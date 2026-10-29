@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { ProfileRedirect } from "@/components/profile-route";
+import { ProfileRedirect } from "@/components/profile-route-lazy";
 
 export const metadata: Metadata = { title: "Profile", robots: { index: false } };
 

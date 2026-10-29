@@ -42,3 +42,8 @@ node_modules
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+
+# Cloudflare / OpenNext
+.open-next
+.dev.vars
+.wrangler

@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { ProfileRoute } from "@/components/profile-route";
+import { ProfileRoute } from "@/components/profile-route-lazy";
 import type { PublicData } from "@/components/public-profile";
 import { anon } from "@/lib/account/server";
 
