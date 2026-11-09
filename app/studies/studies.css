@@ -179,6 +179,17 @@
 .ctos.st-page .st-facts-row > .cm-panel:nth-child(2).st-anim { animation-delay: .1s; }
 .ctos.st-page .st-facts-row > .cm-panel:nth-child(3).st-anim { animation-delay: .2s; }
 
+/* Third pass: (1) the Progress and Load panels share a row and stretch to the same height, so no empty tail;
+   (2) section rules are dropped on this page, spacing carries the separation (one rule was enough, the stacked
+   rules and cyan ticks read as clutter); (3) section padding is tighter, so less dead air between blocks. */
+.ctos.st-page .cm-split { align-items: stretch; }
+.ctos.st-page .cm-split > .cm-panel { height: 100%; }
+.ctos.st-page .cm-section { border-top-color: transparent; padding-block: var(--cm-s7); }
+.ctos.st-page .cm-split > .cm-panel:nth-child(2) > .cm-body-pad { align-content: center; }
+@media (max-width: 760px) {
+  .ctos.st-page .cm-section { padding-block: 40px; }
+}
+
 /* ---- Load-in choreography -------------------------------------------------------------------------------------------
    Everything tagged .st-anim plays once after the boot sequence and any page curtain lift: animations are held
    (paused at their first frame) while html[data-boot] or html[data-xition] covers the screen, so nothing finishes
