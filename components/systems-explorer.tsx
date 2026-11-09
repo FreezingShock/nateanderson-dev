@@ -64,17 +64,17 @@ export function SystemsExplorer() {
 
     return (
         <div style={{ display: "grid", gap: "var(--cm-s5)" }}>
-            <dl className="cm-panel tick cm-kv" style={{ ["--cols" as string]: gameFacts.length }}>
+            <div className="meta stats" style={{ ["--cols" as string]: gameFacts.length }}>
                 {gameFacts.map((f) => (
                     <div key={f.label}>
-                        <dt>{f.label}</dt>
-                        <dd style={{ fontSize: 26 }}>
+                        <div className="cm-lbl">{f.label}</div>
+                        <span className="big" style={{ color: f.color }}>
                             <CountUp value={f.value} />
                             {f.suffix}
-                        </dd>
+                        </span>
                     </div>
                 ))}
-            </dl>
+            </div>
 
             <p className="cm-prose" style={{ margin: 0 }}>
                 <strong>Fractured Islands: Ascension</strong> is a solo-built Roblox progression game. Its architecture

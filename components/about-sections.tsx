@@ -1,65 +1,58 @@
 import Link from "next/link";
 import { Meter } from "@/components/cm/ui";
-import { CountUp, Reveal } from "@/components/cm/reveal";
-import { ABOUT_ICONS } from "@/components/about-icons";
+import { ScrollType } from "@/components/cm/motion";
 import { beliefs, building, designPrinciples, runningPlan, runningStats } from "@/lib/about-data";
 import { READING_STATUS, readingQueue } from "@/lib/studies-data";
-import { KEY_DATES, daysUntil, phases, progressBetween } from "@/lib/timeline-data";
+import { phases, progressBetween } from "@/lib/timeline-data";
 
-// Static sections of /about. Server components, rendered once to HTML.
+// Static sections of /about. Server components, rendered once to HTML. The page wraps them in .ctos, so the naOS
+// panels, card variety and scrubbed reveals come from app/camino/ctos.css and the layout lives in app/about/about.css.
 
 const kw = (text: string) => <strong>{text}</strong>;
 
 const buildTone = (status: string) => (/development|always|senior|playable/i.test(status) ? "live" : "");
 
-export function AboutStory({ nowMs }: { nowMs: number }) {
-    const daysToGrad = daysUntil(KEY_DATES.graduation, nowMs);
-    const facts = [
-        { icon: "GraduationCap" as const, value: "Class of 2027", label: "Senior year" },
-        { icon: "Footprints" as const, value: "4 years", label: "Running competitively" },
-        { icon: "Globe" as const, value: "SoCal", label: "Home, for good" },
-    ];
+// The three verbs from the story: how I think, execute and create.
+const verbs = [
+    { verb: "Think", name: "Philosophy", detail: "Kierkegaard's ethics, agnosticism, interconnected systems" },
+    { verb: "Execute", name: "Discipline", detail: "Competitive running, strength training, precision" },
+    { verb: "Create", name: "Systems thinking", detail: "Game mechanics, urban design, code architecture" },
+];
 
+export function AboutStory() {
     return (
-        <div className="cm-split">
-            <div className="cm-prose">
-                <p style={{ color: "var(--cm-fg)", fontSize: "var(--cm-t-lead)" }}>
-                    I&apos;m {kw("Nate")}, a senior in high school in Southern California studying toward a degree in{" "}
-                    {kw("Environmental Engineering")}. I build games, render systems, and design spaces, always with an eye
-                    toward sustainable, interconnected systems.
-                </p>
-                <p>
-                    I think through {kw("philosophy")} (Kierkegaard&apos;s ethics, agnosticism, interconnected systems), execute
-                    through {kw("discipline")} (competitive running, strength training, precision), and create through{" "}
-                    {kw("systems thinking")} (game mechanics, urban design, code architecture).
-                </p>
-                <p>
-                    By Spring 2031, my goal: launch a {kw("sustainable infrastructure/urban design business")} after completing
-                    my degree at Cal Poly Pomona, with financial freedom and athletic leadership woven through the journey.
-                </p>
+        <div className="about-story">
+            <div>
+                <ScrollType
+                    as="p"
+                    className="about-lede"
+                    text="I'm Nate, a senior in high school in Southern California studying toward a degree in Environmental Engineering. I build games, render systems, and design spaces, always with an eye toward sustainable, interconnected systems."
+                />
+                <div className="cm-prose" style={{ marginTop: "var(--cm-s5)" }}>
+                    <p>
+                        By Spring 2031, my goal: launch a {kw("sustainable infrastructure/urban design business")} after completing
+                        my degree at Cal Poly Pomona, with financial freedom and athletic leadership woven through the journey.
+                    </p>
+                </div>
             </div>
-            <div className="cm-panel tick">
-                <div className="cm-hbar"><span>Profile</span><span>Class of 2027</span></div>
-                <dl className="cm-kv two" style={{ ["--cols" as string]: 2 }}>
-                    {facts.map((f) => {
-                        const Icon = ABOUT_ICONS[f.icon];
-                        return (
-                            <div key={f.label}>
-                                <dt>{f.label}</dt>
-                                <dd style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13 }}>
-                                    <Icon className="cm-ico" aria-hidden="true" />
-                                    {f.value}
-                                </dd>
-                            </div>
-                        );
-                    })}
-                    <div>
-                        <dt>Days to graduation</dt>
-                        <dd style={{ color: "var(--cm-cyan)", fontSize: 22 }}>
-                            {daysToGrad > 0 ? <CountUp value={daysToGrad} /> : "Done"}
-                        </dd>
-                    </div>
+            <div className="cm-panel">
+                <div className="cm-hbar"><span>How I work</span><span>Think / execute / create</span></div>
+                <dl className="about-verbs">
+                    {verbs.map((v) => (
+                        <div key={v.verb}>
+                            <dt>{v.verb}</dt>
+                            <dd>
+                                {v.name}
+                                <small>{v.detail}</small>
+                            </dd>
+                        </div>
+                    ))}
                 </dl>
+                <div className="p-foot" aria-hidden="true">
+                    <span className="id-bars"><i /><i /><i /><i /><i /></span>
+                    <span>story / 3 of 3</span>
+                    <span>naOS / about</span>
+                </div>
             </div>
         </div>
     );
@@ -68,15 +61,13 @@ export function AboutStory({ nowMs }: { nowMs: number }) {
 export function BuildingCards() {
     return (
         <div className="cm-grid">
-            {building.map((item, i) => (
-                <Reveal key={item.title} delay={(i % 3) * 70}>
-                    <Link href={item.href} className="cm-card link" style={{ height: "100%" }}>
-                        <span className={`cm-tag flat ${buildTone(item.status)}`} style={{ alignSelf: "flex-start" }}>{item.status}</span>
-                        <b style={{ fontSize: 17, marginTop: 6 }}>{item.title}</b>
-                        <p>{item.description}</p>
-                        <span className="st">{item.cta} →</span>
-                    </Link>
-                </Reveal>
+            {building.map((item) => (
+                <Link key={item.title} href={item.href} className="cm-card link" style={{ height: "100%" }}>
+                    <span className={`cm-tag flat ${buildTone(item.status)}`} style={{ alignSelf: "flex-start" }}>{item.status}</span>
+                    <b style={{ fontSize: 17, marginTop: 6 }}>{item.title}</b>
+                    <p>{item.description}</p>
+                    <span className="st">{item.cta} →</span>
+                </Link>
             ))}
         </div>
     );
@@ -84,24 +75,23 @@ export function BuildingCards() {
 
 export function RunningSection() {
     return (
-        <div style={{ display: "grid", gap: "var(--cm-s5)" }}>
-            <dl className="cm-panel tick cm-kv" style={{ ["--cols" as string]: 4 }}>
+        <div className="about-run">
+            <div className="meta stats" style={{ ["--cols" as string]: runningStats.length }}>
                 {runningStats.map((s) => (
                     <div key={s.label}>
-                        <dt>{s.label}</dt>
-                        <dd style={{ fontSize: 26 }}>{s.value}</dd>
+                        <div className="cm-lbl">{s.label}</div>
+                        <span className="big" style={{ color: s.color }}>{s.value}</span>
                     </div>
                 ))}
-            </dl>
-
-            <div className="cm-hatch" style={{ padding: 14 }}>
-                <span className="cm-read good" style={{ color: "var(--cm-good)" }}>
-                    Exceeds Santa Monica College&apos;s recruiting standards
-                </span>
-                <span className="cm-note" style={{ display: "inline", marginLeft: 8 }}>on the recruited-athlete path into college running.</span>
             </div>
 
-            <div className="cm-split">
+            <div className="about-flag">
+                <span className="cm-state live">Recruiting</span>
+                <span>Exceeds Santa Monica College&apos;s recruiting standards</span>
+                <span className="cm-note">on the recruited-athlete path into college running.</span>
+            </div>
+
+            <div className="about-split">
                 <div>
                     <span className="cm-lbl">The running plan</span>
                     <ol className="cm-rail" style={{ margin: "14px 0 0", padding: "0 0 0 22px" }}>
@@ -123,6 +113,11 @@ export function RunningSection() {
                         discipline and leadership, qualities I bring to all areas of work. Racing as a recruited athlete
                         through college (SMC to Cal Poly Pomona) is part of my long-term vision.
                     </p>
+                    <div className="p-foot" aria-hidden="true">
+                        <span className="id-bars"><i /><i /><i /><i /><i /></span>
+                        <span>training / base</span>
+                        <span>SMC to CPP</span>
+                    </div>
                 </div>
             </div>
         </div>

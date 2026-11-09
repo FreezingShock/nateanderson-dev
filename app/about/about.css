@@ -1,0 +1,143 @@
+/* About page, naOS layout. Page-only: the shared naOS layers (title blocks, Status-card panels, card variety, scrubbed
+   reveals, index plates, the footer) come from app/camino/ctos.css, and the page wraps itself in .ctos to get them.
+   Everything here is scoped under .about so no other page picks it up. */
+
+/* ---- Header: title blocks on the dither field, with the naOS guide lines ---------------------------------------- */
+.about .about-head {
+    position: relative;
+    display: grid;
+    align-content: center;
+    padding-block: var(--cm-s8) var(--cm-s7);
+    overflow: hidden;
+}
+.about .about-head > .cm-grid-bg {
+    background-image: radial-gradient(circle at center, rgba(244, 244, 242, .55) 0 28%, transparent 32%);
+    background-size: 5px 5px;
+    -webkit-mask-image: linear-gradient(100deg, transparent 8%, #000 100%);
+    mask-image: linear-gradient(100deg, transparent 8%, #000 100%);
+    opacity: .28;
+}
+.about .about-head::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    opacity: .55;
+    background:
+        url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100' preserveAspectRatio='none'%3E%3Cpath d='M0 8 L100 82 M0 96 L100 14' stroke='%23c23bd0' stroke-width='1' fill='none' vector-effect='non-scaling-stroke'/%3E%3C/svg%3E")
+        center / 100% 100% no-repeat;
+}
+.about .about-head > .cm-wrap { position: relative; z-index: 1; }
+.about .about-hero { display: grid; gap: var(--cm-s6); align-items: end; }
+.about .about-copy { display: grid; gap: var(--cm-s5); min-width: 0; }
+.about .about-title { display: inline-flex; flex-direction: column; }
+.ctos.about .about-title > * { font-size: clamp(34px, 9.6vw, 96px); }
+.ctos.about .about-title .hx { white-space: normal; }
+.about .about-lead { margin: 0; max-width: 42ch; font-weight: 600; letter-spacing: -.01em; }
+
+/* Profile card: the Status card frame (cyan left edge, corner bracket, white header bar, signal strip). */
+.about .about-id {
+    position: relative;
+    z-index: 2;
+    background: #141414;
+    border: 1px solid var(--cm-hair-hi);
+    border-left: 3px solid var(--cm-cyan);
+}
+.about .about-id::before,
+.about .about-id::after {
+    content: "";
+    position: absolute;
+    width: 14px;
+    height: 14px;
+    border: 0 solid var(--cm-ctos-block);
+    pointer-events: none;
+}
+.about .about-id::before { right: -1px; top: -1px; border-top-width: 2px; border-right-width: 2px; }
+.about .about-id::after { left: -3px; bottom: -1px; border-bottom-width: 2px; border-left-width: 2px; }
+.about .about-id .id-main { grid-template-columns: 74px minmax(0, 1fr); }
+.about .about-id .id-rows dd a { color: var(--cm-fg); }
+
+@media (min-width: 1000px) {
+    .about .about-head { min-height: min(82vh, 780px); }
+    .about .about-hero { grid-template-columns: minmax(0, 1.35fr) minmax(300px, 1fr); }
+    .about .about-id { margin-bottom: var(--cm-s4); }
+}
+
+/* ---- Readout strip: the ctos stats strip, sized for any number of figures on a phone ---------------------------- */
+.ctos.about .meta.stats { display: grid; grid-template-columns: repeat(var(--cols, 4), minmax(0, 1fr)); width: 100%; }
+.ctos.about .meta.stats > div { min-width: 0; padding: 12px 14px 15px; }
+.ctos.about .meta.stats .big { font-size: 30px; overflow-wrap: anywhere; }
+.ctos.about .meta.stats .cm-lbl { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+/* Status flag: a single Status-card row for the recruiting line. */
+.about .about-flag {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px 14px;
+    padding: 12px 14px;
+    background: #131313;
+    border: 1px solid var(--cm-hair-hi);
+    border-left: 3px solid var(--cm-cyan);
+    font: 500 14px/1.4 var(--cm-display);
+    letter-spacing: -.01em;
+}
+.about .about-flag .cm-note { font-size: 12px; }
+
+/* ---- Story: lede typed by scroll, then a panel that names the three verbs ------------------------------------------ */
+.about .about-story { display: grid; gap: var(--cm-s6); align-items: start; }
+.about .about-lede {
+    margin: 0;
+    font: 600 clamp(20px, 2.6vw, 30px) / 1.2 var(--cm-display);
+    letter-spacing: -.02em;
+    max-width: 30ch;
+    text-wrap: balance;
+}
+.about .about-story .cm-prose p { margin: 0 0 var(--cm-s4); }
+.about .about-verbs { margin: 0; display: grid; }
+.about .about-verbs > div {
+    display: grid;
+    grid-template-columns: 96px minmax(0, 1fr);
+    gap: 12px;
+    padding: 14px;
+    border-top: 1px solid var(--cm-hair);
+    align-items: baseline;
+}
+.about .about-verbs > div:first-child { border-top: 0; }
+.about .about-verbs dt {
+    font: 700 10px/1.2 var(--cm-mono);
+    letter-spacing: .16em;
+    text-transform: uppercase;
+    color: var(--cm-cyan);
+}
+.about .about-verbs dd { margin: 0; font: 700 19px/1.15 var(--cm-display); letter-spacing: -.03em; text-transform: lowercase; }
+.about .about-verbs small { display: block; margin-top: 5px; font: 400 13px/1.45 var(--cm-display); letter-spacing: 0; text-transform: none; color: var(--cm-mute); }
+@media (min-width: 900px) {
+    .about .about-story { grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); }
+}
+
+/* ---- Running: the two-up training split and the plan rail --------------------------------------------------------- */
+.about .about-run { display: grid; gap: var(--cm-s5); }
+.about .about-split { display: grid; gap: var(--cm-s5); align-items: start; }
+@media (min-width: 900px) {
+    .about .about-split { grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); }
+}
+
+/* ---- Closing panel: index plates for the next step --------------------------------------------------------------- */
+.about .about-next { display: grid; gap: var(--cm-s4); }
+.about .about-next .cm-body-pad { padding: var(--cm-s5); }
+.about .about-next .cm-body-pad p { margin: 0; }
+
+@media (max-width: 620px) {
+    .ctos.about .meta.stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .ctos.about .meta.stats > div:nth-child(odd) { border-left: 0; }
+    .ctos.about .meta.stats > div:nth-child(n+3) { border-top: 1px solid var(--cm-hair); }
+    .about .about-id .id-main { grid-template-columns: 62px minmax(0, 1fr); gap: 12px; }
+    .about .about-id .id-badge { width: 62px; height: 78px; }
+    .about .about-verbs > div { grid-template-columns: 1fr; gap: 4px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .about .about-head::after { opacity: .3; }
+}
