@@ -5,6 +5,7 @@ import { CommitHistory } from "@/components/commit-history";
 import { REPO, githubHeaders, fetchCommitsPage, type CommitEntry } from "@/lib/github";
 import { getRepoStats } from "@/lib/site-stats";
 import styles from "./history.module.css";
+import { pageMeta } from "@/lib/seo";
 
 const INITIAL_PER_PAGE = 10;
 
@@ -173,4 +174,8 @@ export default async function HistoryPage() {
     );
 }
 
-export const metadata = { title: "Site History" };
+export const metadata = pageMeta({
+    title: "Site History",
+    description: "This website's own changelog, pulled live from the GitHub API, not written by hand.",
+    path: "/history",
+});

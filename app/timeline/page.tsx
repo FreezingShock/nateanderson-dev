@@ -3,6 +3,7 @@ import { TimelineOverview } from "@/components/timeline-overview";
 import { TimelineExplorer } from "@/components/timeline-explorer";
 import { phases } from "@/lib/timeline-data";
 import "./timeline.css";
+import { pageMeta } from "@/lib/seo";
 
 // Statically generated and re-checked hourly: statuses ("done" / "now" /
 // "upcoming") and progress are computed from real dates at render time, so
@@ -130,4 +131,8 @@ export default function TimelinePage() {
     );
 }
 
-export const metadata = { title: "Timeline" };
+export const metadata = pageMeta({
+    title: "Timeline",
+    description: "The pathway from senior year to a 2031 launch, with real dates, live countdowns and every milestone in between.",
+    path: "/timeline",
+});

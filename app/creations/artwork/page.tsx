@@ -1,5 +1,6 @@
 import { ArtCollectionSection, CreationsShell } from "@/components/creations-sections";
-import { ART_COLLECTIONS } from "@/lib/creations-data";
+import { ART_COLLECTIONS, categoryById } from "@/lib/creations-data";
+import { pageMeta } from "@/lib/seo";
 
 export default function ArtworkPage() {
     return (
@@ -16,4 +17,9 @@ export default function ArtworkPage() {
     );
 }
 
-export const metadata = { title: "Artwork" };
+export const metadata = pageMeta({
+    title: "Artwork",
+    description: categoryById("artwork").blurb,
+    path: "/creations/artwork",
+    image: "/creations/opengraph-image",
+});

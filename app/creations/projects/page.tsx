@@ -1,5 +1,7 @@
 import { getProjects } from "@/lib/content";
 import { CreationsShell, ProjectGrid, Section } from "@/components/creations-sections";
+import { pageMeta } from "@/lib/seo";
+import { categoryById } from "@/lib/creations-data";
 
 export const revalidate = 60;
 
@@ -19,4 +21,9 @@ export default async function ProjectsPage() {
     );
 }
 
-export const metadata = { title: "Projects" };
+export const metadata = pageMeta({
+    title: "Projects",
+    description: categoryById("projects").blurb,
+    path: "/creations/projects",
+    image: "/creations/opengraph-image",
+});

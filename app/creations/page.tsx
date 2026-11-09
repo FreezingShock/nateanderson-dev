@@ -3,6 +3,7 @@ import { getProjects, getRecentRenovations } from "@/lib/content";
 import { CategoryGrid, CreationsShell, IdCard, PhilosophyGrid, Section } from "@/components/creations-sections";
 import { CountUp } from "@/components/cm/reveal";
 import { ART_COLLECTIONS, GAME_MODES, GAME_STATUS, allGames } from "@/lib/creations-data";
+import { pageMeta } from "@/lib/seo";
 
 export const revalidate = 60;
 
@@ -82,4 +83,9 @@ export default async function CreationsPage() {
     );
 }
 
-export const metadata = { title: "Creations" };
+export const metadata = pageMeta({
+    title: "Creations",
+    description:
+        "Everything I build: games you can play here, coding and Roblox projects, renovation studies of real places, and the artwork around it all.",
+    path: "/creations",
+});

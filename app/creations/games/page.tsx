@@ -1,6 +1,7 @@
 import { CreationsShell } from "@/components/creations-sections";
 import { NaosGameMode } from "@/components/games/naos";
-import { GAME_MODES } from "@/lib/creations-data";
+import { GAME_MODES, categoryById } from "@/lib/creations-data";
+import { pageMeta } from "@/lib/seo";
 
 export default function GamesPage() {
     return (
@@ -19,4 +20,9 @@ export default function GamesPage() {
     );
 }
 
-export const metadata = { title: "Games" };
+export const metadata = pageMeta({
+    title: "Games",
+    description: categoryById("games").blurb,
+    path: "/creations/games",
+    image: "/creations/opengraph-image",
+});

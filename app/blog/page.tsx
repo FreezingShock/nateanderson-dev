@@ -4,12 +4,13 @@ import { Scramble } from "@/components/cm/motion";
 import { BlogSection } from "@/components/blog-section";
 import { blogSections, BLOG_SECTION_IDS } from "@/lib/blog";
 import "./blog-naos.css";
+import { pageMeta } from "@/lib/seo";
 
-export const metadata = {
+export const metadata = pageMeta({
     title: "Blog",
-    description:
-        "Essays, research notes, poetry, dev logs and snippets. Thinking in public.",
-};
+    description: "Essays, research notes, poetry, dev logs and snippets. Thinking in public.",
+    path: "/blog",
+});
 
 export default function BlogPage() {
     const allPosts = blogSections.flatMap((s) => s.posts);
