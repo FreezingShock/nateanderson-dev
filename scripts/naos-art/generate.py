@@ -424,6 +424,93 @@ def history():
     return dither(inten, arr)
 
 
+# 4. Studies pathway (Studies page header): six voxel terraces climbing away to the upper right, one
+#    per senior-year class, with a dotted trace running up to floating checkpoint blocks. Same
+#    painter-order isometric method as the islands, over a faint dotted tracking grid.
+# ---------------------------------------------------------------------------------------------
+GRID = 8  # dotted tracking grid under the scene (dithered at half intensity)
+
+
+def studies():
+    W, H = 320, 200
+    CW, CH, VH = 13.0, 6.5, 10.0
+    heights = [1, 2, 3, 4, 5, 6]        # one terrace per class, each one voxel taller than the last
+    tread = 2                           # treads are two cells wide (x), each step one cell deep (y)
+
+    def P(x, y, z):
+        return (x - y) * CW, (x + y) * CH - z * VH
+
+    pts = []
+    for i, h in enumerate(heights):
+        for x in (0, tread):
+            for y in (-i - 1, -i):
+                for z in (0, h):
+                    pts.append(P(x, y, z))
+    for (x, y, z) in [(1, -7, 9), (1, -9, 10)]:
+        for dx in (0, 1):
+            for dy in (0, 1):
+                pts.append(P(x + dx, y + dy, z + 1))
+    xs = [p[0] for p in pts]
+    ys = [p[1] for p in pts]
+    ox = W / 2 - (min(xs) + max(xs)) / 2
+    oy = H / 2 - (min(ys) + max(ys)) / 2
+
+    def Q(x, y, z):
+        px, py = P(x, y, z)
+        return (ox + px, oy + py)
+
+    ids_img = Image.new("L", (W, H), 0)
+    d = ImageDraw.Draw(ids_img)
+
+    # Dotted tracking grid on the ground plane, drawn first so the terraces cover it.
+    for g in range(-1, 9, 2):
+        d.line([Q(g, -11, 0), Q(g, 1, 0)], fill=GRID, width=1)
+        d.line([Q(-1, g - 11, 0), Q(8, g - 11, 0)], fill=GRID, width=1)
+
+    # Painter order: farthest first (smallest x + y), so nearer, shorter steps cover the taller ones behind.
+    boxes = []
+    for i, h in enumerate(heights):
+        boxes.append((0, -i - 1, 0, tread, 1, h, i == len(heights) - 1))
+    for (x, y, z) in [(1, -7, 9), (1, -9, 10)]:
+        boxes.append((x, y, z, 1, 1, 1, True))
+    boxes.sort(key=lambda b: b[0] + b[1])
+
+    for (x, y, z0, w, dd, h, roof) in boxes:
+        zt = z0 + h
+        rc, lc, tc = (BRIGHT, BLEFT, BTOP) if roof else (RIGHT, LEFT, TOP)
+        # +x face (right), +y face (left), then the top.
+        d.polygon([Q(x + w, y, z0), Q(x + w, y + dd, z0), Q(x + w, y + dd, zt), Q(x + w, y, zt)], fill=rc)
+        d.polygon([Q(x, y + dd, z0), Q(x + w, y + dd, z0), Q(x + w, y + dd, zt), Q(x, y + dd, zt)], fill=lc)
+        top = [Q(x, y, zt), Q(x + w, y, zt), Q(x + w, y + dd, zt), Q(x, y + dd, zt)]
+        d.polygon(top, fill=tc)
+        if roof:
+            d.line(top + [top[0]], fill=EDGE, width=1)
+
+    # Dotted trace: one ink dot every other step, from the first tread up to the highest checkpoint.
+    trace = [Q(tread / 2, -i - 0.5, h + 0.4) for i, h in enumerate(heights)]
+    trace.append(Q(1.5, -8, 10.4))
+    for (ax, ay), (bx, by) in zip(trace, trace[1:]):
+        n = int(max(abs(bx - ax), abs(by - ay)) / 2.5)
+        for s in range(n + 1):
+            t = s / max(1, n)
+            d.point((ax + (bx - ax) * t, ay + (by - ay) * t), fill=EDGE)
+
+    arr = np.array(ids_img)
+    yy, xx = np.mgrid[0:H, 0:W]
+    lx, ly = W * 0.72, H * 0.22
+    dist = np.sqrt(((xx - lx) / (W * 0.6)) ** 2 + ((yy - ly) / (H * 0.7)) ** 2)
+    inten = np.zeros((H, W))
+    inten[arr == TOP] = np.clip(0.7 - 0.55 * dist, 0.12, 0.7)[arr == TOP]
+    inten[arr == LEFT] = 0.46
+    inten[arr == RIGHT] = 0.18
+    inten[arr == BTOP] = 1.0
+    inten[arr == BLEFT] = 0.72
+    inten[arr == BRIGHT] = 0.42
+    inten[arr == GRID] = 0.34
+    ink = dither(inten, arr)
+    ink[arr == GRID] = ink[arr == GRID] & (((xx + yy) % 2) == 0)[arr == GRID]
+    return ink
+
 
 if __name__ == "__main__":
     os.makedirs(OUT, exist_ok=True)
@@ -434,3 +521,8 @@ if __name__ == "__main__":
     save_1bit(timeline_route(), os.path.join(OUT, "timeline-route.png"))
     save_1bit(games(), os.path.join(OUT, "games.png"))
     save_1bit(history(), os.path.join(OUT, "history.png"))
+
+
+
+
+    save_1bit(studies(), os.path.join(OUT, "studies.png"))
