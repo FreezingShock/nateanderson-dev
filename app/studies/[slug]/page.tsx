@@ -83,9 +83,9 @@ export default async function CourseDetailPage({
 
             <section id="detail" className="cm-section st-detail" style={{ scrollMarginTop: 96 }}>
                 <div className="cm-wrap" data-rx-auto="" style={{ display: "grid", gap: 16 }}>
-                    <div className="cm-cols3">
+                    <div className="cm-cols3 st-facts-row">
                         {facts.map((f) => (
-                            <div key={f.label} className="cm-panel">
+                            <div key={f.label} className="cm-panel st-anim">
                                 <div className="cm-hbar">
                                     <span>{f.label}</span>
                                 </div>
@@ -161,7 +161,7 @@ export default async function CourseDetailPage({
 
             {related.length > 0 && (
                 <Section id="related" label="On the timeline" title="Where it shows up." ctos>
-                    <div className="cm-grid" style={{ gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))" }}>
+                    <div className="cm-grid st-related" style={{ gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))" }}>
                         {related.map((e) => (
                             <Link key={e.id} href={`/timeline#${e.id}`} className="cm-card link">
                                 <span className={`cm-state ${e.special ? "live" : ""}`}>{e.when}</span>

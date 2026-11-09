@@ -32,7 +32,7 @@ export default async function ProjectPage({ params }: { params: Promise<{ slug: 
     const Icon = categoryById(isProject ? "projects" : "renovations").icon;
     const kind = isProject ? "Project" : "Renovation";
     return (
-        <div className="ctos">
+        <div className="ctos cr-sub">
             <NaosBackdrop src="/naos/bg-default.png" />
             <CreationsHead
                 label={project.category}

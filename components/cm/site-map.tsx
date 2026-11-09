@@ -59,7 +59,7 @@ export function SiteMap() {
 
     return (
         <div
-            className="nv-scrim"
+            className="nv-scrim nv-scrim-drawer"
             onMouseDown={(e) => {
                 if (e.target === e.currentTarget) hide();
             }}

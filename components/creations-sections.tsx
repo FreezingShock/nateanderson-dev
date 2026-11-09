@@ -2,6 +2,7 @@ import Link from "next/link";
 import type { ComponentProps, ReactNode } from "react";
 import { Section as CmSection } from "@/components/cm/ui";
 import { ScrollType, Scramble } from "@/components/cm/motion";
+import { CountUp } from "@/components/cm/reveal";
 import { statusLabel, type Project } from "@/lib/content";
 import {
     CATEGORIES,
@@ -227,12 +228,46 @@ export function GameModeSection({ mode, no }: { mode: GameMode; no: string }) {
     );
 }
 
+/**
+ * Status card for a list page (projects, renovations). Every number is counted from the rows, so it stays true as the
+ * Supabase table changes.
+ */
+export function ListStatusCard({ label, badge, projects }: { label: string; badge: string; projects: Project[] }) {
+    const count = (s: Project["status"]) => projects.filter((p) => p.status === s).length;
+    return (
+        <IdCard
+            label={label}
+            badge={badge}
+            year={String(projects.length).padStart(2, "0")}
+            rows={[
+                { k: "Listed", v: <CountUp value={projects.length} /> },
+                { k: statusLabel.active, v: <CountUp value={count("active")} /> },
+                { k: statusLabel.planning, v: <CountUp value={count("planning")} /> },
+                { k: statusLabel.idea, v: <CountUp value={count("idea")} /> },
+            ]}
+            foot={["list / all", `${projects.length} ${projects.length === 1 ? "entry" : "entries"}`]}
+        />
+    );
+}
+
 /** Project / renovation grid backed by Supabase rows. */
 export function ProjectGrid({ projects }: { projects: Project[] }) {
     if (projects.length === 0) {
+        // Standby card: the same panel family as the status cards, so an empty list still reads as part of the system.
         return (
-            <div className="cm-panel cm-hatch" style={{ padding: 28 }}>
-                <span className="cm-read warm">Nothing here yet. Check back soon.</span>
+            <div className="cm-panel cr-empty">
+                <div className="id-top">
+                    <span className="id-sys">naOS // standby</span>
+                </div>
+                <div className="cr-empty-body">
+                    <span>Nothing here yet.</span>
+                    <small>Check back soon.</small>
+                </div>
+                <div className="p-foot" aria-hidden="true">
+                    <span className="id-bars"><i /><i /><i /><i /><i /></span>
+                    <span>0 entries</span>
+                    <span>queue empty</span>
+                </div>
             </div>
         );
     }

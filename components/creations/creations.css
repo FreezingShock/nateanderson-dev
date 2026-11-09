@@ -132,7 +132,79 @@ html[data-boot="full"] .ctos.cr-hub .cr-head::before, html[data-boot="quick"] .c
    would leave it hidden for good. */
 .ctos.cr-hub .cm-grid > [data-rx]:nth-child(odd) { --rx-x: -26px; --rx-y: 0px; }
 .ctos.cr-hub .cm-grid > [data-rx]:nth-child(even) { --rx-x: 26px; --rx-y: 0px; }
+
+/* Second pass: the two game modes fill the row as two wide cards (auto-fill left half the row empty), the dashed
+   cards keep their count readable over the dot field, and on phones the side offset is short so a card never
+   overhangs the 16px gutter mid-reveal. */
+.ctos.cr-hub .cr-modes { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.ctos.cr-hub .cm-grid > .cm-card:nth-child(3n) .cm-state { background: rgba(26, 26, 26, .9); padding: 2px 6px; margin: -2px -6px; }
+@media (max-width: 760px) {
+  .ctos.cr-hub .cr-modes { grid-template-columns: minmax(0, 1fr); }
+  .ctos.cr-hub .cm-grid > [data-rx]:nth-child(odd) { --rx-x: -12px; }
+  .ctos.cr-hub .cm-grid > [data-rx]:nth-child(even) { --rx-x: 12px; }
+}
 @media (prefers-reduced-motion: reduce) {
   .ctos.cr-hub .cr-head::before, .ctos.cr-hub .cr-head > .cm-grid-bg, .ctos.cr-hub .cr-art img, .ctos.cr-hub .cr-id, .ctos.cr-hub .cr-id .id-rows > div, .ctos.cr-hub .cr-id .id-bars i { animation: none; }
   .ctos.cr-hub .cr-head::before { display: none; }
+}
+
+/* ==========================================================================
+   Subpages (projects, renovations, artwork, the two game pages and each detail page). They take the hub's head load-in
+   and its alternating card reveal, scoped to `.ctos.cr-sub`, so the games hub and the hub itself are untouched.
+   Head: a once-only time load-in (scan, grid, label, status card). Body: scroll-linked, forward going down and reversed
+   going up, with no clip-path or mask on any data-rx item.
+   ========================================================================== */
+
+.ctos.cr-sub .cr-head::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background: linear-gradient(180deg, transparent calc(100% - 2px), var(--cm-cyan) 100%);
+  transform: translate3d(0, -100%, 0);
+  animation: cr-hub-scan 1.1s var(--cm-ease-cut) 0s 1 both;
+}
+.ctos.cr-sub .cr-head > .cm-wrap { z-index: 1; }
+.ctos.cr-sub .cr-head > .cm-grid-bg { animation: cr-sub-grid .9s var(--cm-ease-out) 0s both; }
+@keyframes cr-sub-grid { from { opacity: 0; clip-path: inset(0 0 100% 0); } to { clip-path: inset(0 0 0 0); } }
+.ctos.cr-sub .cr-head .cm-lbl { animation: cr-sub-rise .55s var(--cm-ease-out) .14s both; }
+@keyframes cr-sub-rise { from { opacity: 0; transform: translate3d(0, 10px, 0); } to { opacity: 1; transform: none; } }
+.ctos.cr-sub .cr-id { animation: cr-hub-card .7s var(--cm-ease-cut) .3s both; }
+.ctos.cr-sub .cr-id .id-rows > div { animation: cr-hub-row .5s var(--cm-ease-out) both; }
+.ctos.cr-sub .cr-id .id-rows > div:nth-child(1) { animation-delay: .7s; }
+.ctos.cr-sub .cr-id .id-rows > div:nth-child(2) { animation-delay: .77s; }
+.ctos.cr-sub .cr-id .id-rows > div:nth-child(3) { animation-delay: .84s; }
+.ctos.cr-sub .cr-id .id-rows > div:nth-child(4) { animation-delay: .91s; }
+.ctos.cr-sub .cr-id .id-rows > div:nth-child(5) { animation-delay: .98s; }
+.ctos.cr-sub .cr-id .id-rows > div:nth-child(n+6) { animation-delay: 1.05s; }
+.ctos.cr-sub .cr-id .id-bars i { transform-origin: 50% 100%; animation: cr-hub-bar .5s steps(4, end) both; }
+.ctos.cr-sub .cr-id .id-bars i:nth-child(1) { animation-delay: 1s; }
+.ctos.cr-sub .cr-id .id-bars i:nth-child(2) { animation-delay: 1.06s; }
+.ctos.cr-sub .cr-id .id-bars i:nth-child(3) { animation-delay: 1.12s; }
+.ctos.cr-sub .cr-id .id-bars i:nth-child(4) { animation-delay: 1.18s; }
+.ctos.cr-sub .cr-id .id-bars i:nth-child(5) { animation-delay: 1.24s; }
+
+/* Boot curtain or page change holds the head: nothing plays under it, and it starts when the stage lifts. */
+html[data-boot="full"] .ctos.cr-sub .cr-head::before, html[data-boot="quick"] .ctos.cr-sub .cr-head::before, html[data-xition="hold"] .ctos.cr-sub .cr-head::before,
+html[data-boot="full"] .ctos.cr-sub .cr-head > .cm-grid-bg, html[data-boot="quick"] .ctos.cr-sub .cr-head > .cm-grid-bg, html[data-xition="hold"] .ctos.cr-sub .cr-head > .cm-grid-bg,
+html[data-boot="full"] .ctos.cr-sub .cr-head .cm-lbl, html[data-boot="quick"] .ctos.cr-sub .cr-head .cm-lbl, html[data-xition="hold"] .ctos.cr-sub .cr-head .cm-lbl,
+html[data-boot="full"] .ctos.cr-sub .cr-id, html[data-boot="quick"] .ctos.cr-sub .cr-id, html[data-xition="hold"] .ctos.cr-sub .cr-id {
+  animation: none; opacity: 0;
+}
+
+/* Body: cards in list grids come in from alternating sides, tied to scroll like the hub. */
+.ctos.cr-sub .cm-grid > [data-rx]:nth-child(odd) { --rx-x: -22px; --rx-y: 0px; }
+.ctos.cr-sub .cm-grid > [data-rx]:nth-child(even) { --rx-x: 22px; --rx-y: 0px; }
+
+/* Empty list: a standby status card with the same panel, header bar and signal strip as the rest of the system. */
+.cr-empty { padding: 0; overflow: hidden; }
+.cr-empty .id-top { color: var(--cm-ctos-ink); }
+.cr-empty-body { padding: 28px 18px 24px; background-image: radial-gradient(circle, rgba(244, 244, 242, .1) 0 28%, transparent 32%); background-size: 6px 6px; }
+.cr-empty-body span { display: inline-block; padding: .1em .22em .14em; background: var(--cm-ctos-block); color: var(--cm-ctos-ink); font: 600 clamp(24px, 7vw, 38px)/1 var(--cm-display); letter-spacing: -.03em; }
+.cr-empty-body small { display: block; margin-top: 14px; font: 500 var(--cm-ctos-t-small)/1.5 var(--cm-mono); letter-spacing: .02em; color: var(--cm-mute); }
+
+@media (prefers-reduced-motion: reduce) {
+  .ctos.cr-sub .cr-head::before { display: none; }
+  .ctos.cr-sub .cr-head > .cm-grid-bg, .ctos.cr-sub .cr-head .cm-lbl, .ctos.cr-sub .cr-id, .ctos.cr-sub .cr-id .id-rows > div, .ctos.cr-sub .cr-id .id-bars i { animation: none; }
 }

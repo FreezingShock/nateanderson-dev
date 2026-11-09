@@ -324,6 +324,17 @@
    ========================================================================== */
 
 
+/* Legibility: the backdrop's contour lines run behind the page copy, so the head copy and section blurbs get a dark
+   halo in the page ground colour. Scoped to the Games pages; the cards and panels keep their own grounds. */
+.ctos.ng-page .cr-head-copy,
+.ctos.ng-page .cm-sec-head > div {
+    text-shadow: 0 0 10px rgba(26, 26, 26, .92), 0 0 3px rgba(26, 26, 26, .9);
+}
+/* Slab titles keep their own type: the halo is for running copy, not for the white title blocks. */
+.ctos.ng-page .cm-highlight,
+.ctos.ng-page .cm-highlight > * { text-shadow: none; }
+.ctos.ng-page .cm-sec-head .cm-h2 { text-shadow: -.035em 0 rgba(255, 70, 90, .32), .035em 0 rgba(47, 216, 232, .32); }
+
 /* The layout wrapper stays still: the frame and the readout carry the motion, so nothing moves twice. */
 .ctos .g-layout[data-rx] { opacity: 1; transform: none; }
 

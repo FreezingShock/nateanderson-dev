@@ -95,11 +95,11 @@ export function ReadingQueue() {
                     </span>
                 ))}
             </div>
-            <div className="cm-cols3">
+            <div className="cm-cols3 st-reading">
                 {readingQueue.map((item) => {
                     const st = READING_STATUS[item.status];
                     return (
-                        <div key={item.title} className="cm-panel" style={{ height: "100%" }}>
+                        <div key={item.title} className={item.status === "reading" ? "cm-panel st-now" : "cm-panel"} style={{ height: "100%" }}>
                             <div className="cm-hbar">
                                 <span className={item.status === "reading" ? "live" : ""}>{st.label}</span>
                                 {item.author && <span>{item.author}</span>}

@@ -26,15 +26,21 @@
     animation-delay: .24s;
 }
 
-@keyframes histDither {
+@keyframes histBar {
     from {
-        opacity: 0;
-        clip-path: inset(0 0 100% 0);
+        transform: scaleY(0);
     }
     to {
-        opacity: .9;
-        clip-path: inset(0 0 0 0);
+        transform: scaleY(1);
     }
+}
+
+/* The lead copy sits on a dark plate, so the backdrop never fights the words. */
+.hero :global(.cm-lead) {
+    max-width: 40ch;
+    padding: 12px 16px;
+    background: rgba(26, 26, 26, .86);
+    border-left: 3px solid var(--cm-cyan);
 }
 
 @keyframes histLine {
@@ -110,6 +116,46 @@
     letter-spacing: .06em;
     text-transform: uppercase;
     color: var(--cm-dim);
+}
+
+/* The index panel gets a cyan header bar, so it no longer matches the white-headed latest-commit card. */
+.statsPanel :global(.cm-hbar) {
+    background: var(--cm-cyan);
+    color: var(--cm-cyan-ink);
+}
+
+/* ---- Recent churn: one bar per commit, oldest left, newest cyan. Fills the index panel's lower half. ----------- */
+.churn {
+    padding: 14px 16px 16px;
+    border-top: 1px dashed var(--cm-hair-hi);
+}
+
+.churnHead {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    flex-wrap: wrap;
+    gap: 6px 12px;
+    margin-bottom: 12px;
+}
+
+.bars {
+    display: flex;
+    align-items: flex-end;
+    gap: 4px;
+    height: 84px;
+}
+
+.bars i {
+    flex: 1 1 0;
+    min-width: 0;
+    background: rgba(244, 244, 242, .28);
+    transform-origin: bottom;
+    animation: histBar .7s var(--cm-ease-out) both;
+}
+
+.bars i:last-child {
+    background: var(--cm-cyan);
 }
 
 .idCard .id-main {
@@ -305,6 +351,46 @@ ol.list {
 }
 
 @media (max-width: 560px) {
+    /* Phones: the three stats become a list of rows (label and note left, number right) instead of cramped columns. */
+    .stats {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .stats > div {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        column-gap: 12px;
+        row-gap: 4px;
+        align-items: center;
+        padding: 14px 16px;
+        border-bottom: 1px dashed var(--cm-hair-hi);
+    }
+
+    .stats > div:last-child {
+        border-bottom: 0;
+    }
+
+    .stats > div > :nth-child(1) {
+        grid-column: 1;
+        grid-row: 1;
+    }
+
+    .stats > div > :nth-child(2) {
+        grid-column: 2;
+        grid-row: 1 / span 2;
+        text-align: right;
+    }
+
+    .stats > div > :nth-child(3) {
+        grid-column: 1;
+        grid-row: 2;
+        margin-top: 0;
+    }
+
+    .churn {
+        padding: 12px 14px 14px;
+    }
+
     .headStrip {
         font-size: 9.5px;
         gap: 8px 12px;
@@ -344,6 +430,7 @@ ol.list {
         transition: none;
     }
 
+    .bars i,
     .headStrip,
     .hero :global(.cm-highlight) > span {
         animation: none;

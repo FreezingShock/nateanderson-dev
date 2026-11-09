@@ -20,6 +20,7 @@ export default function OutlineGuesserPage() {
                 title={["Outline Guesser"]}
                 description="Name the country or territory from its outline. Six guesses; every miss shows the distance, the direction to the target and how close you are."
                 back={{ href: "/creations/games", label: "Back to Games" }}
+                variant="sub"
             >
                 <Section id="play" no="01" label="Play" title="Name that outline." ctos>
                     <div className="g-layout">
