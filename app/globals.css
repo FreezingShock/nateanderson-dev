@@ -6,6 +6,7 @@
 @import "./camino/games.css";
 @import "./camino/ctos.css";
 @import "./camino/nav-naos.css";
+@import "./camino/naos-scroll.css";
 
 @plugin "tailwindcss-animate";
 
