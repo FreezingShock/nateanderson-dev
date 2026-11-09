@@ -746,42 +746,59 @@ def _fractal(rng, W, H, octaves=5, base=3):
     return (h - h.min()) / (h.max() - h.min())
 
 
-def backdrop(seed, side="right", base=3, contours=12, density=1.0):
-    rng = np.random.default_rng(seed)
-    h = _fractal(rng, BG_W, BG_H, base=base)
-    gy, gx = np.gradient(h)
-    slope = -(gx + gy)                       # slopes facing the upper-left light are bright
-    slope = slope / (np.percentile(np.abs(slope), 98) + 1e-9)
-    # Mostly shadow: only the lit slopes carry dither, so the field reads as light on terrain, not a grey fill.
-    inten = np.clip(0.5 + 0.5 * slope, 0, 1) ** 3 * 0.6
+def _shape(h, style, steps):
+    """Turn the fractal height map into one of three landforms, so pages differ in more than their seed."""
+    if style == "ridge":                     # sharp crests, like a folded range
+        h = 1 - np.abs(2 * h - 1)
+        return (h - h.min()) / (h.max() - h.min())
+    if style == "terrace":                   # flat plateaus with thin risers, the voxel stepping in smooth form
+        q = np.floor(h * steps)
+        frac = h * steps - q
+        h = (q + 0.12 * frac) / steps
+        return (h - h.min()) / (h.max() - h.min())
+    return h                                 # "terrain": the rolling default
 
-    # Where ink is allowed: a soft ramp toward the open side, sparse under the reading column.
+
+def backdrop(seed, side="right", base=3, contours=12, style="terrain", angle=135, steps=6, cover=0.3):
+    rng = np.random.default_rng(seed)
+    h = _shape(_fractal(rng, BG_W, BG_H, base=base), style, steps)
+    gy, gx = np.gradient(h)
+    t = np.deg2rad(angle)                    # light direction; 135 is the upper left
+    slope = -(gx * np.cos(t) + gy * np.sin(t))
+    slope = slope / (np.percentile(np.abs(slope), 98) + 1e-9)
+    # Lit slopes carry the dither, shadowed slopes stay mostly empty, so the field reads as light on terrain.
+    if style == "terrace":                   # flat tops take a light dither; the risers catch the most light
+        inten = 0.14 + np.clip(slope, 0, 1) ** 1.2 * 0.8
+    else:
+        inten = np.clip(0.5 + 0.5 * slope, 0, 1) ** 2 * 0.8
+
+    # Ink reaches across the whole frame; the open side is denser so the copy side stays calmer.
     xn = np.linspace(0, 1, BG_W)[None, :].repeat(BG_H, 0)
     yn = np.linspace(0, 1, BG_H)[:, None].repeat(BG_W, 1)
     if side == "left":
         xn = 1 - xn
-    keep = np.clip(0.04 + 0.96 * (0.8 * xn + 0.45 * yn) ** 2.2, 0, 1)
+    keep = cover + (1 - cover) * np.clip(0.25 + 0.75 * (0.8 * xn + 0.45 * yn), 0, 1) ** 1.4
 
     # Contour lines: a band edge wherever the quantised height changes between neighbours.
     band = np.floor(h * contours)
     edge = (band != np.roll(band, 1, axis=1)) | (band != np.roll(band, 1, axis=0))
-    edge_ink = edge & (keep * density > rng.random((BG_H, BG_W)))
+    edge_ink = edge & (keep > rng.random((BG_H, BG_W)))
 
     ids = np.ones((BG_H, BG_W), dtype=np.uint8)
-    field = dither(inten * keep * density, ids)
+    field = dither(inten * keep, ids)
     return field | edge_ink
 
 
-# One unique seed per page. Subpages reuse the piece of their section.
+# One unique look per page: its own seed, landform, light and side. Subpages reuse their section's piece.
 BACKDROPS = {
-    "home": dict(seed=11, side="right", base=3, contours=7),
-    "studies": dict(seed=23, side="right", base=4, contours=8),
-    "about": dict(seed=37, side="left", base=2, contours=6),
-    "history": dict(seed=41, side="right", base=5, contours=10),
-    "timeline": dict(seed=53, side="left", base=3, contours=7),
-    "blog": dict(seed=67, side="right", base=4, contours=6),
-    "games": dict(seed=79, side="left", base=3, contours=9),
-    "default": dict(seed=97, side="right", base=3, contours=7),
+    "home": dict(seed=11, side="right", base=3, contours=7, style="terrain", angle=135),
+    "studies": dict(seed=23, side="right", base=3, contours=8, style="terrace", steps=7, angle=120),
+    "about": dict(seed=37, side="left", base=4, contours=8, style="ridge", angle=200),
+    "history": dict(seed=41, side="right", base=5, contours=10, style="terrain", angle=60),
+    "timeline": dict(seed=53, side="left", base=2, contours=5, style="terrace", steps=5, angle=225),
+    "blog": dict(seed=67, side="right", base=5, contours=6, style="ridge", angle=300),
+    "games": dict(seed=79, side="left", base=2, contours=12, style="terrain", angle=45),
+    "default": dict(seed=97, side="right", base=3, contours=7, style="terrain", angle=110),
 }
 
 
