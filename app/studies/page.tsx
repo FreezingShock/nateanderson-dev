@@ -87,7 +87,7 @@ export default function StudiesPage() {
             </Section>
 
             <section className="cm-section">
-                <div className="cm-wrap" style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+                <div className="cm-wrap" data-mx-stagger="" style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
                     {[
                         { href: "/timeline", label: "Full timeline" },
                         { href: "/about", label: "About me" },

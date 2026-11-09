@@ -36,7 +36,7 @@ export default async function ProjectPage({ params }: { params: Promise<{ slug: 
                 back={{ href: isProject ? "/creations/projects" : "/creations/renovations", label: isProject ? "Back to Projects" : "Back to Renovations" }}
             />
             <section className="cm-section" id="detail">
-                <div className="cm-wrap" style={{ display: "grid", gap: 20 }}>
+                <div className="cm-wrap" data-mx-stagger="" style={{ display: "grid", gap: 20 }}>
                     <div className="cm-viz" style={{ aspectRatio: "16 / 7", minHeight: 150 }}>
                         <span className={`cm-tag flat ${tone[project.status]}`} style={{ position: "absolute", left: 12, top: 12 }}>
                             {statusLabel[project.status]}

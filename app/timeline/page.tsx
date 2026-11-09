@@ -50,13 +50,13 @@ export default function TimelinePage() {
             />
 
             <section id="overview" className="cm-section" style={{ scrollMarginTop: 96 }}>
-                <div className="cm-wrap">
+                <div className="cm-wrap" data-mx-stagger="">
                     <TimelineOverview nowMs={nowMs} />
                 </div>
             </section>
 
             <section className="cm-section">
-                <div className="cm-wrap">
+                <div className="cm-wrap" data-mx-stagger="">
                     <TimelineExplorer phases={phases} nowMs={nowMs} />
                 </div>
             </section>

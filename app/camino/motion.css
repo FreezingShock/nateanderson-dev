@@ -1,0 +1,179 @@
+/* ==========================================================================
+   CAMINO motion system. One style (hard-edged wipes, short rises, mono readouts, one cyan edge) with a small
+   set of controlled variations. Everything animates transform / opacity / clip-path only.
+   Recipes and rules: MOTION.md. Engine: lib/motion/engine.ts. Tokens: camino.tokens.css (Motion).
+   ========================================================================== */
+
+/* ---- 1. Scroll reveals ---------------------------------------------------------------------------------------
+   [data-mx]            reveal this element (variant in the value: "", slide, slide-r, scale, wipe, line, fade)
+   [data-mx-stagger]    reveal each direct child, as a wave when several enter together
+   State is data-in (shown) / data-mxd (finished, element goes back to its own styles). */
+
+[data-mx], [data-mx-stagger] > * {
+  --mx-from: translate3d(0, var(--cm-rise), 0);
+}
+[data-mx="slide"], [data-mx-stagger="slide"] > * { --mx-from: translate3d(calc(var(--cm-slide) * -1), 0, 0); }
+[data-mx="slide-r"], [data-mx-stagger="slide-r"] > * { --mx-from: translate3d(var(--cm-slide), 0, 0); }
+[data-mx="scale"], [data-mx-stagger="scale"] > * { --mx-from: scale(.965); }
+[data-mx="fade"], [data-mx-stagger="fade"] > * { --mx-from: none; }
+[data-mx="line"] { --mx-from: scaleX(0); transform-origin: left center; }
+
+/* Hidden until the engine marks them in. (:where keeps specificity flat so data-in always wins.) */
+[data-mx]:not([data-in]) { opacity: 0; transform: var(--mx-from); }
+[data-mx-stagger] > :where(*):not([data-in]):not(:has([data-mx])) { opacity: 0; transform: var(--mx-from); }
+[data-mx="wipe"]:not([data-in]) { opacity: 1; transform: none; clip-path: inset(0 100% 0 0); }
+
+/* Revealing. The transition lives only here, so once finished the element's own hover transitions return. */
+[data-in]:not([data-mxd]) {
+  opacity: 1;
+  transform: none;
+  transition:
+    opacity .5s var(--cm-ease) var(--d, 0ms),
+    transform var(--cm-d-reveal) var(--cm-ease-out) var(--d, 0ms),
+    clip-path .8s var(--cm-ease-cut) var(--d, 0ms);
+}
+[data-mx="wipe"][data-in]:not([data-mxd]) { clip-path: inset(0 0 0 0); }
+[data-mx="line"][data-in]:not([data-mxd]) { transition-duration: .9s, .9s, .9s; transition-timing-function: var(--cm-ease-cut); }
+
+/* Variation by position, not by chance: every third section enters a different way. */
+.cm-section:nth-of-type(3n+2) > .cm-wrap[data-mx-stagger] > * { --mx-from: translate3d(calc(var(--cm-slide) * -1), 0, 0); }
+.cm-section:nth-of-type(3n) > .cm-wrap[data-mx-stagger] > * { --mx-from: scale(.97); }
+
+/* Section rule that draws itself (Section renders <span class="cm-rule" data-mx="line">). */
+.cm-section.ruled { border-top-color: transparent; }
+.cm-rule { position: absolute; left: 0; right: 0; top: 0; height: 1px; background: var(--cm-hair-hi); pointer-events: none; }
+.cm-rule::after { content: ""; position: absolute; left: 0; top: -1px; width: 28px; height: 3px; background: var(--cm-cyan); }
+
+/* ---- 2. Scroll typewriter -------------------------------------------------------------------------------------
+   The engine writes --n (characters typed, fractional) on the element. Each character derives its own opacity
+   and rise from --n and its index --i, with a ~3 character soft edge. A cyan caret rides the newest character. */
+.cm-type .w { display: inline-block; white-space: nowrap; }
+.cm-type .c {
+  --k: clamp(0, calc((var(--n, 0) - var(--i, 0)) / 3), 1);
+  position: relative;
+  display: inline-block;
+  opacity: var(--k);
+  transform: translate3d(0, calc((1 - var(--k)) * .42em), 0);
+}
+.cm-type .c[data-cur]::after {
+  content: "";
+  position: absolute;
+  left: 100%;
+  top: .12em;
+  bottom: .08em;
+  width: 2px;
+  background: var(--cm-cyan);
+  animation: cm-blink .9s steps(2) infinite;
+}
+
+/* ---- 3. Entrance stage: hero and page-head children arrive one after another ---------------------------------- */
+.cm-stage > * { animation: cm-stage-in .8s var(--cm-ease-out) backwards; animation-delay: calc(var(--s, 0) * 80ms); }
+.cm-stage > :nth-child(2) { --s: 1; } .cm-stage > :nth-child(3) { --s: 2; } .cm-stage > :nth-child(4) { --s: 3; }
+.cm-stage > :nth-child(5) { --s: 4; } .cm-stage > :nth-child(n+6) { --s: 5; }
+.cm-hero .cm-tag, .cm-hero .cm-read.float { animation: cm-tag-in .7s var(--cm-ease-out) backwards; animation-delay: .5s; }
+.cm-hero .t2 { animation-delay: .62s; } .cm-hero .t3 { animation-delay: .74s; }
+.cm-hero .ring { animation: cm-ring-in 1.3s var(--cm-ease-out) backwards; animation-delay: .1s; }
+.cm-head > .cm-grid-bg, .cm-hero > .cm-grid-bg { animation: cm-fade-in 1.2s var(--cm-ease) backwards; }
+
+/* Parallax drift (translate property, so it never fights an animation's transform). */
+[data-mx-par] { translate: 0 var(--py, 0px); }
+
+/* While the boot sequence or a page curtain covers the screen, hold the entrance (it starts the moment it lifts). */
+html[data-boot="full"] .cm-stage > *, html[data-boot="quick"] .cm-stage > *, html[data-xition] .cm-stage > * { animation: none; opacity: 0; }
+html[data-boot="full"] .cm-highlight.wipe > *, html[data-boot="quick"] .cm-highlight.wipe > *, html[data-xition] .cm-highlight.wipe > * { animation: none; }
+html[data-boot="full"] .cm-hero .cm-tag, html[data-boot="quick"] .cm-hero .cm-tag, html[data-xition] .cm-hero .cm-tag,
+html[data-boot="full"] .cm-hero .cm-read.float, html[data-boot="quick"] .cm-hero .cm-read.float, html[data-xition] .cm-hero .cm-read.float,
+html[data-boot="full"] .cm-hero .ring, html[data-boot="quick"] .cm-hero .ring, html[data-xition] .cm-hero .ring,
+html[data-boot="full"] .cm-grid-bg, html[data-boot="quick"] .cm-grid-bg, html[data-xition] .cm-grid-bg { animation: none; opacity: 0; }
+
+@keyframes cm-stage-in { from { opacity: 0; transform: translate3d(0, 18px, 0); } to { opacity: 1; transform: none; } }
+@keyframes cm-tag-in { from { opacity: 0; transform: translate3d(0, 10px, 0) scale(.94); } to { opacity: 1; transform: none; } }
+@keyframes cm-ring-in { from { opacity: 0; transform: scale(.86) rotate(-14deg); } to { opacity: 1; transform: none; } }
+@keyframes cm-fade-in { from { opacity: 0; } }
+
+/* ---- 4. Scroll gauge: a 2px cyan line along the top of the viewport that fills as you read ------------------ */
+.cm-pgauge {
+  position: fixed; left: 0; right: 0; top: 0; height: 2px; z-index: var(--cm-z-top);
+  background: var(--cm-cyan); transform-origin: left center;
+  transform: scaleX(var(--cm-page-p, 0)); pointer-events: none;
+}
+
+/* ---- 5. Page curtain (navigation). Directional; the cyan edge leads. ------------------------------------------ */
+.cm-curtain {
+  position: fixed; inset: 0; z-index: var(--cm-z-curtain); visibility: hidden;
+  background: var(--cm-void); display: grid; place-items: center; overflow: hidden;
+}
+.cm-curtain .lbl {
+  font: 600 11px/1 var(--cm-mono); letter-spacing: .22em; text-transform: uppercase; color: var(--cm-fg);
+}
+.cm-curtain .edge { position: absolute; background: var(--cm-cyan); }
+.cm-curtain[data-dir="fwd"] .edge, .cm-curtain[data-dir="back"] .edge { top: 0; bottom: 0; width: 2px; }
+.cm-curtain[data-dir="down"] .edge, .cm-curtain[data-dir="up"] .edge { left: 0; right: 0; height: 2px; }
+.cm-curtain[data-dir="fwd"] .edge.a, .cm-curtain[data-dir="back"] .edge.b { left: 0; }
+.cm-curtain[data-dir="fwd"] .edge.b, .cm-curtain[data-dir="back"] .edge.a { right: 0; }
+.cm-curtain[data-dir="down"] .edge.a, .cm-curtain[data-dir="up"] .edge.b { top: 0; }
+.cm-curtain[data-dir="down"] .edge.b, .cm-curtain[data-dir="up"] .edge.a { bottom: 0; }
+
+/* ---- 6. Boot sequence (site load / reload) ---------------------------------------------------------------------
+   Server-rendered; shown only while the head script has set html[data-boot="full|quick"]. Timeline (full, 1.65s):
+   0.00 readout types, counter climbs   1.05 scan line fires   1.15 shutters open   1.65 gone. Quick (0.78s) skips the
+   typing and runs the counter, scan and shutters on a shorter clock. */
+@property --cm-bp { syntax: "<integer>"; inherits: false; initial-value: 0; }
+
+.cm-boot { position: fixed; inset: 0; z-index: var(--cm-z-boot); display: none; pointer-events: none; }
+html[data-boot="full"] .cm-boot, html[data-boot="quick"] .cm-boot { display: block; }
+.cm-boot .pt, .cm-boot .pb { position: absolute; left: 0; right: 0; height: 50.5%; background: var(--cm-void); }
+.cm-boot .pt { top: 0; } .cm-boot .pb { bottom: 0; }
+.cm-boot .read { position: absolute; inset: 0; display: grid; align-content: center; gap: 14px; padding-inline: var(--cm-gutter); width: min(1180px, 100%); margin-inline: auto; }
+.cm-boot .read > * { max-width: 520px; }
+.cm-boot .l2.quick, html[data-boot="quick"] .cm-boot .l1, html[data-boot="quick"] .cm-boot .l2.full { display: none; }
+html[data-boot="quick"] .cm-boot .l2.quick { display: block; }
+.cm-boot .pct { font: 700 clamp(56px, 14vw, 132px)/.9 var(--cm-display); letter-spacing: var(--cm-track-tight); color: var(--cm-fg); font-variant-numeric: tabular-nums; }
+.cm-boot .pct::after { counter-reset: cm-bp var(--cm-bp); content: counter(cm-bp) "%"; }
+.cm-boot .track { display: block; height: 2px; background: var(--cm-hair); overflow: hidden; }
+.cm-boot .track i { display: block; height: 100%; background: var(--cm-cyan); transform-origin: left center; transform: scaleX(0); }
+.cm-boot .scan { position: absolute; left: 0; right: 0; top: 50%; height: 2px; margin-top: -1px; background: var(--cm-cyan); transform: scaleX(0); opacity: 0; transform-origin: center; }
+
+/* full */
+html[data-boot="full"] .cm-boot .l1 { animation: cm-boot-type .62s steps(26) .12s backwards; }
+html[data-boot="full"] .cm-boot .l2 { animation: cm-fade-in .4s linear .5s backwards; }
+html[data-boot="full"] .cm-boot .pct::after { animation: cm-bp .95s cubic-bezier(.3, .6, .3, 1) .12s forwards; }
+html[data-boot="full"] .cm-boot .track i { animation: cm-grow .95s cubic-bezier(.3, .6, .3, 1) .12s forwards; }
+html[data-boot="full"] .cm-boot .read { animation: cm-boot-out .22s var(--cm-ease-cut) 1.02s forwards; }
+html[data-boot="full"] .cm-boot .scan { animation: cm-scan .3s var(--cm-ease-cut) 1.02s forwards; }
+html[data-boot="full"] .cm-boot .pt { animation: cm-shutter-up .5s var(--cm-ease-cut) 1.15s forwards; }
+html[data-boot="full"] .cm-boot .pb { animation: cm-shutter-down .5s var(--cm-ease-cut) 1.15s forwards; }
+/* quick (reload / return visit) */
+html[data-boot="quick"] .cm-boot .l2 { animation: cm-fade-in .2s linear 0s backwards; }
+html[data-boot="quick"] .cm-boot .pct::after { animation: cm-bp .42s cubic-bezier(.3, .6, .3, 1) 0s forwards; }
+html[data-boot="quick"] .cm-boot .track i { animation: cm-grow .42s cubic-bezier(.3, .6, .3, 1) 0s forwards; }
+html[data-boot="quick"] .cm-boot .read { animation: cm-boot-out .16s var(--cm-ease-cut) .38s forwards; }
+html[data-boot="quick"] .cm-boot .scan { animation: cm-scan .22s var(--cm-ease-cut) .38s forwards; }
+html[data-boot="quick"] .cm-boot .pt { animation: cm-shutter-up .36s var(--cm-ease-cut) .42s forwards; }
+html[data-boot="quick"] .cm-boot .pb { animation: cm-shutter-down .36s var(--cm-ease-cut) .42s forwards; }
+
+@keyframes cm-bp { to { --cm-bp: 100; } }
+@keyframes cm-grow { to { transform: scaleX(1); } }
+@keyframes cm-boot-type { from { clip-path: inset(0 100% 0 0); } to { clip-path: inset(0 0 0 0); } }
+@keyframes cm-boot-out { to { opacity: 0; } }
+@keyframes cm-scan { 0% { opacity: 1; transform: scaleX(0); } 60% { opacity: 1; transform: scaleX(1); } 100% { opacity: 0; transform: scaleX(1); } }
+@keyframes cm-shutter-up { to { transform: translate3d(0, -101%, 0); } }
+@keyframes cm-shutter-down { to { transform: translate3d(0, 101%, 0); } }
+
+/* ---- 7. No script: show everything. Reduced motion: show everything, move nothing. ---------------------------- */
+@media (scripting: none) {
+  html [data-mx]:not([data-in]), html [data-mx-stagger] > :where(*):not([data-in]):not(:has([data-mx])) { opacity: 1; transform: none; clip-path: none; }
+  .cm-type { --n: 9999; }
+  .cm-stage > * { animation: none; }
+  .cm-boot, .cm-curtain { display: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  html [data-mx]:not([data-in]), html [data-mx-stagger] > :where(*):not([data-in]):not(:has([data-mx])) { opacity: 1; transform: none; clip-path: none; }
+  [data-in]:not([data-mxd]) { transition: none; }
+  .cm-type { --n: 9999; }
+  .cm-type .c[data-cur]::after { display: none; }
+  .cm-stage > *, .cm-hero .cm-tag, .cm-hero .cm-read.float, .cm-hero .ring, .cm-head > .cm-grid-bg, .cm-hero > .cm-grid-bg { animation: none; }
+  [data-mx-par] { translate: none; }
+  .cm-boot, .cm-curtain { display: none !important; }
+  .cm-pgauge { transition: none; }
+}

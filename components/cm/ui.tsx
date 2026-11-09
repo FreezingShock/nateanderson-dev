@@ -1,5 +1,6 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
+import { ScrollType } from "@/components/cm/motion";
 
 /** Inner-page header: mono label, highlight-bar title (first bar black, rest cyan), lead, optional actions. */
 export function PageHead({
@@ -19,7 +20,7 @@ export function PageHead({
     return (
         <header className="cm-head">
             <div className="cm-grid-bg" aria-hidden="true" />
-            <div className="cm-wrap">
+            <div className="cm-wrap cm-stage">
                 {back && (
                     <Link href={back.href} className="cm-lbl cm-crumb">
                         <span aria-hidden="true">←</span> {back.label}
@@ -33,7 +34,12 @@ export function PageHead({
                         ))}
                     </span>
                 </h1>
-                {lead && <p className="cm-lead" style={{ margin: 0 }}>{lead}</p>}
+                {lead &&
+                    (typeof lead === "string" ? (
+                        <ScrollType text={lead} auto className="cm-lead" style={{ margin: 0 }} />
+                    ) : (
+                        <p className="cm-lead" style={{ margin: 0 }}>{lead}</p>
+                    ))}
                 {children}
             </div>
         </header>
@@ -61,13 +67,19 @@ export function Section({
     className?: string;
 }) {
     return (
-        <section className={`cm-section ${className}`.trim()} id={id}>
-            <div className="cm-wrap">
+        <section className={`cm-section ruled ${className}`.trim()} id={id}>
+            <span className="cm-rule" data-mx="line" aria-hidden="true" />
+            <div className="cm-wrap" data-mx-stagger="">
                 <div className="cm-sec-head">
                     <div>
                         <span className="cm-lbl">{no ? `${no} / ${label}` : label}</span>
                         <h2 className="cm-h2">{title}</h2>
-                        {blurb && <p className="cm-body" style={{ margin: 0 }}>{blurb}</p>}
+                        {blurb &&
+                            (typeof blurb === "string" ? (
+                                <ScrollType text={blurb} className="cm-body" style={{ margin: 0 }} />
+                            ) : (
+                                <p className="cm-body" style={{ margin: 0 }}>{blurb}</p>
+                            ))}
                     </div>
                     {more && (
                         <Link className="cm-more" href={more.href}>

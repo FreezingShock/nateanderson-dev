@@ -219,12 +219,10 @@
 @keyframes cm-sweep { 0% { opacity: 1; background-position: 100% 0; } 100% { opacity: 1; background-position: -100% 0; } }
 @keyframes cm-glitch { 0% { transform: translate(0,0); filter: drop-shadow(2px 0 var(--cm-alert)) drop-shadow(-2px 0 var(--cm-cyan)); clip-path: inset(10% 0 30% 0); } 50% { transform: translate(-4px,1px); clip-path: inset(40% 0 5% 0); } 100% { transform: none; filter: none; clip-path: inset(0); } }
 .cm-enter { animation: cm-enter var(--cm-d-enter) var(--cm-ease) both; }
-.cm-reveal { opacity: 0; transform: translateY(8px); } .cm-reveal.in { animation: cm-enter var(--cm-d-enter) var(--cm-ease) both; }
 
 @media (prefers-reduced-motion: reduce) {
   .cm-grain, .cm-hbar .live::before { animation: none; }
-  .cm-sweep.go, .cm-glitch, .cm-enter, .cm-reveal.in, .cm-scrim > .cm-panel { animation: none; }
-  .cm-reveal { opacity: 1; transform: none; }
+  .cm-sweep.go, .cm-glitch, .cm-enter, .cm-scrim > .cm-panel { animation: none; }
   .cm-highlight.wipe > * { animation-duration: .01s; animation-delay: 0s; }
 }
 @media (max-width: 640px) {

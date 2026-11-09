@@ -5,6 +5,8 @@ import { ThemeProvider } from "@/components/theme-provider";
 import { Bar } from "@/components/cm/bar";
 import { Film } from "@/components/cm/film";
 import { Launcher } from "@/components/cm/launcher";
+import { Boot, BOOT_SCRIPT } from "@/components/cm/boot";
+import { MotionRoot } from "@/components/cm/motion-root";
 import { SiteFooter } from "@/components/site-footer";
 import { SoundProvider } from "@/components/sound-provider";
 import { JOURNEY_END, JOURNEY_START, progressBetween } from "@/lib/timeline-data";
@@ -58,6 +60,10 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
     const pct = Math.round(progressBetween(JOURNEY_START, JOURNEY_END) * 100);
     return (
         <html lang="en" className={`cm ${arimo.variable} ${plexMono.variable}`} suppressHydrationWarning>
+            <head>
+                {/* Picks the load-sequence variant before first paint (see components/cm/boot.tsx). */}
+                <script dangerouslySetInnerHTML={{ __html: BOOT_SCRIPT }} />
+            </head>
             <body>
                 <ThemeProvider
                     attribute="data-theme"
@@ -67,7 +73,9 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
                     disableTransitionOnChange
                 >
                     <a className="cm-btn solid cm-skip" href="#main">Skip to content</a>
+                    <Boot />
                     <Film />
+                    <MotionRoot />
                     <Bar initialPct={pct} />
                     <main id="main" className="cm-main">{children}</main>
                     <SiteFooter />

@@ -68,7 +68,7 @@ export default async function HistoryPage() {
                 lead="This website's own changelog, pulled live from the GitHub API, not written by hand or regenerated manually."
             />
             <section className="cm-section" id="log">
-                <div className="cm-wrap" style={{ display: "grid", gap: "var(--cm-s5)" }}>
+                <div className="cm-wrap" data-mx-stagger="" style={{ display: "grid", gap: "var(--cm-s5)" }}>
                     <dl className={`cm-panel tick cm-kv ${styles.kv}`} style={{ ["--cols" as string]: 3 }}>
                         {stats.map((stat) => (
                             <div key={stat.label}>

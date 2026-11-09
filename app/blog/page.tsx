@@ -61,7 +61,7 @@ export default function BlogPage() {
             </PageHead>
 
             <section className="cm-section" aria-label="Section index">
-                <div className="cm-wrap">
+                <div className="cm-wrap" data-mx-stagger="">
                     <span className="cm-lbl">Index</span>
                     <div
                         className="cm-table-wrap"
@@ -127,7 +127,7 @@ export default function BlogPage() {
             ))}
 
             <section className="cm-section">
-                <div className="cm-wrap">
+                <div className="cm-wrap" data-mx-stagger="">
                     <div
                         className="cm-panel tick cm-hatch"
                         style={{ padding: 24, display: "grid", gap: 12 }}

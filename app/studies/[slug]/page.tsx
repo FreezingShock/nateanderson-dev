@@ -72,7 +72,7 @@ export default async function CourseDetailPage({
             />
 
             <section id="detail" className="cm-section st-detail" style={{ scrollMarginTop: 96 }}>
-                <div className="cm-wrap" style={{ display: "grid", gap: 16 }}>
+                <div className="cm-wrap" data-mx-stagger="" style={{ display: "grid", gap: 16 }}>
                     <div className="cm-cols3">
                         {facts.map((f) => (
                             <div key={f.label} className="cm-panel">
@@ -164,7 +164,7 @@ export default async function CourseDetailPage({
             )}
 
             <section className="cm-section">
-                <div className="cm-wrap">
+                <div className="cm-wrap" data-mx-stagger="">
                     <div className="cm-grid" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))" }}>
                         {[
                             { c: prev, dir: "← Previous class" },
