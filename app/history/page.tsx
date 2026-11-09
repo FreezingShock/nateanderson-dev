@@ -3,6 +3,7 @@ import { CountUp } from "@/components/cm/reveal";
 import { CommitHistory } from "@/components/commit-history";
 import { REPO, githubHeaders, fetchCommitsPage, type CommitEntry } from "@/lib/github";
 import { getRepoStats } from "@/lib/site-stats";
+import styles from "./history.module.css";
 
 const INITIAL_PER_PAGE = 10;
 
@@ -15,7 +16,7 @@ const INITIAL_PER_PAGE = 10;
 // to reading LOCAL git history; hitting GitHub's own API instead sidesteps
 // it entirely and updates itself on every request (subject to the
 // `revalidate` window below).
-async function getCommits(): Promise<{ commits: CommitEntry[]; totalCommits: number }> {
+async function getCommits(): Promise<{ commits: CommitEntry[]; totalCommits: number; failed: boolean }> {
     const headers = githubHeaders();
 
     const [commits, countRes] = await Promise.all([
@@ -30,7 +31,7 @@ async function getCommits(): Promise<{ commits: CommitEntry[]; totalCommits: num
     ]);
 
     if (commits === null) {
-        return { commits: [], totalCommits: 0 };
+        return { commits: [], totalCommits: 0, failed: true };
     }
 
     let totalCommits = commits.length;
@@ -38,22 +39,26 @@ async function getCommits(): Promise<{ commits: CommitEntry[]; totalCommits: num
     const lastPageMatch = link?.match(/[?&]page=(\d+)>;\s*rel="last"/);
     if (lastPageMatch) totalCommits = Number(lastPageMatch[1]);
 
-    return { commits, totalCommits };
+    return { commits, totalCommits, failed: false };
 }
 
 export const revalidate = 3600; // re-check GitHub for new commits every hour
 
 export default async function HistoryPage() {
-    const [{ commits, totalCommits }, { fileCount, linesOfCode }] = await Promise.all([
+    const [{ commits, totalCommits, failed }, { fileCount, linesOfCode }] = await Promise.all([
         getCommits(),
         getRepoStats(),
     ]);
 
     const stats = [
-        { label: "Commits", value: totalCommits },
-        { label: "Lines of code", value: linesOfCode },
-        { label: "File count", value: fileCount },
+        { label: "Commits", value: totalCommits, note: "On the default branch" },
+        { label: "Lines of code", value: linesOfCode, note: "Text source files" },
+        { label: "File count", value: fileCount, note: "Tracked in the repo" },
     ];
+    const latest = commits[0];
+    const latestDate = latest
+        ? new Date(latest.date).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric", timeZone: "UTC" })
+        : null;
 
     return (
         <>
@@ -64,17 +69,50 @@ export default async function HistoryPage() {
             />
             <section className="cm-section" id="log">
                 <div className="cm-wrap" style={{ display: "grid", gap: "var(--cm-s5)" }}>
-                    <dl className="cm-panel tick cm-kv" style={{ ["--cols" as string]: 3 }}>
+                    <dl className={`cm-panel tick cm-kv ${styles.kv}`} style={{ ["--cols" as string]: 3 }}>
                         {stats.map((stat) => (
                             <div key={stat.label}>
                                 <dt>{stat.label}</dt>
-                                <dd style={{ fontSize: 28 }}>{stat.value > 0 ? <CountUp value={stat.value} /> : "—"}</dd>
+                                <dd>
+                                    {stat.value > 0 ? <CountUp value={stat.value} /> : "—"}
+                                    <span className={`cm-coord ${styles.note}`}>{stat.note}</span>
+                                </dd>
                             </div>
                         ))}
                     </dl>
-                    {totalCommits === 0 ? (
+                    {latest && (
+                        <div className="cm-panel live">
+                            <div className="cm-hbar">
+                                <span className="live">Latest commit</span>
+                                <span>{latestDate}</span>
+                            </div>
+                            <div className={styles.latest}>
+                                <h2 className={styles.latestSubject}>{latest.subject}</h2>
+                                <p className={`cm-coord ${styles.latestMeta}`} style={{ margin: 0 }}>
+                                    <a href={`https://github.com/${REPO}/commit/${latest.hash}`} target="_blank" rel="noreferrer">
+                                        {latest.hash.slice(0, 7)}
+                                    </a>
+                                    {latest.additions !== null && latest.deletions !== null && (
+                                        <span>
+                                            <span style={{ color: "var(--cm-good)" }}>+{latest.additions}</span>
+                                            {" / "}
+                                            <span style={{ color: "var(--cm-alert)" }}>-{latest.deletions}</span>
+                                        </span>
+                                    )}
+                                    <a href={`https://github.com/${REPO}`} target="_blank" rel="noreferrer">
+                                        {REPO}
+                                    </a>
+                                </p>
+                            </div>
+                        </div>
+                    )}
+                    {failed ? (
                         <div className="cm-panel cm-hatch" style={{ padding: 24 }}>
                             <span className="cm-read warm">Couldn&apos;t reach the GitHub API right now. Check back shortly.</span>
+                        </div>
+                    ) : totalCommits === 0 ? (
+                        <div className="cm-panel cm-hatch" style={{ padding: 24 }}>
+                            <span className="cm-read">No commits yet.</span>
                         </div>
                     ) : (
                         <CommitHistory
@@ -84,6 +122,9 @@ export default async function HistoryPage() {
                             initialPerPage={INITIAL_PER_PAGE}
                         />
                     )}
+                    <p className={styles.footnote}>
+                        Counts and commits are read from the GitHub API and refreshed about once an hour. Diff stats (+/−) are cached per commit.
+                    </p>
                 </div>
             </section>
         </>
