@@ -30,6 +30,6 @@
 .naos-backdrop {
   position: fixed; inset: 0; z-index: -1; pointer-events: none;
   background-position: center; background-size: cover; background-repeat: no-repeat;
-  opacity: .5; image-rendering: auto;
+  opacity: .62; image-rendering: auto;
 }
-@media (max-width: 760px) { .naos-backdrop { opacity: .38; background-position: 62% center; } }
+@media (max-width: 760px) { .naos-backdrop { opacity: .5; background-position: 62% center; } }
