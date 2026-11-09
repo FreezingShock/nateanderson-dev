@@ -18,21 +18,6 @@
     opacity: .28;
 }
 .about .about-head > .cm-wrap { position: relative; z-index: 1; }
-/* Legibility: the page backdrop is busy, so the copy sits on a soft dark scrim (the art itself is untouched). */
-.about .about-head::before {
-    content: "";
-    position: absolute;
-    inset: 0;
-    z-index: 0;
-    pointer-events: none;
-    background:
-        radial-gradient(ellipse 70% 60% at 28% 46%, rgba(26, 26, 26, .82) 0, rgba(26, 26, 26, .5) 55%, transparent 100%);
-}
-@media (max-width: 999px) {
-    .about .about-head::before {
-        background: linear-gradient(180deg, rgba(26, 26, 26, .35), rgba(26, 26, 26, .72) 45%, rgba(26, 26, 26, .72) 80%, rgba(26, 26, 26, .35));
-    }
-}
 .about .about-hero { display: grid; gap: var(--cm-s6); align-items: end; }
 .about .about-copy { display: grid; gap: var(--cm-s5); min-width: 0; }
 .about .about-title { display: inline-flex; flex-direction: column; }

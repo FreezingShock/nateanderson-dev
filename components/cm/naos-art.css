@@ -33,3 +33,14 @@
   opacity: .62; image-rendering: auto;
 }
 @media (max-width: 760px) { .naos-backdrop { opacity: .5; background-position: 62% center; } }
+
+/* Shared legibility scrim for every naOS page. It sits above the art and below the content, so the copy keeps its
+   contrast on any page. Desktop: a soft dark pool behind the reading column on the left, where the ink falls off.
+   Phones: the copy runs full width, so the scrim is a top-to-bottom wash. Pages do not add their own scrims. */
+.naos-scrim {
+  position: fixed; inset: 0; z-index: -1; pointer-events: none;
+  background: radial-gradient(ellipse 70% 85% at 24% 44%, rgba(26, 26, 26, .78) 0, rgba(26, 26, 26, .45) 52%, rgba(26, 26, 26, 0) 100%);
+}
+@media (max-width: 760px) {
+  .naos-scrim { background: linear-gradient(180deg, rgba(26, 26, 26, .5) 0, rgba(26, 26, 26, .3) 35%, rgba(26, 26, 26, .34) 70%, rgba(26, 26, 26, .55) 100%); }
+}
