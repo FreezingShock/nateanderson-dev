@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { PageHead, Stat } from "@/components/cm/ui";
 import { Scramble } from "@/components/cm/motion";
+import { NaosArt } from "@/components/cm/naos-art";
 import { BlogSection } from "@/components/blog-section";
 import { blogSections, BLOG_SECTION_IDS } from "@/lib/blog";
 import "./blog-naos.css";
@@ -17,9 +18,24 @@ export default function BlogPage() {
     const published = allPosts.filter((p) => p.status === "published").length;
     const planned = allPosts.length - published;
 
+    if (blogSections.length === 0) {
+        return (
+            <div className="ctos">
+                <div className="blog-hero">
+                    <PageHead
+                        label="Writing / naOS"
+                        title={["blog &", "essays"]}
+                        lead="Notes on systems design, game dev, philosophy, and whatever else is worth writing down. Long essays, research, poetry, technical writeups, and quick thoughts."
+                    />
+                </div>
+            </div>
+        );
+    }
+
     return (
         <div className="ctos">
             <div className="blog-hero">
+                <NaosArt src="/naos/blog.png" width={300} height={200} variant="hero" eager />
                 <PageHead
                     label="Writing / naOS"
                     title={["blog &", "essays"]}

@@ -28,12 +28,6 @@ export function AboutStory() {
                     className="about-lede"
                     text="I'm Nate, a senior in high school in Southern California. I'm headed to Cal Poly SLO for Construction Management, with Cal Poly Pomona as my fallback. I build games, render systems, and design spaces, always with an eye toward sustainable, interconnected systems."
                 />
-                <div className="cm-prose" style={{ marginTop: "var(--cm-s5)" }}>
-                    <p>
-                        By 2031, my goal: launch a {kw("sustainable infrastructure and urban design business")} after
-                        finishing my degree.
-                    </p>
-                </div>
             </div>
             <div className="cm-panel">
                 <div className="cm-hbar"><span>How I work</span><span>Think / execute / create</span></div>

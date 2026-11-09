@@ -6,8 +6,7 @@ import { navItems } from "@/lib/nav";
 import { NateMark } from "@/components/cm/mark";
 import { Scramble } from "@/components/cm/motion";
 
-// Footer-only copy. identity.tagline still says "environmental engineering" and is used by the
-// metadata, OG image and manifest, so it is left alone here until Nate picks the wording site-wide.
+// Footer-only copy, kept separate from identity.tagline (used by metadata, the OG image and the manifest).
 const FOOTER_TAGLINE =
     "Building games, renders, and systems, and aiming for construction management at Cal Poly SLO.";
 

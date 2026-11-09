@@ -14,22 +14,16 @@ export const revalidate = 3600;
 
 const HORIZONS = [
     {
-        title: "Environmental Engineering Firm",
+        title: "Construction Management Firm",
         when: "Early career",
         description:
-            "2–3 years with a leading sustainable infrastructure firm. Build the professional network and real-world project experience.",
+            "2–3 years with a construction firm. Build the professional network and real-world project experience.",
     },
     {
         title: "Thought Leadership",
         when: "Mid-career",
         description:
             "Write on philosophy and engineering, speak at conferences, and position as a voice for authentic, ethical design.",
-    },
-    {
-        title: "Independent Practice",
-        when: "Long-term",
-        description:
-            "Founder of a design-focused sustainability consultancy, applying systems thinking to complex environmental challenges.",
     },
     {
         title: "Fractured Islands Impact",
@@ -64,7 +58,7 @@ export default function TimelinePage() {
             <PageHead
                 label="Journey"
                 title={["Timeline"]}
-                lead="The complete pathway from senior year to a 2031 launch, with real dates, live countdowns and every milestone in between. Where I am, and where I'm heading."
+                lead="The complete pathway from senior year to graduation in 2031, with real dates, live countdowns and every milestone in between. Where I am, and where I'm heading."
             >
                 <div className="id-top tl-status">
                     <span className="id-live"><i />naOS // journey</span>
@@ -99,23 +93,10 @@ export default function TimelinePage() {
                 no="03"
                 label="Future horizons"
                 title="After the degree."
-                blurb="After the BS in Civil Engineering (2031): a trajectory toward impact in environmental infrastructure, sustainable design and systems thinking applied to real-world challenges."
+                blurb="After the degree in 2031: a trajectory toward impact in construction and sustainable design, applying systems thinking to real projects."
                 ctos
             >
                 <div className="tl-goals">
-                    <div className="cm-panel tick tl-launch">
-                        <div className="cm-hbar">
-                            <span className="live">June 2031</span>
-                            <span>Milestone</span>
-                        </div>
-                        <div className="cm-body-pad tl-launch-body">
-                            <h3 className="cm-h2 tl-launch-title">Launch</h3>
-                            <p className="cm-body" style={{ margin: 0, maxWidth: "70ch" }}>
-                                The point the whole plan builds toward: launching a sustainable infrastructure and urban design business or project, backed by a construction degree, an executed portfolio, proven athletic leadership and a network of mentors.
-                            </p>
-                        </div>
-                        <PanelFoot left="naOS / finish line" right="june 2031" />
-                    </div>
                     {HORIZONS.map((goal, i) => (
                         <div key={goal.title} className="cm-panel tl-goal">
                             <div className="cm-hbar">
@@ -137,6 +118,6 @@ export default function TimelinePage() {
 
 export const metadata = pageMeta({
     title: "Timeline",
-    description: "The pathway from senior year to a 2031 launch, with real dates, live countdowns and every milestone in between.",
+    description: "The pathway from senior year to graduation in 2031, with real dates, live countdowns and every milestone in between.",
     path: "/timeline",
 });

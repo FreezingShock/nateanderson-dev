@@ -305,6 +305,15 @@ def about_field():
     lx, ly = W * 0.42, H * 0.36
     dist = np.sqrt(((xx - lx) / (W * 0.55)) ** 2 + ((yy - ly) / (H * 0.6)) ** 2)
     inten[arr == TOP] = np.clip(0.62 - 0.5 * dist, 0.08, 0.62)[arr == TOP]
+    inten[arr == LEFT] = 0.46
+    inten[arr == RIGHT] = 0.2
+    inten[arr == BTOP] = 1.0
+    inten[arr == BLEFT] = 0.72
+    inten[arr == BRIGHT] = 0.42
+    return dither(inten, arr)
+
+
+# ---------------------------------------------------------------------------------------------
 # 4. Games head (geography games): a voxel map of region blocks with one target locked in a
 #    bracket and a beam rising from it. Same painter order and dither as the islands.
 # ---------------------------------------------------------------------------------------------
@@ -513,6 +522,111 @@ def studies():
 
 
 # ---------------------------------------------------------------------------------------------
+# 4. Blog manuscript (blog index hero, and the post header with progress=True). Isometric voxels like islands():
+#    a flat sheet, text lines rising off it (solid heading bar, dithered body bars), a block cursor at the end of
+#    the last line, and small tiles drifting off the sheet. progress=True adds a reading strip along the front edge.
+# ---------------------------------------------------------------------------------------------
+SHEET, BODY, TILE = 8, 9, 10
+
+
+def manuscript(seed=7, W=300, H=200, progress=False):
+    rng = np.random.default_rng(seed)
+    CW, CH, VH = 5.0, 2.6, 3.2
+    ox, oy = W / 2 - 4, 40.0
+
+    def P(x, y, z):
+        return (ox + (x - y) * CW, oy + (x + y) * CH - z * VH)
+
+    SX, SY = 20, 26
+    cols = []  # (x, y, zb, zt, code)
+    for x in range(SX):
+        for y in range(SY):
+            cols.append((x, y, 0, 1, SHEET))
+
+    # Text lines: the first is a heading (solid bar), the rest are body bars with the odd gap and short last line.
+    row, first = 3, True
+    last = None
+    while row < SY - 3:
+        if not first and rng.random() < 0.16:
+            row += 2
+            continue
+        if first:
+            length = int(rng.integers(12, 16))
+            for x in range(2, 2 + length):
+                cols.append((x, row, 1, 3, BTOP))
+            last = (2 + length, row)
+        else:
+            length = int(rng.integers(8, SX - 4))
+            if rng.random() < 0.3:
+                length = int(rng.integers(3, 6))
+            for x in range(2, 2 + length):
+                cols.append((x, row, 1, 2, BODY))
+            last = (2 + length, row)
+        first = False
+        row += 2
+    # Block cursor at the end of the last line.
+    if last:
+        cx, cy = last
+        cols.append((cx, cy, 1, 5, BTOP))
+        cols.append((cx + 1, cy, 1, 5, BTOP))
+
+    # Drifting tiles: small lifted blocks above the sheet, a few in front of it.
+    for _ in range(9):
+        tx = int(rng.integers(-3, SX + 2))
+        ty = int(rng.integers(-2, SY + 2))
+        if 0 <= tx < SX and 0 <= ty < SY:
+            continue
+        z = int(rng.integers(3, 7))
+        cols.append((tx, ty, z, z + 1, TILE))
+        if rng.random() < 0.5:
+            cols.append((tx + 1, ty, z, z + 1, TILE))
+        if rng.random() < 0.35:
+            cols.append((tx, ty, z + 1, z + 2, TILE))
+
+    # Reading strip on the front edge (post header): filled part is solid, the rest is sheet.
+    if progress:
+        filled = int(SX * 0.42)
+        for x in range(SX):
+            code = BTOP if x < filled else SHEET
+            cols.append((x, SY, 0, 1, code))
+
+    cols.sort(key=lambda c: (c[0] + c[1], c[3]))
+    ids_img = Image.new("L", (W, H), 0)
+    d = ImageDraw.Draw(ids_img)
+    # Face codes per column kind: (right side, left side, top)
+    faces = {
+        SHEET: (RIGHT, LEFT, SHEET),
+        BODY: (RIGHT, LEFT, BODY),
+        TILE: (RIGHT, LEFT, TILE),
+        BTOP: (BRIGHT, BLEFT, BTOP),
+    }
+    for x, y, zb, zt, code in cols:
+        rc, lc, tc = faces[code]
+        if zt > zb:
+            d.polygon([P(x + 1, y, zb), P(x + 1, y + 1, zb), P(x + 1, y + 1, zt), P(x + 1, y, zt)], fill=rc)
+            d.polygon([P(x, y + 1, zb), P(x + 1, y + 1, zb), P(x + 1, y + 1, zt), P(x, y + 1, zt)], fill=lc)
+        top = [P(x, y, zt), P(x + 1, y, zt), P(x + 1, y + 1, zt), P(x, y + 1, zt)]
+        d.polygon(top, fill=tc)
+        if code in (BTOP, TILE):
+            d.line(top + [top[0]], fill=EDGE, width=1)
+
+    arr = np.array(ids_img)
+    yy, xx = np.mgrid[0:H, 0:W]
+    lx, ly = W * 0.4, H * 0.3
+    dist = np.sqrt(((xx - lx) / (W * 0.6)) ** 2 + ((yy - ly) / (H * 0.7)) ** 2)
+    inten = np.zeros((H, W))
+    inten[arr == SHEET] = np.clip(0.13 - 0.1 * dist, 0.03, 0.13)[arr == SHEET]  # dark sheet, faint light from above-left
+    inten[arr == RIGHT] = 0.16
+    inten[arr == LEFT] = 0.34
+    inten[arr == BODY] = np.clip(0.95 - 0.35 * dist, 0.55, 0.95)[arr == BODY]  # body bars read as dense ink
+    inten[arr == TILE] = 0.36
+    inten[arr == BTOP] = 1.0                                                   # solid heading bar and cursor
+    inten[arr == BRIGHT] = 0.46
+    inten[arr == BLEFT] = 0.74
+    return dither(inten, arr)
+
+
+# ---------------------------------------------------------------------------------------------
 # 4. Assembly field (Creations hub backdrop). A dithered floor grid, a solid stepped build, two blocks still floating
 #    above the floor on dotted drop lines, and two wireframe placeholders that are not built yet. Same isometric
 #    projection and dither as the islands, so the set reads as one system.
@@ -613,7 +727,6 @@ def assembly():
     return ink
 
 
-
 if __name__ == "__main__":
     os.makedirs(OUT, exist_ok=True)
     save_1bit(islands(), os.path.join(OUT, "islands.png"))
@@ -629,3 +742,5 @@ if __name__ == "__main__":
 
 
     save_1bit(studies(), os.path.join(OUT, "studies.png"))
+    save_1bit(manuscript(seed=7), os.path.join(OUT, "blog.png"))
+    save_1bit(manuscript(seed=21, progress=True), os.path.join(OUT, "post.png"))

@@ -564,7 +564,7 @@ function LiveTickers({ nowMs, total, done }: { nowMs: number; total: number; don
                     </p>
                     <p style={{ margin: 0, font: "700 17px/1.2 var(--cm-display)" }} suppressHydrationWarning>{dateFmt.format(now)}</p>
                     <p className="cm-coord" style={{ margin: 0 }}>
-                        Day {c.dayOfYear} of {c.daysInYear} · {toLaunch.toLocaleString("en-US")} days to launch
+                        Day {c.dayOfYear} of {c.daysInYear} · {toLaunch.toLocaleString("en-US")} days to the finish line
                     </p>
                 </div>
                 <dl className="cm-kv two" style={{ borderTop: "1px solid var(--cm-hair)" }}>

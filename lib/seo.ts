@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 
 export const SITE_NAME = "Nate's Portfolio";
 const DEFAULT_DESCRIPTION =
-    "Games, renders, and systems — built while studying toward environmental engineering.";
+    "Games, renders, and systems — built while studying construction management.";
 
 /**
  * One place for a page's title, description and social tags. The title goes through the root

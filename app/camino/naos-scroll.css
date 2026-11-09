@@ -1,0 +1,58 @@
+/* ==========================================================================
+   naOS scrollbars: one rule for the page and every scrolling surface (hamburger map, search, sheets, dropdowns,
+   tables, the timeline strip). Chrome, Edge, Safari and Android use the WebKit pseudo-elements. Firefox gets
+   scrollbar-color. Chrome 121+ ignores the WebKit pseudo-elements when scrollbar-color is set, so the two never mix.
+   Look: a 10px rail on the panel ground with a hairline edge, a cyan dither thumb, and a white block on hover.
+   ========================================================================== */
+:root {
+  --naos-sb-w: 10px;
+  --naos-sb-track: #131313;
+  --naos-sb-edge: rgba(244, 244, 242, .12);
+  --naos-sb-thumb: #2fd8e8;
+  --naos-sb-dot: rgba(3, 20, 23, .55);
+  --naos-sb-hot: #f4f4f2;
+  --naos-sb-hot-dot: rgba(26, 26, 26, .6);
+}
+:root[data-theme="paper"] {
+  --naos-sb-track: #e6e6e1;
+  --naos-sb-edge: rgba(26, 26, 26, .14);
+  --naos-sb-thumb: #1a1a1a;
+  --naos-sb-dot: rgba(244, 244, 242, .5);
+  --naos-sb-hot: #0a7f89;
+  --naos-sb-hot-dot: rgba(244, 244, 242, .6);
+}
+
+*::-webkit-scrollbar,
+html::-webkit-scrollbar { width: var(--naos-sb-w); height: var(--naos-sb-w); background: var(--naos-sb-track); }
+*::-webkit-scrollbar-track,
+html::-webkit-scrollbar-track {
+  background-color: var(--naos-sb-track);
+  background-image: repeating-linear-gradient(180deg, transparent 0 7px, var(--naos-sb-edge) 7px 8px);
+  box-shadow: inset 1px 0 0 var(--naos-sb-edge);
+  border-radius: 0;
+}
+*::-webkit-scrollbar-thumb,
+html::-webkit-scrollbar-thumb {
+  background-color: var(--naos-sb-thumb);
+  background-image: radial-gradient(circle, var(--naos-sb-dot) 0 30%, transparent 36%);
+  background-size: 3px 3px;
+  border: 2px solid var(--naos-sb-track);
+  border-radius: 0;
+  min-height: 36px;
+}
+*::-webkit-scrollbar-thumb:hover,
+*::-webkit-scrollbar-thumb:active,
+html::-webkit-scrollbar-thumb:hover,
+html::-webkit-scrollbar-thumb:active {
+  background-color: var(--naos-sb-hot);
+  background-image: radial-gradient(circle, var(--naos-sb-hot-dot) 0 30%, transparent 36%);
+}
+*::-webkit-scrollbar-button,
+html::-webkit-scrollbar-button { display: none; width: 0; height: 0; }
+*::-webkit-scrollbar-corner,
+html::-webkit-scrollbar-corner { background: var(--naos-sb-track); }
+
+/* Firefox has no WebKit pseudo-elements; it takes the standard properties instead. */
+@supports not selector(::-webkit-scrollbar) {
+  * { scrollbar-width: thin; scrollbar-color: var(--naos-sb-thumb) var(--naos-sb-track); }
+}
