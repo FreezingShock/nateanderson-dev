@@ -224,6 +224,87 @@ def timeline_route():
 
 
 # ---------------------------------------------------------------------------------------------
+# 4. About page field: a dithered isometric plane with white block nodes joined by dashed conduit
+#    lines ("how it connects"). Original drawing; reuses the islands face codes and shading.
+# ---------------------------------------------------------------------------------------------
+GROUND, GRID = 8, 9
+
+
+def about_field():
+    W, H = 360, 220
+    CW, CH, VH = 11.0, 5.6, 7.2
+    ox, oy = W / 2, 118.0
+
+    def P(gx, gy, z):
+        return (ox + (gx - gy) * CW, oy + (gx + gy) * CH - z * VH)
+
+    # (gx, gy, height, kind): "b" = solid white block, "t" = thin dithered tower.
+    nodes = [
+        (-3, -2, 5, "b"), (-1, -4, 2, "t"), (1, -1, 9, "b"), (3, -3, 3, "t"),
+        (-4, 1, 3, "t"), (-1, 2, 6, "b"), (2, 3, 2, "t"), (4, 0, 5, "b"),
+    ]
+    # Pairs of nodes joined by an L-shaped conduit along the ground plane.
+    links = [(0, 2), (2, 1), (2, 5), (5, 6), (6, 7), (7, 3), (3, 2), (4, 0), (4, 5)]
+    R = 4
+
+    ids_img = Image.new("L", (W, H), 0)
+    d = ImageDraw.Draw(ids_img)
+
+    # Ground plane: filled tiles, then tile outlines as a finer dithered grid.
+    for gx in range(-R, R):
+        for gy in range(-R, R):
+            d.polygon([P(gx, gy, 0), P(gx + 1, gy, 0), P(gx + 1, gy + 1, 0), P(gx, gy + 1, 0)], fill=GROUND)
+    for gx in range(-R, R + 1):
+        d.line([P(gx, -R, 0), P(gx, R, 0)], fill=GRID, width=1)
+    for gy in range(-R, R + 1):
+        d.line([P(-R, gy, 0), P(R, gy, 0)], fill=GRID, width=1)
+
+    # Dashed conduit lines: one dash pattern per link, routed x first, then y.
+    def dashed(p0, p1, on=5, gap=3):
+        (x0, y0), (x1, y1) = p0, p1
+        L = max(((x1 - x0) ** 2 + (y1 - y0) ** 2) ** 0.5, 1e-6)
+        step = on + gap
+        k = 0
+        while k * step < L:
+            t0 = k * step / L
+            t1 = min((k * step + on) / L, 1.0)
+            d.line([(x0 + (x1 - x0) * t0, y0 + (y1 - y0) * t0), (x0 + (x1 - x0) * t1, y0 + (y1 - y0) * t1)],
+                   fill=EDGE, width=1)
+            k += 1
+
+    for a, b in links:
+        ax, ay = nodes[a][0], nodes[a][1]
+        bx, by = nodes[b][0], nodes[b][1]
+        dashed(P(ax, ay, 0), P(bx, ay, 0))
+        dashed(P(bx, ay, 0), P(bx, by, 0))
+
+    # A ring on the ground under each node: the node's "signal" footprint.
+    for gx, gy, _, _ in nodes:
+        pts = [P(gx + 0.9 * np.cos(t), gy + 0.9 * np.sin(t), 0) for t in np.linspace(0, 2 * np.pi, 48)]
+        d.line(pts + [pts[0]], fill=EDGE, width=1)
+
+    # Columns, painter order, same face logic as the islands.
+    cols = [(gx, gy, 0, h, kind == "b") for gx, gy, h, kind in nodes]
+    cols.sort(key=lambda c: (c[0] + c[1], c[3]))
+    for gx, gy, zb, zt, boxed in cols:
+        x, y = gx, gy
+        rc, lc, tc = (BRIGHT, BLEFT, BTOP) if boxed else (RIGHT, LEFT, TOP)
+        d.polygon([P(x + 1, y, zb), P(x + 1, y + 1, zb), P(x + 1, y + 1, zt), P(x + 1, y, zt)], fill=rc)
+        d.polygon([P(x, y + 1, zb), P(x + 1, y + 1, zb), P(x + 1, y + 1, zt), P(x, y + 1, zt)], fill=lc)
+        top = [P(x, y, zt), P(x + 1, y, zt), P(x + 1, y + 1, zt), P(x, y + 1, zt)]
+        d.polygon(top, fill=tc)
+        d.line(top + [top[0]], fill=EDGE, width=1)
+
+    arr = np.array(ids_img)
+    yy, xx = np.mgrid[0:H, 0:W].astype(float)
+    # The plane fades out toward the edges, so the field melts into the page ground.
+    fall = np.clip(1.0 - np.sqrt(((xx - W * 0.5) / (W * 0.5)) ** 2 + ((yy - H * 0.55) / (H * 0.6)) ** 2), 0, 1)
+    inten = np.zeros((H, W))
+    inten[arr == GROUND] = (0.22 * fall)[arr == GROUND]
+    inten[arr == GRID] = (0.5 * fall)[arr == GRID]
+    lx, ly = W * 0.42, H * 0.36
+    dist = np.sqrt(((xx - lx) / (W * 0.55)) ** 2 + ((yy - ly) / (H * 0.6)) ** 2)
+    inten[arr == TOP] = np.clip(0.62 - 0.5 * dist, 0.08, 0.62)[arr == TOP]
 # 4. Games head (geography games): a voxel map of region blocks with one target locked in a
 #    bracket and a beam rising from it. Same painter order and dither as the islands.
 # ---------------------------------------------------------------------------------------------
@@ -349,6 +430,7 @@ if __name__ == "__main__":
     save_1bit(islands(), os.path.join(OUT, "islands.png"))
     save_1bit(track(), os.path.join(OUT, "track.png"))
     save_1bit(wash(), os.path.join(OUT, "wash.png"))
+    save_1bit(about_field(), os.path.join(OUT, "about-field.png"))
     save_1bit(timeline_route(), os.path.join(OUT, "timeline-route.png"))
     save_1bit(games(), os.path.join(OUT, "games.png"))
     save_1bit(history(), os.path.join(OUT, "history.png"))

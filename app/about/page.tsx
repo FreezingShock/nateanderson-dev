@@ -47,7 +47,7 @@ export default function AboutPage() {
                             text="Engineer, builder, runner, systems thinker. This page is the comprehensive story: how the parts connect."
                         />
                     </div>
-                    <aside className="about-id id" aria-label="Profile card" data-mx="slide-r">
+                    <aside className="about-id id" aria-label="Profile card">
                         <div className="id-top">
                             <Scramble className="id-sys" replay text="naOS // about" />
                             <span className="id-live"><i aria-hidden="true" />Live</span>
