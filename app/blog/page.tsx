@@ -17,21 +17,11 @@ export default function BlogPage() {
     const allPosts = blogSections.flatMap((s) => s.posts);
     const published = allPosts.filter((p) => p.status === "published").length;
     const planned = allPosts.length - published;
-
-    if (blogSections.length === 0) {
-        return (
-            <div className="ctos">
-            <NaosBackdrop src="/naos/bg-blog.png" />
-                <div className="blog-hero">
-                    <PageHead
-                        label="Writing / naOS"
-                        title={["blog &", "essays"]}
-                        lead="Notes on systems design, game dev, philosophy, and whatever else is worth writing down. Long essays, research, poetry, technical writeups, and quick thoughts."
-                    />
-                </div>
-            </div>
-        );
-    }
+    // Sections with no posts yet stay off the page: only real content shows up here.
+    const sections = blogSections
+        .map((section, i) => ({ section, id: BLOG_SECTION_IDS[i], no: String(i + 1).padStart(2, "0") }))
+        .filter((x) => x.section.posts.length > 0);
+    const hasSections = sections.length > 0;
 
     return (
         <div className="ctos">
@@ -43,15 +33,17 @@ export default function BlogPage() {
                     lead="Notes on systems design, game dev, philosophy, and whatever else is worth writing down. Long essays, research, poetry, technical writeups, and quick thoughts."
                 >
                     <div className="meta stats blog-stats">
-                        <Stat
-                            label="Sections"
-                            value={String(blogSections.length).padStart(2, "0")}
-                            note="Five kinds of writing"
-                        />
+                        {hasSections && (
+                            <Stat
+                                label="Sections"
+                                value={String(sections.length).padStart(2, "0")}
+                                note="Kinds of writing"
+                            />
+                        )}
                         <Stat
                             label="Published"
                             value={String(published).padStart(2, "0")}
-                            note={published === 0 ? "First post in progress" : "Live now"}
+                            note={published === 0 ? "Nothing live yet" : "Live now"}
                         />
                         <Stat
                             label="Planned"
@@ -59,22 +51,26 @@ export default function BlogPage() {
                             note="Queued up or in draft"
                         />
                     </div>
-                    <nav className="cm-row cta blog-jump" aria-label="Blog sections">
-                        {blogSections.map((s, i) => (
-                            <a
-                                key={s.title}
-                                className={`cta-b${i === 0 ? " a" : ""}`}
-                                href={`#${BLOG_SECTION_IDS[i]}`}
-                            >
-                                <i>{String(i + 1).padStart(2, "0")}</i>
-                                <span>{s.title}</span>
-                                <em aria-hidden="true">→</em>
-                            </a>
-                        ))}
-                    </nav>
+                    {hasSections && (
+                        <nav className="cm-row cta blog-jump" aria-label="Blog sections">
+                            {sections.map(({ section: s, id, no }, i) => (
+                                <a
+                                    key={s.title}
+                                    className={`cta-b${i === 0 ? " a" : ""}`}
+                                    href={`#${id}`}
+                                >
+                                    <i>{no}</i>
+                                    <span>{s.title}</span>
+                                    <em aria-hidden="true">→</em>
+                                </a>
+                            ))}
+                        </nav>
+                    )}
                 </PageHead>
             </div>
 
+            {hasSections ? (
+            <>
             <section className="cm-section ruled" aria-label="Section index">
                 <span className="cm-sec-rule" data-mx="line" aria-hidden="true" />
                 <div className="cm-wrap" data-rx-auto="">
@@ -97,13 +93,13 @@ export default function BlogPage() {
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {blogSections.map((s, i) => {
+                                    {sections.map(({ section: s, id, no }) => {
                                         const live = s.posts.filter((p) => p.status === "published").length;
                                         return (
                                             <tr key={s.title}>
-                                                <td>{String(i + 1).padStart(2, "0")}</td>
+                                                <td>{no}</td>
                                                 <td>
-                                                    <Link href={`#${BLOG_SECTION_IDS[i]}`}>{s.title}</Link>
+                                                    <Link href={`#${id}`}>{s.title}</Link>
                                                 </td>
                                                 <td>{String(s.posts.length).padStart(2, "0")}</td>
                                                 <td>
@@ -125,24 +121,63 @@ export default function BlogPage() {
                                 <i />
                                 <i />
                             </span>
-                            <span>{blogSections.length} sections</span>
+                            <span>{sections.length} sections</span>
                             <span>{published} live</span>
                         </div>
                     </div>
                 </div>
             </section>
 
-            {blogSections.map((section, idx) => (
+            {sections.map(({ section, id, no }) => (
                 <section
                     key={section.title}
-                    id={BLOG_SECTION_IDS[idx]}
+                    id={id}
                     className="cm-section ruled blog-sec"
                     style={{ scrollMarginTop: 80 }}
                 >
                     <span className="cm-sec-rule" data-mx="line" aria-hidden="true" />
-                    <BlogSection {...section} no={String(idx + 1).padStart(2, "0")} />
+                    <BlogSection {...section} no={no} />
                 </section>
             ))}
+            </>
+            ) : (
+            <section className="cm-section ruled blog-empty-sec" aria-label="Writing status">
+                <span className="cm-sec-rule" data-mx="line" aria-hidden="true" />
+                <div className="cm-wrap" data-rx-auto="">
+                    <div className="blog-empty">
+                        <div className="id-top">
+                            <Scramble className="id-sys" replay text="naOS // blog index" />
+                            <span className="id-live">
+                                <i aria-hidden="true" />
+                                Empty
+                            </span>
+                        </div>
+                        <div className="blog-empty-body">
+                            <h2 className="blog-empty-title">
+                                <span className="cm-highlight solo blog-empty-hl">
+                                    <span>nothing live yet</span>
+                                </span>
+                            </h2>
+                            <p className="cm-body blog-empty-copy">
+                                Posts appear here once they are finished. Each one gets its own page, and the newest
+                                shows up on the home page under Recent posts.
+                            </p>
+                        </div>
+                        <div className="id-foot" aria-hidden="true">
+                            <span className="id-bars">
+                                <i />
+                                <i />
+                                <i />
+                                <i />
+                                <i />
+                            </span>
+                            <span>0 sections</span>
+                            <span>0 live</span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+            )}
 
             <section className="cm-section">
                 <div className="cm-wrap" data-rx-auto="">

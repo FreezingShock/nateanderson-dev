@@ -55,7 +55,7 @@
 @media (max-width: 620px) {
   .ctos .post-strip { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); width: 100%; }
   .ctos .post-strip > div { min-width: 0; padding: 10px 12px 12px; }
-  .ctos .post-strip > div:nth-child(3) { border-left: 0; }
+  .ctos .post-strip > div:nth-child(3) { border-left: 0; grid-column: 1 / -1; }
   .ctos .post-strip > div:nth-child(n+3) { border-top: 1px solid var(--cm-hair); }
   .ctos .post-strip-val { font-size: var(--cm-ctos-t-h3); }
   .ctos .post-strip-gauge { grid-column: 1 / -1; min-width: 0; flex: none; }

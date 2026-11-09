@@ -13,8 +13,7 @@
    plays once when the overlay leaves. Only transform, opacity and clip-path move. `backwards` fill leaves the
    elements in their own styles afterwards, so hover and focus behave normally. */
 html[data-boot="full"] .blog-hero .blog-stats > div, html[data-boot="quick"] .blog-hero .blog-stats > div,
-html[data-boot="full"] .blog-hero .blog-jump .cta-b, html[data-boot="quick"] .blog-hero .blog-jump .cta-b,
-html[data-boot="full"] .blog-hero .naos-art-hero img, html[data-boot="quick"] .blog-hero .naos-art-hero img {
+html[data-boot="full"] .blog-hero .blog-jump .cta-b, html[data-boot="quick"] .blog-hero .blog-jump .cta-b {
   animation: none; opacity: 0; clip-path: inset(0 100% 0 0);
 }
 .ctos .blog-hero .blog-stats > div { animation: blog-stat-in .55s var(--cm-ease-out) calc(.5s + var(--i, 0) * 90ms) backwards; }
@@ -36,8 +35,8 @@ html[data-boot="full"] .blog-hero .naos-art-hero img, html[data-boot="quick"] .b
   to { clip-path: inset(0 0 0 0); transform: none; }
 }
 @media (prefers-reduced-motion: reduce) {
-  html[data-boot] .blog-hero .blog-stats > div, html[data-boot] .blog-hero .blog-jump .cta-b,
-  html[data-boot] .blog-hero .naos-art-hero img { animation: none; opacity: 1; clip-path: none; }
+  .ctos .blog-hero .blog-stats > div, .ctos .blog-hero .blog-jump .cta-b { animation: none; }
+  html[data-boot] .blog-hero .blog-stats > div, html[data-boot] .blog-hero .blog-jump .cta-b { animation: none; opacity: 1; clip-path: none; }
 }
 
 /* ---- Hero stats: one strip with a cyan left edge and dither under each figure (the homepage's stats strip) -------- */
@@ -169,3 +168,23 @@ html[data-boot="full"] .blog-hero .naos-art-hero img, html[data-boot="quick"] .b
 .ctos .blog-post.is-link { text-decoration: none; color: inherit; }
 .ctos .blog-post.is-link:focus-visible { outline: 2px solid var(--cm-cyan); outline-offset: 3px; }
 .ctos .blog-post.is-link .p-foot .st::after { content: "  →"; color: var(--cm-cyan); }
+
+/* ---- Empty state (no sections published): one finished status card, no filler posts or placeholder plates ------- */
+.ctos .blog-empty-sec { padding-bottom: 0; }
+.ctos .blog-empty {
+  position: relative; max-width: 880px;
+  background: var(--cm-ctos-panel); border: 1px solid var(--cm-hair-hi); border-left: 3px solid var(--cm-cyan);
+}
+.ctos .blog-empty::before {
+  content: ""; position: absolute; right: -1px; top: -1px; width: 14px; height: 14px; pointer-events: none;
+  border: 0 solid var(--cm-ctos-block); border-top-width: 2px; border-right-width: 2px;
+}
+.ctos .blog-empty-body { display: grid; gap: 18px; padding: clamp(22px, 4vw, 40px) clamp(16px, 3vw, 32px) clamp(20px, 3vw, 28px); }
+.ctos .blog-empty-title { margin: 0; }
+.ctos .blog-empty-hl { display: inline-flex; }
+.ctos .blog-empty-hl > span {
+  font: 800 clamp(30px, 6.4vw, 64px)/.9 var(--cm-display); letter-spacing: -.05em; text-transform: lowercase;
+  padding: .04em .12em .14em;
+}
+.ctos .blog-empty-copy { margin: 0; max-width: 56ch; }
+.ctos .blog-empty .id-foot { border-top: 1px dashed var(--cm-hair-hi); }
