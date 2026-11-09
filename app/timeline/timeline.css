@@ -136,3 +136,7 @@
 .tl-page .tl-phase .tl-ev.tl-s-planned > .cm-panel { border-style: dashed; border-left-style: dashed; border-left-color: var(--cm-hair-hi); background-color: #111; background-image: radial-gradient(circle, rgba(244, 244, 242, .14) 0 28%, transparent 32%); background-size: 6px 6px; }
 .tl-page .tl-phase .tl-ev.tl-s-done > .cm-panel { background-color: #121212; }
 .tl-page .tl-phase .tl-ev.tl-s-done > .cm-panel .cm-h3 { color: #d8d8d4; }
+
+/* Phase column: one track no wider than the viewport. Without this, the phase header's title and meter row set a
+   min-content width of about 900px on phones, and the phase panels ran past the right edge of the screen. */
+.tl-page .tl-phases { grid-template-columns: minmax(0, 1fr); min-width: 0; }
