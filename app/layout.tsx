@@ -68,8 +68,9 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
             <body>
                 <ThemeProvider
                     attribute="data-theme"
-                    themes={["dark", "paper"]}
+                    themes={["dark"]}
                     defaultTheme="dark"
+                    forcedTheme="dark"
                     enableSystem={false}
                     disableTransitionOnChange
                 >

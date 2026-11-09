@@ -65,21 +65,28 @@ export default async function HistoryPage() {
 
     return (
         <div className="ctos">
-            <PageHead
-                label="Meta / Changelog"
-                title={["site", "history"]}
-                lead="This website's own changelog, pulled live from the GitHub API, not written by hand or regenerated manually."
-            >
-                <div className={styles.headStrip} aria-hidden="true">
-                    <span className="id-live"><i />Feed live</span>
-                    <span>source / github api</span>
-                    <span>refresh / 1h</span>
+            <div className={styles.hero}>
+                {/* Backdrop: the commit terrain (scripts/naos-art/generate.py, history()). Decorative, drifts on scroll. */}
+                <div className={styles.bg} data-mx-par="0.06" aria-hidden="true">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img className={styles.art} src="/naos/history.png" width={420} height={220} alt="" decoding="async" draggable={false} />
                 </div>
-            </PageHead>
+                <PageHead
+                    label="Meta / Changelog"
+                    title={["site", "history"]}
+                    lead="This website's own changelog, pulled live from the GitHub API, not written by hand or regenerated manually."
+                >
+                    <div className={styles.headStrip} aria-hidden="true">
+                        <span className="id-live"><i />Feed live</span>
+                        <span>source / github api</span>
+                        <span>refresh / 1h</span>
+                    </div>
+                </PageHead>
+            </div>
 
             <Section ctos id="stats" no="01" label="Index" title="The numbers behind the site.">
                 <div className={styles.grid}>
-                    <div className={`cm-panel ${styles.statsPanel}`}>
+                    <div className={`cm-panel ${styles.statsPanel}`} data-rx="slide">
                         <div className="cm-hbar"><span>Repo index</span><span>{REPO}</span></div>
                         <div className={`meta stats ${styles.stats}`}>
                             {stats.map((stat) => (
@@ -98,7 +105,7 @@ export default async function HistoryPage() {
                     </div>
 
                     {latest && (
-                        <section className={`cm-panel ${styles.idCard}`} aria-label="Latest commit">
+                        <section className={`cm-panel ${styles.idCard}`} aria-label="Latest commit" data-rx="slide-r">
                             <div className="id-top">
                                 <Scramble className="id-sys" replay text="naOS // latest commit" />
                                 <span className="id-live"><i aria-hidden="true" />Live</span>

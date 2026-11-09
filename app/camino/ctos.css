@@ -196,10 +196,15 @@ body:has(.ctos) .cm-foot-base { font-family: var(--cm-mono); }
 .ctos .cm-grid > .cm-card:nth-child(3n+2) b, .ctos .cm-cols3 > .cm-card:nth-child(3n+2) b { letter-spacing: -.02em; font-size: var(--cm-ctos-t-lead); }
 .ctos .cm-grid > .cm-card:nth-child(3n), .ctos .cm-cols3 > .cm-card:nth-child(3n) { border: 1px dashed var(--cm-hair-hi); background-color: transparent; background-image: radial-gradient(circle, rgba(244,244,242,.16) 0 28%, transparent 32%); background-size: 6px 6px; }
 .ctos .cm-grid > .cm-card:nth-child(3n) b, .ctos .cm-cols3 > .cm-card:nth-child(3n) b { font-family: var(--cm-mono); font-size: var(--cm-ctos-t-body); letter-spacing: -.01em; }
-.ctos .cm-grid > .cm-card:nth-child(3n) p, .ctos .cm-cols3 > .cm-card:nth-child(3n) p { background: rgba(26,26,26,.86); padding: 2px 4px; margin-inline: -4px; }
 .ctos .cm-grid > .cm-card:nth-child(3n) .cm-viz { background: linear-gradient(33deg, transparent 49.6%, rgba(194,59,208,.7) 50%, transparent 50.4%), #0d0d0d; }
 .ctos #explore .cm-grid > .cm-card:nth-child(4n+2) { background: var(--cm-cyan); border-color: var(--cm-cyan); color: var(--cm-cyan-ink); }
 .ctos #explore .cm-grid > .cm-card:nth-child(4n+2) b, .ctos #explore .cm-grid > .cm-card:nth-child(4n+2) p, .ctos #explore .cm-grid > .cm-card:nth-child(4n+2) .st, .ctos #explore .cm-grid > .cm-card:nth-child(4n+2) .cm-state { color: var(--cm-cyan-ink); }
+/* Index plates (linked cards on the homepage, About, Creations, Studies): the description is naOS mono, and the dark
+   plate behind it is sized to the text (fit-content, no negative margin), so it never runs past the card padding.
+   On the cyan card the plate flips to ink with cyan text, so the line stays readable. */
+.ctos .cm-grid > .cm-card.link p, .ctos .cm-cols3 > .cm-card.link p { font-family: var(--cm-mono); font-size: var(--cm-ctos-t-small); line-height: 1.5; letter-spacing: -.005em; }
+.ctos .cm-grid > .cm-card:nth-child(3n) p, .ctos .cm-cols3 > .cm-card:nth-child(3n) p { display: block; width: fit-content; max-width: 100%; margin: 0; padding: 3px 7px 4px; background: var(--cm-ctos-ink); color: var(--cm-ctos-block); }
+.ctos #explore .cm-grid > .cm-card:nth-child(4n+2):nth-child(3n) p { background: var(--cm-ctos-ink); color: var(--cm-cyan); }
 .ctos #explore .cm-grid > .cm-card:nth-child(4n+2):hover { background: #5fe6f2; }
 
 /* ---- Profile: checkerboard pillars, terminal feed, rail path ---------------------------------------------------- */

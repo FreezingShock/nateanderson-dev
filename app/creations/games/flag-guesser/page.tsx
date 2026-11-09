@@ -12,7 +12,7 @@ export const metadata = pageMeta({
 
 export default function FlagGuesserPage() {
     return (
-        <div className="ctos">
+        <div className="ctos ng-page">
             <CreationsShell
                 eyebrow="Daily and unlimited"
                 title={["Flag Guesser"]}
