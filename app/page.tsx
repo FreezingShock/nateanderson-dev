@@ -30,7 +30,7 @@ export default async function Home() {
                 <div className="ring" aria-hidden="true" data-mx-par="0.12" />
                 <span className="cm-tag t1" aria-hidden="true" data-mx-par="0.2">Class of <i>2027</i></span>
                 <span className="cm-tag live t2" aria-hidden="true" data-mx-par="0.08">Now shipping <i>Fractured Islands</i></span>
-                <span className="cm-read live float t3" aria-hidden="true" data-mx-par="0.16">Launch / June 2031</span>
+                <span className="cm-read live float t3" aria-hidden="true" data-mx-par="0.16">Graduation / June 2031</span>
                 <div className="cm-wrap">
                     <div className="hero-grid">
                         <div className="hero-copy cm-stage">
@@ -91,7 +91,7 @@ export default async function Home() {
                                     <div><dt>Studying</dt><dd><Scramble replay text="Construction management" /></dd></div>
                                     <div><dt>Shipping</dt><dd><Link href="/creations"><Scramble replay text="Fractured Islands: Ascension" /></Link></dd></div>
                                     <div><dt>Built in</dt><dd><Scramble replay text="Luau, TypeScript, Blender" /></dd></div>
-                                    <div><dt>Launch</dt><dd><Scramble replay text="2031" /></dd></div>
+                                    <div><dt>Graduation</dt><dd><Scramble replay text="2031" /></dd></div>
                                 </dl>
                             </div>
                             <div className="id-foot" aria-hidden="true">

@@ -38,7 +38,7 @@ export const navItems: NavItem[] = [
             { href: "/creations/artwork", label: "Artwork" },
         ],
     },
-    { href: "/timeline", label: "Timeline", title: "Timeline", no: "02", blurb: "The pathway from senior year to a 2031 launch." },
+    { href: "/timeline", label: "Timeline", title: "Timeline", no: "02", blurb: "The pathway from senior year to graduation in 2031." },
     {
         href: "/studies",
         label: "Studies",
@@ -53,13 +53,6 @@ export const navItems: NavItem[] = [
         title: "Blog & Essays",
         no: "04",
         blurb: "Essays, research, poetry, dev log and snippets.",
-        children: [
-            { href: "/blog#essays", label: "Essays" },
-            { href: "/blog#research", label: "Research" },
-            { href: "/blog#poetry", label: "Poetry" },
-            { href: "/blog#devlog", label: "Dev log" },
-            { href: "/blog#snippets", label: "Snippets" },
-        ],
     },
     { href: "/history", label: "History", title: "Site History", no: "05", blurb: "This site's changelog, live from GitHub." },
     {

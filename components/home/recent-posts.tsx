@@ -12,6 +12,7 @@ function formatDate(iso: string) {
 export function RecentPosts() {
     const recent = getRecentPosts(3);
     const teasers = blogSections.slice(0, 3);
+    if (blogSections.length === 0) return null;
     return (
         <Section
             ctos

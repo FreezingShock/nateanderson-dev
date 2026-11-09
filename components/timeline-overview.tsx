@@ -41,7 +41,7 @@ const COUNTDOWNS: Countdown[] = [
 ];
 
 // The events shown as markers on the journey axis: every rainbow milestone
-// plus each major event, plus the finish line itself (Launch). Data is
+// plus each major event. Data is
 // prepared here on the server; the interactive axis is a client component.
 function buildMarkers(nowMs: number): JourneyMarker[] {
     const fromEvents = allEvents()
@@ -64,20 +64,6 @@ function buildMarkers(nowMs: number): JourneyMarker[] {
         }));
     return [
         ...fromEvents,
-        {
-            id: "launch",
-            title: "Launch",
-            when: "June 2031",
-            start: "2031-05-31",
-            description:
-                "The point the whole plan builds toward: launching a sustainable infrastructure and urban design business or project, backed by an engineering degree, an executed portfolio, athletic leadership and a network of mentors.",
-            tags: ["Founding", "Sustainability"],
-            color: "var(--cm-amber)",
-            categoryLabel: "Finish line",
-            status: "upcoming",
-            special: true,
-            href: "#horizons",
-        },
     ];
 }
 

@@ -10,7 +10,7 @@ export default async function Image() {
         naosCard({
             label: "timeline",
             title: "timeline",
-            lead: "The pathway from senior year to a 2031 launch, with real dates, live countdowns and every milestone in between.",
+            lead: "The pathway from senior year to graduation in 2031, with real dates, live countdowns and every milestone in between.",
             path: "/timeline",
         }),
         { ...OG_SIZE, fonts: await naosFonts() }
