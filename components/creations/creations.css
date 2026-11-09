@@ -1,0 +1,56 @@
+/* ==========================================================================
+   Creations on the naOS system. Everything sits under .ctos (CreationsShell and the detail page set it), so the shared
+   ctos layer in app/camino/ctos.css does the title blocks, panels, cards and motion. This file only adds the page-head
+   grid, the guide lines behind the head, the status card placement and the detail sheet.
+   ========================================================================== */
+
+/* Head backdrop: the same magenta guide lines the homepage hero uses, drawn at lower strength. Decorative only. */
+.ctos .cr-head::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  opacity: .4;
+  background:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100' preserveAspectRatio='none'%3E%3Cpath d='M0 8 L100 82 M0 96 L100 14' stroke='%23c23bd0' stroke-width='1' fill='none' vector-effect='non-scaling-stroke'/%3E%3C/svg%3E")
+    center / 100% 100% no-repeat;
+}
+@media (prefers-reduced-motion: reduce) { .ctos .cr-head::after { opacity: .25; } }
+.cr-head > .cm-wrap { z-index: 1; }
+
+/* Head layout: copy on the left, status card on the right from 900px up. One column on phones. */
+.cr-head-grid { display: grid; gap: 28px; align-items: end; padding-bottom: 8px; }
+.cr-head-copy { display: grid; gap: 16px; min-width: 0; align-content: end; }
+.cr-head-copy .cm-lead { max-width: 56ch; }
+.cr-head .cm-lbl { color: var(--cm-ctos-block); opacity: .72; }
+@media (min-width: 900px) {
+  .cr-head-grid.has-aside { grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr); align-items: center; }
+}
+
+/* Status card: full width of its column, capped so it reads as a card, not a banner. */
+.cr-id { width: 100%; max-width: 460px; justify-self: end; }
+.cr-id .id-rows dd .cm-num { font: inherit; letter-spacing: inherit; font-variant-numeric: tabular-nums; }
+.cr-id .id-badge b { font-size: 40px; }
+@media (max-width: 900px) { .cr-id { justify-self: stretch; max-width: none; } }
+
+/* Detail page: a hatched plate with the status tag, then a detail sheet (tags and link). The status card sits in the head. */
+.cr-detail { display: grid; gap: 20px; }
+.cr-plate { aspect-ratio: 16 / 5; min-height: 140px; }
+.cr-plate-tag { position: absolute; left: 14px; top: 14px; }
+.cr-plate-ic { position: absolute; right: 18px; bottom: 14px; width: 56px; height: 56px; color: var(--cm-hair-hi); }
+
+.cr-sheet { display: flex; flex-direction: column; gap: 18px; padding: 0 18px; overflow: hidden; }
+.cr-sheet > .cm-hbar { margin: 0 -18px; }
+.cr-sheet-cols { display: grid; gap: 22px; padding-top: 18px; }
+@media (min-width: 900px) {
+  .cr-sheet-cols { grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); align-items: start; }
+}
+.cr-sheet-block { display: grid; gap: 10px; align-content: start; }
+.cr-sheet-block .cm-lbl { color: var(--cm-mute); }
+.cr-tags { display: flex; flex-wrap: wrap; gap: 8px; }
+.cr-sheet > .p-foot { margin: auto -18px 0; }
+.cr-sheet .cta-b { justify-self: start; }
+
+/* Big title blocks, as on the homepage: the stacked white bars fill the column on phones and reach the hero size on desktop. */
+.ctos .cr-head .cm-highlight > * { font-size: clamp(34px, 10vw, 84px); }
