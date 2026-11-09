@@ -28,7 +28,9 @@
    wrapper both pages render, so the shared naOS layer (app/camino/ctos.css) and sibling pages are untouched.
    ========================================================================== */
 
-/* Header: halftone plane and magenta guide lines, the homepage hero treatment, scoped to this page. */
+/* Header: halftone plane, plus an original 1-bit "pathway" piece (scripts/naos-art/generate.py, studies()): six voxel
+   terraces climbing toward the 2031 checkpoint, drawn on the dithered grid. It builds in hard steps on load, bottom
+   up, the way the homepage art reveals on scroll. Replaces the old magenta cross-lines. */
 .ctos.st-page .cm-head { position: relative; overflow: hidden; }
 .ctos.st-page .cm-head > .cm-grid-bg {
   background-image: radial-gradient(circle at center, rgba(244, 244, 242, .55) 0 28%, transparent 32%);
@@ -40,13 +42,20 @@
 .ctos.st-page .cm-head::after {
   content: "";
   position: absolute;
-  inset: 0;
+  right: -1%;
+  bottom: 4%;
+  width: min(52%, 600px);
+  aspect-ratio: 320 / 200;
   pointer-events: none;
   z-index: 0;
-  opacity: .45;
-  background:
-    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100' preserveAspectRatio='none'%3E%3Cpath d='M0 8 L100 82 M0 96 L100 14' stroke='%23c23bd0' stroke-width='1' fill='none' vector-effect='non-scaling-stroke'/%3E%3C/svg%3E")
-    center / 100% 100% no-repeat;
+  opacity: .62;
+  background: url("/naos/studies.png") right bottom / 100% 100% no-repeat;
+  image-rendering: pixelated;
+  -webkit-mask-image: linear-gradient(270deg, #000 55%, transparent 100%), linear-gradient(0deg, #000 60%, transparent 100%);
+  -webkit-mask-composite: source-in;
+  mask-image: linear-gradient(270deg, #000 55%, transparent 100%), linear-gradient(0deg, #000 60%, transparent 100%);
+  mask-composite: intersect;
+  animation: st-art-in .9s steps(10, end) .12s both;
 }
 .ctos.st-page .cm-head > .cm-wrap { position: relative; z-index: 1; }
 
@@ -133,8 +142,40 @@
 
 @media (max-width: 760px) {
   .ctos.st-page .st-courses > .cm-panel:nth-child(3n) { border-style: dashed; }
-  .ctos.st-page .cm-head::after { opacity: .3; }
+  .ctos.st-page .cm-head::after { right: -12%; bottom: 0; width: 96vw; opacity: .22; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .ctos.st-page .cm-head::after { opacity: .3; }
+  .ctos.st-page .cm-head::after { opacity: .3; animation: none; }
+  .ctos.st-page .st-anim { animation: none !important; }
 }
+
+/* ---- Load-in choreography -------------------------------------------------------------------------------------------
+   Everything tagged .st-anim plays once after the boot sequence and any page curtain lift: animations are held
+   (paused at their first frame) while html[data-boot] or html[data-xition] covers the screen, so nothing finishes
+   behind the cover. */
+@keyframes st-art-in { from { clip-path: inset(100% 0 0 0); } to { clip-path: inset(0 0 0 0); } }
+@keyframes st-id-in { from { clip-path: inset(0 0 100% 0); } to { clip-path: inset(0 0 0 0); } }
+@keyframes st-row-in { from { opacity: 0; transform: translate3d(-14px, 0, 0); } to { opacity: 1; transform: none; } }
+@keyframes st-bar-sweep { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+
+.ctos.st-page .st-id.st-anim { animation: st-id-in .7s steps(9, end) .42s both; }
+.ctos.st-page .st-id .id-rows > div.st-anim { animation: st-row-in .5s var(--cm-ease-out) both; }
+.ctos.st-page .st-id .id-rows > div:nth-child(1) { animation-delay: .95s; }
+.ctos.st-page .st-id .id-rows > div:nth-child(2) { animation-delay: 1.03s; }
+.ctos.st-page .st-id .id-rows > div:nth-child(3) { animation-delay: 1.11s; }
+.ctos.st-page .st-id .id-rows > div:nth-child(4) { animation-delay: 1.19s; }
+.ctos.st-page .st-id .id-bars i.st-anim { transform-origin: bottom; animation: st-bar-sweep .45s var(--cm-ease-out) both; }
+.ctos.st-page .st-id .id-bars i:nth-child(2) { animation-delay: .1s; }
+.ctos.st-page .st-id .id-bars i:nth-child(3) { animation-delay: .2s; }
+.ctos.st-page .st-id .id-bars i:nth-child(4) { animation-delay: .3s; }
+.ctos.st-page .st-id .id-bars i:nth-child(5) { animation-delay: .4s; }
+
+/* Title bars: step the wipe so the white card resolves in hard dither steps, not a smooth slide. */
+.ctos.st-page .cm-highlight.wipe > * { animation-timing-function: steps(10, end); }
+
+html[data-boot="full"] .ctos.st-page .st-anim,
+html[data-boot="quick"] .ctos.st-page .st-anim,
+html[data-xition] .ctos.st-page .st-anim,
+html[data-boot="full"] .ctos.st-page .cm-head::after,
+html[data-boot="quick"] .ctos.st-page .cm-head::after,
+html[data-xition] .ctos.st-page .cm-head::after { animation-play-state: paused; }
