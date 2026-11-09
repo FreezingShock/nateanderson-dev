@@ -1,0 +1,17 @@
+/* Timeline-only layout fixes. Kept out of the shared Camino files on purpose. */
+
+/* Clock + gauges: two columns on desktop, stacked on phones, equal height. */
+.tl-split { display: grid; gap: var(--cm-s6); grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr); align-items: stretch; margin-top: var(--cm-s5); }
+.tl-split > .cm-panel { display: flex; flex-direction: column; }
+.tl-split > .cm-panel > .cm-kv { margin-top: auto; }
+@media (max-width: 760px) { .tl-split { grid-template-columns: minmax(0, 1fr); } }
+
+/* Category filters: all on by default, so cyan would flood the toolbar. Cyan stays for the
+   active phase and live states; here "on" is a filled square, "off" a hollow one (shape, not color). */
+.tl-cats .cm-chip::before { content: ""; width: 6px; height: 6px; border: 1px solid currentColor; box-sizing: border-box; flex: none; }
+.tl-cats .cm-chip[aria-pressed="true"] { color: var(--cm-fg); background: rgba(226, 238, 240, .06); border-color: var(--cm-hair-hi); }
+.tl-cats .cm-chip[aria-pressed="true"]::before { background: currentColor; }
+.tl-cats .cm-chip[aria-pressed="false"] { color: var(--cm-dim); }
+
+/* Up next: four across on desktop so there is no orphan row. */
+.tl-next { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(min(100%, 230px), 1fr)); }

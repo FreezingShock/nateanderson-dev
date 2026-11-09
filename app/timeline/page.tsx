@@ -2,6 +2,7 @@ import { PageHead, Section } from "@/components/cm/ui";
 import { TimelineOverview } from "@/components/timeline-overview";
 import { TimelineExplorer } from "@/components/timeline-explorer";
 import { phases } from "@/lib/timeline-data";
+import "./timeline.css";
 
 // Statically generated and re-checked hourly: statuses ("done" / "now" /
 // "upcoming") and progress are computed from real dates at render time, so
