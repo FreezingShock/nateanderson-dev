@@ -208,3 +208,10 @@ html[data-boot="full"] .ctos.cr-sub .cr-id, html[data-boot="quick"] .ctos.cr-sub
   .ctos.cr-sub .cr-head::before { display: none; }
   .ctos.cr-sub .cr-head > .cm-grid-bg, .ctos.cr-sub .cr-head .cm-lbl, .ctos.cr-sub .cr-id, .ctos.cr-sub .cr-id .id-rows > div, .ctos.cr-sub .cr-id .id-bars i { animation: none; }
 }
+
+/* Four doors and four principles: always a full row. Four across from 1080px up (the 1180px column fits four 260px
+   tracks), a 2x2 between 600 and 1080px, one column on phones. Explicit tracks instead of auto-fill, so an odd fourth
+   card never sits alone in an empty row. */
+.ctos.cr-hub .cr-doors, .ctos.cr-hub .cr-principles { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+@media (max-width: 1080px) { .ctos.cr-hub .cr-doors, .ctos.cr-hub .cr-principles { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 600px) { .ctos.cr-hub .cr-doors, .ctos.cr-hub .cr-principles { grid-template-columns: minmax(0, 1fr); } }

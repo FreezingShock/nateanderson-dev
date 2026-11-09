@@ -151,7 +151,7 @@ const projectTone = { active: "live", planning: "warn", idea: "" } as const;
 /** The four category doors on the hub. */
 export function CategoryGrid({ counts }: { counts: Record<CreationCategory["id"], number> }) {
     return (
-        <div className="cm-grid">
+        <div className="cm-grid cr-doors">
             {CATEGORIES.map((c) => {
                 const Icon = c.icon;
                 return (
@@ -177,7 +177,7 @@ export function CategoryGrid({ counts }: { counts: Record<CreationCategory["id"]
 
 export function PhilosophyGrid() {
     return (
-        <div className="cm-grid">
+        <div className="cm-grid cr-principles">
             {PRINCIPLES.map((p, i) => (
                 <div key={p.title} className="cm-card" style={{ height: "100%" }}>
                     <span className="cm-state">{String(i + 1).padStart(2, "0")}</span>
