@@ -161,7 +161,7 @@ export function KeyLegend() {
 }
 
 /** Camino panel behind a whole game. */
-export const GLASS_CLASS = "cm-panel tick relative mx-auto max-w-lg p-4 sm:p-6";
+export const GLASS_CLASS = "cm-panel tick relative max-w-xl p-4 sm:p-6";
 export const GLASS_STYLE: CSSProperties = {};
 
 export type Mode = "daily" | "unlimited";
@@ -334,7 +334,7 @@ export function Burst() {
                         "var(--cm-cyan)",
                         "var(--cm-amber)",
                         "var(--cm-good)",
-                        "var(--cm-violet)",
+                        "var(--cm-fg)",
                         "var(--cm-amber)",
                     ][i % 5],
                     delay: `${Math.random() * 0.15}s`,
@@ -384,7 +384,7 @@ export function FilterPanel({
     return (
             <div className="mb-3 space-y-2 rounded-[2px] border border-border/50 bg-foreground/5 p-3">
                         <div className="flex flex-wrap items-center gap-1.5">
-                            <span className="w-16 font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
+                            <span className="w-20 font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
                                 Difficulty
                             </span>
                             {DIFFICULTIES.map((d) => {
@@ -406,7 +406,7 @@ export function FilterPanel({
                             })}
                         </div>
                         <div className="flex flex-wrap items-center gap-1.5">
-                            <span className="w-16 font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
+                            <span className="w-20 font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
                                 Region
                             </span>
                             {REGIONS.map((r) => {
@@ -536,7 +536,7 @@ export function CountryCombobox({
         if (finePointer()) inputRef.current?.focus({ preventScroll: true });
     }, []);
 
-    // A picked country flashes light purple and focus moves to Guess (not the
+    // A picked country flashes cyan and focus moves to Guess (not the
     // text box), so the visitor isn't dropped back into typing.
     const landed = useCallback(() => {
         inputRef.current?.blur();
@@ -545,13 +545,13 @@ export function CountryCombobox({
             [
                 {
                     backgroundColor:
-                        "color-mix(in oklch, var(--cm-violet) 55%, transparent)",
-                    boxShadow: "0 0 0 3px var(--cm-violet), 0 0 28px 2px var(--cm-violet)",
+                        "color-mix(in oklch, var(--cm-cyan) 55%, transparent)",
+                    boxShadow: "0 0 0 3px var(--cm-cyan)",
                 },
                 {
                     backgroundColor:
-                        "color-mix(in oklch, var(--cm-violet) 22%, transparent)",
-                    boxShadow: "0 0 0 2px var(--cm-violet), 0 0 14px 0 var(--cm-violet)",
+                        "color-mix(in oklch, var(--cm-cyan) 22%, transparent)",
+                    boxShadow: "0 0 0 2px var(--cm-cyan)",
                 },
                 { backgroundColor: "transparent", boxShadow: "0 0 0 0 transparent" },
             ],
@@ -715,7 +715,7 @@ export function CountryCombobox({
                         className={cn(
                             "h-11 w-full rounded-[2px] border border-border bg-card/60 px-3 text-base outline-none transition-colors focus:border-[var(--cm-cyan)]",
                             rolling &&
-                                "border-[var(--cm-violet)] text-transparent caret-transparent shadow-[0_0_16px_-4px_var(--cm-violet)]"
+                                "border-[var(--cm-cyan)] text-transparent caret-transparent"
                         )}
                     />
                     {rolling && (
@@ -723,7 +723,7 @@ export function CountryCombobox({
                             key={`${rolling.c}-${step.current}`}
                             aria-hidden
                             className="cb-roll pointer-events-none absolute inset-0 flex items-center gap-2 px-3 text-base font-semibold"
-                            style={{ color: "var(--cm-violet)" }}
+                            style={{ color: "var(--cm-cyan)" }}
                         >
                             {/* eslint-disable-next-line @next/next/no-img-element */}
                             <img
@@ -775,11 +775,11 @@ export function CountryCombobox({
                     title="Random country"
                     className="grid size-11 shrink-0 place-items-center rounded-[2px] border transition-transform hover:-translate-y-0.5 active:scale-90"
                     style={{
-                        color: "var(--cm-violet)",
+                        color: "var(--cm-cyan)",
                         borderColor:
-                            "color-mix(in oklch, var(--cm-violet) 60%, transparent)",
+                            "color-mix(in oklch, var(--cm-cyan) 60%, transparent)",
                         backgroundColor:
-                            "color-mix(in oklch, var(--cm-violet) 16%, transparent)",
+                            "color-mix(in oklch, var(--cm-cyan) 16%, transparent)",
                     }}
                 >
                     <Dices className={cn("size-5", rolling && "cb-dice-spin")} />

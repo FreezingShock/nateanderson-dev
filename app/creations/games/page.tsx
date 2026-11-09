@@ -5,8 +5,8 @@ export default function GamesPage() {
     return (
         <CreationsShell
             eyebrow="Creations / Games"
-            title={["Web App Games"]}
-            description="Games that run right here in your browser: daily puzzles, unlimited practice and, down the road, incremental and tycoon games. Most are still placeholders, and we're building them one at a time."
+            title={["Games"]}
+            description="Geography games that run right here in your browser. Take the daily puzzle, then practice as long as you like. Streaks and stats stay on your device."
             back={{ href: "/creations", label: "Back to Creations" }}
         >
             {GAME_MODES.map((m, i) => (

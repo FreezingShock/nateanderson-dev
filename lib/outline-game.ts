@@ -259,13 +259,13 @@ export const DIFFICULTIES = [
 ] as const;
 
 export const REGIONS = [
-    { id: "Africa", label: "Africa", color: "var(--cm-amber)" },
-    { id: "Asia", label: "Asia", color: "var(--cm-alert)" },
-    { id: "Europe", label: "Europe", color: "var(--cm-cyan)" },
-    { id: "North America", label: "N. America", color: "var(--cm-good)" },
-    { id: "South America", label: "S. America", color: "var(--cm-amber)" },
-    { id: "Oceania", label: "Oceania", color: "var(--cm-cyan)" },
-    { id: "Polar", label: "Polar", color: "var(--cm-violet)" },
+    { id: "Africa", label: "Africa", color: "var(--cm-dim)" },
+    { id: "Asia", label: "Asia", color: "var(--cm-dim)" },
+    { id: "Europe", label: "Europe", color: "var(--cm-dim)" },
+    { id: "North America", label: "N. America", color: "var(--cm-dim)" },
+    { id: "South America", label: "S. America", color: "var(--cm-dim)" },
+    { id: "Oceania", label: "Oceania", color: "var(--cm-dim)" },
+    { id: "Polar", label: "Polar", color: "var(--cm-dim)" },
 ] as const;
 
 /** Region id for a country (Antarctica and the open-ocean islands: Polar). */

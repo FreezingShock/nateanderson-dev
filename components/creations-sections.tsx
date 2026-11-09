@@ -40,6 +40,7 @@ export function CreationsShell({
 
 export const Section = CmSection;
 
+const statusLabelFor = (s: Game["status"]) => (s === "building" ? "In development" : "Planned");
 const statusTone = { playable: "live", building: "warn", planned: "" } as const;
 const projectTone = { active: "live", planning: "warn", idea: "" } as const;
 
@@ -103,7 +104,7 @@ function GameCard({ game }: { game: Game }) {
                     <li key={f} className="cm-pill">{f}</li>
                 ))}
             </ul>
-            <span className="st">{game.href ? "Play now →" : "Placeholder / not built yet"}</span>
+            <span className="st">{game.href ? "Play now →" : statusLabelFor(game.status)}</span>
         </>
     );
     return game.href ? (
