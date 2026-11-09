@@ -1,0 +1,76 @@
+# naOS design system
+
+naOS (Nate Anderson OS) is the portfolio's ctOS-style layer: an original surveillance-HUD look inspired by the
+Watch Dogs 2 ctOS profile (style only; no Ubisoft marks or art). It sits on top of Camino (dark, one cyan accent, mono
+caps). Homepage shipped first (`app/page.tsx`); every other page adopts it now.
+
+## Turn it on
+Wrap the page in `<div className="ctos">` and use `Section ctos` (components/cm/ui.tsx). Everything is scoped under
+`.ctos`, so nothing leaks. The page background, the naOS footer and the page-end bar switch on through
+`body:has(.ctos)`. `PageHead` works inside `.ctos` unchanged (its highlight bars get the white title-card look from CSS).
+
+## Files
+- `app/camino/ctos.css`: all naOS CSS (imported after `games.css` in `app/globals.css`).
+- `app/camino/motion.css`: slab and `.hx` rise rules.
+- `lib/motion/engine.ts`: reveal engine (started by `components/cm/motion-root.tsx`).
+- `components/cm/motion.tsx`: `Scramble`, `Slab`, `ScrollType`, `Reveal`.
+- `components/cm/ui.tsx`: `Section` (`ctos` prop), `PageHead`.
+- `components/site-footer.tsx`: shared footer, naOS parts hidden unless `.ctos` is on the page.
+
+## Tokens
+`--cm-ctos-ground #1a1a1a` (page ground), `--cm-ctos-block #f4f4f2` (white title blocks), `--cm-ctos-ink #1a1a1a`
+(text on white). Accent stays `--cm-cyan #2fd8e8` (`--cm-cyan-ink` on cyan). Magenta `#ff2d8a` only for thin guide
+lines. One accent rule: cyan or white, never rainbow.
+
+## Fonts
+Display: heavy grotesk (`--cm-display`), lowercase, tight tracking (-.04 to -.06em), line-height ~.86 on title cards.
+Mono (`--cm-mono`) for labels, caps, tracking .1 to .14em. No Minecraft font.
+
+## Title cards
+White block + ink text behind big lowercase type: `.ctos .cm-highlight` (line-height .86, bottom padding so
+descenders and commas are never cut; never set a fixed height). Wrap each line in `.hx` (nowrap, overflow hidden) so
+lines rise in. Keep hero size responsive (`clamp`), check 390px.
+
+## Panel recipe (the Status card)
+`.ctos .cm-panel` already gives: cyan left border, small top-right bracket, dither strip at the bottom. Layout used on
+the homepage `.hero-status.id`: `.id-top` (white header bar, scrambled `naOS // label`), `.id-main` (badge + dl rows),
+`.id-foot` (signal bars + coordinates). Add a `.p-foot` strip for a mono footer line. Vary cards with
+`:nth-child(3n+1/2/3)` and cyan-filled variants so a grid is never monotone. Dither = dotted radial-gradient masked to
+fade; never gray flickering pixel blocks.
+
+## Reveals and scramble
+- `Section ctos` auto-tags its children (`[data-rx-auto]`: grids, rows, text leaves; see `GROUPS/ROWS/TEXTS` in the
+  engine). Add more selectors there if a page has new item types.
+- Manual: `data-rx="slab|row|slide|slide-r|"` on any element, `data-rx-scr` on a text leaf (characters scramble then
+  lock left to right), `<Scramble replay text="..." />`, `<Slab>` inside a `data-rx="slab"` heading.
+- Old once-only primitives (`data-mx`, `ScrollType`, `data-mx-scr`) still work; `data-scr-hover` + `data-scr-text` gives
+  hover scramble on links/buttons.
+
+## How scroll-linked reverse works
+The engine writes `--p` (0 to 1) on each `[data-rx]` from its viewport position (band ~36% of the viewport, capped at
+340px). CSS maps `--p` to opacity/transform/clip-path, so scrolling down plays forward and up plays the exact reverse.
+Displayed progress eases toward the target (damping ~120ms, frame-rate independent) and a smoothstep is applied when
+writing `--p`, so wheel notches glide. Scramble text uses the same progress. Items on screen at load play a 650ms intro,
+and at the page bottom everything is forced to p=1. `prefers-reduced-motion` must stay respected.
+
+## Perf rules
+Animate only `transform` and `opacity` (plus clip-path for slabs). No animated `filter: blur`. One rAF loop, reads then
+writes, no layout thrash. Touch and narrow screens (`hover: none` or max-width 900px) get still grain and solid panels
+(media query at the bottom of ctos.css); keep new heavy effects inside that gate. Lazy-load heavy images; set
+width/height.
+
+## Footer
+Shared component. Standard Camino footer on pages without `.ctos`. When a page wraps in `.ctos` the footer becomes the
+naOS version (session bar, Status-style panels, numbered social plates, signal bar) automatically. No taped stickers.
+
+## Don'ts
+- No Ubisoft logos, art or fonts; original SVG/CSS only.
+- No gray pixel blocks, no taped graffiti stickers, no rainbow accents.
+- Do not edit shared files (`ctos.css` core, engine, `motion.tsx`) casually; add page-specific rules in a clearly
+  commented block scoped like `.ctos .your-page ...`, and rebase before pushing.
+- Do not cut descenders or commas; do not hide content behind reveals that fail without JS in a way that blocks reading.
+- Keep the Outline/Flag guessers and Fractured Islands; Fractured Idle is gone.
+
+## Testing
+Dev (StrictMode) breaks reveals through the engine's `seen` WeakSet, so test on `next build` + `next start`.
+Check 1440 desktop and 390 touch. Gate cookie: POST `/api/gate` with JSON `{"password":..}` and header `origin`.
