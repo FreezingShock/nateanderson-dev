@@ -382,50 +382,54 @@ export function FilterPanel({
 }) {
     const toggle = toggleIn;
     return (
-            <div className="mb-3 space-y-2 rounded-[2px] border border-border/50 bg-foreground/5 p-3">
-                        <div className="flex flex-wrap items-center gap-1.5">
-                            <span className="w-20 font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
+            <div className="gk-filters mb-3 space-y-2 rounded-[2px] border border-border/50 bg-foreground/5 p-3">
+                        <div className="gk-row flex flex-wrap items-center gap-1.5">
+                            <span className="gk-label w-20 font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
                                 Difficulty
                             </span>
-                            {DIFFICULTIES.map((d) => {
-                                const on = difficulties.includes(d.id);
-                                return (
-                                    <button
-                                        key={d.id}
-                                        type="button"
-                                        aria-pressed={on}
-                                        onClick={() =>
-                                            onChange(toggle(difficulties, d.id), regions)
-                                        }
-                                        className="cm-chip"
-                                    >
-                                        <span className="dot" style={{ background: on ? "currentColor" : d.color }} />
-                                        {d.label}
-                                    </button>
-                                );
-                            })}
+                            <div className="gk-strip">
+                                {DIFFICULTIES.map((d) => {
+                                    const on = difficulties.includes(d.id);
+                                    return (
+                                        <button
+                                            key={d.id}
+                                            type="button"
+                                            aria-pressed={on}
+                                            onClick={() =>
+                                                onChange(toggle(difficulties, d.id), regions)
+                                            }
+                                            className="cm-chip"
+                                        >
+                                            <span className="dot" style={{ background: on ? "currentColor" : d.color }} />
+                                            {d.label}
+                                        </button>
+                                    );
+                                })}
+                            </div>
                         </div>
-                        <div className="flex flex-wrap items-center gap-1.5">
-                            <span className="w-20 font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
+                        <div className="gk-row flex flex-wrap items-center gap-1.5">
+                            <span className="gk-label w-20 font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
                                 Region
                             </span>
-                            {REGIONS.map((r) => {
-                                const on = regions.includes(r.id);
-                                return (
-                                    <button
-                                        key={r.id}
-                                        type="button"
-                                        aria-pressed={on}
-                                        onClick={() =>
-                                            onChange(difficulties, toggle(regions, r.id))
-                                        }
-                                        className="cm-chip"
-                                    >
-                                        <span className="dot" style={{ background: on ? "currentColor" : r.color }} />
-                                        {r.label}
-                                    </button>
-                                );
-                            })}
+                            <div className="gk-strip">
+                                {REGIONS.map((r) => {
+                                    const on = regions.includes(r.id);
+                                    return (
+                                        <button
+                                            key={r.id}
+                                            type="button"
+                                            aria-pressed={on}
+                                            onClick={() =>
+                                                onChange(difficulties, toggle(regions, r.id))
+                                            }
+                                            className="cm-chip"
+                                        >
+                                            <span className="dot" style={{ background: on ? "currentColor" : r.color }} />
+                                            {r.label}
+                                        </button>
+                                    );
+                                })}
+                            </div>
                         </div>
                         <div className="flex items-center justify-between font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
                             <span>
