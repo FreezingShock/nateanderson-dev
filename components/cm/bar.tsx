@@ -86,6 +86,12 @@ export function Dock() {
     const path = usePathname();
     const [next, setNext] = useState<string | null>(null);
     useEffect(() => setNext(null), [path]);
+    // Never let the plate stay on a tab the route didn't reach (error, offline, cancelled transition).
+    useEffect(() => {
+        if (!next) return;
+        const t = window.setTimeout(() => setNext(null), 7000);
+        return () => window.clearTimeout(t);
+    }, [next]);
 
     const target = next ?? path;
     const idx = navItems.findIndex((n) => isActive(target, n.href));
@@ -100,7 +106,7 @@ export function Dock() {
                         href={n.href}
                         aria-current={isActive(path, n.href) ? "page" : undefined}
                         data-on={isActive(target, n.href) ? "" : undefined}
-                        onClick={() => setNext(n.href)}
+                        onClick={() => setNext(isActive(path, n.href) ? null : n.href)}
                     >
                         <Icon className="ic" aria-hidden="true" strokeWidth={1.75} />
                         <span>{n.label}</span>

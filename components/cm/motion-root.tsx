@@ -35,11 +35,19 @@ function labelFor(path: string): string {
  * Internal link clicks and launcher jumps let the current page slide out along the direction of travel, swap the
  * route, then bring the new page in from the other side; its hero and reveals start as it arrives.
  */
+type Phase = "idle" | "out" | "hold" | "in";
+
 export function MotionRoot() {
     const path = usePathname();
     const router = useRouter();
-    const busy = useRef(false);
-    const waiting = useRef<{ from: string; timer: number } | null>(null);
+    // One small state machine; the latest click always wins:
+    //   idle -> out (page leaves) -> hold (route loading, page hidden) -> in (page arrives) -> idle
+    const st = useRef<{ phase: Phase; target: string; timer: number; safety: number }>({
+        phase: "idle",
+        target: "",
+        timer: 0,
+        safety: 0,
+    });
     const first = useRef(true);
 
     // Engine + boot cleanup.
@@ -52,24 +60,33 @@ export function MotionRoot() {
         };
     }, []);
 
+    const reset = useRef(() => {});
+    reset.current = () => {
+        const s = st.current;
+        window.clearTimeout(s.timer);
+        window.clearTimeout(s.safety);
+        const doc = document.documentElement;
+        doc.removeAttribute("data-xition");
+        doc.removeAttribute("data-xin");
+        doc.removeAttribute("data-dir");
+        s.phase = "idle";
+    };
+
     const arrive = useRef(() => {});
     arrive.current = () => {
-        const w = waiting.current;
-        if (!w) return;
-        window.clearTimeout(w.timer);
-        waiting.current = null;
+        const s = st.current;
+        if (s.phase !== "hold") return;
+        window.clearTimeout(s.safety);
         const doc = document.documentElement;
+        if (!location.hash) window.scrollTo({ top: 0, left: 0, behavior: "instant" });
         // One tick: lift the hold (entrances start) and start the page-in animation together.
         doc.setAttribute("data-xin", "");
         doc.removeAttribute("data-xition");
-        window.setTimeout(() => {
-            doc.removeAttribute("data-xin");
-            doc.removeAttribute("data-dir");
-            busy.current = false;
-        }, 700);
+        s.phase = "in";
+        s.timer = window.setTimeout(() => reset.current(), 650);
     };
 
-    // The route actually changed: let the new page mount a frame, then bring it in.
+    // The route changed. If it is the one we are waiting for, bring the page in.
     useEffect(() => {
         if (first.current) {
             first.current = false;
@@ -77,8 +94,11 @@ export function MotionRoot() {
         }
         markNavigation();
         scan(document);
-        const w = waiting.current;
-        if (!w || w.from === path) return;
+        const s = st.current;
+        if (s.phase !== "hold") return;
+        if (new URL(s.target, location.href).pathname !== path) return; // an earlier click's page: keep waiting
+        // Hidden still: go to the top now (Next's own scroll runs mid-transform and can land anywhere).
+        if (!location.hash) window.scrollTo({ top: 0, left: 0, behavior: "instant" });
         const r = requestAnimationFrame(() => arrive.current());
         return () => cancelAnimationFrame(r);
     }, [path]);
@@ -86,24 +106,45 @@ export function MotionRoot() {
     // Click interception + launcher jumps.
     useEffect(() => {
         const reduce = prefersReducedMotion();
-        const go = async (href: string) => {
-            if (busy.current) return false;
+        const s = st.current;
+
+        const toHold = () => {
+            if (s.phase !== "out") return;
+            s.phase = "hold";
+            document.documentElement.setAttribute("data-xition", "hold");
+            router.push(s.target);
+            // If the route never commits (offline, error), don't leave the user on a blank page.
+            s.safety = window.setTimeout(() => arrive.current(), 6000);
+        };
+
+        /** Start or retarget a transition. The most recent call wins. Returns false if it left the click alone. */
+        const go = (href: string): boolean => {
             const url = new URL(href, location.href);
-            if (url.origin !== location.origin || url.pathname === location.pathname) return false;
-            busy.current = true;
+            if (url.origin !== location.origin) return false;
+            const target = url.pathname + url.search + url.hash;
+            const here = url.pathname === location.pathname;
+            if (here && s.phase === "idle") return false; // same page / #hash: plain Next behaviour
             const doc = document.documentElement;
-            doc.setAttribute("data-dir", direction(location.pathname, url.pathname));
-            doc.setAttribute("data-xition", "out");
-            markNavigation();
-            // Let the current page leave (170ms), then swap the route underneath it.
-            await new Promise((r) => window.setTimeout(r, 170));
-            doc.setAttribute("data-xition", "hold");
-            waiting.current = {
-                from: location.pathname,
-                // If the route never commits (offline, error), don't leave the user on a blank page.
-                timer: window.setTimeout(() => arrive.current(), 6000),
-            };
-            router.push(url.pathname + url.search + url.hash);
+
+            if (s.phase === "in") reset.current(); // interrupt the arrival, start over from the live page
+            s.target = target;
+
+            if (s.phase === "idle") {
+                doc.setAttribute("data-dir", direction(location.pathname, url.pathname));
+                doc.setAttribute("data-xition", "out");
+                s.phase = "out";
+                markNavigation();
+                s.timer = window.setTimeout(toHold, 170);
+                return true;
+            }
+            if (s.phase === "out") {
+                if (here) return reset.current(), true; // clicked back onto the page we are still on: cancel
+                doc.setAttribute("data-dir", direction(location.pathname, url.pathname));
+                return true; // toHold will push the newest target
+            }
+            // hold: a route is loading. Point it at the newest target.
+            router.push(target);
+            if (here) arrive.current(); // back onto the page already showing: nothing to wait for
             return true;
         };
 
@@ -113,22 +154,19 @@ export function MotionRoot() {
             const a = e.target.closest<HTMLAnchorElement>("a[href]");
             if (!a || (a.target && a.target !== "_self") || a.hasAttribute("download") || a.closest("[data-no-curtain]")) return;
             const url = new URL(a.href, location.href);
-            if (url.origin !== location.origin || url.pathname === location.pathname) return;
-            e.preventDefault(); // next/link sees defaultPrevented and leaves the navigation to us
-            if (!busy.current) void go(url.pathname + url.search + url.hash);
+            if (url.origin !== location.origin) return;
+            if (go(url.pathname + url.search + url.hash)) e.preventDefault(); // next/link then leaves it to us
         };
         const onNav = (e: Event) => {
             const href = (e as CustomEvent<string>).detail;
-            if (reduce) return router.push(href);
-            void go(href).then((ok) => {
-                if (!ok) router.push(href);
-            });
+            if (reduce || !go(href)) router.push(href);
         };
         if (!reduce) document.addEventListener("click", onClick, true);
         window.addEventListener(NAV_EVENT, onNav);
         return () => {
             document.removeEventListener("click", onClick, true);
             window.removeEventListener(NAV_EVENT, onNav);
+            reset.current();
         };
     }, [router]);
 
