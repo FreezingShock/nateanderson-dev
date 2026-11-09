@@ -40,7 +40,7 @@
 .about .about-id {
     position: relative;
     z-index: 2;
-    background: #141414;
+    background: var(--cm-ctos-panel);
     border: 1px solid var(--cm-hair-hi);
     border-left: 3px solid var(--cm-cyan);
 }
@@ -77,13 +77,13 @@
     align-items: center;
     gap: 6px 14px;
     padding: 12px 14px;
-    background: #131313;
+    background: var(--cm-ctos-panel);
     border: 1px solid var(--cm-hair-hi);
     border-left: 3px solid var(--cm-cyan);
-    font: 500 14px/1.4 var(--cm-display);
+    font: 500 var(--cm-ctos-t-body)/1.4 var(--cm-display);
     letter-spacing: -.01em;
 }
-.about .about-flag .cm-note { font-size: 12px; }
+.about .about-flag .cm-note { font-size: var(--cm-ctos-t-small); }
 
 /* ---- Story: lede typed by scroll, then a panel that names the three verbs ------------------------------------------ */
 .about .about-story { display: grid; gap: var(--cm-s6); align-items: start; }
@@ -106,13 +106,13 @@
 }
 .about .about-verbs > div:first-child { border-top: 0; }
 .about .about-verbs dt {
-    font: 700 10px/1.2 var(--cm-mono);
+    font: 700 var(--cm-ctos-t-tag)/1.2 var(--cm-mono);
     letter-spacing: .16em;
     text-transform: uppercase;
     color: var(--cm-cyan);
 }
 .about .about-verbs dd { margin: 0; font: 700 19px/1.15 var(--cm-display); letter-spacing: -.03em; text-transform: lowercase; }
-.about .about-verbs small { display: block; margin-top: 5px; font: 400 13px/1.45 var(--cm-display); letter-spacing: 0; text-transform: none; color: var(--cm-mute); }
+.about .about-verbs small { display: block; margin-top: 5px; font: 400 var(--cm-ctos-t-body)/1.45 var(--cm-display); letter-spacing: 0; text-transform: none; color: var(--cm-mute); }
 @media (min-width: 900px) {
     .about .about-story { grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); }
 }
