@@ -6,6 +6,7 @@ import { ReadingGauge } from "@/components/blog-reading-gauge";
 import { EssayView, PoemView, QuoteView } from "@/components/blog-post-views";
 import { getPost, getPostNeighbours, getPostRoutes } from "@/lib/blog";
 import { POST_KIND_LABEL, bodyWordCount, poemLineCount } from "@/lib/blog-types";
+import { SITE_NAME } from "@/lib/seo";
 import "./post.css";
 
 export const dynamicParams = false;
@@ -24,15 +25,17 @@ export async function generateMetadata({
     if (!route) return { title: "Post not found" };
     const { post } = route;
     const isDraft = post.status === "draft";
+    const fullTitle = `${post.title} · ${SITE_NAME}`;
     return {
         title: post.title,
         description: post.excerpt,
         openGraph: {
             type: "article",
-            title: post.title,
+            title: fullTitle,
             description: post.excerpt,
             url: `/blog/${slug}`,
         },
+        twitter: { card: "summary_large_image", title: fullTitle, description: post.excerpt },
         // Drafts stay reachable for review but are kept out of search results.
         robots: isDraft ? { index: false, follow: false } : undefined,
     };
