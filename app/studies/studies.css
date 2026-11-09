@@ -22,3 +22,119 @@
 /* List that is itself the panel body: keep the panel's padding, indent only for the markers. */
 .st-list.cm-body-pad { padding: 12px 14px 12px 32px; }
 @media (max-width: 900px) { .st-split, .st-split.even { grid-template-columns: 1fr; } }
+
+/* ==========================================================================
+   naOS on Studies (index and class pages). Page-only rules: every selector is scoped to `.ctos.st-page`, the
+   wrapper both pages render, so the shared naOS layer (app/camino/ctos.css) and sibling pages are untouched.
+   ========================================================================== */
+
+/* Header: halftone plane and magenta guide lines, the homepage hero treatment, scoped to this page. */
+.ctos.st-page .cm-head { position: relative; overflow: hidden; }
+.ctos.st-page .cm-head > .cm-grid-bg {
+  background-image: radial-gradient(circle at center, rgba(244, 244, 242, .55) 0 28%, transparent 32%);
+  background-size: 5px 5px;
+  -webkit-mask-image: linear-gradient(100deg, transparent 8%, #000 100%);
+  mask-image: linear-gradient(100deg, transparent 8%, #000 100%);
+  opacity: .28;
+}
+.ctos.st-page .cm-head::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  opacity: .45;
+  background:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100' preserveAspectRatio='none'%3E%3Cpath d='M0 8 L100 82 M0 96 L100 14' stroke='%23c23bd0' stroke-width='1' fill='none' vector-effect='non-scaling-stroke'/%3E%3C/svg%3E")
+    center / 100% 100% no-repeat;
+}
+.ctos.st-page .cm-head > .cm-wrap { position: relative; z-index: 1; }
+
+/* Status card under the lead: the school year as an ID card (reuses the homepage id-* parts). */
+.ctos.st-page .st-id {
+  position: relative;
+  margin-top: var(--cm-s6);
+  max-width: 640px;
+  background: #141414;
+  border: 1px solid var(--cm-hair-hi);
+  border-left: 3px solid var(--cm-cyan);
+}
+.ctos.st-page .st-id::before, .ctos.st-page .st-id::after { content: ""; position: absolute; width: 14px; height: 14px; border: 0 solid var(--cm-ctos-block); pointer-events: none; }
+.ctos.st-page .st-id::before { right: -1px; top: -1px; border-top-width: 2px; border-right-width: 2px; }
+.ctos.st-page .st-id::after { left: -3px; bottom: -1px; border-bottom-width: 2px; border-left-width: 2px; }
+.ctos.st-page .st-id-main { display: grid; grid-template-columns: 74px minmax(0, 1fr); gap: 16px; padding: 16px 14px 12px; align-items: start; }
+.ctos.st-page .st-id .id-rows dd { font-size: 14px; }
+@media (max-width: 520px) { .ctos.st-page .st-id-main { grid-template-columns: 58px minmax(0, 1fr); gap: 12px; } .ctos.st-page .st-id .id-badge { width: 58px; height: 74px; } .ctos.st-page .st-id .id-badge b { font-size: 34px; } }
+
+/* Panel headers are already white bars (Camino paper); ink text and cyan markers keep them on-system. */
+.ctos.st-page .cm-hbar { padding: 9px 14px; }
+.ctos.st-page .cm-hbar > :last-child { color: #4a4a47; }
+.ctos.st-page .st-hbar-end > span:not(.st-ap) { color: #4a4a47; }
+
+/* Title blocks: course and program names sit on a white block, lowercase heavy grotesk, like the page titles. */
+.ctos.st-page .st-tt {
+  display: inline;
+  background: var(--cm-ctos-block);
+  color: var(--cm-ctos-ink);
+  font-weight: 800;
+  letter-spacing: -.04em;
+  line-height: 1.04;
+  text-transform: lowercase;
+  padding: .02em .2em .12em .08em;
+  box-decoration-break: clone;
+  -webkit-box-decoration-break: clone;
+}
+.ctos.st-page .cm-h3 { letter-spacing: -.02em; }
+
+/* Course cards: three treatments in rotation so the grid never reads as one repeated panel. */
+.ctos.st-page .st-courses > .cm-panel:nth-child(3n+2) {
+  border: 1px solid var(--cm-hair-hi);
+  border-top: 3px solid var(--cm-cyan);
+  background: linear-gradient(180deg, rgba(47, 216, 232, .1), rgba(47, 216, 232, 0) 55%), #151515;
+}
+.ctos.st-page .st-courses > .cm-panel:nth-child(3n) {
+  border: 1px dashed var(--cm-hair-hi);
+  background-color: #111;
+  background-image: radial-gradient(circle, rgba(244, 244, 242, .12) 0 28%, transparent 32%);
+  background-size: 6px 6px;
+}
+.ctos.st-page .st-courses > .cm-panel:nth-child(3n) .cm-body-pad { background: rgba(17, 17, 17, .9); }
+.ctos.st-page .st-courses .cm-body-pad { gap: 12px; }
+
+/* Lists: cyan square markers, dim body text (the Status card's signal colour). */
+.ctos.st-page .st-list li { color: var(--cm-mute); }
+.ctos.st-page .st-list li::marker { color: var(--cm-cyan); }
+
+/* Pathway and tool stages: the current stage reads as the live one. */
+.ctos.st-page .cm-rail > li::before { border-color: var(--cm-hair-hi); }
+.ctos.st-page .cm-rail > li.now::before { box-shadow: 0 0 0 4px rgba(47, 216, 232, .18); }
+
+/* Class page: facts strip, countdown and tiles. */
+.ctos.st-page .st-fact { font: 800 20px/1.12 var(--cm-display); letter-spacing: -.03em; }
+.ctos.st-page .st-count {
+  display: inline-block;
+  background: var(--cm-ctos-block);
+  color: var(--cm-ctos-ink);
+  font: 800 72px/.86 var(--cm-display);
+  letter-spacing: -.06em;
+  padding: .06em .14em .14em .08em;
+}
+.ctos.st-page .st-tile {
+  position: relative;
+  padding: 12px 14px;
+  border: 1px dashed var(--cm-hair-hi);
+  border-left: 3px solid var(--cm-ctos-block);
+  background: rgba(244, 244, 242, .03);
+}
+.ctos.st-page .st-tile .cm-body { color: var(--cm-fg); }
+.ctos.st-page .st-nav { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 10px; }
+.ctos.st-page .st-nav .cta-b { min-height: 56px; width: 100%; }
+.ctos.st-page .st-nav .cta-b span:not(.sr-only) { min-width: 0; overflow-wrap: anywhere; white-space: normal; }
+
+@media (max-width: 760px) {
+  .ctos.st-page .st-courses > .cm-panel:nth-child(3n) { border-style: dashed; }
+  .ctos.st-page .cm-head::after { opacity: .3; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ctos.st-page .cm-head::after { opacity: .3; }
+}
