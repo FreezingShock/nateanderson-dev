@@ -3,7 +3,7 @@ import { Fragment, type CSSProperties, type ElementType, type ReactNode } from "
 // Server-safe motion primitives. They only emit markup (data attributes + per-character spans); the engine in
 // lib/motion/engine.ts (started once by <MotionRoot/>) does the work. See MOTION.md for the full recipe.
 
-export type RevealVariant = "rise" | "slide" | "slide-r" | "scale" | "wipe" | "line" | "fade";
+export type RevealVariant = "slab" | "rise" | "slide" | "slide-r" | "scale" | "wipe" | "line" | "fade";
 
 /** Props for a plain element that should reveal once on scroll. Spread onto any tag. */
 export function mx(variant: RevealVariant = "rise", delay?: number) {
@@ -52,6 +52,46 @@ export function ScrollType({
                 ))}
             </span>
         </Tag>
+    );
+}
+
+/**
+ * Mono text that decodes out of random glyphs (left to right) when it scrolls into view. The real text is in a
+ * visually hidden copy, so screen readers and no-JS see it untouched. `hover` re-runs it on pointer hover.
+ */
+export function Scramble({
+    text,
+    as: Tag = "span",
+    className = "",
+    delay,
+    hover = false,
+}: {
+    text: string;
+    as?: ElementType;
+    className?: string;
+    /** ms before it starts, once in view */
+    delay?: number;
+    hover?: boolean;
+}) {
+    return (
+        <Tag className={className || undefined} {...(hover ? { "data-scr-hover": "" } : {})}>
+            <span className="sr-only">{text}</span>
+            <span aria-hidden="true" data-mx-scr="" data-scr-text="" {...(delay ? { "data-mx-scr-d": String(delay) } : {})}>
+                {text}
+            </span>
+        </Tag>
+    );
+}
+
+/**
+ * Heading text that slides up out of a mask while a solid block sweeps across behind it (the ctOS title-card
+ * move). Wrap the text; put `data-mx="slab"` on the heading tag. `tone` picks the block colour.
+ */
+export function Slab({ children, tone = "paper" }: { children: ReactNode; tone?: "cyan" | "paper" }) {
+    return (
+        <span className={`sl ${tone}`}>
+            <span className="sl-t">{children}</span>
+        </span>
     );
 }
 

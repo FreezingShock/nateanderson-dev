@@ -1,6 +1,6 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
-import { ScrollType } from "@/components/cm/motion";
+import { ScrollType, Scramble, Slab } from "@/components/cm/motion";
 
 /** Inner-page header: mono label, highlight-bar title (first bar black, rest cyan), lead, optional actions. */
 export function PageHead({
@@ -56,6 +56,7 @@ export function Section({
     more,
     children,
     className = "",
+    ctos = false,
 }: {
     id?: string;
     no?: string;
@@ -65,6 +66,8 @@ export function Section({
     more?: { href: string; label: string };
     children: ReactNode;
     className?: string;
+    /** ctOS treatment: scrambled label and slab-reveal heading. Opt-in per page. */
+    ctos?: boolean;
 }) {
     return (
         <section className={`cm-section ruled ${className}`.trim()} id={id}>
@@ -72,8 +75,18 @@ export function Section({
             <div className="cm-wrap" data-mx-stagger="">
                 <div className="cm-sec-head">
                     <div>
-                        <span className="cm-lbl">{no ? `${no} / ${label}` : label}</span>
-                        <h2 className="cm-h2">{title}</h2>
+                        {ctos ? (
+                            <Scramble className="cm-lbl" text={no ? `${no} / ${label}` : label} />
+                        ) : (
+                            <span className="cm-lbl">{no ? `${no} / ${label}` : label}</span>
+                        )}
+                        {ctos ? (
+                            <h2 className="cm-h2" data-mx="slab">
+                                <Slab>{title}</Slab>
+                            </h2>
+                        ) : (
+                            <h2 className="cm-h2">{title}</h2>
+                        )}
                         {blurb &&
                             (typeof blurb === "string" ? (
                                 <ScrollType text={blurb} className="cm-body" style={{ margin: 0 }} />

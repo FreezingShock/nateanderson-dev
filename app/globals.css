@@ -4,6 +4,7 @@
 @import "./camino/site.css";
 @import "./camino/motion.css";
 @import "./camino/games.css";
+@import "./camino/ctos.css";
 
 @plugin "tailwindcss-animate";
 

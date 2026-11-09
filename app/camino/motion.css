@@ -66,6 +66,29 @@
   animation: cm-blink .9s steps(2) infinite;
 }
 
+/* ---- 2b. Slab reveal and highlight-bar text rise (ctOS title-card move) -----------------------------------------
+   Slab: the heading text slides up out of a mask while a solid block sweeps in from the left and exits to the
+   right, uncovering it. Highlight bars (page titles) keep their wipe and the text inside rises through the bar. */
+[data-mx="slab"]:not([data-in]) { opacity: 1; transform: none; }
+.sl { position: relative; display: inline-block; overflow: hidden; vertical-align: top; padding: 0 .04em .1em 0; margin-bottom: -.1em; }
+.sl-t { display: inline-block; transform: translate3d(0, 112%, 0); }
+.sl::after { content: ""; position: absolute; inset: 0 0 .1em 0; background: var(--cm-cyan); transform: scaleX(0); transform-origin: left center; pointer-events: none; }
+.sl.paper::after { background: var(--cm-paper); }
+[data-mx="slab"][data-in] .sl-t { animation: cm-slab-text .62s var(--cm-ease-out) calc(var(--d, 0ms) + .26s) both; }
+[data-mx="slab"][data-in] .sl::after { animation: cm-slab-block .72s var(--cm-ease-cut) var(--d, 0ms) both; }
+@keyframes cm-slab-text { from { transform: translate3d(0, 112%, 0); } to { transform: none; } }
+@keyframes cm-slab-block {
+  0% { transform: scaleX(0); transform-origin: left center; }
+  48% { transform: scaleX(1); transform-origin: left center; }
+  52% { transform: scaleX(1); transform-origin: right center; }
+  100% { transform: scaleX(0); transform-origin: right center; }
+}
+.cm-highlight .hx { display: block; animation: cm-hx-rise .6s var(--cm-ease-out) .24s backwards; }
+.cm-highlight > :nth-child(2) .hx { animation-delay: .32s; } .cm-highlight > :nth-child(3) .hx { animation-delay: .4s; }
+@keyframes cm-hx-rise { from { transform: translate3d(0, 110%, 0); } }
+html[data-boot="full"] .cm-highlight .hx, html[data-boot="quick"] .cm-highlight .hx, html[data-xition="hold"] .cm-highlight .hx { animation: none; transform: translate3d(0, 110%, 0); }
+[data-mx-scr] { white-space: pre-wrap; }
+
 /* ---- 3. Entrance stage: hero and page-head children arrive one after another ---------------------------------- */
 .cm-stage > * { animation: cm-stage-in .8s var(--cm-ease-out) backwards; animation-delay: calc(var(--s, 0) * 80ms); }
 .cm-stage > :nth-child(2) { --s: 1; } .cm-stage > :nth-child(3) { --s: 2; } .cm-stage > :nth-child(4) { --s: 3; }
@@ -167,6 +190,7 @@ html[data-boot="quick"] .cm-boot .pb { animation: cm-shutter-down .36s var(--cm-
 @media (scripting: none) {
   html [data-mx]:not([data-in]), html [data-mx-stagger] > :where(*):not([data-in]):not(:has([data-mx])) { opacity: 1; transform: none; clip-path: none; }
   .cm-type { --n: 9999; }
+  .sl-t { transform: none; }
   .cm-stage > * { animation: none; }
   .cm-boot { display: none; }
 }
@@ -177,6 +201,9 @@ html[data-boot="quick"] .cm-boot .pb { animation: cm-shutter-down .36s var(--cm-
   .cm-type .c[data-cur]::after { display: none; }
   .cm-stage > *, .cm-hero .cm-tag, .cm-hero .cm-read.float, .cm-hero .ring, .cm-head > .cm-grid-bg, .cm-hero > .cm-grid-bg { animation: none; }
   [data-mx-par] { translate: none; }
+  .sl-t { transform: none; animation: none !important; }
+  .sl::after { display: none; }
+  .cm-highlight .hx { animation: none; }
   .cm-boot { display: none !important; }
   .cm-pgauge { transition: none; }
 }
