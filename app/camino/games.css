@@ -158,3 +158,9 @@
 @media (prefers-reduced-motion: reduce) {
     .cb-roll, .cb-dice-spin { animation: none; }
 }
+
+/* ---- Guess input: 16px on touch so iOS Safari doesn't zoom the page on focus ---- */
+.cm input[role="combobox"] { font-size: 16px; }
+@media (pointer: fine) {
+    .cm input[role="combobox"] { font-size: 15px; }
+}

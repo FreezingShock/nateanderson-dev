@@ -11,11 +11,9 @@ export const revalidate = 60;
 export default async function CreationsPage() {
     const [projects, renovations] = await Promise.all([getProjects(), getRecentRenovations()]);
     const games = allGames();
-    const playable = games.filter((g) => g.status === "playable").length;
 
     const stats = [
         { label: "Web app games", value: games.length },
-        { label: "Playable now", value: playable },
         { label: "Projects", value: projects.length },
         { label: "Renovations", value: renovations.length },
         { label: "Art collections", value: ART_COLLECTIONS.length },
@@ -61,9 +59,9 @@ export default async function CreationsPage() {
             <Section
                 id="roadmap"
                 no="04"
-                label="Game roadmap"
-                title="The plan for games on this site."
-                blurb="Mode by mode. Each links to its full list."
+                label="Game modes"
+                title="Two ways to play."
+                blurb="A daily puzzle and an unlimited practice mode. Each links to its games."
             >
                 <div className="cm-grid">
                     {GAME_MODES.map((m, i) => {
@@ -78,7 +76,7 @@ export default async function CreationsPage() {
                                     </div>
                                     <b>{m.title}</b>
                                     <p>{m.tagline}</p>
-                                    <span className="st">{m.games.length} planned or playable</span>
+                                    <span className="st">{m.games.length} {m.games.length === 1 ? "game" : "games"}</span>
                                 </Link>
                             </Reveal>
                         );

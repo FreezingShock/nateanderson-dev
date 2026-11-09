@@ -1,8 +1,6 @@
 import {
     Brush,
-    Building2,
     CalendarDays,
-    Castle,
     Code2,
     Flag,
     Gamepad2,
@@ -11,20 +9,14 @@ import {
     Map,
     Palette,
     Pencil,
-    Repeat,
-    Sprout,
-    Type,
     Boxes,
-    TrendingUp,
-    Landmark,
     type LucideIcon,
 } from "lucide-react";
 
 // Everything on the Creations pages that isn't a Supabase project row.
 // Server-only: icons are component references, which can't cross into
 // client components (the pages render them as elements).
-// Titles and blurbs for games and artwork are WORKING PLACEHOLDERS: edit
-// them here and every page updates.
+// Edit titles and blurbs here and every page updates.
 
 export interface CreationCategory {
     id: "games" | "projects" | "renovations" | "artwork";
@@ -150,14 +142,6 @@ export const GAME_MODES: GameMode[] = [
         about: "A new puzzle every day at midnight Pacific. Guess, share your result, come back tomorrow. Streaks and stats stay in your browser.",
         games: [
             {
-                slug: "daily-word",
-                title: "Daily Word",
-                status: "planned",
-                icon: Type,
-                blurb: "A Wordle-style five-letter word, with a site-themed twist.",
-                features: ["6 guesses", "Streak tracking", "Shareable result grid"],
-            },
-            {
                 slug: "daily-outline",
                 title: "Daily Outline",
                 status: "playable",
@@ -202,58 +186,6 @@ export const GAME_MODES: GameMode[] = [
                 blurb: "Endless country outlines: every country, island and territory, with arrows, distances, hints and a give-up button.",
                 features: ["Hints and give up", "km or miles", "Stats"],
                 href: "/creations/games/outline-guesser",
-            },
-            {
-                slug: "capital-quiz",
-                title: "Capital Quiz",
-                status: "planned",
-                icon: Landmark,
-                blurb: "Match capitals to countries at speed.",
-                features: ["Multiple choice and typed", "Continent packs"],
-            },
-        ],
-    },
-    {
-        id: "incremental",
-        title: "Incremental Progression Games",
-        color: "var(--cm-violet)",
-        icon: Repeat,
-        tagline: "Numbers go up, systems unlock, progress persists.",
-        about: "Slow-burn progression games that live on this site. Come back, collect, upgrade, prestige. The long-term goal is a small universe of connected incremental games sharing one save.",
-        games: [
-            {
-                slug: "eco-loop",
-                title: "Eco Loop",
-                status: "planned",
-                icon: Sprout,
-                blurb: "Restore a dead landscape one system at a time: soil, water, plants, wildlife.",
-                features: ["Interlocking resource loops", "Environmental engineering themes"],
-            },
-        ],
-    },
-    {
-        id: "tycoon",
-        title: "Tycoon Games",
-        color: "var(--cm-amber)",
-        icon: TrendingUp,
-        tagline: "Build it, run it, balance the books.",
-        about: "Management games where economy and design decisions compound. Planned to borrow from real renovation and civil-engineering ideas.",
-        games: [
-            {
-                slug: "green-city",
-                title: "Green City Tycoon",
-                status: "planned",
-                icon: Building2,
-                blurb: "Grow a city without wrecking the watershed.",
-                features: ["Zoning and utilities", "Sustainability score"],
-            },
-            {
-                slug: "reno-tycoon",
-                title: "Renovation Tycoon",
-                status: "planned",
-                icon: Castle,
-                blurb: "Buy, redesign and flip run-down spaces into thriving ones.",
-                features: ["Budget vs. vision", "Ties to the renovation studies"],
             },
         ],
     },
