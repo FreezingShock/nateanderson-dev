@@ -1,6 +1,6 @@
 "use client";
 
-import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { memo, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { Collapse } from "@/components/collapse";
 import { Meter } from "@/components/cm/ui";
 import { useActiveSection } from "@/lib/use-active-section";
@@ -29,6 +29,13 @@ const STATUS_LABEL: Record<EventStatus, string> = {
 
 const CATEGORY_KEYS = Object.keys(CATEGORIES) as Category[];
 
+// A phase is "live" when today falls inside it. Only live phases start expanded; past and future phases start
+// collapsed and mount their milestones the first time they are opened, which keeps the first paint small.
+const isLivePhase = (phase: TimelinePhaseData, nowMs: number) => {
+    const p = progressBetween(phase.start, phase.end, nowMs);
+    return p > 0 && p < 1;
+};
+
 interface EventRowProps {
     event: TimelineEventData;
     status: EventStatus;
@@ -42,6 +49,9 @@ const EventRow = memo(function EventRow({ event, status, open, onToggle }: Event
     const detailsId = `${event.id}-details`;
     const live = status === "now";
     const state = status === "now" ? "now" : status === "done" ? "done" : "";
+    // Detail panels mount the first time they open and then stay mounted, so closing keeps its animation.
+    const [detailsSeen, setDetailsSeen] = useState(open);
+    if (open && !detailsSeen) setDetailsSeen(true);
 
     const header = (
         <>
@@ -96,7 +106,7 @@ const EventRow = memo(function EventRow({ event, status, open, onToggle }: Event
                         </div>
                     )}
 
-                    {hasDetails && (
+                    {hasDetails && (open || detailsSeen) && (
                         <Collapse open={open} id={detailsId}>
                             <ul style={{ margin: 0, padding: "12px 0 0 18px", display: "grid", gap: 6, borderTop: "1px solid var(--cm-hair)" }}>
                                 {event.details!.map((detail) => (
@@ -137,9 +147,31 @@ export function TimelineExplorer({
                 initial[e.id] = statuses[e.id] === "now" && e.type === "major";
         return initial;
     });
+    // Past and future phases start collapsed (see isLivePhase). Same clock on the server and the client, so the
+    // first HTML matches what hydrates.
     const [collapsedPhases, setCollapsedPhases] = useState<
         Record<string, boolean>
-    >({});
+    >(() =>
+        Object.fromEntries(
+            phases.filter((p) => !isLivePhase(p, nowMs)).map((p) => [p.id, true])
+        )
+    );
+    // Phases whose milestones have been mounted at least once. Live phases are mounted from the first render, so
+    // the server HTML still contains them and deep links work without JS.
+    const [seenPhases, setSeenPhases] = useState<Record<string, boolean>>(() =>
+        Object.fromEntries(
+            phases.filter((p) => isLivePhase(p, nowMs)).map((p) => [p.id, true])
+        )
+    );
+    useLayoutEffect(() => {
+        setSeenPhases((s) => {
+            const fresh = phases.filter((p) => !collapsedPhases[p.id] && !s[p.id]);
+            if (fresh.length === 0) return s;
+            const next = { ...s };
+            for (const p of fresh) next[p.id] = true;
+            return next;
+        });
+    }, [collapsedPhases, phases]);
     const [milestonesOnly, setMilestonesOnly] = useState(false);
     const [hiddenCats, setHiddenCats] = useState<
         Partial<Record<Category, boolean>>
@@ -342,7 +374,7 @@ export function TimelineExplorer({
                 </div>
             </div>
 
-            <div style={{ display: "grid", gap: 56 }}>
+            <div className="tl-phases" style={{ display: "grid", gap: 56 }}>
                 {phases.map((phase, pi) => {
                     const collapsed = !!collapsedPhases[phase.id];
                     const events = visibleByPhase[phase.id];
@@ -386,7 +418,7 @@ export function TimelineExplorer({
 
                             <Collapse open={!collapsed} className="" id={`${phase.id}-events`}>
                                 <div style={{ paddingTop: 24 }}>
-                                    {events.length === 0 ? (
+                                    {!seenPhases[phase.id] ? null : events.length === 0 ? (
                                         <p className="cm-body" style={{ border: "1px dashed var(--cm-hair-hi)", padding: 20, textAlign: "center", margin: 0 }}>
                                             Nothing in this phase matches the current filters.
                                         </p>
