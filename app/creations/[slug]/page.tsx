@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import { getProjectBySlug, getAllProjectSlugs, statusLabel } from "@/lib/content";
-import { categoryById } from "@/lib/creations-data";
+import { PROJECT_GALLERY, PROJECT_LINKS, categoryById } from "@/lib/creations-data";
 import { CreationsHead, IdCard } from "@/components/creations-sections";
 import { pageMeta } from "@/lib/seo";
 
@@ -21,8 +21,9 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
 
 const tone = { active: "live", planning: "warn", idea: "" } as const;
 
-// Individual project / renovation page: the naOS title block, a hatched plate with the status tag and icon, then a
-// status card (the file) beside a detail sheet with the tags and the outbound link.
+// Individual project / renovation page, laid out as a case study. When the project has screenshots (PROJECT_GALLERY),
+// the first one is the large lead image and the rest form a gallery; otherwise the hatched plate stands in. A detail
+// sheet with the tags and the outbound link sits beside the status card, as before.
 export default async function ProjectPage({ params }: { params: Promise<{ slug: string }> }) {
     const { slug } = await params;
     const project = await getProjectBySlug(slug);
@@ -31,6 +32,10 @@ export default async function ProjectPage({ params }: { params: Promise<{ slug: 
     const isProject = project.section === "projects";
     const Icon = categoryById(isProject ? "projects" : "renovations").icon;
     const kind = isProject ? "Project" : "Renovation";
+    const shots = PROJECT_GALLERY[slug] ?? [];
+    const [lead, ...rest] = shots;
+    const outbound = PROJECT_LINKS[slug] ?? (project.href ? { href: project.href, label: "Visit project" } : undefined);
+
     return (
         <div className="ctos cr-sub">
             <NaosBackdrop src="/naos/bg-default.webp" />
@@ -57,10 +62,17 @@ export default async function ProjectPage({ params }: { params: Promise<{ slug: 
             />
             <section className="cm-section cr-detail-sec" id="detail">
                 <div className="cm-wrap cr-detail" data-rx-auto="">
-                    <div className="cm-viz cr-plate">
-                        <span className={`cm-tag flat ${tone[project.status]} cr-plate-tag`}>{statusLabel[project.status]}</span>
-                        <Icon className="cr-plate-ic" aria-hidden="true" />
-                    </div>
+                    {lead ? (
+                        <figure className="cr-case-lead">
+                            <img src={lead.src} alt={lead.alt} width={1600} height={1000} loading="eager" decoding="async" />
+                            <figcaption>{lead.caption}</figcaption>
+                        </figure>
+                    ) : (
+                        <div className="cm-viz cr-plate">
+                            <span className={`cm-tag flat ${tone[project.status]} cr-plate-tag`}>{statusLabel[project.status]}</span>
+                            <Icon className="cr-plate-ic" aria-hidden="true" />
+                        </div>
+                    )}
 
                     <div className="cm-panel cr-sheet">
                         <div className="cm-hbar">
@@ -80,10 +92,10 @@ export default async function ProjectPage({ params }: { params: Promise<{ slug: 
                             )}
                             <div className="cr-sheet-block">
                                 <span className="cm-lbl">Link</span>
-                                {project.href ? (
+                                {outbound ? (
                                     <div className="cm-row cta">
-                                        <a className="cta-b a" href={project.href} target="_blank" rel="noreferrer">
-                                            <i>GO</i><span>Visit project</span><em aria-hidden="true">↗</em>
+                                        <a className="cta-b a" href={outbound.href} target="_blank" rel="noreferrer">
+                                            <i>GO</i><span>{outbound.label}</span><em aria-hidden="true">↗</em>
                                         </a>
                                     </div>
                                 ) : (
@@ -97,6 +109,20 @@ export default async function ProjectPage({ params }: { params: Promise<{ slug: 
                             <span>{project.category}</span>
                         </div>
                     </div>
+
+                    {rest.length > 0 && (
+                        <div className="cr-case-gallery">
+                            <span className="cm-lbl">Gallery</span>
+                            <div className={rest.length > 1 ? "cr-case-grid is-multi" : "cr-case-grid"}>
+                                {rest.map((shot) => (
+                                    <figure key={shot.src} className="cr-case-shot">
+                                        <img src={shot.src} alt={shot.alt} width={1600} height={1000} loading="lazy" decoding="async" />
+                                        <figcaption>{shot.caption}</figcaption>
+                                    </figure>
+                                ))}
+                            </div>
+                        </div>
+                    )}
                 </div>
             </section>
         </div>

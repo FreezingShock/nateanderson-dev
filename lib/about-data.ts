@@ -56,7 +56,7 @@ export const skills: Skill[] = [
         name: "Roblox Development",
         level: 4,
         description:
-            "Systems design, menu architecture, stat and attribute systems. An active shipping project (Fractured Islands).",
+            "Systems design, menu architecture, stat and attribute systems.",
         icon: "Code2",
         category: "gamedev",
     },
@@ -174,151 +174,6 @@ export const skills: Skill[] = [
     },
 ];
 
-// --------------------------------------------------- Fractured Islands
-
-export interface GameSystem {
-    id: string;
-    name: string;
-    color: string;
-    icon: AboutIconName;
-    /** Build order from the roadmap (the progression loop is the glue, unnumbered). */
-    priority?: number;
-    description: string;
-    parts: { name: string; description: string }[];
-}
-
-export const gameSystems: GameSystem[] = [
-    {
-        id: "menu",
-        name: "Ascension Menu",
-        color: "var(--cm-amber)",
-        icon: "Layers",
-        priority: 1,
-        description:
-            "The central hub for every player interaction, and the first system being built.",
-        parts: [
-            {
-                name: "Profile",
-                description: "Armor swapping, accessories and a stats display",
-            },
-            {
-                name: "Inventory",
-                description: "Item management and organization",
-            },
-            {
-                name: "Skills",
-                description: "Skill progression and XP tracking",
-            },
-            {
-                name: "Collections",
-                description: "A milestone system with permanent buffs",
-            },
-        ],
-    },
-    {
-        id: "stats",
-        name: "Stat System",
-        color: "var(--cm-good)",
-        icon: "Zap",
-        priority: 2,
-        description:
-            "Calculates and manages every player statistic, kept separate from attributes on purpose.",
-        parts: [
-            {
-                name: "Health",
-                description: "A base stat with multipliers from equipment",
-            },
-            { name: "Speed", description: "Movement speed and its bonuses" },
-            {
-                name: "Bonus Press",
-                description: "Affects the output of button presses",
-            },
-            {
-                name: "Skill Fortune",
-                description: "Increases XP gain across all skills",
-            },
-        ],
-    },
-    {
-        id: "attributes",
-        name: "Attribute System",
-        color: "var(--cm-cyan)",
-        icon: "Settings",
-        priority: 3,
-        description:
-            "The most complex piece: 100+ interdependent attributes with cascading multipliers.",
-        parts: [
-            {
-                name: "Button Modifiers",
-                description: "Press combo multipliers and reductions",
-            },
-            { name: "Skill Bonuses", description: "Per-skill attribute gains" },
-            {
-                name: "Milestone Buffs",
-                description: "Permanent progression rewards",
-            },
-            {
-                name: "Custom Values",
-                description: "Player-allocated attribute points",
-            },
-        ],
-    },
-    {
-        id: "progression",
-        name: "Progression Loop",
-        color: "var(--cm-violet)",
-        icon: "Users",
-        description:
-            "The engagement mechanics that tie the other three together and drive playtime.",
-        parts: [
-            {
-                name: "Button Press",
-                description: "The core mechanic: press buttons for rewards",
-            },
-            {
-                name: "Press Combo",
-                description:
-                    "A multiplier for consecutive presses across any button",
-            },
-            {
-                name: "Skill Leveling",
-                description: "The long-term progression metric",
-            },
-            {
-                name: "Bestiary",
-                description: "A progress guide and milestone tracker",
-            },
-        ],
-    },
-];
-
-export const gameFacts = [
-    {
-        value: 100,
-        suffix: "+",
-        label: "interdependent attributes",
-        color: "var(--cm-cyan)",
-    },
-    {
-        value: 10,
-        suffix: "",
-        label: "menu types in one hub",
-        color: "var(--cm-amber)",
-    },
-    {
-        value: 5,
-        suffix: "",
-        label: "combo stages, 1.1x to 1.5x",
-        color: "var(--cm-good)",
-    },
-    {
-        value: 4,
-        suffix: "",
-        label: "interlocking core systems",
-        color: "var(--cm-violet)",
-    },
-];
-
 // -------------------------------------------------------------- philosophy
 
 export const beliefs = [
@@ -377,12 +232,12 @@ export interface BuildingItem {
 
 export const building: BuildingItem[] = [
     {
-        title: "Fractured Islands: Ascension",
-        color: "var(--cm-violet)",
+        title: "sfvOS",
+        color: "var(--cm-cyan)",
         status: "In development",
         description:
-            "A solo-built Roblox incremental RPG in active development: stat systems, attribute mechanics and engagement loops.",
-        href: "/creations/fractured-islands",
+            "A live city builder on real San Fernando Valley open data: open a neighborhood, then rebuild its real streets, lots and buildings.",
+        href: "/creations/sfvos",
         cta: "See the project",
     },
     {

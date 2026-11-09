@@ -9,7 +9,6 @@ import {
     PhilosophySection,
     RunningSection,
 } from "@/components/about-sections";
-import { SystemsExplorer } from "@/components/systems-explorer";
 import { SkillsExplorer } from "@/components/skills-explorer";
 import { KEY_DATES, daysUntil } from "@/lib/timeline-data";
 import "./about.css";
@@ -60,7 +59,7 @@ export default function AboutPage() {
                                 <div><dt>Based</dt><dd><Scramble replay text="Southern California" /></dd></div>
                                 <div><dt>Studying</dt><dd><Scramble replay text="Construction management" /></dd></div>
                                 <div><dt>Running</dt><dd><Scramble replay text="4 years, captain" /></dd></div>
-                                <div><dt>Shipping</dt><dd><Link href="/creations/fractured-islands"><Scramble replay text="Fractured Islands: Ascension" /></Link></dd></div>
+                                <div><dt>Shipping</dt><dd><Link href="/creations/nexus"><Scramble replay text="Nexus" /></Link></dd></div>
                                 <div>
                                     <dt>Days to graduation</dt>
                                     <dd>{daysToGrad > 0 ? <CountUp value={daysToGrad} /> : "Done"}</dd>
@@ -85,16 +84,13 @@ export default function AboutPage() {
             <Section ctos id="running" no="03" label="Running & athletics" title="Running & athletics.">
                 <RunningSection />
             </Section>
-            <Section ctos id="roblox" no="04" label="Fractured Islands" title="Fractured Islands: system design.">
-                <SystemsExplorer />
-            </Section>
-            <Section ctos id="philosophy" no="05" label="Philosophy" title="Philosophy & thinking.">
+            <Section ctos id="philosophy" no="04" label="Philosophy" title="Philosophy & thinking.">
                 <PhilosophySection />
             </Section>
             <Section
                 ctos
                 id="skills"
-                no="06"
+                no="05"
                 label="Skills"
                 title="Skills & expertise."
                 blurb="Skills organized by domain. Each reflects hands-on experience and active development."
@@ -104,7 +100,7 @@ export default function AboutPage() {
             <Section
                 ctos
                 id="timeline"
-                no="07"
+                no="06"
                 label="The path"
                 title="Four years, three stages, one destination."
                 blurb="The full plan, with every milestone, lives on the timeline."

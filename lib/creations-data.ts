@@ -44,8 +44,8 @@ export const CATEGORIES: CreationCategory[] = [
         title: "Projects",
         color: "var(--cm-cyan)",
         icon: Code2,
-        blurb: "Coding and Roblox projects: solo-built, systems-driven, shipped and in progress.",
-        tags: ["Coding", "Roblox", "Systems"],
+        blurb: "Coding projects: solo-built, systems-driven, shipped and in progress.",
+        tags: ["Coding", "Games", "Systems"],
     },
     {
         id: "renovations",
@@ -53,8 +53,8 @@ export const CATEGORIES: CreationCategory[] = [
         title: "Renovations",
         color: "var(--cm-amber)",
         icon: Hammer,
-        blurb: "Real places studied, measured, modeled and redesigned to be greener and more inviting, starting with Topanga Willows.",
-        tags: ["Topanga Willows", "Blender", "Design"],
+        blurb: "Real places studied, measured, modeled and redesigned to be greener and more inviting.",
+        tags: ["Blender", "Design"],
     },
     {
         id: "artwork",
@@ -69,6 +69,40 @@ export const CATEGORIES: CreationCategory[] = [
 
 export const categoryById = (id: CreationCategory["id"]) =>
     CATEGORIES.find((c) => c.id === id)!;
+
+// ---- Outside links for Supabase project rows ----
+// The projects query doesn't read an href column, so a project that lives somewhere else gets its link here, keyed by
+// the row's slug. Keep the slug in sync with the row in public.projects.
+
+// ---- Case-study screenshots for project pages ----
+// The first shot is the large lead image; the rest form the gallery. Files live in public/creations/<slug>/.
+
+export interface ProjectShot {
+    src: string;
+    alt: string;
+    caption: string;
+}
+
+export const PROJECT_GALLERY: Record<string, ProjectShot[]> = {
+    deepstack: [
+        {
+            src: "/creations/deepstack/carry-word-desk.webp",
+            alt: "Deepstack on desktop: the word paleontology, with a text box to write the definition in your own words.",
+            caption: "A word on the desk. Write its meaning in your own words before the candle burns down.",
+        },
+        {
+            src: "/creations/deepstack/landing-desk.webp",
+            alt: "Deepstack on desktop: the landing between words, offering three ways on, with the depth and floor shown at the top.",
+            caption: "The landing between words. Each choice costs something, and the next floor shows up in the sidebar.",
+        },
+    ],
+};
+
+export const PROJECT_LINKS: Record<string, { href: string; label: string }> = {
+    "nexus": { href: "https://playnexus.dev", label: "Play on playnexus.dev" },
+    "sfvos": { href: "https://github.com/FreezingShock/sfvOS", label: "View the code on GitHub" },
+    "deepstack": { href: "https://github.com/FreezingShock/Deepstack", label: "View the code on GitHub" },
+};
 
 // ---- Philosophy (draft copy: Nate to rewrite in his own voice) ----
 
@@ -219,7 +253,7 @@ export const ART_COLLECTIONS: ArtCollection[] = [
         color: "var(--cm-cyan)",
         icon: Boxes,
         blurb: "3D renders: renovation studies, environments and experiments.",
-        slots: ["Topanga Willows", "Environment study", "Material test", "Lighting study", "Model breakdown", "Wireframe"],
+        slots: ["Environment study", "Material test", "Lighting study", "Model breakdown", "Wireframe"],
     },
     {
         id: "drawings",

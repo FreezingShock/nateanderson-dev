@@ -28,7 +28,7 @@ export const PATH: Step[] = [
     {
         when: "Now",
         title: "Senior year, Class of 2027",
-        detail: "Shipping Fractured Islands and applying to college.",
+        detail: "Building sfvOS and Deepstack, and applying to college.",
         current: true,
     },
     {
@@ -40,7 +40,7 @@ export const PATH: Step[] = [
 
 // Lines for the home page's "Now" feed, newest first.
 export const NOW_FEED: { tag: string; text: string }[] = [
-    { tag: "Shipping", text: "Fractured Islands: Ascension, a Roblox progression game built in Luau." },
+    { tag: "Shipping", text: "Nexus, a cozy offline city builder, is live at playnexus.dev." },
     { tag: "Modeling", text: "Real places in 3D: renovation studies measured, modeled and redesigned." },
     { tag: "Running", text: "Cross country and track, captain this year." },
     { tag: "Applying", text: "Cal Poly SLO first, Cal Poly Pomona as the fallback." },

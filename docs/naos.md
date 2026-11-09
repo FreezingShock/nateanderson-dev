@@ -86,7 +86,7 @@ naOS version (session bar, Status-style panels, numbered social plates, signal b
 - Do not edit shared files (`ctos.css` core, engine, `motion.tsx`) casually; add page-specific rules in a clearly
   commented block scoped like `.ctos .your-page ...`, and rebase before pushing.
 - Do not cut descenders or commas; do not hide content behind reveals that fail without JS in a way that blocks reading.
-- Keep the Outline/Flag guessers and Fractured Islands; Fractured Idle is gone.
+- Keep the Outline/Flag guessers; Fractured Idle is gone.
 
 ## Testing
 Dev (StrictMode) breaks reveals through the engine's `seen` WeakSet, so test on `next build` + `next start`.

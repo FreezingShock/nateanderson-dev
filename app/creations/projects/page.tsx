@@ -11,7 +11,7 @@ export default async function ProjectsPage() {
         <CreationsShell
             eyebrow="Creations / Projects"
             title={["Projects"]}
-            description="Coding and Roblox projects: solo-built, systems-driven, shipped and in progress."
+            description="Coding projects: solo-built, systems-driven, shipped and in progress."
             back={{ href: "/creations", label: "Back to Creations" }}
             variant="sub"
             aside={<ListStatusCard label="projects // index" badge="pj" projects={projects} />}

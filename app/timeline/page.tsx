@@ -25,12 +25,6 @@ const HORIZONS = [
         description:
             "Write on philosophy and engineering, speak at conferences, and position as a voice for authentic, ethical design.",
     },
-    {
-        title: "Fractured Islands Impact",
-        when: "Ongoing",
-        description:
-            "Grow Fractured Islands to 100K+ active players and prove games can teach systems thinking at scale.",
-    },
 ];
 
 const MILESTONES = phases.reduce((n, p) => n + p.events.length, 0);

@@ -32,7 +32,7 @@ export default async function CreationsPage() {
             }
             eyebrow="Made / Creations"
             title={["Creations"]}
-            description="Everything I build: games you can play here, coding and Roblox projects, renovation studies of real places, and the artwork around it all."
+            description="Everything I build: games you can play here, coding projects, renovation studies of real places, and the artwork around it all."
             aside={
                 <IdCard
                     label="creations // index"
@@ -93,6 +93,6 @@ export default async function CreationsPage() {
 export const metadata = pageMeta({
     title: "Creations",
     description:
-        "Everything I build: games you can play here, coding and Roblox projects, renovation studies of real places, and the artwork around it all.",
+        "Everything I build: games you can play here, coding projects, renovation studies of real places, and the artwork around it all.",
     path: "/creations",
 });
