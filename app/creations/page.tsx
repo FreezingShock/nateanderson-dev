@@ -68,7 +68,7 @@ export default async function CreationsPage() {
                 title="Two ways to play."
                 blurb="A daily puzzle and an unlimited practice mode. Each links to its games."
             >
-                <div className="cm-grid">
+                <div className="cm-grid cr-modes">
                     {GAME_MODES.map((m) => {
                         const Icon = m.icon;
                         const live = m.games.filter((g) => g.status === "playable").length;

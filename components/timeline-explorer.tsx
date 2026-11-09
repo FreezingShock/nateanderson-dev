@@ -66,7 +66,7 @@ const EventRow = memo(function EventRow({ event, status, open, onToggle }: Event
     );
 
     return (
-        <li id={event.id} className={`tl-ev ${state}`.trim()} style={{ scrollMarginTop: 120 }}>
+        <li id={event.id} className={`tl-ev ${state} tl-s-${status}`.trim()} style={{ scrollMarginTop: 120 }}>
             <div className="cm-panel" style={{ opacity: status === "upcoming" || status === "planned" ? 0.85 : 1 }}>
                 {hasDetails ? (
                     <button
