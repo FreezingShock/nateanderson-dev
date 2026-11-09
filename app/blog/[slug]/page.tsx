@@ -78,7 +78,7 @@ export default async function BlogPostPage({
 
     return (
         <div className={`ctos post-page post-${kind}`}>
-            <NaosBackdrop src="/naos/bg-blog.png" />
+            <NaosBackdrop src="/naos/bg-blog.webp" />
             <div className="post-hero">
                 <PageHead
                     label={`${POST_KIND_LABEL[kind]} / ${sectionNo} ${sectionTitle}`}

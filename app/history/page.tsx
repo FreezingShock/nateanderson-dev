@@ -76,7 +76,7 @@ export default async function HistoryPage() {
 
     return (
         <div className="ctos">
-            <NaosBackdrop src="/naos/bg-history.png" />
+            <NaosBackdrop src="/naos/bg-history.webp" />
             <div className={styles.hero}>
                 <PageHead
                     label="Meta / Changelog"

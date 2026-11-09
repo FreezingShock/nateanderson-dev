@@ -28,7 +28,7 @@ export default function AboutPage() {
 
     return (
         <div className="ctos about">
-            <NaosBackdrop src="/naos/bg-about.png" />
+            <NaosBackdrop src="/naos/bg-about.webp" />
             <header className="cm-head about-head" id="top">
                 <div className="cm-grid-bg" aria-hidden="true" />
                 <div className="cm-persp" aria-hidden="true" />

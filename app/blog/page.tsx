@@ -30,7 +30,7 @@ export default function BlogPage() {
 
     return (
         <div className="ctos">
-            <NaosBackdrop src="/naos/bg-blog.png" />
+            <NaosBackdrop src="/naos/bg-blog.webp" />
             <div className="blog-hero">
                 <PageHead
                     label="Writing / naOS"

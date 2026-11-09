@@ -73,7 +73,7 @@ export default async function CourseDetailPage({
 
     return (
         <div className="ctos st-page">
-            <NaosBackdrop src="/naos/bg-studies.png" />
+            <NaosBackdrop src="/naos/bg-studies.webp" />
             <PageHead
                 label={course.ap ? "AP course" : "Course"}
                 title={[course.title]}
