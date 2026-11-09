@@ -69,7 +69,7 @@ export default function StudiesPage() {
                 blurb="Self-directed learning alongside formal coursework: philosophy, sustainable systems and design practice. These areas inform and deepen all of the academic work."
                 ctos
             >
-                <div className="cm-cols3">
+                <div className="cm-cols3 st-personal">
                     {personalStudies.map((p) => (
                         <ProgramCardView key={p.title} program={p} />
                     ))}
