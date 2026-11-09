@@ -554,3 +554,10 @@
 
 /* Placeholder cards while the Selected work library streams in: same footprint as a real card, no motion. */
 .ctos .featured-skel { min-height: 168px; opacity: .55; }
+/* Third pass, phone: the work cards' art boxes were 16:9 at full width, so three cards took about a full screen each.
+   A 2:1 box keeps the same frame and trims about 20px per card, about 60px across the section. Desktop keeps 16:9. */
+@media (max-width: 640px) {
+    .ctos #work .cm-viz {
+        aspect-ratio: 2 / 1;
+    }
+}
