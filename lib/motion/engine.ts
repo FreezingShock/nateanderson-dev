@@ -14,6 +14,10 @@
 const STEP = 70; // ms between siblings in a reveal wave
 const MAX_WAVE = 7; // cap so long lists don't trickle forever
 const REVEAL_MS = 650; // matches --cm-d-reveal plus margin; after this the element drops its reveal styles
+// Scroll-linked text lines (fraction of the viewport height, measured from the top edge):
+const READ_LINE = 0.8; // above this line text is fully resolved: typed and unscrambled, never half-finished
+const SCR_ENTER = 0.92; // scrambled text starts decoding here (just inside the bottom edge)
+const TYPE_FROM = 0.92; // scroll-typed blocks start typing here
 
 interface TypeItem {
     el: HTMLElement;
@@ -441,7 +445,9 @@ function frame(now: number) {
     let again = false;
 
     for (const [t, r] of typeRects) {
-        let p = clamp01((vh * 0.92 - r.top) / (vh * 0.3 + r.height * 0.5));
+        // Typing runs only while the block enters through the bottom band and is finished by the read line, so text
+        // the reader can see is never left half-typed.
+        let p = clamp01((vh * TYPE_FROM - r.top) / (vh * (TYPE_FROM - READ_LINE)));
         if (atEnd && r.top < vh) p = 1;
         if (t.auto && t.timeP < 1) {
             t.timeP = clamp01((now - t.t0) / t.dur);
@@ -471,11 +477,18 @@ function frame(now: number) {
     lastT = now;
     const k = 1 - Math.exp(-dt / 120);
     for (const [it, r] of rxRects) {
-        if (Number.isNaN(it.ref)) {
-            const base = vh * 0.97 - it.off;
-            it.ref = r.top < base ? Math.max(base, r.top + band) : -1;
+        let p: number;
+        if (it.scr) {
+            // Scrambled text decodes only while its line is entering at the bottom edge. Once it is past the read line
+            // it is fully legible, so text the reader can see is never left as glyphs.
+            p = clamp01((vh * SCR_ENTER - r.top) / (vh * (SCR_ENTER - READ_LINE)));
+        } else {
+            if (Number.isNaN(it.ref)) {
+                const base = vh * 0.97 - it.off;
+                it.ref = r.top < base ? Math.max(base, r.top + band) : -1;
+            }
+            p = clamp01(((it.ref < 0 ? vh * 0.97 - it.off : it.ref) - r.top) / band);
         }
-        let p = clamp01(((it.ref < 0 ? vh * 0.97 - it.off : it.ref) - r.top) / band);
         if (atEnd && r.top < vh) p = 1;
         if (it.p < 0 && p >= 1 && !it.intro && !it.done) {
             it.intro = true; // already in view when it first appears: play it forward once over time

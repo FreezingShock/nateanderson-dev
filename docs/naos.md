@@ -54,8 +54,13 @@ fade; never gray flickering pixel blocks.
 The engine writes `--p` (0 to 1) on each `[data-rx]` from its viewport position (band ~36% of the viewport, capped at
 340px). CSS maps `--p` to opacity/transform/clip-path, so scrolling down plays forward and up plays the exact reverse.
 Displayed progress eases toward the target (damping ~120ms, frame-rate independent) and a smoothstep is applied when
-writing `--p`, so wheel notches glide. Scramble text uses the same progress. Items on screen at load play a 650ms intro,
+writing `--p`, so wheel notches glide. Items on screen at load play a 650ms intro,
 and at the page bottom everything is forced to p=1. `prefers-reduced-motion` must stay respected.
+
+Scrambled text (`data-rx-scr`) and scroll-typed blocks (`ScrollType`) only animate while they enter through the bottom
+band, from 92% of the viewport height up to the 80% read line (`READ_LINE` in the engine). Above that line they are
+fully decoded or typed, so text the reader can see is never left as glyphs or half-typed. Do not add a rule that holds
+visible text back past that line.
 
 ## Dithered art
 Original 1-bit illustrations live in `public/naos/` (`islands.png` hero, `track.png` and `wash.png` section breaks, `blog.png` for the blog index hero, `post.png` for blog post headers with a reading strip, `studies.png` header piece on the Studies page, `assembly.png` for the Creations hub backdrop: voxel terraces climbing to a checkpoint, from `studies()`).
