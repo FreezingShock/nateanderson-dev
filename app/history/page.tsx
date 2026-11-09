@@ -2,7 +2,7 @@ import { PageHead, Section } from "@/components/cm/ui";
 import { CountUp } from "@/components/cm/reveal";
 import { Scramble } from "@/components/cm/motion";
 import { CommitHistory } from "@/components/commit-history";
-import { REPO, githubHeaders, fetchCommitsPage, type CommitEntry } from "@/lib/github";
+import { REPO, SITE_BRANCH, githubHeaders, fetchSitePage, type CommitEntry } from "@/lib/github";
 import { getRepoStats } from "@/lib/site-stats";
 import styles from "./history.module.css";
 import { pageMeta } from "@/lib/seo";
@@ -20,29 +20,10 @@ const INITIAL_PER_PAGE = 10;
 // it entirely and updates itself on every request (subject to the
 // `revalidate` window below).
 async function getCommits(): Promise<{ commits: CommitEntry[]; totalCommits: number; failed: boolean }> {
-    const headers = githubHeaders();
-
-    const [commits, countRes] = await Promise.all([
-        fetchCommitsPage(1, INITIAL_PER_PAGE, headers),
-        // The commits endpoint has no total-count field — the standard trick
-        // is asking for 1-per-page and reading the last page number out of
-        // the pagination Link header.
-        fetch(`https://api.github.com/repos/${REPO}/commits?per_page=1`, {
-            headers,
-            next: { revalidate: 3600 },
-        }),
-    ]);
-
-    if (commits === null) {
-        return { commits: [], totalCommits: 0, failed: true };
-    }
-
-    let totalCommits = commits.length;
-    const link = countRes.headers.get("Link");
-    const lastPageMatch = link?.match(/[?&]page=(\d+)>;\s*rel="last"/);
-    if (lastPageMatch) totalCommits = Number(lastPageMatch[1]);
-
-    return { commits, totalCommits, failed: false };
+    // One walk of the site branch's first-parent chain gives both the page and the total, so they always agree.
+    const page = await fetchSitePage(1, INITIAL_PER_PAGE, githubHeaders());
+    if (page === null) return { commits: [], totalCommits: 0, failed: true };
+    return { commits: page.commits, totalCommits: page.total, failed: false };
 }
 
 export const revalidate = 3600; // re-check GitHub for new commits every hour
@@ -54,7 +35,7 @@ export default async function HistoryPage() {
     ]);
 
     const stats = [
-        { label: "Commits", value: totalCommits, note: "On the default branch" },
+        { label: "Commits", value: totalCommits, note: `On ${SITE_BRANCH}, one per change` },
         { label: "Lines of code", value: linesOfCode, note: "Text source files" },
         { label: "File count", value: fileCount, note: "Tracked in the repo" },
     ];
@@ -178,6 +159,12 @@ export default async function HistoryPage() {
                 {failed ? (
                     <div className={`cm-panel ${styles.notice}`}>
                         <span className="cm-read warm">Couldn&apos;t reach the GitHub API right now. Check back shortly.</span>
+                        {process.env.NODE_ENV === "development" && (
+                            <span className="cm-coord">
+                                Local dev: GitHub allows 60 unauthenticated requests an hour. Set GITHUB_TOKEN in .env.local (a
+                                fine-grained token with public read access is enough) for live data.
+                            </span>
+                        )}
                     </div>
                 ) : totalCommits === 0 ? (
                     <div className={`cm-panel ${styles.notice}`}>
