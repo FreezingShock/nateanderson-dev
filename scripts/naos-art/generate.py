@@ -305,6 +305,15 @@ def about_field():
     lx, ly = W * 0.42, H * 0.36
     dist = np.sqrt(((xx - lx) / (W * 0.55)) ** 2 + ((yy - ly) / (H * 0.6)) ** 2)
     inten[arr == TOP] = np.clip(0.62 - 0.5 * dist, 0.08, 0.62)[arr == TOP]
+    inten[arr == LEFT] = 0.46
+    inten[arr == RIGHT] = 0.2
+    inten[arr == BTOP] = 1.0
+    inten[arr == BLEFT] = 0.72
+    inten[arr == BRIGHT] = 0.42
+    return dither(inten, arr)
+
+
+# ---------------------------------------------------------------------------------------------
 # 4. Games head (geography games): a voxel map of region blocks with one target locked in a
 #    bracket and a beam rising from it. Same painter order and dither as the islands.
 # ---------------------------------------------------------------------------------------------
