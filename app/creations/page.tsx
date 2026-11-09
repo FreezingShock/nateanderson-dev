@@ -52,7 +52,6 @@ export default async function CreationsPage() {
                 no="03"
                 label="Creation philosophy"
                 title="Why I make things the way I do."
-                blurb="Draft wording: I'll rewrite it in my own voice."
             >
                 <PhilosophyGrid />
             </Section>

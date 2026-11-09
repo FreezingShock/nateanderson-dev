@@ -163,15 +163,19 @@ export function ProjectGrid({ projects }: { projects: Project[] }) {
     );
 }
 
-/** Empty image slots, ready for real artwork. */
+/** One collection: a grid of image plates. Each plate is a hatched viz frame until its piece is added. */
 export function ArtCollectionSection({ collection, no }: { collection: ArtCollection; no: string }) {
+    const Icon = collection.icon;
     return (
-        <CmSection id={collection.id} no={no} label={collection.title} title={collection.title} blurb={collection.blurb}>
-            <div className="cm-grid" style={{ gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))" }}>
-                {collection.slots.map((slot) => (
-                    <div key={slot} className="cm-card">
+        <CmSection id={collection.id} no={no} label="Collection" title={collection.title} blurb={collection.blurb}>
+            <div className="cm-grid" style={{ gridTemplateColumns: "repeat(auto-fill, minmax(160px, 1fr))" }}>
+                {collection.slots.map((slot, i) => (
+                    <div key={slot} className="cm-card" style={{ height: "100%" }}>
                         <div className="cm-viz" style={{ aspectRatio: "4 / 3" }}>
-                            <span className="cm-tag flat">Placeholder</span>
+                            <span className="cm-state" style={{ position: "absolute", left: 10, top: 10 }}>
+                                {String(i + 1).padStart(2, "0")}
+                            </span>
+                            <Icon aria-hidden="true" style={{ position: "absolute", right: 14, bottom: 12, width: 40, height: 40, color: "var(--cm-hair-hi)" }} />
                         </div>
                         <b style={{ fontSize: 13.5 }}>{slot}</b>
                     </div>
