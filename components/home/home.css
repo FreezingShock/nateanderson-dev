@@ -1,0 +1,104 @@
+/* Home-only layout. Built from Camino tokens; shared files in app/camino stay untouched. */
+
+.cm-hero .hero-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--cm-s6);
+    align-items: end;
+}
+.cm-hero .hero-copy {
+    display: grid;
+    gap: var(--cm-s5);
+    min-width: 0;
+}
+.cm-hero .hero-status {
+    display: none;
+}
+.cm-hero .meta .big {
+    font-variant-numeric: tabular-nums;
+}
+.cm-hero .meta .big.none {
+    color: var(--cm-dim);
+}
+
+@media (min-width: 1000px) {
+    .cm-hero .hero-grid {
+        grid-template-columns: minmax(0, 1.5fr) minmax(280px, 1fr);
+    }
+    .cm-hero .hero-status {
+        display: block;
+        position: relative;
+        z-index: 2;
+    }
+    /* The status panel owns the right column, so the loose decoration steps aside. */
+    .cm-hero .t2,
+    .cm-hero .ring {
+        display: none;
+    }
+    .cm-hero .t1 {
+        right: 4%;
+        top: 12%;
+    }
+    .cm-hero .t3 {
+        right: 4%;
+        top: auto;
+        bottom: 6%;
+    }
+}
+
+.hero-status .cm-kv {
+    --cols: 1;
+}
+.hero-status .cm-kv > div {
+    border-right: 0;
+    display: grid;
+    grid-template-columns: 96px 1fr;
+    gap: 12px;
+    align-items: baseline;
+}
+.hero-status .cm-kv > div:last-child {
+    border-bottom: 0;
+}
+.hero-status .cm-kv dd {
+    margin: 0;
+    font-size: 13px;
+    line-height: 1.3;
+}
+.hero-status .cm-kv dd a {
+    color: inherit;
+    text-decoration: none;
+    border-bottom: 1px solid var(--cm-hair-hi);
+}
+.hero-status .cm-kv dd a:hover {
+    color: var(--cm-cyan);
+    border-color: var(--cm-cyan);
+}
+.hero-status .cm-meter {
+    margin: 12px 14px 14px;
+}
+.hero-status .cm-foot-note {
+    display: flex;
+    justify-content: space-between;
+    padding: 0 14px 14px;
+    font: 500 9px/1 var(--cm-mono);
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--cm-dim);
+}
+
+.cm-hero .cm-row .cm-btn {
+    min-height: 40px;
+}
+@media (max-width: 760px) {
+    .cm-hero .cm-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+    }
+    .cm-hero .cm-row .cm-btn:first-child {
+        grid-column: 1 / -1;
+        justify-content: center;
+    }
+    .cm-hero .meta {
+        gap: var(--cm-s5);
+    }
+}
