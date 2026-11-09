@@ -94,26 +94,51 @@ function Journey({ initialPct }: { initialPct: number }) {
 }
 
 /**
- * Top status strip, two clusters and nothing in the middle: menu and brand on the left, journey readout, search and
- * sound on the right. It is sticky, so it stays on screen as the page scrolls.
+ * Top status strip: menu and brand on the left, journey readout, search and sound on the right. Sticky. Once the page
+ * scrolls, the strip fades and the two clusters float on their own, with the page showing through the middle.
  */
+/** True once the page has scrolled away from the top. Reads on scroll frames, so it costs one state change per edge. */
+function useScrolled(threshold = 40): boolean {
+    const [on, setOn] = useState(false);
+    useEffect(() => {
+        let frame = 0;
+        const read = () => {
+            frame = 0;
+            setOn(window.scrollY > threshold);
+        };
+        const onScroll = () => {
+            if (!frame) frame = window.requestAnimationFrame(read);
+        };
+        read();
+        window.addEventListener("scroll", onScroll, { passive: true });
+        return () => {
+            window.removeEventListener("scroll", onScroll);
+            if (frame) window.cancelAnimationFrame(frame);
+        };
+    }, [threshold]);
+    return on;
+}
+
 export function Bar({ initialPct }: { initialPct: number }) {
     const path = usePathname();
     const [mounted, setMounted] = useState(false);
     const [snd, setSnd] = useSoundPrefs();
+    const scrolled = useScrolled();
 
     useEffect(() => setMounted(true), []);
 
     return (
-        <header className="nv-top">
-            <button type="button" className="nv-menu-btn" onClick={openMenu} aria-label="Open site map" aria-haspopup="dialog">
-                <Menu aria-hidden="true" size={17} strokeWidth={2} />
-                <span>menu</span>
-            </button>
-            <Link className="nv-brand" href="/" aria-label="Nate Anderson, home">
-                <NateGlyph size={20} />
-                <b>nate anderson</b>
-            </Link>
+        <header className="nv-top" data-scrolled={scrolled ? "" : undefined}>
+            <div className="nv-start">
+                <button type="button" className="nv-menu-btn" onClick={openMenu} aria-label="Open site map" aria-haspopup="dialog">
+                    <Menu aria-hidden="true" size={17} strokeWidth={2} />
+                    <span>menu</span>
+                </button>
+                <Link className="nv-brand" href="/" aria-label="Nate Anderson, home">
+                    <NateGlyph size={20} />
+                    <b>nate anderson</b>
+                </Link>
+            </div>
             <div className="nv-tools">
                 <Journey initialPct={initialPct} />
                 <button type="button" className="nv-search" onClick={openLauncher} aria-label="Search the site">

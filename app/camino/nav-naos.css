@@ -10,13 +10,32 @@
 }
 
 /* ---- Top strip: menu | brand | where you are | tools -------------------------------------------------------------- */
+/* The top strip is one bar at the top of the page. Once the page scrolls (data-scrolled), the bar's own fill and edges
+   fade out and each cluster draws its own panel, so only the two ends remain and the page shows through the middle.
+   Only colour, shadow and opacity animate; the layout never moves. The strip itself never takes clicks. */
 .nv-top {
     position: sticky; top: 10px; z-index: var(--cm-z-ui);
     display: flex; align-items: stretch; min-height: 46px;
     margin: 10px var(--cm-gutter) 0;
     background: var(--nv-bg);
     border: 1px solid var(--cm-hair-hi); border-left: 3px solid var(--cm-cyan);
+    pointer-events: none;
+    transition: background-color .45s var(--cm-ease), border-color .45s var(--cm-ease);
 }
+.nv-top[data-scrolled] { background-color: transparent; border-color: transparent; }
+.nv-start, .nv-tools {
+    pointer-events: auto;
+    box-shadow: inset 0 0 0 1px transparent, inset 3px 0 0 transparent;
+    background-color: transparent;
+    transition: background-color .45s var(--cm-ease), box-shadow .45s var(--cm-ease);
+}
+.nv-top[data-scrolled] .nv-start,
+.nv-top[data-scrolled] .nv-tools {
+    background-color: var(--nv-bg);
+    box-shadow: inset 0 0 0 1px var(--cm-hair-hi), 0 12px 28px rgba(0, 0, 0, .34);
+}
+.nv-top[data-scrolled] .nv-start { box-shadow: inset 0 0 0 1px var(--cm-hair-hi), inset 3px 0 0 var(--cm-cyan), 0 12px 28px rgba(0, 0, 0, .34); }
+.nv-start { display: flex; align-items: stretch; flex: none; }
 .nv-menu-btn, .nv-search, .nv-snd, .nv-x {
     -webkit-tap-highlight-color: transparent;
 }
@@ -223,6 +242,7 @@
     .nv-sec-t { font-size: 20px; }
 }
 @media (prefers-reduced-motion: reduce) {
+    .nv-top, .nv-start, .nv-tools { transition: none; }
     .nv-panel { animation: none; }
     .nv-sec-t, .nv-kids a, .nv-brand b, .nv-search, .nv-snd, .nv-menu-btn { transition: none; }
 }
