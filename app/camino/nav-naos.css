@@ -11,9 +11,9 @@
 
 /* ---- Top strip: menu | brand | where you are | tools -------------------------------------------------------------- */
 .nv-top {
-    position: relative; z-index: var(--cm-z-ui);
+    position: sticky; top: 10px; z-index: var(--cm-z-ui);
     display: flex; align-items: stretch; min-height: 46px;
-    margin: 12px var(--cm-gutter) 0;
+    margin: 10px var(--cm-gutter) 0;
     background: var(--nv-bg);
     border: 1px solid var(--cm-hair-hi); border-left: 3px solid var(--cm-cyan);
 }
@@ -39,14 +39,8 @@
 }
 .nv-brand:hover b { background: var(--cm-cyan); color: var(--cm-cyan-ink); }
 
-.nv-where { display: flex; align-items: center; gap: 12px; flex: 1; min-width: 0; padding: 0 14px; }
-.nv-no { flex: none; font: 700 var(--cm-ctos-t-tag)/1 var(--cm-mono); letter-spacing: .12em; color: var(--cm-cyan); }
-.nv-name {
-    min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis;
-    font: 700 var(--cm-ctos-t-tag)/1 var(--cm-mono); letter-spacing: .14em; text-transform: uppercase; color: var(--cm-fg);
-}
 
-.nv-tools { display: flex; align-items: stretch; flex: none; border-left: 1px solid var(--cm-hair); }
+.nv-tools { display: flex; align-items: stretch; flex: none; margin-left: auto; border-left: 1px solid var(--cm-hair); }
 
 /* Journey readout: day of the plan, the next step, and a 24-cell bar that fills with the journey. */
 .nv-journey {
@@ -130,7 +124,18 @@
 
 /* ---- Site map (hamburger): sections, then their subpages ----------------------------------------------------------- */
 /* Horizontal overflow is clipped: a 1px spill made a sideways scrollbar appear under the map. */
-.nv-map { overflow-x: hidden; overflow-y: auto; }
+/* Site map: a full-height drawer on the left. The tree scrolls; the head and the search footer stay put. */
+.nv-scrim.nv-scrim-drawer { display: block; padding: 0; }
+.nv-panel.nv-map {
+    position: fixed; top: 0; bottom: 0; left: 0; width: min(440px, 88vw); max-height: none;
+    display: flex; flex-direction: column; overflow: hidden;
+    border: 0; border-right: 1px solid var(--cm-hair-hi); border-left: 3px solid var(--cm-cyan);
+    animation: nv-drawer .34s var(--cm-ease-out) both;
+}
+.nv-map .nv-head { flex: none; }
+.nv-map .nv-tree { flex: 1; min-height: 0; overflow: auto; overscroll-behavior: contain; }
+.nv-map .nv-map-foot { flex: none; }
+@keyframes nv-drawer { from { transform: translate3d(-101%, 0, 0); } to { transform: none; } }
 .nv-tree { list-style: none; margin: 0; padding: 0; }
 .nv-sec-row + .nv-sec-row { border-top: 1px dashed var(--cm-hair); }
 .nv-sec {
@@ -204,14 +209,12 @@
     .nv-menu-btn span { display: none; }
     .nv-search span, .nv-search .nv-key { display: none; }
     .nv-search { padding: 0 12px; }
-    .nv-where { padding: 0 10px; gap: 9px; }
-        .nv-snd-t { display: none; }
+            .nv-snd-t { display: none; }
     .nv-journey { width: 96px; padding-inline: 10px; gap: 0; }
     .nv-jrow { display: none; }
     .nv-snd { padding: 0 11px; }
     .nv-kids { padding-left: 14px; grid-template-columns: 1fr 1fr; }
     .nv-sec-t { font-size: 20px; }
-    .nv-scrim { padding-top: 84px; }
 }
 @media (prefers-reduced-motion: reduce) {
     .nv-panel { animation: none; }

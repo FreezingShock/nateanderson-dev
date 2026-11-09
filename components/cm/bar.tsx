@@ -80,7 +80,7 @@ function Journey({ initialPct }: { initialPct: number }) {
                 </span>
                 {r.next && (
                     <span className="nv-jnext" title={`Next: ${r.next.title}`}>
-                        {r.next.days === 0 ? "next · today" : `next in ${r.next.days}d`}
+                        {r.next.days === 0 ? "due today" : `next in ${r.next.days}d`}
                     </span>
                 )}
             </div>
@@ -94,8 +94,8 @@ function Journey({ initialPct }: { initialPct: number }) {
 }
 
 /**
- * Top status strip, one row, all left-aligned: menu, brand, the "you are here" crumb, then the journey readout and
- * the tools (search, sound). It scrolls away so the page keeps the whole screen.
+ * Top status strip, two clusters and nothing in the middle: menu and brand on the left, journey readout, search and
+ * sound on the right. It is sticky, so it stays on screen as the page scrolls.
  */
 export function Bar({ initialPct }: { initialPct: number }) {
     const path = usePathname();
@@ -103,10 +103,6 @@ export function Bar({ initialPct }: { initialPct: number }) {
     const [snd, setSnd] = useSoundPrefs();
 
     useEffect(() => setMounted(true), []);
-
-    const here = navItems.find((n) => isActive(path, n.href));
-    const sub = here?.children?.find((c) => path === c.href || path.startsWith(c.href + "/"));
-    const crumb = sub ? `${here?.label} / ${sub.label}` : here?.label ?? "Pages";
 
     return (
         <header className="nv-top">
@@ -118,10 +114,6 @@ export function Bar({ initialPct }: { initialPct: number }) {
                 <NateGlyph size={20} />
                 <b>nate anderson</b>
             </Link>
-            <div className="nv-where">
-                <span className="nv-no" aria-hidden="true">{here?.no ?? "--"}</span>
-                <span className="nv-name" aria-live="polite">{crumb}</span>
-            </div>
             <div className="nv-tools">
                 <Journey initialPct={initialPct} />
                 <button type="button" className="nv-search" onClick={openLauncher} aria-label="Search the site">
