@@ -22,8 +22,8 @@ export const NEXT_MONTHS: UpcomingMonth[] = [
         year: "2026",
         color: "var(--cm-cyan)",
         goals: [
-            "Reach out to the Santa Monica College cross-country coach",
-            "Register for the January SAT",
+            "Email SLO admissions for the Construction Management admit rate",
+            "Book an SLO student-led tour",
             "Pick the first real portfolio project",
         ],
     },
@@ -32,7 +32,7 @@ export const NEXT_MONTHS: UpcomingMonth[] = [
         year: "2026",
         color: "var(--cm-amber)",
         goals: [
-            "Steady daily SAT prep",
+            "Submit CSU Apply to SLO and Pomona by Nov 20 (hard deadline Nov 30)",
             "Start the first portfolio design: a SketchUp redesign of a local space",
             "Keep shipping updates to Fractured Islands: Ascension",
         ],
@@ -42,8 +42,8 @@ export const NEXT_MONTHS: UpcomingMonth[] = [
         year: "2026",
         color: "var(--cm-good)",
         goals: [
-            "Submit the Santa Monica College application",
-            "Lock in the SMC → Cal Poly Pomona transfer agreement",
+            "File the FAFSA or Dream Act application by Dec 15",
+            "Ask my counselor about adding calculus and physics senior year",
             "Finish the semester strong",
         ],
     },
@@ -79,8 +79,8 @@ export const NEXT_YEAR: { year: string; blurb: string; milestones: UpcomingMiles
         },
         {
             when: "September",
-            title: "Santa Monica College begins",
-            detail: "Fall 2027 kickoff: pre-engineering coursework and cross-country.",
+            title: "College begins",
+            detail: "Cal Poly SLO Construction Management, or Pomona CEM, with calculus and physics from day one.",
             color: "var(--cm-cyan)",
         },
     ],

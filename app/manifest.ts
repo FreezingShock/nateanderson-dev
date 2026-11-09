@@ -8,7 +8,7 @@ export default function manifest(): MetadataRoute.Manifest {
         name: "Nate's Portfolio",
         short_name: "Nate's Portfolio",
         description:
-            "Games, renders, and systems — built while studying toward environmental engineering.",
+            "Games, renders, and systems, built while studying construction management.",
         start_url: "/",
         display: "standalone",
         background_color: "#040506",

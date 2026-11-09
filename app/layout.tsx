@@ -22,7 +22,7 @@ const plexMono = IBM_Plex_Mono({
 });
 
 const DESCRIPTION =
-    "Games, renders, and systems — built while studying toward environmental engineering.";
+    "Games, renders, and systems, built while studying construction management.";
 
 export const metadata: Metadata = {
     metadataBase: new URL("https://nateanderson.dev"),

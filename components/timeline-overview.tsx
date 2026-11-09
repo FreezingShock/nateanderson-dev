@@ -33,7 +33,7 @@ const COUNTDOWNS: Countdown[] = [
         special: true,
     },
     {
-        label: "Santa Monica College",
+        label: "College starts",
         sublabel: "Fall 2027",
         date: "2027-09-01",
         icon: "Rocket",
@@ -67,7 +67,7 @@ function buildMarkers(nowMs: number): JourneyMarker[] {
         {
             id: "launch",
             title: "Launch",
-            when: "Spring 2031",
+            when: "June 2031",
             start: "2031-05-31",
             description:
                 "The point the whole plan builds toward: launching a sustainable infrastructure and urban design business or project, backed by an engineering degree, an executed portfolio, athletic leadership and a network of mentors.",

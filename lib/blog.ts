@@ -23,7 +23,7 @@ export const blogSections: BlogSectionProps[] = [
     },
     {
         title: "Research & Notes",
-        description: "Research notes on sustainable systems, climate adaptation, circular design, and environmental engineering. Thinking in public.",
+        description: "Research notes on sustainable systems, climate adaptation, circular design, and sustainable infrastructure. Thinking in public.",
         color: "var(--cm-good)",
         posts: [
             {

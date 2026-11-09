@@ -100,16 +100,16 @@ export default function TimelinePage() {
                 <div className="tl-goals">
                     <div className="cm-panel tick tl-launch">
                         <div className="cm-hbar">
-                            <span className="live">Spring 2031</span>
+                            <span className="live">June 2031</span>
                             <span>Milestone</span>
                         </div>
                         <div className="cm-body-pad tl-launch-body">
                             <h3 className="cm-h2 tl-launch-title">Launch</h3>
                             <p className="cm-body" style={{ margin: 0, maxWidth: "70ch" }}>
-                                The point the whole plan builds toward: launching a sustainable infrastructure and urban design business or project, backed by an engineering degree, an executed portfolio, proven athletic leadership and a network of mentors.
+                                The point the whole plan builds toward: launching a sustainable infrastructure and urban design business or project, backed by a construction degree, an executed portfolio, proven athletic leadership and a network of mentors.
                             </p>
                         </div>
-                        <PanelFoot left="naOS / finish line" right="spring 2031" />
+                        <PanelFoot left="naOS / finish line" right="june 2031" />
                     </div>
                     {HORIZONS.map((goal, i) => (
                         <div key={goal.title} className="cm-panel tl-goal">
