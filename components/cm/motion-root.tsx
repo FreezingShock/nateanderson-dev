@@ -36,19 +36,23 @@ function labelFor(path: string): string {
  * route, then bring the new page in from the other side; its hero and reveals start as it arrives.
  */
 type Phase = "idle" | "out" | "hold" | "in";
+/** Minimum time the title card stays up with the destination name on it. */
+const HOLD_MIN = 420;
 
 export function MotionRoot() {
     const path = usePathname();
     const router = useRouter();
     // One small state machine; the latest click always wins:
     //   idle -> out (page leaves) -> hold (route loading, page hidden) -> in (page arrives) -> idle
-    const st = useRef<{ phase: Phase; target: string; timer: number; safety: number }>({
+    const st = useRef<{ phase: Phase; target: string; timer: number; safety: number; heldAt: number }>({
         phase: "idle",
         target: "",
         timer: 0,
         safety: 0,
+        heldAt: 0,
     });
     const first = useRef(true);
+    const wipe = useRef<HTMLDivElement>(null);
 
     // Engine + boot cleanup.
     useEffect(() => {
@@ -76,6 +80,13 @@ export function MotionRoot() {
     arrive.current = () => {
         const s = st.current;
         if (s.phase !== "hold") return;
+        // Keep the title card up long enough to read the name (a cached route commits in a few ms).
+        const rest = HOLD_MIN - (performance.now() - s.heldAt);
+        if (rest > 0) {
+            window.clearTimeout(s.safety);
+            s.safety = window.setTimeout(() => arrive.current(), rest);
+            return;
+        }
         window.clearTimeout(s.safety);
         const doc = document.documentElement;
         if (!location.hash) window.scrollTo({ top: 0, left: 0, behavior: "instant" });
@@ -111,6 +122,7 @@ export function MotionRoot() {
         const toHold = () => {
             if (s.phase !== "out") return;
             s.phase = "hold";
+            s.heldAt = performance.now();
             document.documentElement.setAttribute("data-xition", "hold");
             router.push(s.target);
             // If the route never commits (offline, error), don't leave the user on a blank page.
@@ -132,14 +144,16 @@ export function MotionRoot() {
             if (s.phase === "idle") {
                 doc.setAttribute("data-dir", direction(location.pathname, url.pathname));
                 doc.setAttribute("data-xition", "out");
+                if (wipe.current) wipe.current.dataset.to = labelFor(url.pathname);
                 s.phase = "out";
                 markNavigation();
-                s.timer = window.setTimeout(toHold, 170);
+                s.timer = window.setTimeout(toHold, 260);
                 return true;
             }
             if (s.phase === "out") {
                 if (here) return reset.current(), true; // clicked back onto the page we are still on: cancel
                 doc.setAttribute("data-dir", direction(location.pathname, url.pathname));
+                if (wipe.current) wipe.current.dataset.to = labelFor(url.pathname);
                 return true; // toHold will push the newest target
             }
             // hold: a route is loading. Point it at the newest target.
@@ -170,5 +184,10 @@ export function MotionRoot() {
         };
     }, [router]);
 
-    return <div className="cm-pgauge" aria-hidden="true" />;
+    return (
+        <>
+            <div className="cm-pgauge" aria-hidden="true" />
+            <div className="cm-wipe" ref={wipe} aria-hidden="true" />
+        </>
+    );
 }
