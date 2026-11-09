@@ -86,8 +86,14 @@
 }
 
 /* ---- Bottom dock: numbered tabs, a white plate marks the current page --------------------------------------------- */
-.cm-dock { background: var(--nv-bg); border: 1px solid var(--cm-hair-hi); border-top: 2px solid var(--cm-cyan); box-shadow: none; }
-.cm-dock .ind { background: var(--nv-plate); }
+/* The dock is opaque, so it needs no blur. Blur on a fixed bar with a transformed plate inside (and centring with
+   `translate`) can leave the plate unpainted in Safari, which hid the active tab. Centre with margins instead. */
+.cm-dock {
+    background: var(--nv-bg); border: 1px solid var(--cm-hair-hi); border-top: 2px solid var(--cm-cyan); box-shadow: none;
+    left: 0; right: 0; margin-inline: auto; translate: none;
+    backdrop-filter: none; -webkit-backdrop-filter: none;
+}
+.cm-dock .ind { background: var(--nv-plate); will-change: transform; }
 .cm-dock a[data-on] { color: var(--nv-ink); }
 .cm-dock a[data-on] .ic { color: var(--nv-ink); }
 
