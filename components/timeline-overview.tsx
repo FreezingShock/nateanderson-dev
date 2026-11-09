@@ -99,8 +99,8 @@ export function TimelineOverview({ nowMs }: { nowMs: number }) {
         }));
 
     return (
-        <div style={{ display: "grid", gap: "var(--cm-s7)" }}>
-            <div style={{ display: "grid", gap: 14 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr)", gap: "var(--cm-s7)" }}>
+            <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr)", gap: 14 }}>
                 <div>
                     <span className="cm-lbl">The big dates</span>
                     <p className="cm-body" style={{ margin: "8px 0 0" }}>
@@ -114,9 +114,9 @@ export function TimelineOverview({ nowMs }: { nowMs: number }) {
             <JourneyTracker markers={markers} bands={bands} nowMs={nowMs} total={total} done={done} />
 
             {/* Up next */}
-            <div style={{ display: "grid", gap: 14 }}>
+            <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr)", gap: 14 }}>
                 <span className="cm-lbl">Up next</span>
-                <div className="cm-grid" style={{ gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))" }}>
+                <div className="tl-next">
                     {upNext.map((e) => (
                         <Link key={e.id} href={`#${e.id}`} className="cm-card link">
                             <span className={`cm-state ${e.special ? "live" : ""}`}>{e.when}</span>
