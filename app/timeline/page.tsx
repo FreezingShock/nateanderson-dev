@@ -53,7 +53,7 @@ export default function TimelinePage() {
 
     return (
         <div className="ctos tl-page">
-            <NaosBackdrop src="/naos/bg-timeline.png" />
+            <NaosBackdrop src="/naos/bg-timeline.webp" />
             <PageHead
                 label="Journey"
                 title={["Timeline"]}

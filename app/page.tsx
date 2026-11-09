@@ -22,7 +22,7 @@ export default async function Home() {
 
     return (
         <div className="ctos">
-            <NaosBackdrop src="/naos/bg-home.png" />
+            <NaosBackdrop src="/naos/bg-home.webp" />
             <header className="cm-hero" id="top">
                 <div className="cm-grid-bg" aria-hidden="true" />
                 <div className="cm-persp" aria-hidden="true" />

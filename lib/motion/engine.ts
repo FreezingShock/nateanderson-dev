@@ -5,7 +5,7 @@
 //  - Scroll type:  [data-mx-type] text is typed by scroll distance (and by time for text that is already on screen
 //                  at load). Progress is written as one CSS variable (--n); CSS does the rest.
 //  - Parallax:     [data-mx-par="0.1"] drifts with scroll (transform only).
-//  - Page gauge:   --cm-page-p on <html> (0-1) drives the thin progress line at the top of the viewport.
+//  - Page gauge:   --cm-page-p on the .cm-pgauge element (0-1) drives the thin progress line at the top of the viewport.
 //
 // Everything is gated while the boot sequence or a page curtain is up (html[data-boot] / html[data-xition]) so
 // nothing animates behind a cover. All writes are CSS custom properties, attributes, transform and opacity; all
@@ -367,6 +367,11 @@ function schedule() {
 }
 
 let lastT = 0;
+let gaugeEl: HTMLElement | null = null;
+function pageGauge(): HTMLElement | null {
+    if (!gaugeEl || !gaugeEl.isConnected) gaugeEl = document.querySelector<HTMLElement>(".cm-pgauge");
+    return gaugeEl;
+}
 function frame(now: number) {
     raf = 0;
     const vh = innerHeight;
@@ -375,14 +380,23 @@ function frame(now: number) {
     const y = scrollY;
     const atEnd = max > 0 && y >= max - 6;
 
-    // 1) reads
+    // 1) reads: every rect this frame, before any write. Reading after a write forces a style flush each time.
     const typeRects: [TypeItem, DOMRect][] = [];
     types.forEach((t) => {
         if (t.active) typeRects.push([t, t.el.getBoundingClientRect()]);
     });
+    const rxRects: [RxItem, DOMRect][] = [];
+    const parked: RxItem[] = []; // items outside the active zone that settle on their resting edge
+    rxs.forEach((it) => {
+        if (it.active) rxRects.push([it, it.el.getBoundingClientRect()]);
+        else if (it.p !== it.side) parked.push(it);
+    });
 
     // 2) writes
-    doc.style.setProperty("--cm-page-p", (max ? clamp01(y / max) : 0).toFixed(4));
+    // The gauge reads --cm-page-p, so write it on the gauge (cheap subtree) rather than on <html>: a root-level custom
+    // property change restyles the whole document on every scroll frame.
+    const gauge = pageGauge();
+    if (gauge) gauge.style.setProperty("--cm-page-p", (max ? clamp01(y / max) : 0).toFixed(4));
     let again = false;
 
     for (const [t, r] of typeRects) {
@@ -408,11 +422,7 @@ function frame(now: number) {
 
     // Scrubbed reveals: each item's progress is a function of where it sits in the viewport, so scrolling down plays
     // the animation forward and scrolling back up plays the exact same animation in reverse.
-    const rxRects: [RxItem, DOMRect][] = [];
-    rxs.forEach((it) => {
-        if (it.active) rxRects.push([it, it.el.getBoundingClientRect()]);
-        else if (it.p !== it.side) setRx(it, it.side, now);
-    });
+    for (const it of parked) setRx(it, it.side, now);
     const band = Math.min(vh * 0.36, 340);
     // Critically damped follow: the displayed progress eases toward where the scroll position says it should be, so
     // wheel notches and touch flicks glide instead of stepping. Frame-rate independent via dt.

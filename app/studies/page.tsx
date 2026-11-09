@@ -19,7 +19,7 @@ export default function StudiesPage() {
 
     return (
         <div className="ctos st-page">
-            <NaosBackdrop src="/naos/bg-studies.png" />
+            <NaosBackdrop src="/naos/bg-studies.webp" />
             <PageHead
                 label="Learning"
                 title={["Studies"]}

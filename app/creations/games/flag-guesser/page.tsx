@@ -1,3 +1,4 @@
+import "@/app/camino/games.css";
 import { CreationsShell, Section } from "@/components/creations-sections";
 import { GameFrame, GameReadout } from "@/components/games/naos";
 import { FlagGuesser } from "@/components/games/flag-guesser";
@@ -14,7 +15,7 @@ export const metadata = pageMeta({
 export default function FlagGuesserPage() {
     return (
         <div className="ctos ng-page">
-            <NaosBackdrop src="/naos/bg-games.png" />
+            <NaosBackdrop src="/naos/bg-games.webp" />
             <CreationsShell
                 eyebrow="Daily and unlimited"
                 title={["Flag Guesser"]}

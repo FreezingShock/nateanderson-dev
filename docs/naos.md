@@ -73,6 +73,9 @@ writes, no layout thrash. Touch and narrow screens (`hover: none` or max-width 9
 (media query at the bottom of ctos.css); keep new heavy effects inside that gate. Lazy-load heavy images; set
 width/height.
 
+- Don't write custom properties on `<html>` per frame. The engine writes `--cm-page-p` on `.cm-pgauge`, and reads all
+  layout (rects) before any write, so a frame costs one style flush, not one per item.
+
 ## Footer
 Shared component. Standard Camino footer on pages without `.ctos`. When a page wraps in `.ctos` the footer becomes the
 naOS version (session bar, Status-style panels, numbered social plates, signal bar) automatically. No taped stickers.

@@ -1,3 +1,4 @@
+import "@/app/camino/games.css";
 import { CreationsShell, Section } from "@/components/creations-sections";
 import { GameFrame, GameReadout } from "@/components/games/naos";
 import { OutlineGuesser } from "@/components/games/outline-guesser";
@@ -14,7 +15,7 @@ export const metadata = pageMeta({
 export default function OutlineGuesserPage() {
     return (
         <div className="ctos ng-page">
-            <NaosBackdrop src="/naos/bg-games.png" />
+            <NaosBackdrop src="/naos/bg-games.webp" />
             <CreationsShell
                 eyebrow="Daily and unlimited"
                 title={["Outline Guesser"]}
