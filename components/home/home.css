@@ -218,3 +218,284 @@
         border-top: 1px solid var(--cm-hair);
     }
 }
+
+/* ==========================================================================
+   Homepage hero: each word of the title gets its own treatment, and the three
+   links read as one CTA stack (primary plate on top, two panels below).
+   Scoped under .ctos so nothing leaks to other pages.
+   ========================================================================== */
+
+/* Accent tokens. Accent 1 is the site cyan. Accent 2 is a placeholder (white) until Nate picks the second accent;
+   change only the --hero-accent-2 lines to swap it. */
+.ctos .hero-title {
+    --hero-accent-1: var(--cm-cyan);
+    --hero-accent-1-ink: var(--cm-cyan-ink);
+    --hero-accent-2: var(--cm-ctos-block);
+    --hero-accent-2-ink: var(--cm-ctos-ink);
+}
+
+/* Lines 2 and 3 are not white bars any more: each word is its own plate, with a gap so the words read separately. */
+.ctos .hero-title > .hero-line {
+    padding: 0;
+    background: none;
+    color: inherit;
+}
+.ctos .hero-title .hw {
+    position: relative;
+    display: inline-block;
+    vertical-align: top;
+    padding: .1em .14em .2em .08em;
+    line-height: .86;
+    font-weight: 700;
+    letter-spacing: -.055em;
+    background: var(--cm-ctos-block);
+    color: var(--cm-ctos-ink);
+    transition: transform .25s var(--cm-ease);
+}
+@media (hover: hover) and (pointer: fine) {
+    .ctos .hero-title .hw:hover {
+        transform: translateY(-.04em);
+    }
+}
+
+/* builds: the action verb, in the accent plate. */
+.ctos .hero-title .hw-builds {
+    background: var(--hero-accent-1);
+    color: var(--hero-accent-1-ink);
+}
+/* games,: the object, in the second-accent plate. */
+.ctos .hero-title .hw-games {
+    background: var(--hero-accent-2);
+    color: var(--hero-accent-2-ink);
+}
+/* renders: hollow type on the dark ground, so the word reads as a drawing, not a label. */
+.ctos .hero-title .hw-renders {
+    background: transparent;
+    color: transparent;
+    -webkit-text-stroke: .024em var(--cm-ctos-block);
+    padding-inline: .02em;
+}
+/* systems.: a dark panel with a cyan figure and a dither strip, the same recipe as the status card. */
+.ctos .hero-title .hw-systems {
+    background: var(--cm-ctos-panel);
+    color: var(--hero-accent-1);
+    isolation: isolate;
+    border-left: .06em solid var(--hero-accent-1);
+}
+.ctos .hero-title .hw-systems::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: .3em;
+    z-index: -1;
+    pointer-events: none;
+    background-image: radial-gradient(circle, rgba(244, 244, 242, .5) 0 30%, transparent 34%);
+    background-size: 5px 5px;
+    -webkit-mask-image: linear-gradient(0deg, #000, transparent);
+    mask-image: linear-gradient(0deg, #000, transparent);
+    opacity: .5;
+}
+.ctos .hero-title .hw-amp {
+    display: inline-block;
+    vertical-align: top;
+    padding: .1em .02em 0;
+    line-height: .86;
+    color: var(--cm-cyan);
+    font-weight: 400;
+}
+
+/* ---- CTA stack ---- */
+.ctos .hero-cta {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 8px;
+    width: 100%;
+    max-width: 580px;
+}
+.ctos .hero-cta .hcta-main {
+    grid-column: 1 / -1;
+}
+
+.ctos .hcta {
+    position: relative;
+    isolation: isolate;
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    align-items: stretch;
+    min-height: 64px;
+    overflow: hidden;
+    text-decoration: none;
+    color: var(--cm-fg);
+    background: var(--cm-ctos-panel);
+    border: 1px solid var(--cm-hair-hi);
+    border-left: 3px solid var(--cm-cyan);
+    transition: transform var(--cm-d-base) var(--cm-ease), border-color .15s, color .15s;
+}
+/* Hover fill: a hard wipe from the left in the plate's own color (cyan on panels, white on the primary). */
+.ctos .hcta::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    background: var(--cm-cyan);
+    transform: scaleX(0);
+    transform-origin: 0 50%;
+    transition: transform .32s var(--cm-ease);
+}
+/* Dither strip along the bottom edge, same as the naOS panels. */
+.ctos .hcta::after {
+    content: "";
+    position: absolute;
+    left: 34px;
+    right: 0;
+    bottom: 0;
+    height: 9px;
+    z-index: -1;
+    pointer-events: none;
+    background-image: radial-gradient(circle, rgba(244, 244, 242, .5) 0 30%, transparent 34%);
+    background-size: 4px 4px;
+    -webkit-mask-image: linear-gradient(0deg, #000, transparent);
+    mask-image: linear-gradient(0deg, #000, transparent);
+    opacity: .5;
+}
+
+.ctos .hcta-no {
+    display: grid;
+    place-items: center;
+    padding: 0 12px;
+    font: 700 var(--cm-ctos-t-tag)/1 var(--cm-mono);
+    letter-spacing: .1em;
+    background: var(--cm-ctos-block);
+    color: var(--cm-ctos-ink);
+    transition: background-color .15s, color .15s;
+}
+.ctos .hcta-txt {
+    display: grid;
+    align-content: center;
+    gap: 6px;
+    min-width: 0;
+    padding: 12px 14px;
+}
+.ctos .hcta-txt b {
+    font: 800 22px/.9 var(--cm-display);
+    letter-spacing: -.04em;
+    text-transform: lowercase;
+    white-space: nowrap;
+}
+.ctos .hcta-txt small {
+    font: 500 var(--cm-ctos-t-tag)/1 var(--cm-mono);
+    letter-spacing: .12em;
+    text-transform: uppercase;
+    color: var(--cm-dim);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    transition: color .15s;
+}
+.ctos .hcta-arr {
+    display: grid;
+    place-items: center;
+    padding: 0 16px;
+    font: 400 18px/1 var(--cm-mono);
+    border-left: 1px dashed var(--cm-hair-hi);
+    transition: transform var(--cm-d-base) var(--cm-ease), color .15s;
+}
+
+/* Primary: the cyan plate. */
+.ctos .hcta-main {
+    background: var(--cm-cyan);
+    color: var(--cm-cyan-ink);
+    border-color: var(--cm-cyan);
+    border-left-color: var(--cm-ctos-block);
+    min-height: 76px;
+}
+.ctos .hcta-main::before {
+    background: var(--cm-ctos-block);
+}
+.ctos .hcta-main .hcta-no {
+    background: var(--cm-ctos-ink);
+    color: var(--cm-cyan);
+}
+.ctos .hcta-main .hcta-txt b {
+    font-size: 30px;
+}
+.ctos .hcta-main .hcta-arr {
+    border-left-color: rgba(3, 20, 23, .35);
+    font-size: 24px;
+}
+.ctos .hcta-main::after {
+    background-image: radial-gradient(circle, rgba(3, 20, 23, .6) 0 30%, transparent 34%);
+}
+
+/* Hover (fine pointers only): the fill sweeps in, the plate flips to ink, the arrow runs. */
+@media (hover: hover) and (pointer: fine) {
+    .ctos .hcta:hover {
+        transform: translateY(-2px);
+        border-color: var(--cm-cyan);
+        color: var(--cm-ctos-ink);
+    }
+    .ctos .hcta:hover::before {
+        transform: scaleX(1);
+    }
+    .ctos .hcta:hover .hcta-no {
+        background: var(--cm-ctos-ink);
+        color: var(--cm-cyan);
+    }
+    .ctos .hcta:hover .hcta-txt small {
+        color: rgba(26, 26, 26, .72);
+    }
+    .ctos .hcta:hover .hcta-arr {
+        transform: translateX(4px);
+    }
+    .ctos .hcta-main:hover {
+        border-color: var(--cm-ctos-block);
+        border-left-color: var(--cm-ctos-block);
+    }
+    .ctos .hcta-main:hover::before {
+        background: var(--cm-ctos-block);
+    }
+    .ctos .hcta-main:hover .hcta-no {
+        background: var(--cm-ctos-ink);
+        color: var(--cm-cyan);
+    }
+}
+.ctos .hcta:focus-visible {
+    outline: 2px solid var(--cm-ctos-block);
+    outline-offset: 3px;
+}
+.ctos .hcta:active {
+    transform: translateY(1px);
+}
+
+@media (max-width: 520px) {
+    .ctos .hero-cta {
+        grid-template-columns: minmax(0, 1fr);
+    }
+    .ctos .hero-cta .hcta-main {
+        grid-column: auto;
+    }
+    .ctos .hcta {
+        min-height: 60px;
+    }
+    .ctos .hcta-txt b {
+        font-size: 19px;
+    }
+    .ctos .hcta-main {
+        min-height: 68px;
+    }
+    .ctos .hcta-main .hcta-txt b {
+        font-size: 26px;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .ctos .hero-title .hw,
+    .ctos .hcta,
+    .ctos .hcta::before,
+    .ctos .hcta-arr,
+    .ctos .hcta-no {
+        transition: none;
+    }
+}
