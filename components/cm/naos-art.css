@@ -25,11 +25,33 @@
 }
 
 /* Full-page backdrop: one dithered terrain field per page, fixed behind the content (z-index -1 inside .ctos, which
-   is an isolated stacking context). Static, so it costs no per-frame work. Its opacity is tuned so body copy stays
-   readable; the field is sparse under the reading column (the generator pushes ink to one side of the frame). */
+   is an isolated stacking context). Static, so it costs no per-frame work.
+   - Native pixels: the art is 720x480 and is drawn at exactly 2 css px per art pixel (1440 wide, scaling up on wider
+     screens), with pixelated sampling, so every dot stays crisp instead of going soft.
+   - Gradient, not a fill: a mask keeps the field dense in the upper right and lets it recede to the ground toward the
+     lower left, where the copy sits. Lower opacity overall. */
 .naos-backdrop {
   position: fixed; inset: 0; z-index: -1; pointer-events: none;
-  background-position: center; background-size: cover; background-repeat: no-repeat;
-  opacity: .62; image-rendering: auto;
+  background-position: center top; background-size: max(1440px, 100vw) auto; background-repeat: no-repeat;
+  image-rendering: pixelated; opacity: .5;
+  -webkit-mask-image: radial-gradient(ellipse 75% 85% at 82% 18%, #000 0, rgba(0, 0, 0, .55) 45%, transparent 92%);
+  mask-image: radial-gradient(ellipse 75% 85% at 82% 18%, #000 0, rgba(0, 0, 0, .55) 45%, transparent 92%);
 }
-@media (max-width: 760px) { .naos-backdrop { opacity: .5; background-position: 62% center; } }
+@media (max-width: 760px) {
+  .naos-backdrop {
+    opacity: .4; background-position: 62% top;
+    -webkit-mask-image: linear-gradient(180deg, transparent 0, #000 22%, rgba(0, 0, 0, .6) 60%, transparent 96%);
+    mask-image: linear-gradient(180deg, transparent 0, #000 22%, rgba(0, 0, 0, .6) 60%, transparent 96%);
+  }
+}
+
+/* Shared legibility scrim for every naOS page. It sits above the art and below the content, so the copy keeps its
+   contrast on any page. Desktop: a soft dark pool behind the reading column on the left, where the ink falls off.
+   Phones: the copy runs full width, so the scrim is a top-to-bottom wash. Pages do not add their own scrims. */
+.naos-scrim {
+  position: fixed; inset: 0; z-index: -1; pointer-events: none;
+  background: radial-gradient(ellipse 70% 85% at 24% 44%, rgba(26, 26, 26, .78) 0, rgba(26, 26, 26, .45) 52%, rgba(26, 26, 26, 0) 100%);
+}
+@media (max-width: 760px) {
+  .naos-scrim { background: linear-gradient(180deg, rgba(26, 26, 26, .5) 0, rgba(26, 26, 26, .3) 35%, rgba(26, 26, 26, .34) 70%, rgba(26, 26, 26, .55) 100%); }
+}

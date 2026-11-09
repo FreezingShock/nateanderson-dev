@@ -724,11 +724,11 @@ def backdrop(seed, side="right", base=3, contours=12, style="terrain", angle=135
 BACKDROPS = {
     "home": dict(seed=11, side="right", base=3, contours=7, style="terrain", angle=135),
     "studies": dict(seed=23, side="right", base=3, contours=8, style="terrace", steps=7, angle=120),
-    "about": dict(seed=37, side="left", base=4, contours=8, style="ridge", angle=200),
+    "about": dict(seed=37, side="right", base=4, contours=8, style="ridge", angle=200),
     "history": dict(seed=41, side="right", base=5, contours=10, style="terrain", angle=60),
-    "timeline": dict(seed=53, side="left", base=2, contours=5, style="terrace", steps=5, angle=225),
+    "timeline": dict(seed=53, side="right", base=2, contours=5, style="terrace", steps=5, angle=225),
     "blog": dict(seed=67, side="right", base=5, contours=6, style="ridge", angle=300),
-    "games": dict(seed=79, side="left", base=2, contours=12, style="terrain", angle=45),
+    "games": dict(seed=79, side="right", base=2, contours=12, style="terrain", angle=45),
     "default": dict(seed=97, side="right", base=3, contours=7, style="terrain", angle=110),
 }
 

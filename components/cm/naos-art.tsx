@@ -60,5 +60,10 @@ export function NaosArt({
  * Place it as the first child of the page's `.ctos` root. Decorative: aria-hidden, no pointer events.
  */
 export function NaosBackdrop({ src }: { src: string }) {
-    return <div className="naos-backdrop" aria-hidden="true" style={{ backgroundImage: `url(${src})` }} />;
+    return (
+        <>
+            <div className="naos-backdrop" aria-hidden="true" style={{ backgroundImage: `url(${src})` }} />
+            <div className="naos-scrim" aria-hidden="true" />
+        </>
+    );
 }
