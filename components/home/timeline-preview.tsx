@@ -5,6 +5,7 @@ import { NEXT_MONTHS, NEXT_YEAR } from "@/lib/upcoming";
 export function TimelinePreview() {
     return (
         <Section
+            ctos
             id="timeline"
             no="04"
             label="Timeline view"

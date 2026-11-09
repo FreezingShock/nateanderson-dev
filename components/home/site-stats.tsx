@@ -19,6 +19,7 @@ export async function SiteStats() {
     ];
     return (
         <Section
+            ctos
             id="stats"
             no="03"
             label="Site statistics"

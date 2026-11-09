@@ -65,6 +65,7 @@ export function Scramble({
     className = "",
     delay,
     hover = false,
+    replay = false,
 }: {
     text: string;
     as?: ElementType;
@@ -72,11 +73,13 @@ export function Scramble({
     /** ms before it starts, once in view */
     delay?: number;
     hover?: boolean;
+    /** re-scramble every time it scrolls back into view */
+    replay?: boolean;
 }) {
     return (
         <Tag className={className || undefined} {...(hover ? { "data-scr-hover": "" } : {})}>
             <span className="sr-only">{text}</span>
-            <span aria-hidden="true" data-mx-scr="" data-scr-text="" {...(delay ? { "data-mx-scr-d": String(delay) } : {})}>
+            <span aria-hidden="true" {...(replay ? { "data-rx-scr": "" } : { "data-mx-scr": "" })} data-scr-text="" {...(delay ? { "data-mx-scr-d": String(delay) } : {})}>
                 {text}
             </span>
         </Tag>

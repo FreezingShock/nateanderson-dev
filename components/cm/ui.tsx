@@ -72,16 +72,16 @@ export function Section({
     return (
         <section className={`cm-section ruled ${className}`.trim()} id={id}>
             <span className="cm-sec-rule" data-mx="line" aria-hidden="true" />
-            <div className="cm-wrap" data-mx-stagger="">
+            <div className="cm-wrap" {...(ctos ? { "data-rx-auto": "" } : { "data-mx-stagger": "" })}>
                 <div className="cm-sec-head">
                     <div>
                         {ctos ? (
-                            <Scramble className="cm-lbl" text={no ? `${no} / ${label}` : label} />
+                            <Scramble className="cm-lbl" replay text={no ? `${no} / ${label}` : label} />
                         ) : (
                             <span className="cm-lbl">{no ? `${no} / ${label}` : label}</span>
                         )}
                         {ctos ? (
-                            <h2 className="cm-h2" data-mx="slab">
+                            <h2 className="cm-h2" data-rx="slab">
                                 <Slab>{title}</Slab>
                             </h2>
                         ) : (
