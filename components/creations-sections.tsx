@@ -1,7 +1,7 @@
 import Link from "next/link";
-import type { ReactNode } from "react";
-import { PageHead, Section as CmSection } from "@/components/cm/ui";
-import { Reveal } from "@/components/cm/reveal";
+import type { ComponentProps, ReactNode } from "react";
+import { Section as CmSection } from "@/components/cm/ui";
+import { ScrollType, Scramble } from "@/components/cm/motion";
 import { statusLabel, type Project } from "@/lib/content";
 import {
     CATEGORIES,
@@ -12,33 +12,127 @@ import {
     type Game,
     type GameMode,
 } from "@/lib/creations-data";
+import "@/components/creations/creations.css";
 
-// Server components shared by /creations and its category pages. Everything is Camino: hairline
-// cards, a hatch "viz" panel per item, mono status lines, and cyan only for what is live.
+// Server components shared by /creations and its category pages. Everything is naOS: the page wrapper turns on the
+// ctos layer, every section is a ctos section (scrambled label, slab heading, scrubbed reveals), panels are
+// status-card style, and cyan only marks what is live. Motion comes from the shared engine; nothing here animates.
 
-/** Page frame for every Creations page. */
+/** Page frame for every Creations page: naOS head, optional status card, then the sections. */
 export function CreationsShell({
     eyebrow,
     title,
     description,
     back,
+    aside,
     children,
 }: {
     eyebrow: string;
     title: string[];
     description: string;
     back?: { href: string; label: string };
+    aside?: ReactNode;
     children: ReactNode;
 }) {
     return (
-        <>
-            <PageHead label={eyebrow} title={title} lead={description} back={back} />
+        <div className="ctos">
+            <CreationsHead label={eyebrow} title={title} lead={description} back={back} aside={aside} />
             {children}
-        </>
+        </div>
     );
 }
 
-export const Section = CmSection;
+/**
+ * Title block for a Creations page: a mono label, the lowercase slab title (the same stacked white bars as the
+ * homepage), a typed lead, and an optional status card beside it. Used by the hub, the category pages and detail.
+ */
+export function CreationsHead({
+    label,
+    title,
+    lead,
+    back,
+    aside,
+}: {
+    label: string;
+    title: string[];
+    lead?: string;
+    back?: { href: string; label: string };
+    aside?: ReactNode;
+}) {
+    return (
+        <header className="cm-head cr-head">
+            <div className="cm-grid-bg" aria-hidden="true" />
+            <div className={`cm-wrap cr-head-grid${aside ? " has-aside" : ""}`}>
+                <div className="cr-head-copy cm-stage">
+                    {back && (
+                        <Link href={back.href} className="cm-lbl cm-crumb">
+                            <span aria-hidden="true">←</span> {back.label}
+                        </Link>
+                    )}
+                    <span className="cm-lbl">{label}</span>
+                    <h1 style={{ margin: 0 }}>
+                        <span className={`cm-highlight wipe${title.length === 1 ? " solo" : ""}`} style={{ display: "inline-flex", flexDirection: "column" }}>
+                            {title.map((t) => (
+                                <span key={t}>{t}</span>
+                            ))}
+                        </span>
+                    </h1>
+                    {lead && <ScrollType text={lead} auto className="cm-lead" style={{ margin: 0 }} />}
+                </div>
+                {aside}
+            </div>
+        </header>
+    );
+}
+
+/** Status card (the naOS ID card): badge, label/value rows and a signal strip. Same family as the homepage status. */
+export function IdCard({
+    label,
+    badge,
+    year,
+    rows,
+    foot,
+    live = true,
+}: {
+    label: string;
+    badge: string;
+    year: string;
+    rows: { k: string; v: ReactNode }[];
+    foot: string[];
+    /** Show the blinking Live tag. Off for work that is not running yet. */
+    live?: boolean;
+}) {
+    return (
+        <aside className="hero-status id cr-id" aria-label={label}>
+            <div className="id-top">
+                <Scramble className="id-sys" replay text={label} />
+                {live && <span className="id-live"><i aria-hidden="true" />Live</span>}
+            </div>
+            <div className="id-main">
+                <div className="id-badge" aria-hidden="true"><b>{badge}</b><span>{year}</span></div>
+                <dl className="id-rows">
+                    {rows.map((r) => (
+                        <div key={r.k}>
+                            <dt>{r.k}</dt>
+                            <dd>{r.v}</dd>
+                        </div>
+                    ))}
+                </dl>
+            </div>
+            <div className="id-foot" aria-hidden="true">
+                <span className="id-bars"><i /><i /><i /><i /><i /></span>
+                {foot.map((f) => (
+                    <span key={f}>{f}</span>
+                ))}
+            </div>
+        </aside>
+    );
+}
+
+/** A numbered naOS section. Every Creations section is a ctos section. */
+export function Section(props: ComponentProps<typeof CmSection>) {
+    return <CmSection {...props} ctos />;
+}
 
 const statusLabelFor = (s: Game["status"]) => (s === "building" ? "In development" : "Planned");
 const statusTone = { playable: "live", building: "warn", planned: "" } as const;
@@ -47,25 +141,24 @@ const projectTone = { active: "live", planning: "warn", idea: "" } as const;
 /** The four category doors on the hub. */
 export function CategoryGrid({ counts }: { counts: Record<CreationCategory["id"], number> }) {
     return (
-        <div className="cm-grid" style={{ gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))" }}>
-            {CATEGORIES.map((c, i) => {
+        <div className="cm-grid">
+            {CATEGORIES.map((c) => {
                 const Icon = c.icon;
                 return (
-                    <Reveal key={c.id} delay={(i % 2) * 70}>
-                        <Link href={c.href} className="cm-card link sign" style={{ height: "100%" }}>
-                            <div className="cm-row" style={{ justifyContent: "space-between" }}>
-                                <Icon className="cm-ico" style={{ width: 22, height: 22 }} aria-hidden="true" />
-                                <span className="cm-state">{counts[c.id]} inside</span>
-                            </div>
-                            <b style={{ fontSize: 20, marginTop: 6 }}>{c.title}</b>
-                            <p>{c.blurb}</p>
-                            <div className="cm-row-gap" style={{ marginTop: 6 }}>
-                                {c.tags.map((t) => (
-                                    <span key={t} className="cm-pill">{t}</span>
-                                ))}
-                            </div>
-                        </Link>
-                    </Reveal>
+                    <Link key={c.id} href={c.href} className="cm-card link" style={{ height: "100%" }}>
+                        <div className="cm-row" style={{ justifyContent: "space-between" }}>
+                            <Icon className="cm-ico" style={{ width: 22, height: 22 }} aria-hidden="true" />
+                            <span className="cm-state">{counts[c.id]} inside</span>
+                        </div>
+                        <b style={{ fontSize: 20, marginTop: 6 }}>{c.title}</b>
+                        <p>{c.blurb}</p>
+                        <div className="cm-row-gap" style={{ marginTop: 6 }}>
+                            {c.tags.map((t) => (
+                                <span key={t} className="cm-pill">{t}</span>
+                            ))}
+                        </div>
+                        <span className="st">Open →</span>
+                    </Link>
                 );
             })}
         </div>
@@ -74,15 +167,13 @@ export function CategoryGrid({ counts }: { counts: Record<CreationCategory["id"]
 
 export function PhilosophyGrid() {
     return (
-        <div className="cm-cols4" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))" }}>
+        <div className="cm-grid">
             {PRINCIPLES.map((p, i) => (
-                <Reveal key={p.title} delay={(i % 2) * 70}>
-                    <div className="cm-card" style={{ height: "100%" }}>
-                        <span className="cm-state">{String(i + 1).padStart(2, "0")}</span>
-                        <b>{p.title}</b>
-                        <p>{p.text}</p>
-                    </div>
-                </Reveal>
+                <div key={p.title} className="cm-card" style={{ height: "100%" }}>
+                    <span className="cm-state">{String(i + 1).padStart(2, "0")}</span>
+                    <b>{p.title}</b>
+                    <p>{p.text}</p>
+                </div>
             ))}
         </div>
     );
@@ -117,15 +208,13 @@ function GameCard({ game }: { game: Game }) {
 /** One game mode: a numbered section with its game cards. */
 export function GameModeSection({ mode, no }: { mode: GameMode; no: string }) {
     return (
-        <CmSection id={mode.id} no={no} label={mode.title} title={mode.tagline} blurb={mode.about}>
+        <Section id={mode.id} no={no} label={mode.title} title={mode.tagline} blurb={mode.about}>
             <div className="cm-grid">
-                {mode.games.map((g, i) => (
-                    <Reveal key={g.slug} delay={(i % 3) * 70}>
-                        <GameCard game={g} />
-                    </Reveal>
+                {mode.games.map((g) => (
+                    <GameCard key={g.slug} game={g} />
                 ))}
             </div>
-        </CmSection>
+        </Section>
     );
 }
 
@@ -141,23 +230,21 @@ export function ProjectGrid({ projects }: { projects: Project[] }) {
     return (
         <div className="cm-grid">
             {projects.map((p, i) => (
-                <Reveal key={p.slug} delay={(i % 3) * 70}>
-                    <Link href={`/creations/${p.slug}`} className="cm-card link" style={{ height: "100%" }}>
-                        <div className="cm-viz">
-                            <span className={`cm-tag flat ${projectTone[p.status]}`}>{statusLabel[p.status]}</span>
-                            <span className="glyph" aria-hidden="true">{String(i + 1).padStart(2, "0")}</span>
-                        </div>
-                        <span className="cm-state">{p.category}</span>
-                        <b>{p.title}</b>
-                        <p>{p.description}</p>
-                        <div className="cm-row-gap" style={{ marginTop: 2 }}>
-                            {p.tags.map((t) => (
-                                <span key={t} className="cm-pill">{t}</span>
-                            ))}
-                        </div>
-                        <span className="st">Open →</span>
-                    </Link>
-                </Reveal>
+                <Link key={p.slug} href={`/creations/${p.slug}`} className="cm-card link" style={{ height: "100%" }}>
+                    <div className="cm-viz">
+                        <span className={`cm-tag flat ${projectTone[p.status]}`}>{statusLabel[p.status]}</span>
+                        <span className="glyph" aria-hidden="true">{String(i + 1).padStart(2, "0")}</span>
+                    </div>
+                    <span className="cm-state">{p.category}</span>
+                    <b>{p.title}</b>
+                    <p>{p.description}</p>
+                    <div className="cm-row-gap" style={{ marginTop: 2 }}>
+                        {p.tags.map((t) => (
+                            <span key={t} className="cm-pill">{t}</span>
+                        ))}
+                    </div>
+                    <span className="st">Open →</span>
+                </Link>
             ))}
         </div>
     );
@@ -167,7 +254,7 @@ export function ProjectGrid({ projects }: { projects: Project[] }) {
 export function ArtCollectionSection({ collection, no }: { collection: ArtCollection; no: string }) {
     const Icon = collection.icon;
     return (
-        <CmSection id={collection.id} no={no} label="Collection" title={collection.title} blurb={collection.blurb}>
+        <Section id={collection.id} no={no} label="Collection" title={collection.title} blurb={collection.blurb}>
             <div className="cm-grid" style={{ gridTemplateColumns: "repeat(auto-fill, minmax(160px, 1fr))" }}>
                 {collection.slots.map((slot, i) => (
                     <div key={slot} className="cm-card" style={{ height: "100%" }}>
@@ -181,6 +268,6 @@ export function ArtCollectionSection({ collection, no }: { collection: ArtCollec
                     </div>
                 ))}
             </div>
-        </CmSection>
+        </Section>
     );
 }
