@@ -157,3 +157,8 @@ div.cm-card:hover { transform: none; }
 }
 /* Room for the dock under the footer. */
 body { padding-bottom: calc(86px + env(safe-area-inset-bottom, 0px)); }
+
+/* Tap and click size: inline text links get a 24px box (WCAG 2.5.8); footer links 24px, 32px on touch screens. */
+a.cm-lbl, .cm-more { display: inline-flex; align-items: center; min-height: 24px; }
+.cm-foot-col a { display: flex; align-items: center; min-height: 24px; }
+@media (pointer: coarse) { .cm-foot-col a { min-height: 32px; } }

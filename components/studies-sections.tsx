@@ -20,7 +20,7 @@ export function ProgramCardView({ program }: { program: Program }) {
                 <span>{program.timeline}</span>
             </div>
             <div className="cm-body-pad" style={{ display: "grid", gap: 10 }}>
-                <h4 className="cm-h3" style={{ margin: 0 }}><span className="st-tt">{program.title}</span></h4>
+                <h3 className="cm-h3" style={{ margin: 0 }}><span className="st-tt">{program.title}</span></h3>
                 <p className="cm-body" style={{ margin: 0 }}>{program.description}</p>
                 <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
                     {program.courses.map((c) => (
@@ -105,7 +105,7 @@ export function ReadingQueue() {
                                 {item.author && <span>{item.author}</span>}
                             </div>
                             <div className="cm-body-pad" style={{ display: "grid", gap: 8 }}>
-                                <h4 className="cm-h3" style={{ margin: 0 }}>{item.title}</h4>
+                                <h3 className="cm-h3" style={{ margin: 0 }}>{item.title}</h3>
                                 <p className="cm-body" style={{ margin: 0 }}>{item.note}</p>
                             </div>
                         </div>
@@ -125,7 +125,7 @@ export function ToolRoadmap() {
                         <span>{String(i + 1).padStart(2, "0")} / {stage.when}</span>
                     </div>
                     <div className="cm-body-pad" style={{ display: "grid", gap: 10 }}>
-                        <h4 className="cm-h3" style={{ margin: 0 }}>{stage.label}</h4>
+                        <h3 className="cm-h3" style={{ margin: 0 }}>{stage.label}</h3>
                         <ul className="st-list">
                             {stage.skills.map((s) => (
                                 <li key={s}>{s}</li>

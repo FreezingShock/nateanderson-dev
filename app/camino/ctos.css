@@ -175,6 +175,7 @@ body:has(.ctos) .cm-foot-base { font-family: var(--cm-mono); }
 .ctos .hero-status.id::after { left: -3px; bottom: -1px; border-bottom-width: 2px; border-left-width: 2px; }
 .id-top { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 9px 14px; background: var(--cm-ctos-block); color: var(--cm-ctos-ink); font: 700 var(--cm-ctos-t-tag)/1 var(--cm-mono); letter-spacing: .14em; text-transform: uppercase; }
 .id-live { display: inline-flex; align-items: center; gap: 7px; font-weight: 600; letter-spacing: .12em; color: var(--cm-live); }
+.id-top .id-live { color: #0f6a3a; }
 .id-live i { width: 7px; height: 7px; background: var(--cm-live); box-shadow: 0 0 0 3px rgba(60, 224, 122, .22); animation: cm-blink 1.1s steps(2) infinite; }
 .id-main { display: grid; grid-template-columns: 74px minmax(0, 1fr); gap: 16px; padding: 16px 14px 12px; align-items: start; }
 .id-badge { position: relative; width: 74px; height: 92px; background: var(--cm-ctos-block); color: var(--cm-ctos-ink); overflow: hidden; display: grid; align-content: start; justify-items: start; padding: 6px 7px; }
@@ -200,8 +201,8 @@ body:has(.ctos) .cm-foot-base { font-family: var(--cm-mono); }
 .ctos .cm-grid > .cm-card:nth-child(3n+1), .ctos .cm-cols3 > .cm-card:nth-child(3n+1) { background: var(--cm-ctos-block); border-color: var(--cm-ctos-block); color: var(--cm-ctos-ink); }
 .ctos .cm-grid > .cm-card:nth-child(3n+1) b, .ctos .cm-cols3 > .cm-card:nth-child(3n+1) b { color: var(--cm-ctos-ink); font-weight: 800; letter-spacing: -.03em; font-size: var(--cm-ctos-t-lead); text-transform: lowercase; }
 .ctos .cm-grid > .cm-card:nth-child(3n+1) p, .ctos .cm-cols3 > .cm-card:nth-child(3n+1) p { color: #4a4a47; }
-.ctos .cm-grid > .cm-card:nth-child(3n+1) .st, .ctos .cm-cols3 > .cm-card:nth-child(3n+1) .st { color: #77776f; }
-.ctos .cm-grid > .cm-card:nth-child(3n+1) .cm-state, .ctos .cm-cols3 > .cm-card:nth-child(3n+1) .cm-state { color: #0a7f89; }
+.ctos .cm-grid > .cm-card:nth-child(3n+1) .st, .ctos .cm-cols3 > .cm-card:nth-child(3n+1) .st { color: #5c5c57; }
+.ctos .cm-grid > .cm-card:nth-child(3n+1) .cm-state, .ctos .cm-cols3 > .cm-card:nth-child(3n+1) .cm-state { color: #076e77; }
 .ctos .cm-grid > .cm-card:nth-child(3n+1) .cm-viz { background: repeating-linear-gradient(135deg, rgba(0,0,0,.08) 0 1px, transparent 1px 8px), #e3e3df; border-color: #c9c9c3; }
 .ctos .cm-grid > .cm-card:nth-child(3n+1) .cm-viz .glyph { color: #1a1a1a; }
 .ctos .cm-grid > .cm-card:nth-child(3n+1):hover { background: #fff; transform: translateY(-3px); }
@@ -225,7 +226,7 @@ body:has(.ctos) .cm-foot-base { font-family: var(--cm-mono); }
 .ctos .pf-pillars { border-top: 0; gap: 0; }
 .ctos .pf-pillars > div { border-right: 0; border-top: 0; }
 .ctos .pf-pillars > div:nth-child(odd) { background: var(--cm-ctos-block); color: var(--cm-ctos-ink); }
-.ctos .pf-pillars > div:nth-child(odd) dt { color: #0a7f89; } .ctos .pf-pillars > div:nth-child(odd) small { color: #4a4a47; }
+.ctos .pf-pillars > div:nth-child(odd) dt { color: #076e77; } .ctos .pf-pillars > div:nth-child(odd) small { color: #4a4a47; }
 .ctos .pf-pillars > div:nth-child(even) { background: #0f0f0f; background-image: radial-gradient(circle, rgba(244,244,242,.1) 0 28%, transparent 32%); background-size: 5px 5px; }
 .ctos .pf-pillars dd { font-weight: 800; letter-spacing: -.03em; text-transform: lowercase; font-size: 19px; }
 .ctos .pf-now { background: #0e0e0e; border-color: var(--cm-hair-hi); }
@@ -308,3 +309,15 @@ body:has(.ctos) .cm-foot-base { font-family: var(--cm-mono); }
 .ctos .meta.stats > div::after { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 22px; z-index: -1; pointer-events: none; background-image: radial-gradient(circle, rgba(244, 244, 242, .5) 0 30%, transparent 34%); background-size: 4px 4px; -webkit-mask-image: linear-gradient(0deg, #000, transparent); mask-image: linear-gradient(0deg, #000, transparent); opacity: .4; }
 .ctos .meta.stats .big { font: 800 34px/1 var(--cm-display); letter-spacing: -.05em; margin-top: 4px; display: block; }
 @media (max-width: 520px) { .ctos .cm-hero .meta.stats > div { min-width: 0; padding-inline: 10px 12px; } .ctos .meta.stats .big { font-size: 28px; } }
+
+/* Accessibility pass: pillar detail sits inside its <dd> now (valid dl markup), so keep it on its own line. */
+.ctos .pf-pillars dd > small { display: block; margin-top: 6px; font-size: 13px; font-weight: 500; letter-spacing: 0; text-transform: none; }
+/* Footer naOS links slide on hover; hold still for reduced motion (focus ring stays). */
+@media (prefers-reduced-motion: reduce) { body:has(.ctos) .cm-foot-col a:hover, body:has(.ctos) .cm-foot-col a:focus-visible { transform: none; } }
+/* Contrast on dark panels and light tiles (dim #56646c is 3.0:1 on #131313; mute and step text on light tiles). */
+.ctos .id-foot > span { color: #7d8b93; }
+.ctos .id-top .id-live, .ctos .g-top .id-live { color: #0f6a3a; }
+.ctos dd > a { display: inline-flex; align-items: center; min-height: 24px; }
+.ctos .cm-card:nth-child(3n+1) .cm-pill { color: #3f4a50; }
+/* Pills on the cyan-filled explore cards need the dark cyan ink (#8a99a3 on cyan was 1.7:1). */
+.ctos #explore .cm-grid > .cm-card:nth-child(4n+2) .cm-pill { color: var(--cm-cyan-ink); }

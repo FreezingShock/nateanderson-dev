@@ -86,7 +86,7 @@
 
 .cm-chip { display: inline-flex; align-items: center; gap: 6px; background: transparent; border: 1px solid var(--cm-hair); color: var(--cm-mute); font: 600 10px/1 var(--cm-mono); letter-spacing: .12em; text-transform: uppercase; padding: 6px 8px; cursor: pointer; transition: all var(--cm-d-base); }
 .cm-chip:hover { color: var(--cm-fg); border-color: var(--cm-hair-hi); }
-.cm-chip[aria-pressed="true"] { color: var(--cm-cyan-ink); background: var(--cm-cyan); border-color: var(--cm-cyan); }
+.cm-chip[aria-pressed="true"], .cm-chip[aria-current="true"] { color: var(--cm-cyan-ink); background: var(--cm-cyan); border-color: var(--cm-cyan); }
 .cm-chip .dot { width: 6px; height: 6px; background: currentColor; }
 
 

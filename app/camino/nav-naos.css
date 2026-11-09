@@ -50,7 +50,7 @@
 .nv-jrow { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; min-width: 0; }
 .nv-jday { font: 600 10px/1 var(--cm-mono); letter-spacing: .12em; text-transform: uppercase; color: var(--cm-mute); white-space: nowrap; }
 .nv-jday b { font: 700 12px/1 var(--cm-display); letter-spacing: -.02em; color: var(--cm-fg); margin-left: 4px; }
-.nv-jday em { font-style: normal; color: var(--cm-dim); margin-left: 4px; }
+.nv-jday em { font-style: normal; color: #7d8b93; margin-left: 4px; }
 .nv-jnext {
     min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
     font: 600 9.5px/1 var(--cm-mono); letter-spacing: .1em; text-transform: uppercase; color: var(--cm-cyan);
@@ -226,3 +226,4 @@
     .nv-panel { animation: none; }
     .nv-sec-t, .nv-kids a, .nv-brand b, .nv-search, .nv-snd, .nv-menu-btn { transition: none; }
 }
+@media (prefers-reduced-motion: reduce) { .nv-segs i[data-head] { animation: none; } }
