@@ -25,6 +25,8 @@ export function CreationsShell({
     description,
     back,
     aside,
+    backdrop,
+    variant,
     children,
 }: {
     eyebrow: string;
@@ -32,11 +34,15 @@ export function CreationsShell({
     description: string;
     back?: { href: string; label: string };
     aside?: ReactNode;
+    /** Page-specific art behind the title block (the hub uses the assembly field). */
+    backdrop?: ReactNode;
+    /** Adds `cr-<variant>` to the wrapper so one page can carry its own background and load-in without touching others. */
+    variant?: string;
     children: ReactNode;
 }) {
     return (
-        <div className="ctos">
-            <CreationsHead label={eyebrow} title={title} lead={description} back={back} aside={aside} />
+        <div className={variant ? `ctos cr-${variant}` : "ctos"}>
+            <CreationsHead label={eyebrow} title={title} lead={description} back={back} aside={aside} backdrop={backdrop} />
             {children}
         </div>
     );
@@ -52,16 +58,19 @@ export function CreationsHead({
     lead,
     back,
     aside,
+    backdrop,
 }: {
     label: string;
     title: string[];
     lead?: string;
     back?: { href: string; label: string };
     aside?: ReactNode;
+    backdrop?: ReactNode;
 }) {
     return (
         <header className="cm-head cr-head">
             <div className="cm-grid-bg" aria-hidden="true" />
+            {backdrop}
             <div className={`cm-wrap cr-head-grid${aside ? " has-aside" : ""}`}>
                 <div className="cr-head-copy cm-stage">
                     {back && (

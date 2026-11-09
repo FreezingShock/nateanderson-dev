@@ -54,3 +54,85 @@
 
 /* Big title blocks, as on the homepage: the stacked white bars fill the column on phones and reach the hero size on desktop. */
 .ctos .cr-head .cm-highlight > * { font-size: clamp(34px, 10vw, 84px); }
+
+/* ==========================================================================
+   Hub (/creations) only: its own background and load-in. Other Creations pages keep the shared head above until their
+   own pass. Everything below is scoped to `.ctos.cr-hub`, so nothing else changes.
+   ========================================================================== */
+
+/* Background: the magenta guide X is gone here. A fine scanline field fades in from the top right, and one cyan scan
+   bar sweeps the head once on load (transform only). The assembly art sits behind the status card. */
+.ctos.cr-hub .cr-head::after {
+  opacity: 1;
+  background: repeating-linear-gradient(180deg, rgba(244, 244, 242, .07) 0 1px, transparent 1px 6px);
+  -webkit-mask-image: radial-gradient(85% 90% at 82% 30%, #000 18%, transparent 78%);
+  mask-image: radial-gradient(85% 90% at 82% 30%, #000 18%, transparent 78%);
+}
+.ctos.cr-hub .cr-head::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  /* A full-height plate whose only ink is a 2px cyan line on its bottom edge; moving the plate down sweeps the line. */
+  background: linear-gradient(180deg, transparent calc(100% - 2px), var(--cm-cyan) 100%);
+  transform: translate3d(0, -100%, 0);
+  animation: cr-hub-scan 1.5s var(--cm-ease-cut) .15s 1 both;
+}
+@keyframes cr-hub-scan {
+  0% { transform: translate3d(0, -100%, 0); opacity: .85; }
+  88% { transform: translate3d(0, 0, 0); opacity: .85; }
+  100% { transform: translate3d(0, 0, 0); opacity: 0; }
+}
+.ctos.cr-hub .cr-head > .cm-wrap { z-index: 1; }
+
+/* Assembly art: fills the head as a low, dithered field. The status card and the copy sit on top; the art fades out
+   toward the copy on the left so the title stays readable. */
+.cr-art { position: absolute; inset: 0; z-index: 0; pointer-events: none; opacity: .34;
+  -webkit-mask-image: linear-gradient(90deg, transparent 22%, #000 72%); mask-image: linear-gradient(90deg, transparent 22%, #000 72%); }
+.cr-art .naos-art { position: absolute; inset: 0; width: 100%; height: 100%; }
+.cr-art .naos-art-break { width: 100%; height: 100%; margin: 0; }
+.cr-art img { width: 100%; height: 100%; object-fit: cover; object-position: 58% 52%; }
+@media (max-width: 900px) { .cr-art { opacity: .24; -webkit-mask-image: linear-gradient(180deg, #000 0%, transparent 100%); mask-image: linear-gradient(180deg, #000 0%, transparent 100%); } }
+
+/* Load-in, once, on arrival. Time based (the head is at the top of the page, so there is no scroll to tie it to).
+   Order: guide scan, grid, art dithers in in steps, status card drops in from the top, its rows and bars follow.
+   While the boot curtain or a page change holds the stage, everything stays hidden and starts when it lifts. */
+.ctos.cr-hub .cr-head > .cm-grid-bg { animation: cr-hub-grid 1.1s var(--cm-ease-out) .1s both; }
+@keyframes cr-hub-grid { from { opacity: 0; clip-path: inset(0 0 100% 0); } to { opacity: .7; clip-path: inset(0 0 0 0); } }
+.ctos.cr-hub .cr-art img { animation: cr-hub-art 1s steps(12, end) .35s both; }
+@keyframes cr-hub-art { from { clip-path: inset(0 100% 0 0); } to { clip-path: inset(0 0 0 0); } }
+.ctos.cr-hub .cr-id { animation: cr-hub-card .8s var(--cm-ease-cut) .5s both; }
+@keyframes cr-hub-card { from { clip-path: inset(0 0 100% 0); } to { clip-path: inset(0 0 0 0); } }
+.ctos.cr-hub .cr-id .id-rows > div { animation: cr-hub-row .55s var(--cm-ease-out) both; }
+.ctos.cr-hub .cr-id .id-rows > div:nth-child(1) { animation-delay: .8s; }
+.ctos.cr-hub .cr-id .id-rows > div:nth-child(2) { animation-delay: .88s; }
+.ctos.cr-hub .cr-id .id-rows > div:nth-child(3) { animation-delay: .96s; }
+.ctos.cr-hub .cr-id .id-rows > div:nth-child(4) { animation-delay: 1.04s; }
+@keyframes cr-hub-row { from { opacity: 0; transform: translate3d(-10px, 0, 0); } to { opacity: 1; transform: none; } }
+.ctos.cr-hub .cr-id .id-bars i { transform-origin: 50% 100%; animation: cr-hub-bar .5s steps(4, end) both; }
+.ctos.cr-hub .cr-id .id-bars i:nth-child(1) { animation-delay: 1.1s; }
+.ctos.cr-hub .cr-id .id-bars i:nth-child(2) { animation-delay: 1.16s; }
+.ctos.cr-hub .cr-id .id-bars i:nth-child(3) { animation-delay: 1.22s; }
+.ctos.cr-hub .cr-id .id-bars i:nth-child(4) { animation-delay: 1.28s; }
+.ctos.cr-hub .cr-id .id-bars i:nth-child(5) { animation-delay: 1.34s; }
+@keyframes cr-hub-bar { from { transform: scaleY(0); } to { transform: scaleY(1); } }
+
+/* Boot curtain or page change holds the head: nothing plays under it. */
+html[data-boot="full"] .ctos.cr-hub .cr-head > .cm-grid-bg, html[data-boot="quick"] .ctos.cr-hub .cr-head > .cm-grid-bg, html[data-xition="hold"] .ctos.cr-hub .cr-head > .cm-grid-bg,
+html[data-boot="full"] .ctos.cr-hub .cr-art img, html[data-boot="quick"] .ctos.cr-hub .cr-art img, html[data-xition="hold"] .ctos.cr-hub .cr-art img,
+html[data-boot="full"] .ctos.cr-hub .cr-id, html[data-boot="quick"] .ctos.cr-hub .cr-id, html[data-xition="hold"] .ctos.cr-hub .cr-id,
+html[data-boot="full"] .ctos.cr-hub .cr-head::before, html[data-boot="quick"] .ctos.cr-hub .cr-head::before, html[data-xition="hold"] .ctos.cr-hub .cr-head::before {
+  animation: none; opacity: 0;
+}
+
+/* Body: cards in the hub grids come in from alternating sides (odd from the left, even from the right), tied to scroll
+   (--p from the engine), so scrolling back up plays the same move in reverse. No clip-path or mask on these: the
+   reveal engine watches each card with IntersectionObserver, which treats a fully clipped element as off screen and
+   would leave it hidden for good. */
+.ctos.cr-hub .cm-grid > [data-rx]:nth-child(odd) { --rx-x: -26px; --rx-y: 0px; }
+.ctos.cr-hub .cm-grid > [data-rx]:nth-child(even) { --rx-x: 26px; --rx-y: 0px; }
+@media (prefers-reduced-motion: reduce) {
+  .ctos.cr-hub .cr-head::before, .ctos.cr-hub .cr-head > .cm-grid-bg, .ctos.cr-hub .cr-art img, .ctos.cr-hub .cr-id, .ctos.cr-hub .cr-id .id-rows > div, .ctos.cr-hub .cr-id .id-bars i { animation: none; }
+  .ctos.cr-hub .cr-head::before { display: none; }
+}
