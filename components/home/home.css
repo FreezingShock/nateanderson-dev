@@ -102,3 +102,119 @@
         gap: var(--cm-s5);
     }
 }
+
+/* Profile section: one lead, four pillars, a Now feed and a three-step path. */
+.pf {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: var(--cm-s5);
+    align-items: stretch;
+}
+.pf-id {
+    grid-column: 1 / -1;
+}
+.pf-lead {
+    margin: 0;
+    padding: var(--cm-s5) var(--cm-s5) var(--cm-s4);
+    font: 600 clamp(20px, 2.6vw, 30px) / 1.2 var(--cm-display);
+    letter-spacing: -0.02em;
+    max-width: 38ch;
+    text-wrap: balance;
+}
+.pf-pillars {
+    margin: 0;
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    border-top: 1px solid var(--cm-hair);
+}
+.pf-pillars > div {
+    padding: 14px var(--cm-s4) 16px;
+    border-right: 1px solid var(--cm-hair);
+    display: grid;
+    gap: 4px;
+    align-content: start;
+}
+.pf-pillars > div:last-child {
+    border-right: 0;
+}
+.pf-pillars dt {
+    font: 500 9px/1.2 var(--cm-mono);
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--cm-cyan);
+}
+.pf-pillars dd {
+    margin: 0;
+    font: 600 17px/1.15 var(--cm-display);
+}
+.pf-pillars small {
+    font-size: 12px;
+    line-height: 1.4;
+    color: var(--cm-mute);
+}
+.pf-feed,
+.pf-steps {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+.pf-feed li {
+    display: grid;
+    grid-template-columns: 82px minmax(0, 1fr);
+    gap: 12px;
+    padding: 12px var(--cm-s4);
+    border-top: 1px solid var(--cm-hair);
+    font-size: 13.5px;
+    line-height: 1.4;
+    align-items: baseline;
+}
+.pf-feed li:first-child {
+    border-top: 0;
+}
+.pf-steps li {
+    position: relative;
+    display: grid;
+    gap: 4px;
+    padding: 14px var(--cm-s4) 16px 40px;
+    border-top: 1px solid var(--cm-hair);
+}
+.pf-steps li:first-child {
+    border-top: 0;
+}
+.pf-steps li::before {
+    content: "";
+    position: absolute;
+    left: 16px;
+    top: 19px;
+    width: 9px;
+    height: 9px;
+    border: 1px solid var(--cm-mute);
+}
+.pf-steps li.cur::before {
+    background: var(--cm-cyan);
+    border-color: var(--cm-cyan);
+    box-shadow: var(--cm-glow);
+}
+.pf-steps b {
+    font: 600 16px/1.2 var(--cm-display);
+}
+.pf-steps p {
+    margin: 0;
+    font-size: 12.5px;
+    line-height: 1.45;
+    color: var(--cm-mute);
+}
+@media (max-width: 900px) {
+    .pf {
+        grid-template-columns: minmax(0, 1fr);
+    }
+    .pf-pillars {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+    .pf-pillars > div:nth-child(2n) {
+        border-right: 0;
+    }
+    .pf-pillars > div:nth-child(n + 3) {
+        border-top: 1px solid var(--cm-hair);
+    }
+}
