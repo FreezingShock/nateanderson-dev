@@ -3,6 +3,7 @@ import { GameFrame, GameReadout } from "@/components/games/naos";
 import { FlagGuesser } from "@/components/games/flag-guesser";
 import { pageMeta } from "@/lib/seo";
 
+import { NaosBackdrop } from "@/components/cm/naos-art";
 export const metadata = pageMeta({
     title: "Flag Guesser",
     description: "Name the country from its flag. A daily puzzle and unlimited practice rounds, played in your browser.",
@@ -13,6 +14,7 @@ export const metadata = pageMeta({
 export default function FlagGuesserPage() {
     return (
         <div className="ctos ng-page">
+            <NaosBackdrop src="/naos/bg-games.png" />
             <CreationsShell
                 eyebrow="Daily and unlimited"
                 title={["Flag Guesser"]}

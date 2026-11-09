@@ -23,3 +23,13 @@
 @media (prefers-reduced-motion: reduce) {
   .naos-art.is-armed img, .naos-art.is-in img { clip-path: none; animation: none; }
 }
+
+/* Full-page backdrop: one dithered terrain field per page, fixed behind the content (z-index -1 inside .ctos, which
+   is an isolated stacking context). Static, so it costs no per-frame work. Its opacity is tuned so body copy stays
+   readable; the field is sparse under the reading column (the generator pushes ink to one side of the frame). */
+.naos-backdrop {
+  position: fixed; inset: 0; z-index: -1; pointer-events: none;
+  background-position: center; background-size: cover; background-repeat: no-repeat;
+  opacity: .5; image-rendering: auto;
+}
+@media (max-width: 760px) { .naos-backdrop { opacity: .38; background-position: 62% center; } }

@@ -11,28 +11,7 @@
     display: none;
 }
 
-.bg {
-    position: absolute;
-    inset: 0;
-    z-index: -1;
-    overflow: hidden;
-    pointer-events: none;
-}
 
-.art {
-    position: absolute;
-    top: 12%;
-    right: 0;
-    width: min(56vw, 520px);
-    height: auto;
-    image-rendering: pixelated;
-    image-rendering: crisp-edges;
-    opacity: .9;
-    -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 38%);
-    mask-image: linear-gradient(90deg, transparent 0, #000 38%);
-    user-select: none;
-    animation: histDither 1.3s steps(12, end) .15s both;
-}
 
 /* Title lines: each block wipes in from the left, one after another, so the words land in order. */
 .hero :global(.cm-highlight) > span {
@@ -323,12 +302,6 @@ ol.list {
 
 @media (max-width: 760px) {
     /* Phones: the terrain sits in the space beside the title, above the lead copy, so it never fights the text. */
-    .art {
-        top: 0;
-        right: -12px;
-        width: min(70vw, 280px);
-        opacity: .6;
-    }
 }
 
 @media (max-width: 560px) {
@@ -371,7 +344,6 @@ ol.list {
         transition: none;
     }
 
-    .art,
     .headStrip,
     .hero :global(.cm-highlight) > span {
         animation: none;

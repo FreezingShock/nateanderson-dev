@@ -210,18 +210,3 @@
 .ctos .post-pn .cta-b span { min-width: 0; overflow-wrap: anywhere; white-space: normal; line-height: 1.25; }
 .ctos .post-body-sec { padding-top: 0; }
 
-/* ---- Header art: a page with a reading strip along its front edge (public/naos/post.png). Behind the title block.
-   It dithers in on load after the boot overlay, the same stepped reveal as the index hero. ---------------------------- */
-.ctos .post-hero { position: relative; }
-.ctos .post-hero > .cm-head { position: relative; z-index: 1; }
-.ctos .post-hero .naos-art-hero { top: 4%; right: -2%; width: min(42vw, 430px); opacity: .9; }
-.ctos .post-hero .naos-art-hero img { animation: naos-dither-in 900ms steps(12, end) .12s backwards; }
-html[data-boot="full"] .post-hero .naos-art-hero img, html[data-boot="quick"] .post-hero .naos-art-hero img {
-  animation: none; clip-path: inset(0 100% 0 0);
-}
-@media (max-width: 760px) {
-  .ctos .post-hero .naos-art-hero { top: 0; right: -12%; width: 84vw; opacity: .2; }
-}
-@media (prefers-reduced-motion: reduce) {
-  .ctos .post-hero .naos-art-hero img { animation: none; }
-}

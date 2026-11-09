@@ -7,6 +7,7 @@ import { getRepoStats } from "@/lib/site-stats";
 import styles from "./history.module.css";
 import { pageMeta } from "@/lib/seo";
 
+import { NaosBackdrop } from "@/components/cm/naos-art";
 const INITIAL_PER_PAGE = 10;
 
 // Auto-updating changelog: reads straight from the GitHub REST API at
@@ -65,12 +66,8 @@ export default async function HistoryPage() {
 
     return (
         <div className="ctos">
+            <NaosBackdrop src="/naos/bg-history.png" />
             <div className={styles.hero}>
-                {/* Backdrop: the commit terrain (scripts/naos-art/generate.py, history()). Decorative, drifts on scroll. */}
-                <div className={styles.bg} data-mx-par="0.06" aria-hidden="true">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img className={styles.art} src="/naos/history.png" width={420} height={220} alt="" decoding="async" draggable={false} />
-                </div>
                 <PageHead
                     label="Meta / Changelog"
                     title={["site", "history"]}

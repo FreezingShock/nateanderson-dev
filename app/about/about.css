@@ -17,23 +17,6 @@
     mask-image: linear-gradient(100deg, transparent 8%, #000 100%);
     opacity: .28;
 }
-/* Background: the About field (scripts/naos-art/generate.py, about_field). A dithered isometric plane with white
-   block nodes joined by dashed conduit lines, drawn to be "how the parts connect". It sits on the right, fades
-   out toward the copy, and draws itself in with a stepped dither wipe on load (see the intro block below). */
-.about .about-head::after {
-    content: "";
-    position: absolute;
-    inset: 0;
-    pointer-events: none;
-    z-index: 0;
-    opacity: .6;
-    background: url("/naos/about-field.png") right -165px top 57px / 1080px auto no-repeat;
-    image-rendering: pixelated;
-    -webkit-mask-image: linear-gradient(90deg, transparent 30%, #000 62%);
-    mask-image: linear-gradient(90deg, transparent 30%, #000 62%);
-    animation: about-field-in .95s steps(11, end) .1s backwards;
-}
-@keyframes about-field-in { from { clip-path: inset(100% 0 0 0); } to { clip-path: inset(0 0 0 0); } }
 .about .about-head > .cm-wrap { position: relative; z-index: 1; }
 .about .about-hero { display: grid; gap: var(--cm-s6); align-items: end; }
 .about .about-copy { display: grid; gap: var(--cm-s5); min-width: 0; }
@@ -101,8 +84,6 @@
 @keyframes about-bracket { from { opacity: 0; transform: scale(.4); } }
 
 /* Boot sequence (components/cm/boot.tsx): hold the intro until the boot finishes, like the other naOS pages. */
-html[data-boot="full"] .about .about-head::after, html[data-boot="quick"] .about .about-head::after,
-html[data-xition="hold"] .about .about-head::after { animation: none; clip-path: inset(100% 0 0 0); }
 html[data-boot="full"] .about .about-id, html[data-boot="quick"] .about .about-id,
 html[data-xition="hold"] .about .about-id { animation: none; opacity: 0; }
 
@@ -171,16 +152,6 @@ html[data-xition="hold"] .about .about-id { animation: none; opacity: 0; }
 .about .about-next .cm-body-pad { padding: var(--cm-s5); }
 .about .about-next .cm-body-pad p { margin: 0; }
 
-@media (max-width: 999px) {
-    /* Phones: the card fills the width, so the field sits in the open band above the title, fading down. */
-    .about .about-head::after {
-        background-size: 540px auto;
-        background-position: right -190px top 28px;
-        -webkit-mask-image: linear-gradient(180deg, #000 0, #000 30%, transparent 62%);
-        mask-image: linear-gradient(180deg, #000 0, #000 30%, transparent 62%);
-        opacity: .5;
-    }
-}
 @media (max-width: 620px) {
     .ctos.about .meta.stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
     .ctos.about .meta.stats > div:nth-child(odd) { border-left: 0; }
@@ -191,6 +162,5 @@ html[data-xition="hold"] .about .about-id { animation: none; opacity: 0; }
 }
 
 @media (prefers-reduced-motion: reduce) {
-    .about .about-head::after { opacity: .5; animation: none; }
     .about .about-id, .about .about-id *, .about .about-id::before, .about .about-id::after { animation: none !important; }
 }
