@@ -1,0 +1,227 @@
+/* ==========================================================================
+   naOS navigation: top status strip, bottom dock, site map (hamburger) and search.
+   This chrome lives in the root layout, outside any .ctos wrapper, so every rule here is scoped to a nv-* or
+   cm-dock class and changes nothing else. The layer is loaded last among the naOS files.
+   ========================================================================== */
+:root {
+    --nv-bg: #131313;     /* panels and strips */
+    --nv-plate: #f4f4f2;  /* white title plates */
+    --nv-ink: #1a1a1a;    /* text on plates */
+}
+:root[data-theme="paper"] {
+    --nv-bg: rgba(255, 255, 255, .94);
+    --nv-plate: #1a1a1a;
+    --nv-ink: #f4f4f2;
+}
+
+/* ---- Top strip: menu | brand | where you are | tools -------------------------------------------------------------- */
+.nv-top {
+    position: relative; z-index: var(--cm-z-ui);
+    display: flex; align-items: stretch; min-height: 46px;
+    margin: 12px var(--cm-gutter) 0;
+    background: var(--nv-bg);
+    border: 1px solid var(--cm-hair-hi); border-left: 3px solid var(--cm-cyan);
+}
+.nv-menu-btn, .nv-search, .nv-snd, .nv-theme button, .nv-x {
+    -webkit-tap-highlight-color: transparent;
+}
+.nv-menu-btn {
+    display: flex; align-items: center; gap: 8px; padding: 0 14px 0 12px; flex: none;
+    background: transparent; border: 0; border-right: 1px solid var(--cm-hair);
+    color: var(--cm-fg); font: 700 10.5px/1 var(--cm-mono); letter-spacing: .14em; text-transform: uppercase; cursor: pointer;
+    transition: background var(--cm-d-base), color var(--cm-d-base);
+}
+.nv-menu-btn:hover { background: var(--cm-cyan-wash); }
+
+.nv-brand {
+    display: flex; align-items: center; gap: 9px; flex: none; padding: 0 14px 0 12px;
+    color: inherit; text-decoration: none; border-right: 1px dashed var(--cm-hair-hi);
+}
+.nv-brand b {
+    padding: 6px 8px 7px; background: var(--nv-plate); color: var(--nv-ink);
+    font: 700 12.5px/1 var(--cm-display); letter-spacing: -.02em; text-transform: lowercase; white-space: nowrap;
+    transition: background var(--cm-d-base), color var(--cm-d-base);
+}
+.nv-brand:hover b { background: var(--cm-cyan); color: var(--cm-cyan-ink); }
+
+.nv-where { display: flex; align-items: center; gap: 12px; flex: 1; min-width: 0; padding: 0 14px; }
+.nv-no { flex: none; font: 700 10.5px/1 var(--cm-mono); letter-spacing: .12em; color: var(--cm-cyan); }
+.nv-name {
+    min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis;
+    font: 700 10.5px/1 var(--cm-mono); letter-spacing: .14em; text-transform: uppercase; color: var(--cm-fg);
+}
+.nv-gauge { flex: none; margin-left: auto; width: 96px; min-width: 0; }
+.nv-gauge .cm-meter { height: 3px; }
+
+.nv-tools { display: flex; align-items: stretch; flex: none; border-left: 1px solid var(--cm-hair); }
+.nv-search, .nv-snd {
+    display: flex; align-items: center; gap: 8px; padding: 0 12px;
+    background: transparent; border: 0; border-left: 1px solid var(--cm-hair);
+    color: var(--cm-fg); font: 600 10.5px/1 var(--cm-mono); letter-spacing: .12em; text-transform: uppercase; white-space: nowrap; cursor: pointer;
+    transition: background var(--cm-d-base), color var(--cm-d-base);
+}
+.nv-search { background: var(--nv-plate); color: var(--nv-ink); border-left: 0; }
+.nv-search:hover { background: var(--cm-cyan); color: var(--cm-cyan-ink); }
+.nv-search .nv-key { border-color: currentColor; color: inherit; }
+.nv-snd:hover { background: var(--cm-cyan-wash); }
+.nv-snd-t { min-width: 2.2ch; }
+
+.nv-theme { display: flex; border-left: 1px solid var(--cm-hair); }
+.nv-theme button {
+    padding: 0 11px; background: transparent; border: 0; border-left: 1px solid var(--cm-hair);
+    color: var(--cm-mute); font: 600 10.5px/1 var(--cm-mono); letter-spacing: .1em; text-transform: uppercase; cursor: pointer;
+    transition: background var(--cm-d-base), color var(--cm-d-base);
+}
+.nv-theme button:first-child { border-left: 0; }
+.nv-theme button:hover { background: var(--cm-cyan-wash); color: var(--cm-fg); }
+.nv-theme button[aria-pressed="true"] { background: var(--cm-cyan); color: var(--cm-cyan-ink); }
+
+.nv-menu-btn:focus-visible, .nv-brand:focus-visible, .nv-search:focus-visible, .nv-snd:focus-visible,
+.nv-theme button:focus-visible, .nv-x:focus-visible, .nv-sec:focus-visible, .nv-kids a:focus-visible,
+.nv-item a:focus-visible, .nv-map-search:focus-visible, .nv-map-theme button:focus-visible {
+    outline: 2px solid var(--cm-cyan); outline-offset: -2px;
+}
+
+.nv-key {
+    display: inline-block; padding: 3px 5px; border: 1px solid currentColor; opacity: .7;
+    font: 600 10px/1 var(--cm-mono); letter-spacing: .04em; text-transform: none;
+}
+
+/* ---- Bottom dock: numbered tabs, a white plate marks the current page --------------------------------------------- */
+.cm-dock { background: var(--nv-bg); border: 1px solid var(--cm-hair-hi); border-top: 2px solid var(--cm-cyan); box-shadow: none; }
+.cm-dock .ind { background: var(--nv-plate); }
+.cm-dock a[data-on] { color: var(--nv-ink); }
+.cm-dock a[data-on] .ic { color: var(--nv-ink); }
+
+/* ---- Overlays shared by the site map and search -------------------------------------------------------------------- */
+.nv-scrim {
+    position: fixed; inset: 0; z-index: var(--cm-z-modal);
+    display: grid; place-items: start center; padding: 10vh 12px 16px;
+    background: rgba(4, 5, 6, .62); backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);
+}
+:root[data-theme="paper"] .nv-scrim { background: rgba(242, 243, 241, .6); }
+.nv-panel {
+    position: relative; width: min(640px, 100%); max-height: 80vh; display: flex; flex-direction: column;
+    background: var(--nv-bg); border: 1px solid var(--cm-hair-hi); border-left: 3px solid var(--cm-cyan);
+    animation: cm-enter .26s var(--cm-ease) both;
+}
+.nv-panel::before {
+    content: ""; position: absolute; right: -1px; top: -1px; width: 12px; height: 12px; pointer-events: none;
+    border: 0 solid var(--nv-plate); border-top-width: 2px; border-right-width: 2px;
+}
+.nv-head {
+    display: flex; align-items: center; justify-content: space-between; gap: 12px; flex: none;
+    padding: 9px 14px; background: var(--nv-plate); color: var(--nv-ink);
+    font: 700 10.5px/1 var(--cm-mono); letter-spacing: .14em; text-transform: uppercase;
+}
+.nv-x {
+    display: grid; place-items: center; width: 26px; height: 26px; padding: 0;
+    background: transparent; border: 1px solid currentColor; color: inherit; cursor: pointer;
+}
+.nv-x:hover { background: var(--cm-cyan); border-color: var(--cm-cyan); color: var(--cm-cyan-ink); }
+.nv-foot {
+    display: flex; flex-wrap: wrap; gap: 16px; flex: none; padding: 8px 14px;
+    border-top: 1px dashed var(--cm-hair-hi);
+    font: 500 9px/1 var(--cm-mono); letter-spacing: .14em; text-transform: uppercase; color: var(--cm-dim);
+}
+
+/* ---- Site map (hamburger): sections, then their subpages ----------------------------------------------------------- */
+.nv-map { overflow: auto; }
+.nv-tree { list-style: none; margin: 0; padding: 0; }
+.nv-sec-row + .nv-sec-row { border-top: 1px dashed var(--cm-hair); }
+.nv-sec {
+    display: grid; color: var(--cm-fg); grid-template-columns: 34px minmax(0, 1fr) auto; align-items: center; gap: 10px;
+    padding: 14px 14px 10px; color: var(--cm-fg); text-decoration: none;
+}
+.nv-sec .nv-ix { font: 700 10.5px/1 var(--cm-mono); letter-spacing: .08em; color: var(--cm-cyan); }
+.nv-sec-t {
+    justify-self: start; color: var(--cm-fg); padding: 2px 6px 4px 4px; background: transparent;
+    font: 800 22px/1 var(--cm-display); letter-spacing: -.045em; text-transform: lowercase;
+    transition: background var(--cm-d-base), color var(--cm-d-base);
+}
+.nv-sec:hover .nv-sec-t, .nv-sec:focus-visible .nv-sec-t { background: var(--nv-plate); color: var(--nv-ink); }
+.nv-sec small { font: 500 9.5px/1 var(--cm-mono); letter-spacing: .14em; text-transform: uppercase; color: var(--cm-mute); }
+.nv-sec-row[data-on] .nv-sec-t { background: var(--cm-cyan); color: var(--cm-cyan-ink); }
+.nv-sec-row[data-on] .nv-sec .nv-ix { color: var(--cm-cyan); }
+.nv-sec-row[data-on] .nv-sec small { color: var(--cm-cyan); }
+.nv-kids {
+    list-style: none; margin: 0; padding: 0 14px 14px 58px;
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 2px 14px;
+}
+.nv-kids a {
+    display: flex; align-items: center; gap: 9px; padding: 6px 0;
+    color: var(--cm-mute); text-decoration: none; font: 600 13.5px/1.3 var(--cm-display); letter-spacing: -.01em;
+    transition: color var(--cm-d-base), transform var(--cm-d-base);
+}
+.nv-kids a:hover { color: var(--cm-fg); transform: translateX(3px); }
+.nv-kids a[aria-current="page"] { color: var(--cm-cyan); }
+.nv-kid-dash { flex: none; width: 10px; height: 2px; background: var(--cm-cyan); opacity: .55; }
+.nv-map-foot { padding: 0; border-top: 1px solid var(--cm-hair-hi); }
+/* The header carries the theme switch on wider phones; below 420px it moves into the map. */
+.nv-map-theme { display: none; align-items: center; gap: 0; border-top: 1px dashed var(--cm-hair-hi); }
+.nv-map-theme span { padding: 0 14px; font: 700 9.5px/1 var(--cm-mono); letter-spacing: .16em; text-transform: uppercase; color: var(--cm-mute); }
+.nv-map-theme button {
+    flex: 1; padding: 11px 10px; background: transparent; border: 0; border-left: 1px dashed var(--cm-hair-hi);
+    color: var(--cm-mute); font: 600 10.5px/1 var(--cm-mono); letter-spacing: .12em; text-transform: uppercase; cursor: pointer;
+}
+.nv-map-theme button[aria-pressed="true"] { background: var(--cm-cyan); color: var(--cm-cyan-ink); }
+.nv-map-search {
+    display: flex; align-items: center; justify-content: space-between; width: 100%; padding: 13px 14px;
+    background: var(--nv-plate); color: var(--nv-ink); border: 0; cursor: pointer;
+    font: 700 10.5px/1 var(--cm-mono); letter-spacing: .14em; text-transform: uppercase;
+    transition: background var(--cm-d-base), color var(--cm-d-base);
+}
+.nv-map-search:hover { background: var(--cm-cyan); color: var(--cm-cyan-ink); }
+.nv-map-search .nv-key { border-color: currentColor; color: inherit; }
+
+/* ---- Search -------------------------------------------------------------------------------------------------------- */
+.nv-input { display: flex; align-items: center; gap: 10px; flex: none; padding: 0 14px; border-bottom: 1px solid var(--cm-hair); }
+.nv-prompt { font: 700 16px/1 var(--cm-mono); color: var(--cm-cyan); }
+.nv-input input {
+    flex: 1; min-width: 0; padding: 14px 0; background: transparent; border: 0; outline: none;
+    color: var(--cm-fg); font: 400 16px/1.2 var(--cm-display);
+}
+.nv-input input::placeholder { color: var(--cm-dim); }
+.nv-list { list-style: none; margin: 0; padding: 4px 0 6px; overflow: auto; min-height: 0; }
+.nv-group {
+    display: flex; align-items: center; gap: 10px; padding: 14px 14px 6px;
+    font: 700 9.5px/1 var(--cm-mono); letter-spacing: .18em; text-transform: uppercase; color: var(--cm-mute);
+}
+.nv-group::after { content: ""; flex: 1; border-top: 1px dashed var(--cm-hair-hi); }
+.nv-item a {
+    display: grid; grid-template-columns: 34px minmax(0, 1fr); align-items: center; gap: 10px;
+    padding: 9px 14px; color: var(--cm-fg); text-decoration: none;
+}
+.nv-item .nv-ix { font: 700 10.5px/1 var(--cm-mono); letter-spacing: .06em; color: var(--cm-cyan); }
+.nv-txt { display: grid; gap: 4px; min-width: 0; }
+.nv-txt b { font: 700 15.5px/1.15 var(--cm-display); letter-spacing: -.02em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.nv-txt small { font: 500 9.5px/1.2 var(--cm-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--cm-mute); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.nv-item a.on { background: var(--cm-cyan); color: var(--cm-cyan-ink); }
+.nv-item a.on .nv-ix, .nv-item a.on small { color: var(--cm-cyan-deep); }
+.nv-empty { padding: 18px 14px; font: 500 12px/1.4 var(--cm-mono); color: var(--cm-mute); }
+
+/* ---- Phones: keep brand glyph, menu, search, theme and sound; the crumb ellipsizes ---------------------------------- */
+@media (max-width: 760px) {
+    .nv-gauge { display: none; }
+    .nv-brand b { display: none; }
+    .nv-brand { padding: 0 10px; }
+    .nv-menu-btn { padding: 0 11px; }
+    .nv-menu-btn span { display: none; }
+    .nv-search span, .nv-search .nv-key { display: none; }
+    .nv-search { padding: 0 12px; }
+    .nv-where { padding: 0 10px; gap: 9px; }
+    .nv-theme button { padding: 0 9px; }
+    .nv-snd-t { display: none; }
+    .nv-snd { padding: 0 11px; }
+    .nv-kids { padding-left: 14px; grid-template-columns: 1fr 1fr; }
+    .nv-sec-t { font-size: 20px; }
+    .nv-scrim { padding-top: 84px; }
+}
+@media (max-width: 420px) {
+    .nv-theme { display: none; }
+    .nv-map-theme { display: flex; }
+}
+@media (prefers-reduced-motion: reduce) {
+    .nv-panel { animation: none; }
+    .nv-sec-t, .nv-kids a, .nv-brand b, .nv-search, .nv-snd, .nv-menu-btn { transition: none; }
+}

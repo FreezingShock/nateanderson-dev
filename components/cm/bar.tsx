@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState, type CSSProperties } from "react";
 import { useTheme } from "next-themes";
-import { BookOpen, GraduationCap, History, Home, PenLine, Route, User } from "lucide-react";
+import { BookOpen, GraduationCap, History, Home, Menu, PenLine, Route, Search, User, Volume2, VolumeX } from "lucide-react";
 import { NateGlyph } from "@/components/cm/mark";
 import { navItems } from "@/lib/nav";
 import { JOURNEY_END, JOURNEY_START, progressBetween } from "@/lib/timeline-data";
@@ -28,8 +28,16 @@ export function openLauncher() {
     window.dispatchEvent(new Event("cm:launcher"));
 }
 
-/** Slim strip at the top of the page: brand, journey gauge and the theme / sound / search tools. Scrolls away. */
+export function openMenu() {
+    window.dispatchEvent(new Event("cm:menu"));
+}
+
+/**
+ * Top status strip, one row: menu, brand, "you are here" crumb with the path meter, then the tools (search, theme,
+ * sound). It scrolls away so the page keeps the whole screen.
+ */
 export function Bar({ initialPct }: { initialPct: number }) {
+    const path = usePathname();
     const { theme, setTheme } = useTheme();
     const [mounted, setMounted] = useState(false);
     const [pct, setPct] = useState(initialPct);
@@ -41,28 +49,44 @@ export function Bar({ initialPct }: { initialPct: number }) {
     }, []);
 
     const current = mounted ? (theme === "paper" ? "paper" : "dark") : "dark";
+    const here = navItems.find((n) => isActive(path, n.href));
+    const sub = here?.children?.find((c) => path === c.href || path.startsWith(c.href + "/"));
+    const crumb = sub ? `${here?.label} / ${sub.label}` : here?.label ?? "Pages";
 
     return (
-        <header className="cm-top">
-            <Link className="home" href="/" aria-label="Nate Anderson, home">
-                <NateGlyph size={22} />
-                <b>NATE ANDERSON</b>
+        <header className="nv-top">
+            <button type="button" className="nv-menu-btn" onClick={openMenu} aria-label="Open site map" aria-haspopup="dialog">
+                <Menu aria-hidden="true" size={17} strokeWidth={2} />
+                <span>menu</span>
+            </button>
+            <Link className="nv-brand" href="/" aria-label="Nate Anderson, home">
+                <NateGlyph size={20} />
+                <b>nate anderson</b>
             </Link>
-            <div className="cm-gauge" title="Progress along the plan, Sept 2026 to May 2031">
-                <div className="row">
-                    <span className="cm-lbl" style={{ fontSize: 8.5 }}>Path</span>
-                    <span className="v" style={{ color: "var(--cm-cyan)" }}>{pct}%</span>
+            <div className="nv-where">
+                <span className="nv-no" aria-hidden="true">{here?.no ?? "--"}</span>
+                <span className="nv-name" aria-live="polite">{crumb}</span>
+                <div className="cm-gauge nv-gauge" title="Progress along the plan, Sept 2026 to May 2031">
+                    <div className="row">
+                        <span className="cm-lbl" style={{ fontSize: 8.5 }}>Path</span>
+                        <span className="v" style={{ color: "var(--cm-cyan)" }}>{pct}%</span>
+                    </div>
+                    <div className="cm-meter"><i style={{ ["--v" as string]: `${pct}%` }} /></div>
                 </div>
-                <div className="cm-meter"><i style={{ ["--v" as string]: `${pct}%` }} /></div>
             </div>
-            <div className="tools">
-                <div className="cm-seg" role="group" aria-label="Theme">
-                    <button type="button" aria-pressed={current === "dark"} onClick={() => setTheme("dark")}>DARK</button>
-                    <button type="button" aria-pressed={current === "paper"} onClick={() => setTheme("paper")}>PAPER</button>
+            <div className="nv-tools">
+                <button type="button" className="nv-search" onClick={openLauncher} aria-label="Search the site">
+                    <Search aria-hidden="true" size={15} strokeWidth={2} />
+                    <span>search</span>
+                    <kbd className="nv-key" aria-hidden="true">/</kbd>
+                </button>
+                <div className="nv-theme" role="group" aria-label="Theme">
+                    <button type="button" aria-pressed={current === "dark"} onClick={() => setTheme("dark")}>dark</button>
+                    <button type="button" aria-pressed={current === "paper"} onClick={() => setTheme("paper")}>paper</button>
                 </div>
                 <button
                     type="button"
-                    className="cm-btn"
+                    className="nv-snd"
                     data-snd="off"
                     aria-pressed={mounted ? snd.on : true}
                     aria-label={snd.on ? "Mute sound" : "Unmute sound"}
@@ -71,17 +95,15 @@ export function Bar({ initialPct }: { initialPct: number }) {
                         if (!snd.on) setTimeout(() => sfx("on"), 40);
                     }}
                 >
-                    SND <span className="cm-state live" style={{ color: snd.on ? "var(--cm-cyan)" : "var(--cm-dim)" }}>{mounted && !snd.on ? "OFF" : "ON"}</span>
-                </button>
-                <button type="button" className="cm-btn" onClick={openLauncher} aria-label="Open search">
-                    Search <span className="cm-kbd">/</span>
+                    {mounted && !snd.on ? <VolumeX aria-hidden="true" size={15} strokeWidth={2} /> : <Volume2 aria-hidden="true" size={15} strokeWidth={2} />}
+                    <span className="nv-snd-t" style={{ color: snd.on || !mounted ? "var(--cm-cyan)" : "var(--cm-dim)" }}>{mounted && !snd.on ? "off" : "on"}</span>
                 </button>
             </div>
         </header>
     );
 }
 
-/** The bottom dock: one tab per page. A cyan plate slides to the tab you tap, before the page has even loaded. */
+/** The bottom dock: one tab per page, numbered like the site map. A plate slides to the tab you tap, before the page has loaded. */
 export function Dock() {
     const path = usePathname();
     const [next, setNext] = useState<string | null>(null);

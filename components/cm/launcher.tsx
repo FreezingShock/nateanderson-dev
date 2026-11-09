@@ -8,10 +8,16 @@ import { navigateWithCurtain } from "@/lib/motion/navigate";
 interface Entry {
     href: string;
     label: string;
-    meta: string;
+    /** Two-digit index for pages, a mark for deep links. */
+    ix: string;
+    /** Small line under the label. */
+    hint: string;
+    group: string;
 }
 
-/** `/` command launcher: jump to any page, game or section. Esc closes, arrows + Enter pick. */
+const PAGE_GROUP = "Pages";
+
+/** `/` search: jump to any page, game or section. Esc closes, arrows + Enter pick. Results are grouped. */
 export function Launcher() {
     const [open, setOpen] = useState(false);
     const [q, setQ] = useState("");
@@ -19,16 +25,23 @@ export function Launcher() {
     const input = useRef<HTMLInputElement>(null);
     const returnTo = useRef<HTMLElement | null>(null);
 
-    const entries = useMemo<Entry[]>(
-        () => [
-            ...navItems.map((n) => ({ href: n.href, label: n.title, meta: n.no })),
-            ...launcherLinks.map((l) => ({ href: l.href, label: l.label, meta: l.group })),
-        ],
-        [],
-    );
+    // Pages first, then the curated deep links in their groups, then any section subpage the curated list leaves out.
+    const entries = useMemo<Entry[]>(() => {
+        const curated = new Set(launcherLinks.map((l) => l.href));
+        return [
+            ...navItems.map((n) => ({ href: n.href, label: n.title, ix: n.no, hint: n.blurb, group: PAGE_GROUP })),
+            ...launcherLinks.map((l) => ({ href: l.href, label: l.label, ix: "›", hint: "", group: l.group })),
+            ...navItems.flatMap((n) =>
+                (n.children ?? [])
+                    .filter((c) => !curated.has(c.href))
+                    .map((c) => ({ href: c.href, label: c.label, ix: "›", hint: n.title, group: n.title })),
+            ),
+        ];
+    }, []);
+
     const shown = useMemo(() => {
         const v = q.trim().toLowerCase();
-        return v ? entries.filter((e) => (e.label + " " + e.meta).toLowerCase().includes(v)) : entries;
+        return v ? entries.filter((e) => (e.label + " " + e.hint + " " + e.group).toLowerCase().includes(v)) : entries;
     }, [entries, q]);
 
     const show = useCallback(() => {
@@ -68,33 +81,42 @@ export function Launcher() {
         if (open) input.current?.focus();
     }, [open]);
 
+    // Keep the highlighted row in view while arrowing through a long list.
+    useEffect(() => {
+        if (!open) return;
+        document.querySelector<HTMLElement>(".nv-list [data-sel]")?.scrollIntoView({ block: "nearest" });
+    }, [sel, open]);
+
     if (!open) return null;
     const go = (href: string) => {
         setOpen(false);
         navigateWithCurtain(href);
     };
 
+    let lastGroup = "";
+
     return (
         <div
-            className="cm-scrim"
+            className="nv-scrim"
             onMouseDown={(e) => {
                 if (e.target === e.currentTarget) hide();
             }}
         >
-            <div className="cm-panel solid" role="dialog" aria-modal="true" aria-label="Jump to a page">
-                <div className="cm-hbar">
-                    <span>Launcher</span>
-                    <span><span className="cm-kbd" style={{ borderColor: "#aab", color: "#4a565c" }}>ESC</span></span>
+            <div className="nv-panel" role="dialog" aria-modal="true" aria-label="Search the site">
+                <div className="nv-head">
+                    <span>search // jump to</span>
+                    <kbd className="nv-key">esc</kbd>
                 </div>
-                <div className="cm-launch-input">
-                    <span style={{ color: "var(--cm-cyan)" }}>&gt;</span>
+                <div className="nv-input">
+                    <span className="nv-prompt" aria-hidden="true">&gt;</span>
                     <input
                         ref={input}
                         value={q}
-                        placeholder="Jump to a page, game or section"
+                        placeholder="a page, game, course or section"
                         autoComplete="off"
+                        autoCorrect="off"
+                        spellCheck={false}
                         aria-label="Search the site"
-                        style={{ fontSize: 16 }}
                         onChange={(e) => {
                             setQ(e.target.value);
                             setSel(0);
@@ -113,18 +135,38 @@ export function Launcher() {
                         }}
                     />
                 </div>
-                <ul className="cm-list">
-                    {shown.map((e, i) => (
-                        <li key={e.href}>
-                            <Link href={e.href} className={i === sel ? "on" : ""} onClick={() => setOpen(false)}>
-                                {e.label} <small>{e.meta}</small>
-                            </Link>
-                        </li>
-                    ))}
+                <ul className="nv-list">
+                    {shown.map((e, i) => {
+                        const head = e.group !== lastGroup;
+                        lastGroup = e.group;
+                        return (
+                            <li key={e.href} className="nv-item">
+                                {head && <div className="nv-group" aria-hidden="true">{e.group}</div>}
+                                <Link
+                                    href={e.href}
+                                    data-sel={i === sel ? "" : undefined}
+                                    className={i === sel ? "on" : undefined}
+                                    onMouseEnter={() => setSel(i)}
+                                    onClick={() => setOpen(false)}
+                                >
+                                    <span className="nv-ix">{e.ix}</span>
+                                    <span className="nv-txt">
+                                        <b>{e.label}</b>
+                                        {e.hint && <small>{e.hint}</small>}
+                                    </span>
+                                </Link>
+                            </li>
+                        );
+                    })}
                     {shown.length === 0 && (
-                        <li><span className="cm-body-pad cm-note" style={{ display: "block" }}>Nothing matches “{q}”.</span></li>
+                        <li className="nv-empty">Nothing matches “{q}”.</li>
                     )}
                 </ul>
+                <div className="nv-foot">
+                    <span>↑ ↓ move</span>
+                    <span>↵ open</span>
+                    <span>esc close</span>
+                </div>
             </div>
         </div>
     );
