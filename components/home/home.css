@@ -461,6 +461,11 @@
         color: var(--cm-cyan);
     }
 }
+/* naOS accent map: the 02 and 03 index numbers take orange and magenta as text on a dark chip, so no filled
+   accent plate sits next to the cyan 01 button. */
+.ctos .hero-cta .hcta:nth-child(2) .hcta-no { background: var(--cm-ctos-ground); color: var(--cm-pop-orange); }
+.ctos .hero-cta .hcta:nth-child(3) .hcta-no { background: var(--cm-ctos-ground); color: var(--cm-pop-magenta); }
+
 .ctos .hcta:focus-visible {
     outline: 2px solid var(--cm-ctos-block);
     outline-offset: 3px;
