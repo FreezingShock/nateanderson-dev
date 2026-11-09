@@ -64,6 +64,16 @@ export default async function HistoryPage() {
         : null;
     const latestHasDiff = latest !== undefined && latest.additions !== null && latest.deletions !== null;
 
+    // Recent churn: lines changed per commit for the last 12, oldest on the left, so the index panel shows movement.
+    const recent = commits.slice(0, 12);
+    const churnMax = Math.max(1, ...recent.map((c) => (c.additions ?? 0) + (c.deletions ?? 0)));
+    const churn = recent
+        .map((c) => ({
+            hash: c.hash,
+            pct: Math.max(10, Math.round((((c.additions ?? 0) + (c.deletions ?? 0)) / churnMax) * 100)),
+        }))
+        .reverse();
+
     return (
         <div className="ctos">
             <NaosBackdrop src="/naos/bg-history.png" />
@@ -94,6 +104,19 @@ export default async function HistoryPage() {
                                 </div>
                             ))}
                         </div>
+                        {churn.length > 0 && (
+                            <div className={styles.churn}>
+                                <div className={styles.churnHead}>
+                                    <span className="cm-lbl">Recent churn</span>
+                                    <span className="cm-coord">Lines changed, last {churn.length} commits</span>
+                                </div>
+                                <div className={styles.bars} role="img" aria-label={`Lines changed in the last ${churn.length} commits, oldest to newest`}>
+                                    {churn.map((c, i) => (
+                                        <i key={c.hash} style={{ height: `${c.pct}%`, animationDelay: `${0.5 + i * 0.05}s` }} />
+                                    ))}
+                                </div>
+                            </div>
+                        )}
                         <div className="p-foot" aria-hidden="true">
                             <span className="id-bars"><i /><i /><i /><i /><i /></span>
                             <span>index / 3 metrics</span>
