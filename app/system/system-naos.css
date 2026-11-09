@@ -1,0 +1,142 @@
+/* ==========================================================================
+   System screens: 404, error, global error and the route loading card. naOS treatment, scoped under `.ctos .sys-*`.
+   Reuses the shared naOS rules in app/camino/ctos.css (title blocks, ID card, index plates, footer). Nothing shared is
+   changed here. global-error.tsx renders outside the root layout, so it carries its own inline styles.
+   ========================================================================== */
+
+.ctos .sys-body {
+    display: grid;
+    gap: var(--cm-s6);
+    padding-top: var(--cm-s5);
+    padding-bottom: var(--cm-s7);
+}
+
+/* Status card: a larger badge than the homepage card, because the code is the whole message here. */
+.ctos .sys-card {
+    margin: 0;
+    max-width: 640px;
+}
+.ctos .sys-card .id-main {
+    grid-template-columns: auto minmax(0, 1fr);
+}
+.ctos .sys-card .id-badge {
+    width: auto;
+    height: auto;
+    min-width: 104px;
+    min-height: 116px;
+    padding: 8px 12px 26px;
+}
+.ctos .sys-card .id-badge b {
+    font-size: 50px;
+    white-space: nowrap;
+}
+
+/* Title size for system pages: the inner-page PageHead is small, so give the title block the blog's scale. */
+.ctos .sys-head .cm-highlight > * {
+    font-size: clamp(52px, 26vw, 150px);
+}
+.ctos .sys-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    padding: 14px;
+    border-top: 1px dashed var(--cm-hair-hi);
+}
+.ctos .sys-actions .cm-btn {
+    min-height: 44px;
+    min-width: 120px;
+}
+
+/* Index plates for the 404 page: the blog's plates, reused. */
+.ctos .sys-jump {
+    margin-top: 0;
+    max-width: 100%;
+}
+.ctos .sys-jump .cta-b {
+    min-height: 46px;
+}
+@media (max-width: 760px) {
+    .ctos .sys-jump.cm-row.cta {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+    .ctos .sys-jump .cta-b span {
+        white-space: normal;
+        padding: 0 10px;
+        line-height: 1.25;
+        font-size: 10.5px;
+        letter-spacing: 0.08em;
+    }
+    .ctos .sys-jump .cta-b {
+        min-height: 52px;
+    }
+    .ctos .sys-jump .cta-b::after {
+        display: none;
+    }
+}
+@media (max-width: 420px) {
+    .ctos .sys-card .id-main {
+        gap: 12px;
+        padding: 14px 12px 10px;
+    }
+    .ctos .sys-card .id-badge {
+        min-width: 88px;
+        min-height: 100px;
+        padding: 7px 9px 24px;
+    }
+    .ctos .sys-card .id-badge b {
+        font-size: 38px;
+    }
+}
+
+/* ---- Route loading: a status card that waits 450ms before it shows, so quick navigations never flash it ---------- */
+.ctos .sys-load {
+    opacity: 0;
+    animation: sys-show 0.25s ease 0.45s both;
+}
+.ctos .sys-load .sys-body {
+    padding-top: var(--cm-s7);
+}
+.ctos .sys-track {
+    position: relative;
+    height: 8px;
+    margin: 0 14px 14px;
+    background: repeating-linear-gradient(
+        90deg,
+        rgba(244, 244, 242, 0.22) 0 2px,
+        transparent 2px 6px
+    );
+    overflow: hidden;
+}
+.ctos .sys-track i {
+    position: absolute;
+    inset: 0;
+    left: 0;
+    width: 18%;
+    background: var(--cm-ctos-block);
+    transform: translateX(-100%);
+    animation: sys-scan 1.3s cubic-bezier(0.6, 0, 0.4, 1) infinite;
+}
+@keyframes sys-show {
+    to {
+        opacity: 1;
+    }
+}
+@keyframes sys-scan {
+    0% {
+        transform: translateX(-100%);
+    }
+    100% {
+        transform: translateX(556%);
+    }
+}
+@media (prefers-reduced-motion: reduce) {
+    .ctos .sys-track i {
+        animation: none;
+        transform: none;
+        width: 50%;
+    }
+    .ctos .sys-load {
+        animation-duration: 0.01s;
+    }
+}
