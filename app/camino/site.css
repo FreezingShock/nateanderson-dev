@@ -1,0 +1,106 @@
+/* Site-level layout for nateanderson.dev, built only from Camino tokens. Anything reusable lives in
+   camino.components.css; this file holds page anatomy (hero, splits, prose) and the shell. */
+
+.cm-main { position: relative; z-index: 1; min-height: 100vh; overflow-x: clip; }
+.cm-skip { position: absolute; left: 12px; top: -60px; z-index: 30; }
+.cm-skip:focus { top: 12px; }
+
+/* Hero */
+.cm-hero { position: relative; display: grid; align-content: center; min-height: min(88vh, 860px); overflow: hidden; }
+.cm-hero > .cm-grid-bg { position: absolute; inset: 0; -webkit-mask-image: radial-gradient(70% 70% at 70% 40%, #000, transparent 75%); mask-image: radial-gradient(70% 70% at 70% 40%, #000, transparent 75%); opacity: .8; pointer-events: none; }
+.cm-hero > .cm-wrap { position: relative; display: grid; gap: var(--cm-s5); padding-block: var(--cm-s8) var(--cm-s7); }
+.cm-hero .cm-tag, .cm-hero .cm-read.float { position: absolute; z-index: var(--cm-z-tags); }
+.cm-hero .ring { position: absolute; right: 8%; top: 16%; width: min(36vw, 420px); aspect-ratio: 1; border: 1px solid var(--cm-hair); border-radius: 50%; pointer-events: none; }
+.cm-hero .ring::after { content: ""; position: absolute; inset: 18%; border: 1px dashed var(--cm-hair-hi); border-radius: 50%; }
+.cm-hero .meta { display: flex; flex-wrap: wrap; gap: var(--cm-s6); }
+.cm-hero .t1 { right: 6%; top: 22%; } .cm-hero .t2 { right: 20%; top: 56%; } .cm-hero .t3 { right: 2%; top: 72%; }
+
+/* Page head (every inner page) */
+.cm-head { position: relative; padding-block: var(--cm-s8) var(--cm-s6); overflow: hidden; }
+.cm-head > .cm-grid-bg { position: absolute; inset: 0; -webkit-mask-image: radial-gradient(60% 90% at 85% 0%, #000, transparent 75%); mask-image: radial-gradient(60% 90% at 85% 0%, #000, transparent 75%); opacity: .7; pointer-events: none; }
+.cm-head > .cm-wrap { position: relative; display: grid; gap: var(--cm-s4); }
+.cm-head .cm-highlight > * { font-size: clamp(26px, 4.4vw, 56px); }
+.cm-crumb { display: inline-flex; gap: 8px; align-items: center; text-decoration: none; }
+.cm-crumb:hover { color: var(--cm-cyan); }
+
+/* Layout helpers */
+.cm-split { display: grid; grid-template-columns: 1.2fr 1fr; gap: var(--cm-s6); align-items: start; }
+.cm-split.even { grid-template-columns: 1fr 1fr; }
+.cm-cols3 { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); }
+.cm-cols4 { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); }
+.cm-sec-head { display: flex; justify-content: space-between; align-items: end; gap: 16px; flex-wrap: wrap; margin-bottom: var(--cm-s5); }
+.cm-sec-head > div { display: grid; gap: 10px; }
+.cm-more { font: 600 10px/1 var(--cm-mono); letter-spacing: .13em; text-transform: uppercase; text-decoration: none; color: var(--cm-mute); border-bottom: 1px solid var(--cm-hair-hi); padding-bottom: 4px; white-space: nowrap; }
+.cm-more:hover { color: var(--cm-cyan); border-color: var(--cm-cyan); }
+.cm-prose { max-width: var(--cm-measure); color: var(--cm-mute); }
+.cm-prose p { margin: 0; } .cm-prose p + p { margin-top: var(--cm-s3); }
+.cm-prose strong { color: var(--cm-fg); font-weight: 600; }
+.cm-row-gap { display: flex; flex-wrap: wrap; gap: 6px; }
+.cm-ico { width: 16px; height: 16px; flex: none; }
+.cm-sub { font: 700 15px/1.2 var(--cm-display); margin: 0; }
+.cm-note { font: 400 12.5px/1.45 var(--cm-display); color: var(--cm-mute); margin: 0; }
+.cm-state { font: 500 9px/1 var(--cm-mono); letter-spacing: .14em; text-transform: uppercase; color: var(--cm-dim); }
+.cm-state.live { color: var(--cm-cyan); } .cm-state.warn { color: var(--cm-amber); } .cm-state.alert { color: var(--cm-alert); } .cm-state.good { color: var(--cm-good); }
+
+/* Cards that are plain <div>s */
+div.cm-card { cursor: default; }
+div.cm-card:hover { transform: none; }
+.cm-card.link { cursor: pointer; }
+.cm-card.link:hover { transform: translateY(-2px); }
+
+/* Shell */
+.cm-bar .home b { font: 800 13px/1 var(--cm-display); letter-spacing: .01em; white-space: nowrap; }
+.cm-bar .links { display: flex; }
+.cm-bar .grp.grow { min-width: 0; overflow-x: auto; scrollbar-width: none; }
+.cm-bar a.nav { white-space: nowrap; }
+.cm-bar .tools { gap: 8px; padding-inline: 10px; }
+.cm-bar .cm-btn { padding-block: 8px; white-space: nowrap; }
+.cm-foot { border-top: 1px solid var(--cm-hair); padding-block: var(--cm-s6); position: relative; z-index: 1; }
+.cm-foot .cm-wrap { display: flex; justify-content: space-between; gap: 16px; flex-wrap: wrap; align-items: end; }
+.cm-foot nav { display: flex; gap: 14px; flex-wrap: wrap; }
+.cm-foot nav a { font: 500 10px/1 var(--cm-mono); letter-spacing: .13em; text-transform: uppercase; color: var(--cm-mute); text-decoration: none; }
+.cm-foot nav a:hover { color: var(--cm-cyan); }
+.cm-toast-box { position: fixed; left: 50%; bottom: calc(20px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); z-index: var(--cm-z-top); }
+
+/* Timeline / progress rails */
+.cm-rail { position: relative; padding-left: 22px; display: grid; gap: 12px; }
+.cm-rail::before { content: ""; position: absolute; left: 5px; top: 6px; bottom: 6px; border-left: 1px dashed var(--cm-hair-hi); }
+.cm-rail > li { position: relative; list-style: none; }
+.cm-rail > li::before { content: ""; position: absolute; left: -22px; top: 14px; width: 11px; height: 11px; background: var(--cm-void); border: 1px solid var(--cm-hair-hi); }
+.cm-rail > li.now::before { background: var(--cm-cyan); border-color: var(--cm-cyan); animation: cm-blink 1.2s steps(2) infinite; }
+.cm-rail > li.done::before { background: var(--cm-paper); border-color: var(--cm-paper); }
+@media (prefers-reduced-motion: reduce) { .cm-rail > li.now::before { animation: none; } }
+
+@media (max-width: 760px) {
+    .cm-split, .cm-split.even { grid-template-columns: 1fr; }
+    .cm-hero .t1, .cm-hero .t2, .cm-hero .t3, .cm-hero .ring { display: none; }
+    .cm-head { padding-block: var(--cm-s7) var(--cm-s5); }
+    .cm-bar .home b { display: none; }
+    .cm-bar .gauge-grp { display: none; }
+    /* Phone: the page links drop to their own scrollable row under the tools. */
+    .cm-bar { flex-wrap: wrap; height: auto; overflow: visible; }
+    .cm-bar .grp.grow { order: 9; flex: 1 0 100%; border-left: 0; border-top: 1px solid var(--cm-hair); padding-block: 4px; }
+}
+
+/* Paper theme tweaks */
+:root[data-theme="paper"] .cm-film { background: radial-gradient(130% 95% at 50% 45%, transparent 62%, rgba(0,0,0,.08) 100%); }
+:root[data-theme="paper"] .cm-grain { opacity: .035; filter: invert(1); }
+:root[data-theme="paper"] .cm-highlight > :first-child { background: #050607; color: #f2f3f1; }
+:root[data-theme="paper"] .cm-card { background: rgba(5,6,7,.03); }
+:root[data-theme="paper"] .cm-card:hover { background: rgba(5,6,7,.06); }
+:root[data-theme="paper"] .cm-card .vis { background: #e6e8e5; }
+:root[data-theme="paper"] .cm-tile { background: rgba(255,255,255,.7); }
+
+/* Non-interactive label pill (cm-chip is a button; this is its quiet twin) */
+.cm-pill { display: inline-flex; align-items: center; gap: 6px; border: 1px solid var(--cm-hair); color: var(--cm-mute); font: 600 10px/1 var(--cm-mono); letter-spacing: .12em; text-transform: uppercase; padding: 6px 8px; border-radius: var(--cm-radius); }
+.cm-pill.on { color: var(--cm-cyan-ink); background: var(--cm-cyan); border-color: var(--cm-cyan); }
+.cm-prow { display: grid; gap: 8px; padding: 12px 14px; border-top: 1px solid var(--cm-hair); }
+.cm-prow:first-of-type { border-top: 0; }
+.cm-stream.wrap li { white-space: normal; overflow: visible; text-overflow: clip; }
+.cm-stream.wrap li + li { margin-top: 4px; }
+.cm-viz { aspect-ratio: 16 / 9; position: relative; background: repeating-linear-gradient(135deg, rgba(226,238,240,.06) 0 1px, transparent 1px 8px), #030405; border: 1px solid var(--cm-hair); overflow: hidden; }
+.cm-viz > .cm-tag { position: absolute; left: 8px; top: 8px; }
+.cm-viz > .glyph { position: absolute; right: 10px; bottom: 6px; font: 500 44px/1 var(--cm-mono); color: var(--cm-hair-hi); letter-spacing: -.04em; }
+:root[data-theme="paper"] .cm-viz { background: repeating-linear-gradient(135deg, rgba(5,6,7,.07) 0 1px, transparent 1px 8px), #e9ebe8; }
+.cm-highlight.solo > :first-child { background: var(--cm-cyan); color: var(--cm-cyan-ink); }
+:root[data-theme="paper"] .cm-highlight.solo > :first-child { background: var(--cm-cyan); color: #fff; }

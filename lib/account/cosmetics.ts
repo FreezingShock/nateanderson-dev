@@ -1,4 +1,4 @@
-import type { McSymbolName } from "@/components/mc-symbol";
+import { type McSymbolName } from "@/lib/account/symbols";
 
 // Profile cosmetics that games unlock. Pure data, shared by the server (to check what may be equipped)
 // and the browser (to draw them), so it must not import any game code.

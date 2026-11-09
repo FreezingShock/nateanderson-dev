@@ -50,8 +50,8 @@ const W = 640;
 const H = 460;
 const MIN_K = 0.5;
 const MAX_K = 40;
-const GREEN = "var(--mc-green)";
-const RED = "var(--mc-red)";
+const GREEN = "var(--cm-good)";
+const RED = "var(--cm-alert)";
 
 type Tf = { x: number; y: number; k: number };
 type Bounds = [[number, number], [number, number]];
@@ -453,7 +453,7 @@ export function NeighborRound({
                     { boxShadow: "0 0 0 0 transparent" },
                     {
                         boxShadow:
-                            "0 0 0 2px var(--mc-red), 0 0 24px -4px var(--mc-red)",
+                            "0 0 0 2px var(--cm-alert), 0 0 24px -4px var(--cm-alert)",
                     },
                     { boxShadow: "0 0 0 0 transparent" },
                 ],
@@ -502,8 +502,8 @@ export function NeighborRound({
     return (
         <div>
             <h3
-                className="mb-3 text-center font-minecraft text-base font-bold sm:text-lg"
-                style={{ color: "var(--mc-aqua)" }}
+                className="mb-3 text-center font-sans text-base font-bold sm:text-lg"
+                style={{ color: "var(--cm-cyan)" }}
             >
                 Can you guess {total} {total === 1 ? "neighbour" : "neighbours"} of{" "}
                 {answer.n}?
@@ -511,7 +511,7 @@ export function NeighborRound({
 
             <div
                 ref={mapBoxRef}
-                className="relative overflow-hidden rounded-2xl border bg-slate-950"
+                className="relative overflow-hidden rounded-[2px] border bg-slate-950"
                 style={{ aspectRatio: `${W} / ${H}` }}
             >
                 <svg
@@ -579,7 +579,7 @@ export function NeighborRound({
                                     fontSize={12}
                                     fontWeight={700}
                                     fill={color}
-                                    style={{ fontFamily: "var(--font-rubik), sans-serif" }}
+                                    style={{ fontFamily: "var(--font-mono), sans-serif" }}
                                 >
                                     {text}
                                 </text>
@@ -590,7 +590,7 @@ export function NeighborRound({
                 </svg>
 
                 {/* Zoom buttons */}
-                <div className="absolute right-2 top-2 flex flex-col overflow-hidden rounded-lg border border-white/20 bg-black/50 backdrop-blur">
+                <div className="absolute right-2 top-2 flex flex-col overflow-hidden rounded-[2px] border border-white/20 bg-black/50">
                     <button
                         type="button"
                         aria-label="Zoom in"
@@ -613,7 +613,7 @@ export function NeighborRound({
                     <div
                         key={flash.id}
                         aria-hidden
-                        className="nb-correct-toast pointer-events-none absolute inset-x-0 top-1/2 text-center font-minecraft text-3xl font-bold"
+                        className="nb-correct-toast pointer-events-none absolute inset-x-0 top-1/2 text-center font-sans text-3xl font-bold"
                         style={{ color: GREEN }}
                     >
                         CORRECT!
@@ -627,14 +627,14 @@ export function NeighborRound({
                     type="button"
                     aria-label="Previous neighbour"
                     onClick={() => step(-1)}
-                    className="grid size-9 place-items-center rounded-xl border border-border transition-colors hover:bg-foreground/10"
+                    className="grid size-9 place-items-center rounded-[2px] border border-border transition-colors hover:bg-foreground/10"
                 >
                     <ChevronLeft className="size-4" />
                 </button>
                 <button
                     type="button"
                     onClick={showAll}
-                    className="rounded-full border border-border px-4 py-1.5 font-rubik text-xs font-semibold text-muted-foreground transition-colors hover:text-foreground"
+                    className="rounded-[2px] border border-border px-4 py-1.5 font-mono text-xs font-semibold text-muted-foreground transition-colors hover:text-foreground"
                 >
                     Show all
                 </button>
@@ -642,7 +642,7 @@ export function NeighborRound({
                     type="button"
                     aria-label="Next neighbour"
                     onClick={() => step(1)}
-                    className="grid size-9 place-items-center rounded-xl border border-border transition-colors hover:bg-foreground/10"
+                    className="grid size-9 place-items-center rounded-[2px] border border-border transition-colors hover:bg-foreground/10"
                 >
                     <ChevronRight className="size-4" />
                 </button>
@@ -673,7 +673,7 @@ export function NeighborRound({
                             }
                           : undefined;
                     const cls = cn(
-                        "flex h-11 items-center justify-center gap-2 rounded-xl border px-2 text-sm font-semibold transition-colors",
+                        "flex h-11 items-center justify-center gap-2 rounded-[2px] border px-2 text-sm font-semibold transition-colors",
                         code && "nb-slot-flip",
                         !shown && "border-dashed text-muted-foreground"
                     );
@@ -722,10 +722,10 @@ export function NeighborRound({
                             disabled={hints > 0}
                             data-action="hint"
                             onClick={() => setState({ ...state, hints: 1 })}
-                            className="inline-flex items-center gap-1.5 rounded-full border px-3 py-1 font-rubik text-xs font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-40"
+                            className="inline-flex items-center gap-1.5 rounded-[2px] border px-3 py-1 font-mono text-xs font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-40"
                             style={{
-                                color: "var(--mc-yellow)",
-                                borderColor: "color-mix(in oklch, var(--mc-yellow) 45%, transparent)",
+                                color: "var(--cm-amber)",
+                                borderColor: "color-mix(in oklch, var(--cm-amber) 45%, transparent)",
                             }}
                         >
                             <Lightbulb className="size-3.5" /> First letters
@@ -737,7 +737,7 @@ export function NeighborRound({
                             type="button"
                             data-action="giveup"
                             onClick={giveUp}
-                            className="rounded-full border px-3 py-1 font-rubik text-xs font-semibold transition-colors"
+                            className="rounded-[2px] border px-3 py-1 font-mono text-xs font-semibold transition-colors"
                             style={{
                                 color: RED,
                                 borderColor: `color-mix(in oklch, ${RED} ${confirmGiveUp ? 90 : 45}%, transparent)`,
@@ -753,7 +753,7 @@ export function NeighborRound({
             ) : (
                 <div className="og-hint mt-5 text-center">
                     <p
-                        className="font-minecraft text-xl font-bold"
+                        className="font-sans text-xl font-bold"
                         style={{ color: status === "won" ? GREEN : RED }}
                     >
                         {status === "won"
@@ -775,7 +775,7 @@ export function NeighborRound({
                     {wrong.map((code) => (
                         <span
                             key={code}
-                            className="og-hint inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-xs font-semibold"
+                            className="og-hint inline-flex items-center gap-1 rounded-[2px] border px-2.5 py-0.5 text-xs font-semibold"
                             style={{
                                 color: RED,
                                 borderColor: `color-mix(in oklch, ${RED} 45%, transparent)`,

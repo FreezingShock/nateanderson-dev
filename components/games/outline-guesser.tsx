@@ -41,6 +41,7 @@ import {
     type Status,
     type Unit,
 } from "@/components/games/guess-kit";
+import { GLASS_CLASS } from "@/components/games/guess-kit";
 import { cn } from "@/lib/utils";
 import neighborData from "@/lib/data/neighbors.json";
 import {
@@ -438,9 +439,9 @@ export function OutlineGuesser() {
         : [];
     const shapeFill =
         status === "won"
-            ? "var(--mc-green)"
+            ? "var(--cm-good)"
             : status === "lost"
-              ? "var(--mc-red)"
+              ? "var(--cm-alert)"
               : "#ffffff";
     const s = stats[mode];
     const fmtCountdown = (n: number) =>
@@ -458,9 +459,9 @@ export function OutlineGuesser() {
 
     const pill = (on: boolean) =>
         cn(
-            "rounded-full border px-3 py-1 font-rubik text-xs font-semibold transition-colors",
+            "rounded-[2px] border px-3 py-1 font-mono text-xs font-semibold transition-colors",
             on
-                ? "border-[var(--mc-aqua)] bg-[var(--mc-aqua)]/15 text-[var(--mc-aqua)]"
+                ? "border-[var(--cm-cyan)] bg-[var(--cm-cyan)]/15 text-[var(--cm-cyan)]"
                 : "border-border text-muted-foreground hover:text-foreground"
         );
 
@@ -517,12 +518,11 @@ export function OutlineGuesser() {
             data-primary
             autoFocus
             onClick={onClick}
-            className="inline-flex items-center gap-2 rounded-xl border px-5 py-2.5 font-minecraft text-sm font-bold transition-transform hover:-translate-y-0.5"
+            className="inline-flex items-center gap-2 rounded-[2px] border px-5 py-2.5 font-sans text-sm font-bold transition-transform hover:-translate-y-0.5"
             style={{
                 color,
                 borderColor: `color-mix(in oklch, ${color} 60%, transparent)`,
                 backgroundColor: `color-mix(in oklch, ${color} 14%, transparent)`,
-                boxShadow: `0 0 18px -4px color-mix(in oklch, ${color} 60%, transparent)`,
             }}
         >
             {label}
@@ -549,25 +549,25 @@ export function OutlineGuesser() {
                             ? "Continue neighbours round"
                             : "Neighbours round",
                       () => openRound(2),
-                      "var(--mc-yellow)"
+                      "var(--cm-amber)"
                   )
                 : bigButton(
                       "Play next round: flag",
                       () => openRound(3),
-                      "var(--mc-green)"
+                      "var(--cm-good)"
                   )}
             {skipToSummary}
         </div>
     );
     const nav2 = (
         <div className="mt-4 flex flex-col items-center gap-2.5">
-            {bigButton("Play next round: flag", () => openRound(3), "var(--mc-green)")}
+            {bigButton("Play next round: flag", () => openRound(3), "var(--cm-good)")}
             {skipToSummary}
         </div>
     );
     const nav3 = (
         <div className="mt-4 flex flex-col items-center gap-2.5">
-            {bigButton("See summary", () => openRound(4), "var(--mc-aqua)")}
+            {bigButton("See summary", () => openRound(4), "var(--cm-cyan)")}
         </div>
     );
 
@@ -576,7 +576,7 @@ export function OutlineGuesser() {
             <button
                 type="button"
                 onClick={share}
-                className="inline-flex items-center gap-2 rounded-lg border px-4 py-2 font-minecraft text-sm font-bold transition-transform hover:-translate-y-0.5"
+                className="inline-flex items-center gap-2 rounded-[2px] border px-4 py-2 font-sans text-sm font-bold transition-transform hover:-translate-y-0.5"
                 style={{
                     color: COLOR,
                     borderColor: `color-mix(in oklch, ${COLOR} 55%, transparent)`,
@@ -592,11 +592,11 @@ export function OutlineGuesser() {
                     data-primary
                     autoFocus
                     onClick={() => startUnlimited(pool, answer.c)}
-                    className="inline-flex items-center gap-2 rounded-lg border px-4 py-2 font-minecraft text-sm font-bold transition-transform hover:-translate-y-0.5"
+                    className="inline-flex items-center gap-2 rounded-[2px] border px-4 py-2 font-sans text-sm font-bold transition-transform hover:-translate-y-0.5"
                     style={{
-                        color: "var(--mc-green)",
-                        borderColor: "color-mix(in oklch, var(--mc-green) 55%, transparent)",
-                        backgroundColor: "color-mix(in oklch, var(--mc-green) 12%, transparent)",
+                        color: "var(--cm-good)",
+                        borderColor: "color-mix(in oklch, var(--cm-good) 55%, transparent)",
+                        backgroundColor: "color-mix(in oklch, var(--cm-good) 12%, transparent)",
                     }}
                 >
                     <RotateCcw className="size-4" /> Next country
@@ -611,7 +611,7 @@ export function OutlineGuesser() {
                         data-primary
                         autoFocus
                         onClick={() => switchMode("unlimited")}
-                        className="inline-flex items-center gap-2 rounded-lg border px-4 py-2 font-minecraft text-sm font-bold"
+                        className="inline-flex items-center gap-2 rounded-[2px] border px-4 py-2 font-sans text-sm font-bold"
                     >
                         <Shuffle className="size-4" /> Play unlimited
                     </button>
@@ -623,19 +623,7 @@ export function OutlineGuesser() {
     return (
         <div
             ref={rootRef}
-            className="relative mx-auto max-w-lg overflow-hidden rounded-3xl border border-white/15 p-4 shadow-2xl sm:p-6"
-            style={{
-                // Frosted glass: heavy blur plus a mostly opaque tint, so the
-                // animated page background never shows through the game.
-                backdropFilter: "blur(28px) saturate(1.5)",
-                WebkitBackdropFilter: "blur(28px) saturate(1.5)",
-                backgroundColor:
-                    "color-mix(in oklch, var(--background) 80%, transparent)",
-                backgroundImage:
-                    "linear-gradient(135deg, rgba(255,255,255,0.12), rgba(255,255,255,0.03) 35%, transparent 60%)",
-                boxShadow:
-                    "0 24px 60px -20px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.22), inset 0 0 0 1px rgba(255,255,255,0.05)",
-            }}
+            className={GLASS_CLASS}
         >
             {/* Mode + tools */}
             <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
@@ -742,9 +730,9 @@ export function OutlineGuesser() {
                             }
                             onClick={() => openRound(n)}
                             className={cn(
-                                "inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 font-rubik text-xs font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-45",
+                                "inline-flex items-center gap-1.5 rounded-[2px] border px-2.5 py-1 font-mono text-xs font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-45",
                                 current
-                                    ? "border-[var(--mc-aqua)] bg-[var(--mc-aqua)]/15 text-[var(--mc-aqua)]"
+                                    ? "border-[var(--cm-cyan)] bg-[var(--cm-cyan)]/15 text-[var(--cm-cyan)]"
                                     : "border-border text-muted-foreground hover:text-foreground"
                             )}
                         >
@@ -808,12 +796,12 @@ export function OutlineGuesser() {
             <div
                 key={`${answer.c}-${round}`}
                 className={cn(
-                    "relative mx-auto grid aspect-square w-full max-w-[22rem] place-items-center overflow-hidden rounded-2xl border border-border/60 bg-slate-950 p-6",
+                    "relative mx-auto grid aspect-square w-full max-w-[22rem] place-items-center overflow-hidden rounded-[2px] border border-border/60 bg-slate-950 p-6",
                     status === "won" && "og-win"
                 )}
                 style={{
                     backgroundImage:
-                        "linear-gradient(color-mix(in oklch, var(--mc-aqua) 7%, transparent) 1px, transparent 1px), linear-gradient(90deg, color-mix(in oklch, var(--mc-aqua) 7%, transparent) 1px, transparent 1px)",
+                        "linear-gradient(color-mix(in oklch, var(--cm-cyan) 7%, transparent) 1px, transparent 1px), linear-gradient(90deg, color-mix(in oklch, var(--cm-cyan) 7%, transparent) 1px, transparent 1px)",
                     backgroundSize: "24px 24px",
                 }}
             >
@@ -843,7 +831,7 @@ export function OutlineGuesser() {
                 {status === "won" && <Burst />}
                 {!playing && (
                     <div className="og-hint absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 to-transparent px-4 pb-3 pt-8 text-center">
-                        <p className="font-minecraft text-lg font-bold text-white">
+                        <p className="font-sans text-lg font-bold text-white">
                             {answer.n}
                         </p>
                     </div>
@@ -858,11 +846,11 @@ export function OutlineGuesser() {
                         return (
                             <span
                                 key={i}
-                                className="og-hint inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-semibold"
+                                className="og-hint inline-flex items-center gap-1.5 rounded-[2px] border px-3 py-1 text-xs font-semibold"
                                 style={{
-                                    color: "var(--mc-yellow)",
-                                    borderColor: "color-mix(in oklch, var(--mc-yellow) 50%, transparent)",
-                                    backgroundColor: "color-mix(in oklch, var(--mc-yellow) 10%, transparent)",
+                                    color: "var(--cm-amber)",
+                                    borderColor: "color-mix(in oklch, var(--cm-amber) 50%, transparent)",
+                                    backgroundColor: "color-mix(in oklch, var(--cm-amber) 10%, transparent)",
                                 }}
                             >
                                 {h.text === "flag" ? (
@@ -898,10 +886,10 @@ export function OutlineGuesser() {
                             disabled={hints >= MAX_HINTS}
                             data-action="hint"
                             onClick={() => setHints((h) => Math.min(MAX_HINTS, h + 1))}
-                            className="inline-flex items-center gap-1.5 rounded-full border px-3 py-1 font-rubik text-xs font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-40"
+                            className="inline-flex items-center gap-1.5 rounded-[2px] border px-3 py-1 font-mono text-xs font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-40"
                             style={{
-                                color: "var(--mc-yellow)",
-                                borderColor: "color-mix(in oklch, var(--mc-yellow) 45%, transparent)",
+                                color: "var(--cm-amber)",
+                                borderColor: "color-mix(in oklch, var(--cm-amber) 45%, transparent)",
                             }}
                         >
                             <Lightbulb className="size-3.5" /> Hint ({hints}/{MAX_HINTS})
@@ -913,12 +901,12 @@ export function OutlineGuesser() {
                             type="button"
                             data-action="giveup"
                             onClick={giveUp}
-                            className="rounded-full border px-3 py-1 font-rubik text-xs font-semibold transition-colors"
+                            className="rounded-[2px] border px-3 py-1 font-mono text-xs font-semibold transition-colors"
                             style={{
-                                color: "var(--mc-red)",
-                                borderColor: `color-mix(in oklch, var(--mc-red) ${confirmGiveUp ? 90 : 45}%, transparent)`,
+                                color: "var(--cm-alert)",
+                                borderColor: `color-mix(in oklch, var(--cm-alert) ${confirmGiveUp ? 90 : 45}%, transparent)`,
                                 backgroundColor: confirmGiveUp
-                                    ? "color-mix(in oklch, var(--mc-red) 14%, transparent)"
+                                    ? "color-mix(in oklch, var(--cm-alert) 14%, transparent)"
                                     : undefined,
                             }}
                         >
@@ -929,8 +917,8 @@ export function OutlineGuesser() {
             ) : (
                 <div className="og-hint mt-4 text-center">
                     <p
-                        className="font-minecraft text-xl font-bold"
-                        style={{ color: status === "won" ? "var(--mc-green)" : "var(--mc-red)" }}
+                        className="font-sans text-xl font-bold"
+                        style={{ color: status === "won" ? "var(--cm-good)" : "var(--cm-alert)" }}
                     >
                         {status === "won"
                             ? guesses.length === 1
@@ -968,7 +956,7 @@ export function OutlineGuesser() {
                             key={`empty-${i}`}
                             role="listitem"
                             className={cn(
-                                "flex h-9 items-center justify-center rounded-xl border border-dashed font-mono text-[11px] uppercase tracking-wider text-muted-foreground/70",
+                                "flex h-9 items-center justify-center rounded-[2px] border border-dashed font-mono text-[11px] uppercase tracking-wider text-muted-foreground/70",
                                 i === guesses.length && playing
                                     ? "border-border bg-foreground/5"
                                     : "border-border/50"

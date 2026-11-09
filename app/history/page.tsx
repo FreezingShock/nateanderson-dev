@@ -1,7 +1,5 @@
-import { PageHero } from "@/components/page-hero";
-import { NumberTicker } from "@/components/ui/number-ticker";
-import { SidebarNav } from "@/components/sidebar-nav";
-import { PageBackground } from "@/components/page-background";
+import { PageHead } from "@/components/cm/ui";
+import { CountUp } from "@/components/cm/reveal";
 import { CommitHistory } from "@/components/commit-history";
 import { REPO, githubHeaders, fetchCommitsPage, type CommitEntry } from "@/lib/github";
 import { getRepoStats } from "@/lib/site-stats";
@@ -45,8 +43,6 @@ async function getCommits(): Promise<{ commits: CommitEntry[]; totalCommits: num
 
 export const revalidate = 3600; // re-check GitHub for new commits every hour
 
-const STATS_ACCENTS = ["var(--mc-red)", "var(--mc-gold)", "var(--mc-aqua)"] as const;
-
 export default async function HistoryPage() {
     const [{ commits, totalCommits }, { fileCount, linesOfCode }] = await Promise.all([
         getCommits(),
@@ -55,67 +51,42 @@ export default async function HistoryPage() {
 
     const stats = [
         { label: "Commits", value: totalCommits },
-        { label: "Lines of Code", value: linesOfCode },
-        { label: "File Count", value: fileCount },
+        { label: "Lines of code", value: linesOfCode },
+        { label: "File count", value: fileCount },
     ];
 
     return (
-        <div className="pointer-events-auto min-h-screen">
-            <PageBackground variant="ripple" color="#ff5555" />
-            <SidebarNav sections={[{ id: "log", label: "Changelog" }]} />
-            <section className="w-full px-6 pb-24 pt-28 sm:px-10 lg:px-16">
-                <PageHero
-                    eyebrow="Meta"
-                    title="Site History"
-                    description="This website's own changelog — pulled live from the GitHub API, not written by hand or regenerated manually."
-                    accent="var(--mc-red)"
-                    symbol="location"
-                />
-
-                <div className="mx-auto mt-10 grid max-w-2xl grid-cols-3 gap-3">
-                    {stats.map((stat, i) => {
-                        const accent = STATS_ACCENTS[i];
-                        return (
-                            <div
-                                key={stat.label}
-                                className="flex flex-col items-center gap-1.5 rounded-xl border border-border/60 bg-card/40 px-3 py-5 text-center"
-                            >
-                                {/* NumberTicker's own span hardcodes
-                                    text-black/dark:text-white, which beats
-                                    a `color` set on this wrapper (a class on
-                                    the child always wins over an ancestor's
-                                    inline style) — so the accent color is
-                                    passed straight through as an inline
-                                    style on NumberTicker itself instead,
-                                    which always wins over any class. */}
-                                <span className="font-mono text-2xl font-bold tabular-nums sm:text-3xl">
-                                    <NumberTicker value={stat.value} style={{ color: accent }} />
-                                </span>
-                                <span className="font-mono text-[10px] font-semibold uppercase tracking-wider text-muted-foreground sm:text-xs">
-                                    {stat.label}
-                                </span>
+        <>
+            <PageHead
+                label="Meta / Changelog"
+                title={["Site History"]}
+                lead="This website's own changelog, pulled live from the GitHub API, not written by hand or regenerated manually."
+            />
+            <section className="cm-section" id="log">
+                <div className="cm-wrap" style={{ display: "grid", gap: "var(--cm-s5)" }}>
+                    <dl className="cm-panel tick cm-kv" style={{ ["--cols" as string]: 3 }}>
+                        {stats.map((stat) => (
+                            <div key={stat.label}>
+                                <dt>{stat.label}</dt>
+                                <dd style={{ fontSize: 28 }}>{stat.value > 0 ? <CountUp value={stat.value} /> : "—"}</dd>
                             </div>
-                        );
-                    })}
-                </div>
-
-                <div id="log" className="mx-auto mt-10 max-w-2xl scroll-mt-24">
+                        ))}
+                    </dl>
                     {totalCommits === 0 ? (
-                        <p className="text-sm text-muted-foreground">
-                            Couldn&apos;t reach the GitHub API right now — check back shortly.
-                        </p>
+                        <div className="cm-panel cm-hatch" style={{ padding: 24 }}>
+                            <span className="cm-read warm">Couldn&apos;t reach the GitHub API right now. Check back shortly.</span>
+                        </div>
                     ) : (
                         <CommitHistory
                             repo={REPO}
                             totalCommits={totalCommits}
                             initialCommits={commits}
                             initialPerPage={INITIAL_PER_PAGE}
-                            accent="var(--mc-red)"
                         />
                     )}
                 </div>
             </section>
-        </div>
+        </>
     );
 }
 

@@ -61,12 +61,12 @@ export function proximityPct(km: number, correct: boolean): number {
 
 export const pctColor = (pct: number) =>
     pct >= 80
-        ? "var(--mc-green)"
+        ? "var(--cm-good)"
         : pct >= 60
-          ? "var(--mc-yellow)"
+          ? "var(--cm-amber)"
           : pct >= 35
-            ? "var(--mc-gold)"
-            : "var(--mc-red)";
+            ? "var(--cm-amber)"
+            : "var(--cm-alert)";
 
 /** Five-square proximity bar for share text. */
 export function pctSquares(pct: number): string {
@@ -252,20 +252,20 @@ export function dailyCountry(
 // ---- Difficulty and region filters (Unlimited mode) ----
 
 export const DIFFICULTIES = [
-    { id: 0, label: "Easy", color: "var(--mc-green)" },
-    { id: 1, label: "Medium", color: "var(--mc-yellow)" },
-    { id: 2, label: "Hard", color: "var(--mc-gold)" },
-    { id: 3, label: "Expert", color: "var(--mc-red)" },
+    { id: 0, label: "Easy", color: "var(--cm-good)" },
+    { id: 1, label: "Medium", color: "var(--cm-amber)" },
+    { id: 2, label: "Hard", color: "var(--cm-amber)" },
+    { id: 3, label: "Expert", color: "var(--cm-alert)" },
 ] as const;
 
 export const REGIONS = [
-    { id: "Africa", label: "Africa", color: "var(--mc-gold)" },
-    { id: "Asia", label: "Asia", color: "var(--mc-red)" },
-    { id: "Europe", label: "Europe", color: "var(--mc-blue)" },
-    { id: "North America", label: "N. America", color: "var(--mc-green)" },
-    { id: "South America", label: "S. America", color: "var(--mc-yellow)" },
-    { id: "Oceania", label: "Oceania", color: "var(--mc-aqua)" },
-    { id: "Polar", label: "Polar", color: "var(--mc-light-purple)" },
+    { id: "Africa", label: "Africa", color: "var(--cm-amber)" },
+    { id: "Asia", label: "Asia", color: "var(--cm-alert)" },
+    { id: "Europe", label: "Europe", color: "var(--cm-cyan)" },
+    { id: "North America", label: "N. America", color: "var(--cm-good)" },
+    { id: "South America", label: "S. America", color: "var(--cm-amber)" },
+    { id: "Oceania", label: "Oceania", color: "var(--cm-cyan)" },
+    { id: "Polar", label: "Polar", color: "var(--cm-violet)" },
 ] as const;
 
 /** Region id for a country (Antarctica and the open-ocean islands: Polar). */

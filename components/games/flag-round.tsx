@@ -16,8 +16,8 @@ import { cn } from "@/lib/utils";
 // makeFlagOptions); the board itself is fixed by the parent so it survives a
 // reload and is identical for everyone on the daily.
 
-const GREEN = "var(--mc-green)";
-const RED = "var(--mc-red)";
+const GREEN = "var(--cm-good)";
+const RED = "var(--cm-alert)";
 
 export function FlagRound({
     answer,
@@ -128,8 +128,8 @@ export function FlagRound({
     return (
         <div>
             <h3
-                className="text-center font-minecraft text-base font-bold sm:text-lg"
-                style={{ color: "var(--mc-aqua)" }}
+                className="text-center font-sans text-base font-bold sm:text-lg"
+                style={{ color: "var(--cm-cyan)" }}
             >
                 Which flag is {answer.n}&apos;s?
             </h3>
@@ -165,8 +165,8 @@ export function FlagRound({
                                     : "Flag choice"
                             }
                             className={cn(
-                                "group relative overflow-hidden rounded-xl border-2 bg-card/60 p-1.5 transition-all duration-300",
-                                playing && !picked && "hover:-translate-y-1 hover:shadow-lg",
+                                "group relative overflow-hidden rounded-[2px] border-2 bg-card/60 p-1.5 transition-all duration-300",
+                                playing && !picked && "hover:-translate-y-1 hover:",
                                 right && fresh === code && "og-win",
                                 wrong && fresh === code && "og-shake",
                                 dim && "opacity-35 grayscale"
@@ -177,11 +177,6 @@ export function FlagRound({
                                     : wrong
                                       ? RED
                                       : "var(--border)",
-                                boxShadow: right
-                                    ? `0 0 22px -4px ${GREEN}`
-                                    : wrong
-                                      ? `0 0 16px -6px ${RED}`
-                                      : undefined,
                             }}
                         >
                             {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -204,7 +199,7 @@ export function FlagRound({
                                     aria-hidden
                                 >
                                     <span
-                                        className="grid size-12 place-items-center rounded-full text-black"
+                                        className="grid size-12 place-items-center rounded-[2px] text-black"
                                         style={{
                                             backgroundColor: right ? GREEN : RED,
                                         }}
@@ -230,7 +225,7 @@ export function FlagRound({
             {!playing && (
                 <div className="og-hint mt-5 text-center">
                     <p
-                        className="font-minecraft text-xl font-bold"
+                        className="font-sans text-xl font-bold"
                         style={{ color: status === "won" ? GREEN : RED }}
                     >
                         {status === "won"
