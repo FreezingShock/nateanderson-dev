@@ -67,6 +67,15 @@ scrolls into view. The hero variant uses `eager` and skips the reveal.
 ## Creations hub
 `/creations` is its own page look (`.ctos.cr-hub`, styles at the bottom of `components/creations/creations.css`): the magenta guide X is replaced by a scanline field and one cyan sweep on load, the assembly art fills the head behind the status card, and the head plays a once-only load-in (grid, art dithers in, card drops in, rows and bars follow). Hub cards reveal from alternating sides through the scrubbed engine. Do not add `clip-path` or `mask` to `data-rx` items: the engine's IntersectionObserver treats a fully clipped item as off screen and leaves it hidden.
 
+## Sound (naOS interface set)
+Every interface sound comes from `lib/sound/sounds.ts`, synthesized with Web Audio (no audio files). The naOS block is the
+first group in the catalogue: square and sine blips at fixed Hz, low-passed, plus one sawtooth scan on transitions.
+- Hover ticks, taps, tabs, on/off toggles, menu open and close, the route-change ping (`nav`), deny buzz and the `popup` bell.
+- Under `prefers-reduced-motion: reduce` the scan sweeps and hover ticks drop out; the confirm blips stay.
+- Mute lives in the header (`.nv-snd` in `components/cm/bar.tsx`) and remembers its setting in localStorage (`fi-sound-v1`; the key keeps its old name so saved settings survive).
+- Nothing plays before the first click, tap or key press. Keep new interface sounds in this group, use `tier 0` for ambient ticks, and give anything new a rate-limit `gap`.
+- The games' pentatonic set further down the file is separate and untouched by the naOS look.
+
 ## Perf rules
 Animate only `transform` and `opacity` (plus clip-path for slabs). No animated `filter: blur`. One rAF loop, reads then
 writes, no layout thrash. Touch and narrow screens (`hover: none` or max-width 900px) get still grain and solid panels
