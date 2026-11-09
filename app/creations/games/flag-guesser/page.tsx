@@ -1,8 +1,14 @@
 import { CreationsShell, Section } from "@/components/creations-sections";
 import { GameFrame, GameReadout } from "@/components/games/naos";
 import { FlagGuesser } from "@/components/games/flag-guesser";
+import { pageMeta } from "@/lib/seo";
 
-export const metadata = { title: "Flag Guesser" };
+export const metadata = pageMeta({
+    title: "Flag Guesser",
+    description: "Name the country from its flag. A daily puzzle and unlimited practice rounds, played in your browser.",
+    path: "/creations/games/flag-guesser",
+    image: "/creations/opengraph-image",
+});
 
 export default function FlagGuesserPage() {
     return (

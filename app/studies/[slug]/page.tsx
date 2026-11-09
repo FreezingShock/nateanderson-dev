@@ -16,11 +16,19 @@ import {
     phases,
     progressBetween,
 } from "@/lib/timeline-data";
+import { pageMeta } from "@/lib/seo";
 
 export const revalidate = 3600;
 
 export async function generateStaticParams() {
     return courses.map((c) => ({ slug: c.slug }));
+}
+
+export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }) {
+    const { slug } = await params;
+    const course = courseBySlug[slug];
+    if (!course) return { title: "Class" };
+    return pageMeta({ title: course.title, description: course.description, path: `/studies/${slug}` });
 }
 
 export default async function CourseDetailPage({

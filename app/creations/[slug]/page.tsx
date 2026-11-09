@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import { getProjectBySlug, getAllProjectSlugs, statusLabel } from "@/lib/content";
 import { categoryById } from "@/lib/creations-data";
 import { CreationsHead, IdCard } from "@/components/creations-sections";
+import { pageMeta } from "@/lib/seo";
 
 export const revalidate = 60;
 
@@ -13,7 +14,8 @@ export async function generateStaticParams() {
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }) {
     const { slug } = await params;
     const project = await getProjectBySlug(slug);
-    return { title: project?.title ?? "Creation" };
+    if (!project) return { title: "Creation" };
+    return pageMeta({ title: project.title, description: project.description, path: `/creations/${slug}` });
 }
 
 const tone = { active: "live", planning: "warn", idea: "" } as const;

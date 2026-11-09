@@ -1,5 +1,7 @@
 import { getRecentRenovations } from "@/lib/content";
 import { CreationsShell, ProjectGrid, Section } from "@/components/creations-sections";
+import { pageMeta } from "@/lib/seo";
+import { categoryById } from "@/lib/creations-data";
 
 export const revalidate = 60;
 
@@ -19,4 +21,9 @@ export default async function RenovationsPage() {
     );
 }
 
-export const metadata = { title: "Renovations" };
+export const metadata = pageMeta({
+    title: "Renovations",
+    description: categoryById("renovations").blurb,
+    path: "/creations/renovations",
+    image: "/creations/opengraph-image",
+});

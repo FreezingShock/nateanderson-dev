@@ -11,8 +11,8 @@ export default function manifest(): MetadataRoute.Manifest {
             "Games, renders, and systems, built while studying construction management.",
         start_url: "/",
         display: "standalone",
-        background_color: "#040506",
-        theme_color: "#040506",
+        background_color: "#1a1a1a",
+        theme_color: "#1a1a1a",
         icons: [
             {
                 src: "/icon.svg",

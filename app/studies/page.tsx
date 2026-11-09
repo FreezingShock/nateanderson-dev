@@ -6,6 +6,7 @@ import { CourseExplorer } from "@/components/course-explorer";
 import { PathwayRail, ProgramCardView, ReadingQueue, ToolRoadmap } from "@/components/studies-sections";
 import { courses, personalStudies } from "@/lib/studies-data";
 import "./studies.css";
+import { pageMeta } from "@/lib/seo";
 
 // Statically generated, refreshed hourly: progress bars and countdown starting values are computed from
 // real dates at render time, so the page keeps moving forward on its own.
@@ -112,4 +113,8 @@ export default function StudiesPage() {
     );
 }
 
-export const metadata = { title: "Studies" };
+export const metadata = pageMeta({
+    title: "Studies",
+    description: "The pathway from this year's classes to a university specialization, plus the independent research running alongside it.",
+    path: "/studies",
+});

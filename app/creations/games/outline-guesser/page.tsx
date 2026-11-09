@@ -1,8 +1,14 @@
 import { CreationsShell, Section } from "@/components/creations-sections";
 import { GameFrame, GameReadout } from "@/components/games/naos";
 import { OutlineGuesser } from "@/components/games/outline-guesser";
+import { pageMeta } from "@/lib/seo";
 
-export const metadata = { title: "Outline Guesser" };
+export const metadata = pageMeta({
+    title: "Outline Guesser",
+    description: "Name the country from its outline. A daily puzzle and unlimited practice rounds, played in your browser.",
+    path: "/creations/games/outline-guesser",
+    image: "/creations/opengraph-image",
+});
 
 export default function OutlineGuesserPage() {
     return (

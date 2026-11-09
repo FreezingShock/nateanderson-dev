@@ -13,6 +13,8 @@ import { SystemsExplorer } from "@/components/systems-explorer";
 import { SkillsExplorer } from "@/components/skills-explorer";
 import { KEY_DATES, daysUntil } from "@/lib/timeline-data";
 import "./about.css";
+import { pageMeta } from "@/lib/seo";
+import { PROFILE_LEAD } from "@/lib/identity";
 
 // Statically generated, refreshed hourly: the days-to-graduation figure and the path progress bars come
 // from real dates at render time.
@@ -129,4 +131,8 @@ export default function AboutPage() {
     );
 }
 
-export const metadata = { title: "About" };
+export const metadata = pageMeta({
+    title: "About",
+    description: PROFILE_LEAD,
+    path: "/about",
+});
