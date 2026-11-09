@@ -35,14 +35,6 @@
     }
 }
 
-/* The lead copy sits on a dark plate, so the backdrop never fights the words. */
-.hero :global(.cm-lead) {
-    max-width: 40ch;
-    padding: 12px 16px;
-    background: rgba(26, 26, 26, .86);
-    border-left: 3px solid var(--cm-cyan);
-}
-
 @keyframes histLine {
     from {
         clip-path: inset(0 100% 0 0);
@@ -118,12 +110,6 @@
     color: var(--cm-dim);
 }
 
-/* The index panel gets a cyan header bar, so it no longer matches the white-headed latest-commit card. */
-.statsPanel :global(.cm-hbar) {
-    background: var(--cm-cyan);
-    color: var(--cm-cyan-ink);
-}
-
 /* ---- Recent churn: one bar per commit, oldest left, newest cyan. Fills the index panel's lower half. ----------- */
 .churn {
     padding: 14px 16px 16px;
@@ -146,16 +132,19 @@
     height: 84px;
 }
 
+/* Each bar is a dither field (the naOS panel texture), not a flat grey block. The newest is a solid white block. */
 .bars i {
     flex: 1 1 0;
     min-width: 0;
-    background: rgba(244, 244, 242, .28);
+    background-color: rgba(244, 244, 242, .04);
+    background-image: radial-gradient(circle, rgba(244, 244, 242, .55) 0 30%, transparent 34%);
+    background-size: 4px 4px;
     transform-origin: bottom;
     animation: histBar .7s var(--cm-ease-out) both;
 }
 
 .bars i:last-child {
-    background: var(--cm-cyan);
+    background: var(--cm-ctos-block);
 }
 
 .idCard .id-main {
@@ -356,17 +345,14 @@ ol.list {
         grid-template-columns: minmax(0, 1fr);
     }
 
+    /* Fewer dividers on phones: rows are spaced by padding, and the churn strip gets the only rule below them. */
     .stats > div {
         display: grid;
         grid-template-columns: minmax(0, 1fr) auto;
         column-gap: 12px;
         row-gap: 4px;
         align-items: center;
-        padding: 14px 16px;
-        border-bottom: 1px dashed var(--cm-hair-hi);
-    }
-
-    .stats > div:last-child {
+        padding: 12px 16px;
         border-bottom: 0;
     }
 
