@@ -1,0 +1,146 @@
+/* ==========================================================================
+   Blog page: naOS treatment. Page-only rules, every selector scoped under `.ctos .blog-*` so nothing leaks.
+   Shared naOS rules (title blocks, panel edge, post card variety, id-top/id-foot, p-foot, cta-b plates, footer) live in
+   app/camino/ctos.css and are reused here as-is. Shared engine, motion and components are not changed.
+   ========================================================================== */
+
+/* ---- Hero: magenta tracking lines behind the title (same drawing as the homepage hero) ------------------------- */
+.ctos .blog-hero { position: relative; }
+.ctos .blog-hero::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  opacity: .45;
+  background:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100' preserveAspectRatio='none'%3E%3Cpath d='M0 14 L100 90 M0 88 L100 8' stroke='%23c23bd0' stroke-width='1' fill='none' vector-effect='non-scaling-stroke'/%3E%3C/svg%3E")
+    center / 100% 100% no-repeat;
+}
+.ctos .blog-hero > .cm-head { position: relative; z-index: 1; }
+.ctos .blog-hero .cm-highlight > * { font-size: clamp(44px, 11vw, 150px); }
+
+/* ---- Hero stats: one strip with a cyan left edge and dither under each figure (the homepage's stats strip) -------- */
+.ctos .blog-stats {
+  display: inline-grid;
+  grid-auto-flow: column;
+  gap: 0;
+  width: fit-content;
+  max-width: 100%;
+  margin-top: var(--cm-s5);
+  border: 1px solid var(--cm-hair-hi);
+  border-left: 3px solid var(--cm-cyan);
+  background: #131313;
+}
+.ctos .blog-stats > div { position: relative; isolation: isolate; min-width: 136px; padding: 11px 20px 14px 14px; border-left: 1px solid var(--cm-hair); }
+.ctos .blog-stats > div:first-child { border-left: 0; }
+.ctos .blog-stats > div::after {
+  content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 22px; z-index: -1; pointer-events: none;
+  background-image: radial-gradient(circle, rgba(244, 244, 242, .5) 0 30%, transparent 34%); background-size: 4px 4px;
+  -webkit-mask-image: linear-gradient(0deg, #000, transparent); mask-image: linear-gradient(0deg, #000, transparent); opacity: .4;
+}
+.ctos .blog-stats .big { font: 800 34px/1 var(--cm-display); letter-spacing: -.05em; margin-top: 4px; display: block; }
+.ctos .blog-stats .cm-coord { margin-top: 6px; }
+@media (max-width: 520px) {
+  .ctos .blog-stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); width: 100%; }
+  .ctos .blog-stats > div { min-width: 0; padding: 10px 10px 12px; }
+  .ctos .blog-stats .big { font-size: 26px; }
+  .ctos .blog-stats .cm-coord { font-size: 8.5px; letter-spacing: .08em; line-height: 1.3; }
+}
+
+/* ---- Jump plates: the homepage's index plates, in a 2-up grid on phones ------------------------------------------ */
+.ctos .blog-jump { margin-top: var(--cm-s5); }
+.ctos .blog-jump .cta-b { min-height: 44px; }
+@media (max-width: 760px) {
+  .ctos .blog-jump.cm-row.cta { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .ctos .blog-jump .cta-b span { white-space: normal; padding: 0 10px 0 10px; line-height: 1.25; font-size: 10.5px; letter-spacing: .08em; }
+  .ctos .blog-jump .cta-b { min-height: 52px; }
+  .ctos .blog-jump .cta-b::after { display: none; }
+}
+@media (max-width: 380px) {
+  .ctos .blog-jump.cm-row.cta { grid-template-columns: minmax(0, 1fr); }
+}
+
+/* ---- Section index: a status card with a white header bar, corner bracket and dither footer ---------------------- */
+.ctos .blog-index {
+  position: relative;
+  background: #131313;
+  border: 1px solid var(--cm-hair-hi);
+  border-left: 3px solid var(--cm-cyan);
+}
+.ctos .blog-index::before {
+  content: ""; position: absolute; right: -1px; top: -1px; width: 14px; height: 14px; pointer-events: none;
+  border: 0 solid var(--cm-ctos-block); border-top-width: 2px; border-right-width: 2px;
+}
+.ctos .blog-index-wrap { overflow-x: visible; }
+.ctos .blog-table { font-size: 13.5px; }
+.ctos .blog-table th {
+  padding: 9px 14px; background: transparent; color: var(--cm-dim);
+  border-bottom: 1px dashed var(--cm-hair-hi); font-weight: 500;
+}
+.ctos .blog-table td { padding: 14px; border-bottom: 1px solid var(--cm-hair); vertical-align: middle; }
+.ctos .blog-table td:first-child { font: 700 12px/1 var(--cm-mono); letter-spacing: .08em; color: var(--cm-cyan); width: 1%; white-space: nowrap; }
+.ctos .blog-table td:nth-child(2) a {
+  font: 700 19px/1.1 var(--cm-display); letter-spacing: -.035em; text-transform: lowercase;
+  color: var(--cm-fg); text-decoration: none; border-bottom: 1px solid transparent; transition: color .15s, border-color .15s;
+}
+.ctos .blog-table td:nth-child(2) a:hover, .ctos .blog-table td:nth-child(2) a:focus-visible { color: var(--cm-cyan); border-bottom-color: var(--cm-cyan); }
+.ctos .blog-table td:nth-child(3) { font: 700 14px/1 var(--cm-mono); font-variant-numeric: tabular-nums; color: var(--cm-ctos-block); }
+.ctos .blog-table tr:hover td { background: rgba(244, 244, 242, .035); }
+.ctos .blog-table tr:last-child td { border-bottom: 0; }
+.ctos .blog-index .id-foot { border-top: 1px dashed var(--cm-hair-hi); }
+
+/* Phones: each section becomes a two-line row (no sideways scroll) */
+@media (max-width: 620px) {
+  .ctos .blog-table thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+  .ctos .blog-table, .ctos .blog-table tbody { display: block; width: 100%; }
+  .ctos .blog-table tr { display: grid; grid-template-columns: 40px minmax(0, 1fr) auto; column-gap: 10px; row-gap: 8px; padding: 14px; border-bottom: 1px solid var(--cm-hair); align-items: center; }
+  .ctos .blog-table tr:last-child { border-bottom: 0; }
+  .ctos .blog-table td { display: block; padding: 0; border: 0; background: none !important; }
+  .ctos .blog-table td:nth-child(1) { grid-column: 1; grid-row: 1; width: auto; }
+  .ctos .blog-table td:nth-child(2) { grid-column: 2; grid-row: 1; min-width: 0; }
+  .ctos .blog-table td:nth-child(2) a { font-size: 17px; overflow-wrap: anywhere; }
+  .ctos .blog-table td:nth-child(3) { grid-column: 3; grid-row: 1; }
+  .ctos .blog-table td:nth-child(4) { grid-column: 2 / 4; grid-row: 2; }
+}
+
+/* ---- Post plates: the homepage card variety (white / cyan-edged / dither), with a Status-card header bar ---------- */
+.ctos .blog-grid { grid-template-columns: repeat(auto-fill, minmax(min(100%, 280px), 1fr)); }
+.ctos .blog-post { min-height: 230px; gap: 10px; }
+.ctos .blog-post .bp-top {
+  display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  margin: -14px -14px 4px; padding: 9px 14px; border-bottom: 2px solid var(--cm-cyan);
+  background: #0f0f0f; font: 700 10px/1 var(--cm-mono); letter-spacing: .14em; text-transform: uppercase; color: var(--cm-dim);
+}
+.ctos .blog-post .bp-top > span:first-child { color: var(--cm-cyan); }
+.ctos .blog-post .bp-top .cm-tag { font-size: 9.5px; }
+.ctos .blog-post > b { margin-top: 6px; }
+.ctos .blog-post > p { flex: 1; }
+.ctos .blog-post .p-foot { margin: auto -14px -14px; }
+.ctos .blog-post:hover .p-foot .st { color: var(--cm-cyan); }
+/* Paper plates (every third, starting first) get an ink header rule so the bar still reads on white */
+.ctos .cm-cols3.blog-grid > .cm-card:nth-child(3n+1) .bp-top { background: var(--cm-ctos-ink); color: var(--cm-ctos-block); border-bottom-color: var(--cm-cyan); }
+.ctos .cm-cols3.blog-grid > .cm-card:nth-child(3n+1) .bp-top > span:first-child { color: var(--cm-cyan); }
+.ctos .cm-cols3.blog-grid > .cm-card:nth-child(3n+1) .p-foot { border-top-color: #c9c9c3; }
+.ctos .cm-cols3.blog-grid > .cm-card:nth-child(3n+1) .p-foot .id-bars i { background: #1a1a1a; }
+.ctos .cm-cols3.blog-grid > .cm-card:nth-child(3n) .bp-top { background: #0c0c0c; }
+.ctos .blog-post .id-bars i { width: 3px; }
+.ctos .blog-post .p-foot { padding: 9px 14px; }
+
+/* Section heads: the blurb sits under the title block, and the count pill aligns to the baseline */
+.ctos .blog-sec .cm-sec-head { align-items: end; }
+.ctos .blog-sec .cm-sec-head > .cm-state { align-self: end; padding-bottom: 6px; }
+
+/* Reading notes panel and its links */
+.ctos .blog-note { display: grid; gap: 14px; padding: 0 0 0; }
+.ctos .blog-note > .cm-hbar { margin: 0; }
+.ctos .blog-note-copy { margin: 0; padding: 18px 18px 6px; max-width: 62ch; }
+.ctos .blog-note .p-foot { margin-top: 0; }
+.ctos .blog-note-links { padding: 18px; }
+.ctos .blog-note-links .cta-b { min-width: 0; }
+@media (max-width: 760px) {
+  .ctos .blog-note-links.cm-row.cta { display: grid; grid-template-columns: 1fr; }
+}
+
+/* Motion note: reveals are scroll-linked and handled by the shared engine (data-rx-auto on each wrap). Reduced
+   motion is respected there; this page adds no animations of its own. */

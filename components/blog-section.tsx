@@ -1,3 +1,5 @@
+import { ScrollType, Scramble, Slab } from "@/components/cm/motion";
+
 export interface BlogPost {
     id: string;
     title: string;
@@ -30,86 +32,75 @@ function statusLabel(status: BlogPost["status"]) {
     return "Coming soon";
 }
 
+/**
+ * One blog section in the naOS treatment: scrambled `NN / Name` label, slab-revealed white title block, scroll-typed
+ * blurb, then post plates (the Status-card look from the homepage, with a white header bar and a dither footer).
+ * The wrapper carries `data-rx-auto`, so the reveal engine tags the plates and their text itself.
+ */
 export function BlogSection({
     title,
     description,
     posts,
     no,
-    color,
 }: BlogSectionProps & { no: string }) {
     const count = posts.length;
+    const live = posts.filter((p) => p.status === "published").length;
+
     return (
-        <div
-            className="cm-wrap"
-            style={{ display: "grid", gap: "var(--cm-s5)" }}
-        >
-            <div className="cm-sec-head" style={{ marginBottom: 0 }}>
+        <div className="cm-wrap" data-rx-auto="">
+            <div className="cm-sec-head">
                 <div>
-                    <span className="cm-lbl">
-                        {no} / {title}
-                    </span>
-                    <h2 className="cm-h2">{title}</h2>
-                    <p
-                        className="cm-body"
-                        style={{ margin: 0, maxWidth: "62ch" }}
-                    >
-                        {description}
-                    </p>
+                    <Scramble className="cm-lbl" replay text={`${no} / ${title}`} />
+                    <h2 className="cm-h2" data-rx="slab">
+                        <Slab>{title}</Slab>
+                    </h2>
+                    <ScrollType text={description} className="cm-body" style={{ margin: 0 }} />
                 </div>
+                <span className={`cm-state ${live > 0 ? "live" : ""}`}>
+                    {live > 0 ? `${live} published` : `${count} queued`}
+                </span>
             </div>
+
             {count > 0 ? (
-                <div
-                    style={{
-                        display: "grid",
-                        gap: 12,
-                        gridTemplateColumns:
-                            "repeat(auto-fill, minmax(min(100%, 300px), 360px))",
-                    }}
-                >
-                    {posts.map((post) => {
+                <div className="cm-cols3 blog-grid">
+                    {posts.map((post, i) => {
                         const isPublished = post.status === "published";
+                        const shownTitle =
+                            isPublished || post.title !== "Coming Soon"
+                                ? post.title
+                                : `Next up in ${title.toLowerCase()}`;
                         const inner = (
                             <>
-                                <div
-                                    className="cm-viz"
-                                    style={{
-                                        aspectRatio: "auto",
-                                        minHeight: 72,
-                                        display: "flex",
-                                        alignItems: "flex-start",
-                                        padding: 10,
-                                        borderBottom: `2px solid ${color}`,
-                                    }}
-                                >
-                                    <span
-                                        className={`cm-tag flat ${isPublished ? "live" : ""}`}
-                                    >
+                                <div className="bp-top">
+                                    <span>
+                                        {no}.{String(i + 1).padStart(2, "0")}
+                                    </span>
+                                    <span className={`cm-tag flat ${isPublished ? "live" : ""}`}>
                                         {statusLabel(post.status)}
                                     </span>
                                 </div>
-                                <b>
-                                    {isPublished || post.title !== "Coming Soon"
-                                        ? post.title
-                                        : `Next up in ${title.toLowerCase()}`}
-                                </b>
+                                <b>{shownTitle}</b>
                                 <p>{post.excerpt}</p>
-                                {post.date ? (
-                                    <span className="st">
-                                        {formatDate(post.date)}
+                                <div className="p-foot">
+                                    <span className="id-bars" aria-hidden="true">
+                                        <i />
+                                        <i />
+                                        <i />
+                                        <i />
+                                        <i />
                                     </span>
-                                ) : (
-                                    <span className="st">Queued</span>
-                                )}
+                                    <span className="st">{post.date ? formatDate(post.date) : "Queued"}</span>
+                                </div>
                             </>
                         );
                         return isPublished ? (
-                            <article key={post.id} className="cm-card">
+                            <article key={post.id} className="cm-card blog-post">
                                 {inner}
                             </article>
                         ) : (
                             <article
                                 key={post.id}
-                                className="cm-card"
+                                className="cm-card blog-post"
                                 aria-label={`${post.title}, ${statusLabel(post.status).toLowerCase()}`}
                             >
                                 {inner}
@@ -118,17 +109,10 @@ export function BlogSection({
                     })}
                 </div>
             ) : (
-                <div
-                    className="cm-panel cm-hatch"
-                    style={{ padding: 24, display: "grid", gap: 8 }}
-                >
+                <div className="cm-panel cm-hatch" style={{ padding: 24, display: "grid", gap: 8 }}>
                     <span className="cm-read warm">No posts yet</span>
-                    <p
-                        className="cm-body"
-                        style={{ margin: 0, maxWidth: "62ch" }}
-                    >
-                        Nothing in {title.toLowerCase()} is published yet. The
-                        first one will land here when it is ready.
+                    <p className="cm-body" style={{ margin: 0, maxWidth: "62ch" }}>
+                        Nothing in {title.toLowerCase()} is published yet. The first one will land here when it is ready.
                     </p>
                 </div>
             )}
