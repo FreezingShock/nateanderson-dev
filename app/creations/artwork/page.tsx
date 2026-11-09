@@ -6,7 +6,7 @@ export default function ArtworkPage() {
         <CreationsShell
             eyebrow="Creations / Artwork"
             title={["Artwork"]}
-            description="The AP Art portfolio, Blender renders and drawings. The slots below are placeholders waiting for real pieces."
+            description="The AP Art portfolio, Blender renders and drawings."
             back={{ href: "/creations", label: "Back to Creations" }}
         >
             {ART_COLLECTIONS.map((c, i) => (

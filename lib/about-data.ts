@@ -1,4 +1,4 @@
-// Content for /about. Colors are Minecraft palette tokens (not hard-coded hex)
+// Content for /about. Colors are Camino tokens (not hard-coded hex)
 // so they follow the theme, and anything factual comes from Nate's own notes.
 // Removed on purpose: the old page carried placeholder text ("[YOUR FAVORITE
 // ESSAY…]", "[to fill]"), invented upcoming races with made-up target times,
@@ -104,7 +104,7 @@ export const skills: Skill[] = [
         name: "Tailwind CSS",
         level: 3,
         description:
-            "Responsive design, utility-first workflows and custom theming with the Minecraft color palette.",
+            "Responsive design, utility-first workflows and custom theming with design tokens. This site runs on one.",
         icon: "Palette",
         category: "design",
     },
@@ -112,7 +112,7 @@ export const skills: Skill[] = [
         name: "Next.js & React",
         level: 3,
         description:
-            "Full-stack web development, server components and Supabase integration. Built this whole site.",
+            "Full-stack web development, server components and static rendering. Built this whole site.",
         icon: "Code2",
         category: "web",
     },
@@ -312,9 +312,9 @@ export const gameFacts = [
         color: "var(--cm-good)",
     },
     {
-        value: 3,
+        value: 4,
         suffix: "",
-        label: "core systems to build",
+        label: "interlocking core systems",
         color: "var(--cm-violet)",
     },
 ];
@@ -402,6 +402,15 @@ export const building: BuildingItem[] = [
             "The college pathway through Santa Monica College to Cal Poly Pomona, with an environmental specialization and a capstone focus.",
         href: "/timeline",
         cta: "Open the timeline",
+    },
+    {
+        title: "Games for fun",
+        color: "var(--cm-amber)",
+        status: "Playable",
+        description:
+            "Small browser games I made on the side: Outline Guesser and Flag Guesser, each with a daily puzzle and an unlimited mode.",
+        href: "/creations/games",
+        cta: "Play them",
     },
 ];
 
