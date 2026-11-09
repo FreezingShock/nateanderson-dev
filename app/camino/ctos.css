@@ -80,19 +80,36 @@
 .cm-ctos-tag { position: absolute; right: 16px; top: 76px; z-index: 2; font: 700 12px/1 var(--cm-display); letter-spacing: -.02em; padding: 4px 7px 5px; background: var(--cm-cyan); color: var(--cm-cyan-ink); pointer-events: none; }
 @media (max-width: 720px) { .cm-persp { height: 36%; } }
 
-/* ---- Graffiti stickers (original: hand-set type, spray colours, tape corners) -- footer only ------------------- */
-.cm-sticker-row { display: none; }
-body:has(.ctos) .cm-sticker-row { display: flex; flex-wrap: wrap; gap: 14px 22px; padding-bottom: var(--cm-s6); }
-.cm-sticker {
-  position: relative; display: inline-block; padding: .2em .5em .26em; font: 800 clamp(20px, 3.4vw, 34px)/1 var(--cm-display);
-  letter-spacing: -.05em; text-transform: lowercase; color: #121212; transform: rotate(-3deg); border: 2px solid #121212;
-  box-shadow: 4px 4px 0 rgba(0, 0, 0, .65); user-select: none;
-  background: repeating-linear-gradient(135deg, var(--sk) 0 9px, color-mix(in srgb, var(--sk) 72%, #fff) 9px 18px);
-}
-.cm-sticker::before, .cm-sticker::after { content: ""; position: absolute; width: 34px; height: 12px; background: rgba(244, 244, 242, .75); top: -8px; }
-.cm-sticker::before { left: -12px; transform: rotate(-32deg); } .cm-sticker::after { right: -12px; transform: rotate(28deg); }
-.cm-sticker.pink { --sk: #ff2d8a; } .cm-sticker.cyan { --sk: #2fd8e8; transform: rotate(2deg); } .cm-sticker.lime { --sk: #c8f23c; transform: rotate(-1.5deg); }
-.cm-sticker > * { mix-blend-mode: normal; }
+/* ---- naOS footer (home only: .ctos on the page turns it on) ---------------------------------------------------- */
+.na-bar, .na-sig, .na-ix, .na-arr { display: none; }
+body:has(.ctos) .cm-foot { border-top: 0; padding-top: 0; background: linear-gradient(180deg, #121212, var(--cm-ctos-ground) 60%); }
+body:has(.ctos) .na-bar { display: flex; align-items: center; gap: 12px; padding: 10px 12px; margin-bottom: var(--cm-s6); font: 600 10.5px/1 var(--cm-mono); letter-spacing: .14em; text-transform: none; color: var(--cm-ctos-ink); max-width: none; background: var(--cm-ctos-block); }
+body:has(.ctos) .na-bar .na-dot { width: 8px; height: 8px; background: var(--cm-ctos-ink); animation: na-blink 1.4s steps(2) infinite; }
+body:has(.ctos) .na-bar .na-fill { flex: 1; height: 6px; background: repeating-linear-gradient(90deg, var(--cm-ctos-ink) 0 2px, transparent 2px 6px); opacity: .55; }
+@keyframes na-blink { 50% { opacity: .15; } }
+body:has(.ctos) .cm-foot-top { align-items: stretch; }
+body:has(.ctos) .cm-foot-top > * { position: relative; padding: 18px 18px 20px; background: rgba(244, 244, 242, .035); border-left: 2px solid var(--cm-cyan); }
+body:has(.ctos) .cm-foot-top > *::after { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 6px; background-image: radial-gradient(circle, rgba(47, 216, 232, .55) 0 1px, transparent 1.4px); background-size: 4px 4px; -webkit-mask-image: linear-gradient(90deg, #000, transparent); mask-image: linear-gradient(90deg, #000, transparent); pointer-events: none; }
+body:has(.ctos) .cm-foot-col .cm-lbl { color: var(--cm-ctos-block); font-weight: 700; padding-bottom: 8px; border-bottom: 1px dashed rgba(244, 244, 242, .22); }
+body:has(.ctos) .cm-foot-col a { color: rgba(244, 244, 242, .72); transition: transform var(--cm-d-base), color var(--cm-d-base); }
+body:has(.ctos) .cm-foot-col a:hover, body:has(.ctos) .cm-foot-col a:focus-visible { color: var(--cm-cyan); transform: translateX(4px); }
+body:has(.ctos) .cm-foot-tagline { color: rgba(244, 244, 242, .78); }
+body:has(.ctos) .cm-foot-find { padding: 18px; background: rgba(244, 244, 242, .035); border-left: 2px solid var(--cm-cyan); }
+body:has(.ctos) .cm-foot-find > .cm-lbl { color: var(--cm-ctos-block); font-weight: 700; }
+body:has(.ctos) .cm-foot-social { gap: 0; border: 1px solid rgba(244, 244, 242, .16); }
+body:has(.ctos) .cm-foot-social li { border: 1px solid rgba(244, 244, 242, .16); margin: -1px 0 0 -1px; }
+body:has(.ctos) .cm-foot-social .cm-btn { display: grid; grid-template-columns: auto auto 1fr auto; align-items: center; gap: 10px; border: 0; border-radius: 0; background: transparent; padding: 14px; text-align: left; transition: background var(--cm-d-base), color var(--cm-d-base); }
+body:has(.ctos) .na-ix { display: inline; font: 700 10px/1 var(--cm-mono); color: var(--cm-cyan); letter-spacing: .08em; }
+body:has(.ctos) .na-arr { display: inline; font-style: normal; opacity: .5; transition: transform var(--cm-d-base), opacity var(--cm-d-base); }
+body:has(.ctos) .cm-foot-social .cm-btn:hover, body:has(.ctos) .cm-foot-social .cm-btn:focus-visible { background: var(--cm-ctos-block); color: var(--cm-ctos-ink); }
+body:has(.ctos) .cm-foot-social .cm-btn:hover .na-ix, body:has(.ctos) .cm-foot-social .cm-btn:focus-visible .na-ix { color: var(--cm-ctos-ink); }
+body:has(.ctos) .cm-foot-social .cm-btn:hover .na-arr { transform: translateX(4px); opacity: 1; }
+body:has(.ctos) .na-sig { display: flex; align-items: flex-end; gap: 4px; height: 26px; }
+body:has(.ctos) .na-sig i { flex: 1; background: var(--cm-cyan); opacity: .5; height: 30%; }
+body:has(.ctos) .na-sig i:nth-child(3n) { height: 100%; opacity: .9; } body:has(.ctos) .na-sig i:nth-child(4n+1) { height: 62%; } body:has(.ctos) .na-sig i:nth-child(5n+2) { height: 18%; opacity: .3; }
+body:has(.ctos) .cm-foot-base { font-family: var(--cm-mono); }
+@media (max-width: 760px) { .na-hide { display: none; } body:has(.ctos) .na-bar { font-size: 9.5px; } }
+@media (prefers-reduced-motion: reduce) { body:has(.ctos) .na-bar .na-dot { animation: none; } }
 
 /* ---- Perf: Safari-friendly surfaces ------------------------------------------------------------------------------
    The grain layer is a 4x-viewport fixed plane that jittered forever, and every panel blurred what was behind it.

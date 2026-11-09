@@ -349,7 +349,7 @@ function renderScr(it: RxItem, p: number, now: number) {
 
 function setRx(it: RxItem, p: number, now: number) {
     if (it.scr) renderScr(it, p, now);
-    else it.el.style.setProperty("--p", p.toFixed(3));
+    else it.el.style.setProperty("--p", (p * p * (3 - 2 * p)).toFixed(3)); // smoothstep: soft start and landing
     it.p = p;
 }
 
@@ -366,6 +366,7 @@ function schedule() {
     if (!raf && started) raf = requestAnimationFrame(frame);
 }
 
+let lastT = 0;
 function frame(now: number) {
     raf = 0;
     const vh = innerHeight;
@@ -412,7 +413,12 @@ function frame(now: number) {
         if (it.active) rxRects.push([it, it.el.getBoundingClientRect()]);
         else if (it.p !== it.side) setRx(it, it.side, now);
     });
-    const band = Math.min(vh * 0.28, 260);
+    const band = Math.min(vh * 0.36, 340);
+    // Critically damped follow: the displayed progress eases toward where the scroll position says it should be, so
+    // wheel notches and touch flicks glide instead of stepping. Frame-rate independent via dt.
+    const dt = Math.min(50, Math.max(8, now - lastT));
+    lastT = now;
+    const k = 1 - Math.exp(-dt / 120);
     for (const [it, r] of rxRects) {
         if (Number.isNaN(it.ref)) {
             const base = vh * 0.97 - it.off;
@@ -431,7 +437,14 @@ function frame(now: number) {
             p = Math.min(p, tp);
             if (it.p < 0 && tp <= 0) p = 0;
         }
-        if (it.p >= 0 && Math.abs(p - it.p) < 0.004 && p > 0 && p < 1 && !it.scr) continue;
+        if (!it.intro && it.p >= 0) {
+            const tgt = p;
+            if (Math.abs(tgt - it.p) < 0.004) p = tgt;
+            else {
+                p = it.p + (tgt - it.p) * k;
+                again = true;
+            }
+        }
         if (it.p === p) continue;
         setRx(it, p, now);
     }
