@@ -1,0 +1,117 @@
+/* ==========================================================================
+   ctOS layer (loaded after Camino). Style reference: the Watch Dogs 2 "ctOS 2.0" opening by MK12 (as described in
+   the Motionographer breakdown): Helvetica as a utility's branding system (NYC Transit Graphics Standards lineage),
+   huge lowercase heavy lines on white blocks cropped at the baseline, a small line set beside them on #1a1a1a, hard
+   dither/glitch marks. Original code and marks only; no third-party art or logos.
+   ========================================================================== */
+:root {
+  --cm-ctos-ground: #1a1a1a;
+  --cm-ctos-block: #f4f4f2;
+  --cm-ctos-ink: #1a1a1a;
+}
+
+/* Title card: stacked white blocks, lowercase heavy grotesk, baseline-cropped, lines butt together. */
+.ctos .cm-highlight { gap: 0; }
+.ctos .cm-highlight > * {
+  position: relative;
+  background: var(--cm-ctos-block);
+  color: var(--cm-ctos-ink);
+  font-weight: 700;
+  letter-spacing: -.055em;
+  line-height: .8;
+  text-transform: lowercase;
+  padding: .12em .14em 0 .06em;
+  height: .74em; /* crop: bottom of the glyphs is cut at the block edge */
+  box-sizing: content-box;
+  overflow: hidden;
+}
+.ctos .cm-highlight > :first-child { background: var(--cm-ctos-block); color: var(--cm-ctos-ink); }
+.ctos .cm-highlight.solo > :first-child { background: var(--cm-ctos-block); color: var(--cm-ctos-ink); }
+.ctos .cm-highlight > * { overflow: hidden; }
+.ctos .cm-highlight .hx { display: block; }
+
+/* The title's lead/side line: small white text beside the last block, like the cinematic card. */
+.ctos .cm-hero .cm-lead { font-weight: 600; letter-spacing: -.01em; }
+
+/* Section headings: the same block, smaller, so every page speaks one language. */
+.ctos .cm-h2[data-mx="slab"] .sl::after { background: var(--cm-ctos-block); }
+.ctos .cm-h2 { letter-spacing: -.045em; text-transform: lowercase; }
+
+/* Ground: the cinematic's #1a1a1a instead of near-black, so white blocks pop and cyan stays a rare accent. */
+:root:not([data-theme="paper"]) body:has(.ctos) { background-color: var(--cm-ctos-ground); }
+
+/* ---- 1-bit dither and guide lines (original drawing language, from the cinematic's hacker-art layer) -------------
+   Halftone dots fade across the page-head backdrop; two thin magenta guide lines cross the frame like a tracking
+   overlay. Purely decorative, aria-hidden by being pseudo-elements and the existing grid-bg div. */
+.ctos .cm-hero > .cm-grid-bg {
+  background-image: radial-gradient(circle at center, rgba(244, 244, 242, .55) 0 28%, transparent 32%);
+  background-size: 5px 5px;
+  -webkit-mask-image: linear-gradient(100deg, transparent 8%, #000 100%), linear-gradient(0deg, transparent, #000 70%);
+  mask-image: linear-gradient(100deg, transparent 8%, #000 100%);
+  opacity: .28;
+}
+.ctos .cm-hero::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  opacity: .55;
+  background:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100' preserveAspectRatio='none'%3E%3Cpath d='M0 8 L100 82 M0 96 L100 14' stroke='%23c23bd0' stroke-width='1' fill='none' vector-effect='non-scaling-stroke'/%3E%3C/svg%3E")
+    center / 100% 100% no-repeat;
+}
+.ctos .cm-hero > .cm-wrap { z-index: 1; }
+
+/* Chromatic fringe on off-white display text (the cinematic's slight RGB split). Cheap: two static shadows. */
+.ctos .cm-h2, .ctos .cm-hero .cm-lead { text-shadow: -.035em 0 rgba(255, 70, 90, .32), .035em 0 rgba(47, 216, 232, .32); }
+@media (prefers-reduced-motion: reduce) { .ctos .cm-hero::after { opacity: .3; } }
+
+/* ---- Hero HUD layer: wireframe floor, flickering pixel blocks, ctOS corner tag ---------------------------------
+   All decorative and static or opacity-only. The floor is one gradient plane in 3D; nothing animates layout. */
+.ctos .cm-hero .cm-highlight > * { font-size: clamp(26px, 8.4vw, 76px); }
+.ctos .cm-highlight .hx { white-space: nowrap; }
+.cm-persp {
+  position: absolute; left: -10%; right: -10%; bottom: 0; height: 52%; pointer-events: none; z-index: 0; opacity: .5;
+  background:
+    repeating-linear-gradient(90deg, rgba(226, 238, 240, .22) 0 1px, transparent 1px 64px),
+    repeating-linear-gradient(0deg, rgba(226, 238, 240, .22) 0 1px, transparent 1px 48px);
+  transform: perspective(520px) rotateX(62deg); transform-origin: 50% 100%;
+  -webkit-mask-image: linear-gradient(0deg, #000 10%, transparent 92%); mask-image: linear-gradient(0deg, #000 10%, transparent 92%);
+}
+.cm-pix { position: absolute; right: 24%; top: 7%; width: min(22vw, 260px); height: 150px; opacity: .5; pointer-events: none; z-index: 0; }
+.cm-pix i { position: absolute; background: var(--cm-ctos-block); animation: cm-pix-blink 3.4s steps(1) infinite; }
+.cm-pix i:nth-child(1) { left: 0; top: 0; width: 46%; height: 18px; }
+.cm-pix i:nth-child(2) { left: 52%; top: 0; width: 22%; height: 42px; animation-delay: -.6s; }
+.cm-pix i:nth-child(3) { left: 14%; top: 28px; width: 20%; height: 18px; animation-delay: -1.3s; }
+.cm-pix i:nth-child(4) { left: 78%; top: 24px; width: 18%; height: 64px; animation-delay: -2s; }
+.cm-pix i:nth-child(5) { left: 30%; top: 60px; width: 36%; height: 18px; animation-delay: -.9s; }
+.cm-pix i:nth-child(6) { left: 6%; top: 92px; width: 12%; height: 30px; animation-delay: -2.6s; }
+.cm-pix i:nth-child(7) { left: 56%; top: 96px; width: 30%; height: 18px; animation-delay: -1.7s; }
+.cm-pix i:nth-child(8) { left: 24%; top: 128px; width: 40%; height: 14px; animation-delay: -3s; }
+@keyframes cm-pix-blink { 0%, 100% { opacity: .9; } 8% { opacity: 0; } 16% { opacity: .9; } 52% { opacity: .9; } 56% { opacity: .15; } 60% { opacity: .9; } }
+.cm-ctos-tag { position: absolute; right: 16px; top: 76px; z-index: 2; font: 700 12px/1 var(--cm-display); letter-spacing: -.02em; padding: 4px 7px 5px; background: var(--cm-cyan); color: var(--cm-cyan-ink); pointer-events: none; }
+@media (max-width: 720px) { .cm-pix { display: none; } .cm-persp { height: 36%; } }
+@media (prefers-reduced-motion: reduce) { .cm-pix i { animation: none; } }
+
+/* ---- Graffiti stickers (original: hand-set type, spray colours, tape corners) -- footer only ------------------- */
+.cm-sticker-row { display: none; }
+body:has(.ctos) .cm-sticker-row { display: flex; flex-wrap: wrap; gap: 14px 22px; padding-bottom: var(--cm-s6); }
+.cm-sticker {
+  position: relative; display: inline-block; padding: .2em .5em .26em; font: 800 clamp(20px, 3.4vw, 34px)/1 var(--cm-display);
+  letter-spacing: -.05em; text-transform: lowercase; color: #121212; transform: rotate(-3deg); border: 2px solid #121212;
+  box-shadow: 4px 4px 0 rgba(0, 0, 0, .65); user-select: none;
+  background: repeating-linear-gradient(135deg, var(--sk) 0 9px, color-mix(in srgb, var(--sk) 72%, #fff) 9px 18px);
+}
+.cm-sticker::before, .cm-sticker::after { content: ""; position: absolute; width: 34px; height: 12px; background: rgba(244, 244, 242, .75); top: -8px; }
+.cm-sticker::before { left: -12px; transform: rotate(-32deg); } .cm-sticker::after { right: -12px; transform: rotate(28deg); }
+.cm-sticker.pink { --sk: #ff2d8a; } .cm-sticker.cyan { --sk: #2fd8e8; transform: rotate(2deg); } .cm-sticker.lime { --sk: #c8f23c; transform: rotate(-1.5deg); }
+.cm-sticker > * { mix-blend-mode: normal; }
+
+/* ---- Perf: Safari-friendly surfaces ------------------------------------------------------------------------------
+   The grain layer is a 4x-viewport fixed plane that jittered forever, and every panel blurred what was behind it.
+   Touch devices get a still grain and solid panels; desktop keeps both. The dock/scrim/toast keep their blur. */
+@media (hover: none), (max-width: 900px) {
+  .cm-grain { animation: none; inset: 0; }
+  .cm-panel { backdrop-filter: none; -webkit-backdrop-filter: none; background: var(--cm-glass-hi); }
+}

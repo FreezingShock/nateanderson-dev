@@ -39,6 +39,13 @@ const ABOUT_LINKS = [
 export function SiteFooter() {
     return (
         <footer className="cm-foot" id="footer">
+            <div className="cm-wrap">
+                <div className="cm-sticker-row" aria-hidden="true">
+                    <span className="cm-sticker pink">no signal</span>
+                    <span className="cm-sticker cyan">built by hand</span>
+                    <span className="cm-sticker lime">go dark?</span>
+                </div>
+            </div>
             <div className="cm-wrap cm-foot-wrap">
                 <div className="cm-foot-top">
                     <div className="cm-foot-brand">

@@ -20,9 +20,14 @@ export default async function Home() {
     const playable = allGames().filter((g) => g.status === "playable").length;
 
     return (
-        <>
+        <div className="ctos">
             <header className="cm-hero" id="top">
                 <div className="cm-grid-bg" aria-hidden="true" />
+                <div className="cm-persp" aria-hidden="true" />
+                <div className="cm-pix" aria-hidden="true">
+                    <i /><i /><i /><i /><i /><i /><i /><i />
+                </div>
+                <span className="cm-ctos-tag" aria-hidden="true">ctOS</span>
                 <div className="ring" aria-hidden="true" data-mx-par="0.12" />
                 <span className="cm-tag t1" aria-hidden="true" data-mx-par="0.2">Class of <i>2027</i></span>
                 <span className="cm-tag live t2" aria-hidden="true" data-mx-par="0.08">Now shipping <i>Fractured Islands</i></span>
@@ -33,9 +38,9 @@ export default async function Home() {
                         <span className="cm-lbl">Portfolio / Southern California / nateanderson.dev</span>
                         <h1 style={{ margin: 0 }}>
                             <span className="cm-highlight wipe" style={{ display: "inline-flex", flexDirection: "column" }}>
-                                <span>Nate Anderson</span>
-                                <span>builds games, renders</span>
-                                <span>and systems.</span>
+                                <span><span className="hx">Nate Anderson</span></span>
+                                <span><span className="hx">builds games,</span></span>
+                                <span><span className="hx">renders &amp; systems.</span></span>
                             </span>
                         </h1>
                         <ScrollType
@@ -73,6 +78,7 @@ export default async function Home() {
             </header>
 
             <Section
+                    ctos
                     id="work"
                     no="01"
                     label="Selected work"
@@ -105,7 +111,7 @@ export default async function Home() {
                     </div>
                 </Section>
 
-            <Section id="profile" no="02" label="Profile" title="Who I am, and where I'm headed.">
+            <Section ctos id="profile" no="02" label="Profile" title="Who I am, and where I'm headed.">
                 <div className="pf">
                     <div className="cm-panel pf-id">
                         <div className="cm-hbar"><span>Profile</span><span>Class of 2027</span></div>
@@ -150,7 +156,7 @@ export default async function Home() {
             <TimelinePreview />
             <RecentPosts />
 
-            <Section id="explore" no="06" label="Explore" title="Explore the site.">
+            <Section ctos id="explore" no="06" label="Explore" title="Explore the site.">
                 <div className="cm-grid">
                     {navItems
                         .filter((n) => n.href !== "/")
@@ -166,6 +172,6 @@ export default async function Home() {
                         ))}
                 </div>
             </Section>
-        </>
+        </div>
     );
 }

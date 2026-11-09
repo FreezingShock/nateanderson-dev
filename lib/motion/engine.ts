@@ -34,6 +34,7 @@ interface ParItem {
     last: number;
 }
 
+const SEL = "[data-mx], [data-mx-type], [data-mx-par], [data-mx-scr]";
 const html = () => document.documentElement;
 const clamp01 = (v: number) => (v < 0 ? 0 : v > 1 ? 1 : v);
 
@@ -60,6 +61,7 @@ const queue = new Set<Element>(); // found while gated, registered once the cove
 const types = new Map<Element, TypeItem>();
 const pars = new Map<Element, ParItem>();
 let revealIO: IntersectionObserver | null = null;
+let scrIO: IntersectionObserver | null = null;
 let activeIO: IntersectionObserver | null = null;
 let raf = 0;
 const readyCbs = new Set<() => void>();
@@ -94,6 +96,7 @@ function register(el: Element) {
     seen.add(el);
     if (el.hasAttribute("data-mx-type")) return registerType(el);
     if (el.hasAttribute("data-mx-par")) return registerPar(el);
+    if (el.hasAttribute("data-mx-scr")) return void scrIO?.observe(el);
     revealIO?.observe(el);
 }
 
@@ -145,7 +148,7 @@ function onReveal(entries: IntersectionObserverEntry[]) {
 export function scan(root: ParentNode = document) {
     if (!started) return;
     const found = new Set<Element>();
-    root.querySelectorAll("[data-mx], [data-mx-type], [data-mx-par]").forEach((e) => found.add(e));
+    root.querySelectorAll(SEL).forEach((e) => found.add(e));
     root.querySelectorAll("[data-mx-stagger] > *").forEach((e) => {
         if (!e.hasAttribute("data-mx") && !e.querySelector("[data-mx]")) found.add(e);
     });
@@ -160,14 +163,14 @@ function onMutations(muts: MutationRecord[]) {
             const parent = n.parentElement;
             const isStaggerChild = !!parent?.hasAttribute("data-mx-stagger");
             const targets: HTMLElement[] = [];
-            if (n.matches("[data-mx], [data-mx-type], [data-mx-par]") || isStaggerChild) targets.push(n);
-            n.querySelectorAll<HTMLElement>("[data-mx], [data-mx-type], [data-mx-par]").forEach((e) => targets.push(e));
+            if (n.matches(SEL) || isStaggerChild) targets.push(n);
+            n.querySelectorAll<HTMLElement>(SEL).forEach((e) => targets.push(e));
             n.querySelectorAll<HTMLElement>("[data-mx-stagger] > *").forEach((e) => {
                 if (!e.hasAttribute("data-mx") && !e.querySelector("[data-mx]")) targets.push(e);
             });
             for (const t of targets) {
                 if (seen.has(t)) continue;
-                const typed = t.hasAttribute("data-mx-type") || t.hasAttribute("data-mx-par");
+                const typed = t.hasAttribute("data-mx-type") || t.hasAttribute("data-mx-par") || t.hasAttribute("data-mx-scr");
                 if (!fresh && !typed) {
                     // Content that appears because the user did something (filters, tabs): no animation, and
                     // never a hidden flash. Microtask timing means this lands before the next paint.
@@ -183,6 +186,70 @@ function onMutations(muts: MutationRecord[]) {
             }
         });
     }
+}
+
+
+// ---- Character scramble -----------------------------------------------------------------------------------------
+// [data-mx-scr] text decodes left to right out of random glyphs when it scrolls into view (and again on hover for
+// [data-scr-hover]). The element's real text is the final state and is never changed for assistive tech (the
+// component keeps an sr-only copy). One rAF per running scramble, ~30fps writes, text nodes only.
+const GLYPHS = "01<>/\\[]{}#%$&@*+=-_:;|!?";
+const running = new WeakMap<HTMLElement, number>();
+
+export function scramble(el: HTMLElement, ms?: number) {
+    const final = el.getAttribute("data-final") ?? el.textContent ?? "";
+    el.setAttribute("data-final", final);
+    if (prefersReducedMotion() || !final.trim()) {
+        el.textContent = final;
+        return;
+    }
+    const prev = running.get(el);
+    if (prev) cancelAnimationFrame(prev);
+    const chars = Array.from(final);
+    const dur = ms ?? Math.min(1100, Math.max(420, chars.length * 26));
+    const lock = chars.map((_, i) => (i / chars.length) * 0.78 + Math.random() * 0.22); // when each char resolves (0-1)
+    const t0 = performance.now();
+    let lastW = 0;
+    const tick = (now: number) => {
+        const p = clamp01((now - t0) / dur);
+        if (p >= 1) {
+            el.textContent = final;
+            running.delete(el);
+            return;
+        }
+        if (now - lastW >= 32) {
+            lastW = now;
+            let out = "";
+            for (let i = 0; i < chars.length; i++) {
+                const c = chars[i];
+                out += c === " " || lock[i] <= p ? c : GLYPHS[(Math.random() * GLYPHS.length) | 0];
+            }
+            el.textContent = out;
+        }
+        running.set(el, requestAnimationFrame(tick));
+    };
+    running.set(el, requestAnimationFrame(tick));
+}
+
+function onScrIO(entries: IntersectionObserverEntry[]) {
+    for (const e of entries) {
+        if (!e.isIntersecting) continue;
+        scrIO?.unobserve(e.target);
+        const el = e.target as HTMLElement;
+        const d = parseFloat(el.getAttribute("data-mx-scr-d") || "0") || 0;
+        const delay = d + 0; // optional stagger in ms
+        el.setAttribute("data-in", "");
+        if (delay) window.setTimeout(() => scramble(el), delay);
+        else scramble(el);
+    }
+}
+
+function onHoverScr(ev: PointerEvent) {
+    if (ev.pointerType === "touch") return;
+    const el = (ev.target as Element | null)?.closest?.("[data-scr-hover]");
+    if (!el || !(el instanceof HTMLElement) || running.has(el)) return;
+    const t = el.querySelector<HTMLElement>("[data-scr-text]") ?? el;
+    scramble(t, 380);
 }
 
 // ---------------------------------------------------------------------------------------------------------------
@@ -248,6 +315,7 @@ export function start(): () => void {
     const reduce = prefersReducedMotion();
 
     revealIO = new IntersectionObserver(onReveal, { rootMargin: "0px 0px -8% 0px", threshold: 0.01 });
+    scrIO = new IntersectionObserver(onScrIO, { rootMargin: "0px 0px -6% 0px", threshold: 0.4 });
     activeIO = new IntersectionObserver(
         (es) => {
             es.forEach((e) => {
@@ -265,6 +333,7 @@ export function start(): () => void {
     addEventListener("scroll", onScroll, { passive: true });
     addEventListener("resize", onScroll, { passive: true });
     addEventListener("popstate", markNavigation);
+    document.addEventListener("pointerover", onHoverScr, { passive: true });
 
     // Streaming content and image/font loads move things after the first frame: re-measure when the page resizes.
     const ro = new ResizeObserver(onScroll);
@@ -290,12 +359,14 @@ export function start(): () => void {
         removeEventListener("scroll", onScroll);
         removeEventListener("resize", onScroll);
         removeEventListener("popstate", markNavigation);
+        document.removeEventListener("pointerover", onHoverScr);
         attrs.disconnect();
         ro.disconnect();
         dom.disconnect();
         revealIO?.disconnect();
+        scrIO?.disconnect();
         activeIO?.disconnect();
-        revealIO = activeIO = null;
+        revealIO = activeIO = scrIO = null;
         types.clear();
         pars.clear();
         queue.clear();

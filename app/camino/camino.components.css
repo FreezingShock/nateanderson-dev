@@ -202,7 +202,7 @@
 .cm-glitch { animation: cm-glitch .38s steps(2) 1; }
 
 /* ---- Keyframes -------------------------------------------------------------- */
-@keyframes cm-enter { from { opacity: 0; transform: translateY(8px); filter: blur(4px); } to { opacity: 1; transform: none; filter: none; } }
+@keyframes cm-enter { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
 @keyframes cm-wipe { to { clip-path: inset(0 0 0 0); } }
 @keyframes cm-wipe-out { from { clip-path: inset(0 0 0 0); } to { clip-path: inset(0 100% 0 0); } }
 @keyframes cm-blink { 50% { opacity: .2; } }
