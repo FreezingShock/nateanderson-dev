@@ -29,7 +29,7 @@ export default function BlogPage() {
     const hasSections = sections.length > 0;
 
     return (
-        <div className="ctos">
+        <div className="ctos" data-entrance="type">
             <NaosBackdrop src="/naos/bg-blog.webp" />
             <div className="blog-hero">
                 <PageHead
