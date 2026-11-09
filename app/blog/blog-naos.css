@@ -144,3 +144,8 @@
 
 /* Motion note: reveals are scroll-linked and handled by the shared engine (data-rx-auto on each wrap). Reduced
    motion is respected there; this page adds no animations of its own. */
+
+/* Post plates that link to a post page (/blog/[slug]): no underline, a "read" cue and a focus ring. */
+.ctos .blog-post.is-link { text-decoration: none; color: inherit; }
+.ctos .blog-post.is-link:focus-visible { outline: 2px solid var(--cm-cyan); outline-offset: 3px; }
+.ctos .blog-post.is-link .p-foot .st::after { content: "  →"; color: var(--cm-cyan); }
