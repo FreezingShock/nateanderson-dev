@@ -1,6 +1,81 @@
 /* History page only. Shared naOS and Camino classes live in app/camino/* (ctos.css); this file only adds the
    page-specific layout: the header strip, the stats and latest-commit panels, and the changelog ledger. */
 
+/* ---- Header backdrop: the commit terrain replaces the generic grid and the magenta guide lines ------------------ */
+.hero {
+    position: relative;
+    isolation: isolate;
+}
+
+.hero :global(.cm-grid-bg) {
+    display: none;
+}
+
+.bg {
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    overflow: hidden;
+    pointer-events: none;
+}
+
+.art {
+    position: absolute;
+    top: 12%;
+    right: 0;
+    width: min(56vw, 520px);
+    height: auto;
+    image-rendering: pixelated;
+    image-rendering: crisp-edges;
+    opacity: .9;
+    -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 38%);
+    mask-image: linear-gradient(90deg, transparent 0, #000 38%);
+    user-select: none;
+    animation: histDither 1.3s steps(12, end) .15s both;
+}
+
+/* Title lines: each block wipes in from the left, one after another, so the words land in order. */
+.hero :global(.cm-highlight) > span {
+    animation: histLine .9s var(--cm-ease-cut) both;
+}
+
+.hero :global(.cm-highlight) > span:nth-child(2) {
+    animation-delay: .12s;
+}
+
+.hero :global(.cm-highlight) > span:nth-child(3) {
+    animation-delay: .24s;
+}
+
+@keyframes histDither {
+    from {
+        opacity: 0;
+        clip-path: inset(0 0 100% 0);
+    }
+    to {
+        opacity: .9;
+        clip-path: inset(0 0 0 0);
+    }
+}
+
+@keyframes histLine {
+    from {
+        clip-path: inset(0 100% 0 0);
+    }
+    to {
+        clip-path: inset(0 0 0 0);
+    }
+}
+
+@keyframes histStrip {
+    from {
+        clip-path: inset(0 100% 0 0);
+    }
+    to {
+        clip-path: inset(0 0 0 0);
+    }
+}
+
 /* ---- Header strip: a single cyan-edged mono line under the title ------------------------------------------------- */
 .headStrip {
     display: flex;
@@ -11,6 +86,7 @@
     padding: 9px 14px;
     border-left: 3px solid var(--cm-cyan);
     background: #131313;
+    animation: histStrip .9s steps(10, end) .55s both;
     font: 600 10px/1 var(--cm-mono);
     letter-spacing: .14em;
     text-transform: uppercase;
@@ -245,6 +321,16 @@ ol.list {
     letter-spacing: .12em;
 }
 
+@media (max-width: 760px) {
+    /* Phones: the terrain sits in the space beside the title, above the lead copy, so it never fights the text. */
+    .art {
+        top: 0;
+        right: -12px;
+        width: min(70vw, 280px);
+        opacity: .6;
+    }
+}
+
 @media (max-width: 560px) {
     .headStrip {
         font-size: 9.5px;
@@ -283,5 +369,11 @@ ol.list {
 @media (prefers-reduced-motion: reduce) {
     .subject {
         transition: none;
+    }
+
+    .art,
+    .headStrip,
+    .hero :global(.cm-highlight) > span {
+        animation: none;
     }
 }
