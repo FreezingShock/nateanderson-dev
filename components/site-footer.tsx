@@ -4,6 +4,7 @@ import { DiscordLogoIcon, InstagramLogoIcon } from "@radix-ui/react-icons";
 import { identity } from "@/lib/content";
 import { navItems } from "@/lib/nav";
 import { NateMark } from "@/components/cm/mark";
+import { Scramble } from "@/components/cm/motion";
 
 // Footer-only copy. identity.tagline still says "environmental engineering" and is used by the
 // metadata, OG image and manifest, so it is left alone here until Nate picks the wording site-wide.
@@ -39,12 +40,12 @@ const ABOUT_LINKS = [
 export function SiteFooter() {
     return (
         <footer className="cm-foot" id="footer">
-            <div className="cm-wrap">
-                <div className="cm-sticker-row" aria-hidden="true">
-                    <span className="cm-sticker pink">no signal</span>
-                    <span className="cm-sticker cyan">built by hand</span>
-                    <span className="cm-sticker lime">go dark?</span>
-                </div>
+            <div className="cm-wrap na-bar" aria-hidden="true">
+                <span className="na-dot" />
+                <Scramble replay text="naOS // session end" />
+                <span className="na-fill" />
+                <span>33.7N 117.9W</span>
+                <span className="na-hide">uplink / stable</span>
             </div>
             <div className="cm-wrap cm-foot-wrap">
                 <div className="cm-foot-top">
@@ -73,7 +74,7 @@ export function SiteFooter() {
                 <div className="cm-foot-find">
                     <span className="cm-lbl">Find me</span>
                     <ul className="cm-foot-social">
-                        {SOCIALS.map(({ label, href, Icon, preferred }) => (
+                        {SOCIALS.map(({ label, href, Icon, preferred }, i) => (
                             <li key={label}>
                                 <a
                                     className="cm-btn"
@@ -81,8 +82,10 @@ export function SiteFooter() {
                                     target={href.startsWith("mailto:") ? undefined : "_blank"}
                                     rel="noreferrer"
                                 >
+                                    <b className="na-ix">{String(i + 1).padStart(2, "0")}</b>
                                     <Icon className="cm-ico" />
-                                    {label}
+                                    <span data-scr-hover><span data-scr-text>{label}</span></span>
+                                    <em className="na-arr">→</em>
                                 </a>
                                 {preferred && <span className="cm-foot-pref">Preferred</span>}
                             </li>
@@ -90,6 +93,7 @@ export function SiteFooter() {
                     </ul>
                 </div>
 
+                <div className="na-sig" aria-hidden="true"><i /><i /><i /><i /><i /><i /><i /><i /><i /><i /><i /><i /></div>
                 <div className="cm-rule" style={{ margin: 0 }} />
                 <div className="cm-foot-base">
                     <span className="cm-coord">© {new Date().getFullYear()} {identity.name} {identity.lastName}</span>
