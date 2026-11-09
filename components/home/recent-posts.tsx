@@ -14,6 +14,7 @@ export function RecentPosts() {
     const teasers = blogSections.slice(0, 3);
     return (
         <Section
+            ctos
             id="blog"
             no="05"
             label="Recent posts"

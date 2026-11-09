@@ -5,8 +5,8 @@ import { allGames } from "@/lib/creations-data";
 import { NOW_FEED, PATH, PILLARS, PROFILE_LEAD } from "@/lib/identity";
 import { navItems } from "@/lib/nav";
 import { Section } from "@/components/cm/ui";
-import { CountUp, Reveal } from "@/components/cm/reveal";
-import { ScrollType } from "@/components/cm/motion";
+import { CountUp } from "@/components/cm/reveal";
+import { ScrollType, Scramble } from "@/components/cm/motion";
 import { SiteStats, SiteStatsSkeleton } from "@/components/home/site-stats";
 import { TimelinePreview } from "@/components/home/timeline-preview";
 import { RecentPosts } from "@/components/home/recent-posts";
@@ -24,10 +24,7 @@ export default async function Home() {
             <header className="cm-hero" id="top">
                 <div className="cm-grid-bg" aria-hidden="true" />
                 <div className="cm-persp" aria-hidden="true" />
-                <div className="cm-pix" aria-hidden="true">
-                    <i /><i /><i /><i /><i /><i /><i /><i />
-                </div>
-                <span className="cm-ctos-tag" aria-hidden="true">ctOS</span>
+                <span className="cm-ctos-tag" aria-hidden="true">naOS</span>
                 <div className="ring" aria-hidden="true" data-mx-par="0.12" />
                 <span className="cm-tag t1" aria-hidden="true" data-mx-par="0.2">Class of <i>2027</i></span>
                 <span className="cm-tag live t2" aria-hidden="true" data-mx-par="0.08">Now shipping <i>Fractured Islands</i></span>
@@ -61,16 +58,25 @@ export default async function Home() {
                             <div><div className="cm-lbl">Playable games</div>{playable > 0 ? <CountUp className="big" value={playable} /> : <span className="big none" aria-label="None yet">—</span>}</div>
                         </div>
                         </div>
-                        <aside className="hero-status" aria-label="Current status" data-mx="slide-r">
-                            <div className="cm-panel tick">
-                                <div className="cm-hbar"><span className="live">Status</span><span>Now</span></div>
-                                <dl className="cm-kv">
-                                    <div><dt>Based</dt><dd>Southern California</dd></div>
-                                    <div><dt>Studying</dt><dd>Environmental engineering</dd></div>
-                                    <div><dt>Shipping</dt><dd><Link href="/creations">Fractured Islands: Ascension</Link></dd></div>
-                                    <div><dt>Built in</dt><dd>Luau, TypeScript, Blender</dd></div>
-                                    <div><dt>Launch</dt><dd>Spring 2031</dd></div>
+                        <aside className="hero-status id" aria-label="Current status" data-mx="slide-r">
+                            <div className="id-top">
+                                <Scramble className="id-sys" replay text="naOS // status" />
+                                <span className="id-live"><i aria-hidden="true" />Live</span>
+                            </div>
+                            <div className="id-main">
+                                <div className="id-badge" aria-hidden="true"><b>na</b><span>2027</span></div>
+                                <dl className="id-rows">
+                                    <div><dt>Based</dt><dd><Scramble replay text="Southern California" /></dd></div>
+                                    <div><dt>Studying</dt><dd><Scramble replay text="Environmental engineering" /></dd></div>
+                                    <div><dt>Shipping</dt><dd><Link href="/creations"><Scramble replay text="Fractured Islands: Ascension" /></Link></dd></div>
+                                    <div><dt>Built in</dt><dd><Scramble replay text="Luau, TypeScript, Blender" /></dd></div>
+                                    <div><dt>Launch</dt><dd><Scramble replay text="Spring 2031" /></dd></div>
                                 </dl>
+                            </div>
+                            <div className="id-foot" aria-hidden="true">
+                                <span className="id-bars"><i /><i /><i /><i /><i /></span>
+                                <span>signal / strong</span>
+                                <span>33.7N 117.9W</span>
                             </div>
                         </aside>
                     </div>
@@ -96,8 +102,7 @@ export default async function Home() {
                             </div>
                         )}
                         {featured.map((p, i) => (
-                            <Reveal key={p.slug} delay={(i % 3) * 70}>
-                                <Link className="cm-card link" href={`/creations/${p.slug}`} style={{ height: "100%" }}>
+                            <Link key={p.slug} className="cm-card link" href={`/creations/${p.slug}`}>
                                     <div className="cm-viz">
                                         <span className="cm-tag flat">{p.category}</span>
                                         <span className="glyph" aria-hidden="true">{String(i + 1).padStart(2, "0")}</span>
@@ -106,7 +111,6 @@ export default async function Home() {
                                     <p>{p.description}</p>
                                     <span className="st">{p.tags.slice(0, 3).join(" / ")}</span>
                                 </Link>
-                            </Reveal>
                         ))}
                     </div>
                 </Section>
@@ -115,7 +119,7 @@ export default async function Home() {
                 <div className="pf">
                     <div className="cm-panel pf-id">
                         <div className="cm-hbar"><span>Profile</span><span>Class of 2027</span></div>
-                        <p className="pf-lead">{PROFILE_LEAD}</p>
+                        <ScrollType as="p" className="pf-lead" text={PROFILE_LEAD} />
                         <dl className="pf-pillars">
                             {PILLARS.map((p) => (
                                 <div key={p.label}>
@@ -161,14 +165,12 @@ export default async function Home() {
                     {navItems
                         .filter((n) => n.href !== "/")
                         .map((n, i) => (
-                            <Reveal key={n.href} delay={(i % 3) * 70}>
-                                <Link className="cm-card link" href={n.href} style={{ height: "100%" }}>
+                            <Link key={n.href} className="cm-card link" href={n.href}>
                                     <span className="cm-state">{n.no}</span>
                                     <b>{n.title}</b>
                                     <p>{n.blurb}</p>
                                     <span className="st">{n.href}</span>
                                 </Link>
-                            </Reveal>
                         ))}
                 </div>
             </Section>
