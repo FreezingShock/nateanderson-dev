@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import { getProjectBySlug, getAllProjectSlugs, statusLabel } from "@/lib/content";
+import { categoryById } from "@/lib/creations-data";
 import { PageHead } from "@/components/cm/ui";
 
 export const revalidate = 60;
@@ -17,13 +18,15 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
 
 const tone = { active: "live", planning: "warn", idea: "" } as const;
 
-// Individual project / renovation page: a detail sheet with the status, tags and an outbound link.
+// Individual project / renovation page: the same hatched plate the grid cards use, then a detail sheet
+// with the status, tags and an outbound link.
 export default async function ProjectPage({ params }: { params: Promise<{ slug: string }> }) {
     const { slug } = await params;
     const project = await getProjectBySlug(slug);
     if (!project) notFound();
 
     const isProject = project.section === "projects";
+    const Icon = categoryById(isProject ? "projects" : "renovations").icon;
     return (
         <>
             <PageHead
@@ -33,11 +36,18 @@ export default async function ProjectPage({ params }: { params: Promise<{ slug: 
                 back={{ href: isProject ? "/creations/projects" : "/creations/renovations", label: isProject ? "Back to Projects" : "Back to Renovations" }}
             />
             <section className="cm-section" id="detail">
-                <div className="cm-wrap">
-                    <div className="cm-panel tick" style={{ maxWidth: 720 }}>
+                <div className="cm-wrap" style={{ display: "grid", gap: 20 }}>
+                    <div className="cm-viz" style={{ aspectRatio: "16 / 7", minHeight: 150 }}>
+                        <span className={`cm-tag flat ${tone[project.status]}`} style={{ position: "absolute", left: 12, top: 12 }}>
+                            {statusLabel[project.status]}
+                        </span>
+                        <Icon aria-hidden="true" style={{ position: "absolute", right: 16, bottom: 14, width: 52, height: 52, color: "var(--cm-hair-hi)" }} />
+                    </div>
+
+                    <div className="cm-panel tick" style={{ maxWidth: 720, width: "100%" }}>
                         <div className="cm-hbar">
                             <span>{isProject ? "Project" : "Renovation"}</span>
-                            <span>{statusLabel[project.status]}</span>
+                            <span>{project.slug}</span>
                         </div>
                         <dl className="cm-kv two" style={{ ["--cols" as string]: 2 }}>
                             <div><dt>Status</dt><dd><span className={`cm-tag flat ${tone[project.status]}`}>{statusLabel[project.status]}</span></dd></div>
