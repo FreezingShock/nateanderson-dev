@@ -63,7 +63,7 @@ export default async function CourseDetailPage({
     const pct = Math.round(courseProgress * 100);
 
     return (
-        <>
+        <div className="ctos st-page">
             <PageHead
                 label={course.ap ? "AP course" : "Course"}
                 title={[course.title]}
@@ -72,7 +72,7 @@ export default async function CourseDetailPage({
             />
 
             <section id="detail" className="cm-section st-detail" style={{ scrollMarginTop: 96 }}>
-                <div className="cm-wrap" data-mx-stagger="" style={{ display: "grid", gap: 16 }}>
+                <div className="cm-wrap" data-rx-auto="" style={{ display: "grid", gap: 16 }}>
                     <div className="cm-cols3">
                         {facts.map((f) => (
                             <div key={f.label} className="cm-panel">
@@ -80,7 +80,7 @@ export default async function CourseDetailPage({
                                     <span>{f.label}</span>
                                 </div>
                                 <div className="cm-body-pad">
-                                    <p className="cm-h3" style={{ margin: 0 }}>{f.value}</p>
+                                    <p className="cm-h3 st-fact" style={{ margin: 0 }}>{f.value}</p>
                                 </div>
                             </div>
                         ))}
@@ -103,7 +103,7 @@ export default async function CourseDetailPage({
                                     <span>Days to the AP window</span>
                                 </div>
                                 <div className="cm-body-pad">
-                                    <div className="cm-num big">{daysToExam > 0 ? daysToExam : "Now"}</div>
+                                    <div className="cm-num big"><span className="st-count">{daysToExam > 0 ? daysToExam : "Now"}</span></div>
                                 </div>
                             </div>
                         )}
@@ -111,7 +111,7 @@ export default async function CourseDetailPage({
                 </div>
             </section>
 
-            <Section id="goals" label="Goals & materials" title="What the class covers.">
+            <Section id="goals" label="Goals & materials" title="What the class covers." ctos>
                 <div className="st-split even">
                     <div className="cm-panel st-panel-fill">
                         <div className="cm-hbar"><span>Key focus areas</span></div>
@@ -135,8 +135,8 @@ export default async function CourseDetailPage({
                     <div className="cm-body-pad" style={{ display: "grid", gap: 14 }}>
                         <div className="cm-cols3">
                             {course.materials.map((m) => (
-                                <div key={m} className="cm-panel"><div className="cm-body-pad">
-                                    <span className="cm-body">{m}</span></div>
+                                <div key={m} className="st-tile">
+                                    <span className="cm-body">{m}</span>
                                 </div>
                             ))}
                         </div>
@@ -150,7 +150,7 @@ export default async function CourseDetailPage({
             </Section>
 
             {related.length > 0 && (
-                <Section id="related" label="On the timeline" title="Where it shows up.">
+                <Section id="related" label="On the timeline" title="Where it shows up." ctos>
                     <div className="cm-grid" style={{ gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))" }}>
                         {related.map((e) => (
                             <Link key={e.id} href={`/timeline#${e.id}`} className="cm-card link">
@@ -164,20 +164,22 @@ export default async function CourseDetailPage({
             )}
 
             <section className="cm-section">
-                <div className="cm-wrap" data-mx-stagger="">
-                    <div className="cm-grid" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))" }}>
+                <div className="cm-wrap" data-rx-auto="">
+                    <div className="st-nav">
                         {[
-                            { c: prev, dir: "← Previous class" },
-                            { c: next, dir: "Next class →" },
-                        ].map(({ c, dir }) => (
-                            <Link key={dir} href={`/studies/${c.slug}`} className="cm-card link">
-                                <span className="cm-state">{dir}</span>
-                                <b>{c.title}</b>
+                            { c: prev, dir: "Previous class", arrow: "←" },
+                            { c: next, dir: "Next class", arrow: "→" },
+                        ].map(({ c, dir, arrow }) => (
+                            <Link key={dir} href={`/studies/${c.slug}`} className={`cta-b ${arrow === "←" ? "b" : "c"}`}>
+                                <i>{arrow === "←" ? "prev" : "next"}</i>
+                                <span>{c.title}</span>
+                                <em aria-hidden="true">{arrow}</em>
+                                <span className="sr-only">{dir}: {c.title}</span>
                             </Link>
                         ))}
                     </div>
                 </div>
             </section>
-        </>
+        </div>
     );
 }

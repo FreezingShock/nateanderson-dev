@@ -22,7 +22,7 @@ const CourseCard = memo(function CourseCard({
     const panelId = `${course.slug}-panel`;
 
     return (
-        <div className="cm-panel st-panel-fill">
+        <div className="cm-panel st-panel-fill" data-rx="">
             <div className="cm-hbar">
                 <span>{area.label}</span>
                 <span className="st-hbar-end">
@@ -31,7 +31,7 @@ const CourseCard = memo(function CourseCard({
                 </span>
             </div>
             <div className="cm-body-pad" style={{ display: "grid", gap: 10 }}>
-                <h3 className="cm-h3" style={{ margin: 0 }}>{course.title}</h3>
+                <h3 className="cm-h3" style={{ margin: 0 }}><span className="st-tt">{course.title}</span></h3>
                 <p className="cm-body" style={{ margin: 0 }}>{course.description}</p>
                 <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
                     {course.focus.slice(0, 4).map((item) => (

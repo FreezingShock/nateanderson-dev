@@ -20,7 +20,7 @@ export function ProgramCardView({ program }: { program: Program }) {
                 <span>{program.timeline}</span>
             </div>
             <div className="cm-body-pad" style={{ display: "grid", gap: 10 }}>
-                <h4 className="cm-h3" style={{ margin: 0 }}>{program.title}</h4>
+                <h4 className="cm-h3" style={{ margin: 0 }}><span className="st-tt">{program.title}</span></h4>
                 <p className="cm-body" style={{ margin: 0 }}>{program.description}</p>
                 <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
                     {program.courses.map((c) => (

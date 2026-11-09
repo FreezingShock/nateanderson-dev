@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { PageHead, Section } from "@/components/cm/ui";
+import { StudyStatus } from "@/components/studies-status";
 import { StudiesOverview } from "@/components/studies-overview";
 import { CourseExplorer } from "@/components/course-explorer";
 import { PathwayRail, ProgramCardView, ReadingQueue, ToolRoadmap } from "@/components/studies-sections";
@@ -15,12 +16,14 @@ export default function StudiesPage() {
     const nowMs = Date.now();
 
     return (
-        <>
+        <div className="ctos st-page">
             <PageHead
                 label="Learning"
                 title={["Studies"]}
                 lead="The complete educational pathway: this year's classes, the community college transfer, university specialization, and the independent research running alongside all of it. Systems thinking across technical, creative and philosophical work."
-            />
+            >
+                <StudyStatus nowMs={nowMs} />
+            </PageHead>
 
             <Section
                 id="overview"
@@ -28,6 +31,7 @@ export default function StudiesPage() {
                 label="The school year"
                 title="Where senior year stands."
                 blurb="The dates it's all building toward, counting down live, and how far through the year I am."
+                ctos
             >
                 <StudiesOverview nowMs={nowMs} />
             </Section>
@@ -38,6 +42,7 @@ export default function StudiesPage() {
                 label="Senior year classes"
                 title="Six classes."
                 blurb="Six interdisciplinary classes building toward environmental engineering and systems thinking. Filter by area, and open any class for its goals and materials."
+                ctos
             >
                 <CourseExplorer courses={courses} />
             </Section>
@@ -48,6 +53,7 @@ export default function StudiesPage() {
                 label="Education pathway"
                 title="High school to 2031."
                 blurb="From high school through Santa Monica College to Cal Poly Pomona and a 2031 degree, with live progress through each stage."
+                ctos
             >
                 <PathwayRail nowMs={nowMs} />
             </Section>
@@ -58,6 +64,7 @@ export default function StudiesPage() {
                 label="Personal studies"
                 title="Self-directed."
                 blurb="Self-directed learning alongside formal coursework: philosophy, sustainable systems and design practice. These areas inform and deepen all of the academic work."
+                ctos
             >
                 <div className="cm-cols3">
                     {personalStudies.map((p) => (
@@ -72,6 +79,7 @@ export default function StudiesPage() {
                 label="Reading queue"
                 title="On the shelf."
                 blurb="What's on the shelf, in the order it's getting read."
+                ctos
             >
                 <ReadingQueue />
             </Section>
@@ -82,12 +90,13 @@ export default function StudiesPage() {
                 label="Tools roadmap"
                 title="In order."
                 blurb="The design and engineering toolset, in the order it gets learned: SketchUp, then Revit and AutoCAD, then Civil 3D."
+                ctos
             >
                 <ToolRoadmap />
             </Section>
 
             <section className="cm-section">
-                <div className="cm-wrap" data-mx-stagger="" style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+                <div className="cm-wrap" data-rx-auto="" style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
                     {[
                         { href: "/timeline", label: "Full timeline" },
                         { href: "/about", label: "About me" },
@@ -99,7 +108,7 @@ export default function StudiesPage() {
                     ))}
                 </div>
             </section>
-        </>
+        </div>
     );
 }
 
