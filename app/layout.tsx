@@ -5,6 +5,7 @@ import { ThemeProvider } from "@/components/theme-provider";
 import { Bar, Dock } from "@/components/cm/bar";
 import { Film } from "@/components/cm/film";
 import { Launcher } from "@/components/cm/launcher";
+import { SiteMap } from "@/components/cm/site-map";
 import { Boot, BOOT_SCRIPT } from "@/components/cm/boot";
 import { MotionRoot } from "@/components/cm/motion-root";
 import { SiteFooter } from "@/components/site-footer";
@@ -80,6 +81,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
                     <main id="main" className="cm-main">{children}</main>
                     <SiteFooter />
                     <Dock />
+                    <SiteMap />
                     <Launcher />
                     <SoundProvider />
                 </ThemeProvider>
