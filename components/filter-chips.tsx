@@ -1,7 +1,5 @@
 "use client";
 
-import { cn } from "@/lib/utils";
-
 export interface FilterChip {
     key: string;
     label: string;
@@ -9,9 +7,8 @@ export interface FilterChip {
     count: number;
 }
 
-// Single-select filter row: an "All" chip plus one colored chip per group,
-// each showing how many items it holds. Same look as the timeline's legend,
-// so every filter on the site reads the same way.
+// Single-select filter row: an "All" chip plus one chip per group, each with its count. The square dot
+// is the category flag; pressed state is aria-pressed so it stays accessible. Same look on every filter.
 export function FilterChips({
     chips,
     active,
@@ -26,25 +23,11 @@ export function FilterChips({
     total: number;
     label?: string;
 }) {
-    const base =
-        "inline-flex items-center gap-1.5 rounded-full border px-3 py-1 font-rubik text-xs font-semibold transition-all";
     return (
-        <div className="flex flex-wrap items-center gap-1.5" role="group">
-            <button
-                type="button"
-                aria-pressed={active === null}
-                onClick={() => onChange(null)}
-                className={cn(
-                    base,
-                    active === null
-                        ? "border-foreground/60 bg-foreground/10 text-foreground"
-                        : "border-border text-muted-foreground hover:text-foreground"
-                )}
-            >
+        <div className="cm-row" role="group" style={{ gap: 6 }}>
+            <button type="button" className="cm-chip" aria-pressed={active === null} onClick={() => onChange(null)}>
                 {label}
-                <span className="font-mono text-[10px] opacity-70">
-                    {total}
-                </span>
+                <span style={{ opacity: 0.7 }}>{total}</span>
             </button>
             {chips.map((chip) => {
                 const on = active === chip.key;
@@ -52,27 +35,13 @@ export function FilterChips({
                     <button
                         key={chip.key}
                         type="button"
+                        className="cm-chip"
                         aria-pressed={on}
                         onClick={() => onChange(on ? null : chip.key)}
-                        className={cn(base, "hover:scale-[1.04]")}
-                        style={{
-                            color: chip.color,
-                            borderColor: `color-mix(in oklch, ${chip.color} ${on ? 90 : 40}%, transparent)`,
-                            backgroundColor: `color-mix(in oklch, ${chip.color} ${on ? 22 : 8}%, transparent)`,
-                            boxShadow: on
-                                ? `0 0 14px -4px ${chip.color}`
-                                : undefined,
-                            opacity: active && !on ? 0.55 : 1,
-                        }}
                     >
-                        <span
-                            className="size-2 rounded-full"
-                            style={{ backgroundColor: chip.color }}
-                        />
+                        <span className="dot" style={{ background: on ? "currentColor" : chip.color }} />
                         {chip.label}
-                        <span className="font-mono text-[10px] opacity-70">
-                            {chip.count}
-                        </span>
+                        <span style={{ opacity: 0.7 }}>{chip.count}</span>
                     </button>
                 );
             })}

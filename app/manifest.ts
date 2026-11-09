@@ -11,13 +11,13 @@ export default function manifest(): MetadataRoute.Manifest {
             "Games, renders, and systems — built while studying toward environmental engineering.",
         start_url: "/",
         display: "standalone",
-        background_color: "#0a0a0f",
-        theme_color: "#4f46e5",
+        background_color: "#040506",
+        theme_color: "#040506",
         icons: [
             {
-                src: "/favicon.ico",
-                sizes: "32x32",
-                type: "image/x-icon",
+                src: "/icon.svg",
+                sizes: "any",
+                type: "image/svg+xml",
             },
             {
                 src: "/icon-192x192.png",

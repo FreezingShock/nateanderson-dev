@@ -20,7 +20,7 @@ export const NEXT_MONTHS: UpcomingMonth[] = [
     {
         label: "October",
         year: "2026",
-        color: "var(--mc-aqua)",
+        color: "var(--cm-cyan)",
         goals: [
             "Reach out to the Santa Monica College cross-country coach",
             "Register for the January SAT",
@@ -30,7 +30,7 @@ export const NEXT_MONTHS: UpcomingMonth[] = [
     {
         label: "November",
         year: "2026",
-        color: "var(--mc-gold)",
+        color: "var(--cm-amber)",
         goals: [
             "Steady daily SAT prep",
             "Start the first portfolio design: a SketchUp redesign of a local space",
@@ -40,7 +40,7 @@ export const NEXT_MONTHS: UpcomingMonth[] = [
     {
         label: "December",
         year: "2026",
-        color: "var(--mc-green)",
+        color: "var(--cm-good)",
         goals: [
             "Submit the Santa Monica College application",
             "Lock in the SMC → Cal Poly Pomona transfer agreement",
@@ -57,31 +57,31 @@ export const NEXT_YEAR: { year: string; blurb: string; milestones: UpcomingMiles
             when: "January",
             title: "SAT retake",
             detail: "One more attempt at the score, after months of prep.",
-            color: "var(--mc-yellow)",
+            color: "var(--cm-amber)",
         },
         {
             when: "Spring",
             title: "First polished portfolio piece",
             detail: "One finished, presentable design project, not just sketches.",
-            color: "var(--mc-light-purple)",
+            color: "var(--cm-violet)",
         },
         {
             when: "May",
             title: "AP exam week",
             detail: "Statistics, Biology, Government and the Studio Art portfolio.",
-            color: "var(--mc-blue)",
+            color: "var(--cm-cyan)",
         },
         {
             when: "June",
             title: "High school graduation",
             detail: "Senior Project capstone presented; the college pathway begins.",
-            color: "var(--mc-red)",
+            color: "var(--cm-alert)",
         },
         {
             when: "September",
             title: "Santa Monica College begins",
             detail: "Fall 2027 kickoff: pre-engineering coursework and cross-country.",
-            color: "var(--mc-dark-aqua)",
+            color: "var(--cm-cyan)",
         },
     ],
 };

@@ -1,0 +1,100 @@
+/* ==========================================================================
+   CAMINO design tokens  v1.0
+   A dark surveillance-OS style: near-black ground, paper-white plates,
+   ONE cyan accent for "live", one red for "alert". Hairlines, mono caps, 
+   hard edges. Style reference only: original marks, no third-party art.
+   Drop-in: <link rel="stylesheet" href="camino.tokens.css">
+   Prefix: --cm-*   (rename in one pass if it clashes)
+   ========================================================================== */
+
+
+:root {
+  color-scheme: dark;
+
+  /* ---- Ground & ink --------------------------------------------------- */
+  --cm-void:      #040506;   /* page ground */
+  --cm-ink-0:     #050607;   /* text ON paper/cyan plates */
+  --cm-fg:        #e9eff1;   /* primary text */
+  --cm-mute:      #8a99a3;   /* secondary text, labels */
+  --cm-dim:       #56646c;   /* disabled, placeholders, tick marks */
+  --cm-paper:     #f2f3f1;   /* white plates: tags, header bars, active seg */
+  --cm-paper-mute:#4a565c;   /* secondary text on paper */
+
+  /* ---- Surfaces (frosted glass over imagery / grid) ------------------- */
+  --cm-glass:     rgba(9, 12, 14, .64);
+  --cm-glass-hi:  rgba(14, 18, 21, .72);
+  --cm-solid:     #0a0d0e;   /* use when there is nothing to blur */
+  --cm-hair:      rgba(226, 238, 240, .14);  /* 1px borders, dividers */
+  --cm-hair-hi:   rgba(226, 238, 240, .30);  /* hover borders */
+
+  /* ---- Accent: use sparingly (about 5% of any screen) ----------------- */
+  --cm-cyan:      #2fd8e8;   /* live, selected, primary action */
+  --cm-cyan-ink:  #031417;   /* text on cyan */
+  --cm-cyan-deep: #0b5a62;   /* secondary text on cyan */
+  --cm-cyan-wash: rgba(47, 216, 232, .12);   /* hover/selected row bg */
+  --cm-alert:     #ff4436;   /* failure, destructive, perimeter */
+  --cm-amber:     #f2c94c;   /* strain, warning */
+  --cm-good:      #3ce07a;   /* healthy */
+  --cm-magenta:   #d44fd0;   /* category flag, one-word "break" beats */
+  --cm-violet:    #a58bff;   /* category flag (zoning-style data) */
+  --cm-lime:      #d8e86a;   /* rare colour-break card */
+
+  /* ---- Type ----------------------------------------------------------- */
+  --cm-display: "Helvetica Neue", Helvetica, var(--font-arimo), "Arimo", Arial, sans-serif;
+  --cm-mono:    var(--font-plex-mono), "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+
+  --cm-t-micro:  9px;     /* mono caps, tick labels   (tracking .16em) */
+  --cm-t-tag:    10.5px;  /* callout tags, buttons    (tracking .14em) */
+  --cm-t-small:  12px;
+  --cm-t-body:   14px;
+  --cm-t-lead:   17px;
+  --cm-t-h3:     22px;
+  --cm-t-h2:     clamp(26px, 3.5vw, 44px);
+  --cm-t-h1:     clamp(40px, 7vw, 96px);   /* statement type, tight */
+
+  --cm-track-caps:  .14em;
+  --cm-track-wide:  .22em;
+  --cm-track-tight: -.03em;                /* big display only */
+
+  /* ---- Space (4px base) ----------------------------------------------- */
+  --cm-s1: 4px;  --cm-s2: 8px;  --cm-s3: 12px;  --cm-s4: 16px;
+  --cm-s5: 24px; --cm-s6: 32px; --cm-s7: 48px;  --cm-s8: 80px;
+  --cm-gutter: max(16px, env(safe-area-inset-left, 0px));
+  --cm-measure: 66ch;
+
+  /* ---- Shape: hard edges. Radius is 2px max (0 on plates and tags); round only for status dots and compass ------- */
+  --cm-radius: 2px;
+  --cm-line: 1px;
+
+  /* ---- Elevation ------------------------------------------------------ */
+  --cm-shadow: 0 1px 0 rgba(255,255,255,.04) inset, 0 18px 40px -24px rgba(0,0,0,.9);
+  --cm-glow:   0 0 20px rgba(47, 216, 232, .25);   /* selected only */
+  --cm-blur:   blur(16px) saturate(135%);
+
+  /* ---- Motion --------------------------------------------------------- */
+  --cm-ease:      cubic-bezier(.2, .8, .2, 1);     /* enter, hover */
+  --cm-ease-cut:  cubic-bezier(.7, 0, .2, 1);     /* wipes */
+  --cm-d-fast: .12s;  --cm-d-base: .15s;  --cm-d-enter: .32s;
+  --cm-d-wipe: .5s;   --cm-d-count: .6s;
+
+  /* ---- Layers --------------------------------------------------------- */
+  --cm-z-film: 2; --cm-z-tags: 3; --cm-z-ui: 5; --cm-z-modal: 12; --cm-z-top: 20;
+}
+
+/* ---- Paper theme: the white "card" counterpoint (opening/closing beats,
+        print, light sections). Same tokens, inverted. ------------------- */
+:root[data-theme="paper"], [data-theme="paper"] {
+  color-scheme: light;
+  --cm-void: #f2f3f1;  --cm-fg: #050607;  --cm-mute: #4a565c;  --cm-dim: #8a8f94;
+  --cm-paper: #050607; --cm-ink-0: #f2f3f1;  --cm-paper-mute: #8494a0;
+  --cm-glass: rgba(255,255,255,.7); --cm-glass-hi: rgba(255,255,255,.88); --cm-solid: #ffffff;
+  --cm-hair: rgba(5,6,7,.18); --cm-hair-hi: rgba(5,6,7,.4);
+  --cm-cyan: #0a8f9a; --cm-cyan-ink: #ffffff; --cm-cyan-deep: #d9f7fa;
+  --cm-cyan-wash: rgba(10,143,154,.1);
+  --cm-alert: #e8412c;
+  --cm-shadow: 0 18px 40px -28px rgba(0,0,0,.35);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root { --cm-d-fast: .01s; --cm-d-base: .01s; --cm-d-enter: .01s; --cm-d-wipe: .01s; --cm-d-count: .01s; }
+}

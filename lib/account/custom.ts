@@ -1,4 +1,4 @@
-import { MC_SYMBOLS, type McSymbolName } from "@/components/mc-symbol";
+import { MC_SYMBOL_NAMES, type McSymbolName } from "@/lib/account/symbols";
 import { equippedOf, type Equipped } from "@/lib/account/cosmetics";
 
 // Everything about a profile that is a free choice (as opposed to a cosmetic a game unlocks): avatar, banner
@@ -55,12 +55,12 @@ export interface WidgetSlot {
     hidden?: boolean;
 }
 export const WIDGETS: Record<WidgetId, { label: string; blurb: string; symbol: McSymbolName; color: string; ownerOnly?: boolean; sizes: WidgetSize[] }> = {
-    about: { label: "About", blurb: "Your bio, pronouns and status.", symbol: "flower", color: "var(--mc-light-purple)", sizes: ["s", "m", "l", "f"] },
-    fi: { label: "Fractured Idle", blurb: "The game's profile card: level, tier, stats and skills.", symbol: "wisdom", color: "var(--mc-aqua)", sizes: ["l", "f"] },
-    titles: { label: "Titles and badges", blurb: "Every title and level badge, owned or locked.", symbol: "pristine", color: "var(--mc-yellow)", sizes: ["m", "l", "f"] },
-    locker: { label: "Equipped look", blurb: "What you are wearing: symbol, banner, frame and accent.", symbol: "defense", color: "var(--mc-green)", sizes: ["s", "m", "l"] },
-    unlocks: { label: "Next unlocks", blurb: "The cosmetics you are closest to earning. Only you see this.", symbol: "forge", color: "var(--mc-green)", ownerOnly: true, sizes: ["s", "m", "l"] },
-    games: { label: "More games", blurb: "A pointer to the games that save to your account. Only you see this.", symbol: "arrow", color: "var(--mc-gold)", ownerOnly: true, sizes: ["s", "m", "l"] },
+    about: { label: "About", blurb: "Your bio, pronouns and status.", symbol: "flower", color: "var(--cm-violet)", sizes: ["s", "m", "l", "f"] },
+    fi: { label: "Fractured Idle", blurb: "The game's profile card: level, tier, stats and skills.", symbol: "wisdom", color: "var(--cm-cyan)", sizes: ["l", "f"] },
+    titles: { label: "Titles and badges", blurb: "Every title and level badge, owned or locked.", symbol: "pristine", color: "var(--cm-amber)", sizes: ["m", "l", "f"] },
+    locker: { label: "Equipped look", blurb: "What you are wearing: symbol, banner, frame and accent.", symbol: "defense", color: "var(--cm-good)", sizes: ["s", "m", "l"] },
+    unlocks: { label: "Next unlocks", blurb: "The cosmetics you are closest to earning. Only you see this.", symbol: "forge", color: "var(--cm-good)", ownerOnly: true, sizes: ["s", "m", "l"] },
+    games: { label: "More games", blurb: "A pointer to the games that save to your account. Only you see this.", symbol: "arrow", color: "var(--cm-amber)", ownerOnly: true, sizes: ["s", "m", "l"] },
 };
 export const WIDGET_IDS = Object.keys(WIDGETS) as WidgetId[];
 export const SIZE_COLS: Record<WidgetSize, string> = { s: "lg:col-span-4", m: "lg:col-span-6", l: "lg:col-span-8", f: "lg:col-span-12" };
@@ -97,7 +97,7 @@ export const DEFAULT_CUSTOM: Custom = {
 };
 
 const HEX = /^#[0-9a-fA-F]{6}$/;
-const GLYPHS = Object.keys(MC_SYMBOLS) as McSymbolName[];
+const GLYPHS = MC_SYMBOL_NAMES;
 const TONES: AvatarTone[] = ["vivid", "deep", "pastel", "mono"];
 const text = (v: unknown, max: number) => (typeof v === "string" ? v.replace(/[\u0000-\u001f\u007f<>]/g, "").replace(/\s+/g, " ").trim().slice(0, max) : "");
 const int = (v: unknown, lo: number, hi: number, d: number) => (typeof v === "number" && Number.isFinite(v) ? Math.max(lo, Math.min(hi, Math.round(v))) : d);

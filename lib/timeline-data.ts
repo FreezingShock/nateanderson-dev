@@ -51,18 +51,18 @@ export type Category =
     | "build";
 
 export const CATEGORIES: Record<Category, { label: string; color: string }> = {
-    academics: { label: "Coursework", color: "var(--mc-blue)" },
-    exams: { label: "Exams", color: "var(--mc-red)" },
-    applications: { label: "Applications", color: "var(--mc-aqua)" },
-    athletics: { label: "Athletics", color: "var(--mc-green)" },
-    portfolio: { label: "Portfolio", color: "var(--mc-light-purple)" },
-    career: { label: "Career", color: "var(--mc-gold)" },
-    milestone: { label: "Landmarks", color: "var(--mc-yellow)" },
+    academics: { label: "Coursework", color: "var(--cm-cyan)" },
+    exams: { label: "Exams", color: "var(--cm-alert)" },
+    applications: { label: "Applications", color: "var(--cm-cyan)" },
+    athletics: { label: "Athletics", color: "var(--cm-good)" },
+    portfolio: { label: "Portfolio", color: "var(--cm-violet)" },
+    career: { label: "Career", color: "var(--cm-amber)" },
+    milestone: { label: "Landmarks", color: "var(--cm-amber)" },
     mind: {
         label: "Mind",
-        color: "color-mix(in oklch, var(--mc-dark-purple) 60%, white)",
+        color: "color-mix(in oklch, var(--cm-violet) 60%, white)",
     },
-    build: { label: "Building", color: "var(--mc-dark-aqua)" },
+    build: { label: "Building", color: "var(--cm-cyan)" },
 };
 
 export interface TimelineEventData {
@@ -119,7 +119,7 @@ export const phases: TimelinePhaseData[] = [
         range: "September 2026 — Summer 2027",
         description:
             "The final year before college. Six interdisciplinary courses, college applications, the SAT retake, the Senior Project, AP exams and graduation, all pointed at an environmental engineering pathway.",
-        color: "var(--mc-blue)",
+        color: "var(--cm-cyan)",
         icon: "BookOpen",
         start: "2026-09-01",
         end: "2027-08-31",
@@ -474,7 +474,7 @@ export const phases: TimelinePhaseData[] = [
         range: "September 2027 — May 2029",
         description:
             "Two years of STEM prerequisites while competing as a recruited cross-country athlete. A strong, affordable foundation before upper-level engineering specialization.",
-        color: "var(--mc-aqua)",
+        color: "var(--cm-cyan)",
         icon: "Rocket",
         start: "2027-09-01",
         end: "2029-05-31",
@@ -620,7 +620,7 @@ export const phases: TimelinePhaseData[] = [
         range: "September 2029 — May 2031",
         description:
             "Transfer as a junior and finish in two years, specializing in Environmental Engineering. A capstone project, a growing network and the first real steps toward a business.",
-        color: "var(--mc-green)",
+        color: "var(--cm-good)",
         icon: "Leaf",
         start: "2029-09-01",
         end: "2031-05-31",
@@ -783,7 +783,7 @@ export const phases: TimelinePhaseData[] = [
         range: "Ongoing",
         description:
             "Independent research and creative work running in parallel with formal education: philosophy, sustainable systems, design practice, game development, running, writing and this website.",
-        color: "var(--mc-light-purple)",
+        color: "var(--cm-violet)",
         icon: "Brain",
         start: "2026-09-01",
         end: "2031-05-31",

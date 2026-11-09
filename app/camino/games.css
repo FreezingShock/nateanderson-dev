@@ -1,0 +1,160 @@
+/* Game animation hooks for the Outline and Flag guessers (classes are used by components/games). */
+/* ---- Outline Guesser (components/games/outline-guesser.tsx) ---- */
+@keyframes ogRowIn {
+    from { opacity: 0; transform: translateY(-10px) scale(0.97); }
+    to { opacity: 1; transform: none; }
+}
+@keyframes ogCellIn {
+    from { opacity: 0; transform: translateY(6px); }
+    to { opacity: 1; transform: none; }
+}
+@keyframes ogArrow {
+    0% { opacity: 0; transform: rotate(calc(var(--rot) - 540deg)) scale(0.2); }
+    70% { opacity: 1; transform: rotate(calc(var(--rot) + 12deg)) scale(1.25); }
+    100% { opacity: 1; transform: rotate(var(--rot)) scale(1); }
+}
+@keyframes ogPip {
+    from { opacity: 0; transform: scaleY(0.2); }
+    to { opacity: 1; transform: none; }
+}
+@keyframes ogShape {
+    from { opacity: 0; transform: scale(0.86) rotate(-3deg); filter: blur(6px); }
+    to { opacity: 1; transform: none; filter: blur(0); }
+}
+@keyframes ogShake {
+    0%, 100% { transform: translateX(0); }
+    20% { transform: translateX(-7px); }
+    40% { transform: translateX(6px); }
+    60% { transform: translateX(-4px); }
+    80% { transform: translateX(3px); }
+}
+@keyframes ogWin {
+    0% { transform: scale(1); }
+    40% { transform: scale(1.09); }
+    100% { transform: scale(1); }
+}
+@keyframes ogBurst {
+    from { opacity: 1; transform: translate(0, 0) scale(1); }
+    to {
+        opacity: 0;
+        transform: translate(var(--bx), var(--by)) scale(0.3) rotate(240deg);
+    }
+}
+@keyframes ogHint {
+    from { opacity: 0; transform: translateY(8px) scale(0.9); }
+    to { opacity: 1; transform: none; }
+}
+.og-row { animation: ogRowIn 0.4s cubic-bezier(0.22, 1, 0.36, 1) both; }
+.og-cell { animation: ogCellIn 0.4s ease-out both; }
+.og-arrow { animation: ogArrow 0.9s cubic-bezier(0.22, 1, 0.36, 1) both; }
+.og-pip { transform-origin: bottom; animation: ogPip 0.35s ease-out both; }
+.og-shape { animation: ogShape 0.7s cubic-bezier(0.22, 1, 0.36, 1) both; }
+.og-shake { animation: ogShake 0.45s ease-in-out; }
+.og-win { animation: ogWin 0.7s ease-out; }
+.og-burst {
+    animation: ogBurst 1.1s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+.og-hint { animation: ogHint 0.4s cubic-bezier(0.22, 1, 0.36, 1) both; }
+@media (prefers-reduced-motion: reduce) {
+    .og-row, .og-cell, .og-arrow, .og-pip, .og-shape, .og-shake, .og-win,
+    .og-burst, .og-hint { animation: none; }
+}
+
+/* ---- Outline Guesser: neighbours round (components/games/neighbor-round.tsx) ---- */
+.nb-path {
+    stroke: var(--cm-void);
+    stroke-width: 1;
+    stroke-linejoin: round;
+    transition: fill 0.6s ease, opacity 0.6s ease;
+}
+.nb-path[data-state="center"] { fill: var(--cm-cyan); }
+.nb-path[data-state="hidden"] { fill: var(--cm-dim); }
+.nb-path[data-state="found"] { fill: var(--cm-good); }
+.nb-path.nb-focus { stroke: var(--cm-fg); stroke-width: 2.5; }
+.nb-path[data-state="center"],
+.nb-path[data-state="found"],
+.nb-path[data-state="hidden"],
+.nb-path[data-state="missed"] { cursor: pointer; }
+.nb-path[data-state="missed"] { fill: var(--cm-alert); opacity: 0.75; }
+@keyframes nbCorrect {
+    0% { fill: #ffffff; }
+    35% { fill: #ffffff; }
+    100% { fill: var(--cm-good); }
+}
+.nb-correct { animation: nbCorrect 1.2s ease-out both; }
+@keyframes nbToast {
+    0% { opacity: 0; transform: translateY(-50%) scale(0.4); }
+    25% { opacity: 1; transform: translateY(-50%) scale(1.25); }
+    55% { opacity: 1; transform: translateY(-50%) scale(1); }
+    100% { opacity: 0; transform: translateY(-80%) scale(1); }
+}
+.nb-correct-toast {
+    animation: nbToast 1.4s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+@keyframes nbChipPop {
+    0% { transform: scale(0.4); }
+    60% { transform: scale(1.3); }
+    100% { transform: scale(1); }
+}
+.nb-chip-pop {
+    transform-box: fill-box;
+    transform-origin: center;
+    animation: nbChipPop 0.6s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+@keyframes nbSlotFlip {
+    0% { transform: rotateX(90deg); opacity: 0; }
+    100% { transform: rotateX(0); opacity: 1; }
+}
+.nb-slot-flip { animation: nbSlotFlip 0.55s cubic-bezier(0.22, 1, 0.36, 1) both; }
+@media (prefers-reduced-motion: reduce) {
+    .nb-correct, .nb-correct-toast, .nb-slot-flip { animation: none; }
+}
+
+/* ---- Flag Guesser (components/games/flag-guesser.tsx) ---- */
+.fg-board {
+    perspective: 900px;
+    transition: gap 0.8s ease;
+}
+.fg-tile {
+    position: relative;
+    transform-style: preserve-3d;
+    transition: transform 0.85s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.fg-tile[data-open="true"] { transform: rotateY(180deg); }
+.fg-face {
+    position: absolute;
+    inset: 0;
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
+    border-radius: 0;
+}
+.fg-back { transform: rotateY(180deg); }
+/* Finished: seamless flag, square corners. */
+.fg-board[data-done="true"] .fg-face { border-radius: 0; }
+.fg-cover {
+    background: repeating-linear-gradient(135deg, rgba(226, 238, 240, 0.12) 0 1px, transparent 1px 7px), #030405;
+    box-shadow: inset 0 0 0 1px var(--cm-hair-hi);
+}
+@keyframes fgGlow {
+    0%, 100% { box-shadow: inset 0 0 0 0 transparent; }
+    50% { box-shadow: inset 0 0 0 2px var(--cm-cyan); }
+}
+.fg-just-flipped { animation: fgGlow 1.1s ease-out 0.5s; }
+@media (prefers-reduced-motion: reduce) {
+    .fg-tile { transition: none; }
+    .fg-just-flipped { animation: none; }
+}
+
+/* ---- Country box dice (components/games/guess-kit.tsx) ---- */
+@keyframes cbRoll {
+    from { opacity: 0.3; transform: translateY(-45%); }
+    to { opacity: 1; transform: none; }
+}
+.cb-roll { animation: cbRoll 0.12s ease-out both; }
+@keyframes cbDice {
+    to { transform: rotate(360deg); }
+}
+.cb-dice-spin { animation: cbDice 0.5s linear infinite; }
+@media (prefers-reduced-motion: reduce) {
+    .cb-roll, .cb-dice-spin { animation: none; }
+}

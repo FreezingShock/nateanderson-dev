@@ -12,7 +12,6 @@ import {
     Palette,
     Pencil,
     Repeat,
-    Shapes,
     Sprout,
     Type,
     Boxes,
@@ -20,7 +19,6 @@ import {
     Landmark,
     type LucideIcon,
 } from "lucide-react";
-import type { McSymbolName } from "@/components/mc-symbol";
 
 // Everything on the Creations pages that isn't a Supabase project row.
 // Server-only: icons are component references, which can't cross into
@@ -33,8 +31,6 @@ export interface CreationCategory {
     href: string;
     title: string;
     color: string;
-    bg: string;
-    symbol: McSymbolName;
     icon: LucideIcon;
     blurb: string;
     tags: string[];
@@ -45,9 +41,7 @@ export const CATEGORIES: CreationCategory[] = [
         id: "games",
         href: "/creations/games",
         title: "Web App Games",
-        color: "var(--mc-green)",
-        bg: "#55ff55",
-        symbol: "fortune",
+        color: "var(--cm-good)",
         icon: Gamepad2,
         blurb: "Playable in the browser, right here on the site: daily puzzles, unlimited practice, incremental progression and tycoon games.",
         tags: ["Daily", "Unlimited", "Incremental", "Tycoon"],
@@ -56,9 +50,7 @@ export const CATEGORIES: CreationCategory[] = [
         id: "projects",
         href: "/creations/projects",
         title: "Projects",
-        color: "var(--mc-aqua)",
-        bg: "#55ffff",
-        symbol: "magicFind",
+        color: "var(--cm-cyan)",
         icon: Code2,
         blurb: "Coding and Roblox projects: solo-built, systems-driven, shipped and in progress.",
         tags: ["Coding", "Roblox", "Systems"],
@@ -67,9 +59,7 @@ export const CATEGORIES: CreationCategory[] = [
         id: "renovations",
         href: "/creations/renovations",
         title: "Renovations",
-        color: "var(--mc-gold)",
-        bg: "#ffaa00",
-        symbol: "forge",
+        color: "var(--cm-amber)",
         icon: Hammer,
         blurb: "Real places studied, measured, modeled and redesigned to be greener and more inviting, starting with Topanga Willows.",
         tags: ["Topanga Willows", "Blender", "Design"],
@@ -78,9 +68,7 @@ export const CATEGORIES: CreationCategory[] = [
         id: "artwork",
         href: "/creations/artwork",
         title: "Artwork",
-        color: "var(--mc-light-purple)",
-        bg: "#ff55ff",
-        symbol: "flower",
+        color: "var(--cm-violet)",
         icon: Palette,
         blurb: "The AP Art portfolio, Blender renders and drawings: the creative practice around the engineering.",
         tags: ["AP Art", "Blender", "Drawing"],
@@ -95,33 +83,28 @@ export const categoryById = (id: CreationCategory["id"]) =>
 export interface Principle {
     title: string;
     color: string;
-    symbol: McSymbolName;
     text: string;
 }
 
 export const PRINCIPLES: Principle[] = [
     {
         title: "Systems over screens",
-        color: "var(--mc-aqua)",
-        symbol: "intelligence",
+        color: "var(--cm-cyan)",
         text: "Every project starts as a system: inputs, loops, feedback. The interface comes second. Good systems are still fun when nobody is looking.",
     },
     {
         title: "Play is how I learn",
-        color: "var(--mc-green)",
-        symbol: "fortune",
+        color: "var(--cm-good)",
         text: "Games are the fastest way to make an idea stick, mine or anyone else's. If I can turn something into a loop worth repeating, I understand it.",
     },
     {
         title: "Build small, ship, grow",
-        color: "var(--mc-gold)",
-        symbol: "forge",
+        color: "var(--cm-amber)",
         text: "One playable thing beats ten perfect plans. Each creation ships small and earns its next feature by being used.",
     },
     {
         title: "Real places, real care",
-        color: "var(--mc-light-purple)",
-        symbol: "flower",
+        color: "var(--cm-violet)",
         text: "Renovation studies point the same skills at the physical world: measure it honestly, model it, then make it greener.",
     },
 ];
@@ -131,9 +114,9 @@ export const PRINCIPLES: Principle[] = [
 export type GameStatus = "playable" | "building" | "planned";
 
 export const GAME_STATUS: Record<GameStatus, { label: string; color: string }> = {
-    playable: { label: "Playable", color: "var(--mc-green)" },
-    building: { label: "In Development", color: "var(--mc-gold)" },
-    planned: { label: "Planned", color: "var(--mc-light-purple)" },
+    playable: { label: "Playable", color: "var(--cm-good)" },
+    building: { label: "In Development", color: "var(--cm-amber)" },
+    planned: { label: "Planned", color: "var(--cm-violet)" },
 };
 
 export interface Game {
@@ -151,7 +134,6 @@ export interface GameMode {
     id: "daily" | "unlimited" | "incremental" | "tycoon";
     title: string;
     color: string;
-    symbol: McSymbolName;
     icon: LucideIcon;
     tagline: string;
     about: string;
@@ -162,8 +144,7 @@ export const GAME_MODES: GameMode[] = [
     {
         id: "daily",
         title: "Daily Games",
-        color: "var(--mc-yellow)",
-        symbol: "day",
+        color: "var(--cm-amber)",
         icon: CalendarDays,
         tagline: "One puzzle a day, the same for everyone.",
         about: "A new puzzle every day at midnight Pacific. Guess, share your result, come back tomorrow. Streaks and stats stay in your browser.",
@@ -199,8 +180,7 @@ export const GAME_MODES: GameMode[] = [
     {
         id: "unlimited",
         title: "Unlimited Games",
-        color: "var(--mc-aqua)",
-        symbol: "speed",
+        color: "var(--cm-cyan)",
         icon: InfinityIcon,
         tagline: "Practice mode: as many rounds as you want.",
         about: "The same guessing games with no daily limit, for learning and high scores. Rounds are quick and everything runs in the browser.",
@@ -236,21 +216,11 @@ export const GAME_MODES: GameMode[] = [
     {
         id: "incremental",
         title: "Incremental Progression Games",
-        color: "var(--mc-light-purple)",
-        symbol: "wisdom",
+        color: "var(--cm-violet)",
         icon: Repeat,
         tagline: "Numbers go up, systems unlock, progress persists.",
         about: "Slow-burn progression games that live on this site. Come back, collect, upgrade, prestige. The long-term goal is a small universe of connected incremental games sharing one save.",
         games: [
-            {
-                slug: "fractured-idle",
-                title: "Fractured Idle",
-                status: "playable",
-                icon: Shapes,
-                blurb: "A button-simulator incremental with SkyBlock flavor: click for shards, hire minions, unlock islands and rebirth. A web echo of Fractured Islands.",
-                features: ["Offline progress", "Rebirths and upgrades", "Fullscreen, local saves"],
-                href: "/creations/games/fractured-idle",
-            },
             {
                 slug: "eco-loop",
                 title: "Eco Loop",
@@ -264,8 +234,7 @@ export const GAME_MODES: GameMode[] = [
     {
         id: "tycoon",
         title: "Tycoon Games",
-        color: "var(--mc-gold)",
-        symbol: "forge",
+        color: "var(--cm-amber)",
         icon: TrendingUp,
         tagline: "Build it, run it, balance the books.",
         about: "Management games where economy and design decisions compound. Planned to borrow from real renovation and civil-engineering ideas.",
@@ -299,7 +268,6 @@ export interface ArtCollection {
     title: string;
     color: string;
     icon: LucideIcon;
-    symbol: McSymbolName;
     blurb: string;
     slots: string[];
 }
@@ -308,27 +276,24 @@ export const ART_COLLECTIONS: ArtCollection[] = [
     {
         id: "ap-art",
         title: "AP Art Portfolio",
-        color: "var(--mc-light-purple)",
+        color: "var(--cm-violet)",
         icon: Brush,
-        symbol: "flower",
         blurb: "The Sustained Investigation and Selected Works for AP Art and Design, with the thinking behind each piece.",
         slots: ["Sustained Investigation 1", "Sustained Investigation 2", "Sustained Investigation 3", "Selected Work 1", "Selected Work 2", "Selected Work 3"],
     },
     {
         id: "blender",
         title: "Blender Renders",
-        color: "var(--mc-blue)",
+        color: "var(--cm-cyan)",
         icon: Boxes,
-        symbol: "pristine",
         blurb: "3D renders: renovation studies, environments and experiments.",
         slots: ["Topanga Willows", "Environment study", "Material test", "Lighting study", "Model breakdown", "Wireframe"],
     },
     {
         id: "drawings",
         title: "Drawings",
-        color: "var(--mc-gold)",
+        color: "var(--cm-amber)",
         icon: Pencil,
-        symbol: "magicFind",
         blurb: "Sketches and finished drawings, traditional and digital.",
         slots: ["Sketchbook page", "Figure study", "Landscape", "Ink drawing", "Digital piece", "Doodle"],
     },

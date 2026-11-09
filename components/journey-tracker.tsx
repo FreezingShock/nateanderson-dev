@@ -1,17 +1,10 @@
 "use client";
 
-import {
-    useCallback,
-    useEffect,
-    useLayoutEffect,
-    useMemo,
-    useRef,
-    useState,
-} from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { ArrowRight, Check, Star } from "lucide-react";
-import { GlassBar } from "@/components/glass-bar";
-import { NumberTicker } from "@/components/ui/number-ticker";
+import { Check } from "lucide-react";
+import { Meter } from "@/components/cm/ui";
+import { CountUp } from "@/components/cm/reveal";
 import { cn } from "@/lib/utils";
 import {
     JOURNEY_DAYS,
@@ -23,16 +16,13 @@ import {
     type EventStatus,
 } from "@/lib/timeline-data";
 
-// The interactive journey: a year/month axis for the whole Sept 2026 → May
-// 2031 stretch, hoverable milestones with liquid-glass tooltips, and live
-// clock + progress tickers underneath.
+// The interactive journey: a year/month axis for the whole Sept 2026 to May 2031 stretch, hoverable
+// milestones with hover tags, and live clock + progress gauges underneath.
 //
-// Performance notes: the axis is static (one 60s tick moves the "today"
-// marker); the 1-second clock lives in its own small component so only it
-// re-renders; the tooltip is a single element (portalled to <body>, since a
-// fixed-position tooltip inside the transformed, overflow-hidden card would
-// be clipped) that is only mounted while something is hovered or pinned; and
-// the glass bars animate with transform/width only.
+// Performance notes: the axis is static (one 60s tick moves the "today" marker); the 1-second clock lives
+// in its own small component so only it re-renders; the tooltip is a single element (portalled to <body>,
+// since a fixed tooltip inside an overflow container would be clipped) mounted only while a marker is
+// hovered or pinned.
 
 export interface JourneyMarker {
     id: string;
@@ -148,13 +138,10 @@ function Tip({
     onClose: () => void;
 }) {
     const ref = useRef<HTMLDivElement>(null);
-    const [place, setPlace] = useState<{ left: number; top: number } | null>(
-        null
-    );
+    const [place, setPlace] = useState<{ left: number; top: number } | null>(null);
     const width = Math.min(340, window.innerWidth - 16);
 
-    // Measure once rendered, then place above the marker (or below if there
-    // isn't room), clamped inside the viewport.
+    // Measure once rendered, then place above the marker (or below if there isn't room), clamped to the viewport.
     useLayoutEffect(() => {
         const el = ref.current;
         if (!el) return;
@@ -166,14 +153,8 @@ function Tip({
         setPlace({ left, top });
     }, [rect, width, marker.id]);
 
-    const { color, special } = marker;
     const days = daysUntil(marker.start, now);
-    const statusText =
-        marker.status === "now"
-            ? "Happening now"
-            : marker.status === "done"
-              ? "Completed"
-              : humanize(days);
+    const statusText = marker.status === "now" ? "Happening now" : marker.status === "done" ? "Completed" : humanize(days);
 
     return createPortal(
         <div
@@ -182,167 +163,41 @@ function Tip({
             role="tooltip"
             onPointerEnter={onEnter}
             onPointerLeave={onLeave}
-            className={cn("fixed z-[60] rounded-[18px]", place && "tl-tip-in")}
+            className={cn("cm-panel solid cm-enter", marker.special && "live")}
             style={{
+                position: "fixed",
+                zIndex: 60,
                 left: place?.left ?? -9999,
                 top: place?.top ?? 0,
                 width,
                 visibility: place ? "visible" : "hidden",
-                boxShadow: special
-                    ? "0 18px 50px -12px rgba(255,170,0,0.45), 0 0 40px -10px rgba(85,255,255,0.4)"
-                    : `0 18px 50px -12px color-mix(in oklch, ${color} 55%, transparent)`,
             }}
         >
-            <div
-                className="liquid-glass relative overflow-hidden rounded-[18px] p-4"
-                // The stock liquid-glass blur is tiny (it leans on an SVG
-                // distortion), which left whatever was behind the tooltip,
-                // like the live clock, readable through the copy. A heavy
-                // blur makes it proper frosted glass.
-                style={{
-                    backdropFilter: "blur(20px) saturate(1.6)",
-                    WebkitBackdropFilter: "blur(20px) saturate(1.6)",
-                }}
-            >
-                {/* Dark base under the text. The glass is translucent, so
-                    without this the page behind it competes with the copy. */}
-                <div
-                    aria-hidden
-                    className="pointer-events-none absolute inset-0 bg-background/72"
-                />
-                {/* themed tint bleeding in from the top-left corner */}
-                <div
-                    aria-hidden
-                    className="pointer-events-none absolute inset-0"
-                    style={{
-                        background: special
-                            ? "radial-gradient(120% 90% at 0% 0%, rgba(255,170,0,0.22), transparent 55%), radial-gradient(120% 90% at 100% 100%, rgba(85,255,255,0.18), transparent 55%)"
-                            : `radial-gradient(120% 90% at 0% 0%, color-mix(in oklch, ${color} 26%, transparent), transparent 60%)`,
-                    }}
-                />
-                <div className="relative">
-                    <div className="flex flex-wrap items-center gap-2">
-                        <span
-                            className="inline-flex items-center gap-1.5 font-rubik text-[10px] font-semibold uppercase tracking-wider"
-                            style={{ color }}
-                        >
-                            <span
-                                className="size-2 rounded-full"
-                                style={{
-                                    backgroundColor: color,
-                                    boxShadow: `0 0 8px ${color}`,
-                                }}
-                            />
-                            {marker.categoryLabel}
-                        </span>
-                        {special && (
-                            <span className="chroma-text inline-flex items-center gap-1 font-minecraft text-[10px] font-bold uppercase tracking-wider">
-                                <Star
-                                    className="size-3 text-[#ffaa00]"
-                                    fill="#ffaa00"
-                                />
-                                Milestone
-                            </span>
-                        )}
-                        <span
-                            className="ml-auto inline-flex items-center gap-1 rounded-full border px-2 py-0.5 font-rubik text-[10px] font-semibold uppercase tracking-wider"
-                            style={{
-                                color:
-                                    marker.status === "done"
-                                        ? "var(--muted-foreground)"
-                                        : color,
-                                borderColor:
-                                    "color-mix(in oklch, currentColor 45%, transparent)",
-                            }}
-                        >
-                            {marker.status === "done" && (
-                                <Check className="size-3" />
-                            )}
-                            {marker.status === "now" && (
-                                <span
-                                    className="dot-blink size-1.5 rounded-full"
-                                    style={{ backgroundColor: color }}
-                                />
-                            )}
-                            {statusText}
-                        </span>
+            <div className="cm-hbar">
+                <span className={marker.status === "now" ? "live" : ""}>{marker.categoryLabel}</span>
+                <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
+                    {marker.status === "done" && <Check className="cm-ico" style={{ width: 11, height: 11 }} />}
+                    {statusText}
+                </span>
+            </div>
+            <div className="cm-body-pad" style={{ display: "grid", gap: 8 }}>
+                {marker.special && <span className="cm-tag live flat" style={{ justifySelf: "start" }}>Milestone</span>}
+                <b style={{ font: "700 19px/1.1 var(--cm-display)" }}>{marker.title}</b>
+                <span className="cm-state live">{marker.when}</span>
+                <p className="cm-note" style={{ color: "var(--cm-fg)", opacity: 0.85 }}>{marker.description}</p>
+                {marker.tags && marker.tags.length > 0 && (
+                    <div className="cm-row-gap">
+                        {marker.tags.map((tag) => (
+                            <span key={tag} className="cm-pill">{tag}</span>
+                        ))}
                     </div>
-
-                    <h4
-                        className={cn(
-                            "mt-2.5 font-minecraft text-xl font-bold leading-tight",
-                            special && "chroma-text"
-                        )}
-                        style={
-                            special
-                                ? undefined
-                                : {
-                                      color,
-                                      textShadow: `0 0 16px color-mix(in oklch, ${color} 45%, transparent)`,
-                                  }
-                        }
-                    >
-                        {marker.title}
-                    </h4>
-                    <p
-                        className="mt-1 font-mono text-[11px] font-bold uppercase tracking-wider"
-                        style={{ color }}
-                    >
-                        {marker.when}
-                    </p>
-                    <p className="mt-2.5 text-[13px] leading-relaxed text-foreground/80">
-                        {marker.description}
-                    </p>
-
-                    {marker.tags && marker.tags.length > 0 && (
-                        <div className="mt-3 flex flex-wrap gap-1.5">
-                            {marker.tags.map((tag) => (
-                                <span
-                                    key={tag}
-                                    className="rounded-full border px-2 py-0.5 font-rubik text-[10px] font-medium"
-                                    style={{
-                                        color,
-                                        borderColor: `color-mix(in oklch, ${color} 45%, transparent)`,
-                                        backgroundColor: `color-mix(in oklch, ${color} 12%, transparent)`,
-                                    }}
-                                >
-                                    {tag}
-                                </span>
-                            ))}
-                        </div>
-                    )}
-
-                    <div className="mt-3.5 flex items-center justify-between gap-3 border-t border-white/10 pt-3">
-                        <a
-                            href={marker.href}
-                            onClick={onClose}
-                            className="inline-flex items-center gap-1 font-mono text-xs font-semibold hover:underline"
-                            style={{ color }}
-                        >
-                            View on the timeline{" "}
-                            <ArrowRight className="size-3.5" />
-                        </a>
-                        {!pinned && (
-                            <span className="font-mono text-[10px] text-muted-foreground">
-                                click to pin
-                            </span>
-                        )}
-                    </div>
+                )}
+                <div className="cm-row" style={{ justifyContent: "space-between", borderTop: "1px solid var(--cm-hair)", paddingTop: 10 }}>
+                    <a href={marker.href} onClick={onClose} className="cm-more" style={{ border: 0, padding: 0 }}>
+                        View on the timeline →
+                    </a>
+                    {!pinned && <span className="cm-coord">click to pin</span>}
                 </div>
-                {/* The rim: a border-only layer drawn ON TOP of the glass. (As a
-                    background behind the translucent glass it flooded the whole
-                    card with rainbow and made the text unreadable.) */}
-                <span
-                    aria-hidden
-                    className={cn("tip-ring", special && "chroma-ring")}
-                    style={
-                        special
-                            ? undefined
-                            : {
-                                  background: `linear-gradient(135deg, ${color}, color-mix(in oklch, ${color} 35%, white), ${color})`,
-                              }
-                    }
-                />
             </div>
         </div>,
         document.body
@@ -351,15 +206,7 @@ function Tip({
 
 // ------------------------------------------------------------------- axis
 
-function Axis({
-    markers,
-    bands,
-    nowMs,
-}: {
-    markers: JourneyMarker[];
-    bands: JourneyBand[];
-    nowMs: number;
-}) {
+function Axis({ markers, bands, nowMs }: { markers: JourneyMarker[]; bands: JourneyBand[]; nowMs: number }) {
     const now = useNow(nowMs, 60_000);
     const clock = ptClock(now);
     const nowPct = clock.journeyFrac * 100;
@@ -483,50 +330,32 @@ function Axis({
 
     return (
         <>
-            <p className="mb-2 font-mono text-[10px] uppercase tracking-wider text-muted-foreground sm:hidden">
-                Swipe to explore ↔
-            </p>
-            <div
-                ref={scrollRef}
-                className="-mx-2 overflow-x-auto px-2 pb-2 pt-9 [scrollbar-width:thin]"
-            >
-                <div
-                    className="relative mx-4 min-w-[820px]"
-                    style={{ height: TRACK_H }}
-                >
-                    {/* year bands: the year tickers */}
+            <p className="cm-coord sm:hidden" style={{ margin: "0 0 8px" }}>Swipe to explore ↔</p>
+            <div ref={scrollRef} style={{ overflowX: "auto", padding: "40px 8px 8px", scrollbarWidth: "thin" }}>
+                <div style={{ position: "relative", margin: "0 16px", minWidth: 820, height: TRACK_H }}>
+                    {/* year bands */}
                     {years.map((y, i) => (
                         <div
                             key={y.year}
-                            className="absolute flex items-center justify-center rounded-lg border font-minecraft text-sm font-bold"
+                            className="cm-lbl"
                             style={{
+                                position: "absolute",
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "center",
                                 left: `${y.left}%`,
                                 width: `calc(${y.width}% - 3px)`,
                                 top: YEAR_TOP,
                                 height: YEAR_H,
                                 marginLeft: 1.5,
-                                color:
-                                    y.year === clock.year
-                                        ? "var(--mc-aqua)"
-                                        : "var(--muted-foreground)",
-                                borderColor:
-                                    y.year === clock.year
-                                        ? "color-mix(in oklch, var(--mc-aqua) 55%, transparent)"
-                                        : "color-mix(in oklch, var(--foreground) 14%, transparent)",
-                                backgroundColor:
-                                    i % 2
-                                        ? "color-mix(in oklch, var(--foreground) 6%, transparent)"
-                                        : "color-mix(in oklch, var(--foreground) 3%, transparent)",
-                                boxShadow:
-                                    y.year === clock.year
-                                        ? "0 0 14px -4px var(--mc-aqua)"
-                                        : undefined,
+                                border: `1px solid ${y.year === clock.year ? "var(--cm-cyan)" : "var(--cm-hair)"}`,
+                                color: y.year === clock.year ? "var(--cm-cyan)" : "var(--cm-mute)",
+                                background: i % 2 ? "rgba(226,238,240,.04)" : "transparent",
+                                letterSpacing: ".18em",
                             }}
                         >
                             {y.year}
-                            {y.width < 12 && (
-                                <span className="sr-only"> (partial year)</span>
-                            )}
+                            {y.width < 12 && <span className="sr-only"> (partial year)</span>}
                         </div>
                     ))}
 
@@ -535,93 +364,73 @@ function Axis({
                         <span
                             key={y.year}
                             aria-hidden
-                            className="absolute w-px"
                             style={{
+                                position: "absolute",
+                                width: 1,
                                 left: `${y.left}%`,
                                 top: YEAR_H + 2,
                                 height: TICK_TOP - YEAR_H + 6,
-                                background:
-                                    "repeating-linear-gradient(to bottom, color-mix(in oklch, var(--foreground) 22%, transparent) 0 3px, transparent 3px 7px)",
+                                background: "repeating-linear-gradient(to bottom, var(--cm-hair-hi) 0 3px, transparent 3px 7px)",
                             }}
                         />
                     ))}
 
-                    {/* phase bands */}
-                    {bands.map((b) => (
+                    {/* phase bands: paper plates with the phase name */}
+                    {bands.map((b, i) => (
                         <div
                             key={b.id}
-                            className="absolute flex items-center justify-center overflow-hidden rounded-md border px-1 font-minecraft text-[11px] font-bold"
-                            title={`${b.short}`}
+                            className="cm-hbar"
+                            title={b.short}
                             style={{
+                                position: "absolute",
+                                overflow: "hidden",
                                 left: `${pos(b.start)}%`,
                                 width: `${posNum(dayNum(b.end) + 1) - pos(b.start)}%`,
                                 top: BAND_TOP,
                                 height: BAND_H,
-                                color: b.color,
-                                borderColor: `color-mix(in oklch, ${b.color} 60%, transparent)`,
-                                background: `linear-gradient(180deg, color-mix(in oklch, ${b.color} 28%, transparent), color-mix(in oklch, ${b.color} 10%, transparent))`,
-                                boxShadow: `0 0 14px -6px ${b.color}`,
-                                textShadow: `0 0 10px color-mix(in oklch, ${b.color} 50%, transparent)`,
+                                justifyContent: "center",
+                                padding: "0 4px",
+                                background: i % 2 ? "var(--cm-paper-mute)" : "var(--cm-paper)",
+                                color: i % 2 ? "var(--cm-paper)" : "var(--cm-ink-0)",
+                                borderLeft: "1px solid var(--cm-void)",
                             }}
                         >
-                            <span className="truncate">{b.short}</span>
+                            <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", color: "inherit" }}>{b.short}</span>
                         </div>
                     ))}
 
                     {/* the main line, filled up to today */}
-                    <div
-                        className="absolute inset-x-0 rounded-full"
-                        style={{
-                            top: AXIS_Y - 3,
-                            height: 6,
-                            backgroundColor:
-                                "color-mix(in oklch, var(--foreground) 12%, transparent)",
-                        }}
-                    />
-                    <div
-                        className="absolute rounded-full"
-                        style={{
-                            left: 0,
-                            width: `${Math.max(nowPct, 0.4)}%`,
-                            top: AXIS_Y - 3,
-                            height: 6,
-                            background:
-                                "linear-gradient(90deg, var(--mc-blue), var(--mc-aqua))",
-                            boxShadow: "0 0 14px var(--mc-aqua)",
-                        }}
-                    />
+                    <div style={{ position: "absolute", left: 0, right: 0, top: AXIS_Y - 2, height: 4 }} className="cm-meter">
+                        <i style={{ ["--v" as string]: `${Math.max(nowPct, 0.4)}%`, transition: "none" }} />
+                    </div>
 
-                    {/* month microtickers */}
+                    {/* month ticks */}
                     {months.map((mo) => {
-                        const current =
-                            mo.y === clock.year && mo.m === clock.month;
+                        const current = mo.y === clock.year && mo.m === clock.month;
                         return (
                             <span key={mo.key}>
                                 <span
                                     aria-hidden
-                                    className="absolute w-px"
                                     style={{
+                                        position: "absolute",
+                                        width: 1,
                                         left: `${mo.left}%`,
                                         top: TICK_TOP,
                                         height: mo.jan ? 12 : 7,
-                                        backgroundColor: mo.jan
-                                            ? "var(--foreground)"
-                                            : "color-mix(in oklch, var(--foreground) 35%, transparent)",
-                                        opacity: mo.jan ? 0.6 : 1,
+                                        background: mo.jan ? "var(--cm-fg)" : "var(--cm-hair-hi)",
                                     }}
                                 />
                                 <span
                                     aria-hidden
-                                    className="absolute -translate-x-1/2 font-mono text-[8px] font-bold leading-none"
+                                    className="cm-coord"
                                     style={{
+                                        position: "absolute",
+                                        transform: "translateX(-50%)",
                                         left: `${mo.mid}%`,
                                         top: TICK_TOP + 16,
-                                        color: current
-                                            ? "var(--mc-aqua)"
-                                            : "var(--muted-foreground)",
-                                        textShadow: current
-                                            ? "0 0 8px var(--mc-aqua)"
-                                            : undefined,
+                                        fontSize: 8.5,
+                                        color: current ? "var(--cm-cyan)" : "var(--cm-mute)",
+                                        fontWeight: current ? 600 : 400,
                                     }}
                                     title={`${MONTHS[mo.m - 1]} ${mo.y}`}
                                 >
@@ -632,86 +441,54 @@ function Axis({
                     })}
 
                     {/* today */}
-                    <div
-                        aria-hidden
-                        className="pointer-events-none absolute z-20"
-                        style={{
-                            left: `${nowPct}%`,
-                            top: -30,
-                            height: TICK_TOP + 14,
-                        }}
-                    >
+                    <div aria-hidden style={{ position: "absolute", zIndex: 20, pointerEvents: "none", left: `${nowPct}%`, top: -30, height: TICK_TOP + 14 }}>
                         <span
-                            className="absolute left-0 top-0 whitespace-nowrap rounded-full border px-2 py-0.5 font-mono text-[10px] font-bold uppercase tracking-wider"
+                            className="cm-tag live flat"
                             style={{
-                                // Centered on the marker, except near either end
-                                // of the axis, where the pill's edge is pinned to
-                                // the marker instead so it can't be cut off.
-                                transform:
-                                    nowPct < 8
-                                        ? "translateX(-12px)"
-                                        : nowPct > 92
-                                          ? "translateX(calc(-100% + 12px))"
-                                          : "translateX(-50%)",
-                                color: "var(--mc-aqua)",
-                                borderColor:
-                                    "color-mix(in oklch, var(--mc-aqua) 60%, transparent)",
-                                backgroundColor:
-                                    "color-mix(in oklch, var(--mc-aqua) 14%, var(--background))",
-                                boxShadow: "0 0 14px -2px var(--mc-aqua)",
+                                position: "absolute",
+                                left: 0,
+                                top: 0,
+                                transform: nowPct < 8 ? "translateX(-12px)" : nowPct > 92 ? "translateX(calc(-100% + 12px))" : "translateX(-50%)",
                             }}
                         >
-                            Today · {shortDateFmt.format(now)}
+                            Today <i>{shortDateFmt.format(now)}</i>
                         </span>
-                        <span
-                            className="absolute left-0 w-px -translate-x-1/2"
-                            style={{
-                                top: 22,
-                                bottom: 0,
-                                background:
-                                    "linear-gradient(to bottom, var(--mc-aqua), transparent)",
-                            }}
-                        />
-                        <span
-                            className="absolute size-3 -translate-x-1/2 -translate-y-1/2 animate-ping rounded-full bg-[var(--mc-aqua)] opacity-50"
-                            style={{ left: 0, top: AXIS_Y + 30 }}
-                        />
-                        <span
-                            className="absolute size-2.5 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-background bg-[var(--mc-aqua)]"
-                            style={{
-                                left: 0,
-                                top: AXIS_Y + 30,
-                                boxShadow: "0 0 12px var(--mc-aqua)",
-                            }}
-                        />
+                        <span style={{ position: "absolute", left: 0, width: 1, top: 22, bottom: 0, background: "var(--cm-cyan)", transform: "translateX(-0.5px)" }} />
                     </div>
 
                     {/* milestones */}
                     {markers.map((m) => {
                         const isActive = active?.marker.id === m.id;
+                        const size = m.special ? 14 : 10;
                         return (
                             <button
                                 key={m.id}
                                 type="button"
                                 data-journey-marker
                                 aria-label={`${m.title}, ${m.when}`}
-                                aria-describedby={
-                                    isActive ? "journey-tip" : undefined
-                                }
+                                aria-describedby={isActive ? "journey-tip" : undefined}
                                 aria-expanded={isActive}
-                                className="group absolute grid size-8 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full outline-none"
+                                className="group"
                                 style={{
+                                    position: "absolute",
+                                    display: "grid",
+                                    placeItems: "center",
+                                    width: 32,
+                                    height: 32,
+                                    padding: 0,
+                                    border: 0,
+                                    background: "transparent",
+                                    cursor: "pointer",
+                                    transform: "translate(-50%, -50%)",
                                     left: `${pos(m.start)}%`,
                                     top: AXIS_Y,
                                     zIndex: isActive ? 40 : m.special ? 30 : 10,
                                 }}
                                 onPointerEnter={(e) => {
-                                    if (e.pointerType === "mouse")
-                                        show(m, e.currentTarget, false);
+                                    if (e.pointerType === "mouse") show(m, e.currentTarget, false);
                                 }}
                                 onPointerLeave={(e) => {
-                                    if (e.pointerType === "mouse")
-                                        scheduleHide();
+                                    if (e.pointerType === "mouse") scheduleHide();
                                 }}
                                 onFocus={(e) => show(m, e.currentTarget, false)}
                                 onBlur={scheduleHide}
@@ -720,41 +497,31 @@ function Axis({
                                     else show(m, e.currentTarget, true);
                                 }}
                             >
-                                {m.special ? (
-                                    <span className="chroma-marker grid size-[22px] place-items-center rounded-full transition-transform duration-200 group-hover:scale-[1.4] group-focus-visible:scale-[1.4]">
-                                        <Star
-                                            className="size-3"
-                                            style={{ color: "#ffaa00" }}
-                                            fill="#ffaa00"
-                                        />
-                                    </span>
-                                ) : (
-                                    <span
-                                        className="block size-3 rounded-full border-2 border-background transition-transform duration-200 group-hover:scale-[1.6] group-focus-visible:scale-[1.6]"
-                                        style={{
-                                            backgroundColor: m.color,
-                                            boxShadow: `0 0 10px ${m.color}`,
-                                            opacity:
-                                                m.status === "done" ? 0.6 : 1,
-                                        }}
-                                    />
-                                )}
+                                <span
+                                    style={{
+                                        display: "block",
+                                        width: size,
+                                        height: size,
+                                        background: m.special || m.status === "now" ? "var(--cm-cyan)" : m.status === "done" ? "var(--cm-paper)" : "var(--cm-void)",
+                                        border: `1px solid ${m.special || m.status === "now" ? "var(--cm-cyan)" : "var(--cm-paper)"}`,
+                                        outline: isActive ? "2px solid var(--cm-cyan)" : m.special ? "1px solid var(--cm-cyan)" : "none",
+                                        outlineOffset: 2,
+                                        transition: "transform .15s",
+                                    }}
+                                />
                             </button>
                         );
                     })}
                 </div>
             </div>
+            <p className="cm-row cm-coord" style={{ gap: 16, margin: "8px 0 0" }}>
+                <span><span style={{ display: "inline-block", width: 8, height: 8, background: "var(--cm-paper)", marginRight: 6 }} />Done</span>
+                <span><span style={{ display: "inline-block", width: 8, height: 8, border: "1px solid var(--cm-paper)", marginRight: 6 }} />Upcoming</span>
+                <span><span style={{ display: "inline-block", width: 8, height: 8, background: "var(--cm-cyan)", marginRight: 6 }} />Now / milestone</span>
+            </p>
 
             {active && (
-                <Tip
-                    marker={active.marker}
-                    rect={active.rect}
-                    pinned={active.pinned}
-                    now={now}
-                    onEnter={clearHide}
-                    onLeave={scheduleHide}
-                    onClose={close}
-                />
+                <Tip marker={active.marker} rect={active.rect} pinned={active.pinned} now={now} onEnter={clearHide} onLeave={scheduleHide} onClose={close} />
             )}
         </>
     );
@@ -762,15 +529,20 @@ function Axis({
 
 // ---------------------------------------------------------------- tickers
 
-function LiveTickers({
-    nowMs,
-    total,
-    done,
-}: {
-    nowMs: number;
-    total: number;
-    done: number;
-}) {
+function Gauge({ label, value, decimals, sub, tone }: { label: string; value: number; decimals: number; sub: string; tone?: "warn" | "good" }) {
+    return (
+        <div style={{ display: "grid", gap: 6 }}>
+            <div className="cm-row" style={{ justifyContent: "space-between" }}>
+                <span className="cm-lbl">{label}</span>
+                <span className="cm-num" style={{ fontSize: 12 }}>{(value * 100).toFixed(decimals)}%</span>
+            </div>
+            <Meter value={value * 100} tone={tone} label={label} />
+            <span className="cm-coord">{sub}</span>
+        </div>
+    );
+}
+
+function LiveTickers({ nowMs, total, done }: { nowMs: number; total: number; done: number }) {
     const now = useNow(nowMs, 1000);
     const c = ptClock(now);
     const [timeMain, meridiem] = timeFmt.format(now).split(/\s+/);
@@ -782,128 +554,32 @@ function LiveTickers({
     const toLaunch = daysUntil(JOURNEY_END, now);
 
     return (
-        <div className="mt-6 grid gap-4 lg:grid-cols-5">
-            {/* Right now */}
-            <div
-                className="relative overflow-hidden rounded-2xl border p-5 lg:col-span-2"
-                style={{
-                    borderColor:
-                        "color-mix(in oklch, var(--mc-aqua) 40%, transparent)",
-                    background:
-                        "linear-gradient(140deg, color-mix(in oklch, var(--mc-aqua) 14%, var(--card)), var(--card) 65%)",
-                }}
-            >
-                <p className="flex items-center gap-2 font-mono text-[10px] font-semibold uppercase tracking-[0.2em] text-muted-foreground">
-                    <span
-                        className="dot-blink size-2 rounded-full bg-[#55ff55]"
-                        style={{ boxShadow: "0 0 8px #55ff55" }}
-                    />
-                    Right now · Pacific Time
-                </p>
-                <p
-                    className="mt-3 font-mono text-5xl font-bold tabular-nums sm:text-6xl"
-                    style={{
-                        color: "var(--mc-aqua)",
-                        textShadow: "0 0 24px rgba(85,255,255,0.45)",
-                    }}
-                    suppressHydrationWarning
-                >
-                    {timeMain}
-                    <span className="ml-2 text-xl text-muted-foreground sm:text-2xl">
-                        {meridiem}
-                    </span>
-                </p>
-                <p
-                    className="mt-3 font-minecraft text-lg font-bold leading-tight"
-                    style={{
-                        color: "var(--mc-gold)",
-                        textShadow: "0 0 14px rgba(255,170,0,0.4)",
-                    }}
-                    suppressHydrationWarning
-                >
-                    {dateFmt.format(now)}
-                </p>
-                <p className="mt-2 font-mono text-[11px] uppercase tracking-wider text-muted-foreground">
-                    Day{" "}
-                    <span style={{ color: "var(--mc-aqua)" }}>
-                        {c.dayOfYear}
-                    </span>{" "}
-                    of {c.daysInYear} ·{" "}
-                    <span style={{ color: "var(--mc-green)" }}>
-                        {toLaunch.toLocaleString("en-US")}
-                    </span>{" "}
-                    days to launch
-                </p>
-
-                <div className="mt-4 grid grid-cols-2 gap-3 border-t border-white/10 pt-4">
-                    <div>
-                        <p
-                            className="font-mono text-2xl font-bold tabular-nums"
-                            style={{ color: "var(--mc-gold)" }}
-                        >
-                            <NumberTicker value={total} />
-                        </p>
-                        <p className="font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
-                            milestones planned
-                        </p>
-                    </div>
-                    <div>
-                        <p
-                            className="font-mono text-2xl font-bold tabular-nums"
-                            style={{ color: "var(--mc-green)" }}
-                        >
-                            <NumberTicker value={done} />
-                        </p>
-                        <p className="font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
-                            already done
-                        </p>
-                    </div>
+        <div className="cm-split" style={{ marginTop: "var(--cm-s5)", gridTemplateColumns: "1fr 1.4fr" }}>
+            <div className="cm-panel tick live">
+                <div className="cm-hbar"><span className="live">Right now</span><span>Pacific time</span></div>
+                <div className="cm-body-pad" style={{ display: "grid", gap: 10 }}>
+                    <p className="cm-num" style={{ margin: 0, fontSize: 44, lineHeight: 1, color: "var(--cm-cyan)" }} suppressHydrationWarning>
+                        {timeMain}
+                        <span className="cm-lbl" style={{ marginLeft: 8 }}>{meridiem}</span>
+                    </p>
+                    <p style={{ margin: 0, font: "700 17px/1.2 var(--cm-display)" }} suppressHydrationWarning>{dateFmt.format(now)}</p>
+                    <p className="cm-coord" style={{ margin: 0 }}>
+                        Day {c.dayOfYear} of {c.daysInYear} · {toLaunch.toLocaleString("en-US")} days to launch
+                    </p>
                 </div>
+                <dl className="cm-kv two" style={{ borderTop: "1px solid var(--cm-hair)" }}>
+                    <div><dt>Milestones planned</dt><dd><CountUp value={total} /></dd></div>
+                    <div><dt>Already done</dt><dd style={{ color: "var(--cm-good)" }}><CountUp value={done} /></dd></div>
+                </dl>
             </div>
-
-            {/* Progress tickers */}
-            <div
-                className="space-y-4 rounded-2xl border p-5 lg:col-span-3"
-                style={{
-                    borderColor:
-                        "color-mix(in oklch, var(--foreground) 14%, transparent)",
-                    background:
-                        "linear-gradient(140deg, color-mix(in oklch, var(--mc-light-purple) 8%, var(--card)), var(--card) 70%)",
-                }}
-            >
-                <GlassBar
-                    label="Today"
-                    value={c.dayFrac}
-                    decimals={1}
-                    from="#ffff55"
-                    to="#ffaa00"
-                    sub={`${hLeft}h ${mLeft}m left today`}
-                />
-                <GlassBar
-                    label={MONTHS[c.month - 1]}
-                    value={c.monthFrac}
-                    decimals={2}
-                    from="#55ff55"
-                    to="#55ffff"
-                    sub={`${daysLeftMonth} days left in ${MONTHS[c.month - 1]}`}
-                />
-                <GlassBar
-                    label={String(c.year)}
-                    value={c.yearFrac}
-                    decimals={2}
-                    from="#5555ff"
-                    to="#ff55ff"
-                    sub={`${daysLeftYear} days left in ${c.year}`}
-                />
-                <GlassBar
-                    label="The Whole Journey"
-                    value={c.journeyFrac}
-                    decimals={2}
-                    from="#ff5555"
-                    to="#55ffff"
-                    gradient="linear-gradient(90deg,#ff5555,#ffaa00,#55ff55,#55ffff,#ff55ff)"
-                    sub={`${toLaunch.toLocaleString("en-US")} days until May 31, 2031`}
-                />
+            <div className="cm-panel">
+                <div className="cm-hbar"><span>Progress gauges</span><span>Live</span></div>
+                <div className="cm-body-pad" style={{ display: "grid", gap: 18 }}>
+                    <Gauge label="Today" value={c.dayFrac} decimals={1} sub={`${hLeft}h ${mLeft}m left today`} />
+                    <Gauge label={MONTHS[c.month - 1]} value={c.monthFrac} decimals={2} sub={`${daysLeftMonth} days left in ${MONTHS[c.month - 1]}`} />
+                    <Gauge label={String(c.year)} value={c.yearFrac} decimals={2} sub={`${daysLeftYear} days left in ${c.year}`} />
+                    <Gauge label="The whole journey" value={c.journeyFrac} decimals={2} sub={`${toLaunch.toLocaleString("en-US")} days until May 31, 2031`} />
+                </div>
             </div>
         </div>
     );
@@ -926,30 +602,12 @@ export function JourneyTracker({
 }) {
     return (
         <div>
-            <div
-                className="rounded-2xl border p-5 sm:p-6"
-                style={{
-                    borderColor:
-                        "color-mix(in oklch, var(--mc-green) 40%, transparent)",
-                    background:
-                        "linear-gradient(140deg, color-mix(in oklch, var(--mc-green) 12%, var(--card)), var(--card) 60%)",
-                }}
-            >
-                <div className="flex flex-wrap items-baseline justify-between gap-2">
-                    <h3
-                        className="font-minecraft text-xl font-bold"
-                        style={{
-                            color: "var(--mc-green)",
-                            textShadow: "0 0 16px rgba(85,255,85,0.35)",
-                        }}
-                    >
-                        The Whole Journey
-                    </h3>
-                    <span className="font-mono text-xs text-muted-foreground">
-                        Sept 2026 → May 2031 · hover a marker for details
-                    </span>
+            <div className="cm-panel tick">
+                <div className="cm-hbar"><span>The whole journey</span><span>Sept 2026 → May 2031</span></div>
+                <div className="cm-body-pad">
+                    <p className="cm-coord" style={{ margin: 0 }}>Hover a marker for details.</p>
+                    <Axis markers={markers} bands={bands} nowMs={nowMs} />
                 </div>
-                <Axis markers={markers} bands={bands} nowMs={nowMs} />
             </div>
             <LiveTickers nowMs={nowMs} total={total} done={done} />
         </div>

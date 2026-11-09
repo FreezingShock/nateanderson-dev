@@ -1,7 +1,4 @@
 import Link from "next/link";
-import { ArrowRight, Star } from "lucide-react";
-import { GlowCard } from "@/components/glow-card";
-import { SectionLabel } from "@/components/section-label";
 import {
     JourneyTracker,
     type JourneyBand,
@@ -25,7 +22,6 @@ const COUNTDOWNS: Countdown[] = [
         label: "AP Exam Window",
         sublabel: "May 3 – 13, 2027",
         date: KEY_DATES.apStart,
-        color: "var(--mc-gold)",
         icon: "Award",
         special: true,
     },
@@ -33,7 +29,6 @@ const COUNTDOWNS: Countdown[] = [
         label: "Graduation Day",
         sublabel: "June 10, 2027",
         date: KEY_DATES.graduation,
-        color: "var(--mc-yellow)",
         icon: "GraduationCap",
         special: true,
     },
@@ -41,7 +36,6 @@ const COUNTDOWNS: Countdown[] = [
         label: "Santa Monica College",
         sublabel: "Fall 2027",
         date: "2027-09-01",
-        color: "var(--mc-dark-aqua)",
         icon: "Rocket",
     },
 ];
@@ -78,7 +72,7 @@ function buildMarkers(nowMs: number): JourneyMarker[] {
             description:
                 "The point the whole plan builds toward: launching a sustainable infrastructure and urban design business or project, backed by an engineering degree, an executed portfolio, athletic leadership and a network of mentors.",
             tags: ["Founding", "Sustainability"],
-            color: "var(--mc-gold)",
+            color: "var(--cm-amber)",
             categoryLabel: "Finish line",
             status: "upcoming",
             special: true,
@@ -105,85 +99,31 @@ export function TimelineOverview({ nowMs }: { nowMs: number }) {
         }));
 
     return (
-        <div className="space-y-8">
-            <div>
-                <SectionLabel accent="var(--mc-gold)" symbol="flag">
-                    The Big Dates
-                </SectionLabel>
-                <p className="mt-3 max-w-2xl text-sm text-muted-foreground sm:text-base">
-                    The fixed points everything else is built around, counting
-                    down live.
-                </p>
-                <div className="mt-5">
-                    <TimelineCountdowns items={COUNTDOWNS} nowMs={nowMs} />
+        <div style={{ display: "grid", gap: "var(--cm-s7)" }}>
+            <div style={{ display: "grid", gap: 14 }}>
+                <div>
+                    <span className="cm-lbl">The big dates</span>
+                    <p className="cm-body" style={{ margin: "8px 0 0" }}>
+                        The fixed points everything else is built around, counting down live.
+                    </p>
                 </div>
+                <TimelineCountdowns items={COUNTDOWNS} nowMs={nowMs} />
             </div>
 
-            {/* The whole journey: interactive year/month axis with hoverable
-                milestones, plus live clock and progress tickers. */}
-            <JourneyTracker
-                markers={markers}
-                bands={bands}
-                nowMs={nowMs}
-                total={total}
-                done={done}
-            />
+            {/* The whole journey: interactive year/month axis with hoverable milestones, plus live clock and progress gauges. */}
+            <JourneyTracker markers={markers} bands={bands} nowMs={nowMs} total={total} done={done} />
 
             {/* Up next */}
-            <div>
-                <h3
-                    className="font-minecraft text-lg font-bold"
-                    style={{ color: "var(--mc-aqua)" }}
-                >
-                    Up Next
-                </h3>
-                <div className="mt-4 grid gap-3 sm:grid-cols-2">
-                    {upNext.map((e) => {
-                        const c = e.special
-                            ? "var(--mc-gold)"
-                            : CATEGORIES[e.category].color;
-                        return (
-                            <Link
-                                key={e.id}
-                                href={`#${e.id}`}
-                                className="group block"
-                            >
-                                <GlowCard
-                                    color={c}
-                                    className="flex items-center gap-3 p-4"
-                                >
-                                    <span
-                                        className="size-2.5 shrink-0 rounded-full"
-                                        style={{
-                                            backgroundColor: c,
-                                            boxShadow: `0 0 10px ${c}`,
-                                        }}
-                                    />
-                                    <span className="min-w-0 flex-1">
-                                        <span
-                                            className="block font-mono text-[10px] font-semibold uppercase tracking-wider"
-                                            style={{ color: c }}
-                                        >
-                                            {e.when}
-                                        </span>
-                                        <span className="mt-0.5 flex items-center gap-1.5 text-sm font-semibold leading-tight">
-                                            {e.special && (
-                                                <Star
-                                                    className="size-3.5 shrink-0"
-                                                    style={{ color: "#ffaa00" }}
-                                                    fill="#ffaa00"
-                                                />
-                                            )}
-                                            <span className="truncate">
-                                                {e.title}
-                                            </span>
-                                        </span>
-                                    </span>
-                                    <ArrowRight className="size-4 shrink-0 text-muted-foreground transition-transform duration-200 group-hover:translate-x-1" />
-                                </GlowCard>
-                            </Link>
-                        );
-                    })}
+            <div style={{ display: "grid", gap: 14 }}>
+                <span className="cm-lbl">Up next</span>
+                <div className="cm-grid" style={{ gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))" }}>
+                    {upNext.map((e) => (
+                        <Link key={e.id} href={`#${e.id}`} className="cm-card link">
+                            <span className={`cm-state ${e.special ? "live" : ""}`}>{e.when}</span>
+                            <b>{e.title}</b>
+                            <span className="st">{CATEGORIES[e.category].label}{e.special ? " / Milestone" : ""} →</span>
+                        </Link>
+                    ))}
                 </div>
             </div>
         </div>

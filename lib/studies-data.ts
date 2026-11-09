@@ -22,9 +22,9 @@ export type StudyArea = "design" | "stem" | "civics";
 
 export const STUDY_AREAS: Record<StudyArea, { label: string; color: string }> =
     {
-        design: { label: "Design & Art", color: "var(--mc-light-purple)" },
-        stem: { label: "Science & Math", color: "var(--mc-green)" },
-        civics: { label: "Civics & Speaking", color: "var(--mc-aqua)" },
+        design: { label: "Design & Art", color: "var(--cm-violet)" },
+        stem: { label: "Science & Math", color: "var(--cm-good)" },
+        civics: { label: "Civics & Speaking", color: "var(--cm-cyan)" },
     };
 
 export interface Course {
@@ -61,7 +61,7 @@ export const courses: Course[] = [
         slug: "senior-project",
         title: "Senior Project",
         area: "design",
-        color: "var(--mc-gold)",
+        color: "var(--cm-amber)",
         icon: "GraduationCap",
         description:
             "Landscape design and outdoor space transformation. Exploring how thoughtful design revitalizes neglected public spaces through evidence-based methodology.",
@@ -97,7 +97,7 @@ export const courses: Course[] = [
         slug: "ap-statistics",
         title: "AP Statistics",
         area: "stem",
-        color: "var(--mc-red)",
+        color: "var(--cm-alert)",
         icon: "PieChart",
         description:
             "Statistical analysis, probability, and data interpretation. Mastering quantitative reasoning for research and decision-making.",
@@ -131,7 +131,7 @@ export const courses: Course[] = [
         slug: "ap-biology",
         title: "AP Biology",
         area: "stem",
-        color: "var(--mc-green)",
+        color: "var(--cm-good)",
         icon: "Microscope",
         description:
             "Cellular and organismal biology, ecology, and genetics. Building foundational understanding of living systems and environmental interconnectedness.",
@@ -165,7 +165,7 @@ export const courses: Course[] = [
         slug: "intro-communications",
         title: "Intro to Communications & Public Speaking",
         area: "civics",
-        color: "var(--mc-aqua)",
+        color: "var(--cm-cyan)",
         icon: "Mic",
         description:
             "Communication theory, interpersonal dynamics, and public speaking. Developing articulate presentation and persuasive messaging skills.",
@@ -204,7 +204,7 @@ export const courses: Course[] = [
         slug: "ap-studio-art",
         title: "AP 2-D Studio Art",
         area: "design",
-        color: "var(--mc-light-purple)",
+        color: "var(--cm-violet)",
         icon: "Palette",
         description:
             "Visual composition, design principles, and artistic expression. Developing a portfolio demonstrating conceptual depth and technical mastery.",
@@ -239,7 +239,7 @@ export const courses: Course[] = [
         slug: "ap-government",
         title: "AP Government & Politics",
         area: "civics",
-        color: "var(--mc-blue)",
+        color: "var(--cm-cyan)",
         icon: "Scale",
         description:
             "Constitutional law, political systems, and Supreme Court case studies. Understanding the mechanics of American democracy and civic governance.",
@@ -302,7 +302,7 @@ export const pathway: PathwayStage[] = [
         phaseId: "high-school",
         title: "Senior Year",
         blurb: "Six interdisciplinary classes and the Senior Project.",
-        color: "var(--mc-blue)",
+        color: "var(--cm-cyan)",
         icon: "BookOpen",
         // The classes themselves are the explorer above; this stage just
         // anchors the pathway.
@@ -312,12 +312,12 @@ export const pathway: PathwayStage[] = [
         phaseId: "smc",
         title: "Santa Monica College",
         blurb: "The transfer pathway: STEM prerequisites while racing.",
-        color: "var(--mc-aqua)",
+        color: "var(--cm-cyan)",
         icon: "Compass",
         programs: [
             {
                 title: "Pre-Engineering Core",
-                color: "var(--mc-aqua)",
+                color: "var(--cm-cyan)",
                 icon: "GraduationCap",
                 description:
                     "Foundational STEM coursework for the transfer: the core engineering prerequisites, completed while competing as a recruited cross-country athlete.",
@@ -332,7 +332,7 @@ export const pathway: PathwayStage[] = [
             },
             {
                 title: "General Education",
-                color: "var(--mc-yellow)",
+                color: "var(--cm-amber)",
                 icon: "BookOpen",
                 description:
                     "Breadth requirements and electives, chosen to deepen systems thinking and connect to environmental engineering philosophy.",
@@ -350,12 +350,12 @@ export const pathway: PathwayStage[] = [
         phaseId: "cal-poly",
         title: "Cal Poly Pomona",
         blurb: "Civil Engineering, Environmental specialization.",
-        color: "var(--mc-green)",
+        color: "var(--cm-good)",
         icon: "Leaf",
         programs: [
             {
                 title: "Civil Engineering",
-                color: "var(--mc-green)",
+                color: "var(--cm-good)",
                 icon: "GraduationCap",
                 description:
                     "Environmental Engineering specialization, completed in two years after the SMC transfer, capped by a capstone applying systems thinking to real infrastructure.",
@@ -370,7 +370,7 @@ export const pathway: PathwayStage[] = [
             },
             {
                 title: "Professional Development",
-                color: "var(--mc-gold)",
+                color: "var(--cm-amber)",
                 icon: "Briefcase",
                 description:
                     "Internships, industry projects and networking with civil engineering firms focused on environmental design.",
@@ -391,7 +391,7 @@ export const pathway: PathwayStage[] = [
 export const personalStudies: Program[] = [
     {
         title: "Philosophy & Existentialism",
-        color: "color-mix(in oklch, var(--mc-dark-purple) 60%, white)",
+        color: "color-mix(in oklch, var(--cm-violet) 60%, white)",
         icon: "BookOpen",
         description:
             "Independent study of Kierkegaard, Sartre and existential philosophy. How do authentic philosophical frameworks inform design practice and ethical decision-making?",
@@ -400,7 +400,7 @@ export const personalStudies: Program[] = [
     },
     {
         title: "Sustainable Systems Research",
-        color: "var(--mc-green)",
+        color: "var(--cm-good)",
         icon: "Leaf",
         description:
             "Climate adaptation strategies, circular design and regenerative systems, connecting personal research to the Senior Project and future engineering work.",
@@ -409,7 +409,7 @@ export const personalStudies: Program[] = [
     },
     {
         title: "Design & Creativity Practice",
-        color: "var(--mc-gold)",
+        color: "var(--cm-amber)",
         icon: "Palette",
         description:
             "Sketching, visual thinking and design iteration: daily creative practice connecting Studio Art to engineering design thinking.",
@@ -431,10 +431,10 @@ export const READING_STATUS: Record<
     ReadingStatus,
     { label: string; color: string }
 > = {
-    reading: { label: "Reading now", color: "var(--mc-green)" },
-    next: { label: "Up next", color: "var(--mc-aqua)" },
-    planned: { label: "Planned", color: "var(--mc-yellow)" },
-    reference: { label: "Reference", color: "var(--mc-light-purple)" },
+    reading: { label: "Reading now", color: "var(--cm-good)" },
+    next: { label: "Up next", color: "var(--cm-cyan)" },
+    planned: { label: "Planned", color: "var(--cm-amber)" },
+    reference: { label: "Reference", color: "var(--cm-violet)" },
 };
 
 export const readingQueue: ReadingItem[] = [
@@ -486,7 +486,7 @@ export const toolRoadmap: SkillStage[] = [
     {
         label: "Now",
         when: "2026 – 2027",
-        color: "var(--mc-gold)",
+        color: "var(--cm-amber)",
         icon: "Palette",
         skills: [
             "SketchUp basics",
@@ -497,7 +497,7 @@ export const toolRoadmap: SkillStage[] = [
     {
         label: "SMC years",
         when: "2027 – 2029",
-        color: "var(--mc-aqua)",
+        color: "var(--cm-cyan)",
         icon: "Ruler",
         skills: [
             "Revit",
@@ -509,7 +509,7 @@ export const toolRoadmap: SkillStage[] = [
     {
         label: "Pomona years",
         when: "2029 – 2031",
-        color: "var(--mc-green)",
+        color: "var(--cm-good)",
         icon: "Leaf",
         skills: [
             "Civil 3D",

@@ -14,11 +14,11 @@ import {
 // Review button back into each. Rounds you skipped show as skipped (0).
 
 const RATING_COLOR: Record<string, string> = {
-    Perfect: "var(--mc-yellow)",
-    Great: "var(--mc-green)",
-    Good: "var(--mc-aqua)",
-    "Getting there": "var(--mc-gold)",
-    "Keep practicing": "var(--mc-red)",
+    Perfect: "var(--cm-amber)",
+    Great: "var(--cm-good)",
+    Good: "var(--cm-cyan)",
+    "Getting there": "var(--cm-amber)",
+    "Keep practicing": "var(--cm-alert)",
 };
 
 function CountUp({ to }: { to: number }) {
@@ -60,7 +60,7 @@ function RoundCard({
 }) {
     return (
         <div
-            className="og-row flex items-center gap-3 rounded-xl border p-3 text-left"
+            className="og-row flex items-center gap-3 rounded-[2px] border p-3 text-left"
             style={{
                 animationDelay: `${delay}s`,
                 borderColor: `color-mix(in oklch, ${color} ${muted ? 20 : 45}%, transparent)`,
@@ -68,7 +68,7 @@ function RoundCard({
             }}
         >
             <span
-                className="grid size-10 shrink-0 place-items-center rounded-lg"
+                className="grid size-10 shrink-0 place-items-center rounded-[2px]"
                 style={{
                     color,
                     backgroundColor: `color-mix(in oklch, ${color} 16%, transparent)`,
@@ -78,7 +78,7 @@ function RoundCard({
             </span>
             <span className="min-w-0 flex-1">
                 <span
-                    className="block font-minecraft text-sm font-bold"
+                    className="block font-sans text-sm font-bold"
                     style={{ color }}
                 >
                     {title}
@@ -125,7 +125,7 @@ export function GameSummary({
     footer: ReactNode;
 }) {
     const { r1, r2, r3 } = results;
-    const ratingColor = RATING_COLOR[score.rating] ?? "var(--mc-aqua)";
+    const ratingColor = RATING_COLOR[score.rating] ?? "var(--cm-cyan)";
 
     const r1Detail =
         r1.status === "won"
@@ -156,7 +156,7 @@ export function GameSummary({
                     height={36}
                     className="h-7 w-auto rounded-[3px] shadow"
                 />
-                <h3 className="font-minecraft text-xl font-bold">{answer.n}</h3>
+                <h3 className="font-sans text-xl font-bold">{answer.n}</h3>
             </div>
 
             <div className="mt-5">
@@ -164,14 +164,13 @@ export function GameSummary({
                     className="font-mono text-6xl font-bold tabular-nums"
                     style={{
                         color: ratingColor,
-                        textShadow: `0 0 28px color-mix(in oklch, ${ratingColor} 60%, transparent)`,
                     }}
                 >
                     <CountUp to={score.pct} />
                     <span className="text-3xl">%</span>
                 </p>
                 <p
-                    className="og-hint mt-1 font-minecraft text-lg font-bold"
+                    className="og-hint mt-1 font-sans text-lg font-bold"
                     style={{ color: ratingColor, animationDelay: "1s" }}
                 >
                     {score.rating}
@@ -179,13 +178,12 @@ export function GameSummary({
                 <p className="font-mono text-xs text-muted-foreground">
                     {score.total} of {score.max} points
                 </p>
-                <div className="mx-auto mt-3 h-2.5 max-w-xs overflow-hidden rounded-full bg-foreground/10">
+                <div className="mx-auto mt-3 h-2.5 max-w-xs overflow-hidden rounded-[2px] bg-foreground/10">
                     <div
-                        className="h-full rounded-full transition-[width] duration-[1200ms] ease-out"
+                        className="h-full rounded-[2px] transition-[width] duration-[1200ms] ease-out"
                         style={{
                             width: `${score.pct}%`,
                             backgroundColor: ratingColor,
-                            boxShadow: `0 0 12px ${ratingColor}`,
                         }}
                     />
                 </div>
@@ -198,7 +196,7 @@ export function GameSummary({
                     detail={r1Detail}
                     points={score.r1}
                     max={50}
-                    color="var(--mc-aqua)"
+                    color="var(--cm-cyan)"
                     delay={0.1}
                     onReview={() => goto(1)}
                 />
@@ -209,13 +207,13 @@ export function GameSummary({
                         detail={r2Detail}
                         points={score.r2}
                         max={30}
-                        color="var(--mc-yellow)"
+                        color="var(--cm-amber)"
                         muted={!r2.played}
                         delay={0.25}
                         onReview={() => goto(2)}
                     />
                 ) : (
-                    <p className="og-row rounded-xl border border-dashed border-border/60 p-2.5 text-xs text-muted-foreground" style={{ animationDelay: "0.25s" }}>
+                    <p className="og-row rounded-[2px] border border-dashed border-border/60 p-2.5 text-xs text-muted-foreground" style={{ animationDelay: "0.25s" }}>
                         Round 2: {r2Detail}. The score is out of {score.max}.
                     </p>
                 )}
@@ -225,7 +223,7 @@ export function GameSummary({
                     detail={r3Detail}
                     points={score.r3}
                     max={20}
-                    color="var(--mc-green)"
+                    color="var(--cm-good)"
                     muted={!r3.played}
                     delay={0.4}
                     onReview={() => goto(3)}

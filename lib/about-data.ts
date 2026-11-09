@@ -27,11 +27,11 @@ export const SKILL_CATEGORIES: Record<
     SkillCategory,
     { label: string; color: string }
 > = {
-    gamedev: { label: "Game Dev", color: "var(--mc-gold)" },
-    design: { label: "Design", color: "var(--mc-aqua)" },
-    web: { label: "Web Dev", color: "var(--mc-blue)" },
-    engineering: { label: "Engineering", color: "var(--mc-green)" },
-    leadership: { label: "Leadership", color: "var(--mc-light-purple)" },
+    gamedev: { label: "Game Dev", color: "var(--cm-amber)" },
+    design: { label: "Design", color: "var(--cm-cyan)" },
+    web: { label: "Web Dev", color: "var(--cm-cyan)" },
+    engineering: { label: "Engineering", color: "var(--cm-good)" },
+    leadership: { label: "Leadership", color: "var(--cm-violet)" },
 };
 
 export interface Skill {
@@ -44,11 +44,11 @@ export interface Skill {
 }
 
 export const LEVELS = [
-    { label: "Learning", color: "var(--mc-red)" },
-    { label: "Intermediate", color: "var(--mc-gold)" },
-    { label: "Proficient", color: "var(--mc-yellow)" },
-    { label: "Advanced", color: "var(--mc-green)" },
-    { label: "Expert", color: "var(--mc-aqua)" },
+    { label: "Learning", color: "var(--cm-alert)" },
+    { label: "Intermediate", color: "var(--cm-amber)" },
+    { label: "Proficient", color: "var(--cm-amber)" },
+    { label: "Advanced", color: "var(--cm-good)" },
+    { label: "Expert", color: "var(--cm-cyan)" },
 ];
 
 export const skills: Skill[] = [
@@ -191,7 +191,7 @@ export const gameSystems: GameSystem[] = [
     {
         id: "menu",
         name: "Ascension Menu",
-        color: "var(--mc-gold)",
+        color: "var(--cm-amber)",
         icon: "Layers",
         priority: 1,
         description:
@@ -218,7 +218,7 @@ export const gameSystems: GameSystem[] = [
     {
         id: "stats",
         name: "Stat System",
-        color: "var(--mc-green)",
+        color: "var(--cm-good)",
         icon: "Zap",
         priority: 2,
         description:
@@ -242,7 +242,7 @@ export const gameSystems: GameSystem[] = [
     {
         id: "attributes",
         name: "Attribute System",
-        color: "var(--mc-blue)",
+        color: "var(--cm-cyan)",
         icon: "Settings",
         priority: 3,
         description:
@@ -266,7 +266,7 @@ export const gameSystems: GameSystem[] = [
     {
         id: "progression",
         name: "Progression Loop",
-        color: "var(--mc-light-purple)",
+        color: "var(--cm-violet)",
         icon: "Users",
         description:
             "The engagement mechanics that tie the other three together and drive playtime.",
@@ -297,25 +297,25 @@ export const gameFacts = [
         value: 100,
         suffix: "+",
         label: "interdependent attributes",
-        color: "var(--mc-blue)",
+        color: "var(--cm-cyan)",
     },
     {
         value: 10,
         suffix: "",
         label: "menu types in one hub",
-        color: "var(--mc-gold)",
+        color: "var(--cm-amber)",
     },
     {
         value: 5,
         suffix: "",
         label: "combo stages, 1.1x to 1.5x",
-        color: "var(--mc-green)",
+        color: "var(--cm-good)",
     },
     {
         value: 3,
         suffix: "",
         label: "core systems to build",
-        color: "var(--mc-light-purple)",
+        color: "var(--cm-violet)",
     },
 ];
 
@@ -324,13 +324,13 @@ export const gameFacts = [
 export const beliefs = [
     {
         title: "Agnosticism",
-        color: "var(--mc-aqua)",
+        color: "var(--cm-cyan)",
         description:
             "We can't know ultimate truths, but staying open to questioning matters. It shapes an empirical, systems-thinking approach.",
     },
     {
         title: "Egg Theory",
-        color: "var(--mc-aqua)",
+        color: "var(--cm-cyan)",
         description:
             "We are one consciousness experiencing itself subjectively. It informs a humane, interconnected worldview in design.",
     },
@@ -340,25 +340,25 @@ export const beliefs = [
 export const designPrinciples = [
     {
         title: "Authenticity over trend",
-        color: "var(--mc-light-purple)",
+        color: "var(--cm-violet)",
         description:
             "Solve what's actually broken, not what looks cool. If a space is empty because it's uncomfortable, adding benches and calling it fixed isn't a solution.",
     },
     {
         title: "Ethical design choices",
-        color: "var(--mc-green)",
+        color: "var(--cm-good)",
         description:
             "Every choice has consequences, and I own them: material impact, who can actually use the space, and who will maintain it.",
     },
     {
         title: "Constraints as forcing functions",
-        color: "var(--mc-gold)",
+        color: "var(--cm-amber)",
         description:
             "Budget, land and climate limits don't cap creativity. They force honest solutions. Poor soil? Design for it.",
     },
     {
         title: "Community choice matters",
-        color: "var(--mc-aqua)",
+        color: "var(--cm-cyan)",
         description:
             "Design shapes what's possible: where the paths go, where people gather. If the space ends up empty, the design failed, however it looks.",
     },
@@ -378,7 +378,7 @@ export interface BuildingItem {
 export const building: BuildingItem[] = [
     {
         title: "Fractured Islands: Ascension",
-        color: "var(--mc-light-purple)",
+        color: "var(--cm-violet)",
         status: "In development",
         description:
             "A solo-built Roblox incremental RPG in active development: stat systems, attribute mechanics and engagement loops.",
@@ -387,7 +387,7 @@ export const building: BuildingItem[] = [
     },
     {
         title: "This Website",
-        color: "var(--mc-aqua)",
+        color: "var(--cm-cyan)",
         status: "Always building",
         description:
             "A living project: renovation studies, design work and creations across mediums, changing in public with every commit.",
@@ -396,7 +396,7 @@ export const building: BuildingItem[] = [
     },
     {
         title: "Engineering Foundation",
-        color: "var(--mc-green)",
+        color: "var(--cm-good)",
         status: "Senior year",
         description:
             "The college pathway through Santa Monica College to Cal Poly Pomona, with an environmental specialization and a capstone focus.",
@@ -408,10 +408,10 @@ export const building: BuildingItem[] = [
 // ----------------------------------------------------------------- running
 
 export const runningStats = [
-    { label: "XC 3-mile PR", value: "15:36", color: "var(--mc-gold)" },
-    { label: "1600m", value: "4:36", color: "var(--mc-green)" },
-    { label: "Years running", value: "4", color: "var(--mc-aqua)" },
-    { label: "Role", value: "Captain", color: "var(--mc-light-purple)" },
+    { label: "XC 3-mile PR", value: "15:36", color: "var(--cm-amber)" },
+    { label: "1600m", value: "4:36", color: "var(--cm-good)" },
+    { label: "Years running", value: "4", color: "var(--cm-cyan)" },
+    { label: "Role", value: "Captain", color: "var(--cm-violet)" },
 ];
 
 export const runningPlan = [
@@ -419,28 +419,28 @@ export const runningPlan = [
         when: "Now",
         title: "Captain of Cross Country & Track",
         detail: "Leading the team through senior year.",
-        color: "var(--mc-light-purple)",
+        color: "var(--cm-violet)",
         href: "/timeline#personal-5",
     },
     {
         when: "Fall 2027",
         title: "Recruited athlete at SMC",
         detail: "Racing for Santa Monica College while finishing the STEM prerequisites.",
-        color: "var(--mc-green)",
+        color: "var(--cm-good)",
         href: "/timeline#smc-2",
     },
     {
         when: "2028 – 2029",
         title: "Captain goal at SMC",
         detail: "Stepping into a leadership role on the team.",
-        color: "var(--mc-aqua)",
+        color: "var(--cm-cyan)",
         href: "/timeline#smc-8",
     },
     {
         when: "2029 – 2031",
         title: "Captain goal at Cal Poly Pomona",
         detail: "Carrying the leadership thread through the last two years.",
-        color: "var(--mc-gold)",
+        color: "var(--cm-amber)",
         href: "/timeline#cpp-2",
     },
 ];

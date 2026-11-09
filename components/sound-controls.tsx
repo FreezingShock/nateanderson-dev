@@ -47,7 +47,7 @@ export function SoundPanel({ game = false }: { game?: boolean }) {
                 className="flex w-full items-center justify-between rounded-lg border border-white/10 px-3 py-2 font-rubik text-xs"
             >
                 Sound effects
-                <span className="rounded-full px-2 py-0.5 text-[10px] font-semibold" style={{ backgroundColor: p.on ? "color-mix(in oklch, var(--mc-green) 20%, transparent)" : "color-mix(in oklch, var(--muted-foreground) 20%, transparent)", color: p.on ? "var(--mc-green)" : undefined }}>
+                <span className="rounded-full px-2 py-0.5 text-[10px] font-semibold" style={{ backgroundColor: p.on ? "color-mix(in oklch, var(--cm-good) 20%, transparent)" : "color-mix(in oklch, var(--muted-foreground) 20%, transparent)", color: p.on ? "var(--cm-good)" : undefined }}>
                     {p.on ? "ON" : "OFF"}
                 </span>
             </button>
@@ -64,7 +64,7 @@ export function SoundPanel({ game = false }: { game?: boolean }) {
                         aria-label={`${r.label} volume`}
                         onChange={(e) => set({ [r.k]: Number(e.target.value) / 100 })}
                         onPointerUp={() => sfx(r.test)}
-                        className="h-1.5 min-w-0 flex-1 cursor-pointer accent-[var(--mc-aqua)]"
+                        className="h-1.5 min-w-0 flex-1 cursor-pointer accent-[var(--cm-cyan)]"
                     />
                     <span className="w-9 shrink-0 text-right tabular-nums text-muted-foreground">{Math.round(p[r.k] * 100)}%</span>
                 </label>
@@ -82,7 +82,7 @@ export function SoundPanel({ game = false }: { game?: boolean }) {
                             data-snd="off"
                             aria-label="Mute the big button sound after this many seconds of continuous clicking"
                             onChange={(e) => set({ clickMute: Number(e.target.value) })}
-                            className="h-1.5 min-w-0 flex-1 cursor-pointer accent-[var(--mc-aqua)]"
+                            className="h-1.5 min-w-0 flex-1 cursor-pointer accent-[var(--cm-cyan)]"
                         />
                         <span className="w-14 shrink-0 text-right tabular-nums text-muted-foreground">{p.clickMute === 0 ? "Never" : `${p.clickMute}s`}</span>
                     </label>

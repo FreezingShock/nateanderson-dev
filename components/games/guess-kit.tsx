@@ -10,7 +10,6 @@ import {
     type RefObject,
 } from "react";
 import { ArrowUp, Dices, Globe2, PartyPopper } from "lucide-react";
-import { GlowCard } from "@/components/glow-card";
 import { cn } from "@/lib/utils";
 import {
     DIFFICULTIES,
@@ -33,7 +32,7 @@ import {
 // (distance, arrow, closeness), confetti burst, stats and filter panels,
 // country search box, and localStorage helpers.
 
-export const COLOR = "var(--mc-aqua)";
+export const COLOR = "var(--cm-cyan)";
 
 // ---- Keyboard ----
 //
@@ -161,18 +160,9 @@ export function KeyLegend() {
     );
 }
 
-/** Frosted-glass panel behind a whole game (heavy blur, mostly opaque tint). */
-export const GLASS_CLASS =
-    "relative mx-auto max-w-lg overflow-hidden rounded-3xl border border-white/15 p-4 shadow-2xl sm:p-6";
-export const GLASS_STYLE: CSSProperties = {
-    backdropFilter: "blur(28px) saturate(1.5)",
-    WebkitBackdropFilter: "blur(28px) saturate(1.5)",
-    backgroundColor: "color-mix(in oklch, var(--background) 80%, transparent)",
-    backgroundImage:
-        "linear-gradient(135deg, rgba(255,255,255,0.12), rgba(255,255,255,0.03) 35%, transparent 60%)",
-    boxShadow:
-        "0 24px 60px -20px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.22), inset 0 0 0 1px rgba(255,255,255,0.05)",
-};
+/** Camino panel behind a whole game. */
+export const GLASS_CLASS = "cm-panel tick relative mx-auto max-w-lg p-4 sm:p-6";
+export const GLASS_STYLE: CSSProperties = {};
 
 export type Mode = "daily" | "unlimited";
 export type Status = "playing" | "won" | "lost";
@@ -268,7 +258,7 @@ export function GuessRow({
     return (
         <div
             className={cn(
-                "grid grid-cols-[1fr_auto_2.25rem_3.25rem] items-center gap-2 rounded-xl border px-3 py-1.5 text-sm",
+                "grid grid-cols-[1fr_auto_2.25rem_3.25rem] items-center gap-2 rounded-[2px] border px-3 py-1.5 text-sm",
                 fresh ? "og-row" : ""
             )}
             style={{
@@ -341,11 +331,11 @@ export function Burst() {
                     bx: `${Math.cos(a) * r}px`,
                     by: `${Math.sin(a) * r}px`,
                     color: [
-                        "var(--mc-aqua)",
-                        "var(--mc-gold)",
-                        "var(--mc-green)",
-                        "var(--mc-light-purple)",
-                        "var(--mc-yellow)",
+                        "var(--cm-cyan)",
+                        "var(--cm-amber)",
+                        "var(--cm-good)",
+                        "var(--cm-violet)",
+                        "var(--cm-amber)",
                     ][i % 5],
                     delay: `${Math.random() * 0.15}s`,
                 };
@@ -392,7 +382,7 @@ export function FilterPanel({
 }) {
     const toggle = toggleIn;
     return (
-            <div className="mb-3 space-y-2 rounded-2xl border border-border/50 bg-foreground/5 p-3">
+            <div className="mb-3 space-y-2 rounded-[2px] border border-border/50 bg-foreground/5 p-3">
                         <div className="flex flex-wrap items-center gap-1.5">
                             <span className="w-16 font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
                                 Difficulty
@@ -407,18 +397,9 @@ export function FilterPanel({
                                         onClick={() =>
                                             onChange(toggle(difficulties, d.id), regions)
                                         }
-                                        className="rounded-full border px-2.5 py-0.5 font-rubik text-xs font-semibold transition-all hover:scale-[1.04]"
-                                        style={{
-                                            color: d.color,
-                                            borderColor: `color-mix(in oklch, ${d.color} ${on ? 90 : 35}%, transparent)`,
-                                            backgroundColor: on
-                                                ? `color-mix(in oklch, ${d.color} 20%, transparent)`
-                                                : undefined,
-                                            boxShadow: on
-                                                ? `0 0 12px -3px ${d.color}`
-                                                : undefined,
-                                        }}
+                                        className="cm-chip"
                                     >
+                                        <span className="dot" style={{ background: on ? "currentColor" : d.color }} />
                                         {d.label}
                                     </button>
                                 );
@@ -438,18 +419,9 @@ export function FilterPanel({
                                         onClick={() =>
                                             onChange(difficulties, toggle(regions, r.id))
                                         }
-                                        className="rounded-full border px-2.5 py-0.5 font-rubik text-xs font-semibold transition-all hover:scale-[1.04]"
-                                        style={{
-                                            color: r.color,
-                                            borderColor: `color-mix(in oklch, ${r.color} ${on ? 90 : 35}%, transparent)`,
-                                            backgroundColor: on
-                                                ? `color-mix(in oklch, ${r.color} 20%, transparent)`
-                                                : undefined,
-                                            boxShadow: on
-                                                ? `0 0 12px -3px ${r.color}`
-                                                : undefined,
-                                        }}
+                                        className="cm-chip"
                                     >
+                                        <span className="dot" style={{ background: on ? "currentColor" : r.color }} />
                                         {r.label}
                                     </button>
                                 );
@@ -488,8 +460,8 @@ export function StatsPanel({
     s: ModeStats;
 }) {
     return (
-            <GlowCard color={COLOR} className="og-hint mb-3 p-4">
-                        <p className="font-minecraft text-sm font-bold" style={{ color: COLOR }}>
+            <div className="cm-panel og-hint mb-3 p-4">
+                        <p className="font-sans text-sm font-bold" style={{ color: COLOR }}>
                             {mode === "daily" ? "Daily" : "Unlimited"} stats
                         </p>
                         <div className="mt-2 grid grid-cols-4 gap-2 text-center">
@@ -530,7 +502,7 @@ export function StatsPanel({
                                 );
                             })}
                         </div>
-                    </GlowCard>
+                    </div>
     );
 }
 
@@ -573,13 +545,13 @@ export function CountryCombobox({
             [
                 {
                     backgroundColor:
-                        "color-mix(in oklch, var(--mc-light-purple) 55%, transparent)",
-                    boxShadow: "0 0 0 3px var(--mc-light-purple), 0 0 28px 2px var(--mc-light-purple)",
+                        "color-mix(in oklch, var(--cm-violet) 55%, transparent)",
+                    boxShadow: "0 0 0 3px var(--cm-violet), 0 0 28px 2px var(--cm-violet)",
                 },
                 {
                     backgroundColor:
-                        "color-mix(in oklch, var(--mc-light-purple) 22%, transparent)",
-                    boxShadow: "0 0 0 2px var(--mc-light-purple), 0 0 14px 0 var(--mc-light-purple)",
+                        "color-mix(in oklch, var(--cm-violet) 22%, transparent)",
+                    boxShadow: "0 0 0 2px var(--cm-violet), 0 0 14px 0 var(--cm-violet)",
                 },
                 { backgroundColor: "transparent", boxShadow: "0 0 0 0 transparent" },
             ],
@@ -741,9 +713,9 @@ export function CountryCombobox({
                         }}
                         readOnly={!!rolling}
                         className={cn(
-                            "h-11 w-full rounded-xl border border-border bg-card/60 px-3 text-base outline-none transition-colors focus:border-[var(--mc-aqua)]",
+                            "h-11 w-full rounded-[2px] border border-border bg-card/60 px-3 text-base outline-none transition-colors focus:border-[var(--cm-cyan)]",
                             rolling &&
-                                "border-[var(--mc-light-purple)] text-transparent caret-transparent shadow-[0_0_16px_-4px_var(--mc-light-purple)]"
+                                "border-[var(--cm-violet)] text-transparent caret-transparent shadow-[0_0_16px_-4px_var(--cm-violet)]"
                         )}
                     />
                     {rolling && (
@@ -751,7 +723,7 @@ export function CountryCombobox({
                             key={`${rolling.c}-${step.current}`}
                             aria-hidden
                             className="cb-roll pointer-events-none absolute inset-0 flex items-center gap-2 px-3 text-base font-semibold"
-                            style={{ color: "var(--mc-light-purple)" }}
+                            style={{ color: "var(--cm-violet)" }}
                         >
                             {/* eslint-disable-next-line @next/next/no-img-element */}
                             <img
@@ -767,7 +739,7 @@ export function CountryCombobox({
                     {open && suggestions.length > 0 && (
                         <ul
                             role="listbox"
-                            className="absolute inset-x-0 top-full z-30 mt-1 max-h-60 overflow-y-auto rounded-xl border border-border bg-popover p-1 shadow-xl"
+                            className="absolute inset-x-0 top-full z-30 mt-1 max-h-60 overflow-y-auto rounded-[2px] border border-border bg-popover p-1 "
                         >
                             {suggestions.map((c, i) => {
                                 const used = guessed.has(c.c);
@@ -783,8 +755,8 @@ export function CountryCombobox({
                                         }}
                                         onMouseEnter={() => setActive(i)}
                                         className={cn(
-                                            "cursor-pointer rounded-lg px-3 py-2 text-sm",
-                                            i === active && "bg-[var(--mc-aqua)]/15",
+                                            "cursor-pointer rounded-[2px] px-3 py-2 text-sm",
+                                            i === active && "bg-[var(--cm-cyan)]/15",
                                             used && "cursor-not-allowed opacity-40 line-through"
                                         )}
                                     >
@@ -801,16 +773,13 @@ export function CountryCombobox({
                     onClick={roll}
                     aria-label="Pick a random country"
                     title="Random country"
-                    className="grid size-11 shrink-0 place-items-center rounded-xl border transition-transform hover:-translate-y-0.5 active:scale-90"
+                    className="grid size-11 shrink-0 place-items-center rounded-[2px] border transition-transform hover:-translate-y-0.5 active:scale-90"
                     style={{
-                        color: "var(--mc-light-purple)",
+                        color: "var(--cm-violet)",
                         borderColor:
-                            "color-mix(in oklch, var(--mc-light-purple) 60%, transparent)",
+                            "color-mix(in oklch, var(--cm-violet) 60%, transparent)",
                         backgroundColor:
-                            "color-mix(in oklch, var(--mc-light-purple) 16%, transparent)",
-                        boxShadow: rolling
-                            ? "0 0 18px -2px var(--mc-light-purple)"
-                            : undefined,
+                            "color-mix(in oklch, var(--cm-violet) 16%, transparent)",
                     }}
                 >
                     <Dices className={cn("size-5", rolling && "cb-dice-spin")} />
@@ -820,7 +789,7 @@ export function CountryCombobox({
                     type="submit"
                     data-primary
                     data-role="guess"
-                    className="inline-flex h-11 items-center gap-2 rounded-xl border px-4 font-minecraft text-sm font-bold transition-transform hover:-translate-y-0.5"
+                    className="inline-flex h-11 items-center gap-2 rounded-[2px] border px-4 font-sans text-sm font-bold transition-transform hover:-translate-y-0.5"
                     style={{
                         color: COLOR,
                         borderColor: `color-mix(in oklch, ${COLOR} 55%, transparent)`,
@@ -832,7 +801,7 @@ export function CountryCombobox({
             </div>
             <p
                 className="mt-1.5 min-h-5 text-center text-xs"
-                style={{ color: "var(--mc-red)" }}
+                style={{ color: "var(--cm-alert)" }}
                 role="status"
             >
                 {notice}
