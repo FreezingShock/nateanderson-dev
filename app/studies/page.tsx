@@ -41,7 +41,7 @@ export default function StudiesPage() {
                 no="02"
                 label="Senior year classes"
                 title="Six classes."
-                blurb="Six interdisciplinary classes building toward environmental engineering and systems thinking. Filter by area, and open any class for its goals and materials."
+                blurb="Six interdisciplinary classes building toward construction management and systems thinking. Filter by area, and open any class for its goals and materials."
                 ctos
             >
                 <CourseExplorer courses={courses} />
@@ -52,7 +52,7 @@ export default function StudiesPage() {
                 no="03"
                 label="Education pathway"
                 title="High school to 2031."
-                blurb="From high school through Santa Monica College to Cal Poly Pomona and a 2031 degree, with live progress through each stage."
+                blurb="From high school through Cal Poly SLO or Pomona to a 2031 degree, with live progress through each stage."
                 ctos
             >
                 <PathwayRail nowMs={nowMs} />

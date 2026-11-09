@@ -26,12 +26,12 @@ export function AboutStory() {
                 <ScrollType
                     as="p"
                     className="about-lede"
-                    text="I'm Nate, a senior in high school in Southern California studying toward a degree in Environmental Engineering. I build games, render systems, and design spaces, always with an eye toward sustainable, interconnected systems."
+                    text="I'm Nate, a senior in high school in Southern California. I'm headed to Cal Poly SLO for Construction Management, with Cal Poly Pomona as my fallback. I build games, render systems, and design spaces, always with an eye toward sustainable, interconnected systems."
                 />
                 <div className="cm-prose" style={{ marginTop: "var(--cm-s5)" }}>
                     <p>
-                        By Spring 2031, my goal: launch a {kw("sustainable infrastructure/urban design business")} after completing
-                        my degree at Cal Poly Pomona, with financial freedom and athletic leadership woven through the journey.
+                        By 2031, my goal: launch a {kw("sustainable infrastructure and urban design business")} after
+                        finishing my degree.
                     </p>
                 </div>
             </div>
@@ -86,9 +86,9 @@ export function RunningSection() {
             </div>
 
             <div className="about-flag">
-                <span className="cm-state live">Recruiting</span>
-                <span>Exceeds Santa Monica College&apos;s recruiting standards</span>
-                <span className="cm-note">on the recruited-athlete path into college running.</span>
+                <span className="cm-state live">Training</span>
+                <span>Base of 35 miles a week</span>
+                <span className="cm-note">Cross country and track, captain for senior year.</span>
             </div>
 
             <div className="about-split">
@@ -110,13 +110,12 @@ export function RunningSection() {
                     <div className="cm-hbar"><span>Training philosophy</span><span>Cross country</span></div>
                     <p className="cm-body-pad cm-prose" style={{ margin: 0 }}>
                         Consistent training, mental resilience and continuous improvement. Cross country has shaped my
-                        discipline and leadership, qualities I bring to all areas of work. Racing as a recruited athlete
-                        through college (SMC to Cal Poly Pomona) is part of my long-term vision.
+                        discipline and leadership, qualities I bring to all areas of work.
                     </p>
                     <div className="p-foot" aria-hidden="true">
                         <span className="id-bars"><i /><i /><i /><i /><i /></span>
                         <span>training / base</span>
-                        <span>SMC to CPP</span>
+                        <span>base / 35 mi</span>
                     </div>
                 </div>
             </div>

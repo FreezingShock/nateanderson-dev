@@ -34,7 +34,7 @@ export const PATH: Step[] = [
     {
         when: "Next",
         title: "Cal Poly SLO, Construction Management",
-        detail: "Starting as a freshman. Fallback: Cal Poly Pomona, Construction Engineering Management.",
+        detail: "Starting as a freshman. Fallback: Cal Poly Pomona, Construction Engineering & Management.",
     },
     {
         when: "2031",

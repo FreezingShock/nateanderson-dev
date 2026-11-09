@@ -28,7 +28,7 @@ export const identity = {
     // string: tight UI spots (nav bubble, the initial-letter button) use
     // `name` alone, the hero/footer/metadata use both.
     lastName: "Anderson",
-    tagline: "Building games, renders, and systems — studying toward environmental engineering.",
+    tagline: "Building games, renders, and systems, and headed for a construction management degree.",
 };
 
 interface ProjectRow {

@@ -54,7 +54,7 @@ export default function AboutPage() {
                             <div className="id-badge" aria-hidden="true"><b>na</b><span>2027</span></div>
                             <dl className="id-rows">
                                 <div><dt>Based</dt><dd><Scramble replay text="Southern California" /></dd></div>
-                                <div><dt>Studying</dt><dd><Scramble replay text="Environmental engineering" /></dd></div>
+                                <div><dt>Studying</dt><dd><Scramble replay text="Construction management" /></dd></div>
                                 <div><dt>Running</dt><dd><Scramble replay text="4 years, captain" /></dd></div>
                                 <div><dt>Shipping</dt><dd><Link href="/creations/fractured-islands"><Scramble replay text="Fractured Islands: Ascension" /></Link></dd></div>
                                 <div>

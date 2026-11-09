@@ -395,11 +395,11 @@ export const building: BuildingItem[] = [
         cta: "Read the changelog",
     },
     {
-        title: "Engineering Foundation",
+        title: "College Path",
         color: "var(--cm-good)",
         status: "Senior year",
         description:
-            "The college pathway through Santa Monica College to Cal Poly Pomona, with an environmental specialization and a capstone focus.",
+            "Freshman admission to Cal Poly SLO Construction Management, with Cal Poly Pomona Construction Engineering & Management as the fallback.",
         href: "/timeline",
         cta: "Open the timeline",
     },
@@ -430,26 +430,5 @@ export const runningPlan = [
         detail: "Leading the team through senior year.",
         color: "var(--cm-violet)",
         href: "/timeline#personal-5",
-    },
-    {
-        when: "Fall 2027",
-        title: "Recruited athlete at SMC",
-        detail: "Racing for Santa Monica College while finishing the STEM prerequisites.",
-        color: "var(--cm-good)",
-        href: "/timeline#smc-2",
-    },
-    {
-        when: "2028 – 2029",
-        title: "Captain goal at SMC",
-        detail: "Stepping into a leadership role on the team.",
-        color: "var(--cm-cyan)",
-        href: "/timeline#smc-8",
-    },
-    {
-        when: "2029 – 2031",
-        title: "Captain goal at Cal Poly Pomona",
-        detail: "Carrying the leadership thread through the last two years.",
-        color: "var(--cm-amber)",
-        href: "/timeline#cpp-2",
     },
 ];

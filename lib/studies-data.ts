@@ -289,7 +289,7 @@ export interface Program {
 
 export interface PathwayStage {
     /** Matches a phase id in lib/timeline-data (for dates and progress). */
-    phaseId: "high-school" | "smc" | "cal-poly";
+    phaseId: "high-school" | "college";
     title: string;
     blurb: string;
     color: string;
@@ -301,7 +301,7 @@ export const pathway: PathwayStage[] = [
     {
         phaseId: "high-school",
         title: "Senior Year",
-        blurb: "Six interdisciplinary classes and the Senior Project.",
+        blurb: "Six interdisciplinary classes, the Senior Project and the CSU applications.",
         color: "var(--cm-cyan)",
         icon: "BookOpen",
         // The classes themselves are the explorer above; this stage just
@@ -309,77 +309,40 @@ export const pathway: PathwayStage[] = [
         programs: [],
     },
     {
-        phaseId: "smc",
-        title: "Santa Monica College",
-        blurb: "The transfer pathway: STEM prerequisites while racing.",
-        color: "var(--cm-cyan)",
+        phaseId: "college",
+        title: "Cal Poly SLO or Pomona",
+        blurb: "Construction Management at SLO is the focus. Construction Engineering & Management at Pomona is the fallback.",
+        color: "var(--cm-good)",
         icon: "Compass",
         programs: [
             {
-                title: "Pre-Engineering Core",
+                title: "Construction Management",
                 color: "var(--cm-cyan)",
                 icon: "GraduationCap",
                 description:
-                    "Foundational STEM coursework for the transfer: the core engineering prerequisites, completed while competing as a recruited cross-country athlete.",
-                institution: "Santa Monica College",
-                timeline: "Fall 2027 – Spring 2029 (2 years)",
+                    "Cal Poly SLO's ACCE-accredited B.S. in Construction Management, 123 units. The focus of the plan.",
+                institution: "Cal Poly San Luis Obispo",
+                timeline: "Fall 2027 – June 2031 (4 years)",
                 courses: [
-                    "Calculus I & II",
-                    "Physics I & II",
-                    "Chemistry I & II",
-                    "Engineering Design",
+                    "Calculus I",
+                    "General Physics I",
+                    "Structural Principles I",
+                    "Intro to Structural Systems",
                 ],
             },
             {
-                title: "General Education",
-                color: "var(--cm-amber)",
-                icon: "BookOpen",
-                description:
-                    "Breadth requirements and electives, chosen to deepen systems thinking and connect to environmental engineering philosophy.",
-                institution: "Santa Monica College",
-                timeline: "Fall 2027 – Spring 2029",
-                courses: [
-                    "Environmental Science",
-                    "Technical Writing",
-                    "Philosophy Electives",
-                ],
-            },
-        ],
-    },
-    {
-        phaseId: "cal-poly",
-        title: "Cal Poly Pomona",
-        blurb: "Civil Engineering, Environmental specialization.",
-        color: "var(--cm-good)",
-        icon: "Leaf",
-        programs: [
-            {
-                title: "Civil Engineering",
+                title: "Construction Engineering & Management",
                 color: "var(--cm-good)",
-                icon: "GraduationCap",
+                icon: "Leaf",
                 description:
-                    "Environmental Engineering specialization, completed in two years after the SMC transfer, capped by a capstone applying systems thinking to real infrastructure.",
+                    "Cal Poly Pomona's B.S. in Construction Engineering and Management, 124 units. The fallback, and more engineering-heavy.",
                 institution: "Cal Poly Pomona",
-                timeline: "Fall 2029 – Spring 2031 (2 years)",
+                timeline: "Fall 2027 – June 2031 (4 years)",
                 courses: [
-                    "Water Resources",
-                    "Environmental Engineering",
-                    "Sustainable Infrastructure",
-                    "Capstone Design",
-                ],
-            },
-            {
-                title: "Professional Development",
-                color: "var(--cm-amber)",
-                icon: "Briefcase",
-                description:
-                    "Internships, industry projects and networking with civil engineering firms focused on environmental design.",
-                institution: "Cal Poly Pomona",
-                timeline: "Throughout the program",
-                courses: [
-                    "Summer Internships",
-                    "Industry Projects",
-                    "Consulting Work",
+                    "Calculus I-III",
+                    "Linear Algebra & Differential Equations",
+                    "Physics I-II and Chemistry",
+                    "Statics",
                 ],
             },
         ],
@@ -465,7 +428,7 @@ export const readingQueue: ReadingItem[] = [
     {
         title: "Sustainable Design texts",
         status: "planned",
-        note: "Planned for the SMC years, alongside the engineering prerequisites.",
+        note: "Planned for college, alongside the math and physics.",
     },
     {
         title: "Environmental ethics & climate adaptation",
@@ -495,27 +458,14 @@ export const toolRoadmap: SkillStage[] = [
         ],
     },
     {
-        label: "SMC years",
-        when: "2027 – 2029",
+        label: "College years",
+        when: "2027 – 2031",
         color: "var(--cm-cyan)",
         icon: "Ruler",
         skills: [
-            "Revit",
-            "AutoCAD",
-            "Technical drawing",
-            "Project documentation",
-        ],
-    },
-    {
-        label: "Pomona years",
-        when: "2029 – 2031",
-        color: "var(--cm-good)",
-        icon: "Leaf",
-        skills: [
-            "Civil 3D",
-            "Environmental impact assessment",
-            "Compliance",
-            "Advanced design",
+            "Construction scheduling",
+            "Cost estimating",
+            "Contracts and project management",
         ],
     },
 ];
