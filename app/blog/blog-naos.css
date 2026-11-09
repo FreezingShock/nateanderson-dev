@@ -4,21 +4,48 @@
    app/camino/ctos.css and are reused here as-is. Shared engine, motion and components are not changed.
    ========================================================================== */
 
-/* ---- Hero: magenta tracking lines behind the title (same drawing as the homepage hero) ------------------------- */
+/* ---- Hero: a manuscript assembling itself out of 1-bit voxels (public/naos/blog.png, scripts/naos-art) ----------
+   Replaces the magenta X guide lines. The art is placed by <NaosArt variant="hero" eager> and dithers in on load. */
 .ctos .blog-hero { position: relative; }
-.ctos .blog-hero::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  z-index: 0;
-  opacity: .45;
-  background:
-    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100' preserveAspectRatio='none'%3E%3Cpath d='M0 14 L100 90 M0 88 L100 8' stroke='%23c23bd0' stroke-width='1' fill='none' vector-effect='non-scaling-stroke'/%3E%3C/svg%3E")
-    center / 100% 100% no-repeat;
-}
 .ctos .blog-hero > .cm-head { position: relative; z-index: 1; }
 .ctos .blog-hero .cm-highlight > * { font-size: clamp(44px, 11vw, 150px); }
+.ctos .blog-hero .naos-art-hero { top: 4%; right: -2%; width: min(48vw, 560px); opacity: .95; }
+.ctos .blog-hero .naos-art-hero img { animation: naos-dither-in 900ms steps(12, end) .12s backwards; }
+@media (max-width: 760px) {
+  .ctos .blog-hero .naos-art-hero { top: 0; right: -10%; width: 80vw; opacity: .2; }
+}
+
+/* Load-in choreography for the index hero. Each piece waits behind the boot overlay (hidden, no animation), then
+   plays once when the overlay leaves. Only transform, opacity and clip-path move. `backwards` fill leaves the
+   elements in their own styles afterwards, so hover and focus behave normally. */
+html[data-boot="full"] .blog-hero .blog-stats > div, html[data-boot="quick"] .blog-hero .blog-stats > div,
+html[data-boot="full"] .blog-hero .blog-jump .cta-b, html[data-boot="quick"] .blog-hero .blog-jump .cta-b,
+html[data-boot="full"] .blog-hero .naos-art-hero img, html[data-boot="quick"] .blog-hero .naos-art-hero img {
+  animation: none; opacity: 0; clip-path: inset(0 100% 0 0);
+}
+.ctos .blog-hero .blog-stats > div { animation: blog-stat-in .55s var(--cm-ease-out) calc(.5s + var(--i, 0) * 90ms) backwards; }
+.ctos .blog-hero .blog-stats > div:nth-child(1) { --i: 0; }
+.ctos .blog-hero .blog-stats > div:nth-child(2) { --i: 1; }
+.ctos .blog-hero .blog-stats > div:nth-child(3) { --i: 2; }
+@keyframes blog-stat-in {
+  from { opacity: 0; transform: translate3d(0, 14px, 0); clip-path: inset(0 0 100% 0); }
+  to { opacity: 1; transform: none; clip-path: inset(0 0 0 0); }
+}
+.ctos .blog-hero .blog-jump .cta-b { animation: blog-plate-in .5s var(--cm-ease-cut) calc(.78s + var(--i, 0) * 70ms) backwards; }
+.ctos .blog-hero .blog-jump .cta-b:nth-child(1) { --i: 0; }
+.ctos .blog-hero .blog-jump .cta-b:nth-child(2) { --i: 1; }
+.ctos .blog-hero .blog-jump .cta-b:nth-child(3) { --i: 2; }
+.ctos .blog-hero .blog-jump .cta-b:nth-child(4) { --i: 3; }
+.ctos .blog-hero .blog-jump .cta-b:nth-child(5) { --i: 4; }
+@keyframes blog-plate-in {
+  from { clip-path: inset(0 100% 0 0); transform: translate3d(-10px, 0, 0); }
+  to { clip-path: inset(0 0 0 0); transform: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ctos .blog-hero .naos-art-hero img, .ctos .blog-hero .blog-stats > div, .ctos .blog-hero .blog-jump .cta-b { animation: none; }
+  html[data-boot] .blog-hero .blog-stats > div, html[data-boot] .blog-hero .blog-jump .cta-b,
+  html[data-boot] .blog-hero .naos-art-hero img { animation: none; opacity: 1; clip-path: none; }
+}
 
 /* ---- Hero stats: one strip with a cyan left edge and dither under each figure (the homepage's stats strip) -------- */
 .ctos .blog-stats {
