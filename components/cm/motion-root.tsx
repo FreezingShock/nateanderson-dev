@@ -189,10 +189,29 @@ export function MotionRoot() {
             const href = (e as CustomEvent<string>).detail;
             if (reduce || !go(href)) router.push(href);
         };
+        // Warm the route before the click: the card then holds for less time while the RSC payload arrives.
+        const warmed = new Set<string>();
+        const warm = (e: Event) => {
+            if (!(e.target instanceof Element)) return;
+            const a = e.target.closest<HTMLAnchorElement>("a[href]");
+            if (!a || (a.target && a.target !== "_self") || a.hasAttribute("download")) return;
+            const url = new URL(a.href, location.href);
+            if (url.origin !== location.origin || url.pathname === location.pathname) return;
+            const href = url.pathname + url.search;
+            if (warmed.has(href)) return;
+            warmed.add(href);
+            router.prefetch(href);
+        };
         if (!reduce) document.addEventListener("click", onClick, true);
+        document.addEventListener("pointerover", warm, { capture: true, passive: true });
+        document.addEventListener("touchstart", warm, { capture: true, passive: true });
+        document.addEventListener("focusin", warm, true);
         window.addEventListener(NAV_EVENT, onNav);
         return () => {
             document.removeEventListener("click", onClick, true);
+            document.removeEventListener("pointerover", warm, true);
+            document.removeEventListener("touchstart", warm, true);
+            document.removeEventListener("focusin", warm, true);
             window.removeEventListener(NAV_EVENT, onNav);
             reset.current();
         };
