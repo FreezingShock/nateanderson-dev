@@ -68,7 +68,7 @@ export function Section({
 }) {
     return (
         <section className={`cm-section ruled ${className}`.trim()} id={id}>
-            <span className="cm-rule" data-mx="line" aria-hidden="true" />
+            <span className="cm-sec-rule" data-mx="line" aria-hidden="true" />
             <div className="cm-wrap" data-mx-stagger="">
                 <div className="cm-sec-head">
                     <div>

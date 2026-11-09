@@ -41,8 +41,8 @@
 
 /* Section rule that draws itself (Section renders <span class="cm-rule" data-mx="line">). */
 .cm-section.ruled { border-top-color: transparent; }
-.cm-rule { position: absolute; left: 0; right: 0; top: 0; height: 1px; background: var(--cm-hair-hi); pointer-events: none; }
-.cm-rule::after { content: ""; position: absolute; left: 0; top: -1px; width: 28px; height: 3px; background: var(--cm-cyan); }
+.cm-sec-rule { position: absolute; left: 0; right: 0; top: 0; height: 1px; background: var(--cm-hair-hi); pointer-events: none; }
+.cm-sec-rule::after { content: ""; position: absolute; left: 0; top: -1px; width: 28px; height: 3px; background: var(--cm-cyan); }
 
 /* ---- 2. Scroll typewriter -------------------------------------------------------------------------------------
    The engine writes --n (characters typed, fractional) on the element. Each character derives its own opacity
@@ -79,12 +79,12 @@
 [data-mx-par] { translate: 0 var(--py, 0px); }
 
 /* While the boot sequence or a page curtain covers the screen, hold the entrance (it starts the moment it lifts). */
-html[data-boot="full"] .cm-stage > *, html[data-boot="quick"] .cm-stage > *, html[data-xition] .cm-stage > * { animation: none; opacity: 0; }
-html[data-boot="full"] .cm-highlight.wipe > *, html[data-boot="quick"] .cm-highlight.wipe > *, html[data-xition] .cm-highlight.wipe > * { animation: none; }
-html[data-boot="full"] .cm-hero .cm-tag, html[data-boot="quick"] .cm-hero .cm-tag, html[data-xition] .cm-hero .cm-tag,
-html[data-boot="full"] .cm-hero .cm-read.float, html[data-boot="quick"] .cm-hero .cm-read.float, html[data-xition] .cm-hero .cm-read.float,
-html[data-boot="full"] .cm-hero .ring, html[data-boot="quick"] .cm-hero .ring, html[data-xition] .cm-hero .ring,
-html[data-boot="full"] .cm-grid-bg, html[data-boot="quick"] .cm-grid-bg, html[data-xition] .cm-grid-bg { animation: none; opacity: 0; }
+html[data-boot="full"] .cm-stage > *, html[data-boot="quick"] .cm-stage > *, html[data-xition="hold"] .cm-stage > * { animation: none; opacity: 0; }
+html[data-boot="full"] .cm-highlight.wipe > *, html[data-boot="quick"] .cm-highlight.wipe > *, html[data-xition="hold"] .cm-highlight.wipe > * { animation: none; }
+html[data-boot="full"] .cm-hero .cm-tag, html[data-boot="quick"] .cm-hero .cm-tag, html[data-xition="hold"] .cm-hero .cm-tag,
+html[data-boot="full"] .cm-hero .cm-read.float, html[data-boot="quick"] .cm-hero .cm-read.float, html[data-xition="hold"] .cm-hero .cm-read.float,
+html[data-boot="full"] .cm-hero .ring, html[data-boot="quick"] .cm-hero .ring, html[data-xition="hold"] .cm-hero .ring,
+html[data-boot="full"] .cm-grid-bg, html[data-boot="quick"] .cm-grid-bg, html[data-xition="hold"] .cm-grid-bg { animation: none; opacity: 0; }
 
 @keyframes cm-stage-in { from { opacity: 0; transform: translate3d(0, 18px, 0); } to { opacity: 1; transform: none; } }
 @keyframes cm-tag-in { from { opacity: 0; transform: translate3d(0, 10px, 0) scale(.94); } to { opacity: 1; transform: none; } }
@@ -98,21 +98,24 @@ html[data-boot="full"] .cm-grid-bg, html[data-boot="quick"] .cm-grid-bg, html[da
   transform: scaleX(var(--cm-page-p, 0)); pointer-events: none;
 }
 
-/* ---- 5. Page curtain (navigation). Directional; the cyan edge leads. ------------------------------------------ */
-.cm-curtain {
-  position: fixed; inset: 0; z-index: var(--cm-z-curtain); visibility: hidden;
-  background: var(--cm-void); display: grid; place-items: center; overflow: hidden;
+/* ---- 5. Page change: the page itself leaves and arrives; the dock never moves ---------------------------------
+   Out: the current page slides a short way along the direction of travel and fades (~170ms). In: the new page
+   arrives from the opposite side as its entrance (stage + reveals) starts. A thin cyan line sweeps the top while
+   the route loads. Direction: fwd/back along the nav order, down/up between a section and its sub-pages. */
+html[data-dir="fwd"]  { --ox: -30px; --oy: 0px; }
+html[data-dir="back"] { --ox: 30px;  --oy: 0px; }
+html[data-dir="down"] { --ox: 0px; --oy: -22px; }
+html[data-dir="up"]   { --ox: 0px; --oy: 22px; }
+html[data-xition="out"] .cm-main, html[data-xition="out"] .cm-foot { animation: cm-page-out .17s cubic-bezier(.5, 0, .9, .4) forwards; }
+html[data-xition="hold"] .cm-main, html[data-xition="hold"] .cm-foot { opacity: 0; }
+html[data-xin] .cm-main, html[data-xin] .cm-foot { animation: cm-page-in .55s var(--cm-ease-out) backwards; }
+html[data-xin] .cm-foot { animation-delay: .08s; }
+html[data-xition="out"] .cm-pgauge, html[data-xition="hold"] .cm-pgauge {
+  transform: none; width: 38%; animation: cm-load 0.9s var(--cm-ease-cut) infinite;
 }
-.cm-curtain .lbl {
-  font: 600 11px/1 var(--cm-mono); letter-spacing: .22em; text-transform: uppercase; color: var(--cm-fg);
-}
-.cm-curtain .edge { position: absolute; background: var(--cm-cyan); }
-.cm-curtain[data-dir="fwd"] .edge, .cm-curtain[data-dir="back"] .edge { top: 0; bottom: 0; width: 2px; }
-.cm-curtain[data-dir="down"] .edge, .cm-curtain[data-dir="up"] .edge { left: 0; right: 0; height: 2px; }
-.cm-curtain[data-dir="fwd"] .edge.a, .cm-curtain[data-dir="back"] .edge.b { left: 0; }
-.cm-curtain[data-dir="fwd"] .edge.b, .cm-curtain[data-dir="back"] .edge.a { right: 0; }
-.cm-curtain[data-dir="down"] .edge.a, .cm-curtain[data-dir="up"] .edge.b { top: 0; }
-.cm-curtain[data-dir="down"] .edge.b, .cm-curtain[data-dir="up"] .edge.a { bottom: 0; }
+@keyframes cm-page-out { to { opacity: 0; transform: translate3d(var(--ox), var(--oy), 0); } }
+@keyframes cm-page-in { from { opacity: 0; transform: translate3d(calc(var(--ox) * -1), calc(var(--oy) * -1), 0); } }
+@keyframes cm-load { from { translate: -100% 0; } to { translate: 270% 0; } }
 
 /* ---- 6. Boot sequence (site load / reload) ---------------------------------------------------------------------
    Server-rendered; shown only while the head script has set html[data-boot="full|quick"]. Timeline (full, 1.65s):
@@ -165,7 +168,7 @@ html[data-boot="quick"] .cm-boot .pb { animation: cm-shutter-down .36s var(--cm-
   html [data-mx]:not([data-in]), html [data-mx-stagger] > :where(*):not([data-in]):not(:has([data-mx])) { opacity: 1; transform: none; clip-path: none; }
   .cm-type { --n: 9999; }
   .cm-stage > * { animation: none; }
-  .cm-boot, .cm-curtain { display: none; }
+  .cm-boot { display: none; }
 }
 @media (prefers-reduced-motion: reduce) {
   html [data-mx]:not([data-in]), html [data-mx-stagger] > :where(*):not([data-in]):not(:has([data-mx])) { opacity: 1; transform: none; clip-path: none; }
@@ -174,6 +177,6 @@ html[data-boot="quick"] .cm-boot .pb { animation: cm-shutter-down .36s var(--cm-
   .cm-type .c[data-cur]::after { display: none; }
   .cm-stage > *, .cm-hero .cm-tag, .cm-hero .cm-read.float, .cm-hero .ring, .cm-head > .cm-grid-bg, .cm-hero > .cm-grid-bg { animation: none; }
   [data-mx-par] { translate: none; }
-  .cm-boot, .cm-curtain { display: none !important; }
+  .cm-boot { display: none !important; }
   .cm-pgauge { transition: none; }
 }

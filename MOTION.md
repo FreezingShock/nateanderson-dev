@@ -12,7 +12,8 @@ Tokens: `--cm-ease-out`, `--cm-d-reveal`, `--cm-rise`, `--cm-slide` in `camino.t
 | Moment | What it does |
 | --- | --- |
 | Site load | Shutter boot: mono readout types, counter climbs, scan line, shutters open (1.65s). Reload or return visit in the same session gets the short "re-syncing" variant (0.8s). Back/forward skips it. |
-| Page change | Directional curtain with a cyan leading edge: forward/back along the nav order, down/up between a section and its children. The new page's entrance starts as the curtain lifts. |
+| Page change | The current page slides a short way along the direction of travel and fades (170ms), the route swaps, then the new page arrives from the other side as its entrance starts. Direction: forward/back along the nav order, down/up between a section and its sub-pages. A cyan line sweeps the top while loading. No full-screen cover. |
+| Dock | Bottom nav (`Dock` in `components/cm/bar.tsx`): a cyan plate slides to the tapped tab immediately, before the route loads. |
 | Entrance | `.cm-stage` on a container staggers its children in (`PageHead` and the home hero use it). |
 | Scroll reveal | `<Reveal variant>` or `data-mx`; `Section` staggers its children automatically. Variants: rise, slide, slide-r, scale, wipe, line, fade. Elements entering together form a wave. |
 | Scroll typewriter | `<ScrollType text auto?>`: characters appear by scroll distance (`auto` types over time for first-screen text). |

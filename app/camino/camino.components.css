@@ -160,15 +160,6 @@
 .cm-table tr:hover td { background: rgba(255,255,255,.03); }
 
 /* ---- Nav bar (OS bar): one slim bar holds brand + groups + clock ---------- */
-.cm-bar { display: flex; align-items: stretch; height: 46px; background: var(--cm-glass); border: 1px solid var(--cm-hair); backdrop-filter: var(--cm-blur); -webkit-backdrop-filter: var(--cm-blur); box-shadow: var(--cm-shadow); overflow-x: auto; scrollbar-width: none; }
-.cm-bar.fixed-top { position: sticky; top: 12px; z-index: var(--cm-z-ui); margin: 12px var(--cm-gutter); }
-.cm-bar .home { display: flex; align-items: center; gap: 8px; padding: 0 14px 0 12px; color: inherit; text-decoration: none; background: transparent; border: 0; cursor: pointer; flex: none; }
-.cm-bar .home:hover { background: var(--cm-cyan-wash); }
-.cm-bar .grp { display: flex; align-items: center; gap: 2px; padding: 0 7px; border-left: 1px solid var(--cm-hair); flex: none; }
-.cm-bar .grp.grow { flex: 1; }
-.cm-bar a.nav { color: var(--cm-mute); text-decoration: none; font: 600 10px/1 var(--cm-mono); letter-spacing: .13em; text-transform: uppercase; padding: 9px 10px; border: 1px solid transparent; transition: color var(--cm-d-base), border-color var(--cm-d-base); }
-.cm-bar a.nav:hover { color: var(--cm-fg); border-color: var(--cm-hair-hi); }
-.cm-bar a.nav[aria-current="page"], .cm-bar a.nav.on { color: var(--cm-cyan-ink); background: var(--cm-cyan); }
 
 /* ---- Command palette / launcher modal ------------------------------------- */
 .cm-scrim { position: fixed; inset: 0; z-index: var(--cm-z-modal); display: grid; place-items: start center; padding: 12vh 16px 16px; background: rgba(2,3,4,.55); backdrop-filter: blur(3px); -webkit-backdrop-filter: blur(3px); }
