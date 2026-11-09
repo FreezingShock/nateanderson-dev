@@ -149,7 +149,7 @@ export const courses: Course[] = [
             "Score 4–5 on the AP Biology exam",
             "Master photosynthesis and cellular respiration",
             "Understand population and ecosystem dynamics",
-            "Connect cellular biology to environmental engineering",
+            "Connect cellular biology to ecosystems and systems thinking",
         ],
         materials: [
             "Lab reports and data analysis",

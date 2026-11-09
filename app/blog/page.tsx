@@ -18,6 +18,20 @@ export default function BlogPage() {
     const published = allPosts.filter((p) => p.status === "published").length;
     const planned = allPosts.length - published;
 
+    if (blogSections.length === 0) {
+        return (
+            <div className="ctos">
+                <div className="blog-hero">
+                    <PageHead
+                        label="Writing / naOS"
+                        title={["blog &", "essays"]}
+                        lead="Notes on systems design, game dev, philosophy, and whatever else is worth writing down. Long essays, research, poetry, technical writeups, and quick thoughts."
+                    />
+                </div>
+            </div>
+        );
+    }
+
     return (
         <div className="ctos">
             <div className="blog-hero">

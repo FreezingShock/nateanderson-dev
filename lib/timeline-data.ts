@@ -200,25 +200,6 @@ export const phases: TimelinePhaseData[] = [
                 ],
             },
             {
-                id: "hs-13",
-                title: "SAT Prep Sprint",
-                description:
-                    "Three focused months of steady practice, aimed squarely at the reading section where scores jump the most.",
-                when: "Oct — Dec 2026",
-                start: "2026-10-01",
-                end: "2026-12-31",
-                category: "exams",
-                type: "minor",
-                icon: "Brain",
-                tags: ["SAT", "Prep"],
-                details: [
-                    "Khan Academy's personalized practice, 10+ hours on weak areas",
-                    "2–3 timed, full-length official practice tests by December",
-                    "Review every wrong answer: what's the pattern?",
-                    "Focus on reading comprehension: dense passages from science and philosophy, and pacing",
-                ],
-            },
-            {
                 id: "hs-3",
                 title: "First Portfolio Project",
                 description:
@@ -253,35 +234,6 @@ export const phases: TimelinePhaseData[] = [
                     "Target submission: November 20",
                     "Hard deadline: November 30",
                     "Financial aid: FAFSA or Dream Act filed by December 15, then Cal Grant GPA verification by March 2",
-                ],
-            },
-            {
-                id: "hs-14",
-                title: "SAT Registration Deadline",
-                description: "The last day to register for the January test.",
-                when: "Dec 15, 2026",
-                start: "2026-12-15",
-                category: "exams",
-                type: "minor",
-                icon: "CalendarCheck",
-                tags: ["SAT", "Deadline"],
-            },
-            {
-                id: "hs-5",
-                title: "SAT Retake",
-                description:
-                    "One more attempt at a stronger score, after months of steady prep.",
-                when: "January 2027",
-                start: "2027-01-01",
-                end: "2027-01-31",
-                category: "exams",
-                type: "minor",
-                icon: "Target",
-                tags: ["SAT", "Exam"],
-                details: [
-                    "Sit the January SAT (arrive early, bring ID)",
-                    "Send scores to the colleges that need them",
-                    "Decide whether another attempt is worth it",
                 ],
             },
             {
@@ -622,7 +574,7 @@ export const phases: TimelinePhaseData[] = [
                 id: "personal-5",
                 title: "Running & Cross-Country",
                 description:
-                    "Four years of running, and captain of the Cross Country and Track team this year. The plan keeps racing through both colleges.",
+                    "Four years of running, and captain of the Cross Country and Track team this year.",
                 when: "Year-round",
                 start: "2026-09-01",
                 ongoing: true,

@@ -54,12 +54,6 @@ export const NEXT_YEAR: { year: string; blurb: string; milestones: UpcomingMiles
     blurb: "The pivot year: finish high school, lock in college, and turn planning into shipped work.",
     milestones: [
         {
-            when: "January",
-            title: "SAT retake",
-            detail: "One more attempt at the score, after months of prep.",
-            color: "var(--cm-amber)",
-        },
-        {
             when: "Spring",
             title: "First polished portfolio piece",
             detail: "One finished, presentable design project, not just sketches.",
