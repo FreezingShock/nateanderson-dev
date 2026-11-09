@@ -207,7 +207,7 @@ body:has(.ctos) .cm-foot-base { font-family: var(--cm-mono); }
 .ctos .cm-grid > .cm-card:nth-child(3n+1):hover { background: #fff; transform: translateY(-3px); }
 .ctos .cm-grid > .cm-card:nth-child(3n+2), .ctos .cm-cols3 > .cm-card:nth-child(3n+2) { border: 1px solid var(--cm-hair-hi); border-top: 3px solid var(--cm-cyan); background: linear-gradient(180deg, rgba(47,216,232,.1), rgba(47,216,232,0) 55%), var(--cm-ctos-panel); }
 .ctos .cm-grid > .cm-card:nth-child(3n+2) b, .ctos .cm-cols3 > .cm-card:nth-child(3n+2) b { letter-spacing: -.02em; font-size: var(--cm-ctos-t-lead); }
-.ctos .cm-grid > .cm-card:nth-child(3n), .ctos .cm-cols3 > .cm-card:nth-child(3n) { border: 1px dashed var(--cm-hair-hi); background-color: transparent; background-image: radial-gradient(circle, rgba(244,244,242,.16) 0 28%, transparent 32%); background-size: 6px 6px; }
+.ctos .cm-grid > .cm-card:nth-child(3n), .ctos .cm-cols3 > .cm-card:nth-child(3n) { border: 1px dashed var(--cm-hair-hi); background-color: #111; background-image: radial-gradient(circle, rgba(244,244,242,.16) 0 28%, transparent 32%); background-size: 6px 6px; }
 .ctos .cm-grid > .cm-card:nth-child(3n) b, .ctos .cm-cols3 > .cm-card:nth-child(3n) b { font-family: var(--cm-mono); font-size: var(--cm-ctos-t-body); letter-spacing: -.01em; }
 .ctos .cm-grid > .cm-card:nth-child(3n) .cm-viz { background: linear-gradient(33deg, transparent 49.6%, rgba(194,59,208,.7) 50%, transparent 50.4%), #0d0d0d; }
 .ctos #explore .cm-grid > .cm-card:nth-child(4n+2) { background: var(--cm-cyan); border-color: var(--cm-cyan); color: var(--cm-cyan-ink); }
