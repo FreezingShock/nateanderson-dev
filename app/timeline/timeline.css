@@ -80,7 +80,7 @@
 /* Milestone rows: every third row gets a white left edge and every fourth a dither wash, so a long phase
    is not one repeated dark card. */
 .tl-page .tl-phase .tl-ev:nth-child(3n) > .cm-panel { border-left-color: var(--cm-ctos-block); }
-.tl-page .tl-phase .tl-ev:nth-child(4n+1) > .cm-panel { background-color: #101010; background-image: radial-gradient(circle, rgba(244, 244, 242, .07) 0 28%, transparent 32%); background-size: 6px 6px; }
+.tl-page .tl-phase .tl-ev.tl-s-upcoming:nth-child(4n+1) > .cm-panel { background-color: #101010; background-image: radial-gradient(circle, rgba(244, 244, 242, .07) 0 28%, transparent 32%); background-size: 6px 6px; }
 
 /* 03 / horizons: the Launch title card, and the goal panels in three looks. */
 .tl-page .tl-goals { display: grid; gap: 16px; grid-template-columns: repeat(auto-fit, minmax(min(100%, 250px), 1fr)); }
@@ -127,3 +127,12 @@
     .tl-page .tl-phase > .cm-panel[data-rx] { clip-path: none; }
     .tl-page .tl-phase .cm-rail > li::before { transform: rotate(45deg); }
 }
+
+/* Milestone states: each status gets its own panel look, so a long phase is not one repeated dark card.
+   Now = cyan cap and a cyan wash; planned = dashed outline on dither (the homepage's "idea" card);
+   ongoing = cyan cap; done = recessed panel with the white edge. */
+.tl-page .tl-phase .tl-ev.tl-s-now > .cm-panel { border-top: 3px solid var(--cm-cyan); background: linear-gradient(180deg, rgba(47, 216, 232, .1), rgba(47, 216, 232, 0) 60%), var(--cm-ctos-panel); }
+.tl-page .tl-phase .tl-ev.tl-s-ongoing > .cm-panel { border-top: 2px solid var(--cm-cyan); }
+.tl-page .tl-phase .tl-ev.tl-s-planned > .cm-panel { border-style: dashed; border-left-style: dashed; border-left-color: var(--cm-hair-hi); background-color: transparent; background-image: radial-gradient(circle, rgba(244, 244, 242, .14) 0 28%, transparent 32%); background-size: 6px 6px; }
+.tl-page .tl-phase .tl-ev.tl-s-done > .cm-panel { background-color: #121212; }
+.tl-page .tl-phase .tl-ev.tl-s-done > .cm-panel .cm-h3 { color: #d8d8d4; }

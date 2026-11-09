@@ -129,6 +129,22 @@
   .ctos.st-page .st-anim { animation: none !important; }
 }
 
+/* Reading queue: three columns so six books fill two full rows (no orphan cards), and the book being read gets
+   the cyan top edge. Every third card drops to the dashed dot treatment so the grid is not one repeated panel. */
+.ctos.st-page .st-reading { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+@media (max-width: 1000px) { .ctos.st-page .st-reading { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 640px) { .ctos.st-page .st-reading { grid-template-columns: 1fr; } }
+.ctos.st-page .st-reading > .cm-panel.st-now {
+  border-top: 3px solid var(--cm-cyan);
+  background: linear-gradient(180deg, rgba(47, 216, 232, .1), rgba(47, 216, 232, 0) 55%), var(--cm-ctos-panel);
+}
+.ctos.st-page .st-reading > .cm-panel:nth-child(3n) {
+  border: 1px dashed var(--cm-hair-hi);
+  background-color: #111;
+  background-image: radial-gradient(circle, rgba(244, 244, 242, .12) 0 28%, transparent 32%);
+  background-size: 6px 6px;
+}
+
 /* ---- Load-in choreography -------------------------------------------------------------------------------------------
    Everything tagged .st-anim plays once after the boot sequence and any page curtain lift: animations are held
    (paused at their first frame) while html[data-boot] or html[data-xition] covers the screen, so nothing finishes
