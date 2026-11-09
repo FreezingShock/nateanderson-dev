@@ -9,7 +9,8 @@ import { pageMeta } from "@/lib/seo";
 
 export const metadata = pageMeta({
     title: "Blog",
-    description: "Essays, research notes, poetry, dev logs and snippets. Thinking in public.",
+    description:
+        "Essays, research notes, poetry, dev logs and snippets. Thinking in public.",
     path: "/blog",
 });
 
@@ -19,7 +20,11 @@ export default function BlogPage() {
     const planned = allPosts.length - published;
     // Sections with no posts yet stay off the page: only real content shows up here.
     const sections = blogSections
-        .map((section, i) => ({ section, id: BLOG_SECTION_IDS[i], no: String(i + 1).padStart(2, "0") }))
+        .map((section, i) => ({
+            section,
+            id: BLOG_SECTION_IDS[i],
+            no: String(i + 1).padStart(2, "0"),
+        }))
         .filter((x) => x.section.posts.length > 0);
     const hasSections = sections.length > 0;
 
@@ -43,7 +48,11 @@ export default function BlogPage() {
                         <Stat
                             label="Published"
                             value={String(published).padStart(2, "0")}
-                            note={published === 0 ? "Nothing live yet" : "Live now"}
+                            note={
+                                published === 0
+                                    ? "Nothing live yet"
+                                    : "Live now"
+                            }
                         />
                         <Stat
                             label="Planned"
@@ -52,7 +61,10 @@ export default function BlogPage() {
                         />
                     </div>
                     {hasSections && (
-                        <nav className="cm-row cta blog-jump" aria-label="Blog sections">
+                        <nav
+                            className="cm-row cta blog-jump"
+                            aria-label="Blog sections"
+                        >
                             {sections.map(({ section: s, id, no }, i) => (
                                 <a
                                     key={s.title}
@@ -70,113 +82,163 @@ export default function BlogPage() {
             </div>
 
             {hasSections ? (
-            <>
-            <section className="cm-section ruled" aria-label="Section index">
-                <span className="cm-sec-rule" data-mx="line" aria-hidden="true" />
-                <div className="cm-wrap" data-rx-auto="">
-                    <div className="blog-index">
-                        <div className="id-top">
-                            <Scramble className="id-sys" replay text="naOS // blog index" />
-                            <span className="id-live">
-                                <i aria-hidden="true" />
-                                Live
-                            </span>
-                        </div>
-                        <div className="cm-table-wrap blog-index-wrap">
-                            <table className="cm-table blog-table">
-                                <thead>
-                                    <tr>
-                                        <th scope="col">No</th>
-                                        <th scope="col">Section</th>
-                                        <th scope="col">Posts</th>
-                                        <th scope="col">Status</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {sections.map(({ section: s, id, no }) => {
-                                        const live = s.posts.filter((p) => p.status === "published").length;
-                                        return (
-                                            <tr key={s.title}>
-                                                <td>{no}</td>
-                                                <td>
-                                                    <Link href={`#${id}`}>{s.title}</Link>
-                                                </td>
-                                                <td>{String(s.posts.length).padStart(2, "0")}</td>
-                                                <td>
-                                                    <span className={`cm-state ${live > 0 ? "live" : ""}`}>
-                                                        {live > 0 ? `${live} published` : "Coming soon"}
-                                                    </span>
-                                                </td>
+                <>
+                    <section
+                        className="cm-section ruled"
+                        aria-label="Section index"
+                    >
+                        <span
+                            className="cm-sec-rule"
+                            data-mx="line"
+                            aria-hidden="true"
+                        />
+                        <div className="cm-wrap" data-rx-auto="">
+                            <div className="blog-index">
+                                <div className="id-top">
+                                    <Scramble
+                                        className="id-sys"
+                                        replay
+                                        text="naOS // blog index"
+                                    />
+                                    <span className="id-live">
+                                        <i aria-hidden="true" />
+                                        Live
+                                    </span>
+                                </div>
+                                <div className="cm-table-wrap blog-index-wrap">
+                                    <table className="cm-table blog-table">
+                                        <thead>
+                                            <tr>
+                                                <th scope="col">No</th>
+                                                <th scope="col">Section</th>
+                                                <th scope="col">Posts</th>
+                                                <th scope="col">Status</th>
                                             </tr>
-                                        );
-                                    })}
-                                </tbody>
-                            </table>
+                                        </thead>
+                                        <tbody>
+                                            {sections.map(
+                                                ({ section: s, id, no }) => {
+                                                    const live = s.posts.filter(
+                                                        (p) =>
+                                                            p.status ===
+                                                            "published"
+                                                    ).length;
+                                                    return (
+                                                        <tr key={s.title}>
+                                                            <td>{no}</td>
+                                                            <td>
+                                                                <Link
+                                                                    href={`#${id}`}
+                                                                >
+                                                                    {s.title}
+                                                                </Link>
+                                                            </td>
+                                                            <td>
+                                                                {String(
+                                                                    s.posts
+                                                                        .length
+                                                                ).padStart(
+                                                                    2,
+                                                                    "0"
+                                                                )}
+                                                            </td>
+                                                            <td>
+                                                                <span
+                                                                    className={`cm-state ${live > 0 ? "live" : ""}`}
+                                                                >
+                                                                    {live > 0
+                                                                        ? `${live} published`
+                                                                        : "Coming soon"}
+                                                                </span>
+                                                            </td>
+                                                        </tr>
+                                                    );
+                                                }
+                                            )}
+                                        </tbody>
+                                    </table>
+                                </div>
+                                <div className="id-foot" aria-hidden="true">
+                                    <span className="id-bars">
+                                        <i />
+                                        <i />
+                                        <i />
+                                        <i />
+                                        <i />
+                                    </span>
+                                    <span>{sections.length} sections</span>
+                                    <span>{published} live</span>
+                                </div>
+                            </div>
                         </div>
-                        <div className="id-foot" aria-hidden="true">
-                            <span className="id-bars">
-                                <i />
-                                <i />
-                                <i />
-                                <i />
-                                <i />
-                            </span>
-                            <span>{sections.length} sections</span>
-                            <span>{published} live</span>
-                        </div>
-                    </div>
-                </div>
-            </section>
+                    </section>
 
-            {sections.map(({ section, id, no }) => (
-                <section
-                    key={section.title}
-                    id={id}
-                    className="cm-section ruled blog-sec"
-                    style={{ scrollMarginTop: 80 }}
-                >
-                    <span className="cm-sec-rule" data-mx="line" aria-hidden="true" />
-                    <BlogSection {...section} no={no} />
-                </section>
-            ))}
-            </>
+                    {sections.map(({ section, id, no }) => (
+                        <section
+                            key={section.title}
+                            id={id}
+                            className="cm-section ruled blog-sec"
+                            style={{ scrollMarginTop: 80 }}
+                        >
+                            <span
+                                className="cm-sec-rule"
+                                data-mx="line"
+                                aria-hidden="true"
+                            />
+                            <BlogSection {...section} no={no} />
+                        </section>
+                    ))}
+                </>
             ) : (
-            <section className="cm-section ruled blog-empty-sec" aria-label="Writing status">
-                <span className="cm-sec-rule" data-mx="line" aria-hidden="true" />
-                <div className="cm-wrap" data-rx-auto="">
-                    <div className="blog-empty">
-                        <div className="id-top">
-                            <Scramble className="id-sys" replay text="naOS // blog index" />
-                            <span className="id-live">
-                                <i aria-hidden="true" />
-                                Empty
-                            </span>
-                        </div>
-                        <div className="blog-empty-body">
-                            <h2 className="blog-empty-title">
-                                <span className="cm-highlight solo blog-empty-hl">
-                                    <span>nothing live yet</span>
+                <section
+                    className="cm-section ruled blog-empty-sec"
+                    aria-label="Writing status"
+                >
+                    <span
+                        className="cm-sec-rule"
+                        data-mx="line"
+                        aria-hidden="true"
+                    />
+                    <div className="cm-wrap" data-rx-auto="">
+                        <div className="blog-empty">
+                            <div className="id-top">
+                                <Scramble
+                                    className="id-sys"
+                                    replay
+                                    text="naOS // blog index"
+                                />
+                                <span className="id-live">
+                                    <i aria-hidden="true" />
+                                    Empty
                                 </span>
-                            </h2>
-                            <p className="cm-body blog-empty-copy">
-                                Posts appear here once they are finished. Each one gets its own page, and the newest
-                                shows up on the home page under Recent posts.
-                            </p>
-                        </div>
-                        <div className="id-foot" aria-hidden="true">
-                            <span className="id-bars">
-                                <i />
-                                <i />
-                                <i />
-                                <i />
-                                <i />
-                            </span>
-                            <span>0 sections</span>
-                            <span>0 live</span>
+                            </div>
+                            <div className="blog-empty-body">
+                                <h2 className="blog-empty-title">
+                                    <span className="cm-highlight solo blog-empty-hl">
+                                        <span>nothing live yet</span>
+                                    </span>
+                                </h2>
+                                <p className="cm-body blog-empty-copy">
+                                    Posts appear here once they are finished.
+                                    Each one gets its own page, and the newest
+                                    shows up on the home page under Recent
+                                    posts.
+                                </p>
+                            </div>
+                            <div className="id-foot" aria-hidden="true">
+                                <span className="id-bars">
+                                    <i />
+                                    <i />
+                                    <i />
+                                    <i />
+                                    <i />
+                                </span>
+                                <span>0 sections</span>
+                                <span>0 live</span>
+                            </div>
                         </div>
                     </div>
-                </div>
-            </section>
+                </section>
             )}
 
             <section className="cm-section">
@@ -187,8 +249,9 @@ export default function BlogPage() {
                             <span>Not on a schedule</span>
                         </div>
                         <p className="cm-body blog-note-copy">
-                            Posts are written when they are ready, not on a schedule. The newest ones show up on the
-                            home page under Recent posts.
+                            Posts are written when they are ready, not on a
+                            schedule. The newest ones show up on the home page
+                            under Recent posts.
                         </p>
                         <div className="p-foot" aria-hidden="true">
                             <span className="id-bars">
