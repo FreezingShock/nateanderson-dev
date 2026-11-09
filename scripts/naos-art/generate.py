@@ -292,6 +292,58 @@ def games():
     return dither(inten, arr)
 
 
+# ---------------------------------------------------------------------------------------------
+# 4. History backdrop: a dithered isometric commit terrain. A square grid of voxel cells, each one a stretch of
+#    work: the cells climb toward the top right where the latest commits sit. Original, deterministic.
+# ---------------------------------------------------------------------------------------------
+def history():
+    W, H = 420, 220
+    N = 16
+    CW, CH, VH = 9.0, 4.4, 5.0
+    ox, oy = W / 2, 34.0
+
+    def P(x, y, z):
+        return (ox + (x - y) * CW, oy + (x + y) * CH - z * VH)
+
+    # Activity grows toward the newest corner (high x, low y); a sine term keeps it from looking like a ramp.
+    heights = {}
+    for x in range(N):
+        for y in range(N):
+            t = ((x + (N - 1 - y)) / (2 * (N - 1))) ** 1.7
+            hgt = int(round(t * 7 + 1.2 * np.sin(x * 1.3 + y * 0.7) + 0.8 * np.sin(y * 2.1)))
+            heights[(x, y)] = max(0, hgt)
+
+    ids_img = Image.new("L", (W, H), 0)
+    d = ImageDraw.Draw(ids_img)
+    order = sorted(heights.keys(), key=lambda k: (k[0] + k[1], heights[k]))
+    for x, y in order:
+        zt = heights[(x, y)]
+        recent = (x + (N - 1 - y)) >= (2 * (N - 1)) * 0.78
+        rc, lc, tc = (BRIGHT, BLEFT, BTOP) if recent else (RIGHT, LEFT, TOP)
+        if zt > 0:
+            d.polygon([P(x + 1, y, 0), P(x + 1, y + 1, 0), P(x + 1, y + 1, zt), P(x + 1, y, zt)], fill=rc)
+            d.polygon([P(x, y + 1, 0), P(x + 1, y + 1, 0), P(x + 1, y + 1, zt), P(x, y + 1, zt)], fill=lc)
+        d.polygon([P(x, y, zt), P(x + 1, y, zt), P(x + 1, y + 1, zt), P(x, y + 1, zt)], fill=tc)
+        if zt > 0:
+            # Thin edge on the top outline so each stacked cell reads as its own block.
+            top = [P(x, y, zt), P(x + 1, y, zt), P(x + 1, y + 1, zt), P(x, y + 1, zt)]
+            d.line(top + [top[0]], fill=EDGE, width=1)
+
+    arr = np.array(ids_img)
+    yy, xx = np.mgrid[0:H, 0:W]
+    lx, ly = W * 0.8, H * 0.16
+    dist = np.sqrt(((xx - lx) / (W * 0.6)) ** 2 + ((yy - ly) / (H * 0.8)) ** 2)
+    inten = np.zeros((H, W))
+    inten[arr == TOP] = np.clip(0.6 - 0.5 * dist, 0.05, 0.6)[arr == TOP]
+    inten[arr == LEFT] = 0.42
+    inten[arr == RIGHT] = 0.16
+    inten[arr == BTOP] = 1.0
+    inten[arr == BLEFT] = 0.7
+    inten[arr == BRIGHT] = 0.38
+    return dither(inten, arr)
+
+
+
 if __name__ == "__main__":
     os.makedirs(OUT, exist_ok=True)
     save_1bit(islands(), os.path.join(OUT, "islands.png"))
@@ -299,3 +351,4 @@ if __name__ == "__main__":
     save_1bit(wash(), os.path.join(OUT, "wash.png"))
     save_1bit(timeline_route(), os.path.join(OUT, "timeline-route.png"))
     save_1bit(games(), os.path.join(OUT, "games.png"))
+    save_1bit(history(), os.path.join(OUT, "history.png"))
