@@ -1,9 +1,9 @@
 import { CreationsShell } from "@/components/creations-sections";
+import { NaosBackdrop } from "@/components/cm/naos-art";
 import { NaosGameMode } from "@/components/games/naos";
 import { GAME_MODES, categoryById } from "@/lib/creations-data";
 import { pageMeta } from "@/lib/seo";
 
-import { NaosBackdrop } from "@/components/cm/naos-art";
 export default function GamesPage() {
     return (
         <div className="ctos ng-page">
