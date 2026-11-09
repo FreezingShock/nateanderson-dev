@@ -66,7 +66,7 @@ const EventRow = memo(function EventRow({ event, status, open, onToggle }: Event
     );
 
     return (
-        <li id={event.id} className={state} style={{ scrollMarginTop: 120 }}>
+        <li id={event.id} className={`tl-ev ${state}`.trim()} style={{ scrollMarginTop: 120 }}>
             <div className="cm-panel" style={{ opacity: status === "upcoming" || status === "planned" ? 0.85 : 1 }}>
                 {hasDetails ? (
                     <button
@@ -277,7 +277,7 @@ export function TimelineExplorer({
 
     return (
         <div>
-            <div className="cm-panel" style={{ marginBottom: 32 }}>
+            <div className="cm-panel tl-filter" style={{ marginBottom: 32 }}>
                 <div className="cm-body-pad" style={{ display: "grid", gap: 12 }}>
                     <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 8, justifyContent: "space-between" }}>
                         <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
@@ -350,7 +350,7 @@ export function TimelineExplorer({
                     const pct = Math.round(progressBetween(phase.start, phase.end, nowMs) * 100);
 
                     return (
-                        <section key={phase.id} id={phase.id} style={{ scrollMarginTop: 96 }}>
+                        <section key={phase.id} id={phase.id} className="tl-phase" style={{ scrollMarginTop: 96 }}>
                             <div className="cm-panel tick">
                                 <button
                                     type="button"
