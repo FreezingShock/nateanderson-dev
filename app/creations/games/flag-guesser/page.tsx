@@ -20,6 +20,7 @@ export default function FlagGuesserPage() {
                 title={["Flag Guesser"]}
                 description="Name the country from its flag. It starts hidden behind six tiles and every wrong guess flips another, with distance and direction clues to the right country."
                 back={{ href: "/creations/games", label: "Back to Games" }}
+                variant="sub"
             >
                 <Section id="play" no="01" label="Play" title="Name that flag." ctos>
                     <div className="g-layout">
