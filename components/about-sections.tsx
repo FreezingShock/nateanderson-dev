@@ -10,7 +10,7 @@ import { KEY_DATES, daysUntil, phases, progressBetween } from "@/lib/timeline-da
 
 const kw = (text: string) => <strong>{text}</strong>;
 
-const buildTone = (status: string) => (/development|always|senior/i.test(status) ? "live" : "");
+const buildTone = (status: string) => (/development|always|senior|playable/i.test(status) ? "live" : "");
 
 export function AboutStory({ nowMs }: { nowMs: number }) {
     const daysToGrad = daysUntil(KEY_DATES.graduation, nowMs);
