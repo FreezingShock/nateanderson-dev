@@ -7,6 +7,7 @@ import { navItems } from "@/lib/nav";
 import { Section } from "@/components/cm/ui";
 import { CountUp } from "@/components/cm/reveal";
 import { ScrollType, Scramble } from "@/components/cm/motion";
+import { NaosArt } from "@/components/cm/naos-art";
 import { SiteStats, SiteStatsSkeleton } from "@/components/home/site-stats";
 import { TimelinePreview } from "@/components/home/timeline-preview";
 import { RecentPosts } from "@/components/home/recent-posts";
@@ -25,6 +26,7 @@ export default async function Home() {
                 <div className="cm-grid-bg" aria-hidden="true" />
                 <div className="cm-persp" aria-hidden="true" />
                 <span className="cm-ctos-tag" aria-hidden="true">naOS</span>
+                <NaosArt src="/naos/islands.png" width={300} height={200} variant="hero" eager />
                 <div className="ring" aria-hidden="true" data-mx-par="0.12" />
                 <span className="cm-tag t1" aria-hidden="true" data-mx-par="0.2">Class of <i>2027</i></span>
                 <span className="cm-tag live t2" aria-hidden="true" data-mx-par="0.08">Now shipping <i>Fractured Islands</i></span>
@@ -115,6 +117,10 @@ export default async function Home() {
                     </div>
                 </Section>
 
+            <div className="cm-wrap">
+                <NaosArt src="/naos/track.png" width={320} height={96} />
+            </div>
+
             <Section ctos id="profile" no="02" label="Profile" title="Who I am, and where I'm headed.">
                 <div className="pf">
                     <div className="cm-panel pf-id">
@@ -155,6 +161,10 @@ export default async function Home() {
                     </div>
                 </div>
             </Section>
+
+            <div className="cm-wrap">
+                <NaosArt src="/naos/wash.png" width={320} height={40} />
+            </div>
 
             <Suspense fallback={<SiteStatsSkeleton />}>
                 <SiteStats />
