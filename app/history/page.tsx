@@ -1,5 +1,6 @@
-import { PageHead } from "@/components/cm/ui";
+import { PageHead, Section } from "@/components/cm/ui";
 import { CountUp } from "@/components/cm/reveal";
+import { Scramble } from "@/components/cm/motion";
 import { CommitHistory } from "@/components/commit-history";
 import { REPO, githubHeaders, fetchCommitsPage, type CommitEntry } from "@/lib/github";
 import { getRepoStats } from "@/lib/site-stats";
@@ -59,75 +60,116 @@ export default async function HistoryPage() {
     const latestDate = latest
         ? new Date(latest.date).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric", timeZone: "UTC" })
         : null;
+    const latestHasDiff = latest !== undefined && latest.additions !== null && latest.deletions !== null;
 
     return (
-        <>
+        <div className="ctos">
             <PageHead
                 label="Meta / Changelog"
-                title={["Site History"]}
+                title={["site", "history"]}
                 lead="This website's own changelog, pulled live from the GitHub API, not written by hand or regenerated manually."
-            />
-            <section className="cm-section" id="log">
-                <div className="cm-wrap" data-mx-stagger="" style={{ display: "grid", gap: "var(--cm-s5)" }}>
-                    <dl className={`cm-panel tick cm-kv ${styles.kv}`} style={{ ["--cols" as string]: 3 }}>
-                        {stats.map((stat) => (
-                            <div key={stat.label}>
-                                <dt>{stat.label}</dt>
-                                <dd>
-                                    {stat.value > 0 ? <CountUp value={stat.value} /> : "—"}
-                                    <span className={`cm-coord ${styles.note}`}>{stat.note}</span>
-                                </dd>
-                            </div>
-                        ))}
-                    </dl>
-                    {latest && (
-                        <div className="cm-panel live">
-                            <div className="cm-hbar">
-                                <span className="live">Latest commit</span>
-                                <span>{latestDate}</span>
-                            </div>
-                            <div className={styles.latest}>
-                                <h2 className={styles.latestSubject}>{latest.subject}</h2>
-                                <p className={`cm-coord ${styles.latestMeta}`} style={{ margin: 0 }}>
-                                    <a href={`https://github.com/${REPO}/commit/${latest.hash}`} target="_blank" rel="noreferrer">
-                                        {latest.hash.slice(0, 7)}
-                                    </a>
-                                    {latest.additions !== null && latest.deletions !== null && (
-                                        <span>
-                                            <span style={{ color: "var(--cm-good)" }}>+{latest.additions}</span>
-                                            {" / "}
-                                            <span style={{ color: "var(--cm-alert)" }}>-{latest.deletions}</span>
-                                        </span>
-                                    )}
-                                    <a href={`https://github.com/${REPO}`} target="_blank" rel="noreferrer">
-                                        {REPO}
-                                    </a>
-                                </p>
-                            </div>
-                        </div>
-                    )}
-                    {failed ? (
-                        <div className="cm-panel cm-hatch" style={{ padding: 24 }}>
-                            <span className="cm-read warm">Couldn&apos;t reach the GitHub API right now. Check back shortly.</span>
-                        </div>
-                    ) : totalCommits === 0 ? (
-                        <div className="cm-panel cm-hatch" style={{ padding: 24 }}>
-                            <span className="cm-read">No commits yet.</span>
-                        </div>
-                    ) : (
-                        <CommitHistory
-                            repo={REPO}
-                            totalCommits={totalCommits}
-                            initialCommits={commits}
-                            initialPerPage={INITIAL_PER_PAGE}
-                        />
-                    )}
-                    <p className={styles.footnote}>
-                        Counts and commits are read from the GitHub API and refreshed about once an hour. Diff stats (+/−) are cached per commit.
-                    </p>
+            >
+                <div className={styles.headStrip} aria-hidden="true">
+                    <span className="id-live"><i />Feed live</span>
+                    <span>source / github api</span>
+                    <span>refresh / 1h</span>
                 </div>
-            </section>
-        </>
+            </PageHead>
+
+            <Section ctos id="stats" no="01" label="Index" title="The numbers behind the site.">
+                <div className={styles.grid}>
+                    <div className={`cm-panel ${styles.statsPanel}`}>
+                        <div className="cm-hbar"><span>Repo index</span><span>{REPO}</span></div>
+                        <div className={`meta stats ${styles.stats}`}>
+                            {stats.map((stat) => (
+                                <div key={stat.label}>
+                                    <div className="cm-lbl">{stat.label}</div>
+                                    {stat.value > 0 ? <CountUp className="big" value={stat.value} /> : <span className="big none">—</span>}
+                                    <div className={`cm-coord ${styles.note}`}>{stat.note}</div>
+                                </div>
+                            ))}
+                        </div>
+                        <div className="p-foot" aria-hidden="true">
+                            <span className="id-bars"><i /><i /><i /><i /><i /></span>
+                            <span>index / 3 metrics</span>
+                            <span>{totalCommits > 0 ? `${totalCommits.toLocaleString("en-US")} commits` : "no data"}</span>
+                        </div>
+                    </div>
+
+                    {latest && (
+                        <section className={`cm-panel ${styles.idCard}`} aria-label="Latest commit">
+                            <div className="id-top">
+                                <Scramble className="id-sys" replay text="naOS // latest commit" />
+                                <span className="id-live"><i aria-hidden="true" />Live</span>
+                            </div>
+                            <div className="id-main">
+                                <div className="id-badge" aria-hidden="true">
+                                    <b>{latest.hash.slice(0, 2)}</b>
+                                    <span>head</span>
+                                </div>
+                                <dl className="id-rows">
+                                    <div>
+                                        <dt>Subject</dt>
+                                        <dd><Scramble replay text={latest.subject} /></dd>
+                                    </div>
+                                    <div>
+                                        <dt>Date</dt>
+                                        <dd>{latestDate}</dd>
+                                    </div>
+                                    <div>
+                                        <dt>Commit</dt>
+                                        <dd>
+                                            <a href={`https://github.com/${REPO}/commit/${latest.hash}`} target="_blank" rel="noreferrer">
+                                                {latest.hash.slice(0, 7)}
+                                            </a>
+                                        </dd>
+                                    </div>
+                                    {latestHasDiff && (
+                                        <div>
+                                            <dt>Diff</dt>
+                                            <dd>
+                                                <span style={{ color: "var(--cm-good)" }}>+{latest.additions}</span>
+                                                {" / "}
+                                                <span style={{ color: "var(--cm-alert)" }}>-{latest.deletions}</span>
+                                            </dd>
+                                        </div>
+                                    )}
+                                </dl>
+                            </div>
+                            <div className="id-foot" aria-hidden="true">
+                                <span className="id-bars"><i /><i /><i /><i /><i /></span>
+                                <span>signal / strong</span>
+                                <span>{REPO.split("/")[1]}</span>
+                            </div>
+                        </section>
+                    )}
+                </div>
+            </Section>
+
+            <Section ctos id="log" no="02" label="Changelog" title="Every change, in order.">
+                {failed ? (
+                    <div className={`cm-panel ${styles.notice}`}>
+                        <span className="cm-read warm">Couldn&apos;t reach the GitHub API right now. Check back shortly.</span>
+                    </div>
+                ) : totalCommits === 0 ? (
+                    <div className={`cm-panel ${styles.notice}`}>
+                        <span className="cm-read">No commits yet.</span>
+                    </div>
+                ) : (
+                    <CommitHistory
+                        repo={REPO}
+                        totalCommits={totalCommits}
+                        initialCommits={commits}
+                        initialPerPage={INITIAL_PER_PAGE}
+                    />
+                )}
+                <div className={`p-foot ${styles.footnote}`} aria-hidden="true">
+                    <span className="id-bars"><i /><i /><i /><i /><i /></span>
+                    <span>counts and commits refresh about hourly</span>
+                    <span>diff stats cached per commit</span>
+                </div>
+            </Section>
+        </div>
     );
 }
 
