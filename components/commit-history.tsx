@@ -240,40 +240,47 @@ export function CommitHistory({
             </div>
 
             <ol
-                className={cn("cm-rail", loading && "opacity-50")}
+                className={cn("cm-rail", styles.list, loading && "opacity-50")}
                 aria-live="polite"
-                style={{ margin: 0, padding: "18px 14px 18px 36px", listStyle: "none" }}
                 aria-busy={loading}
             >
                 {error ? (
-                    <li><p className="cm-note">Couldn&apos;t reach the GitHub API right now. Check back shortly.</p></li>
+                    <li className={styles.errorRow}><p className="cm-note">Couldn&apos;t reach the GitHub API right now. Check back shortly.</p></li>
                 ) : (
                     commits.map((entry, i) => {
                         const hasDiff = entry.additions !== null && entry.deletions !== null;
+                        const isHead = page === 1 && i === 0;
+                        const number = Math.max(1, startNumber - i);
                         return (
-                            <li key={entry.hash} className={page === 1 && i === 0 ? "now" : ""}>
-                                <p className="cm-row" style={{ gap: 10, margin: 0 }}>
-                                    <span className="cm-num" style={{ color: "var(--cm-cyan)" }}>#{Math.max(1, startNumber - i)}</span>
-                                    <span className="cm-lbl">{formatDate(entry.date)}</span>
-                                    {now !== null && <span className="cm-coord">{formatRelativeTime(entry.date, now)}</span>}
-                                    <a
-                                        href={`https://github.com/${repo}/commit/${entry.hash}`}
-                                        target="_blank"
-                                        rel="noreferrer"
-                                        className="cm-coord"
-                                        title={entry.hash}
-                                    >
-                                        {entry.hash.slice(0, 7)}
-                                    </a>
-                                </p>
-                                <h3 className="cm-sub" style={{ marginTop: 4 }}>{entry.subject}</h3>
-                                {hasDiff && (
-                                    <p className="cm-coord" style={{ margin: "4px 0 0" }}>
-                                        <span style={{ color: "var(--cm-good)" }}>+{entry.additions}</span>
-                                        {" / "}
-                                        <span style={{ color: "var(--cm-alert)" }}>-{entry.deletions}</span>
+                            <li key={entry.hash} className={cn(styles.item, isHead && styles.head)}>
+                                <span className={styles.idx} aria-label={`Commit number ${number}`}>
+                                    <span className={styles.idxHash}>#</span>
+                                    {number}
+                                </span>
+                                <div className={styles.body}>
+                                    <p className={styles.meta}>
+                                        <span className="cm-lbl">{formatDate(entry.date)}</span>
+                                        {now !== null && <span className={styles.rel}>{formatRelativeTime(entry.date, now)}</span>}
+                                        <a
+                                            href={`https://github.com/${repo}/commit/${entry.hash}`}
+                                            target="_blank"
+                                            rel="noreferrer"
+                                            className={styles.hash}
+                                            title={entry.hash}
+                                        >
+                                            {entry.hash.slice(0, 7)}
+                                        </a>
+                                        {isHead && <span className={styles.tag}>latest</span>}
                                     </p>
-                                )}
+                                    <h3 className={styles.subject}>{entry.subject}</h3>
+                                    {hasDiff && (
+                                        <p className={styles.diff}>
+                                            <span style={{ color: "var(--cm-good)" }}>+{entry.additions}</span>
+                                            {" / "}
+                                            <span style={{ color: "var(--cm-alert)" }}>-{entry.deletions}</span>
+                                        </p>
+                                    )}
+                                </div>
                             </li>
                         );
                     })
