@@ -2,7 +2,7 @@ import Link from "next/link";
 import { Suspense } from "react";
 import { getProjects, getRecentRenovations } from "@/lib/content";
 import { allGames } from "@/lib/creations-data";
-import { GOALS, INTERESTS, NOW_FEED, ROLES } from "@/lib/identity";
+import { NOW_FEED, PATH, PILLARS, PROFILE_LEAD } from "@/lib/identity";
 import { navItems } from "@/lib/nav";
 import { Section } from "@/components/cm/ui";
 import { CountUp, Reveal } from "@/components/cm/reveal";
@@ -15,7 +15,6 @@ export const revalidate = 60; // re-check Supabase for new content every 60s
 
 export default async function Home() {
     const [projects, renovations] = await Promise.all([getProjects(), getRecentRenovations()]);
-    const stack = Array.from(new Set([...projects, ...renovations].flatMap((p) => p.tags)));
     const featured = [...projects, ...renovations].slice(0, 3);
     const playable = allGames().filter((g) => g.status === "playable").length;
 
@@ -102,26 +101,40 @@ export default async function Home() {
                     </div>
                 </Section>
 
-            <Section id="profile" no="02" label="Profile" title="Roles, interests and goals.">
-                <div className="cm-split">
-                    <div className="cm-stack">
-                        <div className="cm-panel tick">
-                            <div className="cm-hbar"><span>Now</span><span>Feed</span></div>
-                            <ol className="cm-stream wrap">
-                                {NOW_FEED.map((l) => (
-                                    <li key={l}>{l}</li>
-                                ))}
-                            </ol>
-                        </div>
-                    </div>
-                    <div className="cm-panel">
+            <Section id="profile" no="02" label="Profile" title="Who I am, and where I'm headed.">
+                <div className="pf">
+                    <div className="cm-panel pf-id">
                         <div className="cm-hbar"><span>Profile</span><span>Class of 2027</span></div>
-                        <div className="cm-prow"><span className="cm-lbl">Roles</span><div className="cm-row-gap">{ROLES.map((r) => <span key={r} className="cm-pill">{r}</span>)}</div></div>
-                        <div className="cm-prow"><span className="cm-lbl">Interests</span><div className="cm-row-gap">{INTERESTS.map((r) => <span key={r} className="cm-pill">{r}</span>)}</div></div>
-                        <div className="cm-prow"><span className="cm-lbl">Heading toward</span><div className="cm-row-gap">{GOALS.map((r) => <span key={r} className="cm-pill">{r}</span>)}</div></div>
-                        {stack.length > 0 && (
-                            <div className="cm-prow"><span className="cm-lbl">Builds with</span><div className="cm-row-gap">{stack.map((r) => <span key={r} className="cm-pill on">{r}</span>)}</div></div>
-                        )}
+                        <p className="pf-lead">{PROFILE_LEAD}</p>
+                        <dl className="pf-pillars">
+                            {PILLARS.map((p) => (
+                                <div key={p.label}>
+                                    <dt>{p.label}</dt>
+                                    <dd>{p.headline}</dd>
+                                    <small>{p.detail}</small>
+                                </div>
+                            ))}
+                        </dl>
+                    </div>
+                    <div className="cm-panel tick pf-now">
+                        <div className="cm-hbar"><span>Now</span><span>Feed</span></div>
+                        <ul className="pf-feed">
+                            {NOW_FEED.map((l) => (
+                                <li key={l.tag}><span className="cm-state live">{l.tag}</span><span>{l.text}</span></li>
+                            ))}
+                        </ul>
+                    </div>
+                    <div className="cm-panel pf-path">
+                        <div className="cm-hbar"><span>Heading toward</span><span>2031</span></div>
+                        <ol className="pf-steps">
+                            {PATH.map((s) => (
+                                <li key={s.title} className={s.current ? "cur" : undefined}>
+                                    <span className="cm-lbl">{s.when}</span>
+                                    <b>{s.title}</b>
+                                    <p>{s.detail}</p>
+                                </li>
+                            ))}
+                        </ol>
                     </div>
                 </div>
             </Section>
