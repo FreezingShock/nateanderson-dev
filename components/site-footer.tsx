@@ -5,6 +5,11 @@ import { identity } from "@/lib/content";
 import { navItems } from "@/lib/nav";
 import { NateMark } from "@/components/cm/mark";
 
+// Footer-only copy. identity.tagline still says "environmental engineering" and is used by the
+// metadata, OG image and manifest, so it is left alone here until Nate picks the wording site-wide.
+const FOOTER_TAGLINE =
+    "Building games, renders, and systems, and aiming for construction management at Cal Poly SLO.";
+
 function TikTokIcon({ className }: { className?: string }) {
     return (
         <svg viewBox="0 0 24 24" fill="currentColor" className={className} aria-hidden="true">
@@ -34,47 +39,52 @@ const ABOUT_LINKS = [
 export function SiteFooter() {
     return (
         <footer className="cm-foot" id="footer">
-            <div className="cm-wrap" style={{ display: "grid", gap: "var(--cm-s6)" }}>
-                <div className="cm-cols4" style={{ alignItems: "start" }}>
-                    <div className="cm-stack">
+            <div className="cm-wrap cm-foot-wrap">
+                <div className="cm-foot-top">
+                    <div className="cm-foot-brand">
                         <NateMark sub="nateanderson.dev" />
-                        <p className="cm-note" style={{ maxWidth: "34ch" }}>{identity.tagline}</p>
-                        <span className="cm-read live">Southern California · Class of 2027</span>
+                        <p className="cm-foot-tagline">{FOOTER_TAGLINE}</p>
+                        <div className="cm-foot-status">
+                            <span className="cm-read live">Class of 2027</span>
+                            <span className="cm-coord">Southern California</span>
+                        </div>
                     </div>
-                    <nav aria-label="Site pages" style={{ display: "grid", gap: 10, alignContent: "start" }}>
+                    <nav className="cm-foot-col" aria-label="Site pages">
                         <span className="cm-lbl">Pages</span>
                         {navItems.map((n) => (
                             <Link key={n.href} href={n.href}>{n.label}</Link>
                         ))}
                     </nav>
-                    <nav aria-label="About Nate" style={{ display: "grid", gap: 10, alignContent: "start" }}>
+                    <nav className="cm-foot-col" aria-label="About Nate">
                         <span className="cm-lbl">About me</span>
                         {ABOUT_LINKS.map((l) => (
                             <Link key={l.href} href={l.href}>{l.label}</Link>
                         ))}
                     </nav>
-                    <div style={{ display: "grid", gap: 10, alignContent: "start" }}>
-                        <span className="cm-lbl">Find me</span>
-                        <ul className="cm-row-gap" style={{ listStyle: "none", margin: 0, padding: 0 }}>
-                            {SOCIALS.map(({ label, href, Icon, preferred }) => (
-                                <li key={label}>
-                                    <a
-                                        className="cm-btn"
-                                        href={href}
-                                        target={href.startsWith("mailto:") ? undefined : "_blank"}
-                                        rel="noreferrer"
-                                    >
-                                        <Icon className="cm-ico" />
-                                        {label}
-                                        {preferred && <span className="cm-state live">Preferred</span>}
-                                    </a>
-                                </li>
-                            ))}
-                        </ul>
-                    </div>
                 </div>
+
+                <div className="cm-foot-find">
+                    <span className="cm-lbl">Find me</span>
+                    <ul className="cm-foot-social">
+                        {SOCIALS.map(({ label, href, Icon, preferred }) => (
+                            <li key={label}>
+                                <a
+                                    className="cm-btn"
+                                    href={href}
+                                    target={href.startsWith("mailto:") ? undefined : "_blank"}
+                                    rel="noreferrer"
+                                >
+                                    <Icon className="cm-ico" />
+                                    {label}
+                                </a>
+                                {preferred && <span className="cm-foot-pref">Preferred</span>}
+                            </li>
+                        ))}
+                    </ul>
+                </div>
+
                 <div className="cm-rule" style={{ margin: 0 }} />
-                <div className="cm-row" style={{ justifyContent: "space-between" }}>
+                <div className="cm-foot-base">
                     <span className="cm-coord">© {new Date().getFullYear()} {identity.name} {identity.lastName}</span>
                     <span className="cm-coord">Built in Southern California / Camino design system</span>
                 </div>
