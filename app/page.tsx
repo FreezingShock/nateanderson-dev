@@ -36,10 +36,17 @@ export default async function Home() {
                         <div className="hero-copy cm-stage">
                         <span className="cm-lbl">Portfolio / Southern California / nateanderson.dev</span>
                         <h1 style={{ margin: 0 }}>
-                            <span className="cm-highlight wipe" style={{ display: "inline-flex", flexDirection: "column" }}>
+                            <span className="cm-highlight wipe hero-title" style={{ display: "inline-flex", flexDirection: "column" }}>
                                 <span><span className="hx">Nate Anderson</span></span>
-                                <span><span className="hx">builds games,</span></span>
-                                <span><span className="hx">renders &amp; systems.</span></span>
+                                <span className="hero-line"><span className="hx">
+                                    <span className="hw hw-builds" data-scr-hover>builds</span>{" "}
+                                    <span className="hw hw-games" data-scr-hover>games,</span>
+                                </span></span>
+                                <span className="hero-line"><span className="hx">
+                                    <span className="hw hw-renders" data-scr-hover>renders</span>{" "}
+                                    <span className="hw-amp" aria-hidden="true">&amp;</span>{" "}
+                                    <span className="hw hw-systems" data-scr-hover>systems.</span>
+                                </span></span>
                             </span>
                         </h1>
                         <ScrollType
@@ -49,11 +56,23 @@ export default async function Home() {
                             style={{ margin: 0 }}
                             text="Headed to Cal Poly SLO for Construction Management. Currently shipping Fractured Islands: Ascension, a Roblox progression game built in Luau."
                         />
-                        <div className="cm-row cta">
-                            <Link className="cta-b a" href="/creations/projects"><i>01</i><span>View projects</span><em aria-hidden="true">→</em></Link>
-                            <Link className="cta-b b" href="/about"><i>02</i><span>About me</span><em aria-hidden="true">→</em></Link>
-                            <Link className="cta-b c" href="/creations/games"><i>03</i><span>Play the games</span><em aria-hidden="true">→</em></Link>
-                        </div>
+                        <nav className="hero-cta" aria-label="Start here">
+                            <Link className="hcta hcta-main" href="/creations/projects" data-scr-hover>
+                                <span className="hcta-no" aria-hidden="true">01</span>
+                                <span className="hcta-txt"><b data-scr-text>View projects</b><small>/creations/projects</small></span>
+                                <span className="hcta-arr" aria-hidden="true">→</span>
+                            </Link>
+                            <Link className="hcta" href="/about" data-scr-hover>
+                                <span className="hcta-no" aria-hidden="true">02</span>
+                                <span className="hcta-txt"><b data-scr-text>About me</b><small>/about</small></span>
+                                <span className="hcta-arr" aria-hidden="true">→</span>
+                            </Link>
+                            <Link className="hcta" href="/creations/games" data-scr-hover>
+                                <span className="hcta-no" aria-hidden="true">03</span>
+                                <span className="hcta-txt"><b data-scr-text>Play the games</b><small>/creations/games</small></span>
+                                <span className="hcta-arr" aria-hidden="true">→</span>
+                            </Link>
+                        </nav>
                         <div className="meta stats">
                             <div><div className="cm-lbl">Projects</div>{projects.length > 0 ? <CountUp className="big" value={projects.length} /> : <span className="big none" aria-label="None yet">—</span>}</div>
                             <div><div className="cm-lbl">Renovations</div>{renovations.length > 0 ? <CountUp className="big" value={renovations.length} /> : <span className="big none" aria-label="None yet">—</span>}</div>

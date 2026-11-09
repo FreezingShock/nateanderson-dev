@@ -1,4 +1,6 @@
 import { PageHead, Section } from "@/components/cm/ui";
+import { NaosArt } from "@/components/cm/naos-art";
+import { Scramble } from "@/components/cm/motion";
 import { TimelineOverview } from "@/components/timeline-overview";
 import { TimelineExplorer } from "@/components/timeline-explorer";
 import { phases } from "@/lib/timeline-data";
@@ -57,6 +59,8 @@ export default function TimelinePage() {
 
     return (
         <div className="ctos tl-page">
+            {/* Original 1-bit terrace art (scripts/naos-art/generate.py). Replaces the generic header overlay on this page. */}
+            <NaosArt src="/naos/timeline-route.png" width={320} height={220} variant="hero" eager className="tl-art" />
             <PageHead
                 label="Journey"
                 title={["Timeline"]}
@@ -64,7 +68,7 @@ export default function TimelinePage() {
             >
                 <div className="id-top tl-status">
                     <span className="id-live"><i />naOS // journey</span>
-                    <span className="id-sys">{phases.length} phases / {MILESTONES} milestones</span>
+                    <span className="id-sys"><Scramble text={`${phases.length} phases / ${MILESTONES} milestones`} /></span>
                 </div>
             </PageHead>
 

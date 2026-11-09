@@ -125,7 +125,7 @@ html[data-boot="full"] .cm-grid-bg, html[data-boot="quick"] .cm-grid-bg, html[da
    name is set on it in heavy lowercase, then it wipes off the far side and the new page arrives.
    Out: page fades (170ms) while the card covers (260ms). Hold: card stays, name shown, route loads.
    In: card exits (460ms) and the new page's entrance runs. The latest click always retargets (MotionRoot).
-   Direction: fwd/back along nav order, down/up between a section and its sub-pages. Only clip-path and opacity. */
+   Direction: fwd/back along nav order, down/up between a section and its sub-pages. Transform and opacity only. */
 html[data-dir="fwd"]  { --ox: -30px; --oy: 0px; }
 html[data-dir="back"] { --ox: 30px;  --oy: 0px; }
 html[data-dir="down"] { --ox: 0px; --oy: -22px; }
@@ -141,42 +141,82 @@ html[data-xition="out"] .cm-pgauge, html[data-xition="hold"] .cm-pgauge {
 @keyframes cm-page-in { from { opacity: 0; transform: translate3d(calc(var(--ox) * -1), calc(var(--oy) * -1), 0); } }
 @keyframes cm-load { from { translate: -100% 0; } to { translate: 270% 0; } }
 
-/* The card. Hidden = zero-area clip. Its magenta guide line and the destination name sit on the card. */
+/* The card: one white title card carries the trip. Hidden = scaled to zero.
+   Parts: a 1-bit dither edge on the leading side, an accent guide line (the destination's colour), a mono readout
+   that types the route, and the destination name rising in heavy lowercase. --acc is set per destination.
+   Only transform and opacity animate here: clip-path animates on the main thread and stutters while the new page
+   hydrates, transform and opacity stay on the compositor. */
 .cm-wipe {
-  position: fixed; inset: 0; z-index: var(--cm-z-curtain); pointer-events: none;
-  background: var(--cm-ctos-block); clip-path: inset(0 100% 0 0);
+  position: fixed; inset: 0; z-index: var(--cm-z-curtain); pointer-events: none; will-change: transform;
+  background: var(--cm-ctos-block); transform: scaleX(0); --acc: #2fd8e8;
 }
 .cm-wipe::before {
-  content: ""; position: absolute; left: 0; right: 0; top: 62%; height: 1px; background: #ff2d8a; opacity: 0;
+  content: ""; position: absolute; left: 0; right: 0; top: 62%; height: 1px; background: var(--acc);
+  opacity: 0; transform-origin: left center;
 }
 .cm-wipe::after {
   content: attr(data-to); position: absolute; left: var(--cm-gutter); right: var(--cm-gutter); bottom: 18vh;
   font: 700 clamp(44px, 13vw, 150px)/.86 var(--cm-display); letter-spacing: -.055em; text-transform: lowercase;
-  color: var(--cm-ctos-ink); padding: .1em .16em .2em .06em; overflow-wrap: anywhere; opacity: 0;
+  color: var(--cm-ctos-ink); padding: .24em .16em .2em .06em; overflow-wrap: anywhere;
+  opacity: 0; transform: translate3d(0, 28px, 0);
 }
-html[data-xition="out"] .cm-wipe::after, html[data-xition="hold"] .cm-wipe::after { animation: nx-label .2s .12s forwards; }
-html[data-xition="hold"] .cm-wipe, html[data-xition="hold"] .cm-wipe::before { clip-path: inset(0 0 0 0); }
-html[data-xition="hold"] .cm-wipe::before { clip-path: none; opacity: 1; animation: nx-guide .42s var(--cm-ease-cut) forwards; transform-origin: left; }
-html[data-xin] .cm-wipe::after { animation: nx-label-out .16s linear forwards; }
-@keyframes nx-label { to { opacity: 1; } }
-@keyframes nx-label-out { to { opacity: 0; } }
+.cm-wipe .edge {
+  position: absolute; opacity: 0;
+  background: radial-gradient(circle, var(--cm-ctos-ink) 0 30%, transparent 36%) 0 0 / 6px 6px;
+}
+.cm-wipe .k {
+  position: absolute; left: var(--cm-gutter); top: max(14vh, 84px); font: 600 12px/1 var(--cm-mono);
+  letter-spacing: .12em; text-transform: uppercase; color: var(--cm-ctos-ink); white-space: nowrap;
+  opacity: 0; transform: translate3d(0, 6px, 0);
+}
+.cm-wipe .k::before {
+  content: ""; display: inline-block; width: .7em; height: .7em; margin-right: .7em; background: var(--acc);
+  vertical-align: -.05em;
+}
+.cm-wipe .k::after { content: "_"; margin-left: .15em; }
+
+/* Direction: the card grows from the side it travels toward and leaves through the far side */
+html[data-dir="fwd"]  .cm-wipe { transform-origin: left center; }
+html[data-dir="back"] .cm-wipe { transform-origin: right center; }
+html[data-dir="down"] .cm-wipe { transform-origin: center top; }
+html[data-dir="up"]   .cm-wipe { transform-origin: center bottom; }
+html[data-dir="fwd"] .cm-wipe .edge  { top: 0; bottom: 0; right: 0; width: min(24vw, 180px); -webkit-mask-image: linear-gradient(to right, transparent, #000 85%); mask-image: linear-gradient(to right, transparent, #000 85%); }
+html[data-dir="back"] .cm-wipe .edge { top: 0; bottom: 0; left: 0; width: min(24vw, 180px); -webkit-mask-image: linear-gradient(to left, transparent, #000 85%); mask-image: linear-gradient(to left, transparent, #000 85%); }
+html[data-dir="down"] .cm-wipe .edge { left: 0; right: 0; bottom: 0; height: min(24vh, 180px); -webkit-mask-image: linear-gradient(to bottom, transparent, #000 85%); mask-image: linear-gradient(to bottom, transparent, #000 85%); }
+html[data-dir="up"]   .cm-wipe .edge { left: 0; right: 0; top: 0; height: min(24vh, 180px); -webkit-mask-image: linear-gradient(to top, transparent, #000 85%); mask-image: linear-gradient(to top, transparent, #000 85%); }
+
+/* out: the card covers, its guide line and dither edge arrive, the readout types */
+html[data-dir="fwd"][data-xition="out"]  .cm-wipe, html[data-dir="back"][data-xition="out"] .cm-wipe { animation: nx-cx-in .28s var(--cm-ease-cut) forwards; }
+html[data-dir="down"][data-xition="out"] .cm-wipe, html[data-dir="up"][data-xition="out"]   .cm-wipe { animation: nx-cy-in .28s var(--cm-ease-cut) forwards; }
+html[data-xition="out"] .cm-wipe .edge { animation: nx-fade-in .26s linear forwards; }
+html[data-xition="out"] .cm-wipe .k { animation: nx-k-in .3s linear .08s forwards; }
+html[data-xition="out"] .cm-wipe .k::after, html[data-xition="hold"] .cm-wipe .k::after { animation: nx-blink .5s steps(1) infinite; }
+html[data-xition="out"] .cm-wipe::after, html[data-xition="hold"] .cm-wipe::after { animation: nx-rise .42s var(--cm-ease-cut) .12s forwards; }
+html[data-xition="out"] .cm-wipe::before, html[data-xition="hold"] .cm-wipe::before { animation: nx-guide .46s var(--cm-ease-cut) .02s forwards; }
+/* hold: the card stays full size, the name and readout stay up */
+html[data-xition="hold"] .cm-wipe { transform: none; animation: none; }
+html[data-xition="hold"] .cm-wipe .edge { opacity: 1; }
+html[data-xition="hold"] .cm-wipe .k { opacity: 1; transform: none; }
+html[data-xition="hold"] .cm-wipe::after { opacity: 1; transform: none; }
+html[data-xition="hold"] .cm-wipe::before { opacity: 1; transform: scaleX(1); }
+/* in: the card leaves through the far side, the name, readout and edge fade */
+html[data-dir="fwd"][data-xin]  .cm-wipe { transform-origin: right center; animation: nx-cx-out .5s var(--cm-ease-cut) .04s both; }
+html[data-dir="back"][data-xin] .cm-wipe { transform-origin: left center;  animation: nx-cx-out .5s var(--cm-ease-cut) .04s both; }
+html[data-dir="down"][data-xin] .cm-wipe { transform-origin: center bottom; animation: nx-cy-out .5s var(--cm-ease-cut) .04s both; }
+html[data-dir="up"][data-xin]   .cm-wipe { transform-origin: center top;    animation: nx-cy-out .5s var(--cm-ease-cut) .04s both; }
+html[data-xin] .cm-wipe::after, html[data-xin] .cm-wipe .k, html[data-xin] .cm-wipe .edge, html[data-xin] .cm-wipe::before {
+  animation: nx-fade-out .18s linear forwards;
+}
+
+@keyframes nx-cx-in { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+@keyframes nx-cx-out { from { transform: scaleX(1); } to { transform: scaleX(0); } }
+@keyframes nx-cy-in { from { transform: scaleY(0); } to { transform: scaleY(1); } }
+@keyframes nx-cy-out { from { transform: scaleY(1); } to { transform: scaleY(0); } }
+@keyframes nx-fade-in { to { opacity: 1; } }
+@keyframes nx-k-in { to { opacity: 1; transform: none; } }
+@keyframes nx-rise { to { opacity: 1; transform: none; } }
 @keyframes nx-guide { from { transform: scaleX(0); } to { transform: scaleX(1); } }
-@keyframes nx-cover-fwd { from { clip-path: inset(0 100% 0 0); } to { clip-path: inset(0 0 0 0); } }
-@keyframes nx-reveal-fwd { from { clip-path: inset(0 0 0 0); } to { clip-path: inset(0 0 0 100%); } }
-@keyframes nx-cover-back { from { clip-path: inset(0 0 0 100%); } to { clip-path: inset(0 0 0 0); } }
-@keyframes nx-reveal-back { from { clip-path: inset(0 0 0 0); } to { clip-path: inset(0 100% 0 0); } }
-@keyframes nx-cover-down { from { clip-path: inset(0 0 100% 0); } to { clip-path: inset(0 0 0 0); } }
-@keyframes nx-reveal-down { from { clip-path: inset(0 0 0 0); } to { clip-path: inset(100% 0 0 0); } }
-@keyframes nx-cover-up { from { clip-path: inset(100% 0 0 0); } to { clip-path: inset(0 0 0 0); } }
-@keyframes nx-reveal-up { from { clip-path: inset(0 0 0 0); } to { clip-path: inset(0 0 100% 0); } }
-html[data-dir="fwd"][data-xition="out"] .cm-wipe { animation: nx-cover-fwd .26s var(--cm-ease-cut) forwards; }
-html[data-dir="fwd"][data-xin] .cm-wipe { animation: nx-reveal-fwd .46s var(--cm-ease-cut) .04s both; }
-html[data-dir="back"][data-xition="out"] .cm-wipe { animation: nx-cover-back .26s var(--cm-ease-cut) forwards; }
-html[data-dir="back"][data-xin] .cm-wipe { animation: nx-reveal-back .46s var(--cm-ease-cut) .04s both; }
-html[data-dir="down"][data-xition="out"] .cm-wipe { animation: nx-cover-down .26s var(--cm-ease-cut) forwards; }
-html[data-dir="down"][data-xin] .cm-wipe { animation: nx-reveal-down .46s var(--cm-ease-cut) .04s both; }
-html[data-dir="up"][data-xition="out"] .cm-wipe { animation: nx-cover-up .26s var(--cm-ease-cut) forwards; }
-html[data-dir="up"][data-xin] .cm-wipe { animation: nx-reveal-up .46s var(--cm-ease-cut) .04s both; }
+@keyframes nx-blink { 50% { opacity: 0; } }
 
 /* ---- 6. System boot (first load of a session; quick re-sync on later loads) ----------------------------------
    Server-rendered; shown only while the head script has set html[data-boot="full|quick"] (components/cm/boot.tsx).
@@ -205,16 +245,16 @@ html[data-boot="full"] .cm-boot-full { display: block; }
   position: absolute; left: var(--cm-gutter); top: max(18vh, 96px); display: grid; gap: 8px;
   font: 500 12.5px/1.2 var(--cm-mono); letter-spacing: .04em; color: var(--cm-fg);
 }
-.cm-boot-full .ln { display: block; white-space: nowrap; animation: nx-type .34s linear forwards; clip-path: inset(0 100% 0 0); }
+.cm-boot-full .ln { display: block; white-space: nowrap; opacity: 0; transform: translate3d(-8px, 0, 0); animation: nx-ln-in .3s cubic-bezier(.16, 1, .3, 1) forwards; }
 .cm-boot-full .l1 { color: var(--cm-cyan); animation-delay: .08s; }
 .cm-boot-full .l2 { animation-delay: .26s; }
 .cm-boot-full .l3 { animation-delay: .44s; }
 .cm-boot-full .l4 { animation-delay: .62s; }
-.cm-boot-full .title { position: absolute; left: var(--cm-gutter); right: var(--cm-gutter); bottom: 22vh; }
+.cm-boot-full .title { position: absolute; left: var(--cm-gutter); right: var(--cm-gutter); bottom: 22vh; overflow: hidden; }
 .cm-boot-full .word {
   display: inline-block; background: var(--cm-ctos-block); color: var(--cm-ctos-ink);
   font: 700 clamp(84px, 24vw, 260px)/.86 var(--cm-display); letter-spacing: -.055em;
-  padding: .24em .16em .2em .06em; clip-path: inset(100% 0 0 0);
+  padding: .24em .16em .2em .06em; transform: translate3d(0, 105%, 0);
   animation: nx-title-up .5s var(--cm-ease-cut) .2s forwards;
 }
 .cm-boot-full .sub {
@@ -249,7 +289,7 @@ html[data-boot="full"] .cm-boot-full { display: block; }
 .cm-boot-full .pb { animation: nx-shutter-down .5s var(--cm-ease-cut) 1.1s forwards; }
 
 .cm-boot-quick {
-  display: none; position: absolute; inset: 0; background: var(--cm-ctos-block); clip-path: inset(0 100% 0 0);
+  display: none; position: absolute; inset: 0; background: var(--cm-ctos-block); transform: scaleX(0); transform-origin: left center; will-change: transform;
 }
 html[data-boot="quick"] .cm-boot-quick { display: block; animation: nx-quick .8s var(--cm-ease-cut) forwards; }
 .cm-boot-quick .word {
@@ -260,8 +300,8 @@ html[data-boot="quick"] .cm-boot-quick { display: block; animation: nx-quick .8s
 
 @keyframes nx-grid-in { to { opacity: 1; } }
 @keyframes nx-grid-out { to { opacity: 0; } }
-@keyframes nx-type { to { clip-path: inset(0 0 0 0); } }
-@keyframes nx-title-up { to { clip-path: inset(0 0 0 0); } }
+@keyframes nx-title-up { to { transform: none; } }
+@keyframes nx-ln-in { to { opacity: 1; transform: none; } }
 @keyframes nx-fade { from { opacity: 0; } }
 @keyframes nx-fade-out { to { opacity: 0; } }
 @keyframes nx-bp { to { --cm-bp: 100; } }
@@ -270,8 +310,8 @@ html[data-boot="quick"] .cm-boot-quick { display: block; animation: nx-quick .8s
 @keyframes nx-shutter-up { to { transform: translate3d(0, -101%, 0); } }
 @keyframes nx-shutter-down { to { transform: translate3d(0, 101%, 0); } }
 @keyframes nx-quick {
-  0% { clip-path: inset(0 100% 0 0); } 40% { clip-path: inset(0 0 0 0); } 62% { clip-path: inset(0 0 0 0); }
-  100% { clip-path: inset(0 0 0 100%); }
+  0% { transform: scaleX(0); } 40% { transform: scaleX(1); } 62% { transform: translate3d(0, 0, 0) scaleX(1); }
+  100% { transform: translate3d(100%, 0, 0) scaleX(1); }
 }
 
 /* ---- 7. No script: show everything. Reduced motion: show everything, move nothing. ---------------------------- */
