@@ -1,0 +1,24 @@
+/* Studies-only layout tweaks on top of the shared Camino kit (kept local so sibling pages are untouched). */
+.st-courses { display: grid; gap: 12px; grid-template-columns: repeat(3, minmax(0, 1fr)); align-items: stretch; }
+@media (max-width: 1100px) { .st-courses { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 700px) { .st-courses { grid-template-columns: 1fr; } }
+
+/* Header-strip meta: an AP flag that does not change the strip's height, so every card lines up. */
+.st-hbar-end { display: inline-flex; align-items: center; gap: 8px; }
+.st-ap { background: var(--cm-alert); color: #fff; font: 700 9px/1 var(--cm-mono); letter-spacing: .14em; padding: 3px 5px; }
+
+.st-panel-fill { height: 100%; display: flex; flex-direction: column; }
+.st-panel-fill > .cm-body-pad { flex: 1; align-content: start; }
+
+.st-list { margin: 0; padding: 0 0 0 18px; display: grid; gap: 8px; }
+.st-list li { color: var(--cm-mute); list-style: square; }
+.st-list li::marker { color: var(--cm-dim); }
+
+.st-facts { display: grid; gap: 16px; }
+.st-split { display: grid; grid-template-columns: 1.2fr 1fr; gap: var(--cm-s6); align-items: stretch; }
+.st-split.even { grid-template-columns: 1fr 1fr; }
+.st-detail { padding-top: var(--cm-s6); }
+
+/* List that is itself the panel body: keep the panel's padding, indent only for the markers. */
+.st-list.cm-body-pad { padding: 12px 14px 12px 32px; }
+@media (max-width: 900px) { .st-split, .st-split.even { grid-template-columns: 1fr; } }

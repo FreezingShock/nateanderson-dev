@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
+import "../studies.css";
 import { PageHead, Section, Meter } from "@/components/cm/ui";
 import {
     AP_WINDOW,
@@ -70,7 +71,7 @@ export default async function CourseDetailPage({
                 back={{ href: "/studies", label: "Back to studies" }}
             />
 
-            <section id="detail" className="cm-section" style={{ scrollMarginTop: 96 }}>
+            <section id="detail" className="cm-section st-detail" style={{ scrollMarginTop: 96 }}>
                 <div className="cm-wrap" style={{ display: "grid", gap: 16 }}>
                     <div className="cm-cols3">
                         {facts.map((f) => (
@@ -85,8 +86,8 @@ export default async function CourseDetailPage({
                         ))}
                     </div>
 
-                    <div className="cm-split">
-                        <div className="cm-panel tick">
+                    <div className="st-split">
+                        <div className="cm-panel tick st-panel-fill">
                             <div className="cm-hbar">
                                 <span className="live">Through the school year</span>
                                 <span>{pct}%</span>
@@ -97,7 +98,7 @@ export default async function CourseDetailPage({
                             </div>
                         </div>
                         {course.ap && (
-                            <div className="cm-panel">
+                            <div className="cm-panel st-panel-fill">
                                 <div className="cm-hbar">
                                     <span>Days to the AP window</span>
                                 </div>
@@ -111,20 +112,20 @@ export default async function CourseDetailPage({
             </section>
 
             <Section id="goals" label="Goals & materials" title="What the class covers.">
-                <div className="cm-split">
-                    <div className="cm-panel">
+                <div className="st-split even">
+                    <div className="cm-panel st-panel-fill">
                         <div className="cm-hbar"><span>Key focus areas</span></div>
-                        <ul className="cm-body-pad" style={{ margin: 0, paddingLeft: 30, display: "grid", gap: 8 }}>
+                        <ul className="cm-body-pad st-list">
                             {course.focus.map((item) => (
-                                <li key={item} style={{ color: "var(--cm-mute)", listStyle: "square" }}>{item}</li>
+                                <li key={item}>{item}</li>
                             ))}
                         </ul>
                     </div>
-                    <div className="cm-panel">
+                    <div className="cm-panel st-panel-fill">
                         <div className="cm-hbar"><span>Learning goals</span></div>
-                        <ul className="cm-body-pad" style={{ margin: 0, paddingLeft: 30, display: "grid", gap: 8 }}>
+                        <ul className="cm-body-pad st-list">
                             {course.goals.map((goal) => (
-                                <li key={goal} style={{ color: "var(--cm-mute)", listStyle: "square" }}>{goal}</li>
+                                <li key={goal}>{goal}</li>
                             ))}
                         </ul>
                     </div>

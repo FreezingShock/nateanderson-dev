@@ -4,6 +4,7 @@ import { StudiesOverview } from "@/components/studies-overview";
 import { CourseExplorer } from "@/components/course-explorer";
 import { PathwayRail, ProgramCardView, ReadingQueue, ToolRoadmap } from "@/components/studies-sections";
 import { courses, personalStudies } from "@/lib/studies-data";
+import "./studies.css";
 
 // Statically generated, refreshed hourly: progress bars and countdown starting values are computed from
 // real dates at render time, so the page keeps moving forward on its own.
@@ -26,7 +27,7 @@ export default function StudiesPage() {
                 no="01"
                 label="The school year"
                 title="Where senior year stands."
-                blurb="Where senior year stands, and the dates it's all building toward, counting down live."
+                blurb="The dates it's all building toward, counting down live, and how far through the year I am."
             >
                 <StudiesOverview nowMs={nowMs} />
             </Section>

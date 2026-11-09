@@ -14,7 +14,7 @@ import { phases, progressBetween } from "@/lib/timeline-data";
 
 export function ProgramCardView({ program }: { program: Program }) {
     return (
-        <div className="cm-panel" style={{ height: "100%" }}>
+        <div className="cm-panel st-panel-fill">
             <div className="cm-hbar">
                 <span>{program.institution ?? "Self-directed"}</span>
                 <span>{program.timeline}</span>
@@ -126,9 +126,9 @@ export function ToolRoadmap() {
                     </div>
                     <div className="cm-body-pad" style={{ display: "grid", gap: 10 }}>
                         <h4 className="cm-h3" style={{ margin: 0 }}>{stage.label}</h4>
-                        <ul style={{ margin: 0, padding: "0 0 0 18px", display: "grid", gap: 6 }}>
+                        <ul className="st-list">
                             {stage.skills.map((s) => (
-                                <li key={s} style={{ color: "var(--cm-mute)", listStyle: "square" }}>{s}</li>
+                                <li key={s}>{s}</li>
                             ))}
                         </ul>
                     </div>
