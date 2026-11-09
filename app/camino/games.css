@@ -164,3 +164,154 @@
 @media (pointer: fine) {
     .cm input[role="combobox"] { font-size: 15px; }
 }
+
+/* ==========================================================================
+   naOS games layer. Only on the Games pages: each wrapper carries `.ctos`, so nothing here leaks elsewhere.
+   Pieces: GameFrame (status card around the game), GameReadout (side panel), NaosGameMode (hub cards).
+   Source: components/games/naos.tsx. Shared naOS rules live in ctos.css and are not repeated here.
+   ========================================================================== */
+
+/* Layout: the game and its readout side by side on desktop, stacked on phones. */
+.ctos .g-layout { display: grid; gap: 18px; align-items: start; min-width: 0; }
+@media (min-width: 1000px) {
+    .ctos .g-layout { grid-template-columns: minmax(0, 1fr) 280px; }
+    .ctos .g-read { position: sticky; top: 96px; }
+}
+
+/* Frame: the one card around a game. Dark ground, cyan left edge, white guide bracket, like the naOS status card. */
+.ctos .g-frame {
+    position: relative;
+    isolation: isolate;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    background: #131313;
+    border: 1px solid var(--cm-hair-hi);
+    border-left: 3px solid var(--cm-cyan);
+}
+.ctos .g-frame::before {
+    content: "";
+    position: absolute;
+    right: -1px;
+    top: -1px;
+    width: 14px;
+    height: 14px;
+    border: 0 solid var(--cm-ctos-block);
+    border-top-width: 2px;
+    border-right-width: 2px;
+    pointer-events: none;
+    z-index: 2;
+}
+.ctos .g-top {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: center;
+    gap: 6px 12px;
+    padding: 9px 14px;
+    background: var(--cm-ctos-block);
+    color: var(--cm-ctos-ink);
+    font: 700 10.5px/1 var(--cm-mono);
+    letter-spacing: .14em;
+    text-transform: uppercase;
+}
+.ctos .g-sys { overflow-wrap: anywhere; }
+.ctos .g-top .id-live { font-weight: 600; letter-spacing: .12em; }
+.ctos .g-body { flex: 1; padding: 14px; min-width: 0; }
+@media (min-width: 640px) { .ctos .g-body { padding: 20px 22px 22px; } }
+
+/* The game's own panel is flattened inside the frame so the frame is the only card. */
+.ctos .g-body > .cm-panel.cm-panel {
+    max-width: none;
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+}
+.ctos .g-body > .cm-panel.cm-panel::before,
+.ctos .g-body > .cm-panel.cm-panel::after { content: none; }
+
+/* Footer strip: the frame's last line, same family as the status card's signal strip. */
+.ctos .g-frame > .p-foot { margin-top: auto; }
+
+/* Readout: a second status card with the game's facts and short rules. */
+.ctos .g-read { display: flex; flex-direction: column; min-width: 0; border-left: 3px solid var(--cm-ctos-block); }
+.ctos .g-read .id-top { padding: 9px 14px; }
+.ctos .g-rows { padding: 14px 14px 8px; }
+.ctos .g-rows dd { font-size: 14px; }
+.ctos .g-notes {
+    list-style: none;
+    margin: 0;
+    padding: 12px 14px 16px;
+    display: grid;
+    gap: 11px;
+    counter-reset: gn;
+    border-top: 1px dashed var(--cm-hair-hi);
+}
+.ctos .g-notes li {
+    counter-increment: gn;
+    position: relative;
+    padding-left: 30px;
+    font: 400 13px/1.45 var(--cm-display);
+    color: var(--cm-mute);
+}
+.ctos .g-notes li::before {
+    content: counter(gn, decimal-leading-zero);
+    position: absolute;
+    left: 0;
+    top: 1px;
+    font: 700 10.5px/1.45 var(--cm-mono);
+    letter-spacing: .08em;
+    color: var(--cm-cyan);
+}
+.ctos .g-read .p-foot { margin-top: auto; }
+
+/* Hub cards: a square art plate above the title, in the card rotation from ctos.css. */
+.ctos .g-card .g-cardart {
+    position: relative;
+    display: grid;
+    place-items: center;
+    height: 76px;
+    margin-bottom: 4px;
+    border: 1px dashed var(--cm-hair-hi);
+    background-color: #0d0d0d;
+    background-image: radial-gradient(circle, rgba(244, 244, 242, .14) 0 28%, transparent 32%);
+    background-size: 6px 6px;
+    overflow: hidden;
+}
+.ctos .g-card .g-cardart::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: 4px;
+    background: var(--cm-cyan);
+}
+.ctos .g-card .g-cardart svg { width: 36px; height: 36px; color: var(--cm-cyan); }
+.ctos .g-card:nth-child(3n+1) .g-cardart { background-color: #e3e3df; border-color: #c9c9c3; background-image: repeating-linear-gradient(135deg, rgba(0, 0, 0, .08) 0 1px, transparent 1px 8px); }
+.ctos .g-card:nth-child(3n+1) .g-cardart svg { color: #0a7f89; }
+.ctos .g-card:nth-child(3n+1) .g-cardart::after { background: #1a1a1a; }
+.ctos .g-card:nth-child(3n) .g-cardart { background-image: linear-gradient(33deg, transparent 49.6%, rgba(194, 59, 208, .7) 50%, transparent 50.4%); }
+.ctos .g-grid { grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); }
+.ctos .g-pills { list-style: none; margin: 2px 0 0; padding: 0; }
+.ctos .g-card:hover .g-cardart svg { transform: translateY(-2px); transition: transform .2s var(--cm-ease); }
+
+/* Flag tiles: the cover is dither on near-black, not a flat grey block. */
+.ctos .fg-cover {
+    background-color: #0d0d0d;
+    background-image: radial-gradient(circle, rgba(244, 244, 242, .16) 0 28%, transparent 32%);
+    background-size: 6px 6px;
+    box-shadow: inset 0 0 0 1px var(--cm-hair-hi);
+}
+.ctos .fg-cover svg { color: var(--cm-cyan); opacity: .75; }
+
+@media (max-width: 760px) {
+    .ctos .g-card .g-cardart { height: 64px; }
+}
+@media (prefers-reduced-motion: reduce) {
+    .ctos .g-card:hover .g-cardart svg { transition: none; transform: none; }
+}
