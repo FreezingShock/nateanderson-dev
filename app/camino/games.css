@@ -315,3 +315,54 @@
 @media (prefers-reduced-motion: reduce) {
     .ctos .g-card:hover .g-cardart svg { transition: none; transform: none; }
 }
+
+/* ==========================================================================
+   Games load-in and backdrop. Scoped to .ng-page (the Games hub and both guessers).
+   - The head's magenta X is replaced by the games map art (public/naos/games.png, scripts/naos-art/generate.py).
+   - Motion is scroll-linked like the homepage: the engine writes --p on each [data-rx] from its viewport position, so
+     scrolling down plays forward and scrolling back up plays the same move in reverse. Nothing here uses time flags.
+   ========================================================================== */
+
+/* Head backdrop: the map art wipes in once, in hard dither steps, then the dot field sits behind it. */
+.ctos.ng-page .cr-head::after {
+    opacity: 1;
+    background:
+        url("/naos/games.png") right 6% top 50% / min(40vw, 440px) auto no-repeat,
+        radial-gradient(circle at center, rgba(244, 244, 242, .34) 0 28%, transparent 32%) 0 0 / 5px 5px;
+    -webkit-mask-image: linear-gradient(100deg, transparent 0%, #000 52%);
+    mask-image: linear-gradient(100deg, transparent 0%, #000 52%);
+    image-rendering: pixelated;
+    animation: ng-art-in 900ms steps(12, end) .12s both;
+}
+@keyframes ng-art-in {
+    from { clip-path: inset(0 100% 0 0); }
+    to { clip-path: inset(0 0 0 0); }
+}
+@media (max-width: 760px) {
+    .ctos.ng-page .cr-head::after {
+        background:
+            url("/naos/games.png") right -4% top 4% / min(72vw, 300px) auto no-repeat,
+            radial-gradient(circle at center, rgba(244, 244, 242, .3) 0 28%, transparent 32%) 0 0 / 5px 5px;
+        -webkit-mask-image: linear-gradient(180deg, #000 0%, transparent 78%);
+        mask-image: linear-gradient(180deg, #000 0%, transparent 78%);
+        opacity: .32;
+    }
+}
+
+/* The layout wrapper stays still: the frame and the readout carry the motion, so nothing moves twice. */
+.ctos .g-layout[data-rx] { opacity: 1; transform: none; }
+
+/* Frame: the white header bar wipes across as the frame arrives (scroll-linked through --p). */
+.ctos .g-frame .g-top { clip-path: inset(0 calc((1 - var(--p)) * 100%) 0 0); }
+.ctos .g-frame .g-body { opacity: calc(.35 + var(--p) * .65); }
+
+/* Hub cards: alternate the entry side so a grid of cards reads as it arrives, not as one rising block. */
+.ctos .g-grid > .g-card[data-rx] { --rx-x: 0px; --rx-y: 18px; }
+.ctos .g-grid > .g-card:nth-child(2n+1)[data-rx] { --rx-x: -26px; }
+.ctos .g-grid > .g-card:nth-child(2n)[data-rx] { --rx-x: 26px; }
+
+@media (prefers-reduced-motion: reduce) {
+    .ctos.ng-page .cr-head::after { animation: none; }
+    .ctos .g-frame .g-top { clip-path: none; }
+    .ctos .g-frame .g-body { opacity: 1; }
+}

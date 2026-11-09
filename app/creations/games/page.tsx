@@ -5,7 +5,7 @@ import { pageMeta } from "@/lib/seo";
 
 export default function GamesPage() {
     return (
-        <div className="ctos">
+        <div className="ctos ng-page">
             <CreationsShell
                 eyebrow="Creations / Games"
                 title={["Games"]}
