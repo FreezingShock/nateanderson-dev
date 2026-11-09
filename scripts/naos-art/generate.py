@@ -163,9 +163,69 @@ def wash():
     ids[(yy > H - 2)] = EDGE
     return dither(inten, ids)
 
+# ---------------------------------------------------------------------------------------------
+# 4. Timeline route (Timeline page header): a staircase of voxel terraces climbing toward the
+#    launch block, with a dashed route line and a diamond station on each step. Same dither
+#    language as the islands; the final step is a solid white block (the launch title card).
+# ---------------------------------------------------------------------------------------------
+def timeline_route():
+    W, H = 320, 220
+    CW, CH, VH = 5.0, 2.6, 4.2
+    ox, oy = 75.0, 74.0
+    ids_img = Image.new("L", (W, H), 0)
+    d = ImageDraw.Draw(ids_img)
+
+    def P(x, y, z):
+        return (ox + (x - y) * CW, oy + (x + y) * CH - z * VH)
+
+    STEPS = 6
+    boxes = []
+    for i in range(STEPS):
+        x0 = 2 + i * 7
+        x1 = x0 + 6
+        zb = -2
+        zt = 1 + i * 3
+        boxes.append((x0, x1, 0, 7, zb, zt, i == STEPS - 1))
+
+    # Painter order: nearer (larger x + y) last.
+    boxes.sort(key=lambda b: (b[0] + b[2], b[5]))
+    for x0, x1, y0, y1, zb, zt, last in boxes:
+        rc, lc, tc = (BRIGHT, BLEFT, BTOP) if last else (RIGHT, LEFT, TOP)
+        d.polygon([P(x1, y0, zb), P(x1, y1, zb), P(x1, y1, zt), P(x1, y0, zt)], fill=rc)
+        d.polygon([P(x0, y1, zb), P(x1, y1, zb), P(x1, y1, zt), P(x0, y1, zt)], fill=lc)
+        top = [P(x0, y0, zt), P(x1, y0, zt), P(x1, y1, zt), P(x0, y1, zt)]
+        d.polygon(top, fill=tc)
+        d.line(top + [top[0]], fill=EDGE, width=1)
+
+    # Dashed route across the terrace tops, one diamond station per step.
+    centres = []
+    for x0, x1, y0, y1, zb, zt, last in boxes:
+        centres.append(P((x0 + x1) / 2, (y0 + y1) / 2, zt + 0.2))
+    for (ax, ay), (bx, by) in zip(centres, centres[1:]):
+        n = int(max(abs(bx - ax), abs(by - ay)) // 1)
+        for k in range(0, n, 4):
+            t0, t1 = k / n, min(k + 2, n) / n
+            d.line([(ax + (bx - ax) * t0, ay + (by - ay) * t0), (ax + (bx - ax) * t1, ay + (by - ay) * t1)], fill=EDGE, width=1)
+    for cx, cy in centres:
+        d.polygon([(cx, cy - 3), (cx + 3, cy), (cx, cy + 3), (cx - 3, cy)], fill=EDGE)
+
+    arr = np.array(ids_img)
+    yy, xx = np.mgrid[0:H, 0:W]
+    lx, ly = W * 0.30, H * 0.30
+    dist = np.sqrt(((xx - lx) / (W * 0.6)) ** 2 + ((yy - ly) / (H * 0.7)) ** 2)
+    inten = np.zeros((H, W))
+    inten[arr == TOP] = np.clip(0.66 - 0.5 * dist, 0.1, 0.66)[arr == TOP]
+    inten[arr == LEFT] = 0.46
+    inten[arr == RIGHT] = 0.2
+    inten[arr == BTOP] = 1.0
+    inten[arr == BLEFT] = 0.72
+    inten[arr == BRIGHT] = 0.42
+    return dither(inten, arr)
+
 
 if __name__ == "__main__":
     os.makedirs(OUT, exist_ok=True)
     save_1bit(islands(), os.path.join(OUT, "islands.png"))
     save_1bit(track(), os.path.join(OUT, "track.png"))
     save_1bit(wash(), os.path.join(OUT, "wash.png"))
+    save_1bit(timeline_route(), os.path.join(OUT, "timeline-route.png"))
