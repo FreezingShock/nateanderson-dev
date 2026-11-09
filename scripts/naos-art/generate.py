@@ -164,8 +164,111 @@ def wash():
     return dither(inten, ids)
 
 
+# ---------------------------------------------------------------------------------------------
+# 4. Assembly field (Creations hub backdrop). A dithered floor grid, a solid stepped build, two blocks still floating
+#    above the floor on dotted drop lines, and two wireframe placeholders that are not built yet. Same isometric
+#    projection and dither as the islands, so the set reads as one system.
+# ---------------------------------------------------------------------------------------------
+FLOOR = 8  # floor tile: top face only, very low ink
+
+
+def assembly():
+    W, H = 280, 170
+    CW, CH, VH = 7.2, 3.6, 4.6
+    ox, oy = W / 2, 22.0
+    ids_img = Image.new("L", (W, H), 0)
+    d = ImageDraw.Draw(ids_img)
+    inten_pts = []  # reserved for clarity; intensity is set per face code below
+
+    def P(x, y, z):
+        return (ox + (x - y) * CW, oy + (x + y) * CH - z * VH)
+
+    def cube(x, y, z0, z1, kind):
+        """Solid unit box from z0 to z1 (kind: FLOOR, TOP or BTOP). Painter order is handled by the caller's sort."""
+        if kind == FLOOR:
+            top = [P(x, y, z1), P(x + 1, y, z1), P(x + 1, y + 1, z1), P(x, y + 1, z1)]
+            d.polygon(top, fill=FLOOR)
+            return
+        rc, lc, tc = (BRIGHT, BLEFT, BTOP) if kind == BTOP else (RIGHT, LEFT, TOP)
+        d.polygon([P(x + 1, y, z0), P(x + 1, y + 1, z0), P(x + 1, y + 1, z1), P(x + 1, y, z1)], fill=rc)
+        d.polygon([P(x, y + 1, z0), P(x + 1, y + 1, z0), P(x + 1, y + 1, z1), P(x, y + 1, z1)], fill=lc)
+        top = [P(x, y, z1), P(x + 1, y, z1), P(x + 1, y + 1, z1), P(x, y + 1, z1)]
+        d.polygon(top, fill=tc)
+        d.line(top + [top[0]], fill=EDGE, width=1)
+
+    def dashed(a, b, step=3):
+        (x0, y0), (x1, y1) = a, b
+        n = int(max(abs(x1 - x0), abs(y1 - y0)))
+        for i in range(0, n + 1, step):
+            t = i / max(1, n)
+            d.point((x0 + (x1 - x0) * t, y0 + (y1 - y0) * t), fill=EDGE)
+            d.point((x0 + (x1 - x0) * t + 1, y0 + (y1 - y0) * t), fill=EDGE)
+
+    def outline(x, y, z0, z1):
+        """Wireframe placeholder: only the edges, nothing filled."""
+        b = [P(x, y, z1), P(x + 1, y, z1), P(x + 1, y + 1, z1), P(x, y + 1, z1)]
+        d.line(b + [b[0]], fill=EDGE, width=1)
+        for cx, cy in [(x + 1, y), (x + 1, y + 1), (x, y + 1)]:
+            d.line([P(cx, cy, z0), P(cx, cy, z1)], fill=EDGE, width=1)
+        d.line([P(x + 1, y, z0), P(x + 1, y + 1, z0), P(x, y + 1, z0)], fill=EDGE, width=1)
+
+    # 1) floor grid: flat tiles, painter order by x+y
+    cells = [(x, y) for x in range(12) for y in range(12)]
+    for x, y in sorted(cells, key=lambda c: c[0] + c[1]):
+        cube(x, y, -1, 0, FLOOR)
+    # grid seams every 7 tiles so the floor reads as a plan, not a blank plane
+    for k in (0, 6, 12):
+        d.line([P(k, 0, 0), P(k, 12, 0)], fill=EDGE, width=1)
+        d.line([P(0, k, 0), P(12, k, 0)], fill=EDGE, width=1)
+
+    # 2) the solid build: a stepped stack (three tiers) in the right half
+    solid = []
+    for x in range(8, 12):
+        for y in range(5, 9):
+            solid.append((x, y, 0, 1, BTOP))
+    for x in range(9, 11):
+        for y in range(6, 8):
+            solid.append((x, y, 1, 2, BTOP))
+    solid.append((9, 6, 2, 3, BTOP))
+    # 3) two pieces still floating above the floor, on dotted drop lines
+    floating = [(4, 10, 4, 5), (11, 11, 3, 4)]
+    # 4) wireframe placeholders: planned, not built
+    planned = [(2, 2, 0, 3), (5, 2, 0, 2)]
+
+    for x, y, z0, z1 in planned:
+        outline(x, y, z0, z1)
+    for x, y, z0, z1 in floating:
+        dashed(P(x + 0.5, y + 0.5, 0), P(x + 0.5, y + 0.5, z0))
+    items = [(x + y, z0, x, y, z0, z1, BTOP) for x, y, z0, z1, _ in solid] + [
+        (x + y, z0, x, y, z0, z1, TOP) for x, y, z0, z1 in floating
+    ]
+    for _, _, x, y, z0, z1, kind in sorted(items, key=lambda t: (t[0], t[1])):
+        cube(x, y, z0, z1, kind)
+
+    arr = np.array(ids_img)
+    yy, xx = np.mgrid[0:H, 0:W]
+    lx, ly = W * 0.6, H * 0.3
+    dist = np.sqrt(((xx - lx) / (W * 0.6)) ** 2 + ((yy - ly) / (H * 0.7)) ** 2)
+    inten = np.zeros((H, W))
+    inten[arr == FLOOR] = 0.10
+    inten[arr == TOP] = np.clip(0.55 - 0.4 * dist, 0.1, 0.55)[arr == TOP]
+    inten[arr == LEFT] = 0.42
+    inten[arr == RIGHT] = 0.18
+    inten[arr == BTOP] = 1.0
+    inten[arr == BLEFT] = 0.7
+    inten[arr == BRIGHT] = 0.4
+    ink = dither(inten, arr)
+    # Fill the floor tiles with a sparse dot lattice so the plan reads even though the floor is so dim.
+    yy2, xx2 = np.mgrid[0:H, 0:W]
+    lattice = (xx2 % 6 == 0) & (yy2 % 6 == 0) & (arr == FLOOR)
+    ink[lattice] = True
+    return ink
+
+
+
 if __name__ == "__main__":
     os.makedirs(OUT, exist_ok=True)
     save_1bit(islands(), os.path.join(OUT, "islands.png"))
     save_1bit(track(), os.path.join(OUT, "track.png"))
     save_1bit(wash(), os.path.join(OUT, "wash.png"))
+    save_1bit(assembly(), os.path.join(OUT, "assembly.png"))

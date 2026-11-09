@@ -2,6 +2,7 @@ import Link from "next/link";
 import { getProjects, getRecentRenovations } from "@/lib/content";
 import { CategoryGrid, CreationsShell, IdCard, PhilosophyGrid, Section } from "@/components/creations-sections";
 import { CountUp } from "@/components/cm/reveal";
+import { NaosArt } from "@/components/cm/naos-art";
 import { ART_COLLECTIONS, GAME_MODES, GAME_STATUS, allGames } from "@/lib/creations-data";
 import { pageMeta } from "@/lib/seo";
 
@@ -23,6 +24,12 @@ export default async function CreationsPage() {
 
     return (
         <CreationsShell
+            variant="hub"
+            backdrop={
+                <div className="cr-art" aria-hidden="true">
+                    <NaosArt src="/naos/assembly.png" width={280} height={170} variant="break" eager />
+                </div>
+            }
             eyebrow="Made / Creations"
             title={["Creations"]}
             description="Everything I build: games you can play here, coding and Roblox projects, renovation studies of real places, and the artwork around it all."
