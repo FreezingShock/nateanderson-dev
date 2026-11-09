@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { ChevronsLeft, ChevronLeft, ChevronRight, ChevronsRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { CommitEntry } from "@/lib/github";
+import styles from "@/app/history/history.module.css";
 
 const PAGE_SIZE_OPTIONS = [5, 10, 20] as const;
 
@@ -191,14 +192,14 @@ export function CommitHistory({
     const busy = loading;
 
     const controls = (
-        <div className="cm-row" style={{ justifyContent: "flex-end", gap: 6 }}>
+        <div className={`cm-row ${styles.controls}`}>
             <button type="button" className="cm-btn" disabled={busy || page <= 1} onClick={() => goToPage(1)} aria-label="First page">
                 <ChevronsLeft className="cm-ico" />
             </button>
             <button type="button" className="cm-btn" disabled={busy || page <= 1} onClick={() => goToPage(page - 1)} aria-label="Previous page">
                 <ChevronLeft className="cm-ico" />
             </button>
-            <span className="cm-coord" style={{ minWidth: 92, textAlign: "center" }}>
+            <span className={`cm-coord ${styles.range}`} aria-live="polite">
                 Page {page} of {totalPages}
             </span>
             <button type="button" className="cm-btn" disabled={busy || page >= totalPages} onClick={() => goToPage(page + 1)} aria-label="Next page">
@@ -217,15 +218,14 @@ export function CommitHistory({
                 <span>{totalCommits.toLocaleString("en-US")} commits</span>
             </div>
             {/* Top bar: page-size selector + the same first/prev/next/last controls that repeat at the bottom. */}
-            <div className="cm-body-pad cm-row" style={{ justifyContent: "space-between", borderBottom: "1px solid var(--cm-hair)" }}>
+            <div className={`cm-body-pad cm-row ${styles.topbar}`}>
                 <label className="cm-row cm-lbl" style={{ gap: 8 }}>
                     Show
                     <select
                         value={perPage}
                         disabled={busy}
                         onChange={(e) => handlePerPageChange(Number(e.target.value))}
-                        className="cm-select"
-                        style={{ width: "auto", padding: "6px 8px", fontSize: 16 }}
+                        className={`cm-select ${styles.select}`}
                         aria-label="Commits per page"
                     >
                         {PAGE_SIZE_OPTIONS.map((n) => (
@@ -241,6 +241,7 @@ export function CommitHistory({
 
             <ol
                 className={cn("cm-rail", loading && "opacity-50")}
+                aria-live="polite"
                 style={{ margin: 0, padding: "18px 14px 18px 36px", listStyle: "none" }}
                 aria-busy={loading}
             >
@@ -260,8 +261,9 @@ export function CommitHistory({
                                         target="_blank"
                                         rel="noreferrer"
                                         className="cm-coord"
+                                        title={entry.hash}
                                     >
-                                        {entry.hash}
+                                        {entry.hash.slice(0, 7)}
                                     </a>
                                 </p>
                                 <h3 className="cm-sub" style={{ marginTop: 4 }}>{entry.subject}</h3>
@@ -278,7 +280,9 @@ export function CommitHistory({
                 )}
             </ol>
 
-            <div className="cm-body-pad" style={{ borderTop: "1px solid var(--cm-hair)" }}>{controls}</div>
+            <div className="cm-body-pad" style={{ borderTop: "1px solid var(--cm-hair)" }}>
+                {controls}
+            </div>
         </div>
     );
 }

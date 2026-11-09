@@ -1,0 +1,74 @@
+/* History page only. Shared Camino tokens/classes live in app/camino/*. */
+
+.topbar {
+    justify-content: space-between;
+    border-bottom: 1px solid var(--cm-hair);
+}
+
+.controls {
+    justify-content: flex-end;
+    gap: 6px;
+}
+
+.range {
+    min-width: 0;
+    text-align: center;
+}
+
+.select {
+    width: auto;
+    padding: 6px 8px;
+    font-size: 16px;
+}
+
+.latest {
+    display: grid;
+    gap: 10px;
+    padding: 18px;
+}
+
+.latestMeta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 14px;
+    align-items: center;
+}
+
+.latestSubject {
+    font: 700 clamp(18px, 2.4vw, 24px)/1.25 var(--cm-display);
+    margin: 0;
+    overflow-wrap: anywhere;
+}
+
+.kv > div > dd {
+    font-size: 28px;
+}
+
+.kv > div > dd .note {
+    display: block;
+    margin-top: 4px;
+    font-size: 10px;
+    color: var(--cm-dim);
+}
+
+.footnote {
+    margin: 0;
+    font: 400 12px/1.5 var(--cm-display);
+    color: var(--cm-mute);
+    max-width: 66ch;
+}
+
+@media (max-width: 560px) {
+    .topbar {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .controls {
+        justify-content: space-between;
+    }
+
+    .range {
+        min-width: 84px;
+    }
+}
