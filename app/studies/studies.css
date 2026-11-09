@@ -145,6 +145,40 @@
   background-size: 6px 6px;
 }
 
+/* Self-directed grid and education pathway: the same three-treatment rotation as the course cards, plus a hierarchy
+   pass on the pathway. The stage in progress is the one panel that reads as live (cyan-tinted); finished stages sit
+   back slightly; upcoming stages use the dashed dot treatment. */
+.ctos.st-page .st-personal > .cm-panel:nth-child(3n+2) {
+  border-top: 3px solid var(--cm-cyan);
+  background: linear-gradient(180deg, rgba(47, 216, 232, .1), rgba(47, 216, 232, 0) 55%), var(--cm-ctos-panel);
+}
+.ctos.st-page .st-personal > .cm-panel:nth-child(3n) {
+  border: 1px dashed var(--cm-hair-hi);
+  background-color: #111;
+  background-image: radial-gradient(circle, rgba(244, 244, 242, .12) 0 28%, transparent 32%);
+  background-size: 6px 6px;
+}
+.ctos.st-page .cm-rail > li.now > .tick {
+  border-color: var(--cm-cyan);
+  background: linear-gradient(180deg, rgba(47, 216, 232, .12), rgba(47, 216, 232, 0) 60%), var(--cm-ctos-panel);
+}
+.ctos.st-page .cm-rail > li.done > .tick { opacity: .8; }
+.ctos.st-page .cm-rail > li:not(.now):not(.done) > .tick {
+  border-style: dashed;
+  background-color: #111;
+  background-image: radial-gradient(circle, rgba(244, 244, 242, .12) 0 28%, transparent 32%);
+  background-size: 6px 6px;
+}
+
+/* Class pages: a lone progress panel spans the row (no dead half-width); the fact cards build in steps like the status
+   card; the first related timeline event takes the full row so the remaining four fill one row exactly. */
+.ctos.st-page .st-split > :only-child { grid-column: 1 / -1; }
+.ctos.st-page .st-facts-row > .cm-panel:nth-child(2) { border-top: 3px solid var(--cm-cyan); }
+.ctos.st-page .st-related > :first-child { grid-column: 1 / -1; }
+.ctos.st-page .st-facts-row > .cm-panel.st-anim { animation: st-id-in .6s steps(8, end) both; }
+.ctos.st-page .st-facts-row > .cm-panel:nth-child(2).st-anim { animation-delay: .1s; }
+.ctos.st-page .st-facts-row > .cm-panel:nth-child(3).st-anim { animation-delay: .2s; }
+
 /* ---- Load-in choreography -------------------------------------------------------------------------------------------
    Everything tagged .st-anim plays once after the boot sequence and any page curtain lift: animations are held
    (paused at their first frame) while html[data-boot] or html[data-xition] covers the screen, so nothing finishes
