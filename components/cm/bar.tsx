@@ -3,11 +3,17 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState, type CSSProperties } from "react";
-import { useTheme } from "next-themes";
 import { BookOpen, GraduationCap, History, Home, Menu, PenLine, Route, Search, User, Volume2, VolumeX } from "lucide-react";
 import { NateGlyph } from "@/components/cm/mark";
 import { navItems } from "@/lib/nav";
-import { JOURNEY_END, JOURNEY_START, progressBetween } from "@/lib/timeline-data";
+import {
+    JOURNEY_DAYS,
+    JOURNEY_END,
+    JOURNEY_START,
+    daysUntil,
+    getUpNext,
+    progressBetween,
+} from "@/lib/timeline-data";
 import { useSoundPrefs } from "@/lib/sound/use-sound";
 import { sfx } from "@/lib/sound/sounds";
 
@@ -32,23 +38,72 @@ export function openMenu() {
     window.dispatchEvent(new Event("cm:menu"));
 }
 
+const SEGS = 24;
+
+interface Readout {
+    pct: number;
+    /** Day of the plan, counting the start day as day 1. */
+    day: number;
+    next: { title: string; days: number } | null;
+}
+
+/** Reads the plan's clock after mount, so the server render and the first client render agree. */
+function useReadout(initialPct: number): Readout {
+    const [r, setR] = useState<Readout>({ pct: initialPct, day: 0, next: null });
+    useEffect(() => {
+        const now = Date.now();
+        const n = getUpNext(1, now)[0];
+        setR({
+            pct: Math.round(progressBetween(JOURNEY_START, JOURNEY_END, now) * 100),
+            day: Math.max(0, 1 - daysUntil(JOURNEY_START, now)),
+            next: n ? { title: n.title, days: Math.max(0, daysUntil(n.start, now)) } : null,
+        });
+    }, []);
+    return r;
+}
+
+/** The top-right readout: day of the plan, the next step, and a segmented bar that fills with the journey. */
+function Journey({ initialPct }: { initialPct: number }) {
+    const r = useReadout(initialPct);
+    const lit = Math.round((r.pct / 100) * SEGS);
+    return (
+        <div
+            className="nv-journey"
+            role="img"
+            aria-label={`${r.pct} percent through the plan to May 2031. Day ${r.day}.`}
+            title="Progress along the plan, Sept 2026 to May 2031"
+        >
+            <div className="nv-jrow" aria-hidden="true">
+                <span className="nv-jday">
+                    day <b>{r.day}</b>
+                    <em>/ {JOURNEY_DAYS.toLocaleString("en-US")}</em>
+                </span>
+                {r.next && (
+                    <span className="nv-jnext" title={`Next: ${r.next.title}`}>
+                        {r.next.days === 0 ? "next · today" : `next in ${r.next.days}d`}
+                    </span>
+                )}
+            </div>
+            <div className="nv-segs" aria-hidden="true">
+                {Array.from({ length: SEGS }, (_, i) => (
+                    <i key={i} className={i < lit ? "on" : undefined} data-head={i === lit - 1 ? "" : undefined} />
+                ))}
+            </div>
+        </div>
+    );
+}
+
 /**
- * Top status strip, one row: menu, brand, "you are here" crumb with the path meter, then the tools (search, theme,
- * sound). It scrolls away so the page keeps the whole screen.
+ * Top status strip, one row, all left-aligned: menu, brand, the "you are here" crumb, then the journey readout and
+ * the tools (search, sound). It scrolls away so the page keeps the whole screen.
  */
 export function Bar({ initialPct }: { initialPct: number }) {
     const path = usePathname();
-    const { theme, setTheme } = useTheme();
     const [mounted, setMounted] = useState(false);
-    const [pct, setPct] = useState(initialPct);
     const [snd, setSnd] = useSoundPrefs();
 
-    useEffect(() => {
-        setMounted(true);
-        setPct(Math.round(progressBetween(JOURNEY_START, JOURNEY_END) * 100));
-    }, []);
+    useEffect(() => setMounted(true), []);
 
-    const current = mounted ? (theme === "paper" ? "paper" : "dark") : "dark";
     const here = navItems.find((n) => isActive(path, n.href));
     const sub = here?.children?.find((c) => path === c.href || path.startsWith(c.href + "/"));
     const crumb = sub ? `${here?.label} / ${sub.label}` : here?.label ?? "Pages";
@@ -66,24 +121,14 @@ export function Bar({ initialPct }: { initialPct: number }) {
             <div className="nv-where">
                 <span className="nv-no" aria-hidden="true">{here?.no ?? "--"}</span>
                 <span className="nv-name" aria-live="polite">{crumb}</span>
-                <div className="cm-gauge nv-gauge" title="Progress along the plan, Sept 2026 to May 2031">
-                    <div className="row">
-                        <span className="cm-lbl" style={{ fontSize: 8.5 }}>Path</span>
-                        <span className="v" style={{ color: "var(--cm-cyan)" }}>{pct}%</span>
-                    </div>
-                    <div className="cm-meter"><i style={{ ["--v" as string]: `${pct}%` }} /></div>
-                </div>
             </div>
             <div className="nv-tools">
+                <Journey initialPct={initialPct} />
                 <button type="button" className="nv-search" onClick={openLauncher} aria-label="Search the site">
                     <Search aria-hidden="true" size={15} strokeWidth={2} />
                     <span>search</span>
                     <kbd className="nv-key" aria-hidden="true">/</kbd>
                 </button>
-                <div className="nv-theme" role="group" aria-label="Theme">
-                    <button type="button" aria-pressed={current === "dark"} onClick={() => setTheme("dark")}>dark</button>
-                    <button type="button" aria-pressed={current === "paper"} onClick={() => setTheme("paper")}>paper</button>
-                </div>
                 <button
                     type="button"
                     className="nv-snd"
