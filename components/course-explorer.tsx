@@ -22,11 +22,11 @@ const CourseCard = memo(function CourseCard({
     const panelId = `${course.slug}-panel`;
 
     return (
-        <div className="cm-panel" style={{ height: "100%" }}>
+        <div className="cm-panel st-panel-fill">
             <div className="cm-hbar">
                 <span>{area.label}</span>
-                <span style={{ display: "inline-flex", gap: 8 }}>
-                    {course.ap && <span className="cm-tag alert flat">AP</span>}
+                <span className="st-hbar-end">
+                    {course.ap && <span className="st-ap">AP</span>}
                     <span>{course.status}</span>
                 </span>
             </div>
@@ -56,17 +56,17 @@ const CourseCard = memo(function CourseCard({
                     <div style={{ display: "grid", gap: 14, paddingTop: 4 }}>
                         <div style={{ display: "grid", gap: 6 }}>
                             <span className="cm-lbl">Learning goals</span>
-                            <ul style={{ margin: 0, padding: "0 0 0 18px", display: "grid", gap: 6 }}>
+                            <ul className="st-list">
                                 {course.goals.map((g) => (
-                                    <li key={g} style={{ color: "var(--cm-mute)", listStyle: "square" }}>{g}</li>
+                                    <li key={g}>{g}</li>
                                 ))}
                             </ul>
                         </div>
                         <div style={{ display: "grid", gap: 6 }}>
                             <span className="cm-lbl">Work &amp; materials</span>
-                            <ul style={{ margin: 0, padding: "0 0 0 18px", display: "grid", gap: 6 }}>
+                            <ul className="st-list">
                                 {course.materials.map((m) => (
-                                    <li key={m} style={{ color: "var(--cm-mute)", listStyle: "square" }}>{m}</li>
+                                    <li key={m}>{m}</li>
                                 ))}
                             </ul>
                         </div>
@@ -108,7 +108,7 @@ export function CourseExplorer({ courses }: { courses: Course[] }) {
                     {anyOpen ? "Collapse all" : "Expand all"}
                 </button>
             </div>
-            <div className="cm-cols3">
+            <div className="st-courses">
                 {visible.map((course) => (
                     <CourseCard key={course.slug} course={course} open={!!open[course.slug]} onToggle={toggle} />
                 ))}
