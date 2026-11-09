@@ -286,7 +286,7 @@ export function TimelineExplorer({
                                     key={phase.id}
                                     href={`#${phase.id}`}
                                     className="cm-chip"
-                                    aria-pressed={activePhase === phase.id}
+                                    aria-current={activePhase === phase.id ? "true" : undefined}
                                 >
                                     {phase.short}
                                 </a>

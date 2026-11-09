@@ -88,3 +88,23 @@ naOS version (session bar, Status-style panels, numbered social plates, signal b
 ## Testing
 Dev (StrictMode) breaks reveals through the engine's `seen` WeakSet, so test on `next build` + `next start`.
 Check 1440 desktop and 390 touch. Gate cookie: POST `/api/gate` with JSON `{"password":..}` and header `origin`.
+
+## Accessibility and touch (sitewide pass, 2026-11-09)
+Checked with axe-core (WCAG 2.0 A/AA, 2.1 AA, best practice) and a Tab walk on 54 routes at 390, 360 and 1440 in Chromium. No sideways scroll on any route, focus shows on all 60 stops, and axe reports zero violations on the content routes. WebKit was not available in the cloud, so the Safari list below is unverified.
+
+Rules to keep (new naOS work must follow them):
+- Text on the light white blocks: live label `#0f6a3a`, teal state and labels `#076e77`, step text `#5c5c57`, pills `#3f4a50`. The bright `--cm-live` green is for dots and dark panels only (1.6:1 on white).
+- Meta text on `#131313` panels: `#7d8b93` (5.3:1). `--cm-dim #56646c` is only 3.0:1 there, so keep it for disabled and tick marks.
+- Phase chips that link to an anchor use `aria-current="true"`, not `aria-pressed` (not allowed on links).
+- Heading order: a card title under an `h2` section starts at `h3`.
+- Tap sizes: inline text links 24px tall (`a.cm-lbl`, `.cm-more`, `dd > a`), footer links 24px (32px on touch), game toolbar buttons 24px (36px on touch). Use 44px for any new standalone control on touch screens.
+- Reduced motion: the reveal engine shows everything with no scroll-linked motion, and CSS stops blinks, slides and the nav head pulse. Add a `prefers-reduced-motion` rule for any new looping animation.
+
+Known Safari risks (WebKit not tested in the cloud; check on an iPhone):
+- `body:has(.ctos)` drives the naOS footer, background and bar. Needs Safari 15.4 or newer. Older iOS gets the plain Camino footer.
+- `backdrop-filter` on glass panels and the nav menu is prefixed. On touch screens `.cm-panel` drops it for solid fills (`ctos.css`).
+- `mask-image` is prefixed on every use. Check the dither fades on the blog and page backdrops.
+- `color-mix()` (history rows, `.id-rows`) needs Safari 16.2 or newer; older browsers lose only the tinted rule colour.
+- `@property --cm-bp` (`motion.css`) needs Safari 16.4 or newer. The fallback is the initial value, so check the boot and menu motion.
+- Scroll-linked reveals rely on IntersectionObserver plus rAF. iOS Low Power Mode slows rAF, so check that content still appears on scroll.
+- iOS zooms any focused input under 16px. The one input checked (flag guesser) is 16px or larger. Check the command bar search and the account forms.

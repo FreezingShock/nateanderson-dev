@@ -341,3 +341,10 @@
     .ctos .g-frame .g-top { clip-path: none; }
     .ctos .g-frame .g-body { opacity: 1; }
 }
+
+/* Game toolbar buttons (Daily, Unlimited, Restart) are 24px tall at least; 36px on touch screens. */
+.ng-page button { min-height: 24px; }
+@media (pointer: coarse) { .ng-page button { min-height: 36px; } }
+/* Muted hint text on the dark game panels (text-muted-foreground/70 was 3.5:1 on #1e1e1e). */
+.ng-page [class*="text-muted-foreground/70"] { color: var(--cm-mute); }
+.ng-page .p-foot > span:nth-child(n+2) { color: #7d8b93; }

@@ -146,8 +146,7 @@ export default async function Home() {
                             {PILLARS.map((p) => (
                                 <div key={p.label}>
                                     <dt>{p.label}</dt>
-                                    <dd>{p.headline}</dd>
-                                    <small>{p.detail}</small>
+                                    <dd>{p.headline}<small>{p.detail}</small></dd>
                                 </div>
                             ))}
                         </dl>

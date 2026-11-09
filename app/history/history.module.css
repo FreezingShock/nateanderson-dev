@@ -69,7 +69,7 @@
     font: 600 10px/1 var(--cm-mono);
     letter-spacing: .14em;
     text-transform: uppercase;
-    color: var(--cm-dim);
+    color: #7d8b93;
 }
 
 /* ---- Index + latest commit: side by side on desktop, stacked on phones ---------------------------------------- */
