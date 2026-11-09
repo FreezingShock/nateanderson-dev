@@ -1,0 +1,211 @@
+/* ==========================================================================
+   Single post pages (/blog/[slug]): naOS treatment, one layout per kind.
+   essay  = dark long-form column, title-card headings, pull quotes, mono code plates
+   quote  = one paper plate, the line set at full size, dither foot, optional note under it
+   poem   = paper plate with stanzas, one row per printed line, roman numerals in the gutter
+   Page-only rules, every selector scoped under `.ctos .post-*`. Shared naOS rules (title blocks, panel edge,
+   cta plates, id-bars, cm-tag) come from app/camino/ctos.css and are reused as-is.
+   ========================================================================== */
+
+/* ---- Draft note (only on posts marked draft in lib/blog.ts) ----------------------------------------------------- */
+.ctos .post-draft {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 10px 14px;
+  max-width: var(--cm-measure); margin: 0 0 22px; padding: 10px 14px;
+  border: 1px dashed var(--cm-amber); background: rgba(242, 201, 76, .06);
+  font: 500 13px/1.45 var(--cm-display); color: var(--cm-mute);
+}
+.ctos .post-draft .cm-tag { background: var(--cm-amber); color: #1a1a1a; }
+.ctos .post-draft .cm-tag::after { border-left-color: var(--cm-amber); }
+
+/* ---- Dek: the standfirst for quotes and poems (essays print the excerpt as their lead inside the title block) ---- */
+.ctos .post-dek {
+  max-width: 60ch; margin: 0 0 22px;
+  font: 500 clamp(18px, 2vw, 22px)/1.4 var(--cm-display); letter-spacing: -.018em; color: var(--cm-fg);
+}
+
+/* ---- Meta strip: type, status, length, and the reading gauge (essays only) ------------------------------------ */
+.ctos .post-strip {
+  display: flex; flex-wrap: wrap; align-items: stretch; max-width: 100%; width: fit-content;
+  margin: 0 0 var(--cm-s6);
+  background: #131313; border: 1px solid var(--cm-hair-hi); border-left: 3px solid var(--cm-cyan);
+}
+.ctos .post-strip > div {
+  position: relative; isolation: isolate; min-width: 124px;
+  padding: 11px 18px 13px 14px; border-left: 1px solid var(--cm-hair);
+}
+.ctos .post-strip > div:first-child { border-left: 0; }
+.ctos .post-strip > div::after {
+  content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 18px; z-index: -1; pointer-events: none;
+  background-image: radial-gradient(circle, rgba(244, 244, 242, .5) 0 30%, transparent 34%); background-size: 4px 4px;
+  -webkit-mask-image: linear-gradient(0deg, #000, transparent); mask-image: linear-gradient(0deg, #000, transparent); opacity: .35;
+}
+.ctos .post-strip-val {
+  display: block; margin-top: 6px;
+  font: 800 26px/1 var(--cm-display); letter-spacing: -.04em; color: var(--cm-ctos-block);
+  font-variant-numeric: tabular-nums;
+}
+.ctos .post-strip-gauge { flex: 1 1 240px; min-width: 220px; }
+.ctos .post-strip-gauge::after { display: none; }
+.ctos .post-gauge { display: grid; gap: 9px; }
+.ctos .post-gauge-row { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
+.ctos .post-gauge-val { font: 700 13px/1 var(--cm-mono); letter-spacing: .06em; color: var(--cm-cyan); font-variant-numeric: tabular-nums; }
+.ctos .post-gauge-track { position: relative; height: 8px; overflow: hidden; background: rgba(244, 244, 242, .08); border: 1px solid var(--cm-hair-hi); }
+.ctos .post-gauge-bar { position: absolute; inset: 0; background: var(--cm-cyan); transform: scaleX(0); transform-origin: left center; will-change: transform; }
+
+@media (max-width: 620px) {
+  .ctos .post-strip { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); width: 100%; }
+  .ctos .post-strip > div { min-width: 0; padding: 10px 12px 12px; }
+  .ctos .post-strip > div:nth-child(3) { border-left: 0; }
+  .ctos .post-strip > div:nth-child(n+3) { border-top: 1px solid var(--cm-hair); }
+  .ctos .post-strip-val { font-size: 21px; }
+  .ctos .post-strip-gauge { grid-column: 1 / -1; min-width: 0; flex: none; }
+  .ctos .post-strip-gauge > .post-gauge { padding: 0; }
+}
+
+/* ==========================================================================
+   ESSAY: dark column, 66ch, title-card headings
+   ========================================================================== */
+.ctos .post-prose {
+  max-width: 66ch;
+  font: 400 18px/1.72 var(--cm-display); letter-spacing: -.006em; color: var(--cm-fg);
+  text-wrap: pretty;
+}
+.ctos .post-prose > p { margin: 0 0 1.15em; }
+.ctos .post-prose > p:first-child { font-size: 21px; line-height: 1.55; font-weight: 500; letter-spacing: -.015em; }
+
+/* Headings: white title card with the lowercase display face, padding so no descender is cut */
+.ctos .post-h { margin: 2.1em 0 .9em; font: 800 clamp(22px, 3.4vw, 32px)/1 var(--cm-display); letter-spacing: -.045em; text-transform: lowercase; }
+.ctos .post-h span {
+  display: inline; background: var(--cm-ctos-block); color: var(--cm-ctos-ink);
+  padding: .06em .2em .18em; line-height: 1.12;
+  box-decoration-break: clone; -webkit-box-decoration-break: clone;
+}
+
+/* Pull quote: cyan rail, large type, mono citation */
+.ctos .post-prose blockquote { margin: 1.8em 0; padding: 4px 0 4px 22px; border-left: 3px solid var(--cm-cyan); }
+.ctos .post-prose blockquote p { margin: 0; font: 600 clamp(21px, 2.8vw, 28px)/1.3 var(--cm-display); letter-spacing: -.025em; color: var(--cm-fg); }
+.ctos .post-prose blockquote cite {
+  display: block; margin-top: 12px;
+  font: 500 10.5px/1 var(--cm-mono); letter-spacing: .14em; text-transform: uppercase; font-style: normal; color: var(--cm-mute);
+}
+
+/* Lists: numbered in cyan mono */
+.ctos .post-list { list-style: none; margin: 0 0 1.3em; padding: 0; display: grid; gap: 10px; counter-reset: pli; }
+.ctos .post-list li { position: relative; padding-left: 34px; counter-increment: pli; }
+.ctos .post-list li::before {
+  content: counter(pli, decimal-leading-zero); position: absolute; left: 0; top: .32em;
+  font: 700 11px/1 var(--cm-mono); letter-spacing: .08em; color: var(--cm-cyan);
+}
+
+/* Code plate */
+.ctos .post-code {
+  margin: 1.4em 0; padding: 14px 16px; max-width: 100%; overflow-x: auto;
+  background: #0f0f0f; border: 1px solid var(--cm-hair-hi); border-left: 3px solid var(--cm-cyan);
+}
+.ctos .post-code code { font: 400 13.5px/1.6 var(--cm-mono); color: var(--cm-fg); white-space: pre; }
+
+@media (max-width: 620px) {
+  .ctos .post-prose { font-size: 17px; line-height: 1.68; }
+  .ctos .post-prose > p:first-child { font-size: 19px; }
+}
+
+/* ==========================================================================
+   QUOTE: one paper plate, the line set at full size
+   ========================================================================== */
+.ctos .post-quote { display: grid; gap: 18px; max-width: 980px; }
+.ctos .post-quote-card {
+  position: relative; isolation: isolate; overflow: hidden; margin: 0;
+  padding: clamp(26px, 5vw, 60px) clamp(22px, 5vw, 64px) 0;
+  background: var(--cm-ctos-block); color: var(--cm-ctos-ink);
+  border-left: 3px solid var(--cm-cyan);
+}
+.ctos .post-quote-card::after {
+  content: ""; position: absolute; right: 0; top: 0; width: 46%; height: 100%; z-index: 0; pointer-events: none;
+  background-image: radial-gradient(circle, rgba(26, 26, 26, .14) 0 30%, transparent 34%); background-size: 5px 5px;
+  -webkit-mask-image: linear-gradient(270deg, #000, transparent 75%); mask-image: linear-gradient(270deg, #000, transparent 75%);
+}
+.ctos .post-quote-mark {
+  position: absolute; z-index: 0; left: clamp(14px, 3vw, 34px); top: 0;
+  font: 800 clamp(150px, 24vw, 300px)/1 var(--cm-display); color: var(--cm-cyan); pointer-events: none; user-select: none;
+}
+.ctos .post-quote-text { position: relative; z-index: 1; margin: 0; padding-top: clamp(70px, 12vw, 130px); }
+.ctos .post-quote-text p {
+  margin: 0; font: 800 clamp(34px, 6.2vw, 88px)/.98 var(--cm-display); letter-spacing: -.045em;
+  color: var(--cm-ctos-ink); text-wrap: balance; overflow-wrap: break-word;
+}
+.ctos .post-quote-foot {
+  position: relative; z-index: 1;
+  margin: clamp(30px, 5vw, 52px) calc(-1 * clamp(22px, 5vw, 64px)) 0; padding: 13px clamp(22px, 5vw, 64px);
+  display: flex; justify-content: space-between; align-items: center; gap: 14px;
+  background: #0f0f0f; border-top: 2px solid var(--cm-cyan);
+  font: 700 10px/1.4 var(--cm-mono); letter-spacing: .14em; text-transform: uppercase; color: var(--cm-dim);
+}
+.ctos .post-quote-who { display: grid; gap: 4px; min-width: 0; }
+.ctos .post-quote-who b { font-weight: 700; color: var(--cm-ctos-block); overflow-wrap: anywhere; }
+.ctos .post-quote-who span { overflow-wrap: anywhere; }
+.ctos .post-quote-foot .id-bars i { background: var(--cm-ctos-block); }
+.ctos .post-quote-note { display: grid; gap: 12px; max-width: 62ch; padding-left: 20px; border-left: 1px dashed var(--cm-hair-hi); }
+.ctos .post-quote-note p { margin: 0; font: 400 16px/1.62 var(--cm-display); color: var(--cm-mute); text-wrap: pretty; }
+
+@media (max-width: 620px) {
+  .ctos .post-quote-mark { font-size: 140px; }
+  .ctos .post-quote-foot { flex-direction: column; align-items: flex-start; }
+}
+
+/* ==========================================================================
+   POEM: paper plate, one row per printed line, stanzas with a roman numeral in the gutter
+   ========================================================================== */
+.ctos .post-poem { display: grid; gap: 22px; max-width: 980px; }
+.ctos .post-epi { max-width: 60ch; padding: 14px 18px; background: #131313; border-left: 3px solid var(--cm-cyan); }
+.ctos .post-epi p { margin: 0; font: italic 400 17px/1.5 var(--cm-display); color: var(--cm-fg); text-wrap: pretty; }
+.ctos .post-epi cite {
+  display: block; margin-top: 10px;
+  font: 500 10.5px/1 var(--cm-mono); letter-spacing: .14em; text-transform: uppercase; font-style: normal; color: var(--cm-mute);
+}
+.ctos .post-poem-card {
+  position: relative; isolation: isolate; overflow: hidden;
+  padding: clamp(26px, 5vw, 64px) clamp(20px, 5vw, 64px) 0;
+  background: var(--cm-ctos-block); color: var(--cm-ctos-ink);
+  border-left: 3px solid var(--cm-cyan);
+}
+.ctos .post-poem-card::after {
+  content: ""; position: absolute; left: 0; bottom: 0; width: 100%; height: 90px; z-index: 0; pointer-events: none;
+  background-image: radial-gradient(circle, rgba(26, 26, 26, .12) 0 30%, transparent 34%); background-size: 5px 5px;
+  -webkit-mask-image: linear-gradient(0deg, #000, transparent); mask-image: linear-gradient(0deg, #000, transparent);
+}
+.ctos .post-stanza {
+  position: relative; z-index: 1;
+  display: grid; grid-template-columns: 56px minmax(0, 1fr); column-gap: clamp(12px, 3vw, 28px);
+  padding-bottom: clamp(22px, 3.4vw, 36px);
+}
+.ctos .post-stanza:last-child { padding-bottom: clamp(26px, 4vw, 44px); }
+.ctos .post-stanza-no { padding-top: .5em; font: 700 11px/1 var(--cm-mono); letter-spacing: .12em; color: var(--cm-ctos-ink); opacity: .5; }
+.ctos .post-lines { min-width: 0; }
+.ctos .post-line {
+  margin: 0; padding-left: 1em; text-indent: -1em;
+  font: 500 clamp(19px, 2.4vw, 27px)/1.42 var(--cm-display); letter-spacing: -.02em; color: var(--cm-ctos-ink);
+  overflow-wrap: anywhere; text-wrap: pretty;
+}
+.ctos .post-poem-foot {
+  position: relative; z-index: 1;
+  margin: 0 calc(-1 * clamp(20px, 5vw, 64px)); padding: 13px clamp(20px, 5vw, 64px);
+  display: flex; justify-content: space-between; align-items: center; gap: 12px;
+  background: #0f0f0f; border-top: 2px solid var(--cm-cyan);
+  font: 700 10px/1.4 var(--cm-mono); letter-spacing: .14em; text-transform: uppercase; color: var(--cm-dim);
+}
+.ctos .post-poem-foot .id-bars i { background: var(--cm-ctos-block); }
+.ctos .post-poem-note { max-width: 62ch; margin: 0; font: 400 16px/1.62 var(--cm-display); color: var(--cm-mute); text-wrap: pretty; }
+
+@media (max-width: 620px) {
+  .ctos .post-stanza { grid-template-columns: 1fr; row-gap: 6px; }
+  .ctos .post-stanza-no { padding-top: 0; font-size: 10px; }
+}
+
+/* ==========================================================================
+   End of post: prev / next plates
+   ========================================================================== */
+.ctos .post-end { padding-top: 0; }
+.ctos .post-pn { gap: 10px; }
+.ctos .post-pn .cta-b { flex: 1 1 240px; min-width: 0; max-width: 100%; }
+.ctos .post-pn .cta-b span { min-width: 0; overflow-wrap: anywhere; white-space: normal; line-height: 1.25; }
+.ctos .post-body-sec { padding-top: 0; }

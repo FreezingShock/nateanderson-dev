@@ -1,4 +1,6 @@
+import Link from "next/link";
 import { ScrollType, Scramble, Slab } from "@/components/cm/motion";
+import type { PostBody } from "@/lib/blog-types";
 
 export interface BlogPost {
     id: string;
@@ -7,6 +9,9 @@ export interface BlogPost {
     date: string;
     status: "published" | "draft" | "coming-soon";
     color: string;
+    /** URL segment for the post page (/blog/[slug]). Posts without a body have no page yet. */
+    slug?: string;
+    body?: PostBody;
 }
 
 export interface BlogSectionProps {
@@ -89,10 +94,23 @@ export function BlogSection({
                                         <i />
                                         <i />
                                     </span>
-                                    <span className="st">{post.date ? formatDate(post.date) : "Queued"}</span>
+                                    <span className="st">{post.date ? formatDate(post.date) : post.slug && post.body ? "Draft preview" : "Queued"}</span>
                                 </div>
                             </>
                         );
+                        const hasPage = !!post.slug && !!post.body;
+                        if (hasPage) {
+                            return (
+                                <Link
+                                    key={post.id}
+                                    href={`/blog/${post.slug}`}
+                                    className="cm-card blog-post is-link"
+                                    aria-label={`${post.title}, ${statusLabel(post.status).toLowerCase()}. Read it.`}
+                                >
+                                    {inner}
+                                </Link>
+                            );
+                        }
                         return isPublished ? (
                             <article key={post.id} className="cm-card blog-post">
                                 {inner}
