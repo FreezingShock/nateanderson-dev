@@ -100,3 +100,41 @@
 .tl-page .tl-goal .cm-h3 { font: 800 var(--cm-ctos-t-h3)/1.05 var(--cm-display); letter-spacing: -.035em; text-transform: lowercase; }
 .tl-page .tl-goal .cm-body { font-size: var(--cm-ctos-t-body); }
 .tl-page .tl-goal .p-foot { margin-top: 4px; }
+
+/* ==========================================================================
+   Timeline load-in and backdrop (2026-11-09). Page-specific; the shared engine and naOS files are unchanged.
+   - Header: the staircase art wipes in on load in hard dither steps (the homepage's "digital creation").
+   - Route stations: each milestone diamond pops in on a 4-step scale tied to --p, so scrolling down plays it
+     forward and scrolling up plays it back in reverse, like the rest of the engine.
+   - Phase panels: a stepped top-down wipe tied to --p, same forward/reverse behaviour.
+   ========================================================================== */
+
+.tl-page { position: relative; }
+.tl-page > .tl-art { position: absolute; top: 64px; right: 0; width: min(34vw, 400px); z-index: 0; opacity: .85; }
+.tl-page .tl-status { flex-wrap: wrap; row-gap: 8px; }
+.tl-page .tl-status > span { white-space: nowrap; }
+.tl-page > .tl-art img { animation: tl-dither-in 1100ms steps(14, end) both; }
+@keyframes tl-dither-in {
+    from { clip-path: inset(0 100% 0 0); }
+    to { clip-path: inset(0 0 0 0); }
+}
+.tl-page .cm-head { position: relative; z-index: 1; }
+
+.tl-page .tl-phase .cm-rail > li::before {
+    transform: rotate(45deg) scale(calc(round(var(--p, 1) * 4, 1) / 4));
+    transition: none;
+}
+
+.tl-page .tl-phase > .cm-panel[data-rx] {
+    clip-path: inset(0 0 calc((1 - round(var(--p, 1) * 6, 1) / 6) * 100%) 0);
+}
+
+@media (max-width: 760px) {
+    .tl-page > .tl-art { top: 96px; right: -22%; width: 80vw; opacity: .14; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .tl-page > .tl-art img { animation: none; }
+    .tl-page .tl-phase > .cm-panel[data-rx] { clip-path: none; }
+    .tl-page .tl-phase .cm-rail > li::before { transform: rotate(45deg); }
+}

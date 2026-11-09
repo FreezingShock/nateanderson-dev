@@ -3,7 +3,6 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { useTheme } from "next-themes";
 import { X } from "lucide-react";
 import { navItems } from "@/lib/nav";
 import { openLauncher } from "@/components/cm/bar";
@@ -17,7 +16,6 @@ const isActive = (path: string, href: string) =>
  */
 export function SiteMap() {
     const path = usePathname();
-    const { theme, setTheme } = useTheme();
     const [open, setOpen] = useState(false);
     const returnTo = useRef<HTMLElement | null>(null);
     const panel = useRef<HTMLElement>(null);
@@ -99,11 +97,6 @@ export function SiteMap() {
                         );
                     })}
                 </ol>
-                <div className="nv-map-theme" role="group" aria-label="Theme">
-                    <span>theme</span>
-                    <button type="button" aria-pressed={theme !== "paper"} onClick={() => setTheme("dark")}>dark</button>
-                    <button type="button" aria-pressed={theme === "paper"} onClick={() => setTheme("paper")}>paper</button>
-                </div>
                 <div className="nv-foot nv-map-foot">
                     <button
                         type="button"

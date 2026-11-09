@@ -22,6 +22,16 @@ function direction(from: string, to: string): Dir {
     return db > da ? "down" : db < da ? "up" : "fwd";
 }
 
+/** Writes the destination onto the title card: name, readout line and accent colour. */
+function paintCard(card: HTMLDivElement | null, path: string) {
+    if (!card) return;
+    const i = rankOf(path);
+    card.dataset.to = labelFor(path);
+    card.style.setProperty("--acc", accentOf(path));
+    const k = card.querySelector<HTMLElement>(".k");
+    if (k) k.textContent = `${i >= 0 ? navItems[i].no : "--"} // ${labelFor(path)}`;
+}
+
 function labelFor(path: string): string {
     const i = rankOf(path);
     const base = i >= 0 ? navItems[i] : null;
@@ -37,7 +47,11 @@ function labelFor(path: string): string {
  */
 type Phase = "idle" | "out" | "hold" | "in";
 /** Minimum time the title card stays up with the destination name on it. */
-const HOLD_MIN = 420;
+const HOLD_MIN = 480;
+
+/** Accent on the title card by section: cyan, magenta, orange in nav order (one pop per section, never rainbow). */
+const ACCENTS = ["#2fd8e8", "#ff2d8a", "#ff7a1a"];
+const accentOf = (p: string) => ACCENTS[Math.max(0, rankOf(p)) % ACCENTS.length];
 
 export function MotionRoot() {
     const path = usePathname();
@@ -144,7 +158,7 @@ export function MotionRoot() {
             if (s.phase === "idle") {
                 doc.setAttribute("data-dir", direction(location.pathname, url.pathname));
                 doc.setAttribute("data-xition", "out");
-                if (wipe.current) wipe.current.dataset.to = labelFor(url.pathname);
+                paintCard(wipe.current, url.pathname);
                 s.phase = "out";
                 markNavigation();
                 s.timer = window.setTimeout(toHold, 260);
@@ -153,7 +167,7 @@ export function MotionRoot() {
             if (s.phase === "out") {
                 if (here) return reset.current(), true; // clicked back onto the page we are still on: cancel
                 doc.setAttribute("data-dir", direction(location.pathname, url.pathname));
-                if (wipe.current) wipe.current.dataset.to = labelFor(url.pathname);
+                paintCard(wipe.current, url.pathname);
                 return true; // toHold will push the newest target
             }
             // hold: a route is loading. Point it at the newest target.
@@ -187,7 +201,10 @@ export function MotionRoot() {
     return (
         <>
             <div className="cm-pgauge" aria-hidden="true" />
-            <div className="cm-wipe" ref={wipe} aria-hidden="true" />
+            <div className="cm-wipe" ref={wipe} aria-hidden="true">
+                <i className="edge" />
+                <span className="k" />
+            </div>
         </>
     );
 }
