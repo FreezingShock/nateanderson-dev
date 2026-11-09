@@ -47,12 +47,12 @@ export default async function Home() {
                             style={{ margin: 0 }}
                             text="Studying toward environmental engineering. Currently shipping Fractured Islands: Ascension, a Roblox progression game built in Luau."
                         />
-                        <div className="cm-row">
-                            <Link className="cm-btn solid" href="/creations/projects">View projects</Link>
-                            <Link className="cm-btn" href="/about">About me</Link>
-                            <Link className="cm-btn" href="/creations/games">Play the games</Link>
+                        <div className="cm-row cta">
+                            <Link className="cta-b a" href="/creations/projects"><i>01</i><span>View projects</span><em aria-hidden="true">→</em></Link>
+                            <Link className="cta-b b" href="/about"><i>02</i><span>About me</span><em aria-hidden="true">→</em></Link>
+                            <Link className="cta-b c" href="/creations/games"><i>03</i><span>Play the games</span><em aria-hidden="true">→</em></Link>
                         </div>
-                        <div className="meta">
+                        <div className="meta stats">
                             <div><div className="cm-lbl">Projects</div>{projects.length > 0 ? <CountUp className="big" value={projects.length} /> : <span className="big none" aria-label="None yet">—</span>}</div>
                             <div><div className="cm-lbl">Renovations</div>{renovations.length > 0 ? <CountUp className="big" value={renovations.length} /> : <span className="big none" aria-label="None yet">—</span>}</div>
                             <div><div className="cm-lbl">Playable games</div>{playable > 0 ? <CountUp className="big" value={playable} /> : <span className="big none" aria-label="None yet">—</span>}</div>
@@ -129,6 +129,7 @@ export default async function Home() {
                                 </div>
                             ))}
                         </dl>
+                        <div className="p-foot" aria-hidden="true"><span className="id-bars"><i /><i /><i /><i /><i /></span><span>naOS / profile</span><span>class of 2027</span></div>
                     </div>
                     <div className="cm-panel tick pf-now">
                         <div className="cm-hbar"><span>Now</span><span>Feed</span></div>
@@ -137,6 +138,7 @@ export default async function Home() {
                                 <li key={l.tag}><span className="cm-state live">{l.tag}</span><span>{l.text}</span></li>
                             ))}
                         </ul>
+                        <div className="p-foot" aria-hidden="true"><span className="id-bars"><i /><i /><i /><i /><i /></span><span>feed / live</span><span>{NOW_FEED.length} items</span></div>
                     </div>
                     <div className="cm-panel pf-path">
                         <div className="cm-hbar"><span>Heading toward</span><span>2031</span></div>
@@ -149,6 +151,7 @@ export default async function Home() {
                                 </li>
                             ))}
                         </ol>
+                        <div className="p-foot" aria-hidden="true"><span className="id-bars"><i /><i /><i /><i /><i /></span><span>path / {PATH.length} steps</span><span>to 2031</span></div>
                     </div>
                 </div>
             </Section>

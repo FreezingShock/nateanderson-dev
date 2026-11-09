@@ -62,9 +62,7 @@ const types = new Map<Element, TypeItem>();
 const pars = new Map<Element, ParItem>();
 let revealIO: IntersectionObserver | null = null;
 let scrIO: IntersectionObserver | null = null;
-let rxIO: IntersectionObserver | null = null;
-let scrollingUp = false;
-let lastY = 0;
+const rxs = new Map<Element, RxItem>();
 let activeIO: IntersectionObserver | null = null;
 let raf = 0;
 const readyCbs = new Set<() => void>();
@@ -99,7 +97,7 @@ function register(el: Element) {
     seen.add(el);
     if (el.hasAttribute("data-mx-type")) return registerType(el);
     if (el.hasAttribute("data-mx-par")) return registerPar(el);
-    if (el.hasAttribute("data-rx") || el.hasAttribute("data-rx-scr")) return void rxIO?.observe(el);
+    if (el.hasAttribute("data-rx") || el.hasAttribute("data-rx-scr")) return registerRx(el);
     if (el.hasAttribute("data-mx-scr")) return void scrIO?.observe(el);
     revealIO?.observe(el);
 }
@@ -285,23 +283,74 @@ function autoRx(root: ParentNode) {
     }
 }
 
-function onRx(entries: IntersectionObserverEntry[]) {
-    const ins = entries.filter((e) => e.isIntersecting).sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top || a.boundingClientRect.left - b.boundingClientRect.left);
-    for (const e of entries) {
-        if (e.isIntersecting) continue;
-        const el = e.target as HTMLElement;
-        el.setAttribute("data-rd", e.boundingClientRect.top < 0 ? "t" : "b");
-        el.style.setProperty("--d", "0ms");
-        el.removeAttribute("data-rin");
-    }
-    ins.forEach((e, i) => {
-        const el = e.target as HTMLElement;
-        const d = Math.min(i, 8) * 55;
-        el.setAttribute("data-rd", scrollingUp ? "t" : "b");
-        el.style.setProperty("--d", `${d}ms`);
-        el.setAttribute("data-rin", "");
-        if (el.hasAttribute("data-rx-scr")) window.setTimeout(() => scramble(el), d);
+interface RxItem {
+    el: HTMLElement;
+    scr: boolean;
+    off: number;
+    final: string;
+    chars: string[];
+    lock: number[];
+    p: number;
+    active: boolean;
+    side: number; // 0 = below the viewport, 1 = above it (applied when the item leaves the active zone)
+    intro: boolean;
+    t0: number;
+    w: number;
+    done: boolean;
+    ref: number; // viewport y where progress is 0; fixed for items already on screen at load so they start fully shown
+}
+
+function registerRx(el: HTMLElement) {
+    const scr = el.hasAttribute("data-rx-scr");
+    const sib = el.parentElement ? Array.prototype.indexOf.call(el.parentElement.children, el) : 0;
+    const final = el.getAttribute("data-final") ?? el.textContent ?? "";
+    if (scr) el.setAttribute("data-final", final);
+    const chars = scr ? Array.from(final) : [];
+    rxs.set(el, {
+        el,
+        scr,
+        off: (sib % 4) * 34,
+        final,
+        chars,
+        lock: chars.map((_, i) => (i / Math.max(1, chars.length)) * 0.78 + Math.random() * 0.22),
+        p: -1,
+        active: true,
+        side: 0,
+        intro: false,
+        t0: 0,
+        w: 0,
+        done: false,
+        ref: NaN,
     });
+    activeIO?.observe(el);
+}
+
+/** Scrubbed text: characters lock in left to right as p goes 0 to 1 and come undone again as it goes back. */
+function renderScr(it: RxItem, p: number, now: number) {
+    if (p >= 1) {
+        if (!it.done) {
+            it.el.textContent = it.final;
+            it.done = true;
+        }
+        return;
+    }
+    if (now - it.w < 40 && it.done === false && it.p >= 0) return;
+    it.w = now;
+    it.done = false;
+    const pool = it.chars.filter((c) => c !== " ");
+    let out = "";
+    for (let i = 0; i < it.chars.length; i++) {
+        const c = it.chars[i];
+        if (c === " " || it.lock[i] <= p) out += c;
+        else out += Math.random() < 0.72 && pool.length ? pool[(Math.random() * pool.length) | 0] : GLYPHS[(Math.random() * GLYPHS.length) | 0];
+    }
+    it.el.textContent = out;
+}
+
+function setRx(it: RxItem, p: number, now: number) {
+    if (it.scr) renderScr(it, p, now);
+    else it.el.style.setProperty("--p", p.toFixed(3));
+    it.p = p;
 }
 
 function onHoverScr(ev: PointerEvent) {
@@ -356,6 +405,37 @@ function frame(now: number) {
         }
     }
 
+    // Scrubbed reveals: each item's progress is a function of where it sits in the viewport, so scrolling down plays
+    // the animation forward and scrolling back up plays the exact same animation in reverse.
+    const rxRects: [RxItem, DOMRect][] = [];
+    rxs.forEach((it) => {
+        if (it.active) rxRects.push([it, it.el.getBoundingClientRect()]);
+        else if (it.p !== it.side) setRx(it, it.side, now);
+    });
+    const band = Math.min(vh * 0.28, 260);
+    for (const [it, r] of rxRects) {
+        if (Number.isNaN(it.ref)) {
+            const base = vh * 0.97 - it.off;
+            it.ref = r.top < base ? Math.max(base, r.top + band) : -1;
+        }
+        let p = clamp01(((it.ref < 0 ? vh * 0.97 - it.off : it.ref) - r.top) / band);
+        if (atEnd && r.top < vh) p = 1;
+        if (it.p < 0 && p >= 1 && !it.intro && !it.done) {
+            it.intro = true; // already in view when it first appears: play it forward once over time
+            it.t0 = now + it.off * 2;
+        }
+        if (it.intro) {
+            const tp = clamp01((now - it.t0) / 650);
+            if (tp >= 1) it.intro = false;
+            else again = true;
+            p = Math.min(p, tp);
+            if (it.p < 0 && tp <= 0) p = 0;
+        }
+        if (it.p >= 0 && Math.abs(p - it.p) < 0.004 && p > 0 && p < 1 && !it.scr) continue;
+        if (it.p === p) continue;
+        setRx(it, p, now);
+    }
+
     pars.forEach((p) => {
         if (!p.active) return;
         const v = Math.round(y * p.k * 10) / 10;
@@ -375,7 +455,6 @@ export function start(): () => void {
     const reduce = prefersReducedMotion();
 
     revealIO = new IntersectionObserver(onReveal, { rootMargin: "0px 0px -8% 0px", threshold: 0.01 });
-    rxIO = new IntersectionObserver(onRx, { rootMargin: "0px 0px -6% 0px", threshold: 0.01 });
     scrIO = new IntersectionObserver(onScrIO, { rootMargin: "0px 0px -6% 0px", threshold: 0.4 });
     activeIO = new IntersectionObserver(
         (es) => {
@@ -384,19 +463,18 @@ export function start(): () => void {
                 if (t) t.active = e.isIntersecting || t.last < 0;
                 const p = pars.get(e.target);
                 if (p) p.active = e.isIntersecting;
+                const r = rxs.get(e.target);
+                if (r) {
+                    r.active = e.isIntersecting;
+                    if (!e.isIntersecting) r.side = e.boundingClientRect.top < 0 ? 1 : 0;
+                }
             });
             schedule();
         },
         { rootMargin: "20% 0px 20% 0px" },
     );
 
-    lastY = scrollY;
-    const onScroll = () => {
-        const y = scrollY;
-        if (Math.abs(y - lastY) > 2) scrollingUp = y < lastY;
-        lastY = y;
-        schedule();
-    };
+    const onScroll = () => schedule();
     addEventListener("scroll", onScroll, { passive: true });
     addEventListener("resize", onScroll, { passive: true });
     addEventListener("popstate", markNavigation);
@@ -432,9 +510,9 @@ export function start(): () => void {
         dom.disconnect();
         revealIO?.disconnect();
         scrIO?.disconnect();
-        rxIO?.disconnect();
+        rxs.clear();
         activeIO?.disconnect();
-        revealIO = activeIO = scrIO = rxIO = null;
+        revealIO = activeIO = scrIO = null;
         types.clear();
         pars.clear();
         queue.clear();
