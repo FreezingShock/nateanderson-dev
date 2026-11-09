@@ -52,7 +52,7 @@
 .ctos .cm-h2 { letter-spacing: -.045em; text-transform: lowercase; }
 
 /* Ground: the cinematic's #1a1a1a instead of near-black, so white blocks pop and cyan stays a rare accent. */
-:root:not([data-theme="paper"]) body:has(.ctos) { background-color: var(--cm-ctos-ground); }
+:root:not([data-theme="paper"]) body.ctos-on { background-color: var(--cm-ctos-ground); }
 
 /* ---- 1-bit dither and guide lines (original drawing language, from the cinematic's hacker-art layer) -------------
    Halftone dots fade across the page-head backdrop; two thin magenta guide lines cross the frame like a tracking
@@ -100,38 +100,38 @@
    seam at the top (like every section). Boxes come off; hairlines and type do the work. ----------------------------- */
 .na-bar, .na-sig, .na-ix, .na-arr { display: none; }
 @keyframes na-blink { 50% { opacity: .15; } }
-body:has(.ctos) .cm-foot { border-top: 0; padding-top: 0; padding-bottom: var(--cm-s6); background: none; }
+body.ctos-on .cm-foot { border-top: 0; padding-top: 0; padding-bottom: var(--cm-s6); background: none; }
 /* Section rhythm on naOS pages: 48px between sections (32px on phones), was 80px / 48px. Section seams fade out. */
-body:has(.ctos) .cm-section { padding-block: var(--cm-s7); }
-body:has(.ctos) .cm-sec-rule { background: linear-gradient(90deg, rgba(244, 244, 242, .26), rgba(244, 244, 242, .06) 60%, transparent); }
-body:has(.ctos) .cm-foot-wrap { gap: var(--cm-s5); }
-body:has(.ctos) .na-bar { position: relative; display: flex; align-items: center; gap: 12px; max-width: none; margin: 0 auto var(--cm-s6); padding: 14px 0 0; border-top: 1px solid rgba(244, 244, 242, .2); font: 600 var(--cm-ctos-t-tag)/1 var(--cm-mono); letter-spacing: .14em; color: rgba(244, 244, 242, .62); background: none; }
-body:has(.ctos) .na-bar::before { content: ""; position: absolute; left: 0; top: -1px; width: 28px; height: 3px; background: var(--cm-cyan); }
-body:has(.ctos) .na-bar .na-dot { width: 8px; height: 8px; background: var(--cm-cyan); animation: na-blink 1.4s steps(2) infinite; }
-body:has(.ctos) .na-bar .na-fill { flex: 1; height: 6px; background: repeating-linear-gradient(90deg, rgba(244, 244, 242, .34) 0 2px, transparent 2px 6px); }
-body:has(.ctos) .cm-foot-top { align-items: start; gap: var(--cm-s6) var(--cm-s5); }
-body:has(.ctos) .cm-foot-top > * { position: relative; padding: 0; background: none; border: 0; }
-body:has(.ctos) .cm-foot-col .cm-lbl, body:has(.ctos) .cm-foot-find > .cm-lbl { color: var(--cm-ctos-block); font-weight: 700; padding-bottom: 8px; border-bottom: 1px dashed rgba(244, 244, 242, .22); }
-body:has(.ctos) .cm-foot-col a { color: rgba(244, 244, 242, .72); transition: transform var(--cm-d-base), color var(--cm-d-base); }
-body:has(.ctos) .cm-foot-col a:hover, body:has(.ctos) .cm-foot-col a:focus-visible { color: var(--cm-cyan); transform: translateX(4px); }
-body:has(.ctos) .cm-foot-tagline { color: rgba(244, 244, 242, .78); }
-body:has(.ctos) .cm-foot-find { padding: 0; background: none; border: 0; }
-body:has(.ctos) .cm-foot-social { gap: 0; border: 0; }
-body:has(.ctos) .cm-foot-social li { border: 1px solid rgba(244, 244, 242, .14); margin: -1px 0 0 -1px; }
-body:has(.ctos) .cm-foot-social .cm-btn { display: grid; grid-template-columns: auto auto 1fr auto; align-items: center; gap: 10px; border: 0; border-radius: 0; background: transparent; padding: 14px; text-align: left; transition: background var(--cm-d-base), color var(--cm-d-base); }
-body:has(.ctos) .na-ix { display: inline; font: 700 var(--cm-ctos-t-tag)/1 var(--cm-mono); color: var(--cm-cyan); letter-spacing: .08em; }
-body:has(.ctos) .na-arr { display: inline; font-style: normal; opacity: .5; transition: transform var(--cm-d-base), opacity var(--cm-d-base); }
-body:has(.ctos) .cm-foot-social .cm-btn:hover, body:has(.ctos) .cm-foot-social .cm-btn:focus-visible { background: var(--cm-ctos-block); color: var(--cm-ctos-ink); }
-body:has(.ctos) .cm-foot-social .cm-btn:hover .na-ix, body:has(.ctos) .cm-foot-social .cm-btn:focus-visible .na-ix { color: var(--cm-ctos-ink); }
-body:has(.ctos) .cm-foot-social .cm-btn:hover .na-arr { transform: translateX(4px); opacity: 1; }
-body:has(.ctos) .na-sig { display: flex; align-items: flex-end; gap: 4px; height: 18px; }
-body:has(.ctos) .na-sig i { flex: 1; background: var(--cm-cyan); opacity: .5; height: 30%; }
-body:has(.ctos) .na-sig i:nth-child(3n) { height: 100%; opacity: .9; } body:has(.ctos) .na-sig i:nth-child(4n+1) { height: 62%; } body:has(.ctos) .na-sig i:nth-child(5n+2) { height: 18%; opacity: .3; }
-body:has(.ctos) .cm-foot-wrap > .cm-rule { display: none; }
-body:has(.ctos) .cm-foot-base { font-family: var(--cm-mono); }
-@media (max-width: 760px) { .na-hide { display: none; } body:has(.ctos) .na-bar { font-size: var(--cm-ctos-t-micro); } }
-@media (max-width: 640px) { body:has(.ctos) .cm-section { padding-block: var(--cm-s6); } }
-@media (prefers-reduced-motion: reduce) { body:has(.ctos) .na-bar .na-dot { animation: none; } }
+body.ctos-on .cm-section { padding-block: var(--cm-s7); }
+body.ctos-on .cm-sec-rule { background: linear-gradient(90deg, rgba(244, 244, 242, .26), rgba(244, 244, 242, .06) 60%, transparent); }
+body.ctos-on .cm-foot-wrap { gap: var(--cm-s5); }
+body.ctos-on .na-bar { position: relative; display: flex; align-items: center; gap: 12px; max-width: none; margin: 0 auto var(--cm-s6); padding: 14px 0 0; border-top: 1px solid rgba(244, 244, 242, .2); font: 600 var(--cm-ctos-t-tag)/1 var(--cm-mono); letter-spacing: .14em; color: rgba(244, 244, 242, .62); background: none; }
+body.ctos-on .na-bar::before { content: ""; position: absolute; left: 0; top: -1px; width: 28px; height: 3px; background: var(--cm-cyan); }
+body.ctos-on .na-bar .na-dot { width: 8px; height: 8px; background: var(--cm-cyan); animation: na-blink 1.4s steps(2) infinite; }
+body.ctos-on .na-bar .na-fill { flex: 1; height: 6px; background: repeating-linear-gradient(90deg, rgba(244, 244, 242, .34) 0 2px, transparent 2px 6px); }
+body.ctos-on .cm-foot-top { align-items: start; gap: var(--cm-s6) var(--cm-s5); }
+body.ctos-on .cm-foot-top > * { position: relative; padding: 0; background: none; border: 0; }
+body.ctos-on .cm-foot-col .cm-lbl, body.ctos-on .cm-foot-find > .cm-lbl { color: var(--cm-ctos-block); font-weight: 700; padding-bottom: 8px; border-bottom: 1px dashed rgba(244, 244, 242, .22); }
+body.ctos-on .cm-foot-col a { color: rgba(244, 244, 242, .72); transition: transform var(--cm-d-base), color var(--cm-d-base); }
+body.ctos-on .cm-foot-col a:hover, body.ctos-on .cm-foot-col a:focus-visible { color: var(--cm-cyan); transform: translateX(4px); }
+body.ctos-on .cm-foot-tagline { color: rgba(244, 244, 242, .78); }
+body.ctos-on .cm-foot-find { padding: 0; background: none; border: 0; }
+body.ctos-on .cm-foot-social { gap: 0; border: 0; }
+body.ctos-on .cm-foot-social li { border: 1px solid rgba(244, 244, 242, .14); margin: -1px 0 0 -1px; }
+body.ctos-on .cm-foot-social .cm-btn { display: grid; grid-template-columns: auto auto 1fr auto; align-items: center; gap: 10px; border: 0; border-radius: 0; background: transparent; padding: 14px; text-align: left; transition: background var(--cm-d-base), color var(--cm-d-base); }
+body.ctos-on .na-ix { display: inline; font: 700 var(--cm-ctos-t-tag)/1 var(--cm-mono); color: var(--cm-cyan); letter-spacing: .08em; }
+body.ctos-on .na-arr { display: inline; font-style: normal; opacity: .5; transition: transform var(--cm-d-base), opacity var(--cm-d-base); }
+body.ctos-on .cm-foot-social .cm-btn:hover, body.ctos-on .cm-foot-social .cm-btn:focus-visible { background: var(--cm-ctos-block); color: var(--cm-ctos-ink); }
+body.ctos-on .cm-foot-social .cm-btn:hover .na-ix, body.ctos-on .cm-foot-social .cm-btn:focus-visible .na-ix { color: var(--cm-ctos-ink); }
+body.ctos-on .cm-foot-social .cm-btn:hover .na-arr { transform: translateX(4px); opacity: 1; }
+body.ctos-on .na-sig { display: flex; align-items: flex-end; gap: 4px; height: 18px; }
+body.ctos-on .na-sig i { flex: 1; background: var(--cm-cyan); opacity: .5; height: 30%; }
+body.ctos-on .na-sig i:nth-child(3n) { height: 100%; opacity: .9; } body.ctos-on .na-sig i:nth-child(4n+1) { height: 62%; } body.ctos-on .na-sig i:nth-child(5n+2) { height: 18%; opacity: .3; }
+body.ctos-on .cm-foot-wrap > .cm-rule { display: none; }
+body.ctos-on .cm-foot-base { font-family: var(--cm-mono); }
+@media (max-width: 760px) { .na-hide { display: none; } body.ctos-on .na-bar { font-size: var(--cm-ctos-t-micro); } }
+@media (max-width: 640px) { body.ctos-on .cm-section { padding-block: var(--cm-s6); } }
+@media (prefers-reduced-motion: reduce) { body.ctos-on .na-bar .na-dot { animation: none; } }
 
 /* ---- Perf: Safari-friendly surfaces ------------------------------------------------------------------------------
    The grain layer is a 4x-viewport fixed plane that jittered forever, and every panel blurred what was behind it.
@@ -313,7 +313,7 @@ body:has(.ctos) .cm-foot-base { font-family: var(--cm-mono); }
 /* Accessibility pass: pillar detail sits inside its <dd> now (valid dl markup), so keep it on its own line. */
 .ctos .pf-pillars dd > small { display: block; margin-top: 6px; font-size: 13px; font-weight: 500; letter-spacing: 0; text-transform: none; }
 /* Footer naOS links slide on hover; hold still for reduced motion (focus ring stays). */
-@media (prefers-reduced-motion: reduce) { body:has(.ctos) .cm-foot-col a:hover, body:has(.ctos) .cm-foot-col a:focus-visible { transform: none; } }
+@media (prefers-reduced-motion: reduce) { body.ctos-on .cm-foot-col a:hover, body.ctos-on .cm-foot-col a:focus-visible { transform: none; } }
 /* Contrast on dark panels and light tiles (dim #56646c is 3.0:1 on #131313; mute and step text on light tiles). */
 .ctos .id-foot > span { color: #7d8b93; }
 .ctos .id-top .id-live, .ctos .g-top .id-live { color: #0f6a3a; }

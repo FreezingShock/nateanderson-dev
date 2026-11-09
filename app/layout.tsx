@@ -8,6 +8,7 @@ import { Launcher } from "@/components/cm/launcher";
 import { SiteMap } from "@/components/cm/site-map";
 import { Boot, BOOT_SCRIPT } from "@/components/cm/boot";
 import { MotionRoot } from "@/components/cm/motion-root";
+import { CtosBody } from "@/components/cm/ctos-body";
 import { SiteFooter } from "@/components/site-footer";
 import { SoundProvider } from "@/components/sound-provider";
 import { JOURNEY_END, JOURNEY_START, progressBetween } from "@/lib/timeline-data";
@@ -78,6 +79,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
                     <Boot />
                     <Film />
                     <MotionRoot />
+                    <CtosBody />
                     <Bar initialPct={pct} />
                     <main id="main" className="cm-main">{children}</main>
                     <SiteFooter />
