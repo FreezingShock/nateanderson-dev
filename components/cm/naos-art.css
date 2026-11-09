@@ -1,0 +1,25 @@
+/* naOS dithered art: decorative 1-bit PNGs. Scoped to .naos-art so no other page is affected. */
+.naos-art { position: relative; pointer-events: none; user-select: none; }
+.naos-art img { display: block; width: 100%; height: auto; image-rendering: pixelated; image-rendering: crisp-edges; }
+
+/* Section-break piece: centred, capped so each art pixel stays a crisp ~2 css px on desktop. */
+.naos-art-break { width: min(100%, 640px); margin: clamp(28px, 5vw, 56px) auto; }
+
+/* Hero piece: floats in the top-right corner behind the copy, quieter on phones. */
+.naos-art-hero { position: absolute; top: 5%; right: 0; width: min(44vw, 420px); z-index: 0; opacity: .9; }
+.naos-art-hero img { width: 100%; }
+
+/* Scroll reveal: a stepped clip, so the dither appears in hard steps instead of a smooth fade. */
+.naos-art.is-armed img { clip-path: inset(0 100% 0 0); }
+.naos-art.is-in img { animation: naos-dither-in 900ms steps(12, end) forwards; }
+@keyframes naos-dither-in {
+  from { clip-path: inset(0 100% 0 0); }
+  to { clip-path: inset(0 0 0 0); }
+}
+
+@media (max-width: 760px) {
+  .naos-art-hero { top: 2%; right: -6%; width: 74vw; opacity: .22; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .naos-art.is-armed img, .naos-art.is-in img { clip-path: none; animation: none; }
+}
