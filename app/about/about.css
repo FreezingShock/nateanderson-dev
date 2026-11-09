@@ -28,6 +28,10 @@
     background:
         radial-gradient(ellipse 70% 60% at 28% 46%, rgba(26, 26, 26, .82) 0, rgba(26, 26, 26, .5) 55%, transparent 100%);
 }
+/* Phones: the section prose and headings sit on a dark band so the backdrop stays texture, not noise. */
+@media (max-width: 999px) {
+    .about .cm-section:not(.ruled) { background: rgba(26, 26, 26, .72); }
+}
 @media (max-width: 999px) {
     .about .about-head::before {
         background: linear-gradient(180deg, rgba(26, 26, 26, .35), rgba(26, 26, 26, .72) 45%, rgba(26, 26, 26, .72) 80%, rgba(26, 26, 26, .35));
