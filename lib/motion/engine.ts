@@ -38,6 +38,13 @@ const SEL = "[data-mx], [data-mx-type], [data-mx-par], [data-mx-scr], [data-rx],
 const html = () => document.documentElement;
 const clamp01 = (v: number) => (v < 0 ? 0 : v > 1 ? 1 : v);
 
+/**
+ * React stamps its fiber onto every element it hydrates. Until that happens the node is still server HTML (streamed
+ * Suspense content can sit like that for a while). Any engine write before then (attributes, --n, scrambled text)
+ * makes React report a hydration mismatch, so the engine only touches nodes React already owns.
+ */
+const hydrated = (el: Element) => Object.keys(el).some((k) => k.startsWith("__reactFiber$"));
+
 export const prefersReducedMotion = () =>
     typeof matchMedia === "function" && matchMedia("(prefers-reduced-motion: reduce)").matches;
 
@@ -88,12 +95,38 @@ function flushGate() {
     schedule();
 }
 
+// Server HTML the engine found before React hydrated it. Held here and retried on a short timer; once React owns
+// the node it is scanned exactly as if it had been there at load. Entries whose node left the page are dropped.
+const waiting = new Set<Element>();
+let waitTimer = 0;
+function wait(el: Element) {
+    waiting.add(el);
+    if (!waitTimer) waitTimer = window.setInterval(retryWaiting, 100);
+}
+function retryWaiting() {
+    waiting.forEach((el) => {
+        if (!el.isConnected) {
+            waiting.delete(el);
+            return;
+        }
+        if (!hydrated(el)) return;
+        waiting.delete(el);
+        if (el.matches(SEL)) register(el);
+        scan(el);
+    });
+    if (!waiting.size && waitTimer) {
+        window.clearInterval(waitTimer);
+        waitTimer = 0;
+    }
+}
+
 function register(el: Element) {
     if (!(el instanceof HTMLElement) || seen.has(el)) return;
     if (gated()) {
         queue.add(el);
         return;
     }
+    if (!hydrated(el)) return wait(el);
     seen.add(el);
     if (el.hasAttribute("data-mx-type")) return registerType(el);
     if (el.hasAttribute("data-mx-par")) return registerPar(el);
@@ -174,6 +207,10 @@ function onMutations(muts: MutationRecord[]) {
             });
             for (const t of targets) {
                 if (seen.has(t)) continue;
+                if (!hydrated(t)) {
+                    wait(t);
+                    continue;
+                }
                 const typed = t.hasAttribute("data-mx-type") || t.hasAttribute("data-mx-par") || t.hasAttribute("data-mx-scr") || t.hasAttribute("data-rx") || t.hasAttribute("data-rx-scr");
                 if (!fresh && !typed) {
                     // Content that appears because the user did something (filters, tabs): no animation, and
@@ -266,6 +303,10 @@ function autoRx(root: ParentNode) {
     root.querySelectorAll("[data-rx-auto]").forEach((w) => wraps.push(w));
     for (const w of wraps) {
         if (w.hasAttribute("data-rx-done")) continue;
+        if (!hydrated(w)) {
+            wait(w);
+            continue;
+        }
         w.setAttribute("data-rx-done", "");
         for (const c of Array.from(w.children)) {
             if (c.matches(".cm-sec-head")) continue; // heading, label and blurb animate themselves
@@ -540,6 +581,9 @@ export function start(): () => void {
         pars.clear();
         queue.clear();
         readyCbs.clear();
+        waiting.clear();
+        if (waitTimer) window.clearInterval(waitTimer);
+        waitTimer = 0;
         if (raf) cancelAnimationFrame(raf);
         raf = 0;
     };
