@@ -39,7 +39,7 @@
 .cm-ico { width: 16px; height: 16px; flex: none; }
 .cm-sub { font: 700 15px/1.2 var(--cm-display); margin: 0; }
 .cm-note { font: 400 12.5px/1.45 var(--cm-display); color: var(--cm-mute); margin: 0; }
-.cm-state { font: 500 9px/1 var(--cm-mono); letter-spacing: .14em; text-transform: uppercase; color: var(--cm-dim); }
+.cm-state { font: 500 10px/1 var(--cm-mono); letter-spacing: .14em; text-transform: uppercase; color: var(--cm-mute); }
 .cm-state.live { color: var(--cm-cyan); } .cm-state.warn { color: var(--cm-amber); } .cm-state.alert { color: var(--cm-alert); } .cm-state.good { color: var(--cm-good); }
 
 /* Cards that are plain <div>s */
@@ -142,7 +142,7 @@ div.cm-card:hover { transform: none; }
 .cm-dock a {
     position: relative; z-index: 1; display: grid; place-items: center; align-content: center; gap: 5px; min-width: 0;
     color: var(--cm-mute); text-decoration: none; -webkit-tap-highlight-color: transparent;
-    font: 600 8px/1 var(--cm-mono); letter-spacing: .06em; text-transform: uppercase;
+    font: 600 9px/1 var(--cm-mono); letter-spacing: .03em; text-transform: uppercase;
     transition: color .25s var(--cm-ease);
 }
 .cm-dock a .ic { width: 18px; height: 18px; transition: transform .35s var(--cm-ease-out); }
