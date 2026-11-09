@@ -34,7 +34,7 @@ interface ParItem {
     last: number;
 }
 
-const SEL = "[data-mx], [data-mx-type], [data-mx-par], [data-mx-scr]";
+const SEL = "[data-mx], [data-mx-type], [data-mx-par], [data-mx-scr], [data-rx], [data-rx-scr]";
 const html = () => document.documentElement;
 const clamp01 = (v: number) => (v < 0 ? 0 : v > 1 ? 1 : v);
 
@@ -62,6 +62,9 @@ const types = new Map<Element, TypeItem>();
 const pars = new Map<Element, ParItem>();
 let revealIO: IntersectionObserver | null = null;
 let scrIO: IntersectionObserver | null = null;
+let rxIO: IntersectionObserver | null = null;
+let scrollingUp = false;
+let lastY = 0;
 let activeIO: IntersectionObserver | null = null;
 let raf = 0;
 const readyCbs = new Set<() => void>();
@@ -96,6 +99,7 @@ function register(el: Element) {
     seen.add(el);
     if (el.hasAttribute("data-mx-type")) return registerType(el);
     if (el.hasAttribute("data-mx-par")) return registerPar(el);
+    if (el.hasAttribute("data-rx") || el.hasAttribute("data-rx-scr")) return void rxIO?.observe(el);
     if (el.hasAttribute("data-mx-scr")) return void scrIO?.observe(el);
     revealIO?.observe(el);
 }
@@ -147,10 +151,11 @@ function onReveal(entries: IntersectionObserverEntry[]) {
 /** Find motion targets under `root`. Safe to call repeatedly. */
 export function scan(root: ParentNode = document) {
     if (!started) return;
+    autoRx(root);
     const found = new Set<Element>();
     root.querySelectorAll(SEL).forEach((e) => found.add(e));
     root.querySelectorAll("[data-mx-stagger] > *").forEach((e) => {
-        if (!e.hasAttribute("data-mx") && !e.querySelector("[data-mx]")) found.add(e);
+        if (!e.hasAttribute("data-mx") && !e.hasAttribute("data-rx") && !e.querySelector("[data-mx], [data-rx]")) found.add(e);
     });
     found.forEach(register);
 }
@@ -160,17 +165,18 @@ function onMutations(muts: MutationRecord[]) {
     for (const m of muts) {
         m.addedNodes.forEach((n) => {
             if (!(n instanceof HTMLElement)) return;
+            autoRx(n);
             const parent = n.parentElement;
             const isStaggerChild = !!parent?.hasAttribute("data-mx-stagger");
             const targets: HTMLElement[] = [];
             if (n.matches(SEL) || isStaggerChild) targets.push(n);
             n.querySelectorAll<HTMLElement>(SEL).forEach((e) => targets.push(e));
             n.querySelectorAll<HTMLElement>("[data-mx-stagger] > *").forEach((e) => {
-                if (!e.hasAttribute("data-mx") && !e.querySelector("[data-mx]")) targets.push(e);
+                if (!e.hasAttribute("data-mx") && !e.hasAttribute("data-rx") && !e.querySelector("[data-mx], [data-rx]")) targets.push(e);
             });
             for (const t of targets) {
                 if (seen.has(t)) continue;
-                const typed = t.hasAttribute("data-mx-type") || t.hasAttribute("data-mx-par") || t.hasAttribute("data-mx-scr");
+                const typed = t.hasAttribute("data-mx-type") || t.hasAttribute("data-mx-par") || t.hasAttribute("data-mx-scr") || t.hasAttribute("data-rx") || t.hasAttribute("data-rx-scr");
                 if (!fresh && !typed) {
                     // Content that appears because the user did something (filters, tabs): no animation, and
                     // never a hidden flash. Microtask timing means this lands before the next paint.
@@ -244,6 +250,60 @@ function onScrIO(entries: IntersectionObserverEntry[]) {
     }
 }
 
+// ---- Replaying reveals ------------------------------------------------------------------------------------------
+// [data-rx] items reveal every time they scroll into view and go back out when they leave, on the side they left
+// from (so scrolling up plays the move in reverse). `data-rin` = shown, `data-rd` = "t" or "b" (the edge it comes
+// from / goes to). Items entering together are staggered by position. [data-rx-scr] text re-scrambles on each entry.
+// A [data-rx-auto] container (Section with `ctos`) tags its own items so pages need no extra markup.
+const GROUPS = ".cm-grid, .cm-split, .cm-cols3, .pf, .cm-rail";
+const ROWS = ".pf-feed li, .pf-steps li, .pf-pillars > div, .cm-rail > li, .cm-table tbody tr, .cm-stream li";
+const TEXTS = ".pf-feed li > span:last-child, .pf-steps b, .pf-steps .cm-lbl, .pf-pillars dt, .pf-pillars dd, .cm-card > b, .cm-card .st, .cm-card > .cm-state, .cm-hbar > span";
+
+function tag(el: Element, variant: string) {
+    if (el instanceof HTMLElement && !el.hasAttribute("data-rx") && !el.closest("[data-mx]")) el.setAttribute("data-rx", variant);
+}
+function autoRx(root: ParentNode) {
+    const wraps: Element[] = [];
+    if (root instanceof Element && root.matches("[data-rx-auto]")) wraps.push(root);
+    root.querySelectorAll("[data-rx-auto]").forEach((w) => wraps.push(w));
+    for (const w of wraps) {
+        if (w.hasAttribute("data-rx-done")) continue;
+        w.setAttribute("data-rx-done", "");
+        for (const c of Array.from(w.children)) {
+            if (c.matches(".cm-sec-head")) continue; // heading, label and blurb animate themselves
+            if (c.matches(GROUPS)) {
+                Array.from(c.children).forEach((k, i) => {
+                    const two = c.matches(".pf, .cm-split");
+                    tag(k, two ? (k.matches(".pf-id") ? "" : i % 2 ? "slide-r" : "slide") : "");
+                });
+            } else tag(c, "");
+        }
+        w.querySelectorAll(ROWS).forEach((r) => tag(r, "row"));
+        w.querySelectorAll(TEXTS).forEach((t) => {
+            if (t.children.length === 0 && t.textContent?.trim() && !t.hasAttribute("data-rx-scr") && !t.closest("[data-mx-scr]")) t.setAttribute("data-rx-scr", "");
+        });
+    }
+}
+
+function onRx(entries: IntersectionObserverEntry[]) {
+    const ins = entries.filter((e) => e.isIntersecting).sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top || a.boundingClientRect.left - b.boundingClientRect.left);
+    for (const e of entries) {
+        if (e.isIntersecting) continue;
+        const el = e.target as HTMLElement;
+        el.setAttribute("data-rd", e.boundingClientRect.top < 0 ? "t" : "b");
+        el.style.setProperty("--d", "0ms");
+        el.removeAttribute("data-rin");
+    }
+    ins.forEach((e, i) => {
+        const el = e.target as HTMLElement;
+        const d = Math.min(i, 8) * 55;
+        el.setAttribute("data-rd", scrollingUp ? "t" : "b");
+        el.style.setProperty("--d", `${d}ms`);
+        el.setAttribute("data-rin", "");
+        if (el.hasAttribute("data-rx-scr")) window.setTimeout(() => scramble(el), d);
+    });
+}
+
 function onHoverScr(ev: PointerEvent) {
     if (ev.pointerType === "touch") return;
     const el = (ev.target as Element | null)?.closest?.("[data-scr-hover]");
@@ -315,6 +375,7 @@ export function start(): () => void {
     const reduce = prefersReducedMotion();
 
     revealIO = new IntersectionObserver(onReveal, { rootMargin: "0px 0px -8% 0px", threshold: 0.01 });
+    rxIO = new IntersectionObserver(onRx, { rootMargin: "0px 0px -6% 0px", threshold: 0.01 });
     scrIO = new IntersectionObserver(onScrIO, { rootMargin: "0px 0px -6% 0px", threshold: 0.4 });
     activeIO = new IntersectionObserver(
         (es) => {
@@ -329,7 +390,13 @@ export function start(): () => void {
         { rootMargin: "20% 0px 20% 0px" },
     );
 
-    const onScroll = () => schedule();
+    lastY = scrollY;
+    const onScroll = () => {
+        const y = scrollY;
+        if (Math.abs(y - lastY) > 2) scrollingUp = y < lastY;
+        lastY = y;
+        schedule();
+    };
     addEventListener("scroll", onScroll, { passive: true });
     addEventListener("resize", onScroll, { passive: true });
     addEventListener("popstate", markNavigation);
@@ -365,8 +432,9 @@ export function start(): () => void {
         dom.disconnect();
         revealIO?.disconnect();
         scrIO?.disconnect();
+        rxIO?.disconnect();
         activeIO?.disconnect();
-        revealIO = activeIO = scrIO = null;
+        revealIO = activeIO = scrIO = rxIO = null;
         types.clear();
         pars.clear();
         queue.clear();
