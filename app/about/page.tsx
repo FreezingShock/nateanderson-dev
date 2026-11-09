@@ -18,6 +18,7 @@ import { PROFILE_LEAD } from "@/lib/identity";
 
 // Statically generated, refreshed hourly: the days-to-graduation figure and the path progress bars come
 // from real dates at render time.
+import { NaosBackdrop } from "@/components/cm/naos-art";
 export const revalidate = 3600;
 
 export default function AboutPage() {
@@ -27,6 +28,7 @@ export default function AboutPage() {
 
     return (
         <div className="ctos about">
+            <NaosBackdrop src="/naos/bg-about.png" />
             <header className="cm-head about-head" id="top">
                 <div className="cm-grid-bg" aria-hidden="true" />
                 <div className="cm-persp" aria-hidden="true" />

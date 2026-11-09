@@ -18,6 +18,7 @@ import {
 } from "@/lib/timeline-data";
 import { pageMeta } from "@/lib/seo";
 
+import { NaosBackdrop } from "@/components/cm/naos-art";
 export const revalidate = 3600;
 
 export async function generateStaticParams() {
@@ -72,6 +73,7 @@ export default async function CourseDetailPage({
 
     return (
         <div className="ctos st-page">
+            <NaosBackdrop src="/naos/bg-studies.png" />
             <PageHead
                 label={course.ap ? "AP course" : "Course"}
                 title={[course.title]}

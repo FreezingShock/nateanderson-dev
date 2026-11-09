@@ -7,7 +7,7 @@ import { navItems } from "@/lib/nav";
 import { Section } from "@/components/cm/ui";
 import { CountUp } from "@/components/cm/reveal";
 import { ScrollType, Scramble } from "@/components/cm/motion";
-import { NaosArt } from "@/components/cm/naos-art";
+import { NaosArt, NaosBackdrop } from "@/components/cm/naos-art";
 import { SiteStats, SiteStatsSkeleton } from "@/components/home/site-stats";
 import { TimelinePreview } from "@/components/home/timeline-preview";
 import { RecentPosts } from "@/components/home/recent-posts";
@@ -22,6 +22,7 @@ export default async function Home() {
 
     return (
         <div className="ctos">
+            <NaosBackdrop src="/naos/bg-home.png" />
             <header className="cm-hero" id="top">
                 <div className="cm-grid-bg" aria-hidden="true" />
                 <div className="cm-persp" aria-hidden="true" />
@@ -136,10 +137,6 @@ export default async function Home() {
                     </div>
                 </Section>
 
-            <div className="cm-wrap">
-                <NaosArt src="/naos/track.png" width={320} height={96} />
-            </div>
-
             <Section ctos id="profile" no="02" label="Profile" title="Who I am, and where I'm headed.">
                 <div className="pf">
                     <div className="cm-panel pf-id">
@@ -180,10 +177,6 @@ export default async function Home() {
                     </div>
                 </div>
             </Section>
-
-            <div className="cm-wrap">
-                <NaosArt src="/naos/wash.png" width={320} height={40} />
-            </div>
 
             <Suspense fallback={<SiteStatsSkeleton />}>
                 <SiteStats />

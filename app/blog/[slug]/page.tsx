@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { PageHead } from "@/components/cm/ui";
-import { NaosArt } from "@/components/cm/naos-art";
+import { NaosBackdrop } from "@/components/cm/naos-art";
 import { ReadingGauge } from "@/components/blog-reading-gauge";
 import { EssayView, PoemView, QuoteView } from "@/components/blog-post-views";
 import { getPost, getPostNeighbours, getPostRoutes } from "@/lib/blog";
@@ -78,8 +78,8 @@ export default async function BlogPostPage({
 
     return (
         <div className={`ctos post-page post-${kind}`}>
+            <NaosBackdrop src="/naos/bg-blog.png" />
             <div className="post-hero">
-                <NaosArt src="/naos/post.png" width={300} height={200} variant="hero" eager />
                 <PageHead
                     label={`${POST_KIND_LABEL[kind]} / ${sectionNo} ${sectionTitle}`}
                     title={[post.title]}

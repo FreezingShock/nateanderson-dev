@@ -4,6 +4,7 @@ import { categoryById } from "@/lib/creations-data";
 import { CreationsHead, IdCard } from "@/components/creations-sections";
 import { pageMeta } from "@/lib/seo";
 
+import { NaosBackdrop } from "@/components/cm/naos-art";
 export const revalidate = 60;
 
 export async function generateStaticParams() {
@@ -32,6 +33,7 @@ export default async function ProjectPage({ params }: { params: Promise<{ slug: 
     const kind = isProject ? "Project" : "Renovation";
     return (
         <div className="ctos">
+            <NaosBackdrop src="/naos/bg-default.png" />
             <CreationsHead
                 label={project.category}
                 title={[project.title]}

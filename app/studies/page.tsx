@@ -10,6 +10,7 @@ import { pageMeta } from "@/lib/seo";
 
 // Statically generated, refreshed hourly: progress bars and countdown starting values are computed from
 // real dates at render time, so the page keeps moving forward on its own.
+import { NaosBackdrop } from "@/components/cm/naos-art";
 export const revalidate = 3600;
 
 export default function StudiesPage() {
@@ -18,6 +19,7 @@ export default function StudiesPage() {
 
     return (
         <div className="ctos st-page">
+            <NaosBackdrop src="/naos/bg-studies.png" />
             <PageHead
                 label="Learning"
                 title={["Studies"]}

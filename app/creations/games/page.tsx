@@ -3,9 +3,11 @@ import { NaosGameMode } from "@/components/games/naos";
 import { GAME_MODES, categoryById } from "@/lib/creations-data";
 import { pageMeta } from "@/lib/seo";
 
+import { NaosBackdrop } from "@/components/cm/naos-art";
 export default function GamesPage() {
     return (
         <div className="ctos ng-page">
+            <NaosBackdrop src="/naos/bg-games.png" />
             <CreationsShell
                 eyebrow="Creations / Games"
                 title={["Games"]}

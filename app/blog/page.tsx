@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { PageHead, Stat } from "@/components/cm/ui";
 import { Scramble } from "@/components/cm/motion";
-import { NaosArt } from "@/components/cm/naos-art";
+import { NaosBackdrop } from "@/components/cm/naos-art";
 import { BlogSection } from "@/components/blog-section";
 import { blogSections, BLOG_SECTION_IDS } from "@/lib/blog";
 import "./blog-naos.css";
@@ -21,6 +21,7 @@ export default function BlogPage() {
     if (blogSections.length === 0) {
         return (
             <div className="ctos">
+            <NaosBackdrop src="/naos/bg-blog.png" />
                 <div className="blog-hero">
                     <PageHead
                         label="Writing / naOS"
@@ -34,8 +35,8 @@ export default function BlogPage() {
 
     return (
         <div className="ctos">
+            <NaosBackdrop src="/naos/bg-blog.png" />
             <div className="blog-hero">
-                <NaosArt src="/naos/blog.png" width={300} height={200} variant="hero" eager />
                 <PageHead
                     label="Writing / naOS"
                     title={["blog &", "essays"]}

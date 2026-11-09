@@ -110,14 +110,8 @@
    ========================================================================== */
 
 .tl-page { position: relative; }
-.tl-page > .tl-art { position: absolute; top: 64px; right: 0; width: min(34vw, 400px); z-index: 0; opacity: .85; }
 .tl-page .tl-status { flex-wrap: wrap; row-gap: 8px; }
 .tl-page .tl-status > span { white-space: nowrap; }
-.tl-page > .tl-art img { animation: tl-dither-in 1100ms steps(14, end) both; }
-@keyframes tl-dither-in {
-    from { clip-path: inset(0 100% 0 0); }
-    to { clip-path: inset(0 0 0 0); }
-}
 .tl-page .cm-head { position: relative; z-index: 1; }
 
 .tl-page .tl-phase .cm-rail > li::before {
@@ -129,12 +123,7 @@
     clip-path: inset(0 0 calc((1 - round(var(--p, 1) * 6, 1) / 6) * 100%) 0);
 }
 
-@media (max-width: 760px) {
-    .tl-page > .tl-art { top: 96px; right: -22%; width: 80vw; opacity: .14; }
-}
-
 @media (prefers-reduced-motion: reduce) {
-    .tl-page > .tl-art img { animation: none; }
     .tl-page .tl-phase > .cm-panel[data-rx] { clip-path: none; }
     .tl-page .tl-phase .cm-rail > li::before { transform: rotate(45deg); }
 }

@@ -53,3 +53,12 @@ export function NaosArt({
         </div>
     );
 }
+
+/**
+ * Full-bleed dithered backdrop for a whole naOS page (scripts/naos-art/generate.py, backdrop()). Fixed to the
+ * viewport and painted under the page content, so it reads as the ground the page sits on, not a header piece.
+ * Place it as the first child of the page's `.ctos` root. Decorative: aria-hidden, no pointer events.
+ */
+export function NaosBackdrop({ src }: { src: string }) {
+    return <div className="naos-backdrop" aria-hidden="true" style={{ backgroundImage: `url(${src})` }} />;
+}
