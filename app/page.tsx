@@ -9,6 +9,7 @@ import { CountUp, Reveal } from "@/components/cm/reveal";
 import { SiteStats, SiteStatsSkeleton } from "@/components/home/site-stats";
 import { TimelinePreview } from "@/components/home/timeline-preview";
 import { RecentPosts } from "@/components/home/recent-posts";
+import "@/components/home/home.css";
 
 export const revalidate = 60; // re-check Supabase for new content every 60s
 
@@ -27,33 +28,48 @@ export default async function Home() {
                 <span className="cm-tag live t2" aria-hidden="true">Now shipping <i>Fractured Islands</i></span>
                 <span className="cm-read live float t3" aria-hidden="true">Launch / Spring 2031</span>
                 <div className="cm-wrap">
-                    <span className="cm-lbl">Portfolio / Southern California / nateanderson.dev</span>
-                    <h1 style={{ margin: 0 }}>
-                        <span className="cm-highlight wipe" style={{ display: "inline-flex", flexDirection: "column" }}>
-                            <span>Nate Anderson</span>
-                            <span>builds games, renders</span>
-                            <span>and systems.</span>
-                        </span>
-                    </h1>
-                    <p className="cm-lead" style={{ margin: 0 }}>
-                        Studying toward environmental engineering. Currently shipping Fractured Islands: Ascension, a
-                        Roblox progression game built in Luau.
-                    </p>
-                    <div className="cm-row">
-                        <Link className="cm-btn solid" href="/creations/projects">View projects</Link>
-                        <Link className="cm-btn" href="/about">About me</Link>
-                        <Link className="cm-btn" href="/creations/games">Play the games</Link>
-                    </div>
-                    <div className="meta">
-                        <div><div className="cm-lbl">Projects</div><CountUp className="big" value={projects.length} /></div>
-                        <div><div className="cm-lbl">Renovations</div><CountUp className="big" value={renovations.length} /></div>
-                        <div><div className="cm-lbl">Playable games</div><CountUp className="big" value={playable} /></div>
+                    <div className="hero-grid">
+                        <div className="hero-copy">
+                        <span className="cm-lbl">Portfolio / Southern California / nateanderson.dev</span>
+                        <h1 style={{ margin: 0 }}>
+                            <span className="cm-highlight wipe" style={{ display: "inline-flex", flexDirection: "column" }}>
+                                <span>Nate Anderson</span>
+                                <span>builds games, renders</span>
+                                <span>and systems.</span>
+                            </span>
+                        </h1>
+                        <p className="cm-lead" style={{ margin: 0 }}>
+                            Studying toward environmental engineering. Currently shipping Fractured Islands: Ascension, a
+                            Roblox progression game built in Luau.
+                        </p>
+                        <div className="cm-row">
+                            <Link className="cm-btn solid" href="/creations/projects">View projects</Link>
+                            <Link className="cm-btn" href="/about">About me</Link>
+                            <Link className="cm-btn" href="/creations/games">Play the games</Link>
+                        </div>
+                        <div className="meta">
+                            <div><div className="cm-lbl">Projects</div>{projects.length > 0 ? <CountUp className="big" value={projects.length} /> : <span className="big none" aria-label="None yet">—</span>}</div>
+                            <div><div className="cm-lbl">Renovations</div>{renovations.length > 0 ? <CountUp className="big" value={renovations.length} /> : <span className="big none" aria-label="None yet">—</span>}</div>
+                            <div><div className="cm-lbl">Playable games</div>{playable > 0 ? <CountUp className="big" value={playable} /> : <span className="big none" aria-label="None yet">—</span>}</div>
+                        </div>
+                        </div>
+                        <aside className="hero-status" aria-label="Current status">
+                            <div className="cm-panel tick">
+                                <div className="cm-hbar"><span className="live">Status</span><span>Now</span></div>
+                                <dl className="cm-kv">
+                                    <div><dt>Based</dt><dd>Southern California</dd></div>
+                                    <div><dt>Studying</dt><dd>Environmental engineering</dd></div>
+                                    <div><dt>Shipping</dt><dd><Link href="/creations">Fractured Islands: Ascension</Link></dd></div>
+                                    <div><dt>Built in</dt><dd>Luau, TypeScript, Blender</dd></div>
+                                    <div><dt>Launch</dt><dd>Spring 2031</dd></div>
+                                </dl>
+                            </div>
+                        </aside>
                     </div>
                 </div>
             </header>
 
-            {featured.length > 0 && (
-                <Section
+            <Section
                     id="work"
                     no="01"
                     label="Selected work"
@@ -62,6 +78,14 @@ export default async function Home() {
                     more={{ href: "/creations/projects", label: "View all" }}
                 >
                     <div className="cm-grid">
+                        {featured.length === 0 && (
+                            <div className="cm-card" style={{ gridColumn: "1 / -1" }}>
+                                <span className="cm-state">Syncing</span>
+                                <b>Featured work loads from the project library.</b>
+                                <p>If nothing appears, the library is offline for a moment. The full list is one click away.</p>
+                                <Link className="st" href="/creations/projects">/creations/projects</Link>
+                            </div>
+                        )}
                         {featured.map((p, i) => (
                             <Reveal key={p.slug} delay={(i % 3) * 70}>
                                 <Link className="cm-card link" href={`/creations/${p.slug}`} style={{ height: "100%" }}>
@@ -77,7 +101,6 @@ export default async function Home() {
                         ))}
                     </div>
                 </Section>
-            )}
 
             <Section id="profile" no="02" label="Profile" title="Roles, interests and goals.">
                 <div className="cm-split">
