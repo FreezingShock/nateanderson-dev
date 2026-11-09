@@ -2,6 +2,7 @@
 @import "./camino/camino.tokens.css";
 @import "./camino/camino.components.css";
 @import "./camino/site.css";
+@import "./camino/motion.css";
 @import "./camino/games.css";
 
 @plugin "tailwindcss-animate";

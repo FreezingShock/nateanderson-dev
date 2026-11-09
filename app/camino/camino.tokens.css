@@ -76,9 +76,12 @@
   --cm-ease-cut:  cubic-bezier(.7, 0, .2, 1);     /* wipes */
   --cm-d-fast: .12s;  --cm-d-base: .15s;  --cm-d-enter: .32s;
   --cm-d-wipe: .5s;   --cm-d-count: .6s;
+  /* Choreography (see motion.css / MOTION.md) */
+  --cm-ease-out:  cubic-bezier(.16, 1, .3, 1);     /* long, soft landing for reveals and entrances */
+  --cm-d-reveal: .7s; --cm-rise: 14px; --cm-slide: 24px;
 
   /* ---- Layers --------------------------------------------------------- */
-  --cm-z-film: 2; --cm-z-tags: 3; --cm-z-ui: 5; --cm-z-modal: 12; --cm-z-top: 20;
+  --cm-z-film: 2; --cm-z-tags: 3; --cm-z-ui: 5; --cm-z-modal: 12; --cm-z-top: 20; --cm-z-curtain: 40; --cm-z-boot: 50;
 }
 
 /* ---- Paper theme: the white "card" counterpoint (opening/closing beats,

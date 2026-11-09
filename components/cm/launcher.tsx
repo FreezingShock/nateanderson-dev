@@ -1,9 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { launcherLinks, navItems } from "@/lib/nav";
+import { navigateWithCurtain } from "@/lib/motion/navigate";
 
 interface Entry {
     href: string;
@@ -13,7 +13,6 @@ interface Entry {
 
 /** `/` command launcher: jump to any page, game or section. Esc closes, arrows + Enter pick. */
 export function Launcher() {
-    const router = useRouter();
     const [open, setOpen] = useState(false);
     const [q, setQ] = useState("");
     const [sel, setSel] = useState(0);
@@ -72,7 +71,7 @@ export function Launcher() {
     if (!open) return null;
     const go = (href: string) => {
         setOpen(false);
-        router.push(href);
+        navigateWithCurtain(href);
     };
 
     return (

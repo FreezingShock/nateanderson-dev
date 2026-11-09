@@ -6,6 +6,7 @@ import { NOW_FEED, PATH, PILLARS, PROFILE_LEAD } from "@/lib/identity";
 import { navItems } from "@/lib/nav";
 import { Section } from "@/components/cm/ui";
 import { CountUp, Reveal } from "@/components/cm/reveal";
+import { ScrollType } from "@/components/cm/motion";
 import { SiteStats, SiteStatsSkeleton } from "@/components/home/site-stats";
 import { TimelinePreview } from "@/components/home/timeline-preview";
 import { RecentPosts } from "@/components/home/recent-posts";
@@ -22,13 +23,13 @@ export default async function Home() {
         <>
             <header className="cm-hero" id="top">
                 <div className="cm-grid-bg" aria-hidden="true" />
-                <div className="ring" aria-hidden="true" />
-                <span className="cm-tag t1" aria-hidden="true">Class of <i>2027</i></span>
-                <span className="cm-tag live t2" aria-hidden="true">Now shipping <i>Fractured Islands</i></span>
-                <span className="cm-read live float t3" aria-hidden="true">Launch / Spring 2031</span>
+                <div className="ring" aria-hidden="true" data-mx-par="0.12" />
+                <span className="cm-tag t1" aria-hidden="true" data-mx-par="0.2">Class of <i>2027</i></span>
+                <span className="cm-tag live t2" aria-hidden="true" data-mx-par="0.08">Now shipping <i>Fractured Islands</i></span>
+                <span className="cm-read live float t3" aria-hidden="true" data-mx-par="0.16">Launch / Spring 2031</span>
                 <div className="cm-wrap">
                     <div className="hero-grid">
-                        <div className="hero-copy">
+                        <div className="hero-copy cm-stage">
                         <span className="cm-lbl">Portfolio / Southern California / nateanderson.dev</span>
                         <h1 style={{ margin: 0 }}>
                             <span className="cm-highlight wipe" style={{ display: "inline-flex", flexDirection: "column" }}>
@@ -37,10 +38,13 @@ export default async function Home() {
                                 <span>and systems.</span>
                             </span>
                         </h1>
-                        <p className="cm-lead" style={{ margin: 0 }}>
-                            Studying toward environmental engineering. Currently shipping Fractured Islands: Ascension, a
-                            Roblox progression game built in Luau.
-                        </p>
+                        <ScrollType
+                            as="p"
+                            auto
+                            className="cm-lead"
+                            style={{ margin: 0 }}
+                            text="Studying toward environmental engineering. Currently shipping Fractured Islands: Ascension, a Roblox progression game built in Luau."
+                        />
                         <div className="cm-row">
                             <Link className="cm-btn solid" href="/creations/projects">View projects</Link>
                             <Link className="cm-btn" href="/about">About me</Link>
@@ -52,7 +56,7 @@ export default async function Home() {
                             <div><div className="cm-lbl">Playable games</div>{playable > 0 ? <CountUp className="big" value={playable} /> : <span className="big none" aria-label="None yet">—</span>}</div>
                         </div>
                         </div>
-                        <aside className="hero-status" aria-label="Current status">
+                        <aside className="hero-status" aria-label="Current status" data-mx="slide-r">
                             <div className="cm-panel tick">
                                 <div className="cm-hbar"><span className="live">Status</span><span>Now</span></div>
                                 <dl className="cm-kv">
