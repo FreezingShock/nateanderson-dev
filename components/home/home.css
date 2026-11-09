@@ -551,3 +551,6 @@
         transition: none;
     }
 }
+
+/* Placeholder cards while the Selected work library streams in: same footprint as a real card, no motion. */
+.ctos .featured-skel { min-height: 168px; opacity: .55; }

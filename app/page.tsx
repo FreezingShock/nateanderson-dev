@@ -1,23 +1,23 @@
 import Link from "next/link";
 import { Suspense } from "react";
-import { getProjects, getRecentRenovations } from "@/lib/content";
 import { allGames } from "@/lib/creations-data";
 import { NOW_FEED, PATH, PILLARS, PROFILE_LEAD } from "@/lib/identity";
 import { navItems } from "@/lib/nav";
 import { Section } from "@/components/cm/ui";
-import { CountUp } from "@/components/cm/reveal";
 import { ScrollType, Scramble } from "@/components/cm/motion";
 import { NaosArt, NaosBackdrop } from "@/components/cm/naos-art";
 import { SiteStats, SiteStatsSkeleton } from "@/components/home/site-stats";
 import { TimelinePreview } from "@/components/home/timeline-preview";
+import { FeaturedCards, FeaturedSkeleton } from "@/components/home/featured-work";
+import { HeroStats, HeroStatsFallback } from "@/components/home/hero-stats";
 import { RecentPosts } from "@/components/home/recent-posts";
 import "@/components/home/home.css";
 
 export const revalidate = 60; // re-check Supabase for new content every 60s
 
-export default async function Home() {
-    const [projects, renovations] = await Promise.all([getProjects(), getRecentRenovations()]);
-    const featured = [...projects, ...renovations].slice(0, 3);
+// Nothing here waits on the network: the library lookups live in <FeaturedCards />, behind a Suspense boundary, so
+// the hero and every section paint at once and the cards stream in when Supabase answers.
+export default function Home() {
     const playable = allGames().filter((g) => g.status === "playable").length;
 
     return (
@@ -75,9 +75,9 @@ export default async function Home() {
                             </Link>
                         </nav>
                         <div className="meta stats">
-                            <div><div className="cm-lbl">Projects</div>{projects.length > 0 ? <CountUp className="big" value={projects.length} /> : <span className="big none" aria-label="None yet">—</span>}</div>
-                            <div><div className="cm-lbl">Renovations</div>{renovations.length > 0 ? <CountUp className="big" value={renovations.length} /> : <span className="big none" aria-label="None yet">—</span>}</div>
-                            <div><div className="cm-lbl">Playable games</div>{playable > 0 ? <CountUp className="big" value={playable} /> : <span className="big none" aria-label="None yet">—</span>}</div>
+                            <Suspense fallback={<HeroStatsFallback playable={playable} />}>
+                                <HeroStats playable={playable} />
+                            </Suspense>
                         </div>
                         </div>
                         <aside className="hero-status id" aria-label="Current status" data-mx="slide-r">
@@ -115,25 +115,9 @@ export default async function Home() {
                     more={{ href: "/creations/projects", label: "View all" }}
                 >
                     <div className="cm-grid">
-                        {featured.length === 0 && (
-                            <div className="cm-card" style={{ gridColumn: "1 / -1" }}>
-                                <span className="cm-state">Syncing</span>
-                                <b>Featured work loads from the project library.</b>
-                                <p>If nothing appears, the library is offline for a moment. The full list is one click away.</p>
-                                <Link className="st" href="/creations/projects">/creations/projects</Link>
-                            </div>
-                        )}
-                        {featured.map((p, i) => (
-                            <Link key={p.slug} className="cm-card link" href={`/creations/${p.slug}`}>
-                                    <div className="cm-viz">
-                                        <span className="cm-tag flat">{p.category}</span>
-                                        <span className="glyph" aria-hidden="true">{String(i + 1).padStart(2, "0")}</span>
-                                    </div>
-                                    <b>{p.title}</b>
-                                    <p>{p.description}</p>
-                                    <span className="st">{p.tags.slice(0, 3).join(" / ")}</span>
-                                </Link>
-                        ))}
+                        <Suspense fallback={<FeaturedSkeleton />}>
+                            <FeaturedCards />
+                        </Suspense>
                     </div>
                 </Section>
 
