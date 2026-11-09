@@ -19,7 +19,10 @@ Wrap the page in `<div className="ctos">` and use `Section ctos` (components/cm/
 
 ## Tokens
 `--cm-ctos-ground #1a1a1a` (page ground), `--cm-ctos-block #f4f4f2` (white title blocks), `--cm-ctos-ink #1a1a1a`
-(text on white). Accent stays `--cm-cyan #2fd8e8` (`--cm-cyan-ink` on cyan). Magenta `#ff2d8a` only for thin guide
+(text on white). Panels: `--cm-ctos-panel #131313` for every status card, grid card and CTA plate (don't hardcode panel greys).
+Type scale: `--cm-ctos-t-micro 9px`, `-tag 10.5px`, `-small 12px`, `-body 14px`, `-lead 17px`, `-h3 22px`. Use these for
+naOS sizes; display sizes (clamp or 26px and up) stay per page.
+Accent stays `--cm-cyan #2fd8e8` (`--cm-cyan-ink` on cyan). Magenta `#ff2d8a` only for thin guide
 lines. One accent rule: cyan or white, never rainbow.
 
 ## Fonts

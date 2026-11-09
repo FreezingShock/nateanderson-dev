@@ -27,7 +27,7 @@
 .cm-split { display: grid; grid-template-columns: 1.2fr 1fr; gap: var(--cm-s6); align-items: start; }
 .cm-split.even { grid-template-columns: 1fr 1fr; }
 .cm-cols3 { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); }
-.cm-cols4 { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); }
+
 .cm-sec-head { display: flex; justify-content: space-between; align-items: end; gap: 16px; flex-wrap: wrap; margin-bottom: var(--cm-s5); }
 .cm-sec-head > div { display: grid; gap: 10px; }
 .cm-more { font: 600 10px/1 var(--cm-mono); letter-spacing: .13em; text-transform: uppercase; text-decoration: none; color: var(--cm-mute); border-bottom: 1px solid var(--cm-hair-hi); padding-bottom: 4px; white-space: nowrap; }
@@ -75,7 +75,7 @@ div.cm-card:hover { transform: none; }
 @media (max-width: 380px) {
     .cm-foot-top { grid-template-columns: minmax(0, 1fr); }
 }
-.cm-toast-box { position: fixed; left: 50%; bottom: calc(20px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); z-index: var(--cm-z-top); }
+
 
 /* Timeline / progress rails */
 .cm-rail { position: relative; padding-left: 22px; display: grid; gap: 12px; }
@@ -99,13 +99,13 @@ div.cm-card:hover { transform: none; }
 :root[data-theme="paper"] .cm-card { background: rgba(5,6,7,.03); }
 :root[data-theme="paper"] .cm-card:hover { background: rgba(5,6,7,.06); }
 :root[data-theme="paper"] .cm-card .vis { background: #e6e8e5; }
-:root[data-theme="paper"] .cm-tile { background: rgba(255,255,255,.7); }
+
 
 /* Non-interactive label pill (cm-chip is a button; this is its quiet twin) */
 .cm-pill { display: inline-flex; align-items: center; gap: 6px; border: 1px solid var(--cm-hair); color: var(--cm-mute); font: 600 10px/1 var(--cm-mono); letter-spacing: .12em; text-transform: uppercase; padding: 6px 8px; border-radius: var(--cm-radius); }
 .cm-pill.on { color: var(--cm-cyan-ink); background: var(--cm-cyan); border-color: var(--cm-cyan); }
-.cm-prow { display: grid; gap: 8px; padding: 12px 14px; border-top: 1px solid var(--cm-hair); }
-.cm-prow:first-of-type { border-top: 0; }
+
+
 .cm-stream.wrap li { white-space: normal; overflow: visible; text-overflow: clip; }
 .cm-stream.wrap li + li { margin-top: 4px; }
 .cm-viz { aspect-ratio: 16 / 9; position: relative; background: repeating-linear-gradient(135deg, rgba(226,238,240,.06) 0 1px, transparent 1px 8px), #030405; border: 1px solid var(--cm-hair); overflow: hidden; }
