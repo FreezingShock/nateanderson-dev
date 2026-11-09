@@ -312,7 +312,7 @@ export function TimelineExplorer({
                         </div>
                     </div>
 
-                    <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 6, borderTop: "1px solid var(--cm-hair)", paddingTop: 12 }}>
+                    <div className="tl-cats" style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 6, borderTop: "1px solid var(--cm-hair)", paddingTop: 12 }}>
                         {CATEGORY_KEYS.map((key) => (
                             <button
                                 key={key}

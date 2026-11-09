@@ -554,7 +554,7 @@ function LiveTickers({ nowMs, total, done }: { nowMs: number; total: number; don
     const toLaunch = daysUntil(JOURNEY_END, now);
 
     return (
-        <div className="cm-split" style={{ marginTop: "var(--cm-s5)", gridTemplateColumns: "1fr 1.4fr" }}>
+        <div className="tl-split">
             <div className="cm-panel tick live">
                 <div className="cm-hbar"><span className="live">Right now</span><span>Pacific time</span></div>
                 <div className="cm-body-pad" style={{ display: "grid", gap: 10 }}>
@@ -569,7 +569,7 @@ function LiveTickers({ nowMs, total, done }: { nowMs: number; total: number; don
                 </div>
                 <dl className="cm-kv two" style={{ borderTop: "1px solid var(--cm-hair)" }}>
                     <div><dt>Milestones planned</dt><dd><CountUp value={total} /></dd></div>
-                    <div><dt>Already done</dt><dd style={{ color: "var(--cm-good)" }}><CountUp value={done} /></dd></div>
+                    <div><dt>Already done</dt><dd><CountUp value={done} /></dd></div>
                 </dl>
             </div>
             <div className="cm-panel">
