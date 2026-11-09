@@ -8,14 +8,6 @@ import { navItems } from "@/lib/nav";
 
 type Dir = "fwd" | "back" | "down" | "up";
 
-const EASE_CUT = "cubic-bezier(.7, 0, .2, 1)";
-const EDGES: Record<Dir, { from: string; to: string }> = {
-    fwd: { from: "translate3d(100%,0,0)", to: "translate3d(-100%,0,0)" },
-    back: { from: "translate3d(-100%,0,0)", to: "translate3d(100%,0,0)" },
-    down: { from: "translate3d(0,100%,0)", to: "translate3d(0,-100%,0)" },
-    up: { from: "translate3d(0,-100%,0)", to: "translate3d(0,100%,0)" },
-};
-
 const rankOf = (p: string) =>
     navItems.findIndex((n) => (n.href === "/" ? p === "/" : p === n.href || p.startsWith(n.href + "/")));
 const depthOf = (p: string) => p.split("/").filter(Boolean).length;
@@ -39,15 +31,13 @@ function labelFor(path: string): string {
 }
 
 /**
- * Starts the motion engine, owns the page curtain, and draws the scroll gauge. Mount once in the root layout.
- * Internal link clicks and launcher jumps cover the screen with a directional curtain, navigate underneath it,
- * then uncover the new page; the new page's hero and reveals only start once the curtain is lifting.
+ * Starts the motion engine, runs page transitions and draws the scroll gauge. Mount once in the root layout.
+ * Internal link clicks and launcher jumps let the current page slide out along the direction of travel, swap the
+ * route, then bring the new page in from the other side; its hero and reveals start as it arrives.
  */
 export function MotionRoot() {
     const path = usePathname();
     const router = useRouter();
-    const curtain = useRef<HTMLDivElement>(null);
-    const label = useRef<HTMLSpanElement>(null);
     const busy = useRef(false);
     const waiting = useRef<{ from: string; timer: number } | null>(null);
     const first = useRef(true);
@@ -62,31 +52,24 @@ export function MotionRoot() {
         };
     }, []);
 
-    const uncover = useRef(() => {});
-    uncover.current = () => {
-        const el = curtain.current;
+    const arrive = useRef(() => {});
+    arrive.current = () => {
         const w = waiting.current;
-        if (!el || !w) return;
+        if (!w) return;
         window.clearTimeout(w.timer);
         waiting.current = null;
-        const dir = (el.dataset.dir as Dir) || "fwd";
         const doc = document.documentElement;
-        const out = el.animate([{ transform: "none" }, { transform: EDGES[dir].to }], {
-            duration: 460,
-            easing: EASE_CUT,
-            fill: "forwards",
-        });
-        // The new page starts writing itself in just after the curtain begins to lift.
-        window.setTimeout(() => doc.removeAttribute("data-xition"), 110);
-        const done = () => {
-            el.style.visibility = "hidden";
-            out.cancel();
+        // One tick: lift the hold (entrances start) and start the page-in animation together.
+        doc.setAttribute("data-xin", "");
+        doc.removeAttribute("data-xition");
+        window.setTimeout(() => {
+            doc.removeAttribute("data-xin");
+            doc.removeAttribute("data-dir");
             busy.current = false;
-        };
-        out.finished.then(done, done);
+        }, 700);
     };
 
-    // The route actually changed: lift the curtain (after the new page has had a frame or two to mount).
+    // The route actually changed: let the new page mount a frame, then bring it in.
     useEffect(() => {
         if (first.current) {
             first.current = false;
@@ -96,45 +79,29 @@ export function MotionRoot() {
         scan(document);
         const w = waiting.current;
         if (!w || w.from === path) return;
-        let r2 = 0;
-        const r1 = requestAnimationFrame(() => {
-            r2 = requestAnimationFrame(() => window.setTimeout(() => uncover.current(), 60));
-        });
-        return () => {
-            cancelAnimationFrame(r1);
-            cancelAnimationFrame(r2);
-        };
+        const r = requestAnimationFrame(() => arrive.current());
+        return () => cancelAnimationFrame(r);
     }, [path]);
 
     // Click interception + launcher jumps.
     useEffect(() => {
         const reduce = prefersReducedMotion();
         const go = async (href: string) => {
-            const el = curtain.current;
-            if (!el || busy.current) return false;
+            if (busy.current) return false;
             const url = new URL(href, location.href);
             if (url.origin !== location.origin || url.pathname === location.pathname) return false;
             busy.current = true;
-            const dir = direction(location.pathname, url.pathname);
-            el.dataset.dir = dir;
-            if (label.current) label.current.textContent = `${dir === "back" || dir === "up" ? "←" : "→"} ${labelFor(url.pathname)}`;
-            document.documentElement.setAttribute("data-xition", "cover");
+            const doc = document.documentElement;
+            doc.setAttribute("data-dir", direction(location.pathname, url.pathname));
+            doc.setAttribute("data-xition", "out");
             markNavigation();
-            el.style.visibility = "visible";
-            const cover = el.animate([{ transform: EDGES[dir].from }, { transform: "none" }], {
-                duration: 270,
-                easing: EASE_CUT,
-                fill: "forwards",
-            });
-            try {
-                await cover.finished;
-            } catch {
-                /* cancelled */
-            }
+            // Let the current page leave (170ms), then swap the route underneath it.
+            await new Promise((r) => window.setTimeout(r, 170));
+            doc.setAttribute("data-xition", "hold");
             waiting.current = {
                 from: location.pathname,
-                // If the route never commits (offline, error), don't leave the user behind a curtain.
-                timer: window.setTimeout(() => uncover.current(), 6000),
+                // If the route never commits (offline, error), don't leave the user on a blank page.
+                timer: window.setTimeout(() => arrive.current(), 6000),
             };
             router.push(url.pathname + url.search + url.hash);
             return true;
@@ -147,9 +114,8 @@ export function MotionRoot() {
             if (!a || (a.target && a.target !== "_self") || a.hasAttribute("download") || a.closest("[data-no-curtain]")) return;
             const url = new URL(a.href, location.href);
             if (url.origin !== location.origin || url.pathname === location.pathname) return;
-            if (busy.current) return e.preventDefault(); // a curtain is already moving: ignore the extra click
             e.preventDefault(); // next/link sees defaultPrevented and leaves the navigation to us
-            void go(url.pathname + url.search + url.hash);
+            if (!busy.current) void go(url.pathname + url.search + url.hash);
         };
         const onNav = (e: Event) => {
             const href = (e as CustomEvent<string>).detail;
@@ -166,14 +132,5 @@ export function MotionRoot() {
         };
     }, [router]);
 
-    return (
-        <>
-            <div className="cm-pgauge" aria-hidden="true" />
-            <div className="cm-curtain" ref={curtain} aria-hidden="true" data-dir="fwd">
-                <i className="edge a" />
-                <i className="edge b" />
-                <span className="lbl" ref={label} />
-            </div>
-        </>
-    );
+    return <div className="cm-pgauge" aria-hidden="true" />;
 }

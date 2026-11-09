@@ -2,7 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Arimo, IBM_Plex_Mono } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "@/components/theme-provider";
-import { Bar } from "@/components/cm/bar";
+import { Bar, Dock } from "@/components/cm/bar";
 import { Film } from "@/components/cm/film";
 import { Launcher } from "@/components/cm/launcher";
 import { Boot, BOOT_SCRIPT } from "@/components/cm/boot";
@@ -79,6 +79,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
                     <Bar initialPct={pct} />
                     <main id="main" className="cm-main">{children}</main>
                     <SiteFooter />
+                    <Dock />
                     <Launcher />
                     <SoundProvider />
                 </ThemeProvider>
