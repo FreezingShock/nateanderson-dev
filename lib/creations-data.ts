@@ -84,6 +84,18 @@ export interface ProjectShot {
 }
 
 export const PROJECT_GALLERY: Record<string, ProjectShot[]> = {
+    nexus: [
+        {
+            src: "/creations/nexus/buildings.webp",
+            alt: "Nexus in play: a small town by a river, with the build menu open on cottages, terrace houses and towers.",
+            caption: "The build menu. Roads, zones, buildings, services, parks and terrain sit along the bottom, with coins and residents at the top.",
+        },
+        {
+            src: "/creations/nexus/welcome.webp",
+            alt: "The Nexus title screen: a Hello, new mayor panel with a Start my town button over an isometric village.",
+            caption: "The title screen. A small village by the river is waiting for a mayor.",
+        },
+    ],
     deepstack: [
         {
             src: "/creations/deepstack/carry-word-desk.webp",

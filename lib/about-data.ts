@@ -53,22 +53,6 @@ export const LEVELS = [
 
 export const skills: Skill[] = [
     {
-        name: "Roblox Development",
-        level: 4,
-        description:
-            "Systems design, menu architecture, stat and attribute systems.",
-        icon: "Code2",
-        category: "gamedev",
-    },
-    {
-        name: "Luau Programming",
-        level: 4,
-        description:
-            "Server/client architecture, ModuleScripts, event handling and optimization.",
-        icon: "Code2",
-        category: "gamedev",
-    },
-    {
         name: "Game Systems",
         level: 3,
         description:
