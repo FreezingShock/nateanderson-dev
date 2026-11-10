@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState, type CSSProperties } from "react";
-import { Menu, Search, Volume2, VolumeX } from "lucide-react";
+import { openConsole } from "@/components/cm/console-entry";
 import { PIXEL_FOR, PixelIcon } from "@/components/cm/pixel-icons";
 import { NateGlyph } from "@/components/cm/mark";
 import { navItems } from "@/lib/nav";
@@ -59,8 +59,8 @@ export function Bar() {
     return (
         <header className="nv-top" data-scrolled={scrolled ? "" : undefined}>
             <div className="nv-start">
-                <button type="button" className="nv-menu-btn" onClick={openMenu} aria-label="Open site map" aria-haspopup="dialog">
-                    <Menu aria-hidden="true" size={17} strokeWidth={2} />
+                <button type="button" className="nv-menu-btn" onClick={openMenu} aria-label="Menu, open site map" aria-haspopup="dialog">
+                    <PixelIcon name="menu" size={24} />
                     <span>menu</span>
                 </button>
                 <Link className="nv-brand" href="/" aria-label="Nate Anderson, home">
@@ -70,22 +70,27 @@ export function Bar() {
             </div>
             <div className="nv-tools">
                 <button type="button" className="nv-search" onClick={openLauncher} aria-label="Search the site">
-                    <Search aria-hidden="true" size={15} strokeWidth={2} />
+                    <PixelIcon name="search" size={24} />
                     <span>search</span>
                     <kbd className="nv-key" aria-hidden="true">/</kbd>
+                </button>
+                <button type="button" className="nv-term" onClick={openConsole} aria-label="Open the command console" aria-haspopup="dialog">
+                    <PixelIcon name="terminal" size={24} />
+                    <span>console</span>
+                    <kbd className="nv-key" aria-hidden="true">`</kbd>
                 </button>
                 <button
                     type="button"
                     className="nv-snd"
                     data-snd="off"
                     aria-pressed={mounted ? snd.on : true}
-                    aria-label={snd.on ? "Mute sound" : "Unmute sound"}
+                    aria-label={mounted && !snd.on ? "Sound off, unmute" : "Sound on, mute"}
                     onClick={() => {
                         setSnd({ on: !snd.on });
                         if (!snd.on) setTimeout(() => sfx("on"), 40);
                     }}
                 >
-                    {mounted && !snd.on ? <VolumeX aria-hidden="true" size={15} strokeWidth={2} /> : <Volume2 aria-hidden="true" size={15} strokeWidth={2} />}
+                    {mounted && !snd.on ? <PixelIcon name="volumeOff" size={24} /> : <PixelIcon name="volumeOn" size={24} />}
                     <span className="nv-snd-t" style={{ color: snd.on || !mounted ? "var(--cm-cyan)" : "var(--cm-dim)" }}>{mounted && !snd.on ? "off" : "on"}</span>
                 </button>
             </div>

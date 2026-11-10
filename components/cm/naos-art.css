@@ -22,6 +22,7 @@
 }
 @media (prefers-reduced-motion: reduce) {
   .naos-art.is-armed img, .naos-art.is-in img { clip-path: none; animation: none; }
+  .naos-backdrop, .naos-backdrop-ground { transition: none; }
 }
 
 /* Full-page backdrop: one dithered terrain field per page, fixed behind the content (z-index -1 inside .ctos, which
@@ -33,13 +34,29 @@
 .naos-backdrop {
   position: fixed; inset: 0; z-index: -1; pointer-events: none;
   background-position: center top; background-size: max(1440px, 100vw) auto; background-repeat: no-repeat;
-  image-rendering: pixelated; opacity: .5;
+  image-rendering: pixelated; opacity: 0; transition: opacity 700ms ease-out;
   -webkit-mask-image: radial-gradient(ellipse 75% 85% at 82% 18%, #000 0, rgba(0, 0, 0, .55) 45%, transparent 92%);
   mask-image: radial-gradient(ellipse 75% 85% at 82% 18%, #000 0, rgba(0, 0, 0, .55) 45%, transparent 92%);
 }
+/* Shown at once, under the art, while the image decodes: a plain dot field in the same spot and shape. It fades out
+   as the art fades in, so the page is never blank and the art never snaps in. */
+.naos-backdrop-ground {
+  position: fixed; inset: 0; z-index: -1; pointer-events: none;
+  background: radial-gradient(circle, rgba(244, 244, 242, .16) 0 30%, transparent 34%) 0 0 / 6px 6px;
+  -webkit-mask-image: radial-gradient(ellipse 75% 85% at 82% 18%, #000 0, rgba(0, 0, 0, .55) 45%, transparent 92%);
+  mask-image: radial-gradient(ellipse 75% 85% at 82% 18%, #000 0, rgba(0, 0, 0, .55) 45%, transparent 92%);
+  opacity: .6; transition: opacity 700ms ease-out;
+}
+.naos-backdrop-ground.is-hidden { opacity: 0; }
+.naos-backdrop.is-ready { opacity: .5; }
 @media (max-width: 760px) {
+  .naos-backdrop-ground {
+    -webkit-mask-image: linear-gradient(180deg, transparent 0, #000 22%, rgba(0, 0, 0, .6) 60%, transparent 96%);
+    mask-image: linear-gradient(180deg, transparent 0, #000 22%, rgba(0, 0, 0, .6) 60%, transparent 96%);
+  }
+  .naos-backdrop.is-ready { opacity: .4; }
   .naos-backdrop {
-    opacity: .4; background-position: 62% top;
+    background-position: 62% top;
     -webkit-mask-image: linear-gradient(180deg, transparent 0, #000 22%, rgba(0, 0, 0, .6) 60%, transparent 96%);
     mask-image: linear-gradient(180deg, transparent 0, #000 22%, rgba(0, 0, 0, .6) 60%, transparent 96%);
   }
@@ -69,6 +86,13 @@
   image-rendering: pixelated; opacity: .42;
   -webkit-mask-image: linear-gradient(270deg, #000 35%, transparent 100%);
   mask-image: linear-gradient(270deg, #000 35%, transparent 100%);
+}
+/* On wide screens the lede runs under the left half of the band, so the band stays faint there and shows on the right. */
+@media (min-width: 761px) {
+  .ctos .cm-head::before {
+    -webkit-mask-image: linear-gradient(270deg, #000 22%, transparent 50%);
+    mask-image: linear-gradient(270deg, #000 22%, transparent 50%);
+  }
 }
 .ctos.st-page .cm-head::before { background-image: url("/naos/band-rail.webp"); }
 .ctos.about .cm-head::before { background-image: url("/naos/band-seam.webp"); }

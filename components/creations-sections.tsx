@@ -155,7 +155,7 @@ export function CategoryGrid({ counts }: { counts: Record<CreationCategory["id"]
                 return (
                     <Link key={c.id} href={c.href} className="cm-card link" style={{ height: "100%" }}>
                         <div className="cm-row" style={{ justifyContent: "space-between" }}>
-                            <Icon className="cm-ico" style={{ width: 22, height: 22 }} aria-hidden="true" />
+                            <Icon className="cm-ico" style={{ width: 24, height: 24 }} aria-hidden="true" />
                             <span className="cm-state">{counts[c.id]} inside</span>
                         </div>
                         <b style={{ fontSize: 20, marginTop: 6 }}>{c.title}</b>
@@ -194,7 +194,7 @@ function GameCard({ game }: { game: Game }) {
         <>
             <div className="cm-viz">
                 <span className={`cm-tag flat ${statusTone[game.status]}`}>{st.label}</span>
-                <Icon aria-hidden="true" style={{ position: "absolute", right: 14, bottom: 12, width: 40, height: 40, color: "var(--cm-hair-hi)" }} />
+                <Icon aria-hidden="true" style={{ position: "absolute", right: 14, bottom: 12, width: 48, height: 48, color: "var(--cm-hair-hi)" }} />
             </div>
             <b>{game.title}</b>
             <p>{game.blurb}</p>
@@ -304,7 +304,7 @@ export function ArtCollectionSection({ collection, no }: { collection: ArtCollec
                             <span className="cm-state" style={{ position: "absolute", left: 10, top: 10 }}>
                                 {String(i + 1).padStart(2, "0")}
                             </span>
-                            <Icon aria-hidden="true" style={{ position: "absolute", right: 14, bottom: 12, width: 40, height: 40, color: "var(--cm-hair-hi)" }} />
+                            <Icon aria-hidden="true" style={{ position: "absolute", right: 14, bottom: 12, width: 48, height: 48, color: "var(--cm-hair-hi)" }} />
                         </div>
                         <b style={{ fontSize: 13.5 }}>{slot}</b>
                     </div>

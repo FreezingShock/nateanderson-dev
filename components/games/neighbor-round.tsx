@@ -1,5 +1,6 @@
 "use client";
 
+import { PixelIcon } from "@/components/cm/pixel-icons";
 import {
     memo,
     useCallback,
@@ -20,15 +21,6 @@ import {
 import type { Feature, FeatureCollection, MultiPolygon, Polygon } from "geojson";
 import type { Topology } from "topojson-specification";
 import { feature } from "topojson-client";
-import {
-    ChevronLeft,
-    ChevronRight,
-    Eye,
-    Lightbulb,
-    Minus,
-    Plus,
-    X,
-} from "lucide-react";
 import { CountryCombobox } from "@/components/games/guess-kit";
 import worldTopo from "@/lib/data/world.topo.json";
 import {
@@ -597,7 +589,7 @@ export function NeighborRound({
                         onClick={() => zoomAt(1.6, W / 2, H / 2, true)}
                         className="grid size-8 place-items-center text-white/90 transition-colors hover:bg-white/15"
                     >
-                        <Plus className="size-4" />
+                        <PixelIcon name="plus" className="size-4" />
                     </button>
                     <button
                         type="button"
@@ -605,7 +597,7 @@ export function NeighborRound({
                         onClick={() => zoomAt(1 / 1.6, W / 2, H / 2, true)}
                         className="grid size-8 place-items-center border-t border-white/20 text-white/90 transition-colors hover:bg-white/15"
                     >
-                        <Minus className="size-4" />
+                        <PixelIcon name="minus" className="size-4" />
                     </button>
                 </div>
 
@@ -629,7 +621,7 @@ export function NeighborRound({
                     onClick={() => step(-1)}
                     className="grid size-9 place-items-center rounded-[2px] border border-border transition-colors hover:bg-foreground/10"
                 >
-                    <ChevronLeft className="size-4" />
+                    <PixelIcon name="chevL" className="size-4" />
                 </button>
                 <button
                     type="button"
@@ -644,7 +636,7 @@ export function NeighborRound({
                     onClick={() => step(1)}
                     className="grid size-9 place-items-center rounded-[2px] border border-border transition-colors hover:bg-foreground/10"
                 >
-                    <ChevronRight className="size-4" />
+                    <PixelIcon name="chevR" className="size-4" />
                 </button>
             </div>
 
@@ -728,7 +720,7 @@ export function NeighborRound({
                                 borderColor: "color-mix(in oklch, var(--cm-amber) 45%, transparent)",
                             }}
                         >
-                            <Lightbulb className="size-3.5" /> First letters
+                            <PixelIcon name="bulb" className="size-3.5" /> First letters
                         </button>
                         <span className="font-mono text-xs uppercase tracking-wider text-muted-foreground">
                             {guessesLeft} {guessesLeft === 1 ? "guess" : "guesses"} left
@@ -763,7 +755,7 @@ export function NeighborRound({
                             : `Found ${found.length} of ${total} neighbours.`}
                     </p>
                     <p className="mt-1 flex items-center justify-center gap-1.5 text-sm text-muted-foreground">
-                        <Eye className="size-4" /> Drag and zoom the map to look around.
+                        <PixelIcon name="eye" className="size-4" /> Drag and zoom the map to look around.
                     </p>
                     {footer}
                 </div>
@@ -782,7 +774,7 @@ export function NeighborRound({
                                 backgroundColor: `color-mix(in oklch, ${RED} 8%, transparent)`,
                             }}
                         >
-                            <X className="size-3" /> {byCode.get(code)?.n ?? code}
+                            <PixelIcon name="close" className="size-3" /> {byCode.get(code)?.n ?? code}
                         </span>
                     ))}
                 </div>

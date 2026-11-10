@@ -1,7 +1,7 @@
 "use client";
 
+import { PixelIcon } from "@/components/cm/pixel-icons";
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { Check, X } from "lucide-react";
 import {
     FLAG_CHANCES,
     flagSrc,
@@ -205,9 +205,9 @@ export function FlagRound({
                                         }}
                                     >
                                         {right ? (
-                                            <Check className="size-7" strokeWidth={3.5} />
+                                            <PixelIcon name="check" className="size-7" />
                                         ) : (
-                                            <X className="size-7" strokeWidth={3.5} />
+                                            <PixelIcon name="close" className="size-7" />
                                         )}
                                     </span>
                                 </span>

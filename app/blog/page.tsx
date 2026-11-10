@@ -6,6 +6,7 @@ import { BlogSection } from "@/components/blog-section";
 import { blogSections, BLOG_SECTION_IDS } from "@/lib/blog";
 import "./blog-naos.css";
 import { pageMeta } from "@/lib/seo";
+import { PixelIcon } from "@/components/cm/pixel-icons";
 
 export const metadata = pageMeta({
     title: "Blog",
@@ -73,7 +74,7 @@ export default function BlogPage() {
                                 >
                                     <i>{no}</i>
                                     <span>{s.title}</span>
-                                    <em aria-hidden="true">→</em>
+                                    <em aria-hidden="true"><PixelIcon name="arrowR" /></em>
                                 </a>
                             ))}
                         </nav>
@@ -266,14 +267,14 @@ export default function BlogPage() {
                         </div>
                         <div className="cm-row cta blog-note-links">
                             <Link className="cta-b a" href="/">
-                                <i>←</i>
+                                <i><PixelIcon name="arrowL" /></i>
                                 <span>Back to home</span>
-                                <em aria-hidden="true">→</em>
+                                <em aria-hidden="true"><PixelIcon name="arrowR" /></em>
                             </Link>
                             <Link className="cta-b" href="/about">
                                 <i>02</i>
                                 <span>About me</span>
-                                <em aria-hidden="true">→</em>
+                                <em aria-hidden="true"><PixelIcon name="arrowR" /></em>
                             </Link>
                         </div>
                     </div>

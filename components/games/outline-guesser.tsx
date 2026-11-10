@@ -1,5 +1,6 @@
 "use client";
 
+import { PixelIcon, px } from "@/components/cm/pixel-icons";
 import {
     useCallback,
     useEffect,
@@ -7,17 +8,6 @@ import {
     useRef,
     useState,
 } from "react";
-import {
-    ArrowRight,
-    BarChart3,
-    Check,
-    Flag,
-    Globe2,
-    Lightbulb,
-    RotateCcw,
-    Share2,
-    Shuffle,
-} from "lucide-react";
 import dynamic from "next/dynamic";
 import { FlagRound } from "@/components/games/flag-round";
 import { GameSummary } from "@/components/games/game-summary";
@@ -67,6 +57,10 @@ import {
     type GameResults,
     type NeighborState,
 } from "@/lib/outline-game";
+
+const GlobeHint = px("globe");
+const BulbHint = px("bulb");
+const FlagHint = px("flag");
 
 // A Worldle-style country outline guesser. Outlines are built from Natural
 // Earth data (scripts/build-outlines.mjs), 238 countries and territories.
@@ -429,12 +423,12 @@ export function OutlineGuesser() {
     const playing = status === "playing";
     const hintList = answer
         ? [
-              { icon: Globe2, text: `Continent: ${answer.k}` },
+              { icon: GlobeHint, text: `Continent: ${answer.k}` },
               {
-                  icon: Lightbulb,
+                  icon: BulbHint,
                   text: `Starts with "${answer.n[0]}", ${answer.n.replace(/[^\p{L}]/gu, "").length} letters`,
               },
-              { icon: Flag, text: "flag" },
+              { icon: FlagHint, text: "flag" },
           ].slice(0, hints)
         : [];
     const shapeFill =
@@ -526,7 +520,7 @@ export function OutlineGuesser() {
             }}
         >
             {label}
-            <ArrowRight className="size-4" />
+            <PixelIcon name="arrowR" className="size-4" />
         </button>
     );
     const skipToSummary = (
@@ -583,7 +577,7 @@ export function OutlineGuesser() {
                     backgroundColor: `color-mix(in oklch, ${COLOR} 12%, transparent)`,
                 }}
             >
-                {copied ? <Check className="size-4" /> : <Share2 className="size-4" />}
+                {copied ? <PixelIcon name="check" className="size-4" /> : <PixelIcon name="share" className="size-4" />}
                 {copied ? "Copied!" : "Share"}
             </button>
             {mode === "unlimited" ? (
@@ -599,7 +593,7 @@ export function OutlineGuesser() {
                         backgroundColor: "color-mix(in oklch, var(--cm-good) 12%, transparent)",
                     }}
                 >
-                    <RotateCcw className="size-4" /> Next country
+                    <PixelIcon name="reset" className="size-4" /> Next country
                 </button>
             ) : (
                 <>
@@ -613,7 +607,7 @@ export function OutlineGuesser() {
                         onClick={() => switchMode("unlimited")}
                         className="inline-flex items-center gap-2 rounded-[2px] border px-4 py-2 font-sans text-sm font-bold"
                     >
-                        <Shuffle className="size-4" /> Play unlimited
+                        <PixelIcon name="shuffle" className="size-4" /> Play unlimited
                     </button>
                 </>
             )}
@@ -660,7 +654,7 @@ export function OutlineGuesser() {
                                 : "Restart with a new country"
                         }
                     >
-                        <RotateCcw className="size-3.5" />
+                        <PixelIcon name="reset" className="size-3.5" />
                         {confirmRestart ? "Sure?" : "Restart"}
                     </button>
                     <button
@@ -677,7 +671,7 @@ export function OutlineGuesser() {
                         onClick={() => setShowStats((v) => !v)}
                         className={cn(pill(showStats), "inline-flex items-center gap-1")}
                     >
-                        <BarChart3 className="size-3.5" /> Stats
+                        <PixelIcon name="chart" className="size-3.5" /> Stats
                     </button>
                 </div>
             </div>
@@ -737,7 +731,7 @@ export function OutlineGuesser() {
                             )}
                         >
                             <span className="font-mono text-[11px]">
-                                {done ? <Check className="size-3" /> : n === 4 ? "★" : n}
+                                {done ? <PixelIcon name="check" className="size-3" /> : n === 4 ? "★" : n}
                             </span>
                             {label}
                         </button>
@@ -892,7 +886,7 @@ export function OutlineGuesser() {
                                 borderColor: "color-mix(in oklch, var(--cm-amber) 45%, transparent)",
                             }}
                         >
-                            <Lightbulb className="size-3.5" /> Hint ({hints}/{MAX_HINTS})
+                            <PixelIcon name="bulb" className="size-3.5" /> Hint ({hints}/{MAX_HINTS})
                         </button>
                         <span className="font-mono text-xs uppercase tracking-wider text-muted-foreground">
                             Guess {Math.min(guesses.length + 1, MAX_GUESSES)} / {MAX_GUESSES}

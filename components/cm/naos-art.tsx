@@ -1,7 +1,11 @@
 "use client";
 
-import { useLayoutEffect, useRef } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { preload } from "react-dom";
 import "./naos-art.css";
+
+/** Every full-page backdrop. A page prefetches the others once its own art is up, so the next page is ready. */
+const BACKDROPS = ["home", "studies", "about", "history", "timeline", "blog", "games", "default"].map((n) => `/naos/bg-${n}.webp`);
 
 /**
  * Original naOS 1-bit dithered art (see scripts/naos-art/generate.py). Decorative only: aria-hidden, no alt text.
@@ -60,9 +64,41 @@ export function NaosArt({
  * Place it as the first child of the page's `.ctos` root. Decorative: aria-hidden, no pointer events.
  */
 export function NaosBackdrop({ src }: { src: string }) {
+    // Asked for during render, so the browser fetches it before the stylesheet reaches the background. The backdrop
+    // fades in only once the image is decoded, over a cheap dot field, so it never blinks in as a finished picture.
+    preload(src, { as: "image", fetchPriority: "high" });
+    const [ready, setReady] = useState(false);
+
+    useEffect(() => {
+        let live = true;
+        const img = new Image();
+        img.src = src;
+        const show = () => {
+            if (live) setReady(true);
+        };
+        if (typeof img.decode === "function") img.decode().then(show, show);
+        else img.onload = show;
+
+        // Prefetch the other page backdrops at low priority once this one is up. Skipped on phones and data saver,
+        // where the extra kilobytes cost more than the wait they save.
+        const conn = (navigator as Navigator & { connection?: { saveData?: boolean } }).connection;
+        const small = window.matchMedia("(max-width: 760px)").matches;
+        let idle: number | undefined;
+        if (!small && !conn?.saveData) {
+            idle = window.setTimeout(() => {
+                for (const other of BACKDROPS) if (other !== src) preload(other, { as: "image", fetchPriority: "low" });
+            }, 1500);
+        }
+        return () => {
+            live = false;
+            if (idle !== undefined) window.clearTimeout(idle);
+        };
+    }, [src]);
+
     return (
         <>
-            <div className="naos-backdrop" aria-hidden="true" style={{ backgroundImage: `url(${src})` }} />
+            <div className={`naos-backdrop-ground${ready ? " is-hidden" : ""}`} aria-hidden="true" />
+            <div className={`naos-backdrop${ready ? " is-ready" : ""}`} aria-hidden="true" style={{ backgroundImage: `url(${src})` }} />
             <div className="naos-scrim" aria-hidden="true" />
         </>
     );

@@ -9,7 +9,7 @@ export default function ArtworkPage() {
         <CreationsShell
             eyebrow="Creations / Artwork"
             title={["Artwork"]}
-            description="The AP Art portfolio, Blender renders and drawings."
+            description="The AP Art portfolio, 3D renders and drawings."
             back={{ href: "/creations", label: "Back to Creations" }}
             variant="sub"
             aside={

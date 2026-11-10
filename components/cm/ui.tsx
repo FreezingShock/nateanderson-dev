@@ -1,12 +1,13 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { ScrollType, Scramble, Slab } from "@/components/cm/motion";
+import { PixelIcon } from "@/components/cm/pixel-icons";
 
 /** Themed "back" button shown above an inner-page title: arrow key block, mono label, hairline frame. */
 export function BackLink({ href, label }: { href: string; label: string }) {
     return (
         <Link href={href} className="cm-back">
-            <i aria-hidden="true">←</i>
+            <i aria-hidden="true"><PixelIcon name="arrowL" /></i>
             <span>{label}</span>
         </Link>
     );

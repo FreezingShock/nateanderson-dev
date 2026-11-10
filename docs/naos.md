@@ -100,6 +100,16 @@ first group in the catalogue: square and sine blips at fixed Hz, low-passed, plu
 - Nothing plays before the first click, tap or key press. Keep new interface sounds in this group, use `tier 0` for ambient ticks, and give anything new a rate-limit `gap`.
 - The games' pentatonic set further down the file is separate and untouched by the naOS look.
 
+## Command console
+A terminal-style panel that drives the site. Open it with the backtick key (or Cmd/Ctrl+J), the `console` button in the top bar (an icon-only tap target on phones), or `window.dispatchEvent(new Event("cm:console"))`. Esc, `exit` or the backtick again close it; focus returns to where it was.
+- Code: `components/cm/console-entry.tsx` (keys, button hook, lazy `next/dynamic` load, so nothing ships until first open) and `components/cm/console.tsx` + `console.css`. It reuses the search panel's `.nv-*` chrome and key caps.
+- Everything printed comes from data the site already has (`lib/nav.ts`, `lib/identity.ts`, `lib/about-data.ts`, `lib/creations-data.ts`). Add no copy that is not on a page. Nothing from the private Nexus dashboard; Nexus appears only as its public project page and playnexus.dev.
+- Commands: `help [cmd]`, `ls [pages|projects|games|sections|<page>]`, `open <place>` (also `cd`, `go`; partial names work), `whoami`, `now`, `skills`, `status`, `sound [on|off]`, `history`, `random`, `back`, `clear` (Ctrl+L), `exit`. Hidden: `sudo`, `rm`, `naos`. Unknown commands get a "did you mean" hint.
+- Tab completes commands and places; Up/Down recall history (kept for the visit, not stored). Listed rows are links.
+- Output lines are drawn with a stepped `clip-path` animation on plain nodes (not `data-rx` items), so the text is always in the DOM for screen readers; `prefers-reduced-motion` shows lines at once. The output is a polite `role="log"`.
+- On phones the panel follows `visualViewport`, so it sits above the keyboard; the input is 16px so iOS does not zoom, and quick-command chips replace the Tab key.
+- It does not touch the password gate: it only navigates to routes the gate already protects.
+
 ## Perf rules
 Animate only `transform` and `opacity` (plus clip-path for slabs). No animated `filter: blur`. One rAF loop, reads then
 writes, no layout thrash. Touch and narrow screens (`hover: none` or max-width 900px) get still grain and solid panels
@@ -148,3 +158,23 @@ Known Safari risks (WebKit not tested in the cloud; check on an iPhone):
 ## Dock icons and motion
 
 The bottom dock draws its icons from `components/cm/pixel-icons.tsx`: seven original 12 x 12 pixel drawings (`#` solid, `:` half-tone, `.` empty) rendered as crisp SVG at 2px per cell. Half-tones are split into two checkerboard phases, and CSS swaps them in hard steps to shimmer on hover and when a tab becomes current. Each tab also has its own small move (hop, flip, slide, toss, write, rewind, nod) in `nav-naos.css`. The plate's travel time grows with distance, and a cyan dither wake is drawn across the tabs it crossed. All of it is switched off under `prefers-reduced-motion`.
+
+## Icon set (components/cm/pixel-icons.tsx)
+
+Every icon on the site comes from one place: `PixelIcon` (or `px(name)` where a data file stores a component). Each icon is a hand-drawn 12 x 12 map in `MAPS`: `#` solid, `:` half-tone (checkerboard), `.` empty. To add an icon, add one entry (12 rows of 12 characters) and use `<PixelIcon name="..." size={24} />`. Mirrors and quarter turns (`chevR`, `chevsR`, `arrowL`, `arrowUp`) are derived in code. Brand marks (GitHub, Discord, Instagram, TikTok, YouTube, mail) are redrawn on the same grid, not copied.
+
+- Icons are decorative (`aria-hidden`); the button or link that holds one carries the accessible label.
+- Sizes that are multiples of 12 (12, 24, 48) are the crispest; the default is 16.
+- Hover and focus shimmer the half-tones (phase A and B swap in hard steps), and a few icons react (close turns, chevrons nudge, reset spins back). All of it lives in `app/camino/icons-naos.css` and turns off under `prefers-reduced-motion`.
+- The dock keeps its own stronger per-tab motion in `nav-naos.css`.
+- Remaining typographic arrows inside running text ("Open →") are plain text on purpose.
+## Surfaces and chrome (app/camino/naos-surfaces.css)
+
+Loaded after ctos.css. It makes every panel, card and strip read against the art and gives the chrome one measuring-scale detail.
+
+- Rest: solid `--cm-ctos-panel` ground, `--cm-ctos-edge` border, and `--cm-ctos-lift` (a 1px dark keyline plus a soft drop) so a plate separates from the dither. Box-shadow only, no blur filters.
+- Hover: edge turns cyan at 70%, ground lifts to #181818. Live (`.on`, `aria-pressed`): full cyan border. Focus: one 2px cyan ring, offset 3px.
+- Chips, the skills level legend and the About/History/Blog stats strip get plates instead of hairlines on art.
+- Section heads get a dark pool behind the label, title and blurb (background gradient on a pseudo-element, never a mask).
+- Section rules carry a tick scale after the cyan stub; the footer rule matches. Live/good `.cm-state` labels get a square pip.
+- Defaults use `:where(.ctos)` so pressed chips, paper cards and page rules still win. Page CSS can override freely.

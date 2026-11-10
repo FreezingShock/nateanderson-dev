@@ -2,6 +2,7 @@ import Link from "next/link";
 import { PageHead } from "@/components/cm/ui";
 import { SystemCard, SYSTEM_JUMP } from "@/components/system-card";
 import "./system/system-naos.css";
+import { PixelIcon } from "@/components/cm/pixel-icons";
 
 export const metadata = { title: "Signal lost" };
 
@@ -44,7 +45,7 @@ export default function NotFound() {
                         >
                             <i>{String(i + 1).padStart(2, "0")}</i>
                             <span>{item.label}</span>
-                            <em aria-hidden="true">→</em>
+                            <em aria-hidden="true"><PixelIcon name="arrowR" /></em>
                         </Link>
                     ))}
                 </nav>
