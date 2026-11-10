@@ -114,450 +114,6 @@ def islands():
 # ---------------------------------------------------------------------------------------------
 # 2. Lane track (section break). Top-down stadium, lanes as dither bands, finish tape.
 # ---------------------------------------------------------------------------------------------
-def track():
-    W, H = 320, 96
-    L, R = 72.0, 30.0           # half straight length, radius (outer edge)
-    cx, cy = W / 2, H / 2
-    yy, xx = np.mgrid[0:H, 0:W].astype(float)
-    x = xx + 0.5 - cx
-    y = yy + 0.5 - cy
-    # Signed distance to a stadium with outer radius R (negative inside). Only the band matters here.
-    qx = np.maximum(np.abs(x) - L, 0.0)
-    dist = np.sqrt(qx * qx + y * y) - R  # 0 at outer edge, -band at the inside edge
-    band = 26.0
-    inside = dist < 0
-    in_band = (dist < 0) & (dist >= -band)
-    lane_idx = np.floor(-dist / 4.4).astype(int)
-    inten = np.zeros((H, W))
-    inten[in_band] = np.where(lane_idx[in_band] % 2 == 0, 0.16, 0.34)
-    inten[(dist < -band) & inside] = 0.06
-    # Lane boundary lines, solid enough to read.
-    edge_line = np.abs(dist + 0.0) < 0.6
-    lane_line = np.zeros_like(edge_line)
-    for k in (2, 4, 6):
-        lane_line |= np.abs(dist + 4.4 * k) < 0.5
-    ids = np.zeros((H, W), dtype=int)
-    ids[in_band] = TOP
-    ids[edge_line | (np.abs(dist + band) < 0.6)] = EDGE
-    ids[lane_line & in_band] = EDGE
-    # Finish tape across the top straight, inside the band.
-    tape = (np.abs(x - 46) < 0.8) & in_band
-    ids[tape] = EDGE
-    # Infield: a sparse halftone so the centre is not empty.
-    ids[(dist < -band) & inside] = TOP
-    centre = np.clip(0.12 * (1 - np.hypot(x, y) / (L + R)), 0.0, 0.12)
-    inten[(dist < -band) & inside] = centre[(dist < -band) & inside]
-    # Keep only the ring and infield dither; hide the outside.
-    ink = dither(inten, ids)
-    return ink
-
-
-# ---------------------------------------------------------------------------------------------
-# 3. Dithered halftone wash (section break accent): a soft gradient band with one hard edge.
-# ---------------------------------------------------------------------------------------------
-def wash():
-    W, H = 320, 40
-    yy, xx = np.mgrid[0:H, 0:W].astype(float)
-    inten = np.clip(1.0 - (xx / W) * 1.1, 0, 1) * np.clip(1.0 - (yy / H), 0.15, 1)
-    ids = np.full((H, W), TOP)
-    ids[(yy > H - 2)] = EDGE
-    return dither(inten, ids)
-
-# ---------------------------------------------------------------------------------------------
-# 4. Timeline route (Timeline page header): a staircase of voxel terraces climbing toward the
-#    launch block, with a dashed route line and a diamond station on each step. Same dither
-#    language as the islands; the final step is a solid white block (the launch title card).
-# ---------------------------------------------------------------------------------------------
-def timeline_route():
-    W, H = 320, 220
-    CW, CH, VH = 5.0, 2.6, 4.2
-    ox, oy = 75.0, 74.0
-    ids_img = Image.new("L", (W, H), 0)
-    d = ImageDraw.Draw(ids_img)
-
-    def P(x, y, z):
-        return (ox + (x - y) * CW, oy + (x + y) * CH - z * VH)
-
-    STEPS = 6
-    boxes = []
-    for i in range(STEPS):
-        x0 = 2 + i * 7
-        x1 = x0 + 6
-        zb = -2
-        zt = 1 + i * 3
-        boxes.append((x0, x1, 0, 7, zb, zt, i == STEPS - 1))
-
-    # Painter order: nearer (larger x + y) last.
-    boxes.sort(key=lambda b: (b[0] + b[2], b[5]))
-    for x0, x1, y0, y1, zb, zt, last in boxes:
-        rc, lc, tc = (BRIGHT, BLEFT, BTOP) if last else (RIGHT, LEFT, TOP)
-        d.polygon([P(x1, y0, zb), P(x1, y1, zb), P(x1, y1, zt), P(x1, y0, zt)], fill=rc)
-        d.polygon([P(x0, y1, zb), P(x1, y1, zb), P(x1, y1, zt), P(x0, y1, zt)], fill=lc)
-        top = [P(x0, y0, zt), P(x1, y0, zt), P(x1, y1, zt), P(x0, y1, zt)]
-        d.polygon(top, fill=tc)
-        d.line(top + [top[0]], fill=EDGE, width=1)
-
-    # Dashed route across the terrace tops, one diamond station per step.
-    centres = []
-    for x0, x1, y0, y1, zb, zt, last in boxes:
-        centres.append(P((x0 + x1) / 2, (y0 + y1) / 2, zt + 0.2))
-    for (ax, ay), (bx, by) in zip(centres, centres[1:]):
-        n = int(max(abs(bx - ax), abs(by - ay)) // 1)
-        for k in range(0, n, 4):
-            t0, t1 = k / n, min(k + 2, n) / n
-            d.line([(ax + (bx - ax) * t0, ay + (by - ay) * t0), (ax + (bx - ax) * t1, ay + (by - ay) * t1)], fill=EDGE, width=1)
-    for cx, cy in centres:
-        d.polygon([(cx, cy - 3), (cx + 3, cy), (cx, cy + 3), (cx - 3, cy)], fill=EDGE)
-
-    arr = np.array(ids_img)
-    yy, xx = np.mgrid[0:H, 0:W]
-    lx, ly = W * 0.30, H * 0.30
-    dist = np.sqrt(((xx - lx) / (W * 0.6)) ** 2 + ((yy - ly) / (H * 0.7)) ** 2)
-    inten = np.zeros((H, W))
-    inten[arr == TOP] = np.clip(0.66 - 0.5 * dist, 0.1, 0.66)[arr == TOP]
-    inten[arr == LEFT] = 0.46
-    inten[arr == RIGHT] = 0.2
-    inten[arr == BTOP] = 1.0
-    inten[arr == BLEFT] = 0.72
-    inten[arr == BRIGHT] = 0.42
-    return dither(inten, arr)
-
-
-# ---------------------------------------------------------------------------------------------
-# 4. About page field: a dithered isometric plane with white block nodes joined by dashed conduit
-#    lines ("how it connects"). Original drawing; reuses the islands face codes and shading.
-# ---------------------------------------------------------------------------------------------
-GROUND, GRID = 8, 9
-
-
-def about_field():
-    W, H = 360, 220
-    CW, CH, VH = 11.0, 5.6, 7.2
-    ox, oy = W / 2, 118.0
-
-    def P(gx, gy, z):
-        return (ox + (gx - gy) * CW, oy + (gx + gy) * CH - z * VH)
-
-    # (gx, gy, height, kind): "b" = solid white block, "t" = thin dithered tower.
-    nodes = [
-        (-3, -2, 5, "b"), (-1, -4, 2, "t"), (1, -1, 9, "b"), (3, -3, 3, "t"),
-        (-4, 1, 3, "t"), (-1, 2, 6, "b"), (2, 3, 2, "t"), (4, 0, 5, "b"),
-    ]
-    # Pairs of nodes joined by an L-shaped conduit along the ground plane.
-    links = [(0, 2), (2, 1), (2, 5), (5, 6), (6, 7), (7, 3), (3, 2), (4, 0), (4, 5)]
-    R = 4
-
-    ids_img = Image.new("L", (W, H), 0)
-    d = ImageDraw.Draw(ids_img)
-
-    # Ground plane: filled tiles, then tile outlines as a finer dithered grid.
-    for gx in range(-R, R):
-        for gy in range(-R, R):
-            d.polygon([P(gx, gy, 0), P(gx + 1, gy, 0), P(gx + 1, gy + 1, 0), P(gx, gy + 1, 0)], fill=GROUND)
-    for gx in range(-R, R + 1):
-        d.line([P(gx, -R, 0), P(gx, R, 0)], fill=GRID, width=1)
-    for gy in range(-R, R + 1):
-        d.line([P(-R, gy, 0), P(R, gy, 0)], fill=GRID, width=1)
-
-    # Dashed conduit lines: one dash pattern per link, routed x first, then y.
-    def dashed(p0, p1, on=5, gap=3):
-        (x0, y0), (x1, y1) = p0, p1
-        L = max(((x1 - x0) ** 2 + (y1 - y0) ** 2) ** 0.5, 1e-6)
-        step = on + gap
-        k = 0
-        while k * step < L:
-            t0 = k * step / L
-            t1 = min((k * step + on) / L, 1.0)
-            d.line([(x0 + (x1 - x0) * t0, y0 + (y1 - y0) * t0), (x0 + (x1 - x0) * t1, y0 + (y1 - y0) * t1)],
-                   fill=EDGE, width=1)
-            k += 1
-
-    for a, b in links:
-        ax, ay = nodes[a][0], nodes[a][1]
-        bx, by = nodes[b][0], nodes[b][1]
-        dashed(P(ax, ay, 0), P(bx, ay, 0))
-        dashed(P(bx, ay, 0), P(bx, by, 0))
-
-    # A ring on the ground under each node: the node's "signal" footprint.
-    for gx, gy, _, _ in nodes:
-        pts = [P(gx + 0.9 * np.cos(t), gy + 0.9 * np.sin(t), 0) for t in np.linspace(0, 2 * np.pi, 48)]
-        d.line(pts + [pts[0]], fill=EDGE, width=1)
-
-    # Columns, painter order, same face logic as the islands.
-    cols = [(gx, gy, 0, h, kind == "b") for gx, gy, h, kind in nodes]
-    cols.sort(key=lambda c: (c[0] + c[1], c[3]))
-    for gx, gy, zb, zt, boxed in cols:
-        x, y = gx, gy
-        rc, lc, tc = (BRIGHT, BLEFT, BTOP) if boxed else (RIGHT, LEFT, TOP)
-        d.polygon([P(x + 1, y, zb), P(x + 1, y + 1, zb), P(x + 1, y + 1, zt), P(x + 1, y, zt)], fill=rc)
-        d.polygon([P(x, y + 1, zb), P(x + 1, y + 1, zb), P(x + 1, y + 1, zt), P(x, y + 1, zt)], fill=lc)
-        top = [P(x, y, zt), P(x + 1, y, zt), P(x + 1, y + 1, zt), P(x, y + 1, zt)]
-        d.polygon(top, fill=tc)
-        d.line(top + [top[0]], fill=EDGE, width=1)
-
-    arr = np.array(ids_img)
-    yy, xx = np.mgrid[0:H, 0:W].astype(float)
-    # The plane fades out toward the edges, so the field melts into the page ground.
-    fall = np.clip(1.0 - np.sqrt(((xx - W * 0.5) / (W * 0.5)) ** 2 + ((yy - H * 0.55) / (H * 0.6)) ** 2), 0, 1)
-    inten = np.zeros((H, W))
-    inten[arr == GROUND] = (0.22 * fall)[arr == GROUND]
-    inten[arr == GRID] = (0.5 * fall)[arr == GRID]
-    lx, ly = W * 0.42, H * 0.36
-    dist = np.sqrt(((xx - lx) / (W * 0.55)) ** 2 + ((yy - ly) / (H * 0.6)) ** 2)
-    inten[arr == TOP] = np.clip(0.62 - 0.5 * dist, 0.08, 0.62)[arr == TOP]
-    inten[arr == LEFT] = 0.46
-    inten[arr == RIGHT] = 0.2
-    inten[arr == BTOP] = 1.0
-    inten[arr == BLEFT] = 0.72
-    inten[arr == BRIGHT] = 0.42
-    return dither(inten, arr)
-
-
-# ---------------------------------------------------------------------------------------------
-# 4. History backdrop: a dithered isometric commit terrain. A square grid of voxel cells, each one a stretch of
-#    work: the cells climb toward the top right where the latest commits sit. Original, deterministic.
-# ---------------------------------------------------------------------------------------------
-def history():
-    W, H = 420, 220
-    N = 16
-    CW, CH, VH = 9.0, 4.4, 5.0
-    ox, oy = W / 2, 34.0
-
-    def P(x, y, z):
-        return (ox + (x - y) * CW, oy + (x + y) * CH - z * VH)
-
-    # Activity grows toward the newest corner (high x, low y); a sine term keeps it from looking like a ramp.
-    heights = {}
-    for x in range(N):
-        for y in range(N):
-            t = ((x + (N - 1 - y)) / (2 * (N - 1))) ** 1.7
-            hgt = int(round(t * 7 + 1.2 * np.sin(x * 1.3 + y * 0.7) + 0.8 * np.sin(y * 2.1)))
-            heights[(x, y)] = max(0, hgt)
-
-    ids_img = Image.new("L", (W, H), 0)
-    d = ImageDraw.Draw(ids_img)
-    order = sorted(heights.keys(), key=lambda k: (k[0] + k[1], heights[k]))
-    for x, y in order:
-        zt = heights[(x, y)]
-        recent = (x + (N - 1 - y)) >= (2 * (N - 1)) * 0.78
-        rc, lc, tc = (BRIGHT, BLEFT, BTOP) if recent else (RIGHT, LEFT, TOP)
-        if zt > 0:
-            d.polygon([P(x + 1, y, 0), P(x + 1, y + 1, 0), P(x + 1, y + 1, zt), P(x + 1, y, zt)], fill=rc)
-            d.polygon([P(x, y + 1, 0), P(x + 1, y + 1, 0), P(x + 1, y + 1, zt), P(x, y + 1, zt)], fill=lc)
-        d.polygon([P(x, y, zt), P(x + 1, y, zt), P(x + 1, y + 1, zt), P(x, y + 1, zt)], fill=tc)
-        if zt > 0:
-            # Thin edge on the top outline so each stacked cell reads as its own block.
-            top = [P(x, y, zt), P(x + 1, y, zt), P(x + 1, y + 1, zt), P(x, y + 1, zt)]
-            d.line(top + [top[0]], fill=EDGE, width=1)
-
-    arr = np.array(ids_img)
-    yy, xx = np.mgrid[0:H, 0:W]
-    lx, ly = W * 0.8, H * 0.16
-    dist = np.sqrt(((xx - lx) / (W * 0.6)) ** 2 + ((yy - ly) / (H * 0.8)) ** 2)
-    inten = np.zeros((H, W))
-    inten[arr == TOP] = np.clip(0.6 - 0.5 * dist, 0.05, 0.6)[arr == TOP]
-    inten[arr == LEFT] = 0.42
-    inten[arr == RIGHT] = 0.16
-    inten[arr == BTOP] = 1.0
-    inten[arr == BLEFT] = 0.7
-    inten[arr == BRIGHT] = 0.38
-    return dither(inten, arr)
-
-
-# 4. Studies pathway (Studies page header): six voxel terraces climbing away to the upper right, one
-#    per senior-year class, with a dotted trace running up to floating checkpoint blocks. Same
-#    painter-order isometric method as the islands, over a faint dotted tracking grid.
-# ---------------------------------------------------------------------------------------------
-GRID = 8  # dotted tracking grid under the scene (dithered at half intensity)
-
-
-def studies():
-    W, H = 320, 200
-    CW, CH, VH = 13.0, 6.5, 10.0
-    heights = [1, 2, 3, 4, 5, 6]        # one terrace per class, each one voxel taller than the last
-    tread = 2                           # treads are two cells wide (x), each step one cell deep (y)
-
-    def P(x, y, z):
-        return (x - y) * CW, (x + y) * CH - z * VH
-
-    pts = []
-    for i, h in enumerate(heights):
-        for x in (0, tread):
-            for y in (-i - 1, -i):
-                for z in (0, h):
-                    pts.append(P(x, y, z))
-    for (x, y, z) in [(1, -7, 9), (1, -9, 10)]:
-        for dx in (0, 1):
-            for dy in (0, 1):
-                pts.append(P(x + dx, y + dy, z + 1))
-    xs = [p[0] for p in pts]
-    ys = [p[1] for p in pts]
-    ox = W / 2 - (min(xs) + max(xs)) / 2
-    oy = H / 2 - (min(ys) + max(ys)) / 2
-
-    def Q(x, y, z):
-        px, py = P(x, y, z)
-        return (ox + px, oy + py)
-
-    ids_img = Image.new("L", (W, H), 0)
-    d = ImageDraw.Draw(ids_img)
-
-    # Dotted tracking grid on the ground plane, drawn first so the terraces cover it.
-    for g in range(-1, 9, 2):
-        d.line([Q(g, -11, 0), Q(g, 1, 0)], fill=GRID, width=1)
-        d.line([Q(-1, g - 11, 0), Q(8, g - 11, 0)], fill=GRID, width=1)
-
-    # Painter order: farthest first (smallest x + y), so nearer, shorter steps cover the taller ones behind.
-    boxes = []
-    for i, h in enumerate(heights):
-        boxes.append((0, -i - 1, 0, tread, 1, h, i == len(heights) - 1))
-    for (x, y, z) in [(1, -7, 9), (1, -9, 10)]:
-        boxes.append((x, y, z, 1, 1, 1, True))
-    boxes.sort(key=lambda b: b[0] + b[1])
-
-    for (x, y, z0, w, dd, h, roof) in boxes:
-        zt = z0 + h
-        rc, lc, tc = (BRIGHT, BLEFT, BTOP) if roof else (RIGHT, LEFT, TOP)
-        # +x face (right), +y face (left), then the top.
-        d.polygon([Q(x + w, y, z0), Q(x + w, y + dd, z0), Q(x + w, y + dd, zt), Q(x + w, y, zt)], fill=rc)
-        d.polygon([Q(x, y + dd, z0), Q(x + w, y + dd, z0), Q(x + w, y + dd, zt), Q(x, y + dd, zt)], fill=lc)
-        top = [Q(x, y, zt), Q(x + w, y, zt), Q(x + w, y + dd, zt), Q(x, y + dd, zt)]
-        d.polygon(top, fill=tc)
-        if roof:
-            d.line(top + [top[0]], fill=EDGE, width=1)
-
-    # Dotted trace: one ink dot every other step, from the first tread up to the highest checkpoint.
-    trace = [Q(tread / 2, -i - 0.5, h + 0.4) for i, h in enumerate(heights)]
-    trace.append(Q(1.5, -8, 10.4))
-    for (ax, ay), (bx, by) in zip(trace, trace[1:]):
-        n = int(max(abs(bx - ax), abs(by - ay)) / 2.5)
-        for s in range(n + 1):
-            t = s / max(1, n)
-            d.point((ax + (bx - ax) * t, ay + (by - ay) * t), fill=EDGE)
-
-    arr = np.array(ids_img)
-    yy, xx = np.mgrid[0:H, 0:W]
-    lx, ly = W * 0.72, H * 0.22
-    dist = np.sqrt(((xx - lx) / (W * 0.6)) ** 2 + ((yy - ly) / (H * 0.7)) ** 2)
-    inten = np.zeros((H, W))
-    inten[arr == TOP] = np.clip(0.7 - 0.55 * dist, 0.12, 0.7)[arr == TOP]
-    inten[arr == LEFT] = 0.46
-    inten[arr == RIGHT] = 0.18
-    inten[arr == BTOP] = 1.0
-    inten[arr == BLEFT] = 0.72
-    inten[arr == BRIGHT] = 0.42
-    inten[arr == GRID] = 0.34
-    ink = dither(inten, arr)
-    ink[arr == GRID] = ink[arr == GRID] & (((xx + yy) % 2) == 0)[arr == GRID]
-    return ink
-
-
-# ---------------------------------------------------------------------------------------------
-# 4. Blog manuscript (blog index hero, and the post header with progress=True). Isometric voxels like islands():
-#    a flat sheet, text lines rising off it (solid heading bar, dithered body bars), a block cursor at the end of
-#    the last line, and small tiles drifting off the sheet. progress=True adds a reading strip along the front edge.
-# ---------------------------------------------------------------------------------------------
-SHEET, BODY, TILE = 8, 9, 10
-
-
-def manuscript(seed=7, W=300, H=200, progress=False):
-    rng = np.random.default_rng(seed)
-    CW, CH, VH = 5.0, 2.6, 3.2
-    ox, oy = W / 2 - 4, 40.0
-
-    def P(x, y, z):
-        return (ox + (x - y) * CW, oy + (x + y) * CH - z * VH)
-
-    SX, SY = 20, 26
-    cols = []  # (x, y, zb, zt, code)
-    for x in range(SX):
-        for y in range(SY):
-            cols.append((x, y, 0, 1, SHEET))
-
-    # Text lines: the first is a heading (solid bar), the rest are body bars with the odd gap and short last line.
-    row, first = 3, True
-    last = None
-    while row < SY - 3:
-        if not first and rng.random() < 0.16:
-            row += 2
-            continue
-        if first:
-            length = int(rng.integers(12, 16))
-            for x in range(2, 2 + length):
-                cols.append((x, row, 1, 3, BTOP))
-            last = (2 + length, row)
-        else:
-            length = int(rng.integers(8, SX - 4))
-            if rng.random() < 0.3:
-                length = int(rng.integers(3, 6))
-            for x in range(2, 2 + length):
-                cols.append((x, row, 1, 2, BODY))
-            last = (2 + length, row)
-        first = False
-        row += 2
-    # Block cursor at the end of the last line.
-    if last:
-        cx, cy = last
-        cols.append((cx, cy, 1, 5, BTOP))
-        cols.append((cx + 1, cy, 1, 5, BTOP))
-
-    # Drifting tiles: small lifted blocks above the sheet, a few in front of it.
-    for _ in range(9):
-        tx = int(rng.integers(-3, SX + 2))
-        ty = int(rng.integers(-2, SY + 2))
-        if 0 <= tx < SX and 0 <= ty < SY:
-            continue
-        z = int(rng.integers(3, 7))
-        cols.append((tx, ty, z, z + 1, TILE))
-        if rng.random() < 0.5:
-            cols.append((tx + 1, ty, z, z + 1, TILE))
-        if rng.random() < 0.35:
-            cols.append((tx, ty, z + 1, z + 2, TILE))
-
-    # Reading strip on the front edge (post header): filled part is solid, the rest is sheet.
-    if progress:
-        filled = int(SX * 0.42)
-        for x in range(SX):
-            code = BTOP if x < filled else SHEET
-            cols.append((x, SY, 0, 1, code))
-
-    cols.sort(key=lambda c: (c[0] + c[1], c[3]))
-    ids_img = Image.new("L", (W, H), 0)
-    d = ImageDraw.Draw(ids_img)
-    # Face codes per column kind: (right side, left side, top)
-    faces = {
-        SHEET: (RIGHT, LEFT, SHEET),
-        BODY: (RIGHT, LEFT, BODY),
-        TILE: (RIGHT, LEFT, TILE),
-        BTOP: (BRIGHT, BLEFT, BTOP),
-    }
-    for x, y, zb, zt, code in cols:
-        rc, lc, tc = faces[code]
-        if zt > zb:
-            d.polygon([P(x + 1, y, zb), P(x + 1, y + 1, zb), P(x + 1, y + 1, zt), P(x + 1, y, zt)], fill=rc)
-            d.polygon([P(x, y + 1, zb), P(x + 1, y + 1, zb), P(x + 1, y + 1, zt), P(x, y + 1, zt)], fill=lc)
-        top = [P(x, y, zt), P(x + 1, y, zt), P(x + 1, y + 1, zt), P(x, y + 1, zt)]
-        d.polygon(top, fill=tc)
-        if code in (BTOP, TILE):
-            d.line(top + [top[0]], fill=EDGE, width=1)
-
-    arr = np.array(ids_img)
-    yy, xx = np.mgrid[0:H, 0:W]
-    lx, ly = W * 0.4, H * 0.3
-    dist = np.sqrt(((xx - lx) / (W * 0.6)) ** 2 + ((yy - ly) / (H * 0.7)) ** 2)
-    inten = np.zeros((H, W))
-    inten[arr == SHEET] = np.clip(0.13 - 0.1 * dist, 0.03, 0.13)[arr == SHEET]  # dark sheet, faint light from above-left
-    inten[arr == RIGHT] = 0.16
-    inten[arr == LEFT] = 0.34
-    inten[arr == BODY] = np.clip(0.95 - 0.35 * dist, 0.55, 0.95)[arr == BODY]  # body bars read as dense ink
-    inten[arr == TILE] = 0.36
-    inten[arr == BTOP] = 1.0                                                   # solid heading bar and cursor
-    inten[arr == BRIGHT] = 0.46
-    inten[arr == BLEFT] = 0.74
-    return dither(inten, arr)
-
-
-# ---------------------------------------------------------------------------------------------
 # 4. Assembly field (Creations hub backdrop). A dithered floor grid, a solid stepped build, two blocks still floating
 #    above the floor on dotted drop lines, and two wireframe placeholders that are not built yet. Same isometric
 #    projection and dither as the islands, so the set reads as one system.
@@ -733,21 +289,94 @@ BACKDROPS = {
 }
 
 
-if __name__ == "__main__":
+# ---------------------------------------------------------------------------------------------
+# 5. Header bands and section washes. A track-shaped band sits behind a page title; a wash is a
+#    dither gradient that fades across a section. Both are 1-bit, original, and placed by CSS (app/camino).
+# ---------------------------------------------------------------------------------------------
+BAND_W, BAND_H = 480, 96   # drawn at 2 css px per art pixel on desktop
+
+
+def band(seed, variant="track", W=BAND_W, H=BAND_H):
+    """A stadium-shaped dither band. Variants: 'track' (dense left, solid outline), 'rail' (dense left, tick marks
+    along the top and bottom), 'seam' (ramp from the right, with contour lines)."""
+    rng = np.random.default_rng(seed)
+    yy, xx = np.mgrid[0:H, 0:W].astype(float)
+    r = H / 2.0
+    cy = H / 2.0 - 0.5
+    cx = np.clip(xx, r, W - r - 1)
+    d = np.hypot(xx - cx, yy - cy)
+    inside = d <= r - 2.5
+    outline = (d <= r - 0.5) & (d > r - 2.0)
+    h = _fractal(rng, W, H, base=4, octaves=4)
+    t = xx / (W - 1)
+    ids = np.ones((H, W), dtype=np.uint8)
+    if variant == "seam":
+        dens = 0.1 + 0.9 * t ** 0.9
+    else:
+        dens = (1.0 - t) ** 0.8          # a smooth ramp: dense on the left, gone by the right end
+    lit = np.clip(0.2 + 0.8 * h, 0, 1) ** 1.4 * dens
+    ink = dither(lit, ids) & inside
+    bands = np.floor(h * (10 if variant == "seam" else 9))
+    edge = (bands != np.roll(bands, 1, axis=1)) | (bands != np.roll(bands, 1, axis=0))
+    ink |= edge & inside & (dens > rng.random((H, W)))   # contours thin out with the ramp, no hard cut
+    if variant == "rail":
+        ink |= inside & (xx % 12 == 0) & (np.abs(yy - cy) > r * 0.55)
+    else:
+        ink |= outline
+    return ink
+
+
+def section_wash(seed, angle=90, W=360, H=240, base=3):
+    """A dither gradient: dense on the side the angle points away from, empty at the far edge. 90 is dense at
+    the top, 270 at the bottom, 180 at the right, 0 at the left."""
+    rng = np.random.default_rng(seed)
+    h = _fractal(rng, W, H, base=base, octaves=4)
+    yy, xx = np.mgrid[0:H, 0:W].astype(float)
+    t = np.deg2rad(angle)
+    p = (xx / (W - 1) - 0.5) * np.cos(t) + (yy / (H - 1) - 0.5) * np.sin(t)
+    p = (p - p.min()) / (p.max() - p.min())   # 0 on the dense side, 1 on the far side
+    dens = (1 - p) ** 1.7
+    inten = np.clip(0.25 + 0.75 * h, 0, 1) * dens * 0.85
+    return dither(inten, np.ones((H, W), dtype=np.uint8))
+
+
+# ---------------------------------------------------------------------------------------------
+# Registry. Every committed piece is listed here, so `python3 generate.py` rebuilds the whole set and
+# `python3 generate.py bg-home band-track` rebuilds just those. Each piece is written as a 1-bit PNG and
+# a lossless WebP (pixel-identical, about 15 to 20 percent smaller); pages point at the WebP.
+# ---------------------------------------------------------------------------------------------
+PIECES = {
+    "islands": (islands, {}),
+    "assembly": (assembly, {}),
+    **{f"bg-{name}": (backdrop, cfg) for name, cfg in BACKDROPS.items()},
+    "band-track": (band, dict(seed=101, variant="track")),
+    "band-rail": (band, dict(seed=113, variant="rail")),
+    "band-seam": (band, dict(seed=127, variant="seam")),
+    "wash-a": (section_wash, dict(seed=201, angle=90)),
+    "wash-b": (section_wash, dict(seed=213, angle=45)),
+    "wash-c": (section_wash, dict(seed=227, angle=270)),
+    "wash-d": (section_wash, dict(seed=239, angle=180)),
+}
+
+
+def save_webp(png_path):
+    Image.open(png_path).convert("RGBA").save(png_path[:-4] + ".webp", lossless=True, quality=100, method=6)
+    print("wrote", os.path.normpath(png_path[:-4] + ".webp"))
+
+
+def build(names=None):
     os.makedirs(OUT, exist_ok=True)
-    save_1bit(islands(), os.path.join(OUT, "islands.png"))
-    save_1bit(track(), os.path.join(OUT, "track.png"))
-    save_1bit(wash(), os.path.join(OUT, "wash.png"))
-    save_1bit(assembly(), os.path.join(OUT, "assembly.png"))
-    save_1bit(about_field(), os.path.join(OUT, "about-field.png"))
-    save_1bit(timeline_route(), os.path.join(OUT, "timeline-route.png"))
-    save_1bit(history(), os.path.join(OUT, "history.png"))
+    for name, (fn, kwargs) in PIECES.items():
+        if names and name not in names:
+            continue
+        png = os.path.join(OUT, f"{name}.png")
+        save_1bit(fn(**kwargs), png)
+        save_webp(png)
 
 
-
-
-    save_1bit(studies(), os.path.join(OUT, "studies.png"))
-    save_1bit(manuscript(seed=7), os.path.join(OUT, "blog.png"))
-    save_1bit(manuscript(seed=21, progress=True), os.path.join(OUT, "post.png"))
-    for name, cfg in BACKDROPS.items():
-        save_1bit(backdrop(**cfg), os.path.join(OUT, f"bg-{name}.png"))
+if __name__ == "__main__":
+    import sys
+    unknown = [a for a in sys.argv[1:] if a not in PIECES]
+    if unknown:
+        raise SystemExit(f"unknown piece(s): {', '.join(unknown)}; known: {', '.join(PIECES)}")
+    build(sys.argv[1:] or None)

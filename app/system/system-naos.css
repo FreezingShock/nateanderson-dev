@@ -92,7 +92,7 @@
 /* ---- Route loading: a status card that waits 450ms before it shows, so quick navigations never flash it ---------- */
 .ctos .sys-load {
     opacity: 0;
-    animation: sys-show 0.25s ease 0.45s both;
+    animation: sys-show var(--cm-d-enter) ease 0.45s both;
 }
 .ctos .sys-load .sys-body {
     padding-top: var(--cm-s7);
@@ -115,7 +115,7 @@
     width: 18%;
     background: var(--cm-ctos-block);
     transform: translateX(-100%);
-    animation: sys-scan 1.3s cubic-bezier(0.6, 0, 0.4, 1) infinite;
+    animation: sys-scan var(--cm-d-long) cubic-bezier(0.6, 0, 0.4, 1) infinite;
 }
 @keyframes sys-show {
     to {

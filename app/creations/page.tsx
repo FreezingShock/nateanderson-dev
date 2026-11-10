@@ -27,12 +27,12 @@ export default async function CreationsPage() {
             variant="hub"
             backdrop={
                 <div className="cr-art" aria-hidden="true">
-                    <NaosArt src="/naos/assembly.png" width={280} height={170} variant="break" eager />
+                    <NaosArt src="/naos/assembly.webp" width={280} height={170} variant="break" eager />
                 </div>
             }
             eyebrow="Made / Creations"
             title={["Creations"]}
-            description="Everything I build: games you can play here, coding and Roblox projects, renovation studies of real places, and the artwork around it all."
+            description="Everything I build: games you can play here, coding projects, renovation studies of real places, and the artwork around it all."
             aside={
                 <IdCard
                     label="creations // index"
@@ -93,6 +93,6 @@ export default async function CreationsPage() {
 export const metadata = pageMeta({
     title: "Creations",
     description:
-        "Everything I build: games you can play here, coding and Roblox projects, renovation studies of real places, and the artwork around it all.",
+        "Everything I build: games you can play here, coding projects, renovation studies of real places, and the artwork around it all.",
     path: "/creations",
 });

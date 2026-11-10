@@ -10,7 +10,7 @@ export default async function Image() {
         naosCard({
             label: "creations",
             title: "creations",
-            lead: "Games you can play here, coding and Roblox projects, renovation studies of real places, and the artwork around it all.",
+            lead: "Games you can play here, coding projects, renovation studies of real places, and the artwork around it all.",
             path: "/creations",
         }),
         { ...OG_SIZE, fonts: await naosFonts() }

@@ -22,24 +22,24 @@ html[data-boot="quick"] [data-entrance] > section {
 
 /* Gate: the page is ready when no transition is running and the boot is done. */
 html:not([data-xition]):not([data-boot="full"]):not([data-boot="quick"]) [data-entrance="dither"] .cm-stage > * {
-  animation: ent-dither .5s steps(4, end) backwards; animation-delay: calc(var(--s, 0) * 70ms);
+  animation: ent-dither var(--cm-d-wipe) steps(4, end) backwards; animation-delay: calc(var(--s, 0) * 70ms);
 }
 html:not([data-xition]):not([data-boot="full"]):not([data-boot="quick"]) [data-entrance="dither"] > section:nth-of-type(-n+3) {
-  animation: ent-dither .6s steps(5, end) backwards; animation-delay: calc(var(--s, 0) * 90ms);
+  animation: ent-dither var(--cm-d-count) steps(5, end) backwards; animation-delay: calc(var(--s, 0) * 90ms);
 }
 
 html:not([data-xition]):not([data-boot="full"]):not([data-boot="quick"]) [data-entrance="assemble"] .cm-stage > * {
-  animation: ent-assemble .7s var(--cm-ease-out) backwards; animation-delay: calc(var(--s, 0) * 80ms);
+  animation: ent-assemble var(--cm-d-reveal) var(--cm-ease-out) backwards; animation-delay: calc(var(--s, 0) * 80ms);
 }
 html:not([data-xition]):not([data-boot="full"]):not([data-boot="quick"]) [data-entrance="assemble"] > section:nth-of-type(-n+3) {
   animation: ent-assemble .8s var(--cm-ease-out) backwards; animation-delay: calc(var(--s, 0) * 110ms);
 }
 
 html:not([data-xition]):not([data-boot="full"]):not([data-boot="quick"]) [data-entrance="tick"] .cm-stage > * {
-  animation: ent-tick .6s var(--cm-ease-out) backwards; animation-delay: calc(var(--s, 0) * 90ms);
+  animation: ent-tick var(--cm-d-count) var(--cm-ease-out) backwards; animation-delay: calc(var(--s, 0) * 90ms);
 }
 html:not([data-xition]):not([data-boot="full"]):not([data-boot="quick"]) [data-entrance="tick"] > section:nth-of-type(-n+3) {
-  animation: ent-tick .7s var(--cm-ease-out) backwards; animation-delay: calc(var(--s, 0) * 100ms);
+  animation: ent-tick var(--cm-d-reveal) var(--cm-ease-out) backwards; animation-delay: calc(var(--s, 0) * 100ms);
 }
 
 html:not([data-xition]):not([data-boot="full"]):not([data-boot="quick"]) [data-entrance="stack"] .cm-stage > * {
@@ -50,31 +50,31 @@ html:not([data-xition]):not([data-boot="full"]):not([data-boot="quick"]) [data-e
 }
 
 html:not([data-xition]):not([data-boot="full"]):not([data-boot="quick"]) [data-entrance="type"] .cm-stage > * {
-  animation: ent-type .5s steps(6, end) backwards; animation-delay: calc(var(--s, 0) * 120ms);
+  animation: ent-type var(--cm-d-wipe) steps(6, end) backwards; animation-delay: calc(var(--s, 0) * 120ms);
 }
 html:not([data-xition]):not([data-boot="full"]):not([data-boot="quick"]) [data-entrance="type"] > section:nth-of-type(-n+3) {
-  animation: ent-type .6s steps(6, end) backwards; animation-delay: calc(var(--s, 0) * 120ms);
+  animation: ent-type var(--cm-d-count) steps(6, end) backwards; animation-delay: calc(var(--s, 0) * 120ms);
 }
 
 html:not([data-xition]):not([data-boot="full"]):not([data-boot="quick"]) [data-entrance="log"] .cm-stage > * {
   animation: ent-log .4s steps(3, end) backwards; animation-delay: calc(var(--s, 0) * 100ms);
 }
 html:not([data-xition]):not([data-boot="full"]):not([data-boot="quick"]) [data-entrance="log"] > section:nth-of-type(-n+3) {
-  animation: ent-log .5s steps(3, end) backwards; animation-delay: calc(var(--s, 0) * 120ms);
+  animation: ent-log var(--cm-d-wipe) steps(3, end) backwards; animation-delay: calc(var(--s, 0) * 120ms);
 }
 
 html:not([data-xition]):not([data-boot="full"]):not([data-boot="quick"]) [data-entrance="lean"] .cm-stage > * {
   animation: ent-lean .9s var(--cm-ease-out) backwards; animation-delay: calc(var(--s, 0) * 110ms);
 }
 html:not([data-xition]):not([data-boot="full"]):not([data-boot="quick"]) [data-entrance="lean"] > section:nth-of-type(-n+3) {
-  animation: ent-lean 1s var(--cm-ease-out) backwards; animation-delay: calc(var(--s, 0) * 130ms);
+  animation: ent-lean var(--cm-d-slow) var(--cm-ease-out) backwards; animation-delay: calc(var(--s, 0) * 130ms);
 }
 
 html:not([data-xition]):not([data-boot="full"]):not([data-boot="quick"]) [data-entrance="tile"] .cm-stage > * {
-  animation: ent-tile .5s var(--cm-ease-out) backwards; animation-delay: calc(var(--s, 0) * 70ms);
+  animation: ent-tile var(--cm-d-wipe) var(--cm-ease-out) backwards; animation-delay: calc(var(--s, 0) * 70ms);
 }
 html:not([data-xition]):not([data-boot="full"]):not([data-boot="quick"]) [data-entrance="tile"] > section:nth-of-type(-n+3) {
-  animation: ent-tile .6s var(--cm-ease-out) backwards; animation-delay: calc(var(--s, 0) * 90ms);
+  animation: ent-tile var(--cm-d-count) var(--cm-ease-out) backwards; animation-delay: calc(var(--s, 0) * 90ms);
 }
 
 /* The keyframes. Each variant has its own motion, so the pages do not share one entrance. */

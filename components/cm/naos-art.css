@@ -11,7 +11,7 @@
 
 /* Scroll reveal: a stepped clip, so the dither appears in hard steps instead of a smooth fade. */
 .naos-art.is-armed img { clip-path: inset(0 100% 0 0); }
-.naos-art.is-in img { animation: naos-dither-in 900ms steps(12, end) forwards; }
+.naos-art.is-in img { animation: naos-dither-in var(--cm-d-slow) steps(12, end) forwards; }
 @keyframes naos-dither-in {
   from { clip-path: inset(0 100% 0 0); }
   to { clip-path: inset(0 0 0 0); }
@@ -54,4 +54,46 @@
 }
 @media (max-width: 760px) {
   .naos-scrim { background: linear-gradient(180deg, rgba(26, 26, 26, .5) 0, rgba(26, 26, 26, .3) 35%, rgba(26, 26, 26, .34) 70%, rgba(26, 26, 26, .55) 100%); }
+}
+
+/* ---- Header bands and section washes (scripts/naos-art/generate.py: band(), section_wash()) -------------------------
+   Placed by CSS only, so pages need no markup. Art is drawn at whole-number scale (2 css px per art pixel on
+   desktop, 1 on phones) with pixelated sampling, so the dots stay crisp.
+   A band sits behind each page title on the right and fades toward the left; each page family gets its own variant.
+   A wash sits behind each ruled section, fading across it; sections rotate through the four washes. Both sit at
+   z-index -1 inside .ctos, so they paint over the backdrop and under the content. */
+.ctos .cm-head::before {
+  content: ""; position: absolute; z-index: -1; right: 0; top: 50%; transform: translateY(-50%);
+  width: 100%; height: 192px; pointer-events: none;
+  background: url("/naos/band-track.webp") right center / 960px 192px no-repeat;
+  image-rendering: pixelated; opacity: .42;
+  -webkit-mask-image: linear-gradient(270deg, #000 35%, transparent 100%);
+  mask-image: linear-gradient(270deg, #000 35%, transparent 100%);
+}
+.ctos.st-page .cm-head::before { background-image: url("/naos/band-rail.webp"); }
+.ctos.about .cm-head::before { background-image: url("/naos/band-seam.webp"); }
+@media (max-width: 760px) {
+  .ctos .cm-head::before { background-size: 480px 96px; height: 96px; opacity: .3; }
+}
+
+/* The wash fades in from the top edge and out toward the sides and the bottom, so the block never reads as a
+   rectangle. The mask is an intersection of a horizontal ramp and a vertical ramp. */
+.ctos .cm-section.ruled::before {
+  content: ""; position: absolute; inset: 0; z-index: -1; pointer-events: none;
+  background: url("/naos/wash-a.webp") center top / 720px 480px no-repeat; image-rendering: pixelated; opacity: .3;
+  -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 24%, #000 60%, transparent 98%),
+                      linear-gradient(180deg, transparent 0, #000 14%, #000 38%, transparent 90%);
+  -webkit-mask-composite: source-in;
+          mask-image: linear-gradient(90deg, transparent 0, #000 24%, #000 60%, transparent 98%),
+                      linear-gradient(180deg, transparent 0, #000 14%, #000 38%, transparent 90%);
+          mask-composite: intersect;
+  -webkit-mask-size: 720px 480px; mask-size: 720px 480px;
+  -webkit-mask-position: center top; mask-position: center top;
+  -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat;
+}
+.ctos .cm-section.ruled:nth-of-type(4n+2)::before { background-image: url("/naos/wash-b.webp"); }
+.ctos .cm-section.ruled:nth-of-type(4n+3)::before { background-image: url("/naos/wash-c.webp"); }
+.ctos .cm-section.ruled:nth-of-type(4n)::before { background-image: url("/naos/wash-d.webp"); }
+@media (max-width: 760px) {
+  .ctos .cm-section.ruled::before { background-size: 360px 240px; -webkit-mask-size: 360px 240px; mask-size: 360px 240px; opacity: .22; }
 }

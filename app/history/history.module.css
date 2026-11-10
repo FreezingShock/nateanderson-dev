@@ -15,7 +15,7 @@
 
 /* Title lines: each block wipes in from the left, one after another, so the words land in order. */
 .hero :global(.cm-highlight) > span {
-    animation: histLine .9s var(--cm-ease-cut) both;
+    animation: histLine var(--cm-d-slow) var(--cm-ease-cut) both;
 }
 
 .hero :global(.cm-highlight) > span:nth-child(2) {
@@ -62,8 +62,8 @@
     margin-top: 22px;
     padding: 9px 14px;
     border-left: 3px solid var(--cm-cyan);
-    background: #131313;
-    animation: histStrip .9s steps(10, end) .55s both;
+    background: var(--cm-ctos-panel);
+    animation: histStrip var(--cm-d-slow) steps(10, end) .55s both;
     font: 600 10px/1 var(--cm-mono);
     letter-spacing: .14em;
     text-transform: uppercase;
@@ -140,7 +140,7 @@
     background-image: radial-gradient(circle, rgba(244, 244, 242, .55) 0 30%, transparent 34%);
     background-size: 4px 4px;
     transform-origin: bottom;
-    animation: histBar .7s var(--cm-ease-out) both;
+    animation: histBar var(--cm-d-reveal) var(--cm-ease-out) both;
 }
 
 .bars i:last-child {
@@ -330,7 +330,7 @@ ol.list {
     flex-wrap: wrap;
     border: 1px solid var(--cm-hair);
     border-left: 3px solid var(--cm-cyan);
-    background: #131313;
+    background: var(--cm-ctos-panel);
     font-size: 9.5px;
     letter-spacing: .12em;
 }

@@ -3,21 +3,12 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState, type CSSProperties } from "react";
-import { BookOpen, GraduationCap, History, Home, Menu, PenLine, Route, Search, User, Volume2, VolumeX } from "lucide-react";
+import { Menu, Search, Volume2, VolumeX } from "lucide-react";
+import { PIXEL_FOR, PixelIcon } from "@/components/cm/pixel-icons";
 import { NateGlyph } from "@/components/cm/mark";
 import { navItems } from "@/lib/nav";
 import { useSoundPrefs } from "@/lib/sound/use-sound";
 import { sfx } from "@/lib/sound/sounds";
-
-const ICONS: Record<string, typeof Home> = {
-    "/": Home,
-    "/creations": BookOpen,
-    "/timeline": Route,
-    "/studies": GraduationCap,
-    "/blog": PenLine,
-    "/history": History,
-    "/about": User,
-};
 
 const isActive = (path: string, href: string) =>
     href === "/" ? path === "/" : path === href || path.startsWith(href + "/");
@@ -116,24 +107,52 @@ export function Dock() {
 
     const target = next ?? path;
     const idx = navItems.findIndex((n) => isActive(target, n.href));
+
+    // When the plate moves, remember where from and how far. The plate's travel time grows with distance, and a dither
+    // wake is drawn across the tabs it crossed. Derived during render so the first committed frame already has them.
+    const [last, setLast] = useState(idx);
+    const [dist, setDist] = useState(1);
+    const [wake, setWake] = useState<{ from: number; to: number; k: number } | null>(null);
+    if (idx !== last) {
+        setLast(idx);
+        if (idx >= 0 && last >= 0) {
+            setDist(Math.abs(idx - last));
+            setWake({ from: last, to: idx, k: (wake?.k ?? 0) + 1 });
+        }
+    }
+    const lo = wake ? Math.min(wake.from, wake.to) : 0;
+    const span = wake ? Math.abs(wake.to - wake.from) + 1 : 1;
+
     return (
-        <nav className="cm-dock" aria-label="Primary" style={{ ["--tabs" as string]: navItems.length, ["--i" as string]: Math.max(idx, 0) } as CSSProperties}>
+        <nav
+            className="cm-dock"
+            aria-label="Primary"
+            data-pending={next ? "" : undefined}
+            style={{ ["--tabs" as string]: navItems.length, ["--i" as string]: Math.max(idx, 0), ["--dist" as string]: dist } as CSSProperties}
+        >
+            {wake && (
+                <b
+                    key={wake.k}
+                    className="wake"
+                    aria-hidden="true"
+                    data-dir={wake.to > wake.from ? "r" : "l"}
+                    style={{ ["--lo" as string]: lo, ["--span" as string]: span } as CSSProperties}
+                    onAnimationEnd={() => setWake(null)}
+                />
+            )}
             <i className="ind" aria-hidden="true" data-off={idx < 0 ? "" : undefined} />
-            {navItems.map((n) => {
-                const Icon = ICONS[n.href] ?? Home;
-                return (
-                    <Link
-                        key={n.href}
-                        href={n.href}
-                        aria-current={isActive(path, n.href) ? "page" : undefined}
-                        data-on={isActive(target, n.href) ? "" : undefined}
-                        onClick={() => setNext(isActive(path, n.href) ? null : n.href)}
-                    >
-                        <Icon className="ic" aria-hidden="true" strokeWidth={1.75} />
-                        <span>{n.label}</span>
-                    </Link>
-                );
-            })}
+            {navItems.map((n) => (
+                <Link
+                    key={n.href}
+                    href={n.href}
+                    aria-current={isActive(path, n.href) ? "page" : undefined}
+                    data-on={isActive(target, n.href) ? "" : undefined}
+                    onClick={() => setNext(isActive(path, n.href) ? null : n.href)}
+                >
+                    <PixelIcon name={PIXEL_FOR[n.href] ?? "home"} className="ic" />
+                    <span>{n.label}</span>
+                </Link>
+            ))}
         </nav>
     );
 }
