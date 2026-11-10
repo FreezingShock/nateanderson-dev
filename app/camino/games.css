@@ -318,7 +318,7 @@
 
 /* ==========================================================================
    Games load-in and backdrop. Scoped to .ng-page (the Games hub and both guessers).
-   - The head's magenta X is replaced by the games map art (public/naos/games.png, scripts/naos-art/generate.py).
+   - The head's magenta X is replaced by the games map art (the bg-games backdrop from scripts/naos-art/generate.py, via NaosBackdrop).
    - Motion is scroll-linked like the homepage: the engine writes --p on each [data-rx] from its viewport position, so
      scrolling down plays forward and scrolling back up plays the same move in reverse. Nothing here uses time flags.
    ========================================================================== */
