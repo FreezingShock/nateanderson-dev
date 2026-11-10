@@ -1,7 +1,7 @@
 name: Deploy
 
 # Vercel builds only the `release` branch (see vercel.json). Merges into `integration` deploy nothing.
-# This workflow moves `release` up to the head of `integration`, which is what triggers one deployment.
+# This workflow  to the head of `integration`, which is what triggers one deployment.
 # Skipped Vercel builds still count against the free plan's 100 deployments a day, so we avoid triggering them at all.
 
 # Trigger: push a branch named deploy/<anything> (a thread creates it from integration, or run
@@ -26,15 +26,25 @@ jobs:
               with:
                   ref: integration
                   fetch-depth: 0
-            - name: Fast-forward release to integration
+            - name: Update release to match integration
               run: |
+                  git config user.name "github-actions[bot]"
+                  git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
                   git fetch origin release || true
-                  if git rev-parse --verify -q origin/release >/dev/null && [ "$(git rev-parse origin/release)" = "$(git rev-parse HEAD)" ]; then
-                      echo "release already matches integration ($(git rev-parse --short HEAD)); nothing to deploy"
-                      exit 0
+                  if git rev-parse --verify -q origin/release >/dev/null; then
+                      if git diff --quiet origin/release HEAD; then
+                          echo "release already has integration's content; nothing to deploy"
+                          exit 0
+                      fi
+                      parents="-p origin/release -p HEAD"
+                  else
+                      parents="-p HEAD"
                   fi
-                  git push origin HEAD:refs/heads/release
-                  echo "release -> $(git rev-parse --short HEAD)" >> "$GITHUB_STEP_SUMMARY"
+                  # A new commit (same files as integration) rather than a plain fast-forward: Vercel does not
+                  # create a deployment for a commit SHA it has already seen on another branch.
+                  new=$(git commit-tree HEAD^{tree} $parents -m "Release $(git rev-parse --short HEAD)")
+                  git push origin "$new:refs/heads/release"
+                  echo "release -> $new (integration $(git rev-parse --short HEAD))" >> "$GITHUB_STEP_SUMMARY"
             - name: Remove trigger branch
               if: always()
               run: git push origin --delete "${GITHUB_REF_NAME}" || true
