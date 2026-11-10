@@ -200,31 +200,73 @@
 .nv-map-search:hover { background: var(--cm-cyan); color: var(--cm-cyan-ink); }
 .nv-map-search .nv-key { border-color: currentColor; color: inherit; }
 
-/* ---- Search -------------------------------------------------------------------------------------------------------- */
-.nv-input { display: flex; align-items: center; gap: 10px; flex: none; padding: 0 14px; border-bottom: 1px solid var(--cm-hair); }
-.nv-prompt { font: 700 var(--cm-ctos-t-lead)/1 var(--cm-mono); color: var(--cm-cyan); }
-.nv-input input {
-    flex: 1; min-width: 0; padding: 14px 0; background: transparent; border: 0; outline: none;
-    color: var(--cm-fg); font: 400 var(--cm-ctos-t-lead)/1.2 var(--cm-display);
+/* ---- Search: a centred panel at a fixed height, so it does not jump as results filter --------------------------------- */
+.nv-scrim:has(.nv-find) { place-items: center; padding: 16px var(--cm-gutter); }
+.nv-panel.nv-find {
+    width: min(680px, 100%); height: min(640px, calc(100dvh - 32px)); max-height: none;
+    box-shadow: 0 30px 80px rgba(0, 0, 0, .55), 0 0 0 1px rgba(0, 0, 0, .4);
+}
+.nv-find .nv-head { gap: 14px; }
+.nv-find .nv-count { margin-left: auto; font-weight: 600; letter-spacing: .1em; opacity: .62; }
+.nv-close {
+    display: grid; place-items: center; min-height: 26px; padding: 0; background: transparent; border: 0;
+    color: inherit; cursor: pointer;
+}
+.nv-close .nv-key { padding: 5px 7px; font-size: 11px; opacity: .85; transition: background var(--cm-d-base), color var(--cm-d-base), border-color var(--cm-d-base); }
+.nv-close:hover .nv-key { background: var(--cm-cyan); border-color: var(--cm-cyan); color: var(--cm-cyan-ink); opacity: 1; }
+.nv-close:focus-visible { outline: 2px solid var(--cm-cyan-ink); outline-offset: 2px; }
+
+/* The field's focus state is the row itself: a cyan base line and a wash, drawn inside the panel (no box that spills). */
+.nv-input {
+    position: relative; display: flex; align-items: center; gap: 12px; flex: none; padding: 0 16px;
+    border-bottom: 1px solid var(--cm-hair-hi); transition: background var(--cm-d-base);
+}
+.nv-input::after {
+    content: ""; position: absolute; left: 0; right: 0; bottom: -1px; height: 2px; background: var(--cm-cyan);
+    transform: scaleX(0); transform-origin: left; transition: transform var(--cm-d-base) var(--cm-ease);
+}
+.nv-input:focus-within { background: var(--cm-cyan-wash); }
+.nv-input:focus-within::after { transform: scaleX(1); }
+.nv-prompt { font: 700 20px/1 var(--cm-mono); color: var(--cm-cyan); }
+.nv-input input,
+.cm .nv-input input:focus-visible {
+    flex: 1; min-width: 0; padding: 18px 0; background: transparent; border: 0; outline: none; box-shadow: none; border-radius: 0;
+    color: var(--cm-fg); font: 400 18px/1.2 var(--cm-display); letter-spacing: -.01em;
 }
 .nv-input input::placeholder { color: var(--cm-dim); }
-.nv-list { list-style: none; margin: 0; padding: 4px 0 6px; overflow: auto; min-height: 0; }
+
+.nv-list { flex: 1; list-style: none; margin: 0; padding: 4px 0 8px; overflow: auto; min-height: 0; overscroll-behavior: contain; scroll-padding-block: 40px; }
 .nv-group {
-    display: flex; align-items: center; gap: 10px; padding: 14px 14px 6px;
-    font: 700 var(--cm-ctos-t-micro)/1 var(--cm-mono); letter-spacing: .18em; text-transform: uppercase; color: var(--cm-mute);
+    display: flex; align-items: center; gap: 10px; padding: 16px 16px 6px;
+    font: 700 var(--cm-ctos-t-tag)/1 var(--cm-mono); letter-spacing: .18em; text-transform: uppercase; color: var(--cm-mute);
 }
 .nv-group::after { content: ""; flex: 1; border-top: 1px dashed var(--cm-hair-hi); }
 .nv-item a {
-    display: grid; grid-template-columns: 34px minmax(0, 1fr); align-items: center; gap: 10px;
-    padding: 9px 14px; color: var(--cm-fg); text-decoration: none;
+    display: grid; grid-template-columns: 34px minmax(0, 1fr) auto; align-items: center; gap: 12px;
+    min-height: 52px; padding: 9px 16px; color: var(--cm-fg); text-decoration: none; outline: none;
+    transition: background var(--cm-d-fast, .12s);
 }
-.nv-item .nv-ix { font: 700 var(--cm-ctos-t-tag)/1 var(--cm-mono); letter-spacing: .06em; color: var(--cm-cyan); }
-.nv-txt { display: grid; gap: 4px; min-width: 0; }
-.nv-txt b { font: 700 15.5px/1.15 var(--cm-display); letter-spacing: -.02em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.nv-txt small { font: 500 var(--cm-ctos-t-micro)/1.2 var(--cm-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--cm-mute); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.nv-item .nv-ix { font: 700 var(--cm-ctos-t-small)/1 var(--cm-mono); letter-spacing: .06em; color: var(--cm-cyan); }
+.nv-txt { display: grid; gap: 5px; min-width: 0; }
+.nv-txt b { font: 700 16px/1.15 var(--cm-display); letter-spacing: -.02em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.nv-txt b mark { background: none; color: var(--cm-cyan); box-shadow: inset 0 -2px 0 currentColor; }
+.nv-txt small { font: 500 var(--cm-ctos-t-tag)/1.2 var(--cm-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--cm-mute); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.nv-grp { font: 600 var(--cm-ctos-t-tag)/1 var(--cm-mono); letter-spacing: .14em; text-transform: uppercase; color: var(--cm-dim); white-space: nowrap; }
 .nv-item a.on { background: var(--cm-cyan); color: var(--cm-cyan-ink); }
-.nv-item a.on .nv-ix, .nv-item a.on small { color: var(--cm-cyan-deep); }
-.nv-empty { padding: 18px 14px; font: 500 var(--cm-ctos-t-small)/1.4 var(--cm-mono); color: var(--cm-mute); }
+.nv-item a.on .nv-ix, .nv-item a.on small, .nv-item a.on .nv-grp { color: var(--cm-cyan-deep); }
+.nv-item a.on .nv-txt b mark { color: var(--cm-cyan-ink); }
+.nv-empty { padding: 28px 16px; font: 500 var(--cm-ctos-t-body)/1.4 var(--cm-mono); color: var(--cm-mute); }
+
+/* Key hints: real key caps at a readable size. Touch screens have no keys, so the strip goes away there. */
+.nv-find .nv-foot {
+    gap: 22px; padding: 12px 16px; align-items: center;
+    font: 600 13px/1 var(--cm-mono); letter-spacing: .1em; color: var(--cm-mute);
+}
+.nv-find .nv-foot span { display: inline-flex; align-items: center; gap: 6px; }
+.nv-find .nv-foot .nv-key { min-width: 24px; padding: 5px 7px; text-align: center; font-size: 13px; color: var(--cm-fg); opacity: .85; margin-right: 0; }
+.nv-find .nv-foot .nv-key + .nv-key { margin-right: 4px; }
+.nv-find .nv-foot .nv-key:last-of-type { margin-right: 6px; }
+@media (hover: none) { .nv-find .nv-foot { display: none; } }
 
 /* ---- Phones: keep brand glyph, menu, journey, search and sound; the crumb ellipsizes ----------------------------- */
 @media (max-width: 760px) {
@@ -238,6 +280,11 @@
     .nv-journey { width: 96px; padding-inline: 10px; gap: 0; }
     .nv-jrow { display: none; }
     .nv-snd { padding: 0 11px; }
+    /* On a phone the keyboard covers the lower half of the screen, so the panel sits near the top and is only as tall
+       as the space above the keyboard needs. */
+    .nv-scrim:has(.nv-find) { place-items: start center; padding: 68px 12px 12px; }
+    .nv-panel.nv-find { height: auto; min-height: 220px; max-height: min(560px, calc(100dvh - 80px)); }
+    .nv-input input, .cm .nv-input input:focus-visible { font-size: 16px; }
     .nv-kids { padding-left: 14px; grid-template-columns: 1fr 1fr; }
     .nv-sec-t { font-size: 20px; }
 }
