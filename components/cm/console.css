@@ -1,0 +1,62 @@
+/* naOS command console. Panel chrome, header, close key, input row and key caps come from nav-naos.css (.nv-*); this
+   file only adds the output area, the quick-command chips and the phone keyboard fit. */
+
+/* Phones: --cn-h / --cn-top follow the visible viewport, so the panel sits above the on-screen keyboard. */
+.cn-scrim { inset: var(--cn-top, 0px) 0 auto 0; height: var(--cn-h, 100dvh); bottom: auto; }
+.cn-panel.nv-find { height: min(600px, calc(var(--cn-h, 100dvh) - 32px)); }
+
+.cn-out {
+    flex: 1; min-height: 0; overflow: auto; overscroll-behavior: contain; padding: 14px 16px 8px;
+    font: 500 14px/1.5 var(--cm-mono); color: var(--cm-fg); cursor: text;
+}
+.cn-entry { margin-bottom: 12px; }
+.cn-cmd { margin-bottom: 4px; color: var(--cm-cyan); font-weight: 700; word-break: break-word; }
+.cn-cmd span { margin-right: 4px; }
+
+/* A line is drawn left to right in steps, after the lines before it. Text stays in the DOM, so screen readers get it
+   whole. Not clip-path on a data-rx item: these are plain nodes. */
+.cn-l {
+    display: block; overflow-wrap: anywhere; color: var(--cm-fg);
+    animation: cn-type var(--t, 120ms) steps(var(--s, 8), end) var(--d, 0ms) both;
+}
+@keyframes cn-type { from { clip-path: inset(0 100% 0 0); } to { clip-path: inset(0 0 0 0); } }
+.cn-hi { color: var(--cm-cyan); font-weight: 700; letter-spacing: .14em; text-transform: uppercase; font-size: 12px; }
+.cn-dim { color: var(--cm-mute); }
+.cn-err { color: var(--cm-amber); }
+
+.cn-row { display: grid; grid-template-columns: minmax(8ch, 17ch) minmax(0, 1fr); gap: 2px 14px; align-items: baseline; padding: 2px 0; }
+.cn-a { font-weight: 700; color: var(--cm-cyan); overflow-wrap: anywhere; }
+.cn-b { color: var(--cm-fg); opacity: .86; }
+.cn-go { text-decoration: none; outline: none; margin-inline: -8px; padding-inline: 8px; transition: background var(--cm-d-base); }
+.cn-go:hover, .cn-go:focus-visible { background: var(--cm-cyan); }
+.cn-go:hover .cn-a, .cn-go:hover .cn-b, .cn-go:focus-visible .cn-a, .cn-go:focus-visible .cn-b { color: var(--cm-cyan-ink); opacity: 1; }
+.cn-go:focus-visible { outline: 2px solid var(--cm-cyan); outline-offset: -2px; }
+
+.cn-hint { flex: none; padding: 6px 16px; border-top: 1px dashed var(--cm-hair-hi); font: 600 12px/1.4 var(--cm-mono); color: var(--cm-mute); white-space: pre-wrap; }
+
+.cn-chips { display: flex; gap: 6px; flex: none; padding: 8px 16px; border-top: 1px dashed var(--cm-hair-hi); overflow-x: auto; scrollbar-width: none; }
+.cn-chips::-webkit-scrollbar { display: none; }
+.cn-chip {
+    flex: none; min-height: 32px; padding: 0 12px; background: transparent; cursor: pointer;
+    border: 1px solid var(--cm-hair-hi); color: var(--cm-fg);
+    font: 600 12px/1 var(--cm-mono); letter-spacing: .08em; -webkit-tap-highlight-color: transparent;
+    transition: background var(--cm-d-base), color var(--cm-d-base), border-color var(--cm-d-base);
+}
+.cn-chip:hover { background: var(--cm-cyan); border-color: var(--cm-cyan); color: var(--cm-cyan-ink); }
+.cn-chip:focus-visible { outline: 2px solid var(--cm-cyan); outline-offset: 1px; }
+
+.cn-in { border-top: 1px solid var(--cm-hair-hi); border-bottom: 0; }
+.cn-in::after { bottom: auto; top: -1px; }
+.cn-in input { font: 500 16px/1.2 var(--cm-mono); letter-spacing: 0; }
+
+@media (max-width: 760px) {
+    .cn-panel.nv-find { height: auto; min-height: 260px; max-height: calc(var(--cn-h, 100dvh) - 72px); }
+    .cn-out { min-height: 96px; padding: 12px 14px 6px; font-size: 13px; }
+    .cn-row { grid-template-columns: minmax(7ch, 12ch) minmax(0, 1fr); gap: 2px 10px; }
+    .cn-chips { padding: 6px 14px; }
+    .cn-chip { min-height: 36px; }
+}
+@media (prefers-reduced-motion: reduce) {
+    .cn-l { animation: none; clip-path: none; }
+    .cn-go, .cn-chip { transition: none; }
+}

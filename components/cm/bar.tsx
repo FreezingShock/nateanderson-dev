@@ -3,7 +3,8 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState, type CSSProperties } from "react";
-import { Menu, Search, Volume2, VolumeX } from "lucide-react";
+import { Menu, Search, Terminal, Volume2, VolumeX } from "lucide-react";
+import { openConsole } from "@/components/cm/console-entry";
 import { PIXEL_FOR, PixelIcon } from "@/components/cm/pixel-icons";
 import { NateGlyph } from "@/components/cm/mark";
 import { navItems } from "@/lib/nav";
@@ -73,6 +74,11 @@ export function Bar() {
                     <Search aria-hidden="true" size={15} strokeWidth={2} />
                     <span>search</span>
                     <kbd className="nv-key" aria-hidden="true">/</kbd>
+                </button>
+                <button type="button" className="nv-term" onClick={openConsole} aria-label="Open the command console" aria-haspopup="dialog">
+                    <Terminal aria-hidden="true" size={15} strokeWidth={2} />
+                    <span>console</span>
+                    <kbd className="nv-key" aria-hidden="true">`</kbd>
                 </button>
                 <button
                     type="button"
