@@ -27,7 +27,7 @@ export default async function CreationsPage() {
             variant="hub"
             backdrop={
                 <div className="cr-art" aria-hidden="true">
-                    <NaosArt src="/naos/assembly.png" width={280} height={170} variant="break" eager />
+                    <NaosArt src="/naos/assembly.webp" width={280} height={170} variant="break" eager />
                 </div>
             }
             eyebrow="Made / Creations"

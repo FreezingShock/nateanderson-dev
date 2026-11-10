@@ -28,7 +28,7 @@
    wrapper both pages render, so the shared naOS layer (app/camino/ctos.css) and sibling pages are untouched.
    ========================================================================== */
 
-/* Header: halftone plane. The page's full-bleed field sits behind everything (NaosBackdrop, bg-studies.png). */
+/* Header: halftone plane. The page's full-bleed field sits behind everything (NaosBackdrop, bg-studies.webp). */
 .ctos.st-page .cm-head { position: relative; overflow: hidden; }
 .ctos.st-page .cm-head > .cm-grid-bg {
   background-image: radial-gradient(circle at center, rgba(244, 244, 242, .55) 0 28%, transparent 32%);
@@ -122,10 +122,8 @@
 
 @media (max-width: 760px) {
   .ctos.st-page .st-courses > .cm-panel:nth-child(3n) { border-style: dashed; }
-  .ctos.st-page .cm-head::after { right: -12%; bottom: 0; width: 96vw; opacity: .22; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .ctos.st-page .cm-head::after { opacity: .3; animation: none; }
   .ctos.st-page .st-anim { animation: none !important; }
 }
 
@@ -215,7 +213,4 @@
 
 html[data-boot="full"] .ctos.st-page .st-anim,
 html[data-boot="quick"] .ctos.st-page .st-anim,
-html[data-xition] .ctos.st-page .st-anim,
-html[data-boot="full"] .ctos.st-page .cm-head::after,
-html[data-boot="quick"] .ctos.st-page .cm-head::after,
-html[data-xition] .ctos.st-page .cm-head::after { animation-play-state: paused; }
+html[data-xition] .ctos.st-page .st-anim { animation-play-state: paused; }

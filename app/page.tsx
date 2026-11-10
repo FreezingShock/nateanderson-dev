@@ -26,7 +26,7 @@ export default function Home() {
             <header className="cm-hero" id="top">
                 <div className="cm-grid-bg" aria-hidden="true" />
                 <div className="cm-persp" aria-hidden="true" />
-                <NaosArt src="/naos/islands.png" width={300} height={200} variant="hero" eager />
+                <NaosArt src="/naos/islands.webp" width={300} height={200} variant="hero" eager />
                 <div className="ring" aria-hidden="true" data-mx-par="0.12" />
                 <div className="cm-wrap">
                     <div className="hero-grid">
