@@ -87,7 +87,7 @@ export default function Home() {
                                     <div><dt>Based</dt><dd><Scramble replay text="Southern California" /></dd></div>
                                     <div><dt>Studying</dt><dd><Scramble replay text="Construction management" /></dd></div>
                                     <div><dt>Shipping</dt><dd><Link href="/creations/projects"><Scramble replay text="Nexus at playnexus.dev" /></Link></dd></div>
-                                    <div><dt>Built in</dt><dd><Scramble replay text="Luau, TypeScript, Blender" /></dd></div>
+                                    <div><dt>Built in</dt><dd><Scramble replay text="TypeScript, Three.js, JavaScript" /></dd></div>
                                     <div><dt>Graduation</dt><dd><Scramble replay text="2031" /></dd></div>
                                 </dl>
                             </div>
