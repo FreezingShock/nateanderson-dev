@@ -55,7 +55,7 @@ export const CATEGORIES: CreationCategory[] = [
         color: "var(--cm-amber)",
         icon: Ic.Hammer,
         blurb: "Real places studied, measured, modeled and redesigned to be greener and more inviting.",
-        tags: ["Blender", "Design"],
+        tags: ["3D", "Design"],
     },
     {
         id: "artwork",
@@ -63,8 +63,8 @@ export const CATEGORIES: CreationCategory[] = [
         title: "Artwork",
         color: "var(--cm-violet)",
         icon: Ic.Palette,
-        blurb: "The AP Art portfolio, Blender renders and drawings: the creative practice around the engineering.",
-        tags: ["AP Art", "Blender", "Drawing"],
+        blurb: "The AP Art portfolio, 3D renders and drawings: the creative practice around the engineering.",
+        tags: ["AP Art", "3D", "Drawing"],
     },
 ];
 
@@ -262,7 +262,7 @@ export const ART_COLLECTIONS: ArtCollection[] = [
     },
     {
         id: "blender",
-        title: "Blender Renders",
+        title: "3D Renders",
         color: "var(--cm-cyan)",
         icon: Ic.Boxes,
         blurb: "3D renders: renovation studies, environments and experiments.",

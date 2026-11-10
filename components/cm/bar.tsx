@@ -58,7 +58,7 @@ export function Bar() {
     return (
         <header className="nv-top" data-scrolled={scrolled ? "" : undefined}>
             <div className="nv-start">
-                <button type="button" className="nv-menu-btn" onClick={openMenu} aria-label="Open site map" aria-haspopup="dialog">
+                <button type="button" className="nv-menu-btn" onClick={openMenu} aria-label="Menu, open site map" aria-haspopup="dialog">
                     <PixelIcon name="menu" size={24} />
                     <span>menu</span>
                 </button>
@@ -78,7 +78,7 @@ export function Bar() {
                     className="nv-snd"
                     data-snd="off"
                     aria-pressed={mounted ? snd.on : true}
-                    aria-label={snd.on ? "Mute sound" : "Unmute sound"}
+                    aria-label={mounted && !snd.on ? "Sound off, unmute" : "Sound on, mute"}
                     onClick={() => {
                         setSnd({ on: !snd.on });
                         if (!snd.on) setTimeout(() => sfx("on"), 40);
