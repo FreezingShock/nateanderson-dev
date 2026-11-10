@@ -11,6 +11,12 @@ const nextConfig: NextConfig = {
     async headers() {
         return [
             {
+                // Art is 1-bit and tiny; cache it for a week on the edge and browser, and let a stale copy serve while
+                // it refreshes. Regenerated art keeps its name, so the window is short on purpose.
+                source: "/naos/:path*",
+                headers: [{ key: "Cache-Control", value: "public, max-age=604800, stale-while-revalidate=86400" }],
+            },
+            {
                 source: "/:path*",
                 headers: [
                     // Vercel already sets a bare `Strict-Transport-Security:
