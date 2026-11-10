@@ -1,6 +1,6 @@
 import Link from "next/link";
 import type { ComponentProps, ReactNode } from "react";
-import { Section as CmSection } from "@/components/cm/ui";
+import { BackLink, Section as CmSection } from "@/components/cm/ui";
 import { ScrollType, Scramble } from "@/components/cm/motion";
 import { CountUp } from "@/components/cm/reveal";
 import { statusLabel, type Project } from "@/lib/content";
@@ -75,9 +75,7 @@ export function CreationsHead({
             <div className={`cm-wrap cr-head-grid${aside ? " has-aside" : ""}`}>
                 <div className="cr-head-copy cm-stage">
                     {back && (
-                        <Link href={back.href} className="cm-lbl cm-crumb">
-                            <span aria-hidden="true">←</span> {back.label}
-                        </Link>
+                        <BackLink href={back.href} label={back.label} />
                     )}
                     <span className="cm-lbl">{label}</span>
                     <h1 style={{ margin: 0 }}>

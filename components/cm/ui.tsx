@@ -2,6 +2,16 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 import { ScrollType, Scramble, Slab } from "@/components/cm/motion";
 
+/** Themed "back" button shown above an inner-page title: arrow key block, mono label, hairline frame. */
+export function BackLink({ href, label }: { href: string; label: string }) {
+    return (
+        <Link href={href} className="cm-back">
+            <i aria-hidden="true">←</i>
+            <span>{label}</span>
+        </Link>
+    );
+}
+
 /** Inner-page header: mono label, highlight-bar title (first bar black, rest cyan), lead, optional actions. */
 export function PageHead({
     label,
@@ -22,9 +32,7 @@ export function PageHead({
             <div className="cm-grid-bg" aria-hidden="true" />
             <div className="cm-wrap cm-stage">
                 {back && (
-                    <Link href={back.href} className="cm-lbl cm-crumb">
-                        <span aria-hidden="true">←</span> {back.label}
-                    </Link>
+                    <BackLink href={back.href} label={back.label} />
                 )}
                 <span className="cm-lbl">{label}</span>
                 <h1 style={{ margin: 0 }}>
