@@ -64,7 +64,7 @@ export const skills: Skill[] = [
         name: "3D Modeling",
         level: 3,
         description:
-            "Blender modeling, rendering and architectural visualization: the renovation studies.",
+            "3D modeling, rendering and architectural visualization: the renovation studies.",
         icon: "Palette",
         category: "design",
     },
