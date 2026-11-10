@@ -6,14 +6,6 @@ import { useEffect, useState, type CSSProperties } from "react";
 import { BookOpen, GraduationCap, History, Home, Menu, PenLine, Route, Search, User, Volume2, VolumeX } from "lucide-react";
 import { NateGlyph } from "@/components/cm/mark";
 import { navItems } from "@/lib/nav";
-import {
-    JOURNEY_DAYS,
-    JOURNEY_END,
-    JOURNEY_START,
-    daysUntil,
-    getUpNext,
-    progressBetween,
-} from "@/lib/timeline-data";
 import { useSoundPrefs } from "@/lib/sound/use-sound";
 import { sfx } from "@/lib/sound/sounds";
 
@@ -38,60 +30,6 @@ function openMenu() {
     window.dispatchEvent(new Event("cm:menu"));
 }
 
-const SEGS = 24;
-
-interface Readout {
-    pct: number;
-    /** Day of the plan, counting the start day as day 1. */
-    day: number;
-    next: { title: string; days: number } | null;
-}
-
-/** Reads the plan's clock after mount, so the server render and the first client render agree. */
-function useReadout(initialPct: number): Readout {
-    const [r, setR] = useState<Readout>({ pct: initialPct, day: 0, next: null });
-    useEffect(() => {
-        const now = Date.now();
-        const n = getUpNext(1, now)[0];
-        setR({
-            pct: Math.round(progressBetween(JOURNEY_START, JOURNEY_END, now) * 100),
-            day: Math.max(0, 1 - daysUntil(JOURNEY_START, now)),
-            next: n ? { title: n.title, days: Math.max(0, daysUntil(n.start, now)) } : null,
-        });
-    }, []);
-    return r;
-}
-
-/** The top-right readout: day of the plan, the next step, and a segmented bar that fills with the journey. */
-function Journey({ initialPct }: { initialPct: number }) {
-    const r = useReadout(initialPct);
-    const lit = Math.round((r.pct / 100) * SEGS);
-    return (
-        <div
-            className="nv-journey"
-            role="img"
-            aria-label={`${r.pct} percent through the plan to May 2031. Day ${r.day}.`}
-            title="Progress along the plan, Sept 2026 to May 2031"
-        >
-            <div className="nv-jrow" aria-hidden="true">
-                <span className="nv-jday">
-                    day <b>{r.day}</b>
-                    <em>/ {JOURNEY_DAYS.toLocaleString("en-US")}</em>
-                </span>
-                {r.next && (
-                    <span className="nv-jnext" title={`Next: ${r.next.title}`}>
-                        {r.next.days === 0 ? "due today" : `next in ${r.next.days}d`}
-                    </span>
-                )}
-            </div>
-            <div className="nv-segs" aria-hidden="true">
-                {Array.from({ length: SEGS }, (_, i) => (
-                    <i key={i} className={i < lit ? "on" : undefined} data-head={i === lit - 1 ? "" : undefined} />
-                ))}
-            </div>
-        </div>
-    );
-}
 
 /**
  * Top status strip: menu and brand on the left, journey readout, search and sound on the right. Sticky. Once the page
@@ -119,7 +57,7 @@ function useScrolled(threshold = 40): boolean {
     return on;
 }
 
-export function Bar({ initialPct }: { initialPct: number }) {
+export function Bar() {
     const path = usePathname();
     const [mounted, setMounted] = useState(false);
     const [snd, setSnd] = useSoundPrefs();
@@ -140,7 +78,6 @@ export function Bar({ initialPct }: { initialPct: number }) {
                 </Link>
             </div>
             <div className="nv-tools">
-                <Journey initialPct={initialPct} />
                 <button type="button" className="nv-search" onClick={openLauncher} aria-label="Search the site">
                     <Search aria-hidden="true" size={15} strokeWidth={2} />
                     <span>search</span>

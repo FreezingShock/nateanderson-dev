@@ -52,7 +52,7 @@ export default function TimelinePage() {
     const nowMs = Date.now();
 
     return (
-        <div className="ctos tl-page">
+        <div className="ctos tl-page" data-entrance="tick">
             <NaosBackdrop src="/naos/bg-timeline.webp" />
             <PageHead
                 label="Journey"

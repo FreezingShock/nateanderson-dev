@@ -21,17 +21,13 @@ export default function Home() {
     const playable = allGames().filter((g) => g.status === "playable").length;
 
     return (
-        <div className="ctos">
+        <div className="ctos" data-entrance="dither">
             <NaosBackdrop src="/naos/bg-home.webp" />
             <header className="cm-hero" id="top">
                 <div className="cm-grid-bg" aria-hidden="true" />
                 <div className="cm-persp" aria-hidden="true" />
-                <span className="cm-ctos-tag" aria-hidden="true">naOS</span>
                 <NaosArt src="/naos/islands.png" width={300} height={200} variant="hero" eager />
                 <div className="ring" aria-hidden="true" data-mx-par="0.12" />
-                <span className="cm-tag t1" aria-hidden="true" data-mx-par="0.2">Class of <i>2027</i></span>
-                <span className="cm-tag live t2" aria-hidden="true" data-mx-par="0.08">Now shipping <i>Fractured Islands</i></span>
-                <span className="cm-read live float t3" aria-hidden="true" data-mx-par="0.16">Graduation / June 2031</span>
                 <div className="cm-wrap">
                     <div className="hero-grid">
                         <div className="hero-copy cm-stage">

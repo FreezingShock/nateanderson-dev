@@ -232,7 +232,7 @@ ol.list {
 }
 
 .idxHash {
-    font: 700 9px/1 var(--cm-mono);
+    font: 700 10px/1 var(--cm-mono);
     letter-spacing: .14em;
     opacity: .55;
 }
@@ -295,7 +295,7 @@ ol.list {
     padding: 3px 5px 4px;
     background: var(--cm-cyan);
     color: var(--cm-cyan-ink);
-    font: 700 9px/1 var(--cm-mono);
+    font: 700 10px/1 var(--cm-mono);
     letter-spacing: .14em;
     text-transform: uppercase;
 }

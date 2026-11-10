@@ -18,7 +18,7 @@ export default function StudiesPage() {
     const nowMs = Date.now();
 
     return (
-        <div className="ctos st-page">
+        <div className="ctos st-page" data-entrance="stack">
             <NaosBackdrop src="/naos/bg-studies.webp" />
             <PageHead
                 label="Learning"
