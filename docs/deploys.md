@@ -8,9 +8,11 @@ The free Vercel plan allows 100 deployments a day, and a build that Vercel skips
 
 ## Deploy now
 
-Run the **Deploy** workflow (`.github/workflows/deploy.yml`): GitHub, Actions, Deploy, Run workflow. A thread can do the same with the GitHub MCP `actions_run_trigger` (workflow `deploy.yml`, ref `integration`). It does nothing if `release` already matches `integration`.
+Push a branch named `deploy/<anything>`. The **Deploy** workflow (`.github/workflows/deploy.yml`) moves `release` to the head of `integration` and deletes the trigger branch. A thread can create it with the GitHub MCP `create_branch` (branch `deploy/now`, from `integration`); from a terminal it is `git push origin integration:refs/heads/deploy/now`. If `release` already matches `integration`, nothing is deployed.
 
-It also runs by itself once a day at 11:00 UTC if anything changed. Threads should deploy only when Nate asks, and should not call anything live until the Vercel deployment for the new `release` commit shows success.
+Threads deploy only when Nate asks, and should not call anything live until the Vercel deployment for the new `release` commit shows success (`gh api repos/FreezingShock/nateanderson-dev/deployments`).
+
+A daily automatic batch and a "Run workflow" button would need the workflow on the default branch (`main`). Making `integration` the default branch in GitHub settings would allow both.
 
 ## One-time dashboard setting
 

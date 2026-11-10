@@ -4,11 +4,12 @@ name: Deploy
 # This workflow moves `release` up to the head of `integration`, which is what triggers one deployment.
 # Skipped Vercel builds still count against the free plan's 100 deployments a day, so we avoid triggering them at all.
 
+# Trigger: push a branch named deploy/<anything> (a thread creates it from integration, or run
+# `git push origin integration:refs/heads/deploy/now`). The workflow deletes it afterwards.
+# (workflow_dispatch and schedule only work for workflow files on the default branch, which is main.)
 on:
-    workflow_dispatch:
-    schedule:
-        # One automatic batch a day, 11:00 UTC (3am Pacific). Does nothing if nothing changed.
-        - cron: "0 11 * * *"
+    push:
+        branches: ["deploy/**"]
 
 permissions:
     contents: write
@@ -34,3 +35,6 @@ jobs:
                   fi
                   git push origin HEAD:refs/heads/release
                   echo "release -> $(git rev-parse --short HEAD)" >> "$GITHUB_STEP_SUMMARY"
+            - name: Remove trigger branch
+              if: always()
+              run: git push origin --delete "${GITHUB_REF_NAME}" || true
