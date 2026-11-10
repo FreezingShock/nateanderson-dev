@@ -29,7 +29,6 @@ const SOCIALS = [
 const ABOUT_LINKS = [
     { label: "Who I am", href: "/about#hero" },
     { label: "Running", href: "/about#running" },
-    { label: "Fractured Islands", href: "/about#roblox" },
     { label: "Philosophy", href: "/about#philosophy" },
     { label: "Skills", href: "/about#skills" },
     { label: "Education path", href: "/about#timeline" },

@@ -514,25 +514,6 @@ export const phases: TimelinePhaseData[] = [
                 ],
             },
             {
-                id: "personal-2",
-                title: "Fractured Islands: Ascension",
-                description:
-                    "A long-running solo Roblox game project: a systems-driven incremental RPG combining button simulators with skill-based progression.",
-                when: "2026 — Indefinite",
-                start: "2026-09-01",
-                ongoing: true,
-                category: "build",
-                type: "major",
-                icon: "Zap",
-                tags: ["Game Dev", "Solo Project", "Luau"],
-                details: [
-                    "Roadmap: the Ascension Menu, then the Stat System, then the 100+ attribute system",
-                    "Dual progression model (button sim + skill tree)",
-                    "Combo system, bestiary and time-based milestones",
-                    "Systems thinking that transfers straight into engineering work",
-                ],
-            },
-            {
                 id: "personal-3",
                 title: "Sustainable Systems Research",
                 description:
@@ -654,7 +635,6 @@ export const phases: TimelinePhaseData[] = [
                 tags: ["iOS", "Gamification", "Planned"],
                 details: [
                     "Steps and calories drive in-game progress and multipliers",
-                    "Shares its progression design language with Fractured Islands",
                     "Idea stage: waiting on funding the Apple developer account",
                 ],
             },

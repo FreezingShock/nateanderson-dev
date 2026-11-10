@@ -10,7 +10,7 @@ export default async function Image() {
         naosCard({
             label: "about",
             title: "about",
-            lead: "Student, runner and Roblox developer. Designs game systems, models real places in 3D, and is heading into construction management.",
+            lead: "Student, runner and maker of games, websites and apps. Designs game systems, models real places in 3D, and is heading into construction management.",
             path: "/about",
         }),
         { ...OG_SIZE, fonts: await naosFonts() }
