@@ -1,16 +1,7 @@
 "use client";
 
+import { PixelIcon } from "@/components/cm/pixel-icons";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import {
-    BarChart3,
-    Check,
-    Globe2,
-    Lightbulb,
-    RotateCcw,
-    Share2,
-    Shuffle,
-    Shapes,
-} from "lucide-react";
 import flagSchedule from "@/lib/data/daily-flag-schedule.json";
 import {
     Burst,
@@ -424,7 +415,7 @@ export function FlagGuesser() {
                                 : "Restart with a new flag"
                         }
                     >
-                        <RotateCcw className="size-3.5" />
+                        <PixelIcon name="reset" className="size-3.5" />
                         {confirmRestart ? "Sure?" : "Restart"}
                     </button>
                     <button
@@ -448,7 +439,7 @@ export function FlagGuesser() {
                             "inline-flex items-center gap-1"
                         )}
                     >
-                        <BarChart3 className="size-3.5" /> Stats
+                        <PixelIcon name="chart" className="size-3.5" /> Stats
                     </button>
                 </div>
             </div>
@@ -501,7 +492,7 @@ export function FlagGuesser() {
                                 }}
                             >
                                 <div className="fg-face fg-cover grid place-items-center">
-                                    <Shapes className="size-6 text-slate-600" />
+                                    <PixelIcon name="shapes" className="size-6 text-slate-600" />
                                 </div>
                                 <div
                                     className="fg-face fg-back"
@@ -553,9 +544,9 @@ export function FlagGuesser() {
                                     <path d={answer.d} fill="#fff" fillRule="evenodd" />
                                 </svg>
                             ) : h.key === "k" ? (
-                                <Globe2 className="size-3.5" />
+                                <PixelIcon name="globe" className="size-3.5" />
                             ) : (
-                                <Lightbulb className="size-3.5" />
+                                <PixelIcon name="bulb" className="size-3.5" />
                             )}
                             {h.text}
                         </span>
@@ -587,7 +578,7 @@ export function FlagGuesser() {
                                     "color-mix(in oklch, var(--cm-amber) 45%, transparent)",
                             }}
                         >
-                            <Lightbulb className="size-3.5" /> Hint ({hints}/
+                            <PixelIcon name="bulb" className="size-3.5" /> Hint ({hints}/
                             {MAX_HINTS})
                         </button>
                         <span className="font-mono text-xs uppercase tracking-wider text-muted-foreground">
@@ -646,9 +637,9 @@ export function FlagGuesser() {
                             }}
                         >
                             {copied ? (
-                                <Check className="size-4" />
+                                <PixelIcon name="check" className="size-4" />
                             ) : (
-                                <Share2 className="size-4" />
+                                <PixelIcon name="share" className="size-4" />
                             )}
                             {copied ? "Copied!" : "Share"}
                         </button>
@@ -667,7 +658,7 @@ export function FlagGuesser() {
                                         "color-mix(in oklch, var(--cm-good) 12%, transparent)",
                                 }}
                             >
-                                <RotateCcw className="size-4" /> Next flag
+                                <PixelIcon name="reset" className="size-4" /> Next flag
                             </button>
                         ) : (
                             <>
@@ -681,7 +672,7 @@ export function FlagGuesser() {
                                     onClick={() => switchMode("unlimited")}
                                     className="inline-flex items-center gap-2 rounded-[2px] border px-4 py-2 font-sans text-sm font-bold"
                                 >
-                                    <Shuffle className="size-4" /> Play unlimited
+                                    <PixelIcon name="shuffle" className="size-4" /> Play unlimited
                                 </button>
                             </>
                         )}

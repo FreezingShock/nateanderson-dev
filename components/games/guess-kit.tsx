@@ -1,5 +1,6 @@
 "use client";
 
+import { PixelIcon } from "@/components/cm/pixel-icons";
 import {
     useCallback,
     useEffect,
@@ -9,7 +10,6 @@ import {
     type CSSProperties,
     type RefObject,
 } from "react";
-import { ArrowUp, Dices, Globe2, PartyPopper } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
     DIFFICULTIES,
@@ -286,7 +286,7 @@ export function GuessRow({
             </span>
             <span className="grid place-items-center" style={delay(2)}>
                 {correct ? (
-                    <PartyPopper
+                    <PixelIcon name="party"
                         className={cn("size-5", fresh && "og-arrow")}
                         style={
                             {
@@ -297,9 +297,8 @@ export function GuessRow({
                         }
                     />
                 ) : (
-                    <ArrowUp
+                    <PixelIcon name="arrowUp"
                         className={cn("size-5", fresh && "og-arrow")}
-                        strokeWidth={3}
                         style={
                             {
                                 color,
@@ -786,7 +785,7 @@ export function CountryCombobox({
                             "color-mix(in oklch, var(--cm-cyan) 16%, transparent)",
                     }}
                 >
-                    <Dices className={cn("size-5", rolling && "cb-dice-spin")} />
+                    <PixelIcon name="dice" className={cn("size-5", rolling && "cb-dice-spin")} />
                 </button>
                 <button
                     ref={guessRef}
@@ -800,7 +799,7 @@ export function CountryCombobox({
                         backgroundColor: `color-mix(in oklch, ${COLOR} 12%, transparent)`,
                     }}
                 >
-                    <Globe2 className="size-4" /> Guess
+                    <PixelIcon name="globe" className="size-4" /> Guess
                 </button>
             </div>
             <p

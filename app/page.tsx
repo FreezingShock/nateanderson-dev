@@ -12,6 +12,7 @@ import { FeaturedCards, FeaturedSkeleton } from "@/components/home/featured-work
 import { HeroStats, HeroStatsFallback } from "@/components/home/hero-stats";
 import { RecentPosts } from "@/components/home/recent-posts";
 import "@/components/home/home.css";
+import { PixelIcon } from "@/components/cm/pixel-icons";
 
 export const revalidate = 60; // re-check Supabase for new content every 60s
 
@@ -57,17 +58,17 @@ export default function Home() {
                             <Link className="hcta hcta-main" href="/creations/projects" data-scr-hover>
                                 <span className="hcta-no" aria-hidden="true">01</span>
                                 <span className="hcta-txt"><b data-scr-text>View projects</b><small>/creations/projects</small></span>
-                                <span className="hcta-arr" aria-hidden="true">→</span>
+                                <span className="hcta-arr" aria-hidden="true"><PixelIcon name="arrowR" /></span>
                             </Link>
                             <Link className="hcta" href="/about" data-scr-hover>
                                 <span className="hcta-no" aria-hidden="true">02</span>
                                 <span className="hcta-txt"><b data-scr-text>About me</b><small>/about</small></span>
-                                <span className="hcta-arr" aria-hidden="true">→</span>
+                                <span className="hcta-arr" aria-hidden="true"><PixelIcon name="arrowR" /></span>
                             </Link>
                             <Link className="hcta" href="/creations/games" data-scr-hover>
                                 <span className="hcta-no" aria-hidden="true">03</span>
                                 <span className="hcta-txt"><b data-scr-text>Play the games</b><small>/creations/games</small></span>
-                                <span className="hcta-arr" aria-hidden="true">→</span>
+                                <span className="hcta-arr" aria-hidden="true"><PixelIcon name="arrowR" /></span>
                             </Link>
                         </nav>
                         <div className="meta stats">

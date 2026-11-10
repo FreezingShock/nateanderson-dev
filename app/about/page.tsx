@@ -18,6 +18,7 @@ import { PROFILE_LEAD } from "@/lib/identity";
 // Statically generated, refreshed hourly: the days-to-graduation figure and the path progress bars come
 // from real dates at render time.
 import { NaosBackdrop } from "@/components/cm/naos-art";
+import { PixelIcon } from "@/components/cm/pixel-icons";
 export const revalidate = 3600;
 
 export default function AboutPage() {
@@ -118,9 +119,9 @@ export default function AboutPage() {
                             </p>
                         </div>
                         <div className="cm-row cta" style={{ padding: "0 var(--cm-s5) var(--cm-s5)" }}>
-                            <Link className="cta-b a" href="/creations/projects"><i>01</i><span>View projects</span><em aria-hidden="true">→</em></Link>
-                            <Link className="cta-b b" href="/blog"><i>02</i><span>Read essays</span><em aria-hidden="true">→</em></Link>
-                            <Link className="cta-b c" href="/timeline"><i>03</i><span>Full timeline</span><em aria-hidden="true">→</em></Link>
+                            <Link className="cta-b a" href="/creations/projects"><i>01</i><span>View projects</span><em aria-hidden="true"><PixelIcon name="arrowR" /></em></Link>
+                            <Link className="cta-b b" href="/blog"><i>02</i><span>Read essays</span><em aria-hidden="true"><PixelIcon name="arrowR" /></em></Link>
+                            <Link className="cta-b c" href="/timeline"><i>03</i><span>Full timeline</span><em aria-hidden="true"><PixelIcon name="arrowR" /></em></Link>
                         </div>
                     </div>
                 </div>

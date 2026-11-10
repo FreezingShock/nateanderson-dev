@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { launcherLinks, navItems } from "@/lib/nav";
+import { PIXEL_FOR, PixelIcon } from "@/components/cm/pixel-icons";
 import { navigateWithCurtain } from "@/lib/motion/navigate";
 
 interface Entry {
@@ -218,7 +219,7 @@ export function Launcher() {
                                     onMouseEnter={() => setSel(i)}
                                     onClick={() => setOpen(false)}
                                 >
-                                    <span className="nv-ix">{e.ix}</span>
+                                    <span className="nv-ix">{PIXEL_FOR[e.href] && e.group === PAGE_GROUP ? <PixelIcon name={PIXEL_FOR[e.href]} size={24} /> : <PixelIcon name="chevR" size={16} />}</span>
                                     <span className="nv-txt">
                                         <b>{mark(e.label, term)}</b>
                                         {e.hint && <small>{e.hint}</small>}

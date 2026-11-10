@@ -9,6 +9,7 @@ import { getPost, getPostNeighbours, getPostRoutes } from "@/lib/blog";
 import { POST_KIND_LABEL, bodyWordCount, poemLineCount } from "@/lib/blog-types";
 import { SITE_NAME } from "@/lib/seo";
 import "./post.css";
+import { PixelIcon } from "@/components/cm/pixel-icons";
 
 export const dynamicParams = false;
 
@@ -135,28 +136,28 @@ export default async function BlogPostPage({
                     <div className="cm-row cta post-pn">
                         {prev ? (
                             <Link className="cta-b" href={`/blog/${prev.slug}`}>
-                                <i>←</i>
+                                <i><PixelIcon name="arrowL" /></i>
                                 <span>{prev.post.title}</span>
-                                <em aria-hidden="true">→</em>
+                                <em aria-hidden="true"><PixelIcon name="arrowR" /></em>
                             </Link>
                         ) : (
                             <Link className="cta-b" href="/blog">
-                                <i>←</i>
+                                <i><PixelIcon name="arrowL" /></i>
                                 <span>Back to blog</span>
-                                <em aria-hidden="true">→</em>
+                                <em aria-hidden="true"><PixelIcon name="arrowR" /></em>
                             </Link>
                         )}
                         {next ? (
                             <Link className="cta-b a" href={`/blog/${next.slug}`}>
-                                <i>→</i>
+                                <i><PixelIcon name="arrowR" /></i>
                                 <span>{next.post.title}</span>
-                                <em aria-hidden="true">→</em>
+                                <em aria-hidden="true"><PixelIcon name="arrowR" /></em>
                             </Link>
                         ) : (
                             <Link className="cta-b a" href="/blog">
                                 <i>↺</i>
                                 <span>All posts</span>
-                                <em aria-hidden="true">→</em>
+                                <em aria-hidden="true"><PixelIcon name="arrowR" /></em>
                             </Link>
                         )}
                     </div>

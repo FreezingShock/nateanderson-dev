@@ -264,7 +264,7 @@ html[data-xition] .cm-dock { z-index: calc(var(--cm-z-curtain) + 1); }
     display: grid; color: var(--cm-fg); grid-template-columns: 34px minmax(0, 1fr) auto; align-items: center; gap: 10px;
     padding: 14px 14px 10px; color: var(--cm-fg); text-decoration: none;
 }
-.nv-sec .nv-ix { font: 700 var(--cm-ctos-t-tag)/1 var(--cm-mono); letter-spacing: .08em; color: var(--cm-cyan); }
+.nv-sec .nv-ix { display: grid; place-items: center start; font: 700 var(--cm-ctos-t-tag)/1 var(--cm-mono); letter-spacing: .08em; color: var(--cm-cyan); }
 .nv-sec-t {
     justify-self: start; color: var(--cm-fg); padding: 2px 6px 4px 4px; background: transparent;
     font: 800 var(--cm-ctos-t-h3)/1 var(--cm-display); letter-spacing: -.045em; text-transform: lowercase;
@@ -273,7 +273,7 @@ html[data-xition] .cm-dock { z-index: calc(var(--cm-z-curtain) + 1); }
 .nv-sec:hover .nv-sec-t, .nv-sec:focus-visible .nv-sec-t { background: var(--nv-plate); color: var(--nv-ink); }
 .nv-sec small { font: 500 var(--cm-ctos-t-micro)/1 var(--cm-mono); letter-spacing: .14em; text-transform: uppercase; color: var(--cm-mute); }
 .nv-sec-row[data-on] .nv-sec-t { background: var(--cm-cyan); color: var(--cm-cyan-ink); }
-.nv-sec-row[data-on] .nv-sec .nv-ix { color: var(--cm-cyan); }
+.nv-sec-row[data-on] .nv-sec .nv-ix { display: grid; place-items: center start; color: var(--cm-cyan); }
 .nv-sec-row[data-on] .nv-sec small { color: var(--cm-cyan); }
 .nv-kids {
     list-style: none; margin: 0; padding: 0 14px 14px 58px;
@@ -343,7 +343,7 @@ html[data-xition] .cm-dock { z-index: calc(var(--cm-z-curtain) + 1); }
     min-height: 52px; padding: 9px 16px; color: var(--cm-fg); text-decoration: none; outline: none;
     transition: background var(--cm-d-fast, .12s);
 }
-.nv-item .nv-ix { font: 700 var(--cm-ctos-t-small)/1 var(--cm-mono); letter-spacing: .06em; color: var(--cm-cyan); }
+.nv-item .nv-ix { display: grid; place-items: center start; font: 700 var(--cm-ctos-t-small)/1 var(--cm-mono); letter-spacing: .06em; color: var(--cm-cyan); }
 .nv-txt { display: grid; gap: 5px; min-width: 0; }
 .nv-txt b { font: 700 16px/1.15 var(--cm-display); letter-spacing: -.02em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .nv-txt b mark { background: none; color: var(--cm-cyan); box-shadow: inset 0 -2px 0 currentColor; }

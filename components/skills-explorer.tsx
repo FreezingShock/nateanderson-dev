@@ -1,7 +1,7 @@
 "use client";
 
+import { PixelIcon } from "@/components/cm/pixel-icons";
 import { memo, useMemo, useState } from "react";
-import { ArrowDownWideNarrow } from "lucide-react";
 import { ABOUT_ICONS } from "@/components/about-icons";
 import { FilterChips, type FilterChip } from "@/components/filter-chips";
 import { Meter } from "@/components/cm/ui";
@@ -30,7 +30,7 @@ const SkillCard = memo(function SkillCard({ skill }: { skill: Skill }) {
                     <b style={{ fontSize: 15 }}>{skill.name}</b>
                     <div className="cm-state" style={{ marginTop: 4 }}>{catLabel} / {level.label}</div>
                 </div>
-                <Icon className="cm-ico" style={{ width: 20, height: 20 }} aria-hidden="true" />
+                <Icon className="cm-ico" style={{ width: 24, height: 24 }} aria-hidden="true" />
             </div>
             <div className="cm-row" style={{ gap: 8, flexWrap: "nowrap" }}>
                 <div style={{ flex: 1 }}>
@@ -70,7 +70,7 @@ export function SkillsExplorer() {
             <div className="cm-row" style={{ justifyContent: "space-between" }}>
                 <FilterChips chips={chips} active={category} onChange={setCategory} total={skills.length} />
                 <button type="button" className="cm-chip" aria-pressed={byLevel} onClick={() => setByLevel((v) => !v)}>
-                    <ArrowDownWideNarrow className="cm-ico" style={{ width: 12, height: 12 }} aria-hidden="true" /> Sort by level
+                    <PixelIcon name="sort" className="cm-ico" style={{ width: 12, height: 12 }} /> Sort by level
                 </button>
             </div>
 

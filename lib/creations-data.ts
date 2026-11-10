@@ -1,17 +1,18 @@
-import {
-    Brush,
-    CalendarDays,
-    Code2,
-    Flag,
-    Gamepad2,
-    Hammer,
-    Infinity as InfinityIcon,
-    Map,
-    Palette,
-    Pencil,
-    Boxes,
-    type LucideIcon,
-} from "lucide-react";
+import { px, type PixelComponent } from "@/components/cm/pixel-icons";
+
+const Ic = {
+    Brush: px("brush"),
+    CalendarDays: px("calendar"),
+    Code2: px("code"),
+    Flag: px("flag"),
+    Gamepad2: px("gamepad"),
+    Hammer: px("hammer"),
+    InfinityIcon: px("infinity"),
+    Map: px("map"),
+    Palette: px("palette"),
+    Pencil: px("pen"),
+    Boxes: px("boxes"),
+};
 
 // Everything on the Creations pages that isn't a Supabase project row.
 // Server-only: icons are component references, which can't cross into
@@ -23,7 +24,7 @@ export interface CreationCategory {
     href: string;
     title: string;
     color: string;
-    icon: LucideIcon;
+    icon: PixelComponent;
     blurb: string;
     tags: string[];
 }
@@ -34,7 +35,7 @@ export const CATEGORIES: CreationCategory[] = [
         href: "/creations/games",
         title: "Web App Games",
         color: "var(--cm-good)",
-        icon: Gamepad2,
+        icon: Ic.Gamepad2,
         blurb: "Playable in the browser, right here on the site: daily puzzles, unlimited practice, incremental progression and tycoon games.",
         tags: ["Daily", "Unlimited", "Incremental", "Tycoon"],
     },
@@ -43,7 +44,7 @@ export const CATEGORIES: CreationCategory[] = [
         href: "/creations/projects",
         title: "Projects",
         color: "var(--cm-cyan)",
-        icon: Code2,
+        icon: Ic.Code2,
         blurb: "Coding projects: solo-built, systems-driven, shipped and in progress.",
         tags: ["Coding", "Games", "Systems"],
     },
@@ -52,7 +53,7 @@ export const CATEGORIES: CreationCategory[] = [
         href: "/creations/renovations",
         title: "Renovations",
         color: "var(--cm-amber)",
-        icon: Hammer,
+        icon: Ic.Hammer,
         blurb: "Real places studied, measured, modeled and redesigned to be greener and more inviting.",
         tags: ["3D", "Design"],
     },
@@ -61,7 +62,7 @@ export const CATEGORIES: CreationCategory[] = [
         href: "/creations/artwork",
         title: "Artwork",
         color: "var(--cm-violet)",
-        icon: Palette,
+        icon: Ic.Palette,
         blurb: "The AP Art portfolio, 3D renders and drawings: the creative practice around the engineering.",
         tags: ["AP Art", "3D", "Drawing"],
     },
@@ -161,7 +162,7 @@ export interface Game {
     slug: string;
     title: string;
     status: GameStatus;
-    icon: LucideIcon;
+    icon: PixelComponent;
     blurb: string;
     features: string[];
     /** Set only for games that actually have a route. */
@@ -172,7 +173,7 @@ export interface GameMode {
     id: "daily" | "unlimited" | "incremental" | "tycoon";
     title: string;
     color: string;
-    icon: LucideIcon;
+    icon: PixelComponent;
     tagline: string;
     about: string;
     games: Game[];
@@ -183,7 +184,7 @@ export const GAME_MODES: GameMode[] = [
         id: "daily",
         title: "Daily Games",
         color: "var(--cm-amber)",
-        icon: CalendarDays,
+        icon: Ic.CalendarDays,
         tagline: "One puzzle a day, the same for everyone.",
         about: "A new puzzle every day at midnight Pacific. Guess, share your result, come back tomorrow. Streaks and stats stay in your browser.",
         games: [
@@ -191,7 +192,7 @@ export const GAME_MODES: GameMode[] = [
                 slug: "daily-outline",
                 title: "Daily Outline",
                 status: "playable",
-                icon: Map,
+                icon: Ic.Map,
                 blurb: "One country outline a day, the same for everyone. Six guesses with distance, direction and closeness.",
                 features: ["238 countries and territories", "Streaks and stats", "Shareable result"],
                 href: "/creations/games/outline-guesser?mode=daily",
@@ -200,7 +201,7 @@ export const GAME_MODES: GameMode[] = [
                 slug: "daily-flag",
                 title: "Daily Flag",
                 status: "playable",
-                icon: Flag,
+                icon: Ic.Flag,
                 blurb: "One mystery flag a day, the same for everyone, revealed one tile at a time with distance and direction clues.",
                 features: ["Tile-flip reveal", "3 hints", "Streaks and stats"],
                 href: "/creations/games/flag-guesser?mode=daily",
@@ -211,7 +212,7 @@ export const GAME_MODES: GameMode[] = [
         id: "unlimited",
         title: "Unlimited Games",
         color: "var(--cm-cyan)",
-        icon: InfinityIcon,
+        icon: Ic.InfinityIcon,
         tagline: "Practice mode: as many rounds as you want.",
         about: "The same guessing games with no daily limit, for learning and high scores. Rounds are quick and everything runs in the browser.",
         games: [
@@ -219,7 +220,7 @@ export const GAME_MODES: GameMode[] = [
                 slug: "flag-guesser",
                 title: "Flag Guesser",
                 status: "playable",
-                icon: Flag,
+                icon: Ic.Flag,
                 blurb: "Endless mystery flags from all 239 countries and territories, with difficulty and region filters, tile-flip reveals and hints.",
                 features: ["All 239 flags", "Difficulty and region filters", "Hints and give up"],
                 href: "/creations/games/flag-guesser",
@@ -228,7 +229,7 @@ export const GAME_MODES: GameMode[] = [
                 slug: "outline-guesser",
                 title: "Outline Guesser",
                 status: "playable",
-                icon: Map,
+                icon: Ic.Map,
                 blurb: "Endless country outlines: every country, island and territory, with arrows, distances, hints and a give-up button.",
                 features: ["Hints and give up", "km or miles", "Stats"],
                 href: "/creations/games/outline-guesser",
@@ -245,7 +246,7 @@ export interface ArtCollection {
     id: string;
     title: string;
     color: string;
-    icon: LucideIcon;
+    icon: PixelComponent;
     blurb: string;
     slots: string[];
 }
@@ -255,7 +256,7 @@ export const ART_COLLECTIONS: ArtCollection[] = [
         id: "ap-art",
         title: "AP Art Portfolio",
         color: "var(--cm-violet)",
-        icon: Brush,
+        icon: Ic.Brush,
         blurb: "The Sustained Investigation and Selected Works for AP Art and Design, with the thinking behind each piece.",
         slots: ["Sustained Investigation 1", "Sustained Investigation 2", "Sustained Investigation 3", "Selected Work 1", "Selected Work 2", "Selected Work 3"],
     },
@@ -263,7 +264,7 @@ export const ART_COLLECTIONS: ArtCollection[] = [
         id: "blender",
         title: "3D Renders",
         color: "var(--cm-cyan)",
-        icon: Boxes,
+        icon: Ic.Boxes,
         blurb: "3D renders: renovation studies, environments and experiments.",
         slots: ["Environment study", "Material test", "Lighting study", "Model breakdown", "Wireframe"],
     },
@@ -271,7 +272,7 @@ export const ART_COLLECTIONS: ArtCollection[] = [
         id: "drawings",
         title: "Drawings",
         color: "var(--cm-amber)",
-        icon: Pencil,
+        icon: Ic.Pencil,
         blurb: "Sketches and finished drawings, traditional and digital.",
         slots: ["Sketchbook page", "Figure study", "Landscape", "Ink drawing", "Digital piece", "Doodle"],
     },

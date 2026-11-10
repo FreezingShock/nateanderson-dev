@@ -5,6 +5,7 @@ import { CreationsHead, IdCard } from "@/components/creations-sections";
 import { pageMeta } from "@/lib/seo";
 
 import { NaosBackdrop } from "@/components/cm/naos-art";
+import { PixelIcon } from "@/components/cm/pixel-icons";
 export const revalidate = 60;
 
 export async function generateStaticParams() {
@@ -95,7 +96,7 @@ export default async function ProjectPage({ params }: { params: Promise<{ slug: 
                                 {outbound ? (
                                     <div className="cm-row cta">
                                         <a className="cta-b a" href={outbound.href} target="_blank" rel="noreferrer">
-                                            <i>GO</i><span>{outbound.label}</span><em aria-hidden="true">↗</em>
+                                            <i>GO</i><span>{outbound.label}</span><em aria-hidden="true"><PixelIcon name="external" /></em>
                                         </a>
                                     </div>
                                 ) : (
