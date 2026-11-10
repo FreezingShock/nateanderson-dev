@@ -82,7 +82,7 @@ div.cm-card:hover { transform: none; }
 .cm-rail::before { content: ""; position: absolute; left: 5px; top: 6px; bottom: 6px; border-left: 1px dashed var(--cm-hair-hi); }
 .cm-rail > li { position: relative; list-style: none; }
 .cm-rail > li::before { content: ""; position: absolute; left: -22px; top: 14px; width: 11px; height: 11px; background: var(--cm-void); border: 1px solid var(--cm-hair-hi); }
-.cm-rail > li.now::before { background: var(--cm-cyan); border-color: var(--cm-cyan); animation: cm-blink 1.2s steps(2) infinite; }
+.cm-rail > li.now::before { background: var(--cm-cyan); border-color: var(--cm-cyan); animation: cm-blink var(--cm-d-long) steps(2) infinite; }
 .cm-rail > li.done::before { background: var(--cm-paper); border-color: var(--cm-paper); }
 @media (prefers-reduced-motion: reduce) { .cm-rail > li.now::before { animation: none; } }
 
@@ -136,16 +136,16 @@ div.cm-card:hover { transform: none; }
 .cm-dock .ind {
     position: absolute; top: -1px; bottom: -1px; left: -1px; width: calc((100% + 2px) / var(--tabs));
     background: var(--cm-cyan); transform: translate3d(calc(var(--i) * 100%), 0, 0);
-    transition: transform .5s var(--cm-ease-out), opacity .2s;
+    transition: transform var(--cm-d-wipe) var(--cm-ease-out), opacity var(--cm-d-base);
 }
 .cm-dock .ind[data-off] { opacity: 0; }
 .cm-dock a {
     position: relative; z-index: 1; display: grid; place-items: center; align-content: center; gap: 5px; min-width: 0;
     color: var(--cm-mute); text-decoration: none; -webkit-tap-highlight-color: transparent;
     font: 600 8px/1 var(--cm-mono); letter-spacing: .06em; text-transform: uppercase;
-    transition: color .25s var(--cm-ease);
+    transition: color var(--cm-d-enter) var(--cm-ease);
 }
-.cm-dock a .ic { width: 18px; height: 18px; transition: transform .35s var(--cm-ease-out); }
+.cm-dock a .ic { width: 18px; height: 18px; transition: transform var(--cm-d-enter) var(--cm-ease-out); }
 .cm-dock a:hover { color: var(--cm-fg); }
 .cm-dock a:active .ic { transform: scale(.88); }
 .cm-dock a[data-on] { color: var(--cm-cyan-ink); }

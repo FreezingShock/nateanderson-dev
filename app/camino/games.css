@@ -44,17 +44,17 @@
     from { opacity: 0; transform: translateY(8px) scale(0.9); }
     to { opacity: 1; transform: none; }
 }
-.og-row { animation: ogRowIn 0.4s cubic-bezier(0.22, 1, 0.36, 1) both; }
-.og-cell { animation: ogCellIn 0.4s ease-out both; }
-.og-arrow { animation: ogArrow 0.9s cubic-bezier(0.22, 1, 0.36, 1) both; }
+.og-row { animation: ogRowIn var(--cm-d-enter) cubic-bezier(0.22, 1, 0.36, 1) both; }
+.og-cell { animation: ogCellIn var(--cm-d-enter) ease-out both; }
+.og-arrow { animation: ogArrow var(--cm-d-slow) cubic-bezier(0.22, 1, 0.36, 1) both; }
 
-.og-shape { animation: ogShape 0.7s cubic-bezier(0.22, 1, 0.36, 1) both; }
-.og-shake { animation: ogShake 0.45s ease-in-out; }
-.og-win { animation: ogWin 0.7s ease-out; }
+.og-shape { animation: ogShape var(--cm-d-reveal) cubic-bezier(0.22, 1, 0.36, 1) both; }
+.og-shake { animation: ogShake var(--cm-d-wipe) ease-in-out; }
+.og-win { animation: ogWin var(--cm-d-reveal) ease-out; }
 .og-burst {
-    animation: ogBurst 1.1s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+    animation: ogBurst var(--cm-d-long) cubic-bezier(0.22, 1, 0.36, 1) forwards;
 }
-.og-hint { animation: ogHint 0.4s cubic-bezier(0.22, 1, 0.36, 1) both; }
+.og-hint { animation: ogHint var(--cm-d-enter) cubic-bezier(0.22, 1, 0.36, 1) both; }
 @media (prefers-reduced-motion: reduce) {
     .og-row, .og-cell, .og-arrow, .og-pip, .og-shape, .og-shake, .og-win,
     .og-burst, .og-hint { animation: none; }
@@ -65,7 +65,7 @@
     stroke: var(--cm-void);
     stroke-width: 1;
     stroke-linejoin: round;
-    transition: fill 0.6s ease, opacity 0.6s ease;
+    transition: fill var(--cm-d-count) ease, opacity var(--cm-d-count) ease;
 }
 .nb-path[data-state="center"] { fill: var(--cm-cyan); }
 .nb-path[data-state="hidden"] { fill: var(--cm-dim); }
@@ -81,7 +81,7 @@
     35% { fill: #ffffff; }
     100% { fill: var(--cm-good); }
 }
-.nb-correct { animation: nbCorrect 1.2s ease-out both; }
+.nb-correct { animation: nbCorrect var(--cm-d-long) ease-out both; }
 @keyframes nbToast {
     0% { opacity: 0; transform: translateY(-50%) scale(0.4); }
     25% { opacity: 1; transform: translateY(-50%) scale(1.25); }
@@ -89,7 +89,7 @@
     100% { opacity: 0; transform: translateY(-80%) scale(1); }
 }
 .nb-correct-toast {
-    animation: nbToast 1.4s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+    animation: nbToast var(--cm-d-long) cubic-bezier(0.22, 1, 0.36, 1) forwards;
 }
 @keyframes nbChipPop {
     0% { transform: scale(0.4); }
@@ -99,13 +99,13 @@
 .nb-chip-pop {
     transform-box: fill-box;
     transform-origin: center;
-    animation: nbChipPop 0.6s cubic-bezier(0.22, 1, 0.36, 1) both;
+    animation: nbChipPop var(--cm-d-count) cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 @keyframes nbSlotFlip {
     0% { transform: rotateX(90deg); opacity: 0; }
     100% { transform: rotateX(0); opacity: 1; }
 }
-.nb-slot-flip { animation: nbSlotFlip 0.55s cubic-bezier(0.22, 1, 0.36, 1) both; }
+.nb-slot-flip { animation: nbSlotFlip var(--cm-d-count) cubic-bezier(0.22, 1, 0.36, 1) both; }
 @media (prefers-reduced-motion: reduce) {
     .nb-correct, .nb-correct-toast, .nb-slot-flip { animation: none; }
 }
@@ -113,12 +113,12 @@
 /* ---- Flag Guesser (components/games/flag-guesser.tsx) ---- */
 .fg-board {
     perspective: 900px;
-    transition: gap 0.8s ease;
+    transition: gap var(--cm-d-reveal) ease;
 }
 .fg-tile {
     position: relative;
     transform-style: preserve-3d;
-    transition: transform 0.85s cubic-bezier(0.22, 1, 0.36, 1);
+    transition: transform var(--cm-d-slow) cubic-bezier(0.22, 1, 0.36, 1);
 }
 .fg-tile[data-open="true"] { transform: rotateY(180deg); }
 .fg-face {
@@ -139,7 +139,7 @@
     0%, 100% { box-shadow: inset 0 0 0 0 transparent; }
     50% { box-shadow: inset 0 0 0 2px var(--cm-cyan); }
 }
-.fg-just-flipped { animation: fgGlow 1.1s ease-out 0.5s; }
+.fg-just-flipped { animation: fgGlow var(--cm-d-long) ease-out 0.5s; }
 @media (prefers-reduced-motion: reduce) {
     .fg-tile { transition: none; }
     .fg-just-flipped { animation: none; }
@@ -150,11 +150,11 @@
     from { opacity: 0.3; transform: translateY(-45%); }
     to { opacity: 1; transform: none; }
 }
-.cb-roll { animation: cbRoll 0.12s ease-out both; }
+.cb-roll { animation: cbRoll var(--cm-d-fast) ease-out both; }
 @keyframes cbDice {
     to { transform: rotate(360deg); }
 }
-.cb-dice-spin { animation: cbDice 0.5s linear infinite; }
+.cb-dice-spin { animation: cbDice var(--cm-d-wipe) linear infinite; }
 @media (prefers-reduced-motion: reduce) {
     .cb-roll, .cb-dice-spin { animation: none; }
 }
@@ -298,7 +298,7 @@
 .ctos .g-card:nth-child(3n) .g-cardart { background-image: linear-gradient(33deg, transparent 49.6%, rgba(194, 59, 208, .7) 50%, transparent 50.4%); }
 .ctos .g-grid { grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); }
 .ctos .g-pills { list-style: none; margin: 2px 0 0; padding: 0; }
-.ctos .g-card:hover .g-cardart svg { transform: translateY(-2px); transition: transform .2s var(--cm-ease); }
+.ctos .g-card:hover .g-cardart svg { transform: translateY(-2px); transition: transform var(--cm-d-base) var(--cm-ease); }
 
 /* Flag tiles: the cover is dither on near-black, not a flat grey block. */
 .ctos .fg-cover {

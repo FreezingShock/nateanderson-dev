@@ -28,12 +28,12 @@
   opacity: 1;
   transform: none;
   transition:
-    opacity .5s var(--cm-ease) var(--d, 0ms),
+    opacity var(--cm-d-wipe) var(--cm-ease) var(--d, 0ms),
     transform var(--cm-d-reveal) var(--cm-ease-out) var(--d, 0ms),
-    clip-path .8s var(--cm-ease-cut) var(--d, 0ms);
+    clip-path var(--cm-d-reveal) var(--cm-ease-cut) var(--d, 0ms);
 }
 [data-mx="wipe"][data-in]:not([data-mxd]) { clip-path: inset(0 0 0 0); }
-[data-mx="line"][data-in]:not([data-mxd]) { transition-duration: .9s, .9s, .9s; transition-timing-function: var(--cm-ease-cut); }
+[data-mx="line"][data-in]:not([data-mxd]) { transition-duration: var(--cm-d-slow), .9s, .9s; transition-timing-function: var(--cm-ease-cut); }
 
 /* Variation by position, not by chance: every third section enters a different way. */
 .cm-section:nth-of-type(3n+2) > .cm-wrap[data-mx-stagger] > * { --mx-from: translate3d(calc(var(--cm-slide) * -1), 0, 0); }
@@ -63,7 +63,7 @@
   bottom: .08em;
   width: 2px;
   background: var(--cm-cyan);
-  animation: cm-blink .9s steps(2) infinite;
+  animation: cm-blink var(--cm-d-slow) steps(2) infinite;
 }
 
 /* ---- 2b. Slab reveal and highlight-bar text rise (ctOS title-card move) -----------------------------------------
@@ -74,8 +74,8 @@
 .sl-t { display: inline-block; transform: translate3d(0, 112%, 0); }
 .sl::after { content: ""; position: absolute; inset: 0 0 .1em 0; background: var(--cm-cyan); transform: scaleX(0); transform-origin: left center; pointer-events: none; }
 .sl.paper::after { background: var(--cm-paper); }
-[data-mx="slab"][data-in] .sl-t { animation: cm-slab-text .62s var(--cm-ease-out) calc(var(--d, 0ms) + .26s) both; }
-[data-mx="slab"][data-in] .sl::after { animation: cm-slab-block .72s var(--cm-ease-cut) var(--d, 0ms) both; }
+[data-mx="slab"][data-in] .sl-t { animation: cm-slab-text var(--cm-d-count) var(--cm-ease-out) calc(var(--d, 0ms) + .26s) both; }
+[data-mx="slab"][data-in] .sl::after { animation: cm-slab-block var(--cm-d-reveal) var(--cm-ease-cut) var(--d, 0ms) both; }
 @keyframes cm-slab-text { from { transform: translate3d(0, 112%, 0); } to { transform: none; } }
 @keyframes cm-slab-block {
   0% { transform: scaleX(0); transform-origin: left center; }
@@ -83,20 +83,20 @@
   52% { transform: scaleX(1); transform-origin: right center; }
   100% { transform: scaleX(0); transform-origin: right center; }
 }
-.cm-highlight .hx { display: block; animation: cm-hx-rise .6s var(--cm-ease-out) .24s backwards; }
+.cm-highlight .hx { display: block; animation: cm-hx-rise var(--cm-d-count) var(--cm-ease-out) .24s backwards; }
 .cm-highlight > :nth-child(2) .hx { animation-delay: .32s; } .cm-highlight > :nth-child(3) .hx { animation-delay: .4s; }
 @keyframes cm-hx-rise { from { transform: translate3d(0, 110%, 0); } }
 html[data-boot="full"] .cm-highlight .hx, html[data-boot="quick"] .cm-highlight .hx, html[data-xition="hold"] .cm-highlight .hx { animation: none; transform: translate3d(0, 110%, 0); }
 [data-mx-scr] { white-space: pre-wrap; }
 
 /* ---- 3. Entrance stage: hero and page-head children arrive one after another ---------------------------------- */
-.cm-stage > * { animation: cm-stage-in .8s var(--cm-ease-out) backwards; animation-delay: calc(var(--s, 0) * 80ms); }
+.cm-stage > * { animation: cm-stage-in var(--cm-d-reveal) var(--cm-ease-out) backwards; animation-delay: calc(var(--s, 0) * 80ms); }
 .cm-stage > :nth-child(2) { --s: 1; } .cm-stage > :nth-child(3) { --s: 2; } .cm-stage > :nth-child(4) { --s: 3; }
 .cm-stage > :nth-child(5) { --s: 4; } .cm-stage > :nth-child(n+6) { --s: 5; }
-.cm-hero .cm-tag, .cm-hero .cm-read.float { animation: cm-tag-in .7s var(--cm-ease-out) backwards; animation-delay: .5s; }
+.cm-hero .cm-tag, .cm-hero .cm-read.float { animation: cm-tag-in var(--cm-d-reveal) var(--cm-ease-out) backwards; animation-delay: .5s; }
 .cm-hero .t2 { animation-delay: .62s; } .cm-hero .t3 { animation-delay: .74s; }
-.cm-hero .ring { animation: cm-ring-in 1.3s var(--cm-ease-out) backwards; animation-delay: .1s; }
-.cm-head > .cm-grid-bg, .cm-hero > .cm-grid-bg { animation: cm-fade-in 1.2s var(--cm-ease) backwards; }
+.cm-hero .ring { animation: cm-ring-in var(--cm-d-long) var(--cm-ease-out) backwards; animation-delay: .1s; }
+.cm-head > .cm-grid-bg, .cm-hero > .cm-grid-bg { animation: cm-fade-in var(--cm-d-long) var(--cm-ease) backwards; }
 
 /* Parallax drift (translate property, so it never fights an animation's transform). */
 [data-mx-par] { translate: 0 var(--py, 0px); }
@@ -130,12 +130,12 @@ html[data-dir="fwd"]  { --ox: -30px; --oy: 0px; }
 html[data-dir="back"] { --ox: 30px;  --oy: 0px; }
 html[data-dir="down"] { --ox: 0px; --oy: -22px; }
 html[data-dir="up"]   { --ox: 0px; --oy: 22px; }
-html[data-xition="out"] .cm-main, html[data-xition="out"] .cm-foot { animation: cm-page-out .17s cubic-bezier(.5, 0, .9, .4) forwards; }
+html[data-xition="out"] .cm-main, html[data-xition="out"] .cm-foot { animation: cm-page-out var(--cm-d-base) cubic-bezier(.5, 0, .9, .4) forwards; }
 html[data-xition="hold"] .cm-main, html[data-xition="hold"] .cm-foot { opacity: 0; }
-html[data-xin] .cm-main, html[data-xin] .cm-foot { animation: cm-page-in .55s var(--cm-ease-out) backwards; }
+html[data-xin] .cm-main, html[data-xin] .cm-foot { animation: cm-page-in var(--cm-d-count) var(--cm-ease-out) backwards; }
 html[data-xin] .cm-foot { animation-delay: .08s; }
 html[data-xition="out"] .cm-pgauge, html[data-xition="hold"] .cm-pgauge {
-  transform: none; width: 38%; animation: cm-load 0.9s var(--cm-ease-cut) infinite;
+  transform: none; width: 38%; animation: cm-load var(--cm-d-slow) var(--cm-ease-cut) infinite;
 }
 @keyframes cm-page-out { to { opacity: 0; transform: translate3d(var(--ox), var(--oy), 0); } }
 @keyframes cm-page-in { from { opacity: 0; transform: translate3d(calc(var(--ox) * -1), calc(var(--oy) * -1), 0); } }
@@ -186,13 +186,13 @@ html[data-dir="down"] .cm-wipe .edge { left: 0; right: 0; bottom: 0; height: min
 html[data-dir="up"]   .cm-wipe .edge { left: 0; right: 0; top: 0; height: min(24vh, 180px); -webkit-mask-image: linear-gradient(to top, transparent, #000 85%); mask-image: linear-gradient(to top, transparent, #000 85%); }
 
 /* out: the card covers, its guide line and dither edge arrive, the readout types */
-html[data-dir="fwd"][data-xition="out"]  .cm-wipe, html[data-dir="back"][data-xition="out"] .cm-wipe { animation: nx-cx-in .28s var(--cm-ease-cut) forwards; }
-html[data-dir="down"][data-xition="out"] .cm-wipe, html[data-dir="up"][data-xition="out"]   .cm-wipe { animation: nx-cy-in .28s var(--cm-ease-cut) forwards; }
-html[data-xition="out"] .cm-wipe .edge { animation: nx-fade-in .26s linear forwards; }
-html[data-xition="out"] .cm-wipe .k { animation: nx-k-in .3s linear .08s forwards; }
-html[data-xition="out"] .cm-wipe .k::after, html[data-xition="hold"] .cm-wipe .k::after { animation: nx-blink .5s steps(1) infinite; }
-html[data-xition="out"] .cm-wipe::after, html[data-xition="hold"] .cm-wipe::after { animation: nx-rise .42s var(--cm-ease-cut) .12s forwards; }
-html[data-xition="out"] .cm-wipe::before, html[data-xition="hold"] .cm-wipe::before { animation: nx-guide .46s var(--cm-ease-cut) .02s forwards; }
+html[data-dir="fwd"][data-xition="out"]  .cm-wipe, html[data-dir="back"][data-xition="out"] .cm-wipe { animation: nx-cx-in var(--cm-d-enter) var(--cm-ease-cut) forwards; }
+html[data-dir="down"][data-xition="out"] .cm-wipe, html[data-dir="up"][data-xition="out"]   .cm-wipe { animation: nx-cy-in var(--cm-d-enter) var(--cm-ease-cut) forwards; }
+html[data-xition="out"] .cm-wipe .edge { animation: nx-fade-in var(--cm-d-enter) linear forwards; }
+html[data-xition="out"] .cm-wipe .k { animation: nx-k-in var(--cm-d-enter) linear .08s forwards; }
+html[data-xition="out"] .cm-wipe .k::after, html[data-xition="hold"] .cm-wipe .k::after { animation: nx-blink var(--cm-d-wipe) steps(1) infinite; }
+html[data-xition="out"] .cm-wipe::after, html[data-xition="hold"] .cm-wipe::after { animation: nx-rise var(--cm-d-wipe) var(--cm-ease-cut) .12s forwards; }
+html[data-xition="out"] .cm-wipe::before, html[data-xition="hold"] .cm-wipe::before { animation: nx-guide var(--cm-d-wipe) var(--cm-ease-cut) .02s forwards; }
 /* hold: the card stays full size, the name and readout stay up */
 html[data-xition="hold"] .cm-wipe { transform: none; animation: none; }
 html[data-xition="hold"] .cm-wipe .edge { opacity: 1; }
@@ -200,12 +200,12 @@ html[data-xition="hold"] .cm-wipe .k { opacity: 1; transform: none; }
 html[data-xition="hold"] .cm-wipe::after { opacity: 1; transform: none; }
 html[data-xition="hold"] .cm-wipe::before { opacity: 1; transform: scaleX(1); }
 /* in: the card leaves through the far side, the name, readout and edge fade */
-html[data-dir="fwd"][data-xin]  .cm-wipe { transform-origin: right center; animation: nx-cx-out .5s var(--cm-ease-cut) .04s both; }
-html[data-dir="back"][data-xin] .cm-wipe { transform-origin: left center;  animation: nx-cx-out .5s var(--cm-ease-cut) .04s both; }
-html[data-dir="down"][data-xin] .cm-wipe { transform-origin: center bottom; animation: nx-cy-out .5s var(--cm-ease-cut) .04s both; }
-html[data-dir="up"][data-xin]   .cm-wipe { transform-origin: center top;    animation: nx-cy-out .5s var(--cm-ease-cut) .04s both; }
+html[data-dir="fwd"][data-xin]  .cm-wipe { transform-origin: right center; animation: nx-cx-out var(--cm-d-wipe) var(--cm-ease-cut) .04s both; }
+html[data-dir="back"][data-xin] .cm-wipe { transform-origin: left center;  animation: nx-cx-out var(--cm-d-wipe) var(--cm-ease-cut) .04s both; }
+html[data-dir="down"][data-xin] .cm-wipe { transform-origin: center bottom; animation: nx-cy-out var(--cm-d-wipe) var(--cm-ease-cut) .04s both; }
+html[data-dir="up"][data-xin]   .cm-wipe { transform-origin: center top;    animation: nx-cy-out var(--cm-d-wipe) var(--cm-ease-cut) .04s both; }
 html[data-xin] .cm-wipe::after, html[data-xin] .cm-wipe .k, html[data-xin] .cm-wipe .edge, html[data-xin] .cm-wipe::before {
-  animation: nx-fade-out .18s linear forwards;
+  animation: nx-fade-out var(--cm-d-base) linear forwards;
 }
 
 @keyframes nx-cx-in { from { transform: scaleX(0); } to { transform: scaleX(1); } }
@@ -239,13 +239,13 @@ html[data-boot="full"] .cm-boot-full { display: block; }
     radial-gradient(circle at center, rgba(244, 244, 242, .5) 0 28%, transparent 32%) 0 0 / 5px 5px;
   -webkit-mask-image: linear-gradient(100deg, transparent 8%, #000 100%);
   mask-image: linear-gradient(100deg, transparent 8%, #000 100%);
-  animation: nx-grid-in .3s linear 0s forwards, nx-grid-out .2s linear 1.05s forwards;
+  animation: nx-grid-in var(--cm-d-enter) linear 0s forwards, nx-grid-out var(--cm-d-base) linear 1.05s forwards;
 }
 .cm-boot-full .log {
   position: absolute; left: var(--cm-gutter); top: max(18vh, 96px); display: grid; gap: 8px;
   font: 500 12.5px/1.2 var(--cm-mono); letter-spacing: .04em; color: var(--cm-fg);
 }
-.cm-boot-full .ln { display: block; white-space: nowrap; opacity: 0; transform: translate3d(-8px, 0, 0); animation: nx-ln-in .3s cubic-bezier(.16, 1, .3, 1) forwards; }
+.cm-boot-full .ln { display: block; white-space: nowrap; opacity: 0; transform: translate3d(-8px, 0, 0); animation: nx-ln-in var(--cm-d-enter) cubic-bezier(.16, 1, .3, 1) forwards; }
 .cm-boot-full .l1 { color: var(--cm-cyan); animation-delay: .08s; }
 .cm-boot-full .l2 { animation-delay: .26s; }
 .cm-boot-full .l3 { animation-delay: .44s; }
@@ -255,43 +255,43 @@ html[data-boot="full"] .cm-boot-full { display: block; }
   display: inline-block; background: var(--cm-ctos-block); color: var(--cm-ctos-ink);
   font: 700 clamp(84px, 24vw, 260px)/.86 var(--cm-display); letter-spacing: -.055em;
   padding: .24em .16em .2em .06em; transform: translate3d(0, 105%, 0);
-  animation: nx-title-up .5s var(--cm-ease-cut) .2s forwards;
+  animation: nx-title-up var(--cm-d-wipe) var(--cm-ease-cut) .2s forwards;
 }
 .cm-boot-full .sub {
   display: block; margin-top: 12px; font: 500 12.5px/1 var(--cm-mono); letter-spacing: .12em; text-transform: uppercase;
-  color: var(--cm-fg); animation: nx-fade .3s linear .56s backwards;
+  color: var(--cm-fg); animation: nx-fade var(--cm-d-enter) linear .56s backwards;
 }
 .cm-boot-full .pct {
   position: absolute; right: var(--cm-gutter); bottom: 74px; font: 600 13px/1 var(--cm-mono); letter-spacing: .08em;
   color: var(--cm-fg); font-variant-numeric: tabular-nums;
 }
 .cm-boot-full .pct::after { counter-reset: cm-bp var(--cm-bp); content: counter(cm-bp) "%"; }
-.cm-boot-full .pct::after { animation: nx-bp .8s cubic-bezier(.3, .6, .3, 1) .2s forwards; }
+.cm-boot-full .pct::after { animation: nx-bp var(--cm-d-reveal) cubic-bezier(.3, .6, .3, 1) .2s forwards; }
 .cm-boot-full .track {
   position: absolute; left: var(--cm-gutter); right: var(--cm-gutter); bottom: 60px; height: 2px;
   background: var(--cm-hair); overflow: hidden;
 }
 .cm-boot-full .track i {
   display: block; height: 100%; background: var(--cm-cyan); transform: scaleX(0); transform-origin: left center;
-  animation: nx-grow .8s cubic-bezier(.3, .6, .3, 1) .2s forwards;
+  animation: nx-grow var(--cm-d-reveal) cubic-bezier(.3, .6, .3, 1) .2s forwards;
 }
 .cm-boot-full .skip {
   position: absolute; left: var(--cm-gutter); bottom: 28px; font: 500 11px/1 var(--cm-mono); letter-spacing: .12em;
   text-transform: uppercase; color: var(--cm-fg); opacity: .5;
-  animation: nx-fade .3s linear .5s backwards, nx-fade-out .2s linear 1s forwards;
+  animation: nx-fade var(--cm-d-enter) linear .5s backwards, nx-fade-out var(--cm-d-base) linear 1s forwards;
 }
 .cm-boot-full .scan {
   position: absolute; left: 0; right: 0; top: 50%; height: 2px; margin-top: -1px; background: var(--cm-cyan);
   transform: scaleX(0); opacity: 0; transform-origin: center;
-  animation: nx-scan .32s var(--cm-ease-cut) 1s forwards;
+  animation: nx-scan var(--cm-d-enter) var(--cm-ease-cut) 1s forwards;
 }
-.cm-boot-full .pt { animation: nx-shutter-up .5s var(--cm-ease-cut) 1.1s forwards; }
-.cm-boot-full .pb { animation: nx-shutter-down .5s var(--cm-ease-cut) 1.1s forwards; }
+.cm-boot-full .pt { animation: nx-shutter-up var(--cm-d-wipe) var(--cm-ease-cut) 1.1s forwards; }
+.cm-boot-full .pb { animation: nx-shutter-down var(--cm-d-wipe) var(--cm-ease-cut) 1.1s forwards; }
 
 .cm-boot-quick {
   display: none; position: absolute; inset: 0; background: var(--cm-ctos-block); transform: scaleX(0); transform-origin: left center; will-change: transform;
 }
-html[data-boot="quick"] .cm-boot-quick { display: block; animation: nx-quick .8s var(--cm-ease-cut) forwards; }
+html[data-boot="quick"] .cm-boot-quick { display: block; animation: nx-quick var(--cm-d-reveal) var(--cm-ease-cut) forwards; }
 .cm-boot-quick .word {
   position: absolute; left: var(--cm-gutter); right: var(--cm-gutter); bottom: 18vh; color: var(--cm-ctos-ink);
   font: 700 clamp(44px, 13vw, 150px)/.86 var(--cm-display); letter-spacing: -.055em; text-transform: lowercase;
