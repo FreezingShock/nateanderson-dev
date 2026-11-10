@@ -61,14 +61,6 @@ export const skills: Skill[] = [
         category: "gamedev",
     },
     {
-        name: "3D Modeling",
-        level: 3,
-        description:
-            "3D modeling, rendering and architectural visualization: the renovation studies.",
-        icon: "Palette",
-        category: "design",
-    },
-    {
         name: "CAD & SketchUp",
         level: 2,
         description:
