@@ -161,3 +161,13 @@ Every icon on the site comes from one place: `PixelIcon` (or `px(name)` where a 
 - Hover and focus shimmer the half-tones (phase A and B swap in hard steps), and a few icons react (close turns, chevrons nudge, reset spins back). All of it lives in `app/camino/icons-naos.css` and turns off under `prefers-reduced-motion`.
 - The dock keeps its own stronger per-tab motion in `nav-naos.css`.
 - Remaining typographic arrows inside running text ("Open →") are plain text on purpose.
+## Surfaces and chrome (app/camino/naos-surfaces.css)
+
+Loaded after ctos.css. It makes every panel, card and strip read against the art and gives the chrome one measuring-scale detail.
+
+- Rest: solid `--cm-ctos-panel` ground, `--cm-ctos-edge` border, and `--cm-ctos-lift` (a 1px dark keyline plus a soft drop) so a plate separates from the dither. Box-shadow only, no blur filters.
+- Hover: edge turns cyan at 70%, ground lifts to #181818. Live (`.on`, `aria-pressed`): full cyan border. Focus: one 2px cyan ring, offset 3px.
+- Chips, the skills level legend and the About/History/Blog stats strip get plates instead of hairlines on art.
+- Section heads get a dark pool behind the label, title and blurb (background gradient on a pseudo-element, never a mask).
+- Section rules carry a tick scale after the cyan stub; the footer rule matches. Live/good `.cm-state` labels get a square pip.
+- Defaults use `:where(.ctos)` so pressed chips, paper cards and page rules still win. Page CSS can override freely.
