@@ -39,6 +39,14 @@
 }
 .ctos.st-page .cm-head > .cm-wrap { position: relative; z-index: 1; }
 
+/* Desktop: title and intro on the left, the status card beside them. PageHead is a single-column stack for every page,
+   so Studies lays out its own two columns; the children stay direct kids of .cm-stage, which the entrance targets. */
+@media (min-width: 1000px) {
+  .ctos.st-page .cm-head > .cm-stage { grid-template-columns: minmax(0, 1.15fr) minmax(360px, 0.85fr); column-gap: var(--cm-s8); align-items: start; }
+  .ctos.st-page .cm-head > .cm-stage > * { grid-column: 1; }
+  .ctos.st-page .cm-head > .cm-stage > .st-id { grid-column: 2; grid-row: 1 / span 4; margin-top: 0; max-width: none; align-self: center; }
+}
+
 /* Status card under the lead: the school year as an ID card (reuses the homepage id-* parts). */
 .ctos.st-page .st-id {
   position: relative;
