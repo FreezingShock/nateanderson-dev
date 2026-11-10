@@ -730,7 +730,7 @@ export function OutlineGuesser() {
                                     : "border-border text-muted-foreground hover:text-foreground"
                             )}
                         >
-                            <span className="font-mono text-[10px]">
+                            <span className="font-mono text-[11px]">
                                 {done ? <PixelIcon name="check" className="size-3" /> : n === 4 ? "★" : n}
                             </span>
                             {label}

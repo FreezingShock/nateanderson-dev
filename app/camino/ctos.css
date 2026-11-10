@@ -19,15 +19,22 @@
   /* Deeper card ground for the dashed grid and planned cards (Timeline, Studies). Was a bare #111 in each dashed or planned card rule. */
   --cm-ctos-deep: #111;
   /* Meta text on panels (footer strips, labels). #7d8b93 is 5.3:1 on #131313; --cm-dim is 3.0:1 there. */
-  --cm-ctos-meta: #7d8b93;
-  /* naOS type scale. Page rules snap to these; display sizes (clamp and 26px+) stay per page.
-     Micro was 9px (2026-11-09 readability pass): mono caps at 9px were hard to read on phones. */
-  --cm-ctos-t-micro: 10.5px;  /* signal bars, tick labels, panel footer strips */
-  --cm-ctos-t-tag: 10.5px;    /* mono tags, bar labels */
-  --cm-ctos-t-small: 12px;    /* CTA plates, small mono lines */
-  --cm-ctos-t-body: 14px;     /* body copy, dense rows */
-  --cm-ctos-t-lead: 17px;     /* lead lines */
-  --cm-ctos-t-h3: 22px;       /* sub-heads */
+  --cm-ctos-meta: #8796a0;
+  /* naOS type system (2026-11-10 readability pass). Every page rule snaps to these; display sizes (clamp, 26px+) stay per page.
+     Hierarchy: eyebrow (micro/tag mono caps) > title (display) > intro (lead) > section heading (h3) > body > label (tag) > meta (micro, --cm-ctos-meta).
+     Floor is 11px: nothing is set smaller, small mono caps carry .12em+ tracking and 500+ weight so they hold up on dither. */
+  --cm-ctos-t-micro: 11px;    /* meta: signal bars, tick labels, panel footer strips */
+  --cm-ctos-t-tag: 11.5px;    /* label / eyebrow: mono tags, bar labels, buttons */
+  --cm-ctos-t-small: 12.5px;  /* CTA plates, small mono lines */
+  --cm-ctos-t-ui: 13.5px;     /* dense UI rows, inputs */
+  --cm-ctos-t-body: 15px;     /* body copy */
+  --cm-ctos-t-lead: 18px;     /* intro / lead lines */
+  --cm-ctos-t-h3: 22px;       /* section heads */
+  --cm-ctos-lh-body: 1.6;     /* body line height */
+  --cm-ctos-lh-tight: 1.35;   /* dense rows, lead lines */
+  --cm-ctos-measure: 62ch;    /* max line length for running copy */
+  --cm-ctos-track-label: .14em;  /* mono caps labels */
+  /* Text on the dark ground: primary --cm-fg; secondary --cm-mute (6.6:1 on #131313); meta --cm-ctos-meta (5.3:1); --cm-dim is for ticks and disabled only. */
 }
 
 /* Title card: stacked white blocks, lowercase heavy grotesk, baseline-cropped, lines butt together. */
@@ -316,7 +323,7 @@ body.ctos-on .cm-foot-base { font-family: var(--cm-mono); }
 @media (max-width: 520px) { .ctos .cm-hero .meta.stats > div { min-width: 0; padding-inline: 10px 12px; } .ctos .meta.stats .big { font-size: 28px; } }
 
 /* Accessibility pass: pillar detail sits inside its <dd> now (valid dl markup), so keep it on its own line. */
-.ctos .pf-pillars dd > small { display: block; margin-top: 6px; font-size: 13px; font-weight: 500; letter-spacing: 0; text-transform: none; }
+.ctos .pf-pillars dd > small { display: block; margin-top: 6px; font-size: var(--cm-ctos-t-ui); font-weight: 500; letter-spacing: 0; text-transform: none; }
 /* Footer naOS links slide on hover; hold still for reduced motion (focus ring stays). */
 @media (prefers-reduced-motion: reduce) { body.ctos-on .cm-foot-col a:hover, body.ctos-on .cm-foot-col a:focus-visible { transform: none; } }
 /* Contrast on dark panels and light tiles (dim #56646c is 3.0:1 on #131313; mute and step text on light tiles). */

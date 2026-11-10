@@ -64,7 +64,7 @@
     border-left: 3px solid var(--cm-cyan);
     background: var(--cm-ctos-panel);
     animation: histStrip var(--cm-d-slow) steps(10, end) .55s both;
-    font: 600 10px/1 var(--cm-mono);
+    font: 600 var(--cm-ctos-t-micro)/1 var(--cm-mono);
     letter-spacing: .14em;
     text-transform: uppercase;
     color: #7d8b93;
@@ -104,7 +104,7 @@
 .note {
     display: block;
     margin-top: 8px;
-    font: 500 9.5px/1.35 var(--cm-mono);
+    font: 500 var(--cm-ctos-t-micro)/1.35 var(--cm-mono);
     letter-spacing: .06em;
     text-transform: uppercase;
     color: var(--cm-dim);
@@ -232,7 +232,7 @@ ol.list {
 }
 
 .idxHash {
-    font: 700 10px/1 var(--cm-mono);
+    font: 700 var(--cm-ctos-t-micro)/1 var(--cm-mono);
     letter-spacing: .14em;
     opacity: .55;
 }
@@ -272,7 +272,7 @@ ol.list {
     align-items: center;
     gap: 6px 12px;
     margin: 0;
-    font: 500 11px/1.4 var(--cm-mono);
+    font: 500 var(--cm-ctos-t-tag)/1.4 var(--cm-mono);
     color: var(--cm-dim);
 }
 
@@ -295,7 +295,7 @@ ol.list {
     padding: 3px 5px 4px;
     background: var(--cm-cyan);
     color: var(--cm-cyan-ink);
-    font: 700 10px/1 var(--cm-mono);
+    font: 700 var(--cm-ctos-t-micro)/1 var(--cm-mono);
     letter-spacing: .14em;
     text-transform: uppercase;
 }
@@ -319,7 +319,7 @@ ol.list {
 
 .diff {
     margin: 0;
-    font: 600 11px/1 var(--cm-mono);
+    font: 600 var(--cm-ctos-t-tag)/1 var(--cm-mono);
     letter-spacing: .06em;
     font-variant-numeric: tabular-nums;
 }
@@ -331,7 +331,7 @@ ol.list {
     border: 1px solid var(--cm-hair);
     border-left: 3px solid var(--cm-cyan);
     background: var(--cm-ctos-panel);
-    font-size: 9.5px;
+    font-size: var(--cm-ctos-t-micro);
     letter-spacing: .12em;
 }
 
@@ -378,7 +378,7 @@ ol.list {
     }
 
     .headStrip {
-        font-size: 9.5px;
+        font-size: var(--cm-ctos-t-micro);
         gap: 8px 12px;
     }
 

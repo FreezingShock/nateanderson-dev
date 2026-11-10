@@ -211,7 +211,7 @@
     padding: 9px 14px;
     background: var(--cm-ctos-block);
     color: var(--cm-ctos-ink);
-    font: 700 10.5px/1 var(--cm-mono);
+    font: 700 var(--cm-ctos-t-micro)/1 var(--cm-mono);
     letter-spacing: .14em;
     text-transform: uppercase;
 }
@@ -255,7 +255,7 @@
     counter-increment: gn;
     position: relative;
     padding-left: 30px;
-    font: 400 13px/1.45 var(--cm-display);
+    font: 400 var(--cm-ctos-t-ui)/1.45 var(--cm-display);
     color: var(--cm-mute);
 }
 .ctos .g-notes li::before {
@@ -263,7 +263,7 @@
     position: absolute;
     left: 0;
     top: 1px;
-    font: 700 10.5px/1.45 var(--cm-mono);
+    font: 700 var(--cm-ctos-t-micro)/1.45 var(--cm-mono);
     letter-spacing: .08em;
     color: var(--cm-cyan);
 }

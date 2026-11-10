@@ -140,3 +140,4 @@
 /* Phase column: one track no wider than the viewport. Without this, the phase header's title and meter row set a
    min-content width of about 900px on phones, and the phase panels ran past the right edge of the screen. */
 .tl-page .tl-phases { grid-template-columns: minmax(0, 1fr); min-width: 0; }
+@media (max-width: 760px) { .tl-page .tl-status > span { white-space: normal; overflow-wrap: anywhere; } }

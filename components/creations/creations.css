@@ -58,7 +58,7 @@
     display: block; width: 100%; height: auto; aspect-ratio: 16 / 10; object-fit: cover;
     border: 1px solid var(--cm-hair-hi); background: #0b0906;
 }
-.cr-case-lead figcaption, .cr-case-shot figcaption { font-size: 13px; line-height: 1.5; color: var(--cm-mute); }
+.cr-case-lead figcaption, .cr-case-shot figcaption { font-size: var(--cm-ctos-t-ui); line-height: 1.5; color: var(--cm-mute); }
 .cr-case-gallery { display: grid; gap: 14px; }
 .cr-case-grid { display: grid; gap: 22px; grid-template-columns: minmax(0, 1fr); }
 @media (min-width: 760px) { .cr-case-grid.is-multi { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
