@@ -328,3 +328,17 @@ html[data-boot="quick"] .cm-boot-quick { display: block; animation: nx-quick var
   .cm-boot, .cm-wipe { display: none !important; }
   .cm-pgauge { transition: none; }
 }
+
+/* ---- 8. Press and hover feedback --------------------------------------------------------------------------------
+   Hover eases out on the shared curve; a press snaps in fast (a click should feel immediate) and releases softly.
+   Transform only, so nothing reflows. Touch devices skip hover lift but keep the press. */
+.cm-card { transition-timing-function: var(--cm-ease-out); }
+.cm-btn, .cm-chip, .cta-b { transition-timing-function: var(--cm-ease); }
+.cm-btn:active, .cm-chip:active { transform: translate3d(0, 1px, 0) scale(.985); transition-duration: .06s; }
+.cm-card:active, .cta-b:active { transform: translate3d(0, 0, 0) scale(.99); transition-duration: .06s; }
+@media (hover: none) {
+  .cm-card:hover { transform: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .cm-card:hover, .cm-card:active, .cta-b:hover, .cta-b:active, .cm-btn:active, .cm-chip:active { transform: none; }
+}

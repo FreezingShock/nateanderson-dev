@@ -63,6 +63,7 @@ let lastNavAt = 0;
 /** Mark "a navigation just happened": content that mounts in the next moments reveals like a new page. */
 export function markNavigation() {
     lastNavAt = performance.now();
+    settleScrambles();
 }
 
 // ---------------------------------------------------------------------------------------------------------------
@@ -238,28 +239,66 @@ function onMutations(muts: MutationRecord[]) {
 // [data-mx-scr] text decodes left to right out of random glyphs when it scrolls into view (and again on hover for
 // [data-scr-hover]). The element's real text is the final state and is never changed for assistive tech (the
 // component keeps an sr-only copy). One rAF per running scramble, ~30fps writes, text nodes only.
+//
+// Hard guarantees (a scramble must never be able to stay as glyphs):
+//  - one run per element: starting a run cancels the previous one (frame loop and deadline timer);
+//  - the true text is read from data-final, else the sr-only copy next to it, and only then from the DOM, so a
+//    half-scrambled node can never be mistaken for the real text;
+//  - every run has a deadline timer that writes the final text even if the frame loop stalls or dies;
+//  - hidden tabs, bfcache restores and route changes settle every running run immediately.
 const GLYPHS = "01<>/\\[]{}#%$&@*+=-_:;|!?";
-const running = new WeakMap<HTMLElement, number>();
+interface ScrRun {
+    raf: number;
+    timer: number;
+    final: string;
+}
+const running = new Map<HTMLElement, ScrRun>();
+
+/** The real text of a scramble target. Never derived from text the engine may have scrambled. */
+function finalOf(el: HTMLElement): string {
+    const have = el.getAttribute("data-final");
+    if (have !== null) return have;
+    const sr = el.previousElementSibling;
+    const real = sr instanceof HTMLElement && sr.classList.contains("sr-only") ? sr.textContent : null;
+    const final = real ?? el.textContent ?? "";
+    el.setAttribute("data-final", final);
+    return final;
+}
+
+function endRun(el: HTMLElement, write = true) {
+    const run = running.get(el);
+    if (!run) return;
+    cancelAnimationFrame(run.raf);
+    window.clearTimeout(run.timer);
+    running.delete(el);
+    if (write && el.textContent !== run.final) el.textContent = run.final;
+}
+
+/** Write the real text into every running scramble right now. */
+function settleScrambles() {
+    for (const el of Array.from(running.keys())) endRun(el);
+}
 
 function scramble(el: HTMLElement, ms?: number) {
-    const final = el.getAttribute("data-final") ?? el.textContent ?? "";
-    el.setAttribute("data-final", final);
+    const final = finalOf(el);
+    endRun(el, false);
     if (prefersReducedMotion() || !final.trim()) {
         el.textContent = final;
         return;
     }
-    const prev = running.get(el);
-    if (prev) cancelAnimationFrame(prev);
     const chars = Array.from(final);
-    const dur = ms ?? Math.min(1100, Math.max(420, chars.length * 26));
+    const dur = ms ?? Math.min(1000, Math.max(420, chars.length * 24));
     const lock = chars.map((_, i) => (i / chars.length) * 0.78 + Math.random() * 0.22); // when each char resolves (0-1)
     const t0 = performance.now();
     let lastW = 0;
+    const run: ScrRun = { raf: 0, timer: 0, final };
+    // Deadline: even if the frame loop never runs again (stalled rAF, throttled tab), the real text lands.
+    run.timer = window.setTimeout(() => endRun(el), dur + 400);
     const tick = (now: number) => {
+        if (running.get(el) !== run) return;
         const p = clamp01((now - t0) / dur);
         if (p >= 1) {
-            el.textContent = final;
-            running.delete(el);
+            endRun(el);
             return;
         }
         if (now - lastW >= 32) {
@@ -271,9 +310,10 @@ function scramble(el: HTMLElement, ms?: number) {
             }
             el.textContent = out;
         }
-        running.set(el, requestAnimationFrame(tick));
+        run.raf = requestAnimationFrame(tick);
     };
-    running.set(el, requestAnimationFrame(tick));
+    running.set(el, run);
+    run.raf = requestAnimationFrame(tick);
 }
 
 function onScrIO(entries: IntersectionObserverEntry[]) {
@@ -348,8 +388,7 @@ interface RxItem {
 function registerRx(el: HTMLElement) {
     const scr = el.hasAttribute("data-rx-scr");
     const sib = el.parentElement ? Array.prototype.indexOf.call(el.parentElement.children, el) : 0;
-    const final = el.getAttribute("data-final") ?? el.textContent ?? "";
-    if (scr) el.setAttribute("data-final", final);
+    const final = scr ? finalOf(el) : "";
     const chars = scr ? Array.from(final) : [];
     rxs.set(el, {
         el,
@@ -398,10 +437,14 @@ function setRx(it: RxItem, p: number, now: number) {
     it.p = p;
 }
 
+/** Hover scramble: once when the pointer enters the element, again only after it has left and come back. Moving
+ *  between children, or resting on it, never re-triggers (pointerover bubbles, so the origin is checked). */
 function onHoverScr(ev: PointerEvent) {
     if (ev.pointerType === "touch") return;
     const el = (ev.target as Element | null)?.closest?.("[data-scr-hover]");
-    if (!el || !(el instanceof HTMLElement) || running.has(el)) return;
+    if (!el || !(el instanceof HTMLElement)) return;
+    const from = ev.relatedTarget;
+    if (from instanceof Node && el.contains(from)) return;
     const t = el.querySelector<HTMLElement>("[data-scr-text]") ?? el;
     scramble(t, 380);
 }
@@ -412,6 +455,8 @@ function schedule() {
 }
 
 let lastT = 0;
+let lastScrollAt = -1e9; // when the page last scrolled; scrubbed text that is left half-decoded resolves once it is quiet
+let idleTimer = 0;
 let gaugeEl: HTMLElement | null = null;
 function pageGauge(): HTMLElement | null {
     if (!gaugeEl || !gaugeEl.isConnected) gaugeEl = document.querySelector<HTMLElement>(".cm-pgauge");
@@ -482,6 +527,9 @@ function frame(now: number) {
             // Scrambled text decodes only while its line is entering at the bottom edge. Once it is past the read line
             // it is fully legible, so text the reader can see is never left as glyphs.
             p = clamp01((vh * SCR_ENTER - r.top) / (vh * (SCR_ENTER - READ_LINE)));
+            // A line that stops scrolling inside the decode band (or loads there) must not stay glyphs: once the page
+            // has been still for a moment it finishes decoding on its own. Scrolling again re-scrubs it as before.
+            if (p > 0 && p < 1 && now - lastScrollAt > 350) p = 1;
         } else {
             if (Number.isNaN(it.ref)) {
                 const base = vh * 0.97 - it.off;
@@ -503,7 +551,7 @@ function frame(now: number) {
         }
         if (!it.intro && it.p >= 0) {
             const tgt = p;
-            if (Math.abs(tgt - it.p) < 0.004) p = tgt;
+            if (Math.abs(tgt - it.p) < (it.scr && tgt >= 1 ? 0.04 : 0.004)) p = tgt; // decoded text lands, it does not asymptote
             else {
                 p = it.p + (tgt - it.p) * k;
                 again = true;
@@ -552,7 +600,20 @@ export function start(): () => void {
     );
 
     const onScroll = () => schedule();
-    addEventListener("scroll", onScroll, { passive: true });
+    const onUserScroll = () => {
+        lastScrollAt = performance.now();
+        window.clearTimeout(idleTimer);
+        idleTimer = window.setTimeout(schedule, 400);
+        schedule();
+    };
+    // A hidden or restored page has stalled timers and frames: land every scramble on its real text and re-measure.
+    const onVisible = () => {
+        settleScrambles();
+        schedule();
+    };
+    addEventListener("scroll", onUserScroll, { passive: true });
+    document.addEventListener("visibilitychange", onVisible);
+    addEventListener("pageshow", onVisible);
     addEventListener("resize", onScroll, { passive: true });
     addEventListener("popstate", markNavigation);
     document.addEventListener("pointerover", onHoverScr, { passive: true });
@@ -578,7 +639,11 @@ export function start(): () => void {
 
     return () => {
         started = false;
-        removeEventListener("scroll", onScroll);
+        removeEventListener("scroll", onUserScroll);
+        document.removeEventListener("visibilitychange", onVisible);
+        removeEventListener("pageshow", onVisible);
+        window.clearTimeout(idleTimer);
+        settleScrambles();
         removeEventListener("resize", onScroll);
         removeEventListener("popstate", markNavigation);
         document.removeEventListener("pointerover", onHoverScr);
