@@ -11,7 +11,6 @@ import { MotionRoot } from "@/components/cm/motion-root";
 import { CtosBody } from "@/components/cm/ctos-body";
 import { SiteFooter } from "@/components/site-footer";
 import { SoundProvider } from "@/components/sound-provider";
-import { JOURNEY_END, JOURNEY_START, progressBetween } from "@/lib/timeline-data";
 
 // Camino type: Helvetica Neue first (Arimo is the metric-compatible fallback where Helvetica is absent),
 // IBM Plex Mono for every label, number, tag and button.
@@ -59,7 +58,6 @@ export const viewport: Viewport = {
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
-    const pct = Math.round(progressBetween(JOURNEY_START, JOURNEY_END) * 100);
     return (
         <html lang="en" className={`cm ${arimo.variable} ${plexMono.variable}`} suppressHydrationWarning>
             <head>
@@ -80,7 +78,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
                     <Film />
                     <MotionRoot />
                     <CtosBody />
-                    <Bar initialPct={pct} />
+                    <Bar />
                     <main id="main" className="cm-main">{children}</main>
                     <SiteFooter />
                     <Dock />

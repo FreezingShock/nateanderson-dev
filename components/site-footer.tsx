@@ -4,7 +4,6 @@ import { DiscordLogoIcon, InstagramLogoIcon } from "@radix-ui/react-icons";
 import { identity } from "@/lib/content";
 import { navItems } from "@/lib/nav";
 import { NateMark } from "@/components/cm/mark";
-import { Scramble } from "@/components/cm/motion";
 
 // Footer-only copy, kept separate from identity.tagline (used by metadata, the OG image and the manifest).
 const FOOTER_TAGLINE =
@@ -39,20 +38,12 @@ const ABOUT_LINKS = [
 export function SiteFooter() {
     return (
         <footer className="cm-foot" id="footer">
-            <div className="cm-wrap na-bar" aria-hidden="true">
-                <span className="na-dot" />
-                <Scramble replay text="naOS // session end" />
-                <span className="na-fill" />
-                <span>33.7N 117.9W</span>
-                <span className="na-hide">uplink / stable</span>
-            </div>
             <div className="cm-wrap cm-foot-wrap">
                 <div className="cm-foot-top">
                     <div className="cm-foot-brand">
                         <NateMark sub="nateanderson.dev" />
                         <p className="cm-foot-tagline">{FOOTER_TAGLINE}</p>
                         <div className="cm-foot-status">
-                            <span className="cm-read live">Class of 2027</span>
                             <span className="cm-coord">Southern California</span>
                         </div>
                     </div>
