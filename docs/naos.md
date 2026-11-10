@@ -93,6 +93,16 @@ first group in the catalogue: square and sine blips at fixed Hz, low-passed, plu
 - Nothing plays before the first click, tap or key press. Keep new interface sounds in this group, use `tier 0` for ambient ticks, and give anything new a rate-limit `gap`.
 - The games' pentatonic set further down the file is separate and untouched by the naOS look.
 
+## Command console
+A terminal-style panel that drives the site. Open it with the backtick key (or Cmd/Ctrl+J), the `console` button in the top bar (an icon-only tap target on phones), or `window.dispatchEvent(new Event("cm:console"))`. Esc, `exit` or the backtick again close it; focus returns to where it was.
+- Code: `components/cm/console-entry.tsx` (keys, button hook, lazy `next/dynamic` load, so nothing ships until first open) and `components/cm/console.tsx` + `console.css`. It reuses the search panel's `.nv-*` chrome and key caps.
+- Everything printed comes from data the site already has (`lib/nav.ts`, `lib/identity.ts`, `lib/about-data.ts`, `lib/creations-data.ts`). Add no copy that is not on a page. Nothing from the private Nexus dashboard; Nexus appears only as its public project page and playnexus.dev.
+- Commands: `help [cmd]`, `ls [pages|projects|games|sections|<page>]`, `open <place>` (also `cd`, `go`; partial names work), `whoami`, `now`, `skills`, `status`, `sound [on|off]`, `history`, `random`, `back`, `clear` (Ctrl+L), `exit`. Hidden: `sudo`, `rm`, `naos`. Unknown commands get a "did you mean" hint.
+- Tab completes commands and places; Up/Down recall history (kept for the visit, not stored). Listed rows are links.
+- Output lines are drawn with a stepped `clip-path` animation on plain nodes (not `data-rx` items), so the text is always in the DOM for screen readers; `prefers-reduced-motion` shows lines at once. The output is a polite `role="log"`.
+- On phones the panel follows `visualViewport`, so it sits above the keyboard; the input is 16px so iOS does not zoom, and quick-command chips replace the Tab key.
+- It does not touch the password gate: it only navigates to routes the gate already protects.
+
 ## Perf rules
 Animate only `transform` and `opacity` (plus clip-path for slabs). No animated `filter: blur`. One rAF loop, reads then
 writes, no layout thrash. Touch and narrow screens (`hover: none` or max-width 900px) get still grain and solid panels

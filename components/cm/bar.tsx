@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState, type CSSProperties } from "react";
+import { openConsole } from "@/components/cm/console-entry";
 import { PIXEL_FOR, PixelIcon } from "@/components/cm/pixel-icons";
 import { NateGlyph } from "@/components/cm/mark";
 import { navItems } from "@/lib/nav";
@@ -72,6 +73,11 @@ export function Bar() {
                     <PixelIcon name="search" size={24} />
                     <span>search</span>
                     <kbd className="nv-key" aria-hidden="true">/</kbd>
+                </button>
+                <button type="button" className="nv-term" onClick={openConsole} aria-label="Open the command console" aria-haspopup="dialog">
+                    <PixelIcon name="terminal" size={24} />
+                    <span>console</span>
+                    <kbd className="nv-key" aria-hidden="true">`</kbd>
                 </button>
                 <button
                     type="button"

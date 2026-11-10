@@ -1,10 +1,12 @@
 import type { Metadata, Viewport } from "next";
+import { preload } from "react-dom";
 import { Arimo, IBM_Plex_Mono } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "@/components/theme-provider";
 import { Bar, Dock } from "@/components/cm/bar";
 import { Film } from "@/components/cm/film";
 import { Launcher } from "@/components/cm/launcher";
+import { ConsoleEntry } from "@/components/cm/console-entry";
 import { SiteMap } from "@/components/cm/site-map";
 import { Boot, BOOT_SCRIPT } from "@/components/cm/boot";
 import { MotionRoot } from "@/components/cm/motion-root";
@@ -58,6 +60,11 @@ export const viewport: Viewport = {
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
+    // The header bands and section washes are CSS backgrounds, which the browser only fetches once it lays them out.
+    // They are a few kilobytes each, so asking for them up front keeps them from arriving after the page paints.
+    for (const n of ["band-track", "band-rail", "band-seam", "wash-a", "wash-b", "wash-c", "wash-d"]) {
+        preload(`/naos/${n}.webp`, { as: "image" });
+    }
     return (
         <html lang="en" className={`cm ${arimo.variable} ${plexMono.variable}`} suppressHydrationWarning>
             <head>
@@ -84,6 +91,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
                     <Dock />
                     <SiteMap />
                     <Launcher />
+                    <ConsoleEntry />
                     <SoundProvider />
                 </ThemeProvider>
             </body>
