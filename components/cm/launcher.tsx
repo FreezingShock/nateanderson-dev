@@ -17,6 +17,19 @@ interface Entry {
 
 const PAGE_GROUP = "Pages";
 
+/** Wraps the part of a label that matches the query. */
+function mark(label: string, term: string) {
+    const at = term ? label.toLowerCase().indexOf(term) : -1;
+    if (at < 0) return label;
+    return (
+        <>
+            {label.slice(0, at)}
+            <mark>{label.slice(at, at + term.length)}</mark>
+            {label.slice(at + term.length)}
+        </>
+    );
+}
+
 /** `/` search: jump to any page, game or section. Esc closes, arrows + Enter pick. Results are grouped. */
 export function Launcher() {
     const [open, setOpen] = useState(false);
@@ -39,10 +52,23 @@ export function Launcher() {
         ];
     }, []);
 
+    const term = q.trim().toLowerCase();
+    // With a query, results are ranked (label starts with it, label contains it, then hint or group) and shown flat.
     const shown = useMemo(() => {
-        const v = q.trim().toLowerCase();
-        return v ? entries.filter((e) => (e.label + " " + e.hint + " " + e.group).toLowerCase().includes(v)) : entries;
-    }, [entries, q]);
+        if (!term) return entries;
+        const rank = (e: Entry) => {
+            const l = e.label.toLowerCase();
+            if (l.startsWith(term)) return 0;
+            if (l.split(/[\s&/-]+/).some((w) => w.startsWith(term))) return 1;
+            if (l.includes(term)) return 2;
+            return (e.hint + " " + e.group).toLowerCase().includes(term) ? 3 : 4;
+        };
+        return entries
+            .map((e, i) => ({ e, i, r: rank(e) }))
+            .filter((x) => x.r < 4)
+            .sort((a, b) => a.r - b.r || a.i - b.i)
+            .map((x) => x.e);
+    }, [entries, term]);
 
     const show = useCallback(() => {
         returnTo.current = document.activeElement as HTMLElement | null;
@@ -81,6 +107,16 @@ export function Launcher() {
         if (open) input.current?.focus();
     }, [open]);
 
+    // Lock page scroll behind the panel.
+    useEffect(() => {
+        if (!open) return;
+        const prev = document.documentElement.style.overflow;
+        document.documentElement.style.overflow = "hidden";
+        return () => {
+            document.documentElement.style.overflow = prev;
+        };
+    }, [open]);
+
     // Keep the highlighted row in view while arrowing through a long list.
     useEffect(() => {
         if (!open) return;
@@ -102,10 +138,34 @@ export function Launcher() {
                 if (e.target === e.currentTarget) hide();
             }}
         >
-            <div className="nv-panel" role="dialog" aria-modal="true" aria-label="Search the site">
+            <div
+                className="nv-panel nv-find"
+                role="dialog"
+                aria-modal="true"
+                aria-label="Search the site"
+                onKeyDown={(e) => {
+                    // Keep Tab inside the panel: search field and close button.
+                    if (e.key !== "Tab") return;
+                    const first = input.current;
+                    const last = e.currentTarget.querySelector<HTMLElement>(".nv-close");
+                    if (!first || !last) return;
+                    if (e.shiftKey && document.activeElement === first) {
+                        e.preventDefault();
+                        last.focus();
+                    } else if (!e.shiftKey && document.activeElement === last) {
+                        e.preventDefault();
+                        first.focus();
+                    }
+                }}
+            >
                 <div className="nv-head">
                     <span>search // jump to</span>
-                    <kbd className="nv-key">esc</kbd>
+                    <span className="nv-count" aria-live="polite">
+                        {term ? `${shown.length} ${shown.length === 1 ? "match" : "matches"}` : `${shown.length} places`}
+                    </span>
+                    <button type="button" className="nv-close" onClick={hide} aria-label="Close search">
+                        <kbd className="nv-key">esc</kbd>
+                    </button>
                 </div>
                 <div className="nv-input">
                     <span className="nv-prompt" aria-hidden="true">&gt;</span>
@@ -117,6 +177,11 @@ export function Launcher() {
                         autoCorrect="off"
                         spellCheck={false}
                         aria-label="Search the site"
+                        role="combobox"
+                        aria-expanded="true"
+                        aria-controls="nv-results"
+                        aria-activedescendant={shown[sel] ? `nv-opt-${sel}` : undefined}
+                        enterKeyHint="go"
                         onChange={(e) => {
                             setQ(e.target.value);
                             setSel(0);
@@ -135,15 +200,19 @@ export function Launcher() {
                         }}
                     />
                 </div>
-                <ul className="nv-list">
+                <ul className="nv-list" id="nv-results" role="listbox" aria-label="Results">
                     {shown.map((e, i) => {
-                        const head = e.group !== lastGroup;
+                        const head = !term && e.group !== lastGroup;
                         lastGroup = e.group;
                         return (
-                            <li key={e.href} className="nv-item">
+                            <li key={e.href} className="nv-item" role="presentation">
                                 {head && <div className="nv-group" aria-hidden="true">{e.group}</div>}
                                 <Link
                                     href={e.href}
+                                    id={`nv-opt-${i}`}
+                                    role="option"
+                                    aria-selected={i === sel}
+                                    tabIndex={-1}
                                     data-sel={i === sel ? "" : undefined}
                                     className={i === sel ? "on" : undefined}
                                     onMouseEnter={() => setSel(i)}
@@ -151,21 +220,22 @@ export function Launcher() {
                                 >
                                     <span className="nv-ix">{e.ix}</span>
                                     <span className="nv-txt">
-                                        <b>{e.label}</b>
+                                        <b>{mark(e.label, term)}</b>
                                         {e.hint && <small>{e.hint}</small>}
                                     </span>
+                                    {term && <span className="nv-grp">{e.group}</span>}
                                 </Link>
                             </li>
                         );
                     })}
                     {shown.length === 0 && (
-                        <li className="nv-empty">Nothing matches “{q}”.</li>
+                        <li className="nv-empty" role="presentation">Nothing matches “{q.trim()}”.</li>
                     )}
                 </ul>
-                <div className="nv-foot">
-                    <span>↑ ↓ move</span>
-                    <span>↵ open</span>
-                    <span>esc close</span>
+                <div className="nv-foot" aria-hidden="true">
+                    <span><kbd className="nv-key">↑</kbd><kbd className="nv-key">↓</kbd>move</span>
+                    <span><kbd className="nv-key">↵</kbd>open</span>
+                    <span><kbd className="nv-key">esc</kbd>close</span>
                 </div>
             </div>
         </div>
