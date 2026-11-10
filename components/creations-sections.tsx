@@ -42,7 +42,7 @@ export function CreationsShell({
     children: ReactNode;
 }) {
     return (
-        <div className={variant ? `ctos cr-${variant}` : "ctos"}>
+        <div className={variant ? `ctos cr-${variant}` : "ctos"} data-entrance="assemble">
             <CreationsHead label={eyebrow} title={title} lead={description} back={back} aside={aside} backdrop={backdrop} />
             {children}
         </div>

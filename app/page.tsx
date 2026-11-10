@@ -21,7 +21,7 @@ export default function Home() {
     const playable = allGames().filter((g) => g.status === "playable").length;
 
     return (
-        <div className="ctos">
+        <div className="ctos" data-entrance="dither">
             <NaosBackdrop src="/naos/bg-home.webp" />
             <header className="cm-hero" id="top">
                 <div className="cm-grid-bg" aria-hidden="true" />

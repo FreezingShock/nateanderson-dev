@@ -1,0 +1,93 @@
+/* ==========================================================================
+   Per-page load-in entrances (naOS). Each top-level page sets data-entrance on its .ctos root and gets its own
+   short entrance for the hero stage and the first sections. Transform and opacity only, no clip-path or mask.
+   Entrances wait until the title card has lifted and the boot has finished, so they start in sync with the reveal
+   and never run under the cover. Pages without data-entrance keep the shared .cm-stage entrance from motion.css.
+   ========================================================================== */
+
+/* Held: hidden until the card lifts or the boot ends. Mirrors the hold and boot rules in motion.css. */
+html[data-xition="hold"] [data-entrance] .cm-stage > *,
+html[data-xition="hold"] [data-entrance] > section,
+html[data-boot="full"] [data-entrance] .cm-stage > *,
+html[data-boot="full"] [data-entrance] > section,
+html[data-boot="quick"] [data-entrance] .cm-stage > *,
+html[data-boot="quick"] [data-entrance] > section {
+  opacity: 0;
+}
+
+/* Stagger index: hero items step by .08s; the first three sections follow the hero. */
+[data-entrance] > section:nth-of-type(1) { --s: 2; }
+[data-entrance] > section:nth-of-type(2) { --s: 3; }
+[data-entrance] > section:nth-of-type(3) { --s: 4; }
+
+/* Gate: the page is ready when no transition is running and the boot is done. */
+html:not([data-xition]):not([data-boot="full"]):not([data-boot="quick"]) [data-entrance="dither"] .cm-stage > * {
+  animation: ent-dither .5s steps(4, end) backwards; animation-delay: calc(var(--s, 0) * 70ms);
+}
+html:not([data-xition]):not([data-boot="full"]):not([data-boot="quick"]) [data-entrance="dither"] > section:nth-of-type(-n+3) {
+  animation: ent-dither .6s steps(5, end) backwards; animation-delay: calc(var(--s, 0) * 90ms);
+}
+
+html:not([data-xition]):not([data-boot="full"]):not([data-boot="quick"]) [data-entrance="assemble"] .cm-stage > * {
+  animation: ent-assemble .7s var(--cm-ease-out) backwards; animation-delay: calc(var(--s, 0) * 80ms);
+}
+html:not([data-xition]):not([data-boot="full"]):not([data-boot="quick"]) [data-entrance="assemble"] > section:nth-of-type(-n+3) {
+  animation: ent-assemble .8s var(--cm-ease-out) backwards; animation-delay: calc(var(--s, 0) * 110ms);
+}
+
+html:not([data-xition]):not([data-boot="full"]):not([data-boot="quick"]) [data-entrance="tick"] .cm-stage > * {
+  animation: ent-tick .6s var(--cm-ease-out) backwards; animation-delay: calc(var(--s, 0) * 90ms);
+}
+html:not([data-xition]):not([data-boot="full"]):not([data-boot="quick"]) [data-entrance="tick"] > section:nth-of-type(-n+3) {
+  animation: ent-tick .7s var(--cm-ease-out) backwards; animation-delay: calc(var(--s, 0) * 100ms);
+}
+
+html:not([data-xition]):not([data-boot="full"]):not([data-boot="quick"]) [data-entrance="stack"] .cm-stage > * {
+  animation: ent-stack .8s var(--cm-ease-out) backwards; animation-delay: calc(var(--s, 0) * 110ms);
+}
+html:not([data-xition]):not([data-boot="full"]):not([data-boot="quick"]) [data-entrance="stack"] > section:nth-of-type(-n+3) {
+  animation: ent-stack .9s var(--cm-ease-out) backwards; animation-delay: calc(var(--s, 0) * 130ms);
+}
+
+html:not([data-xition]):not([data-boot="full"]):not([data-boot="quick"]) [data-entrance="type"] .cm-stage > * {
+  animation: ent-type .5s steps(6, end) backwards; animation-delay: calc(var(--s, 0) * 120ms);
+}
+html:not([data-xition]):not([data-boot="full"]):not([data-boot="quick"]) [data-entrance="type"] > section:nth-of-type(-n+3) {
+  animation: ent-type .6s steps(6, end) backwards; animation-delay: calc(var(--s, 0) * 120ms);
+}
+
+html:not([data-xition]):not([data-boot="full"]):not([data-boot="quick"]) [data-entrance="log"] .cm-stage > * {
+  animation: ent-log .4s steps(3, end) backwards; animation-delay: calc(var(--s, 0) * 100ms);
+}
+html:not([data-xition]):not([data-boot="full"]):not([data-boot="quick"]) [data-entrance="log"] > section:nth-of-type(-n+3) {
+  animation: ent-log .5s steps(3, end) backwards; animation-delay: calc(var(--s, 0) * 120ms);
+}
+
+html:not([data-xition]):not([data-boot="full"]):not([data-boot="quick"]) [data-entrance="lean"] .cm-stage > * {
+  animation: ent-lean .9s var(--cm-ease-out) backwards; animation-delay: calc(var(--s, 0) * 110ms);
+}
+html:not([data-xition]):not([data-boot="full"]):not([data-boot="quick"]) [data-entrance="lean"] > section:nth-of-type(-n+3) {
+  animation: ent-lean 1s var(--cm-ease-out) backwards; animation-delay: calc(var(--s, 0) * 130ms);
+}
+
+html:not([data-xition]):not([data-boot="full"]):not([data-boot="quick"]) [data-entrance="tile"] .cm-stage > * {
+  animation: ent-tile .5s var(--cm-ease-out) backwards; animation-delay: calc(var(--s, 0) * 70ms);
+}
+html:not([data-xition]):not([data-boot="full"]):not([data-boot="quick"]) [data-entrance="tile"] > section:nth-of-type(-n+3) {
+  animation: ent-tile .6s var(--cm-ease-out) backwards; animation-delay: calc(var(--s, 0) * 90ms);
+}
+
+/* The keyframes. Each variant has its own motion, so the pages do not share one entrance. */
+@keyframes ent-dither { from { opacity: 0; transform: translate3d(0, 8px, 0); } to { opacity: 1; transform: none; } }
+@keyframes ent-assemble { from { opacity: 0; transform: translate3d(0, 14px, 0) scale(.97); } to { opacity: 1; transform: none; } }
+@keyframes ent-tick { from { opacity: 0; transform: translate3d(-24px, 0, 0); } to { opacity: 1; transform: none; } }
+@keyframes ent-stack { from { opacity: 0; transform: translate3d(0, 32px, 0); } to { opacity: 1; transform: none; } }
+@keyframes ent-type { from { opacity: 0; transform: translate3d(0, 4px, 0); } to { opacity: 1; transform: none; } }
+@keyframes ent-log { from { opacity: 0; } to { opacity: 1; } }
+@keyframes ent-lean { from { opacity: 0; transform: translate3d(18px, 0, 0); } to { opacity: 1; transform: none; } }
+@keyframes ent-tile { from { opacity: 0; transform: scale(.94); } to { opacity: 1; transform: none; } }
+
+/* Reduced motion: no entrance, everything shown as-is. */
+@media (prefers-reduced-motion: reduce) {
+  [data-entrance] .cm-stage > *, [data-entrance] > section { animation: none !important; opacity: 1 !important; transform: none !important; }
+}
