@@ -115,6 +115,11 @@
     --dither: conic-gradient(var(--cm-cyan) 25%, transparent 0 50%, var(--cm-cyan) 0 75%, transparent 0) 0 0 / 4px 4px;
 }
 
+/* During a page change the title card covers the screen (z-index 40). Lift the dock above it so the plate's move to the
+   next tab is seen on the way out, not only after the new page arrives. Scoped to transitions; otherwise the dock keeps
+   its normal layer, below the boot and the search panel. */
+html[data-xition] .cm-dock { z-index: calc(var(--cm-z-curtain) + 1); }
+
 /* The plate. It travels with a duration that grows with the distance, with a quick start and a soft landing. Four cyan
    corner ticks sit inside it like a HUD target; they blink while the next page is still loading. */
 .cm-dock .ind {

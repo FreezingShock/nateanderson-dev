@@ -123,22 +123,15 @@ html[data-boot="full"] .cm-grid-bg, html[data-boot="quick"] .cm-grid-bg, html[da
 
 /* ---- 5. Page change: a white title card wipes across the screen in the direction of travel, the destination's
    name is set on it in heavy lowercase, then it wipes off the far side and the new page arrives.
-   Out: page fades (170ms) while the card covers (260ms). Hold: card stays, name shown, route loads.
+   Out: the page stays put while the card covers it (260ms). Hold: card stays, name shown, route loads.
    In: card exits (460ms) and the new page's entrance runs. The latest click always retargets (MotionRoot).
    Direction: fwd/back along nav order, down/up between a section and its sub-pages. Transform and opacity only. */
-html[data-dir="fwd"]  { --ox: -30px; --oy: 0px; }
-html[data-dir="back"] { --ox: 30px;  --oy: 0px; }
-html[data-dir="down"] { --ox: 0px; --oy: -22px; }
-html[data-dir="up"]   { --ox: 0px; --oy: 22px; }
-html[data-xition="out"] .cm-main, html[data-xition="out"] .cm-foot { animation: cm-page-out var(--cm-d-base) cubic-bezier(.5, 0, .9, .4) forwards; }
+/* The page itself does not move: a whole-page transform animates a layer as tall as the page, which dropped frames
+   on every switch. The card carries the motion, and each page's own entrance (entrances.css) does the rest. */
 html[data-xition="hold"] .cm-main, html[data-xition="hold"] .cm-foot { opacity: 0; }
-html[data-xin] .cm-main, html[data-xin] .cm-foot { animation: cm-page-in var(--cm-d-count) var(--cm-ease-out) backwards; }
-html[data-xin] .cm-foot { animation-delay: .08s; }
 html[data-xition="out"] .cm-pgauge, html[data-xition="hold"] .cm-pgauge {
   transform: none; width: 38%; animation: cm-load var(--cm-d-slow) var(--cm-ease-cut) infinite;
 }
-@keyframes cm-page-out { to { opacity: 0; transform: translate3d(var(--ox), var(--oy), 0); } }
-@keyframes cm-page-in { from { opacity: 0; transform: translate3d(calc(var(--ox) * -1), calc(var(--oy) * -1), 0); } }
 @keyframes cm-load { from { translate: -100% 0; } to { translate: 270% 0; } }
 
 /* The card: one white title card carries the trip. Hidden = scaled to zero.
