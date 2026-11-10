@@ -37,7 +37,7 @@
 .cm-mark .slab i { background: var(--cm-paper); } .cm-mark .slab i:last-child { background: var(--cm-cyan); width: 70%; }
 .cm-mark .word { display: flex; flex-direction: column; justify-content: center; }
 .cm-mark b { font: 800 18px/.95 var(--cm-display); letter-spacing: -.01em; }
-.cm-mark small { font: 500 9px/1.4 var(--cm-mono); letter-spacing: .22em; color: var(--cm-mute); text-transform: uppercase; margin-top: 3px; }
+.cm-mark small { font: 500 10px/1.4 var(--cm-mono); letter-spacing: .22em; color: var(--cm-mute); text-transform: uppercase; margin-top: 3px; }
 .cm-mark.lg .slab { width: 50px; gap: 3px; } .cm-mark.lg b { font-size: 25px; }
 
 /* ---- Panel: frosted glass, hairline border, "+" registration ticks ------- */
@@ -107,7 +107,7 @@
 .cm-card .vis img, .cm-card .vis svg { width: 100%; height: 100%; object-fit: cover; display: block; }
 .cm-card b { font: 600 15px/1.15 var(--cm-display); }
 .cm-card p { margin: 0; font-size: 12.5px; line-height: 1.4; color: var(--cm-mute); }
-.cm-card .st { font: 500 9px/1 var(--cm-mono); letter-spacing: .12em; color: var(--cm-dim); text-transform: uppercase; }
+.cm-card .st { font: 500 10px/1 var(--cm-mono); letter-spacing: .12em; color: var(--cm-mute); text-transform: uppercase; }
 .cm-card:hover .st { color: var(--cm-cyan); }
 
 /* ---- Key/value grid (profile cards, spec tables) -------------------------- */
@@ -115,7 +115,7 @@
 .cm-kv > div { padding: 8px 12px; border-bottom: 1px solid var(--cm-hair); border-right: 1px solid var(--cm-hair); }
 .cm-kv > div:nth-child(3n) { border-right: 0; }
 .cm-kv.two { grid-template-columns: 1fr 1fr; } .cm-kv.two > div:nth-child(3n) { border-right: 1px solid var(--cm-hair); } .cm-kv.two > div:nth-child(2n) { border-right: 0; }
-.cm-kv dt { font: 500 9px/1.2 var(--cm-mono); letter-spacing: .16em; text-transform: uppercase; color: var(--cm-mute); }
+.cm-kv dt { font: 500 10px/1.2 var(--cm-mono); letter-spacing: .16em; text-transform: uppercase; color: var(--cm-mute); }
 .cm-kv dd { margin: 3px 0 0; font: 500 14px/1.15 var(--cm-mono); font-variant-numeric: tabular-nums; }
 .cm-kv dd small { font-size: 9.5px; color: var(--cm-mute); margin-left: 3px; }
 
