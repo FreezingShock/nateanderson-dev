@@ -80,10 +80,10 @@
     display: flex;
     justify-content: space-between;
     padding: 0 14px 14px;
-    font: 500 9px/1 var(--cm-mono);
+    font: 500 10px/1 var(--cm-mono);
     letter-spacing: 0.14em;
     text-transform: uppercase;
-    color: var(--cm-dim);
+    color: var(--cm-mute);
 }
 
 .cm-hero .cm-row .cm-btn {
@@ -138,7 +138,7 @@
     border-right: 0;
 }
 .pf-pillars dt {
-    font: 500 9px/1.2 var(--cm-mono);
+    font: 500 10px/1.2 var(--cm-mono);
     letter-spacing: 0.16em;
     text-transform: uppercase;
     color: var(--cm-cyan);
@@ -250,7 +250,7 @@
     letter-spacing: -.055em;
     background: var(--cm-ctos-block);
     color: var(--cm-ctos-ink);
-    transition: transform .25s var(--cm-ease);
+    transition: transform var(--cm-d-enter) var(--cm-ease);
 }
 @media (hover: hover) and (pointer: fine) {
     .ctos .hero-title .hw:hover {
@@ -331,7 +331,7 @@
     background: var(--cm-ctos-panel);
     border: 1px solid var(--cm-hair-hi);
     border-left: 3px solid var(--cm-cyan);
-    transition: transform var(--cm-d-base) var(--cm-ease), border-color .15s, color .15s;
+    transition: transform var(--cm-d-base) var(--cm-ease), border-color var(--cm-d-base), color var(--cm-d-base);
 }
 /* Hover fill: a hard wipe from the left in the plate's own color (cyan on panels, white on the primary). */
 .ctos .hcta::before {
@@ -342,7 +342,7 @@
     background: var(--cm-cyan);
     transform: scaleX(0);
     transform-origin: 0 50%;
-    transition: transform .32s var(--cm-ease);
+    transition: transform var(--cm-d-enter) var(--cm-ease);
 }
 /* Dither strip along the bottom edge, same as the naOS panels. */
 .ctos .hcta::after {
@@ -369,7 +369,7 @@
     letter-spacing: .1em;
     background: var(--cm-ctos-block);
     color: var(--cm-ctos-ink);
-    transition: background-color .15s, color .15s;
+    transition: background-color var(--cm-d-base), color var(--cm-d-base);
 }
 .ctos .hcta-txt {
     display: grid;
@@ -392,7 +392,7 @@
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-    transition: color .15s;
+    transition: color var(--cm-d-base);
 }
 .ctos .hcta-arr {
     display: grid;
@@ -400,7 +400,7 @@
     padding: 0 16px;
     font: 400 18px/1 var(--cm-mono);
     border-left: 1px dashed var(--cm-hair-hi);
-    transition: transform var(--cm-d-base) var(--cm-ease), color .15s;
+    transition: transform var(--cm-d-base) var(--cm-ease), color var(--cm-d-base);
 }
 
 /* Primary: the cyan plate. */
@@ -554,3 +554,10 @@
 
 /* Placeholder cards while the Selected work library streams in: same footprint as a real card, no motion. */
 .ctos .featured-skel { min-height: 168px; opacity: .55; }
+/* Third pass, phone: the work cards' art boxes were 16:9 at full width, so three cards took about a full screen each.
+   A 2:1 box keeps the same frame and trims about 20px per card, about 60px across the section. Desktop keeps 16:9. */
+@media (max-width: 640px) {
+    .ctos #work .cm-viz {
+        aspect-ratio: 2 / 1;
+    }
+}

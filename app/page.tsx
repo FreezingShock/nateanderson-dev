@@ -21,17 +21,13 @@ export default function Home() {
     const playable = allGames().filter((g) => g.status === "playable").length;
 
     return (
-        <div className="ctos">
+        <div className="ctos" data-entrance="dither">
             <NaosBackdrop src="/naos/bg-home.webp" />
             <header className="cm-hero" id="top">
                 <div className="cm-grid-bg" aria-hidden="true" />
                 <div className="cm-persp" aria-hidden="true" />
-                <span className="cm-ctos-tag" aria-hidden="true">naOS</span>
                 <NaosArt src="/naos/islands.png" width={300} height={200} variant="hero" eager />
                 <div className="ring" aria-hidden="true" data-mx-par="0.12" />
-                <span className="cm-tag t1" aria-hidden="true" data-mx-par="0.2">Class of <i>2027</i></span>
-                <span className="cm-tag live t2" aria-hidden="true" data-mx-par="0.08">Now shipping <i>Fractured Islands</i></span>
-                <span className="cm-read live float t3" aria-hidden="true" data-mx-par="0.16">Graduation / June 2031</span>
                 <div className="cm-wrap">
                     <div className="hero-grid">
                         <div className="hero-copy cm-stage">
@@ -55,7 +51,7 @@ export default function Home() {
                             auto
                             className="cm-lead"
                             style={{ margin: 0 }}
-                            text="Headed to Cal Poly SLO for Construction Management. Currently shipping Fractured Islands: Ascension, a Roblox progression game built in Luau."
+                            text="Headed to Cal Poly SLO for Construction Management. Currently shipping Nexus, a cozy offline city builder at playnexus.dev."
                         />
                         <nav className="hero-cta" aria-label="Start here">
                             <Link className="hcta hcta-main" href="/creations/projects" data-scr-hover>
@@ -90,8 +86,8 @@ export default function Home() {
                                 <dl className="id-rows">
                                     <div><dt>Based</dt><dd><Scramble replay text="Southern California" /></dd></div>
                                     <div><dt>Studying</dt><dd><Scramble replay text="Construction management" /></dd></div>
-                                    <div><dt>Shipping</dt><dd><Link href="/creations"><Scramble replay text="Fractured Islands: Ascension" /></Link></dd></div>
-                                    <div><dt>Built in</dt><dd><Scramble replay text="Luau, TypeScript, Blender" /></dd></div>
+                                    <div><dt>Shipping</dt><dd><Link href="/creations/projects"><Scramble replay text="Nexus at playnexus.dev" /></Link></dd></div>
+                                    <div><dt>Built in</dt><dd><Scramble replay text="TypeScript, Three.js, JavaScript" /></dd></div>
                                     <div><dt>Graduation</dt><dd><Scramble replay text="2031" /></dd></div>
                                 </dl>
                             </div>

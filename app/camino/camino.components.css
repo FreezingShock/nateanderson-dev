@@ -37,7 +37,7 @@
 .cm-mark .slab i { background: var(--cm-paper); } .cm-mark .slab i:last-child { background: var(--cm-cyan); width: 70%; }
 .cm-mark .word { display: flex; flex-direction: column; justify-content: center; }
 .cm-mark b { font: 800 18px/.95 var(--cm-display); letter-spacing: -.01em; }
-.cm-mark small { font: 500 9px/1.4 var(--cm-mono); letter-spacing: .22em; color: var(--cm-mute); text-transform: uppercase; margin-top: 3px; }
+.cm-mark small { font: 500 10px/1.4 var(--cm-mono); letter-spacing: .22em; color: var(--cm-mute); text-transform: uppercase; margin-top: 3px; }
 .cm-mark.lg .slab { width: 50px; gap: 3px; } .cm-mark.lg b { font-size: 25px; }
 
 /* ---- Panel: frosted glass, hairline border, "+" registration ticks ------- */
@@ -51,7 +51,7 @@
 /* Header bar: a white strip with black mono caps. Title left, state right. */
 .cm-hbar { display: flex; justify-content: space-between; align-items: center; gap: 8px; background: var(--cm-paper); color: var(--cm-ink-0); font: 600 10.5px/1 var(--cm-mono); letter-spacing: .16em; text-transform: uppercase; padding: 6px 8px 6px 10px; }
 .cm-hbar > :last-child { font-weight: 500; color: var(--cm-paper-mute); letter-spacing: .08em; }
-.cm-hbar .live::before { content: ""; display: inline-block; width: 6px; height: 6px; background: #0a8f9a; margin-right: 6px; animation: cm-blink 1.2s steps(2) infinite; }
+.cm-hbar .live::before { content: ""; display: inline-block; width: 6px; height: 6px; background: #0a8f9a; margin-right: 6px; animation: cm-blink var(--cm-d-long) steps(2) infinite; }
 
 /* ---- Callout tag: white plate + 7px notch; the label on any datum -------- */
 .cm-tag { position: relative; display: inline-block; font: 500 10.5px/1 var(--cm-mono); letter-spacing: .14em; text-transform: uppercase; white-space: nowrap; background: var(--cm-paper); color: var(--cm-ink-0); padding: 4px 6px 4px 7px; }
@@ -107,7 +107,7 @@
 .cm-card .vis img, .cm-card .vis svg { width: 100%; height: 100%; object-fit: cover; display: block; }
 .cm-card b { font: 600 15px/1.15 var(--cm-display); }
 .cm-card p { margin: 0; font-size: 12.5px; line-height: 1.4; color: var(--cm-mute); }
-.cm-card .st { font: 500 9px/1 var(--cm-mono); letter-spacing: .12em; color: var(--cm-dim); text-transform: uppercase; }
+.cm-card .st { font: 500 10px/1 var(--cm-mono); letter-spacing: .12em; color: var(--cm-mute); text-transform: uppercase; }
 .cm-card:hover .st { color: var(--cm-cyan); }
 
 /* ---- Key/value grid (profile cards, spec tables) -------------------------- */
@@ -115,7 +115,7 @@
 .cm-kv > div { padding: 8px 12px; border-bottom: 1px solid var(--cm-hair); border-right: 1px solid var(--cm-hair); }
 .cm-kv > div:nth-child(3n) { border-right: 0; }
 .cm-kv.two { grid-template-columns: 1fr 1fr; } .cm-kv.two > div:nth-child(3n) { border-right: 1px solid var(--cm-hair); } .cm-kv.two > div:nth-child(2n) { border-right: 0; }
-.cm-kv dt { font: 500 9px/1.2 var(--cm-mono); letter-spacing: .16em; text-transform: uppercase; color: var(--cm-mute); }
+.cm-kv dt { font: 500 10px/1.2 var(--cm-mono); letter-spacing: .16em; text-transform: uppercase; color: var(--cm-mute); }
 .cm-kv dd { margin: 3px 0 0; font: 500 14px/1.15 var(--cm-mono); font-variant-numeric: tabular-nums; }
 .cm-kv dd small { font-size: 9.5px; color: var(--cm-mute); margin-left: 3px; }
 
@@ -155,7 +155,7 @@
 .cm-table tr:hover td { background: rgba(255,255,255,.03); }
 
 
-.cm-scrim > .cm-panel { width: min(620px, 100%); max-height: 76vh; overflow: auto; animation: cm-enter .26s var(--cm-ease) both; }
+.cm-scrim > .cm-panel { width: min(620px, 100%); max-height: 76vh; overflow: auto; animation: cm-enter var(--cm-d-enter) var(--cm-ease) both; }
 
 
 
@@ -185,10 +185,10 @@
 
 /* ---- Film layer (apply to a fixed overlay div; keep subtle) --------------- */
 .cm-film { position: fixed; inset: 0; pointer-events: none; z-index: var(--cm-z-film); background: radial-gradient(130% 95% at 50% 45%, transparent 58%, rgba(0,0,0,.6) 100%); }
-.cm-grain { position: fixed; inset: -50%; pointer-events: none; z-index: var(--cm-z-film); opacity: .06; animation: cm-grain .9s steps(6) infinite;
+.cm-grain { position: fixed; inset: -50%; pointer-events: none; z-index: var(--cm-z-film); opacity: .06; animation: cm-grain var(--cm-d-slow) steps(6) infinite;
   background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0 0 0 .9 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>"); }
 
-.cm-sweep.go { animation: cm-sweep .9s var(--cm-ease) 1; }
+.cm-sweep.go { animation: cm-sweep var(--cm-d-slow) var(--cm-ease) 1; }
 
 
 /* ---- Keyframes -------------------------------------------------------------- */

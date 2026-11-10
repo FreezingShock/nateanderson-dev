@@ -83,7 +83,7 @@
 }
 .ctos.st-page .st-courses > .cm-panel:nth-child(3n) {
   border: 1px dashed var(--cm-hair-hi);
-  background-color: #111;
+  background-color: var(--cm-ctos-deep);
   background-image: radial-gradient(circle, rgba(244, 244, 242, .12) 0 28%, transparent 32%);
   background-size: 6px 6px;
 }
@@ -140,7 +140,7 @@
 }
 .ctos.st-page .st-reading > .cm-panel:nth-child(3n) {
   border: 1px dashed var(--cm-hair-hi);
-  background-color: #111;
+  background-color: var(--cm-ctos-deep);
   background-image: radial-gradient(circle, rgba(244, 244, 242, .12) 0 28%, transparent 32%);
   background-size: 6px 6px;
 }
@@ -154,7 +154,7 @@
 }
 .ctos.st-page .st-personal > .cm-panel:nth-child(3n) {
   border: 1px dashed var(--cm-hair-hi);
-  background-color: #111;
+  background-color: var(--cm-ctos-deep);
   background-image: radial-gradient(circle, rgba(244, 244, 242, .12) 0 28%, transparent 32%);
   background-size: 6px 6px;
 }
@@ -165,7 +165,7 @@
 .ctos.st-page .cm-rail > li.done > .tick { opacity: .8; }
 .ctos.st-page .cm-rail > li:not(.now):not(.done) > .tick {
   border-style: dashed;
-  background-color: #111;
+  background-color: var(--cm-ctos-deep);
   background-image: radial-gradient(circle, rgba(244, 244, 242, .12) 0 28%, transparent 32%);
   background-size: 6px 6px;
 }
@@ -175,7 +175,7 @@
 .ctos.st-page .st-split > :only-child { grid-column: 1 / -1; }
 .ctos.st-page .st-facts-row > .cm-panel:nth-child(2) { border-top: 3px solid var(--cm-cyan); }
 .ctos.st-page .st-related > :first-child { grid-column: 1 / -1; }
-.ctos.st-page .st-facts-row > .cm-panel.st-anim { animation: st-id-in .6s steps(8, end) both; }
+.ctos.st-page .st-facts-row > .cm-panel.st-anim { animation: st-id-in var(--cm-d-count) steps(8, end) both; }
 .ctos.st-page .st-facts-row > .cm-panel:nth-child(2).st-anim { animation-delay: .1s; }
 .ctos.st-page .st-facts-row > .cm-panel:nth-child(3).st-anim { animation-delay: .2s; }
 
@@ -185,10 +185,10 @@
 .ctos.st-page .cm-split { align-items: stretch; }
 .ctos.st-page .cm-split > .cm-panel { height: 100%; }
 .ctos.st-page .cm-section { border-top-color: transparent; padding-block: var(--cm-s7); }
-.ctos.st-page .cm-split > .cm-panel:nth-child(2) > .cm-body-pad { align-content: center; }
-@media (max-width: 760px) {
-  .ctos.st-page .cm-section { padding-block: 40px; }
+@media (max-width: 640px) {
+  .ctos.st-page .cm-section { padding-block: var(--cm-s6); }
 }
+.ctos.st-page .cm-split > .cm-panel:nth-child(2) > .cm-body-pad { align-content: center; }
 
 /* ---- Load-in choreography -------------------------------------------------------------------------------------------
    Everything tagged .st-anim plays once after the boot sequence and any page curtain lift: animations are held
@@ -198,13 +198,13 @@
 @keyframes st-row-in { from { opacity: 0; transform: translate3d(-14px, 0, 0); } to { opacity: 1; transform: none; } }
 @keyframes st-bar-sweep { from { transform: scaleX(0); } to { transform: scaleX(1); } }
 
-.ctos.st-page .st-id.st-anim { animation: st-id-in .7s steps(9, end) .42s both; }
-.ctos.st-page .st-id .id-rows > div.st-anim { animation: st-row-in .5s var(--cm-ease-out) both; }
+.ctos.st-page .st-id.st-anim { animation: st-id-in var(--cm-d-reveal) steps(9, end) .42s both; }
+.ctos.st-page .st-id .id-rows > div.st-anim { animation: st-row-in var(--cm-d-wipe) var(--cm-ease-out) both; }
 .ctos.st-page .st-id .id-rows > div:nth-child(1) { animation-delay: .95s; }
 .ctos.st-page .st-id .id-rows > div:nth-child(2) { animation-delay: 1.03s; }
 .ctos.st-page .st-id .id-rows > div:nth-child(3) { animation-delay: 1.11s; }
 .ctos.st-page .st-id .id-rows > div:nth-child(4) { animation-delay: 1.19s; }
-.ctos.st-page .st-id .id-bars i.st-anim { transform-origin: bottom; animation: st-bar-sweep .45s var(--cm-ease-out) both; }
+.ctos.st-page .st-id .id-bars i.st-anim { transform-origin: bottom; animation: st-bar-sweep var(--cm-d-wipe) var(--cm-ease-out) both; }
 .ctos.st-page .st-id .id-bars i:nth-child(2) { animation-delay: .1s; }
 .ctos.st-page .st-id .id-bars i:nth-child(3) { animation-delay: .2s; }
 .ctos.st-page .st-id .id-bars i:nth-child(4) { animation-delay: .3s; }

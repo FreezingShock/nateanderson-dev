@@ -6,11 +6,10 @@ caps). Homepage shipped first (`app/page.tsx`); every other page adopts it now.
 
 ## Turn it on
 Wrap the page in `<div className="ctos">` and use `Section ctos` (components/cm/ui.tsx). Everything is scoped under
-`.ctos`, so nothing leaks. The page background, the naOS footer and the page-end bar switch on through
-`body:has(.ctos)`. `PageHead` works inside `.ctos` unchanged (its highlight bars get the white title-card look from CSS).
+`.ctos`, so nothing leaks. The page background, the naOS footer and the page-end bar switch on through the `ctos-on` class on `<body>`, which `components/cm/ctos-body.tsx` sets after each route change. Don't write `body:has(.ctos)` rules: they forced slow style re-checks on every route swap. `PageHead` works inside `.ctos` unchanged (its highlight bars get the white title-card look from CSS).
 
 ## Files
-- `app/camino/ctos.css`: all naOS CSS (imported after `games.css` in `app/globals.css`).
+- `app/camino/ctos.css`: all naOS CSS (imported from `app/globals.css` after `motion.css`; `games.css` is imported by the games pages).
 - `app/camino/motion.css`: slab and `.hx` rise rules.
 - `lib/motion/engine.ts`: reveal engine (started by `components/cm/motion-root.tsx`).
 - `components/cm/motion.tsx`: `Scramble`, `Slab`, `ScrollType`.
@@ -72,6 +71,15 @@ scrolls into view. The hero variant uses `eager` and skips the reveal.
 ## Creations hub
 `/creations` is its own page look (`.ctos.cr-hub`, styles at the bottom of `components/creations/creations.css`): the magenta guide X is replaced by a scanline field and one cyan sweep on load, the assembly art fills the head behind the status card, and the head plays a once-only load-in (grid, art dithers in, card drops in, rows and bars follow). Hub cards reveal from alternating sides through the scrubbed engine. Do not add `clip-path` or `mask` to `data-rx` items: the engine's IntersectionObserver treats a fully clipped item as off screen and leaves it hidden.
 
+## Sound (naOS interface set)
+Every interface sound comes from `lib/sound/sounds.ts`, synthesized with Web Audio (no audio files). The naOS block is the
+first group in the catalogue: square and sine blips at fixed Hz, low-passed, plus one sawtooth scan on transitions.
+- Hover ticks, taps, tabs, on/off toggles, menu open and close, the route-change ping (`nav`), deny buzz and the `popup` bell.
+- Under `prefers-reduced-motion: reduce` the scan sweeps and hover ticks drop out; the confirm blips stay.
+- Mute lives in the header (`.nv-snd` in `components/cm/bar.tsx`) and remembers its setting in localStorage (`fi-sound-v1`; the key keeps its old name so saved settings survive).
+- Nothing plays before the first click, tap or key press. Keep new interface sounds in this group, use `tier 0` for ambient ticks, and give anything new a rate-limit `gap`.
+- The games' pentatonic set further down the file is separate and untouched by the naOS look.
+
 ## Perf rules
 Animate only `transform` and `opacity` (plus clip-path for slabs). No animated `filter: blur`. One rAF loop, reads then
 writes, no layout thrash. Touch and narrow screens (`hover: none` or max-width 900px) get still grain and solid panels
@@ -109,7 +117,7 @@ Rules to keep (new naOS work must follow them):
 - Reduced motion: the reveal engine shows everything with no scroll-linked motion, and CSS stops blinks, slides and the nav head pulse. Add a `prefers-reduced-motion` rule for any new looping animation.
 
 Known Safari risks (WebKit not tested in the cloud; check on an iPhone):
-- `body:has(.ctos)` drives the naOS footer, background and bar. Needs Safari 15.4 or newer. Older iOS gets the plain Camino footer.
+- `body.ctos-on` drives the naOS footer, background and bar. It is a plain class, so it works on every browser, including older iOS.
 - `backdrop-filter` on glass panels and the nav menu is prefixed. On touch screens `.cm-panel` drops it for solid fills (`ctos.css`).
 - `mask-image` is prefixed on every use. Check the dither fades on the blog and page backdrops.
 - `color-mix()` (history rows, `.id-rows`) needs Safari 16.2 or newer; older browsers lose only the tinted rule colour.

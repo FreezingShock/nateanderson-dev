@@ -56,7 +56,7 @@ export default async function HistoryPage() {
         .reverse();
 
     return (
-        <div className="ctos">
+        <div className="ctos" data-entrance="log">
             <NaosBackdrop src="/naos/bg-history.webp" />
             <div className={styles.hero}>
                 <PageHead
