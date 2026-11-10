@@ -12,7 +12,7 @@ Wrap the page in `<div className="ctos">` and use `Section ctos` (components/cm/
 - `app/camino/ctos.css`: all naOS CSS (imported from `app/globals.css` after `motion.css`; `games.css` is imported by the games pages).
 - `app/camino/motion.css`: slab and `.hx` rise rules.
 - `lib/motion/engine.ts`: reveal engine (started by `components/cm/motion-root.tsx`).
-- `components/cm/motion.tsx`: `Scramble`, `Slab`, `ScrollType`, `Reveal`.
+- `components/cm/motion.tsx`: `Scramble`, `Slab`, `ScrollType`.
 - `components/cm/ui.tsx`: `Section` (`ctos` prop), `PageHead`.
 - History backdrop: `public/naos/history.png` (the commit terrain, `history()` in `scripts/naos-art/generate.py`), placed in `app/history/page.tsx` with page-scoped CSS in `app/history/history.module.css`.
 - `components/site-footer.tsx`: shared footer, naOS parts hidden unless `.ctos` is on the page.
@@ -114,4 +114,4 @@ Known Safari risks (WebKit not tested in the cloud; check on an iPhone):
 - `color-mix()` (history rows, `.id-rows`) needs Safari 16.2 or newer; older browsers lose only the tinted rule colour.
 - `@property --cm-bp` (`motion.css`) needs Safari 16.4 or newer. The fallback is the initial value, so check the boot and menu motion.
 - Scroll-linked reveals rely on IntersectionObserver plus rAF. iOS Low Power Mode slows rAF, so check that content still appears on scroll.
-- iOS zooms any focused input under 16px. The one input checked (flag guesser) is 16px or larger. Check the command bar search and the account forms.
+- iOS zooms any focused input under 16px. The one input checked (flag guesser) is 16px or larger. Check the command bar search.

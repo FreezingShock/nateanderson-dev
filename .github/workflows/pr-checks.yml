@@ -1,0 +1,115 @@
+name: PR checks
+
+on:
+    pull_request:
+        branches: [integration, main]
+
+concurrency:
+    group: pr-checks-${{ github.event.pull_request.number }}
+    cancel-in-progress: true
+
+permissions:
+    contents: read
+    pull-requests: write
+
+env:
+    SITE_PASSWORD: ci-password
+    SITE_GATE_SECRET: ci-gate-secret-not-used-in-production
+    NEXT_TELEMETRY_DISABLED: "1"
+    # Placeholders so the build can run without real Supabase credentials. Pages that read Creations
+    # data fall back or show empty states; nothing in CI talks to the real project.
+    NEXT_PUBLIC_SUPABASE_URL: https://placeholder.supabase.co
+    NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: ci-placeholder-key
+    GITHUB_TOKEN: ${{ github.token }}
+
+jobs:
+    # Blocking: types, production build, and a crawl for broken internal links/assets.
+    verify:
+        name: Typecheck, build, link crawl
+        runs-on: ubuntu-latest
+        timeout-minutes: 20
+        steps:
+            - uses: actions/checkout@v4
+            - uses: actions/setup-node@v4
+              with:
+                  node-version: 22
+                  cache: npm
+            - run: npm ci --no-audit --no-fund
+            - name: Typecheck
+              run: npx tsc --noEmit
+            - uses: actions/cache@v4
+              with:
+                  path: .next/cache
+                  key: next-${{ runner.os }}-${{ hashFiles('package-lock.json') }}-${{ github.sha }}
+                  restore-keys: next-${{ runner.os }}-${{ hashFiles('package-lock.json') }}-
+            - name: Build
+              run: npm run build
+            - name: Crawl for broken links
+              run: |
+                  npx next start -p 3123 > server.log 2>&1 &
+                  node scripts/ci/crawl.mjs http://localhost:3123 || { echo "--- server log ---"; tail -40 server.log; exit 1; }
+
+    # Advisory: builds the PR and its base, screenshots both, reports what changed visually.
+    # It never fails the PR; judge the diffs by eye.
+    screenshots:
+        name: Screenshot diff
+        runs-on: ubuntu-latest
+        timeout-minutes: 30
+        steps:
+            - uses: actions/checkout@v4
+              with:
+                  path: head
+            - uses: actions/checkout@v4
+              with:
+                  ref: ${{ github.base_ref }}
+                  path: base
+            - uses: actions/setup-node@v4
+              with:
+                  node-version: 22
+                  cache: npm
+                  cache-dependency-path: |
+                      head/package-lock.json
+                      base/package-lock.json
+            - name: Install and build both
+              run: |
+                  (cd head && npm ci --no-audit --no-fund && npm run build) &
+                  p1=$!
+                  (cd base && npm ci --no-audit --no-fund && npm run build) &
+                  p2=$!
+                  wait $p1 && wait $p2
+            - name: Install screenshot tools
+              working-directory: head/scripts/ci
+              run: |
+                  npm install --no-audit --no-fund
+                  npx playwright install --with-deps chromium
+            - name: Screenshot base and head
+              run: |
+                  (cd base && npx next start -p 3124 > ../base.log 2>&1 &)
+                  (cd head && npx next start -p 3123 > ../head.log 2>&1 &)
+                  (cd base && node ../head/scripts/ci/shots.mjs http://localhost:3124 ../shots/base)
+                  (cd head && node scripts/ci/shots.mjs http://localhost:3123 ../shots/head)
+            - name: Diff
+              run: node head/scripts/ci/diff.mjs shots/base shots/head shots/diff
+            - name: Summary
+              run: cat shots/diff/summary.md >> "$GITHUB_STEP_SUMMARY"
+            - uses: actions/upload-artifact@v4
+              with:
+                  name: screenshot-diff
+                  path: |
+                      shots/diff
+                      shots/head
+                  retention-days: 14
+            - name: Comment on PR
+              continue-on-error: true
+              uses: actions/github-script@v7
+              with:
+                  script: |
+                      const fs = require('fs');
+                      const body = fs.readFileSync('shots/diff/summary.md', 'utf8')
+                          + `\n[Full diffs and screenshots](${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}) (artifact \`screenshot-diff\`).\n\n<!-- pr-checks-screenshots -->`;
+                      const { owner, repo } = context.repo;
+                      const issue_number = context.issue.number;
+                      const comments = await github.paginate(github.rest.issues.listComments, { owner, repo, issue_number });
+                      const prev = comments.find(c => c.body.includes('<!-- pr-checks-screenshots -->'));
+                      if (prev) await github.rest.issues.updateComment({ owner, repo, comment_id: prev.id, body });
+                      else await github.rest.issues.createComment({ owner, repo, issue_number, body });
