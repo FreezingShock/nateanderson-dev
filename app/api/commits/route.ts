@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { fetchCommitsPage } from "@/lib/github";
+import { fetchSitePage } from "@/lib/github";
 
 const MAX_PER_PAGE = 20;
 
@@ -25,12 +25,12 @@ export async function GET(request: NextRequest) {
     const perPage = Math.min(MAX_PER_PAGE, Math.max(1, perPageRaw));
 
     try {
-        const commits = await fetchCommitsPage(page, perPage);
-        if (commits === null) {
+        const result = await fetchSitePage(page, perPage);
+        if (result === null) {
             return NextResponse.json({ error: "Upstream GitHub API error" }, { status: 502 });
         }
 
-        return NextResponse.json(commits, {
+        return NextResponse.json(result.commits, {
             headers: { "Cache-Control": "public, s-maxage=3600, stale-while-revalidate=86400" },
         });
     } catch (err) {

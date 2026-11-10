@@ -1,39 +1,7 @@
 "use client";
 
-import { useLayoutEffect, useRef, type CSSProperties, type ElementType, type ReactNode } from "react";
+import { useLayoutEffect, useRef } from "react";
 import { prefersReducedMotion, whenUngated } from "@/lib/motion/engine";
-import type { RevealVariant } from "@/components/cm/motion";
-
-/**
- * Reveals its content once, the first time it scrolls into view. State lives in data attributes written by the
- * motion engine, so it never re-renders. `variant` is the controlled variation: rise (default), slide, slide-r,
- * scale, wipe, line, fade. `delay` (ms) overrides the automatic wave stagger.
- */
-export function Reveal({
-    as: Tag = "div",
-    className,
-    delay,
-    variant = "rise",
-    children,
-    style,
-}: {
-    as?: ElementType;
-    className?: string;
-    delay?: number;
-    variant?: RevealVariant;
-    children: ReactNode;
-    style?: CSSProperties;
-}) {
-    return (
-        <Tag
-            className={className || undefined}
-            data-mx={variant === "rise" ? "" : variant}
-            style={delay != null ? { ["--d" as string]: `${delay}ms`, ...style } : style}
-        >
-            {children}
-        </Tag>
-    );
-}
 
 /** Counts up once, when it first comes into view (900ms ease-out). Writes the DOM directly: no re-renders. */
 export function CountUp({ value, className = "" }: { value: number; className?: string }) {

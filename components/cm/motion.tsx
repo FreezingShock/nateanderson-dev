@@ -3,16 +3,6 @@ import { Fragment, type CSSProperties, type ElementType, type ReactNode } from "
 // Server-safe motion primitives. They only emit markup (data attributes + per-character spans); the engine in
 // lib/motion/engine.ts (started once by <MotionRoot/>) does the work. See MOTION.md for the full recipe.
 
-export type RevealVariant = "slab" | "rise" | "slide" | "slide-r" | "scale" | "wipe" | "line" | "fade";
-
-/** Props for a plain element that should reveal once on scroll. Spread onto any tag. */
-export function mx(variant: RevealVariant = "rise", delay?: number) {
-    return {
-        "data-mx": variant === "rise" ? "" : variant,
-        ...(delay != null ? { style: { ["--d" as string]: `${delay}ms` } as CSSProperties } : {}),
-    };
-}
-
 /**
  * Text that types itself in by scroll distance: the further the line travels up the screen, the more of it is
  * written. Text that is already on screen at load types in over time instead. Fully readable without JS and to
@@ -97,10 +87,3 @@ export function Slab({ children, tone = "paper" }: { children: ReactNode; tone?:
         </span>
     );
 }
-
-/** A decorative element that drifts with scroll (transform only). `k` is the fraction of scroll it follows. */
-export function parallax(k = 0.1) {
-    return { "data-mx-par": String(k) };
-}
-
-export type { ReactNode };

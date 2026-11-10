@@ -220,7 +220,7 @@ export function makeGuess(guess: Country, answer: Country): Guess {
 }
 
 /** Counts up to `to` once when a fresh row appears. */
-export function CountUp({ to, animate }: { to: number; animate: boolean }) {
+function CountUp({ to, animate }: { to: number; animate: boolean }) {
     const [v, setV] = useState(animate ? 0 : to);
     useEffect(() => {
         if (!animate) return;
@@ -365,7 +365,7 @@ export function Burst() {
     );
 }
 
-export const toggleIn = <T,>(list: T[], v: T) =>
+const toggleIn = <T,>(list: T[], v: T) =>
     list.includes(v) ? list.filter((x) => x !== v) : [...list, v];
 
 /** Difficulty and region chips for Unlimited mode. */

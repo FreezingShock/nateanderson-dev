@@ -13,7 +13,7 @@ Wrap the page in `<div className="ctos">` and use `Section ctos` (components/cm/
 - `app/camino/ctos.css`: all naOS CSS (imported after `games.css` in `app/globals.css`).
 - `app/camino/motion.css`: slab and `.hx` rise rules.
 - `lib/motion/engine.ts`: reveal engine (started by `components/cm/motion-root.tsx`).
-- `components/cm/motion.tsx`: `Scramble`, `Slab`, `ScrollType`, `Reveal`.
+- `components/cm/motion.tsx`: `Scramble`, `Slab`, `ScrollType`.
 - `components/cm/ui.tsx`: `Section` (`ctos` prop), `PageHead`.
 - History backdrop: `public/naos/history.png` (the commit terrain, `history()` in `scripts/naos-art/generate.py`), placed in `app/history/page.tsx` with page-scoped CSS in `app/history/history.module.css`.
 - `components/site-footer.tsx`: shared footer, naOS parts hidden unless `.ctos` is on the page.
@@ -54,8 +54,13 @@ fade; never gray flickering pixel blocks.
 The engine writes `--p` (0 to 1) on each `[data-rx]` from its viewport position (band ~36% of the viewport, capped at
 340px). CSS maps `--p` to opacity/transform/clip-path, so scrolling down plays forward and up plays the exact reverse.
 Displayed progress eases toward the target (damping ~120ms, frame-rate independent) and a smoothstep is applied when
-writing `--p`, so wheel notches glide. Scramble text uses the same progress. Items on screen at load play a 650ms intro,
+writing `--p`, so wheel notches glide. Items on screen at load play a 650ms intro,
 and at the page bottom everything is forced to p=1. `prefers-reduced-motion` must stay respected.
+
+Scrambled text (`data-rx-scr`) and scroll-typed blocks (`ScrollType`) only animate while they enter through the bottom
+band, from 92% of the viewport height up to the 80% read line (`READ_LINE` in the engine). Above that line they are
+fully decoded or typed, so text the reader can see is never left as glyphs or half-typed. Do not add a rule that holds
+visible text back past that line.
 
 ## Dithered art
 Original 1-bit illustrations live in `public/naos/` (`islands.png` hero, `track.png` and `wash.png` section breaks, `blog.png` for the blog index hero, `post.png` for blog post headers with a reading strip, `studies.png` header piece on the Studies page, `assembly.png` for the Creations hub backdrop: voxel terraces climbing to a checkpoint, from `studies()`).
@@ -119,4 +124,4 @@ Known Safari risks (WebKit not tested in the cloud; check on an iPhone):
 - `color-mix()` (history rows, `.id-rows`) needs Safari 16.2 or newer; older browsers lose only the tinted rule colour.
 - `@property --cm-bp` (`motion.css`) needs Safari 16.4 or newer. The fallback is the initial value, so check the boot and menu motion.
 - Scroll-linked reveals rely on IntersectionObserver plus rAF. iOS Low Power Mode slows rAF, so check that content still appears on scroll.
-- iOS zooms any focused input under 16px. The one input checked (flag guesser) is 16px or larger. Check the command bar search and the account forms.
+- iOS zooms any focused input under 16px. The one input checked (flag guesser) is 16px or larger. Check the command bar search.

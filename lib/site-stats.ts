@@ -1,4 +1,4 @@
-import { REPO, githubHeaders } from "@/lib/github";
+import { REPO, SITE_BRANCH, fetchSiteChain, githubHeaders } from "@/lib/github";
 
 // Shared by /history and the landing page's Site Statistics section so both
 // read the same numbers through the same (cached) GitHub calls.
@@ -30,15 +30,9 @@ const CODE_EXTENSIONS = new Set([
 export async function getRepoStats(): Promise<{ fileCount: number; linesOfCode: number }> {
     const headers = githubHeaders();
     try {
-        const repoRes = await fetch(`https://api.github.com/repos/${REPO}`, {
-            headers,
-            next: { revalidate: 3600 },
-        });
-        if (!repoRes.ok) return { fileCount: 0, linesOfCode: 0 };
-        const { default_branch } = (await repoRes.json()) as { default_branch: string };
-
+        // Same branch as the commit history (see SITE_BRANCH), so the numbers describe what is actually on the site.
         const treeRes = await fetch(
-            `https://api.github.com/repos/${REPO}/git/trees/${default_branch}?recursive=1`,
+            `https://api.github.com/repos/${REPO}/git/trees/${encodeURIComponent(SITE_BRANCH)}?recursive=1`,
             { headers, next: { revalidate: 3600 } }
         );
         if (!treeRes.ok) return { fileCount: 0, linesOfCode: 0 };
@@ -54,7 +48,7 @@ export async function getRepoStats(): Promise<{ fileCount: number; linesOfCode: 
             codeFiles.map(async (f) => {
                 try {
                     const raw = await fetch(
-                        `https://raw.githubusercontent.com/${REPO}/${default_branch}/${f.path}`,
+                        `https://raw.githubusercontent.com/${REPO}/${SITE_BRANCH}/${f.path}`,
                         { next: { revalidate: 3600 } }
                     );
                     if (!raw.ok) return 0;
@@ -75,20 +69,8 @@ export async function getRepoStats(): Promise<{ fileCount: number; linesOfCode: 
     }
 }
 
-// Total commit count. The commits endpoint has no total field — the standard
-// trick is asking for 1-per-page and reading the last page number out of the
-// pagination Link header.
+// Total entries on the site branch, one per change (see fetchSiteChain). Same number the history page shows.
 export async function getTotalCommitCount(fallback = 0): Promise<number> {
-    try {
-        const res = await fetch(`https://api.github.com/repos/${REPO}/commits?per_page=1`, {
-            headers: githubHeaders(),
-            next: { revalidate: 3600 },
-        });
-        if (!res.ok) return fallback;
-        const link = res.headers.get("Link");
-        const last = link?.match(/[?&]page=(\d+)>;\s*rel="last"/);
-        return last ? Number(last[1]) : fallback;
-    } catch {
-        return fallback;
-    }
+    const chain = await fetchSiteChain();
+    return chain ? chain.length : fallback;
 }
