@@ -16,6 +16,11 @@ env:
     SITE_PASSWORD: ci-password
     SITE_GATE_SECRET: ci-gate-secret-not-used-in-production
     NEXT_TELEMETRY_DISABLED: "1"
+    # Placeholders so the build can run without real Supabase credentials. Pages that read Creations
+    # data fall back or show empty states; nothing in CI talks to the real project.
+    NEXT_PUBLIC_SUPABASE_URL: https://placeholder.supabase.co
+    NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: ci-placeholder-key
+    GITHUB_TOKEN: ${{ github.token }}
 
 jobs:
     # Blocking: types, production build, and a crawl for broken internal links/assets.
