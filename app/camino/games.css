@@ -185,7 +185,7 @@
     min-width: 0;
     display: flex;
     flex-direction: column;
-    background: #131313;
+    background: var(--cm-ctos-panel);
     border: 1px solid var(--cm-hair-hi);
     border-left: 3px solid var(--cm-cyan);
 }

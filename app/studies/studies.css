@@ -83,7 +83,7 @@
 }
 .ctos.st-page .st-courses > .cm-panel:nth-child(3n) {
   border: 1px dashed var(--cm-hair-hi);
-  background-color: #111;
+  background-color: var(--cm-ctos-deep);
   background-image: radial-gradient(circle, rgba(244, 244, 242, .12) 0 28%, transparent 32%);
   background-size: 6px 6px;
 }
@@ -140,7 +140,7 @@
 }
 .ctos.st-page .st-reading > .cm-panel:nth-child(3n) {
   border: 1px dashed var(--cm-hair-hi);
-  background-color: #111;
+  background-color: var(--cm-ctos-deep);
   background-image: radial-gradient(circle, rgba(244, 244, 242, .12) 0 28%, transparent 32%);
   background-size: 6px 6px;
 }
@@ -154,7 +154,7 @@
 }
 .ctos.st-page .st-personal > .cm-panel:nth-child(3n) {
   border: 1px dashed var(--cm-hair-hi);
-  background-color: #111;
+  background-color: var(--cm-ctos-deep);
   background-image: radial-gradient(circle, rgba(244, 244, 242, .12) 0 28%, transparent 32%);
   background-size: 6px 6px;
 }
@@ -165,7 +165,7 @@
 .ctos.st-page .cm-rail > li.done > .tick { opacity: .8; }
 .ctos.st-page .cm-rail > li:not(.now):not(.done) > .tick {
   border-style: dashed;
-  background-color: #111;
+  background-color: var(--cm-ctos-deep);
   background-image: radial-gradient(circle, rgba(244, 244, 242, .12) 0 28%, transparent 32%);
   background-size: 6px 6px;
 }
