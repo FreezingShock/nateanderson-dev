@@ -6,6 +6,7 @@ import { ThemeProvider } from "@/components/theme-provider";
 import { Bar, Dock } from "@/components/cm/bar";
 import { Film } from "@/components/cm/film";
 import { Launcher } from "@/components/cm/launcher";
+import { ConsoleEntry } from "@/components/cm/console-entry";
 import { SiteMap } from "@/components/cm/site-map";
 import { Boot, BOOT_SCRIPT } from "@/components/cm/boot";
 import { MotionRoot } from "@/components/cm/motion-root";
@@ -90,6 +91,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
                     <Dock />
                     <SiteMap />
                     <Launcher />
+                    <ConsoleEntry />
                     <SoundProvider />
                 </ThemeProvider>
             </body>
