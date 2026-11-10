@@ -20,8 +20,15 @@ Wrap the page in `<div className="ctos">` and use `Section ctos` (components/cm/
 ## Tokens
 `--cm-ctos-ground #1a1a1a` (page ground), `--cm-ctos-block #f4f4f2` (white title blocks), `--cm-ctos-ink #1a1a1a`
 (text on white). Panels: `--cm-ctos-panel #131313` for every status card, grid card and CTA plate (don't hardcode panel greys).
-Type scale: `--cm-ctos-t-micro 9px`, `-tag 10.5px`, `-small 12px`, `-body 14px`, `-lead 17px`, `-h3 22px`. Use these for
-naOS sizes; display sizes (clamp or 26px and up) stay per page.
+Type system (readability pass 2026-11-10). Tokens live in `app/camino/ctos.css`; the floor is 11px, nothing is set smaller
+except the 7-item phone dock labels (8.5px and 8px, they cannot fit otherwise).
+Hierarchy, top to bottom: eyebrow (`-tag`, mono caps, `--cm-ctos-track-label`), title (display, per page), intro
+(`-lead` 18px, `--cm-ctos-lh-tight`), section heading (`-h3` 22px), body (`-body` 15px, `--cm-ctos-lh-body` 1.6,
+`--cm-ctos-measure` 62ch), label (`-tag` 11.5px), meta (`-micro` 11px, colour `--cm-ctos-meta`).
+Sizes: `--cm-ctos-t-micro 11px`, `-tag 11.5px`, `-small 12.5px`, `-ui 13.5px`, `-body 15px`, `-lead 18px`, `-h3 22px`.
+Page CSS uses these tokens instead of raw px; display sizes (clamp or 26px and up) stay per page.
+Text colours: `--cm-fg` primary, `--cm-mute` secondary, `--cm-ctos-meta` meta (5.3:1 or better on panels), `--cm-dim`
+(`#66767f`) for ticks and disabled only. Fonts unchanged: Helvetica Neue/Arimo display, IBM Plex Mono for labels (already self-hosted).
 Accent stays `--cm-cyan #2fd8e8` (`--cm-cyan-ink` on cyan). Magenta `#ff2d8a` only for thin guide
 lines. One accent rule: cyan or white, never rainbow.
 

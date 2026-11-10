@@ -67,12 +67,12 @@
     border-left: 1px solid var(--cm-hair);
 }
 .nv-jrow { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; min-width: 0; }
-.nv-jday { font: 600 10px/1 var(--cm-mono); letter-spacing: .12em; text-transform: uppercase; color: var(--cm-mute); white-space: nowrap; }
-.nv-jday b { font: 700 12px/1 var(--cm-display); letter-spacing: -.02em; color: var(--cm-fg); margin-left: 4px; }
+.nv-jday { font: 600 var(--cm-ctos-t-micro)/1 var(--cm-mono); letter-spacing: .12em; text-transform: uppercase; color: var(--cm-mute); white-space: nowrap; }
+.nv-jday b { font: 700 var(--cm-ctos-t-small)/1 var(--cm-display); letter-spacing: -.02em; color: var(--cm-fg); margin-left: 4px; }
 .nv-jday em { font-style: normal; color: #7d8b93; margin-left: 4px; }
 .nv-jnext {
     min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-    font: 600 9.5px/1 var(--cm-mono); letter-spacing: .1em; text-transform: uppercase; color: var(--cm-cyan);
+    font: 600 var(--cm-ctos-t-micro)/1 var(--cm-mono); letter-spacing: .1em; text-transform: uppercase; color: var(--cm-cyan);
 }
 .nv-segs { display: grid; grid-template-columns: repeat(24, minmax(0, 1fr)); gap: 2px; height: 8px; }
 .nv-segs i { background: rgba(226, 238, 240, .14); }
@@ -308,7 +308,7 @@ html[data-xition] .cm-dock { z-index: calc(var(--cm-z-curtain) + 1); }
     display: grid; place-items: center; min-height: 26px; padding: 0; background: transparent; border: 0;
     color: inherit; cursor: pointer;
 }
-.nv-close .nv-key { padding: 5px 7px; font-size: 11px; opacity: .85; transition: background var(--cm-d-base), color var(--cm-d-base), border-color var(--cm-d-base); }
+.nv-close .nv-key { padding: 5px 7px; font-size: var(--cm-ctos-t-tag); opacity: .85; transition: background var(--cm-d-base), color var(--cm-d-base), border-color var(--cm-d-base); }
 .nv-close:hover .nv-key { background: var(--cm-cyan); border-color: var(--cm-cyan); color: var(--cm-cyan-ink); opacity: 1; }
 .nv-close:focus-visible { outline: 2px solid var(--cm-cyan-ink); outline-offset: 2px; }
 
@@ -356,10 +356,10 @@ html[data-xition] .cm-dock { z-index: calc(var(--cm-z-curtain) + 1); }
 /* Key hints: real key caps at a readable size. Touch screens have no keys, so the strip goes away there. */
 .nv-find .nv-foot {
     gap: 22px; padding: 12px 16px; align-items: center;
-    font: 600 13px/1 var(--cm-mono); letter-spacing: .1em; color: var(--cm-mute);
+    font: 600 var(--cm-ctos-t-ui)/1 var(--cm-mono); letter-spacing: .1em; color: var(--cm-mute);
 }
 .nv-find .nv-foot span { display: inline-flex; align-items: center; gap: 6px; }
-.nv-find .nv-foot .nv-key { min-width: 24px; padding: 5px 7px; text-align: center; font-size: 13px; color: var(--cm-fg); opacity: .85; margin-right: 0; }
+.nv-find .nv-foot .nv-key { min-width: 24px; padding: 5px 7px; text-align: center; font-size: var(--cm-ctos-t-ui); color: var(--cm-fg); opacity: .85; margin-right: 0; }
 .nv-find .nv-foot .nv-key + .nv-key { margin-right: 4px; }
 .nv-find .nv-foot .nv-key:last-of-type { margin-right: 6px; }
 @media (hover: none) { .nv-find .nv-foot { display: none; } }

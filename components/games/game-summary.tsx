@@ -99,7 +99,7 @@ function RoundCard({
                     <button
                         type="button"
                         onClick={onReview}
-                        className="font-mono text-[10px] uppercase tracking-wider text-muted-foreground underline underline-offset-2 hover:text-foreground"
+                        className="font-mono text-[11px] uppercase tracking-wider text-muted-foreground underline underline-offset-2 hover:text-foreground"
                     >
                         Review
                     </button>

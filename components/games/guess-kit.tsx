@@ -142,7 +142,7 @@ export function useGameKeys(rootRef: RefObject<HTMLElement | null>) {
 /** Small legend of the shortcuts (hidden on touch screens). */
 export function KeyLegend() {
     const key = (k: string) => (
-        <kbd className="rounded border border-border bg-foreground/5 px-1.5 py-0.5 font-mono text-[10px]">
+        <kbd className="rounded border border-border bg-foreground/5 px-1.5 py-0.5 font-mono text-[11px]">
             {k}
         </kbd>
     );
@@ -384,7 +384,7 @@ export function FilterPanel({
     return (
             <div className="gk-filters mb-3 space-y-2 rounded-[2px] border border-border/50 bg-foreground/5 p-3">
                         <div className="gk-row flex flex-wrap items-center gap-1.5">
-                            <span className="gk-label w-20 font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
+                            <span className="gk-label w-20 font-mono text-[11px] uppercase tracking-wider text-muted-foreground">
                                 Difficulty
                             </span>
                             <div className="gk-strip">
@@ -408,7 +408,7 @@ export function FilterPanel({
                             </div>
                         </div>
                         <div className="gk-row flex flex-wrap items-center gap-1.5">
-                            <span className="gk-label w-20 font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
+                            <span className="gk-label w-20 font-mono text-[11px] uppercase tracking-wider text-muted-foreground">
                                 Region
                             </span>
                             <div className="gk-strip">
@@ -431,7 +431,7 @@ export function FilterPanel({
                                 })}
                             </div>
                         </div>
-                        <div className="flex items-center justify-between font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
+                        <div className="flex items-center justify-between font-mono text-[11px] uppercase tracking-wider text-muted-foreground">
                             <span>
                                 {poolSize === 0
                                     ? "Nothing matches: loosen a filter"
@@ -479,7 +479,7 @@ export function StatsPanel({
                                     <p className="font-mono text-xl font-bold tabular-nums" style={{ color: COLOR }}>
                                         {v}
                                     </p>
-                                    <p className="font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
+                                    <p className="font-mono text-[11px] uppercase tracking-wider text-muted-foreground">
                                         {label}
                                     </p>
                                 </div>
@@ -493,7 +493,7 @@ export function StatsPanel({
                                         <span className="w-3 font-mono text-muted-foreground">{i + 1}</span>
                                         <div className="h-4 flex-1 rounded bg-foreground/10">
                                             <div
-                                                className="flex h-full items-center justify-end rounded px-1.5 font-mono text-[10px] font-bold text-black transition-[width] duration-700"
+                                                className="flex h-full items-center justify-end rounded px-1.5 font-mono text-[11px] font-bold text-black transition-[width] duration-700"
                                                 style={{
                                                     width: `${Math.max(n ? 8 : 0, (n / max) * 100)}%`,
                                                     backgroundColor: COLOR,

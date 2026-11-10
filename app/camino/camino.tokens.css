@@ -16,7 +16,7 @@
   --cm-ink-0:     #050607;   /* text ON paper/cyan plates */
   --cm-fg:        #e9eff1;   /* primary text */
   --cm-mute:      #8a99a3;   /* secondary text, labels */
-  --cm-dim:       #56646c;   /* disabled, placeholders, tick marks */
+  --cm-dim:       #66767f;   /* disabled, placeholders, tick marks */
   --cm-paper:     #f2f3f1;   /* white plates: tags, header bars, active seg */
   --cm-paper-mute:#4a565c;   /* secondary text on paper */
 
@@ -46,8 +46,8 @@
   --cm-t-micro:  9px;     /* mono caps, tick labels   (tracking .16em) */
   --cm-t-tag:    10.5px;  /* callout tags, buttons    (tracking .14em) */
   --cm-t-small:  12px;
-  --cm-t-body:   14px;
-  --cm-t-lead:   17px;
+  --cm-t-body:   15px;
+  --cm-t-lead:   18px;
   --cm-t-h3:     22px;
   --cm-t-h2:     clamp(26px, 3.5vw, 44px);
   --cm-t-h1:     clamp(40px, 7vw, 96px);   /* statement type, tight */
@@ -60,7 +60,7 @@
   --cm-s1: 4px;  --cm-s2: 8px;  --cm-s3: 12px;  --cm-s4: 16px;
   --cm-s5: 24px; --cm-s6: 32px; --cm-s7: 48px;  --cm-s8: 80px;
   --cm-gutter: max(16px, env(safe-area-inset-left, 0px));
-  --cm-measure: 66ch;
+  --cm-measure: 64ch;
 
   /* ---- Shape: hard edges. Radius is 2px max (0 on plates and tags); round only for status dots and compass ------- */
   --cm-radius: 2px;
