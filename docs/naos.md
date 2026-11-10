@@ -141,3 +141,13 @@ Known Safari risks (WebKit not tested in the cloud; check on an iPhone):
 ## Dock icons and motion
 
 The bottom dock draws its icons from `components/cm/pixel-icons.tsx`: seven original 12 x 12 pixel drawings (`#` solid, `:` half-tone, `.` empty) rendered as crisp SVG at 2px per cell. Half-tones are split into two checkerboard phases, and CSS swaps them in hard steps to shimmer on hover and when a tab becomes current. Each tab also has its own small move (hop, flip, slide, toss, write, rewind, nod) in `nav-naos.css`. The plate's travel time grows with distance, and a cyan dither wake is drawn across the tabs it crossed. All of it is switched off under `prefers-reduced-motion`.
+
+## Icon set (components/cm/pixel-icons.tsx)
+
+Every icon on the site comes from one place: `PixelIcon` (or `px(name)` where a data file stores a component). Each icon is a hand-drawn 12 x 12 map in `MAPS`: `#` solid, `:` half-tone (checkerboard), `.` empty. To add an icon, add one entry (12 rows of 12 characters) and use `<PixelIcon name="..." size={24} />`. Mirrors and quarter turns (`chevR`, `chevsR`, `arrowL`, `arrowUp`) are derived in code. Brand marks (GitHub, Discord, Instagram, TikTok, YouTube, mail) are redrawn on the same grid, not copied.
+
+- Icons are decorative (`aria-hidden`); the button or link that holds one carries the accessible label.
+- Sizes that are multiples of 12 (12, 24, 48) are the crispest; the default is 16.
+- Hover and focus shimmer the half-tones (phase A and B swap in hard steps), and a few icons react (close turns, chevrons nudge, reset spins back). All of it lives in `app/camino/icons-naos.css` and turns off under `prefers-reduced-motion`.
+- The dock keeps its own stronger per-tab motion in `nav-naos.css`.
+- Remaining typographic arrows inside running text ("Open →") are plain text on purpose.

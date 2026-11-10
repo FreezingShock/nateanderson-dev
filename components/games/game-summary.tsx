@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, type ReactNode } from "react";
-import { Flag, Globe2, Map as MapIcon } from "lucide-react";
+import { px, type PixelComponent } from "@/components/cm/pixel-icons";
 import {
     MAX_GUESSES,
     flagSrc,
@@ -9,6 +9,10 @@ import {
     type GameResults,
     type Score,
 } from "@/lib/outline-game";
+
+const Globe2 = px("globe");
+const MapIcon = px("map");
+const Flag = px("flag");
 
 // The end-of-game summary: the total score and one card per round, with a
 // Review button back into each. Rounds you skipped show as skipped (0).
@@ -48,7 +52,7 @@ function RoundCard({
     delay,
     onReview,
 }: {
-    icon: typeof Globe2;
+    icon: PixelComponent;
     title: string;
     detail: string;
     points: number;

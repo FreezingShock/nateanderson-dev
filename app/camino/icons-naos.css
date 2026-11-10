@@ -1,0 +1,36 @@
+/* naOS pixel icons (components/cm/pixel-icons.tsx). One set for the whole site: 12 x 12 art, 1-bit solid pixels plus
+   dithered half-tones. Phase A of the dither is always on and phase B is the opposite checkerboard, kept hidden until
+   an icon reacts. The dock has its own, richer rules in nav-naos.css; everything below leaves the dock alone. */
+svg.px { display: inline-block; flex: none; overflow: visible; vertical-align: middle; shape-rendering: crispEdges; }
+svg.px .px-b { opacity: 0; }
+svg.px.cm-ico { width: 24px; height: 24px; }
+
+@media (prefers-reduced-motion: no-preference) {
+    /* Hover and keyboard focus on any link or button shimmers the half-tones in hard steps, like the dock tabs. */
+    :is(a, button, summary, [role="button"]):is(:hover, :focus-visible):not(.cm-dock a) svg.px .px-a { animation: dk-a .32s steps(1) 2; }
+    :is(a, button, summary, [role="button"]):is(:hover, :focus-visible):not(.cm-dock a) svg.px .px-b { animation: dk-b .32s steps(1) 2; }
+
+    svg.px { transition: transform .14s steps(2); }
+    :is(a, button):active:not(.cm-dock a) svg.px { transform: translate3d(0, 1px, 0); }
+
+    /* A few icons say something more specific when you reach for them. All of it is stepped, never eased. */
+    button:hover svg.px[data-ic="close"] { transform: rotate(90deg); }
+    button:hover svg.px[data-ic="reset"] { transform: rotate(-90deg); }
+    button:hover svg.px[data-ic="search"] { transform: translate3d(1px, -1px, 0); }
+    button:hover svg.px[data-ic="chevL"], button:hover svg.px[data-ic="chevsL"] { transform: translate3d(-2px, 0, 0); }
+    button:hover svg.px[data-ic="chevR"], button:hover svg.px[data-ic="chevsR"] { transform: translate3d(2px, 0, 0); }
+    button:hover svg.px[data-ic="share"], button:hover svg.px[data-ic="external"], a:hover svg.px[data-ic="external"] { transform: translate3d(1px, -1px, 0); }
+    button:hover svg.px[data-ic="shuffle"] { transform: scaleX(-1); }
+    button:hover svg.px[data-ic="bulb"] { animation: px-flick .3s steps(1) 1; }
+    .nv-snd:hover svg.px[data-ic="volumeOn"] { transform: scale(1.08); }
+}
+@keyframes px-flick { 0% { opacity: 1; } 25% { opacity: .35; } 50% { opacity: 1; } 75% { opacity: .5; } 100% { opacity: 1; } }
+
+@media (prefers-reduced-motion: reduce) {
+    svg.px, svg.px path { animation: none !important; transition: none !important; }
+}
+
+/* Arrows that sit inside the CTA blocks, the back button, the footer links and the homepage buttons. */
+.cta-b em svg.px, .cm-back i svg.px, .hcta-arr svg.px, .na-arr svg.px { width: 18px; height: 18px; }
+.cta-b i svg.px { width: 18px; height: 18px; }
+.na-arr, .hcta-arr { display: inline-grid; place-items: center; }

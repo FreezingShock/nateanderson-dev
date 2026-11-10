@@ -1,9 +1,9 @@
 "use client";
 
+import { PIXEL_FOR, PixelIcon } from "@/components/cm/pixel-icons";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { X } from "lucide-react";
 import { navItems } from "@/lib/nav";
 import { openLauncher } from "@/components/cm/bar";
 
@@ -68,7 +68,7 @@ export function SiteMap() {
                 <div className="nv-head">
                     <span>site map // {navItems.length} sections</span>
                     <button type="button" className="nv-x" onClick={hide} aria-label="Close site map">
-                        <X aria-hidden="true" size={15} strokeWidth={2} />
+                        <PixelIcon name="close" size={24} />
                     </button>
                 </div>
                 <ol className="nv-tree">
@@ -77,7 +77,7 @@ export function SiteMap() {
                         return (
                             <li key={n.href} className="nv-sec-row" data-on={on ? "" : undefined}>
                                 <Link href={n.href} className="nv-sec" aria-current={on ? "page" : undefined}>
-                                    <span className="nv-ix">{n.no}</span>
+                                    <span className="nv-ix"><PixelIcon name={PIXEL_FOR[n.href] ?? "home"} size={24} /></span>
                                     <span className="nv-sec-t">{n.title}</span>
                                     <small>{n.label}</small>
                                 </Link>

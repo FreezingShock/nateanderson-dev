@@ -1,8 +1,8 @@
 "use client";
 
+import { PixelIcon } from "@/components/cm/pixel-icons";
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { Check } from "lucide-react";
 import { Meter } from "@/components/cm/ui";
 import { CountUp } from "@/components/cm/reveal";
 import { cn } from "@/lib/utils";
@@ -176,7 +176,7 @@ function Tip({
             <div className="cm-hbar">
                 <span className={marker.status === "now" ? "live" : ""}>{marker.categoryLabel}</span>
                 <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
-                    {marker.status === "done" && <Check className="cm-ico" style={{ width: 11, height: 11 }} />}
+                    {marker.status === "done" && <PixelIcon name="check" className="cm-ico" style={{ width: 11, height: 11 }} />}
                     {statusText}
                 </span>
             </div>

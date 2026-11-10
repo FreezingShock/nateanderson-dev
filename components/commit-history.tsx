@@ -1,7 +1,7 @@
 "use client";
 
+import { PixelIcon } from "@/components/cm/pixel-icons";
 import { useEffect, useRef, useState } from "react";
-import { ChevronsLeft, ChevronLeft, ChevronRight, ChevronsRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { CommitEntry } from "@/lib/github";
 import styles from "@/app/history/history.module.css";
@@ -194,19 +194,19 @@ export function CommitHistory({
     const controls = (
         <div className={`cm-row ${styles.controls}`}>
             <button type="button" className="cm-btn" disabled={busy || page <= 1} onClick={() => goToPage(1)} aria-label="First page">
-                <ChevronsLeft className="cm-ico" />
+                <PixelIcon name="chevsL" className="cm-ico" />
             </button>
             <button type="button" className="cm-btn" disabled={busy || page <= 1} onClick={() => goToPage(page - 1)} aria-label="Previous page">
-                <ChevronLeft className="cm-ico" />
+                <PixelIcon name="chevL" className="cm-ico" />
             </button>
             <span className={`cm-coord ${styles.range}`} aria-live="polite">
                 Page {page} of {totalPages}
             </span>
             <button type="button" className="cm-btn" disabled={busy || page >= totalPages} onClick={() => goToPage(page + 1)} aria-label="Next page">
-                <ChevronRight className="cm-ico" />
+                <PixelIcon name="chevR" className="cm-ico" />
             </button>
             <button type="button" className="cm-btn" disabled={busy || page >= totalPages} onClick={() => goToPage(totalPages)} aria-label="Last page">
-                <ChevronsRight className="cm-ico" />
+                <PixelIcon name="chevsR" className="cm-ico" />
             </button>
         </div>
     );

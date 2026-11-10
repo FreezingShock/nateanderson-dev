@@ -19,6 +19,7 @@ import {
 import { pageMeta } from "@/lib/seo";
 
 import { NaosBackdrop } from "@/components/cm/naos-art";
+import { PixelIcon } from "@/components/cm/pixel-icons";
 export const revalidate = 3600;
 
 export async function generateStaticParams() {
@@ -183,7 +184,7 @@ export default async function CourseDetailPage({
                             <Link key={dir} href={`/studies/${c.slug}`} className={`cta-b ${arrow === "←" ? "b" : "c"}`}>
                                 <i>{arrow === "←" ? "prev" : "next"}</i>
                                 <span>{c.title}</span>
-                                <em aria-hidden="true">{arrow}</em>
+                                <em aria-hidden="true"><PixelIcon name={arrow === "←" ? "arrowL" : "arrowR"} /></em>
                                 <span className="sr-only">{dir}: {c.title}</span>
                             </Link>
                         ))}
