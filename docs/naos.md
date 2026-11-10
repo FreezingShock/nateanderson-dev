@@ -141,3 +141,14 @@ Known Safari risks (WebKit not tested in the cloud; check on an iPhone):
 ## Dock icons and motion
 
 The bottom dock draws its icons from `components/cm/pixel-icons.tsx`: seven original 12 x 12 pixel drawings (`#` solid, `:` half-tone, `.` empty) rendered as crisp SVG at 2px per cell. Half-tones are split into two checkerboard phases, and CSS swaps them in hard steps to shimmer on hover and when a tab becomes current. Each tab also has its own small move (hop, flip, slide, toss, write, rewind, nod) in `nav-naos.css`. The plate's travel time grows with distance, and a cyan dither wake is drawn across the tabs it crossed. All of it is switched off under `prefers-reduced-motion`.
+
+## Surfaces and chrome (app/camino/naos-surfaces.css)
+
+Loaded after ctos.css. It makes every panel, card and strip read against the art and gives the chrome one measuring-scale detail.
+
+- Rest: solid `--cm-ctos-panel` ground, `--cm-ctos-edge` border, and `--cm-ctos-lift` (a 1px dark keyline plus a soft drop) so a plate separates from the dither. Box-shadow only, no blur filters.
+- Hover: edge turns cyan at 70%, ground lifts to #181818. Live (`.on`, `aria-pressed`): full cyan border. Focus: one 2px cyan ring, offset 3px.
+- Chips, the skills level legend and the About/History/Blog stats strip get plates instead of hairlines on art.
+- Section heads get a dark pool behind the label, title and blurb (background gradient on a pseudo-element, never a mask).
+- Section rules carry a tick scale after the cyan stub; the footer rule matches. Live/good `.cm-state` labels get a square pip.
+- Defaults use `:where(.ctos)` so pressed chips, paper cards and page rules still win. Page CSS can override freely.

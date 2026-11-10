@@ -1,0 +1,91 @@
+/* ==========================================================================
+   naOS surfaces and chrome (2026-11-10). Loaded after ctos.css.
+   Job: every panel, card and strip reads clearly against the dither art, in the same four states, and the page
+   chrome (section rules, footer) carries the same measuring-scale detail. Nothing here changes type, icons or motion.
+
+   Specificity notes. Defaults use :where(.ctos) so they sit at the specificity of the bare class and every page rule
+   or state rule (pressed chips, paper cards, cyan cards) still wins over them.
+   No clip-path or mask on data-rx items; no backdrop-filter.
+   ========================================================================== */
+:root {
+  /* One edge lift for anything that sits over art: a 1px dark keyline just outside the border, plus a soft drop that
+     separates the plate from the dither behind it. Box-shadow only, so it costs nothing to paint. */
+  --cm-ctos-lift: 0 0 0 1px rgba(0, 0, 0, .55), 0 14px 28px -14px rgba(0, 0, 0, .75);
+  --cm-ctos-lift-hi: 0 0 0 1px rgba(0, 0, 0, .55), 0 18px 32px -14px rgba(0, 0, 0, .8);
+  /* Ground for chips, legends and strips that used to be see-through. */
+  --cm-ctos-plate: rgba(19, 19, 19, .94);
+  --cm-ctos-edge: rgba(226, 238, 240, .30);
+  --cm-ctos-edge-live: color-mix(in srgb, var(--cm-cyan) 70%, transparent);
+}
+
+/* ---- 1. Panels, cards, strips: rest ------------------------------------------------------------------------------ */
+.ctos .cm-panel,
+.ctos .hero-status.id,
+.ctos .meta.stats,
+.ctos .cm-card,
+.ctos .cta-b { box-shadow: var(--cm-ctos-lift); }
+.ctos .cm-panel:not(.hero-status) { border-top-color: var(--cm-ctos-edge); border-right-color: var(--cm-ctos-edge); border-bottom-color: var(--cm-ctos-edge); }
+
+/* Plain cards (no rotation variant): a solid ground instead of 2% white, and a visible edge. The rotation variants
+   (paper block, cyan-edged, dashed dither) keep their own grounds from ctos.css. */
+:where(.ctos) .cm-card { background-color: var(--cm-ctos-panel); border-color: var(--cm-ctos-edge); }
+
+/* Stats strip: the About, History and Blog strips floated on the art; they now share the hero strip's plate. */
+.ctos .meta.stats { background: var(--cm-ctos-panel); border: 1px solid var(--cm-ctos-edge); border-left: 3px solid var(--cm-pop-magenta); }
+.ctos .meta.stats > div { border-left-color: var(--cm-hair-hi); }
+
+/* ---- 2. Hover and live ------------------------------------------------------------------------------------------- */
+:where(.ctos) .cm-card:hover { background-color: #181818; border-color: var(--cm-ctos-edge-live); }
+.ctos .cm-card.link:hover, .ctos .cm-card[aria-pressed="true"], .ctos .cm-card.on { box-shadow: var(--cm-ctos-lift-hi); }
+.ctos .cm-card[aria-pressed="true"], .ctos .cm-card.on { border-color: var(--cm-cyan); }
+.ctos .cm-panel:hover:not(.hero-status) { border-top-color: var(--cm-ctos-edge-live); border-right-color: var(--cm-ctos-edge-live); border-bottom-color: var(--cm-ctos-edge-live); }
+.ctos .cm-panel, .ctos .cm-card { transition: border-color var(--cm-d-base), box-shadow var(--cm-d-base), background-color var(--cm-d-base), transform var(--cm-d-base); }
+
+/* ---- 3. Focus: one ring for every control and card, same as the Back button and the dock ----------------------- */
+.ctos a:focus-visible, .ctos button:focus-visible, .ctos [tabindex]:focus-visible, .ctos summary:focus-visible {
+  outline: 2px solid var(--cm-cyan); outline-offset: 3px;
+}
+
+/* ---- 4. Chips, legends: solid plates (they were hairline boxes with the art showing through) ----------- */
+:where(.ctos) .cm-chip { background-color: var(--cm-ctos-plate); border-color: var(--cm-ctos-edge); }
+:where(.ctos) .cm-chip:hover { background-color: #1c1c1c; border-color: var(--cm-ctos-edge-live); color: var(--cm-fg); }
+/* The "1 · Learning 2 · Intermediate" level legend and any other bare mono readout row set directly on a section. */
+.ctos .cm-sec-head ~ div > p.cm-row.cm-coord, .ctos .cm-wrap > div > p.cm-row.cm-coord {
+  display: inline-flex; justify-self: start; width: fit-content; max-width: 100%;
+  padding: 8px 12px; background: var(--cm-ctos-plate); border: 1px solid var(--cm-ctos-edge); border-left: 3px solid var(--cm-cyan);
+  color: var(--cm-ctos-meta);
+}
+
+/* ---- 5. Copy set straight on the art gets a dark pool behind it --------------------------------------------------- */
+.ctos .cm-sec-head > div { position: relative; isolation: isolate; }
+.ctos .cm-sec-head > div::before {
+  content: ""; position: absolute; z-index: -1; pointer-events: none; inset: -18px -48px -18px -24px;
+  background: radial-gradient(ellipse 80% 90% at 28% 50%, rgba(26, 26, 26, .86) 0, rgba(26, 26, 26, .6) 55%, rgba(26, 26, 26, 0) 100%);
+}
+@media (max-width: 760px) { .ctos .cm-sec-head > div::before { inset: -12px -14px -12px -14px; } }
+
+/* ---- 6. Status pips on live labels -------------------------------------------------------------------------------- */
+.cm-state.live::before, .cm-state.good::before {
+  content: ""; display: inline-block; width: 6px; height: 6px; margin-right: 7px; vertical-align: 1px; background: currentColor;
+}
+
+/* ---- 7. Chrome: measuring scale on every section rule and the footer rule ---------------------------------------- */
+/* The cyan stub that opens each rule now runs into a short scale: a tick every 12px, a taller one every 60px. */
+.cm-sec-rule::before, .cm-foot::before {
+  content: ""; position: absolute; left: 34px; top: 1px; width: min(34%, 420px); height: 8px; pointer-events: none;
+  background:
+    repeating-linear-gradient(90deg, rgba(244, 244, 242, .4) 0 1px, transparent 1px 60px) 0 0 / 60px 8px repeat-x,
+    repeating-linear-gradient(90deg, rgba(244, 244, 242, .24) 0 1px, transparent 1px 12px) 0 0 / 12px 4px repeat-x;
+  opacity: .8;
+}
+.cm-foot::after { content: ""; position: absolute; left: 0; top: -1px; width: 28px; height: 3px; background: var(--cm-cyan); pointer-events: none; }
+/* The footer sits over the last wash; a dark ground keeps its small mono copy readable. */
+.cm-foot { background: linear-gradient(180deg, rgba(26, 26, 26, .5), rgba(26, 26, 26, .86)); }
+/* Footer link columns: dashed rule under each column head already exists; match it between the top block and the base row. */
+.cm-foot-base { border-top: 1px dashed var(--cm-hair-hi); padding-top: var(--cm-s4); }
+.cm-foot-social .cm-btn { background: var(--cm-ctos-plate); border-color: var(--cm-ctos-edge); }
+.cm-foot-social .cm-btn:hover { border-color: var(--cm-cyan); }
+
+@media (prefers-reduced-motion: reduce) {
+  .ctos .cm-panel, .ctos .cm-card { transition: none; }
+}
