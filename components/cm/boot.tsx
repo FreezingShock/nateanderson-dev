@@ -1,8 +1,8 @@
 /**
  * naOS load sequence (server-rendered, pure CSS, visuals in app/camino/motion.css section 6).
  * The inline script in <head> sets html[data-boot] before first paint:
- *   full  = first load of the session: a short system boot (log lines, title card, counter, shutters open).
- *   quick = any later load in the same session (reload, typed URL): a white title card sweeps across and off.
+ *   full  = the very first visit on this device: a short system boot (log lines, title card, counter, shutters open).
+ *   quick = every later load, in the same session or a new one: a white title card sweeps across and off.
  *   done  = finished, or skipped by a tap or key press. Reduced motion never shows either.
  */
 export function Boot() {
@@ -42,8 +42,8 @@ export const BOOT_SCRIPT = `(function(){try{var d=document.documentElement;
 if(matchMedia('(prefers-reduced-motion: reduce)').matches)return;
 var n=performance.getEntriesByType('navigation')[0];
 if(n&&n.type==='back_forward')return;
-var seen=sessionStorage.getItem('cm-boot');
-sessionStorage.setItem('cm-boot','1');
+var seen=false;
+try{seen=!!localStorage.getItem('cm-boot-seen')||!!sessionStorage.getItem('cm-boot');localStorage.setItem('cm-boot-seen','1');sessionStorage.setItem('cm-boot','1')}catch(x){}
 var full=!seen;
 d.setAttribute('data-boot',full?'full':'quick');
 var ms=full?1600:800;
