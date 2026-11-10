@@ -137,3 +137,7 @@ Known Safari risks (WebKit not tested in the cloud; check on an iPhone):
 - `@property --cm-bp` (`motion.css`) needs Safari 16.4 or newer. The fallback is the initial value, so check the boot and menu motion.
 - Scroll-linked reveals rely on IntersectionObserver plus rAF. iOS Low Power Mode slows rAF, so check that content still appears on scroll.
 - iOS zooms any focused input under 16px. The one input checked (flag guesser) is 16px or larger. Check the command bar search.
+
+## Dock icons and motion
+
+The bottom dock draws its icons from `components/cm/pixel-icons.tsx`: seven original 12 x 12 pixel drawings (`#` solid, `:` half-tone, `.` empty) rendered as crisp SVG at 2px per cell. Half-tones are split into two checkerboard phases, and CSS swaps them in hard steps to shimmer on hover and when a tab becomes current. Each tab also has its own small move (hop, flip, slide, toss, write, rewind, nod) in `nav-naos.css`. The plate's travel time grows with distance, and a cyan dither wake is drawn across the tabs it crossed. All of it is switched off under `prefers-reduced-motion`.
