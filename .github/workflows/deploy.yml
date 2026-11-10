@@ -1,0 +1,36 @@
+name: Deploy
+
+# Vercel builds only the `release` branch (see vercel.json). Merges into `integration` deploy nothing.
+# This workflow moves `release` up to the head of `integration`, which is what triggers one deployment.
+# Skipped Vercel builds still count against the free plan's 100 deployments a day, so we avoid triggering them at all.
+
+on:
+    workflow_dispatch:
+    schedule:
+        # One automatic batch a day, 11:00 UTC (3am Pacific). Does nothing if nothing changed.
+        - cron: "0 11 * * *"
+
+permissions:
+    contents: write
+
+concurrency:
+    group: deploy
+    cancel-in-progress: false
+
+jobs:
+    release:
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v4
+              with:
+                  ref: integration
+                  fetch-depth: 0
+            - name: Fast-forward release to integration
+              run: |
+                  git fetch origin release || true
+                  if git rev-parse --verify -q origin/release >/dev/null && [ "$(git rev-parse origin/release)" = "$(git rev-parse HEAD)" ]; then
+                      echo "release already matches integration ($(git rev-parse --short HEAD)); nothing to deploy"
+                      exit 0
+                  fi
+                  git push origin HEAD:refs/heads/release
+                  echo "release -> $(git rev-parse --short HEAD)" >> "$GITHUB_STEP_SUMMARY"
