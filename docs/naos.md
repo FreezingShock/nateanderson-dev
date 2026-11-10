@@ -115,4 +115,4 @@ Known Safari risks (WebKit not tested in the cloud; check on an iPhone):
 - `color-mix()` (history rows, `.id-rows`) needs Safari 16.2 or newer; older browsers lose only the tinted rule colour.
 - `@property --cm-bp` (`motion.css`) needs Safari 16.4 or newer. The fallback is the initial value, so check the boot and menu motion.
 - Scroll-linked reveals rely on IntersectionObserver plus rAF. iOS Low Power Mode slows rAF, so check that content still appears on scroll.
-- iOS zooms any focused input under 16px. The one input checked (flag guesser) is 16px or larger. Check the command bar search and the account forms.
+- iOS zooms any focused input under 16px. The one input checked (flag guesser) is 16px or larger. Check the command bar search.
