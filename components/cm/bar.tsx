@@ -34,7 +34,7 @@ export function openLauncher() {
     window.dispatchEvent(new Event("cm:launcher"));
 }
 
-export function openMenu() {
+function openMenu() {
     window.dispatchEvent(new Event("cm:menu"));
 }
 
