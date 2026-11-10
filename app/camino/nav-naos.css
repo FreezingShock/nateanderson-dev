@@ -127,7 +127,7 @@ html[data-xition] .cm-dock { z-index: calc(var(--cm-z-curtain) + 1); }
     background: var(--nv-plate); will-change: transform;
     transition: transform var(--dur) cubic-bezier(.2, .9, .1, 1), opacity .2s;
 }
-.cm-dock .ind::before {
+.cm-dock .ind::before, .cm-dock a[data-on]::before {
     content: ""; position: absolute; inset: 3px; pointer-events: none; --c: #0a8f9a;
     background:
         linear-gradient(var(--c), var(--c)) 0 0 / 5px 2px, linear-gradient(var(--c), var(--c)) 0 0 / 2px 5px,
@@ -165,7 +165,10 @@ html[data-xition] .cm-dock { z-index: calc(var(--cm-z-curtain) + 1); }
 .cm-dock a:active svg.px { transform: translate3d(0, 1px, 0); }
 .cm-dock a:focus-visible { outline: 2px solid var(--cm-cyan); outline-offset: -3px; }
 .cm-dock a[data-on]:focus-visible { outline-color: var(--nv-ink); }
-.cm-dock a[data-on] { color: var(--nv-ink); }
+.cm-dock a[data-on] { color: var(--nv-ink); background-color: var(--nv-plate); animation: dk-seat 0s linear var(--dur) backwards; }
+/* The travelling plate is an enhancement. The current tab also carries its own plate, which appears once the travel
+   time has passed, so the dark label can never end up on the dark bar even if the plate fails to paint. */
+@keyframes dk-seat { from { background-color: transparent; } }
 
 /* Pixel icons: 12 x 12 art drawn at 2 pixels per cell, so edges stay crisp. Dither phase A is always on; phase B
    is the opposite checkerboard. Swapping them in hard steps makes the half-tones shimmer. */
