@@ -34,7 +34,6 @@ export const NEXT_MONTHS: UpcomingMonth[] = [
         goals: [
             "Submit CSU Apply to SLO and Pomona by Nov 20 (hard deadline Nov 30)",
             "Start the first portfolio design: a SketchUp redesign of a local space",
-            "Keep shipping updates to Fractured Islands: Ascension",
         ],
     },
     {

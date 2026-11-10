@@ -52,6 +52,17 @@
 .cr-sheet > .p-foot { margin: auto -18px 0; }
 .cr-sheet .cta-b { justify-self: start; }
 
+/* Case-study layout: a large lead image, the details sheet, then a gallery. Screenshots keep their own 16:10 frame. */
+.cr-case-lead, .cr-case-shot { margin: 0; display: grid; gap: 10px; }
+.cr-case-lead img, .cr-case-shot img {
+    display: block; width: 100%; height: auto; aspect-ratio: 16 / 10; object-fit: cover;
+    border: 1px solid var(--cm-hair-hi); background: #0b0906;
+}
+.cr-case-lead figcaption, .cr-case-shot figcaption { font-size: 13px; line-height: 1.5; color: var(--cm-mute); }
+.cr-case-gallery { display: grid; gap: 14px; }
+.cr-case-grid { display: grid; gap: 22px; grid-template-columns: minmax(0, 1fr); }
+@media (min-width: 760px) { .cr-case-grid.is-multi { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+
 /* Big title blocks, as on the homepage: the stacked white bars fill the column on phones and reach the hero size on desktop. */
 .ctos .cr-head .cm-highlight > * { font-size: clamp(34px, 10vw, 84px); }
 

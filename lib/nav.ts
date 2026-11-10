@@ -63,7 +63,6 @@ export const navItems: NavItem[] = [
         blurb: "Who I am and how the parts connect.",
         children: [
             { href: "/about#running", label: "Running & athletics" },
-            { href: "/about#roblox", label: "Fractured Islands" },
             { href: "/about#skills", label: "Skills" },
         ],
     },
@@ -78,6 +77,5 @@ export const launcherLinks: { href: string; label: string; group: string }[] = [
     { href: "/creations/renovations", label: "Renovations", group: "Creations" },
     { href: "/creations/artwork", label: "Artwork", group: "Creations" },
     { href: "/about#running", label: "Running & athletics", group: "About" },
-    { href: "/about#roblox", label: "Fractured Islands", group: "About" },
     { href: "/about#skills", label: "Skills", group: "About" },
 ];

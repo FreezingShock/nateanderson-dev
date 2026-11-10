@@ -31,6 +31,9 @@ export const identity = {
     tagline: "Building games, renders, and systems, and headed for a construction management degree.",
 };
 
+// Rows in any other section (for example "archived") are hidden from the lists and their detail pages 404.
+const VISIBLE_SECTIONS = ["projects", "renovations"];
+
 interface ProjectRow {
     slug: string;
     title: string;
@@ -85,6 +88,7 @@ export async function getProjectBySlug(slug: string): Promise<ProjectWithSection
         .from("projects")
         .select("slug, title, category, status, description, tags, section")
         .eq("slug", slug)
+        .in("section", VISIBLE_SECTIONS)
         .maybeSingle();
 
     if (error || !data) {
@@ -96,7 +100,7 @@ export async function getProjectBySlug(slug: string): Promise<ProjectWithSection
 }
 
 export async function getAllProjectSlugs(): Promise<string[]> {
-    const { data, error } = await supabase.from("projects").select("slug");
+    const { data, error } = await supabase.from("projects").select("slug").in("section", VISIBLE_SECTIONS);
     if (error || !data) {
         if (error) console.error("Failed to fetch project slugs from Supabase:", error.message);
         return [];
