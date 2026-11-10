@@ -1,7 +1,7 @@
 name: Deploy
 
 # Vercel builds only the `release` branch (see vercel.json). Merges into `integration` deploy nothing.
-# This workflow  to the head of `integration`, which is what triggers one deployment.
+# This workflow adds a commit to `release` with the files of `integration`, which triggers one deployment.
 # Skipped Vercel builds still count against the free plan's 100 deployments a day, so we avoid triggering them at all.
 
 # Trigger: push a branch named deploy/<anything> (a thread creates it from integration, or run
