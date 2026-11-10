@@ -68,6 +68,8 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
     return (
         <html lang="en" className={`cm ${arimo.variable} ${plexMono.variable}`} suppressHydrationWarning>
             <head>
+                {/* The site is already a dark design; Dark Reader recolours the white dock plate and leaves its dark label unreadable. */}
+                <meta name="darkreader-lock" />
                 {/* Picks the load-sequence variant before first paint (see components/cm/boot.tsx). */}
                 <script dangerouslySetInnerHTML={{ __html: BOOT_SCRIPT }} />
             </head>
