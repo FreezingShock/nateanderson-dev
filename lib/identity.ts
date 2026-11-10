@@ -12,7 +12,7 @@ export interface Pillar {
 
 export const PILLARS: Pillar[] = [
     { label: "Build", headline: "Games and websites", detail: "Systems design, Three.js and real open data" },
-    { label: "Make", headline: "Blender + 3D", detail: "Architecture and renovation studies, modeled and redesigned" },
+    { label: "Make", headline: "3D and design", detail: "Architecture and renovation studies, modeled and redesigned" },
     { label: "Run", headline: "Cross country", detail: "Chasing faster miles, captain of cross country and track" },
     { label: "Think", headline: "Philosophy", detail: "Kierkegaard, agnosticism and egg theory" },
 ];
