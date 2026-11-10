@@ -178,7 +178,7 @@ export function gate(id: string, tier: number, minGap: number): boolean {
     return true;
 }
 
-export const semi = (n: number) => 2 ** (n / 12);
+const semi = (n: number) => 2 ** (n / 12);
 const SCALE = [0, 2, 4, 7, 9]; // major pentatonic
 /** Frequency of scale degree i (0 = C4), going up through octaves, and down for negatives. */
 export function note(i: number) {

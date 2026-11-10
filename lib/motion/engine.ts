@@ -53,7 +53,7 @@ export const prefersReducedMotion = () =>
     typeof matchMedia === "function" && matchMedia("(prefers-reduced-motion: reduce)").matches;
 
 /** True while the boot sequence or a page curtain covers the screen. */
-export function gated(): boolean {
+function gated(): boolean {
     const d = html();
     const b = d.getAttribute("data-boot");
     return b === "full" || b === "quick" || d.hasAttribute("data-xition");
@@ -241,7 +241,7 @@ function onMutations(muts: MutationRecord[]) {
 const GLYPHS = "01<>/\\[]{}#%$&@*+=-_:;|!?";
 const running = new WeakMap<HTMLElement, number>();
 
-export function scramble(el: HTMLElement, ms?: number) {
+function scramble(el: HTMLElement, ms?: number) {
     const final = el.getAttribute("data-final") ?? el.textContent ?? "";
     el.setAttribute("data-final", final);
     if (prefersReducedMotion() || !final.trim()) {

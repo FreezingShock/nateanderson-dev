@@ -13,7 +13,7 @@ Wrap the page in `<div className="ctos">` and use `Section ctos` (components/cm/
 - `app/camino/ctos.css`: all naOS CSS (imported after `games.css` in `app/globals.css`).
 - `app/camino/motion.css`: slab and `.hx` rise rules.
 - `lib/motion/engine.ts`: reveal engine (started by `components/cm/motion-root.tsx`).
-- `components/cm/motion.tsx`: `Scramble`, `Slab`, `ScrollType`, `Reveal`.
+- `components/cm/motion.tsx`: `Scramble`, `Slab`, `ScrollType`.
 - `components/cm/ui.tsx`: `Section` (`ctos` prop), `PageHead`.
 - History backdrop: `public/naos/history.png` (the commit terrain, `history()` in `scripts/naos-art/generate.py`), placed in `app/history/page.tsx` with page-scoped CSS in `app/history/history.module.css`.
 - `components/site-footer.tsx`: shared footer, naOS parts hidden unless `.ctos` is on the page.
