@@ -3,7 +3,11 @@
 // button every 3 s, reboots when it roughly doubles income. Prints when each milestone lands (play time, no offline).
 import * as E from "../../lib/nodefarm/engine.ts";
 const hours = Number(process.argv[2] || 24 * 14);
+// NF_TUNE='{"perProducer":{"copper":0.02}}' deep-merges over TUNE so numbers can be tried without editing the engine.
+const merge = (a, b) => { for (const [k, v] of Object.entries(b)) a[k] = v && typeof v === "object" && !Array.isArray(v) && a[k] && typeof a[k] === "object" ? merge(a[k], v) : v; return a; };
+if (process.env.NF_TUNE) merge(E.TUNE, JSON.parse(process.env.NF_TUNE));
 const s = E.fresh(0);
+if (!process.env.NF_NODRONES) s.armed = ["mult", "copper", "silicon", "quartz", "aether", "runes", "starglass", "voidsteel", "chrono"]; // the bot arms every stat once it has Drones
 const marks = {};
 const ascents = [];
 const mark = (k, t) => { if (!(k in marks)) marks[k] = t; };
@@ -32,6 +36,8 @@ while (t < hours * 3600) {
                 if (s.mult >= b.cost * 1.0 && (s.mult >= b.cost * 1.3 || t - (marks.lastReboot || 0) > 900)) { E.press(s, "reboot", k); marks.lastReboot = t; break; }
             }
         }
+        // Drones: cheapest tier first, paid in Aether
+        if (!process.env.NF_NODRONES && E.dronesOpen(s)) for (let k = 0; k < E.TIERS; k++) if (s.aether >= E.droneCost(s, k) * 3 && E.buyDrone(s, k)) mark("drone " + k, t);
         E.checkGoals(s);
         if (s.reboot >= 1) mark("first reboot", t);
         if (s.life.reboots >= 25) mark("25 reboots", t);
@@ -51,6 +57,8 @@ while (t < hours * 3600) {
             }
         }
         for (const n of treeOrder) if (!s.tree.includes(n.id) && E.buyNode(s, n.id)) mark("node " + n.id, t);
+        // leftover AP goes into the Power core, then Cold cache
+        if (s.tree.length === E.TREE.length || s.ap > 40) { while (E.buyPerk(s, "power")); }
         if (s.tree.length === E.TREE.length) mark("tree done", t);
         if (s.tree.length === E.TREE.length && s.chrono > 1e3) break;
     }

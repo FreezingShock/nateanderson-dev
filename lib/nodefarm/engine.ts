@@ -40,11 +40,11 @@ export const statDef = (id: StatId) => STATS.find((s) => s.id === id)!;
 export const TUNE = {
     // button price = base * ratio^tier * growth^timesBought
     cost: {
-        mult: { base: 12, ratio: 8, growth: 1.09 },
-        copper: { base: 600_000, ratio: 10, growth: 1.12 },
-        silicon: { base: 1500, ratio: 10, growth: 1.12 },
-        quartz: { base: 9000, ratio: 10, growth: 1.12 },
-        aether: { base: 60_000, ratio: 10, growth: 1.12 },
+        mult: { base: 8, ratio: 8, growth: 1.08 },
+        copper: { base: 2000, ratio: 10, growth: 1.12 },
+        silicon: { base: 200, ratio: 10, growth: 1.12 },
+        quartz: { base: 900, ratio: 10, growth: 1.12 },
+        aether: { base: 3500, ratio: 10, growth: 1.12 },
         runes: { base: 30, ratio: 10, growth: 1.12 },
         starglass: { base: 40, ratio: 10, growth: 1.12 },
         voidsteel: { base: 50, ratio: 10, growth: 1.12 },
@@ -54,13 +54,13 @@ export const TUNE = {
     gainBase: { mult: 1, copper: 1, silicon: 1, quartz: 1, aether: 1, runes: 1, starglass: 1, voidsteel: 1, chrono: 1 } as Record<string, number>,
     gainRatio: 5,
     // reboot tier k: costs rebootBase * rebootRatio^k * rebootGrowth^R Multipliers, adds rebootGainRatio^k Reboots
-    rebootBase: 260,
+    rebootBase: 100,
     rebootRatio: 4.5,
-    rebootGrowth: 1.14,
+    rebootGrowth: 1.12,
     rebootGainRatio: 2.6,
-    rebootStrength: 0.45, // each Reboot adds this much to Multiplier button gains
-    perProducer: { copper: 0.012, silicon: 0.004, quartz: 0.0015, aether: 0.0005, runes: 0.002, starglass: 0.001, voidsteel: 0.0005, chrono: 0.00025 } as Record<string, number>,
-    boostK: { cuReboot: 0.09, cuBytes: 0.02, siCu: 0.12, qzSi: 0.12, aeQz: 0.12, ruAe: 0.12, sgRu: 0.12, vsSg: 0.12, chVs: 0.12, chAll: 0.03 },
+    rebootStrength: 0.7, // each Reboot adds this much to Multiplier button gains
+    perProducer: { copper: 0.05, silicon: 0.03, quartz: 0.016, aether: 0.008, runes: 0.0025, starglass: 0.0012, voidsteel: 0.0006, chrono: 0.0003 } as Record<string, number>,
+    boostK: { cuReboot: 0.09, cuBytes: 0.02, siCu: 0.2, qzSi: 0.2, aeQz: 0.2, ruAe: 0.12, sgRu: 0.12, vsSg: 0.12, chVs: 0.12, chAll: 0.03 },
     boostPow: 0.38,
     unlockAt: { copper: 1, silicon: 150, quartz: 300, aether: 500, runes: 150, starglass: 200, voidsteel: 250, chrono: 300 } as Record<string, number>, // copper: Reboots; the rest: amount of the stat below
     overclockMult: 6,
@@ -69,8 +69,9 @@ export const TUNE = {
     intrusionLife: 9,
     offlineCapHours: 8,
     ascendAether: 400,
-    apPerAether: 12, // AP = floor(sqrt(aether / apPerAether) + sqrt(runes / apPer.runes) + ...)
-    apPer: { runes: 20, starglass: 10, voidsteel: 6, chrono: 3 } as Record<string, number>,
+    apPerAether: 60, // AP = floor((aether / apPerAether)^apPow + (runes / apPer.runes)^apPow + ...)
+    apPer: { runes: 90, starglass: 45, voidsteel: 27, chrono: 14 } as Record<string, number>,
+    apPow: 0.3, // AP grows with amount^apPow; a low power stops Ascends from snowballing
     apBonus: 0.3,
     achBonus: 0.02,
     tierBonus: 0.08, // extra global bonus for each fully completed goal tier
@@ -124,24 +125,24 @@ export const BRANCHES: { id: TreeNode["branch"]; name: string; blurb: string; co
 ];
 const N = (id: string, branch: TreeNode["branch"], name: string, blurb: string, cost: number, req: string[], fx: TreeFx): TreeNode => ({ id, branch, name, blurb, cost, req, fx });
 export const TREE: TreeNode[] = [
-    N("sg1", "signal", "Line coding", "+20% Bytes.", 3, [], { bytes: 0.2 }),
-    N("sg2", "signal", "Gain staging", "+25% Reboot power.", 5, ["sg1"], { reboot: 0.25 }),
-    N("sg3", "signal", "Warm cache", "Reboots keep 30 more seconds of Bytes.", 5, ["sg1"], { start: 30 }),
-    N("sg4", "signal", "Bus widening", "All buttons cost 10% less.", 10, ["sg2"], { discount: 0.1 }),
-    N("sg5", "signal", "Feedback loop", "+50% Bytes.", 16, ["sg3", "sg4"], { bytes: 0.5 }),
-    N("sg6", "signal", "Overdrive", "+30% to everything.", 30, ["sg5"], { global: 0.3 }),
-    N("fg1", "forge", "Furnace tuning", "Copper and Silicon +25%.", 3, [], { mats: { copper: 0.25, silicon: 0.25 } }),
-    N("fg2", "forge", "Clean room", "Quartz and Aether +25%.", 6, ["fg1"], { mats: { quartz: 0.25, aether: 0.25 } }),
-    N("fg3", "forge", "Rune etching", "Runes +40%.", 8, ["fg2"], { mats: { runes: 0.4 } }),
-    N("fg4", "forge", "Star cutting", "Starglass +40%.", 14, ["fg3"], { mats: { starglass: 0.4 } }),
-    N("fg5", "forge", "Void forging", "Voidsteel +40%.", 22, ["fg4"], { mats: { voidsteel: 0.4 } }),
-    N("fg6", "forge", "Time dilation", "Chrono +40%.", 34, ["fg5"], { mats: { chrono: 0.4 } }),
-    N("sy1", "systems", "Standby plus", "Offline time banks +4 hours.", 3, [], { offline: 4 }),
-    N("sy2", "systems", "Overclock plating", "Intrusion boosts last +10 s.", 5, ["sy1"], { overclock: 10 }),
-    N("sy3", "systems", "Cache lines", "Reboots keep 20 more seconds of Bytes.", 6, ["sy1"], { start: 20 }),
-    N("sy4", "systems", "Echo storage", "Offline time banks +8 hours.", 12, ["sy2"], { offline: 8 }),
-    N("sy5", "systems", "Efficient mesh", "All buttons cost 10% less.", 14, ["sy3"], { discount: 0.1 }),
-    N("sy6", "systems", "Singularity", "+20% AP on every Ascend.", 24, ["sy4", "sy5"], { ap: 0.2 }),
+    N("sg1", "signal", "Line coding", "+20% Bytes.", 6, [], { bytes: 0.2 }),
+    N("sg2", "signal", "Gain staging", "+25% Reboot power.", 10, ["sg1"], { reboot: 0.25 }),
+    N("sg3", "signal", "Warm cache", "Reboots keep 30 more seconds of Bytes.", 10, ["sg1"], { start: 30 }),
+    N("sg4", "signal", "Bus widening", "All buttons cost 10% less.", 20, ["sg2"], { discount: 0.1 }),
+    N("sg5", "signal", "Feedback loop", "+50% Bytes.", 32, ["sg3", "sg4"], { bytes: 0.5 }),
+    N("sg6", "signal", "Overdrive", "+30% to everything.", 60, ["sg5"], { global: 0.3 }),
+    N("fg1", "forge", "Furnace tuning", "Copper and Silicon +25%.", 6, [], { mats: { copper: 0.25, silicon: 0.25 } }),
+    N("fg2", "forge", "Clean room", "Quartz and Aether +25%.", 12, ["fg1"], { mats: { quartz: 0.25, aether: 0.25 } }),
+    N("fg3", "forge", "Rune etching", "Runes +40%.", 16, ["fg2"], { mats: { runes: 0.4 } }),
+    N("fg4", "forge", "Star cutting", "Starglass +40%.", 28, ["fg3"], { mats: { starglass: 0.4 } }),
+    N("fg5", "forge", "Void forging", "Voidsteel +40%.", 44, ["fg4"], { mats: { voidsteel: 0.4 } }),
+    N("fg6", "forge", "Time dilation", "Chrono +40%.", 68, ["fg5"], { mats: { chrono: 0.4 } }),
+    N("sy1", "systems", "Standby plus", "Offline time banks +4 hours.", 6, [], { offline: 4 }),
+    N("sy2", "systems", "Overclock plating", "Intrusion boosts last +10 s.", 10, ["sy1"], { overclock: 10 }),
+    N("sy3", "systems", "Cache lines", "Reboots keep 20 more seconds of Bytes.", 12, ["sy1"], { start: 20 }),
+    N("sy4", "systems", "Echo storage", "Offline time banks +8 hours.", 24, ["sy2"], { offline: 8 }),
+    N("sy5", "systems", "Efficient mesh", "All buttons cost 10% less.", 28, ["sy3"], { discount: 0.1 }),
+    N("sy6", "systems", "Singularity", "+20% AP on every Ascend.", 48, ["sy4", "sy5"], { ap: 0.2 }),
 ];
 export const treeNode = (id: string) => TREE.find((n) => n.id === id)!;
 export const hasNode = (s: State, id: string) => s.tree.includes(id);
@@ -388,8 +389,8 @@ export function breach(s: State) {
 
 export const apOnAscend = (s: State) => {
     if (s.aether < TUNE.ascendAether) return 0;
-    let raw = Math.sqrt(s.aether / TUNE.apPerAether);
-    for (const m of ["runes", "starglass", "voidsteel", "chrono"] as const) raw += Math.sqrt(s[m] / TUNE.apPer[m]);
+    let raw = Math.pow(s.aether / TUNE.apPerAether, TUNE.apPow);
+    for (const m of ["runes", "starglass", "voidsteel", "chrono"] as const) raw += Math.pow(s[m] / TUNE.apPer[m], TUNE.apPow);
     return Math.floor(raw * (1 + treeFx(s).ap));
 };
 export const canAscend = (s: State) => apOnAscend(s) >= 1;
