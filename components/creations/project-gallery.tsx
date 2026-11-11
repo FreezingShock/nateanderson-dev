@@ -21,9 +21,12 @@ export function ProjectGallery({ shots }: { shots: ProjectShot[] }) {
 
     return (
         <>
-            <div className={shots.length > 1 ? "cr-case-grid is-multi" : "cr-case-grid"}>
+            <div className={`cr-bento n${Math.min(shots.length, 3)}`}>
                 {shots.map((shot, i) => (
                     <figure key={shot.src} className="cr-case-shot">
+                        <span className="cr-shot-no" aria-hidden="true">
+                            {String(i + 1).padStart(2, "0")}
+                        </span>
                         <button type="button" className="cr-shot-btn" onClick={() => openAt(i)} aria-label={`Open image ${i + 1} full size`}>
                             <img src={shot.src} alt={shot.alt} width={1600} height={1000} loading="lazy" decoding="async" />
                         </button>

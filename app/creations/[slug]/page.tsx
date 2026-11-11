@@ -100,7 +100,7 @@ export default async function ProjectPage({ params }: { params: Promise<{ slug: 
                             )}
                         </figure>
                     ) : firstShot ? (
-                        <figure className="cr-case-lead">
+                        <figure className="cr-case-shot cr-case-lead">
                             <img src={firstShot.src} alt={firstShot.alt} width={1600} height={1000} loading="eager" decoding="async" />
                             <figcaption>{firstShot.caption}</figcaption>
                         </figure>

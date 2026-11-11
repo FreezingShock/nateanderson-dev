@@ -60,8 +60,22 @@
 }
 .cr-case-lead figcaption, .cr-case-shot figcaption { font-size: var(--cm-ctos-t-ui); line-height: 1.5; color: var(--cm-mute); }
 .cr-case-gallery { display: grid; gap: 14px; }
-.cr-case-grid { display: grid; gap: 22px; grid-template-columns: minmax(0, 1fr); }
-@media (min-width: 760px) { .cr-case-grid.is-multi { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+/* Framed plates, naOS style: a hairline border, a white top rule (the same sign as the cards) and a small index number.
+   The image sits inside the frame, so every shot reads as a plate rather than a bare picture. */
+.cr-case-shot { position: relative; padding: 10px; border: 1px solid var(--cm-hair-hi); background: #0b0906; }
+.cr-case-shot::before { content: ""; position: absolute; left: -1px; right: -1px; top: -1px; height: 3px; background: var(--cm-ctos-block); }
+.cr-case-shot img { border: 0; }
+.cr-case-shot figcaption { padding-top: 10px; }
+.cr-shot-no { position: absolute; right: 16px; top: 16px; z-index: 1; font: 500 10px/1 var(--cm-mono); letter-spacing: .14em; color: var(--cm-fg); background: #0b0906; padding: 4px 6px; border: 1px solid var(--cm-hair-hi); }
+
+/* Bento gallery: the first shot is the lead of the set. On desktop it spans two columns, and with three shots it
+   spans two rows too, so it reads bigger than the rest. Phones stack everything in one column. */
+.cr-bento { display: grid; gap: 16px; grid-template-columns: minmax(0, 1fr); grid-auto-flow: dense; }
+@media (min-width: 760px) {
+  .cr-bento.n2, .cr-bento.n3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .cr-bento.n2 .cr-case-shot:first-child { grid-column: span 2; }
+  .cr-bento.n3 .cr-case-shot:first-child { grid-column: span 2; grid-row: span 2; }
+}
 
 /* Live preview: a project that runs in the browser is framed on its page. 16:10 on desktop, 4:3 on phones so a game
    keeps enough height to play. The caption row always carries an outside link, in case the frame is blocked. */
