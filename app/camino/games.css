@@ -411,6 +411,47 @@
 .ng-page .p-foot > span:nth-child(n+2) { color: #7d8b93; }
 
 /* ==========================================================================
+   Stock leftovers in the game UI (2026-11-11). The guessers still carry system-sans bold buttons and headings, Tailwind
+   slate frames and a native-looking guess field. They take the naOS voice here: mono caps controls, the display face
+   for result headings, the panel ground, and the field recipe. The per-game tinted action buttons keep their inline
+   colours. Scoped to .ng-page; the rules are unlayered so they beat the utility classes the components use.
+   ========================================================================== */
+
+/* Action buttons (Share, Next country, Play unlimited): mono caps, like every other naOS control. */
+.ng-page button[class*="font-sans"] {
+    font-family: var(--cm-mono);
+    font-size: var(--cm-ctos-t-ui);
+    font-weight: 600;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    line-height: 1.2;
+}
+/* Result headings and callouts: the display face the page titles use. */
+.ng-page [class*="font-sans"]:not(button) {
+    font-family: var(--cm-display);
+    letter-spacing: -.02em;
+}
+/* Stock Tailwind slate frames (the flag and outline tiles, the hidden-tile icon) take the naOS panel ground and muted ink. */
+.ng-page [class*="bg-slate-950"] { background: var(--cm-ctos-panel); }
+.ng-page [class*="text-slate-600"] { color: var(--cm-dim); }
+/* The guess field is a naOS field: no native chrome, hairline edge, mono ink, cyan on focus. It stays 16px (set by
+   text-base in the component) so iOS does not zoom when it takes focus. */
+.ng-page input[role="combobox"] {
+    -webkit-appearance: none;
+    appearance: none;
+    font-family: var(--cm-mono);
+    font-size: 16px;
+    background: var(--cm-ctos-panel);
+    border: 1px solid var(--cm-ctos-edge);
+    border-radius: var(--cm-radius);
+    color: var(--cm-fg);
+    box-shadow: none;
+}
+.ng-page input[role="combobox"]::placeholder { color: var(--cm-ctos-meta); opacity: 1; }
+.ng-page input[role="combobox"]:focus { border-color: var(--cm-cyan); }
+.ng-page input[role="combobox"]:focus-visible { outline: 2px solid var(--cm-cyan); outline-offset: 3px; }
+
+/* ==========================================================================
    Phones (760px and under). Touch targets reach 44px, the filter chips scroll sideways on one line each, the readout
    facts sit two to a row, and the frame and readout rise straight up (no sideways slide that starts off-screen).
    ========================================================================== */
