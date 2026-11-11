@@ -9,6 +9,7 @@
 @import "./camino/naos-surfaces.css";
 @import "./camino/naos-scroll.css";
 @import "./camino/entrances.css";
+@import "./camino/micro.css";
 
 @plugin "tailwindcss-animate";
 
