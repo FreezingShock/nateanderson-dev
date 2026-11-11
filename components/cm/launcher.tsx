@@ -1,80 +1,174 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { launcherLinks, navItems } from "@/lib/nav";
-import { PIXEL_FOR, PixelIcon } from "@/components/cm/pixel-icons";
+import { allGames, GAME_STATUS } from "@/lib/creations-data";
+import { PIXEL_FOR, PixelIcon, type PixelName } from "@/components/cm/pixel-icons";
 import { navigateWithCurtain } from "@/lib/motion/navigate";
+import { openConsole } from "@/components/cm/console-entry";
+import { fuzzyScore, type FuzzyHit } from "@/lib/search/fuzzy";
+import { readRecent, rememberRecent, type RecentSearch } from "@/lib/search/recent";
+
+// What the list can hold. Pages, games and site sections open a link. Console commands open the naOS console with the
+// command typed in. Recent searches fill the box again.
+type Kind = "link" | "cmd" | "query";
 
 interface Entry {
+    key: string;
+    kind: Kind;
+    /** Where a link goes. */
     href: string;
+    /** The text the user sees, and the part that gets highlighted. */
     label: string;
-    /** Two-digit index for pages, a mark for deep links. */
-    ix: string;
     /** Small line under the label. */
     hint: string;
     group: string;
+    /** Searched as well as the label, never shown or highlighted. */
+    extra: string;
+    /** Pixel icon for the leading mark. Without one, a small chevron. */
+    pixel?: PixelName;
+    /** Commands: the name and the usage line. */
+    cmd?: string;
+    usage?: string;
+}
+
+interface Row {
+    e: Entry;
+    hit?: FuzzyHit;
+}
+
+interface CmdIndex {
+    name: string;
+    usage: string;
+    desc: string;
 }
 
 const PAGE_GROUP = "Pages";
+const GAMES_GROUP = "Games";
+const CONSOLE_GROUP = "Console";
+const RECENT_PLACES = "Recent";
+const RECENT_QUERIES = "Recent searches";
 
-/** Wraps the part of a label that matches the query. */
-function mark(label: string, term: string) {
-    const at = term ? label.toLowerCase().indexOf(term) : -1;
-    if (at < 0) return label;
-    return (
-        <>
-            {label.slice(0, at)}
-            <mark>{label.slice(at, at + term.length)}</mark>
-            {label.slice(at + term.length)}
-        </>
-    );
+/** Loaded once per visit: the console's command list lives in the console chunk, which only loads when searched. */
+let consoleCommands: CmdIndex[] | null = null;
+
+/** Draws the label with the matched letters marked. `idx` are character positions in the label. */
+function highlight(label: string, idx?: number[]): ReactNode {
+    if (!idx?.length) return label;
+    const on = new Set(idx);
+    const out: ReactNode[] = [];
+    let run = "";
+    let marked = false;
+    const flush = (at: number) => {
+        if (!run) return;
+        out.push(marked ? <mark key={`m${at}`}>{run}</mark> : <span key={`s${at}`}>{run}</span>);
+        run = "";
+    };
+    Array.from(label).forEach((c, i) => {
+        const m = on.has(i);
+        if (m !== marked) {
+            flush(i);
+            marked = m;
+        }
+        run += c;
+    });
+    flush(label.length);
+    return <>{out}</>;
 }
 
-/** `/` search: jump to any page, game or section. Esc closes, arrows + Enter pick. Results are grouped. */
+/** `/` search: jump to any page, game, section or console command. Esc closes, arrows + Enter pick. */
 export function Launcher() {
     const [open, setOpen] = useState(false);
     const [q, setQ] = useState("");
     const [sel, setSel] = useState(0);
+    const [recent, setRecent] = useState<RecentSearch>({ queries: [], places: [] });
+    const [cmds, setCmds] = useState<CmdIndex[] | null>(consoleCommands);
     const input = useRef<HTMLInputElement>(null);
     const returnTo = useRef<HTMLElement | null>(null);
-
-    // Pages first, then the curated deep links in their groups, then any section subpage the curated list leaves out.
-    const entries = useMemo<Entry[]>(() => {
-        const curated = new Set(launcherLinks.map((l) => l.href));
-        return [
-            ...navItems.map((n) => ({ href: n.href, label: n.title, ix: n.no, hint: n.blurb, group: PAGE_GROUP })),
-            ...launcherLinks.map((l) => ({ href: l.href, label: l.label, ix: "›", hint: "", group: l.group })),
-            ...navItems.flatMap((n) =>
-                (n.children ?? [])
-                    .filter((c) => !curated.has(c.href))
-                    .map((c) => ({ href: c.href, label: c.label, ix: "›", hint: n.title, group: n.title })),
-            ),
-        ];
-    }, []);
+    const loadingCmds = useRef(false);
 
     const term = q.trim().toLowerCase();
-    // With a query, results are ranked (label starts with it, label contains it, then hint or group) and shown flat.
-    const shown = useMemo(() => {
-        if (!term) return entries;
-        const rank = (e: Entry) => {
-            const l = e.label.toLowerCase();
-            if (l.startsWith(term)) return 0;
-            if (l.split(/[\s&/-]+/).some((w) => w.startsWith(term))) return 1;
-            if (l.includes(term)) return 2;
-            return (e.hint + " " + e.group).toLowerCase().includes(term) ? 3 : 4;
+
+    // Every place the search can reach. Pages first, then games (read from the games data, so new ones appear on their
+    // own), then curated deep links, then the subpages the curated list leaves out. The first entry for an href wins.
+    const places = useMemo<Entry[]>(() => {
+        const out: Entry[] = [];
+        const seen = new Set<string>();
+        const add = (e: Entry) => {
+            if (seen.has(e.href)) return;
+            seen.add(e.href);
+            out.push(e);
         };
-        return entries
-            .map((e, i) => ({ e, i, r: rank(e) }))
-            .filter((x) => x.r < 4)
-            .sort((a, b) => a.r - b.r || a.i - b.i)
-            .map((x) => x.e);
-    }, [entries, term]);
+        for (const n of navItems) {
+            add({ key: `page:${n.href}`, kind: "link", href: n.href, label: n.title, hint: n.blurb, group: PAGE_GROUP, extra: n.label, pixel: PIXEL_FOR[n.href] });
+        }
+        for (const g of allGames()) {
+            if (!g.href) continue; // planned games have no page yet
+            add({
+                key: `game:${g.href}`,
+                kind: "link",
+                href: g.href,
+                label: g.title,
+                hint: GAME_STATUS[g.status].label,
+                group: GAMES_GROUP,
+                extra: `game ${g.blurb}`,
+            });
+        }
+        for (const l of launcherLinks) {
+            add({ key: `link:${l.href}`, kind: "link", href: l.href, label: l.label, hint: "", group: l.group, extra: "" });
+        }
+        for (const n of navItems) {
+            for (const c of n.children ?? []) {
+                add({ key: `sec:${c.href}`, kind: "link", href: c.href, label: c.label, hint: n.title, group: n.title, extra: "" });
+            }
+        }
+        return out;
+    }, []);
+
+    const commandEntries = useMemo<Entry[]>(
+        () =>
+            (cmds ?? []).map((c) => ({
+                key: `cmd:${c.name}`,
+                kind: "cmd",
+                href: "",
+                label: c.name,
+                hint: c.usage,
+                group: CONSOLE_GROUP,
+                extra: `command console ${c.desc}`,
+                cmd: c.name,
+                usage: c.usage,
+            })),
+        [cmds],
+    );
+
+    // With no query: recent searches, recently opened places, then everything. With a query: every match, ranked.
+    const shown = useMemo<Row[]>(() => {
+        if (!term) {
+            const rows: Row[] = recent.queries.slice(0, 3).map((s) => ({
+                e: { key: `q:${s}`, kind: "query" as const, href: "", label: s, hint: "search again", group: RECENT_QUERIES, extra: "" },
+            }));
+            const opened = recent.places
+                .map((h) => places.find((x) => x.href === h))
+                .filter((x): x is Entry => !!x)
+                .slice(0, 4);
+            for (const p of opened) rows.push({ e: { ...p, key: `recent:${p.href}`, group: RECENT_PLACES } });
+            return [...rows, ...places.map((e) => ({ e }))];
+        }
+        // Commands rank a little below places with the same match, so "history" opens the History page before the console.
+        const ranked: { r: Row; rank: number; i: number }[] = [];
+        [...places, ...commandEntries].forEach((e, i) => {
+            const hit = fuzzyScore(term, e.label, `${e.hint} ${e.group} ${e.extra}`);
+            if (hit) ranked.push({ r: { e, hit }, rank: hit.score * (e.kind === "cmd" ? 0.8 : 1), i });
+        });
+        return ranked.sort((a, b) => b.rank - a.rank || a.i - b.i).map((x) => x.r);
+    }, [term, places, commandEntries, recent]);
 
     const show = useCallback(() => {
         returnTo.current = document.activeElement as HTMLElement | null;
         setQ("");
         setSel(0);
+        setRecent(readRecent());
         setOpen(true);
     }, []);
     const hide = useCallback(() => {
@@ -104,6 +198,20 @@ export function Launcher() {
         };
     }, [open, show, hide]);
 
+    // The console's command list is fetched the first time someone searches. Nothing loads for people who never search.
+    useEffect(() => {
+        if (!open || !term || cmds || loadingCmds.current) return;
+        loadingCmds.current = true;
+        import("@/components/cm/console")
+            .then((m) => {
+                consoleCommands = m.CONSOLE_INDEX;
+                setCmds(m.CONSOLE_INDEX);
+            })
+            .catch(() => {
+                loadingCmds.current = false;
+            });
+    }, [open, term, cmds]);
+
     useEffect(() => {
         if (open) input.current?.focus();
     }, [open]);
@@ -124,11 +232,31 @@ export function Launcher() {
         document.querySelector<HTMLElement>(".nv-list [data-sel]")?.scrollIntoView({ block: "nearest" });
     }, [sel, open]);
 
-    if (!open) return null;
-    const go = (href: string) => {
-        setOpen(false);
-        navigateWithCurtain(href);
+    /** Remembers the query (when there is one) and, for places, the place. */
+    const commit = (e: Entry) => {
+        if (term) rememberRecent("queries", q);
+        if (e.kind === "link") rememberRecent("places", e.href);
     };
+
+    const go = (e: Entry) => {
+        if (e.kind === "query") {
+            setQ(e.label);
+            setSel(0);
+            input.current?.focus();
+            return;
+        }
+        commit(e);
+        setOpen(false);
+        if (e.kind === "cmd") {
+            // Open the console with the command in the box. Enter runs it, so nothing happens by surprise.
+            const text = e.cmd ?? e.label;
+            openConsole(e.usage && e.usage.trim() !== text ? `${text} ` : text);
+            return;
+        }
+        navigateWithCurtain(e.href);
+    };
+
+    if (!open) return null;
 
     let lastGroup = "";
 
@@ -173,7 +301,7 @@ export function Launcher() {
                     <input
                         ref={input}
                         value={q}
-                        placeholder="a page, game, course or section"
+                        placeholder="a page, game, command or section"
                         autoComplete="off"
                         autoCorrect="off"
                         spellCheck={false}
@@ -196,42 +324,55 @@ export function Launcher() {
                                 setSel((s) => Math.max(0, s - 1));
                             } else if (e.key === "Enter" && shown[sel]) {
                                 e.preventDefault();
-                                go(shown[sel].href);
+                                go(shown[sel].e);
                             }
                         }}
                     />
                 </div>
                 <ul className="nv-list" id="nv-results" role="listbox" aria-label="Results">
-                    {shown.map((e, i) => {
+                    {shown.map(({ e, hit }, i) => {
                         const head = !term && e.group !== lastGroup;
                         lastGroup = e.group;
+                        const icon = (
+                            <span className="nv-ix">
+                                {e.pixel ? <PixelIcon name={e.pixel} size={24} /> : <PixelIcon name="chevR" size={16} />}
+                            </span>
+                        );
+                        const body = (
+                            <span className="nv-txt">
+                                <b>{term ? highlight(e.label, hit?.idx) : e.label}</b>
+                                {e.hint && <small>{e.hint}</small>}
+                            </span>
+                        );
+                        const common = {
+                            id: `nv-opt-${i}`,
+                            role: "option" as const,
+                            "aria-selected": i === sel,
+                            tabIndex: -1,
+                            "data-sel": i === sel ? "" : undefined,
+                            className: i === sel ? "on" : undefined,
+                            onMouseEnter: () => setSel(i),
+                        };
                         return (
-                            <li key={e.href} className="nv-item" role="presentation">
+                            <li key={e.key} className="nv-item" role="presentation">
                                 {head && <div className="nv-group" aria-hidden="true">{e.group}</div>}
-                                <Link
-                                    href={e.href}
-                                    id={`nv-opt-${i}`}
-                                    role="option"
-                                    aria-selected={i === sel}
-                                    tabIndex={-1}
-                                    data-sel={i === sel ? "" : undefined}
-                                    className={i === sel ? "on" : undefined}
-                                    onMouseEnter={() => setSel(i)}
-                                    onClick={() => setOpen(false)}
-                                >
-                                    <span className="nv-ix">{PIXEL_FOR[e.href] && e.group === PAGE_GROUP ? <PixelIcon name={PIXEL_FOR[e.href]} size={24} /> : <PixelIcon name="chevR" size={16} />}</span>
-                                    <span className="nv-txt">
-                                        <b>{mark(e.label, term)}</b>
-                                        {e.hint && <small>{e.hint}</small>}
-                                    </span>
-                                    {term && <span className="nv-grp">{e.group}</span>}
-                                </Link>
+                                {e.kind === "link" ? (
+                                    <Link href={e.href} {...common} onClick={() => commit(e)}>
+                                        {icon}
+                                        {body}
+                                        {term && <span className="nv-grp">{e.group}</span>}
+                                    </Link>
+                                ) : (
+                                    <button type="button" {...common} onClick={() => go(e)}>
+                                        {icon}
+                                        {body}
+                                        {term && <span className="nv-grp">{e.group}</span>}
+                                    </button>
+                                )}
                             </li>
                         );
                     })}
-                    {shown.length === 0 && (
-                        <li className="nv-empty" role="presentation">Nothing matches “{q.trim()}”.</li>
-                    )}
+                    {shown.length === 0 && <li className="nv-empty" role="presentation">Nothing matches “{q.trim()}”. Try fewer letters, or just the first letters of each word.</li>}
                 </ul>
                 <div className="nv-foot" aria-hidden="true">
                     <span><kbd className="nv-key">↑</kbd><kbd className="nv-key">↓</kbd>move</span>

@@ -68,11 +68,10 @@ export const navItems: NavItem[] = [
     },
 ];
 
-// Deep links the launcher offers on top of the pages.
+// Deep links the launcher offers on top of the pages. Individual games are not listed here: the search reads them from
+// lib/creations-data.ts, so a new game shows up in search as soon as it is added there.
 export const launcherLinks: { href: string; label: string; group: string }[] = [
-    { href: "/creations/games/outline-guesser", label: "Outline Guesser", group: "Play" },
-    { href: "/creations/games/flag-guesser", label: "Flag Guesser", group: "Play" },
-    { href: "/creations/games", label: "All games", group: "Play" },
+    { href: "/creations/games", label: "All games", group: "Games" },
     { href: "/creations/projects", label: "Projects", group: "Creations" },
     { href: "/creations/renovations", label: "Renovations", group: "Creations" },
     { href: "/creations/artwork", label: "Artwork", group: "Creations" },

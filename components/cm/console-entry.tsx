@@ -7,19 +7,23 @@ import { useCallback, useEffect, useState } from "react";
 // header button, or the `cm:console` event), so it adds nothing to the first load.
 const NaosConsole = dynamic(() => import("@/components/cm/console").then((m) => m.NaosConsole), { ssr: false });
 
-export function openConsole() {
-    window.dispatchEvent(new Event("cm:console"));
+/** Opens the console. `prefill` puts a command in the input without running it. */
+export function openConsole(prefill?: string) {
+    window.dispatchEvent(new CustomEvent<{ prefill?: string }>("cm:console", { detail: { prefill } }));
 }
 
 /** Opens the naOS command console with the backtick key (or ⌘/Ctrl + J), the header button, or `cm:console`. */
 export function ConsoleEntry() {
     const [open, setOpen] = useState(false);
     const [loaded, setLoaded] = useState(false);
+    const [prefill, setPrefill] = useState<string | undefined>(undefined);
 
-    const show = useCallback(() => {
+    const show = useCallback((p?: string) => {
+        setPrefill(p);
         setLoaded(true);
         setOpen(true);
     }, []);
+    const onEvent = useCallback((e: Event) => show((e as CustomEvent<{ prefill?: string }>).detail?.prefill), [show]);
     const hide = useCallback(() => setOpen(false), []);
 
     useEffect(() => {
@@ -37,13 +41,13 @@ export function ConsoleEntry() {
             }
         };
         window.addEventListener("keydown", onKey);
-        window.addEventListener("cm:console", show);
+        window.addEventListener("cm:console", onEvent);
         return () => {
             window.removeEventListener("keydown", onKey);
-            window.removeEventListener("cm:console", show);
+            window.removeEventListener("cm:console", onEvent);
         };
-    }, [show]);
+    }, [show, onEvent]);
 
     if (!loaded || !open) return null;
-    return <NaosConsole onClose={hide} />;
+    return <NaosConsole onClose={hide} prefill={prefill} />;
 }
