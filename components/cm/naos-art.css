@@ -33,10 +33,17 @@
      lower left, where the copy sits. Lower opacity overall. */
 .naos-backdrop {
   position: fixed; inset: 0; z-index: -1; pointer-events: none;
-  background-position: center top; background-size: max(1440px, 100vw) auto; background-repeat: no-repeat;
-  image-rendering: pixelated; opacity: 0; transition: opacity 700ms ease-out;
+  opacity: 0; transition: opacity 700ms ease-out;
   -webkit-mask-image: radial-gradient(ellipse 75% 85% at 82% 18%, #000 0, rgba(0, 0, 0, .55) 45%, transparent 92%);
   mask-image: radial-gradient(ellipse 75% 85% at 82% 18%, #000 0, rgba(0, 0, 0, .55) 45%, transparent 92%);
+}
+/* The art itself, inside the masked frame. It is overscanned by 64px on every side so the pointer and scroll drift
+   (NaosBackdrop) never shows an edge. The 64px background offset puts the art exactly where it sat before the
+   overscan. The mask stays on .naos-backdrop, so the fade keeps its geometry. */
+.naos-backdrop-art {
+  position: absolute; inset: -64px; pointer-events: none;
+  background-position: center 64px; background-size: max(1440px, 100vw) auto; background-repeat: no-repeat;
+  image-rendering: pixelated;
 }
 /* Shown at once, under the art, while the image decodes: a plain dot field in the same spot and shape. It fades out
    as the art fades in, so the page is never blank and the art never snaps in. */
@@ -55,8 +62,11 @@
     mask-image: linear-gradient(180deg, transparent 0, #000 22%, rgba(0, 0, 0, .6) 60%, transparent 96%);
   }
   .naos-backdrop.is-ready { opacity: .4; }
+  .naos-backdrop-art {
+    /* 62% is taken over the 518px overscanned box, so -15.36px keeps the art where 62% of 390px put it before. */
+    background-position: calc(62% - 15.36px) 64px;
+  }
   .naos-backdrop {
-    background-position: 62% top;
     -webkit-mask-image: linear-gradient(180deg, transparent 0, #000 22%, rgba(0, 0, 0, .6) 60%, transparent 96%);
     mask-image: linear-gradient(180deg, transparent 0, #000 22%, rgba(0, 0, 0, .6) 60%, transparent 96%);
   }
@@ -71,6 +81,37 @@
 }
 @media (max-width: 760px) {
   .naos-scrim { background: linear-gradient(180deg, rgba(26, 26, 26, .5) 0, rgba(26, 26, 26, .3) 35%, rgba(26, 26, 26, .34) 70%, rgba(26, 26, 26, .55) 100%); }
+}
+
+/* Input reactions (NaosBackdrop in naos-art.tsx). Each layer is positioned once and then moved by transform only.
+   - Halo: a dot disc that wakes under the pointer or finger, same dot grid as the ground, faded at the rim.
+   - Ripples: one dotted ring per press, stepped out and off in a few hard steps (no smooth fade). */
+.naos-halo, .naos-ripples { position: fixed; inset: 0; z-index: -1; pointer-events: none; }
+.naos-halo {
+  inset: auto; left: 0; top: 0; width: 300px; height: 300px; opacity: 0; will-change: transform;
+  transition: opacity 420ms ease-out;
+  background: radial-gradient(circle, rgba(244, 244, 242, .5) 0 30%, transparent 34%) 0 0 / 6px 6px;
+  -webkit-mask-image: radial-gradient(circle closest-side, #000 0, rgba(0, 0, 0, .6) 40%, transparent 100%);
+  mask-image: radial-gradient(circle closest-side, #000 0, rgba(0, 0, 0, .6) 40%, transparent 100%);
+}
+.naos-halo.is-on { opacity: .8; }
+.naos-ripple {
+  position: absolute; width: 240px; height: 240px; margin: -120px 0 0 -120px; border-radius: 50%;
+  background: radial-gradient(circle, rgba(244, 244, 242, .7) 0 30%, transparent 34%) 0 0 / 6px 6px;
+  -webkit-mask-image: radial-gradient(circle closest-side, transparent 76%, #000 84%, #000 92%, transparent 100%);
+  mask-image: radial-gradient(circle closest-side, transparent 76%, #000 84%, #000 92%, transparent 100%);
+  animation: naos-ripple-out 900ms steps(9, end) both; pointer-events: none;
+}
+@keyframes naos-ripple-out {
+  from { transform: scale(.15); opacity: 1; }
+  to { transform: scale(1.5); opacity: 0; }
+}
+@media (max-width: 760px) {
+  .naos-halo { width: 200px; height: 200px; }
+  .naos-ripple { width: 160px; height: 160px; margin: -80px 0 0 -80px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .naos-halo, .naos-ripples { display: none; }
 }
 
 /* ---- Header bands and section washes (scripts/naos-art/generate.py: band(), section_wash()) -------------------------
