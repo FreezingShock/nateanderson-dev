@@ -192,6 +192,8 @@ export interface State {
     ap: number;
     perks: Record<PerkDef["id"], number>;
     ach: string[];
+    /** when each goal or secret was done, ms epoch (for the goal log) */
+    achAt: Record<string, number>;
     /** Drone levels per button tier (reset on Ascend) */
     drones: number[];
     /** fractional presses waiting to fire, per tier */
@@ -201,7 +203,7 @@ export interface State {
     /** owned prestige-tree node ids (bought with AP, kept through Ascend) */
     tree: string[];
     // lifetime counters (survive Ascend)
-    life: { bytes: number; taps: number; reboots: number; ascends: number; intrusions: number; secs: number; presses: number };
+    life: { bytes: number; taps: number; reboots: number; ascends: number; intrusions: number; secs: number; presses: number; capped: number; peakBps: number; apTotal: number };
     overclock: number; // seconds left
 }
 
@@ -226,11 +228,12 @@ export function fresh(now = Date.now()): State {
         ap: 0,
         perks: { scanner: 0, auto: 0, overclock: 0, offline: 0, start: 0, power: 0 },
         ach: [],
+        achAt: {},
         drones: Array(TIERS).fill(0),
         droneAcc: Array(TIERS).fill(0),
         armed: [],
         tree: [],
-        life: { bytes: 0, taps: 0, reboots: 0, ascends: 0, intrusions: 0, secs: 0, presses: 0 },
+        life: { bytes: 0, taps: 0, reboots: 0, ascends: 0, intrusions: 0, secs: 0, presses: 0, capped: 0, peakBps: 0, apTotal: 0 },
         overclock: 0,
     };
 }
@@ -373,6 +376,7 @@ export function tick(s: State, dt: number, eff = 1) {
     s.chrono += d.rates.chrono * dt;
     if (s.overclock > 0) s.overclock = Math.max(0, s.overclock - dt);
     s.life.secs += dt;
+    if (d.bytesPerSec > s.life.peakBps) s.life.peakBps = d.bytesPerSec;
     droneStep(s, dt, eff);
 }
 
@@ -393,7 +397,7 @@ export const canAscend = (s: State) => apOnAscend(s) >= 1;
 export function ascend(s: State) {
     const gain = apOnAscend(s);
     if (gain < 1) return 0;
-    const keep = { ap: s.ap + gain, perks: s.perks, ach: s.ach, tree: s.tree, armed: s.armed, life: { ...s.life, ascends: s.life.ascends + 1 }, started: s.started };
+    const keep = { ap: s.ap + gain, perks: s.perks, ach: s.ach, achAt: s.achAt, tree: s.tree, armed: s.armed, life: { ...s.life, ascends: s.life.ascends + 1, apTotal: s.life.apTotal + gain }, started: s.started };
     const n = fresh(s.at);
     Object.assign(n, keep);
     Object.assign(s, n);
@@ -429,12 +433,13 @@ export interface Goal {
     id: string;
     name: string;
     hint: string;
-    tier: number; // 1..5
-    icon: "bytes" | "mult" | "reboot" | "copper" | "silicon" | "quartz" | "aether" | "alert" | "ascend" | "spark";
+    tier: number; // 1..GOAL_TIERS
+    icon: "bytes" | "mult" | "reboot" | "copper" | "silicon" | "quartz" | "aether" | "runes" | "starglass" | "voidsteel" | "chrono" | "alert" | "ascend" | "spark" | "lock";
     cur: (s: State) => number;
     target: number;
 }
-export const TIER_NAMES = ["", "Access", "Operator", "Admin", "Root", "Kernel"];
+export const GOAL_TIERS = 7;
+export const TIER_NAMES = ["", "Access", "Operator", "Admin", "Root", "Kernel", "Deep", "Zero"];
 const G = (id: string, name: string, hint: string, tier: number, icon: Goal["icon"], target: number, cur: (s: State) => number): Goal => ({ id, name, hint, tier, icon, cur, target });
 const life = (k: keyof State["life"]) => (s: State) => s.life[k];
 export const GOALS: Goal[] = [
@@ -473,20 +478,62 @@ export const GOALS: Goal[] = [
     G("ae1k", "Open channel", "Hold 1,000 Aether.", 5, "aether", 1e3, (s) => s.aether),
     G("ae10k", "Beyond the veil", "Hold 10,000 Aether.", 5, "aether", 1e4, (s) => s.aether),
     G("asc5", "Fifth floor", "Ascend 5 times.", 5, "ascend", 5, life("ascends")),
+    // VI DEEP: the materials past Aether, and the prestige tree
+    G("ru1", "Carved", "Gather your first Runes.", 6, "runes", 1e-9, (s) => s.runes),
+    G("sg1", "Starlight", "Gather your first Starglass.", 6, "starglass", 1e-9, (s) => s.starglass),
+    G("vs1", "Cold metal", "Gather your first Voidsteel.", 6, "voidsteel", 1e-9, (s) => s.voidsteel),
+    G("ch1", "Borrowed time", "Gather your first Chrono.", 6, "chrono", 1e-9, (s) => s.chrono),
+    G("tr1", "Branching", "Buy a node in the prestige tree.", 6, "ascend", 1, (s) => s.tree.length),
+    G("ap10", "Tenfold", "Earn 10 Ascension Points in total.", 6, "ascend", 10, life("apTotal")),
+    // VII ZERO
+    G("b1qi", "Astronomical", "Earn 1 quintillion Bytes.", 7, "bytes", 1e18, life("bytes")),
+    G("p100k", "Stuck key", "Press 100,000 buttons.", 7, "spark", 100000, life("presses")),
+    G("r2k", "Reboot loop", "Reach 2,500 Reboots.", 7, "reboot", 2500, life("reboots")),
+    G("ch1k", "Spare hours", "Hold 1,000 Chrono.", 7, "chrono", 1e3, (s) => s.chrono),
+    G("asc20", "Habit of leaving", "Ascend 20 times.", 7, "ascend", 20, life("ascends")),
+    G("tr18", "Whole tree", "Own every node in the prestige tree.", 7, "ascend", TREE.length, (s) => s.tree.length),
 ];
+
+// ---- secrets. They show as ???? until found, with a clue. Console ones are unlocked by commands (components/cm/console.tsx -> lib/nodefarm/records.ts);
+// the rest are checked here by `test`. Found secrets count toward the goal bonus like any goal.
+export interface Secret {
+    id: string;
+    name: string;
+    clue: string;
+    /** shown once found */
+    how: string;
+    test?: (s: State) => boolean;
+}
+export const SECRETS: Secret[] = [
+    { id: "x_loop", name: "Loopback", clue: "Ask the console to ping home.", how: "Ran `nf ping 127.0.0.1` in the console." },
+    { id: "x_sudo", name: "Not in the sudoers file", clue: "Try to take control from the console.", how: "Ran `nf sudo` in the console." },
+    { id: "x_self", name: "Self aware", clue: "Ask the node who it is.", how: "Ran `nf whoami` in the console." },
+    { id: "x_night", name: "Night shift", clue: "The farm runs at all hours. So do you.", how: "Had Node Farm open between 3 and 4 in the morning.", test: () => new Date().getHours() === 3 },
+    { id: "x_haul", name: "Long haul", clue: "Stay a very long time.", how: "Played for 24 hours in total.", test: (s) => s.life.secs >= 86400 },
+    { id: "x_tank", name: "Full tank", clue: "Leave it alone until the standby cells are full.", how: "Came back to a full standby report.", test: (s) => s.life.capped >= 1 },
+];
+export const secretDone = (s: State, x: Secret) => s.ach.includes(x.id);
+/** Record a goal or secret as done. False if it already was. */
+export function unlock(s: State, id: string): boolean {
+    if (s.ach.includes(id)) return false;
+    s.ach.push(id);
+    s.achAt[id] = Date.now();
+    return true;
+}
 
 export const goalDone = (s: State, g: Goal) => s.ach.includes(g.id);
 /** Number of fully completed tiers. */
 export function tiersDone(s: State): number {
     let n = 0;
-    for (let t = 1; t <= 5; t++) if (GOALS.filter((g) => g.tier === t).every((g) => s.ach.includes(g.id))) n++;
+    for (let t = 1; t <= GOAL_TIERS; t++) if (GOALS.filter((g) => g.tier === t).every((g) => s.ach.includes(g.id))) n++;
     return n;
 }
 
 /** Returns goals newly completed (and records them). */
-export function checkGoals(s: State): Goal[] {
-    const out: Goal[] = [];
-    for (const g of GOALS) if (!s.ach.includes(g.id) && g.cur(s) >= g.target) (s.ach.push(g.id), out.push(g));
+export function checkGoals(s: State): { id: string; name: string; secret?: boolean }[] {
+    const out: { id: string; name: string; secret?: boolean }[] = [];
+    for (const g of GOALS) if (!s.ach.includes(g.id) && g.cur(s) >= g.target && unlock(s, g.id)) out.push(g);
+    for (const x of SECRETS) if (x.test && !s.ach.includes(x.id) && x.test(s) && unlock(s, x.id)) out.push({ id: x.id, name: x.name, secret: true });
     return out;
 }
 
@@ -520,6 +567,8 @@ export function parseSave(raw: string): State | null {
         const n = { ...base, ...o, prod: { ...base.prod, ...o.prod }, perks: { ...base.perks, ...o.perks }, life: { ...base.life, ...o.life }, bought: { ...base.bought, ...o.bought } } as State;
         for (const k of Object.keys(n.bought) as ButtonStat[]) if (!Array.isArray(n.bought[k]) || n.bought[k].length !== TIERS) n.bought[k] = Array(TIERS).fill(0);
         if (!Array.isArray(n.tree)) n.tree = [];
+        if (!Array.isArray(n.ach)) n.ach = [];
+        n.achAt = { ...(o.achAt && typeof o.achAt === "object" ? o.achAt : {}) };
         if (!Array.isArray(n.armed)) n.armed = [];
         for (const k of ["drones", "droneAcc"] as const) if (!Array.isArray(n[k]) || n[k].length !== TIERS || n[k].some((x: number) => !Number.isFinite(x))) n[k] = Array(TIERS).fill(0);
         for (const k of ["bytes", "mult", "reboot", "copper", "silicon", "quartz", "aether", "runes", "starglass", "voidsteel", "chrono", "ap"] as const) if (!Number.isFinite(n[k])) n[k] = base[k];
