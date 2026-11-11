@@ -1,11 +1,13 @@
 "use client";
 
+import { useContext } from "react";
 import { TIERS, TUNE, dronesOpen, droneCost, droneRate, fmt, type State } from "@/lib/nodefarm/engine";
-
-const NAMES = ["Probe", "Courier", "Sweeper", "Warden", "Cascade", "Sovereign"];
+import { DRONE_NAMES as NAMES, droneTip } from "@/lib/nodefarm/guide";
+import { TipCtx } from "./guide";
 
 /** The Drone bay: one Drone line per button tier. A Drone presses its tier on every armed stat, for free labour and Aether. */
-export function DroneBay({ s, open, onToggle, onBuy }: { s: State; open: boolean; onToggle: () => void; onBuy: (tier: number) => void }) {
+export function DroneBay({ s, open, onToggle, onBuy, guided }: { s: State; open: boolean; onToggle: () => void; onBuy: (tier: number) => void; guided?: number }) {
+    const tips = useContext(TipCtx);
     if (!dronesOpen(s)) {
         return (
             <article className="nf-row nf-locked" style={{ ["--c" as string]: "#6bffc9" }}>
@@ -20,7 +22,7 @@ export function DroneBay({ s, open, onToggle, onBuy }: { s: State; open: boolean
     const total = s.drones.reduce((a, b) => a + b, 0);
     const press = s.drones.reduce((a, _, k) => a + droneRate(s, k), 0);
     return (
-        <article className="nf-row nf-dr" style={{ ["--c" as string]: "#6bffc9" }} data-open={open ? "true" : "false"}>
+        <article className="nf-row nf-dr" style={{ ["--c" as string]: "#6bffc9" }} data-open={open ? "true" : "false"} data-guide={guided !== undefined ? "" : undefined} data-stat="drones">
             <div className="nf-bar-t">
                 <span>BAY // DRONES</span>
                 <span className="nf-bar-s">{total > 0 ? `${fmt(press)} presses/s` : "idle"}</span>
@@ -38,7 +40,15 @@ export function DroneBay({ s, open, onToggle, onBuy }: { s: State; open: boolean
                             const cost = droneCost(s, k);
                             const afford = !maxed && s.aether >= cost;
                             return (
-                                <li key={k} data-on={lvl > 0 ? "" : undefined}>
+                                <li
+                                    key={k}
+                                    data-on={lvl > 0 ? "" : undefined}
+                                    onPointerEnter={(e) => { if (e.pointerType === "mouse") tips.show(e.currentTarget, () => droneTip(s, k), { guided: guided === k }); }}
+                                    onPointerLeave={(e) => { if (e.pointerType === "mouse") tips.hide(e.currentTarget); }}
+                                    onPointerDown={(e) => { if (e.pointerType !== "mouse") tips.show(e.currentTarget, () => droneTip(s, k), { ms: 2600, guided: guided === k }); }}
+                                    onFocus={(e) => { if ((e.target as HTMLElement).matches(":focus-visible")) tips.show(e.currentTarget, () => droneTip(s, k), { guided: guided === k }); }}
+                                    onBlur={(e) => tips.hide(e.currentTarget)}
+                                >
                                     <span className="nf-dr-n">
                                         <b>T{k + 1} {NAMES[k]}</b>
                                         <small>{lvl > 0 ? `${fmt(droneRate(s, k))} presses/s` : "not built"}</small>
@@ -46,7 +56,7 @@ export function DroneBay({ s, open, onToggle, onBuy }: { s: State; open: boolean
                                     <span className="nf-dr-pips" aria-label={`Level ${lvl} of ${TUNE.drone.max}`}>
                                         {Array.from({ length: TUNE.drone.max }, (_, i) => <i key={i} data-f={i < lvl ? "" : undefined} />)}
                                     </span>
-                                    <button type="button" className="nf-mini" disabled={!afford} onClick={() => onBuy(k)} aria-label={maxed ? `${NAMES[k]} maxed` : `${lvl ? "Upgrade" : "Build"} ${NAMES[k]} for ${fmt(cost)} Aether`}>
+                                    <button type="button" className="nf-mini" data-guide={guided === k ? "" : undefined} disabled={!afford} onClick={() => onBuy(k)} aria-label={maxed ? `${NAMES[k]} maxed` : `${lvl ? "Upgrade" : "Build"} ${NAMES[k]} for ${fmt(cost)} Aether`}>
                                         {maxed ? "Max" : `${lvl ? "Upgrade" : "Build"} · ${fmt(cost)} AE`}
                                     </button>
                                 </li>
