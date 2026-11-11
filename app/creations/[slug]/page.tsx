@@ -1,8 +1,8 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { getProjectBySlug, getAllProjectSlugs, getProjects, getRecentRenovations, statusLabel } from "@/lib/content";
+import { getProjectBySlug, getAllProjectSlugs, getProjects, getRecentRenovations, lookupProject, statusLabel } from "@/lib/content";
 import { PROJECT_GALLERY, PROJECT_LINKS, PROJECT_PREVIEW, categoryById } from "@/lib/creations-data";
-import { CreationsHead, IdCard } from "@/components/creations-sections";
+import { CreationsHead, CreationsShell, FeedOffline, IdCard, Section } from "@/components/creations-sections";
 import { ProjectGallery } from "@/components/creations/project-gallery";
 import { pageMeta } from "@/lib/seo";
 
@@ -31,7 +31,23 @@ const tone = { active: "live", planning: "warn", idea: "" } as const;
 //   4. previous / next within the same list
 export default async function ProjectPage({ params }: { params: Promise<{ slug: string }> }) {
     const { slug } = await params;
-    const project = await getProjectBySlug(slug);
+    const { project, offline } = await lookupProject(slug);
+    if (offline) {
+        // The library did not answer. This is not a missing project, so it does not get the 404 screen.
+        return (
+            <CreationsShell
+                eyebrow="Creations / Project"
+                title={["Project"]}
+                description="The project library did not answer, so this file cannot be opened right now."
+                back={{ href: "/creations/projects", label: "Back to Projects" }}
+                variant="sub"
+            >
+                <Section id="offline" no="01" label="Feed" title="Try again shortly." blurb="The page fills in on its own once the library answers.">
+                    <FeedOffline what="This project" />
+                </Section>
+            </CreationsShell>
+        );
+    }
     if (!project) notFound();
 
     const isProject = project.section === "projects";
@@ -47,7 +63,7 @@ export default async function ProjectPage({ params }: { params: Promise<{ slug: 
     const galleryShots = preview ? shots : restShots;
 
     // Neighbours come from the same list the hub links to, in its order.
-    const siblings = isProject ? await getProjects() : await getRecentRenovations();
+    const siblings = (isProject ? await getProjects() : await getRecentRenovations()).items;
     const at = siblings.findIndex((p) => p.slug === slug);
     const prev = at > 0 ? siblings[at - 1] : null;
     const next = at >= 0 && at < siblings.length - 1 ? siblings[at + 1] : null;

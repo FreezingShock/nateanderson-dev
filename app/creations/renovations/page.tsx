@@ -1,12 +1,12 @@
 import { getRecentRenovations } from "@/lib/content";
-import { CreationsShell, ListStatusCard, ProjectGrid, Section } from "@/components/creations-sections";
+import { CreationsShell, FeedOffline, ListStatusCard, ProjectGrid, Section } from "@/components/creations-sections";
 import { pageMeta } from "@/lib/seo";
 import { categoryById } from "@/lib/creations-data";
 
 export const revalidate = 60;
 
 export default async function RenovationsPage() {
-    const renovations = await getRecentRenovations();
+    const feed = await getRecentRenovations();
     return (
         <CreationsShell
             eyebrow="Creations / Renovations"
@@ -14,10 +14,10 @@ export default async function RenovationsPage() {
             description="Studying and reimagining real places: measured, modeled and redesigned to be greener and more inviting."
             back={{ href: "/creations", label: "Back to Creations" }}
             variant="sub"
-            aside={<ListStatusCard label="renovations // index" badge="rn" projects={renovations} />}
+            aside={<ListStatusCard label="renovations // index" badge="rn" projects={feed.items} offline={feed.offline} />}
         >
             <Section id="renovations" no="01" label="All renovations" title="Each study starts from a real site." blurb="Every study ends in a redesign.">
-                <ProjectGrid projects={renovations} />
+                {feed.offline ? <FeedOffline what="Renovations" /> : <ProjectGrid projects={feed.items} />}
             </Section>
         </CreationsShell>
     );
