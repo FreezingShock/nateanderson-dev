@@ -74,6 +74,8 @@ export const TUNE = {
     apBonus: 0.3,
     achBonus: 0.02,
     tierBonus: 0.08, // extra global bonus for each fully completed goal tier
+    // Drones: one per button tier, bought with Aether. Each level presses that tier's button on every armed stat, droneRate times a second.
+    drone: { max: 10, base: 25, ratio: 6, growth: 1.7, rate: 0.25, offline: 0.5, burst: 200 },
     autoReserve: 10, // the Autoloader only buys when the balance is at least this many times the price
 };
 
@@ -88,7 +90,7 @@ export interface PerkDef {
 export const PERKS: PerkDef[] = [
     { id: "power", name: "Power core", blurb: "+15% to everything per level.", max: 20, cost: (l) => 1 + l },
     { id: "scanner", name: "Wide-band scanner", blurb: "Intrusions arrive 8% sooner per level.", max: 6, cost: (l) => 1 + l },
-    { id: "auto", name: "Autoloader", blurb: "Auto-buys for you, one stat per level (Multipliers, Copper, Silicon, Quartz, Aether).", max: 5, cost: (l) => 3 + l * 2 },
+    { id: "auto", name: "Autoloader", blurb: "Auto-buys for you, one stat per level (Multipliers, then Copper up to Chrono).", max: 9, cost: (l) => 3 + l * 2 },
     { id: "overclock", name: "Overclock coils", blurb: "Intrusion boosts last +5 s per level.", max: 6, cost: (l) => 2 + l * 2 },
     { id: "offline", name: "Standby cells", blurb: "Offline time banks +4 hours per level.", max: 6, cost: (l) => 2 + l * 2 },
     { id: "start", name: "Cold cache", blurb: "Start each Reboot with 10 seconds of Bytes per level.", max: 10, cost: (l) => 1 + Math.floor(l / 2) },
@@ -192,6 +194,12 @@ export interface State {
     ach: string[];
     /** when each goal or secret was done, ms epoch (for the goal log) */
     achAt: Record<string, number>;
+    /** Drone levels per button tier (reset on Ascend) */
+    drones: number[];
+    /** fractional presses waiting to fire, per tier */
+    droneAcc: number[];
+    /** stats the Drones are allowed to press (kept through Ascend) */
+    armed: string[];
     /** owned prestige-tree node ids (bought with AP, kept through Ascend) */
     tree: string[];
     // lifetime counters (survive Ascend)
@@ -221,6 +229,9 @@ export function fresh(now = Date.now()): State {
         perks: { scanner: 0, auto: 0, overclock: 0, offline: 0, start: 0, power: 0 },
         ach: [],
         achAt: {},
+        drones: Array(TIERS).fill(0),
+        droneAcc: Array(TIERS).fill(0),
+        armed: [],
         tree: [],
         life: { bytes: 0, taps: 0, reboots: 0, ascends: 0, intrusions: 0, secs: 0, presses: 0, capped: 0, peakBps: 0, apTotal: 0 },
         overclock: 0,
@@ -317,7 +328,41 @@ export function press(s: State, stat: ButtonStat, tier: number): boolean {
     return true;
 }
 
-export function tick(s: State, dt: number) {
+export const droneCost = (s: State, tier: number) => TUNE.drone.base * Math.pow(TUNE.drone.ratio, tier) * Math.pow(TUNE.drone.growth, s.drones[tier]);
+export const dronesOpen = (s: State) => s.aether > 0 || s.prod.aether > 0 || s.life.ascends > 0;
+export function buyDrone(s: State, tier: number): boolean {
+    const c = droneCost(s, tier);
+    if (!dronesOpen(s) || s.drones[tier] >= TUNE.drone.max || s.aether < c) return false;
+    s.aether -= c;
+    s.drones[tier] += 1;
+    return true;
+}
+export const droneRate = (s: State, tier: number) => s.drones[tier] * TUNE.drone.rate;
+export function toggleArm(s: State, stat: string) {
+    s.armed = s.armed.includes(stat) ? s.armed.filter((x) => x !== stat) : [...s.armed, stat];
+}
+/** Let the Drones press for dt seconds. eff scales their speed (time away runs slower). Returns presses made. */
+export function droneStep(s: State, dt: number, eff = 1): number {
+    if (!s.armed.length) return 0;
+    let made = 0;
+    for (let k = 0; k < TIERS; k++) {
+        if (s.drones[k] <= 0) continue;
+        s.droneAcc[k] = Math.min(s.droneAcc[k] + droneRate(s, k) * dt * eff, TUNE.drone.burst);
+        let n = Math.floor(s.droneAcc[k]);
+        if (n < 1) continue;
+        s.droneAcc[k] -= n;
+        for (const st of STATS) {
+            if (st.id === "bytes" || st.id === "reboot" || !s.armed.includes(st.id) || !isUnlocked(s, st.id)) continue;
+            for (let i = 0; i < n; i++) {
+                if (!press(s, st.id as ButtonStat, k)) break;
+                made++;
+            }
+        }
+    }
+    return made;
+}
+
+export function tick(s: State, dt: number, eff = 1) {
     const d = derive(s);
     s.bytes += d.bytesPerSec * dt;
     s.life.bytes += d.bytesPerSec * dt;
@@ -332,6 +377,7 @@ export function tick(s: State, dt: number) {
     if (s.overclock > 0) s.overclock = Math.max(0, s.overclock - dt);
     s.life.secs += dt;
     if (d.bytesPerSec > s.life.peakBps) s.life.peakBps = d.bytesPerSec;
+    droneStep(s, dt, eff);
 }
 
 /** Hit the intrusion target: a timed boost. */
@@ -351,7 +397,7 @@ export const canAscend = (s: State) => apOnAscend(s) >= 1;
 export function ascend(s: State) {
     const gain = apOnAscend(s);
     if (gain < 1) return 0;
-    const keep = { ap: s.ap + gain, perks: s.perks, ach: s.ach, achAt: s.achAt, tree: s.tree, life: { ...s.life, ascends: s.life.ascends + 1, apTotal: s.life.apTotal + gain }, started: s.started };
+    const keep = { ap: s.ap + gain, perks: s.perks, ach: s.ach, achAt: s.achAt, tree: s.tree, armed: s.armed, life: { ...s.life, ascends: s.life.ascends + 1, apTotal: s.life.apTotal + gain }, started: s.started };
     const n = fresh(s.at);
     Object.assign(n, keep);
     Object.assign(s, n);
@@ -376,9 +422,10 @@ export function offline(s: State, seconds: number) {
     const dt = secs / steps;
     const oc = s.overclock;
     s.overclock = 0; // an intrusion boost doesn't carry through time away
-    for (let i = 0; i < steps; i++) tick(s, dt);
+    const pressesBefore = s.life.presses;
+    for (let i = 0; i < steps; i++) tick(s, dt, TUNE.drone.offline);
     s.overclock = Math.max(0, oc - secs);
-    return { secs, capped: seconds > cap, gain: { bytes: s.bytes - before.bytes, copper: s.copper - before.copper, silicon: s.silicon - before.silicon, quartz: s.quartz - before.quartz, aether: s.aether - before.aether, runes: s.runes - before.runes, starglass: s.starglass - before.starglass, voidsteel: s.voidsteel - before.voidsteel, chrono: s.chrono - before.chrono } };
+    return { secs, capped: seconds > cap, drones: s.life.presses - pressesBefore, gain: { bytes: s.bytes - before.bytes, copper: s.copper - before.copper, silicon: s.silicon - before.silicon, quartz: s.quartz - before.quartz, aether: s.aether - before.aether, runes: s.runes - before.runes, starglass: s.starglass - before.starglass, voidsteel: s.voidsteel - before.voidsteel, chrono: s.chrono - before.chrono } };
 }
 
 // ---- goals. Five tiers of six. Each goal gives a small permanent boost (TUNE.achBonus) and a full tier gives a bigger one (TUNE.tierBonus).
@@ -492,7 +539,7 @@ export function checkGoals(s: State): { id: string; name: string; secret?: boole
 
 /** Autoloader perk: each level unlocks auto-buying for one stat. Buys at most one button per stat per call. */
 export function autoBuy(s: State): number {
-    const order: ButtonStat[] = ["mult", "copper", "silicon", "quartz", "aether"];
+    const order: ButtonStat[] = ["mult", "copper", "silicon", "quartz", "aether", "runes", "starglass", "voidsteel", "chrono"];
     let n = 0;
     for (let i = 0; i < Math.min(order.length, s.perks.auto); i++) {
         const st = order[i];
@@ -522,6 +569,8 @@ export function parseSave(raw: string): State | null {
         if (!Array.isArray(n.tree)) n.tree = [];
         if (!Array.isArray(n.ach)) n.ach = [];
         n.achAt = { ...(o.achAt && typeof o.achAt === "object" ? o.achAt : {}) };
+        if (!Array.isArray(n.armed)) n.armed = [];
+        for (const k of ["drones", "droneAcc"] as const) if (!Array.isArray(n[k]) || n[k].length !== TIERS || n[k].some((x: number) => !Number.isFinite(x))) n[k] = Array(TIERS).fill(0);
         for (const k of ["bytes", "mult", "reboot", "copper", "silicon", "quartz", "aether", "runes", "starglass", "voidsteel", "chrono", "ap"] as const) if (!Number.isFinite(n[k])) n[k] = base[k];
         return n;
     } catch {
