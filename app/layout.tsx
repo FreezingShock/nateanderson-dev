@@ -74,7 +74,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
                 {/* Picks the load-sequence variant before first paint (see components/cm/boot.tsx). */}
                 <script dangerouslySetInnerHTML={{ __html: BOOT_SCRIPT }} />
             </head>
-            <body>
+            <body suppressHydrationWarning>
                 <ThemeProvider
                     attribute="data-theme"
                     themes={["dark"]}
