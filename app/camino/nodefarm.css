@@ -55,19 +55,32 @@
 .ctos .nf[data-tab="menu"] [data-pane="menu"] { display: block; }
 .ctos .nf[data-tab="stats"] .nf-statspane { display: grid; }
 
+.ctos .nf-dock, .ctos .nf-win-bar, .ctos .nf-scrim { display: none; }
+
+/* Desktop: reactor rail on the left (it stays in view), zones in two columns, and Goals / Ascend / Menu as windows over the board. */
 @media (min-width: 1000px) {
-    .ctos .nf { grid-template-columns: 300px minmax(0, 1fr); grid-template-areas: "hud hud" "core stats" "tabs tabs" "side side"; align-items: start; }
+    .ctos .nf { grid-template-columns: 300px minmax(0, 1fr); grid-template-areas: "hud hud" "core stats"; align-items: start; }
     .ctos .nf-hud { grid-area: hud; }
-    .ctos .nf-corepane { grid-area: core; display: block; }
+    .ctos .nf-corepane { grid-area: core; display: block; position: sticky; top: 76px; }
     .ctos .nf-statspane { grid-area: stats; display: grid; }
-    .ctos .nf-tabs { grid-area: tabs; grid-template-columns: repeat(3, minmax(0, 200px)); margin-top: 18px; border-top: 1px dashed var(--nf-line); padding-top: 18px; }
-    .ctos .nf-tab[data-tab-btn="core"], .ctos .nf-tab[data-tab-btn="stats"] { display: none; }
-    .ctos .nf-tab[aria-pressed="true"] { background: #101010; color: var(--cm-mute); border-color: var(--nf-line); }
-    .ctos .nf[data-side="goals"] [data-tab-btn="goals"], .ctos .nf[data-side="ascend"] [data-tab-btn="ascend"], .ctos .nf[data-side="menu"] [data-tab-btn="menu"] { background: var(--cm-ctos-block); color: var(--cm-ctos-ink); border-color: var(--cm-ctos-block); }
-    .ctos .nf-sidepane { grid-area: side; }
-    .ctos .nf[data-side="goals"] [data-pane="goals"],
-    .ctos .nf[data-side="ascend"] [data-pane="ascend"],
-    .ctos .nf[data-side="menu"] [data-pane="menu"] { display: block; }
+    .ctos .nf-tabs { display: none; }
+    .ctos .nf-dock { display: flex; gap: 6px; }
+    .ctos .nf-dock-b { min-height: 38px; padding: 0 16px; background: #101010; border: 1px solid var(--nf-line); color: var(--cm-mute); font: 600 var(--cm-ctos-t-micro)/1 var(--cm-mono); letter-spacing: .12em; text-transform: uppercase; cursor: pointer; }
+    .ctos .nf-dock-b:hover { background: var(--cm-ctos-block); color: var(--cm-ctos-ink); border-color: var(--cm-ctos-block); }
+    .ctos .nf-dock-b:focus-visible { outline: 2px solid var(--cm-cyan); outline-offset: 2px; }
+    .ctos .nf[data-tab] .nf-sidepane { display: none; }
+    .ctos .nf[data-win="goals"][data-tab] [data-pane="goals"], .ctos .nf[data-win="ascend"][data-tab] [data-pane="ascend"], .ctos .nf[data-win="menu"][data-tab] [data-pane="menu"] {
+        display: block; position: fixed; z-index: 90; left: 50%; top: 50%; translate: -50% -50%; width: min(1040px, 94vw); max-height: min(88vh, 900px); overflow: auto; overscroll-behavior: contain; padding: 0 20px 22px; background: #0b0b0b; border: 1px solid var(--cm-ctos-block); box-shadow: 0 0 0 6px #000a, 0 30px 90px #000; animation: nfIn .18s ease both; }
+    .ctos .nf-scrim { display: block; position: fixed; inset: 0; z-index: 85; background: #000b; border: 0; padding: 0; cursor: default; }
+    .ctos .nf-win-bar { display: flex; align-items: center; position: sticky; top: 0; z-index: 3; margin: 0 -20px 18px; padding-left: 16px; min-height: 36px; background: var(--cm-ctos-block); color: var(--cm-ctos-ink); font: 700 var(--cm-ctos-t-micro)/1 var(--cm-mono); letter-spacing: .14em; text-transform: uppercase; }
+    .ctos .nf-win-bar > span { flex: 1; }
+    .ctos .nf-win-x { display: grid; place-items: center; width: 40px; height: 36px; background: var(--cm-ctos-ink); border: 0; cursor: pointer; }
+    .ctos .nf-win-x i { position: relative; width: 14px; height: 14px; }
+    .ctos .nf-win-x i::before, .ctos .nf-win-x i::after { content: ""; position: absolute; left: 0; right: 0; top: 6px; height: 2px; background: var(--cm-ctos-block); rotate: 45deg; }
+    .ctos .nf-win-x i::after { rotate: -45deg; }
+    .ctos .nf-win-x:hover { background: var(--cm-cyan); }
+    .ctos .nf-win-x:hover i::before, .ctos .nf-win-x:hover i::after { background: #0a0a0a; }
+    .ctos .nf-win-x:focus-visible { outline: 2px solid var(--cm-cyan); outline-offset: -4px; }
 }
 
 /* ---- the core */
@@ -309,7 +322,7 @@
 .ctos .nf-io textarea { width: 100%; padding: 10px; background: #0a0a0a; border: 1px solid var(--nf-line); color: var(--cm-fg); font: 400 16px/1.4 var(--cm-mono); resize: vertical; text-transform: none; letter-spacing: 0; }
 .ctos .nf-io-msg { margin: 8px 0 0; font: 400 var(--cm-ctos-t-ui)/1.4 var(--cm-mono); color: var(--cm-mute); }
 
-@media (max-width: 420px) { .ctos .nf-row-h { gap: 9px; padding-inline: 10px; } .ctos .nf-row > *:not(.nf-row-h) { margin-inline: 10px; } .ctos .nf-row-n b { font-size: 18px; } .ctos .nf-flavor { font-size: 12.5px; } .ctos .nf-btns { grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); } }
+@media (max-width: 420px) { .ctos .nf-row-h { gap: 9px; padding-inline: 10px; } .ctos .nf-row-n b { font-size: 18px; } .ctos .nf-flavor { font-size: 12.5px; } .ctos .nf-btns { grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); } }
 @media (prefers-reduced-motion: reduce) {
     .ctos .nf *, .ctos .nf { animation: none !important; transition: none !important; }
 }
@@ -325,3 +338,23 @@
 .ctos .nf-perks li[data-maxed] { border-color: #6bffc9; }
 .ctos .nf-log { background-image: repeating-linear-gradient(0deg, transparent 0 3px, #ffffff05 3px 4px); }
 .ctos .nf-tiers { gap: 26px; }
+
+.ctos .nf-row[data-open="false"] { cursor: pointer; }
+.ctos .nf-row[data-open="false"]:hover { border-color: color-mix(in srgb, var(--c) 70%, #1c1c1c); }
+/* buttons always fill whole rows: 6 across, or 3x2, or 2x3 on very narrow zones */
+.ctos .nf-row { container-type: inline-size; }
+.ctos .nf-btns { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+@container (min-width: 640px) { .ctos .nf-btns { grid-template-columns: repeat(6, minmax(0, 1fr)); } }
+@container (max-width: 289px) { .ctos .nf-btns { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 640px) {
+    .ctos .nf-chain li { display: none; }
+    .ctos .nf-chain { padding: 8px; justify-content: flex-end; }
+    .ctos .nf-chain::after { content: none; }
+    .ctos .nf-bar-t { letter-spacing: .06em; padding-left: 10px; gap: 8px; }
+    .ctos .nf-bar-s { letter-spacing: .04em; }
+}
+
+/* wide board on big screens: the frame breaks out of the page column */
+@media (min-width: 1240px) {
+    .ctos .nf-bleed { position: relative; left: 50%; translate: -50% 0; width: min(calc(100vw - 80px), 1760px); }
+}

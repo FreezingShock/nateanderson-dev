@@ -38,6 +38,7 @@ export function NodeFarm() {
     const [, bump] = useState(0);
     const [tab, setTab] = useState<Tab>("core");
     const [side, setSide] = useState<Tab>("goals");
+    const [win, setWin] = useState<"" | "goals" | "ascend" | "menu">("");
     const [folded, setFolded] = useState<Record<string, boolean>>({});
     const [lines, setLines] = useState<Line[]>([]);
     const [away, setAway] = useState<{ secs: number; capped: boolean; gain: Record<string, number> } | null>(null);
@@ -48,6 +49,13 @@ export function NodeFarm() {
     const [confirm, setConfirm] = useState<"" | "ascend" | "reset">("");
     const [ioText, setIoText] = useState("");
     const [ioMsg, setIoMsg] = useState("");
+    useEffect(() => {
+        if (!win) return;
+        const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") setWin(""); };
+        window.addEventListener("keydown", onKey);
+        document.querySelector<HTMLElement>(`.nf [data-pane="${win}"] .nf-win-x`)?.focus();
+        return () => window.removeEventListener("keydown", onKey);
+    }, [win]);
     const [snd, setSnd] = useSoundPrefs();
     const feed = useRef<CoreFeed>({ progress: 0, overclock: false, unlocked: 1, speed: 0, lastPulse: -1e9 });
     const ids = useRef(1);
@@ -247,7 +255,7 @@ export function NodeFarm() {
     };
 
     return (
-        <div className="nf" data-tab={tab} data-side={sideShown} data-oc={s.overclock > 0 ? "" : undefined}>
+        <div className="nf" data-tab={tab} data-side={sideShown} data-win={win || undefined} data-oc={s.overclock > 0 ? "" : undefined}>
             <header className="nf-hud">
                 <div className="nf-hud-main">
                     <NfIcon name="bytes" responsive />
@@ -266,7 +274,15 @@ export function NodeFarm() {
                     <span><NfIcon name="mult" /> {fmt(s.mult)}</span>
                     {s.ap > 0 && <span><NfIcon name="ascend" /> {s.ap} AP</span>}
                 </div>
+                <div className="nf-dock" role="group" aria-label="Game windows">
+                    {(["goals", "ascend", "menu"] as const).map((w) => (
+                        <button key={w} type="button" className="nf-dock-b" aria-haspopup="dialog" onClick={() => { setWin(w); sfx("tab"); }}>
+                            {TAB_LABEL[w]}
+                        </button>
+                    ))}
+                </div>
             </header>
+            {win && <button type="button" className="nf-scrim" aria-label="Close window" tabIndex={-1} onClick={() => setWin("")} />}
 
             <nav className="nf-tabs" aria-label="Game sections">
                 {(["core", "stats", "goals", "ascend", "menu"] as Tab[]).map((t) => (
@@ -327,11 +343,14 @@ export function NodeFarm() {
                 ))}
             </section>
 
-            <section className="nf-pane nf-sidepane" data-pane="goals" aria-label="Goals"><GoalsPanel s={s} /></section>
-            <section className="nf-pane nf-sidepane" data-pane="ascend" aria-label="Ascend">
+            <section className="nf-pane nf-sidepane" data-pane="goals" aria-label="Goals" role="dialog" aria-modal="false">
+                <WinBar title="Goals" onClose={() => setWin("")} /><GoalsPanel s={s} /></section>
+            <section className="nf-pane nf-sidepane" data-pane="ascend" aria-label="Ascend" role="dialog" aria-modal="false">
+                <WinBar title="Ascend" onClose={() => setWin("")} />
                 <AscendPanel s={s} d={d} confirm={confirm === "ascend"} onAscend={doAscend} onPerk={(id) => { if (buyPerk(s, id)) { sfx("nfBuy", { tier: 3 }); bump((n) => n + 1); } }} />
             </section>
-            <section className="nf-pane nf-sidepane" data-pane="menu" aria-label="Menu">
+            <section className="nf-pane nf-sidepane" data-pane="menu" aria-label="Menu" role="dialog" aria-modal="false">
+                <WinBar title="Menu" onClose={() => setWin("")} />
                 <MenuPanel
                     s={s}
                     soundOn={snd.on}
@@ -345,6 +364,17 @@ export function NodeFarm() {
                     onReset={doReset}
                 />
             </section>
+        </div>
+    );
+}
+
+function WinBar({ title, onClose }: { title: string; onClose: () => void }) {
+    return (
+        <div className="nf-win-bar">
+            <span>naOS // node.farm // {title}</span>
+            <button type="button" className="nf-win-x" onClick={onClose} aria-label={`Close ${title}`}>
+                <i />
+            </button>
         </div>
     );
 }
