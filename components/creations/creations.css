@@ -63,6 +63,45 @@
 .cr-case-grid { display: grid; gap: 22px; grid-template-columns: minmax(0, 1fr); }
 @media (min-width: 760px) { .cr-case-grid.is-multi { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 
+/* Live preview: a project that runs in the browser is framed on its page. 16:10 on desktop, 4:3 on phones so a game
+   keeps enough height to play. The caption row always carries an outside link, in case the frame is blocked. */
+.cr-preview { margin: 0; display: grid; gap: 10px; }
+.cr-preview-frame { position: relative; aspect-ratio: 16 / 10; border: 1px solid var(--cm-hair-hi); background: #0b0906; overflow: hidden; }
+.cr-preview-frame iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; display: block; }
+@media (max-width: 640px) { .cr-preview-frame { aspect-ratio: 4 / 3; } }
+.cr-preview-bar { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 8px 16px; font-size: var(--cm-ctos-t-ui); color: var(--cm-mute); }
+.cr-preview-bar a { color: var(--cm-fg); text-decoration: underline; text-underline-offset: 3px; min-height: 44px; display: inline-flex; align-items: center; }
+.cr-preview-bar a:focus-visible { outline: 2px solid var(--cm-ctos-block); outline-offset: 3px; }
+
+/* Gallery frames open the lightbox. The button only wraps the image, so the frame keeps its own look. */
+.cr-shot-btn { display: block; width: 100%; padding: 0; margin: 0; border: 0; background: none; cursor: zoom-in; text-align: left; }
+.cr-shot-btn img { transition: opacity var(--cm-d-base); }
+.cr-shot-btn:hover img { opacity: .86; }
+.cr-shot-btn:focus-visible { outline: 2px solid var(--cm-ctos-block); outline-offset: 3px; }
+
+/* Lightbox: a native dialog. Full-size image, caption, close, and previous / next when there is more than one. */
+.cr-lb { width: min(1100px, calc(100vw - 32px)); max-width: none; max-height: calc(100dvh - 32px); padding: 0; border: 1px solid var(--cm-hair-hi); background: #0b0906; color: var(--cm-fg); }
+.cr-lb::backdrop { background: rgba(0, 0, 0, .86); }
+.cr-lb-body { display: grid; gap: 12px; padding: 12px; }
+.cr-lb-bar { display: flex; justify-content: flex-end; }
+.cr-lb-x, .cr-lb-nav button { min-width: 44px; min-height: 44px; border: 1px solid var(--cm-hair-hi); background: transparent; color: var(--cm-fg); font: inherit; font-size: 20px; line-height: 1; cursor: pointer; }
+.cr-lb-x:hover, .cr-lb-nav button:hover { border-color: var(--cm-fg); }
+.cr-lb-x:focus-visible, .cr-lb-nav button:focus-visible { outline: 2px solid var(--cm-ctos-block); outline-offset: 2px; }
+.cr-lb-fig { margin: 0; display: grid; gap: 10px; }
+.cr-lb-fig img { display: block; width: 100%; height: auto; max-height: calc(100dvh - 190px); object-fit: contain; }
+.cr-lb-fig figcaption { font-size: var(--cm-ctos-t-ui); line-height: 1.5; color: var(--cm-mute); }
+.cr-lb-nav { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+
+/* Previous / next within the same list. Empty slots keep the grid even when a project is first or last. */
+.cr-pn { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; border-top: 1px solid var(--cm-hair); padding-top: 18px; }
+.cr-pn-link { display: grid; gap: 8px; min-height: 44px; padding: 14px 16px; border: 1px solid var(--cm-hair); color: var(--cm-fg); text-decoration: none; transition: border-color var(--cm-d-base); }
+.cr-pn-link:hover { border-color: var(--cm-hair-hi); }
+.cr-pn-link:focus-visible { outline: 2px solid var(--cm-ctos-block); outline-offset: 3px; }
+.cr-pn-link b { font-size: 16px; line-height: 1.25; }
+.cr-pn-link.next { justify-items: end; text-align: right; }
+.cr-pn-empty { display: block; }
+@media (max-width: 640px) { .cr-pn { grid-template-columns: minmax(0, 1fr); } }
+
 /* Big title blocks, as on the homepage: the stacked white bars fill the column on phones and reach the hero size on desktop. */
 .ctos .cr-head .cm-highlight > * { font-size: clamp(34px, 10vw, 84px); }
 
