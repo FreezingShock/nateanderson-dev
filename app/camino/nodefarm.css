@@ -360,7 +360,7 @@
 
 /* wide board on big screens: the frame breaks out of the page column */
 @media (min-width: 1240px) {
-    .ctos .nf-bleed { position: relative; left: 50%; translate: -50% 0; width: min(calc(100vw - 80px), 1760px); }
+    .ctos .nf-bleed { width: min(calc(100vw - 80px), 1760px); margin-left: calc(50% - min(calc(50vw - 40px), 880px)); }
 }
 
 /* ---- standby report: a full-screen takeover when you return after time away */
@@ -435,3 +435,5 @@ body .nf-aw-go:focus-visible { outline: 3px solid var(--cm-cyan); outline-offset
 .ctos .nf-arm { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 0 0 12px; padding: 8px 12px; background: #0a0a0a; border: 1px solid var(--nf-line); border-left: 3px solid #6bffc9; font: 600 var(--cm-ctos-t-micro)/1 var(--cm-mono); letter-spacing: .12em; text-transform: uppercase; color: var(--cm-mute); }
 @media (max-width: 559px) { .ctos .nf-dr-list li { grid-template-columns: 1fr auto; } .ctos .nf-dr-pips { grid-column: 1; } .ctos .nf-dr-list .nf-mini { grid-column: 2; grid-row: 1 / 3; } }
 .ctos .nf-dr .nf-brief { margin-bottom: 14px; }
+
+body.nf-win-open .ctos .g-frame, body.nf-win-open .ctos .cm-section, body.nf-win-open .ctos .nf-bleed, body.nf-win-open .ctos [data-rx] { transform: none !important; filter: none !important; will-change: auto !important; }
