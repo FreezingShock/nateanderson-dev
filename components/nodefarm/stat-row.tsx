@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { STATS, TIERS, button, derive, fmt, isUnlocked, statDef, type ButtonStat, type State, type StatId } from "@/lib/nodefarm/engine";
+import { MATS, STATS, TIERS, button, derive, fmt, isUnlocked, statDef, type ButtonStat, type State, type StatId } from "@/lib/nodefarm/engine";
 import { LORE } from "@/lib/nodefarm/lore";
 import { NfIcon, NfTierIcon, type NfIconName } from "./icon";
 
@@ -14,6 +14,10 @@ const UNLOCK_HINT: Record<string, string> = {
     silicon: "Hold 150 Copper",
     quartz: "Hold 300 Silicon",
     aether: "Hold 500 Quartz",
+    runes: "Hold 150 Aether",
+    starglass: "Hold 200 Runes",
+    voidsteel: "Hold 250 Starglass",
+    chrono: "Hold 300 Voidsteel",
 };
 
 /** What this stat is doing for you right now, as label and value pairs for the spec lines. */
@@ -33,12 +37,24 @@ function effects(id: StatId, s: State, d: D): [string, string][] {
             return [["Feeds Silicon", `×${fmt(d.boosts.qzSi)}`], ["Own output", `${fmt(d.rates.quartz)}/s`]];
         case "aether":
             return [["Feeds Quartz", `×${fmt(d.boosts.aeQz)}`], ["Opens", "Ascend"]];
+        case "runes":
+            return [["Feeds Aether", `×${fmt(d.boosts.ruAe)}`], ["Own output", `${fmt(d.rates.runes)}/s`]];
+        case "starglass":
+            return [["Feeds Runes", `×${fmt(d.boosts.sgRu)}`], ["Own output", `${fmt(d.rates.starglass)}/s`]];
+        case "voidsteel":
+            return [["Feeds Starglass", `×${fmt(d.boosts.vsSg)}`], ["Own output", `${fmt(d.rates.voidsteel)}/s`]];
+        case "chrono":
+            return [["Feeds Voidsteel", `×${fmt(d.boosts.chVs)}`], ["Everything", `×${fmt(d.boosts.chAll)}`]];
     }
 }
 
 /** The signal chain: who boosts whom, with live multipliers. Sits above the stat dossiers. */
 export function Chain({ s, d, onAll, allOpen }: { s: State; d: D; onAll: (open: boolean) => void; allOpen: boolean }) {
     const feed: Partial<Record<StatId, string>> = {
+        chrono: `Voidsteel ×${fmt(d.boosts.chVs)}`,
+        voidsteel: `Starglass ×${fmt(d.boosts.vsSg)}`,
+        starglass: `Runes ×${fmt(d.boosts.sgRu)}`,
+        runes: `Aether ×${fmt(d.boosts.ruAe)}`,
         aether: `Quartz ×${fmt(d.boosts.aeQz)}`,
         quartz: `Silicon ×${fmt(d.boosts.qzSi)}`,
         silicon: `Copper ×${fmt(d.boosts.siCu)}`,
@@ -84,8 +100,9 @@ export function StatRow({ id, s, d, onPress, open: expanded, onToggle }: { id: S
         );
     }
     const amt = s[id] as number;
-    const rate = id === "bytes" ? d.bytesPerSec : id === "copper" || id === "silicon" || id === "quartz" || id === "aether" ? d.rates[id] : 0;
-    const prod = id === "copper" || id === "silicon" || id === "quartz" || id === "aether" ? s.prod[id] : 0;
+    const isMat = (MATS as readonly string[]).includes(id);
+    const rate = id === "bytes" ? d.bytesPerSec : isMat ? d.rates[id as (typeof MATS)[number]] : 0;
+    const prod = isMat ? s.prod[id as (typeof MATS)[number]] : 0;
     const buttons = id === "bytes" ? 0 : TIERS;
     const ready = id === "bytes" ? 0 : Array.from({ length: TIERS }, (_, k) => k).filter((k) => (s[button(s, id as ButtonStat, k).pays] as number) >= button(s, id as ButtonStat, k).cost).length;
     const bodyId = `nf-body-${id}`;

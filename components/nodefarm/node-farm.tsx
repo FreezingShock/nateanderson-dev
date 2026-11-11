@@ -5,7 +5,7 @@ import { sfx } from "@/lib/sound/sounds";
 import { setHum } from "@/lib/sound/engine";
 import { useSoundPrefs } from "@/lib/sound/use-sound";
 import {
-    TUNE, ascend, autoBuy, breach, button, buyPerk, checkGoals, derive, exportSave, fmt, fmtTime, fresh, isUnlocked, offline, parseSave, press, STATS, tick,
+    TUNE, ascend, autoBuy, breach, button, buyNode, buyPerk, checkGoals, derive, exportSave, fmt, fmtTime, fresh, isUnlocked, offline, parseSave, press, STATS, tick,
     type ButtonStat, type State,
 } from "@/lib/nodefarm/engine";
 import { Core, type CoreFeed } from "./core";
@@ -363,7 +363,7 @@ export function NodeFarm() {
                 <WinBar title="Goals" onClose={() => setWin("")} /><GoalsPanel s={s} /></section>
             <section className="nf-pane nf-sidepane" data-pane="ascend" aria-label="Ascend" role="dialog" aria-modal="false">
                 <WinBar title="Ascend" onClose={() => setWin("")} />
-                <AscendPanel s={s} d={d} confirm={confirm === "ascend"} onAscend={doAscend} onPerk={(id) => { if (buyPerk(s, id)) { sfx("nfBuy", { tier: 3 }); bump((n) => n + 1); } }} />
+                <AscendPanel s={s} d={d} confirm={confirm === "ascend"} onAscend={doAscend} onPerk={(id) => { if (buyPerk(s, id)) { sfx("nfBuy", { tier: 3 }); bump((n) => n + 1); } }} onNode={(id) => { if (buyNode(s, id)) { sfx("nfBuy", { tier: 4 }); bump((n) => n + 1); } }} />
             </section>
             <section className="nf-pane nf-sidepane" data-pane="menu" aria-label="Menu" role="dialog" aria-modal="false">
                 <WinBar title="Menu" onClose={() => setWin("")} />
