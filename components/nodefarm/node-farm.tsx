@@ -15,6 +15,7 @@ import { AwayReport, type Away } from "./away";
 import { Hack } from "./hack";
 import { DroneBay } from "./drones";
 import { Chain, StatRow } from "./stat-row";
+import { Juice, juice, checkMilestones } from "./juice";
 import { AscendPanel, GoalsPanel, MenuPanel, RecordsPanel } from "./systems";
 
 const KEY = "nf-save-v1";
@@ -65,6 +66,7 @@ export function NodeFarm() {
     const [hum, setHumOn] = useState(true);
     const humRef = useRef(true);
     const prevUnlocked = useRef(0);
+    const prevIds = useRef<string[] | null>(null);
     const toggleHum = () => {
         const next = !humRef.current;
         humRef.current = next;
@@ -189,7 +191,11 @@ export function NodeFarm() {
             f.progress = Math.min(1, s.mult / button(s, "reboot", 0).cost);
             f.overclock = s.overclock > 0;
             f.speed = Math.min(1, Math.log10(1 + d.bytesPerSec) / 12);
-            f.unlocked = STATS.filter((x) => isUnlocked(s, x.id)).length;
+            const openIds = STATS.filter((x) => isUnlocked(s, x.id)).map((x) => x.id);
+            f.unlocked = openIds.length;
+            if (prevIds.current) for (const id of openIds) if (!prevIds.current.includes(id)) juice.emit({ t: "unlock", id });
+            prevIds.current = openIds;
+            if (tickN.current % 10 === 5) checkMilestones(s, d.bytesPerSec);
             f.reboots = s.reboot;
             f.ap = s.ap;
             if (prevUnlocked.current && f.unlocked > prevUnlocked.current) sfx("nfDecrypt");
@@ -228,11 +234,14 @@ export function NodeFarm() {
             const s = g.current;
             const was = s.reboot;
             const owned = stat === "reboot" ? 0 : s.bought[stat][tier];
+            const gainNow = button(s, stat, tier).gain;
             if (!press(s, stat, tier)) {
                 if (!quiet) sfx("deny");
                 return false;
             }
             feed.current.lastPulse = performance.now();
+            juice.emit({ t: "press", stat, tier, gain: gainNow, quiet });
+            if (owned === 0 && tier > 0 && !quiet && stat !== "reboot") juice.emit({ t: "tier", stat, tier });
             if (stat === "reboot") {
                 sfx("nfReboot");
                 log(`REBOOT x${fmt(s.reboot - was)}. Cache wiped, power up. Reboots: ${fmt(s.reboot)}`, "good");
@@ -271,6 +280,7 @@ export function NodeFarm() {
         setConfirm("");
         if (gain) {
             sfx("nfAscend");
+            juice.emit({ t: "ascend", gain, ap: g.current.ap, n: g.current.life.ascends });
             log(`ASCENDED. +${gain} Ascension Points. Everything else was wiped.`, "good");
             setSide("ascend");
             save();
@@ -284,6 +294,7 @@ export function NodeFarm() {
             return;
         }
         g.current = fresh();
+        prevIds.current = null;
         setConfirm("");
         setLines([]);
         log("Save wiped. Starting clean.", "warn");
@@ -355,6 +366,7 @@ export function NodeFarm() {
                 </button>
             )}
             {hack && <Hack onDone={hackDone} />}
+            <Juice reduced={reduced} />
 
             <section className="nf-pane nf-corepane" data-pane="core" aria-label="Core">
                 <div className="nf-core-wrap">
@@ -405,7 +417,7 @@ export function NodeFarm() {
                     setIoText={setIoText}
                     ioMsg={ioMsg}
                     onExport={() => { save(); const code = exportSave(g.current); setIoText(code); setIoMsg("Copy this code to move your save."); navigator.clipboard?.writeText(code).then(() => setIoMsg("Save code copied.")).catch(() => {}); }}
-                    onImport={() => { const n = parseSave(ioText); if (n) { n.at = Date.now(); g.current = n; save(); setIoMsg("Save loaded."); log("Save imported.", "good"); } else setIoMsg("That code isn't a Node Farm save."); }}
+                    onImport={() => { const n = parseSave(ioText); if (n) { n.at = Date.now(); g.current = n; prevIds.current = null; save(); setIoMsg("Save loaded."); log("Save imported.", "good"); } else setIoMsg("That code isn't a Node Farm save."); }}
                     confirm={confirm === "reset"}
                     onReset={doReset}
                 />
