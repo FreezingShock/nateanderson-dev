@@ -44,10 +44,10 @@
 .ctos .nf[data-oc] .nf-big { color: #ff8cbc; }
 
 /* ---- tabs. Phones: five. Desktop: only the three systems tabs (Core and Stats are always on screen). */
-.ctos .nf-tabs { display: grid; grid-template-columns: repeat(6, 1fr); gap: 4px; }
+.ctos .nf-tabs { display: grid; grid-template-columns: repeat(auto-fill, minmax(72px, 1fr)); gap: 4px; }
 .ctos .nf-tab { min-height: 44px; padding: 0 4px; background: #101010; border: 1px solid var(--nf-line); color: var(--cm-mute); font: 600 var(--cm-ctos-t-micro)/1 var(--cm-mono); letter-spacing: .1em; text-transform: uppercase; cursor: pointer; }
 .ctos .nf-tab[aria-pressed="true"] { background: var(--cm-ctos-block); color: var(--cm-ctos-ink); border-color: var(--cm-ctos-block); }
-@media (max-width: 480px) { .ctos .nf-tab { letter-spacing: .02em; font-size: 11px; } }
+@media (max-width: 480px) { .ctos .nf-tab { letter-spacing: .02em; font-size: 11px; padding: 0 2px; } }
 .ctos .nf-tab:focus-visible { outline: 2px solid var(--cm-cyan); outline-offset: 2px; }
 
 .ctos .nf-pane { display: none; min-width: 0; }
@@ -74,7 +74,7 @@
     .ctos .nf-dock-b:focus-visible { outline: 2px solid var(--cm-cyan); outline-offset: 2px; }
     .ctos .nf[data-tab] .nf-sidepane { display: none; }
     .ctos .nf[data-win="goals"][data-tab] [data-pane="goals"], .ctos .nf[data-win="records"][data-tab] [data-pane="records"], .ctos .nf[data-win="ascend"][data-tab] [data-pane="ascend"], .ctos .nf[data-win="menu"][data-tab] [data-pane="menu"] {
-        display: block; position: fixed; z-index: 90; left: 50%; top: 50%; translate: -50% -50%; width: min(1040px, 94vw); max-height: min(88vh, 900px); overflow: auto; overscroll-behavior: contain; padding: 0 20px 22px; background: #0b0b0b; border: 1px solid var(--cm-ctos-block); box-shadow: 0 0 0 6px #000a, 0 30px 90px #000; animation: nfIn .18s ease both; }
+        display: block; position: fixed; z-index: 90; left: 50%; top: 84px; translate: -50% 0; width: min(1040px, 94vw); max-height: calc(100dvh - 84px - 104px); overflow: auto; overscroll-behavior: contain; padding: 0 20px 22px; background: #0b0b0b; border: 1px solid var(--cm-ctos-block); box-shadow: 0 0 0 6px #000a, 0 30px 90px #000; animation: nfIn .18s ease both; }
     .ctos .nf-scrim { display: block; position: fixed; inset: 0; z-index: 85; background: #000b; border: 0; padding: 0; cursor: default; }
     .ctos .nf-win-bar { display: flex; align-items: center; position: sticky; top: 0; z-index: 3; margin: 0 -20px 18px; padding-left: 16px; min-height: 36px; background: var(--cm-ctos-block); color: var(--cm-ctos-ink); font: 700 var(--cm-ctos-t-micro)/1 var(--cm-mono); letter-spacing: .14em; text-transform: uppercase; }
     .ctos .nf-win-bar > span { flex: 1; }
