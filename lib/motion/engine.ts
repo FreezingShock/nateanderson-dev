@@ -557,8 +557,10 @@ function frame(now: number) {
             // it is fully legible, so text the reader can see is never left as glyphs.
             p = clamp01((vh * SCR_ENTER - r.top) / (vh * (SCR_ENTER - READ_LINE)));
             // A line that stops scrolling inside the decode band (or loads there) must not stay glyphs: once the page
-            // has been still for a moment it finishes decoding on its own. Scrolling again re-scrubs it as before.
-            if (p > 0 && p < 1 && now - lastScrollAt > 350) p = 1;
+            // has been still for a moment it finishes decoding on its own. That includes a line parked in the bottom
+            // 8% of the screen (p = 0 there), so nothing the reader can see is left scrambled. Scrolling again re-scrubs
+            // it as before.
+            if (p < 1 && r.top < vh && now - lastScrollAt > 350) p = 1;
         } else {
             if (Number.isNaN(it.ref)) {
                 const base = vh * 0.97 - it.off;

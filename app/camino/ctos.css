@@ -181,30 +181,47 @@ body.ctos-on .cm-sec-rule { background: linear-gradient(90deg, rgba(244, 244, 24
 .id-bars i:nth-child(1) { height: 30%; } .id-bars i:nth-child(2) { height: 48%; } .id-bars i:nth-child(3) { height: 66%; } .id-bars i:nth-child(4) { height: 84%; } .id-bars i:nth-child(5) { height: 100%; }
 @media (prefers-reduced-motion: reduce) { .id-live i { animation: none; } }
 
-/* ---- Card variety: three treatments in rotation (paper block / cyan-edged / dashed dither) ------------------------ */
-.ctos .cm-grid > .cm-card, .ctos .cm-cols3 > .cm-card { position: relative; padding: 14px; gap: 8px; }
-.ctos .cm-grid > .cm-card:nth-child(3n+1), .ctos .cm-cols3 > .cm-card:nth-child(3n+1) { background: var(--cm-ctos-block); border-color: var(--cm-ctos-block); color: var(--cm-ctos-ink); }
-.ctos .cm-grid > .cm-card:nth-child(3n+1) b, .ctos .cm-cols3 > .cm-card:nth-child(3n+1) b { color: var(--cm-ctos-ink); font-weight: 800; letter-spacing: -.03em; font-size: var(--cm-ctos-t-lead); text-transform: lowercase; }
-.ctos .cm-grid > .cm-card:nth-child(3n+1) p, .ctos .cm-cols3 > .cm-card:nth-child(3n+1) p { color: #4a4a47; }
-.ctos .cm-grid > .cm-card:nth-child(3n+1) .st, .ctos .cm-cols3 > .cm-card:nth-child(3n+1) .st { color: #5c5c57; }
-.ctos .cm-grid > .cm-card:nth-child(3n+1) .cm-state, .ctos .cm-cols3 > .cm-card:nth-child(3n+1) .cm-state { color: #076e77; }
-.ctos .cm-grid > .cm-card:nth-child(3n+1) .cm-viz { background: repeating-linear-gradient(135deg, rgba(0,0,0,.08) 0 1px, transparent 1px 8px), #e3e3df; border-color: #c9c9c3; }
-.ctos .cm-grid > .cm-card:nth-child(3n+1) .cm-viz .glyph { color: #1a1a1a; }
-.ctos .cm-grid > .cm-card:nth-child(3n+1):hover { background: #fff; transform: translateY(-3px); }
-.ctos .cm-grid > .cm-card:nth-child(3n+2), .ctos .cm-cols3 > .cm-card:nth-child(3n+2) { border: 1px solid var(--cm-hair-hi); border-top: 3px solid var(--cm-cyan); background: linear-gradient(180deg, rgba(47,216,232,.1), rgba(47,216,232,0) 55%), var(--cm-ctos-panel); }
-.ctos .cm-grid > .cm-card:nth-child(3n+2) b, .ctos .cm-cols3 > .cm-card:nth-child(3n+2) b { letter-spacing: -.02em; font-size: var(--cm-ctos-t-lead); }
-.ctos .cm-grid > .cm-card:nth-child(3n), .ctos .cm-cols3 > .cm-card:nth-child(3n) { border: 1px dashed var(--cm-hair-hi); background-color: var(--cm-ctos-deep); background-image: radial-gradient(circle, rgba(244,244,242,.16) 0 28%, transparent 32%); background-size: 6px 6px; }
-.ctos .cm-grid > .cm-card:nth-child(3n) b, .ctos .cm-cols3 > .cm-card:nth-child(3n) b { font-family: var(--cm-mono); font-size: var(--cm-ctos-t-body); letter-spacing: -.01em; }
-.ctos .cm-grid > .cm-card:nth-child(3n) .cm-viz { background: linear-gradient(33deg, transparent 49.6%, rgba(194,59,208,.7) 50%, transparent 50.4%), #0d0d0d; }
-.ctos #explore .cm-grid > .cm-card:nth-child(4n+2) { background: var(--cm-cyan); border-color: var(--cm-cyan); color: var(--cm-cyan-ink); }
-.ctos #explore .cm-grid > .cm-card:nth-child(4n+2) b, .ctos #explore .cm-grid > .cm-card:nth-child(4n+2) p, .ctos #explore .cm-grid > .cm-card:nth-child(4n+2) .st, .ctos #explore .cm-grid > .cm-card:nth-child(4n+2) .cm-state { color: var(--cm-cyan-ink); }
-/* Index plates (linked cards on the homepage, About, Creations, Studies): the description is naOS mono, and the dark
-   plate behind it is sized to the text (fit-content, no negative margin), so it never runs past the card padding.
-   On the cyan card the plate flips to ink with cyan text, so the line stays readable. */
+/* ---- Cards: one treatment for every card on every naOS page (Explore, About, Creations, Studies, Timeline, Blog) ----
+   Every card is the same dark panel with the dot field and a hairline edge. A live item (.cm-tag.live) takes the cyan
+   top edge, and a hovered card gets the cyan top line (micro.css). Titles are lowercase heavy display, the naOS display
+   rule. Descriptions keep their case and paths stay mono caps. Nothing varies by position, so a grid reads as one set. */
+.ctos .cm-card {
+  position: relative; padding: 14px; gap: 8px;
+  background-color: var(--cm-ctos-panel);
+  background-image: radial-gradient(circle, rgba(244, 244, 242, .09) 0 28%, transparent 32%);
+  background-size: 6px 6px;
+  border: 1px solid var(--cm-hair-hi); border-top: 3px solid var(--cm-hair-hi);
+  color: var(--cm-fg);
+}
+.ctos .cm-card:has(.cm-tag.live) { border-top-color: var(--cm-cyan); }
+.ctos .cm-card > b { color: var(--cm-fg); font: 800 var(--cm-ctos-t-lead)/1.1 var(--cm-display); letter-spacing: -.03em; text-transform: lowercase; }
+.ctos .cm-card p { color: var(--cm-mute); background: none; padding: 0; width: auto; }
+.ctos .cm-card .cm-state { color: var(--cm-cyan); }
+.ctos .cm-card .cm-viz { background: #0d0d0d; border-color: var(--cm-hair-hi); }
+/* Linked cards read as index plates: the description is naOS mono. */
 .ctos .cm-grid > .cm-card.link p, .ctos .cm-cols3 > .cm-card.link p { font-family: var(--cm-mono); font-size: var(--cm-ctos-t-small); line-height: 1.5; letter-spacing: -.005em; }
-.ctos .cm-grid > .cm-card:nth-child(3n) p, .ctos .cm-cols3 > .cm-card:nth-child(3n) p { display: block; width: fit-content; max-width: 100%; margin: 0; padding: 3px 7px 4px; background: var(--cm-ctos-ink); color: var(--cm-ctos-block); }
-.ctos #explore .cm-grid > .cm-card:nth-child(4n+2):nth-child(3n) p { background: var(--cm-ctos-ink); color: var(--cm-cyan); }
-.ctos #explore .cm-grid > .cm-card:nth-child(4n+2):hover { background: #5fe6f2; }
+
+/* ---- Card tones and art: a grid can opt in with data-tone (set by meaning, see app/page.tsx). Each tone is one of
+   three surfaces: panel (the default above), paper (white block, ink text) or cyan. Every toned card carries a large
+   pixel icon centred behind its text, larger than the card so the top and bottom are cut off by the edge. ---- */
+.ctos .cm-card[data-tone] { overflow: hidden; }
+.ctos .cm-card[data-tone] > :not(.cm-card-art) { position: relative; z-index: 1; }
+.ctos .cm-card-art { position: absolute; left: 50%; top: 50%; width: 210px; height: 210px; transform: translate(-50%, -50%); pointer-events: none; z-index: 0; color: var(--cm-fg); opacity: .14; }
+.ctos .cm-card-art svg { width: 100%; height: 100%; display: block; }
+.ctos .cm-card[data-tone="paper"] { background: var(--cm-ctos-block); background-image: none; border-color: var(--cm-ctos-block); color: var(--cm-ctos-ink); }
+.ctos .cm-card[data-tone="paper"] > b { color: var(--cm-ctos-ink); }
+.ctos .cm-card[data-tone="paper"] p { color: #4a4a47; }
+.ctos .cm-card[data-tone="paper"] .st { color: #5c5c57; }
+.ctos .cm-card[data-tone="paper"] .cm-state { color: #076e77; }
+.ctos .cm-card[data-tone="paper"] .cm-card-art { color: var(--cm-ctos-ink); opacity: .09; }
+.ctos .cm-card[data-tone="paper"]:hover { background: #fff; border-color: #fff; }
+.ctos .cm-card[data-tone="paper"]:hover .st { color: #5c5c57; }
+.ctos .cm-card[data-tone="cyan"] { background: var(--cm-cyan); background-image: none; border-color: var(--cm-cyan); color: var(--cm-cyan-ink); }
+.ctos .cm-card[data-tone="cyan"] > b, .ctos .cm-card[data-tone="cyan"] p, .ctos .cm-card[data-tone="cyan"] .st, .ctos .cm-card[data-tone="cyan"] .cm-state { color: var(--cm-cyan-ink); }
+.ctos .cm-card[data-tone="cyan"] .cm-card-art { color: var(--cm-cyan-ink); opacity: .13; }
+.ctos .cm-card[data-tone="cyan"]:hover { background: #5fe6f2; border-color: #5fe6f2; }
+.ctos .cm-card[data-tone="cyan"]:hover .st { color: var(--cm-cyan-ink); }
+.ctos .cm-card[data-tone="cyan"]:hover::before { background: var(--cm-ctos-ink); }
 
 /* ---- Profile: checkerboard pillars, terminal feed, rail path ---------------------------------------------------- */
 .ctos .pf-id .pf-lead { font-weight: 700; letter-spacing: -.035em; max-width: 30ch; }
@@ -302,6 +319,3 @@ body.ctos-on .cm-sec-rule { background: linear-gradient(90deg, rgba(244, 244, 24
 .ctos .id-foot > span { color: #7d8b93; }
 .ctos .id-top .id-live, .ctos .g-top .id-live { color: #0f6a3a; }
 .ctos dd > a { display: inline-flex; align-items: center; min-height: 24px; }
-.ctos .cm-card:nth-child(3n+1) .cm-pill { color: #3f4a50; }
-/* Pills on the cyan-filled explore cards need the dark cyan ink (#8a99a3 on cyan was 1.7:1). */
-.ctos #explore .cm-grid > .cm-card:nth-child(4n+2) .cm-pill { color: var(--cm-cyan-ink); }

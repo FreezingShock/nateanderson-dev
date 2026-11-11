@@ -49,11 +49,6 @@
   transform: scaleX(1);
 }
 
-/* Cards that fill white or cyan on hover (ctos.css hover grounds): a cyan edge would vanish, so it turns ink. */
-:is(.ctos .cm-grid > .cm-card:nth-child(3n+1), .ctos #explore .cm-grid > .cm-card:nth-child(4n+2), .tl-page .tl-next > .cm-card:nth-child(3n+1)):not(div):hover::before {
-  background: var(--cm-ctos-ink);
-}
-
 /* ---- 3. Hover responses (pointer devices, motion allowed) ------------------------------------------------------- */
 @media (hover: hover) and (prefers-reduced-motion: no-preference) {
   .cm-btn .arrow { transition: translate var(--cm-d-base) var(--cm-ease); }

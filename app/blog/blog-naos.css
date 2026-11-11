@@ -123,7 +123,7 @@ html[data-boot="full"] .blog-hero .blog-jump .cta-b, html[data-boot="quick"] .bl
   .ctos .blog-table td:nth-child(4) { grid-column: 2 / 4; grid-row: 2; }
 }
 
-/* ---- Post plates: the homepage card variety (white / cyan-edged / dither), with a Status-card header bar ---------- */
+/* ---- Post plates: shared card treatment (ctos.css), with a Status-card header bar ---------- */
 .ctos .blog-grid { grid-template-columns: repeat(auto-fill, minmax(min(100%, 280px), 1fr)); }
 .ctos .blog-post { min-height: 230px; gap: 10px; }
 .ctos .blog-post .bp-top {
@@ -137,12 +137,6 @@ html[data-boot="full"] .blog-hero .blog-jump .cta-b, html[data-boot="quick"] .bl
 .ctos .blog-post > p { flex: 1; }
 .ctos .blog-post .p-foot { margin: auto -14px -14px; }
 .ctos .blog-post:hover .p-foot .st { color: var(--cm-cyan); }
-/* Paper plates (every third, starting first) get an ink header rule so the bar still reads on white */
-.ctos .cm-cols3.blog-grid > .cm-card:nth-child(3n+1) .bp-top { background: var(--cm-ctos-ink); color: var(--cm-ctos-block); border-bottom-color: var(--cm-cyan); }
-.ctos .cm-cols3.blog-grid > .cm-card:nth-child(3n+1) .bp-top > span:first-child { color: var(--cm-cyan); }
-.ctos .cm-cols3.blog-grid > .cm-card:nth-child(3n+1) .p-foot { border-top-color: #c9c9c3; }
-.ctos .cm-cols3.blog-grid > .cm-card:nth-child(3n+1) .p-foot .id-bars i { background: #1a1a1a; }
-.ctos .cm-cols3.blog-grid > .cm-card:nth-child(3n) .bp-top { background: #0c0c0c; }
 .ctos .blog-post .id-bars i { width: 3px; }
 .ctos .blog-post .p-foot { padding: 9px 14px; }
 

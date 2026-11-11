@@ -12,7 +12,18 @@ import { FeaturedCards, FeaturedSkeleton } from "@/components/home/featured-work
 import { HeroStats, HeroStatsFallback } from "@/components/home/hero-stats";
 import { RecentPosts } from "@/components/home/recent-posts";
 import "@/components/home/home.css";
-import { PixelIcon } from "@/components/cm/pixel-icons";
+import { PIXEL_FOR, PixelIcon } from "@/components/cm/pixel-icons";
+
+// Explore card tones, picked by hand so neighbours contrast (paper over panel, cyan over paper, and so on).
+// Each card's tone is data (data-tone), so the look never depends on its slot in the grid.
+const EXPLORE_TONE: Record<string, "paper" | "cyan" | "panel"> = {
+    "/creations": "paper",
+    "/timeline": "cyan",
+    "/studies": "panel",
+    "/blog": "panel",
+    "/history": "paper",
+    "/about": "cyan",
+};
 
 export const revalidate = 60; // re-check Supabase for new content every 60s
 
@@ -169,13 +180,16 @@ export default function Home() {
                 <div className="cm-grid">
                     {navItems
                         .filter((n) => n.href !== "/")
-                        .map((n, i) => (
-                            <Link key={n.href} className="cm-card link" href={n.href}>
-                                    <span className="cm-state">{n.no}</span>
-                                    <b>{n.title}</b>
-                                    <p>{n.blurb}</p>
-                                    <span className="st">{n.href}</span>
-                                </Link>
+                        .map((n) => (
+                            <Link key={n.href} className="cm-card link" href={n.href} data-tone={EXPLORE_TONE[n.href] ?? "panel"}>
+                                <span className="cm-card-art" aria-hidden="true">
+                                    {PIXEL_FOR[n.href] && <PixelIcon name={PIXEL_FOR[n.href]} size={210} />}
+                                </span>
+                                <span className="cm-state">{n.no}</span>
+                                <b>{n.title}</b>
+                                <p>{n.blurb}</p>
+                                <span className="st">{n.href}</span>
+                            </Link>
                         ))}
                 </div>
             </Section>

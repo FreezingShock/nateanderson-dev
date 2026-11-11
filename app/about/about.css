@@ -166,23 +166,3 @@ html[data-xition="hold"] .about .about-id { animation: none; opacity: 0; }
     .about .about-id, .about .about-id *, .about .about-id::before, .about .about-id::after { animation: none !important; }
 }
 
-/* ---- Card rhythm: one dark panel for every card on this page. ---------------------------------------------------------
-   The shared naOS rules flip cards to white or add dashed and dotted variants by position (ctos.css, nth-child). That
-   made the grids read as a patchwork. Here every card is the same dark panel with the same dither field. A live item
-   gets a cyan top edge; the only accent is that edge and the tag, so the rhythm comes from spacing and type. Scoped to
-   .ctos.about so no other page changes. */
-.ctos.about .cm-card.cm-card {
-    background-color: var(--cm-ctos-panel);
-    background-image: radial-gradient(circle, rgba(244, 244, 242, .09) 0 28%, transparent 32%);
-    background-size: 6px 6px;
-    border: 1px solid var(--cm-hair-hi);
-    border-top: 3px solid var(--cm-hair-hi);
-    color: var(--cm-fg);
-}
-.ctos.about .cm-card.cm-card:has(.cm-tag.live) { border-top-color: var(--cm-cyan); }
-.ctos.about .cm-card.cm-card b { color: var(--cm-fg); font-family: var(--cm-display); font-weight: 700; letter-spacing: -.02em; text-transform: none; }
-.ctos.about .cm-card.cm-card p { color: var(--cm-mute); background: none; padding: 0; width: auto; }
-.ctos.about .cm-card.cm-card .st { color: var(--cm-cyan); }
-.ctos.about .cm-card.cm-card .cm-state { color: var(--cm-cyan); }
-.ctos.about .cm-card.cm-card .cm-viz { background: #0d0d0d; border-color: var(--cm-hair-hi); }
-.ctos.about .cm-card.cm-card:hover { background-color: #181818; transform: translateY(-2px); }
