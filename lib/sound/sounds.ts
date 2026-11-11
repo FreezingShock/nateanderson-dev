@@ -138,6 +138,75 @@ const DEFS = {
         },
     },
 
+    // ---- Node Farm (the incremental game): the same naOS security-terminal voices as the interface set.
+    // A tap is a keycap blip that climbs with the heat meter; buys are access-granted pairs; a Reboot is a power-down scan
+    // followed by a power-up arpeggio; an intrusion is a three-pulse alarm; a breach is a fast lock-picked arpeggio.
+    nfTap: {
+        tier: 1,
+        bus: "game",
+        gap: 40,
+        play: (a: { heat?: number } | undefined) => {
+            const h = Math.max(0, Math.min(1, a?.heat ?? 0));
+            blip("game", (1180 + h * 700) * JITTER[pick("nfTap", 3)], { dur: 0.04, gain: 0.05, glide: 0.8, cutoff: 2600 });
+            blip("game", 160, { dur: 0.05, gain: 0.04, cutoff: 600, type: "sine" });
+        },
+    },
+    nfBuy: {
+        tier: 2,
+        bus: "game",
+        gap: 45,
+        play: (a: { tier?: number } | undefined) => {
+            const t = Math.max(0, Math.min(5, a?.tier ?? 0));
+            const base = 880 * Math.pow(1.0595, t * 2);
+            blip("game", base, { dur: 0.05, gain: 0.06, cutoff: 2600 });
+            blip("game", base * 1.5, { at: 0.055, dur: 0.07, gain: 0.06, cutoff: 3000 });
+            if (t >= 4) blip("game", base * 2, { at: 0.12, dur: 0.1, gain: 0.05, cutoff: 3200 });
+        },
+    },
+    nfReboot: {
+        tier: 3,
+        bus: "game",
+        gap: 600,
+        play: () => {
+            if (!calm()) scan(1400, 180, 0.28, 0.03);
+            [440, 660, 880, 1320, 1760].forEach((f, i) => blip("game", f, { at: 0.3 + i * 0.07, dur: 0.1, gain: 0.06, cutoff: 3200 }));
+        },
+    },
+    nfAlert: {
+        tier: 3,
+        bus: "game",
+        gap: 800,
+        play: () => [0, 0.16, 0.32].forEach((at) => { blip("game", 1040, { at, dur: 0.08, gain: 0.05, cutoff: 2400 }); blip("game", 780, { at: at + 0.08, dur: 0.07, gain: 0.045, cutoff: 2200 }); }),
+    },
+    nfBreach: {
+        tier: 3,
+        bus: "game",
+        gap: 400,
+        play: () => {
+            if (!calm()) scan(300, 2400, 0.2, 0.03);
+            [660, 880, 990, 1320, 1980].forEach((f, i) => blip("game", f, { at: 0.12 + i * 0.05, dur: 0.07, gain: 0.06, cutoff: 3200 }));
+        },
+    },
+    nfGoal: {
+        tier: 3,
+        bus: "game",
+        gap: 500,
+        play: () => {
+            tone("game", { f: 1760, dur: 0.35, gain: 0.05, harm: 0.12, attack: 0.005, cutoff: 4000 });
+            blip("game", 1320, { at: 0.08, dur: 0.08, gain: 0.05, cutoff: 2800 });
+        },
+    },
+    nfAscend: {
+        tier: 4,
+        bus: "game",
+        gap: 1500,
+        play: () => {
+            if (!calm()) scan(160, 3000, 1.1, 0.04);
+            tone("game", { f: 110, dur: 1.6, gain: 0.08, attack: 0.3, cutoff: 500 });
+            [440, 660, 880, 1100, 1320, 1760, 2200].forEach((f, i) => blip("game", f, { at: 0.5 + i * 0.09, dur: 0.14, gain: 0.06, cutoff: 3400 }));
+        },
+    },
+
     // the big button: a soft low bloop that climbs with the combo, and a small sparkle on a crit
     click: {
         tier: 1,
