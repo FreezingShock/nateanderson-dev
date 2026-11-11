@@ -27,7 +27,7 @@ export function FilterChips({
         <div className="cm-row" role="group" style={{ gap: 6 }}>
             <button type="button" className="cm-chip" aria-pressed={active === null} onClick={() => onChange(null)}>
                 {label}
-                <span style={{ opacity: 0.7 }}>{total}</span>
+                <span>{total}</span>
             </button>
             {chips.map((chip) => {
                 const on = active === chip.key;
@@ -41,7 +41,7 @@ export function FilterChips({
                     >
                         <span className="dot" style={{ background: on ? "currentColor" : chip.color }} />
                         {chip.label}
-                        <span style={{ opacity: 0.7 }}>{chip.count}</span>
+                        <span>{chip.count}</span>
                     </button>
                 );
             })}

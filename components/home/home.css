@@ -388,12 +388,14 @@
     font: 500 var(--cm-ctos-t-tag)/1 var(--cm-mono);
     letter-spacing: .12em;
     text-transform: uppercase;
-    color: var(--cm-dim);
+    color: var(--cm-ctos-meta);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
     transition: color var(--cm-d-base);
 }
+/* The primary plate is cyan: its secondary line takes the ink colour (meta grey was 2.2:1 on cyan). */
+.ctos .hcta-main .hcta-txt small { color: var(--cm-cyan-ink); }
 .ctos .hcta-arr {
     display: grid;
     place-items: center;
