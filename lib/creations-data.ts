@@ -12,6 +12,7 @@ const Ic = {
     Palette: px("palette"),
     Pencil: px("pen"),
     Boxes: px("boxes"),
+    Layers: px("layers"),
 };
 
 // Everything on the Creations pages that isn't a Supabase project row.
@@ -240,6 +241,25 @@ export const GAME_MODES: GameMode[] = [
                 blurb: "Endless country outlines: every country, island and territory, with arrows, distances, hints and a give-up button.",
                 features: ["Hints and give up", "km or miles", "Stats"],
                 href: "/creations/games/outline-guesser",
+            },
+        ],
+    },
+    {
+        id: "incremental",
+        title: "Incremental Games",
+        color: "var(--cm-good)",
+        icon: Ic.Layers,
+        tagline: "Idle games that keep growing while you're away.",
+        about: "Buttons, multipliers and resets, with progress saved in your browser. Close the tab and your farm keeps earning, up to a limit.",
+        games: [
+            {
+                slug: "node-farm",
+                title: "Node Farm",
+                status: "playable",
+                icon: Ic.Boxes,
+                blurb: "Hack a core, buy button tiers for Multipliers and Reboots, then farm Copper, Silicon, Quartz and Aether. Each stat boosts the one below it.",
+                features: ["7 chained stats", "Offline progress", "Ascend for perks"],
+                href: "/creations/games/node-farm",
             },
         ],
     },
