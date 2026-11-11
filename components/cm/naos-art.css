@@ -25,6 +25,13 @@
   .naos-backdrop, .naos-backdrop-ground { transition: none; }
 }
 
+/* Stage: one fixed layer that holds the backdrop and its dot field. Its opacity follows scroll (NaosBackdrop), so the
+   art fades out once the page has moved past the top bar. It is its own z -1 stacking context, so it never paints
+   over in-flow content. The halo, ripples and scrim stay outside it. */
+.naos-backdrop-stage {
+  position: fixed; inset: 0; z-index: -1; pointer-events: none;
+}
+
 /* Full-page backdrop: one dithered terrain field per page, fixed behind the content (z-index -1 inside .ctos, which
    is an isolated stacking context). Static, so it costs no per-frame work.
    - Native pixels: the art is 720x480 and is drawn at exactly 2 css px per art pixel (1440 wide, scaling up on wider
