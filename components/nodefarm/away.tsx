@@ -14,6 +14,8 @@ export interface Away {
     /** the standby window, in seconds */
     cap: number;
     capped: boolean;
+    /** buttons the Drones pressed while you were away */
+    drones: number;
     gain: Record<string, number>;
 }
 
@@ -126,6 +128,7 @@ export function AwayReport({ away, reduced, onClose }: { away: Away; reduced: bo
 
                     <dl className="nf-aw-facts">
                         {rate > 0 && <div><dt>Avg rate</dt><dd>{fmt(rate)} Bytes/s</dd></div>}
+                        {away.drones > 0 && <div><dt>Drone presses</dt><dd>{fmt(away.drones)}</dd></div>}
                         <div><dt>Away</dt><dd>{fmtTime(away.gap)}</dd></div>
                         <div><dt>Window</dt><dd>{fmtTime(away.cap)}</dd></div>
                     </dl>

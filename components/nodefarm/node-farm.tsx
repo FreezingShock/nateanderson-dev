@@ -5,13 +5,14 @@ import { sfx } from "@/lib/sound/sounds";
 import { setHum } from "@/lib/sound/engine";
 import { useSoundPrefs } from "@/lib/sound/use-sound";
 import {
-    TUNE, ascend, autoBuy, breach, button, buyNode, buyPerk, checkGoals, derive, exportSave, fmt, fmtTime, fresh, isUnlocked, offline, parseSave, press, STATS, tick,
+    TUNE, ascend, autoBuy, breach, button, buyDrone, buyNode, buyPerk, toggleArm, checkGoals, derive, exportSave, fmt, fmtTime, fresh, isUnlocked, offline, parseSave, press, STATS, tick,
     type ButtonStat, type State,
 } from "@/lib/nodefarm/engine";
 import { Core, type CoreFeed } from "./core";
 import { NfIcon } from "./icon";
 import { AwayReport, type Away } from "./away";
 import { Hack } from "./hack";
+import { DroneBay } from "./drones";
 import { Chain, StatRow } from "./stat-row";
 import { AscendPanel, GoalsPanel, MenuPanel } from "./systems";
 
@@ -354,8 +355,9 @@ export function NodeFarm() {
 
             <section className="nf-pane nf-statspane" data-pane="stats" aria-label="Stats and buttons">
                 <Chain s={s} d={d} allOpen={!STATS.every((x) => folded[x.id])} onAll={(open) => setFold(Object.fromEntries(STATS.map((x) => [x.id, !open])))} />
+                <DroneBay s={s} open={!folded.drones} onToggle={() => { setFold({ ...folded, drones: !folded.drones }); sfx("tab"); }} onBuy={(k) => { if (buyDrone(s, k)) { sfx("nfBuy", { tier: k }); log(`Drone T${k + 1} online.`, "good"); bump((n) => n + 1); } else sfx("deny"); }} />
                 {STATS.map((def) => (
-                    <StatRow key={def.id} id={def.id} s={s} d={d} onPress={doPress} open={!folded[def.id]} onToggle={() => { setFold({ ...folded, [def.id]: !folded[def.id] }); sfx("tab"); }} />
+                    <StatRow key={def.id} id={def.id} s={s} d={d} onPress={doPress} onArm={() => { toggleArm(s, def.id); sfx("tab"); bump((n) => n + 1); }} open={!folded[def.id]} onToggle={() => { setFold({ ...folded, [def.id]: !folded[def.id] }); sfx("tab"); }} />
                 ))}
             </section>
 
