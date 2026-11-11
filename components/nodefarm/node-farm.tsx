@@ -14,6 +14,7 @@ import { Chain, StatRow } from "./stat-row";
 import { AscendPanel, GoalsPanel, MenuPanel } from "./systems";
 
 const KEY = "nf-save-v1";
+const UI_KEY = "nf-ui-v1"; // which stat panels are minimized (per device, not part of the game save)
 type Tab = "core" | "stats" | "goals" | "ascend" | "menu";
 const SIDE: Tab[] = ["goals", "ascend", "menu"];
 const TAB_LABEL: Record<Tab, string> = { core: "Core", stats: "Stats", goals: "Goals", ascend: "Ascend", menu: "Menu" };
@@ -37,6 +38,7 @@ export function NodeFarm() {
     const [, bump] = useState(0);
     const [tab, setTab] = useState<Tab>("core");
     const [side, setSide] = useState<Tab>("goals");
+    const [folded, setFolded] = useState<Record<string, boolean>>({});
     const [lines, setLines] = useState<Line[]>([]);
     const [away, setAway] = useState<{ secs: number; capped: boolean; gain: Record<string, number> } | null>(null);
     const [toast, setToast] = useState<string | null>(null);
@@ -61,6 +63,10 @@ export function NodeFarm() {
     // ---- boot: load the save, bank offline time, print the greeting
     useEffect(() => {
         setReduced(window.matchMedia("(prefers-reduced-motion: reduce)").matches);
+        try {
+            const u = localStorage.getItem(UI_KEY);
+            if (u) setFolded(JSON.parse(u));
+        } catch {}
         const s = load() ?? fresh();
         const first = s.life.secs === 0 && s.life.presses === 0;
         const gap = (Date.now() - s.at) / 1000;
@@ -101,6 +107,13 @@ export function NodeFarm() {
             save();
         };
     }, [ready, save]);
+
+    const setFold = useCallback((next: Record<string, boolean>) => {
+        setFolded(next);
+        try {
+            localStorage.setItem(UI_KEY, JSON.stringify(next));
+        } catch {}
+    }, []);
 
     const scheduleAlert = useCallback(() => {
         nextAlert.current = performance.now() + gapMs(g.current);
@@ -308,9 +321,9 @@ export function NodeFarm() {
             </section>
 
             <section className="nf-pane nf-statspane" data-pane="stats" aria-label="Stats and buttons">
-                <Chain s={s} d={d} />
+                <Chain s={s} d={d} allOpen={!STATS.every((x) => folded[x.id])} onAll={(open) => setFold(Object.fromEntries(STATS.map((x) => [x.id, !open])))} />
                 {STATS.map((def) => (
-                    <StatRow key={def.id} id={def.id} s={s} d={d} onPress={doPress} />
+                    <StatRow key={def.id} id={def.id} s={s} d={d} onPress={doPress} open={!folded[def.id]} onToggle={() => { setFold({ ...folded, [def.id]: !folded[def.id] }); sfx("tab"); }} />
                 ))}
             </section>
 
