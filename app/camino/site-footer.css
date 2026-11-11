@@ -1,7 +1,8 @@
 /* Site footer (components/site-footer.tsx). Identity card, directory, channels. Tokens come from ctos.css.
    Only transform and opacity animate; every animation stops under prefers-reduced-motion. */
 
-.sf-foot { position: relative; isolation: isolate; color: var(--cm-ctos-block); margin-top: 48px; padding: 0 0 8px; }
+/* Sits above the page film (--cm-z-film, z 2), which otherwise dims the bottom of the page, and below the UI layer (z 5). */
+.sf-foot { position: relative; z-index: 4; isolation: isolate; color: var(--cm-ctos-block); margin-top: 48px; padding: 0 0 8px; }
 .sf-foot::before { content: ""; position: absolute; left: 0; right: 0; top: 0; height: 360px; z-index: -1; pointer-events: none; background: url("/naos/wash-c.webp") center top / 420px auto repeat-x; image-rendering: pixelated; opacity: .28; -webkit-mask-image: linear-gradient(180deg, #000 0%, transparent 100%); mask-image: linear-gradient(180deg, #000 0%, transparent 100%); }
 .sf-foot a { color: inherit; text-decoration: none; }
 .sf-foot ul { list-style: none; margin: 0; padding: 0; }
@@ -53,25 +54,19 @@
 .sf-about li a { grid-template-columns: 16px minmax(0, 1fr); border-right: 1px solid rgba(244, 244, 242, .12); }
 .sf-about li:nth-child(even) a { border-right: 0; }
 
-/* ---- Find me: one centered channel block -------------------------------------------------------------------------- */
+/* ---- Contact me: one block of equal tiles, email first with the Preferred tag -------------------------------------- */
 .sf-find { margin-top: 36px; position: relative; background: var(--cm-ctos-panel); border: 1px solid rgba(244, 244, 242, .14); }
 .sf-find::before { content: ""; position: absolute; left: -1px; top: -1px; width: 28px; height: 3px; background: var(--cm-cyan); }
 .sf-find-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 9px 14px; border-bottom: 1px dashed rgba(244, 244, 242, .2); font: 500 var(--cm-ctos-t-micro)/1 var(--cm-mono); letter-spacing: .16em; text-transform: uppercase; color: var(--cm-ctos-meta); }
 .sf-find-ticks { height: 8px; margin: 0 14px; background: repeating-linear-gradient(90deg, rgba(244, 244, 242, .35) 0 1px, transparent 1px 12px); opacity: .7; }
-.sf-find-title { margin: 18px 0 14px; text-align: center; font: 800 var(--cm-ctos-t-h3, 22px)/1 var(--cm-display); letter-spacing: -.03em; text-transform: lowercase; color: var(--cm-ctos-block); }
-.sf-chan { display: flex; flex-wrap: wrap; justify-content: center; padding: 0 0 14px; }
-.sf-chan li { position: relative; flex: 0 0 20%; min-width: 0; margin: -1px 0 0 -1px; }
-.sf-chan li a { display: grid; justify-items: center; align-content: center; gap: 10px; min-height: 124px; padding: 16px 8px 14px; text-align: center; border: 1px solid rgba(244, 244, 242, .14); font: 600 var(--cm-ctos-t-micro)/1.2 var(--cm-mono); letter-spacing: .13em; text-transform: uppercase; color: var(--cm-ctos-block); transition: background var(--cm-d-base), color var(--cm-d-base), border-color var(--cm-d-base); }
+.sf-find-title { margin: 18px 0 14px; text-align: center; font: 800 22px/1 var(--cm-display); letter-spacing: -.03em; text-transform: lowercase; color: var(--cm-ctos-block); }
+.sf-chan { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); padding: 0 0 14px; }
+.sf-chan li { position: relative; min-width: 0; margin: -1px 0 0 -1px; }
+.sf-chan li a { display: grid; justify-items: center; align-content: center; gap: 10px; height: 128px; padding: 14px 8px; text-align: center; border: 1px solid rgba(244, 244, 242, .14); background: transparent; font: 600 var(--cm-ctos-t-micro)/1.2 var(--cm-mono); letter-spacing: .13em; text-transform: uppercase; color: var(--cm-ctos-block); transition: background var(--cm-d-base), color var(--cm-d-base), border-color var(--cm-d-base); }
 .sf-chan li a b { font: 700 var(--cm-ctos-t-micro)/1 var(--cm-mono); color: rgba(244, 244, 242, .42); letter-spacing: .08em; }
 .sf-chan li a:hover, .sf-chan li a:focus-visible { background: var(--cm-ctos-block); color: var(--cm-ctos-ink); border-color: var(--cm-ctos-block); }
 .sf-chan li a:hover .sf-ico-lg, .sf-chan li a:focus-visible .sf-ico-lg, .sf-chan li a:hover b, .sf-chan li a:focus-visible b { color: var(--cm-ctos-ink); }
-/* Email is the primary channel: a full-width cyan bar on its own row above the other five. */
-.sf-chan .sf-chan-main { flex: 0 0 100%; }
-.sf-chan .sf-chan-main a { flex-direction: row; grid-template-columns: auto auto 1fr auto; justify-items: start; align-content: center; min-height: 60px; padding: 0 18px; gap: 14px; text-align: left; background: var(--cm-cyan); border-color: var(--cm-cyan); color: var(--cm-cyan-ink); font-size: var(--cm-ctos-t-tag); }
-.sf-chan .sf-chan-main a b, .sf-chan .sf-chan-main a .sf-ico-lg { color: var(--cm-cyan-ink); }
-.sf-chan .sf-chan-main a:hover, .sf-chan .sf-chan-main a:focus-visible { background: var(--cm-ctos-block); border-color: var(--cm-ctos-block); color: var(--cm-ctos-ink); }
-.sf-chan .sf-chan-main a em { justify-self: end; font: 700 var(--cm-ctos-t-micro)/1 var(--cm-mono); font-style: normal; letter-spacing: .14em; text-transform: uppercase; background: var(--cm-cyan-ink); color: var(--cm-cyan); padding: 4px 6px; }
-.sf-chan li:not(.sf-chan-main) a em { display: none; }
+.sf-chan li em { position: absolute; top: -8px; right: 8px; font: 700 var(--cm-ctos-t-micro)/1 var(--cm-mono); font-style: normal; letter-spacing: .14em; text-transform: uppercase; background: var(--cm-cyan); color: var(--cm-cyan-ink); padding: 3px 5px; pointer-events: none; }
 
 /* ---- Base row ---------------------------------------------------------------------------------------------------- */
 .sf-base { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 8px 24px; margin-top: 28px; padding-top: 16px; border-top: 1px dashed rgba(244, 244, 242, .2); font: 500 var(--cm-ctos-t-micro)/1.4 var(--cm-mono); letter-spacing: .12em; text-transform: uppercase; color: var(--cm-ctos-meta); }
@@ -88,10 +83,6 @@
     .sf-about { grid-template-columns: minmax(0, 1fr); }
     .sf-about li a { border-right: 0; }
     .sf-dir li a { min-height: 46px; }
-    .sf-chan li { flex: 0 0 33.3333%; }
-    /* Six items: email on its own row, three channels, then two wide cells so no row has gaps. */
-    .sf-chan li:nth-child(n+5) { flex: 0 0 50%; }
-    .sf-chan li a { min-height: 110px; padding: 14px 6px 12px; }
-    .sf-chan .sf-chan-main { flex: 0 0 100%; }
-    .sf-chan .sf-chan-main a { min-height: 56px; }
+    .sf-chan { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .sf-chan li a { height: 112px; padding: 12px 6px; }
 }
