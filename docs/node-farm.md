@@ -31,3 +31,6 @@ button tiers (+1, +5, +25, +125, +625, +3125; each tier costs about 8 to 10 time
 - Always put `font` rules for buttons through `:where(button)` (the reset is), or element selectors beat the class rules.
 - Playwright cannot click the pulsing intrusion button without `force: true` (it never settles, on purpose).
 - Intrusions only spawn once Multipliers plus Reboots reach 5, so a brand-new player is not interrupted.
+
+## Drones (automation)
+One Drone per button tier (T1 to T6), bought with Aether, up to level 10 (`TUNE.drone`). Each level presses that tier's button 0.25 times a second on every stat the player has armed (Armed switch in each stat zone; Reboots are never automated). Drones reset on Ascend, the armed list is kept. Time away runs them at 50% speed and the standby report shows the Drone presses. The Autoloader perk now covers Multipliers and Copper through Chrono (max 9 levels).

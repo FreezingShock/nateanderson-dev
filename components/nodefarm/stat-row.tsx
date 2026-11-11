@@ -84,7 +84,7 @@ export function Chain({ s, d, onAll, allOpen }: { s: State; d: D; onAll: (open: 
     );
 }
 
-export function StatRow({ id, s, d, onPress, open: expanded, onToggle }: { id: StatId; s: State; d: D; onPress: PressFn; open: boolean; onToggle: () => void }) {
+export function StatRow({ id, s, d, onPress, onArm, open: expanded, onToggle }: { id: StatId; s: State; d: D; onPress: PressFn; onArm: () => void; open: boolean; onToggle: () => void }) {
     const def = statDef(id);
     const lore = LORE[id];
     const open = isUnlocked(s, id);
@@ -135,6 +135,12 @@ export function StatRow({ id, s, d, onPress, open: expanded, onToggle }: { id: S
                             <div key={k}><dt>{k}</dt><i aria-hidden="true" /><dd>{v}</dd></div>
                         ))}
                     </dl>
+                    {id !== "bytes" && id !== "reboot" && s.drones.some((x) => x > 0) && (
+                        <div className="nf-arm">
+                            <span>Drones</span>
+                            <button type="button" className="nf-mini" aria-pressed={s.armed.includes(id)} onClick={onArm}>{s.armed.includes(id) ? "Armed" : "Off"}</button>
+                        </div>
+                    )}
                     {id !== "bytes" && (
                         <div className="nf-btns">
                             {Array.from({ length: TIERS }, (_, k) => (
