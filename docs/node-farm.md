@@ -41,3 +41,11 @@ button tiers (+1, +5, +25, +125, +625, +3125; each tier costs about 8 to 10 time
 
 ## Drones (automation)
 One Drone per button tier (T1 to T6), bought with Aether, up to level 10 (`TUNE.drone`). Each level presses that tier's button 0.25 times a second on every stat the player has armed (Armed switch in each stat zone; Reboots are never automated). Drones reset on Ascend, the armed list is kept. Time away runs them at 50% speed and the standby report shows the Drone presses. The Autoloader perk now covers Multipliers and Copper through Chrono (max 9 levels).
+
+## Game feel (components/nodefarm/juice.tsx, app/camino/nodefarm-juice.css)
+- The game talks to it with `juice.emit({ t: "press" | "tier" | "unlock" | "ascend" })` and `checkMilestones(s, bps)` (called twice a second from the loop). It never touches the engine or the save.
+- Press pop-ups: plain DOM nodes in a fixed layer on `<body>` (no React state), tinted by stat, a few dither sparks, bigger from tier 4 up and on Reboots. Max 14 alive; held-button repeats merge into one pop every 300 ms. They appear over the last pressed `.nf-btn`.
+- Banners (one at a time, queued, unlocks jump the queue): first-ever stat decrypt (full, with the stat's role), repeat decrypts and first purchase of a tier (short), and milestones (Bytes/s powers, presses, Reboots, Ascensions). What was already seen is kept per device in `nf-juice-v1`; the first call on a device only records, so returning players get no pile-up. Add milestones to `MS`.
+- Ascend: a full-screen sequence on `<body>` that charges a scaled-up reactor core (magenta flicker), flashes once, then types "Root access granted" and counts up the AP. Click, Enter, Esc or Space skips the charge, then closes; it closes itself after 14 s.
+- Reduced motion: no pop-ups, scramble, flash or count-up; banners and the Ascend card just appear. Haptics (Android) only after the first tap.
+- Class names use the `nf-pop`, `nf-jb` and `nf-rx` prefixes (`nf-asc*` already belongs to the Ascend panel).
