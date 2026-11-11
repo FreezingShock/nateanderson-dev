@@ -58,8 +58,10 @@ export function NodeFarm() {
         if (!win) return;
         const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") setWin(""); };
         window.addEventListener("keydown", onKey);
+        // a settled scroll-reveal leaves a transform on the section, which would pin fixed windows to the section instead of the viewport
+        document.body.classList.add("nf-win-open");
         document.querySelector<HTMLElement>(`.nf [data-pane="${win}"] .nf-win-x`)?.focus();
-        return () => window.removeEventListener("keydown", onKey);
+        return () => { window.removeEventListener("keydown", onKey); document.body.classList.remove("nf-win-open"); };
     }, [win]);
     const [snd, setSnd] = useSoundPrefs();
     const [hum, setHumOn] = useState(true);
