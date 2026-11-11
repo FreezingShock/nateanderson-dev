@@ -67,8 +67,8 @@ export default async function CreationsPage() {
                 id="roadmap"
                 no="03"
                 label="Game modes"
-                title="Two ways to play."
-                blurb="A daily puzzle and unlimited practice. Each one links to its games."
+                title="Game sections."
+                blurb="Geography is live. Incremental and automation are next. Each links to its section."
             >
                 <div className="cm-grid cr-modes">
                     {GAME_MODES.map((m) => {

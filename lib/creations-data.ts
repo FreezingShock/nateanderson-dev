@@ -13,6 +13,7 @@ const Ic = {
     Pencil: px("pen"),
     Boxes: px("boxes"),
     Layers: px("layers"),
+    Settings: px("settings"),
 };
 
 // Everything on the Creations pages that isn't a Supabase project row.
@@ -173,34 +174,40 @@ export interface Game {
     icon: PixelComponent;
     blurb: string;
     features: string[];
+    /** How the game is played, shown as a tag on its card. */
+    format?: "Daily" | "Unlimited";
     /** Set only for games that actually have a route. */
     href?: string;
 }
 
 export interface GameMode {
-    id: "daily" | "unlimited" | "incremental" | "tycoon";
+    /** Section id on the Games hub; also the #anchor the Creations overview links to. */
+    id: "geography" | "incremental" | "automation";
     title: string;
     color: string;
     icon: PixelComponent;
     tagline: string;
     about: string;
+    /** Shown in place of cards while a section has no playable game. Never filler cards. */
+    coming?: string;
     games: Game[];
 }
 
 export const GAME_MODES: GameMode[] = [
     {
-        id: "daily",
-        title: "Daily Games",
-        color: "var(--cm-amber)",
-        icon: Ic.CalendarDays,
-        tagline: "One puzzle a day, the same for everyone.",
-        about: "A new puzzle every day at midnight Pacific. Guess, share your result, come back tomorrow. Streaks and stats stay in your browser.",
+        id: "geography",
+        title: "Geography",
+        color: "var(--cm-cyan)",
+        icon: Ic.Map,
+        tagline: "Geography games, right here in your browser.",
+        about: "A new daily puzzle every day at midnight Pacific, plus unlimited practice for learning and high scores. Streaks and stats stay in your browser.",
         games: [
             {
                 slug: "daily-outline",
                 title: "Daily Outline",
                 status: "playable",
                 icon: Ic.Map,
+                format: "Daily",
                 blurb: "One country outline a day, the same for everyone. Six guesses with distance, direction and closeness.",
                 features: ["238 countries and territories", "Streaks and stats", "Shareable result"],
                 href: "/creations/games/outline-guesser?mode=daily",
@@ -210,25 +217,17 @@ export const GAME_MODES: GameMode[] = [
                 title: "Daily Flag",
                 status: "playable",
                 icon: Ic.Flag,
+                format: "Daily",
                 blurb: "One mystery flag a day, the same for everyone, revealed one tile at a time with distance and direction clues.",
                 features: ["Tile-flip reveal", "3 hints", "Streaks and stats"],
                 href: "/creations/games/flag-guesser?mode=daily",
             },
-        ],
-    },
-    {
-        id: "unlimited",
-        title: "Unlimited Games",
-        color: "var(--cm-cyan)",
-        icon: Ic.InfinityIcon,
-        tagline: "Practice mode: as many rounds as you want.",
-        about: "The same guessing games with no daily limit, for learning and high scores. Rounds are quick and everything runs in the browser.",
-        games: [
             {
                 slug: "flag-guesser",
                 title: "Flag Guesser",
                 status: "playable",
                 icon: Ic.Flag,
+                format: "Unlimited",
                 blurb: "Endless mystery flags from all 239 countries and territories, with difficulty and region filters, tile-flip reveals and hints.",
                 features: ["All 239 flags", "Difficulty and region filters", "Hints and give up"],
                 href: "/creations/games/flag-guesser",
@@ -238,6 +237,7 @@ export const GAME_MODES: GameMode[] = [
                 title: "Outline Guesser",
                 status: "playable",
                 icon: Ic.Map,
+                format: "Unlimited",
                 blurb: "Endless country outlines: every country, island and territory, with arrows, distances, hints and a give-up button.",
                 features: ["Hints and give up", "km or miles", "Stats"],
                 href: "/creations/games/outline-guesser",
@@ -246,11 +246,12 @@ export const GAME_MODES: GameMode[] = [
     },
     {
         id: "incremental",
-        title: "Incremental Games",
+        title: "Incremental",
         color: "var(--cm-good)",
         icon: Ic.Layers,
         tagline: "Idle games that keep growing while you're away.",
         about: "Buttons, multipliers and resets, with progress saved in your browser. Close the tab and your farm keeps earning, up to a limit.",
+        coming: "The next incremental game is in development. It goes live in this section when it is playable.",
         games: [
             {
                 slug: "node-farm",
@@ -262,6 +263,16 @@ export const GAME_MODES: GameMode[] = [
                 href: "/creations/games/node-farm",
             },
         ],
+    },
+    {
+        id: "automation",
+        title: "Automation",
+        color: "var(--cm-violet)",
+        icon: Ic.Settings,
+        tagline: "Build the machine that does the work.",
+        about: "Automation games are about setting up systems that run on their own, then improving them.",
+        coming: "Next up. No automation game is playable yet.",
+        games: [],
     },
 ];
 
