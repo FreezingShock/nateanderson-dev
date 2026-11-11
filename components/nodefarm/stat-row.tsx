@@ -1,9 +1,9 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { STATS, TIERS, button, derive, fmt, isUnlocked, statDef, type ButtonStat, type State, type StatId } from "@/lib/nodefarm/engine";
+import { MATS, STATS, TIERS, button, derive, fmt, isUnlocked, statDef, type ButtonStat, type State, type StatId } from "@/lib/nodefarm/engine";
 import { LORE } from "@/lib/nodefarm/lore";
-import { NfIcon, type NfIconName } from "./icon";
+import { NfIcon, NfTierIcon, type NfIconName } from "./icon";
 
 type D = ReturnType<typeof derive>;
 export type PressFn = (stat: ButtonStat, tier: number, quiet?: boolean) => boolean;
@@ -14,6 +14,10 @@ const UNLOCK_HINT: Record<string, string> = {
     silicon: "Hold 150 Copper",
     quartz: "Hold 300 Silicon",
     aether: "Hold 500 Quartz",
+    runes: "Hold 150 Aether",
+    starglass: "Hold 200 Runes",
+    voidsteel: "Hold 250 Starglass",
+    chrono: "Hold 300 Voidsteel",
 };
 
 /** What this stat is doing for you right now, as label and value pairs for the spec lines. */
@@ -33,12 +37,24 @@ function effects(id: StatId, s: State, d: D): [string, string][] {
             return [["Feeds Silicon", `×${fmt(d.boosts.qzSi)}`], ["Own output", `${fmt(d.rates.quartz)}/s`]];
         case "aether":
             return [["Feeds Quartz", `×${fmt(d.boosts.aeQz)}`], ["Opens", "Ascend"]];
+        case "runes":
+            return [["Feeds Aether", `×${fmt(d.boosts.ruAe)}`], ["Own output", `${fmt(d.rates.runes)}/s`]];
+        case "starglass":
+            return [["Feeds Runes", `×${fmt(d.boosts.sgRu)}`], ["Own output", `${fmt(d.rates.starglass)}/s`]];
+        case "voidsteel":
+            return [["Feeds Starglass", `×${fmt(d.boosts.vsSg)}`], ["Own output", `${fmt(d.rates.voidsteel)}/s`]];
+        case "chrono":
+            return [["Feeds Voidsteel", `×${fmt(d.boosts.chVs)}`], ["Everything", `×${fmt(d.boosts.chAll)}`]];
     }
 }
 
 /** The signal chain: who boosts whom, with live multipliers. Sits above the stat dossiers. */
 export function Chain({ s, d, onAll, allOpen }: { s: State; d: D; onAll: (open: boolean) => void; allOpen: boolean }) {
     const feed: Partial<Record<StatId, string>> = {
+        chrono: `Voidsteel ×${fmt(d.boosts.chVs)}`,
+        voidsteel: `Starglass ×${fmt(d.boosts.vsSg)}`,
+        starglass: `Runes ×${fmt(d.boosts.sgRu)}`,
+        runes: `Aether ×${fmt(d.boosts.ruAe)}`,
         aether: `Quartz ×${fmt(d.boosts.aeQz)}`,
         quartz: `Silicon ×${fmt(d.boosts.qzSi)}`,
         silicon: `Copper ×${fmt(d.boosts.siCu)}`,
@@ -68,7 +84,7 @@ export function Chain({ s, d, onAll, allOpen }: { s: State; d: D; onAll: (open: 
     );
 }
 
-export function StatRow({ id, s, d, onPress, open: expanded, onToggle }: { id: StatId; s: State; d: D; onPress: PressFn; open: boolean; onToggle: () => void }) {
+export function StatRow({ id, s, d, onPress, onArm, open: expanded, onToggle }: { id: StatId; s: State; d: D; onPress: PressFn; onArm: () => void; open: boolean; onToggle: () => void }) {
     const def = statDef(id);
     const lore = LORE[id];
     const open = isUnlocked(s, id);
@@ -84,8 +100,9 @@ export function StatRow({ id, s, d, onPress, open: expanded, onToggle }: { id: S
         );
     }
     const amt = s[id] as number;
-    const rate = id === "bytes" ? d.bytesPerSec : id === "copper" || id === "silicon" || id === "quartz" || id === "aether" ? d.rates[id] : 0;
-    const prod = id === "copper" || id === "silicon" || id === "quartz" || id === "aether" ? s.prod[id] : 0;
+    const isMat = (MATS as readonly string[]).includes(id);
+    const rate = id === "bytes" ? d.bytesPerSec : isMat ? d.rates[id as (typeof MATS)[number]] : 0;
+    const prod = isMat ? s.prod[id as (typeof MATS)[number]] : 0;
     const buttons = id === "bytes" ? 0 : TIERS;
     const ready = id === "bytes" ? 0 : Array.from({ length: TIERS }, (_, k) => k).filter((k) => (s[button(s, id as ButtonStat, k).pays] as number) >= button(s, id as ButtonStat, k).cost).length;
     const bodyId = `nf-body-${id}`;
@@ -118,6 +135,12 @@ export function StatRow({ id, s, d, onPress, open: expanded, onToggle }: { id: S
                             <div key={k}><dt>{k}</dt><i aria-hidden="true" /><dd>{v}</dd></div>
                         ))}
                     </dl>
+                    {id !== "bytes" && id !== "reboot" && s.drones.some((x) => x > 0) && (
+                        <div className="nf-arm">
+                            <span>Drones</span>
+                            <button type="button" className="nf-mini" aria-pressed={s.armed.includes(id)} onClick={onArm}>{s.armed.includes(id) ? "Armed" : "Off"}</button>
+                        </div>
+                    )}
                     {id !== "bytes" && (
                         <div className="nf-btns">
                             {Array.from({ length: TIERS }, (_, k) => (
@@ -177,6 +200,7 @@ function BuyBtn({ s, stat, tier, onPress }: { s: State; stat: ButtonStat; tier: 
                     {Array.from({ length: tier + 1 }, (_, i) => <i key={i} />)}
                 </span>
             </span>
+            <NfTierIcon stat={stat} tier={tier} />
             <span className="nf-btn-g">+{fmt(b.gain)}</span>
             <span className="nf-btn-c">{fmt(b.cost)} {pays.short}{owned > 0 && <em> · ×{owned}</em>}</span>
         </button>

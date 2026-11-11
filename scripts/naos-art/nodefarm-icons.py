@@ -32,6 +32,10 @@ RAMPS = {
     "qz": ramp("#25083a", "#6a1f95", "#a64ed0", "#e08cff", "#f9dcff"),
     "ae": ramp("#04261d", "#0f6b52", "#25b88b", "#6bffc9", "#e0fff4"),
     "wh": ramp("#1a1f22", "#4a555b", "#8b979d", "#d9e1e4", "#ffffff"),
+    "rn": ramp("#2a1c04", "#7a5a0c", "#c28f16", "#ffc53a", "#fff0b8"),
+    "sg": ramp("#102532", "#3a6a84", "#7cb4d2", "#bfeaff", "#f4fcff"),
+    "vs": ramp("#0c0818", "#2a1f55", "#5d46b0", "#9a7bff", "#e0d4ff"),
+    "ch": ramp("#2b0f05", "#7a2a10", "#c9501f", "#ff7a4a", "#ffd8b8"),
     "red": ramp("#2b0808", "#80150f", "#d3341c", "#ff6a3d", "#ffd3a8"),
     "gr": ramp("#141719", "#2b3236", "#48535a", "#6f7d85", "#a6b3ba"),
 }
@@ -238,8 +242,76 @@ def spark():
     return c
 
 
+# ---- the deep materials (Runes, Starglass, Voidsteel, Chrono). Each takes a tier t (0..5) so the tier sheet can reuse them;
+# the plain icon sheet shows tier 4 (index 4).
+def runes_t(c, t):
+    w = 7 + t * 0.9
+    slab = rect(16 - w, 16 - w - 2, 16 + w, 16 + w + 2)
+    c.fill(slab, 0.28 + 0.3 * lin(4, 4, 28, 28), "gr")
+    glow = [(0, 1), (1, 1), (2, 1), (3, 1), (4, 1), (5, 1)][: t + 1]
+    segs = [rect(15, 8, 17, 24), rect(10, 15, 22, 17), poly([(16, 9), (22, 16), (16, 23), (10, 16)]) & ~poly([(16, 12), (19, 16), (16, 20), (13, 16)]),
+            rect(10, 9, 12, 12) | rect(20, 9, 22, 12), rect(10, 20, 12, 23) | rect(20, 20, 22, 23), disc(16, 16, 3.2) & ~disc(16, 16, 1.6)]
+    order = [0, 1, 2, 3, 4, 5]
+    for k in order[: t + 1]:
+        c.set(segs[k] & slab, RAMPS["rn"][3 if k % 2 else 4])
+    if t >= 3:
+        c.set(slab & ~rect(16 - w + 1, 16 - w - 1, 16 + w - 1, 16 + w + 1), RAMPS["rn"][2])
+    return c
+
+
+def starglass_t(c, t):
+    def star(cx, cy, r, v):
+        pts = [(cx, cy - r), (cx + r * .26, cy - r * .26), (cx + r, cy), (cx + r * .26, cy + r * .26), (cx, cy + r), (cx - r * .26, cy + r * .26), (cx - r, cy), (cx - r * .26, cy - r * .26)]
+        c.fill(poly(pts), v + 0.5 * lin(cx - r, cy + r, cx + r, cy - r), "sg")
+    sizes = [(16, 16, 11), (7, 8, 5), (25, 9, 5), (8, 25, 4), (25, 24, 5), (16, 3.5, 2.5)]
+    use = [0] + list(range(1, t + 1))
+    if t == 0:
+        sizes[0] = (16, 16, 8)
+    for i in sorted(use, key=lambda k: -sizes[k][2]):
+        cx, cy, r = sizes[i]
+        star(cx, cy, r + (0.35 * t if i == 0 else 0), 0.3)
+    c.set(disc(16, 16, 1.4), RAMPS["sg"][4])
+    return c
+
+
+def voidsteel_t(c, t):
+    n = 1 + t // 2 + (1 if t >= 4 else 0)
+    for i in range(n):
+        y = 24 - i * 7
+        top = poly([(5, y), (25, y), (28, y + 3), (8, y + 3)])
+        front = rect(8, y + 3, 28, y + 8)
+        side = poly([(5, y), (8, y + 3), (8, y + 8), (5, y + 5)])
+        c.fill(side, 0.12, "vs")
+        c.fill(front, 0.2 + 0.2 * lin(8, y, 28, y + 8), "vs")
+        c.fill(top, 0.6 + 0.08 * i, "vs")
+    ring = disc(16, 24 - (n - 1) * 7 + 4.5, 2.4 + t * 0.35) & ~disc(16, 24 - (n - 1) * 7 + 4.5, 1.2 + t * 0.15)
+    c.set(ring, RAMPS["vs"][4])
+    return c
+
+
+def chrono_t(c, t):
+    c.fill(rect(8, 3, 24, 6), 0.7, "ch")
+    c.fill(rect(8, 26, 24, 29), 0.7, "ch")
+    top = poly([(9, 6), (23, 6), (16.5, 15.5)])
+    bot = poly([(16, 16.5), (9.5, 26), (22.5, 26)])
+    c.fill(top, 0.2 + 0.15 * lin(0, 6, 0, 16), "ch")
+    c.fill(bot, 0.35 + 0.1 * t + 0.4 * lin(0, 26, 0, 17), "ch")
+    c.set(rect(15.3, 15, 16.7, 18), RAMPS["ch"][4])
+    for k in range(1 + t // 2):
+        ro = 14.5 - k * 1.8
+        r = np.hypot(xx + .5 - 16, yy + .5 - 16)
+        ang = np.degrees(np.arctan2(yy + .5 - 16, xx + .5 - 16)) + k * 40
+        gap = (ang % 90) < 60
+        c.set((r <= ro) & (r >= ro - 1.0) & gap & ~rect(7, 3, 25, 6) & ~rect(7, 26, 25, 29), RAMPS["ch"][3 if k == 0 else 2])
+    if t >= 4:
+        c.set(rect(14, 10, 18, 13), RAMPS["ch"][4])
+    return c
+
+
 ICONS = [("bytes", bytes_), ("mult", mult), ("reboot", reboot), ("copper", copper), ("silicon", silicon), ("quartz", quartz),
-         ("aether", aether), ("ascend", ascend), ("alert", alert), ("lock", lock), ("spark", spark)]
+         ("aether", aether), ("ascend", ascend), ("alert", alert), ("lock", lock), ("spark", spark),
+         ("runes", lambda: runes_t(Canvas(), 4)), ("starglass", lambda: starglass_t(Canvas(), 4)),
+         ("voidsteel", lambda: voidsteel_t(Canvas(), 4)), ("chrono", lambda: chrono_t(Canvas(), 4))]
 
 
 def main():
