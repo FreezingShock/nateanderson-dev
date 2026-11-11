@@ -601,4 +601,3 @@ body.nf-win-open .ctos .g-frame, body.nf-win-open .ctos .cm-section, body.nf-win
 .ctos .nf-mp-sel-a { display: grid; gap: 6px; justify-items: end; }
 .ctos .nf-mp-sel-a small { font: 600 var(--cm-ctos-t-micro)/1 var(--cm-mono); color: var(--cm-ctos-meta); }
 .ctos .nf-mp-foot { margin: 0; font: 400 var(--cm-ctos-t-micro)/1.4 var(--cm-mono); color: var(--cm-ctos-meta); }
-@media (max-width: 480px) { .ctos .nf-tab { padding: 0 2px; letter-spacing: 0; font-size: 10.5px; } }
