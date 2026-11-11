@@ -7,6 +7,18 @@ import { NAV_EVENT } from "@/lib/motion/navigate";
 import { navItems } from "@/lib/nav";
 
 type Dir = "fwd" | "back" | "down" | "up";
+type XStyle = "fast" | "shutter" | "dissolve";
+/** Per style: when the cover is fully up (route push), the minimum hold with the name shown, and the full exit. */
+const TIMING: Record<XStyle, { cover: number; hold: number; exit: number }> = {
+    fast: { cover: 170, hold: 230, exit: 330 },
+    shutter: { cover: 220, hold: 240, exit: 350 },
+    dissolve: { cover: 200, hold: 230, exit: 300 },
+};
+/** Lab switch: html[data-xstyle] picks the look (set from ?xstyle= for the review). Defaults to fast. */
+const xstyle = (): XStyle => {
+    const v = document.documentElement.dataset.xstyle;
+    return v === "shutter" || v === "dissolve" ? v : "fast";
+};
 
 const rankOf = (p: string) =>
     navItems.findIndex((n) => (n.href === "/" ? p === "/" : p === n.href || p.startsWith(n.href + "/")));
@@ -22,7 +34,7 @@ function direction(from: string, to: string): Dir {
     return db > da ? "down" : db < da ? "up" : "fwd";
 }
 
-/** Writes the destination onto the title card: name, readout line and accent colour. */
+/** Writes the destination onto the title card: name, readout line, blurb and accent colour. */
 function paintCard(card: HTMLDivElement | null, path: string) {
     if (!card) return;
     const i = rankOf(path);
@@ -30,6 +42,9 @@ function paintCard(card: HTMLDivElement | null, path: string) {
     card.style.setProperty("--acc", accentOf(path));
     const k = card.querySelector<HTMLElement>(".k");
     if (k) k.textContent = `${i >= 0 ? navItems[i].no : "--"} // ${labelFor(path)}`;
+    const bl = card.querySelector<HTMLElement>(".bl");
+    const top = i >= 0 && navItems[i].href === path ? navItems[i] : null;
+    if (bl) bl.textContent = top?.blurb ?? "";
 }
 
 function labelFor(path: string): string {
@@ -46,9 +61,6 @@ function labelFor(path: string): string {
  * route, then bring the new page in from the other side; its hero and reveals start as it arrives.
  */
 type Phase = "idle" | "out" | "hold" | "in";
-/** Minimum time the title card stays up with the destination name on it. */
-const HOLD_MIN = 480;
-
 /** Accent on the title card by section: cyan, magenta, orange in nav order (one pop per section, never rainbow). */
 const ACCENTS = ["#2fd8e8", "#ff2d8a", "#ff7a1a"];
 const accentOf = (p: string) => ACCENTS[Math.max(0, rankOf(p)) % ACCENTS.length];
@@ -67,6 +79,16 @@ export function MotionRoot() {
     });
     const first = useRef(true);
     const wipe = useRef<HTMLDivElement>(null);
+
+    // Lab switch: ?xstyle=fast|shutter|dissolve is kept for the session so the style survives the route changes.
+    useEffect(() => {
+        try {
+            const q = new URLSearchParams(location.search).get("xstyle");
+            if (q) sessionStorage.setItem("cm-xstyle", q);
+            const v = sessionStorage.getItem("cm-xstyle");
+            if (v) document.documentElement.dataset.xstyle = v;
+        } catch {}
+    }, []);
 
     // Engine + boot cleanup.
     useEffect(() => {
@@ -95,7 +117,7 @@ export function MotionRoot() {
         const s = st.current;
         if (s.phase !== "hold") return;
         // Keep the title card up long enough to read the name (a cached route commits in a few ms).
-        const rest = HOLD_MIN - (performance.now() - s.heldAt);
+        const rest = TIMING[xstyle()].hold - (performance.now() - s.heldAt);
         if (rest > 0) {
             window.clearTimeout(s.safety);
             s.safety = window.setTimeout(() => arrive.current(), rest);
@@ -108,7 +130,7 @@ export function MotionRoot() {
         doc.setAttribute("data-xin", "");
         doc.removeAttribute("data-xition");
         s.phase = "in";
-        s.timer = window.setTimeout(() => reset.current(), 650);
+        s.timer = window.setTimeout(() => reset.current(), TIMING[xstyle()].exit);
     };
 
     // The route changed. If it is the one we are waiting for, bring the page in.
@@ -161,7 +183,7 @@ export function MotionRoot() {
                 paintCard(wipe.current, url.pathname);
                 s.phase = "out";
                 markNavigation();
-                s.timer = window.setTimeout(toHold, 260);
+                s.timer = window.setTimeout(toHold, TIMING[xstyle()].cover);
                 return true;
             }
             if (s.phase === "out") {
@@ -221,8 +243,13 @@ export function MotionRoot() {
         <>
             <div className="cm-pgauge" aria-hidden="true" />
             <div className="cm-wipe" ref={wipe} aria-hidden="true">
+                <i className="cm-sheet" />
+                <i className="cm-dz" />
+                <i className="cm-shut a" />
+                <i className="cm-shut b" />
                 <i className="edge" />
                 <span className="k" />
+                <span className="bl" />
             </div>
         </>
     );
