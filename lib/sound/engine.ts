@@ -314,3 +314,70 @@ export function pick(id: string, n: number) {
     lastPick.set(id, i);
     return i;
 }
+
+// ---------------------------------------------------------------- a held drone (Node Farm's reactor hum)
+
+type Hum = { a: OscillatorNode; b: OscillatorNode; sub: OscillatorNode; lp: BiquadFilterNode; out: GainNode };
+let humNodes: Hum | null = null;
+
+/**
+ * The reactor hum: three low oscillators (a detuned pair and a sub) under one low-pass, very quiet, on the game bus.
+ * Call it every game tick with the wanted state, or `null` to fade out and stop. `level` (0..1) opens the filter and
+ * raises the pitch a little as the reactor spins up. It only sounds while sound is on and the audio context is running,
+ * so it respects the sound switch, the hidden-tab sleep and the first-gesture rule without extra work from the caller.
+ */
+export function setHum(s: { level: number; boost?: boolean } | null) {
+    load();
+    const live = !!s && prefs.on && !!g && g.ctx.state === "running";
+    if (!live) {
+        if (humNodes && g) {
+            const h = humNodes;
+            h.out.gain.setTargetAtTime(0, g.ctx.currentTime, 0.15);
+            if (!s) {
+                humNodes = null;
+                window.setTimeout(() => {
+                    for (const o of [h.a, h.b, h.sub]) {
+                        try {
+                            o.stop();
+                        } catch {
+                            /* already stopped */
+                        }
+                    }
+                    h.out.disconnect();
+                }, 800);
+            }
+        }
+        return;
+    }
+    if (!g || !s) return;
+    const { ctx } = g;
+    if (!humNodes) {
+        const out = ctx.createGain();
+        out.gain.value = 0;
+        const lp = ctx.createBiquadFilter();
+        lp.type = "lowpass";
+        lp.Q.value = 0.7;
+        const mk = (type: OscillatorType, detune: number) => {
+            const o = ctx.createOscillator();
+            o.type = type;
+            o.detune.value = detune;
+            o.connect(lp);
+            o.start();
+            return o;
+        };
+        const a = mk("sawtooth", -7);
+        const b = mk("sawtooth", 7);
+        const sub = mk("sine", 0);
+        lp.connect(out);
+        out.connect(g.game);
+        humNodes = { a, b, sub, lp, out };
+    }
+    const h = humNodes;
+    const t = ctx.currentTime;
+    const lv = Math.max(0, Math.min(1, s.level));
+    const f = 55 * (1 + lv * 0.5) * (s.boost ? 1.5 : 1);
+    for (const o of [h.a, h.b]) o.frequency.setTargetAtTime(f, t, 0.4);
+    h.sub.frequency.setTargetAtTime(f / 2, t, 0.4);
+    h.lp.frequency.setTargetAtTime(140 + lv * 520 + (s.boost ? 200 : 0), t, 0.4);
+    h.out.gain.setTargetAtTime(0.01 + lv * 0.014, t, 0.3);
+}

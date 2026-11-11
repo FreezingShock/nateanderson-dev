@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { sfx } from "@/lib/sound/sounds";
+import { setHum } from "@/lib/sound/engine";
 import { useSoundPrefs } from "@/lib/sound/use-sound";
 import {
     TUNE, ascend, autoBuy, breach, button, buyPerk, checkGoals, derive, exportSave, fmt, fmtTime, fresh, isUnlocked, offline, parseSave, press, STATS, tick,
@@ -15,6 +16,7 @@ import { Chain, StatRow } from "./stat-row";
 import { AscendPanel, GoalsPanel, MenuPanel } from "./systems";
 
 const KEY = "nf-save-v1";
+const HUM_KEY = "nf-hum-v1"; // reactor hum on or off (per device)
 const UI_KEY = "nf-ui-v1"; // which stat panels are minimized (per device, not part of the game save)
 type Tab = "core" | "stats" | "goals" | "ascend" | "menu";
 const SIDE: Tab[] = ["goals", "ascend", "menu"];
@@ -58,7 +60,19 @@ export function NodeFarm() {
         return () => window.removeEventListener("keydown", onKey);
     }, [win]);
     const [snd, setSnd] = useSoundPrefs();
-    const feed = useRef<CoreFeed>({ progress: 0, overclock: false, unlocked: 1, speed: 0, lastPulse: -1e9 });
+    const [hum, setHumOn] = useState(true);
+    const humRef = useRef(true);
+    const prevUnlocked = useRef(0);
+    const toggleHum = () => {
+        const next = !humRef.current;
+        humRef.current = next;
+        setHumOn(next);
+        try {
+            localStorage.setItem(HUM_KEY, next ? "1" : "0");
+        } catch {}
+        if (!next) setHum(null);
+    };
+    const feed = useRef<CoreFeed>({ progress: 0, overclock: false, unlocked: 1, speed: 0, lastPulse: -1e9, reboots: 0, ap: 0 });
     const ids = useRef(1);
     const nextAlert = useRef(0);
     const alertEnd = useRef(0);
@@ -75,6 +89,10 @@ export function NodeFarm() {
         try {
             const u = localStorage.getItem(UI_KEY);
             if (u) setFolded(JSON.parse(u));
+            if (localStorage.getItem(HUM_KEY) === "0") {
+                humRef.current = false;
+                setHumOn(false);
+            }
         } catch {}
         const s = load() ?? fresh();
         const first = s.life.secs === 0 && s.life.presses === 0;
@@ -147,6 +165,11 @@ export function NodeFarm() {
             f.overclock = s.overclock > 0;
             f.speed = Math.min(1, Math.log10(1 + d.bytesPerSec) / 12);
             f.unlocked = STATS.filter((x) => isUnlocked(s, x.id)).length;
+            f.reboots = s.reboot;
+            f.ap = s.ap;
+            if (prevUnlocked.current && f.unlocked > prevUnlocked.current) sfx("nfDecrypt");
+            prevUnlocked.current = f.unlocked;
+            setHum(humRef.current ? { level: Math.min(1, f.speed * 0.75 + (f.unlocked / 7) * 0.25), boost: f.overclock } : null);
             // intrusion: a target appears, you have a few seconds to open it
             const pn = performance.now();
             if (alertEnd.current && pn > alertEnd.current) {
@@ -168,7 +191,10 @@ export function NodeFarm() {
             }
             bump((n) => n + 1);
         }, 100);
-        return () => clearInterval(iv);
+        return () => {
+            clearInterval(iv);
+            setHum(null);
+        };
     }, [ready, log, hack, scheduleAlert]);
 
     // ---- actions
@@ -176,6 +202,7 @@ export function NodeFarm() {
         (stat: ButtonStat, tier: number, quiet = false) => {
             const s = g.current;
             const was = s.reboot;
+            const owned = stat === "reboot" ? 0 : s.bought[stat][tier];
             if (!press(s, stat, tier)) {
                 if (!quiet) sfx("deny");
                 return false;
@@ -184,7 +211,8 @@ export function NodeFarm() {
             if (stat === "reboot") {
                 sfx("nfReboot");
                 log(`REBOOT x${fmt(s.reboot - was)}. Cache wiped, power up. Reboots: ${fmt(s.reboot)}`, "good");
-            } else sfx("nfBuy", { tier });
+            } else if (owned === 0 && tier > 0 && !quiet) sfx("nfTierUp", { tier });
+            else sfx("nfBuy", { tier, stat });
             bump((n) => n + 1);
             return true;
         },
@@ -307,7 +335,7 @@ export function NodeFarm() {
                 <div className="nf-core-wrap">
                     <div className="nf-core" role="img" aria-label={`Reactor core. ${fmt(d.bytesPerSec)} Bytes per second.`}>
                         <Core feed={feed} reduced={reduced} />
-                        <span className="nf-core-tag">NODE 01 // ONLINE</span>
+                        <span className="nf-core-tag">{s.ap > 0 ? `NODE 01 // ASCENDED ×${s.life.ascends || 1}` : feed.current.unlocked >= 6 ? "NODE 01 // CRYSTAL" : "NODE 01 // ONLINE"}</span>
                     </div>
                 </div>
                 <dl className="nf-readout">
@@ -342,6 +370,8 @@ export function NodeFarm() {
                 <MenuPanel
                     s={s}
                     soundOn={snd.on}
+                    humOn={hum}
+                    onHum={toggleHum}
                     onSound={() => setSnd({ on: !snd.on })}
                     ioText={ioText}
                     setIoText={setIoText}

@@ -3,7 +3,7 @@
 import { useEffect, useRef } from "react";
 import { STATS, TIERS, button, derive, fmt, isUnlocked, statDef, type ButtonStat, type State, type StatId } from "@/lib/nodefarm/engine";
 import { LORE } from "@/lib/nodefarm/lore";
-import { NfIcon, type NfIconName } from "./icon";
+import { NfIcon, NfTierIcon, type NfIconName } from "./icon";
 
 type D = ReturnType<typeof derive>;
 export type PressFn = (stat: ButtonStat, tier: number, quiet?: boolean) => boolean;
@@ -177,6 +177,7 @@ function BuyBtn({ s, stat, tier, onPress }: { s: State; stat: ButtonStat; tier: 
                     {Array.from({ length: tier + 1 }, (_, i) => <i key={i} />)}
                 </span>
             </span>
+            <NfTierIcon stat={stat} tier={tier} />
             <span className="nf-btn-g">+{fmt(b.gain)}</span>
             <span className="nf-btn-c">{fmt(b.cost)} {pays.short}{owned > 0 && <em> · ×{owned}</em>}</span>
         </button>
