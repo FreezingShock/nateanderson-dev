@@ -276,7 +276,7 @@
     isolation: isolate;
     display: grid;
     place-items: center;
-    aspect-ratio: 16 / 9;
+    height: 150px;
     margin-bottom: 4px;
     border: 1px solid #2a2a2a;
     background-color: #080808;
@@ -322,36 +322,72 @@
 }
 .ctos .g-card:hover .g-screen svg { transform: translateY(-3px) scale(1.04); }
 .ctos .g-grid { grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); }
+/* Every hub card uses the same dark ground and cyan top edge. This overrides the 3-up light/dark rotation from ctos.css. */
+.ctos .cm-grid.g-grid > .cm-card.g-card:nth-child(n),
+.ctos .cm-grid.g-grid > .cm-card.g-card:nth-child(n):hover {
+    background: linear-gradient(180deg, rgba(47, 216, 232, .1), rgba(47, 216, 232, 0) 55%), var(--cm-ctos-panel);
+    border: 1px solid var(--cm-hair-hi);
+    border-top: 3px solid var(--cm-cyan);
+    color: #f4f4f2;
+}
+.ctos .cm-grid.g-grid > .cm-card.g-card:nth-child(n) b { color: #f4f4f2; }
+.ctos .cm-grid.g-grid > .cm-card.g-card:nth-child(n) p { color: var(--cm-mute); }
+.ctos .cm-grid.g-grid > .cm-card.g-card:nth-child(n) .st { color: var(--cm-cyan); }
+.ctos .cm-grid.g-grid > .cm-card.g-card .cm-pill { color: #d6d6d2; border-color: var(--cm-hair-hi); background: #161616; }
+.ctos .cm-grid.g-grid > .cm-card.g-card p { background: none; }
 .ctos .g-pills { list-style: none; margin: 2px 0 0; padding: 0; }
 
-/* Mode nav: jump links to each mode with its playable count. */
+/* Card tags: the format (Daily or Unlimited) sits beside the status tag. */
+.ctos .g-tags { display: inline-flex; flex-wrap: wrap; gap: 6px; justify-content: flex-end; }
+
+/* Coming frames: an honest status for a section with no playable game yet. No cards, no filler. */
+.ctos .g-soon {
+    margin: 0;
+    font: 400 var(--cm-ctos-t-ui)/1.55 var(--cm-display);
+    color: var(--cm-mute);
+}
+
+/* Mode nav: a themed strip in the content column. Each mode is a cell with its name and playable count. */
 .ctos .g-hub-nav {
     display: flex;
     flex-wrap: wrap;
-    gap: 8px;
-    margin: 0 0 8px;
+    margin: 0 0 32px;
     padding: 0;
     list-style: none;
+    border: 1px solid var(--cm-hair-hi);
+    border-left: 3px solid var(--cm-cyan);
+    background: #0d0d0d;
 }
 .ctos .g-hub-nav a {
-    display: inline-flex;
+    flex: 1 1 0;
+    display: flex;
     align-items: center;
-    gap: 10px;
-    padding: 9px 12px;
-    border: 1px solid var(--cm-hair-hi);
-    background: #0d0d0d;
-    color: inherit;
+    justify-content: space-between;
+    gap: 12px;
+    min-width: 180px;
+    padding: 13px 16px;
+    border-right: 1px solid var(--cm-hair-hi);
+    color: #f4f4f2;
     font: 700 var(--cm-ctos-t-micro)/1 var(--cm-mono);
     letter-spacing: .14em;
     text-transform: uppercase;
     text-decoration: none;
+    transition: background-color var(--cm-d-base) var(--cm-ease), color var(--cm-d-base) var(--cm-ease);
 }
+.ctos .g-hub-nav a:last-child { border-right: 0; }
+.ctos .g-hub-nav em { font-style: normal; }
 .ctos .g-hub-nav a span { color: var(--cm-cyan); }
 .ctos .g-hub-nav a:hover,
-.ctos .g-hub-nav a:focus-visible { border-color: var(--cm-cyan); }
+.ctos .g-hub-nav a:focus-visible { background: var(--cm-cyan); color: #050607; outline: none; }
+.ctos .g-hub-nav a:hover span,
+.ctos .g-hub-nav a:focus-visible span { color: #050607; }
+@media (max-width: 640px) {
+    .ctos .g-hub-nav a { flex-basis: 100%; min-width: 0; border-right: 0; border-bottom: 1px solid var(--cm-hair-hi); }
+    .ctos .g-hub-nav a:last-child { border-bottom: 0; }
+}
 
 @media (max-width: 760px) {
-    .ctos .g-card .g-screen { aspect-ratio: 2 / 1; }
+    .ctos .g-card .g-screen { height: 124px; }
 }
 @media (prefers-reduced-motion: reduce) {
     .ctos .g-card:hover .g-screen svg { transition: none; transform: none; }

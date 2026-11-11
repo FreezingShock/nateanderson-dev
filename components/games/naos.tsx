@@ -89,7 +89,10 @@ function GameCard({ game, index }: { game: Game; index: number }) {
         <>
             <div className="cm-row" style={{ justifyContent: "space-between" }}>
                 <span className="cm-state">{String(index + 1).padStart(2, "0")} / {game.slug}</span>
-                <span className={`cm-tag flat ${tone}`}>{st.label}</span>
+                <span className="g-tags">
+                    {game.format && <span className="cm-tag flat">{game.format}</span>}
+                    <span className={`cm-tag flat ${tone}`}>{st.label}</span>
+                </span>
             </div>
             <div className="g-screen" aria-hidden="true">
                 <span className="g-screen-cap">{game.status === "playable" ? "preview" : "offline"}</span>
@@ -120,13 +123,20 @@ function GameCard({ game, index }: { game: Game; index: number }) {
 
 /** One game mode on the Games hub: a naOS section whose cards take the ctOS card rotation. */
 export function NaosGameMode({ mode, no }: { mode: GameMode; no: string }) {
+    const live = mode.games.filter((g) => g.status === "playable").length;
     return (
         <Section id={mode.id} no={no} label={mode.title} title={mode.tagline} blurb={mode.about} ctos>
-            <div className="cm-grid g-grid">
-                {mode.games.map((g, i) => (
-                    <GameCard key={g.slug} game={g} index={i} />
-                ))}
-            </div>
+            {mode.games.length > 0 ? (
+                <div className="cm-grid g-grid">
+                    {mode.games.map((g, i) => (
+                        <GameCard key={g.slug} game={g} index={i} />
+                    ))}
+                </div>
+            ) : (
+                <GameFrame code={`${mode.id}.next`} foot={[`${live} playable`, "coming"]}>
+                    <p className="g-soon">{mode.coming}</p>
+                </GameFrame>
+            )}
         </Section>
     );
 }

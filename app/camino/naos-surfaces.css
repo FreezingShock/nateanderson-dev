@@ -71,20 +71,15 @@
 
 /* ---- 7. Chrome: measuring scale on every section rule and the footer rule ---------------------------------------- */
 /* The cyan stub that opens each rule now runs into a short scale: a tick every 12px, a taller one every 60px. */
-.cm-sec-rule::before, .cm-foot::before {
+.cm-sec-rule::before {
   content: ""; position: absolute; left: 34px; top: 1px; width: min(34%, 420px); height: 8px; pointer-events: none;
   background:
     repeating-linear-gradient(90deg, rgba(244, 244, 242, .4) 0 1px, transparent 1px 60px) 0 0 / 60px 8px repeat-x,
     repeating-linear-gradient(90deg, rgba(244, 244, 242, .24) 0 1px, transparent 1px 12px) 0 0 / 12px 4px repeat-x;
   opacity: .8;
 }
-.cm-foot::after { content: ""; position: absolute; left: 0; top: -1px; width: 28px; height: 3px; background: var(--cm-cyan); pointer-events: none; }
 /* The footer sits over the last wash; a dark ground keeps its small mono copy readable. */
-.cm-foot { background: linear-gradient(180deg, rgba(26, 26, 26, .5), rgba(26, 26, 26, .86)); }
 /* Footer link columns: dashed rule under each column head already exists; match it between the top block and the base row. */
-.cm-foot-base { border-top: 1px dashed var(--cm-hair-hi); padding-top: var(--cm-s4); }
-.cm-foot-social .cm-btn { background: var(--cm-ctos-plate); border-color: var(--cm-ctos-edge); }
-.cm-foot-social .cm-btn:hover { border-color: var(--cm-cyan); }
 
 @media (prefers-reduced-motion: reduce) {
   .ctos .cm-panel, .ctos .cm-card { transition: none; }

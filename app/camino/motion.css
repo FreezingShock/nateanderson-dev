@@ -128,7 +128,7 @@ html[data-boot="full"] .cm-grid-bg, html[data-boot="quick"] .cm-grid-bg, html[da
    Direction: fwd/back along nav order, down/up between a section and its sub-pages. Transform and opacity only. */
 /* The page itself does not move: a whole-page transform animates a layer as tall as the page, which dropped frames
    on every switch. The card carries the motion, and each page's own entrance (entrances.css) does the rest. */
-html[data-xition="hold"] .cm-main, html[data-xition="hold"] .cm-foot { opacity: 0; }
+html[data-xition="hold"] .cm-main, html[data-xition="hold"] .sf-foot { opacity: 0; }
 html[data-xition="out"] .cm-pgauge, html[data-xition="hold"] .cm-pgauge {
   transform: none; width: 38%; animation: cm-load var(--cm-d-slow) var(--cm-ease-cut) infinite;
 }
