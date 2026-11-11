@@ -71,6 +71,7 @@ export function NaosBackdrop({ src }: { src: string }) {
     const backdropRef = useRef<HTMLDivElement>(null);
     const haloRef = useRef<HTMLDivElement>(null);
     const ripplesRef = useRef<HTMLDivElement>(null);
+    const stageRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
         let live = true;
@@ -97,6 +98,33 @@ export function NaosBackdrop({ src }: { src: string }) {
             if (idle !== undefined) window.clearTimeout(idle);
         };
     }, [src]);
+
+    // Scroll fade: the art is at full strength under the top bar and fades out as the page moves on, so it stops sitting
+    // behind the panels further down. Written straight to the stage opacity on scroll frames, with no React state. The
+    // stage holds only the backdrop and the dot field, so the halo, ripples and scrim are unaffected.
+    useEffect(() => {
+        const el = stageRef.current;
+        if (!el) return;
+        let frame = 0;
+        const read = () => {
+            frame = 0;
+            const start = 96; // clears the top bar
+            const span = Math.max(320, window.innerHeight * 0.8);
+            const t = Math.min(1, Math.max(0, (window.scrollY - start) / span));
+            el.style.opacity = String(1 - t);
+        };
+        const onScroll = () => {
+            if (!frame) frame = window.requestAnimationFrame(read);
+        };
+        read();
+        window.addEventListener("scroll", onScroll, { passive: true });
+        window.addEventListener("resize", onScroll);
+        return () => {
+            window.removeEventListener("scroll", onScroll);
+            window.removeEventListener("resize", onScroll);
+            if (frame) window.cancelAnimationFrame(frame);
+        };
+    }, []);
 
     // Input reactions. The art drifts a little with the pointer and the scroll position (depth, not a fixed sheet), a
     // dither halo wakes under the cursor or finger, and each press throws a short dither ring. Everything moves by
@@ -193,9 +221,11 @@ export function NaosBackdrop({ src }: { src: string }) {
 
     return (
         <>
-            <div className={`naos-backdrop-ground${ready ? " is-hidden" : ""}`} aria-hidden="true" />
-            <div className={`naos-backdrop${ready ? " is-ready" : ""}`} aria-hidden="true">
-                <div ref={backdropRef} className="naos-backdrop-art" style={{ backgroundImage: `url(${src})` }} />
+            <div ref={stageRef} className="naos-backdrop-stage" aria-hidden="true">
+                <div className={`naos-backdrop-ground${ready ? " is-hidden" : ""}`} aria-hidden="true" />
+                <div className={`naos-backdrop${ready ? " is-ready" : ""}`} aria-hidden="true">
+                    <div ref={backdropRef} className="naos-backdrop-art" style={{ backgroundImage: `url(${src})` }} />
+                </div>
             </div>
             <div ref={haloRef} className="naos-halo" aria-hidden="true" />
             <div ref={ripplesRef} className="naos-ripples" aria-hidden="true" />
