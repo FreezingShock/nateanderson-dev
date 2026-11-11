@@ -46,7 +46,9 @@ lines rise in. Keep hero size responsive (`clamp`), check 390px.
 the homepage `.hero-status.id`: `.id-top` (white header bar, scrambled `naOS // label`), `.id-main` (badge + dl rows),
 `.id-foot` (signal bars + coordinates). Add a `.p-foot` strip for a mono footer line.
 Cards do not vary by position: every `.ctos .cm-card` is the same dark panel with the dot field (ctos.css, "Cards").
-A live item (`.cm-tag.live`) or a hovered card takes the cyan top edge. Card titles are lowercase display, like every
+A grid can give a card a tone by meaning with `data-tone="paper"` or `"cyan"` (ctos.css, "Card tones and art"); the
+Explore grid sets them by hand. A toned card carries a `PixelIcon` centred behind its text, cut off at the top and
+bottom edges. A live item (`.cm-tag.live`) or a hovered card takes the cyan top edge. Card titles are lowercase display, like every
 naOS display line. Dither = dotted radial-gradient masked to fade; never gray flickering pixel blocks.
 
 ## Reveals and scramble

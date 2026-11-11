@@ -228,6 +228,28 @@ body.ctos-on .cm-foot-base { font-family: var(--cm-mono); }
 /* Linked cards read as index plates: the description is naOS mono. */
 .ctos .cm-grid > .cm-card.link p, .ctos .cm-cols3 > .cm-card.link p { font-family: var(--cm-mono); font-size: var(--cm-ctos-t-small); line-height: 1.5; letter-spacing: -.005em; }
 
+/* ---- Card tones and art: a grid can opt in with data-tone (set by meaning, see app/page.tsx). Each tone is one of
+   three surfaces: panel (the default above), paper (white block, ink text) or cyan. Every toned card carries a large
+   pixel icon centred behind its text, larger than the card so the top and bottom are cut off by the edge. ---- */
+.ctos .cm-card[data-tone] { overflow: hidden; }
+.ctos .cm-card[data-tone] > :not(.cm-card-art) { position: relative; z-index: 1; }
+.ctos .cm-card-art { position: absolute; left: 50%; top: 50%; width: 210px; height: 210px; transform: translate(-50%, -50%); pointer-events: none; z-index: 0; color: var(--cm-fg); opacity: .14; }
+.ctos .cm-card-art svg { width: 100%; height: 100%; display: block; }
+.ctos .cm-card[data-tone="paper"] { background: var(--cm-ctos-block); background-image: none; border-color: var(--cm-ctos-block); color: var(--cm-ctos-ink); }
+.ctos .cm-card[data-tone="paper"] > b { color: var(--cm-ctos-ink); }
+.ctos .cm-card[data-tone="paper"] p { color: #4a4a47; }
+.ctos .cm-card[data-tone="paper"] .st { color: #5c5c57; }
+.ctos .cm-card[data-tone="paper"] .cm-state { color: #076e77; }
+.ctos .cm-card[data-tone="paper"] .cm-card-art { color: var(--cm-ctos-ink); opacity: .09; }
+.ctos .cm-card[data-tone="paper"]:hover { background: #fff; border-color: #fff; }
+.ctos .cm-card[data-tone="paper"]:hover .st { color: #5c5c57; }
+.ctos .cm-card[data-tone="cyan"] { background: var(--cm-cyan); background-image: none; border-color: var(--cm-cyan); color: var(--cm-cyan-ink); }
+.ctos .cm-card[data-tone="cyan"] > b, .ctos .cm-card[data-tone="cyan"] p, .ctos .cm-card[data-tone="cyan"] .st, .ctos .cm-card[data-tone="cyan"] .cm-state { color: var(--cm-cyan-ink); }
+.ctos .cm-card[data-tone="cyan"] .cm-card-art { color: var(--cm-cyan-ink); opacity: .13; }
+.ctos .cm-card[data-tone="cyan"]:hover { background: #5fe6f2; border-color: #5fe6f2; }
+.ctos .cm-card[data-tone="cyan"]:hover .st { color: var(--cm-cyan-ink); }
+.ctos .cm-card[data-tone="cyan"]:hover::before { background: var(--cm-ctos-ink); }
+
 /* ---- Profile: checkerboard pillars, terminal feed, rail path ---------------------------------------------------- */
 .ctos .pf-id .pf-lead { font-weight: 700; letter-spacing: -.035em; max-width: 30ch; }
 .ctos .pf-pillars { border-top: 0; gap: 0; }
