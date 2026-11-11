@@ -1,0 +1,62 @@
+/* ==========================================================================
+   Keyboard shortcuts: the `?` cheat sheet and its footer button. The panel chrome (.nv-scrim, .nv-panel, .nv-head,
+   .nv-close, .nv-key) comes from app/camino/nav-naos.css; this file only adds the list. Focus rings come from the global
+   `.cm :focus-visible` rule, so the scrolling list and the footer button show the same cyan ring as every other control.
+   ========================================================================== */
+
+.nv-keys { width: min(680px, 100%); }
+
+.nv-keys-body {
+    overflow-y: auto; overscroll-behavior: contain; -webkit-overflow-scrolling: touch;
+    padding: 4px 16px 16px; min-height: 0;
+}
+
+.nv-keys-group + .nv-keys-group { margin-top: 6px; }
+
+.nv-keys-h {
+    margin: 0; padding: 16px 0 8px;
+    font: 700 var(--cm-ctos-t-micro)/1 var(--cm-mono); letter-spacing: .14em; text-transform: uppercase;
+    color: var(--cm-cyan); border-bottom: 1px dashed var(--cm-hair-hi);
+}
+
+.nv-keys-list { margin: 0; }
+
+.nv-keys-row {
+    display: grid; grid-template-columns: minmax(150px, max-content) minmax(0, 1fr); gap: 16px; align-items: center;
+    padding: 10px 0; border-bottom: 1px dashed var(--cm-hair);
+}
+
+.nv-keys-row dt { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin: 0; }
+.nv-keys-row dd {
+    margin: 0; color: var(--cm-fg); font: 400 var(--cm-ctos-t-ui)/1.4 var(--cm-mono);
+}
+
+.nv-keys-cap { display: inline-flex; align-items: center; gap: 6px; }
+.nv-keys-cap .nv-key { opacity: 1; padding: 4px 6px; border-color: var(--cm-hair-hi); color: var(--cm-fg); }
+.nv-keys-sep {
+    font: 500 var(--cm-ctos-t-micro)/1 var(--cm-mono); letter-spacing: .12em; text-transform: uppercase; color: var(--cm-dim);
+}
+
+.nv-keys-note {
+    margin: 16px 0 0; font: 500 var(--cm-ctos-t-micro)/1.5 var(--cm-mono); letter-spacing: .08em; color: var(--cm-dim);
+}
+
+@media (max-width: 560px) {
+    .nv-keys-body { padding-inline: 14px; }
+    .nv-keys-row { grid-template-columns: minmax(0, 1fr); gap: 6px; padding: 12px 0; }
+}
+
+/* Footer button that opens the sheet. A plain text control, so it reads as part of the footer strip. */
+.cm-keys-btn {
+    display: inline-flex; align-items: center; gap: 10px; padding: 6px 10px 6px 6px; cursor: pointer;
+    background: transparent; border: 1px dashed var(--cm-hair-hi); color: var(--cm-dim);
+    font: 500 var(--cm-ctos-t-micro)/1 var(--cm-mono); letter-spacing: .14em; text-transform: uppercase;
+    transition: color var(--cm-d-base), border-color var(--cm-d-base);
+}
+.cm-keys-btn .nv-key { opacity: .9; }
+.cm-keys-btn:hover { color: var(--cm-cyan); border-color: var(--cm-cyan); }
+.cm-keys-btn:hover .nv-key { background: var(--cm-cyan); border-color: var(--cm-cyan); color: var(--cm-cyan-ink); }
+
+@media (prefers-reduced-motion: reduce) {
+    .cm-keys-btn { transition: none; }
+}
