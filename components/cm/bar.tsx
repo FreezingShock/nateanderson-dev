@@ -69,7 +69,7 @@ export function Bar() {
                 </Link>
             </div>
             <div className="nv-tools">
-                <button type="button" className="nv-search" onClick={openLauncher} aria-label="Search the site">
+                <button type="button" className="nv-search" onClick={openLauncher} aria-label="Search the site" aria-haspopup="dialog">
                     <PixelIcon name="search" size={24} />
                     <span>search</span>
                     <kbd className="nv-key" aria-hidden="true">/</kbd>

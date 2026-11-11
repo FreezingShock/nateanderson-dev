@@ -33,6 +33,7 @@ import {
 } from "@/components/games/guess-kit";
 import { GLASS_CLASS } from "@/components/games/guess-kit";
 import { cn } from "@/lib/utils";
+import { sfx } from "@/lib/sound/sounds";
 import neighborData from "@/lib/data/neighbors.json";
 import {
     ARROW_EMOJI,
@@ -325,6 +326,7 @@ export function OutlineGuesser() {
         (target: Country) => {
             if (!answer || status !== "playing") return;
             const g = makeGuess(target, answer);
+            sfx(g.pct === 100 ? "granted" : "deny");
             const next = [...guesses, g];
             setGuesses(next);
             setFreshIndex(next.length - 1);
