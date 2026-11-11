@@ -192,7 +192,9 @@ export function NaosBackdrop({ src }: { src: string }) {
     return (
         <>
             <div className={`naos-backdrop-ground${ready ? " is-hidden" : ""}`} aria-hidden="true" />
-            <div ref={backdropRef} className={`naos-backdrop${ready ? " is-ready" : ""}`} aria-hidden="true" style={{ backgroundImage: `url(${src})` }} />
+            <div className={`naos-backdrop${ready ? " is-ready" : ""}`} aria-hidden="true">
+                <div ref={backdropRef} className="naos-backdrop-art" style={{ backgroundImage: `url(${src})` }} />
+            </div>
             <div ref={haloRef} className="naos-halo" aria-hidden="true" />
             <div ref={ripplesRef} className="naos-ripples" aria-hidden="true" />
             <div className="naos-scrim" aria-hidden="true" />

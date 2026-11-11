@@ -72,7 +72,8 @@ visible text back past that line.
 The page backdrop answers the reader, in three layers, all moved by `transform` in one rAF loop that sleeps once settled:
 - Pointer lean: with a fine pointer the art drifts up to 10px sideways with the cursor (eased).
 - Scroll drift: the art slides down at 10% of the scroll distance, capped at 56px, so it sits behind the copy like depth.
-  The backdrop is overscanned by 64px on each side (`.naos-backdrop` inset) so the drift never shows an edge.
+  The art lives in `.naos-backdrop-art`, overscanned by 64px on each side, inside the masked `.naos-backdrop` frame. The mask
+  and fade keep their original geometry, and the drift never shows an edge.
 - Dither halo and press ring: a 300px dot disc follows the pointer or finger while it is on the page (200px on phones) and
   fades when a touch lifts. Each press throws one dotted ring that steps out and off (`.naos-ripple`, max three at once).
 

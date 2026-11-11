@@ -32,13 +32,18 @@
    - Gradient, not a fill: a mask keeps the field dense in the upper right and lets it recede to the ground toward the
      lower left, where the copy sits. Lower opacity overall. */
 .naos-backdrop {
-  /* Overscanned by 64px on every side so the pointer and scroll drift (NaosBackdrop) never shows an edge. The art
-     keeps its place: the 64px background offset cancels the overscan. */
-  position: fixed; inset: -64px; z-index: -1; pointer-events: none; will-change: transform;
-  background-position: center 64px; background-size: max(1440px, 100vw) auto; background-repeat: no-repeat;
-  image-rendering: pixelated; opacity: 0; transition: opacity 700ms ease-out;
+  position: fixed; inset: 0; z-index: -1; pointer-events: none;
+  opacity: 0; transition: opacity 700ms ease-out;
   -webkit-mask-image: radial-gradient(ellipse 75% 85% at 82% 18%, #000 0, rgba(0, 0, 0, .55) 45%, transparent 92%);
   mask-image: radial-gradient(ellipse 75% 85% at 82% 18%, #000 0, rgba(0, 0, 0, .55) 45%, transparent 92%);
+}
+/* The art itself, inside the masked frame. It is overscanned by 64px on every side so the pointer and scroll drift
+   (NaosBackdrop) never shows an edge. The 64px background offset puts the art exactly where it sat before the
+   overscan. The mask stays on .naos-backdrop, so the fade keeps its geometry. */
+.naos-backdrop-art {
+  position: absolute; inset: -64px; pointer-events: none; will-change: transform;
+  background-position: center 64px; background-size: max(1440px, 100vw) auto; background-repeat: no-repeat;
+  image-rendering: pixelated;
 }
 /* Shown at once, under the art, while the image decodes: a plain dot field in the same spot and shape. It fades out
    as the art fades in, so the page is never blank and the art never snaps in. */
@@ -57,8 +62,11 @@
     mask-image: linear-gradient(180deg, transparent 0, #000 22%, rgba(0, 0, 0, .6) 60%, transparent 96%);
   }
   .naos-backdrop.is-ready { opacity: .4; }
+  .naos-backdrop-art {
+    /* 62% is taken over the 518px overscanned box, so -15.36px keeps the art where 62% of 390px put it before. */
+    background-position: calc(62% - 15.36px) 64px;
+  }
   .naos-backdrop {
-    background-position: 62% 64px;
     -webkit-mask-image: linear-gradient(180deg, transparent 0, #000 22%, rgba(0, 0, 0, .6) 60%, transparent 96%);
     mask-image: linear-gradient(180deg, transparent 0, #000 22%, rgba(0, 0, 0, .6) 60%, transparent 96%);
   }
