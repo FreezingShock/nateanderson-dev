@@ -10,7 +10,7 @@ export interface CoreFeed {
     progress: number;
     /** true while an intrusion boost is running */
     overclock: boolean;
-    /** how many stats are unlocked (1..7); the tick ring shows one coloured sector for each */
+    /** how many stats are unlocked (1..11); the tick ring shows one coloured sector for each */
     unlocked: number;
     /** a speed hint, 0..1, from log10 of Bytes per second */
     speed: number;
@@ -28,7 +28,7 @@ export interface CoreFeed {
 const S = 144;
 const BAYER = [0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5].map((n) => n / 16 - 0.5);
 const CYAN = [[6, 32, 42], [11, 90, 107], [23, 150, 170], [47, 216, 232], [201, 251, 255]];
-const SECT = ["#2fd8e8", "#b6f04a", "#ff2d8a", "#f08a3c", "#7aa2ff", "#e08cff", "#6bffc9"].map((h) => [parseInt(h.slice(1, 3), 16), parseInt(h.slice(3, 5), 16), parseInt(h.slice(5, 7), 16)]);
+const SECT = ["#2fd8e8", "#b6f04a", "#ff2d8a", "#f08a3c", "#7aa2ff", "#e08cff", "#6bffc9", "#ffc53a", "#bfeaff", "#9a7bff", "#ff7a4a"].map((h) => [parseInt(h.slice(1, 3), 16), parseInt(h.slice(3, 5), 16), parseInt(h.slice(5, 7), 16)]);
 const MAG = [[43, 5, 23], [125, 15, 69], [196, 28, 108], [255, 45, 138], [255, 194, 222]];
 
 export function Core({ feed, reduced }: { feed: React.MutableRefObject<CoreFeed>; reduced: boolean }) {
@@ -95,7 +95,7 @@ export function Core({ feed, reduced }: { feed: React.MutableRefObject<CoreFeed>
                     if (r > 50 && r < 58) {
                         const k = (a + spin) / (Math.PI * 2) * 36;
                         const fr = k - Math.floor(k);
-                        if (fr < 0.38) { v = r > 55 ? 0.95 : 0.55; const si = Math.floor(((a + Math.PI) / (Math.PI * 2)) * 7) % 7; if (si < f.unlocked) sect = si; }
+                        if (fr < 0.38) { v = r > 55 ? 0.95 : 0.55; const si = Math.floor(((a + Math.PI) / (Math.PI * 2)) * 11) % 11; if (si < f.unlocked) sect = si; }
                     }
                     // Reboot progress arc (outer gauge)
                     if (r > 61 && r < 64) {
