@@ -277,6 +277,35 @@ export function whoosh(bus: Bus, o: Whoosh) {
     };
 }
 
+export type KeyClick = { at?: number; gain?: number; f: number; q?: number };
+/** A very short band-passed noise burst: the keypad and relay clicks of the security set. */
+export function keyClick(bus: Bus, o: KeyClick) {
+    if (!g) return;
+    const { ctx } = g;
+    const t0 = ctx.currentTime + (o.at ?? 0) + 0.002;
+    const dur = 0.018;
+    const src = ctx.createBufferSource();
+    src.buffer = g.noise;
+    const bp = ctx.createBiquadFilter();
+    bp.type = "bandpass";
+    bp.frequency.value = o.f;
+    bp.Q.value = o.q ?? 4;
+    const out = ctx.createGain();
+    out.gain.setValueAtTime(o.gain ?? 0.04, t0);
+    out.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+    src.connect(bp);
+    bp.connect(out);
+    out.connect(bus === "ui" ? g.ui : g.game);
+    src.start(t0, Math.random() * 0.5);
+    src.stop(t0 + dur + 0.02);
+    active++;
+    src.onended = () => {
+        active--;
+        out.disconnect();
+        bp.disconnect();
+    };
+}
+
 /** For callers that want round-robin without repeats. */
 const lastPick = new Map<string, number>();
 export function pick(id: string, n: number) {

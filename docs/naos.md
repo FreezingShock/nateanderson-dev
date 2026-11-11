@@ -91,14 +91,21 @@ Placement rules:
 ## Creations hub
 `/creations` is its own page look (`.ctos.cr-hub`, styles at the bottom of `components/creations/creations.css`): the magenta guide X is replaced by a scanline field and one cyan sweep on load, the assembly art fills the head behind the status card, and the head plays a once-only load-in (grid, art dithers in, card drops in, rows and bars follow). Hub cards reveal from alternating sides through the scrubbed engine. Do not add `clip-path` or `mask` to `data-rx` items: the engine's IntersectionObserver treats a fully clipped item as off screen and leaves it hidden.
 
-## Sound (naOS interface set)
-Every interface sound comes from `lib/sound/sounds.ts`, synthesized with Web Audio (no audio files). The naOS block is the
-first group in the catalogue: square and sine blips at fixed Hz, low-passed, plus one sawtooth scan on transitions.
-- Hover ticks, taps, tabs, on/off toggles, menu open and close, the route-change ping (`nav`), deny buzz and the `popup` bell.
+## Sound (naOS security set)
+Every sound comes from `lib/sound/sounds.ts`, synthesized with Web Audio (no audio files, so nothing to copy or license).
+The naOS block is the first group in the catalogue and sounds like a terminal or a security system: square blips at
+fixed Hz, keypad clicks (a short band-passed noise burst from `keyClick` in `engine.ts`), and one sawtooth scan on panels.
+- Wired sitewide by `components/sound-provider.tsx`, no component needs wiring:
+  - hover: a keypad tick on any button, link, tab or option under a mouse pointer (`hover`, tier 0)
+  - taps: `tap` on buttons and in-page controls; tabs (`tab`), toggles (`on` / `off`)
+  - panels: the site map and the search panel play `open` and `close` when they open or close. Their openers (menu, search, console) are silent so the panel's scan is the only sound. Close buttons carry `data-snd="off"`.
+  - route change: `nav`, a three-note packet on the next page. Internal links are silent on click.
+  - games: a correct guess plays `granted`, a wrong one `deny` (flag guesser, outline guesser), a neighbor hit plays `collect` (neighbor round).
+- Results: `granted` (access granted chirp), `deny` (access denied buzz, tier 2 so it outranks the tap under it), `popup` (security alert).
 - Under `prefers-reduced-motion: reduce` the scan sweeps and hover ticks drop out; the confirm blips stay.
-- Mute lives in the header (`.nv-snd` in `components/cm/bar.tsx`) and remembers its setting in localStorage (`fi-sound-v1`; the key keeps its old name so saved settings survive).
+- Mute lives in the header (`.nv-snd` in `components/cm/bar.tsx`) and remembers its setting in localStorage (`fi-sound-v1`; the key keeps its old name so saved settings survive). The console has `sound on|off` too.
 - Nothing plays before the first click, tap or key press. Keep new interface sounds in this group, use `tier 0` for ambient ticks, and give anything new a rate-limit `gap`.
-- The games' pentatonic set further down the file is separate and untouched by the naOS look.
+- Game hooks: `import { sfx } from "@/lib/sound/sounds"` then `sfx("trophy")` and so on. The game set further down the file (buy, unlock, level, rebirth, ascend) is softer and uses one pentatonic scale.
 
 ## Command console
 A terminal-style panel that drives the site. Open it with the backtick key (or Cmd/Ctrl+J), the `console` button in the top bar (an icon-only tap target on phones), or `window.dispatchEvent(new Event("cm:console"))`. Esc, `exit` or the backtick again close it; focus returns to where it was.
