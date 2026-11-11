@@ -184,7 +184,15 @@ export function Launcher() {
         const onKey = (e: KeyboardEvent) => {
             const t = e.target as HTMLElement | null;
             const typing = !!t && (/^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName) || t.isContentEditable);
-            if (e.key === "/" && !open && !typing && !e.metaKey && !e.ctrlKey) {
+            // A game's guess box takes focus on desktop as soon as the page loads, so "/" would type into it. An empty
+            // guess box is not a field anyone types a slash into, so "/" opens search there too.
+            const emptyGuessBox =
+                !!t &&
+                t.tagName === "INPUT" &&
+                t.getAttribute("role") === "combobox" &&
+                (t as HTMLInputElement).value === "" &&
+                !t.closest(".nv-panel, .cn-panel");
+            if (e.key === "/" && !open && (!typing || emptyGuessBox) && !e.metaKey && !e.ctrlKey) {
                 e.preventDefault();
                 show();
             } else if ((e.key === "k" || e.key === "K") && (e.metaKey || e.ctrlKey)) {
