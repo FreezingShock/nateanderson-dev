@@ -111,9 +111,9 @@ export function AscendPanel({ s, d, confirm, onAscend, onPerk }: { s: State; d: 
 }
 
 export function MenuPanel({
-    s, soundOn, onSound, ioText, setIoText, ioMsg, onExport, onImport, confirm, onReset,
+    s, soundOn, onSound, humOn, onHum, ioText, setIoText, ioMsg, onExport, onImport, confirm, onReset,
 }: {
-    s: State; soundOn: boolean; onSound: () => void; ioText: string; setIoText: (v: string) => void; ioMsg: string; onExport: () => void; onImport: () => void; confirm: boolean; onReset: () => void;
+    s: State; soundOn: boolean; onSound: () => void; humOn: boolean; onHum: () => void; ioText: string; setIoText: (v: string) => void; ioMsg: string; onExport: () => void; onImport: () => void; confirm: boolean; onReset: () => void;
 }) {
     const facts: [string, string][] = [
         ["Played", fmtTime(s.life.secs)],
@@ -135,6 +135,7 @@ export function MenuPanel({
                 <header className="nf-sys-h"><h3>Save</h3><p>Stored in this browser. Move it with a code.</p></header>
                 <div className="nf-menu-row">
                     <button type="button" className="nf-mini" aria-pressed={soundOn} onClick={onSound}>Sound: {soundOn ? "on" : "off"}</button>
+                    <button type="button" className="nf-mini" aria-pressed={humOn} onClick={onHum}>Hum: {humOn ? "on" : "off"}</button>
                     <button type="button" className="nf-mini" onClick={onExport}>Export</button>
                     <button type="button" className="nf-mini" onClick={onImport}>Import</button>
                 </div>

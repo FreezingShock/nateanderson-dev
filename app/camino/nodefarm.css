@@ -25,6 +25,9 @@
 .ctos .nf-boot-t { color: var(--cm-cyan); display: block; }
 .ctos .nf .nf-ic, body .nf-aw .nf-ic { --s: 32px; display: inline-block; flex: none; width: var(--s); height: var(--s); background: url(/naos/nodefarm/icons.webp) calc(var(--i) * var(--s) * -1) 0 / calc(var(--s) * 11) var(--s) no-repeat; image-rendering: pixelated; vertical-align: middle; }
 .ctos .nf .nf-ic.l, .ctos .nf .nf-ic.r, body .nf-aw .nf-ic.l { --s: 64px; }
+/* tier icon: bottom-right of a buy button, a whole 32 px of the 192 x 192 sheet (row = stat, column = tier) */
+.ctos .nf .nf-tic { position: absolute; right: 8px; bottom: 6px; z-index: 1; width: 32px; height: 32px; background: url(/naos/nodefarm/tiers.webp) calc(var(--t) * -32px) calc(var(--r) * -32px) / 192px 192px no-repeat; image-rendering: pixelated; pointer-events: none; opacity: .55; filter: grayscale(.7) brightness(.8); transition: opacity 120ms, filter 120ms; }
+.ctos .nf .nf-btn[data-afford] .nf-tic { opacity: 1; filter: none; }
 @media (max-width: 639px) { .ctos .nf .nf-ic.r { --s: 32px; } }
 .ctos .nf :where(button) { font: inherit; color: inherit; touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
 .ctos .nf :where(button):disabled { cursor: not-allowed; }

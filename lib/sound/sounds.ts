@@ -141,16 +141,71 @@ const DEFS = {
     // ---- Node Farm (the incremental game): the same naOS security-terminal voices as the interface set.
     // Buys are access-granted pairs; a Reboot is a power-down scan
     // followed by a power-up arpeggio; an intrusion is a three-pulse alarm; a breach is a fast lock-picked arpeggio.
+    // A press has a voice per stat, and the tier sets pitch and length: Multipliers are keypad presses, Copper relay clacks,
+    // Silicon fast high ticks, Quartz glassy chimes, Aether an airy swell. `stat` is optional so older callers still work.
     nfBuy: {
         tier: 2,
         bus: "game",
         gap: 45,
-        play: (a: { tier?: number } | undefined) => {
+        play: (a: { tier?: number; stat?: string } | undefined) => {
             const t = Math.max(0, Math.min(5, a?.tier ?? 0));
             const base = 880 * Math.pow(1.0595, t * 2);
-            blip("game", base, { dur: 0.05, gain: 0.06, cutoff: 2600 });
-            blip("game", base * 1.5, { at: 0.055, dur: 0.07, gain: 0.06, cutoff: 3000 });
-            if (t >= 4) blip("game", base * 2, { at: 0.12, dur: 0.1, gain: 0.05, cutoff: 3200 });
+            switch (a?.stat) {
+                case "mult":
+                    keyClick("game", { f: 1900, gain: 0.04, q: 3 });
+                    blip("game", base * 0.75, { dur: 0.045, gain: 0.06, glide: 0.8, cutoff: 2400 });
+                    blip("game", base * 1.125, { at: 0.05, dur: 0.06, gain: 0.055, cutoff: 2800 });
+                    break;
+                case "copper":
+                    keyClick("game", { f: 900, gain: 0.07, q: 2 });
+                    blip("game", base * 0.5, { dur: 0.07, gain: 0.07, glide: 0.6, cutoff: 1500 });
+                    blip("game", base * 0.75, { at: 0.06, dur: 0.06, gain: 0.05, cutoff: 1800 });
+                    break;
+                case "silicon":
+                    [1, 1.5, 2].slice(0, 2 + (t >= 3 ? 1 : 0)).forEach((m, i) => blip("game", base * 1.5 * m, { at: i * 0.035, dur: 0.03, gain: 0.045, cutoff: 3600 }));
+                    break;
+                case "quartz":
+                    tone("game", { f: base * 1.5, dur: 0.22 + t * 0.03, gain: 0.05, harm: 0.4, attack: 0.004, cutoff: 4200 });
+                    tone("game", { f: base * 2.25, at: 0.05, dur: 0.2 + t * 0.03, gain: 0.035, harm: 0.3, attack: 0.004, cutoff: 4200 });
+                    break;
+                case "aether":
+                    if (!calm()) whoosh("game", { from: 500, to: 1800 + t * 200, dur: 0.18, gain: 0.03 });
+                    tone("game", { f: base, dur: 0.3, gain: 0.05, harm: 0.25, attack: 0.04, cutoff: 3000 });
+                    tone("game", { f: base * 1.5, at: 0.06, dur: 0.3, gain: 0.04, attack: 0.04, cutoff: 3000 });
+                    break;
+                default:
+                    blip("game", base, { dur: 0.05, gain: 0.06, cutoff: 2600 });
+                    blip("game", base * 1.5, { at: 0.055, dur: 0.07, gain: 0.06, cutoff: 3000 });
+                    if (t >= 4) blip("game", base * 2, { at: 0.12, dur: 0.1, gain: 0.05, cutoff: 3200 });
+            }
+        },
+    },
+    // the first time a button tier is bought: a lock being picked, one pin at a time, ending on access granted
+    nfTierUp: {
+        tier: 3,
+        bus: "game",
+        gap: 500,
+        play: (a: { tier?: number } | undefined) => {
+            const t = Math.max(1, Math.min(5, a?.tier ?? 1));
+            for (let i = 0; i < t; i++) {
+                keyClick("game", { at: i * 0.06, f: 2400 + i * 300, gain: 0.05, q: 4 });
+                blip("game", 660 * Math.pow(1.122, i * 2), { at: i * 0.06, dur: 0.04, gain: 0.045, cutoff: 2800 });
+            }
+            const end = t * 0.06 + 0.04;
+            tone("game", { f: 1320, at: end, dur: 0.3, gain: 0.06, harm: 0.2, attack: 0.005, cutoff: 3600 });
+            tone("game", { f: 1980, at: end + 0.07, dur: 0.34, gain: 0.05, harm: 0.2, attack: 0.005, cutoff: 3800 });
+        },
+    },
+    // a stat decrypting: a bolt thunk, a rising scan and the access chirp
+    nfDecrypt: {
+        tier: 3,
+        bus: "game",
+        gap: 900,
+        play: () => {
+            keyClick("game", { f: 500, gain: 0.09, q: 1.5 });
+            blip("game", 110, { dur: 0.14, gain: 0.08, cutoff: 600, type: "sine" });
+            if (!calm()) scan(300, 2200, 0.35, 0.03);
+            [660, 990, 1320].forEach((f, i) => blip("game", f, { at: 0.38 + i * 0.07, dur: 0.1, gain: 0.06, cutoff: 3200 }));
         },
     },
     nfReboot: {
@@ -186,14 +241,18 @@ const DEFS = {
             blip("game", 1320, { at: 0.08, dur: 0.08, gain: 0.05, cutoff: 2800 });
         },
     },
+    // root access: bolts retracting, a deep power-up swell, then a rising ladder that lands on a held chord
     nfAscend: {
         tier: 4,
         bus: "game",
         gap: 1500,
         play: () => {
-            if (!calm()) scan(160, 3000, 1.1, 0.04);
-            tone("game", { f: 110, dur: 1.6, gain: 0.08, attack: 0.3, cutoff: 500 });
-            [440, 660, 880, 1100, 1320, 1760, 2200].forEach((f, i) => blip("game", f, { at: 0.5 + i * 0.09, dur: 0.14, gain: 0.06, cutoff: 3400 }));
+            [0, 0.14, 0.28, 0.42].forEach((at, i) => { keyClick("game", { at, f: 700 + i * 250, gain: 0.08, q: 2 }); blip("game", 90 + i * 25, { at, dur: 0.1, gain: 0.07, cutoff: 500, type: "sine" }); });
+            if (!calm()) scan(120, 3200, 1.4, 0.045);
+            whoosh("game", { from: 160, to: 3000, dur: 1.4, gain: 0.07, at: 0.2 });
+            tone("game", { f: 82, dur: 2.4, gain: 0.1, attack: 0.5, cutoff: 420 });
+            [440, 660, 880, 1100, 1320, 1760, 2200].forEach((f, i) => blip("game", f, { at: 0.8 + i * 0.09, dur: 0.14, gain: 0.06, cutoff: 3400 }));
+            [880, 1320, 1760].forEach((f) => tone("game", { f, at: 1.5, dur: 1.4, gain: 0.05, harm: 0.25, attack: 0.04, cutoff: 3600 }));
         },
     },
 

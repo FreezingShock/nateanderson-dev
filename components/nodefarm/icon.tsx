@@ -10,3 +10,13 @@ export function NfIcon({ name, large = false, responsive = false, className = ""
     const i = ORDER.indexOf(name);
     return <span aria-hidden="true" className={`nf-ic${large ? " l" : ""}${responsive ? " r" : ""} ${className}`.trim()} style={{ ["--i" as string]: i } as CSSProperties} />;
 }
+
+// One 32 px sprite per button tier: six rows (stat) by six columns (tier), drawn by scripts/naos-art/nodefarm-tier-icons.py.
+// Row order below must match ROWS in that script.
+const TIER_ROWS = ["mult", "reboot", "copper", "silicon", "quartz", "aether"] as const;
+
+export function NfTierIcon({ stat, tier }: { stat: string; tier: number }) {
+    const r = TIER_ROWS.indexOf(stat as (typeof TIER_ROWS)[number]);
+    if (r < 0) return null;
+    return <span aria-hidden="true" className="nf-tic" style={{ ["--r" as string]: r, ["--t" as string]: tier } as CSSProperties} />;
+}
