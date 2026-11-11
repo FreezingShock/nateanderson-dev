@@ -1,6 +1,7 @@
 import { getProjects } from "@/lib/content";
 import { CreationsShell, FeedOffline, ListStatusCard, ProjectGrid, Section } from "@/components/creations-sections";
 import { pageMeta } from "@/lib/seo";
+import { NaosBackdrop } from "@/components/cm/naos-art";
 import { categoryById } from "@/lib/creations-data";
 
 export const revalidate = 60;
@@ -16,6 +17,7 @@ export default async function ProjectsPage() {
             variant="sub"
             aside={<ListStatusCard label="projects // index" badge="pj" projects={feed.items} offline={feed.offline} />}
         >
+            <NaosBackdrop src="/naos/bg-default.webp" />
             <Section id="projects" no="01" label="All projects" title="Open any project." blurb="Status, tags and links for each one.">
                 {feed.offline ? <FeedOffline what="Projects" /> : <ProjectGrid projects={feed.items} />}
             </Section>
