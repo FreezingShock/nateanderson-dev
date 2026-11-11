@@ -16,23 +16,23 @@ const UNLOCK_HINT: Record<string, string> = {
     aether: "Hold 500 Quartz",
 };
 
-/** What this stat is doing for you right now, as short live chips. */
-function effects(id: StatId, s: State, d: D): string[] {
+/** What this stat is doing for you right now, as label and value pairs for the spec lines. */
+function effects(id: StatId, s: State, d: D): [string, string][] {
     switch (id) {
         case "bytes":
-            return [`Output +${fmt(d.bytesPerSec)}/s`, `Global ×${fmt(d.global)}`];
+            return [["Output", `+${fmt(d.bytesPerSec)}/s`], ["Global boost", `×${fmt(d.global)}`]];
         case "mult":
-            return [`Adds +1 B/s each`, `Buttons hit ×${fmt(d.multGainMult)}`];
+            return [["Each unit adds", "+1 B/s"], ["Button strength", `×${fmt(d.multGainMult)}`]];
         case "reboot":
-            return [`+${fmt(d.rebootStrength * 100)}% per Reboot`, `Resets Bytes and Multipliers`];
+            return [["Per Reboot", `+${fmt(d.rebootStrength * 100)}% to buttons`], ["On press", "wipes Bytes + MUL"]];
         case "copper":
-            return [`▸ Reboot power ×${fmt(d.boosts.cuReboot)}`, `▸ Bytes ×${fmt(d.boosts.cuBytes)}`];
+            return [["Feeds Reboot power", `×${fmt(d.boosts.cuReboot)}`], ["Feeds Bytes", `×${fmt(d.boosts.cuBytes)}`]];
         case "silicon":
-            return [`▸ Copper output ×${fmt(d.boosts.siCu)}`];
+            return [["Feeds Copper", `×${fmt(d.boosts.siCu)}`], ["Own output", `${fmt(d.rates.silicon)}/s`]];
         case "quartz":
-            return [`▸ Silicon output ×${fmt(d.boosts.qzSi)}`];
+            return [["Feeds Silicon", `×${fmt(d.boosts.qzSi)}`], ["Own output", `${fmt(d.rates.quartz)}/s`]];
         case "aether":
-            return [`▸ Quartz output ×${fmt(d.boosts.aeQz)}`, `Unlocks Ascend`];
+            return [["Feeds Quartz", `×${fmt(d.boosts.aeQz)}`], ["Opens", "Ascend"]];
     }
 }
 
@@ -91,30 +91,33 @@ export function StatRow({ id, s, d, onPress, open: expanded, onToggle }: { id: S
     const bodyId = `nf-body-${id}`;
     return (
         <article className="nf-row" style={{ ["--c" as string]: def.color }} data-stat={id} data-open={expanded ? "true" : "false"} data-ready={!expanded && ready > 0 ? "" : undefined}>
+            <div className="nf-bar-t">
+                <span>ZONE {String(STATS.findIndex((x) => x.id === id) + 1).padStart(2, "0")} // {lore.zone}</span>
+                <span className="nf-bar-s">{buttons > 0 ? `${ready}/${buttons} ready` : "online"}</span>
+                <button type="button" className="nf-fold" aria-expanded={expanded} aria-controls={bodyId} aria-label={`${expanded ? "Minimize" : "Expand"} ${def.name}`} onClick={onToggle}>
+                    <i aria-hidden="true" />
+                </button>
+            </div>
             <header className="nf-row-h">
                 <span className="nf-plate"><NfIcon name={id as NfIconName} responsive /></span>
                 <div className="nf-row-t">
                     <b>{def.name} <em>{def.short}</em></b>
-                    <span className="nf-code">ZONE // {lore.zone}</span>
+                    <span className="nf-code">{lore.code}</span>
                 </div>
                 <div className="nf-row-n">
                     <b>{fmt(amt)}</b>
                     {rate > 0 && <small>+{fmt(rate)}/s</small>}
-                    {!expanded && buttons > 0 ? <small className="nf-sum">{ready}/{buttons} ready</small> : prod > 0 ? <small>{fmt(prod)} nodes</small> : null}
+                    {prod > 0 && <small>{fmt(prod)} nodes</small>}
                 </div>
-                <button type="button" className="nf-fold" aria-expanded={expanded} aria-controls={bodyId} aria-label={`${expanded ? "Minimize" : "Expand"} ${def.name}`} onClick={onToggle}>
-                    <i aria-hidden="true" />
-                </button>
             </header>
             <div className="nf-body" id={bodyId}>
                 <div className="nf-body-in" inert={!expanded}>
-                    <div className="nf-brief">
-                        <span className="nf-brief-code">{lore.code}</span>
-                        <p>{lore.flavor}</p>
-                    </div>
-                    <ul className="nf-chips" aria-label="Effects">
-                        {effects(id, s, d).map((c) => <li key={c}>{c}</li>)}
-                    </ul>
+                    <p className="nf-brief">{lore.flavor}</p>
+                    <dl className="nf-spec" aria-label="Effects">
+                        {effects(id, s, d).map(([k, v]) => (
+                            <div key={k}><dt>{k}</dt><i aria-hidden="true" /><dd>{v}</dd></div>
+                        ))}
+                    </dl>
                     {id !== "bytes" && (
                         <div className="nf-btns">
                             {Array.from({ length: TIERS }, (_, k) => (
