@@ -71,9 +71,10 @@ export function Launcher() {
             .map((x) => x.e);
     }, [entries, term]);
 
-    const show = useCallback(() => {
+    // `cm:launcher` can carry `{ q }` (the console's `search <words>`) to open with the box already filled in.
+    const show = useCallback((e?: Event) => {
         returnTo.current = document.activeElement as HTMLElement | null;
-        setQ("");
+        setQ((e as CustomEvent<{ q?: string }> | undefined)?.detail?.q ?? "");
         setSel(0);
         setOpen(true);
     }, []);
