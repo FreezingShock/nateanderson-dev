@@ -20,7 +20,7 @@ export function RecentPosts() {
             no="05"
             label="Recent posts"
             title={recent.length > 0 ? "Latest writing." : "Writing is on the way."}
-            blurb={recent.length > 0 ? "The latest essays, notes and experiments." : "The first posts are on the way. Here's what's coming to the blog."}
+            blurb={recent.length > 0 ? "The latest essays, notes and experiments." : "The first posts are on the way."}
             more={{ href: "/blog", label: "All writing" }}
         >
             <div className="cm-cols3">

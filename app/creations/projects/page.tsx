@@ -16,7 +16,7 @@ export default async function ProjectsPage() {
             variant="sub"
             aside={<ListStatusCard label="projects // index" badge="pj" projects={feed.items} offline={feed.offline} />}
         >
-            <Section id="projects" no="01" label="All projects" title="Open any project." blurb="Open any project for its status, tags and links.">
+            <Section id="projects" no="01" label="All projects" title="Open any project." blurb="Status, tags and links for each one.">
                 {feed.offline ? <FeedOffline what="Projects" /> : <ProjectGrid projects={feed.items} />}
             </Section>
         </CreationsShell>

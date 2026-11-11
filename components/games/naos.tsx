@@ -91,7 +91,8 @@ function GameCard({ game, index }: { game: Game; index: number }) {
                 <span className="cm-state">{String(index + 1).padStart(2, "0")} / {game.slug}</span>
                 <span className={`cm-tag flat ${tone}`}>{st.label}</span>
             </div>
-            <div className="g-cardart" aria-hidden="true">
+            <div className="g-screen" aria-hidden="true">
+                <span className="g-screen-cap">{game.status === "playable" ? "preview" : "offline"}</span>
                 <Icon />
             </div>
             <b>{game.title}</b>

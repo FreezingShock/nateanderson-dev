@@ -5,6 +5,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { launcherLinks, navItems } from "@/lib/nav";
 import { PIXEL_FOR, PixelIcon } from "@/components/cm/pixel-icons";
 import { navigateWithCurtain } from "@/lib/motion/navigate";
+import { sfx } from "@/lib/sound/sounds";
 
 interface Entry {
     href: string;
@@ -71,9 +72,10 @@ export function Launcher() {
             .map((x) => x.e);
     }, [entries, term]);
 
-    const show = useCallback(() => {
+    // `cm:launcher` can carry `{ q }` (the console's `search <words>`) to open with the box already filled in.
+    const show = useCallback((e?: Event) => {
         returnTo.current = document.activeElement as HTMLElement | null;
-        setQ("");
+        setQ((e as CustomEvent<{ q?: string }> | undefined)?.detail?.q ?? "");
         setSel(0);
         setOpen(true);
     }, []);
@@ -116,6 +118,14 @@ export function Launcher() {
         return () => {
             document.documentElement.style.overflow = prev;
         };
+    }, [open]);
+
+    // The panel's own open and close scans (the buttons and keys that open it are silent).
+    const sounded = useRef(false);
+    useEffect(() => {
+        if (open === sounded.current) return;
+        sounded.current = open;
+        sfx(open ? "open" : "close");
     }, [open]);
 
     // Keep the highlighted row in view while arrowing through a long list.
@@ -164,7 +174,7 @@ export function Launcher() {
                     <span className="nv-count" aria-live="polite">
                         {term ? `${shown.length} ${shown.length === 1 ? "match" : "matches"}` : `${shown.length} places`}
                     </span>
-                    <button type="button" className="nv-close" onClick={hide} aria-label="Close search">
+                    <button type="button" className="nv-close" data-snd="off" onClick={hide} aria-label="Close search">
                         <kbd className="nv-key">esc</kbd>
                     </button>
                 </div>

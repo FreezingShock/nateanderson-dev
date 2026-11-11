@@ -34,7 +34,7 @@ export const PATH: Step[] = [
     {
         when: "Next",
         title: "Cal Poly SLO, Construction Management",
-        detail: "Starting as a freshman. Fallback: Cal Poly Pomona, Construction Engineering & Management.",
+        detail: "Starting as a freshman. Goals: Cal Poly SLO or Pomona. Fallback: community college.",
     },
 ];
 
@@ -43,5 +43,5 @@ export const NOW_FEED: { tag: string; text: string }[] = [
     { tag: "Shipping", text: "Nexus, a cozy offline city builder, is live at playnexus.dev." },
     { tag: "Modeling", text: "Real places in 3D: renovation studies measured, modeled and redesigned." },
     { tag: "Running", text: "Cross country and track, captain this year." },
-    { tag: "Applying", text: "Cal Poly SLO first, Cal Poly Pomona as the fallback." },
+    { tag: "Applying", text: "Cal Poly SLO or Pomona as goals, community college as the fallback." },
 ];

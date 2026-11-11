@@ -107,8 +107,8 @@ export default function Home() {
                     id="work"
                     no="01"
                     label="Selected work"
-                    title="The work that best shows how I build."
-                    blurb="Solo-built games, real renovation studies, and the systems thinking that connects them."
+                    title="The work that shows how I build."
+                    blurb="Solo-built games, renovation studies, and the systems thinking behind them."
                     more={{ href: "/creations/projects", label: "View all" }}
                 >
                     <div className="cm-grid">
@@ -118,7 +118,7 @@ export default function Home() {
                     </div>
                 </Section>
 
-            <Section ctos id="profile" no="02" label="Profile" title="Who I am, and where I'm headed.">
+            <Section ctos id="profile" no="02" label="Profile" title="Who I am and where I'm headed.">
                 <div className="pf">
                     <div className="cm-panel pf-id">
                         <div className="cm-hbar"><span>Profile</span><span>Class of 2027</span></div>

@@ -269,36 +269,93 @@
 }
 .ctos .g-read .p-foot { margin-top: auto; }
 
-/* Hub cards: a square art plate above the title, in the card rotation from ctos.css. */
-.ctos .g-card .g-cardart {
+/* Hub cards: each game gets a preview screen above its title. The screen is dark on every card, so the
+   light and dark card rotation from ctos.css still reads, but the previews stay one system. */
+.ctos .g-card .g-screen {
     position: relative;
+    isolation: isolate;
     display: grid;
     place-items: center;
-    height: 76px;
+    aspect-ratio: 16 / 9;
     margin-bottom: 4px;
-    border: 1px dashed var(--cm-hair-hi);
-    background-color: #0d0d0d;
-    background-image: radial-gradient(circle, rgba(244, 244, 242, .14) 0 28%, transparent 32%);
+    border: 1px solid #2a2a2a;
+    background-color: #080808;
+    background-image: radial-gradient(circle, rgba(244, 244, 242, .16) 0 26%, transparent 30%);
     background-size: 6px 6px;
     overflow: hidden;
 }
-.ctos .g-card .g-cardart::after {
+.ctos .g-card .g-screen::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    background: repeating-linear-gradient(0deg, rgba(0, 0, 0, .34) 0 1px, transparent 1px 3px);
+    pointer-events: none;
+}
+.ctos .g-card .g-screen::after {
     content: "";
     position: absolute;
     left: 0;
     right: 0;
     bottom: 0;
-    height: 4px;
+    height: 3px;
+    z-index: 1;
     background: var(--cm-cyan);
 }
-.ctos .g-card .g-cardart svg { width: 36px; height: 36px; color: var(--cm-cyan); }
-.ctos .g-card:nth-child(3n+1) .g-cardart { background-color: #e3e3df; border-color: #c9c9c3; background-image: repeating-linear-gradient(135deg, rgba(0, 0, 0, .08) 0 1px, transparent 1px 8px); }
-.ctos .g-card:nth-child(3n+1) .g-cardart svg { color: #0a7f89; }
-.ctos .g-card:nth-child(3n+1) .g-cardart::after { background: #1a1a1a; }
-.ctos .g-card:nth-child(3n) .g-cardart { background-image: linear-gradient(33deg, transparent 49.6%, rgba(194, 59, 208, .7) 50%, transparent 50.4%); }
+.ctos .g-card .g-screen-cap {
+    position: absolute;
+    top: 8px;
+    left: 10px;
+    z-index: 2;
+    font: 700 var(--cm-ctos-t-micro)/1 var(--cm-mono);
+    letter-spacing: .14em;
+    text-transform: uppercase;
+    color: var(--cm-cyan);
+}
+.ctos .g-card .g-screen svg {
+    position: relative;
+    z-index: 2;
+    width: 56px;
+    height: 56px;
+    color: var(--cm-cyan);
+    transition: transform var(--cm-d-base) var(--cm-ease);
+}
+.ctos .g-card:hover .g-screen svg { transform: translateY(-3px) scale(1.04); }
 .ctos .g-grid { grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); }
 .ctos .g-pills { list-style: none; margin: 2px 0 0; padding: 0; }
-.ctos .g-card:hover .g-cardart svg { transform: translateY(-2px); transition: transform var(--cm-d-base) var(--cm-ease); }
+
+/* Mode nav: jump links to each mode with its playable count. */
+.ctos .g-hub-nav {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin: 0 0 8px;
+    padding: 0;
+    list-style: none;
+}
+.ctos .g-hub-nav a {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    padding: 9px 12px;
+    border: 1px solid var(--cm-hair-hi);
+    background: #0d0d0d;
+    color: inherit;
+    font: 700 var(--cm-ctos-t-micro)/1 var(--cm-mono);
+    letter-spacing: .14em;
+    text-transform: uppercase;
+    text-decoration: none;
+}
+.ctos .g-hub-nav a span { color: var(--cm-cyan); }
+.ctos .g-hub-nav a:hover,
+.ctos .g-hub-nav a:focus-visible { border-color: var(--cm-cyan); }
+
+@media (max-width: 760px) {
+    .ctos .g-card .g-screen { aspect-ratio: 2 / 1; }
+}
+@media (prefers-reduced-motion: reduce) {
+    .ctos .g-card:hover .g-screen svg { transition: none; transform: none; }
+}
 
 /* Flag tiles: the cover is dither on near-black, not a flat grey block. */
 .ctos .fg-cover {
@@ -308,13 +365,6 @@
     box-shadow: inset 0 0 0 1px var(--cm-hair-hi);
 }
 .ctos .fg-cover svg { color: var(--cm-cyan); opacity: .75; }
-
-@media (max-width: 760px) {
-    .ctos .g-card .g-cardart { height: 64px; }
-}
-@media (prefers-reduced-motion: reduce) {
-    .ctos .g-card:hover .g-cardart svg { transition: none; transform: none; }
-}
 
 /* ==========================================================================
    Games load-in and backdrop. Scoped to .ng-page (the Games hub and both guessers).
@@ -359,6 +409,47 @@
 /* Muted hint text on the dark game panels (text-muted-foreground/70 was 3.5:1 on #1e1e1e). */
 .ng-page [class*="text-muted-foreground/70"] { color: var(--cm-mute); }
 .ng-page .p-foot > span:nth-child(n+2) { color: #7d8b93; }
+
+/* ==========================================================================
+   Stock leftovers in the game UI (2026-11-11). The guessers still carry system-sans bold buttons and headings, Tailwind
+   slate frames and a native-looking guess field. They take the naOS voice here: mono caps controls, the display face
+   for result headings, the panel ground, and the field recipe. The per-game tinted action buttons keep their inline
+   colours. Scoped to .ng-page; the rules are unlayered so they beat the utility classes the components use.
+   ========================================================================== */
+
+/* Action buttons (Share, Next country, Play unlimited): mono caps, like every other naOS control. */
+.ng-page button[class*="font-sans"] {
+    font-family: var(--cm-mono);
+    font-size: var(--cm-ctos-t-ui);
+    font-weight: 600;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    line-height: 1.2;
+}
+/* Result headings and callouts: the display face the page titles use. */
+.ng-page [class*="font-sans"]:not(button) {
+    font-family: var(--cm-display);
+    letter-spacing: -.02em;
+}
+/* Stock Tailwind slate frames (the flag and outline tiles, the hidden-tile icon) take the naOS panel ground and muted ink. */
+.ng-page [class*="bg-slate-950"] { background: var(--cm-ctos-panel); }
+.ng-page [class*="text-slate-600"] { color: var(--cm-dim); }
+/* The guess field is a naOS field: no native chrome, hairline edge, mono ink, cyan on focus. It stays 16px (set by
+   text-base in the component) so iOS does not zoom when it takes focus. */
+.ng-page input[role="combobox"] {
+    -webkit-appearance: none;
+    appearance: none;
+    font-family: var(--cm-mono);
+    font-size: 16px;
+    background: var(--cm-ctos-panel);
+    border: 1px solid var(--cm-ctos-edge);
+    border-radius: var(--cm-radius);
+    color: var(--cm-fg);
+    box-shadow: none;
+}
+.ng-page input[role="combobox"]::placeholder { color: var(--cm-ctos-meta); opacity: 1; }
+.ng-page input[role="combobox"]:focus { border-color: var(--cm-cyan); }
+.ng-page input[role="combobox"]:focus-visible { outline: 2px solid var(--cm-cyan); outline-offset: 3px; }
 
 /* ==========================================================================
    Phones (760px and under). Touch targets reach 44px, the filter chips scroll sideways on one line each, the readout

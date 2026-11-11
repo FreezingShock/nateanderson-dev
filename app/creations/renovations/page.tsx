@@ -16,7 +16,7 @@ export default async function RenovationsPage() {
             variant="sub"
             aside={<ListStatusCard label="renovations // index" badge="rn" projects={feed.items} offline={feed.offline} />}
         >
-            <Section id="renovations" no="01" label="All renovations" title="Each study starts from a real site." blurb="Each study starts from a real site and ends in a redesign.">
+            <Section id="renovations" no="01" label="All renovations" title="Each study starts from a real site." blurb="Every study ends in a redesign.">
                 {feed.offline ? <FeedOffline what="Renovations" /> : <ProjectGrid projects={feed.items} />}
             </Section>
         </CreationsShell>
