@@ -452,7 +452,7 @@
 .ng-page input[role="combobox"]:focus-visible { outline: 2px solid var(--cm-cyan); outline-offset: 3px; }
 
 /* ==========================================================================
-   Phones (760px and under). Touch targets reach 44px, the filter chips scroll sideways on one line each, the readout
+   Phones (760px and under). Touch targets reach 44px, the filter chips wrap onto lines instead of scrolling, the readout
    facts sit two to a row, and the frame and readout rise straight up (no sideways slide that starts off-screen).
    ========================================================================== */
 @media (max-width: 760px) {
@@ -469,25 +469,19 @@
     .ctos .g-frame[data-rx],
     .ctos .g-read[data-rx] { --rx-x: 0px; --rx-y: 18px; }
 
-    /* Filter panel: each row keeps its label above and its chips on one line that scrolls sideways. */
+    /* Filter panel: each row keeps its label above and its chips wrap onto as many lines as they need. Nothing scrolls out
+       of sight or fades behind an edge mask, so the last difficulty (Expert) is always whole and tappable. */
     .ctos .gk-filters { padding: 8px 10px; }
     .ctos .gk-row { gap: 6px; }
     .ctos .gk-row > .gk-label { flex: 0 0 100%; width: auto; }
     .ctos .gk-strip {
         flex: 1 1 100%;
         display: flex;
-        flex-wrap: nowrap;
+        flex-wrap: wrap;
         gap: 6px;
         min-width: 0;
-        overflow-x: auto;
-        overscroll-behavior-x: contain;
-        -webkit-overflow-scrolling: touch;
-        scrollbar-width: none;
         padding: 2px 2px 4px;
-        mask-image: linear-gradient(90deg, #000 85%, transparent);
-        -webkit-mask-image: linear-gradient(90deg, #000 85%, transparent);
     }
-    .ctos .gk-strip::-webkit-scrollbar { display: none; }
     .ctos .gk-strip > * { flex: 0 0 auto; }
 
     /* Readout facts: two to a row, no divider lines (the grid gap does the separating). */
