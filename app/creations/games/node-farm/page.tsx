@@ -25,9 +25,11 @@ export default function NodeFarmPage() {
                 variant="sub"
             >
                 <Section id="play" no="01" label="Play" title="Hack the node." ctos>
-                    <GameFrame code="node.farm" foot={["saves on this device", "offline up to 8 h"]}>
+                    <div className="nf-bleed">
+                        <GameFrame code="node.farm" foot={["saves on this device", "offline up to 8 h"]}>
                         <NodeFarm />
                     </GameFrame>
+                    </div>
                 </Section>
             </CreationsShell>
         </div>
