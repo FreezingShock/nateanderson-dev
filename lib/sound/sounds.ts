@@ -173,6 +173,22 @@ const DEFS = {
                     tone("game", { f: base, dur: 0.3, gain: 0.05, harm: 0.25, attack: 0.04, cutoff: 3000 });
                     tone("game", { f: base * 1.5, at: 0.06, dur: 0.3, gain: 0.04, attack: 0.04, cutoff: 3000 });
                     break;
+                case "runes":
+                    keyClick("game", { f: 1400, gain: 0.05, q: 2 });
+                    tone("game", { f: base * 0.75, dur: 0.18, gain: 0.06, harm: 0.5, attack: 0.004, cutoff: 2200, type: "triangle" });
+                    blip("game", base * 1.125, { at: 0.07, dur: 0.05, gain: 0.04, cutoff: 3000 });
+                    break;
+                case "starglass":
+                    [2, 3, 4].forEach((m, i) => tone("game", { f: base * m * 0.75, at: i * 0.03, dur: 0.26, gain: 0.03, harm: 0.4, attack: 0.003, cutoff: 5000 }));
+                    break;
+                case "voidsteel":
+                    tone("game", { f: base * 0.25, dur: 0.22, gain: 0.08, glide: 0.5, cutoff: 600, attack: 0.01 });
+                    keyClick("game", { f: 600, gain: 0.06, q: 1.5 });
+                    break;
+                case "chrono":
+                    [0, 0.07, 0.14].forEach((at, i) => blip("game", base * (i % 2 ? 1.2 : 1), { at, dur: 0.025, gain: 0.05, cutoff: 3200 }));
+                    tone("game", { f: base * 0.5, at: 0.2, dur: 0.25, gain: 0.04, glide: 1.5, cutoff: 1800, attack: 0.02 });
+                    break;
                 default:
                     blip("game", base, { dur: 0.05, gain: 0.06, cutoff: 2600 });
                     blip("game", base * 1.5, { at: 0.055, dur: 0.07, gain: 0.06, cutoff: 3000 });
