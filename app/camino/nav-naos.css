@@ -202,6 +202,16 @@ html[data-xition] .cm-dock { z-index: calc(var(--cm-z-curtain) + 1); }
 .cm-dock a[data-on] span { animation: dk-lbl .36s steps(1) 1; }
 @keyframes dk-lbl { 0% { opacity: .15; } 33% { opacity: 1; } 55% { opacity: .3; } 100% { opacity: 1; } }
 
+/* Touch screens: while a text field has the keyboard (html[data-typing], set in Dock), the dock slides below the screen
+   edge so it never floats over the keys. It comes back on blur. Only touch screens get this; desktop keeps the dock. */
+@media (pointer: coarse) {
+    .cm-dock { transition: translate .28s var(--cm-ease-out); }
+    html[data-typing] .cm-dock { translate: 0 calc(100% + 24px); }
+}
+@media (pointer: coarse) and (prefers-reduced-motion: reduce) {
+    .cm-dock { transition: none; }
+}
+
 @media (max-width: 899px) {
     .cm-dock a { font-size: 8.5px; letter-spacing: .01em; }
 }
@@ -384,8 +394,9 @@ html[data-xition] .cm-dock { z-index: calc(var(--cm-z-curtain) + 1); }
     .nv-snd { padding: 0 11px; }
     /* On a phone the keyboard covers the lower half of the screen, so the panel sits near the top and is only as tall
        as the space above the keyboard needs. */
-    .nv-scrim:has(.nv-find) { place-items: start center; padding: 68px 12px 12px; }
-    .nv-panel.nv-find { height: auto; min-height: 220px; max-height: min(560px, calc(100dvh - 80px)); }
+    /* The search sits in the area above the keyboard. Launcher sets --nv-top and --nv-h from visualViewport while open. */
+    .nv-scrim:has(.nv-find) { place-items: start center; padding: 68px 12px 12px; top: var(--nv-top, 0px); bottom: auto; height: var(--nv-h, 100dvh); }
+    .nv-panel.nv-find { height: auto; min-height: 220px; max-height: min(560px, calc(var(--nv-h, 100dvh) - 80px)); }
     .nv-input input, .cm .nv-input input:focus-visible { font-size: 16px; }
     .nv-kids { padding-left: 14px; grid-template-columns: 1fr 1fr; }
     .nv-sec-t { font-size: 20px; }
