@@ -5,6 +5,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { launcherLinks, navItems } from "@/lib/nav";
 import { PIXEL_FOR, PixelIcon } from "@/components/cm/pixel-icons";
 import { navigateWithCurtain } from "@/lib/motion/navigate";
+import { useBackdropScrollLock } from "@/components/cm/scrim-lock";
 
 interface Entry {
     href: string;
@@ -37,7 +38,9 @@ export function Launcher() {
     const [q, setQ] = useState("");
     const [sel, setSel] = useState(0);
     const input = useRef<HTMLInputElement>(null);
+    const scrim = useRef<HTMLDivElement>(null);
     const returnTo = useRef<HTMLElement | null>(null);
+    useBackdropScrollLock(scrim, open);
 
     // Pages first, then the curated deep links in their groups, then any section subpage the curated list leaves out.
     const entries = useMemo<Entry[]>(() => {
@@ -108,6 +111,24 @@ export function Launcher() {
         if (open) input.current?.focus();
     }, [open]);
 
+    // Follow the visible area on phones: when the keyboard comes up, the search shrinks to the space left above it.
+    useEffect(() => {
+        const vv = window.visualViewport;
+        const el = scrim.current;
+        if (!open || !vv || !el) return;
+        const fit = () => {
+            el.style.setProperty("--nv-h", `${Math.round(vv.height)}px`);
+            el.style.setProperty("--nv-top", `${Math.round(vv.offsetTop)}px`);
+        };
+        fit();
+        vv.addEventListener("resize", fit);
+        vv.addEventListener("scroll", fit);
+        return () => {
+            vv.removeEventListener("resize", fit);
+            vv.removeEventListener("scroll", fit);
+        };
+    }, [open]);
+
     // Lock page scroll behind the panel.
     useEffect(() => {
         if (!open) return;
@@ -135,6 +156,7 @@ export function Launcher() {
     return (
         <div
             className="nv-scrim"
+            ref={scrim}
             onMouseDown={(e) => {
                 if (e.target === e.currentTarget) hide();
             }}
