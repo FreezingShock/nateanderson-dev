@@ -13,7 +13,7 @@ export async function SiteStats() {
         fetchRecentCommits(7),
     ]);
     const rows = [
-        { layer: "Commits", note: "Every change to this site, saved one small step at a time.", n: commitCount },
+        { layer: "Commits", note: "Every change to this site, one small step at a time.", n: commitCount },
         { layer: "Lines of code", note: "Hand-written TypeScript, CSS and content behind every page.", n: linesOfCode },
         { layer: "Files", note: "Pages, components and assets that make up the project.", n: fileCount },
     ];
@@ -24,7 +24,7 @@ export async function SiteStats() {
             no="03"
             label="Site statistics"
             title="Read live from GitHub."
-            blurb="This site is never finished, so these numbers climb every time something new ships."
+            blurb="This site is never finished, so these numbers climb as things ship."
             more={{ href: "/history", label: "Full history" }}
         >
             <div className="cm-split even">

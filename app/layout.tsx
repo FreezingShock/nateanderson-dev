@@ -8,9 +8,11 @@ import { Film } from "@/components/cm/film";
 import { Launcher } from "@/components/cm/launcher";
 import { ConsoleEntry } from "@/components/cm/console-entry";
 import { SiteMap } from "@/components/cm/site-map";
+import { KeyboardShortcuts } from "@/components/cm/keys";
 import { Boot, BOOT_SCRIPT } from "@/components/cm/boot";
 import { MotionRoot } from "@/components/cm/motion-root";
 import { CtosBody } from "@/components/cm/ctos-body";
+import { CTOS_BODY_SCRIPT } from "@/lib/ctos-body-script";
 import { SiteFooter } from "@/components/site-footer";
 import { SoundProvider } from "@/components/sound-provider";
 
@@ -68,10 +70,12 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
     return (
         <html lang="en" className={`cm ${arimo.variable} ${plexMono.variable}`} suppressHydrationWarning>
             <head>
+                {/* The site is already a dark design; Dark Reader recolours the white dock plate and leaves its dark label unreadable. */}
+                <meta name="darkreader-lock" />
                 {/* Picks the load-sequence variant before first paint (see components/cm/boot.tsx). */}
                 <script dangerouslySetInnerHTML={{ __html: BOOT_SCRIPT }} />
             </head>
-            <body>
+            <body suppressHydrationWarning>
                 <ThemeProvider
                     attribute="data-theme"
                     themes={["dark"]}
@@ -92,8 +96,11 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
                     <SiteMap />
                     <Launcher />
                     <ConsoleEntry />
+                    <KeyboardShortcuts />
                     <SoundProvider />
                 </ThemeProvider>
+                {/* Runs after <main> is parsed, before first paint: sets ctos-on for naOS pages (see lib/ctos-body-script.ts). */}
+                <script dangerouslySetInnerHTML={{ __html: CTOS_BODY_SCRIPT }} />
             </body>
         </html>
     );

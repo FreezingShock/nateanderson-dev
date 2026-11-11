@@ -3,12 +3,15 @@
 @import "./camino/camino.components.css";
 @import "./camino/site.css";
 @import "./camino/motion.css";
+@import "./camino/transition.css";
 @import "./camino/ctos.css";
 @import "./camino/nav-naos.css";
 @import "./camino/icons-naos.css";
 @import "./camino/naos-surfaces.css";
+@import "./camino/site-footer.css";
 @import "./camino/naos-scroll.css";
 @import "./camino/entrances.css";
+@import "./camino/micro.css";
 
 @plugin "tailwindcss-animate";
 

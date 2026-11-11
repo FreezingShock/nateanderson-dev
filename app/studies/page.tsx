@@ -23,7 +23,7 @@ export default function StudiesPage() {
             <PageHead
                 label="Learning"
                 title={["Studies"]}
-                lead="The complete educational pathway: this year's classes, the community college transfer, university specialization, and the independent research running alongside all of it. Systems thinking across technical, creative and philosophical work."
+                lead="The complete educational pathway: this year's classes, Cal Poly SLO or Pomona as the goal with community college as the fallback, and the independent research running alongside all of it. Systems thinking across technical, creative and philosophical work."
             >
                 <StudyStatus nowMs={nowMs} />
             </PageHead>
@@ -33,7 +33,7 @@ export default function StudiesPage() {
                 no="01"
                 label="The school year"
                 title="Where senior year stands."
-                blurb="The dates it's all building toward, counting down live, and how far through the year I am."
+                blurb="The dates this year builds toward, counting down live, and how far through the year I am."
                 ctos
             >
                 <StudiesOverview nowMs={nowMs} />
@@ -44,7 +44,7 @@ export default function StudiesPage() {
                 no="02"
                 label="Senior year classes"
                 title="Six classes."
-                blurb="Six interdisciplinary classes building toward construction management and systems thinking. Filter by area, and open any class for its goals and materials."
+                blurb="Six interdisciplinary classes building toward construction management and systems thinking. Filter by area, or open a class for its goals and materials."
                 ctos
             >
                 <CourseExplorer courses={courses} />
@@ -66,7 +66,7 @@ export default function StudiesPage() {
                 no="04"
                 label="Personal studies"
                 title="Self-directed."
-                blurb="Self-directed learning alongside formal coursework: philosophy, sustainable systems and design practice. These areas inform and deepen all of the academic work."
+                blurb="Self-directed learning next to formal coursework: philosophy, sustainable systems and design practice. Each area feeds the academic work."
                 ctos
             >
                 <div className="cm-cols3 st-personal">

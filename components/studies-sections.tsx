@@ -91,7 +91,7 @@ export function ReadingQueue() {
                 {(Object.keys(READING_STATUS) as ReadingStatus[]).map((s) => (
                     <span key={s} className={s === "reading" ? "cm-pill on" : "cm-pill"}>
                         {READING_STATUS[s].label}
-                        <span style={{ opacity: 0.7 }}>{counts[s] ?? 0}</span>
+                        <span>{counts[s] ?? 0}</span>
                     </span>
                 ))}
             </div>

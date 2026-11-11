@@ -127,7 +127,7 @@ html[data-xition] .cm-dock { z-index: calc(var(--cm-z-curtain) + 1); }
     background: var(--nv-plate); will-change: transform;
     transition: transform var(--dur) cubic-bezier(.2, .9, .1, 1), opacity .2s;
 }
-.cm-dock .ind::before {
+.cm-dock .ind::before, .cm-dock a[data-on]::before {
     content: ""; position: absolute; inset: 3px; pointer-events: none; --c: #0a8f9a;
     background:
         linear-gradient(var(--c), var(--c)) 0 0 / 5px 2px, linear-gradient(var(--c), var(--c)) 0 0 / 2px 5px,
@@ -165,7 +165,10 @@ html[data-xition] .cm-dock { z-index: calc(var(--cm-z-curtain) + 1); }
 .cm-dock a:active svg.px { transform: translate3d(0, 1px, 0); }
 .cm-dock a:focus-visible { outline: 2px solid var(--cm-cyan); outline-offset: -3px; }
 .cm-dock a[data-on]:focus-visible { outline-color: var(--nv-ink); }
-.cm-dock a[data-on] { color: var(--nv-ink); }
+.cm-dock a[data-on] { color: var(--nv-ink); background-color: var(--nv-plate); animation: dk-seat 0s linear var(--dur) backwards; }
+/* The travelling plate is an enhancement. The current tab also carries its own plate, which appears once the travel
+   time has passed, so the dark label can never end up on the dark bar even if the plate fails to paint. */
+@keyframes dk-seat { from { background-color: transparent; } }
 
 /* Pixel icons: 12 x 12 art drawn at 2 pixels per cell, so edges stay crisp. Dither phase A is always on; phase B
    is the opposite checkerboard. Swapping them in hard steps makes the half-tones shimmer. */
@@ -198,6 +201,16 @@ html[data-xition] .cm-dock { z-index: calc(var(--cm-z-curtain) + 1); }
 /* The label flickers in as its tab takes the plate. */
 .cm-dock a[data-on] span { animation: dk-lbl .36s steps(1) 1; }
 @keyframes dk-lbl { 0% { opacity: .15; } 33% { opacity: 1; } 55% { opacity: .3; } 100% { opacity: 1; } }
+
+/* Touch screens: while a text field has the keyboard (html[data-typing], set in Dock), the dock slides below the screen
+   edge so it never floats over the keys. It comes back on blur. Only touch screens get this; desktop keeps the dock. */
+@media (pointer: coarse) {
+    .cm-dock { transition: translate .28s var(--cm-ease-out); }
+    html[data-typing] .cm-dock { translate: 0 calc(100% + 24px); }
+}
+@media (pointer: coarse) and (prefers-reduced-motion: reduce) {
+    .cm-dock { transition: none; }
+}
 
 @media (max-width: 899px) {
     .cm-dock a { font-size: 8.5px; letter-spacing: .01em; }
@@ -244,9 +257,7 @@ html[data-xition] .cm-dock { z-index: calc(var(--cm-z-curtain) + 1); }
     font: 500 var(--cm-ctos-t-micro)/1 var(--cm-mono); letter-spacing: .14em; text-transform: uppercase; color: var(--cm-dim);
 }
 
-/* ---- Site map (hamburger): sections, then their subpages ----------------------------------------------------------- */
-/* Horizontal overflow is clipped: a 1px spill made a sideways scrollbar appear under the map. */
-/* Site map: a full-height drawer on the left. The tree scrolls; the head and the search footer stay put. */
+/* ---- Site map (hamburger): a left drawer. Sections open like an accordion; their pages hang off a code-style rail ----- */
 .nv-scrim.nv-scrim-drawer { display: block; padding: 0; }
 .nv-panel.nv-map {
     position: fixed; top: 0; bottom: 0; left: 0; width: min(440px, 88vw); max-height: none;
@@ -254,40 +265,91 @@ html[data-xition] .cm-dock { z-index: calc(var(--cm-z-curtain) + 1); }
     border: 0; border-right: 1px solid var(--cm-hair-hi); border-left: 3px solid var(--cm-cyan);
     animation: nv-drawer var(--cm-d-enter) var(--cm-ease-out) both;
 }
-.nv-map .nv-head { flex: none; }
-.nv-map .nv-tree { flex: 1; min-height: 0; overflow: auto; overscroll-behavior: contain; }
-.nv-map .nv-map-foot { flex: none; }
 @keyframes nv-drawer { from { transform: translate3d(-101%, 0, 0); } to { transform: none; } }
-.nv-tree { list-style: none; margin: 0; padding: 0; }
-.nv-sec-row + .nv-sec-row { border-top: 1px dashed var(--cm-hair); }
-.nv-sec {
-    display: grid; color: var(--cm-fg); grid-template-columns: 34px minmax(0, 1fr) auto; align-items: center; gap: 10px;
-    padding: 14px 14px 10px; color: var(--cm-fg); text-decoration: none;
+.nv-map .nv-head { flex: none; position: relative; overflow: hidden; }
+.nv-map .nv-head::after {
+    content: ""; position: absolute; top: 0; bottom: 0; left: 0; width: 40%; pointer-events: none;
+    background: linear-gradient(90deg, transparent, rgba(47, 216, 232, .45), transparent);
+    transform: translate3d(-100%, 0, 0); animation: nv-scan 560ms var(--cm-ease-out) 80ms both;
 }
-.nv-sec .nv-ix { display: grid; place-items: center start; font: 700 var(--cm-ctos-t-tag)/1 var(--cm-mono); letter-spacing: .08em; color: var(--cm-cyan); }
+@keyframes nv-scan { to { transform: translate3d(260%, 0, 0); } }
+.nv-where {
+    flex: none; display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px; padding: 10px 14px;
+    border-bottom: 1px solid var(--cm-hair); font: 500 var(--cm-ctos-t-micro)/1.2 var(--cm-mono);
+    letter-spacing: .12em; text-transform: uppercase; color: var(--cm-mute);
+}
+.nv-where b { font-weight: 700; letter-spacing: .08em; color: var(--cm-cyan); overflow-wrap: anywhere; }
+.nv-scroll { flex: 1; min-height: 0; overflow: auto; overscroll-behavior: contain; padding-bottom: 6px; }
+.nv-code {
+    padding: 14px 14px 6px; font: 500 var(--cm-ctos-t-micro)/1.3 var(--cm-mono); letter-spacing: .03em;
+    color: var(--cm-dim); white-space: nowrap; overflow: hidden;
+}
+.nv-code-end { padding: 6px 14px 14px; }
+.nv-tree { list-style: none; margin: 0; padding: 0; }
+.nv-sec-row { animation: nv-row-in var(--cm-d-base) var(--cm-ease-out) both; animation-delay: calc(var(--i, 0) * 70ms); }
+@keyframes nv-row-in { from { opacity: 0; transform: translate3d(-8px, 0, 0); } }
+.nv-sec-row + .nv-sec-row { border-top: 1px dashed var(--cm-hair); }
+.nv-sec-line { display: flex; align-items: center; min-width: 0; }
+.nv-sec {
+    flex: 1; min-width: 0; display: grid; grid-template-columns: 24px 24px minmax(0, 1fr); align-items: start; gap: 10px;
+    padding: 14px 8px 12px 14px; color: var(--cm-fg); text-decoration: none;
+}
+.nv-no { font: 700 var(--cm-ctos-t-micro)/1 var(--cm-mono); letter-spacing: .08em; color: var(--cm-dim); padding-top: 9px; }
+.nv-ix { display: grid; place-items: center; color: var(--cm-cyan); }
+.nv-ix svg.px { animation: nv-build 300ms steps(3, end) both; animation-delay: var(--d, 0ms); }
+.nv-sec-body { display: grid; gap: 6px; justify-items: start; min-width: 0; }
 .nv-sec-t {
-    justify-self: start; color: var(--cm-fg); padding: 2px 6px 4px 4px; background: transparent;
-    font: 800 var(--cm-ctos-t-h3)/1 var(--cm-display); letter-spacing: -.045em; text-transform: lowercase;
+    justify-self: start; max-width: 100%; color: var(--cm-fg); padding: 2px 6px 4px 4px; background: transparent;
+    font: 800 var(--cm-ctos-t-h3)/1.02 var(--cm-display); letter-spacing: -.045em; text-transform: lowercase;
     transition: background var(--cm-d-base), color var(--cm-d-base);
 }
 .nv-sec:hover .nv-sec-t, .nv-sec:focus-visible .nv-sec-t { background: var(--nv-plate); color: var(--nv-ink); }
-.nv-sec small { font: 500 var(--cm-ctos-t-micro)/1 var(--cm-mono); letter-spacing: .14em; text-transform: uppercase; color: var(--cm-mute); }
+.nv-sec small { font: 500 var(--cm-ctos-t-micro)/1.2 var(--cm-mono); letter-spacing: .14em; text-transform: uppercase; color: var(--cm-mute); padding-left: 4px; }
 .nv-sec-row[data-on] .nv-sec-t { background: var(--cm-cyan); color: var(--cm-cyan-ink); }
-.nv-sec-row[data-on] .nv-sec .nv-ix { display: grid; place-items: center start; color: var(--cm-cyan); }
-.nv-sec-row[data-on] .nv-sec small { color: var(--cm-cyan); }
-.nv-kids {
-    list-style: none; margin: 0; padding: 0 14px 14px 58px;
-    display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 2px 14px;
+.nv-sec-row[data-on] .nv-no, .nv-sec-row[data-on] .nv-sec small, .nv-sec-row[data-on] .nv-ix { color: var(--cm-cyan); }
+.nv-caret {
+    flex: none; min-height: 44px; margin: 0 14px 0 0; padding: 0 10px 0 12px; display: inline-flex; align-items: center; gap: 8px;
+    background: transparent; border: 1px solid var(--cm-hair-hi); color: var(--cm-mute); cursor: pointer; white-space: nowrap;
+    font: 600 var(--cm-ctos-t-micro)/1 var(--cm-mono); letter-spacing: .12em; text-transform: uppercase;
+    transition: color var(--cm-d-base), border-color var(--cm-d-base), background var(--cm-d-base);
 }
+.nv-caret-n { font: 700 var(--cm-ctos-t-tag)/1 var(--cm-mono); letter-spacing: .04em; color: var(--cm-fg); }
+.nv-caret:hover, .nv-caret[aria-expanded="true"] { border-color: var(--cm-cyan); color: var(--cm-cyan); }
+.nv-caret:hover { background: var(--cm-cyan); color: var(--cm-cyan-ink); }
+.nv-caret:hover .nv-caret-n { color: var(--cm-cyan-ink); }
+.nv-caret[aria-expanded="true"] .nv-caret-n { color: var(--cm-cyan); }
+.nv-caret:focus-visible { outline: 2px solid var(--cm-cyan); outline-offset: 2px; }
+.nv-kids { position: relative; list-style: none; margin: 0; padding: 0 14px 12px 60px; }
+.nv-kids::before {
+    content: ""; position: absolute; left: 60px; top: 0; bottom: 22px; width: 1px;
+    background: var(--cm-cyan); opacity: .5; transform-origin: top;
+    animation: nv-rail var(--cm-d-long) var(--cm-ease-out) both;
+}
+@keyframes nv-rail { from { transform: scaleY(0); } }
+.nv-kids li { position: relative; padding-left: 26px; }
+.nv-kids li::before { content: ""; position: absolute; left: 0; top: 50%; width: 18px; height: 1px; background: var(--cm-cyan); opacity: .5; }
 .nv-kids a {
-    display: flex; align-items: center; gap: 9px; padding: 6px 0;
-    color: var(--cm-mute); text-decoration: none; font: 600 var(--cm-ctos-t-body)/1.3 var(--cm-display); letter-spacing: -.01em;
+    display: flex; align-items: center; gap: 10px; min-height: 40px; padding: 6px 4px 6px 0;
+    color: var(--cm-mute); text-decoration: none; font: 600 var(--cm-ctos-t-body)/1.25 var(--cm-display); letter-spacing: -.01em;
     transition: color var(--cm-d-base), transform var(--cm-d-base);
 }
 .nv-kids a:hover { color: var(--cm-fg); transform: translateX(3px); }
 .nv-kids a[aria-current="page"] { color: var(--cm-cyan); }
-.nv-kid-dash { flex: none; width: 10px; height: 2px; background: var(--cm-cyan); opacity: .55; }
-.nv-map-foot { padding: 0; border-top: 1px solid var(--cm-hair-hi); }
+.nv-kid-ic { flex: none; width: 16px; height: 16px; color: currentColor; animation: nv-build 300ms steps(3, end) both; animation-delay: var(--d, 0ms); }
+.nv-kids a .nv-type { min-width: 0; }
+@keyframes nv-build { from { opacity: 0; } }
+
+/* Typed text: the full line holds the width in a hidden layer, so typing never reflows the list. */
+.nv-type { display: inline-grid; max-width: 100%; min-width: 0; }
+.nv-type > span { grid-area: 1 / 1; min-width: 0; }
+.nv-type-ghost { visibility: hidden; }
+.nv-type[data-typing] .nv-type-live::after {
+    content: ""; display: inline-block; width: .42em; height: .9em; margin-left: .08em; vertical-align: -.1em;
+    background: currentColor; animation: nv-caret 520ms steps(1) infinite;
+}
+@keyframes nv-caret { 50% { opacity: 0; } }
+
+.nv-map .nv-map-foot { flex: none; padding: 0; border-top: 1px solid var(--cm-hair-hi); }
 .nv-map-search {
     display: flex; align-items: center; justify-content: space-between; width: 100%; padding: 13px 14px;
     background: var(--nv-plate); color: var(--nv-ink); border: 0; cursor: pointer;
@@ -338,9 +400,11 @@ html[data-xition] .cm-dock { z-index: calc(var(--cm-z-curtain) + 1); }
     font: 700 var(--cm-ctos-t-tag)/1 var(--cm-mono); letter-spacing: .18em; text-transform: uppercase; color: var(--cm-mute);
 }
 .nv-group::after { content: ""; flex: 1; border-top: 1px dashed var(--cm-hair-hi); }
-.nv-item a {
-    display: grid; grid-template-columns: 34px minmax(0, 1fr) auto; align-items: center; gap: 12px;
+/* Results are links (pages, games, sections) or buttons (console commands, recent searches). Both look the same. */
+.nv-item a, .nv-item button {
+    display: grid; grid-template-columns: 34px minmax(0, 1fr) auto; align-items: center; gap: 12px; width: 100%;
     min-height: 52px; padding: 9px 16px; color: var(--cm-fg); text-decoration: none; outline: none;
+    background: transparent; border: 0; border-radius: 0; font: inherit; text-align: left; cursor: pointer;
     transition: background var(--cm-d-fast, .12s);
 }
 .nv-item .nv-ix { display: grid; place-items: center start; font: 700 var(--cm-ctos-t-small)/1 var(--cm-mono); letter-spacing: .06em; color: var(--cm-cyan); }
@@ -349,9 +413,9 @@ html[data-xition] .cm-dock { z-index: calc(var(--cm-z-curtain) + 1); }
 .nv-txt b mark { background: none; color: var(--cm-cyan); box-shadow: inset 0 -2px 0 currentColor; }
 .nv-txt small { font: 500 var(--cm-ctos-t-tag)/1.2 var(--cm-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--cm-mute); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .nv-grp { font: 600 var(--cm-ctos-t-tag)/1 var(--cm-mono); letter-spacing: .14em; text-transform: uppercase; color: var(--cm-dim); white-space: nowrap; }
-.nv-item a.on { background: var(--cm-cyan); color: var(--cm-cyan-ink); }
-.nv-item a.on .nv-ix, .nv-item a.on small, .nv-item a.on .nv-grp { color: var(--cm-cyan-deep); }
-.nv-item a.on .nv-txt b mark { color: var(--cm-cyan-ink); }
+.nv-item .on { background: var(--cm-cyan); color: var(--cm-cyan-ink); }
+.nv-item .on .nv-ix, .nv-item .on small, .nv-item .on .nv-grp { color: var(--cm-cyan-deep); }
+.nv-item .on .nv-txt b mark { color: var(--cm-cyan-ink); }
 .nv-empty { padding: 28px 16px; font: 500 var(--cm-ctos-t-body)/1.4 var(--cm-mono); color: var(--cm-mute); }
 
 /* Key hints: real key caps at a readable size. Touch screens have no keys, so the strip goes away there. */
@@ -381,15 +445,17 @@ html[data-xition] .cm-dock { z-index: calc(var(--cm-z-curtain) + 1); }
     .nv-snd { padding: 0 11px; }
     /* On a phone the keyboard covers the lower half of the screen, so the panel sits near the top and is only as tall
        as the space above the keyboard needs. */
-    .nv-scrim:has(.nv-find) { place-items: start center; padding: 68px 12px 12px; }
-    .nv-panel.nv-find { height: auto; min-height: 220px; max-height: min(560px, calc(100dvh - 80px)); }
+    /* The search sits in the area above the keyboard. Launcher sets --nv-top and --nv-h from visualViewport while open. */
+    .nv-scrim:has(.nv-find) { place-items: start center; padding: 68px 12px 12px; top: var(--nv-top, 0px); bottom: auto; height: var(--nv-h, 100dvh); }
+    .nv-panel.nv-find { height: auto; min-height: 220px; max-height: min(560px, calc(var(--nv-h, 100dvh) - 80px)); }
     .nv-input input, .cm .nv-input input:focus-visible { font-size: 16px; }
-    .nv-kids { padding-left: 14px; grid-template-columns: 1fr 1fr; }
     .nv-sec-t { font-size: 20px; }
 }
 @media (prefers-reduced-motion: reduce) {
     .nv-top, .nv-start, .nv-tools { transition: none; }
     .nv-panel { animation: none; }
     .nv-sec-t, .nv-kids a, .nv-brand b, .nv-search, .nv-term, .nv-snd, .nv-menu-btn { transition: none; }
+    .nv-map .nv-head::after, .nv-kids::before, .nv-kids li::before, .nv-ix svg.px, .nv-kid-ic, .nv-sec-row { animation: none !important; }
+    .nv-type[data-typing] .nv-type-live::after { display: none; }
 }
 @media (prefers-reduced-motion: reduce) { .nv-segs i[data-head] { animation: none; } }

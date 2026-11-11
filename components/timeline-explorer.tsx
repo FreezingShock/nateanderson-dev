@@ -383,7 +383,7 @@ export function TimelineExplorer({
 
                     return (
                         <section key={phase.id} id={phase.id} className="tl-phase" style={{ scrollMarginTop: 96 }}>
-                            <div className="cm-panel tick" data-rx="">
+                            <div className="cm-panel tick" data-rx="" data-rx-inh="">
                                 <button
                                     type="button"
                                     className="cm-hbar"

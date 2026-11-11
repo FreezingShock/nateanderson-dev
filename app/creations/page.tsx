@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { getProjects, getRecentRenovations } from "@/lib/content";
-import { CategoryGrid, CreationsShell, IdCard, PhilosophyGrid, Section } from "@/components/creations-sections";
+import { CategoryGrid, CreationsShell, FeedOffline, IdCard, PhilosophyGrid, Section } from "@/components/creations-sections";
 import { CountUp } from "@/components/cm/reveal";
 import { NaosArt } from "@/components/cm/naos-art";
 import { ART_COLLECTIONS, GAME_MODES, GAME_STATUS, allGames } from "@/lib/creations-data";
@@ -11,13 +11,14 @@ export const revalidate = 60;
 // The hub: the status card in the head, the four doors (each its own page), the philosophy behind all of it, and the
 // two game modes. Projects and renovations come from Supabase; games and artwork live in lib/creations-data.ts.
 export default async function CreationsPage() {
-    const [projects, renovations] = await Promise.all([getProjects(), getRecentRenovations()]);
+    const [projectFeed, renovationFeed] = await Promise.all([getProjects(), getRecentRenovations()]);
+    const offline = projectFeed.offline || renovationFeed.offline;
     const games = allGames();
 
     const counts = {
         games: games.length,
-        projects: projects.length,
-        renovations: renovations.length,
+        projects: projectFeed.items.length,
+        renovations: renovationFeed.items.length,
         artwork: ART_COLLECTIONS.length,
     };
     const total = counts.games + counts.projects + counts.renovations + counts.artwork;
@@ -32,7 +33,7 @@ export default async function CreationsPage() {
             }
             eyebrow="Made / Creations"
             title={["Creations"]}
-            description="Everything I build: games you can play here, coding projects, renovation studies of real places, and the artwork around it all."
+            description="Games to play here, coding projects, renovation studies of real places, and the artwork around it all."
             aside={
                 <IdCard
                     label="creations // index"
@@ -40,8 +41,8 @@ export default async function CreationsPage() {
                     year="2027"
                     rows={[
                         { k: "Web app games", v: <CountUp value={counts.games} /> },
-                        { k: "Projects", v: <CountUp value={counts.projects} /> },
-                        { k: "Renovations", v: <CountUp value={counts.renovations} /> },
+                        { k: "Projects", v: projectFeed.offline ? "offline" : <CountUp value={counts.projects} /> },
+                        { k: "Renovations", v: renovationFeed.offline ? "offline" : <CountUp value={counts.renovations} /> },
                         { k: "Art collections", v: <CountUp value={counts.artwork} /> },
                     ]}
                     foot={["workbench", `${total} items total`]}
@@ -49,6 +50,7 @@ export default async function CreationsPage() {
             }
         >
             <Section id="explore" no="01" label="Explore" title="Four rooms, one workshop." blurb="Pick a door.">
+                {offline && <FeedOffline what="Projects and renovations" />}
                 <CategoryGrid counts={counts} />
             </Section>
 
@@ -65,8 +67,8 @@ export default async function CreationsPage() {
                 id="roadmap"
                 no="03"
                 label="Game modes"
-                title="Two ways to play."
-                blurb="A daily puzzle and an unlimited practice mode. Each links to its games."
+                title="Game sections."
+                blurb="Geography is live. Incremental and automation are next. Each links to its section."
             >
                 <div className="cm-grid cr-modes">
                     {GAME_MODES.map((m) => {

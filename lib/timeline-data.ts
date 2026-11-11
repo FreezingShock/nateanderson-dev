@@ -285,8 +285,8 @@ export const phases: TimelinePhaseData[] = [
                 tags: ["Decisions", "Applications"],
                 details: [
                     "Choose by May 1, 2027",
-                    "Pomona CEM is the fallback if SLO says no",
-                    "Moorpark community college is the spring alternate if neither works out",
+                    "Goals: Cal Poly SLO, or Pomona CEM if SLO says no",
+                    "Community college (Moorpark) is the fallback if neither works out",
                 ],
             },
             {
@@ -405,7 +405,7 @@ export const phases: TimelinePhaseData[] = [
         short: "College",
         range: "September 2027 — June 2031",
         description:
-            "Freshman admission to Cal Poly SLO Construction Management, with Cal Poly Pomona Construction Engineering & Management as the fallback. Both are four-year degrees. Community college is the spring alternate.",
+            "Freshman admission to Cal Poly SLO Construction Management or Cal Poly Pomona Construction Engineering & Management, both four-year degrees. Community college is the fallback.",
         color: "var(--cm-good)",
         icon: "Rocket",
         start: "2027-09-01",

@@ -29,6 +29,7 @@ import {
     type NeighborState,
 } from "@/lib/outline-game";
 import { cn } from "@/lib/utils";
+import { sfx } from "@/lib/sound/sounds";
 
 // Round 2 of the Outline Guesser: name the countries that share a land
 // border with the one you just found. The map is drawn from the same
@@ -419,6 +420,7 @@ export function NeighborRound({
         if (!playing) return;
         const nextGuesses = [...guesses, target.c];
         const isNeighbor = neighborCodes.includes(target.c);
+        sfx(isNeighbor ? "collect" : "deny");
         const foundNow = nextGuesses.filter((g) => neighborCodes.includes(g));
         let nextStatus: NeighborState["status"] = "playing";
         if (foundNow.length === total) nextStatus = "won";

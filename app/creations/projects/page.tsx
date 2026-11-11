@@ -1,12 +1,13 @@
 import { getProjects } from "@/lib/content";
-import { CreationsShell, ListStatusCard, ProjectGrid, Section } from "@/components/creations-sections";
+import { CreationsShell, FeedOffline, ListStatusCard, ProjectGrid, Section } from "@/components/creations-sections";
 import { pageMeta } from "@/lib/seo";
+import { NaosBackdrop } from "@/components/cm/naos-art";
 import { categoryById } from "@/lib/creations-data";
 
 export const revalidate = 60;
 
 export default async function ProjectsPage() {
-    const projects = await getProjects();
+    const feed = await getProjects();
     return (
         <CreationsShell
             eyebrow="Creations / Projects"
@@ -14,10 +15,11 @@ export default async function ProjectsPage() {
             description="Coding projects: solo-built, systems-driven, shipped and in progress."
             back={{ href: "/creations", label: "Back to Creations" }}
             variant="sub"
-            aside={<ListStatusCard label="projects // index" badge="pj" projects={projects} />}
+            aside={<ListStatusCard label="projects // index" badge="pj" projects={feed.items} offline={feed.offline} />}
         >
-            <Section id="projects" no="01" label="All projects" title="Open any project." blurb="Open any project for its status, tags and links.">
-                <ProjectGrid projects={projects} />
+            <NaosBackdrop src="/naos/bg-default.webp" />
+            <Section id="projects" no="01" label="All projects" title="Open any project." blurb="Status, tags and links for each one.">
+                {feed.offline ? <FeedOffline what="Projects" /> : <ProjectGrid projects={feed.items} />}
             </Section>
         </CreationsShell>
     );

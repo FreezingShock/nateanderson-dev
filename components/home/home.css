@@ -388,12 +388,14 @@
     font: 500 var(--cm-ctos-t-tag)/1 var(--cm-mono);
     letter-spacing: .12em;
     text-transform: uppercase;
-    color: var(--cm-dim);
+    color: var(--cm-ctos-meta);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
     transition: color var(--cm-d-base);
 }
+/* The primary plate is cyan: its secondary line takes the ink colour (meta grey was 2.2:1 on cyan). */
+.ctos .hcta-main .hcta-txt small { color: var(--cm-cyan-ink); }
 .ctos .hcta-arr {
     display: grid;
     place-items: center;
@@ -500,22 +502,9 @@
    Page-only (ids #explore, #stats, #timeline); shared naOS CSS is untouched.
    ========================================================================== */
 
-/* Explore: three columns, so six cards fill two full rows with no dead space. The dashed card (every 3rd) becomes a
-   solid panel so it reads as a card, not a faded placeholder. */
+/* Explore: three columns, so six cards fill two full rows with no dead space. Card treatment is shared (ctos.css). */
 .ctos #explore .cm-grid {
     grid-template-columns: repeat(3, minmax(0, 1fr));
-}
-.ctos #explore .cm-grid > .cm-card:nth-child(3n) {
-    border: 1px solid var(--cm-hair-hi);
-    border-left: 3px solid var(--cm-cyan);
-    background: var(--cm-ctos-panel);
-    background-image: none;
-}
-/* Sixth card (About Me) is the cyan plate, so the grid reads white / cyan / panel over panel / panel / cyan. */
-.ctos #explore .cm-grid > .cm-card:nth-child(6) {
-    background: var(--cm-cyan);
-    border-color: var(--cm-cyan);
-    border-left-color: var(--cm-ctos-ink);
 }
 @media (max-width: 900px) {
     .ctos #explore .cm-grid {

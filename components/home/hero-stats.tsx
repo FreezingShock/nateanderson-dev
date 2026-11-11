@@ -20,10 +20,11 @@ function Stat({ label, value }: { label: string; value: number | null }) {
 
 export async function HeroStats({ playable }: { playable: number }) {
     const [projects, renovations] = await Promise.all([getProjects(), getRecentRenovations()]);
+    // A failed read shows a dash, the same as "still loading", rather than a count of zero.
     return (
         <>
-            <Stat label="Projects" value={projects.length} />
-            <Stat label="Renovations" value={renovations.length} />
+            <Stat label="Projects" value={projects.offline ? null : projects.items.length} />
+            <Stat label="Renovations" value={renovations.offline ? null : renovations.items.length} />
             <Stat label="Playable games" value={playable} />
         </>
     );

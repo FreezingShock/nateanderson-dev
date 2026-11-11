@@ -62,7 +62,7 @@ export default async function HistoryPage() {
                 <PageHead
                     label="Meta / Changelog"
                     title={["site", "history"]}
-                    lead="This website's own changelog, pulled live from the GitHub API, not written by hand or regenerated manually."
+                    lead="This site's changelog, pulled live from the GitHub API and never written by hand."
                 >
                     <div className={styles.headStrip} aria-hidden="true">
                         <span className="id-live"><i />Feed live</span>

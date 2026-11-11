@@ -103,6 +103,8 @@ interface Ctx {
     soundOn: boolean;
     history: string[];
     go: (href: string, label: string) => Line[];
+    /** Closes the console, then runs `fn` once the panel has gone. For commands that open another panel or scroll. */
+    leave: (msg: string, fn: () => void) => Line[];
 }
 
 interface Cmd {
@@ -263,6 +265,34 @@ const COMMANDS: Cmd[] = [
         },
     },
     {
+        name: "menu",
+        usage: "menu",
+        desc: "open the site map",
+        run: (_a, ctx) => ctx.leave("opening the site map…", () => window.dispatchEvent(new Event("cm:menu"))),
+    },
+    {
+        name: "search",
+        usage: "search [words]",
+        desc: "open search, with your words filled in",
+        long: ["search flag · search nexus. Leave the words out to open search empty."],
+        run: (args, ctx) => {
+            const q = args.join(" ");
+            return ctx.leave(q ? `searching for “${q}”…` : "opening search…", () =>
+                window.dispatchEvent(new CustomEvent("cm:launcher", { detail: { q } })),
+            );
+        },
+    },
+    {
+        name: "top",
+        usage: "top",
+        desc: "back to the top of the page",
+        run: (_a, ctx) =>
+            ctx.leave("up we go.", () => {
+                const still = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+                window.scrollTo({ top: 0, behavior: still ? "auto" : "smooth" });
+            }),
+    },
+    {
         name: "clear",
         usage: "clear",
         desc: "wipe the screen (ctrl+l)",
@@ -281,6 +311,9 @@ const COMMANDS: Cmd[] = [
 ];
 
 const NAMES = COMMANDS.filter((c) => !c.hidden).map((c) => c.name);
+
+/** The visible commands, for the site search. Read from COMMANDS so new commands show up there on their own. */
+export const CONSOLE_INDEX: { name: string; usage: string; desc: string }[] = COMMANDS.filter((c) => !c.hidden).map(({ name, usage, desc }) => ({ name, usage, desc }));
 const ALIAS: Record<string, string> = { cd: "open", go: "open", goto: "open", quit: "exit", q: "exit", "?": "help", man: "help", cls: "clear", dir: "ls" };
 
 // Per-line typing times: each line is drawn left to right in steps, one after the other, capped so a long answer
@@ -305,11 +338,12 @@ let sessionHistory: string[] = [];
 const BOOT: Line[] = [t("naOS command console", "hi"), t("type help to see what it can do.", "dim")];
 const CHIPS = ["help", "ls", "whoami", "now", "status"];
 
-export function NaosConsole({ onClose }: { onClose: () => void }) {
+/** `prefill` puts a command in the input (the search uses this to open the console on a command). Nothing runs until Enter. */
+export function NaosConsole({ onClose, prefill }: { onClose: () => void; prefill?: string }) {
     const path = usePathname();
     const [snd] = useSoundPrefs();
     const [entries, setEntries] = useState<Entry[]>(() => [{ id: nextId++, lines: BOOT }]);
-    const [value, setValue] = useState("");
+    const [value, setValue] = useState(prefill ?? "");
     const [hint, setHint] = useState("");
     const input = useRef<HTMLInputElement>(null);
     const out = useRef<HTMLDivElement>(null);
@@ -381,6 +415,18 @@ export function NaosConsole({ onClose }: { onClose: () => void }) {
         [onClose],
     );
 
+    const leave = useCallback(
+        (msg: string, fn: () => void): Line[] => {
+            const id = window.setTimeout(() => {
+                onClose();
+                fn();
+            }, 260);
+            timers.current.push(id);
+            return [t(msg)];
+        },
+        [onClose],
+    );
+
     const run = useCallback(
         (raw: string) => {
             const line = raw.trim();
@@ -416,11 +462,12 @@ export function NaosConsole({ onClose }: { onClose: () => void }) {
                     soundOn: snd.on,
                     history: sessionHistory,
                     go,
+                    leave,
                 });
             }
             setEntries((e) => [...e.slice(-40), { id: nextId++, cmd: line, lines }]);
         },
-        [close, go, path, snd.on, targets],
+        [close, go, leave, path, snd.on, targets],
     );
 
     const submit = () => {
