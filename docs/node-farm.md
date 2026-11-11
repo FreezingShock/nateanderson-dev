@@ -12,7 +12,7 @@ button tiers (+1, +5, +25, +125, +625, +3125; each tier costs about 8 to 10 time
   in Bytes, each later material in the one before it. Each material boosts the one below it (Copper boosts Reboot power and
   adds a little to Bytes, Silicon boosts Copper, Quartz boosts Silicon, Aether boosts Quartz).
 - Ascend (400 Aether): wipes everything except goals, perks and lifetime stats for Ascension Points (+25 percent to everything each) and five perks.
-- There is no tapping: progress comes from buttons only (Nate did not want a Cookie Clicker). The core is a live display: its outer arc shows progress to the cheapest Reboot and it pulses on every press. An intrusion appears every 55 to 110 s; catching it gives a x6 Overclock for 20 s.
+- There is no tapping: progress comes from buttons only (Nate did not want a Cookie Clicker). The core is a live display: its outer arc shows progress to the cheapest Reboot and it pulses on every press. Quick-time events (see below) appear every 3 to 5 minutes; clearing one gives a x6 Overclock for 20 s.
 - Offline progress is capped at 8 hours (Standby cells perk: +4 h per level). Nothing is auto-bought.
 
 ## Files
@@ -25,5 +25,7 @@ button tiers (+1, +5, +25, +125, +625, +3125; each tier costs about 8 to 10 time
 
 ## Gotchas
 - Always put `font` rules for buttons through `:where(button)` (the reset is), or element selectors beat the class rules.
-- Playwright cannot click the pulsing intrusion button without `force: true` (it never settles, on purpose).
-- Intrusions only spawn once Multipliers plus Reboots reach 5, so a brand-new player is not interrupted.
+- Events only spawn once Multipliers plus Reboots reach 5 (the trace needs 8), so a brand-new player is not interrupted. The incoming card waits 15 s, so a Playwright test that fast-forwards a fake clock must step in small chunks and stop as soon as `.nf-ev` exists.
+
+## Quick-time events
+`lib/nodefarm/events.ts` holds the event list and every timing number (`EVENT_TUNE`); `components/nodefarm/events.tsx` is the `EventLayer` that schedules them and draws each one as a centered card over a dim scrim (never in a menu). Flow: incoming card (Engage / Skip, 15 s then it passes, controls lock for 0.65 s so a stray tap can't start one) then the live challenge then a short result card. Four types: Intrusion (four-key memory sequence), Power surge (hold, release in the green band, 3 tries), Signal lock (stop the sweep in the zone, 3 tries), Breach trace (hit 4 of 5 lit nodes on a 3 x 3 grid). Winning calls `breach()` (the timed Overclock); missing or skipping costs nothing. All of them work with touch, mouse and keyboard (1 to 4, 1 to 9, Space, Escape skips), the card is an `alertdialog` and returns focus when it closes. Events can be switched off from the card or the Menu (`nf-events-v1` in localStorage). To add a type: add it to `EVENTS`, add a body component in `events.tsx`, and style it under `.nf-ev`.

@@ -9,18 +9,18 @@ import {
 } from "@/lib/nodefarm/engine";
 import { Core, type CoreFeed } from "./core";
 import { NfIcon } from "./icon";
-import { Hack } from "./hack";
+import { EventLayer } from "./events";
 import { Chain, StatRow } from "./stat-row";
 import { AscendPanel, GoalsPanel, MenuPanel } from "./systems";
 
 const KEY = "nf-save-v1";
+const EV_KEY = "nf-events-v1"; // "off" when quick-time events are switched off (per device)
 const UI_KEY = "nf-ui-v1"; // which stat panels are minimized (per device, not part of the game save)
 type Tab = "core" | "stats" | "goals" | "ascend" | "menu";
 const SIDE: Tab[] = ["goals", "ascend", "menu"];
 const TAB_LABEL: Record<Tab, string> = { core: "Core", stats: "Stats", goals: "Goals", ascend: "Ascend", menu: "Menu" };
 type Line = { id: number; t: string; text: string; tone?: "good" | "warn" | "hot" };
 
-const gapMs = (s: State) => (TUNE.intrusionEvery[0] + Math.random() * (TUNE.intrusionEvery[1] - TUNE.intrusionEvery[0])) * 1000 * Math.max(0.4, 1 - s.perks.scanner * 0.08);
 const clock = () => new Date().toTimeString().slice(0, 8);
 
 function load(): State | null {
@@ -43,8 +43,7 @@ export function NodeFarm() {
     const [lines, setLines] = useState<Line[]>([]);
     const [away, setAway] = useState<{ secs: number; capped: boolean; gain: Record<string, number> } | null>(null);
     const [toast, setToast] = useState<string | null>(null);
-    const [alertAt, setAlertAt] = useState<{ x: number; y: number; id: number } | null>(null);
-    const [hack, setHack] = useState(false);
+    const [evOn, setEvOn] = useState(true);
     const [reduced, setReduced] = useState(false);
     const [confirm, setConfirm] = useState<"" | "ascend" | "reset">("");
     const [ioText, setIoText] = useState("");
@@ -59,8 +58,6 @@ export function NodeFarm() {
     const [snd, setSnd] = useSoundPrefs();
     const feed = useRef<CoreFeed>({ progress: 0, overclock: false, unlocked: 1, speed: 0, lastPulse: -1e9 });
     const ids = useRef(1);
-    const nextAlert = useRef(0);
-    const alertEnd = useRef(0);
     const saved = useRef(0);
     const tickN = useRef(0);
 
@@ -74,6 +71,7 @@ export function NodeFarm() {
         try {
             const u = localStorage.getItem(UI_KEY);
             if (u) setFolded(JSON.parse(u));
+            if (localStorage.getItem(EV_KEY) === "off") setEvOn(false);
         } catch {}
         const s = load() ?? fresh();
         const first = s.life.secs === 0 && s.life.presses === 0;
@@ -84,7 +82,6 @@ export function NodeFarm() {
             setAway({ secs: r.secs, capped: r.capped, gain: r.gain });
         }
         s.at = Date.now();
-        nextAlert.current = performance.now() + gapMs(s);
         const greet = first
             ? ["naOS // node.farm online", "Link established. 1 node, no clearance.", "Buy your first Multiplier. The core grows with everything you build."]
             : ["naOS // node.farm resumed", `Session restored. ${fmt(s.life.presses)} buttons pressed, ${fmt(s.life.reboots)} reboots on record.`];
@@ -123,10 +120,6 @@ export function NodeFarm() {
         } catch {}
     }, []);
 
-    const scheduleAlert = useCallback(() => {
-        nextAlert.current = performance.now() + gapMs(g.current);
-    }, []);
-
     // ---- the game loop: 10 ticks a second, real elapsed time, so a throttled background tab catches up on return
     useEffect(() => {
         if (!ready) return;
@@ -146,19 +139,6 @@ export function NodeFarm() {
             f.overclock = s.overclock > 0;
             f.speed = Math.min(1, Math.log10(1 + d.bytesPerSec) / 12);
             f.unlocked = STATS.filter((x) => isUnlocked(s, x.id)).length;
-            // intrusion: a target appears, you have a few seconds to open it
-            const pn = performance.now();
-            if (alertEnd.current && pn > alertEnd.current) {
-                alertEnd.current = 0;
-                setAlertAt(null);
-                log("Intrusion lost. The trace went cold.", "warn");
-                scheduleAlert();
-            } else if (!alertEnd.current && !hack && pn > nextAlert.current && !document.hidden && s.life.reboots + s.mult >= 5) {
-                alertEnd.current = pn + TUNE.intrusionLife * 1000;
-                setAlertAt({ x: 8 + Math.random() * 78, y: 22 + Math.random() * 60, id: ids.current++ });
-                sfx("nfAlert");
-                log("INTRUSION DETECTED. Open the trace before it closes.", "hot");
-            }
             for (const goal of checkGoals(s)) {
                 log(`Goal: ${goal.name}`, "good");
                 setToast(goal.name);
@@ -168,7 +148,7 @@ export function NodeFarm() {
             bump((n) => n + 1);
         }, 100);
         return () => clearInterval(iv);
-    }, [ready, log, hack, scheduleAlert]);
+    }, [ready, log]);
 
     // ---- actions
     const doPress = useCallback(
@@ -190,22 +170,26 @@ export function NodeFarm() {
         [log],
     );
 
-    const openHack = () => {
-        alertEnd.current = 0;
-        setAlertAt(null);
-        setHack(true);
-        sfx("open");
-    };
-    const hackDone = (won: boolean) => {
-        setHack(false);
-        const s = g.current;
-        scheduleAlert();
-        if (won) {
-            breach(s);
-            sfx("nfBreach");
-            log(`TRACE WON. Overclock x${TUNE.overclockMult} for ${TUNE.overclockSecs + s.perks.overclock * 5} s.`, "good");
-        } else log("Trace failed. They got away.", "warn");
-    };
+    // ---- quick-time events (components/nodefarm/events.tsx): a win gives the timed Overclock, a miss costs nothing
+    const evResult = useCallback(
+        (def: { title: string }, won: boolean) => {
+            const s = g.current;
+            if (won) {
+                breach(s);
+                log(`${def.title.toUpperCase()} CLEARED. Overclock x${TUNE.overclockMult} for ${TUNE.overclockSecs + s.perks.overclock * 5} s.`, "good");
+            } else log(`${def.title} lost. No cost.`, "warn");
+        },
+        [log],
+    );
+    const evMiss = useCallback((def: { title: string }) => log(`${def.title} ignored. It passed.`, "warn"), [log]);
+    const evEngage = useCallback((def: { title: string }) => log(`${def.title} engaged.`, "hot"), [log]);
+    const setEvents = useCallback((on: boolean) => {
+        setEvOn(on);
+        try {
+            localStorage.setItem(EV_KEY, on ? "on" : "off");
+        } catch {}
+        if (!on) log("Quick-time events off. Turn them back on in the Menu.", "warn");
+    }, [log]);
 
     const doAscend = () => {
         if (confirm !== "ascend") {
@@ -294,13 +278,7 @@ export function NodeFarm() {
 
             {toast && <div className="nf-toast" role="status"><NfIcon name="spark" /> Goal: {toast}</div>}
 
-            {alertAt && (
-                <button type="button" key={alertAt.id} className="nf-alert" style={{ left: `${alertAt.x}%`, top: `${alertAt.y}%`, ["--life" as string]: `${TUNE.intrusionLife}s` }} onClick={openHack} aria-label="Intrusion detected. Open the trace for a timed Overclock boost.">
-                    <NfIcon name="alert" large />
-                    <span>TRACE</span>
-                </button>
-            )}
-            {hack && <Hack onDone={hackDone} />}
+            <EventLayer game={g} ready={ready} enabled={evOn} busy={!!win || !!away || !!confirm} reduced={reduced} onEngage={evEngage} onResult={evResult} onMiss={evMiss} onDisable={() => setEvents(false)} />
 
             <section className="nf-pane nf-corepane" data-pane="core" aria-label="Core">
                 <div className="nf-core-wrap">
@@ -355,6 +333,8 @@ export function NodeFarm() {
                     s={s}
                     soundOn={snd.on}
                     onSound={() => setSnd({ on: !snd.on })}
+                    eventsOn={evOn}
+                    onEvents={() => setEvents(!evOn)}
                     ioText={ioText}
                     setIoText={setIoText}
                     ioMsg={ioMsg}
