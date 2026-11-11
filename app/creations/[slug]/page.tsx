@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
-import { getProjectBySlug, getAllProjectSlugs, statusLabel } from "@/lib/content";
+import { getProjectBySlug, getAllProjectSlugs, lookupProject, statusLabel } from "@/lib/content";
 import { PROJECT_GALLERY, PROJECT_LINKS, categoryById } from "@/lib/creations-data";
-import { CreationsHead, IdCard } from "@/components/creations-sections";
+import { CreationsHead, CreationsShell, FeedOffline, IdCard, Section } from "@/components/creations-sections";
 import { pageMeta } from "@/lib/seo";
 
 import { NaosBackdrop } from "@/components/cm/naos-art";
@@ -27,7 +27,23 @@ const tone = { active: "live", planning: "warn", idea: "" } as const;
 // sheet with the tags and the outbound link sits beside the status card, as before.
 export default async function ProjectPage({ params }: { params: Promise<{ slug: string }> }) {
     const { slug } = await params;
-    const project = await getProjectBySlug(slug);
+    const { project, offline } = await lookupProject(slug);
+    if (offline) {
+        // The library did not answer. This is not a missing project, so it does not get the 404 screen.
+        return (
+            <CreationsShell
+                eyebrow="Creations / Project"
+                title={["Project"]}
+                description="The project library did not answer, so this file cannot be opened right now."
+                back={{ href: "/creations/projects", label: "Back to Projects" }}
+                variant="sub"
+            >
+                <Section id="offline" no="01" label="Feed" title="Try again shortly." blurb="The page fills in on its own once the library answers.">
+                    <FeedOffline what="This project" />
+                </Section>
+            </CreationsShell>
+        );
+    }
     if (!project) notFound();
 
     const isProject = project.section === "projects";

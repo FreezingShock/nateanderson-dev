@@ -230,21 +230,57 @@ export function GameModeSection({ mode, no }: { mode: GameMode; no: string }) {
  * Status card for a list page (projects, renovations). Every number is counted from the rows, so it stays true as the
  * Supabase table changes.
  */
-export function ListStatusCard({ label, badge, projects }: { label: string; badge: string; projects: Project[] }) {
+export function ListStatusCard({
+    label,
+    badge,
+    projects,
+    offline = false,
+}: {
+    label: string;
+    badge: string;
+    projects: Project[];
+    offline?: boolean;
+}) {
     const count = (s: Project["status"]) => projects.filter((p) => p.status === s).length;
+    // While the feed is down the counts are unknown, so show a dash rather than a false zero.
+    const num = (n: number) => (offline ? "—" : <CountUp value={n} />);
     return (
         <IdCard
             label={label}
             badge={badge}
-            year={String(projects.length).padStart(2, "0")}
+            year={offline ? "--" : String(projects.length).padStart(2, "0")}
+            live={!offline}
             rows={[
-                { k: "Listed", v: <CountUp value={projects.length} /> },
-                { k: statusLabel.active, v: <CountUp value={count("active")} /> },
-                { k: statusLabel.planning, v: <CountUp value={count("planning")} /> },
-                { k: statusLabel.idea, v: <CountUp value={count("idea")} /> },
+                { k: "Listed", v: num(projects.length) },
+                { k: statusLabel.active, v: num(count("active")) },
+                { k: statusLabel.planning, v: num(count("planning")) },
+                { k: statusLabel.idea, v: num(count("idea")) },
             ]}
-            foot={["list / all", `${projects.length} ${projects.length === 1 ? "entry" : "entries"}`]}
+            foot={offline ? ["list / offline", "feed down"] : ["list / all", `${projects.length} ${projects.length === 1 ? "entry" : "entries"}`]}
         />
+    );
+}
+
+/**
+ * Shown when the Supabase feed did not load. Different from the standby card below: that one means the list is empty,
+ * this one means the list could not be read, so nobody should read it as "nothing here yet".
+ */
+export function FeedOffline({ what }: { what: string }) {
+    return (
+        <div className="cm-panel cr-empty" role="status">
+            <div className="id-top">
+                <span className="id-sys">naOS // link lost</span>
+            </div>
+            <div className="cr-empty-body">
+                <span>{what} offline.</span>
+                <small>The list did not load. It retries on its own within a minute, so check back shortly.</small>
+            </div>
+            <div className="p-foot" aria-hidden="true">
+                <span className="id-bars"><i /><i /><i /><i /><i /></span>
+                <span>feed down</span>
+                <span>retrying</span>
+            </div>
+        </div>
     );
 }
 
