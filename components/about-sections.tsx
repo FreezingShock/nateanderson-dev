@@ -26,7 +26,7 @@ export function AboutStory() {
                 <ScrollType
                     as="p"
                     className="about-lede"
-                    text="I'm Nate, a senior in high school in Southern California. I'm headed to Cal Poly SLO for Construction Management, with Cal Poly Pomona as my fallback. I build games, render systems, and design spaces, always with an eye toward sustainable, interconnected systems."
+                    text="I'm Nate, a senior in high school in Southern California. I'm headed to Cal Poly SLO for Construction Management, with Cal Poly Pomona as a goal and community college as my fallback. I build games, render systems, and design spaces, always with an eye toward sustainable, interconnected systems."
                 />
             </div>
             <div className="cm-panel">

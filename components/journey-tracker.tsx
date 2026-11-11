@@ -428,7 +428,6 @@ function Axis({ markers, bands, nowMs }: { markers: JourneyMarker[]; bands: Jour
                                         transform: "translateX(-50%)",
                                         left: `${mo.mid}%`,
                                         top: TICK_TOP + 16,
-                                        fontSize: 8.5,
                                         color: current ? "var(--cm-cyan)" : "var(--cm-mute)",
                                         fontWeight: current ? 600 : 400,
                                     }}

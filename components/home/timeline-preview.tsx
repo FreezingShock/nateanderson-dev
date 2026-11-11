@@ -10,7 +10,7 @@ export function TimelinePreview() {
             no="04"
             label="Timeline view"
             title="Right now, and the year ahead."
-            blurb="What I'm working toward right now and a look at the year ahead."
+            blurb="What I'm working toward now, and the year ahead."
             more={{ href: "/timeline", label: "Full timeline" }}
         >
             <div className="cm-split">

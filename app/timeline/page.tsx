@@ -51,7 +51,7 @@ export default function TimelinePage() {
             <PageHead
                 label="Journey"
                 title={["Timeline"]}
-                lead="The complete pathway from senior year to graduation in 2031, with real dates, live countdowns and every milestone in between. Where I am, and where I'm heading."
+                lead="The full pathway from senior year to graduation in 2031: real dates, live countdowns and every milestone. Where I am, and where I'm heading."
             >
                 <div className="id-top tl-status">
                     <span className="id-live"><i />naOS // journey</span>
@@ -64,7 +64,7 @@ export default function TimelinePage() {
                 no="01"
                 label="Right now"
                 title="The route, live."
-                blurb="The fixed dates, the whole journey on one axis, and what comes next. Everything counts down from today."
+                blurb="The fixed dates on one axis, and what comes next. Everything counts down from today."
                 ctos
             >
                 <TimelineOverview nowMs={nowMs} />
@@ -75,7 +75,7 @@ export default function TimelinePage() {
                 no="02"
                 label="The full route"
                 title="Every phase, in order."
-                blurb="Each phase opens to its milestones. Filter by category, show only the milestones, or expand the whole plan."
+                blurb="Each phase opens to its milestones. Filter by category, show only milestones, or expand everything."
                 ctos
             >
                 <TimelineExplorer phases={phases} nowMs={nowMs} />
@@ -86,7 +86,7 @@ export default function TimelinePage() {
                 no="03"
                 label="Future horizons"
                 title="After the degree."
-                blurb="After the degree in 2031: a trajectory toward impact in construction and sustainable design, applying systems thinking to real projects."
+                blurb="After the degree: a path toward impact in construction and sustainable design, using systems thinking on real projects."
                 ctos
             >
                 <div className="tl-goals">

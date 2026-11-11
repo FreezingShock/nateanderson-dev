@@ -8,6 +8,7 @@ import { Film } from "@/components/cm/film";
 import { Launcher } from "@/components/cm/launcher";
 import { ConsoleEntry } from "@/components/cm/console-entry";
 import { SiteMap } from "@/components/cm/site-map";
+import { KeyboardShortcuts } from "@/components/cm/keys";
 import { Boot, BOOT_SCRIPT } from "@/components/cm/boot";
 import { MotionRoot } from "@/components/cm/motion-root";
 import { CtosBody } from "@/components/cm/ctos-body";
@@ -94,6 +95,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
                     <SiteMap />
                     <Launcher />
                     <ConsoleEntry />
+                    <KeyboardShortcuts />
                     <SoundProvider />
                 </ThemeProvider>
             </body>

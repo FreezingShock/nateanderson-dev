@@ -13,7 +13,7 @@
 
 const STEP = 70; // ms between siblings in a reveal wave
 const MAX_WAVE = 7; // cap so long lists don't trickle forever
-const REVEAL_MS = 650; // matches --cm-d-reveal plus margin; after this the element drops its reveal styles
+const REVEAL_MS = 740; // --cm-d-reveal is .7s; drop the reveal transition only after it has finished, or the last few px snap
 // Scroll-linked text lines (fraction of the viewport height, measured from the top edge):
 const READ_LINE = 0.8; // above this line text is fully resolved: typed and unscrambled, never half-finished
 const SCR_ENTER = 0.92; // scrambled text starts decoding here (just inside the bottom edge)

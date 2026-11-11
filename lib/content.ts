@@ -45,35 +45,43 @@ interface ProjectRow {
     sort_order: number;
 }
 
-async function fetchSection(section: "projects" | "renovations"): Promise<Project[]> {
+// A list read. `offline` means the fetch failed, which is different from an empty list: the pages show a "feed offline"
+// state for it instead of "nothing here yet".
+export interface Feed<T> {
+    items: T[];
+    offline: boolean;
+}
+
+async function fetchSection(section: "projects" | "renovations"): Promise<Feed<Project>> {
     const { data, error } = await supabase
         .from("projects")
         .select("slug, title, category, status, description, tags, section, sort_order")
         .eq("section", section)
         .order("sort_order", { ascending: true });
 
-    if (error) {
-        console.error(`Failed to fetch "${section}" from Supabase:`, error.message);
-        return [];
+    if (error || !data) {
+        console.error(`Failed to fetch "${section}" from Supabase:`, error?.message ?? "no data");
+        return { items: [], offline: true };
     }
 
-    return (data as ProjectRow[]).map(
-        ({ slug, title, category, status, description, tags }) => ({
+    return {
+        items: (data as ProjectRow[]).map(({ slug, title, category, status, description, tags }) => ({
             slug,
             title,
             category,
             status,
             description,
             tags,
-        })
-    );
+        })),
+        offline: false,
+    };
 }
 
-export function getProjects() {
+export function getProjects(): Promise<Feed<Project>> {
     return fetchSection("projects");
 }
 
-export function getRecentRenovations() {
+export function getRecentRenovations(): Promise<Feed<Project>> {
     return fetchSection("renovations");
 }
 
@@ -83,7 +91,9 @@ export interface ProjectWithSection extends Project {
     section: "projects" | "renovations";
 }
 
-export async function getProjectBySlug(slug: string): Promise<ProjectWithSection | null> {
+// `project` is null for a real miss (a 404). `offline` means the read failed, which the page shows as a feed-offline
+// state. The two are kept apart so a failed read never reads as "signal lost".
+export async function lookupProject(slug: string): Promise<{ project: ProjectWithSection | null; offline: boolean }> {
     const { data, error } = await supabase
         .from("projects")
         .select("slug, title, category, status, description, tags, section")
@@ -91,12 +101,15 @@ export async function getProjectBySlug(slug: string): Promise<ProjectWithSection
         .in("section", VISIBLE_SECTIONS)
         .maybeSingle();
 
-    if (error || !data) {
-        if (error) console.error(`Failed to fetch project "${slug}" from Supabase:`, error.message);
-        return null;
+    if (error) {
+        console.error(`Failed to fetch project "${slug}" from Supabase:`, error.message);
+        return { project: null, offline: true };
     }
+    return { project: (data as ProjectWithSection | null) ?? null, offline: false };
+}
 
-    return data as ProjectWithSection;
+export async function getProjectBySlug(slug: string): Promise<ProjectWithSection | null> {
+    return (await lookupProject(slug)).project;
 }
 
 export async function getAllProjectSlugs(): Promise<string[]> {

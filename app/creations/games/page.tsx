@@ -12,17 +12,19 @@ export default function GamesPage() {
             <CreationsShell
                 eyebrow="Creations / Games"
                 title={["Games"]}
-                description="Geography games that run right here in your browser. Take the daily puzzle, then practice as long as you like. Streaks and stats stay on your device."
+                description="Geography games that run in your browser. Take the daily puzzle, then practice as long as you like. Streaks and stats stay on your device."
                 back={{ href: "/creations", label: "Back to Creations" }}
             >
-                <nav className="g-hub-nav" aria-label="Game modes">
-                    {GAME_MODES.map((m) => (
-                        <a key={m.id} href={`#${m.id}`}>
-                            {m.title}
-                            <span>{m.games.filter((g) => g.href).length || "soon"}</span>
-                        </a>
-                    ))}
-                </nav>
+                <div className="cm-wrap">
+                    <nav className="g-hub-nav" aria-label="Game sections">
+                        {GAME_MODES.map((m) => (
+                            <a key={m.id} href={`#${m.id}`}>
+                                <em>{m.title}</em>
+                                <span>{m.games.filter((g) => g.href).length || "soon"}</span>
+                            </a>
+                        ))}
+                    </nav>
+                </div>
                 {GAME_MODES.map((m, i) => (
                     <NaosGameMode key={m.id} mode={m} no={String(i + 1).padStart(2, "0")} />
                 ))}

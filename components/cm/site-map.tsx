@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { navItems } from "@/lib/nav";
 import { openLauncher } from "@/components/cm/bar";
+import { useBackdropScrollLock } from "@/components/cm/scrim-lock";
 import { sfx } from "@/lib/sound/sounds";
 
 const isActive = (path: string, href: string) =>
@@ -20,6 +21,9 @@ export function SiteMap() {
     const [open, setOpen] = useState(false);
     const returnTo = useRef<HTMLElement | null>(null);
     const panel = useRef<HTMLElement>(null);
+    const scrim = useRef<HTMLDivElement>(null);
+    const swipe = useRef<{ x: number; y: number } | null>(null);
+    useBackdropScrollLock(scrim, open);
 
     const show = useCallback(() => {
         returnTo.current = document.activeElement as HTMLElement | null;
@@ -66,14 +70,36 @@ export function SiteMap() {
 
     if (!open) return null;
 
+    // The drawer slides in from the left, so a flick back to the left closes it. Only a mostly sideways drag counts,
+    // so scrolling the list never closes it by accident.
     return (
         <div
             className="nv-scrim nv-scrim-drawer"
+            ref={scrim}
             onMouseDown={(e) => {
                 if (e.target === e.currentTarget) hide();
             }}
         >
-            <nav className="nv-panel nv-map" ref={panel} role="dialog" aria-modal="true" aria-label="Site map">
+            <nav
+                className="nv-panel nv-map"
+                ref={panel}
+                role="dialog"
+                aria-modal="true"
+                aria-label="Site map"
+                onTouchStart={(e) => {
+                    const t = e.touches[0];
+                    swipe.current = { x: t.clientX, y: t.clientY };
+                }}
+                onTouchEnd={(e) => {
+                    const start = swipe.current;
+                    swipe.current = null;
+                    if (!start) return;
+                    const t = e.changedTouches[0];
+                    const dx = t.clientX - start.x;
+                    const dy = t.clientY - start.y;
+                    if (dx < -60 && Math.abs(dx) > Math.abs(dy) * 1.5) hide();
+                }}
+            >
                 <div className="nv-head">
                     <span>site map // {navItems.length} sections</span>
                     <button type="button" className="nv-x" data-snd="off" onClick={hide} aria-label="Close site map">
