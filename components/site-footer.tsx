@@ -2,6 +2,7 @@ import Link from "next/link";
 import { identity } from "@/lib/content";
 import { navItems } from "@/lib/nav";
 import { NateMark } from "@/components/cm/mark";
+import { ShortcutsButton } from "@/components/cm/keys";
 import { PixelIcon, type PixelName } from "@/components/cm/pixel-icons";
 
 // Footer-only copy, kept separate from identity.tagline (used by metadata, the OG image and the manifest).
@@ -78,6 +79,7 @@ export function SiteFooter() {
                 <div className="cm-foot-base">
                     <span className="cm-coord">© {new Date().getFullYear()} {identity.name} {identity.lastName}</span>
                     <span className="cm-coord">Built in Southern California / Camino design system</span>
+                    <ShortcutsButton />
                 </div>
             </div>
         </footer>

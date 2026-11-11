@@ -110,6 +110,14 @@ A terminal-style panel that drives the site. Open it with the backtick key (or C
 - On phones the panel follows `visualViewport`, so it sits above the keyboard; the input is 16px so iOS does not zoom, and quick-command chips replace the Tab key.
 - It does not touch the password gate: it only navigates to routes the gate already protects.
 
+## Keyboard shortcuts
+`components/cm/keys.tsx` (listener and sheet, mounted in `app/layout.tsx`) and `components/cm/keys.css`. The cheat sheet opens with `?`, from the footer button, or with `cm:keys`.
+- Existing keys stay as they were: `/` and Ctrl/Cmd+K search, the backtick and Ctrl/Cmd+J open the console, Esc closes a panel.
+- `g` then `0`–`6` goes to a section, using the numbers in the site map. `[` and `]` step through the sections in menu order and wrap.
+- Single digits are not used for navigation: the Flag Guesser picks answers with 1 to 6.
+- Nothing fires while a text field has focus, and nothing fires while another panel (`.nv-scrim`) is open.
+- Focus rings come from the global `.cm :focus-visible` rule in `app/camino/camino.components.css`. Add a new control with no `outline: none` and it shows one.
+
 ## Perf rules
 Animate only `transform` and `opacity` (plus clip-path for slabs). No animated `filter: blur`. One rAF loop, reads then
 writes, no layout thrash. Touch and narrow screens (`hover: none` or max-width 900px) get still grain and solid panels
