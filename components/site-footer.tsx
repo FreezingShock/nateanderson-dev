@@ -111,10 +111,10 @@ export function SiteFooter() {
                         <span>{SOCIALS.length} open</span>
                     </div>
                     <div className="sf-find-ticks" aria-hidden="true" />
-                    <h2 id="sf-find-title" className="sf-find-title">Find me</h2>
+                    <h2 id="sf-find-title" className="sf-find-title">contact me</h2>
                     <ul className="sf-chan">
                         {SOCIALS.map(({ label, href, icon, preferred }, i) => (
-                            <li key={label} className={preferred ? "sf-chan-main" : undefined}>
+                            <li key={label}>
                                 <a href={href} target={href.startsWith("mailto:") ? undefined : "_blank"} rel="noreferrer">
                                     <b>{String(i + 1).padStart(2, "0")}</b>
                                     <PixelIcon name={icon} className="sf-ico-lg" />
