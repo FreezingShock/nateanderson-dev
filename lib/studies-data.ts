@@ -311,7 +311,7 @@ export const pathway: PathwayStage[] = [
     {
         phaseId: "college",
         title: "Cal Poly SLO or Pomona",
-        blurb: "Construction Management at SLO is the focus. Construction Engineering & Management at Pomona is the fallback.",
+        blurb: "Construction Management at SLO and Construction Engineering & Management at Pomona are the goals. Community college is the fallback.",
         color: "var(--cm-good)",
         icon: "Compass",
         programs: [
@@ -335,7 +335,7 @@ export const pathway: PathwayStage[] = [
                 color: "var(--cm-good)",
                 icon: "Leaf",
                 description:
-                    "Cal Poly Pomona's B.S. in Construction Engineering and Management, 124 units. The fallback, and more engineering-heavy.",
+                    "Cal Poly Pomona's B.S. in Construction Engineering and Management, 124 units. A goal, and more engineering-heavy.",
                 institution: "Cal Poly Pomona",
                 timeline: "Fall 2027 – June 2031 (4 years)",
                 courses: [

@@ -36,7 +36,7 @@ export default function BlogPage() {
                 <PageHead
                     label="Writing / naOS"
                     title={["blog &", "essays"]}
-                    lead="Notes on systems design, game dev, philosophy, and whatever else is worth writing down. Long essays, research, poetry, technical writeups, and quick thoughts."
+                    lead="Notes on systems design, game dev, philosophy and whatever else is worth writing down. Essays, research, poetry, writeups and quick thoughts."
                 >
                     <div className="meta stats blog-stats">
                         {hasSections && (
@@ -220,10 +220,9 @@ export default function BlogPage() {
                                     </span>
                                 </h2>
                                 <p className="cm-body blog-empty-copy">
-                                    Posts appear here once they are finished.
-                                    Each one gets its own page, and the newest
-                                    shows up on the home page under Recent
-                                    posts.
+                                    Posts appear here once they are finished,
+                                    each on its own page. The newest shows up
+                                    under Recent posts on the home page.
                                 </p>
                             </div>
                             <div className="id-foot" aria-hidden="true">
@@ -250,9 +249,8 @@ export default function BlogPage() {
                             <span>Not on a schedule</span>
                         </div>
                         <p className="cm-body blog-note-copy">
-                            Posts are written when they are ready, not on a
-                            schedule. The newest ones show up on the home page
-                            under Recent posts.
+                            Posts go up when they are ready, not on a schedule.
+                            The newest appear under Recent posts on the home page.
                         </p>
                         <div className="p-foot" aria-hidden="true">
                             <span className="id-bars">

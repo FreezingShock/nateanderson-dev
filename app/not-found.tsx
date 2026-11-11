@@ -15,8 +15,8 @@ export default function NotFound() {
                     title={["signal", "lost."]}
                     lead={
                         <>
-                            This route is not on the network. It may have moved,
-                            or it may never have existed.
+                            This route is not on the network. It may have moved
+                            or never existed.
                         </>
                     }
                 />

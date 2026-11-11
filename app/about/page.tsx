@@ -46,7 +46,7 @@ export default function AboutPage() {
                             as="p"
                             auto
                             className="about-lead"
-                            text="Engineer, builder, runner, systems thinker. This page is the comprehensive story: how the parts connect."
+                            text="Student, builder, runner, systems thinker. This is the full story, and how the parts connect."
                         />
                     </div>
                     <aside className="about-id id" aria-label="Profile card">
@@ -94,7 +94,7 @@ export default function AboutPage() {
                 no="05"
                 label="Skills"
                 title="Skills & expertise."
-                blurb="Skills organized by domain. Each reflects hands-on experience and active development."
+                blurb="Grouped by domain. Each one reflects hands-on experience and active development."
             >
                 <SkillsExplorer />
             </Section>
@@ -104,7 +104,7 @@ export default function AboutPage() {
                 no="06"
                 label="The path"
                 title="Four years, three stages, one destination."
-                blurb="The full plan, with every milestone, lives on the timeline."
+                blurb="The full plan and every milestone are on the timeline."
             >
                 <PathGlance nowMs={nowMs} />
             </Section>
@@ -114,8 +114,8 @@ export default function AboutPage() {
                         <div className="cm-hbar"><span>What&apos;s next</span><span>Living document</span></div>
                         <div className="cm-body-pad">
                             <p className="cm-prose">
-                                This page is a living document. Each section will deepen as projects launch, the portfolio
-                                grows, and plans materialize. To see the work in progress:
+                                This page is a living document. Sections will deepen as projects launch and plans firm up.
+                                To see the work in progress:
                             </p>
                         </div>
                         <div className="cm-row cta" style={{ padding: "0 var(--cm-s5) var(--cm-s5)" }}>

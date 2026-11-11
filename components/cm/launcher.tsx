@@ -6,6 +6,8 @@ import { launcherLinks, navItems } from "@/lib/nav";
 import { allGames, GAME_STATUS } from "@/lib/creations-data";
 import { PIXEL_FOR, PixelIcon, type PixelName } from "@/components/cm/pixel-icons";
 import { navigateWithCurtain } from "@/lib/motion/navigate";
+import { useBackdropScrollLock } from "@/components/cm/scrim-lock";
+import { sfx } from "@/lib/sound/sounds";
 import { openConsole } from "@/components/cm/console-entry";
 import { fuzzyScore, type FuzzyHit } from "@/lib/search/fuzzy";
 import { readRecent, rememberRecent, type RecentSearch } from "@/lib/search/recent";
@@ -85,8 +87,10 @@ export function Launcher() {
     const [recent, setRecent] = useState<RecentSearch>({ queries: [], places: [] });
     const [cmds, setCmds] = useState<CmdIndex[] | null>(consoleCommands);
     const input = useRef<HTMLInputElement>(null);
+    const scrim = useRef<HTMLDivElement>(null);
     const returnTo = useRef<HTMLElement | null>(null);
     const loadingCmds = useRef(false);
+    useBackdropScrollLock(scrim, open);
 
     const term = q.trim().toLowerCase();
 
@@ -216,6 +220,24 @@ export function Launcher() {
         if (open) input.current?.focus();
     }, [open]);
 
+    // Follow the visible area on phones: when the keyboard comes up, the search shrinks to the space left above it.
+    useEffect(() => {
+        const vv = window.visualViewport;
+        const el = scrim.current;
+        if (!open || !vv || !el) return;
+        const fit = () => {
+            el.style.setProperty("--nv-h", `${Math.round(vv.height)}px`);
+            el.style.setProperty("--nv-top", `${Math.round(vv.offsetTop)}px`);
+        };
+        fit();
+        vv.addEventListener("resize", fit);
+        vv.addEventListener("scroll", fit);
+        return () => {
+            vv.removeEventListener("resize", fit);
+            vv.removeEventListener("scroll", fit);
+        };
+    }, [open]);
+
     // Lock page scroll behind the panel.
     useEffect(() => {
         if (!open) return;
@@ -224,6 +246,14 @@ export function Launcher() {
         return () => {
             document.documentElement.style.overflow = prev;
         };
+    }, [open]);
+
+    // The panel's own open and close scans (the buttons and keys that open it are silent).
+    const sounded = useRef(false);
+    useEffect(() => {
+        if (open === sounded.current) return;
+        sounded.current = open;
+        sfx(open ? "open" : "close");
     }, [open]);
 
     // Keep the highlighted row in view while arrowing through a long list.
@@ -263,6 +293,7 @@ export function Launcher() {
     return (
         <div
             className="nv-scrim"
+            ref={scrim}
             onMouseDown={(e) => {
                 if (e.target === e.currentTarget) hide();
             }}

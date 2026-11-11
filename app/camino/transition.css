@@ -1,0 +1,118 @@
+/* ==========================================================================
+   Page switch (naOS): two shutter panels that meet on a seam. components/cm/motion-root.tsx sets:
+     html[data-xition="out"]   the panels close on the seam
+     html[data-xition="hold"]  the seam holds, the destination name and blurb show, the route loads
+     html[data-xin]            the panels open to the edges and the new page arrives
+     html[data-dir]            fwd | back split left and right; down | up split top and bottom
+   Timings match SHUTTER in motion-root.tsx. Only transform and opacity animate.
+   ========================================================================== */
+
+/* Loading bar in the top edge while the route loads (the scroll gauge itself lives in motion.css). */
+html[data-xition="out"] .cm-pgauge, html[data-xition="hold"] .cm-pgauge {
+  transform: none; width: 38%; animation: cm-load var(--cm-d-slow) var(--cm-ease-cut) infinite;
+}
+@keyframes cm-load { from { translate: -100% 0; } to { translate: 270% 0; } }
+
+/* The page under the panels does not move. It is hidden while the route loads, and each page's own entrance runs. */
+html[data-xition="hold"] .cm-main, html[data-xition="hold"] .sf-foot { opacity: 0; }
+
+/* ---- The container: hidden when idle, so the panels only exist during a switch ---------------------------------- */
+.cm-wipe {
+  --acc: #2fd8e8;
+  --x-cover: .22s;   /* the panels close */
+  --x-name: .18s;    /* the readout, name and blurb settle */
+  --x-exit: .32s;    /* the panels open */
+  position: fixed; inset: 0; z-index: var(--cm-z-curtain); pointer-events: none; visibility: hidden;
+}
+html[data-xition] .cm-wipe, html[data-xin] .cm-wipe { visibility: visible; }
+.cm-wipe > * { position: absolute; }
+
+/* The two panels. Closed, they meet on the seam; open, each sits off its outer edge. */
+.cm-shut { display: block; z-index: 1; background: var(--cm-ctos-block); }
+.cm-shut.a { left: 0; top: 0; }
+.cm-shut.b { right: 0; bottom: 0; }
+.cm-shut.a::after, .cm-shut.b::after { content: ""; position: absolute; background: var(--acc); }
+html[data-dir="fwd"] .cm-shut, html[data-dir="back"] .cm-shut { width: 50%; height: 100%; }
+html[data-dir="down"] .cm-shut, html[data-dir="up"] .cm-shut { width: 100%; height: 50%; }
+html[data-dir="fwd"] .cm-shut.a::after, html[data-dir="back"] .cm-shut.a::after { right: 0; top: 0; bottom: 0; width: 3px; }
+html[data-dir="fwd"] .cm-shut.b::after, html[data-dir="back"] .cm-shut.b::after { left: 0; top: 0; bottom: 0; width: 3px; }
+html[data-dir="down"] .cm-shut.a::after, html[data-dir="up"] .cm-shut.a::after { left: 0; right: 0; bottom: 0; height: 3px; }
+html[data-dir="down"] .cm-shut.b::after, html[data-dir="up"] .cm-shut.b::after { left: 0; right: 0; top: 0; height: 3px; }
+
+/* The name sits on the seam, with the readout above it and the blurb below. */
+.cm-wipe::after {
+  content: attr(data-to); position: absolute; z-index: 2; left: var(--cm-gutter); right: var(--cm-gutter); bottom: 18vh;
+  font: 700 clamp(44px, 13vw, 150px)/.86 var(--cm-display); letter-spacing: -.055em; text-transform: lowercase;
+  color: var(--cm-ctos-ink); padding: .24em .16em .2em .06em; overflow-wrap: anywhere;
+  opacity: 0; transform: translate3d(0, 28px, 0);
+}
+.cm-wipe .k {
+  z-index: 2; left: var(--cm-gutter); top: max(14vh, 84px); font: 600 var(--cm-ctos-t-small)/1 var(--cm-mono);
+  letter-spacing: .12em; text-transform: uppercase; color: var(--cm-ctos-ink); white-space: nowrap;
+  opacity: 0; transform: translate3d(0, 6px, 0);
+}
+.cm-wipe .k::before {
+  content: ""; display: inline-block; width: .7em; height: .7em; margin-right: .7em; background: var(--acc);
+  vertical-align: -.05em;
+}
+.cm-wipe .k::after { content: "_"; margin-left: .15em; }
+.cm-wipe .bl {
+  z-index: 2; left: var(--cm-gutter); right: var(--cm-gutter); bottom: 9vh; max-width: 40ch; opacity: 0;
+  transform: translate3d(0, 8px, 0); font: 500 var(--cm-ctos-t-body)/1.45 var(--cm-display); color: var(--cm-ctos-ink);
+}
+
+/* ---- Close: the panels come in from the outer edges, then the text settles on the seam --------------------------- */
+html[data-dir="fwd"][data-xition="out"] .cm-shut.a, html[data-dir="back"][data-xition="out"] .cm-shut.a {
+  animation: x-sh-a-h-in var(--x-cover) var(--cm-ease-cut) forwards;
+}
+html[data-dir="fwd"][data-xition="out"] .cm-shut.b, html[data-dir="back"][data-xition="out"] .cm-shut.b {
+  animation: x-sh-b-h-in var(--x-cover) var(--cm-ease-cut) forwards;
+}
+html[data-dir="down"][data-xition="out"] .cm-shut.a, html[data-dir="up"][data-xition="out"] .cm-shut.a {
+  animation: x-sh-a-v-in var(--x-cover) var(--cm-ease-cut) forwards;
+}
+html[data-dir="down"][data-xition="out"] .cm-shut.b, html[data-dir="up"][data-xition="out"] .cm-shut.b {
+  animation: x-sh-b-v-in var(--x-cover) var(--cm-ease-cut) forwards;
+}
+html[data-xition="out"] .cm-wipe .k { animation: x-rise var(--x-name) var(--cm-ease-out) calc(var(--x-cover) * .5) forwards; }
+html[data-xition="out"] .cm-wipe::after, html[data-xition="hold"] .cm-wipe::after {
+  animation: x-rise var(--x-name) var(--cm-ease-out) calc(var(--x-cover) * .6) forwards;
+}
+html[data-xition="out"] .cm-wipe .bl, html[data-xition="hold"] .cm-wipe .bl {
+  animation: x-rise var(--x-name) var(--cm-ease-out) calc(var(--x-cover) * .8) forwards;
+}
+html[data-xition="out"] .cm-wipe .k::after, html[data-xition="hold"] .cm-wipe .k::after { animation: nx-blink .5s steps(1) infinite; }
+/* Hold: the text stays where the close left it. */
+html[data-xition="hold"] .cm-wipe .k { opacity: 1; transform: none; }
+html[data-xition="hold"] .cm-wipe::after { opacity: 1; transform: none; }
+html[data-xition="hold"] .cm-wipe .bl { opacity: 1; transform: none; }
+
+/* ---- Open: the panels leave through their outer edges, the text fades ----------------------------------------- */
+html[data-dir="fwd"][data-xin] .cm-shut.a, html[data-dir="back"][data-xin] .cm-shut.a {
+  animation: x-sh-a-h-out var(--x-exit) var(--cm-ease-cut) .04s both;
+}
+html[data-dir="fwd"][data-xin] .cm-shut.b, html[data-dir="back"][data-xin] .cm-shut.b {
+  animation: x-sh-b-h-out var(--x-exit) var(--cm-ease-cut) .04s both;
+}
+html[data-dir="down"][data-xin] .cm-shut.a, html[data-dir="up"][data-xin] .cm-shut.a {
+  animation: x-sh-a-v-out var(--x-exit) var(--cm-ease-cut) .04s both;
+}
+html[data-dir="down"][data-xin] .cm-shut.b, html[data-dir="up"][data-xin] .cm-shut.b {
+  animation: x-sh-b-v-out var(--x-exit) var(--cm-ease-cut) .04s both;
+}
+html[data-xin] .cm-wipe .k, html[data-xin] .cm-wipe::after, html[data-xin] .cm-wipe .bl {
+  animation: x-fade-out calc(var(--x-exit) * .5) linear forwards;
+}
+
+/* ---- Keyframes ---------------------------------------------------------------------------------------------------- */
+@keyframes x-rise { from { opacity: 0; transform: translate3d(0, 24px, 0); } to { opacity: 1; transform: none; } }
+@keyframes x-fade-out { to { opacity: 0; } }
+@keyframes x-sh-a-h-in { from { transform: translate3d(-100%, 0, 0); } to { transform: none; } }
+@keyframes x-sh-b-h-in { from { transform: translate3d(100%, 0, 0); } to { transform: none; } }
+@keyframes x-sh-a-h-out { from { transform: none; } to { transform: translate3d(-100%, 0, 0); } }
+@keyframes x-sh-b-h-out { from { transform: none; } to { transform: translate3d(100%, 0, 0); } }
+@keyframes x-sh-a-v-in { from { transform: translate3d(0, -100%, 0); } to { transform: none; } }
+@keyframes x-sh-b-v-in { from { transform: translate3d(0, 100%, 0); } to { transform: none; } }
+@keyframes x-sh-a-v-out { from { transform: none; } to { transform: translate3d(0, -100%, 0); } }
+@keyframes x-sh-b-v-out { from { transform: none; } to { transform: translate3d(0, 100%, 0); } }
+@keyframes nx-blink { 50% { opacity: 0; } }

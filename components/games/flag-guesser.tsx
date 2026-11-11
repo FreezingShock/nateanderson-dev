@@ -26,6 +26,7 @@ import {
     type Unit,
 } from "@/components/games/guess-kit";
 import { cn } from "@/lib/utils";
+import { sfx } from "@/lib/sound/sounds";
 import {
     ARROW_EMOJI,
     MAX_GUESSES,
@@ -281,6 +282,7 @@ export function FlagGuesser() {
     const onPick = (target: Country) => {
         if (!answer || status !== "playing") return;
         const g = makeGuess(target, answer);
+        sfx(g.pct === 100 ? "granted" : "deny");
         const next = [...guesses, g];
         setGuesses(next);
         setFreshIndex(next.length - 1);

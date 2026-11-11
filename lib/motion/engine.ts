@@ -13,7 +13,7 @@
 
 const STEP = 70; // ms between siblings in a reveal wave
 const MAX_WAVE = 7; // cap so long lists don't trickle forever
-const REVEAL_MS = 650; // matches --cm-d-reveal plus margin; after this the element drops its reveal styles
+const REVEAL_MS = 740; // --cm-d-reveal is .7s; drop the reveal transition only after it has finished, or the last few px snap
 // Scroll-linked text lines (fraction of the viewport height, measured from the top edge):
 const READ_LINE = 0.8; // above this line text is fully resolved: typed and unscrambled, never half-finished
 const SCR_ENTER = 0.92; // scrambled text starts decoding here (just inside the bottom edge)
@@ -48,6 +48,14 @@ const clamp01 = (v: number) => (v < 0 ? 0 : v > 1 ? 1 : v);
  * makes React report a hydration mismatch, so the engine only touches nodes React already owns.
  */
 const hydrated = (el: Element) => Object.keys(el).some((k) => k.startsWith("__reactFiber$"));
+
+/** Text the engine wrote itself. It is no longer React's text, so checks must not read it as server HTML. */
+const ours = new WeakSet<Node>();
+/** Replace an element's text. Only ever called on nodes that are hydrated (see `register`, `autoRx`, `onHoverScr`). */
+function setText(el: HTMLElement, text: string) {
+    el.textContent = text;
+    if (el.firstChild) ours.add(el.firstChild);
+}
 
 export const prefersReducedMotion = () =>
     typeof matchMedia === "function" && matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -109,7 +117,7 @@ function wait(el: Element) {
     if (!waitTimer) waitTimer = window.setInterval(retryWaiting, 100);
 }
 function retryWaiting() {
-    waiting.forEach((el) => {
+    Array.from(waiting).forEach((el) => {
         if (!el.isConnected) {
             waiting.delete(el);
             return;
@@ -271,7 +279,7 @@ function endRun(el: HTMLElement, write = true) {
     cancelAnimationFrame(run.raf);
     window.clearTimeout(run.timer);
     running.delete(el);
-    if (write && el.textContent !== run.final) el.textContent = run.final;
+    if (write && el.textContent !== run.final) setText(el, run.final);
 }
 
 /** Write the real text into every running scramble right now. */
@@ -283,7 +291,7 @@ function scramble(el: HTMLElement, ms?: number) {
     const final = finalOf(el);
     endRun(el, false);
     if (prefersReducedMotion() || !final.trim()) {
-        el.textContent = final;
+        setText(el, final);
         return;
     }
     const chars = Array.from(final);
@@ -308,7 +316,7 @@ function scramble(el: HTMLElement, ms?: number) {
                 const c = chars[i];
                 out += c === " " || lock[i] <= p ? c : GLYPHS[(Math.random() * GLYPHS.length) | 0];
             }
-            el.textContent = out;
+            setText(el, out);
         }
         run.raf = requestAnimationFrame(tick);
     };
@@ -351,26 +359,38 @@ function autoRx(root: ParentNode) {
             wait(w);
             continue;
         }
-        w.setAttribute("data-rx-done", "");
+        // Plan every write first. Children of a hydrated wrapper can still be server HTML (a Suspense boundary inside the
+        // section streams in later), so the wrapper is tagged only once each planned node is React's too. Tagging a
+        // half-hydrated subtree was the source of "data-rx-scr on <b>" mismatches. Retried until everything is ready.
+        const tags: [Element, string][] = [];
         for (const c of Array.from(w.children)) {
             if (c.matches(".cm-sec-head")) continue; // heading, label and blurb animate themselves
             if (c.matches(GROUPS)) {
+                const two = c.matches(".pf, .cm-split");
                 Array.from(c.children).forEach((k, i) => {
-                    const two = c.matches(".pf, .cm-split");
-                    tag(k, two ? (k.matches(".pf-id") ? "" : i % 2 ? "slide-r" : "slide") : "");
+                    tags.push([k, two ? (k.matches(".pf-id") ? "" : i % 2 ? "slide-r" : "slide") : ""]);
                 });
-            } else tag(c, "");
+            } else tags.push([c, ""]);
         }
-        w.querySelectorAll(ROWS).forEach((r) => tag(r, "row"));
-        w.querySelectorAll(TEXTS).forEach((t) => {
-            if (t.children.length === 0 && t.textContent?.trim() && !t.hasAttribute("data-rx-scr") && !t.closest("[data-mx-scr]")) t.setAttribute("data-rx-scr", "");
-        });
+        w.querySelectorAll(ROWS).forEach((r) => tags.push([r, "row"]));
+        const texts = Array.from(w.querySelectorAll<HTMLElement>(TEXTS)).filter(
+            (t) => t.children.length === 0 && t.textContent?.trim() && !t.hasAttribute("data-rx-scr") && !t.closest("[data-mx-scr]"),
+        );
+        if (![...tags.map(([e]) => e), ...texts].every((e) => hydrated(e))) {
+            wait(w);
+            continue;
+        }
+        w.setAttribute("data-rx-done", "");
+        for (const [el, variant] of tags) tag(el, variant);
+        texts.forEach((t) => t.setAttribute("data-rx-scr", ""));
     }
 }
 
 interface RxItem {
     el: HTMLElement;
     scr: boolean;
+    inh: boolean; // also mirrors its progress to an inherited --pi for the CSS that styles its descendants
+    pool: string[]; // the non-space characters a scramble draws its noise from (built once, not per frame)
     off: number;
     final: string;
     chars: string[];
@@ -393,6 +413,8 @@ function registerRx(el: HTMLElement) {
     rxs.set(el, {
         el,
         scr,
+        inh: !scr && (el.hasAttribute("data-rx-inh") || el.getAttribute("data-rx") === "slab"),
+        pool: chars.filter((c) => c !== " "),
         off: (sib % 4) * 34,
         final,
         chars,
@@ -413,7 +435,7 @@ function registerRx(el: HTMLElement) {
 function renderScr(it: RxItem, p: number, now: number) {
     if (p >= 1) {
         if (!it.done) {
-            it.el.textContent = it.final;
+            setText(it.el, it.final);
             it.done = true;
         }
         return;
@@ -421,19 +443,25 @@ function renderScr(it: RxItem, p: number, now: number) {
     if (now - it.w < 40 && it.done === false && it.p >= 0) return;
     it.w = now;
     it.done = false;
-    const pool = it.chars.filter((c) => c !== " ");
+    const pool = it.pool;
     let out = "";
     for (let i = 0; i < it.chars.length; i++) {
         const c = it.chars[i];
         if (c === " " || it.lock[i] <= p) out += c;
         else out += Math.random() < 0.72 && pool.length ? pool[(Math.random() * pool.length) | 0] : GLYPHS[(Math.random() * GLYPHS.length) | 0];
     }
-    it.el.textContent = out;
+    setText(it.el, out);
 }
 
 function setRx(it: RxItem, p: number, now: number) {
     if (it.scr) renderScr(it, p, now);
-    else it.el.style.setProperty("--p", (p * p * (3 - 2 * p)).toFixed(3)); // smoothstep: soft start and landing
+    else {
+        // smoothstep: soft start and landing. --p is not inherited (see ctos.css), so only the few elements whose
+        // children read it (slabs, game frames, timeline phases) also get the inherited --pi.
+        const v = (p * p * (3 - 2 * p)).toFixed(3);
+        it.el.style.setProperty("--p", v);
+        if (it.inh) it.el.style.setProperty("--pi", v);
+    }
     it.p = p;
 }
 
@@ -446,6 +474,7 @@ function onHoverScr(ev: PointerEvent) {
     const from = ev.relatedTarget;
     if (from instanceof Node && el.contains(from)) return;
     const t = el.querySelector<HTMLElement>("[data-scr-text]") ?? el;
+    if (!hydrated(t)) return; // pointer can arrive while the page is still hydrating
     scramble(t, 380);
 }
 

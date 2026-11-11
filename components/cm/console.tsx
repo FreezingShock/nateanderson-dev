@@ -103,6 +103,8 @@ interface Ctx {
     soundOn: boolean;
     history: string[];
     go: (href: string, label: string) => Line[];
+    /** Closes the console, then runs `fn` once the panel has gone. For commands that open another panel or scroll. */
+    leave: (msg: string, fn: () => void) => Line[];
 }
 
 interface Cmd {
@@ -263,6 +265,34 @@ const COMMANDS: Cmd[] = [
         },
     },
     {
+        name: "menu",
+        usage: "menu",
+        desc: "open the site map",
+        run: (_a, ctx) => ctx.leave("opening the site map…", () => window.dispatchEvent(new Event("cm:menu"))),
+    },
+    {
+        name: "search",
+        usage: "search [words]",
+        desc: "open search, with your words filled in",
+        long: ["search flag · search nexus. Leave the words out to open search empty."],
+        run: (args, ctx) => {
+            const q = args.join(" ");
+            return ctx.leave(q ? `searching for “${q}”…` : "opening search…", () =>
+                window.dispatchEvent(new CustomEvent("cm:launcher", { detail: { q } })),
+            );
+        },
+    },
+    {
+        name: "top",
+        usage: "top",
+        desc: "back to the top of the page",
+        run: (_a, ctx) =>
+            ctx.leave("up we go.", () => {
+                const still = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+                window.scrollTo({ top: 0, behavior: still ? "auto" : "smooth" });
+            }),
+    },
+    {
         name: "clear",
         usage: "clear",
         desc: "wipe the screen (ctrl+l)",
@@ -385,6 +415,18 @@ export function NaosConsole({ onClose, prefill }: { onClose: () => void; prefill
         [onClose],
     );
 
+    const leave = useCallback(
+        (msg: string, fn: () => void): Line[] => {
+            const id = window.setTimeout(() => {
+                onClose();
+                fn();
+            }, 260);
+            timers.current.push(id);
+            return [t(msg)];
+        },
+        [onClose],
+    );
+
     const run = useCallback(
         (raw: string) => {
             const line = raw.trim();
@@ -420,11 +462,12 @@ export function NaosConsole({ onClose, prefill }: { onClose: () => void; prefill
                     soundOn: snd.on,
                     history: sessionHistory,
                     go,
+                    leave,
                 });
             }
             setEntries((e) => [...e.slice(-40), { id: nextId++, cmd: line, lines }]);
         },
-        [close, go, path, snd.on, targets],
+        [close, go, leave, path, snd.on, targets],
     );
 
     const submit = () => {

@@ -115,7 +115,7 @@
 .tl-page .cm-head { position: relative; z-index: 1; }
 
 .tl-page .tl-phase .cm-rail > li::before {
-    transform: rotate(45deg) scale(calc(round(var(--p, 1) * 4, 1) / 4));
+    transform: rotate(45deg) scale(calc(round(var(--pi, 1) * 4, 1) / 4));
     transition: none;
 }
 

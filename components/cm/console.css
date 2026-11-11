@@ -56,6 +56,9 @@
     .cn-chips { padding: 6px 14px; }
     .cn-chip { min-height: 36px; }
 }
+@media (pointer: coarse) {
+    .cn-chip { min-height: 44px; }
+}
 @media (prefers-reduced-motion: reduce) {
     .cn-l { animation: none; clip-path: none; }
     .cn-go, .cn-chip { transition: none; }

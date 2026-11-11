@@ -269,36 +269,129 @@
 }
 .ctos .g-read .p-foot { margin-top: auto; }
 
-/* Hub cards: a square art plate above the title, in the card rotation from ctos.css. */
-.ctos .g-card .g-cardart {
+/* Hub cards: each game gets a preview screen above its title. The screen is dark on every card, so the
+   light and dark card rotation from ctos.css still reads, but the previews stay one system. */
+.ctos .g-card .g-screen {
     position: relative;
+    isolation: isolate;
     display: grid;
     place-items: center;
-    height: 76px;
+    height: 150px;
     margin-bottom: 4px;
-    border: 1px dashed var(--cm-hair-hi);
-    background-color: #0d0d0d;
-    background-image: radial-gradient(circle, rgba(244, 244, 242, .14) 0 28%, transparent 32%);
+    border: 1px solid #2a2a2a;
+    background-color: #080808;
+    background-image: radial-gradient(circle, rgba(244, 244, 242, .16) 0 26%, transparent 30%);
     background-size: 6px 6px;
     overflow: hidden;
 }
-.ctos .g-card .g-cardart::after {
+.ctos .g-card .g-screen::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    background: repeating-linear-gradient(0deg, rgba(0, 0, 0, .34) 0 1px, transparent 1px 3px);
+    pointer-events: none;
+}
+.ctos .g-card .g-screen::after {
     content: "";
     position: absolute;
     left: 0;
     right: 0;
     bottom: 0;
-    height: 4px;
+    height: 3px;
+    z-index: 1;
     background: var(--cm-cyan);
 }
-.ctos .g-card .g-cardart svg { width: 36px; height: 36px; color: var(--cm-cyan); }
-.ctos .g-card:nth-child(3n+1) .g-cardart { background-color: #e3e3df; border-color: #c9c9c3; background-image: repeating-linear-gradient(135deg, rgba(0, 0, 0, .08) 0 1px, transparent 1px 8px); }
-.ctos .g-card:nth-child(3n+1) .g-cardart svg { color: #0a7f89; }
-.ctos .g-card:nth-child(3n+1) .g-cardart::after { background: #1a1a1a; }
-.ctos .g-card:nth-child(3n) .g-cardart { background-image: linear-gradient(33deg, transparent 49.6%, rgba(194, 59, 208, .7) 50%, transparent 50.4%); }
+.ctos .g-card .g-screen-cap {
+    position: absolute;
+    top: 8px;
+    left: 10px;
+    z-index: 2;
+    font: 700 var(--cm-ctos-t-micro)/1 var(--cm-mono);
+    letter-spacing: .14em;
+    text-transform: uppercase;
+    color: var(--cm-cyan);
+}
+.ctos .g-card .g-screen svg {
+    position: relative;
+    z-index: 2;
+    width: 56px;
+    height: 56px;
+    color: var(--cm-cyan);
+    transition: transform var(--cm-d-base) var(--cm-ease);
+}
+.ctos .g-card:hover .g-screen svg { transform: translateY(-3px) scale(1.04); }
 .ctos .g-grid { grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); }
+/* Every hub card uses the same dark ground and cyan top edge. This overrides the 3-up light/dark rotation from ctos.css. */
+.ctos .cm-grid.g-grid > .cm-card.g-card:nth-child(n),
+.ctos .cm-grid.g-grid > .cm-card.g-card:nth-child(n):hover {
+    background: linear-gradient(180deg, rgba(47, 216, 232, .1), rgba(47, 216, 232, 0) 55%), var(--cm-ctos-panel);
+    border: 1px solid var(--cm-hair-hi);
+    border-top: 3px solid var(--cm-cyan);
+    color: #f4f4f2;
+}
+.ctos .cm-grid.g-grid > .cm-card.g-card:nth-child(n) b { color: #f4f4f2; }
+.ctos .cm-grid.g-grid > .cm-card.g-card:nth-child(n) p { color: var(--cm-mute); }
+.ctos .cm-grid.g-grid > .cm-card.g-card:nth-child(n) .st { color: var(--cm-cyan); }
+.ctos .cm-grid.g-grid > .cm-card.g-card .cm-pill { color: #d6d6d2; border-color: var(--cm-hair-hi); background: #161616; }
+.ctos .cm-grid.g-grid > .cm-card.g-card p { background: none; }
 .ctos .g-pills { list-style: none; margin: 2px 0 0; padding: 0; }
-.ctos .g-card:hover .g-cardart svg { transform: translateY(-2px); transition: transform var(--cm-d-base) var(--cm-ease); }
+
+/* Card tags: the format (Daily or Unlimited) sits beside the status tag. */
+.ctos .g-tags { display: inline-flex; flex-wrap: wrap; gap: 6px; justify-content: flex-end; }
+
+/* Coming frames: an honest status for a section with no playable game yet. No cards, no filler. */
+.ctos .g-soon {
+    margin: 0;
+    font: 400 var(--cm-ctos-t-ui)/1.55 var(--cm-display);
+    color: var(--cm-mute);
+}
+
+/* Mode nav: a themed strip in the content column. Each mode is a cell with its name and playable count. */
+.ctos .g-hub-nav {
+    display: flex;
+    flex-wrap: wrap;
+    margin: 0 0 32px;
+    padding: 0;
+    list-style: none;
+    border: 1px solid var(--cm-hair-hi);
+    border-left: 3px solid var(--cm-cyan);
+    background: #0d0d0d;
+}
+.ctos .g-hub-nav a {
+    flex: 1 1 0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    min-width: 180px;
+    padding: 13px 16px;
+    border-right: 1px solid var(--cm-hair-hi);
+    color: #f4f4f2;
+    font: 700 var(--cm-ctos-t-micro)/1 var(--cm-mono);
+    letter-spacing: .14em;
+    text-transform: uppercase;
+    text-decoration: none;
+    transition: background-color var(--cm-d-base) var(--cm-ease), color var(--cm-d-base) var(--cm-ease);
+}
+.ctos .g-hub-nav a:last-child { border-right: 0; }
+.ctos .g-hub-nav em { font-style: normal; }
+.ctos .g-hub-nav a span { color: var(--cm-cyan); }
+.ctos .g-hub-nav a:hover,
+.ctos .g-hub-nav a:focus-visible { background: var(--cm-cyan); color: #050607; outline: none; }
+.ctos .g-hub-nav a:hover span,
+.ctos .g-hub-nav a:focus-visible span { color: #050607; }
+@media (max-width: 640px) {
+    .ctos .g-hub-nav a { flex-basis: 100%; min-width: 0; border-right: 0; border-bottom: 1px solid var(--cm-hair-hi); }
+    .ctos .g-hub-nav a:last-child { border-bottom: 0; }
+}
+
+@media (max-width: 760px) {
+    .ctos .g-card .g-screen { height: 124px; }
+}
+@media (prefers-reduced-motion: reduce) {
+    .ctos .g-card:hover .g-screen svg { transition: none; transform: none; }
+}
 
 /* Flag tiles: the cover is dither on near-black, not a flat grey block. */
 .ctos .fg-cover {
@@ -308,13 +401,6 @@
     box-shadow: inset 0 0 0 1px var(--cm-hair-hi);
 }
 .ctos .fg-cover svg { color: var(--cm-cyan); opacity: .75; }
-
-@media (max-width: 760px) {
-    .ctos .g-card .g-cardart { height: 64px; }
-}
-@media (prefers-reduced-motion: reduce) {
-    .ctos .g-card:hover .g-cardart svg { transition: none; transform: none; }
-}
 
 /* ==========================================================================
    Games load-in and backdrop. Scoped to .ng-page (the Games hub and both guessers).
@@ -338,9 +424,9 @@
 /* The layout wrapper stays still: the frame and the readout carry the motion, so nothing moves twice. */
 .ctos .g-layout[data-rx] { opacity: 1; transform: none; }
 
-/* Frame: the white header bar wipes across as the frame arrives (scroll-linked through --p). */
-.ctos .g-frame .g-top { clip-path: inset(0 calc((1 - var(--p)) * 100%) 0 0); }
-.ctos .g-frame .g-body { opacity: calc(.35 + var(--p) * .65); }
+/* Frame: the white header bar wipes across as the frame arrives (scroll-linked through --pi, see data-rx-inh). */
+.ctos .g-frame .g-top { clip-path: inset(0 calc((1 - var(--pi)) * 100%) 0 0); }
+.ctos .g-frame .g-body { opacity: calc(.35 + var(--pi) * .65); }
 
 /* Hub cards: alternate the entry side so a grid of cards reads as it arrives, not as one rising block. */
 .ctos .g-grid > .g-card[data-rx] { --rx-x: 0px; --rx-y: 18px; }
@@ -361,7 +447,48 @@
 .ng-page .p-foot > span:nth-child(n+2) { color: #7d8b93; }
 
 /* ==========================================================================
-   Phones (760px and under). Touch targets reach 44px, the filter chips scroll sideways on one line each, the readout
+   Stock leftovers in the game UI (2026-11-11). The guessers still carry system-sans bold buttons and headings, Tailwind
+   slate frames and a native-looking guess field. They take the naOS voice here: mono caps controls, the display face
+   for result headings, the panel ground, and the field recipe. The per-game tinted action buttons keep their inline
+   colours. Scoped to .ng-page; the rules are unlayered so they beat the utility classes the components use.
+   ========================================================================== */
+
+/* Action buttons (Share, Next country, Play unlimited): mono caps, like every other naOS control. */
+.ng-page button[class*="font-sans"] {
+    font-family: var(--cm-mono);
+    font-size: var(--cm-ctos-t-ui);
+    font-weight: 600;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    line-height: 1.2;
+}
+/* Result headings and callouts: the display face the page titles use. */
+.ng-page [class*="font-sans"]:not(button) {
+    font-family: var(--cm-display);
+    letter-spacing: -.02em;
+}
+/* Stock Tailwind slate frames (the flag and outline tiles, the hidden-tile icon) take the naOS panel ground and muted ink. */
+.ng-page [class*="bg-slate-950"] { background: var(--cm-ctos-panel); }
+.ng-page [class*="text-slate-600"] { color: var(--cm-dim); }
+/* The guess field is a naOS field: no native chrome, hairline edge, mono ink, cyan on focus. It stays 16px (set by
+   text-base in the component) so iOS does not zoom when it takes focus. */
+.ng-page input[role="combobox"] {
+    -webkit-appearance: none;
+    appearance: none;
+    font-family: var(--cm-mono);
+    font-size: 16px;
+    background: var(--cm-ctos-panel);
+    border: 1px solid var(--cm-ctos-edge);
+    border-radius: var(--cm-radius);
+    color: var(--cm-fg);
+    box-shadow: none;
+}
+.ng-page input[role="combobox"]::placeholder { color: var(--cm-ctos-meta); opacity: 1; }
+.ng-page input[role="combobox"]:focus { border-color: var(--cm-cyan); }
+.ng-page input[role="combobox"]:focus-visible { outline: 2px solid var(--cm-cyan); outline-offset: 3px; }
+
+/* ==========================================================================
+   Phones (760px and under). Touch targets reach 44px, the filter chips wrap onto lines instead of scrolling, the readout
    facts sit two to a row, and the frame and readout rise straight up (no sideways slide that starts off-screen).
    ========================================================================== */
 @media (max-width: 760px) {
@@ -378,25 +505,19 @@
     .ctos .g-frame[data-rx],
     .ctos .g-read[data-rx] { --rx-x: 0px; --rx-y: 18px; }
 
-    /* Filter panel: each row keeps its label above and its chips on one line that scrolls sideways. */
+    /* Filter panel: each row keeps its label above and its chips wrap onto as many lines as they need. Nothing scrolls out
+       of sight or fades behind an edge mask, so the last difficulty (Expert) is always whole and tappable. */
     .ctos .gk-filters { padding: 8px 10px; }
     .ctos .gk-row { gap: 6px; }
     .ctos .gk-row > .gk-label { flex: 0 0 100%; width: auto; }
     .ctos .gk-strip {
         flex: 1 1 100%;
         display: flex;
-        flex-wrap: nowrap;
+        flex-wrap: wrap;
         gap: 6px;
         min-width: 0;
-        overflow-x: auto;
-        overscroll-behavior-x: contain;
-        -webkit-overflow-scrolling: touch;
-        scrollbar-width: none;
         padding: 2px 2px 4px;
-        mask-image: linear-gradient(90deg, #000 85%, transparent);
-        -webkit-mask-image: linear-gradient(90deg, #000 85%, transparent);
     }
-    .ctos .gk-strip::-webkit-scrollbar { display: none; }
     .ctos .gk-strip > * { flex: 0 0 auto; }
 
     /* Readout facts: two to a row, no divider lines (the grid gap does the separating). */

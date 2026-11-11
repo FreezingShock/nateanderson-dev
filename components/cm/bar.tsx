@@ -69,7 +69,7 @@ export function Bar() {
                 </Link>
             </div>
             <div className="nv-tools">
-                <button type="button" className="nv-search" onClick={openLauncher} aria-label="Search the site">
+                <button type="button" className="nv-search" onClick={openLauncher} aria-label="Search the site" aria-haspopup="dialog">
                     <PixelIcon name="search" size={24} />
                     <span>search</span>
                     <kbd className="nv-key" aria-hidden="true">/</kbd>
@@ -109,6 +109,28 @@ export function Dock() {
         const t = window.setTimeout(() => setNext(null), 7000);
         return () => window.clearTimeout(t);
     }, [next]);
+
+    // While a text field has focus (on a phone, the keyboard is up), the dock slides away so it never sits over the keys.
+    // The CSS only applies it on touch screens; this just marks the document.
+    useEffect(() => {
+        const root = document.documentElement;
+        const field = (el: EventTarget | null) =>
+            el instanceof HTMLElement &&
+            el.matches(
+                "input:not([type=checkbox]):not([type=radio]):not([type=button]):not([type=submit]):not([type=range]):not([type=file]), textarea, select, [contenteditable='true']",
+            );
+        const onIn = (e: FocusEvent) => {
+            if (field(e.target)) root.setAttribute("data-typing", "");
+        };
+        const onOut = () => root.removeAttribute("data-typing");
+        document.addEventListener("focusin", onIn);
+        document.addEventListener("focusout", onOut);
+        return () => {
+            document.removeEventListener("focusin", onIn);
+            document.removeEventListener("focusout", onOut);
+            root.removeAttribute("data-typing");
+        };
+    }, []);
 
     const target = next ?? path;
     const idx = navItems.findIndex((n) => isActive(target, n.href));
@@ -152,7 +174,17 @@ export function Dock() {
                     href={n.href}
                     aria-current={isActive(path, n.href) ? "page" : undefined}
                     data-on={isActive(target, n.href) ? "" : undefined}
-                    onClick={() => setNext(isActive(path, n.href) ? null : n.href)}
+                    onClick={(e) => {
+                        // Tapping the tab you are already on returns to the top of the page, the way a native tab bar does.
+                        // A thumb can reach it from anywhere on a long page; deeper pages still go to their section.
+                        if (path === n.href) {
+                            e.preventDefault();
+                            const calm = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+                            window.scrollTo({ top: 0, behavior: calm ? "auto" : "smooth" });
+                            return;
+                        }
+                        setNext(isActive(path, n.href) ? null : n.href);
+                    }}
                 >
                     <PixelIcon name={PIXEL_FOR[n.href] ?? "home"} className="ic" />
                     <span>{n.label}</span>

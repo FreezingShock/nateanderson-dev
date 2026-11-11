@@ -5,14 +5,23 @@ import { getProjects, getRecentRenovations, type Project } from "@/lib/content";
 // sections paint while these resolve inside their <Suspense> boundary. Markup matches the cards that shipped inline.
 export async function FeaturedCards() {
     const [projects, renovations] = await Promise.all([getProjects(), getRecentRenovations()]);
-    const featured: Project[] = [...projects, ...renovations].slice(0, 3);
+    const offline = projects.offline || renovations.offline;
+    const featured: Project[] = [...projects.items, ...renovations.items].slice(0, 3);
 
     if (featured.length === 0) {
-        return (
+        // Two different states: a failed read says so, and an empty library reads as standby, not as a fault.
+        return offline ? (
+            <div className="cm-card" style={{ gridColumn: "1 / -1" }} role="status">
+                <span className="cm-state warn">Feed offline</span>
+                <b>Featured work did not load.</b>
+                <p>The project library is not responding right now. It retries on its own, and the full list is one click away.</p>
+                <Link className="st" href="/creations/projects">/creations/projects</Link>
+            </div>
+        ) : (
             <div className="cm-card" style={{ gridColumn: "1 / -1" }}>
-                <span className="cm-state">Syncing</span>
-                <b>Featured work loads from the project library.</b>
-                <p>If nothing appears, the library is offline for a moment. The full list is one click away.</p>
+                <span className="cm-state">Standby</span>
+                <b>Nothing featured yet.</b>
+                <p>Projects land here once they are added. The full list is one click away.</p>
                 <Link className="st" href="/creations/projects">/creations/projects</Link>
             </div>
         );
