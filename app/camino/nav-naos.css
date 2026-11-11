@@ -400,9 +400,11 @@ html[data-xition] .cm-dock { z-index: calc(var(--cm-z-curtain) + 1); }
     font: 700 var(--cm-ctos-t-tag)/1 var(--cm-mono); letter-spacing: .18em; text-transform: uppercase; color: var(--cm-mute);
 }
 .nv-group::after { content: ""; flex: 1; border-top: 1px dashed var(--cm-hair-hi); }
-.nv-item a {
-    display: grid; grid-template-columns: 34px minmax(0, 1fr) auto; align-items: center; gap: 12px;
+/* Results are links (pages, games, sections) or buttons (console commands, recent searches). Both look the same. */
+.nv-item a, .nv-item button {
+    display: grid; grid-template-columns: 34px minmax(0, 1fr) auto; align-items: center; gap: 12px; width: 100%;
     min-height: 52px; padding: 9px 16px; color: var(--cm-fg); text-decoration: none; outline: none;
+    background: transparent; border: 0; border-radius: 0; font: inherit; text-align: left; cursor: pointer;
     transition: background var(--cm-d-fast, .12s);
 }
 .nv-item .nv-ix { display: grid; place-items: center start; font: 700 var(--cm-ctos-t-small)/1 var(--cm-mono); letter-spacing: .06em; color: var(--cm-cyan); }
@@ -411,9 +413,9 @@ html[data-xition] .cm-dock { z-index: calc(var(--cm-z-curtain) + 1); }
 .nv-txt b mark { background: none; color: var(--cm-cyan); box-shadow: inset 0 -2px 0 currentColor; }
 .nv-txt small { font: 500 var(--cm-ctos-t-tag)/1.2 var(--cm-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--cm-mute); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .nv-grp { font: 600 var(--cm-ctos-t-tag)/1 var(--cm-mono); letter-spacing: .14em; text-transform: uppercase; color: var(--cm-dim); white-space: nowrap; }
-.nv-item a.on { background: var(--cm-cyan); color: var(--cm-cyan-ink); }
-.nv-item a.on .nv-ix, .nv-item a.on small, .nv-item a.on .nv-grp { color: var(--cm-cyan-deep); }
-.nv-item a.on .nv-txt b mark { color: var(--cm-cyan-ink); }
+.nv-item .on { background: var(--cm-cyan); color: var(--cm-cyan-ink); }
+.nv-item .on .nv-ix, .nv-item .on small, .nv-item .on .nv-grp { color: var(--cm-cyan-deep); }
+.nv-item .on .nv-txt b mark { color: var(--cm-cyan-ink); }
 .nv-empty { padding: 28px 16px; font: 500 var(--cm-ctos-t-body)/1.4 var(--cm-mono); color: var(--cm-mute); }
 
 /* Key hints: real key caps at a readable size. Touch screens have no keys, so the strip goes away there. */

@@ -74,7 +74,7 @@ export function Bar() {
                     <span>search</span>
                     <kbd className="nv-key" aria-hidden="true">/</kbd>
                 </button>
-                <button type="button" className="nv-term" onClick={openConsole} aria-label="Open the command console" aria-haspopup="dialog">
+                <button type="button" className="nv-term" onClick={() => openConsole()} aria-label="Open the command console" aria-haspopup="dialog">
                     <PixelIcon name="terminal" size={24} />
                     <span>console</span>
                     <kbd className="nv-key" aria-hidden="true">`</kbd>

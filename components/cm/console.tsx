@@ -311,6 +311,9 @@ const COMMANDS: Cmd[] = [
 ];
 
 const NAMES = COMMANDS.filter((c) => !c.hidden).map((c) => c.name);
+
+/** The visible commands, for the site search. Read from COMMANDS so new commands show up there on their own. */
+export const CONSOLE_INDEX: { name: string; usage: string; desc: string }[] = COMMANDS.filter((c) => !c.hidden).map(({ name, usage, desc }) => ({ name, usage, desc }));
 const ALIAS: Record<string, string> = { cd: "open", go: "open", goto: "open", quit: "exit", q: "exit", "?": "help", man: "help", cls: "clear", dir: "ls" };
 
 // Per-line typing times: each line is drawn left to right in steps, one after the other, capped so a long answer
@@ -335,11 +338,12 @@ let sessionHistory: string[] = [];
 const BOOT: Line[] = [t("naOS command console", "hi"), t("type help to see what it can do.", "dim")];
 const CHIPS = ["help", "ls", "whoami", "now", "status"];
 
-export function NaosConsole({ onClose }: { onClose: () => void }) {
+/** `prefill` puts a command in the input (the search uses this to open the console on a command). Nothing runs until Enter. */
+export function NaosConsole({ onClose, prefill }: { onClose: () => void; prefill?: string }) {
     const path = usePathname();
     const [snd] = useSoundPrefs();
     const [entries, setEntries] = useState<Entry[]>(() => [{ id: nextId++, lines: BOOT }]);
-    const [value, setValue] = useState("");
+    const [value, setValue] = useState(prefill ?? "");
     const [hint, setHint] = useState("");
     const input = useRef<HTMLInputElement>(null);
     const out = useRef<HTMLDivElement>(null);
