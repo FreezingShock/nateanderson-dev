@@ -1,5 +1,5 @@
 // Pacing sim for Node Farm. Run: node --experimental-strip-types scripts/nodefarm/sim.mjs [hours]
-// A greedy bot: taps 2 times a second for the first hour (then 0.3/s as a casual player), buys the best-value affordable
+// A greedy bot (no tapping in this game): buys the best-value affordable
 // button every 3 s, reboots when it roughly doubles income. Prints when each milestone lands (play time, no offline).
 import * as E from "../../lib/nodefarm/engine.ts";
 const hours = Number(process.argv[2] || 24 * 14);
@@ -10,8 +10,6 @@ const mats = ["mult", "copper", "silicon", "quartz", "aether"];
 let t = 0, nextBuy = 0;
 const dt = 0.5;
 while (t < hours * 3600) {
-    const tapsPerSec = t < 3600 ? 2 : 0.3;
-    for (let i = 0; i < tapsPerSec * dt; i++) E.tap(s);
     E.tick(s, dt);
     t += dt;
     if (t >= nextBuy) {

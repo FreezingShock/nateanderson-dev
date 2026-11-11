@@ -52,9 +52,6 @@ export const TUNE = {
     boostK: { cuReboot: 0.09, cuBytes: 0.02, siCu: 0.12, qzSi: 0.12, aeQz: 0.12 },
     boostPow: 0.38,
     unlockAt: { copper: 1, silicon: 150, quartz: 300, aether: 500 } as Record<string, number>, // copper: Reboots; the rest: amount of the stat below
-    tapBase: 1,
-    tapRate: 0.07, // a tap is worth this share of one second of production, plus tapBase
-    comboMax: 3,
     overclockMult: 6,
     overclockSecs: 20,
     intrusionEvery: [55, 110] as [number, number],
@@ -64,10 +61,12 @@ export const TUNE = {
     apPerAether: 60, // AP = floor(sqrt(aether / apPerAether))
     apBonus: 0.25,
     achBonus: 0.02,
+    tierBonus: 0.08, // extra global bonus for each fully completed goal tier
+    autoReserve: 10, // the Autoloader only buys when the balance is at least this many times the price
 };
 
 export interface PerkDef {
-    id: "tap" | "overclock" | "offline" | "start" | "power";
+    id: "scanner" | "auto" | "overclock" | "offline" | "start" | "power";
     name: string;
     blurb: string;
     max: number;
@@ -76,7 +75,8 @@ export interface PerkDef {
 
 export const PERKS: PerkDef[] = [
     { id: "power", name: "Power core", blurb: "+15% to everything per level.", max: 20, cost: (l) => 1 + l },
-    { id: "tap", name: "Hot keys", blurb: "Taps are worth +50% per level.", max: 10, cost: (l) => 1 + l },
+    { id: "scanner", name: "Wide-band scanner", blurb: "Intrusions arrive 8% sooner per level.", max: 6, cost: (l) => 1 + l },
+    { id: "auto", name: "Autoloader", blurb: "Auto-buys for you, one stat per level (Multipliers, Copper, Silicon, Quartz, Aether).", max: 5, cost: (l) => 3 + l * 2 },
     { id: "overclock", name: "Overclock coils", blurb: "Intrusion boosts last +5 s per level.", max: 6, cost: (l) => 2 + l * 2 },
     { id: "offline", name: "Standby cells", blurb: "Offline time banks +4 hours per level.", max: 6, cost: (l) => 2 + l * 2 },
     { id: "start", name: "Cold cache", blurb: "Start each Reboot with 10 seconds of Bytes per level.", max: 10, cost: (l) => 1 + Math.floor(l / 2) },
@@ -99,9 +99,8 @@ export interface State {
     perks: Record<PerkDef["id"], number>;
     ach: string[];
     // lifetime counters (survive Ascend)
-    life: { bytes: number; taps: number; reboots: number; ascends: number; intrusions: number; secs: number };
+    life: { bytes: number; taps: number; reboots: number; ascends: number; intrusions: number; secs: number; presses: number };
     overclock: number; // seconds left
-    combo: number; // 0..1 heat
 }
 
 export function fresh(now = Date.now()): State {
@@ -119,11 +118,10 @@ export function fresh(now = Date.now()): State {
         prod: { copper: 0, silicon: 0, quartz: 0, aether: 0 },
         bought: { mult: Array(TIERS).fill(0), reboot: Array(TIERS).fill(0), copper: Array(TIERS).fill(0), silicon: Array(TIERS).fill(0), quartz: Array(TIERS).fill(0), aether: Array(TIERS).fill(0) },
         ap: 0,
-        perks: { tap: 0, overclock: 0, offline: 0, start: 0, power: 0 },
+        perks: { scanner: 0, auto: 0, overclock: 0, offline: 0, start: 0, power: 0 },
         ach: [],
-        life: { bytes: 0, taps: 0, reboots: 0, ascends: 0, intrusions: 0, secs: 0 },
+        life: { bytes: 0, taps: 0, reboots: 0, ascends: 0, intrusions: 0, secs: 0, presses: 0 },
         overclock: 0,
-        combo: 0,
     };
 }
 
@@ -135,7 +133,6 @@ export interface Derived {
     rebootStrength: number;
     multGainMult: number;
     rates: Record<"copper" | "silicon" | "quartz" | "aether", number>;
-    tapValue: number;
     offlineCap: number; // seconds
     boosts: { cuReboot: number; cuBytes: number; siCu: number; qzSi: number; aeQz: number };
 }
@@ -149,7 +146,7 @@ export function derive(s: State): Derived {
         qzSi: boost(s.quartz, k.qzSi),
         aeQz: boost(s.aether, k.aeQz),
     };
-    const global = (1 + s.perks.power * 0.15) * (1 + s.ap * TUNE.apBonus) * (1 + s.ach.length * TUNE.achBonus) * (s.overclock > 0 ? TUNE.overclockMult : 1);
+    const global = (1 + s.perks.power * 0.15) * (1 + s.ap * TUNE.apBonus) * (1 + s.ach.length * TUNE.achBonus) * (1 + tiersDone(s) * TUNE.tierBonus) * (s.overclock > 0 ? TUNE.overclockMult : 1);
     const rebootStrength = TUNE.rebootStrength * boosts.cuReboot;
     const multGainMult = 1 + rebootStrength * s.reboot;
     const bytesPerSec = s.mult * boosts.cuBytes * global;
@@ -159,8 +156,7 @@ export function derive(s: State): Derived {
         quartz: s.prod.quartz * TUNE.perProducer.quartz * boosts.aeQz * global,
         aether: s.prod.aether * TUNE.perProducer.aether * global,
     };
-    const tapValue = (TUNE.tapBase + bytesPerSec * TUNE.tapRate) * (1 + s.perks.tap * 0.5) * (1 + s.combo * (TUNE.comboMax - 1));
-    return { global, bytesPerSec, rebootStrength, multGainMult, rates, tapValue, offlineCap: (TUNE.offlineCapHours + s.perks.offline * 4) * 3600, boosts };
+    return { global, bytesPerSec, rebootStrength, multGainMult, rates, offlineCap: (TUNE.offlineCapHours + s.perks.offline * 4) * 3600, boosts };
 }
 
 export const gainFor = (stat: ButtonStat, tier: number) => TUNE.gainBase[stat] * Math.pow(TUNE.gainRatio, tier);
@@ -198,6 +194,7 @@ export function press(s: State, stat: ButtonStat, tier: number): boolean {
     if (amount(s, b.pays) < b.cost) return false;
     if (stat === "reboot") {
         s.reboot += b.gain;
+        s.life.presses += 1;
         s.life.reboots += b.gain;
         s.mult = 1;
         s.bought.mult.fill(0);
@@ -205,6 +202,7 @@ export function press(s: State, stat: ButtonStat, tier: number): boolean {
         return true;
     }
     (s[b.pays] as number) = amount(s, b.pays) - b.cost;
+    s.life.presses += 1;
     s.bought[stat][tier] += 1;
     if (stat === "mult") s.mult += b.gain;
     else s.prod[stat] += b.gain;
@@ -220,17 +218,7 @@ export function tick(s: State, dt: number) {
     s.quartz += d.rates.quartz * dt;
     s.aether += d.rates.aether * dt;
     if (s.overclock > 0) s.overclock = Math.max(0, s.overclock - dt);
-    s.combo = Math.max(0, s.combo - dt * 0.35);
     s.life.secs += dt;
-}
-
-export function tap(s: State): number {
-    const v = derive(s).tapValue;
-    s.bytes += v;
-    s.life.bytes += v;
-    s.life.taps += 1;
-    s.combo = Math.min(1, s.combo + 0.08);
-    return v;
 }
 
 /** Hit the intrusion target: a timed boost. */
@@ -272,51 +260,91 @@ export function offline(s: State, seconds: number) {
     s.overclock = 0; // an intrusion boost doesn't carry through time away
     for (let i = 0; i < steps; i++) tick(s, dt);
     s.overclock = Math.max(0, oc - secs);
-    s.combo = 0;
     return { secs, capped: seconds > cap, gain: { bytes: s.bytes - before.bytes, copper: s.copper - before.copper, silicon: s.silicon - before.silicon, quartz: s.quartz - before.quartz, aether: s.aether - before.aether } };
 }
 
-// ---- goals (achievements). Each one gives a small permanent boost, see TUNE.achBonus.
+// ---- goals. Five tiers of six. Each goal gives a small permanent boost (TUNE.achBonus) and a full tier gives a bigger one (TUNE.tierBonus).
 export interface Goal {
     id: string;
     name: string;
     hint: string;
-    done: (s: State) => boolean;
+    tier: number; // 1..5
+    icon: "bytes" | "mult" | "reboot" | "copper" | "silicon" | "quartz" | "aether" | "alert" | "ascend" | "spark";
+    cur: (s: State) => number;
+    target: number;
 }
-const G = (id: string, name: string, hint: string, done: (s: State) => boolean): Goal => ({ id, name, hint, done });
+export const TIER_NAMES = ["", "Access", "Operator", "Admin", "Root", "Kernel"];
+const G = (id: string, name: string, hint: string, tier: number, icon: Goal["icon"], target: number, cur: (s: State) => number): Goal => ({ id, name, hint, tier, icon, cur, target });
+const life = (k: keyof State["life"]) => (s: State) => s.life[k];
 export const GOALS: Goal[] = [
-    G("tap10", "First contact", "Tap the core 10 times.", (s) => s.life.taps >= 10),
-    G("tap500", "Calloused", "Tap the core 500 times.", (s) => s.life.taps >= 500),
-    G("tap5k", "Keycap fatigue", "Tap the core 5,000 times.", (s) => s.life.taps >= 5000),
-    G("b1k", "Packet storm", "Earn 1,000 Bytes.", (s) => s.life.bytes >= 1e3),
-    G("b1m", "Bandwidth", "Earn 1 million Bytes.", (s) => s.life.bytes >= 1e6),
-    G("b1b", "Backbone", "Earn 1 billion Bytes.", (s) => s.life.bytes >= 1e9),
-    G("b1t", "Whole network", "Earn 1 trillion Bytes.", (s) => s.life.bytes >= 1e12),
-    G("b1qa", "Past the index", "Earn 1 quadrillion Bytes.", (s) => s.life.bytes >= 1e15),
-    G("m100", "Stacked", "Hold 100 Multipliers.", (s) => s.mult >= 100),
-    G("m10k", "Overstacked", "Hold 10,000 Multipliers.", (s) => s.mult >= 1e4),
-    G("r1", "Cold boot", "Reboot once.", (s) => s.life.reboots >= 1),
-    G("r25", "Habit", "Reach 25 Reboots.", (s) => s.life.reboots >= 25),
-    G("r500", "Uptime is a myth", "Reach 500 Reboots.", (s) => s.life.reboots >= 500),
-    G("cu1", "Trace lines", "Mine your first Copper.", (s) => s.copper > 0),
-    G("cu1k", "Spool", "Hold 1,000 Copper.", (s) => s.copper >= 1e3),
-    G("si1", "Wafer thin", "Mine your first Silicon.", (s) => s.silicon > 0),
-    G("si1k", "Fab line", "Hold 1,000 Silicon.", (s) => s.silicon >= 1e3),
-    G("qz1", "Resonance", "Mine your first Quartz.", (s) => s.quartz > 0),
-    G("qz1k", "Clean cut", "Hold 1,000 Quartz.", (s) => s.quartz >= 1e3),
-    G("ae1", "Signal in the noise", "Gather your first Aether.", (s) => s.aether > 0),
-    G("ae1k", "Open channel", "Hold 1,000 Aether.", (s) => s.aether >= 1e3),
-    G("int1", "Counter-hack", "Catch an intrusion.", (s) => s.life.intrusions >= 1),
-    G("int25", "Watchdog", "Catch 25 intrusions.", (s) => s.life.intrusions >= 25),
-    G("asc1", "Ascended", "Ascend once.", (s) => s.life.ascends >= 1),
-    G("asc5", "Fifth floor", "Ascend 5 times.", (s) => s.life.ascends >= 5),
+    // I  ACCESS
+    G("tap10", "First contact", "Press 10 buttons.", 1, "spark", 10, life("presses")),
+    G("b1k", "Packet storm", "Earn 1,000 Bytes.", 1, "bytes", 1e3, life("bytes")),
+    G("m100", "Stacked", "Hold 100 Multipliers.", 1, "mult", 100, (s) => s.mult),
+    G("r1", "Cold boot", "Reboot once.", 1, "reboot", 1, life("reboots")),
+    G("cu1", "Trace lines", "Mine your first Copper.", 1, "copper", 1e-9, (s) => s.copper),
+    G("int1", "Counter-hack", "Win an intrusion.", 1, "alert", 1, life("intrusions")),
+    // II OPERATOR
+    G("tap500", "Calloused", "Press 500 buttons.", 2, "spark", 500, life("presses")),
+    G("b1m", "Bandwidth", "Earn 1 million Bytes.", 2, "bytes", 1e6, life("bytes")),
+    G("m10k", "Overstacked", "Hold 10,000 Multipliers.", 2, "mult", 1e4, (s) => s.mult),
+    G("r25", "Habit", "Reach 25 Reboots.", 2, "reboot", 25, life("reboots")),
+    G("cu1k", "Spool", "Hold 1,000 Copper.", 2, "copper", 1e3, (s) => s.copper),
+    G("si1", "Wafer thin", "Mine your first Silicon.", 2, "silicon", 1e-9, (s) => s.silicon),
+    // III ADMIN
+    G("tap5k", "Keycap fatigue", "Press 5,000 buttons.", 3, "spark", 5000, life("presses")),
+    G("b1b", "Backbone", "Earn 1 billion Bytes.", 3, "bytes", 1e9, life("bytes")),
+    G("r100", "Triple digits", "Reach 100 Reboots.", 3, "reboot", 100, life("reboots")),
+    G("si1k", "Fab line", "Hold 1,000 Silicon.", 3, "silicon", 1e3, (s) => s.silicon),
+    G("qz1", "Resonance", "Mine your first Quartz.", 3, "quartz", 1e-9, (s) => s.quartz),
+    G("int25", "Watchdog", "Win 25 intrusions.", 3, "alert", 25, life("intrusions")),
+    // IV ROOT
+    G("p25k", "Muscle memory", "Press 25,000 buttons.", 4, "spark", 25000, life("presses")),
+    G("b1t", "Whole network", "Earn 1 trillion Bytes.", 4, "bytes", 1e12, life("bytes")),
+    G("r500", "Uptime is a myth", "Reach 500 Reboots.", 4, "reboot", 500, life("reboots")),
+    G("qz1k", "Clean cut", "Hold 1,000 Quartz.", 4, "quartz", 1e3, (s) => s.quartz),
+    G("ae1", "Signal in the noise", "Gather your first Aether.", 4, "aether", 1e-9, (s) => s.aether),
+    G("asc1", "Ascended", "Ascend once.", 4, "ascend", 1, life("ascends")),
+    // V  KERNEL
+    G("b1qa", "Past the index", "Earn 1 quadrillion Bytes.", 5, "bytes", 1e15, life("bytes")),
+    G("cu1m", "Mother lode", "Hold 1 million Copper.", 5, "copper", 1e6, (s) => s.copper),
+    G("si1m", "Silicon valley", "Hold 1 million Silicon.", 5, "silicon", 1e6, (s) => s.silicon),
+    G("ae1k", "Open channel", "Hold 1,000 Aether.", 5, "aether", 1e3, (s) => s.aether),
+    G("ae10k", "Beyond the veil", "Hold 10,000 Aether.", 5, "aether", 1e4, (s) => s.aether),
+    G("asc5", "Fifth floor", "Ascend 5 times.", 5, "ascend", 5, life("ascends")),
 ];
 
-/** Returns the ids of goals newly completed (and records them). */
+export const goalDone = (s: State, g: Goal) => s.ach.includes(g.id);
+/** Number of fully completed tiers. */
+export function tiersDone(s: State): number {
+    let n = 0;
+    for (let t = 1; t <= 5; t++) if (GOALS.filter((g) => g.tier === t).every((g) => s.ach.includes(g.id))) n++;
+    return n;
+}
+
+/** Returns goals newly completed (and records them). */
 export function checkGoals(s: State): Goal[] {
     const out: Goal[] = [];
-    for (const g of GOALS) if (!s.ach.includes(g.id) && g.done(s)) (s.ach.push(g.id), out.push(g));
+    for (const g of GOALS) if (!s.ach.includes(g.id) && g.cur(s) >= g.target) (s.ach.push(g.id), out.push(g));
     return out;
+}
+
+/** Autoloader perk: each level unlocks auto-buying for one stat. Buys at most one button per stat per call. */
+export function autoBuy(s: State): number {
+    const order: ButtonStat[] = ["mult", "copper", "silicon", "quartz", "aether"];
+    let n = 0;
+    for (let i = 0; i < Math.min(order.length, s.perks.auto); i++) {
+        const st = order[i];
+        if (!isUnlocked(s, st)) continue;
+        for (let k = TIERS - 1; k >= 0; k--) {
+            const b = button(s, st, k);
+            if (amount(s, b.pays) >= b.cost * TUNE.autoReserve) {
+                if (press(s, st, k)) n++;
+                break;
+            }
+        }
+    }
+    return n;
 }
 
 // ---- saving

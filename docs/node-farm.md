@@ -12,7 +12,7 @@ button tiers (+1, +5, +25, +125, +625, +3125; each tier costs about 8 to 10 time
   in Bytes, each later material in the one before it. Each material boosts the one below it (Copper boosts Reboot power and
   adds a little to Bytes, Silicon boosts Copper, Quartz boosts Silicon, Aether boosts Quartz).
 - Ascend (400 Aether): wipes everything except goals, perks and lifetime stats for Ascension Points (+25 percent to everything each) and five perks.
-- Tap the core for Bytes (value scales with production, a heat meter multiplies fast taps up to x3). An intrusion appears every 55 to 110 s; catching it gives a x6 Overclock for 20 s.
+- There is no tapping: progress comes from buttons only (Nate did not want a Cookie Clicker). The core is a live display: its outer arc shows progress to the cheapest Reboot and it pulses on every press. An intrusion appears every 55 to 110 s; catching it gives a x6 Overclock for 20 s.
 - Offline progress is capped at 8 hours (Standby cells perk: +4 h per level). Nothing is auto-bought.
 
 ## Files
@@ -21,7 +21,7 @@ button tiers (+1, +5, +25, +125, +625, +3125; each tier costs about 8 to 10 time
 - `components/nodefarm/`: `node-farm.tsx` (game loop at 10 Hz on real elapsed time, UI), `core.tsx` (144 px canvas shown pixelated), `icon.tsx`.
 - `app/camino/nodefarm.css`: all styles, scoped under `.ctos .nf`. This is the only naOS surface that uses more than the cyan accent; each stat has its own colour (`--c`).
 - `scripts/naos-art/nodefarm-icons.py`: draws the 11 colour 32 px icons (`public/naos/nodefarm/icons.{png,webp}`). Cell order is shared with `components/nodefarm/icon.tsx`.
-- Sounds: the `nf*` entries in `lib/sound/sounds.ts` (naOS blips and scans, rate-limited, off until the first tap).
+- Sounds: the `nf*` entries in `lib/sound/sounds.ts` (naOS blips and scans, rate-limited, off until the first click or key press).
 
 ## Gotchas
 - Always put `font` rules for buttons through `:where(button)` (the reset is), or element selectors beat the class rules.

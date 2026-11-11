@@ -20,11 +20,11 @@ export default function NodeFarmPage() {
             <CreationsShell
                 eyebrow="Incremental"
                 title={["Node Farm"]}
-                description="An idle game about growing one hacked node into a farm. Tap the core, buy buttons, Reboot for power, and chain materials that each boost the one below. It keeps running while you're away."
+                description="An idle game about growing one hacked node into a farm. Buy buttons, Reboot for power, and chain materials that each boost the one below. It keeps running while you're away."
                 back={{ href: "/creations/games", label: "Back to Games" }}
                 variant="sub"
             >
-                <Section id="play" no="01" label="Play" title="Hack the core." ctos>
+                <Section id="play" no="01" label="Play" title="Hack the node." ctos>
                     <GameFrame code="node.farm" foot={["saves on this device", "offline up to 8 h"]}>
                         <NodeFarm />
                     </GameFrame>

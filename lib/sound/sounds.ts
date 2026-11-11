@@ -139,18 +139,8 @@ const DEFS = {
     },
 
     // ---- Node Farm (the incremental game): the same naOS security-terminal voices as the interface set.
-    // A tap is a keycap blip that climbs with the heat meter; buys are access-granted pairs; a Reboot is a power-down scan
+    // Buys are access-granted pairs; a Reboot is a power-down scan
     // followed by a power-up arpeggio; an intrusion is a three-pulse alarm; a breach is a fast lock-picked arpeggio.
-    nfTap: {
-        tier: 1,
-        bus: "game",
-        gap: 40,
-        play: (a: { heat?: number } | undefined) => {
-            const h = Math.max(0, Math.min(1, a?.heat ?? 0));
-            blip("game", (1180 + h * 700) * JITTER[pick("nfTap", 3)], { dur: 0.04, gain: 0.05, glide: 0.8, cutoff: 2600 });
-            blip("game", 160, { dur: 0.05, gain: 0.04, cutoff: 600, type: "sine" });
-        },
-    },
     nfBuy: {
         tier: 2,
         bus: "game",
