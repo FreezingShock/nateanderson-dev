@@ -126,7 +126,11 @@ body.ctos-on .cm-sec-rule { background: linear-gradient(90deg, rgba(244, 244, 24
 
 /* ---- Scrubbed reveals: the engine writes --p (0 to 1) from the item's position in the viewport. Scrolling down plays
    the move forward; scrolling up plays the identical move backward. Nothing here uses time or direction flags. ----- */
+/* --p is per element and not inherited, so a big panel with a reveal does not restyle its whole subtree every frame.
+   The few elements whose children read the progress (slabs, game frames, timeline phases) carry --pi, which is inherited. */
+@property --p { syntax: "<number>"; inherits: false; initial-value: 0; }
 [data-rx] { --p: 0; --rx-x: 0px; --rx-y: 22px; }
+[data-rx="slab"], [data-rx-inh] { --pi: 0; }
 [data-rx="slide"] { --rx-x: -34px; --rx-y: 0px; } [data-rx="slide-r"] { --rx-x: 34px; --rx-y: 0px; }
 [data-rx="row"] { --rx-x: -16px; --rx-y: 0px; }
 [data-rx]:not([data-rx="slab"]) {
@@ -134,16 +138,18 @@ body.ctos-on .cm-sec-rule { background: linear-gradient(90deg, rgba(244, 244, 24
   transform: translate3d(calc((1 - var(--p)) * var(--rx-x)), calc((1 - var(--p)) * var(--rx-y)), 0);
 }
 /* Slab headings: the block sweeps in then out (clip), and the text rises through the mask, both tied to --p. */
-[data-rx="slab"] .sl-t { transform: translate3d(0, calc((1 - clamp(0, (var(--p) - .28) / .72, 1)) * 112%), 0); animation: none; }
+[data-rx="slab"] .sl-t { transform: translate3d(0, calc((1 - clamp(0, (var(--pi) - .28) / .72, 1)) * 112%), 0); animation: none; }
 [data-rx="slab"] .sl::after {
   transform: none; animation: none;
-  clip-path: inset(0 calc(100% - min(100%, var(--p) * 200%)) 0 max(0%, calc((var(--p) - .5) * 200%)));
+  clip-path: inset(0 calc(100% - min(100%, var(--pi) * 200%)) 0 max(0%, calc((var(--pi) - .5) * 200%)));
 }
 @media (scripting: none) {
   [data-rx] { --p: 1; }
+  [data-rx="slab"], [data-rx-inh] { --pi: 1; }
 }
 @media (prefers-reduced-motion: reduce) {
   [data-rx] { --p: 1 !important; }
+  [data-rx="slab"], [data-rx-inh] { --pi: 1 !important; }
   [data-rx="slab"] .sl::after { display: none; }
 }
 

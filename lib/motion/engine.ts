@@ -389,6 +389,8 @@ function autoRx(root: ParentNode) {
 interface RxItem {
     el: HTMLElement;
     scr: boolean;
+    inh: boolean; // also mirrors its progress to an inherited --pi for the CSS that styles its descendants
+    pool: string[]; // the non-space characters a scramble draws its noise from (built once, not per frame)
     off: number;
     final: string;
     chars: string[];
@@ -411,6 +413,8 @@ function registerRx(el: HTMLElement) {
     rxs.set(el, {
         el,
         scr,
+        inh: !scr && (el.hasAttribute("data-rx-inh") || el.getAttribute("data-rx") === "slab"),
+        pool: chars.filter((c) => c !== " "),
         off: (sib % 4) * 34,
         final,
         chars,
@@ -439,7 +443,7 @@ function renderScr(it: RxItem, p: number, now: number) {
     if (now - it.w < 40 && it.done === false && it.p >= 0) return;
     it.w = now;
     it.done = false;
-    const pool = it.chars.filter((c) => c !== " ");
+    const pool = it.pool;
     let out = "";
     for (let i = 0; i < it.chars.length; i++) {
         const c = it.chars[i];
@@ -451,7 +455,13 @@ function renderScr(it: RxItem, p: number, now: number) {
 
 function setRx(it: RxItem, p: number, now: number) {
     if (it.scr) renderScr(it, p, now);
-    else it.el.style.setProperty("--p", (p * p * (3 - 2 * p)).toFixed(3)); // smoothstep: soft start and landing
+    else {
+        // smoothstep: soft start and landing. --p is not inherited (see ctos.css), so only the few elements whose
+        // children read it (slabs, game frames, timeline phases) also get the inherited --pi.
+        const v = (p * p * (3 - 2 * p)).toFixed(3);
+        it.el.style.setProperty("--p", v);
+        if (it.inh) it.el.style.setProperty("--pi", v);
+    }
     it.p = p;
 }
 

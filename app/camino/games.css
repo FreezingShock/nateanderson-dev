@@ -424,9 +424,9 @@
 /* The layout wrapper stays still: the frame and the readout carry the motion, so nothing moves twice. */
 .ctos .g-layout[data-rx] { opacity: 1; transform: none; }
 
-/* Frame: the white header bar wipes across as the frame arrives (scroll-linked through --p). */
-.ctos .g-frame .g-top { clip-path: inset(0 calc((1 - var(--p)) * 100%) 0 0); }
-.ctos .g-frame .g-body { opacity: calc(.35 + var(--p) * .65); }
+/* Frame: the white header bar wipes across as the frame arrives (scroll-linked through --pi, see data-rx-inh). */
+.ctos .g-frame .g-top { clip-path: inset(0 calc((1 - var(--pi)) * 100%) 0 0); }
+.ctos .g-frame .g-body { opacity: calc(.35 + var(--pi) * .65); }
 
 /* Hub cards: alternate the entry side so a grid of cards reads as it arrives, not as one rising block. */
 .ctos .g-grid > .g-card[data-rx] { --rx-x: 0px; --rx-y: 18px; }

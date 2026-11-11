@@ -144,6 +144,13 @@ writes, no layout thrash. Touch and narrow screens (`hover: none` or max-width 9
 (media query at the bottom of ctos.css); keep new heavy effects inside that gate. Lazy-load heavy images; set
 width/height.
 
+- Scroll progress is `--p` on each `[data-rx]` element and is not inherited (`@property` in `ctos.css`), so a big panel
+  with a reveal does not restyle its whole subtree each frame. CSS that reads progress from a child (slab headings,
+  game frames, timeline phases) reads `--pi` instead. The engine mirrors `--pi` only on `[data-rx="slab"]` and on
+  elements marked `data-rx-inh`, so mark a new element that way before a descendant needs its progress.
+- `body.ctos-on` is set by an inline script in the root layout (`lib/ctos-body-script.ts`) before first paint, and
+  again on client navigations. Without it the naOS footer arrows and page ground snap in after the first paint (a
+  0.15 layout shift on the case-study pages).
 - Don't write custom properties on `<html>` per frame. The engine writes `--cm-page-p` on `.cm-pgauge`, and reads all
   layout (rects) before any write, so a frame costs one style flush, not one per item.
 
