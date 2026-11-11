@@ -3,6 +3,7 @@ import { IdCard } from "@/components/creations-sections";
 import { CountUp } from "@/components/cm/reveal";
 import { ART_COLLECTIONS, categoryById } from "@/lib/creations-data";
 import { pageMeta } from "@/lib/seo";
+import { NaosBackdrop } from "@/components/cm/naos-art";
 
 export default function ArtworkPage() {
     return (
@@ -23,6 +24,7 @@ export default function ArtworkPage() {
                 />
             }
         >
+            <NaosBackdrop src="/naos/bg-default.webp" />
             {ART_COLLECTIONS.map((c, i) => (
                 <ArtCollectionSection key={c.id} collection={c} no={String(i + 1).padStart(2, "0")} />
             ))}

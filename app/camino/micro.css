@@ -25,7 +25,7 @@
 .nv-kids a:active { color: var(--cm-cyan); }
 
 /* Text-style links and labels: a press flips them to the accent, so the click reads as taken. */
-.cm-more:active, a.cm-lbl:active, .cm-foot-col a:active { color: var(--cm-cyan); }
+.cm-more:active, a.cm-lbl:active, .sf-dir li a:active, .sf-chan li a:active { color: var(--cm-cyan); }
 
 /* Hard-edged buttons flash cyan for the frame of the press. Filled variants dim slightly instead. */
 .cm-btn:not(.solid):not(.paper):active,

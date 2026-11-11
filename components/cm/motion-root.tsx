@@ -7,18 +7,8 @@ import { NAV_EVENT } from "@/lib/motion/navigate";
 import { navItems } from "@/lib/nav";
 
 type Dir = "fwd" | "back" | "down" | "up";
-type XStyle = "fast" | "shutter" | "dissolve";
-/** Per style: when the cover is fully up (route push), the minimum hold with the name shown, and the full exit. */
-const TIMING: Record<XStyle, { cover: number; hold: number; exit: number }> = {
-    fast: { cover: 170, hold: 230, exit: 330 },
-    shutter: { cover: 220, hold: 240, exit: 350 },
-    dissolve: { cover: 200, hold: 230, exit: 300 },
-};
-/** Lab switch: html[data-xstyle] picks the look (set from ?xstyle= for the review). Defaults to fast. */
-const xstyle = (): XStyle => {
-    const v = document.documentElement.dataset.xstyle;
-    return v === "shutter" || v === "dissolve" ? v : "fast";
-};
+/** Panels: when they have closed on the seam (the route push), the minimum hold with the name up, and the full exit. */
+const SHUTTER = { cover: 220, hold: 240, exit: 350 };
 
 const rankOf = (p: string) =>
     navItems.findIndex((n) => (n.href === "/" ? p === "/" : p === n.href || p.startsWith(n.href + "/")));
@@ -80,16 +70,6 @@ export function MotionRoot() {
     const first = useRef(true);
     const wipe = useRef<HTMLDivElement>(null);
 
-    // Lab switch: ?xstyle=fast|shutter|dissolve is kept for the session so the style survives the route changes.
-    useEffect(() => {
-        try {
-            const q = new URLSearchParams(location.search).get("xstyle");
-            if (q) sessionStorage.setItem("cm-xstyle", q);
-            const v = sessionStorage.getItem("cm-xstyle");
-            if (v) document.documentElement.dataset.xstyle = v;
-        } catch {}
-    }, []);
-
     // Engine + boot cleanup.
     useEffect(() => {
         const stop = start();
@@ -117,7 +97,7 @@ export function MotionRoot() {
         const s = st.current;
         if (s.phase !== "hold") return;
         // Keep the title card up long enough to read the name (a cached route commits in a few ms).
-        const rest = TIMING[xstyle()].hold - (performance.now() - s.heldAt);
+        const rest = SHUTTER.hold - (performance.now() - s.heldAt);
         if (rest > 0) {
             window.clearTimeout(s.safety);
             s.safety = window.setTimeout(() => arrive.current(), rest);
@@ -130,7 +110,7 @@ export function MotionRoot() {
         doc.setAttribute("data-xin", "");
         doc.removeAttribute("data-xition");
         s.phase = "in";
-        s.timer = window.setTimeout(() => reset.current(), TIMING[xstyle()].exit);
+        s.timer = window.setTimeout(() => reset.current(), SHUTTER.exit);
     };
 
     // The route changed. If it is the one we are waiting for, bring the page in.
@@ -183,7 +163,7 @@ export function MotionRoot() {
                 paintCard(wipe.current, url.pathname);
                 s.phase = "out";
                 markNavigation();
-                s.timer = window.setTimeout(toHold, TIMING[xstyle()].cover);
+                s.timer = window.setTimeout(toHold, SHUTTER.cover);
                 return true;
             }
             if (s.phase === "out") {
@@ -243,11 +223,8 @@ export function MotionRoot() {
         <>
             <div className="cm-pgauge" aria-hidden="true" />
             <div className="cm-wipe" ref={wipe} aria-hidden="true">
-                <i className="cm-sheet" />
-                <i className="cm-dz" />
                 <i className="cm-shut a" />
                 <i className="cm-shut b" />
-                <i className="edge" />
                 <span className="k" />
                 <span className="bl" />
             </div>
