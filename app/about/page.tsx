@@ -46,7 +46,7 @@ export default function AboutPage() {
                             as="p"
                             auto
                             className="about-lead"
-                            text="Engineer, builder, runner, systems thinker. This is the full story, and how the parts connect."
+                            text="Student, builder, runner, systems thinker. This is the full story, and how the parts connect."
                         />
                     </div>
                     <aside className="about-id id" aria-label="Profile card">

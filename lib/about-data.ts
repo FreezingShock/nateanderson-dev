@@ -230,7 +230,7 @@ export const building: BuildingItem[] = [
         color: "var(--cm-good)",
         status: "Senior year",
         description:
-            "Freshman admission to Cal Poly SLO Construction Management, with Cal Poly Pomona Construction Engineering & Management as the fallback.",
+            "Freshman admission to Cal Poly SLO Construction Management or Cal Poly Pomona Construction Engineering & Management, with community college as the fallback.",
         href: "/timeline",
         cta: "Open the timeline",
     },

@@ -36,8 +36,8 @@ export const CATEGORIES: CreationCategory[] = [
         title: "Web App Games",
         color: "var(--cm-good)",
         icon: Ic.Gamepad2,
-        blurb: "Playable in the browser: daily puzzles, unlimited practice, incremental progression and tycoon games.",
-        tags: ["Daily", "Unlimited", "Incremental", "Tycoon"],
+        blurb: "Playable in the browser, sorted into geography, incremental and automation games.",
+        tags: ["Geography", "Incremental", "Automation"],
     },
     {
         id: "projects",

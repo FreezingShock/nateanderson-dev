@@ -23,7 +23,7 @@ export default function StudiesPage() {
             <PageHead
                 label="Learning"
                 title={["Studies"]}
-                lead="The complete educational pathway: this year's classes, the community college transfer, university specialization, and the independent research running alongside all of it. Systems thinking across technical, creative and philosophical work."
+                lead="The complete educational pathway: this year's classes, Cal Poly SLO or Pomona as the goal with community college as the fallback, and the independent research running alongside all of it. Systems thinking across technical, creative and philosophical work."
             >
                 <StudyStatus nowMs={nowMs} />
             </PageHead>
