@@ -16,7 +16,7 @@ export default async function RenovationsPage() {
             variant="sub"
             aside={<ListStatusCard label="renovations // index" badge="rn" projects={renovations} />}
         >
-            <Section id="renovations" no="01" label="All renovations" title="Each study starts from a real site." blurb="Each study starts from a real site and ends in a redesign.">
+            <Section id="renovations" no="01" label="All renovations" title="Each study starts from a real site." blurb="Every study ends in a redesign.">
                 <ProjectGrid projects={renovations} />
             </Section>
         </CreationsShell>
