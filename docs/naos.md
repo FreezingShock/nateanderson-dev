@@ -148,8 +148,12 @@ width/height.
   layout (rects) before any write, so a frame costs one style flush, not one per item.
 
 ## Footer
-Shared component. Standard Camino footer on pages without `.ctos`. When a page wraps in `.ctos` the footer becomes the
-naOS version (session bar, Status-style panels, numbered social plates, signal bar) automatically. No taped stickers.
+`components/site-footer.tsx` (styles in `app/camino/site-footer.css`). One layout on every page: Nate's ID card (the homepage
+Status card, with name, based, now and heading-to rows), a page and About directory beside it, then a centered Find me block
+with email as the primary cyan bar and five channels in a grid. Facts come from `lib/identity.ts`, `lib/nav.ts` and the
+About data, so add content there, not in the footer. The keyboard shortcuts button stays in the base row.
+Its live bars are CSS only (transform steps) and stop under reduced motion. The page transition hides it through
+`html[data-xition="hold"] .sf-foot` in `motion.css`.
 
 ## Don'ts
 - No Ubisoft logos, art or fonts; original SVG/CSS only.
