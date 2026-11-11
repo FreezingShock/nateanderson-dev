@@ -9,6 +9,7 @@ import {
 } from "@/lib/nodefarm/engine";
 import { Core, type CoreFeed } from "./core";
 import { NfIcon } from "./icon";
+import { AwayReport, type Away } from "./away";
 import { Hack } from "./hack";
 import { Chain, StatRow } from "./stat-row";
 import { AscendPanel, GoalsPanel, MenuPanel } from "./systems";
@@ -41,7 +42,7 @@ export function NodeFarm() {
     const [win, setWin] = useState<"" | "goals" | "ascend" | "menu">("");
     const [folded, setFolded] = useState<Record<string, boolean>>({});
     const [lines, setLines] = useState<Line[]>([]);
-    const [away, setAway] = useState<{ secs: number; capped: boolean; gain: Record<string, number> } | null>(null);
+    const [away, setAway] = useState<Away | null>(null);
     const [toast, setToast] = useState<string | null>(null);
     const [alertAt, setAlertAt] = useState<{ x: number; y: number; id: number } | null>(null);
     const [hack, setHack] = useState(false);
@@ -81,7 +82,7 @@ export function NodeFarm() {
         g.current = s;
         if (gap > 60 && !first) {
             const r = offline(s, gap);
-            setAway({ secs: r.secs, capped: r.capped, gain: r.gain });
+            setAway({ ...r, gap, cap: derive(s).offlineCap });
         }
         s.at = Date.now();
         nextAlert.current = performance.now() + gapMs(s);
@@ -137,7 +138,7 @@ export function NodeFarm() {
             s.at = now;
             if (gap > 3) {
                 const r = offline(s, gap);
-                if (gap > 60) setAway({ secs: r.secs, capped: r.capped, gain: r.gain });
+                if (gap > 60) setAway({ ...r, gap, cap: derive(s).offlineCap });
             } else tick(s, Math.max(0, gap));
             if (++tickN.current % 10 === 0 && s.perks.auto > 0) autoBuy(s);
             const d = derive(s);
@@ -314,23 +315,6 @@ export function NodeFarm() {
                     <div><dt>Reboot</dt><dd>{Math.round(feed.current.progress * 100)}%</dd></div>
                     <div><dt>Global</dt><dd>×{fmt(d.global)}</dd></div>
                 </dl>
-                {away && (
-                    <div className="nf-away" role="status">
-                        <b>While you were gone · {fmtTime(away.secs)}{away.capped ? " (cap)" : ""}</b>
-                        <span>
-                            +{fmt(away.gain.bytes)} Bytes
-                            {away.gain.copper > 0 && ` · +${fmt(away.gain.copper)} Cu`}
-                            {away.gain.silicon > 0 && ` · +${fmt(away.gain.silicon)} Si`}
-                            {away.gain.quartz > 0 && ` · +${fmt(away.gain.quartz)} Qz`}
-                            {away.gain.aether > 0 && ` · +${fmt(away.gain.aether)} Ae`}
-                            {away.gain.runes > 0 && ` · +${fmt(away.gain.runes)} Rn`}
-                            {away.gain.starglass > 0 && ` · +${fmt(away.gain.starglass)} Sg`}
-                            {away.gain.voidsteel > 0 && ` · +${fmt(away.gain.voidsteel)} Vs`}
-                            {away.gain.chrono > 0 && ` · +${fmt(away.gain.chrono)} Ch`}
-                        </span>
-                        <button type="button" className="nf-mini" onClick={() => setAway(null)}>Dismiss</button>
-                    </div>
-                )}
                 <ol className="nf-log" aria-label="Event log" role="log" aria-live="polite">
                     {lines.slice(-7).map((l) => (
                         <li key={l.id} data-tone={l.tone}>
@@ -368,6 +352,7 @@ export function NodeFarm() {
                     onReset={doReset}
                 />
             </section>
+            {away && <AwayReport away={away} reduced={reduced} onClose={() => setAway(null)} />}
         </div>
     );
 }

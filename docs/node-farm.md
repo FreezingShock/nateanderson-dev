@@ -15,7 +15,7 @@ button tiers (+1, +5, +25, +125, +625, +3125; each tier costs about 8 to 10 time
 - Prestige tree (`TREE` in the engine, `components/nodefarm/tree.tsx`): 18 nodes in three branches (Signal, Forge, Systems), bought with AP, kept through Ascend. `state.tree` holds owned ids; old saves load with an empty tree.
 - Ascend (400 Aether): wipes everything except goals, perks and lifetime stats for Ascension Points (+25 percent to everything each) and five perks.
 - There is no tapping: progress comes from buttons only (Nate did not want a Cookie Clicker). The core is a live display: its outer arc shows progress to the cheapest Reboot and it pulses on every press. An intrusion appears every 55 to 110 s; catching it gives a x6 Overclock for 20 s.
-- Offline progress is capped at 8 hours (Standby cells perk: +4 h per level). Nothing is auto-bought.
+- Offline progress is capped at 8 hours (Standby cells perk: +4 h per level). Nothing is auto-bought. Returning after more than a minute away opens a full-screen standby report (components/nodefarm/away.tsx): time banked, a standby-window meter, what each resource gained, and a Collect button. Everything is already banked when it opens; Esc or Collect closes it.
 
 ## Files
 - `lib/nodefarm/engine.ts`: pure rules and every tuning number (`TUNE`). No imports, so the sim runs it in Node.
