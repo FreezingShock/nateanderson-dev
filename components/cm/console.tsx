@@ -7,6 +7,8 @@ import { skills, SKILL_CATEGORIES, type SkillCategory } from "@/lib/about-data";
 import { NOW_FEED, PATH, PROFILE_LEAD } from "@/lib/identity";
 import { launcherLinks, navItems } from "@/lib/nav";
 import { navigateWithCurtain } from "@/lib/motion/navigate";
+import { parseSave } from "@/lib/nodefarm/engine";
+import { NF_PATH, NF_SAVE_KEY, NF_SUBS, nfCommand, type NfLive } from "@/lib/nodefarm/records";
 import { setPrefs } from "@/lib/sound/engine";
 import { sfx } from "@/lib/sound/sounds";
 import { useSoundPrefs } from "@/lib/sound/use-sound";
@@ -128,6 +130,31 @@ const levenshtein = (a: string, b: string) => {
 const listGroup = (targets: Target[], g: Target["group"]): Line[] =>
     targets.filter((x) => x.group === g).map((x) => row(x.id, x.hint, x.href));
 
+/** `nf`: Node Farm from the console. Talks to the open game when there is one (it answers the `nf:live` event), otherwise reads and writes the saved game. */
+function runNf(args: string[]): Line[] {
+    if ((args[0] ?? "").toLowerCase() === "open") return [{ t: NF_PATH, go: NF_PATH }];
+    const ref: { live?: NfLive } = {};
+    window.dispatchEvent(new CustomEvent("nf:live", { detail: ref }));
+    let state = ref.live?.s ?? null;
+    if (!state) {
+        try {
+            const raw = localStorage.getItem(NF_SAVE_KEY);
+            state = raw ? parseSave(raw) : null;
+        } catch {}
+    }
+    if (!state) return [t("no node found. start one first:", "dim"), { t: NF_PATH, go: NF_PATH }];
+    const r = nfCommand(state, args);
+    if (r.unlocked.length) {
+        if (ref.live) ref.live.notify(r.unlocked);
+        else {
+            try {
+                localStorage.setItem(NF_SAVE_KEY, JSON.stringify(state));
+            } catch {}
+        }
+    }
+    return r.lines;
+}
+
 const COMMANDS: Cmd[] = [
     {
         name: "help",
@@ -238,6 +265,13 @@ const COMMANDS: Cmd[] = [
             if (a) return [t("sound: use on or off.", "err")];
             return [t(`sound is ${ctx.soundOn ? "on" : "off"}. sound on · sound off`)];
         },
+    },
+    {
+        name: "nf",
+        usage: "nf [stats|goals|secrets]",
+        desc: "Node Farm readout, goals and secrets",
+        long: ["nf · nf stats · nf goals · nf secrets · nf open. Works with the game open or from your saved game."],
+        run: (args) => runNf(args),
     },
     {
         name: "history",
@@ -486,6 +520,7 @@ export function NaosConsole({ onClose, prefill }: { onClose: () => void; prefill
         else if (first === "open" || first === "cd" || first === "go" || first === "goto") pool = targets.map((x) => x.id);
         else if (first === "ls" || first === "dir") pool = ["pages", "projects", "games", "sections", ...navItems.filter((n) => n.children?.length).map((n) => slug(n.label))];
         else if (first === "sound") pool = ["on", "off"];
+        else if (first === "nf") pool = NF_SUBS;
         else if (first === "help" || first === "man") pool = NAMES;
         else return;
         const m = pool.filter((p) => p.startsWith(last));

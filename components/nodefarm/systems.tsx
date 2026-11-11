@@ -1,13 +1,19 @@
 "use client";
 
 import { PixelIcon } from "@/components/cm/pixel-icons";
-import { GOALS, PERKS, TIER_NAMES, TUNE, apOnAscend, canAscend, derive, fmt, fmtTime, goalDone, tiersDone, type State } from "@/lib/nodefarm/engine";
+import { GOALS, GOAL_TIERS, PERKS, SECRETS, TIER_NAMES, TUNE, apOnAscend, canAscend, derive, fmt, fmtTime, goalDone, tiersDone, type State } from "@/lib/nodefarm/engine";
+import { goalCounts, recordSections } from "@/lib/nodefarm/records";
 import { NfIcon } from "./icon";
 import { TreePanel } from "./tree";
 
 type D = ReturnType<typeof derive>;
-const ROMAN = ["", "I", "II", "III", "IV", "V"];
-const TIER_COLOR = ["", "#2fd8e8", "#b6f04a", "#f0a53c", "#ff2d8a", "#f4f4f2"];
+const ROMAN = ["", "I", "II", "III", "IV", "V", "VI", "VII"];
+const TIER_COLOR = ["", "#2fd8e8", "#b6f04a", "#f0a53c", "#ff2d8a", "#f4f4f2", "#ffc53a", "#9a7bff"];
+const stamp = (ms?: number) => {
+    if (!ms) return "done";
+    const d = new Date(ms);
+    return `${d.toLocaleDateString(undefined, { month: "short", day: "numeric" })} ${d.toTimeString().slice(0, 5)}`;
+};
 
 export function GoalsPanel({ s }: { s: State }) {
     return (
@@ -15,12 +21,12 @@ export function GoalsPanel({ s }: { s: State }) {
             <header className="nf-sys-h">
                 <h3>Goals</h3>
                 <p>
-                    {s.ach.length} of {GOALS.length} done. Each goal adds +{TUNE.achBonus * 100}% to everything, and a finished tier adds +{TUNE.tierBonus * 100}% more.
+                    {goalCounts(s).goals} of {GOALS.length} done, {goalCounts(s).secrets} of {SECRETS.length} secrets found. Each goal or secret adds +{TUNE.achBonus * 100}% to everything, and a finished tier adds +{TUNE.tierBonus * 100}% more.
                     <b> Now +{fmt(((1 + s.ach.length * TUNE.achBonus) * (1 + tiersDone(s) * TUNE.tierBonus) - 1) * 100)}%.</b>
                 </p>
             </header>
             <div className="nf-tiers">
-                {[1, 2, 3, 4, 5].map((t) => {
+                {Array.from({ length: GOAL_TIERS }, (_, i) => i + 1).map((t) => {
                     const goals = GOALS.filter((g) => g.tier === t);
                     const n = goals.filter((g) => goalDone(s, g)).length;
                     const full = n === goals.length;
@@ -46,7 +52,7 @@ export function GoalsPanel({ s }: { s: State }) {
                                                 <small>{g.hint}</small>
                                                 <span className="nf-bar sm" aria-hidden="true"><i style={{ width: `${Math.min(100, (cur / tgt) * 100)}%` }} /></span>
                                             </span>
-                                            <span className="nf-goal-n">{done ? <PixelIcon name="check" size={12} /> : `${fmt(cur)}/${fmt(tgt)}`}</span>
+                                            <span className="nf-goal-n">{done ? <><PixelIcon name="check" size={12} /><time>{stamp(s.achAt[g.id])}</time></> : `${fmt(cur)}/${fmt(tgt)}`}</span>
                                         </li>
                                     );
                                 })}
@@ -55,6 +61,42 @@ export function GoalsPanel({ s }: { s: State }) {
                     );
                 })}
             </div>
+            <section className="nf-secrets" aria-label="Secrets">
+                <header>
+                    <b>Secrets</b>
+                    <span className="nf-tier-s">{goalCounts(s).secrets}/{SECRETS.length} found</span>
+                </header>
+                <ul>
+                    {SECRETS.map((x) => {
+                        const done = s.ach.includes(x.id);
+                        return (
+                            <li key={x.id} data-done={done ? "" : undefined}>
+                                <NfIcon name={done ? "spark" : "lock"} />
+                                <span className="nf-goal-t">
+                                    <b>{done ? x.name : "????"}</b>
+                                    <small>{done ? x.how : x.clue}</small>
+                                </span>
+                                <span className="nf-goal-n">{done ? <><PixelIcon name="check" size={12} /><time>{stamp(s.achAt[x.id])}</time></> : "hidden"}</span>
+                            </li>
+                        );
+                    })}
+                </ul>
+            </section>
+        </div>
+    );
+}
+
+export function RecordsPanel({ s }: { s: State }) {
+    return (
+        <div className="nf-sys nf-rec-grid">
+            {recordSections(s).map((sec) => (
+                <section key={sec.id}>
+                    <header className="nf-sys-h"><h3>{sec.title}</h3><p>{sec.blurb}</p></header>
+                    <dl className="nf-recs">
+                        {sec.rows.map(([k, v]) => <div key={k}><dt>{k}</dt><dd>{v}</dd></div>)}
+                    </dl>
+                </section>
+            ))}
         </div>
     );
 }

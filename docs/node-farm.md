@@ -31,3 +31,10 @@ button tiers (+1, +5, +25, +125, +625, +3125; each tier costs about 8 to 10 time
 - Always put `font` rules for buttons through `:where(button)` (the reset is), or element selectors beat the class rules.
 - Playwright cannot click the pulsing intrusion button without `force: true` (it never settles, on purpose).
 - Intrusions only spawn once Multipliers plus Reboots reach 5, so a brand-new player is not interrupted.
+
+## Goals, secrets, Records and the console (`nf`)
+- Goals: seven tiers of six (Access to Zero). Each done goal or found secret gives +2% to everything, a full tier +8%. `state.achAt` holds when each was done (the log shows it). Tiers 6 and 7 cover the deep materials, the tree and long grinds.
+- Secrets (`SECRETS` in engine.ts) show as ???? with a clue. Three are unlocked by hidden console commands (`nf ping 127.0.0.1`, `nf sudo`, `nf whoami`), three by play (3 am session, 24 h played, a full standby report).
+- Records window (dock and a phone tab): this run, materials, lifetime, progress. Built in `lib/nodefarm/records.ts` (`recordSections`).
+- Console: `nf`, `nf stats`, `nf goals`, `nf secrets`, `nf open`. The console asks the open game for its state with an `nf:live` event (the game fills `detail.live`); with no game open it reads and writes the saved game in localStorage. `nfCommand` is pure, so new commands go in records.ts.
+- New life counters (`capped`, `peakBps`, `apTotal`) and `achAt` are filled in for old saves by `parseSave`.

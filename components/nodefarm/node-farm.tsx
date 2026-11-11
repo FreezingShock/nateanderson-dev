@@ -8,19 +8,20 @@ import {
     TUNE, ascend, autoBuy, breach, button, buyNode, buyPerk, checkGoals, derive, exportSave, fmt, fmtTime, fresh, isUnlocked, offline, parseSave, press, STATS, tick,
     type ButtonStat, type State,
 } from "@/lib/nodefarm/engine";
+import type { NfLive } from "@/lib/nodefarm/records";
 import { Core, type CoreFeed } from "./core";
 import { NfIcon } from "./icon";
 import { AwayReport, type Away } from "./away";
 import { Hack } from "./hack";
 import { Chain, StatRow } from "./stat-row";
-import { AscendPanel, GoalsPanel, MenuPanel } from "./systems";
+import { AscendPanel, GoalsPanel, MenuPanel, RecordsPanel } from "./systems";
 
 const KEY = "nf-save-v1";
 const HUM_KEY = "nf-hum-v1"; // reactor hum on or off (per device)
 const UI_KEY = "nf-ui-v1"; // which stat panels are minimized (per device, not part of the game save)
-type Tab = "core" | "stats" | "goals" | "ascend" | "menu";
-const SIDE: Tab[] = ["goals", "ascend", "menu"];
-const TAB_LABEL: Record<Tab, string> = { core: "Core", stats: "Stats", goals: "Goals", ascend: "Ascend", menu: "Menu" };
+type Tab = "core" | "stats" | "goals" | "records" | "ascend" | "menu";
+const SIDE: Tab[] = ["goals", "records", "ascend", "menu"];
+const TAB_LABEL: Record<Tab, string> = { core: "Core", stats: "Stats", goals: "Goals", records: "Records", ascend: "Ascend", menu: "Menu" };
 type Line = { id: number; t: string; text: string; tone?: "good" | "warn" | "hot" };
 
 const gapMs = (s: State) => (TUNE.intrusionEvery[0] + Math.random() * (TUNE.intrusionEvery[1] - TUNE.intrusionEvery[0])) * 1000 * Math.max(0.4, 1 - s.perks.scanner * 0.08);
@@ -41,7 +42,7 @@ export function NodeFarm() {
     const [, bump] = useState(0);
     const [tab, setTab] = useState<Tab>("core");
     const [side, setSide] = useState<Tab>("goals");
-    const [win, setWin] = useState<"" | "goals" | "ascend" | "menu">("");
+    const [win, setWin] = useState<"" | "goals" | "records" | "ascend" | "menu">("");
     const [folded, setFolded] = useState<Record<string, boolean>>({});
     const [lines, setLines] = useState<Line[]>([]);
     const [away, setAway] = useState<Away | null>(null);
@@ -100,6 +101,7 @@ export function NodeFarm() {
         g.current = s;
         if (gap > 60 && !first) {
             const r = offline(s, gap);
+            if (r.capped) s.life.capped += 1;
             setAway({ ...r, gap, cap: derive(s).offlineCap });
         }
         s.at = Date.now();
@@ -110,6 +112,27 @@ export function NodeFarm() {
         greet.forEach((t, i) => setTimeout(() => log(t, i === 0 ? "good" : undefined), 180 + i * 360));
         setReady(true);
     }, [log]);
+
+    // ---- the naOS console's `nf` command asks for the live state here (see components/cm/console.tsx)
+    useEffect(() => {
+        if (!ready) return;
+        const onLive = (e: Event) => {
+            (e as CustomEvent<{ live?: NfLive }>).detail.live = {
+                s: g.current,
+                notify: (found) => {
+                    for (const f of found) {
+                        log(`Secret found: ${f.name}`, "good");
+                        setToast(f.name);
+                        sfx("nfGoal");
+                        setTimeout(() => setToast((t) => (t === f.name ? null : t)), 3200);
+                    }
+                    bump((n) => n + 1);
+                },
+            };
+        };
+        window.addEventListener("nf:live", onLive);
+        return () => window.removeEventListener("nf:live", onLive);
+    }, [ready, log]);
 
     // ---- save
     const save = useCallback(() => {
@@ -156,6 +179,7 @@ export function NodeFarm() {
             s.at = now;
             if (gap > 3) {
                 const r = offline(s, gap);
+                if (gap > 60 && r.capped) s.life.capped += 1;
                 if (gap > 60) setAway({ ...r, gap, cap: derive(s).offlineCap });
             } else tick(s, Math.max(0, gap));
             if (++tickN.current % 10 === 0 && s.perks.auto > 0) autoBuy(s);
@@ -184,7 +208,7 @@ export function NodeFarm() {
                 log("INTRUSION DETECTED. Open the trace before it closes.", "hot");
             }
             for (const goal of checkGoals(s)) {
-                log(`Goal: ${goal.name}`, "good");
+                log(goal.secret ? `Secret found: ${goal.name}` : `Goal: ${goal.name}`, "good");
                 setToast(goal.name);
                 sfx("nfGoal");
                 setTimeout(() => setToast((t) => (t === goal.name ? null : t)), 3200);
@@ -304,7 +328,7 @@ export function NodeFarm() {
                     {s.ap > 0 && <span><NfIcon name="ascend" /> {s.ap} AP</span>}
                 </div>
                 <div className="nf-dock" role="group" aria-label="Game windows">
-                    {(["goals", "ascend", "menu"] as const).map((w) => (
+                    {(["goals", "records", "ascend", "menu"] as const).map((w) => (
                         <button key={w} type="button" className="nf-dock-b" aria-haspopup="dialog" onClick={() => { setWin(w); sfx("tab"); }}>
                             {TAB_LABEL[w]}
                         </button>
@@ -314,7 +338,7 @@ export function NodeFarm() {
             {win && <button type="button" className="nf-scrim" aria-label="Close window" tabIndex={-1} onClick={() => setWin("")} />}
 
             <nav className="nf-tabs" aria-label="Game sections">
-                {(["core", "stats", "goals", "ascend", "menu"] as Tab[]).map((t) => (
+                {(["core", "stats", "goals", "records", "ascend", "menu"] as Tab[]).map((t) => (
                     <button key={t} type="button" className="nf-tab" aria-pressed={tab === t} data-tab-btn={t} onClick={() => setTabBoth(t)}>
                         {TAB_LABEL[t]}
                     </button>
@@ -361,6 +385,8 @@ export function NodeFarm() {
 
             <section className="nf-pane nf-sidepane" data-pane="goals" aria-label="Goals" role="dialog" aria-modal="false">
                 <WinBar title="Goals" onClose={() => setWin("")} /><GoalsPanel s={s} /></section>
+            <section className="nf-pane nf-sidepane" data-pane="records" aria-label="Records" role="dialog" aria-modal="false">
+                <WinBar title="Records" onClose={() => setWin("")} /><RecordsPanel s={s} /></section>
             <section className="nf-pane nf-sidepane" data-pane="ascend" aria-label="Ascend" role="dialog" aria-modal="false">
                 <WinBar title="Ascend" onClose={() => setWin("")} />
                 <AscendPanel s={s} d={d} confirm={confirm === "ascend"} onAscend={doAscend} onPerk={(id) => { if (buyPerk(s, id)) { sfx("nfBuy", { tier: 3 }); bump((n) => n + 1); } }} onNode={(id) => { if (buyNode(s, id)) { sfx("nfBuy", { tier: 4 }); bump((n) => n + 1); } }} />
