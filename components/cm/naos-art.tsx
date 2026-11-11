@@ -127,7 +127,9 @@ export function NaosBackdrop({ src }: { src: string }) {
             drift.x += (wantX - drift.x) * 0.1;
             drift.y += (wantY - drift.y) * 0.1;
             halo.style.transform = `translate3d(${(at.x - r).toFixed(1)}px, ${(at.y - r).toFixed(1)}px, 0)`;
-            backdrop.style.transform = `translate3d(${drift.x.toFixed(2)}px, ${drift.y.toFixed(2)}px, 0)`;
+            // At rest the transform is cleared, so the art paints exactly as it does with no script (no compositing layer).
+            const rest = wantX === 0 && wantY === 0 && Math.abs(drift.x) < 0.02 && Math.abs(drift.y) < 0.02;
+            backdrop.style.transform = rest ? "" : `translate(${drift.x.toFixed(2)}px, ${drift.y.toFixed(2)}px)`;
             const moving =
                 Math.abs(aim.x - at.x) > 0.3 || Math.abs(aim.y - at.y) > 0.3 || Math.abs(wantX - drift.x) > 0.05 || Math.abs(wantY - drift.y) > 0.05;
             if (moving) frame = window.requestAnimationFrame(tick);

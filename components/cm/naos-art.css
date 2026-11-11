@@ -41,7 +41,7 @@
    (NaosBackdrop) never shows an edge. The 64px background offset puts the art exactly where it sat before the
    overscan. The mask stays on .naos-backdrop, so the fade keeps its geometry. */
 .naos-backdrop-art {
-  position: absolute; inset: -64px; pointer-events: none; will-change: transform;
+  position: absolute; inset: -64px; pointer-events: none;
   background-position: center 64px; background-size: max(1440px, 100vw) auto; background-repeat: no-repeat;
   image-rendering: pixelated;
 }
