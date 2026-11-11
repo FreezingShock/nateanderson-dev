@@ -23,7 +23,7 @@ export function GameFrame({
     children: ReactNode;
 }) {
     return (
-        <div className="g-frame" data-rx="slide">
+        <div className="g-frame" data-rx="slide" data-rx-inh="">
             <div className="g-top">
                 <Scramble className="g-sys" replay text={`naOS // ${code}`} />
                 <span className="id-live">

@@ -11,6 +11,7 @@ import { SiteMap } from "@/components/cm/site-map";
 import { Boot, BOOT_SCRIPT } from "@/components/cm/boot";
 import { MotionRoot } from "@/components/cm/motion-root";
 import { CtosBody } from "@/components/cm/ctos-body";
+import { CTOS_BODY_SCRIPT } from "@/lib/ctos-body-script";
 import { SiteFooter } from "@/components/site-footer";
 import { SoundProvider } from "@/components/sound-provider";
 
@@ -96,6 +97,8 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
                     <ConsoleEntry />
                     <SoundProvider />
                 </ThemeProvider>
+                {/* Runs after <main> is parsed, before first paint: sets ctos-on for naOS pages (see lib/ctos-body-script.ts). */}
+                <script dangerouslySetInnerHTML={{ __html: CTOS_BODY_SCRIPT }} />
             </body>
         </html>
     );
