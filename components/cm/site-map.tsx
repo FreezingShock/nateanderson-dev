@@ -7,6 +7,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { navItems } from "@/lib/nav";
 import { openLauncher } from "@/components/cm/bar";
 import { useBackdropScrollLock } from "@/components/cm/scrim-lock";
+import { sfx } from "@/lib/sound/sounds";
 
 const isActive = (path: string, href: string) =>
     href === "/" ? path === "/" : path === href || path.startsWith(href + "/");
@@ -47,6 +48,14 @@ export function SiteMap() {
 
     // Any route change closes the map.
     useEffect(() => setOpen(false), [path]);
+
+    // The panel's own open and close scans (the buttons that open it are silent).
+    const sounded = useRef(false);
+    useEffect(() => {
+        if (open === sounded.current) return;
+        sounded.current = open;
+        sfx(open ? "open" : "close");
+    }, [open]);
 
     // Lock the page behind the map and move focus into it.
     useEffect(() => {
@@ -93,7 +102,7 @@ export function SiteMap() {
             >
                 <div className="nv-head">
                     <span>site map // {navItems.length} sections</span>
-                    <button type="button" className="nv-x" onClick={hide} aria-label="Close site map">
+                    <button type="button" className="nv-x" data-snd="off" onClick={hide} aria-label="Close site map">
                         <PixelIcon name="close" size={24} />
                     </button>
                 </div>

@@ -1,0 +1,82 @@
+/* ==========================================================================
+   Micro-interactions (2026-11-11). Loaded last in app/globals.css so it can refine every control.
+   Element-level feedback only: no scroll, reveal, scramble or page rules belong here.
+
+   Three responses, one set of rules across the site:
+     press   a snap in on :active (touch included) and a soft release. Hard-edged buttons flash cyan for the press.
+     hover   a cyan measuring edge draws across the top of cards, arrows nudge, chip dots grow. Pointer devices only.
+     focus   unchanged: the cyan outline from naos-surfaces.css and camino.components.css.
+
+   Rules that keep this safe:
+   - Movement uses the individual `translate` and `scale` properties, never `transform`. The reveal engine writes
+     `transform` on [data-rx] items (ctos.css), so a hover or press here cannot cancel a reveal in progress.
+   - Lifts on hover are not repeated here: .cm-card already lifts (camino.components.css, site.css).
+   - Colour and movement only. No layout change, no clip-path, no mask, no backdrop-filter.
+   - Reduced motion keeps the colour responses and drops every movement. The card edge fades instead of drawing.
+   ========================================================================== */
+
+/* ---- 1. Press: controls that did not have one yet --------------------------------------------------------------- */
+.nv-menu-btn:active, .nv-search:active, .nv-snd:active, .nv-term:active, .nv-x:active, .nv-map-search:active,
+.nv-brand:active, .nv-sec:active, .cm-tile:active, .ctos .g-card:active, .blog-post.is-link:active {
+  translate: 0 1px;
+}
+.cm-tile:active { scale: .94; translate: 0 0; }
+.nv-item a:active:not(.on) { background: var(--cm-cyan-wash); }
+.nv-kids a:active { color: var(--cm-cyan); }
+
+/* Text-style links and labels: a press flips them to the accent, so the click reads as taken. */
+.cm-more:active, a.cm-lbl:active, .cm-foot-col a:active { color: var(--cm-cyan); }
+
+/* Hard-edged buttons flash cyan for the frame of the press. Filled variants dim slightly instead. */
+.cm-btn:not(.solid):not(.paper):active,
+.cm-btn.paper:active { background: var(--cm-cyan); border-color: var(--cm-cyan); color: var(--cm-cyan-ink); }
+.cm-btn.solid:active { filter: brightness(.9); }
+.cm-btn:active .arrow { translate: 2px 0; }
+
+/* A pressed card sinks back to its resting shadow; the edge stays drawn while the finger is down. */
+.ctos .cm-card.link:active, .ctos a.cm-card:active, .ctos button.cm-card:active { box-shadow: var(--cm-ctos-lift); }
+
+/* ---- 2. Card measuring edge: the cyan line that draws across the top on hover, focus and press ------------------ */
+:where(a.cm-card, button.cm-card, .cm-card.link, .blog-post.is-link) { position: relative; }
+.cm-card:not(div)::before,
+.blog-post.is-link::before {
+  content: ""; position: absolute; left: -1px; right: -1px; top: -1px; height: 2px; z-index: 1; pointer-events: none;
+  background: var(--cm-cyan); transform: scaleX(0); transform-origin: 0 50%;
+  transition: transform var(--cm-d-base) var(--cm-ease);
+}
+.cm-card:not(div):hover::before, .cm-card:not(div):focus-visible::before, .cm-card:not(div):active::before,
+.blog-post.is-link:hover::before, .blog-post.is-link:focus-visible::before, .blog-post.is-link:active::before {
+  transform: scaleX(1);
+}
+
+/* Cards that fill white or cyan on hover (ctos.css hover grounds): a cyan edge would vanish, so it turns ink. */
+:is(.ctos .cm-grid > .cm-card:nth-child(3n+1), .ctos #explore .cm-grid > .cm-card:nth-child(4n+2), .tl-page .tl-next > .cm-card:nth-child(3n+1)):not(div):hover::before {
+  background: var(--cm-ctos-ink);
+}
+
+/* ---- 3. Hover responses (pointer devices, motion allowed) ------------------------------------------------------- */
+@media (hover: hover) and (prefers-reduced-motion: no-preference) {
+  .cm-btn .arrow { transition: translate var(--cm-d-base) var(--cm-ease); }
+  .cm-btn:hover .arrow { translate: 2px 0; }
+  .cm-chip .dot { transition: scale var(--cm-d-base) var(--cm-ease); }
+  .cm-chip:hover .dot { scale: 1.35; }
+  .cm-tile { transition: scale var(--cm-d-base) var(--cm-ease); }
+  .cm-tile:hover:not(:active) { scale: 1.06; }
+}
+
+/* ---- 4. Reduced motion: no movement, no scale, edge fades in place ---------------------------------------------- */
+@media (prefers-reduced-motion: reduce) {
+  .cm-card:not(div)::before, .blog-post.is-link::before {
+    transform: none; opacity: 0; transition: opacity var(--cm-d-fast) linear;
+  }
+  .cm-card:not(div):hover::before, .cm-card:not(div):focus-visible::before, .cm-card:not(div):active::before,
+  .blog-post.is-link:hover::before, .blog-post.is-link:focus-visible::before, .blog-post.is-link:active::before {
+    opacity: 1;
+  }
+  .nv-menu-btn:active, .nv-search:active, .nv-snd:active, .nv-term:active, .nv-x:active, .nv-map-search:active,
+  .nv-brand:active, .nv-sec:active, .cm-tile:active, .ctos .g-card:active, .blog-post.is-link:active,
+  .cm-tile:active, .cm-tile:hover, .cm-chip:hover .dot {
+    translate: none; scale: none;
+  }
+  .cm-btn:active .arrow, .cm-btn:hover .arrow { translate: none; }
+}
