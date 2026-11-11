@@ -324,6 +324,16 @@
 .ctos .g-grid { grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); }
 .ctos .g-pills { list-style: none; margin: 2px 0 0; padding: 0; }
 
+/* Card tags: the format (Daily or Unlimited) sits beside the status tag. */
+.ctos .g-tags { display: inline-flex; flex-wrap: wrap; gap: 6px; justify-content: flex-end; }
+
+/* Coming frames: an honest status for a section with no playable game yet. No cards, no filler. */
+.ctos .g-soon {
+    margin: 0;
+    font: 400 var(--cm-ctos-t-ui)/1.55 var(--cm-display);
+    color: var(--cm-mute);
+}
+
 /* Mode nav: jump links to each mode with its playable count. */
 .ctos .g-hub-nav {
     display: flex;

@@ -19,7 +19,7 @@ export default function GamesPage() {
                     {GAME_MODES.map((m) => (
                         <a key={m.id} href={`#${m.id}`}>
                             {m.title}
-                            <span>{m.games.filter((g) => g.href).length}</span>
+                            <span>{m.games.filter((g) => g.href).length || "soon"}</span>
                         </a>
                     ))}
                 </nav>
