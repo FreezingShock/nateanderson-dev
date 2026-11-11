@@ -240,7 +240,7 @@ body.ctos-on .cm-foot-base { font-family: var(--cm-mono); }
 .ctos .pf-pillars > div:nth-child(odd) { background: var(--cm-ctos-block); color: var(--cm-ctos-ink); }
 .ctos .pf-pillars > div:nth-child(odd) dt { color: #076e77; } .ctos .pf-pillars > div:nth-child(odd) small { color: #4a4a47; }
 .ctos .pf-pillars > div:nth-child(even) { background: #0f0f0f; background-image: radial-gradient(circle, rgba(244,244,242,.1) 0 28%, transparent 32%); background-size: 5px 5px; }
-.ctos .pf-pillars dd { font-weight: 800; letter-spacing: -.03em; text-transform: lowercase; font-size: 19px; }
+.ctos .pf-pillars dd { font-weight: 800; letter-spacing: -.03em; text-transform: lowercase; font-size: var(--cm-ctos-t-lead); }
 .ctos .pf-now { background: #0e0e0e; border-color: var(--cm-hair-hi); }
 .ctos .pf-feed { font-family: var(--cm-mono); }
 .ctos .pf-feed li { font: 400 var(--cm-ctos-t-small)/1.5 var(--cm-mono); grid-template-columns: 88px minmax(0, 1fr); }

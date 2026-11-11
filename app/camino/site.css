@@ -63,7 +63,7 @@ div.cm-card:hover { transform: none; }
 .cm-foot-wrap { display: grid; gap: var(--cm-s5); }
 .cm-foot-top { display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr) minmax(0, 1fr); gap: var(--cm-s6) var(--cm-s5); align-items: start; }
 .cm-foot-brand { display: grid; gap: var(--cm-s4); justify-items: start; min-width: 0; }
-.cm-foot-tagline { margin: 0; max-width: 46ch; font: 400 14px/1.55 var(--cm-display); color: var(--cm-mute); text-wrap: pretty; }
+.cm-foot-tagline { margin: 0; max-width: 46ch; font: 400 var(--cm-ctos-t-body)/1.55 var(--cm-display); color: var(--cm-mute); text-wrap: pretty; }
 .cm-foot-status { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; }
 .cm-foot-status .cm-read { font-size: var(--cm-ctos-t-micro); letter-spacing: .1em; text-transform: uppercase; white-space: nowrap; }
 .cm-foot-status .cm-coord { white-space: nowrap; }
