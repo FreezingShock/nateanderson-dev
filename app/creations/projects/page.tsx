@@ -16,7 +16,7 @@ export default async function ProjectsPage() {
             variant="sub"
             aside={<ListStatusCard label="projects // index" badge="pj" projects={projects} />}
         >
-            <Section id="projects" no="01" label="All projects" title="Open any project." blurb="Open any project for its status, tags and links.">
+            <Section id="projects" no="01" label="All projects" title="Open any project." blurb="Status, tags and links for each one.">
                 <ProjectGrid projects={projects} />
             </Section>
         </CreationsShell>

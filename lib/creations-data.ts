@@ -36,7 +36,7 @@ export const CATEGORIES: CreationCategory[] = [
         title: "Web App Games",
         color: "var(--cm-good)",
         icon: Ic.Gamepad2,
-        blurb: "Playable in the browser, right here on the site: daily puzzles, unlimited practice, incremental progression and tycoon games.",
+        blurb: "Playable in the browser: daily puzzles, unlimited practice, incremental progression and tycoon games.",
         tags: ["Daily", "Unlimited", "Incremental", "Tycoon"],
     },
     {
@@ -45,7 +45,7 @@ export const CATEGORIES: CreationCategory[] = [
         title: "Projects",
         color: "var(--cm-cyan)",
         icon: Ic.Code2,
-        blurb: "Coding projects: solo-built, systems-driven, shipped and in progress.",
+        blurb: "Coding projects: solo-built, systems-driven, shipped or in progress.",
         tags: ["Coding", "Games", "Systems"],
     },
     {
@@ -63,7 +63,7 @@ export const CATEGORIES: CreationCategory[] = [
         title: "Artwork",
         color: "var(--cm-violet)",
         icon: Ic.Palette,
-        blurb: "The AP Art portfolio, 3D renders and drawings: the creative practice around the engineering.",
+        blurb: "The AP Art portfolio, 3D renders and drawings: the creative side of the engineering work.",
         tags: ["AP Art", "3D", "Drawing"],
     },
 ];

@@ -32,7 +32,7 @@ export default async function CreationsPage() {
             }
             eyebrow="Made / Creations"
             title={["Creations"]}
-            description="Everything I build: games you can play here, coding projects, renovation studies of real places, and the artwork around it all."
+            description="Games to play here, coding projects, renovation studies of real places, and the artwork around it all."
             aside={
                 <IdCard
                     label="creations // index"
@@ -66,7 +66,7 @@ export default async function CreationsPage() {
                 no="03"
                 label="Game modes"
                 title="Two ways to play."
-                blurb="A daily puzzle and an unlimited practice mode. Each links to its games."
+                blurb="A daily puzzle and unlimited practice. Each one links to its games."
             >
                 <div className="cm-grid cr-modes">
                     {GAME_MODES.map((m) => {

@@ -221,7 +221,7 @@ export const building: BuildingItem[] = [
         color: "var(--cm-cyan)",
         status: "Always building",
         description:
-            "A living project: renovation studies, design work and creations across mediums, changing in public with every commit.",
+            "A living project: renovation studies, design work and creations, changing in public with every commit.",
         href: "/history",
         cta: "Read the changelog",
     },
