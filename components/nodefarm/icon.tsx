@@ -4,9 +4,11 @@ import type { CSSProperties } from "react";
 // must match ICONS in that script. Sizes are whole multiples of the art (32 or 64) so the pixels stay square; the CSS lives in
 // app/camino/nodefarm.css (.nf-ic, .l, .r).
 const ORDER = ["bytes", "mult", "reboot", "copper", "silicon", "quartz", "aether", "ascend", "alert", "lock", "spark"] as const;
-export type NfIconName = (typeof ORDER)[number];
+export type NfIconName = (typeof ORDER)[number] | "runes" | "starglass" | "voidsteel" | "chrono";
+// New deep materials borrow a cell until the art pass draws their own.
+const ALIAS: Record<string, (typeof ORDER)[number]> = { runes: "aether", starglass: "quartz", voidsteel: "silicon", chrono: "spark" };
 
 export function NfIcon({ name, large = false, responsive = false, className = "" }: { name: NfIconName; large?: boolean; responsive?: boolean; className?: string }) {
-    const i = ORDER.indexOf(name);
+    const i = ORDER.indexOf((ALIAS[name] ?? name) as (typeof ORDER)[number]);
     return <span aria-hidden="true" className={`nf-ic${large ? " l" : ""}${responsive ? " r" : ""} ${className}`.trim()} style={{ ["--i" as string]: i } as CSSProperties} />;
 }

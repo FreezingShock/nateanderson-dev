@@ -3,6 +3,7 @@
 import { PixelIcon } from "@/components/cm/pixel-icons";
 import { GOALS, PERKS, TIER_NAMES, TUNE, apOnAscend, canAscend, derive, fmt, fmtTime, goalDone, tiersDone, type State } from "@/lib/nodefarm/engine";
 import { NfIcon } from "./icon";
+import { TreePanel } from "./tree";
 
 type D = ReturnType<typeof derive>;
 const ROMAN = ["", "I", "II", "III", "IV", "V"];
@@ -58,7 +59,7 @@ export function GoalsPanel({ s }: { s: State }) {
     );
 }
 
-export function AscendPanel({ s, d, confirm, onAscend, onPerk }: { s: State; d: D; confirm: boolean; onAscend: () => void; onPerk: (id: (typeof PERKS)[number]["id"]) => void }) {
+export function AscendPanel({ s, d, confirm, onAscend, onPerk, onNode }: { s: State; d: D; confirm: boolean; onAscend: () => void; onPerk: (id: (typeof PERKS)[number]["id"]) => void; onNode: (id: string) => void }) {
     const gain = apOnAscend(s);
     const after = (1 + (s.ap + gain) * TUNE.apBonus) / (1 + s.ap * TUNE.apBonus);
     return (
@@ -66,12 +67,13 @@ export function AscendPanel({ s, d, confirm, onAscend, onPerk }: { s: State; d: 
             <section className="nf-asc">
                 <header className="nf-sys-h">
                     <h3>Ascend</h3>
-                    <p>Wipe the whole run. You keep goals, perks and lifetime stats, and get Ascension Points (AP). Each AP adds +{TUNE.apBonus * 100}% to everything, permanently.</p>
+                    <p>Wipe the whole run. You keep goals, perks, the tree and lifetime stats, and get Ascension Points (AP). Each AP adds +{TUNE.apBonus * 100}% to everything, permanently.</p>
                 </header>
                 <div className="nf-asc-card">
                     <NfIcon name="ascend" large />
                     <div className="nf-asc-stats">
                         <span><small>Aether</small><b>{fmt(s.aether)} / {fmt(TUNE.ascendAether)}</b></span>
+                        {s.runes > 0 && <span><small>Deep materials add</small><b>{`Runes ${fmt(s.runes)}`}{s.starglass > 0 ? ` · Starglass ${fmt(s.starglass)}` : ""}</b></span>}
                         <span><small>AP now</small><b>{s.ap}</b></span>
                         <span><small>On ascend</small><b>{gain > 0 ? `+${gain} AP` : "locked"}</b></span>
                         <span><small>Global</small><b>{gain > 0 ? `×${fmt(d.global)} → ×${fmt(d.global * after)}` : `×${fmt(d.global)}`}</b></span>
@@ -106,6 +108,7 @@ export function AscendPanel({ s, d, confirm, onAscend, onPerk }: { s: State; d: 
                     })}
                 </ul>
             </section>
+            <TreePanel s={s} onNode={onNode} />
         </div>
     );
 }

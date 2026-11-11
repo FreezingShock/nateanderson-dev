@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { sfx } from "@/lib/sound/sounds";
 import { useSoundPrefs } from "@/lib/sound/use-sound";
 import {
-    TUNE, ascend, autoBuy, breach, button, buyPerk, checkGoals, derive, exportSave, fmt, fmtTime, fresh, isUnlocked, offline, parseSave, press, STATS, tick,
+    TUNE, ascend, autoBuy, breach, button, buyNode, buyPerk, checkGoals, derive, exportSave, fmt, fmtTime, fresh, isUnlocked, offline, parseSave, press, STATS, tick,
     type ButtonStat, type State,
 } from "@/lib/nodefarm/engine";
 import { Core, type CoreFeed } from "./core";
@@ -323,6 +323,10 @@ export function NodeFarm() {
                             {away.gain.silicon > 0 && ` · +${fmt(away.gain.silicon)} Si`}
                             {away.gain.quartz > 0 && ` · +${fmt(away.gain.quartz)} Qz`}
                             {away.gain.aether > 0 && ` · +${fmt(away.gain.aether)} Ae`}
+                            {away.gain.runes > 0 && ` · +${fmt(away.gain.runes)} Rn`}
+                            {away.gain.starglass > 0 && ` · +${fmt(away.gain.starglass)} Sg`}
+                            {away.gain.voidsteel > 0 && ` · +${fmt(away.gain.voidsteel)} Vs`}
+                            {away.gain.chrono > 0 && ` · +${fmt(away.gain.chrono)} Ch`}
                         </span>
                         <button type="button" className="nf-mini" onClick={() => setAway(null)}>Dismiss</button>
                     </div>
@@ -347,7 +351,7 @@ export function NodeFarm() {
                 <WinBar title="Goals" onClose={() => setWin("")} /><GoalsPanel s={s} /></section>
             <section className="nf-pane nf-sidepane" data-pane="ascend" aria-label="Ascend" role="dialog" aria-modal="false">
                 <WinBar title="Ascend" onClose={() => setWin("")} />
-                <AscendPanel s={s} d={d} confirm={confirm === "ascend"} onAscend={doAscend} onPerk={(id) => { if (buyPerk(s, id)) { sfx("nfBuy", { tier: 3 }); bump((n) => n + 1); } }} />
+                <AscendPanel s={s} d={d} confirm={confirm === "ascend"} onAscend={doAscend} onPerk={(id) => { if (buyPerk(s, id)) { sfx("nfBuy", { tier: 3 }); bump((n) => n + 1); } }} onNode={(id) => { if (buyNode(s, id)) { sfx("nfBuy", { tier: 4 }); bump((n) => n + 1); } }} />
             </section>
             <section className="nf-pane nf-sidepane" data-pane="menu" aria-label="Menu" role="dialog" aria-modal="false">
                 <WinBar title="Menu" onClose={() => setWin("")} />
