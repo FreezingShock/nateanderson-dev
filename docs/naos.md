@@ -44,9 +44,10 @@ lines rise in. Keep hero size responsive (`clamp`), check 390px.
 ## Panel recipe (the Status card)
 `.ctos .cm-panel` already gives: cyan left border, small top-right bracket, dither strip at the bottom. Layout used on
 the homepage `.hero-status.id`: `.id-top` (white header bar, scrambled `naOS // label`), `.id-main` (badge + dl rows),
-`.id-foot` (signal bars + coordinates). Add a `.p-foot` strip for a mono footer line. Vary cards with
-`:nth-child(3n+1/2/3)` and cyan-filled variants so a grid is never monotone. Dither = dotted radial-gradient masked to
-fade; never gray flickering pixel blocks.
+`.id-foot` (signal bars + coordinates). Add a `.p-foot` strip for a mono footer line.
+Cards do not vary by position: every `.ctos .cm-card` is the same dark panel with the dot field (ctos.css, "Cards").
+A live item (`.cm-tag.live`) or a hovered card takes the cyan top edge. Card titles are lowercase display, like every
+naOS display line. Dither = dotted radial-gradient masked to fade; never gray flickering pixel blocks.
 
 ## Reveals and scramble
 - `Section ctos` auto-tags its children (`[data-rx-auto]`: grids, rows, text leaves; see `GROUPS/ROWS/TEXTS` in the
