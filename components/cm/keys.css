@@ -60,3 +60,9 @@
 @media (prefers-reduced-motion: reduce) {
     .cm-keys-btn { transition: none; }
 }
+
+/* The Node Farm window keys are short one-word rows, so they sit in two columns instead of a tall list. */
+@media (min-width: 561px) {
+    .nv-keys-group[data-short] .nv-keys-list { display: grid; grid-template-columns: 1fr 1fr; column-gap: 28px; }
+    .nv-keys-group[data-short] .nv-keys-row { grid-template-columns: 40px minmax(0, 1fr); gap: 12px; padding: 8px 0; }
+}

@@ -4,10 +4,11 @@
 // Entries are data in lib/nodefarm/codex.ts (hidden until their system opens, numbers read from the engine). Desktop shows
 // index and reader side by side; a phone shows the index, then one entry with a back button. Styles: app/camino/nodefarm-codex.css.
 import { useEffect, useMemo, useRef, useState } from "react";
+import { nfx } from "@/lib/nodefarm/sound";
 import { codeReveal } from "@/lib/nodefarm/cx";
 import { ENTRIES, ENTRY_BY, GROUPS, codexNew, codexSeen, markCodexSeen, unlocked, type Block, type CodexOpen } from "@/lib/nodefarm/codex";
 import type { State } from "@/lib/nodefarm/engine";
-import { DataLines, Frame } from "./win-kit";
+import { DataLines, Frame, WinBanner } from "./win-kit";
 import "@/app/camino/nodefarm-codex.css";
 
 const COLOR = "#ff6b57";
@@ -53,18 +54,20 @@ export function CodexPanel({ s, shown, onOpen }: { s: State; shown: boolean; onO
     }, [entry?.id]);
     const total = ENTRIES.length;
     const fresh = list.filter((e) => !seen.has(e.id)).length;
-    const pick = (id: string) => { setSel(id); setView("entry"); };
+    const pick = (id: string) => { setSel(id); setView("entry"); nfx("nfPage"); };
 
     return (
         <div className="nf-sys nf-wk nf-cdx" data-v={view}>
-            <header className="nf-cdx-top" data-cx-i="0">
-                <p className="nf-cdx-path">~/codex</p>
-                <dl className="nf-cdx-read">
-                    <div><dt>ENTRIES</dt><dd>{list.length}{list.length < total ? ` of ${total}` : ""}</dd></div>
-                    <div><dt>NEW</dt><dd>{fresh}</dd></div>
-                </dl>
-                <p className="nf-cdx-lead">What each system does, written as you reach it. More entries open as the farm grows.</p>
-            </header>
+            <WinBanner
+                art="codex"
+                color={COLOR}
+                readout={[
+                    ["~/codex", ""],
+                    ["ENTRIES", `${list.length}${list.length < total ? ` of ${total}` : ""}`],
+                    ["NEW", `${fresh}`],
+                ]}
+            />
+            <p className="nf-wk-note">What each system does, written as you reach it. More entries open as the farm grows.</p>
             <div className="nf-cdx-grid" data-cx-i="1">
                 <nav className="nf-cdx-list" aria-label="Codex entries">
                     {GROUPS.map((g) => {
@@ -89,7 +92,7 @@ export function CodexPanel({ s, shown, onOpen }: { s: State; shown: boolean; onO
                     {list.length < total && <p className="nf-cdx-more">{total - list.length} more {total - list.length === 1 ? "entry is" : "entries are"} encrypted.</p>}
                 </nav>
                 <Frame path={`codex/${entry.id}`} color={COLOR} className="nf-cdx-fr" aside={entry.where}>
-                    <button type="button" className="nf-cdx-back" onClick={() => setView("list")}>◂ all entries</button>
+                    <button type="button" className="nf-cdx-back" onClick={() => { setView("list"); nfx("nfPage"); }}>◂ all entries</button>
                     <div className="nf-cdx-body" ref={reader} aria-live="polite">
                         <h2 className="nf-cdx-h">{entry.title}</h2>
                         <Body blocks={body} />

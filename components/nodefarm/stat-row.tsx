@@ -1,6 +1,6 @@
 "use client";
 
-import { useContext, useEffect, useRef, type CSSProperties } from "react";
+import { memo, useContext, useEffect, useRef, type CSSProperties } from "react";
 import { MATS, ROMAN, STATS, TIERS, button, postOf, zoneRank, derive, droneBoost, originAp, paradoxOc, bloomKeys, sunstoneAll, singularityAll, fmt, fmtTime, hasFeature, isUnlocked, statDef, type ButtonStat, type State, type StatId } from "@/lib/nodefarm/engine";
 import { LORE } from "@/lib/nodefarm/lore";
 import { fnCaption } from "@/lib/nodefarm/feed";
@@ -12,7 +12,9 @@ import { hasZoneArt } from "@/lib/nodefarm/zone-art";
 import { ZoneArt } from "./zone-art";
 import { ZoneRig } from "./rig";
 import { ZoneEvent } from "./zone-event";
+import { Hold } from "./hold";
 import { eventsFor, zoneEvDef, type ZeChoice } from "@/lib/nodefarm/zoneevents";
+import { readyCount } from "@/lib/nodefarm/layout";
 
 type D = ReturnType<typeof derive>;
 export type PressFn = (stat: ButtonStat, tier: number, quiet?: boolean) => boolean;
@@ -74,7 +76,7 @@ function effects(id: StatId, s: State, d: D): [string, string][] {
 }
 
 /** The signal chain: who boosts whom, with live multipliers. Sits above the stat dossiers. Only the zones you have reached, plus the next one, are drawn. */
-export function Chain({ s, d, onAll, allOpen }: { s: State; d: D; onAll: (open: boolean) => void; allOpen: boolean }) {
+export function Chain({ s, d, onAll, allOpen, onIdle, onJump }: { s: State; d: D; onAll: (open: boolean) => void; allOpen: boolean; onIdle?: () => void; onJump?: (id: StatId) => void }) {
     const feed: Partial<Record<StatId, string>> = {
         sunstone: `Geodes ×${fmt(d.boosts.suGe)}`,
         geodes: `Magma ×${fmt(d.boosts.geMg)}`,
@@ -118,16 +120,25 @@ export function Chain({ s, d, onAll, allOpen }: { s: State; d: D; onAll: (open: 
             )}
             {shown.map((def, i) => {
                 const open = isUnlocked(s, def.id);
-                return (
-                    <li key={def.id} data-open={open ? "" : undefined} data-ev={open && eventsFor(s, def.id).length ? "" : undefined} style={{ ["--c" as string]: def.color, ["--ev" as string]: zoneEvDef(eventsFor(s, def.id)[0]?.kind ?? "surge").color }}>
+                const rdy = open ? readyCount(s, def.id) : 0;
+                const body = (
+                    <>
                         <NfIcon name={open ? (def.id as NfIconName) : "lock"} />
                         <b>{def.short}</b>
                         <small>{open ? feed[def.id] : "encrypted"}</small>
+                    </>
+                );
+                return (
+                    <li key={def.id} data-open={open ? "" : undefined} data-ready={rdy ? "" : undefined} data-ev={open && eventsFor(s, def.id).length ? "" : undefined} style={{ ["--c" as string]: def.color, ["--ev" as string]: zoneEvDef(eventsFor(s, def.id)[0]?.kind ?? "surge").color }}>
+                        {open && onJump ? (
+                            <button type="button" className="nf-chain-b" onClick={() => onJump(def.id)} aria-label={`Go to ${def.name}${rdy ? `, ${rdy} button${rdy > 1 ? "s" : ""} ready` : ""}`}>{body}</button>
+                        ) : body}
                         {i < shown.length - 1 && <i aria-hidden="true">▸</i>}
                     </li>
                 );
             })}
             <li className="nf-chain-all">
+                {onIdle && <button type="button" className="nf-mini" onClick={onIdle} title="Fold every zone with nothing to buy">Fold idle</button>}
                 <button type="button" className="nf-mini" onClick={() => onAll(!allOpen)}>{allOpen ? "Minimize all" : "Expand all"}</button>
             </li>
         </ol>
@@ -170,10 +181,12 @@ export function StatRow({ id, s, d, onPress, onArm, onWatchdog, open: expanded, 
     const bodyId = `nf-body-${id}`;
     const evs = eventsFor(s, id);
     return (
-        <article className="nf-row" style={{ ["--c" as string]: def.color, ...(evs.length ? { ["--ev" as string]: zoneEvDef(evs[0].kind).color } : null) }} data-ev={evs.length ? "" : undefined} data-stat={id} data-open={expanded ? "true" : "false"} data-ready={!expanded && ready > 0 ? "" : undefined} data-guide={guide?.stat === id ? "" : undefined} data-art={hasZoneArt(id) ? "" : undefined} onClick={(e) => { if (!expanded && !(e.target as HTMLElement).closest("button")) onToggle(); }}>
+        <article className="nf-row" style={{ ["--c" as string]: def.color, ...(evs.length ? { ["--ev" as string]: zoneEvDef(evs[0].kind).color } : null) }} data-ev={evs.length ? "" : undefined} data-stat={id} data-open={expanded ? "true" : "false"} data-ready={!expanded && ready > 0 ? "" : undefined} data-guide={guide?.stat === id ? "" : undefined} data-art={hasZoneArt(id) ? "" : undefined}>
             <ZoneArt id={id} s={s} />
             <div className="nf-bar-t">
+                <span className="nf-bar-ic" aria-hidden="true"><NfIcon name={id as NfIconName} /></span>
                 <span>ZONE {String(STATS.findIndex((x) => x.id === id) + 1).padStart(2, "0")} // {lore.zone}</span>
+                {!expanded && <span className="nf-bar-v" title={exact(amt)}><b>{fmt(amt)}</b> {def.short}{rate > 0 && <small> +{fmt(rate)}/s</small>}</span>}
                 <span className="nf-bar-s">{buttons > 0 ? `${ready}/${buttons} ready` : "online"}</span>
                 <button type="button" className="nf-fold" aria-expanded={expanded} aria-controls={bodyId} aria-label={`${expanded ? "Minimize" : "Expand"} ${def.name}`} onClick={onToggle}>
                     <i aria-hidden="true" />
@@ -186,7 +199,7 @@ export function StatRow({ id, s, d, onPress, onArm, onWatchdog, open: expanded, 
                     <span className="nf-code">{lore.code}</span>
                 </div>
                 <div className="nf-row-n">
-                    <b title={exact(amt)}>{fmt(amt)}</b>
+                    <b>{fmt(amt)}</b>
                     {rate > 0 && <small>+{fmt(rate)}/s</small>}
                     {prod > 0 && <small>{fmt(prod)} nodes</small>}
                 </div>
@@ -194,6 +207,8 @@ export function StatRow({ id, s, d, onPress, onArm, onWatchdog, open: expanded, 
             {evs.map((e) => <ZoneEvent key={e.id} s={s} zone={id} e={e} onChoose={(i, c) => onZoneEv?.(i, c)} cardId={zeCard} />)}
             <div className="nf-body" id={bodyId}>
                 <div className="nf-body-in" ref={bodyIn} inert={!expanded}>
+                    {/* a folded zone cannot be read, so its body keeps its last render and comes back fresh the moment it opens */}
+                    <Hold live={expanded} k={`${guide?.stat === id ? guide.tier : ""}${evs.length}`}>
                     <p className="nf-brief">{lore.flavor}</p>
                     <dl className="nf-spec" aria-label="Effects">
                         {effects(id, s, d).map(([k, v]) => (
@@ -221,6 +236,7 @@ export function StatRow({ id, s, d, onPress, onArm, onWatchdog, open: expanded, 
                             ))}
                         </div>
                     )}
+                    </Hold>
                 </div>
             </div>
         </article>
@@ -229,10 +245,23 @@ export function StatRow({ id, s, d, onPress, onArm, onWatchdog, open: expanded, 
 
 // A buy button, skinned per stat in CSS. Press once to buy; hold to keep buying (after 0.4 s, then 10 a second).
 function BuyBtn({ s, d, stat, tier, onPress, guided }: { s: State; d: D; stat: ButtonStat; tier: number; onPress: PressFn; guided: boolean }) {
-    const tips = useContext(TipCtx);
     const b = button(s, stat, tier);
-    const pays = statDef(b.pays);
     const afford = (s[b.pays] as number) >= b.cost;
+    // Forecast node: how long until this button is affordable, at the current rate of the stat that pays for it
+    const payRate = b.pays === "bytes" ? d.bytesPerSec : (MATS as readonly string[]).includes(b.pays) ? d.rates[b.pays as (typeof MATS)[number]] : 0;
+    const eta = !afford && payRate > 0 && (guided || hasFeature(s, "forecast")) ? (b.cost - (s[b.pays] as number)) / payRate : 0;
+    // The button redraws only when something it prints changes: a ten-a-second tick moves the amounts but rarely these strings.
+    return <BuyView s={s} stat={stat} tier={tier} onPress={onPress} guided={guided} gain={fmt(b.gain)} gainN={b.gain} cost={Number.isFinite(b.cost) ? fmt(b.cost) : ""} exactCost={Number.isFinite(b.cost) ? exact(b.cost) : ""} afford={afford} pays={b.pays} owned={stat === "reboot" ? 0 : s.bought[stat][tier]} eta={eta > 0 ? (eta < 86400 * 30 ? fmtTime(eta) : "a long while") : ""} />;
+}
+
+const BuyView = memo(function BuyView({ s, stat, tier, onPress, guided, gain, gainN, cost, exactCost, afford, pays: paysId, owned, eta }: { s: State; stat: ButtonStat; tier: number; onPress: PressFn; guided: boolean; gain: string; gainN: number; cost: string; exactCost: string; afford: boolean; pays: StatId; owned: number; eta: string }) {
+    const tips = useContext(TipCtx);
+    const pays = statDef(paysId);
+    // "you have N" in the price tooltip is filled in when the pointer arrives, so the amount ticking up does not redraw the button
+    const costTip = (el: HTMLElement) => {
+        const c = el.querySelector<HTMLElement>(".nf-btn-c");
+        if (c && exactCost) c.title = `Costs ${exactCost} ${pays.name}${afford ? "" : `, you have ${exact(s[paysId] as number)}`}`;
+    };
     const t = useRef<ReturnType<typeof setTimeout> | null>(null);
     const iv = useRef<ReturnType<typeof setInterval> | null>(null);
     const pending = useRef(false); // touch: a press waiting for release
@@ -245,20 +274,17 @@ function BuyBtn({ s, d, stat, tier, onPress, guided }: { s: State; d: D; stat: B
     const build = () => buttonTip(s, stat, tier);
     const isReboot = stat === "reboot";
     const name = LORE[stat].tiers[tier];
-    const owned = isReboot ? 0 : s.bought[stat][tier];
-    // Forecast node: how long until this button is affordable, at the current rate of the stat that pays for it
-    const payRate = b.pays === "bytes" ? d.bytesPerSec : (MATS as readonly string[]).includes(b.pays) ? d.rates[b.pays as (typeof MATS)[number]] : 0;
-    const eta = !afford && payRate > 0 && (guided || hasFeature(s, "forecast")) ? (b.cost - (s[b.pays] as number)) / payRate : 0;
     return (
         <button
             type="button"
             className="nf-btn"
             data-afford={afford ? "" : undefined}
+            data-locked={cost ? undefined : ""}
             data-tier={tier}
             data-guide={guided ? "" : undefined}
-            aria-label={`${name}: ${isReboot ? "Reboot for" : "buy"} +${fmt(b.gain)} ${statDef(stat).name} for ${fmt(b.cost)} ${pays.name}${owned ? `, owned ${owned}` : ""}`}
-            onPointerEnter={(e) => { if (e.pointerType === "mouse") tips.show(e.currentTarget, build, { guided }); }}
-            onFocus={(e) => { if (e.currentTarget.matches(":focus-visible")) tips.show(e.currentTarget, build, { guided }); }}
+            aria-label={`${name}: ${isReboot ? "Reboot for" : "buy"} +${gain} ${statDef(stat).name} for ${cost} ${pays.name}${owned ? `, owned ${owned}` : ""}`}
+            onPointerEnter={(e) => { costTip(e.currentTarget); if (e.pointerType === "mouse") tips.show(e.currentTarget, build, { guided }); }}
+            onFocus={(e) => { costTip(e.currentTarget); if (e.currentTarget.matches(":focus-visible")) tips.show(e.currentTarget, build, { guided }); }}
             onBlur={(e) => tips.hide(e.currentTarget)}
             onPointerDown={(e) => {
                 if (e.pointerType === "mouse" && e.button !== 0) return;
@@ -305,12 +331,16 @@ function BuyBtn({ s, d, stat, tier, onPress, guided }: { s: State; d: D; stat: B
             {guided && <i className="nf-gd-c" aria-hidden="true" />}
             <i className="nf-rar" aria-hidden="true" />
             <NfTierIcon stat={stat} tier={tier} />
-            <span className="nf-btn-g">+{fmt(b.gain)}</span>
-            <span className="nf-btn-fn" aria-hidden="true">{fnCaption(stat, b.gain)}</span>
-            <span className="nf-btn-c" title={`Costs ${exact(b.cost)} ${pays.name}${afford ? "" : `, you have ${exact(s[b.pays] as number)}`}`}>{fmt(b.cost)} {pays.short}{owned > 0 && <em> · ×{owned}</em>}{eta > 0 && <em className="nf-eta"> · {eta < 86400 * 30 ? fmtTime(eta) : "a long while"}</em>}</span>
+            <span className="nf-btn-g">+{gain}</span>
+            <span className="nf-btn-fn" aria-hidden="true">{fnCaption(stat, gainN)}</span>
+            {cost ? (
+                <span className="nf-btn-c" title={`Costs ${exactCost} ${pays.name}`}>{cost} {pays.short}{owned > 0 && <em> · ×{owned}</em>}{eta && <em className="nf-eta"> · {eta}</em>}</span>
+            ) : (
+                <span className="nf-btn-c">locked in this test</span>
+            )}
         </button>
     );
-}
+});
 
 const DRONE_DOT = ["#2fd8e8", "#b6f04a", "#f08a3c", "#7aa2ff", "#e08cff", "#ffc53a"];
 /** The Drones posted to this zone (a blinking light each, in the Drone's colour) and the zone's mastery rank. */

@@ -129,7 +129,9 @@
 }
 .ctos .nf-sw-ph .nf-tab::before { content: ""; position: absolute; left: -1px; right: -1px; top: -1px; height: 2px; background: var(--sw); opacity: 0; }
 .ctos .nf-sw-ph .nf-sw-l { max-width: 100%; font: 700 11px/1 var(--cm-mono); letter-spacing: .1em; text-transform: uppercase; color: #d8d8d8; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.ctos .nf-sw-ph .nf-sw-r { max-width: 100%; font: 500 11px/1 var(--cm-mono); letter-spacing: 0; color: var(--cm-ctos-meta); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-variant-numeric: tabular-nums; }
+.ctos .nf-sw-ph .nf-sw-r { max-width: 100%; font: 500 11px/1 var(--cm-mono); letter-spacing: 0; color: var(--cm-ctos-meta); white-space: normal; overflow-wrap: anywhere; overflow: hidden; text-overflow: ellipsis; font-variant-numeric: tabular-nums; }
+/* the readout wraps to a second line instead of cutting "1000 AP free" to "1000 AP f…" in a 60px cell */
+@media (min-width: 360px) { .ctos .nf-sw-ph .nf-sw-r { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; line-height: 1.15; } }
 .ctos .nf-sw-ph .nf-sw-pip { right: 6px; top: 6px; }
 .ctos .nf-sw-ph .nf-tab[aria-pressed="true"] { background: color-mix(in srgb, var(--sw) 14%, #0e0e0e); border-color: color-mix(in srgb, var(--sw) 70%, #1c1c1c); color: inherit; }
 .ctos .nf-sw-ph .nf-tab[aria-pressed="true"]::before { opacity: 1; }

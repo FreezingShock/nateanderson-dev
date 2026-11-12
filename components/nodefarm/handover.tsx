@@ -151,7 +151,7 @@ function Ledger({ s }: { s: State }) {
         `Rig levels${f.rigKeep ? ` (half stay: Rig memory)` : ""}`,
     ];
     const keeps = [
-        "Goals, secrets and story logs",
+        "Goals, secrets and operator logs",
         "Exploit Lab research",
         ...(s.auto?.own.length ? ["Scripts you have learned"] : []),
         ...(s.dr?.nodes.length || masteryRanks(s) ? ["The hangar: postings, mastery and the drone tree"] : []),
@@ -174,7 +174,7 @@ function Protocols({ s, pick, pick2, onPick, onPick2 }: { s: State; pick: ProtoI
     const running = s.hand.proto;
     return (
         <section className="nf-hx-proto" data-cx-i="2">
-            <header className="nf-sys-h">
+            <header className="nf-sys-h" data-path="handover/protocol">
                 <h3>Protocol</h3>
                 <p>
                     {s.hand.count === 0 ? "The next operator runs one of the old operators' protocols for the whole cycle. Pick it before you hand over." : live ? "Operator's desk: a change takes effect at once." : "Your pick takes effect at the next Handover."}
@@ -214,7 +214,7 @@ function Gateway({ s, onFirmware }: { s: State; onFirmware: () => void }) {
     const ready = fwReady(s);
     return (
         <section className="nf-hx-gate" data-cx-i="4">
-            <header className="nf-sys-h">
+            <header className="nf-sys-h" data-path="handover/firmware">
                 <h3>Firmware</h3>
                 <p>{FW.length} upgrades in {["one", "two", "three", "four", "five"][FW_SECS.length - 1]} sections, flashed with Keys. {s.hand.keys} Keys held{ready ? `, ${ready} ready to flash` : ""}.</p>
             </header>
@@ -239,7 +239,7 @@ function Gateway({ s, onFirmware }: { s: State; onFirmware: () => void }) {
 function Notes({ s, note, setNote }: { s: State; note: string; setNote: (v: string) => void }) {
     return (
         <section className="nf-hx-notes" data-cx-i="5">
-            <header className="nf-sys-h">
+            <header className="nf-sys-h" data-path="handover/note">
                 <h3>Handover note</h3>
                 <p>Optional. Every operator before you left one. Yours shows up here and in Records.</p>
             </header>
