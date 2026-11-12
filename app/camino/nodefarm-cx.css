@@ -16,3 +16,8 @@ body.nf-win-open .nf-jb { z-index: 55; }
 /* quick-time event scrim fades while its card deletes out */
 .ctos .nf-ev-scrim[data-out] { opacity: 0; transition: opacity .12s steps(3, end) .06s; }
 .ctos .nf-ev { --cx-c: #ff6a3d; }
+
+/* decrypt: glyph noise over each row */
+.nf-cx-fx .nf-cx-noise { position: absolute; display: block; overflow: hidden; white-space: pre; text-decoration: none; background: #0b0b0b; color: var(--k); font: 500 12px/13px var(--cm-mono, monospace); letter-spacing: .02em; opacity: .9; }
+/* crt: scanlines over the whole window while it switches on or off */
+.nf-cx-fx em { position: absolute; inset: 0; opacity: 0; background: repeating-linear-gradient(0deg, transparent 0 2px, color-mix(in srgb, var(--k) 22%, transparent) 2px 3px); }
