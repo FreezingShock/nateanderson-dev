@@ -61,6 +61,7 @@ import { ZoneEventCard } from "./zone-event";
 import { zeChoose, zoneEvDef, zoneLabel, type ZeChoice } from "@/lib/nodefarm/zoneevents";
 import { ARCS, arcKey, arcOf } from "@/lib/nodefarm/arcs";
 import { ArcHead } from "./arcs";
+import { ArcRail, ArcStep } from "./arc-rail";
 import { PokeLayer } from "./poke";
 import { StressPanel, StressStrip } from "./stress";
 import { chOpen, leaveTest, startTest, takeChNews, testDef, RANKS, type TestId } from "@/lib/nodefarm/stress";
@@ -1083,7 +1084,10 @@ export function NodeFarm() {
         sfx("tab");
         setTimeout(() => document.querySelector<HTMLElement>(`.nf [data-stat="${key}"]`)?.scrollIntoView({ behavior: reduced ? "auto" : "smooth", block: "center" }), 90);
     };
-    // one arc at a time: open this arc, fold the others, and bring its header up if it is off screen
+    // the arc rail: the picked arc is the newest one not folded (the fold record keeps the pick across reloads)
+    const liveArcs = shownArcIds(s);
+    const selArc = [...liveArcs].reverse().find((id) => !folded[arcKey(id)]) ?? liveArcs[liveArcs.length - 1];
+    // pick an arc on the rail: fold the others, and bring its header up if it is off screen
     const focusArc = (id: string) => {
         setFold(soloArc(folded, id));
         sfx("tab");
@@ -1096,9 +1100,9 @@ export function NodeFarm() {
     };
     keyApi.current.arc = (dir) => {
         if (win || treeOpen || labTree) return;
-        const ids = shownArcIds(s);
+        const ids = liveArcs;
         if (!ids.length) return;
-        const cur = ids.findIndex((id) => !folded[arcKey(id)]);
+        const cur = ids.indexOf(selArc);
         setTab("stats");
         focusArc(ids[cur < 0 ? (dir > 0 ? 0 : ids.length - 1) : (cur + dir + ids.length) % ids.length]);
     };
@@ -1236,7 +1240,7 @@ export function NodeFarm() {
             </section>
 
             <section className="nf-pane nf-statspane" data-pane="stats" aria-label="Stats and buttons" onClick={(e) => blankFoldTarget(e.target as HTMLElement)?.click()}>
-                <Chain s={s} d={d} allOpen={!STATS.every((x) => folded[x.id])} onAll={(open) => setFold({ ...folded, ...Object.fromEntries(STATS.map((x) => [x.id, !open])), ...(open ? Object.fromEntries(ARCS.map((a) => [arcKey(a.id), false])) : {}) })} onIdle={foldIdle} onJump={(id) => goTo({ stat: id as Target["stat"] })} />
+                <Chain s={s} d={d} allOpen={!STATS.every((x) => folded[x.id])} onAll={(open) => setFold({ ...folded, ...Object.fromEntries(STATS.map((x) => [x.id, !open])) })} onIdle={foldIdle} onJump={(id) => goTo({ stat: id as Target["stat"] })} />
                 {labOpen(s) && (
                     <LabZone
                         s={s}
@@ -1281,19 +1285,22 @@ export function NodeFarm() {
                         onTree={() => { setWin(""); setTreeOpen(false); setLabTree(false); setDroneTree(true); sfx("tab"); }}
                     />
                 )}
+                <ArcRail s={s} arcs={liveArcs} sel={selArc} onPick={focusArc} />
                 {ARCS.map((arc, ai) => {
                     const shown = arc.zones.filter((z) => isUnlocked(s, z as StatId) || z === firstLocked);
                     if (!shown.length) return null;
                     const preview = !shown.some((z) => isUnlocked(s, z as StatId)); // only the next encrypted zone: always shown
-                    const arcOpen = preview || !folded[arcKey(arc.id)];
+                    if (!preview && arc.id !== selArc) return null; // the rail shows one arc at a time
+                    const arcOpen = true;
                     return (
-                        <div key={arc.id} className="nf-arcgrp" data-arc={arc.id} data-preview={preview ? "" : undefined} role="group" aria-label={arc.name} style={{ ["--arc" as string]: arc.color } as CSSProperties}>
-                            <ArcHead arc={arc} no={ai + 1} s={s} open={arcOpen} onToggle={() => { if (preview) return; if (arcOpen) { setFold({ ...folded, [arcKey(arc.id)]: true }); sfx("tab"); } else focusArc(arc.id); }} />
+                        <div key={arc.id} className="nf-arcgrp" data-arc={arc.id} data-preview={preview ? "" : undefined} data-rail="" role="group" aria-label={arc.name} style={{ ["--arc" as string]: arc.color } as CSSProperties}>
+                            <ArcHead arc={arc} no={ai + 1} s={s} open={arcOpen} onToggle={() => {}} />
                             {arcOpen && (
                                 <div id={`nf-arc-${arc.id}`} className="nf-arc-zones">
                                     {shown.map((id) => (
                                         <StatRow key={id} id={id as StatId} s={s} d={d} guide={guideTarget} onPress={doPress} onArm={() => { toggleArm(s, id as StatId); sfx("tab"); bump((n) => n + 1); }} onWatchdog={() => { s.watchdog = !s.watchdog; sfx("tab"); log(`Watchdog timer ${s.watchdog ? "on: Reboots run themselves" : "off"}.`, s.watchdog ? "good" : "warn"); bump((n) => n + 1); }} open={!folded[id]} onToggle={() => { setFold({ ...folded, [id]: !folded[id] }); sfx("tab"); }} onZoneEv={onZoneEv} zeCard={zeCard} />
                                     ))}
+                                    {!preview && <ArcStep s={s} arcs={liveArcs} sel={selArc} onPick={focusArc} />}
                                 </div>
                             )}
                         </div>
