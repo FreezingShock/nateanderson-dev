@@ -11,8 +11,9 @@ import { scrambleNow } from "@/lib/motion/engine";
 import { GOALS, STATS, TREE, TUNE, apOnAscend, canAscend, fmt, isUnlocked, nodeOpen, type State, ascendNeed, handSeen, keysOnHandover } from "@/lib/nodefarm/engine";
 import { goalCounts } from "@/lib/nodefarm/records";
 import { LOGS } from "@/lib/nodefarm/story";
+import { RANKS_ALL, chOpen, chRun, ranksTotal, testDef } from "@/lib/nodefarm/stress";
 
-export type WinId = "map" | "goals" | "records" | "ascend" | "handover" | "menu" | "tree";
+export type WinId = "map" | "goals" | "records" | "ascend" | "handover" | "stress" | "menu" | "tree";
 /** Everything the rail and hop strip can open: the windows plus the full-screen menus (tree, lab). */
 export type OpenId = WinId | "lab";
 export type SwId = OpenId | "core" | "stats" | "full";
@@ -27,11 +28,12 @@ export const SW: Record<SwId, Def> = {
     ascend: { label: "Ascend", key: "A", icon: "ascend", color: "#ff2d8a", path: "ascend" },
     tree: { label: "Tree", key: "T", icon: "tree", color: "#a98bff", path: "tree" },
     handover: { label: "Handover", key: "H", icon: "key", color: "#3dff6e", path: "handover" },
+    stress: { label: "Stress", key: "X", icon: "zap", color: "#ff5a3c", path: "stress" },
     lab: { label: "Lab", icon: "code", color: "#9fd0ff", path: "lab" },
     menu: { label: "Menu", key: "S", icon: "settings", color: "#b6f04a", path: "config" },
     full: { label: "Full screen", key: "F", icon: "expand", color: "#e8e8e8", path: "fs" },
 };
-const WIN_ORDER: OpenId[] = ["map", "goals", "records", "ascend", "tree", "lab", "handover", "menu"];
+const WIN_ORDER: OpenId[] = ["map", "goals", "records", "ascend", "tree", "lab", "stress", "handover", "menu"];
 /** Tree and lab show once seen; anything else can hide itself through its info line (Handover, before the Origin arc ends). */
 const shown = (w: OpenId, tree: boolean, lab: boolean, info?: SwInfo) => (w !== "tree" || tree) && (w !== "lab" || lab) && !info?.[w]?.hide;
 
@@ -76,6 +78,7 @@ export function swInfo(s: State, bps: number, lastSave: number, fs: boolean, lab
         menu: { read: ago < 0 ? "not saved" : ago < 60 ? `saved ${ago}s` : `saved ${Math.floor(ago / 60)}m` },
         lab: { read: labReady ? `${labReady} ready` : `${fmt(s.lab.intel)} intel`, hot: labReady > 0 },
         full: { read: fs ? "on" : "off" },
+        stress: { read: chRun(s) ? testDef(chRun(s)!.id).name.toLowerCase() : `${ranksTotal(s)}/${RANKS_ALL} ranks`, hot: !!chRun(s), hide: !chOpen(s) },
         handover: { read: hkeys > 0 ? `ready +${hkeys} keys` : s.hand.count ? `${s.hand.keys} keys` : "node zero", hot: hkeys > 0, hide: !handSeen(s) },
     };
 }

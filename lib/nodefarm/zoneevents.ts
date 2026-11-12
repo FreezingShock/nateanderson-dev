@@ -3,7 +3,7 @@
 // or wait it out). Nothing ever takes stock from you, and time away just lets an event run out. Pure rules, no React: the numbers
 // live in ZE_TUNE (engine.ts, because the engine reads them), the strip on the zone panel is components/nodefarm/zone-event.tsx.
 import {
-    STATS, TICK_HOOKS, ZE_TUNE, derive, isUnlocked, overclockMult, resonancePair, statDef, zeOut,
+    STATS, TICK_HOOKS, ZE_TUNE, chOff, derive, isUnlocked, overclockMult, resonancePair, statDef, zeOut,
     type State, type StatId, type ZoneEvActive, type ZoneEvKind, type ZoneEvState, MATS, type MatId,
 } from "./engine";
 import { LORE } from "./lore";
@@ -122,7 +122,7 @@ export function zeStep(s: State, dt: number) {
     }
     if (z.act.length) return;
     z.wait = Math.max(0, z.wait - dt);
-    if (z.wait > 0 || dt > 5) return;
+    if (z.wait > 0 || dt > 5 || chOff(s, "events")) return;
     const r = rollEvent(s);
     z.wait = ZE_TUNE.gap[0] + Math.random() * (ZE_TUNE.gap[1] - ZE_TUNE.gap[0]);
     if (r) zeStart(s, r.kind, r.zone);
