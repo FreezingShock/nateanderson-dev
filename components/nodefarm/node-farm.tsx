@@ -5,7 +5,7 @@ import { sfx } from "@/lib/sound/sounds";
 import { setHum } from "@/lib/sound/engine";
 import { useSoundPrefs } from "@/lib/sound/use-sound";
 import {
-    TUNE, overclockMult, overclockSecs, respec, ascend, autoBuy, breach, button, buyDrone, buyNode, buyPerk, toggleArm, checkGoals, derive, exportSave, fmt, fmtTime, fresh, getNumFmt, setNumFmt, type NumFmt, isUnlocked, offline, parseSave, press, STATS, tick,
+    TUNE, overclockMult, overclockSecs, respec, ascend, autoBuy, breach, button, buyDrone, buyNode, canAfford, buyPerk, toggleArm, checkGoals, derive, exportSave, fmt, fmtTime, fresh, getNumFmt, setNumFmt, type NumFmt, isUnlocked, offline, parseSave, press, STATS, tick,
     apEach, dropFill, hasFeature, openDrop, pressMax, setMount, statDef,
     buyLabNode, cancelCompile, compile, deploy, labNode, labOpen, payload, type PayloadId,
     buyFw, fwNode, handSeen, handover, protoDef, respecFw, setProto, type ProtoId,
@@ -15,6 +15,7 @@ import type { NfLive } from "@/lib/nodefarm/records";
 import { Core, type CoreFeed } from "./core";
 import { NfIcon } from "./icon";
 import { EventLayer } from "./events";
+import { MiniHud } from "./mini-hud";
 import { RARITY, payLoot, type Loot } from "@/lib/nodefarm/events";
 import { AwayReport, type Away } from "./away";
 import { Scenery, SceneWindow } from "./scenery";
@@ -37,7 +38,7 @@ import { LOGS, logNo, recoverLogs } from "@/lib/nodefarm/story";
 import { Juice, juice, checkMilestones } from "./juice";
 import { GuideStrip, Tip, TipCtx, type TipApi, type TipState } from "./guide";
 import { MapPanel } from "./map";
-import { nextStep, type Target } from "@/lib/nodefarm/guide";
+import { exact, nextStep, type Target } from "@/lib/nodefarm/guide";
 import { GoalsPanel, MenuPanel, RecordsPanel } from "./systems";
 import { AscendPanel } from "./ascend";
 import { HandoverPanel, fwModel } from "./handover";
@@ -53,6 +54,7 @@ const FS_KEY = "nf-fs-v1"; // full screen mode on or off (per device)
 const HUM_KEY = "nf-hum-v1"; // reactor hum on or off (per device)
 const UI_KEY = "nf-ui-v1"; // which stat panels are minimized (per device, not part of the game save)
 const MAX_KEY = "nf-max-v1"; // "1" when Buy max (Batch job node) is switched on (per device)
+const JUMP_KEY = "nf-jump-v1"; // "off" when the page should not scroll to the board on a return visit (per device)
 const CALM_KEY = "nf-calm-v1"; // "1" when motion is forced calm, on top of the OS setting (per device)
 const FMT_KEY = "nf-numfmt-v1"; // number format: short | sci | eng (per device)
 const BACKUP_KEY = "nf-backup-v1"; // the save as it was just before an import, a wipe or a failed load (one slot)
@@ -288,6 +290,7 @@ export function NodeFarm() {
             if (localStorage.getItem(EV_KEY) === "off") setEvOn(false);
             if (localStorage.getItem(MAX_KEY) === "1") setBuyMax(true);
             if (localStorage.getItem(CALM_KEY) === "1") setCalm(true);
+            if (localStorage.getItem(JUMP_KEY) === "off") setJumpOn(false);
             const nf = localStorage.getItem(FMT_KEY);
             if (nf === "sci" || nf === "eng") { setNumFmt(nf); setNumFmtState(nf); }
             setBackup(readBackup());
@@ -724,6 +727,12 @@ export function NodeFarm() {
         document.body.classList.toggle("nf-calm", calm);
         return () => document.body.classList.remove("nf-calm");
     }, [calm]);
+    const [jumpOn, setJumpOn] = useState(true);
+    const toggleJump = () => {
+        const v = !jumpOn;
+        setJumpOn(v);
+        try { localStorage.setItem(JUMP_KEY, v ? "on" : "off"); } catch {}
+    };
     const toggleCalm = () => {
         const v = !calm;
         setCalm(v);
@@ -735,6 +744,29 @@ export function NodeFarm() {
         try { localStorage.setItem(FMT_KEY, f); } catch {}
     };
 
+    // ---- coming back to a save: the page opens with the intro on top, so bring the board into view once (a first visit still reads the intro)
+    const brought = useRef(false);
+    useEffect(() => {
+        if (!ready || brought.current) return;
+        brought.current = true;
+        const s = g.current;
+        let off = false;
+        try { off = localStorage.getItem(JUMP_KEY) === "off"; } catch {}
+        if (off || !s || s.life.presses < 20 || location.hash || window.scrollY > 120) return;
+        // the page settles for a moment (fonts, backdrop), so align twice and stop as soon as the player scrolls themselves
+        let y = -1;
+        const align = () => {
+            const el = document.querySelector<HTMLElement>(".nf");
+            if (!el || (y >= 0 && Math.abs(window.scrollY - y) > 2)) return;
+            y = Math.max(0, Math.round(el.getBoundingClientRect().top + window.scrollY - 70));
+            window.scrollTo({ top: y, behavior: "auto" });
+        };
+        const t = setTimeout(align, 350);
+        const t2 = setTimeout(align, 1300);
+        const t3 = setTimeout(align, 2600);
+        return () => { clearTimeout(t); clearTimeout(t2); clearTimeout(t3); };
+    }, [ready]);
+
     // ---- tab title: while the tab is in the background it shows the rate, so progress is visible from the tab strip
     useEffect(() => {
         if (!ready) return;
@@ -742,7 +774,10 @@ export function NodeFarm() {
         const upd = () => {
             const s = g.current;
             if (!s) return;
-            document.title = document.visibilityState === "hidden" ? `${fmt(derive(s).bytesPerSec)}/s · Node Farm` : base;
+            const d = derive(s);
+            const st = nextStep(s, d);
+            const ready = st.target?.stat !== undefined && st.frac >= 1 ? "● ready · " : "";
+            document.title = document.visibilityState === "hidden" ? `${ready}${fmt(d.bytesPerSec)}/s · Node Farm` : base;
         };
         document.addEventListener("visibilitychange", upd);
         const iv = setInterval(upd, 2000);
@@ -750,19 +785,25 @@ export function NodeFarm() {
     }, [ready]);
 
     // ---- keyboard: one letter per window. Off while typing, with a modifier, over another panel or during an event.
-    const keyApi = useRef<{ open: (w: Win | "tree") => void; max: () => void; lab: () => void; fw: () => void }>({ open: () => {}, max: () => {}, lab: () => {}, fw: () => {} });
+    const keyApi = useRef<{ open: (w: Win | "tree") => void; max: () => void; lab: () => void; fw: () => void; go: () => void; press: (held: boolean) => void; tier: (k: number, held: boolean) => void }>({ open: () => {}, max: () => {}, lab: () => {}, fw: () => {}, go: () => {}, press: () => {}, tier: () => {} });
     useEffect(() => {
         if (!ready) return;
         const onKey = (e: KeyboardEvent) => {
-            if (e.ctrlKey || e.metaKey || e.altKey || e.isComposing || e.repeat) return;
+            if (e.ctrlKey || e.metaKey || e.altKey || e.isComposing) return;
             const el = e.target as HTMLElement | null;
             if (el && (el.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(el.tagName))) return;
             if (document.querySelector(".nv-scrim, .nf-ev-scrim:not([data-out]), .nf-aw, .nf-rx")) return;
+            // P presses the glowing button of the next step; holding it keeps buying like holding the button does
+            if (e.key.toLowerCase() === "p") { e.preventDefault(); keyApi.current.press(e.repeat); return; }
+            // 1 to 6 press that tier on the zone in the middle of the screen
+            if (/^[1-6]$/.test(e.key)) { e.preventDefault(); keyApi.current.tier(Number(e.key) - 1, e.repeat); return; }
+            if (e.repeat) return;
             const w = ({ m: "map", o: "goals", l: "records", a: "ascend", h: "handover", s: "menu", t: "tree" } as const)[e.key.toLowerCase() as "m"];
             if (w) { e.preventDefault(); keyApi.current.open(w); }
             else if (e.key.toLowerCase() === "k") { e.preventDefault(); keyApi.current.fw(); }
             else if (e.key.toLowerCase() === "b") keyApi.current.max();
             else if (e.key.toLowerCase() === "r") { e.preventDefault(); keyApi.current.lab(); }
+            else if (e.key.toLowerCase() === "g") { e.preventDefault(); keyApi.current.go(); }
         };
         window.addEventListener("keydown", onKey);
         return () => window.removeEventListener("keydown", onKey);
@@ -800,6 +841,14 @@ export function NodeFarm() {
         setTab(t);
         if (SIDE.includes(t)) setSide(t);
         sfx("tab");
+        // phones: the section opens under the tab grid, usually below the fold, so a tap would look like nothing happened
+        if (window.innerWidth < 1000) {
+            requestAnimationFrame(() => requestAnimationFrame(() => {
+                const bar = document.querySelector<HTMLElement>(".nf-tabs");
+                if (!bar) return;
+                window.scrollTo({ top: Math.max(0, bar.getBoundingClientRect().top + window.scrollY - 64), behavior: reduced ? "auto" : "smooth" });
+            }));
+        }
     };
     const openWin = (w: Win | "tree") => {
         if (w === "tree") { setWin(""); setTreeOpen(true); sfx("tab"); return; }
@@ -836,6 +885,9 @@ export function NodeFarm() {
     };
     const treeSeenK = s.life.ascends > 0 || s.ap > 0 || s.tree.length > 0;
     keyApi.current = {
+        go: () => {},
+        press: () => {},
+        tier: () => {},
         lab: () => { if (labTree) setLabTree(false); else if (!treeOpen && !fwTree) openLab(); },
         fw: () => { if (fwTree) setFwTree(false); else if (!treeOpen && !labTree) openFw(); },
         open: (w) => {
@@ -867,6 +919,34 @@ export function NodeFarm() {
         sfx("tab");
         setTimeout(() => document.querySelector<HTMLElement>(`.nf [data-stat="${key}"]`)?.scrollIntoView({ behavior: reduced ? "auto" : "smooth", block: "center" }), 90);
     };
+    keyApi.current.tier = (k, held) => {
+        if (win || treeOpen || labTree) return;
+        // the open zone nearest the middle of the screen
+        const mid = window.innerHeight / 2;
+        let best: HTMLElement | null = null;
+        let gap = Infinity;
+        document.querySelectorAll<HTMLElement>(".nf-row[data-open='true']").forEach((row) => {
+            if (!row.querySelector(".nf-btn")) return;
+            const r = row.getBoundingClientRect();
+            const dist = r.top <= mid && r.bottom >= mid ? 0 : Math.min(Math.abs(r.top - mid), Math.abs(r.bottom - mid));
+            if (dist < gap) { gap = dist; best = row; }
+        });
+        const row = best as HTMLElement | null;
+        if (!row || gap > window.innerHeight) return;
+        if (held && row.dataset.stat === "reboot") return;
+        const b = row.querySelector<HTMLButtonElement>(`.nf-btn[data-tier="${k}"]`);
+        if (b) b.click();
+    };
+    keyApi.current.go = () => { if (!win && !treeOpen && !labTree) goTo(step.target); };
+    keyApi.current.press = (held) => {
+        const t = step.target;
+        if (win || treeOpen || labTree || !t) return;
+        // nothing to press (a window, a Drone or the lab): P does what Show me does
+        if (!t.stat || t.tier === undefined) { if (!held) goTo(t); return; }
+        if (held && t.stat === "reboot") return;
+        if (!canAfford(s, t.stat, t.tier)) { if (!held) { sfx("deny"); goTo(t); } return; }
+        doPress(t.stat, t.tier, held);
+    };
     const treeSeen = s.life.ascends > 0 || s.ap > 0 || s.tree.length > 0;
     const sw = swInfo(s, d.bytesPerSec, lastSave, fs, labReady(s), win === "records" || (tab === "records" && !win));
     const era = eraOf(s);
@@ -888,7 +968,7 @@ export function NodeFarm() {
                 <div className="nf-hud-main">
                     <NfIcon name="bytes" responsive />
                     <div>
-                        <b className="nf-big">{fmt(s.bytes)}</b>
+                        <b className="nf-big" title={`${exact(s.bytes)} Bytes`}>{fmt(s.bytes)}</b>
                         <span className="nf-sub">Bytes · +{fmt(d.bytesPerSec)}/s</span>
                     </div>
                 </div>
@@ -900,9 +980,9 @@ export function NodeFarm() {
                 )}
                 <div className="nf-hud-side">
                     {!fs && <button type="button" className="nf-fsb" onClick={() => { setFs(true); sfx("tab"); }} aria-label="Full screen">Full</button>}
-                    <span><NfIcon name="reboot" /> {fmt(s.reboot)}</span>
-                    <span><NfIcon name="mult" /> {fmt(s.mult)}</span>
-                    {s.ap > 0 && <span><NfIcon name="ascend" /> {s.ap} AP</span>}
+                    <span className="nf-hud-n" title="Reboots: every one makes Multiplier buttons hit harder"><NfIcon name="reboot" /> {fmt(s.reboot)}<small>RBT</small></span>
+                    <span className="nf-hud-n" title="Multipliers: each adds Bytes every second"><NfIcon name="mult" /> {fmt(s.mult)}<small>MUL</small></span>
+                    {s.ap > 0 && <span className="nf-hud-n" title="Ascension Points: spend them in the prestige tree"><NfIcon name="ascend" /> {s.ap}<small>AP</small></span>}
                     {hasFeature(s, "deaddrop") && <DeadDrop s={s} onOpen={() => {
                         const got = openDrop(s);
                         if (!got) return sfx("deny");
@@ -916,6 +996,7 @@ export function NodeFarm() {
                 <Dock info={sw} open={win} treeSeen={treeSeen} lab={labOpen(s)} guideWin={step.target?.win} fs={fs} onOpen={(w) => (w === "lab" ? openLab() : win === w ? closeWin() : openWin(w))} onFs={() => { setFs(!fs); sfx("tab"); }} />
             </header>
             <GuideStrip step={step} onGo={() => goTo(step.target)} onMap={() => openWin("map")} mapOpen={win === "map"} />
+            <MiniHud bytes={s.bytes} rate={d.bytesPerSec} step={step} onGo={() => goTo(step.target)} paused={!!win || treeOpen || labTree || !!away || !!confirm} />
             {win && <button type="button" className="nf-scrim" aria-label="Close window" tabIndex={-1} onClick={closeWin} />}
 
             <PhoneTabs info={sw} tab={tab} treeSeen={treeSeen} lab={labOpen(s)} guideWin={step.target?.win} onTab={(t) => setTabBoth(t)} onTree={() => openWin("tree")} onLab={openLab} />
@@ -1040,6 +1121,8 @@ export function NodeFarm() {
                     calm={calm}
                     osCalm={osReduced}
                     onCalm={toggleCalm}
+                    jumpOn={jumpOn}
+                    onJump={toggleJump}
                     lastSave={lastSave}
                     numFmt={numFmt}
                     onNumFmt={setFormat}

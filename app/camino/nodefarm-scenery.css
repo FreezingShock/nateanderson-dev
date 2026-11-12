@@ -16,6 +16,13 @@
 [data-era="6"] { --scn: url(/naos/nodefarm/scene-6.webp?v=76eee990); --det: url(/naos/nodefarm/detail-6.webp?v=3001322c); }
 [data-era="7"] { --scn: url(/naos/nodefarm/scene-7.webp?v=b737a80a); --det: url(/naos/nodefarm/detail-7.webp?v=b3252828); }
 [data-era="8"] { --scn: url(/naos/nodefarm/scene-8.webp?v=e5c4b5c3); --det: url(/naos/nodefarm/detail-8.webp?v=c245fb2c); }
+/* layered eras (scripts/naos-art/nodefarm-scenes-deep.py): --scn is the flattened still for the one-image surfaces */
+[data-era="9"] { --scn: url(/naos/nodefarm/scene-9.webp?v=70a2f587); --det: url(/naos/nodefarm/detail-9.webp?v=50fb0922); --scn-far: url(/naos/nodefarm/scene-9-far.webp?v=6910f1e6); --scn-near: url(/naos/nodefarm/scene-9-near.webp?v=efc38df0); --scn-fx: url(/naos/nodefarm/scene-9-fx.webp?v=2764cd75); }
+[data-era="10"] { --scn: url(/naos/nodefarm/scene-10.webp?v=efd33a89); --det: url(/naos/nodefarm/detail-10.webp?v=dbefd183); --scn-far: url(/naos/nodefarm/scene-10-far.webp?v=aca61142); --scn-near: url(/naos/nodefarm/scene-10-near.webp?v=c95b55df); --scn-fx: url(/naos/nodefarm/scene-10-fx.webp?v=ef79c619); }
+[data-era="11"] { --scn: url(/naos/nodefarm/scene-11.webp?v=798809f4); --det: url(/naos/nodefarm/detail-11.webp?v=4f4f3bf0); --scn-far: url(/naos/nodefarm/scene-11-far.webp?v=f7823e5a); --scn-near: url(/naos/nodefarm/scene-11-near.webp?v=98030fd6); --scn-fx: url(/naos/nodefarm/scene-11-fx.webp?v=f83f19c0); }
+[data-era="12"] { --scn: url(/naos/nodefarm/scene-12.webp?v=1044283c); --det: url(/naos/nodefarm/detail-12.webp?v=c88828dc); --scn-far: url(/naos/nodefarm/scene-12-far.webp?v=9717f89f); --scn-near: url(/naos/nodefarm/scene-12-near.webp?v=5873edea); --scn-fx: url(/naos/nodefarm/scene-12-fx.webp?v=9fb4b995); }
+[data-era="13"] { --scn: url(/naos/nodefarm/scene-13.webp?v=7d764928); --det: url(/naos/nodefarm/detail-13.webp?v=d4378817); --scn-far: url(/naos/nodefarm/scene-13-far.webp?v=dcbeae42); --scn-near: url(/naos/nodefarm/scene-13-near.webp?v=51f95c53); --scn-fx: url(/naos/nodefarm/scene-13-fx.webp?v=dec646d4); }
+[data-era="14"] { --scn: url(/naos/nodefarm/scene-14.webp?v=d9f43657); --det: url(/naos/nodefarm/detail-14.webp?v=4beab320); --scn-far: url(/naos/nodefarm/scene-14-far.webp?v=7bbfd3d7); --scn-near: url(/naos/nodefarm/scene-14-near.webp?v=2e8dbf2c); --scn-fx: url(/naos/nodefarm/scene-14-fx.webp?v=dfb439f3); }
 
 .ctos .nf { isolation: isolate; }
 
@@ -28,6 +35,22 @@
 .ctos .nf-scn-l[data-out] { animation: nfScnOut 1.4s steps(7) both; }
 @media (min-width: 1000px) { .ctos .nf-scn-l { background-size: 1440px 810px; } }
 
+/* layered eras: a far layer that drifts sideways (one tile per --drift, one art pixel per step) behind the near layer, whose top
+   background is the fx sheet (8 frames stacked top to bottom) stepped at 5 fps. Both step background-position, so they repaint
+   only when a step lands; a transform drift measured worse (the compositor redraws the whole masked stage every frame).
+   --tw/--th are the tile size: 3 css px per art px on desktop, 2 on phones, same as the flat eras. */
+.ctos .nf-scn-l[data-deep] { --tw: 960px; --th: 540px; background: none; }
+@media (min-width: 1000px) { .ctos .nf-scn-l[data-deep] { --tw: 1440px; --th: 810px; } }
+.ctos .nf-scn-far, .ctos .nf-scn-near { position: absolute; left: 0; right: 0; bottom: 0; image-rendering: pixelated; }
+.ctos .nf-scn-far { top: 0; background: var(--scn-far) repeat-x 0 100% / var(--tw) var(--th); }
+.ctos .nf-scn-far[data-drift] { animation: nfScnDrift var(--drift, 600s) steps(480) infinite; }
+.ctos .nf-scn-near { top: 0; background-image: var(--scn-fx), var(--scn-near); background-repeat: repeat-x; background-size: var(--tw) calc(var(--th) * 8), var(--tw) var(--th);
+    background-position: center bottom calc(var(--th) * -7), center bottom; animation: nfScnFx 1.6s steps(8) infinite; }
+@keyframes nfScnDrift { to { background-position: calc(var(--tw) * -1) 100%; } }
+@keyframes nfScnFx { to { background-position: center bottom var(--th), center bottom; } }
+/* nothing to see under the full-screen tree, and Calm motion means calm */
+body.nf-tm-open .ctos .nf-scn-far, body.nf-tm-open .ctos .nf-scn-near, body.nf-calm .ctos .nf-scn-far, body.nf-calm .ctos .nf-scn-near { animation-play-state: paused; }
+
 /* window under the core: fills the empty rail with the current scene */
 .ctos .nf-scn-win { position: relative; margin-top: 10px; height: 144px; overflow: hidden; background: #0a0a0a; border: 1px solid var(--nf-line);
     --b: color-mix(in srgb, var(--cm-cyan) 80%, transparent);
@@ -35,6 +58,11 @@
 @media (min-width: 1000px) { .ctos .nf-scn-win { height: 132px; } }
 .ctos .nf-scn-win-i { position: absolute; inset: 0; background: var(--det) 50% 50% / 360px 144px no-repeat; image-rendering: pixelated; opacity: .9; animation: nfScnWin .9s steps(6) both; }
 @keyframes nfScnWin { from { opacity: 0; } to { opacity: .9; } }
+/* layered eras: the close-up is 8 frames stacked, so the box is exactly one frame tall and steps through them */
+.ctos .nf-scn-win-i[data-deep] { inset: auto 0; top: 50%; height: 144px; margin-top: -72px; background-size: 360px 1152px; background-position: center 0;
+    animation: nfScnWin .9s steps(6) both, nfScnWinFx 1.6s steps(8) infinite; }
+@keyframes nfScnWinFx { to { background-position: center -1152px; } }
+body.nf-tm-open .ctos .nf-scn-win-i[data-deep], body.nf-calm .ctos .nf-scn-win-i[data-deep] { animation-play-state: paused; }
 .ctos .nf-scn-cap { position: absolute; left: 8px; bottom: 8px; padding: 4px 8px; background: #0c0c0cd9; font: 700 var(--cm-ctos-t-micro)/1 var(--cm-mono); letter-spacing: .14em; color: var(--cm-ctos-meta); }
 
 /* Ascend pane: the gate and stairs above the card */
@@ -47,6 +75,6 @@ body .nf-rx.nf-rx { background-image: linear-gradient(#050505d9, #050505d9), url
 @media (min-width: 1000px) { body .nf-rx.nf-rx { background-size: auto, 1440px 810px; } }
 
 @media (prefers-reduced-motion: reduce) {
-    .ctos .nf-scn-l, .ctos .nf-scn-l[data-out], .ctos .nf-scn-win-i { animation: none; }
+    .ctos .nf-scn-l, .ctos .nf-scn-l[data-out], .ctos .nf-scn-win-i, .ctos .nf-scn-far, .ctos .nf-scn-near, .ctos .nf-scn-win-i[data-deep] { animation: none; }
     .ctos .nf-scn-l[data-out] { display: none; }
 }

@@ -33,7 +33,7 @@ export function GuideStrip({ step, onGo, onMap, mapOpen }: { step: Step; onGo: (
             </div>
             <div className="nf-gd-act">
                 <button type="button" className="nf-gd-go" onClick={onGo}>
-                    <NfIcon name="spark" /> Show me
+                    <NfIcon name="spark" /> Show me <kbd className="nf-kbd" aria-hidden="true">G</kbd>
                 </button>
                 <button type="button" className="nf-gd-map" aria-haspopup="dialog" aria-pressed={mapOpen} onClick={onMap}>
                     Map

@@ -235,18 +235,19 @@ export function RecordsPanel({ s }: { s: State }) {
 const FORMATS: [NumFmt, string][] = [["short", "1.2M"], ["sci", "1.2e6"], ["eng", "1.2e6 / e3"]];
 
 export function MenuPanel({
-    s, soundOn, onSound, humOn, onHum, eventsOn, onEvents, ioText, setIoText, ioMsg, onExport, onImport, importConfirm, onDownload, onUpload, backup, onRestore, volume, onVolume, calm, osCalm, onCalm, lastSave, numFmt, onNumFmt, hasMax, onReset,
+    s, soundOn, onSound, humOn, onHum, eventsOn, onEvents, ioText, setIoText, ioMsg, onExport, onImport, importConfirm, onDownload, onUpload, backup, onRestore, volume, onVolume, calm, osCalm, onCalm, jumpOn, onJump, lastSave, numFmt, onNumFmt, hasMax, onReset,
 }: {
     s: State; soundOn: boolean; onSound: () => void; humOn: boolean; onHum: () => void; eventsOn: boolean; onEvents: () => void; ioText: string; setIoText: (v: string) => void; ioMsg: string; onExport: () => void; onImport: () => void; importConfirm: boolean; onDownload: () => void; onUpload: (f: File) => void;
-    backup: { at: number; why: string } | null; onRestore: () => void; volume: number; onVolume: (v: number) => void; calm: boolean; osCalm: boolean; onCalm: () => void; lastSave: number; numFmt: NumFmt; onNumFmt: (f: NumFmt) => void; hasMax: boolean; confirm?: boolean; onReset: () => void;
+    backup: { at: number; why: string } | null; onRestore: () => void; volume: number; onVolume: (v: number) => void; calm: boolean; osCalm: boolean; onCalm: () => void; jumpOn: boolean; onJump: () => void; lastSave: number; numFmt: NumFmt; onNumFmt: (f: NumFmt) => void; hasMax: boolean; confirm?: boolean; onReset: () => void;
 }) {
     const opts: { key: string; on: boolean; flip: () => void; note: string; off?: boolean }[] = [
         { key: "sound", on: soundOn, flip: onSound, note: "naOS clicks, prints and alarms" },
         { key: "hum", on: humOn, flip: onHum, note: "the reactor's low drone" },
         { key: "events", on: eventsOn, flip: onEvents, note: "quick-time events every few minutes" },
+        { key: "jump", on: jumpOn, flip: onJump, note: "scroll to the board when you come back to a save" },
         { key: "calm", on: calm || osCalm, flip: onCalm, off: osCalm, note: osCalm ? "your device already asks for less motion" : "less motion: no pops, flashes or loops" },
     ];
-    const keys: [string, string][] = [["M", "Map"], ["O", "Goals"], ["L", "Records"], ["A", "Ascend"], ["S", "Menu"], ["T", "Tree"], ...(hasMax ? [["B", "Buy max on or off"] as [string, string]] : []), ["Esc", "Close the open window"], ["Hold a button", "Keep buying"]];
+    const keys: [string, string][] = [["M", "Map"], ["O", "Goals"], ["L", "Records"], ["A", "Ascend"], ["S", "Menu"], ["T", "Tree"], ["G", "Show me the next step"], ["P", "Press the glowing button (hold to keep going)"], ["1 to 6", "Press that tier on the zone in the middle of the screen"], ...(hasMax ? [["B", "Buy max on or off"] as [string, string]] : []), ["Esc", "Close the open window"], ["Hold a button", "Keep buying"]];
     return (
         <div className="nf-sys nf-wk">
             <WinBanner
