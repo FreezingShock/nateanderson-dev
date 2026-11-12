@@ -5,7 +5,7 @@ import { sfx } from "@/lib/sound/sounds";
 import { setHum } from "@/lib/sound/engine";
 import { useSoundPrefs } from "@/lib/sound/use-sound";
 import {
-    TUNE, overclockMult, overclockSecs, respec, ascend, autoBuy, breach, button, buyDrone, buyNode, buyPerk, toggleArm, checkGoals, derive, exportSave, fmt, fmtTime, fresh, isUnlocked, offline, parseSave, press, STATS, tick,
+    TUNE, overclockMult, overclockSecs, respec, ascend, autoBuy, breach, button, buyDrone, buyNode, buyPerk, toggleArm, checkGoals, derive, exportSave, fmt, fmtTime, fresh, getNumFmt, setNumFmt, type NumFmt, isUnlocked, offline, parseSave, press, STATS, tick,
     apEach, dropFill, hasFeature, openDrop, pressMax, setMount, statDef,
     type ButtonStat, type MatId, type State,
 } from "@/lib/nodefarm/engine";
@@ -40,18 +40,40 @@ const EV_KEY = "nf-events-v1"; // "off" when quick-time events are switched off 
 const HUM_KEY = "nf-hum-v1"; // reactor hum on or off (per device)
 const UI_KEY = "nf-ui-v1"; // which stat panels are minimized (per device, not part of the game save)
 const MAX_KEY = "nf-max-v1"; // "1" when Buy max (Batch job node) is switched on (per device)
+const CALM_KEY = "nf-calm-v1"; // "1" when motion is forced calm, on top of the OS setting (per device)
+const FMT_KEY = "nf-numfmt-v1"; // number format: short | sci | eng (per device)
+const BACKUP_KEY = "nf-backup-v1"; // the save as it was just before an import, a wipe or a failed load (one slot)
+const CORRUPT_KEY = "nf-corrupt-v1"; // raw text of a save that could not be read, kept instead of being overwritten
 type Tab = "core" | "stats" | "map" | "goals" | "records" | "ascend" | "menu";
 const SIDE: Tab[] = ["map", "goals", "records", "ascend", "menu"];
 const TAB_LABEL: Record<Tab, string> = { core: "Core", stats: "Stats", map: "Map", goals: "Goals", records: "Records", ascend: "Ascend", menu: "Menu" };
 
-function load(): State | null {
+function load(): { s: State | null; unreadable: boolean } {
     try {
         const raw = localStorage.getItem(KEY);
-        return raw ? parseSave(raw) : null;
+        if (!raw) return { s: null, unreadable: false };
+        const s = parseSave(raw);
+        // a save that will not parse (damaged, or from a newer build) must not be overwritten five seconds later
+        if (!s) {
+            try { localStorage.setItem(CORRUPT_KEY, raw); } catch {}
+        }
+        return { s, unreadable: !s };
+    } catch {
+        return { s: null, unreadable: false };
+    }
+}
+
+export type Backup = { at: number; why: string; code: string };
+function readBackup(): Backup | null {
+    try {
+        const b = JSON.parse(localStorage.getItem(BACKUP_KEY) ?? "null");
+        return b && typeof b.code === "string" && parseSave(b.code) ? b : null;
     } catch {
         return null;
     }
 }
+
+const hasProgress = (s: State) => s.life.presses > 0 || s.life.secs > 60;
 
 export function NodeFarm() {
     const g = useRef<State>(null as unknown as State);
@@ -70,8 +92,16 @@ export function NodeFarm() {
     const [away, setAway] = useState<Away | null>(null);
     const [toast, setToast] = useState<string | null>(null);
     const [evOn, setEvOn] = useState(true);
-    const [reduced, setReduced] = useState(false);
-    const [confirm, setConfirm] = useState<"" | "ascend" | "reset">("");
+    const [osReduced, setReduced] = useState(false);
+    const [calm, setCalm] = useState(false);
+    const reduced = osReduced || calm;
+    const [lastSave, setLastSave] = useState(0);
+    const [confirm, setConfirm] = useState<"" | "ascend" | "reset" | "import">("");
+    const [stale, setStale] = useState(false); // another tab wrote the save: this tab stops saving so it cannot overwrite it
+    const staleRef = useRef(false);
+    staleRef.current = stale;
+    const [numFmt, setNumFmtState] = useState<NumFmt>("short");
+    const [backup, setBackup] = useState<Backup | null>(null);
     const [ioText, setIoText] = useState("");
     const [ioMsg, setIoMsg] = useState("");
     const [buyMax, setBuyMax] = useState(false);
@@ -87,7 +117,7 @@ export function NodeFarm() {
         const el = paneOf(w);
         const n = ++closing.current;
         root.current?.setAttribute("data-closing", "");
-        codeReveal(el, { dir: "out", rows: el ? paneRows(el) : undefined }).then(() => {
+        codeReveal(el, { dir: "out", style: "crt", rows: el ? paneRows(el) : undefined }).then(() => {
             if (closing.current !== n) return;
             root.current?.removeAttribute("data-closing");
             setWin((cur) => (cur === w ? "" : cur));
@@ -99,7 +129,7 @@ export function NodeFarm() {
         if (firstTab.current) { firstTab.current = false; return; }
         if (matchMedia("(min-width: 1000px)").matches) return;
         const el = paneOf(tab);
-        if (el) codeReveal(el, { bare: true, rows: paneRows(el), ms: 240 });
+        if (el) codeReveal(el, { bare: true, style: "crt", rows: paneRows(el), ms: 240 });
     }, [tab]);
     const winRef = useRef(win);
     winRef.current = win;
@@ -111,7 +141,7 @@ export function NodeFarm() {
         if (!el) return;
         cxClear(el);
         el.scrollTop = 0;
-        codeReveal(el, { dir: "in", rows: paneRows(el) });
+        codeReveal(el, { dir: "in", style: "crt", rows: paneRows(el) });
     }, [win]);
     useEffect(() => {
         if (!win) return;
@@ -158,6 +188,7 @@ export function NodeFarm() {
     );
     const feed = useRef<CoreFeed>({ progress: 0, overclock: false, unlocked: 1, speed: 0, lastPulse: -1e9, reboots: 0, ap: 0 });
     const saved = useRef(0);
+    const warnedSave = useRef(false);
     const tickN = useRef(0);
 
     // plain text lines get a level tag and highlighted numbers; code-style lines go through feedStore.push with tokens
@@ -171,12 +202,18 @@ export function NodeFarm() {
             if (u) setFolded(JSON.parse(u));
             if (localStorage.getItem(EV_KEY) === "off") setEvOn(false);
             if (localStorage.getItem(MAX_KEY) === "1") setBuyMax(true);
+            if (localStorage.getItem(CALM_KEY) === "1") setCalm(true);
+            const nf = localStorage.getItem(FMT_KEY);
+            if (nf === "sci" || nf === "eng") { setNumFmt(nf); setNumFmtState(nf); }
+            setBackup(readBackup());
             if (localStorage.getItem(HUM_KEY) === "0") {
                 humRef.current = false;
                 setHumOn(false);
             }
         } catch {}
-        const s = load() ?? fresh();
+        const got = load();
+        const s = got.s ?? fresh();
+        if (got.unreadable) setTimeout(() => log("The saved game could not be read. It is kept in this browser; a new game starts.", "warn"), 1800);
         const first = s.life.secs === 0 && s.life.presses === 0;
         const gap = (Date.now() - s.at) / 1000;
         g.current = s;
@@ -204,6 +241,8 @@ export function NodeFarm() {
         const onLive = (e: Event) => {
             (e as CustomEvent<{ live?: NfLive }>).detail.live = {
                 s: g.current,
+                // admin tools rewrote the state (lib/nodefarm/admin.ts): no banner flood, save, redraw
+                changed: () => { prevIds.current = null; tipApi.hide(); save(); bump((n) => n + 1); },
                 notify: (found) => {
                     for (const f of found) {
                         feedStore.push([...call(idTok("secret"), "found", [strTok(f.name)])], { tone: "good", type: true });
@@ -222,13 +261,17 @@ export function NodeFarm() {
     // ---- save
     const save = useCallback(() => {
         const s = g.current;
-        if (!s) return;
+        if (!s || staleRef.current) return;
         try {
             s.at = Date.now();
             localStorage.setItem(KEY, JSON.stringify(s));
             saved.current = Date.now();
-        } catch {}
-    }, []);
+            setLastSave(saved.current);
+        } catch {
+            // storage full or blocked (private mode): say so once instead of failing silently
+            if (!warnedSave.current) { warnedSave.current = true; log("This browser would not store the save. Export a code from Menu so nothing is lost.", "warn"); }
+        }
+    }, [log]);
     useEffect(() => {
         if (!ready) return;
         const iv = setInterval(save, 5000);
@@ -407,18 +450,131 @@ export function NodeFarm() {
         }
     };
 
+    // ---- save safety
+    const keepBackup = (why: string) => {
+        try {
+            const b: Backup = { at: Date.now(), why, code: exportSave(g.current) };
+            localStorage.setItem(BACKUP_KEY, JSON.stringify(b));
+            setBackup(b);
+        } catch {}
+    };
+    // two tabs on one save overwrite each other: when another tab writes, this one stops saving and says so
+    useEffect(() => {
+        if (!ready) return;
+        const onStore = (e: StorageEvent) => { if (e.key === KEY && e.newValue) setStale(true); };
+        window.addEventListener("storage", onStore);
+        return () => window.removeEventListener("storage", onStore);
+    }, [ready]);
+    const applySave = (n: State, msg: string) => {
+        n.at = Date.now();
+        if (n.treeRefund) { log(`Old tree nodes refunded: ${fmt(n.treeRefund)} AP.`, "good"); delete n.treeRefund; }
+        g.current = n;
+        tipApi.hide();
+        prevIds.current = null;
+        setStale(false);
+        staleRef.current = false;
+        save();
+        setIoMsg(msg);
+        log(msg, "good");
+    };
+    const doImport = () => {
+        const n = parseSave(ioText);
+        if (!n) { setIoMsg("That code isn't a Node Farm save."); return; }
+        // a save with progress in it is only replaced after a second press, and the old one goes to the backup slot
+        if (hasProgress(g.current) && confirm !== "import") {
+            setConfirm("import");
+            setIoMsg("This replaces your current save. Press Import again to confirm; the old save is kept as a backup.");
+            setTimeout(() => setConfirm((c) => (c === "import" ? "" : c)), 6000);
+            return;
+        }
+        if (hasProgress(g.current)) keepBackup("before import");
+        setConfirm("");
+        applySave(n, "Save imported.");
+    };
+    const doRestore = () => {
+        const b = readBackup();
+        const n = b && parseSave(b.code);
+        if (!b || !n) { setIoMsg("No backup to restore."); return; }
+        const swap = { at: Date.now(), why: "before restore", code: exportSave(g.current) };
+        applySave(n, "Backup restored.");
+        try { localStorage.setItem(BACKUP_KEY, JSON.stringify(swap)); setBackup(swap); } catch {}
+    };
+    const doDownload = () => {
+        save();
+        try {
+            const url = URL.createObjectURL(new Blob([exportSave(g.current)], { type: "text/plain" }));
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = `node-farm-save-${new Date().toISOString().slice(0, 10)}.txt`;
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            setTimeout(() => URL.revokeObjectURL(url), 1000);
+            setIoMsg("Save file downloaded.");
+        } catch { setIoMsg("Could not make a file. Use Export and copy the code."); }
+    };
+    const doUpload = (f: File) => {
+        f.text().then((txt) => { setIoText(txt.trim()); setIoMsg(parseSave(txt) ? "File read. Press Import to load it." : "That file isn't a Node Farm save."); }).catch(() => setIoMsg("Could not read that file."));
+    };
+    useEffect(() => {
+        document.body.classList.toggle("nf-calm", calm);
+        return () => document.body.classList.remove("nf-calm");
+    }, [calm]);
+    const toggleCalm = () => {
+        const v = !calm;
+        setCalm(v);
+        try { localStorage.setItem(CALM_KEY, v ? "1" : "0"); } catch {}
+    };
+    const setFormat = (f: NumFmt) => {
+        setNumFmt(f);
+        setNumFmtState(f);
+        try { localStorage.setItem(FMT_KEY, f); } catch {}
+    };
+
+    // ---- tab title: while the tab is in the background it shows the rate, so progress is visible from the tab strip
+    useEffect(() => {
+        if (!ready) return;
+        const base = document.title;
+        const upd = () => {
+            const s = g.current;
+            if (!s) return;
+            document.title = document.visibilityState === "hidden" ? `${fmt(derive(s).bytesPerSec)}/s · Node Farm` : base;
+        };
+        document.addEventListener("visibilitychange", upd);
+        const iv = setInterval(upd, 2000);
+        return () => { clearInterval(iv); document.removeEventListener("visibilitychange", upd); document.title = base; };
+    }, [ready]);
+
+    // ---- keyboard: one letter per window. Off while typing, with a modifier, over another panel or during an event.
+    const keyApi = useRef<{ open: (w: "map" | "goals" | "records" | "ascend" | "menu" | "tree") => void; max: () => void }>({ open: () => {}, max: () => {} });
+    useEffect(() => {
+        if (!ready) return;
+        const onKey = (e: KeyboardEvent) => {
+            if (e.ctrlKey || e.metaKey || e.altKey || e.isComposing || e.repeat) return;
+            const el = e.target as HTMLElement | null;
+            if (el && (el.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(el.tagName))) return;
+            if (document.querySelector(".nv-scrim, .nf-ev-scrim:not([data-out]), .nf-aw, .nf-rx")) return;
+            const w = ({ m: "map", o: "goals", l: "records", a: "ascend", s: "menu", t: "tree" } as const)[e.key.toLowerCase() as "m"];
+            if (w) { e.preventDefault(); keyApi.current.open(w); }
+            else if (e.key.toLowerCase() === "b") keyApi.current.max();
+        };
+        window.addEventListener("keydown", onKey);
+        return () => window.removeEventListener("keydown", onKey);
+    }, [ready]);
+
     const doReset = () => {
         if (confirm !== "reset") {
             setConfirm("reset");
             setTimeout(() => setConfirm((c) => (c === "reset" ? "" : c)), 4000);
             return;
         }
+        if (hasProgress(g.current)) keepBackup("before wipe");
         g.current = fresh();
         prevIds.current = null;
         tipApi.hide();
         setConfirm("");
         feedStore.clear();
-        log("Save wiped. Starting clean.", "warn");
+        log("Save wiped. The old save is kept as a backup in Menu.", "warn");
         save();
     };
 
@@ -443,6 +599,16 @@ export function NodeFarm() {
         if (w === "tree") { setWin(""); setTreeOpen(true); sfx("tab"); return; }
         setWin(w);
         setTabBoth(w);
+    };
+    const treeSeenK = s.life.ascends > 0 || s.ap > 0 || s.tree.length > 0;
+    keyApi.current = {
+        open: (w) => {
+            if (treeOpen) { if (w === "tree") setTreeOpen(false); return; }
+            if (w === "tree") { if (treeSeenK) openWin("tree"); return; }
+            if (win === w) closeWin();
+            else openWin(w);
+        },
+        max: () => { if (hasFeature(s, "buymax")) { const v = !buyMax; setBuyMax(v); sfx("tab"); try { localStorage.setItem(MAX_KEY, v ? "1" : "0"); } catch {} } },
     };
     // the next-step guide: what to do, and a button that opens the right zone and scrolls to what glows
     const step = nextStep(s, d);
@@ -513,6 +679,13 @@ export function NodeFarm() {
                 {treeSeen && <button type="button" className="nf-tab" aria-haspopup="dialog" data-guide={step.target?.win === "tree" ? "" : undefined} onClick={() => openWin("tree")}>Tree</button>}
             </nav>
 
+            {stale && (
+                <div className="nf-stale" role="alert">
+                    <span>Node Farm is open in another tab. This tab stopped saving so the two don&apos;t overwrite each other.</span>
+                    <button type="button" className="nf-mini" onClick={() => location.reload()}>Load latest save</button>
+                    <button type="button" className="nf-mini" onClick={() => { setStale(false); staleRef.current = false; save(); }}>Save from here</button>
+                </div>
+            )}
             {toast && <div className="nf-toast" role="status"><NfIcon name="spark" /> Goal: {toast}</div>}
 
             <EventLayer game={g} ready={ready} enabled={evOn} busy={!!win || treeOpen || !!away || !!confirm} reduced={reduced} onEngage={evEngage} onResult={evResult} onMiss={evMiss} onDisable={() => setEvents(false)} />
@@ -583,7 +756,21 @@ export function NodeFarm() {
                     setIoText={setIoText}
                     ioMsg={ioMsg}
                     onExport={() => { save(); const code = exportSave(g.current); setIoText(code); setIoMsg("Copy this code to move your save."); navigator.clipboard?.writeText(code).then(() => setIoMsg("Save code copied.")).catch(() => {}); }}
-                    onImport={() => { const n = parseSave(ioText); if (n) { n.at = Date.now(); if (n.treeRefund) { log(`Old tree nodes refunded: ${fmt(n.treeRefund)} AP.`, "good"); delete n.treeRefund; } g.current = n; tipApi.hide(); prevIds.current = null; save(); setIoMsg("Save loaded."); log("Save imported.", "good"); } else setIoMsg("That code isn't a Node Farm save."); }}
+                    onImport={doImport}
+                    importConfirm={confirm === "import"}
+                    onDownload={doDownload}
+                    onUpload={doUpload}
+                    backup={backup}
+                    onRestore={doRestore}
+                    volume={snd.master}
+                    onVolume={(v) => setSnd({ master: v })}
+                    calm={calm}
+                    osCalm={osReduced}
+                    onCalm={toggleCalm}
+                    lastSave={lastSave}
+                    numFmt={numFmt}
+                    onNumFmt={setFormat}
+                    hasMax={hasFeature(s, "buymax")}
                     confirm={confirm === "reset"}
                     onReset={doReset}
                 />

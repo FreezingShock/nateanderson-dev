@@ -5,7 +5,7 @@ import { createPortal } from "react-dom";
 import { TreeBackdrop, TreeDust, type TreeBackdropHandle } from "./tree-backdrop";
 import { TreeSprite, type SpriteState } from "./tree-sprite";
 import { SPRITE_CELLS } from "@/lib/nodefarm/tree-sprites";
-import { codeReveal } from "@/lib/nodefarm/cx";
+import { cardGlitch } from "./card-glitch";
 import * as Engine from "@/lib/nodefarm/engine";
 import { BRANCHES, TREE, fmt, hasNode, nodeOpen, treeFx, treeNode, type State, type TreeNode } from "@/lib/nodefarm/engine";
 
@@ -39,8 +39,8 @@ const RING: Map<string, number> = (() => {
     }
     return d;
 })();
-const BOOT_MS = 1400;
-const CLOSE_MS = 340;
+const BOOT_MS = 1150;
+const CLOSE_MS = 320;
 type NodeState = "owned" | "ready" | "open" | "locked";
 type Extra = TreeNode & { flavor?: string; sprite?: string };
 
@@ -394,10 +394,13 @@ function TreeMenuInner({ s, reduced, onBuy, onRespec, onClose }: TreeMenuProps) 
         const el = view.current;
         const raf = requestAnimationFrame(() => {
             if (bootRef.current !== "in") return fit(false);
-            // boot: start close on the core, then pull back to the fitted view while the rings decrypt
+            // zoom through the core (Nate's pick): start far past the usual zoom limit inside the core, then fall back to
+            // the fitted view while the rings unfold outward
             const t = fitTarget();
-            jump(0, 0, Math.min(KMAX, t.k * 2.3));
-            bootT.current.push(window.setTimeout(() => { if (!touched.current) flyTo(t.cx, t.cy, t.k, 950); }, 230));
+            stop();
+            cam.current = { cx: 0, cy: 0, k: 3.4 };
+            apply();
+            bootT.current.push(window.setTimeout(() => { if (!touched.current) flyTo(t.cx, t.cy, t.k, 900); }, 60));
         });
         const ro = new ResizeObserver(() => {
             measure();
@@ -515,10 +518,10 @@ function TreeMenuInner({ s, reduced, onBuy, onRespec, onClose }: TreeMenuProps) 
     useLayoutEffect(() => {
         const el = card.current;
         if (!el) return;
-        if (shown) { void codeReveal(el, { dir: "in" }); return; }
+        if (shown) { void cardGlitch(el, "in"); return; }
         if (!leaving) return;
         const id = leaving;
-        void codeReveal(el, { dir: "out" }).then(() => setLeaving((l) => (l === id ? null : l)));
+        void cardGlitch(el, "out").then(() => setLeaving((l) => (l === id ? null : l)));
     }, [shown, leaving]);
     useEffect(() => { bd.current?.focus(shown && shown !== "core" ? treeNode(shown).branch : null); }, [shown]);
 
@@ -704,19 +707,6 @@ function TreeMenuInner({ s, reduced, onBuy, onRespec, onClose }: TreeMenuProps) 
         requestAnimationFrame(() => fit());
     };
 
-    // the boot sequence's terminal lines (real counts, taken once at open)
-    const bootLines = useMemo(() => {
-        const inRange = TREE.filter((n) => vis.get(n.id) === "shown").length;
-        const fog = TREE.filter((n) => vis.get(n.id) === "fog").length;
-        return [
-            "naos@node-01:~$ tree --mount",
-            `> read ${TREE.length} nodes ......... ok`,
-            `> decrypt ${inRange} in range ...... ok`,
-            fog ? `> ${fog} encrypted // signal weak` : "> no encrypted nodes left",
-            `> ${owned} installed // ${fmt(s.ap)} AP free`,
-        ];
-    }, []); // eslint-disable-line react-hooks/exhaustive-deps
-
     // the card's content
     const cn = cardId && cardId !== "core" ? (treeNode(cardId) as Extra) : null;
     const cvis = cn ? vis.get(cn.id) : null;
@@ -897,13 +887,6 @@ function TreeMenuInner({ s, reduced, onBuy, onRespec, onClose }: TreeMenuProps) 
                 <button type="button" className="nf-tm-dockb" aria-expanded={dockOpen} aria-label={dockOpen ? "Hide the page dock" : "Show the page dock"} onClick={() => setDockOpen((v) => !v)}>
                     <i aria-hidden="true" />&lt;/&gt; pages
                 </button>
-            )}
-            {boot === "in" && (
-                <div className="nf-tm-boot" aria-hidden="true">
-                    <div className="nf-tm-boot-t">
-                        {bootLines.map((l, i) => <span key={i} style={{ ["--n" as string]: l.length, ["--d" as string]: `${80 + i * 150}ms` } as CSSProperties}>{l}</span>)}
-                    </div>
-                </div>
             )}
             {rows.length > 0 && (
                 <>
