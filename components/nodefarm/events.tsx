@@ -5,7 +5,11 @@ import { useCallback, useEffect, useLayoutEffect, useRef, useState, type CSSProp
 import { createPortal } from "react-dom";
 import { keyIsTyping } from "@/lib/nodefarm/keys";
 import { cxPlay, useCodeReveal } from "@/lib/nodefarm/cx";
-import { sfx } from "@/lib/sound/sounds";
+import { nfx } from "@/lib/nodefarm/sound";
+import type { SfxName } from "@/lib/sound/sounds";
+
+// everything on the quick-time event cards plays in the "events" mix
+const sfx = (n: SfxName, a?: unknown) => nfx(n, a, "events");
 import { EVENTS, EVENT_TUNE, RARITY, nextGapMs, pickEvent, rogueChoices, rollLoot, type EventDef, type EventKind, type Loot } from "@/lib/nodefarm/events";
 import { eventHaste, fmt, overclockMult, statDef, type State } from "@/lib/nodefarm/engine";
 import { NfIcon, type NfIconName } from "./icon";

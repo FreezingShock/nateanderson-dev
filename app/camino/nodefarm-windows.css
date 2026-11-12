@@ -159,6 +159,9 @@
 .ctos .nf-wk-box::before { content: "["; color: var(--cm-ctos-meta); }
 .ctos .nf-wk-box::after { content: "]"; color: var(--cm-ctos-meta); }
 .ctos .nf-wk-k { min-width: 7ch; color: var(--cm-fg); }
+.ctos .nf-wk-cfgrow .nf-wk-k { min-width: 11ch; }
+.ctos button.nf-wk-k { background: none; border: 0; padding: 0; font: inherit; text-align: left; cursor: pointer; text-decoration: underline dotted #ffffff40; text-underline-offset: 3px; }
+.ctos button.nf-wk-k:hover, .ctos button.nf-wk-k:focus-visible { color: var(--c, #5be3ff); }
 .ctos .nf-wk-eq { color: var(--cm-ctos-meta); }
 .ctos .nf-wk-cfg b { min-width: 3ch; color: var(--c); }
 .ctos .nf-wk-cfg li > button[aria-checked="false"] b { color: #ff8cbc; }

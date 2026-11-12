@@ -4,6 +4,7 @@ import { useEffect, useRef } from "react";
 import { usePathname } from "next/navigation";
 import { armSound } from "@/lib/sound/engine";
 import { sfx, type SfxName } from "@/lib/sound/sounds";
+import { nfx } from "@/lib/nodefarm/sound";
 
 // Site-wide interface sound. One delegated listener turns clicks on buttons, tabs, switches and menus into the naOS
 // tones from lib/sound, and a mouse hover over any of them plays a quiet keypad tick, so no component needs wiring.
@@ -37,6 +38,9 @@ function pickSound(el: HTMLElement): SfxName | null {
     return "tap";
 }
 
+// Taps, toggles and hovers inside Node Farm go through its "interface" volume (lib/nodefarm/sound.ts); everywhere else plays as before.
+const play = (name: SfxName, el: Element) => (el.closest(".nf") ? nfx(name, undefined, "interface") : sfx(name));
+
 export function SoundProvider() {
     const path = usePathname();
     const first = useRef(true);
@@ -48,7 +52,7 @@ export function SoundProvider() {
             const el = e.target.closest<HTMLElement>(HIT);
             if (!el) return;
             const name = pickSound(el);
-            if (name) setTimeout(() => sfx(name), 0); // after the click's own handlers, so a purchase can outrank the tap
+            if (name) setTimeout(() => play(name, el), 0); // after the click's own handlers, so a purchase can outrank the tap
         };
         let over: Element | null = null;
         const onOver = (e: PointerEvent) => {
@@ -58,7 +62,7 @@ export function SoundProvider() {
             over = el;
             if (!el || el.closest('[data-snd="off"]')) return;
             if ((el as HTMLButtonElement).disabled || el.getAttribute("aria-disabled") === "true") return;
-            sfx("hover");
+            play("hover", el);
         };
         document.addEventListener("click", onClick, true);
         document.addEventListener("pointerover", onOver, true);

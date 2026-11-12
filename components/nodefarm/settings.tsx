@@ -3,6 +3,7 @@
 // Effects level lives in lib/nodefarm/fx.ts; the other switches are owned by node-farm.tsx and come in as props.
 import { FX_MODES, setFxMode, useFxMode, useLowFx, type FxMode } from "@/lib/nodefarm/fx";
 import type { NumFmt } from "@/lib/nodefarm/engine";
+import { NF_SYSTEMS, resetMix, setVol, useMix } from "@/lib/nodefarm/sound";
 import { Frame } from "./win-kit";
 
 const FORMATS: [NumFmt, string][] = [["short", "1.2M"], ["sci", "1.2e6"], ["eng", "1.2e6 / e3"]];
@@ -23,6 +24,7 @@ type Line = { key: string; on: boolean; flip: () => void; note: string; off?: bo
 export function SettingsFrame(p: SettingsProps) {
     const fx = useFxMode();
     const low = useLowFx();
+    const mix = useMix();
     const group = (title: string, lines: Line[], extra?: React.ReactNode) => (
         <li className="nf-st-g" key={title}>
             <p className="nf-st-h">{"# "}{title}</p>
@@ -59,6 +61,24 @@ export function SettingsFrame(p: SettingsProps) {
                         </label>
                     </li>
                 ))}
+                <li className="nf-st-g" key="mix">
+                    <p className="nf-st-h">{"# "}mix {"// click a name to hear it"}</p>
+                    <ul className="nf-wk-cfg">
+                        {NF_SYSTEMS.map((m) => (
+                            <li className="nf-wk-cfgrow" key={m.id}>
+                                <div>
+                                    <span className="nf-wk-box" aria-hidden="true">~</span>
+                                    {m.id === "hum" ? <span className="nf-wk-k">{m.label}</span> : <button type="button" className="nf-wk-k" onClick={m.sample} aria-label={`Play a ${m.label} sound`}>{m.label}</button>}
+                                    <span className="nf-wk-eq" aria-hidden="true">=</span>
+                                    <b>{Math.round(mix[m.id] * 100)}%</b>
+                                    <input type="range" min={0} max={1} step={0.05} value={mix[m.id]} onChange={(e) => setVol(m.id, Number(e.target.value))} aria-label={`${m.label} volume: ${m.note}`} />
+                                    <span className="nf-wk-c">{"// "}{m.note}</span>
+                                </div>
+                            </li>
+                        ))}
+                        <li className="nf-wk-cfgrow"><div><span className="nf-wk-box" aria-hidden="true">~</span><button type="button" className="nf-wk-k" onClick={resetMix}>reset mix</button></div></li>
+                    </ul>
+                </li>
                 {group("motion", [
                     { key: "calm", on: p.calm || p.osCalm, flip: p.onCalm, off: p.osCalm, note: p.osCalm ? "your device already asks for less motion" : "less motion: no pops, flashes or loops" },
                 ], (
