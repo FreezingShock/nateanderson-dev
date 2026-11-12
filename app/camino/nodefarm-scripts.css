@@ -1,0 +1,118 @@
+/* Node Farm Scripts zone (components/nodefarm/scripts.tsx): the scheduler's crontab in amber phosphor. Sharp panel, plain
+   data lines, no pills or tabs. Each script line takes its own colour (--c) for the icon, status and toggles.
+   Art: zone-sched (8 stages x 6 frames, 288 x 96) and sched-icons (32 px, 6 rows x 4 frames), both drawn by
+   scripts/naos-art/nodefarm-sched-scene.py. */
+.ctos { --sch-amber: #ffb000; --sch-ink: #ffe3a6; --sch-dim: #b08a4a; --sch-deep: #140d02; --sch-line: #5c4210; }
+
+.ctos .nf-sch { --c: #ffb000; background: repeating-linear-gradient(0deg, #ffb00008 0 1px, transparent 1px 4px), #0d0a05; border-color: var(--sch-line); }
+.ctos .nf-row.nf-sch { --zone: repeating-linear-gradient(0deg, #ffb0001a 0 1px, transparent 1px 3px); }
+.ctos .nf-sch .nf-bar-t { background: #241703; color: var(--sch-amber); box-shadow: inset 0 -2px var(--sch-amber); }
+.ctos .nf-sch .nf-bar-s { color: var(--sch-ink); }
+.ctos .nf-sch .nf-fold i { border-color: var(--sch-amber); }
+.ctos .nf-sch .nf-body-in { display: grid; gap: 18px; }
+
+/* hero: the cron room scene (grows one machine per script learned), the count and the next step */
+.ctos .nf-sch-hero { --sc: 2; position: relative; display: grid; grid-template: "top scene" auto "note scene" 1fr / minmax(0, 1fr) auto; gap: 14px 24px; }
+.ctos .nf-sch-scene { grid-area: scene; position: relative; display: block; width: calc(288px * var(--sc)); height: calc(96px * var(--sc)); border: 1px solid var(--sch-line); box-shadow: 4px 4px 0 #000; background: url(/naos/nodefarm/zone-sched.webp?v=3971628d) no-repeat; background-size: calc(1728px * var(--sc)) calc(768px * var(--sc)); background-position: 0 calc(var(--st, 0) * -96px * var(--sc)); image-rendering: pixelated; animation: nfSchScene 1s steps(6) infinite; pointer-events: none; }
+.ctos .nf-sch-scene::after { content: ""; position: absolute; inset: 0; background: repeating-linear-gradient(0deg, transparent 0 3px, #00000026 3px 4px); }
+@keyframes nfSchScene { from { background-position-x: 0; } to { background-position-x: calc(-1728px * var(--sc)); } }
+.ctos .nf-sch-top { grid-area: top; display: grid; gap: 10px; align-self: start; }
+.ctos .nf-sch-ps { font: 600 var(--cm-ctos-t-ui)/1 var(--cm-mono); color: var(--sch-amber); }
+.ctos .nf-sch-ps::after { content: "_"; margin-left: 2px; animation: nfSchCaret 1s steps(1) infinite; }
+@keyframes nfSchCaret { 50% { opacity: 0; } }
+.ctos .nf-sch-count { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 12px; font-family: var(--cm-mono); }
+.ctos .nf-sch-count b { font: 700 32px/1 var(--cm-mono); color: var(--sch-ink); font-variant-numeric: tabular-nums; }
+.ctos .nf-sch-count b small { font-size: 18px; color: var(--sch-dim); }
+.ctos .nf-sch-count > span { font: 700 var(--cm-ctos-t-micro)/1.3 var(--cm-mono); letter-spacing: .12em; text-transform: uppercase; color: var(--sch-amber); }
+.ctos .nf-sch-count small { font-weight: 500; letter-spacing: .02em; text-transform: none; }
+.ctos .nf-sch-count > span small { display: block; margin-top: 3px; color: var(--sch-dim); }
+.ctos .nf-sch-note { grid-area: note; align-self: end; margin: 0; max-width: 72ch; font: 500 var(--cm-ctos-t-ui)/1.55 var(--cm-sans, inherit); color: var(--sch-ink); }
+.ctos .nf-sch-note b { margin-right: 4px; font: 700 var(--cm-ctos-t-micro)/1 var(--cm-mono); letter-spacing: .1em; text-transform: uppercase; color: var(--sch-amber); }
+.ctos .nf-sch-note small { display: block; margin-top: 4px; font: 500 var(--cm-ctos-t-micro)/1.4 var(--cm-mono); color: var(--sch-dim); }
+
+/* the script list: one bordered block per script, a coloured edge on the left */
+.ctos .nf-sch-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.ctos .nf-sch-s { position: relative; display: grid; gap: 10px; padding: 12px 14px 14px; background: #120c03e6; border: 1px solid var(--sch-line); border-left: 3px solid color-mix(in srgb, var(--c) 45%, #241703); }
+.ctos .nf-sch-s[data-st="run"] { border-left-color: var(--c); background: linear-gradient(90deg, color-mix(in srgb, var(--c) 9%, #120c03) 0, #120c03 60%); }
+.ctos .nf-sch-s[data-st="lock"] { background: repeating-linear-gradient(45deg, #0d0a05 0 4px, #120c03 4px 8px); border-style: dashed; border-left-style: solid; }
+/* corner brackets on running scripts */
+.ctos .nf-sch-s[data-st="run"]::before, .ctos .nf-sch-s[data-st="run"]::after { content: ""; position: absolute; width: 8px; height: 8px; border: solid var(--c); pointer-events: none; }
+.ctos .nf-sch-s[data-st="run"]::before { top: -1px; right: -1px; border-width: 2px 2px 0 0; }
+.ctos .nf-sch-s[data-st="run"]::after { bottom: -1px; right: -1px; border-width: 0 2px 2px 0; }
+.ctos .nf-sch-h { display: grid; grid-template-columns: auto minmax(0, 1fr) auto auto; align-items: center; gap: 12px; }
+.ctos .nf-sch-ic { display: block; width: 32px; height: 32px; background: url(/naos/nodefarm/sched-icons.webp?v=a68ed396) 0 calc(var(--r) * -32px) / 128px 192px no-repeat; image-rendering: pixelated; }
+.ctos .nf-sch-s[data-st="lock"] .nf-sch-ic { filter: grayscale(1) brightness(.5); }
+.ctos .nf-sch-ic[data-on] { animation: nfSchIcon .8s steps(4) infinite; }
+@keyframes nfSchIcon { from { background-position-x: 0; } to { background-position-x: -128px; } }
+.ctos .nf-sch-n { display: grid; gap: 3px; min-width: 0; }
+.ctos .nf-sch-n b { font: 700 16px/1.1 var(--cm-mono); color: var(--sch-ink); }
+.ctos .nf-sch-s[data-st="run"] .nf-sch-n b { color: var(--c); }
+.ctos .nf-sch-n small { font: 500 var(--cm-ctos-t-micro)/1.3 var(--cm-mono); letter-spacing: .04em; color: var(--sch-dim); }
+.ctos .nf-sch-st { font: 700 var(--cm-ctos-t-micro)/1 var(--cm-mono); letter-spacing: .12em; text-transform: uppercase; color: var(--sch-dim); white-space: nowrap; }
+.ctos .nf-sch-s[data-st="run"] .nf-sch-st { color: var(--c); }
+.ctos .nf-sch-s[data-st="run"] .nf-sch-st::before { content: ""; display: inline-block; width: 6px; height: 6px; margin-right: 6px; background: var(--c); animation: nfSchBlink 1.2s steps(1) infinite; }
+.ctos .nf-sch-s[data-st="rec"] .nf-sch-st { color: #ff5a4a; }
+.ctos .nf-sch-s[data-st="rec"] .nf-sch-st::before { content: "●"; margin-right: 6px; animation: nfSchBlink 1.2s steps(1) infinite; }
+@keyframes nfSchBlink { 50% { opacity: .2; } }
+.ctos :where(button).nf-sch-run { min-width: 76px; min-height: 36px; padding: 0 14px; background: #1c1203; border: 1px solid var(--sch-line); color: var(--sch-ink); font: 700 var(--cm-ctos-t-micro)/1 var(--cm-mono); letter-spacing: .12em; text-transform: uppercase; cursor: pointer; box-shadow: 3px 3px 0 #000; transition: translate .12s, box-shadow .12s; }
+.ctos :where(button).nf-sch-run[aria-pressed="false"] { background: var(--c); border-color: var(--c); color: #140d02; }
+.ctos .nf-sch-s[data-st="stop"] .nf-sch-run { animation: nfSchReady 1.6s ease-in-out infinite; }
+@keyframes nfSchReady { 0%, 100% { box-shadow: 3px 3px 0 #000; } 50% { box-shadow: 3px 3px 0 #000, 0 0 0 3px color-mix(in srgb, var(--c) 35%, transparent); } }
+@media (hover: hover) { .ctos .nf-sch-run:hover { translate: -1px -1px; box-shadow: 4px 4px 0 #000; } }
+.ctos .nf-sch-run:focus-visible, .ctos .nf-sch-cyc:focus-visible, .ctos .nf-sch-tiers button:focus-visible, .ctos .nf-sch-stat:focus-visible, .ctos .nf-sch-tick:focus-visible { outline: 2px solid var(--sch-amber); outline-offset: 2px; }
+
+.ctos .nf-sch-d { margin: 0; max-width: 72ch; font: 400 var(--cm-ctos-t-ui)/1.5 var(--cm-display); color: #c9b48a; }
+.ctos .nf-sch-d b { margin-right: 4px; font: 700 var(--cm-ctos-t-micro)/1 var(--cm-mono); letter-spacing: .1em; text-transform: uppercase; color: var(--c); }
+.ctos .nf-sch-d span { display: block; margin-top: 2px; color: var(--sch-dim); }
+.ctos .nf-sch-rec { display: grid; gap: 8px; }
+.ctos .nf-sch-meter { position: relative; display: block; height: 8px; background: repeating-linear-gradient(90deg, #241703 0 6px, #1a1103 6px 8px); border: 1px solid var(--sch-line); }
+.ctos .nf-sch-meter i { position: absolute; inset: 0 auto 0 0; width: calc(var(--f) * 100%); background: repeating-linear-gradient(90deg, var(--c) 0 6px, transparent 6px 8px); transition: width .3s linear; }
+.ctos .nf-sch-rules { display: grid; gap: 10px; }
+.ctos .nf-sch-line { margin: 0; font: 500 var(--cm-ctos-t-ui)/2 var(--cm-mono); color: var(--sch-ink); }
+.ctos .nf-sch-line > span { margin-left: 8px; color: var(--sch-dim); font-size: var(--cm-ctos-t-micro); }
+.ctos .nf-sch-line > span::before { content: "// "; color: var(--sch-line); }
+.ctos .nf-sch-hint { margin: 0; font: 500 var(--cm-ctos-t-micro)/1.5 var(--cm-mono); color: var(--sch-dim); }
+/* a rule value you press to cycle */
+.ctos :where(button).nf-sch-cyc { display: inline-flex; align-items: center; gap: 6px; min-height: 30px; margin: 0 4px; padding: 0 8px; background: #241703; border: 1px solid var(--c); color: var(--c); font: 700 var(--cm-ctos-t-ui)/1 var(--cm-mono); cursor: pointer; vertical-align: middle; }
+.ctos .nf-sch-cyc i { font-style: normal; font-size: 10px; opacity: .7; }
+@media (hover: hover) { .ctos .nf-sch-cyc:hover { background: var(--c); color: #140d02; } }
+
+/* buy.sh grid: stat toggle then six tier squares, two columns on wide screens */
+.ctos .nf-sch-grid { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(330px, 1fr)); gap: 4px 14px; }
+.ctos .nf-sch-grid li { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 10px; min-height: 36px; padding: 2px 0 2px 10px; border-left: 2px solid color-mix(in srgb, var(--c) 50%, transparent); }
+.ctos :where(button).nf-sch-stat, .ctos :where(button).nf-sch-tick { display: inline-flex; align-items: center; gap: 8px; min-height: 32px; padding: 0; background: none; border: 0; color: var(--sch-ink); font: 600 var(--cm-ctos-t-ui)/1 var(--cm-mono); cursor: pointer; text-align: left; }
+.ctos .nf-sch-stat:disabled { color: var(--sch-dim); cursor: default; }
+.ctos .nf-sch-stat i, .ctos .nf-sch-tick i { width: 14px; height: 14px; flex: none; border: 1px solid var(--c); background: transparent; }
+.ctos .nf-sch-stat[aria-pressed="true"] i, .ctos .nf-sch-tick[aria-pressed="true"] i { background: var(--c); box-shadow: inset 0 0 0 2px #140d02; }
+.ctos .nf-sch-stat[aria-pressed="true"] { color: var(--c); }
+.ctos .nf-sch-tiers { display: grid; grid-template-columns: repeat(6, 38px); gap: 3px; }
+.ctos .nf-sch-tiers :where(button) { min-height: 30px; padding: 0; background: transparent; border: 1px dashed #7a6238; color: #8a7448; font: 700 11px/1 var(--cm-mono); letter-spacing: .04em; cursor: pointer; }
+.ctos .nf-sch-tiers button[data-t] { border-style: solid; border-color: color-mix(in srgb, var(--c) 55%, #241703); color: color-mix(in srgb, var(--c) 70%, #fff0); }
+.ctos .nf-sch-tiers button[aria-pressed="true"] { background: var(--c); border-color: var(--c); color: #140d02; }
+.ctos .nf-sch-tiers button:disabled { cursor: help; }
+/* compile.sh and deploy.sh: one data line per recipe */
+.ctos .nf-sch-pay { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 4px 14px; }
+.ctos .nf-sch-pay li { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; align-items: center; gap: 10px; min-height: 36px; padding-left: 10px; border-left: 2px solid #4aa3ff66; font: 500 var(--cm-ctos-t-ui)/1.2 var(--cm-mono); color: var(--sch-ink); }
+.ctos .nf-sch-pay b { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ctos .nf-sch-pay small { color: var(--sch-dim); font-size: var(--cm-ctos-t-micro); white-space: nowrap; }
+.ctos .nf-sch-pv { font-size: var(--cm-ctos-t-micro); color: var(--sch-dim); white-space: nowrap; }
+.ctos .nf-sch-tick { font-size: var(--cm-ctos-t-micro) !important; color: var(--sch-dim) !important; }
+.ctos .nf-sch-tick[aria-pressed="true"] { color: var(--c) !important; }
+
+@media (min-width: 640px) and (max-width: 1180px) { .ctos .nf-sch-hero { --sc: 1.5; } }
+@media (max-width: 639px) {
+    .ctos .nf-sch-hero { --sc: 1; grid-template: "scene" auto "top" auto "note" auto / minmax(0, 1fr); }
+    .ctos .nf-sch-scene { justify-self: center; }
+    .ctos .nf-sch-h { grid-template-columns: auto minmax(0, 1fr) auto; }
+    .ctos .nf-sch-st { grid-column: 2; grid-row: 2; }
+    .ctos .nf-sch-run { grid-column: 3; grid-row: 1 / span 2; }
+    .ctos .nf-sch-grid { grid-template-columns: minmax(0, 1fr); }
+    .ctos .nf-sch-grid li { grid-template-columns: minmax(0, 1fr); gap: 4px; padding-block: 6px; }
+    .ctos .nf-sch-tiers { grid-template-columns: repeat(6, minmax(0, 1fr)); }
+    .ctos .nf-sch-pay { grid-template-columns: minmax(0, 1fr); }
+    .ctos .nf-sch-line { line-height: 1.9; }
+    .ctos .nf-sch-line > span { display: block; margin: 2px 0 0; line-height: 1.5; }
+}
+@media (hover: none) { .ctos .nf-sch-tiers button, .ctos .nf-sch-cyc, .ctos .nf-sch-stat, .ctos .nf-sch-tick { min-height: 40px; } .ctos .nf-sch-run { min-height: 44px; } }
+@media (prefers-reduced-motion: reduce) { .ctos .nf-sch-scene, .ctos .nf-sch-ic[data-on], .ctos .nf-sch-run, .ctos .nf-sch-ps::after, .ctos .nf-sch-st::before { animation: none !important; } }
+body.nf-calm .ctos .nf-sch-scene, body.nf-calm .ctos .nf-sch-ic[data-on] { animation: none; }
