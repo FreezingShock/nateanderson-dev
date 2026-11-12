@@ -41,8 +41,8 @@ body > .nf-tm-host { position: fixed; inset: 0; z-index: 1000; }
 .ctos .nf-tm[data-focus] .nf-tl-bed { opacity: .12; }
 .ctos .nf-tl { transition: opacity .3s, stroke .3s; }
 .ctos .nf-tl[data-st="off"] { stroke: #6b7a8c; stroke-width: 3; opacity: .4; }
-.ctos .nf-tl[data-st="edge"] { stroke: var(--c); stroke-width: 4; stroke-dasharray: 18 6; animation: nfTrace 1.2s linear infinite, nfTracePulse 1.8s ease-in-out infinite; }
-.ctos .nf-tl[data-st="on"] { stroke: var(--c); stroke-width: 5; animation: nfTracePulse 2.6s ease-in-out infinite; }
+.ctos .nf-tl[data-st="edge"] { stroke: var(--c); stroke-width: 4; stroke-dasharray: 18 6; animation: nfTrace 1.2s steps(12) infinite, nfTracePulse 1.8s steps(9) infinite; }
+.ctos .nf-tl[data-st="on"] { stroke: var(--c); stroke-width: 5; animation: nfTracePulse 2.6s steps(13) infinite; }
 .ctos .nf-tl[data-fog] { opacity: .15; animation: none; }
 .ctos .nf-tm[data-focus] .nf-tl:not([data-near]) { opacity: .12; animation: none; }
 .ctos .nf-tm[data-focus] .nf-tl[data-near] { opacity: 1; }
@@ -52,7 +52,7 @@ body > .nf-tm-host { position: fixed; inset: 0; z-index: 1000; }
 .ctos .nf-tl-via[data-st="on"] { fill: color-mix(in srgb, var(--c) 35%, #000); stroke: var(--c); opacity: 1; }
 .ctos .nf-tl-via[data-fog] { opacity: .15; }
 .ctos .nf-tm[data-focus] .nf-tl-via:not([data-near]) { opacity: .12; }
-.ctos .nf-tl-pk { stroke: #fff; stroke-width: 5; stroke-dasharray: 10 150; animation: nfPacket 1.9s linear infinite; }
+.ctos .nf-tl-pk { stroke: #fff; stroke-width: 5; stroke-dasharray: 10 150; animation: nfPacket 1.9s steps(38) infinite; }
 .ctos .nf-tm[data-focus] .nf-tl-pk { opacity: .35; }
 @keyframes nfTrace { to { stroke-dashoffset: -24; } }
 @keyframes nfTracePulse { 0%, 100% { opacity: .75; } 50% { opacity: 1; } }
@@ -109,7 +109,7 @@ body > .nf-tm-host { position: fixed; inset: 0; z-index: 1000; }
     animation: nfHalo 3.2s ease-in-out infinite;
 }
 .ctos .nf-tn[data-st="locked"] .nf-tn-halo, .ctos .nf-tn[data-vis="fog"] .nf-tn-halo { --br: #ffffff26; animation: none; }
-@keyframes nfHalo { 0%, 100% { inset: -16px; opacity: .65; } 50% { inset: -22px; opacity: 1; } }
+@keyframes nfHalo { 0%, 100% { scale: 1; opacity: .65; } 50% { scale: 1.065; opacity: 1; } } /* scale, not inset: no layout every frame */
 
 /* states */
 .ctos .nf-tn[data-st="locked"] .nf-tn-ic { opacity: .3; filter: grayscale(1) brightness(.7); }
@@ -151,7 +151,7 @@ body > .nf-tm-host { position: fixed; inset: 0; z-index: 1000; }
 .ctos .nf-tn[data-flash] .nf-tn-body { animation: nfTnBuy .7s cubic-bezier(.2, .8, .2, 1); }
 .ctos .nf-tn[data-flash] .nf-tn-face::after { content: ""; position: absolute; inset: -6px; border: 3px solid var(--c); animation: nfTnBurst .8s ease-out both; pointer-events: none; }
 .ctos .nf-tn[data-new] { animation: nfTnReveal .9s cubic-bezier(.2, .8, .2, 1) both; }
-@keyframes nfTnReady { 0%, 100% { opacity: 0; inset: -8px; } 50% { opacity: 1; inset: -13px; } }
+@keyframes nfTnReady { 0%, 100% { opacity: 0; scale: 1; } 50% { opacity: 1; scale: 1.08; } }
 @keyframes nfTnBuy { 0% { scale: 1; } 30% { scale: .9; } 65% { scale: 1.08; } 100% { scale: 1; } }
 @keyframes nfTnBurst { from { opacity: 1; inset: -6px; } to { opacity: 0; inset: -40px; } }
 @keyframes nfTnReveal { 0% { opacity: 0; scale: .5; filter: brightness(3); } 45% { opacity: 1; filter: brightness(2); } 100% { opacity: 1; scale: 1; filter: none; } }

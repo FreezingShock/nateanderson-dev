@@ -15,7 +15,11 @@ import { NfIcon } from "./icon";
 import { EventLayer } from "./events";
 import { AwayReport, type Away } from "./away";
 import { Scenery, SceneWindow } from "./scenery";
-import { TreeMenu } from "./tree";
+import dynamic from "next/dynamic";
+// The prestige tree (menu, backdrop, sprites) is the biggest piece of the game and most visits never open it, so it loads on its
+// own and is fetched quietly once the board is idle.
+const loadTree = () => import("./tree");
+const TreeMenu = dynamic(() => loadTree().then((m) => ({ default: m.TreeMenu })), { ssr: false });
 import { eraOf } from "@/lib/nodefarm/scenery";
 import { DroneBay } from "./drones";
 import { Chain, StatRow } from "./stat-row";
@@ -57,6 +61,8 @@ export function NodeFarm() {
     const [side, setSide] = useState<Tab>("goals");
     const [win, setWin] = useState<"" | "map" | "goals" | "records" | "ascend" | "menu">("");
     const [treeOpen, setTreeOpen] = useState(false);
+    const treeOpenRef = useRef(false);
+    treeOpenRef.current = treeOpen;
     const [folded, setFolded] = useState<Record<string, boolean>>({});
     const feedStore = useMemo(() => new FeedStore(), []);
     useEffect(() => () => feedStore.dispose(), [feedStore]);
@@ -237,6 +243,14 @@ export function NodeFarm() {
         };
     }, [ready, save]);
 
+    useEffect(() => {
+        if (!ready) return;
+        const w = window as Window & { requestIdleCallback?: (f: () => void, o?: { timeout: number }) => number; cancelIdleCallback?: (n: number) => void };
+        const idle = typeof w.requestIdleCallback === "function";
+        const id = idle ? w.requestIdleCallback!(() => void loadTree(), { timeout: 4000 }) : window.setTimeout(() => void loadTree(), 2500);
+        return () => (idle ? w.cancelIdleCallback?.(id) : window.clearTimeout(id));
+    }, [ready]);
+
     const setFold = useCallback((next: Record<string, boolean>) => {
         setFolded(next);
         try {
@@ -307,7 +321,8 @@ export function NodeFarm() {
                 sfx("nfGoal");
                 setTimeout(() => setToast((t) => (t === goal.name ? null : t)), 3200);
             }
-            bump((n) => n + 1);
+            // the full-screen tree hides the board, so it only needs to follow twice a second (the game itself still ticks ten times a second)
+            if (!treeOpenRef.current || tickN.current % 5 === 0) bump((n) => n + 1);
         }, 100);
         return () => {
             clearInterval(iv);
@@ -576,6 +591,7 @@ export function NodeFarm() {
             {treeOpen && (
                 <TreeMenu
                     s={s}
+                    ver={`${s.tree.length}|${s.ap}`}
                     reduced={reduced}
                     onBuy={(id) => { if (buyNode(s, id)) { sfx("nfBuy", { tier: 4 }); bump((n) => n + 1); } else sfx("deny"); }}
                     onRespec={() => { const back = respec(s); sfx("tab"); log(`Tree respec: ${fmt(back)} AP refunded.`, "good"); save(); bump((n) => n + 1); return back; }}
