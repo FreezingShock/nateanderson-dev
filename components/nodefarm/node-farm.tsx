@@ -32,6 +32,7 @@ import { ScriptsZone } from "./scripts";
 import { SCRIPTS, SCRIPT_BY, ascendDue, learnStep, schedOpen, teachAscend, teachCompile, teachDeploy, teachDrop, teachPress } from "@/lib/nodefarm/scripts";
 import { eraOf } from "@/lib/nodefarm/scenery";
 import { DroneBay, droneModel } from "./drones";
+import { rigManual } from "@/lib/nodefarm/rigs";
 import { Chain, StatRow } from "./stat-row";
 import { Feed } from "./feed";
 import { FeedStore, buyToks, call, com, droneToks, fromText, id as idTok, num, p as pun, str as strTok, txt, unlockToks, type FeedTone } from "@/lib/nodefarm/feed";
@@ -608,6 +609,7 @@ export function NodeFarm() {
             }
             gainNow *= n;
             teachPress(s, stat, tier, n);
+            rigManual(s);
             feed.current.lastPulse = performance.now();
             feed.current.pulseStat = Math.max(0, STATS.findIndex((x) => x.id === stat));
             dronePrev.current.manual += 1;

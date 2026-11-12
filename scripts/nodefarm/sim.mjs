@@ -6,6 +6,14 @@ const hours = Number(process.argv[2] || 24 * 14);
 // NF_TUNE='{"perProducer":{"copper":0.02}}' deep-merges over TUNE so numbers can be tried without editing the engine.
 const merge = (a, b) => { for (const [k, v] of Object.entries(b)) a[k] = v && typeof v === "object" && !Array.isArray(v) && a[k] && typeof a[k] === "object" ? merge(a[k], v) : v; return a; };
 if (process.env.NF_TUNE) merge(E.TUNE, JSON.parse(process.env.NF_TUNE));
+// Zone rigs (lib/nodefarm/rigs.ts) join in unless NF_NORIGS=1. rigs.ts imports "./engine" without an extension, so resolve that to .ts.
+let RG = null;
+if (!process.env.NF_NORIGS) {
+    const { registerHooks } = await import("node:module");
+    registerHooks({ resolve(spec, ctx, next) { try { return next(spec, ctx); } catch (e) { if (spec.startsWith(".")) return next(spec + ".ts", ctx); throw e; } } });
+    RG = await import("../../lib/nodefarm/rigs.ts");
+    if (process.env.NF_RIGTUNE) merge(RG.RIG_TUNE, JSON.parse(process.env.NF_RIGTUNE)); // same as NF_TUNE, for RIG_TUNE
+}
 const s = E.fresh(0);
 if (!process.env.NF_NODRONES) s.armed = ["mult", ...E.MATS]; // the bot arms every stat once it has Drones
 if (process.env.NF_NODRONES) s.autoArmed = ["mult", ...E.MATS]; // keep Standing orders from arming anything
@@ -44,6 +52,12 @@ while (t < hours * 3600) {
                 const b = E.button(s, "reboot", k);
                 if (s.mult >= b.cost * 1.0 && (s.mult >= b.cost * 1.3 || t - (marks.lastReboot || 0) > 900)) { E.press(s, "reboot", k); marks.lastReboot = t; break; }
             }
+        }
+        // Zone rigs: buy any level the bot can pay four times over; scrubbers stay on, the forge draws 10%, the prism aims at Copper
+        if (RG) {
+            if (E.isUnlocked(s, "voidsteel")) RG.setRig(s, "draw", 0.1);
+            for (const d of RG.RIGS) for (const k of d.keys) { const p = RG.rigPrice(s, k.key); if (!p.maxed && E.amount(s, p.pays) >= p.cost * 4 && RG.buyRig(s, k.key)) mark("rig " + k.key + " " + RG.rigLv(s, k.key), t); }
+            if (E.isUnlocked(s, "origin") && s.origin >= RG.rewritePrice(s) * 4) { const z = RG.RIGS.find((d) => d.zone !== "origin" && (RG.rig(s).re[d.zone] ?? 0) < 3); if (z) RG.rewrite(s, z.zone); }
         }
         // Drones: cheapest tier first, paid in Aether
         if (!process.env.NF_NODRONES && E.dronesOpen(s)) for (let k = 0; k < E.TIERS; k++) if (s.aether >= E.droneCost(s, k) * 3 && E.buyDrone(s, k)) mark("drone " + k, t);

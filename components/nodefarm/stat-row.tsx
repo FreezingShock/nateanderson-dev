@@ -10,6 +10,7 @@ import { NfIcon, NfTierIcon, type NfIconName } from "./icon";
 import { useFoldReveal } from "@/lib/nodefarm/cx";
 import { hasZoneArt } from "@/lib/nodefarm/zone-art";
 import { ZoneArt } from "./zone-art";
+import { ZoneRig } from "./rig";
 import { ZoneEvent } from "./zone-event";
 import { eventsFor, zoneEvDef, type ZeChoice } from "@/lib/nodefarm/zoneevents";
 
@@ -175,6 +176,7 @@ export function StatRow({ id, s, d, onPress, onArm, onWatchdog, open: expanded, 
                             <div key={k}><dt>{k}</dt><i aria-hidden="true" /><dd>{v}</dd></div>
                         ))}
                     </dl>
+                    <ZoneRig id={id} s={s} d={d} />
                     {id !== "bytes" && id !== "reboot" && s.drones.some((x) => x > 0) && (
                         <div className="nf-arm">
                             <span>Drones</span>
