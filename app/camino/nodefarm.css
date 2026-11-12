@@ -23,10 +23,10 @@
 }
 .ctos .nf-boot { min-height: 280px; place-content: center; text-align: center; font: 500 var(--cm-ctos-t-ui)/1.6 var(--cm-mono); color: var(--cm-mute); letter-spacing: .1em; text-transform: uppercase; }
 .ctos .nf-boot-t { color: var(--cm-cyan); display: block; }
-.ctos .nf .nf-ic, body .nf-aw .nf-ic { --s: 32px; display: inline-block; flex: none; width: var(--s); height: var(--s); background: url(/naos/nodefarm/icons-anim.webp) calc(var(--i) * var(--s) * -1) 0 / calc(var(--s) * 21) calc(var(--s) * 4) no-repeat; animation: nfFrame 1s steps(4) infinite; animation-delay: calc(var(--i) * -.23s); image-rendering: pixelated; vertical-align: middle; }
+.ctos .nf .nf-ic, body .nf-aw .nf-ic { --s: 32px; display: inline-block; flex: none; width: var(--s); height: var(--s); background: url(/naos/nodefarm/icons-anim.webp?v=e42d7a08) calc(var(--i) * var(--s) * -1) 0 / calc(var(--s) * 21) calc(var(--s) * 4) no-repeat; animation: nfFrame 1s steps(4) infinite; animation-delay: calc(var(--i) * -.23s); image-rendering: pixelated; vertical-align: middle; }
 .ctos .nf .nf-ic.l, .ctos .nf .nf-ic.r, body .nf-aw .nf-ic.l { --s: 64px; }
 /* tier icon: bottom-right of a buy button, a whole 32 px of the 192 x 192 sheet (row = stat, column = tier) */
-.ctos .nf .nf-tic { position: absolute; right: 8px; bottom: 6px; z-index: 1; width: 32px; height: 32px; background: url(/naos/nodefarm/tiers-anim.webp) calc(var(--t) * -32px) calc(var(--r) * -32px) / 192px 2048px no-repeat; animation: nfTierFrame 1.1s steps(4) infinite paused; image-rendering: pixelated; pointer-events: none; opacity: .55; filter: grayscale(.7) brightness(.8); transition: opacity 120ms, filter 120ms; }
+.ctos .nf .nf-tic { position: absolute; right: 8px; bottom: 6px; z-index: 1; width: 32px; height: 32px; background: url(/naos/nodefarm/tiers-anim.webp?v=4901cc01) calc(var(--t) * -32px) calc(var(--r) * -32px) / 192px 2048px no-repeat; animation: nfTierFrame 1.1s steps(4) infinite paused; image-rendering: pixelated; pointer-events: none; opacity: .55; filter: grayscale(.7) brightness(.8); transition: opacity 120ms, filter 120ms; }
 .ctos .nf .nf-btn[data-afford] .nf-tic { opacity: 1; filter: none; animation-play-state: running; animation-delay: calc((var(--r) * 3 + var(--t)) * -.17s); }
 @media (max-width: 639px) { .ctos .nf .nf-ic.r { --s: 32px; } }
 .ctos .nf :where(button) { font: inherit; color: inherit; touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
@@ -463,7 +463,7 @@ body.nf-win-open .ctos .cm-section.ruled { z-index: 60; }
 @keyframes nfTierFrame { to { background-position-y: calc(var(--r) * -32px - 2048px); } }
 @keyframes nfDroneFrame { to { background-position-y: -256px; } }
 
-.ctos .nf-sp-d { display: block; width: 64px; height: 64px; flex: none; background: url(/naos/nodefarm/drones.webp) calc(var(--k) * -64px) 0 / 384px 256px no-repeat; image-rendering: pixelated; filter: grayscale(1) brightness(.55); animation: nfDroneFrame .8s steps(4) infinite paused; }
+.ctos .nf-sp-d { display: block; width: 64px; height: 64px; flex: none; background: url(/naos/nodefarm/drones.webp?v=600574e6) calc(var(--k) * -64px) 0 / 384px 256px no-repeat; image-rendering: pixelated; filter: grayscale(1) brightness(.55); animation: nfDroneFrame .8s steps(4) infinite paused; }
 .ctos .nf-sp-d[data-on] { filter: none; animation-play-state: running; animation-delay: calc(var(--k) * -.2s); }
 .ctos .nf-locked .nf-sp-d { --k: 0; filter: grayscale(1) brightness(.7); }
 
