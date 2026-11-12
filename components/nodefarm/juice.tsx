@@ -248,10 +248,11 @@ export function Juice({ reduced }: { reduced: boolean }) {
     const jb = useRef<HTMLDivElement>(null);
     const curKey = cur?.key ?? 0;
     const curOut = !!cur?.out;
+    const curKind = cur?.kind;
     useLayoutEffect(() => {
         if (!curKey) return;
-        codeReveal(jb.current, { dir: curOut ? "out" : "in", rows: ".nf-jb-ic, .nf-jb-t > *", sound: false, ms: curOut ? 200 : 320 });
-    }, [curKey, curOut]);
+        codeReveal(jb.current, { dir: curOut ? "out" : "in", style: curKind === "milestone" ? "print" : "decrypt", rows: ".nf-jb-ic, .nf-jb-t > *", sound: false, ms: curOut ? 200 : 320 });
+    }, [curKey, curOut, curKind]);
 
     if (!host) return null;
     return createPortal(
