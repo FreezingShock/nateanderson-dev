@@ -4,9 +4,10 @@ import { useRef, type CSSProperties } from "react";
 import { useFoldReveal } from "@/lib/nodefarm/cx";
 import { PAYLOADS, STATS, TIERS, apOnAscend, dropFill, fmt, fmtTime, hasRecipe, isUnlocked, type ScriptId, type State } from "@/lib/nodefarm/engine";
 import {
-    BUY_STATS, SCRIPTS, SCRIPT_COLOR, SCRIPT_TUNE, ascendTarget, auto, buyCycle, buyVer, cycleSetting, cycleStock, isOn, learnLeft, learnPart, runAge,
-    schedStage, scriptGate, scriptNext, scriptOpen, setRunning, taughtMask, toggleBuyStat, toggleBuyTier, toggleDeploy, type ScriptDef,
+    BUY_STATS, RIG_ZONES, SCRIPTS, SCRIPT_COLOR, SCRIPT_TUNE, ascendTarget, auto, buyCycle, buyVer, cycleAnswer, cycleSetting, cycleStock, flip, isOn, learnLeft, learnPart,
+    restoreLeft, runAge, schedStage, toggleRigZone, scriptGate, scriptNext, scriptOpen, setRunning, taughtMask, toggleBuyStat, toggleBuyTier, toggleDeploy, type ScriptDef,
 } from "@/lib/nodefarm/scripts";
+import { capCharge, rigCap, rigDef, rigLv, rigOpen, zoneNo } from "@/lib/nodefarm/rigs";
 import "@/app/camino/nodefarm-scripts.css";
 
 /**
@@ -15,7 +16,7 @@ import "@/app/camino/nodefarm-scripts.css";
  * Styles: app/camino/nodefarm-scripts.css. Art: scripts/naos-art/nodefarm-sched-scene.py (zone-sched, sched-icons).
  */
 const statName = (id: string) => STATS.find((x) => x.id === id)!;
-const ROW: Record<ScriptId, number> = { buy: 0, reboot: 1, compile: 2, deploy: 3, drop: 4, ascend: 5 };
+const ROW: Record<ScriptId, number> = { buy: 0, reboot: 1, compile: 2, deploy: 3, drop: 4, ascend: 5, rig: 6, event: 7, restore: 8 };
 
 export function ScriptIcon({ id, on }: { id: ScriptId; on?: boolean }) {
     return <span className="nf-sch-ic" aria-hidden="true" data-on={on ? "" : undefined} style={{ ["--r" as string]: ROW[id] } as CSSProperties} />;
@@ -101,6 +102,15 @@ function ScriptLine({ x, s, onChange }: { x: ScriptDef; s: State; onChange: (msg
     );
 }
 
+/** A yes/no rule: a square you tick. */
+function Tick({ on, label, onPress }: { on: boolean; label: string; onPress: () => void }) {
+    return (
+        <button type="button" className="nf-sch-tick nf-sch-chain" aria-pressed={on} onClick={onPress}>
+            <i aria-hidden="true" />{label}
+        </button>
+    );
+}
+
 /** A rule value you press to cycle. */
 function Cyc({ v, label, onPress }: { v: string; label: string; onPress: () => void }) {
     return (
@@ -163,10 +173,70 @@ function Rules({ id, s, onChange }: { id: ScriptId; s: State; onChange: (msg?: s
     }
     if (id === "reboot") {
         return (
+            <>
             <p className="nf-sch-line">
                 Reboot when Multipliers reach <Cyc v={`×${a.rebootX}`} label="Reboot at" onPress={() => { cycleSetting(s, "rebootX"); onChange(); }} /> the best tier&apos;s price
                 <span>{fmt(a.ran.reboot ?? 0)} Reboots run so far · shares the Watchdog switch</span>
             </p>
+            <div className="nf-sch-chains">
+                <Tick on={!!a.capWait} label={`wait for a full Capacitor (now ${Math.floor(capCharge(s) * 100)}%)`} onPress={() => { flip(s, "capWait"); onChange(); }} />
+                {s.lab.seen && <Tick on={!!a.bombFirst} label={`arm a Logic bomb first when one is stocked (${s.lab.stock.logicbomb ?? 0} in stock)`} onPress={() => { flip(s, "bombFirst"); onChange(); }} />}
+            </div>
+            </>
+        );
+    }
+    if (id === "rig") {
+        const zones = RIG_ZONES.filter((z) => rigOpen(s, z));
+        return (
+            <>
+                <p className="nf-sch-line">
+                    upgrade when you hold <Cyc v={`×${a.rigX ?? 5}`} label="Rig reserve" onPress={() => { cycleSetting(s, "rigX"); onChange(); }} /> the price
+                    <span>{fmt(a.ran.rig ?? 0)} levels bought so far · runs every {SCRIPT_TUNE.cycle.rig} s · the cheapest level first</span>
+                </p>
+                <ul className="nf-sch-pay nf-sch-rigs" aria-label="Rigs rig.sh upgrades">
+                    {zones.map((z) => {
+                        const def = rigDef(z)!;
+                        const lv = def.keys.reduce((n, k) => n + rigLv(s, k.key), 0);
+                        const cap = rigCap(s, z) * def.keys.length;
+                        return (
+                            <li key={z} style={{ ["--c" as string]: statName(z).color } as CSSProperties}>
+                                <b>{zoneNo(z)} {def.name}</b>
+                                <small>lv {lv}/{cap}</small>
+                                <button type="button" className="nf-sch-tick" aria-pressed={!!a.rigs?.[z]} onClick={() => { toggleRigZone(s, z); onChange(); }} aria-label={`rig.sh upgrades ${def.name}`}>
+                                    <i aria-hidden="true" />{lv >= cap ? "maxed" : "upgrade"}
+                                </button>
+                            </li>
+                        );
+                    })}
+                </ul>
+            </>
+        );
+    }
+    if (id === "event") {
+        return (
+            <>
+                <p className="nf-sch-line">
+                    Rich vein: <Cyc v={(a.vein ?? "mine") === "mine" ? "mine it now" : "let it run"} label="Rich vein" onPress={() => { cycleAnswer(s, "vein"); onChange(); }} />
+                    Fault: <Cyc v={(a.fault ?? "patch") === "patch" ? "patch it" : "wait it out"} label="Fault" onPress={() => { cycleAnswer(s, "fault"); onChange(); }} />
+                    <span>{fmt(a.ran.event ?? 0)} answered so far · checks every second</span>
+                </p>
+                <p className="nf-sch-hint">Mining pays 4 minutes of the zone at once; letting it run doubles it for 4 minutes. A patch costs a little Bytes; a Fault you can&apos;t pay for waits until you can.</p>
+            </>
+        );
+    }
+    if (id === "restore") {
+        const [t, p] = restoreLeft(s);
+        const saved = a.build?.length ?? 0;
+        return (
+            <>
+                <p className="nf-sch-line">
+                    {a.rebuild ? "Rebuilding" : "Build saved"}: {saved} tree node{saved === 1 ? "" : "s"} in the order you bought them
+                    <span>{a.rebuild ? `${t} node${t === 1 ? "" : "s"} and ranks left, ${p} perk level${p === 1 ? "" : "s"} left · waits for AP` : "it keeps copying your tree as you build it, and rebuilds after each Handover"}</span>
+                </p>
+                <div className="nf-sch-chains">
+                    <Tick on={a.restPerks !== false} label="rebuild perks too, after the tree" onPress={() => { flip(s, "restPerks"); onChange(); }} />
+                </div>
+            </>
         );
     }
     if (id === "compile" || id === "deploy") {
@@ -203,6 +273,11 @@ function Rules({ id, s, onChange }: { id: ScriptId; s: State; onChange: (msg?: s
                 Ascend when the AP on offer reaches <Cyc v={`×${a.ascX}`} label="Ascend at" onPress={() => { cycleSetting(s, "ascX"); onChange(); }} /> your last Ascend
                 <span>target {fmt(target)} AP · on offer {fmt(now)} AP · run {fmtTime(age)}{age < SCRIPT_TUNE.ascMinSecs ? ` (waits for ${fmtTime(SCRIPT_TUNE.ascMinSecs)})` : ""}</span>
             </p>
+            {s.lab.seen && (
+                <div className="nf-sch-chains">
+                    <Tick on={!!a.zeroFirst} label={`arm a Zero-click first when one is stocked (${s.lab.stock.zeroclick ?? 0} in stock)`} onPress={() => { flip(s, "zeroFirst"); onChange(); }} />
+                </div>
+            )}
             <p className="nf-sch-hint">Ascend wipes the run, the same as pressing it yourself. It only fires while the game is open, never during time away.</p>
         </>
     );
