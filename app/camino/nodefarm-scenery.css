@@ -7,15 +7,15 @@
 @keyframes nfScnOut { from { opacity: var(--scn-o, .55); } to { opacity: 0; } }
 
 /* one place that maps an era to its image; every surface reads --scn */
-[data-era="0"] { --scn: url(/naos/nodefarm/scene-0.webp); }
-[data-era="1"] { --scn: url(/naos/nodefarm/scene-1.webp); }
-[data-era="2"] { --scn: url(/naos/nodefarm/scene-2.webp); }
-[data-era="3"] { --scn: url(/naos/nodefarm/scene-3.webp); }
-[data-era="4"] { --scn: url(/naos/nodefarm/scene-4.webp); }
-[data-era="5"] { --scn: url(/naos/nodefarm/scene-5.webp); }
-[data-era="6"] { --scn: url(/naos/nodefarm/scene-6.webp); }
-[data-era="7"] { --scn: url(/naos/nodefarm/scene-7.webp); }
-[data-era="8"] { --scn: url(/naos/nodefarm/scene-8.webp); }
+[data-era="0"] { --scn: url(/naos/nodefarm/scene-0.webp); --det: url(/naos/nodefarm/detail-0.webp); }
+[data-era="1"] { --scn: url(/naos/nodefarm/scene-1.webp); --det: url(/naos/nodefarm/detail-1.webp); }
+[data-era="2"] { --scn: url(/naos/nodefarm/scene-2.webp); --det: url(/naos/nodefarm/detail-2.webp); }
+[data-era="3"] { --scn: url(/naos/nodefarm/scene-3.webp); --det: url(/naos/nodefarm/detail-3.webp); }
+[data-era="4"] { --scn: url(/naos/nodefarm/scene-4.webp); --det: url(/naos/nodefarm/detail-4.webp); }
+[data-era="5"] { --scn: url(/naos/nodefarm/scene-5.webp); --det: url(/naos/nodefarm/detail-5.webp); }
+[data-era="6"] { --scn: url(/naos/nodefarm/scene-6.webp); --det: url(/naos/nodefarm/detail-6.webp); }
+[data-era="7"] { --scn: url(/naos/nodefarm/scene-7.webp); --det: url(/naos/nodefarm/detail-7.webp); }
+[data-era="8"] { --scn: url(/naos/nodefarm/scene-8.webp); --det: url(/naos/nodefarm/detail-8.webp); }
 
 .ctos .nf { isolation: isolate; }
 
@@ -29,11 +29,11 @@
 @media (min-width: 1000px) { .ctos .nf-scn-l { background-size: 1440px 810px; } }
 
 /* window under the core: fills the empty rail with the current scene */
-.ctos .nf-scn-win { position: relative; margin-top: 10px; height: clamp(150px, 26vw, 190px); overflow: hidden; background: #0a0a0a; border: 1px solid var(--nf-line);
+.ctos .nf-scn-win { position: relative; margin-top: 10px; height: 144px; overflow: hidden; background: #0a0a0a; border: 1px solid var(--nf-line);
     --b: color-mix(in srgb, var(--cm-cyan) 80%, transparent);
     background-image: linear-gradient(var(--b), var(--b)), linear-gradient(var(--b), var(--b)), linear-gradient(var(--b), var(--b)), linear-gradient(var(--b), var(--b)); background-size: 12px 2px, 2px 12px, 12px 2px, 2px 12px; background-position: left top, left top, right bottom, right bottom; background-repeat: no-repeat; }
 @media (min-width: 1000px) { .ctos .nf-scn-win { height: 132px; } }
-.ctos .nf-scn-win-i { position: absolute; inset: 0; background: var(--scn) 50% 100% / 480px 270px no-repeat; image-rendering: pixelated; opacity: .9; animation: nfScnWin .9s steps(6) both; }
+.ctos .nf-scn-win-i { position: absolute; inset: 0; background: var(--det) 50% 50% / 360px 144px no-repeat; image-rendering: pixelated; opacity: .9; animation: nfScnWin .9s steps(6) both; }
 @keyframes nfScnWin { from { opacity: 0; } to { opacity: .9; } }
 .ctos .nf-scn-cap { position: absolute; left: 8px; bottom: 8px; padding: 4px 8px; background: #0c0c0cd9; font: 700 var(--cm-ctos-t-micro)/1 var(--cm-mono); letter-spacing: .14em; color: var(--cm-ctos-meta); }
 
