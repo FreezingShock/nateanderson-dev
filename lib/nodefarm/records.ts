@@ -5,6 +5,7 @@ import { SCRIPTS, auto, isOn, learnPart, scriptNext, scriptOpen } from "./script
 import { OPERATORS, archiveOf, loadSeen, pickNews } from "./news";
 import {
     GOALS, GOAL_TIERS, LAB, MATS, PAYLOADS, PERKS, SECRETS, TIER_NAMES, TREE, TREE_FULL, apOnAscend, intelRate, derive, fmt, fmtTime, goalDone, statDef, tiersDone, unlock,
+    FW, handSeen, keysOnHandover, protoDef,
     type State,
 } from "./engine";
 import { LOGS, logNo } from "./story";
@@ -79,6 +80,14 @@ export function recordSections(s: State): RecordSection[] {
         ["Payloads compiled", fmt(s.life.compiled)],
         ["Payloads deployed", fmt(s.life.deployed)],
     ] });
+    if (handSeen(s)) out.push({ id: "hand", title: "Handover", blurb: "Keys and Firmware survive every Handover. Your notes for the next operator are kept here.", rows: [
+        ["Handovers", fmt(s.hand.count)],
+        ["Keys held", `${fmt(s.hand.keys)} · ${fmt(s.hand.keysTotal)} earned`],
+        ["Firmware", `${s.hand.fw.length} / ${FW.length}`],
+        ["Protocol", s.hand.proto ? `${protoDef(s.hand.proto).op}, ${protoDef(s.hand.proto).name}${s.hand.proto2 ? ` + ${protoDef(s.hand.proto2).op}` : ""}` : "none yet"],
+        ["Next Handover", keysOnHandover(s) ? `+${keysOnHandover(s)} Keys` : "reach node zero"],
+        ...s.hand.notes.slice(-5).reverse().map((n) => [`Note, cycle ${n.n}`, n.text] as [string, string]),
+    ] });
     return out;
 }
 
@@ -123,7 +132,8 @@ export function nfCommand(s: State, args: string[]): NfResult {
             row("ascensions", `${s.life.ascends}  (${s.ap} AP)`),
             row("goals", `${c.goals}/${c.goalTotal}`),
             row("secrets", `${c.secrets}/${c.secretTotal}`),
-            t("nf stats · nf goals · nf secrets · nf logs · nf news · nf lab · nf cron · nf archive · nf open", "dim"),
+            ...(handSeen(s) ? [row("handovers", `${s.hand.count}  (${s.hand.keys} keys)`)] : []),
+            t("nf stats · nf goals · nf secrets · nf logs · nf news · nf lab · nf handover · nf cron · nf archive · nf open", "dim"),
         ];
     } else if (sub === "stats") {
         lines = recordSections(s).flatMap((sec) => [t(sec.title.toLowerCase(), "hi"), ...sec.rows.map(([a, b]) => row(a.toLowerCase(), b))]);
@@ -191,6 +201,20 @@ export function nfCommand(s: State, args: string[]): NfResult {
                 ...(s.lab.armed.length ? [row("armed", s.lab.armed.join(", "))] : []),
             ];
         }
+    } else if (sub === "handover") {
+        if (!handSeen(s)) lines = [t("handover: node zero is further down. keep going.", "err")];
+        else {
+            const k = keysOnHandover(s);
+            lines = [
+                t("handover", "hi"),
+                row("handovers", fmt(s.hand.count)),
+                row("keys", `${fmt(s.hand.keys)} held, ${fmt(s.hand.keysTotal)} earned`),
+                row("firmware", `${s.hand.fw.length}/${FW.length}`),
+                row("protocol", s.hand.proto ? `${protoDef(s.hand.proto).op.toLowerCase()} (${protoDef(s.hand.proto).name.toLowerCase()})` : "none"),
+                row("next", k ? `+${k} keys, ready` : "start Origin production"),
+                ...s.hand.notes.slice(-3).reverse().map((n) => row(`cycle ${n.n}`, n.text)),
+            ];
+        }
     } else if (sub === "cron" || sub === "crontab") {
         const a = auto(s);
         lines = [t(`crontab -l  // ${a.own.length}/${SCRIPTS.length} scripts learned`, "hi")];
@@ -205,7 +229,7 @@ export function nfCommand(s: State, args: string[]): NfResult {
     } else if (sub === "whoami") {
         lines = [t("node-01. one core, no clearance, and a growing farm."), ...secret("x_self")];
     } else {
-        lines = [t(`nf: unknown: ${args[0]}`, "err"), t("nf stats · nf goals · nf secrets · nf logs · nf news · nf lab · nf cron · nf archive · nf open", "dim")];
+        lines = [t(`nf: unknown: ${args[0]}`, "err"), t("nf stats · nf goals · nf secrets · nf logs · nf news · nf lab · nf handover · nf cron · nf archive · nf open", "dim")];
     }
     return { lines, unlocked: found };
 }

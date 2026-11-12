@@ -2,7 +2,7 @@
 // engine (no React), so every number comes from `TUNE` and the engine's own `button`/`derive` and follows any rebalance.
 import {
     GOALS, MATS, PERKS, TIERS, TREE, TUNE, REBOOT_UNLOCK,
-    LAB, PAYLOADS, intelRate, amount, apOnAscend, button, canAfford, canAscend, derive, droneBoost, droneCost, droneMax, droneRate, dronesOpen, postOf, postX, zoneRank, ROMAN, originAp, paradoxOc, singularityAll, fmt, fmtTime, goalDone, hasNode, isUnlocked, nodeOpen, statDef,
+    LAB, PAYLOADS, intelRate, amount, apOnAscend, ascendNeed, unlockNeed, FW, fwNodeOpen, keysOnHandover, treeComplete, button, canAfford, canAscend, derive, droneBoost, droneCost, droneMax, droneRate, dronesOpen, postOf, postX, zoneRank, ROMAN, originAp, paradoxOc, singularityAll, fmt, fmtTime, goalDone, hasNode, isUnlocked, nodeOpen, statDef,
     type ButtonStat, type Derived, type MatId, type State, type StatId,
 } from "./engine";
 import { LORE } from "./lore";
@@ -12,7 +12,7 @@ export interface Target {
     stat?: ButtonStat;
     tier?: number;
     drone?: number;
-    win?: "ascend" | "goals" | "tree" | "lab";
+    win?: "ascend" | "goals" | "tree" | "lab" | "handover";
     /** scroll to the Exploit Lab zone on the board */
     lab?: boolean;
 }
@@ -87,7 +87,7 @@ export function unlockInfo(s: State, id: StatId): { label: string; cur: number; 
     if (!below) return { label: "", cur: 0, need: 1, unit: "", frac: 0 };
     // after your first Ascend a zone opens at a quarter of the usual amount (same rule as isUnlocked)
     const quarter = s.life.ascends > 0 && s.life.reboots >= TUNE.unlockAt.copper;
-    const need = TUNE.unlockAt[id] / (quarter ? 4 : 1);
+    const need = unlockNeed(s, id) / (quarter ? 4 : 1);
     return { label: `Hold ${fmt(need)} ${statDef(below).name}`, cur: amount(s, below), need, unit: statDef(below).short, frac: fracOf(amount(s, below), need) };
 }
 
@@ -127,6 +127,15 @@ export function nextStep(s: State, d: Derived): Step {
         return mk({ id: "spend-ap", title: `Spend ${fmt(s.ap)} Ascension Points`, why: "Perks and tree nodes are permanent and survive every Ascend. Open the tree to pick one.", cur: 1, need: 1, unit: "AP", target: { win: TREE.some((n) => !hasNode(s, n.id) && nodeOpen(s, n) && s.ap >= n.cost) ? "tree" : "ascend" } });
     }
 
+    // ---- Handover (the reset past Ascend): flash Firmware with Keys you hold, and hand over once the tree is whole
+    if (s.hand.keys > 0 && FW.some((n) => !s.hand.fw.includes(n.id) && fwNodeOpen(s, n) && s.hand.keys >= n.cost)) {
+        return mk({ id: "flash-fw", kicker: "HANDOVER", title: `Flash Firmware with ${fmt(s.hand.keys)} Keys`, why: "Firmware is kept through every Handover and changes how every run starts and what survives.", cur: 1, need: 1, unit: "KEY", target: { win: "handover" } });
+    }
+    const hk = keysOnHandover(s);
+    if (hk > 0 && (treeComplete(s) || s.hand.count > 0)) {
+        return mk({ id: "handover", kicker: "NODE ZERO", title: `Hand over for +${fmt(hk)} Keys`, why: "Pass the node to the next operator. It wipes AP, perks and the tree too, and Keys buy Firmware that changes every later run.", cur: s.prod.origin, need: 1, unit: "OR", target: { win: "handover" } });
+    }
+
     // ---- the Exploit Lab, once, when it opens: research a recipe, then compile and deploy it
     if (s.lab.seen && s.lab.nodes.length === 0) {
         const need = Math.min(...LAB.filter((n) => n.links.includes("core")).map((n) => n.cost));
@@ -154,9 +163,9 @@ export function nextStep(s: State, d: Derived): Step {
             if (training) {
                 if (canAscend(s)) {
                     const gain = apOnAscend(s);
-                    return mk({ id: "ascend", title: `Ascend for +${fmt(gain)} AP`, why: "Ascending wipes this run but keeps goals, perks, the tree and lab research, and every AP boosts everything for good.", cur: s.aether, need: TUNE.ascendAether, unit: "AE", target: { win: "ascend" } });
+                    return mk({ id: "ascend", title: `Ascend for +${fmt(gain)} AP`, why: "Ascending wipes this run but keeps goals, perks, the tree and lab research, and every AP boosts everything for good.", cur: s.aether, need: ascendNeed(s), unit: "AE", target: { win: "ascend" } });
                 }
-                return mk({ id: "reach-ascend", title: "Reach Ascend", why: `Hold ${fmt(TUNE.ascendAether)} Aether to Ascend: a reset that gives permanent power.`, cur: s.aether, need: TUNE.ascendAether, unit: "AE", pay: "aether", target: aim(s, "aether") });
+                return mk({ id: "reach-ascend", title: "Reach Ascend", why: `Hold ${fmt(ascendNeed(s))} Aether to Ascend: a reset that gives permanent power.`, cur: s.aether, need: ascendNeed(s), unit: "AE", pay: "aether", target: aim(s, "aether") });
             }
         }
         if (!isUnlocked(s, m)) {
@@ -173,7 +182,7 @@ export function nextStep(s: State, d: Derived): Step {
 
     // ---- chain is running: Ascend if it pays, otherwise the nearest goal
     if (canAscend(s)) {
-        return mk({ id: "ascend", title: `Ascend for +${fmt(apOnAscend(s))} AP`, why: "A fresh run with more permanent power. Spend the AP on perks and the tree.", cur: s.aether, need: TUNE.ascendAether, unit: "AE", target: { win: "ascend" } });
+        return mk({ id: "ascend", title: `Ascend for +${fmt(apOnAscend(s))} AP`, why: "A fresh run with more permanent power. Spend the AP on perks and the tree.", cur: s.aether, need: ascendNeed(s), unit: "AE", target: { win: "ascend" } });
     }
     let best: { g: (typeof GOALS)[number]; f: number } | null = null;
     for (const g of GOALS) {
