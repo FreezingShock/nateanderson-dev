@@ -2,7 +2,7 @@
    Sharp ctOS panels with corner brackets and plain data lines, on top of the shared window kit (nodefarm-windows.css). */
 
 /* the window as a phone section and as a desktop window (same pattern as the other windows in nodefarm.css) */
-.ctos .nf-sidepane[data-pane="stress"] { --sw: #ff5a3c; }
+.ctos .nf-sidepane[data-pane="stress"] { --sw: #ff2a2a; }
 .ctos .nf[data-tab="stress"] [data-pane="stress"] { display: block; }
 @media (min-width: 1000px) {
     .ctos .nf[data-tab] .nf-sidepane[data-pane="stress"] { display: none; }
@@ -10,7 +10,7 @@
         display: block; position: fixed; z-index: 90; left: 50%; top: 84px; translate: -50% 0; width: min(1040px, 94vw); max-height: calc(100dvh - 84px - 104px); overflow: auto; overscroll-behavior: contain; padding: 0 20px 22px; background: #0b0b0b; border: 1px solid var(--cm-ctos-block); box-shadow: 0 0 0 6px #000a, 0 30px 90px #000; }
 }
 
-.ctos .nf-wk-ban[data-art="stress"] .nf-wk-art i { background-image: url(/naos/nodefarm/win-stress.webp?v=6e2c8a26); }
+.ctos .nf-wk-ban[data-art="stress"] .nf-wk-art i { background-image: url(/naos/nodefarm/win-stress.webp?v=2bfb19b7); }
 
 .ctos .nf-st { display: grid; gap: 22px; }
 

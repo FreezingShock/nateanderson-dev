@@ -13,7 +13,7 @@ import "@/app/camino/nodefarm-stress.css";
  * Styles: app/camino/nodefarm-stress.css (nf-st-*), on top of the shared window kit (win-kit.tsx). Rows carry data-cx-i
  * for the code reveal.
  */
-export const STRESS_RED = "#ff5a3c";
+export const STRESS_RED = "#ff2a2a";
 const GOALS = CH_TUNE.goals.map((g) => statDef(g));
 const pad = (n: number) => String(n).padStart(2, "0");
 

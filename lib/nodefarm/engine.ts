@@ -772,6 +772,8 @@ export interface RigState {
     seeds?: number;
     // run meters (reset on Ascend)
     cache: number;
+    /** the Packet cache's cap at the last tick (Hot swap reads it without a derive) */
+    cacheCapAt: number;
     quiet: number;
     pour: number;
     casts: number;
@@ -820,7 +822,7 @@ export const CH_HOOKS: {
 } = {};
 export const chOff = (s: State, what: ChOff) => !!CH_HOOKS.off?.(s, what);
 // ---- Zone events: the numbers and the two reads the rest of the engine needs (spawning and choices live in lib/nodefarm/zoneevents.ts)
-export type ZoneEvKind = "surge" | "clearance" | "resonance" | "vein" | "fault";
+export type ZoneEvKind = "surge" | "clearance" | "resonance" | "vein" | "fault" | "convoy" | "tune";
 export interface ZoneEvActive {
     /** a running number, so the screen can tell a new event from the one it already showed */
     id: number;
@@ -831,6 +833,8 @@ export interface ZoneEvActive {
     total: number;
     /** vein and fault: you have answered the choice (Let it run, Wait it out), so the buttons go away. Mining and patching end the event instead. */
     picked?: boolean;
+    /** convoy: fractional extra Drone presses waiting to fire, per tier */
+    acc?: number[];
 }
 export interface ZoneEvState {
     act: ZoneEvActive[];
@@ -841,28 +845,36 @@ export interface ZoneEvState {
     kinds: Partial<Record<ZoneEvKind, number>>;
     /** the zone of the last event, so the next one lands somewhere else */
     last?: StatId;
+    /** the last dozen events, newest last (`at` is life.secs when it started), for Records */
+    log?: { kind: ZoneEvKind; zone: StatId; at: number }[];
 }
 export const ZE_TUNE = {
     /** gap between events in game seconds, [min, max]; the first one waits for `first` seconds of life */
-    gap: [480, 840] as [number, number],
+    gap: [660, 1140] as [number, number],
     first: 480,
     /** how long each lasts, seconds */
-    secs: { surge: 180, clearance: 180, resonance: 180, vein: 240, fault: 180 } as Record<ZoneEvKind, number>,
+    secs: { surge: 150, clearance: 150, resonance: 150, vein: 210, fault: 150, convoy: 150, tune: 150 } as Record<ZoneEvKind, number>,
     /** relative odds of each kind */
-    odds: { surge: 3, clearance: 2, resonance: 2, vein: 2, fault: 1 } as Record<ZoneEvKind, number>,
-    /** output multipliers */
-    surge: 2,
-    resonance: 1.6,
-    vein: 2,
-    fault: 0.5,
+    odds: { surge: 3, clearance: 2, resonance: 2, vein: 2, fault: 1, convoy: 1.5, tune: 1.5 } as Record<ZoneEvKind, number>,
+    /** output multipliers (trimmed after the balance audit: the first numbers cut a Drone-bot Origin run from about 38 h to 26 to 32 h) */
+    surge: 1.4,
+    resonance: 1.3,
+    vein: 1.4,
+    fault: 0.6,
     /** Clearance: price multiplier on that zone's buttons */
-    clearance: 0.6,
+    clearance: 0.75,
     /** Rich vein: seconds of the zone's output paid at once if you Mine it */
-    mine: 240,
+    mine: 150,
     /** Fault: seconds of Bytes output a Patch costs */
     patch: 25,
     /** no Fault before this much life */
     faultFrom: 900,
+    /** Drone convoy: your Drones press that zone this many times as often */
+    convoy: 2.5,
+    /** Rig tune: the zone rig's bonus counts this many times over */
+    tune: 2,
+    /** events kept in the log */
+    logMax: 12,
 };
 /** The zone a Resonance also lifts: the one below it in the chain (Bytes pairs with Multipliers). */
 export const resonancePair = (zone: StatId): StatId => { const i = STATS.findIndex((x) => x.id === zone); return STATS[i > 0 ? i - 1 : 1].id; };
@@ -873,12 +885,17 @@ export function zeOut(s: State, id: StatId): number {
     let x = 1;
     for (const e of a) {
         if (e.left <= 0) continue;
-        if (e.kind === "surge" && e.zone === id) x *= ZE_TUNE.surge;
+        if (e.kind === "surge" && e.zone === id) x *= fwFieldOp(s) ? 1 + (ZE_TUNE.surge - 1) * 2 : ZE_TUNE.surge;
         else if (e.kind === "vein" && e.zone === id) x *= ZE_TUNE.vein;
         else if (e.kind === "fault" && e.zone === id) x *= ZE_TUNE.fault;
         else if (e.kind === "resonance" && (e.zone === id || resonancePair(e.zone) === id)) x *= ZE_TUNE.resonance;
     }
     return x;
+}
+/** The zone whose rig a Rig tune is running on (its bonus counts ZE_TUNE.tune times), or null. */
+export function zeTuned(s: State): StatId | null {
+    const e = s.ze?.act.find((x) => x.kind === "tune" && x.left > 0);
+    return e ? e.zone : null;
 }
 /** Price multiplier on a zone's buttons (Clearance). */
 export function zeCost(s: State, stat: StatId): number {
@@ -1148,7 +1165,7 @@ export function droneStep(s: State, dt: number, eff = 1): number {
     const fx = droneFx(s);
     const sweep = s.armed.filter((st) => st !== "bytes" && st !== "reboot" && isUnlocked(s, st as StatId)) as ButtonStat[];
     let made = 0;
-    let units = 0;
+    let parts = 0;
     const pressN = (st: ButtonStat, tier: number, n: number) => { for (let i = 0; i < n; i++) { if (!press(s, st, tier)) break; made++; } };
     for (let k = 0; k < TIERS; k++) {
         if (s.drones[k] <= 0) continue;
@@ -1157,6 +1174,8 @@ export function droneStep(s: State, dt: number, eff = 1): number {
         const sweepRate = post ? (fx.garrison ? base : 0) : base * (1 + fx.sweep);
         const postRate = post ? base * postX(s, k) : 0;
         const reach = (D.mods[k]?.[2] ?? 0) * DRONE_TUNE.reachEach;
+        const salv = 1 + (D.mods[k]?.[4] ?? 0) * DRONE_TUNE.salvageEach;
+        let units = 0;
         // sweeping
         if (sweepRate > 0 && sweep.length) {
             s.droneAcc[k] = Math.min(s.droneAcc[k] + sweepRate, TUNE.drone.burst);
@@ -1171,7 +1190,7 @@ export function droneStep(s: State, dt: number, eff = 1): number {
             const n = Math.floor(D.pacc[k]);
             if (n >= 1) { D.pacc[k] -= n; pressN(post, k, n); }
             units += postRate;
-            addSvc(s, post, postRate, fx);
+            addSvc(s, post, postRate * (1 + (D.mods[k]?.[3] ?? 0) * DRONE_TUNE.tunerEach), fx);
         }
         // reach: the tier below, on the same zones
         if (reach > 0 && k > 0) {
@@ -1182,8 +1201,9 @@ export function droneStep(s: State, dt: number, eff = 1): number {
                 if (n >= 1) { D.racc[k] -= n; for (const st of zones) pressN(st, k - 1, n); }
             }
         }
+        parts += units * salv;
     }
-    if (units > 0) D.parts = Math.min(CAP, D.parts + units * DRONE_TUNE.partK * (1 + fx.parts));
+    if (parts > 0) D.parts = Math.min(CAP, D.parts + parts * DRONE_TUNE.partK * (1 + fx.parts));
     return made;
 }
 
@@ -1343,17 +1363,36 @@ export function buyPerk(s: State, id: PerkDef["id"]): boolean {
     return true;
 }
 
-/** Catch up for time away. Production only; nothing is bought for you. Returns what was gained. */
+/** Catch up for time away. Production only; nothing is bought for you (except by the scripts you taught). Returns what was gained.
+ *  The steps are short (10 s) while scripts are running, and a step never runs past the moment a timed boost ends (Overclock,
+ *  Swarm alarm, a zone event, a deployed payload), so a boost counts for exactly the time it had left, not a whole step. */
 export function offline(s: State, seconds: number) {
     const cap = derive(s).offlineCap;
     const secs = Math.min(Math.max(0, seconds), cap);
     const before = Object.fromEntries((["bytes", ...MATS] as const).map((k) => [k, s[k]])) as Record<"bytes" | MatId, number>;
-    const steps = Math.min(600, Math.max(1, Math.ceil(secs / 20)));
+    const per = s.auto?.own.length ? 10 : 20;
+    const steps = Math.min(2400, Math.max(1, Math.ceil(secs / per)));
     const dt = secs / steps;
     const oc = s.overclock;
     s.overclock = 0; // an intrusion boost doesn't carry through time away
     const pressesBefore = s.life.presses;
-    for (let i = 0; i < steps; i++) tick(s, dt, handFx(s).standby ? 1 : Math.min(1, TUNE.drone.offline + treeFx(s).droneOff + droneFx(s).off));
+    const eff = handFx(s).standby ? 1 : Math.min(1, TUNE.drone.offline + treeFx(s).droneOff + droneFx(s).off);
+    const nextEnd = () => {
+        let m = Infinity;
+        if (s.overclock > 0) m = Math.min(m, s.overclock);
+        if (s.frenzy) m = Math.min(m, s.frenzy);
+        for (const e of s.ze?.act ?? []) if (e.left > 0) m = Math.min(m, e.left);
+        for (const r of s.lab.run) if (r.left > 0) m = Math.min(m, r.left);
+        return m;
+    };
+    for (let i = 0; i < steps; i++) {
+        let left = dt;
+        for (let guard = 0; left > 1e-9 && guard < 40; guard++) {
+            const h = guard === 39 ? left : Math.min(left, Math.max(0.05, nextEnd()));
+            tick(s, h, eff);
+            left -= h;
+        }
+    }
     s.overclock = Math.max(0, oc - secs);
     return { secs, capped: seconds > cap, drones: s.life.presses - pressesBefore, gain: Object.fromEntries((["bytes", ...MATS] as const).map((k) => [k, s[k] - before[k]])) as Record<"bytes" | MatId, number> };
 }
@@ -1869,6 +1908,12 @@ export const DRONE_TUNE = {
     partK: 0.1, // Parts per attempted press
     reachEach: 0.2, // each Reach level presses the tier below at this share of the Drone's speed
     servoEach: 0.25, // each Servo level: Drone speed +this
+    tunerEach: 0.25, // each Tuner level: mastery from this Drone's posting +this
+    salvageEach: 0.3, // each Salvager level: Parts from this Drone +this
+    masteredSpeed: 0.02, // every zone at mastery V: every Drone +this speed
+    rigCut: 0.06, // each mastery rank on a zone: its rig upgrades cost this much less
+    eventLonger: 0.5, // a good zone event on a zone with a posted Drone lasts this much longer
+    faultFaster: 1, // a fault on a zone with a posted Drone clears this much faster
     uplinkEach: 1, // each Uplink level: posting speed +this (x3 -> x4)
     modMax: 5,
     modBase: 25, // a mod costs modBase * modGrowth^level * modTier^tier Parts
@@ -1881,12 +1926,15 @@ export const DRONE_TUNE = {
 };
 /** Zones a Drone can work: every button stat except Reboots, in chain order. */
 export const POSTABLE: readonly ButtonStat[] = ["mult", ...MATS];
-export type ModId = "servo" | "uplink" | "reach";
+export type ModId = "servo" | "uplink" | "reach" | "tuner" | "salvage";
 export const MODS: { id: ModId; name: string; blurb: string }[] = [
     { id: "servo", name: "Servo", blurb: "presses 25% faster per level" },
     { id: "uplink", name: "Uplink", blurb: "posting speed +1x per level" },
     { id: "reach", name: "Reach", blurb: "also presses the tier below at 20% per level" },
+    { id: "tuner", name: "Tuner", blurb: "builds mastery 25% faster per level while posted" },
+    { id: "salvage", name: "Salvager", blurb: "salvages 30% more Parts per level" },
 ];
+export const MOD_COUNT = MODS.length;
 export interface DroneState {
     /** each tier's posting, or null to sweep every armed zone (kept through Ascend) */
     post: (ButtonStat | null)[];
@@ -1902,7 +1950,7 @@ export interface DroneState {
     pacc: number[];
     racc: number[];
 }
-export const freshDr = (): DroneState => ({ post: Array(TIERS).fill(null), svc: {}, parts: 0, mods: Array.from({ length: TIERS }, () => [0, 0, 0]), nodes: [], pacc: Array(TIERS).fill(0), racc: Array(TIERS).fill(0) });
+export const freshDr = (): DroneState => ({ post: Array(TIERS).fill(null), svc: {}, parts: 0, mods: Array.from({ length: TIERS }, () => Array(MOD_COUNT).fill(0)), nodes: [], pacc: Array(TIERS).fill(0), racc: Array(TIERS).fill(0) });
 
 // -- the drone tree
 export type DroneSec = "flight" | "dispatch" | "salvage";
@@ -2025,6 +2073,17 @@ export function masteryMul(s: State, st: ButtonStat): number {
     const r = zoneRank(s, st);
     return r ? 1 + (DRONE_TUNE.rankX[r] - 1) * (1 + droneFx(s).rankPow) : 1;
 }
+/** Zones at mastery V. */
+export const masteredZones = (s: State) => POSTABLE.filter((st) => zoneRank(s, st) >= DRONE_TUNE.rankAt.length).length;
+/** Rig upgrades on a zone cost less with its mastery (rigs.ts). */
+export const rigMasteryCut = (s: State, zone: StatId) => (s.dr && POSTABLE.includes(zone as ButtonStat) ? 1 - DRONE_TUNE.rigCut * zoneRank(s, zone as ButtonStat) : 1);
+/** How fast a zone event's clock runs: a posted Drone makes good events last longer and faults clear sooner (zoneevents.ts). */
+export function droneEventPace(s: State, zone: StatId, good: boolean): number {
+    if (!s.dr) return 1;
+    const here = s.dr.post.some((p, k) => p === zone && s.drones[k] > 0 && isUnlocked(s, zone));
+    if (!here) return 1;
+    return good ? 1 / (1 + DRONE_TUNE.eventLonger) : 1 + DRONE_TUNE.faultFaster;
+}
 export const masteryRanks = (s: State) => POSTABLE.reduce((a, st) => a + zoneRank(s, st), 0);
 /** Cores: one per mastery rank ever earned, minus what the drone tree has spent. */
 export const coresEarned = (s: State) => masteryRanks(s);
@@ -2060,6 +2119,8 @@ export function hangarSpeed(s: State, tier: number): number {
     let x = (1 + (s.dr.mods[tier]?.[0] ?? 0) * DRONE_TUNE.servoEach) * (1 + fx.speed);
     if (fx.formation) x *= 1 + fx.formation * s.dr.post.filter((p, k) => p && s.drones[k] > 0 && isUnlocked(s, p)).length;
     if (fx.rankSpeed) x *= 1 + fx.rankSpeed * masteryRanks(s);
+    const mastered = masteredZones(s);
+    if (mastered) x *= 1 + DRONE_TUNE.masteredSpeed * mastered;
     return x;
 }
 /** Parts salvaged per second right now (the same sums droneStep makes). */
@@ -2070,8 +2131,9 @@ export function partsRate(s: State): number {
     for (let k = 0; k < TIERS; k++) {
         if (s.drones[k] <= 0) continue;
         const r = droneRate(s, k), post = postOf(s, k);
-        if (post) u += r * postX(s, k) + (fx.garrison ? r * sweep : 0);
-        else u += r * (1 + fx.sweep) * sweep;
+        const salv = 1 + (s.dr.mods[k]?.[4] ?? 0) * DRONE_TUNE.salvageEach;
+        if (post) u += (r * postX(s, k) + (fx.garrison ? r * sweep : 0)) * salv;
+        else u += r * (1 + fx.sweep) * sweep * salv;
     }
     return u * DRONE_TUNE.partK * (1 + fx.parts);
 }
@@ -2083,12 +2145,12 @@ export function svcRate(s: State, st: ButtonStat): number {
     for (let k = 0; k < TIERS; k++) {
         if (s.drones[k] <= 0) continue;
         const r = droneRate(s, k), post = postOf(s, k);
-        if (post === st) u += r * postX(s, k);
+        if (post === st) u += r * postX(s, k) * (1 + (s.dr.mods[k]?.[3] ?? 0) * DRONE_TUNE.tunerEach);
         if (fx.sweepSvc && armed && (!post || fx.garrison)) u += r * (post ? 1 : 1 + fx.sweep) * fx.sweepSvc;
     }
     return u * (1 + fx.svc);
 }
-export const modLevels = (s: State) => s.dr.mods.reduce((a, m) => a + m[0] + m[1] + m[2], 0);
+export const modLevels = (s: State) => s.dr.mods.reduce((a, m) => a + m.reduce((x, y) => x + y, 0), 0);
 /** Foundry: everything +1% per mod level. */
 export const foundryAll = (s: State) => (s.dr ? 1 + droneFx(s).modGlobal * modLevels(s) : 1);
 
@@ -2103,7 +2165,7 @@ export function modBlock(s: State, tier: number, mod: number): ModFail | null {
     return null;
 }
 export function buyMod(s: State, tier: number, mod: number): boolean {
-    if (tier < 0 || tier >= TIERS || mod < 0 || mod > 2 || modBlock(s, tier, mod)) return false;
+    if (tier < 0 || tier >= TIERS || mod < 0 || mod >= MOD_COUNT || modBlock(s, tier, mod)) return false;
     s.dr.parts -= modCost(s, tier, mod);
     s.dr.mods[tier][mod] += 1;
     return true;
@@ -2129,6 +2191,7 @@ export function droneTreeTotals(s: State): [string, string][] {
     const f = droneFx(s);
     const rows: [string, string][] = [];
     rows.push(["Mastery ranks", `${masteryRanks(s)} of ${POSTABLE.length * 5}`]);
+    if (masteredZones(s)) rows.push(["Mastered zones", `${masteredZones(s)}, Drones +${Math.round(masteredZones(s) * DRONE_TUNE.masteredSpeed * 100)}%`]);
     if (f.speed) rows.push(["Drone speed", `x${+(1 + f.speed).toFixed(2)}`]);
     if (f.formation) rows.push(["Formation", `+${Math.round(f.formation * 100)}% per posted Drone`]);
     if (f.off) rows.push(["Away speed", `+${Math.round(f.off * 100)}%`]);
@@ -2151,7 +2214,7 @@ export function droneTreeTotals(s: State): [string, string][] {
 }
 /** The hangar after an Ascend: postings, mastery and the tree stay; Parts and mods reset (Black box keeps a share). */
 export function drOnAscend(s: State): DroneState {
-    const keep = droneFx(s).modKeep;
+    const keep = Math.max(droneFx(s).modKeep, s.hand ? handFx(s).modKeep : 0);
     return {
         ...s.dr,
         parts: Math.floor(s.dr.parts * keep),
@@ -2171,7 +2234,7 @@ function parseDr(o: unknown): DroneState {
         post: Array.isArray(x.post) && x.post.length === TIERS ? x.post.map((p) => (POSTABLE.includes(p as ButtonStat) ? (p as ButtonStat) : null)) : b.post,
         svc: Object.fromEntries(Object.entries(x.svc ?? {}).filter(([k, v]) => POSTABLE.includes(k as ButtonStat) && num(v) > 0).map(([k, v]) => [k, num(v)])),
         parts: Math.max(0, num(x.parts)),
-        mods: Array.isArray(x.mods) && x.mods.length === TIERS ? x.mods.map((m) => (Array.isArray(m) && m.length === 3 ? m.map((lv) => Math.max(0, Math.floor(num(lv)))) : [0, 0, 0])) : b.mods,
+        mods: Array.isArray(x.mods) && x.mods.length === TIERS ? x.mods.map((m) => Array.from({ length: MOD_COUNT }, (_, i) => (Array.isArray(m) ? Math.max(0, Math.floor(num(m[i]))) : 0))) : b.mods,
         nodes: Array.isArray(x.nodes) ? [...new Set(x.nodes.filter((id) => DT_BY.has(id)))] : [],
         pacc: arr(x.pacc),
         racc: arr(x.racc),
@@ -2184,13 +2247,13 @@ function parseDr(o: unknown): DroneState {
 // Exploit Lab research. It pays Keys, which buy Firmware (a small green tree that changes the rules of every later run),
 // and you pick one operator protocol that shapes the next cycle. docs/node-farm.md "Handover".
 export type ProtoId = "wren" | "tamsin" | "osk" | "vael";
-export type FwSec = "boot" | "memory" | "relay";
+export type FwSec = "boot" | "memory" | "relay" | "field";
 export const HAND_TUNE = {
     needProd: 1, // Origin producers you need this run before you can hand over
     keysPerNode: 1 / 6, // Keys per prestige-tree node (and extra rank) owned at the Handover
     keysPerOriginLog: 1, // Keys grow with the square root of Origin's power of ten (1e9 Origin: +3, 1e100: +10)
     keysBase: 1, // every Handover pays at least this
-    nodeCost: [2, 3, 3, 6, 6, 12], // Keys per Firmware slot (notables x1.25): about six Handovers to own all 18
+    nodeCost: [2, 3, 3, 6, 6, 12], // Keys per Firmware slot (notables x1.25): about eight Handovers to own all 24
     fwScale: 1, // scales every Firmware price (pacing knob)
     protoX: 2, // a protocol's main boost: x(1 + protoX); Dual boot runs the second one at half
     vaelPay: 120, // seconds of production every event win pays under Vael's protocol
@@ -2200,6 +2263,8 @@ export const HAND_TUNE = {
     afterglow: 180, // Afterglow: seconds of Overclock at the start of every Ascend
     noteMax: 140, // characters in a handover note
     apPerHand: 1, // every Handover done: AP on Ascend x(1 + this * Handovers), so each cycle rebuilds the tree faster
+    rankStep: 0.25, // protocol mastery: each rank runs that protocol x(1 + this) stronger
+    rankMax: 3, // ranks I to III, one per cycle you finish on that protocol
 };
 export const PROTOS: { id: ProtoId; op: string; name: string; blurb: string; flavor: string; color: string }[] = [
     { id: "wren", op: "Wren", name: "Tape and fans", blurb: "Multiplier buttons add x3 and Reboots hit x2 as hard.", flavor: "Get it booting first. Make it pretty never.", color: "#b6f04a" },
@@ -2227,6 +2292,12 @@ export interface FwFx {
     standby?: boolean; // more offline hours, Drones at full speed while away
     dual?: boolean; // a second protocol runs at half strength
     lineage?: number; // everything +this per Handover done
+    rigKeep?: number; // Handover keeps this share of every rig level
+    zeLong?: number; // zone events last x(1 + this)
+    modKeep?: number; // Ascend and Handover keep this share of the hangar's Parts and mod levels
+    rigCost?: number; // rig levels cost this fraction less
+    zeOften?: number; // zone events come x(1 + this) as often
+    fieldOp?: boolean; // no more Faults, and Surges run twice as strong
 }
 export const PREINSTALLED: Feature[] = ["watchdog", "orders", "forecast"];
 export interface FwNode { id: string; branch: FwSec; kind: TreeKind; name: string; blurb: string; flavor: string; cost: number; links: string[]; fx: FwFx; x: number; y: number; ix: number; sprite: string; entry?: boolean }
@@ -2234,6 +2305,7 @@ export const FW_SECS: { id: FwSec; name: string; blurb: string; color: string }[
     { id: "boot", name: "Boot", blurb: "How every run starts.", color: "#3dff6e" },
     { id: "memory", name: "Memory", blurb: "What survives Ascend and Handover.", color: "#ffc53a" },
     { id: "relay", name: "Relay", blurb: "Keys, protocols and the long haul.", color: "#64e6ff" },
+    { id: "field", name: "Field", blurb: "Rigs, zone events and the hangar.", color: "#ff7ab6" },
 ];
 type FwRow = [slot: number, id: string, kind: TreeKind, name: string, blurb: string, flavor: string, fx: FwFx];
 const FW_ARMS: Record<FwSec, FwRow[]> = {
@@ -2261,15 +2333,23 @@ const FW_ARMS: Record<FwSec, FwRow[]> = {
         [4, "fw_rootpath", "notable", "Root path", "Engrams, Paradox and Origin open at a quarter of the usual amount.", "There is a shorter way down to node zero. It was always there.", { rootPath: 0.25 }],
         [5, "fw_lineage", "keystone", "Lineage", "Everything +50% for every Handover you have done.", "Every operator who left made the node a little stronger.", { lineage: 0.5 }],
     ],
+    field: [
+        [0, "fw_rigmem", "minor", "Rig memory", "Handover keeps half of every rig level.", "The rigs were built by hand. Hands remember.", { rigKeep: 0.5 }],
+        [1, "fw_rod", "minor", "Lightning rod", "Zone events last 50% longer.", "Give the weather something tall to hold on to.", { zeLong: 0.5 }],
+        [2, "fw_recorder", "minor", "Flight recorder", "Ascend and Handover keep half your Parts and mod levels in the hangar.", "The orange box survives everything. That is the whole point of it.", { modKeep: 0.5 }],
+        [3, "fw_fieldkit", "notable", "Field kit", "Rig levels cost 40% less.", "Every zone gets a toolbox. Somebody finally labelled the drawers.", { rigCost: 0.4 }],
+        [4, "fw_weather", "notable", "Weather eye", "Zone events come twice as often.", "Watch the zones long enough and you can feel the next one coming.", { zeOften: 1 }],
+        [5, "fw_fieldop", "keystone", "Field operator", "Faults stop happening, and Surges run twice as strong.", "Walk the floor every shift. Nothing breaks where someone is looking.", { fieldOp: true }],
+    ],
 };
-const FW_ORDER: FwSec[] = ["boot", "memory", "relay"];
+const FW_ORDER: FwSec[] = ["boot", "memory", "relay", "field"];
 // same small diamond as the lab tree: entry, two paths of two, keystone
 const FW_SLOTS: [number, number, number[]][] = [[2.3, 0, []], [3.9, -1.1, [0]], [3.9, 1.1, [0]], [5.7, -1.25, [1]], [5.7, 1.25, [2]], [7.5, 0, [3, 4]]];
 function buildFw(): FwNode[] {
     const out: FwNode[] = [];
     FW_ORDER.forEach((arm, ai) => {
-        // rotated a sixth of a turn from the lab so the two trees never look the same
-        const th = -Math.PI / 2 + Math.PI / 3 + (ai * 2 * Math.PI) / FW_ORDER.length;
+        // four arms on the diagonals (an X), so it never looks like the lab's or the hangar's three-armed trees
+        const th = -Math.PI / 2 + Math.PI / 4 + (ai * 2 * Math.PI) / FW_ORDER.length;
         const c = Math.cos(th), sn = Math.sin(th);
         const ids: string[] = [];
         for (const [slot, id, kind, name, blurb, flavor, fx] of FW_ARMS[arm]) {
@@ -2321,8 +2401,10 @@ export interface HandState {
     cycleAt: number;
     /** the notes you left at each Handover, oldest first */
     notes: HandNote[];
+    /** protocol mastery: cycles finished on each protocol (ranks I to III) */
+    rank: Partial<Record<ProtoId, number>>;
 }
-export const freshHand = (): HandState => ({ keys: 0, fw: [], proto: null, proto2: null, count: 0, keysTotal: 0, cycleAp: 0, cycleAt: 0, notes: [] });
+export const freshHand = (): HandState => ({ keys: 0, fw: [], proto: null, proto2: null, count: 0, keysTotal: 0, cycleAp: 0, cycleAt: 0, notes: [], rank: {} });
 
 const HFX_CACHE = new WeakMap<string[], { n: number; v: ReturnType<typeof handFxRaw> }>();
 /** What the owned Firmware adds up to. Cached per Firmware array. */
@@ -2335,7 +2417,7 @@ export function handFx(s: State) {
     return v;
 }
 function handFxRaw(ids: string[]) {
-    const o = { kitReboot: 0, kitProd: 0, afterglow: 0, unlockMul: 1, rootPath: 1, ascendAt: 1, preinstall: false, keepEntry: false, keepUpper: false, perkKeep: 0, labKeep: false, droneKeep: 0, apRefund: 0, keys: 0, anyAscend: false, standby: false, dual: false, lineage: 0 };
+    const o = { kitReboot: 0, kitProd: 0, afterglow: 0, unlockMul: 1, rootPath: 1, ascendAt: 1, preinstall: false, keepEntry: false, keepUpper: false, perkKeep: 0, labKeep: false, droneKeep: 0, apRefund: 0, keys: 0, anyAscend: false, standby: false, dual: false, lineage: 0, rigKeep: 0, zeLong: 0, modKeep: 0, rigCost: 0, zeOften: 0, fieldOp: false };
     for (const id of ids) {
         const f = FW_BY.get(id)?.fx;
         if (!f) continue;
@@ -2350,16 +2432,28 @@ function handFxRaw(ids: string[]) {
         o.apRefund += f.apRefund ?? 0;
         o.keys += f.keys ?? 0;
         o.lineage += f.lineage ?? 0;
-        for (const k of ["preinstall", "keepEntry", "keepUpper", "labKeep", "anyAscend", "standby", "dual"] as const) if (f[k]) o[k] = true;
+        o.rigKeep = Math.max(o.rigKeep, f.rigKeep ?? 0);
+        o.modKeep = Math.max(o.modKeep, f.modKeep ?? 0);
+        o.zeLong += f.zeLong ?? 0;
+        o.rigCost += f.rigCost ?? 0;
+        o.zeOften += f.zeOften ?? 0;
+        for (const k of ["preinstall", "keepEntry", "keepUpper", "labKeep", "anyAscend", "standby", "dual", "fieldOp"] as const) if (f[k]) o[k] = true;
     }
     return o;
 }
-/** How strongly a protocol runs: 1 for the main one, 0.5 for the Dual boot one, else 0. */
+/** Protocol mastery rank (0 to 3): cycles you have finished on that protocol. */
+export const protoRank = (s: State, id: ProtoId) => Math.min(HAND_TUNE.rankMax, s.hand?.rank?.[id] ?? 0);
+/** How strongly a protocol runs: 1 for the main one, 0.5 for the Dual boot one, else 0; each mastery rank adds 25%. */
 export function protoK(s: State, id: ProtoId): number {
     if (!s.hand) return 0;
-    if (s.hand.proto === id) return 1;
-    return s.hand.proto2 === id && handFx(s).dual ? 0.5 : 0;
+    const base = s.hand.proto === id ? 1 : s.hand.proto2 === id && handFx(s).dual ? 0.5 : 0;
+    return base ? base * (1 + HAND_TUNE.rankStep * protoRank(s, id)) : 0;
 }
+/** Field: rig prices, zone event length and gap, and the Field operator keystone (read by rigs.ts and zoneevents.ts). */
+export const fwRigCost = (s: State) => (s.hand ? Math.max(0.2, 1 - handFx(s).rigCost) : 1);
+export const fwZeLong = (s: State) => (s.hand ? 1 + handFx(s).zeLong : 1);
+export const fwZeGap = (s: State) => (s.hand ? 1 / (1 + handFx(s).zeOften) : 1);
+export const fwFieldOp = (s: State) => !!s.hand && handFx(s).fieldOp;
 /** Lineage: everything +50% per Handover done. */
 /** Arc clears (lib/nodefarm/arcs.ts fills this when it is imported, like RIG_HOOKS): how many arcs have every button pressed once. */
 export const ARC_HOOKS: { cleared?: (s: State) => number } = {};
@@ -2404,8 +2498,8 @@ export function handKeeps(s: State): string[] {
     });
 }
 /**
- * Hand the node over. Wipes the run, AP, perks, the prestige tree, Drones, Mounted drives and the lab's Intel and stock;
- * keeps goals, secrets, logs, lifetime stats, lab research, learned Scripts, Keys and Firmware. Returns the Keys paid (0 = not allowed).
+ * Hand the node over. Wipes the run, AP, perks, the prestige tree, Drones, Mounted drives, rig levels and the lab's Intel and stock;
+ * keeps goals, secrets, logs, lifetime stats, lab research, learned Scripts, the hangar, zone event history, Keys and Firmware. Returns the Keys paid (0 = not allowed).
  */
 export function handover(s: State, proto: ProtoId | null, note = "", proto2: ProtoId | null = null): number {
     const gain = keysOnHandover(s);
@@ -2425,9 +2519,16 @@ export function handover(s: State, proto: ProtoId | null, note = "", proto2: Pro
         proto,
         proto2: hf.dual && proto2 !== proto ? proto2 : null,
         notes: text ? [...s.hand.notes, { n: s.hand.count + 1, text, at: s.at, proto }].slice(-50) : s.hand.notes,
+        // the protocol you finish a cycle on ranks up
+        rank: s.hand.proto ? { ...s.hand.rank, [s.hand.proto]: Math.min(HAND_TUNE.rankMax, (s.hand.rank[s.hand.proto] ?? 0) + 1) } : s.hand.rank,
     };
     const lab: LabState = { ...freshLab(), seen: s.lab.seen, nodes: s.lab.nodes, last: s.lab.last };
-    const keep = { hand, lab, ap: refund, perks, tree: kept, treeLv: {}, ach: s.ach, achAt: s.achAt, logs: s.logs, armed: s.armed, watchdog: s.watchdog, dropAt: s.dropAt, autoArmed: s.autoArmed, auto: s.auto, dr: drOnAscend(s), life: { ...s.life }, started: s.started };
+    // rigs: switches stay, levels go (Rig memory keeps a share); zone events keep their history and timer, a running one ends
+    const r0 = RIG_HOOKS.ascend ? RIG_HOOKS.ascend(s) : s.rig;
+    const scale = (o: Record<string, number> | undefined) => Object.fromEntries(Object.entries(o ?? {}).map(([k, v]) => [k, Math.floor(v * hf.rigKeep)]).filter(([, v]) => (v as number) > 0));
+    const rig = r0 ? { ...r0, lv: scale(r0.lv), re: scale(r0.re), rw: Math.floor((r0.rw ?? 0) * hf.rigKeep) } : r0;
+    const ze = s.ze ? { ...s.ze, act: [] } : s.ze;
+    const keep = { hand, lab, rig, ze, ap: refund, perks, tree: kept, treeLv: {}, ach: s.ach, achAt: s.achAt, logs: s.logs, armed: s.armed, watchdog: s.watchdog, dropAt: s.dropAt, autoArmed: s.autoArmed, auto: s.auto, dr: drOnAscend(s), life: { ...s.life }, started: s.started };
     const n = fresh(s.at);
     Object.assign(n, keep);
     Object.assign(s, n);
@@ -2482,6 +2583,12 @@ export function fwTotals(s: State): [string, string][] {
     if (f.standby) rows.push(["Time away", `+${HAND_TUNE.standbyHours} h, Drones full speed`]);
     if (f.dual) rows.push(["Dual boot", "second protocol at half"]);
     if (f.lineage) rows.push(["Lineage", `x${fmt(handGlobal(s))} everything`]);
+    if (f.rigKeep) rows.push(["Rig levels kept", `${Math.round(f.rigKeep * 100)}%`]);
+    if (f.zeLong) rows.push(["Zone events last", `x${fmt(1 + f.zeLong)}`]);
+    if (f.modKeep) rows.push(["Hangar kept", `${Math.round(f.modKeep * 100)}% of Parts and mods`]);
+    if (f.rigCost) rows.push(["Rig prices", `-${Math.round(Math.min(0.8, f.rigCost) * 100)}%`]);
+    if (f.zeOften) rows.push(["Zone events", `x${fmt(1 + f.zeOften)} as often`]);
+    if (f.fieldOp) rows.push(["Field operator", "no Faults, Surges x2"]);
     return rows;
 }
 function parseHand(o: unknown): HandState {
@@ -2500,6 +2607,7 @@ function parseHand(o: unknown): HandState {
         cycleAp: Math.max(0, num(x.cycleAp)),
         cycleAt: Math.max(0, num(x.cycleAt)),
         notes: Array.isArray(x.notes) ? x.notes.filter((v) => v && typeof v.text === "string").map((v) => ({ n: Math.floor(num(v.n)), text: String(v.text).slice(0, HAND_TUNE.noteMax), at: num(v.at), proto: pid(v.proto) })).slice(-50) : [],
+        rank: Object.fromEntries(Object.entries(x.rank && typeof x.rank === "object" ? x.rank : {}).filter(([k, v]) => PROTOS.some((p) => p.id === k) && num(v) > 0).map(([k, v]) => [k, Math.min(HAND_TUNE.rankMax, Math.floor(num(v)))])),
     };
 }
 
@@ -2576,6 +2684,7 @@ function parseZe(o: unknown): ZoneEvState | undefined {
         seen: Math.max(0, Math.floor(num(x.seen))),
         kinds: Object.fromEntries(Object.entries(x.kinds ?? {}).filter(([k, v]) => kinds.includes(k) && num(v) > 0).map(([k, v]) => [k, Math.floor(num(v))])),
         last: ids.includes(x.last as string) ? x.last : undefined,
+        log: (Array.isArray(x.log) ? x.log : []).filter((e) => e && kinds.includes(e.kind) && ids.includes(e.zone)).slice(-ZE_TUNE.logMax).map((e) => ({ kind: e.kind, zone: e.zone, at: num(e.at) })),
     };
 }
 

@@ -235,7 +235,7 @@ def bench():
     return c
 
 
-PIECES = {"map": (mast, "#2fd8e8"), "goals": (plinths, "#ffc53a"), "records": (archive, "#f0a53c"), "menu": (desk, "#b6f04a"), "stress": (bench, "#ff5a3c")}
+PIECES = {"map": (mast, "#2fd8e8"), "goals": (plinths, "#ffc53a"), "records": (archive, "#f0a53c"), "menu": (desk, "#b6f04a"), "stress": (bench, "#ff2a2a")}
 
 if __name__ == "__main__":
     want = sys.argv[1:] or list(PIECES)

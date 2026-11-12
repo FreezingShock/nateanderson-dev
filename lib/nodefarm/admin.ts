@@ -5,8 +5,8 @@
 import { BUY_STATS, SCRIPTS, SCRIPT_TUNE, auto, grantScripts, setRunning } from "./scripts";
 import { maxRigs } from "./rigs";
 import {
-    DRONE_TREE, DRONE_TUNE, POSTABLE, freshDr, modMax,
-    FW, handover, GOALS, LAB, LAB_TUNE, MATS, PAYLOADS, PERKS, SECRETS, STATS, TIERS, TREE, TREE_FULL, TUNE, ascend, ascendNeed, apOnAscend, derive, droneMax, exportSave, freshLab, fullTreeIds, parseSave, tick, treeFx, treeSpent, unlock,
+    DRONE_TREE, DRONE_TUNE, MODS, POSTABLE, freshDr, modMax,
+    FW, HAND_TUNE, PROTOS, handover, GOALS, LAB, LAB_TUNE, MATS, PAYLOADS, PERKS, SECRETS, STATS, TIERS, TREE, TREE_FULL, TUNE, ascend, ascendNeed, apOnAscend, derive, droneMax, exportSave, freshLab, fullTreeIds, parseSave, tick, treeFx, treeSpent, unlock,
     type MatId, type PerkDef, type ScriptId, type State, type StatId,
 } from "./engine";
 import { LOGS } from "./story";
@@ -118,7 +118,7 @@ export function setDrone(s: State, tier: number, lvl: number) { s.drones[tier] =
 export const ARMABLE = ["mult", ...MATS] as string[];
 export function maxDrones(s: State) {
     s.dr.nodes = DRONE_TREE.map((n) => n.id);
-    for (let k = 0; k < TIERS; k++) { s.drones[k] = droneMax(s); s.dr.mods[k] = [modMax(s, 0), modMax(s, 1), modMax(s, 2)]; }
+    for (let k = 0; k < TIERS; k++) { s.drones[k] = droneMax(s); s.dr.mods[k] = MODS.map((_, i) => modMax(s, i)); }
     for (const st of POSTABLE) s.dr.svc[st] = Math.max(s.dr.svc[st] ?? 0, DRONE_TUNE.rankAt[DRONE_TUNE.rankAt.length - 1]);
     s.armed = [...ARMABLE];
 }
@@ -227,6 +227,8 @@ export function forceHandover(s: State): number {
 export function addKeys(s: State, n: number) { s.hand.keys += n; s.hand.keysTotal += n; }
 /** Flash every Firmware node (no Keys spent). */
 export function ownAllFw(s: State) { s.hand.fw = FW.map((n) => n.id); }
+/** Every protocol at its top mastery rank. */
+export function maxProtoRanks(s: State) { s.hand.rank = Object.fromEntries(PROTOS.map((p) => [p.id, HAND_TUNE.rankMax])); }
 
 /** Make the run look like it is in era `n`: open every material up to its first stat and empty the ones after. */
 export function jumpEra(s: State, n: number) {

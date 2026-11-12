@@ -7,6 +7,7 @@ import { GOALS, GOAL_TIERS, SECRETS, TIER_NAMES, TUNE, fmt, fmtTime, goalDone, t
 import { goalCounts, recordSections } from "@/lib/nodefarm/records";
 import { LOGS, logNo } from "@/lib/nodefarm/story";
 import { NfIcon } from "./icon";
+import { SettingsFrame } from "./settings";
 import { DataLines, Frame, HoldButton, WinBanner } from "./win-kit";
 
 // Goals, Records and Menu windows (rebuilt 2026-11-12): art banner, bracket frames, data lines. Shared parts in ./win-kit.
@@ -196,7 +197,7 @@ export function RecordsPanel({ s }: { s: State }) {
         ["Global bonus", pick(run.rows, "Global bonus"), "#ffc53a"],
         ["Ascensions", String(s.life.ascends), "#ff2d8a"],
     ];
-    const colours: Record<string, string> = { run: "#2fd8e8", mats: "#f08a3c", life: "#b6f04a", prog: "#ffc53a" };
+    const colours: Record<string, string> = { run: "#2fd8e8", mats: "#f08a3c", life: "#b6f04a", prog: "#ffc53a", zev: "#ffa23a" };
     return (
         <div className="nf-sys nf-wk">
             <WinBanner
@@ -232,21 +233,12 @@ export function RecordsPanel({ s }: { s: State }) {
 // Menu: a config file. Each setting is one line you click to flip; the save code is a terminal block; reset is a hold.
 // Save files, backup, volume, calm motion, number format and keys came in with #170 and keep their behaviour.
 
-const FORMATS: [NumFmt, string][] = [["short", "1.2M"], ["sci", "1.2e6"], ["eng", "1.2e6 / e3"]];
-
 export function MenuPanel({
     s, soundOn, onSound, humOn, onHum, eventsOn, onEvents, ioText, setIoText, ioMsg, onExport, onImport, importConfirm, onDownload, onUpload, backup, onRestore, volume, onVolume, calm, osCalm, onCalm, jumpOn, onJump, lastSave, numFmt, onNumFmt, onReset,
 }: {
     s: State; soundOn: boolean; onSound: () => void; humOn: boolean; onHum: () => void; eventsOn: boolean; onEvents: () => void; ioText: string; setIoText: (v: string) => void; ioMsg: string; onExport: () => void; onImport: () => void; importConfirm: boolean; onDownload: () => void; onUpload: (f: File) => void;
     backup: { at: number; why: string } | null; onRestore: () => void; volume: number; onVolume: (v: number) => void; calm: boolean; osCalm: boolean; onCalm: () => void; jumpOn: boolean; onJump: () => void; lastSave: number; numFmt: NumFmt; onNumFmt: (f: NumFmt) => void; confirm?: boolean; onReset: () => void;
 }) {
-    const opts: { key: string; on: boolean; flip: () => void; note: string; off?: boolean }[] = [
-        { key: "sound", on: soundOn, flip: onSound, note: "naOS clicks, prints and alarms" },
-        { key: "hum", on: humOn, flip: onHum, note: "the reactor's low drone" },
-        { key: "events", on: eventsOn, flip: onEvents, note: "quick-time events every few minutes" },
-        { key: "jump", on: jumpOn, flip: onJump, note: "scroll to the board when you come back to a save" },
-        { key: "calm", on: calm || osCalm, flip: onCalm, off: osCalm, note: osCalm ? "your device already asks for less motion" : "less motion: no pops, flashes or loops" },
-    ];
     const keys: [string, string][] = [["M", "Map"], ["O", "Goals"], ["L", "Records"], ["A", "Ascend"], ["S", "Menu"], ["T", "Tree"], ["G", "Show me the next step"], ["P", "Press the glowing button (hold to keep going)"], ["1 to 6", "Press that tier on the zone in the middle of the screen"], ["Esc", "Close the open window"], ["Hold a button", "Keep buying"]];
     return (
         <div className="nf-sys nf-wk">
@@ -261,40 +253,7 @@ export function MenuPanel({
                 ]}
             />
             <div className="nf-wk-cols nf-wk-menu">
-                <Frame i={1} color="#b6f04a" path="config/node.cfg" title="Settings" note="Kept on this device, not in the save. Click a line to flip it.">
-                    <ul className="nf-wk-cfg">
-                        {opts.map((o) => (
-                            <li key={o.key}>
-                                <button type="button" role="switch" aria-checked={o.on} disabled={o.off} onClick={o.flip}>
-                                    <span className="nf-wk-box" aria-hidden="true">{o.on ? "x" : " "}</span>
-                                    <span className="nf-wk-k">{o.key}</span>
-                                    <span className="nf-wk-eq" aria-hidden="true">=</span>
-                                    <b>{o.on ? "on" : "off"}</b>
-                                    <span className="nf-wk-c">{"// "}{o.note}</span>
-                                </button>
-                            </li>
-                        ))}
-                        <li className="nf-wk-cfgrow">
-                            <label>
-                                <span className="nf-wk-box" aria-hidden="true">~</span>
-                                <span className="nf-wk-k">volume</span>
-                                <span className="nf-wk-eq" aria-hidden="true">=</span>
-                                <b>{Math.round(volume * 100)}%</b>
-                                <input type="range" min={0} max={1} step={0.05} value={volume} onChange={(e) => onVolume(Number(e.target.value))} aria-label="Master volume (all site sounds)" />
-                            </label>
-                        </li>
-                        <li className="nf-wk-cfgrow">
-                            <div role="group" aria-label="Number format">
-                                <span className="nf-wk-box" aria-hidden="true">~</span>
-                                <span className="nf-wk-k">numbers</span>
-                                <span className="nf-wk-eq" aria-hidden="true">=</span>
-                                <span className="nf-wk-pick">
-                                    {FORMATS.map(([k, ex]) => <button key={k} type="button" aria-pressed={numFmt === k} onClick={() => onNumFmt(k)}>{ex}</button>)}
-                                </span>
-                            </div>
-                        </li>
-                    </ul>
-                </Frame>
+                <SettingsFrame soundOn={soundOn} onSound={onSound} humOn={humOn} onHum={onHum} eventsOn={eventsOn} onEvents={onEvents} volume={volume} onVolume={onVolume} calm={calm} osCalm={osCalm} onCalm={onCalm} jumpOn={jumpOn} onJump={onJump} numFmt={numFmt} onNumFmt={onNumFmt} />
                 <Frame i={2} color="#2fd8e8" path="config/save.key" title="Save code" note="Your save lives in this browser. Export a code or a file to move it, or paste one to load it.">
                     <label className="nf-wk-term">
                         <span className="nf-wk-term-h"><span aria-hidden="true">$</span> cat save.key</span>

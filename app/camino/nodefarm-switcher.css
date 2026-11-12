@@ -8,6 +8,7 @@
 .ctos .nf-sidepane[data-pane="records"] { --sw: #f0a53c; }
 .ctos .nf-sidepane[data-pane="ascend"] { --sw: #ff2d8a; }
 .ctos .nf-sidepane[data-pane="handover"] { --sw: #3dff6e; }
+.ctos .nf-sidepane[data-pane="codex"] { --sw: #ff6b57; }
 .ctos .nf-sidepane[data-pane="menu"] { --sw: #b6f04a; }
 
 @keyframes nfSwPip { 50% { opacity: .25; } }
