@@ -397,7 +397,7 @@ const COMMANDS: Cmd[] = [
         name: "nf",
         usage: "nf [stats|goals|secrets|anim|fs]",
         desc: "Node Farm readout, goals and secrets",
-        long: ["nf · nf stats · nf goals · nf secrets · nf open · nf anim auto|print|decrypt|crt · nf fs [on|off] (full screen) · nf core [zone|chroma|aurora|gold|mono|<zone>|parts 0-11]. Works with the game open or from your saved game."],
+        long: ["nf · nf stats · nf goals · nf secrets · nf open · nf anim auto|print|decrypt|crt · nf fs [on|off] (full screen) · nf core [zone|chroma|aurora|gold|mono|<zone>|parts 0-13]. Works with the game open or from your saved game."],
         run: (args) => runNf(args),
     },
     {

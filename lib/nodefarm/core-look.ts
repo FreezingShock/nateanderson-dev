@@ -62,6 +62,8 @@ export const PART_WHY: Record<PartId, string> = {
     ring3: "origin online",
     rigs: "first rig level",
     shell: "first handover",
+    vines: "spores online",
+    crust: "basalt online",
 };
 /** each zone's rig level (the Glyph hall's carvings count as its rig) */
 function rigLevels(s: State): number[] {
@@ -90,6 +92,8 @@ export function coreParts(s: State, rigs = rigLevels(s)): number {
     if (isUnlocked(s, "origin")) m |= PART.ring3;
     if (rigs.some((n) => n > 0)) m |= PART.rigs;
     if ((s.hand?.count ?? 0) >= 1) m |= PART.shell;
+    if (isUnlocked(s, "spores")) m |= PART.vines;
+    if (isUnlocked(s, "basalt")) m |= PART.crust;
     return m;
 }
 

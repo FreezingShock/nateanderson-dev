@@ -13,8 +13,10 @@ export const PART = {
     ring3: 256, // Origin open
     rigs: 512, // first rig level
     shell: 1024, // first Handover
+    vines: 2048, // Spores open (Overgrowth)
+    crust: 4096, // Basalt open (Descent)
 } as const;
-export const PART_ORDER = ["clamps", "socket", "masts", "docks", "ring1", "glyphs", "ring2", "corona", "ring3", "rigs", "shell"] as const;
+export const PART_ORDER = ["clamps", "socket", "masts", "docks", "ring1", "glyphs", "ring2", "corona", "ring3", "rigs", "shell", "vines", "crust"] as const;
 
 /** Looks the core can wear. 0 follows the zone; the rest unlock (see SKIN_WHY in core-look.ts). */
 export const SKINS = ["zone", "chroma", "aurora", "gold", "mono"] as const;

@@ -295,7 +295,7 @@ export function makeCoreRenderer(statColors: string[], eventColors: string[] = E
     };
 
     // how much the radial core shrinks to make room, by number of parts built
-    const KS = [1, 0.95, 0.9, 0.87, 0.85, 0.82, 0.8, 0.79, 0.78, 0.77, 0.77, 0.77];
+    const KS = [1, 0.95, 0.9, 0.87, 0.85, 0.82, 0.8, 0.79, 0.78, 0.77, 0.77, 0.77, 0.77, 0.77];
 
     return {
         draw(out, f, t) {
@@ -340,13 +340,43 @@ export function makeCoreRenderer(statColors: string[], eventColors: string[] = E
                     if (g.r[i] < HO + 1) continue;
                     const ri = g.ri[i];
                     if (ri >= 104) continue;
-                    // six soft rays turning slowly, plus a faint haze that thins toward the corners
+                    // six narrow rays turning slowly, combed into fine streaks, and a thin glow hugging the halo. The dark
+                    // between the rays stays dark, so the structures in front read cleanly.
                     const ray = g.c6[i] * CA[ri] - g.s6[i] * SA[ri];
-                    const v = ((ray > 0.55 ? (ray - 0.55) * 1.6 : 0) + 0.18) * AMP[ri];
-                    if (v + g.bay[i] * 0.5 > 0.26) { CI[coronaN] = i; CVv[coronaN++] = 0.12 + v * 0.45; }
+                    const core = ray > 0.7 ? (ray - 0.7) / 0.3 : 0;
+                    const glow = ri < HO + 9 ? (HO + 9 - ri) / 9 : 0;
+                    if (core === 0 && glow === 0) continue;
+                    const streak = 0.55 + 0.45 * Math.sin(g.a[i] * 56 + ri * 0.18 - t * 1.4);
+                    const v = (core * core * streak * 1.25 + glow * glow * 0.3) * AMP[ri];
+                    if (v + g.bay[i] * 0.4 > 0.3) { CI[coronaN] = i; CVv[coronaN++] = 0.1 + v * 0.5; }
                 }
             }
             if (corona > 0) for (let j = 0; j < coronaN; j++) { V[CI[j]] = CVv[j]; C[CI[j]] = CH_ZONE; }
+
+            // ---- basalt crust (Descent): jagged rock along the bottom edge between the docks, magma glowing in its cracks,
+            // embers rising; geodes sprout crystals on it once they open
+            const crust = bd("crust");
+            const stat = (k: number) => CH_STAT + Math.min(k, NS - 1);
+            if (crust > 0) {
+                const cg = smooth(crust);
+                const basalt = stat(21), magma = stat(22), geode = stat(23);
+                for (let x = 28; x < S - 28; x++) {
+                    const h = Math.round((3 + hash(x * 0.37) * 3 + hash(Math.floor(x / 6) + 0.5) * 5) * cg);
+                    const crack = hash(Math.floor(x / 2) * 1.7 + 3) > 0.72;
+                    for (let d = 0; d < h; d++) {
+                        const y = S - 2 - d;
+                        if (crack && d < h - 1 && d > 0) put(x, y, 0.6 + 0.4 * (0.5 + 0.5 * Math.sin(t * 2.3 + x * 0.5)), magma);
+                        else put(x, y, d === h - 1 ? 0.7 : d === h - 2 ? 0.5 : 0.28, basalt);
+                    }
+                    // crystals on the rock once Geodes are open
+                    if (f.unlocked >= 24 && x % 11 === 4 && cg >= 1) for (let d = 0; d < 4; d++) { put(x, S - 2 - h - d, 0.7 + d * 0.08, geode); if (d < 2) put(x + 1, S - 2 - h - d, 0.5, geode); }
+                    // embers
+                    if (crack && cg >= 1) {
+                        const ph = (t * (0.4 + hash(x) * 0.3) + hash(x + 9)) % 1;
+                        under(x + Math.round(Math.sin(t * 3 + x) * ph * 2), S - 2 - h - Math.round(ph * 22), 1 - ph * 0.7, magma);
+                    }
+                }
+            }
 
             // ---- copper socket: a trace frame round the edge, corner brackets, packets running clockwise, and four
             // capacitor banks at the edge midpoints that charge with the Reboot gauge
@@ -403,6 +433,43 @@ export function makeCoreRenderer(statColors: string[], eventColors: string[] = E
                         put(x2, y2, 0.75, CH_ZONE);
                         const [x3, y3] = at(d - 2);
                         put(x3, y3, 0.45, CH_ZONE);
+                    }
+                }
+            }
+
+            // ---- vines (Overgrowth): runners creep round the frame, leaves stir, and buds open in pollen and bloom colours
+            const vine = bd("vines");
+            if (vine > 0) {
+                const sporeC = stat(17), mycC = stat(18), pollenC = stat(19), bloomC = stat(20);
+                const lo = 2, hi = S - 3, len = hi - lo, perim = len * 4;
+                const shown = perim * smooth(vine);
+                const at = (d: number): [number, number, number, number] => {
+                    // position on the frame plus the inward direction
+                    if (d < len) return [lo + d, lo, 0, 1];
+                    if (d < len * 2) return [hi, lo + d - len, -1, 0];
+                    if (d < len * 3) return [hi - (d - len * 2), hi, 0, -1];
+                    return [lo, hi - (d - len * 3), 1, 0];
+                };
+                for (let d = 0; d < shown; d++) {
+                    // two runners twisting round each other along the frame, starting from the bottom left corner
+                    const dd = (d + len * 3) % perim;
+                    const [x, y, ix, iy] = at(dd);
+                    const off = 1.5 + Math.sin(d * 0.21) * 1.5;
+                    under(x + ix * off, y + iy * off, 0.6, mycC);
+                    under(x + ix * (off + 1), y + iy * (off + 1), 0.35, mycC);
+                    const off2 = 1.5 + Math.sin(d * 0.21 + Math.PI) * 1.5;
+                    if (d % 3) under(x + ix * off2, y + iy * off2, 0.5, sporeC);
+                    if (d % 6 === 3) {
+                        const sway = Math.floor(t * 1.5 + d * 0.3) % 3 - 1;
+                        const lx = x + ix * (off + 2) + iy * sway, ly = y + iy * (off + 2) + ix * sway;
+                        put(lx, ly, 0.85, sporeC); put(lx + iy, ly + ix, 0.6, sporeC); put(lx + ix, ly + iy, 0.7, sporeC);
+                    }
+                    if (vine >= 1 && d % 17 === 8 && f.unlocked >= 19) {
+                        const bc = f.unlocked >= 21 && d % 2 ? bloomC : pollenC;
+                        const fx = x + ix * (off + 2.5), fy = y + iy * (off + 2.5);
+                        const open = 0.6 + 0.4 * Math.sin(t * 1.2 + d);
+                        put(fx, fy, 1, pollenC);
+                        put(fx + 1, fy, open, bc); put(fx - 1, fy, open, bc); put(fx, fy + 1, open, bc); put(fx, fy - 1, open, bc);
                     }
                 }
             }
@@ -688,10 +755,10 @@ export function makeCoreRenderer(statColors: string[], eventColors: string[] = E
             // ---- rig rack: a pod on the frame per zone, lit in the zone's colour once its rig has a level
             const rack = bd("rigs");
             if (rack > 0) {
-                const slots = [32, 42, 52, 92, 102, 112];
+                const slots = [26, 36, 46, 56, 88, 98, 108, 118];
                 const n = Math.min(f.unlocked, NS, Math.ceil(NS * smooth(rack)));
                 for (let z = 0; z < n; z++) {
-                    const edge = Math.floor(z / 6) % 4, u = slots[z % 6];
+                    const edge = Math.floor(z / 8) % 4, u = slots[z % 8];
                     // pod 7 along the edge, 4 deep, standing on the frame
                     for (let a = -3; a <= 3; a++)
                         for (let d = 0; d < 4; d++) {

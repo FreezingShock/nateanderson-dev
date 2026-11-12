@@ -22,9 +22,9 @@ const colors = [...eng.matchAll(/\{ id: "(\w+)", name: "[^"]+", short: "[^"]+", 
 
 const html = `<!doctype html><body style="margin:0;background:#0c0c0c"><canvas id=c></canvas><script>${js}
 const COLORS = ${JSON.stringify(colors)};
-const STAGES = 12, SC = 2, PAD = 8, CS = CORE_S * SC + PAD;
-// rows: [zone, skin, overclock, event]: zone 01 / copper / aether / origin / chroma / aurora / gold / mono / overclock / each zone event
-const ROWS = [[0, 0, false, 0], [3, 0, false, 0], [6, 0, false, 0], [16, 0, false, 0], [0, 1, false, 0], [0, 2, false, 0], [0, 3, false, 0], [0, 4, false, 0], [6, 0, true, 0], [9, 0, false, 1], [9, 0, false, 2], [9, 0, false, 3], [9, 0, false, 4], [9, 0, false, 5]];
+const STAGES = 14, SC = 2, PAD = 8, CS = CORE_S * SC + PAD;
+// rows: [zone, skin, overclock, event]: zone 01 / copper / aether / origin / bloom / core / chroma / aurora / gold / mono / overclock / each zone event
+const ROWS = [[0, 0, false, 0], [3, 0, false, 0], [6, 0, false, 0], [16, 0, false, 0], [20, 0, false, 0], [24, 0, false, 0], [0, 1, false, 0], [0, 2, false, 0], [0, 3, false, 0], [0, 4, false, 0], [6, 0, true, 0], [9, 0, false, 1], [9, 0, false, 2], [9, 0, false, 3], [9, 0, false, 4], [9, 0, false, 5]];
 const c = document.getElementById("c");
 c.width = CS * STAGES; c.height = CS * ROWS.length;
 const ctx = c.getContext("2d"); ctx.imageSmoothingEnabled = false;
@@ -37,8 +37,8 @@ window.render = (t) => {
   ROWS.forEach(([zone, skin, oc, event], row) => {
     for (let st = 0; st < STAGES; st++) {
       let parts = 0; for (let k = 0; k < st; k++) parts |= 1 << k;
-      const unlocked = Math.max(zone + 1, [2, 3, 4, 6, 7, 9, 12, 13, 15, 17, 17, 17][st]);
-      R.draw(img.data, { progress: 0.62, overclock: oc, unlocked, speed: st / 10, pulse: 0, pulseStat: 1, reboots: st * 6, ap: st * 3, zone, prevZone: zone, zoneMix: 1, skin, flare: 0, event, rigs: Array.from({ length: 17 }, (_, i) => (i < unlocked && i % 3 !== 2 ? 1 + (i % 4) : 0)), fw: 0.6, parts, build: Array(11).fill(1), drones: st >= 4 ? 3 : 0, glyphs: st >= 6 ? 4 : 0 }, t);
+      const unlocked = Math.max(zone + 1, [2, 3, 4, 6, 7, 9, 12, 13, 15, 17, 17, 17, 21, 25][st]);
+      R.draw(img.data, { progress: 0.62, overclock: oc, unlocked, speed: st / 10, pulse: 0, pulseStat: 1, reboots: st * 6, ap: st * 3, zone, prevZone: zone, zoneMix: 1, skin, flare: 0, event, rigs: Array.from({ length: COLORS.length }, (_, i) => (i < unlocked && i % 3 !== 2 ? 1 + (i % 4) : 0)), fw: 0.6, parts, build: Array(13).fill(1), drones: st >= 4 ? 3 : 0, glyphs: st >= 6 ? 4 : 0 }, t);
       tctx.putImageData(img, 0, 0);
       ctx.drawImage(tmp, st * CS + PAD / 2, row * CS + PAD / 2, CORE_S * SC, CORE_S * SC);
     }
@@ -55,7 +55,7 @@ await save("sheet.png", 3.3);
 for (let i = 0; i < frames; i++) await save(`f${String(i).padStart(3, "0")}.png`, 3.3 + i / 20);
 const perf = await p.evaluate(() => {
   const R = makeCoreRenderer(COLORS), d = new Uint8ClampedArray(CORE_S * CORE_S * 4);
-  const f = { progress: 0.6, overclock: false, unlocked: 17, speed: 1, pulse: 0, pulseStat: 1, reboots: 99, ap: 30, zone: 16, prevZone: 15, zoneMix: 0.5, skin: 0, flare: 0, event: 3, rigs: Array(17).fill(3), fw: 0.5, parts: 2047, build: Array(11).fill(1), drones: 4, glyphs: 6 };
+  const f = { progress: 0.6, overclock: false, unlocked: 25, speed: 1, pulse: 0, pulseStat: 1, reboots: 99, ap: 30, zone: 16, prevZone: 15, zoneMix: 0.5, skin: 0, flare: 0, event: 3, rigs: Array(25).fill(3), fw: 0.5, parts: 8191, build: Array(13).fill(1), drones: 4, glyphs: 6 };
   for (let i = 0; i < 30; i++) R.draw(d, f, i / 40);
   const t0 = performance.now(); for (let i = 0; i < 200; i++) R.draw(d, f, i / 40); const full = (performance.now() - t0) / 200;
   const f0 = { ...f, event: 0, unlocked: 3, parts: 0, drones: 0, glyphs: 0, zone: 0, prevZone: 0, zoneMix: 1 };
