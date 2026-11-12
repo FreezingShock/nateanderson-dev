@@ -237,3 +237,10 @@ Checks: /mnt/project-files/portfolio/node-farm-refresh/ (`checks.mjs` interactio
 After regenerating any Node Farm art run `node scripts/nodefarm/stamp-art.mjs` (it rewrites the stamps in app/camino/*.css
 and lib/nodefarm/art-version.ts; build code URLs with `nfArt(file)`). `npm run build` runs it with `--check` first and
 fails if a stamp is stale or if the icon/tier sheets don't match ORDER/TIER_ROWS in components/nodefarm/icon.tsx and the CSS sizes.
+
+## Balance audit (2026-11-12)
+Whole game simulated together (17 zones, 60-node tree, Exploit Lab) with `NF_ASC_GAP=1`. Two runaways found and fixed:
+- **Cross-talk** boosted every material by the one two steps up with a power-law boost, a second feedback loop through all 14 materials. The sim reached Infinity (the 1e300 cap) about 20 minutes after buying it. It is now log-scaled (`TUNE.logK.crosstalk`).
+- **Chrono's "boost everything"** (`chAll`) was also a power law, and Chrono is itself boosted by that. Once Engrams opened, global went from about 9 to 1e9 in an hour. It now grows with log10 past `TUNE.chAllCap` (1e6 Chrono), so it is unchanged for the whole mid game.
+Result (bot, no Drones, with the lab): first Ascend 2.67 h, Chrono 25.6 h, Origin 43.6 h (unchanged); first 40 tree nodes 44.4 h, whole tree 48.4 h (was 45.4 h), every rank 60.4 h (was 51.4 h with AP per Ascend jumping from 220 to 5,000 in one Ascend). With the bot arming Drones: first Ascend 4.0 h, Chrono 13.7 h, Origin 42.7 h, ranks done 66 h.
+Not changed, on purpose: Engrams, Paradox and Origin still open within about 20 minutes of each other for the bot (the stat below is already huge, so `unlockAt` does not gate them; gating on Ascend count walled the Drone bot for 17 h, so it was dropped). Debug flags: `NF_TRACE=<minutes>` prints a status line, `NF_BAN=id,id` stops the bot buying nodes.

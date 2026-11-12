@@ -10,6 +10,7 @@ import "@/app/camino/nodefarm-fs.css";
 import "@/app/camino/nodefarm-windows.css";
 import "@/app/camino/nodefarm-switcher.css";
 import "@/app/camino/nodefarm-admin.css";
+import "@/app/camino/nodefarm-phone.css";
 import { CreationsShell, Section } from "@/components/creations-sections";
 import { GameFrame } from "@/components/games/naos";
 import { NodeFarm } from "@/components/nodefarm/node-farm";

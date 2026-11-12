@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import { STATS } from "@/lib/nodefarm/engine";
 
 // The reactor core: a 144 px canvas drawn per pixel (hex field, dithered plasma, rotating ring) and shown pixelated at 2x.
 // All state arrives through refs so a render of the parent never restarts it.
@@ -28,7 +29,9 @@ export interface CoreFeed {
 const S = 144;
 const BAYER = [0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5].map((n) => n / 16 - 0.5);
 const CYAN = [[6, 32, 42], [11, 90, 107], [23, 150, 170], [47, 216, 232], [201, 251, 255]];
-const SECT = ["#2fd8e8", "#b6f04a", "#ff2d8a", "#f08a3c", "#7aa2ff", "#e08cff", "#6bffc9", "#ffc53a", "#bfeaff", "#9a7bff", "#ff7a4a"].map((h) => [parseInt(h.slice(1, 3), 16), parseInt(h.slice(3, 5), 16), parseInt(h.slice(5, 7), 16)]);
+// One colour per stat, straight from the stat list. (This was a fixed 11-colour list, so the 12th stat threw every frame and the core stopped drawing.)
+const SECT = STATS.map((st) => [parseInt(st.color.slice(1, 3), 16), parseInt(st.color.slice(3, 5), 16), parseInt(st.color.slice(5, 7), 16)]);
+const NSECT = SECT.length;
 const MAG = [[43, 5, 23], [125, 15, 69], [196, 28, 108], [255, 45, 138], [255, 194, 222]];
 
 // Per-pixel geometry never changes, so it is computed once for the whole page instead of 20,000 hypot/atan2 calls a frame.
@@ -87,7 +90,7 @@ export function Core({ feed, reduced }: { feed: React.MutableRefObject<CoreFeed>
             const nodes: { x: number; y: number; c: number }[] = [];
             for (let k = 2; k < f.unlocked; k++) {
                 const na = t * (0.5 + k * 0.17) * (k % 2 ? 1 : -1) + k * 1.7;
-                nodes.push({ x: Math.cos(na) * 45, y: Math.sin(na) * 45, c: k });
+                nodes.push({ x: Math.cos(na) * 45, y: Math.sin(na) * 45, c: k % NSECT });
             }
             const lit = Math.min(24, f.ap);
             const pr = 14 + (1 - pulse) * 50;
@@ -121,7 +124,7 @@ export function Core({ feed, reduced }: { feed: React.MutableRefObject<CoreFeed>
                     if (r > 50 && r < 58) {
                         const k = (a + spin) / (Math.PI * 2) * 36;
                         const fr = k - Math.floor(k);
-                        if (fr < 0.38) { v = r > 55 ? 0.95 : 0.55; const si = Math.floor(((a + Math.PI) / (Math.PI * 2)) * 11) % 11; if (si < f.unlocked) sect = si; }
+                        if (fr < 0.38) { v = r > 55 ? 0.95 : 0.55; const si = Math.floor(((a + Math.PI) / (Math.PI * 2)) * NSECT) % NSECT; if (si < f.unlocked) sect = si; }
                     }
                     // Reboot progress arc (outer gauge)
                     if (r > 61 && r < 64) {
@@ -144,7 +147,7 @@ export function Core({ feed, reduced }: { feed: React.MutableRefObject<CoreFeed>
                     const o = (y * S + x) * 4;
                     if (v < 0) { px[o + 3] = 0; continue; }
                     const idx = Math.max(0, Math.min(4, Math.floor(v * 4 + 0.5 + G.bay[i])));
-                    const c = sect >= 0 && !f.overclock ? (idx >= 3 ? SECT[sect] : SECT[sect].map((n) => n * 0.45)) : pal[idx];
+                    const c = sect >= 0 && !f.overclock ? (idx >= 3 ? SECT[sect % NSECT] : SECT[sect % NSECT].map((n) => n * 0.45)) : pal[idx];
                     px[o] = c[0]; px[o + 1] = c[1]; px[o + 2] = c[2]; px[o + 3] = 255;
                 }
             }

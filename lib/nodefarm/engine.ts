@@ -74,8 +74,9 @@ export const TUNE = {
     perProducer: { copper: 0.05, silicon: 0.03, quartz: 0.016, aether: 0.008, runes: 0.0025, starglass: 0.0012, voidsteel: 0.0006, chrono: 0.0003, nebula: 0.0002, pulsars: 0.00017, singularity: 0.00016, engrams: 0.00015, paradox: 0.00008, origin: 0.00004 } as Record<string, number>,
     boostK: { cuReboot: 0.09, cuBytes: 0.02, siCu: 0.2, qzSi: 0.2, aeQz: 0.2, ruAe: 0.12, sgRu: 0.12, vsSg: 0.12, chVs: 0.12, chAll: 0.03, nbCh: 0.12, puNb: 0.12, snPu: 0.12, egSn: 0.12, pxEg: 0.12, orPx: 0.12 },
     // the extras on the last three materials grow with log10 of the amount, so they cannot feed back into a runaway
-    logK: { snAll: 0.1, egDrone: 0.15, pxOc: 0.15, orAp: 0.1 },
+    logK: { snAll: 0.1, egDrone: 0.15, pxOc: 0.15, orAp: 0.1, crosstalk: 0.12 },
     boostPow: 0.38,
+    chAllCap: 1e6, // Chrono boosts EVERYTHING, including Chrono: past this amount the boost grows only with log10 (a power law fed itself to 1e300 once Engrams opened)
     unlockAt: { copper: 1, silicon: 150, quartz: 300, aether: 500, runes: 150, starglass: 200, voidsteel: 250, chrono: 300, nebula: 300, pulsars: 300, singularity: 300, engrams: 350, paradox: 400, origin: 450 } as Record<string, number>, // copper: Reboots; the rest: amount of the stat below
     overclockMult: 6,
     overclockSecs: 20,
@@ -699,6 +700,12 @@ export function fresh(now = Date.now()): State {
     };
 }
 
+/** Like boost, but past `cap` the amount only counts by its log10, so a boost on everything cannot feed the material that makes it. */
+const boostCapped = (amount: number, k: number, cap: number) => {
+    const a = Math.max(0, amount);
+    if (a <= cap) return 1 + k * Math.pow(a, TUNE.boostPow);
+    return 1 + k * Math.pow(cap, TUNE.boostPow) * (1 + Math.log10(a / cap));
+};
 const boost = (amount: number, k: number) => 1 + k * Math.pow(Math.max(0, amount), TUNE.boostPow);
 
 export interface Derived {
@@ -723,7 +730,7 @@ export function derive(s: State): Derived {
         sgRu: boost(s.starglass, k.sgRu),
         vsSg: boost(s.voidsteel, k.vsSg),
         chVs: boost(s.chrono, k.chVs),
-        chAll: boost(s.chrono, k.chAll),
+        chAll: boostCapped(s.chrono, k.chAll, TUNE.chAllCap),
         nbCh: boost(s.nebula, k.nbCh),
         puNb: boost(s.pulsars, k.puNb),
         snPu: boost(s.singularity, k.snPu),
@@ -742,8 +749,9 @@ export function derive(s: State): Derived {
     const bytesPerSec = s.mult * boosts.cuBytes * global * (1 + tf.bytes) * lb.bytes * runBytes(s, tf);
     // each material is boosted by the one after it in the chain
     const boostedBy: Record<MatId, number> = { copper: boosts.siCu, silicon: boosts.qzSi, quartz: boosts.aeQz, aether: boosts.ruAe, runes: boosts.sgRu, starglass: boosts.vsSg, voidsteel: boosts.chVs, chrono: boosts.nbCh, nebula: boosts.puNb, pulsars: boosts.snPu, singularity: boosts.egSn, engrams: boosts.pxEg, paradox: boosts.orPx, origin: 1 };
-    // Cross-talk: each material is also boosted by the one two steps up the chain, at the weaker late-chain strength
-    if (tf.features.includes("crosstalk")) MATS.forEach((m, i) => { const up = MATS[i + 2]; if (up) boostedBy[m] *= boost(s[up], TUNE.boostK.ruAe); });
+    // Cross-talk: each material is also boosted by the one two steps up the chain. Log-scaled: a power-law boost here made a second
+    // feedback loop through all fourteen materials and the sim hit Infinity within minutes of buying it (balance audit 2026-11-12).
+    if (tf.features.includes("crosstalk")) MATS.forEach((m, i) => { const up = MATS[i + 2]; if (up) boostedBy[m] *= logBoost(s[up], TUNE.logK.crosstalk); });
     // Bus bar (Reboots feed every material) and Specialist (the newest material you produce)
     const bus = tf.busbar ? 1 + tf.busbar * Math.log10(1 + s.reboot) : 1;
     let newest: MatId | null = null;
