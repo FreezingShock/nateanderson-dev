@@ -114,9 +114,9 @@ function view(id: StatId, s: State, d: Derived): View {
             const m = ringMul(s);
             return { frac: (m - 1) / (T.ringMax - 1), meter: `ringing with ${fmt(s.quartz)} Quartz`, lines: [["Geodes output", x(m)]] };
         }
-        case "core": {
+        case "sunstone": {
             const n = convLevels(s);
-            return { frac: n / (DESCENT_RIGS.length * (T.baseCap + T.rewriteMax)), meter: `${n} rig levels below`, lines: [["Core output", x(convMul(s))]] };
+            return { frac: n / (DESCENT_RIGS.length * (T.baseCap + T.rewriteMax)), meter: `${n} rig levels below`, lines: [["Sunstone output", x(convMul(s))]] };
         }
         default:
             return { frac: 0, meter: "", lines: [] };
