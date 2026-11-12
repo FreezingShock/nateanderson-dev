@@ -284,9 +284,10 @@ export function NodeFarm() {
                 setHumOn(false);
             }
         } catch {}
+        const timers: ReturnType<typeof setTimeout>[] = [];
         const got = load();
         const s = got.s ?? fresh();
-        if (got.unreadable) setTimeout(() => log("The saved game could not be read. It is kept in this browser; a new game starts.", "warn"), 1800);
+        if (got.unreadable) timers.push(setTimeout(() => log("The saved game could not be read. It is kept in this browser; a new game starts.", "warn"), 1800));
         const first = s.life.secs === 0 && s.life.presses === 0;
         const gap = (Date.now() - s.at) / 1000;
         g.current = s;
@@ -304,8 +305,10 @@ export function NodeFarm() {
             greet.push(`The prestige tree was rebuilt with 40 new nodes. ${fmt(s.treeRefund)} AP from your old nodes is back to spend.`);
             delete s.treeRefund;
         }
-        greet.forEach((t, i) => setTimeout(() => log(t, i === 0 || i === 2 ? "good" : undefined), 180 + i * 900));
+        greet.forEach((t, i) => timers.push(setTimeout(() => log(t, i === 0 || i === 2 ? "good" : undefined), 180 + i * 900)));
         setReady(true);
+        // React StrictMode (npm run dev) runs this twice: drop the first run's greeting so every line prints once
+        return () => timers.forEach(clearTimeout);
     }, [log]);
 
     // ---- news lines: every so often one short line (past operator, operator, node note, hint) drops into the feed,
@@ -872,7 +875,7 @@ export function NodeFarm() {
                 </div>
                 <dl className="nf-readout">
                     <div><dt>Bytes/s</dt><dd>{fmt(d.bytesPerSec)}</dd></div>
-                    <div><dt>Reboot</dt><dd>{Math.round(feed.current.progress * 100)}%</dd></div>
+                    <div><dt>To reboot</dt><dd>{Math.round(feed.current.progress * 100)}%</dd></div>
                     <div><dt>Global</dt><dd>×{fmt(d.global)}</dd></div>
                 </dl>
                 <Feed store={feedStore} reduced={reduced} />
