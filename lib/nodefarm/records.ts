@@ -5,6 +5,7 @@ import {
     GOALS, GOAL_TIERS, MATS, PERKS, SECRETS, TIER_NAMES, TREE, apOnAscend, derive, fmt, fmtTime, goalDone, statDef, tiersDone, unlock,
     type State,
 } from "./engine";
+import { LOGS, logNo } from "./story";
 
 export const NF_PATH = "/creations/games/node-farm";
 export const NF_SAVE_KEY = "nf-save-v1";
@@ -83,7 +84,7 @@ export interface NfLine {
 const t = (text: string, k?: NfLine["k"]): NfLine => ({ t: text, k });
 const row = (a: string, b: string, go?: string): NfLine => ({ a, b, go });
 
-export const NF_SUBS = ["stats", "goals", "secrets", "open"];
+export const NF_SUBS = ["stats", "goals", "secrets", "logs", "open"];
 
 export interface NfResult {
     lines: NfLine[];
@@ -112,7 +113,7 @@ export function nfCommand(s: State, args: string[]): NfResult {
             row("ascensions", `${s.life.ascends}  (${s.ap} AP)`),
             row("goals", `${c.goals}/${c.goalTotal}`),
             row("secrets", `${c.secrets}/${c.secretTotal}`),
-            t("nf stats · nf goals · nf secrets · nf open", "dim"),
+            t("nf stats · nf goals · nf secrets · nf logs · nf open", "dim"),
         ];
     } else if (sub === "stats") {
         lines = recordSections(s).flatMap((sec) => [t(sec.title.toLowerCase(), "hi"), ...sec.rows.map(([a, b]) => row(a.toLowerCase(), b))]);
@@ -129,6 +130,16 @@ export function nfCommand(s: State, args: string[]): NfResult {
         const c = goalCounts(s);
         lines = [t(`secrets ${c.secrets}/${c.secretTotal}`, "hi")];
         for (const x of SECRETS) lines.push(s.ach.includes(x.id) ? row(x.name.toLowerCase(), x.how) : row("????", x.clue));
+    } else if (sub === "logs") {
+        const n = Number(args[1]);
+        if (args[1] && Number.isInteger(n) && n >= 1 && n <= LOGS.length) {
+            const l = LOGS[n - 1];
+            lines = s.logs.includes(l.id) ? [t(`LOG ${logNo(n - 1)} // ${l.title.toLowerCase()}`, "hi"), t(l.text)] : [t(`log ${logNo(n - 1)}: not recovered yet.`, "dim")];
+        } else {
+            lines = [t(`logs ${s.logs.length}/${LOGS.length}`, "hi")];
+            LOGS.forEach((l, i) => lines.push(s.logs.includes(l.id) ? row(logNo(i), l.title.toLowerCase()) : row(logNo(i), "????")));
+            lines.push(t("nf logs <number> to read one.", "dim"));
+        }
     } else if (sub === "open") {
         lines = [t(`${NF_PATH}`, "dim")];
         lines[0].go = NF_PATH;
@@ -142,7 +153,7 @@ export function nfCommand(s: State, args: string[]): NfResult {
     } else if (sub === "whoami") {
         lines = [t("node-01. one core, no clearance, and a growing farm."), ...secret("x_self")];
     } else {
-        lines = [t(`nf: unknown: ${args[0]}`, "err"), t("nf stats · nf goals · nf secrets · nf open", "dim")];
+        lines = [t(`nf: unknown: ${args[0]}`, "err"), t("nf stats · nf goals · nf secrets · nf logs · nf open", "dim")];
     }
     return { lines, unlocked: found };
 }

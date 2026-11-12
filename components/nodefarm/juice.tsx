@@ -5,6 +5,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { TUNE, STATS, fmt, isUnlocked, statDef, type ButtonStat, type State, type StatId } from "@/lib/nodefarm/engine";
 import { LORE } from "@/lib/nodefarm/lore";
+import { ascendNote } from "@/lib/nodefarm/story";
 import { Core, type CoreFeed } from "./core";
 import { NfIcon, type NfIconName } from "./icon";
 
@@ -342,6 +343,7 @@ function AscendSeq({ data, reduced, onClose }: { data: { gain: number; ap: numbe
                     <h2 className="nf-rx-h">Root access granted</h2>
                     <p className="nf-rx-gain"><b ref={num}>{data.gain}</b> <span>Ascension {data.gain === 1 ? "Point" : "Points"}</span></p>
                     <p className="nf-rx-line">{data.ap} AP total. Each one adds {Math.round(TUNE.apBonus * 100)}% to everything.</p>
+                    <p className="nf-rx-line nf-rx-note">{ascendNote(data.n)}</p>
                     <p className="nf-rx-line dim">Wiped: Bytes, Multipliers, Reboots, materials and Drones. Kept: goals, perks and the tree.</p>
                     <p className="nf-rx-go" data-ready={canClose ? "" : undefined}>{canClose ? "Tap to continue" : "\u00a0"}</p>
                 </div>

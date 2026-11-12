@@ -3,6 +3,7 @@
 import { PixelIcon } from "@/components/cm/pixel-icons";
 import { GOALS, GOAL_TIERS, PERKS, SECRETS, TIER_NAMES, TUNE, apOnAscend, canAscend, derive, fmt, fmtTime, goalDone, tiersDone, type State } from "@/lib/nodefarm/engine";
 import { goalCounts, recordSections } from "@/lib/nodefarm/records";
+import { LOGS, logNo } from "@/lib/nodefarm/story";
 import { NfIcon } from "./icon";
 import { TreePanel } from "./tree";
 
@@ -97,6 +98,14 @@ export function RecordsPanel({ s }: { s: State }) {
                     </dl>
                 </section>
             ))}
+            <section className="nf-logs">
+                <header className="nf-sys-h"><h3>Operator logs</h3><p>{s.logs.length} of {LOGS.length} recovered. Left by whoever ran this node before you.</p></header>
+                <ol className="nf-log-list">
+                    {LOGS.map((l, i) => (s.logs.includes(l.id)
+                        ? <li key={l.id}><b>LOG {logNo(i)} // {l.title}</b><p>{l.text}</p></li>
+                        : <li key={l.id} className="lock"><b>LOG {logNo(i)} // ????</b></li>))}
+                </ol>
+            </section>
         </div>
     );
 }

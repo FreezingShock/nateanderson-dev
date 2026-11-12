@@ -71,3 +71,9 @@ One Drone per button tier (T1 to T6), bought with Aether, up to level 10 (`TUNE.
 - The game loop counts presses nobody clicked as `life.presses - last - manual` and batches them into `drones.sweep() ×N`. Plain text from the game still works through `log(text, tone)`; `fromText` adds an `ok:` / `warn:` / `alert:` / `sys:` tag and picks out numbers and CAPS.
 - Button captions (`fnCaption`: `.add(5)`, `.spawn(125)`, `.reboot(1)`) and the locked-zone `if (mul >= 5) copper.decrypt()` line are decoration only (`aria-hidden`); names and numbers on buttons are unchanged. Styles: `app/camino/nodefarm-code.css`.
 - To add a feed line from the game: `feedStore.push(tokens, { tone, type })` with `call(id(stat), "name", [args])`.
+
+## Story logs (lore)
+
+Premise (Nate picked "inherited node", 2026-11-12): you took over node-01 from a previous operator who left logs. `lib/nodefarm/story.ts` holds the 25 logs, each with a test on the game state (stat unlocked, reboot count, tree branch finished, goal rank, and so on). Numbers follow writing order, so early finds leave gaps. A log is stored in `State.logs` the first time its test passes (checked in the tick, `node-farm.tsx`) and is kept through Ascend. A save from before logs existed gets them all at once, with one quiet feed line.
+
+Where they show: a typed `logs.recover("004")` feed line and a milestone banner when one is found, the "Operator logs" list in the Records window, `nf logs` and `nf logs <number>` in the console, and one operator line on the Ascend screen (`ASCEND_NOTES`). The Ascend notes quote log numbers 012 and 017, so keep those in step if the order of `LOGS` changes. To add a log, append to the end of `LOGS` (inserting renumbers every later log).
