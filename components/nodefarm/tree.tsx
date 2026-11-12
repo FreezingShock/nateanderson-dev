@@ -1,20 +1,56 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type KeyboardEvent as RKeyboardEvent } from "react";
+import { forwardRef, useCallback, useEffect, useImperativeHandle, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type KeyboardEvent as RKeyboardEvent, type PointerEvent as RPointerEvent } from "react";
+import { createPortal } from "react-dom";
+import * as Engine from "@/lib/nodefarm/engine";
 import { BRANCHES, TREE, fmt, hasNode, nodeOpen, treeFx, treeNode, type State, type TreeNode } from "@/lib/nodefarm/engine";
 
-/** The prestige tree menu: a full-screen web of nodes you pan and zoom. Layout comes from the engine (`TREE` x and y, in units). */
-const U = 110; // px per tree unit at zoom 1
-const R = 10; // world radius in units, a little past the outermost keystones
-const KMIN = 0.2;
-const KMAX = 2;
-const SPAN = 2 * R * U;
+/**
+ * The prestige tree menu: a full-screen web of nodes with a camera you pan, pinch and zoom.
+ * Layout comes from the engine (`TREE` x and y, in tree units). Only nodes near what you own are drawn:
+ * one step out they are readable, two steps out they are encrypted silhouettes, further out they are hidden.
+ * Picking a node glides the camera to it and opens a card anchored at the node.
+ */
+const U = 165; // px per tree unit at zoom 1
+const KMIN = 0.3;
+const KMAX = 1.8;
+const SZ = { minor: 88, notable: 112, keystone: 152, core: 152 } as const;
+const GLIDE_MS = 560;
 const BCOL = Object.fromEntries(BRANCHES.map((b) => [b.id, b.color])) as Record<string, string>;
 const BNAME = Object.fromEntries(BRANCHES.map((b) => [b.id, b.name])) as Record<string, string>;
 const KIND = { minor: "MINOR", notable: "NOTABLE", keystone: "KEYSTONE" } as const;
 const clamp = (v: number, a: number, b: number) => Math.min(b, Math.max(a, v));
+const easeInOut = (t: number) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
 
-function stateOf(s: State, n: TreeNode): "owned" | "ready" | "open" | "locked" {
+type Vis = "shown" | "fog" | "hidden";
+type NodeState = "owned" | "ready" | "open" | "locked";
+type Extra = TreeNode & { flavor?: string };
+
+// The upgrades data may ship its own reveal rule (`nodeVis`); until then, graph distance from what you own decides.
+const engineVis = (Engine as unknown as { nodeVis?: (s: State, n: TreeNode) => Vis }).nodeVis;
+function visMap(s: State): Map<string, Vis> {
+    const out = new Map<string, Vis>();
+    if (engineVis) {
+        for (const n of TREE) out.set(n.id, engineVis(s, n));
+        return out;
+    }
+    const dist = new Map<string, number>();
+    const q: string[] = [];
+    for (const n of TREE) if (hasNode(s, n.id)) { dist.set(n.id, 0); q.push(n.id); }
+    for (const n of TREE) if (!dist.has(n.id) && n.links.includes("core")) { dist.set(n.id, 1); q.push(n.id); }
+    for (let i = 0; i < q.length; i++) {
+        const d = dist.get(q[i])!;
+        if (d >= 2) continue;
+        for (const l of treeNode(q[i]).links) if (l !== "core" && !dist.has(l)) { dist.set(l, d + 1); q.push(l); }
+    }
+    for (const n of TREE) {
+        const d = dist.get(n.id);
+        out.set(n.id, d === undefined || d > 2 ? "hidden" : d === 2 ? "fog" : "shown");
+    }
+    return out;
+}
+
+function stateOf(s: State, n: TreeNode): NodeState {
     if (hasNode(s, n.id)) return "owned";
     if (!nodeOpen(s, n)) return "locked";
     return s.ap >= n.cost ? "ready" : "open";
@@ -45,89 +81,269 @@ function totals(s: State): [string, string][] {
     return rows;
 }
 
+/** Effect text with its numbers picked out ("+20% Bytes" -> <b>+20%</b> Bytes). */
+function Fx({ text }: { text: string }) {
+    const parts = text.split(/([+-]?x?\d+(?:\.\d+)?\s?(?:%|s\b|h\b|AP\b)?|twice)/g);
+    return <>{parts.map((p, i) => (i % 2 ? <b key={i}>{p}</b> : p))}</>;
+}
+
+/** Name that decrypts in when the card changes node. Always settles on the real text. */
+function ScrambleName({ text, reduced }: { text: string; reduced: boolean }) {
+    const el = useRef<HTMLSpanElement>(null);
+    useEffect(() => {
+        const node = el.current;
+        if (!node) return;
+        node.textContent = text;
+        if (reduced) return;
+        const glyphs = "01<>/#_$%&*+=?";
+        let f = 0;
+        const total = 9;
+        const id = window.setInterval(() => {
+            f++;
+            const keep = Math.floor((f / total) * text.length);
+            node.textContent = text.slice(0, keep) + [...text.slice(keep)].map((c) => (c === " " ? " " : glyphs[(Math.random() * glyphs.length) | 0])).join("");
+            if (f >= total) { window.clearInterval(id); node.textContent = text; }
+        }, 28);
+        return () => { window.clearInterval(id); node.textContent = text; };
+    }, [text, reduced]);
+    return <span ref={el} aria-hidden="true">{text}</span>;
+}
+
+/* ---- backdrop: parallax layers that follow the camera. The art thread's TreeBackdrop uses the same handle. */
+export interface BackdropHandle {
+    move: (x: number, y: number, k: number) => void;
+    resize: (w: number, h: number) => void;
+    focus?: (branch: string | null) => void;
+}
+const DEPTHS = [0.06, 0.18, 0.4];
+const LocalBackdrop = forwardRef<BackdropHandle, { reduced: boolean }>(function LocalBackdrop({ reduced }, ref) {
+    const layers = useRef<(HTMLDivElement | null)[]>([]);
+    const size = useRef({ w: 0, h: 0 });
+    useImperativeHandle(ref, () => ({
+        move(x, y, k) {
+            const { w, h } = size.current;
+            layers.current.forEach((el, i) => {
+                if (!el) return;
+                const d = reduced ? 0 : DEPTHS[i];
+                // offset of the core from the screen centre, scaled down by depth; zoom nudges near layers a little
+                const ox = (x - w / 2) * d, oy = (y - h / 2) * d;
+                const s = 1 + (k - 1) * d * 0.5;
+                el.style.transform = `translate3d(${ox.toFixed(1)}px, ${oy.toFixed(1)}px, 0) scale(${s.toFixed(3)})`;
+            });
+        },
+        resize(w, h) { size.current = { w, h }; },
+        focus(b) {
+            const root = layers.current[0]?.parentElement;
+            if (root) root.style.setProperty("--fc", b ? BCOL[b] ?? "transparent" : "transparent");
+        },
+    }), [reduced]);
+    return (
+        <div className="nf-tm-bg" aria-hidden="true">
+            {DEPTHS.map((_, i) => <div key={i} className="nf-tm-bgl" data-l={i} ref={(el) => { layers.current[i] = el; }} />)}
+            <div className="nf-tm-bgv" />
+        </div>
+    );
+});
+
 export function TreeMenu({ s, reduced, onBuy, onRespec, onClose }: { s: State; reduced: boolean; onBuy: (id: string) => void; onRespec: () => number; onClose: () => void }) {
     const root = useRef<HTMLDivElement>(null);
     const view = useRef<HTMLDivElement>(null);
     const world = useRef<HTMLDivElement>(null);
-    const v = useRef({ x: 0, y: 0, k: 1 });
+    const card = useRef<HTMLElement>(null);
+    const lead = useRef<HTMLSpanElement>(null);
+    const bd = useRef<BackdropHandle>(null);
+    /** camera: the world point at the centre of the view (px at zoom 1, core = 0,0) and the zoom */
+    const cam = useRef({ cx: 0, cy: 0, k: 1 });
+    const glide = useRef(0);
+    const dims = useRef({ w: 800, h: 600 });
     const ptrs = useRef(new Map<number, { x: number; y: number }>());
     const gest = useRef({ total: 0, suppress: false, pinch: 0, mx: 0, my: 0 });
-    const animT = useRef<number | undefined>(undefined);
-    const [sel, setSel] = useState<string>(() => TREE.find((n) => stateOf(s, n) === "ready")?.id ?? "");
+    const hovT = useRef<number | undefined>(undefined);
+    const cardFor = useRef<string | null>(null);
+    const prevVis = useRef<Map<string, Vis> | null>(null);
+    const [sel, setSel] = useState<string>("");
     const [hov, setHov] = useState<string | null>(null);
+    const hovRef = useRef<string | null>(null);
+    hovRef.current = hov;
+    const lastPt = useRef({ x: -1, y: -1 });
     const [flash, setFlash] = useState<string | null>(null);
+    const [fresh, setFresh] = useState<Set<string>>(() => new Set());
     const [confirm, setConfirm] = useState(false);
     const [msg, setMsg] = useState("");
+    const [showTot, setShowTot] = useState(false);
 
-    const apply = useCallback((animate = false) => {
-        const w = world.current, r = root.current;
-        if (!w || !r) return;
-        const { x, y, k } = v.current;
-        if (animate && !reduced) {
-            w.dataset.anim = "";
-            window.clearTimeout(animT.current);
-            animT.current = window.setTimeout(() => delete w.dataset.anim, 420);
-        }
-        w.style.transform = `translate(${x}px, ${y}px) scale(${k})`;
-        r.style.setProperty("--px", `${x * 0.25}px`);
-        r.style.setProperty("--py", `${y * 0.25}px`);
-        const lod = k < 0.55 ? "far" : "near";
-        if (r.dataset.lod !== lod) r.dataset.lod = lod;
-    }, [reduced]);
+    const vis = useMemo(() => visMap(s), [s, s.tree.length]); // eslint-disable-line react-hooks/exhaustive-deps
+    const seen = (id: string) => id === "core" || (vis.get(id) ?? "hidden") !== "hidden";
 
-    const size = () => {
+    // world bounds of everything on screen, so the camera can't wander off into empty space
+    const bounds = useMemo(() => {
+        // all drawn nodes bound the camera; the readable ones (not fogged) are what Fit frames
+        const box = (keep: (id: string) => boolean) => {
+            let x0 = -U, x1 = U, y0 = -U, y1 = U;
+            for (const n of TREE) if (keep(n.id)) {
+                x0 = Math.min(x0, n.x * U); x1 = Math.max(x1, n.x * U);
+                y0 = Math.min(y0, n.y * U); y1 = Math.max(y1, n.y * U);
+            }
+            return { x0, x1, y0, y1 };
+        };
+        return { ...box(seen), fit: box((id) => vis.get(id) === "shown") };
+    }, [vis]); // eslint-disable-line react-hooks/exhaustive-deps
+    const bRef = useRef(bounds);
+    bRef.current = bounds;
+
+    const measure = () => {
         const b = view.current?.getBoundingClientRect();
-        return { w: b?.width ?? 800, h: b?.height ?? 600 };
+        dims.current = { w: b?.width || 800, h: b?.height || 600 };
+        bd.current?.resize(dims.current.w, dims.current.h);
+        return dims.current;
     };
-    const set = useCallback((x: number, y: number, k: number, animate = false) => {
-        const { w, h } = size();
-        k = clamp(k, KMIN, KMAX);
-        const lim = (R * U * k) * 0.9;
-        v.current = { x: clamp(x, w / 2 - lim, w / 2 + lim), y: clamp(y, h / 2 - lim, h / 2 + lim), k };
-        apply(animate);
-    }, [apply]);
-    const zoomAt = useCallback((cx: number, cy: number, f: number, animate = false) => {
-        const { x, y, k } = v.current;
-        const nk = clamp(k * f, KMIN, KMAX);
-        const r = nk / k;
-        set(cx - (cx - x) * r, cy - (cy - y) * r, nk, animate);
-    }, [set]);
-    const fit = useCallback((animate = true) => {
-        const { w, h } = size();
-        set(w / 2, h / 2, (Math.min(w, h) / SPAN) * 0.98, animate);
-    }, [set]);
-    const home = useCallback((animate = false) => {
-        const { w, h } = size();
-        set(w / 2, h / 2, clamp(Math.min(w, h) / (2 * 4.8 * U), 0.55, 1), animate);
-    }, [set]);
-    const centerOn = useCallback((n: TreeNode | null, animate = true) => {
-        const { w, h } = size();
-        const k = Math.max(v.current.k, 0.8);
-        // leave room for the side panel on a wide screen
-        const off = w >= 900 ? -170 : 0;
-        set(w / 2 + off - (n ? n.x * U : 0) * k, h / 2 - (n ? n.y * U : 0) * k - (w < 900 ? 60 : 0), k, animate);
-    }, [set]);
 
-    // first view: on the player's frontier if they own nodes, otherwise the core
+    /** Put the card next to whichever node it belongs to, in screen space (it does not scale with the world). */
+    const placeCard = useCallback(() => {
+        const c = card.current, ln = lead.current, id = cardFor.current;
+        if (!c || !ln) return;
+        if (!id) { c.style.visibility = "hidden"; ln.style.visibility = "hidden"; return; }
+        const n = id === "core" ? null : treeNode(id);
+        const { w, h } = dims.current;
+        const { cx, cy, k } = cam.current;
+        const top = 44; // the bar above the view
+        const sx = w / 2 + ((n ? n.x * U : 0) - cx) * k;
+        const sy = top + h / 2 + ((n ? n.y * U : 0) - cy) * k;
+        const r = ((n ? SZ[n.kind] : SZ.core) / 2) * k + 10;
+        const cw = c.offsetWidth, ch = c.offsetHeight;
+        const gap = 22;
+        let left: number, tp: number, side: "r" | "l" | "b" | "t";
+        if (sx + r + gap + cw <= w - 12) { side = "r"; left = sx + r + gap; tp = sy - Math.min(48, ch / 2); }
+        else if (sx - r - gap - cw >= 12) { side = "l"; left = sx - r - gap - cw; tp = sy - Math.min(48, ch / 2); }
+        else if (sy + r + gap + ch <= top + h - 8) { side = "b"; left = sx - cw / 2; tp = sy + r + gap; }
+        else { side = "t"; left = sx - cw / 2; tp = sy - r - gap - ch; }
+        left = clamp(left, 12, w - cw - 12);
+        tp = clamp(tp, top + 12, top + h - ch - 12);
+        c.style.transform = `translate3d(${Math.round(left)}px, ${Math.round(tp)}px, 0)`;
+        c.style.visibility = "visible";
+        c.dataset.side = side;
+        // leader line from the node's edge to the card
+        if (side === "r" || side === "l") {
+            const x0 = side === "r" ? sx + r - 10 : left + cw;
+            const x1 = side === "r" ? left : sx - r + 10;
+            const y = clamp(sy, tp + 10, tp + ch - 10);
+            ln.style.transform = `translate3d(${Math.round(Math.min(x0, x1))}px, ${Math.round(y)}px, 0)`;
+            ln.style.width = `${Math.max(0, Math.abs(x1 - x0))}px`;
+            ln.style.height = "2px";
+        } else {
+            const y0 = side === "b" ? sy + r - 10 : tp + ch;
+            const y1 = side === "b" ? tp : sy - r + 10;
+            const x = clamp(sx, left + 10, left + cw - 10);
+            ln.style.transform = `translate3d(${Math.round(x)}px, ${Math.round(Math.min(y0, y1))}px, 0)`;
+            ln.style.width = "2px";
+            ln.style.height = `${Math.max(0, Math.abs(y1 - y0))}px`;
+        }
+        ln.style.visibility = "visible";
+    }, []);
+
+    const apply = useCallback(() => {
+        const wEl = world.current, r = root.current;
+        if (!wEl || !r) return;
+        const { w, h } = dims.current;
+        const { cx, cy, k } = cam.current;
+        const x = w / 2 - cx * k, y = h / 2 - cy * k;
+        wEl.style.transform = `translate3d(${x.toFixed(2)}px, ${y.toFixed(2)}px, 0) scale(${k.toFixed(4)})`;
+        bd.current?.move(x, y, k);
+        const lod = k < 0.62 ? "far" : "near";
+        if (r.dataset.lod !== lod) r.dataset.lod = lod;
+        placeCard();
+    }, [placeCard]);
+
+    const limit = (cx: number, cy: number, k: number) => {
+        const b = bRef.current;
+        const pad = 1.6 * U;
+        k = clamp(k, KMIN, KMAX);
+        return { cx: clamp(cx, b.x0 - pad, b.x1 + pad), cy: clamp(cy, b.y0 - pad, b.y1 + pad), k };
+    };
+    const stop = () => { if (glide.current) cancelAnimationFrame(glide.current); glide.current = 0; };
+    const jump = useCallback((cx: number, cy: number, k: number) => {
+        stop();
+        cam.current = limit(cx, cy, k);
+        apply();
+    }, [apply]); // eslint-disable-line react-hooks/exhaustive-deps
+    /** Eased camera move. Zoom eases in log space so a zoom-in does not swing past the target. */
+    const flyTo = useCallback((cx: number, cy: number, k: number, ms = GLIDE_MS) => {
+        const to = limit(cx, cy, k);
+        if (reduced) return jump(to.cx, to.cy, to.k);
+        stop();
+        const from = { ...cam.current };
+        const t0 = performance.now();
+        const lk0 = Math.log(from.k), lk1 = Math.log(to.k);
+        const step = (t: number) => {
+            const p = easeInOut(clamp((t - t0) / ms, 0, 1));
+            cam.current = { cx: from.cx + (to.cx - from.cx) * p, cy: from.cy + (to.cy - from.cy) * p, k: Math.exp(lk0 + (lk1 - lk0) * p) };
+            apply();
+            glide.current = p < 1 ? requestAnimationFrame(step) : 0;
+        };
+        glide.current = requestAnimationFrame(step);
+    }, [apply, jump, reduced]); // eslint-disable-line react-hooks/exhaustive-deps
+
+    const zoomAt = useCallback((px: number, py: number, f: number, animate = false) => {
+        const { w, h } = dims.current;
+        const { cx, cy, k } = cam.current;
+        const nk = clamp(k * f, KMIN, KMAX);
+        const wx = cx + (px - w / 2) / k, wy = cy + (py - h / 2) / k;
+        const ncx = wx - (px - w / 2) / nk, ncy = wy - (py - h / 2) / nk;
+        if (animate) flyTo(ncx, ncy, nk, 260);
+        else jump(ncx, ncy, nk);
+    }, [flyTo, jump]);
+
+    /** Zoom to fit everything that is visible. */
+    const fit = useCallback((animate = true, maxK = 1.05) => {
+        const { w, h } = measure();
+        const b = bRef.current.fit;
+        const bw = b.x1 - b.x0 + 2.6 * U, bh = b.y1 - b.y0 + 2.6 * U;
+        const k = clamp(Math.min(w / bw, h / bh), KMIN, maxK);
+        const cx = (b.x0 + b.x1) / 2, cy = (b.y0 + b.y1) / 2;
+        if (animate) flyTo(cx, cy, k); else jump(cx, cy, k);
+    }, [flyTo, jump]);
+
+    /** Bring a node into focus: glide over, zoom in a little, and leave room for its card. */
+    const focusNode = useCallback((id: string) => {
+        const { w, h } = measure();
+        const n = id === "core" ? null : treeNode(id);
+        const nx = n ? n.x * U : 0, ny = n ? n.y * U : 0;
+        const k = clamp(Math.max(cam.current.k, w < 700 ? 0.78 : 1.0), KMIN, w < 700 ? 1.0 : 1.25);
+        // desktop: node a little left of centre so the card fits on its right; phone: node in the upper third, card below
+        const sx = w < 700 ? w / 2 : w * 0.4;
+        const sy = w < 700 ? h * 0.3 : h * 0.48;
+        flyTo(nx - (sx - w / 2) / k, ny - (sy - h / 2) / k, k);
+    }, [flyTo]);
+
+    // first view: fit what is visible (it starts small, so this lands close in). The menu can open while the page is
+    // still transformed by a transition, so watch the view's size and refit until the player touches the camera.
+    const touched = useRef(false);
     useEffect(() => {
-        const last = [...s.tree].reverse().map((id) => TREE.find((n) => n.id === id)).find(Boolean) ?? null;
-        // wait a frame: the body class that clears page transforms (below) has to be on before the view can be measured
-        const raf = requestAnimationFrame(() => {
-            home();
-            if (last) centerOn(last, false);
+        const el = view.current;
+        const raf = requestAnimationFrame(() => fit(false));
+        const ro = new ResizeObserver(() => {
+            measure();
+            if (touched.current) apply();
+            else fit(false);
         });
-        const onResize = () => apply();
-        window.addEventListener("resize", onResize);
-        return () => { cancelAnimationFrame(raf); window.removeEventListener("resize", onResize); window.clearTimeout(animT.current); };
+        if (el) ro.observe(el);
+        return () => { cancelAnimationFrame(raf); ro.disconnect(); stop(); window.clearTimeout(hovT.current); };
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     // modal behaviour: body class (lifts the board above the page), Escape, focus in and back out
+    const selRef = useRef(sel);
+    selRef.current = sel;
     useEffect(() => {
         const prev = document.activeElement as HTMLElement | null;
         document.body.classList.add("nf-win-open", "nf-tm-open");
         root.current?.querySelector<HTMLElement>(".nf-tm-x")?.focus();
-        const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") { e.stopPropagation(); onClose(); } };
+        const onKey = (e: KeyboardEvent) => {
+            if (e.key !== "Escape") return;
+            e.stopPropagation();
+            // first Escape lets go of the picked node, the second closes the tree
+            if (selRef.current) { setSel(""); setHov(null); } else onClose();
+        };
         window.addEventListener("keydown", onKey, true);
         return () => {
             window.removeEventListener("keydown", onKey, true);
@@ -142,6 +358,7 @@ export function TreeMenu({ s, reduced, onBuy, onRespec, onClose }: { s: State; r
         if (!el) return;
         const onWheel = (e: WheelEvent) => {
             e.preventDefault();
+            touched.current = true;
             const b = el.getBoundingClientRect();
             const dy = e.deltaMode === 1 ? e.deltaY * 16 : e.deltaY;
             zoomAt(e.clientX - b.left, e.clientY - b.top, Math.exp(-dy * (e.ctrlKey ? 0.01 : 0.0016)));
@@ -150,12 +367,32 @@ export function TreeMenu({ s, reduced, onBuy, onRespec, onClose }: { s: State; r
         return () => el.removeEventListener("wheel", onWheel);
     }, [zoomAt]);
 
+    // nodes that just came into view (or out of the fog) play a decrypt reveal
+    useEffect(() => {
+        const prev = prevVis.current;
+        prevVis.current = vis;
+        if (!prev) return;
+        const up = new Set<string>();
+        for (const [id, v] of vis) { const p = prev.get(id); if (p !== v && v !== "hidden") up.add(id); }
+        if (!up.size) return;
+        setFresh(up);
+        const t = window.setTimeout(() => setFresh(new Set()), 1100);
+        return () => window.clearTimeout(t);
+    }, [vis]);
+
+    const shown = hov ?? (sel || null);
+    cardFor.current = shown;
+    useLayoutEffect(() => { measure(); placeCard(); });
+    useEffect(() => { bd.current?.focus?.(shown && shown !== "core" ? treeNode(shown).branch : null); }, [shown]);
+
     // ---- pointers: one finger or the mouse pans, two fingers pinch
-    const pos = (e: React.PointerEvent) => {
+    const pos = (e: RPointerEvent) => {
         const b = view.current!.getBoundingClientRect();
         return { x: e.clientX - b.left, y: e.clientY - b.top };
     };
-    const down = (e: React.PointerEvent) => {
+    const down = (e: RPointerEvent) => {
+        stop();
+        touched.current = true;
         ptrs.current.set(e.pointerId, pos(e));
         if (ptrs.current.size === 1) { gest.current.total = 0; gest.current.suppress = false; }
         if (ptrs.current.size === 2) {
@@ -166,7 +403,7 @@ export function TreeMenu({ s, reduced, onBuy, onRespec, onClose }: { s: State; r
             gest.current.suppress = true;
         }
     };
-    const move = (e: React.PointerEvent) => {
+    const move = (e: RPointerEvent) => {
         const old = ptrs.current.get(e.pointerId);
         if (!old) return;
         const now = pos(e);
@@ -177,7 +414,8 @@ export function TreeMenu({ s, reduced, onBuy, onRespec, onClose }: { s: State; r
             const dist = Math.hypot(a.x - b.x, a.y - b.y);
             const mx = (a.x + b.x) / 2, my = (a.y + b.y) / 2;
             if (g.pinch > 0 && dist > 0) zoomAt(mx, my, dist / g.pinch);
-            set(v.current.x + (mx - g.mx), v.current.y + (my - g.my), v.current.k);
+            const k = cam.current.k;
+            jump(cam.current.cx - (mx - g.mx) / k, cam.current.cy - (my - g.my) / k, k);
             g.pinch = dist;
             g.mx = mx;
             g.my = my;
@@ -187,82 +425,151 @@ export function TreeMenu({ s, reduced, onBuy, onRespec, onClose }: { s: State; r
         g.total += Math.abs(dx) + Math.abs(dy);
         if (g.total > 6) {
             if (!g.suppress) { g.suppress = true; try { view.current?.setPointerCapture(e.pointerId); } catch { /* ignore */ } }
-            set(v.current.x + dx, v.current.y + dy, v.current.k);
+            const k = cam.current.k;
+            jump(cam.current.cx - dx / k, cam.current.cy - dy / k, k);
         }
     };
-    const up = (e: React.PointerEvent) => {
+    const up = (e: RPointerEvent) => {
         ptrs.current.delete(e.pointerId);
         if (ptrs.current.size < 2) gest.current.pinch = 0;
         if (ptrs.current.size === 0) window.setTimeout(() => { gest.current.suppress = false; }, 0);
     };
 
     const keys = (e: RKeyboardEvent) => {
+        touched.current = true;
         if (e.key === "Tab") {
-            const f = [...root.current!.querySelectorAll<HTMLElement>("button:not([disabled]), [tabindex='0']")];
+            const f = [...root.current!.querySelectorAll<HTMLElement>("button:not([disabled]), [tabindex='0']")].filter((el) => el.offsetParent !== null);
             const first = f[0], last = f[f.length - 1];
             if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
             else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
             return;
         }
-        const { w, h } = size();
-        const st = 90;
-        if (e.key === "ArrowLeft") set(v.current.x + st, v.current.y, v.current.k);
-        else if (e.key === "ArrowRight") set(v.current.x - st, v.current.y, v.current.k);
-        else if (e.key === "ArrowUp") set(v.current.x, v.current.y + st, v.current.k);
-        else if (e.key === "ArrowDown") set(v.current.x, v.current.y - st, v.current.k);
+        const { w, h } = dims.current;
+        const st = 90 / cam.current.k;
+        const { cx, cy, k } = cam.current;
+        if (e.key === "ArrowLeft") jump(cx - st, cy, k);
+        else if (e.key === "ArrowRight") jump(cx + st, cy, k);
+        else if (e.key === "ArrowUp") jump(cx, cy - st, k);
+        else if (e.key === "ArrowDown") jump(cx, cy + st, k);
         else if (e.key === "+" || e.key === "=") zoomAt(w / 2, h / 2, 1.25, true);
         else if (e.key === "-" || e.key === "_") zoomAt(w / 2, h / 2, 0.8, true);
         else if (e.key === "0") fit();
-        else if (e.key === "Home") centerOn(null);
+        else if (e.key === "Home") flyTo(0, 0, cam.current.k);
         else return;
         if ((e.target as HTMLElement).tagName !== "BUTTON" || e.key.startsWith("Arrow")) e.preventDefault();
     };
 
     const ensureVisible = (n: TreeNode) => {
-        const { w, h } = size();
-        const { x, y, k } = v.current;
-        const sx = x + n.x * U * k, sy = y + n.y * U * k;
-        if (sx < 60 || sx > w - 60 || sy < 60 || sy > h - 160) centerOn(n);
+        const { w, h } = dims.current;
+        const { cx, cy, k } = cam.current;
+        const sx = w / 2 + (n.x * U - cx) * k, sy = h / 2 + (n.y * U - cy) * k;
+        if (sx < 80 || sx > w - 80 || sy < 80 || sy > h - 120) focusNode(n.id);
+    };
+
+    // hover shows the card, with a short grace period so the pointer can travel from the node onto the card
+    const hoverOn = (id: string) => {
+        window.clearTimeout(hovT.current);
+        if (glide.current || ptrs.current.size) return;
+        if (hovRef.current !== id) setHov(id);
+    };
+    const hoverOff = () => { window.clearTimeout(hovT.current); hovT.current = window.setTimeout(() => setHov(null), 160); };
+
+    // 3D tilt toward the pointer, written straight to the node (no React state per move)
+    const tilt = (e: RPointerEvent<HTMLElement>, id: string) => {
+        if (e.pointerType !== "mouse") return;
+        const moved = Math.abs(e.clientX - lastPt.current.x) + Math.abs(e.clientY - lastPt.current.y) > 1;
+        lastPt.current = { x: e.clientX, y: e.clientY };
+        if (moved) hoverOn(id);
+        if (reduced) return;
+        const el = e.currentTarget, b = el.getBoundingClientRect();
+        const px = (e.clientX - b.left) / b.width - 0.5, py = (e.clientY - b.top) / b.height - 0.5;
+        el.style.setProperty("--ry", `${(px * 26).toFixed(1)}deg`);
+        el.style.setProperty("--rx", `${(-py * 26).toFixed(1)}deg`);
+    };
+    const untilt = (e: RPointerEvent<HTMLElement>) => { e.currentTarget.style.removeProperty("--rx"); e.currentTarget.style.removeProperty("--ry"); };
+
+    const pick = (id: string) => {
+        if (sel === id) return;
+        setSel(id);
+        setHov(null);
+        focusNode(id);
     };
 
     const owned = s.tree.length;
-    const nodes = useMemo(() => TREE, []);
+    const selNode = sel && sel !== "core" ? treeNode(sel) : null;
+    const near = useMemo(() => new Set(selNode ? [selNode.id, ...selNode.links] : sel === "core" ? ["core", ...TREE.filter((n) => n.links.includes("core")).map((n) => n.id)] : []), [sel]); // eslint-disable-line react-hooks/exhaustive-deps
+
+    // links: dark bed for depth, a row of square beads, and flowing packets along owned paths (one path per section)
     const links = useMemo(() => {
-        const out: { a: string; b: string; ax: number; ay: number; bx: number; by: number; col: string }[] = [];
+        const out: { key: string; ax: number; ay: number; bx: number; by: number; col: string; st: "on" | "edge" | "off"; fog: boolean; near: boolean }[] = [];
+        const have = (id: string) => id === "core" || s.tree.includes(id);
         for (const n of TREE) for (const l of n.links) {
-            if (l === "core") out.push({ a: "core", b: n.id, ax: 0, ay: 0, bx: n.x * U, by: n.y * U, col: BCOL[n.branch] });
-            else if (n.id < l) { const m = treeNode(l); out.push({ a: n.id, b: l, ax: n.x * U, ay: n.y * U, bx: m.x * U, by: m.y * U, col: BCOL[n.branch] }); }
+            if (l !== "core" && n.id > l) continue;
+            const m = l === "core" ? null : treeNode(l);
+            if (!seen(n.id) || (m && !seen(m.id))) continue;
+            // draw from the inner end outward, so packets flow away from the core
+            let a = { x: m ? m.x * U : 0, y: m ? m.y * U : 0, id: l }, b = { x: n.x * U, y: n.y * U, id: n.id };
+            if (Math.hypot(a.x, a.y) > Math.hypot(b.x, b.y)) [a, b] = [b, a];
+            const ha = have(a.id), hb = have(b.id);
+            out.push({
+                key: a.id + "-" + b.id, ax: a.x, ay: a.y, bx: b.x, by: b.y, col: BCOL[n.branch],
+                st: ha && hb ? "on" : ha || hb ? "edge" : "off",
+                fog: vis.get(n.id) === "fog" || (!!m && vis.get(m.id) === "fog"),
+                near: !!sel && (near.has(a.id) && near.has(b.id)),
+            });
         }
         return out;
-    }, []);
-    const have = (id: string) => id === "core" || s.tree.includes(id);
+    }, [s.tree.length, vis, sel, near]); // eslint-disable-line react-hooks/exhaustive-deps
+    const packets = useMemo(() => {
+        const by: Record<string, string> = {};
+        for (const l of links) if (l.st === "on") by[l.col] = (by[l.col] ?? "") + `M${l.ax.toFixed(1)} ${l.ay.toFixed(1)}L${l.bx.toFixed(1)} ${l.by.toFixed(1)}`;
+        return Object.entries(by);
+    }, [links]);
 
-    const shown = hov ?? sel;
-    const node = shown && shown !== "core" ? treeNode(shown) : null;
-    const nst = node ? stateOf(s, node) : null;
+    // section labels sit just past the furthest visible node of each section
+    const labels = useMemo(() => BRANCHES.map((b) => {
+        const mine = TREE.filter((n) => n.branch === b.id);
+        const ax = mine.reduce((a, n) => a + n.x, 0), ay = mine.reduce((a, n) => a + n.y, 0);
+        const th = Math.atan2(ay, ax);
+        const far = mine.filter((n) => seen(n.id)).reduce((m, n) => Math.max(m, Math.hypot(n.x, n.y)), 0);
+        return { b, th, r: far ? far + 0.85 : 0, got: mine.filter((n) => hasNode(s, n.id)).length, total: mine.length };
+    }), [vis, s.tree.length]); // eslint-disable-line react-hooks/exhaustive-deps
+
     const rows = totals(s);
     const spent = s.tree.reduce((a, id) => a + (TREE.find((n) => n.id === id)?.cost ?? 0), 0);
+    const ready = TREE.filter((n) => seen(n.id) && stateOf(s, n) === "ready").length;
 
     const buy = (id: string) => {
         onBuy(id);
         setFlash(id);
-        window.setTimeout(() => setFlash((f) => (f === id ? null : f)), 700);
+        window.setTimeout(() => setFlash((f) => (f === id ? null : f)), 900);
     };
     const respec = () => {
         if (!s.tree.length) return;
         if (!confirm) { setConfirm(true); window.setTimeout(() => setConfirm(false), 4000); return; }
         const back = onRespec();
         setConfirm(false);
+        setSel("");
         setMsg(`Tree cleared. ${fmt(back)} AP refunded.`);
         window.setTimeout(() => setMsg(""), 4000);
+        requestAnimationFrame(() => fit());
     };
 
-    return (
-        <div className="nf-tm" ref={root} role="dialog" aria-modal="true" aria-label="Prestige tree" data-lod="near" onKeyDown={keys}>
-            <div className="nf-tm-bg" aria-hidden="true" />
+    // the card's content
+    const cn = shown && shown !== "core" ? (treeNode(shown) as Extra) : null;
+    const cvis = cn ? vis.get(cn.id) : null;
+    const cst = cn ? stateOf(s, cn) : null;
+    const fogCard = cvis === "fog";
+    const pinned = !!shown && shown === sel;
+
+    // portaled to <body> so no page transition or scroll reveal transform can shift the fixed layer
+    return createPortal(
+        <div className="ctos nf-tm-host">
+        <div className="nf-tm" ref={root} role="dialog" aria-modal="true" aria-label="Prestige tree" data-lod="near" data-focus={sel ? "" : undefined} onKeyDown={keys}>
+            <LocalBackdrop ref={bd} reduced={reduced} />
             <header className="nf-tm-bar">
                 <span className="nf-tm-t">naOS // node.farm // prestige tree</span>
-                <span className="nf-tm-ap" aria-live="polite"><b>{fmt(s.ap)}</b> AP<small>{owned}/{TREE.length} nodes</small></span>
+                <span className="nf-tm-ap" aria-live="polite"><b>{fmt(s.ap)}</b> AP<small>{owned}/{TREE.length} nodes{ready ? ` // ${ready} ready` : ""}</small></span>
                 <button type="button" className="nf-tm-b" data-danger={confirm ? "" : undefined} disabled={!owned} onClick={respec} title="Take every node back and refund its AP. Free.">
                     {confirm ? `Confirm: refund ${fmt(spent)} AP` : "Respec"}
                 </button>
@@ -273,40 +580,52 @@ export function TreeMenu({ s, reduced, onBuy, onRespec, onClose }: { s: State; r
                 ref={view}
                 tabIndex={0}
                 role="group"
-                aria-label="Prestige tree map. Drag to pan, scroll or pinch to zoom, arrow keys pan, plus and minus zoom, 0 fits the whole tree."
+                aria-label="Prestige tree map. Drag to pan, scroll or pinch to zoom, arrow keys pan, plus and minus zoom, 0 fits the tree."
                 onPointerDown={down}
                 onPointerMove={move}
                 onPointerUp={up}
                 onPointerCancel={up}
                 onClickCapture={(e) => { if (gest.current.suppress) { e.stopPropagation(); e.preventDefault(); } }}
+                onClick={(e) => { if (e.target === view.current || e.target === world.current) { setSel(""); setHov(null); } }}
             >
                 <div className="nf-tm-world" ref={world}>
-                    {BRANCHES.map((b, i) => (
-                        <div key={b.id} className="nf-tm-wedge" data-arm={b.id} style={{ ["--c" as string]: b.color, ["--from" as string]: `${i * 72 - 36}deg`, width: SPAN, height: SPAN } as CSSProperties} aria-hidden="true" />
-                    ))}
-                    {[2.2, 4.4, 6.0].map((r) => <i key={r} className="nf-tm-ring" aria-hidden="true" style={{ width: r * 2 * U, height: r * 2 * U }} />)}
-                    <svg className="nf-tm-links" width={SPAN} height={SPAN} viewBox={`${-SPAN / 2} ${-SPAN / 2} ${SPAN} ${SPAN}`} aria-hidden="true">
-                        {links.map((l) => {
-                            const a = have(l.a), b = have(l.b);
-                            const st = a && b ? "on" : a || b ? "edge" : "off";
-                            return <line key={l.a + l.b} x1={l.ax} y1={l.ay} x2={l.bx} y2={l.by} data-st={st} style={{ ["--c" as string]: l.col }} />;
-                        })}
+                    <svg className="nf-tm-links" width={2} height={2} aria-hidden="true">
+                        {links.map((l) => <line key={"b" + l.key} className="nf-tl-bed" x1={l.ax} y1={l.ay} x2={l.bx} y2={l.by} data-st={l.st} data-fog={l.fog ? "" : undefined} style={{ ["--c" as string]: l.col } as CSSProperties} />)}
+                        {links.map((l) => <line key={l.key} className="nf-tl" x1={l.ax} y1={l.ay} x2={l.bx} y2={l.by} data-st={l.st} data-fog={l.fog ? "" : undefined} data-near={l.near ? "" : undefined} style={{ ["--c" as string]: l.col } as CSSProperties} />)}
+                        {!reduced && packets.map(([col, d]) => <path key={col} className="nf-tl-pk" d={d} style={{ ["--c" as string]: col } as CSSProperties} />)}
                     </svg>
-                    {BRANCHES.map((b, i) => {
-                        const th = -Math.PI / 2 + (i * 2 * Math.PI) / BRANCHES.length;
-                        const mine = TREE.filter((n) => n.branch === b.id);
-                        return (
-                            <div key={b.id} className="nf-tm-sec" style={{ left: Math.cos(th) * 9.15 * U, top: Math.sin(th) * 9.15 * U, ["--c" as string]: b.color } as CSSProperties}>
-                                <b>{b.name}</b>
-                                <small>{mine.filter((n) => hasNode(s, n.id)).length}/{mine.length} // {b.blurb}</small>
-                            </div>
-                        );
-                    })}
-                    <button type="button" className="nf-tn nf-tn-core" data-kind="core" data-st="owned" data-sel={sel === "core" ? "" : undefined} aria-label="Core. Every section starts here." style={{ ["--col" as string]: 4, ["--row" as string]: 7 } as CSSProperties} onClick={() => setSel("core")} onPointerEnter={(e) => { if (e.pointerType === "mouse") setHov("core"); }} onPointerLeave={() => setHov(null)}>
-                        <i className="nf-tn-ic" /><span className="nf-tn-l">core</span>
+                    {labels.map(({ b, th, r, got, total }) => r > 0 && (
+                        <div key={b.id} className="nf-tm-sec" data-side={Math.cos(th) > 0.35 ? "r" : Math.cos(th) < -0.35 ? "l" : "c"} style={{ left: Math.cos(th) * r * U, top: Math.sin(th) * r * U, ["--c" as string]: b.color } as CSSProperties}>
+                            <b>{b.name}</b>
+                            <small>{got}/{total} // {b.blurb}</small>
+                        </div>
+                    ))}
+                    <button
+                        type="button"
+                        className="nf-tn nf-tn-core"
+                        data-kind="core"
+                        data-st="owned"
+                        data-sel={sel === "core" ? "" : undefined}
+                        data-dim={sel && !near.has("core") ? "" : undefined}
+                        aria-label="Core. Every section starts here."
+                        style={{ ["--sz" as string]: `${SZ.core}px`, ["--c" as string]: "#e8f6ff", ["--col" as string]: 4, ["--row" as string]: 7 } as CSSProperties}
+                        onClick={() => pick("core")}
+                        
+                        onPointerLeave={(e) => { hoverOff(); untilt(e); }}
+                        onPointerMove={(e) => tilt(e, "core")}
+                        onFocus={() => setHov("core")}
+                        onBlur={() => setHov(null)}
+                    >
+                        <span className="nf-tn-shadow" />
+                        <span className="nf-tn-halo" />
+                        <span className="nf-tn-body"><span className="nf-tn-face"><i className="nf-tn-ic" /></span></span>
+                        <span className="nf-tn-l">core</span>
                     </button>
-                    {nodes.map((n) => {
+                    {TREE.map((n) => {
+                        const v = vis.get(n.id) ?? "hidden";
+                        if (v === "hidden") return null;
                         const st = stateOf(s, n);
+                        const fog = v === "fog";
                         return (
                             <button
                                 key={n.id}
@@ -314,59 +633,104 @@ export function TreeMenu({ s, reduced, onBuy, onRespec, onClose }: { s: State; r
                                 className="nf-tn"
                                 data-kind={n.kind}
                                 data-st={st}
+                                data-vis={v}
                                 data-sel={sel === n.id ? "" : undefined}
+                                data-dim={sel && !near.has(n.id) ? "" : undefined}
                                 data-flash={flash === n.id ? "" : undefined}
-                                aria-label={`${n.name}, ${BNAME[n.branch]}, ${KIND[n.kind].toLowerCase()}, ${st === "owned" ? "owned" : st === "locked" ? "locked" : `${n.cost} AP`}. ${n.blurb}`}
+                                data-new={fresh.has(n.id) ? "" : undefined}
+                                aria-label={fog ? `Encrypted ${KIND[n.kind].toLowerCase()} node in ${BNAME[n.branch]}.` : `${n.name}, ${BNAME[n.branch]}, ${KIND[n.kind].toLowerCase()}, ${st === "owned" ? "owned" : st === "locked" ? "locked" : `${n.cost} AP`}. ${n.blurb}`}
                                 aria-pressed={sel === n.id}
-                                style={{ left: n.x * U, top: n.y * U, ["--c" as string]: BCOL[n.branch], ["--col" as string]: n.ix % 8, ["--row" as string]: Math.floor(n.ix / 8) } as CSSProperties}
-                                onClick={() => setSel(n.id)}
-                                onPointerEnter={(e) => { if (e.pointerType === "mouse") setHov(n.id); }}
-                                onPointerLeave={() => setHov(null)}
-                                onFocus={() => ensureVisible(n)}
+                                style={{ left: n.x * U, top: n.y * U, ["--sz" as string]: `${SZ[n.kind]}px`, ["--c" as string]: BCOL[n.branch], ["--col" as string]: n.ix % 8, ["--row" as string]: Math.floor(n.ix / 8) } as CSSProperties}
+                                onClick={() => pick(n.id)}
+                                
+                                onPointerLeave={(e) => { hoverOff(); untilt(e); }}
+                                onPointerMove={(e) => tilt(e, n.id)}
+                                onFocus={() => { setHov(n.id); ensureVisible(n); }}
+                                onBlur={() => setHov(null)}
                             >
-                                <i className="nf-tn-ic" />
-                                <span className="nf-tn-l">{n.name}{st === "owned" ? "" : ` · ${n.cost}`}</span>
+                                <span className="nf-tn-shadow" />
+                                {n.kind === "keystone" && <span className="nf-tn-halo" />}
+                                <span className="nf-tn-body">
+                                    <span className="nf-tn-face">{fog ? <i className="nf-tn-q">?</i> : <i className="nf-tn-ic" />}</span>
+                                </span>
+                                <span className="nf-tn-l">{fog ? "encrypted" : n.name}</span>
+                                {!fog && st !== "owned" && <span className="nf-tn-cost">{n.cost} AP</span>}
                             </button>
                         );
                     })}
                 </div>
             </div>
             <span className="nf-tm-zoom" role="group" aria-label="Zoom">
-                <button type="button" className="nf-tm-b sq" aria-label="Zoom out" onClick={() => { const { w, h } = size(); zoomAt(w / 2, h / 2, 0.75, true); }}>-</button>
+                <button type="button" className="nf-tm-b sq" aria-label="Zoom in" onClick={() => { const { w, h } = dims.current; zoomAt(w / 2, h / 2, 1.33, true); }}>+</button>
                 <button type="button" className="nf-tm-b" onClick={() => fit()}>Fit</button>
-                <button type="button" className="nf-tm-b sq" aria-label="Zoom in" onClick={() => { const { w, h } = size(); zoomAt(w / 2, h / 2, 1.33, true); }}>+</button>
+                <button type="button" className="nf-tm-b sq" aria-label="Zoom out" onClick={() => { const { w, h } = dims.current; zoomAt(w / 2, h / 2, 0.75, true); }}>-</button>
             </span>
-            <aside className="nf-tm-card" data-st={nst ?? "core"} style={{ ["--c" as string]: node ? BCOL[node.branch] : "#ffffff" } as CSSProperties} aria-live="polite">
-                {node ? (
+            <span className="nf-tm-lead" ref={lead} aria-hidden="true" style={{ ["--c" as string]: cn ? BCOL[cn.branch] : "#e8f6ff" } as CSSProperties} />
+            <aside
+                className="nf-tm-card"
+                ref={card}
+                key={shown ?? "none"}
+                data-st={fogCard ? "fog" : cst ?? "core"}
+                data-pinned={pinned ? "" : undefined}
+                data-kind={cn?.kind ?? "core"}
+                style={{ ["--c" as string]: cn ? BCOL[cn.branch] : "#e8f6ff", visibility: "hidden" } as CSSProperties}
+                aria-live="polite"
+                onPointerEnter={() => window.clearTimeout(hovT.current)}
+                onPointerLeave={() => { if (hov && hov !== sel) hoverOff(); }}
+            >
+                {shown && (cn ? (
                     <>
-                        <span className="nf-tm-k">{BNAME[node.branch]} // {KIND[node.kind]} // {nst === "owned" ? "OWNED" : nst === "locked" ? "LOCKED" : "AVAILABLE"}</span>
-                        <b className="nf-tm-n">{node.name}</b>
-                        <p>{node.blurb}</p>
-                        {nst === "locked" && (
-                            <p className="nf-tm-need">Buy a node next to it first: {node.links.filter((l) => l !== "core").map((l) => treeNode(l).name).join(", ")}.</p>
+                        <span className="nf-tm-k">
+                            <span>{BNAME[cn.branch]} // {KIND[cn.kind]}</span>
+                            <span className="nf-tm-st">{fogCard ? "ENCRYPTED" : cst === "owned" ? "OWNED" : cst === "locked" ? "LOCKED" : cst === "ready" ? "READY" : "AVAILABLE"}</span>
+                        </span>
+                        <b className="nf-tm-n">{fogCard ? <ScrambleName text="????????" reduced={reduced} /> : <ScrambleName text={cn.name} reduced={reduced} />}<span className="sr-only">{fogCard ? "Encrypted node" : cn.name}</span></b>
+                        {fogCard ? (
+                            <p className="nf-tm-fx">Signal too weak to read. Buy a node next to it to decrypt this one.</p>
+                        ) : (
+                            <>
+                                <p className="nf-tm-fx"><Fx text={cn.blurb} /></p>
+                                {cn.flavor && <p className="nf-tm-flv">&ldquo;{cn.flavor}&rdquo;</p>}
+                            </>
                         )}
-                        <div className="nf-tm-a">
-                            <small>{node.cost} AP · you have {fmt(s.ap)}</small>
-                            <button type="button" className="nf-mini" disabled={nst !== "ready"} onClick={() => buy(node.id)}>
-                                {nst === "owned" ? "Owned" : nst === "locked" ? "Locked" : s.ap < node.cost ? `Need ${node.cost - s.ap} more` : `Buy · ${node.cost} AP`}
-                            </button>
-                        </div>
+                        {!fogCard && cst === "locked" && (
+                            <p className="nf-tm-need">Needs a neighbour: {cn.links.filter((l) => l !== "core" && seen(l) && vis.get(l) !== "fog").map((l) => treeNode(l).name).join(", ") || "decrypt the path first"}.</p>
+                        )}
+                        {!fogCard && (
+                            <div className="nf-tm-a">
+                                <span className="nf-tm-cost"><b>{cst === "owned" ? "Owned" : `${cn.cost} AP`}</b><small>{cst === "owned" ? "kept through Ascend" : `you have ${fmt(s.ap)}`}</small></span>
+                                {cst !== "owned" && (
+                                    <button type="button" className="nf-tm-buy" disabled={cst !== "ready"} onClick={() => buy(cn.id)}>
+                                        {cst === "locked" ? "Locked" : cst === "open" ? `Need ${fmt(cn.cost - s.ap)} more` : "Install"}
+                                    </button>
+                                )}
+                            </div>
+                        )}
                     </>
                 ) : (
                     <>
-                        <span className="nf-tm-k">{shown === "core" ? "CORE // FREE" : "PRESTIGE TREE"}</span>
-                        <b className="nf-tm-n">{shown === "core" ? "The core" : "Pick a node"}</b>
-                        <p>{shown === "core" ? "Every section starts from here. A node opens once it touches the core or a node you own." : "Tap or hover a node to read it. Drag to pan, pinch or scroll to zoom. Nodes next to what you own glow when you can afford them. Respec is free and refunds every AP."}</p>
+                        <span className="nf-tm-k"><span>CORE // ROOT</span><span className="nf-tm-st">ONLINE</span></span>
+                        <b className="nf-tm-n"><ScrambleName text="The core" reduced={reduced} /><span className="sr-only">The core</span></b>
+                        <p className="nf-tm-fx">Every section grows out of here. A node opens once it touches the core or a node you own, and the next ring decrypts as you buy toward it. Respec is free and refunds every AP.</p>
                     </>
-                )}
+                ))}
                 {msg && <p className="nf-tm-msg" role="status">{msg}</p>}
             </aside>
+            {!sel && !hov && (
+                <p className="nf-tm-hint" aria-hidden="true">{ready ? `${ready} node${ready > 1 ? "s" : ""} ready to install // tap one to read it` : "tap a node to read it // drag to pan // pinch or scroll to zoom"}</p>
+            )}
+            {msg && !shown && <p className="nf-tm-hint" role="status">{msg}</p>}
             {rows.length > 0 && (
-                <dl className="nf-tm-tot" aria-label="What the tree gives you">
-                    <dt className="nf-tm-th">Tree gives</dt><dd className="nf-tm-th" />
-                    {rows.map(([k, val]) => <div key={k}><dt>{k}</dt><dd>{val}</dd></div>)}
-                </dl>
+                <>
+                    <button type="button" className="nf-tm-b nf-tm-totb" aria-expanded={showTot} onClick={() => setShowTot((v) => !v)}>Tree gives</button>
+                    <dl className="nf-tm-tot" data-open={showTot ? "" : undefined} aria-label="What the tree gives you">
+                        <dt className="nf-tm-th">Tree gives</dt><dd className="nf-tm-th" />
+                        {rows.map(([k, val]) => <div key={k}><dt>{k}</dt><dd>{val}</dd></div>)}
+                    </dl>
+                </>
             )}
         </div>
+        </div>,
+        document.body,
     );
 }
