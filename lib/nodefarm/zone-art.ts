@@ -4,7 +4,7 @@
 import { STATS, TIERS, amount, button, type ButtonStat, type State, type StatId } from "./engine";
 
 /** Zones that have a sheet at /naos/nodefarm/zone-<id>.webp. Art lanes add their ids here. */
-export const ZONE_ART: readonly StatId[] = ["bytes", "silicon", "quartz", "aether", "runes"];
+export const ZONE_ART: readonly StatId[] = ["bytes", "silicon", "quartz", "aether", "runes", "starglass", "voidsteel", "chrono"];
 
 export const ART = { W: 288, H: 96, STAGES: 8, FRAMES: 6, FPS: 6 } as const;
 export const MAX_STAGE = ART.STAGES - 1;
