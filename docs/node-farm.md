@@ -228,3 +228,17 @@ Checks: /mnt/project-files/portfolio/node-farm-refresh/ (`checks.mjs` interactio
 After regenerating any Node Farm art run `node scripts/nodefarm/stamp-art.mjs` (it rewrites the stamps in app/camino/*.css
 and lib/nodefarm/art-version.ts; build code URLs with `nfArt(file)`). `npm run build` runs it with `--check` first and
 fails if a stamp is stale or if the icon/tier sheets don't match ORDER/TIER_ROWS in components/nodefarm/icon.tsx and the CSS sizes.
+
+## Handover (the reset past Ascend), 2026-11-12
+The second prestige layer. Built on the recommended picks while Nate's taste cards (name, what it wipes, what Keys buy) were open.
+- Opens once Origin is producing (`handOpen`: `HAND_TUNE.needProd` Origin producers). The window (key H, rail and phone tab, `components/nodefarm/handover.tsx`, styles `app/camino/nodefarm-handover.css`, classes `nf-hx*`) shows from the moment the Root Chamber decrypts (`handSeen`).
+- `handover(s, proto, note, proto2)` wipes the run, AP, perks, the prestige tree (ranks too), Drones, Mounted drives and the lab's Intel, stock, queue and buffs. It keeps goals, secrets, logs, lifetime stats (so the quarter-unlock after a first Ascend still applies), lab research, Keys, Firmware and the notes. Hold 1.6 s to confirm; a screen-reader click asks twice. A backup of the save is kept first ("before Handover" in Menu).
+- Keys = `keysBase` + tree nodes and ranks / 6 + sqrt(log10 Origin), times Keysmith. A whole tree pays about 13 to 20.
+- Firmware: 18 nodes in three arms (Boot, Memory, Relay) on the lab tree's layout, rotated. Data `FW_ARMS`, effects `handFx` (cached per array), prices `HAND_TUNE.nodeCost` (2 to 12 Keys). Respec is free. Shown by the shared `TreeMenu` with `fwModel(s)` in the green phosphor `root` theme (backdrop `components/nodefarm/fw-backdrop.tsx`); key K opens it, as does the window's gateway.
+- Protocols (`PROTOS`): one per cycle, chosen at the Handover, named after the old operators: Wren (Multiplier buttons x3, Reboots x2), Tamsin (Intel x3, goals x2), Osk (Drones x3 speed, half price), Vael (events twice as often, each win pays 2 min of production). `protoK` is 1 for the running one and 0.5 for the Dual boot one. Operator's desk lets you switch any time.
+- Hooks in the engine: `derive` (Lineage, Tamsin, Wren, Hot standby), `isUnlocked` via `unlockNeed` (Fast path, Root path), `hasFeature` (Preinstalled), `droneRate`/`droneCost` (Osk), `eventHaste`/`breach` (Vael), `ascendNeed` (Short fuse; every "400 Aether" in the UI reads it), `ascend` (Lab image, Drone RAM, `bootKit`), `offline` (Hot standby), `parseSave` (`parseHand`; old saves get a fresh one).
+- `derive` now caps Bytes/s and every rate at `CAP`, so a runaway late game can't write Infinity (null) into the save.
+- Pacing (sim, `NF_HAND=8 NF_NODRONES=1 NF_ASC_GAP=1`): first Handover 44 h, then cycles of 20, 13.5, 6.4, 3, 3, 2 and 1 h; all Firmware after the 6th Handover (~90 h). `NF_PROTO` picks the bot's protocol.
+- Art: `scripts/naos-art/nodefarm-handover-art.py` (fw-bg-0/2, fw-sec-*, fw-core, scene-handover with 4 frames); sprites in `scripts/naos-art/nodefarm_fw_motifs.py` (appended to the tree sprite sheets so old rows never move). Run the stamper after either.
+- Records "Handover" section, console `nf handover`, guide steps `flash-fw` and `handover`, admin Run: Force Handover, +20 Keys, All Firmware.
+- Checks: /mnt/project-files/portfolio/node-farm-handover/hand.mjs (`node hand.mjs <repo> <base> <outdir>`).

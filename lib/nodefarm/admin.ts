@@ -3,7 +3,7 @@
 // components/nodefarm/admin.tsx. Easy to remove: delete this file, admin.tsx, nodefarm-admin.css, and the few
 // `admin` lines in node-farm.tsx, events.tsx and components/cm/console.tsx.
 import {
-    GOALS, LAB, LAB_TUNE, MATS, PAYLOADS, PERKS, SECRETS, STATS, TIERS, TREE, TREE_FULL, TUNE, ascend, apOnAscend, derive, droneMax, exportSave, freshLab, fullTreeIds, parseSave, tick, treeFx, treeSpent, unlock,
+    FW, handover, GOALS, LAB, LAB_TUNE, MATS, PAYLOADS, PERKS, SECRETS, STATS, TIERS, TREE, TREE_FULL, TUNE, ascend, ascendNeed, apOnAscend, derive, droneMax, exportSave, freshLab, fullTreeIds, parseSave, tick, treeFx, treeSpent, unlock,
     type MatId, type PerkDef, type State, type StatId,
 } from "./engine";
 import { LOGS } from "./story";
@@ -176,9 +176,19 @@ export function skipTime(s: State, secs: number): number {
 
 /** Ascend now even if there is not enough Aether (adds just enough first). Returns the AP gained. */
 export function forceAscend(s: State): number {
-    if (apOnAscend(s) < 1) s.aether = Math.max(s.aether, TUNE.ascendAether);
+    if (apOnAscend(s) < 1) s.aether = Math.max(s.aether, ascendNeed(s));
     return ascend(s);
 }
+
+/** Hand over now even before node zero (gives one Origin producer first). Returns the Keys gained. */
+export function forceHandover(s: State): number {
+    if (s.prod.origin < 1) { s.prod.origin = 1; s.origin = Math.max(s.origin, 1); }
+    return handover(s, s.hand.proto ?? "wren", "", s.hand.proto2);
+}
+/** Add Keys. */
+export function addKeys(s: State, n: number) { s.hand.keys += n; s.hand.keysTotal += n; }
+/** Flash every Firmware node (no Keys spent). */
+export function ownAllFw(s: State) { s.hand.fw = FW.map((n) => n.id); }
 
 /** Make the run look like it is in era `n`: open every material up to its first stat and empty the ones after. */
 export function jumpEra(s: State, n: number) {
