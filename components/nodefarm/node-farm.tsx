@@ -46,6 +46,8 @@ import { isAdmin, setAdmin } from "@/lib/nodefarm/admin";
 import { adminFlags, buyDroneNode, buyMod, droneNode, masteryRanks, MODS, respecDrones, setPost } from "@/lib/nodefarm/engine";
 import { DRONE_NAMES } from "@/lib/nodefarm/guide";
 import { codeReveal, cxClear } from "@/lib/nodefarm/cx";
+import { ZoneEventCard } from "./zone-event";
+import { zeChoose, zoneEvDef, zoneLabel, type ZeChoice } from "@/lib/nodefarm/zoneevents";
 
 const KEY = "nf-save-v1";
 const EV_KEY = "nf-events-v1"; // "off" when quick-time events are switched off (per device)
@@ -103,6 +105,10 @@ export function NodeFarm() {
     const closeDrones = useCallback(() => setDroneTree(false), []);
     /** mastery ranks last seen, so a rank up gets one feed line and a banner */
     const rankPrev = useRef<{ s: State | null; n: number }>({ s: null, n: 0 });
+    /** zone events: the one announced by the centered card, and the last event id this screen has seen (for the feed) */
+    const [zeCard, setZeCard] = useState<number | null>(null);
+    const closeZeCard = useCallback(() => setZeCard(null), []);
+    const zeSeen = useRef<{ s: State | null; n: number }>({ s: null, n: 0 });
     const labPrev = useRef<{ s: State | null; seen: boolean; compiled: number }>({ s: null, seen: false, compiled: 0 });
     // stable on purpose: the tree's modal effect re-runs whenever this changes, and this component re-renders ten times a second
     const closeTree = useCallback(() => setTreeOpen(false), []);
@@ -486,6 +492,19 @@ export function NodeFarm() {
                     juice.emit({ t: "milestone", title: "Zone mastery up", sub: `Your posted Drones earned a rank. ${rn} ranks so far; spend the Core in the drone tree.` });
                 }
                 rankPrev.current = { s, n: rn };
+                // zone events: a new one gets a feed line and the centered card (only while this save is loaded and the tab is showing)
+                const zs = zeSeen.current;
+                const zn = s.ze?.seen ?? 0;
+                if (zs.s === s && zn > zs.n && s.ze) {
+                    const ev = s.ze.act[s.ze.act.length - 1];
+                    if (ev && !document.hidden) {
+                        const zd = zoneEvDef(ev.kind);
+                        feedStore.push([...call(idTok("zone"), "event", [strTok(ev.kind)]), pun(" → "), strTok(zoneLabel(ev.zone))], { tone: zd.good ? "hot" : "warn", type: true });
+                        setZeCard(ev.id);
+                        sfx("nfAlert");
+                    }
+                }
+                zeSeen.current = { s, n: zn };
             }
             if (++tickN.current % 10 === 0 && s.perks.auto > 0) autoBuy(s);
             const d = derive(s);
@@ -608,6 +627,19 @@ export function NodeFarm() {
         [log],
     );
     const evMiss = useCallback((def: { title: string }) => log(`${def.title} ignored. It passed.`, "warn"), [log]);
+    const onZoneEv = useCallback(
+        (id: number, c: ZeChoice) => {
+            const r = zeChoose(g.current, id, c);
+            if (!r.ok) { sfx("deny"); return; }
+            sfx("nfBuy", { tier: 2 });
+            if (c === "mine") log(`Vein mined: +${fmt(r.paid ?? 0)} ${statDef(r.stat ?? "bytes").name}.`, "good");
+            else if (c === "patch") log(`Fault patched for ${fmt(r.paid ?? 0)} Bytes.`, "good");
+            else log(c === "run" ? "Vein left running." : "Fault left to run out.", "good");
+            save();
+            bump((x) => x + 1);
+        },
+        [log, save],
+    );
     const evEngage = useCallback((def: { title: string }) => log(`${def.title} engaged.`, "hot"), [log]);
     const setEvents = useCallback((on: boolean) => {
         setEvOn(on);
@@ -1001,6 +1033,7 @@ export function NodeFarm() {
             )}
             {toast && <div className="nf-toast" role="status"><NfIcon name="spark" /> Goal: {toast}</div>}
 
+            <ZoneEventCard s={s} id={zeCard} onChoose={onZoneEv} onClose={closeZeCard} reduced={reduced} />
             <EventLayer game={g} ready={ready} enabled={evOn} busy={!!win || treeOpen || labTree || droneTree || !!away || !!confirm} reduced={reduced} onEngage={evEngage} onResult={evResult} onMiss={evMiss} onDisable={() => setEvents(false)} />
             <Juice reduced={reduced} />
 
@@ -1069,7 +1102,7 @@ export function NodeFarm() {
                 {STATS.map((def) => {
                     if (!isUnlocked(s, def.id) && def.id !== firstLocked) return null;
                     return (
-                        <StatRow key={def.id} id={def.id} s={s} d={d} guide={guideTarget} onPress={doPress} onArm={() => { toggleArm(s, def.id); sfx("tab"); bump((n) => n + 1); }} onWatchdog={() => { s.watchdog = !s.watchdog; sfx("tab"); log(`Watchdog timer ${s.watchdog ? "on: Reboots run themselves" : "off"}.`, s.watchdog ? "good" : "warn"); bump((n) => n + 1); }} open={!folded[def.id]} onToggle={() => { setFold({ ...folded, [def.id]: !folded[def.id] }); sfx("tab"); }} />
+                        <StatRow key={def.id} id={def.id} s={s} d={d} guide={guideTarget} onPress={doPress} onArm={() => { toggleArm(s, def.id); sfx("tab"); bump((n) => n + 1); }} onWatchdog={() => { s.watchdog = !s.watchdog; sfx("tab"); log(`Watchdog timer ${s.watchdog ? "on: Reboots run themselves" : "off"}.`, s.watchdog ? "good" : "warn"); bump((n) => n + 1); }} open={!folded[def.id]} onToggle={() => { setFold({ ...folded, [def.id]: !folded[def.id] }); sfx("tab"); }} onZoneEv={onZoneEv} zeCard={zeCard} />
                     );
                 })}
                 {laterLocked.length > 0 && (
