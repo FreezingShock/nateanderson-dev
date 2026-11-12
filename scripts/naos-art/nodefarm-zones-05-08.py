@@ -1,7 +1,8 @@
 """Node Farm staged zone art for zones 05 to 08: Fab Cleanroom (silicon), Crystal Vault (quartz), Signal Void (aether) and
 Glyph Hall (runes). Follows the zone art contract v1 (see docs/node-farm.md, "Zone art").
 
-Each zone gets one sheet: 8 rows (stage 0..7) by 6 columns (animation frames), 288 x 64 art pixels per cell. Row 0 is the
+Each zone gets one sheet: 8 rows (stage 0..7) by 6 columns (animation frames), 288 x 96 art pixels per cell; rows 0-31
+are headroom backdrop that reaches up to the title bar, sprites live in rows 32-95. Row 0 is the
 backdrop alone. Row n adds sprite n to row n-1, so a stage change reads as "something new appeared". Sprite n is a bigger,
 richer version of the zone's 32 px icon: tiers 1..6 follow the zone's button names (Die, Wafer, Batch...) and sprite 7 is
 the capstone. Sprites stand on one floor line, small ones on the left and big ones on the right (the panel crops the left).
@@ -32,11 +33,12 @@ _spec = importlib.util.spec_from_file_location("nodefarm_icons", HERE / "nodefar
 nfi = importlib.util.module_from_spec(_spec)
 _spec.loader.exec_module(nfi)
 
-CW, CH = 288, 64      # one cell, art pixels
+CW, CH = 288, 96      # one cell, art pixels (contract v3: rows 0-31 headroom backdrop up to the title bar)
 FRAMES = 6            # 6 fps loop
 STAGES = 7            # rows 1..7 (row 0 is the backdrop)
 BY = CH - 1           # floor row: every sprite stands on it
-TOP = 10  # rows 0..9 can sit under the title bar at 3x: backdrop only (contract v2)
+HEAD = 32  # rows 0..31: backdrop only, cut to whatever height the panel has
+TOP = 42   # sprite tops stay at this row or lower
 
 
 def hexc(h):
@@ -198,6 +200,82 @@ def sn(f, phase=0.0, cycles=1):
 def floor_glow(c, cx, w, rampname, f=0, h=3):
     """A dithered pool of light on the floor under a sprite."""
     c.shadow(cx, BY + 0.5, w, h, rampname, 1)
+
+
+
+# ------------------------------------------------------------------------------------------- far layers (contract v3 headroom)
+# Big faint shapes behind each zone so the panel reads as a place even at stage 0. Only shades 0-1, alpha <= 90.
+def si_far(b, f):
+    """Cleanroom ceiling: filter panels across the headroom, laminar light falling from the lit ones, a far rack wall."""
+    c = b.c
+    for i in range(0, CW, 24):
+        for j in range(2):
+            x0, y0 = i + 2, 2 + j * 11
+            panel = c.rect(x0, y0, x0 + 20, y0 + 9)
+            lit = ((i // 24) * 3 + j * 5) % 4 != 0
+            b.put(panel & ~c.rect(x0 + 1, y0 + 1, x0 + 19, y0 + 8), "si", 1, 80)
+            if lit:
+                b.dens(0.45 + 0.1 * tw(f, i / CW), "sic", 1, 70, mask=c.rect(x0 + 1, y0 + 1, x0 + 19, y0 + 8))
+                if j == 1:
+                    shaft = c.rect(x0 + 3, y0 + 9, x0 + 17, CH - 6)
+                    b.dens(0.42 * (1 - c.lin(0, y0 + 9, 0, CH - 6)), "si", 0, 75, mask=shaft)
+                    for k in range(3):
+                        py = (y0 + 12 + k * 17 + f * 3) % (CH - 8)
+                        b.put(c.rect(x0 + 5 + k * 5, py, x0 + 6 + k * 5, py + 1), "si", 1, 90)
+    for x in range(0, CW, 9):   # far racks along the back wall
+        h = 22 + (x * 7) % 13
+        rack = c.rect(x, CH - 8 - h, x + 7, CH - 8)
+        b.dens(0.35, "si2", 0, 85, mask=rack)
+        on = c.rect(x + 2, CH - 8 - h + 3 + ((x + f * 4) % max(h - 6, 1)), x + 3, CH - 8 - h + 4 + ((x + f * 4) % max(h - 6, 1)))
+        b.put(on, "sic", 1, 90)
+
+
+def qz_far(b, f):
+    """Giant crystal silhouettes deep in the vault, a faint shine running up one each frame."""
+    c = b.c
+    rng = np.random.default_rng(17)
+    for k in range(13):
+        cx = int(rng.integers(0, CW)); w = int(rng.integers(10, 26)); h = int(rng.integers(40, CH + 10))
+        lean = int(rng.integers(-8, 9))
+        pts = [(cx - w / 2, CH), (cx - w / 2 + lean * .8, CH - h + w * .6), (cx + lean, CH - h), (cx + w / 2 + lean * .8, CH - h + w * .6), (cx + w / 2, CH)]
+        m = c.poly(pts)
+        b.dens(0.55, "qz2" if k % 2 else "qz", 0, 85, mask=m)
+        b.dens(0.12 + 0.2 * c.lin(0, CH - h, 0, CH), "qz2" if k % 2 else "qz", 1, 80, mask=m)
+        b.put(m & ~np.roll(m, 1, axis=1), "qzp" if (k + f) % FRAMES == 0 else "qz", 1, 85)
+
+
+def ae_far(b, f):
+    """Aurora bands drifting across the headroom in three greens."""
+    c = b.c
+    for k, (rp, y0, amp, per) in enumerate([("ae", 10, 5, 90), ("ae2", 20, 6, 120), ("aey", 30, 4, 70)]):
+        yc = y0 + amp * np.sin(2 * np.pi * (c.xx / per + f / FRAMES + k / 3))
+        band = np.abs(c.yy - yc) < 4 + 2 * np.sin(c.xx / 23 + k)
+        b.dens(0.5 * (1 - np.abs(c.yy - yc) / 7), rp, 1, 75, mask=band)
+
+
+def rn_far(b, f):
+    """The hall wall: big stone blocks with carved glyphs, two torches whose glow breathes."""
+    c = b.c
+    rows = CH // 12
+    for r in range(rows):
+        off = 0 if r % 2 else 14
+        for x in range(-off, CW, 28):
+            y0 = r * 12
+            blk = c.rect(x + 1, y0 + 1, x + 27, y0 + 11)
+            b.dens(0.22 + 0.2 * ((x // 28 + r) % 3) / 2, "st", 0, 85, mask=blk)
+            b.put(c.rect(x + 1, y0 + 1, x + 27, y0 + 2) & blk, "st", 1, 70)
+            if (x // 28 * 5 + r * 3) % 4 == 0:
+                gx, gy = x + 11, y0 + 3
+                m = np.zeros((CH, CW), bool)
+                for (a, b_, cc, d) in GLYPHS[(x // 28 + r) % 3]:
+                    m |= c.seg(gx + a * 6, gy + b_ * 6, gx + cc * 6, gy + d * 6, 1)
+                b.put(m, "rn", 1 if (r + x // 28 + f) % 3 == 0 else 0, 90)
+    for tx in (70, 214):
+        k = 0.85 + 0.15 * tw(f, tx / 100)
+        glow = np.clip(1 - np.hypot(c.xx + .5 - tx, (c.yy + .5 - 20) * 1.2) / 30, 0, 1) * 0.6 * k
+        b.dens(glow, "rno", 1, 85)
+        b.put(c.rect(tx - 1, 20, tx + 2, 30), "st", 1, 90)
+        b.put(c.rect(tx, 16 - (f % 2), tx + 1, 20), "rno", 1, 90)
 
 
 # =============================================================================================== 05 FAB CLEANROOM (silicon)
@@ -428,13 +506,14 @@ def si_sprite(c, n, cx, f):
 
 
 def si_backdrop(b, f):
-    """Circuit traces with a pulse running along them, a faint die grid on the floor."""
+    """Cleanroom ceiling and racks behind, circuit traces with a pulse running along them, a die grid on the floor."""
+    si_far(b, f)
     c = b.c
     rng = np.random.default_rng(5)
     traces = np.zeros((CH, CW), bool)
     paths = []
-    for k in range(18):
-        y = int(rng.integers(4, 54))
+    for k in range(30):
+        y = int(rng.integers(4, CH - 10))
         x0 = int(rng.integers(0, 200)); x1 = x0 + int(rng.integers(30, 90))
         y2 = y + int(rng.choice([-8, -5, 5, 8]))
         xm = (x0 + x1) // 2
@@ -591,7 +670,8 @@ def qz_sprite(c, n, cx, f):
 
 
 def qz_backdrop(b, f):
-    """A faint diamond lattice with nodes that wake in turn."""
+    """Crystal silhouettes behind, a diamond lattice with nodes that wake in turn."""
+    qz_far(b, f)
     c = b.c
     a = (c.xx + c.yy * 2) % 16
     d = (c.xx - c.yy * 2) % 16
@@ -752,17 +832,18 @@ def ae_sprite(c, n, cx, f):
 
 def ae_backdrop(b, f):
     """Ripples spreading from the gate's side of the panel, a faint starfield."""
+    ae_far(b, f)
     c = b.c
-    ox, oy = 250, 70
+    ox, oy = 250, CH + 6
     r = np.hypot(c.xx + .5 - ox, (c.yy + .5 - oy) * 1.6)
-    wave = ((r - f * 18 / FRAMES * 1.0) % 18) < 1
-    b.dens(0.35 + 0.6 * (1 - np.clip(r / 300, 0, 1)), "ae", 1, 80, mask=wave)
+    wave = ((r - f * 24 / FRAMES) % 24) < 1
+    b.put(wave & (r < 260), "ae", 1, 70)
     ox2, oy2 = 40, -10
     r2 = np.hypot(c.xx + .5 - ox2, (c.yy + .5 - oy2) * 1.4)
-    wave2 = ((r2 + f * 12 / FRAMES) % 12) < 1
-    b.dens(0.45, "ae2", 1, 70, mask=wave2 & ~wave)
+    wave2 = ((r2 + f * 24 / FRAMES) % 24) < 1
+    b.put(wave2 & ~wave & (c.yy > 34), "ae2", 1, 60)
     rng = np.random.default_rng(21)
-    for k in range(80):
+    for k in range(50):
         x, y = int(rng.integers(0, CW)), int(rng.integers(0, CH - 8))
         if (k + f) % 4:
             b.put(c.rect(x, y, x + 1, y + 1), ["ae", "aey", "ae2"][k % 3], 1, 90)
@@ -888,12 +969,13 @@ def rn_sprite(c, n, cx, f):
 
 def rn_backdrop(b, f):
     """Carved floor tiles and faint wall glyphs; dust motes drifting up."""
+    rn_far(b, f)
     c = b.c
     tiles = ((c.xx % 16) < 1) | ((c.yy % 8) < 1)
     b.dens(0.2 + 0.6 * c.lin(0, 20, 0, CH), "rn", 0, 70, mask=tiles)
     rng = np.random.default_rng(31)
-    for k in range(34):
-        x, y = int(rng.integers(4, CW - 8)) // 16 * 16 + 6, int(rng.integers(0, 6)) * 8 + 2
+    for k in range(50):
+        x, y = int(rng.integers(4, CW - 8)) // 16 * 16 + 6, int(rng.integers(0, (CH - 16) // 8)) * 8 + 2
         kind = int(rng.integers(0, 3))
         m = np.zeros((CH, CW), bool)
         for (a, b_, cc, d) in GLYPHS[kind]:
@@ -929,7 +1011,7 @@ def cell(zone, stage, f):
         c.img[m] = layer.img[m]
     if (c.img[:TOP - 3, :, 3] > 0).any() and stage:
         print(f"  warn: {zone} stage {stage} frame {f}: sprite pixels above row {TOP - 3}")
-    c.img[:TOP] = 0   # only backdrop under the title bar
+    c.img[:HEAD] = 0   # headroom is backdrop only
     out = b.img.copy()
     m = c.img[..., 3] > 0
     out[m] = c.img[m]
