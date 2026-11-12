@@ -56,8 +56,10 @@ function stateOf(s: State, n: TreeNode): NodeState {
     return s.ap >= n.cost ? "ready" : "open";
 }
 
-/** What the owned nodes add up to, as plain rows for the readout. */
+/** What the owned nodes add up to, as plain rows for the readout. The engine's own `treeTotals` wins when it has one. */
+const engineTotals = (Engine as unknown as { treeTotals?: (s: State) => [string, string][] }).treeTotals;
 function totals(s: State): [string, string][] {
+    if (engineTotals) return engineTotals(s);
     const f = treeFx(s);
     const pct = (x: number) => `+${Math.round(x * 100)}%`;
     const rows: [string, string][] = [];
@@ -249,7 +251,7 @@ export function TreeMenu({ s, reduced, onBuy, onRespec, onClose }: { s: State; r
         const x = w / 2 - cx * k, y = h / 2 - cy * k;
         wEl.style.transform = `translate3d(${x.toFixed(2)}px, ${y.toFixed(2)}px, 0) scale(${k.toFixed(4)})`;
         bd.current?.move(x, y, k);
-        const lod = k < 0.62 ? "far" : "near";
+        const lod = k < 0.5 ? "far" : "near";
         if (r.dataset.lod !== lod) r.dataset.lod = lod;
         placeCard();
     }, [placeCard]);
@@ -298,7 +300,8 @@ export function TreeMenu({ s, reduced, onBuy, onRespec, onClose }: { s: State; r
         const { w, h } = measure();
         const b = bRef.current.fit;
         const bw = b.x1 - b.x0 + 2.6 * U, bh = b.y1 - b.y0 + 2.6 * U;
-        const k = clamp(Math.min(w / bw, h / bh), KMIN, maxK);
+        // never fit so far out that the nodes turn into dots: past this, panning shows the rest
+        const k = clamp(Math.min(w / bw, h / bh), w < 700 ? 0.42 : 0.56, maxK);
         const cx = (b.x0 + b.x1) / 2, cy = (b.y0 + b.y1) / 2;
         if (animate) flyTo(cx, cy, k); else jump(cx, cy, k);
     }, [flyTo, jump]);
