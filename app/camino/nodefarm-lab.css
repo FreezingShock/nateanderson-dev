@@ -54,19 +54,19 @@
 /* ---- blueprint backdrop */
 .nf-lbd { position: absolute; inset: 0; z-index: 0; overflow: hidden; pointer-events: none; contain: strict; background: radial-gradient(ellipse at 50% 46%, #0b3c7c 0, #052452 42%, #020d20 100%); }
 .nf-lbd-g { position: absolute; inset: 0; will-change: background-position; }
-.nf-lbd-g[data-l="0"] { background-image: url(/naos/nodefarm/lab-bg-0.webp); image-rendering: pixelated; opacity: .62; }
+.nf-lbd-g[data-l="0"] { background-image: url(/naos/nodefarm/lab-bg-0.webp?v=30a198d2); image-rendering: pixelated; opacity: .62; }
 .nf-lbd-g[data-l="1"] { background-image: linear-gradient(#5aa8ff10 1px, transparent 1px), linear-gradient(90deg, #5aa8ff10 1px, transparent 1px); opacity: .9; }
 .nf-lbd-g[data-l="2"] { background-image: linear-gradient(#5aa8ff22 1px, transparent 1px), linear-gradient(90deg, #5aa8ff22 1px, transparent 1px); }
-.nf-lbd-g[data-l="3"] { background-image: url(/naos/nodefarm/lab-bg-2.webp); image-rendering: pixelated; opacity: .8; animation: nfLbdSway 14s ease-in-out infinite alternate; }
+.nf-lbd-g[data-l="3"] { background-image: url(/naos/nodefarm/lab-bg-2.webp?v=a8241b78); image-rendering: pixelated; opacity: .8; animation: nfLbdSway 14s ease-in-out infinite alternate; }
 /* the world grid: dotted crosses at every half unit, glued to the nodes */
 .nf-lbd-g[data-l="4"] { background-image: radial-gradient(circle, #9fd0ff66 0 1.5px, transparent 2px); opacity: .7; }
 .nf-lbd-w { position: absolute; left: 0; top: 0; width: 0; height: 0; transform-origin: 0 0; will-change: transform; }
 .nf-lbd-w i { position: absolute; display: block; translate: -50% -50%; border-radius: 50%; }
-.nf-lbd-core { width: 1152px; height: 1152px; background: url(/naos/nodefarm/lab-core.webp) center / 100% 100% no-repeat; image-rendering: pixelated; animation: nfLbdPulse 6s ease-in-out infinite; }
+.nf-lbd-core { width: 1152px; height: 1152px; background: url(/naos/nodefarm/lab-core.webp?v=d0edc6a5) center / 100% 100% no-repeat; image-rendering: pixelated; animation: nfLbdPulse 6s ease-in-out infinite; }
 .nf-lbd-sec { width: 1536px; height: 1536px; background: center / 100% 100% no-repeat; image-rendering: pixelated; opacity: .85; transition: opacity .5s; }
-.nf-lbd-sec[data-sec="exploits"] { background-image: url(/naos/nodefarm/lab-sec-exploits.webp); }
-.nf-lbd-sec[data-sec="malware"] { background-image: url(/naos/nodefarm/lab-sec-malware.webp); }
-.nf-lbd-sec[data-sec="infra"] { background-image: url(/naos/nodefarm/lab-sec-infra.webp); }
+.nf-lbd-sec[data-sec="exploits"] { background-image: url(/naos/nodefarm/lab-sec-exploits.webp?v=0682e900); }
+.nf-lbd-sec[data-sec="malware"] { background-image: url(/naos/nodefarm/lab-sec-malware.webp?v=f6e00651); }
+.nf-lbd-sec[data-sec="infra"] { background-image: url(/naos/nodefarm/lab-sec-infra.webp?v=5a480fd4); }
 .nf-lbd[data-focus] .nf-lbd-sec { opacity: .45; }
 .nf-lbd[data-focus="exploits"] .nf-lbd-sec[data-sec="exploits"], .nf-lbd[data-focus="malware"] .nf-lbd-sec[data-sec="malware"], .nf-lbd[data-focus="infra"] .nf-lbd-sec[data-sec="infra"] { opacity: 1; }
 /* drafting circles round the core, dashed like construction lines */
@@ -170,7 +170,7 @@
 .ctos .nf-lab-hero > .nf-lab-top { grid-area: top; }
 .ctos .nf-lab-hero > .nf-lab-note { grid-area: note; align-self: end; }
 .ctos .nf-lab-hero > .nf-lab-flow { grid-area: flow; }
-.ctos .nf-lab-scene { grid-area: scene; position: relative; display: block; border: 1px solid #2c5a92; box-shadow: 4px 4px 0 #00091a; width: calc(288px * var(--sc)); height: calc(96px * var(--sc)); background: url(/naos/nodefarm/zone-lab.webp) no-repeat; background-size: calc(1728px * var(--sc)) calc(768px * var(--sc)); background-position: 0 calc(var(--st, 0) * -96px * var(--sc)); image-rendering: pixelated; animation: nfLabScene 1s steps(6) infinite; pointer-events: none; }
+.ctos .nf-lab-scene { grid-area: scene; position: relative; display: block; border: 1px solid #2c5a92; box-shadow: 4px 4px 0 #00091a; width: calc(288px * var(--sc)); height: calc(96px * var(--sc)); background: url(/naos/nodefarm/zone-lab.webp?v=5f0d2d99) no-repeat; background-size: calc(1728px * var(--sc)) calc(768px * var(--sc)); background-position: 0 calc(var(--st, 0) * -96px * var(--sc)); image-rendering: pixelated; animation: nfLabScene 1s steps(6) infinite; pointer-events: none; }
 .ctos .nf-lab-scene::after { content: ""; position: absolute; inset: 0; background: repeating-linear-gradient(0deg, transparent 0 3px, #00000022 3px 4px); }
 @keyframes nfLabScene { from { background-position-x: 0; } to { background-position-x: calc(-1728px * var(--sc)); } }
 .ctos .nf-lab-top { align-self: start; }
@@ -205,7 +205,7 @@
 @media (min-width: 640px) and (max-width: 1180px) { .ctos .nf-lab-hero { --sc: 1.5; } }
 @media (prefers-reduced-motion: reduce) { .ctos .nf-lab-scene { animation: none; } }
 /* the panel's own ground: the research tree's painted blueprint paper, faded in from the top-left like every zone wash */
-.ctos .nf-row.nf-lab { --zone: url(/naos/nodefarm/lab-bg-0.webp) 0 0 / 512px 512px; }
+.ctos .nf-row.nf-lab { --zone: url(/naos/nodefarm/lab-bg-0.webp?v=30a198d2) 0 0 / 512px 512px; }
 .ctos .nf-row.nf-lab::before { image-rendering: pixelated; opacity: .55; }
 /* the recipe fact line on a research node's card */
 .nf-tm .nf-tm-spec { margin: 0; padding: 6px 10px; font: 600 var(--cm-ctos-t-micro)/1.5 var(--cm-mono); letter-spacing: .04em; color: #b7c9e4; background: #001a40; border-left: 2px solid var(--lab-warn, #f9f1a5); }

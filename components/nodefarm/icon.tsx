@@ -1,4 +1,6 @@
 import type { CSSProperties } from "react";
+import { nfArt } from "@/lib/nodefarm/art-version";
+import "@/app/camino/nodefarm-icons64.css";
 
 // Colour icon sheet for Node Farm, drawn by scripts/naos-art/nodefarm-icons.py (32 x 32 cells, one row). Cell order below
 // must match ICONS in that script. Sizes are whole multiples of the art (32 or 64) so the pixels stay square; the CSS lives in
@@ -15,7 +17,14 @@ export function NfIcon({ name, large = false, responsive = false, className = ""
 // Row order below must match ROWS in that script.
 const TIER_ROWS = ["mult", "reboot", "copper", "silicon", "quartz", "aether", "runes", "starglass", "voidsteel", "chrono", "nebula", "pulsars", "singularity", "engrams", "paradox", "origin"] as const;
 
+// 64 px redraw: one sheet per stat (six tiers across, eight frames down), drawn by scripts/naos-art/nodefarm-icons64.py. Stats listed
+// here use it; the rest still use the 32 px sheet above. scripts/nodefarm/stamp-art.mjs checks every listed sheet exists and is 384 x 512.
+const TIC64 = ["copper"] as const;
+
 export function NfTierIcon({ stat, tier }: { stat: string; tier: number }) {
+    if ((TIC64 as readonly string[]).includes(stat)) {
+        return <span aria-hidden="true" className="nf-tic nf-tic64" style={{ ["--t" as string]: tier, backgroundImage: `url(${nfArt(`tic-${stat}.webp`)})` } as CSSProperties} />;
+    }
     const r = TIER_ROWS.indexOf(stat as (typeof TIER_ROWS)[number]);
     if (r < 0) return null;
     return <span aria-hidden="true" className="nf-tic" style={{ ["--r" as string]: r, ["--t" as string]: tier } as CSSProperties} />;
