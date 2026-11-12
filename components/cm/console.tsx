@@ -11,6 +11,7 @@ import { STATS as NF_STATS, isUnlocked as nfUnlocked, parseSave, type State as N
 import { isAdmin, maxOut, overwrite, setAdmin, snapState, snaps, takeSnap } from "@/lib/nodefarm/admin";
 import { NF_PATH, NF_SAVE_KEY, NF_SUBS, nfCommand, type NfLive } from "@/lib/nodefarm/records";
 import { CX_STYLES, cxOverride, setCxOverride, type CxStyle } from "@/lib/nodefarm/cx";
+import { getFxMode, getLowFx, setFxMode } from "@/lib/nodefarm/fx";
 import { getStagePreview, setStagePreview } from "@/lib/nodefarm/zone-art";
 import { PART_WHY, chromaOpen, coreLook, coreMode, corePreview, setCoreMode, setCorePreview } from "@/lib/nodefarm/core-look";
 import { PART_ORDER } from "@/lib/nodefarm/core-parts";
@@ -231,6 +232,14 @@ function runNf(args: string[]): Line[] {
         }
         return [t(`menu animation: ${cxOverride() ?? "auto"}. nf anim auto · nf anim ${CX_STYLES.join(" · nf anim ")}`)];
     }
+    if ((args[0] ?? "").toLowerCase() === "fx") {
+        const v = (args[1] ?? "").toLowerCase();
+        if (v === "full" || v === "low" || v === "auto") {
+            setFxMode(v);
+            return [t(`effects: ${v}.`)];
+        }
+        return [t(`effects: ${getFxMode()}${getFxMode() === "auto" ? ` (running ${getLowFx() ? "low" : "full"})` : ""}. nf fx full · low · auto`)];
+    }
     if ((args[0] ?? "").toLowerCase() === "art") {
         // preview the staged zone art at one stage (this visit only)
         const v = (args[1] ?? "").toLowerCase();
@@ -393,9 +402,9 @@ const COMMANDS: Cmd[] = [
     },
     {
         name: "nf",
-        usage: "nf [stats|goals|secrets|anim|fs]",
+        usage: "nf [stats|goals|secrets|anim|fx|fs]",
         desc: "Node Farm readout, goals and secrets",
-        long: ["nf · nf stats · nf goals · nf secrets · nf open · nf anim auto|print|decrypt|crt · nf fs [on|off] (full screen) · nf core [zone|chroma|<zone>|parts 0-9]. Works with the game open or from your saved game."],
+        long: ["nf · nf stats · nf goals · nf secrets · nf open · nf anim auto|print|decrypt|crt · nf fx full|low|auto (effects level) · nf fs [on|off] (full screen) · nf core [zone|chroma|<zone>|parts 0-9]. Works with the game open or from your saved game."],
         run: (args) => runNf(args),
     },
     {

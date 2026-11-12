@@ -12,6 +12,7 @@ import {
     buyFw, fwNode, handSeen, handover, protoDef, respecFw, setProto, type ProtoId,
     type ButtonStat, type MatId, type State, type StatId,
 } from "@/lib/nodefarm/engine";
+import { initFx } from "@/lib/nodefarm/fx";
 import type { NfLive } from "@/lib/nodefarm/records";
 import { Core, freshCoreFeed, type CoreFeed } from "./core";
 import { PART_WHY, chromaOpen, coreLook, corePreview } from "@/lib/nodefarm/core-look";
@@ -299,6 +300,7 @@ export function NodeFarm() {
     // ---- boot: load the save, bank offline time, print the greeting
     useEffect(() => {
         setReduced(window.matchMedia("(prefers-reduced-motion: reduce)").matches);
+        initFx();
         try {
             const u = localStorage.getItem(UI_KEY);
             if (u) setFolded(JSON.parse(u));
