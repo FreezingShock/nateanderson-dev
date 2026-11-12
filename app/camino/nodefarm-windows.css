@@ -238,19 +238,7 @@
     .ctos .nf-wk-scan, .ctos .nf-wk-caret, .ctos .nf-wk-nodes li[data-next] button, .ctos .nf-wk-chain li[data-here] .nf-wk-ct, .ctos .nf-wk-chain li[data-here] .nf-wk-cn { animation: none !important; }
 }
 
-/* ==== next step strip: a sprite tile for what it points at, and a code kicker */
-.ctos .nf-gd-ic { display: none; }
-@media (min-width: 560px) {
-    .ctos .nf-guide { grid-template-columns: auto minmax(0, 1fr); }
-    .ctos .nf-gd-ic { display: grid; place-items: center; grid-row: span 3; align-self: center; width: 76px; height: 76px; background: radial-gradient(circle, color-mix(in srgb, var(--cm-cyan) 30%, transparent) .9px, transparent 1.4px) 0 0 / 4px 4px, #070809; border: 1px solid color-mix(in srgb, var(--cm-cyan) 40%, #1c1c1c); }
-    .ctos .nf-guide > :not(.nf-gd-ic) { grid-column: 2; }
-}
-@media (min-width: 900px) {
-    .ctos .nf-guide { grid-template-columns: auto minmax(0, 1.5fr) minmax(220px, 1fr) auto; }
-    .ctos .nf-gd-ic { grid-row: auto; }
-    .ctos .nf-guide > :not(.nf-gd-ic) { grid-column: auto; }
-}
-.ctos .nf-gd-k > span { color: var(--cm-ctos-meta); letter-spacing: .06em; }
+/* next step strip: moved to nodefarm-next.css (the console overhaul) */
 
 /* ==== Drone bay: a dithered pad under each sprite in its colour, columns that line up, a coloured buy button */
 .ctos .nf-dr-list li { position: relative; background: linear-gradient(90deg, color-mix(in srgb, var(--c) 7%, #0a0a0a), #0a0a0a 40%); }

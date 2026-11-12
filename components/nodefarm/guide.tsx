@@ -1,44 +1,139 @@
 "use client";
 
-import { createContext, useEffect, useLayoutEffect, useRef, type RefObject } from "react";
+import { createContext, useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type RefObject } from "react";
 import { cxPlay, useCodeReveal } from "@/lib/nodefarm/cx";
-import { fmt } from "@/lib/nodefarm/engine";
-import { etaText, type Step, type TipInfo } from "@/lib/nodefarm/guide";
+import { apOnAscend, button, canAfford, canAscend, droneCost, droneMax, fmt, statDef, type Derived, type State, type StatId } from "@/lib/nodefarm/engine";
+import { DRONE_NAMES, etaText, incomeOf, telemetry, type NxIcon, type Step, type Target, type TipInfo } from "@/lib/nodefarm/guide";
 import { NfIcon, type NfIconName } from "./icon";
 
-// ---- the "next step" strip: always under the HUD. One line on what to do, one on why, how close you are, and a GO button
-// that opens the right zone and scrolls to the glowing button.
-export function GuideStrip({ step, onGo, onMap, mapOpen }: { step: Step; onGo: () => void; onMap: () => void; mapOpen: boolean }) {
+// ---- the next step console: always under the HUD. An animated plate for the kind of step, what to do and why, a live meter
+// with the rate and time left, a button that does the step when it can (or takes you to it), and a row of live readouts for
+// every system (next zone, Ascend, AP, goals, lab, drones) that each jump to where they live. Art: scripts/naos-art/nodefarm-next-art.py.
+const PLATES = ["grow", "reboot", "decrypt", "build", "drone", "ascend", "tree", "lab", "compile", "goal", "done"] as const;
+type Plate = (typeof PLATES)[number];
+const NX_ICONS: NxIcon[] = ["target", "map", "ascend", "ap", "key", "goal", "lab", "drone", "clock", "tree", "intel", "play", "lock"];
+const PLATE_C: Record<Plate, string> = { grow: "#b6f04a", reboot: "#ff2d8a", decrypt: "#ffc53a", build: "", drone: "#6bffc9", ascend: "#ff2d8a", tree: "#a98bff", lab: "#9fd0ff", compile: "#9fd0ff", goal: "#ffc53a", done: "#2fd8e8" };
+const PLATE_TAG: Record<Plate, string> = { grow: "growth", reboot: "reboot", decrypt: "decrypt", build: "build", drone: "drones", ascend: "ascend", tree: "prestige", lab: "research", compile: "payload", goal: "goal", done: "complete" };
+const STORE = "nf-next-v1";
+
+function plateOf(id: string): { p: Plate; stat?: StatId } {
+    if (id === "first-mult" || id === "grow") return { p: "grow", stat: "mult" };
+    if (id === "first-reboot") return { p: "reboot" };
+    if (id === "spend-ap") return { p: "tree" };
+    if (id === "lab-research") return { p: "lab" };
+    if (id === "lab-compile") return { p: "compile" };
+    if (id === "first-drone") return { p: "drone" };
+    if (id === "ascend" || id === "reach-ascend") return { p: "ascend" };
+    if (id.startsWith("decrypt-")) return { p: "decrypt", stat: id.slice(8) as StatId };
+    if (id.startsWith("first-")) return { p: "build", stat: id.slice(6) as StatId };
+    if (id.startsWith("goal-")) return { p: "goal" };
+    return { p: "done" };
+}
+
+export function NxIc({ name }: { name: NxIcon }) {
+    return <span aria-hidden="true" className="nf-nx-i" style={{ ["--i" as string]: NX_ICONS.indexOf(name) } as CSSProperties} />;
+}
+
+/** What the big button does: the step itself when it can be done from here, otherwise open or point at it. */
+function primaryOf(s: State, step: Step): { kind: "do" | "go"; label: string; detail: string; icon: NxIcon } {
+    const t = step.target;
+    if (t?.stat !== undefined && t.tier !== undefined && canAfford(s, t.stat, t.tier)) {
+        const b = button(s, t.stat, t.tier);
+        return { kind: "do", label: t.stat === "reboot" ? "Reboot now" : `Buy ${statDef(t.stat).short} T${t.tier + 1}`, detail: `${fmt(b.cost)} ${statDef(b.pays).short}`, icon: "play" };
+    }
+    if (t?.drone !== undefined && s.drones[t.drone] < droneMax(s) && s.aether >= droneCost(s, t.drone)) {
+        return { kind: "do", label: `Build ${DRONE_NAMES[t.drone]}`, detail: `${fmt(droneCost(s, t.drone))} AE`, icon: "play" };
+    }
+    if (t?.win === "tree") return { kind: "go", label: "Open tree", detail: `${fmt(s.ap)} AP to spend`, icon: "tree" };
+    if (t?.win === "ascend") return { kind: "go", label: "Open Ascend", detail: canAscend(s) ? `+${fmt(apOnAscend(s))} AP` : "perks and reset", icon: "ascend" };
+    if (t?.win === "goals") return { kind: "go", label: "Open goals", detail: "rewards and tiers", icon: "goal" };
+    if (t?.win === "lab") return { kind: "go", label: "Open lab", detail: `${fmt(s.lab.intel)} Intel`, icon: "lab" };
+    if (t?.lab) return { kind: "go", label: "Go to lab", detail: "compile, then deploy", icon: "lab" };
+    if (t?.drone !== undefined) return { kind: "go", label: "Show me", detail: "Drone bay", icon: "target" };
+    if (t?.stat) return { kind: "go", label: "Show me", detail: `${statDef(t.stat).name} T${(t.tier ?? 0) + 1}`, icon: "target" };
+    return { kind: "go", label: "Show me", detail: "", icon: "target" };
+}
+
+export function GuideStrip({ s, d, step, onGo, onDo, onCell, onMap, mapOpen }: {
+    s: State;
+    d: Derived;
+    step: Step;
+    onGo: () => void;
+    /** do the step directly (press the button / build the Drone); false when it could not */
+    onDo: () => boolean;
+    onCell: (t: Target) => void;
+    onMap: () => void;
+    mapOpen: boolean;
+}) {
     const pct = Math.round(step.frac * 100);
     const eta = etaText(step.eta);
-    const t = step.target;
-    // the sprite of whatever the step points at, so the strip reads at a glance (2026-11-12 refresh)
-    const icon: NfIconName = t?.drone !== undefined ? "aether" : t?.win === "tree" || t?.win === "ascend" ? "ascend" : t?.win === "goals" ? "spark" : (t?.stat as NfIconName | undefined) ?? "spark";
+    const { p, stat } = plateOf(step.id);
+    const color = PLATE_C[p] || (stat ? statDef(stat).color : "#2fd8e8");
+    const prim = primaryOf(s, step);
+    const rate = step.pay ? incomeOf(s, d, step.pay) : 0;
+    const cells = telemetry(s, d);
+    const done = step.frac >= 1;
+    // the readout row can be folded away (remembered per browser)
+    const [folded, setFolded] = useState(false);
+    useEffect(() => { try { setFolded(localStorage.getItem(STORE) === "0"); } catch {} }, []);
+    const fold = () => { const v = !folded; setFolded(v); try { localStorage.setItem(STORE, v ? "0" : "1"); } catch {} };
+    // a new step decrypts in (the unlock look); the first paint does not
+    const text = useRef<HTMLDivElement>(null);
+    const prev = useRef(step.id);
+    useEffect(() => {
+        if (prev.current !== step.id) cxPlay(text.current, { bare: true, ms: 360, rows: ":scope > *", style: "decrypt" });
+        prev.current = step.id;
+    }, [step.id]);
     return (
-        <aside className="nf-guide" data-step={step.id} aria-label="Next step">
-            <span className="nf-gd-ic" aria-hidden="true"><NfIcon name={icon} large /></span>
-            <div className="nf-gd-text">
+        <aside className="nf-guide nf-nx" data-step={step.id} data-plate={p} data-done={done ? "" : undefined} aria-label="Next step" style={{ ["--c" as string]: color } as CSSProperties}>
+            <div className="nf-nx-plate" aria-hidden="true" style={{ ["--p" as string]: PLATES.indexOf(p) } as CSSProperties}>
+                {stat && <span className="nf-nx-stat"><NfIcon name={stat as NfIconName} /></span>}
+                <span className="nf-nx-tag">{PLATE_TAG[p]}</span>
+            </div>
+            <div className="nf-gd-text" ref={text}>
                 <span className="nf-gd-k"><span aria-hidden="true">$ next </span>{"// "}{step.kicker}</span>
                 <b className="nf-gd-t">{step.title}</b>
                 <p className="nf-gd-why">{step.why}</p>
             </div>
             <div className="nf-gd-meter">
+                <div className="nf-nx-mh">
+                    <b>{step.meter ?? (step.unit ? `${fmt(step.cur)} / ${fmt(step.need)} ${step.unit}` : step.need > 1 ? `${fmt(step.cur)} / ${fmt(step.need)}` : `${pct}%`)}</b>
+                    <span>{done ? "ready" : `${pct}%`}</span>
+                </div>
                 <span className="nf-bar nf-gd-bar" role="progressbar" aria-label={step.title} aria-valuemin={0} aria-valuemax={100} aria-valuenow={pct}>
                     <i style={{ width: `${pct}%` }} />
                 </span>
-                <small>
-                    {step.unit ? <>{fmt(step.cur)} / {fmt(step.need)} {step.unit}</> : <>{pct}%</>}
-                    {eta && <> · about {eta}</>}
-                </small>
+                <dl className="nf-nx-dl">
+                    <div><dt><NxIc name="clock" /> eta</dt><dd>{done ? "now" : eta || (step.pay ? "start producing" : "ready when you are")}</dd></div>
+                    {step.pay && <div><dt><NxIc name="intel" /> rate</dt><dd>{rate > 0 ? `+${fmt(rate)} ${statDef(step.pay).short}/s` : "not producing"}</dd></div>}
+                </dl>
             </div>
             <div className="nf-gd-act">
-                <button type="button" className="nf-gd-go" onClick={onGo}>
-                    <NfIcon name="spark" /> Show me
+                <button type="button" className="nf-gd-go" data-kind={prim.kind} onClick={() => { if (prim.kind === "do") { if (!onDo()) onGo(); } else onGo(); }}>
+                    <NxIc name={prim.icon} />
+                    <span><b>{prim.label}</b>{prim.detail && <small>{prim.detail}</small>}</span>
                 </button>
-                <button type="button" className="nf-gd-map" aria-haspopup="dialog" aria-pressed={mapOpen} onClick={onMap}>
-                    Map
-                </button>
+                <div className="nf-nx-sec">
+                    {prim.kind === "do" && <button type="button" className="nf-gd-map" onClick={onGo}><NxIc name="target" /> Find</button>}
+                    <button type="button" className="nf-gd-map" aria-haspopup="dialog" aria-pressed={mapOpen} onClick={onMap}><NxIc name="map" /> Map</button>
+                    <button type="button" className="nf-gd-map nf-nx-fold" aria-expanded={!folded} aria-controls="nf-nx-cells" onClick={fold} title={folded ? "Show live readouts" : "Hide live readouts"}>{folded ? "+" : "−"}<span className="sr-only">{folded ? "Show live readouts" : "Hide live readouts"}</span></button>
+                </div>
             </div>
+            {!folded && (
+                <ul className="nf-nx-cells" id="nf-nx-cells" aria-label="Live progress">
+                    {cells.map((c) => (
+                        <li key={c.id}>
+                            <button type="button" className="nf-nx-cell" data-state={c.state} disabled={c.state === "locked" || !c.target} style={{ ["--c" as string]: c.color } as CSSProperties} onClick={() => c.target && onCell(c.target)}>
+                                <NxIc name={c.state === "locked" ? "lock" : c.icon} />
+                                <span className="nf-nx-cl">{c.label}{c.state === "ready" && <em> {"// ready"}</em>}</span>
+                                <b>{c.value}</b>
+                                <small>{c.sub}</small>
+                                <i aria-hidden="true"><i style={{ width: `${Math.round(c.frac * 100)}%` }} /></i>
+                            </button>
+                        </li>
+                    ))}
+                </ul>
+            )}
         </aside>
     );
 }
