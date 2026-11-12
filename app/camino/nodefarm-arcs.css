@@ -11,7 +11,7 @@
 .ctos .nf-arc-i { display: grid; place-items: center; width: 28px; height: 24px; }
 .ctos .nf-arc-i i { width: 8px; height: 8px; border-right: 2px solid var(--c); border-bottom: 2px solid var(--c); rotate: 45deg; translate: 0 -2px; transition: rotate .2s ease, translate .2s ease; }
 .ctos .nf-arc[data-open="false"] .nf-arc-i i { rotate: -45deg; translate: -2px 0; }
-.ctos .nf-arc-p { grid-column: 1 / -1; height: 4px; background: color-mix(in srgb, var(--c) 16%, #000); }
+.ctos .nf-arc-p { position: relative; grid-column: 1 / -1; height: 4px; background: color-mix(in srgb, var(--c) 16%, #000); }
 .ctos .nf-arc-p i { display: block; height: 100%; background: var(--c); }
 .ctos .nf-arc-d { grid-column: 1 / -1; max-width: 46ch; color: #eef6f8; font: 400 12px/1.4 var(--cm-mono); opacity: .85; }
 .ctos .nf-arc[data-ready] .nf-arc-s { color: var(--c); opacity: 1; }
@@ -26,3 +26,7 @@
 .ctos .nf-row .nf-fold i { border-color: #07090d; }
 .ctos .nf-row[data-ready] .nf-bar-s { background: var(--c); color: #07090d; }
 @media (max-width: 819px) { .ctos .nf-arc-zones { padding-left: 8px; gap: 12px; } }
+.ctos .nf-arc-p b { position: absolute; top: -3px; width: 2px; height: 10px; background: color-mix(in srgb, var(--c) 45%, #000); }
+.ctos .nf-arc-p b[data-hit] { background: #07090d; }
+.ctos .nf-arc-p[data-done] { box-shadow: 0 0 0 1px var(--c); }
+.ctos .nf-arc:has(.nf-arc-p[data-done]) .nf-arc-k::after { content: " // CLEARED"; color: #07090d; background: var(--c); padding: 2px 6px; margin-left: 8px; letter-spacing: .12em; }
