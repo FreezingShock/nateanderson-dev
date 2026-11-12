@@ -429,6 +429,8 @@ const LEGACY_COST: Record<string, number> = Object.fromEntries(
     "sg1:6,sg2:10,sg3:10,sg4:20,sg5:32,sg7:13,sg6:60,sg8:25,sg9:31,sg10:36,sg11:63,sgk:98,fg1:6,fg2:12,fg7:6,fg3:16,fg8:14,fg9:17,fg4:28,fg10:24,fg5:44,fg11:39,fg6:68,fgk:91,sy1:6,sy2:10,sy3:12,sy4:24,sy6:48,sy5:28,sy7:28,sy8:22,sy9:28,sy10:34,sy11:56,syk:91,dr1:6,dr2:8,dr3:10,dr4:14,dr5:17,dr6:18,dr7:24,dr8:28,dr9:32,dr10:42,dr11:63,drk:98,an1:7,an2:10,an3:10,an4:15,an5:18,an6:17,an7:28,an8:28,an9:38,an10:39,an11:77,ank:98"
         .split(",").map((p) => [p.split(":")[0], Number(p.split(":")[1])]),
 );
+/** Batch job (signal arm, slot 1) was removed with the Buy toggle; it cost 10 AP, so an old save gets that back. */
+LEGACY_COST.batchjob = 10;
 /** Drop node ids that are not in this tree and give their AP back. Returns the AP refunded. */
 export function migrateTree(s: State): number {
     let back = 0;
