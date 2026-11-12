@@ -20,10 +20,11 @@ button tiers (+1, +5, +25, +125, +625, +3125; each tier costs about 8 to 10 time
 
 ## Ascend window
 `components/nodefarm/ascend.tsx`, styles `app/camino/nodefarm-ascend.css` (classes `nf-ax*`; `nf-asc*` was the old panel, `nf-rx` is the full-screen sequence). Reworked 2026-11-12.
+- Layout (Nate picked B, 2026-11-12): desktop has the art as a full-width banner, the three steps in one row with the Hold button at the right, then the gateway banner, the perks in two columns, then Mounted drives. Phone is one column in the same order.
 - Stage: `scene-ascend` at 1x with the tower's five rings lit in Aether green as the charge climbs (`RINGS`), a beacon when ready, a code readout and a 12-segment charge column (the meter for screen readers).
 - Flow: three steps, 01 Charge (Aether), 02 Ascend (+AP), 03 Spend or hold (AP held and the global multiplier before and after). Colours: Aether green, AP magenta, tree cyan.
 - Hold to Ascend: press and hold 1.2 s (`HOLD_MS`) by pointer, Enter or Space. A quick tap shows "Keep holding to Ascend". A click with no press behind it (screen readers) uses the old two-step confirm. `doAscend(true)` skips the confirm.
-- Gateway: a live miniature of the tree (only what `nodeVis` shows, zoomed to fit), section counts and an `> open /prestige/tree` command. It plays a 240 ms dial-in, then calls `openWin("tree")`; the tree menu runs its own opening.
+- Gateway (Nate picked the art banner): a strip of the tree's own starfield (`tree-bg-0..2` and `tree-core`), with the section counts and an `> open /prestige/tree` command over it. The layers shift apart on hover. It plays a 240 ms dial-in (the sky rushes toward the core), then calls `openWin("tree")`, and the tree menu runs its own opening.
 - Perks: spec rows; affordable ones turn magenta. Mounted drives sit under everything.
 - Sections carry `data-cx-i` for the shared code-reveal primitive (`lib/nodefarm/cx.ts`).
 - Checks and screenshots: /mnt/project-files/portfolio/node-farm-ascend/ (`checks.mjs`, `shots.mjs`).

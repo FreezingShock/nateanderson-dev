@@ -1,12 +1,11 @@
 "use client";
 
 import { useEffect, useRef, useState, type CSSProperties } from "react";
-import { BRANCHES, MATS, PERKS, TREE, TUNE, apEach, apGlobal, apOnAscend, canAscend, derive, fmt, hasNode, mountSlots, nodeVis, statDef, type MatId, type State } from "@/lib/nodefarm/engine";
+import { BRANCHES, MATS, PERKS, TREE, TUNE, apEach, apGlobal, apOnAscend, canAscend, derive, fmt, hasNode, mountSlots, statDef, type MatId, type State } from "@/lib/nodefarm/engine";
 import { NfIcon } from "./icon";
 
 // The Ascend window (2026-11-12 rework): the art is the stage, the Aether charge climbs beside the tower, a three-step
-// ledger shows the flow (Aether -> Ascend -> AP), and the tree gets a gateway panel with a live miniature of what you have
-// revealed. Styles: app/camino/nodefarm-ascend.css (classes nf-ax*; nf-asc* belonged to the old panel).
+// ledger shows the flow (Aether -> Ascend -> AP), and the tree gets a gateway banner on the tree's own starfield (Nate's picks, 2026-11-12). Styles: app/camino/nodefarm-ascend.css (classes nf-ax*; nf-asc* belonged to the old panel).
 // Rows carry data-cx-i so the shared code-reveal primitive (lib/nodefarm/cx.ts) can print them in order.
 
 type D = ReturnType<typeof derive>;
@@ -162,44 +161,6 @@ function Perks({ s, onPerk }: { s: State; onPerk: (id: PerkId) => void }) {
     );
 }
 
-/** Live miniature of the tree: only what the tree itself would show (owned, buyable, fog). */
-function MiniTree({ s }: { s: State }) {
-    const vis = new Map(TREE.map((n) => [n.id, nodeVis(s, n)]));
-    const color = Object.fromEntries(BRANCHES.map((b) => [b.id, b.color]));
-    const shown = TREE.filter((n) => vis.get(n.id) !== "hidden");
-    const at = (id: string) => (id === "core" ? { x: 0, y: 0 } : TREE.find((n) => n.id === id)!);
-    const links: [string, string, boolean][] = [];
-    for (const n of shown) for (const l of n.links) {
-        if (l !== "core" && (vis.get(l) === "hidden" || l < n.id)) continue;
-        links.push([n.id, l, hasNode(s, n.id) && (l === "core" || hasNode(s, l))]);
-    }
-    // zoom to what is revealed, so the miniature grows outward as the tree opens up
-    const R = Math.min(11, Math.max(4.6, ...shown.map((n) => Math.max(Math.abs(n.x), Math.abs(n.y)) + 1.4)));
-    return (
-        <svg className="nf-ax-mini" viewBox={`${-R} ${-R} ${R * 2} ${R * 2}`} aria-hidden="true">
-            <g className="nf-ax-spokes">
-                {BRANCHES.map((b, i) => {
-                    const th = -Math.PI / 2 + (i * 2 * Math.PI) / BRANCHES.length;
-                    return <line key={b.id} x1={Math.cos(th) * 1.4} y1={Math.sin(th) * 1.4} x2={Math.cos(th) * 10.4} y2={Math.sin(th) * 10.4} stroke={b.color} />;
-                })}
-            </g>
-            <g className="nf-ax-links">
-                {links.map(([a, b, on]) => { const A = at(a), B = at(b); return <line key={a + b} x1={A.x} y1={A.y} x2={B.x} y2={B.y} data-on={on ? "" : undefined} />; })}
-            </g>
-            {shown.map((n) => {
-                const v = vis.get(n.id);
-                const own = hasNode(s, n.id);
-                const r = n.kind === "keystone" ? 0.85 : n.kind === "notable" ? 0.7 : 0.55;
-                return (
-                    <rect key={n.id} x={n.x - r} y={n.y - r} width={r * 2} height={r * 2} className="nf-ax-nd" data-st={own ? "own" : v === "fog" ? "fog" : "open"}
-                        style={{ ["--c" as string]: color[n.branch] } as CSSProperties} />
-                );
-            })}
-            <rect className="nf-ax-core" x={-1} y={-1} width={2} height={2} />
-        </svg>
-    );
-}
-
 /** The way into the full-screen tree. A short dial-in plays here, then the tree menu runs its own opening. */
 function Gateway({ s, onTree }: { s: State; onTree: () => void }) {
     const [go, setGo] = useState(false);
@@ -217,14 +178,17 @@ function Gateway({ s, onTree }: { s: State; onTree: () => void }) {
                 <p>{TREE.length} upgrades in five sections, bought with AP and kept through every Ascend. {s.ap} AP to spend, {owned} of {TREE.length} owned.</p>
             </header>
             <button type="button" className="nf-ax-portal" onClick={open} aria-label="Open the prestige tree">
-                <span className="nf-ax-portal-art" aria-hidden="true"><i className="nf-ax-sweep" /><MiniTree s={s} /></span>
-                <ul className="nf-ax-secs" aria-hidden="true">
-                    {BRANCHES.map((b) => {
-                        const mine = TREE.filter((n) => n.branch === b.id);
-                        return <li key={b.id} style={{ ["--c" as string]: b.color }}><b>{b.name}</b><small>{mine.filter((n) => hasNode(s, n.id)).length}/{mine.length}</small></li>;
-                    })}
-                </ul>
-                <span className="nf-ax-cmd" aria-hidden="true"><em>&gt;</em> open /prestige/tree<i /></span>
+                <span className="nf-ax-sky" aria-hidden="true"><i data-l="0" /><i data-l="1" /><i data-l="2" /><i className="nf-ax-sky-core" /></span>
+                <span className="nf-ax-pc" aria-hidden="true">
+                    <span className="nf-ax-pk">PRESTIGE.TREE // {owned}/{TREE.length} NODES // {s.ap} AP</span>
+                    <ul className="nf-ax-secs">
+                        {BRANCHES.map((b) => {
+                            const mine = TREE.filter((n) => n.branch === b.id);
+                            return <li key={b.id} style={{ ["--c" as string]: b.color }}><b>{b.name}</b><small>{mine.filter((n) => hasNode(s, n.id)).length}/{mine.length}</small></li>;
+                        })}
+                    </ul>
+                    <span className="nf-ax-cmd"><em>&gt;</em> open /prestige/tree<i /></span>
+                </span>
             </button>
         </section>
     );
