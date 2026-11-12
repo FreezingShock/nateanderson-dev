@@ -23,7 +23,7 @@ const ORDER: StatId[] = ["bytes", "copper", "silicon", "quartz", "aether", "rune
 const COUNT_MS = 1500;
 
 /** Full-screen "welcome back" report. Everything is already banked when it opens; Collect only closes it. */
-export function AwayReport({ away, reduced, onClose }: { away: Away; reduced: boolean; onClose: () => void }) {
+export function AwayReport({ away, era, reduced, onClose }: { away: Away; era: number; reduced: boolean; onClose: () => void }) {
     const [p, setP] = useState(reduced ? 1 : 0);
     const btn = useRef<HTMLButtonElement>(null);
     const back = useRef<HTMLElement | null>(null);
@@ -85,6 +85,7 @@ export function AwayReport({ away, reduced, onClose }: { away: Away; reduced: bo
     return createPortal(
         <div
             className="nf-aw"
+            data-era={era}
             data-done={done || undefined}
             role="dialog"
             aria-modal="true"
