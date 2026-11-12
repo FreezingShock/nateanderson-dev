@@ -5,7 +5,7 @@ import { createPortal } from "react-dom";
 import { cxPlay, useCodeReveal } from "@/lib/nodefarm/cx";
 import { sfx } from "@/lib/sound/sounds";
 import { EVENTS, EVENT_TUNE, nextGapMs, pickEvent, type EventDef, type EventKind } from "@/lib/nodefarm/events";
-import { eventHaste, overclockMult, overclockSecs, type State } from "@/lib/nodefarm/engine";
+import { eventHaste, fmt, overclockMult, type State } from "@/lib/nodefarm/engine";
 
 type Stage = "incoming" | "live" | "result";
 type Active = { def: EventDef; id: number; stage: Stage; won: boolean };
@@ -174,7 +174,7 @@ export function EventLayer({ game, busy, enabled, ready, reduced, onEngage, onRe
                     <span>{stage === "incoming" ? "incoming" : stage === "live" ? "live" : view.won ? "cleared" : "lost"}</span>
                 </div>
 
-                {stage === "incoming" && <Incoming def={def} onEngage={engage} onSkip={skip} onOff={() => { sfx("close"); onDisable(); }} />}
+                {stage === "incoming" && <Incoming def={def} mult={overclockMult(game.current)} onEngage={engage} onSkip={skip} onOff={() => { sfx("close"); onDisable(); }} />}
                 {stage === "live" && (
                     <>
                         <p id="nf-ev-d" className="nf-ev-hint">{def.hint}</p>
@@ -185,7 +185,7 @@ export function EventLayer({ game, busy, enabled, ready, reduced, onEngage, onRe
                 )}
                 {stage === "result" && (
                     <p id="nf-ev-d" className="nf-ev-result" role="status" data-won={view.won ? "" : undefined}>
-                        {view.won ? `Cleared. Overclock x${overclockMult(game.current)} for ${overclockSecs(game.current)} s.` : "Lost. No cost, the next one will come."}
+                        {view.won ? `Cleared. Overclock x${fmt(overclockMult(game.current))} for ${Math.round(game.current.overclock)} s.` : "Lost. No cost, the next one will come."}
                     </p>
                 )}
             </div>
@@ -210,7 +210,7 @@ function useScreenHost() {
     return host;
 }
 
-function Incoming({ def, onEngage, onSkip, onOff }: { def: EventDef; onEngage: () => void; onSkip: () => void; onOff: () => void }) {
+function Incoming({ def, mult, onEngage, onSkip, onOff }: { def: EventDef; mult: number; onEngage: () => void; onSkip: () => void; onOff: () => void }) {
     const [armed, setArmed] = useState(false);
     const ref = useRef<HTMLButtonElement>(null);
     useEffect(() => {
@@ -224,7 +224,7 @@ function Incoming({ def, onEngage, onSkip, onOff }: { def: EventDef; onEngage: (
         <>
             <h2 className="nf-ev-name">{def.title}</h2>
             <p id="nf-ev-d" className="nf-ev-brief">{def.brief}</p>
-            <p className="nf-ev-reward">Win: Overclock x6. Skip or lose: nothing happens.</p>
+            <p className="nf-ev-reward">Win: Overclock x{fmt(mult)}. Skip or lose: nothing happens.</p>
             <div className="nf-ev-actions">
                 <button ref={ref} type="button" className="nf-ev-go" disabled={!armed} onClick={onEngage}>Engage</button>
                 <button type="button" className="nf-ev-alt" onClick={onSkip}>Skip</button>
@@ -236,10 +236,13 @@ function Incoming({ def, onEngage, onSkip, onOff }: { def: EventDef; onEngage: (
 }
 
 function Clock({ secs, onEnd }: { secs: number; onEnd: () => void }) {
+    // the game re-renders ten times a second and onEnd is a new function each time: keep it in a ref, or the timer restarts forever and never fires
+    const end = useRef(onEnd);
+    end.current = onEnd;
     useEffect(() => {
-        const t = setTimeout(onEnd, secs * 1000);
+        const t = setTimeout(() => end.current(), secs * 1000);
         return () => clearTimeout(t);
-    }, [secs, onEnd]);
+    }, [secs]);
     return <div className="nf-ev-clock" aria-hidden="true"><i style={{ animationDuration: `${secs}s` }} /></div>;
 }
 
