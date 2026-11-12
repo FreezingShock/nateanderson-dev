@@ -268,7 +268,12 @@ function runNf(args: string[]): Line[] {
         } catch {}
     }
     if (!state) return [t("no node found. start one first:", "dim"), { t: NF_PATH, go: NF_PATH }];
-    if ((args[0] ?? "").toLowerCase() === "admin") return nfAdmin(args.slice(1), state, ref.live);
+    if ((args[0] ?? "").toLowerCase() === "admin") {
+        const out = nfAdmin(args.slice(1), state, ref.live);
+        // the panel lives on the game page, so from anywhere else point at it
+        if (!ref.live && isAdmin() && ["on", "max", "panel"].includes((args[1] ?? "").toLowerCase())) out.push(t("the panel opens on the game page:", "dim"), { t: NF_PATH, go: NF_PATH });
+        return out;
+    }
     if ((args[0] ?? "").toLowerCase() === "core") return nfCore(args.slice(1), state);
     const r = nfCommand(state, args);
     if (r.unlocked.length) {
@@ -395,10 +400,20 @@ const COMMANDS: Cmd[] = [
     },
     {
         name: "nf",
-        usage: "nf [stats|goals|secrets|anim|fs]",
+        usage: "nf [stats|goals|secrets|admin|anim|fs]",
         desc: "Node Farm readout, goals and secrets",
-        long: ["nf · nf stats · nf goals · nf secrets · nf open · nf anim auto|print|decrypt|crt · nf fs [on|off] (full screen) · nf core [zone|chroma|aurora|gold|mono|<zone>|parts 0-13]. Works with the game open or from your saved game."],
+        long: ["nf · nf stats · nf goals · nf secrets · nf open · nf anim auto|print|decrypt|crt · nf fs [on|off] (full screen) · nf core [zone|chroma|aurora|gold|mono|<zone>|parts 0-13] · nf admin (testing panel, see admin). Works with the game open or from your saved game."],
         run: (args) => runNf(args),
+    },
+    {
+        name: "admin",
+        usage: "admin [on|off|max|panel]",
+        desc: "Node Farm admin panel (testing tools)",
+        long: [
+            "admin or admin on opens the panel: speed up to x100, skip time, force Ascend, fire events, jump era, edit any stat, tree node, Drone or script.",
+            "admin max grants everything · admin panel reopens it · admin off hides it · admin snap|snaps|restore [n|real] for snapshots. It stores your real save first; admin restore real brings it back. Same as nf admin.",
+        ],
+        run: (args) => runNf(["admin", ...(args.length ? args : ["on"])]),
     },
     {
         name: "history",
