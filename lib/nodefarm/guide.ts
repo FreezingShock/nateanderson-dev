@@ -2,7 +2,7 @@
 // engine (no React), so every number comes from `TUNE` and the engine's own `button`/`derive` and follows any rebalance.
 import {
     GOALS, MATS, PERKS, TIERS, TREE, TUNE, REBOOT_UNLOCK,
-    LAB, PAYLOADS, intelRate, amount, apOnAscend, ascendNeed, unlockNeed, FW, fwNodeOpen, keysOnHandover, treeComplete, button, canAfford, canAscend, derive, droneBoost, droneCost, droneMax, droneRate, dronesOpen, originAp, paradoxOc, singularityAll, fmt, fmtTime, goalDone, hasNode, isUnlocked, nodeOpen, statDef,
+    LAB, PAYLOADS, intelRate, amount, apOnAscend, ascendNeed, unlockNeed, FW, fwNodeOpen, keysOnHandover, treeComplete, button, canAfford, canAscend, derive, droneBoost, droneCost, droneMax, droneRate, dronesOpen, postOf, postX, zoneRank, ROMAN, originAp, paradoxOc, singularityAll, fmt, fmtTime, goalDone, hasNode, isUnlocked, nodeOpen, statDef,
     type ButtonStat, type Derived, type MatId, type State, type StatId,
 } from "./engine";
 import { LORE } from "./lore";
@@ -155,6 +155,11 @@ export function nextStep(s: State, d: Derived): Step {
             if (dronesOpen(s) && drones === 0 && s.aether >= droneCost(s, 0)) {
                 return mk({ id: "first-drone", title: "Build a Drone", why: "Drones press buttons for you, even while you are away. Open the Drone bay and build a Probe.", cur: s.aether, need: droneCost(s, 0), unit: "AE", pay: "aether", target: { drone: 0 } });
             }
+            // once, after the first Drone: post it somewhere so the hangar's mastery and Cores start
+            if (drones > 0 && s.dr.post.every((p) => !p) && zoneRank(s, "mult") === 0 && !s.dr.nodes.length && !Object.keys(s.dr.svc).length) {
+                const k = s.drones.findIndex((x) => x > 0);
+                return mk({ id: "post-drone", kicker: "DRONE HANGAR", title: "Post a Drone to a zone", why: "Pick a zone in a Drone's Posting menu. It presses only there, faster, and earns that zone permanent mastery and a Core per rank.", cur: 0, need: 1, unit: "", eta: null, target: { drone: k } });
+            }
             if (training) {
                 if (canAscend(s)) {
                     const gain = apOnAscend(s);
@@ -284,12 +289,18 @@ export function droneTip(s: State, tier: number): TipInfo {
     const maxed = lvl >= droneMax(s);
     const cost = droneCost(s, tier);
     const afford = !maxed && s.aether >= cost;
+    const post = postOf(s, tier);
+    const per = (r: number) => (post ? r * postX(s, tier) : r);
     const rows: [string, string][] = [
-        ["Presses", `tier ${tier + 1} buttons on every armed stat`],
-        ["Now", `${fmt(droneRate(s, tier))} presses/s`],
+        ["Presses", post ? `tier ${tier + 1} on ${statDef(post).name} only, x${fmt(postX(s, tier))}` : `tier ${tier + 1} buttons on every armed stat`],
+        ["Now", `${fmt(per(droneRate(s, tier)))} presses/s`],
     ];
+    if (post) rows.push(["Mastery", `${statDef(post).name} ${ROMAN[zoneRank(s, post)] || "unranked"}`]);
     if (!maxed) {
-        rows.push(["After", `${fmt(droneRate(s, tier) + TUNE.drone.rate)} presses/s`]);
+        s.drones[tier] += 1;
+        const next = droneRate(s, tier);
+        s.drones[tier] -= 1;
+        rows.push(["After", `${fmt(per(next))} presses/s`]);
         rows.push(["Cost", `${fmt(cost)} Aether`]);
         rows.push(["You have", `${fmt(s.aether)} AE`]);
     }
@@ -299,7 +310,7 @@ export function droneTip(s: State, tier: number): TipInfo {
         color: statDef("aether").color,
         kicker: "Drone bay",
         title: `T${tier + 1} ${DRONE_NAMES[tier]}`,
-        note: "Arm a stat in its zone so Drones press for it.",
+        note: post ? "Posted: it works one zone, faster, and builds that zone's mastery." : "Sweeping: it presses every stat you arm in its zone. Post it to one zone to build mastery.",
         rows,
         status: maxed ? "Maxed." : afford ? `Ready. ${lvl ? "Upgrade" : "Build"} it.` : `Short by ${fmt(cost - s.aether)} AE${etaText(eta) ? `, about ${etaText(eta)}` : ""}.`,
         tone: afford || maxed ? "ok" : "wait",

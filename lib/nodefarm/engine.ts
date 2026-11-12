@@ -645,6 +645,8 @@ export interface State {
     treeRefund?: number;
     /** Exploit Lab: Intel, research nodes, compile queue, payload stock and running buffs (see LabState) */
     lab: LabState;
+    /** Drone hangar: postings, zone mastery, Parts, mods and the drone tree (see DroneState) */
+    dr: DroneState;
     /** Handover (the reset past Ascend): Keys, Firmware, the protocol and your handover notes (see HandState) */
     hand: HandState;
     /** Scripts (lib/nodefarm/scripts.ts): what you taught the scheduler and how each script is set. Kept through Ascend. Created on first use. */
@@ -735,6 +737,7 @@ export function fresh(now = Date.now()): State {
         autoArmed: [],
         life: { bytes: 0, taps: 0, reboots: 0, ascends: 0, intrusions: 0, secs: 0, presses: 0, capped: 0, peakBps: 0, apTotal: 0, intel: 0, compiled: 0, deployed: 0 },
         lab: freshLab(),
+        dr: freshDr(),
         hand: freshHand(),
         overclock: 0,
     };
@@ -783,10 +786,10 @@ export function derive(s: State): Derived {
     const droneLv = s.drones.reduce((a, b) => a + b, 0);
     const global = (1 + s.perks.power * 0.15) * (1 + tf.global) * apGlobal(s) * (1 + s.ach.length * (TUNE.achBonus + tf.goals) * (1 + protoK(s, "tamsin"))) * (1 + tiersDone(s) * TUNE.tierBonus) * handGlobal(s)
         * (1 + droneLv * tf.droneGlobal) * (1 + s.runWins * tf.winBoost) * boosts.chAll * singularityAll(s) * (s.overclock > 0 ? overclockMult(s) : 1) * lb.global
-        * (tf.perNode ? 1 + tf.perNode * treeCount(s) : 1);
+        * (tf.perNode ? 1 + tf.perNode * treeCount(s) : 1) * foundryAll(s);
     const wren = protoK(s, "wren");
     const rebootStrength = TUNE.rebootStrength * boosts.cuReboot * (1 + tf.reboot) * (tf.ocReboot && s.overclock > 0 ? 1 + tf.ocReboot : 1) * (1 + wren);
-    const multGainMult = (1 + rebootStrength * s.reboot) * (1 + tf.multGain) * lb.mult * (1 + 2 * wren);
+    const multGainMult = (1 + rebootStrength * s.reboot) * (1 + tf.multGain) * lb.mult * masteryMul(s, "mult") * (1 + 2 * wren);
     // capped like every amount, so a runaway late game can never write Infinity (null in JSON) into the save
     const bytesPerSec = Math.min(CAP, s.mult * boosts.cuBytes * global * (1 + tf.bytes) * lb.bytes * runBytes(s, tf));
     // each material is boosted by the one after it in the chain
@@ -799,7 +802,7 @@ export function derive(s: State): Derived {
     let newest: MatId | null = null;
     if (tf.specialist) for (const m of MATS) if (s.prod[m] > 0) newest = m;
     const rates = {} as Record<MatId, number>;
-    for (const m of MATS) rates[m] = Math.min(CAP, s.prod[m] * TUNE.perProducer[m] * boostedBy[m] * (1 + (tf.mats[m] ?? 0)) * global * (FORGE_MATS.includes(m) ? lb.forge : 1) * bus * (m === newest ? 1 + tf.specialist : 1));
+    for (const m of MATS) rates[m] = Math.min(CAP, s.prod[m] * TUNE.perProducer[m] * boostedBy[m] * (1 + (tf.mats[m] ?? 0)) * global * (FORGE_MATS.includes(m) ? lb.forge : 1) * bus * (m === newest ? 1 + tf.specialist : 1) * masteryMul(s, m));
     return { global, bytesPerSec, rebootStrength, multGainMult, rates, offlineCap: Math.max(1, TUNE.offlineCapHours + s.perks.offline * 4 + tf.offline + (handFx(s).standby ? HAND_TUNE.standbyHours : 0)) * 3600, boosts };
 }
 
@@ -882,8 +885,8 @@ export function press(s: State, stat: ButtonStat, tier: number): boolean {
     return true;
 }
 
-export const droneMax = (s: State) => { const f = treeFx(s); return TUNE.drone.max + f.droneMax + (f.droneTierGoal ? f.droneTierGoal * tiersDone(s) : 0); };
-export const droneCost = (s: State, tier: number) => TUNE.drone.base * Math.pow(TUNE.drone.ratio, tier) * Math.pow(TUNE.drone.growth, s.drones[tier]) * treeFx(s).droneCost / (1 + protoK(s, "osk"));
+export const droneMax = (s: State) => { const f = treeFx(s); return TUNE.drone.max + f.droneMax + droneFx(s).droneMax + (f.droneTierGoal ? f.droneTierGoal * tiersDone(s) : 0); };
+export const droneCost = (s: State, tier: number) => TUNE.drone.base * Math.pow(TUNE.drone.ratio, tier) * Math.pow(TUNE.drone.growth, s.drones[tier]) * treeFx(s).droneCost * (1 - droneFx(s).droneCost) / (1 + protoK(s, "osk"));
 export const dronesOpen = (s: State) => s.aether > 0 || s.prod.aether > 0 || s.life.ascends > 0;
 export function buyDrone(s: State, tier: number): boolean {
     const c = droneCost(s, tier);
@@ -902,7 +905,7 @@ export const originAp = (s: State) => logBoost(s.origin, TUNE.logK.orAp);
 const topDrone = (s: State) => { for (let k = s.drones.length - 1; k >= 0; k--) if (s.drones[k] > 0) return k; return -1; };
 export const droneRate = (s: State, tier: number) => {
     const f = treeFx(s);
-    let r = s.drones[tier] * TUNE.drone.rate * (1 + f.drone) * labBuffs(s).drone * droneBoost(s) * (1 + 2 * protoK(s, "osk"));
+    let r = s.drones[tier] * TUNE.drone.rate * (1 + f.drone) * labBuffs(s).drone * droneBoost(s) * hangarSpeed(s, tier) * (1 + 2 * protoK(s, "osk"));
     if (f.spearhead && r > 0 && topDrone(s) === tier) r *= 1 + f.spearhead; // Spearhead: the top tier you own
     if (f.frenzy && (s.frenzy ?? 0) > 0) r *= TUNE.frenzyX; // Swarm alarm
     return r;
@@ -910,24 +913,51 @@ export const droneRate = (s: State, tier: number) => {
 export function toggleArm(s: State, stat: string) {
     s.armed = s.armed.includes(stat) ? s.armed.filter((x) => x !== stat) : [...s.armed, stat];
 }
-/** Let the Drones press for dt seconds. eff scales their speed (time away runs slower). Returns presses made. */
+/** Let the Drones press for dt seconds. eff scales their speed (time away runs slower). Returns presses made.
+ * A Drone with no posting sweeps: it presses its tier on every armed zone. A posted Drone presses only its zone, DRONE_TUNE.postX
+ * times as fast, and its work there builds that zone's mastery. Reach mods also press the tier below. Every press a Drone
+ * attempts salvages a little Parts. */
 export function droneStep(s: State, dt: number, eff = 1): number {
-    if (!s.armed.length) return 0;
+    const D = s.dr;
+    const fx = droneFx(s);
+    const sweep = s.armed.filter((st) => st !== "bytes" && st !== "reboot" && isUnlocked(s, st as StatId)) as ButtonStat[];
     let made = 0;
+    let units = 0;
+    const pressN = (st: ButtonStat, tier: number, n: number) => { for (let i = 0; i < n; i++) { if (!press(s, st, tier)) break; made++; } };
     for (let k = 0; k < TIERS; k++) {
         if (s.drones[k] <= 0) continue;
-        s.droneAcc[k] = Math.min(s.droneAcc[k] + droneRate(s, k) * dt * eff, TUNE.drone.burst);
-        let n = Math.floor(s.droneAcc[k]);
-        if (n < 1) continue;
-        s.droneAcc[k] -= n;
-        for (const st of STATS) {
-            if (st.id === "bytes" || st.id === "reboot" || !s.armed.includes(st.id) || !isUnlocked(s, st.id)) continue;
-            for (let i = 0; i < n; i++) {
-                if (!press(s, st.id as ButtonStat, k)) break;
-                made++;
+        const base = droneRate(s, k) * dt * eff;
+        const post = postOf(s, k);
+        const sweepRate = post ? (fx.garrison ? base : 0) : base * (1 + fx.sweep);
+        const postRate = post ? base * postX(s, k) : 0;
+        const reach = (D.mods[k]?.[2] ?? 0) * DRONE_TUNE.reachEach;
+        // sweeping
+        if (sweepRate > 0 && sweep.length) {
+            s.droneAcc[k] = Math.min(s.droneAcc[k] + sweepRate, TUNE.drone.burst);
+            const n = Math.floor(s.droneAcc[k]);
+            if (n >= 1) { s.droneAcc[k] -= n; for (const st of sweep) pressN(st, k, n); }
+            units += sweepRate * sweep.length;
+            if (fx.sweepSvc) for (const st of sweep) addSvc(s, st, sweepRate * fx.sweepSvc, fx);
+        }
+        // posted
+        if (post) {
+            D.pacc[k] = Math.min(D.pacc[k] + postRate, TUNE.drone.burst * 4);
+            const n = Math.floor(D.pacc[k]);
+            if (n >= 1) { D.pacc[k] -= n; pressN(post, k, n); }
+            units += postRate;
+            addSvc(s, post, postRate, fx);
+        }
+        // reach: the tier below, on the same zones
+        if (reach > 0 && k > 0) {
+            const zones = [...(post ? [post] : []), ...(sweepRate > 0 ? sweep : [])];
+            if (zones.length) {
+                D.racc[k] = Math.min(D.racc[k] + (post ? postRate : sweepRate) * reach, TUNE.drone.burst);
+                const n = Math.floor(D.racc[k]);
+                if (n >= 1) { D.racc[k] -= n; for (const st of zones) pressN(st, k - 1, n); }
             }
         }
     }
+    if (units > 0) D.parts = Math.min(CAP, D.parts + units * DRONE_TUNE.partK * (1 + fx.parts));
     return made;
 }
 
@@ -1065,7 +1095,8 @@ export function ascend(s: State) {
     // Lab image (Firmware) keeps Intel and running payloads through Ascend
     const lab: LabState = { ...s.lab, intel: hf.labKeep ? s.lab.intel : 0, run: hf.labKeep ? s.lab.run : [], armed: s.lab.armed.filter((x) => x !== "zeroclick"), dump: LAB_TUNE.dumpSecs };
     const hand: HandState = { ...s.hand, cycleAp: s.hand.cycleAp + gain };
-    const keep = { lab, hand, ap: s.ap + gain, perks: s.perks, ach: s.ach, achAt: s.achAt, logs: s.logs, tree: s.tree, treeLv: s.treeLv, armed: s.armed, mounts: s.mounts, watchdog: s.watchdog, dropAt: s.dropAt, autoArmed: s.autoArmed, auto: s.auto, life: { ...s.life, ascends: s.life.ascends + 1, apTotal: s.life.apTotal + gain }, started: s.started };
+    const dr = drOnAscend(s);
+    const keep = { lab, dr, hand, ap: s.ap + gain, perks: s.perks, ach: s.ach, achAt: s.achAt, logs: s.logs, tree: s.tree, treeLv: s.treeLv, armed: s.armed, mounts: s.mounts, watchdog: s.watchdog, dropAt: s.dropAt, autoArmed: s.autoArmed, auto: s.auto, life: { ...s.life, ascends: s.life.ascends + 1, apTotal: s.life.apTotal + gain }, started: s.started };
     const n = fresh(s.at);
     Object.assign(n, keep);
     Object.assign(s, n);
@@ -1098,7 +1129,7 @@ export function offline(s: State, seconds: number) {
     const oc = s.overclock;
     s.overclock = 0; // an intrusion boost doesn't carry through time away
     const pressesBefore = s.life.presses;
-    for (let i = 0; i < steps; i++) tick(s, dt, handFx(s).standby ? 1 : Math.min(1, TUNE.drone.offline + treeFx(s).droneOff));
+    for (let i = 0; i < steps; i++) tick(s, dt, handFx(s).standby ? 1 : Math.min(1, TUNE.drone.offline + treeFx(s).droneOff + droneFx(s).off));
     s.overclock = Math.max(0, oc - secs);
     return { secs, capped: seconds > cap, drones: s.life.presses - pressesBefore, gain: Object.fromEntries((["bytes", ...MATS] as const).map((k) => [k, s[k] - before[k]])) as Record<"bytes" | MatId, number> };
 }
@@ -1594,6 +1625,326 @@ export function labStep(s: State, dt: number, bytesPerSec: number): PayloadId[] 
     return done;
 }
 
+// ---- Drone hangar. Drones grow into a system you build across Ascends, on three clocks:
+//  - postings and zone mastery (forever): post a Drone to one zone and it presses only there, faster; its work there builds
+//    that zone's mastery (ranks I to V, a permanent boost to the zone's output). Every rank earns one Core.
+//  - Parts and mods (one run): every press a Drone attempts salvages Parts; Parts buy three mods per Drone (Servo, Uplink, Reach).
+//  - the drone tree (forever): Cores buy nodes in a small 18-node tree on the shared tree menu (amber "hangar" skin).
+// See docs/node-farm.md "Drone hangar".
+export const DRONE_TUNE = {
+    postX: 3, // a posted Drone presses this many times as fast on its zone
+    partK: 0.1, // Parts per attempted press
+    reachEach: 0.2, // each Reach level presses the tier below at this share of the Drone's speed
+    servoEach: 0.25, // each Servo level: Drone speed +this
+    uplinkEach: 1, // each Uplink level: posting speed +this (x3 -> x4)
+    modMax: 5,
+    modBase: 25, // a mod costs modBase * modGrowth^level * modTier^tier Parts
+    modGrowth: 3,
+    modTier: 2.5,
+    // service (attempted presses on a zone) needed for mastery ranks I..V, and each rank's output multiplier
+    rankAt: [500, 10000, 200000, 4000000, 80000000],
+    rankX: [1, 1.05, 1.1, 1.16, 1.23, 1.35],
+    nodeCost: [1, 2, 2, 4, 4, 8], // Cores per tree slot
+};
+/** Zones a Drone can work: every button stat except Reboots, in chain order. */
+export const POSTABLE: readonly ButtonStat[] = ["mult", ...MATS];
+export type ModId = "servo" | "uplink" | "reach";
+export const MODS: { id: ModId; name: string; blurb: string }[] = [
+    { id: "servo", name: "Servo", blurb: "presses 25% faster per level" },
+    { id: "uplink", name: "Uplink", blurb: "posting speed +1x per level" },
+    { id: "reach", name: "Reach", blurb: "also presses the tier below at 20% per level" },
+];
+export interface DroneState {
+    /** each tier's posting, or null to sweep every armed zone (kept through Ascend) */
+    post: (ButtonStat | null)[];
+    /** service per zone: presses attempted there by posted Drones (kept forever) */
+    svc: Partial<Record<ButtonStat, number>>;
+    /** Parts, salvaged from presses (reset on Ascend) */
+    parts: number;
+    /** mod levels [tier][servo, uplink, reach] (reset on Ascend) */
+    mods: number[][];
+    /** owned drone tree nodes (kept through Ascend) */
+    nodes: string[];
+    /** fractional presses waiting, posted and reach (per tier) */
+    pacc: number[];
+    racc: number[];
+}
+export const freshDr = (): DroneState => ({ post: Array(TIERS).fill(null), svc: {}, parts: 0, mods: Array.from({ length: TIERS }, () => [0, 0, 0]), nodes: [], pacc: Array(TIERS).fill(0), racc: Array(TIERS).fill(0) });
+
+// -- the drone tree
+export type DroneSec = "flight" | "dispatch" | "salvage";
+export const DRONE_SECS: { id: DroneSec; name: string; blurb: string; color: string }[] = [
+    { id: "flight", name: "Flight", blurb: "How fast every Drone presses.", color: "#ffb14a" },
+    { id: "dispatch", name: "Dispatch", blurb: "Postings and zone mastery.", color: "#6bffc9" },
+    { id: "salvage", name: "Salvage", blurb: "Parts, mods and the hangar itself.", color: "#ff7a4a" },
+];
+export interface DroneFx {
+    speed?: number; // every Drone x(1 + this)
+    off?: number; // added to Drone speed while away
+    formation?: number; // every Drone +this per posted Drone
+    servoMax?: number; // extra Servo levels
+    sweep?: number; // sweeping Drones x(1 + this)
+    rankSpeed?: number; // every Drone +this per mastery rank
+    postX?: number; // posting speed +this
+    sweepSvc?: number; // sweeping earns this share of mastery
+    svc?: number; // mastery builds x(1 + this) as fast
+    rankPow?: number; // mastery bonuses x(1 + this) stronger
+    relay?: number; // a posting also gives this share of its mastery to the next zone up the chain
+    garrison?: boolean; // posted Drones also sweep
+    parts?: number; // Parts x(1 + this)
+    modCost?: number; // mods cost this fraction less
+    droneCost?: number; // Drones cost this fraction less Aether
+    modKeep?: number; // share of mod levels and Parts kept through Ascend
+    droneMax?: number; // extra Drone levels per tier
+    modGlobal?: number; // everything +this per mod level owned
+}
+export interface DroneNode { id: string; branch: DroneSec; kind: TreeKind; name: string; blurb: string; flavor: string; cost: number; links: string[]; fx: DroneFx; x: number; y: number; ix: number; sprite: string }
+type DroneRow = [slot: number, id: string, kind: TreeKind, name: string, blurb: string, flavor: string, fx: DroneFx];
+const DRONE_ARMS: Record<DroneSec, DroneRow[]> = {
+    flight: [
+        [0, "dx_burner", "minor", "Afterburner", "Every Drone presses 50% faster.", "Bolted a second fan on. The hangar smells like ozone now.", { speed: 0.5 }],
+        [1, "dx_formation", "minor", "Formation", "Every Drone presses 10% faster for each Drone on a posting.", "They fly tighter when someone is out front.", { formation: 0.1 }],
+        [2, "dx_night", "minor", "Night flight", "Drones work 25% harder while you are away.", "Running lights off. They know the way.", { off: 0.25 }],
+        [3, "dx_overdrive", "notable", "Overdrive", "Servo mods go to level 8.", "The servos were rated for five. They took eight without a word.", { servoMax: 3 }],
+        [4, "dx_slipstream", "notable", "Slipstream", "Sweeping Drones press 50% faster.", "Each one rides the wake of the one before it.", { sweep: 0.5 }],
+        [5, "dx_hivemind", "keystone", "Hivemind", "Drones press twice as fast, and every mastery rank adds 1% more.", "Six frames, one thought. The thought is mostly about buttons.", { speed: 1, rankSpeed: 0.01 }],
+    ],
+    dispatch: [
+        [0, "dx_orders", "minor", "Field orders", "Posted Drones press x4 on their zone (was x3).", "Clear orders, one zone each. Nobody wanders.", { postX: 1 }],
+        [1, "dx_patrol", "minor", "Patrol logs", "Sweeping Drones also build mastery, at a quarter of the rate.", "They write down every zone they pass. Most of it is useful.", { sweepSvc: 0.25 }],
+        [2, "dx_tour", "minor", "Long tour", "Mastery builds twice as fast.", "Same zone, same shift, every day. They learn the creaks.", { svc: 1 }],
+        [3, "dx_fieldops", "notable", "Field ops", "Mastery bonuses are 50% stronger.", "The veterans train the new frames. Nobody asked them to.", { rankPow: 0.5 }],
+        [4, "dx_relay", "notable", "Relay mast", "Each posting also builds half as much mastery in the next zone up the chain.", "Every posting gets a mast. The mast talks to the zone next door.", { relay: 0.5 }],
+        [5, "dx_garrison", "keystone", "Garrison", "Posted Drones also sweep every armed zone at full speed.", "Stationed, and still somehow everywhere.", { garrison: true }],
+    ],
+    salvage: [
+        [0, "dx_scrap", "minor", "Scrapper", "Parts x2.", "Every press sheds a little metal. Now somebody sweeps it up.", { parts: 1 }],
+        [1, "dx_refit", "minor", "Refit bench", "Mods cost 40% less.", "A proper bench, a proper light. Refits take half the swearing.", { modCost: 0.4 }],
+        [2, "dx_credit", "minor", "Hangar credit", "Drones cost 40% less Aether.", "The supplier knows the hangar by name now.", { droneCost: 0.4 }],
+        [3, "dx_blackbox", "notable", "Black box", "Keep half your mod levels and Parts through every Ascend.", "The frames reset. The flight recorders don't.", { modKeep: 0.5 }],
+        [4, "dx_frames", "notable", "Spare frames", "Drones go 2 levels higher.", "Two more chassis on the rack, wired and waiting.", { droneMax: 2 }],
+        [5, "dx_foundry", "keystone", "Foundry", "Every mod level adds +1% to everything.", "The hangar builds its own parts now. Then it builds better ones.", { modGlobal: 0.01 }],
+    ],
+};
+const DRONE_ORDER: DroneSec[] = ["flight", "dispatch", "salvage"];
+function buildDroneTree(): DroneNode[] {
+    const out: DroneNode[] = [];
+    DRONE_ORDER.forEach((arm, ai) => {
+        // arms point down-left, up and down-right, so the tree reads as a three-rotor frame
+        const th = -Math.PI / 2 + (ai * 2 * Math.PI) / DRONE_ORDER.length;
+        const c = Math.cos(th), sn = Math.sin(th);
+        const ids: string[] = [];
+        for (const [slot, id, kind, name, blurb, flavor, fx] of DRONE_ARMS[arm]) {
+            const [u, v] = LAB_SLOTS[slot];
+            out.push({ id, branch: arm, kind, name, blurb, flavor, fx, cost: DRONE_TUNE.nodeCost[slot], links: slot === 0 ? ["core"] : [], x: +(u * c - v * sn).toFixed(3), y: +(u * sn + v * c).toFixed(3), ix: out.length, sprite: id });
+            ids[slot] = id;
+        }
+        LAB_SLOTS.forEach(([, , ls], slot) => ls.forEach((l) => {
+            const A = out.find((n) => n.id === ids[slot])!, B = out.find((n) => n.id === ids[l])!;
+            A.links.push(B.id);
+            B.links.push(A.id);
+        }));
+    });
+    return out;
+}
+export const DRONE_TREE: DroneNode[] = buildDroneTree();
+const DT_BY = new Map(DRONE_TREE.map((n) => [n.id, n]));
+export const droneNode = (id: string) => DT_BY.get(id)!;
+type DroneFxSum = Required<Omit<DroneFx, "garrison">> & { garrison: boolean };
+let dfxKey = "";
+let dfxVal: DroneFxSum | null = null;
+/** What the owned drone tree nodes add up to (cached on the owned list). */
+export function droneFx(s: State): DroneFxSum {
+    const nodes = s.dr?.nodes ?? [];
+    const key = nodes.join(",");
+    if (dfxVal && key === dfxKey) return dfxVal;
+    const o: DroneFxSum = { speed: 0, off: 0, formation: 0, servoMax: 0, sweep: 0, rankSpeed: 0, postX: 0, sweepSvc: 0, svc: 0, rankPow: 0, relay: 0, garrison: false, parts: 0, modCost: 0, droneCost: 0, modKeep: 0, droneMax: 0, modGlobal: 0 };
+    for (const id of nodes) {
+        const f = DT_BY.get(id)?.fx;
+        if (!f) continue;
+        for (const [k, v] of Object.entries(f)) {
+            if (k === "garrison") o.garrison = o.garrison || !!v;
+            else if (k === "speed") o.speed = (1 + o.speed) * (1 + (v as number)) - 1; // speed boosts multiply
+            else { const r = o as unknown as Record<string, number>; r[k] = (r[k] ?? 0) + (v as number); }
+        }
+    }
+    dfxKey = key;
+    dfxVal = o;
+    return o;
+}
+export const droneTreeHas = (s: State, id: string) => s.dr.nodes.includes(id);
+export const droneNodeOpen = (s: State, n: DroneNode) => n.links.some((l) => l === "core" || s.dr.nodes.includes(l));
+export function droneVis(s: State, n: DroneNode): NodeVis {
+    if (s.dr.nodes.includes(n.id) || droneNodeOpen(s, n)) return "shown";
+    return n.links.some((l) => l !== "core" && droneNodeOpen(s, DT_BY.get(l)!)) ? "fog" : "hidden";
+}
+
+// -- mastery
+export const zoneSvc = (s: State, st: ButtonStat) => s.dr.svc[st] ?? 0;
+export function rankOf(svc: number): number { let r = 0; while (r < DRONE_TUNE.rankAt.length && svc >= DRONE_TUNE.rankAt[r]) r++; return r; }
+export const zoneRank = (s: State, st: ButtonStat) => rankOf(zoneSvc(s, st));
+/** Service needed for the next rank, or null at rank V. */
+export const nextRankAt = (s: State, st: ButtonStat) => { const r = zoneRank(s, st); return r < DRONE_TUNE.rankAt.length ? DRONE_TUNE.rankAt[r] : null; };
+export const ROMAN = ["", "I", "II", "III", "IV", "V"];
+/** A zone's output multiplier from its mastery rank. */
+export function masteryMul(s: State, st: ButtonStat): number {
+    if (!s.dr) return 1;
+    const r = zoneRank(s, st);
+    return r ? 1 + (DRONE_TUNE.rankX[r] - 1) * (1 + droneFx(s).rankPow) : 1;
+}
+export const masteryRanks = (s: State) => POSTABLE.reduce((a, st) => a + zoneRank(s, st), 0);
+/** Cores: one per mastery rank ever earned, minus what the drone tree has spent. */
+export const coresEarned = (s: State) => masteryRanks(s);
+export const coresSpent = (s: State) => s.dr.nodes.reduce((a, id) => a + (DT_BY.get(id)?.cost ?? 0), 0);
+export const cores = (s: State) => Math.max(0, coresEarned(s) - coresSpent(s));
+function addSvc(s: State, st: ButtonStat, n: number, fx: DroneFxSum) {
+    const v = n * (1 + fx.svc);
+    s.dr.svc[st] = Math.min(CAP, (s.dr.svc[st] ?? 0) + v);
+    if (fx.relay) {
+        const i = POSTABLE.indexOf(st);
+        const nb = POSTABLE[i + 1] ?? POSTABLE[i - 1];
+        if (nb) s.dr.svc[nb] = Math.min(CAP, (s.dr.svc[nb] ?? 0) + v * fx.relay);
+    }
+}
+
+// -- postings and speed
+/** Where a tier's Drone works: its posted zone while that zone is open, or null (it sweeps). */
+export function postOf(s: State, tier: number): ButtonStat | null {
+    const p = s.dr.post[tier];
+    return p && isUnlocked(s, p) ? p : null;
+}
+export function setPost(s: State, tier: number, st: ButtonStat | null): boolean {
+    if (tier < 0 || tier >= TIERS) return false;
+    if (st !== null && (!POSTABLE.includes(st) || !isUnlocked(s, st))) return false;
+    s.dr.post[tier] = st;
+    return true;
+}
+export const postX = (s: State, tier: number) => DRONE_TUNE.postX + droneFx(s).postX + (s.dr.mods[tier]?.[1] ?? 0) * DRONE_TUNE.uplinkEach;
+/** The hangar's part of a Drone's speed: Servo, the tree, Formation and Hivemind. */
+export function hangarSpeed(s: State, tier: number): number {
+    if (!s.dr) return 1;
+    const fx = droneFx(s);
+    let x = (1 + (s.dr.mods[tier]?.[0] ?? 0) * DRONE_TUNE.servoEach) * (1 + fx.speed);
+    if (fx.formation) x *= 1 + fx.formation * s.dr.post.filter((p, k) => p && s.drones[k] > 0 && isUnlocked(s, p)).length;
+    if (fx.rankSpeed) x *= 1 + fx.rankSpeed * masteryRanks(s);
+    return x;
+}
+/** Parts salvaged per second right now (the same sums droneStep makes). */
+export function partsRate(s: State): number {
+    const fx = droneFx(s);
+    const sweep = s.armed.filter((st) => st !== "bytes" && st !== "reboot" && isUnlocked(s, st as StatId)).length;
+    let u = 0;
+    for (let k = 0; k < TIERS; k++) {
+        if (s.drones[k] <= 0) continue;
+        const r = droneRate(s, k), post = postOf(s, k);
+        if (post) u += r * postX(s, k) + (fx.garrison ? r * sweep : 0);
+        else u += r * (1 + fx.sweep) * sweep;
+    }
+    return u * DRONE_TUNE.partK * (1 + fx.parts);
+}
+/** Mastery per second on a zone from the Drones posted there (and patrols). */
+export function svcRate(s: State, st: ButtonStat): number {
+    const fx = droneFx(s);
+    const armed = s.armed.includes(st) && isUnlocked(s, st);
+    let u = 0;
+    for (let k = 0; k < TIERS; k++) {
+        if (s.drones[k] <= 0) continue;
+        const r = droneRate(s, k), post = postOf(s, k);
+        if (post === st) u += r * postX(s, k);
+        if (fx.sweepSvc && armed && (!post || fx.garrison)) u += r * (post ? 1 : 1 + fx.sweep) * fx.sweepSvc;
+    }
+    return u * (1 + fx.svc);
+}
+export const modLevels = (s: State) => s.dr.mods.reduce((a, m) => a + m[0] + m[1] + m[2], 0);
+/** Foundry: everything +1% per mod level. */
+export const foundryAll = (s: State) => (s.dr ? 1 + droneFx(s).modGlobal * modLevels(s) : 1);
+
+// -- mods
+export const modMax = (s: State, mod: number) => DRONE_TUNE.modMax + (mod === 0 ? droneFx(s).servoMax : 0);
+export const modCost = (s: State, tier: number, mod: number) => DRONE_TUNE.modBase * Math.pow(DRONE_TUNE.modGrowth, s.dr.mods[tier][mod]) * Math.pow(DRONE_TUNE.modTier, tier) * (1 - droneFx(s).modCost);
+export type ModFail = "drone" | "max" | "parts";
+export function modBlock(s: State, tier: number, mod: number): ModFail | null {
+    if (s.drones[tier] <= 0) return "drone";
+    if (s.dr.mods[tier][mod] >= modMax(s, mod)) return "max";
+    if (s.dr.parts < modCost(s, tier, mod)) return "parts";
+    return null;
+}
+export function buyMod(s: State, tier: number, mod: number): boolean {
+    if (tier < 0 || tier >= TIERS || mod < 0 || mod > 2 || modBlock(s, tier, mod)) return false;
+    s.dr.parts -= modCost(s, tier, mod);
+    s.dr.mods[tier][mod] += 1;
+    return true;
+}
+
+// -- tree buying
+export function buyDroneNode(s: State, id: string): boolean {
+    const n = DT_BY.get(id);
+    if (!n || s.dr.nodes.includes(id) || !droneNodeOpen(s, n) || cores(s) < n.cost) return false;
+    s.dr.nodes.push(id);
+    return true;
+}
+/** Free respec: every Core comes back. Mod levels above the new caps are trimmed, without refund. Returns Cores refunded. */
+export function respecDrones(s: State): number {
+    const back = coresSpent(s);
+    s.dr.nodes = [];
+    for (const m of s.dr.mods) m[0] = Math.min(m[0], modMax(s, 0));
+    s.drones = s.drones.map((lv) => Math.min(lv, droneMax(s)));
+    return back;
+}
+/** What the owned drone tree gives, as label and value rows for the tree readout. */
+export function droneTreeTotals(s: State): [string, string][] {
+    const f = droneFx(s);
+    const rows: [string, string][] = [];
+    rows.push(["Mastery ranks", `${masteryRanks(s)} of ${POSTABLE.length * 5}`]);
+    if (f.speed) rows.push(["Drone speed", `x${+(1 + f.speed).toFixed(2)}`]);
+    if (f.formation) rows.push(["Formation", `+${Math.round(f.formation * 100)}% per posted Drone`]);
+    if (f.off) rows.push(["Away speed", `+${Math.round(f.off * 100)}%`]);
+    if (f.servoMax) rows.push(["Servo cap", `level ${DRONE_TUNE.modMax + f.servoMax}`]);
+    if (f.sweep) rows.push(["Sweeping", `x${1 + f.sweep}`]);
+    if (f.rankSpeed) rows.push(["Hivemind", `+${Math.round(f.rankSpeed * masteryRanks(s) * 100)}% speed`]);
+    rows.push(["Posting speed", `x${DRONE_TUNE.postX + f.postX} before Uplink`]);
+    if (f.sweepSvc) rows.push(["Patrol mastery", `${Math.round(f.sweepSvc * 100)}%`]);
+    if (f.svc) rows.push(["Mastery speed", `x${1 + f.svc}`]);
+    if (f.rankPow) rows.push(["Mastery bonus", `+${Math.round(f.rankPow * 100)}% stronger`]);
+    if (f.relay) rows.push(["Relay mast", `${Math.round(f.relay * 100)}% to the next zone`]);
+    if (f.garrison) rows.push(["Garrison", "posted Drones also sweep"]);
+    if (f.parts) rows.push(["Parts", `x${1 + f.parts}`]);
+    if (f.modCost) rows.push(["Mod prices", `-${Math.round(f.modCost * 100)}%`]);
+    if (f.droneCost) rows.push(["Drone prices", `-${Math.round(f.droneCost * 100)}%`]);
+    if (f.modKeep) rows.push(["Kept on Ascend", `${Math.round(f.modKeep * 100)}% of mods and Parts`]);
+    if (f.droneMax) rows.push(["Drone levels", `+${f.droneMax}`]);
+    if (f.modGlobal) rows.push(["Foundry", `+${Math.round(f.modGlobal * modLevels(s) * 100)}% everything`]);
+    return rows;
+}
+/** The hangar after an Ascend: postings, mastery and the tree stay; Parts and mods reset (Black box keeps a share). */
+function drOnAscend(s: State): DroneState {
+    const keep = droneFx(s).modKeep;
+    return {
+        ...s.dr,
+        parts: Math.floor(s.dr.parts * keep),
+        mods: s.dr.mods.map((m) => m.map((lv) => Math.floor(lv * keep))),
+        pacc: Array(TIERS).fill(0),
+        racc: Array(TIERS).fill(0),
+    };
+}
+/** A saved hangar, checked field by field; anything odd falls back to fresh. */
+function parseDr(o: unknown): DroneState {
+    const b = freshDr();
+    if (!o || typeof o !== "object") return b;
+    const x = o as Partial<DroneState>;
+    const num = (v: unknown, d = 0) => (typeof v === "number" && Number.isFinite(v) ? v : d);
+    const arr = (v: unknown) => (Array.isArray(v) && v.length === TIERS ? v.map((n) => Math.max(0, num(n))) : Array(TIERS).fill(0));
+    return {
+        post: Array.isArray(x.post) && x.post.length === TIERS ? x.post.map((p) => (POSTABLE.includes(p as ButtonStat) ? (p as ButtonStat) : null)) : b.post,
+        svc: Object.fromEntries(Object.entries(x.svc ?? {}).filter(([k, v]) => POSTABLE.includes(k as ButtonStat) && num(v) > 0).map(([k, v]) => [k, num(v)])),
+        parts: Math.max(0, num(x.parts)),
+        mods: Array.isArray(x.mods) && x.mods.length === TIERS ? x.mods.map((m) => (Array.isArray(m) && m.length === 3 ? m.map((lv) => Math.max(0, Math.floor(num(lv)))) : [0, 0, 0])) : b.mods,
+        nodes: Array.isArray(x.nodes) ? [...new Set(x.nodes.filter((id) => DT_BY.has(id)))] : [],
+        pacc: arr(x.pacc),
+        racc: arr(x.racc),
+    };
+}
+
 // ---- Handover: the reset past Ascend (second prestige layer). Reaching Node zero (Origin production) lets you hand the
 // node to the next operator, the way Wren, Tamsin, Osk and Vael did. It wipes everything Ascend wipes plus AP, perks, the
 // prestige tree, Drones, Mounted drives and the lab's Intel and stock. It keeps goals, secrets, logs, lifetime stats and
@@ -1841,7 +2192,7 @@ export function handover(s: State, proto: ProtoId | null, note = "", proto2: Pro
         notes: text ? [...s.hand.notes, { n: s.hand.count + 1, text, at: s.at, proto }].slice(-50) : s.hand.notes,
     };
     const lab: LabState = { ...freshLab(), seen: s.lab.seen, nodes: s.lab.nodes, last: s.lab.last };
-    const keep = { hand, lab, ap: refund, perks, tree: kept, treeLv: {}, ach: s.ach, achAt: s.achAt, logs: s.logs, armed: s.armed, watchdog: s.watchdog, dropAt: s.dropAt, autoArmed: s.autoArmed, auto: s.auto, life: { ...s.life }, started: s.started };
+    const keep = { hand, lab, ap: refund, perks, tree: kept, treeLv: {}, ach: s.ach, achAt: s.achAt, logs: s.logs, armed: s.armed, watchdog: s.watchdog, dropAt: s.dropAt, autoArmed: s.autoArmed, auto: s.auto, dr: drOnAscend(s), life: { ...s.life }, started: s.started };
     const n = fresh(s.at);
     Object.assign(n, keep);
     Object.assign(s, n);
@@ -1939,6 +2290,7 @@ export function parseSave(raw: string): State | null {
         if (!Number.isFinite(n.dropAt)) n.dropAt = 0;
         if (!Number.isFinite(n.runWins)) n.runWins = 0;
         n.lab = parseLab(o.lab);
+        n.dr = parseDr(o.dr);
         n.hand = parseHand(o.hand);
         const back = migrateTree(n);
         if (back > 0) n.treeRefund = (n.treeRefund ?? 0) + back;

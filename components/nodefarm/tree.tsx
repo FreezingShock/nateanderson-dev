@@ -8,6 +8,7 @@ import { SPRITE_CELLS } from "@/lib/nodefarm/tree-sprites";
 import { cardGlitch } from "./card-glitch";
 import { LabBackdrop } from "./lab-backdrop";
 import { FwBackdrop } from "./fw-backdrop";
+import { HangarBackdrop } from "./hangar-backdrop";
 import { BRANCHES, TREE, fmt, nodeCost, nodeLevel, nodeOpen, nodeVis, treeNode, treeSpent, treeTotals, type Branch, type State, type TreeKind } from "@/lib/nodefarm/engine";
 
 /**
@@ -38,7 +39,7 @@ export interface MenuNode {
  * data, the currency and the words, and `theme` picks the look (the research tree is the blue "lab" skin, nodefarm-lab.css).
  */
 export interface TreeModel {
-    theme: "prestige" | "lab" | "root";
+    theme: "prestige" | "lab" | "root" | "hangar";
     /** bar title after "naOS // node.farm // " */
     title: string;
     /** dialog label, also used in sentences ("Prestige tree map") */
@@ -181,6 +182,7 @@ function TreeMenuInner({ s, model, reduced, onBuy, onRespec, onClose }: TreeMenu
     const m = model ?? prestigeModel(s);
     const lab = m.theme === "lab";
     const root_ = m.theme === "root"; // the Handover Firmware tree (green phosphor skin, nodefarm-handover.css)
+    const hangar = m.theme === "hangar";
     // per-model lookups (the node list is a constant per model, so these only build once per theme)
     const { byId, BCOL, BNAME, RING } = useMemo(() => ({
         byId: new Map(m.nodes.map((n) => [n.id, n])),
@@ -763,7 +765,7 @@ function TreeMenuInner({ s, model, reduced, onBuy, onRespec, onClose }: TreeMenu
         <div className="ctos nf-tm-host">
         <div className="nf-tm" ref={root} role="dialog" aria-modal="true" aria-label={m.label} data-theme={m.theme} data-lod="near" data-focus={sel ? "" : undefined} data-boot={boot} data-chrome={chrome ? "" : undefined} onKeyDown={keys}>
             <header className="nf-tm-bar">
-                <span className="nf-tm-t">{lab && <i className="nf-tm-ps1" aria-hidden="true">PS ~/lab&gt;</i>}{root_ && <i className="nf-tm-ps1" aria-hidden="true">root@node0:/fw#</i>}naOS // node.farm // {m.title}</span>
+                <span className="nf-tm-t">{lab && <i className="nf-tm-ps1" aria-hidden="true">PS ~/lab&gt;</i>}{root_ && <i className="nf-tm-ps1" aria-hidden="true">root@node0:/fw#</i>}{hangar && <i className="nf-tm-ps1" aria-hidden="true">~/hangar $</i>}naOS // node.farm // {m.title}</span>
                 <span className="nf-tm-ap" aria-live="polite"><b>{fmt(m.wallet)}</b> {m.unit}<small>{owned}/{TREE.length} nodes{ready ? ` // ${ready} ready` : ""}</small></span>
                 {m.respec && onRespec && (
                     <button type="button" className="nf-tm-b" data-danger={confirm ? "" : undefined} disabled={!owned} onClick={respec} title={`Take every node back and refund its ${m.unit}. Free.`}>
@@ -785,7 +787,7 @@ function TreeMenuInner({ s, model, reduced, onBuy, onRespec, onClose }: TreeMenu
                 onClickCapture={(e) => { if (gest.current.suppress) { e.stopPropagation(); e.preventDefault(); } }}
                 onClick={(e) => { if (e.target === view.current || e.target === world.current) { setSel(""); setHov(null); } }}
             >
-                {lab ? <LabBackdrop ref={bd} unit={U} /> : root_ ? <FwBackdrop ref={bd} unit={U} /> : <TreeBackdrop ref={bd} unit={U} />}
+                {lab ? <LabBackdrop ref={bd} unit={U} /> : root_ ? <FwBackdrop ref={bd} unit={U} /> : hangar ? <HangarBackdrop ref={bd} unit={U} /> : <TreeBackdrop ref={bd} unit={U} />}
                 <div className="nf-tm-world" ref={world}>
                     {labels.map(({ b, th, r, got, total }) => r > 0 && (
                         <div key={b.id} className="nf-tm-sec" data-side={Math.cos(th) > 0.35 ? "r" : Math.cos(th) < -0.35 ? "l" : "c"} style={{ left: Math.cos(th) * r * U, top: Math.sin(th) * r * U, ["--c" as string]: b.color } as CSSProperties}>
@@ -817,7 +819,7 @@ function TreeMenuInner({ s, model, reduced, onBuy, onRespec, onClose }: TreeMenu
                     >
                         <span className="nf-tn-shadow" />
                         <span className="nf-tn-halo" />
-                        <span className="nf-tn-body"><span className="nf-tn-face"><NodeIcon n={null} st="owned" fog={false} core={lab ? "rx_core" : root_ ? "fw_core" : undefined} /></span></span>
+                        <span className="nf-tn-body"><span className="nf-tn-face"><NodeIcon n={null} st="owned" fog={false} core={lab ? "rx_core" : root_ ? "fw_core" : hangar ? "dx_core" : undefined} /></span></span>
                         <span className="nf-tn-l">core</span>
                     </button>
                     {TREE.map((n) => {
@@ -865,7 +867,7 @@ function TreeMenuInner({ s, model, reduced, onBuy, onRespec, onClose }: TreeMenu
                         );
                     })}
                 </div>
-                {!lab && !root_ && <TreeDust />}
+                {!lab && !root_ && !hangar && <TreeDust />}
             </div>
             <span className="nf-tm-zoom" role="group" aria-label="Zoom">
                 <button type="button" className="nf-tm-b sq" aria-label="Zoom in" onClick={() => { const { w, h } = dims.current; zoomAt(w / 2, h / 2, 1.33, true); }}>+</button>

@@ -30,6 +30,8 @@ SIZES = {"s": 32, "m": 40, "l": 64}
 SECS = {"signal": "#2fd8e8", "forge": "#ffc53a", "systems": "#6bffc9", "drones": "#ff4d6d", "anomaly": "#9a7bff", "core": "#e6f0ff"}
 # the Exploit Lab research tree (nodefarm_lab_motifs.py): blues, so the research tree reads as one blueprint
 SECS.update({"exploits": "#59b8ff", "malware": "#8f9bff", "infra": "#5ff0e8", "labcore": "#4aa3ff"})
+# the drone tree (nodefarm_drone_motifs.py): warm hangar colours
+SECS.update({"flight": "#ffb14a", "dispatch": "#6bffc9", "salvage": "#ff7a4a", "hangarcore": "#c9d2e0"})
 SECS.update({"boot": "#3dff6e", "memory": "#ffc53a", "relay": "#64e6ff", "fwcore": "#3dff6e"})
 
 
@@ -228,9 +230,11 @@ def hidden(img, filled):
 sys.path.insert(0, HERE)
 from nodefarm_tree_motifs import MOTIFS, NODES  # noqa: E402  (motif library and the node -> motif table)
 from nodefarm_lab_motifs import LAB_NODES  # noqa: E402  (research tree sprites; their motifs register into MOTIFS)
-from nodefarm_fw_motifs import FW_NODES  # noqa: E402  (Handover Firmware tree sprites, appended so older rows never move)
+from nodefarm_drone_motifs import DRONE_NODES  # noqa: E402  (drone tree sprites, appended last so older rows keep their place)
 
-NODES = {**NODES, **LAB_NODES, **FW_NODES}
+from nodefarm_fw_motifs import FW_NODES  # noqa: E402  (Handover Firmware tree sprites, appended after the drone tree so older rows never move)
+
+NODES = {**NODES, **LAB_NODES, **DRONE_NODES, **FW_NODES}
 
 
 def build_sheet(size_key, rows):
