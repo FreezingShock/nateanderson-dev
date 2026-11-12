@@ -9,7 +9,7 @@ import {
     TUNE, overclockMult, overclockSecs, respec, ascend, autoBuy, breach, button, buyDrone, buyNode, canAfford, buyPerk, toggleArm, checkGoals, derive, exportSave, fmt, fmtTime, fresh, getNumFmt, setNumFmt, type NumFmt, isUnlocked, offline, parseSave, press, STATS, tick,
     apEach, dropFill, hasFeature, openDrop, setMount, statDef,
     buyLabNode, cancelCompile, compile, deploy, labNode, labOpen, payload, type PayloadId,
-    buyFw, fwNode, handSeen, handover, protoDef, respecFw, setProto, type ProtoId,
+    buyFw, fwNode, handSeen, handover, protoDef, protoRank, respecFw, setProto, type ProtoId,
     type ButtonStat, type MatId, type State, type StatId,
 } from "@/lib/nodefarm/engine";
 import type { NfLive } from "@/lib/nodefarm/records";
@@ -46,6 +46,7 @@ import { exact, nextStep, type Target } from "@/lib/nodefarm/guide";
 import { GoalsPanel, MenuPanel, RecordsPanel } from "./systems";
 import { AscendPanel } from "./ascend";
 import { HandoverPanel, fwModel } from "./handover";
+import { HandoverCut, type HandCutInfo } from "./handover-cut";
 import { Dock, PhoneTabs, WinBar, swInfo } from "./switcher";
 import { AdminPanel, type AdminHost } from "./admin";
 import { isAdmin, setAdmin } from "@/lib/nodefarm/admin";
@@ -123,6 +124,8 @@ export function NodeFarm() {
     const closeLab = useCallback(() => setLabTree(false), []);
     /** the Handover Firmware tree (same menu, green phosphor skin) */
     const [fwTree, setFwTree] = useState(false);
+    // the Handover moment (handover-cut.tsx); `after` runs when it closes
+    const [cut, setCut] = useState<(HandCutInfo & { after: () => void }) | null>(null);
     const closeFw = useCallback(() => setFwTree(false), []);
     const treeOpenRef = useRef(false);
     // a full-screen tree (prestige, Exploit Lab, Drone, Firmware) hides the board, so the game loop barely re-renders it
@@ -344,7 +347,7 @@ export function NodeFarm() {
     // ---- news lines: every so often one short line (past operator, operator, node note, hint) drops into the feed,
     // chosen for how far the farm has got. Skipped when the tab is hidden, a window is open, or the feed is busy.
     const busyRef = useRef(false);
-    busyRef.current = !!win || treeOpen || droneTree || fwTree || !!away || !!confirm;
+    busyRef.current = !!win || treeOpen || droneTree || fwTree || !!cut || !!away || !!confirm;
     useEffect(() => {
         if (!ready) return;
         let to: ReturnType<typeof setTimeout>;
@@ -929,11 +932,13 @@ export function NodeFarm() {
     const openFw = () => { if (!fwSeen) return; setWin(""); setTreeOpen(false); setLabTree(false); setFwTree(true); sfx("tab"); };
     const doHandover = (proto: ProtoId, note: string, proto2: ProtoId | null) => {
         keepBackup("before Handover");
+        const from = s.hand.proto;
         const keys = handover(s, proto, note, proto2);
         if (!keys) return sfx("deny");
         sfx("nfAscend");
         const p = protoDef(proto);
-        juice.emit({ t: "milestone", title: `Handover ${s.hand.count}: +${keys} Keys`, sub: `${p.op}'s protocol is running: ${p.name}. Flash Firmware with your Keys.` });
+        const milestone = () => juice.emit({ t: "milestone", title: `Handover ${s.hand.count}: +${keys} Keys`, sub: `${p.op}'s protocol is running: ${p.name}. Flash Firmware with your Keys.` });
+        setCut({ n: s.hand.count, keys, from, fromRank: from ? protoRank(s, from) : 0, to: proto, note: s.hand.notes.at(-1)?.n === s.hand.count ? s.hand.notes.at(-1)!.text : "", after: milestone });
         feedStore.push([...call(idTok("system"), "handover", [strTok(p.op.toLowerCase())]), pun(" → "), num(`+${keys} Keys`), txt(" "), { k: "c", v: "// node handed over" }], { tone: "good", type: true });
         prevIds.current = null;
         save();
@@ -1079,7 +1084,7 @@ export function NodeFarm() {
             {toast && <div className="nf-toast" role="status"><NfIcon name="spark" /> Goal: {toast}</div>}
 
             <ZoneEventCard s={s} id={zeCard} onChoose={onZoneEv} onClose={closeZeCard} reduced={reduced} />
-            <EventLayer game={g} ready={ready} enabled={evOn} busy={!!win || treeOpen || labTree || droneTree || fwTree || !!away || !!confirm} reduced={reduced} onEngage={evEngage} onResult={evResult} onMiss={evMiss} onDisable={() => setEvents(false)} />
+            <EventLayer game={g} ready={ready} enabled={evOn} busy={!!win || treeOpen || labTree || droneTree || fwTree || !!cut || !!away || !!confirm} reduced={reduced} onEngage={evEngage} onResult={evResult} onMiss={evMiss} onDisable={() => setEvents(false)} />
             <Juice reduced={reduced} />
 
             <section className="nf-pane nf-corepane" data-pane="core" aria-label="Core">
@@ -1265,6 +1270,7 @@ export function NodeFarm() {
                     onClose={closeDrones}
                 />
             )}
+            {cut && <HandoverCut info={cut} reduced={reduced} onDone={() => { const a = cut.after; setCut(null); a(); }} />}
             {fwTree && (
                 <TreeMenu
                     s={s}

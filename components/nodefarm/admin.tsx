@@ -8,7 +8,7 @@ import {
 } from "@/lib/nodefarm/engine";
 import { ZONE_EVENTS, ensureZe, zeClear, zeStart, zoneLabel } from "@/lib/nodefarm/zoneevents";
 import {
-    ARMABLE, RESOURCES, addKeys, addStat, forceHandover, ownAllFw, clearLab, clearLogs, clearPerks, dropSnap, forceAscend, grantGoals, grantLab, grantLogs, grantSecrets, jumpEra, maxDrones, maxOut, maxPerks, overwrite, ownAllNodes, parseAmount, refundTree,
+    ARMABLE, RESOURCES, addKeys, addStat, forceHandover, maxProtoRanks, ownAllFw, clearLab, clearLogs, clearPerks, dropSnap, forceAscend, grantGoals, grantLab, grantLogs, grantSecrets, jumpEra, maxDrones, maxOut, maxPerks, overwrite, ownAllNodes, parseAmount, refundTree,
     forgetScript, forgetScripts, grantScripts, scriptCount, teachScript, revokeGoals, setAP, setDrone, setPerk, setProd, setStat, skipTime, snapState, snaps, takeSnap, toggleNode, toggleSecret, type Snap,
 } from "@/lib/nodefarm/admin";
 import { SCRIPTS, isOn, setRunning } from "@/lib/nodefarm/scripts";
@@ -302,6 +302,7 @@ function AdminPanelInner({ host }: { host: AdminHost }) {
                                         <Btn onClick={() => act((x) => `handed over: +${forceHandover(x)} Keys`, "forced a Handover")}>Force Handover</Btn>
                                         <Btn onClick={() => act((x) => addKeys(x, 20), "+20 Keys")}>+20 Keys</Btn>
                                         <Btn onClick={() => act(ownAllFw, "every Firmware flashed")}>All Firmware</Btn>
+                                        <Btn onClick={() => act(maxProtoRanks, "every protocol at rank III")}>Max ranks</Btn>
                                     </div>
                                     <div className="nf-ad-line">
                                         <span className="nf-ad-k">Overclock</span>
