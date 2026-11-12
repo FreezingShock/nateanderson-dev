@@ -4,10 +4,11 @@ import { memo, useCallback, useEffect, useRef, useState, type CSSProperties, typ
 import { createPortal } from "react-dom";
 import {
     BRANCHES, GOALS, GOAL_TIERS, MATS, PERKS, SECRETS, TIERS, TIER_NAMES, TREE, TREE_FULL, apOnAscend, adminFlags, derive, droneMax, exportSave, fmt, fmtTime, fresh, parseSave, statDef, treeFx,
-    type MatId, type State, type StatId,
+    STATS, isUnlocked, type MatId, type State, type StatId,
 } from "@/lib/nodefarm/engine";
+import { ZONE_EVENTS, ensureZe, zeClear, zeStart, zoneLabel } from "@/lib/nodefarm/zoneevents";
 import {
-    ARMABLE, RESOURCES, addStat, clearLab, clearLogs, clearPerks, dropSnap, forceAscend, grantGoals, grantLab, grantLogs, grantSecrets, jumpEra, maxDrones, maxOut, maxPerks, overwrite, ownAllNodes, parseAmount, refundTree,
+    ARMABLE, RESOURCES, addKeys, addStat, forceHandover, ownAllFw, clearLab, clearLogs, clearPerks, dropSnap, forceAscend, grantGoals, grantLab, grantLogs, grantSecrets, jumpEra, maxDrones, maxOut, maxPerks, overwrite, ownAllNodes, parseAmount, refundTree,
     revokeGoals, setAP, setDrone, setPerk, setProd, setStat, skipTime, snapState, snaps, takeSnap, toggleNode, toggleSecret, type Snap,
 } from "@/lib/nodefarm/admin";
 import { EVENTS, type EventKind } from "@/lib/nodefarm/events";
@@ -211,6 +212,7 @@ function AdminPanelInner({ host }: { host: AdminHost }) {
         window.addEventListener("pointercancel", up);
     };
 
+    const [zeZone, setZeZone] = useState<StatId>("copper");
     const act = (fn: (s: State) => void | string, msg: string) => {
         const r = fn(host.get());
         host.changed();
@@ -295,6 +297,12 @@ function AdminPanelInner({ host }: { host: AdminHost }) {
                                         <small className="nf-ad-note">{gain >= 1 ? `+${gain} AP available` : "adds the Aether it needs first"}</small>
                                     </div>
                                     <div className="nf-ad-line">
+                                        <span className="nf-ad-k">Handover</span>
+                                        <Btn onClick={() => act((x) => `handed over: +${forceHandover(x)} Keys`, "forced a Handover")}>Force Handover</Btn>
+                                        <Btn onClick={() => act((x) => addKeys(x, 20), "+20 Keys")}>+20 Keys</Btn>
+                                        <Btn onClick={() => act(ownAllFw, "every Firmware flashed")}>All Firmware</Btn>
+                                    </div>
+                                    <div className="nf-ad-line">
                                         <span className="nf-ad-k">Overclock</span>
                                         <Btn onClick={() => act((x) => { x.overclock = 60; }, "overclock 60 s")}>60 s</Btn>
                                         <Btn onClick={() => act((x) => { x.overclock = 600; }, "overclock 10 min")}>10 min</Btn>
@@ -303,6 +311,20 @@ function AdminPanelInner({ host }: { host: AdminHost }) {
                                     <div className="nf-ad-line">
                                         <span className="nf-ad-k">Quick-time event</span>
                                         <span className="nf-ad-opts">{EVENTS.map((e) => <Btn key={e.kind} onClick={() => { host.fire(e.kind); setNote(`> ${e.title} sent`); }}>{e.title}</Btn>)}</span>
+                                    </div>
+                                    <div className="nf-ad-line">
+                                        <span className="nf-ad-k">Zone event</span>
+                                        <select className="nf-ad-in" aria-label="Zone for the event" value={zeZone} onChange={(e) => setZeZone(e.target.value as StatId)} onKeyDown={(e) => e.stopPropagation()}>
+                                            {STATS.filter((x) => isUnlocked(host.get(), x.id)).map((x) => <option key={x.id} value={x.id}>{zoneLabel(x.id)}</option>)}
+                                        </select>
+                                    </div>
+                                    <div className="nf-ad-line">
+                                        <span className="nf-ad-k" />
+                                        <span className="nf-ad-opts">
+                                            {ZONE_EVENTS.map((e) => <Btn key={e.kind} onClick={() => act((x) => { zeStart(x, e.kind, isUnlocked(x, zeZone) ? zeZone : "bytes"); }, `${e.title} on ${zoneLabel(zeZone)}`)}>{e.title}</Btn>)}
+                                            <Btn onClick={() => act((x) => { zeClear(x); }, "zone events cleared")}>Clear</Btn>
+                                            <Btn onClick={() => act((x) => { ensureZe(x).wait = 5; }, "next zone event in 5 s")}>Next in 5 s</Btn>
+                                        </span>
                                     </div>
                                     <div className="nf-ad-line">
                                         <span className="nf-ad-k">Jump to era</span>

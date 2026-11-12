@@ -30,6 +30,8 @@ const FULL = new Set(E.fullTreeIds()); // NF_BAN=id,id: the bot never buys these
 for (const id of (process.env.NF_BAN || "").split(",")) FULL.delete(id); // the bot takes the first side of every fork
 // Ascend policy: ascend as soon as AP gain is at least max(2, 40% of AP already held), a typical player keeps going for a while first.
 let t = 0, nextBuy = 0;
+const HANDS = Number(process.env.NF_HAND || 0);
+const handLog = [];
 const dt = 0.5;
 while (t < hours * 3600) {
     E.tick(s, dt);
@@ -129,9 +131,24 @@ while (t < hours * 3600) {
         if (allRanks || s.ap > 40) { while (E.buyPerk(s, "power")); }
         if (E.treeComplete(s)) mark("tree whole", t);
         if (allRanks) mark("tree done", t);
-        if (allRanks && s.origin > 0 && !process.env.NF_NOSTOP) break;
+        // NF_HAND=n: hand over up to n times (the reset past Ascend) once the tree is done and Origin is producing.
+        // NF_PROTO picks the protocol (default wren). Firmware is bought cheapest first.
+        if (HANDS > 0 && E.treeComplete(s) && E.handOpen(s) && s.hand.count < HANDS) {
+            const keys = E.handover(s, process.env.NF_PROTO || "wren", "", "osk");
+            handLog.push([t, keys]);
+            mark("handover " + s.hand.count, t);
+            ascents.length = 0;
+            for (let more = true; more;) {
+                more = false;
+                const next = E.FW.filter((n) => !s.hand.fw.includes(n.id) && E.fwNodeOpen(s, n)).sort((a, b) => a.cost - b.cost)[0];
+                if (next && E.buyFw(s, next.id)) { more = true; mark("fw " + next.id, t); }
+            }
+            continue;
+        }
+        if (allRanks && s.origin > 0 && !process.env.NF_NOSTOP && s.hand.count >= HANDS) break;
     }
 }
+if (HANDS) console.log("handovers", handLog.map(([a, k], i) => `${(a / 3600).toFixed(1)}h +${k} keys${i ? ` (cycle ${((a - handLog[i - 1][0]) / 3600).toFixed(1)}h)` : ""}`).join(", "), "fw", s.hand.fw.length + "/" + E.FW.length);
 console.log("ascends", ascents.map(([a, g, ap]) => `${(a / 3600).toFixed(0)}h +${g} (ap ${ap})`).join(", "));
 const h = (x) => (x / 3600).toFixed(2) + " h";
 for (const [k, v] of Object.entries(marks)) if (k !== "lastReboot") console.log(k.padEnd(14), h(v));

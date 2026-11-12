@@ -39,11 +39,11 @@ export const RIG_TUNE = {
     // 10 Void draw
     draws: [0, 0.1, 0.25], drawK: 1, drawKLv: 0.2,
     // 11 Stillness: minutes without a press of your own to reach the full boost
-    stillMins: 20, stillLv: 0.15, stillMax: 2,
+    stillMins: 20, stillLv: 0.15, stillMax: 1,
     // 12 Weather: one cycle, storm minutes, storm boost
-    wxMins: 12, stormMins: 3, stormLv: 0.6, storm: 2, front: 3,
+    wxMins: 12, stormMins: 3, stormLv: 0.6, storm: 1.5, front: 3,
     // 13 Beacon
-    pulseSecs: 30, pulseLv: 0.06, pulsesPer: 30,
+    pulseSecs: 30, pulseLv: 0.06, pulsesPer: 40,
     // 14 Gravity well
     well: 0.025, wellLv: 0.008,
     // 15 Index
@@ -79,9 +79,9 @@ export const RIGS: RigDef[] = [
       keys: [{ key: "runes:echo", name: "Echo", perLv: "+5% Aether" }, { key: "runes:ward", name: "Ward", perLv: "+5% Runes" }, { key: "runes:root", name: "Root", perLv: "+5% Quartz" }] },
     R("starglass", "Prism beam", "aim", "Aim the beam at any zone below. That zone gets a boost that grows with the Starglass you hold.", "a brighter beam"),
     R("voidsteel", "Void draw", "link", "Siphon part of Starglass output into the forge. The more you draw, the more Voidsteel comes out.", "each siphoned share pays 20% more"),
-    R("chrono", "Stillness", "idle", "Chrono runs faster the longer you go without pressing a button yourself, up to ×3. Drones and scripts don't break it.", "reaches full stillness 15% sooner"),
-    R("nebula", "Weather", "cycle", "Clear skies, a front, then a storm, on a 12 minute clock. Storms double Nebula; fronts thin it.", "storms last 36 s longer"),
-    R("pulsars", "Beacon", "link", "The spire pulses on a steady clock. Every 30 pulses fires a free Overclock.", "pulses 6% faster"),
+    R("chrono", "Stillness", "idle", "Chrono runs faster the longer you go without pressing a button yourself, up to ×2. Drones and scripts don't break it.", "reaches full stillness 15% sooner"),
+    R("nebula", "Weather", "cycle", "Clear skies, a front, then a storm, on a 12 minute clock. Storms add half again to Nebula; fronts thin it.", "storms last 36 s longer"),
+    R("pulsars", "Beacon", "link", "The spire pulses on a steady clock. Every 40 pulses fires a free Overclock.", "pulses 6% faster"),
     R("singularity", "Gravity well", "link", "Every material button pressed this run, by anyone, drops mass into the well. Mass strengthens Singularity.", "+0.8% per tenfold mass"),
     R("engrams", "Index", "collection", "Every goal, secret and story log you own is filed here, and each one strengthens Engrams.", "+0.2% per filed record"),
     R("paradox", "Mirror", "catch-up", "The material zone furthest behind is mirrored: it gets a boost that grows with the Paradox you hold.", "a stronger reflection"),

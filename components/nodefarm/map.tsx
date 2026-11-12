@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef, useState, type CSSProperties } from "react";
-import { BRANCHES, GOALS, GOAL_TIERS, STATS, TIER_NAMES, TREE, TREE_FULL, TUNE, fullTreeIds, amount, apEach, apOnAscend, canAscend, derive, droneCost, dronesOpen, fmt, goalDone, hasNode, intelRate, isUnlocked, LAB, LAB_SECS, PAYLOADS, hasRecipe, tiersDone, MATS, type MatId, type State, type StatId } from "@/lib/nodefarm/engine";
+import { BRANCHES, GOALS, GOAL_TIERS, STATS, TIER_NAMES, TREE, TREE_FULL, TUNE, fullTreeIds, amount, apEach, apOnAscend, canAscend, derive, droneCost, dronesOpen, fmt, goalDone, hasNode, intelRate, isUnlocked, LAB, LAB_SECS, PAYLOADS, hasRecipe, tiersDone, MATS, type MatId, type State, type StatId, ascendNeed } from "@/lib/nodefarm/engine";
 const FULL = new Set(fullTreeIds());
 import { feedLine, nextStep, unlockInfo } from "@/lib/nodefarm/guide";
 import { LORE } from "@/lib/nodefarm/lore";
@@ -113,8 +113,8 @@ export function MapPanel({ s, d, onTree, onWin, onLab }: { s: State; d: D; onTre
 
             <div className="nf-wk-cols nf-wk-beyond">
                 <Frame i={3} color="#6bffc9" path="sys/ascend" title="Ascend" note={<>Wipes the run, keeps goals, perks, the tree and lab research, and pays AP. Each AP adds +{Math.round(apEach(s) * 100)}% to everything.</>}>
-                    <span className="nf-bar sm" aria-hidden="true"><i style={{ width: `${Math.min(100, (s.aether / TUNE.ascendAether) * 100)}%` }} /></span>
-                    <DataLines rows={[["status", canAscend(s) ? `ready, +${fmt(apOnAscend(s))} AP` : `${fmt(s.aether)} / ${fmt(TUNE.ascendAether)} Aether`]]} />
+                    <span className="nf-bar sm" aria-hidden="true"><i style={{ width: `${Math.min(100, (s.aether / ascendNeed(s)) * 100)}%` }} /></span>
+                    <DataLines rows={[["status", canAscend(s) ? `ready, +${fmt(apOnAscend(s))} AP` : `${fmt(s.aether)} / ${fmt(ascendNeed(s))} Aether`]]} />
                     <button type="button" className="nf-wk-btn" onClick={() => onWin("ascend")}>Open Ascend</button>
                 </Frame>
                 <Frame i={4} color="#ff4d6d" path="sys/drones" title="Drones" note="Press buttons for you, even while you are away. Bought with Aether, one line per button tier.">

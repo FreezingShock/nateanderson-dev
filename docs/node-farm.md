@@ -255,6 +255,19 @@ Whole game simulated together (17 zones, 60-node tree, Exploit Lab) with `NF_ASC
 Result (bot, no Drones, with the lab): first Ascend 2.67 h, Chrono 25.6 h, Origin 43.6 h (unchanged); first 40 tree nodes 44.4 h, whole tree 48.4 h (was 45.4 h), every rank 60.4 h (was 51.4 h with AP per Ascend jumping from 220 to 5,000 in one Ascend). With the bot arming Drones: first Ascend 4.0 h, Chrono 13.7 h, Origin 42.7 h, ranks done 66 h.
 Not changed, on purpose: Engrams, Paradox and Origin still open within about 20 minutes of each other for the bot (the stat below is already huge, so `unlockAt` does not gate them; gating on Ascend count walled the Drone bot for 17 h, so it was dropped). Debug flags: `NF_TRACE=<minutes>` prints a status line, `NF_BAN=id,id` stops the bot buying nodes.
 
+## Handover (the reset past Ascend), 2026-11-12
+The second prestige layer. Built on the recommended picks while Nate's taste cards (name, what it wipes, what Keys buy) were open.
+- Opens once Origin is producing (`handOpen`: `HAND_TUNE.needProd` Origin producers). The window (key H, rail and phone tab, `components/nodefarm/handover.tsx`, styles `app/camino/nodefarm-handover.css`, classes `nf-hx*`) shows from the moment the Root Chamber decrypts (`handSeen`).
+- `handover(s, proto, note, proto2)` wipes the run, AP, perks, the prestige tree (ranks too), Drones, Mounted drives and the lab's Intel, stock, queue and buffs. It keeps goals, secrets, logs, lifetime stats (so the quarter-unlock after a first Ascend still applies), lab research, Keys, Firmware and the notes. Hold 1.6 s to confirm; a screen-reader click asks twice. A backup of the save is kept first ("before Handover" in Menu).
+- Keys = `keysBase` + tree nodes and ranks / 6 + sqrt(log10 Origin), times Keysmith. A whole tree pays about 13 to 20.
+- Firmware: 18 nodes in three arms (Boot, Memory, Relay) on the lab tree's layout, rotated. Data `FW_ARMS`, effects `handFx` (cached per array), prices `HAND_TUNE.nodeCost` (2 to 12 Keys). Respec is free. Shown by the shared `TreeMenu` with `fwModel(s)` in the green phosphor `root` theme (backdrop `components/nodefarm/fw-backdrop.tsx`); key K opens it, as does the window's gateway.
+- Protocols (`PROTOS`): one per cycle, chosen at the Handover, named after the old operators: Wren (Multiplier buttons x3, Reboots x2), Tamsin (Intel x3, goals x2), Osk (Drones x3 speed, half price), Vael (events twice as often, each win pays 2 min of production). `protoK` is 1 for the running one and 0.5 for the Dual boot one. Operator's desk lets you switch any time.
+- Hooks in the engine: `derive` (Lineage, Tamsin, Wren, Hot standby), `isUnlocked` via `unlockNeed` (Fast path, Root path), `hasFeature` (Preinstalled), `droneRate`/`droneCost` (Osk), `eventHaste`/`breach` (Vael), `ascendNeed` (Short fuse; every "400 Aether" in the UI reads it), `ascend` (Lab image, Drone RAM, `bootKit`), `offline` (Hot standby), `parseSave` (`parseHand`; old saves get a fresh one).
+- `derive` now caps Bytes/s and every rate at `CAP`, so a runaway late game can't write Infinity (null) into the save.
+- Pacing (sim after the balance audit #199, `NF_HAND=8 NF_NODRONES=1 NF_ASC_GAP=1`, the bot hands over once the tree is whole, ranks not needed): first Handover 48 h, then cycles of 18, 9, 6, 10, 5, 8 and 5 h; all Firmware by the 7th (~105 h). Every Handover done also multiplies AP on Ascend by (1 + `apPerHand` x Handovers), so each cycle rebuilds the tree faster. `NF_PROTO` picks the bot's protocol.
+- Art: `scripts/naos-art/nodefarm-handover-art.py` (fw-bg-0/2, fw-sec-*, fw-core, scene-handover with 4 frames); sprites in `scripts/naos-art/nodefarm_fw_motifs.py` (appended to the tree sprite sheets so old rows never move). Run the stamper after either.
+- Records "Handover" section, console `nf handover`, guide steps `flash-fw` and `handover`, admin Run: Force Handover, +20 Keys, All Firmware.
+- Checks: /mnt/project-files/portfolio/node-farm-handover/hand.mjs (`node hand.mjs <repo> <base> <outdir>`).
 ## Scripts (automation layer), 2026-11-12
 Learned automation, in `lib/nodefarm/scripts.ts` (rules, registers `scriptStep` in the engine's `TICK_HOOKS`, so scripts also run through time away), the board zone `components/nodefarm/scripts.tsx` (between the Exploit Lab and the Drone bay), styles `app/camino/nodefarm-scripts.css` (amber phosphor, `nf-sch-*`). Save state is `state.auto` (`AutoState` in engine.ts), created on first use and kept through Ascend; old saves are credited for what they already did by hand (lifetime presses, compiles, deploys, Ascends; tiers with presses this run count as taught).
 - Earned by doing (the recommended pick, card sent to Nate): the scheduler "records" you. 40 manual buy presses teach buy.sh, 12 manual Reboots reboot.sh, 5 compiles compile.sh, 5 deploys deploy.sh, 2 Dead drop opens drop.sh, 3 Ascends ascend.sh (`SCRIPT_TUNE.learn`). Watchdog timer (tree) teaches reboot.sh and Cron job (lab) teaches compile.sh at once. A script shows as "encrypted" until the thing it automates exists. New scripts start stopped; the zone's "next //" line and a glowing Run button say what to do.
@@ -279,9 +292,9 @@ Every zone keeps its six buttons and has one rig: a meter, one rule, and a level
   03 Capacitor (charge between Reboots pays extra Reboots), 04 Batch pour (timed Copper lump plus casts), 05 Air scrubbers
   (dust hazard; scrubbers burn Copper), 06 Crystal growth (Quartz stages over the run), 07 Afterglow (spare Aether at Ascend
   speeds Copper to Quartz next run), 08 Carvings (three glyph tracks: Aether, Runes, Quartz), 09 Prism beam (aim at Bytes or
-  Copper to Runes), 10 Void draw (0/10/25% of Starglass into Voidsteel), 11 Stillness (Chrono up to x3 the longer you press
-  nothing yourself; `rigManual` in doPress resets it), 12 Weather (12 min clock: clear, front x0.67, storm x2), 13 Beacon
-  (free Overclock every 30 pulses), 14 Gravity well (material presses add mass, log boost), 15 Index (goals, secrets, logs),
+  Copper to Runes), 10 Void draw (0/10/25% of Starglass into Voidsteel), 11 Stillness (Chrono up to x2 the longer you press
+  nothing yourself; `rigManual` in doPress resets it), 12 Weather (12 min clock: clear, front x0.67, storm x1.5), 13 Beacon
+  (free Overclock every 40 pulses), 14 Gravity well (material presses add mass, log boost), 15 Index (goals, secrets, logs),
   16 Mirror (boosts the running material with the fewest producers), 17 Rewrite (raises other rigs' caps).
 - Boosts touch only their own zone or a named neighbour, and the big ones are log-scaled or capped. Never add a power-law boost
   on everything.
@@ -289,3 +302,11 @@ Every zone keeps its six buttons and has one rig: a meter, one rule, and a level
 - Admin section 10 "Zone rigs": max every rig, fill meters, clear. `nf admin max` maxes rigs too.
 - Sim: rigs join unless `NF_NORIGS=1` (`NF_RIGTUNE` merges over `RIG_TUNE`); the bot buys any level it can pay four times over.
   The first numbers took the whole tree from 39.2 h to 27.4 h, so most boosts were halved: now see the PR for the run.
+## Zone events
+About every 8 to 14 minutes of play (first one after 8 minutes of life), one unlocked zone gets a short event. Rules and the roll are in `lib/nodefarm/zoneevents.ts`; every number is `ZE_TUNE` in `engine.ts` (the engine reads it in `derive` and `button` through `zeOut` and `zeCost`). State is `s.ze` (optional, so old saves load): the running event, a timer, counts. Ascend ends a running event.
+
+- **Surge**: the zone's output x2 for 3 min. **Clearance**: its buttons cost 40% less (not on Bytes, which has none). **Resonance**: the zone and the one below it x1.6. **Rich vein** (Bytes and materials): output x2 for 4 min, or Mine it now for 4 min of output at once. **Fault** (after 15 min of life): output halved for 3 min; Patch it for 25 s of Bytes or wait it out. Nothing takes stock from you and nothing needs a reflex.
+- Output means Bytes per second for Bytes, button strength for Multipliers, Reboot strength for Reboots, and the rate for a material.
+- Only online ticks (5 s or less) start an event; time away just runs the clock down. The scripts/sim never imports `zoneevents.ts`, so `sim.mjs` pacing is unchanged.
+- Shown as a centered card (`ZoneEventCard`, no scrim, plain events close after 7 s, a vein or fault waits for an answer or "Decide later"), a readout on the zone panel (`ZoneEvent`, with the answers if you deferred) and a dot on the signal chain. Reveal is decrypt.
+- Admin panel, Run section: zone picker, one button per event, Clear, and Next in 5 s.
