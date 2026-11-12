@@ -195,11 +195,14 @@ export function EventLayer({ game, busy, enabled, ready, reduced, onEngage, onRe
     );
 }
 
-/** `document.fullscreenElement` while something is full screen, otherwise `<body>`; null until mounted. */
+/** The full-screen element while one smaller than the page is full screen, otherwise `<body>`; null until mounted. */
 function useScreenHost() {
     const [host, setHost] = useState<Element | null>(null);
     useEffect(() => {
-        const pick = () => setHost(document.fullscreenElement ?? document.body);
+        const pick = () => {
+            const fs = document.fullscreenElement;
+            setHost(fs && fs !== document.documentElement ? fs : document.body);
+        };
         pick();
         document.addEventListener("fullscreenchange", pick);
         return () => document.removeEventListener("fullscreenchange", pick);
