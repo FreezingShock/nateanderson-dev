@@ -41,6 +41,7 @@ import { codeReveal, cxClear } from "@/lib/nodefarm/cx";
 
 const KEY = "nf-save-v1";
 const EV_KEY = "nf-events-v1"; // "off" when quick-time events are switched off (per device)
+const FS_KEY = "nf-fs-v1"; // full screen mode on or off (per device)
 const HUM_KEY = "nf-hum-v1"; // reactor hum on or off (per device)
 const UI_KEY = "nf-ui-v1"; // which stat panels are minimized (per device, not part of the game save)
 const MAX_KEY = "nf-max-v1"; // "1" when Buy max (Batch job node) is switched on (per device)
@@ -114,6 +115,26 @@ export function NodeFarm() {
     const [ioText, setIoText] = useState("");
     const [ioMsg, setIoMsg] = useState("");
     const [buyMax, setBuyMax] = useState(false);
+    const [fs, setFsState] = useState(false);
+    const fsApi = useRef(false);
+    // full screen: the board fills the viewport and the site's bar and dock step aside. Where the browser has a Fullscreen API (not iPhone) it goes truly full screen too.
+    const setFs = useCallback((on: boolean) => {
+        setFsState(on);
+        try { localStorage.setItem(FS_KEY, on ? "1" : "0"); } catch {}
+        const d = document as Document & { webkitFullscreenElement?: Element; webkitExitFullscreen?: () => void };
+        const el = document.documentElement as HTMLElement & { webkitRequestFullscreen?: () => void };
+        try {
+            if (on && !(d.fullscreenElement || d.webkitFullscreenElement)) {
+                if (el.requestFullscreen) { fsApi.current = true; el.requestFullscreen().catch(() => { fsApi.current = false; }); }
+                else if (el.webkitRequestFullscreen) { fsApi.current = true; el.webkitRequestFullscreen(); }
+            } else if (!on && (d.fullscreenElement || d.webkitFullscreenElement)) {
+                fsApi.current = false;
+                if (d.exitFullscreen) d.exitFullscreen().catch(() => {}); else d.webkitExitFullscreen?.();
+            }
+        } catch {}
+    }, []);
+    const fsRef = useRef(fs);
+    fsRef.current = fs;
     const buyMaxRef = useRef(false);
     buyMaxRef.current = buyMax;
     // ---- window open/close: every window prints in and deletes out with the shared code reveal (lib/nodefarm/cx.ts)
@@ -161,6 +182,40 @@ export function NodeFarm() {
         document.querySelector<HTMLElement>(`.nf [data-pane="${win}"] .nf-win-x`)?.focus();
         return () => { window.removeEventListener("keydown", onKey); document.body.classList.remove("nf-win-open"); };
     }, [win]);
+    useEffect(() => {
+        try { if (localStorage.getItem(FS_KEY) === "1") setFsState(true); } catch {}
+        // the browser left real full screen (Esc): leave the in-page mode with it
+        const onChange = () => {
+            const d = document as Document & { webkitFullscreenElement?: Element };
+            if (!(d.fullscreenElement || d.webkitFullscreenElement) && fsApi.current) { fsApi.current = false; setFsState(false); try { localStorage.setItem(FS_KEY, "0"); } catch {} }
+        };
+        const onCmd = (e: Event) => {
+            const v = (e as CustomEvent<{ on?: boolean }>).detail?.on;
+            setFs(v === undefined ? !fsRef.current : v);
+        };
+        const onKey = (e: KeyboardEvent) => {
+            if (e.ctrlKey || e.metaKey || e.altKey) return;
+            const t = e.target as HTMLElement | null;
+            if (t && (t.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName))) return;
+            if (document.querySelector(".cn-panel, .nv-find, .nf-tm-host, .nf-aw")) return;
+            if (e.key === "f" || e.key === "F") { e.preventDefault(); setFs(!fsRef.current); }
+            else if (e.key === "Escape" && fsRef.current && !winRef.current) setFs(false);
+        };
+        document.addEventListener("fullscreenchange", onChange);
+        document.addEventListener("webkitfullscreenchange", onChange);
+        window.addEventListener("nf:fs", onCmd);
+        window.addEventListener("keydown", onKey);
+        return () => {
+            document.removeEventListener("fullscreenchange", onChange);
+            document.removeEventListener("webkitfullscreenchange", onChange);
+            window.removeEventListener("nf:fs", onCmd);
+            window.removeEventListener("keydown", onKey);
+        };
+    }, [setFs]);
+    useEffect(() => {
+        document.body.classList.toggle("nf-fs", fs);
+        return () => document.body.classList.remove("nf-fs");
+    }, [fs]);
     const [snd, setSnd] = useSoundPrefs();
     const [hum, setHumOn] = useState(true);
     const humRef = useRef(true);
@@ -702,7 +757,13 @@ export function NodeFarm() {
 
     return (
         <TipCtx.Provider value={tipApi}>
-        <div className="nf" ref={root} data-tab={tab} data-side={sideShown} data-win={win || undefined} data-oc={s.overclock > 0 ? "" : undefined}>
+        <div className="nf" ref={root} data-tab={tab} data-side={sideShown} data-win={win || undefined} data-fs={fs ? "" : undefined} data-oc={s.overclock > 0 ? "" : undefined}>
+            {fs && (
+                <div className="nf-fsbar">
+                    <span>NODE.FARM // FULL SCREEN</span>
+                    <button type="button" className="nf-fsbar-x" onClick={() => { setFs(false); sfx("tab"); }} aria-label="Exit full screen">Exit <kbd>F</kbd></button>
+                </div>
+            )}
             <Scenery era={era} />
             <header className="nf-hud">
                 <div className="nf-hud-main">
@@ -718,6 +779,7 @@ export function NodeFarm() {
                     </div>
                 )}
                 <div className="nf-hud-side">
+                    {!fs && <button type="button" className="nf-fsb" onClick={() => { setFs(true); sfx("tab"); }} aria-label="Full screen">Full</button>}
                     <span><NfIcon name="reboot" /> {fmt(s.reboot)}</span>
                     <span><NfIcon name="mult" /> {fmt(s.mult)}</span>
                     {s.ap > 0 && <span><NfIcon name="ascend" /> {s.ap} AP</span>}
@@ -737,6 +799,7 @@ export function NodeFarm() {
                         </button>
                     ))}
                     {treeSeen && <button type="button" className="nf-dock-b" aria-haspopup="dialog" data-guide={step.target?.win === "tree" ? "" : undefined} onClick={() => openWin("tree")}>Tree</button>}
+                    <button type="button" className="nf-dock-b" aria-pressed={fs} onClick={() => { setFs(!fs); sfx("tab"); }}>{fs ? "Exit full" : "Full screen"}</button>
                 </div>
             </header>
             <GuideStrip step={step} onGo={() => goTo(step.target)} onMap={() => openWin("map")} mapOpen={win === "map"} />
