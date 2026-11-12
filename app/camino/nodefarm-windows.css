@@ -302,6 +302,14 @@ body.nf-win-open .nf-jb { z-index: 59; }
 .ctos .nf-wk-file input { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; font-size: 16px; }
 .ctos .nf-wk-file:focus-within { outline: 2px solid var(--c, var(--cm-cyan)); outline-offset: 2px; }
 .ctos .nf-wk-backup { display: grid; gap: 10px; padding-top: 12px; border-top: 1px dashed #ffffff1c; }
+.ctos .nf-wk-bk { margin: 0; padding: 0; list-style: none; display: grid; gap: 0; border: 1px solid #ffffff14; }
+.ctos .nf-wk-bk li { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 9px 12px; }
+.ctos .nf-wk-bk li + li { border-top: 1px dashed #ffffff14; }
+.ctos .nf-wk-bk-t { min-width: 0; display: grid; gap: 3px; font: 500 var(--cm-ctos-t-ui)/1.3 var(--cm-mono); color: var(--cm-mute); }
+.ctos .nf-wk-bk-t b { color: var(--cm-fg); font-weight: 700; margin-right: 4px; }
+.ctos .nf-wk-bk-t small { font-size: var(--cm-ctos-t-micro); color: var(--cm-ctos-meta); }
+.ctos .nf-wk-bk .nf-wk-btn { flex: none; min-height: 34px; padding: 0 12px; }
+@media (hover: none) { .ctos .nf-wk-bk .nf-wk-btn { min-height: 44px; } }
 @media (hover: none) { .ctos .nf-wk-keys { display: none; } }
 
 /* ---- mini HUD (components/nodefarm/mini-hud.tsx): a one-line readout under the site bar once the HUD has scrolled away */
