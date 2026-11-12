@@ -4,7 +4,7 @@ An original idle incremental game at `/creations/games/node-farm`, in the Games 
 one node from a naOS terminal and grow it into a farm. Saves in the browser (`localStorage` key `nf-save-v1`).
 
 ## The chain
-Bytes (per second) <- Multipliers <- Reboots <- Copper <- Silicon <- Quartz <- Aether <- Runes <- Starglass <- Voidsteel <- Chrono. Every stat except Bytes has six
+Bytes (per second) <- Multipliers <- Reboots <- Copper <- Silicon <- Quartz <- Aether <- Runes <- Starglass <- Voidsteel <- Chrono <- Nebula <- Pulsars <- Singularity <- Engrams <- Paradox <- Origin. Every stat except Bytes has six
 button tiers (+1, +5, +25, +125, +625, +3125; each tier costs about 8 to 10 times the last, and a button's price grows 9 to 12 percent each time it is bought).
 - Multipliers (paid in Bytes) add straight to Bytes per second.
 - Reboots (paid in Multipliers) reset Bytes and Multipliers and make every Multiplier button hit harder.
@@ -12,6 +12,7 @@ button tiers (+1, +5, +25, +125, +625, +3125; each tier costs about 8 to 10 time
   in Bytes, each later material in the one before it. Each material boosts the one below it (Copper boosts Reboot power and
   adds a little to Bytes, Silicon boosts Copper, Quartz boosts Silicon, Aether boosts Quartz).
 - Runes, Starglass, Voidsteel and Chrono are the deep materials (unlock at 150 Aether, 200 Runes, 250 Starglass, 300 Voidsteel; a quarter of that after your first Ascend). Same rules as the others, each boosts the one below, Chrono adds a little to everything. They also add to the AP you earn (`TUNE.apPer`).
+- Zones 12 to 17 (Nate, 2026-11-12: deep space first, then the Origin arc): Cloud Deck (Nebula), Beacon Spire (Pulsars), Event Horizon (Singularity), Engram Archive (Engrams), Mirror Stair (Paradox), Root Chamber (Origin). Same rules as the deep materials, each boosts the one below (`boostK` 0.12) and adds AP. Their extras grow with log10 of the amount (`TUNE.logK`) so they cannot run away: Singularity adds a little to everything, Engrams speed up Drones, Paradox strengthens Overclock, Origin multiplies AP on Ascend. Never give a late material a power-law "everything" boost: in the sim two of them blew every amount to Infinity within minutes. `tick` also caps every amount at `CAP` (1e300). Goal tier VIII "Source" holds the first of each. Art: icons and tier sprites in nodefarm-icons.py, zone scenes in scripts/naos-art/zone-art-12-17.py. They share the Clockwork era scenery for now. Sim (with the lab): Nebula ~22-29 h, Origin ~43 h, tree ~44-46 h.
 - Prestige tree (see "Prestige tree" below): 40 nodes in five sections, bought with AP, kept through Ascend. `state.tree` holds owned ids; old saves are refunded for nodes that no longer exist.
 - Ascend (400 Aether): wipes everything except goals, perks and lifetime stats for Ascension Points (+30 percent to everything each) and five perks.
 - There is no tapping: progress comes from buttons only (Nate did not want a Cookie Clicker). The core is a live display: its outer arc shows progress to the cheapest Reboot and it pulses on every press. Quick-time events (see below) appear every 3 to 5 minutes; clearing one gives the timed Overclock plus a rarity loot roll.

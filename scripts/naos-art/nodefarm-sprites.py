@@ -6,8 +6,8 @@ lower ones, so the sixth button of a stat is visibly the lively one. The six Dro
 blinking lens, a thruster flame) and grow parts per tier.
 
 Writes public/naos/nodefarm/{icons-anim,tiers-anim,drones}.{png,webp}. Layout (CSS steps the frames down the sheet):
-  icons-anim   15 icons across, 4 frames down        (480 x 128)
-  tiers-anim   6 tiers across, 10 stats x 4 frames   (192 x 1280, frame f of row r is at y = f * 320 + r * 32)
+  icons-anim   21 icons across, 4 frames down        (672 x 128)
+  tiers-anim   6 tiers across, 16 stats x 4 frames   (192 x 2048, frame f of row r is at y = f * 512 + r * 32)
   drones       6 tiers across, 4 frames down         (192 x 128)
 Run: python3 scripts/naos-art/nodefarm-sprites.py
 """
@@ -107,6 +107,7 @@ def animate(name, base, lvl, seed):
         "quartz": ["glint", "spark"], "aether": ["bob", "pulse"], "ascend": ["bob", "pulse"], "alert": ["blink"], "lock": [],
         "spark": ["spark"], "runes": ["flicker"], "starglass": ["glint", "spark"], "voidsteel": ["pulse", "bob"],
         "chrono": ["pulse", "flicker"],
+        "nebula": ["pulse", "spark"], "pulsars": ["blink", "glint"], "singularity": ["pulse", "glint"], "engrams": ["flicker", "glint"], "paradox": ["glint", "spark"], "origin": ["pulse", "spark"],
     }[name]
     frames = []
     for f in range(FRAMES):
@@ -183,14 +184,14 @@ def main():
     out = HERE.parents[1] / "public/naos/nodefarm"
     out.mkdir(parents=True, exist_ok=True)
 
-    # --- icons: 15 across, 4 frames down
+    # --- icons: 21 across, 4 frames down
     sheet = np.zeros((N * FRAMES, N * len(nfi.ICONS), 4), np.uint8)
     for i, (name, fn) in enumerate(nfi.ICONS):
         for f, img in enumerate(animate(name, fn().img, 3, 10 + i)):
             sheet[f * N:(f + 1) * N, i * N:(i + 1) * N] = img
     save(Image.fromarray(sheet, "RGBA"), out / "icons-anim", "/tmp/nf-anim-icons.png")
 
-    # --- tier icons: 6 across, (10 stats x 4 frames) down, frame blocks stacked
+    # --- tier icons: 6 across, (16 stats x 4 frames) down, frame blocks stacked
     rows = nft.ROWS
     sheet = np.zeros((N * len(rows) * FRAMES, N * nft.TIERS, 4), np.uint8)
     for r, (name, fn) in enumerate(rows):

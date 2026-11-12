@@ -7,12 +7,13 @@ const hours = Number(process.argv[2] || 24 * 14);
 const merge = (a, b) => { for (const [k, v] of Object.entries(b)) a[k] = v && typeof v === "object" && !Array.isArray(v) && a[k] && typeof a[k] === "object" ? merge(a[k], v) : v; return a; };
 if (process.env.NF_TUNE) merge(E.TUNE, JSON.parse(process.env.NF_TUNE));
 const s = E.fresh(0);
-if (!process.env.NF_NODRONES) s.armed = ["mult", "copper", "silicon", "quartz", "aether", "runes", "starglass", "voidsteel", "chrono"]; // the bot arms every stat once it has Drones
-if (process.env.NF_NODRONES) s.autoArmed = ["mult", "copper", "silicon", "quartz", "aether", "runes", "starglass", "voidsteel", "chrono"]; // keep Standing orders from arming anything
+if (!process.env.NF_NODRONES) s.armed = ["mult", ...E.MATS]; // the bot arms every stat once it has Drones
+if (process.env.NF_NODRONES) s.autoArmed = ["mult", ...E.MATS]; // keep Standing orders from arming anything
 const marks = {};
 const ascents = [];
 const mark = (k, t) => { if (!(k in marks)) marks[k] = t; };
-const order = ["chrono", "voidsteel", "starglass", "runes", "aether", "quartz", "silicon", "copper", "mult"];
+const order = [...E.MATS].reverse().concat("mult");
+const treeOrder = [...E.TREE].sort((a, b) => a.cost - b.cost);
 const labOrder = [...E.LAB].sort((a, b) => a.cost - b.cost);
 let labBought = 0, labCompiles = 0;
 const labSkip = (process.env.NF_LABSKIP || "").split(","); // payload ids the bot never compiles
@@ -49,7 +50,7 @@ while (t < hours * 3600) {
         if (s.silicon > 0) mark("silicon", t);
         if (s.quartz > 0) mark("quartz", t);
         if (s.aether > 0) mark("aether", t);
-        for (const m of ["runes", "starglass", "voidsteel", "chrono"]) if (s[m] > 0) mark(m, t);
+        for (const m of E.MATS.slice(4)) if (s[m] > 0) mark(m, t);
         if (E.canAscend(s)) {
             mark("can ascend", t);
             const gain = E.apOnAscend(s);
@@ -93,14 +94,14 @@ while (t < hours * 3600) {
         if (allRanks || s.ap > 40) { while (E.buyPerk(s, "power")); }
         if (E.treeComplete(s)) mark("tree whole", t);
         if (allRanks) mark("tree done", t);
-        if (allRanks && s.chrono > 1e3 && !process.env.NF_NOSTOP) break;
+        if (allRanks && s.origin > 0 && !process.env.NF_NOSTOP) break;
     }
 }
 console.log("ascends", ascents.map(([a, g, ap]) => `${(a / 3600).toFixed(0)}h +${g} (ap ${ap})`).join(", "));
 const h = (x) => (x / 3600).toFixed(2) + " h";
 for (const [k, v] of Object.entries(marks)) if (k !== "lastReboot") console.log(k.padEnd(14), h(v));
 console.log("lab", s.lab.nodes.length + "/" + E.LAB.length, "compiles", labCompiles, "intel life", E.fmt(s.life.intel));
-console.log("end", h(t), "bytes/s", E.fmt(E.derive(s).bytesPerSec), "R", E.fmt(s.reboot), "cu", E.fmt(s.copper), "si", E.fmt(s.silicon), "qz", E.fmt(s.quartz), "ae", E.fmt(s.aether), "rn", E.fmt(s.runes), "sg", E.fmt(s.starglass), "vs", E.fmt(s.voidsteel), "ch", E.fmt(s.chrono), "ap", s.ap, "ascends", s.life.ascends, "goals", s.ach.length);
+console.log("end", h(t), "bytes/s", E.fmt(E.derive(s).bytesPerSec), "R", E.fmt(s.reboot), "cu", E.fmt(s.copper), "si", E.fmt(s.silicon), "qz", E.fmt(s.quartz), "ae", E.fmt(s.aether), "rn", E.fmt(s.runes), "sg", E.fmt(s.starglass), "vs", E.fmt(s.voidsteel), "ch", E.fmt(s.chrono), "eg", E.fmt(s.engrams), "px", E.fmt(s.paradox), "or", E.fmt(s.origin), "ap", s.ap, "ascends", s.life.ascends, "goals", s.ach.length);
 
 if (process.env.DUMP) {
     const { writeFileSync } = await import("node:fs");

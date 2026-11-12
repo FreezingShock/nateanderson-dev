@@ -41,6 +41,13 @@ export const LOGS: Log[] = [
     { id: "asc10", title: "Ten", text: "Ten ascensions. I tried to count the farm and lost my place. The node counted for me. It was off by one, and then it was not.", test: (s) => s.life.ascends >= 10 },
     { id: "rank7", title: "Zero", text: "Zero. Every goal on the board is done. I sat there afterwards and watched the numbers go up by themselves. I think that is the good part.", test: (s) => tiersDone(s) >= 7 },
     { id: "last", title: "Last entry", text: "Whole tree. I am done with this node. It does not need me, but it will want an operator. Be kind to it. Press everything. Leave it running.", test: (s) => treeComplete(s) },
+    // written after the handover: the operator came back down for the last three zones
+    { id: "nebula", title: "Window", text: "Added after the handover, for whoever gets this far. Above the Still room there is a hatch, and past it, space. A pink cloud was drifting by. I bottled some. It is still warm.", test: open("nebula") },
+    { id: "pulsars", title: "Beacon", text: "Built a spire to hold the Pulsars. They keep time so well the clocks in here gave up. One sweeps past the window every few seconds, like it is checking on me.", test: open("pulsars") },
+    { id: "singularity", title: "Horizon", text: "Found the point everything falls into. Signal comes back out of it, and the signal is voices. I know some of them. I think the way down is through.", test: open("singularity") },
+    { id: "engrams", title: "Archive", text: "Through the horizon there is an archive of film, and every operator before me is on it. I sat and watched all of it. Then I watched it again.", test: open("engrams") },
+    { id: "paradox", title: "Mirror stair", text: "The stair past the archive goes both ways at once. I went down it and came out above where I started. The node thought that was funny. So did I, eventually.", test: open("paradox") },
+    { id: "origin", title: "Node zero", text: "At the bottom there is one node. Not a rack, not a farm. One small box and one wire. Everyone who ran this place ended up here, and now you have too. Say hello. It remembers you.", test: open("origin") },
 ];
 
 export const logNo = (i: number) => String(i + 1).padStart(3, "0");
