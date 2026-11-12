@@ -24,6 +24,8 @@ import dynamic from "next/dynamic";
 const loadTree = () => import("./tree");
 const TreeMenu = dynamic(() => loadTree().then((m) => ({ default: m.TreeMenu })), { ssr: false });
 import { LabHud, LabZone, labModel, labReady } from "./lab";
+import { ScriptsZone } from "./scripts";
+import { SCRIPTS, SCRIPT_BY, ascendDue, learnStep, schedOpen, teachAscend, teachCompile, teachDeploy, teachDrop, teachPress } from "@/lib/nodefarm/scripts";
 import { eraOf } from "@/lib/nodefarm/scenery";
 import { DroneBay } from "./drones";
 import { Chain, StatRow } from "./stat-row";
@@ -114,6 +116,10 @@ export function NodeFarm() {
     const feedStore = useMemo(() => new FeedStore(), []);
     useEffect(() => () => feedStore.dispose(), [feedStore]);
     const dronePrev = useRef<{ s: State | null; presses: number; manual: number }>({ s: null, presses: 0, manual: 0 });
+    // Scripts (lib/nodefarm/scripts.ts): what each script had done at the last check, for the feed, and its own presses
+    const schedPrev = useRef<{ s: State | null; ran: Record<string, number> }>({ s: null, ran: {} });
+    const schedPress = useRef<{ s: State | null; n: number }>({ s: null, n: 0 });
+    const schedRef = useRef<(s: State) => void>(() => {});
     const [away, setAway] = useState<Away | null>(null);
     const [toast, setToast] = useState<string | null>(null);
     const [evOn, setEvOn] = useState(true);
@@ -462,8 +468,10 @@ export function NodeFarm() {
                 else tick(s, Math.max(0, gap));
                 // presses nobody clicked (Drones, Autoloader) are counted from the lifetime total, then batched into one feed line
                 const dp = dronePrev.current;
+                const scriptMade = schedPress.current.s === s ? (s.auto?.presses ?? 0) - schedPress.current.n : 0;
+                schedPress.current = { s, n: s.auto?.presses ?? 0 };
                 if (dp.s === s) {
-                    const made = s.life.presses - dp.presses - dp.manual;
+                    const made = s.life.presses - dp.presses - dp.manual - scriptMade;
                     if (made > 0) feedStore.batch("drone", (n, sum) => droneToks(sum, s.armed.length, !s.drones.some((x) => x > 0)), made, 4000);
                 }
                 dronePrev.current = { s, presses: s.life.presses, manual: 0 };
@@ -484,6 +492,7 @@ export function NodeFarm() {
                     }
             prevIds.current = openIds;
             if (tickN.current % 10 === 5) checkMilestones(s, d.bytesPerSec);
+            if (tickN.current % 10 === 3) schedRef.current(s);
             if (tickN.current % 10 === 7) {
                 // story logs: a log is stored the first time it is within reach. A save from before logs existed gets them all at once, quietly.
                 const got = recoverLogs(s);
@@ -545,6 +554,7 @@ export function NodeFarm() {
                 return false;
             }
             gainNow *= n;
+            teachPress(s, stat, tier, n);
             feed.current.lastPulse = performance.now();
             dronePrev.current.manual += 1;
             juice.emit({ t: "press", stat, tier, gain: gainNow, quiet });
@@ -596,6 +606,36 @@ export function NodeFarm() {
         if (!on) log("Quick-time events off. Turn them back on in the Menu.", "warn");
     }, [log]);
 
+    // ---- Scripts: announce newly learned scripts, batch what each one did into the feed, and run ascend.sh (online only)
+    schedRef.current = (s: State) => {
+        const a = s.auto;
+        if (!a) return;
+        const got = learnStep(s);
+        for (const id of got) {
+            const x = SCRIPT_BY.get(id)!;
+            juice.emit({ t: "milestone", title: `${x.file} learned`, sub: `${x.name}. Press Run in Scripts to start it.` });
+            feedStore.push([...call(idTok("cron"), "install", [strTok(x.file)]), pun(" → "), strTok("learned")], { tone: "hot", type: true });
+            sfx("nfGoal");
+        }
+        const sp = schedPrev.current;
+        if (sp.s === s)
+            for (const x of SCRIPTS) {
+                const n = (a.ran[x.id] ?? 0) - (sp.ran[x.id] ?? 0);
+                if (n > 0 && x.id !== "ascend") feedStore.batch(`cron:${x.id}`, (_n, sum) => [...call(idTok("cron"), "run", [strTok(x.file)]), txt(" "), num(`×${fmt(sum)}`)], n, 6000);
+            }
+        if (ascendDue(s)) {
+            const gain = ascend(s);
+            if (gain) {
+                a.ran.ascend = (a.ran.ascend ?? 0) + 1;
+                sfx("nfAscend");
+                juice.emit({ t: "milestone", title: `ascend.sh: +${gain} AP`, sub: "A new run has started. Stop ascend.sh in Scripts to Ascend by hand again." });
+                feedStore.push([...call(idTok("cron"), "run", [strTok("ascend.sh")]), pun(" → "), num(`+${gain} AP`), txt(" "), com("// everything else wiped")], { tone: "good", type: true });
+            }
+        }
+        schedPrev.current = { s, ran: { ...a.ran } };
+        if (got.length || a.ran.ascend !== sp.ran.ascend) save();
+    };
+
     const doAscend = (now = false) => {
         if (!now && confirm !== "ascend") {
             setConfirm("ascend");
@@ -605,6 +645,7 @@ export function NodeFarm() {
         const gain = ascend(g.current);
         setConfirm("");
         if (gain) {
+            teachAscend(g.current);
             sfx("nfAscend");
             juice.emit({ t: "ascend", gain, ap: g.current.ap, n: g.current.life.ascends, each: apEach(g.current) });
             feedStore.push([...call(idTok("system"), "ascend"), pun(" → "), num(`+${gain} AP`), txt(" "), { k: "c", v: "// everything else wiped" }], { tone: "good", type: true });
@@ -785,6 +826,7 @@ export function NodeFarm() {
         const p = payload(id);
         const r = deploy(s, id);
         if (!r.ok) return sfx("deny");
+        teachDeploy(s);
         sfx(p.kind === "buff" ? "nfTierUp" : "nfGoal", { tier: 3 });
         juice.emit({ t: "milestone", title: `${p.name} deployed`, sub: r.stacked ? "Already running: its time was extended." : p.blurb });
         const tail = r.paid ? `paid ${fmt(r.paid.bytes ?? 0)} B` : r.stacked ? "extended" : p.kind === "charge" ? "armed" : p.kind === "buff" ? "running" : "done";
@@ -864,6 +906,7 @@ export function NodeFarm() {
                     {hasFeature(s, "deaddrop") && <DeadDrop s={s} onOpen={() => {
                         const got = openDrop(s);
                         if (!got) return sfx("deny");
+                        teachDrop(s);
                         sfx("nfGoal");
                         log(`Dead drop opened: ${Object.entries(got).map(([k, v]) => `${fmt(v ?? 0)} ${statDef(k as MatId).name}`).join(", ")}.`, "good");
                         save();
@@ -915,9 +958,17 @@ export function NodeFarm() {
                         onToggle={() => { setFold({ ...folded, lab: !folded.lab }); sfx("tab"); }}
                         onResearch={openLab}
                         guided={!!step.target?.lab || step.target?.win === "lab"}
-                        onCompile={(id) => { if (compile(s, id)) { sfx("nfBuy", { tier: 2 }); feedStore.push([...call(idTok("gcc"), "compile", [strTok(`${id}.c`)]), pun(" → "), strTok("queued")], { tone: "good" }); bump((n) => n + 1); } else sfx("deny"); }}
+                        onCompile={(id) => { if (compile(s, id)) { teachCompile(s); sfx("nfBuy", { tier: 2 }); feedStore.push([...call(idTok("gcc"), "compile", [strTok(`${id}.c`)]), pun(" → "), strTok("queued")], { tone: "good" }); bump((n) => n + 1); } else sfx("deny"); }}
                         onCancel={(i) => { if (cancelCompile(s, i)) { sfx("tab"); bump((n) => n + 1); } }}
                         onDeploy={(id) => doDeploy(id)}
+                    />
+                )}
+                {schedOpen(s) && (
+                    <ScriptsZone
+                        s={s}
+                        open={!folded.sched}
+                        onToggle={() => { setFold({ ...folded, sched: !folded.sched }); sfx("tab"); }}
+                        onChange={(msg) => { sfx("tab"); if (msg) feedStore.push([...call(idTok("cron"), msg.endsWith("running") ? "start" : "stop", [strTok(msg.split(" ")[0])])], { tone: msg.endsWith("running") ? "good" : "warn" }); save(); bump((n) => n + 1); }}
                     />
                 )}
                 {isUnlocked(s, "aether") && (

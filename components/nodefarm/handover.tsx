@@ -149,7 +149,7 @@ function Ledger({ s }: { s: State }) {
         `The prestige tree${kept ? ` (${kept} nodes stay: Imprint)` : ""}${back ? `, ${fmt(back)} AP back (Tape backup)` : ""}`,
         "Drones, Mounted drives and Exploit Lab Intel and stock",
     ];
-    const keeps = ["Goals, secrets and story logs", "Exploit Lab research", "Lifetime stats and your Ascend count", "Keys, Firmware and your notes"];
+    const keeps = ["Goals, secrets and story logs", "Exploit Lab research", ...(s.auto?.own.length ? ["Scripts you have learned"] : []), "Lifetime stats and your Ascend count", "Keys, Firmware and your notes"];
     return (
         <section className="nf-hx-ledger" data-cx-i="3">
             <div><h4>Wipes</h4><ul>{wipes.map((x) => <li key={x}>{x}</li>)}</ul></div>
