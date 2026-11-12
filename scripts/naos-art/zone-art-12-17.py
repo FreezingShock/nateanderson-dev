@@ -1,4 +1,6 @@
-"""Node Farm staged zone art for zone 12 Engram Archive (Engrams), zone 13 Mirror Stair (Paradox) and zone 14 Root Chamber (Origin).
+"""Node Farm staged zone art for the six zones past Chrono: deep space (12 Cloud Deck / Nebula, 13 Beacon Spire / Pulsars,
+14 Event Horizon / Singularity) and the Origin arc (15 Engram Archive / Engrams, 16 Mirror Stair / Paradox, 17 Root Chamber /
+Origin).
 
 Follows the staged zone art contract v4 (docs/node-farm.md, "Zone art"; kit in nodefarm_zone_kit.py): one sheet per zone at
 public/naos/nodefarm/zone-<statId>, cells of 288 x 96 art px, 8 rows (row 0 is the bare backdrop, row n adds sprite n on top of
@@ -11,7 +13,7 @@ of accents, plus wh/gr). Alpha is 0 or 255 except the backdrop haze (alpha <= 90
 Placement: the far left (about 60 px) sits behind the zone description, so it only gets backdrop; the top right sits under the
 big number, so the hero (sprite 7) stands right of centre and low. Sprites walk up in size from left to right.
 
-Run: python3 scripts/naos-art/zone-art-12-14.py [engrams|paradox|origin ...]
+Run: python3 scripts/naos-art/zone-art-12-17.py [nebula|pulsars|singularity|engrams|paradox|origin ...]
 """
 import math
 import sys
@@ -847,7 +849,530 @@ def origin(stage, f):
     return fg
 
 
-ZONES = {"engrams": engrams, "paradox": paradox, "origin": origin}
+# =====================================================================================================================
+# shared space backdrop pieces
+# =====================================================================================================================
+def starfield(c, f, seed, n=70, ramps=("wh", "pu", "nb")):
+    for i in range(n):
+        x = rnd(seed, i, 1) * W
+        y = rnd(seed, i, 2) * (FLOOR - 4)
+        b = rnd(seed, i, 3)
+        rn = ramps[i % len(ramps)]
+        tw_ = (f + i) % 6
+        sh = 1 if b < 0.5 else 2 if b < 0.85 else 3
+        if b > 0.85 and tw_ < 2:
+            sh = 4
+            c.shade(rect(x - 1, y, x, y + 1) | rect(x + 1, y, x + 2, y + 1), rn, 2)
+        c.shade(rect(x, y, x + 1, y + 1), rn, sh)
+
+
+def cloud(c, cx, cy, r, rn, seed, f, alpha=90, drift=1.0):
+    """A haze cloud made of overlapping lobes, drifting a little with the frame."""
+    m = np.zeros((H, W), bool)
+    v = np.zeros((H, W))
+    for k in range(7):
+        lx = cx + (rnd(seed, k, 1) - 0.5) * r * 2.2 + math.sin(TAU * f / F + k) * drift
+        ly = cy + (rnd(seed, k, 2) - 0.5) * r
+        lr = r * (0.45 + rnd(seed, k, 3) * 0.5)
+        d = disc(lx, ly, lr, lr * 0.75)
+        m |= d
+        v = np.maximum(v, radial(lx, ly, lr * 1.2))
+    c.haze(m, 0.4 + 0.6 * v, rn, alpha=alpha)
+    c.shade(m & (v > 0.5) & (((xx * 3 + yy * 7 + f) % 11) == 0) & (((xx + yy) % 2) == 0), rn, 2)
+    c.shade(m & (v > 0.75) & (((xx * 5 + yy * 3 + f * 2) % 17) == 0), rn, 3)
+    return m
+
+
+# =====================================================================================================================
+# zone 12 CLOUD DECK  /  Nebula.  Ramps: nb (rose), accents pu (blue starlight) + wh, gr for the deck
+# =====================================================================================================================
+def deck_bg(c, f):
+    """An observation deck: a great window of struts looking out on pink and blue star-nursery clouds."""
+    starfield(c, f, 1201)
+    cloud(c, 60, 30, 34, "nb", 1, f)
+    cloud(c, 170, 18, 40, "nb", 2, f, drift=1.5)
+    cloud(c, 120, 60, 26, "pu", 3, f)
+    cloud(c, 250, 50, 30, "nb", 4, f)
+    cloud(c, 20, 70, 20, "pu", 5, f)
+    # window struts (dark metal) with rivets
+    for x in (0, 96, 192, 286):
+        c.fill(rect(x, 0, x + 3, FLOOR), 0.15, "gr")
+        for y in range(4, FLOOR, 10):
+            c.shade(rect(x + 1, y, x + 2, y + 1), "gr", 3)
+    c.fill(rect(0, 0, W, 3), 0.15, "gr")
+    for x0 in (3, 99, 195):  # curved top of each pane
+        arc = disc(x0 + 46.5, 46, 47, 46) & ~disc(x0 + 46.5, 48, 46, 45) & (yy < 30)
+        c.shade(arc, "gr", 1)
+    # deck railing
+    c.fill(rect(0, FLOOR - 14, W, FLOOR - 12), 0.35, "gr")
+    for x in range(4, W, 14):
+        c.shade(rect(x, FLOOR - 12, x + 1, FLOOR), "gr", 2)
+    c.shade(rect(0, FLOOR - 14, W, FLOOR - 13), "nb", 2)
+
+
+def jar(c, x, base, w, h, f, rn="nb", seed=0):
+    body = rect(x - w / 2, base - h, x + w / 2, base - 2)
+    c.fill(rect(x - w / 2 - 1, base - 2, x + w / 2 + 1, base), 0.4, "gr")
+    c.fill(rect(x - w / 2 + 1, base - h - 3, x + w / 2 - 1, base - h), 0.6, "gr")
+    c.fill(body, 0.05, "pu", dither=0.2)
+    for k in range(int(w * h / 10)):
+        mx = x - w / 2 + 1 + rnd(seed, k, 1) * (w - 2)
+        my = base - h + 1 + ((rnd(seed, k, 2) * (h - 3) - f * 0.7) % (h - 3))
+        c.shade(rect(mx, my, mx + 1, my + 1), rn, 3 + (k + f) % 2)
+    c.shade(rect(x - w / 2, base - h, x - w / 2 + 1, base - 2), "pu", 3)
+
+
+def nb_1(c, f):
+    """Dust: a small jar of glowing dust."""
+    jar(c, SLOT[1], FLOOR, 6, 8, f, seed=1)
+
+
+def nb_2(c, f):
+    """Haze: a bell jar with a pink cloud turning inside."""
+    x = SLOT[2]
+    c.fill(rect(x - 6, FLOOR - 2, x + 6, FLOOR), 0.4, "gr")
+    bell = disc(x, FLOOR - 8, 5.5, 8) & (yy < FLOOR - 2)
+    c.fill(bell, 0.05, "pu", dither=0.2)
+    m = disc(x + math.sin(TAU * f / F) * 1.2, FLOOR - 7, 3.5, 2.5) | disc(x - math.sin(TAU * f / F) * 1.2, FLOOR - 9, 3, 2)
+    c.fill(m & bell, 0.6 + 0.3 * wave(f), "nb")
+    c.shade(bell & ~disc(x, FLOOR - 8, 4.6, 7.1) & (xx < x), "pu", 3)
+    c.shade(rect(x - 1, FLOOR - 17, x + 1, FLOOR - 15), "gr", 3)
+
+
+def nb_3(c, f):
+    """Veil: a sheet of glowing gas strung between two posts, rippling."""
+    x = SLOT[3]
+    c.fill(rect(x - 9, FLOOR - 20, x - 7, FLOOR), 0.4, "gr", outline=True)
+    c.fill(rect(x + 7, FLOOR - 20, x + 9, FLOOR), 0.4, "gr", outline=True)
+    for k in range(14):
+        xx0 = x - 7 + k
+        top = FLOOR - 18 + math.sin(k / 2 + TAU * f / F) * 1.2
+        bot = FLOOR - 5 + math.sin(k / 3 + TAU * f / F + 1) * 1.5
+        c.fill(rect(xx0, top, xx0 + 1, bot), 0.4 + 0.5 * ((k + f) % 4 == 0), "nb" if k % 3 else "pu", dither=0.6)
+
+
+def nb_4(c, f):
+    """Pillar: a tall glass tube holding a column of gas, a new star lighting in its top."""
+    x = SLOT[4]
+    h = 30
+    c.fill(rect(x - 7, FLOOR - 3, x + 7, FLOOR), 0.4, "gr", outline=True)
+    c.fill(rect(x - 6, FLOOR - h - 3, x + 6, FLOOR - h), 0.5, "gr", outline=True)
+    tube = rect(x - 5, FLOOR - h, x + 5, FLOOR - 3)
+    c.fill(tube, 0.04, "pu", dither=0.2)
+    col = np.zeros((H, W), bool)
+    for y in range(FLOOR - h + 1, FLOOR - 3):
+        wdt = 2 + abs(math.sin(y / 4 + TAU * f / F)) * 2
+        col |= rect(x - wdt + math.sin(y / 6) * 1, y, x + wdt + math.sin(y / 6), y + 1)
+    c.fill(col & tube, 0.35 + 0.5 * lin(0, FLOOR, 0, FLOOR - h), "nb")
+    c.shade(disc(x, FLOOR - h + 5, 1.6 + 0.6 * wave(f)), "wh", 4)
+    c.shade(tube & rect(x - 5, 0, x - 4, H), "pu", 3)
+
+
+def nb_5(c, f):
+    """Nursery: a cradle of copper ribs holding five baby stars, each pulsing on its own beat."""
+    x = SLOT[5]
+    cy = FLOOR - 16
+    c.fill(rect(x - 3, FLOOR - 6, x + 3, FLOOR), 0.4, "gr", outline=True)
+    cradle = disc(x, cy, 13, 10) & ~disc(x, cy, 11.5, 8.5) & (yy > cy - 2)
+    c.fill(cradle, 0.6, "cu")
+    for k in range(5):
+        a = math.pi * (0.15 + 0.175 * k)
+        c.shade(line(x, cy, x + math.cos(a) * 12, cy + math.sin(a) * 9, 1), "cu", 2)
+    cloud(c, x, cy - 2, 9, "nb", 55, f, alpha=90)
+    for k, (dx, dy) in enumerate([(-6, -1), (-2, 2), (3, -3), (7, 1), (0, -6)]):
+        r = 1.2 + 0.8 * wave(f, k / 5)
+        c.shade(disc(x + dx, cy + dy, r + 1), "nb", 3)
+        c.shade(disc(x + dx, cy + dy, r), "wh", 4)
+
+
+def nb_6(c, f):
+    """Cloud deck telescope: a brass telescope on a tripod pointed up through the window, a cloud caught in its lens."""
+    x = SLOT[6]
+    for dx in (-10, 0, 10):
+        c.shade(line(x, FLOOR - 22, x + dx, FLOOR, 2), "gr", 2)
+    tube = poly([(x - 14, FLOOR - 18), (x + 12, FLOOR - 44), (x + 18, FLOOR - 38), (x - 8, FLOOR - 12)])
+    c.fill(tube, 0.4 + 0.4 * lin(x - 14, FLOOR - 12, x + 18, FLOOR - 44), "rn", outline=True)
+    for k in range(3):
+        q = 0.25 + k * 0.25
+        bx, by = x - 11 + 26 * q, FLOOR - 15 - 26 * q
+        c.shade(line(bx - 3, by - 3, bx + 3, by + 3, 1.5), "rn", 4)
+    c.fill(disc(x + 15, FLOOR - 41, 4.5), 0.1, "pu", dither=0.2)
+    c.shade(disc(x + 15, FLOOR - 41, 4.5) & ~disc(x + 15, FLOOR - 41, 3.5), "rn", 4)
+    c.shade(disc(x + 15 + math.sin(TAU * f / F), FLOOR - 41, 2), "nb", 3)
+    c.shade(rect(x - 2, FLOOR - 25, x + 2, FLOOR - 21), "gr", 3)
+
+
+def nb_7(c, f):
+    """Cloud deck: a great glass sphere on a pump stand, full of turning nebula, a star being born at its heart."""
+    x, base = SLOT[7], FLOOR
+    cy, R = base - 38, 30
+    # stand and pipes
+    c.fill(poly([(x - 18, base), (x - 10, base - 12), (x + 10, base - 12), (x + 18, base)]), 0.3 + 0.2 * lin(x - 18, base, x + 18, base - 12), "gr", outline=True)
+    for k, dx in enumerate((-22, 22)):
+        c.fill(rect(x + dx - 2, base - 26, x + dx + 2, base), 0.35, "cu", outline=True)
+        c.shade(line(x + dx, base - 26, x + dx * 0.6, cy + 8, 3), "cu", 2)
+        c.shade(rect(x + dx - 1, base - 20 + (f + k * 3) % 6 * 3, x + dx + 1, base - 19 + (f + k * 3) % 6 * 3), "nb", 4)
+    sphere = disc(x, cy, R)
+    c.fill(sphere, 0.03, "pu", dither=0.2)
+    # swirling gas: two arms rotating
+    for arm in range(2):
+        for i in range(60):
+            t = i / 60
+            a = arm * math.pi + t * 4.0 + TAU * f / F / 2
+            rr = 3 + t * (R - 5)
+            px_, py_ = x + math.cos(a) * rr, cy + math.sin(a) * rr * 0.8
+            c.fill(disc(px_, py_, 2.5 + t * 3) & sphere, 0.3 + 0.6 * (1 - t), "nb" if arm == 0 else "qz", dither=0.7)
+    starfield(c, f, 1271, n=25, ramps=("wh", "pu"))
+    c.shade(disc(x, cy, 4 + 1.2 * wave(f)), "nb", 4)
+    c.shade(disc(x, cy, 2.5), "wh", 4)
+    for k in range(4):  # spikes
+        a = k * math.pi / 2
+        c.shade(line(x, cy, x + math.cos(a) * (7 + 2 * wave(f)), cy + math.sin(a) * (7 + 2 * wave(f)), 1), "wh", 4)
+    c.shade(sphere & ~disc(x, cy, R - 1), "pu", 3)
+    c.shade(disc(x - 12, cy - 14, 3, 5) & sphere & ~disc(x - 11, cy - 13, 2, 4), "wh", 4)
+    c.fill(rect(x - 8, cy - R - 4, x + 8, cy - R + 2), 0.5, "gr", outline=True)
+    c.shade(rect(x - 1, cy - R - 8, x + 1, cy - R - 4), "gr", 3)
+
+
+def nebula(stage, f):
+    fns = [nb_1, nb_2, nb_3, nb_4, nb_5, nb_6, nb_7]
+    fg = K.Cell()
+    for i in [6, 5, 4, 3, 2, 1, 0]:
+        if i < stage:
+            fns[i](fg, f)
+    ground(fg, "gr", f, "nb")
+    bg = K.Cell()
+    deck_bg(bg, f)
+    fg.under(bg)
+    return fg
+
+
+# =====================================================================================================================
+# zone 13 BEACON SPIRE  /  Pulsars.  Ramps: pu (electric blue), accents wh + sn (warm lamp) + mag
+# =====================================================================================================================
+def beam(c, x, y, angle, length, width, rn="pu", alpha=80):
+    a = angle
+    ex, ey = x + math.cos(a) * length, y + math.sin(a) * length
+    nx, ny = -math.sin(a) * width, math.cos(a) * width
+    m = poly([(x, y), (ex + nx, ey + ny), (ex - nx, ey - ny)])
+    c.haze(m, 0.95, rn, alpha=alpha)
+    c.shade(m & (((xx * 5 + yy * 3) % 7) == 0), rn, 2)
+    c.shade(line(x, y, x + math.cos(a) * length * 0.7, y + math.sin(a) * length * 0.7, 1), rn, 3)
+    return m
+
+
+def spire_bg(c, f):
+    """Deep space with lattice spires on the horizon, each topped by a blinking lamp, and slow sweeping beams overhead."""
+    starfield(c, f, 1301, n=90, ramps=("wh", "pu", "pu", "mag"))
+    cloud(c, 210, 20, 30, "si", 6, f, alpha=70)
+    cloud(c, 40, 24, 24, "pu", 7, f, alpha=60)
+    for i, (x, h, w) in enumerate([(14, 60, 8), (52, 40, 6), (108, 70, 9), (150, 34, 5), (228, 56, 7), (272, 76, 9)]):
+        top = FLOOR - h
+        legs = line(x - w, FLOOR, x, top, 1) | line(x + w, FLOOR, x, top, 1)
+        for y in range(int(top) + 6, FLOOR, 6):
+            q = (y - top) / h
+            legs |= line(x - w * q, y, x + w * q, y + 6 * 0.9, 1)
+        c.shade(legs, "pu", 1)
+        lit = (f + i) % 3 == 0
+        c.shade(rect(x - 1, top - 2, x + 1, top), "mag" if i % 2 else "sn", 4 if lit else 2)
+        if lit:
+            c.haze(disc(x, top - 1, 5), 0.95, "mag" if i % 2 else "sn", alpha=70)
+    for k in range(2):  # sweeping beams from far beacons
+        a = -math.pi / 2 + math.sin(TAU * f / F + k * 2) * 0.6
+        beam(c, 108 if k == 0 else 272, FLOOR - (70 if k == 0 else 76), a + (0.3 if k else -0.3), 70, 6, "pu", alpha=50)
+
+
+def pu_1(c, f):
+    """Blink: a tiny beacon on a stake, blinking on an exact beat."""
+    x = SLOT[1]
+    c.shade(rect(x, FLOOR - 8, x + 1, FLOOR), "gr", 3)
+    on = f % 2 == 0
+    c.shade(disc(x + 0.5, FLOOR - 9, 1.6), "pu", 4 if on else 1)
+    if on:
+        c.haze(disc(x, FLOOR - 9, 5), 0.95, "pu", alpha=90)
+
+
+def pu_2(c, f):
+    """Beat: a metronome ticking left and right."""
+    x = SLOT[2]
+    c.fill(poly([(x - 6, FLOOR), (x - 3, FLOOR - 14), (x + 3, FLOOR - 14), (x + 6, FLOOR)]), 0.3 + 0.3 * lin(x - 6, FLOOR, x + 6, FLOOR - 14), "rn", outline=True)
+    a = math.sin(TAU * f / F) * 0.6
+    c.shade(line(x, FLOOR - 3, x + math.sin(a) * 12, FLOOR - 3 - math.cos(a) * 12, 1), "wh", 4)
+    c.shade(disc(x + math.sin(a) * 8, FLOOR - 3 - math.cos(a) * 8, 1.4), "pu", 4)
+
+
+def pu_3(c, f):
+    """Beacon: a lamp post with a turning light."""
+    x = SLOT[3]
+    c.fill(rect(x - 1.5, FLOOR - 18, x + 1.5, FLOOR), 0.4, "gr", outline=True)
+    c.fill(rect(x - 4, FLOOR - 2, x + 4, FLOOR), 0.5, "gr")
+    lamp = rect(x - 3.5, FLOOR - 24, x + 3.5, FLOOR - 18)
+    c.fill(lamp, 0.5, "pu", outline=True)
+    c.fill(rect(x - 4.5, FLOOR - 26, x + 4.5, FLOOR - 24), 0.6, "gr")
+    a = TAU * f / F
+    beam(c, x, FLOOR - 21, a, 16, 2.5, "pu", alpha=70)
+    c.shade(rect(x + round(math.cos(a) * 2.5) - 0.5, FLOOR - 22, x + round(math.cos(a) * 2.5) + 0.5, FLOOR - 20), "wh", 4)
+
+
+def pu_4(c, f):
+    """Lighthouse: a small striped lighthouse sweeping its beam across the zone."""
+    x = SLOT[4]
+    body = poly([(x - 7, FLOOR), (x - 4, FLOOR - 26), (x + 4, FLOOR - 26), (x + 7, FLOOR)])
+    c.fill(body, 0.6 + 0.3 * lin(x - 7, 0, x + 7, 0), "wh", outline=True)
+    for k in range(3):
+        c.fill(body & rect(0, FLOOR - 8 - k * 8, W, FLOOR - 4 - k * 8), 0.6, "mag")
+    c.fill(rect(x - 5, FLOOR - 33, x + 5, FLOOR - 26), 0.1, "pu", dither=0.2)
+    c.fill(poly([(x - 6, FLOOR - 33), (x, FLOOR - 38), (x + 6, FLOOR - 33)]), 0.5, "mag", outline=True)
+    a = math.pi + math.sin(TAU * f / F) * 1.2 - 0.3
+    beam(c, x, FLOOR - 30, a, 30, 5, "pu", alpha=80)
+    c.shade(disc(x, FLOOR - 30, 2.2), "wh", 4)
+
+
+def pu_5(c, f):
+    """Magnetar: two magnet poles holding a tiny spinning star, field lines looping between them."""
+    x = SLOT[5]
+    cy = FLOOR - 18
+    for side in (-1, 1):
+        px0 = x + side * 13
+        c.fill(rect(px0 - 3, cy - 12, px0 + 3, FLOOR), 0.35, "gr", outline=True)
+        c.fill(rect(px0 - 3, cy - 12, px0 + 3, cy - 6), 0.6, "red" if side < 0 else "si")
+    for k in range(4):
+        ry = 4 + k * 3
+        loop = disc(x, cy, 12, ry) & ~disc(x, cy, 11, ry - 1)
+        c.shade(loop & (((xx + yy + f * 2 + k) % 4) == 0), "pu", 2 + (k == f % 4))
+    c.shade(disc(x, cy, 3 + 0.8 * wave(f)), "pu", 4)
+    c.shade(disc(x, cy, 1.5), "wh", 4)
+    a = TAU * f / F / 2
+    c.shade(line(x - math.cos(a) * 8, cy - math.sin(a) * 8, x + math.cos(a) * 8, cy + math.sin(a) * 8, 1), "wh", 3)
+
+
+def pu_6(c, f):
+    """Spire: a tall lattice mast with dishes, a light climbing it and a lamp blinking on top."""
+    x = SLOT[6]
+    h = 52
+    top = FLOOR - h
+    m = line(x - 9, FLOOR, x - 1, top, 1.5) | line(x + 9, FLOOR, x + 1, top, 1.5)
+    for y in range(top + 4, FLOOR, 5):
+        q = (y - top) / h
+        m |= line(x - 1 - 8 * q, y, x + 1 + 8 * q, y + 5, 1) | line(x + 1 + 8 * q, y, x - 1 - 8 * q, y + 5, 1)
+    c.fill(m, 0.45, "gr")
+    for k, (dy, side) in enumerate([(14, -1), (26, 1), (36, -1)]):
+        dx = x + side * 6
+        dish = disc(dx + side * 3, top + dy, 4, 6) & ~disc(dx + side * 5, top + dy, 4, 6)
+        c.fill(dish, 0.6, "wh")
+    y = FLOOR - (f / F) * h
+    c.shade(rect(x - 2, y, x + 2, y + 1), "pu", 4)
+    on = f % 3 != 2
+    c.shade(rect(x - 1.5, top - 3, x + 1.5, top), "mag", 4 if on else 1)
+    if on:
+        c.haze(disc(x, top - 2, 6), 0.95, "mag", alpha=80)
+
+
+def pu_7(c, f):
+    """Beacon spire: a pulsar held in a gimbal of rings on a great tower, its two beams sweeping round."""
+    x, base = SLOT[7], FLOOR
+    cy = base - 46
+    # tower
+    c.fill(poly([(x - 16, base), (x - 6, cy + 14), (x + 6, cy + 14), (x + 16, base)]), 0.25 + 0.3 * lin(x - 16, base, x + 16, cy), "gr", outline=True)
+    for k in range(4):
+        y = base - 6 - k * 7
+        c.shade(rect(x - 12 + k * 2, y, x + 12 - k * 2, y + 1), "gr", 3)
+        c.shade(rect(x - 2, y - 4, x + 2, y - 2), "pu", 4 if (f + k) % 4 == 0 else 2)
+    # beams (behind the rings)
+    a = TAU * f / F / 2 - 1.1
+    beam(c, x, cy, a, 64, 7, "pu", alpha=90)
+    beam(c, x, cy, a + math.pi, 64, 7, "pu", alpha=90)
+    # gimbal rings
+    for k, (rx, ry) in enumerate([(20, 7), (7, 20), (16, 16)]):
+        ring = disc(x, cy, rx, ry) & ~disc(x, cy, rx - 1.6, ry - 1.6)
+        c.fill(ring, 0.55 + 0.3 * (k == 2), "rn" if k < 2 else "gr")
+    # the star
+    c.shade(disc(x, cy, 6 + wave(f)), "pu", 3)
+    c.shade(disc(x, cy, 4), "pu", 4)
+    c.shade(disc(x - 1, cy - 1, 2), "wh", 4)
+    twinkle(c, f, 12, 1707, (x - 40, base - 80, x + 40, base - 30), ["pu", "wh", "mag"])
+
+
+def pulsars(stage, f):
+    fns = [pu_1, pu_2, pu_3, pu_4, pu_5, pu_6, pu_7]
+    fg = K.Cell()
+    for i in [6, 5, 4, 3, 2, 1, 0]:
+        if i < stage:
+            fns[i](fg, f)
+    ground(fg, "gr", f, "pu")
+    bg = K.Cell()
+    spire_bg(bg, f)
+    fg.under(bg)
+    return fg
+
+
+# =====================================================================================================================
+# zone 14 EVENT HORIZON  /  Singularity.  Ramps: sn (accretion gold), accents mag + pu, wh
+# =====================================================================================================================
+def warp_bg(c, f):
+    """Space bent toward a point off the right edge: a warped grid, stars stretched into streaks, matter streaming in."""
+    gx, gy = 250, 50
+    for i in range(80):
+        x = rnd(1401, i, 1) * W
+        y = rnd(1401, i, 2) * (FLOOR - 4)
+        d = math.hypot(x - gx, y - gy)
+        L = max(0, 6 - d / 25)
+        ang = math.atan2(gy - y, gx - x)
+        rn = ["wh", "sn", "pu", "mag"][i % 4]
+        sh = 3 if (f + i) % 5 == 0 else 2 if i % 3 == 0 else 1
+        c.shade(line(x, y, x + math.cos(ang) * L, y + math.sin(ang) * L, 1) if L > 1 else rect(x, y, x + 1, y + 1), rn, sh)
+    # warped grid: horizontal lines bending down toward the well
+    for k in range(9):
+        y0 = 6 + k * 10
+        pts = []
+        for x in range(0, W + 1, 4):
+            d = math.hypot(x - gx, y0 - gy)
+            pts.append((x, y0 + 900 / (d + 30) * (1 if y0 > gy else -1) * 0.6))
+        m = np.zeros((H, W), bool)
+        for (x0, y0_), (x1, y1) in zip(pts, pts[1:]):
+            m |= line(x0, y0_, x1, y1, 1)
+        c.shade(m & (((xx + f) % 3) == 0), "sn" if k % 2 else "mag", 1)
+    for k in range(10):  # vertical lines
+        x0 = 8 + k * 28
+        pts = []
+        for y in range(0, FLOOR + 1, 4):
+            d = math.hypot(x0 - gx, y - gy)
+            pts.append((x0 + 900 / (d + 30) * (1 if x0 > gx else -1) * 0.8, y))
+        m = np.zeros((H, W), bool)
+        for (a0, b0), (a1, b1) in zip(pts, pts[1:]):
+            m |= line(a0, b0, a1, b1, 1)
+        c.shade(m & (((yy + f) % 3) == 0), "pu", 1)
+    cloud(c, 60, 30, 26, "mag", 8, f, alpha=60)
+    cloud(c, 150, 70, 22, "sn", 9, f, alpha=60)
+
+
+def hole(c, x, cy, R, f, tilt=0.32, rn="sn"):
+    """A black hole: dark centre, glowing disk turning (bright clumps move round), lensed back of the disk over the top."""
+    back = disc(x, cy, R, R * tilt) & ~disc(x, cy, R * 0.45, R * tilt * 0.45) & (yy < cy)
+    halo = disc(x, cy - R * 0.05, R * 0.55) & ~disc(x, cy - R * 0.05, R * 0.55 - max(1, R * 0.08)) & (yy < cy)
+    c.fill(halo, 0.85, rn)
+    c.fill(back, 0.3 + 0.4 * (1 - np.abs(xx - x) / R), rn)
+    hl = disc(x, cy - R * 0.05, R * 0.44)
+    c.set(hl, (5, 3, 2))
+    front = disc(x, cy, R, R * tilt) & ~disc(x, cy, R * 0.45, R * tilt * 0.45) & (yy >= cy)
+    c.fill(front, 0.45 + 0.5 * (1 - np.abs(xx - x) / R), rn)
+    for k in range(5):
+        a = TAU * (f / F / 5 + k / 5)
+        bx, by = x + math.cos(a) * R * 0.75, cy + math.sin(a) * R * tilt * 0.75
+        if math.sin(a) > -0.2:
+            c.shade(disc(bx, by, max(1, R * 0.06)), "wh", 4)
+    c.shade(disc(x, cy, R, R * tilt) & ~disc(x, cy, R - 1, R * tilt - 1) & (yy >= cy), rn, 4)
+
+
+def sn_1(c, f):
+    """Mote: a tiny dark sphere with a ring, hovering over a dish."""
+    x = SLOT[1]
+    c.fill(rect(x - 4, FLOOR - 2, x + 4, FLOOR), 0.5, "gr")
+    hole(c, x, FLOOR - 8 - (1 if f % 3 == 0 else 0), 5, f)
+
+
+def sn_2(c, f):
+    """Well: a gravity-well grid sagging into a funnel, a marble circling down."""
+    x = SLOT[2]
+    for k in range(4):
+        r = 7 - k * 1.5
+        c.shade(disc(x, FLOOR - 6 + k * 1.4, r, r * 0.35) & ~disc(x, FLOOR - 6 + k * 1.4, r - 0.8, r * 0.35 - 0.6), "sn", 2 + (k == 3))
+    a = TAU * f / F
+    rr = 6 - (f / F) * 4
+    c.shade(disc(x + math.cos(a) * rr, FLOOR - 6 + (6 - rr) * 0.8 + math.sin(a) * rr * 0.35, 1.1), "wh", 4)
+    c.fill(rect(x - 8, FLOOR - 1, x + 8, FLOOR), 0.4, "gr")
+
+
+def sn_3(c, f):
+    """Lens: a ring on a stand that bends the starlight behind it into an arc."""
+    x = SLOT[3]
+    cy = FLOOR - 13
+    c.fill(rect(x - 1, cy + 6, x + 1, FLOOR), 0.4, "gr", outline=True)
+    c.fill(rect(x - 5, FLOOR - 2, x + 5, FLOOR), 0.5, "gr")
+    ring = disc(x, cy, 8) & ~disc(x, cy, 6.3)
+    c.fill(ring, 0.6, "rn")
+    c.fill(disc(x, cy, 6.3), 0.03, "pu", dither=0.2)
+    arc = disc(x, cy, 4.5) & ~disc(x, cy, 3.3) & (yy < cy + 1)
+    c.shade(arc & (((xx + f) % 2) == 0), "pu", 3)
+    c.shade(arc & (((xx + f) % 2) == 1), "sn", 3)
+    c.shade(disc(x, cy, 1.0), "wh", 4 if f % 2 else 2)
+
+
+def sn_4(c, f):
+    """Disk: a small black hole in an orrery stand, its disk turning."""
+    x = SLOT[4]
+    cy = FLOOR - 16
+    c.fill(poly([(x - 8, FLOOR), (x - 2, FLOOR - 7), (x + 2, FLOOR - 7), (x + 8, FLOOR)]), 0.4, "gr", outline=True)
+    c.shade(disc(x, cy, 11, 11) & ~disc(x, cy, 10, 10) & (xx < x - 6), "rn", 3)
+    c.shade(disc(x, cy, 11, 11) & ~disc(x, cy, 10, 10) & (xx > x + 6), "rn", 3)
+    hole(c, x, cy, 10, f)
+
+
+def sn_5(c, f):
+    """Horizon: a ring gate standing on the floor, its centre black, light curling round its edge."""
+    x = SLOT[5]
+    cy = FLOOR - 17
+    gate = disc(x, cy, 15, 17) & ~disc(x, cy, 11, 13)
+    c.fill(gate & (yy < FLOOR), 0.3 + 0.4 * lin(x - 15, FLOOR, x + 15, cy - 17), "gr", outline=True)
+    c.set(disc(x, cy, 11, 13) & (yy < FLOOR), (5, 3, 2))
+    for k in range(8):
+        a = TAU * (k / 8 + f / F / 4)
+        c.shade(disc(x + math.cos(a) * 12.5, cy + math.sin(a) * 14.5, 1), "sn" if k % 2 else "mag", 4)
+    rim = disc(x, cy, 11, 13) & ~disc(x, cy, 10, 12) & (yy < FLOOR)
+    c.shade(rim, "sn", 3)
+    c.fill(rect(x - 18, FLOOR - 3, x + 18, FLOOR), 0.4, "gr")
+
+
+def sn_6(c, f):
+    """Singularity: a black hole floating free, matter spiralling into it from a nearby cloud."""
+    x = SLOT[6]
+    cy = FLOOR - 26
+    for i in range(30):  # stream
+        t = i / 30
+        a = t * 5 + TAU * f / F / 3
+        rr = 24 * (1 - t) + 9
+        c.shade(disc(x + math.cos(a) * rr, cy + math.sin(a) * rr * 0.4, 1 + (1 - t)), "mag" if i % 3 else "sn", 3)
+    hole(c, x, cy, 17, f)
+    c.haze(disc(x, FLOOR - 3, 12, 3), 0.95, "sn", alpha=60)
+
+
+def sn_7(c, f):
+    """Event horizon: a vast black hole low on the right, its tilted disk blazing, a small probe falling in on a long arc."""
+    x, base = SLOT[7], FLOOR
+    cy = base - 34
+    R = 38
+    c.haze(disc(x, cy, R + 10, R * 0.6), 0.9, "sn", alpha=80)
+    # jets up and down, behind the hole and its disk
+    jets = K.Cell()
+    for d in (-1, 1):
+        jet = poly([(x - 2, cy), (x + 2, cy), (x + 4 + d, cy + d * 40), (x - 4 + d, cy + d * 40)]) & (yy < base)
+        jets.shade(jet & (((yy + f * 3) % 4) == 0), "pu", 3)
+    hole(c, x, cy, R, f, tilt=0.3)
+    c.under(jets)
+    # probe falling in
+    t = (f / F)
+    px0, py0 = x - 44 + t * 18, cy - 30 + t * 14
+    c.shade(rect(px0 - 1, py0 - 1, px0 + 2, py0 + 1), "wh", 4)
+    c.shade(rect(px0 - 3, py0, px0 - 1, py0 + 1) | rect(px0 + 2, py0, px0 + 4, py0 + 1), "pu", 3)
+    for k in range(4):
+        c.shade(rect(px0 - 4 - k * 3, py0 - 2 - k * 2, px0 - 3 - k * 3, py0 - 1 - k * 2), "sn", 2)
+    twinkle(c, f, 14, 1707, (x - 50, base - 80, x + 40, base - 10), ["sn", "wh", "mag"])
+
+
+def singularity(stage, f):
+    fns = [sn_1, sn_2, sn_3, sn_4, sn_5, sn_6, sn_7]
+    fg = K.Cell()
+    for i in [6, 5, 4, 3, 2, 1, 0]:
+        if i < stage:
+            fns[i](fg, f)
+    ground(fg, "gr", f, "sn")
+    bg = K.Cell()
+    warp_bg(bg, f)
+    fg.under(bg)
+    return fg
+
+
+ZONES = {"nebula": nebula, "pulsars": pulsars, "singularity": singularity, "engrams": engrams, "paradox": paradox, "origin": origin}
 
 if __name__ == "__main__":
     for z in sys.argv[1:] or list(ZONES):
