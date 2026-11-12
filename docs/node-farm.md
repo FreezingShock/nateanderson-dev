@@ -356,3 +356,23 @@ The Menu window's `config/node.cfg` block lives in `components/nodefarm/settings
 - `audit.mjs` and `tour3.mjs` in /mnt/project-files/portfolio/node-farm-first30/ seed a late save (`nf admin max` through the console), open every zone and list overflowing or tiny controls at 1440, 390 and 360.
 - The Drone hangar rows were clipped past the right edge on phones once drone levels pass 10 (20 pips, the posting list and the third mod were cut off): `nodefarm-hangar.css` now lets the row shrink and the pips squeeze.
 - Ten sections on the phone grid use smaller labels so Handover and Records are not cut; the desktop rail with eight or more windows shows the key badge on hover only, so it stops cutting labels and status lines.
+
+## Stress tests (challenge runs), 2026-11-12
+
+Rules: lib/nodefarm/stress.ts (fills `CH_HOOKS` in the engine and adds a tick hook). Window: components/nodefarm/stress.tsx,
+styles app/camino/nodefarm-stress.css (`nf-st-*`), banner art `win-stress` from scripts/naos-art/nodefarm-window-art.py. Key X.
+
+- Open after the first Ascend. Starting a test stores the real run inside the save (`s.ch.run.real`) and starts a fresh run
+  that keeps perks, AP, the tree (not in Cold tree), Firmware, the protocol, lab research and learned scripts.
+- Ranks I, II and III clear when Aether, Starglass and Chrono open (`CH_TUNE.goals`). The best rank per test is kept forever
+  and pays a small boost (`CH_TUNE.pay`) through Ascend and Handover.
+- Locked during a test: Ascend, Handover, tree buys and respec, perks, Firmware (`chOff(s, "prestige")`).
+- Leaving restores the stored run through `parseSave`, merges goals, logs, lifetime stats and learned scripts, and shifts
+  the run's game-time stamps (`rebootAt`, `hand.cycleAt`) by the test's length. Lab, hangar and rig buys made in a test are undone.
+- Tests: Brownout (perks, unspent AP and goal bonuses off), Grounded (no Drones), Cold tree, Narrow band (tiers 1 to 3),
+  Thin pipe (Bytes/s x0.1), Dead air (no quick-time or zone events), Broken chain (materials don't boost the one below),
+  Short leash (30, 90, 240 min of game time per rank).
+- Pacing check: `DUMP=/tmp/s.json node --experimental-strip-types scripts/nodefarm/sim.mjs 12` then
+  `node --experimental-strip-types scripts/nodefarm/stress-sim.mjs /tmp/s.json 6` (also checks the run comes back intact).
+  First run (2026-11-12) from a 3.6 h save: rank I in 0.4 to 1.0 h, rank III in 4.4 to 6 h; from a 24 h save: rank III in
+  1 to 1.8 h, Brownout III 6.3 h.
