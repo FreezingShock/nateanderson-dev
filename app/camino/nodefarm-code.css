@@ -1,0 +1,36 @@
+/* Node Farm code theming: the terminal feed's syntax colours, the typed-line cursor, button code captions and the locked-zone condition. */
+@keyframes nfCaret { 0%, 55% { opacity: 1; } 56%, 100% { opacity: 0; } }
+@keyframes nfFeedIn { from { clip-path: inset(0 100% 0 0); } to { clip-path: inset(0 0 0 0); } }
+
+.ctos .nf-log { gap: 4px; padding: 10px 12px 10px 10px; }
+.ctos .nf-log li { display: flex; gap: 8px; align-items: baseline; padding-left: 6px; border-left: 2px solid #1c1c1c; color: var(--cm-mute); }
+.ctos .nf-log li:last-child { color: var(--cm-fg); animation: none; }
+.ctos .nf-log li[data-new] { animation: nfFeedIn .32s steps(14) both; }
+.ctos .nf-log li[data-tone="good"] { border-left-color: #6bffc9; }
+.ctos .nf-log li[data-tone="warn"] { border-left-color: #f0a53c; }
+.ctos .nf-log li[data-tone="hot"] { border-left-color: #ff6a8a; }
+.ctos .nf-log time { flex: none; font-variant-numeric: tabular-nums; }
+.ctos .nf-ln { min-width: 0; overflow-wrap: anywhere; }
+.ctos .nf-log li:last-child .nf-ln::after { content: ""; display: inline-block; width: .55em; height: 1.05em; margin-left: 3px; vertical-align: -.18em; background: var(--cm-cyan); animation: nfCaret 1s steps(1) infinite; }
+
+/* token colours (data-k), shared by the feed and the locked-zone condition */
+.ctos .nf [data-k="id"] { color: var(--tc, var(--cm-fg)); }
+.ctos .nf [data-k="fn"] { color: var(--cm-cyan); }
+.ctos .nf [data-k="num"] { color: #f0a53c; font-variant-numeric: tabular-nums; }
+.ctos .nf [data-k="str"] { color: #6bffc9; }
+.ctos .nf [data-k="kw"] { color: #c58bff; }
+.ctos .nf [data-k="p"] { color: #5b6470; }
+.ctos .nf [data-k="c"] { color: var(--cm-ctos-meta); }
+.ctos .nf [data-k="t"] { color: inherit; }
+
+/* button caption: the action as a function call, under the number */
+.ctos .nf-btn-fn { font: 500 var(--cm-ctos-t-micro)/1 var(--cm-mono); letter-spacing: -.03em; color: color-mix(in srgb, var(--c) 70%, #5b6470); opacity: .75; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: calc(100% - 34px); }
+.ctos .nf-btn[data-afford] .nf-btn-fn { opacity: 1; }
+
+/* locked zone: the unlock condition as an if statement */
+.ctos .nf-lk-code { display: block; margin-top: 8px; font: 500 var(--cm-ctos-t-micro)/1.4 var(--cm-mono); overflow-wrap: anywhere; }
+
+@media (prefers-reduced-motion: reduce) {
+    .ctos .nf-log li[data-new] { animation: none; }
+    .ctos .nf-log li:last-child .nf-ln::after { animation: none; }
+}
