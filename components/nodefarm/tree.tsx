@@ -88,7 +88,7 @@ export function prestigeModel(s: State): TreeModel {
         level: (n) => nodeLevel(s, n.id), price: (n) => nodeCost(s, treeNode(n.id)), spent: () => treeSpent(s),
         keptNote: "kept through Ascend", buyWord: "Install", prompt: "~/tree $", respec: true,
         fogText: "Signal too weak to read. Buy a node next to it to decrypt this one.",
-        core: { kicker: "hub.root", name: "The hub", fx: "Every section grows out of here. A node opens once it touches the hub or a node you own; the next ring decrypts as you buy toward it.", quote: "Respec is free and refunds every AP.", color: "#e8f6ff" },
+        core: { kicker: "hub.root", name: "Hub", fx: "Every section grows out of here. A node opens once it touches the hub or a node you own; the next ring decrypts as you buy toward it.", quote: "Respec is free and refunds every AP.", color: "#e8f6ff" },
     };
 }
 
@@ -732,7 +732,7 @@ function TreeMenuInner({ s, model, reduced, onBuy, onRespec, onClose }: TreeMenu
         }
         return out;
     }, [m.owned, vis, sel, near]); // eslint-disable-line react-hooks/exhaustive-deps
-    /** packets: one path of owned traces per section colour, drawn on a canvas (see drawPk) so the dashes never repaint the SVG */
+    /** packets: one path of owned traces per section color, drawn on a canvas (see drawPk) so the dashes never repaint the SVG */
     const packets = useMemo(() => {
         const by: Record<string, [number, number][][]> = {};
         for (const l of links) if (l.st === "on") (by[l.col] ??= []).push(l.pts);
@@ -985,7 +985,7 @@ function TreeMenuInner({ s, model, reduced, onBuy, onRespec, onClose }: TreeMenu
                         {!fogCard && cst === "locked" && (cn.req ? (
                             <p className="nf-tm-need" data-cx-i="4">// needs both: {cn.req.map((r) => `${m.owned.includes(r) ? "[x]" : "[ ]"} ${seen(r) && vis.get(r) !== "fog" ? treeNode(r).name : `a ${BNAME[treeNode(r).branch]} node, still encrypted`}`).join("  ")}</p>
                         ) : (
-                            <p className="nf-tm-need" data-cx-i="4">// needs a neighbour: {cn.links.filter((l) => l !== "core" && seen(l) && vis.get(l) !== "fog").map((l) => treeNode(l).name).join(", ") || "decrypt the path first"}</p>
+                            <p className="nf-tm-need" data-cx-i="4">// needs a neighbor: {cn.links.filter((l) => l !== "core" && seen(l) && vis.get(l) !== "fog").map((l) => treeNode(l).name).join(", ") || "decrypt the path first"}</p>
                         ))}
                         {!fogCard && cn.form === "fork" && cn.excl && (
                             <p className="nf-tm-need" data-cx-i="4" data-tone="fork">// fork: pick one. {cswap ? `Swapping refunds ${cswap.name} and takes this instead, free.` : m.owned.includes(cn.id) ? `${seen(cn.excl) ? treeNode(cn.excl).name : "The other side"} is locked; buy it to swap.` : `Owning this locks ${seen(cn.excl) && vis.get(cn.excl) !== "fog" ? treeNode(cn.excl).name : "the other side"}.`}</p>

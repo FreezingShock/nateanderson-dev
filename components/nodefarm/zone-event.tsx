@@ -5,7 +5,7 @@ import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { createPortal } from "react-dom";
 import { cxPlay } from "@/lib/nodefarm/cx";
 import { ZE_TUNE, fmt, statDef, type State, type StatId, type ZoneEvActive } from "@/lib/nodefarm/engine";
-import { mineAmount, patchCost, zeEffect, zoneEvDef, zoneLabel, type ZeChoice } from "@/lib/nodefarm/zoneevents";
+import { mineAmount, patchCost, zeEffect, zeTitle, zoneEvDef, zoneLabel, type ZeChoice } from "@/lib/nodefarm/zoneevents";
 
 const clock = (sec: number) => `${Math.floor(Math.max(0, sec) / 60)}:${String(Math.floor(Math.max(0, sec) % 60)).padStart(2, "0")}`;
 
@@ -82,7 +82,7 @@ export function ZoneEventCard({ s, id, onChoose, onClose, reduced }: { s: State;
                 <div ref={card} className="nf-zc" role="status" data-kind={e.kind} style={{ ["--k" as string]: def.color } as CSSProperties}>
                     {(["tl", "tr", "bl", "br"] as const).map((c) => <i key={c} className="nf-zc-br" data-c={c} aria-hidden="true" />)}
                     <div className="nf-zc-top"><b>ZONE EVENT // {def.code}</b><span>{zoneLabel(e.zone)}</span></div>
-                    <h3 className="nf-zc-name">{def.title}</h3>
+                    <h3 className="nf-zc-name">{zeTitle(e.kind, e.zone)}</h3>
                     <p className="nf-zc-line">{zeEffect(s, e)} for {clock(e.left)}.</p>
                     <span className="nf-bar sm" aria-hidden="true"><i style={{ width: `${pct}%`, background: def.color }} /></span>
                     {ask && e.kind === "vein" && (

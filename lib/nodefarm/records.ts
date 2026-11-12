@@ -10,6 +10,7 @@ import {
 } from "./engine";
 import { LOGS, logNo } from "./story";
 import { END_STAGES, END_STEPS, buildBlock, endSeen, endStage, lastZone, stageCost } from "./ending";
+import { zeTitle, zoneLabel } from "./zoneevents";
 import { ENTRIES, unlocked as unlockedEntries } from "./codex";
 
 export const NF_PATH = "/creations/games/node-farm";
@@ -73,6 +74,11 @@ export function recordSections(s: State): RecordSection[] {
         { id: "life", title: "Lifetime", blurb: "Survives every Ascend.", rows: life },
         { id: "prog", title: "Progress", blurb: "Goals, secrets, tree and perks.", rows: prog },
     ];
+    if (s.ze?.seen) {
+        const log = s.ze.log ?? [];
+        const rows: [string, string][] = [["Seen", `${s.ze.seen}`], ...[...log].reverse().map((e): [string, string] => [zeTitle(e.kind, e.zone), `${zoneLabel(e.zone)}, ${fmtTime(Math.max(0, s.life.secs - e.at))} ago`])];
+        out.push({ id: "zev", title: "Zone events", blurb: "The last dozen, newest first.", rows });
+    }
     if (mats.length) out.splice(1, 0, { id: "mats", title: "Materials", blurb: "Held, nodes and output per second.", rows: mats });
     if (s.lab.seen) out.push({ id: "lab", title: "Exploit Lab", blurb: "Research and stock survive Ascend; Intel does not.", rows: [
         ["Intel", `${fmt(s.lab.intel)} · +${fmt(intelRate(s, d.bytesPerSec))}/s`],
@@ -106,7 +112,7 @@ export interface NfLine {
 const t = (text: string, k?: NfLine["k"]): NfLine => ({ t: text, k });
 const row = (a: string, b: string, go?: string): NfLine => ({ a, b, go });
 
-export const NF_SUBS = ["stats", "goals", "secrets", "logs", "archive", "news", "open", "codex", "anim", "fs", "fullscreen", "art", "core", "admin"];
+export const NF_SUBS = ["stats", "goals", "secrets", "logs", "archive", "news", "open", "codex", "anim", "fs", "fullscreen", "art", "core", "admin", "keys"];
 
 export interface NfResult {
     lines: NfLine[];
@@ -163,6 +169,9 @@ export function nfCommand(s: State, args: string[]): NfResult {
             LOGS.forEach((l, i) => lines.push(s.logs.includes(l.id) ? row(logNo(i), l.title.toLowerCase()) : row(logNo(i), "????")));
             lines.push(t("nf logs <number> to read one.", "dim"));
         }
+    } else if (sub === "keys") {
+        if (typeof window !== "undefined") window.dispatchEvent(new Event("cm:keys"));
+        lines = [t("keys sheet open. Same list: nf codex hotkeys.", "dim")];
     } else if (sub === "codex") {
         const open = unlockedEntries(s);
         const q = args.slice(1).join(" ").toLowerCase();

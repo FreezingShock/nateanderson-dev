@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useEffect, useLayoutEffect, useRef, type RefObject } from "react";
+import { createContext, memo, useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore, type RefObject } from "react";
 import { cxPlay, useCodeReveal } from "@/lib/nodefarm/cx";
 import { fmt } from "@/lib/nodefarm/engine";
 import { etaText, type Step, type TipInfo } from "@/lib/nodefarm/guide";
@@ -55,8 +55,22 @@ export interface TipApi {
     hide: (el?: HTMLElement) => void;
 }
 export const TipCtx = createContext<TipApi>({ show() {}, hide() {} });
+/** The tip's own store: showing or hiding one re-renders only <Tip>, never the board. */
+export interface TipStore {
+    get: () => TipState | null;
+    set: (f: TipState | null | ((cur: TipState | null) => TipState | null)) => void;
+    sub: (fn: () => void) => () => void;
+}
 
-export function Tip({ host, tip: live }: { host: RefObject<HTMLElement | null>; tip: TipState | null }) {
+export const Tip = memo(function Tip({ host, store }: { host: RefObject<HTMLElement | null>; store: TipStore }) {
+    const live = useSyncExternalStore(store.sub, store.get, () => null);
+    // the numbers in a tip follow the game, about four times a second while one is showing
+    const [, again] = useState(0);
+    useEffect(() => {
+        if (!live) return;
+        const iv = setInterval(() => again((n) => n + 1), 250);
+        return () => clearInterval(iv);
+    }, [live]);
     const ref = useRef<HTMLDivElement>(null);
     // keep the last tip on screen while it deletes out; a new target reprints it (code reveal, lib/nodefarm/cx.ts)
     const last = useRef<TipState | null>(null);
@@ -102,4 +116,4 @@ export function Tip({ host, tip: live }: { host: RefObject<HTMLElement | null>; 
             <p className="nf-tip-s">{c.status}</p>
         </div>
     );
-}
+});
