@@ -997,7 +997,7 @@ export function NodeFarm() {
             {treeOpen && (
                 <TreeMenu
                     s={s}
-                    ver={`${s.tree.length}|${s.ap}`}
+                    ver={`${s.tree.join(",")}|${s.ap}|${JSON.stringify(s.treeLv ?? {})}`}
                     reduced={reduced}
                     onBuy={(id) => { if (buyNode(s, id)) { sfx("nfBuy", { tier: 4 }); bump((n) => n + 1); } else sfx("deny"); }}
                     onRespec={() => { const back = respec(s); sfx("tab"); log(`Tree respec: ${fmt(back)} AP refunded.`, "good"); save(); bump((n) => n + 1); return back; }}
