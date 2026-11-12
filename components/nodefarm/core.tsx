@@ -31,6 +31,27 @@ const CYAN = [[6, 32, 42], [11, 90, 107], [23, 150, 170], [47, 216, 232], [201, 
 const SECT = ["#2fd8e8", "#b6f04a", "#ff2d8a", "#f08a3c", "#7aa2ff", "#e08cff", "#6bffc9", "#ffc53a", "#bfeaff", "#9a7bff", "#ff7a4a"].map((h) => [parseInt(h.slice(1, 3), 16), parseInt(h.slice(3, 5), 16), parseInt(h.slice(5, 7), 16)]);
 const MAG = [[43, 5, 23], [125, 15, 69], [196, 28, 108], [255, 45, 138], [255, 194, 222]];
 
+// Per-pixel geometry never changes, so it is computed once for the whole page instead of 20,000 hypot/atan2 calls a frame.
+// Pixels past radius 70 are never drawn (the halo ends at 70), so they are left out of the pixel list entirely.
+const R_MAX = 70;
+let GEO: { n: number; x: Uint8Array; y: Uint8Array; dx: Float32Array; dy: Float32Array; r: Float32Array; a: Float32Array; s3: Float32Array; c3: Float32Array; bay: Float32Array } | null = null;
+function geo() {
+    if (GEO) return GEO;
+    const tmp: number[] = [];
+    for (let y = 0; y < S; y++) for (let x = 0; x < S; x++) if (Math.hypot(x - S / 2 + 0.5, y - S / 2 + 0.5) < R_MAX) tmp.push(x, y);
+    const n = tmp.length / 2;
+    const g = { n, x: new Uint8Array(n), y: new Uint8Array(n), dx: new Float32Array(n), dy: new Float32Array(n), r: new Float32Array(n), a: new Float32Array(n), s3: new Float32Array(n), c3: new Float32Array(n), bay: new Float32Array(n) };
+    for (let i = 0; i < n; i++) {
+        const x = tmp[i * 2], y = tmp[i * 2 + 1];
+        const dx = x - S / 2 + 0.5, dy = y - S / 2 + 0.5;
+        const a = Math.atan2(dy, dx);
+        g.x[i] = x; g.y[i] = y; g.dx[i] = dx; g.dy[i] = dy; g.r[i] = Math.hypot(dx, dy); g.a[i] = a;
+        g.s3[i] = Math.sin(a * 3); g.c3[i] = Math.cos(a * 3);
+        g.bay[i] = BAYER[(y & 3) * 4 + (x & 3)] * 0.9;
+    }
+    return (GEO = g);
+}
+
 export function Core({ feed, reduced }: { feed: React.MutableRefObject<CoreFeed>; reduced: boolean }) {
     const ref = useRef<HTMLCanvasElement>(null);
 
@@ -46,9 +67,14 @@ export function Core({ feed, reduced }: { feed: React.MutableRefObject<CoreFeed>
         const io = new IntersectionObserver((e) => (visible = e[0]?.isIntersecting ?? true));
         io.observe(cv);
 
+        const G = geo();
+        let lastDraw = -1e9;
         const draw = (now: number) => {
             raf = requestAnimationFrame(draw);
-            if (!visible || document.hidden) return;
+            if (!visible || document.hidden || document.body.classList.contains("nf-tm-open")) return; // the full-screen tree covers the core
+            // 40 fps is plenty for a 144 px dithered plasma, and a press pulse still redraws at once
+            if (now - lastDraw < 24 && !(now - feed.current.lastPulse < 40)) return;
+            lastDraw = now;
             const f = feed.current;
             const t = reduced ? 0 : now / 1000;
             const pal = f.overclock ? MAG : CYAN;
@@ -65,11 +91,11 @@ export function Core({ feed, reduced }: { feed: React.MutableRefObject<CoreFeed>
             }
             const lit = Math.min(24, f.ap);
             const pr = 14 + (1 - pulse) * 50;
-            for (let y = 0; y < S; y++) {
-                for (let x = 0; x < S; x++) {
-                    const dx = x - S / 2 + 0.5, dy = y - S / 2 + 0.5;
-                    const r = Math.hypot(dx, dy);
-                    const a = Math.atan2(dy, dx);
+            const ct = Math.cos(t), st = Math.sin(t);
+            for (let i = 0; i < G.n; i++) {
+                {
+                    const x = G.x[i], y = G.y[i];
+                    const dx = G.dx[i], dy = G.dy[i], r = G.r[i], a = G.a[i];
                     let v = -1; // -1 = transparent
                     let sect = -1;
                     // hex core body (a hexagon of radius 40, flat-top)
@@ -80,7 +106,7 @@ export function Core({ feed, reduced }: { feed: React.MutableRefObject<CoreFeed>
                         hx = (r * Math.cos(m - seg / 2)) / Math.cos(seg / 2);
                     }
                     if (hx < 40) {
-                        const plasma = 0.5 + 0.5 * Math.sin(r * 0.28 - t * 2.4 + Math.sin(a * 3 + t) * 1.2);
+                        const plasma = 0.5 + 0.5 * Math.sin(r * 0.28 - t * 2.4 + (G.s3[i] * ct + G.c3[i] * st) * 1.2);
                         v = 0.18 + plasma * (0.42 + f.progress * 0.28) + (1 - r / 52) * 0.22;
                         if (hx > 36) v = 0.9; // bright rim
                         else if (hx > 33) v = 0.12;
@@ -105,7 +131,7 @@ export function Core({ feed, reduced }: { feed: React.MutableRefObject<CoreFeed>
                     }
                     // orbiting nodes, one per stat unlocked past the second
                     let nc = -1;
-                    for (const n of nodes) if (Math.hypot(dx - n.x, dy - n.y) < 2.6) nc = n.c;
+                    for (let q = 0; q < nodes.length; q++) { const n = nodes[q], ex = dx - n.x, ey = dy - n.y; if (ex * ex + ey * ey < 6.76) nc = n.c; }
                     if (nc >= 0) { v = 1; sect = nc; }
                     // ascension halo
                     if (r > 66 && r < 70) {
@@ -117,7 +143,7 @@ export function Core({ feed, reduced }: { feed: React.MutableRefObject<CoreFeed>
                     if (pulse > 0 && Math.abs(r - pr) < 1.6) v = Math.max(v, 0.5 + pulse * 0.5);
                     const o = (y * S + x) * 4;
                     if (v < 0) { px[o + 3] = 0; continue; }
-                    const idx = Math.max(0, Math.min(4, Math.floor(v * 4 + 0.5 + BAYER[(y & 3) * 4 + (x & 3)] * 0.9)));
+                    const idx = Math.max(0, Math.min(4, Math.floor(v * 4 + 0.5 + G.bay[i])));
                     const c = sect >= 0 && !f.overclock ? (idx >= 3 ? SECT[sect] : SECT[sect].map((n) => n * 0.45)) : pal[idx];
                     px[o] = c[0]; px[o + 1] = c[1]; px[o + 2] = c[2]; px[o + 3] = 255;
                 }
