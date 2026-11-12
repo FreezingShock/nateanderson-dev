@@ -1,6 +1,6 @@
 """Node Farm staged zone art for zone 09 Prism Court (Starglass), zone 10 Hollow Forge (Voidsteel) and zone 11 Still Room (Chrono).
 
-Follows the staged zone art contract (docs/node-farm.md, "Zone art"): one sheet per zone at public/naos/nodefarm/zone-<statId>,
+Follows the staged zone art contract v2: one sheet per zone at public/naos/nodefarm/zone-<statId>,
 cells of 288 x 64 art px, 8 rows (row 0 is the bare backdrop, row n adds sprite n on top of row n-1) by 6 frames across, a
 6-frame loop at 6 fps. Sprites grow from about 8 px to 56 px tall; each one is a bigger, richer take on the zone's 32 px icon.
 
@@ -9,9 +9,8 @@ accents, plus wh/gr), so it reads as the same dither as the small sprites. No an
 backdrop haze (alpha <= 90, shades 0-1 only).
 
 Layout inside the 288 x 64 cell (bottom anchored at y = 62):
-  sprites 1-4 walk up in size from x = 48 to x = 106, sprite 7 (the zone's centrepiece) stands at x ~ 156, then sprite 6 and
-  sprite 5 on the right. The top-right 80 x 22 under the big number only ever gets backdrop. Phone shows the right ~180 px, so
-  sprites 5-7 are always in view there.
+  sprites walk up in size from left to right (contract v2 crops the scene on its left), sprite 7, the zone's centrepiece, on the
+  far right. Rows 0-9 can sit under the title bar at 3x, so they only ever get backdrop.
 
 Run: python3 scripts/naos-art/zone-art-09-11.py [starglass|voidsteel|chrono ...]
 Writes public/naos/nodefarm/zone-<id>.{png,webp} and a 2x preview to /tmp/zone-art-<id>.png.
@@ -36,10 +35,11 @@ ROWS, FRAMES = 8, 6
 BASE = 62            # ground line for sprites
 SS = 4               # supersampling for polygon masks
 TAU = math.tau
-QUIET = (W - 80, 0, W, 22)   # top-right box under the big number: backdrop only
+TOP = 10                     # rows 0-9 can sit under the title bar at 3x: backdrop only (contract v2)
+QUIET = (0, 0, 0, 0)         # v1 top-right box, retired in contract v2
 
 # x centre of each sprite (index 1..7)
-SLOT = {1: 48, 2: 63, 3: 81, 4: 105, 5: 266, 6: 222, 7: 158}
+SLOT = {1: 44, 2: 58, 3: 76, 4: 100, 5: 132, 6: 180, 7: 248}
 
 
 def hexc(h):
@@ -867,7 +867,6 @@ def sg_bg(c, f):
     for i in range(10):
         x = (i * 29 + 29 * ph * 0 + f * 5) % W
         c.px(x, hz, RAMPS[["cyan", "mag", "lime"][i % 3]][3])
-    quiet_dim(c)
 
 
 def vs_bg(c, f):
@@ -943,7 +942,6 @@ def vs_bg(c, f):
         t = (ph + rng.uniform()) % 1
         y = y0 - 9 * t
         c.px(x0 + math.sin(TAU * (t + i * .1)), y, RAMPS[["mag", "rn", "qz"][i % 3]][2 if t < .6 else 1], True)
-    quiet_dim(c)
 
 
 def ch_bg(c, f):
@@ -1005,7 +1003,6 @@ def ch_bg(c, f):
     c.set(fl & chk & ((c.bayer + .5) < 0.2 + 0.8 * c.lin(0, 0, W, 0)), RAMPS["ch"][1])
     # dust held in the air, in every accent
     motes(c, 110, f, 5, (24, 2, W - 2, BASE - 2), ("ch", "rn", "cyan", "qz", "lime", "wh"))
-    quiet_dim(c)
 
 
 
@@ -1025,8 +1022,7 @@ def cell(zone, row, f):
     for n in ORDER:
         if n <= row:
             sprites[n - 1](c, f)
-    x0, y0, x1, y1 = QUIET
-    c.img[y0:y1, x0:x1] = 0
+    c.img[:TOP] = 0
     # backdrop goes underneath: paint it on its own canvas and fill only where the sprites left holes
     b = Canvas()
     bg(b, f)
@@ -1057,7 +1053,6 @@ def main():
                 sheet[row * H:(row + 1) * H, f * W:(f + 1) * W] = cell(zone, row, f)
         a = sheet[..., 3]
         assert np.all((a == 0) | (a == 255) | (a <= 90)), "alpha must be 0, 255 or haze <= 90"
-        check_quiet(sheet, zone)
         im = Image.fromarray(sheet, "RGBA")
         png, webp = out / f"zone-{zone}.png", out / f"zone-{zone}.webp"
         im.save(png, optimize=True)
