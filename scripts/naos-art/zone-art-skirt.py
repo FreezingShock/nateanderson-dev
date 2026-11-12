@@ -30,8 +30,28 @@ HAND: set[str] = set()
 B4 = np.array([[0, 8, 2, 10], [12, 4, 14, 6], [3, 11, 1, 9], [15, 7, 13, 5]]) / 16.0
 
 
+def backdrop(sheet: Image.Image) -> np.ndarray:
+    """The cell's left SKW columns with only the backdrop: pixels that stage 0 and stage 7 agree on. Anything that changes
+    between them is a sprite or a stage-0 ghost of one, so it is cut out and the hole filled from the backdrop beside it
+    (nearest kept pixel in the same row, looking further from the join, so the fill comes from the side that will fade)."""
+    full = np.asarray(sheet.convert("RGBA"))
+    a = full[:CH, :SKW].copy()
+    z = full[CH * 7:CH * 8, :SKW]
+    hole = np.any(a != z, axis=2)
+    for y in range(CH):
+        xs = np.nonzero(~hole[y])[0]
+        if not len(xs):
+            a[y] = 0
+            continue
+        for x in np.nonzero(hole[y])[0]:
+            right = xs[xs > x]          # mirrored, columns right of x in the cell sit further from the join
+            src = right[0] if len(right) else xs[xs < x][-1]
+            a[y, x] = a[y, src]
+    return a
+
+
 def skirt(sheet: Image.Image) -> Image.Image:
-    a = np.asarray(sheet.convert("RGBA"))[:CH, :SKW].copy()
+    a = backdrop(sheet)
     s = a[:, ::-1]                                   # mirror: column SKW-1 of the skirt = column 0 of the cell
     h, w = s.shape[:2]
     y, x = np.mgrid[0:h, 0:w].astype(float)

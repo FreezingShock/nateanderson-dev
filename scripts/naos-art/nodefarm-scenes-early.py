@@ -1110,7 +1110,6 @@ def clockwork_far(v):
     horizon_glow(L, v, "ch", 70, CG, 0, 2, CK_SKY, 1.0)
     horizon_glow(L, v, "cu", 140, CG, 1, 3, None, 0.6)
     starfield(L, 8, 70, 4, 80, ["wh", "ch", "cu"], 0.06)
-    L.gas(np.clip((s - 0.55) * 2, 0, 1) * np.clip(1 - np.abs(v.wy - 110) / 34, 0, 1), "eg", 0, 2)
     for k in range(10):                                               # far rooftops and spires
         x = k * 48 + rnd(1003, k) * 20
         w, h = 18 + rnd(1003, k, 1) * 18, 12 + rnd(1003, k, 2) * 22

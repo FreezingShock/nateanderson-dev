@@ -21,6 +21,11 @@
         radial-gradient(closest-side, rgb(0 0 0 / .85), rgb(0 0 0 / .6) 55%, transparent),
         var(--art), var(--sk, none);
     background-repeat: no-repeat;
+    /* the sheet's earlier frames sit left of the cell as it steps, so the sheet is clipped to the content box, which starts
+       where the cell does (padding = the skirt's room); every other layer paints the whole box */
+    box-sizing: border-box; padding-left: max(0px, var(--x0));
+    background-clip: border-box, border-box, content-box, border-box;
+    background-origin: padding-box;
     background-size: 100% 100%, var(--nw) var(--nh), calc(1728px * var(--s)) calc(var(--h) * 8 * var(--s)), calc(128px * var(--s)) calc(var(--h) * var(--s));
     background-position: 0 0, var(--nx) var(--ny), var(--x0) var(--y0), var(--xk) var(--yk);
     image-rendering: pixelated;
