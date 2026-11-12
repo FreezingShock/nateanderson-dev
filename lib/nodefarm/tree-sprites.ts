@@ -54,6 +54,9 @@ export const SPRITE_CELLS: Record<string, ["s" | "m" | "l", number]> = {
     "fw_keysmith": ["s", 51],
     "fw_desk": ["s", 52],
     "fw_standby": ["s", 53],
+    "fw_rigmem": ["s", 54],
+    "fw_rod": ["s", 55],
+    "fw_recorder": ["s", 56],
     "watchdog": ["m", 0],
     "flatrate": ["m", 1],
     "mount1": ["m", 2],
@@ -95,6 +98,8 @@ export const SPRITE_CELLS: Record<string, ["s" | "m" | "l", number]> = {
     "fw_droneram": ["m", 38],
     "fw_dual": ["m", 39],
     "fw_rootpath": ["m", 40],
+    "fw_fieldkit": ["m", 41],
+    "fw_weather": ["m", 42],
     "core": ["l", 0],
     "overdrive": ["l", 1],
     "overpress": ["l", 2],
@@ -118,6 +123,7 @@ export const SPRITE_CELLS: Record<string, ["s" | "m" | "l", number]> = {
     "fw_shortfuse": ["l", 20],
     "fw_tape": ["l", 21],
     "fw_lineage": ["l", 22],
+    "fw_fieldop": ["l", 23],
 };
 export const SPRITE_PX = { s: 32, m: 40, l: 64 } as const;
-export const SPRITE_ROWS = { s: 54, m: 41, l: 23 } as const;
+export const SPRITE_ROWS = { s: 57, m: 43, l: 24 } as const;

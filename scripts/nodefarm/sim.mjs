@@ -73,7 +73,7 @@ while (t < hours * 3600) {
             for (let more = true; more;) {
                 more = false;
                 let best = null;
-                for (let k = 0; k < E.TIERS; k++) for (let m = 0; m < 3; m++) if (!E.modBlock(s, k, m)) { const c = E.modCost(s, k, m); if (!best || c < best[2]) best = [k, m, c]; }
+                for (let k = 0; k < E.TIERS; k++) for (let m = 0; m < E.MOD_COUNT; m++) if (!E.modBlock(s, k, m)) { const c = E.modCost(s, k, m); if (!best || c < best[2]) best = [k, m, c]; }
                 if (best && E.buyMod(s, best[0], best[1])) more = true;
             }
             for (const n of [...E.DRONE_TREE].sort((a, b) => a.cost - b.cost)) if (E.buyDroneNode(s, n.id)) mark("dnode " + n.id, t);

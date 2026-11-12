@@ -3,7 +3,7 @@
 // or wait it out). Nothing ever takes stock from you, and time away just lets an event run out. Pure rules, no React: the numbers
 // live in ZE_TUNE (engine.ts, because the engine reads them), the strip on the zone panel is components/nodefarm/zone-event.tsx.
 import {
-    STATS, TICK_HOOKS, ZE_TUNE, derive, isUnlocked, overclockMult, resonancePair, statDef, zeOut,
+    STATS, TICK_HOOKS, ZE_TUNE, derive, droneEventPace, isUnlocked, overclockMult, resonancePair, statDef, zeOut, fwFieldOp, fwZeGap, fwZeLong,
     type State, type StatId, type ZoneEvActive, type ZoneEvKind, type ZoneEvState, MATS, type MatId,
 } from "./engine";
 import { LORE } from "./lore";
@@ -41,7 +41,7 @@ export function kindsFor(s: State, zone: StatId): ZoneEvKind[] {
     const out: ZoneEvKind[] = ["surge", "resonance"];
     if (hasButtons(zone)) out.push("clearance");
     if (hasStock(zone)) out.push("vein");
-    if (s.life.secs >= ZE_TUNE.faultFrom) out.push("fault");
+    if (s.life.secs >= ZE_TUNE.faultFrom && !fwFieldOp(s)) out.push("fault"); // Field operator (Firmware): no Faults
     return out;
 }
 
@@ -61,7 +61,8 @@ export function patchCost(s: State): number {
 /** Start an event on a zone (the scheduler and the admin panel both call this). Replaces nothing: events stack only when started by hand. */
 export function zeStart(s: State, kind: ZoneEvKind, zone: StatId): ZoneEvActive {
     const z = ensureZe(s);
-    const e: ZoneEvActive = { id: z.seen + 1, kind, zone, left: ZE_TUNE.secs[kind], total: ZE_TUNE.secs[kind] };
+    const secs = ZE_TUNE.secs[kind] * fwZeLong(s); // Lightning rod (Firmware)
+    const e: ZoneEvActive = { id: z.seen + 1, kind, zone, left: secs, total: secs };
     z.act.push(e);
     z.seen += 1;
     z.kinds[kind] = (z.kinds[kind] ?? 0) + 1;
@@ -117,14 +118,14 @@ export function zeClear(s: State) {
 export function zeStep(s: State, dt: number) {
     const z = ensureZe(s);
     if (z.act.length) {
-        for (const e of z.act) e.left -= dt;
+        for (const e of z.act) e.left -= dt * droneEventPace(s, e.zone, e.kind !== "fault"); // a posted Drone stretches good events and patches faults
         if (z.act.some((e) => e.left <= 0)) z.act = z.act.filter((e) => e.left > 0);
     }
     if (z.act.length) return;
     z.wait = Math.max(0, z.wait - dt);
     if (z.wait > 0 || dt > 5) return;
     const r = rollEvent(s);
-    z.wait = ZE_TUNE.gap[0] + Math.random() * (ZE_TUNE.gap[1] - ZE_TUNE.gap[0]);
+    z.wait = (ZE_TUNE.gap[0] + Math.random() * (ZE_TUNE.gap[1] - ZE_TUNE.gap[0])) * fwZeGap(s); // Weather eye (Firmware)
     if (r) zeStart(s, r.kind, r.zone);
 }
 if (!TICK_HOOKS.includes(zeStep)) TICK_HOOKS.push(zeStep);

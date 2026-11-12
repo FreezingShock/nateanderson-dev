@@ -4,8 +4,8 @@ import { useContext, useRef, type CSSProperties } from "react";
 import { useFoldReveal } from "@/lib/nodefarm/cx";
 import {
     DRONE_SECS, DRONE_TREE, DRONE_TUNE, MODS, POSTABLE, ROMAN, TIERS, TUNE, cores, coresSpent, droneCost, droneFx, droneMax, droneNode, droneNodeOpen,
-    droneRate, droneTreeTotals, droneVis, dronesOpen, fmt, fmtTime, isUnlocked, masteryMul, masteryRanks, modBlock, modCost, modMax, nextRankAt, partsRate,
-    postOf, postX, statDef, svcRate, zoneRank, zoneSvc, type ButtonStat, type State,
+    droneRate, droneTreeTotals, droneVis, dronesOpen, fmt, fmtTime, isUnlocked, masteredZones, masteryMul, masteryRanks, modBlock, modCost, modMax, nextRankAt, partsRate,
+    postOf, postX, rigMasteryCut, statDef, svcRate, zoneRank, zoneSvc, type ButtonStat, type State,
 } from "@/lib/nodefarm/engine";
 import { DRONE_NAMES as NAMES, droneTip } from "@/lib/nodefarm/guide";
 import { TipCtx } from "./guide";
@@ -31,7 +31,7 @@ export function droneModel(s: State): TreeModel {
 /** Drone tree nodes you can fit right now. */
 export const droneReady = (s: State) => DRONE_TREE.filter((n) => !s.dr.nodes.includes(n.id) && droneNodeOpen(s, n) && cores(s) >= n.cost).length;
 
-const MOD_SHORT = ["SERVO", "UPLINK", "REACH"];
+const MOD_SHORT = ["SERVO", "UPLINK", "REACH", "TUNER", "SALVAGE"];
 
 /** The Drone hangar: berths with live Drones, the roster (build, post, mod), zone mastery and the way into the drone tree. */
 export function DroneBay({ s, open, onToggle, onBuy, onPost, onMod, onTree, guided }: {
@@ -81,7 +81,7 @@ export function DroneBay({ s, open, onToggle, onBuy, onPost, onMod, onTree, guid
                             <b>{treeSeen ? (ready ? `${ready} ready` : `${s.dr.nodes.length}/${DRONE_TREE.length}`) : "locked"}</b>
                         </button>
                     </div>
-                    <p className="nf-brief">A Drone presses its tier&apos;s button. Left on <b>sweep</b>, it presses every zone you arm. <b>Post</b> it to one zone and it presses only there, x{fmt(DRONE_TUNE.postX + droneFx(s).postX)} as fast, and builds that zone&apos;s mastery: a permanent boost, and a Core per rank. Mods and Parts reset on Ascend; postings, mastery and the drone tree stay. Away, Drones run at {Math.round(Math.min(1, TUNE.drone.offline + droneFx(s).off) * 100)}% speed or better. Reboots stay manual.</p>
+                    <p className="nf-brief">A Drone presses its tier&apos;s button. Left on <b>sweep</b>, it presses every zone you arm. <b>Post</b> it to one zone and it presses only there, x{fmt(DRONE_TUNE.postX + droneFx(s).postX)} as fast, and builds that zone&apos;s mastery: a permanent boost, cheaper rig upgrades there, and a Core per rank. A posted Drone also makes that zone&apos;s good events last longer and patches its faults faster. Mods and Parts reset on Ascend; postings, mastery and the drone tree stay. Away, Drones run at {Math.round(Math.min(1, TUNE.drone.offline + droneFx(s).off) * 100)}% speed or better. Reboots stay manual.</p>
                     <ul className="nf-dr-list">
                         {Array.from({ length: TIERS }, (_, k) => {
                             const lvl = s.drones[k];
@@ -175,7 +175,7 @@ function Berths({ s }: { s: State }) {
 function Mastery({ s, zones }: { s: State; zones: ButtonStat[] }) {
     return (
         <section className="nf-hg-ms" data-cx-i="">
-            <h4 className="nf-hg-h">zone mastery <small>ranks are permanent · each rank is one Core</small></h4>
+            <h4 className="nf-hg-h">zone mastery <small>ranks are permanent · each rank is one Core{masteredZones(s) ? ` · ${masteredZones(s)} mastered, every Drone +${Math.round(masteredZones(s) * DRONE_TUNE.masteredSpeed * 100)}%` : " · a zone at V speeds up every Drone"}</small></h4>
             <ol>
                 {zones.map((st) => {
                     const r = zoneRank(s, st);
@@ -192,7 +192,7 @@ function Mastery({ s, zones }: { s: State; zones: ButtonStat[] }) {
                             <span className="nf-hg-rk" aria-label={`Rank ${r} of 5`}>{[1, 2, 3, 4, 5].map((i) => <i key={i} data-f={i <= r ? "" : undefined} />)}</span>
                             <span className="nf-hg-bar"><i /></span>
                             <small>{at ? (rate > 0 ? `${ROMAN[r + 1]} in ${fmtTime((at - sv) / rate)}` : `${fmt(sv)} / ${fmt(at)}`) : "mastered"}</small>
-                            <em>x{fmt(masteryMul(s, st))}</em>
+                            <em title={r ? `Output x${fmt(masteryMul(s, st))}, rig upgrades -${Math.round((1 - rigMasteryCut(s, st)) * 100)}%` : undefined}>x{fmt(masteryMul(s, st))}</em>
                             <span className="nf-hg-here">{here.map((k) => <i key={k} style={{ ["--c" as string]: DRONE_COLOURS[k] } as CSSProperties} title={`T${k + 1} ${NAMES[k]}`} />)}</span>
                         </li>
                     );
