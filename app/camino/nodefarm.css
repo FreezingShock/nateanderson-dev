@@ -670,3 +670,12 @@ body.nf-win-open .ctos .cm-section.ruled { z-index: 60; }
 /* long tier names plus up to six pips overflowed the button on a phone: let the name shrink and ellipsise */
 .ctos .nf-btn, .ctos .nf-btn-top { min-width: 0; }
 .ctos .nf-btn-name { min-width: 0; flex: 0 1 auto; }
+
+/* operator logs (Records window) */
+.ctos .nf-logs { grid-column: 1 / -1; }
+.ctos .nf-log-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 1px; background: var(--nf-line); border: 1px solid var(--nf-line); }
+@media (min-width: 900px) { .ctos .nf-log-list { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.ctos .nf-log-list li { background: #0c0c0c; padding: 12px 14px; min-width: 0; }
+.ctos .nf-log-list b { display: block; font: 500 11px/1.3 var(--cm-mono); letter-spacing: 0.08em; color: #ffc53a; }
+.ctos .nf-log-list p { margin: 6px 0 0; font: 400 14px/1.55 var(--cm-mono); color: var(--cm-fg, #ddd); }
+.ctos .nf-log-list li.lock b { color: #6a6a6a; }

@@ -90,3 +90,5 @@ body .nf-rx-flash { position: absolute; inset: 0; z-index: 5; pointer-events: no
     body .nf-rx-go { animation: none; }
     body .nf-rx-flash { display: none; }
 }
+
+body .nf-rx-note { color: #ffc53a; font-size: 13px; }
