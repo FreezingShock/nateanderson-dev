@@ -27,10 +27,10 @@
 }
 .ctos .nf-wk-art { position: absolute; inset: 0; pointer-events: none; }
 .ctos .nf-wk-art::after { content: ""; position: absolute; inset: 0; background: linear-gradient(90deg, #070707 0, #070707cc 18%, transparent 40%, transparent 70%, #070707aa 100%); }
-.ctos .nf-wk-art i { position: absolute; left: 50%; bottom: 0; width: 480px; height: 150px; margin-left: -240px; background: url(/naos/nodefarm/win-map.webp) 0 0 / 480px 150px no-repeat; image-rendering: pixelated; }
-.ctos .nf-wk-ban[data-art="goals"] .nf-wk-art i { background-image: url(/naos/nodefarm/win-goals.webp); }
-.ctos .nf-wk-ban[data-art="records"] .nf-wk-art i { background-image: url(/naos/nodefarm/win-records.webp); }
-.ctos .nf-wk-ban[data-art="menu"] .nf-wk-art i { background-image: url(/naos/nodefarm/win-menu.webp); }
+.ctos .nf-wk-art i { position: absolute; left: 50%; bottom: 0; width: 480px; height: 150px; margin-left: -240px; background: url(/naos/nodefarm/win-map.webp?v=6933fe25) 0 0 / 480px 150px no-repeat; image-rendering: pixelated; }
+.ctos .nf-wk-ban[data-art="goals"] .nf-wk-art i { background-image: url(/naos/nodefarm/win-goals.webp?v=2bd320e4); }
+.ctos .nf-wk-ban[data-art="records"] .nf-wk-art i { background-image: url(/naos/nodefarm/win-records.webp?v=7e21e5af); }
+.ctos .nf-wk-ban[data-art="menu"] .nf-wk-art i { background-image: url(/naos/nodefarm/win-menu.webp?v=80416805); }
 @media (min-width: 900px) { .ctos .nf-wk-art i { left: 58%; } }
 .ctos .nf-wk-scan { position: absolute; left: 0; right: 0; top: 0; height: 2px; background: color-mix(in srgb, var(--c) 70%, transparent); opacity: .45; animation: nfWkScan 5.2s linear infinite; pointer-events: none; }
 @keyframes nfWkScan { from { transform: translateY(0); } to { transform: translateY(170px); } }
@@ -207,9 +207,10 @@
 .ctos .nf-wk-chain li[data-state="locked"] .nf-wk-cl b { color: var(--cm-ctos-meta); }
 .ctos .nf-wk-ct { font: 700 var(--cm-ctos-t-micro)/1 var(--cm-mono); letter-spacing: .1em; text-transform: uppercase; color: var(--cm-ctos-meta); }
 .ctos .nf-wk-chain li[data-state="done"] .nf-wk-ct { color: var(--c); }
-.ctos .nf-wk-chain li[data-here] .nf-wk-ct { padding: 4px 6px; background: var(--cm-cyan); color: #0a0a0a; animation: nfWkHere 1.6s steps(2) infinite; }
+.ctos .nf-wk-chain li[data-here] .nf-wk-ct { padding: 4px 6px; background: var(--cm-cyan); color: #0a0a0a; animation: nfWkHere 1.6s step-end infinite; }
 .ctos .nf-wk-chain li[data-here] .nf-wk-cn { border-color: var(--cm-cyan); animation: nfWkNext 1.8s steps(6) infinite; --c: var(--cm-cyan); }
-@keyframes nfWkHere { 50% { background: #0a0a0a; color: var(--cm-cyan); box-shadow: inset 0 0 0 1px var(--cm-cyan); } }
+/* two hard states; the old steps(2) blend put the text and its background at the same colour for half a second (an empty block) */
+@keyframes nfWkHere { 0% { background: var(--cm-cyan); color: #0a0a0a; } 50% { background: #0a0a0a; color: var(--cm-cyan); box-shadow: inset 0 0 0 1px var(--cm-cyan); } }
 @media (hover: hover) { .ctos .nf-wk-chain button:hover { border-color: #ffffff22; } }
 .ctos .nf-wk-zone { position: relative; display: grid; gap: 14px; padding: 16px 18px 18px; background: #0a0a0a; border: 1px solid color-mix(in srgb, var(--c) 30%, #1c1c1c); }
 .ctos .nf-wk-zh { display: flex; align-items: center; gap: 14px; }

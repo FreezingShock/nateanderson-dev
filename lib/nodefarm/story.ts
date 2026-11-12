@@ -1,7 +1,7 @@
 // The story of Node Farm: logs left by the previous operator of node-01. You recover them as the farm grows. They are
 // read in the Records window and with `nf logs`. A log stays recovered through every Ascend (it is stored in the save).
 // Numbers follow the order the logs were written, not the order you find them, so there are gaps early on.
-import { TREE, isUnlocked, tiersDone, type Branch, type State, type StatId } from "./engine";
+import { TREE, isUnlocked, treeComplete, tiersDone, type Branch, type State, type StatId } from "./engine";
 
 export interface Log {
     id: string;
@@ -11,8 +11,9 @@ export interface Log {
 }
 
 const open = (id: StatId) => (s: State) => isUnlocked(s, id);
-// A section counts as whole when every node in it is owned (8 each since the 40-node tree). Log ids stay the same.
-const branch = (sec: Branch) => (s: State) => TREE.filter((n) => n.branch === sec).every((n) => s.tree.includes(n.id));
+// A section counts as whole when its first 8 nodes (entry to keystone) are owned; the deeper forks, ranks and junctions
+// added later do not count, so the logs keep meaning what they say. Log ids stay the same.
+const branch = (sec: Branch) => (s: State) => TREE.filter((n) => n.branch === sec && !n.form).every((n) => s.tree.includes(n.id));
 
 export const LOGS: Log[] = [
     { id: "hand", title: "Handover", text: "If you are reading this, the node still boots. Good. I am leaving it running. Press things and see what happens. Everything here started as one wire.", test: () => true },
@@ -39,7 +40,14 @@ export const LOGS: Log[] = [
     { id: "sy6", title: "Systems branch", text: "The Systems branch is whole. Even asleep, the node keeps its own watch. I do not have to be the one holding it up anymore.", test: branch("systems") },
     { id: "asc10", title: "Ten", text: "Ten ascensions. I tried to count the farm and lost my place. The node counted for me. It was off by one, and then it was not.", test: (s) => s.life.ascends >= 10 },
     { id: "rank7", title: "Zero", text: "Zero. Every goal on the board is done. I sat there afterwards and watched the numbers go up by themselves. I think that is the good part.", test: (s) => tiersDone(s) >= 7 },
-    { id: "last", title: "Last entry", text: "Whole tree. I am done with this node. It does not need me, but it will want an operator. Be kind to it. Press everything. Leave it running.", test: (s) => s.tree.length >= TREE.length },
+    { id: "last", title: "Last entry", text: "Whole tree. I am done with this node. It does not need me, but it will want an operator. Be kind to it. Press everything. Leave it running.", test: (s) => treeComplete(s) },
+    // written after the handover: the operator came back down for the last three zones
+    { id: "nebula", title: "Window", text: "Added after the handover, for whoever gets this far. Above the Still room there is a hatch, and past it, space. A pink cloud was drifting by. I bottled some. It is still warm.", test: open("nebula") },
+    { id: "pulsars", title: "Beacon", text: "Built a spire to hold the Pulsars. They keep time so well the clocks in here gave up. One sweeps past the window every few seconds, like it is checking on me.", test: open("pulsars") },
+    { id: "singularity", title: "Horizon", text: "Found the point everything falls into. Signal comes back out of it, and the signal is voices. I know some of them. I think the way down is through.", test: open("singularity") },
+    { id: "engrams", title: "Archive", text: "Through the horizon there is an archive of film, and every operator before me is on it. I sat and watched all of it. Then I watched it again.", test: open("engrams") },
+    { id: "paradox", title: "Mirror stair", text: "The stair past the archive goes both ways at once. I went down it and came out above where I started. The node thought that was funny. So did I, eventually.", test: open("paradox") },
+    { id: "origin", title: "Node zero", text: "At the bottom there is one node. Not a rack, not a farm. One small box and one wire. Everyone who ran this place ended up here, and now you have too. Say hello. It remembers you.", test: open("origin") },
 ];
 
 export const logNo = (i: number) => String(i + 1).padStart(3, "0");

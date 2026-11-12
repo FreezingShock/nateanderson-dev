@@ -1,11 +1,13 @@
 "use client";
 
 import { useRef, useState, type CSSProperties } from "react";
-import { BRANCHES, GOALS, GOAL_TIERS, STATS, TIER_NAMES, TREE, TUNE, amount, apEach, apOnAscend, canAscend, derive, droneCost, dronesOpen, fmt, goalDone, hasNode, isUnlocked, tiersDone, MATS, type MatId, type State, type StatId } from "@/lib/nodefarm/engine";
+import { BRANCHES, GOALS, GOAL_TIERS, STATS, TIER_NAMES, TREE, TREE_FULL, TUNE, fullTreeIds, amount, apEach, apOnAscend, canAscend, derive, droneCost, dronesOpen, fmt, goalDone, hasNode, intelRate, isUnlocked, LAB, LAB_SECS, PAYLOADS, hasRecipe, tiersDone, MATS, type MatId, type State, type StatId } from "@/lib/nodefarm/engine";
+const FULL = new Set(fullTreeIds());
 import { feedLine, nextStep, unlockInfo } from "@/lib/nodefarm/guide";
 import { LORE } from "@/lib/nodefarm/lore";
 import { NfIcon, type NfIconName } from "./icon";
 import { DataLines, Frame, WinBanner } from "./win-kit";
+import { LAB_BLUE, labReady } from "./lab";
 
 type D = ReturnType<typeof derive>;
 type Stand = "done" | "ready" | "next" | "locked";
@@ -23,7 +25,7 @@ const TAG: Record<Stand, string> = { done: "online", ready: "open", next: "decry
 /** The whole farm on one screen (rebuilt 2026-11-12): the chain drawn as a signal tower, Bytes at the base and Chrono at the
  *  top, with YOU ARE HERE on the zone being worked on and a readout of the picked zone beside it. Then the systems beyond
  *  the chain (Ascend, Drones, Goals) and the prestige tree's sections. */
-export function MapPanel({ s, d, onTree, onWin }: { s: State; d: D; onTree: () => void; onWin: (w: "ascend" | "goals") => void }) {
+export function MapPanel({ s, d, onTree, onWin, onLab }: { s: State; d: D; onTree: () => void; onWin: (w: "ascend" | "goals") => void; onLab?: () => void }) {
     const step = nextStep(s, d);
     const raw = STATS.map((x) => standing(s, x.id));
     const frontier = raw.findIndex((x) => x !== "done");
@@ -49,8 +51,9 @@ export function MapPanel({ s, d, onTree, onWin }: { s: State; d: D; onTree: () =
                 readout={[
                     ["~/map", ""],
                     ["ZONES", `${online} / ${STATS.length} online`],
-                    ["TREE", `${owned} / ${TREE.length} nodes`],
+                    ["TREE", `${owned} / ${TREE_FULL} nodes`],
                     ["GOALS", `${goals} / ${GOALS.length}`],
+                    ...(s.lab.seen ? [["LAB", `${s.lab.nodes.length} / ${LAB.length} research`] as [string, string]] : []),
                 ]}
             />
 
@@ -109,7 +112,7 @@ export function MapPanel({ s, d, onTree, onWin }: { s: State; d: D; onTree: () =
             </div>
 
             <div className="nf-wk-cols nf-wk-beyond">
-                <Frame i={3} color="#6bffc9" path="sys/ascend" title="Ascend" note={<>Wipes the run, keeps goals, perks and the tree, and pays AP. Each AP adds +{Math.round(apEach(s) * 100)}% to everything.</>}>
+                <Frame i={3} color="#6bffc9" path="sys/ascend" title="Ascend" note={<>Wipes the run, keeps goals, perks, the tree and lab research, and pays AP. Each AP adds +{Math.round(apEach(s) * 100)}% to everything.</>}>
                     <span className="nf-bar sm" aria-hidden="true"><i style={{ width: `${Math.min(100, (s.aether / TUNE.ascendAether) * 100)}%` }} /></span>
                     <DataLines rows={[["status", canAscend(s) ? `ready, +${fmt(apOnAscend(s))} AP` : `${fmt(s.aether)} / ${fmt(TUNE.ascendAether)} Aether`]]} />
                     <button type="button" className="nf-wk-btn" onClick={() => onWin("ascend")}>Open Ascend</button>
@@ -124,11 +127,11 @@ export function MapPanel({ s, d, onTree, onWin }: { s: State; d: D; onTree: () =
                 </Frame>
             </div>
 
-            <Frame i={6} color="#2fd8e8" className="nf-wk-treefr" path="sys/tree" title="Prestige tree" aside={<>{fmt(s.ap)} AP to spend</>} note={`${owned} of ${TREE.length} nodes in five sections, bought with AP. Nothing in it resets.`}>
+            <Frame i={6} color="#2fd8e8" className="nf-wk-treefr" path="sys/tree" title="Prestige tree" aside={<>{fmt(s.ap)} AP to spend</>} note={`${owned} of ${TREE_FULL} nodes in five sections, bought with AP. Nothing in it resets.`}>
                 <ul className="nf-wk-branches">
                     {BRANCHES.map((b) => {
-                        const mine = TREE.filter((n) => n.branch === b.id);
-                        const have = mine.filter((n) => hasNode(s, n.id)).length;
+                        const mine = TREE.filter((n) => n.branch === b.id && FULL.has(n.id)); // one side of each fork
+                        const have = TREE.filter((n) => n.branch === b.id && hasNode(s, n.id)).length;
                         return (
                             <li key={b.id} style={{ ["--c" as string]: b.color } as CSSProperties}>
                                 <b>{b.name}</b>
@@ -140,6 +143,31 @@ export function MapPanel({ s, d, onTree, onWin }: { s: State; d: D; onTree: () =
                     })}
                 </ul>
                 <button type="button" className="nf-wk-btn is-main" onClick={onTree}>Open tree</button>
+            </Frame>
+
+            <Frame i={7} color={LAB_BLUE} className="nf-wk-treefr" path="sys/lab" title="Exploit Lab" aside={s.lab.seen ? <>{fmt(s.lab.intel)} Intel</> : <>opens with Silicon</>} note={s.lab.seen ? "Earn Intel, research recipes, compile them into payloads, deploy them for timed buffs. Research and stock survive Ascend." : "A second currency and a small research tree. It decrypts the moment Silicon comes online."}>
+                {s.lab.seen ? (
+                    <>
+                        <ul className="nf-wk-branches">
+                            {LAB_SECS.map((b) => {
+                                const mine = LAB.filter((n) => n.branch === b.id);
+                                const have = mine.filter((n) => s.lab.nodes.includes(n.id)).length;
+                                return (
+                                    <li key={b.id} style={{ ["--c" as string]: b.color } as CSSProperties}>
+                                        <b>{b.name}</b>
+                                        <span className="nf-bar sm" aria-hidden="true"><i style={{ width: `${(have / mine.length) * 100}%` }} /></span>
+                                        <em>{have}/{mine.length}</em>
+                                        <small>{b.blurb}</small>
+                                    </li>
+                                );
+                            })}
+                        </ul>
+                        <DataLines rows={[["intel", `+${fmt(intelRate(s, d.bytesPerSec))}/s`], ["recipes", `${PAYLOADS.filter((p) => hasRecipe(s, p.id)).length} / ${PAYLOADS.length}`], ["ready", labReady(s) ? `${labReady(s)} to research` : "save up Intel"]]} />
+                        {onLab && <button type="button" className="nf-wk-btn is-main" onClick={onLab}>Open lab</button>}
+                    </>
+                ) : (
+                    <DataLines rows={[["status", "encrypted"], ["key", "bring Silicon online"]]} />
+                )}
             </Frame>
         </div>
     );

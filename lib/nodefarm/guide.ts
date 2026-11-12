@@ -2,7 +2,7 @@
 // engine (no React), so every number comes from `TUNE` and the engine's own `button`/`derive` and follows any rebalance.
 import {
     GOALS, MATS, PERKS, TIERS, TREE, TUNE, REBOOT_UNLOCK,
-    amount, apOnAscend, button, canAfford, canAscend, derive, droneCost, droneMax, droneRate, dronesOpen, fmt, fmtTime, goalDone, hasNode, isUnlocked, nodeOpen, statDef,
+    LAB, PAYLOADS, intelRate, amount, apOnAscend, button, canAfford, canAscend, derive, droneBoost, droneCost, droneMax, droneRate, dronesOpen, originAp, paradoxOc, singularityAll, fmt, fmtTime, goalDone, hasNode, isUnlocked, nodeOpen, statDef,
     type ButtonStat, type Derived, type MatId, type State, type StatId,
 } from "./engine";
 import { LORE } from "./lore";
@@ -12,7 +12,9 @@ export interface Target {
     stat?: ButtonStat;
     tier?: number;
     drone?: number;
-    win?: "ascend" | "goals" | "tree";
+    win?: "ascend" | "goals" | "tree" | "lab";
+    /** scroll to the Exploit Lab zone on the board */
+    lab?: boolean;
 }
 
 export interface Step {
@@ -122,6 +124,15 @@ export function nextStep(s: State, d: Derived): Step {
         return mk({ id: "spend-ap", title: `Spend ${fmt(s.ap)} Ascension Points`, why: "Perks and tree nodes are permanent and survive every Ascend. Open the tree to pick one.", cur: 1, need: 1, unit: "AP", target: { win: TREE.some((n) => !hasNode(s, n.id) && nodeOpen(s, n) && s.ap >= n.cost) ? "tree" : "ascend" } });
     }
 
+    // ---- the Exploit Lab, once, when it opens: research a recipe, then compile and deploy it
+    if (s.lab.seen && s.lab.nodes.length === 0) {
+        const need = Math.min(...LAB.filter((n) => n.links.includes("core")).map((n) => n.cost));
+        if (s.lab.intel >= need * 0.5) return mk({ id: "lab-research", kicker: "EXPLOIT LAB", title: "Research your first recipe", why: "Intel runs alongside Bytes. Open the research tree and pick Packet sniffer or Rootkit.", cur: s.lab.intel, need, unit: "IN", eta: s.lab.intel >= need ? null : (need - s.lab.intel) / Math.max(1e-9, intelRate(s, d.bytesPerSec)), target: { win: "lab" } });
+    }
+    if (s.lab.nodes.length > 0 && s.life.compiled === 0 && s.lab.queue.length === 0 && PAYLOADS.some((p) => s.lab.nodes.includes(`rx_${p.id}`))) {
+        return mk({ id: "lab-compile", kicker: "EXPLOIT LAB", title: "Compile your first payload", why: "Press Compile in the Lab. When it lands in stock, press Deploy for the buff.", cur: 0, need: 1, unit: "", eta: null, target: { lab: true } });
+    }
+
     // ---- the chain, one zone at a time: Copper, Silicon, Quartz, Aether, then (after an Ascend) the deep materials
     for (let i = 0; i < MATS.length; i++) {
         const m = MATS[i];
@@ -135,7 +146,7 @@ export function nextStep(s: State, d: Derived): Step {
             if (training) {
                 if (canAscend(s)) {
                     const gain = apOnAscend(s);
-                    return mk({ id: "ascend", title: `Ascend for +${fmt(gain)} AP`, why: "Ascending wipes this run but keeps goals, perks and the tree, and every AP boosts everything for good.", cur: s.aether, need: TUNE.ascendAether, unit: "AE", target: { win: "ascend" } });
+                    return mk({ id: "ascend", title: `Ascend for +${fmt(gain)} AP`, why: "Ascending wipes this run but keeps goals, perks, the tree and lab research, and every AP boosts everything for good.", cur: s.aether, need: TUNE.ascendAether, unit: "AE", target: { win: "ascend" } });
                 }
                 return mk({ id: "reach-ascend", title: "Reach Ascend", why: `Hold ${fmt(TUNE.ascendAether)} Aether to Ascend: a reset that gives permanent power.`, cur: s.aether, need: TUNE.ascendAether, unit: "AE", pay: "aether", target: aim(s, "aether") });
             }
@@ -187,6 +198,12 @@ export function feedLine(id: StatId, s: State, d: Derived): string {
         case "starglass": return `Runes ×${fmt(b.sgRu)}`;
         case "voidsteel": return `Starglass ×${fmt(b.vsSg)}`;
         case "chrono": return `Voidsteel ×${fmt(b.chVs)}, everything ×${fmt(b.chAll)}`;
+        case "nebula": return `Chrono ×${fmt(b.nbCh)}`;
+        case "pulsars": return `Nebula ×${fmt(b.puNb)}`;
+        case "singularity": return `Pulsars ×${fmt(b.snPu)}, everything ×${fmt(singularityAll(s))}`;
+        case "engrams": return `Singularity ×${fmt(b.egSn)}, Drones ×${fmt(droneBoost(s))}`;
+        case "paradox": return `Engrams ×${fmt(b.pxEg)}, Overclock ×${fmt(paradoxOc(s))}`;
+        case "origin": return `Paradox ×${fmt(b.orPx)}, AP on Ascend ×${fmt(originAp(s))}`;
     }
 }
 

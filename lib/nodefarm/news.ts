@@ -1,7 +1,7 @@
 // The news lines: now and then a short line from the previous operator (or the node itself) drops into the terminal feed.
 // Every line is tied to how far you have got, so early lines talk about wires and later ones about Runes and Chrono.
 // Picking is pure (see pickNews): it skips anything shown recently, so a long session does not loop.
-import { STATS, TREE, fmt, isUnlocked, tiersDone, type State } from "./engine";
+import { STATS, TREE, TREE_FULL, fmt, isUnlocked, tiersDone, type State } from "./engine";
 import { com, id, kw, p, txt, type Tok } from "./feed";
 
 export type NewsKind = "op" | "note" | "hint" | "wry" | "past";
@@ -16,7 +16,7 @@ interface News {
     t: string | ((s: State) => string);
 }
 
-/** How far the farm has got: the index of the newest unlocked stat (0 = Bytes only, 10 = Chrono). */
+/** How far the farm has got: the index of the newest unlocked stat (0 = Bytes only, 10 = Chrono, 16 = Origin). */
 export const stageOf = (s: State) => {
     let top = 0;
     STATS.forEach((d, i) => {
@@ -100,7 +100,7 @@ const BASE: News[] = [
     { k: "op", from: 9, to: 11, t: "Voidsteel does not reflect. It just stops the light and thinks about it." },
     { k: "op", from: 9, to: 11, t: "Poured a bar on the floor. It cooled in the shape of a floor tile. I did not plan that." },
     { k: "note", from: 9, to: 11, t: "voidsteel.pour() // from an empty place" },
-    { k: "hint", from: 9, to: 10, t: "Voidsteel boosts Starglass. Chrono is the last material, and it nudges everything a little." },
+    { k: "hint", from: 9, to: 10, t: "Voidsteel boosts Starglass. Chrono is past it, and it nudges everything a little." },
     { k: "wry", from: 9, to: 11, t: "The metal came from nowhere. Nowhere is surprisingly well stocked." },
 
     // ---- Chrono (10)
@@ -109,6 +109,49 @@ const BASE: News[] = [
     { k: "note", from: 10, t: "chrono.hold() // time about to leave, caught in time" },
     { k: "wry", from: 10, t: "I am three minutes early to everything now. Nobody has noticed. The node has." },
     { k: "hint", from: 10, ok: (s) => s.life.ascends < 3, t: "Late game is Ascend again and again, spending AP in the tree. The node does not mind repeats." },
+    { k: "hint", from: 10, to: 11, t: "Chrono is not the end of the node. Hold enough of it and the hatch above the Still room opens onto open space." },
+
+    // ---- Nebula (11)
+    { k: "op", from: 11, t: "Opened the top hatch and there was a cloud outside the window. Not weather. A star nursery, drifting past at walking pace." },
+    { k: "op", from: 11, t: "Bottled some Nebula. The jar glows pink and the Chrono in the drawer ticks a little slower near it." },
+    { k: "note", from: 11, t: "nebula.collect() // gas, dust, the start of a star" },
+    { k: "wry", from: 11, t: "The node has a window now. I am choosing not to ask where the window is." },
+    { k: "hint", from: 11, to: 12, t: "Nebula boosts Chrono. Further out there is something blinking on a very regular beat." },
+
+    // ---- Pulsars (12)
+    { k: "op", from: 12, t: "Caught a Pulsar. It blinks six hundred times a second and never once loses count. I have stopped trusting the quartz." },
+    { k: "op", from: 12, t: "The beacon spire sweeps the room every few seconds. I keep ducking. It keeps missing me on purpose." },
+    { k: "note", from: 12, t: "pulsars.sync() // tick tick tick, forever, exactly" },
+    { k: "wry", from: 12, t: "A dead star with better timekeeping than me. Fine. It has had longer to practise." },
+    { k: "hint", from: 12, to: 13, t: "Pulsars boost Nebula. Past them is a place where everything falls in." },
+
+    // ---- Singularity (13)
+    { k: "op", from: 13, t: "There is a hole in the floor of the sky. Things go in and do not come out, except signal, which comes out sounding familiar." },
+    { k: "op", from: 13, t: "Dropped a pen near the Singularity. Still watching it fall. It is taking its time." },
+    { k: "note", from: 13, t: "singularity.lean() // everything tilts toward it, a little" },
+    { k: "wry", from: 13, t: "Every road leads somewhere. This one leads to a single point, which is at least easy to find." },
+    { k: "hint", from: 13, to: 14, t: "Singularity boosts Pulsars and pulls a little on everything. The signal coming out of it is a recording." },
+
+    // ---- Engrams (14)
+    { k: "op", from: 14, t: "On the far side of the horizon there is a room full of film. Every reel is somebody who sat in this chair. I have not found mine yet." },
+    { k: "op", from: 14, t: "Played a reel at random. Somebody laughing at the fans for being too loud. The fans are still too loud." },
+    { k: "note", from: 14, t: "engrams.play() // recorded, rewound, recorded again" },
+    { k: "wry", from: 14, t: "The archive has no index. It has a feeling about where things are, and it is usually right." },
+    { k: "hint", from: 14, to: 15, t: "Engrams boost Singularity and make the Drones press faster. Keep the reels turning and the Mirror stair opens." },
+
+    // ---- Paradox (15)
+    { k: "op", from: 15, t: "The stair past the archive goes up and down at the same time. I counted the steps both ways and got the same number." },
+    { k: "op", from: 15, t: "Folded a Paradox and it came back unfolded, then folded, then both. I wrote down all three. They are the same note." },
+    { k: "note", from: 15, t: "paradox.fold() // true && !true, held still" },
+    { k: "wry", from: 15, t: "I would explain the Mirror stair, but I already did, tomorrow." },
+    { k: "hint", from: 15, to: 16, t: "Paradox boosts Engrams and makes every Overclock hit harder. Win events while it is high." },
+
+    // ---- Origin (16)
+    { k: "op", from: 16, t: "At the bottom of everything there is one small box with one wire. It is warm. I think it has been waiting a long time." },
+    { k: "op", from: 16, t: "Every rack, every amp, every reel up there was built around this box. It does not look like much. Neither did I." },
+    { k: "note", from: 16, t: "origin.boot() // node zero, still answering" },
+    { k: "wry", from: 16, t: "Root access, finally. The root was a box the size of a lunch tin." },
+    { k: "hint", from: 16, ok: (s) => s.life.ascends < 25, t: "Origin boosts Paradox, and every Ascend pays more AP while you hold it. It is the last link in the chain." },
 
     // ---- more of the middle and the end
     { k: "op", from: 3, to: 6, t: "I measure my days in Reboots now. Today was a good one. Fourteen, and none of them hurt." },
@@ -152,7 +195,7 @@ const BASE: News[] = [
     { k: "note", ok: (s) => s.life.ascends >= 1, t: (s) => `ascends = ${fmt(s.life.ascends)} // ${fmt(s.life.apTotal)} AP earned in all` },
     { k: "hint", ok: (s) => s.ap > 0 && s.tree.length === 0, t: "You have AP and an empty tree. Open the tree from Ascend and take the first node you can reach." },
     { k: "op", ok: (s) => s.tree.length >= 5, t: "Every node I bought in the tree felt like moving a piece in a house I already lived in." },
-    { k: "note", ok: (s) => s.tree.length >= 1, t: (s) => `tree: ${s.tree.length} of ${TREE.length} nodes owned` },
+    { k: "note", ok: (s) => s.tree.length >= 1, t: (s) => `tree: ${s.tree.length} of ${TREE_FULL} nodes owned` },
     { k: "wry", ok: (s) => s.tree.length >= 15, t: "The tree grows toward whatever you press last. I have stopped pretending that is a coincidence." },
     { k: "hint", ok: (s) => s.ap >= 10 && s.tree.length > 0, t: "Free respec on the tree. If a branch is not paying, take the AP back and try another." },
 

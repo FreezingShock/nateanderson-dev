@@ -36,6 +36,12 @@ RAMPS = {
     "sg": ramp("#102532", "#3a6a84", "#7cb4d2", "#bfeaff", "#f4fcff"),
     "vs": ramp("#0c0818", "#2a1f55", "#5d46b0", "#9a7bff", "#e0d4ff"),
     "ch": ramp("#2b0f05", "#7a2a10", "#c9501f", "#ff7a4a", "#ffd8b8"),
+    "nb": ramp("#2a0a22", "#7a1f62", "#c94aa3", "#ff8ad8", "#ffe0f4"),
+    "pu": ramp("#061f2a", "#0f5a74", "#2aa6c8", "#64e6ff", "#e0faff"),
+    "sn": ramp("#2a1504", "#7a3f0a", "#c97418", "#ffb14a", "#fff0cc"),
+    "eg": ramp("#24160b", "#6b4424", "#b07a4a", "#e8b98a", "#fff0dc"),
+    "px": ramp("#15161f", "#454a63", "#8a90ad", "#dfe3f5", "#ffffff"),
+    "or": ramp("#03200b", "#0b5a24", "#17a33f", "#3dff6e", "#d4ffe0"),
     "red": ramp("#2b0808", "#80150f", "#d3341c", "#ff6a3d", "#ffd3a8"),
     "gr": ramp("#141719", "#2b3236", "#48535a", "#6f7d85", "#a6b3ba"),
 }
@@ -308,10 +314,176 @@ def chrono_t(c, t):
     return c
 
 
+# ---- deep space (Nebula, Pulsars, Singularity), same tier convention as above.
+def nebula_t(c, t):
+    """A cloud of star-nursery gas: soft lobes that grow and stack, with new stars lit inside."""
+    lobes = [(16, 18, 7), (10, 20, 5), (22, 20, 5.5), (13, 13, 5), (21, 13, 4.5), (7, 15, 3.5), (25, 15, 3.5)][: 3 + min(4, t)]
+    k = 1 + t * 0.08
+    m = np.zeros((N, N), bool)
+    for x, y, r in lobes:
+        m |= disc(16 + (x - 16) * k, 17 + (y - 17) * k, r * k)
+    c.fill(m, 0.25 + 0.55 * lin(4, 28, 26, 6), "nb")
+    core = disc(16, 17, 3 + t * 0.4)
+    c.fill(core & m, 0.85, "nb", outline=False)
+    for i, (x, y) in enumerate([(12, 15), (20, 19), (17, 12), (9, 19), (23, 14), (15, 21)][: 1 + t]):
+        c.set(rect(x, y, x + 1, y + 1), RAMPS["wh"][4])
+        if i < t - 1:
+            c.set(rect(x - 1, y, x, y + 1) | rect(x + 1, y, x + 2, y + 1), RAMPS["pu"][3])
+    return c
+
+
+def pulsars_t(c, t):
+    """A spinning dead star: a bright core with two beams that get longer and sharper, and rings of field lines."""
+    cx, cy = 16, 16
+    L = 7 + t * 1.7
+    beam = poly([(cx - 1.3, cy), (cx - 3.5 - L * 0.35, cy - L), (cx + 0.5 - L * 0.25, cy - L - 1), (cx + 1.3, cy)])
+    beam |= poly([(cx + 1.3, cy), (cx + 3.5 + L * 0.35, cy + L), (cx - 0.5 + L * 0.25, cy + L + 1), (cx - 1.3, cy)])
+    c.fill(beam, 0.4 + 0.5 * (1 - np.hypot(xx - cx, yy - cy) / (L + 2)), "pu", outline=False)
+    for k in range(min(2, t // 2 + 1)):
+        rr = 5 + k * 3 + t * 0.3
+        ring = disc(cx, cy, rr, rr * 0.45) & ~disc(cx, cy, rr - 1, rr * 0.45 - 1)
+        c.set(ring & ~disc(cx, cy, 3), RAMPS["pu"][2 + (k == 0)])
+    c.fill(disc(cx, cy, 3 + t * 0.25), 0.9, "pu")
+    c.set(disc(cx - 0.5, cy - 0.5, 1.2), RAMPS["wh"][4])
+    return c
+
+
+def singularity_t(c, t):
+    """A black hole: a dark centre with a glowing accretion disk that widens and brightens, and a lensed halo above."""
+    cx, cy = 16, 16
+    R = 9 + t * 0.9
+    disk = disc(cx, cy, R, R * 0.32) & ~disc(cx, cy, R * 0.45, R * 0.15)
+    halo = disc(cx, cy - 0.5, R * 0.6) & ~disc(cx, cy - 0.5, R * 0.6 - 1.2 - t * 0.15)
+    c.fill(halo & (yy < cy), 0.6 + 0.08 * t, "sn", outline=False)
+    c.fill(disk & (yy >= cy - 0.5), 0.35 + 0.55 * (1 - np.abs(xx - cx) / R), "sn")
+    hole = disc(cx, cy - 0.5, R * 0.42)
+    c.set(hole, (6, 4, 2))
+    c.fill(disk & (yy < cy - 0.5) & ~hole, 0.25 + 0.4 * (1 - np.abs(xx - cx) / R), "sn", outline=False)
+    c.set(disc(cx, cy - 0.5, R * 0.42 + 0.9) & ~hole & (yy < cy), RAMPS["sn"][4])
+    if t >= 3:
+        for x, y in [(cx - R - 1, cy - 4), (cx + R, cy + 3), (cx + 3, cy - R * 0.6 - 3)][: t - 2]:
+            c.set(rect(x, y, x + 1, y + 1), RAMPS["wh"][4])
+    return c
+
+
+# ---- the last three materials (Engrams, Paradox, Origin), same tier convention as above.
+def engrams_t(c, t):
+    """A film reel of recorded memory: a metal flange with cut-outs over a dark coil of film. The reel grows, more frames
+    light up, and a strip unspools from it at higher tiers."""
+    R = 8.5 + t * 0.7
+    cx, cy = 14 - t * 0.3, 15 - t * 0.2
+    if t >= 2:  # film strip unspooling to the lower right, with sprocket holes and lit frames
+        y0 = 23.5 - t * 0.6
+        strip = poly([(cx + 3, y0 - 1), (31, y0 - 1), (31, y0 + 5), (cx + 3, y0 + 5)])
+        c.fill(strip, 0.12, "eg")
+        for k in range(8):
+            x = cx + 4 + k * 2.4
+            if x < 30:
+                c.set(rect(x, y0 - 0.5, x + 1, y0 + 0.5) | rect(x, y0 + 3.5, x + 1, y0 + 4.5), RAMPS["eg"][2])
+        for k in range(min(t - 1, 4)):
+            x = cx + R * 0.2 + 5 + k * 4.2
+            if x + 3 < 31:
+                c.set(rect(x, y0 + 1, x + 3, y0 + 3), RAMPS["eg"][4 if k == min(t - 1, 4) - 1 else 3])
+    coil = disc(cx, cy, R)
+    c.fill(coil, 0.1 + 0.15 * lin(cx - R, cy - R, cx + R, cy + R), "eg")
+    for k in range(2 + t // 2):  # wound film rings
+        rr = R - 1.5 - k * 1.6
+        c.set(disc(cx, cy, rr) & ~disc(cx, cy, rr - 0.7), RAMPS["eg"][1])
+    fl = R * 0.72  # metal flange with cut-outs
+    flange = disc(cx, cy, fl)
+    holes = 3 + (1 if t >= 3 else 0) + (1 if t >= 5 else 0)
+    cut = np.zeros_like(flange)
+    for k in range(holes):
+        a = -math.pi / 2 + k * 2 * math.pi / holes
+        cut |= disc(cx + math.cos(a) * fl * 0.55, cy + math.sin(a) * fl * 0.55, fl * 0.27)
+    c.fill(flange & ~cut, 0.55 + 0.4 * lin(cx + fl, cy + fl, cx - fl, cy - fl), "eg", outline=False)
+    c.set(flange & ~disc(cx, cy, fl - 0.9) & ~cut, RAMPS["eg"][4])
+    c.set(disc(cx, cy, 1.7), RAMPS["eg"][1])
+    c.set(disc(cx, cy, 0.8), RAMPS["eg"][4])
+    if t >= 4:  # a second, smaller reel behind
+        r2 = 3.5 + (t - 4) * 1.2
+        back = disc(26, 6.5, r2) & ~coil
+        c.fill(back, 0.5, "eg")
+        c.set(disc(26, 6.5, 0.9) & back, RAMPS["eg"][0])
+    return c
+
+
+def paradox_t(c, t):
+    """A looped ribbon (a lemniscate with a twist): the back half dark, the front half light, crossing over itself. Higher
+    tiers widen the loop and add a chromatic split (cyan and magenta ghost edges), as if it sits in two places at once."""
+    a = 6.8 + t * 0.55
+    wid = 1.7 + t * 0.16
+    cx, cy = 16, 16
+    pts = []
+    for i in range(240):
+        u = i / 240 * 2 * math.pi
+        d = 1 + math.sin(u) ** 2
+        pts.append((cx + a * math.cos(u) / d * 1.4, cy + a * math.sin(u) * math.cos(u) / d * 2.0, math.cos(u + 0.6)))
+    back = np.zeros((N, N), bool); front = np.zeros((N, N), bool); vb = np.zeros((N, N)); vf = np.zeros((N, N))
+    for x, y, depth in pts:
+        m = disc(x, y, wid)
+        if depth < 0:
+            back |= m; vb[m] = 0.15 + 0.2 * (1 + depth)
+        else:
+            front |= m; vf[m] = 0.55 + 0.4 * depth
+    if t >= 5:
+        for dx, rn in ((-1, "cyan"), (1, "mag")):
+            g = np.roll(back | front, dx, axis=1) & ~(back | front)
+            c.set(g, RAMPS[rn][3])
+    c.fill(back & ~front, vb, "px", outline=False)
+    c.fill(front, vf, "px", outline=False)
+    c.outline(back | front, "px")
+    if t >= 1:
+        c.set(disc(cx, cy, 1.2), RAMPS["px"][4])
+    if t >= 3:
+        for k, (x, y) in enumerate([(cx - a * 1.4, cy - 4), (cx + a * 1.4, cy + 4)]):
+            c.set(rect(x - 0.5, y - 0.5, x + 0.5, y + 0.5), RAMPS["cyan" if k == 0 else "mag"][4])
+    return c
+
+
+def origin_t(c, t):
+    """The first node: a small box with one green core, roots running down out of it. Roots, light and rays grow with tier."""
+    w = 5.5 + t * 0.9
+    top = 15 - t * 0.6
+    cx = 16
+    nroots = 1 + t
+    for k in range(nroots):  # roots
+        fx = (k - (nroots - 1) / 2) * (2.6 + t * 0.2)
+        x0, y0 = cx + fx * 0.3, top + w * 1.1
+        x1, y1 = cx + fx * 1.4, min(30.5, y0 + 6 + t + (k % 2) * 2)
+        for j in range(12):
+            q = j / 11
+            x = x0 + (x1 - x0) * q + math.sin(q * 3 + k) * 0.8
+            y = y0 + (y1 - y0) * q
+            c.set(rect(x, y, x + 1, y + 1), RAMPS["or"][2 if q < 0.6 else 1])
+    face = rect(cx - w, top, cx + w, top + w * 1.15)
+    lid = poly([(cx - w, top), (cx - w + 2.5, top - 2.5), (cx + w + 2.5, top - 2.5), (cx + w, top)])
+    side = poly([(cx + w, top), (cx + w + 2.5, top - 2.5), (cx + w + 2.5, top + w * 1.15 - 2.5), (cx + w, top + w * 1.15)])
+    c.fill(side, 0.12, "gr")
+    c.fill(face, 0.25 + 0.25 * lin(cx - w, top, cx + w, top + w), "gr")
+    c.fill(lid, 0.7, "gr")
+    core_y = top + w * 0.58
+    if t >= 2:  # glow ring
+        ring = disc(cx, core_y, 2.6 + t * 0.45) & ~disc(cx, core_y, 1.6 + t * 0.4)
+        c.set(ring & face, RAMPS["or"][2])
+    c.set(disc(cx, core_y, 1.5 + t * 0.3), RAMPS["or"][3])
+    c.set(disc(cx - 0.4, core_y - 0.4, 0.8), RAMPS["or"][4])
+    if t >= 1:  # the one wire
+        c.set(rect(cx + w + 2, top - 6 - t, cx + w + 3, top - 1.5), RAMPS["or"][2])
+        c.set(rect(cx + w + 1.5, top - 7 - t, cx + w + 3.5, top - 6 - t), RAMPS["or"][4])
+    if t >= 3:  # rays
+        for k, (dx, dy) in enumerate([(-1, -1), (1, -1.2), (-1.3, 0.1), (1.4, 0.2)][: t - 1]):
+            x, y = cx + dx * (w + 3.5), top - 3 + dy * 4
+            c.set(rect(x, y, x + 1, y + 1), RAMPS["or"][4 if k % 2 == 0 else 3])
+    return c
+
+
 ICONS = [("bytes", bytes_), ("mult", mult), ("reboot", reboot), ("copper", copper), ("silicon", silicon), ("quartz", quartz),
          ("aether", aether), ("ascend", ascend), ("alert", alert), ("lock", lock), ("spark", spark),
          ("runes", lambda: runes_t(Canvas(), 4)), ("starglass", lambda: starglass_t(Canvas(), 4)),
-         ("voidsteel", lambda: voidsteel_t(Canvas(), 4)), ("chrono", lambda: chrono_t(Canvas(), 4))]
+         ("voidsteel", lambda: voidsteel_t(Canvas(), 4)), ("chrono", lambda: chrono_t(Canvas(), 4)),
+         ("engrams", lambda: engrams_t(Canvas(), 4)), ("paradox", lambda: paradox_t(Canvas(), 4)), ("origin", lambda: origin_t(Canvas(), 4)),
+         ("nebula", lambda: nebula_t(Canvas(), 4)), ("pulsars", lambda: pulsars_t(Canvas(), 4)), ("singularity", lambda: singularity_t(Canvas(), 4))]
 
 
 def main():

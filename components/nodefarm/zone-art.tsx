@@ -2,6 +2,7 @@
 
 import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties } from "react";
 import type { State, StatId } from "@/lib/nodefarm/engine";
+import { nfArt } from "@/lib/nodefarm/art-version";
 import { hasZoneArt, onStagePreview, shownStage } from "@/lib/nodefarm/zone-art";
 
 /**
@@ -120,7 +121,7 @@ export function ZoneArt({ id, s }: { id: StatId; s: State }) {
             aria-hidden="true"
             data-stage={stage}
             data-up={up ? "" : undefined}
-            style={{ ["--st" as string]: stage, ["--art" as string]: `url(/naos/nodefarm/zone-${id}.webp)` } as CSSProperties}
+            style={{ ["--st" as string]: stage, ["--art" as string]: `url(${nfArt(`zone-${id}.webp`)})` } as CSSProperties}
         />
     );
 }

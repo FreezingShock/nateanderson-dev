@@ -6,8 +6,8 @@ import { TreeBackdrop, TreeDust, type TreeBackdropHandle } from "./tree-backdrop
 import { TreeSprite, type SpriteState } from "./tree-sprite";
 import { SPRITE_CELLS } from "@/lib/nodefarm/tree-sprites";
 import { cardGlitch } from "./card-glitch";
-import * as Engine from "@/lib/nodefarm/engine";
-import { BRANCHES, TREE, fmt, hasNode, nodeOpen, treeFx, treeNode, type State, type TreeNode } from "@/lib/nodefarm/engine";
+import { LabBackdrop } from "./lab-backdrop";
+import { BRANCHES, TREE, fmt, nodeCost, nodeLevel, nodeOpen, nodeVis, treeNode, treeSpent, treeTotals, type Branch, type State, type TreeKind } from "@/lib/nodefarm/engine";
 
 /**
  * The prestige tree menu: a full-screen web of nodes with a camera you pan, pinch and zoom.
@@ -20,33 +20,95 @@ const KMIN = 0.3;
 const KMAX = 1.8;
 const SZ = { minor: 88, notable: 112, keystone: 152, core: 152 } as const;
 const GLIDE_MS = 560;
-const BCOL = Object.fromEntries(BRANCHES.map((b) => [b.id, b.color])) as Record<string, string>;
-const BNAME = Object.fromEntries(BRANCHES.map((b) => [b.id, b.name])) as Record<string, string>;
 const KIND = { minor: "MINOR", notable: "NOTABLE", keystone: "KEYSTONE" } as const;
 const clamp = (v: number, a: number, b: number) => Math.min(b, Math.max(a, v));
 const easeInOut = (t: number) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
 
 type Vis = "shown" | "fog" | "hidden";
 
+/** One node as the menu sees it. The prestige tree (TREE) and the Exploit Lab research tree (LAB) both fit this. */
+export interface MenuNode {
+    id: string; branch: string; kind: TreeKind; name: string; blurb: string; flavor?: string; cost: number; links: string[]; x: number; y: number; ix: number; sprite?: string;
+    /** the deeper prestige tree: junction (needs every `req`), fork (owning `excl` locks it until you swap), ranked (bought up to `ranks` times) */
+    form?: "junction" | "fork" | "ranked"; req?: string[]; excl?: string; ranks?: number;
+}
+/**
+ * What the menu needs to draw a tree. The same camera, tiles, card, links and reveal run both trees; the model swaps the
+ * data, the currency and the words, and `theme` picks the look (the research tree is the blue "lab" skin, nodefarm-lab.css).
+ */
+export interface TreeModel {
+    theme: "prestige" | "lab";
+    /** bar title after "naOS // node.farm // " */
+    title: string;
+    /** dialog label, also used in sentences ("Prestige tree map") */
+    label: string;
+    nodes: MenuNode[];
+    sections: { id: string; name: string; blurb: string; color: string }[];
+    /** owned node ids */
+    owned: string[];
+    /** the currency you have, and its short name */
+    wallet: number;
+    unit: string;
+    open: (n: MenuNode) => boolean;
+    vis: (n: MenuNode) => Vis;
+    /** what the owned nodes add up to, as label and value rows */
+    totals: () => [string, string][];
+    totalsLabel: string;
+    /** the card's line under an owned node's price */
+    keptNote: string;
+    /** the buy button's word */
+    buyWord: string;
+    /** the core's card */
+    core: { kicker: string; name: string; fx: string; quote: string; color: string };
+    /** the controls line prompt, such as "~/tree $" */
+    prompt: string;
+    /** the fogged node's card line */
+    fogText: string;
+    /** free respec (prestige tree only) */
+    respec: boolean;
+    /** how far out "fit" may zoom: [phone, desktop]. A small tree can show all of itself at once. */
+    fitMin?: [number, number];
+    /** an extra fact line on a node's card (the lab shows what a recipe compiles into) */
+    spec?: (n: MenuNode) => string | null;
+    /** ranks owned (0 when not owned); default 1 for an owned node */
+    level?: (n: MenuNode) => number;
+    /** what the next purchase costs (ranked nodes climb); default n.cost */
+    price?: (n: MenuNode) => number;
+    /** currency a respec would refund; default the sum of owned costs */
+    spent?: () => number;
+}
+
+/** The prestige tree as a model (the default). */
+export function prestigeModel(s: State): TreeModel {
+    return {
+        theme: "prestige", title: "prestige tree", label: "Prestige tree", nodes: TREE, sections: BRANCHES, owned: s.tree, wallet: s.ap, unit: "AP",
+        open: (n) => nodeOpen(s, treeNode(n.id)), vis: (n) => nodeVis(s, treeNode(n.id)), totals: () => treeTotals(s), totalsLabel: "Tree gives",
+        level: (n) => nodeLevel(s, n.id), price: (n) => nodeCost(s, treeNode(n.id)), spent: () => treeSpent(s),
+        keptNote: "kept through Ascend", buyWord: "Install", prompt: "~/tree $", respec: true,
+        fogText: "Signal too weak to read. Buy a node next to it to decrypt this one.",
+        core: { kicker: "core.root", name: "The core", fx: "Every section grows out of here. A node opens once it touches the core or a node you own; the next ring decrypts as you buy toward it.", quote: "Respec is free and refunds every AP.", color: "#e8f6ff" },
+    };
+}
+
 /** Steps from the core along the links, so the opening can decrypt the tree ring by ring. */
-const RING: Map<string, number> = (() => {
+function ringsOf(nodes: MenuNode[]): Map<string, number> {
+    const by = new Map(nodes.map((n) => [n.id, n]));
     const d = new Map<string, number>();
     const q: string[] = [];
-    for (const n of TREE) if (n.links.includes("core")) { d.set(n.id, 1); q.push(n.id); }
+    for (const n of nodes) if (n.links.includes("core")) { d.set(n.id, 1); q.push(n.id); }
     for (let i = 0; i < q.length; i++) {
         const r = d.get(q[i])!;
-        for (const l of treeNode(q[i]).links) if (l !== "core" && !d.has(l)) { d.set(l, r + 1); q.push(l); }
+        for (const l of by.get(q[i])!.links) if (l !== "core" && !d.has(l)) { d.set(l, r + 1); q.push(l); }
     }
     return d;
-})();
+}
 const BOOT_MS = 1150;
 const CLOSE_MS = 320;
 type NodeState = "owned" | "ready" | "open" | "locked";
-type Extra = TreeNode & { flavor?: string; sprite?: string };
 
 /** The node's icon: the art thread's sprite when the sheet has this key, else the older shared sheet. */
-function NodeIcon({ n, st, fog }: { n: TreeNode | null; st: NodeState; fog: boolean }) {
-    const key = n ? (n as Extra).sprite ?? n.id : "core";
+function NodeIcon({ n, st, fog, core }: { n: MenuNode | null; st: NodeState; fog: boolean; core?: string }) {
+    const key = n ? n.sprite ?? n.id : core ?? "core";
     if (SPRITE_CELLS[key]) {
         // locked nodes stay a dark silhouette until they touch something you own (Nate picked this, 2026-11-12)
         const ss: SpriteState = fog || st === "locked" ? "hidden" : st === "owned" ? "owned" : "open";
@@ -60,61 +122,25 @@ function NodeIcon({ n, st, fog }: { n: TreeNode | null; st: NodeState; fog: bool
     return fog ? <i className="nf-tn-q">?</i> : <i className="nf-tn-ic" />;
 }
 
-// The upgrades data may ship its own reveal rule (`nodeVis`); until then, graph distance from what you own decides.
-const engineVis = (Engine as unknown as { nodeVis?: (s: State, n: TreeNode) => Vis }).nodeVis;
-function visMap(s: State): Map<string, Vis> {
+function visMap(m: TreeModel): Map<string, Vis> {
     const out = new Map<string, Vis>();
-    if (engineVis) {
-        for (const n of TREE) out.set(n.id, engineVis(s, n));
-        return out;
-    }
-    const dist = new Map<string, number>();
-    const q: string[] = [];
-    for (const n of TREE) if (hasNode(s, n.id)) { dist.set(n.id, 0); q.push(n.id); }
-    for (const n of TREE) if (!dist.has(n.id) && n.links.includes("core")) { dist.set(n.id, 1); q.push(n.id); }
-    for (let i = 0; i < q.length; i++) {
-        const d = dist.get(q[i])!;
-        if (d >= 2) continue;
-        for (const l of treeNode(q[i]).links) if (l !== "core" && !dist.has(l)) { dist.set(l, d + 1); q.push(l); }
-    }
-    for (const n of TREE) {
-        const d = dist.get(n.id);
-        out.set(n.id, d === undefined || d > 2 ? "hidden" : d === 2 ? "fog" : "shown");
-    }
+    for (const n of m.nodes) out.set(n.id, m.vis(n));
     return out;
 }
 
-function stateOf(s: State, n: TreeNode): NodeState {
-    if (hasNode(s, n.id)) return "owned";
-    if (!nodeOpen(s, n)) return "locked";
-    return s.ap >= n.cost ? "ready" : "open";
+const levelOf = (m: TreeModel, n: MenuNode) => m.level?.(n) ?? (m.owned.includes(n.id) ? 1 : 0);
+const priceOf = (m: TreeModel, n: MenuNode) => m.price?.(n) ?? n.cost;
+/** A ranked node with ranks left: owned (lit), but still for sale. */
+const moreRanks = (m: TreeModel, n: MenuNode) => !!n.ranks && m.owned.includes(n.id) && levelOf(m, n) < n.ranks;
+/** What buying this node does right now: buy, next rank, or swap the other side of a fork. */
+function buyState(m: TreeModel, n: MenuNode): NodeState {
+    if (m.owned.includes(n.id) && !moreRanks(m, n)) return "owned";
+    if (!m.open(n)) return "locked";
+    return m.wallet + (n.excl && m.owned.includes(n.excl) ? priceOf(m, n) : 0) >= priceOf(m, n) ? "ready" : "open";
 }
-
-/** What the owned nodes add up to, as plain rows for the readout. The engine's own `treeTotals` wins when it has one. */
-const engineTotals = (Engine as unknown as { treeTotals?: (s: State) => [string, string][] }).treeTotals;
-function totals(s: State): [string, string][] {
-    if (engineTotals) return engineTotals(s);
-    const f = treeFx(s);
-    const pct = (x: number) => `+${Math.round(x * 100)}%`;
-    const rows: [string, string][] = [];
-    if (f.bytes) rows.push(["Bytes", pct(f.bytes)]);
-    if (f.global) rows.push(["Everything", pct(f.global)]);
-    if (f.reboot) rows.push(["Reboot power", pct(f.reboot)]);
-    if (f.multGain) rows.push(["Multiplier buttons", pct(f.multGain)]);
-    if (f.discount < 1) rows.push(["Button prices", `-${Math.round((1 - f.discount) * 100)}%`]);
-    const mats = Object.values(f.mats);
-    if (mats.length) rows.push(["Materials boosted", String(mats.length)]);
-    if (f.start) rows.push(["Reboot keeps", `${f.start} s of Bytes`]);
-    if (f.offline) rows.push(["Offline cap", `+${f.offline} h`]);
-    if (f.overclock) rows.push(["Overclock length", `+${f.overclock} s`]);
-    if (f.ocMult) rows.push(["Overclock power", `+x${f.ocMult}`]);
-    if (f.ap) rows.push(["AP on Ascend", pct(f.ap)]);
-    if (f.goals) rows.push(["Goal bonus", `+${Math.round(f.goals * 100)}% each`]);
-    if (f.drone) rows.push(["Drone speed", pct(f.drone)]);
-    if (f.droneMax) rows.push(["Drone levels", `+${f.droneMax}`]);
-    if (f.droneCost < 1) rows.push(["Drone prices", `-${Math.round((1 - f.droneCost) * 100)}%`]);
-    if (f.droneOff) rows.push(["Drones away", pct(f.droneOff)]);
-    return rows;
+/** The tile's look: a ranked node with ranks left still looks owned. */
+function stateOf(m: TreeModel, n: MenuNode): NodeState {
+    return m.owned.includes(n.id) ? "owned" : buyState(m, n);
 }
 
 /** Effect text with its numbers picked out ("+20% Bytes" -> <b>+20%</b> Bytes). */
@@ -145,12 +171,23 @@ function ScrambleName({ text, reduced }: { text: string; reduced: boolean }) {
     return <span ref={el} aria-hidden="true">{text}</span>;
 }
 
-type TreeMenuProps = { s: State; /** changes whenever the tree, AP or anything else the menu shows changes (the State object itself is mutated in place) */ ver: string; reduced: boolean; onBuy: (id: string) => void; onRespec: () => number; onClose: () => void };
+type TreeMenuProps = { s: State; /** which tree to draw (default: the prestige tree) */ model?: TreeModel; /** changes whenever the tree, AP or anything else the menu shows changes (the State object itself is mutated in place) */ ver: string; reduced: boolean; onBuy: (id: string) => void; onRespec?: () => number; onClose: () => void };
 
 /** The game re-renders ten times a second; the menu only needs to follow when what it shows changes. */
-export const TreeMenu = memo(TreeMenuInner, (a, b) => a.s === b.s && a.ver === b.ver && a.reduced === b.reduced);
+export const TreeMenu = memo(TreeMenuInner, (a, b) => a.s === b.s && a.ver === b.ver && a.reduced === b.reduced && a.model?.theme === b.model?.theme);
 
-function TreeMenuInner({ s, reduced, onBuy, onRespec, onClose }: TreeMenuProps) {
+function TreeMenuInner({ s, model, reduced, onBuy, onRespec, onClose }: TreeMenuProps) {
+    const m = model ?? prestigeModel(s);
+    const lab = m.theme === "lab";
+    // per-model lookups (the node list is a constant per model, so these only build once per theme)
+    const { byId, BCOL, BNAME, RING } = useMemo(() => ({
+        byId: new Map(m.nodes.map((n) => [n.id, n])),
+        BCOL: Object.fromEntries(m.sections.map((b) => [b.id, b.color])) as Record<string, string>,
+        BNAME: Object.fromEntries(m.sections.map((b) => [b.id, b.name])) as Record<string, string>,
+        RING: ringsOf(m.nodes),
+    }), [m.theme]); // eslint-disable-line react-hooks/exhaustive-deps
+    const treeNode = (id: string) => byId.get(id)!;
+    const TREE = m.nodes;
     const root = useRef<HTMLDivElement>(null);
     const view = useRef<HTMLDivElement>(null);
     const world = useRef<HTMLDivElement>(null);
@@ -192,7 +229,7 @@ function TreeMenuInner({ s, reduced, onBuy, onRespec, onClose }: TreeMenuProps) 
     const [chrome, setChrome] = useState(false);
     const [dockOpen, setDockOpen] = useState(false);
 
-    const vis = useMemo(() => visMap(s), [s, s.tree.length]); // eslint-disable-line react-hooks/exhaustive-deps
+    const vis = useMemo(() => visMap(m), [s, m.theme, m.owned.length]); // eslint-disable-line react-hooks/exhaustive-deps
     drawn.current = useMemo(() => [{ id: "core", x: 0, y: 0, sz: SZ.core }, ...TREE.filter((n) => (vis.get(n.id) ?? "hidden") !== "hidden").map((n) => ({ id: n.id, x: n.x * U, y: n.y * U, sz: SZ[n.kind] }))], [vis]);
     const seen = (id: string) => id === "core" || (vis.get(id) ?? "hidden") !== "hidden";
 
@@ -366,7 +403,7 @@ function TreeMenuInner({ s, reduced, onBuy, onRespec, onClose }: TreeMenuProps) 
         const b = bRef.current.fit;
         const bw = b.x1 - b.x0 + 2.6 * U, bh = b.y1 - b.y0 + 2.6 * U;
         // never fit so far out that the nodes turn into dots: past this, panning shows the rest
-        const k = clamp(Math.min(w / bw, (h - st) / bh), w < 700 ? 0.42 : 0.56, maxK);
+        const k = clamp(Math.min(w / bw, (h - st) / bh), (m.fitMin ?? [0.42, 0.56])[w < 700 ? 0 : 1], maxK);
         return { cx: (b.x0 + b.x1) / 2, cy: (b.y0 + b.y1) / 2 - st / 2 / k, k };
     };
     const fit = useCallback((animate = true, maxK = 1.05) => {
@@ -523,7 +560,7 @@ function TreeMenuInner({ s, reduced, onBuy, onRespec, onClose }: TreeMenuProps) 
         const id = leaving;
         void cardGlitch(el, "out").then(() => setLeaving((l) => (l === id ? null : l)));
     }, [shown, leaving]);
-    useEffect(() => { bd.current?.focus(shown && shown !== "core" ? treeNode(shown).branch : null); }, [shown]);
+    useEffect(() => { bd.current?.focus(shown && shown !== "core" ? (treeNode(shown).branch as Branch) : null); }, [shown]);
 
     // ---- pointers: one finger or the mouse pans, two fingers pinch
     const pos = (e: RPointerEvent) => {
@@ -601,7 +638,7 @@ function TreeMenuInner({ s, reduced, onBuy, onRespec, onClose }: TreeMenuProps) 
         if ((e.target as HTMLElement).tagName !== "BUTTON" || e.key.startsWith("Arrow")) e.preventDefault();
     };
 
-    const ensureVisible = (n: TreeNode) => {
+    const ensureVisible = (n: MenuNode) => {
         const { w, h, st } = dims.current;
         const { cx, cy, k } = cam.current;
         const sx = w / 2 + (n.x * U - cx) * k, sy = h / 2 + (n.y * U - cy) * k;
@@ -638,7 +675,7 @@ function TreeMenuInner({ s, reduced, onBuy, onRespec, onClose }: TreeMenuProps) 
         focusNode(id);
     };
 
-    const owned = s.tree.length;
+    const owned = m.owned.length;
     const selNode = sel && sel !== "core" ? treeNode(sel) : null;
     const near = useMemo(() => new Set(selNode ? [selNode.id, ...selNode.links] : sel === "core" ? ["core", ...TREE.filter((n) => n.links.includes("core")).map((n) => n.id)] : []), [sel]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -646,7 +683,7 @@ function TreeMenuInner({ s, reduced, onBuy, onRespec, onClose }: TreeMenuProps) 
     // Owned traces light up and carry packets outward (one packet path per section).
     const links = useMemo(() => {
         const out: { key: string; d: string; vias: [number, number][]; col: string; st: "on" | "edge" | "off"; fog: boolean; near: boolean }[] = [];
-        const have = (id: string) => id === "core" || s.tree.includes(id);
+        const have = (id: string) => id === "core" || m.owned.includes(id);
         for (const n of TREE) for (const l of n.links) {
             if (l !== "core" && n.id > l) continue;
             const m = l === "core" ? null : treeNode(l);
@@ -671,7 +708,7 @@ function TreeMenuInner({ s, reduced, onBuy, onRespec, onClose }: TreeMenuProps) 
             });
         }
         return out;
-    }, [s.tree.length, vis, sel, near]); // eslint-disable-line react-hooks/exhaustive-deps
+    }, [m.owned, vis, sel, near]); // eslint-disable-line react-hooks/exhaustive-deps
     const packets = useMemo(() => {
         const by: Record<string, string> = {};
         for (const l of links) if (l.st === "on") by[l.col] = (by[l.col] ?? "") + l.d;
@@ -679,17 +716,19 @@ function TreeMenuInner({ s, reduced, onBuy, onRespec, onClose }: TreeMenuProps) 
     }, [links]);
 
     // section labels sit just past the furthest visible node of each section
-    const labels = useMemo(() => BRANCHES.map((b) => {
+    const labels = useMemo(() => m.sections.map((b) => {
         const mine = TREE.filter((n) => n.branch === b.id);
         const ax = mine.reduce((a, n) => a + n.x, 0), ay = mine.reduce((a, n) => a + n.y, 0);
         const th = Math.atan2(ay, ax);
         const far = mine.filter((n) => seen(n.id)).reduce((m, n) => Math.max(m, Math.hypot(n.x, n.y)), 0);
-        return { b, th, r: far ? far + 0.85 : 0, got: mine.filter((n) => hasNode(s, n.id)).length, total: mine.length };
-    }), [vis, s.tree.length]); // eslint-disable-line react-hooks/exhaustive-deps
+        // the deeper tips are big ranked tiles with pips above them, so their label sits a little further out
+        return { b, th, r: far ? far + (far > 12 ? 1.35 : 0.85) : 0, got: mine.filter((n) => m.owned.includes(n.id)).length, total: mine.length };
+    }), [vis, m.owned]); // eslint-disable-line react-hooks/exhaustive-deps
 
-    const rows = totals(s);
-    const spent = s.tree.reduce((a, id) => a + (TREE.find((n) => n.id === id)?.cost ?? 0), 0);
-    const ready = TREE.filter((n) => seen(n.id) && stateOf(s, n) === "ready").length;
+    const rows = m.totals();
+    const spent = m.spent ? m.spent() : m.owned.reduce((a, id) => a + (byId.get(id)?.cost ?? 0), 0);
+    // ready to buy: new nodes and ranks left, not fork swaps (a swap is a choice, not progress)
+    const ready = TREE.filter((n) => seen(n.id) && buyState(m, n) === "ready" && !(n.excl && m.owned.includes(n.excl))).length;
 
     const buy = (id: string) => {
         onBuy(id);
@@ -697,7 +736,7 @@ function TreeMenuInner({ s, reduced, onBuy, onRespec, onClose }: TreeMenuProps) 
         window.setTimeout(() => setFlash((f) => (f === id ? null : f)), 900);
     };
     const respec = () => {
-        if (!s.tree.length) return;
+        if (!m.owned.length || !onRespec) return;
         if (!confirm) { setConfirm(true); window.setTimeout(() => setConfirm(false), 4000); return; }
         const back = onRespec();
         setConfirm(false);
@@ -708,22 +747,27 @@ function TreeMenuInner({ s, reduced, onBuy, onRespec, onClose }: TreeMenuProps) 
     };
 
     // the card's content
-    const cn = cardId && cardId !== "core" ? (treeNode(cardId) as Extra) : null;
+    const cn = cardId && cardId !== "core" ? treeNode(cardId) : null;
     const cvis = cn ? vis.get(cn.id) : null;
-    const cst = cn ? stateOf(s, cn) : null;
+    const cst = cn ? buyState(m, cn) : null;
+    const clv = cn ? levelOf(m, cn) : 0;
+    const cprice = cn ? priceOf(m, cn) : 0;
+    const cswap = cn?.excl && m.owned.includes(cn.excl) ? treeNode(cn.excl) : null;
     const fogCard = cvis === "fog";
     const pinned = !!shown && shown === sel;
 
     // portaled to <body> so no page transition or scroll reveal transform can shift the fixed layer
     return createPortal(
         <div className="ctos nf-tm-host">
-        <div className="nf-tm" ref={root} role="dialog" aria-modal="true" aria-label="Prestige tree" data-lod="near" data-focus={sel ? "" : undefined} data-boot={boot} data-chrome={chrome ? "" : undefined} onKeyDown={keys}>
+        <div className="nf-tm" ref={root} role="dialog" aria-modal="true" aria-label={m.label} data-theme={m.theme} data-lod="near" data-focus={sel ? "" : undefined} data-boot={boot} data-chrome={chrome ? "" : undefined} onKeyDown={keys}>
             <header className="nf-tm-bar">
-                <span className="nf-tm-t">naOS // node.farm // prestige tree</span>
-                <span className="nf-tm-ap" aria-live="polite"><b>{fmt(s.ap)}</b> AP<small>{owned}/{TREE.length} nodes{ready ? ` // ${ready} ready` : ""}</small></span>
-                <button type="button" className="nf-tm-b" data-danger={confirm ? "" : undefined} disabled={!owned} onClick={respec} title="Take every node back and refund its AP. Free.">
-                    {confirm ? `Confirm: refund ${fmt(spent)} AP` : "Respec"}
-                </button>
+                <span className="nf-tm-t">{lab && <i className="nf-tm-ps1" aria-hidden="true">PS ~/lab&gt;</i>}naOS // node.farm // {m.title}</span>
+                <span className="nf-tm-ap" aria-live="polite"><b>{fmt(m.wallet)}</b> {m.unit}<small>{owned}/{TREE.length} nodes{ready ? ` // ${ready} ready` : ""}</small></span>
+                {m.respec && onRespec && (
+                    <button type="button" className="nf-tm-b" data-danger={confirm ? "" : undefined} disabled={!owned} onClick={respec} title="Take every node back and refund its AP. Free.">
+                        {confirm ? `Confirm: refund ${fmt(spent)} AP` : "Respec"}
+                    </button>
+                )}
                 <button type="button" className="nf-tm-x" onClick={close} aria-label="Close the tree"><i /></button>
             </header>
             <div
@@ -731,7 +775,7 @@ function TreeMenuInner({ s, reduced, onBuy, onRespec, onClose }: TreeMenuProps) 
                 ref={view}
                 tabIndex={0}
                 role="group"
-                aria-label="Prestige tree map. Drag to pan, scroll or pinch to zoom, arrow keys pan, plus and minus zoom, 0 fits the tree."
+                aria-label={`${m.label} map. Drag to pan, scroll or pinch to zoom, arrow keys pan, plus and minus zoom, 0 fits the tree.`}
                 onPointerDown={down}
                 onPointerMove={move}
                 onPointerUp={up}
@@ -739,7 +783,7 @@ function TreeMenuInner({ s, reduced, onBuy, onRespec, onClose }: TreeMenuProps) 
                 onClickCapture={(e) => { if (gest.current.suppress) { e.stopPropagation(); e.preventDefault(); } }}
                 onClick={(e) => { if (e.target === view.current || e.target === world.current) { setSel(""); setHov(null); } }}
             >
-                <TreeBackdrop ref={bd} unit={U} />
+                {lab ? <LabBackdrop ref={bd} unit={U} /> : <TreeBackdrop ref={bd} unit={U} />}
                 <div className="nf-tm-world" ref={world}>
                     {labels.map(({ b, th, r, got, total }) => r > 0 && (
                         <div key={b.id} className="nf-tm-sec" data-side={Math.cos(th) > 0.35 ? "r" : Math.cos(th) < -0.35 ? "l" : "c"} style={{ left: Math.cos(th) * r * U, top: Math.sin(th) * r * U, ["--c" as string]: b.color } as CSSProperties}>
@@ -771,27 +815,33 @@ function TreeMenuInner({ s, reduced, onBuy, onRespec, onClose }: TreeMenuProps) 
                     >
                         <span className="nf-tn-shadow" />
                         <span className="nf-tn-halo" />
-                        <span className="nf-tn-body"><span className="nf-tn-face"><NodeIcon n={null} st="owned" fog={false} /></span></span>
+                        <span className="nf-tn-body"><span className="nf-tn-face"><NodeIcon n={null} st="owned" fog={false} core={lab ? "rx_core" : undefined} /></span></span>
                         <span className="nf-tn-l">core</span>
                     </button>
                     {TREE.map((n) => {
                         const v = vis.get(n.id) ?? "hidden";
                         if (v === "hidden") return null;
-                        const st = stateOf(s, n);
+                        const st = stateOf(m, n);
+                        const bst = buyState(m, n);
                         const fog = v === "fog";
+                        const lv = levelOf(m, n);
+                        const swapOut = !!n.excl && m.owned.includes(n.excl);
                         return (
                             <button
                                 key={n.id}
                                 type="button"
                                 className="nf-tn"
                                 data-kind={n.kind}
+                                data-form={n.form}
+                                data-swap={swapOut && !fog ? "" : undefined}
+                                data-more={moreRanks(m, n) && bst === "ready" ? "" : undefined}
                                 data-st={st}
                                 data-vis={v}
                                 data-sel={sel === n.id ? "" : undefined}
                                 data-dim={sel && !near.has(n.id) ? "" : undefined}
                                 data-flash={flash === n.id ? "" : undefined}
                                 data-new={fresh.has(n.id) ? "" : undefined}
-                                aria-label={fog ? `Encrypted ${KIND[n.kind].toLowerCase()} node in ${BNAME[n.branch]}.` : `${n.name}, ${BNAME[n.branch]}, ${KIND[n.kind].toLowerCase()}, ${st === "owned" ? "owned" : st === "locked" ? "locked" : `${n.cost} AP`}. ${n.blurb}`}
+                                aria-label={fog ? `Encrypted ${KIND[n.kind].toLowerCase()} node in ${BNAME[n.branch]}.` : `${n.name}, ${BNAME[n.branch]}, ${KIND[n.kind].toLowerCase()}, ${n.ranks ? `rank ${lv} of ${n.ranks}, ` : ""}${bst === "owned" ? "owned" : bst === "locked" ? "locked" : `${fmt(priceOf(m, n))} ${m.unit}`}. ${n.blurb}`}
                                 aria-pressed={sel === n.id}
                                 style={{ left: n.x * U, top: n.y * U, ["--ring" as string]: Math.min(RING.get(n.id) ?? 1, 8), ["--sz" as string]: `${SZ[n.kind]}px`, ["--c" as string]: BCOL[n.branch], ["--col" as string]: n.ix % 8, ["--row" as string]: Math.floor(n.ix / 8) } as CSSProperties}
                                 onClick={() => pick(n.id)}
@@ -807,19 +857,20 @@ function TreeMenuInner({ s, reduced, onBuy, onRespec, onClose }: TreeMenuProps) 
                                     <span className="nf-tn-face"><NodeIcon n={n} st={st} fog={fog} /></span>
                                 </span>
                                 <span className="nf-tn-l">{fog ? "encrypted" : n.name}</span>
-                                {!fog && st !== "owned" && <span className="nf-tn-cost">{n.cost} AP</span>}
+                                {!fog && n.form && <span className="nf-tn-form" aria-hidden="true">{n.form === "ranked" ? <>{Array.from({ length: n.ranks ?? 1 }, (_, i) => <i key={i} data-on={i < lv ? "" : undefined} />)}</> : n.form === "fork" ? (swapOut ? "swap" : "fork") : "junction"}</span>}
+                                {!fog && bst !== "owned" && <span className="nf-tn-cost">{fmt(priceOf(m, n))} {m.unit}</span>}
                             </button>
                         );
                     })}
                 </div>
-                <TreeDust />
+                {!lab && <TreeDust />}
             </div>
             <span className="nf-tm-zoom" role="group" aria-label="Zoom">
                 <button type="button" className="nf-tm-b sq" aria-label="Zoom in" onClick={() => { const { w, h } = dims.current; zoomAt(w / 2, h / 2, 1.33, true); }}>+</button>
                 <button type="button" className="nf-tm-b" onClick={() => fit()}>Fit</button>
                 <button type="button" className="nf-tm-b sq" aria-label="Zoom out" onClick={() => { const { w, h } = dims.current; zoomAt(w / 2, h / 2, 0.75, true); }}>-</button>
             </span>
-            <span className="nf-tm-lead" ref={lead} aria-hidden="true" style={{ ["--c" as string]: cn ? BCOL[cn.branch] : "#e8f6ff" } as CSSProperties} />
+            <span className="nf-tm-lead" ref={lead} aria-hidden="true" style={{ ["--c" as string]: cn ? BCOL[cn.branch] : m.core.color } as CSSProperties} />
             <aside
                 className="nf-tm-card"
                 ref={card}
@@ -827,7 +878,7 @@ function TreeMenuInner({ s, reduced, onBuy, onRespec, onClose }: TreeMenuProps) 
                 data-st={fogCard ? "fog" : cst ?? "core"}
                 data-pinned={pinned ? "" : undefined}
                 data-kind={cn?.kind ?? "core"}
-                style={{ ["--c" as string]: cn ? BCOL[cn.branch] : "#e8f6ff", visibility: "hidden" } as CSSProperties}
+                style={{ ["--c" as string]: cn ? BCOL[cn.branch] : m.core.color, visibility: "hidden" } as CSSProperties}
                 aria-live="polite"
                 onPointerEnter={() => window.clearTimeout(hovT.current)}
                 onPointerLeave={() => { if (hov && hov !== sel) hoverOff(); }}
@@ -835,27 +886,36 @@ function TreeMenuInner({ s, reduced, onBuy, onRespec, onClose }: TreeMenuProps) 
                 {cardId && (cn ? (
                     <>
                         <span className="nf-tm-k" data-cx-i="0">
-                            <span>{BNAME[cn.branch].toLowerCase()}.{cn.kind}</span>
-                            <span className="nf-tm-st">{fogCard ? "ENCRYPTED" : cst === "owned" ? "OWNED" : cst === "locked" ? "LOCKED" : cst === "ready" ? "READY" : "AVAILABLE"}</span>
+                            <span>{BNAME[cn.branch].toLowerCase()}.{fogCard ? cn.kind : cn.form ?? cn.kind}</span>
+                            <span className="nf-tm-st">{fogCard ? "ENCRYPTED" : cn.ranks && clv ? `RANK ${clv}/${cn.ranks}` : cst === "owned" ? "OWNED" : cst === "locked" ? "LOCKED" : cswap ? "SWAP" : cst === "ready" ? "READY" : "AVAILABLE"}</span>
                         </span>
                         <b className="nf-tm-n" data-cx-i="1">{fogCard ? <ScrambleName text="????????" reduced={reduced} /> : <ScrambleName text={cn.name} reduced={reduced} />}<span className="sr-only">{fogCard ? "Encrypted node" : cn.name}</span></b>
                         {fogCard ? (
-                            <p className="nf-tm-fx" data-cx-i="2"><i aria-hidden="true">err</i><span>Signal too weak to read. Buy a node next to it to decrypt this one.</span></p>
+                            <p className="nf-tm-fx" data-cx-i="2"><i aria-hidden="true">err</i><span>{m.fogText}</span></p>
                         ) : (
                             <>
                                 <p className="nf-tm-fx" data-cx-i="2"><i aria-hidden="true">fx</i><span><Fx text={cn.blurb} /></span></p>
+                                {m.spec?.(cn) && <p className="nf-tm-spec" data-cx-i="2">{m.spec(cn)}</p>}
                                 {cn.flavor && <blockquote className="nf-tm-flv" data-cx-i="3"><p>{cn.flavor}</p></blockquote>}
                             </>
                         )}
-                        {!fogCard && cst === "locked" && (
+                        {!fogCard && cst === "locked" && (cn.req ? (
+                            <p className="nf-tm-need" data-cx-i="4">// needs both: {cn.req.map((r) => `${m.owned.includes(r) ? "[x]" : "[ ]"} ${seen(r) && vis.get(r) !== "fog" ? treeNode(r).name : `a ${BNAME[treeNode(r).branch]} node, still encrypted`}`).join("  ")}</p>
+                        ) : (
                             <p className="nf-tm-need" data-cx-i="4">// needs a neighbour: {cn.links.filter((l) => l !== "core" && seen(l) && vis.get(l) !== "fog").map((l) => treeNode(l).name).join(", ") || "decrypt the path first"}</p>
+                        ))}
+                        {!fogCard && cn.form === "fork" && cn.excl && (
+                            <p className="nf-tm-need" data-cx-i="4" data-tone="fork">// fork: pick one. {cswap ? `Swapping refunds ${cswap.name} and takes this instead, free.` : m.owned.includes(cn.id) ? `${seen(cn.excl) ? treeNode(cn.excl).name : "The other side"} is locked; buy it to swap.` : `Owning this locks ${seen(cn.excl) && vis.get(cn.excl) !== "fog" ? treeNode(cn.excl).name : "the other side"}.`}</p>
+                        )}
+                        {!fogCard && cn.ranks && (
+                            <p className="nf-tm-need" data-cx-i="4" data-tone="rank">// ranked: buy it up to {cn.ranks} times, the price climbs each rank. {clv ? `${clv} of ${cn.ranks} owned.` : "None owned yet."}</p>
                         )}
                         {!fogCard && (
                             <div className="nf-tm-a" data-cx-i="5">
-                                <span className="nf-tm-cost"><b>{cst === "owned" ? "Owned" : `${cn.cost} AP`}</b><small>{cst === "owned" ? "kept through Ascend" : `you have ${fmt(s.ap)}`}</small></span>
+                                <span className="nf-tm-cost"><b>{cst === "owned" ? (cn.ranks ? "Maxed" : "Owned") : cswap ? "Free swap" : `${fmt(cprice)} ${m.unit}`}</b><small>{cst === "owned" ? m.keptNote : `you have ${fmt(m.wallet)}`}</small></span>
                                 {cst !== "owned" && (
                                     <button type="button" className="nf-tm-buy" disabled={cst !== "ready"} onClick={() => buy(cn.id)}>
-                                        {cst === "locked" ? "Locked" : cst === "open" ? `Need ${fmt(cn.cost - s.ap)} more` : "Install"}
+                                        {cst === "locked" ? "Locked" : cst === "open" ? `Need ${fmt(cprice - m.wallet)} more` : cswap ? "Swap" : clv ? `Rank ${clv + 1}` : m.buyWord}
                                     </button>
                                 )}
                             </div>
@@ -863,21 +923,21 @@ function TreeMenuInner({ s, reduced, onBuy, onRespec, onClose }: TreeMenuProps) 
                     </>
                 ) : (
                     <>
-                        <span className="nf-tm-k" data-cx-i="0"><span>core.root</span><span className="nf-tm-st">ONLINE</span></span>
-                        <b className="nf-tm-n" data-cx-i="1"><ScrambleName text="The core" reduced={reduced} /><span className="sr-only">The core</span></b>
-                        <p className="nf-tm-fx" data-cx-i="2"><i aria-hidden="true">sys</i><span>Every section grows out of here. A node opens once it touches the core or a node you own; the next ring decrypts as you buy toward it.</span></p>
-                        <blockquote className="nf-tm-flv" data-cx-i="3"><p>Respec is free and refunds every AP.</p></blockquote>
+                        <span className="nf-tm-k" data-cx-i="0"><span>{m.core.kicker}</span><span className="nf-tm-st">ONLINE</span></span>
+                        <b className="nf-tm-n" data-cx-i="1"><ScrambleName text={m.core.name} reduced={reduced} /><span className="sr-only">{m.core.name}</span></b>
+                        <p className="nf-tm-fx" data-cx-i="2"><i aria-hidden="true">sys</i><span>{m.core.fx}</span></p>
+                        <blockquote className="nf-tm-flv" data-cx-i="3"><p>{m.core.quote}</p></blockquote>
                     </>
                 ))}
                 {msg && <p className="nf-tm-msg" role="status">{msg}</p>}
             </aside>
             {!sel && !hov && boot !== "in" && (
                 <button type="button" className="nf-tm-hint" data-min={hintMin ? "" : undefined} aria-expanded={!hintMin} aria-label={hintMin ? "Show the tree controls" : "Hide the tree controls"} onClick={() => setHintMin((m) => !m)}>
-                    <span className="nf-tm-ps">~/tree $</span>
+                    <span className="nf-tm-ps">{m.prompt}</span>
                     <span className="nf-tm-hc" key={hintMin ? "min" : "full"}>
                         {hintMin
                             ? (ready ? <><b>{ready}</b> ready</> : "help")
-                            : <>{ready ? <><b>{ready}</b> ready to install // </> : null}{coarse ? (ready ? "tap one to read it" : "tap: read // drag: pan // pinch: zoom") : "click: read // drag: pan // scroll: zoom"}</>}
+                            : <>{ready ? <><b>{ready}</b> ready to {m.buyWord.toLowerCase()} // </> : null}{coarse ? (ready ? "tap one to read it" : "tap: read // drag: pan // pinch: zoom") : "click: read // drag: pan // scroll: zoom"}</>}
                     </span>
                     <i className="nf-tm-caret" aria-hidden="true" />
                 </button>
@@ -890,9 +950,9 @@ function TreeMenuInner({ s, reduced, onBuy, onRespec, onClose }: TreeMenuProps) 
             )}
             {rows.length > 0 && (
                 <>
-                    <button type="button" className="nf-tm-b nf-tm-totb" aria-expanded={showTot} onClick={() => setShowTot((v) => !v)}>Tree gives</button>
-                    <dl className="nf-tm-tot" data-open={showTot ? "" : undefined} aria-label="What the tree gives you">
-                        <dt className="nf-tm-th">Tree gives</dt><dd className="nf-tm-th" />
+                    <button type="button" className="nf-tm-b nf-tm-totb" aria-expanded={showTot} onClick={() => setShowTot((v) => !v)}>{m.totalsLabel}</button>
+                    <dl className="nf-tm-tot" data-open={showTot ? "" : undefined} aria-label={`What the ${m.label.toLowerCase()} gives you`}>
+                        <dt className="nf-tm-th">{m.totalsLabel}</dt><dd className="nf-tm-th" />
                         {rows.map(([k, val]) => <div key={k}><dt>{k}</dt><dd>{val}</dd></div>)}
                     </dl>
                 </>

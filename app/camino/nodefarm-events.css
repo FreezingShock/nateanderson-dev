@@ -110,7 +110,7 @@
 .ctos .nf-ev-loot b { font: 700 19px/1.2 var(--cm-mono); color: #fff; }
 .ctos .nf-ev-loot p { margin: 0; font: 500 12.5px/1.4 var(--cm-mono); color: var(--cm-mute); }
 /* icons inside the portaled card (the base .nf-ic rule is scoped to .nf in nodefarm.css) */
-.ctos .nf-ev .nf-ic { --s: 32px; display: inline-block; flex: none; width: var(--s); height: var(--s); background: url(/naos/nodefarm/icons-anim.webp) calc(var(--i) * var(--s) * -1) 0 / calc(var(--s) * 15) calc(var(--s) * 4) no-repeat; animation: nfFrame 1s steps(4) infinite; image-rendering: pixelated; vertical-align: middle; }
+.ctos .nf-ev .nf-ic { --s: 32px; display: inline-block; flex: none; width: var(--s); height: var(--s); background: url(/naos/nodefarm/icons-anim.webp?v=e42d7a08) calc(var(--i) * var(--s) * -1) 0 / calc(var(--s) * 21) calc(var(--s) * 4) no-repeat; animation: nfFrame 1s steps(4) infinite; image-rendering: pixelated; vertical-align: middle; }
 .ctos .nf-ev .nf-ic.l { --s: 64px; }
 
 @media (prefers-reduced-motion: reduce) {

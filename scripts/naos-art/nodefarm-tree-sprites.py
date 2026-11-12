@@ -28,6 +28,8 @@ OUT = os.path.join(ROOT, "public", "naos", "nodefarm")
 BAYER = (np.array([[0, 8, 2, 10], [12, 4, 14, 6], [3, 11, 1, 9], [15, 7, 13, 5]]) + 0.5) / 16.0
 SIZES = {"s": 32, "m": 40, "l": 64}
 SECS = {"signal": "#2fd8e8", "forge": "#ffc53a", "systems": "#6bffc9", "drones": "#ff4d6d", "anomaly": "#9a7bff", "core": "#e6f0ff"}
+# the Exploit Lab research tree (nodefarm_lab_motifs.py): blues, so the research tree reads as one blueprint
+SECS.update({"exploits": "#59b8ff", "malware": "#8f9bff", "infra": "#5ff0e8", "labcore": "#4aa3ff"})
 
 
 def hx(h):
@@ -224,6 +226,9 @@ def hidden(img, filled):
 
 sys.path.insert(0, HERE)
 from nodefarm_tree_motifs import MOTIFS, NODES  # noqa: E402  (motif library and the node -> motif table)
+from nodefarm_lab_motifs import LAB_NODES  # noqa: E402  (research tree sprites; their motifs register into MOTIFS)
+
+NODES = {**NODES, **LAB_NODES}
 
 
 def build_sheet(size_key, rows):
