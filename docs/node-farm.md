@@ -141,3 +141,14 @@ Code: pure rules and snapshots in `lib/nodefarm/admin.ts`, panel in `components/
 - Keys (only on the Node Farm page, off while typing, with a modifier, over another panel or during an event): M Map, O Goals, L Records, A Ascend, S Menu, T Tree, B Buy max.
 - The tab title shows `<rate>/s · Node Farm` while the tab is in the background.
 - Menu "Calm motion" (`nf-calm-v1`) forces reduced motion on top of the OS setting: the `reduced` prop everywhere plus `body.nf-calm` CSS. Menu also shows when the game last saved.
+
+## Older windows refresh (Map, Goals, Records, Menu), 2026-11-12
+Brought up to the Ascend window's level. Shared parts in `components/nodefarm/win-kit.tsx`: `WinBanner` (dither art from `public/naos/nodefarm/win-<map|goals|records|menu>.webp`, drawn by `scripts/naos-art/nodefarm-window-art.py`, with a `$ cd ~/...` code readout), `Frame` (corner-bracket section with a `// path` heading), `DataLines` (`key ..... value`) and `HoldButton` (press and hold; a click with no press behind it arms, a second click fires). Styles: `app/camino/nodefarm-windows.css` (`nf-wk-*`).
+- Goals: each tier is a circuit rail of badge nodes; a segment lights when both ends are done. The line under the rail reads out the hovered, tapped, or next goal.
+- Records: four big readouts, the record sections as data lines, and a two-pane log reader that prints the picked log.
+- Menu: a config file (click a line to flip it; volume and number format are lines too), the save code as a terminal block, wipe is Hold to wipe (keeps the backup), keys as data lines.
+- Map: the chain as a signal tower (Chrono at the top, Bytes at the base, YOU ARE HERE on the zone being worked on) beside a readout of the picked zone, then Ascend, Drones, Goals and the tree's sections.
+- Phone: windows sit inline under the tabs, so they get a solid panel over the scenery.
+- Next step strip shows the sprite of what it points at. Drone bay rows get a dithered pad in each Drone's colour and aligned columns.
+- Unlock and milestone banners are a strip pinned under the site bar, as wide as the board (left and width set in juice.tsx). They sit under an open window.
+Checks: /mnt/project-files/portfolio/node-farm-refresh/ (`checks.mjs` interactions incl. a real long touch on phone, `wins.mjs` and `board.mjs` screenshots).
