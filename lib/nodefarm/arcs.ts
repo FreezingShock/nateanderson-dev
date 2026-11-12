@@ -1,6 +1,6 @@
 // Zone arcs: the board groups its zones into chapters. Add a new arc (or new zone ids to an arc) here and the board,
 // the headers and the remembered collapse state follow; nothing else lists the groups.
-import { ARC_HOOKS, TIERS, type ButtonStat, type State } from "./engine";
+import { ARC_HOOKS, STATS, TIERS, type ButtonStat, type State } from "./engine";
 
 export type Arc = { id: string; name: string; blurb: string; color: string; zones: readonly string[]; /** era scene file (scene-<n>.webp) used as the header art; arcs without one get a colour wash */ scene?: number };
 
@@ -10,6 +10,8 @@ export const ARCS: readonly Arc[] = [
     { id: "hollow", name: "The hollow", blurb: "Glyphs, glass, void metal and stopped time.", color: "#9a7bff", zones: ["runes", "starglass", "voidsteel", "chrono"], scene: 8 },
     { id: "deep", name: "Deep space", blurb: "Gas, dead stars and a point that pulls.", color: "#ff8ad8", zones: ["nebula", "pulsars", "singularity"], scene: 11 },
     { id: "origin", name: "The origin", blurb: "Memory, mirrors and the first node.", color: "#3dff6e", zones: ["engrams", "paradox", "origin"], scene: 13 },
+    { id: "overgrowth", name: "Overgrowth", blurb: "Spores, threads, pollen and the farm in flower. Opens after the first Handover.", color: "#5cf0c0", zones: ["spores", "mycelium", "pollen", "bloom"], scene: 18 },
+    { id: "descent", name: "Descent", blurb: "Rock, magma, hollow stone and the core. Opens after the first Handover.", color: "#ff9a2a", zones: ["basalt", "magma", "geodes", "core"], scene: 22 },
 ];
 
 export const arcKey = (id: string) => `arc:${id}`;
@@ -29,3 +31,5 @@ export function arcProgress(s: State, zones: readonly string[]) {
 export const arcCleared = (s: State, a: Arc) => { const p = arcProgress(s, a.zones); return p.total > 0 && p.built >= p.total; };
 export const arcsCleared = (s: State) => ARCS.reduce((n, a) => n + (arcCleared(s, a) ? 1 : 0), 0);
 ARC_HOOKS.cleared = arcsCleared;
+/** Zone number (01 to 25), the same one the zone panels print. */
+export const zoneNo = (id: string) => STATS.findIndex((x) => x.id === id) + 1;
