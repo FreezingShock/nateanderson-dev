@@ -13,6 +13,7 @@ button tiers (+1, +5, +25, +125, +625, +3125; each tier costs about 8 to 10 time
   adds a little to Bytes, Silicon boosts Copper, Quartz boosts Silicon, Aether boosts Quartz).
 - Runes, Starglass, Voidsteel and Chrono are the deep materials (unlock at 150 Aether, 200 Runes, 250 Starglass, 300 Voidsteel; a quarter of that after your first Ascend). Same rules as the others, each boosts the one below, Chrono adds a little to everything. They also add to the AP you earn (`TUNE.apPer`).
 - Zones 12 to 17 (Nate, 2026-11-12: deep space first, then the Origin arc): Cloud Deck (Nebula), Beacon Spire (Pulsars), Event Horizon (Singularity), Engram Archive (Engrams), Mirror Stair (Paradox), Root Chamber (Origin). Same rules as the deep materials, each boosts the one below (`boostK` 0.12) and adds AP. Their extras grow with log10 of the amount (`TUNE.logK`) so they cannot run away: Singularity adds a little to everything, Engrams speed up Drones, Paradox strengthens Overclock, Origin multiplies AP on Ascend. Never give a late material a power-law "everything" boost: in the sim two of them blew every amount to Infinity within minutes. `tick` also caps every amount at `CAP` (1e300). Goal tier VIII "Source" holds the first of each. Art: icons and tier sprites in nodefarm-icons.py, zone scenes in scripts/naos-art/zone-art-12-17.py. Each has its own layered era scenery (see Scenery). Sim (with the lab): Nebula ~22-29 h, Origin ~43 h, tree ~44-46 h.
+- Zones 18 to 25 (Nate, 2026-11-12: both arcs, four zones each, after the first Handover): **Overgrowth** Spore Cellar (Spores), Mycel Web (Mycelium), Canopy Hall (Pollen), Bloom Core (Bloom), then **Descent** Bedrock Shaft (Basalt), Magma Line (Magma), Geode Vault (Geodes), The Core (Core). `ARC_MATS` in engine.ts: `isUnlocked` keeps them shut until `hand.count > 0`, then they open like the deep chain (`unlockAt` on the amount below). Same rules: each boosts the one below (`boostK` 0.12) and adds a little AP. Extras are log10 like the Origin arc: Bloom multiplies Keys on Handover (`bloomKeys`), Core adds a little to everything (`coreAll`). Goal tier IX "Bedrock" holds the first of each. Art: page scenery `scripts/naos-art/nodefarm-scenes-arc.py` (eras 15 to 22, layered like 9 to 14), 64 px button sprites and zone icons `scripts/naos-art/nodefarm_arc64.py` (stubs `nodefarm_tiers64_<stat>.py`), zone panels `scripts/naos-art/zone-art-18-25.py` (built from the era scene and the button sprites). Arcs registered in `lib/nodefarm/arcs.ts`.
 - Prestige tree (see "Prestige tree" below): 40 nodes in five sections, bought with AP, kept through Ascend. `state.tree` holds owned ids; old saves are refunded for nodes that no longer exist.
 - Ascend (400 Aether): wipes everything except goals, perks and lifetime stats for Ascension Points (+30 percent to everything each) and five perks.
 - There is no tapping: progress comes from buttons only (Nate did not want a Cookie Clicker). The core is a live display: its outer arc shows progress to the cheapest Reboot and it pulses on every press. Quick-time events (see below) appear every 3 to 5 minutes; clearing one gives the timed Overclock plus a rarity loot roll.
@@ -143,6 +144,13 @@ Nate dislikes reaction, memory, puzzle and guessing games, so no event tests ref
 - Dead packet (pink): three presses crack it open.
 
 Each body reports a quality from 0 to 1; when the clock runs out it reports what it has so far. From `winAt` (0.25) it is a win: node-farm.tsx calls `breach()` (Overclock, so the Anomaly tree nodes keep working) then `payLoot()`. Loot rarity uses the board's six rarity colours; better quality shifts the roll up. Loot is a lump of Bytes or of the newest material (seconds of plain, non-Overclock output) or extra Overclock seconds, sized so engaging every event adds about +40% over the Overclock alone. Skipping or closing with too little done costs nothing. Touch, mouse and keyboard all work (1 to 3, Space, Escape skips); the card is an `alertdialog` (the docked spike strip is a `status`) and returns focus when it closes. Events can be switched off from the card or the Menu (`nf-events-v1`). Admin `nf:fire` shows any kind right away. To add a type: add it to `EVENTS`, add a body that calls `useDone(props, sofar)`, and style it in nodefarm-events.css. Timers whose deps include callbacks from node-farm.tsx get reset by its 10 Hz re-render, so keep such callbacks in refs.
+
+## Reactor core (lib/nodefarm/core-art.ts, core-look.ts, components/nodefarm/core.tsx), 2026-11-12
+- One 144 px buffer shown at 2x. `core-art.ts` is the renderer and imports nothing from the game, so `node scripts/naos-art/core-preview.mjs <dir> [frames]` draws a contact sheet of every stage and look (and prints ms per frame) with the same code. `core-look.ts` reads the save: zone colours, chroma, structures. `core-parts.ts` lists the structures.
+- Colours: the core wears the ramp of the newest zone you have bought something in (5 steps generated from the stat colour, zone 01 keeps its exact cyan) and dithers across over 0.9 s when a zone opens. Presses flash the pulse ring in the pressed zone's colour. Overclock still turns everything magenta. `nf core <zone>` pins a zone, `nf core zone` follows the newest again.
+- Chroma: unlocks at the first Ascend; `nf core chroma` cycles swirling bands of every opened zone's colours. Saved in `nf-core-v1` (this browser).
+- Structures bolt on as each part of the game opens, building in over 1.6 s with a feed line (`core.attach(...)`): clamps (first Reboot), copper socket with capacitor banks that charge with the Reboot gauge (Copper), lattice masts (Exploit Lab), drone docks and flying drones (first Drone), gyro ring I (first Ascend), code glyph orbit (first Script), gyro ring II (Nebula), corona (Engrams), gyro ring III (Origin). The radial core pulls back from 1.0 to 0.77 scale as they arrive to make room. `nf core parts 0-9` previews, `nf core parts live` goes back.
+- Cost: draws at 30 fps (pulses redraw at once), skips frames off screen, in a hidden tab and under the tree; Calm motion draws a still frame and redraws only when something it shows changes. Measured headless at ~1.9 ms per frame with everything on (the old core was ~1.45 ms at 40 fps), so the total per second is about the same.
 
 ## Scenery (dither backdrops per era)
 - Art: `scripts/naos-art/nodefarm-scenes.py` draws nine original 480 x 270 landscapes plus an Ascend piece into `public/naos/nodefarm/scene-<n>.{png,webp}` (`scene-ascend` for Ascend). Two-tone palette PNGs (era colour at 55% for the dither, full colour for lit lines), about 1 to 6 KB each. Every scene tiles sideways without a seam, so a wide board repeats it. Rebuild with `python3 scripts/naos-art/nodefarm-scenes.py` (or `... 3 ascend`).
@@ -279,6 +287,36 @@ Learned automation, in `lib/nodefarm/scripts.ts` (rules, registers `scriptStep` 
 - Art: `scripts/naos-art/nodefarm-sched-scene.py` draws `zone-sched` (the cron room, one machine per script learned, the clock daemon at buy.sh v3) and `sched-icons` (32 px, 4 frames per script).
 - Pacing: the greedy sim bot already plays perfectly, so scripts do not change the sim; they move a real player toward the bot's numbers.
 
+## Zone rigs (one mechanic per zone), 2026-11-12
+Every zone keeps its six buttons and has one rig: a meter, one rule, and a level track. Rules in `lib/nodefarm/rigs.ts`
+(every number in `RIG_TUNE`; importing the file fills the engine's `RIG_HOOKS`), panel `components/nodefarm/rig.tsx`
+(drawn in each zone body by `StatRow`), styles `app/camino/nodefarm-rig.css` (`nf-rig*`). Save state `state.rig`
+(`RigState` in engine.ts), made or repaired on first use by `rig(s)`, so old saves load.
+- Nate's picks (2026-11-12): rig levels are kept through Ascend (meters, charges and clocks reset with the run); hazards are a
+  real drain (Cleanroom dust can take Silicon down to 60% of its rate).
+- Levels cost minutes of the zone's own output (`RIG_TUNE.minutes`: 2, 6, 15, 40, 100 min; Bytes for zones 01 to 03), never
+  paid at Overclock rate. Cap 5; Root chamber's Rewrite adds up to +3 per rig (levels 6 to 8 cost 240, 600, 1500 min).
+- The rigs: 01 Packet cache (carry: Bytes cache poured back on Reboot), 02 Gain staging (Multiplier tiers owned this Reboot),
+  03 Capacitor (charge between Reboots pays extra Reboots), 04 Batch pour (timed Copper lump plus casts), 05 Air scrubbers
+  (dust hazard; scrubbers burn Copper), 06 Crystal growth (Quartz stages over the run), 07 Afterglow (spare Aether at Ascend
+  speeds Copper to Quartz next run), 08 Carvings (three glyph tracks: Aether, Runes, Quartz), 09 Prism beam (aim at Bytes or
+  Copper to Runes), 10 Void draw (0/10/25% of Starglass into Voidsteel), 11 Stillness (Chrono up to x2 the longer you press
+  nothing yourself; `rigManual` in doPress resets it), 12 Weather (12 min clock: clear, front x0.67, storm x1.5), 13 Beacon
+  (free Overclock every 40 pulses), 14 Gravity well (material presses add mass, log boost), 15 Index (goals, secrets, logs),
+  16 Mirror (boosts the running material with the fewest producers), 17 Rewrite (raises other rigs' caps).
+- Boosts touch only their own zone or a named neighbour, and the big ones are log-scaled or capped. Never add a power-law boost
+  on everything.
+- New zones (arc past Origin): add a `RIGS` entry and a case in `muls()` and/or `step()`.
+- Zones 18 to 25 (Overgrowth and Descent): 18 Spread (each running material zone strengthens Spores), 19 Knots (Spores and
+  Mycelium tiers owned this run; all twelve double it), 20 Daylight (10 min clock: day Pollen x1.4, night Pollen x0.8 but
+  Spores and Mycelium x1.3), 21 Seed bank (each Ascend banks one seed per tenfold Bloom held, up to 30, kept through Ascend;
+  +2% Bloom each), 22 Drill bit (wear hazard down to 50% Basalt; coolant clears it and adds a bonus but burns Bloom),
+  23 Eruptions (timed Magma lump that heats the shaft: Basalt x1.5 for a minute), 24 Ringing (Geodes grow with Quartz held,
+  log, capped x3), 25 Convection (each rig level in zones 18 to 24 strengthens the last zone).
+- Admin section 10 "Zone rigs": max every rig, fill meters, clear. `nf admin max` maxes rigs too.
+- Sim: rigs join unless `NF_NORIGS=1` (`NF_RIGTUNE` merges over `RIG_TUNE`); the bot buys any level it can pay four times over.
+  The first numbers took the whole tree from 39.2 h to 27.4 h, so most boosts were halved. Now (Drone bot, 2026-11-12): first Ascend
+  2.84 h -> 2.60 h, Chrono 14.0 -> 12.5 h, Nebula 26.7 -> 24.9 h, Origin 37.8 -> 35.2 h, whole tree 39.2 -> 36.4 h (about 7% faster).
 ## Zone events
 About every 8 to 14 minutes of play (first one after 8 minutes of life), one unlocked zone gets a short event. Rules and the roll are in `lib/nodefarm/zoneevents.ts`; every number is `ZE_TUNE` in `engine.ts` (the engine reads it in `derive` and `button` through `zeOut` and `zeCost`). State is `s.ze` (optional, so old saves load): the running event, a timer, counts. Ascend ends a running event.
 

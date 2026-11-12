@@ -10,9 +10,11 @@ export const ARCS: readonly Arc[] = [
     { id: "hollow", name: "The hollow", blurb: "Glyphs, glass, void metal and stopped time.", color: "#9a7bff", zones: ["runes", "starglass", "voidsteel", "chrono"], scene: 8 },
     { id: "deep", name: "Deep space", blurb: "Gas, dead stars and a point that pulls.", color: "#ff8ad8", zones: ["nebula", "pulsars", "singularity"], scene: 11 },
     { id: "origin", name: "The origin", blurb: "Memory, mirrors and the first node.", color: "#3dff6e", zones: ["engrams", "paradox", "origin"], scene: 13 },
+    { id: "overgrowth", name: "Overgrowth", blurb: "Spores, threads, pollen and the farm in flower. Opens after the first Handover.", color: "#5cf0c0", zones: ["spores", "mycelium", "pollen", "bloom"], scene: 18 },
+    { id: "descent", name: "Descent", blurb: "Rock, magma, hollow stone and the core. Opens after the first Handover.", color: "#ff9a2a", zones: ["basalt", "magma", "geodes", "core"], scene: 22 },
 ];
 
 export const arcKey = (id: string) => `arc:${id}`;
 export const arcOf = (stat: string) => ARCS.find((a) => a.zones.includes(stat));
-/** Zone number (01 to 17), the same one the zone panels print. */
+/** Zone number (01 to 25), the same one the zone panels print. */
 export const zoneNo = (id: string) => STATS.findIndex((x) => x.id === id) + 1;

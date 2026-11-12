@@ -1,7 +1,7 @@
 "use client";
 
 import { useContext, useEffect, useRef, type CSSProperties } from "react";
-import { MATS, ROMAN, STATS, TIERS, button, postOf, zoneRank, derive, droneBoost, originAp, paradoxOc, singularityAll, fmt, fmtTime, hasFeature, isUnlocked, statDef, type ButtonStat, type State, type StatId } from "@/lib/nodefarm/engine";
+import { MATS, ROMAN, STATS, TIERS, button, postOf, zoneRank, derive, droneBoost, originAp, paradoxOc, bloomKeys, coreAll, singularityAll, fmt, fmtTime, hasFeature, isUnlocked, statDef, type ButtonStat, type State, type StatId } from "@/lib/nodefarm/engine";
 import { LORE } from "@/lib/nodefarm/lore";
 import { fnCaption } from "@/lib/nodefarm/feed";
 import { buttonTip, exact, unlockInfo, type Target } from "@/lib/nodefarm/guide";
@@ -10,6 +10,7 @@ import { NfIcon, NfTierIcon, type NfIconName } from "./icon";
 import { useFoldReveal } from "@/lib/nodefarm/cx";
 import { hasZoneArt } from "@/lib/nodefarm/zone-art";
 import { ZoneArt } from "./zone-art";
+import { ZoneRig } from "./rig";
 import { ZoneEvent } from "./zone-event";
 import { eventsFor, zoneEvDef, type ZeChoice } from "@/lib/nodefarm/zoneevents";
 
@@ -53,12 +54,36 @@ function effects(id: StatId, s: State, d: D): [string, string][] {
             return [["Feeds Engrams", `×${fmt(d.boosts.pxEg)}`], ["Overclock", `×${fmt(paradoxOc(s))}`]];
         case "origin":
             return [["Feeds Paradox", `×${fmt(d.boosts.orPx)}`], ["AP on Ascend", `×${fmt(originAp(s))}`]];
+        case "spores":
+            return [["Feeds Origin", `×${fmt(d.boosts.spOr)}`], ["Own output", `${fmt(d.rates.spores)}/s`]];
+        case "mycelium":
+            return [["Feeds Spores", `×${fmt(d.boosts.mySp)}`], ["Own output", `${fmt(d.rates.mycelium)}/s`]];
+        case "pollen":
+            return [["Feeds Mycelium", `×${fmt(d.boosts.poMy)}`], ["Own output", `${fmt(d.rates.pollen)}/s`]];
+        case "bloom":
+            return [["Feeds Pollen", `×${fmt(d.boosts.blPo)}`], ["Keys on Handover", `×${fmt(bloomKeys(s))}`]];
+        case "basalt":
+            return [["Feeds Bloom", `×${fmt(d.boosts.baBl)}`], ["Own output", `${fmt(d.rates.basalt)}/s`]];
+        case "magma":
+            return [["Feeds Basalt", `×${fmt(d.boosts.mgBa)}`], ["Own output", `${fmt(d.rates.magma)}/s`]];
+        case "geodes":
+            return [["Feeds Magma", `×${fmt(d.boosts.geMg)}`], ["Own output", `${fmt(d.rates.geodes)}/s`]];
+        case "core":
+            return [["Feeds Geodes", `×${fmt(d.boosts.coGe)}`], ["Everything", `×${fmt(coreAll(s))}`]];
     }
 }
 
 /** The signal chain: who boosts whom, with live multipliers. Sits above the stat dossiers. Only the zones you have reached, plus the next one, are drawn. */
 export function Chain({ s, d, onAll, allOpen }: { s: State; d: D; onAll: (open: boolean) => void; allOpen: boolean }) {
     const feed: Partial<Record<StatId, string>> = {
+        core: `Geodes ×${fmt(d.boosts.coGe)}`,
+        geodes: `Magma ×${fmt(d.boosts.geMg)}`,
+        magma: `Basalt ×${fmt(d.boosts.mgBa)}`,
+        basalt: `Bloom ×${fmt(d.boosts.baBl)}`,
+        bloom: `Pollen ×${fmt(d.boosts.blPo)}`,
+        pollen: `Mycelium ×${fmt(d.boosts.poMy)}`,
+        mycelium: `Spores ×${fmt(d.boosts.mySp)}`,
+        spores: `Origin ×${fmt(d.boosts.spOr)}`,
         origin: `Paradox ×${fmt(d.boosts.orPx)}`,
         paradox: `Engrams ×${fmt(d.boosts.pxEg)}`,
         engrams: `Singularity ×${fmt(d.boosts.egSn)}`,
@@ -175,6 +200,7 @@ export function StatRow({ id, s, d, onPress, onArm, onWatchdog, open: expanded, 
                             <div key={k}><dt>{k}</dt><i aria-hidden="true" /><dd>{v}</dd></div>
                         ))}
                     </dl>
+                    <ZoneRig id={id} s={s} d={d} />
                     {id !== "bytes" && id !== "reboot" && s.drones.some((x) => x > 0) && (
                         <div className="nf-arm">
                             <span>Drones</span>

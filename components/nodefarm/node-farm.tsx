@@ -13,7 +13,9 @@ import {
     type ButtonStat, type MatId, type State, type StatId,
 } from "@/lib/nodefarm/engine";
 import type { NfLive } from "@/lib/nodefarm/records";
-import { Core, type CoreFeed } from "./core";
+import { Core, freshCoreFeed, type CoreFeed } from "./core";
+import { PART_WHY, chromaOpen, coreLook, corePreview } from "@/lib/nodefarm/core-look";
+import { PART_ORDER } from "@/lib/nodefarm/core-parts";
 import { NfIcon } from "./icon";
 import { EventLayer } from "./events";
 import { MiniHud } from "./mini-hud";
@@ -30,6 +32,7 @@ import { ScriptsZone } from "./scripts";
 import { SCRIPTS, SCRIPT_BY, ascendDue, learnStep, schedOpen, teachAscend, teachCompile, teachDeploy, teachDrop, teachPress } from "@/lib/nodefarm/scripts";
 import { eraOf } from "@/lib/nodefarm/scenery";
 import { DroneBay, droneModel } from "./drones";
+import { rigManual } from "@/lib/nodefarm/rigs";
 import { Chain, StatRow } from "./stat-row";
 import { Feed } from "./feed";
 import { FeedStore, buyToks, call, com, droneToks, fromText, id as idTok, num, p as pun, str as strTok, txt, unlockToks, type FeedTone } from "@/lib/nodefarm/feed";
@@ -284,7 +287,8 @@ export function NodeFarm() {
         }),
         [],
     );
-    const feed = useRef<CoreFeed>({ progress: 0, overclock: false, unlocked: 1, speed: 0, lastPulse: -1e9, reboots: 0, ap: 0 });
+    const feed = useRef<CoreFeed>(freshCoreFeed());
+    const chromaWas = useRef<boolean | null>(null);
     const saved = useRef(0);
     const warnedSave = useRef(false);
     const tickN = useRef(0);
@@ -555,6 +559,23 @@ export function NodeFarm() {
             labPrev.current = { s, seen: s.lab.seen, compiled: s.life.compiled };
             f.reboots = s.reboot;
             f.ap = s.ap;
+            // the core's colours and structures (lib/nodefarm/core-look.ts); a structure that bolts on says so in the feed
+            const look = coreLook(s);
+            const partsWas = f.parts;
+            f.zone = look.zone;
+            f.chroma = look.chroma;
+            f.parts = look.parts;
+            f.drones = look.drones;
+            f.glyphs = look.glyphs;
+            if (partsWas >= 0 && corePreview() == null) {
+                const added = PART_ORDER.filter((_, k) => look.parts & (1 << k) && !(partsWas & (1 << k)));
+                // an imported or restored save can bring several at once: one line for those
+                if (added.length > 2) feedStore.push([...call(idTok("core"), "attach", [num(added.length)]), txt(" "), com("// structures restored")], { tone: "good", type: true });
+                else for (const p of added) feedStore.push([...call(idTok("core"), "attach", [strTok(p)]), txt(" "), com(`// ${PART_WHY[p]}`)], { tone: "good", type: true });
+            }
+            const chroma = chromaOpen(s);
+            if (chromaWas.current === false && chroma) feedStore.push([...call(idTok("core"), "unlock", [strTok("chroma")]), txt(" "), com("// nf core chroma in the console")], { tone: "hot", type: true });
+            chromaWas.current = chroma;
             if (prevUnlocked.current && f.unlocked > prevUnlocked.current) sfx("nfDecrypt");
             prevUnlocked.current = f.unlocked;
             setHum(humRef.current ? { level: Math.min(1, f.speed * 0.75 + (f.unlocked / 7) * 0.25), boost: f.overclock } : null);
@@ -588,7 +609,9 @@ export function NodeFarm() {
             }
             gainNow *= n;
             teachPress(s, stat, tier, n);
+            rigManual(s);
             feed.current.lastPulse = performance.now();
+            feed.current.pulseStat = Math.max(0, STATS.findIndex((x) => x.id === stat));
             dronePrev.current.manual += 1;
             juice.emit({ t: "press", stat, tier, gain: gainNow, quiet });
             if (owned === 0 && tier > 0 && !quiet && stat !== "reboot") juice.emit({ t: "tier", stat, tier });
