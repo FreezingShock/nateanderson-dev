@@ -247,7 +247,7 @@ export function MenuPanel({
         { key: "jump", on: jumpOn, flip: onJump, note: "scroll to the board when you come back to a save" },
         { key: "calm", on: calm || osCalm, flip: onCalm, off: osCalm, note: osCalm ? "your device already asks for less motion" : "less motion: no pops, flashes or loops" },
     ];
-    const keys: [string, string][] = [["M", "Map"], ["O", "Goals"], ["L", "Records"], ["A", "Ascend"], ["S", "Menu"], ["T", "Tree"], ["G", "Show me the next step"], ["P", "Press the glowing button (hold to keep going)"], ["1 to 6", "Press that tier on the zone in the middle of the screen"], ["Esc", "Close the open window"], ["Hold a button", "Keep buying"]];
+    const keys: [string, string][] = [["M", "Map"], ["O", "Goals"], ["L", "Records"], ["A", "Ascend"], ["S", "Menu"], ["T", "Tree"], ["G", "Show me the next step"], ["P", "Press the glowing button (hold to keep going)"], ["1 to 6", "Press that tier on the zone in the middle of the screen"], ["Q / E", "Open the previous or next arc"], ["Z", "Fold or open the zone in the middle of the screen"], ["Click a header", "Fold or open that panel"], ["Esc", "Close the open window"], ["Hold a button", "Keep buying"]];
     return (
         <div className="nf-sys nf-wk">
             <WinBanner
