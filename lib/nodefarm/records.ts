@@ -3,7 +3,7 @@
 // not open). No React, no DOM.
 import { OPERATORS, archiveOf, loadSeen, pickNews } from "./news";
 import {
-    GOALS, GOAL_TIERS, MATS, PERKS, SECRETS, TIER_NAMES, TREE, apOnAscend, derive, fmt, fmtTime, goalDone, statDef, tiersDone, unlock,
+    GOALS, GOAL_TIERS, LAB, MATS, PAYLOADS, PERKS, SECRETS, TIER_NAMES, TREE, apOnAscend, intelRate, derive, fmt, fmtTime, goalDone, statDef, tiersDone, unlock,
     type State,
 } from "./engine";
 import { LOGS, logNo } from "./story";
@@ -70,6 +70,14 @@ export function recordSections(s: State): RecordSection[] {
         { id: "prog", title: "Progress", blurb: "Goals, secrets, tree and perks.", rows: prog },
     ];
     if (mats.length) out.splice(1, 0, { id: "mats", title: "Materials", blurb: "Held, nodes and output per second.", rows: mats });
+    if (s.lab.seen) out.push({ id: "lab", title: "Exploit Lab", blurb: "Research and stock survive Ascend; Intel does not.", rows: [
+        ["Intel", `${fmt(s.lab.intel)} · +${fmt(intelRate(s, d.bytesPerSec))}/s`],
+        ["Research", `${s.lab.nodes.length} / ${LAB.length}`],
+        ["Recipes", `${PAYLOADS.filter((p) => s.lab.nodes.includes(`rx_${p.id}`)).length} / ${PAYLOADS.length}`],
+        ["Intel, lifetime", fmt(s.life.intel)],
+        ["Payloads compiled", fmt(s.life.compiled)],
+        ["Payloads deployed", fmt(s.life.deployed)],
+    ] });
     return out;
 }
 
@@ -114,7 +122,7 @@ export function nfCommand(s: State, args: string[]): NfResult {
             row("ascensions", `${s.life.ascends}  (${s.ap} AP)`),
             row("goals", `${c.goals}/${c.goalTotal}`),
             row("secrets", `${c.secrets}/${c.secretTotal}`),
-            t("nf stats · nf goals · nf secrets · nf logs · nf archive · nf open", "dim"),
+            t("nf stats · nf goals · nf secrets · nf logs · nf lab · nf archive · nf open", "dim"),
         ];
     } else if (sub === "stats") {
         lines = recordSections(s).flatMap((sec) => [t(sec.title.toLowerCase(), "hi"), ...sec.rows.map(([a, b]) => row(a.toLowerCase(), b))]);
@@ -167,10 +175,27 @@ export function nfCommand(s: State, args: string[]): NfResult {
         else lines = [t("ping what?", "err")];
     } else if (sub === "sudo") {
         lines = [t("node-01 is not in the sudoers file. this incident will be reported.", "err"), ...secret("x_sudo")];
+    } else if (sub === "lab") {
+        if (!s.lab.seen) lines = [t("~/lab: no such directory. it decrypts with Silicon.", "err")];
+        else {
+            const run = s.lab.run.filter((r) => r.left > 0);
+            const stock = PAYLOADS.filter((p) => (s.lab.stock[p.id] ?? 0) > 0);
+            lines = [
+                t("exploit lab", "hi"),
+                row("intel", `${fmt(s.lab.intel)}  (+${fmt(intelRate(s))}/s)`),
+                row("research", `${s.lab.nodes.length}/${LAB.length}`),
+                row("running", run.length ? run.map((r) => `${r.id} ${fmtTime(r.left)}`).join(", ") : "nothing"),
+                row("queue", s.lab.queue.length ? s.lab.queue.map((q) => q.id).join(", ") : "idle"),
+                row("stock", stock.length ? stock.map((p) => `${p.id} x${s.lab.stock[p.id]}`).join(", ") : "empty"),
+                ...(s.lab.armed.length ? [row("armed", s.lab.armed.join(", "))] : []),
+            ];
+        }
+    } else if (sub === "fork") {
+        lines = [t(":(){ :|:& };:"), t("fork: retry: Resource temporarily unavailable", "err"), t("the node copied itself 4,096 times, then everyone calmed down."), ...secret("x_fork")];
     } else if (sub === "whoami") {
         lines = [t("node-01. one core, no clearance, and a growing farm."), ...secret("x_self")];
     } else {
-        lines = [t(`nf: unknown: ${args[0]}`, "err"), t("nf stats · nf goals · nf secrets · nf logs · nf archive · nf open", "dim")];
+        lines = [t(`nf: unknown: ${args[0]}`, "err"), t("nf stats · nf goals · nf secrets · nf logs · nf lab · nf archive · nf open", "dim")];
     }
     return { lines, unlocked: found };
 }

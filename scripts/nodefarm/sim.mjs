@@ -14,6 +14,9 @@ const ascents = [];
 const mark = (k, t) => { if (!(k in marks)) marks[k] = t; };
 const order = ["chrono", "voidsteel", "starglass", "runes", "aether", "quartz", "silicon", "copper", "mult"];
 const treeOrder = [...E.TREE].sort((a, b) => a.cost - b.cost);
+const labOrder = [...E.LAB].sort((a, b) => a.cost - b.cost);
+let labBought = 0, labCompiles = 0;
+const labSkip = (process.env.NF_LABSKIP || "").split(","); // payload ids the bot never compiles
 // Ascend policy: ascend as soon as AP gain is at least max(2, 40% of AP already held), a typical player keeps going for a while first.
 let t = 0, nextBuy = 0;
 const dt = 0.5;
@@ -58,6 +61,20 @@ while (t < hours * 3600) {
             }
         }
         for (const n of treeOrder) if (!s.tree.includes(n.id) && E.buyNode(s, n.id)) mark("node " + n.id, t);
+        // Exploit Lab (NF_NOLAB=1 skips it): research cheapest first, keep a little stock of every recipe, deploy as soon as it helps
+        if (!process.env.NF_NOLAB && s.lab.seen) {
+            mark("lab open", t);
+            for (const n of labOrder) if (!s.lab.nodes.includes(n.id) && E.buyLabNode(s, n.id)) { labBought++; mark(`lab ${labBought}`, t); }
+            if (s.lab.nodes.length === E.LAB.length) mark("lab done", t);
+            for (const p of E.PAYLOADS) if (!labSkip.includes(p.id) && (s.lab.stock[p.id] ?? 0) < 2 && E.compile(s, p.id)) labCompiles++;
+            for (const p of E.PAYLOADS) {
+                if ((s.lab.stock[p.id] ?? 0) < 1) continue;
+                if (p.kind === "buff" && !E.isRunning(s, p.id)) E.deploy(s, p.id);
+                else if (p.kind === "charge" && !E.isArmed(s, p.id)) E.deploy(s, p.id);
+                else if (p.id === "ransom" || p.id === "trojan") E.deploy(s, p.id);
+                else if (p.id === "polymorph" && s.lab.run.length >= 2) E.deploy(s, p.id);
+            }
+        }
         // mounted drives: the bot keeps its deepest materials; the Dead drop is opened as soon as it is full
         const mats = ["chrono", "voidsteel", "starglass", "runes", "aether"].filter((m) => s.prod[m] > 0).slice(0, E.mountSlots(s));
         mats.forEach((m, i) => E.setMount(s, i, m));
@@ -71,6 +88,7 @@ while (t < hours * 3600) {
 console.log("ascends", ascents.map(([a, g, ap]) => `${(a / 3600).toFixed(0)}h +${g} (ap ${ap})`).join(", "));
 const h = (x) => (x / 3600).toFixed(2) + " h";
 for (const [k, v] of Object.entries(marks)) if (k !== "lastReboot") console.log(k.padEnd(14), h(v));
+console.log("lab", s.lab.nodes.length + "/" + E.LAB.length, "compiles", labCompiles, "intel life", E.fmt(s.life.intel));
 console.log("end", h(t), "bytes/s", E.fmt(E.derive(s).bytesPerSec), "R", E.fmt(s.reboot), "cu", E.fmt(s.copper), "si", E.fmt(s.silicon), "qz", E.fmt(s.quartz), "ae", E.fmt(s.aether), "rn", E.fmt(s.runes), "sg", E.fmt(s.starglass), "vs", E.fmt(s.voidsteel), "ch", E.fmt(s.chrono), "ap", s.ap, "ascends", s.life.ascends, "goals", s.ach.length);
 
 if (process.env.DUMP) {

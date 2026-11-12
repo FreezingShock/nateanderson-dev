@@ -13,7 +13,9 @@ import { goalCounts } from "@/lib/nodefarm/records";
 import { LOGS } from "@/lib/nodefarm/story";
 
 export type WinId = "map" | "goals" | "records" | "ascend" | "menu" | "tree";
-export type SwId = WinId | "core" | "stats" | "full";
+/** Everything the rail and hop strip can open: the windows plus the full-screen menus (tree, lab). */
+export type OpenId = WinId | "lab";
+export type SwId = OpenId | "core" | "stats" | "full";
 
 type Def = { label: string; key?: string; icon: PixelName; color: string; path: string };
 export const SW: Record<SwId, Def> = {
@@ -24,10 +26,12 @@ export const SW: Record<SwId, Def> = {
     records: { label: "Records", key: "L", icon: "book", color: "#f0a53c", path: "records" },
     ascend: { label: "Ascend", key: "A", icon: "ascend", color: "#ff2d8a", path: "ascend" },
     tree: { label: "Tree", key: "T", icon: "tree", color: "#a98bff", path: "tree" },
+    lab: { label: "Lab", icon: "code", color: "#9fd0ff", path: "lab" },
     menu: { label: "Menu", key: "S", icon: "settings", color: "#b6f04a", path: "config" },
     full: { label: "Full screen", key: "F", icon: "expand", color: "#e8e8e8", path: "fs" },
 };
-const WIN_ORDER: WinId[] = ["map", "goals", "records", "ascend", "tree", "menu"];
+const WIN_ORDER: OpenId[] = ["map", "goals", "records", "ascend", "tree", "lab", "menu"];
+const shown = (w: OpenId, tree: boolean, lab: boolean) => (w !== "tree" || tree) && (w !== "lab" || lab);
 
 /** One line of live state per slot, and whether that window wants a look (a lit pip). */
 export type SwInfo = Record<SwId, { read: string; hot?: boolean }>;
@@ -48,7 +52,7 @@ function markLogsSeen(n: number) {
 }
 
 /** Plain function, not a hook: the game calls it after its boot early-return. */
-export function swInfo(s: State, bps: number, lastSave: number, fs: boolean, recordsOpen: boolean): SwInfo {
+export function swInfo(s: State, bps: number, lastSave: number, fs: boolean, labReady: number, recordsOpen: boolean): SwInfo {
     if (recordsOpen && logsSeen() !== s.logs.length) markLogsSeen(s.logs.length);
     const seen = logsSeen();
     const zones = STATS.filter((x) => isUnlocked(s, x.id)).length;
@@ -67,6 +71,7 @@ export function swInfo(s: State, bps: number, lastSave: number, fs: boolean, rec
         ascend: { read: ready ? `ready +${fmt(apOnAscend(s))}` : `${fmt(s.aether)}/${fmt(TUNE.ascendAether)} AE`, hot: ready },
         tree: { read: spend ? `${s.ap} AP free` : `${s.tree.length}/${TREE.length}`, hot: spend },
         menu: { read: ago < 0 ? "not saved" : ago < 60 ? `saved ${ago}s` : `saved ${Math.floor(ago / 60)}m` },
+        lab: { read: labReady ? `${labReady} ready` : `${fmt(s.lab.intel)} intel`, hot: labReady > 0 },
         full: { read: fs ? "on" : "off" },
     };
 }
@@ -118,8 +123,8 @@ function Slot({ id, info, active, guide, onClick, compact = false }: { id: SwId;
 }
 
 /** Desktop: one rail of window modules under the HUD. */
-export function Dock({ info, open, treeSeen, guideWin, fs, onOpen, onFs }: { info: SwInfo; open: WinId | ""; treeSeen: boolean; guideWin?: string; fs: boolean; onOpen: (w: WinId) => void; onFs: () => void }) {
-    const ids = WIN_ORDER.filter((w) => w !== "tree" || treeSeen);
+export function Dock({ info, open, treeSeen, lab, guideWin, fs, onOpen, onFs }: { info: SwInfo; open: WinId | ""; treeSeen: boolean; lab: boolean; guideWin?: string; fs: boolean; onOpen: (w: OpenId) => void; onFs: () => void }) {
+    const ids = WIN_ORDER.filter((w) => shown(w, treeSeen, lab));
     return (
         <nav className="nf-dock nf-sw" aria-label="Game windows" style={{ ["--n" as string]: ids.length } as CSSProperties}>
             <span className="nf-sw-cap" aria-hidden="true">$ open</span>
@@ -132,10 +137,11 @@ export function Dock({ info, open, treeSeen, guideWin, fs, onOpen, onFs }: { inf
 }
 
 /** Phone: the section grid (Core and Zones are in-page sections, the rest are the same windows as desktop). */
-export function PhoneTabs({ info, tab, treeSeen, guideWin, onTab, onTree }: { info: SwInfo; tab: string; treeSeen: boolean; guideWin?: string; onTab: (t: Exclude<SwId, "tree" | "full">) => void; onTree: () => void }) {
-    const ids: Exclude<SwId, "full">[] = ["core", "stats", "map", "goals", "records", "ascend", ...(treeSeen ? (["tree"] as const) : []), "menu"];
+export function PhoneTabs({ info, tab, treeSeen, lab, guideWin, onTab, onTree, onLab }: { info: SwInfo; tab: string; treeSeen: boolean; lab: boolean; guideWin?: string; onTab: (t: Exclude<SwId, "tree" | "lab" | "full">) => void; onTree: () => void; onLab: () => void }) {
+    const ids: Exclude<SwId, "full">[] = ["core", "stats", ...WIN_ORDER.filter((w) => shown(w, treeSeen, lab))];
+    // 7 or 8 sections sit four across; 9 (tree and lab both open) sit three across so no row is left with one
     return (
-        <nav className="nf-tabs nf-sw-ph" aria-label="Game sections">
+        <nav className="nf-tabs nf-sw-ph" aria-label="Game sections" style={{ ["--cols" as string]: ids.length > 8 ? 3 : 4 } as CSSProperties}>
             {ids.map((t) => {
                 const def = SW[t];
                 const on = tab === t;
@@ -148,10 +154,10 @@ export function PhoneTabs({ info, tab, treeSeen, guideWin, onTab, onTree }: { in
                         data-tab-btn={t}
                         data-hot={info[t].hot ? "" : undefined}
                         data-guide={guideWin === t ? "" : undefined}
-                        aria-pressed={t === "tree" ? undefined : on}
-                        aria-haspopup={t === "tree" ? "dialog" : undefined}
+                        aria-pressed={t === "tree" || t === "lab" ? undefined : on}
+                        aria-haspopup={t === "tree" || t === "lab" ? "dialog" : undefined}
                         aria-label={`${def.label}: ${info[t].read}`}
-                        onClick={() => (t === "tree" ? onTree() : onTab(t))}
+                        onClick={() => (t === "tree" ? onTree() : t === "lab" ? onLab() : onTab(t))}
                     >
                         <i className="nf-sw-ic" aria-hidden="true"><PixelIcon name={def.icon} size={20} /></i>
                         <span className="nf-sw-l" aria-hidden="true">{def.label}</span>
@@ -165,9 +171,9 @@ export function PhoneTabs({ info, tab, treeSeen, guideWin, onTab, onTree }: { in
 }
 
 /** The title bar every desktop window wears: its colour, icon and path, a strip to hop to another window, its key, close. */
-export function WinBar({ id, info, treeSeen, onSwitch, onClose }: { id: WinId; info: SwInfo; treeSeen: boolean; onSwitch: (w: WinId) => void; onClose: () => void }) {
+export function WinBar({ id, info, treeSeen, lab, onSwitch, onClose }: { id: WinId; info: SwInfo; treeSeen: boolean; lab: boolean; onSwitch: (w: OpenId) => void; onClose: () => void }) {
     const def = SW[id];
-    const ids = WIN_ORDER.filter((w) => w !== "tree" || treeSeen);
+    const ids = WIN_ORDER.filter((w) => shown(w, treeSeen, lab));
     return (
         <div className="nf-win-bar nf-sw-bar" style={vars(id)}>
             <i className="nf-sw-bar-ic" aria-hidden="true"><PixelIcon name={def.icon} size={20} /></i>

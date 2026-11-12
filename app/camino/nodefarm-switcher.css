@@ -107,7 +107,7 @@
 }
 
 /* ---- phone section grid */
-.ctos .nf-sw-ph { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 4px; }
+.ctos .nf-sw-ph { grid-template-columns: repeat(var(--cols, 4), minmax(0, 1fr)); gap: 4px; }
 .ctos .nf-sw-ph .nf-tab {
     position: relative;
     display: grid;
