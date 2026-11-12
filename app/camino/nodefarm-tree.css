@@ -83,7 +83,7 @@ body > .nf-tm-host { position: fixed; inset: 0; z-index: 1000; }
 .ctos .nf-tn-face { position: relative; display: grid; place-items: center; width: calc(100% - 14px); height: calc(100% - 14px); border: 2px solid var(--rim); background: radial-gradient(circle at 50% 45%, #1b222b 0, #0a0d11 75%), #0a0d11; box-shadow: inset 0 0 0 1px #000, inset 0 0 16px #000c; transition: border-color .25s, box-shadow .25s; }
 /* dither grain on the face */
 .ctos .nf-tn-face::before { content: ""; position: absolute; inset: 0; background: radial-gradient(circle, #ffffff10 0 .8px, transparent 1px) 0 0 / 4px 4px; pointer-events: none; }
-.ctos .nf-tn-ic { position: relative; display: block; width: calc(var(--sz) * .6); height: calc(var(--sz) * .6); background: url(/naos/nodefarm/tree-nodes.webp) calc(var(--col) * var(--sz) * -.6) calc(var(--row) * var(--sz) * -.6) / calc(var(--sz) * .6 * 8) auto no-repeat; image-rendering: pixelated; transition: opacity .25s, filter .25s; }
+.ctos .nf-tn-ic { position: relative; display: block; width: calc(var(--sz) * .6); height: calc(var(--sz) * .6); background: url(/naos/nodefarm/tree-nodes.webp?v=117e47a1) calc(var(--col) * var(--sz) * -.6) calc(var(--row) * var(--sz) * -.6) / calc(var(--sz) * .6 * 8) auto no-repeat; image-rendering: pixelated; transition: opacity .25s, filter .25s; }
 .ctos .nf-tn-spr { position: relative; }
 .ctos .nf-tn[data-st="open"] .nf-tn-spr { opacity: .8; filter: saturate(.6); }
 .ctos .nf-tn[data-vis="fog"] .nf-tn-spr { opacity: .7; }

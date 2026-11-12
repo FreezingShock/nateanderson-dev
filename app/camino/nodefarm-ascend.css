@@ -33,7 +33,7 @@
     -webkit-mask-image: none; mask-image: none;
 }
 .ctos .nf-ax-art::after { content: ""; position: absolute; inset: 0; background: linear-gradient(#0a0a0a 0, transparent 30%, transparent 70%, #0a0a0acc 100%); pointer-events: none; }
-.ctos .nf-ax-tower { position: absolute; left: 50%; bottom: 0; width: 480px; height: 270px; margin-left: -240px; background: url(/naos/nodefarm/scene-ascend.webp) 0 0 / 480px 270px no-repeat; image-rendering: pixelated; z-index: 1; }
+.ctos .nf-ax-tower { position: absolute; left: 50%; bottom: 0; width: 480px; height: 270px; margin-left: -240px; background: url(/naos/nodefarm/scene-ascend.webp?v=1518a5f9) 0 0 / 480px 270px no-repeat; image-rendering: pixelated; z-index: 1; }
 .ctos .nf-ax-ring { position: absolute; left: 198px; width: 84px; height: 14px; top: calc(116px - var(--i) * 26px); opacity: 0; border: 2px solid var(--ae); border-radius: 50%; background: radial-gradient(circle, color-mix(in srgb, var(--ae) 60%, transparent) 0 .8px, transparent 1.2px) 0 0 / 3px 3px; box-shadow: 0 0 12px color-mix(in srgb, var(--ae) 45%, transparent); transition: opacity .3s steps(3); }
 .ctos .nf-ax-ring[data-on] { opacity: .85; animation: nfAxRing 2.4s steps(6) calc(var(--i) * -.3s) infinite; }
 @keyframes nfAxRing { 0%, 100% { opacity: .85; } 50% { opacity: .5; } }
@@ -90,10 +90,10 @@
 .ctos .nf-ax-portal:focus-visible { outline: 2px solid var(--cm-cyan); outline-offset: 4px; }
 .ctos .nf-ax-sky { position: absolute; inset: 0; overflow: hidden; }
 .ctos .nf-ax-sky i { position: absolute; inset: -40px; background-repeat: repeat; background-size: 512px 512px; image-rendering: pixelated; transition: transform .5s cubic-bezier(.2, .7, .2, 1); }
-.ctos .nf-ax-sky i[data-l="0"] { background-image: url(/naos/nodefarm/tree-bg-0.webp); }
-.ctos .nf-ax-sky i[data-l="1"] { right: -552px; background-image: url(/naos/nodefarm/tree-bg-1.webp); animation: nfAxDrift 120s linear infinite; }
-.ctos .nf-ax-sky i[data-l="2"] { background-image: url(/naos/nodefarm/tree-bg-2.webp); opacity: .8; }
-.ctos .nf-ax-sky .nf-ax-sky-core { inset: auto; right: 6%; top: 50%; width: 300px; height: 300px; margin-top: -150px; background: url(/naos/nodefarm/tree-core.webp) center / 100% 100% no-repeat; animation: nfAxCore 6s ease-in-out infinite; }
+.ctos .nf-ax-sky i[data-l="0"] { background-image: url(/naos/nodefarm/tree-bg-0.webp?v=0586b6ff); }
+.ctos .nf-ax-sky i[data-l="1"] { right: -552px; background-image: url(/naos/nodefarm/tree-bg-1.webp?v=6a9828f8); animation: nfAxDrift 120s linear infinite; }
+.ctos .nf-ax-sky i[data-l="2"] { background-image: url(/naos/nodefarm/tree-bg-2.webp?v=2882a0b8); opacity: .8; }
+.ctos .nf-ax-sky .nf-ax-sky-core { inset: auto; right: 6%; top: 50%; width: 300px; height: 300px; margin-top: -150px; background: url(/naos/nodefarm/tree-core.webp?v=9db65de4) center / 100% 100% no-repeat; animation: nfAxCore 6s ease-in-out infinite; }
 @keyframes nfAxDrift { to { transform: translateX(-512px); } }
 @keyframes nfAxCore { 50% { opacity: .75; scale: 1.04; } }
 .ctos .nf-ax-sky::after { content: ""; position: absolute; inset: 0; background: linear-gradient(90deg, #03050ae6 0, #03050aa6 45%, transparent 75%); }

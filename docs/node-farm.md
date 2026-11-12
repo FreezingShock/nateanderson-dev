@@ -222,3 +222,9 @@ Checks: /mnt/project-files/portfolio/node-farm-refresh/ (`checks.mjs` interactio
 - Windows: the coloured title bar (`WinBar`) carries the window's icon, name, path, live line, a hop strip of every window (switch without closing; the new one CRT-prints in) and its key. Phone: `PhoneTabs`, a 4-across grid with icon, label and data line.
 - Live lines come from `swInfo()` (a plain function, called every render after the boot return, so not a hook).
 - Check: /mnt/project-files/portfolio/node-farm-switcher/shots.mjs.
+
+## Art cache stamps
+`/naos/*` is cached for a week and regenerated sheets keep their names, so CSS asks for `url(/naos/nodefarm/<file>?v=<hash>)`.
+After regenerating any Node Farm art run `node scripts/nodefarm/stamp-art.mjs` (it rewrites the stamps in app/camino/*.css
+and lib/nodefarm/art-version.ts; build code URLs with `nfArt(file)`). `npm run build` runs it with `--check` first and
+fails if a stamp is stale or if the icon/tier sheets don't match ORDER/TIER_ROWS in components/nodefarm/icon.tsx and the CSS sizes.

@@ -7,15 +7,15 @@
 @keyframes nfScnOut { from { opacity: var(--scn-o, .55); } to { opacity: 0; } }
 
 /* one place that maps an era to its image; every surface reads --scn */
-[data-era="0"] { --scn: url(/naos/nodefarm/scene-0.webp); --det: url(/naos/nodefarm/detail-0.webp); }
-[data-era="1"] { --scn: url(/naos/nodefarm/scene-1.webp); --det: url(/naos/nodefarm/detail-1.webp); }
-[data-era="2"] { --scn: url(/naos/nodefarm/scene-2.webp); --det: url(/naos/nodefarm/detail-2.webp); }
-[data-era="3"] { --scn: url(/naos/nodefarm/scene-3.webp); --det: url(/naos/nodefarm/detail-3.webp); }
-[data-era="4"] { --scn: url(/naos/nodefarm/scene-4.webp); --det: url(/naos/nodefarm/detail-4.webp); }
-[data-era="5"] { --scn: url(/naos/nodefarm/scene-5.webp); --det: url(/naos/nodefarm/detail-5.webp); }
-[data-era="6"] { --scn: url(/naos/nodefarm/scene-6.webp); --det: url(/naos/nodefarm/detail-6.webp); }
-[data-era="7"] { --scn: url(/naos/nodefarm/scene-7.webp); --det: url(/naos/nodefarm/detail-7.webp); }
-[data-era="8"] { --scn: url(/naos/nodefarm/scene-8.webp); --det: url(/naos/nodefarm/detail-8.webp); }
+[data-era="0"] { --scn: url(/naos/nodefarm/scene-0.webp?v=259ec039); --det: url(/naos/nodefarm/detail-0.webp?v=6055e5e5); }
+[data-era="1"] { --scn: url(/naos/nodefarm/scene-1.webp?v=5efcae30); --det: url(/naos/nodefarm/detail-1.webp?v=dcb370ce); }
+[data-era="2"] { --scn: url(/naos/nodefarm/scene-2.webp?v=929d2dde); --det: url(/naos/nodefarm/detail-2.webp?v=a9699967); }
+[data-era="3"] { --scn: url(/naos/nodefarm/scene-3.webp?v=df70140e); --det: url(/naos/nodefarm/detail-3.webp?v=ffb408da); }
+[data-era="4"] { --scn: url(/naos/nodefarm/scene-4.webp?v=4ddbd1a5); --det: url(/naos/nodefarm/detail-4.webp?v=9f793a4a); }
+[data-era="5"] { --scn: url(/naos/nodefarm/scene-5.webp?v=02091cf3); --det: url(/naos/nodefarm/detail-5.webp?v=b934997c); }
+[data-era="6"] { --scn: url(/naos/nodefarm/scene-6.webp?v=76eee990); --det: url(/naos/nodefarm/detail-6.webp?v=3001322c); }
+[data-era="7"] { --scn: url(/naos/nodefarm/scene-7.webp?v=b737a80a); --det: url(/naos/nodefarm/detail-7.webp?v=b3252828); }
+[data-era="8"] { --scn: url(/naos/nodefarm/scene-8.webp?v=e5c4b5c3); --det: url(/naos/nodefarm/detail-8.webp?v=c245fb2c); }
 
 .ctos .nf { isolation: isolate; }
 
@@ -43,7 +43,7 @@
 body .nf-aw[data-era] { background-color: #070707; }
 body .nf-aw[data-era]::before { background: linear-gradient(#070707bf, #070707bf), var(--scn, none) repeat-x 50% 100% / 960px 540px; opacity: 1; -webkit-mask-image: linear-gradient(to top, #000 0, #000 30%, transparent 85%); mask-image: linear-gradient(to top, #000 0, #000 30%, transparent 85%); image-rendering: pixelated; }
 @media (min-width: 1000px) { body .nf-aw[data-era]::before { background-size: auto, 1440px 810px; } }
-body .nf-rx.nf-rx { background-image: linear-gradient(#050505d9, #050505d9), url(/naos/nodefarm/scene-ascend.webp); background-repeat: no-repeat; background-position: 0 0, 50% 100%; background-size: auto, 960px 540px; image-rendering: pixelated; }
+body .nf-rx.nf-rx { background-image: linear-gradient(#050505d9, #050505d9), url(/naos/nodefarm/scene-ascend.webp?v=1518a5f9); background-repeat: no-repeat; background-position: 0 0, 50% 100%; background-size: auto, 960px 540px; image-rendering: pixelated; }
 @media (min-width: 1000px) { body .nf-rx.nf-rx { background-size: auto, 1440px 810px; } }
 
 @media (prefers-reduced-motion: reduce) {
