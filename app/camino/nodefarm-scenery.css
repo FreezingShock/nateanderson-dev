@@ -1,22 +1,22 @@
 /* ==========================================================================
-   Node Farm scenery (components/nodefarm/scenery.tsx, art from scripts/naos-art/nodefarm-scenes.py).
-   One dither scene per era, tinted in that era's stat colour. The ground only shows in the gaps between panels (they
+   Node Farm scenery (components/nodefarm/scenery.tsx, art from scripts/naos-art/nodefarm-scenes-early.py and -deep.py).
+   One layered colour dither scene per era, in that era's stat palette. The ground only shows in the gaps between panels (they
    stay solid), so it never sits under numbers. Each scene is 480 x 270 art pixels, shown at 3x on desktop and 2x on phones.
    ========================================================================== */
 @keyframes nfScnIn { from { opacity: 0; } to { opacity: var(--scn-o, .55); } }
 @keyframes nfScnOut { from { opacity: var(--scn-o, .55); } to { opacity: 0; } }
 
-/* one place that maps an era to its image; every surface reads --scn */
-[data-era="0"] { --scn: url(/naos/nodefarm/scene-0.webp?v=259ec039); --det: url(/naos/nodefarm/detail-0.webp?v=6055e5e5); }
-[data-era="1"] { --scn: url(/naos/nodefarm/scene-1.webp?v=5efcae30); --det: url(/naos/nodefarm/detail-1.webp?v=dcb370ce); }
-[data-era="2"] { --scn: url(/naos/nodefarm/scene-2.webp?v=929d2dde); --det: url(/naos/nodefarm/detail-2.webp?v=a9699967); }
-[data-era="3"] { --scn: url(/naos/nodefarm/scene-3.webp?v=df70140e); --det: url(/naos/nodefarm/detail-3.webp?v=ffb408da); }
-[data-era="4"] { --scn: url(/naos/nodefarm/scene-4.webp?v=4ddbd1a5); --det: url(/naos/nodefarm/detail-4.webp?v=9f793a4a); }
-[data-era="5"] { --scn: url(/naos/nodefarm/scene-5.webp?v=02091cf3); --det: url(/naos/nodefarm/detail-5.webp?v=b934997c); }
-[data-era="6"] { --scn: url(/naos/nodefarm/scene-6.webp?v=76eee990); --det: url(/naos/nodefarm/detail-6.webp?v=3001322c); }
-[data-era="7"] { --scn: url(/naos/nodefarm/scene-7.webp?v=b737a80a); --det: url(/naos/nodefarm/detail-7.webp?v=b3252828); }
-[data-era="8"] { --scn: url(/naos/nodefarm/scene-8.webp?v=e5c4b5c3); --det: url(/naos/nodefarm/detail-8.webp?v=c245fb2c); }
-/* layered eras (scripts/naos-art/nodefarm-scenes-deep.py): --scn is the flattened still for the one-image surfaces */
+/* one place that maps an era to its images; every era is layered (0-8: scripts/naos-art/nodefarm-scenes-early.py, 9-14:
+   nodefarm-scenes-deep.py). --scn is the flattened still for the one-image surfaces, --det the 8-frame close-up. */
+[data-era="0"] { --scn: url(/naos/nodefarm/scene-0.webp?v=97fbe647); --det: url(/naos/nodefarm/detail-0.webp?v=a5296cbc); --scn-far: url(/naos/nodefarm/scene-0-far.webp?v=9c25983a); --scn-near: url(/naos/nodefarm/scene-0-near.webp?v=e0674580); --scn-fx: url(/naos/nodefarm/scene-0-fx.webp?v=6fd2ad3b); }
+[data-era="1"] { --scn: url(/naos/nodefarm/scene-1.webp?v=8a6c0fda); --det: url(/naos/nodefarm/detail-1.webp?v=380b16a8); --scn-far: url(/naos/nodefarm/scene-1-far.webp?v=cd9b3a1f); --scn-near: url(/naos/nodefarm/scene-1-near.webp?v=39c32c1b); --scn-fx: url(/naos/nodefarm/scene-1-fx.webp?v=383592dd); }
+[data-era="2"] { --scn: url(/naos/nodefarm/scene-2.webp?v=74a4ecd3); --det: url(/naos/nodefarm/detail-2.webp?v=78154de2); --scn-far: url(/naos/nodefarm/scene-2-far.webp?v=a12aca92); --scn-near: url(/naos/nodefarm/scene-2-near.webp?v=3179d757); --scn-fx: url(/naos/nodefarm/scene-2-fx.webp?v=611f1b10); }
+[data-era="3"] { --scn: url(/naos/nodefarm/scene-3.webp?v=2e1cb373); --det: url(/naos/nodefarm/detail-3.webp?v=a4f9fa00); --scn-far: url(/naos/nodefarm/scene-3-far.webp?v=01902271); --scn-near: url(/naos/nodefarm/scene-3-near.webp?v=e81797e5); --scn-fx: url(/naos/nodefarm/scene-3-fx.webp?v=9fff5e85); }
+[data-era="4"] { --scn: url(/naos/nodefarm/scene-4.webp?v=083dcc73); --det: url(/naos/nodefarm/detail-4.webp?v=f11c1091); --scn-far: url(/naos/nodefarm/scene-4-far.webp?v=233cd73a); --scn-near: url(/naos/nodefarm/scene-4-near.webp?v=09d62d07); --scn-fx: url(/naos/nodefarm/scene-4-fx.webp?v=7e402dbe); }
+[data-era="5"] { --scn: url(/naos/nodefarm/scene-5.webp?v=bb209c0d); --det: url(/naos/nodefarm/detail-5.webp?v=7fb7e917); --scn-far: url(/naos/nodefarm/scene-5-far.webp?v=1fe17482); --scn-near: url(/naos/nodefarm/scene-5-near.webp?v=74373f06); --scn-fx: url(/naos/nodefarm/scene-5-fx.webp?v=07c2e0b9); }
+[data-era="6"] { --scn: url(/naos/nodefarm/scene-6.webp?v=b1b00d9f); --det: url(/naos/nodefarm/detail-6.webp?v=e10c42b5); --scn-far: url(/naos/nodefarm/scene-6-far.webp?v=8ad187a1); --scn-near: url(/naos/nodefarm/scene-6-near.webp?v=ae4366bb); --scn-fx: url(/naos/nodefarm/scene-6-fx.webp?v=b67a1e2b); }
+[data-era="7"] { --scn: url(/naos/nodefarm/scene-7.webp?v=41ae2032); --det: url(/naos/nodefarm/detail-7.webp?v=392b6539); --scn-far: url(/naos/nodefarm/scene-7-far.webp?v=7c766952); --scn-near: url(/naos/nodefarm/scene-7-near.webp?v=4cf46e2e); --scn-fx: url(/naos/nodefarm/scene-7-fx.webp?v=81062e11); }
+[data-era="8"] { --scn: url(/naos/nodefarm/scene-8.webp?v=d0ad54a0); --det: url(/naos/nodefarm/detail-8.webp?v=18c49513); --scn-far: url(/naos/nodefarm/scene-8-far.webp?v=14ebc751); --scn-near: url(/naos/nodefarm/scene-8-near.webp?v=010819d6); --scn-fx: url(/naos/nodefarm/scene-8-fx.webp?v=e0c01ccd); }
 [data-era="9"] { --scn: url(/naos/nodefarm/scene-9.webp?v=70a2f587); --det: url(/naos/nodefarm/detail-9.webp?v=50fb0922); --scn-far: url(/naos/nodefarm/scene-9-far.webp?v=6910f1e6); --scn-near: url(/naos/nodefarm/scene-9-near.webp?v=efc38df0); --scn-fx: url(/naos/nodefarm/scene-9-fx.webp?v=2764cd75); }
 [data-era="10"] { --scn: url(/naos/nodefarm/scene-10.webp?v=efd33a89); --det: url(/naos/nodefarm/detail-10.webp?v=dbefd183); --scn-far: url(/naos/nodefarm/scene-10-far.webp?v=aca61142); --scn-near: url(/naos/nodefarm/scene-10-near.webp?v=c95b55df); --scn-fx: url(/naos/nodefarm/scene-10-fx.webp?v=ef79c619); }
 [data-era="11"] { --scn: url(/naos/nodefarm/scene-11.webp?v=798809f4); --det: url(/naos/nodefarm/detail-11.webp?v=4f4f3bf0); --scn-far: url(/naos/nodefarm/scene-11-far.webp?v=f7823e5a); --scn-near: url(/naos/nodefarm/scene-11-near.webp?v=98030fd6); --scn-fx: url(/naos/nodefarm/scene-11-fx.webp?v=f83f19c0); }
