@@ -35,9 +35,9 @@
 .nf-bd-vig { position: absolute; inset: 0; display: block; background: radial-gradient(ellipse at center, transparent 50%, #000c 100%); }
 
 /* ---- sprites: 6 columns per row (shine 0..3, locked, hidden) ---- */
-.nf-ts { display: block; flex: none; width: var(--px); height: var(--px); background-image: url(/naos/nodefarm/tree-spr-s.webp?v=4aca52f0); background-repeat: no-repeat; background-size: calc(var(--px) * 6) auto; background-position: calc(var(--col) * var(--px) * -1) calc(var(--row) * var(--px) * -1); image-rendering: pixelated; }
-.nf-ts[data-sz="m"] { background-image: url(/naos/nodefarm/tree-spr-m.webp?v=93751e93); }
-.nf-ts[data-sz="l"] { background-image: url(/naos/nodefarm/tree-spr-l.webp?v=6973b968); }
+.nf-ts { display: block; flex: none; width: var(--px); height: var(--px); background-image: url(/naos/nodefarm/tree-spr-s.webp?v=c98204d5); background-repeat: no-repeat; background-size: calc(var(--px) * 6) auto; background-position: calc(var(--col) * var(--px) * -1) calc(var(--row) * var(--px) * -1); image-rendering: pixelated; }
+.nf-ts[data-sz="m"] { background-image: url(/naos/nodefarm/tree-spr-m.webp?v=28b1e5f7); }
+.nf-ts[data-sz="l"] { background-image: url(/naos/nodefarm/tree-spr-l.webp?v=a9969b9d); }
 .nf-ts[data-miss] { background: none; }
 /* owned: a shine sweeps across now and then (frames 1 to 3), offset per node */
 .nf-ts[data-st="owned"] { animation: nfTsShine 7s steps(1) infinite; animation-delay: var(--ph, 0s); }

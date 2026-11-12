@@ -1,7 +1,7 @@
 "use client";
 
-import { useContext, useEffect, useRef } from "react";
-import { MATS, STATS, TIERS, button, derive, droneBoost, originAp, paradoxOc, singularityAll, fmt, fmtTime, hasFeature, isUnlocked, statDef, type ButtonStat, type State, type StatId } from "@/lib/nodefarm/engine";
+import { useContext, useEffect, useRef, type CSSProperties } from "react";
+import { MATS, ROMAN, STATS, TIERS, button, postOf, zoneRank, derive, droneBoost, originAp, paradoxOc, singularityAll, fmt, fmtTime, hasFeature, isUnlocked, statDef, type ButtonStat, type State, type StatId } from "@/lib/nodefarm/engine";
 import { LORE } from "@/lib/nodefarm/lore";
 import { fnCaption } from "@/lib/nodefarm/feed";
 import { buttonTip, exact, unlockInfo, type Target } from "@/lib/nodefarm/guide";
@@ -177,6 +177,7 @@ export function StatRow({ id, s, d, onPress, onArm, onWatchdog, open: expanded, 
                     {id !== "bytes" && id !== "reboot" && s.drones.some((x) => x > 0) && (
                         <div className="nf-arm">
                             <span>Drones</span>
+                            <PostedHere s={s} id={id as ButtonStat} />
                             <button type="button" className="nf-mini" aria-pressed={s.armed.includes(id)} onClick={onArm}>{s.armed.includes(id) ? "Armed" : "Off"}</button>
                         </div>
                     )}
@@ -281,5 +282,20 @@ function BuyBtn({ s, d, stat, tier, onPress, guided }: { s: State; d: D; stat: B
             <span className="nf-btn-fn" aria-hidden="true">{fnCaption(stat, b.gain)}</span>
             <span className="nf-btn-c" title={`Costs ${exact(b.cost)} ${pays.name}${afford ? "" : `, you have ${exact(s[b.pays] as number)}`}`}>{fmt(b.cost)} {pays.short}{owned > 0 && <em> · ×{owned}</em>}{eta > 0 && <em className="nf-eta"> · {eta < 86400 * 30 ? fmtTime(eta) : "a long while"}</em>}</span>
         </button>
+    );
+}
+
+const DRONE_DOT = ["#2fd8e8", "#b6f04a", "#f08a3c", "#7aa2ff", "#e08cff", "#ffc53a"];
+/** The Drones posted to this zone (a blinking light each, in the Drone's colour) and the zone's mastery rank. */
+function PostedHere({ s, id }: { s: State; id: ButtonStat }) {
+    const here = Array.from({ length: TIERS }, (_, k) => k).filter((k) => s.drones[k] > 0 && postOf(s, k) === id);
+    const r = zoneRank(s, id);
+    if (!here.length && !r) return null;
+    return (
+        <span className="nf-arm-post" aria-label={`${here.length} Drone${here.length === 1 ? "" : "s"} posted here, mastery ${r ? ROMAN[r] : "none"}`}>
+            {here.map((k) => <i key={k} style={{ ["--d" as string]: DRONE_DOT[k] } as CSSProperties} />)}
+            {here.length > 0 && <span>posted</span>}
+            {r > 0 && <b>mastery {ROMAN[r]}</b>}
+        </span>
     );
 }

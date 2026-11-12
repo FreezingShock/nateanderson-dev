@@ -27,7 +27,7 @@ import { LabHud, LabZone, labModel, labReady } from "./lab";
 import { ScriptsZone } from "./scripts";
 import { SCRIPTS, SCRIPT_BY, ascendDue, learnStep, schedOpen, teachAscend, teachCompile, teachDeploy, teachDrop, teachPress } from "@/lib/nodefarm/scripts";
 import { eraOf } from "@/lib/nodefarm/scenery";
-import { DroneBay } from "./drones";
+import { DroneBay, droneModel } from "./drones";
 import { Chain, StatRow } from "./stat-row";
 import { Feed } from "./feed";
 import { FeedStore, buyToks, call, com, droneToks, fromText, id as idTok, num, p as pun, str as strTok, txt, unlockToks, type FeedTone } from "@/lib/nodefarm/feed";
@@ -43,7 +43,8 @@ import { AscendPanel } from "./ascend";
 import { Dock, PhoneTabs, WinBar, swInfo } from "./switcher";
 import { AdminPanel, type AdminHost } from "./admin";
 import { isAdmin, setAdmin } from "@/lib/nodefarm/admin";
-import { adminFlags } from "@/lib/nodefarm/engine";
+import { adminFlags, buyDroneNode, buyMod, droneNode, masteryRanks, MODS, respecDrones, setPost } from "@/lib/nodefarm/engine";
+import { DRONE_NAMES } from "@/lib/nodefarm/guide";
 import { codeReveal, cxClear } from "@/lib/nodefarm/cx";
 
 const KEY = "nf-save-v1";
@@ -97,6 +98,11 @@ export function NodeFarm() {
     const [treeOpen, setTreeOpen] = useState(false);
     /** the Exploit Lab's research tree (same menu as the prestige tree, blue lab skin) */
     const [labTree, setLabTree] = useState(false);
+    /** the drone tree (same menu, amber hangar skin) */
+    const [droneTree, setDroneTree] = useState(false);
+    const closeDrones = useCallback(() => setDroneTree(false), []);
+    /** mastery ranks last seen, so a rank up gets one feed line and a banner */
+    const rankPrev = useRef<{ s: State | null; n: number }>({ s: null, n: 0 });
     const labPrev = useRef<{ s: State | null; seen: boolean; compiled: number }>({ s: null, seen: false, compiled: 0 });
     // stable on purpose: the tree's modal effect re-runs whenever this changes, and this component re-renders ten times a second
     const closeTree = useCallback(() => setTreeOpen(false), []);
@@ -323,7 +329,7 @@ export function NodeFarm() {
     // ---- news lines: every so often one short line (past operator, operator, node note, hint) drops into the feed,
     // chosen for how far the farm has got. Skipped when the tab is hidden, a window is open, or the feed is busy.
     const busyRef = useRef(false);
-    busyRef.current = !!win || treeOpen || !!away || !!confirm;
+    busyRef.current = !!win || treeOpen || droneTree || !!away || !!confirm;
     useEffect(() => {
         if (!ready) return;
         let to: ReturnType<typeof setTimeout>;
@@ -472,6 +478,14 @@ export function NodeFarm() {
                     if (made > 0) feedStore.batch("drone", (n, sum) => droneToks(sum, s.armed.length, !s.drones.some((x) => x > 0)), made, 4000);
                 }
                 dronePrev.current = { s, presses: s.life.presses, manual: 0 };
+                // zone mastery: a rank up gets a feed line and a banner (only for ranks earned while this save is loaded)
+                const rp = rankPrev.current;
+                const rn = masteryRanks(s);
+                if (rp.s === s && rn > rp.n) {
+                    feedStore.push([...call(idTok("hangar"), "mastery", [num(`+${rn - rp.n}`)]), pun(" → "), strTok(`${rn} ranks, +${rn - rp.n} Core${rn - rp.n === 1 ? "" : "s"}`)], { tone: "hot", type: true });
+                    juice.emit({ t: "milestone", title: "Zone mastery up", sub: `Your posted Drones earned a rank. ${rn} ranks so far; spend the Core in the drone tree.` });
+                }
+                rankPrev.current = { s, n: rn };
             }
             if (++tickN.current % 10 === 0 && s.perks.auto > 0) autoBuy(s);
             const d = derive(s);
@@ -987,7 +1001,7 @@ export function NodeFarm() {
             )}
             {toast && <div className="nf-toast" role="status"><NfIcon name="spark" /> Goal: {toast}</div>}
 
-            <EventLayer game={g} ready={ready} enabled={evOn} busy={!!win || treeOpen || labTree || !!away || !!confirm} reduced={reduced} onEngage={evEngage} onResult={evResult} onMiss={evMiss} onDisable={() => setEvents(false)} />
+            <EventLayer game={g} ready={ready} enabled={evOn} busy={!!win || treeOpen || labTree || droneTree || !!away || !!confirm} reduced={reduced} onEngage={evEngage} onResult={evResult} onMiss={evMiss} onDisable={() => setEvents(false)} />
             <Juice reduced={reduced} />
 
             <section className="nf-pane nf-corepane" data-pane="core" aria-label="Core">
@@ -1030,7 +1044,27 @@ export function NodeFarm() {
                     />
                 )}
                 {isUnlocked(s, "aether") && (
-                    <DroneBay s={s} guided={step.target?.drone} open={!folded.drones} onToggle={() => { setFold({ ...folded, drones: !folded.drones }); sfx("tab"); }} onBuy={(k) => { if (buyDrone(s, k)) { sfx("nfBuy", { tier: k }); feedStore.push([...call(idTok("drones"), "deploy", [strTok(`T${k + 1}`)]), pun(" → "), strTok("online")], { tone: "good", type: true }); bump((n) => n + 1); } else sfx("deny"); }} />
+                    <DroneBay
+                        s={s}
+                        guided={step.target?.drone}
+                        open={!folded.drones}
+                        onToggle={() => { setFold({ ...folded, drones: !folded.drones }); sfx("tab"); }}
+                        onBuy={(k) => { if (buyDrone(s, k)) { sfx("nfBuy", { tier: k }); feedStore.push([...call(idTok("drones"), "deploy", [strTok(`T${k + 1}`)]), pun(" → "), strTok("online")], { tone: "good", type: true }); bump((n) => n + 1); } else sfx("deny"); }}
+                        onPost={(k, st) => {
+                            if (!setPost(s, k, st)) return sfx("deny");
+                            sfx("tab");
+                            feedStore.push([...call(idTok("drones"), st ? "post" : "sweep", [strTok(`T${k + 1}`), ...(st ? [pun(", "), strTok(st)] : [])]), pun(" → "), strTok(st ? `${DRONE_NAMES[k]} on station` : "patrolling armed zones")], { tone: "good" });
+                            save();
+                            bump((n) => n + 1);
+                        }}
+                        onMod={(k, m) => {
+                            if (!buyMod(s, k, m)) return sfx("deny");
+                            sfx("nfBuy", { tier: Math.min(5, k + 1) });
+                            feedStore.push([...call(idTok("drones"), "refit", [strTok(`T${k + 1}`), pun(", "), strTok(MODS[m].id)]), pun(" → "), num(`lv ${s.dr.mods[k][m]}`)], { tone: "good" });
+                            bump((n) => n + 1);
+                        }}
+                        onTree={() => { setWin(""); setTreeOpen(false); setLabTree(false); setDroneTree(true); sfx("tab"); }}
+                    />
                 )}
                 {STATS.map((def) => {
                     if (!isUnlocked(s, def.id) && def.id !== firstLocked) return null;
@@ -1113,6 +1147,23 @@ export function NodeFarm() {
                         bump((x) => x + 1);
                     }}
                     onClose={closeLab}
+                />
+            )}
+            {droneTree && (
+                <TreeMenu
+                    s={s}
+                    model={droneModel(s)}
+                    ver={`${s.dr.nodes.join(",")}|${masteryRanks(s)}`}
+                    reduced={reduced}
+                    onBuy={(id) => {
+                        if (!buyDroneNode(s, id)) return sfx("deny");
+                        sfx("nfBuy", { tier: 4 });
+                        feedStore.push([...call(idTok("hangar"), "fit", [strTok(droneNode(id).name)]), pun(" → "), strTok("installed")], { tone: "good", type: true });
+                        save();
+                        bump((x) => x + 1);
+                    }}
+                    onRespec={() => { const back = respecDrones(s); sfx("tab"); log(`Drone tree respec: ${fmt(back)} Cores back.`, "good"); save(); bump((n) => n + 1); return back; }}
+                    onClose={closeDrones}
                 />
             )}
             {treeOpen && (

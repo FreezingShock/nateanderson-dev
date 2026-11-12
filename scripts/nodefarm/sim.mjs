@@ -45,6 +45,23 @@ while (t < hours * 3600) {
         }
         // Drones: cheapest tier first, paid in Aether
         if (!process.env.NF_NODRONES && E.dronesOpen(s)) for (let k = 0; k < E.TIERS; k++) if (s.aether >= E.droneCost(s, k) * 3 && E.buyDrone(s, k)) mark("drone " + k, t);
+        // Drone hangar (NF_NOHANGAR=1 skips it): post each Drone to the open zone with the lowest mastery (newest zone wins ties),
+        // buy the cheapest mod, then the cheapest drone tree node
+        if (!process.env.NF_NODRONES && !process.env.NF_NOHANGAR && s.drones.some((x) => x > 0)) {
+            if (t % 120 < 3) {
+                const open = E.POSTABLE.filter((st) => E.isUnlocked(s, st)).sort((a, b) => E.zoneRank(s, a) - E.zoneRank(s, b) || E.POSTABLE.indexOf(b) - E.POSTABLE.indexOf(a));
+                for (let k = 0; k < E.TIERS; k++) E.setPost(s, k, s.drones[k] > 0 ? open[k % open.length] ?? null : null);
+            }
+            for (let more = true; more;) {
+                more = false;
+                let best = null;
+                for (let k = 0; k < E.TIERS; k++) for (let m = 0; m < 3; m++) if (!E.modBlock(s, k, m)) { const c = E.modCost(s, k, m); if (!best || c < best[2]) best = [k, m, c]; }
+                if (best && E.buyMod(s, best[0], best[1])) more = true;
+            }
+            for (const n of [...E.DRONE_TREE].sort((a, b) => a.cost - b.cost)) if (E.buyDroneNode(s, n.id)) mark("dnode " + n.id, t);
+            const r = E.masteryRanks(s);
+            for (const x of [1, 5, 15, 30, 45, 60, 75]) if (r >= x) mark(`mastery ${x}`, t);
+        }
         E.checkGoals(s);
         // NF_TRACE=<minutes>: print a status line every that many play minutes (to find walls and runaways)
         if (process.env.NF_TRACE && t >= (marks.nextTrace || 0)) { marks.nextTrace = t + 60 * Number(process.env.NF_TRACE); console.log("t", (t / 3600).toFixed(2), "b/s", E.fmt(E.derive(s).bytesPerSec), "ae", E.fmt(s.aether), "or", E.fmt(s.origin), "px", E.fmt(s.paradox), "ap+", E.apOnAscend(s), "asc", s.life.ascends, "tree", s.tree.length, "G", E.fmt(E.derive(s).global), "ap", s.ap, "mounts", s.mounts.join("+"), "prod", MATS_P(s)); }
