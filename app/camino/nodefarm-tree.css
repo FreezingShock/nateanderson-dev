@@ -3,7 +3,7 @@
    square beads; owned paths carry packets. The card is anchored next to the node in screen space.
    Art: scripts/naos-art/nodefarm-tree.py -> public/naos/nodefarm/tree-nodes (32 px cells, 8 per row) and tree-bg. */
 body > .nf-tm-host { position: fixed; inset: 0; z-index: 1000; }
-.ctos .nf-tm { position: fixed; inset: 0; z-index: 1000; display: block; overflow: hidden; background: #04060a; color: var(--cm-fg); font-family: var(--cm-mono); animation: nfIn .18s ease both; overscroll-behavior: contain; }
+.ctos .nf-tm { position: fixed; inset: 0; z-index: 1000; display: block; overflow: hidden; background: #04060a; color: var(--cm-fg); font-family: var(--cm-mono); overscroll-behavior: contain; }
 
 /* the backdrop (parallax layers, core halo, section nebulae) is components/nodefarm/tree-backdrop.tsx, styled in nodefarm-tree-art.css */
 
@@ -220,7 +220,19 @@ body > .nf-tm-host { position: fixed; inset: 0; z-index: 1000; }
 /* ---- floating controls, hint and readout */
 .ctos .nf-tm-zoom { position: absolute; z-index: 4; left: 12px; top: 56px; display: grid; gap: 3px; }
 .ctos .nf-tm-zoom .nf-tm-b { background: #0a0a0aee; border: 1px solid #ffffff2e; }
-.ctos .nf-tm-hint { position: absolute; z-index: 3; left: 50%; bottom: 18px; translate: -50% 0; margin: 0; padding: 7px 12px; max-width: calc(100vw - 32px); background: #06090ddd; border-left: 3px solid var(--cm-cyan); font: 600 var(--cm-ctos-t-micro)/1.3 var(--cm-mono); letter-spacing: .08em; color: var(--cm-mute); text-transform: uppercase; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; pointer-events: none; }
+/* the controls line: a shell prompt with a blinking caret on a dithered edge; it folds to "~/tree $ help" after the
+   first touch and sits in the bottom-right corner, away from the middle of the tree */
+.ctos .nf-tm-hint { position: absolute; z-index: 3; right: 16px; bottom: 16px; display: flex; align-items: center; gap: 9px; max-width: min(640px, calc(100vw - 32px)); margin: 0; padding: 9px 12px 9px 20px; background: #05080bf0; border: 1px solid #ffffff1c; border-top: 2px solid var(--cm-cyan); box-shadow: 6px 6px 0 #000a; color: var(--cm-fg); font: 500 12px/1.3 var(--cm-mono); letter-spacing: .02em; white-space: nowrap; cursor: pointer; overflow: hidden; }
+.ctos .nf-tm-hint::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 10px; background: conic-gradient(var(--cm-cyan) 25%, transparent 0 50%, var(--cm-cyan) 0 75%, transparent 0) 0 0 / 4px 4px; opacity: .7; }
+.ctos .nf-tm-hint::after { content: ""; position: absolute; inset: 0; background: repeating-linear-gradient(0deg, #ffffff07 0 1px, transparent 1px 3px); pointer-events: none; }
+.ctos .nf-tm-hint:hover { border-color: #ffffff3a; border-top-color: var(--cm-cyan); }
+.ctos .nf-tm-hint:focus-visible { outline: 2px solid var(--cm-cyan); outline-offset: 2px; }
+.ctos .nf-tm-ps { flex: none; color: var(--cm-cyan); font-weight: 700; }
+.ctos .nf-tm-hc { min-width: 0; overflow: hidden; text-overflow: ellipsis; color: #b9c4cf; animation: nfCxRow .24s steps(10, end) both; }
+.ctos .nf-tm-hc b { color: #ffc53a; font-weight: 800; }
+.ctos .nf-tm-caret { flex: none; width: 7px; height: 13px; background: var(--cm-cyan); animation: nfCaret 1.05s steps(1) infinite; }
+@keyframes nfCaret { 50% { opacity: 0; } }
+.ctos .nf-tm-toast { position: absolute; z-index: 4; left: 50%; bottom: 18px; translate: -50% 0; margin: 0; padding: 8px 14px; max-width: calc(100vw - 32px); background: #05080bf0; border-left: 3px solid var(--cm-cyan); color: var(--cm-cyan); font: 600 12px/1.3 var(--cm-mono); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; animation: nfCxRow .24s steps(10, end) both; }
 .ctos .nf-tm-totb { display: none; }
 .ctos .nf-tm-tot { position: absolute; z-index: 3; left: 16px; bottom: 16px; width: 250px; max-height: 42dvh; overflow: auto; margin: 0; padding: 10px 12px; background: #090c10e6; border: 1px solid #ffffff22; border-top: 2px solid var(--cm-cyan); box-shadow: 6px 6px 0 #000a; }
 .ctos .nf-tm-tot > div { display: flex; justify-content: space-between; gap: 10px; padding: 3px 0; font: 500 var(--cm-ctos-t-micro)/1.3 var(--cm-mono); }
@@ -241,10 +253,11 @@ body > .nf-tm-host { position: fixed; inset: 0; z-index: 1000; }
     .ctos .nf-tm-totb { display: block; position: absolute; z-index: 4; right: 12px; top: 52px; background: #0a0a0aee; border: 1px solid #ffffff2e; }
     .ctos .nf-tm-tot { display: none; left: auto; right: 12px; top: 96px; bottom: auto; }
     .ctos .nf-tm-tot[data-open] { display: block; }
-    .ctos .nf-tm-hint { bottom: calc(14px + env(safe-area-inset-bottom)); }
+    .ctos .nf-tm-hint { right: 12px; bottom: calc(12px + env(safe-area-inset-bottom)); }
+    .ctos .nf-tm-hint:not([data-min]) { left: 12px; }
 }
 @media (prefers-reduced-motion: reduce) {
-    .ctos .nf-tm, .ctos .nf-tm-card, .ctos .nf-tm-card [data-cx-i] { animation: none; }
+    .ctos .nf-tm, .ctos .nf-tm-card, .ctos .nf-tm-card [data-cx-i], .ctos .nf-tm-hc, .ctos .nf-tm-toast, .ctos .nf-tm-caret { animation: none; }
     .ctos .nf-tn[data-st="ready"]:not([data-vis="fog"])::before { animation: none; opacity: .8; }
     .ctos .nf-tn[data-flash] .nf-tn-body, .ctos .nf-tn[data-flash] .nf-tn-face::after, .ctos .nf-tn[data-new], .ctos .nf-tn-halo, .ctos .nf-tl { animation: none; }
     .ctos .nf-tl[data-st="edge"] { stroke-dasharray: none; }
@@ -253,3 +266,55 @@ body > .nf-tm-host { position: fixed; inset: 0; z-index: 1000; }
 
 /* the menu owns the whole screen: tuck the site bar and dock away while it is open */
 body.nf-tm-open .nv-top, body.nf-tm-open .cm-dock, body.nf-tm-open .nf-jb, body.nf-tm-open .nf-pops { visibility: hidden; }
+/* the site map, search and console still open above the tree */
+body.nf-tm-open .nv-scrim { z-index: 1003; }
+
+/* ---- desktop framing (Nate, 2026-11-12): the site's top-left and top-right clusters stay, the tree's own bar slots in
+   between them on the same line, and the page dock waits behind a "</> pages" tab at the bottom */
+body.nf-tm-chrome .nv-top { visibility: visible; z-index: 1001; background-color: transparent; border-color: transparent; }
+body.nf-tm-chrome .nv-top .nv-start, body.nf-tm-chrome .nv-top .nv-tools { background-color: var(--nv-bg); box-shadow: inset 0 0 0 1px var(--cm-hair-hi), 0 12px 28px rgba(0, 0, 0, .34); }
+body.nf-tm-chrome .nv-top .nv-start { box-shadow: inset 0 0 0 1px var(--cm-hair-hi), inset 3px 0 0 var(--cm-cyan), 0 12px 28px rgba(0, 0, 0, .34); }
+body.nf-tm-chrome.nf-tm-dock .cm-dock { visibility: visible; z-index: 1001; animation: nfDockIn .26s steps(6, end) both; }
+@keyframes nfDockIn { from { clip-path: inset(100% 0 0 0); } to { clip-path: inset(0); } }
+.ctos .nf-tm[data-chrome] .nf-tm-view { inset: 0; }
+.ctos .nf-tm[data-chrome] .nf-tm-bar { left: var(--tm-l); right: var(--tm-r); top: var(--tm-t); height: var(--tm-h); border-left: 3px solid #0a0a0a; box-shadow: 0 12px 28px #0007; }
+.ctos .nf-tm[data-chrome] .nf-tm-x { height: 100%; }
+.ctos .nf-tm[data-chrome] .nf-tm-zoom { left: var(--cm-gutter, 16px); top: calc(var(--tm-t) + var(--tm-h) + 14px); }
+.ctos .nf-tm-dockb { position: absolute; z-index: 4; left: 50%; bottom: 0; translate: -50% 0; display: flex; align-items: center; gap: 9px; padding: 7px 16px 9px; background: #05080bf0; border: 1px solid #ffffff22; border-bottom: 0; border-top: 2px solid var(--cm-cyan); color: var(--cm-fg); font: 700 var(--cm-ctos-t-micro)/1 var(--cm-mono); letter-spacing: .14em; text-transform: uppercase; cursor: pointer; transition: bottom .26s steps(6, end), background .15s; }
+.ctos .nf-tm-dockb i { width: 7px; height: 7px; border: solid var(--cm-cyan); border-width: 2px 2px 0 0; rotate: -45deg; translate: 0 2px; transition: rotate .2s; }
+.ctos .nf-tm-dockb:hover { background: var(--cm-cyan); color: #05070a; }
+.ctos .nf-tm-dockb:hover i { border-color: #05070a; }
+.ctos .nf-tm-dockb:focus-visible { outline: 2px solid var(--cm-cyan); outline-offset: 2px; }
+.ctos .nf-tm-dockb[aria-expanded="true"] { bottom: var(--dock-gap, 90px); border-bottom: 1px solid #ffffff22; }
+.ctos .nf-tm-dockb[aria-expanded="true"] i { rotate: 135deg; translate: 0 -2px; }
+
+/* ---- opening: a boot sequence. The layer opens from a scanline, a few real terminal lines type over a dark screen
+   that dithers away, the camera pulls back from the core and the nodes decrypt ring by ring (about 1.2 s; any key,
+   click or wheel skips). Closing collapses the layer to a line and then a point, like a CRT switching off. */
+.ctos .nf-tm[data-boot="in"] { animation: nfTmIn .3s steps(8, end) both; }
+@keyframes nfTmIn { 0% { clip-path: inset(50% 0 50% 0); } 35% { clip-path: inset(calc(50% - 1px) 0 calc(50% - 1px) 0); } 100% { clip-path: inset(0); } }
+.ctos .nf-tm[data-boot="out"] { animation: nfTmOut .34s steps(8, end) both; pointer-events: none; }
+@keyframes nfTmOut { 0% { clip-path: inset(0); } 55% { clip-path: inset(calc(50% - 1px) 0 calc(50% - 1px) 0); } 100% { clip-path: inset(calc(50% - 1px) 50% calc(50% - 1px) 50%); } }
+.ctos .nf-tm-boot { position: absolute; inset: 0; z-index: 7; pointer-events: none; }
+.ctos .nf-tm-boot::before { content: ""; position: absolute; inset: 0; background: #04060a; animation: nfBootDim .5s steps(5, end) .42s both; }
+.ctos .nf-tm-boot::after { content: ""; position: absolute; inset: 0; background: conic-gradient(#04060a 25%, transparent 0 50%, #04060a 0 75%, transparent 0) 0 0 / 4px 4px; animation: nfBootDither .7s steps(4, end) .4s both; }
+@keyframes nfBootDim { to { opacity: 0; } }
+@keyframes nfBootDither { 0% { opacity: 0; } 40% { opacity: 1; } 100% { opacity: 0; } }
+.ctos .nf-tm-boot-t { position: absolute; z-index: 1; left: 24px; bottom: 28px; display: grid; gap: 4px; padding: 12px 16px 12px 18px; background: #04060ad0; border-left: 3px solid var(--cm-cyan); font: 500 13px/1.35 var(--cm-mono); color: #9fb1c2; animation: nfBootTxt .2s steps(3, end) 1.05s both reverse; }
+.ctos .nf-tm-boot-t span { width: calc(var(--n) * 1ch); overflow: hidden; white-space: nowrap; animation: nfType calc(var(--n) * 9ms) steps(var(--n), end) var(--d) both; }
+.ctos .nf-tm-boot-t span:first-child { color: var(--cm-cyan); font-weight: 700; }
+@keyframes nfType { from { width: 0; } }
+@keyframes nfBootTxt { from { opacity: 0; } to { opacity: 1; } }
+.ctos .nf-tm[data-boot="in"] .nf-tn { animation: nfBootNode .34s steps(6, end) both; animation-delay: calc(460ms + var(--ring, 0) * 70ms); }
+.ctos .nf-tm[data-boot="in"] .nf-tn-core { animation-delay: 380ms; }
+@keyframes nfBootNode { 0% { opacity: 0; scale: .35; filter: brightness(4) saturate(0); } 55% { opacity: 1; scale: 1.08; } 100% { opacity: 1; scale: 1; filter: none; } }
+.ctos .nf-tm[data-boot="in"] .nf-tm-links { animation: nfBootFlick .5s steps(5, end) .5s both; }
+@keyframes nfBootFlick { 0% { opacity: 0; } 30% { opacity: .7; } 45% { opacity: .1; } 100% { opacity: 1; } }
+.ctos .nf-tm[data-boot="in"] .nf-tm-sec { animation: nfBootTxt .3s steps(4, end) 1s both; }
+.ctos .nf-tm[data-boot="in"] .nf-tm-bar { animation: nfBarIn .3s steps(6, end) .12s both; }
+@keyframes nfBarIn { from { clip-path: inset(0 100% 0 0); } to { clip-path: inset(0); } }
+.ctos .nf-tm[data-boot="in"] :is(.nf-tm-zoom, .nf-tm-tot, .nf-tm-totb, .nf-tm-dockb) { animation: nfBootTxt .24s steps(3, end) .9s both; }
+@media (prefers-reduced-motion: reduce) {
+    body.nf-tm-chrome.nf-tm-dock .cm-dock, .ctos .nf-tm[data-boot] { animation: none; }
+    .ctos .nf-tm-dockb, .ctos .nf-tm-dockb i { transition: none; }
+}
