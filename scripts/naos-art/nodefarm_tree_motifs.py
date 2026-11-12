@@ -726,6 +726,48 @@ def opendoor(s):
 
 # ---------------------------------------------------------------------------------------------- node table
 # key: (motif, section, size, accent). Size: s minor, m notable, l keystone. Keys are node ids in lib/nodefarm/engine.ts.
+
+# ---------------------------------------------------------------------------------------------- the deeper tree (2026-11-12)
+# Junctions, forks and ranked nodes. Most reuse motifs that were drawn but never placed; these four are new.
+@motif
+def jar(s):
+    s.rect(0.3, 0.1, 0.7, 0.2, "metal")
+    s.poly([(0.22, 0.26), (0.78, 0.26), (0.84, 0.4), (0.84, 0.86), (0.16, 0.86), (0.16, 0.4)], "dark")
+    s.poly([(0.22, 0.48), (0.78, 0.48), (0.78, 0.8), (0.22, 0.8)], "main")
+    for x, y in [(0.34, 0.6), (0.52, 0.56), (0.66, 0.68), (0.42, 0.72)]:
+        s.dot(x, y, 0.05, "acc", flat=False)
+    s.line([(0.26, 0.32), (0.26, 0.42)], 0.05, "glow")
+
+
+@motif
+def spear(s):
+    s.poly([(0.5, 0.06), (0.68, 0.34), (0.56, 0.34), (0.56, 0.4), (0.44, 0.4), (0.44, 0.34), (0.32, 0.34)], "acc")
+    s.rect(0.46, 0.4, 0.54, 0.9, "metal")
+    for i, y in enumerate((0.58, 0.72, 0.86)):
+        w = 0.12 + i * 0.06
+        s.poly([(0.5, y - 0.1), (0.5 + w, y), (0.5 - w, y)], "main")
+    s.dot(0.5, 0.2, 0.04)
+
+
+@motif
+def manifest(s):
+    s.rect(0.2, 0.14, 0.8, 0.9, "metal")
+    s.rect(0.36, 0.08, 0.64, 0.2, "dark")
+    for i in range(4):
+        y = 0.3 + i * 0.15
+        s.rect(0.28, y, 0.38, y + 0.08, "acc")
+        s.rect(0.44, y + 0.02, 0.72, y + 0.06, "ink")
+
+
+@motif
+def siren(s):
+    s.rect(0.2, 0.74, 0.8, 0.88, "dark")
+    s.poly([(0.3, 0.74), (0.3, 0.42), (0.38, 0.3), (0.62, 0.3), (0.7, 0.42), (0.7, 0.74)], "main")
+    s.rect(0.38, 0.42, 0.62, 0.66, "acc")
+    s.arc(0.04, 0.12, 0.38, 0.62, 200, 250, 0.06, "glow")
+    s.arc(0.62, 0.12, 0.96, 0.62, 290, 340, 0.06, "glow")
+    s.line([(0.5, 0.06), (0.5, 0.2)], 0.06, "glow")
+
 NODES = {
     "core": ("reactor", "core", "l", MINT),
     # signal
@@ -773,4 +815,25 @@ NODES = {
     "echo": ("echo", "anomaly", "m", PINK),
     "zeroday": ("opendoor", "anomaly", "m", PINK),
     "spike": ("spike", "anomaly", "l", PINK),
+    # the deeper tree: forks (m), ranked tips (l) and the five junctions (m, coloured by their first section)
+    "coldstart": ("burst", "signal", "m", FIRE),
+    "longhaul": ("hourglass", "signal", "m", GOLD),
+    "clockskew": ("clockx2", "signal", "l", PINK),
+    "specialist": ("gemcut", "forge", "m", PINK),
+    "generalist": ("ingot", "forge", "m", COPPER),
+    "alloy": ("voidanvil", "forge", "l", VOID),
+    "hoarder": ("jar", "systems", "m", GOLD),
+    "investor": ("mesh", "systems", "m", CYAN),
+    "archive": ("tape", "systems", "l", PINK),
+    "widenet": ("hive", "drones", "m", GOLD),
+    "spearhead": ("spear", "drones", "m", CYAN),
+    "firmware": ("floppy", "drones", "l", CYAN),
+    "storm": ("eye", "anomaly", "m", CYAN),
+    "patient": ("quietroom", "anomaly", "m", GOLD),
+    "afterimage": ("bleed", "anomaly", "l", PINK),
+    "busbar": ("bus", "signal", "m", GOLD),
+    "manifest": ("manifest", "forge", "m", MINT),
+    "nightcrew": ("pod", "systems", "m", HOT),
+    "swarmalarm": ("siren", "drones", "m", VOID),
+    "feedback": ("gainknob", "anomaly", "m", CYAN),
 }

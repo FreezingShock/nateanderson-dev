@@ -3,7 +3,7 @@
 // components/nodefarm/admin.tsx. Easy to remove: delete this file, admin.tsx, nodefarm-admin.css, and the few
 // `admin` lines in node-farm.tsx, events.tsx and components/cm/console.tsx.
 import {
-    GOALS, LAB, LAB_TUNE, MATS, PAYLOADS, PERKS, SECRETS, STATS, TIERS, TREE, TUNE, ascend, apOnAscend, derive, droneMax, exportSave, freshLab, parseSave, tick, treeFx, unlock,
+    GOALS, LAB, LAB_TUNE, MATS, PAYLOADS, PERKS, SECRETS, STATS, TIERS, TREE, TREE_FULL, TUNE, ascend, apOnAscend, derive, droneMax, exportSave, freshLab, fullTreeIds, parseSave, tick, treeFx, treeSpent, unlock,
     type MatId, type PerkDef, type State, type StatId,
 } from "./engine";
 import { LOGS } from "./story";
@@ -94,16 +94,18 @@ export function setProd(s: State, id: MatId, n: number) { s.prod[id] = Math.max(
 export function setAP(s: State, v: number) { s.ap = Math.max(0, Math.min(1e9, Math.floor(v))); }
 
 // ---- tree
-export const ownAllNodes = (s: State) => { s.tree = TREE.map((n) => n.id); };
-export const ownNoNodes = (s: State) => { s.tree = []; s.mounts = []; };
+export const ownAllNodes = (s: State) => { s.tree = fullTreeIds(); };
+export const ownNoNodes = (s: State) => { s.tree = []; s.treeLv = {}; s.mounts = []; };
 export function toggleNode(s: State, id: string): boolean {
     const had = s.tree.includes(id);
-    s.tree = had ? s.tree.filter((x) => x !== id) : [...s.tree, id];
+    const other = TREE.find((n) => n.id === id)?.excl;
+    s.tree = had ? s.tree.filter((x) => x !== id) : [...s.tree.filter((x) => x !== other), id]; // a fork swaps
+    if (had && s.treeLv) { const { [id]: _, ...rest } = s.treeLv; s.treeLv = rest; }
     if (had) s.mounts = s.mounts.slice(0, treeFx(s).mounts);
     return !had;
 }
 /** Take the tree back and give the AP back (what respec does). */
-export function refundTree(s: State) { let b = 0; for (const id of s.tree) b += TREE.find((n) => n.id === id)?.cost ?? 0; s.ap += b; ownNoNodes(s); return b; }
+export function refundTree(s: State) { const b = treeSpent(s); s.ap += b; ownNoNodes(s); return b; }
 
 // ---- perks, drones, goals, logs
 export function setPerk(s: State, id: PerkDef["id"], lvl: number) { s.perks[id] = Math.max(0, Math.min(PERKS.find((p) => p.id === id)!.max, Math.floor(lvl))); }
@@ -196,5 +198,5 @@ export function jumpEra(s: State, n: number) {
 /** What admin mode changes, for the console and panel header. */
 export const adminSummary = (s: State) => {
     const d = derive(s);
-    return { nodes: s.tree.length, nodeTotal: TREE.length, ap: s.ap, global: d.global };
+    return { nodes: s.tree.length, nodeTotal: TREE_FULL, ap: s.ap, global: d.global };
 };
