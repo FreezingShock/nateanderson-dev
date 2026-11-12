@@ -17,7 +17,7 @@ interface News {
 }
 
 /** Display name of the zone 25 material (it may be renamed). */
-const lastMat = () => statDef("core").name;
+const lastMat = () => statDef("sunstone").name;
 
 /** How far the farm has got: the index of the newest unlocked stat (0 = Bytes only, 10 = Chrono, 16 = Origin). */
 export const stageOf = (s: State) => {
