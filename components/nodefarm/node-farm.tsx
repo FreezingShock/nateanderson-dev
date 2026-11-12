@@ -6,7 +6,7 @@ import { sfx } from "@/lib/sound/sounds";
 import { setHum } from "@/lib/sound/engine";
 import { useSoundPrefs } from "@/lib/sound/use-sound";
 import {
-    TUNE, overclockMult, overclockSecs, respec, ascend, autoBuy, breach, button, buyDrone, buyNode, canAfford, buyPerk, toggleArm, checkGoals, derive, exportSave, fmt, fmtTime, fresh, getNumFmt, setNumFmt, type NumFmt, isUnlocked, offline, parseSave, press, STATS, tick,
+    TUNE, overclockMult, overclockSecs, respec, ascend, autoBuy, breach, button, buyDrone, buyNode, canAfford, buyPerk, toggleArm, checkGoals, derive, exportSave, fmt, fmtTime, fresh, getNumFmt, setNumFmt, type NumFmt, isUnlocked, parseSave, press, STATS, tick,
     apEach, dropFill, hasFeature, openDrop, setMount, statDef,
     buyLabNode, cancelCompile, compile, deploy, labNode, labOpen, payload, type PayloadId,
     buyFw, fwNode, handSeen, handover, protoDef, respecFw, setProto, type ProtoId,
@@ -21,6 +21,7 @@ import { EventLayer } from "./events";
 import { MiniHud } from "./mini-hud";
 import { RARITY, payLoot, type Loot } from "@/lib/nodefarm/events";
 import { AwayReport, type Away } from "./away";
+import { catchUp } from "@/lib/nodefarm/offline";
 import { Scenery, SceneWindow } from "./scenery";
 import dynamic from "next/dynamic";
 // The prestige tree (menu, backdrop, sprites) is the biggest piece of the game and most visits never open it, so it loads on its
@@ -321,7 +322,7 @@ export function NodeFarm() {
         const gap = (Date.now() - s.at) / 1000;
         g.current = s;
         if (gap > 60 && !first) {
-            const r = offline(s, gap);
+            const r = catchUp(s, gap);
             if (r.capped) s.life.capped += 1;
             setAway({ ...r, gap, cap: derive(s).offlineCap });
         }
@@ -449,7 +450,7 @@ export function NodeFarm() {
             setSpeed: (n) => { speedRef.current = n; },
             previewAway: (secs) => {
                 const copy = structuredClone(g.current);
-                const r = offline(copy, secs);
+                const r = catchUp(copy, secs);
                 setAway({ ...r, gap: secs, cap: derive(copy).offlineCap });
             },
             fire: (kind) => window.dispatchEvent(new CustomEvent("nf:fire", { detail: kind })),
@@ -476,7 +477,7 @@ export function NodeFarm() {
             const gap = (now - s.at) / 1000;
             s.at = now;
             if (gap > 3) {
-                const r = offline(s, gap);
+                const r = catchUp(s, gap);
                 if (gap > 60 && r.capped) s.life.capped += 1;
                 if (gap > 60) setAway({ ...r, gap, cap: derive(s).offlineCap });
             } else {
