@@ -286,6 +286,12 @@ Learned automation, in `lib/nodefarm/scripts.ts` (rules, registers `scriptStep` 
 - Feed: `cron.run("buy.sh") ×n` batched lines; script presses are kept out of the Drone sweep count (`state.auto.presses`). Console `nf cron` lists every script. Admin `nf admin max` teaches all of them (`grantScripts`).
 - Art: `scripts/naos-art/nodefarm-sched-scene.py` draws `zone-sched` (the cron room, one machine per script learned, the clock daemon at buy.sh v3) and `sched-icons` (32 px, 4 frames per script).
 - Pacing: the greedy sim bot already plays perfectly, so scripts do not change the sim; they move a real player toward the bot's numbers.
+- Batch 2 (later 2026-11-12): three scripts for the newer systems.
+  - rig.sh (Auto-rig): learned from 5 rig levels bought by hand. Every 5 s it buys one level on each ticked zone rig (cheapest key first, so Carvings spreads across its three glyphs) once you hold x2, x5, x10 or x20 of the price (`rigX`).
+  - event.sh (Auto-answer): learned from answering 3 zone events. Every 1 s it answers a Rich vein (mine now, or let it run) and a Fault (patch, or wait it out) the way you set (`vein`, `fault`).
+  - restore.sh (Auto-restore): opens after the first Handover, learned at once. It keeps copying your prestige tree (order, ranks) and perk levels; after a Handover (`hand.count` goes up) it rebuys the tree in that order as AP comes in, stopping at the first node it can't pay for, then the perks unless "rebuild perks too" is off (`restPerks`).
+- Chains (the `&&` ticks under a rule): reboot.sh can wait for a full Capacitor (`capWait`) and arm a stocked Logic bomb first (`bombFirst`); ascend.sh can arm a stocked Zero-click first (`zeroFirst`, `ascendPrep`). Once reboot.sh is learned, `watchdogStep` hands the rule to scripts.ts so the chains apply.
+- The cron room has 11 stages: crane (rig.sh), radar dish (event.sh) and tape reels (restore.sh) were added; `sched-icons` is 9 rows.
 
 ## Zone rigs (one mechanic per zone), 2026-11-12
 Every zone keeps its six buttons and has one rig: a meter, one rule, and a level track. Rules in `lib/nodefarm/rigs.ts`

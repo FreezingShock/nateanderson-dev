@@ -693,7 +693,7 @@ export interface State {
 }
 
 /** Scripts: learned automation (rules live in lib/nodefarm/scripts.ts, which registers itself in TICK_HOOKS). */
-export type ScriptId = "buy" | "reboot" | "compile" | "deploy" | "drop" | "ascend";
+export type ScriptId = "buy" | "reboot" | "compile" | "deploy" | "drop" | "ascend" | "rig" | "event" | "restore";
 export interface AutoState {
     /** manual presses per stat and tier, lifetime (buy.sh may only press tiers you pressed by hand) */
     taught: Record<string, number[]>;
@@ -726,6 +726,25 @@ export interface AutoState {
     ran: Partial<Record<ScriptId, number>>;
     /** buttons pressed by scripts, so the feed can tell them from Drone presses */
     presses: number;
+    // second batch (optional, so first-batch saves load as they are)
+    /** reboot.sh: wait for a full Capacitor (zone 03 rig); deploy a stocked Logic bomb first */
+    capWait?: boolean;
+    bombFirst?: boolean;
+    /** ascend.sh: deploy a stocked Zero-click first */
+    zeroFirst?: boolean;
+    /** rig.sh: zones whose rig it upgrades, and the reserve it keeps (times the price) */
+    rigs?: Record<string, boolean>;
+    rigX?: number;
+    /** event.sh: how it answers a Rich vein and a Fault */
+    vein?: "mine" | "run";
+    fault?: "patch" | "wait";
+    /** restore.sh: the build saved before the last Handover (tree order, ranks, perks), whether it is rebuilding, and what it rebuilds */
+    build?: string[];
+    buildLv?: Record<string, number>;
+    buildPerks?: Record<string, number>;
+    rebuild?: boolean;
+    seenHand?: number;
+    restPerks?: boolean;
 }
 /** Called at the end of every tick (and so also through time away). Scripts add themselves here. */
 export const TICK_HOOKS: ((s: State, dt: number) => void)[] = [];
@@ -1205,9 +1224,10 @@ export const eventHaste = (s: State) => 1 - Math.max(0.3, (1 - s.perks.scanner *
 // ---- Watchdog timer (auto-Reboot) and the Dead drop
 /** Press the best affordable Reboot once you hold TUNE.watchdogReserve times its price. Returns the tier pressed, or -1. */
 export function watchdogStep(s: State): number {
-    // reboot.sh (Scripts) is the same rule, learned by hand instead of bought, with its own reserve setting
-    if (!s.watchdog || !(hasFeature(s, "watchdog") || s.auto?.own.includes("reboot")) || !isUnlocked(s, "reboot")) return -1;
-    const x = s.auto?.own.includes("reboot") ? s.auto.rebootX : TUNE.watchdogReserve;
+    // once reboot.sh is learned it runs the rule itself (lib/nodefarm/scripts.ts, with the Capacitor and Logic bomb options)
+    if (s.auto?.own.includes("reboot")) return -1;
+    if (!s.watchdog || !hasFeature(s, "watchdog") || !isUnlocked(s, "reboot")) return -1;
+    const x = TUNE.watchdogReserve;
     for (let k = TIERS - 1; k >= 0; k--) {
         const b = button(s, "reboot", k);
         if (s.mult >= b.cost * x) {
