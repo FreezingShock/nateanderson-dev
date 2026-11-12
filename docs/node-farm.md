@@ -329,6 +329,6 @@ About every 8 to 14 minutes of play (first one after 8 minutes of life), one unl
   frames, drawn by `scripts/naos-art/nodefarm-rigs.py` (kit `nodefarm_rig_kit.py`) into `public/naos/nodefarm/rigs.webp`. Row
   order is `RIG_ORDER` in the script and `ART_ROWS` in rig.tsx; the state comes from the rig's meter (`artState`), Weather from
   its sky. Run the stamper after regenerating.
-- Arc links: when every rig in an arc reaches lv 3, 5 and 8 (`LINK_TUNE`), the arc's zones get x1.03, x1.06, x1.1 and the arc's
+- Arc links: when every rig in an arc reaches lv 3, 5 and 8 (`LINK_TUNE`), the arc's zones get x1.02, x1.04, x1.06 and the arc's
   named interaction turns on (`ARC_LINKS`): Hot swap (rack), Clean growth (fab), Still light (hollow), Storm pulse (deep),
   Recall (origin). The arc's level is its lowest rig level (the Glyph hall counts its lowest glyph). Shown on each rig panel.

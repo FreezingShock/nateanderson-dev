@@ -207,7 +207,7 @@ export function setRig(s: State, k: "scrub" | "aim" | "draw" | "rwAim" | "cool",
 }
 
 // ---- arc links: every rig in an arc levelled together lights the arc's link (Nate's card: milestones at lv 3, 5, 8)
-export const LINK_TUNE = { at: [3, 5, 8], mul: [1.03, 1.06, 1.1] };
+export const LINK_TUNE = { at: [3, 5, 8], mul: [1.02, 1.04, 1.06] };
 export interface ArcLink { arc: string; name: string; rule: string }
 /** One named interaction per arc, on from the first milestone. Arcs without an entry only get the output bonus. */
 export const ARC_LINKS: Record<string, ArcLink> = {
