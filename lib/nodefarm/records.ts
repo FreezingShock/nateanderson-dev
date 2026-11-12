@@ -5,7 +5,7 @@ import { SCRIPTS, auto, isOn, learnPart, scriptNext, scriptOpen } from "./script
 import { OPERATORS, archiveOf, loadSeen, pickNews } from "./news";
 import {
     GOALS, GOAL_TIERS, LAB, MATS, PAYLOADS, PERKS, SECRETS, TIER_NAMES, TREE, TREE_FULL, apOnAscend, intelRate, derive, fmt, fmtTime, goalDone, statDef, tiersDone, unlock,
-    FW, handSeen, keysOnHandover, protoDef,
+    FW, PROTOS, ROMAN, handSeen, keysOnHandover, protoDef, protoRank,
     type State,
 } from "./engine";
 import { LOGS, logNo } from "./story";
@@ -86,6 +86,7 @@ export function recordSections(s: State): RecordSection[] {
         ["Keys held", `${fmt(s.hand.keys)} · ${fmt(s.hand.keysTotal)} earned`],
         ["Firmware", `${s.hand.fw.length} / ${FW.length}`],
         ["Protocol", s.hand.proto ? `${protoDef(s.hand.proto).op}, ${protoDef(s.hand.proto).name}${s.hand.proto2 ? ` + ${protoDef(s.hand.proto2).op}` : ""}` : "none yet"],
+        ["Protocol ranks", PROTOS.map((p) => `${p.op} ${ROMAN[protoRank(s, p.id)] || "-"}`).join(" · ")],
         ["Next Handover", keysOnHandover(s) ? `+${keysOnHandover(s)} Keys` : "reach node zero"],
         ...s.hand.notes.slice(-5).reverse().map((n) => [`Note, cycle ${n.n}`, n.text] as [string, string]),
     ] });
@@ -229,6 +230,7 @@ export function nfCommand(s: State, args: string[]): NfResult {
                 row("keys", `${fmt(s.hand.keys)} held, ${fmt(s.hand.keysTotal)} earned`),
                 row("firmware", `${s.hand.fw.length}/${FW.length}`),
                 row("protocol", s.hand.proto ? `${protoDef(s.hand.proto).op.toLowerCase()} (${protoDef(s.hand.proto).name.toLowerCase()})` : "none"),
+                row("ranks", PROTOS.map((p) => `${p.op.toLowerCase()} ${ROMAN[protoRank(s, p.id)] || "-"}`).join("  ")),
                 row("next", k ? `+${k} keys, ready` : "start Origin production"),
                 ...s.hand.notes.slice(-3).reverse().map((n) => row(`cycle ${n.n}`, n.text)),
             ];

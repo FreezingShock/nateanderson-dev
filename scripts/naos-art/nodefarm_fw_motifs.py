@@ -2,7 +2,7 @@
 
 Same rules as nodefarm_tree_motifs.py: a motif draws flat parts in a 0..1 box, the shader adds ramp, outline and shadow.
 The Firmware tree is the green phosphor skin: Boot is phosphor green, Memory is amber (old tape and core memory), Relay is
-a pale cyan. Every node has its own motif; all art is original. FW_NODES maps a sprite key (the Firmware node id) to
+a pale cyan, Field (batch 2) is rose. Every node has its own motif; all art is original. FW_NODES maps a sprite key (the Firmware node id) to
 (motif, section, size, accent).
 """
 import math
@@ -239,6 +239,77 @@ def fw_corebox(s):
     s.line([(0.5, 0.8), (0.5, 0.9), (0.78, 0.9)], 0.04, "acc")
 
 
+# ---------------------------------------------------------------------------------------------- field (batch 2, rose)
+@motif
+def fw_rigmem(s):
+    # a wrench laid over a punched memory card
+    s.rect(0.14, 0.2, 0.86, 0.8, "metal")
+    s.poly([(0.14, 0.2), (0.28, 0.2), (0.14, 0.34)], DEEP)
+    for j in range(3):
+        for i in range(5):
+            if (i + j) % 2 == 0:
+                s.rect(0.24 + i * 0.12, 0.3 + j * 0.13, 0.3 + i * 0.12, 0.36 + j * 0.13, DEEP)
+    s.line([(0.24, 0.84), (0.72, 0.36)], 0.1, "main")
+    s.ring(0.62, 0.16, 0.9, 0.44, 0.07, "main")
+    s.rect(0.73, 0.14, 0.8, 0.26, "metal")
+
+
+@motif
+def fw_rod(s):
+    # a lightning rod on a mast, a bolt coming down to it
+    s.line([(0.5, 0.36), (0.5, 0.9)], 0.07, "metal")
+    s.poly([(0.44, 0.36), (0.5, 0.2), (0.56, 0.36)], "main")
+    s.rect(0.32, 0.86, 0.68, 0.94, "metal")
+    s.line([(0.86, 0.04), (0.66, 0.2), (0.78, 0.22), (0.56, 0.36)], 0.05, "acc", True)
+    s.dot(0.5, 0.22, 0.04, "glow")
+
+
+@motif
+def fw_recorder(s):
+    # the orange flight recorder box, strapped, with a little blinking light
+    s.rect(0.16, 0.26, 0.84, 0.8, "acc")
+    s.rect(0.16, 0.26, 0.84, 0.34, "main")
+    s.rect(0.16, 0.72, 0.84, 0.8, "main")
+    s.line([(0.3, 0.42), (0.7, 0.42)], 0.03, "dark")
+    s.line([(0.3, 0.52), (0.62, 0.52)], 0.03, "dark")
+    s.dot(0.72, 0.6, 0.045, "glow")
+    s.line([(0.4, 0.26), (0.4, 0.14), (0.6, 0.14), (0.6, 0.26)], 0.04, "metal")
+
+
+@motif
+def fw_fieldkit(s):
+    # an open toolbox with a screwdriver and a spanner sticking out
+    s.rect(0.1, 0.5, 0.9, 0.86, "main")
+    s.rect(0.1, 0.5, 0.9, 0.58, "metal")
+    s.line([(0.38, 0.5), (0.38, 0.4), (0.62, 0.4), (0.62, 0.5)], 0.05, "metal")
+    s.line([(0.24, 0.5), (0.32, 0.12)], 0.05, "acc")
+    s.rect(0.28, 0.08, 0.36, 0.22, "acc")
+    s.line([(0.66, 0.5), (0.78, 0.18)], 0.06, "metal")
+    s.ring(0.7, 0.06, 0.88, 0.24, 0.05, "metal")
+    s.dot(0.5, 0.7, 0.04, "glow")
+
+
+@motif
+def fw_weather(s):
+    # an eye with a storm cloud for a pupil
+    s.poly([(0.04, 0.5), (0.3, 0.24), (0.7, 0.24), (0.96, 0.5), (0.7, 0.76), (0.3, 0.76)], "metal")
+    s.ell(0.28, 0.28, 0.72, 0.72, "main")
+    s.ell(0.36, 0.38, 0.6, 0.56, PALE)
+    s.ell(0.46, 0.34, 0.66, 0.52, PALE)
+    s.line([(0.52, 0.56), (0.46, 0.64), (0.54, 0.64), (0.48, 0.72)], 0.035, "acc", True)
+
+
+@motif
+def fw_fieldop(s):
+    # a hard hat over a clipboard with a tick, walking the floor
+    s.rect(0.22, 0.42, 0.78, 0.94, "metal")
+    s.rect(0.28, 0.48, 0.72, 0.9, PALE)
+    s.line([(0.36, 0.7), (0.46, 0.8), (0.64, 0.58)], 0.06, "acc", True)
+    s.ell(0.2, 0.06, 0.8, 0.5, "main")
+    s.rect(0.12, 0.3, 0.88, 0.38, "main")
+    s.rect(0.46, 0.06, 0.54, 0.3, "glow")
+
+
 FW_NODES = {
     "fw_core": ("fw_corebox", "fwcore", "l", AMBER),
     "fw_warm": ("fw_warm", "boot", "s", AMBER),
@@ -259,4 +330,11 @@ FW_NODES = {
     "fw_dual": ("fw_dual", "relay", "m", AMBER),
     "fw_rootpath": ("fw_rootpath", "relay", "m", PHOS),
     "fw_lineage": ("fw_lineage", "relay", "l", AMBER),
+    # batch 2: the Field arm, appended so every older row keeps its place in the sheets
+    "fw_rigmem": ("fw_rigmem", "field", "s", AMBER),
+    "fw_rod": ("fw_rod", "field", "s", CYAN),
+    "fw_recorder": ("fw_recorder", "field", "s", "#ff8a3c"),
+    "fw_fieldkit": ("fw_fieldkit", "field", "m", AMBER),
+    "fw_weather": ("fw_weather", "field", "m", CYAN),
+    "fw_fieldop": ("fw_fieldop", "field", "l", PHOS),
 }
