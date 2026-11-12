@@ -4,17 +4,21 @@ import { createContext, useEffect, useLayoutEffect, useRef, type RefObject } fro
 import { cxPlay, useCodeReveal } from "@/lib/nodefarm/cx";
 import { fmt } from "@/lib/nodefarm/engine";
 import { etaText, type Step, type TipInfo } from "@/lib/nodefarm/guide";
-import { NfIcon } from "./icon";
+import { NfIcon, type NfIconName } from "./icon";
 
 // ---- the "next step" strip: always under the HUD. One line on what to do, one on why, how close you are, and a GO button
 // that opens the right zone and scrolls to the glowing button.
 export function GuideStrip({ step, onGo, onMap, mapOpen }: { step: Step; onGo: () => void; onMap: () => void; mapOpen: boolean }) {
     const pct = Math.round(step.frac * 100);
     const eta = etaText(step.eta);
+    const t = step.target;
+    // the sprite of whatever the step points at, so the strip reads at a glance (2026-11-12 refresh)
+    const icon: NfIconName = t?.drone !== undefined ? "aether" : t?.win === "tree" || t?.win === "ascend" ? "ascend" : t?.win === "goals" ? "spark" : (t?.stat as NfIconName | undefined) ?? "spark";
     return (
         <aside className="nf-guide" data-step={step.id} aria-label="Next step">
+            <span className="nf-gd-ic" aria-hidden="true"><NfIcon name={icon} large /></span>
             <div className="nf-gd-text">
-                <span className="nf-gd-k">{step.kicker}</span>
+                <span className="nf-gd-k"><span aria-hidden="true">$ next </span>{"// "}{step.kicker}</span>
                 <b className="nf-gd-t">{step.title}</b>
                 <p className="nf-gd-why">{step.why}</p>
             </div>

@@ -1,0 +1,294 @@
+/* ==========================================================================
+   Node Farm: the older windows rebuilt 2026-11-12 (Map, Goals, Records, Menu) to the Ascend window's level.
+   Parts: components/nodefarm/win-kit.tsx (nf-wk-*). Art banner on a halftone floor with a code readout, sections in
+   corner-bracket frames, dotted data lines, sharp corners, no pills. Colours come from --c on each part.
+   ========================================================================== */
+.ctos .nf-wk { display: grid; gap: 22px; }
+
+/* corner brackets: eight thin gradients, pixel sharp */
+.ctos .nf-wk-ban::before, .ctos .nf-wk-fr::before, .ctos .nf-wk-zone::before, .ctos .nf-wk-here::before {
+    --br: var(--c, var(--cm-cyan));
+    content: ""; position: absolute; inset: -1px; pointer-events: none; z-index: 2;
+    background-image:
+        linear-gradient(var(--br), var(--br)), linear-gradient(var(--br), var(--br)),
+        linear-gradient(var(--br), var(--br)), linear-gradient(var(--br), var(--br)),
+        linear-gradient(var(--br), var(--br)), linear-gradient(var(--br), var(--br)),
+        linear-gradient(var(--br), var(--br)), linear-gradient(var(--br), var(--br));
+    background-size: 12px 2px, 2px 12px, 12px 2px, 2px 12px, 12px 2px, 2px 12px, 12px 2px, 2px 12px;
+    background-position: 0 0, 0 0, 100% 0, 100% 0, 0 100%, 0 100%, 100% 100%, 100% 100%;
+    background-repeat: no-repeat;
+}
+
+/* ---- banner */
+.ctos .nf-wk-ban {
+    position: relative; min-height: 170px; overflow: hidden; display: flex; align-items: flex-start; justify-content: space-between; gap: 18px; padding: 14px 16px;
+    background: radial-gradient(circle at 50% 100%, color-mix(in srgb, var(--c) 20%, transparent) 0 1px, transparent 1.5px) 0 0 / 4px 4px, #070707;
+    border: 1px solid color-mix(in srgb, var(--c) 30%, #1c1c1c);
+}
+.ctos .nf-wk-art { position: absolute; inset: 0; pointer-events: none; }
+.ctos .nf-wk-art::after { content: ""; position: absolute; inset: 0; background: linear-gradient(90deg, #070707 0, #070707cc 18%, transparent 40%, transparent 70%, #070707aa 100%); }
+.ctos .nf-wk-art i { position: absolute; left: 50%; bottom: 0; width: 480px; height: 150px; margin-left: -240px; background: url(/naos/nodefarm/win-map.webp) 0 0 / 480px 150px no-repeat; image-rendering: pixelated; }
+.ctos .nf-wk-ban[data-art="goals"] .nf-wk-art i { background-image: url(/naos/nodefarm/win-goals.webp); }
+.ctos .nf-wk-ban[data-art="records"] .nf-wk-art i { background-image: url(/naos/nodefarm/win-records.webp); }
+.ctos .nf-wk-ban[data-art="menu"] .nf-wk-art i { background-image: url(/naos/nodefarm/win-menu.webp); }
+@media (min-width: 900px) { .ctos .nf-wk-art i { left: 58%; } }
+.ctos .nf-wk-scan { position: absolute; left: 0; right: 0; top: 0; height: 2px; background: color-mix(in srgb, var(--c) 70%, transparent); opacity: .45; animation: nfWkScan 5.2s linear infinite; pointer-events: none; }
+@keyframes nfWkScan { from { transform: translateY(0); } to { transform: translateY(170px); } }
+.ctos .nf-wk-code { position: relative; z-index: 3; margin: 0; display: grid; gap: 4px; font: 500 var(--cm-ctos-t-micro)/1.35 var(--cm-mono); letter-spacing: .1em; text-transform: uppercase; }
+.ctos .nf-wk-code > div { display: flex; gap: 10px; }
+.ctos .nf-wk-code dt { min-width: 10ch; color: var(--cm-ctos-meta); }
+.ctos .nf-wk-code dd { margin: 0; color: var(--cm-fg); }
+.ctos .nf-wk-code .nf-wk-path { color: var(--c); font-weight: 700; text-transform: none; letter-spacing: .06em; font-size: 13px; }
+.ctos .nf-wk-code .nf-wk-path::before { content: "$ cd "; color: var(--cm-ctos-meta); font-weight: 500; }
+.ctos .nf-wk-big { position: relative; z-index: 3; margin: 0; display: grid; justify-items: end; gap: 4px; text-align: right; }
+.ctos .nf-wk-big b { font: 700 clamp(28px, 5vw, 44px)/1 var(--cm-mono); color: var(--c); text-shadow: 0 0 18px color-mix(in srgb, var(--c) 40%, transparent); }
+.ctos .nf-wk-big span { font: 600 var(--cm-ctos-t-micro)/1 var(--cm-mono); letter-spacing: .14em; text-transform: uppercase; color: var(--cm-ctos-meta); }
+@media (max-width: 559px) {
+    .ctos .nf-wk-ban { flex-direction: column; min-height: 190px; }
+    .ctos .nf-wk-big { justify-items: start; text-align: left; padding: 6px 10px 6px 0; background: #070707d9; box-shadow: 10px 0 14px #070707d9; }
+    .ctos .nf-wk-art i { opacity: .8; }
+    .ctos .nf-wk-art::after { background: linear-gradient(180deg, #070707 0, #070707bb 45%, transparent 75%); }
+}
+
+.ctos .nf-wk-lead { margin: -6px 0 0; font: 400 var(--cm-ctos-t-ui)/1.5 var(--cm-display); color: var(--cm-mute); }
+.ctos .nf-wk-lead b { color: var(--cm-fg); }
+
+/* ---- frames */
+.ctos .nf-wk-fr { position: relative; display: grid; gap: 14px; align-content: start; padding: 16px 18px 18px; background: #0a0a0a; border: 1px solid color-mix(in srgb, var(--c, var(--cm-cyan)) 26%, #1c1c1c); min-width: 0; }
+.ctos .nf-wk-fh { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 12px; }
+.ctos .nf-wk-p { font: 600 var(--cm-ctos-t-micro)/1 var(--cm-mono); letter-spacing: .12em; color: var(--c, var(--cm-cyan)); }
+.ctos .nf-wk-fh .nf-wk-p { flex-basis: 100%; }
+.ctos .nf-wk-p::before { content: "// "; color: var(--cm-ctos-meta); }
+.ctos .nf-wk-fh h3 { margin: 0; font: 700 18px/1.1 var(--cm-display); letter-spacing: -.01em; color: var(--cm-fg); text-transform: lowercase; }
+.ctos .nf-wk-fa { margin-left: auto; font: 700 var(--cm-ctos-t-micro)/1 var(--cm-mono); letter-spacing: .08em; color: var(--cm-fg); font-variant-numeric: tabular-nums; }
+.ctos .nf-wk-fa em { font-style: normal; font-weight: 500; color: var(--cm-ctos-meta); text-transform: uppercase; margin-left: 6px; }
+.ctos .nf-wk-note { margin: -6px 0 0; font: 400 var(--cm-ctos-t-ui)/1.45 var(--cm-display); color: var(--cm-mute); max-width: 62ch; }
+.ctos .nf-wk-cols { display: grid; gap: 22px; }
+@media (min-width: 720px) { .ctos .nf-wk-cols { grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: start; } }
+
+/* ---- data lines: key ........ value */
+.ctos .nf-wk-dl { margin: 0; display: grid; gap: 7px; }
+.ctos .nf-wk-dl > div { display: flex; align-items: baseline; gap: 8px; min-width: 0; }
+.ctos .nf-wk-dl dt { flex: none; font: 500 var(--cm-ctos-t-micro)/1.2 var(--cm-mono); letter-spacing: .1em; text-transform: uppercase; color: var(--cm-ctos-meta); }
+.ctos .nf-wk-dl i { flex: 1 1 12px; min-width: 12px; border-bottom: 2px dotted #ffffff1f; translate: 0 -3px; }
+.ctos .nf-wk-dl dd { margin: 0; min-width: 0; text-align: right; font: 700 13px/1.25 var(--cm-mono); color: var(--cm-fg); font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+
+/* ---- buttons */
+.ctos .nf-wk-btn { justify-self: start; min-height: 40px; padding: 0 16px; background: #111; border: 1px solid color-mix(in srgb, var(--c, var(--cm-cyan)) 45%, #1c1c1c); color: var(--cm-fg); font: 700 var(--cm-ctos-t-micro)/1 var(--cm-mono); letter-spacing: .12em; text-transform: uppercase; cursor: pointer; }
+.ctos .nf-wk-btn::before { content: "> "; white-space: pre; color: var(--c, var(--cm-cyan)); }
+.ctos .nf-wk-btn.is-main { background: var(--c, var(--cm-cyan)); border-color: var(--c, var(--cm-cyan)); color: #0a0a0a; }
+.ctos .nf-wk-btn.is-main::before { color: #0a0a0a; }
+@media (hover: hover) { .ctos .nf-wk-btn:hover { background: var(--cm-fg); border-color: var(--cm-fg); color: #0a0a0a; } .ctos .nf-wk-btn:hover::before { color: #0a0a0a; } }
+.ctos .nf-wk-btn:focus-visible, .ctos .nf-wk-nodes button:focus-visible, .ctos .nf-wk-cfg button:focus-visible, .ctos .nf-wk-chain button:focus-visible, .ctos .nf-wk-loglist button:focus-visible, .ctos .nf-wk-hold:focus-visible { outline: 2px solid var(--c, var(--cm-cyan)); outline-offset: 2px; }
+@media (hover: none) { .ctos .nf-wk-btn { min-height: 44px; } }
+
+/* ==== Goals: tiers as circuit rails */
+.ctos .nf-wk-tiers { display: grid; gap: 18px; }
+.ctos .nf-wk-tier.is-full { box-shadow: 0 0 0 1px color-mix(in srgb, var(--c) 45%, transparent), 0 0 26px color-mix(in srgb, var(--c) 12%, transparent); }
+.ctos .nf-wk-tier.is-dim { opacity: .62; }
+.ctos .nf-wk-rail { display: grid; gap: 12px; }
+.ctos .nf-wk-nodes { position: relative; list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(var(--n), minmax(0, 1fr)); }
+/* the trace: a segment from each node to the next, lit when both ends are done */
+.ctos .nf-wk-nodes li::before { content: ""; position: absolute; z-index: -1; left: 50%; width: 100%; top: 50%; height: 2px; margin-top: -1px; background: repeating-linear-gradient(90deg, #ffffff26 0 4px, transparent 4px 7px); }
+.ctos .nf-wk-nodes li:last-child::before { content: none; }
+.ctos .nf-wk-nodes li[data-done]:has(+ li[data-done])::before { background: var(--c); box-shadow: 0 0 8px color-mix(in srgb, var(--c) 60%, transparent); }
+.ctos .nf-wk-nodes li { position: relative; z-index: 1; display: grid; place-items: center; }
+.ctos .nf-wk-nodes button {
+    position: relative; display: grid; place-items: center; width: 52px; height: 52px; padding: 0; cursor: pointer;
+    background: #0d0d0d; border: 1px solid #ffffff1c; box-shadow: 0 0 0 4px #0a0a0a;
+    transition: transform .12s steps(3), border-color .12s steps(3);
+}
+.ctos .nf-wk-nodes .nf-ic { filter: grayscale(1) brightness(.55); }
+.ctos .nf-wk-nodes li[data-done] button { background: color-mix(in srgb, var(--c) 16%, #0a0a0a); border-color: var(--c); box-shadow: 0 0 0 4px #0a0a0a, 0 0 14px color-mix(in srgb, var(--c) 35%, transparent); }
+.ctos .nf-wk-nodes li[data-done] .nf-ic { filter: none; }
+.ctos .nf-wk-nodes li[data-next] button { border-color: color-mix(in srgb, var(--c) 65%, transparent); animation: nfWkNext 1.8s steps(6) infinite; }
+.ctos .nf-wk-nodes li[data-next] .nf-ic { filter: grayscale(.4) brightness(.85); }
+@keyframes nfWkNext { 0%, 100% { box-shadow: 0 0 0 4px #0a0a0a, 0 0 0 5px color-mix(in srgb, var(--c) 25%, transparent); } 50% { box-shadow: 0 0 0 4px #0a0a0a, 0 0 0 7px color-mix(in srgb, var(--c) 45%, transparent); } }
+.ctos .nf-wk-nodes li[data-on] button { transform: translateY(-3px); outline: 1px solid var(--cm-fg); outline-offset: 3px; }
+/* progress fills the left edge of a node, bottom up */
+.ctos .nf-wk-ring { position: absolute; left: -1px; bottom: -1px; top: -1px; width: 3px; background: #ffffff10; }
+.ctos .nf-wk-ring i { position: absolute; left: 0; right: 0; bottom: 0; background: var(--c); }
+.ctos .nf-wk-tick { position: absolute; right: -7px; top: -7px; display: grid; place-items: center; width: 18px; height: 18px; background: var(--c); color: #0a0a0a; }
+.ctos .nf-wk-read { margin: 0; display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px; padding: 9px 12px; background: #070707; border-left: 3px solid var(--c); font: 400 var(--cm-ctos-t-micro)/1.4 var(--cm-mono); color: var(--cm-ctos-meta); min-height: 40px; }
+.ctos .nf-wk-read-k { color: var(--c); font-weight: 700; letter-spacing: .06em; }
+.ctos .nf-wk-read b { font: 700 var(--cm-ctos-t-ui)/1.2 var(--cm-display); color: var(--cm-fg); }
+.ctos .nf-wk-read-t { flex: 1 1 180px; }
+.ctos .nf-wk-read em { font-style: normal; font-weight: 700; color: var(--cm-fg); font-variant-numeric: tabular-nums; }
+@media (max-width: 559px) {
+    .ctos .nf-wk-nodes button { width: 40px; height: 40px; }
+    .ctos .nf-wk-nodes .nf-ic { --s: 32px; zoom: .875; }
+    .ctos .nf-wk-fr { padding: 14px 12px 14px; }
+}
+.ctos .nf-wk-sec .nf-wk-nodes li:not([data-done]) .nf-ic { filter: brightness(.6); }
+
+/* ==== Records */
+.ctos .nf-wk-bigs { margin: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1px; background: #1c1c1c; border: 1px solid #1c1c1c; }
+@media (min-width: 720px) { .ctos .nf-wk-bigs { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+.ctos .nf-wk-bigs > div { position: relative; padding: 14px 14px 12px; background: #0a0a0a; min-width: 0; }
+.ctos .nf-wk-bigs > div::before { content: ""; position: absolute; left: 0; right: 0; top: 0; height: 4px; background: repeating-conic-gradient(var(--c) 0 25%, transparent 0 50%) 0 0 / 4px 4px; opacity: .6; }
+.ctos .nf-wk-bigs dt { font: 600 var(--cm-ctos-t-micro)/1 var(--cm-mono); letter-spacing: .12em; text-transform: uppercase; color: var(--cm-ctos-meta); }
+.ctos .nf-wk-bigs dd { margin: 8px 0 0; font: 700 clamp(20px, 3vw, 28px)/1 var(--cm-mono); color: var(--c); font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.ctos .nf-wk-logs { display: grid; gap: 14px; }
+@media (min-width: 720px) { .ctos .nf-wk-logs { grid-template-columns: minmax(200px, 260px) minmax(0, 1fr); align-items: start; } }
+.ctos .nf-wk-loglist { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; max-height: 340px; overflow: auto; overscroll-behavior: contain; scrollbar-width: thin; }
+@media (max-width: 719px) { .ctos .nf-wk-loglist { grid-template-columns: repeat(2, minmax(0, 1fr)); max-height: 220px; } }
+.ctos .nf-wk-loglist button { width: 100%; display: flex; align-items: baseline; gap: 10px; min-height: 34px; padding: 6px 10px; background: #0d0d0d; border: 0; border-left: 2px solid transparent; color: var(--cm-fg); text-align: left; cursor: pointer; font: 400 var(--cm-ctos-t-micro)/1.25 var(--cm-mono); }
+.ctos .nf-wk-loglist button span { color: var(--c); font-weight: 700; }
+.ctos .nf-wk-loglist button b { font-weight: 500; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ctos .nf-wk-loglist button[data-lock] { color: var(--cm-ctos-meta); }
+.ctos .nf-wk-loglist button[data-lock] span { color: var(--cm-ctos-meta); }
+.ctos .nf-wk-loglist button[aria-pressed="true"] { background: color-mix(in srgb, var(--c) 14%, #0a0a0a); border-left-color: var(--c); }
+@media (hover: hover) { .ctos .nf-wk-loglist button:hover { background: #161616; } }
+.ctos .nf-wk-logbody { position: relative; min-height: 180px; padding: 16px 18px; background: #050605; border: 1px solid color-mix(in srgb, var(--c) 25%, #1c1c1c); background-image: repeating-linear-gradient(0deg, transparent 0 3px, #ffffff05 3px 4px); }
+.ctos .nf-wk-logh { margin: 0 0 12px; font: 700 var(--cm-ctos-t-micro)/1.2 var(--cm-mono); letter-spacing: .12em; color: var(--c); }
+.ctos .nf-wk-logt { margin: 0; max-width: 62ch; font: 400 15px/1.6 var(--cm-mono); color: var(--cm-fg); }
+.ctos .nf-wk-logt.is-lock { color: var(--cm-ctos-meta); }
+.ctos .nf-wk-caret { display: inline-block; width: 8px; height: 1em; margin-left: 4px; vertical-align: -2px; background: var(--c); animation: nfWkCaret 1s steps(1) infinite; }
+@keyframes nfWkCaret { 50% { opacity: 0; } }
+.ctos .nf-wk-logf { margin: 14px 0 0; font: 500 var(--cm-ctos-t-micro)/1 var(--cm-mono); letter-spacing: .1em; color: var(--cm-ctos-meta); text-align: right; }
+
+/* ==== Menu */
+.ctos .nf-wk-menu .nf-wk-fr:first-child { grid-column: 1 / -1; }
+.ctos .nf-wk-cfg { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
+.ctos .nf-wk-cfg li > button {
+    width: 100%; display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px; min-height: 44px; padding: 10px 12px; cursor: pointer; text-align: left;
+    background: #0d0d0d; border: 0; border-left: 2px solid #ffffff1c; color: var(--cm-fg); font: 400 14px/1.3 var(--cm-mono);
+}
+.ctos .nf-wk-cfg li > button[aria-checked="true"] { border-left-color: var(--c); }
+.ctos .nf-wk-box { display: inline-flex; flex: none; color: var(--c); font-weight: 700; white-space: pre; }
+.ctos .nf-wk-box::before { content: "["; color: var(--cm-ctos-meta); }
+.ctos .nf-wk-box::after { content: "]"; color: var(--cm-ctos-meta); }
+.ctos .nf-wk-k { min-width: 7ch; color: var(--cm-fg); }
+.ctos .nf-wk-eq { color: var(--cm-ctos-meta); }
+.ctos .nf-wk-cfg b { min-width: 3ch; color: var(--c); }
+.ctos .nf-wk-cfg li > button[aria-checked="false"] b { color: #ff8cbc; }
+.ctos .nf-wk-c { flex: 1 1 200px; color: var(--cm-ctos-meta); font-size: var(--cm-ctos-t-micro); }
+@media (hover: hover) { .ctos .nf-wk-cfg li > button:hover { background: #161616; } }
+.ctos .nf-wk-term { display: grid; gap: 0; background: #050605; border: 1px solid color-mix(in srgb, var(--c) 25%, #1c1c1c); }
+.ctos .nf-wk-term-h { padding: 8px 10px; border-bottom: 1px solid #ffffff12; font: 600 var(--cm-ctos-t-micro)/1 var(--cm-mono); letter-spacing: .06em; color: var(--cm-ctos-meta); }
+.ctos .nf-wk-term-h span { color: var(--c); }
+.ctos .nf-wk-term textarea { width: 100%; padding: 10px; background: transparent; border: 0; color: var(--c); font: 400 16px/1.4 var(--cm-mono); resize: vertical; word-break: break-all; }
+.ctos .nf-wk-term textarea::placeholder { color: #ffffff44; }
+.ctos .nf-wk-term textarea:focus-visible { outline: 1px solid var(--c); outline-offset: -1px; }
+.ctos .nf-wk-acts { display: flex; flex-wrap: wrap; gap: 8px; }
+.ctos .nf-wk-msg { margin: 0; font: 400 var(--cm-ctos-t-ui)/1.4 var(--cm-mono); color: var(--c); }
+/* hold to wipe: fills left to right while held */
+.ctos .nf-wk-hold { position: relative; overflow: hidden; justify-self: start; min-height: 46px; min-width: 220px; padding: 0 18px; background: #140a0e; border: 1px solid #ff2d8a88; color: #ff8cbc; font: 700 var(--cm-ctos-t-micro)/1 var(--cm-mono); letter-spacing: .14em; text-transform: uppercase; cursor: pointer; touch-action: none; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
+.ctos .nf-wk-hold > span { position: relative; z-index: 1; }
+.ctos .nf-wk-hold-fill { position: absolute; inset: 0; transform-origin: 0 50%; transform: scaleX(0); background: repeating-linear-gradient(90deg, #ff2d8a 0 6px, #c21f68 6px 8px); }
+.ctos .nf-wk-hold[data-hold] .nf-wk-hold-fill { transform: scaleX(1); transition: transform var(--hold) linear; }
+.ctos .nf-wk-hold[data-hold] > span, .ctos .nf-wk-hold[data-armed] > span { color: #fff; }
+.ctos .nf-wk-hold[data-armed] { background: #ff2d8a; color: #0a0a0a; }
+@media (hover: hover) { .ctos .nf-wk-hold:hover { border-color: #ff2d8a; } }
+
+/* ==== Map: the signal tower */
+.ctos .nf-wk-here { position: relative; display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; padding: 12px 16px; background: #0a0c0d; border: 1px solid color-mix(in srgb, var(--cm-cyan) 35%, #1c1c1c); --c: var(--cm-cyan); }
+.ctos .nf-wk-here-k { padding: 4px 8px; background: var(--cm-cyan); color: #0a0a0a; font: 700 var(--cm-ctos-t-micro)/1 var(--cm-mono); letter-spacing: .14em; }
+.ctos .nf-wk-here b { font: 700 18px/1.15 var(--cm-display); color: var(--cm-fg); text-transform: lowercase; }
+.ctos .nf-wk-here .nf-bar { --c: var(--cm-cyan); flex: 1 1 120px; max-width: 260px; margin-left: auto; }
+.ctos .nf-wk-here em { font: 700 var(--cm-ctos-t-micro)/1 var(--cm-mono); font-style: normal; color: var(--cm-cyan); }
+.ctos .nf-wk-tower { display: grid; gap: 18px; }
+@media (min-width: 820px) { .ctos .nf-wk-tower { grid-template-columns: minmax(0, 1fr) minmax(0, 1.05fr); align-items: start; } .ctos .nf-wk-zone { position: sticky; top: 50px; } }
+.ctos .nf-wk-chain { position: relative; list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+/* the trunk running down through every node */
+.ctos .nf-wk-chain::before { content: ""; position: absolute; left: 25px; top: 20px; bottom: 20px; width: 2px; background: repeating-linear-gradient(0deg, #ffffff2a 0 4px, transparent 4px 7px); }
+.ctos .nf-wk-chain li { position: relative; }
+.ctos .nf-wk-chain li[data-state="done"]::after { content: ""; position: absolute; left: 25px; top: 50%; bottom: -10px; width: 2px; background: var(--c); box-shadow: 0 0 8px color-mix(in srgb, var(--c) 55%, transparent); }
+.ctos .nf-wk-chain li:last-child::after { content: none; }
+.ctos .nf-wk-chain button { position: relative; z-index: 1; width: 100%; display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 12px; padding: 4px 10px 4px 4px; min-height: 52px; background: transparent; border: 1px solid transparent; color: var(--cm-fg); text-align: left; cursor: pointer; }
+.ctos .nf-wk-chain button[aria-pressed="true"] { background: color-mix(in srgb, var(--c) 9%, #0a0a0a); border-color: color-mix(in srgb, var(--c) 45%, transparent); }
+.ctos .nf-wk-cn { display: grid; place-items: center; width: 44px; height: 44px; background: #0d0d0d; border: 1px solid #ffffff1c; box-shadow: 0 0 0 4px #0b0b0b; }
+.ctos .nf-wk-chain li[data-state="done"] .nf-wk-cn { border-color: var(--c); background: color-mix(in srgb, var(--c) 14%, #0a0a0a); }
+.ctos .nf-wk-chain li[data-state="locked"] .nf-wk-cn .nf-ic { filter: brightness(.45); }
+.ctos .nf-wk-chain li[data-state="next"] .nf-wk-cn .nf-ic { filter: grayscale(.6) brightness(.8); }
+.ctos .nf-wk-cl { display: grid; gap: 2px; min-width: 0; }
+.ctos .nf-wk-cl b { font: 700 15px/1.15 var(--cm-display); text-transform: lowercase; }
+.ctos .nf-wk-cl small { font: 400 var(--cm-ctos-t-micro)/1.2 var(--cm-mono); color: var(--cm-ctos-meta); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ctos .nf-wk-chain li[data-state="locked"] .nf-wk-cl b { color: var(--cm-ctos-meta); }
+.ctos .nf-wk-ct { font: 700 var(--cm-ctos-t-micro)/1 var(--cm-mono); letter-spacing: .1em; text-transform: uppercase; color: var(--cm-ctos-meta); }
+.ctos .nf-wk-chain li[data-state="done"] .nf-wk-ct { color: var(--c); }
+.ctos .nf-wk-chain li[data-here] .nf-wk-ct { padding: 4px 6px; background: var(--cm-cyan); color: #0a0a0a; animation: nfWkHere 1.6s steps(2) infinite; }
+.ctos .nf-wk-chain li[data-here] .nf-wk-cn { border-color: var(--cm-cyan); animation: nfWkNext 1.8s steps(6) infinite; --c: var(--cm-cyan); }
+@keyframes nfWkHere { 50% { background: #0a0a0a; color: var(--cm-cyan); box-shadow: inset 0 0 0 1px var(--cm-cyan); } }
+@media (hover: hover) { .ctos .nf-wk-chain button:hover { border-color: #ffffff22; } }
+.ctos .nf-wk-zone { position: relative; display: grid; gap: 14px; padding: 16px 18px 18px; background: #0a0a0a; border: 1px solid color-mix(in srgb, var(--c) 30%, #1c1c1c); }
+.ctos .nf-wk-zh { display: flex; align-items: center; gap: 14px; }
+.ctos .nf-wk-zh h3 { margin: 0; font: 700 clamp(20px, 3vw, 26px)/1.05 var(--cm-display); text-transform: lowercase; letter-spacing: -.02em; color: var(--cm-fg); }
+.ctos .nf-wk-zh small { display: block; margin-top: 4px; font: 500 var(--cm-ctos-t-micro)/1.2 var(--cm-mono); letter-spacing: .08em; color: var(--c); }
+.ctos .nf-wk-zone[data-state="locked"] .nf-ic, .ctos .nf-wk-zone[data-state="next"] .nf-ic { filter: grayscale(.6) brightness(.7); }
+.ctos .nf-wk-zf { margin: 0; font: 400 var(--cm-ctos-t-ui)/1.5 var(--cm-display); color: var(--cm-mute); }
+.ctos .nf-wk-zone .nf-bar { --c: var(--cm-cyan); }
+.ctos .nf-wk-beyond { grid-template-columns: minmax(0, 1fr); }
+@media (min-width: 900px) { .ctos .nf-wk-beyond { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+.ctos .nf-wk-fr .nf-bar, .ctos .nf-wk-rail .nf-bar { --c: inherit; }
+.ctos .nf-wk-branches { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+@media (min-width: 720px) { .ctos .nf-wk-branches { grid-template-columns: repeat(5, minmax(0, 1fr)); } }
+.ctos .nf-wk-branches li { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 6px 8px; padding: 10px; background: #0d0d0d; border-top: 2px solid var(--c); }
+.ctos .nf-wk-branches b { font: 700 var(--cm-ctos-t-ui)/1 var(--cm-mono); text-transform: uppercase; letter-spacing: .06em; color: var(--c); }
+.ctos .nf-wk-branches em { font: 700 var(--cm-ctos-t-micro)/1 var(--cm-mono); font-style: normal; color: var(--cm-fg); }
+.ctos .nf-wk-branches .nf-bar { grid-column: 1 / -1; }
+.ctos .nf-wk-branches small { grid-column: 1 / -1; font: 400 var(--cm-ctos-t-micro)/1.35 var(--cm-mono); color: var(--cm-ctos-meta); }
+
+/* ==== phone: windows sit inline under the tabs, so give them a solid panel over the scenery */
+@media (max-width: 999px) {
+    .ctos .nf .nf-sidepane { position: relative; z-index: 1; padding: 14px 12px 18px; background: #0b0b0b; border: 1px solid #ffffff1a; box-shadow: 0 0 0 4px #000a; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .ctos .nf-wk-scan, .ctos .nf-wk-caret, .ctos .nf-wk-nodes li[data-next] button, .ctos .nf-wk-chain li[data-here] .nf-wk-ct, .ctos .nf-wk-chain li[data-here] .nf-wk-cn { animation: none !important; }
+}
+
+/* ==== next step strip: a sprite tile for what it points at, and a code kicker */
+.ctos .nf-gd-ic { display: none; }
+@media (min-width: 560px) {
+    .ctos .nf-guide { grid-template-columns: auto minmax(0, 1fr); }
+    .ctos .nf-gd-ic { display: grid; place-items: center; grid-row: span 3; align-self: center; width: 76px; height: 76px; background: radial-gradient(circle, color-mix(in srgb, var(--cm-cyan) 30%, transparent) .9px, transparent 1.4px) 0 0 / 4px 4px, #070809; border: 1px solid color-mix(in srgb, var(--cm-cyan) 40%, #1c1c1c); }
+    .ctos .nf-guide > :not(.nf-gd-ic) { grid-column: 2; }
+}
+@media (min-width: 900px) {
+    .ctos .nf-guide { grid-template-columns: auto minmax(0, 1.5fr) minmax(220px, 1fr) auto; }
+    .ctos .nf-gd-ic { grid-row: auto; }
+    .ctos .nf-guide > :not(.nf-gd-ic) { grid-column: auto; }
+}
+.ctos .nf-gd-k > span { color: var(--cm-ctos-meta); letter-spacing: .06em; }
+
+/* ==== Drone bay: a dithered pad under each sprite in its colour, columns that line up, a coloured buy button */
+.ctos .nf-dr-list li { position: relative; background: linear-gradient(90deg, color-mix(in srgb, var(--c) 7%, #0a0a0a), #0a0a0a 40%); }
+.ctos .nf-dr-list li > .nf-sp-d { position: relative; }
+.ctos .nf-dr-list li::before { content: ""; position: absolute; left: 10px; top: 50%; width: 64px; height: 30px; margin-top: 4px; pointer-events: none; background: radial-gradient(circle, color-mix(in srgb, var(--c) 55%, transparent) .9px, transparent 1.4px) 0 0 / 4px 4px; -webkit-mask-image: radial-gradient(closest-side, #000 30%, transparent); mask-image: radial-gradient(closest-side, #000 30%, transparent); opacity: .35; }
+.ctos .nf-dr-list li[data-on]::before { opacity: .9; }
+@media (min-width: 560px) {
+    .ctos .nf-dr-list li { grid-template-columns: auto minmax(0, 1fr) 132px 180px; }
+    .ctos .nf-dr-list .nf-mini { width: 100%; }
+}
+.ctos .nf-dr-list .nf-mini:not(:disabled) { background: color-mix(in srgb, var(--c) 18%, #0d0d0d); border-color: var(--c); color: var(--cm-fg); }
+@media (hover: hover) { .ctos .nf-dr-list .nf-mini:not(:disabled):hover { background: var(--c); color: #0a0a0a; } }
+.ctos .nf-dr-pips i[data-f] { box-shadow: 0 0 6px color-mix(in srgb, var(--c) 50%, transparent); }
+
+/* ==== unlock and milestone banners: a strip pinned under the site bar, the board's width (left and width set in components/nodefarm/juice.tsx) */
+html body .nf-jb { left: var(--jb-left, 8px); top: 64px; translate: none; width: var(--jb-w, min(92vw, 560px)); min-height: 56px; padding: 8px 18px 8px 10px; gap: 14px; border-left-width: 4px; }
+html body .nf-jb:not([data-first]) { width: var(--jb-w, min(92vw, 420px)); padding: 6px 18px 6px 10px; min-height: 48px; }
+html body .nf-jb .nf-jb-t { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 14px; }
+html body .nf-jb .nf-jb-t b { font-size: clamp(14px, 2.6vw, 18px); }
+html body .nf-jb .nf-jb-t span { flex: 1 1 200px; }
+html body .nf-jb .nf-ic.l { --s: 32px; }
+/* while a game window is open the strip waits underneath it */
+body.nf-win-open .nf-jb { z-index: 59; }
+@media (max-width: 559px) { html body .nf-jb .nf-jb-t span { display: none; } }
+
+/* Menu additions (#170 features in the config look) */
+.ctos .nf-wk-cfg li > button:disabled { cursor: default; opacity: .7; }
+.ctos .nf-wk-cfgrow > label, .ctos .nf-wk-cfgrow > div { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; min-height: 44px; padding: 8px 12px; background: #0d0d0d; border-left: 2px solid #ffffff1c; font: 400 14px/1.3 var(--cm-mono); color: var(--cm-fg); }
+.ctos .nf-wk-cfgrow .nf-wk-box { color: var(--cm-ctos-meta); }
+.ctos .nf-wk-cfgrow input[type="range"] { flex: 1 1 160px; accent-color: var(--c); min-height: 28px; }
+.ctos .nf-wk-pick { display: inline-flex; flex-wrap: wrap; gap: 4px; }
+.ctos .nf-wk-pick button { min-height: 32px; padding: 0 10px; background: #111; border: 1px solid #ffffff1c; color: var(--cm-mute); font: 600 12px/1 var(--cm-mono); cursor: pointer; }
+.ctos .nf-wk-pick button[aria-pressed="true"] { border-color: var(--c); color: var(--c); }
+.ctos .nf-wk-pick button:focus-visible { outline: 2px solid var(--c); outline-offset: 2px; }
+@media (hover: none) { .ctos .nf-wk-pick button { min-height: 44px; } }
+.ctos .nf-wk-btn[data-armed] { background: #ff2d8a; border-color: #ff2d8a; color: #0a0a0a; }
+.ctos .nf-wk-file { position: relative; display: inline-flex; align-items: center; }
+.ctos .nf-wk-file input { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; font-size: 16px; }
+.ctos .nf-wk-file:focus-within { outline: 2px solid var(--c, var(--cm-cyan)); outline-offset: 2px; }
+.ctos .nf-wk-backup { display: grid; gap: 10px; padding-top: 12px; border-top: 1px dashed #ffffff1c; }
+@media (hover: none) { .ctos .nf-wk-keys { display: none; } }

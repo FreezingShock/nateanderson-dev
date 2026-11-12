@@ -1,13 +1,16 @@
 "use client";
 
-import { BRANCHES, GOALS, GOAL_TIERS, PERKS, STATS, TIER_NAMES, TREE, TUNE, amount, apEach, apOnAscend, canAscend, derive, droneCost, dronesOpen, fmt, goalDone, hasNode, isUnlocked, tiersDone, MATS, type MatId, type State, type StatId } from "@/lib/nodefarm/engine";
+import { useRef, useState, type CSSProperties } from "react";
+import { BRANCHES, GOALS, GOAL_TIERS, STATS, TIER_NAMES, TREE, TUNE, amount, apEach, apOnAscend, canAscend, derive, droneCost, dronesOpen, fmt, goalDone, hasNode, isUnlocked, tiersDone, MATS, type MatId, type State, type StatId } from "@/lib/nodefarm/engine";
 import { feedLine, nextStep, unlockInfo } from "@/lib/nodefarm/guide";
 import { LORE } from "@/lib/nodefarm/lore";
 import { NfIcon, type NfIconName } from "./icon";
+import { DataLines, Frame, WinBanner } from "./win-kit";
 
 type D = ReturnType<typeof derive>;
+type Stand = "done" | "ready" | "next" | "locked";
 
-/** Where each stat stands: done (running), ready (open but nothing built yet) or locked. */
+/** Where each stat stands: done (running), ready (open but nothing built yet), next (the one being decrypted) or locked. */
 function standing(s: State, id: StatId): "done" | "ready" | "locked" {
     if (!isUnlocked(s, id)) return "locked";
     if (id === "bytes") return "done";
@@ -15,125 +18,129 @@ function standing(s: State, id: StatId): "done" | "ready" | "locked" {
     if (id === "reboot") return s.reboot > 0 || s.life.reboots > 0 ? "done" : "ready";
     return s.prod[id as MatId] > 0 ? "done" : "ready";
 }
+const TAG: Record<Stand, string> = { done: "online", ready: "open", next: "decrypting", locked: "encrypted" };
 
-/** The whole farm on one screen: the chain from Bytes to Chrono, the Ascend gate and Drones, and the prestige tree. */
+/** The whole farm on one screen (rebuilt 2026-11-12): the chain drawn as a signal tower, Bytes at the base and Chrono at the
+ *  top, with YOU ARE HERE on the zone being worked on and a readout of the picked zone beside it. Then the systems beyond
+ *  the chain (Ascend, Drones, Goals) and the prestige tree's sections. */
 export function MapPanel({ s, d, onTree, onWin }: { s: State; d: D; onTree: () => void; onWin: (w: "ascend" | "goals") => void }) {
     const step = nextStep(s, d);
-    const stand = STATS.map((x) => standing(s, x.id));
-    const frontier = stand.findIndex((x) => x !== "done");
-    const total = STATS.length;
-    const online = stand.filter((x) => x === "done").length;
+    const raw = STATS.map((x) => standing(s, x.id));
+    const frontier = raw.findIndex((x) => x !== "done");
+    const stand: Stand[] = raw.map((x, i) => (x === "locked" && i === frontier ? "next" : x));
+    const online = raw.filter((x) => x === "done").length;
     const goals = GOALS.filter((g) => goalDone(s, g)).length;
     const owned = TREE.filter((n) => hasNode(s, n.id)).length;
+    const here = frontier < 0 ? STATS.length - 1 : frontier;
+    const [sel, setSel] = useState<number | null>(null);
+    const zone = useRef<HTMLElement>(null);
+    const pick = sel ?? here;
+    const def = STATS[pick];
+    const st = stand[pick];
+    const u = st === "next" || st === "locked" ? unlockInfo(s, def.id) : null;
+    const rate = def.id === "bytes" ? d.bytesPerSec : (MATS as readonly string[]).includes(def.id) ? d.rates[def.id as MatId] : 0;
+    const prev = STATS[pick - 1];
 
     return (
-        <div className="nf-sys nf-map">
-            <header className="nf-sys-h">
-                <h3>Progress map</h3>
-                <p>The whole farm in one place: what is running, what is next, and what each part does. {online} of {total} zones online, {owned} of {TREE.length} tree nodes, {goals} of {GOALS.length} goals.</p>
-            </header>
+        <div className="nf-sys nf-wk nf-map">
+            <WinBanner
+                art="map"
+                color="#2fd8e8"
+                readout={[
+                    ["~/map", ""],
+                    ["ZONES", `${online} / ${STATS.length} online`],
+                    ["TREE", `${owned} / ${TREE.length} nodes`],
+                    ["GOALS", `${goals} / ${GOALS.length}`],
+                ]}
+            />
 
-            <p className="nf-mp-now" aria-label="Current step">
-                <span>YOU ARE HERE</span> <b>{step.title}</b> <em>{Math.round(step.frac * 100)}%</em>
-            </p>
+            <section className="nf-wk-here" data-cx-i="1" aria-label="Current step">
+                <span className="nf-wk-here-k">YOU ARE HERE</span>
+                <b>{step.title}</b>
+                <span className="nf-bar sm" aria-hidden="true"><i style={{ width: `${Math.round(step.frac * 100)}%` }} /></span>
+                <em>{Math.round(step.frac * 100)}%</em>
+            </section>
 
-            <h4 className="nf-mp-h">Signal chain <small>Bytes at the bottom, Chrono at the top. Each zone boosts the one before it.</small></h4>
-            <ol className="nf-mp-chain" aria-label="Signal chain">
-                {[...STATS].map((def, i) => ({ def, i })).reverse().map(({ def, i }) => {
-                    const st = stand[i];
-                    const isNext = i === frontier;
-                    const u = st === "locked" ? unlockInfo(s, def.id) : null;
-                    const rate = def.id === "bytes" ? d.bytesPerSec : (MATS as readonly string[]).includes(def.id) ? d.rates[def.id as MatId] : 0;
-                    const prev = STATS[i - 1];
-                    return (
-                        <li key={def.id} className="nf-mp" data-state={st} data-next={isNext ? "" : undefined} style={{ ["--c" as string]: def.color }}>
-                            <span className="nf-mp-rail" aria-hidden="true"><i /></span>
-                            <span className="nf-mp-ic"><NfIcon name={st === "locked" ? "lock" : (def.id as NfIconName)} responsive /></span>
-                            <div className="nf-mp-t">
-                                <b>{def.name} <em>{def.short}</em></b>
-                                <small>{LORE[def.id].zone} // {def.role}</small>
-                            </div>
-                            <div className="nf-mp-d">
-                                {st === "done" && (
-                                    <>
-                                        <b>{fmt(amount(s, def.id))}{rate > 0 && <span> · +{fmt(rate)}/s</span>}</b>
-                                        <small>{feedLine(def.id, s, d)}</small>
-                                    </>
-                                )}
-                                {st === "ready" && (
-                                    <>
-                                        <b>Open</b>
-                                        <small>{def.id === "reboot" ? "Press a Reboot button to begin." : "Build your first node."}</small>
-                                    </>
-                                )}
-                                {u && isNext && (
-                                    <>
-                                        <b>Next · {Math.round(u.frac * 100)}%</b>
-                                        <small>Unlocks at: {u.label.charAt(0).toLowerCase() + u.label.slice(1)}.</small>
-                                        <span className="nf-bar sm" aria-hidden="true"><i style={{ width: `${u.frac * 100}%` }} /></span>
-                                    </>
-                                )}
-                                {u && !isNext && (
-                                    <>
-                                        <b>Encrypted</b>
-                                        <small>Opens after {prev ? prev.name : "the one before"}.</small>
-                                    </>
-                                )}
-                            </div>
-                            {isNext && <span className="nf-mp-tag">NEXT</span>}
-                        </li>
-                    );
-                })}
-            </ol>
+            <div className="nf-wk-tower" data-cx-i="2">
+                <ol className="nf-wk-chain" aria-label="Signal chain, Chrono at the top, Bytes at the base">
+                    {STATS.map((x, i) => ({ x, i })).reverse().map(({ x, i }) => {
+                        const k = stand[i];
+                        return (
+                            <li key={x.id} data-state={k} data-here={i === here ? "" : undefined} style={{ ["--c" as string]: x.color } as CSSProperties}>
+                                <button type="button" aria-pressed={i === pick} onClick={() => { setSel(i); if (matchMedia("(max-width: 819px)").matches) setTimeout(() => zone.current?.scrollIntoView({ block: "nearest", behavior: "smooth" }), 40); }} onPointerEnter={(e) => { if (e.pointerType === "mouse") setSel(i); }}>
+                                    <span className="nf-wk-cn"><NfIcon name={k === "locked" ? "lock" : (x.id as NfIconName)} /></span>
+                                    <span className="nf-wk-cl">
+                                        <b>{k === "locked" ? "????" : x.name}</b>
+                                        <small>{k === "locked" ? "encrypted" : LORE[x.id].zone}</small>
+                                    </span>
+                                    <span className="nf-wk-ct">{i === here ? "you are here" : TAG[k]}</span>
+                                </button>
+                            </li>
+                        );
+                    })}
+                </ol>
 
-            <h4 className="nf-mp-h">Beyond the chain <small>Where the run goes once it is running.</small></h4>
-            <div className="nf-mp-cards">
-                <section className="nf-mp-card" style={{ ["--c" as string]: "#6bffc9" }}>
-                    <b>Ascend</b>
-                    <p>Wipes the run, keeps goals, perks and the tree, and pays Ascension Points. Each AP adds +{Math.round(apEach(s) * 100)}% to everything.</p>
+                <article ref={zone} className="nf-wk-zone" data-state={st} style={{ ["--c" as string]: def.color } as CSSProperties} aria-live="polite">
+                    <span className="nf-wk-p">zone.{String(pick).padStart(2, "0")} // {st === "locked" ? "encrypted" : LORE[def.id].code}</span>
+                    <div className="nf-wk-zh">
+                        <NfIcon name={st === "locked" ? "lock" : (def.id as NfIconName)} large />
+                        <div>
+                            <h3>{st === "locked" ? "Encrypted zone" : def.name}</h3>
+                            <small>{st === "locked" ? `Opens after ${prev ? prev.name : "the one before"}.` : `${LORE[def.id].zone} // ${def.short}`}</small>
+                        </div>
+                    </div>
+                    {st !== "locked" && <p className="nf-wk-zf">{LORE[def.id].flavor}</p>}
+                    {st === "done" && (
+                        <DataLines rows={[
+                            ["held", fmt(amount(s, def.id))],
+                            ...(rate > 0 ? [["output", `+${fmt(rate)}/s`] as [string, string]] : []),
+                            ["feeds", feedLine(def.id, s, d)],
+                        ]} />
+                    )}
+                    {st === "ready" && <DataLines rows={[["status", "open"], ["to do", def.id === "reboot" ? "press a Reboot button" : "build your first node"]]} />}
+                    {u && st === "next" && (
+                        <>
+                            <DataLines rows={[["unlock", u.label], ["progress", `${fmt(u.cur)} / ${fmt(u.need)} ${u.unit}`]]} />
+                            <span className="nf-bar" aria-hidden="true"><i style={{ width: `${u.frac * 100}%` }} /></span>
+                        </>
+                    )}
+                    {st === "locked" && <DataLines rows={[["status", "encrypted"], ["key", `decrypt ${prev ? prev.name : "the zone below"} first`]]} />}
+                </article>
+            </div>
+
+            <div className="nf-wk-cols nf-wk-beyond">
+                <Frame i={3} color="#6bffc9" path="sys/ascend" title="Ascend" note={<>Wipes the run, keeps goals, perks and the tree, and pays AP. Each AP adds +{Math.round(apEach(s) * 100)}% to everything.</>}>
                     <span className="nf-bar sm" aria-hidden="true"><i style={{ width: `${Math.min(100, (s.aether / TUNE.ascendAether) * 100)}%` }} /></span>
-                    <small>{canAscend(s) ? `Ready: +${fmt(apOnAscend(s))} AP now.` : `${fmt(s.aether)} / ${fmt(TUNE.ascendAether)} Aether to open it.`}</small>
-                    <button type="button" className="nf-mini" onClick={() => onWin("ascend")}>Open Ascend</button>
-                </section>
-                <section className="nf-mp-card" style={{ ["--c" as string]: "#2fd8e8" }}>
-                    <b>Drones</b>
-                    <p>Press buttons for you, even while you are away. Bought with Aether, one line per button tier.</p>
-                    <small>{!dronesOpen(s) ? "Mine your first Aether to open the bay." : s.drones.some((x) => x > 0) ? (() => { const n = s.drones.reduce((a, x) => a + x, 0); return `${n} level${n === 1 ? "" : "s"} built.`; })() : `First Drone costs ${fmt(droneCost(s, 0))} Aether.`}</small>
-                </section>
-                <section className="nf-mp-card" style={{ ["--c" as string]: "#ffc53a" }}>
-                    <b>Goals</b>
-                    <p>Every goal adds +{TUNE.achBonus * 100}% to everything, and a finished tier adds +{TUNE.tierBonus * 100}%.</p>
+                    <DataLines rows={[["status", canAscend(s) ? `ready, +${fmt(apOnAscend(s))} AP` : `${fmt(s.aether)} / ${fmt(TUNE.ascendAether)} Aether`]]} />
+                    <button type="button" className="nf-wk-btn" onClick={() => onWin("ascend")}>Open Ascend</button>
+                </Frame>
+                <Frame i={4} color="#ff4d6d" path="sys/drones" title="Drones" note="Press buttons for you, even while you are away. Bought with Aether, one line per button tier.">
+                    <DataLines rows={[["status", !dronesOpen(s) ? "mine your first Aether" : s.drones.some((x) => x > 0) ? `${s.drones.reduce((a, x) => a + x, 0)} levels built` : `first costs ${fmt(droneCost(s, 0))} AE`]]} />
+                </Frame>
+                <Frame i={5} color="#ffc53a" path="sys/goals" title="Goals" note={<>Each goal adds +{TUNE.achBonus * 100}% to everything, a finished tier +{TUNE.tierBonus * 100}%.</>}>
                     <span className="nf-bar sm" aria-hidden="true"><i style={{ width: `${(goals / GOALS.length) * 100}%` }} /></span>
-                    <small>{goals} of {GOALS.length} done, tier {Math.min(GOAL_TIERS, tiersDone(s) + 1)} ({TIER_NAMES[Math.min(GOAL_TIERS, tiersDone(s) + 1)]}) next.</small>
-                    <button type="button" className="nf-mini" onClick={() => onWin("goals")}>Open Goals</button>
-                </section>
+                    <DataLines rows={[["done", `${goals} / ${GOALS.length}`], ["next tier", TIER_NAMES[Math.min(GOAL_TIERS, tiersDone(s) + 1)]]]} />
+                    <button type="button" className="nf-wk-btn" onClick={() => onWin("goals")}>Open Goals</button>
+                </Frame>
             </div>
 
-            <h4 className="nf-mp-h">Prestige tree <small>{owned} of {TREE.length} nodes, bought with AP in the tree menu.</small></h4>
-            <div className="nf-mp-tree">
-                {BRANCHES.map((b) => {
-                    const mine = TREE.filter((n) => n.branch === b.id);
-                    const have = mine.filter((n) => hasNode(s, n.id)).length;
-                    return (
-                        <section key={b.id} className="nf-mp-branch" style={{ ["--c" as string]: b.color }} aria-label={`${b.name} section`}>
-                            <header><b>{b.name}</b><small>{have}/{mine.length}</small></header>
-                            <p>{b.blurb}</p>
-                            <span className="nf-bar sm" aria-hidden="true"><i style={{ width: `${(have / mine.length) * 100}%` }} /></span>
-                        </section>
-                    );
-                })}
-            </div>
-            <div className="nf-mp-sel" data-state="open">
-                <div>
-                    <span>PRESTIGE TREE</span>
-                    <b>{fmt(s.ap)} AP to spend</b>
-                    <p>A web of {TREE.length} upgrades in five sections. Pan and zoom to explore it. Nothing in it resets.</p>
-                </div>
-                <div className="nf-mp-sel-a">
-                    <button type="button" className="nf-mini" onClick={onTree}>Open tree</button>
-                </div>
-            </div>
-            {PERKS.length > 0 && <p className="nf-mp-foot">Perks (Power core, Autoloader, Standby cells and more) are bought in the Ascend window.</p>}
+            <Frame i={6} color="#2fd8e8" className="nf-wk-treefr" path="sys/tree" title="Prestige tree" aside={<>{fmt(s.ap)} AP to spend</>} note={`${owned} of ${TREE.length} nodes in five sections, bought with AP. Nothing in it resets.`}>
+                <ul className="nf-wk-branches">
+                    {BRANCHES.map((b) => {
+                        const mine = TREE.filter((n) => n.branch === b.id);
+                        const have = mine.filter((n) => hasNode(s, n.id)).length;
+                        return (
+                            <li key={b.id} style={{ ["--c" as string]: b.color } as CSSProperties}>
+                                <b>{b.name}</b>
+                                <span className="nf-bar sm" aria-hidden="true"><i style={{ width: `${(have / mine.length) * 100}%` }} /></span>
+                                <em>{have}/{mine.length}</em>
+                                <small>{b.blurb}</small>
+                            </li>
+                        );
+                    })}
+                </ul>
+                <button type="button" className="nf-wk-btn is-main" onClick={onTree}>Open tree</button>
+            </Frame>
         </div>
     );
 }
