@@ -270,7 +270,7 @@ def mult_backdrop(a, f):
 
 
 MULT = [  # (cx, cy-from-floor, r) per stage; heights ~ 8, 12, 16, 22, 30, 40, 56
-    (18, 4, 4.4), (38, 6, 6.6), (62, 8, 8.8), (90, 11, 12), (256, 15, 16), (204, 20, 21), (142, 24, 26),
+    (64, 4, 4.4), (78, 6, 6.6), (96, 8, 8.8), (120, 11, 12), (266, 15, 16), (222, 20, 21), (164, 24, 26),
 ]
 
 
@@ -299,8 +299,10 @@ def mult_stage(stage, f):
         if i == 5:
             # six petal cells around the module (honeycomb), lit in a chase
             for k in range(6):
+                if k in (0, 3):
+                    continue
                 ang = math.pi / 3 * k
-                px, py = cx + math.cos(ang) * r * 1.42, cy + math.sin(ang) * r * 1.42
+                px, py = cx + math.cos(ang) * r * 1.3, cy + math.sin(ang) * r * 1.3
                 if py + 5 > GY:
                     continue
                 a.set(line(cx, cy, px, py, 1.2), col("lime", 1))
@@ -313,14 +315,11 @@ def mult_stage(stage, f):
             a.fill(hexm(cx, cy, 4.5 + tri(f) * 1.5), 0.6 + 0.4 * tri(f), "cyan")
             a.set(hexm(cx, cy, 1.6), col("wh", 4))
         if i == 4:
-            meter(a, cx - r - 6, GY - 1, 7, f, 11)
             meter(a, cx + r + 3, GY - 1, 5, f, 12)
         if i == 6:
             # cyan status strip and amber meters on the plinth
-            meter(a, cx - r - 10, GY - 1, 9, f, 21)
             meter(a, cx - r - 6, GY - 1, 11, f, 22)
             meter(a, cx + r + 4, GY - 1, 10, f, 23)
-            meter(a, cx + r + 8, GY - 1, 8, f, 24)
             for k in range(5):
                 on = (f + k) % 3 == 0
                 a.set(rect(cx - 6 + k * 3, GY - 3, cx - 4 + k * 3, GY - 2), col("cyan", 4 if on else 2))
@@ -404,7 +403,7 @@ def reboot_backdrop(a, f):
     a.haze(rect(0, GY + 1, W, H) & (((xx - yy) // 3) % 2 == 0), col("rn", 1), 0.7)
 
 
-REBOOT = [(16, 4), (36, 6), (60, 8), (90, 11), (256, 15), (204, 20), (142, 21)]  # (cx, radius-ish)
+REBOOT = [(64, 4), (78, 6), (97, 8), (124, 11), (264, 15), (222, 20), (166, 21)]  # (cx, radius-ish)
 
 
 def reboot_stage(stage, f):
@@ -609,7 +608,7 @@ def copper_backdrop(a, f):
         lamps(a, [pts[-1]], f + k, ["rn", "red", "cu"])
 
 
-COPPER = [(16, 8), (38, 7), (64, 9), (94, 0), (260, 0), (204, 14), (126, 0)]  # (cx, ingot size); 0 = special
+COPPER = [(64, 8), (79, 7), (100, 9), (124, 0), (266, 0), (220, 12), (164, 0)]  # (cx, ingot size); 0 = special
 
 
 def trace_path(stage):
