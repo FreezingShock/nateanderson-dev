@@ -13,6 +13,7 @@ import type { NfLive } from "@/lib/nodefarm/records";
 import { Core, type CoreFeed } from "./core";
 import { NfIcon } from "./icon";
 import { EventLayer } from "./events";
+import { RARITY, payLoot, type Loot } from "@/lib/nodefarm/events";
 import { AwayReport, type Away } from "./away";
 import { Scenery, SceneWindow } from "./scenery";
 import dynamic from "next/dynamic";
@@ -535,14 +536,16 @@ export function NodeFarm() {
         [log, feedStore],
     );
 
-    // ---- quick-time events (components/nodefarm/events.tsx): a win gives the timed Overclock, a miss costs nothing
+    // ---- quick-time events (components/nodefarm/events.tsx): a win gives the timed Overclock plus its loot roll, a miss costs nothing
     const evResult = useCallback(
-        (def: { title: string }, won: boolean) => {
+        (def: { title: string }, won: boolean, loot?: Loot | null) => {
             const s = g.current;
             if (won) {
                 const r = breach(s);
+                if (loot) payLoot(s, loot);
                 bump((x) => x + 1);
                 log(`${def.title.toUpperCase()} CLEARED. Overclock x${fmt(overclockMult(s))} ${r.stacked ? `extended to ${Math.round(s.overclock)} s` : `for ${Math.round(overclockSecs(s))} s`}.`, "good");
+                if (loot) log(`LOOT // ${RARITY[loot.rarity].name.toUpperCase()}: ${loot.label}.`, loot.rarity >= 3 ? "hot" : "good");
                 if (r.zero) log(`ZERO-DAY: ${fmt(r.zero.bytes ?? 0)} Bytes and 10 minutes of every material paid out.`, "good");
                 if (r.echo) log("ECHO: something knocked back. Another event is coming.", "hot");
                 return { echo: r.echo };
