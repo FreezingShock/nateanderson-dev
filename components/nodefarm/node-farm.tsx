@@ -123,7 +123,8 @@ export function NodeFarm() {
     const [fwTree, setFwTree] = useState(false);
     const closeFw = useCallback(() => setFwTree(false), []);
     const treeOpenRef = useRef(false);
-    treeOpenRef.current = treeOpen;
+    // a full-screen tree (prestige, Exploit Lab, Drone, Firmware) hides the board, so the game loop barely re-renders it
+    treeOpenRef.current = treeOpen || labTree || droneTree || fwTree;
 
     // admin mode (lib/nodefarm/admin.ts): turned on from the naOS console with `nf admin on`; unadvertised
     const [adminOn, setAdminOn] = useState(false);
@@ -569,8 +570,8 @@ export function NodeFarm() {
                 sfx("nfGoal");
                 setTimeout(() => setToast((t) => (t === goal.name ? null : t)), 3200);
             }
-            // the full-screen tree hides the board, so it only needs to follow twice a second (the game itself still ticks ten times a second)
-            if (!treeOpenRef.current || tickN.current % 5 === 0) bump((n) => n + 1);
+            // a full-screen tree hides the board, so the page only needs to follow once a second (the game itself still ticks ten times a second)
+            if (!treeOpenRef.current || tickN.current % 10 === 0) bump((n) => n + 1);
         }, 100);
         return () => {
             clearInterval(iv);
