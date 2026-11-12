@@ -990,7 +990,7 @@ def rn_backdrop(b, f):
 
 # ------------------------------------------------------------------------------------------- layout and output
 # Sprite centres on the 288 px floor, small to big left to right (the panel crops the scene on its left, so the newest stay in view).
-X = {1: 58, 2: 72, 3: 90, 4: 116, 5: 150, 6: 196, 7: 254}
+X = {1: 66, 2: 80, 3: 97, 4: 121, 5: 153, 6: 198, 7: 244}
 ZONES = {
     "silicon": (si_sprite, si_backdrop),
     "quartz": (qz_sprite, qz_backdrop),
