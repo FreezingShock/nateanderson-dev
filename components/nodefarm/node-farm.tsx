@@ -14,8 +14,8 @@ import {
 } from "@/lib/nodefarm/engine";
 import type { NfLive } from "@/lib/nodefarm/records";
 import { Core, freshCoreFeed, type CoreFeed } from "./core";
-import { PART_WHY, chromaOpen, coreLook, corePreview } from "@/lib/nodefarm/core-look";
-import { PART_ORDER } from "@/lib/nodefarm/core-parts";
+import { PART_WHY, SKIN_WHY, coreLook, corePreview, skinOpen } from "@/lib/nodefarm/core-look";
+import { PART_ORDER, SKINS } from "@/lib/nodefarm/core-parts";
 import { NfIcon } from "./icon";
 import { EventLayer } from "./events";
 import { MiniHud } from "./mini-hud";
@@ -39,7 +39,7 @@ import { FeedStore, buyToks, call, com, droneToks, fromText, id as idTok, num, p
 import { markSeen, newsToks, pickNews } from "@/lib/nodefarm/news";
 import { LORE } from "@/lib/nodefarm/lore";
 import { LOGS, logNo, recoverLogs } from "@/lib/nodefarm/story";
-import { Juice, juice, checkMilestones } from "./juice";
+import { Juice, juice, checkMilestones, onJuice } from "./juice";
 import { GuideStrip, Tip, TipCtx, type TipApi, type TipState } from "./guide";
 import { MapPanel } from "./map";
 import { exact, nextStep, type Target } from "@/lib/nodefarm/guide";
@@ -288,7 +288,11 @@ export function NodeFarm() {
         [],
     );
     const feed = useRef<CoreFeed>(freshCoreFeed());
-    const chromaWas = useRef<boolean | null>(null);
+    const skinsWas = useRef<boolean[] | null>(null);
+    // the core flares on milestones, unlocks and tier-ups
+    useEffect(() => onJuice((e) => {
+        if (e.t === "milestone" || e.t === "unlock" || e.t === "tier") feed.current.flareAt = performance.now();
+    }), []);
     const saved = useRef(0);
     const warnedSave = useRef(false);
     const tickN = useRef(0);
@@ -563,7 +567,10 @@ export function NodeFarm() {
             const look = coreLook(s);
             const partsWas = f.parts;
             f.zone = look.zone;
-            f.chroma = look.chroma;
+            f.skin = look.skin;
+            f.event = look.event;
+            f.rigs = look.rigs;
+            f.fw = look.fw;
             f.parts = look.parts;
             f.drones = look.drones;
             f.glyphs = look.glyphs;
@@ -573,9 +580,13 @@ export function NodeFarm() {
                 if (added.length > 2) feedStore.push([...call(idTok("core"), "attach", [num(added.length)]), txt(" "), com("// structures restored")], { tone: "good", type: true });
                 else for (const p of added) feedStore.push([...call(idTok("core"), "attach", [strTok(p)]), txt(" "), com(`// ${PART_WHY[p]}`)], { tone: "good", type: true });
             }
-            const chroma = chromaOpen(s);
-            if (chromaWas.current === false && chroma) feedStore.push([...call(idTok("core"), "unlock", [strTok("chroma")]), txt(" "), com("// nf core chroma in the console")], { tone: "hot", type: true });
-            chromaWas.current = chroma;
+            // a core skin unlocking says so once, with the command that turns it on
+            const skins = SKINS.map((k) => skinOpen(s, k));
+            if (skinsWas.current)
+                SKINS.forEach((k, i) => {
+                    if (k !== "zone" && skins[i] && !skinsWas.current![i]) feedStore.push([...call(idTok("core"), "unlock", [strTok(k)]), txt(" "), com(`// ${SKIN_WHY[k]}. nf core ${k} in the console`)], { tone: "hot", type: true });
+                });
+            skinsWas.current = skins;
             if (prevUnlocked.current && f.unlocked > prevUnlocked.current) sfx("nfDecrypt");
             prevUnlocked.current = f.unlocked;
             setHum(humRef.current ? { level: Math.min(1, f.speed * 0.75 + (f.unlocked / 7) * 0.25), boost: f.overclock } : null);

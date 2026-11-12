@@ -33,8 +33,16 @@ export interface CoreFrame {
     prevZone: number;
     /** 0..1 dither dissolve from prevZone to zone */
     zoneMix: number;
-    /** chroma: the core cycles through every unlocked zone's colours */
-    chroma: boolean;
+    /** index into SKINS: 0 zone colours, 1 chroma, 2 aurora, 3 gold, 4 mono */
+    skin: number;
+    /** 0..1 strength of a flare (a milestone or unlock just happened): a shockwave and a brighter body */
+    flare: number;
+    /** running zone event, index + 1 in CORE_EVENTS (0 = none) */
+    event: number;
+    /** rig level per zone (lights the rig rack on the frame) */
+    rigs: number[];
+    /** 0..1 share of the Firmware owned (lights the Handover shell) */
+    fw: number;
     /** PART bitmask */
     parts: number;
     /** 0..1 per part: how far each part has built in (index = PART_ORDER position) */
@@ -69,6 +77,12 @@ const STEEL: RGB[] = [[12, 15, 22], [38, 44, 58], [76, 86, 108], [128, 142, 166]
 const CH_ZONE = 0;
 const CH_STEEL = 1;
 const CH_STAT = 2; // + stat index
+const CH_EVENT = 40; // the running zone event's colour
+
+const GOLD: RGB[] = [[30, 18, 4], [96, 60, 10], [178, 124, 26], [255, 197, 58], [255, 242, 204]];
+const MONO: RGB[] = [[10, 10, 10], [36, 36, 36], [98, 98, 96], [206, 206, 198], [244, 244, 236]];
+/** zone event colours (surge, clearance, resonance, vein, fault), the same as lib/nodefarm/zoneevents.ts */
+export const EVENT_COLORS = ["#2fd8e8", "#b6f04a", "#b46bff", "#ffc53a", "#ff5a4a"];
 
 // ---- geometry, computed once
 
@@ -130,9 +144,12 @@ export interface CoreRenderer {
 }
 
 /** One renderer per canvas. `statColors` is the stat list's colours in order (zone 01 first). */
-export function makeCoreRenderer(statColors: string[]): CoreRenderer {
+export function makeCoreRenderer(statColors: string[], eventColors: string[] = EVENT_COLORS): CoreRenderer {
     const NS = statColors.length;
     const ZR: RGB[][] = statColors.map((c, i) => (i === 0 ? CYAN : ramp(hex(c))));
+    const ER: RGB[][] = eventColors.map((c) => ramp(hex(c)));
+    // aurora: curtains of Aether, Pulsars, Nebula and Voidsteel
+    const AUR: RGB[][] = ["#6bffc9", "#64e6ff", "#ff8ad8", "#9a7bff"].map((c) => ramp(hex(c)));
     const V = new Float32Array(N);
     const CA = new Float32Array(104), SA = new Float32Array(104), AMP = new Float32Array(104);
     // the corona turns slowly, so it is traced ten times a second and replayed in between
@@ -278,7 +295,7 @@ export function makeCoreRenderer(statColors: string[]): CoreRenderer {
     };
 
     // how much the radial core shrinks to make room, by number of parts built
-    const KS = [1, 0.95, 0.9, 0.87, 0.85, 0.82, 0.8, 0.79, 0.78, 0.77];
+    const KS = [1, 0.95, 0.9, 0.87, 0.85, 0.82, 0.8, 0.79, 0.78, 0.77, 0.77, 0.77];
 
     return {
         draw(out, f, t) {
@@ -290,7 +307,7 @@ export function makeCoreRenderer(statColors: string[]): CoreRenderer {
             // the core pulls back to make room as structures bolt on (smoothly, while a part builds in)
             let n = 0;
             for (const p of PART_ORDER) n += smooth(bd(p));
-            const K = KS[Math.floor(n)] + (KS[Math.min(9, Math.floor(n) + 1)] - KS[Math.floor(n)]) * (n - Math.floor(n));
+            const K = KS[Math.floor(n)] + (KS[Math.min(KS.length - 1, Math.floor(n) + 1)] - KS[Math.floor(n)]) * (n - Math.floor(n));
             const iK = 1 / K;
             const HO = 70 * K; // outer edge of the halo
             const pulse = f.pulse;
@@ -472,14 +489,17 @@ export function makeCoreRenderer(statColors: string[]): CoreRenderer {
             }
 
             // ---- sparks falling into the core
-            const ns = 5 + Math.round(f.speed * 14);
+            const ev = f.event;
+            const spCh = ev === 1 || ev === 4 ? CH_EVENT : CH_ZONE; // a surge or a rich vein colours the sparks
+            const ns = 5 + Math.round(f.speed * 14) + (ev === 1 ? 10 : ev === 4 ? 6 : 0) + Math.round(f.flare * 16);
+            const spd = ev === 1 ? 2 : 1;
             for (let k = 0; k < ns; k++) {
-                const ph = (t * (0.22 + hash(k) * 0.2) + hash(k + 40)) % 1;
+                const ph = (t * (0.22 + hash(k) * 0.2) * spd + hash(k + 40)) % 1;
                 const r = (74 - ph * 36) * K;
                 const ang = hash(k + 80) * TAU + ph * 1.6;
                 const v = 0.45 + ph * 0.55;
-                under(cx + Math.cos(ang) * r, cy + Math.sin(ang) * r, v, CH_ZONE);
-                under(cx + Math.cos(ang - 0.05) * (r + 2), cy + Math.sin(ang - 0.05) * (r + 2), v * 0.5, CH_ZONE);
+                under(cx + Math.cos(ang) * r, cy + Math.sin(ang) * r, v, spCh);
+                under(cx + Math.cos(ang - 0.05) * (r + 2), cy + Math.sin(ang - 0.05) * (r + 2), v * 0.5, spCh);
             }
 
             // ---- code glyphs (Scripts), back half: on a flat orbit just past the halo
@@ -506,6 +526,14 @@ export function makeCoreRenderer(statColors: string[]): CoreRenderer {
                 nodes.push(Math.cos(na) * 45, Math.sin(na) * 45, k % NS);
             }
             const pr = 14 + (1 - pulse) * 50;
+            const fl = f.flare;
+            // Handover shell: a slow twelve-sided cage between the body and the tick ring, one facet lit per twelfth of the Firmware
+            const shell = bd("shell");
+            const shSeg = TAU / 12, shRot = t * 0.06, shLit = Math.round(f.fw * 12), shR = 47.4 - (1 - smooth(shell)) * 8;
+            // events: surge rings out from the centre, clearance sweeps like radar, resonance wobbles a ring, fault flickers the rim
+            const evPr = 14 + ((t * 1.1) % 1) * 52;
+            const sweep = (t * 2.4) % TAU;
+            const faultOn = ev === 5 && Math.floor(t * 9) % 3 === 0;
             for (let i = 0; i < N; i++) {
                 const r = g.r[i] * iK;
                 if (r >= 70) continue;
@@ -526,7 +554,8 @@ export function makeCoreRenderer(statColors: string[]): CoreRenderer {
                         const nx = dx / 44, ny = dy / 44, nz = Math.sqrt(Math.max(0, 1 - nx * nx - ny * ny));
                         v *= 0.62 + 0.48 * (-0.5 * nx - 0.55 * ny + 0.67 * nz);
                         if ((dx + 15) * (dx + 15) + (dy + 16) * (dy + 16) < 17) v = Math.max(v, 0.92);
-                        if (hx > 36) v = 0.74 + 0.36 * Math.max(0, -0.7 * (dx + dy) / r); // rim, brighter on the lit side
+                        v += fl * 0.3;
+                        if (hx > 36) { v = 0.74 + 0.36 * Math.max(0, -0.7 * (dx + dy) / r); if (faultOn) c = CH_EVENT; } // rim, brighter on the lit side
                         else if (hx > 33) v = 0.1;
                         if (stage >= 1 && r > 17 && r < 21 && Math.sin(a * 6 - t * 1.6) > -0.2) v = 0.85; // inner rotor
                         if (spokes > 0 && r < 24 && r > 6) {
@@ -568,6 +597,26 @@ export function makeCoreRenderer(statColors: string[]): CoreRenderer {
                     const si = Math.floor((hseg + 24) % 24);
                     if ((hseg + 24) % 1 < 0.8) v = si < lit ? 0.95 : 0.22;
                 }
+                if (shell > 0 && r > 45 && r < 50) {
+                    const m = (((a - shRot) % shSeg) + shSeg) % shSeg;
+                    const hx12 = (r * Math.cos(m - shSeg / 2)) / Math.cos(shSeg / 2);
+                    if (Math.abs(hx12 - shR) < 0.75) {
+                        const fi = Math.floor((((a - shRot) % TAU) + TAU) % TAU / shSeg);
+                        const corner = Math.abs(m - shSeg / 2) > shSeg * 0.42;
+                        if (corner) { v = 0.9; c = CH_STEEL; }
+                        else if (fi < shLit) { v = 0.82 + 0.15 * Math.sin(t * 3 + fi); c = CH_ZONE; }
+                        else { v = 0.3; c = CH_STEEL; }
+                    }
+                }
+                if (ev === 1 && Math.abs(r - evPr) < 1.1) { v = 0.85; c = CH_EVENT; }
+                else if (ev === 2 && v < 0.3 && r > 38) {
+                    let d = sweep - ((a + TAU) % TAU);
+                    if (d < 0) d += TAU;
+                    if (d < 0.9 && 0.75 - d + g.bay[i] * 0.5 > 0.25) { v = d < 0.06 ? 1 : 0.7 - d * 0.5; c = CH_EVENT; }
+                } else if (ev === 3 && ((r > 41 && r < 49) || (r > 61 && r < 68))) {
+                    const rr = 45 + Math.sin(a * 5 + t * 4) * 2.6, rr2 = 64.5 + Math.sin(a * 7 - t * 3) * 2;
+                    if (Math.abs(r - rr) < 1.1 || Math.abs(r - rr2) < 0.8) { v = 0.9; c = CH_EVENT; }
+                } else if (ev === 4 && r > 66 && hash(Math.floor(t * 3) * 31 + Math.floor((a + Math.PI) * 4)) > 0.72) { v = 1; c = CH_EVENT; }
                 if (pulse > 0 && Math.abs(r - pr) < 1.6) { v = Math.max(v, 0.5 + pulse * 0.5); c = CH_STAT + (f.pulseStat % NS); }
                 if (v >= 0) { V[i] = v; C[i] = c; }
             }
@@ -636,6 +685,51 @@ export function makeCoreRenderer(statColors: string[]): CoreRenderer {
                 }
             }
 
+            // ---- rig rack: a pod on the frame per zone, lit in the zone's colour once its rig has a level
+            const rack = bd("rigs");
+            if (rack > 0) {
+                const slots = [32, 42, 52, 92, 102, 112];
+                const n = Math.min(f.unlocked, NS, Math.ceil(NS * smooth(rack)));
+                for (let z = 0; z < n; z++) {
+                    const edge = Math.floor(z / 6) % 4, u = slots[z % 6];
+                    // pod 7 along the edge, 4 deep, standing on the frame
+                    for (let a = -3; a <= 3; a++)
+                        for (let d = 0; d < 4; d++) {
+                            const x = edge === 0 ? u + a : edge === 1 ? S - 4 - d : edge === 2 ? S - 1 - u - a : 3 + d;
+                            const y = edge === 0 ? 3 + d : edge === 1 ? u + a : edge === 2 ? S - 4 - d : S - 1 - u - a;
+                            const lv = f.rigs[z] ?? 0;
+                            const rim = Math.abs(a) === 3 || d === 0 || d === 3;
+                            if (rim) put(x, y, d === 0 || a === -3 ? 0.78 : 0.3, CH_STEEL);
+                            else if (lv > 0) put(x, y, Math.min(1, 0.55 + lv * 0.08 + (Math.floor(t * 2 + z) % 5 === a + 2 ? 0.3 : 0)), CH_STAT + z);
+                            else put(x, y, 0.12, CH_STEEL);
+                        }
+                }
+            }
+
+            // ---- flare: a shockwave rolls out past the halo when a milestone or unlock lands
+            if (fl > 0) {
+                const fr = HO + (1 - fl) * 34;
+                const steps = Math.ceil(fr * 6.4);
+                for (let k = 0; k < steps; k++) {
+                    const th = (k / steps) * TAU;
+                    put(cx + Math.cos(th) * fr, cy + Math.sin(th) * fr, 0.35 + fl * 0.65, CH_ZONE);
+                    if (fl > 0.4) under(cx + Math.cos(th) * (fr - 2), cy + Math.sin(th) * (fr - 2), fl * 0.5, CH_ZONE);
+                }
+            }
+
+            // ---- fault: a few rows slip sideways, like a bad signal
+            if (ev === 5) {
+                const tick = Math.floor(t * 12);
+                for (let y = 0; y < S; y++) {
+                    if (hash(tick * 7 + Math.floor(y / 3)) < 0.9) continue;
+                    const sh = Math.round((hash(tick + y) - 0.5) * 10);
+                    if (!sh) continue;
+                    const row = y * S;
+                    if (sh > 0) for (let x = S - 1; x >= sh; x--) { V[row + x] = V[row + x - sh]; C[row + x] = C[row + x - sh]; }
+                    else for (let x = 0; x < S + sh; x++) { V[row + x] = V[row + x - sh]; C[row + x] = C[row + x - sh]; }
+                }
+            }
+
             // ---- palette pass
             const nz = Math.max(1, Math.min(NS, f.unlocked));
             for (let i = 0; i < N; i++) {
@@ -645,10 +739,22 @@ export function makeCoreRenderer(statColors: string[]): CoreRenderer {
                 const idx = Math.max(0, Math.min(4, Math.floor(v * 4 + 0.5 + g.bay[i])));
                 const ch = C[i];
                 let col: RGB;
-                if (ch === CH_STEEL) col = STEEL[idx];
+                if (ch === CH_EVENT) col = ER[(f.event - 1) % ER.length][idx];
+                else if (f.skin === 4) col = MONO[idx]; // mono: the whole machine in the site's 1-bit off-white
+                else if (ch === CH_STEEL) col = STEEL[idx];
                 else if (f.overclock) col = MAG[idx];
                 else if (ch >= CH_STAT) col = ZR[(ch - CH_STAT) % NS][idx];
-                else if (f.chroma) {
+                else if (f.skin === 2) {
+                    // aurora: slow curtains that hang down the core and drift sideways
+                    const x = i % S, y = (i / S) | 0;
+                    const b = ((y * 0.03 + Math.sin(x * 0.07 + t * 0.5) * 0.7 + t * 0.1) % 4 + 4) % 4;
+                    col = AUR[(Math.floor(b) + (b - Math.floor(b) > 0.75 + g.b8[i] * 0.25 ? 1 : 0)) % 4][idx];
+                } else if (f.skin === 3) {
+                    // gold, with a glint that slides across now and then
+                    const x = i % S, y = (i / S) | 0;
+                    const gl = ((x + y - t * 70) % 260 + 260) % 260;
+                    col = GOLD[Math.min(4, idx + (gl < 7 ? 1 : 0))];
+                } else if (f.skin === 1) {
                     // chroma: swirling bands of every unlocked zone's colours, dithered where they meet
                     const b = (((g.a[i] / TAU + 0.5) * Math.min(nz, 6) - t * 0.35 + g.r[i] * 0.03) % nz + nz) % nz;
                     const z = (Math.floor(b) + (b - Math.floor(b) > 0.78 + g.b8[i] * 0.22 ? 1 : 0)) % nz;
