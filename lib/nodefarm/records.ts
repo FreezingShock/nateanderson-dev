@@ -111,7 +111,7 @@ export interface NfLine {
 const t = (text: string, k?: NfLine["k"]): NfLine => ({ t: text, k });
 const row = (a: string, b: string, go?: string): NfLine => ({ a, b, go });
 
-export const NF_SUBS = ["stats", "goals", "secrets", "logs", "archive", "news", "open", "codex", "anim", "fs", "fullscreen", "art", "core", "admin"];
+export const NF_SUBS = ["stats", "goals", "secrets", "logs", "archive", "news", "open", "codex", "anim", "fs", "fullscreen", "art", "core", "admin", "keys"];
 
 export interface NfResult {
     lines: NfLine[];
@@ -168,6 +168,9 @@ export function nfCommand(s: State, args: string[]): NfResult {
             LOGS.forEach((l, i) => lines.push(s.logs.includes(l.id) ? row(logNo(i), l.title.toLowerCase()) : row(logNo(i), "????")));
             lines.push(t("nf logs <number> to read one.", "dim"));
         }
+    } else if (sub === "keys") {
+        if (typeof window !== "undefined") window.dispatchEvent(new Event("cm:keys"));
+        lines = [t("keys sheet open. Same list: nf codex hotkeys.", "dim")];
     } else if (sub === "codex") {
         const open = unlockedEntries(s);
         const q = args.slice(1).join(" ").toLowerCase();

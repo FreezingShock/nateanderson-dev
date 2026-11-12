@@ -8,6 +8,8 @@ import {
 } from "./engine";
 import { ARCS, zoneNo } from "./arcs";
 import { LORE } from "./lore";
+import { NF_KEY_GROUPS, NF_KEYS_NOTE } from "./keys";
+import { chOpen } from "./stress";
 import { LOGS } from "./story";
 import { EVENTS, EVENT_TUNE } from "./events";
 import { RIGS, RIG_TUNE } from "./rigs";
@@ -347,20 +349,9 @@ export const ENTRIES: CodexEntry[] = [
     {
         id: "keys", group: "ref", title: "Hotkeys", gate: () => true,
         body: (s) => {
-            const rows: [string, string][] = [
-                ["M", "Map"], ["O", "Goals"], ["L", "Records"], ["A", "Ascend"], ["S", "Menu"], ["C", "Codex"],
-                ...(treeSeen(s) ? ([["T", "Prestige tree"]] as [string, string][]) : []),
-                ...(labOpen(s) ? ([["R", "Exploit Lab"]] as [string, string][]) : []),
-                ...(handSeen(s) ? ([["H", "Handover"], ["K", "Firmware"]] as [string, string][]) : []),
-                ["G", "Show me the next step"],
-                ["P", "Press the glowing button (hold to keep going)"],
-                ["1 to 6", "Press that tier on the zone in the middle of the screen"],
-                ["Q / E", "Open the previous or next arc"],
-                ["Z", "Fold or open the zone in the middle of the screen"],
-                ["F", "Full screen"],
-                ["Esc", "Close the open window"],
-            ];
-            return [{ rows }, { note: "Keys work only on this page, and not while you type, over another panel or during an event." }];
+            const gate = { tree: treeSeen(s), lab: labOpen(s), hand: handSeen(s), stress: chOpen(s) };
+            const rows: [string, string][] = NF_KEY_GROUPS.flatMap((g) => g.rows).filter((r) => !r.needs || gate[r.needs]).map((r) => [r.keys.join(" / "), r.label]);
+            return [{ rows }, { note: NF_KEYS_NOTE + " Press ? for the same list in a sheet." }];
         },
     },
     {
