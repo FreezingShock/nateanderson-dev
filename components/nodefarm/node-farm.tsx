@@ -37,6 +37,7 @@ import { MapPanel } from "./map";
 import { nextStep, type Target } from "@/lib/nodefarm/guide";
 import { GoalsPanel, MenuPanel, RecordsPanel } from "./systems";
 import { AscendPanel } from "./ascend";
+import { Dock, PhoneTabs, WinBar, swInfo } from "./switcher";
 import { AdminPanel, type AdminHost } from "./admin";
 import { isAdmin, setAdmin } from "@/lib/nodefarm/admin";
 import { adminFlags } from "@/lib/nodefarm/engine";
@@ -54,7 +55,6 @@ const BACKUP_KEY = "nf-backup-v1"; // the save as it was just before an import, 
 const CORRUPT_KEY = "nf-corrupt-v1"; // raw text of a save that could not be read, kept instead of being overwritten
 type Tab = "core" | "stats" | "map" | "goals" | "records" | "ascend" | "menu";
 const SIDE: Tab[] = ["map", "goals", "records", "ascend", "menu"];
-const TAB_LABEL: Record<Tab, string> = { core: "Core", stats: "Stats", map: "Map", goals: "Goals", records: "Records", ascend: "Ascend", menu: "Menu" };
 
 function load(): { s: State | null; unreadable: boolean } {
     try {
@@ -798,6 +798,7 @@ export function NodeFarm() {
         setTimeout(() => document.querySelector<HTMLElement>(`.nf [data-stat="${key}"]`)?.scrollIntoView({ behavior: reduced ? "auto" : "smooth", block: "center" }), 90);
     };
     const treeSeen = s.life.ascends > 0 || s.ap > 0 || s.tree.length > 0;
+    const sw = swInfo(s, d.bytesPerSec, lastSave, fs, labReady(s), win === "records" || (tab === "records" && !win));
     const era = eraOf(s);
     const firstLocked = STATS.find((x) => !isUnlocked(s, x.id))?.id;
     const laterLocked = STATS.filter((x) => !isUnlocked(s, x.id) && x.id !== firstLocked);
@@ -841,29 +842,12 @@ export function NodeFarm() {
                         bump((x) => x + 1);
                     }} />}
                 </div>
-                <div className="nf-dock" role="group" aria-label="Game windows">
-                    {(["map", "goals", "records", "ascend", "menu"] as const).map((w) => (
-                        <button key={w} type="button" className="nf-dock-b" aria-haspopup="dialog" data-guide={step.target?.win === w ? "" : undefined} onClick={() => { setWin(w); sfx("tab"); }}>
-                            {TAB_LABEL[w]}
-                        </button>
-                    ))}
-                    {treeSeen && <button type="button" className="nf-dock-b" aria-haspopup="dialog" data-guide={step.target?.win === "tree" ? "" : undefined} onClick={() => openWin("tree")}>Tree</button>}
-                    {labOpen(s) && <button type="button" className="nf-dock-b nf-dock-lab" aria-haspopup="dialog" data-ready={labReady(s) ? "" : undefined} data-guide={step.target?.win === "lab" ? "" : undefined} onClick={openLab}>Lab</button>}
-                    <button type="button" className="nf-dock-b" aria-pressed={fs} onClick={() => { setFs(!fs); sfx("tab"); }}>{fs ? "Exit full" : "Full screen"}</button>
-                </div>
+                <Dock info={sw} open={win} treeSeen={treeSeen} lab={labOpen(s)} guideWin={step.target?.win} fs={fs} onOpen={(w) => (w === "lab" ? openLab() : win === w ? closeWin() : openWin(w))} onFs={() => { setFs(!fs); sfx("tab"); }} />
             </header>
             <GuideStrip step={step} onGo={() => goTo(step.target)} onMap={() => openWin("map")} mapOpen={win === "map"} />
             {win && <button type="button" className="nf-scrim" aria-label="Close window" tabIndex={-1} onClick={closeWin} />}
 
-            <nav className="nf-tabs" aria-label="Game sections">
-                {(["core", "stats", "map", "goals", "records", "ascend", "menu"] as Tab[]).map((t) => (
-                    <button key={t} type="button" className="nf-tab" aria-pressed={tab === t} data-guide={step.target?.win === t ? "" : undefined} data-tab-btn={t} onClick={() => setTabBoth(t)}>
-                        {TAB_LABEL[t]}
-                    </button>
-                ))}
-                {treeSeen && <button type="button" className="nf-tab" aria-haspopup="dialog" data-guide={step.target?.win === "tree" ? "" : undefined} onClick={() => openWin("tree")}>Tree</button>}
-                {labOpen(s) && <button type="button" className="nf-tab nf-dock-lab" aria-haspopup="dialog" data-ready={labReady(s) ? "" : undefined} data-guide={step.target?.win === "lab" ? "" : undefined} onClick={openLab}>Lab</button>}
-            </nav>
+            <PhoneTabs info={sw} tab={tab} treeSeen={treeSeen} lab={labOpen(s)} guideWin={step.target?.win} onTab={(t) => setTabBoth(t)} onTree={() => openWin("tree")} onLab={openLab} />
 
             {stale && (
                 <div className="nf-stale" role="alert">
@@ -930,19 +914,19 @@ export function NodeFarm() {
             </section>
 
             <section className="nf-pane nf-sidepane" data-pane="map" aria-label="Progress map" role="dialog" aria-modal="false">
-                <WinBar title="Map" onClose={closeWin} />
+                <WinBar id="map" info={sw} treeSeen={treeSeen} lab={labOpen(s)} onSwitch={(w) => (w === "lab" ? openLab() : openWin(w))} onClose={closeWin} />
                 <MapPanel s={s} d={d} onTree={() => openWin("tree")} onWin={(w) => openWin(w)} />
             </section>
             <section className="nf-pane nf-sidepane" data-pane="goals" aria-label="Goals" role="dialog" aria-modal="false">
-                <WinBar title="Goals" onClose={closeWin} /><GoalsPanel s={s} /></section>
+                <WinBar id="goals" info={sw} treeSeen={treeSeen} lab={labOpen(s)} onSwitch={(w) => (w === "lab" ? openLab() : openWin(w))} onClose={closeWin} /><GoalsPanel s={s} /></section>
             <section className="nf-pane nf-sidepane" data-pane="records" aria-label="Records" role="dialog" aria-modal="false">
-                <WinBar title="Records" onClose={closeWin} /><RecordsPanel s={s} /></section>
+                <WinBar id="records" info={sw} treeSeen={treeSeen} lab={labOpen(s)} onSwitch={(w) => (w === "lab" ? openLab() : openWin(w))} onClose={closeWin} /><RecordsPanel s={s} /></section>
             <section className="nf-pane nf-sidepane" data-pane="ascend" aria-label="Ascend" role="dialog" aria-modal="false">
-                <WinBar title="Ascend" onClose={closeWin} />
+                <WinBar id="ascend" info={sw} treeSeen={treeSeen} lab={labOpen(s)} onSwitch={(w) => (w === "lab" ? openLab() : openWin(w))} onClose={closeWin} />
                 <AscendPanel s={s} d={d} confirm={confirm === "ascend"} onAscend={doAscend} onPerk={(id) => { if (buyPerk(s, id)) { sfx("nfBuy", { tier: 3 }); bump((n) => n + 1); } }} onTree={() => openWin("tree")} onMount={(i, m) => { if (setMount(s, i, m)) { sfx("tab"); save(); bump((n) => n + 1); } }} />
             </section>
             <section className="nf-pane nf-sidepane" data-pane="menu" aria-label="Menu" role="dialog" aria-modal="false">
-                <WinBar title="Menu" onClose={closeWin} />
+                <WinBar id="menu" info={sw} treeSeen={treeSeen} lab={labOpen(s)} onSwitch={(w) => (w === "lab" ? openLab() : openWin(w))} onClose={closeWin} />
                 <MenuPanel
                     s={s}
                     soundOn={snd.on}
@@ -1018,13 +1002,3 @@ function DeadDrop({ s, onOpen }: { s: State; onOpen: () => void }) {
         : <span className="nf-drop" title={`Dead drop fills in ${fmtTime(left)}`} aria-label={`Dead drop ${Math.floor(f * 100)}% full, ready in ${fmtTime(left)}`}><i style={{ width: `${f * 100}%` }} />DROP {Math.floor(f * 100)}%</span>;
 }
 
-function WinBar({ title, onClose }: { title: string; onClose: () => void }) {
-    return (
-        <div className="nf-win-bar">
-            <span><span className="sr-only">naOS // node.farm // {title}</span><span aria-hidden="true" data-cx-scr="">naOS // node.farm // {title}</span></span>
-            <button type="button" className="nf-win-x" onClick={onClose} aria-label={`Close ${title}`}>
-                <i />
-            </button>
-        </div>
-    );
-}

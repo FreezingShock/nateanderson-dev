@@ -207,3 +207,10 @@ Brought up to the Ascend window's level. Shared parts in `components/nodefarm/wi
 - Next step strip shows the sprite of what it points at. Drone bay rows get a dithered pad in each Drone's colour and aligned columns.
 - Unlock and milestone banners are a strip pinned under the site bar, as wide as the board (left and width set in juice.tsx). They sit under an open window.
 Checks: /mnt/project-files/portfolio/node-farm-refresh/ (`checks.mjs` interactions incl. a real long touch on phone, `wins.mjs` and `board.mjs` screenshots).
+
+## Window switcher (components/nodefarm/switcher.tsx, app/camino/nodefarm-switcher.css), 2026-11-12
+- One colour per window, used on its rail slot, phone tab, title bar and frame (`SW` in switcher.tsx, `--sw` in CSS): Map cyan, Goals gold, Records amber, Ascend pink, Tree violet, Lab blueprint blue (opens the Exploit Lab menu, pip when a research node is affordable), Menu lime; phone-only Core mint and Zones blue. Icons are the shared 12 px pixel set (`ascend`, `tree`, `expand` were added for this).
+- Desktop: a module rail along the bottom of the HUD (`Dock`): icon, label (scrambles once per hover), one live data line, letter key. A slot whose window wants a look gets a lit pip and a pulsing colour edge: Ascend ready, tree AP that can buy a node, logs recovered since Records was last opened (`nf-sw-v1`, per browser). Full screen is the last, icon-only slot.
+- Windows: the coloured title bar (`WinBar`) carries the window's icon, name, path, live line, a hop strip of every window (switch without closing; the new one CRT-prints in) and its key. Phone: `PhoneTabs`, a 4-across grid with icon, label and data line.
+- Live lines come from `swInfo()` (a plain function, called every render after the boot return, so not a hook).
+- Check: /mnt/project-files/portfolio/node-farm-switcher/shots.mjs.
