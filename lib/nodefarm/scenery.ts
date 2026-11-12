@@ -33,7 +33,7 @@ export const ERAS: readonly Era[] = [
     { name: "Shaft", stats: ["basalt"], drift: 0 },
     { name: "Magma", stats: ["magma"], drift: 540 },
     { name: "Geode", stats: ["geodes"], drift: 0 },
-    { name: "Core", stats: ["core"], drift: 900 },
+    { name: "Sun", stats: ["sunstone"], drift: 900 },
 ];
 
 /** True for the eras drawn in layers (far, near, animated overlay). */

@@ -30,7 +30,7 @@ const loadTree = () => import("./tree");
 const TreeMenu = dynamic(() => loadTree().then((m) => ({ default: m.TreeMenu })), { ssr: false });
 import { LabHud, LabZone, labModel, labReady } from "./lab";
 import { ScriptsZone } from "./scripts";
-import { SCRIPTS, SCRIPT_BY, ascendDue, learnStep, schedOpen, teachAscend, teachCompile, teachDeploy, teachDrop, teachPress } from "@/lib/nodefarm/scripts";
+import { SCRIPTS, SCRIPT_BY, ascendDue, ascendPrep, learnStep, teachEvent, schedOpen, teachAscend, teachCompile, teachDeploy, teachDrop, teachPress } from "@/lib/nodefarm/scripts";
 import { eraOf } from "@/lib/nodefarm/scenery";
 import { DroneBay, droneModel } from "./drones";
 import { rigManual } from "@/lib/nodefarm/rigs";
@@ -658,6 +658,7 @@ export function NodeFarm() {
         (id: number, c: ZeChoice) => {
             const r = zeChoose(g.current, id, c);
             if (!r.ok) { sfx("deny"); return; }
+            teachEvent(g.current);
             sfx("nfBuy", { tier: 2 });
             if (c === "mine") log(`Vein mined: +${fmt(r.paid ?? 0)} ${statDef(r.stat ?? "bytes").name}.`, "good");
             else if (c === "patch") log(`Fault patched for ${fmt(r.paid ?? 0)} Bytes.`, "good");
@@ -694,6 +695,7 @@ export function NodeFarm() {
                 if (n > 0 && x.id !== "ascend") feedStore.batch(`cron:${x.id}`, (_n, sum) => [...call(idTok("cron"), "run", [strTok(x.file)]), txt(" "), num(`×${fmt(sum)}`)], n, 6000);
             }
         if (ascendDue(s)) {
+            ascendPrep(s);
             const gain = ascend(s);
             if (gain) {
                 a.ran.ascend = (a.ran.ascend ?? 0) + 1;
