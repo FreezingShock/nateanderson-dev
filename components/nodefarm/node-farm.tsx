@@ -43,7 +43,7 @@ import { markSeen, newsToks, pickNews } from "@/lib/nodefarm/news";
 import { LORE } from "@/lib/nodefarm/lore";
 import { LOGS, logNo, recoverLogs } from "@/lib/nodefarm/story";
 import { Juice, juice, checkMilestones, onJuice } from "./juice";
-import { GuideStrip, Tip, TipCtx, type TipApi, type TipState } from "./guide";
+import { GuideStrip, Tip, TipCtx, type TipApi, type TipState, type TipStore } from "./guide";
 import { MapPanel } from "./map";
 import { nextStep, type Target } from "@/lib/nodefarm/guide";
 import { GoalsPanel, MenuPanel, RecordsPanel } from "./systems";
@@ -275,7 +275,17 @@ export function NodeFarm() {
     };
     // tooltips: one layer at the root, driven from the buttons (hover and focus on desktop, a short flash after a tap on touch)
     const root = useRef<HTMLDivElement>(null);
-    const [tip, setTip] = useState<TipState | null>(null);
+    // the tooltip lives in its own little store so hovering a button does not re-render the whole board (components/nodefarm/guide.tsx Tip)
+    const tipStore = useMemo<TipStore>(() => {
+        let cur: TipState | null = null;
+        const subs = new Set<() => void>();
+        return {
+            get: () => cur,
+            set: (f) => { const n = typeof f === "function" ? f(cur) : f; if (n !== cur) { cur = n; subs.forEach((x) => x()); } },
+            sub: (fn) => { subs.add(fn); return () => { subs.delete(fn); }; },
+        };
+    }, []);
+    const setTip = tipStore.set;
     const tipTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
     const tipApi = useMemo<TipApi>(
         () => ({
@@ -291,7 +301,7 @@ export function NodeFarm() {
                 setTip((t) => (!el || t?.el === el ? null : t));
             },
         }),
-        [],
+        [setTip],
     );
     const feed = useRef<CoreFeed>(freshCoreFeed());
     const skinsWas = useRef<boolean[] | null>(null);
@@ -1467,7 +1477,7 @@ export function NodeFarm() {
                     onClose={closeTree}
                 />
             )}
-            <Tip host={root} tip={tip} />
+            <Tip host={root} store={tipStore} />
             {away && <AwayReport away={away} era={era} reduced={reduced} onClose={() => setAway(null)} />}
         </div>
         </TipCtx.Provider>
