@@ -1,7 +1,7 @@
 """64 px button sprites and zone icons for the two arcs past Root Chamber (shared by the nodefarm_tiers64_<stat>.py stubs).
 
 Overgrowth: Spores (Spore cellar), Mycelium (Mycel web), Pollen (Canopy hall), Bloom (Bloom core).
-Descent: Basalt (Bedrock shaft), Magma (Magma line), Geodes (Geode vault), Core (The core).
+Descent: Basalt (Bedrock shaft), Magma (Magma line), Geodes (Geode vault), Sunstone (The buried sun).
 
 Tier names come from lib/nodefarm/lore.ts. Each tier grows in size, parts and motion; tier 5 is the zone's namesake and also
 serves as the zone icon. Same kit and rules as the other tiers64 modules (draw(t, p) -> Canvas, phase p in [0, 1)).
@@ -828,7 +828,7 @@ CORE = [spark1, ingot, furnace, mantle, star, core]
 
 
 ARCS = {"spores": SPORES, "mycelium": MYCELIUM, "pollen": POLLEN, "bloom": BLOOM,
-        "basalt": BASALT, "magma": MAGMA, "geodes": GEODES, "core": CORE}
+        "basalt": BASALT, "magma": MAGMA, "geodes": GEODES, "sunstone": CORE}
 
 
 def make(stat):

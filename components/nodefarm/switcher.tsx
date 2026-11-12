@@ -133,7 +133,7 @@ function Slot({ id, info, active, guide, onClick, compact = false }: { id: SwId;
 export function Dock({ info, open, treeSeen, lab, guideWin, fs, onOpen, onFs }: { info: SwInfo; open: WinId | ""; treeSeen: boolean; lab: boolean; guideWin?: string; fs: boolean; onOpen: (w: OpenId) => void; onFs: () => void }) {
     const ids = WIN_ORDER.filter((w) => shown(w, treeSeen, lab, info));
     return (
-        <nav className="nf-dock nf-sw" aria-label="Game windows" style={{ ["--n" as string]: ids.length } as CSSProperties}>
+        <nav className="nf-dock nf-sw" aria-label="Game windows" data-many={ids.length >= 8 ? "" : undefined} style={{ ["--n" as string]: ids.length } as CSSProperties}>
             <span className="nf-sw-cap" aria-hidden="true">$ open</span>
             {ids.map((w) => (
                 <Slot key={w} id={w} info={info} active={open === w} guide={guideWin === w} onClick={() => onOpen(w)} />
@@ -148,7 +148,7 @@ export function PhoneTabs({ info, tab, treeSeen, lab, guideWin, onTab, onTree, o
     const ids: Exclude<SwId, "full">[] = ["core", "stats", ...WIN_ORDER.filter((w) => shown(w, treeSeen, lab, info))];
     // 8 sections sit four across, 9 three across, 10 five across, so no row is left with one; 11 and 12 go four across
     return (
-        <nav className="nf-tabs nf-sw-ph" aria-label="Game sections" style={{ ["--cols" as string]: ids.length === 9 ? 3 : ids.length === 10 ? 5 : 4 } as CSSProperties}>
+        <nav className="nf-tabs nf-sw-ph" aria-label="Game sections" data-cols={ids.length === 10 ? 5 : undefined} style={{ ["--cols" as string]: ids.length === 9 ? 3 : ids.length === 10 ? 5 : 4 } as CSSProperties}>
             {ids.map((t) => {
                 const def = SW[t];
                 const on = tab === t;

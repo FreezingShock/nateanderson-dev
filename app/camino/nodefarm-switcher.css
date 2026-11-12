@@ -138,8 +138,18 @@
 .ctos .nf-sw-ph .nf-tab:active { background: color-mix(in srgb, var(--sw) 22%, #0e0e0e); }
 .ctos .nf-sw-ph .nf-tab:focus-visible { outline: 2px solid var(--sw); outline-offset: 2px; }
 .ctos .nf-sw-ph .nf-tab[data-guide] { --c: var(--sw); border-color: var(--sw); }
+/* ten sections in five columns: smaller labels so Handover and Records are not cut short */
+.ctos .nf-sw-ph[data-cols="5"] .nf-sw-l { font-size: 10px; letter-spacing: .02em; }
+.ctos .nf-sw-ph[data-cols="5"] .nf-sw-r { font-size: 10px; letter-spacing: 0; }
 @media (max-width: 359px) { .ctos .nf-sw-ph .nf-sw-r { display: none; } .ctos .nf-sw-ph .nf-tab { min-height: 54px; grid-template-rows: 22px auto; } }
 
 @media (prefers-reduced-motion: reduce) {
     .ctos .nf-sw-pip, .ctos .nf-sw-b[data-hot]::before, .ctos .nf-sw-hb[data-hot]::after { animation: none; }
+}
+
+/* nine or ten windows in the rail: the key badge would cut the label and the status line, so it shows on hover and focus only */
+@media (min-width: 1000px) and (max-width: 1699px) {
+    .ctos .nf-sw[data-many] .nf-sw-b:not([data-compact]) .nf-sw-k { display: none; }
+    .ctos .nf-sw[data-many] .nf-sw-b:not([data-compact]):is(:hover, :focus-visible) .nf-sw-k { display: block; position: absolute; right: 6px; top: 6px; }
+    .ctos .nf-sw[data-many] .nf-sw-b { grid-template-columns: 24px minmax(0, 1fr); gap: 8px; padding-left: 12px; }
 }
