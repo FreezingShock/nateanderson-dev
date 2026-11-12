@@ -52,7 +52,7 @@ export const ENTRIES: CodexEntry[] = [
     {
         id: "buttons", group: "basics", title: "Buttons", gate: () => true,
         body: () => [
-            { p: "Every zone has six buy buttons, one per tier. A press spends the stat that pays for that zone and adds to it. Nothing in Node Farm is tapped: the game moves when you buy." },
+            { p: "Every zone has six buy buttons, one per tier. A press spends the stat that pays for that zone and adds to it. There is nothing to tap. Buying is what moves the numbers." },
             {
                 rows: [
                     ["Tier gains", Array.from({ length: TIERS }, (_, k) => `+${Math.pow(TUNE.gainRatio, k)}`).join(" ")],
@@ -67,7 +67,7 @@ export const ENTRIES: CodexEntry[] = [
     {
         id: "chain", group: "basics", title: "The chain", gate: () => true,
         body: (s) => [
-            { p: "Zones run in a chain. Each one is paid in the stat before it, and each material boosts the stat it is paid in." },
+            { p: "Zones run in a chain. Each one is paid in the stat before it, and each material boosts the stat that pays it." },
             { rows: STATS.filter((x) => x.pays && isUnlocked(s, x.id)).map((x): [string, string] => [x.name, `paid in ${statDef(x.pays!).name}`]) },
             { p: "Because boosts run down the chain, the deepest zone you own is what makes everything above it faster." },
         ],
@@ -127,9 +127,9 @@ export const ENTRIES: CodexEntry[] = [
     {
         id: "core", group: "basics", title: "Reactor core", gate: () => true,
         body: () => [
-            { p: "The core is a live display. Its outer arc shows progress to your cheapest Reboot, and it pulses on every press." },
-            { p: "It wears the colour of the newest zone you have bought in, turns magenta during an Overclock, and bolts on a new structure each time a system opens: clamps at your first Reboot, a Copper socket, lattice masts for the Exploit Lab, drone docks, a code orbit for scripts, gyro rings, a corona at Engrams." },
-            { note: "After your first Ascend, nf core chroma cycles every colour you have opened." },
+            { p: "The outer arc shows progress to your cheapest Reboot, and the core pulses on every press." },
+            { p: "It wears the color of the newest zone you have bought in, turns magenta during an Overclock, and bolts on a new structure each time a system opens: clamps at your first Reboot, a Copper socket, lattice masts for the Exploit Lab, drone docks, a code orbit for scripts, gyro rings, a corona at Engrams." },
+            { note: "After your first Ascend, nf core chroma cycles every color you have opened." },
         ],
     },
     // ------------------------------------------------------------------ zones
@@ -252,7 +252,7 @@ export const ENTRIES: CodexEntry[] = [
         id: "hangar", group: "systems", title: "Drone hangar", gate: (s) => s.drones.some((l) => l > 0) || s.dr.nodes.length > 0,
         where: "the Drone hangar zone",
         body: () => [
-            { p: "Drones grow on three clocks." },
+            { p: "Drones improve in three ways." },
             {
                 list: [
                     ["Postings", `post a Drone to one zone. It presses only there, ${DRONE_TUNE.postX}x as fast. Every press it attempts adds service to that zone.`],
@@ -266,7 +266,7 @@ export const ENTRIES: CodexEntry[] = [
     {
         id: "scripts", group: "systems", title: "Scripts", gate: (s) => schedOpen(s), where: "the Scripts zone",
         body: (s) => [
-            { p: "Scripts are learned by doing. The scheduler watches your hands, and once you have done something enough times it offers to do it for you. A new script starts stopped." },
+            { p: "Scripts are learned by doing. The scheduler watches what you press, and once you have done something enough times it offers to do it for you. A new script starts stopped." },
             { list: SCRIPTS.map((x): [string, string] => [x.file, `learned after you ${x.teach(SCRIPT_TUNE.learn[x.id]).replace(/ more/, "").replace(/^(\w)/, (m) => m.toLowerCase()).replace(/\.$/, "")}.`]) },
             {
                 list: [
@@ -302,7 +302,7 @@ export const ENTRIES: CodexEntry[] = [
             {
                 list: [
                     ["Keystones", "sit at the end of each section and are plain boosts."],
-                    ["Junctions", "sit between two sections and need both neighbours."],
+                    ["Junctions", "sit between two sections and need both neighbors."],
                     ["Forks", "offer two nodes; you own one. Swapping is free."],
                     ["Ranked", "tips you can buy up to 5 times."],
                 ],
@@ -367,7 +367,7 @@ export const ENTRIES: CodexEntry[] = [
                 ["nf archive [name]", "what you have found of each earlier operator"],
                 ["nf codex [name]", "this guide"],
                 ["nf fs [on|off]", "full screen"],
-                ["nf core [zone|chroma|name]", "the reactor core's colours"],
+                ["nf core [zone|chroma|name]", "the reactor core's colors"],
                 ["nf open", "scroll to the game"],
                 ...(labOpen(s) ? ([["nf lab", "Exploit Lab"]] as [string, string][]) : []),
                 ...(schedOpen(s) ? ([["nf cron", "scripts"]] as [string, string][]) : []),
