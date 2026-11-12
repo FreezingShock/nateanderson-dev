@@ -2391,12 +2391,28 @@ function parseHand(o: unknown): HandState {
 }
 
 // ---- saving
+/** Save codes are base64 of the UTF-8 save text. (btoa alone throws on a curly quote or an emoji, which a Handover note can hold.) */
+function toCode(text: string): string {
+    const bytes = new TextEncoder().encode(text);
+    let bin = "";
+    for (let i = 0; i < bytes.length; i += 0x8000) bin += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
+    return btoa(bin);
+}
+/** Codes from before that fix are Latin-1 text; they are not valid UTF-8 if they hold an accent, so they fall back to as-is. */
+function fromCode(code: string): string {
+    const bin = atob(code);
+    try {
+        return new TextDecoder("utf-8", { fatal: true }).decode(Uint8Array.from(bin, (c) => c.charCodeAt(0)));
+    } catch {
+        return bin;
+    }
+}
 export function exportSave(s: State): string {
-    return btoa(JSON.stringify({ ...s, at: Date.now() }));
+    return toCode(JSON.stringify({ ...s, at: Date.now() }));
 }
 export function parseSave(raw: string): State | null {
     try {
-        const o = JSON.parse(raw.trim().startsWith("{") ? raw : atob(raw.trim()));
+        const o = JSON.parse(raw.trim().startsWith("{") ? raw : fromCode(raw.trim()));
         if (!o || o.v !== 1 || typeof o.bytes !== "number") return null;
         const base = fresh();
         const n = { ...base, ...o, prod: { ...base.prod, ...o.prod }, perks: { ...base.perks, ...o.perks }, life: { ...base.life, ...o.life }, bought: { ...base.bought, ...o.bought } } as State;
