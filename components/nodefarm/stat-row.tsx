@@ -266,6 +266,7 @@ function BuyBtn({ s, d, stat, tier, onPress, guided }: { s: State; d: D; stat: B
             type="button"
             className="nf-btn"
             data-afford={afford ? "" : undefined}
+            data-locked={Number.isFinite(b.cost) ? undefined : ""}
             data-tier={tier}
             data-guide={guided ? "" : undefined}
             aria-label={`${name}: ${isReboot ? "Reboot for" : "buy"} +${fmt(b.gain)} ${statDef(stat).name} for ${fmt(b.cost)} ${pays.name}${owned ? `, owned ${owned}` : ""}`}
@@ -319,7 +320,11 @@ function BuyBtn({ s, d, stat, tier, onPress, guided }: { s: State; d: D; stat: B
             <NfTierIcon stat={stat} tier={tier} />
             <span className="nf-btn-g">+{fmt(b.gain)}</span>
             <span className="nf-btn-fn" aria-hidden="true">{fnCaption(stat, b.gain)}</span>
-            <span className="nf-btn-c" title={`Costs ${exact(b.cost)} ${pays.name}${afford ? "" : `, you have ${exact(s[b.pays] as number)}`}`}>{fmt(b.cost)} {pays.short}{owned > 0 && <em> · ×{owned}</em>}{eta > 0 && <em className="nf-eta"> · {eta < 86400 * 30 ? fmtTime(eta) : "a long while"}</em>}</span>
+            {Number.isFinite(b.cost) ? (
+                <span className="nf-btn-c" title={`Costs ${exact(b.cost)} ${pays.name}${afford ? "" : `, you have ${exact(s[b.pays] as number)}`}`}>{fmt(b.cost)} {pays.short}{owned > 0 && <em> · ×{owned}</em>}{eta > 0 && <em className="nf-eta"> · {eta < 86400 * 30 ? fmtTime(eta) : "a long while"}</em>}</span>
+            ) : (
+                <span className="nf-btn-c">locked in this test</span>
+            )}
         </button>
     );
 }

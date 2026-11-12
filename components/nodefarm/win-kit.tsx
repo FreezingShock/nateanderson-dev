@@ -6,7 +6,7 @@ import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from 
 // an art banner with a code readout on top, sections in corner-bracket frames, and dotted `key ..... value` data lines.
 // Art: public/naos/nodefarm/win-<art>.webp (scripts/naos-art/nodefarm-window-art.py). Styles: app/camino/nodefarm-windows.css (nf-wk*).
 
-export type WinArt = "map" | "goals" | "records" | "menu";
+export type WinArt = "map" | "goals" | "records" | "menu" | "stress";
 
 /** The banner at the top of a window: dithered art standing on a halftone floor, a code readout at the left and an
  *  optional big figure at the right. */
