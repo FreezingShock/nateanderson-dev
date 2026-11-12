@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { codeReveal } from "@/lib/nodefarm/cx";
+import { scrambleNow } from "@/lib/motion/engine";
 import { createPortal } from "react-dom";
 import { sfx } from "@/lib/sound/sounds";
 import { fmt, fmtTime, statDef, type StatId } from "@/lib/nodefarm/engine";
@@ -54,6 +56,8 @@ export function AwayReport({ away, era, reduced, onClose }: { away: Away; era: n
         const prev = html.style.overflow;
         html.style.overflow = "hidden";
         sfx("nfGoal");
+        codeReveal(panel.current, { dir: "in", rows: "[data-cx-i]", sound: false, ms: 420 });
+        wrap.current?.querySelectorAll<HTMLElement>(".nf-aw-bar [data-cx-scr]").forEach((t) => scrambleNow(t));
         return () => {
             html.style.overflow = prev;
             back.current?.focus?.();
@@ -62,7 +66,17 @@ export function AwayReport({ away, era, reduced, onClose }: { away: Away; era: n
 
     const done = p >= 1;
     const skip = () => setP(1);
-    const close = () => { sfx("nfBuy", { tier: 3 }); onClose(); };
+    // closing deletes the panel out (code reveal), fades the backdrop, then hands back to the game
+    const panel = useRef<HTMLElement>(null);
+    const wrap = useRef<HTMLDivElement>(null);
+    const leaving = useRef(false);
+    const close = () => {
+        if (leaving.current) return;
+        leaving.current = true;
+        sfx("nfBuy", { tier: 3 });
+        wrap.current?.setAttribute("data-out", "");
+        codeReveal(panel.current, { dir: "out", rows: "[data-cx-i]" }).then(onClose);
+    };
 
     // keys work wherever focus is: Esc closes, Tab stays on the button
     const key = useRef<(e: KeyboardEvent) => void>(() => {});
@@ -84,6 +98,7 @@ export function AwayReport({ away, era, reduced, onClose }: { away: Away; era: n
     if (!host) return null;
     return createPortal(
         <div
+            ref={wrap}
             className="nf-aw"
             data-era={era}
             data-done={done || undefined}
@@ -94,27 +109,27 @@ export function AwayReport({ away, era, reduced, onClose }: { away: Away; era: n
             onClick={() => { if (!done) skip(); }}
         >
             <div className="nf-aw-bar">
-                <span>naOS // node.farm // standby report</span>
+                <span><span className="sr-only">naOS // node.farm // standby report</span><span aria-hidden="true" data-cx-scr="">naOS // node.farm // standby report</span></span>
                 <span className="nf-aw-bar-r">{away.capped ? "WINDOW FULL" : "LINK RESTORED"}</span>
             </div>
 
             <div className="nf-aw-body">
-                <section className="nf-aw-panel">
+                <section className="nf-aw-panel" ref={panel}>
                     <i className="nf-aw-br" aria-hidden="true" />
-                    <p className="nf-aw-kicker">Link lost · node held on standby</p>
-                    <h2 id="nf-aw-title" className="nf-aw-title">While you were gone</h2>
-                    <p className="nf-aw-time" aria-hidden="true">{fmtTime(away.secs * p)}</p>
-                    <p id="nf-aw-sum" className="nf-aw-sum">
+                    <p className="nf-aw-kicker" data-cx-i="0">Link lost · node held on standby</p>
+                    <h2 id="nf-aw-title" className="nf-aw-title" data-cx-i="1">While you were gone</h2>
+                    <p className="nf-aw-time" aria-hidden="true" data-cx-i="2">{fmtTime(away.secs * p)}</p>
+                    <p id="nf-aw-sum" className="nf-aw-sum" data-cx-i="3">
                         {fmtTime(away.secs)} banked{away.capped ? `. You were away ${fmtTime(away.gap)}, but standby holds ${fmtTime(away.cap)}.` : "."}
                         {" "}{rows.map((id) => `${fmt(away.gain[id])} ${statDef(id).name}`).join(", ")} collected.
                     </p>
 
-                    <div className="nf-aw-meter" aria-hidden="true">
+                    <div className="nf-aw-meter" aria-hidden="true" data-cx-i="4">
                         <div className="nf-aw-meter-h"><span>Standby window</span><span>{fmtTime(away.secs)} / {fmtTime(away.cap)}</span></div>
                         <div className="nf-aw-track"><i style={{ width: `${fill * p * 100}%` }} /></div>
                     </div>
 
-                    <ul className="nf-aw-gain" aria-hidden="true">
+                    <ul className="nf-aw-gain" aria-hidden="true" data-cx-i="5">
                         {rows.map((id, i) => {
                             const def = statDef(id);
                             return (
@@ -127,16 +142,16 @@ export function AwayReport({ away, era, reduced, onClose }: { away: Away; era: n
                         })}
                     </ul>
 
-                    <dl className="nf-aw-facts">
+                    <dl className="nf-aw-facts" data-cx-i="6">
                         {rate > 0 && <div><dt>Avg rate</dt><dd>{fmt(rate)} Bytes/s</dd></div>}
                         {away.drones > 0 && <div><dt>Drone presses</dt><dd>{fmt(away.drones)}</dd></div>}
                         <div><dt>Away</dt><dd>{fmtTime(away.gap)}</dd></div>
                         <div><dt>Window</dt><dd>{fmtTime(away.cap)}</dd></div>
                     </dl>
 
-                    {away.capped && <p className="nf-aw-note">Standby was full for {fmtTime(away.gap - away.cap)}. Standby cells in Ascend add 4 hours each.</p>}
+                    {away.capped && <p className="nf-aw-note" data-cx-i="7">Standby was full for {fmtTime(away.gap - away.cap)}. Standby cells in Ascend add 4 hours each.</p>}
 
-                    <button ref={btn} type="button" className="nf-aw-go" onClick={(e) => { e.stopPropagation(); if (done) close(); else skip(); }}>
+                    <button ref={btn} type="button" className="nf-aw-go" data-cx-i="7" onClick={(e) => { e.stopPropagation(); if (done) close(); else skip(); }}>
                         {done ? "Collect and resume" : "Skip"}
                     </button>
                 </section>

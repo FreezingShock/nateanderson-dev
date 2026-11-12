@@ -49,6 +49,9 @@ One open/close animation for every window, card and pop-up ("terminal print"): t
 - `--cx-c` sets the bracket/caret/scan colour (falls back to `--c`, then cyan). `bare` skips the frame for things that sit inline.
 - Windows (Map, Goals, Records, Ascend, Menu) go through `closeWin()` in node-farm.tsx; on phones a tab switch prints the section's rows in. Put `data-cx-i` on a panel's sections to control the print order; without any, the pane's second-level children print.
 - `data-cx-scr` replaces the text node, so only put it on static labels (use an sr-only twin like WinBar does).
+- Where it is used: windows (node-farm.tsx), the offline report (away.tsx, rows tagged, backdrop fades), quick-time event cards (events.tsx: prints in, reprints the body on each stage, deletes out while the last state stays on screen inert), banners (juice.tsx, timing unchanged), tooltips (guide.tsx `Tip`: reprints when the target changes, deletes out on leave), folding zones and the Drone bay (`useFoldReveal`, rows only, first render skipped). The tree card and the Ascend window use it from their own files.
+- Sound: `nfPrint` (soft key ticks, one per row) on a framed "in", `nfDelete` on a framed "out"; bare reveals are silent. Pass `sound` to override.
+- Banners sit under an open window (z-index 55 while `body.nf-win-open`) instead of covering it.
 
 ## Game feel (components/nodefarm/juice.tsx, app/camino/nodefarm-juice.css)
 - The game talks to it with `juice.emit({ t: "press" | "tier" | "unlock" | "ascend" })` and `checkMilestones(s, bps)` (called twice a second from the loop). It never touches the engine or the save.

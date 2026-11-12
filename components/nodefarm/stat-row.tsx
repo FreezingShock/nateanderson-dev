@@ -7,6 +7,7 @@ import { fnCaption } from "@/lib/nodefarm/feed";
 import { buttonTip, unlockInfo, type Target } from "@/lib/nodefarm/guide";
 import { TipCtx } from "./guide";
 import { NfIcon, NfTierIcon, type NfIconName } from "./icon";
+import { useFoldReveal } from "@/lib/nodefarm/cx";
 
 type D = ReturnType<typeof derive>;
 export type PressFn = (stat: ButtonStat, tier: number, quiet?: boolean) => boolean;
@@ -92,6 +93,8 @@ export function Chain({ s, d, onAll, allOpen, max, onMax }: { s: State; d: D; on
 export function StatRow({ id, s, d, onPress, onArm, onWatchdog, open: expanded, onToggle, guide }: { id: StatId; s: State; d: D; onPress: PressFn; onArm: () => void; onWatchdog?: () => void; open: boolean; onToggle: () => void; guide?: Target }) {
     const def = statDef(id);
     const lore = LORE[id];
+    const bodyIn = useRef<HTMLDivElement>(null);
+    useFoldReveal(bodyIn, expanded);
     const open = isUnlocked(s, id);
     if (!open) {
         const u = unlockInfo(s, id);
@@ -143,7 +146,7 @@ export function StatRow({ id, s, d, onPress, onArm, onWatchdog, open: expanded, 
                 </div>
             </header>
             <div className="nf-body" id={bodyId}>
-                <div className="nf-body-in" inert={!expanded}>
+                <div className="nf-body-in" ref={bodyIn} inert={!expanded}>
                     <p className="nf-brief">{lore.flavor}</p>
                     <dl className="nf-spec" aria-label="Effects">
                         {effects(id, s, d).map(([k, v]) => (

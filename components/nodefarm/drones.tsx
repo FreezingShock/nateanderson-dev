@@ -1,6 +1,7 @@
 "use client";
 
-import { useContext, type CSSProperties } from "react";
+import { useContext, useRef, type CSSProperties } from "react";
+import { useFoldReveal } from "@/lib/nodefarm/cx";
 import { TIERS, TUNE, dronesOpen, droneCost, droneMax, droneRate, fmt, type State } from "@/lib/nodefarm/engine";
 import { DRONE_NAMES as NAMES, droneTip } from "@/lib/nodefarm/guide";
 import { TipCtx } from "./guide";
@@ -11,6 +12,8 @@ const DRONE_COLOURS = ["#2fd8e8", "#b6f04a", "#f08a3c", "#7aa2ff", "#e08cff", "#
 /** The Drone bay: one Drone line per button tier. A Drone presses its tier on every armed stat, for free labour and Aether. */
 export function DroneBay({ s, open, onToggle, onBuy, guided }: { s: State; open: boolean; onToggle: () => void; onBuy: (tier: number) => void; guided?: number }) {
     const tips = useContext(TipCtx);
+    const bodyIn = useRef<HTMLDivElement>(null);
+    useFoldReveal(bodyIn, open);
     if (!dronesOpen(s)) {
         return (
             <article className="nf-row nf-locked" style={{ ["--c" as string]: "#6bffc9" }}>
@@ -34,7 +37,7 @@ export function DroneBay({ s, open, onToggle, onBuy, guided }: { s: State; open:
                 </button>
             </div>
             <div className="nf-body" id="nf-body-drones">
-                <div className="nf-body-in" inert={!open}>
+                <div className="nf-body-in" ref={bodyIn} inert={!open}>
                     <p className="nf-brief">Each Drone presses its tier&apos;s button on every stat you arm in that stat&apos;s zone. Bought with Aether, reset on Ascend, and they keep working at {Math.round(TUNE.drone.offline * 100)}% speed while you are away. Reboots stay manual.</p>
                     <ul className="nf-dr-list">
                         {Array.from({ length: TIERS }, (_, k) => {

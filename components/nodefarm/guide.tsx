@@ -1,6 +1,7 @@
 "use client";
 
-import { createContext, useLayoutEffect, useRef, type RefObject } from "react";
+import { createContext, useEffect, useLayoutEffect, useRef, type RefObject } from "react";
+import { cxPlay, useCodeReveal } from "@/lib/nodefarm/cx";
 import { fmt } from "@/lib/nodefarm/engine";
 import { etaText, type Step, type TipInfo } from "@/lib/nodefarm/guide";
 import { NfIcon } from "./icon";
@@ -51,8 +52,19 @@ export interface TipApi {
 }
 export const TipCtx = createContext<TipApi>({ show() {}, hide() {} });
 
-export function Tip({ host, tip }: { host: RefObject<HTMLElement | null>; tip: TipState | null }) {
+export function Tip({ host, tip: live }: { host: RefObject<HTMLElement | null>; tip: TipState | null }) {
     const ref = useRef<HTMLDivElement>(null);
+    // keep the last tip on screen while it deletes out; a new target reprints it (code reveal, lib/nodefarm/cx.ts)
+    const last = useRef<TipState | null>(null);
+    if (live) last.current = live;
+    const shown = useCodeReveal(ref, !!live, { bare: true, ms: 200, rows: ":scope > *" });
+    const tip = live ?? (shown ? last.current : null);
+    const target = live?.el ?? null;
+    const prevTarget = useRef<HTMLElement | null>(null);
+    useEffect(() => {
+        if (target && prevTarget.current && target !== prevTarget.current) cxPlay(ref.current, { bare: true, ms: 200, rows: ":scope > *" });
+        prevTarget.current = target;
+    }, [target]);
     useLayoutEffect(() => {
         const t = ref.current;
         const h = host.current;
