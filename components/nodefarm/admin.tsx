@@ -3,7 +3,7 @@
 import { memo, useCallback, useEffect, useRef, useState, type CSSProperties, type PointerEvent as RPointerEvent, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import {
-    BRANCHES, GOALS, GOAL_TIERS, MATS, PERKS, SECRETS, TIERS, TIER_NAMES, TREE, apOnAscend, adminFlags, derive, droneMax, exportSave, fmt, fmtTime, fresh, parseSave, statDef, treeFx,
+    BRANCHES, GOALS, GOAL_TIERS, MATS, PERKS, SECRETS, TIERS, TIER_NAMES, TREE, TREE_FULL, apOnAscend, adminFlags, derive, droneMax, exportSave, fmt, fmtTime, fresh, parseSave, statDef, treeFx,
     type MatId, type State, type StatId,
 } from "@/lib/nodefarm/engine";
 import {
@@ -243,7 +243,7 @@ function AdminPanelInner({ host }: { host: AdminHost }) {
                             <div className="nf-ad-code">
                                 <span className="nf-ad-ps" data-cx-scr="">root@node-01:~#<u aria-hidden="true" /></span>
                                 <span><b>save</b><em>{taken ? `real save stored ${ago(taken.at)}` : "no snapshot yet"}</em></span>
-                                <span><b>tree</b><em>{treeOwned}/{TREE.length} nodes · {fmt(s.ap)} AP · ×{fmt(d.global)}</em></span>
+                                <span><b>tree</b><em>{treeOwned}/{TREE_FULL} nodes · {fmt(s.ap)} AP · ×{fmt(d.global)}</em></span>
                                 <span><b>clock</b><em>×{speed} speed · fog {reveal ? "off" : "on"}</em></span>
                                 <span className="nf-ad-last">{note}</span>
                             </div>
@@ -361,7 +361,7 @@ function AdminPanelInner({ host }: { host: AdminHost }) {
                                     ))}
                                 </Sec>
 
-                                <Sec n={7} title="Prestige tree" hint={`${treeOwned} / ${TREE.length} owned`} {...sec("tree")}>
+                                <Sec n={7} title="Prestige tree" hint={`${treeOwned} / ${TREE_FULL} owned`} {...sec("tree")}>
                                     <div className="nf-ad-line">
                                         <Btn onClick={() => act(ownAllNodes, "every node owned")}>All</Btn>
                                         <Btn onClick={() => act((x) => { x.tree = []; x.mounts = []; }, "tree emptied (no refund)")}>None</Btn>

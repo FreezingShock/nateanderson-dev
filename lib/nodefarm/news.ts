@@ -1,7 +1,7 @@
 // The news lines: now and then a short line from the previous operator (or the node itself) drops into the terminal feed.
 // Every line is tied to how far you have got, so early lines talk about wires and later ones about Runes and Chrono.
 // Picking is pure (see pickNews): it skips anything shown recently, so a long session does not loop.
-import { STATS, TREE, fmt, isUnlocked, tiersDone, type State } from "./engine";
+import { STATS, TREE, TREE_FULL, fmt, isUnlocked, tiersDone, type State } from "./engine";
 import { com, id, kw, p, txt, type Tok } from "./feed";
 
 export type NewsKind = "op" | "note" | "hint" | "wry" | "past";
@@ -152,7 +152,7 @@ const BASE: News[] = [
     { k: "note", ok: (s) => s.life.ascends >= 1, t: (s) => `ascends = ${fmt(s.life.ascends)} // ${fmt(s.life.apTotal)} AP earned in all` },
     { k: "hint", ok: (s) => s.ap > 0 && s.tree.length === 0, t: "You have AP and an empty tree. Open the tree from Ascend and take the first node you can reach." },
     { k: "op", ok: (s) => s.tree.length >= 5, t: "Every node I bought in the tree felt like moving a piece in a house I already lived in." },
-    { k: "note", ok: (s) => s.tree.length >= 1, t: (s) => `tree: ${s.tree.length} of ${TREE.length} nodes owned` },
+    { k: "note", ok: (s) => s.tree.length >= 1, t: (s) => `tree: ${s.tree.length} of ${TREE_FULL} nodes owned` },
     { k: "wry", ok: (s) => s.tree.length >= 15, t: "The tree grows toward whatever you press last. I have stopped pretending that is a coincidence." },
     { k: "hint", ok: (s) => s.ap >= 10 && s.tree.length > 0, t: "Free respec on the tree. If a branch is not paying, take the AP back and try another." },
 

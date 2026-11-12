@@ -570,6 +570,8 @@ export function NodeFarm() {
                 if (r.zero) log(`ZERO-DAY: ${fmt(r.zero.bytes ?? 0)} Bytes and 10 minutes of every material paid out.`, "good");
                 if (r.echo) log("ECHO: something knocked back. Another event is coming.", "hot");
                 if (r.intel >= 1) feedStore.push([...call(idTok("lab"), "capture", [strTok("trace")]), pun(" → "), num(`+${fmt(r.intel)} intel`)], { tone: "good", type: true });
+                if (r.paid) log(`PATIENT: ${fmt(r.paid.bytes ?? 0)} Bytes and 5 minutes of every material paid out.`, "good");
+                if (r.frenzy) log("SWARM ALARM: the Drones are in a frenzy, x4 speed for 60 s.", "hot");
                 return { echo: r.echo };
             } else log(`${def.title} lost. No cost.`, "warn");
         },

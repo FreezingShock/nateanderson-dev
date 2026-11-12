@@ -1,7 +1,7 @@
 // The story of Node Farm: logs left by the previous operator of node-01. You recover them as the farm grows. They are
 // read in the Records window and with `nf logs`. A log stays recovered through every Ascend (it is stored in the save).
 // Numbers follow the order the logs were written, not the order you find them, so there are gaps early on.
-import { TREE, isUnlocked, tiersDone, type Branch, type State, type StatId } from "./engine";
+import { TREE, isUnlocked, treeComplete, tiersDone, type Branch, type State, type StatId } from "./engine";
 
 export interface Log {
     id: string;
@@ -11,8 +11,9 @@ export interface Log {
 }
 
 const open = (id: StatId) => (s: State) => isUnlocked(s, id);
-// A section counts as whole when every node in it is owned (8 each since the 40-node tree). Log ids stay the same.
-const branch = (sec: Branch) => (s: State) => TREE.filter((n) => n.branch === sec).every((n) => s.tree.includes(n.id));
+// A section counts as whole when its first 8 nodes (entry to keystone) are owned; the deeper forks, ranks and junctions
+// added later do not count, so the logs keep meaning what they say. Log ids stay the same.
+const branch = (sec: Branch) => (s: State) => TREE.filter((n) => n.branch === sec && !n.form).every((n) => s.tree.includes(n.id));
 
 export const LOGS: Log[] = [
     { id: "hand", title: "Handover", text: "If you are reading this, the node still boots. Good. I am leaving it running. Press things and see what happens. Everything here started as one wire.", test: () => true },
@@ -39,7 +40,7 @@ export const LOGS: Log[] = [
     { id: "sy6", title: "Systems branch", text: "The Systems branch is whole. Even asleep, the node keeps its own watch. I do not have to be the one holding it up anymore.", test: branch("systems") },
     { id: "asc10", title: "Ten", text: "Ten ascensions. I tried to count the farm and lost my place. The node counted for me. It was off by one, and then it was not.", test: (s) => s.life.ascends >= 10 },
     { id: "rank7", title: "Zero", text: "Zero. Every goal on the board is done. I sat there afterwards and watched the numbers go up by themselves. I think that is the good part.", test: (s) => tiersDone(s) >= 7 },
-    { id: "last", title: "Last entry", text: "Whole tree. I am done with this node. It does not need me, but it will want an operator. Be kind to it. Press everything. Leave it running.", test: (s) => s.tree.length >= TREE.length },
+    { id: "last", title: "Last entry", text: "Whole tree. I am done with this node. It does not need me, but it will want an operator. Be kind to it. Press everything. Leave it running.", test: (s) => treeComplete(s) },
 ];
 
 export const logNo = (i: number) => String(i + 1).padStart(3, "0");
