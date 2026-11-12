@@ -251,6 +251,15 @@ export function Juice({ reduced }: { reduced: boolean }) {
     const curKind = cur?.kind;
     useLayoutEffect(() => {
         if (!curKey) return;
+        // the banner is a strip pinned under the site bar, as wide as the board (Nate's open call, built 2026-11-12). Docking it
+        // to the HUD itself was tried and dropped: the board's scroll reveal moves the HUD while the strip is measured.
+        const el = jb.current;
+        const hud = document.querySelector<HTMLElement>(".nf .nf-hud");
+        if (el && hud && !curOut) {
+            const r = hud.getBoundingClientRect();
+            el.style.setProperty("--jb-left", `${Math.round(Math.max(8, r.left))}px`);
+            el.style.setProperty("--jb-w", `${Math.round(Math.min(r.width, innerWidth - 16))}px`);
+        }
         codeReveal(jb.current, { dir: curOut ? "out" : "in", style: curKind === "milestone" ? "print" : "decrypt", rows: ".nf-jb-ic, .nf-jb-t > *", sound: false, ms: curOut ? 200 : 320 });
     }, [curKey, curOut, curKind]);
 
