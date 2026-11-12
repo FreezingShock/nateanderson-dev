@@ -10,7 +10,7 @@ import { navigateWithCurtain } from "@/lib/motion/navigate";
 import { parseSave, type State as NfState } from "@/lib/nodefarm/engine";
 import { isAdmin, maxOut, overwrite, setAdmin, snapState, snaps, takeSnap } from "@/lib/nodefarm/admin";
 import { NF_PATH, NF_SAVE_KEY, NF_SUBS, nfCommand, type NfLive } from "@/lib/nodefarm/records";
-import { CX_STYLES, cxStyle, setCxStyle, type CxStyle } from "@/lib/nodefarm/cx";
+import { CX_STYLES, cxOverride, setCxOverride, type CxStyle } from "@/lib/nodefarm/cx";
 import { setPrefs } from "@/lib/sound/engine";
 import { sfx } from "@/lib/sound/sounds";
 import { useSoundPrefs } from "@/lib/sound/use-sound";
@@ -175,12 +175,16 @@ function runNf(args: string[]): Line[] {
     if ((args[0] ?? "").toLowerCase() === "open") return [{ t: NF_PATH, go: NF_PATH }];
     if ((args[0] ?? "").toLowerCase() === "anim") {
         // try the menu animation styles (saved in this browser)
-        const v = (args[1] ?? "").toLowerCase() as CxStyle;
-        if (CX_STYLES.includes(v)) {
-            setCxStyle(v);
-            return [t(`menu animation: ${v}. open any Node Farm window to see it.`)];
+        const v = (args[1] ?? "").toLowerCase();
+        if (CX_STYLES.includes(v as CxStyle)) {
+            setCxOverride(v as CxStyle);
+            return [t(`every menu now uses ${v}. nf anim auto puts each style back in its place.`)];
         }
-        return [t(`menu animation is ${cxStyle()}. nf anim ${CX_STYLES.join(" · nf anim ")}`)];
+        if (v === "auto") {
+            setCxOverride(null);
+            return [t("menus back to their own styles: print for milestones, decrypt for unlocks and events, crt for panels.")];
+        }
+        return [t(`menu animation: ${cxOverride() ?? "auto"}. nf anim auto · nf anim ${CX_STYLES.join(" · nf anim ")}`)];
     }
     const ref: { live?: NfLive } = {};
     window.dispatchEvent(new CustomEvent("nf:live", { detail: ref }));
@@ -320,7 +324,7 @@ const COMMANDS: Cmd[] = [
         name: "nf",
         usage: "nf [stats|goals|secrets|anim]",
         desc: "Node Farm readout, goals and secrets",
-        long: ["nf · nf stats · nf goals · nf secrets · nf open · nf anim print|decrypt|crt. Works with the game open or from your saved game."],
+        long: ["nf · nf stats · nf goals · nf secrets · nf open · nf anim auto|print|decrypt|crt. Works with the game open or from your saved game."],
         run: (args) => runNf(args),
     },
     {

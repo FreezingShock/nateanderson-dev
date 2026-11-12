@@ -147,13 +147,13 @@ export function EventLayer({ game, busy, enabled, ready, reduced, onEngage, onRe
     const card = useRef<HTMLDivElement>(null);
     const lastAct = useRef<Active | null>(null);
     if (act) lastAct.current = act;
-    const shown = useCodeReveal(card, !!act, { rows: ":scope > :not(.nf-ev-br)" });
+    const shown = useCodeReveal(card, !!act, { style: "decrypt", rows: ":scope > :not(.nf-ev-br)" });
     const stageKey = act ? `${act.id}:${act.stage}` : "";
     const prevStage = useRef("");
     useEffect(() => {
         const was = prevStage.current;
         prevStage.current = stageKey;
-        if (stageKey && was && was.split(":")[0] === stageKey.split(":")[0]) cxPlay(card.current, { bare: true, sound: false, rows: ":scope > :not(.nf-ev-br):not(.nf-ev-top)" });
+        if (stageKey && was && was.split(":")[0] === stageKey.split(":")[0]) cxPlay(card.current, { style: "decrypt", bare: true, sound: false, rows: ":scope > :not(.nf-ev-br):not(.nf-ev-top)" });
     }, [stageKey]);
 
     const view = act ?? (shown ? lastAct.current : null);

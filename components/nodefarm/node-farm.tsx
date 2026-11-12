@@ -88,7 +88,7 @@ export function NodeFarm() {
         const el = paneOf(w);
         const n = ++closing.current;
         root.current?.setAttribute("data-closing", "");
-        codeReveal(el, { dir: "out", rows: el ? paneRows(el) : undefined }).then(() => {
+        codeReveal(el, { dir: "out", style: "crt", rows: el ? paneRows(el) : undefined }).then(() => {
             if (closing.current !== n) return;
             root.current?.removeAttribute("data-closing");
             setWin((cur) => (cur === w ? "" : cur));
@@ -100,7 +100,7 @@ export function NodeFarm() {
         if (firstTab.current) { firstTab.current = false; return; }
         if (matchMedia("(min-width: 1000px)").matches) return;
         const el = paneOf(tab);
-        if (el) codeReveal(el, { bare: true, rows: paneRows(el), ms: 240 });
+        if (el) codeReveal(el, { bare: true, style: "crt", rows: paneRows(el), ms: 240 });
     }, [tab]);
     const winRef = useRef(win);
     winRef.current = win;
@@ -112,7 +112,7 @@ export function NodeFarm() {
         if (!el) return;
         cxClear(el);
         el.scrollTop = 0;
-        codeReveal(el, { dir: "in", rows: paneRows(el) });
+        codeReveal(el, { dir: "in", style: "crt", rows: paneRows(el) });
     }, [win]);
     useEffect(() => {
         if (!win) return;
