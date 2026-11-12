@@ -280,7 +280,10 @@ export const hasNode = (s: State, id: string) => s.tree.includes(id);
 export const nodeOpen = (s: State, n: TreeNode) => n.links.some((l) => l === "core" || s.tree.includes(l));
 /** Progressive reveal (Nate, 2026-11-12): owned and buyable nodes are shown; one step past a shown node is fog (a
  *  silhouette at its real size, no name or cost); everything further out is hidden. */
+/** Admin mode: show every node, fog or not (components/nodefarm/admin.tsx). */
+export const adminFlags = { reveal: false };
 export function nodeVis(s: State, n: TreeNode): NodeVis {
+    if (adminFlags.reveal) return "shown";
     if (s.tree.includes(n.id) || nodeOpen(s, n)) return "shown";
     return n.links.some((l) => l !== "core" && nodeOpen(s, BY_ID.get(l)!)) ? "fog" : "hidden";
 }
