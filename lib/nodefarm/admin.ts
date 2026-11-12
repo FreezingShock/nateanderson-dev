@@ -3,7 +3,7 @@
 // components/nodefarm/admin.tsx. Easy to remove: delete this file, admin.tsx, nodefarm-admin.css, and the few
 // `admin` lines in node-farm.tsx, events.tsx and components/cm/console.tsx.
 import {
-    GOALS, MATS, PERKS, SECRETS, STATS, TIERS, TREE, TUNE, ascend, apOnAscend, derive, droneMax, exportSave, parseSave, tick, treeFx, unlock,
+    GOALS, LAB, LAB_TUNE, MATS, PAYLOADS, PERKS, SECRETS, STATS, TIERS, TREE, TUNE, ascend, apOnAscend, derive, droneMax, exportSave, freshLab, parseSave, tick, treeFx, unlock,
     type MatId, type PerkDef, type State, type StatId,
 } from "./engine";
 import { LOGS } from "./story";
@@ -127,6 +127,19 @@ export const grantSecrets = (s: State) => { for (const x of SECRETS) unlock(s, x
 export const grantLogs = (s: State) => { s.logs = LOGS.map((l) => l.id); };
 export const clearLogs = (s: State) => { s.logs = []; };
 
+// ---- Exploit Lab
+/** Open the lab, research every node and fill Intel and stock. */
+export function grantLab(s: State) {
+    s.lab.seen = true;
+    s.lab.nodes = LAB.map((n) => n.id);
+    s.lab.intel = Math.max(s.lab.intel, 1e6);
+    for (const p of PAYLOADS) s.lab.stock[p.id] = LAB_TUNE.stockMax;
+}
+/** Forget all research, stock, queue and running payloads (the lab stays open once seen). */
+export function clearLab(s: State) {
+    s.lab = { ...freshLab(), seen: s.lab.seen };
+}
+
 // ---- the whole lot
 /** Everything: every tree node, every perk, Drones, goals, secrets, logs, a pile of every material and prestige. */
 export function maxOut(s: State) {
@@ -136,6 +149,7 @@ export function maxOut(s: State) {
     grantGoals(s);
     grantSecrets(s);
     grantLogs(s);
+    grantLab(s);
     s.life.ascends = Math.max(s.life.ascends, 10);
     s.life.reboots = Math.max(s.life.reboots, 1000);
     s.life.apTotal = Math.max(s.life.apTotal, 1000);
