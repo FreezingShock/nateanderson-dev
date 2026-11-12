@@ -168,6 +168,11 @@ lines and buttons. It grows from stage 0 (backdrop only) to stage 7 (seven sprit
   `public/naos/nodefarm/zone-<id>.{png,webp}`, cells 288 x 96 art px, 6 frames across, 8 stages down (1728 x 768). Rows 0 to
   31 are sky/backdrop that reaches the title bar, sprites live lower down; the whole cell is always visible. RAMPS and BAYER from `nodefarm-icons.py`, busy backdrops and several on-palette accents (Nate's pick),
   WebP lossless under 30 KB. Add the zone id to `ZONE_ART` to switch a sheet on.
+- **Zones 05 to 08** (`scripts/naos-art/nodefarm-zones-05-08.py`): Fab Cleanroom, Crystal Vault, Signal Void, Glyph Hall. Sprites
+  1 to 6 follow each zone's button names (Die to Megafab, Shard to Cavern, Spark to Rift, Mark to Grimoire); sprite 7 is the
+  capstone (fab tower, resonance spire, signal gate, hall gate) and stands left of sprite 6 to keep clear of the big number.
+  Each zone adds two shade ramps of its own hue and a far layer for the sky (cleanroom ceiling and racks, crystal
+  silhouettes, aurora, carved wall with torches). Nate picked the strong halo behind the sprites.
 - **Preview**: `nf art 0` to `nf art 7` in the console shows every zone at one stage for this visit; `nf art live` goes back.
 
 ## Older windows refresh (Map, Goals, Records, Menu), 2026-11-12

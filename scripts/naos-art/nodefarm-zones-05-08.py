@@ -29,6 +29,9 @@ HERE = Path(__file__).resolve().parent
 OUT = HERE.parent.parent / "public" / "naos" / "nodefarm"
 PREVIEW = Path(os.environ.get("NF_ZONE_PREVIEW", "/tmp/nf-zone-preview"))
 
+_kspec = importlib.util.spec_from_file_location("nodefarm_zone_kit", HERE / "nodefarm_zone_kit.py")
+K = importlib.util.module_from_spec(_kspec)
+_kspec.loader.exec_module(K)
 _spec = importlib.util.spec_from_file_location("nodefarm_icons", HERE / "nodefarm-icons.py")
 nfi = importlib.util.module_from_spec(_spec)
 _spec.loader.exec_module(nfi)
@@ -989,8 +992,9 @@ def rn_backdrop(b, f):
 
 
 # ------------------------------------------------------------------------------------------- layout and output
-# Sprite centres on the 288 px floor, small to big left to right (the panel crops the scene on its left, so the newest stay in view).
-X = {1: 66, 2: 80, 3: 97, 4: 121, 5: 153, 6: 198, 7: 244}
+# Sprite centres on the 288 px floor. Small to big left to right, except the capstone (7) stands left of sprite 6 so it stays
+# clear of the big number in the top-right corner (contract v4); sprite 6 may run under the number's dark pool.
+X = {1: 60, 2: 73, 3: 90, 4: 113, 5: 143, 6: 250, 7: 192}
 ZONES = {
     "silicon": (si_sprite, si_backdrop),
     "quartz": (qz_sprite, qz_backdrop),
@@ -1039,19 +1043,20 @@ def preview(zone, sh):
     frames[0].save(PREVIEW / f"{zone}.gif", save_all=True, append_images=frames[1:], duration=167, loop=0, disposal=2)
 
 
+class _Img:
+    def __init__(self, img):
+        self.img = img
+
+
 def main():
+    """Writes each sheet through the shared kit (size, budget and preview checks live there)."""
+    assert (CW, CH, STAGES + 1, FRAMES) == (K.W, K.H, K.STAGES, K.FRAMES), "zone art contract changed: update CW/CH/FRAMES"
     args = [a for a in sys.argv[1:] if not a.startswith("--")]
-    OUT.mkdir(parents=True, exist_ok=True)
     for zone in args or list(ZONES):
-        sh = sheet(zone)
-        png, webp = OUT / f"zone-{zone}.png", OUT / f"zone-{zone}.webp"
-        sh.save(png, optimize=True)
-        sh.save(webp, lossless=True, quality=100, method=6)
-        kb = (png.stat().st_size / 1024, webp.stat().st_size / 1024)
-        flag = "" if kb[0] <= 300 and kb[1] <= 30 else "  OVER BUDGET"
-        print(f"{zone}: {sh.size}  png {kb[0]:.0f} KB  webp {kb[1]:.0f} KB{flag}")
+        print(zone)
+        sh = K.save_sheet(zone, lambda s, f, z=zone: _Img(cell(z, s, f)), preview=True)
         if "--preview" in sys.argv:
-            preview(zone, sh)
+            preview(zone, Image.fromarray(sh, "RGBA"))
 
 
 if __name__ == "__main__":
