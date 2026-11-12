@@ -339,6 +339,8 @@ About every 8 to 14 minutes of play (first one after 8 minutes of life), one unl
 - Shown as a centered card (`ZoneEventCard`, no scrim, plain events close after 7 s, a vein or fault waits for an answer or "Decide later"), a readout on the zone panel (`ZoneEvent`, with the answers if you deferred) and a dot on the signal chain. Reveal is decrypt.
 - Admin panel, Run section: zone picker, one button per event, Clear, and Next in 5 s.
 
+## Settings and low-effects mode
+The Menu window's `config/node.cfg` block lives in `components/nodefarm/settings.tsx` (sound, hum, volume, calm, effects, events, jump, number format). All per device, not in the save. Effects level (`full | low | auto`) is in `lib/nodefarm/fx.ts`: `initFx()` runs at boot, `setFxMode`, `useLowFx()`, window event `nf:fx`, and CSS hooks `body.nf-lowfx` / `body[data-nf-fx="low"]`. Auto measures the median frame time once (about 3.5 s after boot) and goes low under about 40 fps. Console: `nf fx full|low|auto`. The heavy-effect list for low mode is `app/camino/nodefarm-fx.css`: add new loops, drifting layers, blurs and big glows there. Low mode never hides information, and `body.nf-calm` is a separate switch.
 ## QOL batch 3 (2026-11-12, late-game layout pass)
 - `audit.mjs` and `tour3.mjs` in /mnt/project-files/portfolio/node-farm-first30/ seed a late save (`nf admin max` through the console), open every zone and list overflowing or tiny controls at 1440, 390 and 360.
 - The Drone hangar rows were clipped past the right edge on phones once drone levels pass 10 (20 pips, the posting list and the third mod were cut off): `nodefarm-hangar.css` now lets the row shrink and the pips squeeze.
