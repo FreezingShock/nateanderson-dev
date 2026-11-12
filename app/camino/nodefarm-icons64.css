@@ -19,3 +19,10 @@
 @media (max-resolution: 1.4dppx) {
     .ctos .nf .nf-tic.nf-tic64, .ctos .nf .nf-ic:not(.l), body .nf-aw .nf-ic:not(.l), .ctos .nf-ev .nf-ic:not(.l) { image-rendering: auto; }
 }
+/* phone: two buttons across. A slightly smaller sprite keeps clear of the wrapped function caption above it. */
+@media (max-width: 719px) {
+    .ctos .nf .nf-btn { --ts: 40px; }
+    .ctos .nf .nf-btn:has(.nf-tic64) .nf-btn-fn { max-width: 100%; }
+}
+/* off-screen sprites hold still (components/nodefarm/icon.tsx sets data-vis while one is in view) */
+.ctos .nf-ic:not([data-vis]), body .nf-ic:not([data-vis]), .ctos .nf .nf-tic.nf-tic64:not([data-vis]) { animation-play-state: paused !important; }

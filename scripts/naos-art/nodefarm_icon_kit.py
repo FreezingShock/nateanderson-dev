@@ -293,3 +293,69 @@ def contact(img, scale=4, bg=(20, 20, 20, 255)):
 def save_pair(img, stem):
     img.save(f"{stem}.png", optimize=True)
     img.save(f"{stem}.webp", lossless=True, quality=100, method=6)
+
+
+# ---------------------------------------------------------------- common objects
+def shadow(c, cx, w, y=58, h=2.6):
+    """Soft ground shadow under a sprite."""
+    c.set(disc(cx, y, w, h), P["ink"][0], 150)
+    c.set(disc(cx, y, w * 0.7, h * 0.7), P["ink"][0], 210)
+
+
+def box(c, x, y, w, h, d, pal, v=0.0, outline=True):
+    """Box seen from the front with its top and right side going up-right by depth d. Returns (front, top, side) masks."""
+    front = rect(x, y, x + w, y + h)
+    top = poly([(x, y), (x + d, y - d * 0.6), (x + w + d, y - d * 0.6), (x + w, y)])
+    side = poly([(x + w, y), (x + w + d, y - d * 0.6), (x + w + d, y + h - d * 0.6), (x + w, y + h)])
+    c.fill(side, 0.22 + v, pal)
+    c.fill(front, 0.42 + v + 0.22 * (1 - lin(x, y, x + w, y + h)), pal)
+    c.fill(top, 0.74 + v, pal)
+    if outline:
+        c.outline(front | top | side, pal)
+    c.rim(top, P[pal][-1] if isinstance(pal, str) else pal[-1], 0, -1)
+    return front, top, side
+
+
+def cyl(c, cx, top, bot, rx, ry, pal, v=0.0, cap=True):
+    """Upright cylinder: body shaded across with the light on the left, elliptical cap. Returns (body, cap) masks."""
+    body = rect(cx - rx, top, cx + rx, bot) | disc(cx, bot, rx, ry)
+    shade = 0.12 + v + 0.8 * np.clip(1 - np.abs((X - (cx - rx * 0.35)) / (rx * 1.25)), 0, 1)
+    c.fill(body, shade, pal)
+    capm = disc(cx, top, rx, ry)
+    if cap:
+        c.fill(capm, 0.7 + v + 0.2 * (1 - lin(cx - rx, top - ry, cx + rx, top + ry)), pal)
+    c.outline(body | capm, pal)
+    return body, capm
+
+
+def orb(c, cx, cy, r, pal, v=0.0, hx=-0.35, hy=-0.4):
+    """Shaded sphere, light from the top-left."""
+    m = disc(cx, cy, r)
+    d = np.hypot(X - (cx + hx * r), Y - (cy + hy * r)) / (r * 1.7)
+    c.fill(m, 1.0 - d * 1.15 + v, pal)
+    return m
+
+
+def tilted_ring(cx, cy, rx, ry, tilt_deg, w=1.4):
+    """Thin ellipse ring rotated by tilt; returns (mask, front) where front marks the half nearer the viewer."""
+    a = math.radians(tilt_deg)
+    u = (X - cx) * math.cos(a) + (Y - cy) * math.sin(a)
+    v = -(X - cx) * math.sin(a) + (Y - cy) * math.cos(a)
+    e = np.sqrt((u / rx) ** 2 + (v / ry) ** 2)
+    m = np.abs(e - 1) * min(rx, ry) <= w / 2 + 0.25
+    return m, v >= 0
+
+
+def star4(cx, cy, r, w=None):
+    """Four-point star polygon mask."""
+    w = w or r * 0.28
+    return poly([(cx, cy - r), (cx + w, cy - w), (cx + r, cy), (cx + w, cy + w), (cx, cy + r), (cx - w, cy + w), (cx - r, cy), (cx - w, cy - w)])
+
+
+def blink(p, k, phase=0.0):
+    """True on roughly half the loop, k blinks per loop."""
+    return ((p * k + phase) % 1.0) < 0.5
+
+
+def lerp(a, b, t):
+    return a + (b - a) * t
