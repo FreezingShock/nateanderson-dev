@@ -467,7 +467,9 @@ export function PokeLayer({ s, d, root, coreFeed, feed, reduced, onChange, onGo,
     const f = ventFrac(s);
     const ready = f >= 1;
     const segs = 10;
-    const ventBtn = coreEl
+    // the gauge stays out of sight until it is half charged (or has been used), so the first minutes show a plain core
+    const ventShown = f >= 0.5 || poke(s).vents > 0;
+    const ventBtn = coreEl && ventShown
         ? createPortal(
             <button
                 type="button"

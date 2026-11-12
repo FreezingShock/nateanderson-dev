@@ -3,7 +3,7 @@
 import {
     chOff,
     GOALS, MATS, PERKS, TIERS, TREE, TUNE, REBOOT_UNLOCK,
-    ARC_MATS, LAB, PAYLOADS, intelRate, amount, apOnAscend, ascendNeed, unlockNeed, FW, fwNodeOpen, keysOnHandover, treeComplete, button, canAfford, canAscend, derive, droneBoost, droneCost, droneMax, droneRate, dronesOpen, postOf, postX, zoneRank, ROMAN, originAp, paradoxOc, bloomKeys, sunstoneAll, singularityAll, fmt, fmtTime, goalDone, hasNode, isUnlocked, nodeOpen, statDef,
+    ARC_MATS, LAB, PAYLOADS, intelRate, payloadCost, amount, apOnAscend, ascendNeed, unlockNeed, FW, fwNodeOpen, keysOnHandover, treeComplete, button, canAfford, canAscend, derive, droneBoost, droneCost, droneMax, droneRate, dronesOpen, postOf, postX, zoneRank, ROMAN, originAp, paradoxOc, bloomKeys, sunstoneAll, singularityAll, fmt, fmtTime, goalDone, hasNode, isUnlocked, nodeOpen, statDef,
     type ButtonStat, type Derived, type MatId, type State, type StatId,
 } from "./engine";
 import { LORE } from "./lore";
@@ -145,7 +145,10 @@ export function nextStep(s: State, d: Derived): Step {
         if (s.lab.intel >= need * 0.5) return mk({ id: "lab-research", kicker: "EXPLOIT LAB", title: "Research your first payload", why: "Intel runs alongside Bytes. Open the research tree and pick Packet sniffer or Rootkit.", cur: s.lab.intel, need, unit: "IN", eta: s.lab.intel >= need ? null : (need - s.lab.intel) / Math.max(1e-9, intelRate(s, d.bytesPerSec)), target: { win: "lab" } });
     }
     if (s.lab.nodes.length > 0 && s.life.compiled === 0 && s.lab.queue.length === 0 && PAYLOADS.some((p) => s.lab.nodes.includes(`rx_${p.id}`))) {
-        return mk({ id: "lab-compile", kicker: "EXPLOIT LAB", title: "Compile your first payload", why: "Press Compile in the Lab. When it lands in stock, press Deploy for the buff.", cur: 0, need: 1, unit: "", eta: null, target: { lab: true } });
+        // meter the Intel the recipe costs, so the step never sits at 0% with no clock after the research spent it all
+        const p = PAYLOADS.find((x) => s.lab.nodes.includes(`rx_${x.id}`))!;
+        const need = payloadCost(s, p, d).intel;
+        return mk({ id: "lab-compile", kicker: "EXPLOIT LAB", title: "Compile your first payload", why: "Press Compile in the Lab. When it lands in stock, press Deploy for the buff.", cur: Math.min(s.lab.intel, need), need, unit: "IN", eta: s.lab.intel >= need ? null : (need - s.lab.intel) / Math.max(1e-9, intelRate(s, d.bytesPerSec)), target: { lab: true } });
     }
 
     // ---- the chain, one zone at a time: Copper, Silicon, Quartz, Aether, then (after an Ascend) the deep materials

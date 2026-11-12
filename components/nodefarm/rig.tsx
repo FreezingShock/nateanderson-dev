@@ -5,7 +5,7 @@
 // Styles: app/camino/nodefarm-rig.css (`nf-rig*`).
 import { useState, type CSSProperties } from "react";
 import { sfx } from "@/lib/sound/sounds";
-import { STATS, fmt, fmtTime, statDef, type Derived, type State, type StatId } from "@/lib/nodefarm/engine";
+import { STATS, fmt, isUnlocked, fmtTime, statDef, type Derived, type State, type StatId } from "@/lib/nodefarm/engine";
 import {
     GROW_NAMES, PRISM_AIMS, RIGS, RIG_TUNE as T, buyRig, cacheCap, capCharge, capPay, capSecs, castMax, drawPay, glowFor, glowMul, growMul, growNext, growStage,
     indexMul, indexed, mirrorMul, mirrored, pourSecs, prismMul, pulseSecs, rewrite, rewritePrice, rig, rigCap, rigDef, rigLv, rigPrice, scrubBurn, setRig,
@@ -137,6 +137,9 @@ export function ZoneRig({ id, s, d }: { id: StatId; s: State; d: Derived }) {
     const [, bump] = useState(0);
     const def = rigDef(id);
     if (!def) return null;
+    // Rigs are the second layer of every zone: they stay out of sight until Silicon is open (about the fifth minute, when their
+    // first upgrade is in reach), so the first zones show only their buttons and the one next step.
+    if (!isUnlocked(s, "silicon") && s.life.ascends === 0) return null;
     const r = rig(s);
     const v = view(id, s, d);
     const act = (fn: () => boolean | void) => { const res = fn(); sfx(res === false ? "deny" : "tab"); bump((n) => n + 1); };
