@@ -36,6 +36,8 @@ const ARC_TITLES: Record<string, Record<ZoneEvKind, string>> = {
     fab: { surge: "Clean run", clearance: "Bulk order", resonance: "Matched wafers", vein: "Crystal seam", fault: "Dust leak", convoy: "Cart run", tune: "Calibrated line" },
     hollow: { surge: "Glyph flare", clearance: "Open vault", resonance: "Echoing halls", vein: "Buried seam", fault: "Stuck hour", convoy: "Torchbearers", tune: "Aligned carvings" },
     deep: { surge: "Solar wind", clearance: "Salvage drift", resonance: "Gravity lens", vein: "Dense cloud", fault: "Debris field", convoy: "Probe fleet", tune: "Dish alignment" },
+    overgrowth: { surge: "Spore burst", clearance: "Seed swap", resonance: "Cross-pollination", vein: "Rich loam", fault: "Blight", convoy: "Gardeners' round", tune: "Grafted rig" },
+    descent: { surge: "Magma surge", clearance: "Rockfall sale", resonance: "Deep echo", vein: "Geode pocket", fault: "Cave-in", convoy: "Mining crew", tune: "Tempered rig" },
     origin: { surge: "Memory flood", clearance: "Old prices", resonance: "Reflection", vein: "Buried archive", fault: "Stale index", convoy: "Recall", tune: "Rewritten rig" },
 };
 /** The name shown on the card and the log: the arc's own, or the plain one. */
