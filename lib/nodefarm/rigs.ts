@@ -50,6 +50,22 @@ export const RIG_TUNE = {
     index: 0.005, indexLv: 0.002,
     // 16 Mirror
     mirror: 0.1, mirrorLv: 0.025, mirrorMax: 4,
+    // 18 Spread: per material zone running this run
+    spread: 0.01, spreadLv: 0.004,
+    // 19 Knots: per Spores or Mycelium tier owned this run (12 knots, all tied doubles it)
+    knot: 0.015, knotLv: 0.005,
+    // 20 Daylight: one cycle, night minutes, day boost to Pollen, night drag on Pollen, night boost to Spores and Mycelium
+    sunMins: 10, nightMins: 4, day: 1.4, dayLv: 0.06, night: 0.8, nightGrow: 1.3,
+    // 21 Seed bank: seeds banked per tenfold Bloom at Ascend, bank size, boost per seed
+    seedMax: 30, seedMaxLv: 6, seed: 0.02,
+    // 22 Drill bit (real drain: a worn bit takes Basalt down to wearFloor of its rate)
+    wearUp: 1200, wearDown: 180, wearFloor: 0.5, coolBonus: 0.1, coolBonusLv: 0.03, coolBurn: 0.12, coolBurnLv: 0.015,
+    // 23 Eruptions: pressure clock, seconds of Magma each pays, shaft heat (Basalt boost) and how long it lasts
+    ventSecs: 180, ventLv: 0.06, ventPays: 20, heat: 1.5, heatSecs: 60, heatSecsLv: 10,
+    // 24 Ringing: Geodes grow with the Quartz you hold (log), capped
+    ring: 0.04, ringLv: 0.012, ringMax: 3,
+    // 25 Convection: per rig level owned across zones 18 to 24
+    conv: 0.01, convLv: 0.003,
 };
 const T = RIG_TUNE;
 
@@ -85,6 +101,14 @@ export const RIGS: RigDef[] = [
     R("singularity", "Gravity well", "link", "Every material button pressed this run, by anyone, drops mass into the well. Mass strengthens Singularity.", "+0.8% per tenfold mass"),
     R("engrams", "Index", "collection", "Every goal, secret and story log you own is filed here, and each one strengthens Engrams.", "+0.2% per filed record"),
     R("paradox", "Mirror", "catch-up", "The material zone furthest behind is mirrored: it gets a boost that grows with the Paradox you hold.", "a stronger reflection"),
+    R("spores", "Spread", "collection", "Spores drift into every zone that is running. Each material zone with producers this run strengthens Spores.", "+0.4% per running zone"),
+    R("mycelium", "Knots", "set", "Each Spores and Mycelium tier you own this run ties a knot in the web. Each knot strengthens Mycelium, and all twelve double it.", "+0.5% per knot"),
+    R("pollen", "Daylight", "cycle", "Day and night on a 10 minute clock. Days lift Pollen; nights slow it but feed Spores and Mycelium below.", "brighter days, +6% Pollen"),
+    R("bloom", "Seed bank", "carry", "Every Ascend banks seeds from the Bloom you hold, one per tenfold. Seeds stay through Ascend and each one strengthens Bloom.", "the bank holds 6 more seeds"),
+    R("basalt", "Drill bit", "hazard", "The bit wears while Basalt runs and a worn bit drags Basalt down to 50%. Coolant clears the wear and adds a bonus, but burns a share of Bloom.", "+3% cool bonus and 1.5% less Bloom burned"),
+    R("magma", "Eruptions", "timing", "Pressure builds on its own clock. Each eruption pays a lump of Magma and heats the shaft above, so Basalt runs at ×1.5 for a minute.", "erupts 6% sooner and heat lasts 10 s longer"),
+    R("geodes", "Ringing", "link", "The vault rings with the Crystal vault far above. Geodes grow with the Quartz you hold, up to ×3.", "a louder ring"),
+    R("core", "Convection", "meta", "Heat rises through the arc. Every rig level owned in zones 18 to 24 strengthens the core.", "+0.3% per level below"),
     R("origin", "Rewrite", "meta", "Spend Origin to rewrite another zone's rig. Each rewrite raises that rig's level cap by one, up to three, forever.", ""),
 ];
 export const RIG_BY = new Map(RIGS.map((r) => [r.zone, r]));
@@ -92,7 +116,7 @@ export const rigDef = (id: StatId) => RIG_BY.get(id);
 const KEY_ZONE = new Map(RIGS.flatMap((r) => r.keys.map((k) => [k.key, r.zone] as const)));
 
 export function freshRig(): RigState {
-    return { lv: {}, re: {}, rw: 0, scrub: true, aim: "copper", draw: 0, rwAim: "bytes", cache: 0, quiet: 0, pour: 0, casts: 0, dust: 0, grow: 0, glow: 0, glowLeft: 0, wx: 0, pulse: 0, pulses: 0, fired: 0, well: 0 };
+    return { lv: {}, re: {}, rw: 0, scrub: true, aim: "copper", draw: 0, rwAim: "bytes", cool: true, seeds: 0, cache: 0, quiet: 0, pour: 0, casts: 0, dust: 0, grow: 0, glow: 0, glowLeft: 0, wx: 0, pulse: 0, pulses: 0, fired: 0, well: 0, sun: 0, wear: 0, vent: 0, heat: 0 };
 }
 const num = (v: unknown, d = 0) => (typeof v === "number" && Number.isFinite(v) ? v : d);
 /** The rig state, made or repaired on first use (old saves have none). */
@@ -109,9 +133,11 @@ export function rig(s: State): RigState {
         aim: typeof o.aim === "string" && PRISM_AIMS.includes(o.aim as StatId) ? o.aim : b.aim,
         draw: T.draws.includes(num(o.draw)) ? num(o.draw) : 0,
         rwAim: typeof o.rwAim === "string" && RIG_BY.has(o.rwAim as StatId) && o.rwAim !== "origin" ? o.rwAim : b.rwAim,
+        cool: typeof o.cool === "boolean" ? o.cool : true,
     };
-    for (const k of ["cache", "quiet", "pour", "casts", "dust", "grow", "glow", "glowLeft", "wx", "pulse", "pulses", "fired", "well"] as const) r[k] = Math.max(0, num(o[k]));
+    for (const k of ["cache", "quiet", "pour", "casts", "dust", "grow", "glow", "glowLeft", "wx", "pulse", "pulses", "fired", "well", "seeds", "sun", "wear", "vent", "heat"] as const) r[k] = Math.max(0, num(o[k]));
     r.dust = Math.min(1, r.dust);
+    r.wear = Math.min(1, r.wear ?? 0);
     s.rig = r;
     checked.add(r);
     return r;
@@ -170,9 +196,10 @@ export function rewrite(s: State, zone?: StatId): boolean {
     r.rw += 1;
     return true;
 }
-export function setRig(s: State, k: "scrub" | "aim" | "draw" | "rwAim", v: boolean | string | number) {
+export function setRig(s: State, k: "scrub" | "aim" | "draw" | "rwAim" | "cool", v: boolean | string | number) {
     const r = rig(s);
     if (k === "scrub") r.scrub = !!v;
+    if (k === "cool") r.cool = !!v;
     if (k === "aim" && PRISM_AIMS.includes(v as StatId)) r.aim = v as string;
     if (k === "draw" && T.draws.includes(v as number)) r.draw = v as number;
     if (k === "rwAim" && RIG_BY.has(v as StatId) && v !== "origin") r.rwAim = v as string;
@@ -226,6 +253,32 @@ export function mirrored(s: State): MatId | null {
 }
 export const mirrorMul = (s: State) => Math.min(T.mirrorMax, 1 + (T.mirror + T.mirrorLv * L(s, "paradox")) * Math.log10(1 + Math.max(0, s.paradox)));
 
+// ---- the Overgrowth and Descent rigs (zones 18 to 25)
+export const runningZones = (s: State) => MATS.filter((m) => s.prod[m] > 0).length;
+export const spreadMul = (s: State) => 1 + runningZones(s) * (T.spread + T.spreadLv * L(s, "spores"));
+export const knotsTied = (s: State) => s.bought.spores.filter((n) => n > 0).length + s.bought.mycelium.filter((n) => n > 0).length;
+export const knotMul = (s: State) => { const n = knotsTied(s); return 1 + n * (T.knot + T.knotLv * L(s, "mycelium")) * (n >= 12 ? 2 : 1); };
+/** Daylight now: day or night, the Pollen boost, the boost below at night, and seconds left in the phase. */
+export function daylight(s: State): { phase: "day" | "night"; mul: number; below: number; left: number } {
+    const t = rig(s).sun ?? 0;
+    const day = (T.sunMins - T.nightMins) * 60;
+    if (t < day) return { phase: "day", mul: T.day + T.dayLv * L(s, "pollen"), below: 1, left: day - t };
+    return { phase: "night", mul: T.night, below: T.nightGrow, left: T.sunMins * 60 - t };
+}
+export const seedMax = (s: State) => T.seedMax + T.seedMaxLv * L(s, "bloom");
+export const seedMul = (s: State) => 1 + T.seed * (rig(s).seeds ?? 0);
+/** Seeds an Ascend right now would bank (one per tenfold Bloom held). */
+export const seedsFor = (s: State) => Math.floor(Math.log10(1 + Math.max(0, s.bloom)));
+export const coolBonus = (s: State) => T.coolBonus + T.coolBonusLv * L(s, "basalt");
+export const coolBurn = (s: State) => Math.max(0.02, T.coolBurn - T.coolBurnLv * L(s, "basalt"));
+export const basaltYield = (s: State) => { const r = rig(s); const w = r.wear ?? 0; return (1 + (r.cool ? coolBonus(s) : 0)) * (1 - w) + T.wearFloor * w; };
+export const ventSecs = (s: State) => T.ventSecs * Math.max(0.3, 1 - T.ventLv * L(s, "magma"));
+export const heatSecs = (s: State) => T.heatSecs + T.heatSecsLv * L(s, "magma");
+export const ringMul = (s: State) => Math.min(T.ringMax, 1 + (T.ring + T.ringLv * L(s, "geodes")) * Math.log10(1 + Math.max(0, s.quartz)));
+export const DESCENT_RIGS: StatId[] = ["spores", "mycelium", "pollen", "bloom", "basalt", "magma", "geodes"];
+export const convLevels = (s: State) => DESCENT_RIGS.reduce((a, z) => a + rigLv(s, z), 0);
+export const convMul = (s: State) => 1 + convLevels(s) * (T.conv + T.convLv * L(s, "core"));
+
 /** Every rig's output multiplier, by zone. Only open zones count. */
 export function muls(s: State): Partial<Record<StatId, number>> {
     const r = rig(s);
@@ -248,6 +301,14 @@ export function muls(s: State): Partial<Record<StatId, number>> {
     if (open("singularity")) mul("singularity", wellMul(s));
     if (open("engrams")) mul("engrams", indexMul(s));
     if (open("paradox")) { const z = mirrored(s); if (z) mul(z, mirrorMul(s)); }
+    if (open("spores")) mul("spores", spreadMul(s));
+    if (open("mycelium")) mul("mycelium", knotMul(s));
+    if (open("pollen")) { const dl = daylight(s); mul("pollen", dl.mul); mul("spores", dl.below); mul("mycelium", dl.below); }
+    if (open("bloom")) mul("bloom", seedMul(s));
+    if (open("basalt")) { mul("basalt", basaltYield(s)); if (r.cool) mul("bloom", 1 - coolBurn(s)); }
+    if (open("magma") && (r.heat ?? 0) > 0) mul("basalt", T.heat);
+    if (open("geodes")) mul("geodes", ringMul(s));
+    if (open("core")) mul("core", convMul(s));
     return m;
 }
 
@@ -295,6 +356,22 @@ function step(s: State, dt: number, d: Derived) {
             }
         }
     }
+    // 20 Daylight
+    if (s.prod.pollen > 0) r.sun = ((r.sun ?? 0) + dt) % (T.sunMins * 60);
+    // 22 Drill bit
+    if (s.prod.basalt > 0) r.wear = r.cool ? Math.max(0, (r.wear ?? 0) - dt / T.wearDown) : Math.min(1, (r.wear ?? 0) + dt / T.wearUp);
+    // 23 Eruptions
+    if ((r.heat ?? 0) > 0) r.heat = Math.max(0, (r.heat ?? 0) - dt);
+    if (s.prod.magma > 0) {
+        r.vent = (r.vent ?? 0) + dt;
+        const per = ventSecs(s);
+        if (r.vent >= per) {
+            const n = Math.floor(r.vent / per);
+            r.vent -= n * per;
+            s.magma += (d.rates.magma / oc) * T.ventPays * n;
+            r.heat = heatSecs(s);
+        }
+    }
 }
 
 RIG_HOOKS.muls = muls;
@@ -305,7 +382,8 @@ RIG_HOOKS.spend = (s, stat, tier) => { if (stat !== "mult" && isUnlocked(s, "sin
 RIG_HOOKS.ascend = (s) => {
     const r = rig(s);
     const glow = glowFor(s);
-    return { ...freshRig(), lv: r.lv, re: r.re, rw: r.rw, scrub: r.scrub, aim: r.aim, draw: r.draw, rwAim: r.rwAim, quiet: r.quiet, glow, glowLeft: glow > 0 ? glowSecs(s) : 0 };
+    const seeds = isUnlocked(s, "bloom") ? Math.min(seedMax(s), (r.seeds ?? 0) + seedsFor(s)) : r.seeds ?? 0;
+    return { ...freshRig(), lv: r.lv, re: r.re, rw: r.rw, scrub: r.scrub, aim: r.aim, draw: r.draw, rwAim: r.rwAim, cool: r.cool, seeds, quiet: r.quiet, glow, glowLeft: glow > 0 ? glowSecs(s) : 0 };
 };
 
 /** Short live readouts for the console and the admin panel. */
@@ -340,5 +418,9 @@ export function fillRigs(s: State) {
     r.glowLeft = glowSecs(s);
     r.wx = (T.wxMins - stormMins(s)) * 60;
     s.rebootAt = Math.max(0, s.life.secs - capSecs(s));
+    r.seeds = seedMax(s);
+    r.wear = 0;
+    r.vent = ventSecs(s) - 1;
+    r.sun = 0;
 }
 export function clearRigs(s: State) { s.rig = freshRig(); }

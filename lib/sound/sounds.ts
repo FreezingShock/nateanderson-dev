@@ -238,6 +238,22 @@ const DEFS = {
                     tone("game", { f: base * 0.25, dur: 0.35, gain: 0.07, harm: 0.3, cutoff: 900, attack: 0.01 });
                     blip("game", base * 2, { at: 0.03, dur: 0.05, gain: 0.05, cutoff: 4200 });
                     break;
+                case "spores":
+                case "mycelium":
+                case "pollen":
+                case "bloom":
+                    // Overgrowth: a soft woody pluck that rises, like a stem springing back
+                    tone("game", { f: base * 0.75, dur: 0.22, gain: 0.05, glide: 1.25, cutoff: 1800, attack: 0.008, type: "triangle" });
+                    blip("game", base * 1.5, { at: 0.05, dur: 0.06, gain: 0.035, cutoff: 3000 });
+                    break;
+                case "basalt":
+                case "magma":
+                case "geodes":
+                case "core":
+                    // Descent: a low struck-stone thud with a bright chip on top
+                    tone("game", { f: base * 0.25, dur: 0.3, gain: 0.07, glide: 0.8, harm: 0.4, cutoff: 700, attack: 0.004 });
+                    blip("game", base * 3, { at: 0.02, dur: 0.03, gain: 0.03, cutoff: 5200 });
+                    break;
                 default:
                     blip("game", base, { dur: 0.05, gain: 0.06, cutoff: 2600 });
                     blip("game", base * 1.5, { at: 0.055, dur: 0.07, gain: 0.06, cutoff: 3000 });
