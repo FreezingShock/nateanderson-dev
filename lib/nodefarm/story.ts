@@ -1,7 +1,7 @@
 // The story of Node Farm: logs left by the previous operator of node-01. You recover them as the farm grows. They are
 // read in the Records window and with `nf logs`. A log stays recovered through every Ascend (it is stored in the save).
 // Numbers follow the order the logs were written, not the order you find them, so there are gaps early on.
-import { TREE, isUnlocked, tiersDone, type State, type StatId } from "./engine";
+import { TREE, isUnlocked, tiersDone, type Branch, type State, type StatId } from "./engine";
 
 export interface Log {
     id: string;
@@ -11,8 +11,8 @@ export interface Log {
 }
 
 const open = (id: StatId) => (s: State) => isUnlocked(s, id);
-// A branch counts as whole when its six original nodes (prefix 1 to 6) are owned. The tree has grown to 60 nodes in five sections, but these keep their ids.
-const branch = (last: string) => (s: State) => [1, 2, 3, 4, 5, 6].every((i) => s.tree.includes(last.slice(0, 2) + i));
+// A section counts as whole when every node in it is owned (8 each since the 40-node tree). Log ids stay the same.
+const branch = (sec: Branch) => (s: State) => TREE.filter((n) => n.branch === sec).every((n) => s.tree.includes(n.id));
 
 export const LOGS: Log[] = [
     { id: "hand", title: "Handover", text: "If you are reading this, the node still boots. Good. I am leaving it running. Press things and see what happens. Everything here started as one wire.", test: () => true },
@@ -34,9 +34,9 @@ export const LOGS: Log[] = [
     { id: "asc3", title: "Third time", text: "Third ascension. It no longer feels like losing everything. It feels like handing the room back to the dark and getting it returned cleaner.", test: (s) => s.life.ascends >= 3 },
     { id: "voidsteel", title: "Hollow", text: "Poured metal from a hollow in the floor. It rings when you set it down, and the Starglass rings back. I turned the music off so I could hear them talk.", test: open("voidsteel") },
     { id: "chrono", title: "Borrowed time", text: "Chrono is time that was about to leave. I caught some. The wall clock has not moved since. I think that is the price, and I think I am fine with it.", test: open("chrono") },
-    { id: "sg6", title: "Signal branch", text: "The Signal branch is whole, from Line coding to Overdrive, and the hum changed pitch. It used to complain. Now it sounds like it is working with me.", test: branch("sg6") },
-    { id: "fg6", title: "Forge branch", text: "The Forge branch is whole. I can make anything in this room now. That should worry me more than it does.", test: branch("fg6") },
-    { id: "sy6", title: "Systems branch", text: "The Systems branch is whole. Even asleep, the node keeps its own watch. I do not have to be the one holding it up anymore.", test: branch("sy6") },
+    { id: "sg6", title: "Signal branch", text: "The Signal branch is whole, from Line coding to Overdrive, and the hum changed pitch. It used to complain. Now it sounds like it is working with me.", test: branch("signal") },
+    { id: "fg6", title: "Forge branch", text: "The Forge branch is whole. I can make anything in this room now. That should worry me more than it does.", test: branch("forge") },
+    { id: "sy6", title: "Systems branch", text: "The Systems branch is whole. Even asleep, the node keeps its own watch. I do not have to be the one holding it up anymore.", test: branch("systems") },
     { id: "asc10", title: "Ten", text: "Ten ascensions. I tried to count the farm and lost my place. The node counted for me. It was off by one, and then it was not.", test: (s) => s.life.ascends >= 10 },
     { id: "rank7", title: "Zero", text: "Zero. Every goal on the board is done. I sat there afterwards and watched the numbers go up by themselves. I think that is the good part.", test: (s) => tiersDone(s) >= 7 },
     { id: "last", title: "Last entry", text: "Whole tree. I am done with this node. It does not need me, but it will want an operator. Be kind to it. Press everything. Leave it running.", test: (s) => s.tree.length >= TREE.length },

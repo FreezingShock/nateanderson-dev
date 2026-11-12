@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState, type MutableRefObject } from "react";
 import { sfx } from "@/lib/sound/sounds";
 import { EVENT_TUNE, nextGapMs, pickEvent, type EventDef, type EventKind } from "@/lib/nodefarm/events";
-import { overclockMult, overclockSecs, type State } from "@/lib/nodefarm/engine";
+import { eventHaste, overclockMult, overclockSecs, type State } from "@/lib/nodefarm/engine";
 
 type Stage = "incoming" | "live" | "result";
 type Active = { def: EventDef; id: number; stage: Stage; won: boolean };
@@ -16,7 +16,8 @@ interface LayerProps {
     ready: boolean;
     reduced: boolean;
     onEngage: (def: EventDef) => void;
-    onResult: (def: EventDef, won: boolean) => void;
+    /** return `{ echo: true }` to bring the next event right away (the Echo tree node) */
+    onResult: (def: EventDef, won: boolean) => { echo?: boolean } | void;
     onMiss: (def: EventDef) => void;
     onDisable: () => void;
 }
@@ -33,7 +34,7 @@ export function EventLayer({ game, busy, enabled, ready, reduced, onEngage, onRe
     busyRef.current = busy;
 
     const schedule = useCallback(() => {
-        next.current = performance.now() + nextGapMs(game.current?.perks.scanner ?? 0);
+        next.current = performance.now() + nextGapMs(game.current ? eventHaste(game.current) : 0);
     }, [game]);
 
     useEffect(() => {
@@ -79,10 +80,12 @@ export function EventLayer({ game, busy, enabled, ready, reduced, onEngage, onRe
             const a = actRef.current;
             if (!a || a.stage === "result") return;
             setAct({ ...a, stage: "result", won });
-            onResult(a.def, won);
+            const r = onResult(a.def, won);
             sfx(won ? "nfBreach" : "deny");
             setTimeout(() => setAct((c) => (c && c.id === a.id ? null : c)), EVENT_TUNE.resultMs);
             schedule();
+            // Echo: the next event follows as soon as this result card is gone
+            if (r && r.echo) next.current = performance.now() + EVENT_TUNE.resultMs + 1500;
         },
         [onResult, schedule],
     );
