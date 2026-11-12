@@ -1,184 +1,325 @@
 "use client";
 
+import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { PixelIcon } from "@/components/cm/pixel-icons";
-import { GOALS, GOAL_TIERS, SECRETS, TIER_NAMES, TUNE, fmt, fmtTime, goalDone, tiersDone, type NumFmt, type State } from "@/lib/nodefarm/engine";
+import { codeReveal } from "@/lib/nodefarm/cx";
+import { GOALS, GOAL_TIERS, SECRETS, TIER_NAMES, TUNE, fmt, fmtTime, goalDone, tiersDone, type Goal, type NumFmt, type State } from "@/lib/nodefarm/engine";
 import { goalCounts, recordSections } from "@/lib/nodefarm/records";
 import { LOGS, logNo } from "@/lib/nodefarm/story";
 import { NfIcon } from "./icon";
+import { DataLines, Frame, HoldButton, WinBanner } from "./win-kit";
+
+// Goals, Records and Menu windows (rebuilt 2026-11-12): art banner, bracket frames, data lines. Shared parts in ./win-kit.
+// Styles: app/camino/nodefarm-windows.css. Rows carry data-cx-i so the window's code reveal prints them in order.
 
 const ROMAN = ["", "I", "II", "III", "IV", "V", "VI", "VII"];
 const TIER_COLOR = ["", "#2fd8e8", "#b6f04a", "#f0a53c", "#ff2d8a", "#f4f4f2", "#ffc53a", "#9a7bff"];
+const SECRET_COLOR = "#9a7bff";
 const stamp = (ms?: number) => {
     if (!ms) return "done";
     const d = new Date(ms);
     return `${d.toLocaleDateString(undefined, { month: "short", day: "numeric" })} ${d.toTimeString().slice(0, 5)}`;
 };
+const bonusNow = (s: State) => ((1 + s.ach.length * TUNE.achBonus) * (1 + tiersDone(s) * TUNE.tierBonus) - 1) * 100;
+
+// ---------------------------------------------------------------------------------------------------------------------
+// Goals: each tier is a circuit rail of badge nodes that light up when done. The line under the rail reads out one goal:
+// the one under the pointer, else the one you tapped, else the next one to do in that tier.
+
+function goalProg(s: State, g: Goal) {
+    const first = g.target < 1;
+    const cur = first ? (g.cur(s) > 0 ? 1 : 0) : Math.min(g.cur(s), g.target);
+    const tgt = first ? 1 : g.target;
+    return { cur, tgt, frac: Math.min(1, cur / tgt) };
+}
+
+type RailItem = { id: string; name: string; text: string; icon: Goal["icon"]; done: boolean; frac: number; count: string; at?: number };
+
+function Rail({ items, color, label, i }: { items: RailItem[]; color: string; label: string; i: number }) {
+    const [hover, setHover] = useState<string | null>(null);
+    const [pick, setPick] = useState<string | null>(null);
+    const next = items.find((x) => !x.done) ?? items[items.length - 1];
+    const shown = items.find((x) => x.id === (hover ?? pick)) ?? next;
+    const lit = items.filter((x) => x.done).length;
+    return (
+        <div className="nf-wk-rail" data-cx-i={i} style={{ ["--c" as string]: color, ["--n" as string]: items.length, ["--lit" as string]: lit } as CSSProperties}>
+            <ol className="nf-wk-nodes" aria-label={label}>
+                {items.map((x) => (
+                    <li key={x.id} data-done={x.done ? "" : undefined} data-next={x === next && !x.done ? "" : undefined} data-on={x === shown ? "" : undefined}>
+                        <button
+                            type="button"
+                            aria-pressed={x === shown}
+                            aria-label={`${x.name}: ${x.done ? "done" : x.count}`}
+                            onPointerEnter={(e) => { if (e.pointerType === "mouse") setHover(x.id); }}
+                            onPointerLeave={(e) => { if (e.pointerType === "mouse") setHover(null); }}
+                            onFocus={() => setPick(x.id)}
+                            onClick={() => setPick(x.id)}
+                        >
+                            <NfIcon name={x.icon} />
+                            <span className="nf-wk-ring" aria-hidden="true"><i style={{ height: `${x.frac * 100}%` }} /></span>
+                            {x.done && <span className="nf-wk-tick" aria-hidden="true"><PixelIcon name="check" size={12} /></span>}
+                        </button>
+                    </li>
+                ))}
+            </ol>
+            <p className="nf-wk-read" aria-live="polite">
+                <span className="nf-wk-read-k">{shown.done ? "[done]" : shown === next ? "[next]" : "[ -- ]"}</span>
+                <b>{shown.name}</b>
+                <span className="nf-wk-read-t">{shown.text}</span>
+                <em>{shown.done ? stamp(shown.at) : shown.count}</em>
+            </p>
+        </div>
+    );
+}
 
 export function GoalsPanel({ s }: { s: State }) {
+    const c = goalCounts(s);
+    const tiers = tiersDone(s);
     return (
-        <div className="nf-sys">
-            <header className="nf-sys-h" data-cx-i="0">
-                <h3>Goals</h3>
-                <p>
-                    {goalCounts(s).goals} of {GOALS.length} done, {goalCounts(s).secrets} of {SECRETS.length} secrets found. Each goal or secret adds +{TUNE.achBonus * 100}% to everything, and a finished tier adds +{TUNE.tierBonus * 100}% more.
-                    <b> Now +{fmt(((1 + s.ach.length * TUNE.achBonus) * (1 + tiersDone(s) * TUNE.tierBonus) - 1) * 100)}%.</b>
-                </p>
-            </header>
-            <div className="nf-tiers">
-                {Array.from({ length: GOAL_TIERS }, (_, i) => i + 1).map((t) => {
+        <div className="nf-sys nf-wk">
+            <WinBanner
+                art="goals"
+                color="#ffc53a"
+                readout={[
+                    ["~/goals", ""],
+                    ["DONE", `${c.goals} / ${GOALS.length}`],
+                    ["TIERS", `${tiers} / ${GOAL_TIERS}`],
+                    ["SECRETS", `${c.secrets} / ${SECRETS.length}`],
+                ]}
+                big={`+${fmt(bonusNow(s))}%`}
+                bigLabel="to everything"
+            />
+            <p className="nf-wk-lead" data-cx-i="1">
+                Every goal or secret adds <b>+{TUNE.achBonus * 100}%</b> to everything. Finish all six in a tier for <b>+{TUNE.tierBonus * 100}%</b> more.
+            </p>
+            <div className="nf-wk-tiers">
+                {Array.from({ length: GOAL_TIERS }, (_, k) => k + 1).map((t) => {
                     const goals = GOALS.filter((g) => g.tier === t);
-                    const n = goals.filter((g) => goalDone(s, g)).length;
+                    const items: RailItem[] = goals.map((g) => {
+                        const p = goalProg(s, g);
+                        return { id: g.id, name: g.name, text: g.hint, icon: g.icon, done: goalDone(s, g), frac: p.frac, count: `${fmt(p.cur)} / ${fmt(p.tgt)}`, at: s.achAt[g.id] };
+                    });
+                    const n = items.filter((x) => x.done).length;
                     const full = n === goals.length;
+                    const open = t === 1 || GOALS.filter((g) => g.tier === t - 1).some((g) => goalDone(s, g)) || n > 0;
                     return (
-                        <section key={t} className="nf-tier" data-cx-i={t} data-full={full ? "" : undefined} style={{ ["--c" as string]: TIER_COLOR[t] }}>
-                            <header>
-                                <span className="nf-tier-n">{ROMAN[t]}</span>
-                                <b>{TIER_NAMES[t]}</b>
-                                <span className="nf-tier-s">{n}/{goals.length}{full ? " · bonus on" : ` · +${TUNE.tierBonus * 100}% at ${goals.length}`}</span>
-                                <span className="nf-bar sm" aria-hidden="true"><i style={{ width: `${(n / goals.length) * 100}%` }} /></span>
-                            </header>
-                            <ul>
-                                {goals.map((g) => {
-                                    const done = goalDone(s, g);
-                                    const first = g.target < 1;
-                                    const cur = first ? (g.cur(s) > 0 ? 1 : 0) : Math.min(g.cur(s), g.target);
-                                    const tgt = first ? 1 : g.target;
-                                    return (
-                                        <li key={g.id} data-done={done ? "" : undefined}>
-                                            <NfIcon name={g.icon} />
-                                            <span className="nf-goal-t">
-                                                <b>{g.name}</b>
-                                                <small>{g.hint}</small>
-                                                <span className="nf-bar sm" aria-hidden="true"><i style={{ width: `${Math.min(100, (cur / tgt) * 100)}%` }} /></span>
-                                            </span>
-                                            <span className="nf-goal-n">{done ? <><PixelIcon name="check" size={12} /><time>{stamp(s.achAt[g.id])}</time></> : `${fmt(cur)}/${fmt(tgt)}`}</span>
-                                        </li>
-                                    );
-                                })}
-                            </ul>
-                        </section>
+                        <Frame
+                            key={t}
+                            i={t + 1}
+                            color={TIER_COLOR[t]}
+                            className={`nf-wk-tier${full ? " is-full" : ""}${open ? "" : " is-dim"}`}
+                            path={`tier.${ROMAN[t]}`}
+                            title={TIER_NAMES[t]}
+                            aside={<>{n}/{goals.length} <em>{full ? "bonus on" : `+${TUNE.tierBonus * 100}% at ${goals.length}`}</em></>}
+                        >
+                            <Rail items={items} color={TIER_COLOR[t]} label={`${TIER_NAMES[t]} goals`} i={t + 1} />
+                        </Frame>
                     );
                 })}
+                <Frame
+                    i={GOAL_TIERS + 2}
+                    color={SECRET_COLOR}
+                    className="nf-wk-tier nf-wk-sec"
+                    path="tier.??"
+                    title="Secrets"
+                    aside={<>{c.secrets}/{SECRETS.length} <em>found</em></>}
+                >
+                    <Rail
+                        i={GOAL_TIERS + 2}
+                        color={SECRET_COLOR}
+                        label="Secrets"
+                        items={SECRETS.map((x) => {
+                            const done = s.ach.includes(x.id);
+                            return { id: x.id, name: done ? x.name : "????", text: done ? x.how : x.clue, icon: done ? "spark" : "lock", done, frac: done ? 1 : 0, count: "hidden", at: s.achAt[x.id] };
+                        })}
+                    />
+                </Frame>
             </div>
-            <section className="nf-secrets" aria-label="Secrets" data-cx-i="9">
-                <header>
-                    <b>Secrets</b>
-                    <span className="nf-tier-s">{goalCounts(s).secrets}/{SECRETS.length} found</span>
-                </header>
-                <ul>
-                    {SECRETS.map((x) => {
-                        const done = s.ach.includes(x.id);
-                        return (
-                            <li key={x.id} data-done={done ? "" : undefined}>
-                                <NfIcon name={done ? "spark" : "lock"} />
-                                <span className="nf-goal-t">
-                                    <b>{done ? x.name : "????"}</b>
-                                    <small>{done ? x.how : x.clue}</small>
-                                </span>
-                                <span className="nf-goal-n">{done ? <><PixelIcon name="check" size={12} /><time>{stamp(s.achAt[x.id])}</time></> : "hidden"}</span>
-                            </li>
-                        );
-                    })}
-                </ul>
-            </section>
+        </div>
+    );
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+// Records: an operator dossier (big readouts, then data lines) and a two-pane log reader that types the picked log out.
+
+function LogReader({ s }: { s: State }) {
+    const got = LOGS.map((l) => s.logs.includes(l.id));
+    const latest = (() => { for (let i = LOGS.length - 1; i >= 0; i--) if (got[i]) return i; return 0; })();
+    const [sel, setSel] = useState(latest);
+    const body = useRef<HTMLDivElement>(null);
+    const first = useRef(true);
+    useEffect(() => {
+        if (first.current) { first.current = false; return; }
+        codeReveal(body.current, { bare: true, rows: ":scope > *", ms: 320, sound: false });
+    }, [sel]);
+    const l = LOGS[sel];
+    const open = got[sel];
+    return (
+        <div className="nf-wk-logs">
+            <ol className="nf-wk-loglist" aria-label="Operator logs">
+                {LOGS.map((x, i) => (
+                    <li key={x.id}>
+                        <button
+                            type="button"
+                            aria-pressed={i === sel}
+                            data-lock={got[i] ? undefined : ""}
+                            onClick={() => {
+                                setSel(i);
+                                if (matchMedia("(max-width: 719px)").matches) setTimeout(() => body.current?.scrollIntoView({ block: "nearest", behavior: "smooth" }), 40);
+                            }}
+                        >
+                            <span>{logNo(i)}</span>
+                            <b>{got[i] ? x.title : "encrypted"}</b>
+                        </button>
+                    </li>
+                ))}
+            </ol>
+            <div className="nf-wk-logbody" ref={body} aria-live="polite">
+                <p className="nf-wk-logh">LOG {logNo(sel)} // {open ? l.title : "????"}</p>
+                {open
+                    ? <p className="nf-wk-logt">{l.text}<span className="nf-wk-caret" aria-hidden="true" /></p>
+                    : <p className="nf-wk-logt is-lock">This log is still encrypted. It decrypts as the farm grows.<span className="nf-wk-caret" aria-hidden="true" /></p>}
+                <p className="nf-wk-logf">signed: operator, node-01</p>
+            </div>
         </div>
     );
 }
 
 export function RecordsPanel({ s }: { s: State }) {
+    const secs = recordSections(s);
+    const run = secs.find((x) => x.id === "run")!;
+    const life = secs.find((x) => x.id === "life")!;
+    const pick = (rows: [string, string][], k: string) => rows.find((r) => r[0] === k)?.[1] ?? "";
+    const big: [string, string, string][] = [
+        ["Time played", fmtTime(s.life.secs), "#2fd8e8"],
+        ["Peak Bytes/s", pick(life.rows, "Peak Bytes/s"), "#b6f04a"],
+        ["Global bonus", pick(run.rows, "Global bonus"), "#ffc53a"],
+        ["Ascensions", String(s.life.ascends), "#ff2d8a"],
+    ];
+    const colours: Record<string, string> = { run: "#2fd8e8", mats: "#f08a3c", life: "#b6f04a", prog: "#ffc53a" };
     return (
-        <div className="nf-sys nf-rec-grid">
-            {recordSections(s).map((sec) => (
-                <section key={sec.id}>
-                    <header className="nf-sys-h"><h3>{sec.title}</h3><p>{sec.blurb}</p></header>
-                    <dl className="nf-recs">
-                        {sec.rows.map(([k, v]) => <div key={k}><dt>{k}</dt><dd>{v}</dd></div>)}
-                    </dl>
-                </section>
-            ))}
-            <section className="nf-logs">
-                <header className="nf-sys-h"><h3>Operator logs</h3><p>{s.logs.length} of {LOGS.length} recovered. Left by whoever ran this node before you.</p></header>
-                <ol className="nf-log-list">
-                    {LOGS.map((l, i) => (s.logs.includes(l.id)
-                        ? <li key={l.id}><b>LOG {logNo(i)} // {l.title}</b><p>{l.text}</p></li>
-                        : <li key={l.id} className="lock"><b>LOG {logNo(i)} // ????</b></li>))}
-                </ol>
-            </section>
+        <div className="nf-sys nf-wk">
+            <WinBanner
+                art="records"
+                color="#f0a53c"
+                readout={[
+                    ["~/records", ""],
+                    ["RUN", String(s.life.ascends + 1).padStart(2, "0")],
+                    ["FIRST BOOT", new Date(s.started).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" })],
+                    ["LOGS", `${s.logs.length} / ${LOGS.length} recovered`],
+                ]}
+            />
+            <dl className="nf-wk-bigs" data-cx-i="1">
+                {big.map(([k, v, c]) => (
+                    <div key={k} style={{ ["--c" as string]: c } as CSSProperties}><dt>{k}</dt><dd>{v}</dd></div>
+                ))}
+            </dl>
+            <div className="nf-wk-cols">
+                {secs.map((sec, i) => (
+                    <Frame key={sec.id} i={i + 2} color={colours[sec.id]} path={`records/${sec.id}`} title={sec.title} note={sec.blurb}>
+                        <DataLines rows={sec.rows} />
+                    </Frame>
+                ))}
+            </div>
+            <Frame i={8} color="#6bffc9" className="nf-wk-logfr" path="records/logs" title="Operator logs" aside={<>{s.logs.length}/{LOGS.length}</>} note="Left by whoever ran this node before you. New ones decrypt as the farm grows.">
+                <LogReader s={s} />
+            </Frame>
         </div>
     );
 }
 
+// ---------------------------------------------------------------------------------------------------------------------
+// Menu: a config file. Each setting is one line you click to flip; the save code is a terminal block; reset is a hold.
+// Save files, backup, volume, calm motion, number format and keys came in with #170 and keep their behaviour.
+
+const FORMATS: [NumFmt, string][] = [["short", "1.2M"], ["sci", "1.2e6"], ["eng", "1.2e6 / e3"]];
+
 export function MenuPanel({
-    s, soundOn, onSound, humOn, onHum, eventsOn, onEvents, ioText, setIoText, ioMsg, onExport, onImport, importConfirm, onDownload, onUpload, backup, onRestore, volume, onVolume, calm, osCalm, onCalm, lastSave, numFmt, onNumFmt, hasMax, confirm, onReset,
+    s, soundOn, onSound, humOn, onHum, eventsOn, onEvents, ioText, setIoText, ioMsg, onExport, onImport, importConfirm, onDownload, onUpload, backup, onRestore, volume, onVolume, calm, osCalm, onCalm, lastSave, numFmt, onNumFmt, hasMax, onReset,
 }: {
     s: State; soundOn: boolean; onSound: () => void; humOn: boolean; onHum: () => void; eventsOn: boolean; onEvents: () => void; ioText: string; setIoText: (v: string) => void; ioMsg: string; onExport: () => void; onImport: () => void; importConfirm: boolean; onDownload: () => void; onUpload: (f: File) => void;
-    backup: { at: number; why: string } | null; onRestore: () => void; volume: number; onVolume: (v: number) => void; calm: boolean; osCalm: boolean; onCalm: () => void; lastSave: number; numFmt: NumFmt; onNumFmt: (f: NumFmt) => void; hasMax: boolean; confirm: boolean; onReset: () => void;
+    backup: { at: number; why: string } | null; onRestore: () => void; volume: number; onVolume: (v: number) => void; calm: boolean; osCalm: boolean; onCalm: () => void; lastSave: number; numFmt: NumFmt; onNumFmt: (f: NumFmt) => void; hasMax: boolean; confirm?: boolean; onReset: () => void;
 }) {
-    const FORMATS: [NumFmt, string][] = [["short", "1.2M"], ["sci", "1.2e6"], ["eng", "1.2e6 / e3"]];
-    const facts: [string, string][] = [
-        ["Played", fmtTime(s.life.secs)],
-        ["Presses", fmt(s.life.presses)],
-        ["Bytes ever", fmt(s.life.bytes)],
-        ["Reboots ever", fmt(s.life.reboots)],
-        ["Events cleared", String(s.life.intrusions)],
-        ["Ascensions", String(s.life.ascends)],
+    const opts: { key: string; on: boolean; flip: () => void; note: string; off?: boolean }[] = [
+        { key: "sound", on: soundOn, flip: onSound, note: "naOS clicks, prints and alarms" },
+        { key: "hum", on: humOn, flip: onHum, note: "the reactor's low drone" },
+        { key: "events", on: eventsOn, flip: onEvents, note: "quick-time events every few minutes" },
+        { key: "calm", on: calm || osCalm, flip: onCalm, off: osCalm, note: osCalm ? "your device already asks for less motion" : "less motion: no pops, flashes or loops" },
     ];
+    const keys: [string, string][] = [["M", "Map"], ["O", "Goals"], ["L", "Records"], ["A", "Ascend"], ["S", "Menu"], ["T", "Tree"], ...(hasMax ? [["B", "Buy max on or off"] as [string, string]] : []), ["Esc", "Close the open window"], ["Hold a button", "Keep buying"]];
     return (
-        <div className="nf-sys nf-menu-grid">
-            <section>
-                <header className="nf-sys-h"><h3>Lifetime</h3><p>Survives every Ascend.</p></header>
-                <dl className="nf-facts">
-                    {facts.map(([k, v]) => <div key={k}><dt>{k}</dt><dd>{v}</dd></div>)}
-                </dl>
-            </section>
-            <section>
-                <header className="nf-sys-h"><h3>Save</h3><p>Stored in this browser. Move it with a code.</p></header>
-                <div className="nf-menu-row">
-                    <button type="button" className="nf-mini" onClick={onExport}>Export code</button>
-                    <button type="button" className="nf-mini" onClick={onDownload}>Download file</button>
-                    <label className="nf-mini nf-file">Open file<input type="file" accept=".txt,text/plain" onChange={(e) => { const f = e.target.files?.[0]; if (f) onUpload(f); e.target.value = ""; }} /></label>
-                    <button type="button" className="nf-mini" data-guide={importConfirm ? "" : undefined} onClick={onImport}>{importConfirm ? "Confirm import" : "Import"}</button>
-                </div>
-                <label className="nf-io">
-                    <span>Save code</span>
-                    <textarea value={ioText} onChange={(e) => setIoText(e.target.value)} rows={3} spellCheck={false} placeholder="Export to get a code, or paste one here and press Import." />
-                </label>
-                <p className="nf-io-msg">{lastSave ? `Last saved ${new Date(lastSave).toLocaleTimeString()}. Saves every 5 s and when you leave.` : "Saves every 5 s and when you leave."}</p>
-                {ioMsg && <p className="nf-io-msg" role="status">{ioMsg}</p>}
-                {backup && (
-                    <div className="nf-backup">
-                        <span>Backup from {new Date(backup.at).toLocaleString()} ({backup.why}).</span>
-                        <button type="button" className="nf-mini" onClick={onRestore}>Restore backup</button>
+        <div className="nf-sys nf-wk">
+            <WinBanner
+                art="menu"
+                color="#b6f04a"
+                readout={[
+                    ["~/config", ""],
+                    ["SAVE", "this browser · every 5s"],
+                    ["LAST SAVE", lastSave ? new Date(lastSave).toLocaleTimeString() : "not yet"],
+                    ["PLAYED", fmtTime(s.life.secs)],
+                ]}
+            />
+            <div className="nf-wk-cols nf-wk-menu">
+                <Frame i={1} color="#b6f04a" path="config/node.cfg" title="Settings" note="Kept on this device, not in the save. Click a line to flip it.">
+                    <ul className="nf-wk-cfg">
+                        {opts.map((o) => (
+                            <li key={o.key}>
+                                <button type="button" role="switch" aria-checked={o.on} disabled={o.off} onClick={o.flip}>
+                                    <span className="nf-wk-box" aria-hidden="true">{o.on ? "x" : " "}</span>
+                                    <span className="nf-wk-k">{o.key}</span>
+                                    <span className="nf-wk-eq" aria-hidden="true">=</span>
+                                    <b>{o.on ? "on" : "off"}</b>
+                                    <span className="nf-wk-c">{"// "}{o.note}</span>
+                                </button>
+                            </li>
+                        ))}
+                        <li className="nf-wk-cfgrow">
+                            <label>
+                                <span className="nf-wk-box" aria-hidden="true">~</span>
+                                <span className="nf-wk-k">volume</span>
+                                <span className="nf-wk-eq" aria-hidden="true">=</span>
+                                <b>{Math.round(volume * 100)}%</b>
+                                <input type="range" min={0} max={1} step={0.05} value={volume} onChange={(e) => onVolume(Number(e.target.value))} aria-label="Master volume (all site sounds)" />
+                            </label>
+                        </li>
+                        <li className="nf-wk-cfgrow">
+                            <div role="group" aria-label="Number format">
+                                <span className="nf-wk-box" aria-hidden="true">~</span>
+                                <span className="nf-wk-k">numbers</span>
+                                <span className="nf-wk-eq" aria-hidden="true">=</span>
+                                <span className="nf-wk-pick">
+                                    {FORMATS.map(([k, ex]) => <button key={k} type="button" aria-pressed={numFmt === k} onClick={() => onNumFmt(k)}>{ex}</button>)}
+                                </span>
+                            </div>
+                        </li>
+                    </ul>
+                </Frame>
+                <Frame i={2} color="#2fd8e8" path="config/save.key" title="Save code" note="Your save lives in this browser. Export a code or a file to move it, or paste one to load it.">
+                    <label className="nf-wk-term">
+                        <span className="nf-wk-term-h"><span aria-hidden="true">$</span> cat save.key</span>
+                        <textarea value={ioText} onChange={(e) => setIoText(e.target.value)} rows={4} spellCheck={false} placeholder="Export to print a code here, or paste one and press Import." aria-label="Save code" />
+                    </label>
+                    <div className="nf-wk-acts">
+                        <button type="button" className="nf-wk-btn is-main" onClick={onExport}>Export + copy</button>
+                        <button type="button" className="nf-wk-btn" data-armed={importConfirm ? "" : undefined} onClick={onImport}>{importConfirm ? "Confirm import" : "Import"}</button>
+                        <button type="button" className="nf-wk-btn" onClick={onDownload}>Download file</button>
+                        <label className="nf-wk-btn nf-wk-file">Open file<input type="file" accept=".txt,text/plain" onChange={(e) => { const f = e.target.files?.[0]; if (f) onUpload(f); e.target.value = ""; }} /></label>
                     </div>
-                )}
-            </section>
-            <section>
-                <header className="nf-sys-h"><h3>Settings</h3><p>Kept on this device, not in the save.</p></header>
-                <div className="nf-menu-row">
-                    <button type="button" className="nf-mini" aria-pressed={soundOn} onClick={onSound}>Sound: {soundOn ? "on" : "off"}</button>
-                    <button type="button" className="nf-mini" aria-pressed={humOn} onClick={onHum}>Hum: {humOn ? "on" : "off"}</button>
-                    <button type="button" className="nf-mini" aria-pressed={eventsOn} onClick={onEvents}>Events: {eventsOn ? "on" : "off"}</button>
-                    <button type="button" className="nf-mini" aria-pressed={calm || osCalm} disabled={osCalm} onClick={onCalm} title={osCalm ? "Your device already asks for less motion" : undefined}>Calm motion: {calm || osCalm ? "on" : "off"}</button>
-                </div>
-                <label className="nf-io nf-vol">
-                    <span>Volume {Math.round(volume * 100)}%</span>
-                    <input type="range" min={0} max={1} step={0.05} value={volume} onChange={(e) => onVolume(Number(e.target.value))} aria-label="Master volume (all site sounds)" />
-                </label>
-                <div className="nf-fmt" role="group" aria-label="Number format">
-                    <span className="nf-fmt-l">Numbers</span>
-                    {FORMATS.map(([k, ex]) => <button key={k} type="button" className="nf-mini" aria-pressed={numFmt === k} onClick={() => onNumFmt(k)}>{ex}</button>)}
-                </div>
-            </section>
-            <section className="nf-keys-sec">
-                <header className="nf-sys-h"><h3>Keys</h3><p>Single letters, off while typing.</p></header>
-                <dl className="nf-facts nf-keys">
-                    {([["M", "Map"], ["O", "Goals"], ["L", "Records"], ["A", "Ascend"], ["S", "Menu"], ["T", "Tree"], ...(hasMax ? [["B", "Buy max on or off"]] : []), ["Esc", "Close the open window"], ["Hold a button", "Keep buying"]] as [string, string][]).map(([k, v]) => <div key={k}><dt>{k}</dt><dd>{v}</dd></div>)}
-                </dl>
-            </section>
-            <section className="nf-danger-zone">
-                <header className="nf-sys-h"><h3>Danger</h3><p>Deletes this save. Export first if unsure.</p></header>
-                <button type="button" className="nf-mini nf-danger" onClick={onReset}>{confirm ? "Confirm wipe" : "Reset everything"}</button>
-            </section>
+                    {ioMsg && <p className="nf-wk-msg" role="status">{"> "}{ioMsg}</p>}
+                    {backup && (
+                        <div className="nf-wk-backup">
+                            <DataLines rows={[["backup", `${new Date(backup.at).toLocaleString()} (${backup.why})`]]} />
+                            <button type="button" className="nf-wk-btn" onClick={onRestore}>Restore backup</button>
+                        </div>
+                    )}
+                </Frame>
+                <Frame i={3} color="#ff2d8a" className="nf-wk-danger" path="config/wipe.sh" title="Wipe save" note="Deletes this save, tree and goals too. The old save is kept as a backup above.">
+                    <HoldButton label="Hold to wipe" holding="Keep holding" armed="Press again to wipe" onFire={onReset} />
+                </Frame>
+                <Frame i={4} color="#ffc53a" className="nf-wk-keys" path="config/keys.map" title="Keys" note="Single letters, off while typing.">
+                    <DataLines rows={keys} />
+                </Frame>
+            </div>
         </div>
     );
 }
