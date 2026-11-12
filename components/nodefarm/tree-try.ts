@@ -13,7 +13,7 @@ export type TreeTry = {
     frame: "corners" | "bounds" | "full";
     open: "boot" | "iris" | "zoom";
 };
-export const TRY_DEFAULT: TreeTry = { anim: "term", type: "split", frame: "corners", open: "boot" };
+export const TRY_DEFAULT: TreeTry = { anim: "glitch", type: "split", frame: "corners", open: "boot" };
 
 export function readTry(): TreeTry {
     try {
