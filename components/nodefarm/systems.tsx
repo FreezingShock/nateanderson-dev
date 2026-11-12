@@ -111,6 +111,7 @@ export function AscendPanel({ s, d, confirm, onAscend, onPerk, onNode }: { s: St
                     <h3>Ascend</h3>
                     <p>Wipe the whole run. You keep goals, perks, the tree and lifetime stats, and get Ascension Points (AP). Each AP adds +{TUNE.apBonus * 100}% to everything, permanently.</p>
                 </header>
+                <div className="nf-asc-art" aria-hidden="true" />
                 <div className="nf-asc-card">
                     <NfIcon name="ascend" large />
                     <div className="nf-asc-stats">

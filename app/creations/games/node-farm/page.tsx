@@ -1,6 +1,7 @@
 import "@/app/camino/games.css";
 import "@/app/camino/nodefarm.css";
 import "@/app/camino/nodefarm-deep.css";
+import "@/app/camino/nodefarm-scenery.css";
 import { CreationsShell, Section } from "@/components/creations-sections";
 import { GameFrame } from "@/components/games/naos";
 import { NodeFarm } from "@/components/nodefarm/node-farm";

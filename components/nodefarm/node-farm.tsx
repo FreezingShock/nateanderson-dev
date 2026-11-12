@@ -13,6 +13,8 @@ import { Core, type CoreFeed } from "./core";
 import { NfIcon } from "./icon";
 import { EventLayer } from "./events";
 import { AwayReport, type Away } from "./away";
+import { Scenery, SceneWindow } from "./scenery";
+import { eraOf } from "@/lib/nodefarm/scenery";
 import { DroneBay } from "./drones";
 import { Chain, StatRow } from "./stat-row";
 import { Juice, juice, checkMilestones } from "./juice";
@@ -344,6 +346,7 @@ export function NodeFarm() {
         sfx("tab");
         setTimeout(() => document.querySelector<HTMLElement>(`.nf [data-stat="${key}"]`)?.scrollIntoView({ behavior: reduced ? "auto" : "smooth", block: "center" }), 90);
     };
+    const era = eraOf(s);
     const firstLocked = STATS.find((x) => !isUnlocked(s, x.id))?.id;
     const laterLocked = STATS.filter((x) => !isUnlocked(s, x.id) && x.id !== firstLocked);
     const guideTarget = step.target && !step.target.win ? step.target : undefined;
@@ -351,6 +354,7 @@ export function NodeFarm() {
     return (
         <TipCtx.Provider value={tipApi}>
         <div className="nf" ref={root} data-tab={tab} data-side={sideShown} data-win={win || undefined} data-oc={s.overclock > 0 ? "" : undefined}>
+            <Scenery era={era} />
             <header className="nf-hud">
                 <div className="nf-hud-main">
                     <NfIcon name="bytes" responsive />
@@ -412,6 +416,7 @@ export function NodeFarm() {
                         </li>
                     ))}
                 </ol>
+                <SceneWindow era={era} />
             </section>
 
             <section className="nf-pane nf-statspane" data-pane="stats" aria-label="Stats and buttons">
@@ -469,7 +474,7 @@ export function NodeFarm() {
                 />
             </section>
             <Tip host={root} tip={tip} />
-            {away && <AwayReport away={away} reduced={reduced} onClose={() => setAway(null)} />}
+            {away && <AwayReport away={away} era={era} reduced={reduced} onClose={() => setAway(null)} />}
         </div>
         </TipCtx.Provider>
     );
