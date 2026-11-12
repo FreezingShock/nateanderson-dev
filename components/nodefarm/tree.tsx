@@ -484,9 +484,10 @@ export function TreeMenu({ s, reduced, onBuy, onRespec, onClose }: { s: State; r
     const selNode = sel && sel !== "core" ? treeNode(sel) : null;
     const near = useMemo(() => new Set(selNode ? [selNode.id, ...selNode.links] : sel === "core" ? ["core", ...TREE.filter((n) => n.links.includes("core")).map((n) => n.id)] : []), [sel]); // eslint-disable-line react-hooks/exhaustive-deps
 
-    // links: dark bed for depth, a row of square beads, and flowing packets along owned paths (one path per section)
+    // links are circuit traces: a straight run, a 45 degree bend, a straight run (vias at the bends), on a dark bed.
+    // Owned traces light up and carry packets outward (one packet path per section).
     const links = useMemo(() => {
-        const out: { key: string; ax: number; ay: number; bx: number; by: number; col: string; st: "on" | "edge" | "off"; fog: boolean; near: boolean }[] = [];
+        const out: { key: string; d: string; vias: [number, number][]; col: string; st: "on" | "edge" | "off"; fog: boolean; near: boolean }[] = [];
         const have = (id: string) => id === "core" || s.tree.includes(id);
         for (const n of TREE) for (const l of n.links) {
             if (l !== "core" && n.id > l) continue;
@@ -496,8 +497,16 @@ export function TreeMenu({ s, reduced, onBuy, onRespec, onClose }: { s: State; r
             let a = { x: m ? m.x * U : 0, y: m ? m.y * U : 0, id: l }, b = { x: n.x * U, y: n.y * U, id: n.id };
             if (Math.hypot(a.x, a.y) > Math.hypot(b.x, b.y)) [a, b] = [b, a];
             const ha = have(a.id), hb = have(b.id);
+            const dx = b.x - a.x, dy = b.y - a.y, adx = Math.abs(dx), ady = Math.abs(dy);
+            const sx = Math.sign(dx), sy = Math.sign(dy), dg = Math.min(adx, ady), run = (Math.max(adx, ady) - dg) / 2;
+            const p1: [number, number] = adx >= ady ? [a.x + sx * run, a.y] : [a.x, a.y + sy * run];
+            const p2: [number, number] = [p1[0] + sx * dg, p1[1] + sy * dg];
+            const f = (v: number) => v.toFixed(1);
+            const bent = dg > 4 && run > 4;
             out.push({
-                key: a.id + "-" + b.id, ax: a.x, ay: a.y, bx: b.x, by: b.y, col: BCOL[n.branch],
+                key: a.id + "-" + b.id, col: BCOL[n.branch],
+                d: `M${f(a.x)} ${f(a.y)}L${f(p1[0])} ${f(p1[1])}L${f(p2[0])} ${f(p2[1])}L${f(b.x)} ${f(b.y)}`,
+                vias: bent ? [p1, p2] : [],
                 st: ha && hb ? "on" : ha || hb ? "edge" : "off",
                 fog: vis.get(n.id) === "fog" || (!!m && vis.get(m.id) === "fog"),
                 near: !!sel && (near.has(a.id) && near.has(b.id)),
@@ -507,7 +516,7 @@ export function TreeMenu({ s, reduced, onBuy, onRespec, onClose }: { s: State; r
     }, [s.tree.length, vis, sel, near]); // eslint-disable-line react-hooks/exhaustive-deps
     const packets = useMemo(() => {
         const by: Record<string, string> = {};
-        for (const l of links) if (l.st === "on") by[l.col] = (by[l.col] ?? "") + `M${l.ax.toFixed(1)} ${l.ay.toFixed(1)}L${l.bx.toFixed(1)} ${l.by.toFixed(1)}`;
+        for (const l of links) if (l.st === "on") by[l.col] = (by[l.col] ?? "") + l.d;
         return Object.entries(by);
     }, [links]);
 
@@ -575,8 +584,9 @@ export function TreeMenu({ s, reduced, onBuy, onRespec, onClose }: { s: State; r
                 <TreeBackdrop ref={bd} unit={U} />
                 <div className="nf-tm-world" ref={world}>
                     <svg className="nf-tm-links" width={2} height={2} aria-hidden="true">
-                        {links.map((l) => <line key={"b" + l.key} className="nf-tl-bed" x1={l.ax} y1={l.ay} x2={l.bx} y2={l.by} data-st={l.st} data-fog={l.fog ? "" : undefined} style={{ ["--c" as string]: l.col } as CSSProperties} />)}
-                        {links.map((l) => <line key={l.key} className="nf-tl" x1={l.ax} y1={l.ay} x2={l.bx} y2={l.by} data-st={l.st} data-fog={l.fog ? "" : undefined} data-near={l.near ? "" : undefined} style={{ ["--c" as string]: l.col } as CSSProperties} />)}
+                        {links.map((l) => <path key={"b" + l.key} className="nf-tl-bed" d={l.d} data-st={l.st} data-fog={l.fog ? "" : undefined} style={{ ["--c" as string]: l.col } as CSSProperties} />)}
+                        {links.map((l) => <path key={l.key} className="nf-tl" d={l.d} data-st={l.st} data-fog={l.fog ? "" : undefined} data-near={l.near ? "" : undefined} style={{ ["--c" as string]: l.col } as CSSProperties} />)}
+                        {links.map((l) => l.vias.map(([x, y], i) => <rect key={l.key + "v" + i} className="nf-tl-via" x={x - 6} y={y - 6} width={12} height={12} data-st={l.st} data-fog={l.fog ? "" : undefined} data-near={l.near ? "" : undefined} style={{ ["--c" as string]: l.col } as CSSProperties} />))}
                         {!reduced && packets.map(([col, d]) => <path key={col} className="nf-tl-pk" d={d} style={{ ["--c" as string]: col } as CSSProperties} />)}
                     </svg>
                     {labels.map(({ b, th, r, got, total }) => r > 0 && (
