@@ -15,11 +15,12 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 import numpy as np  # noqa: E402
 import nodefarm_zone_kit as K  # noqa: E402
 
-BASE = 61  # floor line
+BASE = K.H - 3  # floor line (rows 0-31 are headroom that reaches up to the title bar)
+Y = K.HEAD  # sprite rows start here
 
 # stage -> (centre x, base y, height). Everything sits in the right 180 px so phones see every stage.
 CUBES = [
-    (170, 63, 8),    # 1: small, in front of the big one
+    (170, BASE + 2, 8),    # 1: small, in front of the big one
     (114, BASE, 12),  # 2
     (131, BASE, 16),  # 3
     (152, BASE, 22),  # 4
@@ -44,7 +45,7 @@ LED_RAMPS = ["cyan", "cyan", "lime", "mag", "si", "wh", "rn"]
 def backdrop(c, f):
     rng = np.random.default_rng(7)
     # overhead cable runs sagging between racks (drawn first, racks sit in front)
-    for k, (y0, ramp) in enumerate(((9, "si"), (14, "cyan"), (19, "mag"))):
+    for k, (y0, ramp) in enumerate(((4, "si"), (11, "cyan"), (18, "mag"), (Y + 9, "si"), (Y + 15, "lime"))):
         for x0 in range(-20 + k * 13, K.W, 58):
             x1 = x0 + 58
             for x in range(max(0, x0), min(K.W, x1)):
@@ -55,7 +56,7 @@ def backdrop(c, f):
     x = 0
     while x < K.W:
         w = int(rng.integers(12, 22))
-        top = int(rng.integers(12, 30))
+        top = int(rng.integers(6, Y + 20))
         rack = K.rect(x, top, x + w - 2, BASE)
         c.img[rack] = 0
         c.haze(rack, 0.45 + 0.5 * K.lin(0, BASE, 0, top), "cyan", alpha=85)

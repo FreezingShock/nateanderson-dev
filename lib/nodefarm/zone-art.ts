@@ -6,7 +6,7 @@ import { STATS, TIERS, amount, button, type ButtonStat, type State, type StatId 
 /** Zones that have a sheet at /naos/nodefarm/zone-<id>.webp. Art lanes add their ids here. */
 export const ZONE_ART: readonly StatId[] = ["bytes"];
 
-export const ART = { W: 288, H: 64, STAGES: 8, FRAMES: 6, FPS: 6 } as const;
+export const ART = { W: 288, H: 96, STAGES: 8, FRAMES: 6, FPS: 6 } as const;
 export const MAX_STAGE = ART.STAGES - 1;
 
 /** How many of a zone's units count as "fully built" for the owned half of the blend (log scale, so the first few count most). */

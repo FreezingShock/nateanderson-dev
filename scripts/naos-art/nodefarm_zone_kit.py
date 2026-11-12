@@ -2,12 +2,13 @@
 
 Contract (also in docs/node-farm.md, "Zone art"):
   sheet  public/naos/nodefarm/zone-<statId>.{png,webp}
-  cell   W x H = 288 x 64 art px, transparent background
+  cell   W x H = 288 x 96 art px, transparent background: rows 0-31 are headroom (backdrop only, it fills the panel up to the
+         title bar and is cut to fit), the sprites live in rows 32-95
   rows   STAGES = 8: row 0 is the base scene, row n (1..7) shows sprites 1..n, each bigger than the last
   cols   FRAMES = 6: a clean loop at 6 fps, frame 0 doubles as the still (reduced motion, offscreen)
-  shown  3x on desktop, 2x on phones (right anchored, only the right ~180 px show), bottom edge sits just above the buttons
-  keep   rows 0-9 backdrop only (on wide panels they can sit under the title bar); the panel crops the left side on narrow
-         panels, fades the cut and stops the scene short of the big number, so the right edge is free to use
+  shown  3x on wide panels, 2x otherwise; bottom edge sits just above the spec lines, the top reaches the title bar
+  keep   sprite tops at row 42 or lower (rows 32-41 can hide under the title bar at 3x); the panel crops the left side on
+         narrow panels, fades the cut and stops the scene short of the big number, so the right edge is free to use
   budget WebP lossless <= 30 KB, PNG <= 300 KB
 
 Drawing works like nodefarm-icons.py: flat shapes shaded with a gradient that is quantised to a five-step ramp through a 4x4
@@ -32,10 +33,10 @@ from PIL import Image, ImageDraw
 
 HERE = Path(__file__).resolve().parent
 OUT = HERE.parents[1] / "public/naos/nodefarm"
-W, H = 288, 64
+W, H = 288, 96
+HEAD = 32  # rows 0..HEAD-1: headroom backdrop, shown only as far as the panel has room
 STAGES, FRAMES = 8, 6
 FPS = 6
-TOP = 10  # rows 0..TOP-1 may be hidden under the title bar: backdrop only
 BUDGET = {"webp": 30_000, "png": 300_000}
 
 
@@ -166,9 +167,6 @@ def save_sheet(stat, draw, preview=True):
         for f in range(FRAMES):
             img = draw(s, f).img
             sheet[s * H:(s + 1) * H, f * W:(f + 1) * W] = img
-        top = sheet[s * H:s * H + TOP, :W]
-        if ((top[..., 3] > 90) & (top[..., :3].max(-1) > 170)).mean() > 0.03:
-            print(f"  warning {stat} stage {s}: bright pixels in the top {TOP} rows, which can hide under the title bar")
     OUT.mkdir(parents=True, exist_ok=True)
     im = Image.fromarray(sheet, "RGBA")
     png, webp = OUT / f"zone-{stat}.png", OUT / f"zone-{stat}.webp"

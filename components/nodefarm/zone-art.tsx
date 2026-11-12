@@ -9,7 +9,7 @@ import { hasZoneArt, onStagePreview, shownStage } from "@/lib/nodefarm/zone-art"
  * and buttons. One element, one sprite sheet: the row is the stage, CSS steps through the six frames. Paused while offscreen.
  * A stage going up flashes the new sprite in. The box is measured only when the panel resizes (no per-frame JS): it sets
  * --s (3 art px per art pixel on wide panels, else 2), --w (visible width, the art is cropped on its left), --b (where the
- * floor sits) and --r (room kept free for the big number on the right).
+ * floor sits), --t (the top: the title bar) and --r (room kept free for the big number on the right).
  * Styles: app/camino/nodefarm-zone-art.css. Stage logic: lib/nodefarm/zone-art.ts.
  */
 export function ZoneArt({ id, s }: { id: StatId; s: State }) {
@@ -48,14 +48,16 @@ export function ZoneArt({ id, s }: { id: StatId; s: State }) {
                 for (const c of range.getClientRects()) textR = Math.max(textR, c.right);
             }
             const narrow = matchMedia("(max-width: 639px)").matches; // same breakpoint as the band in the CSS
-            let sc: number, w: number, b: number, right = 0;
+            let sc: number, w: number, b: number, t: number, right = 0;
+            const top = (bar ? bar.bottom : r.top) - r.top;
             if (narrow) {
                 // phones: the description runs full width, so the scene gets its own band under the header (CSS makes room)
                 sc = 2;
                 w = r.width;
-                b = (q(".nf-row-h")?.bottom ?? r.top) - r.top + 64 * sc;
+                t = (q(".nf-row-h")?.bottom ?? r.top) - r.top;
+                b = t + 64 * sc;
             } else {
-                const top = (bar ? bar.bottom : r.top) - r.top;
+                t = top; // the scene fills up to the title bar; its headroom rows are cut to fit
                 const pad = parseFloat(row.style.getPropertyValue("--art-pad")) || 0;
                 b = (spec ? spec.top : r.bottom) - r.top - 6;
                 // wide panels get 3x: the backdrop-only top rows may hide under the title bar, and up to 48 px of extra
@@ -75,6 +77,7 @@ export function ZoneArt({ id, s }: { id: StatId; s: State }) {
             node.style.setProperty("--s", String(sc));
             node.style.setProperty("--w", `${Math.max(0, Math.round(w))}px`);
             node.style.setProperty("--b", `${Math.round(b)}px`);
+            node.style.setProperty("--t", `${Math.round(t)}px`);
             node.style.setProperty("--r", `${Math.round(right)}px`);
         };
         fit();

@@ -154,13 +154,14 @@ lines and buttons. It grows from stage 0 (backdrop only) to stage 7 (seven sprit
   `nf-zone-art-v1`, not in the save), so Bytes and Multipliers show the best Reboot cycle of the run. In the pacing sim the
   early zones reach 7 in about 0.6 to 1.5 h, Aether reaches about 3 by the first Ascend.
 - **Panel** (`components/nodefarm/zone-art.tsx`, `app/camino/nodefarm-zone-art.css`): one element per zone. The box is
-  measured only when the panel resizes: 3 screen px per art pixel on panels 1100 px and wider (up to 48 px of room is opened
-  above the spec lines for it), 2 otherwise; cropped on the left at the end of the description text; stops short of the big
-  number. Phones (under 640 px) give it its own 128 px band under the header; folded panels hide it there and dim it on desktop.
+  measured only when the panel resizes: it runs from the title bar down to the spec lines (Nate: the art reaches all the way
+  up to the white bar), 3 screen px per art pixel on panels 1100 px and wider (up to 48 px of room is opened above the spec
+  lines for it), 2 otherwise; cropped on the left at the end of the description text; stops short of the big number. Phones (under 640 px) give it its own 128 px band under the header; folded panels hide it there and dim it on desktop.
   Frames step at 6 fps with CSS, paused offscreen and for reduced motion. No filter, mask or blend on the animated layer.
 - **Art** (`scripts/naos-art/nodefarm_zone_kit.py` plus one script per lane, e.g. `nodefarm-zone-bytes.py`): sheet
-  `public/naos/nodefarm/zone-<id>.{png,webp}`, cells 288 x 64 art px, 6 frames across, 8 stages down (1728 x 512). Rows 0 to 9
-  may hide under the title bar, so they are backdrop only. Newest and biggest sprites go on the right (phones and narrow
+  `public/naos/nodefarm/zone-<id>.{png,webp}`, cells 288 x 96 art px, 6 frames across, 8 stages down (1728 x 768). The cell
+  sits on the floor and is cut at the title bar: rows 0 to 31 are headroom backdrop, sprites live in rows 32 to 95 with their
+  tops at row 42 or lower. Newest and biggest sprites go on the right (phones and narrow
   panels crop the left). RAMPS and BAYER from `nodefarm-icons.py`, busy backdrops and several on-palette accents (Nate's pick),
   WebP lossless under 30 KB. Add the zone id to `ZONE_ART` to switch a sheet on.
 - **Preview**: `nf art 0` to `nf art 7` in the console shows every zone at one stage for this visit; `nf art live` goes back.

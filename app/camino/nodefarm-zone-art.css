@@ -1,25 +1,27 @@
-/* Staged zone art (components/nodefarm/zone-art.tsx). Sheet: 6 frames across, 8 stages down, 288 x 64 art px per cell,
-   drawn at --s screen px per art pixel, right-anchored and cropped on the left to --w, floor at --b (all set by the component
-   when the panel resizes). Contract: docs/node-farm.md, "Zone art".
+/* Staged zone art (components/nodefarm/zone-art.tsx). Sheet: 6 frames across, 8 stages down, 288 x 96 art px per cell
+   (rows 0-31 headroom backdrop). Drawn at --s screen px per art pixel, right-anchored and cropped on the left to --w; the box
+   runs from --t (the title bar) to --b (the floor, just above the spec lines) and the cell sits on its floor, so the headroom
+   is cut to whatever height the panel has. All set by the component when the panel resizes. Contract: docs/node-farm.md.
    Perf: one painted element per zone, background-position stepped at 6 fps, no filter, mask or blend on it, paused offscreen. */
 .ctos .nf-row > .nf-art {
-    --s: 2; --w: 0px; --b: 160px; --r: 0px;
+    --s: 2; --w: 0px; --b: 160px; --t: 34px; --r: 0px; --h: 96px;
     --x0: calc(var(--w) - 288px * var(--s));
-    position: absolute; z-index: 1; right: var(--r, 0px); top: calc(var(--b) - 64px * var(--s));
-    width: var(--w); height: calc(64px * var(--s));
+    --y0: calc(var(--b) - var(--t) - var(--h) * var(--s) * (var(--st) + 1));
+    position: absolute; z-index: 1; right: var(--r); top: var(--t);
+    width: var(--w); height: calc(var(--b) - var(--t));
     pointer-events: none;
     /* layer 1 fades the cropped left edge into the panel, layer 2 is the sheet */
     background-image: linear-gradient(90deg, var(--nf-ground), transparent calc(20px * var(--s))), var(--art);
     background-repeat: no-repeat;
-    background-size: 100% 100%, calc(1728px * var(--s)) calc(512px * var(--s));
-    background-position: 0 0, var(--x0) calc(var(--st) * -64px * var(--s));
+    background-size: 100% 100%, calc(1728px * var(--s)) calc(var(--h) * 8 * var(--s));
+    background-position: 0 0, var(--x0) var(--y0);
     image-rendering: pixelated;
     animation: nfArtRun 1s steps(6) infinite paused;
 }
 .ctos .nf-row > .nf-art[data-run] { animation-play-state: running; }
 @keyframes nfArtRun {
-    from { background-position: 0 0, var(--x0) calc(var(--st) * -64px * var(--s)); }
-    to { background-position: 0 0, calc(var(--x0) - 1728px * var(--s)) calc(var(--st) * -64px * var(--s)); }
+    from { background-position: 0 0, var(--x0) var(--y0); }
+    to { background-position: 0 0, calc(var(--x0) - 1728px * var(--s)) var(--y0); }
 }
 
 /* folded: the scene sits on the panel floor and dims, so the skyline still shows behind the header */
@@ -32,7 +34,7 @@
     25%, 75%, 100% { opacity: 1; }
 }
 
-/* wide panels: room for the 3x scene above the spec lines (set by the component, 0 to 48 px) */
+/* wide panels: room for the 3x sprites above the spec lines (set by the component, 0 to 48 px) */
 .ctos .nf-row[data-art] .nf-spec { margin-top: calc(14px + var(--art-pad, 0px)); }
 
 /* phones: the scene gets its own band between the header and the description */
