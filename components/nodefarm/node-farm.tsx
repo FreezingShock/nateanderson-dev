@@ -21,6 +21,7 @@ import { DroneBay } from "./drones";
 import { Chain, StatRow } from "./stat-row";
 import { Feed } from "./feed";
 import { FeedStore, buyToks, call, com, droneToks, fromText, id as idTok, num, p as pun, str as strTok, txt, unlockToks, type FeedTone } from "@/lib/nodefarm/feed";
+import { markSeen, newsToks, pickNews } from "@/lib/nodefarm/news";
 import { LORE } from "@/lib/nodefarm/lore";
 import { LOGS, logNo, recoverLogs } from "@/lib/nodefarm/story";
 import { Juice, juice, checkMilestones } from "./juice";
@@ -191,6 +192,33 @@ export function NodeFarm() {
         greet.forEach((t, i) => setTimeout(() => log(t, i === 0 || i === 2 ? "good" : undefined), 180 + i * 900));
         setReady(true);
     }, [log]);
+
+    // ---- news lines: every so often one short line (past operator, operator, node note, hint) drops into the feed,
+    // chosen for how far the farm has got. Skipped when the tab is hidden, a window is open, or the feed is busy.
+    const busyRef = useRef(false);
+    busyRef.current = !!win || treeOpen || !!away || !!confirm;
+    useEffect(() => {
+        if (!ready) return;
+        let to: ReturnType<typeof setTimeout>;
+        const recent: number[] = [];
+        const next = () => {
+            to = setTimeout(() => {
+                const idle = Date.now() - (feedStore.lines[feedStore.lines.length - 1]?.at ?? 0) > 5000;
+                if (!document.hidden && !busyRef.current && idle) {
+                    const pick = pickNews(g.current, recent);
+                    if (pick) {
+                        recent.push(pick.key);
+                        if (recent.length > 40) recent.shift();
+                        if (pick.k === "past") markSeen(pick.key);
+                        feedStore.push(newsToks(pick.k, pick.text, pick.op), { type: true });
+                    }
+                }
+                next();
+            }, 20000 + Math.random() * 10000);
+        };
+        next();
+        return () => clearTimeout(to);
+    }, [ready, feedStore]);
 
     // ---- the naOS console's `nf` command asks for the live state here (see components/cm/console.tsx)
     useEffect(() => {
