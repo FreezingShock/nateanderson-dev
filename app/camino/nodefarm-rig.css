@@ -7,6 +7,19 @@
 .ctos .nf-rig[data-warn] { border-color: color-mix(in srgb, #ff5a3c 55%, transparent); }
 .ctos .nf-rig[data-warn]::before, .ctos .nf-rig[data-warn]::after { border-color: #ff5a3c; }
 
+/* the rig machine: a 96 x 64 dither sprite, 4 states x 6 frames per row (scripts/naos-art/nodefarm-rigs.py) */
+.ctos .nf-rig { grid-template-columns: auto minmax(0, 1fr); grid-template-rows: auto auto 1fr; column-gap: 18px; }
+.ctos .nf-rig-m { align-self: start; }
+.ctos .nf-rig > :not(.nf-rig-art) { grid-column: 2; }
+.ctos .nf-rig > .nf-rig-ups, .ctos .nf-rig > .nf-rig-ctl, .ctos .nf-rig > .nf-rig-spec, .ctos .nf-rig > .nf-rig-link { grid-column: 1 / -1; }
+.ctos .nf-rig:not(:has(.nf-rig-art)) > * { grid-column: 1 / -1; }
+.ctos .nf-rig-art { --sc: 2; grid-column: 1; grid-row: 1 / span 3; align-self: start; display: block; width: calc(96px * var(--sc)); height: calc(64px * var(--sc));
+    background: url(/naos/nodefarm/rigs.webp?v=3e3638c9) no-repeat; background-size: calc(2304px * var(--sc)) auto; image-rendering: pixelated;
+    background-position: calc(var(--st, 0) * -576px * var(--sc)) calc(var(--row, 0) * -64px * var(--sc)); animation: nfRigArt .9s steps(6) infinite; }
+@keyframes nfRigArt {
+    from { background-position-x: calc(var(--st, 0) * -576px * var(--sc)); }
+    to { background-position-x: calc((var(--st, 0) + 1) * -576px * var(--sc)); }
+}
 .ctos .nf-rig-h { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: 4px 16px; }
 .ctos .nf-rig-k { font: 700 var(--cm-ctos-t-micro)/1.2 var(--cm-mono); letter-spacing: .14em; text-transform: uppercase; color: var(--c); }
 .ctos .nf-rig-lv { font: 600 var(--cm-ctos-t-micro)/1.2 var(--cm-mono); letter-spacing: .08em; color: var(--cm-ctos-meta); font-variant-numeric: tabular-nums; }
@@ -43,11 +56,19 @@
 .ctos .nf-rig-up[data-afford] .nf-rig-up-c { color: var(--cm-fg); }
 
 @media (max-width: 560px) {
-    .ctos .nf-rig { padding: 12px 12px 14px; }
+    .ctos .nf-rig { padding: 12px 12px 14px; grid-template-columns: minmax(0, 1fr); grid-template-rows: none; }
+    .ctos .nf-rig > * { grid-column: 1 / -1 !important; }
+    .ctos .nf-rig-art { --sc: 1.5; grid-row: auto; justify-self: center; }
     .ctos .nf-rig-ups { grid-template-columns: minmax(0, 1fr); }
 }
-@media (prefers-reduced-motion: reduce) { .ctos .nf-rig-bar i { transition: none; } }
+@media (prefers-reduced-motion: reduce) { .ctos .nf-rig-bar i { transition: none; } .ctos .nf-rig-art { animation: none; } }
 @media (max-width: 560px) {
     .ctos .nf-rig-zones { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); width: 100%; }
     .ctos .nf-rig-zones .nf-mini { min-width: 0; min-height: 40px; padding: 0; }
 }
+
+/* arc link line: the rigs of one arc levelled together */
+.ctos .nf-rig-link { grid-column: 1 / -1; display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 12px; padding-top: 8px; border-top: 1px dashed color-mix(in srgb, var(--c) 30%, #2a2a2a); font: 500 var(--cm-ctos-t-micro)/1.45 var(--cm-mono); color: var(--cm-ctos-meta); }
+.ctos .nf-rig-link b { font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--cm-fg); }
+.ctos .nf-rig-link[data-on] b { color: var(--c); }
+.ctos .nf-rig-link i { font-style: normal; letter-spacing: .2em; color: var(--c); }

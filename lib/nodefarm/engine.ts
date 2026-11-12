@@ -717,6 +717,8 @@ export interface RigState {
     rwAim: string;
     // run meters (reset on Ascend)
     cache: number;
+    /** the Packet cache's cap at the last tick (Hot swap reads it without a derive) */
+    cacheCapAt: number;
     quiet: number;
     pour: number;
     casts: number;
