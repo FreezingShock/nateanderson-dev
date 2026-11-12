@@ -57,7 +57,7 @@ function effects(id: StatId, s: State, d: D): [string, string][] {
 }
 
 /** The signal chain: who boosts whom, with live multipliers. Sits above the stat dossiers. Only the zones you have reached, plus the next one, are drawn. */
-export function Chain({ s, d, onAll, allOpen, max, onMax }: { s: State; d: D; onAll: (open: boolean) => void; allOpen: boolean; max?: boolean; onMax?: () => void }) {
+export function Chain({ s, d, onAll, allOpen }: { s: State; d: D; onAll: (open: boolean) => void; allOpen: boolean }) {
     const feed: Partial<Record<StatId, string>> = {
         origin: `Paradox ×${fmt(d.boosts.orPx)}`,
         paradox: `Engrams ×${fmt(d.boosts.pxEg)}`,
@@ -103,9 +103,6 @@ export function Chain({ s, d, onAll, allOpen, max, onMax }: { s: State; d: D; on
                 );
             })}
             <li className="nf-chain-all">
-                {onMax && hasFeature(s, "buymax") && (
-                    <button type="button" className="nf-mini" aria-pressed={!!max} onClick={onMax} title="Batch job: one press buys as many as you can afford">{max ? "Buy: max" : "Buy: x1"}</button>
-                )}
                 <button type="button" className="nf-mini" onClick={() => onAll(!allOpen)}>{allOpen ? "Minimize all" : "Expand all"}</button>
             </li>
         </ol>

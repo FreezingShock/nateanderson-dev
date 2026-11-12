@@ -2,7 +2,6 @@
 /** sprite key -> [sheet size key, row]. Sheets: public/naos/nodefarm/tree-spr-{s,m,l}.webp, 6 columns per row. */
 export const SPRITE_CELLS: Record<string, ["s" | "m" | "l", number]> = {
     "linecode": ["s", 0],
-    "batchjob": ["s", 1],
     "echocancel": ["s", 2],
     "headstart": ["s", 3],
     "hotswap": ["s", 4],

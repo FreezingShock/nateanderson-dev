@@ -162,7 +162,7 @@ export function MapPanel({ s, d, onTree, onWin, onLab }: { s: State; d: D; onTre
                                 );
                             })}
                         </ul>
-                        <DataLines rows={[["intel", `+${fmt(intelRate(s, d.bytesPerSec))}/s`], ["recipes", `${PAYLOADS.filter((p) => hasRecipe(s, p.id)).length} / ${PAYLOADS.length}`], ["ready", labReady(s) ? `${labReady(s)} to research` : "save up Intel"]]} />
+                        <DataLines rows={[["intel", `+${fmt(intelRate(s, d.bytesPerSec))}/s`], ["payloads", `${PAYLOADS.filter((p) => hasRecipe(s, p.id)).length} / ${PAYLOADS.length}`], ["ready", labReady(s) ? `${labReady(s)} to research` : "save up Intel"]]} />
                         {onLab && <button type="button" className="nf-wk-btn is-main" onClick={onLab}>Open lab</button>}
                     </>
                 ) : (
