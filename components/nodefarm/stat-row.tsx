@@ -84,8 +84,8 @@ export function Chain({ s, d, onAll, allOpen, max, onMax }: { s: State; d: D; on
             {hidden > 0 && (
                 <li className="nf-chain-more" aria-label={`${hidden} more zones still encrypted`}>
                     <NfIcon name="lock" />
-                    <b>+{hidden}</b>
-                    <small>encrypted</small>
+                    <b>{hidden} more</b>
+                    <small>zones encrypted</small>
                     <i aria-hidden="true">▸</i>
                 </li>
             )}

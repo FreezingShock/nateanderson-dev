@@ -207,9 +207,10 @@
 .ctos .nf-wk-chain li[data-state="locked"] .nf-wk-cl b { color: var(--cm-ctos-meta); }
 .ctos .nf-wk-ct { font: 700 var(--cm-ctos-t-micro)/1 var(--cm-mono); letter-spacing: .1em; text-transform: uppercase; color: var(--cm-ctos-meta); }
 .ctos .nf-wk-chain li[data-state="done"] .nf-wk-ct { color: var(--c); }
-.ctos .nf-wk-chain li[data-here] .nf-wk-ct { padding: 4px 6px; background: var(--cm-cyan); color: #0a0a0a; animation: nfWkHere 1.6s steps(2) infinite; }
+.ctos .nf-wk-chain li[data-here] .nf-wk-ct { padding: 4px 6px; background: var(--cm-cyan); color: #0a0a0a; animation: nfWkHere 1.6s step-end infinite; }
 .ctos .nf-wk-chain li[data-here] .nf-wk-cn { border-color: var(--cm-cyan); animation: nfWkNext 1.8s steps(6) infinite; --c: var(--cm-cyan); }
-@keyframes nfWkHere { 50% { background: #0a0a0a; color: var(--cm-cyan); box-shadow: inset 0 0 0 1px var(--cm-cyan); } }
+/* two hard states; the old steps(2) blend put the text and its background at the same colour for half a second (an empty block) */
+@keyframes nfWkHere { 0% { background: var(--cm-cyan); color: #0a0a0a; } 50% { background: #0a0a0a; color: var(--cm-cyan); box-shadow: inset 0 0 0 1px var(--cm-cyan); } }
 @media (hover: hover) { .ctos .nf-wk-chain button:hover { border-color: #ffffff22; } }
 .ctos .nf-wk-zone { position: relative; display: grid; gap: 14px; padding: 16px 18px 18px; background: #0a0a0a; border: 1px solid color-mix(in srgb, var(--c) 30%, #1c1c1c); }
 .ctos .nf-wk-zh { display: flex; align-items: center; gap: 14px; }
