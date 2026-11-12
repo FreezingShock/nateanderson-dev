@@ -1086,7 +1086,14 @@ export function NodeFarm() {
             setTimeout(() => document.querySelector<HTMLElement>(`.nf [data-stat="lab"]`)?.scrollIntoView({ behavior: reduced ? "auto" : "smooth", block: "center" }), 90);
             return;
         }
+        if (t.dtree) { setWin(""); setTreeOpen(false); setLabTree(false); setDroneTree(true); sfx("tab"); return; }
         setTab("stats");
+        if (t.sched) {
+            if (folded.sched) setFold({ ...folded, sched: false });
+            sfx("tab");
+            setTimeout(() => document.querySelector<HTMLElement>(`.nf [data-stat="sched"]`)?.scrollIntoView({ behavior: reduced ? "auto" : "smooth", block: "center" }), 90);
+            return;
+        }
         const key = t.drone !== undefined ? "drones" : t.stat;
         if (!key) return;
         const arc = arcOf(key);

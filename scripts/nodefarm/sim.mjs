@@ -24,7 +24,12 @@ if (!process.env.NF_NODRONES) s.armed = ["mult", ...E.MATS]; // the bot arms eve
 if (process.env.NF_NODRONES) s.autoArmed = ["mult", ...E.MATS]; // keep Standing orders from arming anything
 const marks = {};
 const ascents = [];
-const mark = (k, t) => { if (!(k in marks)) marks[k] = t; };
+// NF_SNAP=<dir>: write a save file when a milestone first lands and at fixed play times (scripts/nodefarm/guide-audit.mjs reads them)
+const { writeFileSync: wf, mkdirSync: mk } = await import("node:fs");
+if (process.env.NF_SNAP) mk(process.env.NF_SNAP, { recursive: true });
+const snap = (name, t) => { if (process.env.NF_SNAP) { s.at = Date.now(); wf(`${process.env.NF_SNAP}/${String(Math.round(t / 60)).padStart(6, "0")}m-${name.replace(/\W+/g, "-")}.json`, JSON.stringify(s)); } };
+const mark = (k, t) => { if (!(k in marks)) { marks[k] = t; if (process.env.NF_SNAP && /^(first reboot|copper|silicon|quartz|aether|runes|chrono|voidsteel|origin|sunstone|bloom|geodes|can ascend|ascend [135]|lab open|lab done|drone 0|handover \d|tree whole|first drop|dnode|mastery 15|rig .* 3)/.test(k) && !/^dnode|^rig/.test(k) || /^(mastery 15)$/.test(k)) snap(k, t); } };
+const SNAP_AT = [5, 20, 60, 120, 240, 480, 1440].map((m) => m * 60);
 const MATS_P = (s) => E.MATS.map((m) => E.fmt(s.prod[m])).join("/");
 const order = [...E.MATS].reverse().concat("mult");
 const treeOrder = [...E.TREE].sort((a, b) => a.cost - b.cost);
@@ -41,6 +46,7 @@ const dt = Number(process.env.NF_DT || 0.5); // tick size in seconds (the live g
 while (t < hours * 3600) {
     E.tick(s, dt);
     t += dt;
+    if (SNAP_AT.length && t >= SNAP_AT[0]) snap("t" + SNAP_AT.shift() / 60 + "m", t);
     if (t >= nextBuy) {
         nextBuy = t + 3;
         // buy: for each stat, the most expensive affordable tier is a good greedy choice when cost < 25% of balance

@@ -19,7 +19,8 @@ const STORE = "nf-next-v1";
 function plateOf(id: string): { p: Plate; stat?: StatId } {
     if (id === "first-mult" || id === "grow") return { p: "grow", stat: "mult" };
     if (id === "first-reboot") return { p: "reboot" };
-    if (id === "spend-ap") return { p: "tree" };
+    if (id === "spend-ap" || id === "finish-tree" || id === "open-handover" || id === "handover" || id === "flash-fw") return { p: "tree" };
+    if (id === "event") return { p: "goal" };
     if (id === "lab-research") return { p: "lab" };
     if (id === "lab-compile") return { p: "compile" };
     if (id === "first-drone") return { p: "drone" };
@@ -44,6 +45,10 @@ function primaryOf(s: State, step: Step): { kind: "do" | "go"; label: string; de
     if (t?.drone !== undefined && s.drones[t.drone] < droneMax(s) && s.aether >= droneCost(s, t.drone)) {
         return { kind: "do", label: `Build ${DRONE_NAMES[t.drone]}`, detail: `${fmt(droneCost(s, t.drone))} AE`, icon: "play" };
     }
+    if (t?.win === "stress") return { kind: "go", label: "Open stress tests", detail: "permanent rewards", icon: "play" };
+    if (t?.win === "handover") return { kind: "go", label: "Open Handover", detail: s.hand.keys > 0 ? `${fmt(s.hand.keys)} Keys` : "Keys and Firmware", icon: "key" };
+    if (t?.sched) return { kind: "go", label: "Open Scripts", detail: "learned and learning", icon: "play" };
+    if (t?.dtree) return { kind: "go", label: "Open Drone tree", detail: "spend Cores", icon: "drone" };
     if (t?.win === "tree") return { kind: "go", label: "Open tree", detail: `${fmt(s.ap)} AP to spend`, icon: "tree" };
     if (t?.win === "ascend") return { kind: "go", label: "Open Ascend", detail: canAscend(s) ? `+${fmt(apOnAscend(s))} AP` : "perks and reset", icon: "ascend" };
     if (t?.win === "goals") return { kind: "go", label: "Open goals", detail: "rewards and tiers", icon: "goal" };
@@ -119,6 +124,15 @@ export function GuideStrip({ s, d, step, onGo, onDo, onCell, onMap, mapOpen }: {
                     <button type="button" className="nf-gd-map nf-nx-fold" aria-expanded={!folded} aria-controls="nf-nx-cells" onClick={fold} title={folded ? "Show live readouts" : "Hide live readouts"}>{folded ? "+" : "−"}<span className="sr-only">{folded ? "Show live readouts" : "Hide live readouts"}</span></button>
                 </div>
             </div>
+            {step.also && step.also.length > 0 && (
+                <ul className="nf-nx-also" aria-label="Also ready">
+                    {step.also.map((a) => (
+                        <li key={a.id}>
+                            <button type="button" onClick={() => a.target && onCell(a.target)}><span aria-hidden="true">+ </span>{a.text}</button>
+                        </li>
+                    ))}
+                </ul>
+            )}
             {!folded && (
                 <ul className="nf-nx-cells" id="nf-nx-cells" aria-label="Live progress">
                     {cells.map((c) => (

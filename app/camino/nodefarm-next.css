@@ -143,3 +143,10 @@
 @media (prefers-reduced-motion: reduce) {
     .ctos .nf-nx-plate, .ctos .nf-nx .nf-gd-go::after, .ctos .nf-nx-cl em { animation: none !important; }
 }
+
+/* ---- also ready: other things the player can do right now, one plain line each under the main step */
+.ctos .nf-nx-also { grid-column: 1 / -1; list-style: none; margin: 0; padding: 8px 0 0; display: flex; flex-wrap: wrap; gap: 4px 22px; border-top: 1px dashed color-mix(in srgb, var(--c) 30%, #1c1c1c); }
+.ctos .nf-nx-also button { all: unset; cursor: pointer; font: 600 var(--cm-ctos-t-micro)/1.4 var(--cm-mono); color: var(--cm-fg); }
+.ctos .nf-nx-also button span { color: var(--c); }
+.ctos .nf-nx-also button:hover, .ctos .nf-nx-also button:focus-visible { color: var(--c); text-decoration: underline; text-underline-offset: 3px; }
+.ctos .nf-nx-also button:focus-visible { outline: 1px solid var(--c); outline-offset: 2px; }
