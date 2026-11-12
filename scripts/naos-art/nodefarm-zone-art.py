@@ -203,6 +203,9 @@ def hexmod(art, cx, cy, r, f, ph=0.0, detail=0):
         art.set(x1 | x2, col("lime", 4 if k > .45 or detail == 0 else 3))
         if detail >= 3:
             art.set(inner & bx & (np.abs((xx + .5 - cx) - (yy + .5 - cy)) < w * .45) & disc(cx, cy, r * .3), col("wh", 4))
+    if 1 <= detail <= 5 and r >= 6:
+        a_ = tri(f + detail)
+        art.set(hexm(cx, cy, 1.6 + r * .08), col("cyan", 4 if a_ > .5 else 3))
     if detail >= 4:
         # concentric inner rings that step outward
         for j in range(1, 3 + (detail >= 6)):
@@ -229,16 +232,37 @@ def meter(art, x0, y1, n, f, seed, w=2):
         art.set(rect(x0, y, x0 + w, y + 1), col(c, 3 if i < lv[f] else 1))
 
 
-def mult_backdrop(a):
+def lamps(a, pts, f, ramps):
+    """Tiny full-colour status lamps on the back wall, each blinking on its own phase."""
+    for k, (x, y) in enumerate(pts):
+        r = ramps[k % len(ramps)]
+        on = (f + k * 2) % FRAMES < 3
+        a.set(rect(x, y, x + 1, y + 1), col(r, 4 if on else 2))
+
+
+def busy(x, y):
+    """True inside the top-right corner reserved for the big number and its sub-lines."""
+    return x > 200 and y < 30
+
+
+def mult_backdrop(a, f):
     floor(a, "lime")
+    # cyan carrier and lime harmonics, denser than the wall pattern
+    for j, (y, amp, cyc) in enumerate([(27, 2, 7), (40, 1.5, 9)]):
+        wv = np.sin(xx / W * cyc * 2 * math.pi - j - f / FRAMES * 2 * math.pi) * amp
+        a.haze((np.abs(yy + .5 - (y + wv)) < .6) & ~((xx > 200) & (yy < 30)), col("cyan", 1))
+    # rack rails with lit ports along the wall
+    a.haze(rect(0, 52, W, 53), col("lime", 1))
+    a.haze(rect(0, 52, W, 56) & (xx.astype(int) % 5 == 0), col("lime", 0))
+    lamps(a, [(x, 54) for x in range(9, W, 15)], f, ["lime", "cyan", "rn"])
     # faint carrier waves across the back wall
     for j, (y, amp, cyc) in enumerate([(20, 3, 3), (34, 2, 5), (46, 2.5, 4)]):
         wv = np.sin(xx / W * cyc * 2 * math.pi + j) * amp
         a.haze(np.abs(yy + .5 - (y + wv)) < .6, col("lime", 1))
-    # honeycomb outline wall, sparse
+    # honeycomb outline wall
     for cy in range(8, 56, 14):
         for cx in range(6 + (cy // 14 % 2) * 12, W, 24):
-            if (cx * 7 + cy * 3) % 5 < 2:
+            if (cx * 7 + cy * 3) % 5 < 3 and not busy(cx, cy):
                 a.haze(hexm(cx, cy, 6) & ~hexm(cx, cy, 5), col("lime", 1), 0.7)
 
 
@@ -358,8 +382,14 @@ def cell_bar(art, x0, y1, w, n, f, ph):
         art.set(rect(x0, y, x0 + w, y + 1), col(c, 3 if i < lvl else 1))
 
 
-def reboot_backdrop(a):
+def reboot_backdrop(a, f):
     floor(a, "mag")
+    # breaker grid panels on the wall, and amber/cyan status lamps
+    for x in range(4, W, 36):
+        if not busy(x, 30):
+            a.haze(rect(x + 6, 30, x + 24, 46) & ~rect(x + 7, 31, x + 23, 45), col("mag", 1))
+            a.haze(rect(x + 8, 33, x + 22, 43) & ((xx.astype(int) % 3) == 0), col("mag", 0))
+    lamps(a, [(x + 14, 48) for x in range(4, W, 36)] + [(x + 4, 26) for x in range(4, 200, 36)], f, ["rn", "cyan", "mag"])
     # conduit pipes along the back wall
     for y in (16, 22):
         a.haze(rect(0, y, W, y + 1), col("mag", 1))
@@ -406,9 +436,9 @@ def reboot_stage(stage, f):
             cell_bar(a, cx - 3, GY - 1, 6, 8, f, .3)
             cell_bar(a, cx + 7, GY - 1, 4, 6, f, .6)
             cell_bar(a, cx - 11, GY - 1, 4, 5, f, .1)
-            power(a, cx, GY - 30, 9, f, detail=3, ph=.1)
+            power(a, cx, GY - 26, 8, f, detail=3, ph=.1)
             if f % 2 == 0:
-                spark4(a, cx + 11, GY - 34, True)
+                spark4(a, cx + 11, GY - 28, True)
         elif i == 5:
             # coil pylon: stacked rings with the glyph as its head, arcing to the ground
             for j in range(6):
@@ -555,21 +585,24 @@ def furnace(art, cx, f):
     return P
 
 
-def copper_backdrop(a):
+def copper_backdrop(a, f):
     floor(a, "cu")
+    # warm glow seams in the floor and pads that pulse amber
+    a.haze(rect(0, GY + 2, W, GY + 3) & ((xx.astype(int) // 6) % 3 == 0), col("red", 1))
     # PCB trace network on the back wall: right-angle runs with pads
     rng = np.random.default_rng(4)
-    for k in range(9):
+    for k in range(16):
         x = rng.integers(0, W - 40)
         y = rng.integers(10, GY - 8)
         L1 = rng.integers(16, 60)
         d = rng.choice([-1, 1])
         pts = [(x, y), (x + L1, y), (x + L1 + 6, y + 6 * d), (x + L1 + 6 + rng.integers(10, 40), y + 6 * d)]
-        if x + L1 > 200 and y < 24:
+        if any(busy(px, py) for px, py in pts):
             continue  # keep the number corner clear
-        a.haze(path_mask(pts, 1), col("cu", 1))
+        a.haze(path_mask(pts, 1), col("cu", 1) if k % 3 else col("rn", 1))
         for p in (pts[0], pts[-1]):
             a.haze(disc(p[0], p[1], 1.5), col("cu", 1))
+        lamps(a, [pts[-1]], f + k, ["rn", "red", "cu"])
 
 
 COPPER = [(16, 8), (38, 7), (64, 9), (94, 0), (260, 0), (204, 14), (126, 0)]  # (cx, ingot size); 0 = special
@@ -633,7 +666,7 @@ ZONES = {
 def cell(name, stage, f):
     back, draw = ZONES[name]
     a = draw(stage, f)
-    back(a)               # haze only fills empty pixels, so it sits behind the art
+    back(a, f)            # haze only fills empty pixels, so it sits behind the art
     return a.img
 
 
