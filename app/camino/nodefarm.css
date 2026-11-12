@@ -463,10 +463,10 @@ body.nf-win-open .ctos .cm-section.ruled { z-index: 60; }
    ========================================================================== */
 @keyframes nfFrame { to { background-position-y: calc(var(--s) * -8); } }
 @keyframes nfTierFrame { to { background-position-y: calc(var(--r) * -32px - 2048px); } }
-@keyframes nfDroneFrame { to { background-position-y: -256px; } }
+@keyframes nfDroneFrame { to { background-position-y: -512px; } }
 
-.ctos .nf-sp-d { display: block; width: 64px; height: 64px; flex: none; background: url(/naos/nodefarm/drones.webp?v=600574e6) calc(var(--k) * -64px) 0 / 384px 256px no-repeat; image-rendering: pixelated; filter: grayscale(1) brightness(.55); animation: nfDroneFrame .8s steps(4) infinite paused; }
-.ctos .nf-sp-d[data-on] { filter: none; animation-play-state: running; animation-delay: calc(var(--k) * -.2s); }
+.ctos .nf-sp-d { display: block; width: 64px; height: 64px; flex: none; background: url(/naos/nodefarm/drones.webp?v=4ecf8762) calc(var(--k) * -64px) 0 / 384px 512px no-repeat; image-rendering: pixelated; filter: grayscale(1) brightness(.55); animation: nfDroneFrame .9s steps(8) infinite paused; }
+.ctos .nf-sp-d[data-on] { filter: none; animation-play-state: running; animation-delay: calc(var(--k) * -.15s); }
 .ctos .nf-locked .nf-sp-d { --k: 0; filter: grayscale(1) brightness(.7); }
 
 .ctos .nf-btn[data-tier="0"] { --rar: #9aa7ad; }

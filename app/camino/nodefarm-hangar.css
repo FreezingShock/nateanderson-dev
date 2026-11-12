@@ -56,15 +56,17 @@
 .ctos .nf-hg .nf-dr-list li::before { top: 38px; margin-top: 0; }
 .ctos .nf-hg-head { position: relative; display: grid; grid-template-columns: auto minmax(0, 1.2fr) auto auto; align-items: center; gap: 8px 16px; padding: 10px 12px; }
 @media (min-width: 560px) { .ctos .nf-hg-head { grid-template-columns: auto minmax(0, 1fr) 132px 180px; } }
-@media (max-width: 559px) { .ctos .nf-hg-head .nf-mini { white-space: normal; max-width: 7.5em; min-height: 44px; line-height: 1.25; text-align: center; } .ctos .nf-hg-head { grid-template-columns: auto 1fr auto; } .ctos .nf-hg-head .nf-dr-pips { grid-column: 2; } .ctos .nf-hg-head .nf-mini { grid-column: 3; grid-row: 1 / 3; } .ctos .nf-hg-head .nf-sp-d { grid-row: 1 / 3; } }
+@media (max-width: 559px) { .ctos .nf-hg-head { grid-template-columns: auto 1fr; } .ctos .nf-hg-head .nf-sp-d { grid-column: 1; grid-row: 1 / 3; } .ctos .nf-hg-head .nf-dr-n { grid-column: 2; grid-row: 1; } .ctos .nf-hg-head .nf-dr-pips { grid-column: 2; grid-row: 2; } .ctos .nf-hg-head .nf-mini { grid-column: 1 / -1; grid-row: 3; width: 100%; min-height: 44px; } }
 .ctos .nf-hg-ctl { display: grid; grid-template-columns: minmax(0, 1fr); gap: 10px; padding: 10px 12px 12px; border-top: 1px dashed #ffffff14; }
-@media (min-width: 760px) { .ctos .nf-hg-ctl { grid-template-columns: minmax(220px, 1fr) minmax(0, 1.6fr); align-items: center; } }
+@media (min-width: 1200px) { .ctos .nf-hg-ctl { grid-template-columns: minmax(220px, 1fr) minmax(0, 2.4fr); align-items: center; } }
 .ctos .nf-hg-post { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: 10px; }
 .ctos .nf-hg-post span { font: 700 var(--cm-ctos-t-micro)/1 var(--cm-mono); letter-spacing: .14em; text-transform: uppercase; color: var(--cm-ctos-meta); }
 .ctos .nf-hg-post select { min-width: 0; width: 100%; min-height: 40px; padding: 0 30px 0 10px; appearance: none; background: #0d0d0d linear-gradient(45deg, transparent 50%, var(--c) 50%) right 14px center / 6px 6px no-repeat; border: 1px solid color-mix(in srgb, var(--c) 45%, #2a2a2a); border-radius: 0; color: var(--cm-fg); font: 500 var(--cm-ctos-t-ui)/1 var(--cm-mono); cursor: pointer; }
 @media (max-width: 559px) { .ctos .nf-hg-post select { font-size: 16px; } }
 .ctos .nf-hg-post select:focus-visible { outline: 2px solid var(--c); outline-offset: 2px; }
 .ctos .nf-hg-mods { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+@media (min-width: 900px) { .ctos .nf-hg-mods { grid-template-columns: repeat(5, minmax(0, 1fr)); } }
+@media (max-width: 559px) { .ctos .nf-hg-mods { grid-template-columns: repeat(2, minmax(0, 1fr)); } .ctos .nf-hg-mods > :last-child { grid-column: 1 / -1; } }
 .ctos .nf-hg-mod { display: grid; grid-template-columns: auto 1fr; grid-template-rows: auto auto; align-items: center; gap: 4px 8px; min-height: 44px; padding: 6px 8px; background: #0d0d0d; border: 1px solid #2a2a2a; border-left: 2px solid var(--c); color: var(--cm-fg); text-align: left; cursor: pointer; font: 700 10.5px/1 var(--cm-mono); letter-spacing: .1em; }
 .ctos .nf-hg-mod small { grid-column: 1 / -1; font: 500 var(--cm-ctos-t-micro)/1 var(--cm-mono); letter-spacing: .04em; color: var(--hg-haz); }
 .ctos .nf-hg-mod:disabled { cursor: default; border-left-color: #333; }
@@ -152,7 +154,7 @@
 /* ---- hangar-floor backdrop */
 .nf-hbd { position: absolute; inset: 0; z-index: 0; overflow: hidden; pointer-events: none; contain: strict; background: radial-gradient(ellipse at 50% 46%, #1a1610 0, #0c0e12 45%, #040506 100%); }
 .nf-hbd-g { position: absolute; inset: 0; will-change: background-position; }
-.nf-hbd-g[data-l="0"] { background-image: url(/naos/nodefarm/hangar-bg-0.webp?v=7b087149); image-rendering: pixelated; opacity: .75; }
+.nf-hbd-g[data-l="0"] { background-image: url(/naos/nodefarm/hangar-bg-0.webp?v=23358889); image-rendering: pixelated; opacity: .75; }
 .nf-hbd-g[data-l="1"] { background-image: linear-gradient(#ffb14a0c 1px, transparent 1px), linear-gradient(90deg, #ffb14a0c 1px, transparent 1px); }
 .nf-hbd-g[data-l="2"] { background-image: linear-gradient(#ffd23a1a 2px, transparent 2px), linear-gradient(90deg, #ffd23a1a 2px, transparent 2px); }
 .nf-hbd-g[data-l="3"] { background-image: radial-gradient(circle, #c9d2e066 0 1.5px, transparent 2px); opacity: .6; }
