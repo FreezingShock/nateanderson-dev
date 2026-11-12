@@ -317,7 +317,7 @@
 .ctos .nf-hud, .ctos .nf-chain, .ctos .nf-tier, .ctos .nf-asc-card, .ctos .nf-away { position: relative; overflow: hidden; border-left-width: 1px; border-color: color-mix(in srgb, var(--c, var(--cm-cyan)) 35%, #1c1c1c); }
 .ctos .nf-hud::after, .ctos .nf-chain::after, .ctos .nf-tier::after, .ctos .nf-asc-card::after, .ctos .nf-away::after { content: ""; position: absolute; left: 0; right: 0; top: 0; height: 6px; pointer-events: none; background: repeating-conic-gradient(var(--c, #2fd8e8) 0 25%, transparent 0 50%) 0 0 / 4px 4px; opacity: .5; -webkit-mask-image: linear-gradient(90deg, #000, transparent 75%); mask-image: linear-gradient(90deg, #000, transparent 75%); }
 .ctos .nf-chain { padding-top: 16px; }
-.ctos .nf-chain-all { margin-left: auto; align-self: center; padding: 0 !important; opacity: 1 !important; }
+.ctos .nf-chain-all { display: flex; gap: 6px; margin-left: auto; align-self: center; padding: 0 !important; opacity: 1 !important; }
 .ctos .nf-chain-all::after { content: none; }
 .ctos .nf-perks li[data-maxed] { border-color: #6bffc9; }
 .ctos .nf-log { background-image: repeating-linear-gradient(0deg, transparent 0 3px, #ffffff05 3px 4px); }
@@ -331,7 +331,7 @@
 @container (min-width: 640px) { .ctos .nf-btns { grid-template-columns: repeat(6, minmax(0, 1fr)); } }
 @container (max-width: 289px) { .ctos .nf-btns { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 @media (max-width: 640px) {
-    .ctos .nf-chain li { display: none; }
+    .ctos .nf-chain li:not(.nf-chain-all) { display: none; }
     .ctos .nf-chain { padding: 8px; justify-content: flex-end; }
     .ctos .nf-chain::after { content: none; }
     .ctos .nf-bar-t { letter-spacing: .06em; padding-left: 10px; gap: 8px; }
