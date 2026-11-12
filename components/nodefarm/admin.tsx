@@ -7,7 +7,7 @@ import {
     type MatId, type State, type StatId,
 } from "@/lib/nodefarm/engine";
 import {
-    ARMABLE, RESOURCES, addStat, clearLogs, clearPerks, dropSnap, forceAscend, grantGoals, grantLogs, grantSecrets, jumpEra, maxDrones, maxOut, maxPerks, overwrite, ownAllNodes, parseAmount, refundTree,
+    ARMABLE, RESOURCES, addStat, clearLab, clearLogs, clearPerks, dropSnap, forceAscend, grantGoals, grantLab, grantLogs, grantSecrets, jumpEra, maxDrones, maxOut, maxPerks, overwrite, ownAllNodes, parseAmount, refundTree,
     revokeGoals, setAP, setDrone, setPerk, setProd, setStat, skipTime, snapState, snaps, takeSnap, toggleNode, toggleSecret, type Snap,
 } from "@/lib/nodefarm/admin";
 import { EVENTS, type EventKind } from "@/lib/nodefarm/events";
@@ -252,10 +252,10 @@ function AdminPanelInner({ host }: { host: AdminHost }) {
                         <div className="nf-ad-cols">
                             <div className="nf-ad-col">
                                 <Sec n={1} title="Grant" hint="one click each" {...sec("grant")}>
-                                    <button type="button" className="nf-ad-go" onClick={() => act(maxOut, "everything granted: tree, perks, Drones, goals, secrets, logs, prestiges, materials")}>
+                                    <button type="button" className="nf-ad-go" onClick={() => act(maxOut, "everything granted: tree, perks, Drones, goals, secrets, logs, lab, prestiges, materials")}>
                                         <i aria-hidden="true" />
                                         <span>Max out everything</span>
-                                        <small>40 tree nodes · every perk · Drones · goals · secrets · logs · all materials</small>
+                                        <small>40 tree nodes · every perk · Drones · goals · secrets · logs · lab · all materials</small>
                                     </button>
                                     <div className="nf-ad-grid">
                                         <Btn onClick={() => act(ownAllNodes, "every tree node owned")}>Own every tree node</Btn>
@@ -265,6 +265,8 @@ function AdminPanelInner({ host }: { host: AdminHost }) {
                                         <Btn onClick={() => act(maxDrones, "Drones maxed and armed")}>Max Drones, arm all</Btn>
                                         <Btn onClick={() => act((x) => { grantGoals(x); grantSecrets(x); }, "every goal and secret done")}>Every goal and secret</Btn>
                                         <Btn onClick={() => act(grantLogs, "every story log recovered")}>Recover all logs</Btn>
+                                        <Btn onClick={() => act(grantLab, "lab researched, Intel and stock filled")}>Research the whole lab</Btn>
+                                        <Btn onClick={() => act(clearLab, "lab research cleared")}>Clear lab</Btn>
                                         <Btn on={reveal} onClick={() => { adminFlags.reveal = !adminFlags.reveal; setReveal(adminFlags.reveal); host.changed(); setNote(`> tree fog ${adminFlags.reveal ? "off" : "on"}`); }}>Reveal whole tree</Btn>
                                     </div>
                                 </Sec>
