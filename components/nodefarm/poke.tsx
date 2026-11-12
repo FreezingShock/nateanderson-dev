@@ -21,6 +21,7 @@ import { call, id as idTok, num, p as pun, str as strTok, type FeedStore } from 
 import { shownStage, hasZoneArt } from "@/lib/nodefarm/zone-art";
 import { POKE_TUNE, cachePay, lumpText, neighbours, openCache, poke, vent, ventFrac, ventPay, ventReady, zoneRate, dropCache } from "@/lib/nodefarm/poke";
 import type { CoreFeed } from "./core";
+import { ARCS, arcOf } from "@/lib/nodefarm/arcs";
 import { TipCtx } from "./guide";
 
 type D = ReturnType<typeof derive>;
@@ -272,7 +273,10 @@ export function PokeLayer({ s, d, root, coreFeed, feed, reduced, onChange, onGo,
             }
             if (lastType === "mouse") return;
             const f = figure(t);
-            if (f) tip.show(f.el, f.build, { ms: 2600 });
+            if (!f) return;
+            tip.show(f.el, f.build, { ms: 2600 });
+            // a tap on an open zone's number reads it; the header's blank-space fold would otherwise close the panel
+            if (f.el.matches(".nf-row[data-open='true'] .nf-row-n")) e.stopPropagation();
         };
         // quick menu: right-click, or hold a finger still on a zone panel for 520 ms
         const openMenu = (z: StatId, x: number, y: number) => {
@@ -408,9 +412,15 @@ export function PokeLayer({ s, d, root, coreFeed, feed, reduced, onChange, onGo,
 
     // ---- caches: one button per waiting cache, portaled into its zone panel. Placed with the art box's own inline sizes
     // (no layout read): --t/--b are its top and floor, --s the art scale, so x runs along the visible scene.
+    // caches whose zone sits in a folded arc show as a count on that arc's header (it opens the arc on a tap, like the rest of it)
+    const hidden: Record<string, number> = {};
     const caches = typeof document === "undefined" ? [] : p.c.map((c) => {
         const row = document.querySelector<HTMLElement>(`.nf .nf-row[data-stat="${c.z}"]:not(.nf-locked)`);
-        if (!row) return null;
+        if (!row) {
+            const a = arcOf(c.z);
+            if (a) hidden[a.id] = (hidden[a.id] ?? 0) + 1;
+            return null;
+        }
         // a folded panel shows no scene: the crate sits in its title bar instead
         const bar = row.dataset.open === "false" ? row.querySelector<HTMLElement>(":scope > .nf-bar-t") : null;
         const art = row.querySelector<HTMLElement>(":scope > .nf-art");
@@ -438,6 +448,17 @@ export function PokeLayer({ s, d, root, coreFeed, feed, reduced, onChange, onGo,
             </button>,
             bar ?? row,
             `pk-${c.id}`,
+        );
+    });
+
+    const arcBadges = typeof document === "undefined" ? [] : Object.entries(hidden).map(([id, n]) => {
+        const no = ARCS.findIndex((a) => a.id === id) + 1;
+        const head = [...document.querySelectorAll<HTMLElement>(".nf .nf-arc")].find((h) => h.querySelector(".nf-arc-k")?.textContent?.startsWith(`ARC ${String(no).padStart(2, "0")} `));
+        if (!head) return null;
+        return createPortal(
+            <span className="nf-pk-arcb" aria-hidden="true"><Crate />{n > 1 ? `${n} CACHES` : "CACHE"}</span>,
+            head,
+            `pk-arc-${id}`,
         );
     });
 
@@ -505,5 +526,5 @@ export function PokeLayer({ s, d, root, coreFeed, feed, reduced, onChange, onGo,
         );
     }
 
-    return <>{caches}{ventBtn}{menuEl}</>;
+    return <>{caches}{arcBadges}{ventBtn}{menuEl}</>;
 }

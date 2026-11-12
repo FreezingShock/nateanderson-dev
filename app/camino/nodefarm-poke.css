@@ -47,6 +47,10 @@
 .ctos .nf-bar-t > .nf-pk-cache .nf-pk-crate { width: 20px; height: 20px; filter: none; }
 @media (max-width: 639px) { .ctos .nf-row[data-open="true"] > .nf-pk-cache { top: calc(var(--pkt) - 10px); } .ctos .nf-bar-t > .nf-pk-cache .nf-pk-tag { display: none; } }
 
+/* a cache inside a folded arc: a badge on the arc header; clicks pass through to the header's own button */
+.ctos .nf-arc > .nf-pk-arcb { position: absolute; z-index: 2; top: 8px; right: 54px; display: flex; align-items: center; gap: 6px; pointer-events: none; padding: 3px 6px 3px 4px; background: #0c0c0ce6; border: 1px solid var(--c); font: 700 10px/1 var(--cm-mono); letter-spacing: .14em; color: var(--c); --pk-c: var(--c); --pk-l: color-mix(in srgb, var(--c) 45%, #fff); --pk-d: color-mix(in srgb, var(--c) 35%, #000); }
+.ctos .nf-arc > .nf-pk-arcb .nf-pk-crate { width: 18px; height: 18px; filter: none; }
+
 /* ---- the vent: a button over the core. A gauge under the top edge; brackets light up when it is full */
 .ctos .nf-pk-core { position: absolute; inset: 0; z-index: 2; background: none; border: 0; padding: 0; cursor: pointer; border-radius: 50%; }
 .ctos .nf-pk-core:focus-visible { outline: 2px solid var(--cm-ctos-accent, #2fd8e8); outline-offset: -6px; }
