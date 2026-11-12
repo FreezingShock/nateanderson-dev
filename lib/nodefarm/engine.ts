@@ -774,16 +774,16 @@ export interface ZoneEvState {
 }
 export const ZE_TUNE = {
     /** gap between events in game seconds, [min, max]; the first one waits for `first` seconds of life */
-    gap: [600, 1020] as [number, number],
+    gap: [660, 1140] as [number, number],
     first: 480,
     /** how long each lasts, seconds */
     secs: { surge: 150, clearance: 150, resonance: 150, vein: 210, fault: 150, convoy: 150, tune: 150 } as Record<ZoneEvKind, number>,
     /** relative odds of each kind */
     odds: { surge: 3, clearance: 2, resonance: 2, vein: 2, fault: 1, convoy: 1.5, tune: 1.5 } as Record<ZoneEvKind, number>,
     /** output multipliers (trimmed after the balance audit: the first numbers cut a Drone-bot Origin run from about 38 h to 26 to 32 h) */
-    surge: 1.5,
+    surge: 1.4,
     resonance: 1.3,
-    vein: 1.5,
+    vein: 1.4,
     fault: 0.6,
     /** Clearance: price multiplier on that zone's buttons */
     clearance: 0.75,
@@ -794,7 +794,7 @@ export const ZE_TUNE = {
     /** no Fault before this much life */
     faultFrom: 900,
     /** Drone convoy: your Drones press that zone this many times as often */
-    convoy: 3,
+    convoy: 2.5,
     /** Rig tune: the zone rig's bonus counts this many times over */
     tune: 2,
     /** events kept in the log */
