@@ -61,6 +61,8 @@ import { ZoneEventCard } from "./zone-event";
 import { zeChoose, zoneEvDef, zoneLabel, type ZeChoice } from "@/lib/nodefarm/zoneevents";
 import { ARCS, arcKey, arcOf } from "@/lib/nodefarm/arcs";
 import { ArcHead } from "./arcs";
+import { Hold } from "./hold";
+import { useOffscreenPause } from "./offscreen";
 import { PokeLayer } from "./poke";
 import { StressPanel, StressStrip } from "./stress";
 import { chOpen, leaveTest, startTest, takeChNews, testDef, RANKS, type TestId } from "@/lib/nodefarm/stress";
@@ -110,7 +112,8 @@ const hasProgress = (s: State) => s.life.presses > 0 || s.life.secs > 60;
 export function NodeFarm() {
     const g = useRef<State>(null as unknown as State);
     const [ready, setReady] = useState(false);
-    const [, bump] = useState(0);
+    const [ver, bump] = useState(0); // bumped by whatever the player or a system just did
+    const [, tickBump] = useState(0); // bumped by the 10 Hz loop only (see Hold: hidden parts follow ver, not this)
     const [tab, setTab] = useState<Tab>("core");
     const [side, setSide] = useState<Tab>("goals");
     const [win, setWin] = useState<"" | Win>("");
@@ -504,6 +507,8 @@ export function NodeFarm() {
         });
     }, [ready, arcCount]); // eslint-disable-line react-hooks/exhaustive-deps
 
+    useOffscreenPause(root, ready);
+
     // ---- the game loop: 10 ticks a second, real elapsed time, so a throttled background tab catches up on return
     useEffect(() => {
         if (!ready) return;
@@ -636,7 +641,7 @@ export function NodeFarm() {
                 setTimeout(() => setToast((t) => (t === goal.name ? null : t)), 3200);
             }
             // a full-screen tree hides the board, so the page only needs to follow once a second (the game itself still ticks ten times a second)
-            if (!treeOpenRef.current || tickN.current % 10 === 0) bump((n) => n + 1);
+            if (!treeOpenRef.current || tickN.current % 10 === 0) tickBump((n) => n + 1);
         }, 100);
         return () => {
             clearInterval(iv);
@@ -1157,6 +1162,13 @@ export function NodeFarm() {
     const laterLocked = STATS.filter((x) => !isUnlocked(s, x.id) && x.id !== firstLocked);
     const guideTarget = step.target && !step.target.win ? step.target : undefined;
 
+    // Hold keys: a hidden copy refreshes about three times a second (slow) or at once when something was done (ver)
+    const slow = Math.floor(tickN.current / 3);
+    const slow2 = Math.floor(tickN.current / 2); // open system panels follow at 5 Hz
+    const hk = `${ver}|${slow}`;
+    const foldSig = JSON.stringify(folded);
+    const guideKey = `${step.target?.drone ?? ""}${step.target?.lab ?? ""}${step.target?.win ?? ""}`;
+    const onPane = (id: string) => win === id || tab === id;
     return (
         <TipCtx.Provider value={tipApi}>
         <div className="nf" ref={root} data-tab={tab} data-side={sideShown} data-win={win || undefined} data-fs={fs ? "" : undefined} data-oc={s.overclock > 0 ? "" : undefined}>
@@ -1196,14 +1208,14 @@ export function NodeFarm() {
                         bump((x) => x + 1);
                     }} />}
                 </div>
-                <Dock info={sw} open={win} treeSeen={treeSeen} lab={labOpen(s)} guideWin={step.target?.win} fs={fs} onOpen={(w) => (w === "lab" ? openLab() : win === w ? closeWin() : openWin(w))} onFs={() => { setFs(!fs); sfx("tab"); }} />
-                <StressStrip s={s} onOpen={() => openWin("stress")} />
+                <Hold live={false} k={`${hk}|${win}|${fs}|${treeSeen}|${guideKey}`}><Dock info={sw} open={win} treeSeen={treeSeen} lab={labOpen(s)} guideWin={step.target?.win} fs={fs} onOpen={(w) => (w === "lab" ? openLab() : win === w ? closeWin() : openWin(w))} onFs={() => { setFs(!fs); sfx("tab"); }} /></Hold>
+                <Hold live={false} k={hk}><StressStrip s={s} onOpen={() => openWin("stress")} /></Hold>
             </header>
             <GuideStrip step={step} onGo={() => goTo(step.target)} onMap={() => openWin("map")} mapOpen={win === "map"} />
             <MiniHud bytes={s.bytes} rate={d.bytesPerSec} step={step} onGo={() => goTo(step.target)} paused={!!win || treeOpen || labTree || !!away || !!confirm} />
             {win && <button type="button" className="nf-scrim" aria-label="Close window" tabIndex={-1} onClick={closeWin} />}
 
-            <PhoneTabs info={sw} tab={tab} treeSeen={treeSeen} lab={labOpen(s)} guideWin={step.target?.win} onTab={(t) => setTabBoth(t)} onTree={() => openWin("tree")} onLab={openLab} />
+            <Hold live={false} k={`${hk}|${tab}|${treeSeen}|${guideKey}`}><PhoneTabs info={sw} tab={tab} treeSeen={treeSeen} lab={labOpen(s)} guideWin={step.target?.win} onTab={(t) => setTabBoth(t)} onTree={() => openWin("tree")} onLab={openLab} /></Hold>
 
             {stale && (
                 <div className="nf-stale" role="alert">
@@ -1236,8 +1248,9 @@ export function NodeFarm() {
             </section>
 
             <section className="nf-pane nf-statspane" data-pane="stats" aria-label="Stats and buttons" onClick={(e) => blankFoldTarget(e.target as HTMLElement)?.click()}>
-                <Chain s={s} d={d} allOpen={!STATS.every((x) => folded[x.id])} onAll={(open) => setFold({ ...folded, ...Object.fromEntries(STATS.map((x) => [x.id, !open])), ...(open ? Object.fromEntries(ARCS.map((a) => [arcKey(a.id), false])) : {}) })} onIdle={foldIdle} onJump={(id) => goTo({ stat: id as Target["stat"] })} />
+                <Hold live={false} k={`${hk}|${foldSig}`}><Chain s={s} d={d} allOpen={!STATS.every((x) => folded[x.id])} onAll={(open) => setFold({ ...folded, ...Object.fromEntries(STATS.map((x) => [x.id, !open])), ...(open ? Object.fromEntries(ARCS.map((a) => [arcKey(a.id), false])) : {}) })} onIdle={foldIdle} onJump={(id) => goTo({ stat: id as Target["stat"] })} /></Hold>
                 {labOpen(s) && (
+                    <Hold live={false} k={`${ver}|${folded.lab ? slow : slow2}|${foldSig}|${guideKey}`}>
                     <LabZone
                         s={s}
                         d={d}
@@ -1249,16 +1262,20 @@ export function NodeFarm() {
                         onCancel={(i) => { if (cancelCompile(s, i)) { sfx("tab"); bump((n) => n + 1); } }}
                         onDeploy={(id) => doDeploy(id)}
                     />
+                    </Hold>
                 )}
                 {schedOpen(s) && (
+                    <Hold live={false} k={`${ver}|${folded.sched ? slow : slow2}|${foldSig}|${guideKey}`}>
                     <ScriptsZone
                         s={s}
                         open={!folded.sched}
                         onToggle={() => { setFold({ ...folded, sched: !folded.sched }); sfx("tab"); }}
                         onChange={(msg) => { sfx("tab"); if (msg) feedStore.push([...call(idTok("cron"), msg.endsWith("running") ? "start" : "stop", [strTok(msg.split(" ")[0])])], { tone: msg.endsWith("running") ? "good" : "warn" }); save(); bump((n) => n + 1); }}
                     />
+                    </Hold>
                 )}
                 {isUnlocked(s, "aether") && (
+                    <Hold live={false} k={`${ver}|${folded.drones ? slow : slow2}|${foldSig}|${guideKey}`}>
                     <DroneBay
                         s={s}
                         guided={step.target?.drone}
@@ -1280,6 +1297,7 @@ export function NodeFarm() {
                         }}
                         onTree={() => { setWin(""); setTreeOpen(false); setLabTree(false); setDroneTree(true); sfx("tab"); }}
                     />
+                    </Hold>
                 )}
                 {ARCS.map((arc, ai) => {
                     const shown = arc.zones.filter((z) => isUnlocked(s, z as StatId) || z === firstLocked);
@@ -1288,7 +1306,7 @@ export function NodeFarm() {
                     const arcOpen = preview || !folded[arcKey(arc.id)];
                     return (
                         <div key={arc.id} className="nf-arcgrp" data-arc={arc.id} data-preview={preview ? "" : undefined} role="group" aria-label={arc.name} style={{ ["--arc" as string]: arc.color } as CSSProperties}>
-                            <ArcHead arc={arc} no={ai + 1} s={s} open={arcOpen} onToggle={() => { if (preview) return; if (arcOpen) { setFold({ ...folded, [arcKey(arc.id)]: true }); sfx("tab"); } else focusArc(arc.id); }} />
+                            <Hold live={false} k={`${hk}|${foldSig}`}><ArcHead arc={arc} no={ai + 1} s={s} open={arcOpen} onToggle={() => { if (preview) return; if (arcOpen) { setFold({ ...folded, [arcKey(arc.id)]: true }); sfx("tab"); } else focusArc(arc.id); }} /></Hold>
                             {arcOpen && (
                                 <div id={`nf-arc-${arc.id}`} className="nf-arc-zones">
                                     {shown.map((id) => (
@@ -1312,40 +1330,43 @@ export function NodeFarm() {
             </section>
 
             <section className="nf-pane nf-sidepane" data-pane="map" aria-label="Progress map" role="dialog" aria-modal="false">
-                <WinBar id="map" info={sw} treeSeen={treeSeen} lab={labOpen(s)} onSwitch={(w) => (w === "lab" ? openLab() : openWin(w))} onClose={closeWin} />
-                <MapPanel s={s} d={d} onTree={() => openWin("tree")} onWin={(w) => openWin(w)} onLab={() => { closeWin(); openLab(); }} />
+                <Hold live={onPane("map")} k=""><WinBar id="map" info={sw} treeSeen={treeSeen} lab={labOpen(s)} onSwitch={(w) => (w === "lab" ? openLab() : openWin(w))} onClose={closeWin} /></Hold>
+                <Hold live={onPane("map")} k=""><MapPanel s={s} d={d} onTree={() => openWin("tree")} onWin={(w) => openWin(w)} onLab={() => { closeWin(); openLab(); }} /></Hold>
             </section>
             <section className="nf-pane nf-sidepane" data-pane="goals" aria-label="Goals" role="dialog" aria-modal="false">
-                <WinBar id="goals" info={sw} treeSeen={treeSeen} lab={labOpen(s)} onSwitch={(w) => (w === "lab" ? openLab() : openWin(w))} onClose={closeWin} /><GoalsPanel s={s} /></section>
+                <Hold live={onPane("goals")} k=""><WinBar id="goals" info={sw} treeSeen={treeSeen} lab={labOpen(s)} onSwitch={(w) => (w === "lab" ? openLab() : openWin(w))} onClose={closeWin} /></Hold><Hold live={onPane("goals")} k=""><GoalsPanel s={s} /></Hold></section>
             <section className="nf-pane nf-sidepane" data-pane="records" aria-label="Records" role="dialog" aria-modal="false">
-                <WinBar id="records" info={sw} treeSeen={treeSeen} lab={labOpen(s)} onSwitch={(w) => (w === "lab" ? openLab() : openWin(w))} onClose={closeWin} /><RecordsPanel s={s} /></section>
+                <Hold live={onPane("records")} k=""><WinBar id="records" info={sw} treeSeen={treeSeen} lab={labOpen(s)} onSwitch={(w) => (w === "lab" ? openLab() : openWin(w))} onClose={closeWin} /></Hold><Hold live={onPane("records")} k=""><RecordsPanel s={s} /></Hold></section>
             <section className="nf-pane nf-sidepane" data-pane="ascend" aria-label="Ascend" role="dialog" aria-modal="false">
-                <WinBar id="ascend" info={sw} treeSeen={treeSeen} lab={labOpen(s)} onSwitch={(w) => (w === "lab" ? openLab() : openWin(w))} onClose={closeWin} />
-                <AscendPanel s={s} d={d} confirm={confirm === "ascend"} onAscend={doAscend} onPerk={(id) => { if (buyPerk(s, id)) { sfx("nfBuy", { tier: 3 }); bump((n) => n + 1); } }} onTree={() => openWin("tree")} onMount={(i, m) => { if (setMount(s, i, m)) { sfx("tab"); save(); bump((n) => n + 1); } }} />
+                <Hold live={onPane("ascend")} k=""><WinBar id="ascend" info={sw} treeSeen={treeSeen} lab={labOpen(s)} onSwitch={(w) => (w === "lab" ? openLab() : openWin(w))} onClose={closeWin} /></Hold>
+                <Hold live={onPane("ascend")} k=""><AscendPanel s={s} d={d} confirm={confirm === "ascend"} onAscend={doAscend} onPerk={(id) => { if (buyPerk(s, id)) { sfx("nfBuy", { tier: 3 }); bump((n) => n + 1); } }} onTree={() => openWin("tree")} onMount={(i, m) => { if (setMount(s, i, m)) { sfx("tab"); save(); bump((n) => n + 1); } }} /></Hold>
             </section>
             {handSeen(s) && (
                 <section className="nf-pane nf-sidepane" data-pane="handover" aria-label="Handover" role="dialog" aria-modal="false">
-                    <WinBar id="handover" info={sw} treeSeen={treeSeen} lab={labOpen(s)} onSwitch={(w) => (w === "lab" ? openLab() : openWin(w))} onClose={closeWin} />
+                    <Hold live={onPane("handover")} k=""><WinBar id="handover" info={sw} treeSeen={treeSeen} lab={labOpen(s)} onSwitch={(w) => (w === "lab" ? openLab() : openWin(w))} onClose={closeWin} /></Hold>
+                    <Hold live={onPane("handover")} k="">
                     <HandoverPanel
                         s={s}
                         onHandover={doHandover}
                         onFirmware={openFw}
                         onProto={(id, second) => { if (setProto(s, id, second)) { sfx("tab"); log(`Protocol: ${protoDef(id).op}, ${protoDef(id).name}${second ? " (Dual boot, half strength)" : ""}.`, "good"); save(); bump((n) => n + 1); } }}
                     />
+                    </Hold>
                 </section>
             )}
             {chOpen(s) && (
                 <section className="nf-pane nf-sidepane" data-pane="stress" aria-label="Stress tests" role="dialog" aria-modal="false">
-                    <WinBar id="stress" info={sw} treeSeen={treeSeen} lab={labOpen(s)} onSwitch={(w) => (w === "lab" ? openLab() : openWin(w))} onClose={closeWin} />
-                    <StressPanel s={s} onStart={doStress} onLeave={doLeaveStress} />
+                    <Hold live={onPane("stress")} k=""><WinBar id="stress" info={sw} treeSeen={treeSeen} lab={labOpen(s)} onSwitch={(w) => (w === "lab" ? openLab() : openWin(w))} onClose={closeWin} /></Hold>
+                    <Hold live={onPane("stress")} k=""><StressPanel s={s} onStart={doStress} onLeave={doLeaveStress} /></Hold>
                 </section>
             )}
             <section className="nf-pane nf-sidepane" data-pane="codex" aria-label="Codex" role="dialog" aria-modal="false">
-                <WinBar id="codex" info={sw} treeSeen={treeSeen} lab={labOpen(s)} onSwitch={(w) => (w === "lab" ? openLab() : openWin(w))} onClose={closeWin} />
-                <CodexPanel s={s} shown={win === "codex" || (tab === "codex" && !win)} onOpen={(w) => (w === "lab" ? (closeWin(), openLab()) : openWin(w))} />
+                <Hold live={onPane("codex")} k=""><WinBar id="codex" info={sw} treeSeen={treeSeen} lab={labOpen(s)} onSwitch={(w) => (w === "lab" ? openLab() : openWin(w))} onClose={closeWin} /></Hold>
+                <Hold live={onPane("codex")} k=""><CodexPanel s={s} shown={win === "codex" || (tab === "codex" && !win)} onOpen={(w) => (w === "lab" ? (closeWin(), openLab()) : openWin(w))} /></Hold>
             </section>
             <section className="nf-pane nf-sidepane" data-pane="menu" aria-label="Menu" role="dialog" aria-modal="false">
-                <WinBar id="menu" info={sw} treeSeen={treeSeen} lab={labOpen(s)} onSwitch={(w) => (w === "lab" ? openLab() : openWin(w))} onClose={closeWin} />
+                <Hold live={onPane("menu")} k=""><WinBar id="menu" info={sw} treeSeen={treeSeen} lab={labOpen(s)} onSwitch={(w) => (w === "lab" ? openLab() : openWin(w))} onClose={closeWin} /></Hold>
+                <Hold live={onPane("menu")} k="">
                 <MenuPanel
                     s={s}
                     soundOn={snd.on}
@@ -1376,6 +1397,7 @@ export function NodeFarm() {
                     onNumFmt={setFormat}
                     onReset={() => doReset(true)}
                 />
+                </Hold>
             </section>
             {adminOn && !adminOpen && <button type="button" className="nf-ad-tab" onClick={() => setAdminOpen(true)} aria-label="Open the root console"><i />root</button>}
             {adminOn && adminOpen && <AdminPanel host={adminHost} />}
