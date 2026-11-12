@@ -198,6 +198,8 @@ export function NodeFarm() {
         const onLive = (e: Event) => {
             (e as CustomEvent<{ live?: NfLive }>).detail.live = {
                 s: g.current,
+                // admin tools rewrote the state (lib/nodefarm/admin.ts): no banner flood, save, redraw
+                changed: () => { prevIds.current = null; tipApi.hide(); save(); bump((n) => n + 1); },
                 notify: (found) => {
                     for (const f of found) {
                         feedStore.push([...call(idTok("secret"), "found", [strTok(f.name)])], { tone: "good", type: true });

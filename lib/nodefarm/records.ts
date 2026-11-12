@@ -163,4 +163,6 @@ export interface NfLive {
     s: State;
     /** call after a command changed the state, with what it unlocked */
     notify: (unlocked: { id: string; name: string }[]) => void;
+    /** call after admin tools rewrote the state: redraws, saves and keeps the unlock banners quiet */
+    changed?: () => void;
 }
