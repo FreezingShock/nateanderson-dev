@@ -17,7 +17,7 @@ import "@/app/camino/nodefarm-rig.css";
 type Line = [string, string];
 /** Row order of public/naos/nodefarm/rigs.webp (scripts/naos-art/nodefarm-rigs.py RIG_ORDER). */
 const ART_ROWS: StatId[] = ["bytes", "mult", "reboot", "copper", "silicon", "quartz", "aether", "runes", "starglass", "voidsteel", "chrono", "nebula", "pulsars", "singularity", "engrams", "paradox", "origin",
-    "spores", "mycelium", "pollen", "bloom", "basalt", "magma", "geodes", "core"];
+    "spores", "mycelium", "pollen", "bloom", "basalt", "magma", "geodes", "sunstone"];
 /** Which of the four drawn states to show: empty, started, past half, full. Weather shows its sky instead of its clock. */
 function artState(id: StatId, s: State, frac: number): number {
     if (id === "pollen") return s.prod.pollen > 0 && daylight(s).phase === "day" ? 3 : 0;
@@ -124,9 +124,9 @@ function view(id: StatId, s: State, d: Derived): View {
             const m = ringMul(s);
             return { frac: (m - 1) / (T.ringMax - 1), meter: `ringing with ${fmt(s.quartz)} Quartz`, lines: [["Geodes output", x(m)]] };
         }
-        case "core": {
+        case "sunstone": {
             const n = convLevels(s);
-            return { frac: n / (DESCENT_RIGS.length * (T.baseCap + T.rewriteMax)), meter: `${n} rig levels below`, lines: [["Core output", x(convMul(s))]] };
+            return { frac: n / (DESCENT_RIGS.length * (T.baseCap + T.rewriteMax)), meter: `${n} rig levels below`, lines: [["Sunstone output", x(convMul(s))]] };
         }
         default:
             return { frac: 0, meter: "", lines: [] };

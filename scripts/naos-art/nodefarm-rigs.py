@@ -649,11 +649,11 @@ def convection(c, p, f):
 
 RIG_ORDER = ["bytes", "mult", "reboot", "copper", "silicon", "quartz", "aether", "runes", "starglass", "voidsteel", "chrono",
              "nebula", "pulsars", "singularity", "engrams", "paradox", "origin",
-             "spores", "mycelium", "pollen", "bloom", "basalt", "magma", "geodes", "core"]
+             "spores", "mycelium", "pollen", "bloom", "basalt", "magma", "geodes", "sunstone"]
 DRAW = {"bytes": cache, "mult": staging, "reboot": capacitor, "copper": pour, "silicon": scrubbers, "quartz": crystals, "aether": afterglow, "runes": carvings,
         "starglass": prism, "voidsteel": voiddraw, "chrono": stillness, "nebula": weather, "pulsars": beacon, "singularity": well, "engrams": index,
         "paradox": mirror, "origin": rewrite, "spores": spread, "mycelium": knots, "pollen": daylight, "bloom": seedbank,
-        "basalt": drill, "magma": eruption, "geodes": ringing, "core": convection}
+        "basalt": drill, "magma": eruption, "geodes": ringing, "sunstone": convection}
 
 
 def blank(c, p, f):

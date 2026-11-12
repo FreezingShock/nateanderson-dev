@@ -6,24 +6,32 @@
 //   deploy.sh   redeploys chosen payloads when they run out
 //   drop.sh     opens the Dead drop when it is full
 //   ascend.sh   Ascends once the AP on offer beats your last Ascend by a margin you pick
+//   rig.sh      upgrades the zone rigs you tick once you hold a multiple of the price
+//   event.sh    answers zone events: mines or rides a Rich vein, patches or waits out a Fault
+//   restore.sh  after a Handover, buys your tree back in the order you built it, then your perks
 // Drones are the fast, blind hands; scripts are the slow rules about when, which and how much to keep.
 // Rules are pure (no React). The board zone is components/nodefarm/scripts.tsx. See docs/node-farm.md "Scripts".
 import {
     MATS, STATS, TICK_HOOKS, TIERS, amount, apOnAscend, button, compile, compileBlock, deploy, deployBlock, dropFill, hasFeature, hasRecipe, isRunning,
-    isUnlocked, labOpen, labSlots, openDrop, payload, press, PAYLOADS,
-    type AutoState, type ButtonStat, type PayloadId, type ScriptId, type State,
+    isUnlocked, labOpen, labSlots, openDrop, payload, press, PAYLOADS, PERKS, TREE, buyNode, buyPerk, handSeen, nodeLevel,
+    type AutoState, type ButtonStat, type PayloadId, type ScriptId, type State, type StatId,
 } from "./engine";
+import { RIGS, buyRig, capCharge, rig, rigOpen, rigPrice } from "./rigs";
+import { zeChoose } from "./zoneevents";
+const BY_ID = new Set(TREE.map((n) => n.id));
 
 export const SCRIPT_TUNE = {
     /** manual actions that teach each script */
-    learn: { buy: 40, reboot: 12, compile: 5, deploy: 5, drop: 2, ascend: 3 } as Record<ScriptId, number>,
+    learn: { buy: 40, reboot: 12, compile: 5, deploy: 5, drop: 2, ascend: 3, rig: 5, event: 3, restore: 1 } as Record<ScriptId, number>,
+    /** rig.sh buys a level once you hold this many times its price */
+    rigX: [2, 5, 10, 20],
     /** buy.sh may press a tier after you pressed it by hand this many times (on that stat) */
     teachTier: 3,
     /** buy.sh: seconds between runs per version, and the buys that reach each version */
     buyCycle: [3, 1.5, 0.75],
     buyVer: [0, 500, 5000],
     /** the other scripts' cycles, seconds */
-    cycle: { compile: 2, deploy: 1, drop: 5 } as Record<string, number>,
+    cycle: { compile: 2, deploy: 1, drop: 5, rig: 5, event: 1, restore: 1 } as Record<string, number>,
     /** settings each rule cycles through on a press */
     keep: [1, 2, 5, 10],
     rebootX: [1.5, 3, 10, 30],
@@ -48,11 +56,14 @@ export interface ScriptDef {
     color: string;
 }
 export const SCRIPTS: ScriptDef[] = [
-    { id: "buy", file: "buy.sh", name: "Auto-buy", color: "#b6f04a", blurb: "Presses the button tiers you taught it, on the stats you tick, and keeps a reserve.", teach: (n) => `Press any buy button by hand ${n} more time${n === 1 ? "" : "s"}.`, flavor: "It watched your hands for a while. Then it asked if it could try." },
+    { id: "buy", file: "buy.sh", name: "Auto-buy", color: "#b6f04a", blurb: "Auto-buy script: presses the button tiers you taught it, on the stats you tick, and keeps a reserve.", teach: (n) => `Press any buy button by hand ${n} more time${n === 1 ? "" : "s"}.`, flavor: "It watched your hands for a while. Then it asked if it could try." },
     { id: "reboot", file: "reboot.sh", name: "Auto-Reboot", color: "#ff2d8a", blurb: "Reboots at the best tier you can afford once Multipliers reach a multiple of its price.", teach: (n) => `Reboot by hand ${n} more time${n === 1 ? "" : "s"}.`, flavor: "Kill, wait, start. The same three words every time, so it learned them." },
     { id: "compile", file: "compile.sh", name: "Auto-compile", color: "#4aa3ff", blurb: "Keeps the recipes you pick stocked, compiling whenever the queue and your Intel allow.", teach: (n) => `Compile ${n} more payload${n === 1 ? "" : "s"} by hand in the Exploit Lab.`, flavor: "make all. It has never once forgotten the flags." },
     { id: "deploy", file: "deploy.sh", name: "Auto-deploy", color: "#8f9bff", blurb: "Deploys the payloads you pick from stock: buffs when they run out, charges when unarmed.", teach: (n) => `Deploy ${n} more payload${n === 1 ? "" : "s"} by hand.`, flavor: "Fire and forget, then fire again on the minute." },
     { id: "drop", file: "drop.sh", name: "Auto-collect", color: "#ffc53a", blurb: "Opens the Dead drop the moment it is full, even while you are away.", teach: (n) => `Open the Dead drop by hand ${n} more time${n === 1 ? "" : "s"}.`, flavor: "Checks the box every five seconds. It has never been late." },
+    { id: "rig", file: "rig.sh", name: "Auto-rig", color: "#f08a3c", blurb: "Upgrades the zone rigs you tick, one level at a time, once you hold a multiple of the price.", teach: (n) => `Buy ${n} more rig level${n === 1 ? "" : "s"} by hand in any zone.`, flavor: "It read the service manuals cover to cover. Then it picked up the wrench." },
+    { id: "event", file: "event.sh", name: "Auto-answer", color: "#ffc53a", blurb: "Answers zone events for you: mines or rides a Rich vein, patches or waits out a Fault.", teach: (n) => `Answer ${n} more Rich vein or Fault by hand.`, flavor: "Picks up on the first ring. Always says the same thing." },
+    { id: "restore", file: "restore.sh", name: "Auto-restore", color: "#9fe870", blurb: "After a Handover, buys your prestige tree back in the order you built it, then your perks, as AP comes in.", teach: () => "Do your first Handover. It saves your build on the way out.", flavor: "Somebody has to remember the floor plan. It wrote it on the back of the door." },
     { id: "ascend", file: "ascend.sh", name: "Auto-Ascend", color: "#6bffc9", blurb: "Ascends for you once the AP on offer beats your last Ascend by the margin you set. Only while the game is open.", teach: (n) => `Ascend by hand ${n} more time${n === 1 ? "" : "s"}.`, flavor: "It knows the way up now. It waits for you to say how high." },
 ];
 export const SCRIPT_BY = new Map(SCRIPTS.map((x) => [x.id, x]));
@@ -113,6 +124,14 @@ function sanitize(o: unknown): AutoState {
     for (const [k, v] of Object.entries(rec(x.acc))) if (isScript(k)) b.acc[k] = Math.max(0, num(v));
     for (const [k, v] of Object.entries(rec(x.ran))) if (isScript(k)) b.ran[k] = Math.max(0, num(v));
     b.presses = Math.max(0, num(x.presses));
+    for (const k of ["capWait", "bombFirst", "zeroFirst", "rebuild", "restPerks"] as const) if (typeof x[k] === "boolean") b[k] = x[k];
+    if (x.rigs && typeof x.rigs === "object") b.rigs = Object.fromEntries(Object.entries(x.rigs).filter(([k, v]) => RIG_ZONES.includes(k as StatId) && v === true));
+    b.rigX = pick(x.rigX, SCRIPT_TUNE.rigX, 5);
+    if (x.vein === "mine" || x.vein === "run") b.vein = x.vein;
+    if (x.fault === "patch" || x.fault === "wait") b.fault = x.fault;
+    if (Array.isArray(x.build)) b.build = x.build.filter((id) => typeof id === "string" && BY_ID.has(id));
+    for (const k of ["buildLv", "buildPerks"] as const) if (x[k] && typeof x[k] === "object") b[k] = Object.fromEntries(Object.entries(x[k]!).filter(([, v]) => num(v) > 0).map(([id, v]) => [id, Math.floor(num(v))]));
+    if (Number.isFinite(x.seenHand)) b.seenHand = Math.max(0, num(x.seenHand));
     return b;
 }
 
@@ -125,11 +144,15 @@ export function scriptOpen(s: State, id: ScriptId): boolean {
         case "compile": case "deploy": return labOpen(s);
         case "drop": return hasFeature(s, "deaddrop");
         case "ascend": return s.life.ascends > 0 || apOnAscend(s) >= 1;
+        case "rig": return true;
+        case "event": return !!s.ze || s.life.secs >= 300;
+        case "restore": return handSeen(s);
     }
 }
 /** What still locks a script, in a few words, for scripts that are not open yet. */
 export const scriptGate: Record<ScriptId, string> = {
     buy: "", reboot: "opens with Reboots", compile: "opens with the Exploit Lab (Silicon)", deploy: "opens with the Exploit Lab (Silicon)", drop: "opens with the Dead drop tree node", ascend: "opens when you can first Ascend",
+    rig: "", event: "opens with the first zone event", restore: "opens when the Root Chamber decrypts",
 };
 export const owns = (s: State, id: ScriptId) => !!s.auto?.own.includes(id);
 /** 0..1 how far a script is learned. Watchdog timer (tree) teaches reboot.sh and Cron job (lab) teaches compile.sh. */
@@ -137,9 +160,14 @@ export function learnPart(s: State, id: ScriptId): number {
     if (owns(s, id)) return 1;
     if (id === "reboot" && hasFeature(s, "watchdog")) return 1;
     if (id === "compile" && s.lab.nodes.includes("rx_cron")) return 1;
+    // rig levels and Handovers are counted where they are kept, so earlier play counts too
+    if (id === "rig") return Math.min(1, Math.max(auto(s).learn.rig ?? 0, rigLevels(s)) / SCRIPT_TUNE.learn.rig);
+    if (id === "restore") return s.hand.count >= SCRIPT_TUNE.learn.restore ? 1 : 0;
     return Math.min(1, (auto(s).learn[id] ?? 0) / SCRIPT_TUNE.learn[id]);
 }
-export const learnLeft = (s: State, id: ScriptId) => Math.max(0, SCRIPT_TUNE.learn[id] - Math.floor(auto(s).learn[id] ?? 0));
+export const learnLeft = (s: State, id: ScriptId) => Math.max(0, SCRIPT_TUNE.learn[id] - Math.floor(id === "rig" ? Math.max(auto(s).learn.rig ?? 0, rigLevels(s)) : id === "restore" ? s.hand.count : (auto(s).learn[id] ?? 0)));
+/** Rig levels owned across every zone. */
+export const rigLevels = (s: State) => Object.values(rig(s).lv).reduce((n, v) => n + v, 0);
 /** Learn every script that is now taught. Returns the ids just learned (the UI announces them). New scripts start stopped. */
 export function learnStep(s: State): ScriptId[] {
     const a = s.auto;
@@ -170,6 +198,7 @@ export const teachCompile = (s: State) => bump(auto(s), "compile");
 export const teachDeploy = (s: State) => bump(auto(s), "deploy");
 export const teachDrop = (s: State) => bump(auto(s), "drop");
 export const teachAscend = (s: State) => bump(auto(s), "ascend");
+export const teachEvent = (s: State) => bump(auto(s), "event");
 
 // ---- buy.sh
 /** Tiers of a stat buy.sh is allowed to press (taught by hand), as a bitmask. */
@@ -244,6 +273,116 @@ export function runDeploy(s: State): PayloadId[] {
     return out;
 }
 
+// ---- reboot.sh: the Watchdog rule with its own reserve, plus two chains (wait for the Capacitor, arm a Logic bomb first)
+export function runReboot(s: State): number {
+    const a = s.auto!;
+    if (!isUnlocked(s, "reboot")) return -1;
+    if (a.capWait && capCharge(s) < 1) return -1;
+    for (let k = TIERS - 1; k >= 0; k--) {
+        const b = button(s, "reboot", k);
+        if (s.mult < b.cost * a.rebootX) continue;
+        if (a.bombFirst && (s.lab.stock.logicbomb ?? 0) > 0 && !s.lab.armed.includes("logicbomb")) deploy(s, "logicbomb");
+        if (!press(s, "reboot", k)) return -1;
+        a.ran.reboot = (a.ran.reboot ?? 0) + 1;
+        return k;
+    }
+    return -1;
+}
+
+// ---- rig.sh
+/** Zones with a rig that has levels to buy (every zone but the Root chamber). */
+export const RIG_ZONES = RIGS.filter((r) => r.keys.length > 0).map((r) => r.zone);
+export function runRig(s: State): number {
+    const a = s.auto!;
+    let n = 0;
+    for (const z of RIG_ZONES) {
+        if (!a.rigs?.[z] || !rigOpen(s, z)) continue;
+        const def = RIGS.find((r) => r.zone === z)!;
+        // the cheapest key first (the Glyph hall has three)
+        const keys = def.keys.map((k) => ({ k: k.key, p: rigPrice(s, k.key) })).filter((x) => !x.p.maxed && Number.isFinite(x.p.cost)).sort((x, y) => x.p.cost - y.p.cost);
+        const pick = keys[0];
+        if (pick && (s[pick.p.pays] as number) >= pick.p.cost * (a.rigX ?? 5) && buyRig(s, pick.k)) n++;
+    }
+    a.ran.rig = (a.ran.rig ?? 0) + n;
+    return n;
+}
+export function toggleRigZone(s: State, z: StatId) {
+    const a = auto(s);
+    a.rigs = { ...(a.rigs ?? {}), [z]: !a.rigs?.[z] };
+}
+
+// ---- event.sh
+export function runEvent(s: State): number {
+    const a = s.auto!;
+    const z = s.ze;
+    if (!z?.act.length) return 0;
+    let n = 0;
+    for (const e of [...z.act]) {
+        if (e.left <= 0 || e.picked) continue;
+        if (e.kind === "vein") {
+            const mine = (a.vein ?? "mine") === "mine";
+            if (mine) { if (mineVein(s, e.id)) n++; }
+            else { e.picked = true; n++; }
+        } else if (e.kind === "fault") {
+            if ((a.fault ?? "patch") === "patch" && patchFault(s, e.id)) n++;
+            else if (a.fault === "wait") { e.picked = true; n++; }
+        }
+    }
+    a.ran.event = (a.ran.event ?? 0) + n;
+    return n;
+}
+const mineVein = (s: State, id: number) => zeChoose(s, id, "mine").ok;
+const patchFault = (s: State, id: number) => zeChoose(s, id, "patch").ok;
+
+// ---- restore.sh
+/** Keep a copy of the build while it grows, and start rebuilding when a Handover happens. */
+function restoreWatch(s: State, a: AutoState) {
+    const n = s.hand.count;
+    if (a.seenHand === undefined) a.seenHand = n;
+    if (n > a.seenHand) {
+        a.seenHand = n;
+        if (a.build?.length) a.rebuild = true;
+        return;
+    }
+    if (a.rebuild || !s.tree.length) return;
+    // a new copy whenever the tree grew or changed
+    if (!a.build || a.build.length !== s.tree.length || a.build.some((id, i) => s.tree[i] !== id)) a.build = [...s.tree];
+    a.buildLv = { ...(s.treeLv ?? {}) };
+    if (Object.values(s.perks).some((v) => v > 0)) a.buildPerks = { ...s.perks };
+}
+/** What restore.sh still has to buy: [tree nodes and ranks left, perk levels left]. */
+export function restoreLeft(s: State): [number, number] {
+    const a = s.auto;
+    if (!a?.build) return [0, 0];
+    let t = 0;
+    for (const id of a.build) t += Math.max(0, Math.max(1, a.buildLv?.[id] ?? 1) - (s.tree.includes(id) ? nodeLevel(s, id) : 0));
+    let p = 0;
+    if (a.restPerks !== false) for (const x of PERKS) p += Math.max(0, (a.buildPerks?.[x.id] ?? 0) - s.perks[x.id]);
+    return [t, p];
+}
+export function runRestore(s: State): number {
+    const a = s.auto!;
+    if (!a.rebuild || !a.build) return 0;
+    let n = 0;
+    // the tree in build order; stop at the first node it can't pay for, so the path stays in order
+    for (const id of a.build) {
+        if (!BY_ID.has(id)) continue;
+        const want = Math.max(1, a.buildLv?.[id] ?? 1);
+        while ((s.tree.includes(id) ? nodeLevel(s, id) : 0) < want) {
+            if (!buyNode(s, id)) {
+                if (!s.tree.includes(id)) { a.ran.restore = (a.ran.restore ?? 0) + n; return n; }
+                break;
+            }
+            n++;
+        }
+    }
+    if (a.restPerks !== false)
+        for (const x of PERKS) while (s.perks[x.id] < (a.buildPerks?.[x.id] ?? 0)) { if (!buyPerk(s, x.id)) { a.ran.restore = (a.ran.restore ?? 0) + n; return n; } n++; }
+    a.rebuild = false;
+    a.ran.restore = (a.ran.restore ?? 0) + n;
+    return n;
+}
+
 // ---- ascend.sh (run by the open game only, so an Ascend always happens in front of you)
 /** AP ascend.sh is waiting for. */
 export const ascendTarget = (s: State) => {
@@ -257,12 +396,29 @@ export function ascendDue(s: State): boolean {
     if (!a?.on.ascend || !a.own.includes("ascend")) return false;
     return runAge(s) >= SCRIPT_TUNE.ascMinSecs && apOnAscend(s) >= ascendTarget(s);
 }
+/** Just before ascend.sh Ascends: arm a stocked Zero-click if that chain is on. */
+export function ascendPrep(s: State) {
+    const a = s.auto;
+    if (a?.zeroFirst && (s.lab.stock.zeroclick ?? 0) > 0 && !s.lab.armed.includes("zeroclick")) deploy(s, "zeroclick");
+}
 
 /** Cycle a rule setting to its next value. */
-export function cycleSetting(s: State, key: "keep" | "rebootX" | "ascX") {
+export function cycleSetting(s: State, key: "keep" | "rebootX" | "ascX" | "rigX") {
     const a = auto(s);
     const list = SCRIPT_TUNE[key] as readonly number[];
-    a[key] = list[(list.indexOf(a[key]) + 1) % list.length];
+    const cur = key === "rigX" ? a.rigX ?? 5 : a[key];
+    const next = list[(list.indexOf(cur) + 1) % list.length];
+    if (key === "rigX") a.rigX = next; else a[key] = next;
+}
+/** Flip one of the yes/no rules. */
+export function flip(s: State, key: "capWait" | "bombFirst" | "zeroFirst" | "restPerks") {
+    const a = auto(s);
+    a[key] = key === "restPerks" ? a.restPerks === false : !a[key];
+}
+export function cycleAnswer(s: State, key: "vein" | "fault") {
+    const a = auto(s);
+    if (key === "vein") a.vein = (a.vein ?? "mine") === "mine" ? "run" : "mine";
+    else a.fault = (a.fault ?? "patch") === "patch" ? "wait" : "patch";
 }
 export function cycleStock(s: State, id: PayloadId) {
     const a = auto(s);
@@ -300,7 +456,12 @@ export function scriptStep(s: State, dt: number) {
         a.seenAsc = s.life.ascends;
         a.seenAp = s.life.apTotal;
     }
+    restoreWatch(s, a);
     if (!a.own.length) return;
+    if (s.watchdog && a.own.includes("reboot")) runReboot(s);
+    if (a.on.rig && a.own.includes("rig")) every(a, "rig", dt, SCRIPT_TUNE.cycle.rig, () => runRig(s));
+    if (a.on.event && a.own.includes("event")) every(a, "event", dt, SCRIPT_TUNE.cycle.event, () => runEvent(s));
+    if (a.on.restore && a.own.includes("restore")) every(a, "restore", dt, SCRIPT_TUNE.cycle.restore, () => runRestore(s));
     if (a.on.buy && a.own.includes("buy")) every(a, "buy", dt, buyCycle(s), () => runBuy(s));
     if (a.on.compile && a.own.includes("compile") && labOpen(s)) every(a, "compile", dt, SCRIPT_TUNE.cycle.compile, () => runCompile(s));
     if (a.on.deploy && a.own.includes("deploy") && labOpen(s)) every(a, "deploy", dt, SCRIPT_TUNE.cycle.deploy, () => runDeploy(s));
@@ -312,7 +473,8 @@ if (!TICK_HOOKS.includes(scriptStep)) TICK_HOOKS.push(scriptStep);
 export const runningCount = (s: State) => SCRIPTS.filter((x) => isOn(s, x.id)).length;
 
 /** Scene stage 0..7 for the zone art: one machine per script learned, the seventh once buy.sh reaches v3. */
-export const schedStage = (s: State) => Math.min(7, (s.auto?.own.length ?? 0) + (buyVer(s) >= 2 ? 1 : 0));
+export const SCHED_STAGES = 11;
+export const schedStage = (s: State) => Math.min(SCHED_STAGES - 1, (s.auto?.own.length ?? 0) + (buyVer(s) >= 2 ? 1 : 0));
 
 /** The one thing to do next with scripts, as a plain line (or null when everything is set). */
 export function scriptNext(s: State): { id: ScriptId; text: string } | null {
@@ -351,4 +513,5 @@ export function grantScripts(s: State) {
     for (const st of BUY_STATS) a.taught[st] = Array(TIERS).fill(SCRIPT_TUNE.teachTier);
     for (const x of SCRIPTS) if (!a.own.includes(x.id)) a.own.push(x.id);
     for (const st of BUY_STATS) a.buy[st] = 63;
+    a.rigs = Object.fromEntries(RIG_ZONES.map((z) => [z, true]));
 }

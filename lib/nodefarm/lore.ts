@@ -35,5 +35,5 @@ export const LORE: Record<StatId, Lore> = {
     basalt: { code: "BA-SHAFT // BORE", zone: "Bedrock shaft", flavor: "Under the cellar the roots stop and the rock starts. Cut it, and the Bloom has something to stand on.", tiers: ["Chip", "Slab", "Column", "Strata", "Bore", "Bedrock"] },
     magma: { code: "MG-LINE // FLOW", zone: "Magma line", flavor: "The farm's last pipeline runs over a river of it. The heat hardens the Basalt as it climbs.", tiers: ["Ember", "Vent", "Seep", "Flow", "Lake", "Caldera"] },
     geodes: { code: "GE-VAULT // HOLLOW", zone: "Geode vault", flavor: "A stone the size of a hall, hollow and lined with light. The racks inside read the crystal like a disk. It cools the Magma into shape.", tiers: ["Pebble", "Nodule", "Druse", "Cavity", "Vault", "Cathedral"] },
-    core: { code: "CO-SUN // BOTTOM", zone: "The core", flavor: "A white sun held in clamps at the bottom of everything. It feeds the Geodes, and warms the whole farm a little.", tiers: ["Spark", "Ingot", "Furnace", "Mantle", "Star", "Core"] },
+    sunstone: { code: "SU-DEEP // BOTTOM", zone: "The buried sun", flavor: "A white sun held in clamps at the bottom of everything. It feeds the Geodes, and warms the whole farm a little.", tiers: ["Spark", "Ingot", "Furnace", "Mantle", "Star", "Sun"] },
 };

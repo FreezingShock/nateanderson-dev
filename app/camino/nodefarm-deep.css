@@ -45,7 +45,7 @@
 .ctos .nf-row[data-stat="basalt"] { --zone: repeating-linear-gradient(0deg, color-mix(in srgb, var(--c) 10%, transparent) 0 1px, transparent 1px 9px, color-mix(in srgb, var(--c) 5%, transparent) 9px 14px, transparent 14px 22px); }
 .ctos .nf-row[data-stat="magma"] { --zone: linear-gradient(0deg, color-mix(in srgb, var(--c) 18%, transparent), transparent 45%), repeating-linear-gradient(80deg, color-mix(in srgb, var(--c) 8%, transparent) 0 1px, transparent 1px 21px); }
 .ctos .nf-row[data-stat="geodes"] { --zone: conic-gradient(from 30deg at 86% 55%, color-mix(in srgb, var(--c) 12%, transparent) 0 10deg, transparent 10deg 30deg, color-mix(in srgb, var(--c) 10%, transparent) 30deg 38deg, transparent 38deg 60deg, color-mix(in srgb, var(--c) 12%, transparent) 60deg 68deg, transparent 68deg); }
-.ctos .nf-row[data-stat="core"] { --zone: radial-gradient(circle at 86% 55%, color-mix(in srgb, #fffbe0 18%, transparent), color-mix(in srgb, var(--c) 12%, transparent) 25%, transparent 55%); }
+.ctos .nf-row[data-stat="sunstone"] { --zone: radial-gradient(circle at 86% 55%, color-mix(in srgb, #fffbe0 18%, transparent), color-mix(in srgb, var(--c) 12%, transparent) 25%, transparent 55%); }
 /* Spores: damp stone with a teal glow underneath */
 .ctos .nf-row[data-stat="spores"] .nf-btn { border: 1px solid #0e5a4c; border-radius: 0; background: linear-gradient(0deg, #06201b, #0a1210 60%); }
 .ctos .nf-row[data-stat="spores"] .nf-btn[data-afford] { border-color: var(--c); background: linear-gradient(0deg, #0b3a30, #0b1a16 70%); box-shadow: 0 2px 0 -1px #1fa585; }
@@ -68,5 +68,5 @@
 .ctos .nf-row[data-stat="geodes"] .nf-btn { border: 1px solid #38145e; border-radius: 0; background: #0f0818; }
 .ctos .nf-row[data-stat="geodes"] .nf-btn[data-afford] { border-color: var(--c); background: linear-gradient(135deg, #2a1048 25%, #1a0c2c 25% 50%, #22103c 50% 75%, #1a0c2c 75%); }
 /* Core: white-gold heat */
-.ctos .nf-row[data-stat="core"] .nf-btn { border: 1px solid #80460a; border-radius: 0; background: #140c04; }
-.ctos .nf-row[data-stat="core"] .nf-btn[data-afford] { border-color: var(--c); background: radial-gradient(ellipse at 50% 50%, #4a2a06, #1a0f04 75%); box-shadow: 0 0 0 1px #3e2604, 0 0 12px -3px color-mix(in srgb, var(--c) 65%, transparent); }
+.ctos .nf-row[data-stat="sunstone"] .nf-btn { border: 1px solid #80460a; border-radius: 0; background: #140c04; }
+.ctos .nf-row[data-stat="sunstone"] .nf-btn[data-afford] { border-color: var(--c); background: radial-gradient(ellipse at 50% 50%, #4a2a06, #1a0f04 75%); box-shadow: 0 0 0 1px #3e2604, 0 0 12px -3px color-mix(in srgb, var(--c) 65%, transparent); }

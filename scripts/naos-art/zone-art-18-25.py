@@ -31,7 +31,7 @@ _spec.loader.exec_module(SC)
 
 W, H, F = ZK.W, ZK.H, ZK.FRAMES
 FLOOR = 95
-ERA = {"spores": 15, "mycelium": 16, "pollen": 17, "bloom": 18, "basalt": 19, "magma": 20, "geodes": 21, "core": 22}
+ERA = {"spores": 15, "mycelium": 16, "pollen": 17, "bloom": 18, "basalt": 19, "magma": 20, "geodes": 21, "sunstone": 22}
 # the band of the era world shown in the panel (world x offset, top world row) and scale; chosen so the scene's floor line
 # sits near the panel floor and its centrepiece falls right of centre, behind the hero
 BAND = {15: (40, 112), 16: (20, 104), 17: (40, 108), 18: (20, 100), 19: (60, 120), 20: (40, 116), 21: (40, 110), 22: (20, 96)}
