@@ -1,9 +1,12 @@
 "use client";
 
-import { useContext } from "react";
+import { useContext, type CSSProperties } from "react";
 import { TIERS, TUNE, dronesOpen, droneCost, droneRate, fmt, type State } from "@/lib/nodefarm/engine";
 import { DRONE_NAMES as NAMES, droneTip } from "@/lib/nodefarm/guide";
 import { TipCtx } from "./guide";
+
+/** Each Drone's colour matches the ramp its sprite is drawn in (scripts/naos-art/nodefarm-sprites.py). */
+const DRONE_COLOURS = ["#2fd8e8", "#b6f04a", "#f08a3c", "#7aa2ff", "#e08cff", "#ffc53a"];
 
 /** The Drone bay: one Drone line per button tier. A Drone presses its tier on every armed stat, for free labour and Aether. */
 export function DroneBay({ s, open, onToggle, onBuy, guided }: { s: State; open: boolean; onToggle: () => void; onBuy: (tier: number) => void; guided?: number }) {
@@ -11,7 +14,7 @@ export function DroneBay({ s, open, onToggle, onBuy, guided }: { s: State; open:
     if (!dronesOpen(s)) {
         return (
             <article className="nf-row nf-locked" style={{ ["--c" as string]: "#6bffc9" }}>
-                <span className="nf-plate"><span className="nf-dr-glyph" aria-hidden="true">▣</span></span>
+                <span className="nf-plate"><span className="nf-sp-d" aria-hidden="true" style={{ ["--k" as string]: 0 } as CSSProperties} /></span>
                 <div>
                     <b>ENCRYPTED // Drone bay</b>
                     <small>Mine your first Aether to decrypt.</small>
@@ -42,6 +45,7 @@ export function DroneBay({ s, open, onToggle, onBuy, guided }: { s: State; open:
                             return (
                                 <li
                                     key={k}
+                                    style={{ ["--c" as string]: DRONE_COLOURS[k] } as CSSProperties}
                                     data-on={lvl > 0 ? "" : undefined}
                                     onPointerEnter={(e) => { if (e.pointerType === "mouse") tips.show(e.currentTarget, () => droneTip(s, k), { guided: guided === k }); }}
                                     onPointerLeave={(e) => { if (e.pointerType === "mouse") tips.hide(e.currentTarget); }}
@@ -49,6 +53,7 @@ export function DroneBay({ s, open, onToggle, onBuy, guided }: { s: State; open:
                                     onFocus={(e) => { if ((e.target as HTMLElement).matches(":focus-visible")) tips.show(e.currentTarget, () => droneTip(s, k), { guided: guided === k }); }}
                                     onBlur={(e) => tips.hide(e.currentTarget)}
                                 >
+                                    <span className="nf-sp-d" aria-hidden="true" data-on={lvl > 0 ? "" : undefined} style={{ ["--k" as string]: k } as CSSProperties} />
                                     <span className="nf-dr-n">
                                         <b>T{k + 1} {NAMES[k]}</b>
                                         <small>{lvl > 0 ? `${fmt(droneRate(s, k))} presses/s` : "not built"}</small>

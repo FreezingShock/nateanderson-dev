@@ -45,3 +45,4 @@ yarn-error.log*
 
 # CI tooling
 scripts/ci/node_modules
+__pycache__/
