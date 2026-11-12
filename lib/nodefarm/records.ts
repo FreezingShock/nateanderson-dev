@@ -182,6 +182,7 @@ export function nfCommand(s: State, args: string[]): NfResult {
     } else if (sub === "ping") {
         const host = (args[1] ?? "").toLowerCase();
         if (host === "127.0.0.1" || host === "localhost") lines = [t("64 bytes from 127.0.0.1: time=0.001 ms"), t("that was you."), ...secret("x_loop")];
+        else if (host === "node-00") lines = [t("no reply from node-00. it answers last."), ...secret("x_zero")];
         else if (host) lines = [t(`ping: ${args[1]}: no route from the node. it only talks to itself.`, "err")];
         else lines = [t("ping what?", "err")];
     } else if (sub === "sudo") {
@@ -226,6 +227,10 @@ export function nfCommand(s: State, args: string[]): NfResult {
         lines.push(t(nx ? `next: ${nx.text}` : "every script is learned and running.", "dim"));
     } else if (sub === "fork") {
         lines = [t(":(){ :|:& };:"), t("fork: retry: Resource temporarily unavailable", "err"), t("the node copied itself 4,096 times, then everyone calmed down."), ...secret("x_fork")];
+    } else if (sub === "rm" && args.join(" ").toLowerCase().includes("-rf /")) {
+        lines = [t("rm: cannot remove '/': it is not your node to delete.", "err"), t("the operators before you tried.", "dim"), ...secret("x_rm")];
+    } else if (sub === "kill") {
+        lines = [t("kill: the drone is not listening. it never was."), ...secret("x_kill")];
     } else if (sub === "whoami") {
         lines = [t("node-01. one core, no clearance, and a growing farm."), ...secret("x_self")];
     } else {
