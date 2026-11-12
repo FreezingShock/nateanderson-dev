@@ -325,3 +325,13 @@ About every 8 to 14 minutes of play (first one after 8 minutes of life), one unl
 - Only online ticks (5 s or less) start an event; time away just runs the clock down. The scripts/sim never imports `zoneevents.ts`, so `sim.mjs` pacing is unchanged.
 - Shown as a centered card (`ZoneEventCard`, no scrim, plain events close after 7 s, a vein or fault waits for an answer or "Decide later"), a readout on the zone panel (`ZoneEvent`, with the answers if you deferred) and a dot on the signal chain. Reveal is decrypt.
 - Admin panel, Run section: zone picker, one button per event, Clear, and Next in 5 s.
+
+## Touch layer (caches, core vent, figure tips, links, zone menu), 2026-11-12
+Rules in `lib/nodefarm/poke.ts` (every number in `POKE_TUNE`, state `s.poke`, registers in `TICK_HOOKS`, so `sim.mjs` pacing is unchanged); UI in `components/nodefarm/poke.tsx` (`PokeLayer`), styles `app/camino/nodefarm-poke.css` (`nf-pk*`). Nate dislikes reflex tests and tap-clicker mashing, so nothing here needs speed and nothing pays for repeat taps.
+- **Caches**: after 3 min of online play, then every 6 to 10 min, a crate drops into one open zone's scene and waits forever (up to 3 at once; while 3 wait, none drop). A tap pays 60 s of that zone's plain output (Multipliers, Reboots and Bytes zones pay Bytes). A folded panel shows the crate in its title bar. Caches in a zone that closes again (Ascend, Handover) move to the Uplink rack.
+- **Core vent**: a button over the reactor core with a 10-step gauge. It fills over 10 min of online play and waits once full (magenta brackets); a tap then pays 45 s of every output. An early tap pulses the core and shows the vent readout.
+- **Figure tips** (print reveal, the shared `Tip` layer): HUD Bytes, RBT, MUL, AP, the core readout (Global shows its breakdown), every zone's big number (exact, per second/minute/hour, time to double, nodes), every spec line, every chain stop. Found by delegation on the game root, so panels carry no extra markup. Hover on desktop, tap on touch (2.6 s).
+- **Links**: a signal chain stop or a "Feeds ..." spec line jumps to that zone (`goTo`) and pings its border.
+- **Zone menu**: right-click, or hold a finger still 520 ms on a zone panel (not on its buttons): Scan zone (a feed line), Open cache, Arm/Disarm Drones, Feeder, Feeds, Open the Drone bay. Escape, a tap elsewhere or a scroll closes it.
+- Only online ticks (5 s or less) charge the vent or drop caches. Admin/tests: `window.dispatchEvent(new CustomEvent("nf:poke", { detail: "vent" | "<zone id>" }))`.
+- Check: /mnt/project-files/portfolio/node-farm-poke/poke-check.mjs (1440 and iPhone 13).
