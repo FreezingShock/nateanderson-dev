@@ -103,9 +103,6 @@
 .ctos .nf-log li { overflow-wrap: anywhere; }
 .ctos .nf-log li:last-child { animation: nfLine .45s steps(18) both; color: var(--cm-fg); }
 .ctos .nf-log time { color: var(--cm-ctos-meta); }
-.ctos .nf-log [data-tone="good"] span { color: #6bffc9; }
-.ctos .nf-log [data-tone="warn"] span { color: #f0a53c; }
-.ctos .nf-log [data-tone="hot"] span { color: #ff6a8a; }
 
 /* ---- toast, intrusion target, trace minigame */
 .ctos .nf-toast { position: fixed; z-index: 60; left: 50%; bottom: 96px; display: inline-flex; align-items: center; gap: 8px; padding: 9px 14px; background: var(--cm-ctos-block); color: var(--cm-ctos-ink); font: 700 var(--cm-ctos-t-ui)/1 var(--cm-mono); letter-spacing: .04em; animation: nfToast 3.2s ease both; pointer-events: none; white-space: nowrap; max-width: 92%; overflow: hidden; text-overflow: ellipsis; }

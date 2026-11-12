@@ -15,6 +15,9 @@ import { EventLayer } from "./events";
 import { AwayReport, type Away } from "./away";
 import { DroneBay } from "./drones";
 import { Chain, StatRow } from "./stat-row";
+import { Feed } from "./feed";
+import { FeedStore, buyToks, call, com, droneToks, fromText, id as idTok, num, p as pun, str as strTok, txt, unlockToks, type FeedTone } from "@/lib/nodefarm/feed";
+import { LORE } from "@/lib/nodefarm/lore";
 import { Juice, juice, checkMilestones } from "./juice";
 import { GuideStrip, Tip, TipCtx, type TipApi, type TipState } from "./guide";
 import { MapPanel } from "./map";
@@ -28,9 +31,6 @@ const UI_KEY = "nf-ui-v1"; // which stat panels are minimized (per device, not p
 type Tab = "core" | "stats" | "map" | "goals" | "records" | "ascend" | "menu";
 const SIDE: Tab[] = ["map", "goals", "records", "ascend", "menu"];
 const TAB_LABEL: Record<Tab, string> = { core: "Core", stats: "Stats", map: "Map", goals: "Goals", records: "Records", ascend: "Ascend", menu: "Menu" };
-type Line = { id: number; t: string; text: string; tone?: "good" | "warn" | "hot" };
-
-const clock = () => new Date().toTimeString().slice(0, 8);
 
 function load(): State | null {
     try {
@@ -49,7 +49,9 @@ export function NodeFarm() {
     const [side, setSide] = useState<Tab>("goals");
     const [win, setWin] = useState<"" | "map" | "goals" | "records" | "ascend" | "menu">("");
     const [folded, setFolded] = useState<Record<string, boolean>>({});
-    const [lines, setLines] = useState<Line[]>([]);
+    const feedStore = useMemo(() => new FeedStore(), []);
+    useEffect(() => () => feedStore.dispose(), [feedStore]);
+    const dronePrev = useRef<{ s: State | null; presses: number; manual: number }>({ s: null, presses: 0, manual: 0 });
     const [away, setAway] = useState<Away | null>(null);
     const [toast, setToast] = useState<string | null>(null);
     const [evOn, setEvOn] = useState(true);
@@ -101,13 +103,11 @@ export function NodeFarm() {
         [],
     );
     const feed = useRef<CoreFeed>({ progress: 0, overclock: false, unlocked: 1, speed: 0, lastPulse: -1e9, reboots: 0, ap: 0 });
-    const ids = useRef(1);
     const saved = useRef(0);
     const tickN = useRef(0);
 
-    const log = useCallback((text: string, tone?: Line["tone"]) => {
-        setLines((l) => [...l.slice(-39), { id: ids.current++, t: clock(), text, tone }]);
-    }, []);
+    // plain text lines get a level tag and highlighted numbers; code-style lines go through feedStore.push with tokens
+    const log = useCallback((text: string, tone?: FeedTone) => feedStore.push(fromText(text, tone), { tone, type: true }), [feedStore]);
 
     // ---- boot: load the save, bank offline time, print the greeting
     useEffect(() => {
@@ -134,7 +134,7 @@ export function NodeFarm() {
         const greet = first
             ? ["naOS // node.farm online", "Link established. 1 node, no clearance.", "Buy your first Multiplier. The core grows with everything you build."]
             : ["naOS // node.farm resumed", `Session restored. ${fmt(s.life.presses)} buttons pressed, ${fmt(s.life.reboots)} reboots on record.`];
-        greet.forEach((t, i) => setTimeout(() => log(t, i === 0 ? "good" : undefined), 180 + i * 360));
+        greet.forEach((t, i) => setTimeout(() => log(t, i === 0 ? "good" : undefined), 180 + i * 900));
         setReady(true);
     }, [log]);
 
@@ -146,7 +146,7 @@ export function NodeFarm() {
                 s: g.current,
                 notify: (found) => {
                     for (const f of found) {
-                        log(`Secret found: ${f.name}`, "good");
+                        feedStore.push([...call(idTok("secret"), "found", [strTok(f.name)])], { tone: "good", type: true });
                         setToast(f.name);
                         sfx("nfGoal");
                         setTimeout(() => setToast((t) => (t === f.name ? null : t)), 3200);
@@ -157,7 +157,7 @@ export function NodeFarm() {
         };
         window.addEventListener("nf:live", onLive);
         return () => window.removeEventListener("nf:live", onLive);
-    }, [ready, log]);
+    }, [ready, feedStore]);
 
     // ---- save
     const save = useCallback(() => {
@@ -202,7 +202,16 @@ export function NodeFarm() {
                 const r = offline(s, gap);
                 if (gap > 60 && r.capped) s.life.capped += 1;
                 if (gap > 60) setAway({ ...r, gap, cap: derive(s).offlineCap });
-            } else tick(s, Math.max(0, gap));
+            } else {
+                tick(s, Math.max(0, gap));
+                // presses nobody clicked (Drones, Autoloader) are counted from the lifetime total, then batched into one feed line
+                const dp = dronePrev.current;
+                if (dp.s === s) {
+                    const made = s.life.presses - dp.presses - dp.manual;
+                    if (made > 0) feedStore.batch("drone", (n, sum) => droneToks(sum, s.armed.length, !s.drones.some((x) => x > 0)), made, 4000);
+                }
+                dronePrev.current = { s, presses: s.life.presses, manual: 0 };
+            }
             if (++tickN.current % 10 === 0 && s.perks.auto > 0) autoBuy(s);
             const d = derive(s);
             const f = feed.current;
@@ -211,7 +220,12 @@ export function NodeFarm() {
             f.speed = Math.min(1, Math.log10(1 + d.bytesPerSec) / 12);
             const openIds = STATS.filter((x) => isUnlocked(s, x.id)).map((x) => x.id);
             f.unlocked = openIds.length;
-            if (prevIds.current) for (const id of openIds) if (!prevIds.current.includes(id)) juice.emit({ t: "unlock", id });
+            if (prevIds.current)
+                for (const id of openIds)
+                    if (!prevIds.current.includes(id)) {
+                        juice.emit({ t: "unlock", id });
+                        feedStore.push(unlockToks(id, LORE[id].zone, STATS.findIndex((x) => x.id === id) + 1), { tone: "good", type: true });
+                    }
             prevIds.current = openIds;
             if (tickN.current % 10 === 5) checkMilestones(s, d.bytesPerSec);
             f.reboots = s.reboot;
@@ -220,7 +234,7 @@ export function NodeFarm() {
             prevUnlocked.current = f.unlocked;
             setHum(humRef.current ? { level: Math.min(1, f.speed * 0.75 + (f.unlocked / 7) * 0.25), boost: f.overclock } : null);
             for (const goal of checkGoals(s)) {
-                log(goal.secret ? `Secret found: ${goal.name}` : `Goal: ${goal.name}`, "good");
+                feedStore.push(call(idTok(goal.secret ? "secret" : "goal"), goal.secret ? "found" : "done", [strTok(goal.name)]), { tone: "good", type: true });
                 setToast(goal.name);
                 sfx("nfGoal");
                 setTimeout(() => setToast((t) => (t === goal.name ? null : t)), 3200);
@@ -231,7 +245,7 @@ export function NodeFarm() {
             clearInterval(iv);
             setHum(null);
         };
-    }, [ready, log]);
+    }, [ready, feedStore]);
 
     // ---- actions
     const doPress = useCallback(
@@ -245,17 +259,24 @@ export function NodeFarm() {
                 return false;
             }
             feed.current.lastPulse = performance.now();
+            dronePrev.current.manual += 1;
             juice.emit({ t: "press", stat, tier, gain: gainNow, quiet });
             if (owned === 0 && tier > 0 && !quiet && stat !== "reboot") juice.emit({ t: "tier", stat, tier });
             if (stat === "reboot") {
                 sfx("nfReboot");
-                log(`REBOOT x${fmt(s.reboot - was)}. Cache wiped, power up. Reboots: ${fmt(s.reboot)}`, "good");
-            } else if (owned === 0 && tier > 0 && !quiet) sfx("nfTierUp", { tier });
-            else sfx("nfBuy", { tier, stat });
+                feedStore.push([...call(idTok("system"), "reboot"), pun(" → "), num(`×${fmt(s.reboot - was)}`), txt(" "), { k: "c", v: `// cache wiped, reboot #${fmt(s.reboot)}` }], { tone: "good", type: true });
+            } else {
+                if (owned === 0 && tier > 0 && !quiet) sfx("nfTierUp", { tier });
+                else sfx("nfBuy", { tier, stat });
+            }
+            if (stat !== "reboot") {
+                const name = LORE[stat].tiers[tier];
+                feedStore.batch(`buy:${stat}:${tier}`, (n, sum) => buyToks(stat, name, n, sum), gainNow);
+            }
             bump((n) => n + 1);
             return true;
         },
-        [log],
+        [log, feedStore],
     );
 
     // ---- quick-time events (components/nodefarm/events.tsx): a win gives the timed Overclock, a miss costs nothing
@@ -290,7 +311,7 @@ export function NodeFarm() {
         if (gain) {
             sfx("nfAscend");
             juice.emit({ t: "ascend", gain, ap: g.current.ap, n: g.current.life.ascends });
-            log(`ASCENDED. +${gain} Ascension Points. Everything else was wiped.`, "good");
+            feedStore.push([...call(idTok("system"), "ascend"), pun(" → "), num(`+${gain} AP`), txt(" "), { k: "c", v: "// everything else wiped" }], { tone: "good", type: true });
             setSide("ascend");
             save();
         }
@@ -306,7 +327,7 @@ export function NodeFarm() {
         prevIds.current = null;
         tipApi.hide();
         setConfirm("");
-        setLines([]);
+        feedStore.clear();
         log("Save wiped. Starting clean.", "warn");
         save();
     };
@@ -405,19 +426,13 @@ export function NodeFarm() {
                     <div><dt>Reboot</dt><dd>{Math.round(feed.current.progress * 100)}%</dd></div>
                     <div><dt>Global</dt><dd>×{fmt(d.global)}</dd></div>
                 </dl>
-                <ol className="nf-log" aria-label="Event log" role="log" aria-live="polite">
-                    {lines.slice(-7).map((l) => (
-                        <li key={l.id} data-tone={l.tone}>
-                            <time>{l.t}</time> <span>{l.text}</span>
-                        </li>
-                    ))}
-                </ol>
+                <Feed store={feedStore} reduced={reduced} />
             </section>
 
             <section className="nf-pane nf-statspane" data-pane="stats" aria-label="Stats and buttons">
                 <Chain s={s} d={d} allOpen={!STATS.every((x) => folded[x.id])} onAll={(open) => setFold(Object.fromEntries(STATS.map((x) => [x.id, !open])))} />
                 {isUnlocked(s, "aether") && (
-                    <DroneBay s={s} guided={step.target?.drone} open={!folded.drones} onToggle={() => { setFold({ ...folded, drones: !folded.drones }); sfx("tab"); }} onBuy={(k) => { if (buyDrone(s, k)) { sfx("nfBuy", { tier: k }); log(`Drone T${k + 1} online.`, "good"); bump((n) => n + 1); } else sfx("deny"); }} />
+                    <DroneBay s={s} guided={step.target?.drone} open={!folded.drones} onToggle={() => { setFold({ ...folded, drones: !folded.drones }); sfx("tab"); }} onBuy={(k) => { if (buyDrone(s, k)) { sfx("nfBuy", { tier: k }); feedStore.push([...call(idTok("drones"), "deploy", [strTok(`T${k + 1}`)]), pun(" → "), strTok("online")], { tone: "good", type: true }); bump((n) => n + 1); } else sfx("deny"); }} />
                 )}
                 {STATS.map((def) => {
                     if (!isUnlocked(s, def.id) && def.id !== firstLocked) return null;
