@@ -12,12 +12,14 @@ if (process.env.NF_NODRONES) s.autoArmed = ["mult", ...E.MATS]; // keep Standing
 const marks = {};
 const ascents = [];
 const mark = (k, t) => { if (!(k in marks)) marks[k] = t; };
+const MATS_P = (s) => E.MATS.map((m) => E.fmt(s.prod[m])).join("/");
 const order = [...E.MATS].reverse().concat("mult");
 const treeOrder = [...E.TREE].sort((a, b) => a.cost - b.cost);
 const labOrder = [...E.LAB].sort((a, b) => a.cost - b.cost);
 let labBought = 0, labCompiles = 0;
 const labSkip = (process.env.NF_LABSKIP || "").split(","); // payload ids the bot never compiles
-const FULL = new Set(E.fullTreeIds()); // the bot takes the first side of every fork
+const FULL = new Set(E.fullTreeIds()); // NF_BAN=id,id: the bot never buys these nodes (to see what one node does)
+for (const id of (process.env.NF_BAN || "").split(",")) FULL.delete(id); // the bot takes the first side of every fork
 // Ascend policy: ascend as soon as AP gain is at least max(2, 40% of AP already held), a typical player keeps going for a while first.
 let t = 0, nextBuy = 0;
 const dt = 0.5;
@@ -44,6 +46,8 @@ while (t < hours * 3600) {
         // Drones: cheapest tier first, paid in Aether
         if (!process.env.NF_NODRONES && E.dronesOpen(s)) for (let k = 0; k < E.TIERS; k++) if (s.aether >= E.droneCost(s, k) * 3 && E.buyDrone(s, k)) mark("drone " + k, t);
         E.checkGoals(s);
+        // NF_TRACE=<minutes>: print a status line every that many play minutes (to find walls and runaways)
+        if (process.env.NF_TRACE && t >= (marks.nextTrace || 0)) { marks.nextTrace = t + 60 * Number(process.env.NF_TRACE); console.log("t", (t / 3600).toFixed(2), "b/s", E.fmt(E.derive(s).bytesPerSec), "ae", E.fmt(s.aether), "or", E.fmt(s.origin), "px", E.fmt(s.paradox), "ap+", E.apOnAscend(s), "asc", s.life.ascends, "tree", s.tree.length, "G", E.fmt(E.derive(s).global), "ap", s.ap, "mounts", s.mounts.join("+"), "prod", MATS_P(s)); }
         if (s.reboot >= 1) mark("first reboot", t);
         if (s.life.reboots >= 25) mark("25 reboots", t);
         if (s.copper > 0) mark("copper", t);
