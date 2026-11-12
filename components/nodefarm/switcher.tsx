@@ -11,8 +11,9 @@ import { scrambleNow } from "@/lib/motion/engine";
 import { GOALS, STATS, TREE, TUNE, apOnAscend, canAscend, fmt, isUnlocked, nodeOpen, type State, ascendNeed, handSeen, keysOnHandover } from "@/lib/nodefarm/engine";
 import { goalCounts } from "@/lib/nodefarm/records";
 import { LOGS } from "@/lib/nodefarm/story";
+import { codexNew, unlocked as codexOpen } from "@/lib/nodefarm/codex";
 
-export type WinId = "map" | "goals" | "records" | "ascend" | "handover" | "menu" | "tree";
+export type WinId = "map" | "goals" | "records" | "ascend" | "handover" | "codex" | "menu" | "tree";
 /** Everything the rail and hop strip can open: the windows plus the full-screen menus (tree, lab). */
 export type OpenId = WinId | "lab";
 export type SwId = OpenId | "core" | "stats" | "full";
@@ -28,10 +29,11 @@ export const SW: Record<SwId, Def> = {
     tree: { label: "Tree", key: "T", icon: "tree", color: "#a98bff", path: "tree" },
     handover: { label: "Handover", key: "H", icon: "key", color: "#3dff6e", path: "handover" },
     lab: { label: "Lab", icon: "code", color: "#9fd0ff", path: "lab" },
+    codex: { label: "Codex", key: "C", icon: "bulb", color: "#ff6b57", path: "codex" },
     menu: { label: "Menu", key: "S", icon: "settings", color: "#b6f04a", path: "config" },
     full: { label: "Full screen", key: "F", icon: "expand", color: "#e8e8e8", path: "fs" },
 };
-const WIN_ORDER: OpenId[] = ["map", "goals", "records", "ascend", "tree", "lab", "handover", "menu"];
+const WIN_ORDER: OpenId[] = ["map", "goals", "records", "ascend", "tree", "lab", "handover", "codex", "menu"];
 /** Tree and lab show once seen; anything else can hide itself through its info line (Handover, before the Origin arc ends). */
 const shown = (w: OpenId, tree: boolean, lab: boolean, info?: SwInfo) => (w !== "tree" || tree) && (w !== "lab" || lab) && !info?.[w]?.hide;
 
@@ -73,6 +75,7 @@ export function swInfo(s: State, bps: number, lastSave: number, fs: boolean, lab
         records: { read: newLogs ? `${newLogs} new` : `${s.logs.length} logs`, hot: newLogs > 0 },
         ascend: { read: ready ? `ready +${fmt(apOnAscend(s))}` : `${fmt(s.aether)}/${fmt(ascendNeed(s))} AE`, hot: ready },
         tree: { read: spend ? `${s.ap} AP free` : `${s.tree.length}/${TREE.length}`, hot: spend },
+        codex: (() => { const n = codexNew(s).length; return { read: n ? `${n} new` : `${codexOpen(s).length} entries`, hot: n > 0 }; })(),
         menu: { read: ago < 0 ? "not saved" : ago < 60 ? `saved ${ago}s` : `saved ${Math.floor(ago / 60)}m` },
         lab: { read: labReady ? `${labReady} ready` : `${fmt(s.lab.intel)} intel`, hot: labReady > 0 },
         full: { read: fs ? "on" : "off" },
@@ -143,7 +146,7 @@ export function Dock({ info, open, treeSeen, lab, guideWin, fs, onOpen, onFs }: 
 /** Phone: the section grid (Core and Zones are in-page sections, the rest are the same windows as desktop). */
 export function PhoneTabs({ info, tab, treeSeen, lab, guideWin, onTab, onTree, onLab }: { info: SwInfo; tab: string; treeSeen: boolean; lab: boolean; guideWin?: string; onTab: (t: Exclude<SwId, "tree" | "lab" | "full">) => void; onTree: () => void; onLab: () => void }) {
     const ids: Exclude<SwId, "full">[] = ["core", "stats", ...WIN_ORDER.filter((w) => shown(w, treeSeen, lab, info))];
-    // 7 or 8 sections sit four across, 9 sit three across and 10 (with Handover) five across, so no row is left with one
+    // 8 sections sit four across, 9 three across, 10 five across, so no row is left with one; 11 and 12 go four across
     return (
         <nav className="nf-tabs nf-sw-ph" aria-label="Game sections" style={{ ["--cols" as string]: ids.length === 9 ? 3 : ids.length === 10 ? 5 : 4 } as CSSProperties}>
             {ids.map((t) => {

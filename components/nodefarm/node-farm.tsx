@@ -46,6 +46,8 @@ import { exact, nextStep, type Target } from "@/lib/nodefarm/guide";
 import { GoalsPanel, MenuPanel, RecordsPanel } from "./systems";
 import { AscendPanel } from "./ascend";
 import { HandoverPanel, fwModel } from "./handover";
+import { CodexPanel } from "./codex";
+import { unlocked as codexUnlocked } from "@/lib/nodefarm/codex";
 import { Dock, PhoneTabs, WinBar, swInfo } from "./switcher";
 import { AdminPanel, type AdminHost } from "./admin";
 import { isAdmin, setAdmin } from "@/lib/nodefarm/admin";
@@ -67,9 +69,9 @@ const CALM_KEY = "nf-calm-v1"; // "1" when motion is forced calm, on top of the 
 const FMT_KEY = "nf-numfmt-v1"; // number format: short | sci | eng (per device)
 const BACKUP_KEY = "nf-backup-v1"; // the save as it was just before an import, a wipe or a failed load (one slot)
 const CORRUPT_KEY = "nf-corrupt-v1"; // raw text of a save that could not be read, kept instead of being overwritten
-type Tab = "core" | "stats" | "map" | "goals" | "records" | "ascend" | "handover" | "menu";
-const SIDE: Tab[] = ["map", "goals", "records", "ascend", "handover", "menu"];
-type Win = "map" | "goals" | "records" | "ascend" | "handover" | "menu";
+type Tab = "core" | "stats" | "map" | "goals" | "records" | "ascend" | "handover" | "codex" | "menu";
+const SIDE: Tab[] = ["map", "goals", "records", "ascend", "handover", "codex", "menu"];
+type Win = "map" | "goals" | "records" | "ascend" | "handover" | "codex" | "menu";
 
 function load(): { s: State | null; unreadable: boolean } {
     try {
@@ -864,7 +866,7 @@ export function NodeFarm() {
             // 1 to 6 press that tier on the zone in the middle of the screen
             if (/^[1-6]$/.test(e.key)) { e.preventDefault(); keyApi.current.tier(Number(e.key) - 1, e.repeat); return; }
             if (e.repeat) return;
-            const w = ({ m: "map", o: "goals", l: "records", a: "ascend", h: "handover", s: "menu", t: "tree" } as const)[e.key.toLowerCase() as "m"];
+            const w = ({ m: "map", o: "goals", l: "records", a: "ascend", h: "handover", c: "codex", s: "menu", t: "tree" } as const)[e.key.toLowerCase() as "m"];
             if (w) { e.preventDefault(); keyApi.current.open(w); }
             else if (e.key.toLowerCase() === "k") { e.preventDefault(); keyApi.current.fw(); }
             else if (e.key.toLowerCase() === "r") { e.preventDefault(); keyApi.current.lab(); }
@@ -873,6 +875,22 @@ export function NodeFarm() {
         window.addEventListener("keydown", onKey);
         return () => window.removeEventListener("keydown", onKey);
     }, [ready]);
+
+    // codex: a feed line when a system you just reached gets its entry
+    const codexAnn = useRef<Set<string> | null>(null);
+    useEffect(() => {
+        if (!ready) return;
+        const timer = window.setInterval(() => {
+            const st = g.current;
+            if (!st) return;
+            const now = codexUnlocked(st);
+            const prev = codexAnn.current;
+            codexAnn.current = new Set(now.map((e) => e.id));
+            if (!prev) return;
+            for (const e of now) if (!prev.has(e.id)) feedStore.push([...call(idTok("codex"), "entry", [strTok(e.id)]), pun(" "), com(`// ${e.title.toLowerCase()}. press C`)], { tone: "good", type: true });
+        }, 2000);
+        return () => window.clearInterval(timer);
+    }, [ready]); // eslint-disable-line react-hooks/exhaustive-deps
 
     const doReset = (now = false) => {
         if (!now && confirm !== "reset") {
@@ -1193,6 +1211,10 @@ export function NodeFarm() {
                     />
                 </section>
             )}
+            <section className="nf-pane nf-sidepane" data-pane="codex" aria-label="Codex" role="dialog" aria-modal="false">
+                <WinBar id="codex" info={sw} treeSeen={treeSeen} lab={labOpen(s)} onSwitch={(w) => (w === "lab" ? openLab() : openWin(w))} onClose={closeWin} />
+                <CodexPanel s={s} shown={win === "codex" || (tab === "codex" && !win)} onOpen={(w) => (w === "lab" ? (closeWin(), openLab()) : openWin(w))} />
+            </section>
             <section className="nf-pane nf-sidepane" data-pane="menu" aria-label="Menu" role="dialog" aria-modal="false">
                 <WinBar id="menu" info={sw} treeSeen={treeSeen} lab={labOpen(s)} onSwitch={(w) => (w === "lab" ? openLab() : openWin(w))} onClose={closeWin} />
                 <MenuPanel
