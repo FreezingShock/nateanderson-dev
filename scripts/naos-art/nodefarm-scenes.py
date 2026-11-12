@@ -1,8 +1,9 @@
 """Node Farm era scenery: one original dithered landscape per era, plus the Ascend piece.
 
-Run:  python3 scripts/naos-art/nodefarm-scenes.py            (all)
-      python3 scripts/naos-art/nodefarm-scenes.py 3 ascend   (just those)
-Output: public/naos/nodefarm/scene-<n>.{png,webp} (n = 0..8, era order below) and scene-ascend.{png,webp}.
+Run:  python3 scripts/naos-art/nodefarm-scenes.py                (all)
+      python3 scripts/naos-art/nodefarm-scenes.py 3 ascend d3    (just those; dN = the close-up for era N)
+Output: public/naos/nodefarm/scene-<n>.{png,webp} (n = 0..8, era order below), scene-ascend.{png,webp}, and detail-<n> (360 x 144
+close-ups for the scene window).
 
 Each file is 480 x 270 art pixels, drawn at 3 css px (2 on phones) with image-rendering: pixelated. Palette PNG:
 index 0 transparent, 1 = the era colour at 55 percent, 2 = the era colour. Dither fills use index 1, solid lines and
@@ -508,15 +509,258 @@ def ascend():
     return c
 
 
+# ---------------------------------------------------------------------------------------------
+# Close-ups: one big object per era for the scene window in the core rail (360 x 144, shown 1:1), so the window
+# is not a crop of the backdrop. Same colours as the era.
+# ---------------------------------------------------------------------------------------------
+DW, DH = 360, 144
+
+
+def sized(w, h, fn):
+    """Run a drawing function with the canvas size set to w x h (the Canvas helpers read the module size)."""
+    global W, H
+    old = (W, H)
+    W, H = w, h
+    try:
+        return fn()
+    finally:
+        W, H = old
+
+
+def d_uplink():
+    c = Canvas(21)
+    r = c.rng
+    c.haze(0.0, 0.2, 1.6, DH)
+    for x0, x1, top in ((18, 96, 30), (264, 342, 22)):       # racks at the sides, dim
+        c.rect(x0, top, x1, DH, 0.14)
+        for y in range(top + 10, DH, 12):
+            c.line([(x0 + 4, y), (x1 - 4, y)])
+    x0, x1 = 112, 248                                        # the rack in front
+    c.rect(x0, 6, x1, DH + 4, 0.3)
+    for u in range(7):
+        y = 12 + u * 18
+        c.rect(x0 + 6, y, x1 - 6, y + 14, 0.5)
+        for vx in range(x0 + 12, x0 + 62, 4):                 # vents
+            c.line([(vx, y + 3), (vx, y + 11)])
+        for k in range(5):                                    # status lights
+            if r.random() < 0.6:
+                c.rect(x1 - 52 + k * 8, y + 4, x1 - 48 + k * 8, y + 8, 1.0, edge=False)
+                c.ds.rectangle((x1 - 52 + k * 8, y + 4, x1 - 49 + k * 8, y + 7), fill=255)
+        c.line([(x0 + 70, y + 7), (x0 + 82, y + 7)])
+    for cx in (130, 180, 226):                                # cables
+        pts = [(cx, 0)]
+        for k in range(1, 9):
+            pts.append((cx + 6 * np.sin(k * 0.9 + cx), k * 18))
+        c.line(pts)
+    return c
+
+
+def d_foundry():
+    c = Canvas(22)
+    r = c.rng
+    c.haze(0.04, 0.34, 1.4, DH)
+    cx = 180
+    c.poly([(cx - 78, 52), (cx + 78, 52), (cx + 52, 128), (cx - 52, 128)], 0.4)        # crucible
+    for yy in (68, 84, 100, 116):
+        w = 78 - (yy - 52) * 0.34
+        c.line([(cx - w, yy), (cx + w, yy)])
+    c.ellipse((cx - 78, 44, cx + 78, 60), 0.95)                                           # molten surface
+    for _ in range(40):
+        c.dot(int(r.integers(cx - 70, cx + 70)), int(r.integers(47, 57)))
+    c.poly([(cx - 8, 60), (cx + 8, 60), (cx + 6, 140), (cx - 6, 140)], 0.8, edge=False)  # pour
+    c.line([(cx - 20, 20), (cx - 20, 52)])                                                # chain
+    c.line([(cx + 20, 20), (cx + 20, 52)])
+    c.line([(cx - 20, 20), (cx + 20, 20)], 2)
+    for _ in range(46):                                                                   # sparks
+        c.dot(int(r.integers(30, 330)), int(r.integers(4, 134)))
+    return c
+
+
+def d_wafer():
+    c = Canvas(23)
+    r = c.rng
+    c.haze(0.0, 0.16, 1.6, DH)
+    x0, y0, x1, y1 = 100, 12, 260, 132
+    c.rect(x0, y0, x1, y1, 0.22)
+    c.rect(x0 + 14, y0 + 14, x1 - 14, y1 - 14, 0.36)
+    for gx in range(x0 + 14, x1 - 14, 10):                    # core grid
+        c.line([(gx, y0 + 14), (gx, y1 - 14)])
+    for gy in range(y0 + 14, y1 - 14, 10):
+        c.line([(x0 + 14, gy), (x1 - 14, gy)])
+    for _ in range(26):
+        gx = x0 + 14 + 10 * int(r.integers(0, 14))
+        gy = y0 + 14 + 10 * int(r.integers(0, 9))
+        c.ds.rectangle((gx + 2, gy + 2, gx + 8, gy + 8), fill=255)
+    for px in range(x0 + 8, x1 - 6, 14):                      # bond pads and traces out to the edge
+        c.ds.rectangle((px, y0 + 3, px + 5, y0 + 8), fill=255)
+        c.ds.rectangle((px, y1 - 8, px + 5, y1 - 3), fill=255)
+    for py in range(y0 + 10, y1 - 8, 14):
+        c.ds.rectangle((x0 + 3, py, x0 + 8, py + 5), fill=255)
+        c.ds.rectangle((x1 - 8, py, x1 - 3, py + 5), fill=255)
+    for k in range(6):                                        # traces leaving the die
+        y = 24 + k * 18
+        c.line([(x0, y), (40 + k * 6, y), (40 + k * 6, y + 10), (4, y + 10)])
+        c.line([(x1, y + 6), (320 - k * 6, y + 6), (320 - k * 6, y - 4), (356, y - 4)])
+    return c
+
+
+def d_lattice():
+    c = Canvas(24)
+    r = c.rng
+    c.haze(0.0, 0.2, 1.4, DH)
+    b = 140
+
+    def spire(x, h, w, lean, dl, dr):
+        tip = (x + lean, b - h)
+        c.poly([(x - w, b), (x - w, b - h * 0.66), tip, (x, b)], dl)
+        c.poly([(x, b), tip, (x + w, b - h * 0.66), (x + w, b)], dr)
+        c.line([tip, (x, b - h * 0.6)])
+
+    for x, h, w, l in ((70, 70, 16, -4), (290, 62, 15, 5), (120, 96, 20, -6), (244, 90, 19, 6)):
+        spire(x, h, w, l, 0.16, 0.42)
+    spire(182, 136, 34, 0, 0.22, 0.72)
+    for k in range(9):                                        # light fanning out of the big crystal
+        a = -np.pi / 2 + (k - 4) * 0.28
+        c.line([(182 + 20 * np.cos(a), 40 + 20 * np.sin(a)), (182 + 90 * np.cos(a), 40 + 90 * np.sin(a))])
+    for _ in range(12):
+        x, y = int(r.integers(8, 352)), int(r.integers(6, 100))
+        c.dot(x, y); c.dot(x - 1, y); c.dot(x + 1, y); c.dot(x, y - 1); c.dot(x, y + 1)
+    return c
+
+
+def d_aurora():
+    c = Canvas(25)
+    r = c.rng
+    c.haze(0.0, 0.1, 1.6, DH)
+    for gx in range(0, DW, 24):                               # scope graticule
+        c.line([(gx, 0), (gx, DH)])
+    for gy in range(0, DH, 24):
+        c.line([(0, gy), (DW, gy)])
+    c.rect(0, 0, DW, DH, 0.0, edge=False)                     # clear it, keep as a faint dither grid only
+    a = np.asarray(c.f, dtype=float) / 255
+    s = np.zeros((DH, DW), dtype=np.uint8)
+    xs = np.arange(DW)
+    for k in range(5):
+        m, ph, amp = 2 + k, r.random() * 6.28, 14 + 6 * k
+        cy = 72 + (k - 2) * 8 + amp * np.sin(2 * np.pi * m * xs / DW + ph)
+        for x in xs:
+            yc = int(cy[x])
+            for y in range(max(0, yc - 12), min(DH, yc + 2)):
+                a[y, x] = max(a[y, x], 0.5 * (1 - (yc - y) / 12) ** 1.4)
+            if 0 <= yc < DH:
+                s[yc, x] = 255
+    for gx in range(0, DW, 24):
+        s[:, gx] = np.maximum(s[:, gx], 0)
+    for bx in range(10, DW - 10, 9):                          # spectrum bars along the bottom
+        h = int(4 + 22 * abs(np.sin(bx * 0.13)) * r.random() + 4)
+        s[DH - h : DH, bx : bx + 5] = 255
+    c.f = Image.fromarray((a * 255).astype(np.uint8))
+    c.s = Image.fromarray(s)
+    c.df, c.ds = ImageDraw.Draw(c.f), ImageDraw.Draw(c.s)
+    return c
+
+
+def d_monolith():
+    c = Canvas(26)
+    r = c.rng
+    c.haze(0.0, 0.2, 1.4, DH)
+    cx = 180
+    c.radial(cx, 66, 54, 110, 0.4)
+    c.poly([(cx - 40, 144), (cx - 34, 6), (cx + 34, 0), (cx + 42, 144)], 0.3)
+    c.poly([(cx + 42, 144), (cx + 34, 0), (cx + 52, 8), (cx + 60, 144)], 0.6)             # lit side
+    for k in range(4):                                        # carved rows
+        y = 18 + k * 28
+        for gx in range(cx - 26, cx + 22, 18):
+            kind = int(r.integers(0, 4))
+            if kind == 0:
+                c.line([(gx, y), (gx, y + 16)]); c.line([(gx - 5, y + 4), (gx + 5, y + 4)])
+            elif kind == 1:
+                c.line([(gx - 6, y + 16), (gx, y), (gx + 6, y + 16)])
+            elif kind == 2:
+                c.ellipse((gx - 6, y, gx + 6, y + 16), 0.0)
+            else:
+                c.line([(gx - 6, y), (gx + 6, y), (gx, y + 16), (gx - 6, y)])
+    for side in (-1, 1):                                      # floating runes either side
+        for k in range(3):
+            x, y = cx + side * (84 + 24 * (k % 2)), 26 + k * 38
+            c.ellipse((x - 10, y - 10, x + 10, y + 10), 0.18, edge=False)
+            c.line([(x - 4, y + 5), (x, y - 5), (x + 4, y + 5)])
+    return c
+
+
+def d_glass():
+    c = Canvas(27)
+    r = c.rng
+    c.haze(0.0, 0.1, 1.4, DH)
+    c.stars(50)
+    cx, cy = 180, 74
+    top, mid = cy - 56, cy
+    pts = [(cx - 70, cy - 20), (cx - 36, top), (cx + 36, top), (cx + 70, cy - 20), (cx, cy + 62)]   # a cut gem, front view
+    c.poly(pts, 0.24)
+    c.poly([pts[0], pts[1], (cx - 16, cy - 20)], 0.55)
+    c.poly([pts[1], pts[2], (cx + 16, cy - 20), (cx - 16, cy - 20)], 0.14)
+    c.poly([pts[2], pts[3], (cx + 16, cy - 20)], 0.7)
+    c.poly([pts[0], (cx - 16, cy - 20), pts[4]], 0.4)
+    c.poly([(cx - 16, cy - 20), (cx + 16, cy - 20), pts[4]], 0.2)
+    c.poly([(cx + 16, cy - 20), pts[3], pts[4]], 0.62)
+    c.line([pts[0], pts[3]])
+    for _ in range(7):                                        # sparkles
+        x, y = int(r.integers(20, 340)), int(r.integers(10, 130))
+        s = int(r.integers(3, 7))
+        c.line([(x - s, y), (x + s, y)]); c.line([(x, y - s), (x, y + s)])
+    return c
+
+
+def d_eclipse():
+    c = Canvas(28)
+    r = c.rng
+    c.haze(0.0, 0.08, 1.4, DH)
+    c.stars(40)
+    cx, cy, R = 120, 188, 150                                 # a huge dark disc rising past the bottom edge
+    c.radial(cx, cy, R, R + 46, 0.7, 1.2)
+    c.ellipse((cx - R, cy - R, cx + R, cy + R), 0.0)
+    c.line([(cx + (R + 18) * np.cos(a), cy + (R + 18) * 0.3 * np.sin(a) - 30) for a in np.linspace(3.3, 6.1, 80)])
+    for _ in range(10):                                       # slabs and debris
+        x, y = int(r.integers(190, 330)), int(r.integers(8, 120))
+        w, h, sk = int(r.integers(14, 40)), int(r.integers(5, 11)), int(r.integers(3, 8))
+        c.poly([(x, y), (x + w, y), (x + w - sk, y + h), (x - sk, y + h)], 0.5)
+        c.line([(x - sk, y + h), (x - sk, y + h + 3), (x + w - sk, y + h + 3), (x + w - sk, y + h)])
+    return c
+
+
+def d_clockwork():
+    c = Canvas(29)
+    c.haze(0.0, 0.1, 1.4, DH)
+    cog(c, 118, 76, 66, 54, 14, 0.36, 0.0)
+    cog(c, 236, 52, 46, 38, 11, 0.5, 0.2)
+    cog(c, 288, 118, 34, 28, 9, 0.28, 0.4)
+    c.line([(180, 0), (180, 20)])                             # pendulum
+    c.line([(180, 20), (210, 100)])
+    c.ellipse((200, 96, 224, 120), 0.7)
+    return c
+
+
+DETAILS = [d_uplink, d_foundry, d_wafer, d_lattice, d_aurora, d_monolith, d_glass, d_eclipse, d_clockwork]
+
+
+def save_detail(i):
+    c = sized(DW, DH, DETAILS[i])
+    # Canvas.save reads the module size, so save at the close-up size too
+    sized(DW, DH, lambda: c.save(f"detail-{i}", ERAS[i][1]))
+
+
 PIECES = {str(i): (fn, ERAS[i]) for i, fn in enumerate([uplink, foundry, wafer, lattice, aurora, monolith, glass, eclipse, clockwork])}
 PIECES["ascend"] = (ascend, ASCEND)
 
 if __name__ == "__main__":
     os.makedirs(OUT, exist_ok=True)
-    want = sys.argv[1:] or list(PIECES)
-    bad = [w for w in want if w not in PIECES]
+    want = sys.argv[1:] or list(PIECES) + [f"d{i}" for i in range(9)]
+    bad = [w for w in want if w not in PIECES and not (w.startswith("d") and w[1:].isdigit() and int(w[1:]) < 9)]
     if bad:
         raise SystemExit(f"unknown: {bad}; known: {list(PIECES)}")
     for key in want:
+        if key.startswith("d"):
+            save_detail(int(key[1:]))
+            continue
         fn, (_, color) = PIECES[key]
         fn().save(f"scene-{key}", color)
