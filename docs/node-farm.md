@@ -51,6 +51,7 @@ One open/close animation for every window, card and pop-up ("terminal print"): t
 - `data-cx-scr` replaces the text node, so only put it on static labels (use an sr-only twin like WinBar does).
 - Where it is used: windows (node-farm.tsx), the offline report (away.tsx, rows tagged, backdrop fades), quick-time event cards (events.tsx: prints in, reprints the body on each stage, deletes out while the last state stays on screen inert), banners (juice.tsx, timing unchanged), tooltips (guide.tsx `Tip`: reprints when the target changes, deletes out on leave), folding zones and the Drone bay (`useFoldReveal`, rows only, first render skipped). The tree card and the Ascend window use it from their own files.
 - Sound: `nfPrint` (soft key ticks, one per row) on a framed "in", `nfDelete` on a framed "out"; bare reveals are silent. Pass `sound` to override.
+- Three styles, picked game-wide: `print` (default), `decrypt` (rows sit under flickering glyph noise that resolves left to right), `crt` (window switches on like a monitor: line, flash, scanlines; folds and tooltips flicker). Try one with `nf anim decrypt` in the console (saved per browser) or `?cx=crt` in the URL. CRT animates `transform`, so it fits windows that position with `translate`/`left`, not with `transform`.
 - Banners sit under an open window (z-index 55 while `body.nf-win-open`) instead of covering it.
 
 ## Game feel (components/nodefarm/juice.tsx, app/camino/nodefarm-juice.css)
