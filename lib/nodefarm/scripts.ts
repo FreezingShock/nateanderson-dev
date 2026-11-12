@@ -28,8 +28,8 @@ export const SCRIPT_TUNE = {
     /** buy.sh may press a tier after you pressed it by hand this many times (on that stat) */
     teachTier: 3,
     /** buy.sh: seconds between runs per version, and the buys that reach each version */
-    buyCycle: [3, 1.5, 0.75],
-    buyVer: [0, 500, 5000],
+    buyCycle: [3, 1.5, 0.75, 0.3],
+    buyVer: [0, 500, 5000, 50000],
     /** the other scripts' cycles, seconds */
     cycle: { compile: 2, deploy: 1, drop: 5, rig: 5, event: 1, restore: 1 } as Record<string, number>,
     /** settings each rule cycles through on a press */
@@ -209,7 +209,7 @@ export function taughtMask(s: State, stat: string): number {
     for (let k = 0; k < TIERS; k++) if (t[k] >= SCRIPT_TUNE.teachTier) m |= 1 << k;
     return m;
 }
-/** buy.sh version (0..2), from the buys it has made. */
+/** buy.sh version (0..3), from the buys it has made. */
 export const buyVer = (s: State) => { const n = s.auto?.ran.buy ?? 0; let v = 0; SCRIPT_TUNE.buyVer.forEach((at, i) => { if (n >= at) v = i; }); return v; };
 export const buyCycle = (s: State) => SCRIPT_TUNE.buyCycle[buyVer(s)];
 /** One buy.sh run: on each ticked stat, press the highest allowed tier it can afford while keeping the reserve. */
@@ -447,9 +447,38 @@ function every(a: AutoState, id: ScriptId, dt: number, cycle: number, fn: () => 
     while (t >= cycle && n < SCRIPT_TUNE.burst) { t -= cycle; n++; fn(); }
     a.acc[id] = Math.min(t, cycle);
 }
+/** Old saves: stats that sweeping Drones or the removed Autoloader perk pressed come to buy.sh once (engine migrateAutomation
+ * fills `armed`). buy.sh is learned and running, each stat ticked, and every tier the save has bought counts as taught. */
+export function migrateArmed(s: State) {
+    if (!s.armed.length) return;
+    const a = auto(s);
+    for (const st of s.armed) {
+        if (!BUY_STATS.includes(st as ButtonStat)) continue;
+        const t = (a.taught[st] ??= Array(TIERS).fill(0));
+        s.bought[st as ButtonStat].forEach((n, k) => { if (n > 0 || ((s.seen?.[st as ButtonStat] ?? 0) >> k) & 1) t[k] = Math.max(t[k], SCRIPT_TUNE.teachTier); });
+        a.buy[st] = ALL_TIERS;
+    }
+    if (!a.own.includes("buy")) a.own.push("buy");
+    a.learn.buy = Math.max(a.learn.buy ?? 0, SCRIPT_TUNE.learn.buy);
+    a.on.buy = true;
+    s.armed = [];
+}
+const ALL_TIERS = (1 << TIERS) - 1;
+/** Standing orders (tree node): every stat is ticked for buy.sh the first time it opens; untick it and it stays off. */
+function standingOrders(s: State, a: AutoState) {
+    if (!a.own.includes("buy") || !hasFeature(s, "orders")) return;
+    for (const st of BUY_STATS) {
+        if (s.autoArmed.includes(st) || !isUnlocked(s, st)) continue;
+        s.autoArmed.push(st);
+        a.buy[st] = ALL_TIERS;
+    }
+}
+
 export function scriptStep(s: State, dt: number) {
+    if (s.armed.length) migrateArmed(s);
     const a = s.auto;
     if (!a) return;
+    standingOrders(s, a);
     // notice an Ascend from anywhere (button, admin, ascend.sh) for ascend.sh's rule
     if (s.life.ascends !== a.seenAsc) {
         if (s.life.ascends > a.seenAsc) { a.lastAp = Math.max(0, s.life.apTotal - a.seenAp); a.runAt = s.life.secs; }

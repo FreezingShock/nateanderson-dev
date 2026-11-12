@@ -107,7 +107,7 @@ export const TUNE = {
     achBonus: 0.02,
     arcBonus: 0.05, // global bonus for each arc whose every button has been pressed at least once (lib/nodefarm/arcs.ts)
     tierBonus: 0.08, // extra global bonus for each fully completed goal tier
-    // Drones: one per button tier, bought with Aether. Each level presses that tier's button on every armed stat, droneRate times a second.
+    // Drones: one per button tier, bought with Aether. Each level presses that tier's button on its posted zone (postX times droneRate a second); docked Drones do nothing.
     drone: { max: 10, base: 25, ratio: 6, growth: 1.7, rate: 0.25, offline: 0.5, burst: 200 },
     treeCost: 1, // scales every tree node price (pacing knob for the sim)
     apBonusFromEarned: false, // true: the AP bonus also counts AP spent on nodes and perks. Off because the sim then finishes the tree in 12 to 19 h (AP feeds itself); spending AP is the brake
@@ -2650,12 +2650,12 @@ function migrateAutomation(n: State, o: Record<string, any>) {
     if (!n.dr || !n.armed.length) return; // a save with nothing armed had no sweeping Drones
     const open = POSTABLE.filter((st) => isUnlocked(n, st)).reverse();
     const armedOpen = open.filter((st) => n.armed.includes(st));
+    const pool = armedOpen.length ? armedOpen : open;
     let i = 0;
     for (let k = 0; k < TIERS; k++) {
-        if (n.drones[k] <= 0 || n.dr.post[k]) continue;
-        const pool = armedOpen.length ? armedOpen : open;
-        if (!pool.length) break;
-        n.dr.post[k] = pool[i++ % pool.length];
+        if (n.drones[k] <= 0 || n.dr.post[k] || !pool.length) continue;
+        // a zone no other Drone works yet, else round the pool again
+        n.dr.post[k] = pool.find((st) => !n.dr.post.includes(st)) ?? pool[i++ % pool.length];
     }
 }
 

@@ -243,9 +243,9 @@ const BASE: News[] = [
 
     // ---- Drones
     { k: "op", ok: (s) => s.drones.some((d) => d > 0), t: "The Drones press faster than I do and never ask what for. I have been thinking about that." },
-    { k: "note", ok: (s) => s.drones.some((d) => d > 0), t: "drones.sweep() // nobody is holding the button. the button is being held." },
+    { k: "note", ok: (s) => s.drones.some((d) => d > 0), t: "drones.work() // nobody is holding the button. the button is being held." },
     { k: "hint", from: 3, ok: (s) => !s.drones.some((d) => d > 0), t: "Drones are a separate shop in the Drone hangar. They press buttons for you. Arm a stat and they get to work." },
-    { k: "wry", ok: (s) => s.armed.length > 0, t: "A Drone pressed a button I did not tell it to. Filing under initiative." },
+    { k: "wry", ok: (s) => s.dr.post.some((p, k) => p && s.drones[k] > 0), t: "A Drone pressed a button I did not tell it to. Filing under initiative." },
 
     // ---- Ascends and the tree
     { k: "op", ok: (s) => s.life.ascends >= 1, t: "After an Ascend the room is quiet and clean and it looks bigger. It is not bigger. It is just empty enough to see." },

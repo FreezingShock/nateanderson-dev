@@ -20,13 +20,12 @@
 @media (min-width: 900px) { .ctos .nf-hg-fly { scale: 1; top: 18%; } }
 @media (max-width: 559px) { .ctos .nf-hg-fly { scale: .5; top: 6%; } .ctos .nf-hg-tag { font-size: 9px; padding: 1px 3px; letter-spacing: .04em; } .ctos .nf-hg-tag[data-long] { font-size: 0; } .ctos .nf-hg-tag[data-long]::after { content: attr(data-short); font-size: 9px; } }
 .ctos .nf-hg-fly .nf-sp-d { filter: drop-shadow(0 6px 0 #0008); }
-/* sweepers drift across their berth; posted Drones fly sorties out of the top and come back */
-.ctos .nf-hg-berth[data-mode="sweep"] .nf-hg-fly { animation: nfHgSweep 5.2s ease-in-out infinite; animation-delay: calc(var(--k) * -.9s); }
+/* docked Drones sit dim in their cradle; posted Drones fly sorties out of the top and come back */
+.ctos .nf-hg-berth[data-mode="dock"] .nf-hg-fly { opacity: .55; }
 .ctos .nf-hg-berth[data-mode="out"] .nf-hg-fly { animation: nfHgSortie 6s cubic-bezier(.5, 0, .5, 1) infinite; animation-delay: calc(var(--k) * -1s); }
 .ctos .nf-hg-berth[data-mode="out"]::before { content: ""; position: absolute; left: 50%; top: 0; width: 2px; height: 60%; margin-left: -1px; background: linear-gradient(var(--z), transparent); opacity: .55; animation: nfHgBeam 6s ease-in-out infinite; animation-delay: calc(var(--k) * -1s); }
 .ctos .nf-hg-tag { position: absolute; left: 50%; bottom: 6%; translate: -50% 0; padding: 2px 6px; background: #05070ae6; border: 1px solid color-mix(in srgb, var(--z) 60%, #283244); color: var(--z); font: 700 10px/1.2 var(--cm-mono); letter-spacing: .1em; text-transform: uppercase; white-space: nowrap; }
 .ctos .nf-hg-berth[data-mode="empty"] .nf-hg-tag { color: #5a6478; border-color: #283244; }
-@keyframes nfHgSweep { 0%, 100% { translate: -14px 0; } 25% { translate: 0 -5px; } 50% { translate: 14px 0; } 75% { translate: 0 3px; } }
 @keyframes nfHgSortie {
     0%, 12% { translate: 0 0; scale: .78; opacity: 1; }
     40% { translate: 0 -70px; scale: .4; opacity: 0; }
