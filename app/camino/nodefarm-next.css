@@ -18,7 +18,7 @@
 .ctos .nf-nx-plate {
     --w: 80px; --h: 56px;
     position: relative; flex: none; width: var(--w); height: var(--h);
-    background: url(/naos/nodefarm/next-plates.webp) 0 calc(var(--p) * var(--h) * -1) / calc(var(--w) * 4) calc(var(--h) * 11) no-repeat;
+    background: url(/naos/nodefarm/next-plates.webp?v=f4275ffd) 0 calc(var(--p) * var(--h) * -1) / calc(var(--w) * 4) calc(var(--h) * 11) no-repeat;
     image-rendering: pixelated;
     border: 1px solid color-mix(in srgb, var(--c) 45%, #1c1c1c);
     box-shadow: 0 0 0 3px #050606, 0 0 24px -6px color-mix(in srgb, var(--c) 50%, transparent);
@@ -52,7 +52,7 @@
 .ctos .nf-nx-dl .nf-nx-i { --s: 12px; }
 
 /* ---- icons: 24 px pixel art (scripts/naos-art/nodefarm-next-art.py), shown at 24 or a crisp 12 */
-.ctos .nf-nx-i { --s: 24px; display: inline-block; flex: none; width: var(--s); height: var(--s); background: url(/naos/nodefarm/next-icons.webp) calc(var(--i) * var(--s) * -1) 0 / calc(var(--s) * 13) var(--s) no-repeat; image-rendering: pixelated; vertical-align: middle; }
+.ctos .nf-nx-i { --s: 24px; display: inline-block; flex: none; width: var(--s); height: var(--s); background: url(/naos/nodefarm/next-icons.webp?v=62622631) calc(var(--i) * var(--s) * -1) 0 / calc(var(--s) * 13) var(--s) no-repeat; image-rendering: pixelated; vertical-align: middle; }
 
 /* ---- actions: the big button does the step (or takes you there), then Find / Map / fold */
 .ctos .nf-nx .nf-gd-act { display: grid; gap: 8px; align-content: center; }

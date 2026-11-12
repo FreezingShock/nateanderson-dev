@@ -137,7 +137,9 @@ export function apPicks(s: State): { count: number; cheapest: number; tree: bool
 /** The single most useful thing to do now. Always returns something: the chain, then the nearest goal. */
 export function nextStep(s: State, d: Derived): Step {
     const st = coreStep(s, d);
-    const also = readyNow(s, d).filter((a) => a.id !== st.id && !sameTarget(a.target, st.target)).slice(0, 3);
+    // a Handover wipes the run, AP and perks, so Ascend and spending are no use beside it
+    const wipes = st.id === "handover";
+    const also = readyNow(s, d).filter((a) => a.id !== st.id && !sameTarget(a.target, st.target) && !(wipes && (a.id === "ascend" || a.id === "spend-ap" || a.id.startsWith("rig-")))).slice(0, 3);
     if (also.length) st.also = also;
     return st;
 }
@@ -183,7 +185,9 @@ export function readyNow(s: State, d: Derived): Also[] {
     }
     // stress tests: once, as an invitation
     if (chOpen(s) && !chRun(s) && ranksTotal(s) === 0 && s.life.ascends >= 2) out.push({ id: "stress", text: "Try a stress test for a permanent reward", target: { win: "stress" } });
-    return out;
+    // things that change the run come first; a switch or a lesson is background
+    const rank = (a: Also) => (a.id === "event" ? 0 : a.id.startsWith("sw-") ? 8 : a.id.startsWith("teach-") ? 7 : a.id === "stress" ? 6 : 1);
+    return out.map((a, i) => [a, i] as const).sort((x, y) => rank(x[0]) - rank(y[0]) || x[1] - y[1]).map((x) => x[0]);
 }
 
 function coreStep(s: State, d: Derived): Step {
