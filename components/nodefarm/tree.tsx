@@ -145,6 +145,9 @@ export function TreeMenu({ s, reduced, onBuy, onRespec, onClose }: { s: State; r
     const gest = useRef({ total: 0, suppress: false, pinch: 0, mx: 0, my: 0 });
     const hovT = useRef<number | undefined>(undefined);
     const cardFor = useRef<string | null>(null);
+    const sideFor = useRef<{ id: string | null; side: string }>({ id: null, side: "r" });
+    /** drawn nodes in world px, for the card's placement */
+    const drawn = useRef<{ id: string; x: number; y: number; sz: number }[]>([]);
     const prevVis = useRef<Map<string, Vis> | null>(null);
     const [sel, setSel] = useState<string>("");
     const [hov, setHov] = useState<string | null>(null);
@@ -158,6 +161,7 @@ export function TreeMenu({ s, reduced, onBuy, onRespec, onClose }: { s: State; r
     const [showTot, setShowTot] = useState(false);
 
     const vis = useMemo(() => visMap(s), [s, s.tree.length]); // eslint-disable-line react-hooks/exhaustive-deps
+    drawn.current = useMemo(() => [{ id: "core", x: 0, y: 0, sz: SZ.core }, ...TREE.filter((n) => (vis.get(n.id) ?? "hidden") !== "hidden").map((n) => ({ id: n.id, x: n.x * U, y: n.y * U, sz: SZ[n.kind] }))], [vis]);
     const seen = (id: string) => id === "core" || (vis.get(id) ?? "hidden") !== "hidden";
 
     // world bounds of everything on screen, so the camera can't wander off into empty space
@@ -197,13 +201,39 @@ export function TreeMenu({ s, reduced, onBuy, onRespec, onClose }: { s: State; r
         const r = ((n ? SZ[n.kind] : SZ.core) / 2) * k + 10;
         const cw = c.offsetWidth, ch = c.offsetHeight;
         const gap = 22;
-        let left: number, tp: number, side: "r" | "l" | "b" | "t";
-        if (sx + r + gap + cw <= w - 12) { side = "r"; left = sx + r + gap; tp = sy - Math.min(48, ch / 2); }
-        else if (sx - r - gap - cw >= 12) { side = "l"; left = sx - r - gap - cw; tp = sy - Math.min(48, ch / 2); }
-        else if (sy + r + gap + ch <= top + h - 8) { side = "b"; left = sx - cw / 2; tp = sy + r + gap; }
-        else { side = "t"; left = sx - cw / 2; tp = sy - r - gap - ch; }
-        left = clamp(left, 12, w - cw - 12);
-        tp = clamp(tp, top + 12, top + h - ch - 12);
+        // try each side, score how much of the other drawn nodes the card would cover, keep the least-covering side
+        // (with a little stickiness, so the card does not hop around while the camera moves)
+        type Side = "r" | "l" | "b" | "t";
+        const place = (sd: Side): [number, number] => {
+            const l0 = sd === "r" ? sx + r + gap : sd === "l" ? sx - r - gap - cw : sx - cw / 2;
+            const t0 = sd === "b" ? sy + r + gap : sd === "t" ? sy - r - gap - ch : sy - Math.min(48, ch / 2);
+            return [clamp(l0, 12, w - cw - 12), clamp(t0, top + 12, top + h - ch - 12)];
+        };
+        const fits = (sd: Side) => sd === "r" ? sx + r + gap + cw <= w - 12 : sd === "l" ? sx - r - gap - cw >= 12 : sd === "b" ? sy + r + gap + ch <= top + h - 8 : sy - r - gap - ch >= top + 8;
+        const others = drawn.current.filter((o) => o.id !== id);
+        const cover = (l0: number, t0: number) => {
+            let a = 0;
+            for (const o of others) {
+                const ox = w / 2 + (o.x - cx) * k, oy = top + h / 2 + (o.y - cy) * k, orr = (o.sz / 2) * k + 6;
+                const ix = Math.min(l0 + cw, ox + orr) - Math.max(l0, ox - orr), iy = Math.min(t0 + ch, oy + orr) - Math.max(t0, oy - orr);
+                if (ix > 0 && iy > 0) a += ix * iy;
+            }
+            // covering the node itself (after clamping) is the worst case
+            const sx0 = Math.min(l0 + cw, sx + r) - Math.max(l0, sx - r), sy0 = Math.min(t0 + ch, sy + r) - Math.max(t0, sy - r);
+            if (sx0 > 0 && sy0 > 0) a += sx0 * sy0 * 6;
+            return a;
+        };
+        const sides: Side[] = (["r", "l", "b", "t"] as Side[]).filter(fits);
+        if (!sides.length) sides.push(w < 700 ? "b" : "r");
+        const prev = sideFor.current.id === id ? sideFor.current.side : null;
+        let side: Side = sides[0], best = Infinity;
+        for (const sd of sides) {
+            const [l0, t0] = place(sd);
+            const sc = cover(l0, t0) * (sd === prev ? 0.7 : 1) + (sd === "r" ? 0 : 400);
+            if (sc < best) { best = sc; side = sd; }
+        }
+        sideFor.current = { id, side };
+        const [left, tp] = place(side);
         c.style.transform = `translate3d(${Math.round(left)}px, ${Math.round(tp)}px, 0)`;
         c.style.visibility = "visible";
         c.dataset.side = side;
@@ -677,24 +707,24 @@ export function TreeMenu({ s, reduced, onBuy, onRespec, onClose }: { s: State; r
             >
                 {shown && (cn ? (
                     <>
-                        <span className="nf-tm-k">
-                            <span>{BNAME[cn.branch]} // {KIND[cn.kind]}</span>
+                        <span className="nf-tm-k" data-cx-i="0">
+                            <span>{BNAME[cn.branch].toLowerCase()}.{cn.kind}</span>
                             <span className="nf-tm-st">{fogCard ? "ENCRYPTED" : cst === "owned" ? "OWNED" : cst === "locked" ? "LOCKED" : cst === "ready" ? "READY" : "AVAILABLE"}</span>
                         </span>
-                        <b className="nf-tm-n">{fogCard ? <ScrambleName text="????????" reduced={reduced} /> : <ScrambleName text={cn.name} reduced={reduced} />}<span className="sr-only">{fogCard ? "Encrypted node" : cn.name}</span></b>
+                        <b className="nf-tm-n" data-cx-i="1">{fogCard ? <ScrambleName text="????????" reduced={reduced} /> : <ScrambleName text={cn.name} reduced={reduced} />}<span className="sr-only">{fogCard ? "Encrypted node" : cn.name}</span></b>
                         {fogCard ? (
-                            <p className="nf-tm-fx">Signal too weak to read. Buy a node next to it to decrypt this one.</p>
+                            <p className="nf-tm-fx" data-cx-i="2"><i aria-hidden="true">err</i><span>Signal too weak to read. Buy a node next to it to decrypt this one.</span></p>
                         ) : (
                             <>
-                                <p className="nf-tm-fx"><Fx text={cn.blurb} /></p>
-                                {cn.flavor && <p className="nf-tm-flv">&ldquo;{cn.flavor}&rdquo;</p>}
+                                <p className="nf-tm-fx" data-cx-i="2"><i aria-hidden="true">fx</i><span><Fx text={cn.blurb} /></span></p>
+                                {cn.flavor && <blockquote className="nf-tm-flv" data-cx-i="3"><p>{cn.flavor}</p></blockquote>}
                             </>
                         )}
                         {!fogCard && cst === "locked" && (
-                            <p className="nf-tm-need">Needs a neighbour: {cn.links.filter((l) => l !== "core" && seen(l) && vis.get(l) !== "fog").map((l) => treeNode(l).name).join(", ") || "decrypt the path first"}.</p>
+                            <p className="nf-tm-need" data-cx-i="4">// needs a neighbour: {cn.links.filter((l) => l !== "core" && seen(l) && vis.get(l) !== "fog").map((l) => treeNode(l).name).join(", ") || "decrypt the path first"}</p>
                         )}
                         {!fogCard && (
-                            <div className="nf-tm-a">
+                            <div className="nf-tm-a" data-cx-i="5">
                                 <span className="nf-tm-cost"><b>{cst === "owned" ? "Owned" : `${cn.cost} AP`}</b><small>{cst === "owned" ? "kept through Ascend" : `you have ${fmt(s.ap)}`}</small></span>
                                 {cst !== "owned" && (
                                     <button type="button" className="nf-tm-buy" disabled={cst !== "ready"} onClick={() => buy(cn.id)}>
@@ -706,9 +736,10 @@ export function TreeMenu({ s, reduced, onBuy, onRespec, onClose }: { s: State; r
                     </>
                 ) : (
                     <>
-                        <span className="nf-tm-k"><span>CORE // ROOT</span><span className="nf-tm-st">ONLINE</span></span>
-                        <b className="nf-tm-n"><ScrambleName text="The core" reduced={reduced} /><span className="sr-only">The core</span></b>
-                        <p className="nf-tm-fx">Every section grows out of here. A node opens once it touches the core or a node you own, and the next ring decrypts as you buy toward it. Respec is free and refunds every AP.</p>
+                        <span className="nf-tm-k" data-cx-i="0"><span>core.root</span><span className="nf-tm-st">ONLINE</span></span>
+                        <b className="nf-tm-n" data-cx-i="1"><ScrambleName text="The core" reduced={reduced} /><span className="sr-only">The core</span></b>
+                        <p className="nf-tm-fx" data-cx-i="2"><i aria-hidden="true">sys</i><span>Every section grows out of here. A node opens once it touches the core or a node you own; the next ring decrypts as you buy toward it.</span></p>
+                        <blockquote className="nf-tm-flv" data-cx-i="3"><p>Respec is free and refunds every AP.</p></blockquote>
                     </>
                 ))}
                 {msg && <p className="nf-tm-msg" role="status">{msg}</p>}
