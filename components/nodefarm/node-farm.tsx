@@ -9,7 +9,7 @@ import {
     TUNE, overclockMult, overclockSecs, respec, ascend, autoBuy, breach, button, buyDrone, buyNode, canAfford, buyPerk, toggleArm, checkGoals, derive, exportSave, fmt, fmtTime, fresh, getNumFmt, setNumFmt, type NumFmt, isUnlocked, parseSave, press, STATS, tick,
     apEach, dropFill, hasFeature, openDrop, setMount, statDef,
     buyLabNode, cancelCompile, compile, deploy, labNode, labOpen, payload, type PayloadId,
-    buyFw, fwNode, handSeen, handover, protoDef, protoRank, respecFw, setProto, type ProtoId,
+    chOff, buyFw, fwNode, handSeen, handover, protoDef, protoRank, respecFw, setProto, type ProtoId,
     type ButtonStat, type MatId, type State, type StatId,
 } from "@/lib/nodefarm/engine";
 import { initFx } from "@/lib/nodefarm/fx";
@@ -61,6 +61,8 @@ import { ZoneEventCard } from "./zone-event";
 import { zeChoose, zoneEvDef, zoneLabel, type ZeChoice } from "@/lib/nodefarm/zoneevents";
 import { ARCS, arcKey, arcOf } from "@/lib/nodefarm/arcs";
 import { ArcHead } from "./arcs";
+import { StressPanel, StressStrip } from "./stress";
+import { chOpen, leaveTest, startTest, takeChNews, testDef, RANKS, type TestId } from "@/lib/nodefarm/stress";
 import { ACC_KEY, blankFoldTarget, readyCount, shownArcIds, soloArc } from "@/lib/nodefarm/layout";
 
 const KEY = "nf-save-v1";
@@ -73,9 +75,9 @@ const CALM_KEY = "nf-calm-v1"; // "1" when motion is forced calm, on top of the 
 const FMT_KEY = "nf-numfmt-v1"; // number format: short | sci | eng (per device)
 const BACKUP_KEY = "nf-backup-v1"; // the save as it was just before an import, a wipe or a failed load (one slot)
 const CORRUPT_KEY = "nf-corrupt-v1"; // raw text of a save that could not be read, kept instead of being overwritten
-type Tab = "core" | "stats" | "map" | "goals" | "records" | "ascend" | "handover" | "codex" | "menu";
-const SIDE: Tab[] = ["map", "goals", "records", "ascend", "handover", "codex", "menu"];
-type Win = "map" | "goals" | "records" | "ascend" | "handover" | "codex" | "menu";
+type Tab = "core" | "stats" | "map" | "goals" | "records" | "ascend" | "handover" | "stress" | "codex" | "menu";
+const SIDE: Tab[] = ["map", "goals", "records", "ascend", "handover", "stress", "codex", "menu"];
+type Win = "map" | "goals" | "records" | "ascend" | "handover" | "stress" | "codex" | "menu";
 
 function load(): { s: State | null; unreadable: boolean } {
     try {
@@ -492,7 +494,8 @@ export function NodeFarm() {
         arcCountRef.current = ids.length;
         if (!ids.length) return;
         setFolded((f) => {
-            if (!(prev === -1 ? !f[ACC_KEY] : ids.length > prev)) return f;
+            // a reset (Ascend, Handover, starting or leaving a stress test) can shrink the board: the newest arc left opens then too
+            if (!(prev === -1 ? !f[ACC_KEY] : ids.length !== prev)) return f;
             // the first tidy also folds the big system panels (Lab, Scripts, Hangar): their title bars still show what they are doing
             const next = { ...soloArc(f, ids[ids.length - 1]), [ACC_KEY]: true, ...(prev === -1 ? { lab: true, sched: true, drones: true } : {}) };
             try { localStorage.setItem(UI_KEY, JSON.stringify(next)); } catch {}
@@ -619,6 +622,12 @@ export function NodeFarm() {
             if (prevUnlocked.current && f.unlocked > prevUnlocked.current) sfx("nfDecrypt");
             prevUnlocked.current = f.unlocked;
             setHum(humRef.current ? { level: Math.min(1, f.speed * 0.75 + (f.unlocked / 7) * 0.25), boost: f.overclock } : null);
+            for (const n of takeChNews(s)) {
+                const t = testDef(n.id);
+                sfx("nfTierUp", { tier: 3 });
+                juice.emit({ t: "milestone", title: `${t.name}: rank ${RANKS[n.rank - 1]} cleared`, sub: `Kept for good: ${t.pays(n.rank)}.` });
+                feedStore.push([...call(idTok("stress"), "rank", [strTok(n.id), strTok(RANKS[n.rank - 1])]), pun(" → "), strTok(t.pays(n.rank))], { tone: "good", type: true });
+            }
             for (const goal of checkGoals(s)) {
                 feedStore.push(call(idTok(goal.secret ? "secret" : "goal"), goal.secret ? "found" : "done", [strTok(goal.name)]), { tone: "good", type: true });
                 setToast(goal.name);
@@ -906,7 +915,7 @@ export function NodeFarm() {
             // 1 to 6 press that tier on the zone in the middle of the screen
             if (/^[1-6]$/.test(e.key)) { e.preventDefault(); keyApi.current.tier(Number(e.key) - 1, e.repeat); return; }
             if (e.repeat) return;
-            const w = ({ m: "map", o: "goals", l: "records", a: "ascend", h: "handover", c: "codex", s: "menu", t: "tree" } as const)[e.key.toLowerCase() as "m"];
+            const w = ({ m: "map", o: "goals", l: "records", a: "ascend", h: "handover", x: "stress", c: "codex", s: "menu", t: "tree" } as const)[e.key.toLowerCase() as "m"];
             if (w) { e.preventDefault(); keyApi.current.open(w); }
             else if (e.key.toLowerCase() === "k") { e.preventDefault(); keyApi.current.fw(); }
             else if (e.key.toLowerCase() === "r") { e.preventDefault(); keyApi.current.lab(); }
@@ -979,6 +988,7 @@ export function NodeFarm() {
     const openWin = (w: Win | "tree") => {
         if (w === "tree") { setWin(""); setTreeOpen(true); sfx("tab"); return; }
         if (w === "handover" && !handSeen(s)) return;
+        if (w === "stress" && !chOpen(s)) return;
         setWin(w);
         setTabBoth(w);
     };
@@ -995,6 +1005,29 @@ export function NodeFarm() {
         const milestone = () => juice.emit({ t: "milestone", title: `Handover ${s.hand.count}: +${keys} Keys`, sub: `${p.op}'s protocol is running: ${p.name}. Flash Firmware with your Keys.` });
         setCut({ n: s.hand.count, keys, from, fromRank: from ? protoRank(s, from) : 0, to: proto, note: s.hand.notes.at(-1)?.n === s.hand.count ? s.hand.notes.at(-1)!.text : "", after: milestone });
         feedStore.push([...call(idTok("system"), "handover", [strTok(p.op.toLowerCase())]), pun(" → "), num(`+${keys} Keys`), txt(" "), { k: "c", v: "// node handed over" }], { tone: "good", type: true });
+        prevIds.current = null;
+        save();
+        bump((n) => n + 1);
+    };
+    // stress tests (lib/nodefarm/stress.ts): the real run is stored inside the save and comes back on leave
+    const doStress = (id: TestId) => {
+        keepBackup("before a stress test");
+        if (!startTest(s, id)) return sfx("deny");
+        const t = testDef(id);
+        sfx("nfAscend");
+        juice.emit({ t: "milestone", title: `Stress test: ${t.name}`, sub: `${t.rule} Your run is stored and comes back when you leave.` });
+        feedStore.push([...call(idTok("stress"), "start", [strTok(id)]), pun(" → "), strTok("run stored"), txt(" "), com("// fresh run under the fault")], { tone: "hot", type: true });
+        prevIds.current = null;
+        closeWin();
+        save();
+        bump((n) => n + 1);
+    };
+    const doLeaveStress = () => {
+        const got = leaveTest(s);
+        if (got < 0) return sfx("deny");
+        sfx("nfGoal");
+        juice.emit({ t: "milestone", title: "Run restored", sub: `${got} rank${got === 1 ? "" : "s"} cleared in that test. Everything else is as you left it.` });
+        feedStore.push([...call(idTok("stress"), "leave"), pun(" → "), strTok("run restored")], { tone: "good", type: true });
         prevIds.current = null;
         save();
         bump((n) => n + 1);
@@ -1163,6 +1196,7 @@ export function NodeFarm() {
                     }} />}
                 </div>
                 <Dock info={sw} open={win} treeSeen={treeSeen} lab={labOpen(s)} guideWin={step.target?.win} fs={fs} onOpen={(w) => (w === "lab" ? openLab() : win === w ? closeWin() : openWin(w))} onFs={() => { setFs(!fs); sfx("tab"); }} />
+                <StressStrip s={s} onOpen={() => openWin("stress")} />
             </header>
             <GuideStrip step={step} onGo={() => goTo(step.target)} onMap={() => openWin("map")} mapOpen={win === "map"} />
             <MiniHud bytes={s.bytes} rate={d.bytesPerSec} step={step} onGo={() => goTo(step.target)} paused={!!win || treeOpen || labTree || !!away || !!confirm} />
@@ -1180,7 +1214,7 @@ export function NodeFarm() {
             {toast && <div className="nf-toast" role="status"><NfIcon name="spark" /> Goal: {toast}</div>}
 
             <ZoneEventCard s={s} id={zeCard} onChoose={onZoneEv} onClose={closeZeCard} reduced={reduced} />
-            <EventLayer game={g} ready={ready} enabled={evOn} busy={!!win || treeOpen || labTree || droneTree || fwTree || !!cut || !!away || !!confirm} reduced={reduced} onEngage={evEngage} onResult={evResult} onMiss={evMiss} onDisable={() => setEvents(false)} />
+            <EventLayer game={g} ready={ready} enabled={evOn && !chOff(s, "events")} busy={!!win || treeOpen || labTree || droneTree || fwTree || !!cut || !!away || !!confirm} reduced={reduced} onEngage={evEngage} onResult={evResult} onMiss={evMiss} onDisable={() => setEvents(false)} />
             <Juice reduced={reduced} />
 
             <section className="nf-pane nf-corepane" data-pane="core" aria-label="Core">
@@ -1296,6 +1330,12 @@ export function NodeFarm() {
                         onFirmware={openFw}
                         onProto={(id, second) => { if (setProto(s, id, second)) { sfx("tab"); log(`Protocol: ${protoDef(id).op}, ${protoDef(id).name}${second ? " (Dual boot, half strength)" : ""}.`, "good"); save(); bump((n) => n + 1); } }}
                     />
+                </section>
+            )}
+            {chOpen(s) && (
+                <section className="nf-pane nf-sidepane" data-pane="stress" aria-label="Stress tests" role="dialog" aria-modal="false">
+                    <WinBar id="stress" info={sw} treeSeen={treeSeen} lab={labOpen(s)} onSwitch={(w) => (w === "lab" ? openLab() : openWin(w))} onClose={closeWin} />
+                    <StressPanel s={s} onStart={doStress} onLeave={doLeaveStress} />
                 </section>
             )}
             <section className="nf-pane nf-sidepane" data-pane="codex" aria-label="Codex" role="dialog" aria-modal="false">

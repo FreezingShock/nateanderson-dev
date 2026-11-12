@@ -279,6 +279,8 @@ export const ART_V: Record<string, string> = {
     "win-menu.webp": "80416805",
     "win-records.png": "2915e0de",
     "win-records.webp": "7e21e5af",
+    "win-stress.png": "45ae369e",
+    "win-stress.webp": "2bfb19b7",
     "zone-aether-skirt.png": "5f45a45f",
     "zone-aether-skirt.webp": "a04d428c",
     "zone-aether.png": "4f46dc93",
