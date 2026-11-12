@@ -6,21 +6,23 @@ import { sfx } from "@/lib/sound/sounds";
 import { setHum } from "@/lib/sound/engine";
 import { useSoundPrefs } from "@/lib/sound/use-sound";
 import {
-    TUNE, overclockMult, overclockSecs, respec, ascend, canAscend, autoBuy, breach, button, buyDrone, buyNode, canAfford, buyPerk, toggleArm, checkGoals, derive, exportSave, fmt, fmtTime, fresh, getNumFmt, setNumFmt, type NumFmt, isUnlocked, offline, parseSave, press, STATS, tick,
+    TUNE, overclockMult, overclockSecs, respec, ascend, canAscend, autoBuy, breach, button, buyDrone, buyNode, canAfford, buyPerk, toggleArm, checkGoals, derive, exportSave, fmt, fmtTime, fresh, getNumFmt, setNumFmt, type NumFmt, isUnlocked, parseSave, press, STATS, tick,
     apEach, dropFill, hasFeature, openDrop, setMount, statDef,
     buyLabNode, cancelCompile, compile, deploy, labNode, labOpen, payload, type PayloadId,
-    buyFw, fwNode, handSeen, handover, protoDef, respecFw, setProto, type ProtoId,
+    buyFw, fwNode, handSeen, handover, protoDef, protoRank, respecFw, setProto, type ProtoId,
     type ButtonStat, type MatId, type State, type StatId,
 } from "@/lib/nodefarm/engine";
+import { initFx } from "@/lib/nodefarm/fx";
 import type { NfLive } from "@/lib/nodefarm/records";
 import { Core, freshCoreFeed, type CoreFeed } from "./core";
-import { PART_WHY, chromaOpen, coreLook, corePreview } from "@/lib/nodefarm/core-look";
-import { PART_ORDER } from "@/lib/nodefarm/core-parts";
+import { PART_WHY, SKIN_WHY, coreLook, corePreview, skinOpen } from "@/lib/nodefarm/core-look";
+import { PART_ORDER, SKINS } from "@/lib/nodefarm/core-parts";
 import { NfIcon } from "./icon";
 import { EventLayer } from "./events";
 import { MiniHud } from "./mini-hud";
 import { RARITY, payLoot, type Loot } from "@/lib/nodefarm/events";
 import { AwayReport, type Away } from "./away";
+import { catchUp } from "@/lib/nodefarm/offline";
 import { Scenery, SceneWindow } from "./scenery";
 import dynamic from "next/dynamic";
 // The prestige tree (menu, backdrop, sprites) is the biggest piece of the game and most visits never open it, so it loads on its
@@ -29,7 +31,7 @@ const loadTree = () => import("./tree");
 const TreeMenu = dynamic(() => loadTree().then((m) => ({ default: m.TreeMenu })), { ssr: false });
 import { LabHud, LabZone, labModel, labReady } from "./lab";
 import { ScriptsZone } from "./scripts";
-import { SCRIPTS, SCRIPT_BY, ascendDue, learnStep, schedOpen, teachAscend, teachCompile, teachDeploy, teachDrop, teachPress } from "@/lib/nodefarm/scripts";
+import { SCRIPTS, SCRIPT_BY, ascendDue, ascendPrep, learnStep, teachEvent, schedOpen, teachAscend, teachCompile, teachDeploy, teachDrop, teachPress } from "@/lib/nodefarm/scripts";
 import { eraOf } from "@/lib/nodefarm/scenery";
 import { DroneBay, droneModel } from "./drones";
 import { rigManual } from "@/lib/nodefarm/rigs";
@@ -39,13 +41,16 @@ import { FeedStore, buyToks, call, com, droneToks, fromText, id as idTok, num, p
 import { markSeen, newsToks, pickNews } from "@/lib/nodefarm/news";
 import { LORE } from "@/lib/nodefarm/lore";
 import { LOGS, logNo, recoverLogs } from "@/lib/nodefarm/story";
-import { Juice, juice, checkMilestones } from "./juice";
+import { Juice, juice, checkMilestones, onJuice } from "./juice";
 import { GuideStrip, Tip, TipCtx, type TipApi, type TipState } from "./guide";
 import { MapPanel } from "./map";
 import { exact, nextStep, type Target } from "@/lib/nodefarm/guide";
 import { GoalsPanel, MenuPanel, RecordsPanel } from "./systems";
 import { AscendPanel } from "./ascend";
 import { HandoverPanel, fwModel } from "./handover";
+import { CodexPanel } from "./codex";
+import { unlocked as codexUnlocked } from "@/lib/nodefarm/codex";
+import { HandoverCut, type HandCutInfo } from "./handover-cut";
 import { Dock, PhoneTabs, WinBar, swInfo } from "./switcher";
 import { AdminPanel, type AdminHost } from "./admin";
 import { isAdmin, setAdmin } from "@/lib/nodefarm/admin";
@@ -66,9 +71,9 @@ const UI_KEY = "nf-ui-v1"; // which stat panels are minimized (per device, not p
 const JUMP_KEY = "nf-jump-v1"; // "off" when the page should not scroll to the board on a return visit (per device)
 const CALM_KEY = "nf-calm-v1"; // "1" when motion is forced calm, on top of the OS setting (per device)
 const FMT_KEY = "nf-numfmt-v1"; // number format: short | sci | eng (per device)
-type Tab = "core" | "stats" | "map" | "goals" | "records" | "ascend" | "handover" | "menu";
-const SIDE: Tab[] = ["map", "goals", "records", "ascend", "handover", "menu"];
-type Win = "map" | "goals" | "records" | "ascend" | "handover" | "menu";
+type Tab = "core" | "stats" | "map" | "goals" | "records" | "ascend" | "handover" | "codex" | "menu";
+const SIDE: Tab[] = ["map", "goals", "records", "ascend", "handover", "codex", "menu"];
+type Win = "map" | "goals" | "records" | "ascend" | "handover" | "codex" | "menu";
 
 function load(): { s: State | null; unreadable: boolean; raw: string } {
     try {
@@ -111,9 +116,12 @@ export function NodeFarm() {
     const closeLab = useCallback(() => setLabTree(false), []);
     /** the Handover Firmware tree (same menu, green phosphor skin) */
     const [fwTree, setFwTree] = useState(false);
+    // the Handover moment (handover-cut.tsx); `after` runs when it closes
+    const [cut, setCut] = useState<(HandCutInfo & { after: () => void }) | null>(null);
     const closeFw = useCallback(() => setFwTree(false), []);
     const treeOpenRef = useRef(false);
-    treeOpenRef.current = treeOpen;
+    // a full-screen tree (prestige, Exploit Lab, Drone, Firmware) hides the board, so the game loop barely re-renders it
+    treeOpenRef.current = treeOpen || labTree || droneTree || fwTree;
 
     // admin mode (lib/nodefarm/admin.ts): turned on from the naOS console with `nf admin on`; unadvertised
     const [adminOn, setAdminOn] = useState(false);
@@ -277,7 +285,11 @@ export function NodeFarm() {
         [],
     );
     const feed = useRef<CoreFeed>(freshCoreFeed());
-    const chromaWas = useRef<boolean | null>(null);
+    const skinsWas = useRef<boolean[] | null>(null);
+    // the core flares on milestones, unlocks and tier-ups
+    useEffect(() => onJuice((e) => {
+        if (e.t === "milestone" || e.t === "unlock" || e.t === "tier") feed.current.flareAt = performance.now();
+    }), []);
     const saved = useRef(0);
     const warnedSave = useRef(false);
     const tickN = useRef(0);
@@ -288,6 +300,7 @@ export function NodeFarm() {
     // ---- boot: load the save, bank offline time, print the greeting
     useEffect(() => {
         setReduced(window.matchMedia("(prefers-reduced-motion: reduce)").matches);
+        initFx();
         try {
             const u = localStorage.getItem(UI_KEY);
             if (u) setFolded(JSON.parse(u));
@@ -313,7 +326,7 @@ export function NodeFarm() {
         const gap = (Date.now() - s.at) / 1000;
         g.current = s;
         if (gap > 60 && !first) {
-            const r = offline(s, gap);
+            const r = catchUp(s, gap);
             if (r.capped) s.life.capped += 1;
             setAway({ ...r, gap, cap: derive(s).offlineCap });
         }
@@ -335,7 +348,7 @@ export function NodeFarm() {
     // ---- news lines: every so often one short line (past operator, operator, node note, hint) drops into the feed,
     // chosen for how far the farm has got. Skipped when the tab is hidden, a window is open, or the feed is busy.
     const busyRef = useRef(false);
-    busyRef.current = !!win || treeOpen || droneTree || fwTree || !!away || !!confirm;
+    busyRef.current = !!win || treeOpen || droneTree || fwTree || !!cut || !!away || !!confirm;
     useEffect(() => {
         if (!ready) return;
         let to: ReturnType<typeof setTimeout>;
@@ -447,7 +460,7 @@ export function NodeFarm() {
             setSpeed: (n) => { speedRef.current = n; },
             previewAway: (secs) => {
                 const copy = structuredClone(g.current);
-                const r = offline(copy, secs);
+                const r = catchUp(copy, secs);
                 setAway({ ...r, gap: secs, cap: derive(copy).offlineCap });
             },
             fire: (kind) => window.dispatchEvent(new CustomEvent("nf:fire", { detail: kind })),
@@ -474,7 +487,7 @@ export function NodeFarm() {
             const gap = (now - s.at) / 1000;
             s.at = now;
             if (gap > 3) {
-                const r = offline(s, gap);
+                const r = catchUp(s, gap);
                 if (gap > 60 && r.capped) s.life.capped += 1;
                 if (gap > 60) setAway({ ...r, gap, cap: derive(s).offlineCap });
             } else {
@@ -561,7 +574,10 @@ export function NodeFarm() {
             const look = coreLook(s);
             const partsWas = f.parts;
             f.zone = look.zone;
-            f.chroma = look.chroma;
+            f.skin = look.skin;
+            f.event = look.event;
+            f.rigs = look.rigs;
+            f.fw = look.fw;
             f.parts = look.parts;
             f.drones = look.drones;
             f.glyphs = look.glyphs;
@@ -571,9 +587,13 @@ export function NodeFarm() {
                 if (added.length > 2) feedStore.push([...call(idTok("core"), "attach", [num(added.length)]), txt(" "), com("// structures restored")], { tone: "good", type: true });
                 else for (const p of added) feedStore.push([...call(idTok("core"), "attach", [strTok(p)]), txt(" "), com(`// ${PART_WHY[p]}`)], { tone: "good", type: true });
             }
-            const chroma = chromaOpen(s);
-            if (chromaWas.current === false && chroma) feedStore.push([...call(idTok("core"), "unlock", [strTok("chroma")]), txt(" "), com("// nf core chroma in the console")], { tone: "hot", type: true });
-            chromaWas.current = chroma;
+            // a core skin unlocking says so once, with the command that turns it on
+            const skins = SKINS.map((k) => skinOpen(s, k));
+            if (skinsWas.current)
+                SKINS.forEach((k, i) => {
+                    if (k !== "zone" && skins[i] && !skinsWas.current![i]) feedStore.push([...call(idTok("core"), "unlock", [strTok(k)]), txt(" "), com(`// ${SKIN_WHY[k]}. nf core ${k} in the console`)], { tone: "hot", type: true });
+                });
+            skinsWas.current = skins;
             if (prevUnlocked.current && f.unlocked > prevUnlocked.current) sfx("nfDecrypt");
             prevUnlocked.current = f.unlocked;
             setHum(humRef.current ? { level: Math.min(1, f.speed * 0.75 + (f.unlocked / 7) * 0.25), boost: f.overclock } : null);
@@ -583,8 +603,8 @@ export function NodeFarm() {
                 sfx("nfGoal");
                 setTimeout(() => setToast((t) => (t === goal.name ? null : t)), 3200);
             }
-            // the full-screen tree hides the board, so it only needs to follow twice a second (the game itself still ticks ten times a second)
-            if (!treeOpenRef.current || tickN.current % 5 === 0) bump((n) => n + 1);
+            // a full-screen tree hides the board, so the page only needs to follow once a second (the game itself still ticks ten times a second)
+            if (!treeOpenRef.current || tickN.current % 10 === 0) bump((n) => n + 1);
         }, 100);
         return () => {
             clearInterval(iv);
@@ -655,6 +675,7 @@ export function NodeFarm() {
         (id: number, c: ZeChoice) => {
             const r = zeChoose(g.current, id, c);
             if (!r.ok) { sfx("deny"); return; }
+            teachEvent(g.current);
             sfx("nfBuy", { tier: 2 });
             if (c === "mine") log(`Vein mined: +${fmt(r.paid ?? 0)} ${statDef(r.stat ?? "bytes").name}.`, "good");
             else if (c === "patch") log(`Fault patched for ${fmt(r.paid ?? 0)} Bytes.`, "good");
@@ -691,6 +712,7 @@ export function NodeFarm() {
                 if (n > 0 && x.id !== "ascend") feedStore.batch(`cron:${x.id}`, (_n, sum) => [...call(idTok("cron"), "run", [strTok(x.file)]), txt(" "), num(`×${fmt(sum)}`)], n, 6000);
             }
         if (ascendDue(s)) {
+            ascendPrep(s);
             const gain = ascend(s);
             if (gain) {
                 a.ran.ascend = (a.ran.ascend ?? 0) + 1;
@@ -860,7 +882,7 @@ export function NodeFarm() {
             // 1 to 6 press that tier on the zone in the middle of the screen
             if (/^[1-6]$/.test(e.key)) { e.preventDefault(); keyApi.current.tier(Number(e.key) - 1, e.repeat); return; }
             if (e.repeat) return;
-            const w = ({ m: "map", o: "goals", l: "records", a: "ascend", h: "handover", s: "menu", t: "tree" } as const)[e.key.toLowerCase() as "m"];
+            const w = ({ m: "map", o: "goals", l: "records", a: "ascend", h: "handover", c: "codex", s: "menu", t: "tree" } as const)[e.key.toLowerCase() as "m"];
             if (w) { e.preventDefault(); keyApi.current.open(w); }
             else if (e.key.toLowerCase() === "k") { e.preventDefault(); keyApi.current.fw(); }
             else if (e.key.toLowerCase() === "r") { e.preventDefault(); keyApi.current.lab(); }
@@ -869,6 +891,22 @@ export function NodeFarm() {
         window.addEventListener("keydown", onKey);
         return () => window.removeEventListener("keydown", onKey);
     }, [ready]);
+
+    // codex: a feed line when a system you just reached gets its entry
+    const codexAnn = useRef<Set<string> | null>(null);
+    useEffect(() => {
+        if (!ready) return;
+        const timer = window.setInterval(() => {
+            const st = g.current;
+            if (!st) return;
+            const now = codexUnlocked(st);
+            const prev = codexAnn.current;
+            codexAnn.current = new Set(now.map((e) => e.id));
+            if (!prev) return;
+            for (const e of now) if (!prev.has(e.id)) feedStore.push([...call(idTok("codex"), "entry", [strTok(e.id)]), pun(" "), com(`// ${e.title.toLowerCase()}. press C`)], { tone: "good", type: true });
+        }, 2000);
+        return () => window.clearInterval(timer);
+    }, [ready]); // eslint-disable-line react-hooks/exhaustive-deps
 
     const doReset = (now = false) => {
         if (!now && confirm !== "reset") {
@@ -922,11 +960,13 @@ export function NodeFarm() {
     const openFw = () => { if (!fwSeen) return; setWin(""); setTreeOpen(false); setLabTree(false); setFwTree(true); sfx("tab"); };
     const doHandover = (proto: ProtoId, note: string, proto2: ProtoId | null) => {
         keepBackup("before Handover");
+        const from = s.hand.proto;
         const keys = handover(s, proto, note, proto2);
         if (!keys) return sfx("deny");
         sfx("nfAscend");
         const p = protoDef(proto);
-        juice.emit({ t: "milestone", title: `Handover ${s.hand.count}: +${keys} Keys`, sub: `${p.op}'s protocol is running: ${p.name}. Flash Firmware with your Keys.` });
+        const milestone = () => juice.emit({ t: "milestone", title: `Handover ${s.hand.count}: +${keys} Keys`, sub: `${p.op}'s protocol is running: ${p.name}. Flash Firmware with your Keys.` });
+        setCut({ n: s.hand.count, keys, from, fromRank: from ? protoRank(s, from) : 0, to: proto, note: s.hand.notes.at(-1)?.n === s.hand.count ? s.hand.notes.at(-1)!.text : "", after: milestone });
         feedStore.push([...call(idTok("system"), "handover", [strTok(p.op.toLowerCase())]), pun(" → "), num(`+${keys} Keys`), txt(" "), { k: "c", v: "// node handed over" }], { tone: "good", type: true });
         prevIds.current = null;
         save();
@@ -1072,7 +1112,7 @@ export function NodeFarm() {
             {toast && <div className="nf-toast" role="status"><NfIcon name="spark" /> Goal: {toast}</div>}
 
             <ZoneEventCard s={s} id={zeCard} onChoose={onZoneEv} onClose={closeZeCard} reduced={reduced} />
-            <EventLayer game={g} ready={ready} enabled={evOn} busy={!!win || treeOpen || labTree || droneTree || fwTree || !!away || !!confirm} reduced={reduced} onEngage={evEngage} onResult={evResult} onMiss={evMiss} onDisable={() => setEvents(false)} />
+            <EventLayer game={g} ready={ready} enabled={evOn} busy={!!win || treeOpen || labTree || droneTree || fwTree || !!cut || !!away || !!confirm} reduced={reduced} onEngage={evEngage} onResult={evResult} onMiss={evMiss} onDisable={() => setEvents(false)} />
             <Juice reduced={reduced} />
 
             <section className="nf-pane nf-corepane" data-pane="core" aria-label="Core">
@@ -1189,6 +1229,10 @@ export function NodeFarm() {
                     />
                 </section>
             )}
+            <section className="nf-pane nf-sidepane" data-pane="codex" aria-label="Codex" role="dialog" aria-modal="false">
+                <WinBar id="codex" info={sw} treeSeen={treeSeen} lab={labOpen(s)} onSwitch={(w) => (w === "lab" ? openLab() : openWin(w))} onClose={closeWin} />
+                <CodexPanel s={s} shown={win === "codex" || (tab === "codex" && !win)} onOpen={(w) => (w === "lab" ? (closeWin(), openLab()) : openWin(w))} />
+            </section>
             <section className="nf-pane nf-sidepane" data-pane="menu" aria-label="Menu" role="dialog" aria-modal="false">
                 <WinBar id="menu" info={sw} treeSeen={treeSeen} lab={labOpen(s)} onSwitch={(w) => (w === "lab" ? openLab() : openWin(w))} onClose={closeWin} />
                 <MenuPanel
@@ -1259,6 +1303,7 @@ export function NodeFarm() {
                     onClose={closeDrones}
                 />
             )}
+            {cut && <HandoverCut info={cut} reduced={reduced} onDone={() => { const a = cut.after; setCut(null); a(); }} />}
             {fwTree && (
                 <TreeMenu
                     s={s}

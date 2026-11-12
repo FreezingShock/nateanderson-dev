@@ -3,6 +3,7 @@
 import { useEffect, useRef } from "react";
 import { STATS } from "@/lib/nodefarm/engine";
 import { CORE_S, PART_ORDER, makeCoreRenderer, type CoreFrame } from "@/lib/nodefarm/core-art";
+import { ZONE_EVENTS } from "@/lib/nodefarm/zoneevents";
 
 // The reactor core: a 144 px canvas drawn by lib/nodefarm/core-art.ts and shown pixelated at 2x.
 // All state arrives through refs so a render of the parent never restarts it.
@@ -26,14 +27,23 @@ export interface CoreFeed {
     ap: number;
     /** stat index of the zone whose colours the core wears (lib/nodefarm/core-look.ts) */
     zone: number;
-    chroma: boolean;
+    /** index into SKINS (0 = zone colours) */
+    skin: number;
+    /** performance.now() of the last milestone or unlock: the core flares */
+    flareAt: number;
+    /** running zone event (index + 1 in CORE_EVENTS, 0 = none) */
+    event: number;
+    /** rig level per zone */
+    rigs: number[];
+    /** 0..1 share of the Firmware owned */
+    fw: number;
     /** structures bolted on (PART bitmask), -1 until the game has loaded */
     parts: number;
     drones: number;
     glyphs: number;
 }
 
-export const freshCoreFeed = (): CoreFeed => ({ progress: 0, overclock: false, unlocked: 1, speed: 0, lastPulse: -1e9, pulseStat: 0, reboots: 0, ap: 0, zone: 0, chroma: false, parts: -1, drones: 0, glyphs: 0 });
+export const freshCoreFeed = (): CoreFeed => ({ progress: 0, overclock: false, unlocked: 1, speed: 0, lastPulse: -1e9, pulseStat: 0, reboots: 0, ap: 0, zone: 0, skin: 0, flareAt: -1e9, event: 0, rigs: [], fw: 0, parts: -1, drones: 0, glyphs: 0 });
 
 const BUILD_MS = 1600; // a new structure bolts on over this long
 const DISSOLVE_MS = 900; // a zone change dithers across over this long
@@ -47,7 +57,7 @@ export function Core({ feed, reduced }: { feed: React.MutableRefObject<CoreFeed>
         const ctx = cv.getContext("2d");
         if (!ctx) return;
         const img = ctx.createImageData(CORE_S, CORE_S);
-        const R = makeCoreRenderer(STATS.map((x) => x.color));
+        const R = makeCoreRenderer(STATS.map((x) => x.color), ZONE_EVENTS.map((e) => e.color));
         let raf = 0;
         let visible = true;
         const io = new IntersectionObserver((e) => (visible = e[0]?.isIntersecting ?? true));
@@ -57,7 +67,7 @@ export function Core({ feed, reduced }: { feed: React.MutableRefObject<CoreFeed>
         const born: number[] = PART_ORDER.map(() => -1e9);
         let primed = false;
         let zone = 0, prevZone = 0, zoneAt = -1e9;
-        const frame: CoreFrame = { progress: 0, overclock: false, unlocked: 1, speed: 0, pulse: 0, pulseStat: 0, reboots: 0, ap: 0, zone, prevZone, zoneMix: 1, chroma: false, parts: 0, build: PART_ORDER.map(() => 1), drones: 0, glyphs: 0 };
+        const frame: CoreFrame = { progress: 0, overclock: false, unlocked: 1, speed: 0, pulse: 0, pulseStat: 0, reboots: 0, ap: 0, zone, prevZone, zoneMix: 1, skin: 0, flare: 0, event: 0, rigs: [], fw: 0, parts: 0, build: PART_ORDER.map(() => 1), drones: 0, glyphs: 0 };
         let lastDraw = -1e9, lastCheck = -1e9;
         let sig = "";
         const draw = (now: number) => {
@@ -75,10 +85,10 @@ export function Core({ feed, reduced }: { feed: React.MutableRefObject<CoreFeed>
             if (reduced) {
                 if (now - lastCheck < 500) return;
                 lastCheck = now;
-                const s = `${f.zone}|${f.chroma}|${f.parts}|${f.overclock}|${f.unlocked}|${Math.round(f.progress * 40)}|${Math.min(24, f.ap)}|${Math.min(8, Math.floor(Math.log2(1 + f.reboots)))}`;
+                const s = `${f.zone}|${f.skin}|${f.event}|${f.fw}|${f.rigs.join()}|${f.parts}|${f.overclock}|${f.unlocked}|${Math.round(f.progress * 40)}|${Math.min(24, f.ap)}|${Math.min(8, Math.floor(Math.log2(1 + f.reboots)))}`;
                 if (s === sig && now - lastDraw < 4000) return;
                 sig = s;
-            } else if (now - lastDraw < 33 && !(now - f.lastPulse < 40)) return;
+            } else if (now - lastDraw < (document.body.classList.contains("nf-lowfx") ? 80 : 33) && !(now - f.lastPulse < 40)) return;
             lastDraw = now;
             if (f.zone !== zone) {
                 prevZone = zone;
@@ -102,7 +112,11 @@ export function Core({ feed, reduced }: { feed: React.MutableRefObject<CoreFeed>
             frame.zone = zone;
             frame.prevZone = prevZone;
             frame.zoneMix = reduced ? 1 : Math.min(1, (now - zoneAt) / DISSOLVE_MS);
-            frame.chroma = f.chroma;
+            frame.skin = f.skin;
+            frame.flare = reduced ? 0 : Math.max(0, 1 - (now - f.flareAt) / 1200);
+            frame.event = f.event;
+            frame.rigs = f.rigs;
+            frame.fw = f.fw;
             frame.parts = f.parts;
             frame.drones = f.drones;
             frame.glyphs = f.glyphs;

@@ -3,7 +3,8 @@
 Writes to public/naos/nodefarm/:
   fw-bg-0        256 px tile, opaque: green phosphor glass, dithered mist in amber and cyan, memory-dump columns
   fw-bg-2        256 px tile, transparent: near layer of glowing motes and key glyphs
-  fw-sec-*       384 px, transparent: one plate per Firmware section (boot / memory / relay)
+  fw-sec-*       384 px, transparent: one plate per Firmware section (boot / memory / relay / field)
+  handover-cut   320 x 180, opaque, 8 frames stacked: the Handover moment (an empty desk, the lamp going out, the next boot)
   fw-core        384 px, transparent: phosphor rings round node zero
   scene-handover 480 x 160, opaque, 4 frames stacked: the Root Chamber, one small box with one wire at the foot of the
                  mirror stair, the four operator lamps on the wall and a key turning in the air
@@ -34,6 +35,9 @@ lab.RAMP.update({
     "lime": ["#0e2606", "#2a5a10", "#5aa81c", "#b6f04a", "#e6ffc8"],
     "orange": ["#2a1004", "#6b2a0e", "#c0581a", "#f08a3c", "#ffe0c4"],
     "tcyan": ["#04222a", "#0a4a58", "#1590a8", "#2fd8e8", "#cff6ff"],
+    "rose": ["#2a0614", "#6b1438", "#c02a6a", "#ff7ab6", "#ffd6ea"],
+    "room": ["#030504", "#070c09", "#0c140f", "#121d16", "#1a2a20"],
+    "wood": ["#140a04", "#2a170a", "#4a2a12", "#6b4220", "#8f5e34"],
 })
 HEX = {  # 3x5 pixel digits for the memory dumps
     "0": ["###", "#.#", "#.#", "#.#", "###"], "1": [".#.", "##.", ".#.", ".#.", "###"], "7": ["###", "..#", ".#.", ".#.", ".#."],
@@ -150,6 +154,26 @@ def m_relay(cv, rng, ramp, accent):
         cv.dot(x - 1, y - 1, accent, 4, w=3, h=3)
 
 
+def m_field(cv, rng, ramp, accent):
+    # a floor plan: zone rooms as dotted boxes, a walking route threading them, small bolts where the weather hits
+    rooms = [(rng.randrange(70, 250, 4), rng.randrange(70, 250, 4), rng.randrange(36, 70, 4), rng.randrange(28, 56, 4)) for _ in range(6)]
+    for x, y, w, h in rooms:
+        for t in range(0, w, 3):
+            cv.dot(x + t, y, ramp, 3)
+            cv.dot(x + t, y + h, ramp, 2)
+        for t in range(0, h, 3):
+            cv.dot(x, y + t, ramp, 2)
+            cv.dot(x + w, y + t, ramp, 3)
+    pts = [(x + w // 2, y + h // 2) for x, y, w, h in rooms]
+    for (x0, y0), (x1, y1) in zip(pts, pts[1:]):
+        steps = int(max(abs(x1 - x0), abs(y1 - y0)))
+        for k in range(0, steps, 4):
+            cv.dot(x0 + (x1 - x0) * k / steps, y0 + (y1 - y0) * k / steps, accent, 3, w=2, h=2)
+    for x, y in pts[::2]:
+        for k, (dx, dy) in enumerate(((0, 0), (-3, 5), (2, 5), (-2, 10))):
+            cv.dot(x + dx, y - 22 + dy, "amber", 4 if k % 2 == 0 else 3, w=2, h=4)
+
+
 def core():
     n = 384
     cv = Canvas(n)
@@ -256,11 +280,117 @@ def scene():
     print("  scene-handover", im.size)
 
 
+def cut():
+    """The Handover moment, 320 x 180, 8 frames stacked: an operator's desk seen from behind in a dark room. 0-2 the lamp is
+    on and the terminal scrolls; 3 the lamp flickers; 4-5 the room goes dark and the screen holds one key; 6-7 the screen
+    boots bright green for the next operator. components/nodefarm/handover-cut.tsx steps through it."""
+    W, H, F = 320, 180, 8
+    frames = []
+    for f in range(F):
+        cv = Canvas(W)
+        cv.img[..., 3] = 255
+        n = cv.n
+        y, x = cv.y, cv.x
+        lamp = 1.0 if f < 3 else (0.45 if f == 3 else 0.0)
+        boot = 0.0 if f < 6 else (0.55 if f == 6 else 1.0)
+        nz = noise(n, 8, 301)
+        cv.fill(np.ones((n, n), bool), np.clip(0.1 + 0.25 * nz + 0.2 * lamp * (1 - y / H), 0, 1), "room")
+        # lamp pool on the wall, warm
+        if lamp:
+            g = np.clip(1 - np.hypot((x - 92) / 1.3, y - 60) / 80, 0, 1) ** 1.7 * lamp
+            cv.fill((g > 0) & (y < H), g * 0.7, "amber", dither=1.0)
+        # screen glow, green, grows when the next operator boots
+        sg = 0.35 + 0.65 * boot if f >= 4 else 0.45
+        g2 = np.clip(1 - np.hypot((x - 176) / 1.4, y - 78) / (70 + 50 * boot), 0, 1) ** 1.8 * sg
+        cv.fill((g2 > 0) & (y < H), g2 * 0.8, "phos", dither=1.0)
+        # desk
+        cv.dot(0, 128, "wood", 2, w=W, h=6)
+        cv.dot(0, 134, "wood", 1, w=W, h=46)
+        for xx in range(0, W, 2):
+            cv.dot(xx, 128, "wood", 3 + (1 if lamp and 60 < xx < 140 else 0))
+        # the terminal (a CRT box) on the desk
+        tx, ty, tw, th = 136, 46, 82, 72
+        cv.dot(tx, ty, "room", 4, w=tw, h=th)
+        cv.dot(tx + 2, ty + 2, "phos", 1, w=tw - 4, h=2)
+        sx, sy, sw, sh = tx + 8, ty + 8, tw - 16, th - 22
+        cv.dot(sx, sy, "glass", 0, w=sw, h=sh)
+        if f < 4:
+            for row in range(7):  # scrolling log lines
+                L = (7 + ((row + f * 3) * 37) % 40)
+                cv.dot(sx + 4, sy + 4 + row * 6, "phos", 3 if row != 6 or f % 2 == 0 else 2, w=min(L, sw - 8), h=2)
+        elif f < 6:
+            kx, ky = sx + sw // 2, sy + sh // 2 - 6  # one key, held on the screen
+            for k in range(24):
+                a = k / 24 * 2 * math.pi
+                cv.dot(kx + 5 * math.cos(a), ky + 5 * math.sin(a), "amber", 4)
+            cv.dot(kx - 1, ky + 5, "amber", 4, w=2, h=12)
+            cv.dot(kx + 1, ky + 12, "amber", 3, w=3, h=2)
+            cv.dot(kx + 1, ky + 15, "amber", 3, w=2, h=2)
+            if f == 5:
+                cv.dot(sx + 4, sy + sh - 8, "phos", 4, w=4, h=4)
+        else:
+            fill = int(sh * (0.5 if f == 6 else 1))
+            cv.dot(sx, sy + sh - fill, "phos", 1, w=sw, h=fill)
+            for row in range(0, fill - 6, 6):
+                cv.dot(sx + 4, sy + sh - fill + 4 + row, "phos", 4, w=8 + (row * 13) % 30, h=2)
+            cv.dot(sx + 4, sy + 4, "phos", 4, w=4, h=4)
+        cv.dot(tx + tw - 14, ty + th - 9, "red" if f < 4 else ("amber" if f < 6 else "phos"), 4, w=3, h=3)
+        cv.dot(tx + 30, ty + th, "room", 3, w=22, h=10)  # neck and foot
+        # keyboard
+        cv.dot(138, 122, "room", 3, w=78, h=6)
+        for k in range(18):
+            cv.dot(140 + k * 4, 123, "phos" if f >= 6 else "room", 2 if f >= 6 else 4, w=3, h=2)
+        # the desk lamp on the left
+        cv.dot(70, 124, "room", 4, w=26, h=4)
+        for t in range(40):
+            cv.dot(80 + t * 0.35, 124 - t, "room", 4, w=2, h=1)
+        for t in range(22):
+            cv.dot(94 - t * 0.6, 84 - t * 0.3, "room", 4, w=2, h=1)
+        cv.dot(68, 72, "amber" if lamp else "room", 4 if lamp == 1 else (2 if lamp else 3), w=16, h=6)
+        cv.dot(70, 78, "amber" if lamp else "room", 3 if lamp else 2, w=12, h=2)
+        # the chair back, empty, in silhouette
+        # the cable from the terminal off the edge of the desk, a pulse running along it
+        for k in range(60):
+            cv.dot(176 + k * 2, 132 + min(20, k // 2), "amber", 4 if (k + f * 8) % 30 < 3 else 1)
+        # the chair back, empty, in silhouette: a rounded back with a seam, a lumbar bar, the gas lift and a star base
+        cx0, cy0, cw, ch = 198, 100, 40, 54
+        back = ((x - (cx0 + cw / 2)) / (cw / 2)) ** 2 + ((np.maximum(y - (cy0 + 12), 0) / (ch - 12)) ** 6) + ((np.minimum(y - (cy0 + 12), 0) / 12) ** 2) <= 1
+        cv.fill(back & (y < H), np.full(back.shape, 0.2), "room", dither=0)
+        inner = ((x - (cx0 + cw / 2)) / (cw / 2 - 4)) ** 2 + ((np.maximum(y - (cy0 + 14), 0) / (ch - 18)) ** 6) + ((np.minimum(y - (cy0 + 14), 0) / 10) ** 2) <= 1
+        cv.fill(inner & (y < H), np.full(back.shape, 0.45), "room", dither=0)
+        for yy in range(cy0 + 8, cy0 + ch - 6, 2):
+            cv.dot(cx0 + cw // 2, yy, "room", 0)
+        cv.dot(cx0 + 4, cy0 + 34, "room", 0, w=cw - 8, h=4)
+        if lamp:  # the lamp catches the edge of the backrest
+            for yy in range(cy0 + 10, cy0 + 40):
+                cv.dot(cx0 + 2 + max(0, (yy - cy0 - 30) // 6), yy, "amber", 1)
+        cv.dot(cx0 + cw // 2 - 3, cy0 + ch, "room", 0, w=6, h=18)
+        cv.dot(cx0 + cw // 2 - 3, cy0 + ch + 2, "room", 2, w=1, h=14)
+        for dx in (-18, -8, 2, 12):
+            cv.dot(cx0 + cw // 2 + dx, 176, "room", 0, w=8, h=3)
+        # four operator mugs along the back of the desk, the last one still warm while the lamp is on
+        for i, ramp in enumerate(("lime", "tcyan", "orange", "amber")):
+            mx = 248 + i * 17
+            cv.dot(mx, 118, ramp, 2 if lamp or f >= 6 else 1, w=10, h=10)
+            cv.dot(mx + 10, 121, ramp, 1, w=3, h=4)
+            if i == 3 and lamp == 1:
+                for k in range(6):
+                    cv.dot(mx + 3 + (k + f) % 3, 112 - k * 2, "amber", 2)
+        frames.append(cv.img[:H, :W].copy())
+    sheet = np.concatenate(frames, axis=0)
+    im = Image.fromarray(sheet, "RGBA")
+    im.save(OUT / "handover-cut.png", optimize=True)
+    im.save(OUT / "handover-cut.webp", lossless=True, quality=100, method=6)
+    print("  handover-cut", im.size)
+
+
 if __name__ == "__main__":
     glass()
     near()
     plate("boot", "phos", "amber", m_boot, 91)
     plate("memory", "amber", "phos", m_memory, 92)
     plate("relay", "cyan", "phos", m_relay, 93)
+    plate("field", "rose", "phos", m_field, 94)
     core()
     scene()
+    cut()

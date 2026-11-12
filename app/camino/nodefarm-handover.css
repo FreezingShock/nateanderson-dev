@@ -68,8 +68,9 @@
 .nf-fbd-sec[data-sec="boot"] { background-image: url(/naos/nodefarm/fw-sec-boot.webp?v=b2ab2878); }
 .nf-fbd-sec[data-sec="memory"] { background-image: url(/naos/nodefarm/fw-sec-memory.webp?v=938deae0); }
 .nf-fbd-sec[data-sec="relay"] { background-image: url(/naos/nodefarm/fw-sec-relay.webp?v=23d16257); }
+.nf-fbd-sec[data-sec="field"] { background-image: url(/naos/nodefarm/fw-sec-field.webp?v=21781a76); }
 .nf-fbd[data-focus] .nf-fbd-sec { opacity: .3; }
-.nf-fbd[data-focus="boot"] .nf-fbd-sec[data-sec="boot"], .nf-fbd[data-focus="memory"] .nf-fbd-sec[data-sec="memory"], .nf-fbd[data-focus="relay"] .nf-fbd-sec[data-sec="relay"] { opacity: 1; }
+.nf-fbd[data-focus="boot"] .nf-fbd-sec[data-sec="boot"], .nf-fbd[data-focus="memory"] .nf-fbd-sec[data-sec="memory"], .nf-fbd[data-focus="relay"] .nf-fbd-sec[data-sec="relay"], .nf-fbd[data-focus="field"] .nf-fbd-sec[data-sec="field"] { opacity: 1; }
 /* drafting circles round the core, dashed like construction lines */
 .nf-fbd-ring { border: 2px dashed #3dff6e2e; border-radius: 50%; }
 .nf-fbd-ring[data-r="2"] { border-style: solid; border-width: 1px; border-color: #3dff6e1f; }
@@ -138,6 +139,10 @@
 .ctos .nf-hx-op:focus-visible { outline: 2px solid var(--c); outline-offset: 2px; }
 .ctos .nf-hx-op[aria-checked="true"] { background: color-mix(in srgb, var(--c) 10%, #0a0d0b); border-color: var(--c); box-shadow: inset 0 0 0 1px var(--c); }
 .ctos .nf-hx-op-k { font: 700 var(--cm-ctos-t-micro)/1 var(--cm-mono); letter-spacing: .14em; color: var(--c); }
+.ctos .nf-hx-rank { display: flex; align-items: center; gap: 4px; }
+.ctos .nf-hx-rank i { width: 14px; height: 4px; background: #1f2a22; }
+.ctos .nf-hx-rank i[data-on] { background: var(--c); box-shadow: 0 0 6px color-mix(in srgb, var(--c) 60%, transparent); }
+.ctos .nf-hx-rank small { margin-left: 6px; font: 400 11px/1 var(--cm-mono); letter-spacing: .1em; color: #8fa596; }
 .ctos .nf-hx-op b { font: 700 var(--cm-ctos-t-h3)/1.1 var(--cm-display); color: var(--cm-fg); letter-spacing: -.02em; }
 .ctos .nf-hx-op-fx { padding: 6px 8px; background: color-mix(in srgb, var(--c) 12%, #050505); font: 500 var(--cm-ctos-t-micro)/1.45 var(--cm-mono); color: var(--cm-fg); }
 .ctos .nf-hx-op q { font: italic 400 14px/1.45 Georgia, "Times New Roman", serif; color: #b9c7bd; quotes: "\201C" "\201D"; }
@@ -210,4 +215,35 @@
 @media (hover: none), (max-width: 900px) { .ctos .nf-hx-scan { display: none; } }
 @media (prefers-reduced-motion: reduce) {
     .ctos .nf-hx *, .ctos .nf-hx *::before, .ctos .nf-hx *::after { animation: none !important; transition: none !important; }
+}
+
+/* ---- the Handover moment (components/nodefarm/handover-cut.tsx): a full-screen cut over the game */
+.nf-hcut { position: fixed; inset: 0; z-index: 2147483000; display: grid; place-content: center; justify-items: center; gap: 22px; padding: 24px 16px; background: #020403; color: #d8f5df; cursor: pointer; animation: nf-hcut-in .45s steps(6) both; }
+.nf-hcut[data-out] { animation: nf-hcut-out .38s steps(5) both; }
+.nf-hcut-stage { position: relative; width: min(92vw, 960px, calc((100dvh - 260px) * 16 / 9)); aspect-ratio: 16 / 9; border: 1px solid #1f3a28; box-shadow: 0 0 0 4px #020403, 0 0 0 5px #123020, 0 0 60px rgba(61, 255, 110, .08); }
+.nf-hcut-stage::before, .nf-hcut-stage::after { content: ""; position: absolute; width: 14px; height: 14px; border: 2px solid #3dff6e; z-index: 2; }
+.nf-hcut-stage::before { top: -8px; left: -8px; border-right: 0; border-bottom: 0; }
+.nf-hcut-stage::after { right: -8px; bottom: -8px; border-left: 0; border-top: 0; }
+.nf-hcut-art { position: absolute; inset: 0; background: url(/naos/nodefarm/handover-cut.webp?v=25557557) 0 calc(var(--f) * 100% / (var(--n) - 1)) / 100% calc(var(--n) * 100%) no-repeat; image-rendering: pixelated; }
+.nf-hcut-scan { position: absolute; inset: 0; background: repeating-linear-gradient(to bottom, rgba(0, 0, 0, .22) 0 1px, transparent 1px 3px); pointer-events: none; mix-blend-mode: multiply; }
+.nf-hcut-read { display: grid; gap: 8px; width: min(92vw, 640px); font-family: var(--cm-mono); }
+.nf-hcut-k { font: 700 11px/1 var(--cm-mono); letter-spacing: .2em; color: #3dff6e; }
+.nf-hcut-l { margin: 0; display: grid; gap: 3px; padding-left: 12px; border-left: 2px solid var(--c); opacity: 0; transform: translateY(4px); transition: opacity .25s steps(3), transform .25s steps(3); }
+.nf-hcut-l[data-on] { opacity: .55; transform: none; }
+.nf-hcut-l[data-now] { opacity: 1; }
+.nf-hcut-l b { font: 700 15px/1.3 var(--cm-mono); color: var(--c); letter-spacing: .02em; }
+.nf-hcut-l small { font: 400 13px/1.4 var(--cm-mono); color: #9fb5a6; }
+.nf-hcut-note { margin: 4px 0 0; font: italic 400 15px/1.5 Georgia, "Times New Roman", serif; color: #e8dcc0; quotes: "\201C" "\201D"; opacity: 0; transition: opacity .4s steps(4); }
+.nf-hcut-note[data-on] { opacity: 1; }
+.nf-hcut-skip { position: fixed; right: 16px; bottom: 16px; min-height: 44px; padding: 0 18px; background: transparent; border: 1px solid #2c4a35; color: #9fb5a6; font: 700 12px/1 var(--cm-mono); letter-spacing: .16em; text-transform: uppercase; cursor: pointer; }
+.nf-hcut-skip:hover, .nf-hcut-skip:focus-visible { color: #3dff6e; border-color: #3dff6e; outline: none; }
+@keyframes nf-hcut-in { from { opacity: 0; clip-path: inset(49% 0 49% 0); } to { opacity: 1; clip-path: inset(0 0 0 0); } }
+@keyframes nf-hcut-out { from { opacity: 1; } to { opacity: 0; } }
+@media (max-width: 600px) {
+    .nf-hcut { gap: 16px; align-content: center; }
+    .nf-hcut-l b { font-size: 14px; }
+}
+@media (prefers-reduced-motion: reduce) {
+    .nf-hcut, .nf-hcut[data-out] { animation: none; }
+    .nf-hcut-l, .nf-hcut-note { transition: none; }
 }
