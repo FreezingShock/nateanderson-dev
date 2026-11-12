@@ -2627,8 +2627,24 @@ function parseHand(o: unknown): HandState {
 }
 
 // ---- saving
+/** Save codes are base64 of the UTF-8 save text. (btoa alone throws on a curly quote or an emoji, which a Handover note can hold.) */
+function toCode(text: string): string {
+    const bytes = new TextEncoder().encode(text);
+    let bin = "";
+    for (let i = 0; i < bytes.length; i += 0x8000) bin += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
+    return btoa(bin);
+}
+/** Codes from before that fix are Latin-1 text; they are not valid UTF-8 if they hold an accent, so they fall back to as-is. */
+function fromCode(code: string): string {
+    const bin = atob(code);
+    try {
+        return new TextDecoder("utf-8", { fatal: true }).decode(Uint8Array.from(bin, (c) => c.charCodeAt(0)));
+    } catch {
+        return bin;
+    }
+}
 export function exportSave(s: State): string {
-    return btoa(JSON.stringify({ ...s, at: Date.now() }));
+    return toCode(JSON.stringify({ ...s, at: Date.now() }));
 }
 /** Zone 25 was called Core (id "core") on integration for a few hours before it became Sunstone. Move those saves over. */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -2649,7 +2665,7 @@ function renameCore(o: Record<string, any>) {
 }
 export function parseSave(raw: string): State | null {
     try {
-        const o = JSON.parse(raw.trim().startsWith("{") ? raw : atob(raw.trim()));
+        const o = JSON.parse(raw.trim().startsWith("{") ? raw : fromCode(raw.trim()));
         renameCore(o);
         if (!o || o.v !== 1 || typeof o.bytes !== "number") return null;
         const base = fresh();
