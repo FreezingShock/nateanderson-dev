@@ -34,7 +34,12 @@ function NodeIcon({ n, st, fog }: { n: TreeNode | null; st: NodeState; fog: bool
     const key = n ? (n as Extra).sprite ?? n.id : "core";
     if (SPRITE_CELLS[key]) {
         const ss: SpriteState = fog ? "hidden" : st === "owned" ? "owned" : st === "locked" ? "locked" : "open";
-        return <TreeSprite sprite={key} state={ss} className="nf-tn-spr" />;
+        return (
+            <>
+                <TreeSprite sprite={key} state={ss} className="nf-tn-spr" />
+                {fog && <i className="nf-tn-q nf-tn-qo">?</i>}
+            </>
+        );
     }
     return fog ? <i className="nf-tn-q">?</i> : <i className="nf-tn-ic" />;
 }
