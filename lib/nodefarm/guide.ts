@@ -2,7 +2,7 @@
 // engine (no React), so every number comes from `TUNE` and the engine's own `button`/`derive` and follows any rebalance.
 import {
     GOALS, MATS, PERKS, TIERS, TREE, TUNE, REBOOT_UNLOCK,
-    amount, apOnAscend, button, canAfford, canAscend, derive, droneCost, droneRate, dronesOpen, fmt, fmtTime, goalDone, hasNode, isUnlocked, nodeOpen, statDef,
+    amount, apOnAscend, button, canAfford, canAscend, derive, droneCost, droneMax, droneRate, dronesOpen, fmt, fmtTime, goalDone, hasNode, isUnlocked, nodeOpen, statDef,
     type ButtonStat, type Derived, type MatId, type State, type StatId,
 } from "./engine";
 import { LORE } from "./lore";
@@ -12,7 +12,7 @@ export interface Target {
     stat?: ButtonStat;
     tier?: number;
     drone?: number;
-    win?: "ascend" | "goals";
+    win?: "ascend" | "goals" | "tree";
 }
 
 export interface Step {
@@ -119,7 +119,7 @@ export function nextStep(s: State, d: Derived): Step {
 
     // ---- spend Ascension Points before anything else once you have them
     if (canSpendAp(s)) {
-        return mk({ id: "spend-ap", title: `Spend ${fmt(s.ap)} Ascension Points`, why: "Perks and tree nodes are permanent and survive every Ascend. Open Ascend and pick one.", cur: 1, need: 1, unit: "AP", target: { win: "ascend" } });
+        return mk({ id: "spend-ap", title: `Spend ${fmt(s.ap)} Ascension Points`, why: "Perks and tree nodes are permanent and survive every Ascend. Open the tree to pick one.", cur: 1, need: 1, unit: "AP", target: { win: TREE.some((n) => !hasNode(s, n.id) && nodeOpen(s, n) && s.ap >= n.cost) ? "tree" : "ascend" } });
     }
 
     // ---- the chain, one zone at a time: Copper, Silicon, Quartz, Aether, then (after an Ascend) the deep materials
@@ -251,7 +251,7 @@ export function buttonTip(s: State, stat: ButtonStat, tier: number): TipInfo {
 export const DRONE_NAMES = ["Probe", "Courier", "Sweeper", "Warden", "Cascade", "Sovereign"];
 export function droneTip(s: State, tier: number): TipInfo {
     const lvl = s.drones[tier];
-    const maxed = lvl >= TUNE.drone.max;
+    const maxed = lvl >= droneMax(s);
     const cost = droneCost(s, tier);
     const afford = !maxed && s.aether >= cost;
     const rows: [string, string][] = [
@@ -263,7 +263,7 @@ export function droneTip(s: State, tier: number): TipInfo {
         rows.push(["Cost", `${fmt(cost)} Aether`]);
         rows.push(["You have", `${fmt(s.aether)} AE`]);
     }
-    rows.push(["Level", `${lvl} of ${TUNE.drone.max}`]);
+    rows.push(["Level", `${lvl} of ${droneMax(s)}`]);
     const eta = etaTo(s, derive(s), "aether", cost);
     return {
         color: statDef("aether").color,

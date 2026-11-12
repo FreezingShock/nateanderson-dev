@@ -5,7 +5,7 @@ import { sfx } from "@/lib/sound/sounds";
 import { setHum } from "@/lib/sound/engine";
 import { useSoundPrefs } from "@/lib/sound/use-sound";
 import {
-    TUNE, ascend, autoBuy, breach, button, buyDrone, buyNode, buyPerk, toggleArm, checkGoals, derive, exportSave, fmt, fmtTime, fresh, isUnlocked, offline, parseSave, press, STATS, tick,
+    TUNE, overclockMult, overclockSecs, respec, ascend, autoBuy, breach, button, buyDrone, buyNode, buyPerk, toggleArm, checkGoals, derive, exportSave, fmt, fmtTime, fresh, isUnlocked, offline, parseSave, press, STATS, tick,
     type ButtonStat, type State,
 } from "@/lib/nodefarm/engine";
 import type { NfLive } from "@/lib/nodefarm/records";
@@ -14,6 +14,7 @@ import { NfIcon } from "./icon";
 import { EventLayer } from "./events";
 import { AwayReport, type Away } from "./away";
 import { Scenery, SceneWindow } from "./scenery";
+import { TreeMenu } from "./tree";
 import { eraOf } from "@/lib/nodefarm/scenery";
 import { DroneBay } from "./drones";
 import { Chain, StatRow } from "./stat-row";
@@ -51,6 +52,7 @@ export function NodeFarm() {
     const [tab, setTab] = useState<Tab>("core");
     const [side, setSide] = useState<Tab>("goals");
     const [win, setWin] = useState<"" | "map" | "goals" | "records" | "ascend" | "menu">("");
+    const [treeOpen, setTreeOpen] = useState(false);
     const [folded, setFolded] = useState<Record<string, boolean>>({});
     const feedStore = useMemo(() => new FeedStore(), []);
     useEffect(() => () => feedStore.dispose(), [feedStore]);
@@ -302,7 +304,7 @@ export function NodeFarm() {
             const s = g.current;
             if (won) {
                 breach(s);
-                log(`${def.title.toUpperCase()} CLEARED. Overclock x${TUNE.overclockMult} for ${TUNE.overclockSecs + s.perks.overclock * 5} s.`, "good");
+                log(`${def.title.toUpperCase()} CLEARED. Overclock x${overclockMult(s)} for ${overclockSecs(s)} s.`, "good");
             } else log(`${def.title} lost. No cost.`, "warn");
         },
         [log],
@@ -366,7 +368,8 @@ export function NodeFarm() {
         if (SIDE.includes(t)) setSide(t);
         sfx("tab");
     };
-    const openWin = (w: "map" | "goals" | "records" | "ascend" | "menu") => {
+    const openWin = (w: "map" | "goals" | "records" | "ascend" | "menu" | "tree") => {
+        if (w === "tree") { setWin(""); setTreeOpen(true); sfx("tab"); return; }
         setWin(w);
         setTabBoth(w);
     };
@@ -382,6 +385,7 @@ export function NodeFarm() {
         sfx("tab");
         setTimeout(() => document.querySelector<HTMLElement>(`.nf [data-stat="${key}"]`)?.scrollIntoView({ behavior: reduced ? "auto" : "smooth", block: "center" }), 90);
     };
+    const treeSeen = s.life.ascends > 0 || s.ap > 0 || s.tree.length > 0;
     const era = eraOf(s);
     const firstLocked = STATS.find((x) => !isUnlocked(s, x.id))?.id;
     const laterLocked = STATS.filter((x) => !isUnlocked(s, x.id) && x.id !== firstLocked);
@@ -401,7 +405,7 @@ export function NodeFarm() {
                 </div>
                 {s.overclock > 0 && (
                     <div className="nf-oc" role="status">
-                        <NfIcon name="spark" /> OVERCLOCK x{TUNE.overclockMult} · {Math.ceil(s.overclock)}s
+                        <NfIcon name="spark" /> OVERCLOCK x{overclockMult(s)} · {Math.ceil(s.overclock)}s
                     </div>
                 )}
                 <div className="nf-hud-side">
@@ -415,6 +419,7 @@ export function NodeFarm() {
                             {TAB_LABEL[w]}
                         </button>
                     ))}
+                    {treeSeen && <button type="button" className="nf-dock-b" aria-haspopup="dialog" data-guide={step.target?.win === "tree" ? "" : undefined} onClick={() => openWin("tree")}>Tree</button>}
                 </div>
             </header>
             <GuideStrip step={step} onGo={() => goTo(step.target)} onMap={() => openWin("map")} mapOpen={win === "map"} />
@@ -426,11 +431,12 @@ export function NodeFarm() {
                         {TAB_LABEL[t]}
                     </button>
                 ))}
+                {treeSeen && <button type="button" className="nf-tab" aria-haspopup="dialog" data-guide={step.target?.win === "tree" ? "" : undefined} onClick={() => openWin("tree")}>Tree</button>}
             </nav>
 
             {toast && <div className="nf-toast" role="status"><NfIcon name="spark" /> Goal: {toast}</div>}
 
-            <EventLayer game={g} ready={ready} enabled={evOn} busy={!!win || !!away || !!confirm} reduced={reduced} onEngage={evEngage} onResult={evResult} onMiss={evMiss} onDisable={() => setEvents(false)} />
+            <EventLayer game={g} ready={ready} enabled={evOn} busy={!!win || treeOpen || !!away || !!confirm} reduced={reduced} onEngage={evEngage} onResult={evResult} onMiss={evMiss} onDisable={() => setEvents(false)} />
             <Juice reduced={reduced} />
 
             <section className="nf-pane nf-corepane" data-pane="core" aria-label="Core">
@@ -474,7 +480,7 @@ export function NodeFarm() {
 
             <section className="nf-pane nf-sidepane" data-pane="map" aria-label="Progress map" role="dialog" aria-modal="false">
                 <WinBar title="Map" onClose={() => setWin("")} />
-                <MapPanel s={s} d={d} onNode={(id) => { if (buyNode(s, id)) { sfx("nfBuy", { tier: 3 }); bump((n) => n + 1); } }} onWin={(w) => openWin(w)} />
+                <MapPanel s={s} d={d} onTree={() => openWin("tree")} onWin={(w) => openWin(w)} />
             </section>
             <section className="nf-pane nf-sidepane" data-pane="goals" aria-label="Goals" role="dialog" aria-modal="false">
                 <WinBar title="Goals" onClose={() => setWin("")} /><GoalsPanel s={s} /></section>
@@ -482,7 +488,7 @@ export function NodeFarm() {
                 <WinBar title="Records" onClose={() => setWin("")} /><RecordsPanel s={s} /></section>
             <section className="nf-pane nf-sidepane" data-pane="ascend" aria-label="Ascend" role="dialog" aria-modal="false">
                 <WinBar title="Ascend" onClose={() => setWin("")} />
-                <AscendPanel s={s} d={d} confirm={confirm === "ascend"} onAscend={doAscend} onPerk={(id) => { if (buyPerk(s, id)) { sfx("nfBuy", { tier: 3 }); bump((n) => n + 1); } }} onNode={(id) => { if (buyNode(s, id)) { sfx("nfBuy", { tier: 4 }); bump((n) => n + 1); } }} />
+                <AscendPanel s={s} d={d} confirm={confirm === "ascend"} onAscend={doAscend} onPerk={(id) => { if (buyPerk(s, id)) { sfx("nfBuy", { tier: 3 }); bump((n) => n + 1); } }} onTree={() => openWin("tree")} />
             </section>
             <section className="nf-pane nf-sidepane" data-pane="menu" aria-label="Menu" role="dialog" aria-modal="false">
                 <WinBar title="Menu" onClose={() => setWin("")} />
@@ -503,6 +509,15 @@ export function NodeFarm() {
                     onReset={doReset}
                 />
             </section>
+            {treeOpen && (
+                <TreeMenu
+                    s={s}
+                    reduced={reduced}
+                    onBuy={(id) => { if (buyNode(s, id)) { sfx("nfBuy", { tier: 4 }); bump((n) => n + 1); } else sfx("deny"); }}
+                    onRespec={() => { const back = respec(s); sfx("tab"); log(`Tree respec: ${fmt(back)} AP refunded.`, "good"); save(); bump((n) => n + 1); return back; }}
+                    onClose={() => setTreeOpen(false)}
+                />
+            )}
             <Tip host={root} tip={tip} />
             {away && <AwayReport away={away} era={era} reduced={reduced} onClose={() => setAway(null)} />}
         </div>

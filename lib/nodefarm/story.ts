@@ -11,7 +11,8 @@ export interface Log {
 }
 
 const open = (id: StatId) => (s: State) => isUnlocked(s, id);
-const branch = (last: string) => (s: State) => s.tree.includes(last);
+// A branch counts as whole when its six original nodes (prefix 1 to 6) are owned. The tree has grown to 60 nodes in five sections, but these keep their ids.
+const branch = (last: string) => (s: State) => [1, 2, 3, 4, 5, 6].every((i) => s.tree.includes(last.slice(0, 2) + i));
 
 export const LOGS: Log[] = [
     { id: "hand", title: "Handover", text: "If you are reading this, the node still boots. Good. I am leaving it running. Press things and see what happens. Everything here started as one wire.", test: () => true },

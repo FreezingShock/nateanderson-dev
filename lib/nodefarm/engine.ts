@@ -95,77 +95,198 @@ export const PERKS: PerkDef[] = [
     { id: "start", name: "Cold cache", blurb: "Start each Reboot with 10 seconds of Bytes per level.", max: 10, cost: (l) => 1 + Math.floor(l / 2) },
 ];
 
-// ---- prestige tree: bought with AP, kept through every Ascend. Nodes need all of their `req` nodes first.
+// ---- prestige tree: a web of 60 nodes in five arms around a free core, bought with AP and kept through every Ascend.
+// A node can be bought once it touches the core or an owned node (`links`). Keystones are the big pure boosts at the arm ends (Nate chose no trade-offs). Respec refunds every AP spent.
 export interface TreeFx {
     bytes?: number; // +x to Bytes per second
     global?: number; // +x to everything
     reboot?: number; // +x to Reboot power
-    discount?: number; // cheaper buttons, as a fraction off (stacks multiplicatively)
+    multGain?: number; // +x to what a Multiplier button adds
+    discount?: number; // cheaper buttons, as a fraction off (stacks multiplicatively; negative = dearer)
     mats?: Partial<Record<MatId, number>>; // +x to one material's output
     start?: number; // extra seconds of Bytes kept on a Reboot
     offline?: number; // extra hours of offline banking
     overclock?: number; // extra seconds on an intrusion boost
+    ocMult?: number; // +x to the Overclock multiplier
     ap?: number; // +x to AP earned on Ascend
+    goals?: number; // +x to what every goal and secret gives
+    drone?: number; // +x to Drone press speed
+    droneMax?: number; // extra Drone levels per tier
+    droneCost?: number; // Drones cost this fraction less
+    droneOff?: number; // +x to Drone speed while you are away
 }
+export type TreeKind = "minor" | "notable" | "keystone";
+export type Branch = "signal" | "forge" | "systems" | "drones" | "anomaly";
 export interface TreeNode {
     id: string;
-    branch: "signal" | "forge" | "systems";
+    branch: Branch;
+    kind: TreeKind;
     name: string;
     blurb: string;
     cost: number;
-    req: string[];
+    /** neighbours (both directions); "core" is the free start */
+    links: string[];
     fx: TreeFx;
+    /** position in tree units (the menu multiplies by its grid size) */
+    x: number;
+    y: number;
+    /** index of the sprite in public/naos/nodefarm/tree-nodes (arm * 12 + slot) */
+    ix: number;
 }
-export const BRANCHES: { id: TreeNode["branch"]; name: string; blurb: string; color: string }[] = [
+export const BRANCHES: { id: Branch; name: string; blurb: string; color: string }[] = [
     { id: "signal", name: "Signal", blurb: "Bytes, Reboots and prices.", color: "#2fd8e8" },
     { id: "forge", name: "Forge", blurb: "Materials, from Copper to Chrono.", color: "#ffc53a" },
-    { id: "systems", name: "Systems", blurb: "Time away, Overclock and AP.", color: "#6bffc9" },
+    { id: "systems", name: "Systems", blurb: "Time away, goals and AP.", color: "#6bffc9" },
+    { id: "drones", name: "Drones", blurb: "More Drones, faster Drones, cheaper Drones.", color: "#ff4d6d" },
+    { id: "anomaly", name: "Anomaly", blurb: "Overclock, odd power and sharp trade-offs.", color: "#9a7bff" },
 ];
-const N = (id: string, branch: TreeNode["branch"], name: string, blurb: string, cost: number, req: string[], fx: TreeFx): TreeNode => ({ id, branch, name, blurb, cost, req, fx });
-export const TREE: TreeNode[] = [
-    N("sg1", "signal", "Line coding", "+20% Bytes.", 6, [], { bytes: 0.2 }),
-    N("sg2", "signal", "Gain staging", "+25% Reboot power.", 10, ["sg1"], { reboot: 0.25 }),
-    N("sg3", "signal", "Warm cache", "Reboots keep 30 more seconds of Bytes.", 10, ["sg1"], { start: 30 }),
-    N("sg4", "signal", "Bus widening", "All buttons cost 10% less.", 20, ["sg2"], { discount: 0.1 }),
-    N("sg5", "signal", "Feedback loop", "+50% Bytes.", 32, ["sg3", "sg4"], { bytes: 0.5 }),
-    N("sg6", "signal", "Overdrive", "+30% to everything.", 60, ["sg5"], { global: 0.3 }),
-    N("fg1", "forge", "Furnace tuning", "Copper and Silicon +25%.", 6, [], { mats: { copper: 0.25, silicon: 0.25 } }),
-    N("fg2", "forge", "Clean room", "Quartz and Aether +25%.", 12, ["fg1"], { mats: { quartz: 0.25, aether: 0.25 } }),
-    N("fg3", "forge", "Rune etching", "Runes +40%.", 16, ["fg2"], { mats: { runes: 0.4 } }),
-    N("fg4", "forge", "Star cutting", "Starglass +40%.", 28, ["fg3"], { mats: { starglass: 0.4 } }),
-    N("fg5", "forge", "Void forging", "Voidsteel +40%.", 44, ["fg4"], { mats: { voidsteel: 0.4 } }),
-    N("fg6", "forge", "Time dilation", "Chrono +40%.", 68, ["fg5"], { mats: { chrono: 0.4 } }),
-    N("sy1", "systems", "Standby plus", "Offline time banks +4 hours.", 6, [], { offline: 4 }),
-    N("sy2", "systems", "Overclock plating", "Intrusion boosts last +10 s.", 10, ["sy1"], { overclock: 10 }),
-    N("sy3", "systems", "Cache lines", "Reboots keep 20 more seconds of Bytes.", 12, ["sy1"], { start: 20 }),
-    N("sy4", "systems", "Echo storage", "Offline time banks +8 hours.", 24, ["sy2"], { offline: 8 }),
-    N("sy5", "systems", "Efficient mesh", "All buttons cost 10% less.", 28, ["sy3"], { discount: 0.1 }),
-    N("sy6", "systems", "Singularity", "+20% AP on every Ascend.", 48, ["sy4", "sy5"], { ap: 0.2 }),
+// Each arm uses the same 12 slots: [outward, sideways, linked slots]. Slot 0 touches the core; slot 11 is the keystone.
+const SLOTS: [number, number, number[]][] = [
+    [1.3, 0, []], [2.2, -0.75, [0]], [2.2, 0.75, [0]], [3.1, -1.4, [1]], [3.3, 0, [1, 2]], [3.1, 1.4, [2]],
+    [4.4, -0.85, [3, 4]], [4.4, 0.85, [4, 5]], [5.6, -1.5, [6]], [5.6, 1.5, [7]], [6.0, 0, [6, 7, 8, 9]], [7.5, 0, [10]],
 ];
-export const treeNode = (id: string) => TREE.find((n) => n.id === id)!;
+type Row = [slot: number, id: string, name: string, blurb: string, cost: number, fx: TreeFx];
+const ARMS: Record<Branch, Row[]> = {
+    signal: [
+        [0, "sg1", "Line coding", "+20% Bytes.", 6, { bytes: 0.2 }],
+        [1, "sg2", "Gain staging", "+25% Reboot power.", 10, { reboot: 0.25 }],
+        [2, "sg3", "Warm cache", "Reboots keep 30 more seconds of Bytes.", 10, { start: 30 }],
+        [3, "sg4", "Bus widening", "All buttons cost 10% less.", 20, { discount: 0.1 }],
+        [4, "sg5", "Feedback loop", "+50% Bytes.", 32, { bytes: 0.5 }],
+        [5, "sg7", "Burst buffer", "+25% Bytes.", 18, { bytes: 0.25 }],
+        [6, "sg6", "Overdrive", "+30% to everything.", 60, { global: 0.3 }],
+        [7, "sg8", "Parity check", "All buttons cost 8% less.", 36, { discount: 0.08 }],
+        [8, "sg9", "Wide carrier", "+30% Reboot power.", 44, { reboot: 0.3 }],
+        [9, "sg10", "Clock doubler", "+40% Bytes.", 52, { bytes: 0.4 }],
+        [10, "sg11", "Phase lock", "+25% to everything.", 90, { global: 0.25 }],
+        [11, "sgk", "Redline", "+100% Bytes and +20% to everything.", 140, { bytes: 1, global: 0.2 }],
+    ],
+    forge: [
+        [0, "fg1", "Furnace tuning", "Copper and Silicon +25%.", 6, { mats: { copper: 0.25, silicon: 0.25 } }],
+        [1, "fg2", "Clean room", "Quartz and Aether +25%.", 12, { mats: { quartz: 0.25, aether: 0.25 } }],
+        [2, "fg7", "Smelter feed", "Copper +30%.", 8, { mats: { copper: 0.3 } }],
+        [3, "fg3", "Rune etching", "Runes +40%.", 16, { mats: { runes: 0.4 } }],
+        [4, "fg8", "Doping bath", "Silicon and Quartz +30%.", 20, { mats: { silicon: 0.3, quartz: 0.3 } }],
+        [5, "fg9", "Slag recycling", "Every material +10%.", 24, { mats: { copper: 0.1, silicon: 0.1, quartz: 0.1, aether: 0.1, runes: 0.1, starglass: 0.1, voidsteel: 0.1, chrono: 0.1 } }],
+        [6, "fg4", "Star cutting", "Starglass +40%.", 28, { mats: { starglass: 0.4 } }],
+        [7, "fg10", "Crystal seed", "Quartz and Aether +30%.", 34, { mats: { quartz: 0.3, aether: 0.3 } }],
+        [8, "fg5", "Void forging", "Voidsteel +40%.", 44, { mats: { voidsteel: 0.4 } }],
+        [9, "fg11", "Deep vein", "Runes and Starglass +30%.", 56, { mats: { runes: 0.3, starglass: 0.3 } }],
+        [10, "fg6", "Time dilation", "Chrono +40%.", 68, { mats: { chrono: 0.4 } }],
+        [11, "fgk", "Overpressure", "Every material +60%.", 130, { mats: { copper: 0.6, silicon: 0.6, quartz: 0.6, aether: 0.6, runes: 0.6, starglass: 0.6, voidsteel: 0.6, chrono: 0.6 } }],
+    ],
+    systems: [
+        [0, "sy1", "Standby plus", "Offline time banks +4 hours.", 6, { offline: 4 }],
+        [1, "sy2", "Overclock plating", "Intrusion boosts last +10 s.", 10, { overclock: 10 }],
+        [2, "sy3", "Cache lines", "Reboots keep 20 more seconds of Bytes.", 12, { start: 20 }],
+        [3, "sy4", "Echo storage", "Offline time banks +8 hours.", 24, { offline: 8 }],
+        [4, "sy6", "Singularity", "+20% AP on every Ascend.", 48, { ap: 0.2 }],
+        [5, "sy5", "Efficient mesh", "All buttons cost 10% less.", 28, { discount: 0.1 }],
+        [6, "sy7", "Hibernate", "Offline time banks +4 hours.", 40, { offline: 4 }],
+        [7, "sy8", "Burst coils", "Intrusion boosts last +8 s.", 32, { overclock: 8 }],
+        [8, "sy9", "Scrubber", "Reboots keep 40 more seconds of Bytes.", 40, { start: 40 }],
+        [9, "sy10", "Ledger", "Goals and secrets give +1% more each.", 48, { goals: 0.01 }],
+        [10, "sy11", "Event horizon", "+25% AP on every Ascend.", 80, { ap: 0.25 }],
+        [11, "syk", "Cold storage", "+60% AP on every Ascend.", 130, { ap: 0.6 }],
+    ],
+    drones: [
+        [0, "dr1", "Wake routine", "Drones cost 20% less.", 8, { droneCost: 0.2 }],
+        [1, "dr2", "Servo grease", "Drones press 15% faster.", 12, { drone: 0.15 }],
+        [2, "dr3", "Spare cells", "+1 level per Drone.", 14, { droneMax: 1 }],
+        [3, "dr4", "Tuned gyros", "Drones press 20% faster.", 20, { drone: 0.2 }],
+        [4, "dr5", "Hive link", "Drones work +25% harder while you are away.", 24, { droneOff: 0.25 }],
+        [5, "dr6", "Bulk order", "Drones cost 25% less.", 26, { droneCost: 0.25 }],
+        [6, "dr7", "Long wings", "+1 level per Drone.", 34, { droneMax: 1 }],
+        [7, "dr8", "Hot servos", "Drones press 30% faster.", 40, { drone: 0.3 }],
+        [8, "dr9", "Night shift", "Drones work +25% harder while you are away.", 46, { droneOff: 0.25 }],
+        [9, "dr10", "Hive mind", "+2 levels per Drone.", 60, { droneMax: 2 }],
+        [10, "dr11", "Fleet doctrine", "Drones press 40% faster and get +1 level.", 90, { drone: 0.4, droneMax: 1 }],
+        [11, "drk", "Swarm protocol", "Drones press twice as fast and cost 20% less.", 140, { drone: 1, droneCost: 0.2 }],
+    ],
+    anomaly: [
+        [0, "an1", "Static", "Intrusion boosts last +6 s.", 10, { overclock: 6 }],
+        [1, "an2", "Echo", "Overclock is x1 stronger.", 14, { ocMult: 1 }],
+        [2, "an3", "Pattern read", "Goals and secrets give +1% more each.", 14, { goals: 0.01 }],
+        [3, "an4", "Ghost line", "+8% to everything.", 22, { global: 0.08 }],
+        [4, "an5", "Cache bleed", "Reboots keep 25 more seconds of Bytes.", 26, { start: 25 }],
+        [5, "an6", "Dead reckoning", "+15% Bytes.", 24, { bytes: 0.15 }],
+        [6, "an7", "Resonant noise", "Overclock is x1.5 stronger.", 40, { ocMult: 1.5 }],
+        [7, "an8", "Black box", "+10% AP on every Ascend.", 40, { ap: 0.1 }],
+        [8, "an9", "Phantom load", "+12% to everything.", 54, { global: 0.12 }],
+        [9, "an10", "Signal archive", "Goals and secrets give +1% more each.", 56, { goals: 0.01 }],
+        [10, "an11", "Quiet room", "Multiplier buttons add twice as much.", 110, { multGain: 1 }],
+        [11, "ank", "Spike protocol", "Overclock is x6 stronger and lasts 10 s longer.", 140, { ocMult: 6, overclock: 10 }],
+    ],
+};
+/** the 18 nodes from the first tree keep their ids and prices so old saves refund fairly */
+const OLD_IDS = /^(sg|fg|sy)[1-6]$/;
+const ARM_ORDER: Branch[] = ["signal", "forge", "systems", "drones", "anomaly"];
+function buildTree(): TreeNode[] {
+    const out: TreeNode[] = [];
+    const link = (a: string, b: string) => {
+        const A = out.find((n) => n.id === a)!;
+        const B = out.find((n) => n.id === b)!;
+        if (!A.links.includes(b)) A.links.push(b);
+        if (!B.links.includes(a)) B.links.push(a);
+    };
+    const idAt: Record<string, string[]> = {};
+    ARM_ORDER.forEach((arm, ai) => {
+        const th = -Math.PI / 2 + (ai * 2 * Math.PI) / ARM_ORDER.length;
+        const c = Math.cos(th), sn = Math.sin(th);
+        idAt[arm] = [];
+        for (const [slot, id, name, blurb, cost, fx] of ARMS[arm]) {
+            const [u, v] = SLOTS[slot];
+            const kind: TreeKind = slot === 11 || id === "an11" ? "keystone" : slot === 10 || slot === 4 ? "notable" : "minor";
+            out.push({ id, branch: arm, kind, name, blurb, cost: OLD_IDS.test(id) ? cost : Math.max(6, Math.round(cost * 0.7)), links: slot === 0 ? ["core"] : [], fx, x: +(u * c - v * sn).toFixed(3), y: +(u * sn + v * c).toFixed(3), ix: ai * 12 + slot });
+            idAt[arm][slot] = id;
+        }
+        SLOTS.forEach(([, , ls], slot) => ls.forEach((l) => link(idAt[arm][slot], idAt[arm][l])));
+    });
+    // bridges between neighbouring arms, outer edge to outer edge
+    ARM_ORDER.forEach((arm, ai) => link(idAt[arm][9], idAt[ARM_ORDER[(ai + 1) % ARM_ORDER.length]][8]));
+    return out;
+}
+export const TREE: TreeNode[] = buildTree();
+const BY_ID = new Map(TREE.map((n) => [n.id, n]));
+export const treeNode = (id: string) => BY_ID.get(id)!;
 export const hasNode = (s: State, id: string) => s.tree.includes(id);
-export const nodeOpen = (s: State, n: TreeNode) => n.req.every((r) => s.tree.includes(r));
+export const nodeOpen = (s: State, n: TreeNode) => n.links.some((l) => l === "core" || s.tree.includes(l));
 export function buyNode(s: State, id: string): boolean {
-    const n = TREE.find((x) => x.id === id);
+    const n = BY_ID.get(id);
     if (!n || s.tree.includes(id) || !nodeOpen(s, n) || s.ap < n.cost) return false;
     s.ap -= n.cost;
     s.tree.push(id);
     return true;
 }
+/** Take every node back and refund the AP spent on it. Costs nothing. Returns the AP refunded. */
+export function respec(s: State): number {
+    let back = 0;
+    for (const id of s.tree) back += BY_ID.get(id)?.cost ?? 0;
+    s.ap += back;
+    s.tree = [];
+    return back;
+}
 /** Sum of everything the owned tree nodes give. */
 export function treeFx(s: State) {
-    const o = { bytes: 0, global: 0, reboot: 0, discount: 1, start: 0, offline: 0, overclock: 0, ap: 0, mats: {} as Record<string, number> };
+    const o = { bytes: 0, global: 0, reboot: 0, multGain: 0, discount: 1, start: 0, offline: 0, overclock: 0, ocMult: 0, ap: 0, goals: 0, drone: 0, droneMax: 0, droneCost: 1, droneOff: 0, mats: {} as Record<string, number> };
     for (const id of s.tree) {
-        const f = TREE.find((n) => n.id === id)?.fx;
+        const f = BY_ID.get(id)?.fx;
         if (!f) continue;
         o.bytes += f.bytes ?? 0;
         o.global += f.global ?? 0;
         o.reboot += f.reboot ?? 0;
+        o.multGain += f.multGain ?? 0;
         o.discount *= 1 - (f.discount ?? 0);
         o.start += f.start ?? 0;
         o.offline += f.offline ?? 0;
         o.overclock += f.overclock ?? 0;
+        o.ocMult += f.ocMult ?? 0;
         o.ap += f.ap ?? 0;
+        o.goals += f.goals ?? 0;
+        o.drone += f.drone ?? 0;
+        o.droneMax += f.droneMax ?? 0;
+        o.droneCost *= 1 - (f.droneCost ?? 0);
+        o.droneOff += f.droneOff ?? 0;
         for (const [m, v] of Object.entries(f.mats ?? {})) o.mats[m] = (o.mats[m] ?? 0) + v;
     }
     return o;
@@ -267,15 +388,15 @@ export function derive(s: State): Derived {
         chAll: boost(s.chrono, k.chAll),
     };
     const tf = treeFx(s);
-    const global = (1 + s.perks.power * 0.15 + tf.global) * (1 + s.ap * TUNE.apBonus) * (1 + s.ach.length * TUNE.achBonus) * (1 + tiersDone(s) * TUNE.tierBonus) * boosts.chAll * (s.overclock > 0 ? TUNE.overclockMult : 1);
+    const global = (1 + s.perks.power * 0.15 + tf.global) * (1 + s.ap * TUNE.apBonus) * (1 + s.ach.length * (TUNE.achBonus + tf.goals)) * (1 + tiersDone(s) * TUNE.tierBonus) * boosts.chAll * (s.overclock > 0 ? overclockMult(s) : 1);
     const rebootStrength = TUNE.rebootStrength * boosts.cuReboot * (1 + tf.reboot);
-    const multGainMult = 1 + rebootStrength * s.reboot;
+    const multGainMult = (1 + rebootStrength * s.reboot) * (1 + tf.multGain);
     const bytesPerSec = s.mult * boosts.cuBytes * global * (1 + tf.bytes);
     // each material is boosted by the one after it in the chain
     const boostedBy: Record<MatId, number> = { copper: boosts.siCu, silicon: boosts.qzSi, quartz: boosts.aeQz, aether: boosts.ruAe, runes: boosts.sgRu, starglass: boosts.vsSg, voidsteel: boosts.chVs, chrono: 1 };
     const rates = {} as Record<MatId, number>;
     for (const m of MATS) rates[m] = s.prod[m] * TUNE.perProducer[m] * boostedBy[m] * (1 + (tf.mats[m] ?? 0)) * global;
-    return { global, bytesPerSec, rebootStrength, multGainMult, rates, offlineCap: (TUNE.offlineCapHours + s.perks.offline * 4 + tf.offline) * 3600, boosts };
+    return { global, bytesPerSec, rebootStrength, multGainMult, rates, offlineCap: Math.max(1, TUNE.offlineCapHours + s.perks.offline * 4 + tf.offline) * 3600, boosts };
 }
 
 export const gainFor = (stat: ButtonStat, tier: number) => TUNE.gainBase[stat] * Math.pow(TUNE.gainRatio, tier);
@@ -333,16 +454,17 @@ export function press(s: State, stat: ButtonStat, tier: number): boolean {
     return true;
 }
 
-export const droneCost = (s: State, tier: number) => TUNE.drone.base * Math.pow(TUNE.drone.ratio, tier) * Math.pow(TUNE.drone.growth, s.drones[tier]);
+export const droneMax = (s: State) => TUNE.drone.max + treeFx(s).droneMax;
+export const droneCost = (s: State, tier: number) => TUNE.drone.base * Math.pow(TUNE.drone.ratio, tier) * Math.pow(TUNE.drone.growth, s.drones[tier]) * treeFx(s).droneCost;
 export const dronesOpen = (s: State) => s.aether > 0 || s.prod.aether > 0 || s.life.ascends > 0;
 export function buyDrone(s: State, tier: number): boolean {
     const c = droneCost(s, tier);
-    if (!dronesOpen(s) || s.drones[tier] >= TUNE.drone.max || s.aether < c) return false;
+    if (!dronesOpen(s) || s.drones[tier] >= droneMax(s) || s.aether < c) return false;
     s.aether -= c;
     s.drones[tier] += 1;
     return true;
 }
-export const droneRate = (s: State, tier: number) => s.drones[tier] * TUNE.drone.rate;
+export const droneRate = (s: State, tier: number) => s.drones[tier] * TUNE.drone.rate * (1 + treeFx(s).drone);
 export function toggleArm(s: State, stat: string) {
     s.armed = s.armed.includes(stat) ? s.armed.filter((x) => x !== stat) : [...s.armed, stat];
 }
@@ -385,9 +507,12 @@ export function tick(s: State, dt: number, eff = 1) {
     droneStep(s, dt, eff);
 }
 
+export const overclockMult = (s: State) => TUNE.overclockMult + treeFx(s).ocMult;
+export const overclockSecs = (s: State) => Math.max(5, TUNE.overclockSecs + s.perks.overclock * 5 + treeFx(s).overclock);
+
 /** Hit the intrusion target: a timed boost. */
 export function breach(s: State) {
-    s.overclock = TUNE.overclockSecs + s.perks.overclock * 5 + treeFx(s).overclock;
+    s.overclock = overclockSecs(s);
     s.life.intrusions += 1;
 }
 
@@ -428,7 +553,7 @@ export function offline(s: State, seconds: number) {
     const oc = s.overclock;
     s.overclock = 0; // an intrusion boost doesn't carry through time away
     const pressesBefore = s.life.presses;
-    for (let i = 0; i < steps; i++) tick(s, dt, TUNE.drone.offline);
+    for (let i = 0; i < steps; i++) tick(s, dt, Math.min(1, TUNE.drone.offline + treeFx(s).droneOff));
     s.overclock = Math.max(0, oc - secs);
     return { secs, capped: seconds > cap, drones: s.life.presses - pressesBefore, gain: { bytes: s.bytes - before.bytes, copper: s.copper - before.copper, silicon: s.silicon - before.silicon, quartz: s.quartz - before.quartz, aether: s.aether - before.aether, runes: s.runes - before.runes, starglass: s.starglass - before.starglass, voidsteel: s.voidsteel - before.voidsteel, chrono: s.chrono - before.chrono } };
 }

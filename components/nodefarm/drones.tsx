@@ -1,7 +1,7 @@
 "use client";
 
 import { useContext, type CSSProperties } from "react";
-import { TIERS, TUNE, dronesOpen, droneCost, droneRate, fmt, type State } from "@/lib/nodefarm/engine";
+import { TIERS, TUNE, dronesOpen, droneCost, droneMax, droneRate, fmt, type State } from "@/lib/nodefarm/engine";
 import { DRONE_NAMES as NAMES, droneTip } from "@/lib/nodefarm/guide";
 import { TipCtx } from "./guide";
 
@@ -39,7 +39,7 @@ export function DroneBay({ s, open, onToggle, onBuy, guided }: { s: State; open:
                     <ul className="nf-dr-list">
                         {Array.from({ length: TIERS }, (_, k) => {
                             const lvl = s.drones[k];
-                            const maxed = lvl >= TUNE.drone.max;
+                            const maxed = lvl >= droneMax(s);
                             const cost = droneCost(s, k);
                             const afford = !maxed && s.aether >= cost;
                             return (
@@ -58,8 +58,8 @@ export function DroneBay({ s, open, onToggle, onBuy, guided }: { s: State; open:
                                         <b>T{k + 1} {NAMES[k]}</b>
                                         <small>{lvl > 0 ? `${fmt(droneRate(s, k))} presses/s` : "not built"}</small>
                                     </span>
-                                    <span className="nf-dr-pips" aria-label={`Level ${lvl} of ${TUNE.drone.max}`}>
-                                        {Array.from({ length: TUNE.drone.max }, (_, i) => <i key={i} data-f={i < lvl ? "" : undefined} />)}
+                                    <span className="nf-dr-pips" aria-label={`Level ${lvl} of ${droneMax(s)}`}>
+                                        {Array.from({ length: droneMax(s) }, (_, i) => <i key={i} data-f={i < lvl ? "" : undefined} />)}
                                     </span>
                                     <button type="button" className="nf-mini" data-guide={guided === k ? "" : undefined} disabled={!afford} onClick={() => onBuy(k)} aria-label={maxed ? `${NAMES[k]} maxed` : `${lvl ? "Upgrade" : "Build"} ${NAMES[k]} for ${fmt(cost)} Aether`}>
                                         {maxed ? "Max" : `${lvl ? "Upgrade" : "Build"} · ${fmt(cost)} AE`}
