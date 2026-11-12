@@ -198,7 +198,7 @@ export function StatRow({ id, s, d, onPress, onArm, onWatchdog, open: expanded, 
                     <span className="nf-code">{lore.code}</span>
                 </div>
                 <div className="nf-row-n">
-                    <b title={exact(amt)}>{fmt(amt)}</b>
+                    <b>{fmt(amt)}</b>
                     {rate > 0 && <small>+{fmt(rate)}/s</small>}
                     {prod > 0 && <small>{fmt(prod)} nodes</small>}
                 </div>

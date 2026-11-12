@@ -44,7 +44,7 @@ import { LOGS, logNo, recoverLogs } from "@/lib/nodefarm/story";
 import { Juice, juice, checkMilestones, onJuice } from "./juice";
 import { GuideStrip, Tip, TipCtx, type TipApi, type TipState } from "./guide";
 import { MapPanel } from "./map";
-import { exact, nextStep, type Target } from "@/lib/nodefarm/guide";
+import { nextStep, type Target } from "@/lib/nodefarm/guide";
 import { GoalsPanel, MenuPanel, RecordsPanel } from "./systems";
 import { AscendPanel } from "./ascend";
 import { HandoverPanel, fwModel } from "./handover";
@@ -61,6 +61,7 @@ import { ZoneEventCard } from "./zone-event";
 import { zeChoose, zoneEvDef, zoneLabel, type ZeChoice } from "@/lib/nodefarm/zoneevents";
 import { ARCS, arcKey, arcOf } from "@/lib/nodefarm/arcs";
 import { ArcHead } from "./arcs";
+import { PokeLayer } from "./poke";
 import { StressPanel, StressStrip } from "./stress";
 import { chOpen, leaveTest, startTest, takeChNews, testDef, RANKS, type TestId } from "@/lib/nodefarm/stress";
 import { ACC_KEY, blankFoldTarget, readyCount, shownArcIds, soloArc } from "@/lib/nodefarm/layout";
@@ -1170,7 +1171,7 @@ export function NodeFarm() {
                 <div className="nf-hud-main">
                     <NfIcon name="bytes" responsive />
                     <div>
-                        <b className="nf-big" title={`${exact(s.bytes)} Bytes`}>{fmt(s.bytes)}</b>
+                        <b className="nf-big">{fmt(s.bytes)}</b>
                         <span className="nf-sub">Bytes · +{fmt(d.bytesPerSec)}/s</span>
                     </div>
                 </div>
@@ -1182,9 +1183,9 @@ export function NodeFarm() {
                 )}
                 <div className="nf-hud-side">
                     {!fs && <button type="button" className="nf-fsb" onClick={() => { setFs(true); sfx("tab"); }} aria-label="Full screen">Full</button>}
-                    <span className="nf-hud-n" title="Reboots: every one makes Multiplier buttons hit harder"><NfIcon name="reboot" /> {fmt(s.reboot)}<small>RBT</small></span>
-                    <span className="nf-hud-n" title="Multipliers: each adds Bytes every second"><NfIcon name="mult" /> {fmt(s.mult)}<small>MUL</small></span>
-                    {s.ap > 0 && <span className="nf-hud-n" title="Ascension Points: spend them in the prestige tree"><NfIcon name="ascend" /> {s.ap}<small>AP</small></span>}
+                    <span className="nf-hud-n"><NfIcon name="reboot" /> {fmt(s.reboot)}<small>RBT</small></span>
+                    <span className="nf-hud-n"><NfIcon name="mult" /> {fmt(s.mult)}<small>MUL</small></span>
+                    {s.ap > 0 && <span className="nf-hud-n"><NfIcon name="ascend" /> {s.ap}<small>AP</small></span>}
                     {hasFeature(s, "deaddrop") && <DeadDrop s={s} onOpen={() => {
                         const got = openDrop(s);
                         if (!got) return sfx("deny");
@@ -1216,6 +1217,7 @@ export function NodeFarm() {
             <ZoneEventCard s={s} id={zeCard} onChoose={onZoneEv} onClose={closeZeCard} reduced={reduced} />
             <EventLayer game={g} ready={ready} enabled={evOn && !chOff(s, "events")} busy={!!win || treeOpen || labTree || droneTree || fwTree || !!cut || !!away || !!confirm} reduced={reduced} onEngage={evEngage} onResult={evResult} onMiss={evMiss} onDisable={() => setEvents(false)} />
             <Juice reduced={reduced} />
+            {d && <PokeLayer s={s} d={d} root={root} coreFeed={feed} feed={feedStore} reduced={reduced} onChange={() => { save(); bump((n) => n + 1); }} onGo={goTo} onArm={(z) => { toggleArm(s, z); sfx("tab"); log(`Drones ${s.armed.includes(z) ? "armed on" : "pulled off"} ${statDef(z).name}.`, "good"); save(); bump((n) => n + 1); }} />}
 
             <section className="nf-pane nf-corepane" data-pane="core" aria-label="Core">
                 <div className="nf-core-wrap">
