@@ -179,7 +179,6 @@ body > .nf-tm-host { position: fixed; inset: 0; z-index: 1000; }
     background-size: 12px 2px, 2px 12px, 12px 2px, 2px 12px;
     background-position: 100% 100%, 100% 100%, 0 100%, 0 100%;
     background-repeat: no-repeat;
-    animation: nfCardIn .28s steps(7, end) both;
 }
 .ctos .nf-tm-card[data-pinned] { border-color: color-mix(in srgb, var(--c) 60%, #1a1a1a); }
 .ctos .nf-tm-card[data-kind="keystone"] { width: 380px; border-top-width: 5px; }
@@ -199,10 +198,8 @@ body > .nf-tm-host { position: fixed; inset: 0; z-index: 1000; }
 .ctos .nf-tm-flv { position: relative; margin: 0; padding: 10px 12px 10px 18px; background: #0b0e12; font: italic 400 15px/1.5 var(--nf-serif); color: #b9c4cf; }
 .ctos .nf-tm-flv::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 8px; background: radial-gradient(circle, color-mix(in srgb, var(--c) 70%, transparent) 0 .9px, transparent 1.2px) 0 0 / 3px 3px; }
 .ctos .nf-tm-flv p::before { content: "\201C"; } .ctos .nf-tm-flv p::after { content: "\201D"; }
-/* terminal print: rows wipe in left to right in steps, 40 ms apart, with a caret on the row being printed */
-.ctos .nf-tm-card [data-cx-i] { animation: nfCxRow .2s steps(8, end) both; animation-delay: calc(var(--i, 0) * 40ms + 60ms); }
-.ctos .nf-tm-card [data-cx-i="0"] { --i: 0; } .ctos .nf-tm-card [data-cx-i="1"] { --i: 1; } .ctos .nf-tm-card [data-cx-i="2"] { --i: 2; }
-.ctos .nf-tm-card [data-cx-i="3"] { --i: 3; } .ctos .nf-tm-card [data-cx-i="4"] { --i: 4; } .ctos .nf-tm-card [data-cx-i="5"] { --i: 4; }
+/* the card's open and close is the shared code reveal (lib/nodefarm/cx.ts, "terminal print"); these keyframes are for
+   the controls line and the toast */
 @keyframes nfCxRow { from { clip-path: inset(0 100% 0 0); } to { clip-path: inset(0 0 0 0); } }
 .ctos .nf-tm-need { font: 500 12px/1.45 var(--cm-mono); color: #6f8a6a; }
 .ctos .nf-tm-msg { color: var(--cm-cyan); font: 600 var(--cm-ctos-t-micro)/1.4 var(--cm-mono); }
@@ -215,7 +212,6 @@ body > .nf-tm-host { position: fixed; inset: 0; z-index: 1000; }
 .ctos .nf-tm-buy:hover:not(:disabled) { translate: -2px -2px; box-shadow: 6px 6px 0 color-mix(in srgb, var(--c) 35%, #000); }
 .ctos .nf-tm-buy:active:not(:disabled) { translate: 2px 2px; box-shadow: 1px 1px 0 color-mix(in srgb, var(--c) 35%, #000); }
 .ctos .nf-tm-buy:disabled { background: #1a1f26; color: var(--cm-ctos-meta); box-shadow: none; cursor: default; }
-@keyframes nfCardIn { 0% { opacity: 0; clip-path: inset(0 0 calc(100% - 3px) 0); } 30% { opacity: 1; clip-path: inset(0 0 calc(100% - 3px) 0); } 100% { opacity: 1; clip-path: inset(0); } }
 
 /* ---- floating controls, hint and readout */
 .ctos .nf-tm-zoom { position: absolute; z-index: 4; left: 12px; top: 56px; display: grid; gap: 3px; }
@@ -257,7 +253,7 @@ body > .nf-tm-host { position: fixed; inset: 0; z-index: 1000; }
     .ctos .nf-tm-hint:not([data-min]) { left: 12px; }
 }
 @media (prefers-reduced-motion: reduce) {
-    .ctos .nf-tm, .ctos .nf-tm-card, .ctos .nf-tm-card [data-cx-i], .ctos .nf-tm-hc, .ctos .nf-tm-toast, .ctos .nf-tm-caret { animation: none; }
+    .ctos .nf-tm, .ctos .nf-tm-hc, .ctos .nf-tm-toast, .ctos .nf-tm-caret { animation: none; }
     .ctos .nf-tn[data-st="ready"]:not([data-vis="fog"])::before { animation: none; opacity: .8; }
     .ctos .nf-tn[data-flash] .nf-tn-body, .ctos .nf-tn[data-flash] .nf-tn-face::after, .ctos .nf-tn[data-new], .ctos .nf-tn-halo, .ctos .nf-tl { animation: none; }
     .ctos .nf-tl[data-st="edge"] { stroke-dasharray: none; }

@@ -5,6 +5,7 @@ import { createPortal } from "react-dom";
 import { TreeBackdrop, TreeDust, type TreeBackdropHandle } from "./tree-backdrop";
 import { TreeSprite, type SpriteState } from "./tree-sprite";
 import { SPRITE_CELLS } from "@/lib/nodefarm/tree-sprites";
+import { codeReveal } from "@/lib/nodefarm/cx";
 import * as Engine from "@/lib/nodefarm/engine";
 import { BRANCHES, TREE, fmt, hasNode, nodeOpen, treeFx, treeNode, type State, type TreeNode } from "@/lib/nodefarm/engine";
 
@@ -499,8 +500,21 @@ export function TreeMenu({ s, reduced, onBuy, onRespec, onClose }: { s: State; r
     }, [vis]);
 
     const shown = hov ?? (sel || null);
-    cardFor.current = shown;
+    // the card closes with the shared code reveal, so it keeps the last node's content while the rows delete
+    const [leaving, setLeaving] = useState<string | null>(null);
+    const [prevShown, setPrevShown] = useState<string | null>(shown);
+    if (prevShown !== shown) { setPrevShown(shown); setLeaving(shown ? null : prevShown); }
+    const cardId = shown ?? leaving;
+    cardFor.current = cardId;
     useLayoutEffect(() => { measure(); placeCard(); });
+    useLayoutEffect(() => {
+        const el = card.current;
+        if (!el) return;
+        if (shown) { void codeReveal(el, { dir: "in" }); return; }
+        if (!leaving) return;
+        const id = leaving;
+        void codeReveal(el, { dir: "out" }).then(() => setLeaving((l) => (l === id ? null : l)));
+    }, [shown, leaving]);
     useEffect(() => { bd.current?.focus(shown && shown !== "core" ? treeNode(shown).branch : null); }, [shown]);
 
     // ---- pointers: one finger or the mouse pans, two fingers pinch
@@ -699,7 +713,7 @@ export function TreeMenu({ s, reduced, onBuy, onRespec, onClose }: { s: State; r
     }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
     // the card's content
-    const cn = shown && shown !== "core" ? (treeNode(shown) as Extra) : null;
+    const cn = cardId && cardId !== "core" ? (treeNode(cardId) as Extra) : null;
     const cvis = cn ? vis.get(cn.id) : null;
     const cst = cn ? stateOf(s, cn) : null;
     const fogCard = cvis === "fog";
@@ -814,7 +828,7 @@ export function TreeMenu({ s, reduced, onBuy, onRespec, onClose }: { s: State; r
             <aside
                 className="nf-tm-card"
                 ref={card}
-                key={shown ?? "none"}
+                key={cardId ?? "none"}
                 data-st={fogCard ? "fog" : cst ?? "core"}
                 data-pinned={pinned ? "" : undefined}
                 data-kind={cn?.kind ?? "core"}
@@ -823,7 +837,7 @@ export function TreeMenu({ s, reduced, onBuy, onRespec, onClose }: { s: State; r
                 onPointerEnter={() => window.clearTimeout(hovT.current)}
                 onPointerLeave={() => { if (hov && hov !== sel) hoverOff(); }}
             >
-                {shown && (cn ? (
+                {cardId && (cn ? (
                     <>
                         <span className="nf-tm-k" data-cx-i="0">
                             <span>{BNAME[cn.branch].toLowerCase()}.{cn.kind}</span>
@@ -868,7 +882,7 @@ export function TreeMenu({ s, reduced, onBuy, onRespec, onClose }: { s: State; r
                     <span className="nf-tm-hc" key={hintMin ? "min" : "full"}>
                         {hintMin
                             ? (ready ? <><b>{ready}</b> ready</> : "help")
-                            : <>{ready ? <><b>{ready}</b> ready to install // </> : null}{coarse ? "tap: read // drag: pan // pinch: zoom" : "click: read // drag: pan // scroll: zoom // 0: fit"}</>}
+                            : <>{ready ? <><b>{ready}</b> ready to install // </> : null}{coarse ? (ready ? "tap one to read it" : "tap: read // drag: pan // pinch: zoom") : "click: read // drag: pan // scroll: zoom"}</>}
                     </span>
                     <i className="nf-tm-caret" aria-hidden="true" />
                 </button>
