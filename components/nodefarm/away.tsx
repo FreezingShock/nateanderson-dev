@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { codeReveal } from "@/lib/nodefarm/cx";
 import { scrambleNow } from "@/lib/motion/engine";
 import { createPortal } from "react-dom";
-import { sfx } from "@/lib/sound/sounds";
+import { nfx as sfx } from "@/lib/nodefarm/sound";
 import { MATS, fmt, fmtTime, statDef, type StatId } from "@/lib/nodefarm/engine";
 import { NfIcon } from "./icon";
 import type { SysGroup } from "@/lib/nodefarm/offline";

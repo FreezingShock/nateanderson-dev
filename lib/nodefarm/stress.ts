@@ -46,11 +46,11 @@ export const TESTS: TestDef[] = [
     { id: "brownout", n: 1, icon: "zap", name: "Brownout", rule: "Perks, unspent AP and goal bonuses add nothing.", plan: "The tree and your materials carry the run.", pays: (r) => `everything ${pct(P.brownout * r)}` },
     { id: "grounded", n: 2, icon: "users", name: "Grounded", rule: "No Drones.", plan: "Scripts and your own presses carry the run.", pays: (r) => `Drone speed ${pct(P.grounded * r)}` },
     { id: "cold", n: 3, icon: "tree", name: "Cold tree", rule: "The prestige tree is switched off.", plan: "Perks and AP still count. The tree comes back when you leave.", pays: (r) => `AP on Ascend ${pct(P.cold * r)}` },
-    { id: "narrow", n: 4, icon: "layers", name: "Narrow band", rule: `Only the first ${CH_TUNE.narrow} tiers of every button.`, plan: "Volume over size: the cheap tiers have to do it all.", pays: (r) => `Multiplier gain ${pct(P.narrow * r)}` },
+    { id: "narrow", n: 4, icon: "layers", name: "Narrow band", rule: `Only the first ${CH_TUNE.narrow} tiers of every button.`, plan: "The cheap tiers have to do all the work.", pays: (r) => `Multiplier gain ${pct(P.narrow * r)}` },
     { id: "thin", n: 5, icon: "send", name: "Thin pipe", rule: "Bytes/s cut to a tenth.", plan: "Bytes are scarce, so pick the Multiplier and Copper tiers that pay back fastest.", pays: (r) => `Bytes ${pct(P.thin * r)}` },
     { id: "dead", n: 6, icon: "volumeOff", name: "Dead air", rule: "No quick-time events and no zone events.", plan: "No Overclock and no event payouts. Pure production.", pays: (r) => `Overclock time ${pct(P.dead * r)}` },
     { id: "chain", n: 7, icon: "infinity", name: "Broken chain", rule: "Materials stop boosting the one below them.", plan: "Every zone stands on its own buttons. Spread out instead of rushing deep.", pays: (r) => `every material ${pct(P.chain * r)}` },
-    { id: "leash", n: 8, icon: "flag", name: "Short leash", rule: `Each rank has a time limit: ${CH_TUNE.leash.join(", ")} min of game time.`, plan: "Game time, so time away counts. A stronger tree makes the later limits.", pays: (r) => `offline cap +${P.leash * r} h` },
+    { id: "leash", n: 8, icon: "flag", name: "Short leash", rule: `Each rank has a time limit: ${CH_TUNE.leash.join(", ")} min of game time.`, plan: "Game time, so time away counts toward each limit. Each later rank gets a longer limit.", pays: (r) => `offline cap +${P.leash * r} h` },
 ];
 export const testDef = (id: TestId) => TESTS.find((t) => t.id === id)!;
 export const RANKS = ["I", "II", "III"];
