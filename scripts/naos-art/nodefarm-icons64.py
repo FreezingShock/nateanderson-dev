@@ -47,7 +47,8 @@ def build(stat):
 
 # Zone/stat icon sheet: same order as ORDER in components/nodefarm/icon.tsx, eight frames down.
 ICON_ORDER = ["bytes", "mult", "reboot", "copper", "silicon", "quartz", "aether", "ascend", "alert", "lock", "spark", "runes",
-              "starglass", "voidsteel", "chrono", "engrams", "paradox", "origin", "nebula", "pulsars", "singularity"]
+              "starglass", "voidsteel", "chrono", "engrams", "paradox", "origin", "nebula", "pulsars", "singularity",
+              "spores", "mycelium", "pollen", "bloom", "basalt", "magma", "geodes", "core"]
 
 
 def icon_fn(name):
