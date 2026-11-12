@@ -2,7 +2,7 @@
 
 import type { CSSProperties } from "react";
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
-import { sfx } from "@/lib/sound/sounds";
+import { nfx as sfx, nfx, humVol } from "@/lib/nodefarm/sound";
 import { setHum } from "@/lib/sound/engine";
 import { useSoundPrefs } from "@/lib/sound/use-sound";
 import {
@@ -304,6 +304,7 @@ export function NodeFarm() {
     // the core flares on milestones, unlocks and tier-ups
     useEffect(() => onJuice((e) => {
         if (e.t === "milestone" || e.t === "unlock" || e.t === "tier") feed.current.flareAt = performance.now();
+        if (e.t === "milestone") nfx("nfGoal");
     }), []);
     const saved = useRef(0);
     const warnedSave = useRef(false);
@@ -546,7 +547,7 @@ export function NodeFarm() {
                         const zd = zoneEvDef(ev.kind);
                         feedStore.push([...call(idTok("zone"), "event", [strTok(ev.kind)]), pun(" → "), strTok(zoneLabel(ev.zone))], { tone: zd.good ? "hot" : "warn", type: true });
                         setZeCard(ev.id);
-                        sfx("nfAlert");
+                        nfx("nfZone", { good: zd.good });
                     }
                 }
                 zeSeen.current = { s, n: zn };
@@ -622,7 +623,7 @@ export function NodeFarm() {
             skinsWas.current = skins;
             if (prevUnlocked.current && f.unlocked > prevUnlocked.current) sfx("nfDecrypt");
             prevUnlocked.current = f.unlocked;
-            setHum(humRef.current ? { level: Math.min(1, f.speed * 0.75 + (f.unlocked / 7) * 0.25), boost: f.overclock } : null);
+            setHum(humRef.current ? { level: Math.min(1, f.speed * 0.75 + (f.unlocked / 7) * 0.25), boost: f.overclock, vol: humVol() } : null);
             for (const n of takeChNews(s)) {
                 const t = testDef(n.id);
                 sfx("nfTierUp", { tier: 3 });
@@ -708,7 +709,7 @@ export function NodeFarm() {
             const r = zeChoose(g.current, id, c);
             if (!r.ok) { sfx("deny"); return; }
             teachEvent(g.current);
-            sfx("nfBuy", { tier: 2 });
+            nfx("nfBuy", { tier: 2 }, "events");
             if (c === "mine") log(`Vein mined: +${fmt(r.paid ?? 0)} ${statDef(r.stat ?? "bytes").name}.`, "good");
             else if (c === "patch") log(`Fault patched for ${fmt(r.paid ?? 0)} Bytes.`, "good");
             else log(c === "run" ? "Vein left running." : "Fault left to run out.", "good");
@@ -1001,7 +1002,7 @@ export function NodeFarm() {
         const from = s.hand.proto;
         const keys = handover(s, proto, note, proto2);
         if (!keys) return sfx("deny");
-        sfx("nfAscend");
+        sfx("nfHandover");
         const p = protoDef(proto);
         const milestone = () => juice.emit({ t: "milestone", title: `Handover ${s.hand.count}: +${keys} Keys`, sub: `${p.op}'s protocol is running: ${p.name}. Flash Firmware with your Keys.` });
         setCut({ n: s.hand.count, keys, from, fromRank: from ? protoRank(s, from) : 0, to: proto, note: s.hand.notes.at(-1)?.n === s.hand.count ? s.hand.notes.at(-1)!.text : "", after: milestone });
@@ -1015,7 +1016,7 @@ export function NodeFarm() {
         keepBackup("before a stress test");
         if (!startTest(s, id)) return sfx("deny");
         const t = testDef(id);
-        sfx("nfAscend");
+        sfx("nfStress");
         juice.emit({ t: "milestone", title: `Stress test: ${t.name}`, sub: `${t.rule} Your run is stored and comes back when you leave.` });
         feedStore.push([...call(idTok("stress"), "start", [strTok(id)]), pun(" → "), strTok("run stored"), txt(" "), com("// fresh run under the fault")], { tone: "hot", type: true });
         prevIds.current = null;
@@ -1026,7 +1027,7 @@ export function NodeFarm() {
     const doLeaveStress = () => {
         const got = leaveTest(s);
         if (got < 0) return sfx("deny");
-        sfx("nfGoal");
+        nfx("nfGoal", undefined, "runs");
         juice.emit({ t: "milestone", title: "Run restored", sub: `${got} rank${got === 1 ? "" : "s"} cleared in that test. Everything else is as you left it.` });
         feedStore.push([...call(idTok("stress"), "leave"), pun(" → "), strTok("run restored")], { tone: "good", type: true });
         prevIds.current = null;
@@ -1255,7 +1256,7 @@ export function NodeFarm() {
                         s={s}
                         open={!folded.sched}
                         onToggle={() => { setFold({ ...folded, sched: !folded.sched }); sfx("tab"); }}
-                        onChange={(msg) => { sfx("tab"); if (msg) feedStore.push([...call(idTok("cron"), msg.endsWith("running") ? "start" : "stop", [strTok(msg.split(" ")[0])])], { tone: msg.endsWith("running") ? "good" : "warn" }); save(); bump((n) => n + 1); }}
+                        onChange={(msg) => { nfx(msg ? "nfScript" : "tab", { on: !!msg?.endsWith("running") }, "automation"); if (msg) feedStore.push([...call(idTok("cron"), msg.endsWith("running") ? "start" : "stop", [strTok(msg.split(" ")[0])])], { tone: msg.endsWith("running") ? "good" : "warn" }); save(); bump((n) => n + 1); }}
                     />
                 )}
                 {isUnlocked(s, "aether") && (
@@ -1264,7 +1265,7 @@ export function NodeFarm() {
                         guided={step.target?.drone}
                         open={!folded.drones}
                         onToggle={() => { setFold({ ...folded, drones: !folded.drones }); sfx("tab"); }}
-                        onBuy={(k) => { if (buyDrone(s, k)) { sfx("nfBuy", { tier: k }); feedStore.push([...call(idTok("drones"), "deploy", [strTok(`T${k + 1}`)]), pun(" → "), strTok("online")], { tone: "good", type: true }); bump((n) => n + 1); } else sfx("deny"); }}
+                        onBuy={(k) => { if (buyDrone(s, k)) { sfx("nfDrone", { tier: k }); feedStore.push([...call(idTok("drones"), "deploy", [strTok(`T${k + 1}`)]), pun(" → "), strTok("online")], { tone: "good", type: true }); bump((n) => n + 1); } else sfx("deny"); }}
                         onPost={(k, st) => {
                             if (!setPost(s, k, st)) return sfx("deny");
                             sfx("tab");
@@ -1274,7 +1275,7 @@ export function NodeFarm() {
                         }}
                         onMod={(k, m) => {
                             if (!buyMod(s, k, m)) return sfx("deny");
-                            sfx("nfBuy", { tier: Math.min(5, k + 1) });
+                            sfx("nfDrone", { tier: Math.min(5, k + 1) });
                             feedStore.push([...call(idTok("drones"), "refit", [strTok(`T${k + 1}`), pun(", "), strTok(MODS[m].id)]), pun(" → "), num(`lv ${s.dr.mods[k][m]}`)], { tone: "good" });
                             bump((n) => n + 1);
                         }}
@@ -1404,7 +1405,7 @@ export function NodeFarm() {
                     reduced={reduced}
                     onBuy={(id) => {
                         if (!buyDroneNode(s, id)) return sfx("deny");
-                        sfx("nfBuy", { tier: 4 });
+                        nfx("nfDrone", { tier: 4 });
                         feedStore.push([...call(idTok("hangar"), "fit", [strTok(droneNode(id).name)]), pun(" → "), strTok("installed")], { tone: "good", type: true });
                         save();
                         bump((x) => x + 1);

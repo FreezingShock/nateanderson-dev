@@ -385,3 +385,9 @@ styles app/camino/nodefarm-stress.css (`nf-st-*`), banner art `win-stress` from 
   `node --experimental-strip-types scripts/nodefarm/stress-sim.mjs /tmp/s.json 6` (also checks the run comes back intact).
   First run (2026-11-12) from a 3.6 h save: rank I in 0.4 to 1.0 h, rank III in 4.4 to 6 h; from a 24 h save: rank III in
   1 to 1.8 h, Brownout III 6.3 h.
+
+## Sound pass (mixer)
+
+Every Node Farm sound goes through `nfx(name, arg?, system?)` in `lib/nodefarm/sound.ts`, never `sfx` directly. It belongs to one of eight systems (buttons, unlocks, runs, automation, events, world, interface, hum) and plays at that system's volume, kept per device in `nf-mix-v1` (not in the save). The site-wide master volume and sound switch still apply first. Sliders are in the Menu window's settings under "mix"; clicking a name plays a sample. Under the hood `setLevel()` in `lib/sound/engine.ts` scales the gain of every voice created during that one `play()`.
+
+To add a sound: write it in `lib/sound/sounds.ts` (same voices: key clicks, square blips, soft sine bodies, filtered sweeps), give it a home system in `HOME` in `lib/nodefarm/sound.ts`, and call `nfx("name")`. The new voices are `nfHandover`, `nfStress`, `nfScript` (arg `{ on }`), `nfDrone`, `nfRig`, `nfZone` (arg `{ good }`), `nfCache`, `nfVent`, `nfPage` and `nfEnd` (reserved for the ending screen: call `nfx("nfEnd")`). Milestone banners also play the goal chirp, and the rate limiter drops it when something louder just played.

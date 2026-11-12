@@ -13,7 +13,11 @@
 import { useContext, useEffect, useRef, useState, type CSSProperties, type MutableRefObject } from "react";
 import { createPortal } from "react-dom";
 import "@/app/camino/nodefarm-poke.css";
-import { sfx } from "@/lib/sound/sounds";
+import { nfx } from "@/lib/nodefarm/sound";
+import type { SfxName } from "@/lib/sound/sounds";
+
+// scans, caches and the core vent play in the "world" mix
+const sfx = (n: SfxName, a?: unknown) => nfx(n, a, "world");
 import { STATS, apGlobal, derive, fmt, fmtTime, isUnlocked, overclockMult, singularityAll, sunstoneAll, statDef, MATS, TUNE, type State, type StatId, type MatId } from "@/lib/nodefarm/engine";
 import { exact, type Target, type TipInfo } from "@/lib/nodefarm/guide";
 import { LORE } from "@/lib/nodefarm/lore";
@@ -366,8 +370,8 @@ export function PokeLayer({ s, d, root, coreFeed, feed, reduced, onChange, onGo,
 
     const doOpen = (id: number, el: Element | null) => {
         const got = openCache(s, id);
-        if (!got) return sfx("deny");
-        sfx("nfGoal");
+        if (!got) return nfx("deny");
+        sfx("nfCache");
         popAt(el, `+${fmt(got.amount)} ${statDef(got.stat).short}`, statDef(got.zone).color, reduced);
         feed.push([...call(idTok("cache", statDef(got.zone).color), "open", [strTok(zoneName(got.zone).toLowerCase())]), pun(" → "), num(`+${fmt(got.amount)}`), pun(" "), idTok(statDef(got.stat).short, statDef(got.stat).color)], { tone: "good" });
         tip.hide();
@@ -383,7 +387,7 @@ export function PokeLayer({ s, d, root, coreFeed, feed, reduced, onChange, onGo,
         const got = vent(s);
         if (!got) return;
         coreFeed.current.flareAt = performance.now(); // the core's big flash and shockwave
-        sfx("nfGoal");
+        sfx("nfVent");
         navigator.vibrate?.(12);
         popAt(el, lumpText(got), "#ff2d8a", reduced);
         feed.push([...call(idTok("core"), "vent"), pun(" → "), num(lumpText(got))], { tone: "good", type: true });
