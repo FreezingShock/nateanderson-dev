@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState, type MutableRefObject } from "react";
 import { sfx } from "@/lib/sound/sounds";
 import { EVENT_TUNE, nextGapMs, pickEvent, type EventDef, type EventKind } from "@/lib/nodefarm/events";
-import type { State } from "@/lib/nodefarm/engine";
+import { overclockMult, overclockSecs, type State } from "@/lib/nodefarm/engine";
 
 type Stage = "incoming" | "live" | "result";
 type Active = { def: EventDef; id: number; stage: Stage; won: boolean };
@@ -147,7 +147,7 @@ export function EventLayer({ game, busy, enabled, ready, reduced, onEngage, onRe
                 )}
                 {stage === "result" && (
                     <p id="nf-ev-d" className="nf-ev-result" role="status" data-won={act.won ? "" : undefined}>
-                        {act.won ? `Cleared. Overclock x6 for ${20 + game.current.perks.overclock * 5} s.` : "Lost. No cost, the next one will come."}
+                        {act.won ? `Cleared. Overclock x${overclockMult(game.current)} for ${overclockSecs(game.current)} s.` : "Lost. No cost, the next one will come."}
                     </p>
                 )}
             </div>

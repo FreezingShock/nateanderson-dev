@@ -1,7 +1,6 @@
 "use client";
 
-import { useState } from "react";
-import { BRANCHES, GOALS, GOAL_TIERS, PERKS, STATS, TIER_NAMES, TREE, TUNE, amount, apOnAscend, canAscend, derive, droneCost, dronesOpen, fmt, goalDone, hasNode, isUnlocked, nodeOpen, tiersDone, treeNode, MATS, type MatId, type State, type StatId, type TreeNode } from "@/lib/nodefarm/engine";
+import { BRANCHES, GOALS, GOAL_TIERS, PERKS, STATS, TIER_NAMES, TREE, TUNE, amount, apOnAscend, canAscend, derive, droneCost, dronesOpen, fmt, goalDone, hasNode, isUnlocked, tiersDone, MATS, type MatId, type State, type StatId } from "@/lib/nodefarm/engine";
 import { feedLine, nextStep, unlockInfo } from "@/lib/nodefarm/guide";
 import { LORE } from "@/lib/nodefarm/lore";
 import { NfIcon, type NfIconName } from "./icon";
@@ -17,19 +16,14 @@ function standing(s: State, id: StatId): "done" | "ready" | "locked" {
     return s.prod[id as MatId] > 0 ? "done" : "ready";
 }
 
-const depthOf = (n: TreeNode): number => (n.req.length ? 1 + Math.max(...n.req.map((r) => depthOf(treeNode(r)))) : 0);
-
 /** The whole farm on one screen: the chain from Bytes to Chrono, the Ascend gate and Drones, and the prestige tree. */
-export function MapPanel({ s, d, onNode, onWin }: { s: State; d: D; onNode: (id: string) => void; onWin: (w: "ascend" | "goals") => void }) {
-    const [sel, setSel] = useState<string>("");
+export function MapPanel({ s, d, onTree, onWin }: { s: State; d: D; onTree: () => void; onWin: (w: "ascend" | "goals") => void }) {
     const step = nextStep(s, d);
     const stand = STATS.map((x) => standing(s, x.id));
     const frontier = stand.findIndex((x) => x !== "done");
     const total = STATS.length;
     const online = stand.filter((x) => x === "done").length;
     const goals = GOALS.filter((g) => goalDone(s, g)).length;
-    const cur = (sel ? TREE.find((n) => n.id === sel) : undefined) ?? TREE.find((n) => !hasNode(s, n.id) && nodeOpen(s, n)) ?? TREE[0];
-    const curState = hasNode(s, cur.id) ? "owned" : nodeOpen(s, cur) ? "open" : "locked";
     const owned = TREE.filter((n) => hasNode(s, n.id)).length;
 
     return (
@@ -115,42 +109,31 @@ export function MapPanel({ s, d, onNode, onWin }: { s: State; d: D; onNode: (id:
                 </section>
             </div>
 
-            <h4 className="nf-mp-h">Prestige tree <small>Bought with AP in the Ascend window. Tap a node to read it.</small></h4>
+            <h4 className="nf-mp-h">Prestige tree <small>{owned} of {TREE.length} nodes, bought with AP in the tree menu.</small></h4>
             <div className="nf-mp-tree">
-                {BRANCHES.map((b) => (
-                    <section key={b.id} className="nf-mp-branch" style={{ ["--c" as string]: b.color }} aria-label={`${b.name} branch`}>
-                        <header><b>{b.name}</b><small>{TREE.filter((n) => n.branch === b.id && hasNode(s, n.id)).length}/{TREE.filter((n) => n.branch === b.id).length}</small></header>
-                        <ol>
-                            {TREE.filter((n) => n.branch === b.id).map((n) => {
-                                const st = hasNode(s, n.id) ? "owned" : nodeOpen(s, n) ? "open" : "locked";
-                                return (
-                                    <li key={n.id} style={{ ["--d" as string]: depthOf(n) }}>
-                                        <button type="button" className="nf-mp-node" data-state={st} aria-pressed={cur.id === n.id} onClick={() => setSel(n.id)} onPointerEnter={(e) => { if (e.pointerType === "mouse") setSel(n.id); }}>
-                                            <i aria-hidden="true" />
-                                            <span>{n.name}</span>
-                                            <small>{st === "owned" ? "owned" : `${n.cost} AP`}</small>
-                                        </button>
-                                    </li>
-                                );
-                            })}
-                        </ol>
-                    </section>
-                ))}
+                {BRANCHES.map((b) => {
+                    const mine = TREE.filter((n) => n.branch === b.id);
+                    const have = mine.filter((n) => hasNode(s, n.id)).length;
+                    return (
+                        <section key={b.id} className="nf-mp-branch" style={{ ["--c" as string]: b.color }} aria-label={`${b.name} section`}>
+                            <header><b>{b.name}</b><small>{have}/{mine.length}</small></header>
+                            <p>{b.blurb}</p>
+                            <span className="nf-bar sm" aria-hidden="true"><i style={{ width: `${(have / mine.length) * 100}%` }} /></span>
+                        </section>
+                    );
+                })}
             </div>
-            <div className="nf-mp-sel" data-state={curState} style={{ ["--c" as string]: BRANCHES.find((b) => b.id === cur.branch)?.color }} aria-live="polite">
+            <div className="nf-mp-sel" data-state="open">
                 <div>
-                    <span>{BRANCHES.find((b) => b.id === cur.branch)?.name} // {curState === "owned" ? "OWNED" : curState === "open" ? "AVAILABLE" : "LOCKED"}</span>
-                    <b>{cur.name}</b>
-                    <p>{cur.blurb}{cur.req.length > 0 && ` Needs ${cur.req.map((r) => treeNode(r).name).join(" and ")}.`}</p>
+                    <span>PRESTIGE TREE</span>
+                    <b>{fmt(s.ap)} AP to spend</b>
+                    <p>A web of {TREE.length} upgrades in five sections. Pan and zoom to explore it. Nothing in it resets.</p>
                 </div>
                 <div className="nf-mp-sel-a">
-                    <small>{cur.cost} AP · you have {fmt(s.ap)}</small>
-                    <button type="button" className="nf-mini" disabled={curState !== "open" || s.ap < cur.cost} onClick={() => onNode(cur.id)}>
-                        {curState === "owned" ? "Owned" : curState === "locked" ? "Locked" : `Buy · ${cur.cost} AP`}
-                    </button>
+                    <button type="button" className="nf-mini" onClick={onTree}>Open tree</button>
                 </div>
             </div>
-            {PERKS.length > 0 && <p className="nf-mp-foot">Perks (Power core, Autoloader, Standby cells and more) are bought in the Ascend window too.</p>}
+            {PERKS.length > 0 && <p className="nf-mp-foot">Perks (Power core, Autoloader, Standby cells and more) are bought in the Ascend window.</p>}
         </div>
     );
 }

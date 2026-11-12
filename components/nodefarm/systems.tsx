@@ -1,10 +1,9 @@
 "use client";
 
 import { PixelIcon } from "@/components/cm/pixel-icons";
-import { GOALS, GOAL_TIERS, PERKS, SECRETS, TIER_NAMES, TUNE, apOnAscend, canAscend, derive, fmt, fmtTime, goalDone, tiersDone, type State } from "@/lib/nodefarm/engine";
+import { BRANCHES, GOALS, GOAL_TIERS, PERKS, TREE, hasNode, SECRETS, TIER_NAMES, TUNE, apOnAscend, canAscend, derive, fmt, fmtTime, goalDone, tiersDone, type State } from "@/lib/nodefarm/engine";
 import { goalCounts, recordSections } from "@/lib/nodefarm/records";
 import { NfIcon } from "./icon";
-import { TreePanel } from "./tree";
 
 type D = ReturnType<typeof derive>;
 const ROMAN = ["", "I", "II", "III", "IV", "V", "VI", "VII"];
@@ -101,7 +100,27 @@ export function RecordsPanel({ s }: { s: State }) {
     );
 }
 
-export function AscendPanel({ s, d, confirm, onAscend, onPerk, onNode }: { s: State; d: D; confirm: boolean; onAscend: () => void; onPerk: (id: (typeof PERKS)[number]["id"]) => void; onNode: (id: string) => void }) {
+/** Summary of the prestige tree on the Ascend pane, with the way into the full-screen menu. */
+function TreeCard({ s, onOpen }: { s: State; onOpen: () => void }) {
+    const owned = s.tree.length;
+    return (
+        <section className="nf-tree-wrap nf-tree-card">
+            <header className="nf-sys-h">
+                <h3>Prestige tree</h3>
+                <p>{TREE.length} upgrades in five sections, bought with AP and kept through every Ascend. {s.ap} AP to spend, {owned} of {TREE.length} owned.</p>
+            </header>
+            <ul className="nf-tree-sum">
+                {BRANCHES.map((b) => {
+                    const mine = TREE.filter((n) => n.branch === b.id);
+                    return <li key={b.id} style={{ ["--c" as string]: b.color }}><b>{b.name}</b><small>{mine.filter((n) => hasNode(s, n.id)).length}/{mine.length}</small></li>;
+                })}
+            </ul>
+            <button type="button" className="nf-mini nf-tree-open" onClick={onOpen}>Open the tree</button>
+        </section>
+    );
+}
+
+export function AscendPanel({ s, d, confirm, onAscend, onPerk, onTree }: { s: State; d: D; confirm: boolean; onAscend: () => void; onPerk: (id: (typeof PERKS)[number]["id"]) => void; onTree: () => void }) {
     const gain = apOnAscend(s);
     const after = (1 + (s.ap + gain) * TUNE.apBonus) / (1 + s.ap * TUNE.apBonus);
     return (
@@ -151,7 +170,7 @@ export function AscendPanel({ s, d, confirm, onAscend, onPerk, onNode }: { s: St
                     })}
                 </ul>
             </section>
-            <TreePanel s={s} onNode={onNode} />
+            <TreeCard s={s} onOpen={onTree} />
         </div>
     );
 }
