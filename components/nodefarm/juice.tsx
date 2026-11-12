@@ -7,7 +7,10 @@ import { createPortal } from "react-dom";
 import { TUNE, STATS, fmt, isUnlocked, statDef, type ButtonStat, type State, type StatId } from "@/lib/nodefarm/engine";
 import { LORE } from "@/lib/nodefarm/lore";
 import { ascendNote } from "@/lib/nodefarm/story";
-import { Core, type CoreFeed } from "./core";
+import { Core, freshCoreFeed, type CoreFeed } from "./core";
+import { coreLook } from "@/lib/nodefarm/core-look";
+import { PART } from "@/lib/nodefarm/core-parts";
+import type { NfLive } from "@/lib/nodefarm/records";
 import { NfIcon, type NfIconName } from "./icon";
 
 // Game feel for Node Farm: number pop-ups on presses, banners when a stat decrypts / a button tier opens / a milestone is
@@ -334,7 +337,15 @@ function placeBanner(el: HTMLElement | null) {
 
 // ---- the Ascend sequence: charge the core, flash, then the report. Click, Enter or Esc skips the charge, then closes.
 function AscendSeq({ data, reduced, onClose }: { data: { gain: number; ap: number; n: number; each?: number }; reduced: boolean; onClose: () => void }) {
-    const feed = useRef<CoreFeed>({ progress: reduced ? 1 : 0, overclock: false, unlocked: STATS.length, speed: 0.25, lastPulse: -1e9, reboots: 64, ap: reduced ? data.ap : Math.max(0, data.ap - data.gain) });
+    // the player's own core (colours and structures); on the first Ascend its gyro ring builds in at the flash
+    const look = useRef<ReturnType<typeof coreLook> | null>(null);
+    if (!look.current) {
+        const probe: { live?: NfLive } = {};
+        window.dispatchEvent(new CustomEvent("nf:live", { detail: probe }));
+        look.current = probe.live ? coreLook(probe.live.s) : { zone: 0, chroma: false, parts: PART.ring1, drones: 0, glyphs: 0 };
+    }
+    const lk = look.current;
+    const feed = useRef<CoreFeed>({ ...freshCoreFeed(), progress: reduced ? 1 : 0, unlocked: STATS.length, speed: 0.25, reboots: 64, ap: reduced ? data.ap : Math.max(0, data.ap - data.gain), zone: lk.zone, chroma: lk.chroma, parts: reduced || data.n > 1 ? lk.parts : lk.parts & ~PART.ring1, drones: lk.drones, glyphs: lk.glyphs });
     const [phase, setPhase] = useState<"charge" | "show">(reduced ? "show" : "charge");
     const [canClose, setCanClose] = useState(reduced);
     const num = useRef<HTMLElement>(null);
@@ -345,7 +356,7 @@ function AscendSeq({ data, reduced, onClose }: { data: { gain: number; ap: numbe
 
     const reveal = useCallback(() => {
         const f = feed.current;
-        f.progress = 1; f.overclock = false; f.speed = 1; f.ap = data.ap; f.lastPulse = performance.now();
+        f.progress = 1; f.overclock = false; f.speed = 1; f.ap = data.ap; f.lastPulse = performance.now(); f.parts = look.current?.parts ?? f.parts;
         setPhase("show");
     }, [data.ap]);
 
