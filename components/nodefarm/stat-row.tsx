@@ -217,6 +217,7 @@ function BuyBtn({ s, stat, tier, onPress, guided }: { s: State; stat: ButtonStat
                 </span>
             </span>
             {guided && <i className="nf-gd-c" aria-hidden="true" />}
+            <i className="nf-rar" aria-hidden="true" />
             <NfTierIcon stat={stat} tier={tier} />
             <span className="nf-btn-g">+{fmt(b.gain)}</span>
             <span className="nf-btn-c">{fmt(b.cost)} {pays.short}{owned > 0 && <em> · ×{owned}</em>}</span>
