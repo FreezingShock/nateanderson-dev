@@ -146,7 +146,7 @@ export function nextStep(s: State, d: Derived): Step {
             if (training) {
                 if (canAscend(s)) {
                     const gain = apOnAscend(s);
-                    return mk({ id: "ascend", title: `Ascend for +${fmt(gain)} AP`, why: "Ascending wipes this run but keeps goals, perks and the tree, and every AP boosts everything for good.", cur: s.aether, need: TUNE.ascendAether, unit: "AE", target: { win: "ascend" } });
+                    return mk({ id: "ascend", title: `Ascend for +${fmt(gain)} AP`, why: "Ascending wipes this run but keeps goals, perks, the tree and lab research, and every AP boosts everything for good.", cur: s.aether, need: TUNE.ascendAether, unit: "AE", target: { win: "ascend" } });
                 }
                 return mk({ id: "reach-ascend", title: "Reach Ascend", why: `Hold ${fmt(TUNE.ascendAether)} Aether to Ascend: a reset that gives permanent power.`, cur: s.aether, need: TUNE.ascendAether, unit: "AE", pay: "aether", target: aim(s, "aether") });
             }

@@ -5,15 +5,18 @@ import { LAB, LAB_SECS } from "@/lib/nodefarm/engine";
 import type { TreeBackdropHandle } from "./tree-backdrop";
 
 /**
- * The research tree's backdrop: a blueprint sheet. Three drafting grids (fine, major, and the world grid the nodes sit on)
- * follow the camera at different rates for depth, plus a world layer with the core's glow, one tinted wash per section and a
- * few drafting marks (a compass circle and dimension ticks). Pure CSS gradients: no art files, nothing per frame but a
- * background-position and one transform. Same handle as the prestige TreeBackdrop, so the menu drives either one.
+ * The research tree's backdrop: a dithered blueprint sheet. Far to near: the painted paper (`lab-bg-0`, multicolour mist and
+ * schematic symbols), a fine and a major drafting grid, a layer of floating bytes (`lab-bg-2`) and the dot grid the nodes sit
+ * on, each following the camera at its own rate for depth. A world layer holds one dither plate per section (`lab-sec-*`),
+ * the core's drafting rings (`lab-core`) and three compass rings. Art: scripts/naos-art/nodefarm-lab-bg.py. Nothing per frame
+ * but background-positions and one transform. Same handle as the prestige TreeBackdrop, so the menu drives either one.
  * Styles: app/camino/nodefarm-lab.css (`.nf-lbd*`). Decorative: aria-hidden, no pointer events.
  */
 const LAYERS = [
+    { depth: 0.12, zoom: 0.2, cell: 512 }, // painted paper (256 art px drawn at 2x)
     { depth: 0.2, zoom: 0.25, cell: 26 },
     { depth: 0.55, zoom: 0.6, cell: 132 },
+    { depth: 0.8, zoom: 0.85, cell: 768 }, // floating bytes (256 art px drawn at 3x)
     { depth: 1, zoom: 1, cell: 0 }, // cell 0 = half a tree unit, glued to the nodes
 ];
 

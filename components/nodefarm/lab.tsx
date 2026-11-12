@@ -25,10 +25,39 @@ export function labModel(s: State): TreeModel {
     return {
         theme: "lab", title: "lab // research", label: "Research tree", nodes: LAB, sections: LAB_SECS, owned: s.lab.nodes, wallet: s.lab.intel, unit: "Intel",
         open: (n) => labNodeOpen(s, labNode(n.id)), vis: (n) => labVis(s, labNode(n.id)), totals: () => labTotals(s), totalsLabel: "Lab gives",
-        keptNote: "kept through Ascend", buyWord: "Research", prompt: "PS ~/lab>", respec: false,
+        keptNote: "kept through Ascend", buyWord: "Research", prompt: "PS ~/lab>", respec: false, fitMin: [0.34, 0.5],
         fogText: "Encrypted research. Finish a node next to it to read this one.",
+        spec: (n) => {
+            const r = labNode(n.id).fx.recipe;
+            if (!r) return null;
+            const p = PAYLOADS.find((x) => x.id === r)!;
+            const c = payloadCost(s, p);
+            const run = p.kind === "buff" ? `runs ${fmtTime(payloadDur(s, p))}` : p.kind === "charge" ? "waits for its trigger" : "fires at once";
+            return `recipe // ${KIND_WORD[p.kind]} · compiles in ${fmtTime(compileSecs(s, p))} · ${run} · each costs ${fmt(c.intel)} Intel + ${fmt(c.amount)} ${statDef(c.mat).short}`;
+        },
         core: { kicker: "lab.root", name: "Exploit Lab", fx: "Intel buys research here. Most nodes unlock a recipe you compile on the board; the rest upgrade the lab. Research is kept through every Ascend.", quote: "The last operator left the bench set up. Most of the notes are in a language only the node speaks.", color: LAB_BLUE },
     };
+}
+
+/** Scene stage 0..7 for the panel art (zone-lab sheet): grows with research. */
+export const labStage = (s: State) => { const n = s.lab.nodes.length; return n === 0 ? 0 : Math.min(7, 1 + Math.floor(((n - 1) * 6) / (LAB.length - 1))); };
+
+type Step = "intel" | "research" | "compile" | "deploy";
+const STEP_NOTE: Record<Step, string> = {
+    intel: "Intel trickles in with your Bytes per second. Every Reboot and every event win drops an extra lump.",
+    research: "Spend Intel in the research tree. Most nodes unlock a recipe; the Infra arm upgrades the lab itself.",
+    compile: "Compile a recipe below. It costs Intel plus a little of a material, and keeps compiling while you are away.",
+    deploy: "Deploy from stock. Buffs run in a slot for minutes; charges wait for your next Reboot or Ascend; instants fire now.",
+};
+/** The one thing to do next in the lab, for the flow strip. */
+function nextStep(s: State, d: Derived, ready: number): Step {
+    const recipes = PAYLOADS.filter((p) => hasRecipe(s, p.id));
+    if (!recipes.length) return ready ? "research" : "intel";
+    const stocked = recipes.some((p) => (s.lab.stock[p.id] ?? 0) > 0 && !deployBlock(s, p.id));
+    if (stocked) return "deploy";
+    if (!s.lab.queue.length && recipes.some((p) => !compileBlock(s, p.id, d))) return "compile";
+    if (ready) return "research";
+    return s.lab.queue.length ? "compile" : "intel";
 }
 
 /** How many research nodes you can buy right now. */
@@ -55,6 +84,14 @@ export function LabZone({ s, d, open, onToggle, onCompile, onCancel, onDeploy, o
     const slots = labSlots(s);
     const qmax = labQueueMax(s);
     const left = PAYLOADS.length - recipes.length;
+    const step = nextStep(s, d, ready);
+    const stock = PAYLOADS.reduce((n, p) => n + (s.lab.stock[p.id] ?? 0), 0);
+    const steps: { id: Step; k: string; v: string }[] = [
+        { id: "intel", k: "earn intel", v: `+${fmt(rate)}/s` },
+        { id: "research", k: "research", v: ready ? `${ready} ready` : `${s.lab.nodes.length}/${LAB.length}` },
+        { id: "compile", k: "compile", v: s.lab.queue.length ? `${s.lab.queue.length} in queue` : recipes.length ? "idle" : "no recipe" },
+        { id: "deploy", k: "deploy", v: `${stock} in stock · ${running.length}/${slots} on` },
+    ];
     return (
         <article className="nf-row nf-lab" style={{ ["--c" as string]: LAB_BLUE }} data-open={open ? "true" : "false"} data-stat="lab" data-guide={guided ? "" : undefined}>
             <div className="nf-bar-t">
@@ -66,7 +103,9 @@ export function LabZone({ s, d, open, onToggle, onCompile, onCancel, onDeploy, o
             </div>
             <div className="nf-body" id="nf-body-lab">
                 <div className="nf-body-in" ref={bodyIn} inert={!open}>
-                    <div className="nf-lab-top" data-cx-i="">
+                    <div className="nf-lab-hero" data-cx-i="">
+                    <i className="nf-lab-scene" aria-hidden="true" style={{ ["--st" as string]: labStage(s) } as CSSProperties} />
+                    <div className="nf-lab-top">
                         <div className="nf-lab-intel">
                             <span className="nf-lab-ps" aria-hidden="true">PS ~/lab&gt;</span>
                             <b>{fmt(s.lab.intel)}</b>
@@ -78,9 +117,22 @@ export function LabZone({ s, d, open, onToggle, onCompile, onCancel, onDeploy, o
                             <span className="sr-only">Open the research tree. {ready ? `${ready} nodes ready to research.` : `${s.lab.nodes.length} of ${LAB.length} researched.`}</span>
                         </button>
                     </div>
+                    <ol className="nf-lab-flow" aria-label="How the lab works">
+                        {steps.map((x, i) => (
+                            <li key={x.id} data-now={x.id === step ? "" : undefined} data-done={steps.findIndex((y) => y.id === step) > i ? "" : undefined}>
+                                {x.id === "research" ? (
+                                    <button type="button" onClick={onResearch}><i>0{i + 1}</i><b>{x.k}</b><span>{x.v}</span></button>
+                                ) : (
+                                    <span className="nf-lab-fs"><i>0{i + 1}</i><b>{x.k}</b><span>{x.v}</span></span>
+                                )}
+                            </li>
+                        ))}
+                    </ol>
+                    <p className="nf-lab-note"><b>next //</b> {STEP_NOTE[step]} <small>Research and stock survive Ascend; Intel and running buffs reset.</small></p>
+                    </div>
 
                     {recipes.length === 0 ? (
-                        <p className="nf-brief">Intel now runs alongside your Bytes. Spend it in the research tree to unlock recipes, compile them into payloads here, then deploy them for buffs. Start with <b>Packet sniffer</b> or <b>Rootkit</b>, both {LAB[0].cost} Intel.</p>
+                        <p className="nf-brief">Start with <b>Packet sniffer</b> (Exploits) or <b>Rootkit</b> (Malware), {LAB[0].cost} Intel each. Each one unlocks its recipe here. <b>Fiber tap</b> (Infra) doubles your Intel instead.</p>
                     ) : (
                         <>
                             <div className="nf-lab-run" data-cx-i="" aria-label="Running payloads">

@@ -62,6 +62,10 @@ export interface TreeModel {
     fogText: string;
     /** free respec (prestige tree only) */
     respec: boolean;
+    /** how far out "fit" may zoom: [phone, desktop]. A small tree can show all of itself at once. */
+    fitMin?: [number, number];
+    /** an extra fact line on a node's card (the lab shows what a recipe compiles into) */
+    spec?: (n: MenuNode) => string | null;
 }
 
 /** The prestige tree as a model (the default). */
@@ -379,7 +383,7 @@ function TreeMenuInner({ s, model, reduced, onBuy, onRespec, onClose }: TreeMenu
         const b = bRef.current.fit;
         const bw = b.x1 - b.x0 + 2.6 * U, bh = b.y1 - b.y0 + 2.6 * U;
         // never fit so far out that the nodes turn into dots: past this, panning shows the rest
-        const k = clamp(Math.min(w / bw, (h - st) / bh), w < 700 ? 0.42 : 0.56, maxK);
+        const k = clamp(Math.min(w / bw, (h - st) / bh), (m.fitMin ?? [0.42, 0.56])[w < 700 ? 0 : 1], maxK);
         return { cx: (b.x0 + b.x1) / 2, cy: (b.y0 + b.y1) / 2 - st / 2 / k, k };
     };
     const fit = useCallback((animate = true, maxK = 1.05) => {
@@ -859,6 +863,7 @@ function TreeMenuInner({ s, model, reduced, onBuy, onRespec, onClose }: TreeMenu
                         ) : (
                             <>
                                 <p className="nf-tm-fx" data-cx-i="2"><i aria-hidden="true">fx</i><span><Fx text={cn.blurb} /></span></p>
+                                {m.spec?.(cn) && <p className="nf-tm-spec" data-cx-i="2">{m.spec(cn)}</p>}
                                 {cn.flavor && <blockquote className="nf-tm-flv" data-cx-i="3"><p>{cn.flavor}</p></blockquote>}
                             </>
                         )}
@@ -892,7 +897,7 @@ function TreeMenuInner({ s, model, reduced, onBuy, onRespec, onClose }: TreeMenu
                     <span className="nf-tm-hc" key={hintMin ? "min" : "full"}>
                         {hintMin
                             ? (ready ? <><b>{ready}</b> ready</> : "help")
-                            : <>{ready ? <><b>{ready}</b> ready to install // </> : null}{coarse ? (ready ? "tap one to read it" : "tap: read // drag: pan // pinch: zoom") : "click: read // drag: pan // scroll: zoom"}</>}
+                            : <>{ready ? <><b>{ready}</b> ready to {m.buyWord.toLowerCase()} // </> : null}{coarse ? (ready ? "tap one to read it" : "tap: read // drag: pan // pinch: zoom") : "click: read // drag: pan // scroll: zoom"}</>}
                     </span>
                     <i className="nf-tm-caret" aria-hidden="true" />
                 </button>
