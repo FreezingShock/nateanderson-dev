@@ -25,9 +25,12 @@ _icons = importlib.util.module_from_spec(_spec)
 _spec.loader.exec_module(_icons)
 RAMPS = _icons.RAMPS
 
-W, H = 288, 64
+W, H = 288, 96          # contract v3: rows 0-31 are headroom backdrop up to the title bar (cut to the panel's height)
+HEAD = 32               # sprites live in rows 32-95
+TOP = 42                # no sprite pixel above this row
+OY = H - 64             # offset of the old 64-row layout
 FRAMES, STAGES = 6, 8
-GY = 61                      # floor line: sprites stand on it
+GY = H - 3                      # floor line: sprites stand on it
 HAZE = 80                    # backdrop alpha
 OUT = HERE.parents[1] / "public" / "naos" / "nodefarm"
 
@@ -241,33 +244,33 @@ def lamps(a, pts, f, ramps):
 
 
 def busy(x, y):
-    """True inside the top-right corner reserved for the big number and its sub-lines."""
-    return x > 200 and y < 30
+    """Contract v1 kept a quiet corner for the big number; v2 stops the art short of it, so nothing is reserved now."""
+    return False
 
 
 def mult_backdrop(a, f):
     floor(a, "lime")
-    # cyan carrier and lime harmonics, denser than the wall pattern
-    for j, (y, amp, cyc) in enumerate([(27, 2, 7), (40, 1.5, 9)]):
+    # cyan carriers and lime harmonics running the full height of the bay
+    for j, (y, amp, cyc) in enumerate([(6, 1.5, 6), (OY + 27, 2, 7), (OY + 40, 1.5, 9)]):
         wv = np.sin(xx / W * cyc * 2 * math.pi - j - f / FRAMES * 2 * math.pi) * amp
-        a.haze((np.abs(yy + .5 - (y + wv)) < .6) & ~((xx > 200) & (yy < 30)), col("cyan", 1))
-    # rack rails with lit ports along the wall
-    a.haze(rect(0, 52, W, 53), col("lime", 1))
-    a.haze(rect(0, 52, W, 56) & (xx.astype(int) % 5 == 0), col("lime", 0))
-    lamps(a, [(x, 54) for x in range(9, W, 15)], f, ["lime", "cyan", "rn"])
-    # faint carrier waves across the back wall
-    for j, (y, amp, cyc) in enumerate([(20, 3, 3), (34, 2, 5), (46, 2.5, 4)]):
+        a.haze(np.abs(yy + .5 - (y + wv)) < .6, col("cyan", 1))
+    # rack rails with lit ports along the wall, one high and one low
+    for ry in (OY - 8, OY + 52):
+        a.haze(rect(0, ry, W, ry + 1), col("lime", 1))
+        a.haze(rect(0, ry, W, ry + 4) & (xx.astype(int) % 5 == 0), col("lime", 0))
+        lamps(a, [(x + (ry % 7), ry + 2) for x in range(9, W, 15)], f + ry, ["lime", "cyan", "rn"])
+    for j, (y, amp, cyc) in enumerate([(14, 2, 4), (OY + 20, 3, 3), (OY + 34, 2, 5), (OY + 46, 2.5, 4)]):
         wv = np.sin(xx / W * cyc * 2 * math.pi + j) * amp
         a.haze(np.abs(yy + .5 - (y + wv)) < .6, col("lime", 1))
-    # honeycomb outline wall
-    for cy in range(8, 56, 14):
-        for cx in range(6 + (cy // 14 % 2) * 12, W, 24):
-            if (cx * 7 + cy * 3) % 5 < 3 and not busy(cx, cy):
+    # honeycomb outline wall, top to floor
+    for cy in range(-6, GY - 4, 14):
+        for cx in range(6 + ((cy + 14) // 14 % 2) * 12, W, 24):
+            if (cx * 7 + cy * 3) % 5 < 3:
                 a.haze(hexm(cx, cy, 6) & ~hexm(cx, cy, 5), col("lime", 1), 0.7)
 
 
 MULT = [  # (cx, cy-from-floor, r) per stage; heights ~ 8, 12, 16, 22, 30, 40, 56
-    (18, 4, 4.4), (38, 6, 6.6), (62, 8, 8.8), (90, 11, 12), (256, 15, 16), (204, 20, 22), (142, 28, 30),
+    (18, 4, 4.4), (38, 6, 6.6), (62, 8, 8.8), (90, 11, 12), (256, 15, 16), (204, 20, 21), (142, 24, 26),
 ]
 
 
@@ -384,23 +387,24 @@ def cell_bar(art, x0, y1, w, n, f, ph):
 
 def reboot_backdrop(a, f):
     floor(a, "mag")
-    # breaker grid panels on the wall, and amber/cyan status lamps
-    for x in range(4, W, 36):
-        if not busy(x, 30):
-            a.haze(rect(x + 6, 30, x + 24, 46) & ~rect(x + 7, 31, x + 23, 45), col("mag", 1))
-            a.haze(rect(x + 8, 33, x + 22, 43) & ((xx.astype(int) % 3) == 0), col("mag", 0))
-    lamps(a, [(x + 14, 48) for x in range(4, W, 36)] + [(x + 4, 26) for x in range(4, 200, 36)], f, ["rn", "cyan", "mag"])
-    # conduit pipes along the back wall
-    for y in (16, 22):
+    # breaker panels in two banks on the wall, with amber/cyan status lamps
+    for by in (OY - 26, OY + 30):
+        for x in range(4 + (by % 18), W, 36):
+            a.haze(rect(x + 6, by, x + 24, by + 16) & ~rect(x + 7, by + 1, x + 23, by + 15), col("mag", 1))
+            a.haze(rect(x + 8, by + 3, x + 22, by + 13) & ((xx.astype(int) % 3) == 0), col("mag", 0))
+        lamps(a, [(x + 14, by + 18) for x in range(4 + (by % 18), W, 36)], f + by, ["rn", "cyan", "mag"])
+    # conduit pipes along the back wall, risers up to the ceiling
+    for y in (2, OY - 6, OY + 16, OY + 22):
         a.haze(rect(0, y, W, y + 1), col("mag", 1))
     for x in range(10, W, 36):
-        a.haze(rect(x, 16, x + 2, GY), col("mag", 1), 0.5)
-        a.haze(rect(x - 1, 14, x + 3, 24), col("mag", 0))
-    # diagonal hazard wash along the floor
+        a.haze(rect(x, 0, x + 2, GY), col("mag", 1), 0.5)
+        a.haze(rect(x - 1, OY + 14, x + 3, OY + 24), col("mag", 0))
+    # hazard band under the ceiling and diagonal hazard wash along the floor
+    a.haze(rect(0, OY - 3, W, OY - 1) & (((xx - yy) // 3) % 2 == 0), col("rn", 1))
     a.haze(rect(0, GY + 1, W, H) & (((xx - yy) // 3) % 2 == 0), col("rn", 1), 0.7)
 
 
-REBOOT = [(16, 4), (36, 6), (60, 8), (90, 11), (256, 15), (204, 20), (142, 26)]  # (cx, radius-ish)
+REBOOT = [(16, 4), (36, 6), (60, 8), (90, 11), (256, 15), (204, 20), (142, 21)]  # (cx, radius-ish)
 
 
 def reboot_stage(stage, f):
@@ -545,30 +549,30 @@ def sparks(art, cx, cy, f, n, seed, spread=8.0):
 
 def furnace(art, cx, f):
     """Stage 7: a squat foundry with a chimney, a molten mouth and a pour channel."""
-    s = 26
-    P = box(art, cx, GY - 47, s, s * .8, 30, "gr", lit=(0.55, 0.35, 0.15))
+    s = 22
+    P = box(art, cx, GY - 40, s, s * .8, 25, "gr", lit=(0.55, 0.35, 0.15))
     L, F, R = P["L"], P["F"], P["R"]
     # copper roof and riveted copper plates on the shaded side
-    top = iso(cx, GY - 47, s, s * .8, 30)[0]
+    top = iso(cx, GY - 40, s, s * .8, 25)[0]
     art.fill(top, 0.55 + 0.3 * (1 - lin(L[0], 0, R[0], 0)), "cu", outline=False)
-    rside = iso(cx, GY - 47, s, s * .8, 30)[2]
+    rside = iso(cx, GY - 40, s, s * .8, 25)[2]
     art.fill(rside & ((xx.astype(int) % 7) != 0), 0.22 + 0.15 * lin(F[0], 0, R[0], 0), "cu", outline=False, lo=1)
     for k in range(4):
         x = F[0] + 3 + k * 6
         y = F[1] - (x - F[0]) * .5 + 4
         art.set(rect(x, y, x + 1, y + 1), col("cu", 4))
-        art.set(rect(x, y + 20, x + 1, y + 21), col("cu", 4))
-    art.outline(top | rside | iso(cx, GY - 47, s, s * .8, 30)[1], "gr")
+        art.set(rect(x, y + 16, x + 1, y + 17), col("cu", 4))
+    art.outline(top | rside | iso(cx, GY - 40, s, s * .8, 25)[1], "gr")
     for k in (0.3, 0.75):
-        y = L[1] + 30 * k
+        y = L[1] + 25 * k
         art.set(path_mask([(L[0], y), (F[0], y + (F[1] - L[1])), (R[0], y + (R[1] - F[1]) + (F[1] - L[1]))], 1.2), col("cu", 3))
     # chimney on the back corner
-    box(art, cx + 7, GY - 64 + 2, 5, 4, 14, "gr", lit=(0.6, 0.4, 0.2))
-    art.set(rect(cx + 5, GY - 63, cx + 9, GY - 62), col("red", 3 if f % 2 else 2))
+    box(art, cx + 6, GY - 50, 4, 3, 10, "gr", lit=(0.6, 0.4, 0.2))
+    art.set(rect(cx + 5, GY - 50, cx + 8, GY - 49), col("red", 3 if f % 2 else 2))
     # mouth on the left face, flickering
     mx0, mx1 = L[0] + 4, F[0] - 4
-    y0 = L[1] + 12
-    mouth = poly([(mx0, y0 + (mx0 - L[0]) * .5), (mx1, y0 + (mx1 - L[0]) * .5), (mx1, y0 + (mx1 - L[0]) * .5 + 11), (mx0, y0 + (mx0 - L[0]) * .5 + 11)])
+    y0 = L[1] + 9
+    mouth = poly([(mx0, y0 + (mx0 - L[0]) * .5), (mx1, y0 + (mx1 - L[0]) * .5), (mx1, y0 + (mx1 - L[0]) * .5 + 9), (mx0, y0 + (mx0 - L[0]) * .5 + 9)])
     art.fill(mouth, 0.55 + 0.35 * (1 - lin(0, y0, 0, y0 + 14)) + 0.12 * wave(f), "red", outline=False)
     art.set(mouth & (BAYER < 0.12 + 0.12 * wave(f, .25)), col("rn", 4))
     art.dots(disc((mx0 + mx1) / 2, y0 + 12, 20, 9) & (yy < GY), col("red", 1), 0.18 + 0.1 * tri(f))
@@ -581,7 +585,7 @@ def furnace(art, cx, f):
     # smoke from the chimney, drifting into the quiet corner only as haze-dark puffs
     for k in range(3):
         p = (f / FRAMES + k / 3) % 1
-        art.dots(disc(cx + 6 - p * 8, GY - 65 + 2 - p * 4, 1.5 + p * 2), col("gr", 2 if p < .5 else 1), 0.6 - p * 0.45)
+        art.dots(disc(cx + 6 - p * 8, GY - 52 - p * 4, 1.5 + p * 2), col("gr", 2 if p < .5 else 1), 0.6 - p * 0.45)
     return P
 
 
@@ -591,9 +595,9 @@ def copper_backdrop(a, f):
     a.haze(rect(0, GY + 2, W, GY + 3) & ((xx.astype(int) // 6) % 3 == 0), col("red", 1))
     # PCB trace network on the back wall: right-angle runs with pads
     rng = np.random.default_rng(4)
-    for k in range(16):
+    for k in range(26):
         x = rng.integers(0, W - 40)
-        y = rng.integers(10, GY - 8)
+        y = rng.integers(3, GY - 8)
         L1 = rng.integers(16, 60)
         d = rng.choice([-1, 1])
         pts = [(x, y), (x + L1, y), (x + L1 + 6, y + 6 * d), (x + L1 + 6 + rng.integers(10, 40), y + 6 * d)]
@@ -666,6 +670,7 @@ ZONES = {
 def cell(name, stage, f):
     back, draw = ZONES[name]
     a = draw(stage, f)
+    a.img[:TOP] = 0       # sprites (and their glow) stay below row TOP; the headroom is backdrop only
     back(a, f)            # haze only fills empty pixels, so it sits behind the art
     return a.img
 
