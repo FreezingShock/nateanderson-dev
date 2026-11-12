@@ -6,6 +6,7 @@
         "dev": "next dev --turbopack",
         "prebuild": "node scripts/nodefarm/stamp-art.mjs --check",
         "build": "next build",
+        "test:nodefarm": "node --experimental-strip-types --no-warnings --test --test-reporter=spec \"tests/nodefarm/*.test.mjs\"",
         "start": "next start",
         "lint": "next lint",
         "format": "prettier --write \"**/*.{js,jsx,ts,tsx,json,css,scss,md}\""

@@ -350,14 +350,12 @@ About every 11 to 19 minutes of play (first one after 8 minutes of life), one un
   named interaction turns on (`ARC_LINKS`): Hot swap (rack), Clean growth (fab), Still light (hollow), Storm pulse (deep),
   Recall (origin), Pollination (overgrowth), Quench (descent). The arc's level is its lowest rig level (the Glyph hall counts its lowest glyph). Shown on each rig panel.
 
-## Touch layer (caches, core vent, figure tips, links, zone menu), 2026-11-12
-Rules in `lib/nodefarm/poke.ts` (every number in `POKE_TUNE`, state `s.poke`, registers in `TICK_HOOKS`, so `sim.mjs` pacing is unchanged); UI in `components/nodefarm/poke.tsx` (`PokeLayer`), styles `app/camino/nodefarm-poke.css` (`nf-pk*`). Nate dislikes reflex tests and tap-clicker mashing, so nothing here needs speed and nothing pays for repeat taps.
-- **Caches**: after 3 min of online play, then every 6 to 10 min, a crate drops into one open zone's scene and waits forever (up to 3 at once; while 3 wait, none drop). A tap pays 60 s of that zone's plain output (Multipliers, Reboots and Bytes zones pay Bytes). A folded panel shows the crate in its title bar. Caches in a zone that closes again (Ascend, Handover) move to the Uplink rack.
-- **Core vent**: a button over the reactor core with a 10-step gauge. It fills over 10 min of online play and waits once full (magenta brackets); a tap then pays 45 s of every output. An early tap pulses the core and shows the vent readout.
+## Touch layer (figure tips, links, zone menu), 2026-11-12
+Helpers in `lib/nodefarm/poke.ts`; UI in `components/nodefarm/poke.tsx` (`PokeLayer`), styles `app/camino/nodefarm-poke.css` (`nf-pk*`). Nate dislikes reflex tests and tap-clicker mashing, so nothing here needs speed and nothing pays for repeat taps.
 - **Figure tips** (print reveal, the shared `Tip` layer): HUD Bytes, RBT, MUL, AP, the core readout (Global shows its breakdown), every zone's big number (exact, per second/minute/hour, time to double, nodes), every spec line, every chain stop. Found by delegation on the game root, so panels carry no extra markup. Hover on desktop, tap on touch (2.6 s).
 - **Links**: a signal chain stop or a "Feeds ..." spec line jumps to that zone (`goTo`) and pings its border.
-- **Zone menu**: right-click, or hold a finger still 520 ms on a zone panel (not on its buttons): Scan zone (a feed line), Open cache, Arm/Disarm Drones, Feeder, Feeds, Open the Drone bay. Escape, a tap elsewhere or a scroll closes it.
-- Only online ticks (5 s or less) charge the vent or drop caches. Admin/tests: `window.dispatchEvent(new CustomEvent("nf:poke", { detail: "vent" | "<zone id>" }))`.
+- **Zone menu**: right-click, or hold a finger still 520 ms on a zone panel (not on its buttons): Scan zone (a feed line), Arm/Disarm Drones, Feeder, Feeds, Open the Drone bay. Escape, a tap elsewhere or a scroll closes it.
+- Caches and the core vent were cut the same day (systems audit, Nate's pick): tap-for-a-lump overlapped the Dead drop. Saves that still carry `poke` ignore it.
 - Check: /mnt/project-files/portfolio/node-farm-poke/poke-check.mjs (1440 and iPhone 13).
 
 ## Settings and low-effects mode
@@ -400,3 +398,17 @@ The game state is one mutable object and `NodeFarm` re-renders 10 times a second
 Every Node Farm sound goes through `nfx(name, arg?, system?)` in `lib/nodefarm/sound.ts`, never `sfx` directly. It belongs to one of eight systems (buttons, unlocks, runs, automation, events, world, interface, hum) and plays at that system's volume, kept per device in `nf-mix-v1` (not in the save). The site-wide master volume and sound switch still apply first. Sliders are in the Menu window's settings under "mix"; clicking a name plays a sample. Under the hood `setLevel()` in `lib/sound/engine.ts` scales the gain of every voice created during that one `play()`.
 
 To add a sound: write it in `lib/sound/sounds.ts` (same voices: key clicks, square blips, soft sine bodies, filtered sweeps), give it a home system in `HOME` in `lib/nodefarm/sound.ts`, and call `nfx("name")`. The new voices are `nfHandover`, `nfStress`, `nfScript` (arg `{ on }`), `nfDrone`, `nfRig`, `nfZone` (arg `{ good }`), `nfCache`, `nfVent`, `nfPage` and `nfEnd` (reserved for the ending screen: call `nfx("nfEnd")`). Milestone banners also play the goal chirp, and the rate limiter drops it when something louder just played.
+
+## Engine tests (tests/nodefarm, 2026-11-12)
+
+`npm run test:nodefarm` runs the engine tests with Node's built-in runner (`node:test`, no new dependencies; Node 22 strips the TypeScript itself). It takes about 25 s and runs on every PR as a step of the blocking "Typecheck, build, link crawl" job, before the build, so a red run blocks the merge like a type error does. Run it before you push any change under `lib/nodefarm/`. One file alone: `node --experimental-strip-types --no-warnings --test tests/nodefarm/resets.test.mjs`.
+
+| File | What it pins down |
+|---|---|
+| `saves.test.mjs` | Every save in `scripts/nodefarm/fixtures` loads (plain JSON and base64) with nothing lost (runs `save-compat.mjs`, `removed-nodes-check.mjs` and `backups-check.mjs`), export then import gives the same save, bad input never throws |
+| `resets.test.mjs` | What Reboot, Ascend, Handover and a stress test keep and wipe; a refused Ascend or Handover changes nothing; a stress test puts the real run back exactly |
+| `run.test.mjs` | A bot playing 4 h with Ascends, a maxed state for 1 h and two Handover cycles never makes NaN, Infinity or a negative balance; away time (10 min, 1 h, 8 h, 24 h) stays inside the cap and never shrinks lifetime Bytes; lifetime Bytes, presses and Reboots agree between 0.1 s and 4 s ticks (10% for Bytes, 1% for presses) |
+| `zones.test.mjs` | 25 zones in order, unlock chain never skips, zones 18 to 25 stay shut until the first Handover |
+| `systems.test.mjs` | Scripts, drones, rigs, quick-time events, zone events (every kind in every zone), the lab, goals, secrets, the prestige tree and fork swaps do not throw or make NaN; ids are unique and every tree, lab, Firmware and drone node can be reached from the core |
+
+Rules for tests: they must not change game behaviour, and the keep/wipe rules in `resets.test.mjs` are the source of truth for what a reset keeps, so change them in the same PR as the engine change. `tests/nodefarm/helpers.mjs` has the loader (it hooks module resolution like the bundler does), `maxed()` (a late-game state built with admin's `maxOut`), `play()` (a greedy bot) and `problems()` (NaN and negatives). To add a save fixture, run `scripts/nodefarm/save-gen.mjs` against an older build and drop the JSON in `scripts/nodefarm/fixtures`; every test that loops over fixtures picks it up. Known cost: a maxed state with all Drones is slow to tick (about 60 ms a tick), so tests keep those runs short.
