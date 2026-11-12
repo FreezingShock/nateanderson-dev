@@ -216,7 +216,15 @@ export function codeReveal(el: HTMLElement | null, opts: CxOpts = {}): Promise<v
             resolve();
         };
         Promise.all(anims.map((a) => a.finished.catch(() => undefined))).then(finish);
-        run.timer = window.setTimeout(finish, total + 400);
+        // deadline: settle even if frames stall. While the animations are visibly still playing (a slowed devtools
+        // timeline, a busy frame) give them a little longer, up to a hard cap.
+        let tries = 0;
+        const deadline = () => {
+            if (runs.get(el) !== run) return;
+            if (tries++ < 6 && document.visibilityState === "visible" && anims.some((a) => a.playState === "running")) run.timer = window.setTimeout(deadline, 400);
+            else finish();
+        };
+        run.timer = window.setTimeout(deadline, total + 400);
     });
 }
 
