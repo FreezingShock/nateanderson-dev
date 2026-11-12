@@ -2,13 +2,12 @@
 
 Contract (also in docs/node-farm.md, "Zone art"):
   sheet  public/naos/nodefarm/zone-<statId>.{png,webp}
-  cell   W x H = 288 x 96 art px, transparent background: rows 0-31 are headroom (backdrop only, it fills the panel up to the
-         title bar and is cut to fit), the sprites live in rows 32-95
+  cell   W x H = 288 x 96 art px, transparent background: rows 0-31 are sky/backdrop reaching up to the title bar, the
+         sprites live in rows 32-95. The whole cell is always shown (scaled to fit, never cut)
   rows   STAGES = 8: row 0 is the base scene, row n (1..7) shows sprites 1..n, each bigger than the last
   cols   FRAMES = 6: a clean loop at 6 fps, frame 0 doubles as the still (reduced motion, offscreen)
-  shown  3x on wide panels, 2x otherwise; bottom edge sits just above the spec lines, the top reaches the title bar
-  keep   sprite tops at row 42 or lower (rows 32-41 can hide under the title bar at 3x); the panel crops the left side on
-         narrow panels, fades the cut and stops the scene short of the big number, so the right edge is free to use
+  shown  scaled so the cell fills title bar to spec lines and touches the panel's right edge (about 1.5x to 3x)
+  keep   the panel darkens the far left (behind the description) and a pool behind the big number at the top right
   budget WebP lossless <= 30 KB, PNG <= 300 KB
 
 Drawing works like nodefarm-icons.py: flat shapes shaded with a gradient that is quantised to a five-step ramp through a 4x4
@@ -34,7 +33,7 @@ from PIL import Image, ImageDraw
 HERE = Path(__file__).resolve().parent
 OUT = HERE.parents[1] / "public/naos/nodefarm"
 W, H = 288, 96
-HEAD = 32  # rows 0..HEAD-1: headroom backdrop, shown only as far as the panel has room
+HEAD = 32  # rows 0..HEAD-1: sky/backdrop up to the title bar
 STAGES, FRAMES = 8, 6
 FPS = 6
 BUDGET = {"webp": 30_000, "png": 300_000}

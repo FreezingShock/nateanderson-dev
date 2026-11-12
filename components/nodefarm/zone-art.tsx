@@ -9,7 +9,8 @@ import { hasZoneArt, onStagePreview, shownStage } from "@/lib/nodefarm/zone-art"
  * and buttons. One element, one sprite sheet: the row is the stage, CSS steps through the six frames. Paused while offscreen.
  * A stage going up flashes the new sprite in. The box is measured only when the panel resizes (no per-frame JS): it sets
  * --s (3 art px per art pixel on wide panels, else 2), --w (visible width, the art is cropped on its left), --b (where the
- * floor sits), --t (the top: the title bar) and --r (room kept free for the big number on the right).
+ * floor sits), --t (the top: the title bar), --tf (end of the dark wash behind the description) and --nx/--ny/--nw/--nh
+ * (the dark pool behind the big number).
  * Styles: app/camino/nodefarm-zone-art.css. Stage logic: lib/nodefarm/zone-art.ts.
  */
 export function ZoneArt({ id, s }: { id: StatId; s: State }) {
@@ -48,37 +49,51 @@ export function ZoneArt({ id, s }: { id: StatId; s: State }) {
                 for (const c of range.getClientRects()) textR = Math.max(textR, c.right);
             }
             const narrow = matchMedia("(max-width: 639px)").matches; // same breakpoint as the band in the CSS
-            let sc: number, w: number, b: number, t: number, right = 0;
+            let sc: number, w: number, b: number, t: number;
+            let fade = -80; // where the dark wash behind the description ends, in box px
+            let glow = [0, 0, 0, 0]; // the dark pool behind the big number: x, y, width, height in box px
             const top = (bar ? bar.bottom : r.top) - r.top;
+            // scale: the whole 96-row cell fits between the title bar and the floor, nothing is cut. Snapped to whole device
+            // pixels so the dither stays crisp; if snapping leaves a gap over 12 px at the top, the next step up is used and
+            // the panel opens that much room above the spec lines instead.
+            const dpr = Math.max(1, Math.round(window.devicePixelRatio || 1));
             if (narrow) {
-                // phones: the description runs full width, so the scene gets its own band under the header (CSS makes room)
-                sc = 2;
-                w = r.width;
+                // phones: the description runs full width, so the scene gets its own band under the header (CSS sizes it)
+                sc = Math.max(1, Math.round((r.width / 288) * dpr) / dpr);
+                w = Math.min(r.width, 288 * sc);
                 t = (q(".nf-row-h")?.bottom ?? r.top) - r.top;
-                b = t + 64 * sc;
+                b = t + 96 * sc;
+                row.style.setProperty("--art-band", `${Math.round(96 * sc)}px`);
             } else {
-                t = top; // the scene fills up to the title bar; its headroom rows are cut to fit
+                t = top;
                 const pad = parseFloat(row.style.getPropertyValue("--art-pad")) || 0;
                 b = (spec ? spec.top : r.bottom) - r.top - 6;
-                // wide panels get 3x: the backdrop-only top rows may hide under the title bar, and up to 48 px of extra
-                // room is opened above the spec lines when the description is short
-                const need = 64 * 3 - 32 - (b - pad - top);
-                sc = r.width >= 1100 && need <= 48 ? 3 : 2;
-                const nextPad = sc === 3 ? Math.max(0, Math.ceil(need)) : 0;
+                const room = b - pad - top;
+                sc = Math.max(1, Math.floor((room / 96) * dpr) / dpr);
+                if (96 * sc < room - 12) sc += 1 / dpr;
+                sc = Math.min(sc, 3);
+                const nextPad = Math.max(0, Math.ceil(96 * sc - room));
                 if (nextPad !== pad) {
                     row.style.setProperty("--art-pad", `${nextPad}px`);
                     b += nextPad - pad;
                 }
-                // the scene stops short of the big number, so the number never sits on art
+                t = b - 96 * sc; // the cell's top edge sits at (or just under) the title bar
+                // the scene runs to the panel's right edge; the description gets a dark wash and the big number a dark pool
+                w = Math.min(r.width, 288 * sc);
+                const boxL = r.right - w;
+                fade = Math.round(textR - boxL);
                 const num = q(".nf-row-n");
-                right = num ? r.right - num.left + 14 : 0;
-                w = Math.min(r.width - right - (textR - r.left) - 24, 288 * sc);
+                if (num) glow = [num.left - boxL - 36, num.top - r.top - t - 22, num.width + 72, num.height + 44];
             }
             node.style.setProperty("--s", String(sc));
             node.style.setProperty("--w", `${Math.max(0, Math.round(w))}px`);
             node.style.setProperty("--b", `${Math.round(b)}px`);
             node.style.setProperty("--t", `${Math.round(t)}px`);
-            node.style.setProperty("--r", `${Math.round(right)}px`);
+            node.style.setProperty("--tf", `${fade}px`);
+            node.style.setProperty("--nx", `${Math.round(glow[0])}px`);
+            node.style.setProperty("--ny", `${Math.round(glow[1])}px`);
+            node.style.setProperty("--nw", `${Math.round(glow[2])}px`);
+            node.style.setProperty("--nh", `${Math.round(glow[3])}px`);
         };
         fit();
         const ro = new ResizeObserver(fit);
