@@ -2,7 +2,9 @@
 // directly in Node. Numbers are plain doubles; a full run stays far below 1e308.
 
 /** Producer materials in chain order. Each is paid in the one before it (Copper in Bytes) and boosts that one in turn. */
-export const MATS = ["copper", "silicon", "quartz", "aether", "runes", "starglass", "voidsteel", "chrono", "nebula", "pulsars", "singularity", "engrams", "paradox", "origin"] as const;
+export const MATS = ["copper", "silicon", "quartz", "aether", "runes", "starglass", "voidsteel", "chrono", "nebula", "pulsars", "singularity", "engrams", "paradox", "origin", "spores", "mycelium", "pollen", "bloom", "basalt", "magma", "geodes", "core"] as const;
+/** The two arcs past Root Chamber (Overgrowth, then Descent). They stay shut until the first Handover. */
+export const ARC_MATS: readonly MatId[] = ["spores", "mycelium", "pollen", "bloom", "basalt", "magma", "geodes", "core"];
 export type MatId = (typeof MATS)[number];
 export type StatId = "bytes" | "mult" | "reboot" | MatId;
 export type ButtonStat = Exclude<StatId, "bytes">;
@@ -38,6 +40,14 @@ export const STATS: StatDef[] = [
     { id: "engrams", name: "Engrams", short: "EG", role: "Recorded memory. Boosts Singularity, and Drones press faster.", pays: "singularity", color: "#e8b98a" },
     { id: "paradox", name: "Paradox", short: "PX", role: "Folded logic. Boosts Engrams, and Overclock hits harder.", pays: "engrams", color: "#dfe3f5" },
     { id: "origin", name: "Origin", short: "OR", role: "The first node. Boosts Paradox, and every Ascend pays more AP.", pays: "paradox", color: "#3dff6e" },
+    { id: "spores", name: "Spores", short: "SP", role: "What the roots shed past node zero. Boost Origin.", pays: "origin", color: "#5cf0c0" },
+    { id: "mycelium", name: "Mycelium", short: "MY", role: "Roots grown into a network. Boosts Spores.", pays: "spores", color: "#c8bdff" },
+    { id: "pollen", name: "Pollen", short: "PO", role: "Carried up into the light. Boosts Mycelium.", pays: "mycelium", color: "#f2e44a" },
+    { id: "bloom", name: "Bloom", short: "BL", role: "The farm in flower. Boosts Pollen, and every Handover pays more Keys.", pays: "pollen", color: "#ff7aa0" },
+    { id: "basalt", name: "Basalt", short: "BA", role: "Rock under the roots. Boosts Bloom.", pays: "bloom", color: "#8e99a8" },
+    { id: "magma", name: "Magma", short: "MG", role: "Heat on the way down. Boosts Basalt.", pays: "basalt", color: "#ff9a2a" },
+    { id: "geodes", name: "Geodes", short: "GE", role: "Hollow stones full of light. Boost Magma.", pays: "magma", color: "#c77aff" },
+    { id: "core", name: "Core", short: "CO", role: "The bottom of everything. Boosts Geodes, and everything a little.", pays: "geodes", color: "#ffd04a" },
 ];
 
 export const statDef = (id: StatId) => STATS.find((s) => s.id === id)!;
@@ -61,9 +71,17 @@ export const TUNE = {
         engrams: { base: 15, ratio: 10, growth: 1.12 },
         paradox: { base: 10, ratio: 10, growth: 1.12 },
         origin: { base: 6, ratio: 10, growth: 1.12 },
+        spores: { base: 5, ratio: 10, growth: 1.12 },
+        mycelium: { base: 5, ratio: 10, growth: 1.12 },
+        pollen: { base: 4, ratio: 10, growth: 1.12 },
+        bloom: { base: 4, ratio: 10, growth: 1.12 },
+        basalt: { base: 4, ratio: 10, growth: 1.12 },
+        magma: { base: 3, ratio: 10, growth: 1.12 },
+        geodes: { base: 3, ratio: 10, growth: 1.12 },
+        core: { base: 3, ratio: 10, growth: 1.12 },
     } as Record<string, { base: number; ratio: number; growth: number }>,
     // how much one press of tier k adds (Multipliers, or producers for materials)
-    gainBase: { mult: 1, copper: 1, silicon: 1, quartz: 1, aether: 1, runes: 1, starglass: 1, voidsteel: 1, chrono: 1, nebula: 1, pulsars: 1, singularity: 1, engrams: 1, paradox: 1, origin: 1 } as Record<string, number>,
+    gainBase: { mult: 1, copper: 1, silicon: 1, quartz: 1, aether: 1, runes: 1, starglass: 1, voidsteel: 1, chrono: 1, nebula: 1, pulsars: 1, singularity: 1, engrams: 1, paradox: 1, origin: 1, spores: 1, mycelium: 1, pollen: 1, bloom: 1, basalt: 1, magma: 1, geodes: 1, core: 1 } as Record<string, number>,
     gainRatio: 5,
     // reboot tier k: costs rebootBase * rebootRatio^k * rebootGrowth^R Multipliers, adds rebootGainRatio^k Reboots
     rebootBase: 100,
@@ -71,19 +89,19 @@ export const TUNE = {
     rebootGrowth: 1.12,
     rebootGainRatio: 2.6,
     rebootStrength: 0.7, // each Reboot adds this much to Multiplier button gains
-    perProducer: { copper: 0.05, silicon: 0.03, quartz: 0.016, aether: 0.008, runes: 0.0025, starglass: 0.0012, voidsteel: 0.0006, chrono: 0.0003, nebula: 0.0002, pulsars: 0.00017, singularity: 0.00016, engrams: 0.00015, paradox: 0.00008, origin: 0.00004 } as Record<string, number>,
-    boostK: { cuReboot: 0.09, cuBytes: 0.02, siCu: 0.2, qzSi: 0.2, aeQz: 0.2, ruAe: 0.12, sgRu: 0.12, vsSg: 0.12, chVs: 0.12, chAll: 0.03, nbCh: 0.12, puNb: 0.12, snPu: 0.12, egSn: 0.12, pxEg: 0.12, orPx: 0.12 },
+    perProducer: { copper: 0.05, silicon: 0.03, quartz: 0.016, aether: 0.008, runes: 0.0025, starglass: 0.0012, voidsteel: 0.0006, chrono: 0.0003, nebula: 0.0002, pulsars: 0.00017, singularity: 0.00016, engrams: 0.00015, paradox: 0.00008, origin: 0.00004, spores: 0.00003, mycelium: 0.000025, pollen: 0.00002, bloom: 0.000016, basalt: 0.000012, magma: 0.00001, geodes: 0.000008, core: 0.000006 } as Record<string, number>,
+    boostK: { cuReboot: 0.09, cuBytes: 0.02, siCu: 0.2, qzSi: 0.2, aeQz: 0.2, ruAe: 0.12, sgRu: 0.12, vsSg: 0.12, chVs: 0.12, chAll: 0.03, nbCh: 0.12, puNb: 0.12, snPu: 0.12, egSn: 0.12, pxEg: 0.12, orPx: 0.12, spOr: 0.12, mySp: 0.12, poMy: 0.12, blPo: 0.12, baBl: 0.12, mgBa: 0.12, geMg: 0.12, coGe: 0.12 },
     // the extras on the last three materials grow with log10 of the amount, so they cannot feed back into a runaway
-    logK: { snAll: 0.1, egDrone: 0.15, pxOc: 0.15, orAp: 0.1, crosstalk: 0.12 },
+    logK: { snAll: 0.1, egDrone: 0.15, pxOc: 0.15, orAp: 0.1, crosstalk: 0.12, blKeys: 0.1, coAll: 0.08 },
     boostPow: 0.38,
     chAllCap: 1e6, // Chrono boosts EVERYTHING, including Chrono: past this amount the boost grows only with log10 (a power law fed itself to 1e300 once Engrams opened)
-    unlockAt: { copper: 1, silicon: 150, quartz: 300, aether: 500, runes: 150, starglass: 200, voidsteel: 250, chrono: 300, nebula: 300, pulsars: 300, singularity: 300, engrams: 350, paradox: 400, origin: 450 } as Record<string, number>, // copper: Reboots; the rest: amount of the stat below
+    unlockAt: { copper: 1, silicon: 150, quartz: 300, aether: 500, runes: 150, starglass: 200, voidsteel: 250, chrono: 300, nebula: 300, pulsars: 300, singularity: 300, engrams: 350, paradox: 400, origin: 450, spores: 500, mycelium: 550, pollen: 600, bloom: 650, basalt: 700, magma: 750, geodes: 800, core: 850 } as Record<string, number>, // copper: Reboots; the rest: amount of the stat below
     overclockMult: 6,
     overclockSecs: 20,
     offlineCapHours: 8,
     ascendAether: 400,
     apPerAether: 60, // AP = floor((aether / apPerAether)^apPow + (runes / apPer.runes)^apPow + ...)
-    apPer: { runes: 90, starglass: 45, voidsteel: 27, chrono: 14, nebula: 8, pulsars: 4, singularity: 2, engrams: 1, paradox: 0.5, origin: 0.2 } as Record<string, number>,
+    apPer: { runes: 90, starglass: 45, voidsteel: 27, chrono: 14, nebula: 8, pulsars: 4, singularity: 2, engrams: 1, paradox: 0.5, origin: 0.2, spores: 0.1, mycelium: 0.05, pollen: 0.025, bloom: 0.012, basalt: 0.006, magma: 0.003, geodes: 0.0015, core: 0.0008 } as Record<string, number>,
     apPow: 0.3, // AP grows with amount^apPow; a low power stops Ascends from snowballing
     apBonus: 0.3,
     achBonus: 0.02,
@@ -611,6 +629,14 @@ export interface State {
     engrams: number;
     paradox: number;
     origin: number;
+    spores: number;
+    mycelium: number;
+    pollen: number;
+    bloom: number;
+    basalt: number;
+    magma: number;
+    geodes: number;
+    core: number;
     prod: Record<MatId, number>;
     bought: Record<ButtonStat, number[]>;
     ap: number;
@@ -715,6 +741,10 @@ export interface RigState {
     aim: string;
     draw: number;
     rwAim: string;
+    /** 22 Bedrock shaft: coolant on the drill bit (optional, old saves have none) */
+    cool?: boolean;
+    /** 21 Bloom core: seeds banked at each Ascend (kept through Ascend) */
+    seeds?: number;
     // run meters (reset on Ascend)
     cache: number;
     quiet: number;
@@ -729,6 +759,11 @@ export interface RigState {
     pulses: number;
     fired: number;
     well: number;
+    /** 20 Canopy hall day clock, 22 drill bit wear (0..1), 23 Magma line pressure clock and seconds of shaft heat left */
+    sun?: number;
+    wear?: number;
+    vent?: number;
+    heat?: number;
 }
 /** Filled by lib/nodefarm/rigs.ts. Every hook is optional, so the engine (and the sim) run the same without rigs. */
 export const RIG_HOOKS: {
@@ -837,6 +872,14 @@ export function fresh(now = Date.now()): State {
         engrams: 0,
         paradox: 0,
         origin: 0,
+        spores: 0,
+        mycelium: 0,
+        pollen: 0,
+        bloom: 0,
+        basalt: 0,
+        magma: 0,
+        geodes: 0,
+        core: 0,
         prod: Object.fromEntries(MATS.map((m) => [m, 0])) as Record<MatId, number>,
         bought: Object.fromEntries((["mult", "reboot", ...MATS] as ButtonStat[]).map((k) => [k, Array(TIERS).fill(0)])) as Record<ButtonStat, number[]>,
         ap: 0,
@@ -879,7 +922,7 @@ export interface Derived {
     multGainMult: number;
     rates: Record<MatId, number>;
     offlineCap: number; // seconds
-    boosts: { cuReboot: number; cuBytes: number; siCu: number; qzSi: number; aeQz: number; ruAe: number; sgRu: number; vsSg: number; chVs: number; chAll: number; nbCh: number; puNb: number; snPu: number; egSn: number; pxEg: number; orPx: number };
+    boosts: { cuReboot: number; cuBytes: number; siCu: number; qzSi: number; aeQz: number; ruAe: number; sgRu: number; vsSg: number; chVs: number; chAll: number; nbCh: number; puNb: number; snPu: number; egSn: number; pxEg: number; orPx: number; spOr: number; mySp: number; poMy: number; blPo: number; baBl: number; mgBa: number; geMg: number; coGe: number };
 }
 
 export function derive(s: State): Derived {
@@ -901,13 +944,21 @@ export function derive(s: State): Derived {
         egSn: boost(s.engrams, k.egSn),
         pxEg: boost(s.paradox, k.pxEg),
         orPx: boost(s.origin, k.orPx),
+        spOr: boost(s.spores, k.spOr),
+        mySp: boost(s.mycelium, k.mySp),
+        poMy: boost(s.pollen, k.poMy),
+        blPo: boost(s.bloom, k.blPo),
+        baBl: boost(s.basalt, k.baBl),
+        mgBa: boost(s.magma, k.mgBa),
+        geMg: boost(s.geodes, k.geMg),
+        coGe: boost(s.core, k.coGe),
     };
     const tf = treeFx(s);
     const lb = labBuffs(s);
     const droneLv = s.drones.reduce((a, b) => a + b, 0);
     const global = (1 + s.perks.power * 0.15) * (1 + tf.global) * apGlobal(s) * (1 + s.ach.length * (TUNE.achBonus + tf.goals) * (1 + protoK(s, "tamsin"))) * (1 + tiersDone(s) * TUNE.tierBonus) * handGlobal(s)
         * (1 + droneLv * tf.droneGlobal) * (1 + s.runWins * tf.winBoost) * boosts.chAll * singularityAll(s) * (s.overclock > 0 ? overclockMult(s) : 1) * lb.global
-        * (tf.perNode ? 1 + tf.perNode * treeCount(s) : 1) * foundryAll(s);
+        * (tf.perNode ? 1 + tf.perNode * treeCount(s) : 1) * foundryAll(s) * coreAll(s);
     const wren = protoK(s, "wren");
     const rig = RIG_HOOKS.muls ? RIG_HOOKS.muls(s) : {};
     const rebootStrength = TUNE.rebootStrength * boosts.cuReboot * (1 + tf.reboot) * (tf.ocReboot && s.overclock > 0 ? 1 + tf.ocReboot : 1) * (1 + wren) * zeOut(s, "reboot");
@@ -915,7 +966,7 @@ export function derive(s: State): Derived {
     // capped like every amount, so a runaway late game can never write Infinity (null in JSON) into the save
     const bytesPerSec = Math.min(CAP, s.mult * boosts.cuBytes * global * (1 + tf.bytes) * lb.bytes * runBytes(s, tf) * zeOut(s, "bytes") * (rig.bytes ?? 1));
     // each material is boosted by the one after it in the chain
-    const boostedBy: Record<MatId, number> = { copper: boosts.siCu, silicon: boosts.qzSi, quartz: boosts.aeQz, aether: boosts.ruAe, runes: boosts.sgRu, starglass: boosts.vsSg, voidsteel: boosts.chVs, chrono: boosts.nbCh, nebula: boosts.puNb, pulsars: boosts.snPu, singularity: boosts.egSn, engrams: boosts.pxEg, paradox: boosts.orPx, origin: 1 };
+    const boostedBy: Record<MatId, number> = { copper: boosts.siCu, silicon: boosts.qzSi, quartz: boosts.aeQz, aether: boosts.ruAe, runes: boosts.sgRu, starglass: boosts.vsSg, voidsteel: boosts.chVs, chrono: boosts.nbCh, nebula: boosts.puNb, pulsars: boosts.snPu, singularity: boosts.egSn, engrams: boosts.pxEg, paradox: boosts.orPx, origin: boosts.spOr, spores: boosts.mySp, mycelium: boosts.poMy, pollen: boosts.blPo, bloom: boosts.baBl, basalt: boosts.mgBa, magma: boosts.geMg, geodes: boosts.coGe, core: 1 };
     // Cross-talk: each material is also boosted by the one two steps up the chain. Log-scaled: a power-law boost here made a second
     // feedback loop through all fourteen materials and the sim hit Infinity within minutes of buying it (balance audit 2026-11-12).
     if (tf.features.includes("crosstalk")) MATS.forEach((m, i) => { const up = MATS[i + 2]; if (up) boostedBy[m] *= logBoost(s[up], TUNE.logK.crosstalk); });
@@ -971,6 +1022,7 @@ export function isUnlocked(s: State, id: StatId): boolean {
     if (id === "bytes" || id === "mult") return true;
     if (id === "reboot") return s.life.bytes >= REBOOT_UNLOCK.bytes || s.reboot > 0 || s.mult >= REBOOT_UNLOCK.mult;
     if (id === "copper") return s.life.reboots >= TUNE.unlockAt.copper;
+    if (ARC_MATS.includes(id as MatId) && !(s.hand?.count > 0)) return false;
     const i = MATS.indexOf(id as MatId);
     const below = MATS[i - 1];
     // after your first Ascend a stat opens at a quarter of the usual amount
@@ -1026,6 +1078,9 @@ export const singularityAll = (s: State) => logBoost(s.singularity, TUNE.logK.sn
 export const droneBoost = (s: State) => logBoost(s.engrams, TUNE.logK.egDrone);
 export const paradoxOc = (s: State) => logBoost(s.paradox, TUNE.logK.pxOc);
 export const originAp = (s: State) => logBoost(s.origin, TUNE.logK.orAp);
+/** Bloom: every Handover pays more Keys. Core: everything a little. Both log-scaled like the Origin arc extras. */
+export const bloomKeys = (s: State) => logBoost(s.bloom, TUNE.logK.blKeys);
+export const coreAll = (s: State) => logBoost(s.core, TUNE.logK.coAll);
 /** The highest Drone tier with a level, or -1. */
 const topDrone = (s: State) => { for (let k = s.drones.length - 1; k >= 0; k--) if (s.drones[k] > 0) return k; return -1; };
 export const droneRate = (s: State, tier: number) => {
@@ -1285,8 +1340,8 @@ export interface Goal {
     cur: (s: State) => number;
     target: number;
 }
-export const GOAL_TIERS = 8;
-export const TIER_NAMES = ["", "Access", "Operator", "Admin", "Root", "Kernel", "Deep", "Zero", "Source"];
+export const GOAL_TIERS = 9;
+export const TIER_NAMES = ["", "Access", "Operator", "Admin", "Root", "Kernel", "Deep", "Zero", "Source", "Bedrock"];
 const G = (id: string, name: string, hint: string, tier: number, icon: Goal["icon"], target: number, cur: (s: State) => number): Goal => ({ id, name, hint, tier, icon, cur, target });
 const life = (k: keyof State["life"]) => (s: State) => s.life[k];
 export const GOALS: Goal[] = [
@@ -1346,6 +1401,15 @@ export const GOALS: Goal[] = [
     G("eg1", "Deja vu", "Record your first Engram.", 8, "engrams", 1e-9, (s) => s.engrams),
     G("px1", "Both at once", "Fold your first Paradox.", 8, "paradox", 1e-9, (s) => s.paradox),
     G("or1", "Node zero", "Reach the first Origin.", 8, "origin", 1e-9, (s) => s.origin),
+    // IX BEDROCK: the two arcs past Root Chamber, up through the farm (Overgrowth) and then down to the Core (Descent)
+    G("sp1", "Damp", "Grow your first Spores.", 9, "spores", 1e-9, (s) => s.spores),
+    G("my1", "Wired in", "Spin your first Mycelium.", 9, "mycelium", 1e-9, (s) => s.mycelium),
+    G("po1", "Daylight", "Gather your first Pollen.", 9, "pollen", 1e-9, (s) => s.pollen),
+    G("bl1", "In flower", "Open your first Bloom.", 9, "bloom", 1e-9, (s) => s.bloom),
+    G("ba1", "Hard floor", "Cut your first Basalt.", 9, "basalt", 1e-9, (s) => s.basalt),
+    G("mg1", "Running hot", "Tap your first Magma.", 9, "magma", 1e-9, (s) => s.magma),
+    G("ge1", "Hollow", "Crack your first Geode.", 9, "geodes", 1e-9, (s) => s.geodes),
+    G("co1", "The bottom", "Reach the Core.", 9, "core", 1e-9, (s) => s.core),
 ];
 
 // ---- secrets. They show as ???? until found, with a clue. Console ones are unlocked by commands (components/cm/console.tsx -> lib/nodefarm/records.ts);
@@ -2296,7 +2360,7 @@ export const handSeen = (s: State) => s.hand.count > 0 || isUnlocked(s, "origin"
 export function keysOnHandover(s: State): number {
     if (!handOpen(s)) return 0;
     const raw = HAND_TUNE.keysBase + treeCount(s) * HAND_TUNE.keysPerNode + Math.sqrt(Math.log10(1 + Math.max(0, s.origin))) * HAND_TUNE.keysPerOriginLog;
-    return Math.floor(raw * (1 + handFx(s).keys));
+    return Math.floor(raw * (1 + handFx(s).keys) * bloomKeys(s));
 }
 /** Which prestige tree nodes a Handover keeps (Imprint, Deep imprint). */
 export function handKeeps(s: State): string[] {
@@ -2441,7 +2505,7 @@ export function parseSave(raw: string): State | null {
         n.achAt = { ...(o.achAt && typeof o.achAt === "object" ? o.achAt : {}) };
         if (!Array.isArray(n.armed)) n.armed = [];
         for (const k of ["drones", "droneAcc"] as const) if (!Array.isArray(n[k]) || n[k].length !== TIERS || n[k].some((x: number) => !Number.isFinite(x))) n[k] = Array(TIERS).fill(0);
-        for (const k of ["bytes", "mult", "reboot", "copper", "silicon", "quartz", "aether", "runes", "starglass", "voidsteel", "chrono", "nebula", "pulsars", "singularity", "engrams", "paradox", "origin", "ap"] as const) if (!Number.isFinite(n[k])) n[k] = base[k];
+        for (const k of ["bytes", "mult", "reboot", "copper", "silicon", "quartz", "aether", "runes", "starglass", "voidsteel", "chrono", "nebula", "pulsars", "singularity", "engrams", "paradox", "origin", "spores", "mycelium", "pollen", "bloom", "basalt", "magma", "geodes", "core", "ap"] as const) if (!Number.isFinite(n[k])) n[k] = base[k];
         return n;
     } catch {
         return null;
