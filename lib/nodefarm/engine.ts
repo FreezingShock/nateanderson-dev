@@ -87,6 +87,7 @@ export const TUNE = {
     apPow: 0.3, // AP grows with amount^apPow; a low power stops Ascends from snowballing
     apBonus: 0.3,
     achBonus: 0.02,
+    arcBonus: 0.05, // global bonus for each arc whose every button has been pressed at least once (lib/nodefarm/arcs.ts)
     tierBonus: 0.08, // extra global bonus for each fully completed goal tier
     // Drones: one per button tier, bought with Aether. Each level presses that tier's button on every armed stat, droneRate times a second.
     drone: { max: 10, base: 25, ratio: 6, growth: 1.7, rate: 0.25, offline: 0.5, burst: 200 },
@@ -658,6 +659,8 @@ export interface State {
     rig?: RigState;
     /** Zone events (lib/nodefarm/zoneevents.ts): the running event, the timer to the next one and a count. Reset on Ascend. Created on first use. */
     ze?: ZoneEvState;
+    /** Which button tiers were ever pressed, per stat, as a bit mask. Kept through Ascend; arcs clear when every tier of every zone in them is set. */
+    seen?: Partial<Record<ButtonStat, number>>;
     // lifetime counters (survive Ascend)
     life: { bytes: number; taps: number; reboots: number; ascends: number; intrusions: number; secs: number; presses: number; capped: number; peakBps: number; apTotal: number; intel: number; compiled: number; deployed: number };
     overclock: number; // seconds left
@@ -905,7 +908,7 @@ export function derive(s: State): Derived {
     const tf = treeFx(s);
     const lb = labBuffs(s);
     const droneLv = s.drones.reduce((a, b) => a + b, 0);
-    const global = (1 + s.perks.power * 0.15) * (1 + tf.global) * apGlobal(s) * (1 + s.ach.length * (TUNE.achBonus + tf.goals) * (1 + protoK(s, "tamsin"))) * (1 + tiersDone(s) * TUNE.tierBonus) * handGlobal(s)
+    const global = (1 + s.perks.power * 0.15) * (1 + tf.global) * apGlobal(s) * (1 + s.ach.length * (TUNE.achBonus + tf.goals) * (1 + protoK(s, "tamsin"))) * (1 + tiersDone(s) * TUNE.tierBonus) * handGlobal(s) * (ARC_HOOKS.cleared ? 1 + TUNE.arcBonus * ARC_HOOKS.cleared(s) : 1)
         * (1 + droneLv * tf.droneGlobal) * (1 + s.runWins * tf.winBoost) * boosts.chAll * singularityAll(s) * (s.overclock > 0 ? overclockMult(s) : 1) * lb.global
         * (tf.perNode ? 1 + tf.perNode * treeCount(s) : 1) * foundryAll(s);
     const wren = protoK(s, "wren");
@@ -982,6 +985,7 @@ export function isUnlocked(s: State, id: StatId): boolean {
 export function press(s: State, stat: ButtonStat, tier: number): boolean {
     const b = button(s, stat, tier);
     if (amount(s, b.pays) < b.cost) return false;
+    (s.seen ??= {})[stat] = ((s.seen[stat] ?? 0) | (1 << tier));
     if (stat === "reboot") {
         // Logic bomb (Exploit Lab): an armed charge multiplies this Reboot
         const bomb = s.lab.armed.indexOf("logicbomb");
@@ -1217,7 +1221,7 @@ export function ascend(s: State) {
     const hand: HandState = { ...s.hand, cycleAp: s.hand.cycleAp + gain };
     const dr = drOnAscend(s);
     const rig = RIG_HOOKS.ascend ? RIG_HOOKS.ascend(s) : s.rig;
-    const keep = { lab, dr, hand, rig, ap: s.ap + gain, perks: s.perks, ach: s.ach, achAt: s.achAt, logs: s.logs, tree: s.tree, treeLv: s.treeLv, armed: s.armed, mounts: s.mounts, watchdog: s.watchdog, dropAt: s.dropAt, autoArmed: s.autoArmed, auto: s.auto, life: { ...s.life, ascends: s.life.ascends + 1, apTotal: s.life.apTotal + gain }, started: s.started };
+    const keep = { lab, dr, hand, rig, seen: s.seen, ap: s.ap + gain, perks: s.perks, ach: s.ach, achAt: s.achAt, logs: s.logs, tree: s.tree, treeLv: s.treeLv, armed: s.armed, mounts: s.mounts, watchdog: s.watchdog, dropAt: s.dropAt, autoArmed: s.autoArmed, auto: s.auto, life: { ...s.life, ascends: s.life.ascends + 1, apTotal: s.life.apTotal + gain }, started: s.started };
     const n = fresh(s.at);
     Object.assign(n, keep);
     Object.assign(s, n);
@@ -2250,6 +2254,8 @@ export function protoK(s: State, id: ProtoId): number {
     return s.hand.proto2 === id && handFx(s).dual ? 0.5 : 0;
 }
 /** Lineage: everything +50% per Handover done. */
+/** Arc clears (lib/nodefarm/arcs.ts fills this when it is imported, like RIG_HOOKS): how many arcs have every button pressed once. */
+export const ARC_HOOKS: { cleared?: (s: State) => number } = {};
 export const handGlobal = (s: State) => (s.hand ? 1 + handFx(s).lineage * s.hand.count : 1);
 /** The node remembers: every Handover done multiplies AP on Ascend. */
 export const handAp = (s: State) => (s.hand ? 1 + HAND_TUNE.apPerHand * s.hand.count : 1);
@@ -2401,6 +2407,12 @@ export function parseSave(raw: string): State | null {
         const base = fresh();
         const n = { ...base, ...o, prod: { ...base.prod, ...o.prod }, perks: { ...base.perks, ...o.perks }, life: { ...base.life, ...o.life }, bought: { ...base.bought, ...o.bought } } as State;
         for (const k of Object.keys(n.bought) as ButtonStat[]) if (!Array.isArray(n.bought[k]) || n.bought[k].length !== TIERS) n.bought[k] = Array(TIERS).fill(0);
+        // saves from before arcs: what is built right now stands in for what was ever pressed (Reboot buttons are not counted, so tier 1 if any Reboot happened)
+        if (!n.seen) {
+            n.seen = {};
+            for (const k of Object.keys(n.bought) as ButtonStat[]) n.seen[k] = n.bought[k].reduce((m, c, i) => m | (c > 0 ? 1 << i : 0), 0);
+            if (n.life.reboots > 0) n.seen.reboot = (n.seen.reboot ?? 0) | 1;
+        }
         if (!Array.isArray(n.tree)) n.tree = [];
         if (!n.treeLv || typeof n.treeLv !== "object") n.treeLv = {};
         if (!Number.isFinite(n.rebootAt)) n.rebootAt = 0;

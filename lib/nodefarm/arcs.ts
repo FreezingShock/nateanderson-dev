@@ -1,6 +1,6 @@
 // Zone arcs: the board groups its zones into chapters. Add a new arc (or new zone ids to an arc) here and the board,
 // the headers and the remembered collapse state follow; nothing else lists the groups.
-import { STATS } from "./engine";
+import { ARC_HOOKS, TIERS, type ButtonStat, type State } from "./engine";
 
 export type Arc = { id: string; name: string; blurb: string; color: string; zones: readonly string[]; /** era scene file (scene-<n>.webp) used as the header art; arcs without one get a colour wash */ scene?: number };
 
@@ -14,5 +14,18 @@ export const ARCS: readonly Arc[] = [
 
 export const arcKey = (id: string) => `arc:${id}`;
 export const arcOf = (stat: string) => ARCS.find((a) => a.zones.includes(stat));
-/** Zone number (01 to 17), the same one the zone panels print. */
-export const zoneNo = (id: string) => STATS.findIndex((x) => x.id === id) + 1;
+/** Buttons of an arc that were ever pressed (kept through Ascend), out of all of them. Zones without buttons (Bytes) do not count. */
+export function arcProgress(s: State, zones: readonly string[]) {
+    let built = 0;
+    let total = 0;
+    for (const z of zones) {
+        if (z === "bytes") continue;
+        total += TIERS;
+        const m = s.seen?.[z as ButtonStat] ?? 0;
+        for (let k = 0; k < TIERS; k++) if (m & (1 << k)) built++;
+    }
+    return { built, total };
+}
+export const arcCleared = (s: State, a: Arc) => { const p = arcProgress(s, a.zones); return p.total > 0 && p.built >= p.total; };
+export const arcsCleared = (s: State) => ARCS.reduce((n, a) => n + (arcCleared(s, a) ? 1 : 0), 0);
+ARC_HOOKS.cleared = arcsCleared;
