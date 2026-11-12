@@ -1,4 +1,8 @@
-"""Node Farm era scenery: one original dithered landscape per era, plus the Ascend piece.
+"""Node Farm Ascend piece (scene-ascend). The flat two-tone era scenes 0..8 that used to live here were redrawn in colour and
+in layers by nodefarm-scenes-early.py; their functions stay below as the record of the originals, but this script no longer
+writes scene-0..8 or detail-0..8 (that would overwrite the layered art).
+
+Original notes: one original dithered landscape per era, plus the Ascend piece.
 
 Run:  python3 scripts/naos-art/nodefarm-scenes.py                (all)
       python3 scripts/naos-art/nodefarm-scenes.py 3 ascend d3    (just those; dN = the close-up for era N)
@@ -754,8 +758,10 @@ PIECES["ascend"] = (ascend, ASCEND)
 
 if __name__ == "__main__":
     os.makedirs(OUT, exist_ok=True)
-    want = sys.argv[1:] or list(PIECES) + [f"d{i}" for i in range(9)]
-    bad = [w for w in want if w not in PIECES and not (w.startswith("d") and w[1:].isdigit() and int(w[1:]) < 9)]
+    want = sys.argv[1:] or ["ascend"]
+    bad = [w for w in want if w != "ascend"]
+    if bad:
+        raise SystemExit(f"{bad}: eras 0-8 are drawn by nodefarm-scenes-early.py now; this script only builds 'ascend'")
     if bad:
         raise SystemExit(f"unknown: {bad}; known: {list(PIECES)}")
     for key in want:
