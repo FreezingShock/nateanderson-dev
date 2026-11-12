@@ -171,7 +171,7 @@ Code: pure rules and snapshots in `lib/nodefarm/admin.ts`, panel in `components/
 - Import asks twice when the current save has progress, and a backup slot (`nf-backup-v1`, one save) is written before an import, a wipe or a restore; Menu has Restore backup. A save that cannot be read is copied to `nf-corrupt-v1` instead of being overwritten.
 - A second tab on the same save is detected through the `storage` event: that tab stops saving and shows a notice with Load latest save / Save from here.
 - Menu: Download file and Open file (plain-text save code), Volume (the site-wide master volume), Numbers (short, scientific, engineering; `nf-numfmt-v1`, `setNumFmt` in the engine).
-- Keys (only on the Node Farm page, off while typing, with a modifier, over another panel or during an event): M Map, O Goals, L Records, A Ascend, S Menu, T Tree, B Buy max.
+- Keys (only on the Node Farm page, off while typing, with a modifier, over another panel or during an event): M Map, O Goals, L Records, A Ascend, S Menu, T Tree, B Buy max, R Lab, G Show me (the next step), P press the glowing button of the next step (hold to keep buying, never repeats a Reboot; when there is nothing to press it acts like Show me).
 - The tab title shows `<rate>/s · Node Farm` while the tab is in the background.
 - Menu "Calm motion" (`nf-calm-v1`) forces reduced motion on top of the OS setting: the `reduced` prop everywhere plus `body.nf-calm` CSS. Menu also shows when the game last saved.
 
@@ -229,9 +229,28 @@ After regenerating any Node Farm art run `node scripts/nodefarm/stamp-art.mjs` (
 and lib/nodefarm/art-version.ts; build code URLs with `nfArt(file)`). `npm run build` runs it with `--check` first and
 fails if a stamp is stale or if the icon/tier sheets don't match ORDER/TIER_ROWS in components/nodefarm/icon.tsx and the CSS sizes.
 
+## First 30 minutes audit (2026-11-12, QOL pass)
+- Scripts in /mnt/project-files/portfolio/node-farm-first30/ (`play.mjs` fresh-save bot on a fake clock, `checks.mjs` for the items below).
+- HUD chips for Reboots, Multipliers and AP now carry RBT / MUL / AP labels and hover titles (a new player saw two unlabelled numbers).
+- The guided button always shows its time-to-afford (before, only with the Forecast node), so the glowing button says how long to wait.
+- A background tab that has its next step ready shows "● ready" in the tab title.
+- Coming back to a save (20+ presses, no hash) scrolls the board under the site bar once; a first visit still starts on the intro.
+- Keys G and P, listed in Menu.
+
 ## Balance audit (2026-11-12)
 Whole game simulated together (17 zones, 60-node tree, Exploit Lab) with `NF_ASC_GAP=1`. Two runaways found and fixed:
 - **Cross-talk** boosted every material by the one two steps up with a power-law boost, a second feedback loop through all 14 materials. The sim reached Infinity (the 1e300 cap) about 20 minutes after buying it. It is now log-scaled (`TUNE.logK.crosstalk`).
 - **Chrono's "boost everything"** (`chAll`) was also a power law, and Chrono is itself boosted by that. Once Engrams opened, global went from about 9 to 1e9 in an hour. It now grows with log10 past `TUNE.chAllCap` (1e6 Chrono), so it is unchanged for the whole mid game.
 Result (bot, no Drones, with the lab): first Ascend 2.67 h, Chrono 25.6 h, Origin 43.6 h (unchanged); first 40 tree nodes 44.4 h, whole tree 48.4 h (was 45.4 h), every rank 60.4 h (was 51.4 h with AP per Ascend jumping from 220 to 5,000 in one Ascend). With the bot arming Drones: first Ascend 4.0 h, Chrono 13.7 h, Origin 42.7 h, ranks done 66 h.
 Not changed, on purpose: Engrams, Paradox and Origin still open within about 20 minutes of each other for the bot (the stat below is already huge, so `unlockAt` does not gate them; gating on Ascend count walled the Drone bot for 17 h, so it was dropped). Debug flags: `NF_TRACE=<minutes>` prints a status line, `NF_BAN=id,id` stops the bot buying nodes.
+
+## Scripts (automation layer), 2026-11-12
+Learned automation, in `lib/nodefarm/scripts.ts` (rules, registers `scriptStep` in the engine's `TICK_HOOKS`, so scripts also run through time away), the board zone `components/nodefarm/scripts.tsx` (between the Exploit Lab and the Drone bay), styles `app/camino/nodefarm-scripts.css` (amber phosphor, `nf-sch-*`). Save state is `state.auto` (`AutoState` in engine.ts), created on first use and kept through Ascend; old saves are credited for what they already did by hand (lifetime presses, compiles, deploys, Ascends; tiers with presses this run count as taught).
+- Earned by doing (the recommended pick, card sent to Nate): the scheduler "records" you. 40 manual buy presses teach buy.sh, 12 manual Reboots reboot.sh, 5 compiles compile.sh, 5 deploys deploy.sh, 2 Dead drop opens drop.sh, 3 Ascends ascend.sh (`SCRIPT_TUNE.learn`). Watchdog timer (tree) teaches reboot.sh and Cron job (lab) teaches compile.sh at once. A script shows as "encrypted" until the thing it automates exists. New scripts start stopped; the zone's "next //" line and a glowing Run button say what to do.
+- buy.sh: on each ticked stat it presses the highest allowed tier it can afford while keeping `keep` times the price (x1, x2, x5, x10). It may only press a tier you pressed by hand 3 times on that stat (`teachTier`). It runs every 3 s, then 1.5 s at 500 buys (v2) and 0.75 s at 5,000 (v3); one press per stat per run, so Drones stay the fast option. A stat buy.sh covers is skipped by the Autoloader perk.
+- reboot.sh: the Watchdog rule with its own reserve (x1.5, x3, x10, x30), sharing the `watchdog` switch (`watchdogStep` in engine.ts).
+- compile.sh keeps chosen recipes stocked to 1, 2, 3 or 5; deploy.sh deploys ticked payloads (buffs when not running, charges when unarmed, Trojan outside an Overclock, Polymorph with two buffs up); drop.sh opens the Dead drop when full.
+- ascend.sh: Ascends when the AP on offer reaches x1, x1.25, x1.5, x2 or x3 of the last Ascend (your average before it has seen one), never in a run under 5 minutes, and only while the game is open (node-farm.tsx `schedRef`, not the tick hook).
+- Feed: `cron.run("buy.sh") ×n` batched lines; script presses are kept out of the Drone sweep count (`state.auto.presses`). Console `nf cron` lists every script. Admin `nf admin max` teaches all of them (`grantScripts`).
+- Art: `scripts/naos-art/nodefarm-sched-scene.py` draws `zone-sched` (the cron room, one machine per script learned, the clock daemon at buy.sh v3) and `sched-icons` (32 px, 4 frames per script).
+- Pacing: the greedy sim bot already plays perfectly, so scripts do not change the sim; they move a real player toward the bot's numbers.

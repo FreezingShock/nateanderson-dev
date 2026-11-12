@@ -1,6 +1,7 @@
 // Node Farm records and console commands. Pure: takes a State, returns data or printed lines. The Records window reads
 // `recordSections`; the naOS console's `nf` command runs `nfCommand` against the live game (or the saved one when the game is
 // not open). No React, no DOM.
+import { SCRIPTS, auto, isOn, learnPart, scriptNext, scriptOpen } from "./scripts";
 import { OPERATORS, archiveOf, loadSeen, pickNews } from "./news";
 import {
     GOALS, GOAL_TIERS, LAB, MATS, PAYLOADS, PERKS, SECRETS, TIER_NAMES, TREE, TREE_FULL, apOnAscend, intelRate, derive, fmt, fmtTime, goalDone, statDef, tiersDone, unlock,
@@ -122,7 +123,7 @@ export function nfCommand(s: State, args: string[]): NfResult {
             row("ascensions", `${s.life.ascends}  (${s.ap} AP)`),
             row("goals", `${c.goals}/${c.goalTotal}`),
             row("secrets", `${c.secrets}/${c.secretTotal}`),
-            t("nf stats · nf goals · nf secrets · nf logs · nf lab · nf archive · nf open", "dim"),
+            t("nf stats · nf goals · nf secrets · nf logs · nf lab · nf cron · nf archive · nf open", "dim"),
         ];
     } else if (sub === "stats") {
         lines = recordSections(s).flatMap((sec) => [t(sec.title.toLowerCase(), "hi"), ...sec.rows.map(([a, b]) => row(a.toLowerCase(), b))]);
@@ -190,12 +191,21 @@ export function nfCommand(s: State, args: string[]): NfResult {
                 ...(s.lab.armed.length ? [row("armed", s.lab.armed.join(", "))] : []),
             ];
         }
+    } else if (sub === "cron" || sub === "crontab") {
+        const a = auto(s);
+        lines = [t(`crontab -l  // ${a.own.length}/${SCRIPTS.length} scripts learned`, "hi")];
+        for (const x of SCRIPTS) {
+            const state = a.own.includes(x.id) ? (isOn(s, x.id) ? "running" : "stopped") : scriptOpen(s, x.id) ? `recording ${Math.floor(learnPart(s, x.id) * 100)}%` : "encrypted";
+            lines.push(row(x.file, `${state}${a.ran[x.id] ? `  · ${fmt(a.ran[x.id]!)} runs` : ""}`));
+        }
+        const nx = scriptNext(s);
+        lines.push(t(nx ? `next: ${nx.text}` : "every script is learned and running.", "dim"));
     } else if (sub === "fork") {
         lines = [t(":(){ :|:& };:"), t("fork: retry: Resource temporarily unavailable", "err"), t("the node copied itself 4,096 times, then everyone calmed down."), ...secret("x_fork")];
     } else if (sub === "whoami") {
         lines = [t("node-01. one core, no clearance, and a growing farm."), ...secret("x_self")];
     } else {
-        lines = [t(`nf: unknown: ${args[0]}`, "err"), t("nf stats · nf goals · nf secrets · nf logs · nf lab · nf archive · nf open", "dim")];
+        lines = [t(`nf: unknown: ${args[0]}`, "err"), t("nf stats · nf goals · nf secrets · nf logs · nf lab · nf cron · nf archive · nf open", "dim")];
     }
     return { lines, unlocked: found };
 }

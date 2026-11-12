@@ -220,7 +220,7 @@ function BuyBtn({ s, d, stat, tier, onPress, guided }: { s: State; d: D; stat: B
     const owned = isReboot ? 0 : s.bought[stat][tier];
     // Forecast node: how long until this button is affordable, at the current rate of the stat that pays for it
     const payRate = b.pays === "bytes" ? d.bytesPerSec : (MATS as readonly string[]).includes(b.pays) ? d.rates[b.pays as (typeof MATS)[number]] : 0;
-    const eta = !afford && payRate > 0 && hasFeature(s, "forecast") ? (b.cost - (s[b.pays] as number)) / payRate : 0;
+    const eta = !afford && payRate > 0 && (guided || hasFeature(s, "forecast")) ? (b.cost - (s[b.pays] as number)) / payRate : 0;
     return (
         <button
             type="button"

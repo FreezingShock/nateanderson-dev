@@ -246,7 +246,7 @@ export function MenuPanel({
         { key: "events", on: eventsOn, flip: onEvents, note: "quick-time events every few minutes" },
         { key: "calm", on: calm || osCalm, flip: onCalm, off: osCalm, note: osCalm ? "your device already asks for less motion" : "less motion: no pops, flashes or loops" },
     ];
-    const keys: [string, string][] = [["M", "Map"], ["O", "Goals"], ["L", "Records"], ["A", "Ascend"], ["S", "Menu"], ["T", "Tree"], ...(hasMax ? [["B", "Buy max on or off"] as [string, string]] : []), ["Esc", "Close the open window"], ["Hold a button", "Keep buying"]];
+    const keys: [string, string][] = [["M", "Map"], ["O", "Goals"], ["L", "Records"], ["A", "Ascend"], ["S", "Menu"], ["T", "Tree"], ["G", "Show me the next step"], ["P", "Press the glowing button (hold to keep going)"], ...(hasMax ? [["B", "Buy max on or off"] as [string, string]] : []), ["Esc", "Close the open window"], ["Hold a button", "Keep buying"]];
     return (
         <div className="nf-sys nf-wk">
             <WinBanner
