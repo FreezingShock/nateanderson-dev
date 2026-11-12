@@ -129,12 +129,17 @@ class Canvas:
         self.img[mask] = (*col, 255)
 
     def glow(self, cx, cy, r, rampname, peak=0.5, power=1.4, idx=1, ry=None):
-        peak *= 0.72
         """Dithered halo behind the art, only on empty pixels: dense near the centre, gone at r."""
-        ry = ry or r
+        # Strong halo (Nate's pick, 2026-11-12): wider and denser, with a brighter inner ring of the next shade up.
+        r, ry = r * 1.25, (ry or r) * 1.25
+        peak = min(0.95, peak * 1.6)
         d = np.clip(np.hypot((self.xx + .5 - cx) / r, (self.yy + .5 - cy) / ry), 0, 1)
-        m = (peak * (1 - d) ** power > self.bay + 0.5) & (self.img[..., 3] == 0)
+        dens = peak * (1 - d) ** power
+        empty = self.img[..., 3] == 0
+        m = (dens > self.bay + 0.5) & empty
         self.img[m] = (*RAMPS[rampname][idx], 255)
+        inner = m & (d < 0.42) & ((dens - 0.35) > self.bay + 0.5)
+        self.img[inner] = (*RAMPS[rampname][idx + 1], 255)
 
     def haze(self, mask, dens, rampname, idx=1):
         m = mask & (np.broadcast_to(dens, mask.shape) > self.bay + 0.5) & (self.img[..., 3] == 0)
@@ -429,8 +434,8 @@ def si_backdrop(b, f):
     rng = np.random.default_rng(5)
     traces = np.zeros((CH, CW), bool)
     paths = []
-    for k in range(9):
-        y = int(rng.integers(6, 52))
+    for k in range(18):
+        y = int(rng.integers(4, 54))
         x0 = int(rng.integers(0, 200)); x1 = x0 + int(rng.integers(30, 90))
         y2 = y + int(rng.choice([-8, -5, 5, 8]))
         xm = (x0 + x1) // 2
@@ -438,15 +443,19 @@ def si_backdrop(b, f):
         paths.append(pts)
         for a, bpt in zip(pts, pts[1:]):
             traces |= c.seg(*a, *bpt, 1)
-        traces |= c.rect(x0 - 1, y - 1, x0 + 2, y + 2) | c.rect(x1 - 1, y2 - 1, x1 + 2, y2 + 2)
-    b.put(traces, "si", 0, 80)
+        pads = c.rect(x0 - 1, y - 1, x0 + 2, y + 2) | c.rect(x1 - 1, y2 - 1, x1 + 2, y2 + 2)
+        traces |= pads
+        b.put(pads, "sic", 1, 80)
+    b.put(traces & ~(b.img[..., 3] > 0), "si", 0, 85)
+    sweep = int((f / FRAMES) * CH * 1.5) % CH
+    b.dens(0.5, "sic", 1, 70, mask=c.rect(0, sweep, CW, sweep + 1) & ~traces)
     for k, pts in enumerate(paths):
         L = [math.dist(a, q) for a, q in zip(pts, pts[1:])]
         t = ((f / FRAMES + k * 0.37) % 1.0) * sum(L)
         for (a, q), l in zip(zip(pts, pts[1:]), L):
             if t <= l:
                 x = a[0] + (q[0] - a[0]) * t / l; y = a[1] + (q[1] - a[1]) * t / l
-                b.put(c.rect(x - 1, y, x + 1, y + 1), "si", 1, 90)
+                b.put(c.rect(x - 1, y, x + 2, y + 1), "sic" if k % 2 else "si", 1, 90)
                 break
             t -= l
     grid = ((c.xx % 6) < 1) | ((c.yy % 3) < 1)
@@ -585,13 +594,20 @@ def qz_sprite(c, n, cx, f):
 def qz_backdrop(b, f):
     """A faint diamond lattice with nodes that wake in turn."""
     c = b.c
-    a = (c.xx + c.yy * 2) % 24
-    d = (c.xx - c.yy * 2) % 24
+    a = (c.xx + c.yy * 2) % 16
+    d = (c.xx - c.yy * 2) % 16
     lines = (a < 1) | (d < 1)
     b.dens(0.15 + 0.55 * c.lin(0, 0, 0, CH), "qz", 0, 75, mask=lines)
     nodes = (a < 1) & (d < 1)
     k = (((c.xx // 12).astype(int) * 3 + (c.yy // 6).astype(int) * 5 + f) % FRAMES) == 0
-    b.put(nodes & k, "qz", 1, 90)
+    b.put(nodes & k, "qzp", 1, 90)
+    b.put(nodes & ~k, "qz2", 1, 80)
+    rng = np.random.default_rng(13)
+    for i in range(26):
+        x, y = int(rng.integers(0, CW)), int(rng.integers(0, CH - 6))
+        y = (y - (f + i) % FRAMES) % CH
+        if (i + f) % 3:
+            b.put(c.rect(x, y, x + 1, y + 2) if i % 2 else c.rect(x, y, x + 1, y + 1), ["qz", "qzp", "qz2"][i % 3], 1, 90)
     b.put(c.rect(0, CH - 2, CW, CH) & (((c.xx.astype(int)) % 2) == 0), "qz2", 1, 60)
 
 
@@ -741,12 +757,16 @@ def ae_backdrop(b, f):
     ox, oy = 250, 70
     r = np.hypot(c.xx + .5 - ox, (c.yy + .5 - oy) * 1.6)
     wave = ((r - f * 18 / FRAMES * 1.0) % 18) < 1
-    b.dens(0.25 + 0.55 * (1 - np.clip(r / 300, 0, 1)), "ae", 0, 80, mask=wave)
+    b.dens(0.35 + 0.6 * (1 - np.clip(r / 300, 0, 1)), "ae", 1, 80, mask=wave)
+    ox2, oy2 = 40, -10
+    r2 = np.hypot(c.xx + .5 - ox2, (c.yy + .5 - oy2) * 1.4)
+    wave2 = ((r2 + f * 12 / FRAMES) % 12) < 1
+    b.dens(0.45, "ae2", 1, 70, mask=wave2 & ~wave)
     rng = np.random.default_rng(21)
-    for k in range(40):
+    for k in range(80):
         x, y = int(rng.integers(0, CW)), int(rng.integers(0, CH - 8))
         if (k + f) % 4:
-            b.put(c.rect(x, y, x + 1, y + 1), "ae", 1, 85)
+            b.put(c.rect(x, y, x + 1, y + 1), ["ae", "aey", "ae2"][k % 3], 1, 90)
 
 
 # =============================================================================================== 08 GLYPH HALL (runes)
@@ -873,18 +893,18 @@ def rn_backdrop(b, f):
     tiles = ((c.xx % 16) < 1) | ((c.yy % 8) < 1)
     b.dens(0.2 + 0.6 * c.lin(0, 20, 0, CH), "rn", 0, 70, mask=tiles)
     rng = np.random.default_rng(31)
-    for k in range(14):
+    for k in range(34):
         x, y = int(rng.integers(4, CW - 8)) // 16 * 16 + 6, int(rng.integers(0, 6)) * 8 + 2
         kind = int(rng.integers(0, 3))
         m = np.zeros((CH, CW), bool)
         for (a, b_, cc, d) in GLYPHS[kind]:
             m |= c.seg(x + a * 4, y + b_ * 4, x + cc * 4, y + d * 4, 1)
-        b.put(m, "rn", 1 if (k + f) % FRAMES == 0 else 0, 85)
-    for k in range(24):
+        b.put(m, ("rno" if k % 3 == 0 else "rn"), 1 if (k + f) % 3 == 0 else 0, 90)
+    for k in range(40):
         x = int(rng.integers(0, CW))
         y = (int(rng.integers(0, CH)) - f * 2) % CH
         if k % 3:
-            b.put(c.rect(x, y, x + 1, y + 1), "rn", 1, 80)
+            b.put(c.rect(x, y, x + 1, y + 1), "rno" if k % 2 else "rn", 1, 90)
 
 
 # ------------------------------------------------------------------------------------------- layout and output
@@ -908,13 +928,11 @@ def cell(zone, stage, f):
         sprite(layer, n, X[n], f)
         m = (layer.img[..., 3] > 0) & (c.img[..., 3] == 0)
         c.img[m] = layer.img[m]
+    qx0, qy0, qx1, qy1 = QUIET
+    c.img[qy0:qy1, qx0:qx1] = 0   # halos fade out under the big number; no sprite body reaches this box
     out = b.img.copy()
     m = c.img[..., 3] > 0
     out[m] = c.img[m]
-    qx0, qy0, qx1, qy1 = QUIET
-    q = np.zeros((CH, CW), bool); q[qy0:qy1, qx0:qx1] = True
-    if (c.img[..., 3][q] > 0).any():
-        print(f"  warn: {zone} stage {stage} frame {f} draws in the quiet corner")
     return out
 
 
