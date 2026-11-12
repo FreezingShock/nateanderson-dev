@@ -117,7 +117,7 @@ function Flow({ s, d, gain, confirm, onAscend }: { s: State; d: D; gain: number;
                 <li style={{ ["--c" as string]: "#ff2d8a" }}>
                     <span className="nf-ax-k" data-cx-scr="">02 // Ascend</span>
                     <span className="nf-ax-v"><NfIcon name="ascend" /><b>{gain > 0 ? `+${gain}` : "0"}</b><small>AP on Ascend</small></span>
-                    <small className="nf-ax-n">Wipes the whole run. Keeps goals, perks, the tree and lifetime stats.</small>
+                    <small className="nf-ax-n">Wipes the whole run. Keeps goals, perks, the tree, lab research and stock, and lifetime stats.</small>
                 </li>
                 <li style={{ ["--c" as string]: "var(--cm-cyan)" }}>
                     <span className="nf-ax-k" data-cx-scr="">03 // Spend or hold</span>

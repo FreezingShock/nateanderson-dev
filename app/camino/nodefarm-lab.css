@@ -54,14 +54,19 @@
 /* ---- blueprint backdrop */
 .nf-lbd { position: absolute; inset: 0; z-index: 0; overflow: hidden; pointer-events: none; contain: strict; background: radial-gradient(ellipse at 50% 46%, #0b3c7c 0, #052452 42%, #020d20 100%); }
 .nf-lbd-g { position: absolute; inset: 0; will-change: background-position; }
-.nf-lbd-g[data-l="0"] { background-image: linear-gradient(#5aa8ff10 1px, transparent 1px), linear-gradient(90deg, #5aa8ff10 1px, transparent 1px); opacity: .9; }
-.nf-lbd-g[data-l="1"] { background-image: linear-gradient(#5aa8ff22 1px, transparent 1px), linear-gradient(90deg, #5aa8ff22 1px, transparent 1px); }
+.nf-lbd-g[data-l="0"] { background-image: url(/naos/nodefarm/lab-bg-0.webp); image-rendering: pixelated; opacity: .62; }
+.nf-lbd-g[data-l="1"] { background-image: linear-gradient(#5aa8ff10 1px, transparent 1px), linear-gradient(90deg, #5aa8ff10 1px, transparent 1px); opacity: .9; }
+.nf-lbd-g[data-l="2"] { background-image: linear-gradient(#5aa8ff22 1px, transparent 1px), linear-gradient(90deg, #5aa8ff22 1px, transparent 1px); }
+.nf-lbd-g[data-l="3"] { background-image: url(/naos/nodefarm/lab-bg-2.webp); image-rendering: pixelated; opacity: .8; animation: nfLbdSway 14s ease-in-out infinite alternate; }
 /* the world grid: dotted crosses at every half unit, glued to the nodes */
-.nf-lbd-g[data-l="2"] { background-image: radial-gradient(circle, #9fd0ff66 0 1.5px, transparent 2px); opacity: .7; }
+.nf-lbd-g[data-l="4"] { background-image: radial-gradient(circle, #9fd0ff66 0 1.5px, transparent 2px); opacity: .7; }
 .nf-lbd-w { position: absolute; left: 0; top: 0; width: 0; height: 0; transform-origin: 0 0; will-change: transform; }
 .nf-lbd-w i { position: absolute; display: block; translate: -50% -50%; border-radius: 50%; }
-.nf-lbd-core { width: 900px; height: 900px; background: radial-gradient(circle, #4aa3ff38 0, #4aa3ff14 35%, transparent 68%); animation: nfLbdPulse 6s ease-in-out infinite; }
-.nf-lbd-sec { width: 1100px; height: 1100px; background: radial-gradient(circle, color-mix(in srgb, var(--c) 18%, transparent) 0, transparent 62%); transition: opacity .5s; }
+.nf-lbd-core { width: 1152px; height: 1152px; background: url(/naos/nodefarm/lab-core.webp) center / 100% 100% no-repeat; image-rendering: pixelated; animation: nfLbdPulse 6s ease-in-out infinite; }
+.nf-lbd-sec { width: 1536px; height: 1536px; background: center / 100% 100% no-repeat; image-rendering: pixelated; opacity: .85; transition: opacity .5s; }
+.nf-lbd-sec[data-sec="exploits"] { background-image: url(/naos/nodefarm/lab-sec-exploits.webp); }
+.nf-lbd-sec[data-sec="malware"] { background-image: url(/naos/nodefarm/lab-sec-malware.webp); }
+.nf-lbd-sec[data-sec="infra"] { background-image: url(/naos/nodefarm/lab-sec-infra.webp); }
 .nf-lbd[data-focus] .nf-lbd-sec { opacity: .45; }
 .nf-lbd[data-focus="exploits"] .nf-lbd-sec[data-sec="exploits"], .nf-lbd[data-focus="malware"] .nf-lbd-sec[data-sec="malware"], .nf-lbd[data-focus="infra"] .nf-lbd-sec[data-sec="infra"] { opacity: 1; }
 /* drafting circles round the core, dashed like construction lines */
@@ -71,8 +76,9 @@
 .nf-lbd-scan { position: absolute; left: 0; right: 0; top: 0; height: 30%; display: block; background: linear-gradient(transparent, #5aa8ff0d 70%, #9fd0ff1a 99%, transparent); animation: nfLbdScan 9s linear infinite; }
 .nf-lbd-vig { position: absolute; inset: 0; display: block; background: radial-gradient(ellipse at center, transparent 55%, #000a1ccc 100%), repeating-linear-gradient(0deg, transparent 0 3px, #00000018 3px 4px); }
 @keyframes nfLbdPulse { 0%, 100% { opacity: .8; } 50% { opacity: 1; } }
+@keyframes nfLbdSway { from { translate: -8px 0; } to { translate: 8px 6px; } }
 @keyframes nfLbdScan { from { translate: 0 -100%; } to { translate: 0 400%; } }
-@media (prefers-reduced-motion: reduce) { .nf-lbd-core, .nf-lbd-scan { animation: none; } .nf-lbd-scan { display: none; } }
+@media (prefers-reduced-motion: reduce) { .nf-lbd-core, .nf-lbd-scan, .nf-lbd-g { animation: none; } .nf-lbd-scan { display: none; } }
 
 /* ---- board zone */
 .ctos .nf-lab { --c: #4aa3ff; background: linear-gradient(#5aa8ff0a 1px, transparent 1px) 0 0 / 22px 22px, linear-gradient(90deg, #5aa8ff0a 1px, transparent 1px) 0 0 / 22px 22px, #04112a; border-color: #2c5a92; }
@@ -157,3 +163,49 @@
 .ctos .nf-dock-lab { border-color: #2c5a92; color: #9fd0ff; }
 .ctos .nf-dock-lab[data-ready] { border-color: var(--lab-warn); color: var(--lab-warn); }
 .ctos .nf-dock-lab:hover { background: var(--lab-ps) !important; color: var(--lab-ink) !important; border-color: var(--lab-line) !important; }
+
+/* ---- lab panel hero: staged workbench scene (zone-lab sheet, scripts/naos-art/nodefarm-lab-scene.py) behind the Intel
+   readout, then the four-step flow strip and the "next" line. --st = stage row 0..7, --sc = art px size. */
+.ctos .nf-lab-hero { --sc: 2; position: relative; isolation: isolate; display: grid; grid-template: "top scene" auto "note scene" 1fr "flow flow" auto / minmax(0, 1fr) auto; gap: 14px 24px; }
+.ctos .nf-lab-hero > .nf-lab-top { grid-area: top; }
+.ctos .nf-lab-hero > .nf-lab-note { grid-area: note; align-self: end; }
+.ctos .nf-lab-hero > .nf-lab-flow { grid-area: flow; }
+.ctos .nf-lab-scene { grid-area: scene; position: relative; display: block; border: 1px solid #2c5a92; box-shadow: 4px 4px 0 #00091a; width: calc(288px * var(--sc)); height: calc(96px * var(--sc)); background: url(/naos/nodefarm/zone-lab.webp) no-repeat; background-size: calc(1728px * var(--sc)) calc(768px * var(--sc)); background-position: 0 calc(var(--st, 0) * -96px * var(--sc)); image-rendering: pixelated; animation: nfLabScene 1s steps(6) infinite; pointer-events: none; }
+.ctos .nf-lab-scene::after { content: ""; position: absolute; inset: 0; background: repeating-linear-gradient(0deg, transparent 0 3px, #00000022 3px 4px); }
+@keyframes nfLabScene { from { background-position-x: 0; } to { background-position-x: calc(-1728px * var(--sc)); } }
+.ctos .nf-lab-top { align-self: start; }
+.ctos .nf-lab-flow { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0; align-self: end; border: 1px solid #2c5a92; background: #020c20d9; }
+.ctos .nf-lab-flow li { position: relative; min-width: 0; }
+.ctos .nf-lab-flow li + li { border-left: 1px solid #2c5a92; }
+.ctos .nf-lab-flow li + li::before { content: ""; position: absolute; left: -5px; top: 50%; width: 8px; height: 8px; translate: 0 -50%; rotate: 45deg; background: #020c20; border: solid #2c5a92; border-width: 1px 1px 0 0; z-index: 1; }
+.ctos .nf-lab-flow button, .ctos .nf-lab-fs { display: grid; grid-template-columns: auto 1fr; grid-template-rows: auto auto; column-gap: 8px; width: 100%; padding: 10px 14px; text-align: left; font-family: var(--cm-mono); color: #8ea9cc; background: none; border: 0; }
+.ctos .nf-lab-flow button { cursor: pointer; }
+@media (hover: hover) { .ctos .nf-lab-flow button:hover { background: #012456; } }
+.ctos .nf-lab-flow button:focus-visible { outline: 2px solid var(--lab-line); outline-offset: -2px; }
+.ctos .nf-lab-flow i { grid-row: span 2; align-self: center; font: 700 var(--cm-ctos-t-micro)/1 var(--cm-mono); font-style: normal; color: #5a7aa8; }
+.ctos .nf-lab-flow b { font: 700 var(--cm-ctos-t-micro)/1.3 var(--cm-mono); letter-spacing: .12em; text-transform: uppercase; color: #b7c9e4; }
+.ctos .nf-lab-flow span span, .ctos .nf-lab-flow button span { font: 500 var(--cm-ctos-t-micro)/1.4 var(--cm-mono); color: #8ea9cc; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ctos .nf-lab-flow li[data-done] b { color: #6f8db5; }
+.ctos .nf-lab-flow li[data-done] i { color: var(--lab-line); }
+.ctos .nf-lab-flow li[data-now] { background: linear-gradient(#012456, #001a40); box-shadow: inset 0 -2px var(--lab-warn); }
+.ctos .nf-lab-flow li[data-now] i { color: var(--lab-warn); }
+.ctos .nf-lab-flow li[data-now] b { color: var(--lab-ink); }
+.ctos .nf-lab-flow li[data-now] span span, .ctos .nf-lab-flow li[data-now] button span { color: var(--lab-warn); }
+.ctos .nf-lab-note { margin: 0; max-width: 72ch; font: 500 var(--cm-ctos-t-ui)/1.55 var(--cm-sans, inherit); color: #b7c9e4; }
+.ctos .nf-lab-note b { font: 700 var(--cm-ctos-t-micro)/1 var(--cm-mono); letter-spacing: .1em; text-transform: uppercase; color: var(--lab-warn); margin-right: 4px; }
+.ctos .nf-lab-note small { display: block; margin-top: 4px; font: 500 var(--cm-ctos-t-micro)/1.4 var(--cm-mono); color: #6f8db5; }
+@media (max-width: 639px) {
+    .ctos .nf-lab-hero { --sc: 1; grid-template: "scene" auto "top" auto "flow" auto "note" auto / minmax(0, 1fr); }
+    .ctos .nf-lab-scene { justify-self: center; }
+    .ctos .nf-lab-flow { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .ctos .nf-lab-flow li:nth-child(3) { border-left: 0; }
+    .ctos .nf-lab-flow li:nth-child(n + 3) { border-top: 1px solid #2c5a92; }
+    .ctos .nf-lab-flow li:nth-child(3)::before { display: none; }
+}
+@media (min-width: 640px) and (max-width: 1180px) { .ctos .nf-lab-hero { --sc: 1.5; } }
+@media (prefers-reduced-motion: reduce) { .ctos .nf-lab-scene { animation: none; } }
+/* the panel's own ground: the research tree's painted blueprint paper, faded in from the top-left like every zone wash */
+.ctos .nf-row.nf-lab { --zone: url(/naos/nodefarm/lab-bg-0.webp) 0 0 / 512px 512px; }
+.ctos .nf-row.nf-lab::before { image-rendering: pixelated; opacity: .55; }
+/* the recipe fact line on a research node's card */
+.nf-tm .nf-tm-spec { margin: 0; padding: 6px 10px; font: 600 var(--cm-ctos-t-micro)/1.5 var(--cm-mono); letter-spacing: .04em; color: #b7c9e4; background: #001a40; border-left: 2px solid var(--lab-warn, #f9f1a5); }
