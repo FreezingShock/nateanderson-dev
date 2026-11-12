@@ -117,7 +117,7 @@ export function MapPanel({ s, d, onTree, onWin, onLab }: { s: State; d: D; onTre
                     <DataLines rows={[["status", canAscend(s) ? `ready, +${fmt(apOnAscend(s))} AP` : `${fmt(s.aether)} / ${fmt(ascendNeed(s))} Aether`]]} />
                     <button type="button" className="nf-wk-btn" onClick={() => onWin("ascend")}>Open Ascend</button>
                 </Frame>
-                <Frame i={4} color="#ff4d6d" path="sys/drones" title="Drones" note="Press buttons for you, even while you are away. Bought with Aether, one line per button tier.">
+                <Frame i={4} color="#ff4d6d" path="sys/drones" title="Drones" note="Press buttons for you, even while you are away. Bought with Aether, one per button tier.">
                     <DataLines rows={[["status", !dronesOpen(s) ? "mine your first Aether" : s.drones.some((x) => x > 0) ? `${s.drones.reduce((a, x) => a + x, 0)} levels built` : `first costs ${fmt(droneCost(s, 0))} AE`]]} />
                 </Frame>
                 <Frame i={5} color="#ffc53a" path="sys/goals" title="Goals" note={<>Each goal adds +{TUNE.achBonus * 100}% to everything, a finished tier +{TUNE.tierBonus * 100}%.</>}>

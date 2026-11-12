@@ -188,7 +188,8 @@ Testing tools, on this device only (the `admin` command is listed in `help`; pan
 Code: pure rules and snapshots in `lib/nodefarm/admin.ts`, panel in `components/nodefarm/admin.tsx`, styles in `app/camino/nodefarm-admin.css`. The game side is a few lines in `node-farm.tsx` (admin state, speed multiplier in the tick loop, `nf:admin` and `nf:live.changed`), `events.tsx` (`nf:fire` listener) and `engine.ts` (`adminFlags.reveal`). To remove admin mode later, delete those three files and those lines, plus `nfAdmin` in `components/cm/console.tsx`. Test scripts: `/mnt/project-files/portfolio/node-farm-admin/` (`run.mjs`, `panel.mjs`, `extra.mjs`).
 
 ## Save safety, settings and keys (feature check)
-- Import asks twice when the current save has progress, and a backup slot (`nf-backup-v1`, one save) is written before an import, a wipe or a restore; Menu has Restore backup. A save that cannot be read is copied to `nf-corrupt-v1` instead of being overwritten.
+- Import asks twice when the current save has progress. Save codes are base64 of the UTF-8 save (an older Latin-1 code still loads). Backups live in one list, `nf-backups-v1` (lib/nodefarm/backups.ts, newest first): `auto` when the game opens (the raw save before any migration) and every 30 minutes of play, newest 4; `daily`, the first auto of each day, newest 3; `event` before an import, wipe, restore, Handover, Ascend or a stale tab saving over another, newest 3; `lost`, the text of a save that could not be read (Copy out puts it in the save box). Menu lists them with Restore; a restore keeps the save it replaces as a new backup. The old one-slot `nf-backup-v1` is moved in on first read. Admin snapshots (`nf admin restore real`) are separate.
+- Save safety checks: `node --experimental-strip-types scripts/nodefarm/save-compat.mjs [old repo]` loads the saves in scripts/nodefarm/fixtures (made by save-gen.mjs from the released build) into the current engine and checks nothing is lost, NaN or locked again; `backups-check.mjs` tests the backup rules; `saves-browser.mjs <base url> <out dir>` runs the Menu flow on a production build. After a change that touches State, run save-compat; after a release, run save-gen against it and add the new fixtures.
 - A second tab on the same save is detected through the `storage` event: that tab stops saving and shows a notice with Load latest save / Save from here.
 - Menu: Download file and Open file (plain-text save code), Volume (the site-wide master volume), Numbers (short, scientific, engineering; `nf-numfmt-v1`, `setNumFmt` in the engine).
 - Keys (only on the Node Farm page, off while typing, with a modifier, over another panel or during an event): M Map, O Goals, L Records, A Ascend, S Menu, T Tree, R Lab, G Show me (the next step), P press the glowing button of the next step (hold to keep buying, never repeats a Reboot; when there is nothing to press it acts like Show me).
@@ -349,6 +350,16 @@ About every 11 to 19 minutes of play (first one after 8 minutes of life), one un
   named interaction turns on (`ARC_LINKS`): Hot swap (rack), Clean growth (fab), Still light (hollow), Storm pulse (deep),
   Recall (origin), Pollination (overgrowth), Quench (descent). The arc's level is its lowest rig level (the Glyph hall counts its lowest glyph). Shown on each rig panel.
 
+## Touch layer (caches, core vent, figure tips, links, zone menu), 2026-11-12
+Rules in `lib/nodefarm/poke.ts` (every number in `POKE_TUNE`, state `s.poke`, registers in `TICK_HOOKS`, so `sim.mjs` pacing is unchanged); UI in `components/nodefarm/poke.tsx` (`PokeLayer`), styles `app/camino/nodefarm-poke.css` (`nf-pk*`). Nate dislikes reflex tests and tap-clicker mashing, so nothing here needs speed and nothing pays for repeat taps.
+- **Caches**: after 3 min of online play, then every 6 to 10 min, a crate drops into one open zone's scene and waits forever (up to 3 at once; while 3 wait, none drop). A tap pays 60 s of that zone's plain output (Multipliers, Reboots and Bytes zones pay Bytes). A folded panel shows the crate in its title bar. Caches in a zone that closes again (Ascend, Handover) move to the Uplink rack.
+- **Core vent**: a button over the reactor core with a 10-step gauge. It fills over 10 min of online play and waits once full (magenta brackets); a tap then pays 45 s of every output. An early tap pulses the core and shows the vent readout.
+- **Figure tips** (print reveal, the shared `Tip` layer): HUD Bytes, RBT, MUL, AP, the core readout (Global shows its breakdown), every zone's big number (exact, per second/minute/hour, time to double, nodes), every spec line, every chain stop. Found by delegation on the game root, so panels carry no extra markup. Hover on desktop, tap on touch (2.6 s).
+- **Links**: a signal chain stop or a "Feeds ..." spec line jumps to that zone (`goTo`) and pings its border.
+- **Zone menu**: right-click, or hold a finger still 520 ms on a zone panel (not on its buttons): Scan zone (a feed line), Open cache, Arm/Disarm Drones, Feeder, Feeds, Open the Drone bay. Escape, a tap elsewhere or a scroll closes it.
+- Only online ticks (5 s or less) charge the vent or drop caches. Admin/tests: `window.dispatchEvent(new CustomEvent("nf:poke", { detail: "vent" | "<zone id>" }))`.
+- Check: /mnt/project-files/portfolio/node-farm-poke/poke-check.mjs (1440 and iPhone 13).
+
 ## Settings and low-effects mode
 The Menu window's `config/node.cfg` block lives in `components/nodefarm/settings.tsx` (sound, hum, volume, calm, effects, events, jump, number format). All per device, not in the save. Effects level (`full | low | auto`) is in `lib/nodefarm/fx.ts`: `initFx()` runs at boot, `setFxMode`, `useLowFx()`, window event `nf:fx`, and CSS hooks `body.nf-lowfx` / `body[data-nf-fx="low"]`. Auto measures the median frame time once (about 3.5 s after boot) and goes low under about 40 fps. Console: `nf fx full|low|auto`. The heavy-effect list for low mode is `app/camino/nodefarm-fx.css`: add new loops, drifting layers, blurs and big glows there. Low mode never hides information, and `body.nf-calm` is a separate switch.
 ## QOL batch 3 (2026-11-12, late-game layout pass)
@@ -362,3 +373,30 @@ Everything together made the game about 1.7x faster than Nate's targets: with th
 - `HAND_TUNE.apPerHand` 1 to 0.25. With `NF_ASC_GAP=1` Handovers now land at about 37, 48, 57, 63, 69, 74, 79 and 84 h (cycles 12 h down to 5 h, was 3 to 8 h and shorter without the hourly cap). Firmware is nearly full by about 85 h.
 Tick size is not a problem: lifetime Bytes, Reboots and presses over 2 h agree within about 1% from a 0.1 s tick to 30 s (`scripts/nodefarm/dt-check.mjs`). `s.bytes` alone does differ, because every Reboot resets it and the Watchdog Reboots every few seconds.
 Sim flags added: `NF_ZONEEV=1` (zone events, the bot mines veins and patches faults), `NF_ZETUNE`, `NF_HANDTUNE`, `NF_DT`.
+## Stress tests (challenge runs), 2026-11-12
+
+Rules: lib/nodefarm/stress.ts (fills `CH_HOOKS` in the engine and adds a tick hook). Window: components/nodefarm/stress.tsx,
+styles app/camino/nodefarm-stress.css (`nf-st-*`), banner art `win-stress` from scripts/naos-art/nodefarm-window-art.py. Key X.
+
+- Open after the first Ascend. Starting a test stores the real run inside the save (`s.ch.run.real`) and starts a fresh run
+  that keeps perks, AP, the tree (not in Cold tree), Firmware, the protocol, lab research and learned scripts.
+- Ranks I, II and III clear when Aether, Starglass and Chrono open (`CH_TUNE.goals`). The best rank per test is kept forever
+  and pays a small boost (`CH_TUNE.pay`) through Ascend and Handover.
+- Locked during a test: Ascend, Handover, tree buys and respec, perks, Firmware (`chOff(s, "prestige")`).
+- Leaving restores the stored run through `parseSave`, merges goals, logs, lifetime stats and learned scripts, and shifts
+  the run's game-time stamps (`rebootAt`, `hand.cycleAt`) by the test's length. Lab, hangar and rig buys made in a test are undone.
+- Tests: Brownout (perks, unspent AP and goal bonuses off), Grounded (no Drones), Cold tree, Narrow band (tiers 1 to 3),
+  Thin pipe (Bytes/s x0.1), Dead air (no quick-time or zone events), Broken chain (materials don't boost the one below),
+  Short leash (30, 90, 240 min of game time per rank).
+- Pacing check: `DUMP=/tmp/s.json node --experimental-strip-types scripts/nodefarm/sim.mjs 12` then
+  `node --experimental-strip-types scripts/nodefarm/stress-sim.mjs /tmp/s.json 6` (also checks the run comes back intact).
+  First run (2026-11-12) from a 3.6 h save: rank I in 0.4 to 1.0 h, rank III in 4.4 to 6 h; from a 24 h save: rank III in
+  1 to 1.8 h, Brownout III 6.3 h.
+
+## Board render holds (2026-11-12, perf)
+The game state is one mutable object and `NodeFarm` re-renders 10 times a second, so everything under it re-rendered too. `components/nodefarm/hold.tsx` (`Hold live k`) keeps returning a part's last element while it is not `live` and its key `k` is unchanged, so React skips it. Used for: side windows (map, goals, records, ascend, handover, stress, codex, menu, and their title bars) while hidden, the body of a folded zone (`StatRow`), Dock, phone tabs, Chain and arc heads (about 3 Hz), and the Lab, Scripts and Hangar panels (3 Hz folded, 5 Hz open). Anything a player does bumps `ver`, which refreshes held parts at once. The 10 Hz loop uses `tickBump`, not `bump`, for the same reason: add new player actions with `bump`. `BuyBtn` computes what it prints and `BuyView` is memoised on those strings. `useOffscreenPause` (offscreen.ts) sets `data-off` on panels scrolled out of view and `nodefarm-fx.css` pauses their loops. When adding a panel that nobody sees most of the time, wrap it in `Hold`; do not read `s` in a held element's event handlers through stale closures (read `g.current`). Numbers and harness: portfolio/node-farm-perf/board/.
+## Sound pass (mixer)
+
+Every Node Farm sound goes through `nfx(name, arg?, system?)` in `lib/nodefarm/sound.ts`, never `sfx` directly. It belongs to one of eight systems (buttons, unlocks, runs, automation, events, world, interface, hum) and plays at that system's volume, kept per device in `nf-mix-v1` (not in the save). The site-wide master volume and sound switch still apply first. Sliders are in the Menu window's settings under "mix"; clicking a name plays a sample. Under the hood `setLevel()` in `lib/sound/engine.ts` scales the gain of every voice created during that one `play()`.
+
+To add a sound: write it in `lib/sound/sounds.ts` (same voices: key clicks, square blips, soft sine bodies, filtered sweeps), give it a home system in `HOME` in `lib/nodefarm/sound.ts`, and call `nfx("name")`. The new voices are `nfHandover`, `nfStress`, `nfScript` (arg `{ on }`), `nfDrone`, `nfRig`, `nfZone` (arg `{ good }`), `nfCache`, `nfVent`, `nfPage` and `nfEnd` (reserved for the ending screen: call `nfx("nfEnd")`). Milestone banners also play the goal chirp, and the rate limiter drops it when something louder just played.

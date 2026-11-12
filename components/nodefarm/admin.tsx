@@ -268,7 +268,7 @@ function AdminPanelInner({ host }: { host: AdminHost }) {
                                         <Btn onClick={() => act(clearPerks, "perks cleared")}>Clear perks</Btn>
                                         <Btn onClick={() => act(maxDrones, "Drones maxed and armed")}>Max Drones, arm all</Btn>
                                         <Btn onClick={() => act((x) => { grantGoals(x); grantSecrets(x); }, "every goal and secret done")}>Every goal and secret</Btn>
-                                        <Btn onClick={() => act(grantLogs, "every story log recovered")}>Recover all logs</Btn>
+                                        <Btn onClick={() => act(grantLogs, "every operator log recovered")}>Recover all logs</Btn>
                                         <Btn onClick={() => act(grantLab, "lab researched, Intel and stock filled")}>Research the whole lab</Btn>
                                         <Btn onClick={() => act(clearLab, "lab research cleared")}>Clear lab</Btn>
                                         <Btn on={reveal} onClick={() => { adminFlags.reveal = !adminFlags.reveal; setReveal(adminFlags.reveal); host.changed(); setNote(`> tree fog ${adminFlags.reveal ? "off" : "on"}`); }}>Reveal whole tree</Btn>

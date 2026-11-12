@@ -172,7 +172,110 @@ def desk():
     return c
 
 
-PIECES = {"map": (mast, "#2fd8e8"), "goals": (plinths, "#ffc53a"), "records": (archive, "#f0a53c"), "menu": (desk, "#b6f04a")}
+def bench():
+    """Stress tests: a server node clamped on a test bench, probes running to a scope that shows a spiking trace, sparks."""
+    c = sc.Canvas(35)
+    r = c.rng
+    c.haze(0.0, 0.2, 1.7, BH)
+    c.stars(24, sparkle=3)
+    base = 132
+    c.rect(20, base, 460, 150, 0.3)                            # the bench top and its edge
+    c.line([(20, base), (460, base)])
+    for lx in (40, 440):                                       # legs
+        c.rect(lx - 4, base, lx + 4, 150, 0.5)
+    # the node under test: a rack unit in a clamp frame
+    nx = 150
+    c.rect(nx - 70, 58, nx + 70, base - 4, 0.22)
+    for k, y in enumerate(range(66, base - 10, 12)):
+        c.rect(nx - 62, y, nx + 62, y + 8, 0.36)
+        for j in range(5):
+            if r.random() < 0.55:
+                c.ds.rectangle((nx + 30 + j * 6, y + 3, nx + 31 + j * 6, y + 4), fill=255)
+    for cx_ in (nx - 78, nx + 78):                             # clamp posts and the screw bar over the top
+        c.rect(cx_ - 4, 40, cx_ + 4, base - 4, 0.6)
+    c.rect(nx - 82, 36, nx + 82, 44, 0.5)
+    c.line([(nx, 44), (nx, 58)])
+    c.rect(nx - 6, 22, nx + 6, 36, 0.7)
+    # the scope: a screen with a grid and a trace that runs flat, then spikes past the top
+    sx0, sy0, sx1, sy1 = 280, 30, 440, 112
+    c.rect(sx0, sy0, sx1, sy1, 0.3)
+    c.rect(sx0 + 6, sy0 + 6, sx1 - 6, sy1 - 18, 0.05)
+    for gx in range(sx0 + 16, sx1 - 6, 16):
+        for gy in range(sy0 + 10, sy1 - 18, 4):
+            c.dot(gx, gy)
+    mid = (sy0 + sy1 - 12) // 2
+    pts = []
+    for x in range(sx0 + 8, sx1 - 8, 2):
+        f = (x - sx0) / (sx1 - sx0)
+        amp = 3 if f < 0.55 else 3 + (f - 0.55) * 70
+        pts.append((x, mid + amp * np.sin(x * 0.55) * (1 if r.random() < 0.9 else 1.6)))
+    c.line([(x, max(sy0 + 7, min(sy1 - 19, y))) for x, y in pts])
+    for k in range(5):                                         # knobs under the screen
+        kx = sx0 + 20 + k * 28
+        c.ellipse((kx - 5, sy1 - 14, kx + 5, sy1 - 4), 0.6)
+    c.rect(sx0 + 30, sy1, sx1 - 30, base - 2, 0.25)            # scope stand
+    # probe leads from the node to the scope, sagging
+    for k, (y0, y1) in enumerate(((80, 92), (98, 100), (114, 106))):
+        x0, x1 = nx + 70, sx0
+        pts = [(x0 + (x1 - x0) * t, y0 + (y1 - y0) * t + 18 * np.sin(np.pi * t)) for t in np.linspace(0, 1, 24)]
+        c.line(pts)
+        c.rect(x0 - 2, y0 - 2, x0 + 3, y0 + 2, 1.0, edge=False)
+    # sparks off the clamp, lightning drawn as a zig-zag
+    for sx_, sy_ in ((nx + 78, 50), (nx - 78, 70)):
+        x, y = sx_, sy_
+        pts = [(x, y)]
+        for _ in range(5):
+            x += r.integers(-7, 8)
+            y -= r.integers(4, 9)
+            pts.append((x, y))
+        c.line(pts)
+        for _ in range(6):
+            c.dot(sx_ + r.integers(-12, 13), sy_ + r.integers(-14, 6))
+    c.radial(nx + 78, 50, 2, 26, peak=0.4)
+    return c
+
+
+def shelf():
+    """Codex: two shelves of entry spines either side, an open book at the centre and a lit bulb over it."""
+    c = sc.Canvas(35)
+    r = c.rng
+    c.haze(0.0, 0.2, 1.6, BH)
+    c.stars(30, sparkle=3)
+    for x0, x1 in ((6, 150), (330, 474)):                     # spines on two shelves
+        for shelf_y in (74, 146):
+            x = x0
+            while x < x1 - 6:
+                w = int(r.integers(6, 12))
+                h = int(r.integers(30, 58))
+                top = shelf_y - h
+                c.rect(x, top, x + w, shelf_y, 0.22 if r.random() < 0.6 else 0.4)
+                c.line([(x, top + 8), (x + w, top + 8)])
+                if r.random() < 0.5:
+                    c.dot(x + w // 2, top + 16)
+                x += w + 2
+            c.line([(x0, shelf_y + 2), (x1, shelf_y + 2)])
+    # the open book, two pages with printed lines and a spine down the middle
+    cx = 240
+    c.rect(cx - 44, 92, cx - 2, 130, 0.35)
+    c.rect(cx + 2, 92, cx + 44, 130, 0.35)
+    c.line([(cx, 90), (cx, 132)])
+    for y in range(100, 128, 5):
+        c.line([(cx - 36, y), (cx - 36 + int(r.integers(14, 30)), y)])
+        c.line([(cx + 10, y), (cx + 10 + int(r.integers(14, 30)), y)])
+    c.line([(cx - 44, 130), (cx, 136), (cx + 44, 130)])
+    # the bulb over the book, with its base and a few rays
+    c.ellipse((cx - 9, 24, cx + 9, 50), 1.0)
+    c.rect(cx - 5, 50, cx + 5, 60, 0.7)
+    c.line([(cx - 4, 56), (cx + 4, 56)])
+    c.radial(cx, 38, 2, 44, peak=0.5)
+    for ang in (-2.4, -1.9, -1.3, -0.4, 0.4, 1.3, 1.9, 2.4):
+        x0, y0 = cx + 22 * np.cos(ang), 38 + 22 * np.sin(ang)
+        c.line([(x0, y0), (cx + 34 * np.cos(ang), 38 + 34 * np.sin(ang))])
+    c.ground(lambda x: 146 + np.sin(x / 40), top=0.3, bottom=0.06)
+    return c
+
+
+PIECES = {"map": (mast, "#2fd8e8"), "goals": (plinths, "#ffc53a"), "records": (archive, "#f0a53c"), "menu": (desk, "#b6f04a"), "stress": (bench, "#ff2a2a"), "codex": (shelf, "#ff6b57")}
 
 if __name__ == "__main__":
     want = sys.argv[1:] or list(PIECES)

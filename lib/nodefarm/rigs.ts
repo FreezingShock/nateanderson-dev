@@ -4,7 +4,7 @@
 // RIG_HOOKS. The panel is components/nodefarm/rig.tsx. See docs/node-farm.md "Zone rigs".
 //
 // Adding a zone: add a RIGS entry, and a case in muls() and/or step() if the rig changes output or runs on a clock.
-// Keep every boost to its own zone or a named neighbour, and never a power-law boost on everything.
+// Keep every boost to its own zone or a named neighbor, and never a power-law boost on everything.
 import {
     MATS, RIG_HOOKS, STATS, TUNE, ZE_TUNE, derive, fwRigCost, rigMasteryCut, isUnlocked, overclockMult, overclockSecs, sinceReboot, zeTuned,
     type Derived, type MatId, type RigState, type State, type StatId,
@@ -88,7 +88,7 @@ export const RIGS: RigDef[] = [
     R("bytes", "Packet cache", "carry", "A slice of every Byte earned fills a cache that survives Reboot. Each Reboot pours it back into Bytes.", "fills faster and holds 30 s more output"),
     R("mult", "Gain staging", "set", "Each Multiplier tier you own this Reboot lights a stage and makes Multiplier buttons stronger. All six lit doubles it.", "+0.5% per lit stage"),
     R("reboot", "Capacitor", "timing", "Charges while you wait between Reboots. The next Reboot spends the charge for extra Reboots.", "charges 8% faster and pays 4% more"),
-    R("copper", "Batch pour", "cycle", "The mould fills on its own clock. Each pour pays a lump of Copper and adds a cast, and every cast raises Copper output this run.", "pours 6% sooner and holds 5 more casts"),
+    R("copper", "Batch pour", "cycle", "The mold fills on its own clock. Each pour pays a lump of Copper and adds a cast, and every cast raises Copper output this run.", "pours 6% sooner and holds 5 more casts"),
     R("silicon", "Air scrubbers", "hazard", "Dust settles while the scrubbers are off and drags Silicon down to 60%. Scrubbers clear it and add a bonus, but burn a share of Copper.", "+4% clean bonus and 1.2% less Copper burned"),
     R("quartz", "Crystal growth", "growth", "Crystals grow while Quartz runs: shard, crystal, cluster, geode, cavern. Each stage multiplies Quartz until you Ascend.", "grows 8% faster, +1.5% per stage"),
     R("aether", "Afterglow", "carry", "Aether past what Ascend needs is kept as Afterglow, which speeds Copper, Silicon and Quartz at the start of the next run.", "stronger glow that lasts 4 min longer"),
@@ -100,7 +100,7 @@ export const RIGS: RigDef[] = [
     R("nebula", "Weather", "cycle", "Clear skies, a front, then a storm, on a 12 minute clock. Storms add half again to Nebula; fronts thin it.", "storms last 36 s longer"),
     R("pulsars", "Beacon", "link", "The spire pulses on a steady clock. Every 40 pulses fires a free Overclock.", "pulses 6% faster"),
     R("singularity", "Gravity well", "link", "Every material button pressed this run, by anyone, drops mass into the well. Mass strengthens Singularity.", "+0.8% per tenfold mass"),
-    R("engrams", "Index", "collection", "Every goal, secret and story log you own is filed here, and each one strengthens Engrams.", "+0.2% per filed record"),
+    R("engrams", "Index", "collection", "Every goal, secret and operator log you have is filed here, and each one strengthens Engrams.", "+0.2% per filed record"),
     R("paradox", "Mirror", "catch-up", "The material zone furthest behind is mirrored: it gets a boost that grows with the Paradox you hold.", "a stronger reflection"),
     R("spores", "Spread", "collection", "Spores drift into every zone that is running. Each material zone with producers this run strengthens Spores.", "+0.4% per running zone"),
     R("mycelium", "Knots", "set", "Each Spores and Mycelium tier you own this run ties a knot in the web. Each knot strengthens Mycelium, and all twelve double it.", "+0.5% per knot"),
