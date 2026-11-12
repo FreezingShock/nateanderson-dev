@@ -298,9 +298,12 @@ export const canAfford = (s: State, stat: ButtonStat, tier: number) => {
     return amount(s, b.pays) >= b.cost;
 };
 
+/** Reboots decrypt after this many Bytes earned in total, or this many Multipliers held. */
+export const REBOOT_UNLOCK = { bytes: 600, mult: 40 };
+
 export function isUnlocked(s: State, id: StatId): boolean {
     if (id === "bytes" || id === "mult") return true;
-    if (id === "reboot") return s.life.bytes >= 600 || s.reboot > 0 || s.mult >= 40;
+    if (id === "reboot") return s.life.bytes >= REBOOT_UNLOCK.bytes || s.reboot > 0 || s.mult >= REBOOT_UNLOCK.mult;
     if (id === "copper") return s.life.reboots >= TUNE.unlockAt.copper;
     const i = MATS.indexOf(id as MatId);
     const below = MATS[i - 1];
