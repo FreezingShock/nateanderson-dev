@@ -155,7 +155,7 @@ export function learnStep(s: State): ScriptId[] {
     return out;
 }
 const bump = (a: AutoState, id: ScriptId, n = 1) => { a.learn[id] = (a.learn[id] ?? 0) + n; };
-/** A button pressed by hand (n presses, for Buy max). */
+/** A button pressed by hand, n times at once (Auto-buy learns from these). */
 export function teachPress(s: State, stat: ButtonStat, tier: number, n = 1) {
     const a = auto(s);
     if (stat === "reboot") { bump(a, "reboot"); return; }

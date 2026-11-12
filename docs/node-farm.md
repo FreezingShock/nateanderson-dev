@@ -105,7 +105,7 @@ One open/close animation for every window, card and pop-up ("terminal print"): t
 - AP bonus: +30% per AP held, so spending AP lowers it until respec (Nate kept this 2026-11-12; `TUNE.apBonusFromEarned` would count spent AP too, but the sim then finishes the tree in 12 to 19 h). Carrier nodes raise the per-AP value (`apEach`). `TUNE.apGainSoft` puts a log knee on Ascends above 250 AP so AP cannot run off to infinity after the tree is done.
 - Pacing (sim): first Ascend 3.3 h, whole tree 60.3 h without Drones, 75 h with the bot arming Drones (Nate's target: about 60 h).
 - Effects (`treeFx`, cached per tree array): boosts written "xN" multiply with each other (`bytes`, `global`, `reboot`, `mats`, `ap`, `drone`, `ocTime`, `ocX`). The others: `growth` (prices climb slower), `rebootKeep`, `unlockMul`, starting kits (`kitReboot`, `kitProd`, `kitDrones`, applied in `ascend`), `droneKeep`, `droneGlobal`, `mounts`, `eventRate` (`eventHaste`), `winBoost` (`state.runWins`), `zeroDay` and `echo` (returned by `breach`). `treeTotals(s)` turns them into readout rows for the menu.
-- Systems: Buy max (`pressMax`, toggle above the stat zones, per device `nf-max-v1`), Watchdog timer (`watchdogStep` in `tick`, switch in the Reboot zone, `state.watchdog`), Forecast (time to afford on each button), Dead drop (`dropFill` / `openDrop`, `state.dropAt`, HUD meter; real time, fills while away), Standing orders (`autoArm`, `state.autoArmed` so a stat you disarm stays off), Mounted drives (`setMount`, `state.mounts`, picker on the Ascend pane), Ghost line, Cross-talk, Echo (the event layer brings the next event right after the result), Zero-day (`payout`).
+- Systems: Watchdog timer (`watchdogStep` in `tick`, switch in the Reboot zone, `state.watchdog`), Forecast (time to afford on each button), Dead drop (`dropFill` / `openDrop`, `state.dropAt`, HUD meter; real time, fills while away), Standing orders (`autoArm`, `state.autoArmed` so a stat you disarm stays off), Mounted drives (`setMount`, `state.mounts`, picker on the Ascend pane), Ghost line, Cross-talk, Echo (the event layer brings the next event right after the result), Zero-day (`payout`).
 - Old saves: `parseSave` calls `migrateTree`, which drops ids that are not in the tree and refunds them at their old price (`LEGACY_COST`, the 60 nodes from #157). The refund is shown once in the feed (`state.treeRefund`). Story logs count a section as whole when all 8 of its nodes are owned. The "Whole tree" goal needs all 40. The Rubber duck opens the secret "Quack".
 - Menu: `components/nodefarm/tree.tsx` (`TreeMenu`), styles `app/camino/nodefarm-tree.css`. Opened from the Ascend window gateway, the Map, the guide strip, the dock and a phone tab (once you have AP, a node or an Ascend). Portaled to `<body>` inside a `.ctos nf-tm-host` wrapper (z-index 1000) so no page transform can shift it; while open the body gets `nf-win-open nf-tm-open` (hides the site bar and dock). The site's search, map and console scrims (`.nv-scrim`) are lifted to z-index 1003 so they open above the tree, and the tree ignores Escape while one is open.
 - Framing (Nate picked "full screen, keep corners", 2026-11-12): phones get the whole screen with the site bar hidden. Desktop (900 px and up) keeps the site's top-left and top-right clusters (`body.nf-tm-chrome`, `.nv-top` lifted to z-index 1001, styled as when scrolled) and the tree's own bar slots between them on the same line (`--tm-l`, `--tm-r`, `--tm-t`, `--tm-h`, measured from `.nv-start` and `.nv-tools` on open and resize). The view then fills the screen; `dims.st` is how much of its top the bar covers, and fit, focus and the card all keep clear of it. The page dock waits behind a `</> pages` tab at the bottom centre (`body.nf-tm-dock` shows it, the tab rides on top).
@@ -145,6 +145,13 @@ Nate dislikes reaction, memory, puzzle and guessing games, so no event tests ref
 
 Each body reports a quality from 0 to 1; when the clock runs out it reports what it has so far. From `winAt` (0.25) it is a win: node-farm.tsx calls `breach()` (Overclock, so the Anomaly tree nodes keep working) then `payLoot()`. Loot rarity uses the board's six rarity colours; better quality shifts the roll up. Loot is a lump of Bytes or of the newest material (seconds of plain, non-Overclock output) or extra Overclock seconds, sized so engaging every event adds about +40% over the Overclock alone. Skipping or closing with too little done costs nothing. Touch, mouse and keyboard all work (1 to 3, Space, Escape skips); the card is an `alertdialog` (the docked spike strip is a `status`) and returns focus when it closes. Events can be switched off from the card or the Menu (`nf-events-v1`). Admin `nf:fire` shows any kind right away. To add a type: add it to `EVENTS`, add a body that calls `useDone(props, sofar)`, and style it in nodefarm-events.css. Timers whose deps include callbacks from node-farm.tsx get reset by its 10 Hz re-render, so keep such callbacks in refs.
 
+## Reactor core (lib/nodefarm/core-art.ts, core-look.ts, components/nodefarm/core.tsx), 2026-11-12
+- One 144 px buffer shown at 2x. `core-art.ts` is the renderer and imports nothing from the game, so `node scripts/naos-art/core-preview.mjs <dir> [frames]` draws a contact sheet of every stage and look (and prints ms per frame) with the same code. `core-look.ts` reads the save: zone colours, chroma, structures. `core-parts.ts` lists the structures.
+- Colours: the core wears the ramp of the newest zone you have bought something in (5 steps generated from the stat colour, zone 01 keeps its exact cyan) and dithers across over 0.9 s when a zone opens. Presses flash the pulse ring in the pressed zone's colour. Overclock still turns everything magenta. `nf core <zone>` pins a zone, `nf core zone` follows the newest again.
+- Chroma: unlocks at the first Ascend; `nf core chroma` cycles swirling bands of every opened zone's colours. Saved in `nf-core-v1` (this browser).
+- Structures bolt on as each part of the game opens, building in over 1.6 s with a feed line (`core.attach(...)`): clamps (first Reboot), copper socket with capacitor banks that charge with the Reboot gauge (Copper), lattice masts (Exploit Lab), drone docks and flying drones (first Drone), gyro ring I (first Ascend), code glyph orbit (first Script), gyro ring II (Nebula), corona (Engrams), gyro ring III (Origin). The radial core pulls back from 1.0 to 0.77 scale as they arrive to make room. `nf core parts 0-9` previews, `nf core parts live` goes back.
+- Cost: draws at 30 fps (pulses redraw at once), skips frames off screen, in a hidden tab and under the tree; Calm motion draws a still frame and redraws only when something it shows changes. Measured headless at ~1.9 ms per frame with everything on (the old core was ~1.45 ms at 40 fps), so the total per second is about the same.
+
 ## Scenery (dither backdrops per era)
 - Art: `scripts/naos-art/nodefarm-scenes.py` draws nine original 480 x 270 landscapes plus an Ascend piece into `public/naos/nodefarm/scene-<n>.{png,webp}` (`scene-ascend` for Ascend). Two-tone palette PNGs (era colour at 55% for the dither, full colour for lit lines), about 1 to 6 KB each. Every scene tiles sideways without a seam, so a wide board repeats it. Rebuild with `python3 scripts/naos-art/nodefarm-scenes.py` (or `... 3 ascend`).
 - Eras (`lib/nodefarm/scenery.ts`, `eraOf`): the furthest stat the current run has opened. 0 Uplink (Bytes, Multipliers, cyan), 1 Foundry (Reboots, Copper), 2 Wafer (Silicon), 3 Lattice (Quartz), 4 Aurora (Aether), 5 Monolith (Runes), 6 Glass (Starglass), 7 Eclipse (Voidsteel), 8 Clockwork (Chrono), 9 Nursery (Nebula, Cloud Deck), 10 Beacon (Pulsars), 11 Horizon (Singularity), 12 Archive (Engrams), 13 Mirror (Paradox), 14 Root (Origin). After an Ascend it steps back until the stats reopen.
@@ -182,7 +189,7 @@ Code: pure rules and snapshots in `lib/nodefarm/admin.ts`, panel in `components/
 - Import asks twice when the current save has progress, and a backup slot (`nf-backup-v1`, one save) is written before an import, a wipe or a restore; Menu has Restore backup. A save that cannot be read is copied to `nf-corrupt-v1` instead of being overwritten.
 - A second tab on the same save is detected through the `storage` event: that tab stops saving and shows a notice with Load latest save / Save from here.
 - Menu: Download file and Open file (plain-text save code), Volume (the site-wide master volume), Numbers (short, scientific, engineering; `nf-numfmt-v1`, `setNumFmt` in the engine).
-- Keys (only on the Node Farm page, off while typing, with a modifier, over another panel or during an event): M Map, O Goals, L Records, A Ascend, S Menu, T Tree, B Buy max, R Lab, G Show me (the next step), P press the glowing button of the next step (hold to keep buying, never repeats a Reboot; when there is nothing to press it acts like Show me).
+- Keys (only on the Node Farm page, off while typing, with a modifier, over another panel or during an event): M Map, O Goals, L Records, A Ascend, S Menu, T Tree, R Lab, G Show me (the next step), P press the glowing button of the next step (hold to keep buying, never repeats a Reboot; when there is nothing to press it acts like Show me).
 - The tab title shows `<rate>/s · Node Farm` while the tab is in the background.
 - Menu "Calm motion" (`nf-calm-v1`) forces reduced motion on top of the OS setting: the `reduced` prop everywhere plus `body.nf-calm` CSS. Menu also shows when the game last saved.
 
@@ -223,7 +230,7 @@ Brought up to the Ascend window's level. Shared parts in `components/nodefarm/wi
 - Menu: a config file (click a line to flip it; volume and number format are lines too), the save code as a terminal block, wipe is Hold to wipe (keeps the backup), keys as data lines.
 - Map: the chain as a signal tower (Chrono at the top, Bytes at the base, YOU ARE HERE on the zone being worked on) beside a readout of the picked zone, then Ascend, Drones, Goals and the tree's sections.
 - Phone: windows sit inline under the tabs, so they get a solid panel over the scenery.
-- Next step strip shows the sprite of what it points at. Drone bay rows get a dithered pad in each Drone's colour and aligned columns.
+- Next step strip shows the sprite of what it points at. Drone hangar rows get a dithered pad in each Drone's colour and aligned columns.
 - Unlock and milestone banners are a strip pinned under the site bar, as wide as the board (left and width set in juice.tsx). They sit under an open window.
 Checks: /mnt/project-files/portfolio/node-farm-refresh/ (`checks.mjs` interactions incl. a real long touch on phone, `wins.mjs` and `board.mjs` screenshots).
 
@@ -279,3 +286,36 @@ Learned automation, in `lib/nodefarm/scripts.ts` (rules, registers `scriptStep` 
 - Feed: `cron.run("buy.sh") ×n` batched lines; script presses are kept out of the Drone sweep count (`state.auto.presses`). Console `nf cron` lists every script. Admin `nf admin max` teaches all of them (`grantScripts`).
 - Art: `scripts/naos-art/nodefarm-sched-scene.py` draws `zone-sched` (the cron room, one machine per script learned, the clock daemon at buy.sh v3) and `sched-icons` (32 px, 4 frames per script).
 - Pacing: the greedy sim bot already plays perfectly, so scripts do not change the sim; they move a real player toward the bot's numbers.
+
+## Zone rigs (one mechanic per zone), 2026-11-12
+Every zone keeps its six buttons and has one rig: a meter, one rule, and a level track. Rules in `lib/nodefarm/rigs.ts`
+(every number in `RIG_TUNE`; importing the file fills the engine's `RIG_HOOKS`), panel `components/nodefarm/rig.tsx`
+(drawn in each zone body by `StatRow`), styles `app/camino/nodefarm-rig.css` (`nf-rig*`). Save state `state.rig`
+(`RigState` in engine.ts), made or repaired on first use by `rig(s)`, so old saves load.
+- Nate's picks (2026-11-12): rig levels are kept through Ascend (meters, charges and clocks reset with the run); hazards are a
+  real drain (Cleanroom dust can take Silicon down to 60% of its rate).
+- Levels cost minutes of the zone's own output (`RIG_TUNE.minutes`: 2, 6, 15, 40, 100 min; Bytes for zones 01 to 03), never
+  paid at Overclock rate. Cap 5; Root chamber's Rewrite adds up to +3 per rig (levels 6 to 8 cost 240, 600, 1500 min).
+- The rigs: 01 Packet cache (carry: Bytes cache poured back on Reboot), 02 Gain staging (Multiplier tiers owned this Reboot),
+  03 Capacitor (charge between Reboots pays extra Reboots), 04 Batch pour (timed Copper lump plus casts), 05 Air scrubbers
+  (dust hazard; scrubbers burn Copper), 06 Crystal growth (Quartz stages over the run), 07 Afterglow (spare Aether at Ascend
+  speeds Copper to Quartz next run), 08 Carvings (three glyph tracks: Aether, Runes, Quartz), 09 Prism beam (aim at Bytes or
+  Copper to Runes), 10 Void draw (0/10/25% of Starglass into Voidsteel), 11 Stillness (Chrono up to x2 the longer you press
+  nothing yourself; `rigManual` in doPress resets it), 12 Weather (12 min clock: clear, front x0.67, storm x1.5), 13 Beacon
+  (free Overclock every 40 pulses), 14 Gravity well (material presses add mass, log boost), 15 Index (goals, secrets, logs),
+  16 Mirror (boosts the running material with the fewest producers), 17 Rewrite (raises other rigs' caps).
+- Boosts touch only their own zone or a named neighbour, and the big ones are log-scaled or capped. Never add a power-law boost
+  on everything.
+- New zones (arc past Origin): add a `RIGS` entry and a case in `muls()` and/or `step()`.
+- Admin section 10 "Zone rigs": max every rig, fill meters, clear. `nf admin max` maxes rigs too.
+- Sim: rigs join unless `NF_NORIGS=1` (`NF_RIGTUNE` merges over `RIG_TUNE`); the bot buys any level it can pay four times over.
+  The first numbers took the whole tree from 39.2 h to 27.4 h, so most boosts were halved. Now (Drone bot, 2026-11-12): first Ascend
+  2.84 h -> 2.60 h, Chrono 14.0 -> 12.5 h, Nebula 26.7 -> 24.9 h, Origin 37.8 -> 35.2 h, whole tree 39.2 -> 36.4 h (about 7% faster).
+## Zone events
+About every 8 to 14 minutes of play (first one after 8 minutes of life), one unlocked zone gets a short event. Rules and the roll are in `lib/nodefarm/zoneevents.ts`; every number is `ZE_TUNE` in `engine.ts` (the engine reads it in `derive` and `button` through `zeOut` and `zeCost`). State is `s.ze` (optional, so old saves load): the running event, a timer, counts. Ascend ends a running event.
+
+- **Surge**: the zone's output x2 for 3 min. **Clearance**: its buttons cost 40% less (not on Bytes, which has none). **Resonance**: the zone and the one below it x1.6. **Rich vein** (Bytes and materials): output x2 for 4 min, or Mine it now for 4 min of output at once. **Fault** (after 15 min of life): output halved for 3 min; Patch it for 25 s of Bytes or wait it out. Nothing takes stock from you and nothing needs a reflex.
+- Output means Bytes per second for Bytes, button strength for Multipliers, Reboot strength for Reboots, and the rate for a material.
+- Only online ticks (5 s or less) start an event; time away just runs the clock down. The scripts/sim never imports `zoneevents.ts`, so `sim.mjs` pacing is unchanged.
+- Shown as a centered card (`ZoneEventCard`, no scrim, plain events close after 7 s, a vein or fault waits for an answer or "Decide later"), a readout on the zone panel (`ZoneEvent`, with the answers if you deferred) and a dot on the signal chain. Reveal is decrypt.
+- Admin panel, Run section: zone picker, one button per event, Clear, and Next in 5 s.

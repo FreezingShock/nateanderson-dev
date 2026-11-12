@@ -11,9 +11,12 @@ import { hasZoneArt, onStagePreview, shownStage } from "@/lib/nodefarm/zone-art"
  * A stage going up flashes the new sprite in. The box is measured only when the panel resizes (no per-frame JS): it sets
  * --s (3 art px per art pixel on wide panels, else 2), --w (visible width, the art is cropped on its left), --b (where the
  * floor sits), --t (the top: the title bar), --tf (end of the dark wash behind the description) and --nx/--ny/--nw/--nh
- * (the dark pool behind the big number).
+ * (the dark pool behind the big number). The box is SKIRT art px wider than the cell so the static skirt to its left shows too.
  * Styles: app/camino/nodefarm-zone-art.css. Stage logic: lib/nodefarm/zone-art.ts.
  */
+/** Width in art px of the dithered strip left of the cell that lets the scene fizzle out (zone-<id>-skirt.webp). */
+const SKIRT = 128;
+
 export function ZoneArt({ id, s }: { id: StatId; s: State }) {
     const el = useRef<HTMLElement>(null);
     const [, rerender] = useState(0);
@@ -61,7 +64,7 @@ export function ZoneArt({ id, s }: { id: StatId; s: State }) {
             if (narrow) {
                 // phones: the description runs full width, so the scene gets its own band under the header (CSS sizes it)
                 sc = Math.max(1, Math.round((r.width / 288) * dpr) / dpr);
-                w = Math.min(r.width, 288 * sc);
+                w = Math.min(r.width, (288 + SKIRT) * sc);
                 t = (q(".nf-row-h")?.bottom ?? r.top) - r.top;
                 b = t + 96 * sc;
                 row.style.setProperty("--art-band", `${Math.round(96 * sc)}px`);
@@ -80,7 +83,7 @@ export function ZoneArt({ id, s }: { id: StatId; s: State }) {
                 }
                 t = b - 96 * sc; // the cell's top edge sits at (or just under) the title bar
                 // the scene runs to the panel's right edge; the description gets a dark wash and the big number a dark pool
-                w = Math.min(r.width, 288 * sc);
+                w = Math.min(r.width, (288 + SKIRT) * sc);
                 const boxL = r.right - w;
                 fade = Math.round(textR - boxL);
                 const num = q(".nf-row-n");
@@ -121,7 +124,7 @@ export function ZoneArt({ id, s }: { id: StatId; s: State }) {
             aria-hidden="true"
             data-stage={stage}
             data-up={up ? "" : undefined}
-            style={{ ["--st" as string]: stage, ["--art" as string]: `url(${nfArt(`zone-${id}.webp`)})` } as CSSProperties}
+            style={{ ["--st" as string]: stage, ["--art" as string]: `url(${nfArt(`zone-${id}.webp`)})`, ["--sk" as string]: `url(${nfArt(`zone-${id}-skirt.webp`)})` } as CSSProperties}
         />
     );
 }

@@ -6,14 +6,16 @@ import { sfx } from "@/lib/sound/sounds";
 import { setHum } from "@/lib/sound/engine";
 import { useSoundPrefs } from "@/lib/sound/use-sound";
 import {
-    TUNE, overclockMult, overclockSecs, respec, ascend, autoBuy, breach, button, buyDrone, buyNode, canAfford, buyPerk, toggleArm, checkGoals, derive, exportSave, fmt, fmtTime, fresh, getNumFmt, setNumFmt, type NumFmt, isUnlocked, offline, parseSave, press, STATS, tick, type StatId,
-    apEach, dropFill, hasFeature, openDrop, pressMax, setMount, statDef,
+    TUNE, overclockMult, overclockSecs, respec, ascend, autoBuy, breach, button, buyDrone, buyNode, canAfford, buyPerk, toggleArm, checkGoals, derive, exportSave, fmt, fmtTime, fresh, getNumFmt, setNumFmt, type NumFmt, isUnlocked, offline, parseSave, press, STATS, tick,
+    apEach, dropFill, hasFeature, openDrop, setMount, statDef,
     buyLabNode, cancelCompile, compile, deploy, labNode, labOpen, payload, type PayloadId,
     buyFw, fwNode, handSeen, handover, protoDef, respecFw, setProto, type ProtoId,
-    type ButtonStat, type MatId, type State,
+    type ButtonStat, type MatId, type State, type StatId,
 } from "@/lib/nodefarm/engine";
 import type { NfLive } from "@/lib/nodefarm/records";
-import { Core, type CoreFeed } from "./core";
+import { Core, freshCoreFeed, type CoreFeed } from "./core";
+import { PART_WHY, chromaOpen, coreLook, corePreview } from "@/lib/nodefarm/core-look";
+import { PART_ORDER } from "@/lib/nodefarm/core-parts";
 import { NfIcon } from "./icon";
 import { EventLayer } from "./events";
 import { MiniHud } from "./mini-hud";
@@ -30,6 +32,7 @@ import { ScriptsZone } from "./scripts";
 import { SCRIPTS, SCRIPT_BY, ascendDue, learnStep, schedOpen, teachAscend, teachCompile, teachDeploy, teachDrop, teachPress } from "@/lib/nodefarm/scripts";
 import { eraOf } from "@/lib/nodefarm/scenery";
 import { DroneBay, droneModel } from "./drones";
+import { rigManual } from "@/lib/nodefarm/rigs";
 import { Chain, StatRow } from "./stat-row";
 import { Feed } from "./feed";
 import { FeedStore, buyToks, call, com, droneToks, fromText, id as idTok, num, p as pun, str as strTok, txt, unlockToks, type FeedTone } from "@/lib/nodefarm/feed";
@@ -49,6 +52,8 @@ import { isAdmin, setAdmin } from "@/lib/nodefarm/admin";
 import { adminFlags, buyDroneNode, buyMod, droneNode, masteryRanks, MODS, respecDrones, setPost } from "@/lib/nodefarm/engine";
 import { DRONE_NAMES } from "@/lib/nodefarm/guide";
 import { codeReveal, cxClear } from "@/lib/nodefarm/cx";
+import { ZoneEventCard } from "./zone-event";
+import { zeChoose, zoneEvDef, zoneLabel, type ZeChoice } from "@/lib/nodefarm/zoneevents";
 import { ARCS, arcKey, arcOf } from "@/lib/nodefarm/arcs";
 import { ArcHead } from "./arcs";
 
@@ -57,7 +62,6 @@ const EV_KEY = "nf-events-v1"; // "off" when quick-time events are switched off 
 const FS_KEY = "nf-fs-v1"; // full screen mode on or off (per device)
 const HUM_KEY = "nf-hum-v1"; // reactor hum on or off (per device)
 const UI_KEY = "nf-ui-v1"; // which stat panels are minimized (per device, not part of the game save)
-const MAX_KEY = "nf-max-v1"; // "1" when Buy max (Batch job node) is switched on (per device)
 const JUMP_KEY = "nf-jump-v1"; // "off" when the page should not scroll to the board on a return visit (per device)
 const CALM_KEY = "nf-calm-v1"; // "1" when motion is forced calm, on top of the OS setting (per device)
 const FMT_KEY = "nf-numfmt-v1"; // number format: short | sci | eng (per device)
@@ -109,6 +113,10 @@ export function NodeFarm() {
     const closeDrones = useCallback(() => setDroneTree(false), []);
     /** mastery ranks last seen, so a rank up gets one feed line and a banner */
     const rankPrev = useRef<{ s: State | null; n: number }>({ s: null, n: 0 });
+    /** zone events: the one announced by the centered card, and the last event id this screen has seen (for the feed) */
+    const [zeCard, setZeCard] = useState<number | null>(null);
+    const closeZeCard = useCallback(() => setZeCard(null), []);
+    const zeSeen = useRef<{ s: State | null; n: number }>({ s: null, n: 0 });
     const labPrev = useRef<{ s: State | null; seen: boolean; compiled: number }>({ s: null, seen: false, compiled: 0 });
     // stable on purpose: the tree's modal effect re-runs whenever this changes, and this component re-renders ten times a second
     const closeTree = useCallback(() => setTreeOpen(false), []);
@@ -146,7 +154,6 @@ export function NodeFarm() {
     const [backup, setBackup] = useState<Backup | null>(null);
     const [ioText, setIoText] = useState("");
     const [ioMsg, setIoMsg] = useState("");
-    const [buyMax, setBuyMax] = useState(false);
     const [fs, setFsState] = useState(false);
     const fsApi = useRef(false);
     // full screen: the board fills the viewport and the site's bar and dock step aside. Where the browser has a Fullscreen API (not iPhone) it goes truly full screen too.
@@ -167,8 +174,6 @@ export function NodeFarm() {
     }, []);
     const fsRef = useRef(fs);
     fsRef.current = fs;
-    const buyMaxRef = useRef(false);
-    buyMaxRef.current = buyMax;
     // ---- window open/close: every window prints in and deletes out with the shared code reveal (lib/nodefarm/cx.ts)
     const closing = useRef(0);
     const paneOf = (w: string) => root.current?.querySelector<HTMLElement>(`[data-pane="${w}"]`) ?? null;
@@ -282,7 +287,8 @@ export function NodeFarm() {
         }),
         [],
     );
-    const feed = useRef<CoreFeed>({ progress: 0, overclock: false, unlocked: 1, speed: 0, lastPulse: -1e9, reboots: 0, ap: 0 });
+    const feed = useRef<CoreFeed>(freshCoreFeed());
+    const chromaWas = useRef<boolean | null>(null);
     const saved = useRef(0);
     const warnedSave = useRef(false);
     const tickN = useRef(0);
@@ -297,7 +303,6 @@ export function NodeFarm() {
             const u = localStorage.getItem(UI_KEY);
             if (u) setFolded(JSON.parse(u));
             if (localStorage.getItem(EV_KEY) === "off") setEvOn(false);
-            if (localStorage.getItem(MAX_KEY) === "1") setBuyMax(true);
             if (localStorage.getItem(CALM_KEY) === "1") setCalm(true);
             if (localStorage.getItem(JUMP_KEY) === "off") setJumpOn(false);
             const nf = localStorage.getItem(FMT_KEY);
@@ -495,6 +500,19 @@ export function NodeFarm() {
                     juice.emit({ t: "milestone", title: "Zone mastery up", sub: `Your posted Drones earned a rank. ${rn} ranks so far; spend the Core in the drone tree.` });
                 }
                 rankPrev.current = { s, n: rn };
+                // zone events: a new one gets a feed line and the centered card (only while this save is loaded and the tab is showing)
+                const zs = zeSeen.current;
+                const zn = s.ze?.seen ?? 0;
+                if (zs.s === s && zn > zs.n && s.ze) {
+                    const ev = s.ze.act[s.ze.act.length - 1];
+                    if (ev && !document.hidden) {
+                        const zd = zoneEvDef(ev.kind);
+                        feedStore.push([...call(idTok("zone"), "event", [strTok(ev.kind)]), pun(" → "), strTok(zoneLabel(ev.zone))], { tone: zd.good ? "hot" : "warn", type: true });
+                        setZeCard(ev.id);
+                        sfx("nfAlert");
+                    }
+                }
+                zeSeen.current = { s, n: zn };
             }
             if (++tickN.current % 10 === 0 && s.perks.auto > 0) autoBuy(s);
             const d = derive(s);
@@ -531,7 +549,7 @@ export function NodeFarm() {
             const lp = labPrev.current;
             if (lp.s === s) {
                 if (s.lab.seen && !lp.seen) {
-                    juice.emit({ t: "milestone", title: "Exploit Lab decrypted", sub: "Intel now runs alongside Bytes. Research a recipe, compile it, deploy it." });
+                    juice.emit({ t: "milestone", title: "Exploit Lab decrypted", sub: "Intel now runs alongside Bytes. Research a payload, compile it, deploy it." });
                     feedStore.push([...call(idTok("lab"), "mount", [strTok("~/lab")]), pun(" → "), strTok("intel online")], { tone: "good", type: true });
                     sfx("nfDecrypt");
                 }
@@ -541,6 +559,23 @@ export function NodeFarm() {
             labPrev.current = { s, seen: s.lab.seen, compiled: s.life.compiled };
             f.reboots = s.reboot;
             f.ap = s.ap;
+            // the core's colours and structures (lib/nodefarm/core-look.ts); a structure that bolts on says so in the feed
+            const look = coreLook(s);
+            const partsWas = f.parts;
+            f.zone = look.zone;
+            f.chroma = look.chroma;
+            f.parts = look.parts;
+            f.drones = look.drones;
+            f.glyphs = look.glyphs;
+            if (partsWas >= 0 && corePreview() == null) {
+                const added = PART_ORDER.filter((_, k) => look.parts & (1 << k) && !(partsWas & (1 << k)));
+                // an imported or restored save can bring several at once: one line for those
+                if (added.length > 2) feedStore.push([...call(idTok("core"), "attach", [num(added.length)]), txt(" "), com("// structures restored")], { tone: "good", type: true });
+                else for (const p of added) feedStore.push([...call(idTok("core"), "attach", [strTok(p)]), txt(" "), com(`// ${PART_WHY[p]}`)], { tone: "good", type: true });
+            }
+            const chroma = chromaOpen(s);
+            if (chromaWas.current === false && chroma) feedStore.push([...call(idTok("core"), "unlock", [strTok("chroma")]), txt(" "), com("// nf core chroma in the console")], { tone: "hot", type: true });
+            chromaWas.current = chroma;
             if (prevUnlocked.current && f.unlocked > prevUnlocked.current) sfx("nfDecrypt");
             prevUnlocked.current = f.unlocked;
             setHum(humRef.current ? { level: Math.min(1, f.speed * 0.75 + (f.unlocked / 7) * 0.25), boost: f.overclock } : null);
@@ -567,15 +602,16 @@ export function NodeFarm() {
             const intelWas = s.lab.intel;
             const owned = stat === "reboot" ? 0 : s.bought[stat][tier];
             let gainNow = button(s, stat, tier).gain;
-            // Buy max (Batch job node): one press buys as many as the balance allows
-            const n = stat !== "reboot" && buyMaxRef.current && hasFeature(s, "buymax") ? pressMax(s, stat, tier) : press(s, stat, tier) ? 1 : 0;
+            const n = press(s, stat, tier) ? 1 : 0;
             if (!n) {
                 if (!quiet) sfx("deny");
                 return false;
             }
             gainNow *= n;
             teachPress(s, stat, tier, n);
+            rigManual(s);
             feed.current.lastPulse = performance.now();
+            feed.current.pulseStat = Math.max(0, STATS.findIndex((x) => x.id === stat));
             dronePrev.current.manual += 1;
             juice.emit({ t: "press", stat, tier, gain: gainNow, quiet });
             if (owned === 0 && tier > 0 && !quiet && stat !== "reboot") juice.emit({ t: "tier", stat, tier });
@@ -617,6 +653,19 @@ export function NodeFarm() {
         [log],
     );
     const evMiss = useCallback((def: { title: string }) => log(`${def.title} ignored. It passed.`, "warn"), [log]);
+    const onZoneEv = useCallback(
+        (id: number, c: ZeChoice) => {
+            const r = zeChoose(g.current, id, c);
+            if (!r.ok) { sfx("deny"); return; }
+            sfx("nfBuy", { tier: 2 });
+            if (c === "mine") log(`Vein mined: +${fmt(r.paid ?? 0)} ${statDef(r.stat ?? "bytes").name}.`, "good");
+            else if (c === "patch") log(`Fault patched for ${fmt(r.paid ?? 0)} Bytes.`, "good");
+            else log(c === "run" ? "Vein left running." : "Fault left to run out.", "good");
+            save();
+            bump((x) => x + 1);
+        },
+        [log, save],
+    );
     const evEngage = useCallback((def: { title: string }) => log(`${def.title} engaged.`, "hot"), [log]);
     const setEvents = useCallback((on: boolean) => {
         setEvOn(on);
@@ -802,7 +851,7 @@ export function NodeFarm() {
     }, [ready]);
 
     // ---- keyboard: one letter per window. Off while typing, with a modifier, over another panel or during an event.
-    const keyApi = useRef<{ open: (w: Win | "tree") => void; max: () => void; lab: () => void; fw: () => void; go: () => void; press: (held: boolean) => void; tier: (k: number, held: boolean) => void }>({ open: () => {}, max: () => {}, lab: () => {}, fw: () => {}, go: () => {}, press: () => {}, tier: () => {} });
+    const keyApi = useRef<{ open: (w: Win | "tree") => void; lab: () => void; fw: () => void; go: () => void; press: (held: boolean) => void; tier: (k: number, held: boolean) => void }>({ open: () => {}, lab: () => {}, fw: () => {}, go: () => {}, press: () => {}, tier: () => {} });
     useEffect(() => {
         if (!ready) return;
         const onKey = (e: KeyboardEvent) => {
@@ -818,7 +867,6 @@ export function NodeFarm() {
             const w = ({ m: "map", o: "goals", l: "records", a: "ascend", h: "handover", s: "menu", t: "tree" } as const)[e.key.toLowerCase() as "m"];
             if (w) { e.preventDefault(); keyApi.current.open(w); }
             else if (e.key.toLowerCase() === "k") { e.preventDefault(); keyApi.current.fw(); }
-            else if (e.key.toLowerCase() === "b") keyApi.current.max();
             else if (e.key.toLowerCase() === "r") { e.preventDefault(); keyApi.current.lab(); }
             else if (e.key.toLowerCase() === "g") { e.preventDefault(); keyApi.current.go(); }
         };
@@ -914,7 +962,6 @@ export function NodeFarm() {
             if (win === w) closeWin();
             else openWin(w);
         },
-        max: () => { if (hasFeature(s, "buymax")) { const v = !buyMax; setBuyMax(v); sfx("tab"); try { localStorage.setItem(MAX_KEY, v ? "1" : "0"); } catch {} } },
     };
     // the next-step guide: what to do, and a button that opens the right zone and scrolls to what glows
     const step = nextStep(s, d);
@@ -1028,6 +1075,7 @@ export function NodeFarm() {
             )}
             {toast && <div className="nf-toast" role="status"><NfIcon name="spark" /> Goal: {toast}</div>}
 
+            <ZoneEventCard s={s} id={zeCard} onChoose={onZoneEv} onClose={closeZeCard} reduced={reduced} />
             <EventLayer game={g} ready={ready} enabled={evOn} busy={!!win || treeOpen || labTree || droneTree || fwTree || !!away || !!confirm} reduced={reduced} onEngage={evEngage} onResult={evResult} onMiss={evMiss} onDisable={() => setEvents(false)} />
             <Juice reduced={reduced} />
 
@@ -1048,7 +1096,7 @@ export function NodeFarm() {
             </section>
 
             <section className="nf-pane nf-statspane" data-pane="stats" aria-label="Stats and buttons">
-                <Chain s={s} d={d} allOpen={!STATS.every((x) => folded[x.id])} onAll={(open) => setFold({ ...folded, ...Object.fromEntries(STATS.map((x) => [x.id, !open])), ...(open ? Object.fromEntries(ARCS.map((a) => [arcKey(a.id), false])) : {}) })} max={buyMax} onMax={() => { const v = !buyMax; setBuyMax(v); sfx("tab"); try { localStorage.setItem(MAX_KEY, v ? "1" : "0"); } catch {} }} />
+                <Chain s={s} d={d} allOpen={!STATS.every((x) => folded[x.id])} onAll={(open) => setFold({ ...folded, ...Object.fromEntries(STATS.map((x) => [x.id, !open])), ...(open ? Object.fromEntries(ARCS.map((a) => [arcKey(a.id), false])) : {}) })} />
                 {labOpen(s) && (
                     <LabZone
                         s={s}
@@ -1103,7 +1151,7 @@ export function NodeFarm() {
                             {arcOpen && (
                                 <div id={`nf-arc-${arc.id}`} className="nf-arc-zones">
                                     {shown.map((id) => (
-                                        <StatRow key={id} id={id as StatId} s={s} d={d} guide={guideTarget} onPress={doPress} onArm={() => { toggleArm(s, id as StatId); sfx("tab"); bump((n) => n + 1); }} onWatchdog={() => { s.watchdog = !s.watchdog; sfx("tab"); log(`Watchdog timer ${s.watchdog ? "on: Reboots run themselves" : "off"}.`, s.watchdog ? "good" : "warn"); bump((n) => n + 1); }} open={!folded[id]} onToggle={() => { setFold({ ...folded, [id]: !folded[id] }); sfx("tab"); }} />
+                                        <StatRow key={id} id={id as StatId} s={s} d={d} guide={guideTarget} onPress={doPress} onArm={() => { toggleArm(s, id as StatId); sfx("tab"); bump((n) => n + 1); }} onWatchdog={() => { s.watchdog = !s.watchdog; sfx("tab"); log(`Watchdog timer ${s.watchdog ? "on: Reboots run themselves" : "off"}.`, s.watchdog ? "good" : "warn"); bump((n) => n + 1); }} open={!folded[id]} onToggle={() => { setFold({ ...folded, [id]: !folded[id] }); sfx("tab"); }} onZoneEv={onZoneEv} zeCard={zeCard} />
                                     ))}
                                 </div>
                             )}
@@ -1175,7 +1223,6 @@ export function NodeFarm() {
                     lastSave={lastSave}
                     numFmt={numFmt}
                     onNumFmt={setFormat}
-                    hasMax={hasFeature(s, "buymax")}
                     onReset={() => doReset(true)}
                 />
             </section>
@@ -1191,7 +1238,7 @@ export function NodeFarm() {
                         if (!buyLabNode(s, id)) return sfx("deny");
                         sfx("nfBuy", { tier: 4 });
                         const n = labNode(id);
-                        feedStore.push([...call(idTok("lab"), "research", [strTok(n.name)]), pun(" → "), strTok(n.fx.recipe ? "recipe unlocked" : "installed")], { tone: "good", type: true });
+                        feedStore.push([...call(idTok("lab"), "research", [strTok(n.name)]), pun(" → "), strTok(n.fx.recipe ? "payload unlocked" : "installed")], { tone: "good", type: true });
                         save();
                         bump((x) => x + 1);
                     }}

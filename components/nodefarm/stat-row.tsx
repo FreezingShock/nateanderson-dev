@@ -10,6 +10,9 @@ import { NfIcon, NfTierIcon, type NfIconName } from "./icon";
 import { useFoldReveal } from "@/lib/nodefarm/cx";
 import { hasZoneArt } from "@/lib/nodefarm/zone-art";
 import { ZoneArt } from "./zone-art";
+import { ZoneRig } from "./rig";
+import { ZoneEvent } from "./zone-event";
+import { eventsFor, zoneEvDef, type ZeChoice } from "@/lib/nodefarm/zoneevents";
 
 type D = ReturnType<typeof derive>;
 export type PressFn = (stat: ButtonStat, tier: number, quiet?: boolean) => boolean;
@@ -71,7 +74,7 @@ function effects(id: StatId, s: State, d: D): [string, string][] {
 }
 
 /** The signal chain: who boosts whom, with live multipliers. Sits above the stat dossiers. Only the zones you have reached, plus the next one, are drawn. */
-export function Chain({ s, d, onAll, allOpen, max, onMax }: { s: State; d: D; onAll: (open: boolean) => void; allOpen: boolean; max?: boolean; onMax?: () => void }) {
+export function Chain({ s, d, onAll, allOpen }: { s: State; d: D; onAll: (open: boolean) => void; allOpen: boolean }) {
     const feed: Partial<Record<StatId, string>> = {
         core: `Geodes ×${fmt(d.boosts.coGe)}`,
         geodes: `Magma ×${fmt(d.boosts.geMg)}`,
@@ -116,7 +119,7 @@ export function Chain({ s, d, onAll, allOpen, max, onMax }: { s: State; d: D; on
             {shown.map((def, i) => {
                 const open = isUnlocked(s, def.id);
                 return (
-                    <li key={def.id} data-open={open ? "" : undefined} style={{ ["--c" as string]: def.color }}>
+                    <li key={def.id} data-open={open ? "" : undefined} data-ev={open && eventsFor(s, def.id).length ? "" : undefined} style={{ ["--c" as string]: def.color, ["--ev" as string]: zoneEvDef(eventsFor(s, def.id)[0]?.kind ?? "surge").color }}>
                         <NfIcon name={open ? (def.id as NfIconName) : "lock"} />
                         <b>{def.short}</b>
                         <small>{open ? feed[def.id] : "encrypted"}</small>
@@ -125,16 +128,13 @@ export function Chain({ s, d, onAll, allOpen, max, onMax }: { s: State; d: D; on
                 );
             })}
             <li className="nf-chain-all">
-                {onMax && hasFeature(s, "buymax") && (
-                    <button type="button" className="nf-mini" aria-pressed={!!max} onClick={onMax} title="Batch job: one press buys as many as you can afford">{max ? "Buy: max" : "Buy: x1"}</button>
-                )}
                 <button type="button" className="nf-mini" onClick={() => onAll(!allOpen)}>{allOpen ? "Minimize all" : "Expand all"}</button>
             </li>
         </ol>
     );
 }
 
-export function StatRow({ id, s, d, onPress, onArm, onWatchdog, open: expanded, onToggle, guide }: { id: StatId; s: State; d: D; onPress: PressFn; onArm: () => void; onWatchdog?: () => void; open: boolean; onToggle: () => void; guide?: Target }) {
+export function StatRow({ id, s, d, onPress, onArm, onWatchdog, open: expanded, onToggle, guide, onZoneEv, zeCard }: { id: StatId; s: State; d: D; onPress: PressFn; onArm: () => void; onWatchdog?: () => void; open: boolean; onToggle: () => void; guide?: Target; onZoneEv?: (id: number, c: ZeChoice) => void; zeCard?: number | null }) {
     const def = statDef(id);
     const lore = LORE[id];
     const bodyIn = useRef<HTMLDivElement>(null);
@@ -168,8 +168,9 @@ export function StatRow({ id, s, d, onPress, onArm, onWatchdog, open: expanded, 
     const buttons = id === "bytes" ? 0 : TIERS;
     const ready = id === "bytes" ? 0 : Array.from({ length: TIERS }, (_, k) => k).filter((k) => (s[button(s, id as ButtonStat, k).pays] as number) >= button(s, id as ButtonStat, k).cost).length;
     const bodyId = `nf-body-${id}`;
+    const evs = eventsFor(s, id);
     return (
-        <article className="nf-row" style={{ ["--c" as string]: def.color }} data-stat={id} data-open={expanded ? "true" : "false"} data-ready={!expanded && ready > 0 ? "" : undefined} data-guide={guide?.stat === id ? "" : undefined} data-art={hasZoneArt(id) ? "" : undefined} onClick={(e) => { if (!expanded && !(e.target as HTMLElement).closest("button")) onToggle(); }}>
+        <article className="nf-row" style={{ ["--c" as string]: def.color, ...(evs.length ? { ["--ev" as string]: zoneEvDef(evs[0].kind).color } : null) }} data-ev={evs.length ? "" : undefined} data-stat={id} data-open={expanded ? "true" : "false"} data-ready={!expanded && ready > 0 ? "" : undefined} data-guide={guide?.stat === id ? "" : undefined} data-art={hasZoneArt(id) ? "" : undefined} onClick={(e) => { if (!expanded && !(e.target as HTMLElement).closest("button")) onToggle(); }}>
             <ZoneArt id={id} s={s} />
             <div className="nf-bar-t">
                 <span>ZONE {String(STATS.findIndex((x) => x.id === id) + 1).padStart(2, "0")} // {lore.zone}</span>
@@ -190,6 +191,7 @@ export function StatRow({ id, s, d, onPress, onArm, onWatchdog, open: expanded, 
                     {prod > 0 && <small>{fmt(prod)} nodes</small>}
                 </div>
             </header>
+            {evs.map((e) => <ZoneEvent key={e.id} s={s} zone={id} e={e} onChoose={(i, c) => onZoneEv?.(i, c)} cardId={zeCard} />)}
             <div className="nf-body" id={bodyId}>
                 <div className="nf-body-in" ref={bodyIn} inert={!expanded}>
                     <p className="nf-brief">{lore.flavor}</p>
@@ -198,6 +200,7 @@ export function StatRow({ id, s, d, onPress, onArm, onWatchdog, open: expanded, 
                             <div key={k}><dt>{k}</dt><i aria-hidden="true" /><dd>{v}</dd></div>
                         ))}
                     </dl>
+                    <ZoneRig id={id} s={s} d={d} />
                     {id !== "bytes" && id !== "reboot" && s.drones.some((x) => x > 0) && (
                         <div className="nf-arm">
                             <span>Drones</span>

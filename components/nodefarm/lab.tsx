@@ -33,9 +33,9 @@ export function labModel(s: State): TreeModel {
             const p = PAYLOADS.find((x) => x.id === r)!;
             const c = payloadCost(s, p);
             const run = p.kind === "buff" ? `runs ${fmtTime(payloadDur(s, p))}` : p.kind === "charge" ? "waits for its trigger" : "fires at once";
-            return `recipe // ${KIND_WORD[p.kind]} · compiles in ${fmtTime(compileSecs(s, p))} · ${run} · each costs ${fmt(c.intel)} Intel + ${fmt(c.amount)} ${statDef(c.mat).short}`;
+            return `payload // ${KIND_WORD[p.kind]} · compiles in ${fmtTime(compileSecs(s, p))} · ${run} · each costs ${fmt(c.intel)} Intel + ${fmt(c.amount)} ${statDef(c.mat).short}`;
         },
-        core: { kicker: "lab.root", name: "Exploit Lab", fx: "Intel buys research here. Most nodes unlock a recipe you compile on the board; the rest upgrade the lab. Research is kept through every Ascend.", quote: "The last operator left the bench set up. Most of the notes are in a language only the node speaks.", color: LAB_BLUE },
+        core: { kicker: "lab.root", name: "Exploit Lab", fx: "Intel buys research here. Most nodes unlock a payload you compile on the board; the rest upgrade the lab. Research is kept through every Ascend.", quote: "The last operator left the bench set up. Most of the notes are in a language only the node speaks.", color: LAB_BLUE },
     };
 }
 
@@ -45,8 +45,8 @@ export const labStage = (s: State) => { const n = s.lab.nodes.length; return n =
 type Step = "intel" | "research" | "compile" | "deploy";
 const STEP_NOTE: Record<Step, string> = {
     intel: "Intel trickles in with your Bytes per second. Every Reboot and every event win drops an extra lump.",
-    research: "Spend Intel in the research tree. Most nodes unlock a recipe; the Infra arm upgrades the lab itself.",
-    compile: "Compile a recipe below. It costs Intel plus a little of a material, and keeps compiling while you are away.",
+    research: "Spend Intel in the research tree. Most nodes unlock a payload; the Infra arm upgrades the lab itself.",
+    compile: "Compile a payload below. It costs Intel plus a little of a material, and keeps compiling while you are away.",
     deploy: "Deploy from stock. Buffs run in a slot for minutes; charges wait for your next Reboot or Ascend; instants fire now.",
 };
 /** The one thing to do next in the lab, for the flow strip. */
@@ -89,7 +89,7 @@ export function LabZone({ s, d, open, onToggle, onCompile, onCancel, onDeploy, o
     const steps: { id: Step; k: string; v: string }[] = [
         { id: "intel", k: "earn intel", v: `+${fmt(rate)}/s` },
         { id: "research", k: "research", v: ready ? `${ready} ready` : `${s.lab.nodes.length}/${LAB.length}` },
-        { id: "compile", k: "compile", v: s.lab.queue.length ? `${s.lab.queue.length} in queue` : recipes.length ? "idle" : "no recipe" },
+        { id: "compile", k: "compile", v: s.lab.queue.length ? `${s.lab.queue.length} in queue` : recipes.length ? "idle" : "no payload" },
         { id: "deploy", k: "deploy", v: `${stock} in stock · ${running.length}/${slots} on` },
     ];
     return (
@@ -132,7 +132,7 @@ export function LabZone({ s, d, open, onToggle, onCompile, onCancel, onDeploy, o
                     </div>
 
                     {recipes.length === 0 ? (
-                        <p className="nf-brief">Start with <b>Packet sniffer</b> (Exploits) or <b>Rootkit</b> (Malware), {LAB[0].cost} Intel each. Each one unlocks its recipe here. <b>Fiber tap</b> (Infra) doubles your Intel instead.</p>
+                        <p className="nf-brief">Start with <b>Packet sniffer</b> (Exploits) or <b>Rootkit</b> (Malware), {LAB[0].cost} Intel each. Each one unlocks its payload here. <b>Fiber tap</b> (Infra) doubles your Intel instead.</p>
                     ) : (
                         <>
                             <div className="nf-lab-run" data-cx-i="" aria-label="Running payloads">
@@ -159,7 +159,7 @@ export function LabZone({ s, d, open, onToggle, onCompile, onCancel, onDeploy, o
                             <div className="nf-lab-q" data-cx-i="" aria-label="Compile queue">
                                 <span className="nf-lab-h">compile queue <small>{s.lab.queue.length}/{qmax}</small></span>
                                 {s.lab.queue.length === 0 ? (
-                                    <p className="nf-lab-empty">// idle. Compile a recipe below; it keeps compiling while you are away.</p>
+                                    <p className="nf-lab-empty">// idle. Compile a payload below; it keeps compiling while you are away.</p>
                                 ) : (
                                     <ol>
                                         {s.lab.queue.map((q, i) => {
@@ -177,12 +177,12 @@ export function LabZone({ s, d, open, onToggle, onCompile, onCancel, onDeploy, o
                                     </ol>
                                 )}
                             </div>
-                            <ul className="nf-lab-list" data-cx-i="" aria-label="Recipes">
+                            <ul className="nf-lab-list" data-cx-i="" aria-label="Payloads">
                                 {recipes.map((p) => <Recipe key={p.id} s={s} d={d} p={p} onCompile={onCompile} onDeploy={onDeploy} />)}
                             </ul>
                         </>
                     )}
-                    {left > 0 && <p className="nf-lab-more">// {left} more recipe{left > 1 ? "s" : ""} encrypted in the research tree</p>}
+                    {left > 0 && <p className="nf-lab-more">// {left} more payload{left > 1 ? "s" : ""} encrypted in the research tree</p>}
                 </div>
             </div>
         </article>
