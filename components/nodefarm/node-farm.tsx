@@ -333,11 +333,13 @@ export function NodeFarm() {
     // ---- admin mode: the console flips `nf-admin-v1` and fires `nf:admin`; the panel is components/nodefarm/admin.tsx
     useEffect(() => {
         if (!ready) return;
-        setAdminOn(isAdmin());
+        const on = isAdmin();
+        setAdminOn(on);
+        setAdminOpen(on); // once admin is on the panel floats over the game on every visit
         const onAdmin = (e: Event) => {
             const d = (e as CustomEvent<{ on?: boolean; open?: boolean }>).detail ?? {};
             if (d.on === false) { setAdminOn(false); setAdminOpen(false); speedRef.current = 1; adminFlags.reveal = false; }
-            else if (d.on) { setAdminOn(true); if (d.open) { setWin(""); setTreeOpen(false); setAdminOpen(true); } }
+            else if (d.on) { setAdminOn(true); if (d.open) setAdminOpen(true); }
         };
         window.addEventListener("nf:admin", onAdmin);
         return () => window.removeEventListener("nf:admin", onAdmin);
@@ -352,7 +354,6 @@ export function NodeFarm() {
             previewAway: (secs) => {
                 const copy = structuredClone(g.current);
                 const r = offline(copy, secs);
-                setAdminOpen(false);
                 setAway({ ...r, gap: secs, cap: derive(copy).offlineCap });
             },
             fire: (kind) => window.dispatchEvent(new CustomEvent("nf:fire", { detail: kind })),
