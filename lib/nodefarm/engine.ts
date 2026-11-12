@@ -65,8 +65,6 @@ export const TUNE = {
     unlockAt: { copper: 1, silicon: 150, quartz: 300, aether: 500, runes: 150, starglass: 200, voidsteel: 250, chrono: 300 } as Record<string, number>, // copper: Reboots; the rest: amount of the stat below
     overclockMult: 6,
     overclockSecs: 20,
-    intrusionEvery: [55, 110] as [number, number],
-    intrusionLife: 9,
     offlineCapHours: 8,
     ascendAether: 400,
     apPerAether: 60, // AP = floor((aether / apPerAether)^apPow + (runes / apPer.runes)^apPow + ...)

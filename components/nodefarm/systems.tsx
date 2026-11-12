@@ -156,16 +156,16 @@ export function AscendPanel({ s, d, confirm, onAscend, onPerk, onNode }: { s: St
 }
 
 export function MenuPanel({
-    s, soundOn, onSound, humOn, onHum, ioText, setIoText, ioMsg, onExport, onImport, confirm, onReset,
+    s, soundOn, onSound, humOn, onHum, eventsOn, onEvents, ioText, setIoText, ioMsg, onExport, onImport, confirm, onReset,
 }: {
-    s: State; soundOn: boolean; onSound: () => void; humOn: boolean; onHum: () => void; ioText: string; setIoText: (v: string) => void; ioMsg: string; onExport: () => void; onImport: () => void; confirm: boolean; onReset: () => void;
+    s: State; soundOn: boolean; onSound: () => void; humOn: boolean; onHum: () => void; eventsOn: boolean; onEvents: () => void; ioText: string; setIoText: (v: string) => void; ioMsg: string; onExport: () => void; onImport: () => void; confirm: boolean; onReset: () => void;
 }) {
     const facts: [string, string][] = [
         ["Played", fmtTime(s.life.secs)],
         ["Presses", fmt(s.life.presses)],
         ["Bytes ever", fmt(s.life.bytes)],
         ["Reboots ever", fmt(s.life.reboots)],
-        ["Intrusions won", String(s.life.intrusions)],
+        ["Events cleared", String(s.life.intrusions)],
         ["Ascensions", String(s.life.ascends)],
     ];
     return (
@@ -181,6 +181,7 @@ export function MenuPanel({
                 <div className="nf-menu-row">
                     <button type="button" className="nf-mini" aria-pressed={soundOn} onClick={onSound}>Sound: {soundOn ? "on" : "off"}</button>
                     <button type="button" className="nf-mini" aria-pressed={humOn} onClick={onHum}>Hum: {humOn ? "on" : "off"}</button>
+                    <button type="button" className="nf-mini" aria-pressed={eventsOn} onClick={onEvents}>Events: {eventsOn ? "on" : "off"}</button>
                     <button type="button" className="nf-mini" onClick={onExport}>Export</button>
                     <button type="button" className="nf-mini" onClick={onImport}>Import</button>
                 </div>

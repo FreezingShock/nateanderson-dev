@@ -14,7 +14,7 @@ button tiers (+1, +5, +25, +125, +625, +3125; each tier costs about 8 to 10 time
 - Runes, Starglass, Voidsteel and Chrono are the deep materials (unlock at 150 Aether, 200 Runes, 250 Starglass, 300 Voidsteel; a quarter of that after your first Ascend). Same rules as the others, each boosts the one below, Chrono adds a little to everything. They also add to the AP you earn (`TUNE.apPer`).
 - Prestige tree (`TREE` in the engine, `components/nodefarm/tree.tsx`): 18 nodes in three branches (Signal, Forge, Systems), bought with AP, kept through Ascend. `state.tree` holds owned ids; old saves load with an empty tree.
 - Ascend (400 Aether): wipes everything except goals, perks and lifetime stats for Ascension Points (+30 percent to everything each) and five perks.
-- There is no tapping: progress comes from buttons only (Nate did not want a Cookie Clicker). The core is a live display: its outer arc shows progress to the cheapest Reboot and it pulses on every press. An intrusion appears every 55 to 110 s; catching it gives a x6 Overclock for 20 s.
+- There is no tapping: progress comes from buttons only (Nate did not want a Cookie Clicker). The core is a live display: its outer arc shows progress to the cheapest Reboot and it pulses on every press. Quick-time events (see below) appear every 3 to 5 minutes; clearing one gives a x6 Overclock for 20 s.
 - Offline progress is capped at 8 hours (Standby cells perk: +4 h per level). Nothing is auto-bought. Returning after more than a minute away opens a full-screen standby report (components/nodefarm/away.tsx): time banked, a standby-window meter, what each resource gained, and a Collect button. Everything is already banked when it opens; Esc or Collect closes it.
 
 ## Files
@@ -29,8 +29,7 @@ button tiers (+1, +5, +25, +125, +625, +3125; each tier costs about 8 to 10 time
 
 ## Gotchas
 - Always put `font` rules for buttons through `:where(button)` (the reset is), or element selectors beat the class rules.
-- Playwright cannot click the pulsing intrusion button without `force: true` (it never settles, on purpose).
-- Intrusions only spawn once Multipliers plus Reboots reach 5, so a brand-new player is not interrupted.
+- Events only spawn once Multipliers plus Reboots reach 5 (the trace needs 8), so a brand-new player is not interrupted. The incoming card waits 15 s, so a Playwright test that fast-forwards a fake clock must step in small chunks and stop as soon as `.nf-ev` exists.
 
 ## Goals, secrets, Records and the console (`nf`)
 - Goals: seven tiers of six (Access to Zero). Each done goal or found secret gives +2% to everything, a full tier +8%. `state.achAt` holds when each was done (the log shows it). Tiers 6 and 7 cover the deep materials, the tree and long grinds.
@@ -55,3 +54,6 @@ One Drone per button tier (T1 to T6), bought with Aether, up to level 10 (`TUNE.
 - `components/nodefarm/guide.tsx`: the always-visible strip under the HUD (title, why, progress bar with ETA, "Show me" opens the zone and scrolls to the glowing button, "Map") and the tooltip layer (`TipCtx`, one `.nf-tip` at the root of `.nf`, positioned from the button's box because quartz buttons are clip-pathed). Hover and keyboard focus on desktop; on touch the tip flashes for 2.6 s after a tap, so an unaffordable button explains itself.
 - Glow: `data-guide` on the targeted button, zone, dock button or tab. Only the first locked zone is drawn in full (with a progress meter); the rest fold into one "BEYOND" line, and the Drone bay appears once Aether is open.
 - `components/nodefarm/map.tsx`: the Map window (dock button, a tab on phones, MAP in the strip): signal chain Bytes to Chrono with state and boosts, Ascend / Drones / Goals cards, and the 18-node prestige tree with a detail line and a Buy button. Saves are unchanged (nf-save-v1).
+
+## Quick-time events
+`lib/nodefarm/events.ts` holds the event list and every timing number (`EVENT_TUNE`); `components/nodefarm/events.tsx` is the `EventLayer` that schedules them and draws each one as a centered card over a dim scrim (never in a menu). Flow: incoming card (Engage / Skip, 15 s then it passes, controls lock for 0.65 s so a stray tap can't start one) then the live challenge then a short result card. Four types: Intrusion (four-key memory sequence), Power surge (hold, release in the green band, 3 tries), Signal lock (stop the sweep in the zone, 3 tries), Breach trace (hit 4 of 5 lit nodes on a 3 x 3 grid). Winning calls `breach()` (the timed Overclock); missing or skipping costs nothing. All of them work with touch, mouse and keyboard (1 to 4, 1 to 9, Space, Escape skips), the card is an `alertdialog` and returns focus when it closes. Events can be switched off from the card or the Menu (`nf-events-v1` in localStorage). To add a type: add it to `EVENTS`, add a body component in `events.tsx`, and style it under `.nf-ev`.
