@@ -31,6 +31,7 @@
 .ctos .nf-wk-ban[data-art="goals"] .nf-wk-art i { background-image: url(/naos/nodefarm/win-goals.webp?v=2bd320e4); }
 .ctos .nf-wk-ban[data-art="records"] .nf-wk-art i { background-image: url(/naos/nodefarm/win-records.webp?v=7e21e5af); }
 .ctos .nf-wk-ban[data-art="menu"] .nf-wk-art i { background-image: url(/naos/nodefarm/win-menu.webp?v=80416805); }
+.ctos .nf-wk-ban[data-art="codex"] .nf-wk-art i { background-image: url(/naos/nodefarm/win-codex.webp?v=949192c2); }
 @media (min-width: 900px) { .ctos .nf-wk-art i { left: 58%; } }
 .ctos .nf-wk-scan { position: absolute; left: 0; right: 0; top: 0; height: 2px; background: color-mix(in srgb, var(--c) 70%, transparent); opacity: .45; animation: nfWkScan 5.2s linear infinite; pointer-events: none; }
 @keyframes nfWkScan { from { transform: translateY(0); } to { transform: translateY(170px); } }
@@ -45,7 +46,7 @@
 .ctos .nf-wk-big span { font: 600 var(--cm-ctos-t-micro)/1 var(--cm-mono); letter-spacing: .14em; text-transform: uppercase; color: var(--cm-ctos-meta); }
 @media (max-width: 559px) {
     .ctos .nf-wk-ban { flex-direction: column; min-height: 190px; }
-    .ctos .nf-wk-big { justify-items: start; text-align: left; padding: 6px 10px 6px 0; background: #070707d9; box-shadow: 10px 0 14px #070707d9; }
+    .ctos .nf-wk-big, .ctos .nf-wk-code { justify-items: start; text-align: left; padding: 6px 10px 6px 0; background: #070707d9; box-shadow: 10px 0 14px #070707d9; }
     .ctos .nf-wk-art i { opacity: .8; }
     .ctos .nf-wk-art::after { background: linear-gradient(180deg, #070707 0, #070707bb 45%, transparent 75%); }
 }

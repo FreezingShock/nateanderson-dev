@@ -271,6 +271,8 @@ export const ART_V: Record<string, string> = {
     "tree-spr-m.webp": "f5c179de",
     "tree-spr-s.png": "7d5c983c",
     "tree-spr-s.webp": "78b909f2",
+    "win-codex.png": "874e3e34",
+    "win-codex.webp": "949192c2",
     "win-goals.png": "7736cae4",
     "win-goals.webp": "2bd320e4",
     "win-map.png": "e0cdab90",
