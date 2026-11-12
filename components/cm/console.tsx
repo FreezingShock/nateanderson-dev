@@ -7,6 +7,11 @@ import { skills, SKILL_CATEGORIES, type SkillCategory } from "@/lib/about-data";
 import { NOW_FEED, PATH, PROFILE_LEAD } from "@/lib/identity";
 import { launcherLinks, navItems } from "@/lib/nav";
 import { navigateWithCurtain } from "@/lib/motion/navigate";
+import { parseSave, type State as NfState } from "@/lib/nodefarm/engine";
+import { isAdmin, maxOut, overwrite, setAdmin, snapState, snaps, takeSnap } from "@/lib/nodefarm/admin";
+import { NF_PATH, NF_SAVE_KEY, NF_SUBS, nfCommand, type NfLive } from "@/lib/nodefarm/records";
+import { CX_STYLES, cxOverride, setCxOverride, type CxStyle } from "@/lib/nodefarm/cx";
+import { getStagePreview, setStagePreview } from "@/lib/nodefarm/zone-art";
 import { setPrefs } from "@/lib/sound/engine";
 import { sfx } from "@/lib/sound/sounds";
 import { useSoundPrefs } from "@/lib/sound/use-sound";
@@ -128,6 +133,108 @@ const levenshtein = (a: string, b: string) => {
 const listGroup = (targets: Target[], g: Target["group"]): Line[] =>
     targets.filter((x) => x.group === g).map((x) => row(x.id, x.hint, x.href));
 
+/** `nf admin ...`: Node Farm root console. Not listed in help or tab completion. The panel is components/nodefarm/admin.tsx. */
+function nfAdmin(args: string[], state: NfState, live?: NfLive): Line[] {
+    const sub = (args[0] ?? "").toLowerCase();
+    const done = () => {
+        if (live) live.changed?.();
+        else try { localStorage.setItem(NF_SAVE_KEY, JSON.stringify(state)); } catch {}
+    };
+    const open = () => window.dispatchEvent(new CustomEvent("nf:admin", { detail: { on: true, open: true } }));
+    const arm = (): Line[] => {
+        if (isAdmin()) return [];
+        setAdmin(true, state);
+        return [t("admin on. your real save is stored first: nf admin restore real", "hi")];
+    };
+    if (sub === "on") { const l = arm(); open(); return [...(l.length ? l : [t("admin already on.", "dim")]), t("panel opening. nf admin max grants everything.", "dim")]; }
+    if (sub === "off") { setAdmin(false, null); return [t("admin off. the panel is hidden. nf admin restore real brings your real save back.")]; }
+    if (sub === "max") {
+        const l = arm();
+        maxOut(state);
+        done();
+        open();
+        return [...l, t("everything granted: every tree node, perk, Drone, goal, secret and log, plus prestiges.", "hi"), t("open the tree to see it.", "dim")];
+    }
+    if (sub === "panel") { const l = arm(); open(); return [...l, t("panel open.", "dim")]; }
+    if (sub === "snap") { const s = takeSnap(state, args.slice(1).join(" ") || "snapshot"); return [t(`snapshot ${s.id} saved.`)]; }
+    if (sub === "snaps") { const a = snaps(); return a.length ? a.map((x, i) => row(`${i + 1}  ${x.real ? "real save" : x.label}`, new Date(x.at).toLocaleString())) : [t("no snapshots.", "dim")]; }
+    if (sub === "restore") {
+        const a = snaps();
+        const w = (args[1] ?? "real").toLowerCase();
+        const pick = w === "real" ? a.find((x) => x.real) : a[Number(w) - 1];
+        const next = pick ? snapState(pick.id) : null;
+        if (!next) return [t("no such snapshot. nf admin snaps lists them.", "err")];
+        overwrite(state, next);
+        done();
+        return [t(`restored ${pick!.real ? "your real save" : pick!.label}.`, "hi")];
+    }
+    return [t(isAdmin() ? "admin is on." : "admin is off.", "hi"), t("nf admin on · off · max · panel · snap · snaps · restore [n|real]", "dim")];
+}
+
+/** `nf`: Node Farm from the console. Talks to the open game when there is one (it answers the `nf:live` event), otherwise reads and writes the saved game. */
+function runNf(args: string[]): Line[] {
+    if ((args[0] ?? "").toLowerCase() === "open") return [{ t: NF_PATH, go: NF_PATH }];
+    if ((args[0] ?? "").toLowerCase() === "anim") {
+        // try the menu animation styles (saved in this browser)
+        const v = (args[1] ?? "").toLowerCase();
+        if (CX_STYLES.includes(v as CxStyle)) {
+            setCxOverride(v as CxStyle);
+            return [t(`every menu now uses ${v}. nf anim auto puts each style back in its place.`)];
+        }
+        if (v === "auto") {
+            setCxOverride(null);
+            return [t("menus back to their own styles: print for milestones, decrypt for unlocks and events, crt for panels.")];
+        }
+        return [t(`menu animation: ${cxOverride() ?? "auto"}. nf anim auto · nf anim ${CX_STYLES.join(" · nf anim ")}`)];
+    }
+    if ((args[0] ?? "").toLowerCase() === "art") {
+        // preview the staged zone art at one stage (this visit only)
+        const v = (args[1] ?? "").toLowerCase();
+        if (/^[0-7]$/.test(v)) {
+            setStagePreview(Number(v));
+            return [t(`every zone now shows stage ${v} of 7. nf art live goes back to your real progress.`)];
+        }
+        if (v === "live" || v === "off") {
+            setStagePreview(null);
+            return [t("zone art back to your real progress.")];
+        }
+        const p = getStagePreview();
+        return [t(`zone art: ${p == null ? "live" : `stage ${p}`}. nf art 0-7 · nf art live`)];
+    }
+    const sub0 = (args[0] ?? "").toLowerCase();
+    if (sub0 === "fullscreen" || sub0 === "fs") {
+        // full screen needs the game on the page; it answers the nf:live event
+        const probe: { live?: NfLive } = {};
+        window.dispatchEvent(new CustomEvent("nf:live", { detail: probe }));
+        if (!probe.live) return [t("full screen needs the game open:", "dim"), { t: NF_PATH, go: NF_PATH }];
+        const a = (args[1] ?? "").toLowerCase();
+        const on = a === "on" ? true : a === "off" ? false : undefined;
+        window.dispatchEvent(new CustomEvent("nf:fs", { detail: { on } }));
+        return [t(on === undefined ? "full screen toggled. F also does it." : `full screen ${a}.`)];
+    }
+    const ref: { live?: NfLive } = {};
+    window.dispatchEvent(new CustomEvent("nf:live", { detail: ref }));
+    let state = ref.live?.s ?? null;
+    if (!state) {
+        try {
+            const raw = localStorage.getItem(NF_SAVE_KEY);
+            state = raw ? parseSave(raw) : null;
+        } catch {}
+    }
+    if (!state) return [t("no node found. start one first:", "dim"), { t: NF_PATH, go: NF_PATH }];
+    if ((args[0] ?? "").toLowerCase() === "admin") return nfAdmin(args.slice(1), state, ref.live);
+    const r = nfCommand(state, args);
+    if (r.unlocked.length) {
+        if (ref.live) ref.live.notify(r.unlocked);
+        else {
+            try {
+                localStorage.setItem(NF_SAVE_KEY, JSON.stringify(state));
+            } catch {}
+        }
+    }
+    return r.lines;
+}
+
 const COMMANDS: Cmd[] = [
     {
         name: "help",
@@ -238,6 +345,13 @@ const COMMANDS: Cmd[] = [
             if (a) return [t("sound: use on or off.", "err")];
             return [t(`sound is ${ctx.soundOn ? "on" : "off"}. sound on · sound off`)];
         },
+    },
+    {
+        name: "nf",
+        usage: "nf [stats|goals|secrets|anim|fs]",
+        desc: "Node Farm readout, goals and secrets",
+        long: ["nf · nf stats · nf goals · nf secrets · nf open · nf anim auto|print|decrypt|crt · nf fs [on|off] (full screen). Works with the game open or from your saved game."],
+        run: (args) => runNf(args),
     },
     {
         name: "history",
@@ -486,6 +600,7 @@ export function NaosConsole({ onClose, prefill }: { onClose: () => void; prefill
         else if (first === "open" || first === "cd" || first === "go" || first === "goto") pool = targets.map((x) => x.id);
         else if (first === "ls" || first === "dir") pool = ["pages", "projects", "games", "sections", ...navItems.filter((n) => n.children?.length).map((n) => slug(n.label))];
         else if (first === "sound") pool = ["on", "off"];
+        else if (first === "nf") pool = NF_SUBS;
         else if (first === "help" || first === "man") pool = NAMES;
         else return;
         const m = pool.filter((p) => p.startsWith(last));

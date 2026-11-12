@@ -1,20 +1,18 @@
 "use client";
 
-import { useEffect, useRef } from "react";
-import { STATS, TIERS, button, derive, fmt, isUnlocked, statDef, type ButtonStat, type State, type StatId } from "@/lib/nodefarm/engine";
+import { useContext, useEffect, useRef } from "react";
+import { MATS, STATS, TIERS, button, derive, fmt, fmtTime, hasFeature, isUnlocked, statDef, type ButtonStat, type State, type StatId } from "@/lib/nodefarm/engine";
 import { LORE } from "@/lib/nodefarm/lore";
-import { NfIcon, type NfIconName } from "./icon";
+import { fnCaption } from "@/lib/nodefarm/feed";
+import { buttonTip, unlockInfo, type Target } from "@/lib/nodefarm/guide";
+import { TipCtx } from "./guide";
+import { NfIcon, NfTierIcon, type NfIconName } from "./icon";
+import { useFoldReveal } from "@/lib/nodefarm/cx";
+import { hasZoneArt } from "@/lib/nodefarm/zone-art";
+import { ZoneArt } from "./zone-art";
 
 type D = ReturnType<typeof derive>;
 export type PressFn = (stat: ButtonStat, tier: number, quiet?: boolean) => boolean;
-
-const UNLOCK_HINT: Record<string, string> = {
-    reboot: "Earn 600 Bytes in total",
-    copper: "Reboot once",
-    silicon: "Hold 150 Copper",
-    quartz: "Hold 300 Silicon",
-    aether: "Hold 500 Quartz",
-};
 
 /** What this stat is doing for you right now, as label and value pairs for the spec lines. */
 function effects(id: StatId, s: State, d: D): [string, string][] {
@@ -33,12 +31,24 @@ function effects(id: StatId, s: State, d: D): [string, string][] {
             return [["Feeds Silicon", `×${fmt(d.boosts.qzSi)}`], ["Own output", `${fmt(d.rates.quartz)}/s`]];
         case "aether":
             return [["Feeds Quartz", `×${fmt(d.boosts.aeQz)}`], ["Opens", "Ascend"]];
+        case "runes":
+            return [["Feeds Aether", `×${fmt(d.boosts.ruAe)}`], ["Own output", `${fmt(d.rates.runes)}/s`]];
+        case "starglass":
+            return [["Feeds Runes", `×${fmt(d.boosts.sgRu)}`], ["Own output", `${fmt(d.rates.starglass)}/s`]];
+        case "voidsteel":
+            return [["Feeds Starglass", `×${fmt(d.boosts.vsSg)}`], ["Own output", `${fmt(d.rates.voidsteel)}/s`]];
+        case "chrono":
+            return [["Feeds Voidsteel", `×${fmt(d.boosts.chVs)}`], ["Everything", `×${fmt(d.boosts.chAll)}`]];
     }
 }
 
-/** The signal chain: who boosts whom, with live multipliers. Sits above the stat dossiers. */
-export function Chain({ s, d, onAll, allOpen }: { s: State; d: D; onAll: (open: boolean) => void; allOpen: boolean }) {
+/** The signal chain: who boosts whom, with live multipliers. Sits above the stat dossiers. Only the zones you have reached, plus the next one, are drawn. */
+export function Chain({ s, d, onAll, allOpen, max, onMax }: { s: State; d: D; onAll: (open: boolean) => void; allOpen: boolean; max?: boolean; onMax?: () => void }) {
     const feed: Partial<Record<StatId, string>> = {
+        chrono: `Voidsteel ×${fmt(d.boosts.chVs)}`,
+        voidsteel: `Starglass ×${fmt(d.boosts.vsSg)}`,
+        starglass: `Runes ×${fmt(d.boosts.sgRu)}`,
+        runes: `Aether ×${fmt(d.boosts.ruAe)}`,
         aether: `Quartz ×${fmt(d.boosts.aeQz)}`,
         quartz: `Silicon ×${fmt(d.boosts.qzSi)}`,
         silicon: `Copper ×${fmt(d.boosts.siCu)}`,
@@ -48,49 +58,77 @@ export function Chain({ s, d, onAll, allOpen }: { s: State; d: D; onAll: (open: 
         bytes: `+${fmt(d.bytesPerSec)}/s`,
     };
     const order = [...STATS].reverse();
+    const firstLocked = STATS.find((x) => !isUnlocked(s, x.id));
+    const hidden = firstLocked ? STATS.length - STATS.indexOf(firstLocked) - 1 : 0;
+    const shown = order.slice(hidden);
     return (
         <ol className="nf-chain" aria-label="Signal chain: each stat boosts the next">
-            {order.map((def, i) => {
+            {hidden > 0 && (
+                <li className="nf-chain-more" aria-label={`${hidden} more zones still encrypted`}>
+                    <NfIcon name="lock" />
+                    <b>+{hidden}</b>
+                    <small>encrypted</small>
+                    <i aria-hidden="true">▸</i>
+                </li>
+            )}
+            {shown.map((def, i) => {
                 const open = isUnlocked(s, def.id);
                 return (
                     <li key={def.id} data-open={open ? "" : undefined} style={{ ["--c" as string]: def.color }}>
                         <NfIcon name={open ? (def.id as NfIconName) : "lock"} />
                         <b>{def.short}</b>
                         <small>{open ? feed[def.id] : "encrypted"}</small>
-                        {i < order.length - 1 && <i aria-hidden="true">▸</i>}
+                        {i < shown.length - 1 && <i aria-hidden="true">▸</i>}
                     </li>
                 );
             })}
             <li className="nf-chain-all">
+                {onMax && hasFeature(s, "buymax") && (
+                    <button type="button" className="nf-mini" aria-pressed={!!max} onClick={onMax} title="Batch job: one press buys as many as you can afford">{max ? "Buy: max" : "Buy: x1"}</button>
+                )}
                 <button type="button" className="nf-mini" onClick={() => onAll(!allOpen)}>{allOpen ? "Minimize all" : "Expand all"}</button>
             </li>
         </ol>
     );
 }
 
-export function StatRow({ id, s, d, onPress, open: expanded, onToggle }: { id: StatId; s: State; d: D; onPress: PressFn; open: boolean; onToggle: () => void }) {
+export function StatRow({ id, s, d, onPress, onArm, onWatchdog, open: expanded, onToggle, guide }: { id: StatId; s: State; d: D; onPress: PressFn; onArm: () => void; onWatchdog?: () => void; open: boolean; onToggle: () => void; guide?: Target }) {
     const def = statDef(id);
     const lore = LORE[id];
+    const bodyIn = useRef<HTMLDivElement>(null);
+    useFoldReveal(bodyIn, expanded);
     const open = isUnlocked(s, id);
     if (!open) {
+        const u = unlockInfo(s, id);
+        const pct = Math.round(u.frac * 100);
         return (
-            <article className="nf-row nf-locked" style={{ ["--c" as string]: def.color }}>
+            <article className="nf-row nf-locked" style={{ ["--c" as string]: def.color }} data-stat={id}>
                 <span className="nf-plate"><NfIcon name="lock" /></span>
-                <div>
-                    <b>ENCRYPTED // {def.name}</b>
-                    <small>{UNLOCK_HINT[id]} to decrypt.</small>
+                <div className="nf-lk">
+                    <span className="nf-lk-k">ZONE {String(STATS.findIndex((x) => x.id === id) + 1).padStart(2, "0")} // ENCRYPTED</span>
+                    <b>{def.name}</b>
+                    <small>Unlocks at: {u.label.charAt(0).toLowerCase() + u.label.slice(1)}.</small>
+                    <code className="nf-lk-code" aria-hidden="true">
+                        <span data-k="kw">if</span><span data-k="p"> (</span><span data-k="id">{u.unit.toLowerCase()}</span><span data-k="p"> &gt;= </span><span data-k="num">{fmt(u.need)}</span><span data-k="p">) </span><span data-k="id" style={{ ["--tc" as string]: def.color }}>{id}</span><span data-k="p">.</span><span data-k="fn">decrypt</span><span data-k="p">()</span>
+                    </code>
+                    <span className="nf-lk-m">
+                        <span className="nf-bar sm" role="progressbar" aria-label={`Progress to decrypt ${def.name}`} aria-valuemin={0} aria-valuemax={100} aria-valuenow={pct}><i style={{ width: `${pct}%` }} /></span>
+                        <small>{fmt(u.cur)} / {fmt(u.need)} {u.unit}</small>
+                    </span>
                 </div>
             </article>
         );
     }
     const amt = s[id] as number;
-    const rate = id === "bytes" ? d.bytesPerSec : id === "copper" || id === "silicon" || id === "quartz" || id === "aether" ? d.rates[id] : 0;
-    const prod = id === "copper" || id === "silicon" || id === "quartz" || id === "aether" ? s.prod[id] : 0;
+    const isMat = (MATS as readonly string[]).includes(id);
+    const rate = id === "bytes" ? d.bytesPerSec : isMat ? d.rates[id as (typeof MATS)[number]] : 0;
+    const prod = isMat ? s.prod[id as (typeof MATS)[number]] : 0;
     const buttons = id === "bytes" ? 0 : TIERS;
     const ready = id === "bytes" ? 0 : Array.from({ length: TIERS }, (_, k) => k).filter((k) => (s[button(s, id as ButtonStat, k).pays] as number) >= button(s, id as ButtonStat, k).cost).length;
     const bodyId = `nf-body-${id}`;
     return (
-        <article className="nf-row" style={{ ["--c" as string]: def.color }} data-stat={id} data-open={expanded ? "true" : "false"} data-ready={!expanded && ready > 0 ? "" : undefined} onClick={(e) => { if (!expanded && !(e.target as HTMLElement).closest("button")) onToggle(); }}>
+        <article className="nf-row" style={{ ["--c" as string]: def.color }} data-stat={id} data-open={expanded ? "true" : "false"} data-ready={!expanded && ready > 0 ? "" : undefined} data-guide={guide?.stat === id ? "" : undefined} data-art={hasZoneArt(id) ? "" : undefined} onClick={(e) => { if (!expanded && !(e.target as HTMLElement).closest("button")) onToggle(); }}>
+            <ZoneArt id={id} s={s} />
             <div className="nf-bar-t">
                 <span>ZONE {String(STATS.findIndex((x) => x.id === id) + 1).padStart(2, "0")} // {lore.zone}</span>
                 <span className="nf-bar-s">{buttons > 0 ? `${ready}/${buttons} ready` : "online"}</span>
@@ -111,17 +149,29 @@ export function StatRow({ id, s, d, onPress, open: expanded, onToggle }: { id: S
                 </div>
             </header>
             <div className="nf-body" id={bodyId}>
-                <div className="nf-body-in" inert={!expanded}>
+                <div className="nf-body-in" ref={bodyIn} inert={!expanded}>
                     <p className="nf-brief">{lore.flavor}</p>
                     <dl className="nf-spec" aria-label="Effects">
                         {effects(id, s, d).map(([k, v]) => (
                             <div key={k}><dt>{k}</dt><i aria-hidden="true" /><dd>{v}</dd></div>
                         ))}
                     </dl>
+                    {id !== "bytes" && id !== "reboot" && s.drones.some((x) => x > 0) && (
+                        <div className="nf-arm">
+                            <span>Drones</span>
+                            <button type="button" className="nf-mini" aria-pressed={s.armed.includes(id)} onClick={onArm}>{s.armed.includes(id) ? "Armed" : "Off"}</button>
+                        </div>
+                    )}
+                    {id === "reboot" && onWatchdog && hasFeature(s, "watchdog") && (
+                        <div className="nf-arm">
+                            <span>Watchdog timer</span>
+                            <button type="button" className="nf-mini" aria-pressed={s.watchdog} onClick={onWatchdog}>{s.watchdog ? "Auto" : "Off"}</button>
+                        </div>
+                    )}
                     {id !== "bytes" && (
                         <div className="nf-btns">
                             {Array.from({ length: TIERS }, (_, k) => (
-                                <BuyBtn key={k} s={s} stat={id as ButtonStat} tier={k} onPress={onPress} />
+                                <BuyBtn key={k} s={s} d={d} stat={id as ButtonStat} tier={k} onPress={onPress} guided={guide?.stat === id && guide.tier === k} />
                             ))}
                         </div>
                     )}
@@ -132,42 +182,71 @@ export function StatRow({ id, s, d, onPress, open: expanded, onToggle }: { id: S
 }
 
 // A buy button, skinned per stat in CSS. Press once to buy; hold to keep buying (after 0.4 s, then 10 a second).
-function BuyBtn({ s, stat, tier, onPress }: { s: State; stat: ButtonStat; tier: number; onPress: PressFn }) {
+function BuyBtn({ s, d, stat, tier, onPress, guided }: { s: State; d: D; stat: ButtonStat; tier: number; onPress: PressFn; guided: boolean }) {
+    const tips = useContext(TipCtx);
     const b = button(s, stat, tier);
     const pays = statDef(b.pays);
     const afford = (s[b.pays] as number) >= b.cost;
     const t = useRef<ReturnType<typeof setTimeout> | null>(null);
     const iv = useRef<ReturnType<typeof setInterval> | null>(null);
+    const pending = useRef(false); // touch: a press waiting for release
     const stop = () => {
         if (t.current) clearTimeout(t.current);
         if (iv.current) clearInterval(iv.current);
         t.current = iv.current = null;
     };
     useEffect(() => stop, []);
+    const build = () => buttonTip(s, stat, tier);
     const isReboot = stat === "reboot";
     const name = LORE[stat].tiers[tier];
     const owned = isReboot ? 0 : s.bought[stat][tier];
+    // Forecast node: how long until this button is affordable, at the current rate of the stat that pays for it
+    const payRate = b.pays === "bytes" ? d.bytesPerSec : (MATS as readonly string[]).includes(b.pays) ? d.rates[b.pays as (typeof MATS)[number]] : 0;
+    const eta = !afford && payRate > 0 && hasFeature(s, "forecast") ? (b.cost - (s[b.pays] as number)) / payRate : 0;
     return (
         <button
             type="button"
             className="nf-btn"
             data-afford={afford ? "" : undefined}
             data-tier={tier}
+            data-guide={guided ? "" : undefined}
             aria-label={`${name}: ${isReboot ? "Reboot for" : "buy"} +${fmt(b.gain)} ${statDef(stat).name} for ${fmt(b.cost)} ${pays.name}${owned ? `, owned ${owned}` : ""}`}
+            onPointerEnter={(e) => { if (e.pointerType === "mouse") tips.show(e.currentTarget, build, { guided }); }}
+            onFocus={(e) => { if (e.currentTarget.matches(":focus-visible")) tips.show(e.currentTarget, build, { guided }); }}
+            onBlur={(e) => tips.hide(e.currentTarget)}
             onPointerDown={(e) => {
                 if (e.pointerType === "mouse" && e.button !== 0) return;
+                // no hover on touch: show the tip for a moment after the tap, so a button you cannot afford yet still explains itself
+                if (e.pointerType !== "mouse") tips.show(e.currentTarget, build, { ms: 2600, guided });
+                stop();
+                if (e.pointerType !== "mouse") {
+                    // touch: a finger that lands here may be scrolling the page, so buy on release (a scroll cancels the pointer
+                    // first). Held for 0.35 s it buys and then repeats like a mouse hold.
+                    pending.current = true;
+                    if (isReboot) return;
+                    t.current = setTimeout(() => {
+                        pending.current = false;
+                        onPress(stat, tier);
+                        iv.current = setInterval(() => {
+                            if (!onPress(stat, tier, true)) stop();
+                        }, 100);
+                    }, 350);
+                    return;
+                }
                 onPress(stat, tier);
                 if (isReboot) return;
-                stop();
                 t.current = setTimeout(() => {
                     iv.current = setInterval(() => {
                         if (!onPress(stat, tier, true)) stop();
                     }, 100);
                 }, 400);
             }}
-            onPointerUp={stop}
-            onPointerLeave={stop}
-            onPointerCancel={stop}
+            onPointerUp={() => {
+                stop();
+                if (pending.current) { pending.current = false; onPress(stat, tier); }
+            }}
+            onPointerLeave={(e) => { stop(); pending.current = false; if (e.pointerType === "mouse") tips.hide(e.currentTarget); }}
+            onPointerCancel={() => { stop(); pending.current = false; }}
             onClick={(e) => e.detail === 0 && onPress(stat, tier)}
             onContextMenu={(e) => e.preventDefault()}
         >
@@ -177,8 +256,12 @@ function BuyBtn({ s, stat, tier, onPress }: { s: State; stat: ButtonStat; tier: 
                     {Array.from({ length: tier + 1 }, (_, i) => <i key={i} />)}
                 </span>
             </span>
+            {guided && <i className="nf-gd-c" aria-hidden="true" />}
+            <i className="nf-rar" aria-hidden="true" />
+            <NfTierIcon stat={stat} tier={tier} />
             <span className="nf-btn-g">+{fmt(b.gain)}</span>
-            <span className="nf-btn-c">{fmt(b.cost)} {pays.short}{owned > 0 && <em> · ×{owned}</em>}</span>
+            <span className="nf-btn-fn" aria-hidden="true">{fnCaption(stat, b.gain)}</span>
+            <span className="nf-btn-c">{fmt(b.cost)} {pays.short}{owned > 0 && <em> · ×{owned}</em>}{eta > 0 && <em className="nf-eta"> · {eta < 86400 * 30 ? fmtTime(eta) : "a long while"}</em>}</span>
         </button>
     );
 }
