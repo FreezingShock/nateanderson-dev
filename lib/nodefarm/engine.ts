@@ -99,6 +99,12 @@ export const TUNE = {
     mountKeep: 1, // fraction of a mounted material's producers kept through Ascend
     apSoft: 100, // past this many AP, each extra AP counts less toward the global bonus (AP^apSoftPow), so Ascends cannot run away
     apSoftPow: 0.5,
+    rankCost: 1.6, // each rank of a ranked tree node costs this much more than the last
+    coldStartSecs: 90, // Cold start: how long the Bytes boost lasts after each Reboot
+    longHaulMins: 4, // Long haul: Bytes gain +100% for every this many minutes since the last Reboot
+    longHaulMax: 8, // ...up to this many extra
+    frenzySecs: 60, // Swarm alarm: how long the Drone frenzy lasts after an event win
+    frenzyX: 4, // ...and how much faster they press
     apGainSoft: 250, // past this many AP in one Ascend, the rest grows with the log of the raw amount, so late Ascends cannot run away (0 = off)
 };
 
@@ -157,6 +163,18 @@ export interface TreeFx {
     winBoost?: number; // everything +this per event win, until the next Ascend
     zeroDay?: number; // chance an event win also pays 10 minutes of production
     echo?: number; // chance an event win brings the next event right away
+    // added with the deeper tree (junctions, forks, ranked nodes)
+    coldStart?: number; // Bytes x(1 + this) for TUNE.coldStartSecs after every Reboot
+    longHaul?: number; // Bytes grow with time since the last Reboot (1 = on)
+    specialist?: number; // the newest material you produce x(1 + this)
+    perNode?: number; // everything +this per tree node (and rank) owned
+    spearhead?: number; // the highest Drone tier you own presses x(1 + this)
+    winPay?: number; // every event win pays this many seconds of production
+    busbar?: number; // materials x(1 + this * log10(1 + Reboots))
+    apPerMat?: number; // AP on Ascend +this per material you produce
+    droneTierGoal?: number; // extra Drone levels per completed goal tier
+    frenzy?: number; // an event win sends the Drones into a frenzy (1 = on)
+    ocReboot?: number; // Reboot power x(1 + this) during an Overclock
     feature?: Feature;
 }
 /** Systems a node switches on. The UI checks them with `hasFeature`. */
@@ -188,6 +206,14 @@ export interface TreeNode {
     entry?: boolean;
     /** part of a chain with rising cost, such as Carrier I to III */
     chain?: { id: string; step: number; of: number };
+    /** the deeper tree (2026-11-12): junctions, forks and ranked nodes. Absent on the first 40. */
+    form?: "junction" | "fork" | "ranked";
+    /** junction: every one of these must be owned (both sections), not just one neighbour */
+    req?: string[];
+    /** fork: the other side of the pair. Owning one locks the other; buying the other swaps for free */
+    excl?: string;
+    /** ranked: how many times it can be bought (the price climbs by TUNE.rankCost each time) */
+    ranks?: number;
 }
 export const BRANCHES: { id: Branch; name: string; blurb: string; color: string }[] = [
     { id: "signal", name: "Signal", blurb: "Bytes, Reboots and prices.", color: "#2fd8e8" },
@@ -202,6 +228,9 @@ const SLOTS: [number, number, number[]][] = [
     [2.4, 0, []], [4.0, -1.2, [0]], [4.0, 1.2, [0]], [5.8, -1.7, [1]], [5.8, 1.7, [2]], [7.6, -1.2, [3]], [7.6, 1.2, [4]], [9.6, 0, [5, 6]],
 ];
 const SLOT_COST = [4, 10, 12, 24, 24, 48, 48, 140];
+// Past each keystone (the deeper tree): 8 and 9 are a fork pair, 10 is the ranked tip that opens from either fork.
+const OUTER: [number, number, number[]][] = [[11.5, -1.3, [7]], [11.5, 1.3, [7]], [13.4, 0, [8, 9]]];
+const OUTER_COST = [400, 400, 200];
 type Row = [slot: number, id: string, kind: TreeKind, name: string, blurb: string, flavor: string, fx: TreeFx, cost?: number];
 const ALL_MATS = (v: number) => Object.fromEntries(MATS.map((m) => [m, v])) as Record<MatId, number>;
 const ARMS: Record<Branch, Row[]> = {
@@ -214,6 +243,9 @@ const ARMS: Record<Branch, Row[]> = {
         [5, "watchdog", "notable", "Watchdog timer", "Auto-Reboot: Reboots for you at the best tier you can afford. Switch it in the Reboot zone.", "A timer that kicks the node when it stalls. The node has stopped stalling.", { feature: "watchdog" }],
         [6, "flatrate", "notable", "Flat rate", "Button prices climb 40% slower each time you buy.", "Renegotiated with the grid. They did not read the fine print.", { growth: 0.4 }],
         [7, "overdrive", "keystone", "Overdrive", "Everything x3.", "Past the red line the hum goes quiet. That is when it works hardest.", { global: 2 }],
+        [8, "coldstart", "notable", "Cold start", "For 90 s after every Reboot, Bytes x10.", "The first breath after a restart is the loudest.", { coldStart: 9 }],
+        [9, "longhaul", "notable", "Long haul", "Bytes +100% for every 4 minutes since your last Reboot, up to x9.", "Leave it running long enough and it stops asking why.", { longHaul: 1 }],
+        [10, "clockskew", "keystone", "Clock skew", "Bytes x1.5 per rank.", "Ran the clock a hair fast. Nobody has complained yet.", { bytes: 0.5 }],
     ],
     forge: [
         [0, "furnace", "minor", "Furnace tuning", "Copper and Silicon x2.", "Hotter, steadier, cleaner. The slag pile is shrinking.", { mats: { copper: 1, silicon: 1 } }],
@@ -224,6 +256,9 @@ const ARMS: Record<Branch, Row[]> = {
         [5, "mount2", "minor", "Mounted drive II", "A second mounted drive.", "Second drive, same bolts. The floor is getting crowded.", { mounts: 1 }],
         [6, "crosstalk", "notable", "Cross-talk", "Every material also boosts the one two steps down the chain.", "The materials started talking past their neighbours. I let them.", { feature: "crosstalk" }],
         [7, "overpress", "keystone", "Overpressure", "Every material x3.", "Every pipe at full pressure. The forge sings one long note.", { mats: ALL_MATS(2) }],
+        [8, "specialist", "notable", "Specialist", "The newest material you produce x8.", "Pick one seam and dig until it rings.", { specialist: 7 }],
+        [9, "generalist", "notable", "Generalist", "Every material x2.5.", "A little of everything, all of it hot.", { mats: ALL_MATS(1.5) }],
+        [10, "alloy", "keystone", "Alloy", "Every material x1.4 per rank.", "Mix two metals and both forget what they were.", { mats: ALL_MATS(0.4) }],
     ],
     systems: [
         [0, "standby", "minor", "Standby plus", "Offline time banks +8 hours.", "Bigger cells, longer naps.", { offline: 8 }],
@@ -234,6 +269,9 @@ const ARMS: Record<Branch, Row[]> = {
         [5, "carrier3", "minor", "Carrier III", "Each AP adds another third more: twice the bonus with all three.", "The carrier is all you hear now.", { apEach: 1 / 3 }],
         [6, "deaddrop", "notable", "Dead drop", "A cache fills over 4 hours of real time, even while away. Open it for 1 hour of production.", "Someone leaves a box at the node. No note. Always the right size.", { feature: "deaddrop" }],
         [7, "coldstore", "keystone", "Cold storage", "AP from every Ascend x2.", "Packed the whole run in ice. It thaws worth twice as much.", { ap: 1 }],
+        [8, "hoarder", "notable", "Hoarder", "Each unspent AP adds half again as much to everything.", "Kept the points in a jar. The jar hums.", { apEach: 0.5 }],
+        [9, "investor", "notable", "Investor", "+4% to everything for every tree node and rank you own.", "Every node pays a little rent to the others.", { perNode: 0.04 }],
+        [10, "archive", "keystone", "Archive", "AP from every Ascend x1.08 per rank.", "Every run gets filed. The filing cabinet is worth something now.", { ap: 0.08 }],
     ],
     drones: [
         [0, "wake", "minor", "Wake routine", "Every Ascend starts with a level 1 Drone on every tier.", "They boot before I do.", { kitDrones: 1 }],
@@ -244,6 +282,9 @@ const ARMS: Record<Branch, Row[]> = {
         [5, "graveyard", "notable", "Graveyard shift", "Drones work at full speed while you are away (was half).", "Nobody told them it was night.", { droneOff: 0.5 }],
         [6, "hivemem", "notable", "Hive memory", "Drones keep half their levels through every Ascend.", "They remember the old floor plan.", { droneKeep: 0.5 }],
         [7, "swarm", "keystone", "Swarm protocol", "Each Drone level adds +3% to everything.", "A hundred small hands, one big push.", { droneGlobal: 0.03 }],
+        [8, "widenet", "notable", "Wide net", "Every Drone presses 60% faster.", "Spread thin and everywhere at once.", { drone: 0.6 }],
+        [9, "spearhead", "notable", "Spearhead", "Your highest-tier Drone presses x6.", "One Drone out front. The rest follow its lights.", { spearhead: 5 }],
+        [10, "firmware", "keystone", "Firmware", "Drones press 30% faster per rank.", "Flashed them again. They boot a little smarter each time.", { drone: 0.3 }],
     ],
     anomaly: [
         [0, "static", "minor", "Static", "Quick-time events come 30% more often.", "There is always someone on the line now.", { eventRate: 0.3 }],
@@ -254,35 +295,72 @@ const ARMS: Record<Branch, Row[]> = {
         [5, "echo", "notable", "Echo", "Winning an event has a 1 in 3 chance to bring the next one right away.", "Answered the knock and something knocked back.", { echo: 1 / 3 }],
         [6, "zeroday", "notable", "Zero-day", "One in five event wins also pays 10 minutes of production.", "An open door nobody else has found yet.", { zeroDay: 0.2 }],
         [7, "spike", "keystone", "Spike protocol", "Overclock x2 again, and every event win adds +2% to everything until the next Ascend.", "Every knock makes the node a little louder.", { ocX: 1, winBoost: 0.02 }],
+        [8, "storm", "notable", "Storm chaser", "Quick-time events come 50% more often.", "Stopped waiting for the knock. Started going looking.", { eventRate: 0.5 }],
+        [9, "patient", "notable", "Patient", "Every event win also pays 5 minutes of production.", "Let it knock twice. The second knock brings gifts.", { winPay: 300 }],
+        [10, "afterimage", "keystone", "Afterimage", "Overclock x1.15 per rank.", "The boost leaves a shape on the screen after it ends.", { ocX: 0.15 }],
     ],
 };
+// Junctions sit between two neighbouring sections and need the node on each side (arm slot 6 and the next arm's slot 5).
+// Keyed by the first section; the second is the next one round the core.
+type JRow = [id: string, name: string, blurb: string, flavor: string, fx: TreeFx];
+const JUNCTIONS: Record<Branch, JRow> = {
+    signal: ["busbar", "Bus bar", "Every material grows with your Reboots this run: x2 at 100, x2.5 at 1,000.", "Tied the Reboot line straight into the forge. Every restart stokes it.", { busbar: 0.5 }],
+    forge: ["manifest", "Manifest", "AP from every Ascend +5% for each material you produce.", "Counted every crate on the way out. They count for more now.", { apPerMat: 0.05 }],
+    systems: ["nightcrew", "Night crew", "+1 Drone level cap for every completed goal tier.", "Every badge on the wall buys one more pair of hands.", { droneTierGoal: 1 }],
+    drones: ["swarmalarm", "Swarm alarm", "Winning an event sends the Drones into a frenzy: x4 speed for 60 s.", "The alarm goes off and they all wake up angry.", { frenzy: 1 }],
+    anomaly: ["feedback", "Feedback loop", "During an Overclock, Reboot power x3.", "Pointed the mic at the speaker. The whole node screamed in tune.", { ocReboot: 2 }],
+};
+const JUNCTION_COST = 160;
+const RANKS = 5;
 const CHAINS: Record<string, [string, number, number]> = { carrier1: ["carrier", 1, 3], carrier2: ["carrier", 2, 3], carrier3: ["carrier", 3, 3], mount1: ["mount", 1, 2], mount2: ["mount", 2, 2] };
 const ARM_ORDER: Branch[] = ["signal", "forge", "systems", "drones", "anomaly"];
 function buildTree(): TreeNode[] {
     const out: TreeNode[] = [];
-    ARM_ORDER.forEach((arm, ai) => {
+    const byId = (id: string) => out.find((n) => n.id === id)!;
+    const link = (a: string, b: string) => { byId(a).links.push(b); byId(b).links.push(a); };
+    const slotIds: Record<string, string[]> = {};
+    const all = [...SLOTS, ...OUTER];
+    // two passes so the first 40 keep their old order (ix), and the deeper nodes come after them
+    for (const pass of [0, 1]) ARM_ORDER.forEach((arm, ai) => {
         const th = -Math.PI / 2 + (ai * 2 * Math.PI) / ARM_ORDER.length;
         const c = Math.cos(th), sn = Math.sin(th);
-        const ids: string[] = [];
+        const ids: string[] = (slotIds[arm] ??= []);
         for (const [slot, id, kind, name, blurb, flavor, fx, price] of ARMS[arm]) {
-            const [u, v] = SLOTS[slot];
+            if ((slot >= SLOTS.length ? 1 : 0) !== pass) continue;
+            const [u, v] = all[slot];
             const ch = CHAINS[id];
+            const outer = slot >= SLOTS.length;
+            const form = !outer ? undefined : slot === 10 ? "ranked" : "fork";
+            const base = price ?? (outer ? OUTER_COST[slot - SLOTS.length] : SLOT_COST[slot] * (kind === "notable" ? 1.3 : 1));
             out.push({
                 id, branch: arm, kind, name, blurb, flavor, fx,
-                cost: Math.round((price ?? SLOT_COST[slot] * (kind === "notable" ? 1.3 : 1)) * TUNE.treeCost),
+                cost: Math.round(base * TUNE.treeCost),
                 links: slot === 0 ? ["core"] : [],
                 x: +(u * c - v * sn).toFixed(3), y: +(u * sn + v * c).toFixed(3),
                 ix: out.length, sprite: id,
                 ...(slot === 0 ? { entry: true } : {}),
                 ...(ch ? { chain: { id: ch[0], step: ch[1], of: ch[2] } } : {}),
-            });
+                ...(form ? { form } : {}),
+                ...(form === "ranked" ? { ranks: RANKS } : {}),
+            } as TreeNode);
             ids[slot] = id;
         }
-        SLOTS.forEach(([, , ls], slot) => ls.forEach((l) => {
-            const A = out.find((n) => n.id === ids[slot])!, B = out.find((n) => n.id === ids[l])!;
-            A.links.push(B.id);
-            B.links.push(A.id);
-        }));
+        if (!pass) { SLOTS.forEach(([, , ls], slot) => ls.forEach((l) => link(ids[slot], ids[l]))); return; }
+        OUTER.forEach(([, , ls], k) => ls.forEach((l) => link(ids[SLOTS.length + k], ids[l])));
+        byId(ids[8]).excl = ids[9];
+        byId(ids[9]).excl = ids[8];
+    });
+    // junctions: halfway round between two sections, linked to the nearest node on each side
+    ARM_ORDER.forEach((arm, ai) => {
+        const next = ARM_ORDER[(ai + 1) % ARM_ORDER.length];
+        const th = -Math.PI / 2 + ((ai + 0.5) * 2 * Math.PI) / ARM_ORDER.length;
+        const [id, name, blurb, flavor, fx] = JUNCTIONS[arm];
+        const req = [slotIds[arm][6], slotIds[next][5]];
+        out.push({
+            id, branch: arm, kind: "notable", name, blurb, flavor, fx, cost: Math.round(JUNCTION_COST * TUNE.treeCost), links: [],
+            x: +(7.4 * Math.cos(th)).toFixed(3), y: +(7.4 * Math.sin(th)).toFixed(3), ix: out.length, sprite: id, form: "junction", req,
+        });
+        req.forEach((r) => link(id, r));
     });
     return out;
 }
@@ -290,8 +368,24 @@ export const TREE: TreeNode[] = buildTree();
 const BY_ID = new Map(TREE.map((n) => [n.id, n]));
 export const treeNode = (id: string) => BY_ID.get(id)!;
 export const hasNode = (s: State, id: string) => s.tree.includes(id);
-/** Buyable once it touches the core or an owned node. */
-export const nodeOpen = (s: State, n: TreeNode) => n.links.some((l) => l === "core" || s.tree.includes(l));
+/** Buyable once it touches the core or an owned node. A junction needs every node in `req`, not just one. */
+export const nodeOpen = (s: State, n: TreeNode) => (n.req ? n.req.every((r) => s.tree.includes(r)) : n.links.some((l) => l === "core" || s.tree.includes(l)));
+/** How many ranks of a node are owned: 0 when not owned, 1 for any owned plain node. */
+export const nodeLevel = (s: State, id: string) => (s.tree.includes(id) ? (s.treeLv?.[id] ?? 1) : 0);
+/** What the next purchase of this node costs (a ranked node climbs by TUNE.rankCost each rank). */
+export const nodeCost = (s: State, n: TreeNode) => (n.ranks ? Math.round(n.cost * Math.pow(TUNE.rankCost, nodeLevel(s, n.id))) : n.cost);
+/** True when nothing more can be bought on this node. */
+export const nodeMaxed = (s: State, n: TreeNode) => nodeLevel(s, n.id) >= (n.ranks ?? 1);
+/** AP spent on one node, all its ranks included. */
+const nodeSpent = (s: State, n: TreeNode) => { let t = 0; for (let l = 0; l < nodeLevel(s, n.id); l++) t += n.ranks ? Math.round(n.cost * Math.pow(TUNE.rankCost, l)) : n.cost; return t; };
+/** AP spent on the whole tree, ranks included (what a respec refunds). */
+export const treeSpent = (s: State) => s.tree.reduce((a, id) => a + (BY_ID.has(id) ? nodeSpent(s, BY_ID.get(id)!) : 0), 0);
+/** Nodes you can own at once: every node but the other side of each fork. "Whole tree" means this many. */
+export const TREE_FULL = TREE.filter((n) => !(n.form === "fork" && n.excl && TREE.indexOf(treeNode(n.excl)) < TREE.indexOf(n))).length;
+/** Ids that make a whole tree (the first side of every fork), for admin and tests. */
+export const fullTreeIds = () => TREE.filter((n) => !(n.form === "fork" && n.excl && TREE.indexOf(treeNode(n.excl)) < TREE.indexOf(n))).map((n) => n.id);
+/** Whole tree: TREE_FULL nodes owned (forks count once). Ranks are not needed. */
+export const treeComplete = (s: State) => s.tree.length >= TREE_FULL;
 /** Progressive reveal (Nate, 2026-11-12): owned and buyable nodes are shown; one step past a shown node is fog (a
  *  silhouette at its real size, no name or cost); everything further out is hidden. */
 /** Admin mode: show every node, fog or not (components/nodefarm/admin.tsx). */
@@ -299,21 +393,30 @@ export const adminFlags = { reveal: false };
 export function nodeVis(s: State, n: TreeNode): NodeVis {
     if (adminFlags.reveal) return "shown";
     if (s.tree.includes(n.id) || nodeOpen(s, n)) return "shown";
+    // a junction shows (locked) once you own either side, so you can see what the other side is for
+    if (n.req && n.req.some((r) => s.tree.includes(r))) return "shown";
     return n.links.some((l) => l !== "core" && nodeOpen(s, BY_ID.get(l)!)) ? "fog" : "hidden";
 }
+/** Buy a node, the next rank of a ranked node, or swap a fork: buying the other side of an owned fork refunds it first. */
 export function buyNode(s: State, id: string): boolean {
     const n = BY_ID.get(id);
-    if (!n || s.tree.includes(id) || !nodeOpen(s, n) || s.ap < n.cost) return false;
-    s.ap -= n.cost;
-    s.tree.push(id);
+    if (!n || nodeMaxed(s, n) || !nodeOpen(s, n)) return false;
+    const cost = nodeCost(s, n);
+    const swap = n.excl && s.tree.includes(n.excl) ? BY_ID.get(n.excl)! : null;
+    const back = swap ? nodeSpent(s, swap) : 0;
+    if (s.ap + back < cost) return false;
+    if (swap) s.tree = s.tree.filter((x) => x !== swap.id); // a new array, so the effect cache recomputes
+    s.ap += back - cost;
+    if (s.tree.includes(id)) s.treeLv = { ...s.treeLv, [id]: nodeLevel(s, id) + 1 };
+    else s.tree = [...s.tree, id];
     return true;
 }
 /** Take every node back and refund the AP spent on it. Costs nothing. Returns the AP refunded. */
 export function respec(s: State): number {
-    let back = 0;
-    for (const id of s.tree) back += BY_ID.get(id)?.cost ?? 0;
+    const back = treeSpent(s);
     s.ap += back;
     s.tree = [];
+    s.treeLv = {};
     s.mounts = [];
     // Drone levels that only the removed nodes allowed (extra levels per tier) go with them
     s.drones = s.drones.map((lv) => Math.min(lv, droneMax(s)));
@@ -333,14 +436,19 @@ export function migrateTree(s: State): number {
         else back += LEGACY_COST[id] ?? 0;
     }
     s.tree = keep;
+    // ranks only for ranked nodes you own, within their cap
+    const lv: Record<string, number> = {};
+    for (const [id, v] of Object.entries(s.treeLv ?? {})) { const n = BY_ID.get(id); if (n?.ranks && keep.includes(id) && Number.isFinite(v) && v > 1) lv[id] = Math.min(n.ranks, Math.floor(v)); }
+    s.treeLv = lv;
+    // both sides of a fork (an admin save, or an old bug): keep the first, refund the second
+    for (const id of [...s.tree]) { const n = BY_ID.get(id)!; if (n.excl && s.tree.includes(n.excl) && s.tree.indexOf(n.excl) < s.tree.indexOf(id)) { s.tree = s.tree.filter((x) => x !== id); back += n.cost; } }
     s.ap += back;
     return back;
 }
 export const hasFeature = (s: State, f: Feature) => s.tree.some((id) => BY_ID.get(id)?.fx.feature === f);
 /** AP spent on owned nodes and perks. With TUNE.apBonusFromEarned the AP bonus counts this too, so spending never lowers it. */
 export function apSpent(s: State): number {
-    let n = 0;
-    for (const id of s.tree) n += BY_ID.get(id)?.cost ?? 0;
+    let n = treeSpent(s);
     for (const p of PERKS) for (let l = 0; l < s.perks[p.id]; l++) n += p.cost(l);
     return n;
 }
@@ -386,6 +494,17 @@ export function treeTotals(s: State): [string, string][] {
     if (f.zeroDay) rows.push(["Zero-day chance", `${Math.round(f.zeroDay * 100)}%`]);
     if (f.echo) rows.push(["Echo chance", `${Math.round(f.echo * 100)}%`]);
     if (f.winBoost) rows.push(["Per event win", `+${Math.round(f.winBoost * 100)}% this run`]);
+    if (f.coldStart) rows.push(["After a Reboot", `Bytes x${1 + f.coldStart} for ${TUNE.coldStartSecs} s`]);
+    if (f.longHaul) rows.push(["Long haul now", `Bytes x${+runBytes(s, f).toFixed(1)}`]);
+    if (f.specialist) rows.push(["Newest material", `x${1 + f.specialist}`]);
+    if (f.perNode) rows.push(["Per node owned", `+${Math.round(f.perNode * 100)}% (x${+(1 + f.perNode * treeCount(s)).toFixed(2)} now)`]);
+    if (f.spearhead) rows.push(["Top Drone tier", `x${1 + f.spearhead}`]);
+    if (f.winPay) rows.push(["Per event win", `${Math.round(f.winPay / 60)} min of output`]);
+    if (f.busbar) rows.push(["Bus bar now", `materials x${+(1 + f.busbar * Math.log10(1 + s.reboot)).toFixed(2)}`]);
+    if (f.apPerMat) rows.push(["AP per material", `+${Math.round(f.apPerMat * 100)}% each`]);
+    if (f.droneTierGoal) rows.push(["Night crew", `+${f.droneTierGoal * tiersDone(s)} Drone levels`]);
+    if (f.frenzy) rows.push(["Swarm alarm", `Drones x${TUNE.frenzyX} for ${TUNE.frenzySecs} s per win`]);
+    if (f.ocReboot) rows.push(["Overclock Reboot power", `x${1 + f.ocReboot}`]);
     const named: Record<Feature, string> = { buymax: "Buy max", watchdog: "Watchdog timer", forecast: "Forecast", deaddrop: "Dead drop", orders: "Standing orders", ghostline: "Ghost line", crosstalk: "Cross-talk", duck: "Rubber duck" };
     if (f.features.length) rows.push(["Systems", f.features.map((k) => named[k]).join(", ")]);
     return rows;
@@ -395,10 +514,13 @@ const mulIn = (a: number, b?: number) => (b ? (1 + a) * (1 + b) - 1 : a);
 /** Everything the owned tree nodes give. Boosts named "x(1 + this)" stack by multiplying. Cached per tree array and length. */
 const FX_CACHE = new WeakMap<string[], { n: number; v: ReturnType<typeof treeFxRaw> }>();
 export function treeFx(s: State) {
+    // ranks change without changing the tree array, so they are part of the key
+    let n = s.tree.length;
+    if (s.treeLv) for (const k in s.treeLv) n += s.treeLv[k] * 1000;
     const c = FX_CACHE.get(s.tree);
-    if (c && c.n === s.tree.length) return c.v;
+    if (c && c.n === n) return c.v;
     const v = treeFxRaw(s);
-    FX_CACHE.set(s.tree, { n: s.tree.length, v });
+    FX_CACHE.set(s.tree, { n, v });
     return v;
 }
 function treeFxRaw(s: State) {
@@ -407,10 +529,15 @@ function treeFxRaw(s: State) {
         mats: {} as Record<string, number>,
         apEach: 0, growth: 0, rebootKeep: 0, unlockMul: 1, kitReboot: 0, kitProd: {} as Record<string, number>, kitDrones: 0, droneKeep: 0, droneGlobal: 0, mounts: 0,
         eventRate: 0, ocTime: 0, ocX: 0, winBoost: 0, zeroDay: 0, echo: 0, features: [] as Feature[],
+        coldStart: 0, longHaul: 0, specialist: 0, perNode: 0, spearhead: 0, winPay: 0, busbar: 0, apPerMat: 0, droneTierGoal: 0, frenzy: 0, ocReboot: 0,
     };
+    const each: TreeFx[] = [];
     for (const id of s.tree) {
         const f = BY_ID.get(id)?.fx;
         if (!f) continue;
+        for (let l = nodeLevel(s, id); l > 0; l--) each.push(f); // a ranked node applies once per rank
+    }
+    for (const f of each) {
         o.bytes = mulIn(o.bytes, f.bytes);
         o.global = mulIn(o.global, f.global);
         o.reboot = mulIn(o.reboot, f.reboot);
@@ -444,6 +571,17 @@ function treeFxRaw(s: State) {
         o.zeroDay += f.zeroDay ?? 0;
         o.echo += f.echo ?? 0;
         if (f.feature) o.features.push(f.feature);
+        o.coldStart += f.coldStart ?? 0;
+        o.longHaul += f.longHaul ?? 0;
+        o.specialist += f.specialist ?? 0;
+        o.perNode += f.perNode ?? 0;
+        o.spearhead += f.spearhead ?? 0;
+        o.winPay += f.winPay ?? 0;
+        o.busbar += f.busbar ?? 0;
+        o.apPerMat += f.apPerMat ?? 0;
+        o.droneTierGoal += f.droneTierGoal ?? 0;
+        o.frenzy += f.frenzy ?? 0;
+        o.ocReboot += f.ocReboot ?? 0;
     }
     return o;
 }
@@ -486,6 +624,12 @@ export interface State {
     armed: string[];
     /** owned prestige-tree node ids (bought with AP, kept through Ascend) */
     tree: string[];
+    /** ranks above 1 of ranked tree nodes, by id (kept through Ascend; an owned ranked node without an entry is rank 1) */
+    treeLv?: Record<string, number>;
+    /** life.secs at the last Reboot or Ascend (Cold start and Long haul) */
+    rebootAt?: number;
+    /** seconds of Drone frenzy left (Swarm alarm) */
+    frenzy?: number;
     /** materials on Mounted drives: their producers survive Ascend (kept through Ascend) */
     mounts: MatId[];
     /** Watchdog timer switch (auto-Reboot) */
@@ -538,6 +682,9 @@ export function fresh(now = Date.now()): State {
         droneAcc: Array(TIERS).fill(0),
         armed: [],
         tree: [],
+        treeLv: {},
+        rebootAt: 0,
+        frenzy: 0,
         mounts: [],
         watchdog: true,
         dropAt: 0,
@@ -585,17 +732,35 @@ export function derive(s: State): Derived {
     const lb = labBuffs(s);
     const droneLv = s.drones.reduce((a, b) => a + b, 0);
     const global = (1 + s.perks.power * 0.15) * (1 + tf.global) * apGlobal(s) * (1 + s.ach.length * (TUNE.achBonus + tf.goals)) * (1 + tiersDone(s) * TUNE.tierBonus)
-        * (1 + droneLv * tf.droneGlobal) * (1 + s.runWins * tf.winBoost) * boosts.chAll * singularityAll(s) * (s.overclock > 0 ? overclockMult(s) : 1) * lb.global;
-    const rebootStrength = TUNE.rebootStrength * boosts.cuReboot * (1 + tf.reboot);
+        * (1 + droneLv * tf.droneGlobal) * (1 + s.runWins * tf.winBoost) * boosts.chAll * singularityAll(s) * (s.overclock > 0 ? overclockMult(s) : 1) * lb.global
+        * (tf.perNode ? 1 + tf.perNode * treeCount(s) : 1);
+    const rebootStrength = TUNE.rebootStrength * boosts.cuReboot * (1 + tf.reboot) * (tf.ocReboot && s.overclock > 0 ? 1 + tf.ocReboot : 1);
     const multGainMult = (1 + rebootStrength * s.reboot) * (1 + tf.multGain) * lb.mult;
-    const bytesPerSec = s.mult * boosts.cuBytes * global * (1 + tf.bytes) * lb.bytes;
+    const bytesPerSec = s.mult * boosts.cuBytes * global * (1 + tf.bytes) * lb.bytes * runBytes(s, tf);
     // each material is boosted by the one after it in the chain
     const boostedBy: Record<MatId, number> = { copper: boosts.siCu, silicon: boosts.qzSi, quartz: boosts.aeQz, aether: boosts.ruAe, runes: boosts.sgRu, starglass: boosts.vsSg, voidsteel: boosts.chVs, chrono: boosts.nbCh, nebula: boosts.puNb, pulsars: boosts.snPu, singularity: boosts.egSn, engrams: boosts.pxEg, paradox: boosts.orPx, origin: 1 };
     // Cross-talk: each material is also boosted by the one two steps up the chain, at the weaker late-chain strength
     if (tf.features.includes("crosstalk")) MATS.forEach((m, i) => { const up = MATS[i + 2]; if (up) boostedBy[m] *= boost(s[up], TUNE.boostK.ruAe); });
+    // Bus bar (Reboots feed every material) and Specialist (the newest material you produce)
+    const bus = tf.busbar ? 1 + tf.busbar * Math.log10(1 + s.reboot) : 1;
+    let newest: MatId | null = null;
+    if (tf.specialist) for (const m of MATS) if (s.prod[m] > 0) newest = m;
     const rates = {} as Record<MatId, number>;
-    for (const m of MATS) rates[m] = s.prod[m] * TUNE.perProducer[m] * boostedBy[m] * (1 + (tf.mats[m] ?? 0)) * global * (FORGE_MATS.includes(m) ? lb.forge : 1);
+    for (const m of MATS) rates[m] = s.prod[m] * TUNE.perProducer[m] * boostedBy[m] * (1 + (tf.mats[m] ?? 0)) * global * (FORGE_MATS.includes(m) ? lb.forge : 1) * bus * (m === newest ? 1 + tf.specialist : 1);
     return { global, bytesPerSec, rebootStrength, multGainMult, rates, offlineCap: Math.max(1, TUNE.offlineCapHours + s.perks.offline * 4 + tf.offline) * 3600, boosts };
+}
+
+/** Nodes plus extra ranks owned (Investor). */
+export const treeCount = (s: State) => { let n = s.tree.length; if (s.treeLv) for (const k in s.treeLv) n += Math.max(0, s.treeLv[k] - 1); return n; };
+/** Seconds since the last Reboot or Ascend. */
+export const sinceReboot = (s: State) => Math.max(0, s.life.secs - (s.rebootAt ?? 0));
+/** The Bytes multiplier from Cold start or Long haul, which depend on time since the last Reboot. */
+export function runBytes(s: State, tf = treeFx(s)): number {
+    let x = 1;
+    const t = sinceReboot(s);
+    if (tf.coldStart && t < TUNE.coldStartSecs) x *= 1 + tf.coldStart;
+    if (tf.longHaul) x *= 1 + Math.min(TUNE.longHaulMax, t / 60 / TUNE.longHaulMins) * tf.longHaul;
+    return x;
 }
 
 export const gainFor = (stat: ButtonStat, tier: number) => TUNE.gainBase[stat] * Math.pow(TUNE.gainRatio, tier);
@@ -650,6 +815,7 @@ export function press(s: State, stat: ButtonStat, tier: number): boolean {
         s.reboot += gain;
         s.life.presses += 1;
         s.life.reboots += gain;
+        s.rebootAt = s.life.secs;
         s.mult = Math.max(1, s.mult * treeFx(s).rebootKeep);
         s.bought.mult.fill(0);
         s.bytes = derive(s).bytesPerSec * (10 * s.perks.start + treeFx(s).start);
@@ -663,7 +829,7 @@ export function press(s: State, stat: ButtonStat, tier: number): boolean {
     return true;
 }
 
-export const droneMax = (s: State) => TUNE.drone.max + treeFx(s).droneMax;
+export const droneMax = (s: State) => { const f = treeFx(s); return TUNE.drone.max + f.droneMax + (f.droneTierGoal ? f.droneTierGoal * tiersDone(s) : 0); };
 export const droneCost = (s: State, tier: number) => TUNE.drone.base * Math.pow(TUNE.drone.ratio, tier) * Math.pow(TUNE.drone.growth, s.drones[tier]) * treeFx(s).droneCost;
 export const dronesOpen = (s: State) => s.aether > 0 || s.prod.aether > 0 || s.life.ascends > 0;
 export function buyDrone(s: State, tier: number): boolean {
@@ -679,7 +845,15 @@ export const singularityAll = (s: State) => logBoost(s.singularity, TUNE.logK.sn
 export const droneBoost = (s: State) => logBoost(s.engrams, TUNE.logK.egDrone);
 export const paradoxOc = (s: State) => logBoost(s.paradox, TUNE.logK.pxOc);
 export const originAp = (s: State) => logBoost(s.origin, TUNE.logK.orAp);
-export const droneRate = (s: State, tier: number) => s.drones[tier] * TUNE.drone.rate * (1 + treeFx(s).drone) * labBuffs(s).drone * droneBoost(s);
+/** The highest Drone tier with a level, or -1. */
+const topDrone = (s: State) => { for (let k = s.drones.length - 1; k >= 0; k--) if (s.drones[k] > 0) return k; return -1; };
+export const droneRate = (s: State, tier: number) => {
+    const f = treeFx(s);
+    let r = s.drones[tier] * TUNE.drone.rate * (1 + f.drone) * labBuffs(s).drone * droneBoost(s);
+    if (f.spearhead && r > 0 && topDrone(s) === tier) r *= 1 + f.spearhead; // Spearhead: the top tier you own
+    if (f.frenzy && (s.frenzy ?? 0) > 0) r *= TUNE.frenzyX; // Swarm alarm
+    return r;
+};
 export function toggleArm(s: State, stat: string) {
     s.armed = s.armed.includes(stat) ? s.armed.filter((x) => x !== stat) : [...s.armed, stat];
 }
@@ -716,6 +890,7 @@ export function tick(s: State, dt: number, eff = 1) {
     if (s.bytes > CAP) s.bytes = CAP;
     if (s.life.bytes > CAP) s.life.bytes = CAP;
     if (s.overclock > 0) s.overclock = Math.max(0, s.overclock - dt);
+    if (s.frenzy) s.frenzy = Math.max(0, s.frenzy - dt);
     s.life.secs += dt;
     if (d.bytesPerSec > s.life.peakBps) s.life.peakBps = d.bytesPerSec;
     labStep(s, dt, d.bytesPerSec);
@@ -749,7 +924,10 @@ export function breach(s: State, rnd: () => number = Math.random) {
     const zero = f.zeroDay > 0 && rnd() < f.zeroDay ? payout(s, TUNE.zeroDayPays) : null;
     const echo = f.echo > 0 && rnd() < f.echo;
     const intel = labLump(s, LAB_TUNE.eventSecs);
-    return { stacked, zero, echo, intel };
+    const paid = f.winPay > 0 ? payout(s, f.winPay) : null; // Patient
+    const frenzy = f.frenzy > 0;
+    if (frenzy) s.frenzy = TUNE.frenzySecs; // Swarm alarm
+    return { stacked, zero, echo, intel, paid, frenzy };
 }
 /** How much sooner events come (Wide-band scanner perk plus Static), as a fraction off the gap. */
 export const eventHaste = (s: State) => 1 - Math.max(0.3, (1 - s.perks.scanner * 0.08) * (1 - treeFx(s).eventRate));
@@ -807,7 +985,8 @@ export const apOnAscend = (s: State) => {
     if (s.aether < TUNE.ascendAether) return 0;
     let raw = Math.pow(s.aether / TUNE.apPerAether, TUNE.apPow);
     for (const [m, per] of Object.entries(TUNE.apPer)) raw += Math.pow(s[m as MatId] / per, TUNE.apPow);
-    let gain = raw * (1 + treeFx(s).ap) * originAp(s) * (s.lab.armed.includes("zeroclick") ? 1 + payload("zeroclick").v : 1);
+    const tf = treeFx(s);
+    let gain = raw * (1 + tf.ap) * originAp(s) * (s.lab.armed.includes("zeroclick") ? 1 + payload("zeroclick").v : 1) * (tf.apPerMat ? 1 + tf.apPerMat * MATS.filter((m) => s.prod[m] > 0).length : 1);
     if (TUNE.apGainSoft > 0 && gain > TUNE.apGainSoft) gain = TUNE.apGainSoft * (1 + Math.log(gain / TUNE.apGainSoft));
     return Math.floor(gain);
 };
@@ -821,12 +1000,13 @@ export function ascend(s: State) {
     const keptProd = Object.fromEntries(mounts.map((m) => [m, Math.floor(s.prod[m] * TUNE.mountKeep)]));
     const keptDrones = s.drones.map((lv) => Math.max(Math.floor(lv * tf.droneKeep), tf.kitDrones));
     const lab: LabState = { ...s.lab, intel: 0, run: [], armed: s.lab.armed.filter((x) => x !== "zeroclick"), dump: LAB_TUNE.dumpSecs };
-    const keep = { lab, ap: s.ap + gain, perks: s.perks, ach: s.ach, achAt: s.achAt, logs: s.logs, tree: s.tree, armed: s.armed, mounts: s.mounts, watchdog: s.watchdog, dropAt: s.dropAt, autoArmed: s.autoArmed, life: { ...s.life, ascends: s.life.ascends + 1, apTotal: s.life.apTotal + gain }, started: s.started };
+    const keep = { lab, ap: s.ap + gain, perks: s.perks, ach: s.ach, achAt: s.achAt, logs: s.logs, tree: s.tree, treeLv: s.treeLv, armed: s.armed, mounts: s.mounts, watchdog: s.watchdog, dropAt: s.dropAt, autoArmed: s.autoArmed, life: { ...s.life, ascends: s.life.ascends + 1, apTotal: s.life.apTotal + gain }, started: s.started };
     const n = fresh(s.at);
     Object.assign(n, keep);
     Object.assign(s, n);
     // starting kits and what the tree carries over
     s.reboot = tf.kitReboot;
+    s.rebootAt = s.life.secs;
     for (const [m, v] of Object.entries(tf.kitProd)) s.prod[m as MatId] += v;
     for (const [m, v] of Object.entries(keptProd)) s.prod[m as MatId] = Math.max(s.prod[m as MatId], v);
     s.drones = keptDrones;
@@ -920,7 +1100,7 @@ export const GOALS: Goal[] = [
     G("r2k", "Reboot loop", "Reach 2,500 Reboots.", 7, "reboot", 2500, life("reboots")),
     G("ch1k", "Spare hours", "Hold 1,000 Chrono.", 7, "chrono", 1e3, (s) => s.chrono),
     G("asc20", "Habit of leaving", "Ascend 20 times.", 7, "ascend", 20, life("ascends")),
-    G("tr18", "Whole tree", "Own every node in the prestige tree.", 7, "ascend", TREE.length, (s) => s.tree.length),
+    G("tr18", "Whole tree", "Own every node in the prestige tree (one side of each fork).", 7, "ascend", TREE_FULL, (s) => s.tree.length),
     // VIII SOURCE: the six zones past Chrono, out into space and then down to where the node began
     G("nb1", "Stardust", "Gather your first Nebula.", 8, "nebula", 1e-9, (s) => s.nebula),
     G("pu1", "Lighthouse keeper", "Catch your first Pulsar.", 8, "pulsars", 1e-9, (s) => s.pulsars),
@@ -1359,6 +1539,9 @@ export function parseSave(raw: string): State | null {
         const n = { ...base, ...o, prod: { ...base.prod, ...o.prod }, perks: { ...base.perks, ...o.perks }, life: { ...base.life, ...o.life }, bought: { ...base.bought, ...o.bought } } as State;
         for (const k of Object.keys(n.bought) as ButtonStat[]) if (!Array.isArray(n.bought[k]) || n.bought[k].length !== TIERS) n.bought[k] = Array(TIERS).fill(0);
         if (!Array.isArray(n.tree)) n.tree = [];
+        if (!n.treeLv || typeof n.treeLv !== "object") n.treeLv = {};
+        if (!Number.isFinite(n.rebootAt)) n.rebootAt = 0;
+        if (!Number.isFinite(n.frenzy)) n.frenzy = 0;
         if (!Array.isArray(n.mounts)) n.mounts = [];
         n.mounts = n.mounts.filter((m) => (MATS as readonly string[]).includes(m));
         if (!Array.isArray(n.autoArmed)) n.autoArmed = [];
