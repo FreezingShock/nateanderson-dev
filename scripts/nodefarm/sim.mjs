@@ -6,13 +6,18 @@ const hours = Number(process.argv[2] || 24 * 14);
 // NF_TUNE='{"perProducer":{"copper":0.02}}' deep-merges over TUNE so numbers can be tried without editing the engine.
 const merge = (a, b) => { for (const [k, v] of Object.entries(b)) a[k] = v && typeof v === "object" && !Array.isArray(v) && a[k] && typeof a[k] === "object" ? merge(a[k], v) : v; return a; };
 if (process.env.NF_TUNE) merge(E.TUNE, JSON.parse(process.env.NF_TUNE));
+if (process.env.NF_HANDTUNE) merge(E.HAND_TUNE, JSON.parse(process.env.NF_HANDTUNE)); // same, for Handover's HAND_TUNE
+if (process.env.NF_ZETUNE) merge(E.ZE_TUNE, JSON.parse(process.env.NF_ZETUNE)); // same, for the zone events' ZE_TUNE
 // Zone rigs (lib/nodefarm/rigs.ts) join in unless NF_NORIGS=1. rigs.ts imports "./engine" without an extension, so resolve that to .ts.
 let RG = null;
-if (!process.env.NF_NORIGS) {
+// NF_ZONEEV=1: zone events run too (random, so results vary); the bot mines every Rich vein and patches every Fault at once.
+let ZE = null;
+if (!process.env.NF_NORIGS || process.env.NF_ZONEEV) {
     const { registerHooks } = await import("node:module");
     registerHooks({ resolve(spec, ctx, next) { try { return next(spec, ctx); } catch (e) { if (spec.startsWith(".")) return next(spec + ".ts", ctx); throw e; } } });
-    RG = await import("../../lib/nodefarm/rigs.ts");
-    if (process.env.NF_RIGTUNE) merge(RG.RIG_TUNE, JSON.parse(process.env.NF_RIGTUNE)); // same as NF_TUNE, for RIG_TUNE
+    if (!process.env.NF_NORIGS) RG = await import("../../lib/nodefarm/rigs.ts");
+    if (process.env.NF_ZONEEV) ZE = await import("../../lib/nodefarm/zoneevents.ts");
+    if (RG && process.env.NF_RIGTUNE) merge(RG.RIG_TUNE, JSON.parse(process.env.NF_RIGTUNE)); // same as NF_TUNE, for RIG_TUNE
 }
 const s = E.fresh(0);
 if (!process.env.NF_NODRONES) s.armed = ["mult", ...E.MATS]; // the bot arms every stat once it has Drones
@@ -32,7 +37,7 @@ for (const id of (process.env.NF_BAN || "").split(",")) FULL.delete(id); // the 
 let t = 0, nextBuy = 0;
 const HANDS = Number(process.env.NF_HAND || 0);
 const handLog = [];
-const dt = 0.5;
+const dt = Number(process.env.NF_DT || 0.5); // tick size in seconds (the live game ticks at 0.1)
 while (t < hours * 3600) {
     E.tick(s, dt);
     t += dt;
@@ -71,7 +76,7 @@ while (t < hours * 3600) {
             for (let more = true; more;) {
                 more = false;
                 let best = null;
-                for (let k = 0; k < E.TIERS; k++) for (let m = 0; m < 3; m++) if (!E.modBlock(s, k, m)) { const c = E.modCost(s, k, m); if (!best || c < best[2]) best = [k, m, c]; }
+                for (let k = 0; k < E.TIERS; k++) for (let m = 0; m < E.MOD_COUNT; m++) if (!E.modBlock(s, k, m)) { const c = E.modCost(s, k, m); if (!best || c < best[2]) best = [k, m, c]; }
                 if (best && E.buyMod(s, best[0], best[1])) more = true;
             }
             for (const n of [...E.DRONE_TREE].sort((a, b) => a.cost - b.cost)) if (E.buyDroneNode(s, n.id)) mark("dnode " + n.id, t);
@@ -79,6 +84,7 @@ while (t < hours * 3600) {
             for (const x of [1, 5, 15, 30, 45, 60, 75]) if (r >= x) mark(`mastery ${x}`, t);
         }
         E.checkGoals(s);
+        if (ZE && s.ze) for (const e of [...s.ze.act]) { if (e.kind === "vein") ZE.zeChoose(s, e.id, "mine"); else if (e.kind === "fault") ZE.zeChoose(s, e.id, "patch"); }
         // NF_TRACE=<minutes>: print a status line every that many play minutes (to find walls and runaways)
         if (process.env.NF_TRACE && t >= (marks.nextTrace || 0)) { marks.nextTrace = t + 60 * Number(process.env.NF_TRACE); console.log("t", (t / 3600).toFixed(2), "b/s", E.fmt(E.derive(s).bytesPerSec), "ae", E.fmt(s.aether), "or", E.fmt(s.origin), "px", E.fmt(s.paradox), "ap+", E.apOnAscend(s), "asc", s.life.ascends, "tree", s.tree.length, "G", E.fmt(E.derive(s).global), "ap", s.ap, "mounts", s.mounts.join("+"), "prod", MATS_P(s)); }
         if (s.reboot >= 1) mark("first reboot", t);

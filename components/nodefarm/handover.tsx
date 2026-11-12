@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState, type CSSProperties } from "react";
 import {
     FW, FW_SECS, HAND_TUNE, PROTOS, canSwitchProto, fmt, fmtTime, fwNode, fwNodeOpen, fwTotals, fwVis, handFx, handKeeps, handOpen, isUnlocked,
-    keysOnHandover, protoDef, statDef, treeCount, treeSpent, type ProtoId, type State,
+    keysOnHandover, masteryRanks, protoDef, protoRank, ROMAN, statDef, treeCount, treeSpent, type ProtoId, type State,
 } from "@/lib/nodefarm/engine";
 import { NfIcon } from "./icon";
 import type { TreeModel } from "./tree";
@@ -148,8 +148,17 @@ function Ledger({ s }: { s: State }) {
         `AP and perks${f.perkKeep ? ` (half the perk levels stay: Perk cache)` : ""}`,
         `The prestige tree${kept ? ` (${kept} nodes stay: Imprint)` : ""}${back ? `, ${fmt(back)} AP back (Tape backup)` : ""}`,
         "Drones, Mounted drives and Exploit Lab Intel and stock",
+        `Rig levels${f.rigKeep ? ` (half stay: Rig memory)` : ""}`,
     ];
-    const keeps = ["Goals, secrets and story logs", "Exploit Lab research", ...(s.auto?.own.length ? ["Scripts you have learned"] : []), "Lifetime stats and your Ascend count", "Keys, Firmware and your notes"];
+    const keeps = [
+        "Goals, secrets and operator logs",
+        "Exploit Lab research",
+        ...(s.auto?.own.length ? ["Scripts you have learned"] : []),
+        ...(s.dr?.nodes.length || masteryRanks(s) ? ["The hangar: postings, mastery and the drone tree"] : []),
+        "Rig switches and zone event history",
+        "Lifetime stats and your Ascend count",
+        "Keys, Firmware, protocol ranks and your notes",
+    ];
     return (
         <section className="nf-hx-ledger" data-cx-i="3">
             <div><h4>Wipes</h4><ul>{wipes.map((x) => <li key={x}>{x}</li>)}</ul></div>
@@ -165,19 +174,22 @@ function Protocols({ s, pick, pick2, onPick, onPick2 }: { s: State; pick: ProtoI
     const running = s.hand.proto;
     return (
         <section className="nf-hx-proto" data-cx-i="2">
-            <header className="nf-sys-h">
+            <header className="nf-sys-h" data-path="handover/protocol">
                 <h3>Protocol</h3>
                 <p>
                     {s.hand.count === 0 ? "The next operator runs one of the old operators' protocols for the whole cycle. Pick it before you hand over." : live ? "Operator's desk: a change takes effect at once." : "Your pick takes effect at the next Handover."}
                     {running ? ` Running now: ${protoDef(running).op}, ${protoDef(running).name}.` : ""}
+                    {" "}Hand over on a protocol and it ranks up (I to III), each rank 25% stronger.
                 </p>
             </header>
             <div className="nf-hx-ops" role="radiogroup" aria-label="Protocol">
                 {PROTOS.map((p) => {
                     const on = pick === p.id;
+                    const rk = protoRank(s, p.id);
                     return (
                         <button key={p.id} type="button" role="radio" aria-checked={on} className="nf-hx-op" data-run={running === p.id ? "" : undefined} style={{ ["--c" as string]: p.color } as CSSProperties} onClick={() => onPick(p.id)}>
                             <span className="nf-hx-op-k">{p.op.toUpperCase()} // {running === p.id ? "RUNNING" : on ? "PICKED" : "PROTOCOL"}</span>
+                            <span className="nf-hx-rank" aria-label={`Rank ${rk} of ${HAND_TUNE.rankMax}`}>{Array.from({ length: HAND_TUNE.rankMax }, (_, i) => <i key={i} data-on={i < rk ? "" : undefined} />)}<small>{rk ? `RANK ${ROMAN[rk]} · x${(1 + HAND_TUNE.rankStep * rk).toFixed(2)}` : "UNRANKED"}</small></span>
                             <b>{p.name}</b>
                             <span className="nf-hx-op-fx">{p.blurb}</span>
                             <q>{p.flavor}</q>
@@ -202,9 +214,9 @@ function Gateway({ s, onFirmware }: { s: State; onFirmware: () => void }) {
     const ready = fwReady(s);
     return (
         <section className="nf-hx-gate" data-cx-i="4">
-            <header className="nf-sys-h">
+            <header className="nf-sys-h" data-path="handover/firmware">
                 <h3>Firmware</h3>
-                <p>{FW.length} upgrades in three sections, flashed with Keys. {s.hand.keys} Keys held{ready ? `, ${ready} ready to flash` : ""}.</p>
+                <p>{FW.length} upgrades in {["one", "two", "three", "four", "five"][FW_SECS.length - 1]} sections, flashed with Keys. {s.hand.keys} Keys held{ready ? `, ${ready} ready to flash` : ""}.</p>
             </header>
             <button type="button" className="nf-hx-portal" onClick={onFirmware} aria-label="Open the Firmware tree" disabled={s.hand.count === 0 && s.hand.keys === 0} title={s.hand.count === 0 && s.hand.keys === 0 ? "Your first Handover pays the Keys" : undefined}>
                 <span className="nf-hx-glass" aria-hidden="true"><i data-l="0" /><i data-l="1" /><i className="nf-hx-glass-core" /></span>
@@ -227,7 +239,7 @@ function Gateway({ s, onFirmware }: { s: State; onFirmware: () => void }) {
 function Notes({ s, note, setNote }: { s: State; note: string; setNote: (v: string) => void }) {
     return (
         <section className="nf-hx-notes" data-cx-i="5">
-            <header className="nf-sys-h">
+            <header className="nf-sys-h" data-path="handover/note">
                 <h3>Handover note</h3>
                 <p>Optional. Every operator before you left one. Yours shows up here and in Records.</p>
             </header>

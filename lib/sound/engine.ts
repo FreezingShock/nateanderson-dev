@@ -178,6 +178,13 @@ export function gate(id: string, tier: number, minGap: number): boolean {
     return true;
 }
 
+// A per-call loudness multiplier, set around one sound's play() by Node Farm's mixer (lib/nodefarm/sound.ts) so every
+// system can have its own volume. Voices read it synchronously when they are created, so it never leaks to other sounds.
+let level = 1;
+export function setLevel(n: number) {
+    level = Number.isFinite(n) ? Math.max(0, Math.min(1, n)) : 1;
+}
+
 const semi = (n: number) => 2 ** (n / 12);
 const SCALE = [0, 2, 4, 7, 9]; // major pentatonic
 /** Frequency of scale degree i (0 = C4), going up through octaves, and down for negatives. */
@@ -205,7 +212,7 @@ export function tone(bus: Bus, o: Tone) {
     const { ctx } = g;
     const t0 = ctx.currentTime + (o.at ?? 0) + 0.004;
     const dur = o.dur ?? 0.16;
-    const peak = (o.gain ?? 0.2) * 0.9;
+    const peak = (o.gain ?? 0.2) * 0.9 * level;
     const atk = o.attack ?? 0.008;
     const out = ctx.createGain();
     out.gain.setValueAtTime(0.0001, t0);
@@ -262,7 +269,7 @@ export function whoosh(bus: Bus, o: Whoosh) {
     bp.frequency.exponentialRampToValueAtTime(o.to, t0 + dur);
     const out = ctx.createGain();
     out.gain.setValueAtTime(0.0001, t0);
-    out.gain.linearRampToValueAtTime((o.gain ?? 0.1) * 0.9, t0 + dur * 0.35);
+    out.gain.linearRampToValueAtTime((o.gain ?? 0.1) * 0.9 * level, t0 + dur * 0.35);
     out.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
     src.connect(bp);
     bp.connect(out);
@@ -291,7 +298,7 @@ export function keyClick(bus: Bus, o: KeyClick) {
     bp.frequency.value = o.f;
     bp.Q.value = o.q ?? 4;
     const out = ctx.createGain();
-    out.gain.setValueAtTime(o.gain ?? 0.04, t0);
+    out.gain.setValueAtTime((o.gain ?? 0.04) * level, t0);
     out.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
     src.connect(bp);
     bp.connect(out);
@@ -326,7 +333,7 @@ let humNodes: Hum | null = null;
  * raises the pitch a little as the reactor spins up. It only sounds while sound is on and the audio context is running,
  * so it respects the sound switch, the hidden-tab sleep and the first-gesture rule without extra work from the caller.
  */
-export function setHum(s: { level: number; boost?: boolean } | null) {
+export function setHum(s: { level: number; boost?: boolean; vol?: number } | null) {
     load();
     const live = !!s && prefs.on && !!g && g.ctx.state === "running";
     if (!live) {
@@ -380,5 +387,6 @@ export function setHum(s: { level: number; boost?: boolean } | null) {
     for (const o of [h.a, h.b]) o.frequency.setTargetAtTime(f, t, 0.4);
     h.sub.frequency.setTargetAtTime(f / 2, t, 0.4);
     h.lp.frequency.setTargetAtTime(140 + lv * 520 + (s.boost ? 200 : 0), t, 0.4);
-    h.out.gain.setTargetAtTime(0.01 + lv * 0.014, t, 0.3);
+    const vol = s.vol !== undefined && Number.isFinite(s.vol) ? Math.max(0, Math.min(1, s.vol)) : 1;
+    h.out.gain.setTargetAtTime((0.01 + lv * 0.014) * vol, t, 0.3);
 }

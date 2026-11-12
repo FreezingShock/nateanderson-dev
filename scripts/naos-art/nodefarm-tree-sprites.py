@@ -32,7 +32,7 @@ SECS = {"signal": "#2fd8e8", "forge": "#ffc53a", "systems": "#6bffc9", "drones":
 SECS.update({"exploits": "#59b8ff", "malware": "#8f9bff", "infra": "#5ff0e8", "labcore": "#4aa3ff"})
 # the drone tree (nodefarm_drone_motifs.py): warm hangar colours
 SECS.update({"flight": "#ffb14a", "dispatch": "#6bffc9", "salvage": "#ff7a4a", "hangarcore": "#c9d2e0"})
-SECS.update({"boot": "#3dff6e", "memory": "#ffc53a", "relay": "#64e6ff", "fwcore": "#3dff6e"})
+SECS.update({"boot": "#3dff6e", "memory": "#ffc53a", "relay": "#64e6ff", "field": "#ff7ab6", "fwcore": "#3dff6e"})
 
 
 def hx(h):

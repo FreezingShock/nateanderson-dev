@@ -1,8 +1,9 @@
 // Node Farm guidance: what to do next, why a zone is still locked, and what a button will do. Pure rules on top of the
 // engine (no React), so every number comes from `TUNE` and the engine's own `button`/`derive` and follows any rebalance.
 import {
+    chOff,
     GOALS, MATS, PERKS, TIERS, TREE, TUNE, REBOOT_UNLOCK,
-    ARC_MATS, LAB, PAYLOADS, intelRate, amount, apOnAscend, ascendNeed, unlockNeed, FW, fwNodeOpen, keysOnHandover, treeComplete, button, canAfford, canAscend, derive, droneBoost, droneCost, droneMax, droneRate, dronesOpen, postOf, postX, zoneRank, ROMAN, originAp, paradoxOc, bloomKeys, coreAll, singularityAll, fmt, fmtTime, goalDone, hasNode, isUnlocked, nodeOpen, statDef,
+    ARC_MATS, LAB, PAYLOADS, intelRate, amount, apOnAscend, ascendNeed, unlockNeed, FW, fwNodeOpen, keysOnHandover, treeComplete, button, canAfford, canAscend, derive, droneBoost, droneCost, droneMax, droneRate, dronesOpen, postOf, postX, zoneRank, ROMAN, originAp, paradoxOc, bloomKeys, sunstoneAll, singularityAll, fmt, fmtTime, goalDone, hasNode, isUnlocked, nodeOpen, statDef,
     type ButtonStat, type Derived, type MatId, type State, type StatId,
 } from "./engine";
 import { LORE } from "./lore";
@@ -48,7 +49,10 @@ const etaTo = (s: State, d: Derived, id: StatId, need: number) => {
 };
 
 /** The full number for a hover title, for when the short form ("1.24M") is not enough. */
-export const exact = (n: number) => (!Number.isFinite(n) ? "" : Math.abs(n) >= 1e15 ? n.toExponential(4) : n.toLocaleString("en-US", { maximumFractionDigits: Math.abs(n) < 100 ? 2 : 0 }));
+// one formatter each: toLocaleString builds an Intl object on every call, which showed up at the top of the board profile
+const NF2 = new Intl.NumberFormat("en-US", { maximumFractionDigits: 2 });
+const NF0 = new Intl.NumberFormat("en-US", { maximumFractionDigits: 0 });
+export const exact = (n: number) => (!Number.isFinite(n) ? "" : Math.abs(n) >= 1e15 ? n.toExponential(4) : (Math.abs(n) < 100 ? NF2 : NF0).format(n));
 
 /** Short form for a wait: "about 4m 10s". Null when nothing is producing toward it. */
 export const etaText = (eta: number | null) => (eta === null || eta <= 0 ? "" : eta > 99 * 3600 ? "a very long time" : fmtTime(eta));
@@ -95,7 +99,7 @@ export function unlockInfo(s: State, id: StatId): { label: string; cur: number; 
 
 /** Whether the player has something to spend Ascension Points on right now. */
 function canSpendAp(s: State): boolean {
-    if (s.ap <= 0) return false;
+    if (s.ap <= 0 || chOff(s, "prestige")) return false; // locked during a stress test
     if (PERKS.some((p) => s.perks[p.id] < p.max && s.ap >= p.cost(s.perks[p.id]))) return true;
     return TREE.some((n) => !hasNode(s, n.id) && nodeOpen(s, n) && s.ap >= n.cost);
 }
@@ -230,7 +234,7 @@ export function feedLine(id: StatId, s: State, d: Derived): string {
         case "basalt": return `Bloom ×${fmt(b.baBl)}`;
         case "magma": return `Basalt ×${fmt(b.mgBa)}`;
         case "geodes": return `Magma ×${fmt(b.geMg)}`;
-        case "core": return `Geodes ×${fmt(b.coGe)}, everything ×${fmt(coreAll(s))}`;
+        case "sunstone": return `Geodes ×${fmt(b.suGe)}, everything ×${fmt(sunstoneAll(s))}`;
     }
 }
 

@@ -8,6 +8,7 @@
 .ctos .nf-sidepane[data-pane="records"] { --sw: #f0a53c; }
 .ctos .nf-sidepane[data-pane="ascend"] { --sw: #ff2d8a; }
 .ctos .nf-sidepane[data-pane="handover"] { --sw: #3dff6e; }
+.ctos .nf-sidepane[data-pane="codex"] { --sw: #ff6b57; }
 .ctos .nf-sidepane[data-pane="menu"] { --sw: #b6f04a; }
 
 @keyframes nfSwPip { 50% { opacity: .25; } }
@@ -128,7 +129,9 @@
 }
 .ctos .nf-sw-ph .nf-tab::before { content: ""; position: absolute; left: -1px; right: -1px; top: -1px; height: 2px; background: var(--sw); opacity: 0; }
 .ctos .nf-sw-ph .nf-sw-l { max-width: 100%; font: 700 11px/1 var(--cm-mono); letter-spacing: .1em; text-transform: uppercase; color: #d8d8d8; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.ctos .nf-sw-ph .nf-sw-r { max-width: 100%; font: 500 11px/1 var(--cm-mono); letter-spacing: 0; color: var(--cm-ctos-meta); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-variant-numeric: tabular-nums; }
+.ctos .nf-sw-ph .nf-sw-r { max-width: 100%; font: 500 11px/1 var(--cm-mono); letter-spacing: 0; color: var(--cm-ctos-meta); white-space: normal; overflow-wrap: anywhere; overflow: hidden; text-overflow: ellipsis; font-variant-numeric: tabular-nums; }
+/* the readout wraps to a second line instead of cutting "1000 AP free" to "1000 AP f…" in a 60px cell */
+@media (min-width: 360px) { .ctos .nf-sw-ph .nf-sw-r { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; line-height: 1.15; } }
 .ctos .nf-sw-ph .nf-sw-pip { right: 6px; top: 6px; }
 .ctos .nf-sw-ph .nf-tab[aria-pressed="true"] { background: color-mix(in srgb, var(--sw) 14%, #0e0e0e); border-color: color-mix(in srgb, var(--sw) 70%, #1c1c1c); color: inherit; }
 .ctos .nf-sw-ph .nf-tab[aria-pressed="true"]::before { opacity: 1; }
@@ -137,8 +140,18 @@
 .ctos .nf-sw-ph .nf-tab:active { background: color-mix(in srgb, var(--sw) 22%, #0e0e0e); }
 .ctos .nf-sw-ph .nf-tab:focus-visible { outline: 2px solid var(--sw); outline-offset: 2px; }
 .ctos .nf-sw-ph .nf-tab[data-guide] { --c: var(--sw); border-color: var(--sw); }
+/* ten sections in five columns: smaller labels so Handover and Records are not cut short */
+.ctos .nf-sw-ph[data-cols="5"] .nf-sw-l { font-size: 10px; letter-spacing: .02em; }
+.ctos .nf-sw-ph[data-cols="5"] .nf-sw-r { font-size: 10px; letter-spacing: 0; }
 @media (max-width: 359px) { .ctos .nf-sw-ph .nf-sw-r { display: none; } .ctos .nf-sw-ph .nf-tab { min-height: 54px; grid-template-rows: 22px auto; } }
 
 @media (prefers-reduced-motion: reduce) {
     .ctos .nf-sw-pip, .ctos .nf-sw-b[data-hot]::before, .ctos .nf-sw-hb[data-hot]::after { animation: none; }
+}
+
+/* nine or ten windows in the rail: the key badge would cut the label and the status line, so it shows on hover and focus only */
+@media (min-width: 1000px) and (max-width: 1699px) {
+    .ctos .nf-sw[data-many] .nf-sw-b:not([data-compact]) .nf-sw-k { display: none; }
+    .ctos .nf-sw[data-many] .nf-sw-b:not([data-compact]):is(:hover, :focus-visible) .nf-sw-k { display: block; position: absolute; right: 6px; top: 6px; }
+    .ctos .nf-sw[data-many] .nf-sw-b { grid-template-columns: 24px minmax(0, 1fr); gap: 8px; padding-left: 12px; }
 }
