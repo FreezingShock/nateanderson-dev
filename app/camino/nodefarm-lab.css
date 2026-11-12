@@ -53,33 +53,10 @@
 
 /* ---- blueprint backdrop */
 .nf-lbd { position: absolute; inset: 0; z-index: 0; overflow: hidden; pointer-events: none; contain: strict; background: radial-gradient(ellipse at 50% 46%, #0b3c7c 0, #052452 42%, #020d20 100%); }
-/* each layer is its own GPU layer, painted once and moved by components/nodefarm/parallax.ts (transform only) */
-.nf-lbd-g { position: absolute; left: 0; top: 0; width: 0; height: 0; transform-origin: 0 0; will-change: transform; contain: strict; background-repeat: repeat; background-size: var(--t) var(--t); background-position: var(--s, 0) var(--s, 0); }
-.nf-lbd-g[data-l="0"] { background-image: url(/naos/nodefarm/lab-bg-0.webp?v=30a198d2); image-rendering: pixelated; opacity: .62; }
-.nf-lbd-g[data-l="1"] { background-image: linear-gradient(#5aa8ff10 1px, transparent 1px), linear-gradient(90deg, #5aa8ff10 1px, transparent 1px); opacity: .9; }
-.nf-lbd-g[data-l="2"] { background-image: linear-gradient(#5aa8ff22 1px, transparent 1px), linear-gradient(90deg, #5aa8ff22 1px, transparent 1px); }
-.nf-lbd-g[data-l="3"] { background-image: url(/naos/nodefarm/lab-bg-2.webp?v=a8241b78); image-rendering: pixelated; opacity: .8; animation: nfLbdSway 14s ease-in-out infinite alternate; }
-/* the world grid: dotted crosses at every half unit, glued to the nodes */
-.nf-lbd-g[data-l="4"] { background-image: radial-gradient(circle, #9fd0ff66 0 1.5px, transparent 2px); opacity: .7; }
-.nf-lbd-w { position: absolute; left: 0; top: 0; width: 0; height: 0; transform-origin: 0 0; will-change: transform; }
-.nf-lbd-w i { position: absolute; display: block; translate: -50% -50%; border-radius: 50%; }
-.nf-lbd-core { width: 1152px; height: 1152px; background: url(/naos/nodefarm/lab-core.webp?v=d0edc6a5) center / 100% 100% no-repeat; image-rendering: pixelated; animation: nfLbdPulse 6s ease-in-out infinite; }
-.nf-lbd-sec { width: 1536px; height: 1536px; background: center / 100% 100% no-repeat; image-rendering: pixelated; opacity: .85; transition: opacity .5s; }
-.nf-lbd-sec[data-sec="exploits"] { background-image: url(/naos/nodefarm/lab-sec-exploits.webp?v=0682e900); }
-.nf-lbd-sec[data-sec="malware"] { background-image: url(/naos/nodefarm/lab-sec-malware.webp?v=f6e00651); }
-.nf-lbd-sec[data-sec="infra"] { background-image: url(/naos/nodefarm/lab-sec-infra.webp?v=5a480fd4); }
-.nf-lbd[data-focus] .nf-lbd-sec { opacity: .45; }
-.nf-lbd[data-focus="exploits"] .nf-lbd-sec[data-sec="exploits"], .nf-lbd[data-focus="malware"] .nf-lbd-sec[data-sec="malware"], .nf-lbd[data-focus="infra"] .nf-lbd-sec[data-sec="infra"] { opacity: 1; }
-/* drafting circles round the core, dashed like construction lines */
-.nf-lbd-ring { border: 2px dashed #5aa8ff2e; border-radius: 50%; }
-.nf-lbd-ring[data-r="2"] { border-style: solid; border-width: 1px; border-color: #5aa8ff1f; }
-.nf-lbd-ring[data-r="3"] { border-color: #5aa8ff14; }
 .nf-lbd-scan { position: absolute; left: 0; right: 0; top: 0; height: 30%; display: block; background: linear-gradient(transparent, #5aa8ff0d 70%, #9fd0ff1a 99%, transparent); animation: nfLbdScan 9s linear infinite; }
 .nf-lbd-vig { position: absolute; inset: 0; display: block; background: radial-gradient(ellipse at center, transparent 55%, #000a1ccc 100%), repeating-linear-gradient(0deg, transparent 0 3px, #00000018 3px 4px); }
-@keyframes nfLbdPulse { 0%, 100% { opacity: .8; } 50% { opacity: 1; } }
-@keyframes nfLbdSway { from { translate: -8px 0; } to { translate: 8px 6px; } }
 @keyframes nfLbdScan { from { translate: 0 -100%; } to { translate: 0 400%; } }
-@media (prefers-reduced-motion: reduce) { .nf-lbd-core, .nf-lbd-scan, .nf-lbd-g { animation: none; } .nf-lbd-scan { display: none; } }
+@media (prefers-reduced-motion: reduce) { .nf-lbd-scan { animation: none; display: none; } }
 
 /* ---- board zone */
 .ctos .nf-lab { --c: #4aa3ff; background: linear-gradient(#5aa8ff0a 1px, transparent 1px) 0 0 / 22px 22px, linear-gradient(90deg, #5aa8ff0a 1px, transparent 1px) 0 0 / 22px 22px, #04112a; border-color: #2c5a92; }
