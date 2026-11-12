@@ -53,7 +53,7 @@ export function recordSections(s: State): RecordSection[] {
         ["Reboots ever", fmt(s.life.reboots)],
         ["Ascensions", String(s.life.ascends)],
         ["AP earned", String(s.life.apTotal)],
-        ["Intrusions won", String(s.life.intrusions)],
+        ["Quick-time events won", String(s.life.intrusions)],
         ["Standby filled", `${s.life.capped} time${s.life.capped === 1 ? "" : "s"}`],
     ];
     const mats: [string, string][] = MATS.filter((m) => s[m] > 0 || s.prod[m] > 0).map((m) => [statDef(m).name, `${fmt(s[m])} · ${fmt(s.prod[m])} nodes · +${fmt(d.rates[m])}/s`]);
@@ -75,7 +75,7 @@ export function recordSections(s: State): RecordSection[] {
     if (s.lab.seen) out.push({ id: "lab", title: "Exploit Lab", blurb: "Research and stock survive Ascend; Intel does not.", rows: [
         ["Intel", `${fmt(s.lab.intel)} · +${fmt(intelRate(s, d.bytesPerSec))}/s`],
         ["Research", `${s.lab.nodes.length} / ${LAB.length}`],
-        ["Recipes", `${PAYLOADS.filter((p) => s.lab.nodes.includes(`rx_${p.id}`)).length} / ${PAYLOADS.length}`],
+        ["Payloads", `${PAYLOADS.filter((p) => s.lab.nodes.includes(`rx_${p.id}`)).length} / ${PAYLOADS.length}`],
         ["Intel, lifetime", fmt(s.life.intel)],
         ["Payloads compiled", fmt(s.life.compiled)],
         ["Payloads deployed", fmt(s.life.deployed)],
@@ -103,7 +103,7 @@ export interface NfLine {
 const t = (text: string, k?: NfLine["k"]): NfLine => ({ t: text, k });
 const row = (a: string, b: string, go?: string): NfLine => ({ a, b, go });
 
-export const NF_SUBS = ["stats", "goals", "secrets", "logs", "archive", "news", "open", "anim", "fs", "fullscreen", "art"];
+export const NF_SUBS = ["stats", "goals", "secrets", "logs", "archive", "news", "open", "anim", "fs", "fullscreen", "art", "core"];
 
 export interface NfResult {
     lines: NfLine[];
@@ -133,7 +133,7 @@ export function nfCommand(s: State, args: string[]): NfResult {
             row("goals", `${c.goals}/${c.goalTotal}`),
             row("secrets", `${c.secrets}/${c.secretTotal}`),
             ...(handSeen(s) ? [row("handovers", `${s.hand.count}  (${s.hand.keys} keys)`)] : []),
-            t("nf stats · nf goals · nf secrets · nf logs · nf lab · nf handover · nf cron · nf archive · nf open", "dim"),
+            t("nf stats · nf goals · nf secrets · nf logs · nf news · nf lab · nf handover · nf cron · nf archive · nf open", "dim"),
         ];
     } else if (sub === "stats") {
         lines = recordSections(s).flatMap((sec) => [t(sec.title.toLowerCase(), "hi"), ...sec.rows.map(([a, b]) => row(a.toLowerCase(), b))]);
@@ -229,7 +229,7 @@ export function nfCommand(s: State, args: string[]): NfResult {
     } else if (sub === "whoami") {
         lines = [t("node-01. one core, no clearance, and a growing farm."), ...secret("x_self")];
     } else {
-        lines = [t(`nf: unknown: ${args[0]}`, "err"), t("nf stats · nf goals · nf secrets · nf logs · nf lab · nf handover · nf cron · nf archive · nf open", "dim")];
+        lines = [t(`nf: unknown: ${args[0]}`, "err"), t("nf stats · nf goals · nf secrets · nf logs · nf news · nf lab · nf handover · nf cron · nf archive · nf open", "dim")];
     }
     return { lines, unlocked: found };
 }

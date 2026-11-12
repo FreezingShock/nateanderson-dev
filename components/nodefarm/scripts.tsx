@@ -171,7 +171,7 @@ function Rules({ id, s, onChange }: { id: ScriptId; s: State; onChange: (msg?: s
     }
     if (id === "compile" || id === "deploy") {
         const list = PAYLOADS.filter((p) => hasRecipe(s, p.id));
-        if (!list.length) return <p className="nf-sch-hint">No recipes yet. Research one in the Exploit Lab and it shows up here.</p>;
+        if (!list.length) return <p className="nf-sch-hint">No payloads yet. Research one in the Exploit Lab and it shows up here.</p>;
         return (
             <ul className="nf-sch-pay" aria-label={id === "compile" ? "Stock levels" : "Payloads to deploy"}>
                 {list.map((p) => (

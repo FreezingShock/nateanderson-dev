@@ -3,6 +3,7 @@
 // components/nodefarm/admin.tsx. Easy to remove: delete this file, admin.tsx, nodefarm-admin.css, and the few
 // `admin` lines in node-farm.tsx, events.tsx and components/cm/console.tsx.
 import { grantScripts } from "./scripts";
+import { maxRigs } from "./rigs";
 import {
     DRONE_TREE, DRONE_TUNE, POSTABLE, freshDr, modMax,
     FW, handover, GOALS, LAB, LAB_TUNE, MATS, PAYLOADS, PERKS, SECRETS, STATS, TIERS, TREE, TREE_FULL, TUNE, ascend, ascendNeed, apOnAscend, derive, droneMax, exportSave, freshLab, fullTreeIds, parseSave, tick, treeFx, treeSpent, unlock,
@@ -162,6 +163,7 @@ export function maxOut(s: State) {
     grantLogs(s);
     grantLab(s);
     grantScripts(s);
+    maxRigs(s);
     s.life.ascends = Math.max(s.life.ascends, 10);
     s.life.reboots = Math.max(s.life.reboots, 1000);
     s.life.apTotal = Math.max(s.life.apTotal, 1000);

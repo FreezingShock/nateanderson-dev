@@ -2,7 +2,7 @@
 // engine (no React), so every number comes from `TUNE` and the engine's own `button`/`derive` and follows any rebalance.
 import {
     GOALS, MATS, PERKS, TIERS, TREE, TUNE, REBOOT_UNLOCK,
-    LAB, PAYLOADS, intelRate, amount, apOnAscend, ascendNeed, unlockNeed, FW, fwNodeOpen, keysOnHandover, treeComplete, button, canAfford, canAscend, derive, droneBoost, droneCost, droneMax, droneRate, dronesOpen, postOf, postX, zoneRank, ROMAN, originAp, paradoxOc, singularityAll, fmt, fmtTime, goalDone, hasNode, isUnlocked, nodeOpen, statDef,
+    ARC_MATS, LAB, PAYLOADS, intelRate, amount, apOnAscend, ascendNeed, unlockNeed, FW, fwNodeOpen, keysOnHandover, treeComplete, button, canAfford, canAscend, derive, droneBoost, droneCost, droneMax, droneRate, dronesOpen, postOf, postX, zoneRank, ROMAN, originAp, paradoxOc, bloomKeys, coreAll, singularityAll, fmt, fmtTime, goalDone, hasNode, isUnlocked, nodeOpen, statDef,
     type ButtonStat, type Derived, type MatId, type State, type StatId,
 } from "./engine";
 import { LORE } from "./lore";
@@ -82,6 +82,8 @@ export function unlockInfo(s: State, id: StatId): { label: string; cur: number; 
         const need = button(s, "reboot", 0).cost;
         return { label: "Run your first Reboot", cur: s.mult, need, unit: "MUL", frac: isUnlocked(s, "reboot") ? fracOf(s.mult, need) : 0 };
     }
+    // the Overgrowth and Descent arcs stay shut until the first Handover
+    if (ARC_MATS.includes(id as MatId) && !(s.hand?.count > 0)) return { label: "Hand the node over once", cur: 0, need: 1, unit: "HANDOVER", frac: 0 };
     const i = MATS.indexOf(id as MatId);
     const below = MATS[i - 1] as MatId | undefined;
     if (!below) return { label: "", cur: 0, need: 1, unit: "", frac: 0 };
@@ -139,7 +141,7 @@ export function nextStep(s: State, d: Derived): Step {
     // ---- the Exploit Lab, once, when it opens: research a recipe, then compile and deploy it
     if (s.lab.seen && s.lab.nodes.length === 0) {
         const need = Math.min(...LAB.filter((n) => n.links.includes("core")).map((n) => n.cost));
-        if (s.lab.intel >= need * 0.5) return mk({ id: "lab-research", kicker: "EXPLOIT LAB", title: "Research your first recipe", why: "Intel runs alongside Bytes. Open the research tree and pick Packet sniffer or Rootkit.", cur: s.lab.intel, need, unit: "IN", eta: s.lab.intel >= need ? null : (need - s.lab.intel) / Math.max(1e-9, intelRate(s, d.bytesPerSec)), target: { win: "lab" } });
+        if (s.lab.intel >= need * 0.5) return mk({ id: "lab-research", kicker: "EXPLOIT LAB", title: "Research your first payload", why: "Intel runs alongside Bytes. Open the research tree and pick Packet sniffer or Rootkit.", cur: s.lab.intel, need, unit: "IN", eta: s.lab.intel >= need ? null : (need - s.lab.intel) / Math.max(1e-9, intelRate(s, d.bytesPerSec)), target: { win: "lab" } });
     }
     if (s.lab.nodes.length > 0 && s.life.compiled === 0 && s.lab.queue.length === 0 && PAYLOADS.some((p) => s.lab.nodes.includes(`rx_${p.id}`))) {
         return mk({ id: "lab-compile", kicker: "EXPLOIT LAB", title: "Compile your first payload", why: "Press Compile in the Lab. When it lands in stock, press Deploy for the buff.", cur: 0, need: 1, unit: "", eta: null, target: { lab: true } });
@@ -153,7 +155,7 @@ export function nextStep(s: State, d: Derived): Step {
             // Aether is online: Drones are cheap, then Ascend is the next big step
             const drones = s.drones.reduce((a, b) => a + b, 0);
             if (dronesOpen(s) && drones === 0 && s.aether >= droneCost(s, 0)) {
-                return mk({ id: "first-drone", title: "Build a Drone", why: "Drones press buttons for you, even while you are away. Open the Drone bay and build a Probe.", cur: s.aether, need: droneCost(s, 0), unit: "AE", pay: "aether", target: { drone: 0 } });
+                return mk({ id: "first-drone", title: "Build a Drone", why: "Drones press buttons for you, even while you are away. Open the Drone hangar and build a Probe.", cur: s.aether, need: droneCost(s, 0), unit: "AE", pay: "aether", target: { drone: 0 } });
             }
             // once, after the first Drone: post it somewhere so the hangar's mastery and Cores start
             if (drones > 0 && s.dr.post.every((p) => !p) && zoneRank(s, "mult") === 0 && !s.dr.nodes.length && !Object.keys(s.dr.svc).length) {
@@ -221,6 +223,14 @@ export function feedLine(id: StatId, s: State, d: Derived): string {
         case "engrams": return `Singularity ×${fmt(b.egSn)}, Drones ×${fmt(droneBoost(s))}`;
         case "paradox": return `Engrams ×${fmt(b.pxEg)}, Overclock ×${fmt(paradoxOc(s))}`;
         case "origin": return `Paradox ×${fmt(b.orPx)}, AP on Ascend ×${fmt(originAp(s))}`;
+        case "spores": return `Origin ×${fmt(b.spOr)}`;
+        case "mycelium": return `Spores ×${fmt(b.mySp)}`;
+        case "pollen": return `Mycelium ×${fmt(b.poMy)}`;
+        case "bloom": return `Pollen ×${fmt(b.blPo)}, Keys on Handover ×${fmt(bloomKeys(s))}`;
+        case "basalt": return `Bloom ×${fmt(b.baBl)}`;
+        case "magma": return `Basalt ×${fmt(b.mgBa)}`;
+        case "geodes": return `Magma ×${fmt(b.geMg)}`;
+        case "core": return `Geodes ×${fmt(b.coGe)}, everything ×${fmt(coreAll(s))}`;
     }
 }
 
@@ -278,7 +288,7 @@ export function buttonTip(s: State, stat: ButtonStat, tier: number): TipInfo {
         title: LORE[stat].tiers[tier],
         note: stat === "reboot" ? undefined : "Hold the button to keep buying.",
         rows,
-        status: afford ? (stat === "reboot" ? "Ready. Press to reboot." : "Ready. Press to buy.") : `Short by ${fmt(b.cost - have)} ${pays.short}${etaText(eta) ? `, about ${etaText(eta)}` : ""}.`,
+        status: afford ? (stat === "reboot" ? "Ready. Press to Reboot." : "Ready. Press to buy.") : `Short by ${fmt(b.cost - have)} ${pays.short}${etaText(eta) ? `, about ${etaText(eta)}` : ""}.`,
         tone: afford ? "ok" : "wait",
     };
 }
@@ -308,7 +318,7 @@ export function droneTip(s: State, tier: number): TipInfo {
     const eta = etaTo(s, derive(s), "aether", cost);
     return {
         color: statDef("aether").color,
-        kicker: "Drone bay",
+        kicker: "DRONE HANGAR",
         title: `T${tier + 1} ${DRONE_NAMES[tier]}`,
         note: post ? "Posted: it works one zone, faster, and builds that zone's mastery." : "Sweeping: it presses every stat you arm in its zone. Post it to one zone to build mastery.",
         rows,

@@ -103,7 +103,7 @@ function Stage({ s, gain }: { s: State; gain: number }) {
 /** Aether -> Ascend -> AP, as three plain data steps joined by a trace. */
 function Flow({ s, d, gain, confirm, onAscend }: { s: State; d: D; gain: number; confirm: boolean; onAscend: (now?: boolean) => void }) {
     const after = apGlobal(s, gain) / apGlobal(s);
-    const deep = (["runes", "starglass", "voidsteel", "chrono", "nebula", "pulsars", "singularity", "engrams", "paradox", "origin"] as const).filter((m) => s[m] > 0);
+    const deep = (["runes", "starglass", "voidsteel", "chrono", "nebula", "pulsars", "singularity", "engrams", "paradox", "origin", "spores", "mycelium", "pollen", "bloom", "basalt", "magma", "geodes", "core"] as const).filter((m) => s[m] > 0);
     const ready = canAscend(s);
     return (
         <section className="nf-ax-flow" data-cx-i="1">
@@ -117,7 +117,7 @@ function Flow({ s, d, gain, confirm, onAscend }: { s: State; d: D; gain: number;
                 <li style={{ ["--c" as string]: "#ff2d8a" }}>
                     <span className="nf-ax-k" data-cx-scr="">02 // Ascend</span>
                     <span className="nf-ax-v"><NfIcon name="ascend" /><b>{gain > 0 ? `+${gain}` : "0"}</b><small>AP on Ascend</small></span>
-                    <small className="nf-ax-n">Wipes the whole run. Keeps goals, perks, the tree, lab research and stock, and lifetime stats.</small>
+                    <small className="nf-ax-n">Wipes the run. Keeps goals, perks, the tree, lab research and stock, scripts, and lifetime stats.</small>
                 </li>
                 <li style={{ ["--c" as string]: "var(--cm-cyan)" }}>
                     <span className="nf-ax-k" data-cx-scr="">03 // Spend or hold</span>

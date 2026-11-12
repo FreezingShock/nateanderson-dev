@@ -178,14 +178,14 @@ const BASE: News[] = [
     { k: "wry", from: 6, t: "Aether is the only material I have ever seen get shy." },
     { k: "wry", from: 8, t: "Every material on this node is a little smug about the one before it." },
     { k: "wry", ok: (s) => s.life.ascends >= 5, t: "I have started saying thank you to the Ascend button. It does not answer. It does not need to." },
-    { k: "hint", from: 3, to: 8, t: "Arm a stat in the Drone bay to let Drones press it. Disarm one if you want to save it by hand." },
+    { k: "hint", from: 3, to: 8, t: "Arm a stat in the Drone hangar to let Drones press it. Disarm one if you want to save it by hand." },
     { k: "hint", from: 6, ok: (s) => s.life.ascends === 0 && s.aether < 400, t: "Aether comes faster when Runes, Starglass and Quartz are boosted underneath it. Build the chain, not just the top." },
     { k: "hint", ok: (s) => s.tree.length > 3, t: "Start with a branch, then fill it. The inner nodes of a branch cost less than reaching across to a new one." },
 
     // ---- Drones
     { k: "op", ok: (s) => s.drones.some((d) => d > 0), t: "The Drones press faster than I do and never ask what for. I have been thinking about that." },
     { k: "note", ok: (s) => s.drones.some((d) => d > 0), t: "drones.sweep() // nobody is holding the button. the button is being held." },
-    { k: "hint", from: 3, ok: (s) => !s.drones.some((d) => d > 0), t: "Drones are a separate shop in the Drone bay. They press buttons for you. Arm a stat and they get to work." },
+    { k: "hint", from: 3, ok: (s) => !s.drones.some((d) => d > 0), t: "Drones are a separate shop in the Drone hangar. They press buttons for you. Arm a stat and they get to work." },
     { k: "wry", ok: (s) => s.armed.length > 0, t: "A Drone pressed a button I did not tell it to. Filing under initiative." },
 
     // ---- Ascends and the tree
