@@ -77,11 +77,15 @@ export const TUNE = {
     drone: { max: 10, base: 25, ratio: 6, growth: 1.7, rate: 0.25, offline: 0.5, burst: 200 },
     autoReserve: 10, // the Autoloader only buys when the balance is at least this many times the price
     treeCost: 1, // scales every tree node price (pacing knob for the sim)
-    apBonusFromEarned: true, // the AP bonus counts AP spent on nodes and perks too, so spending never lowers it
+    apBonusFromEarned: false, // true: the AP bonus also counts AP spent on nodes and perks. Off because the sim then finishes the tree in 12 to 19 h (AP feeds itself); spending AP is the brake
     watchdogReserve: 1.5, // Watchdog timer Reboots once you hold this many times the price in Multipliers
     dropHours: 4, // Dead drop fills over this many real hours
     dropPays: 3600, // seconds of production in a Dead drop
     zeroDayPays: 600, // seconds of production in a Zero-day payout
+    mountKeep: 1, // fraction of a mounted material's producers kept through Ascend
+    apSoft: 100, // past this many AP, each extra AP counts less toward the global bonus (AP^apSoftPow), so Ascends cannot run away
+    apSoftPow: 0.5,
+    apGainSoft: 250, // past this many AP in one Ascend, the rest grows with the log of the raw amount, so late Ascends cannot run away (0 = off)
 };
 
 export interface PerkDef {
@@ -123,7 +127,7 @@ export interface TreeFx {
     droneCost?: number; // Drones cost this fraction less
     droneOff?: number; // added to Drone speed while away (base 0.5)
     // added with the 40-node tree
-    apEach?: number; // added to what each AP gives (TUNE.apBonus)
+    apEach?: number; // what each AP gives (TUNE.apBonus) x(1 + this), summed
     growth?: number; // button prices climb this fraction slower per purchase
     rebootKeep?: number; // fraction of Multipliers kept on a Reboot
     unlockMul?: number; // materials open at this fraction of the usual amount
@@ -209,11 +213,11 @@ const ARMS: Record<Branch, Row[]> = {
     ],
     systems: [
         [0, "standby", "minor", "Standby plus", "Offline time banks +8 hours.", "Bigger cells, longer naps.", { offline: 8 }],
-        [1, "carrier1", "minor", "Carrier I", "Each AP gives +40% instead of +30%.", "Boosted the carrier. The points carry further.", { apEach: 0.1 }],
+        [1, "carrier1", "minor", "Carrier I", "Each AP adds a third more to everything.", "Boosted the carrier. The points carry further.", { apEach: 1 / 3 }],
         [2, "forecast", "minor", "Forecast", "Every button shows how long until you can afford it.", "Every price comes with an arrival time now.", { feature: "forecast" }],
-        [3, "carrier2", "notable", "Carrier II", "Each AP gives +50%.", "Louder carrier, same message, more of it lands.", { apEach: 0.1 }],
+        [3, "carrier2", "notable", "Carrier II", "Each AP adds another third more.", "Louder carrier, same message, more of it lands.", { apEach: 1 / 3 }],
         [4, "ledger", "minor", "Ledger", "Each goal and secret gives +4% instead of +2%.", "Wrote down every win. The node reads the list at night.", { goals: 0.02 }],
-        [5, "carrier3", "minor", "Carrier III", "Each AP gives +60%.", "The carrier is all you hear now.", { apEach: 0.1 }],
+        [5, "carrier3", "minor", "Carrier III", "Each AP adds another third more: twice the bonus with all three.", "The carrier is all you hear now.", { apEach: 1 / 3 }],
         [6, "deaddrop", "notable", "Dead drop", "A cache fills over 4 hours of real time, even while away. Open it for 1 hour of production.", "Someone leaves a box at the node. No note. Always the right size.", { feature: "deaddrop" }],
         [7, "coldstore", "keystone", "Cold storage", "AP from every Ascend x2.", "Packed the whole run in ice. It thaws worth twice as much.", { ap: 1 }],
     ],
@@ -323,6 +327,50 @@ export function apSpent(s: State): number {
 }
 /** The AP that counts toward the +x% per AP bonus. */
 export const apForBonus = (s: State) => s.ap + (TUNE.apBonusFromEarned ? apSpent(s) : 0);
+/** What one AP adds to everything right now (0.3 = +30%), Carrier nodes included. */
+export const apEach = (s: State) => TUNE.apBonus * (1 + treeFx(s).apEach);
+/** The AP part of the global multiplier, optionally with `extra` AP added. */
+export const apGlobal = (s: State, extra = 0) => 1 + apSoftened(apForBonus(s) + extra) * apEach(s);
+/** AP above TUNE.apSoft counts with diminishing returns. */
+export const apSoftened = (ap: number) => (ap <= TUNE.apSoft ? ap : TUNE.apSoft * Math.pow(ap / TUNE.apSoft, TUNE.apSoftPow));
+
+/** What the owned nodes add up to, as label and value rows for the tree menu readout. */
+export function treeTotals(s: State): [string, string][] {
+    const f = treeFx(s);
+    const x = (v: number) => `x${+(1 + v).toFixed(2)}`;
+    const rows: [string, string][] = [];
+    if (f.global) rows.push(["Everything", x(f.global)]);
+    if (f.bytes) rows.push(["Bytes", x(f.bytes)]);
+    if (f.reboot) rows.push(["Reboot power", x(f.reboot)]);
+    if (f.apEach) rows.push(["Each AP gives", `+${Math.round(apEach(s) * 100)}%`]);
+    if (f.ap) rows.push(["AP on Ascend", x(f.ap)]);
+    if (f.growth) rows.push(["Price climb", `${Math.round(f.growth * 100)}% slower`]);
+    if (f.rebootKeep) rows.push(["Reboot keeps", `${Math.round(f.rebootKeep * 100)}% of Multipliers`]);
+    const mats = Object.entries(f.mats).filter(([, v]) => v);
+    if (mats.length) rows.push(["Materials boosted", `${mats.length} of ${MATS.length}`]);
+    if (f.unlockMul < 1) rows.push(["Materials open at", `${Math.round(f.unlockMul * 100)}%`]);
+    if (f.mounts) rows.push(["Mounted drives", String(f.mounts)]);
+    if (f.kitReboot) rows.push(["Ascend starts with", `${f.kitReboot} Reboots`]);
+    if (Object.keys(f.kitProd).length) rows.push(["Starter producers", Object.keys(f.kitProd).map((m) => statDef(m as MatId).short).join(" ")]);
+    if (f.kitDrones) rows.push(["Starter Drones", `level ${f.kitDrones}`]);
+    if (f.offline) rows.push(["Offline cap", `+${f.offline} h`]);
+    if (f.goals) rows.push(["Each goal gives", `+${Math.round((TUNE.achBonus + f.goals) * 100)}%`]);
+    if (f.drone) rows.push(["Drone speed", x(f.drone)]);
+    if (f.droneMax) rows.push(["Drone levels", `${TUNE.drone.max + f.droneMax} max`]);
+    if (f.droneCost < 1) rows.push(["Drone prices", `-${Math.round((1 - f.droneCost) * 100)}%`]);
+    if (f.droneOff) rows.push(["Drones away", `${Math.round(Math.min(1, TUNE.drone.offline + f.droneOff) * 100)}% speed`]);
+    if (f.droneKeep) rows.push(["Drones kept", `${Math.round(f.droneKeep * 100)}%`]);
+    if (f.droneGlobal) rows.push(["Per Drone level", `+${Math.round(f.droneGlobal * 100)}% everything`]);
+    if (f.eventRate) rows.push(["Events", `${Math.round(f.eventRate * 100)}% sooner`]);
+    if (f.ocMult || f.ocX) rows.push(["Overclock", `x${+((TUNE.overclockMult + f.ocMult) * (1 + f.ocX)).toFixed(1)}`]);
+    if (f.ocTime) rows.push(["Overclock length", x(f.ocTime)]);
+    if (f.zeroDay) rows.push(["Zero-day chance", `${Math.round(f.zeroDay * 100)}%`]);
+    if (f.echo) rows.push(["Echo chance", `${Math.round(f.echo * 100)}%`]);
+    if (f.winBoost) rows.push(["Per event win", `+${Math.round(f.winBoost * 100)}% this run`]);
+    const named: Record<Feature, string> = { buymax: "Buy max", watchdog: "Watchdog timer", forecast: "Forecast", deaddrop: "Dead drop", orders: "Standing orders", ghostline: "Ghost line", crosstalk: "Cross-talk", duck: "Rubber duck" };
+    if (f.features.length) rows.push(["Systems", f.features.map((k) => named[k]).join(", ")]);
+    return rows;
+}
 
 const mulIn = (a: number, b?: number) => (b ? (1 + a) * (1 + b) - 1 : a);
 /** Everything the owned tree nodes give. Boosts named "x(1 + this)" stack by multiplying. Cached per tree array and length. */
@@ -495,7 +543,7 @@ export function derive(s: State): Derived {
     };
     const tf = treeFx(s);
     const droneLv = s.drones.reduce((a, b) => a + b, 0);
-    const global = (1 + s.perks.power * 0.15) * (1 + tf.global) * (1 + apForBonus(s) * (TUNE.apBonus + tf.apEach)) * (1 + s.ach.length * (TUNE.achBonus + tf.goals)) * (1 + tiersDone(s) * TUNE.tierBonus)
+    const global = (1 + s.perks.power * 0.15) * (1 + tf.global) * apGlobal(s) * (1 + s.ach.length * (TUNE.achBonus + tf.goals)) * (1 + tiersDone(s) * TUNE.tierBonus)
         * (1 + droneLv * tf.droneGlobal) * (1 + s.runWins * tf.winBoost) * boosts.chAll * (s.overclock > 0 ? overclockMult(s) : 1);
     const rebootStrength = TUNE.rebootStrength * boosts.cuReboot * (1 + tf.reboot);
     const multGainMult = (1 + rebootStrength * s.reboot) * (1 + tf.multGain);
@@ -704,7 +752,9 @@ export const apOnAscend = (s: State) => {
     if (s.aether < TUNE.ascendAether) return 0;
     let raw = Math.pow(s.aether / TUNE.apPerAether, TUNE.apPow);
     for (const m of ["runes", "starglass", "voidsteel", "chrono"] as const) raw += Math.pow(s[m] / TUNE.apPer[m], TUNE.apPow);
-    return Math.floor(raw * (1 + treeFx(s).ap));
+    let gain = raw * (1 + treeFx(s).ap);
+    if (TUNE.apGainSoft > 0 && gain > TUNE.apGainSoft) gain = TUNE.apGainSoft * (1 + Math.log(gain / TUNE.apGainSoft));
+    return Math.floor(gain);
 };
 export const canAscend = (s: State) => apOnAscend(s) >= 1;
 
@@ -713,7 +763,7 @@ export function ascend(s: State) {
     if (gain < 1) return 0;
     const tf = treeFx(s);
     const mounts = s.mounts.slice(0, tf.mounts);
-    const keptProd = Object.fromEntries(mounts.map((m) => [m, s.prod[m]]));
+    const keptProd = Object.fromEntries(mounts.map((m) => [m, Math.floor(s.prod[m] * TUNE.mountKeep)]));
     const keptDrones = s.drones.map((lv) => Math.max(Math.floor(lv * tf.droneKeep), tf.kitDrones));
     const keep = { ap: s.ap + gain, perks: s.perks, ach: s.ach, achAt: s.achAt, logs: s.logs, tree: s.tree, armed: s.armed, mounts: s.mounts, watchdog: s.watchdog, dropAt: s.dropAt, autoArmed: s.autoArmed, life: { ...s.life, ascends: s.life.ascends + 1, apTotal: s.life.apTotal + gain }, started: s.started };
     const n = fresh(s.at);
@@ -833,6 +883,7 @@ export const SECRETS: Secret[] = [
     { id: "x_self", name: "Self aware", clue: "Ask the node who it is.", how: "Ran `nf whoami` in the console." },
     { id: "x_night", name: "Night shift", clue: "The farm runs at all hours. So do you.", how: "Had Node Farm open between 3 and 4 in the morning.", test: () => new Date().getHours() === 3 },
     { id: "x_haul", name: "Long haul", clue: "Stay a very long time.", how: "Played for 24 hours in total.", test: (s) => s.life.secs >= 86400 },
+    { id: "x_duck", name: "Quack", clue: "Some of the best help is cheap and very quiet.", how: "Bought the Rubber duck in the prestige tree.", test: (s) => s.tree.includes("duck") },
     { id: "x_tank", name: "Full tank", clue: "Leave it alone until the standby cells are full.", how: "Came back to a full standby report.", test: (s) => s.life.capped >= 1 },
 ];
 export const secretDone = (s: State, x: Secret) => s.ach.includes(x.id);

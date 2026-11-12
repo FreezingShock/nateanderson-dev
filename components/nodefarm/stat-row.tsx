@@ -1,7 +1,7 @@
 "use client";
 
 import { useContext, useEffect, useRef } from "react";
-import { MATS, STATS, TIERS, button, derive, fmt, isUnlocked, statDef, type ButtonStat, type State, type StatId } from "@/lib/nodefarm/engine";
+import { MATS, STATS, TIERS, button, derive, fmt, fmtTime, hasFeature, isUnlocked, statDef, type ButtonStat, type State, type StatId } from "@/lib/nodefarm/engine";
 import { LORE } from "@/lib/nodefarm/lore";
 import { fnCaption } from "@/lib/nodefarm/feed";
 import { buttonTip, unlockInfo, type Target } from "@/lib/nodefarm/guide";
@@ -40,7 +40,7 @@ function effects(id: StatId, s: State, d: D): [string, string][] {
 }
 
 /** The signal chain: who boosts whom, with live multipliers. Sits above the stat dossiers. Only the zones you have reached, plus the next one, are drawn. */
-export function Chain({ s, d, onAll, allOpen }: { s: State; d: D; onAll: (open: boolean) => void; allOpen: boolean }) {
+export function Chain({ s, d, onAll, allOpen, max, onMax }: { s: State; d: D; onAll: (open: boolean) => void; allOpen: boolean; max?: boolean; onMax?: () => void }) {
     const feed: Partial<Record<StatId, string>> = {
         chrono: `Voidsteel ×${fmt(d.boosts.chVs)}`,
         voidsteel: `Starglass ×${fmt(d.boosts.vsSg)}`,
@@ -80,13 +80,16 @@ export function Chain({ s, d, onAll, allOpen }: { s: State; d: D; onAll: (open: 
                 );
             })}
             <li className="nf-chain-all">
+                {onMax && hasFeature(s, "buymax") && (
+                    <button type="button" className="nf-mini" aria-pressed={!!max} onClick={onMax} title="Batch job: one press buys as many as you can afford">{max ? "Buy: max" : "Buy: x1"}</button>
+                )}
                 <button type="button" className="nf-mini" onClick={() => onAll(!allOpen)}>{allOpen ? "Minimize all" : "Expand all"}</button>
             </li>
         </ol>
     );
 }
 
-export function StatRow({ id, s, d, onPress, onArm, open: expanded, onToggle, guide }: { id: StatId; s: State; d: D; onPress: PressFn; onArm: () => void; open: boolean; onToggle: () => void; guide?: Target }) {
+export function StatRow({ id, s, d, onPress, onArm, onWatchdog, open: expanded, onToggle, guide }: { id: StatId; s: State; d: D; onPress: PressFn; onArm: () => void; onWatchdog?: () => void; open: boolean; onToggle: () => void; guide?: Target }) {
     const def = statDef(id);
     const lore = LORE[id];
     const open = isUnlocked(s, id);
@@ -153,10 +156,16 @@ export function StatRow({ id, s, d, onPress, onArm, open: expanded, onToggle, gu
                             <button type="button" className="nf-mini" aria-pressed={s.armed.includes(id)} onClick={onArm}>{s.armed.includes(id) ? "Armed" : "Off"}</button>
                         </div>
                     )}
+                    {id === "reboot" && onWatchdog && hasFeature(s, "watchdog") && (
+                        <div className="nf-arm">
+                            <span>Watchdog timer</span>
+                            <button type="button" className="nf-mini" aria-pressed={s.watchdog} onClick={onWatchdog}>{s.watchdog ? "Auto" : "Off"}</button>
+                        </div>
+                    )}
                     {id !== "bytes" && (
                         <div className="nf-btns">
                             {Array.from({ length: TIERS }, (_, k) => (
-                                <BuyBtn key={k} s={s} stat={id as ButtonStat} tier={k} onPress={onPress} guided={guide?.stat === id && guide.tier === k} />
+                                <BuyBtn key={k} s={s} d={d} stat={id as ButtonStat} tier={k} onPress={onPress} guided={guide?.stat === id && guide.tier === k} />
                             ))}
                         </div>
                     )}
@@ -167,7 +176,7 @@ export function StatRow({ id, s, d, onPress, onArm, open: expanded, onToggle, gu
 }
 
 // A buy button, skinned per stat in CSS. Press once to buy; hold to keep buying (after 0.4 s, then 10 a second).
-function BuyBtn({ s, stat, tier, onPress, guided }: { s: State; stat: ButtonStat; tier: number; onPress: PressFn; guided: boolean }) {
+function BuyBtn({ s, d, stat, tier, onPress, guided }: { s: State; d: D; stat: ButtonStat; tier: number; onPress: PressFn; guided: boolean }) {
     const tips = useContext(TipCtx);
     const b = button(s, stat, tier);
     const pays = statDef(b.pays);
@@ -184,6 +193,9 @@ function BuyBtn({ s, stat, tier, onPress, guided }: { s: State; stat: ButtonStat
     const isReboot = stat === "reboot";
     const name = LORE[stat].tiers[tier];
     const owned = isReboot ? 0 : s.bought[stat][tier];
+    // Forecast node: how long until this button is affordable, at the current rate of the stat that pays for it
+    const payRate = b.pays === "bytes" ? d.bytesPerSec : (MATS as readonly string[]).includes(b.pays) ? d.rates[b.pays as (typeof MATS)[number]] : 0;
+    const eta = !afford && payRate > 0 && hasFeature(s, "forecast") ? (b.cost - (s[b.pays] as number)) / payRate : 0;
     return (
         <button
             type="button"
@@ -225,7 +237,7 @@ function BuyBtn({ s, stat, tier, onPress, guided }: { s: State; stat: ButtonStat
             <NfTierIcon stat={stat} tier={tier} />
             <span className="nf-btn-g">+{fmt(b.gain)}</span>
             <span className="nf-btn-fn" aria-hidden="true">{fnCaption(stat, b.gain)}</span>
-            <span className="nf-btn-c">{fmt(b.cost)} {pays.short}{owned > 0 && <em> · ×{owned}</em>}</span>
+            <span className="nf-btn-c">{fmt(b.cost)} {pays.short}{owned > 0 && <em> · ×{owned}</em>}{eta > 0 && <em className="nf-eta"> · {eta < 86400 * 30 ? fmtTime(eta) : "a long while"}</em>}</span>
         </button>
     );
 }
