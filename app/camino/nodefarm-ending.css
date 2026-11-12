@@ -78,6 +78,6 @@ body .nf-end .nf-end-note { margin: 0; font: 400 var(--cm-ctos-t-micro)/1.5 var(
 @media (max-width: 560px) {
     .ctos .nf-end-cells { grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 3px; }
     .ctos .nf-end-cells li { padding: 8px 4px; letter-spacing: .02em; }
-    .ctos .nf-end-cells li b { font-size: 11px; }
+    .ctos .nf-end-cells li, .ctos .nf-end-cells li b { font-size: 11px; letter-spacing: 0; }
     body .nf-end-ops li { grid-template-columns: 1fr; gap: 4px; }
 }

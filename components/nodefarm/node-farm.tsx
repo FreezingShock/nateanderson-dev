@@ -981,7 +981,13 @@ export function NodeFarm() {
         feedStore.clear();
         const last = carry.logs.at(-1);
         log(`New operator. Ending ${carry.stars} is kept, and the old save is in Menu as a backup.`, "good");
-        if (last) juice.emit({ t: "milestone", title: `Log from operator ${last.n}`, sub: last.text });
+        document.querySelector<HTMLElement>(".nf")?.scrollIntoView({ block: "start" });
+        // after the fresh save's own first log banner, so yours is the one that stays up
+        if (last) {
+            // the banner comes after the fresh save's own first-log banner; the feed keeps the full text
+            window.setTimeout(() => juice.emit({ t: "milestone", title: `Log from operator ${last.n}`, sub: last.text }), 3200);
+            log(`Log from operator ${last.n}: ${last.text}`, "hot");
+        }
         save();
         bump((x) => x + 1);
     };
