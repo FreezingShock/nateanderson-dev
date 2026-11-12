@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState, type MutableRefObject } from "react";
+import { createPortal } from "react-dom";
 import { cxPlay, useCodeReveal } from "@/lib/nodefarm/cx";
 import { sfx } from "@/lib/sound/sounds";
 import { EVENT_TUNE, nextGapMs, pickEvent, type EventDef, type EventKind } from "@/lib/nodefarm/events";
@@ -143,10 +144,15 @@ export function EventLayer({ game, busy, enabled, ready, reduced, onEngage, onRe
         if (stageKey && was && was.split(":")[0] === stageKey.split(":")[0]) cxPlay(card.current, { bare: true, sound: false, rows: ":scope > :not(.nf-ev-br):not(.nf-ev-top)" });
     }, [stageKey]);
 
+    // The layer is portaled out of the game so it centers on the visible screen, not on the (tall, scrolled) board.
+    // In full screen only the full-screen element is painted, so it goes inside that instead of <body>.
+    const host = useScreenHost();
+
     const view = act ?? (shown ? lastAct.current : null);
-    if (!view) return null;
+    if (!view || !host) return null;
     const { def, stage } = view;
-    return (
+    return createPortal(
+        <div className="ctos nf-ev-host">
         <div className="nf-ev-scrim" data-stage={stage} data-out={act ? undefined : ""} inert={!act}>
             <div ref={card} className="nf-ev" role="alertdialog" aria-modal="true" aria-labelledby="nf-ev-t" aria-describedby="nf-ev-d" data-kind={def.kind} data-stage={stage} data-reduced={reduced ? "" : undefined}>
                 <i className="nf-ev-br" data-c="tl" /><i className="nf-ev-br" data-c="tr" /><i className="nf-ev-br" data-c="bl" /><i className="nf-ev-br" data-c="br" />
@@ -171,7 +177,21 @@ export function EventLayer({ game, busy, enabled, ready, reduced, onEngage, onRe
                 )}
             </div>
         </div>
+        </div>,
+        host,
     );
+}
+
+/** `document.fullscreenElement` while something is full screen, otherwise `<body>`; null until mounted. */
+function useScreenHost() {
+    const [host, setHost] = useState<Element | null>(null);
+    useEffect(() => {
+        const pick = () => setHost(document.fullscreenElement ?? document.body);
+        pick();
+        document.addEventListener("fullscreenchange", pick);
+        return () => document.removeEventListener("fullscreenchange", pick);
+    }, []);
+    return host;
 }
 
 function Incoming({ def, onEngage, onSkip, onOff }: { def: EventDef; onEngage: () => void; onSkip: () => void; onOff: () => void }) {
