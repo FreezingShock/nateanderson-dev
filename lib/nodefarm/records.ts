@@ -52,7 +52,7 @@ export function recordSections(s: State): RecordSection[] {
         ["Reboots ever", fmt(s.life.reboots)],
         ["Ascensions", String(s.life.ascends)],
         ["AP earned", String(s.life.apTotal)],
-        ["Intrusions won", String(s.life.intrusions)],
+        ["Quick-time events won", String(s.life.intrusions)],
         ["Standby filled", `${s.life.capped} time${s.life.capped === 1 ? "" : "s"}`],
     ];
     const mats: [string, string][] = MATS.filter((m) => s[m] > 0 || s.prod[m] > 0).map((m) => [statDef(m).name, `${fmt(s[m])} · ${fmt(s.prod[m])} nodes · +${fmt(d.rates[m])}/s`]);
@@ -123,7 +123,7 @@ export function nfCommand(s: State, args: string[]): NfResult {
             row("ascensions", `${s.life.ascends}  (${s.ap} AP)`),
             row("goals", `${c.goals}/${c.goalTotal}`),
             row("secrets", `${c.secrets}/${c.secretTotal}`),
-            t("nf stats · nf goals · nf secrets · nf logs · nf lab · nf cron · nf archive · nf open", "dim"),
+            t("nf stats · nf goals · nf secrets · nf logs · nf news · nf lab · nf cron · nf archive · nf open", "dim"),
         ];
     } else if (sub === "stats") {
         lines = recordSections(s).flatMap((sec) => [t(sec.title.toLowerCase(), "hi"), ...sec.rows.map(([a, b]) => row(a.toLowerCase(), b))]);
@@ -205,7 +205,7 @@ export function nfCommand(s: State, args: string[]): NfResult {
     } else if (sub === "whoami") {
         lines = [t("node-01. one core, no clearance, and a growing farm."), ...secret("x_self")];
     } else {
-        lines = [t(`nf: unknown: ${args[0]}`, "err"), t("nf stats · nf goals · nf secrets · nf logs · nf lab · nf cron · nf archive · nf open", "dim")];
+        lines = [t(`nf: unknown: ${args[0]}`, "err"), t("nf stats · nf goals · nf secrets · nf logs · nf news · nf lab · nf cron · nf archive · nf open", "dim")];
     }
     return { lines, unlocked: found };
 }

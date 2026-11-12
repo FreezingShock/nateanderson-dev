@@ -119,10 +119,10 @@ export interface PerkDef {
 
 export const PERKS: PerkDef[] = [
     { id: "power", name: "Power core", blurb: "+15% to everything per level.", max: 20, cost: (l) => 1 + l },
-    { id: "scanner", name: "Wide-band scanner", blurb: "Intrusions arrive 8% sooner per level.", max: 6, cost: (l) => 1 + l },
+    { id: "scanner", name: "Wide-band scanner", blurb: "Quick-time events arrive 8% sooner per level.", max: 6, cost: (l) => 1 + l },
     { id: "auto", name: "Autoloader", blurb: "Auto-buys for you, one stat per level (Multipliers, then each material up the chain).", max: 12, cost: (l) => 3 + l * 2 },
-    { id: "overclock", name: "Overclock coils", blurb: "Intrusion boosts last +5 s per level.", max: 6, cost: (l) => 2 + l * 2 },
-    { id: "offline", name: "Standby cells", blurb: "Offline time banks +4 hours per level.", max: 6, cost: (l) => 2 + l * 2 },
+    { id: "overclock", name: "Overclock coils", blurb: "Overclocks last +5 s longer per level.", max: 6, cost: (l) => 2 + l * 2 },
+    { id: "offline", name: "Standby cells", blurb: "Standby window +4 hours per level.", max: 6, cost: (l) => 2 + l * 2 },
     { id: "start", name: "Cold cache", blurb: "Start each Reboot with 10 seconds of Bytes per level.", max: 10, cost: (l) => 1 + Math.floor(l / 2) },
 ];
 
@@ -262,7 +262,7 @@ const ARMS: Record<Branch, Row[]> = {
         [10, "alloy", "keystone", "Alloy", "Every material x1.4 per rank.", "Mix two metals and both forget what they were.", { mats: ALL_MATS(0.4) }],
     ],
     systems: [
-        [0, "standby", "minor", "Standby plus", "Offline time banks +8 hours.", "Bigger cells, longer naps.", { offline: 8 }],
+        [0, "standby", "minor", "Standby plus", "Standby window +8 hours.", "Bigger cells, longer naps.", { offline: 8 }],
         [1, "carrier1", "minor", "Carrier I", "Each AP adds a third more to everything.", "Boosted the carrier. The points carry further.", { apEach: 1 / 3 }],
         [2, "forecast", "minor", "Forecast", "Every button shows how long until you can afford it.", "Every price comes with an arrival time now.", { feature: "forecast" }],
         [3, "carrier2", "notable", "Carrier II", "Each AP adds another third more.", "Louder carrier, same message, more of it lands.", { apEach: 1 / 3 }],
@@ -1144,7 +1144,7 @@ export const GOALS: Goal[] = [
     G("m100", "Stacked", "Hold 100 Multipliers.", 1, "mult", 100, (s) => s.mult),
     G("r1", "Cold boot", "Reboot once.", 1, "reboot", 1, life("reboots")),
     G("cu1", "Trace lines", "Mine your first Copper.", 1, "copper", 1e-9, (s) => s.copper),
-    G("int1", "Counter-hack", "Win an intrusion.", 1, "alert", 1, life("intrusions")),
+    G("int1", "Counter-hack", "Win a quick-time event.", 1, "alert", 1, life("intrusions")),
     // II OPERATOR
     G("tap500", "Calloused", "Press 500 buttons.", 2, "spark", 500, life("presses")),
     G("b1m", "Bandwidth", "Earn 1 million Bytes.", 2, "bytes", 1e6, life("bytes")),
@@ -1158,7 +1158,7 @@ export const GOALS: Goal[] = [
     G("r100", "Triple digits", "Reach 100 Reboots.", 3, "reboot", 100, life("reboots")),
     G("si1k", "Fab line", "Hold 1,000 Silicon.", 3, "silicon", 1e3, (s) => s.silicon),
     G("qz1", "Resonance", "Mine your first Quartz.", 3, "quartz", 1e-9, (s) => s.quartz),
-    G("int25", "Watchdog", "Win 25 intrusions.", 3, "alert", 25, life("intrusions")),
+    G("int25", "Watchdog", "Win 25 quick-time events.", 3, "alert", 25, life("intrusions")),
     // IV ROOT
     G("p25k", "Muscle memory", "Press 25,000 buttons.", 4, "spark", 25000, life("presses")),
     G("b1t", "Whole network", "Earn 1 trillion Bytes.", 4, "bytes", 1e12, life("bytes")),

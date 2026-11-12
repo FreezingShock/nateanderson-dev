@@ -222,7 +222,7 @@ Brought up to the Ascend window's level. Shared parts in `components/nodefarm/wi
 - Menu: a config file (click a line to flip it; volume and number format are lines too), the save code as a terminal block, wipe is Hold to wipe (keeps the backup), keys as data lines.
 - Map: the chain as a signal tower (Chrono at the top, Bytes at the base, YOU ARE HERE on the zone being worked on) beside a readout of the picked zone, then Ascend, Drones, Goals and the tree's sections.
 - Phone: windows sit inline under the tabs, so they get a solid panel over the scenery.
-- Next step strip shows the sprite of what it points at. Drone bay rows get a dithered pad in each Drone's colour and aligned columns.
+- Next step strip shows the sprite of what it points at. Drone hangar rows get a dithered pad in each Drone's colour and aligned columns.
 - Unlock and milestone banners are a strip pinned under the site bar, as wide as the board (left and width set in juice.tsx). They sit under an open window.
 Checks: /mnt/project-files/portfolio/node-farm-refresh/ (`checks.mjs` interactions incl. a real long touch on phone, `wins.mjs` and `board.mjs` screenshots).
 

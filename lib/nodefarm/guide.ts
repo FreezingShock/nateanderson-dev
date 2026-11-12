@@ -144,7 +144,7 @@ export function nextStep(s: State, d: Derived): Step {
             // Aether is online: Drones are cheap, then Ascend is the next big step
             const drones = s.drones.reduce((a, b) => a + b, 0);
             if (dronesOpen(s) && drones === 0 && s.aether >= droneCost(s, 0)) {
-                return mk({ id: "first-drone", title: "Build a Drone", why: "Drones press buttons for you, even while you are away. Open the Drone bay and build a Probe.", cur: s.aether, need: droneCost(s, 0), unit: "AE", pay: "aether", target: { drone: 0 } });
+                return mk({ id: "first-drone", title: "Build a Drone", why: "Drones press buttons for you, even while you are away. Open the Drone hangar and build a Probe.", cur: s.aether, need: droneCost(s, 0), unit: "AE", pay: "aether", target: { drone: 0 } });
             }
             // once, after the first Drone: post it somewhere so the hangar's mastery and Cores start
             if (drones > 0 && s.dr.post.every((p) => !p) && zoneRank(s, "mult") === 0 && !s.dr.nodes.length && !Object.keys(s.dr.svc).length) {
@@ -269,7 +269,7 @@ export function buttonTip(s: State, stat: ButtonStat, tier: number): TipInfo {
         title: LORE[stat].tiers[tier],
         note: stat === "reboot" ? undefined : "Hold the button to keep buying.",
         rows,
-        status: afford ? (stat === "reboot" ? "Ready. Press to reboot." : "Ready. Press to buy.") : `Short by ${fmt(b.cost - have)} ${pays.short}${etaText(eta) ? `, about ${etaText(eta)}` : ""}.`,
+        status: afford ? (stat === "reboot" ? "Ready. Press to Reboot." : "Ready. Press to buy.") : `Short by ${fmt(b.cost - have)} ${pays.short}${etaText(eta) ? `, about ${etaText(eta)}` : ""}.`,
         tone: afford ? "ok" : "wait",
     };
 }
@@ -299,7 +299,7 @@ export function droneTip(s: State, tier: number): TipInfo {
     const eta = etaTo(s, derive(s), "aether", cost);
     return {
         color: statDef("aether").color,
-        kicker: "Drone bay",
+        kicker: "DRONE HANGAR",
         title: `T${tier + 1} ${DRONE_NAMES[tier]}`,
         note: post ? "Posted: it works one zone, faster, and builds that zone's mastery." : "Sweeping: it presses every stat you arm in its zone. Post it to one zone to build mastery.",
         rows,
