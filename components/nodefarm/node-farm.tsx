@@ -8,6 +8,7 @@ import {
     TUNE, overclockMult, overclockSecs, respec, ascend, autoBuy, breach, button, buyDrone, buyNode, canAfford, buyPerk, toggleArm, checkGoals, derive, exportSave, fmt, fmtTime, fresh, getNumFmt, setNumFmt, type NumFmt, isUnlocked, offline, parseSave, press, STATS, tick,
     apEach, dropFill, hasFeature, openDrop, pressMax, setMount, statDef,
     buyLabNode, cancelCompile, compile, deploy, labNode, labOpen, payload, type PayloadId,
+    buyFw, fwNode, handSeen, handover, protoDef, respecFw, setProto, type ProtoId,
     type ButtonStat, type MatId, type State,
 } from "@/lib/nodefarm/engine";
 import type { NfLive } from "@/lib/nodefarm/records";
@@ -40,6 +41,7 @@ import { MapPanel } from "./map";
 import { exact, nextStep, type Target } from "@/lib/nodefarm/guide";
 import { GoalsPanel, MenuPanel, RecordsPanel } from "./systems";
 import { AscendPanel } from "./ascend";
+import { HandoverPanel, fwModel } from "./handover";
 import { Dock, PhoneTabs, WinBar, swInfo } from "./switcher";
 import { AdminPanel, type AdminHost } from "./admin";
 import { isAdmin, setAdmin } from "@/lib/nodefarm/admin";
@@ -58,8 +60,9 @@ const CALM_KEY = "nf-calm-v1"; // "1" when motion is forced calm, on top of the 
 const FMT_KEY = "nf-numfmt-v1"; // number format: short | sci | eng (per device)
 const BACKUP_KEY = "nf-backup-v1"; // the save as it was just before an import, a wipe or a failed load (one slot)
 const CORRUPT_KEY = "nf-corrupt-v1"; // raw text of a save that could not be read, kept instead of being overwritten
-type Tab = "core" | "stats" | "map" | "goals" | "records" | "ascend" | "menu";
-const SIDE: Tab[] = ["map", "goals", "records", "ascend", "menu"];
+type Tab = "core" | "stats" | "map" | "goals" | "records" | "ascend" | "handover" | "menu";
+const SIDE: Tab[] = ["map", "goals", "records", "ascend", "handover", "menu"];
+type Win = "map" | "goals" | "records" | "ascend" | "handover" | "menu";
 
 function load(): { s: State | null; unreadable: boolean } {
     try {
@@ -94,7 +97,7 @@ export function NodeFarm() {
     const [, bump] = useState(0);
     const [tab, setTab] = useState<Tab>("core");
     const [side, setSide] = useState<Tab>("goals");
-    const [win, setWin] = useState<"" | "map" | "goals" | "records" | "ascend" | "menu">("");
+    const [win, setWin] = useState<"" | Win>("");
     const [treeOpen, setTreeOpen] = useState(false);
     /** the Exploit Lab's research tree (same menu as the prestige tree, blue lab skin) */
     const [labTree, setLabTree] = useState(false);
@@ -107,6 +110,9 @@ export function NodeFarm() {
     // stable on purpose: the tree's modal effect re-runs whenever this changes, and this component re-renders ten times a second
     const closeTree = useCallback(() => setTreeOpen(false), []);
     const closeLab = useCallback(() => setLabTree(false), []);
+    /** the Handover Firmware tree (same menu, green phosphor skin) */
+    const [fwTree, setFwTree] = useState(false);
+    const closeFw = useCallback(() => setFwTree(false), []);
     const treeOpenRef = useRef(false);
     treeOpenRef.current = treeOpen;
 
@@ -329,7 +335,7 @@ export function NodeFarm() {
     // ---- news lines: every so often one short line (past operator, operator, node note, hint) drops into the feed,
     // chosen for how far the farm has got. Skipped when the tab is hidden, a window is open, or the feed is busy.
     const busyRef = useRef(false);
-    busyRef.current = !!win || treeOpen || droneTree || !!away || !!confirm;
+    busyRef.current = !!win || treeOpen || droneTree || fwTree || !!away || !!confirm;
     useEffect(() => {
         if (!ready) return;
         let to: ReturnType<typeof setTimeout>;
@@ -793,7 +799,7 @@ export function NodeFarm() {
     }, [ready]);
 
     // ---- keyboard: one letter per window. Off while typing, with a modifier, over another panel or during an event.
-    const keyApi = useRef<{ open: (w: "map" | "goals" | "records" | "ascend" | "menu" | "tree") => void; max: () => void; lab: () => void; go: () => void; press: (held: boolean) => void; tier: (k: number, held: boolean) => void }>({ open: () => {}, max: () => {}, lab: () => {}, go: () => {}, press: () => {}, tier: () => {} });
+    const keyApi = useRef<{ open: (w: Win | "tree") => void; max: () => void; lab: () => void; fw: () => void; go: () => void; press: (held: boolean) => void; tier: (k: number, held: boolean) => void }>({ open: () => {}, max: () => {}, lab: () => {}, fw: () => {}, go: () => {}, press: () => {}, tier: () => {} });
     useEffect(() => {
         if (!ready) return;
         const onKey = (e: KeyboardEvent) => {
@@ -806,8 +812,9 @@ export function NodeFarm() {
             // 1 to 6 press that tier on the zone in the middle of the screen
             if (/^[1-6]$/.test(e.key)) { e.preventDefault(); keyApi.current.tier(Number(e.key) - 1, e.repeat); return; }
             if (e.repeat) return;
-            const w = ({ m: "map", o: "goals", l: "records", a: "ascend", s: "menu", t: "tree" } as const)[e.key.toLowerCase() as "m"];
+            const w = ({ m: "map", o: "goals", l: "records", a: "ascend", h: "handover", s: "menu", t: "tree" } as const)[e.key.toLowerCase() as "m"];
             if (w) { e.preventDefault(); keyApi.current.open(w); }
+            else if (e.key.toLowerCase() === "k") { e.preventDefault(); keyApi.current.fw(); }
             else if (e.key.toLowerCase() === "b") keyApi.current.max();
             else if (e.key.toLowerCase() === "r") { e.preventDefault(); keyApi.current.lab(); }
             else if (e.key.toLowerCase() === "g") { e.preventDefault(); keyApi.current.go(); }
@@ -857,12 +864,27 @@ export function NodeFarm() {
             }));
         }
     };
-    const openWin = (w: "map" | "goals" | "records" | "ascend" | "menu" | "tree") => {
+    const openWin = (w: Win | "tree") => {
         if (w === "tree") { setWin(""); setTreeOpen(true); sfx("tab"); return; }
+        if (w === "handover" && !handSeen(s)) return;
         setWin(w);
         setTabBoth(w);
     };
-    const openLab = () => { if (!labOpen(s)) return; setWin(""); setTreeOpen(false); setLabTree(true); sfx("tab"); };
+    const openLab = () => { if (!labOpen(s)) return; setWin(""); setTreeOpen(false); setFwTree(false); setLabTree(true); sfx("tab"); };
+    const fwSeen = s.hand.count > 0 || s.hand.keys > 0;
+    const openFw = () => { if (!fwSeen) return; setWin(""); setTreeOpen(false); setLabTree(false); setFwTree(true); sfx("tab"); };
+    const doHandover = (proto: ProtoId, note: string, proto2: ProtoId | null) => {
+        keepBackup("before Handover");
+        const keys = handover(s, proto, note, proto2);
+        if (!keys) return sfx("deny");
+        sfx("nfAscend");
+        const p = protoDef(proto);
+        juice.emit({ t: "milestone", title: `Handover ${s.hand.count}: +${keys} Keys`, sub: `${p.op}'s protocol is running: ${p.name}. Flash Firmware with your Keys.` });
+        feedStore.push([...call(idTok("system"), "handover", [strTok(p.op.toLowerCase())]), pun(" → "), num(`+${keys} Keys`), txt(" "), { k: "c", v: "// node handed over" }], { tone: "good", type: true });
+        prevIds.current = null;
+        save();
+        bump((n) => n + 1);
+    };
     const doDeploy = (id: PayloadId) => {
         const p = payload(id);
         const r = deploy(s, id);
@@ -880,9 +902,10 @@ export function NodeFarm() {
         go: () => {},
         press: () => {},
         tier: () => {},
-        lab: () => { if (labTree) setLabTree(false); else if (!treeOpen) openLab(); },
+        lab: () => { if (labTree) setLabTree(false); else if (!treeOpen && !fwTree && !droneTree) openLab(); },
+        fw: () => { if (fwTree) setFwTree(false); else if (!treeOpen && !labTree && !droneTree) openFw(); },
         open: (w) => {
-            if (labTree) return;
+            if (labTree || fwTree || droneTree) return;
             if (treeOpen) { if (w === "tree") setTreeOpen(false); return; }
             if (w === "tree") { if (treeSeenK) openWin("tree"); return; }
             if (win === w) closeWin();
@@ -1001,7 +1024,7 @@ export function NodeFarm() {
             )}
             {toast && <div className="nf-toast" role="status"><NfIcon name="spark" /> Goal: {toast}</div>}
 
-            <EventLayer game={g} ready={ready} enabled={evOn} busy={!!win || treeOpen || labTree || droneTree || !!away || !!confirm} reduced={reduced} onEngage={evEngage} onResult={evResult} onMiss={evMiss} onDisable={() => setEvents(false)} />
+            <EventLayer game={g} ready={ready} enabled={evOn} busy={!!win || treeOpen || labTree || droneTree || fwTree || !!away || !!confirm} reduced={reduced} onEngage={evEngage} onResult={evResult} onMiss={evMiss} onDisable={() => setEvents(false)} />
             <Juice reduced={reduced} />
 
             <section className="nf-pane nf-corepane" data-pane="core" aria-label="Core">
@@ -1096,6 +1119,17 @@ export function NodeFarm() {
                 <WinBar id="ascend" info={sw} treeSeen={treeSeen} lab={labOpen(s)} onSwitch={(w) => (w === "lab" ? openLab() : openWin(w))} onClose={closeWin} />
                 <AscendPanel s={s} d={d} confirm={confirm === "ascend"} onAscend={doAscend} onPerk={(id) => { if (buyPerk(s, id)) { sfx("nfBuy", { tier: 3 }); bump((n) => n + 1); } }} onTree={() => openWin("tree")} onMount={(i, m) => { if (setMount(s, i, m)) { sfx("tab"); save(); bump((n) => n + 1); } }} />
             </section>
+            {handSeen(s) && (
+                <section className="nf-pane nf-sidepane" data-pane="handover" aria-label="Handover" role="dialog" aria-modal="false">
+                    <WinBar id="handover" info={sw} treeSeen={treeSeen} lab={labOpen(s)} onSwitch={(w) => (w === "lab" ? openLab() : openWin(w))} onClose={closeWin} />
+                    <HandoverPanel
+                        s={s}
+                        onHandover={doHandover}
+                        onFirmware={openFw}
+                        onProto={(id, second) => { if (setProto(s, id, second)) { sfx("tab"); log(`Protocol: ${protoDef(id).op}, ${protoDef(id).name}${second ? " (Dual boot, half strength)" : ""}.`, "good"); save(); bump((n) => n + 1); } }}
+                    />
+                </section>
+            )}
             <section className="nf-pane nf-sidepane" data-pane="menu" aria-label="Menu" role="dialog" aria-modal="false">
                 <WinBar id="menu" info={sw} treeSeen={treeSeen} lab={labOpen(s)} onSwitch={(w) => (w === "lab" ? openLab() : openWin(w))} onClose={closeWin} />
                 <MenuPanel
@@ -1164,6 +1198,23 @@ export function NodeFarm() {
                     }}
                     onRespec={() => { const back = respecDrones(s); sfx("tab"); log(`Drone tree respec: ${fmt(back)} Cores back.`, "good"); save(); bump((n) => n + 1); return back; }}
                     onClose={closeDrones}
+                />
+            )}
+            {fwTree && (
+                <TreeMenu
+                    s={s}
+                    model={fwModel(s)}
+                    ver={`${s.hand.fw.join(",")}|${s.hand.keys}`}
+                    reduced={reduced}
+                    onBuy={(id) => {
+                        if (!buyFw(s, id)) return sfx("deny");
+                        sfx("nfBuy", { tier: 5 });
+                        feedStore.push([...call(idTok("fw"), "flash", [strTok(fwNode(id).name)]), pun(" → "), strTok("ok")], { tone: "good", type: true });
+                        save();
+                        bump((x) => x + 1);
+                    }}
+                    onRespec={() => { const back = respecFw(s); sfx("tab"); log(`Firmware respec: ${fmt(back)} Keys back.`, "good"); save(); bump((n) => n + 1); return back; }}
+                    onClose={closeFw}
                 />
             )}
             {treeOpen && (

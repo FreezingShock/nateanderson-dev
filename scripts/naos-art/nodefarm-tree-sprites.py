@@ -32,6 +32,7 @@ SECS = {"signal": "#2fd8e8", "forge": "#ffc53a", "systems": "#6bffc9", "drones":
 SECS.update({"exploits": "#59b8ff", "malware": "#8f9bff", "infra": "#5ff0e8", "labcore": "#4aa3ff"})
 # the drone tree (nodefarm_drone_motifs.py): warm hangar colours
 SECS.update({"flight": "#ffb14a", "dispatch": "#6bffc9", "salvage": "#ff7a4a", "hangarcore": "#c9d2e0"})
+SECS.update({"boot": "#3dff6e", "memory": "#ffc53a", "relay": "#64e6ff", "fwcore": "#3dff6e"})
 
 
 def hx(h):
@@ -231,7 +232,9 @@ from nodefarm_tree_motifs import MOTIFS, NODES  # noqa: E402  (motif library and
 from nodefarm_lab_motifs import LAB_NODES  # noqa: E402  (research tree sprites; their motifs register into MOTIFS)
 from nodefarm_drone_motifs import DRONE_NODES  # noqa: E402  (drone tree sprites, appended last so older rows keep their place)
 
-NODES = {**NODES, **LAB_NODES, **DRONE_NODES}
+from nodefarm_fw_motifs import FW_NODES  # noqa: E402  (Handover Firmware tree sprites, appended after the drone tree so older rows never move)
+
+NODES = {**NODES, **LAB_NODES, **DRONE_NODES, **FW_NODES}
 
 
 def build_sheet(size_key, rows):
