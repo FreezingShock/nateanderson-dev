@@ -5,6 +5,7 @@ import "@/app/camino/nodefarm-scenery.css";
 import "@/app/camino/nodefarm-tree.css";
 import "@/app/camino/nodefarm-code.css";
 import "@/app/camino/nodefarm-ascend.css";
+import "@/app/camino/nodefarm-windows.css";
 import { CreationsShell, Section } from "@/components/creations-sections";
 import { GameFrame } from "@/components/games/naos";
 import { NodeFarm } from "@/components/nodefarm/node-farm";

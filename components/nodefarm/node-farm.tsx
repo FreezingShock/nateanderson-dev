@@ -547,8 +547,8 @@ export function NodeFarm() {
         return () => window.removeEventListener("keydown", onKey);
     }, [ready]);
 
-    const doReset = () => {
-        if (confirm !== "reset") {
+    const doReset = (now = false) => {
+        if (!now && confirm !== "reset") {
             setConfirm("reset");
             setTimeout(() => setConfirm((c) => (c === "reset" ? "" : c)), 4000);
             return;
@@ -756,8 +756,7 @@ export function NodeFarm() {
                     numFmt={numFmt}
                     onNumFmt={setFormat}
                     hasMax={hasFeature(s, "buymax")}
-                    confirm={confirm === "reset"}
-                    onReset={doReset}
+                    onReset={() => doReset(true)}
                 />
             </section>
             {treeOpen && (
