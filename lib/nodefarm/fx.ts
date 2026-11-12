@@ -6,14 +6,14 @@
 //   plain JS getLowFx()
 //   React    const low = useLowFx()
 //   event    window "nf:fx" (detail: boolean, true when low)
-// Kept per device in localStorage "nf-fx-v1"; it is not part of the save.
+// Default is auto. Kept per device in localStorage "nf-fx-v1"; it is not part of the save.
 import { useSyncExternalStore } from "react";
 
 export type FxMode = "full" | "low" | "auto";
 export const FX_MODES: FxMode[] = ["full", "low", "auto"];
 const KEY = "nf-fx-v1";
 
-let mode: FxMode = "full";
+let mode: FxMode = "auto"; // the default: measure once and go low only on a slow machine
 let autoLow = false; // what the probe found, only used in auto
 let low = false;
 let probed = false;
@@ -71,7 +71,7 @@ export function initFx() {
     started = true;
     try {
         const v = localStorage.getItem(KEY);
-        if (v === "low" || v === "auto") mode = v;
+        if (v === "low" || v === "full" || v === "auto") mode = v;
     } catch {}
     if (mode === "auto") probe();
     apply();
@@ -81,5 +81,5 @@ export function useLowFx(): boolean {
     return useSyncExternalStore((f) => { subs.add(f); return () => { subs.delete(f); }; }, () => low, () => false);
 }
 export function useFxMode(): FxMode {
-    return useSyncExternalStore((f) => { subs.add(f); return () => { subs.delete(f); }; }, () => mode, () => "full" as FxMode);
+    return useSyncExternalStore((f) => { subs.add(f); return () => { subs.delete(f); }; }, () => mode, () => "auto" as FxMode);
 }
