@@ -1,6 +1,6 @@
 """Scripts (scheduler) panel scene and script icons for Node Farm.
 
-Scene: same contract as the zone sheets (scripts/naos-art/nodefarm_zone_kit.py): 288 x 96 cells, 8 stage rows, 6 frames,
+Scene: same contract as the zone sheets (scripts/naos-art/nodefarm_zone_kit.py): 288 x 96 cells, 11 stage rows, 6 frames,
 writes public/naos/nodefarm/zone-sched.{png,webp}. Stage = scripts learned (lib/nodefarm/scripts.ts, `schedStage`).
   0 the cron room: an amber terminal wall with a crontab scrolling, a wall clock, a server floor
   1 buy.sh      a pick arm over a conveyor, dropping lime blocks
@@ -9,8 +9,11 @@ writes public/naos/nodefarm/zone-sched.{png,webp}. Stage = scripts learned (lib/
   4 deploy.sh   a violet launch rail firing packets off to the right
   5 drop.sh     a yellow chute that drops a crate
   6 ascend.sh   a green lift beam with rings climbing it
-  7 buy.sh v3   the daemon: an amber clock-face drone keeping time over the room
-Icons: public/naos/nodefarm/sched-icons.{png,webp}, 32 px cells, one row per script (SCRIPTS order), 4 frames.
+  7 rig.sh      a ceiling crane whose trolley runs the rail with a wrench on the hook
+  8 event.sh    a radar dish sweeping the sky, a blip lighting on the sweep
+  9 restore.sh  a tape archive on the wall, reels turning
+  10            the daemon: an amber clock-face drone keeping time over the room (all scripts learned, or buy.sh v3)
+Icons: public/naos/nodefarm/sched-icons.{png,webp}, 32 px cells, one row per script (ROW in components/nodefarm/scripts.tsx), 4 frames.
 Run: python3 scripts/naos-art/nodefarm-sched-scene.py
 """
 import math
@@ -186,7 +189,55 @@ def daemon(c, f):
     c.shade(K.rect(int(cx) - 1, int(cy) + 11, int(cx) + 2, int(cy) + 13), "red" if f % 2 else "sn", 4)
 
 
-SPRITES = [conveyor, breaker, press_, rail, chute, lift, daemon]
+def crane(c, f):
+    # ceiling rail, a trolley shuttling along it, a cable and a wrench on the hook
+    c.fill(K.rect(160, 1, 190, 4), 0.5, "gr", outline=True)
+    t = K.wave(f)
+    tx = 164 + 20 * t
+    c.fill(K.rect(int(tx) - 3, 4, int(tx) + 4, 8), 0.75, "cu", outline=True)
+    sway = 2 * math.sin(f / F * 2 * math.pi)
+    hx, hy = tx + sway, 22
+    c.fill(K.line(tx, 8, hx, hy, 1), 0.6, "wh", outline=False)
+    c.fill(K.disc(hx, hy + 1, 2), 0.9, "cu")
+    # the wrench: a handle and an open jaw
+    c.fill(K.line(hx, hy + 3, hx + 1, hy + 12, 2.2), 0.8, "cu")
+    jaw = K.disc(hx + 1, hy + 14, 3.2) & ~K.disc(hx + 1, hy + 15.5, 1.6)
+    c.fill(jaw, 0.85, "cu")
+
+
+def radar(c, f):
+    cx, cy = 236, 18
+    c.fill(K.rect(cx - 1, cy, cx + 2, 30), 0.5, "gr", outline=True)
+    dish = K.disc(cx, cy, 10, 6) & (K.yy < cy + 1)
+    c.fill(dish, 0.35 + 0.5 * K.lin(cx - 10, cy - 6, cx + 10, cy), "rn", outline=True)
+    c.fill(K.line(cx, cy, cx + 5, cy - 9, 1), 0.9, "wh", outline=False)
+    c.fill(K.disc(cx + 5, cy - 9, 1.5), 0.95, "rn")
+    # the sweep arc in the sky and a blip it catches every loop
+    a = f / F * 2 * math.pi
+    for r in (14, 18):
+        x, y = cx + r * math.cos(a - math.pi / 2) * 0.9, cy - 4 + r * math.sin(a - math.pi / 2) * 0.5
+        c.shade(K.rect(int(x), int(y), int(x) + 2, int(y) + 1), "rn", 3)
+    if f in (2, 3):
+        c.shade(K.rect(cx + 12, cy - 13, cx + 15, cy - 11), "red", 4)
+
+
+def reels(c, f):
+    x0, y0, x1, y1 = 186, 6, 216, 28
+    c.fill(K.rect(x0, y0, x1, y1), 0.25 + 0.25 * K.lin(x0, y0, x1, y1), "gr", outline=True)
+    for i, cx in enumerate((194, 208)):
+        cy = 14
+        c.fill(K.disc(cx, cy, 5), 0.55, "lime", outline=False)
+        c.fill(K.disc(cx, cy, 1.5), 0.15, "gr", outline=False)
+        a = (f / F + i * 0.25) * 2 * math.pi * (1 if i == 0 else -1)
+        for k in range(3):
+            b = a + k * 2 * math.pi / 3
+            c.shade(K.rect(int(cx + 3 * math.cos(b)), int(cy + 3 * math.sin(b)), int(cx + 3 * math.cos(b)) + 1, int(cy + 3 * math.sin(b)) + 1), "gr", 0)
+    c.fill(K.line(194, 19, 208, 19, 1), 0.85, "lime", outline=False)
+    for k in range(4):
+        c.shade(K.rect(189 + k * 6, 23, 192 + k * 6, 25), "lime" if (k + f) % 4 else "wh", 3)
+
+
+SPRITES = [conveyor, breaker, press_, rail, chute, lift, crane, radar, reels, daemon]
 
 
 def draw(stage, frame):
@@ -251,6 +302,35 @@ def icon_drop(c, f):
     c.shade(K.rect(15, y + 2, 17, y + 5), "rn", 1)
 
 
+def icon_rig(c, f):
+    c.fill(K.rect(4, 3, 28, 6), 0.5, "gr", outline=True)
+    tx = 10 + 3 * f
+    c.fill(K.rect(tx - 3, 6, tx + 4, 9), 0.75, "cu", outline=True)
+    c.fill(K.line(tx, 9, tx, 15, 1), 0.6, "wh", outline=False)
+    c.fill(K.line(tx, 16, tx + 1, 24, 2.4), 0.8, "cu")
+    jaw = K.disc(tx + 1, 26, 3.4) & ~K.disc(tx + 1, 27.6, 1.7)
+    c.fill(jaw, 0.85, "cu")
+
+
+def icon_event(c, f):
+    c.fill(K.rect(15, 18, 18, 29), 0.5, "gr", outline=True)
+    dish = K.disc(16, 18, 11, 7) & (K.yy < 19)
+    c.fill(dish, 0.4 + 0.5 * K.lin(5, 11, 27, 18), "rn", outline=True)
+    c.fill(K.line(16, 18, 22, 8, 1), 0.9, "wh", outline=False)
+    if f % 2 == 0:
+        c.shade(K.rect(25, 3, 28, 6), "red", 4)
+
+
+def icon_restore(c, f):
+    c.fill(K.rect(2, 7, 30, 26), 0.28, "gr", outline=True)
+    for i, cx in enumerate((10, 22)):
+        c.fill(K.disc(cx, 15, 5.5), 0.55, "lime", outline=False)
+        c.fill(K.disc(cx, 15, 1.5), 0.1, "gr", outline=False)
+        b = (f / IF) * 2 * math.pi * (1 if i == 0 else -1)
+        c.shade(K.rect(int(cx + 3 * math.cos(b)), int(15 + 3 * math.sin(b)), int(cx + 3 * math.cos(b)) + 1, int(15 + 3 * math.sin(b)) + 1), "gr", 0)
+    c.fill(K.line(10, 21, 22, 21, 1), 0.85, "lime", outline=False)
+
+
 def icon_ascend(c, f):
     c.fill(K.rect(15, 3, 17, 29), 0.95, "ae", outline=False)
     for i in range(2):
@@ -261,7 +341,7 @@ def icon_ascend(c, f):
     c.fill(K.rect(7, 27, 25, 30), 0.5, "ae", outline=True)
 
 
-ICONS = [icon_buy, icon_reboot, icon_compile, icon_deploy, icon_drop, icon_ascend]
+ICONS = [icon_buy, icon_reboot, icon_compile, icon_deploy, icon_drop, icon_ascend, icon_rig, icon_event, icon_restore]
 
 
 def save_icons():
@@ -280,5 +360,6 @@ def save_icons():
 
 
 if __name__ == "__main__":
+    K.STAGES = len(SPRITES) + 1
     K.save_sheet("sched", draw)
     save_icons()

@@ -14,7 +14,7 @@ import { useContext, useEffect, useRef, useState, type CSSProperties, type Mutab
 import { createPortal } from "react-dom";
 import "@/app/camino/nodefarm-poke.css";
 import { sfx } from "@/lib/sound/sounds";
-import { STATS, apGlobal, derive, fmt, fmtTime, isUnlocked, overclockMult, singularityAll, coreAll, statDef, MATS, TUNE, type State, type StatId, type MatId } from "@/lib/nodefarm/engine";
+import { STATS, apGlobal, derive, fmt, fmtTime, isUnlocked, overclockMult, singularityAll, sunstoneAll, statDef, MATS, TUNE, type State, type StatId, type MatId } from "@/lib/nodefarm/engine";
 import { exact, type Target, type TipInfo } from "@/lib/nodefarm/guide";
 import { LORE } from "@/lib/nodefarm/lore";
 import { call, id as idTok, num, p as pun, str as strTok, type FeedStore } from "@/lib/nodefarm/feed";
@@ -125,12 +125,12 @@ function globalTip(s: State, d: D): TipInfo {
     const goals = 1 + s.ach.length * TUNE.achBonus;
     const oc = s.overclock > 0 ? overclockMult(s) : 1;
     const ch = d.boosts.chAll;
-    const sn = singularityAll(s) * coreAll(s);
+    const sn = singularityAll(s) * sunstoneAll(s);
     const known = ap * goals * oc * ch * sn;
     const rows: [string, string][] = [["Ascension Points", `×${fmt(ap)}`], ["Goals and secrets", `×${fmt(goals)}`]];
     if (oc > 1) rows.push(["Overclock", `×${fmt(oc)}`]);
     if (ch > 1) rows.push(["Chrono", `×${fmt(ch)}`]);
-    if (sn > 1.0001) rows.push(["Singularity and Core", `×${fmt(sn)}`]);
+    if (sn > 1.0001) rows.push(["Singularity and Sunstone", `×${fmt(sn)}`]);
     rows.push(["Perks, tree and the rest", `×${fmt(d.global / known)}`]);
     return { color: "#2fd8e8", kicker: "CORE // GLOBAL BOOST", title: `×${exact(d.global)}`, note: "Multiplies Bytes and every material.", rows, status: "Every source multiplies the others.", tone: "ok" };
 }
