@@ -52,6 +52,14 @@ button tiers (+1, +5, +25, +125, +625, +3125; each tier costs about 8 to 10 time
 ## Drones (automation)
 One Drone per button tier (T1 to T6), bought with Aether, up to level 10 (`TUNE.drone`). Each level presses that tier's button 0.25 times a second on every stat the player has armed (Armed switch in each stat zone; Reboots are never automated). Drones reset on Ascend, the armed list is kept. Time away runs them at 50% speed and the standby report shows the Drone presses. The Autoloader perk now covers Multipliers and Copper through Chrono (max 9 levels).
 
+## Code reveal (lib/nodefarm/cx.ts, app/camino/nodefarm-cx.css)
+One open/close animation for every window, card and pop-up ("terminal print"): the frame opens out of a thin line, corner brackets snap in, a scan line sweeps, rows marked `data-cx-i` print left to right with a caret, top to bottom, and `data-cx-scr` labels decode out of glyphs (the engine's `scrambleNow`, always lands on the real text). Closing deletes rows bottom-up, then folds the frame back to a line. About 280 ms in, 160 ms out, 40 ms per row, at most 8 staggered rows, only rows on screen animate.
+- `codeReveal(el, { dir, rows, ms, bare })` returns a Promise; a new call on the same element restarts (never queues); a deadline timer always settles it; reduced motion resolves at once. `cxPlay(el)` replays the open, `cxStop(el)` lands it now, `cxClear(el)` lifts what an "out" left (hidden).
+- `useCodeReveal(ref, open)` keeps a thing mounted through its exit.
+- `--cx-c` sets the bracket/caret/scan colour (falls back to `--c`, then cyan). `bare` skips the frame for things that sit inline.
+- Windows (Map, Goals, Records, Ascend, Menu) go through `closeWin()` in node-farm.tsx; on phones a tab switch prints the section's rows in. Put `data-cx-i` on a panel's sections to control the print order; without any, the pane's second-level children print.
+- `data-cx-scr` replaces the text node, so only put it on static labels (use an sr-only twin like WinBar does).
+
 ## Game feel (components/nodefarm/juice.tsx, app/camino/nodefarm-juice.css)
 - The game talks to it with `juice.emit({ t: "press" | "tier" | "unlock" | "ascend" })` and `checkMilestones(s, bps)` (called twice a second from the loop). It never touches the engine or the save.
 - Press pop-ups: plain DOM nodes in a fixed layer on `<body>` (no React state), tinted by stat, a few dither sparks, bigger from tier 4 up and on Reboots. Max 14 alive; held-button repeats merge into one pop every 300 ms. They appear over the last pressed `.nf-btn`.

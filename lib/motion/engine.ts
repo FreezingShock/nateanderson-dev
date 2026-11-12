@@ -324,6 +324,21 @@ function scramble(el: HTMLElement, ms?: number) {
     run.raf = requestAnimationFrame(tick);
 }
 
+/**
+ * Decode an element's text out of random glyphs now (the same scramble the page uses). Always lands on the real text:
+ * `text` if given, else the element's sr-only sibling or its current text. Safe to call again mid-run (it restarts).
+ * Only for nodes React no longer re-renders the text of (static labels), because it replaces the text node.
+ */
+export function scrambleNow(el: HTMLElement, ms?: number, text?: string) {
+    if (text !== undefined) el.setAttribute("data-final", text);
+    scramble(el, ms);
+}
+
+/** Land a running scramble on its real text right away. */
+export function settleScramble(el: HTMLElement) {
+    endRun(el);
+}
+
 function onScrIO(entries: IntersectionObserverEntry[]) {
     for (const e of entries) {
         if (!e.isIntersecting) continue;

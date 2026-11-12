@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { sfx } from "@/lib/sound/sounds";
 import { setHum } from "@/lib/sound/engine";
 import { useSoundPrefs } from "@/lib/sound/use-sound";
@@ -29,6 +29,7 @@ import { MapPanel } from "./map";
 import { nextStep, type Target } from "@/lib/nodefarm/guide";
 import { GoalsPanel, MenuPanel, RecordsPanel } from "./systems";
 import { AscendPanel } from "./ascend";
+import { codeReveal, cxClear } from "@/lib/nodefarm/cx";
 
 const KEY = "nf-save-v1";
 const EV_KEY = "nf-events-v1"; // "off" when quick-time events are switched off (per device)
@@ -70,9 +71,45 @@ export function NodeFarm() {
     const [buyMax, setBuyMax] = useState(false);
     const buyMaxRef = useRef(false);
     buyMaxRef.current = buyMax;
+    // ---- window open/close: every window prints in and deletes out with the shared code reveal (lib/nodefarm/cx.ts)
+    const closing = useRef(0);
+    const paneOf = (w: string) => root.current?.querySelector<HTMLElement>(`[data-pane="${w}"]`) ?? null;
+    const paneRows = (el: HTMLElement) => (el.querySelector("[data-cx-i]") ? ":scope > .nf-win-bar, [data-cx-i]" : ":scope > .nf-win-bar, :scope > :not(.nf-win-bar) > *");
+    const closeWin = useCallback(() => {
+        const w = winRef.current;
+        if (!w) return;
+        const el = paneOf(w);
+        const n = ++closing.current;
+        root.current?.setAttribute("data-closing", "");
+        codeReveal(el, { dir: "out", rows: el ? paneRows(el) : undefined }).then(() => {
+            if (closing.current !== n) return;
+            root.current?.removeAttribute("data-closing");
+            setWin((cur) => (cur === w ? "" : cur));
+        });
+    }, []);
+    // phone: switching tabs prints the new section in (rows only, no frame)
+    const firstTab = useRef(true);
+    useLayoutEffect(() => {
+        if (firstTab.current) { firstTab.current = false; return; }
+        if (matchMedia("(min-width: 1000px)").matches) return;
+        const el = paneOf(tab);
+        if (el) codeReveal(el, { bare: true, rows: paneRows(el), ms: 240 });
+    }, [tab]);
+    const winRef = useRef(win);
+    winRef.current = win;
+    useLayoutEffect(() => {
+        if (!win) return;
+        closing.current++;
+        root.current?.removeAttribute("data-closing");
+        const el = paneOf(win);
+        if (!el) return;
+        cxClear(el);
+        el.scrollTop = 0;
+        codeReveal(el, { dir: "in", rows: paneRows(el) });
+    }, [win]);
     useEffect(() => {
         if (!win) return;
-        const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") setWin(""); };
+        const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") closeWin(); };
         window.addEventListener("keydown", onKey);
         // clears reveal transforms and lifts the board above the hero while a window is open (see nodefarm.css)
         document.body.classList.add("nf-win-open");
@@ -450,7 +487,7 @@ export function NodeFarm() {
                 </div>
             </header>
             <GuideStrip step={step} onGo={() => goTo(step.target)} onMap={() => openWin("map")} mapOpen={win === "map"} />
-            {win && <button type="button" className="nf-scrim" aria-label="Close window" tabIndex={-1} onClick={() => setWin("")} />}
+            {win && <button type="button" className="nf-scrim" aria-label="Close window" tabIndex={-1} onClick={closeWin} />}
 
             <nav className="nf-tabs" aria-label="Game sections">
                 {(["core", "stats", "map", "goals", "records", "ascend", "menu"] as Tab[]).map((t) => (
@@ -506,19 +543,19 @@ export function NodeFarm() {
             </section>
 
             <section className="nf-pane nf-sidepane" data-pane="map" aria-label="Progress map" role="dialog" aria-modal="false">
-                <WinBar title="Map" onClose={() => setWin("")} />
+                <WinBar title="Map" onClose={closeWin} />
                 <MapPanel s={s} d={d} onTree={() => openWin("tree")} onWin={(w) => openWin(w)} />
             </section>
             <section className="nf-pane nf-sidepane" data-pane="goals" aria-label="Goals" role="dialog" aria-modal="false">
-                <WinBar title="Goals" onClose={() => setWin("")} /><GoalsPanel s={s} /></section>
+                <WinBar title="Goals" onClose={closeWin} /><GoalsPanel s={s} /></section>
             <section className="nf-pane nf-sidepane" data-pane="records" aria-label="Records" role="dialog" aria-modal="false">
-                <WinBar title="Records" onClose={() => setWin("")} /><RecordsPanel s={s} /></section>
+                <WinBar title="Records" onClose={closeWin} /><RecordsPanel s={s} /></section>
             <section className="nf-pane nf-sidepane" data-pane="ascend" aria-label="Ascend" role="dialog" aria-modal="false">
-                <WinBar title="Ascend" onClose={() => setWin("")} />
+                <WinBar title="Ascend" onClose={closeWin} />
                 <AscendPanel s={s} d={d} confirm={confirm === "ascend"} onAscend={doAscend} onPerk={(id) => { if (buyPerk(s, id)) { sfx("nfBuy", { tier: 3 }); bump((n) => n + 1); } }} onTree={() => openWin("tree")} onMount={(i, m) => { if (setMount(s, i, m)) { sfx("tab"); save(); bump((n) => n + 1); } }} />
             </section>
             <section className="nf-pane nf-sidepane" data-pane="menu" aria-label="Menu" role="dialog" aria-modal="false">
-                <WinBar title="Menu" onClose={() => setWin("")} />
+                <WinBar title="Menu" onClose={closeWin} />
                 <MenuPanel
                     s={s}
                     soundOn={snd.on}
@@ -564,7 +601,7 @@ function DeadDrop({ s, onOpen }: { s: State; onOpen: () => void }) {
 function WinBar({ title, onClose }: { title: string; onClose: () => void }) {
     return (
         <div className="nf-win-bar">
-            <span>naOS // node.farm // {title}</span>
+            <span><span className="sr-only">naOS // node.farm // {title}</span><span aria-hidden="true" data-cx-scr="">naOS // node.farm // {title}</span></span>
             <button type="button" className="nf-win-x" onClick={onClose} aria-label={`Close ${title}`}>
                 <i />
             </button>
