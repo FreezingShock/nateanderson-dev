@@ -95,7 +95,7 @@ export const TUNE = {
     logK: { snAll: 0.1, egDrone: 0.15, pxOc: 0.15, orAp: 0.1, crosstalk: 0.12, blKeys: 0.1, suAll: 0.08 },
     boostPow: 0.38,
     chAllCap: 1e6, // Chrono boosts EVERYTHING, including Chrono: past this amount the boost grows only with log10 (a power law fed itself to 1e300 once Engrams opened)
-    unlockAt: { copper: 1, silicon: 150, quartz: 300, aether: 500, runes: 150, starglass: 200, voidsteel: 250, chrono: 2000, nebula: 300, pulsars: 300, singularity: 300, engrams: 350, paradox: 400, origin: 450, spores: 500, mycelium: 550, pollen: 600, bloom: 650, basalt: 700, magma: 750, geodes: 800, sunstone: 850 } as Record<string, number>, // copper: Reboots; the rest: amount of the stat below
+    unlockAt: { copper: 1, silicon: 150, quartz: 300, aether: 500, runes: 150, starglass: 800, voidsteel: 2500, chrono: 1000, nebula: 300, pulsars: 300, singularity: 300, engrams: 350, paradox: 400, origin: 450, spores: 500, mycelium: 550, pollen: 600, bloom: 650, basalt: 700, magma: 750, geodes: 800, sunstone: 850 } as Record<string, number>, // copper: Reboots; the rest: amount of the stat below
     overclockMult: 6,
     overclockSecs: 20,
     offlineCapHours: 8,
