@@ -436,4 +436,6 @@ body .nf-aw-go:focus-visible { outline: 3px solid var(--cm-cyan); outline-offset
 @media (max-width: 559px) { .ctos .nf-dr-list li { grid-template-columns: 1fr auto; } .ctos .nf-dr-pips { grid-column: 1; } .ctos .nf-dr-list .nf-mini { grid-column: 2; grid-row: 1 / 3; } }
 .ctos .nf-dr .nf-brief { margin-bottom: 14px; }
 
+/* While a window is open: drop the identity transform a settled scroll-reveal leaves on the section (it would turn the section into the containing block for the fixed window), and lift the section above the hero. */
 body.nf-win-open .ctos .g-frame, body.nf-win-open .ctos .cm-section, body.nf-win-open .ctos .nf-bleed, body.nf-win-open .ctos [data-rx] { transform: none !important; filter: none !important; will-change: auto !important; }
+body.nf-win-open .ctos .cm-section.ruled { z-index: 60; }
