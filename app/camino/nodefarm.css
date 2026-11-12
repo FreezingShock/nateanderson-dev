@@ -467,7 +467,7 @@ body.nf-win-open .ctos .cm-section.ruled { z-index: 60; }
 }
 
 /* ---- tooltip */
-.ctos .nf-tip { --br: var(--c); position: absolute; z-index: 95; width: min(300px, calc(100vw - 24px)); padding: 12px 14px 12px; background-color: #080a0b; border: 1px solid color-mix(in srgb, var(--c) 40%, #1c1c1c); box-shadow: 0 14px 40px #000d; pointer-events: none; animation: nfTipIn .12s ease-out both; }
+.ctos .nf-tip { --br: var(--c); position: absolute; z-index: 95; width: min(300px, calc(100vw - 24px)); padding: 12px 14px 12px; background-color: #080a0b; border: 1px solid color-mix(in srgb, var(--c) 40%, #1c1c1c); box-shadow: 0 14px 40px #000d; pointer-events: none; }
 .ctos .nf-tip::after { content: ""; position: absolute; left: var(--ax, 50%); width: 8px; height: 8px; margin-left: -4px; background: #080a0b; border: 1px solid color-mix(in srgb, var(--c) 40%, #1c1c1c); rotate: 45deg; }
 .ctos .nf-tip[data-side="up"]::after { bottom: -5px; border-top: 0; border-left: 0; }
 .ctos .nf-tip[data-side="down"]::after { top: -5px; border-bottom: 0; border-right: 0; }
@@ -567,7 +567,7 @@ body.nf-win-open .ctos .cm-section.ruled { z-index: 60; }
 
 /* ---- quick-time events: a centered card over a dim scrim, sharp ctOS panel with corner brackets */
 @keyframes nfWait { from { transform: scaleX(1); } to { transform: scaleX(0); } }
-.ctos .nf-ev-scrim { position: fixed; inset: 0; z-index: 80; display: grid; place-items: center; padding: 16px; background: #000b; animation: nfIn .18s ease both; overscroll-behavior: contain; }
+.ctos .nf-ev-scrim { position: fixed; inset: 0; z-index: 80; display: grid; place-items: center; padding: 16px; background: #000b; animation: nfScrim .16s steps(4, end) both; transition: opacity .12s steps(3, end); overscroll-behavior: contain; }
 .ctos .nf-ev { position: relative; width: min(94vw, 440px); max-height: calc(100dvh - 32px); overflow: auto; display: grid; gap: 16px; padding: 22px 22px 18px; background: #0a0a0a; border: 1px solid var(--cm-ctos-block); box-shadow: 0 0 0 6px #000, 0 30px 90px #000; touch-action: manipulation; }
 .ctos .nf-ev[data-stage="incoming"] { border-color: #ff6a3d; }
 .ctos .nf-ev[data-stage="result"][data-won] { border-color: var(--cm-cyan); }

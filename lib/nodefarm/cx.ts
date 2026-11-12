@@ -3,6 +3,7 @@
 import { useEffect, useLayoutEffect, useRef, useState, type RefObject } from "react";
 import { prefersReducedMotion, scrambleNow, settleScramble } from "@/lib/motion/engine";
 import "@/app/camino/nodefarm-cx.css";
+import { sfx } from "@/lib/sound/sounds";
 
 /*
  * Code reveal ("terminal print"): the one open/close animation for every Node Farm window, card and pop-up.
@@ -30,6 +31,8 @@ export interface CxOpts {
     ms?: number;
     /** skip the frame line/brackets (for things that sit inline, like a folding panel body) */
     bare?: boolean;
+    /** play the print / delete ticks (default: on for framed reveals, off for bare ones) */
+    sound?: boolean;
 }
 
 export const CX = { inMs: 280, outMs: 160, step: 40, maxStagger: 8 } as const;
@@ -97,6 +100,7 @@ export function codeReveal(el: HTMLElement | null, opts: CxOpts = {}): Promise<v
         const run: Run = { anims, fx: null, timer: 0, done: resolve };
         runs.set(el, run);
         const color = getComputedStyle(el).getPropertyValue("--cx-c").trim() || "";
+        if (opts.sound ?? !opts.bare) sfx(dir === "in" ? "nfPrint" : "nfDelete", rows.length);
 
         if (dir === "in") {
             const frameMs = opts.bare ? 0 : Math.round(total * 0.36);
@@ -277,4 +281,22 @@ export function useCodeReveal<T extends HTMLElement>(ref: RefObject<T | null>, o
     }, [shown, open]);
     useEffect(() => () => cxStop(ref.current), [ref]);
     return shown;
+}
+
+/**
+ * A folding panel body: rows print in when it expands and delete when it folds (no frame, no sound; the fold
+ * button already clicks). Skips the first render so a page load does not animate every zone.
+ */
+export function useFoldReveal<T extends HTMLElement>(ref: RefObject<T | null>, open: boolean, rows = ":scope > *") {
+    const first = useRef(true);
+    useEffect(() => {
+        if (first.current) {
+            first.current = false;
+            return;
+        }
+        const el = ref.current;
+        if (!el) return;
+        if (open) codeReveal(el, { bare: true, rows, ms: 260 });
+        else codeReveal(el, { dir: "out", bare: true, rows, ms: 260 });
+    }, [open, ref, rows]);
 }

@@ -5,6 +5,7 @@ import { createPortal } from "react-dom";
 import { TreeBackdrop, TreeDust, type TreeBackdropHandle } from "./tree-backdrop";
 import { TreeSprite, type SpriteState } from "./tree-sprite";
 import { SPRITE_CELLS } from "@/lib/nodefarm/tree-sprites";
+import { codeReveal } from "@/lib/nodefarm/cx";
 import * as Engine from "@/lib/nodefarm/engine";
 import { BRANCHES, TREE, fmt, hasNode, nodeOpen, treeFx, treeNode, type State, type TreeNode } from "@/lib/nodefarm/engine";
 
@@ -26,6 +27,20 @@ const clamp = (v: number, a: number, b: number) => Math.min(b, Math.max(a, v));
 const easeInOut = (t: number) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
 
 type Vis = "shown" | "fog" | "hidden";
+
+/** Steps from the core along the links, so the opening can decrypt the tree ring by ring. */
+const RING: Map<string, number> = (() => {
+    const d = new Map<string, number>();
+    const q: string[] = [];
+    for (const n of TREE) if (n.links.includes("core")) { d.set(n.id, 1); q.push(n.id); }
+    for (let i = 0; i < q.length; i++) {
+        const r = d.get(q[i])!;
+        for (const l of treeNode(q[i]).links) if (l !== "core" && !d.has(l)) { d.set(l, r + 1); q.push(l); }
+    }
+    return d;
+})();
+const BOOT_MS = 1400;
+const CLOSE_MS = 340;
 type NodeState = "owned" | "ready" | "open" | "locked";
 type Extra = TreeNode & { flavor?: string; sprite?: string };
 
@@ -140,11 +155,15 @@ export function TreeMenu({ s, reduced, onBuy, onRespec, onClose }: { s: State; r
     /** camera: the world point at the centre of the view (px at zoom 1, core = 0,0) and the zoom */
     const cam = useRef({ cx: 0, cy: 0, k: 1 });
     const glide = useRef(0);
-    const dims = useRef({ w: 800, h: 600 });
+    /** view size, the view's top inside the menu, and how much of the view's top the bar covers */
+    const dims = useRef({ w: 800, h: 600, vt: 44, st: 0 });
     const ptrs = useRef(new Map<number, { x: number; y: number }>());
     const gest = useRef({ total: 0, suppress: false, pinch: 0, mx: 0, my: 0 });
     const hovT = useRef<number | undefined>(undefined);
     const cardFor = useRef<string | null>(null);
+    const sideFor = useRef<{ id: string | null; side: string }>({ id: null, side: "r" });
+    /** drawn nodes in world px, for the card's placement */
+    const drawn = useRef<{ id: string; x: number; y: number; sz: number }[]>([]);
     const prevVis = useRef<Map<string, Vis> | null>(null);
     const [sel, setSel] = useState<string>("");
     const [hov, setHov] = useState<string | null>(null);
@@ -156,8 +175,20 @@ export function TreeMenu({ s, reduced, onBuy, onRespec, onClose }: { s: State; r
     const [confirm, setConfirm] = useState(false);
     const [msg, setMsg] = useState("");
     const [showTot, setShowTot] = useState(false);
+    /** opening and closing: "in" plays the boot sequence, "out" the collapse before the menu unmounts */
+    const [boot, setBoot] = useState<"in" | "done" | "out">(reduced ? "done" : "in");
+    const bootRef = useRef(boot);
+    bootRef.current = boot;
+    const bootT = useRef<number[]>([]);
+    /** the controls line folds to a small prompt after the first touch, so it never sits over nodes */
+    const [hintMin, setHintMin] = useState(false);
+    const [coarse, setCoarse] = useState(false);
+    /** desktop: the site's top corners stay, the tree's bar sits between them and the dock waits behind a tab */
+    const [chrome, setChrome] = useState(false);
+    const [dockOpen, setDockOpen] = useState(false);
 
     const vis = useMemo(() => visMap(s), [s, s.tree.length]); // eslint-disable-line react-hooks/exhaustive-deps
+    drawn.current = useMemo(() => [{ id: "core", x: 0, y: 0, sz: SZ.core }, ...TREE.filter((n) => (vis.get(n.id) ?? "hidden") !== "hidden").map((n) => ({ id: n.id, x: n.x * U, y: n.y * U, sz: SZ[n.kind] }))], [vis]);
     const seen = (id: string) => id === "core" || (vis.get(id) ?? "hidden") !== "hidden";
 
     // world bounds of everything on screen, so the camera can't wander off into empty space
@@ -176,9 +207,30 @@ export function TreeMenu({ s, reduced, onBuy, onRespec, onClose }: { s: State; r
     const bRef = useRef(bounds);
     bRef.current = bounds;
 
+    const endBoot = useCallback(() => {
+        if (bootRef.current !== "in") return;
+        bootT.current.forEach((x) => window.clearTimeout(x));
+        bootT.current = [];
+        setBoot("done");
+    }, []);
+    const closing = useRef(false);
+    /** close plays the collapse (a CRT line), then hands back to the game */
+    const close = useCallback(() => {
+        if (closing.current) return;
+        closing.current = true;
+        if (reduced) return onClose();
+        bootT.current.forEach((x) => window.clearTimeout(x));
+        setBoot("out");
+        window.setTimeout(onClose, CLOSE_MS);
+    }, [onClose, reduced]);
+
     const measure = () => {
         const b = view.current?.getBoundingClientRect();
-        dims.current = { w: b?.width || 800, h: b?.height || 600 };
+        const r = root.current?.getBoundingClientRect();
+        const bar = root.current?.querySelector(".nf-tm-bar")?.getBoundingClientRect();
+        const vt = b && r ? b.top - r.top : 44;
+        const st = b && bar ? Math.max(0, bar.bottom - b.top) : 0;
+        dims.current = { w: b?.width || 800, h: b?.height || 600, vt, st };
         bd.current?.resize(dims.current.w, dims.current.h);
         return dims.current;
     };
@@ -189,21 +241,46 @@ export function TreeMenu({ s, reduced, onBuy, onRespec, onClose }: { s: State; r
         if (!c || !ln) return;
         if (!id) { c.style.visibility = "hidden"; ln.style.visibility = "hidden"; return; }
         const n = id === "core" ? null : treeNode(id);
-        const { w, h } = dims.current;
+        const { w, h, vt: top, st } = dims.current;
         const { cx, cy, k } = cam.current;
-        const top = 44; // the bar above the view
         const sx = w / 2 + ((n ? n.x * U : 0) - cx) * k;
         const sy = top + h / 2 + ((n ? n.y * U : 0) - cy) * k;
         const r = ((n ? SZ[n.kind] : SZ.core) / 2) * k + 10;
         const cw = c.offsetWidth, ch = c.offsetHeight;
         const gap = 22;
-        let left: number, tp: number, side: "r" | "l" | "b" | "t";
-        if (sx + r + gap + cw <= w - 12) { side = "r"; left = sx + r + gap; tp = sy - Math.min(48, ch / 2); }
-        else if (sx - r - gap - cw >= 12) { side = "l"; left = sx - r - gap - cw; tp = sy - Math.min(48, ch / 2); }
-        else if (sy + r + gap + ch <= top + h - 8) { side = "b"; left = sx - cw / 2; tp = sy + r + gap; }
-        else { side = "t"; left = sx - cw / 2; tp = sy - r - gap - ch; }
-        left = clamp(left, 12, w - cw - 12);
-        tp = clamp(tp, top + 12, top + h - ch - 12);
+        // try each side, score how much of the other drawn nodes the card would cover, keep the least-covering side
+        // (with a little stickiness, so the card does not hop around while the camera moves)
+        type Side = "r" | "l" | "b" | "t";
+        const place = (sd: Side): [number, number] => {
+            const l0 = sd === "r" ? sx + r + gap : sd === "l" ? sx - r - gap - cw : sx - cw / 2;
+            const t0 = sd === "b" ? sy + r + gap : sd === "t" ? sy - r - gap - ch : sy - Math.min(48, ch / 2);
+            return [clamp(l0, 12, w - cw - 12), clamp(t0, top + st + 12, top + h - ch - 12)];
+        };
+        const fits = (sd: Side) => sd === "r" ? sx + r + gap + cw <= w - 12 : sd === "l" ? sx - r - gap - cw >= 12 : sd === "b" ? sy + r + gap + ch <= top + h - 8 : sy - r - gap - ch >= top + st + 8;
+        const others = drawn.current.filter((o) => o.id !== id);
+        const cover = (l0: number, t0: number) => {
+            let a = 0;
+            for (const o of others) {
+                const ox = w / 2 + (o.x - cx) * k, oy = top + h / 2 + (o.y - cy) * k, orr = (o.sz / 2) * k + 6;
+                const ix = Math.min(l0 + cw, ox + orr) - Math.max(l0, ox - orr), iy = Math.min(t0 + ch, oy + orr) - Math.max(t0, oy - orr);
+                if (ix > 0 && iy > 0) a += ix * iy;
+            }
+            // covering the node itself (after clamping) is the worst case
+            const sx0 = Math.min(l0 + cw, sx + r) - Math.max(l0, sx - r), sy0 = Math.min(t0 + ch, sy + r) - Math.max(t0, sy - r);
+            if (sx0 > 0 && sy0 > 0) a += sx0 * sy0 * 6;
+            return a;
+        };
+        const sides: Side[] = (["r", "l", "b", "t"] as Side[]).filter(fits);
+        if (!sides.length) sides.push(w < 700 ? "b" : "r");
+        const prev = sideFor.current.id === id ? sideFor.current.side : null;
+        let side: Side = sides[0], best = Infinity;
+        for (const sd of sides) {
+            const [l0, t0] = place(sd);
+            const sc = cover(l0, t0) * (sd === prev ? 0.7 : 1) + (sd === "r" ? 0 : 400);
+            if (sc < best) { best = sc; side = sd; }
+        }
+        sideFor.current = { id, side };
+        const [left, tp] = place(side);
         c.style.transform = `translate3d(${Math.round(left)}px, ${Math.round(tp)}px, 0)`;
         c.style.visibility = "visible";
         c.dataset.side = side;
@@ -279,26 +356,30 @@ export function TreeMenu({ s, reduced, onBuy, onRespec, onClose }: { s: State; r
     }, [flyTo, jump]);
 
     /** Zoom to fit everything that is visible. */
-    const fit = useCallback((animate = true, maxK = 1.05) => {
-        const { w, h } = measure();
+    const fitTarget = (maxK = 1.05) => {
+        const { w, h, st } = measure();
         const b = bRef.current.fit;
         const bw = b.x1 - b.x0 + 2.6 * U, bh = b.y1 - b.y0 + 2.6 * U;
         // never fit so far out that the nodes turn into dots: past this, panning shows the rest
-        const k = clamp(Math.min(w / bw, h / bh), w < 700 ? 0.42 : 0.56, maxK);
-        const cx = (b.x0 + b.x1) / 2, cy = (b.y0 + b.y1) / 2;
-        if (animate) flyTo(cx, cy, k); else jump(cx, cy, k);
-    }, [flyTo, jump]);
+        const k = clamp(Math.min(w / bw, (h - st) / bh), w < 700 ? 0.42 : 0.56, maxK);
+        return { cx: (b.x0 + b.x1) / 2, cy: (b.y0 + b.y1) / 2 - st / 2 / k, k };
+    };
+    const fit = useCallback((animate = true, maxK = 1.05) => {
+        const t = fitTarget(maxK);
+        if (animate) flyTo(t.cx, t.cy, t.k); else jump(t.cx, t.cy, t.k);
+    }, [flyTo, jump]); // eslint-disable-line react-hooks/exhaustive-deps
 
     /** Bring a node into focus: glide over, zoom in a little, and leave room for its card. */
     const focusNode = useCallback((id: string) => {
-        const { w, h } = measure();
+        const { w, h: vh, st } = measure();
         const n = id === "core" ? null : treeNode(id);
         const nx = n ? n.x * U : 0, ny = n ? n.y * U : 0;
         const k = clamp(Math.max(cam.current.k, w < 700 ? 0.78 : 1.0), KMIN, w < 700 ? 1.0 : 1.25);
         // desktop: node a little left of centre so the card fits on its right; phone: node in the upper third, card below
         const sx = w < 700 ? w / 2 : w * 0.4;
-        const sy = w < 700 ? h * 0.3 : h * 0.48;
-        flyTo(nx - (sx - w / 2) / k, ny - (sy - h / 2) / k, k);
+        // (inside the part of the view the bar does not cover)
+        const sy = st + (w < 700 ? (vh - st) * 0.3 : (vh - st) * 0.48);
+        flyTo(nx - (sx - w / 2) / k, ny - (sy - vh / 2) / k, k);
     }, [flyTo]);
 
     // first view: fit what is visible (it starts small, so this lands close in). The menu can open while the page is
@@ -306,10 +387,16 @@ export function TreeMenu({ s, reduced, onBuy, onRespec, onClose }: { s: State; r
     const touched = useRef(false);
     useEffect(() => {
         const el = view.current;
-        const raf = requestAnimationFrame(() => fit(false));
+        const raf = requestAnimationFrame(() => {
+            if (bootRef.current !== "in") return fit(false);
+            // boot: start close on the core, then pull back to the fitted view while the rings decrypt
+            const t = fitTarget();
+            jump(0, 0, Math.min(KMAX, t.k * 2.3));
+            bootT.current.push(window.setTimeout(() => { if (!touched.current) flyTo(t.cx, t.cy, t.k, 950); }, 230));
+        });
         const ro = new ResizeObserver(() => {
             measure();
-            if (touched.current) apply();
+            if (touched.current || bootRef.current === "in") apply();
             else fit(false);
         });
         if (el) ro.observe(el);
@@ -324,11 +411,14 @@ export function TreeMenu({ s, reduced, onBuy, onRespec, onClose }: { s: State; r
         const prev = document.activeElement as HTMLElement | null;
         document.body.classList.add("nf-win-open", "nf-tm-open");
         root.current?.querySelector<HTMLElement>(".nf-tm-x")?.focus();
+        setCoarse(window.matchMedia("(pointer: coarse)").matches);
         const onKey = (e: KeyboardEvent) => {
-            if (e.key !== "Escape") return;
+            if (e.key !== "Escape") { if (bootRef.current === "in" && !e.repeat) endBoot(); return; }
+            // the site map, search and console open above the tree on desktop: their Escape is theirs
+            if (document.querySelector(".nv-scrim")) return;
             e.stopPropagation();
             // first Escape lets go of the picked node, the second closes the tree
-            if (selRef.current) { setSel(""); setHov(null); } else onClose();
+            if (selRef.current) { setSel(""); setHov(null); } else close();
         };
         window.addEventListener("keydown", onKey, true);
         return () => {
@@ -336,7 +426,48 @@ export function TreeMenu({ s, reduced, onBuy, onRespec, onClose }: { s: State; r
             document.body.classList.remove("nf-win-open", "nf-tm-open");
             prev?.focus?.();
         };
-    }, [onClose]);
+    }, [close]); // eslint-disable-line react-hooks/exhaustive-deps
+
+    // the boot ends on its own, or early on any key, click or wheel
+    useEffect(() => {
+        if (bootRef.current !== "in") return;
+        const t = window.setTimeout(() => setBoot((b) => (b === "in" ? "done" : b)), BOOT_MS);
+        const list = bootT.current;
+        return () => { window.clearTimeout(t); list.forEach((x) => window.clearTimeout(x)); };
+    }, []);
+
+    // desktop framing: the tree's bar slots between the site's top-left and top-right clusters, which stay usable
+    useEffect(() => {
+        const mq = window.matchMedia("(min-width: 900px)");
+        const lay = () => {
+            const a = document.querySelector(".nv-top .nv-start")?.getBoundingClientRect();
+            const b = document.querySelector(".nv-top .nv-tools")?.getBoundingClientRect();
+            const on = mq.matches && !!a && !!b && a.width > 0 && b.width > 0;
+            document.body.classList.toggle("nf-tm-chrome", on);
+            setChrome(on);
+            const el = root.current;
+            if (!on || !el || !a || !b) return;
+            el.style.setProperty("--tm-l", `${Math.round(a.right + 10)}px`);
+            el.style.setProperty("--tm-r", `${Math.round(window.innerWidth - b.left + 10)}px`);
+            el.style.setProperty("--tm-t", `${Math.round(a.top)}px`);
+            el.style.setProperty("--tm-h", `${Math.round(a.height)}px`);
+        };
+        lay();
+        window.addEventListener("resize", lay);
+        mq.addEventListener("change", lay);
+        return () => { window.removeEventListener("resize", lay); mq.removeEventListener("change", lay); document.body.classList.remove("nf-tm-chrome"); };
+    }, []);
+
+    // the dock tab: the site's page dock slides up over the tree, the tab rides on top of it
+    useEffect(() => {
+        const on = dockOpen && chrome;
+        document.body.classList.toggle("nf-tm-dock", on);
+        if (on) {
+            const d = document.querySelector(".cm-dock")?.getBoundingClientRect();
+            if (d) root.current?.style.setProperty("--dock-gap", `${Math.round(window.innerHeight - d.top + 10)}px`);
+        }
+        return () => document.body.classList.remove("nf-tm-dock");
+    }, [dockOpen, chrome]);
 
     // wheel zoom has to be a non-passive listener to stop the page from scrolling
     useEffect(() => {
@@ -345,13 +476,15 @@ export function TreeMenu({ s, reduced, onBuy, onRespec, onClose }: { s: State; r
         const onWheel = (e: WheelEvent) => {
             e.preventDefault();
             touched.current = true;
+            endBoot();
+            setHintMin(true);
             const b = el.getBoundingClientRect();
             const dy = e.deltaMode === 1 ? e.deltaY * 16 : e.deltaY;
             zoomAt(e.clientX - b.left, e.clientY - b.top, Math.exp(-dy * (e.ctrlKey ? 0.01 : 0.0016)));
         };
         el.addEventListener("wheel", onWheel, { passive: false });
         return () => el.removeEventListener("wheel", onWheel);
-    }, [zoomAt]);
+    }, [zoomAt, endBoot]);
 
     // nodes that just came into view (or out of the fog) play a decrypt reveal
     useEffect(() => {
@@ -367,8 +500,21 @@ export function TreeMenu({ s, reduced, onBuy, onRespec, onClose }: { s: State; r
     }, [vis]);
 
     const shown = hov ?? (sel || null);
-    cardFor.current = shown;
+    // the card closes with the shared code reveal, so it keeps the last node's content while the rows delete
+    const [leaving, setLeaving] = useState<string | null>(null);
+    const [prevShown, setPrevShown] = useState<string | null>(shown);
+    if (prevShown !== shown) { setPrevShown(shown); setLeaving(shown ? null : prevShown); }
+    const cardId = shown ?? leaving;
+    cardFor.current = cardId;
     useLayoutEffect(() => { measure(); placeCard(); });
+    useLayoutEffect(() => {
+        const el = card.current;
+        if (!el) return;
+        if (shown) { void codeReveal(el, { dir: "in" }); return; }
+        if (!leaving) return;
+        const id = leaving;
+        void codeReveal(el, { dir: "out" }).then(() => setLeaving((l) => (l === id ? null : l)));
+    }, [shown, leaving]);
     useEffect(() => { bd.current?.focus(shown && shown !== "core" ? treeNode(shown).branch : null); }, [shown]);
 
     // ---- pointers: one finger or the mouse pans, two fingers pinch
@@ -379,6 +525,8 @@ export function TreeMenu({ s, reduced, onBuy, onRespec, onClose }: { s: State; r
     const down = (e: RPointerEvent) => {
         stop();
         touched.current = true;
+        endBoot();
+        setHintMin(true);
         ptrs.current.set(e.pointerId, pos(e));
         if (ptrs.current.size === 1) { gest.current.total = 0; gest.current.suppress = false; }
         if (ptrs.current.size === 2) {
@@ -446,10 +594,10 @@ export function TreeMenu({ s, reduced, onBuy, onRespec, onClose }: { s: State; r
     };
 
     const ensureVisible = (n: TreeNode) => {
-        const { w, h } = dims.current;
+        const { w, h, st } = dims.current;
         const { cx, cy, k } = cam.current;
         const sx = w / 2 + (n.x * U - cx) * k, sy = h / 2 + (n.y * U - cy) * k;
-        if (sx < 80 || sx > w - 80 || sy < 80 || sy > h - 120) focusNode(n.id);
+        if (sx < 80 || sx > w - 80 || sy < st + 80 || sy > h - 120) focusNode(n.id);
     };
 
     // hover shows the card, with a short grace period so the pointer can travel from the node onto the card
@@ -475,6 +623,7 @@ export function TreeMenu({ s, reduced, onBuy, onRespec, onClose }: { s: State; r
     const untilt = (e: RPointerEvent<HTMLElement>) => { e.currentTarget.style.removeProperty("--rx"); e.currentTarget.style.removeProperty("--ry"); };
 
     const pick = (id: string) => {
+        setHintMin(true);
         if (sel === id) return;
         setSel(id);
         setHov(null);
@@ -550,8 +699,21 @@ export function TreeMenu({ s, reduced, onBuy, onRespec, onClose }: { s: State; r
         requestAnimationFrame(() => fit());
     };
 
+    // the boot sequence's terminal lines (real counts, taken once at open)
+    const bootLines = useMemo(() => {
+        const inRange = TREE.filter((n) => vis.get(n.id) === "shown").length;
+        const fog = TREE.filter((n) => vis.get(n.id) === "fog").length;
+        return [
+            "naos@node-01:~$ tree --mount",
+            `> read ${TREE.length} nodes ......... ok`,
+            `> decrypt ${inRange} in range ...... ok`,
+            fog ? `> ${fog} encrypted // signal weak` : "> no encrypted nodes left",
+            `> ${owned} installed // ${fmt(s.ap)} AP free`,
+        ];
+    }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
     // the card's content
-    const cn = shown && shown !== "core" ? (treeNode(shown) as Extra) : null;
+    const cn = cardId && cardId !== "core" ? (treeNode(cardId) as Extra) : null;
     const cvis = cn ? vis.get(cn.id) : null;
     const cst = cn ? stateOf(s, cn) : null;
     const fogCard = cvis === "fog";
@@ -560,14 +722,14 @@ export function TreeMenu({ s, reduced, onBuy, onRespec, onClose }: { s: State; r
     // portaled to <body> so no page transition or scroll reveal transform can shift the fixed layer
     return createPortal(
         <div className="ctos nf-tm-host">
-        <div className="nf-tm" ref={root} role="dialog" aria-modal="true" aria-label="Prestige tree" data-lod="near" data-focus={sel ? "" : undefined} onKeyDown={keys}>
+        <div className="nf-tm" ref={root} role="dialog" aria-modal="true" aria-label="Prestige tree" data-lod="near" data-focus={sel ? "" : undefined} data-boot={boot} data-chrome={chrome ? "" : undefined} onKeyDown={keys}>
             <header className="nf-tm-bar">
                 <span className="nf-tm-t">naOS // node.farm // prestige tree</span>
                 <span className="nf-tm-ap" aria-live="polite"><b>{fmt(s.ap)}</b> AP<small>{owned}/{TREE.length} nodes{ready ? ` // ${ready} ready` : ""}</small></span>
                 <button type="button" className="nf-tm-b" data-danger={confirm ? "" : undefined} disabled={!owned} onClick={respec} title="Take every node back and refund its AP. Free.">
                     {confirm ? `Confirm: refund ${fmt(spent)} AP` : "Respec"}
                 </button>
-                <button type="button" className="nf-tm-x" onClick={onClose} aria-label="Close the tree"><i /></button>
+                <button type="button" className="nf-tm-x" onClick={close} aria-label="Close the tree"><i /></button>
             </header>
             <div
                 className="nf-tm-view"
@@ -584,18 +746,18 @@ export function TreeMenu({ s, reduced, onBuy, onRespec, onClose }: { s: State; r
             >
                 <TreeBackdrop ref={bd} unit={U} />
                 <div className="nf-tm-world" ref={world}>
-                    <svg className="nf-tm-links" width={2} height={2} aria-hidden="true">
-                        {links.map((l) => <path key={"b" + l.key} className="nf-tl-bed" d={l.d} data-st={l.st} data-fog={l.fog ? "" : undefined} style={{ ["--c" as string]: l.col } as CSSProperties} />)}
-                        {links.map((l) => <path key={l.key} className="nf-tl" d={l.d} data-st={l.st} data-fog={l.fog ? "" : undefined} data-near={l.near ? "" : undefined} style={{ ["--c" as string]: l.col } as CSSProperties} />)}
-                        {links.map((l) => l.vias.map(([x, y], i) => <rect key={l.key + "v" + i} className="nf-tl-via" x={x - 6} y={y - 6} width={12} height={12} data-st={l.st} data-fog={l.fog ? "" : undefined} data-near={l.near ? "" : undefined} style={{ ["--c" as string]: l.col } as CSSProperties} />))}
-                        {!reduced && packets.map(([col, d]) => <path key={col} className="nf-tl-pk" d={d} style={{ ["--c" as string]: col } as CSSProperties} />)}
-                    </svg>
                     {labels.map(({ b, th, r, got, total }) => r > 0 && (
                         <div key={b.id} className="nf-tm-sec" data-side={Math.cos(th) > 0.35 ? "r" : Math.cos(th) < -0.35 ? "l" : "c"} style={{ left: Math.cos(th) * r * U, top: Math.sin(th) * r * U, ["--c" as string]: b.color } as CSSProperties}>
                             <b>{b.name}</b>
                             <small>{got}/{total} // {b.blurb}</small>
                         </div>
                     ))}
+                    <svg className="nf-tm-links" width={2} height={2} aria-hidden="true">
+                        {links.map((l) => <path key={"b" + l.key} className="nf-tl-bed" d={l.d} data-st={l.st} data-fog={l.fog ? "" : undefined} style={{ ["--c" as string]: l.col } as CSSProperties} />)}
+                        {links.map((l) => <path key={l.key} className="nf-tl" d={l.d} data-st={l.st} data-fog={l.fog ? "" : undefined} data-near={l.near ? "" : undefined} style={{ ["--c" as string]: l.col } as CSSProperties} />)}
+                        {links.map((l) => l.vias.map(([x, y], i) => <rect key={l.key + "v" + i} className="nf-tl-via" x={x - 6} y={y - 6} width={12} height={12} data-st={l.st} data-fog={l.fog ? "" : undefined} data-near={l.near ? "" : undefined} style={{ ["--c" as string]: l.col } as CSSProperties} />))}
+                        {!reduced && packets.map(([col, d]) => <path key={col} className="nf-tl-pk" d={d} style={{ ["--c" as string]: col } as CSSProperties} />)}
+                    </svg>
                     <button
                         type="button"
                         className="nf-tn nf-tn-core"
@@ -636,7 +798,7 @@ export function TreeMenu({ s, reduced, onBuy, onRespec, onClose }: { s: State; r
                                 data-new={fresh.has(n.id) ? "" : undefined}
                                 aria-label={fog ? `Encrypted ${KIND[n.kind].toLowerCase()} node in ${BNAME[n.branch]}.` : `${n.name}, ${BNAME[n.branch]}, ${KIND[n.kind].toLowerCase()}, ${st === "owned" ? "owned" : st === "locked" ? "locked" : `${n.cost} AP`}. ${n.blurb}`}
                                 aria-pressed={sel === n.id}
-                                style={{ left: n.x * U, top: n.y * U, ["--sz" as string]: `${SZ[n.kind]}px`, ["--c" as string]: BCOL[n.branch], ["--col" as string]: n.ix % 8, ["--row" as string]: Math.floor(n.ix / 8) } as CSSProperties}
+                                style={{ left: n.x * U, top: n.y * U, ["--ring" as string]: Math.min(RING.get(n.id) ?? 1, 8), ["--sz" as string]: `${SZ[n.kind]}px`, ["--c" as string]: BCOL[n.branch], ["--col" as string]: n.ix % 8, ["--row" as string]: Math.floor(n.ix / 8) } as CSSProperties}
                                 onClick={() => pick(n.id)}
                                 
                                 onPointerLeave={(e) => { hoverOff(); untilt(e); }}
@@ -666,7 +828,7 @@ export function TreeMenu({ s, reduced, onBuy, onRespec, onClose }: { s: State; r
             <aside
                 className="nf-tm-card"
                 ref={card}
-                key={shown ?? "none"}
+                key={cardId ?? "none"}
                 data-st={fogCard ? "fog" : cst ?? "core"}
                 data-pinned={pinned ? "" : undefined}
                 data-kind={cn?.kind ?? "core"}
@@ -675,26 +837,26 @@ export function TreeMenu({ s, reduced, onBuy, onRespec, onClose }: { s: State; r
                 onPointerEnter={() => window.clearTimeout(hovT.current)}
                 onPointerLeave={() => { if (hov && hov !== sel) hoverOff(); }}
             >
-                {shown && (cn ? (
+                {cardId && (cn ? (
                     <>
-                        <span className="nf-tm-k">
-                            <span>{BNAME[cn.branch]} // {KIND[cn.kind]}</span>
+                        <span className="nf-tm-k" data-cx-i="0">
+                            <span>{BNAME[cn.branch].toLowerCase()}.{cn.kind}</span>
                             <span className="nf-tm-st">{fogCard ? "ENCRYPTED" : cst === "owned" ? "OWNED" : cst === "locked" ? "LOCKED" : cst === "ready" ? "READY" : "AVAILABLE"}</span>
                         </span>
-                        <b className="nf-tm-n">{fogCard ? <ScrambleName text="????????" reduced={reduced} /> : <ScrambleName text={cn.name} reduced={reduced} />}<span className="sr-only">{fogCard ? "Encrypted node" : cn.name}</span></b>
+                        <b className="nf-tm-n" data-cx-i="1">{fogCard ? <ScrambleName text="????????" reduced={reduced} /> : <ScrambleName text={cn.name} reduced={reduced} />}<span className="sr-only">{fogCard ? "Encrypted node" : cn.name}</span></b>
                         {fogCard ? (
-                            <p className="nf-tm-fx">Signal too weak to read. Buy a node next to it to decrypt this one.</p>
+                            <p className="nf-tm-fx" data-cx-i="2"><i aria-hidden="true">err</i><span>Signal too weak to read. Buy a node next to it to decrypt this one.</span></p>
                         ) : (
                             <>
-                                <p className="nf-tm-fx"><Fx text={cn.blurb} /></p>
-                                {cn.flavor && <p className="nf-tm-flv">&ldquo;{cn.flavor}&rdquo;</p>}
+                                <p className="nf-tm-fx" data-cx-i="2"><i aria-hidden="true">fx</i><span><Fx text={cn.blurb} /></span></p>
+                                {cn.flavor && <blockquote className="nf-tm-flv" data-cx-i="3"><p>{cn.flavor}</p></blockquote>}
                             </>
                         )}
                         {!fogCard && cst === "locked" && (
-                            <p className="nf-tm-need">Needs a neighbour: {cn.links.filter((l) => l !== "core" && seen(l) && vis.get(l) !== "fog").map((l) => treeNode(l).name).join(", ") || "decrypt the path first"}.</p>
+                            <p className="nf-tm-need" data-cx-i="4">// needs a neighbour: {cn.links.filter((l) => l !== "core" && seen(l) && vis.get(l) !== "fog").map((l) => treeNode(l).name).join(", ") || "decrypt the path first"}</p>
                         )}
                         {!fogCard && (
-                            <div className="nf-tm-a">
+                            <div className="nf-tm-a" data-cx-i="5">
                                 <span className="nf-tm-cost"><b>{cst === "owned" ? "Owned" : `${cn.cost} AP`}</b><small>{cst === "owned" ? "kept through Ascend" : `you have ${fmt(s.ap)}`}</small></span>
                                 {cst !== "owned" && (
                                     <button type="button" className="nf-tm-buy" disabled={cst !== "ready"} onClick={() => buy(cn.id)}>
@@ -706,17 +868,38 @@ export function TreeMenu({ s, reduced, onBuy, onRespec, onClose }: { s: State; r
                     </>
                 ) : (
                     <>
-                        <span className="nf-tm-k"><span>CORE // ROOT</span><span className="nf-tm-st">ONLINE</span></span>
-                        <b className="nf-tm-n"><ScrambleName text="The core" reduced={reduced} /><span className="sr-only">The core</span></b>
-                        <p className="nf-tm-fx">Every section grows out of here. A node opens once it touches the core or a node you own, and the next ring decrypts as you buy toward it. Respec is free and refunds every AP.</p>
+                        <span className="nf-tm-k" data-cx-i="0"><span>core.root</span><span className="nf-tm-st">ONLINE</span></span>
+                        <b className="nf-tm-n" data-cx-i="1"><ScrambleName text="The core" reduced={reduced} /><span className="sr-only">The core</span></b>
+                        <p className="nf-tm-fx" data-cx-i="2"><i aria-hidden="true">sys</i><span>Every section grows out of here. A node opens once it touches the core or a node you own; the next ring decrypts as you buy toward it.</span></p>
+                        <blockquote className="nf-tm-flv" data-cx-i="3"><p>Respec is free and refunds every AP.</p></blockquote>
                     </>
                 ))}
                 {msg && <p className="nf-tm-msg" role="status">{msg}</p>}
             </aside>
-            {!sel && !hov && (
-                <p className="nf-tm-hint" aria-hidden="true">{ready ? `${ready} node${ready > 1 ? "s" : ""} ready to install // tap one to read it` : "tap a node to read it // drag to pan // pinch or scroll to zoom"}</p>
+            {!sel && !hov && boot !== "in" && (
+                <button type="button" className="nf-tm-hint" data-min={hintMin ? "" : undefined} aria-expanded={!hintMin} aria-label={hintMin ? "Show the tree controls" : "Hide the tree controls"} onClick={() => setHintMin((m) => !m)}>
+                    <span className="nf-tm-ps">~/tree $</span>
+                    <span className="nf-tm-hc" key={hintMin ? "min" : "full"}>
+                        {hintMin
+                            ? (ready ? <><b>{ready}</b> ready</> : "help")
+                            : <>{ready ? <><b>{ready}</b> ready to install // </> : null}{coarse ? (ready ? "tap one to read it" : "tap: read // drag: pan // pinch: zoom") : "click: read // drag: pan // scroll: zoom"}</>}
+                    </span>
+                    <i className="nf-tm-caret" aria-hidden="true" />
+                </button>
             )}
-            {msg && !shown && <p className="nf-tm-hint" role="status">{msg}</p>}
+            {msg && !shown && <p className="nf-tm-toast" role="status">{msg}</p>}
+            {chrome && (
+                <button type="button" className="nf-tm-dockb" aria-expanded={dockOpen} aria-label={dockOpen ? "Hide the page dock" : "Show the page dock"} onClick={() => setDockOpen((v) => !v)}>
+                    <i aria-hidden="true" />&lt;/&gt; pages
+                </button>
+            )}
+            {boot === "in" && (
+                <div className="nf-tm-boot" aria-hidden="true">
+                    <div className="nf-tm-boot-t">
+                        {bootLines.map((l, i) => <span key={i} style={{ ["--n" as string]: l.length, ["--d" as string]: `${80 + i * 150}ms` } as CSSProperties}>{l}</span>)}
+                    </div>
+                </div>
+            )}
             {rows.length > 0 && (
                 <>
                     <button type="button" className="nf-tm-b nf-tm-totb" aria-expanded={showTot} onClick={() => setShowTot((v) => !v)}>Tree gives</button>

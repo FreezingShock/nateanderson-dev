@@ -17,7 +17,7 @@ const stamp = (ms?: number) => {
 export function GoalsPanel({ s }: { s: State }) {
     return (
         <div className="nf-sys">
-            <header className="nf-sys-h">
+            <header className="nf-sys-h" data-cx-i="0">
                 <h3>Goals</h3>
                 <p>
                     {goalCounts(s).goals} of {GOALS.length} done, {goalCounts(s).secrets} of {SECRETS.length} secrets found. Each goal or secret adds +{TUNE.achBonus * 100}% to everything, and a finished tier adds +{TUNE.tierBonus * 100}% more.
@@ -30,7 +30,7 @@ export function GoalsPanel({ s }: { s: State }) {
                     const n = goals.filter((g) => goalDone(s, g)).length;
                     const full = n === goals.length;
                     return (
-                        <section key={t} className="nf-tier" data-full={full ? "" : undefined} style={{ ["--c" as string]: TIER_COLOR[t] }}>
+                        <section key={t} className="nf-tier" data-cx-i={t} data-full={full ? "" : undefined} style={{ ["--c" as string]: TIER_COLOR[t] }}>
                             <header>
                                 <span className="nf-tier-n">{ROMAN[t]}</span>
                                 <b>{TIER_NAMES[t]}</b>
@@ -60,7 +60,7 @@ export function GoalsPanel({ s }: { s: State }) {
                     );
                 })}
             </div>
-            <section className="nf-secrets" aria-label="Secrets">
+            <section className="nf-secrets" aria-label="Secrets" data-cx-i="9">
                 <header>
                     <b>Secrets</b>
                     <span className="nf-tier-s">{goalCounts(s).secrets}/{SECRETS.length} found</span>
