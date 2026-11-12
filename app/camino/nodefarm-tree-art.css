@@ -4,8 +4,8 @@
 
 /* ---- backdrop: 3 tiling layers far to near, then the world layer, then a vignette ---- */
 .nf-bd { position: absolute; inset: 0; z-index: 0; overflow: hidden; pointer-events: none; contain: strict; }
-.nf-bd-l { --t: 1024px; position: absolute; left: 0; top: 0; width: 0; height: 0; overflow: hidden; contain: strict; will-change: transform; }
-.nf-bd-d { position: absolute; inset: 0; display: block; background-repeat: repeat; background-size: var(--t) var(--t); image-rendering: pixelated; }
+.nf-bd-l { --t: 1024px; position: absolute; left: 0; top: 0; width: 0; height: 0; overflow: hidden; contain: strict; transform-origin: 0 0; will-change: transform; }
+.nf-bd-d { position: absolute; inset: 0; display: block; background-repeat: repeat; background-size: var(--t) var(--t); background-position: var(--s, 0) var(--s, 0); image-rendering: pixelated; }
 .nf-bd[data-soft] .nf-bd-w i { image-rendering: auto; }
 .nf-bd-l[data-l="0"] .nf-bd-d { background-image: url(/naos/nodefarm/tree-bg-0.webp?v=0586b6ff); }
 .nf-bd-l[data-l="1"] .nf-bd-d { background-image: url(/naos/nodefarm/tree-bg-1.webp?v=6a9828f8); animation: nfBdDrift 300s linear infinite; will-change: transform; }

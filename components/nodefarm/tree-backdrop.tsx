@@ -2,6 +2,7 @@
 
 import { forwardRef, useEffect, useImperativeHandle, useMemo, useRef } from "react";
 import { TREE, BRANCHES, type Branch } from "@/lib/nodefarm/engine";
+import { createParallax, paintLayer, type PLayer, type PView } from "./parallax";
 import "@/app/camino/nodefarm-tree-art.css";
 
 /**
@@ -40,33 +41,9 @@ const DRIFT = 1;
 const SWAY = 2;
 const SLACK = 40;
 
-type View = { w: number; h: number; x: number; y: number; k: number };
-type Layer = { el: HTMLDivElement; s: number };
-/** Size (only when the scale steps) and place one tiling layer. Pans write only a translate. */
-function paintLayer(L: Layer, v: View, depth: number, zoom: number, extraW = 0, slack = 0) {
-    // scale rounded to 2 percent steps so zooming only repaints a layer now and then
-    const s = Math.max(0.2, Math.round((1 + (v.k - 1) * zoom) * 50) / 50);
-    const ts = T * s;
-    if (L.s !== s) {
-        // the view plus one tile (plus any drift or sway room), with the tile drawn at this scale
-        L.s = s;
-        L.el.style.width = `${Math.ceil(v.w + ts * (1 + extraW) + slack * 2)}px`;
-        L.el.style.height = `${Math.ceil(v.h + ts + slack * 2)}px`;
-        L.el.style.setProperty("--t", `${ts.toFixed(2)}px`);
-    }
-    const cx = (v.w / 2 - v.x) / v.k;
-    const cy = (v.h / 2 - v.y) / v.k;
-    const mod = (n: number) => ((n % ts) + ts) % ts;
-    const lx = mod(v.w / 2 - cx * depth * v.k) - ts - slack;
-    const ly = mod(v.h / 2 - cy * depth * v.k) - ts - slack;
-    L.el.style.transform = `translate3d(${lx.toFixed(1)}px, ${ly.toFixed(1)}px, 0)`;
-}
-
 // the backdrop and the dust share one camera; the dust registers here and the backdrop paints it on every move
-const shared: { view: View; dust: Set<Layer> } = { view: { w: 0, h: 0, x: 0, y: 0, k: 1 }, dust: new Set() };
-const paintDust = (L: Layer) => {
-    if (shared.view.w) paintLayer(L, shared.view, DUST.depth, DUST.zoom, 1);
-};
+const shared: { view: PView | null; dust: Set<PLayer> } = { view: null, dust: new Set() };
+const dustLayer = (el: HTMLElement): PLayer => ({ el, depth: DUST.depth, zoom: DUST.zoom, cell: T, extraW: 1 });
 
 /** world size of the halo and the section nebulae in css px at zoom 1 (art px x 2 and x 4) */
 const CORE = 800;
@@ -76,7 +53,6 @@ export const TreeBackdrop = forwardRef<TreeBackdropHandle, { unit?: number }>(fu
     const root = useRef<HTMLDivElement>(null);
     const layers = useRef<(HTMLDivElement | null)[]>([]);
     const world = useRef<HTMLDivElement>(null);
-    const view = useRef({ w: 0, h: 0, x: 0, y: 0, k: 1 });
 
     // each section's nebula sits at the middle of its nodes
     const secs = useMemo(
@@ -91,40 +67,36 @@ export const TreeBackdrop = forwardRef<TreeBackdropHandle, { unit?: number }>(fu
     );
 
     useImperativeHandle(ref, () => {
-        const ls: (Layer | null)[] = DEPTH.map(() => null);
-        const paint = () => {
-            const v = view.current;
-            if (!v.w || !v.h) return;
-            shared.view = v;
-            layers.current.forEach((el, i) => {
-                if (!el) return;
-                if (!ls[i] || ls[i]!.el !== el) ls[i] = { el, s: 0 };
-                paintLayer(ls[i]!, v, DEPTH[i], ZOOM[i], i === DRIFT ? 1 : 0, i === SWAY ? SLACK : 0);
-            });
-            shared.dust.forEach(paintDust);
-            if (world.current) world.current.style.transform = `translate3d(${v.x.toFixed(1)}px, ${v.y.toFixed(1)}px, 0) scale(${v.k.toFixed(4)})`;
-            // below 1:1 the dither would alias into moire, so let the browser average it into a soft glow
-            const r = root.current;
-            if (r) {
-                const soft = v.k < 0.95;
-                if (soft !== (r.dataset.soft !== undefined)) {
-                    if (soft) r.dataset.soft = "";
-                    else delete r.dataset.soft;
+        const ls: (PLayer | null)[] = DEPTH.map(() => null);
+        const px = createParallax({
+            layers: () => {
+                const out: PLayer[] = [];
+                layers.current.forEach((el, i) => {
+                    if (!el) return;
+                    if (!ls[i] || ls[i]!.el !== el) ls[i] = { el, depth: DEPTH[i], zoom: ZOOM[i], cell: T, extraW: i === DRIFT ? 1 : 0, slack: i === SWAY ? SLACK : 0 };
+                    out.push(ls[i]!);
+                });
+                return out;
+            },
+            world: () => world.current,
+            root: () => root.current,
+            after: (v, settle) => {
+                shared.view = v;
+                shared.dust.forEach((L) => paintLayer(L, v, settle));
+                // below 1:1 the dither would alias into moire, so let the browser average it into a soft glow
+                const r = root.current;
+                if (r) {
+                    const soft = v.k < 0.95;
+                    if (soft !== (r.dataset.soft !== undefined)) {
+                        if (soft) r.dataset.soft = "";
+                        else delete r.dataset.soft;
+                    }
                 }
-            }
-        };
+            },
+        });
         return {
-            move(x, y, k) {
-                Object.assign(view.current, { x, y, k });
-                paint();
-            },
-            resize(w, h) {
-                if (w === view.current.w && h === view.current.h) return;
-                Object.assign(view.current, { w, h });
-                ls.forEach((L) => { if (L) L.s = 0; });
-                shared.dust.forEach((L) => { L.s = 0; });
-                paint();
-            },
+            move: px.move,
+            resize: px.resize,
             focus(branch) {
                 const r = root.current;
                 if (!r) return;
@@ -157,9 +129,9 @@ export function TreeDust() {
     const el = useRef<HTMLDivElement>(null);
     useEffect(() => {
         if (!el.current) return;
-        const L: Layer = { el: el.current, s: 0 };
+        const L = dustLayer(el.current);
         shared.dust.add(L);
-        paintDust(L);
+        if (shared.view?.w) paintLayer(L, shared.view, true);
         return () => { shared.dust.delete(L); };
     }, []);
     return (

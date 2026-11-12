@@ -54,7 +54,8 @@
 
 /* ---- phosphor backdrop */
 .nf-fbd { position: absolute; inset: 0; z-index: 0; overflow: hidden; pointer-events: none; contain: strict; background: radial-gradient(ellipse at 50% 46%, #0b4a22 0, #052a12 42%, #010a04 100%); }
-.nf-fbd-g { position: absolute; inset: 0; will-change: background-position; }
+/* each layer is its own GPU layer, painted once and moved by components/nodefarm/parallax.ts (transform only) */
+.nf-fbd-g { position: absolute; left: 0; top: 0; width: 0; height: 0; transform-origin: 0 0; will-change: transform; contain: strict; background-repeat: repeat; background-size: var(--t) var(--t); background-position: var(--s, 0) var(--s, 0); }
 .nf-fbd-g[data-l="0"] { background-image: url(/naos/nodefarm/fw-bg-0.webp?v=9acc7861); image-rendering: pixelated; opacity: .62; }
 .nf-fbd-g[data-l="1"] { background-image: linear-gradient(#3dff6e10 1px, transparent 1px), linear-gradient(90deg, #3dff6e10 1px, transparent 1px); opacity: .9; }
 .nf-fbd-g[data-l="2"] { background-image: linear-gradient(#3dff6e22 1px, transparent 1px), linear-gradient(90deg, #3dff6e22 1px, transparent 1px); }

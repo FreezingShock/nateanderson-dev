@@ -151,7 +151,8 @@
 
 /* ---- hangar-floor backdrop */
 .nf-hbd { position: absolute; inset: 0; z-index: 0; overflow: hidden; pointer-events: none; contain: strict; background: radial-gradient(ellipse at 50% 46%, #1a1610 0, #0c0e12 45%, #040506 100%); }
-.nf-hbd-g { position: absolute; inset: 0; will-change: background-position; }
+/* each layer is its own GPU layer, painted once and moved by components/nodefarm/parallax.ts (transform only) */
+.nf-hbd-g { position: absolute; left: 0; top: 0; width: 0; height: 0; transform-origin: 0 0; will-change: transform; contain: strict; background-repeat: repeat; background-size: var(--t) var(--t); background-position: var(--s, 0) var(--s, 0); }
 .nf-hbd-g[data-l="0"] { background-image: url(/naos/nodefarm/hangar-bg-0.webp?v=7b087149); image-rendering: pixelated; opacity: .75; }
 .nf-hbd-g[data-l="1"] { background-image: linear-gradient(#ffb14a0c 1px, transparent 1px), linear-gradient(90deg, #ffb14a0c 1px, transparent 1px); }
 .nf-hbd-g[data-l="2"] { background-image: linear-gradient(#ffd23a1a 2px, transparent 2px), linear-gradient(90deg, #ffd23a1a 2px, transparent 2px); }

@@ -3,6 +3,7 @@
 import { forwardRef, useImperativeHandle, useMemo, useRef } from "react";
 import { FW, FW_SECS } from "@/lib/nodefarm/engine";
 import type { TreeBackdropHandle } from "./tree-backdrop";
+import { gridHandle, type GridSpec } from "./parallax";
 
 /**
  * The Firmware tree's backdrop: green phosphor glass. Far to near: the painted glass (`fw-bg-0`, amber and cyan mist and
@@ -11,11 +12,11 @@ import type { TreeBackdropHandle } from "./tree-backdrop";
  * rings round node zero (`fw-core`) and three rings. Art: scripts/naos-art/nodefarm-handover-art.py. Same handle as the
  * prestige TreeBackdrop. Styles: app/camino/nodefarm-handover.css (`.nf-fbd*`). Decorative: aria-hidden, no pointer events.
  */
-const LAYERS = [
+const LAYERS: GridSpec[] = [
     { depth: 0.12, zoom: 0.2, cell: 512 }, // painted paper (256 art px drawn at 2x)
     { depth: 0.2, zoom: 0.25, cell: 26 },
     { depth: 0.55, zoom: 0.6, cell: 132 },
-    { depth: 0.8, zoom: 0.85, cell: 768 }, // floating bytes (256 art px drawn at 3x)
+    { depth: 0.8, zoom: 0.85, cell: 768, slack: 12 }, // floating bytes (256 art px drawn at 3x), sways 8 px
     { depth: 1, zoom: 1, cell: 0 }, // cell 0 = half a tree unit, glued to the nodes
 ];
 
@@ -27,33 +28,7 @@ export const FwBackdrop = forwardRef<TreeBackdropHandle, { unit?: number }>(func
         const ns = FW.filter((n) => n.branch === b.id);
         return { id: b.id, color: b.color, x: (ns.reduce((a, n) => a + n.x, 0) / ns.length) * unit, y: (ns.reduce((a, n) => a + n.y, 0) / ns.length) * unit };
     }), [unit]);
-    useImperativeHandle(ref, () => {
-        const v = { w: 0, h: 0, x: 0, y: 0, k: 1 };
-        const paint = () => {
-            if (!v.w) return;
-            const cx = (v.w / 2 - v.x) / v.k, cy = (v.h / 2 - v.y) / v.k;
-            LAYERS.forEach((L, i) => {
-                const el = layers.current[i];
-                if (!el) return;
-                const sc = Math.max(0.2, 1 + (v.k - 1) * L.zoom);
-                const cell = (L.cell || unit / 2) * sc;
-                const ox = v.w / 2 - cx * L.depth * v.k, oy = v.h / 2 - cy * L.depth * v.k;
-                el.style.backgroundSize = `${cell.toFixed(2)}px ${cell.toFixed(2)}px`;
-                el.style.backgroundPosition = `${ox.toFixed(1)}px ${oy.toFixed(1)}px`;
-            });
-            if (world.current) world.current.style.transform = `translate3d(${v.x.toFixed(1)}px, ${v.y.toFixed(1)}px, 0) scale(${v.k.toFixed(4)})`;
-        };
-        return {
-            move(x, y, k) { Object.assign(v, { x, y, k }); paint(); },
-            resize(w, h) { Object.assign(v, { w, h }); paint(); },
-            focus(branch) {
-                const r = root.current;
-                if (!r) return;
-                if (branch) r.dataset.focus = branch;
-                else delete r.dataset.focus;
-            },
-        };
-    }, [unit]);
+    useImperativeHandle(ref, () => gridHandle(LAYERS, unit, layers, world, root), [unit]);
     return (
         <div ref={root} className="nf-fbd" aria-hidden="true">
             {LAYERS.map((_, i) => <div key={i} ref={(el) => { layers.current[i] = el; }} className="nf-fbd-g" data-l={i} />)}
