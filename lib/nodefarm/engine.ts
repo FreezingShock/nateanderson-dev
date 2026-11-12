@@ -298,6 +298,8 @@ export function respec(s: State): number {
     s.ap += back;
     s.tree = [];
     s.mounts = [];
+    // Drone levels that only the removed nodes allowed (extra levels per tier) go with them
+    s.drones = s.drones.map((lv) => Math.min(lv, droneMax(s)));
     return back;
 }
 /** Costs of the 60 nodes from the first big tree (#157), so a save that owns them is refunded in full. */

@@ -146,6 +146,8 @@ export function Juice({ reduced }: { reduced: boolean }) {
 
     const next = useCallback(() => {
         if (holding.current) { showing.current = false; return; }
+        // a window or the tree is open: the page (and the window with it) sits under a banner portaled to <body>, so hold banners until it closes
+        if (queue.current.length && document.body.classList.contains("nf-win-open")) { showing.current = true; later(next, 350); return; }
         const b = queue.current.shift();
         if (!b) { showing.current = false; setCur(null); return; }
         showing.current = true;

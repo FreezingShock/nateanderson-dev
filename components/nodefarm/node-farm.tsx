@@ -57,6 +57,8 @@ export function NodeFarm() {
     const [side, setSide] = useState<Tab>("goals");
     const [win, setWin] = useState<"" | "map" | "goals" | "records" | "ascend" | "menu">("");
     const [treeOpen, setTreeOpen] = useState(false);
+    // stable on purpose: the tree's modal effect re-runs whenever this changes, and this component re-renders ten times a second
+    const closeTree = useCallback(() => setTreeOpen(false), []);
     const [folded, setFolded] = useState<Record<string, boolean>>({});
     const feedStore = useMemo(() => new FeedStore(), []);
     useEffect(() => () => feedStore.dispose(), [feedStore]);
@@ -461,7 +463,7 @@ export function NodeFarm() {
                 </div>
                 {s.overclock > 0 && (
                     <div className="nf-oc" role="status">
-                        <NfIcon name="spark" /> OVERCLOCK x{overclockMult(s)} · {Math.ceil(s.overclock)}s
+                        <NfIcon name="spark" /> OVERCLOCK x{fmt(overclockMult(s))} · {Math.ceil(s.overclock)}s
                     </div>
                 )}
                 <div className="nf-hud-side">
@@ -579,7 +581,7 @@ export function NodeFarm() {
                     reduced={reduced}
                     onBuy={(id) => { if (buyNode(s, id)) { sfx("nfBuy", { tier: 4 }); bump((n) => n + 1); } else sfx("deny"); }}
                     onRespec={() => { const back = respec(s); sfx("tab"); log(`Tree respec: ${fmt(back)} AP refunded.`, "good"); save(); bump((n) => n + 1); return back; }}
-                    onClose={() => setTreeOpen(false)}
+                    onClose={closeTree}
                 />
             )}
             <Tip host={root} tip={tip} />
