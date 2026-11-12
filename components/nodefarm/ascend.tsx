@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, type CSSProperties } from "react";
-import { BRANCHES, MATS, PERKS, TREE, TUNE, apEach, apGlobal, apOnAscend, canAscend, derive, fmt, hasNode, mountSlots, statDef, type MatId, type State } from "@/lib/nodefarm/engine";
+import { BRANCHES, MATS, PERKS, TREE, TREE_FULL, TUNE, apEach, apGlobal, apOnAscend, canAscend, derive, fmt, hasNode, mountSlots, statDef, type MatId, type State } from "@/lib/nodefarm/engine";
 import { NfIcon } from "./icon";
 
 // The Ascend window (2026-11-12 rework): the art is the stage, the Aether charge climbs beside the tower, a three-step
@@ -175,12 +175,12 @@ function Gateway({ s, onTree }: { s: State; onTree: () => void }) {
         <section className="nf-ax-gate" data-cx-i="2" data-go={go ? "" : undefined}>
             <header className="nf-sys-h">
                 <h3>Prestige tree</h3>
-                <p>{TREE.length} upgrades in five sections, bought with AP and kept through every Ascend. {s.ap} AP to spend, {owned} of {TREE.length} owned.</p>
+                <p>{TREE.length} upgrades in five sections, bought with AP and kept through every Ascend. {s.ap} AP to spend, {owned} of {TREE_FULL} owned.</p>
             </header>
             <button type="button" className="nf-ax-portal" onClick={open} aria-label="Open the prestige tree">
                 <span className="nf-ax-sky" aria-hidden="true"><i data-l="0" /><i data-l="1" /><i data-l="2" /><i className="nf-ax-sky-core" /></span>
                 <span className="nf-ax-pc" aria-hidden="true">
-                    <span className="nf-ax-pk">PRESTIGE.TREE // {owned}/{TREE.length} NODES // {s.ap} AP</span>
+                    <span className="nf-ax-pk">PRESTIGE.TREE // {owned}/{TREE_FULL} NODES // {s.ap} AP</span>
                     <ul className="nf-ax-secs">
                         {BRANCHES.map((b) => {
                             const mine = TREE.filter((n) => n.branch === b.id);

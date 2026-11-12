@@ -13,10 +13,10 @@ const marks = {};
 const ascents = [];
 const mark = (k, t) => { if (!(k in marks)) marks[k] = t; };
 const order = ["chrono", "voidsteel", "starglass", "runes", "aether", "quartz", "silicon", "copper", "mult"];
-const treeOrder = [...E.TREE].sort((a, b) => a.cost - b.cost);
 const labOrder = [...E.LAB].sort((a, b) => a.cost - b.cost);
 let labBought = 0, labCompiles = 0;
 const labSkip = (process.env.NF_LABSKIP || "").split(","); // payload ids the bot never compiles
+const FULL = new Set(E.fullTreeIds()); // the bot takes the first side of every fork
 // Ascend policy: ascend as soon as AP gain is at least max(2, 40% of AP already held), a typical player keeps going for a while first.
 let t = 0, nextBuy = 0;
 const dt = 0.5;
@@ -54,13 +54,23 @@ while (t < hours * 3600) {
             mark("can ascend", t);
             const gain = E.apOnAscend(s);
             const last = ascents.length ? ascents[ascents.length - 1] : [0, 0];
-            if ((s.life.ascends === 0 && gain >= 2) || gain >= last[1] * 1.4 || t - last[0] > 3600 * 60) {
+            // NF_ASC_GAP=1: at most one Ascend per hour of play (a player does not Ascend ten times in twenty minutes), and one
+            // at least every 3 hours once gains stop growing
+            const gapOk = t - last[0] >= 3600 * Number(process.env.NF_ASC_GAP || 0);
+            if (gapOk && ((s.life.ascends === 0 && gain >= 2) || gain >= last[1] * 1.4 || t - last[0] > 3600 * (process.env.NF_ASC_GAP && s.tree.length >= 40 ? 3 * Number(process.env.NF_ASC_GAP) : 60))) {
                 E.ascend(s);
                 ascents.push([t, gain, s.ap]);
                 mark("ascend " + s.life.ascends, t);
             }
         }
-        for (const n of treeOrder) if (!s.tree.includes(n.id) && E.buyNode(s, n.id)) mark("node " + n.id, t);
+        // cheapest first, including the next rank of a ranked node; never swaps a fork
+        for (let more = true; more;) {
+            more = false;
+            const next = E.TREE.filter((n) => FULL.has(n.id) && !E.nodeMaxed(s, n) && E.nodeOpen(s, n)).sort((a, b) => E.nodeCost(s, a) - E.nodeCost(s, b))[0];
+            if (next && E.buyNode(s, next.id)) { more = true; mark("node " + next.id + (E.nodeLevel(s, next.id) > 1 ? " r" + E.nodeLevel(s, next.id) : ""), t); }
+        }
+        const allRanks = E.TREE.every((n) => !FULL.has(n.id) || E.nodeMaxed(s, n));
+        if (s.tree.filter((id) => !E.treeNode(id).form).length === 40) mark("first 40 done", t);
         // Exploit Lab (NF_NOLAB=1 skips it): research cheapest first, keep a little stock of every recipe, deploy as soon as it helps
         if (!process.env.NF_NOLAB && s.lab.seen) {
             mark("lab open", t);
@@ -80,9 +90,10 @@ while (t < hours * 3600) {
         mats.forEach((m, i) => E.setMount(s, i, m));
         if (E.openDrop(s, t * 1000)) mark("first drop", t);
         // leftover AP goes into the Power core, then Cold cache
-        if (s.tree.length === E.TREE.length || s.ap > 40) { while (E.buyPerk(s, "power")); }
-        if (s.tree.length === E.TREE.length) mark("tree done", t);
-        if (s.tree.length === E.TREE.length && s.chrono > 1e3 && !process.env.NF_NOSTOP) break;
+        if (allRanks || s.ap > 40) { while (E.buyPerk(s, "power")); }
+        if (E.treeComplete(s)) mark("tree whole", t);
+        if (allRanks) mark("tree done", t);
+        if (allRanks && s.chrono > 1e3 && !process.env.NF_NOSTOP) break;
     }
 }
 console.log("ascends", ascents.map(([a, g, ap]) => `${(a / 3600).toFixed(0)}h +${g} (ap ${ap})`).join(", "));
