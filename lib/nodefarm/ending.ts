@@ -49,6 +49,7 @@ export function stageCost(i: number) {
 export function buildBlock(s: State): string | null {
     const stage = endStage(s);
     if (stage >= END_STEPS) return "built";
+    if (s.ch?.run) return "Locked until you leave the test";
     const z = lastZone();
     const name = STATS[STATS.length - 1].name;
     if (!endOpen(s)) return `Start ${name} production`;
@@ -117,7 +118,7 @@ export const END_COPY = {
     keep: "Keep running",
     next: "New operator",
     nextConfirm: "Confirm: start fresh as the next operator",
-    nextNote: "A fresh save, from one wire. Your ending star and your log carry over.",
+    nextNote: "A fresh save, from one wire. Goals, Keys, Firmware, the tree, stress ranks and lifetime stats start over. Your ending star and your log carry over.",
     buildHead: "Final build // node zero",
     buildIntro: "Five stages, paid in {zone} and Keys. Built stages are kept through Ascend and Handover.",
     buildDone: "Node zero is awake.",
