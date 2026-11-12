@@ -125,3 +125,11 @@ One open/close animation for every window, card and pop-up ("terminal print"): t
 Premise (Nate picked "inherited node", 2026-11-12): you took over node-01 from a previous operator who left logs. `lib/nodefarm/story.ts` holds the 25 logs, each with a test on the game state (stat unlocked, reboot count, tree branch finished, goal rank, and so on). Numbers follow writing order, so early finds leave gaps. A log is stored in `State.logs` the first time its test passes (checked in the tick, `node-farm.tsx`) and is kept through Ascend. A save from before logs existed gets them all at once, with one quiet feed line.
 
 Where they show: a typed `logs.recover("004")` feed line and a milestone banner when one is found, the "Operator logs" list in the Records window, `nf logs` and `nf logs <number>` in the console, and one operator line on the Ascend screen (`ASCEND_NOTES`). The Ascend notes quote log numbers 012 and 017, so keep those in step if the order of `LOGS` changes. To add a log, append to the end of `LOGS` (inserting renumbers every later log).
+
+## Save safety, settings and keys (feature check)
+- Import asks twice when the current save has progress, and a backup slot (`nf-backup-v1`, one save) is written before an import, a wipe or a restore; Menu has Restore backup. A save that cannot be read is copied to `nf-corrupt-v1` instead of being overwritten.
+- A second tab on the same save is detected through the `storage` event: that tab stops saving and shows a notice with Load latest save / Save from here.
+- Menu: Download file and Open file (plain-text save code), Volume (the site-wide master volume), Numbers (short, scientific, engineering; `nf-numfmt-v1`, `setNumFmt` in the engine).
+- Keys (only on the Node Farm page, off while typing, with a modifier, over another panel or during an event): M Map, O Goals, L Records, A Ascend, S Menu, T Tree, B Buy max.
+- The tab title shows `<rate>/s · Node Farm` while the tab is in the background.
+- Menu "Calm motion" (`nf-calm-v1`) forces reduced motion on top of the OS setting: the `reduced` prop everywhere plus `body.nf-calm` CSS. Menu also shows when the game last saved.
