@@ -2,6 +2,7 @@
 // snapshots; no React. Turned on from the naOS console (`nf admin on`, `nf admin max`) and driven by
 // components/nodefarm/admin.tsx. Easy to remove: delete this file, admin.tsx, nodefarm-admin.css, and the few
 // `admin` lines in node-farm.tsx, events.tsx and components/cm/console.tsx.
+import { grantScripts } from "./scripts";
 import {
     DRONE_TREE, DRONE_TUNE, POSTABLE, freshDr, modMax,
     GOALS, LAB, LAB_TUNE, MATS, PAYLOADS, PERKS, SECRETS, STATS, TIERS, TREE, TREE_FULL, TUNE, ascend, apOnAscend, derive, droneMax, exportSave, freshLab, fullTreeIds, parseSave, tick, treeFx, treeSpent, unlock,
@@ -160,6 +161,7 @@ export function maxOut(s: State) {
     grantSecrets(s);
     grantLogs(s);
     grantLab(s);
+    grantScripts(s);
     s.life.ascends = Math.max(s.life.ascends, 10);
     s.life.reboots = Math.max(s.life.reboots, 1000);
     s.life.apTotal = Math.max(s.life.apTotal, 1000);

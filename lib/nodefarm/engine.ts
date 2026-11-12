@@ -647,10 +647,50 @@ export interface State {
     lab: LabState;
     /** Drone hangar: postings, zone mastery, Parts, mods and the drone tree (see DroneState) */
     dr: DroneState;
+    /** Scripts (lib/nodefarm/scripts.ts): what you taught the scheduler and how each script is set. Kept through Ascend. Created on first use. */
+    auto?: AutoState;
     // lifetime counters (survive Ascend)
     life: { bytes: number; taps: number; reboots: number; ascends: number; intrusions: number; secs: number; presses: number; capped: number; peakBps: number; apTotal: number; intel: number; compiled: number; deployed: number };
     overclock: number; // seconds left
 }
+
+/** Scripts: learned automation (rules live in lib/nodefarm/scripts.ts, which registers itself in TICK_HOOKS). */
+export type ScriptId = "buy" | "reboot" | "compile" | "deploy" | "drop" | "ascend";
+export interface AutoState {
+    /** manual presses per stat and tier, lifetime (buy.sh may only press tiers you pressed by hand) */
+    taught: Record<string, number[]>;
+    /** manual actions counted toward learning each script */
+    learn: Partial<Record<ScriptId, number>>;
+    /** learned scripts */
+    own: ScriptId[];
+    /** running switches (reboot.sh uses the Watchdog switch, `watchdog`) */
+    on: Partial<Record<ScriptId, boolean>>;
+    /** buy.sh: bitmask of the tiers it may press, per stat */
+    buy: Record<string, number>;
+    /** buy.sh: only buys while the balance is at least this many times the price */
+    keep: number;
+    /** reboot.sh: Reboots once Multipliers reach this many times the best price */
+    rebootX: number;
+    /** compile.sh: keep each recipe stocked up to this many */
+    stockTo: Partial<Record<PayloadId, number>>;
+    /** deploy.sh: payloads it deploys */
+    dep: PayloadId[];
+    /** ascend.sh: Ascends once the AP on offer is this many times the last Ascend's */
+    ascX: number;
+    /** AP the last Ascend paid, and life.secs when it happened (ascend.sh) */
+    lastAp: number;
+    runAt: number;
+    /** ascends and apTotal seen, to notice an Ascend from anywhere */
+    seenAsc: number;
+    seenAp: number;
+    /** cycle timers and actions run per script (buy.sh's version comes from its total) */
+    acc: Partial<Record<ScriptId, number>>;
+    ran: Partial<Record<ScriptId, number>>;
+    /** buttons pressed by scripts, so the feed can tell them from Drone presses */
+    presses: number;
+}
+/** Called at the end of every tick (and so also through time away). Scripts add themselves here. */
+export const TICK_HOOKS: ((s: State, dt: number) => void)[] = [];
 
 export function fresh(now = Date.now()): State {
     return {
@@ -935,6 +975,7 @@ export function tick(s: State, dt: number, eff = 1) {
     droneStep(s, dt, eff);
     watchdogStep(s);
     autoArm(s);
+    for (const h of TICK_HOOKS) h(s, dt);
 }
 
 export const overclockMult = (s: State) => { const f = treeFx(s); return (TUNE.overclockMult + f.ocMult) * (1 + f.ocX) * paradoxOc(s); };
@@ -973,10 +1014,16 @@ export const eventHaste = (s: State) => 1 - Math.max(0.3, (1 - s.perks.scanner *
 // ---- Watchdog timer (auto-Reboot) and the Dead drop
 /** Press the best affordable Reboot once you hold TUNE.watchdogReserve times its price. Returns the tier pressed, or -1. */
 export function watchdogStep(s: State): number {
-    if (!s.watchdog || !hasFeature(s, "watchdog") || !isUnlocked(s, "reboot")) return -1;
+    // reboot.sh (Scripts) is the same rule, learned by hand instead of bought, with its own reserve setting
+    if (!s.watchdog || !(hasFeature(s, "watchdog") || s.auto?.own.includes("reboot")) || !isUnlocked(s, "reboot")) return -1;
+    const x = s.auto?.own.includes("reboot") ? s.auto.rebootX : TUNE.watchdogReserve;
     for (let k = TIERS - 1; k >= 0; k--) {
         const b = button(s, "reboot", k);
-        if (s.mult >= b.cost * TUNE.watchdogReserve) return press(s, "reboot", k) ? k : -1;
+        if (s.mult >= b.cost * x) {
+            if (!press(s, "reboot", k)) return -1;
+            if (s.auto) s.auto.ran.reboot = (s.auto.ran.reboot ?? 0) + 1;
+            return k;
+        }
     }
     return -1;
 }
@@ -1039,7 +1086,7 @@ export function ascend(s: State) {
     const keptDrones = s.drones.map((lv) => Math.max(Math.floor(lv * tf.droneKeep), tf.kitDrones));
     const lab: LabState = { ...s.lab, intel: 0, run: [], armed: s.lab.armed.filter((x) => x !== "zeroclick"), dump: LAB_TUNE.dumpSecs };
     const dr = drOnAscend(s);
-    const keep = { lab, dr, ap: s.ap + gain, perks: s.perks, ach: s.ach, achAt: s.achAt, logs: s.logs, tree: s.tree, treeLv: s.treeLv, armed: s.armed, mounts: s.mounts, watchdog: s.watchdog, dropAt: s.dropAt, autoArmed: s.autoArmed, life: { ...s.life, ascends: s.life.ascends + 1, apTotal: s.life.apTotal + gain }, started: s.started };
+    const keep = { lab, dr, ap: s.ap + gain, perks: s.perks, ach: s.ach, achAt: s.achAt, logs: s.logs, tree: s.tree, treeLv: s.treeLv, armed: s.armed, mounts: s.mounts, watchdog: s.watchdog, dropAt: s.dropAt, autoArmed: s.autoArmed, auto: s.auto, life: { ...s.life, ascends: s.life.ascends + 1, apTotal: s.life.apTotal + gain }, started: s.started };
     const n = fresh(s.at);
     Object.assign(n, keep);
     Object.assign(s, n);
@@ -1201,6 +1248,7 @@ export function autoBuy(s: State): number {
     for (let i = 0; i < Math.min(order.length, s.perks.auto); i++) {
         const st = order[i];
         if (!isUnlocked(s, st)) continue;
+        if (s.auto?.on.buy && s.auto.buy[st]) continue; // buy.sh has this stat: its rules win
         for (let k = TIERS - 1; k >= 0; k--) {
             const b = button(s, st, k);
             if (amount(s, b.pays) >= b.cost * TUNE.autoReserve) {

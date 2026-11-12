@@ -65,13 +65,15 @@ const list = (name) => {
 const icons = list("ORDER");
 const rows = list("TIER_ROWS");
 const allCss = readdirSync(CSS_DIR).filter((n) => n.endsWith(".css")).map((n) => [n, readFileSync(join(CSS_DIR, n), "utf8")]);
-for (const f of ["icons.png", "icons-anim.png"]) {
-    const { w } = pngSize(f);
-    if (w !== icons * 32) errors.push(`${f} is ${w / 32} icons wide but icon.tsx ORDER lists ${icons}`);
+{
+    const { w, h } = pngSize("icons64.png");
+    if (w !== icons * 64) errors.push(`icons64.png is ${w / 64} icons wide but icon.tsx ORDER lists ${icons}`);
+    if (h !== 64 * 8) errors.push(`icons64.png should be eight 64 px frames tall, is ${h}px`);
 }
 for (const [n, src] of allCss) {
-    for (const m of src.matchAll(/icons-anim\.webp[^;]*?calc\(var\(--s\) \* (\d+)\)/g)) {
+    for (const m of src.matchAll(/icons64\.webp[^;]*?calc\(var\(--s\) \* (\d+)\) calc\(var\(--s\) \* (\d+)\)/g)) {
         if (+m[1] !== icons) errors.push(`${n}: icon sheet sized for ${m[1]} icons, ORDER lists ${icons}`);
+        if (+m[2] !== 8) errors.push(`${n}: icon sheet sized for ${m[2]} frames, icons64 has 8`);
     }
     for (const m of src.matchAll(/tiers-anim\.webp[^;]*?\/ (\d+)px (\d+)px/g)) {
         if (+m[2] !== rows * 128) errors.push(`${n}: tier sheet sized ${m[2]}px tall, TIER_ROWS needs ${rows * 128}px`);
@@ -80,6 +82,13 @@ for (const [n, src] of allCss) {
 const t = pngSize("tiers-anim.png");
 if (t.h !== rows * 128) errors.push(`tiers-anim.png has ${t.h / 128} rows but icon.tsx TIER_ROWS lists ${rows}`);
 if (pngSize("tiers.png").h !== rows * 32) errors.push(`tiers.png row count does not match TIER_ROWS (${rows})`);
+// 64 px button sprites: one sheet per stat in TIC64, six tiers across by eight frames down.
+const tic64 = (iconSrc.match(/const TIC64 = \[([^\]]*)\]/)?.[1] ?? "").split(",").map((x) => x.trim().replace(/"/g, "")).filter(Boolean);
+for (const st of tic64) {
+    if (!hash[`tic-${st}.png`] || !hash[`tic-${st}.webp`]) { errors.push(`tic-${st}.{png,webp} missing (listed in icon.tsx TIC64)`); continue; }
+    const { w, h } = pngSize(`tic-${st}.png`);
+    if (w !== 384 || h !== 512) errors.push(`tic-${st}.png is ${w}x${h}, expected 384x512 (6 tiers x 8 frames of 64 px)`);
+}
 
 if (errors.length) {
     console.error("Node Farm art check failed:\n  " + errors.join("\n  "));
