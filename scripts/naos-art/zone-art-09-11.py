@@ -30,12 +30,14 @@ _spec.loader.exec_module(_nfi)
 RAMPS = _nfi.RAMPS
 BAYER4 = np.array([[0, 8, 2, 10], [12, 4, 14, 6], [3, 11, 1, 9], [15, 7, 13, 5]]) / 16.0 - 0.5
 
-W, H = 288, 64
+W, H = 288, 96
+HEAD = 32            # contract v3: rows 0-31 are headroom backdrop up to the title bar; drawing code works in the
+                     # old 64-row frame (y = 0 at row 32), so headroom art uses negative y
 ROWS, FRAMES = 8, 6
 BASE = 62            # ground line for sprites
 SS = 4               # supersampling for polygon masks
 TAU = math.tau
-TOP = 10                     # rows 0-9 can sit under the title bar at 3x: backdrop only (contract v2)
+TOP = 10                     # sprite tops stay at old row 10 (sheet row 42) or lower
 QUIET = (0, 0, 0, 0)         # v1 top-right box, retired in contract v2
 
 # x centre of each sprite (index 1..7)
@@ -51,6 +53,7 @@ class Canvas:
     def __init__(self):
         self.img = np.zeros((H, W, 4), np.uint8)
         self.yy, self.xx = np.mgrid[0:H, 0:W].astype(float) + 0.5
+        self.yy -= HEAD
         self.bayer = np.tile(BAYER4, (H // 4, W // 4))
 
     def empty(self):
@@ -59,7 +62,7 @@ class Canvas:
     # ---- masks
     def poly(self, pts):
         im = Image.new("L", (W * SS, H * SS), 0)
-        ImageDraw.Draw(im).polygon([(x * SS, y * SS) for x, y in pts], fill=255)
+        ImageDraw.Draw(im).polygon([(x * SS, (y + HEAD) * SS) for x, y in pts], fill=255)
         return np.asarray(im.resize((W, H), Image.BOX)) > 127
 
     def disc(self, cx, cy, r, ry=None):
@@ -76,7 +79,7 @@ class Canvas:
 
     def line(self, x0, y0, x1, y1, w=1.0):
         im = Image.new("L", (W * SS, H * SS), 0)
-        ImageDraw.Draw(im).line([(x0 * SS, y0 * SS), (x1 * SS, y1 * SS)], fill=255, width=max(1, int(w * SS)))
+        ImageDraw.Draw(im).line([(x0 * SS, (y0 + HEAD) * SS), (x1 * SS, (y1 + HEAD) * SS)], fill=255, width=max(1, int(w * SS)))
         return np.asarray(im.resize((W, H), Image.BOX)) > 100
 
     def lin(self, x0, y0, x1, y1):
@@ -121,7 +124,7 @@ class Canvas:
         self.set(m, RAMPS[rampname][shade])
 
     def px(self, x, y, col, only_empty=False):
-        x, y = int(math.floor(x)), int(math.floor(y))
+        x, y = int(math.floor(x)), int(math.floor(y)) + HEAD
         if 0 <= x < W and 0 <= y < H:
             if only_empty and self.img[y, x, 3] == 255:
                 return
@@ -1007,6 +1010,146 @@ def ch_bg(c, f):
 
 
 # =====================================================================================================================
+# headroom (contract v3): rows above the old 64-row scene, up to the title bar. Drawn in the old frame, so y runs from -32
+# down to about 10. Each zone grows its scenery upward here; the panel cuts this band to whatever height it has, so nothing
+# essential lives above y = -8.
+# =====================================================================================================================
+def sky_points(c, f, n, seed, y0, y1, ramps, x0=12):
+    rng = np.random.default_rng(seed)
+    for i in range(n):
+        x, y = rng.uniform(x0, W - 2), rng.uniform(y0, y1)
+        b = tw(f, i + seed)
+        rn = ramps[i % len(ramps)]
+        if b > 0.25:
+            c.px(x, y, RAMPS[rn][1 if b < .55 else (2 if b < .85 else 3)], True)
+        if b > 0.94 and i % 4 == 0:
+            c.spark(x, y, RAMPS[rn][2], 1, True)
+
+
+def sg_head(c, f):
+    ph = f / FRAMES
+    ribbon(c, -26, 3, 110, ph + .15, 5, "mag", 50)
+    ribbon(c, -14, 4, 80, -ph + .5, 5, "cyan", 55)
+    sky_points(c, f, 90, 21, -32, 6, ["sg", "cyan", "mag", "qz", "lime", "rn"])
+    # crystal stalactites hanging from the top edge, catching light in turn
+    rng = np.random.default_rng(23)
+    for i in range(16):
+        x = 40 + i * 16 + rng.uniform(-4, 4)
+        ln = rng.uniform(5, 15) * (0.5 + 0.7 * x / W)
+        w = rng.uniform(3, 6)
+        rn = ["sg", "qz", "cyan", "mag"][i % 4]
+        m = c.poly([(x - w / 2, -33), (x + w / 2, -33), (x + w / 2, -33 + ln * 0.5), (x, -33 + ln), (x - w / 2, -33 + ln * 0.5)]) & c.empty()
+        c.fill(m, 0.2 + 0.8 * c.lin(x - w, -33, x + w, -33 + ln) * c.lin(0, 0, W, 0), rn, outline=False, lo=0, hi=2)
+        if (i + f) % 6 == 0:
+            c.px(x, -33 + ln - 1, RAMPS[rn][4])
+    # a shooting star crossing once per loop
+    t = ph
+    sx, sy = 60 + 200 * t, -24 + 10 * t
+    for k in range(6):
+        c.px(sx - k * 2, sy - k * 0.5, RAMPS["sg"][4 - min(3, k)], False)
+    # a far constellation
+    pts = [(150, -22), (166, -27), (184, -20), (200, -26), (216, -18)]
+    for (x0, y0), (x1, y1) in zip(pts, pts[1:]):
+        c.set(c.line(x0, y0, x1, y1, 1) & ((c.xx.astype(int) % 3) == 0) & c.empty(), RAMPS["qz"][1])
+    for i, (x, y) in enumerate(pts):
+        c.px(x, y, RAMPS["sg"][3 if tw(f, i + 9) > .5 else 2])
+
+
+def vs_head(c, f):
+    ph = f / FRAMES
+    # plating continues up
+    q = 9
+    col = (c.xx // q).astype(int)
+    lx = c.xx - col * q
+    ly = (c.yy + 64 + (col % 2) * q / 2) % q
+    seam = ((lx < 1) | (ly < 1)) & (c.yy < 8)
+    c.set(seam & ((c.bayer + .5) < 0.5 * c.lin(20, 0, W, 0)) & c.empty(), RAMPS["vs"][0])
+    # crane gantry rail across the ceiling with a trolley and hook
+    rail = c.rect(20, -28, W, -24)
+    c.fill(rail & c.empty(), 0.5, "gr", outline=False, lo=1, hi=2, amp=0.0)
+    truss = rail & (((c.xx + c.yy).astype(int) % 6) < 1)
+    c.set(truss, RAMPS["gr"][0])
+    tx = 150 + 6 * math.sin(TAU * ph)
+    c.fill(c.rect(tx - 5, -24, tx + 5, -20), 0.6, "rn", lo=1, hi=3)
+    for y in range(-20, -4):
+        c.px(tx, y, RAMPS["gr"][2], True)
+    c.set(c.ring(tx, -3, 2.5, 1) & (c.yy > -4), RAMPS["gr"][3])
+    # sagging cables between ceiling posts
+    for x0, x1, rn in ((30, 90, "cyan"), (90, 140, "mag"), (180, 250, "lime"), (230, 286, "rn")):
+        for k in range(int(x1 - x0)):
+            x = x0 + k
+            t = k / (x1 - x0)
+            y = -22 + 9 * 4 * t * (1 - t)
+            c.px(x, y, RAMPS[rn][1], True)
+        # a signal pulse running along the cable
+        t = (ph + x0 / 100) % 1
+        c.px(x0 + (x1 - x0) * t, -22 + 36 * t * (1 - t), RAMPS[rn][4])
+    # hanging lamps, gently swaying
+    for i, (lx, ln, rn) in enumerate(((60, 12, "rn"), (120, 8, "cyan"), (206, 14, "mag"), (262, 10, "lime"))):
+        sway = 1.2 * math.sin(TAU * (ph + i * .25))
+        for y in range(-24, -24 + ln):
+            c.px(lx + sway * (y + 24) / ln, y, RAMPS["gr"][1], True)
+        bx, by = lx + sway, -24 + ln
+        shade = c.poly([(bx - 4, by + 3), (bx - 2, by), (bx + 2, by), (bx + 4, by + 3)])
+        c.fill(shade, 0.5, "gr", lo=1, hi=3)
+        c.set(c.rect(bx - 2, by + 3, bx + 2, by + 4), RAMPS[rn][4])
+        cone = c.poly([(bx - 3, by + 4), (bx + 3, by + 4), (bx + 10, by + 24), (bx - 10, by + 24)])
+        c.haze(cone & ((c.bayer + .5) < 0.5 * (1 - c.lin(0, by + 4, 0, by + 24))), rn, 1, 60)
+    # a vent fan turning in the wall
+    fx, fy = 100, -6
+    c.set(c.ring(fx, fy, 6, 1), RAMPS["gr"][2])
+    for k in range(3):
+        a = k * TAU / 3 + TAU / 3 * ph
+        c.set(c.line(fx, fy, fx + 5 * math.cos(a), fy + 5 * math.sin(a), 1.4) & c.empty(), RAMPS["vs"][2])
+    sky_points(c, f, 40, 31, -32, 8, ["mag", "rn", "qz"], 30)
+
+
+def ch_head(c, f):
+    ph = f / FRAMES
+    # the vast dial's outer arcs continue up into the headroom
+    cx, cy = 190, 92
+    for k, (rr, rn) in enumerate([(96, "rn"), (108, "ch"), (118, "cyan")]):
+        m = c.ring(cx, cy, rr, 1) & ((c.bayer + .5) < [0.6, 0.5, 0.35][k]) & (c.yy < 10)
+        c.set(m & c.empty(), RAMPS[rn][1])
+    for k in range(48):
+        a = k * TAU / 48 + TAU / 2
+        if math.sin(a) > -0.2:
+            continue
+        m = c.line(cx + 104 * math.cos(a), cy + 104 * math.sin(a), cx + 100 * math.cos(a), cy + 100 * math.sin(a), 1) & c.empty() & (c.yy < 10)
+        c.set(m, RAMPS["ch"][2 if k % 4 == 0 else 1])
+    # ceiling beam with brass brackets
+    beam = c.rect(0, -32, W, -28)
+    c.fill(beam & c.empty(), 0.4 * c.lin(0, 0, W, 0) + 0.2, "ch", outline=False, lo=0, hi=2)
+    for x in range(30, W, 36):
+        c.set(c.poly([(x, -28), (x + 6, -28), (x + 3, -24)]) & c.empty(), RAMPS["rn"][2])
+    # a big gear half-buried in the ceiling, turning slowly
+    gx, gy, gr, t = 70, -32, 16, 8
+    rot = (TAU / t) * ph
+    ang = np.arctan2(c.yy - gy, c.xx - gx) - rot
+    dd = np.hypot(c.xx - gx, c.yy - gy)
+    body = ((dd <= gr * 0.76) | ((dd <= gr) & (np.cos(ang * t) > 0.25))) & ~c.disc(gx, gy, gr * 0.3)
+    c.fill(body & c.empty(), 1 - c.lin(gx - gr, gy - gr, gx + gr, gy + gr), "rn", outline=False, lo=1, hi=2, amp=0.0)
+    # chains with stopped pendulums and lanterns hanging from the beam
+    for i, (hx, ln, rn) in enumerate(((140, 22, "cyan"), (230, 16, "qz"), (262, 26, "lime"), (32, 18, "mag"))):
+        for y in range(-28, -28 + ln, 2):
+            c.px(hx, y, RAMPS["gr"][2 if (y // 2) % 2 else 1], True)
+        by = -28 + ln
+        lan = c.rect(hx - 3, by, hx + 3, by + 6)
+        c.fill(lan, 0.5, "rn", lo=1, hi=3, amp=0.0)
+        c.set(c.rect(hx - 2, by + 1, hx + 2, by + 5), RAMPS[rn][3 if tw(f, i) > .4 else 2])
+        c.glow(hx, by + 3, 9, rn, 0.9, 0)
+    # light shafts reach the ceiling
+    for k in range(3):
+        x0 = 120 + k * 46
+        shaft = c.poly([(x0 + 18, -32), (x0 + 34, -32), (x0 + 16, 0), (x0, 0)])
+        c.haze(shaft & ((c.bayer + .5) < 0.4), "rn", 1, 45)
+    motes(c, 60, f, 41, (16, -31, W - 2, 8), ("ch", "rn", "cyan", "qz", "lime", "wh"))
+
+
+HEADROOM = {"starglass": sg_head, "voidsteel": vs_head, "chrono": ch_head}
+
+
+# =====================================================================================================================
 ZONES = {
     "starglass": (sg_bg, [sg_1, sg_2, sg_3, sg_4, sg_5, sg_6, sg_7]),
     "voidsteel": (vs_bg, [vs_1, vs_2, vs_3, vs_4, vs_5, vs_6, vs_7]),
@@ -1022,10 +1165,11 @@ def cell(zone, row, f):
     for n in ORDER:
         if n <= row:
             sprites[n - 1](c, f)
-    c.img[:TOP] = 0
+    c.img[:HEAD + TOP] = 0
     # backdrop goes underneath: paint it on its own canvas and fill only where the sprites left holes
     b = Canvas()
     bg(b, f)
+    HEADROOM[zone](b, f)
     holes = c.img[..., 3] == 0
     c.img[holes] = b.img[holes]
     return c.img
