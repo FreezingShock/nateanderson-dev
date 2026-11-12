@@ -3,7 +3,7 @@
 import {
     chOff,
     GOALS, MATS, PERKS, TIERS, TREE, TUNE, REBOOT_UNLOCK,
-    LAB, PAYLOADS, intelRate, amount, apOnAscend, ascendNeed, unlockNeed, FW, fwNodeOpen, keysOnHandover, treeComplete, button, canAfford, canAscend, derive, droneBoost, droneCost, droneMax, droneRate, dronesOpen, postOf, postX, zoneRank, ROMAN, originAp, paradoxOc, singularityAll, fmt, fmtTime, goalDone, hasNode, isUnlocked, nodeOpen, statDef,
+    ARC_MATS, LAB, PAYLOADS, intelRate, amount, apOnAscend, ascendNeed, unlockNeed, FW, fwNodeOpen, keysOnHandover, treeComplete, button, canAfford, canAscend, derive, droneBoost, droneCost, droneMax, droneRate, dronesOpen, postOf, postX, zoneRank, ROMAN, originAp, paradoxOc, bloomKeys, sunstoneAll, singularityAll, fmt, fmtTime, goalDone, hasNode, isUnlocked, nodeOpen, statDef,
     type ButtonStat, type Derived, type MatId, type State, type StatId,
 } from "./engine";
 import { LORE } from "./lore";
@@ -83,6 +83,8 @@ export function unlockInfo(s: State, id: StatId): { label: string; cur: number; 
         const need = button(s, "reboot", 0).cost;
         return { label: "Run your first Reboot", cur: s.mult, need, unit: "MUL", frac: isUnlocked(s, "reboot") ? fracOf(s.mult, need) : 0 };
     }
+    // the Overgrowth and Descent arcs stay shut until the first Handover
+    if (ARC_MATS.includes(id as MatId) && !(s.hand?.count > 0)) return { label: "Hand the node over once", cur: 0, need: 1, unit: "HANDOVER", frac: 0 };
     const i = MATS.indexOf(id as MatId);
     const below = MATS[i - 1] as MatId | undefined;
     if (!below) return { label: "", cur: 0, need: 1, unit: "", frac: 0 };
@@ -222,6 +224,14 @@ export function feedLine(id: StatId, s: State, d: Derived): string {
         case "engrams": return `Singularity ×${fmt(b.egSn)}, Drones ×${fmt(droneBoost(s))}`;
         case "paradox": return `Engrams ×${fmt(b.pxEg)}, Overclock ×${fmt(paradoxOc(s))}`;
         case "origin": return `Paradox ×${fmt(b.orPx)}, AP on Ascend ×${fmt(originAp(s))}`;
+        case "spores": return `Origin ×${fmt(b.spOr)}`;
+        case "mycelium": return `Spores ×${fmt(b.mySp)}`;
+        case "pollen": return `Mycelium ×${fmt(b.poMy)}`;
+        case "bloom": return `Pollen ×${fmt(b.blPo)}, Keys on Handover ×${fmt(bloomKeys(s))}`;
+        case "basalt": return `Bloom ×${fmt(b.baBl)}`;
+        case "magma": return `Basalt ×${fmt(b.mgBa)}`;
+        case "geodes": return `Magma ×${fmt(b.geMg)}`;
+        case "sunstone": return `Geodes ×${fmt(b.suGe)}, everything ×${fmt(sunstoneAll(s))}`;
     }
 }
 

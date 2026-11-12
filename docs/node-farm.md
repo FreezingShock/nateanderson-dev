@@ -13,6 +13,7 @@ button tiers (+1, +5, +25, +125, +625, +3125; each tier costs about 8 to 10 time
   adds a little to Bytes, Silicon boosts Copper, Quartz boosts Silicon, Aether boosts Quartz).
 - Runes, Starglass, Voidsteel and Chrono are the deep materials (unlock at 150 Aether, 200 Runes, 250 Starglass, 300 Voidsteel; a quarter of that after your first Ascend). Same rules as the others, each boosts the one below, Chrono adds a little to everything. They also add to the AP you earn (`TUNE.apPer`).
 - Zones 12 to 17 (Nate, 2026-11-12: deep space first, then the Origin arc): Cloud Deck (Nebula), Beacon Spire (Pulsars), Event Horizon (Singularity), Engram Archive (Engrams), Mirror Stair (Paradox), Root Chamber (Origin). Same rules as the deep materials, each boosts the one below (`boostK` 0.12) and adds AP. Their extras grow with log10 of the amount (`TUNE.logK`) so they cannot run away: Singularity adds a little to everything, Engrams speed up Drones, Paradox strengthens Overclock, Origin multiplies AP on Ascend. Never give a late material a power-law "everything" boost: in the sim two of them blew every amount to Infinity within minutes. `tick` also caps every amount at `CAP` (1e300). Goal tier VIII "Source" holds the first of each. Art: icons and tier sprites in nodefarm-icons.py, zone scenes in scripts/naos-art/zone-art-12-17.py. Each has its own layered era scenery (see Scenery). Sim (with the lab): Nebula ~22-29 h, Origin ~43 h, tree ~44-46 h.
+- Zones 18 to 25 (Nate, 2026-11-12: both arcs, four zones each, after the first Handover): **Overgrowth** Spore Cellar (Spores), Mycel Web (Mycelium), Canopy Hall (Pollen), Bloom Core (Bloom), then **Descent** Bedrock Shaft (Basalt), Magma Line (Magma), Geode Vault (Geodes), The Buried Sun (Sunstone, id `sunstone`; it was Core / `core` until Nate's rename pick, and `parseSave` moves old `core` saves over). `ARC_MATS` in engine.ts: `isUnlocked` keeps them shut until `hand.count > 0`, then they open like the deep chain (`unlockAt` on the amount below). Same rules: each boosts the one below (`boostK` 0.12) and adds a little AP. Extras are log10 like the Origin arc: Bloom multiplies Keys on Handover (`bloomKeys`), Sunstone adds a little to everything (`sunstoneAll`). Goal tier IX "Bedrock" holds the first of each. Art: page scenery `scripts/naos-art/nodefarm-scenes-arc.py` (eras 15 to 22, layered like 9 to 14), 64 px button sprites and zone icons `scripts/naos-art/nodefarm_arc64.py` (stubs `nodefarm_tiers64_<stat>.py`), zone panels `scripts/naos-art/zone-art-18-25.py` (built from the era scene and the button sprites). Arcs registered in `lib/nodefarm/arcs.ts`.
 - Prestige tree (see "Prestige tree" below): 40 nodes in five sections, bought with AP, kept through Ascend. `state.tree` holds owned ids; old saves are refunded for nodes that no longer exist.
 - Ascend (400 Aether): wipes everything except goals, perks and lifetime stats for Ascension Points (+30 percent to everything each) and five perks.
 - There is no tapping: progress comes from buttons only (Nate did not want a Cookie Clicker). The core is a live display: its outer arc shows progress to the cheapest Reboot and it pulses on every press. Quick-time events (see below) appear every 3 to 5 minutes; clearing one gives the timed Overclock plus a rarity loot roll.
@@ -180,7 +181,7 @@ Every 20 to 30 s one short line drops into the terminal feed (typed out, skipped
 
 ## Admin mode (root console)
 
-Unadvertised testing tools, on this device only. Once on, the panel floats over the game (drag the bar, resize from the corner, minimize with the − button or a double-click; position and size are remembered) and stays across visits; the × hides it and a small "root" tab brings it back. Turn on from the naOS console (backtick): `nf admin on` arms it and opens the panel, `nf admin max` grants everything (tree, perks, Drones, goals, secrets, logs, prestiges, materials), `nf admin panel` reopens the panel, `nf admin snap|snaps|restore [n|real]` manage snapshots, `nf admin off` hides it. Turning it on stores your real save as the `real save` snapshot first.
+Testing tools, on this device only (the `admin` command is listed in `help`; panel section 10 teaches, runs and forgets Scripts). Once on, the panel floats over the game (drag the bar, resize from the corner, minimize with the − button or a double-click; position and size are remembered) and stays across visits; the × hides it and a small "root" tab brings it back. Turn on from the naOS console (backtick): `admin` (listed in `help`, tab completes; same as `nf admin on`) arms it and opens the panel, `nf admin max` grants everything (tree, perks, Drones, goals, secrets, logs, prestiges, materials), `nf admin panel` reopens the panel, `nf admin snap|snaps|restore [n|real]` manage snapshots, `nf admin off` hides it. Turning it on stores your real save as the `real save` snapshot first.
 
 Code: pure rules and snapshots in `lib/nodefarm/admin.ts`, panel in `components/nodefarm/admin.tsx`, styles in `app/camino/nodefarm-admin.css`. The game side is a few lines in `node-farm.tsx` (admin state, speed multiplier in the tick loop, `nf:admin` and `nf:live.changed`), `events.tsx` (`nf:fire` listener) and `engine.ts` (`adminFlags.reveal`). To remove admin mode later, delete those three files and those lines, plus `nfAdmin` in `components/cm/console.tsx`. Test scripts: `/mnt/project-files/portfolio/node-farm-admin/` (`run.mjs`, `panel.mjs`, `extra.mjs`).
 
@@ -285,6 +286,12 @@ Learned automation, in `lib/nodefarm/scripts.ts` (rules, registers `scriptStep` 
 - Feed: `cron.run("buy.sh") ×n` batched lines; script presses are kept out of the Drone sweep count (`state.auto.presses`). Console `nf cron` lists every script. Admin `nf admin max` teaches all of them (`grantScripts`).
 - Art: `scripts/naos-art/nodefarm-sched-scene.py` draws `zone-sched` (the cron room, one machine per script learned, the clock daemon at buy.sh v3) and `sched-icons` (32 px, 4 frames per script).
 - Pacing: the greedy sim bot already plays perfectly, so scripts do not change the sim; they move a real player toward the bot's numbers.
+- Batch 2 (later 2026-11-12): three scripts for the newer systems.
+  - rig.sh (Auto-rig): learned from 5 rig levels bought by hand. Every 5 s it buys one level on each ticked zone rig (cheapest key first, so Carvings spreads across its three glyphs) once you hold x2, x5, x10 or x20 of the price (`rigX`).
+  - event.sh (Auto-answer): learned from answering 3 zone events. Every 1 s it answers a Rich vein (mine now, or let it run) and a Fault (patch, or wait it out) the way you set (`vein`, `fault`).
+  - restore.sh (Auto-restore): opens after the first Handover, learned at once. It keeps copying your prestige tree (order, ranks) and perk levels; after a Handover (`hand.count` goes up) it rebuys the tree in that order as AP comes in, stopping at the first node it can't pay for, then the perks unless "rebuild perks too" is off (`restPerks`).
+- Chains (the `&&` ticks under a rule): reboot.sh can wait for a full Capacitor (`capWait`) and arm a stocked Logic bomb first (`bombFirst`); ascend.sh can arm a stocked Zero-click first (`zeroFirst`, `ascendPrep`). Once reboot.sh is learned, `watchdogStep` hands the rule to scripts.ts so the chains apply.
+- The cron room has 11 stages: crane (rig.sh), radar dish (event.sh) and tape reels (restore.sh) were added; `sched-icons` is 9 rows.
 
 ## Zone rigs (one mechanic per zone), 2026-11-12
 Every zone keeps its six buttons and has one rig: a meter, one rule, and a level track. Rules in `lib/nodefarm/rigs.ts`
@@ -306,6 +313,12 @@ Every zone keeps its six buttons and has one rig: a meter, one rule, and a level
 - Boosts touch only their own zone or a named neighbour, and the big ones are log-scaled or capped. Never add a power-law boost
   on everything.
 - New zones (arc past Origin): add a `RIGS` entry and a case in `muls()` and/or `step()`.
+- Zones 18 to 25 (Overgrowth and Descent): 18 Spread (each running material zone strengthens Spores), 19 Knots (Spores and
+  Mycelium tiers owned this run; all twelve double it), 20 Daylight (10 min clock: day Pollen x1.4, night Pollen x0.8 but
+  Spores and Mycelium x1.3), 21 Seed bank (each Ascend banks one seed per tenfold Bloom held, up to 30, kept through Ascend;
+  +2% Bloom each), 22 Drill bit (wear hazard down to 50% Basalt; coolant clears it and adds a bonus but burns Bloom),
+  23 Eruptions (timed Magma lump that heats the shaft: Basalt x1.5 for a minute), 24 Ringing (Geodes grow with Quartz held,
+  log, capped x3), 25 Convection (each rig level in zones 18 to 24 strengthens the last zone).
 - Admin section 10 "Zone rigs": max every rig, fill meters, clear. `nf admin max` maxes rigs too.
 - Sim: rigs join unless `NF_NORIGS=1` (`NF_RIGTUNE` merges over `RIG_TUNE`); the bot buys any level it can pay four times over.
   The first numbers took the whole tree from 39.2 h to 27.4 h, so most boosts were halved. Now (Drone bot, 2026-11-12): first Ascend
@@ -318,6 +331,11 @@ About every 8 to 14 minutes of play (first one after 8 minutes of life), one unl
 - Only online ticks (5 s or less) start an event; time away just runs the clock down. The scripts/sim never imports `zoneevents.ts`, so `sim.mjs` pacing is unchanged.
 - Shown as a centered card (`ZoneEventCard`, no scrim, plain events close after 7 s, a vein or fault waits for an answer or "Decide later"), a readout on the zone panel (`ZoneEvent`, with the answers if you deferred) and a dot on the signal chain. Reveal is decrypt.
 - Admin panel, Run section: zone picker, one button per event, Clear, and Next in 5 s.
+
+## QOL batch 3 (2026-11-12, late-game layout pass)
+- `audit.mjs` and `tour3.mjs` in /mnt/project-files/portfolio/node-farm-first30/ seed a late save (`nf admin max` through the console), open every zone and list overflowing or tiny controls at 1440, 390 and 360.
+- The Drone hangar rows were clipped past the right edge on phones once drone levels pass 10 (20 pips, the posting list and the third mod were cut off): `nodefarm-hangar.css` now lets the row shrink and the pips squeeze.
+- Ten sections on the phone grid use smaller labels so Handover and Records are not cut; the desktop rail with eight or more windows shows the key badge on hover only, so it stops cutting labels and status lines.
 
 ## Stress tests (challenge runs), 2026-11-12
 
