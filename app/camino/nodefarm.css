@@ -58,6 +58,7 @@
 .ctos .nf[data-tab="goals"] [data-pane="goals"],
 .ctos .nf[data-tab="records"] [data-pane="records"],
 .ctos .nf[data-tab="ascend"] [data-pane="ascend"],
+.ctos .nf[data-tab="handover"] [data-pane="handover"],
 .ctos .nf[data-tab="menu"] [data-pane="menu"] { display: block; }
 .ctos .nf[data-tab="stats"] .nf-statspane { display: grid; }
 
@@ -76,7 +77,7 @@
     .ctos .nf-dock-b:hover { background: var(--cm-ctos-block); color: var(--cm-ctos-ink); border-color: var(--cm-ctos-block); }
     .ctos .nf-dock-b:focus-visible { outline: 2px solid var(--cm-cyan); outline-offset: 2px; }
     .ctos .nf[data-tab] .nf-sidepane { display: none; }
-    .ctos .nf[data-win="map"][data-tab] [data-pane="map"], .ctos .nf[data-win="goals"][data-tab] [data-pane="goals"], .ctos .nf[data-win="records"][data-tab] [data-pane="records"], .ctos .nf[data-win="ascend"][data-tab] [data-pane="ascend"], .ctos .nf[data-win="menu"][data-tab] [data-pane="menu"] {
+    .ctos .nf[data-win="map"][data-tab] [data-pane="map"], .ctos .nf[data-win="goals"][data-tab] [data-pane="goals"], .ctos .nf[data-win="records"][data-tab] [data-pane="records"], .ctos .nf[data-win="ascend"][data-tab] [data-pane="ascend"], .ctos .nf[data-win="handover"][data-tab] [data-pane="handover"], .ctos .nf[data-win="menu"][data-tab] [data-pane="menu"] {
         display: block; position: fixed; z-index: 90; left: 50%; top: 84px; translate: -50% 0; width: min(1040px, 94vw); max-height: calc(100dvh - 84px - 104px); overflow: auto; overscroll-behavior: contain; padding: 0 20px 22px; background: #0b0b0b; border: 1px solid var(--cm-ctos-block); box-shadow: 0 0 0 6px #000a, 0 30px 90px #000; }
     .ctos .nf-scrim { display: block; position: fixed; inset: 0; z-index: 85; background: #000b; border: 0; padding: 0; cursor: default; animation: nfScrim .16s steps(4, end) both; transition: opacity .16s steps(4, end); }
     .ctos .nf[data-closing] .nf-scrim { opacity: 0; }
