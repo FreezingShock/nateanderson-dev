@@ -291,6 +291,7 @@ body.nf-win-open .nf-jb { z-index: 59; }
 .ctos .nf-wk-cfgrow > label, .ctos .nf-wk-cfgrow > div { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; min-height: 44px; padding: 8px 12px; background: #0d0d0d; border-left: 2px solid #ffffff1c; font: 400 14px/1.3 var(--cm-mono); color: var(--cm-fg); }
 .ctos .nf-wk-cfgrow .nf-wk-box { color: var(--cm-ctos-meta); }
 .ctos .nf-wk-cfgrow input[type="range"] { flex: 1 1 160px; accent-color: var(--c); min-height: 28px; }
+@media (hover: none) { .ctos .nf-wk-cfgrow input[type="range"] { min-height: 40px; } }
 .ctos .nf-wk-pick { display: inline-flex; flex-wrap: wrap; gap: 4px; }
 .ctos .nf-wk-pick button { min-height: 32px; padding: 0 10px; background: #111; border: 1px solid #ffffff1c; color: var(--cm-mute); font: 600 12px/1 var(--cm-mono); cursor: pointer; }
 .ctos .nf-wk-pick button[aria-pressed="true"] { border-color: var(--c); color: var(--c); }

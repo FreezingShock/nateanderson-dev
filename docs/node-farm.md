@@ -278,3 +278,12 @@ Learned automation, in `lib/nodefarm/scripts.ts` (rules, registers `scriptStep` 
 - Feed: `cron.run("buy.sh") ×n` batched lines; script presses are kept out of the Drone sweep count (`state.auto.presses`). Console `nf cron` lists every script. Admin `nf admin max` teaches all of them (`grantScripts`).
 - Art: `scripts/naos-art/nodefarm-sched-scene.py` draws `zone-sched` (the cron room, one machine per script learned, the clock daemon at buy.sh v3) and `sched-icons` (32 px, 4 frames per script).
 - Pacing: the greedy sim bot already plays perfectly, so scripts do not change the sim; they move a real player toward the bot's numbers.
+
+## Zone events
+About every 8 to 14 minutes of play (first one after 8 minutes of life), one unlocked zone gets a short event. Rules and the roll are in `lib/nodefarm/zoneevents.ts`; every number is `ZE_TUNE` in `engine.ts` (the engine reads it in `derive` and `button` through `zeOut` and `zeCost`). State is `s.ze` (optional, so old saves load): the running event, a timer, counts. Ascend ends a running event.
+
+- **Surge**: the zone's output x2 for 3 min. **Clearance**: its buttons cost 40% less (not on Bytes, which has none). **Resonance**: the zone and the one below it x1.6. **Rich vein** (Bytes and materials): output x2 for 4 min, or Mine it now for 4 min of output at once. **Fault** (after 15 min of life): output halved for 3 min; Patch it for 25 s of Bytes or wait it out. Nothing takes stock from you and nothing needs a reflex.
+- Output means Bytes per second for Bytes, button strength for Multipliers, Reboot strength for Reboots, and the rate for a material.
+- Only online ticks (5 s or less) start an event; time away just runs the clock down. The scripts/sim never imports `zoneevents.ts`, so `sim.mjs` pacing is unchanged.
+- Shown as a centered card (`ZoneEventCard`, no scrim, plain events close after 7 s, a vein or fault waits for an answer or "Decide later"), a readout on the zone panel (`ZoneEvent`, with the answers if you deferred) and a dot on the signal chain. Reveal is decrypt.
+- Admin panel, Run section: zone picker, one button per event, Clear, and Next in 5 s.
