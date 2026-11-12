@@ -236,6 +236,7 @@ fails if a stamp is stale or if the icon/tier sheets don't match ORDER/TIER_ROWS
 - A background tab that has its next step ready shows "● ready" in the tab title.
 - Coming back to a save (20+ presses, no hash) scrolls the board under the site bar once; a first visit still starts on the intro.
 - Keys G and P, listed in Menu.
+- Batch 2: `components/nodefarm/mini-hud.tsx` is a slim fixed readout (Bytes, rate, next step, Show me) that appears under the site bar once the HUD and guide strip have scrolled away; it stays off while a window, the tree, the report or (on phones) the tab grid is in view. Keys 1 to 6 press that tier on the open zone nearest the middle of the screen (never held on Reboots). `exact()` in guide.ts gives full numbers for hover titles and an Exact row in button tips. Menu `jump` (`nf-jump-v1`) turns the return-visit scroll off. On phones a tab tap scrolls the tab grid to the top so the section is on screen (before, the section opened just below the fold and looked like nothing happened).
 
 ## Balance audit (2026-11-12)
 Whole game simulated together (17 zones, 60-node tree, Exploit Lab) with `NF_ASC_GAP=1`. Two runaways found and fixed:

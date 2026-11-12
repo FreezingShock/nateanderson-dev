@@ -4,7 +4,7 @@ import { useContext, useEffect, useRef } from "react";
 import { MATS, STATS, TIERS, button, derive, droneBoost, originAp, paradoxOc, singularityAll, fmt, fmtTime, hasFeature, isUnlocked, statDef, type ButtonStat, type State, type StatId } from "@/lib/nodefarm/engine";
 import { LORE } from "@/lib/nodefarm/lore";
 import { fnCaption } from "@/lib/nodefarm/feed";
-import { buttonTip, unlockInfo, type Target } from "@/lib/nodefarm/guide";
+import { buttonTip, exact, unlockInfo, type Target } from "@/lib/nodefarm/guide";
 import { TipCtx } from "./guide";
 import { NfIcon, NfTierIcon, type NfIconName } from "./icon";
 import { useFoldReveal } from "@/lib/nodefarm/cx";
@@ -161,7 +161,7 @@ export function StatRow({ id, s, d, onPress, onArm, onWatchdog, open: expanded, 
                     <span className="nf-code">{lore.code}</span>
                 </div>
                 <div className="nf-row-n">
-                    <b>{fmt(amt)}</b>
+                    <b title={exact(amt)}>{fmt(amt)}</b>
                     {rate > 0 && <small>+{fmt(rate)}/s</small>}
                     {prod > 0 && <small>{fmt(prod)} nodes</small>}
                 </div>
@@ -279,7 +279,7 @@ function BuyBtn({ s, d, stat, tier, onPress, guided }: { s: State; d: D; stat: B
             <NfTierIcon stat={stat} tier={tier} />
             <span className="nf-btn-g">+{fmt(b.gain)}</span>
             <span className="nf-btn-fn" aria-hidden="true">{fnCaption(stat, b.gain)}</span>
-            <span className="nf-btn-c">{fmt(b.cost)} {pays.short}{owned > 0 && <em> · ×{owned}</em>}{eta > 0 && <em className="nf-eta"> · {eta < 86400 * 30 ? fmtTime(eta) : "a long while"}</em>}</span>
+            <span className="nf-btn-c" title={`Costs ${exact(b.cost)} ${pays.name}${afford ? "" : `, you have ${exact(s[b.pays] as number)}`}`}>{fmt(b.cost)} {pays.short}{owned > 0 && <em> · ×{owned}</em>}{eta > 0 && <em className="nf-eta"> · {eta < 86400 * 30 ? fmtTime(eta) : "a long while"}</em>}</span>
         </button>
     );
 }
