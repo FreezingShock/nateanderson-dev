@@ -695,3 +695,5 @@ body.nf-win-open .ctos .cm-section.ruled { z-index: 60; }
 .ctos .nf-stale span { flex: 1 1 260px; }
 @media (min-width: 900px) { .ctos .nf-stale { left: auto; max-width: 560px; } }
 @media (hover: none) { .ctos .nf-keys-sec { display: none; } }
+body.nf-calm .nf *, body.nf-calm .nf { animation: none !important; transition: none !important; }
+body.nf-calm [class^="nf-"], body.nf-calm [class*=" nf-"] { animation-duration: 1ms !important; animation-iteration-count: 1 !important; }

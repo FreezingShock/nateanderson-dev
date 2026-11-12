@@ -36,6 +36,7 @@ const EV_KEY = "nf-events-v1"; // "off" when quick-time events are switched off 
 const HUM_KEY = "nf-hum-v1"; // reactor hum on or off (per device)
 const UI_KEY = "nf-ui-v1"; // which stat panels are minimized (per device, not part of the game save)
 const MAX_KEY = "nf-max-v1"; // "1" when Buy max (Batch job node) is switched on (per device)
+const CALM_KEY = "nf-calm-v1"; // "1" when motion is forced calm, on top of the OS setting (per device)
 const FMT_KEY = "nf-numfmt-v1"; // number format: short | sci | eng (per device)
 const BACKUP_KEY = "nf-backup-v1"; // the save as it was just before an import, a wipe or a failed load (one slot)
 const CORRUPT_KEY = "nf-corrupt-v1"; // raw text of a save that could not be read, kept instead of being overwritten
@@ -85,7 +86,10 @@ export function NodeFarm() {
     const [away, setAway] = useState<Away | null>(null);
     const [toast, setToast] = useState<string | null>(null);
     const [evOn, setEvOn] = useState(true);
-    const [reduced, setReduced] = useState(false);
+    const [osReduced, setReduced] = useState(false);
+    const [calm, setCalm] = useState(false);
+    const reduced = osReduced || calm;
+    const [lastSave, setLastSave] = useState(0);
     const [confirm, setConfirm] = useState<"" | "ascend" | "reset" | "import">("");
     const [stale, setStale] = useState(false); // another tab wrote the save: this tab stops saving so it cannot overwrite it
     const staleRef = useRef(false);
@@ -192,6 +196,7 @@ export function NodeFarm() {
             if (u) setFolded(JSON.parse(u));
             if (localStorage.getItem(EV_KEY) === "off") setEvOn(false);
             if (localStorage.getItem(MAX_KEY) === "1") setBuyMax(true);
+            if (localStorage.getItem(CALM_KEY) === "1") setCalm(true);
             const nf = localStorage.getItem(FMT_KEY);
             if (nf === "sci" || nf === "eng") { setNumFmt(nf); setNumFmtState(nf); }
             setBackup(readBackup());
@@ -253,6 +258,7 @@ export function NodeFarm() {
             s.at = Date.now();
             localStorage.setItem(KEY, JSON.stringify(s));
             saved.current = Date.now();
+            setLastSave(saved.current);
         } catch {
             // storage full or blocked (private mode): say so once instead of failing silently
             if (!warnedSave.current) { warnedSave.current = true; log("This browser would not store the save. Export a code from Menu so nothing is lost.", "warn"); }
@@ -493,6 +499,15 @@ export function NodeFarm() {
     const doUpload = (f: File) => {
         f.text().then((txt) => { setIoText(txt.trim()); setIoMsg(parseSave(txt) ? "File read. Press Import to load it." : "That file isn't a Node Farm save."); }).catch(() => setIoMsg("Could not read that file."));
     };
+    useEffect(() => {
+        document.body.classList.toggle("nf-calm", calm);
+        return () => document.body.classList.remove("nf-calm");
+    }, [calm]);
+    const toggleCalm = () => {
+        const v = !calm;
+        setCalm(v);
+        try { localStorage.setItem(CALM_KEY, v ? "1" : "0"); } catch {}
+    };
     const setFormat = (f: NumFmt) => {
         setNumFmt(f);
         setNumFmtState(f);
@@ -732,6 +747,10 @@ export function NodeFarm() {
                     onRestore={doRestore}
                     volume={snd.master}
                     onVolume={(v) => setSnd({ master: v })}
+                    calm={calm}
+                    osCalm={osReduced}
+                    onCalm={toggleCalm}
+                    lastSave={lastSave}
                     numFmt={numFmt}
                     onNumFmt={setFormat}
                     hasMax={hasFeature(s, "buymax")}

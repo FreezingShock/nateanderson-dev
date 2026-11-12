@@ -109,10 +109,10 @@ export function RecordsPanel({ s }: { s: State }) {
 }
 
 export function MenuPanel({
-    s, soundOn, onSound, humOn, onHum, eventsOn, onEvents, ioText, setIoText, ioMsg, onExport, onImport, importConfirm, onDownload, onUpload, backup, onRestore, volume, onVolume, numFmt, onNumFmt, hasMax, confirm, onReset,
+    s, soundOn, onSound, humOn, onHum, eventsOn, onEvents, ioText, setIoText, ioMsg, onExport, onImport, importConfirm, onDownload, onUpload, backup, onRestore, volume, onVolume, calm, osCalm, onCalm, lastSave, numFmt, onNumFmt, hasMax, confirm, onReset,
 }: {
     s: State; soundOn: boolean; onSound: () => void; humOn: boolean; onHum: () => void; eventsOn: boolean; onEvents: () => void; ioText: string; setIoText: (v: string) => void; ioMsg: string; onExport: () => void; onImport: () => void; importConfirm: boolean; onDownload: () => void; onUpload: (f: File) => void;
-    backup: { at: number; why: string } | null; onRestore: () => void; volume: number; onVolume: (v: number) => void; numFmt: NumFmt; onNumFmt: (f: NumFmt) => void; hasMax: boolean; confirm: boolean; onReset: () => void;
+    backup: { at: number; why: string } | null; onRestore: () => void; volume: number; onVolume: (v: number) => void; calm: boolean; osCalm: boolean; onCalm: () => void; lastSave: number; numFmt: NumFmt; onNumFmt: (f: NumFmt) => void; hasMax: boolean; confirm: boolean; onReset: () => void;
 }) {
     const FORMATS: [NumFmt, string][] = [["short", "1.2M"], ["sci", "1.2e6"], ["eng", "1.2e6 / e3"]];
     const facts: [string, string][] = [
@@ -143,6 +143,7 @@ export function MenuPanel({
                     <span>Save code</span>
                     <textarea value={ioText} onChange={(e) => setIoText(e.target.value)} rows={3} spellCheck={false} placeholder="Export to get a code, or paste one here and press Import." />
                 </label>
+                <p className="nf-io-msg">{lastSave ? `Last saved ${new Date(lastSave).toLocaleTimeString()}. Saves every 5 s and when you leave.` : "Saves every 5 s and when you leave."}</p>
                 {ioMsg && <p className="nf-io-msg" role="status">{ioMsg}</p>}
                 {backup && (
                     <div className="nf-backup">
@@ -157,6 +158,7 @@ export function MenuPanel({
                     <button type="button" className="nf-mini" aria-pressed={soundOn} onClick={onSound}>Sound: {soundOn ? "on" : "off"}</button>
                     <button type="button" className="nf-mini" aria-pressed={humOn} onClick={onHum}>Hum: {humOn ? "on" : "off"}</button>
                     <button type="button" className="nf-mini" aria-pressed={eventsOn} onClick={onEvents}>Events: {eventsOn ? "on" : "off"}</button>
+                    <button type="button" className="nf-mini" aria-pressed={calm || osCalm} disabled={osCalm} onClick={onCalm} title={osCalm ? "Your device already asks for less motion" : undefined}>Calm motion: {calm || osCalm ? "on" : "off"}</button>
                 </div>
                 <label className="nf-io nf-vol">
                     <span>Volume {Math.round(volume * 100)}%</span>
