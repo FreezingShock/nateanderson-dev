@@ -12,10 +12,15 @@ if (process.env.NF_ZETUNE) merge(E.ZE_TUNE, JSON.parse(process.env.NF_ZETUNE)); 
 let RG = null;
 // NF_ZONEEV=1: zone events run too (random, so results vary); the bot mines every Rich vein and patches every Fault at once.
 let ZE = null;
-if (!process.env.NF_NORIGS || process.env.NF_ZONEEV) {
+// Arc clear bonus (lib/nodefarm/arcs.ts) is on unless NF_NOARCS=1: the bot presses every button once as soon as it can pay for it.
+// NF_POKE=1: caches and the Core vent (lib/nodefarm/poke.ts) too, the bot claims every one at once (so an upper bound, about +10%).
+let POKE = null, ARCS = null;
+{
     const { registerHooks } = await import("node:module");
     registerHooks({ resolve(spec, ctx, next) { try { return next(spec, ctx); } catch (e) { if (spec.startsWith(".")) return next(spec + ".ts", ctx); throw e; } } });
     if (!process.env.NF_NORIGS) RG = await import("../../lib/nodefarm/rigs.ts");
+    if (!process.env.NF_NOARCS) ARCS = await import("../../lib/nodefarm/arcs.ts");
+    if (process.env.NF_POKE) POKE = await import("../../lib/nodefarm/poke.ts");
     if (process.env.NF_ZONEEV) ZE = await import("../../lib/nodefarm/zoneevents.ts");
     if (RG && process.env.NF_RIGTUNE) merge(RG.RIG_TUNE, JSON.parse(process.env.NF_RIGTUNE)); // same as NF_TUNE, for RIG_TUNE
 }
@@ -84,6 +89,8 @@ while (t < hours * 3600) {
             for (const x of [1, 5, 15, 30, 45, 60, 75]) if (r >= x) mark(`mastery ${x}`, t);
         }
         E.checkGoals(s);
+        if (ARCS) for (const st of order) { if (st === "mult" || !E.isUnlocked(s, st)) continue; for (let k = 0; k < E.TIERS; k++) if (!((s.seen?.[st] ?? 0) & (1 << k))) { const b = E.button(s, st, k); if (E.amount(s, b.pays) >= b.cost) E.press(s, st, k); } }
+        if (POKE) { for (const c of [...POKE.poke(s).c]) POKE.openCache(s, c.id); if (POKE.ventReady(s)) POKE.vent(s); }
         if (ZE && s.ze) for (const e of [...s.ze.act]) { if (e.kind === "vein") ZE.zeChoose(s, e.id, "mine"); else if (e.kind === "fault") ZE.zeChoose(s, e.id, "patch"); }
         // NF_TRACE=<minutes>: print a status line every that many play minutes (to find walls and runaways)
         if (process.env.NF_TRACE && t >= (marks.nextTrace || 0)) { marks.nextTrace = t + 60 * Number(process.env.NF_TRACE); console.log("t", (t / 3600).toFixed(2), "b/s", E.fmt(E.derive(s).bytesPerSec), "ae", E.fmt(s.aether), "or", E.fmt(s.origin), "px", E.fmt(s.paradox), "ap+", E.apOnAscend(s), "asc", s.life.ascends, "tree", s.tree.length, "G", E.fmt(E.derive(s).global), "ap", s.ap, "mounts", s.mounts.join("+"), "prod", MATS_P(s)); }
