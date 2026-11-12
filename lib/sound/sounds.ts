@@ -57,6 +57,27 @@ const DEFS = {
             if (!calm()) scan(420, 1500, 0.14, 0.018);
         },
     },
+    // Node Farm code reveal (lib/nodefarm/cx.ts): rows printing in are soft key ticks, one per row; closing is a short
+    // run of ticks falling in pitch, like a line being backspaced. Quiet on purpose: menus open often.
+    nfPrint: {
+        tier: 1,
+        bus: "ui",
+        gap: 120,
+        play: (n?: number) => {
+            const k = Math.max(2, Math.min(6, n ?? 4));
+            for (let i = 0; i < k; i++) keyClick("ui", { f: 2300 + (i % 2) * 400, gain: 0.014, q: 5, at: i * 0.034 });
+            blip("ui", 1760, { at: k * 0.034, dur: 0.03, gain: 0.02, cutoff: 2800 });
+        },
+    },
+    nfDelete: {
+        tier: 1,
+        bus: "ui",
+        gap: 120,
+        play: () => {
+            for (let i = 0; i < 3; i++) keyClick("ui", { f: 2200 - i * 380, gain: 0.012, q: 5, at: i * 0.03 });
+            blip("ui", 660, { at: 0.1, dur: 0.04, gain: 0.025, glide: 0.7, cutoff: 1800 });
+        },
+    },
     // a toggle switching on: the system accepting a setting
     on: {
         tier: 1,
