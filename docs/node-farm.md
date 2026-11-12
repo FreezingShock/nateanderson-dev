@@ -367,6 +367,12 @@ The Menu window's `config/node.cfg` block lives in `components/nodefarm/settings
 - The Drone hangar rows were clipped past the right edge on phones once drone levels pass 10 (20 pips, the posting list and the third mod were cut off): `nodefarm-hangar.css` now lets the row shrink and the pips squeeze.
 - Ten sections on the phone grid use smaller labels so Handover and Records are not cut; the desktop rail with eight or more windows shows the key badge on hover only, so it stops cutting labels and status lines.
 
+### Balance audit, round 3 (2026-11-12, after Scripts, Drone hangar, Handover, rigs, zone events, zones 18 to 25)
+Everything together made the game about 1.7x faster than Nate's targets: with the Drone bot Chrono landed at 12 h (target about 20 h), Origin at 25 h and the first Handover at 30 h, and Handover cycles shrank toward minutes. Two numbers changed:
+- `TUNE.unlockAt.chrono` 300 to 2000 (Voidsteel needed). Chrono now opens at about 22 h for both bots. Raising other thresholds, `treeCost`, cost growth or `apBonus` barely moved the late game (Nate kept AP at +30% each, so it is untouched); once Chrono is open the chain cascades to Origin within a few hours whatever its gates are, because the global multiplier is huge by then.
+- `HAND_TUNE.apPerHand` 1 to 0.25. With `NF_ASC_GAP=1` Handovers now land at about 37, 48, 57, 63, 69, 74, 79 and 84 h (cycles 12 h down to 5 h, was 3 to 8 h and shorter without the hourly cap). Firmware is nearly full by about 85 h.
+Tick size is not a problem: lifetime Bytes, Reboots and presses over 2 h agree within about 1% from a 0.1 s tick to 30 s (`scripts/nodefarm/dt-check.mjs`). `s.bytes` alone does differ, because every Reboot resets it and the Watchdog Reboots every few seconds.
+Sim flags added: `NF_ZONEEV=1` (zone events, the bot mines veins and patches faults), `NF_ZETUNE`, `NF_HANDTUNE`, `NF_DT`.
 ## Stress tests (challenge runs), 2026-11-12
 
 Rules: lib/nodefarm/stress.ts (fills `CH_HOOKS` in the engine and adds a tick hook). Window: components/nodefarm/stress.tsx,
