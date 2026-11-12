@@ -805,7 +805,7 @@ export const RIG_HOOKS: {
     ascend?: (s: State) => RigState | undefined;
 } = {};
 // ---- Zone events: the numbers and the two reads the rest of the engine needs (spawning and choices live in lib/nodefarm/zoneevents.ts)
-export type ZoneEvKind = "surge" | "clearance" | "resonance" | "vein" | "fault";
+export type ZoneEvKind = "surge" | "clearance" | "resonance" | "vein" | "fault" | "convoy" | "tune";
 export interface ZoneEvActive {
     /** a running number, so the screen can tell a new event from the one it already showed */
     id: number;
@@ -816,6 +816,8 @@ export interface ZoneEvActive {
     total: number;
     /** vein and fault: you have answered the choice (Let it run, Wait it out), so the buttons go away. Mining and patching end the event instead. */
     picked?: boolean;
+    /** convoy: fractional extra Drone presses waiting to fire, per tier */
+    acc?: number[];
 }
 export interface ZoneEvState {
     act: ZoneEvActive[];
@@ -826,28 +828,36 @@ export interface ZoneEvState {
     kinds: Partial<Record<ZoneEvKind, number>>;
     /** the zone of the last event, so the next one lands somewhere else */
     last?: StatId;
+    /** the last dozen events, newest last (`at` is life.secs when it started), for Records */
+    log?: { kind: ZoneEvKind; zone: StatId; at: number }[];
 }
 export const ZE_TUNE = {
     /** gap between events in game seconds, [min, max]; the first one waits for `first` seconds of life */
-    gap: [480, 840] as [number, number],
+    gap: [660, 1140] as [number, number],
     first: 480,
     /** how long each lasts, seconds */
-    secs: { surge: 180, clearance: 180, resonance: 180, vein: 240, fault: 180 } as Record<ZoneEvKind, number>,
+    secs: { surge: 150, clearance: 150, resonance: 150, vein: 210, fault: 150, convoy: 150, tune: 150 } as Record<ZoneEvKind, number>,
     /** relative odds of each kind */
-    odds: { surge: 3, clearance: 2, resonance: 2, vein: 2, fault: 1 } as Record<ZoneEvKind, number>,
-    /** output multipliers */
-    surge: 2,
-    resonance: 1.6,
-    vein: 2,
-    fault: 0.5,
+    odds: { surge: 3, clearance: 2, resonance: 2, vein: 2, fault: 1, convoy: 1.5, tune: 1.5 } as Record<ZoneEvKind, number>,
+    /** output multipliers (trimmed after the balance audit: the first numbers cut a Drone-bot Origin run from about 38 h to 26 to 32 h) */
+    surge: 1.4,
+    resonance: 1.3,
+    vein: 1.4,
+    fault: 0.6,
     /** Clearance: price multiplier on that zone's buttons */
-    clearance: 0.6,
+    clearance: 0.75,
     /** Rich vein: seconds of the zone's output paid at once if you Mine it */
-    mine: 240,
+    mine: 150,
     /** Fault: seconds of Bytes output a Patch costs */
     patch: 25,
     /** no Fault before this much life */
     faultFrom: 900,
+    /** Drone convoy: your Drones press that zone this many times as often */
+    convoy: 2.5,
+    /** Rig tune: the zone rig's bonus counts this many times over */
+    tune: 2,
+    /** events kept in the log */
+    logMax: 12,
 };
 /** The zone a Resonance also lifts: the one below it in the chain (Bytes pairs with Multipliers). */
 export const resonancePair = (zone: StatId): StatId => { const i = STATS.findIndex((x) => x.id === zone); return STATS[i > 0 ? i - 1 : 1].id; };
@@ -864,6 +874,11 @@ export function zeOut(s: State, id: StatId): number {
         else if (e.kind === "resonance" && (e.zone === id || resonancePair(e.zone) === id)) x *= ZE_TUNE.resonance;
     }
     return x;
+}
+/** The zone whose rig a Rig tune is running on (its bonus counts ZE_TUNE.tune times), or null. */
+export function zeTuned(s: State): StatId | null {
+    const e = s.ze?.act.find((x) => x.kind === "tune" && x.left > 0);
+    return e ? e.zone : null;
 }
 /** Price multiplier on a zone's buttons (Clearance). */
 export function zeCost(s: State, stat: StatId): number {
@@ -2646,6 +2661,7 @@ function parseZe(o: unknown): ZoneEvState | undefined {
         seen: Math.max(0, Math.floor(num(x.seen))),
         kinds: Object.fromEntries(Object.entries(x.kinds ?? {}).filter(([k, v]) => kinds.includes(k) && num(v) > 0).map(([k, v]) => [k, Math.floor(num(v))])),
         last: ids.includes(x.last as string) ? x.last : undefined,
+        log: (Array.isArray(x.log) ? x.log : []).filter((e) => e && kinds.includes(e.kind) && ids.includes(e.zone)).slice(-ZE_TUNE.logMax).map((e) => ({ kind: e.kind, zone: e.zone, at: num(e.at) })),
     };
 }
 

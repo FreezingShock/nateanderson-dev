@@ -81,8 +81,8 @@ const CH_EVENT = 40; // the running zone event's colour
 
 const GOLD: RGB[] = [[30, 18, 4], [96, 60, 10], [178, 124, 26], [255, 197, 58], [255, 242, 204]];
 const MONO: RGB[] = [[10, 10, 10], [36, 36, 36], [98, 98, 96], [206, 206, 198], [244, 244, 236]];
-/** zone event colours (surge, clearance, resonance, vein, fault), the same as lib/nodefarm/zoneevents.ts */
-export const EVENT_COLORS = ["#2fd8e8", "#b6f04a", "#b46bff", "#ffc53a", "#ff5a4a"];
+/** zone event colours (surge, clearance, resonance, vein, fault, convoy, tune), the same as lib/nodefarm/zoneevents.ts */
+export const EVENT_COLORS = ["#2fd8e8", "#b6f04a", "#b46bff", "#ffc53a", "#ff5a4a", "#ffa23a", "#6bffc9"];
 
 // ---- geometry, computed once
 

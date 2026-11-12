@@ -6,7 +6,7 @@
 // Adding a zone: add a RIGS entry, and a case in muls() and/or step() if the rig changes output or runs on a clock.
 // Keep every boost to its own zone or a named neighbour, and never a power-law boost on everything.
 import {
-    MATS, RIG_HOOKS, STATS, TUNE, derive, fwRigCost, rigMasteryCut, isUnlocked, overclockMult, overclockSecs, sinceReboot,
+    MATS, RIG_HOOKS, STATS, TUNE, ZE_TUNE, derive, fwRigCost, rigMasteryCut, isUnlocked, overclockMult, overclockSecs, sinceReboot, zeTuned,
     type Derived, type MatId, type RigState, type State, type StatId,
 } from "./engine";
 import { ARCS } from "./arcs";
@@ -343,6 +343,9 @@ export function muls(s: State): Partial<Record<StatId, number>> {
     if (open("geodes")) mul("geodes", ringMul(s));
     if (open("sunstone")) mul("sunstone", convMul(s));
     for (const a of ARCS) { const k = linkTier(s, a.id); if (k > 0) for (const z of a.zones) mul(z as StatId, LINK_TUNE.mul[k - 1]); }
+    // a zone event, Rig tune: that zone's rig bonus counts several times over (only a bonus: a rig that costs output is left alone)
+    const tuned = zeTuned(s);
+    if (tuned && (m[tuned] ?? 1) > 1) m[tuned] = 1 + (m[tuned]! - 1) * ZE_TUNE.tune;
     return m;
 }
 

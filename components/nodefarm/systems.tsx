@@ -197,7 +197,7 @@ export function RecordsPanel({ s }: { s: State }) {
         ["Global bonus", pick(run.rows, "Global bonus"), "#ffc53a"],
         ["Ascensions", String(s.life.ascends), "#ff2d8a"],
     ];
-    const colours: Record<string, string> = { run: "#2fd8e8", mats: "#f08a3c", life: "#b6f04a", prog: "#ffc53a" };
+    const colours: Record<string, string> = { run: "#2fd8e8", mats: "#f08a3c", life: "#b6f04a", prog: "#ffc53a", zev: "#ffa23a" };
     return (
         <div className="nf-sys nf-wk">
             <WinBanner
