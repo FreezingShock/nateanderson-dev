@@ -66,6 +66,8 @@ export const ART_V: Record<string, string> = {
     "lab-sec-infra.webp": "5a480fd4",
     "lab-sec-malware.png": "1861f89d",
     "lab-sec-malware.webp": "f6e00651",
+    "rigs.png": "425b7148",
+    "rigs.webp": "b25474a7",
     "scene-0-far.webp": "9c25983a",
     "scene-0-fx.webp": "6fd2ad3b",
     "scene-0-near.webp": "e0674580",

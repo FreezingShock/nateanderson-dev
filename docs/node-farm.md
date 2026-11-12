@@ -338,6 +338,13 @@ About every 8 to 14 minutes of play (first one after 8 minutes of life), one unl
 - Only online ticks (5 s or less) start an event; time away just runs the clock down. The scripts/sim never imports `zoneevents.ts`, so `sim.mjs` pacing is unchanged.
 - Shown as a centered card (`ZoneEventCard`, no scrim, plain events close after 7 s, a vein or fault waits for an answer or "Decide later"), a readout on the zone panel (`ZoneEvent`, with the answers if you deferred) and a dot on the signal chain. Reveal is decrypt.
 - Admin panel, Run section: zone picker, one button per event, Clear, and Next in 5 s.
+- Rig machines (2026-11-12, round 2): each rig has a 96 x 64 dither machine, 4 states (empty, started, past half, full) x 6
+  frames, drawn by `scripts/naos-art/nodefarm-rigs.py` (kit `nodefarm_rig_kit.py`) into `public/naos/nodefarm/rigs.webp`. Row
+  order is `RIG_ORDER` in the script and `ART_ROWS` in rig.tsx; the state comes from the rig's meter (`artState`), Weather from
+  its sky. Run the stamper after regenerating.
+- Arc links: when every rig in an arc reaches lv 3, 5 and 8 (`LINK_TUNE`), the arc's zones get x1.02, x1.04, x1.06 and the arc's
+  named interaction turns on (`ARC_LINKS`): Hot swap (rack), Clean growth (fab), Still light (hollow), Storm pulse (deep),
+  Recall (origin), Pollination (overgrowth), Quench (descent). The arc's level is its lowest rig level (the Glyph hall counts its lowest glyph). Shown on each rig panel.
 
 ## Settings and low-effects mode
 The Menu window's `config/node.cfg` block lives in `components/nodefarm/settings.tsx` (sound, hum, volume, calm, effects, events, jump, number format). All per device, not in the save. Effects level (`full | low | auto`) is in `lib/nodefarm/fx.ts`: `initFx()` runs at boot, `setFxMode`, `useLowFx()`, window event `nf:fx`, and CSS hooks `body.nf-lowfx` / `body[data-nf-fx="low"]`. Auto measures the median frame time once (about 3.5 s after boot) and goes low under about 40 fps. Console: `nf fx full|low|auto`. The heavy-effect list for low mode is `app/camino/nodefarm-fx.css`: add new loops, drifting layers, blurs and big glows there. Low mode never hides information, and `body.nf-calm` is a separate switch.

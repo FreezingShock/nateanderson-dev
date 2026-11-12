@@ -769,6 +769,8 @@ export interface RigState {
     seeds?: number;
     // run meters (reset on Ascend)
     cache: number;
+    /** the Packet cache's cap at the last tick (Hot swap reads it without a derive) */
+    cacheCapAt: number;
     quiet: number;
     pour: number;
     casts: number;
