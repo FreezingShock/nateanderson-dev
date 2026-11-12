@@ -1345,8 +1345,8 @@ export interface Goal {
     cur: (s: State) => number;
     target: number;
 }
-export const GOAL_TIERS = 9;
-export const TIER_NAMES = ["", "Access", "Operator", "Admin", "Root", "Kernel", "Deep", "Zero", "Source", "Bedrock"];
+export const GOAL_TIERS = 12;
+export const TIER_NAMES = ["", "Access", "Operator", "Admin", "Root", "Kernel", "Deep", "Zero", "Source", "Bedrock", "Daemon", "Subsystem", "Firmware"];
 const G = (id: string, name: string, hint: string, tier: number, icon: Goal["icon"], target: number, cur: (s: State) => number): Goal => ({ id, name, hint, tier, icon, cur, target });
 const life = (k: keyof State["life"]) => (s: State) => s.life[k];
 export const GOALS: Goal[] = [
@@ -2590,3 +2590,44 @@ export function fmtTime(sec: number): string {
     const h = Math.floor(sec / 3600), m = Math.floor((sec % 3600) / 60), x = sec % 60;
     return h ? `${h}h ${m}m` : m ? `${m}m ${x}s` : `${x}s`;
 }
+
+// ---- goals and secrets for the systems that came after the first eight tiers: Scripts, the Drone hangar, zone rigs, zone events,
+// the Exploit Lab, the reactor core and Handover. Pushed here (after every table they read exists) so the base list stays untouched.
+// Each one counts as a normal goal (TUNE.achBonus), and a full tier gives TUNE.tierBonus like the rest.
+const ranSum = (s: State) => Object.values(s.auto?.ran ?? {}).reduce((a, n) => a + (n ?? 0), 0);
+const rigSum = (s: State) => Object.values(s.rig?.lv ?? {}).reduce((a, n) => a + n, 0);
+const bestRank = (s: State) => Math.max(0, ...POSTABLE.map((st) => zoneRank(s, st)));
+/** Same rule as coreParts in core-look.ts: every structure is on the reactor core. */
+const coreFull = (s: State) =>
+    (s.life.reboots >= 1 || s.reboot > 0) && isUnlocked(s, "copper") && s.lab.seen && (s.drones.some((n) => n > 0) || Object.keys(s.dr?.svc ?? {}).length > 0) &&
+    s.life.ascends >= 1 && (s.auto?.own.length ?? 0) > 0 && isUnlocked(s, "nebula") && isUnlocked(s, "engrams") && isUnlocked(s, "origin");
+GOALS.push(
+    // X  DAEMON: Scripts and Drones
+    G("sc1", "Taught it", "Learn your first Script.", 10, "spark", 1, (s) => s.auto?.own.length ?? 0),
+    G("sc6", "Full crontab", "Learn all six Scripts.", 10, "spark", 6, (s) => s.auto?.own.length ?? 0),
+    G("sr1k", "Unattended", "Let Scripts run 1,000 actions.", 10, "spark", 1000, ranSum),
+    G("dp1", "Sent out", "Post a Drone to a zone.", 10, "mult", 1, (s) => s.dr?.post.filter((x) => x).length ?? 0),
+    G("dm3", "Regular", "Reach mastery rank III in a zone.", 10, "mult", 3, bestRank),
+    G("dt18", "Full hangar", "Own every node in the Drone tree.", 10, "mult", DRONE_TREE.length, (s) => s.dr?.nodes.length ?? 0),
+    // XI SUBSYSTEM: rigs, zone events, the lab, the core
+    G("rg1", "Rigged", "Buy your first rig level.", 11, "copper", 1, rigSum),
+    G("rg25", "Tuned", "Reach 25 rig levels in total.", 11, "copper", 25, rigSum),
+    G("ze1", "Anomaly", "See a zone event.", 11, "alert", 1, (s) => s.ze?.seen ?? 0),
+    G("lb1", "Live fire", "Deploy your first payload.", 11, "alert", 1, life("deployed")),
+    G("lb18", "Full stack", "Research every Exploit Lab node.", 11, "alert", LAB.length, (s) => s.lab.nodes.length),
+    G("cr9", "Fully bolted", "Get every structure onto the reactor core.", 11, "ascend", 1, (s) => (coreFull(s) ? 1 : 0)),
+    // XII FIRMWARE: Handover
+    G("hd1", "Handed over", "Hand the node over once.", 12, "origin", 1, (s) => s.hand?.count ?? 0),
+    G("hd5", "Fifth operator", "Hand the node over 5 times.", 12, "origin", 5, (s) => s.hand?.count ?? 0),
+    G("hk100", "Keyring", "Earn 100 Keys in total.", 12, "origin", 100, (s) => s.hand?.keysTotal ?? 0),
+    G("hn3", "Notes to self", "Leave 3 handover notes.", 12, "origin", 3, (s) => s.hand?.notes.length ?? 0),
+    G("fw9", "Flashed", "Own 9 Firmware nodes.", 12, "origin", 9, (s) => s.hand?.fw.length ?? 0),
+    G("fw18", "Full image", "Own every Firmware node.", 12, "origin", FW.length, (s) => s.hand?.fw.length ?? 0),
+);
+SECRETS.push(
+    { id: "x_rm", name: "Permission denied", clue: "Try to delete everything from the console.", how: "Ran `nf rm -rf /` in the console." },
+    { id: "x_kill", name: "Kill signal", clue: "Tell a Drone it is done.", how: "Ran `nf kill` in the console." },
+    { id: "x_zero", name: "Zero reply", clue: "Ping the node that came before this one.", how: "Ran `nf ping node-00` in the console." },
+    { id: "x_hands", name: "Hands off", clue: "Let it decide when to leave.", how: "A Script ran an Ascend for you.", test: (s) => (s.auto?.ran.ascend ?? 0) >= 1 },
+    { id: "x_edit", name: "Edit history", clue: "The root chamber lets you rewrite its neighbours. Keep going.", how: "Rewrote rigs 12 times.", test: (s) => (s.rig?.rw ?? 0) >= 12 },
+);
