@@ -91,12 +91,11 @@ function NumRow({ name, color, value, onSet, onAdd, onMul, suffix }: { name: str
         <div className="nf-ad-nr" style={{ ["--c" as string]: color } as CSSProperties}>
             <span className="nf-ad-k"><i />{name}</span>
             <b className="nf-ad-v">{fmt(value)}{suffix ? <small>{suffix}</small> : null}</b>
-            <input ref={box} className="nf-ad-in" data-bad={bad ? "" : undefined} placeholder="1e9 · 5M" aria-label={`${name} amount`} inputMode="text" autoCapitalize="off" autoCorrect="off" spellCheck={false} enterKeyHint="done" onKeyDown={(e) => { if (e.key === "Enter") take(onSet); e.stopPropagation(); }} />
-            <span className="nf-ad-acts">
+            <span className="nf-ad-ctl">
+                <input ref={box} className="nf-ad-in" data-bad={bad ? "" : undefined} placeholder="1e9 · 5M" aria-label={`${name} amount`} inputMode="text" autoCapitalize="off" autoCorrect="off" spellCheck={false} enterKeyHint="done" onKeyDown={(e) => { if (e.key === "Enter") take(onSet); e.stopPropagation(); }} />
                 <Btn onClick={() => take(onSet)}>Set</Btn>
                 <Btn onClick={() => take(onAdd)}>Add</Btn>
                 {onMul && <Btn onClick={() => onMul(10)}>×10</Btn>}
-                {onMul && <Btn onClick={() => onMul(1000)}>×1k</Btn>}
                 <Btn onClick={() => onSet(0)}>Zero</Btn>
             </span>
         </div>
@@ -151,7 +150,8 @@ function AdminPanelInner({ host }: { host: AdminHost }) {
         codeReveal(root.current, { dir: "out", rows: ":scope [data-cx-i]" }).then(host.close);
     }, [host]);
     useEffect(() => {
-        const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") { e.stopPropagation(); close(); } };
+        // Escape closes the panel, unless a site layer (the naOS console, search, the menu) is open on top and wants it
+        const onKey = (e: KeyboardEvent) => { if (e.key === "Escape" && !document.querySelector(".nv-scrim, .cn-panel, .nv-panel")) { e.stopPropagation(); close(); } };
         window.addEventListener("keydown", onKey, true);
         return () => window.removeEventListener("keydown", onKey, true);
     }, [close]);

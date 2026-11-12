@@ -3,8 +3,8 @@
    `nf admin on`. Sharp ctOS panels: corner brackets, plain data lines, mono type, no pills, no tabs. Accent is
    root orange-red; the rest is the game's own cyan and stat colours. Removable with the component.
    ========================================================================== */
-body > .nf-ad-host { position: fixed; inset: 0; z-index: 1100; }
-.ctos .nf-ad { --ad: #ff6a3d; --cx-c: #ff6a3d; position: fixed; inset: 0; z-index: 1100; display: flex; flex-direction: column; background: #06080a; color: var(--cm-fg); font-family: var(--cm-mono); overscroll-behavior: contain; animation: nfAdIn .22s steps(5) both; }
+body > .nf-ad-host { position: fixed; inset: 0; z-index: 1000; }
+.ctos .nf-ad { --ad: #ff6a3d; --cx-c: #ff6a3d; position: fixed; inset: 0; z-index: 1000; display: flex; flex-direction: column; background: #06080a; color: var(--cm-fg); font-family: var(--cm-mono); overscroll-behavior: contain; animation: nfAdIn .22s steps(5) both; }
 @keyframes nfAdIn { from { opacity: 0; } to { opacity: 1; } }
 .ctos .nf-ad::before { content: ""; position: absolute; inset: 0; pointer-events: none; background: radial-gradient(circle, color-mix(in srgb, var(--ad) 14%, transparent) .8px, transparent 1.3px) 0 0 / 5px 5px; -webkit-mask-image: linear-gradient(180deg, #000 0, transparent 38%); mask-image: linear-gradient(180deg, #000 0, transparent 38%); }
 
@@ -93,12 +93,13 @@ body > .nf-ad-host { position: fixed; inset: 0; z-index: 1100; }
 .ctos .nf-ad-v small { font: 500 var(--cm-ctos-t-micro)/1 var(--cm-mono); color: var(--cm-ctos-meta); }
 .ctos .nf-ad-note { font: 500 var(--cm-ctos-t-micro)/1.4 var(--cm-mono); letter-spacing: .02em; color: var(--cm-ctos-meta); }
 
-.ctos .nf-ad-nr, .ctos .nf-ad-st { display: grid; grid-template-columns: 14ch 11ch minmax(0, 1fr); align-items: center; gap: 8px 12px; padding-top: 10px; border-top: 1px dotted #ffffff17; }
-.ctos .nf-ad-nr:first-child, .ctos .nf-ad-st:first-child { padding-top: 0; border-top: 0; }
-.ctos .nf-ad-nr .nf-ad-acts { grid-column: 1 / -1; }
-.ctos .nf-ad-nr .nf-ad-in { width: 100%; min-width: 0; }
-.ctos .nf-ad-nr .nf-ad-v { text-align: right; padding-right: 4px; }
-.ctos .nf-ad-st { grid-template-columns: 1fr auto auto auto; }
+.ctos .nf-ad-nr { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 8px 12px; padding-top: 10px; border-top: 1px dotted #ffffff17; }
+.ctos .nf-ad-nr:first-child { padding-top: 0; border-top: 0; }
+.ctos .nf-ad-ctl { grid-column: 1 / -1; display: flex; align-items: center; gap: 6px; }
+.ctos .nf-ad-ctl .nf-ad-in { flex: 1; min-width: 0; }
+.ctos .nf-ad-nr .nf-ad-v { text-align: right; }
+.ctos .nf-ad-st { display: grid; grid-template-columns: 1fr auto auto auto; align-items: center; gap: 8px 12px; padding-top: 10px; border-top: 1px dotted #ffffff17; }
+.ctos .nf-ad-st:first-child { padding-top: 0; border-top: 0; }
 .ctos .nf-ad-st .nf-ad-note { grid-column: 1 / -1; }
 .ctos .nf-ad-lv { display: inline-flex; align-items: center; gap: 8px; }
 .ctos .nf-ad-lv b { min-width: 7ch; text-align: center; font: 700 14px/1 var(--cm-mono); font-variant-numeric: tabular-nums; }
@@ -114,7 +115,6 @@ body > .nf-ad-host { position: fixed; inset: 0; z-index: 1100; }
 .ctos .nf-ad-grow { flex: 1; min-width: 160px; }
 .ctos .nf-ad-ta { width: 100%; min-height: 56px; padding: 8px 10px; resize: vertical; line-height: 1.4; font-size: 12px; }
 @media (max-width: 899px) { .ctos .nf-ad-in { font-size: 16px; } }
-@media (max-width: 479px) { .ctos .nf-ad-nr { grid-template-columns: minmax(0, 1fr) auto; } .ctos .nf-ad-nr .nf-ad-in { grid-column: 1 / -1; } }
 
 /* ---- snapshots */
 .ctos .nf-ad-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 0; }
