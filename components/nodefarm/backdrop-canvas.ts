@@ -11,7 +11,8 @@
  *   - A canvas is one whole texture: there are no tiles for the browser to fall behind on, so it cannot blank mid-pan.
  *   - Pans write one transform per layer, snapped to whole pixels at 1:1 so pixel art and 1 px grid lines stay crisp.
  *   - Zoom is a small residual scale on top of the drawn tile size. A layer is redrawn at the new size only when the
- *     residual leaves 0.9..1.2, or once after the camera settles so it ends crisp. Zooming never jumps in steps.
+ *     residual leaves 0.9..1.2, or once after the camera settles so it ends crisp, one layer per frame so a zoom never
+ *     stalls on several draws at once. Zooming never jumps in steps.
  *   - Ambient motion (drift, sway, the core pulse, the radar sweep) is CSS animation: compositor work only.
  *   - While the camera moves, the tree menu gets `data-pan`, which pauses the link dash steps (each step repaints the
  *     links), so a pan frame is GPU work only.
@@ -115,6 +116,8 @@ export interface PView {
 /** smallest and largest residual scale a drawn layer may show before it is redrawn */
 const RES_MIN = 0.9;
 const RES_MAX = 1.2;
+/** the canvas covers the view down to this residual, so a queued redraw a few frames late never shows an edge */
+const COVER = 0.8;
 const mod = (n: number, m: number) => ((n % m) + m) % m;
 
 const images = new Map<string, HTMLImageElement>();
@@ -146,29 +149,26 @@ export class LayerCanvas {
     /** draw the tiles into the canvas at tile size r (css px); the canvas is sized for view v */
     private draw(v: PView) {
         const r = this.r, slack = this.slack;
-        const W = Math.ceil(v.w / RES_MIN + r * (1 + this.extraW) + slack * 2);
-        const H = Math.ceil(v.h / RES_MIN + r + slack * 2);
+        const W = Math.ceil(v.w / COVER + r * (1 + this.extraW) + slack * 2);
+        const H = Math.ceil(v.h / COVER + r + slack * 2);
         const c = this.el;
-        if (c.width !== W) c.width = W;
-        if (c.height !== H) c.height = H;
         c.style.width = `${W}px`;
         c.style.height = `${H}px`;
         c.style.setProperty("--t", `${r}px`);
         this.vw = v.w;
         this.vh = v.h;
-        const g = c.getContext("2d");
-        if (!g) return;
-        g.setTransform(1, 0, 0, 1, 0, 0);
-        g.clearRect(0, 0, W, H);
-        g.imageSmoothingEnabled = false;
         let src: CanvasImageSource;
         let sc = 1;
+        // canvas px per css px: pixel art is stored at its own art resolution (1 canvas px per art px) and the canvas is
+        // scaled up with image-rendering: pixelated, which looks the same and draws 4 to 9 times fewer pixels
+        let px = 1;
         const l = this.spec;
         if (l.kind === "img") {
             const im = loadImg(l.src, () => { if (this.last) this.draw(this.last); });
             if (!im) return;
             src = im;
             sc = r / im.naturalWidth;
+            px = Math.min(1, im.naturalWidth / l.cell);
         } else {
             // a grid or dot tile at a whole number of px, so lines and dots stay crisp
             const t = document.createElement("canvas");
@@ -185,28 +185,69 @@ export class LayerCanvas {
             }
             src = t;
         }
+        const BW = Math.ceil(W * px), BH = Math.ceil(H * px);
+        if (c.width !== BW) c.width = BW;
+        if (c.height !== BH) c.height = BH;
+        // draw off screen, then hand the finished bitmap to the visible canvas (a "bitmaprenderer" canvas just shows that
+        // bitmap; it is never repainted or copied again until the next draw)
+        const off = typeof OffscreenCanvas !== "undefined" ? new OffscreenCanvas(BW, BH) : Object.assign(document.createElement("canvas"), { width: BW, height: BH });
+        const g = off.getContext("2d") as CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D | null;
+        if (!g) return;
+        g.imageSmoothingEnabled = false;
+        g.setTransform(px, 0, 0, px, 0, 0);
         const pat = g.createPattern(src, "repeat");
         if (!pat) return;
         // tiles start at (slack, slack); a dot sits mid-cell, so its grid point is half a cell in
-        const off = l.kind === "dots" ? -r / 2 : 0;
-        pat.setTransform(new DOMMatrix([sc, 0, 0, sc, slack + off, slack + off]));
+        const dot = l.kind === "dots" ? -r / 2 : 0;
+        pat.setTransform(new DOMMatrix([sc, 0, 0, sc, slack + dot, slack + dot]));
         g.fillStyle = pat;
         g.fillRect(0, 0, W, H);
+        this.show(off);
         this.drawn = true;
     }
 
-    /** place the layer for this view; `settle` redraws at the exact size if it is showing a residual scale */
-    place(v: PView, settle = false) {
-        this.last = v;
-        const l = this.spec;
-        const sEff = Math.max(0.2, 1 + (v.k - 1) * l.zoom);
-        const want = (l.cell || this.unit / 2) * sEff;
-        const q = this.r ? want / this.r : 0;
-        if (!this.r || q < RES_MIN || q > RES_MAX || (settle && Math.abs(q - 1) > 0.002)) {
-            this.r = Math.max(3, Math.round(want));
-            this.drawn = false;
+    private br: ImageBitmapRenderingContext | null | undefined;
+    private show(off: OffscreenCanvas | HTMLCanvasElement) {
+        if (this.br === undefined) this.br = typeof OffscreenCanvas !== "undefined" ? this.el.getContext("bitmaprenderer") : null;
+        if (this.br && off instanceof OffscreenCanvas) {
+            this.br.transferFromImageBitmap(off.transferToImageBitmap());
+            return;
         }
-        if (!this.drawn || this.vw !== v.w || this.vh !== v.h) this.draw(v);
+        // fallback (no OffscreenCanvas): copy into the visible canvas once
+        const g = this.el.getContext("2d");
+        if (!g) return;
+        g.clearRect(0, 0, this.el.width, this.el.height);
+        g.drawImage(off, 0, 0);
+    }
+
+    /** drawn at least once for this view size */
+    drawnFor(v: PView) { return this.drawn && this.vw === v.w && this.vh === v.h; }
+
+    private want(v: PView) {
+        const l = this.spec;
+        return (l.cell || this.unit / 2) * Math.max(0.2, 1 + (v.k - 1) * l.zoom);
+    }
+
+    /** does this layer need a fresh draw for view v (never drawn, view resized, or showing too much residual scale)? */
+    needs(v: PView, settle: boolean) {
+        if (!this.drawn || this.vw !== v.w || this.vh !== v.h) return true;
+        const q = this.want(v) / this.r;
+        return q < RES_MIN || q > RES_MAX || (settle && Math.abs(q - 1) > 0.01);
+    }
+
+    /** draw at the exact tile size for view v */
+    redraw(v: PView) {
+        this.r = Math.max(3, Math.round(this.want(v)));
+        this.draw(v);
+        this.place(v);
+    }
+
+    /** move the drawn layer for this view (a transform only, never a draw) */
+    place(v: PView) {
+        this.last = v;
+        if (!this.r) return;
+        const l = this.spec;
+        const want = this.want(v);
         const res = want / this.r;
         const cx = (v.w / 2 - v.x) / v.k;
         const cy = (v.h / 2 - v.y) / v.k;
@@ -237,11 +278,31 @@ export class Parallax {
     setLayers(ls: LayerCanvas[]) { this.layers = ls; this.paint(true); }
     setFront(ls: LayerCanvas[]) { this.front = ls; this.paint(true); }
 
+    private queue = new Set<LayerCanvas>();
+    private raf = 0;
+
+    /** Redraw queued layers one per frame, so a zoom never stalls a frame on several big draws at once. */
+    private pump = () => {
+        this.raf = 0;
+        if (this.dead) return;
+        const L = this.queue.values().next().value;
+        if (!L) return;
+        this.queue.delete(L);
+        L.redraw(this.view);
+        if (this.queue.size) this.raf = requestAnimationFrame(this.pump);
+    };
+
     private paint(settle = false) {
         const v = this.view;
         if (!v.w || !v.h || this.dead) return;
-        for (const L of this.layers) L.place(v, settle);
-        for (const L of this.front) L.place(v, settle);
+        for (const L of [...this.layers, ...this.front]) {
+            L.place(v);
+            if (!L.needs(v, settle)) continue;
+            // a layer that has never been drawn (just opened, or resized) draws now; zoom redraws wait their turn
+            if (!L.drawnFor(v)) L.redraw(v);
+            else this.queue.add(L);
+        }
+        if (this.queue.size && !this.raf) this.raf = requestAnimationFrame(this.pump);
         if (this.world) this.world.style.transform = `translate3d(${v.x.toFixed(2)}px, ${v.y.toFixed(2)}px, 0) scale(${v.k.toFixed(4)})`;
         if (this.soft !== undefined) {
             const s = v.k < this.soft;
@@ -284,6 +345,7 @@ export class Parallax {
     destroy() {
         this.dead = true;
         if (this.timer) clearTimeout(this.timer);
+        if (this.raf) cancelAnimationFrame(this.raf);
         delete this.root.closest<HTMLElement>(".nf-tm")?.dataset.pan;
     }
 }
