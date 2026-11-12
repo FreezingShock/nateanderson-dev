@@ -8,7 +8,7 @@ import { nfx } from "@/lib/nodefarm/sound";
 import { codeReveal } from "@/lib/nodefarm/cx";
 import { ENTRIES, ENTRY_BY, GROUPS, codexNew, codexSeen, markCodexSeen, unlocked, type Block, type CodexOpen } from "@/lib/nodefarm/codex";
 import type { State } from "@/lib/nodefarm/engine";
-import { DataLines, Frame } from "./win-kit";
+import { DataLines, Frame, WinBanner } from "./win-kit";
 import "@/app/camino/nodefarm-codex.css";
 
 const COLOR = "#ff6b57";
@@ -58,14 +58,16 @@ export function CodexPanel({ s, shown, onOpen }: { s: State; shown: boolean; onO
 
     return (
         <div className="nf-sys nf-wk nf-cdx" data-v={view}>
-            <header className="nf-cdx-top" data-cx-i="0">
-                <p className="nf-cdx-path">~/codex</p>
-                <dl className="nf-cdx-read">
-                    <div><dt>ENTRIES</dt><dd>{list.length}{list.length < total ? ` of ${total}` : ""}</dd></div>
-                    <div><dt>NEW</dt><dd>{fresh}</dd></div>
-                </dl>
-                <p className="nf-cdx-lead">What each system does, written as you reach it. More entries open as the farm grows.</p>
-            </header>
+            <WinBanner
+                art="codex"
+                color={COLOR}
+                readout={[
+                    ["~/codex", ""],
+                    ["ENTRIES", `${list.length}${list.length < total ? ` of ${total}` : ""}`],
+                    ["NEW", `${fresh}`],
+                ]}
+            />
+            <p className="nf-wk-note">What each system does, written as you reach it. More entries open as the farm grows.</p>
             <div className="nf-cdx-grid" data-cx-i="1">
                 <nav className="nf-cdx-list" aria-label="Codex entries">
                     {GROUPS.map((g) => {
