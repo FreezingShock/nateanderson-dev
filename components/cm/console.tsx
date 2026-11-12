@@ -11,6 +11,7 @@ import { parseSave, type State as NfState } from "@/lib/nodefarm/engine";
 import { isAdmin, maxOut, overwrite, setAdmin, snapState, snaps, takeSnap } from "@/lib/nodefarm/admin";
 import { NF_PATH, NF_SAVE_KEY, NF_SUBS, nfCommand, type NfLive } from "@/lib/nodefarm/records";
 import { CX_STYLES, cxOverride, setCxOverride, type CxStyle } from "@/lib/nodefarm/cx";
+import { getStagePreview, setStagePreview } from "@/lib/nodefarm/zone-art";
 import { setPrefs } from "@/lib/sound/engine";
 import { sfx } from "@/lib/sound/sounds";
 import { useSoundPrefs } from "@/lib/sound/use-sound";
@@ -185,6 +186,20 @@ function runNf(args: string[]): Line[] {
             return [t("menus back to their own styles: print for milestones, decrypt for unlocks and events, crt for panels.")];
         }
         return [t(`menu animation: ${cxOverride() ?? "auto"}. nf anim auto · nf anim ${CX_STYLES.join(" · nf anim ")}`)];
+    }
+    if ((args[0] ?? "").toLowerCase() === "art") {
+        // preview the staged zone art at one stage (this visit only)
+        const v = (args[1] ?? "").toLowerCase();
+        if (/^[0-7]$/.test(v)) {
+            setStagePreview(Number(v));
+            return [t(`every zone now shows stage ${v} of 7. nf art live goes back to your real progress.`)];
+        }
+        if (v === "live" || v === "off") {
+            setStagePreview(null);
+            return [t("zone art back to your real progress.")];
+        }
+        const p = getStagePreview();
+        return [t(`zone art: ${p == null ? "live" : `stage ${p}`}. nf art 0-7 · nf art live`)];
     }
     const sub0 = (args[0] ?? "").toLowerCase();
     if (sub0 === "fullscreen" || sub0 === "fs") {
