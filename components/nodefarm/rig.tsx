@@ -10,14 +10,18 @@ import {
     GROW_NAMES, PRISM_AIMS, RIGS, RIG_TUNE as T, buyRig, cacheCap, capCharge, capPay, capSecs, castMax, drawPay, glowFor, glowMul, growMul, growNext, growStage,
     indexMul, indexed, mirrorMul, mirrored, pourSecs, prismMul, pulseSecs, rewrite, rewritePrice, rig, rigCap, rigDef, rigLv, rigPrice, scrubBurn, setRig,
     siliconYield, stagesLit, ARC_LINKS, LINK_TUNE, arcLevel, arcOfZone, linkTier, stagingMul, stillFrac, stillMul, weather, wellMul, zoneNo,
+    runningZones, spreadMul, knotsTied, knotMul, daylight, seedMax, seedMul, seedsFor, basaltYield, coolBurn, ventSecs, heatSecs, ringMul, convLevels, convMul, DESCENT_RIGS,
 } from "@/lib/nodefarm/rigs";
 import "@/app/camino/nodefarm-rig.css";
 
 type Line = [string, string];
 /** Row order of public/naos/nodefarm/rigs.webp (scripts/naos-art/nodefarm-rigs.py RIG_ORDER). */
-const ART_ROWS: StatId[] = ["bytes", "mult", "reboot", "copper", "silicon", "quartz", "aether", "runes", "starglass", "voidsteel", "chrono", "nebula", "pulsars", "singularity", "engrams", "paradox", "origin"];
+const ART_ROWS: StatId[] = ["bytes", "mult", "reboot", "copper", "silicon", "quartz", "aether", "runes", "starglass", "voidsteel", "chrono", "nebula", "pulsars", "singularity", "engrams", "paradox", "origin",
+    "spores", "mycelium", "pollen", "bloom", "basalt", "magma", "geodes", "core"];
 /** Which of the four drawn states to show: empty, started, past half, full. Weather shows its sky instead of its clock. */
 function artState(id: StatId, s: State, frac: number): number {
+    if (id === "pollen") return s.prod.pollen > 0 && daylight(s).phase === "day" ? 3 : 0;
+    if (id === "magma") return (rig(s).heat ?? 0) > 0 ? 3 : frac >= 0.5 ? 2 : frac > 0.02 ? 1 : 0;
     if (id === "nebula") { const w = weather(s); return s.prod.nebula > 0 ? (w.phase === "storm" ? 3 : w.phase === "front" ? 2 : 0) : 0; }
     return frac >= 0.999 ? 3 : frac >= 0.5 ? 2 : frac > 0.02 ? 1 : 0;
 }
@@ -90,6 +94,40 @@ function view(id: StatId, s: State, d: Derived): View {
             const total = Object.values(r.re).reduce((a, b) => a + b, 0);
             return { frac: total / (T.rewriteMax * (RIGS.length - 1)), meter: `${total} rewrites`, lines: [["Next rewrite target", `${zoneNo(r.rwAim as StatId)} ${rigDef(r.rwAim as StatId)?.name} · cap ${rigCap(s, r.rwAim as StatId)}`]] };
         }
+        case "spores": {
+            const n = runningZones(s);
+            return { frac: n / 22, meter: `${n} zones running`, lines: [["Spores output", x(spreadMul(s))]] };
+        }
+        case "mycelium": {
+            const n = knotsTied(s);
+            return { frac: n / 12, meter: `${n}/12 knots tied${n >= 12 ? " · whole web" : ""}`, lines: [["Mycelium output", x(knotMul(s))], ["Ties a knot", "any Spores or Mycelium tier you don't own yet"]] };
+        }
+        case "pollen": {
+            const dl = daylight(s);
+            return { frac: (r.sun ?? 0) / (T.sunMins * 60), meter: s.prod.pollen > 0 ? `${dl.phase} · ${fmtTime(dl.left)} left` : "dark until Pollen runs", lines: [["Pollen output", x(dl.mul)], ["Spores and Mycelium", dl.below > 1 ? x(dl.below) : "untouched by day"]] };
+        }
+        case "bloom": {
+            const n = r.seeds ?? 0;
+            return { frac: n / seedMax(s), meter: `${fmt(n)} / ${fmt(seedMax(s))} seeds banked`, lines: [["Bloom output", x(seedMul(s))], ["Ascend now banks", `+${Math.max(0, Math.min(seedMax(s) - n, seedsFor(s)))} seeds`]] };
+        }
+        case "basalt": {
+            const y = basaltYield(s);
+            const w = r.wear ?? 0;
+            return { frac: w, warn: y < 1, meter: `bit wear ${Math.round(w * 100)}%${r.cool ? " · cooling" : " · wearing"}`, lines: [["Basalt yield", `${Math.round(y * 100)}%`], ["Coolant burns", r.cool ? `${Math.round(coolBurn(s) * 100)}% of Bloom` : "nothing (off)"]] };
+        }
+        case "magma": {
+            const per = ventSecs(s);
+            const h = r.heat ?? 0;
+            return { frac: s.prod.magma > 0 ? (r.vent ?? 0) / per : 0, meter: s.prod.magma > 0 ? `eruption in ${fmtTime(per - (r.vent ?? 0))}` : "quiet until Magma runs", lines: [["Each eruption", `${T.ventPays} s of Magma`], ["Shaft heat", h > 0 ? `Basalt ×${fmt(T.heat)} · ${fmtTime(h)} left` : `none (lasts ${fmtTime(heatSecs(s))})`]] };
+        }
+        case "geodes": {
+            const m = ringMul(s);
+            return { frac: (m - 1) / (T.ringMax - 1), meter: `ringing with ${fmt(s.quartz)} Quartz`, lines: [["Geodes output", x(m)]] };
+        }
+        case "core": {
+            const n = convLevels(s);
+            return { frac: n / (DESCENT_RIGS.length * (T.baseCap + T.rewriteMax)), meter: `${n} rig levels below`, lines: [["Core output", x(convMul(s))]] };
+        }
         default:
             return { frac: 0, meter: "", lines: [] };
     }
@@ -125,6 +163,12 @@ export function ZoneRig({ id, s, d }: { id: StatId; s: State; d: Derived }) {
                 <div className="nf-rig-ctl">
                     <span>Scrubbers</span>
                     <button type="button" className="nf-mini" aria-pressed={r.scrub} onClick={() => act(() => setRig(s, "scrub", !r.scrub))}>{r.scrub ? "On" : "Off"}</button>
+                </div>
+            )}
+            {id === "basalt" && (
+                <div className="nf-rig-ctl">
+                    <span>Coolant</span>
+                    <button type="button" className="nf-mini" aria-pressed={!!r.cool} onClick={() => act(() => setRig(s, "cool", !r.cool))}>{r.cool ? "On" : "Off"}</button>
                 </div>
             )}
             {id === "starglass" && (

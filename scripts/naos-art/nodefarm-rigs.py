@@ -10,7 +10,7 @@ import numpy as np
 
 sys.path.insert(0, str(Path(__file__).parent))
 from nodefarm_rig_kit import (  # noqa: E402
-    P, Canvas, X, Y, angle, box, cyl, disc, floor_plate, lin, line, orb, path, poly, radial, rect, ring, sheet, status_strip, wave, zig,
+    P, hexc, Canvas, X, Y, angle, box, cyl, disc, floor_plate, lin, line, orb, path, poly, radial, rect, ring, sheet, status_strip, wave, zig,
 )
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -475,11 +475,185 @@ def rewrite(c, p, f):
         c.glow(stem, ("or", 5), r=2, a=110)
     status_strip(c, f, "or")
 
+# ---------------------------------------------------------------- zones 18 to 25 (Overgrowth, Descent): own ramps
+P.update({
+    "sp": [hexc(c) for c in ("#04201a", "#0a4234", "#126a52", "#1fa07c", "#38c8a0", "#5cf0c0", "#b0ffe6", "#efffff")],
+    "my": [hexc(c) for c in ("#120e24", "#241c48", "#3c3272", "#5e52a4", "#8a7ed4", "#c8bdff", "#ece6ff")],
+    "po": [hexc(c) for c in ("#201a02", "#4a3e06", "#86740c", "#c0aa16", "#f2e44a", "#fff6a8", "#fffde8")],
+    "bl": [hexc(c) for c in ("#2a0612", "#5e0e2a", "#a01e48", "#e0406e", "#ff7aa0", "#ffb8cc", "#fff0f4")],
+    "ba": [hexc(c) for c in ("#0c0e12", "#1c2128", "#30373f", "#4a535e", "#6a7582", "#8e99a8", "#c4ccd6")],
+    "mg": [hexc(c) for c in ("#2a0804", "#6a1406", "#b02a08", "#e85a10", "#ff9a2a", "#ffd070", "#fff4c8")],
+    "ge": [hexc(c) for c in ("#160828", "#341252", "#5a2088", "#8a3cc0", "#c77aff", "#e8c0ff", "#fff0ff")],
+    "co": [hexc(c) for c in ("#2a1a02", "#5e3c06", "#a0680a", "#e0a018", "#ffd04a", "#fff0a0", "#fffff0")],
+})
+
+
+# 18 Spore cellar: Spread
+def spread(c, p, f):
+    floor_plate(c)
+    for i, (x, h) in enumerate(((22, 18), (40, 26), (60, 22), (76, 14))):
+        stem = rect(x - 2, 52 - h, x + 2, 52)
+        c.fill(stem, 0.5 + 0.2 * (1 - lin(x - 2, 0, x + 2, 0)), "sp")
+        cap = disc(x, 52 - h, 7 + i % 2 * 2, 4) & (Y < 52 - h + 1)
+        c.fill(cap, 0.4 + 0.5 * (1 - lin(x - 8, 52 - h - 4, x + 8, 52 - h)), "sp")
+        c.outline(stem | cap, "ink")
+    n = int(4 + f * 26)
+    for k in range(n):
+        t = (p + k / n) % 1
+        x = 20 + (k * 17) % 60 + 6 * math.sin(t * 6.28 + k)
+        y = 34 - t * 30
+        c.set(rect(x, y, x + 1, y + 1), P["sp"][6 if k % 3 else 5])
+    status_strip(c, f, "sp")
+
+
+# 19 Mycel web: Knots
+def knots(c, p, f):
+    floor_plate(c)
+    nodes = [(16, 20), (32, 12), (50, 18), (68, 10), (82, 22), (24, 38), (44, 34), (62, 40), (78, 38), (36, 24), (56, 28), (72, 26)]
+    lit = int(round(f * 12))
+    for i, (a, b) in enumerate([(0, 1), (1, 2), (2, 3), (3, 4), (0, 5), (5, 6), (6, 7), (7, 8), (1, 9), (9, 6), (2, 10), (10, 7), (3, 11), (11, 8), (9, 10), (10, 11)]):
+        x0, y0 = nodes[a]; x1, y1 = nodes[b]
+        on = a < lit and b < lit
+        c.set(line(x0, y0, x1, y1, 1), P["my"][4 if on else 2])
+    for i, (x, y) in enumerate(nodes):
+        on = i < lit
+        c.fill(disc(x, y, 2.4), 0.9 if on else 0.35, "my")
+        if on and (int(p * 6) + i) % 4 == 0:
+            c.glow(disc(x, y, 2.4), ("my", 5), r=2, a=120)
+    if lit >= 12:
+        k = int(p * 16) % 16
+        c.spark(*nodes[k % 12], 1, P["white"][2])
+    status_strip(c, f, "my")
+
+
+# 20 Canopy hall: Daylight (state follows day and night, not the meter)
+def daylight(c, p, f):
+    floor_plate(c)
+    sky = rect(8, 4, 88, 52)
+    day = f >= 0.5
+    c.fill(sky, (0.45 if day else 0.12) + 0.3 * (1 - lin(48, 4, 48, 52)), "sky" if day else "dusk")
+    a = p * math.pi
+    sx, sy = 12 + 72 * p, 40 - 30 * math.sin(a)
+    c.fill(disc(sx, sy, 5), 0.95, "po" if day else "white")
+    if day:
+        c.glow(disc(sx, sy, 5), ("po", 5), r=3, a=120)
+    # canopy leaves
+    for i in range(7):
+        x = 10 + i * 13
+        lf = disc(x, 46 + (i % 2) * 2, 9, 5)
+        c.fill(lf & sky, 0.35 + 0.3 * (1 - lin(x - 9, 41, x + 9, 51)) + (0.2 if day else -0.15), "sp")
+    if day:
+        for k in range(8):
+            t = (p + k / 8) % 1
+            c.set(rect(16 + k * 9 + 4 * math.sin(t * 6.28), 40 - t * 30, 17 + k * 9 + 4 * math.sin(t * 6.28), 41 - t * 30) & sky, P["po"][5])
+    status_strip(c, f, "po")
+
+
+# 21 Bloom core: Seed bank
+def seedbank(c, p, f):
+    floor_plate(c)
+    box(c, 54, 26, 28, 26, 5, "steel", v=-0.15)
+    for i in range(9):
+        x, y = 57 + (i % 3) * 8, 29 + (i // 3) * 7
+        c.fill(rect(x, y, x + 6, y + 5), 0.2, "ink")
+        if i < int(round(f * 9)):
+            c.fill(disc(x + 3, y + 2.5, 2), 0.8, "bl")
+    stem = path([(28, 52), (30, 34), (26, 22)], 2)
+    c.fill(stem, 0.5, "sp")
+    open_ = 0.4 + 0.6 * f
+    for k in range(6):
+        ang = k * math.pi / 3 + p * 0.6
+        pet = disc(26 + 6 * open_ * math.cos(ang), 18 + 6 * open_ * math.sin(ang), 4.5 * open_ + 1.5, 3 * open_ + 1)
+        c.fill(pet, 0.55 + 0.35 * (k % 2), "bl")
+    c.fill(disc(26, 18, 2.6), 0.9, "po")
+    if f > 0:
+        t = p
+        c.set(rect(30 + 26 * t, 22 + 12 * t * t, 32 + 26 * t, 24 + 12 * t * t), P["bl"][5])
+    status_strip(c, f, "bl")
+
+
+# 22 Bedrock shaft: Drill bit (meter = wear)
+def drill(c, p, f):
+    floor_plate(c)
+    rock = rect(8, 30, 88, 54)
+    c.fill(rock, 0.3 + 0.3 * (1 - lin(48, 30, 48, 54)), "ba")
+    c.fill(rect(40, 4, 56, 12), 0.6, "steel")
+    shaft = rect(46, 12, 50, 30)
+    c.fill(shaft, 0.7, "steel")
+    sp = p * (1 - 0.7 * f)
+    bit = poly([(42, 30), (54, 30), (48, 46)])
+    c.fill(bit, 0.4 + 0.4 * ((((X - 42) / 3 + sp * 6) % 2) < 1), "mg" if f > 0.6 else "steel")
+    c.outline(bit, "ink")
+    for k in range(4):
+        t = (p + k / 4) % 1
+        c.set(rect(40 - 10 * t + k * 6, 30 - 6 * math.sin(t * 3.14), 41 - 10 * t + k * 6, 31 - 6 * math.sin(t * 3.14)), P["ba"][5])
+    if f > 0.6 and int(p * 6) % 2 == 0:
+        c.spark(48, 44, 1, P["mg"][5])
+    status_strip(c, f, "red" if f > 0.3 else "ba")
+
+
+# 23 Magma line: Eruptions
+def eruption(c, p, f):
+    floor_plate(c)
+    cone = poly([(14, 52), (40, 22), (56, 22), (82, 52)])
+    c.fill(cone, 0.25 + 0.35 * (1 - lin(14, 22, 82, 52)), "ba")
+    c.outline(cone, "ink")
+    lava = rect(41, 20, 55, 24)
+    c.fill(lava, 0.6 + 0.3 * f, "mg")
+    for k in range(3):
+        c.set(path([(44 + k * 4, 24), (40 + k * 6, 32 + k * 5), (36 + k * 9, 44 + k * 2)], 1.4), P["mg"][3 + int(f * 2)])
+    if f >= 0.99:
+        for k in range(10):
+            t = (p + k / 10) % 1
+            x = 48 + (k - 5) * 3 * t
+            y = 20 - 18 * math.sin(math.pi * t)
+            c.set(rect(x, y, x + 2, y + 2), P["mg"][5 if k % 2 else 6])
+        c.glow(lava, ("mg", 5), r=3, a=130)
+    else:
+        for k in range(int(f * 3) + 1):
+            y = 16 - ((p + k / 3) % 1) * 12
+            c.fill(disc(48 + 2 * math.sin(p * 6 + k), y, 2 + k * 0.5), 0.4, "stone")
+    status_strip(c, f, "mg")
+
+
+# 24 Geode vault: Ringing
+def ringing(c, p, f):
+    floor_plate(c)
+    shell = disc(48, 32, 22, 20)
+    c.fill(shell, 0.3 + 0.3 * (1 - lin(26, 12, 70, 52)), "ba")
+    c.outline(shell, "ink")
+    hollow = disc(48, 32, 15, 13)
+    c.fill(hollow, 0.15, "ge")
+    a = angle(48, 32)
+    teeth = hollow & ~disc(48, 32, 15 - 4 - 4 * f, 13 - 4 - 4 * f) & ((a * 14) % 1 < 0.6)
+    c.fill(teeth, 0.6 + 0.35 * (1 - radial(48, 32, 15)), "ge")
+    if f > 0:
+        r = 22 + ((p * 2) % 1) * 18 * f
+        c.set(ring(48, 32, r + 0.6, r - 0.4, 0.9) & ~shell, P["ge"][4], 160)
+    status_strip(c, f, "ge")
+
+
+# 25 The core: Convection
+def convection(c, p, f):
+    floor_plate(c)
+    core = orb(c, 48, 30, 13, "co", v=0.1 * f)
+    c.glow(core, ("co", 4), r=3, a=110)
+    for k in range(4):
+        ang = k * math.pi / 2 + p * math.pi / 2
+        loop = (ring(48, 30, 22, 20.6) & ((((angle(48, 30) - ang / (2 * math.pi)) % 1) < 0.18)))
+        c.set(loop, P["mg"][4 if k < int(f * 4) + 1 else 1])
+    for k in range(int(f * 6)):
+        t = (p + k / 6) % 1
+        c.set(rect(36 + k * 4, 50 - t * 40, 37 + k * 4, 51 - t * 40), P["co"][5])
+    status_strip(c, f, "co")
+
 RIG_ORDER = ["bytes", "mult", "reboot", "copper", "silicon", "quartz", "aether", "runes", "starglass", "voidsteel", "chrono",
-             "nebula", "pulsars", "singularity", "engrams", "paradox", "origin"]
+             "nebula", "pulsars", "singularity", "engrams", "paradox", "origin",
+             "spores", "mycelium", "pollen", "bloom", "basalt", "magma", "geodes", "core"]
 DRAW = {"bytes": cache, "mult": staging, "reboot": capacitor, "copper": pour, "silicon": scrubbers, "quartz": crystals, "aether": afterglow, "runes": carvings,
         "starglass": prism, "voidsteel": voiddraw, "chrono": stillness, "nebula": weather, "pulsars": beacon, "singularity": well, "engrams": index,
-        "paradox": mirror, "origin": rewrite}
+        "paradox": mirror, "origin": rewrite, "spores": spread, "mycelium": knots, "pollen": daylight, "bloom": seedbank,
+        "basalt": drill, "magma": eruption, "geodes": ringing, "core": convection}
 
 
 def blank(c, p, f):

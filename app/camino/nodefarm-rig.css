@@ -14,7 +14,7 @@
 .ctos .nf-rig > .nf-rig-ups, .ctos .nf-rig > .nf-rig-ctl, .ctos .nf-rig > .nf-rig-spec, .ctos .nf-rig > .nf-rig-link { grid-column: 1 / -1; }
 .ctos .nf-rig:not(:has(.nf-rig-art)) > * { grid-column: 1 / -1; }
 .ctos .nf-rig-art { --sc: 2; grid-column: 1; grid-row: 1 / span 3; align-self: start; display: block; width: calc(96px * var(--sc)); height: calc(64px * var(--sc));
-    background: url(/naos/nodefarm/rigs.webp?v=3e3638c9) no-repeat; background-size: calc(2304px * var(--sc)) auto; image-rendering: pixelated;
+    background: url(/naos/nodefarm/rigs.webp?v=b25474a7) no-repeat; background-size: calc(2304px * var(--sc)) auto; image-rendering: pixelated;
     background-position: calc(var(--st, 0) * -576px * var(--sc)) calc(var(--row, 0) * -64px * var(--sc)); animation: nfRigArt .9s steps(6) infinite; }
 @keyframes nfRigArt {
     from { background-position-x: calc(var(--st, 0) * -576px * var(--sc)); }

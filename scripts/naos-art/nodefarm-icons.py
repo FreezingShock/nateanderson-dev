@@ -44,6 +44,15 @@ RAMPS = {
     "or": ramp("#03200b", "#0b5a24", "#17a33f", "#3dff6e", "#d4ffe0"),
     "red": ramp("#2b0808", "#80150f", "#d3341c", "#ff6a3d", "#ffd3a8"),
     "gr": ramp("#141719", "#2b3236", "#48535a", "#6f7d85", "#a6b3ba"),
+    # Overgrowth arc (zones 18-21) and Descent arc (zones 22-25)
+    "sp": ramp("#071f1c", "#0e5a4c", "#1fa585", "#5cf0c0", "#dcfff2"),
+    "my": ramp("#17122a", "#3f3470", "#7d6fc0", "#c8bdff", "#f6f2ff"),
+    "po": ramp("#262204", "#6b6010", "#bfae1c", "#f2e44a", "#fffbd0"),
+    "bl": ramp("#2a0716", "#7c1240", "#d2306c", "#ff7aa0", "#ffe0ea"),
+    "ba": ramp("#121418", "#2e3440", "#56606f", "#8e99a8", "#d2d9e2"),
+    "mg": ramp("#2a0a02", "#7a2006", "#d4500e", "#ff9a2a", "#fff1b0"),
+    "ge": ramp("#1a0a2a", "#4a1a78", "#8a3ad0", "#c77aff", "#f3dcff"),
+    "co": ramp("#2a1802", "#80460a", "#e08a10", "#ffd04a", "#fffbe0"),
 }
 
 yy, xx = np.mgrid[0:N, 0:N].astype(float)
