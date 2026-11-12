@@ -6,7 +6,7 @@
 // Adding a zone: add a RIGS entry, and a case in muls() and/or step() if the rig changes output or runs on a clock.
 // Keep every boost to its own zone or a named neighbour, and never a power-law boost on everything.
 import {
-    MATS, RIG_HOOKS, STATS, TUNE, derive, isUnlocked, overclockMult, overclockSecs, sinceReboot,
+    MATS, RIG_HOOKS, STATS, TUNE, ZE_TUNE, derive, isUnlocked, overclockMult, overclockSecs, sinceReboot, zeTuned,
     type Derived, type MatId, type RigState, type State, type StatId,
 } from "./engine";
 
@@ -248,6 +248,9 @@ export function muls(s: State): Partial<Record<StatId, number>> {
     if (open("singularity")) mul("singularity", wellMul(s));
     if (open("engrams")) mul("engrams", indexMul(s));
     if (open("paradox")) { const z = mirrored(s); if (z) mul(z, mirrorMul(s)); }
+    // a zone event, Rig tune: that zone's rig bonus counts several times over (only a bonus: a rig that costs output is left alone)
+    const tuned = zeTuned(s);
+    if (tuned && (m[tuned] ?? 1) > 1) m[tuned] = 1 + (m[tuned]! - 1) * ZE_TUNE.tune;
     return m;
 }
 

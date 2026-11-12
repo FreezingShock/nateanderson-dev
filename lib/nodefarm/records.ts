@@ -9,6 +9,7 @@ import {
     type State,
 } from "./engine";
 import { LOGS, logNo } from "./story";
+import { zeTitle, zoneLabel } from "./zoneevents";
 
 export const NF_PATH = "/creations/games/node-farm";
 export const NF_SAVE_KEY = "nf-save-v1";
@@ -71,6 +72,11 @@ export function recordSections(s: State): RecordSection[] {
         { id: "life", title: "Lifetime", blurb: "Survives every Ascend.", rows: life },
         { id: "prog", title: "Progress", blurb: "Goals, secrets, tree and perks.", rows: prog },
     ];
+    if (s.ze?.seen) {
+        const log = s.ze.log ?? [];
+        const rows: [string, string][] = [["Seen", `${s.ze.seen}`], ...[...log].reverse().map((e): [string, string] => [zeTitle(e.kind, e.zone), `${zoneLabel(e.zone)}, ${fmtTime(Math.max(0, s.life.secs - e.at))} ago`])];
+        out.push({ id: "zev", title: "Zone events", blurb: "The last dozen, newest first.", rows });
+    }
     if (mats.length) out.splice(1, 0, { id: "mats", title: "Materials", blurb: "Held, nodes and output per second.", rows: mats });
     if (s.lab.seen) out.push({ id: "lab", title: "Exploit Lab", blurb: "Research and stock survive Ascend; Intel does not.", rows: [
         ["Intel", `${fmt(s.lab.intel)} · +${fmt(intelRate(s, d.bytesPerSec))}/s`],
