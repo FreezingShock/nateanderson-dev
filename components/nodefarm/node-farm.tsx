@@ -14,6 +14,7 @@ import type { NfLive } from "@/lib/nodefarm/records";
 import { Core, type CoreFeed } from "./core";
 import { NfIcon } from "./icon";
 import { EventLayer } from "./events";
+import { MiniHud } from "./mini-hud";
 import { RARITY, payLoot, type Loot } from "@/lib/nodefarm/events";
 import { AwayReport, type Away } from "./away";
 import { Scenery, SceneWindow } from "./scenery";
@@ -36,7 +37,7 @@ import { LOGS, logNo, recoverLogs } from "@/lib/nodefarm/story";
 import { Juice, juice, checkMilestones } from "./juice";
 import { GuideStrip, Tip, TipCtx, type TipApi, type TipState } from "./guide";
 import { MapPanel } from "./map";
-import { nextStep, type Target } from "@/lib/nodefarm/guide";
+import { exact, nextStep, type Target } from "@/lib/nodefarm/guide";
 import { GoalsPanel, MenuPanel, RecordsPanel } from "./systems";
 import { AscendPanel } from "./ascend";
 import { Dock, PhoneTabs, WinBar, swInfo } from "./switcher";
@@ -51,6 +52,7 @@ const FS_KEY = "nf-fs-v1"; // full screen mode on or off (per device)
 const HUM_KEY = "nf-hum-v1"; // reactor hum on or off (per device)
 const UI_KEY = "nf-ui-v1"; // which stat panels are minimized (per device, not part of the game save)
 const MAX_KEY = "nf-max-v1"; // "1" when Buy max (Batch job node) is switched on (per device)
+const JUMP_KEY = "nf-jump-v1"; // "off" when the page should not scroll to the board on a return visit (per device)
 const CALM_KEY = "nf-calm-v1"; // "1" when motion is forced calm, on top of the OS setting (per device)
 const FMT_KEY = "nf-numfmt-v1"; // number format: short | sci | eng (per device)
 const BACKUP_KEY = "nf-backup-v1"; // the save as it was just before an import, a wipe or a failed load (one slot)
@@ -282,6 +284,7 @@ export function NodeFarm() {
             if (localStorage.getItem(EV_KEY) === "off") setEvOn(false);
             if (localStorage.getItem(MAX_KEY) === "1") setBuyMax(true);
             if (localStorage.getItem(CALM_KEY) === "1") setCalm(true);
+            if (localStorage.getItem(JUMP_KEY) === "off") setJumpOn(false);
             const nf = localStorage.getItem(FMT_KEY);
             if (nf === "sci" || nf === "eng") { setNumFmt(nf); setNumFmtState(nf); }
             setBackup(readBackup());
@@ -718,6 +721,12 @@ export function NodeFarm() {
         document.body.classList.toggle("nf-calm", calm);
         return () => document.body.classList.remove("nf-calm");
     }, [calm]);
+    const [jumpOn, setJumpOn] = useState(true);
+    const toggleJump = () => {
+        const v = !jumpOn;
+        setJumpOn(v);
+        try { localStorage.setItem(JUMP_KEY, v ? "on" : "off"); } catch {}
+    };
     const toggleCalm = () => {
         const v = !calm;
         setCalm(v);
@@ -735,7 +744,9 @@ export function NodeFarm() {
         if (!ready || brought.current) return;
         brought.current = true;
         const s = g.current;
-        if (!s || s.life.presses < 20 || location.hash || window.scrollY > 120) return;
+        let off = false;
+        try { off = localStorage.getItem(JUMP_KEY) === "off"; } catch {}
+        if (off || !s || s.life.presses < 20 || location.hash || window.scrollY > 120) return;
         // the page settles for a moment (fonts, backdrop), so align twice and stop as soon as the player scrolls themselves
         let y = -1;
         const align = () => {
@@ -768,7 +779,7 @@ export function NodeFarm() {
     }, [ready]);
 
     // ---- keyboard: one letter per window. Off while typing, with a modifier, over another panel or during an event.
-    const keyApi = useRef<{ open: (w: "map" | "goals" | "records" | "ascend" | "menu" | "tree") => void; max: () => void; lab: () => void; go: () => void; press: (held: boolean) => void }>({ open: () => {}, max: () => {}, lab: () => {}, go: () => {}, press: () => {} });
+    const keyApi = useRef<{ open: (w: "map" | "goals" | "records" | "ascend" | "menu" | "tree") => void; max: () => void; lab: () => void; go: () => void; press: (held: boolean) => void; tier: (k: number, held: boolean) => void }>({ open: () => {}, max: () => {}, lab: () => {}, go: () => {}, press: () => {}, tier: () => {} });
     useEffect(() => {
         if (!ready) return;
         const onKey = (e: KeyboardEvent) => {
@@ -778,6 +789,8 @@ export function NodeFarm() {
             if (document.querySelector(".nv-scrim, .nf-ev-scrim:not([data-out]), .nf-aw, .nf-rx")) return;
             // P presses the glowing button of the next step; holding it keeps buying like holding the button does
             if (e.key.toLowerCase() === "p") { e.preventDefault(); keyApi.current.press(e.repeat); return; }
+            // 1 to 6 press that tier on the zone in the middle of the screen
+            if (/^[1-6]$/.test(e.key)) { e.preventDefault(); keyApi.current.tier(Number(e.key) - 1, e.repeat); return; }
             if (e.repeat) return;
             const w = ({ m: "map", o: "goals", l: "records", a: "ascend", s: "menu", t: "tree" } as const)[e.key.toLowerCase() as "m"];
             if (w) { e.preventDefault(); keyApi.current.open(w); }
@@ -844,6 +857,7 @@ export function NodeFarm() {
     keyApi.current = {
         go: () => {},
         press: () => {},
+        tier: () => {},
         lab: () => { if (labTree) setLabTree(false); else if (!treeOpen) openLab(); },
         open: (w) => {
             if (labTree) return;
@@ -873,6 +887,24 @@ export function NodeFarm() {
         if (folded[key]) setFold({ ...folded, [key]: false });
         sfx("tab");
         setTimeout(() => document.querySelector<HTMLElement>(`.nf [data-stat="${key}"]`)?.scrollIntoView({ behavior: reduced ? "auto" : "smooth", block: "center" }), 90);
+    };
+    keyApi.current.tier = (k, held) => {
+        if (win || treeOpen || labTree) return;
+        // the open zone nearest the middle of the screen
+        const mid = window.innerHeight / 2;
+        let best: HTMLElement | null = null;
+        let gap = Infinity;
+        document.querySelectorAll<HTMLElement>(".nf-row[data-open='true']").forEach((row) => {
+            if (!row.querySelector(".nf-btn")) return;
+            const r = row.getBoundingClientRect();
+            const dist = r.top <= mid && r.bottom >= mid ? 0 : Math.min(Math.abs(r.top - mid), Math.abs(r.bottom - mid));
+            if (dist < gap) { gap = dist; best = row; }
+        });
+        const row = best as HTMLElement | null;
+        if (!row || gap > window.innerHeight) return;
+        if (held && row.dataset.stat === "reboot") return;
+        const b = row.querySelector<HTMLButtonElement>(`.nf-btn[data-tier="${k}"]`);
+        if (b) b.click();
     };
     keyApi.current.go = () => { if (!win && !treeOpen && !labTree) goTo(step.target); };
     keyApi.current.press = (held) => {
@@ -905,7 +937,7 @@ export function NodeFarm() {
                 <div className="nf-hud-main">
                     <NfIcon name="bytes" responsive />
                     <div>
-                        <b className="nf-big">{fmt(s.bytes)}</b>
+                        <b className="nf-big" title={`${exact(s.bytes)} Bytes`}>{fmt(s.bytes)}</b>
                         <span className="nf-sub">Bytes · +{fmt(d.bytesPerSec)}/s</span>
                     </div>
                 </div>
@@ -933,6 +965,7 @@ export function NodeFarm() {
                 <Dock info={sw} open={win} treeSeen={treeSeen} lab={labOpen(s)} guideWin={step.target?.win} fs={fs} onOpen={(w) => (w === "lab" ? openLab() : win === w ? closeWin() : openWin(w))} onFs={() => { setFs(!fs); sfx("tab"); }} />
             </header>
             <GuideStrip step={step} onGo={() => goTo(step.target)} onMap={() => openWin("map")} mapOpen={win === "map"} />
+            <MiniHud bytes={s.bytes} rate={d.bytesPerSec} step={step} onGo={() => goTo(step.target)} paused={!!win || treeOpen || labTree || !!away || !!confirm} />
             {win && <button type="button" className="nf-scrim" aria-label="Close window" tabIndex={-1} onClick={closeWin} />}
 
             <PhoneTabs info={sw} tab={tab} treeSeen={treeSeen} lab={labOpen(s)} guideWin={step.target?.win} onTab={(t) => setTabBoth(t)} onTree={() => openWin("tree")} onLab={openLab} />
@@ -1046,6 +1079,8 @@ export function NodeFarm() {
                     calm={calm}
                     osCalm={osReduced}
                     onCalm={toggleCalm}
+                    jumpOn={jumpOn}
+                    onJump={toggleJump}
                     lastSave={lastSave}
                     numFmt={numFmt}
                     onNumFmt={setFormat}
