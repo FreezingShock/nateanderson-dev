@@ -38,7 +38,6 @@
 .ctos .nf-scn-cap { position: absolute; left: 8px; bottom: 8px; padding: 4px 8px; background: #0c0c0cd9; font: 700 var(--cm-ctos-t-micro)/1 var(--cm-mono); letter-spacing: .14em; color: var(--cm-ctos-meta); }
 
 /* Ascend pane: the gate and stairs above the card */
-.ctos .nf-asc-art { height: 230px; margin-bottom: 12px; background: #0a0a0a url(/naos/nodefarm/scene-ascend.webp) 50% 100% / 480px 270px no-repeat; image-rendering: pixelated; border: 1px solid color-mix(in srgb, #ff2d8a 40%, #1c1c1c); }
 
 /* standby report and the Ascend sequence: the scene sits low on the screen, under a dark veil so type stays readable */
 body .nf-aw[data-era] { background-color: #070707; }
