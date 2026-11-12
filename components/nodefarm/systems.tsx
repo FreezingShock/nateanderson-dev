@@ -13,8 +13,8 @@ import { DataLines, Frame, HoldButton, WinBanner } from "./win-kit";
 // Goals, Records and Menu windows (rebuilt 2026-11-12): art banner, bracket frames, data lines. Shared parts in ./win-kit.
 // Styles: app/camino/nodefarm-windows.css. Rows carry data-cx-i so the window's code reveal prints them in order.
 
-const ROMAN = ["", "I", "II", "III", "IV", "V", "VI", "VII", "VIII"];
-const TIER_COLOR = ["", "#2fd8e8", "#b6f04a", "#f0a53c", "#ff2d8a", "#f4f4f2", "#ffc53a", "#9a7bff", "#3dff6e"];
+const ROMAN = ["", "I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X", "XI", "XII"];
+const TIER_COLOR = ["", "#2fd8e8", "#b6f04a", "#f0a53c", "#ff2d8a", "#f4f4f2", "#ffc53a", "#9a7bff", "#3dff6e", "#ff9a3c", "#4ad0ff", "#6bffc9", "#a5ff3d"];
 const SECRET_COLOR = "#9a7bff";
 const stamp = (ms?: number) => {
     if (!ms) return "done";
