@@ -126,6 +126,9 @@ Premise (Nate picked "inherited node", 2026-11-12): you took over node-01 from a
 
 Where they show: a typed `logs.recover("004")` feed line and a milestone banner when one is found, the "Operator logs" list in the Records window, `nf logs` and `nf logs <number>` in the console, and one operator line on the Ascend screen (`ASCEND_NOTES`). The Ascend notes quote log numbers 012 and 017, so keep those in step if the order of `LOGS` changes. To add a log, append to the end of `LOGS` (inserting renumbers every later log).
 
+## News lines (lib/nodefarm/news.ts)
+Every 20 to 30 s one short line drops into the terminal feed (typed out, skipped when the tab is hidden, a window is open or the feed was busy in the last 5 s). Lines are in the previous-operator voice (Nate picked that tone and "mixed into the terminal feed"): `op` (prev.op), `past` (four earlier operators of node-01: wren, tamsin, osk, vael, all gone), `note` (dim node comment), `hint` (how to progress) and `wry`. Each line has a stage window (index of the newest unlocked stat) and an optional state test, so early lines talk about wires and late ones about Runes and Chrono. `pickNews(state, recent)` skips the last 40 shown. Past-operator messages shown are remembered in `localStorage["nf-news-v1"]`. Console: `nf news` prints a random fitting line, `nf archive [name]` lists what has been found of each operator. Add lines to `BASE` or `PAST`; new past messages go at the end of the operator's block (keys are array positions, so inserting resets what players have "seen"). Names and fates of the four operators were written by Claude on Nate's ask for more lore; he has not confirmed them.
+
 ## Full screen
 `Full screen` (HUD button on phone, dock button on desktop, key `F`, console `nf fs [on|off]`) sets `body.nf-fs` and `data-fs` on `.nf`. The site's top bar, page dock and footer are hidden and the board becomes `position: fixed` (z-index 70, inside `main`, so body-level pop-ups, the tree and the offline report stay above it). A sticky bar at the top shows `Exit F`; Esc closes an open window first, then leaves full screen. Where the browser has a Fullscreen API (not iPhone) it also requests real full screen on `<html>` and leaving real full screen with Esc leaves the mode. The mode is remembered per browser (`nf-fs-v1`) and comes back as the in-page mode on the next visit (browsers need a tap for real full screen). CSS: app/camino/nodefarm-fs.css. The tree falls back to its full-screen framing because the site bar is hidden. Checks: /mnt/project-files/portfolio/node-farm-fullscreen/ (fs.mjs, fs-states.mjs).
 
@@ -142,3 +145,14 @@ Code: pure rules and snapshots in `lib/nodefarm/admin.ts`, panel in `components/
 - Keys (only on the Node Farm page, off while typing, with a modifier, over another panel or during an event): M Map, O Goals, L Records, A Ascend, S Menu, T Tree, B Buy max.
 - The tab title shows `<rate>/s · Node Farm` while the tab is in the background.
 - Menu "Calm motion" (`nf-calm-v1`) forces reduced motion on top of the OS setting: the `reduced` prop everywhere plus `body.nf-calm` CSS. Menu also shows when the game last saved.
+
+## Older windows refresh (Map, Goals, Records, Menu), 2026-11-12
+Brought up to the Ascend window's level. Shared parts in `components/nodefarm/win-kit.tsx`: `WinBanner` (dither art from `public/naos/nodefarm/win-<map|goals|records|menu>.webp`, drawn by `scripts/naos-art/nodefarm-window-art.py`, with a `$ cd ~/...` code readout), `Frame` (corner-bracket section with a `// path` heading), `DataLines` (`key ..... value`) and `HoldButton` (press and hold; a click with no press behind it arms, a second click fires). Styles: `app/camino/nodefarm-windows.css` (`nf-wk-*`).
+- Goals: each tier is a circuit rail of badge nodes; a segment lights when both ends are done. The line under the rail reads out the hovered, tapped, or next goal.
+- Records: four big readouts, the record sections as data lines, and a two-pane log reader that prints the picked log.
+- Menu: a config file (click a line to flip it; volume and number format are lines too), the save code as a terminal block, wipe is Hold to wipe (keeps the backup), keys as data lines.
+- Map: the chain as a signal tower (Chrono at the top, Bytes at the base, YOU ARE HERE on the zone being worked on) beside a readout of the picked zone, then Ascend, Drones, Goals and the tree's sections.
+- Phone: windows sit inline under the tabs, so they get a solid panel over the scenery.
+- Next step strip shows the sprite of what it points at. Drone bay rows get a dithered pad in each Drone's colour and aligned columns.
+- Unlock and milestone banners are a strip pinned under the site bar, as wide as the board (left and width set in juice.tsx). They sit under an open window.
+Checks: /mnt/project-files/portfolio/node-farm-refresh/ (`checks.mjs` interactions incl. a real long touch on phone, `wins.mjs` and `board.mjs` screenshots).
