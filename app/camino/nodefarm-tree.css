@@ -284,33 +284,27 @@ body.nf-tm-chrome.nf-tm-dock .cm-dock { visibility: visible; z-index: 1001; anim
 .ctos .nf-tm-dockb[aria-expanded="true"] { bottom: var(--dock-gap, 90px); border-bottom: 1px solid #ffffff22; }
 .ctos .nf-tm-dockb[aria-expanded="true"] i { rotate: 135deg; translate: 0 -2px; }
 
-/* ---- opening: a boot sequence. The layer opens from a scanline, a few real terminal lines type over a dark screen
-   that dithers away, the camera pulls back from the core and the nodes decrypt ring by ring (about 1.2 s; any key,
-   click or wheel skips). Closing collapses the layer to a line and then a point, like a CRT switching off. */
-.ctos .nf-tm[data-boot="in"] { animation: nfTmIn .3s steps(8, end) both; }
-@keyframes nfTmIn { 0% { clip-path: inset(50% 0 50% 0); } 35% { clip-path: inset(calc(50% - 1px) 0 calc(50% - 1px) 0); } 100% { clip-path: inset(0); } }
-.ctos .nf-tm[data-boot="out"] { animation: nfTmOut .34s steps(8, end) both; pointer-events: none; }
-@keyframes nfTmOut { 0% { clip-path: inset(0); } 55% { clip-path: inset(calc(50% - 1px) 0 calc(50% - 1px) 0); } 100% { clip-path: inset(calc(50% - 1px) 50% calc(50% - 1px) 50%); } }
-.ctos .nf-tm-boot { position: absolute; inset: 0; z-index: 7; pointer-events: none; }
-.ctos .nf-tm-boot::before { content: ""; position: absolute; inset: 0; background: #04060a; animation: nfBootDim .5s steps(5, end) .42s both; }
-.ctos .nf-tm-boot::after { content: ""; position: absolute; inset: 0; background: conic-gradient(#04060a 25%, transparent 0 50%, #04060a 0 75%, transparent 0) 0 0 / 4px 4px; animation: nfBootDither .7s steps(4, end) .4s both; }
-@keyframes nfBootDim { to { opacity: 0; } }
-@keyframes nfBootDither { 0% { opacity: 0; } 40% { opacity: 1; } 100% { opacity: 0; } }
-.ctos .nf-tm-boot-t { position: absolute; z-index: 1; left: 24px; bottom: 28px; display: grid; gap: 4px; padding: 12px 16px 12px 18px; background: #04060ad0; border-left: 3px solid var(--cm-cyan); font: 500 13px/1.35 var(--cm-mono); color: #9fb1c2; animation: nfBootTxt .2s steps(3, end) 1.05s both reverse; }
-.ctos .nf-tm-boot-t span { width: calc(var(--n) * 1ch); overflow: hidden; white-space: nowrap; animation: nfType calc(var(--n) * 9ms) steps(var(--n), end) var(--d) both; }
-.ctos .nf-tm-boot-t span:first-child { color: var(--cm-cyan); font-weight: 700; }
-@keyframes nfType { from { width: 0; } }
-@keyframes nfBootTxt { from { opacity: 0; } to { opacity: 1; } }
-.ctos .nf-tm[data-boot="in"] .nf-tn { animation: nfBootNode .34s steps(6, end) both; animation-delay: calc(460ms + var(--ring, 0) * 70ms); }
-.ctos .nf-tm[data-boot="in"] .nf-tn-core { animation-delay: 380ms; }
-@keyframes nfBootNode { 0% { opacity: 0; scale: .35; filter: brightness(4) saturate(0); } 55% { opacity: 1; scale: 1.08; } 100% { opacity: 1; scale: 1; filter: none; } }
-.ctos .nf-tm[data-boot="in"] .nf-tm-links { animation: nfBootFlick .5s steps(5, end) .5s both; }
-@keyframes nfBootFlick { 0% { opacity: 0; } 30% { opacity: .7; } 45% { opacity: .1; } 100% { opacity: 1; } }
-.ctos .nf-tm[data-boot="in"] .nf-tm-sec { animation: nfBootTxt .3s steps(4, end) 1s both; }
+/* ---- opening: zoom through the core (Nate's pick, 2026-11-12). The camera starts deep inside the core behind a white
+   flash and falls back to the fitted view (about 0.9 s) while the links flicker on and the nodes unfold ring by ring
+   (\`--ring\`, steps from the core). Any key, click or wheel ends it early. Closing pushes through: the layer scales up,
+   flares and fades (320 ms) before the game unmounts it. Reduced motion skips both. */
+.ctos .nf-tm[data-boot="in"] { animation: nfBootTxt .12s steps(2, end) both; }
+.ctos .nf-tm[data-boot="in"]::after { content: ""; position: absolute; inset: 0; z-index: 8; pointer-events: none; background: radial-gradient(circle at 50% 50%, #e8f6ff 0 18%, #7fe3ff55 34%, transparent 62%); animation: nfBootTxt .55s steps(6, end) .05s both reverse; }
+.ctos .nf-tm[data-boot="in"] .nf-tn:not(.nf-tn-core) { animation: nfBootNode .3s steps(5, end) both; animation-delay: calc(380ms + var(--ring, 0) * 60ms); }
+.ctos .nf-tm[data-boot="in"] .nf-tm-links { animation: nfBootFlick .45s steps(5, end) .35s both; }
+.ctos .nf-tm[data-boot="in"] .nf-tm-sec, .ctos .nf-tm[data-boot="in"] :is(.nf-tm-zoom, .nf-tm-tot, .nf-tm-totb, .nf-tm-dockb) { animation: nfBootTxt .24s steps(3, end) .85s both; }
 .ctos .nf-tm[data-boot="in"] .nf-tm-bar { animation: nfBarIn .3s steps(6, end) .12s both; }
+.ctos .nf-tm[data-boot="out"] { animation: nfZoomOut .32s steps(6, end) both; pointer-events: none; }
+@keyframes nfBootTxt { from { opacity: 0; } to { opacity: 1; } }
+@keyframes nfBootNode { 0% { opacity: 0; scale: .35; filter: brightness(4) saturate(0); } 55% { opacity: 1; scale: 1.08; } 100% { opacity: 1; scale: 1; filter: none; } }
+@keyframes nfBootFlick { 0% { opacity: 0; } 30% { opacity: .7; } 45% { opacity: .1; } 100% { opacity: 1; } }
 @keyframes nfBarIn { from { clip-path: inset(0 100% 0 0); } to { clip-path: inset(0); } }
-.ctos .nf-tm[data-boot="in"] :is(.nf-tm-zoom, .nf-tm-tot, .nf-tm-totb, .nf-tm-dockb) { animation: nfBootTxt .24s steps(3, end) .9s both; }
+@keyframes nfZoomOut { to { opacity: 0; scale: 1.6; filter: brightness(2.4); } }
+
+/* the card's glitch-slice ghost (components/nodefarm/card-glitch.ts animates it) */
+.ctos .nf-tm-card > .nf-tm-ghost { position: absolute; inset: 0; z-index: 3; pointer-events: none; box-shadow: inset 0 0 0 2px #ff2d8a, -4px 0 0 #00e5ff66, 4px 0 0 #ff2d8a66; mix-blend-mode: screen; }
 @media (prefers-reduced-motion: reduce) {
     body.nf-tm-chrome.nf-tm-dock .cm-dock, .ctos .nf-tm[data-boot] { animation: none; }
     .ctos .nf-tm-dockb, .ctos .nf-tm-dockb i { transition: none; }
 }
+

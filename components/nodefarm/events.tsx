@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef, useState, type MutableRefObject } from 
 import { createPortal } from "react-dom";
 import { cxPlay, useCodeReveal } from "@/lib/nodefarm/cx";
 import { sfx } from "@/lib/sound/sounds";
-import { EVENT_TUNE, nextGapMs, pickEvent, type EventDef, type EventKind } from "@/lib/nodefarm/events";
+import { EVENTS, EVENT_TUNE, nextGapMs, pickEvent, type EventDef, type EventKind } from "@/lib/nodefarm/events";
 import { eventHaste, overclockMult, overclockSecs, type State } from "@/lib/nodefarm/engine";
 
 type Stage = "incoming" | "live" | "result";
@@ -61,6 +61,19 @@ export function EventLayer({ game, busy, enabled, ready, reduced, onEngage, onRe
     useEffect(() => {
         if (!enabled) setAct(null);
     }, [enabled]);
+
+    // admin mode (`nf:fire`, components/nodefarm/admin.tsx): show a chosen event right away
+    useEffect(() => {
+        const onFire = (e: Event) => {
+            const def = EVENTS.find((x) => x.kind === (e as CustomEvent<EventKind>).detail);
+            if (!def || actRef.current) return;
+            last.current = def.kind;
+            setAct({ def, id: ids.current++, stage: "incoming", won: false });
+            sfx("nfAlert");
+        };
+        window.addEventListener("nf:fire", onFire);
+        return () => window.removeEventListener("nf:fire", onFire);
+    }, []);
 
     // restore focus to whatever had it when the event opened
     const returnTo = useRef<HTMLElement | null>(null);
@@ -135,13 +148,13 @@ export function EventLayer({ game, busy, enabled, ready, reduced, onEngage, onRe
     const card = useRef<HTMLDivElement>(null);
     const lastAct = useRef<Active | null>(null);
     if (act) lastAct.current = act;
-    const shown = useCodeReveal(card, !!act, { rows: ":scope > :not(.nf-ev-br)" });
+    const shown = useCodeReveal(card, !!act, { style: "decrypt", rows: ":scope > :not(.nf-ev-br)" });
     const stageKey = act ? `${act.id}:${act.stage}` : "";
     const prevStage = useRef("");
     useEffect(() => {
         const was = prevStage.current;
         prevStage.current = stageKey;
-        if (stageKey && was && was.split(":")[0] === stageKey.split(":")[0]) cxPlay(card.current, { bare: true, sound: false, rows: ":scope > :not(.nf-ev-br):not(.nf-ev-top)" });
+        if (stageKey && was && was.split(":")[0] === stageKey.split(":")[0]) cxPlay(card.current, { style: "decrypt", bare: true, sound: false, rows: ":scope > :not(.nf-ev-br):not(.nf-ev-top)" });
     }, [stageKey]);
 
     // The layer is portaled out of the game so it centers on the visible screen, not on the (tall, scrolled) board.
