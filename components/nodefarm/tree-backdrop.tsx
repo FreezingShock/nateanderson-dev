@@ -5,14 +5,14 @@ import { TREE, BRANCHES, type Branch } from "@/lib/nodefarm/engine";
 import "@/app/camino/nodefarm-tree-art.css";
 
 /**
- * The prestige tree's backdrop: four tiling dither layers that move at different rates with the camera (parallax), plus a
+ * The prestige tree's backdrop: three tiling dither layers that move at different rates with the camera (parallax), plus a
  * world layer (the core halo and one nebula per section) that moves 1:1 with the nodes.
  *
  * The menu owns the camera and calls the handle; nothing here re-renders on a move, it only writes transforms.
  *   move(x, y, k)   the world transform the menu applies: translate(x px, y px) scale(k)
  *   resize(w, h)    the view size in px (on mount and on resize)
  *   focus(branch)   tint toward one section (hover or select), or null
- * Art: scripts/naos-art/nodefarm-tree-bg.py -> public/naos/nodefarm/tree-bg-0..3, tree-core, tree-sec-<branch>.
+ * Art: scripts/naos-art/nodefarm-tree-bg.py -> public/naos/nodefarm/tree-bg-0..2, tree-core, tree-sec-<branch>.
  * Styles: app/camino/nodefarm-tree-art.css. Decorative: aria-hidden, no pointer events.
  */
 export interface TreeBackdropHandle {
@@ -26,13 +26,13 @@ const TILE = 512;
 const PX = 2;
 const T = TILE * PX;
 /** how far each layer follows the camera (0 = fixed to the screen, 1 = glued to the nodes), far to near */
-const DEPTH = [0.05, 0.15, 0.35, 0.6];
+const DEPTH = [0.08, 0.35, 0.6];
 /** how much of the zoom each layer takes */
-const ZOOM = [0.06, 0.18, 0.4, 0.7];
-/** smallest zoom the menu allows; layers are sized so they still cover the view there */
-const K_MIN = 0.2;
-const scaleOf = (i: number, k: number) => 1 + (k - 1) * ZOOM[i];
-const S_MIN = Math.min(...DEPTH.map((_, i) => scaleOf(i, K_MIN)));
+const ZOOM = [0.1, 0.4, 0.7];
+/** layer scale, rounded to 2 percent steps so zooming only repaints a layer now and then */
+const scaleOf = (i: number, k: number) => Math.round((1 + (k - 1) * ZOOM[i]) * 50) / 50;
+/** only this layer drifts while idle (it needs one extra tile of width for it) */
+const DRIFT = 1;
 /** world size of the halo and the section nebulae in css px at zoom 1 (art px x 2 and x 4) */
 const CORE = 800;
 const SEC = 1024;
@@ -56,6 +56,8 @@ export const TreeBackdrop = forwardRef<TreeBackdropHandle, { unit?: number }>(fu
     );
 
     useImperativeHandle(ref, () => {
+        // per layer: the scale it was last sized for, so a pan only writes a translate
+        const sized: number[] = DEPTH.map(() => 0);
         const paint = () => {
             const { w, h, x, y, k } = view.current;
             if (!w || !h) return;
@@ -66,18 +68,28 @@ export const TreeBackdrop = forwardRef<TreeBackdropHandle, { unit?: number }>(fu
                 if (!el) return;
                 const s = scaleOf(i, k);
                 const ts = T * s;
+                if (sized[i] !== s) {
+                    // the layer is the view plus one tile (two for the drifting one), with the tile drawn at this scale:
+                    // a layout and paint, but only when the zoom crosses a 2 percent step
+                    sized[i] = s;
+                    el.style.width = `${Math.ceil(w + ts * (i === DRIFT ? 2 : 1))}px`;
+                    el.style.height = `${Math.ceil(h + ts)}px`;
+                    el.style.setProperty("--t", `${ts.toFixed(2)}px`);
+                }
                 const mod = (v: number) => ((v % ts) + ts) % ts;
                 const lx = mod(w / 2 - cx * DEPTH[i] * k) - ts;
                 const ly = mod(h / 2 - cy * DEPTH[i] * k) - ts;
-                el.style.transform = `translate3d(${lx.toFixed(1)}px, ${ly.toFixed(1)}px, 0) scale(${s.toFixed(4)})`;
+                el.style.transform = `translate3d(${lx.toFixed(1)}px, ${ly.toFixed(1)}px, 0)`;
             });
             if (world.current) world.current.style.transform = `translate3d(${x.toFixed(1)}px, ${y.toFixed(1)}px, 0) scale(${k.toFixed(4)})`;
             // below 1:1 the dither would alias into moire, so let the browser average it into a soft glow
-            const soft = k < 0.95 ? "" : null;
             const r = root.current;
-            if (r && (r.dataset.soft !== undefined) !== (soft !== null)) {
-                if (soft === null) delete r.dataset.soft;
-                else r.dataset.soft = soft;
+            if (r) {
+                const soft = k < 0.95;
+                if (soft !== (r.dataset.soft !== undefined)) {
+                    if (soft) r.dataset.soft = "";
+                    else delete r.dataset.soft;
+                }
             }
         };
         return {
@@ -86,15 +98,9 @@ export const TreeBackdrop = forwardRef<TreeBackdropHandle, { unit?: number }>(fu
                 paint();
             },
             resize(w, h) {
+                if (w === view.current.w && h === view.current.h) return;
                 Object.assign(view.current, { w, h });
-                // big enough to cover the view at the smallest scale, plus a tile of slack on each side and one for the drift
-                const lw = Math.ceil(w / S_MIN + T * 3);
-                const lh = Math.ceil(h / S_MIN + T * 2);
-                layers.current.forEach((el) => {
-                    if (!el) return;
-                    el.style.width = `${lw}px`;
-                    el.style.height = `${lh}px`;
-                });
+                sized.fill(0);
                 paint();
             },
             focus(branch) {
@@ -111,7 +117,6 @@ export const TreeBackdrop = forwardRef<TreeBackdropHandle, { unit?: number }>(fu
             {DEPTH.map((_, i) => (
                 <div key={i} ref={(el) => { layers.current[i] = el; }} className="nf-bd-l" data-l={i}>
                     <i className="nf-bd-d" />
-                    {i === 2 && <i className="nf-bd-d nf-bd-tw" />}
                 </div>
             ))}
             <div ref={world} className="nf-bd-w">

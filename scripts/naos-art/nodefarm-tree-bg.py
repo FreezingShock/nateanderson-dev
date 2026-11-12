@@ -5,8 +5,8 @@ Run:  python3 scripts/naos-art/nodefarm-tree-bg.py            (everything)
       python3 scripts/naos-art/nodefarm-tree-bg.py core secs   (just the halo, just the section nebulae)
       python3 scripts/naos-art/nodefarm-tree-bg.py --variant circuit   (alternate far layer, used for the taste sheet)
 Output (public/naos/nodefarm/):
-  tree-bg-0..3.{png,webp}   far to near. 512 x 512 art px, each tiles seamlessly on both axes, drawn 2 css px per pixel.
-                            0 is opaque (deep space); 1 to 3 are transparent.
+  tree-bg-0..2.{png,webp}   far to near. 512 x 512 art px, each tiles seamlessly on both axes, drawn 2 css px per pixel.
+                            0 is opaque (deep space with the nebula baked in); 1 (stars) and 2 (near motes) are transparent.
   tree-core.{png,webp}      the halo behind the core, 400 x 400 art px, transparent, drawn in world space.
   tree-sec-<branch>.{png,webp}  one 256 x 256 transparent nebula per section, drawn in world space behind that arm.
 Palette PNGs (index 0 is transparent on 1 to 3 and the world pieces). Everything is procedural: Bayer 4 x 4 dither over
@@ -160,7 +160,7 @@ def layer0_circuit(rng, pal):
     save(idx, pal, "tree-bg-0", transparent=False)
 
 
-# ------------------------------------------------------------------------------------------- layer 1: section nebulae
+# ------------------------------------------------------------------------------------------- nebula (baked into layer 0)
 def layer1():
     rng = np.random.default_rng(23)
     # per section: 3 shades (dim dither, mid dither, bright rim) -> indices 1 + s*3 + k
@@ -178,10 +178,10 @@ def layer1():
     mid = (d * 0.36 - 0.2) > b
     idx[lo] = (1 + sec * 3)[lo]
     idx[mid] = (2 + sec * 3)[mid]
-    save(idx, pal, "tree-bg-1")
+    save(idx, pal, "_tree-bg-mid")
 
 
-# ------------------------------------------------------------------------------------------- layer 2: coloured stars
+# ------------------------------------------------------------------------------------------- layer 1: coloured stars
 def layer2():
     rng = np.random.default_rng(37)
     pal = [(0, 0, 0), (234, 242, 255), (150, 168, 200)]
@@ -197,10 +197,10 @@ def layer2():
         s = int(rng.integers(0, len(SECS)))
         core, glow = (1, 3 + s * 2 + 1) if rng.random() < 0.4 else (3 + s * 2, 3 + s * 2 + 1)
         star(idx, x, y, 1 if r < 0.85 else 2, core, glow)
-    save(idx, pal, "tree-bg-2")
+    save(idx, pal, "tree-bg-1")
 
 
-# ------------------------------------------------------------------------------------------- layer 3: near motes
+# ------------------------------------------------------------------------------------------- layer 2: near motes
 def layer3():
     """Sparse, big, close: dithered discs (out of focus), a few big twinkles and hex data motes. Sells the depth."""
     rng = np.random.default_rng(53)
@@ -239,7 +239,7 @@ def layer3():
             wrap_put(idx, x + px, y + py, 2 + s * 2)
         wrap_put(idx, x, y, 1)
         wrap_put(idx, x + 1, y, 1)
-    save(idx, pal, "tree-bg-3")
+    save(idx, pal, "tree-bg-2")
 
 
 # ------------------------------------------------------------------------------------------- world pieces
@@ -340,6 +340,20 @@ def sec_piece(name, col, seed):
     save(idx, pal, f"tree-sec-{name}")
 
 
+def merge_far():
+    """Bake the nebula into the deep-space tile: one opaque far layer instead of two (each full-screen layer costs a
+    composite per frame while panning)."""
+    far = Image.open(os.path.join(OUT, "tree-bg-0.png")).convert("RGBA")
+    mid = Image.open(os.path.join(OUT, "_tree-bg-mid.png")).convert("RGBA")
+    far.alpha_composite(mid)
+    out = far.convert("RGB").quantize(colors=255, method=Image.Quantize.FASTOCTREE, dither=Image.Dither.NONE)
+    out.save(os.path.join(OUT, "tree-bg-0.png"), optimize=True)
+    out.convert("RGB").save(os.path.join(OUT, "tree-bg-0.webp"), lossless=True, quality=100, method=6)
+    for ext in ("png", "webp"):
+        os.remove(os.path.join(OUT, "_tree-bg-mid." + ext))
+    print("merged the nebula into tree-bg-0")
+
+
 def main(args):
     variant = "space"
     if "--variant" in args:
@@ -349,6 +363,7 @@ def main(args):
     if "layers" in want:
         layer0(variant)
         layer1()
+        merge_far()
         layer2()
         layer3()
     if "core" in want:
