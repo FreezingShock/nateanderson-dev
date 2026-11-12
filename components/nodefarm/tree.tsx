@@ -349,6 +349,8 @@ function TreeMenuInner({ s, model, reduced, onBuy, onRespec, onClose }: TreeMenu
         ln.style.visibility = "visible";
     }, []);
 
+    const drawPkRef = useRef<() => void>(() => {});
+    const pkRaf = useRef(0);
     const apply = useCallback(() => {
         const wEl = world.current, r = root.current;
         if (!wEl || !r) return;
@@ -357,6 +359,10 @@ function TreeMenuInner({ s, model, reduced, onBuy, onRespec, onClose }: TreeMenu
         const x = w / 2 - cx * k, y = h / 2 - cy * k;
         wEl.style.transform = `translate3d(${x.toFixed(2)}px, ${y.toFixed(2)}px, 0) scale(${k.toFixed(4)})`;
         bd.current?.move(x, y, k);
+        // keep the canvas screen-aligned inside the scaled world (the inverse of the world's transform)
+        if (pkc.current) pkc.current.style.transform = `translate3d(${(-x / k).toFixed(2)}px, ${(-y / k).toFixed(2)}px, 0) scale(${(1 / k).toFixed(5)})`;
+        // the canvas only needs one redraw per frame, however many pointer events arrived
+        if (!pkRaf.current) pkRaf.current = requestAnimationFrame(() => { pkRaf.current = 0; drawPkRef.current(); });
         const lod = k < 0.5 ? "far" : "near";
         if (r.dataset.lod !== lod) r.dataset.lod = lod;
         placeCard();
@@ -453,6 +459,18 @@ function TreeMenuInner({ s, model, reduced, onBuy, onRespec, onClose }: TreeMenu
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
+    // once the opening has played the menu is opaque, so the board behind it stops being laid out and painted (it still keeps its state and scroll positions)
+    useEffect(() => {
+        if (boot !== "done") return;
+        // content-visibility hides the board's contents, so pin its height first (the page keeps its length and scroll position)
+        const nf = document.querySelector<HTMLElement>(".nf");
+        if (nf) nf.style.containIntrinsicSize = `auto ${Math.round(nf.getBoundingClientRect().height)}px`;
+        document.body.classList.add("nf-tm-covered");
+        return () => {
+            document.body.classList.remove("nf-tm-covered");
+            if (nf) nf.style.containIntrinsicSize = "";
+        };
+    }, [boot]);
     // modal behaviour: body class (lifts the board above the page), Escape, focus in and back out
     const selRef = useRef(sel);
     selRef.current = sel;
@@ -686,7 +704,7 @@ function TreeMenuInner({ s, model, reduced, onBuy, onRespec, onClose }: TreeMenu
     // links are circuit traces: a straight run, a 45 degree bend, a straight run (vias at the bends), on a dark bed.
     // Owned traces light up and carry packets outward (one packet path per section).
     const links = useMemo(() => {
-        const out: { key: string; d: string; vias: [number, number][]; col: string; st: "on" | "edge" | "off"; fog: boolean; near: boolean }[] = [];
+        const out: { key: string; d: string; pts: [number, number][]; vias: [number, number][]; col: string; st: "on" | "edge" | "off"; fog: boolean; near: boolean }[] = [];
         const have = (id: string) => id === "core" || m.owned.includes(id);
         for (const n of TREE) for (const l of n.links) {
             if (l !== "core" && n.id > l) continue;
@@ -705,6 +723,7 @@ function TreeMenuInner({ s, model, reduced, onBuy, onRespec, onClose }: TreeMenu
             out.push({
                 key: a.id + "-" + b.id, col: BCOL[n.branch],
                 d: `M${f(a.x)} ${f(a.y)}L${f(p1[0])} ${f(p1[1])}L${f(p2[0])} ${f(p2[1])}L${f(b.x)} ${f(b.y)}`,
+                pts: [[a.x, a.y], p1, p2, [b.x, b.y]],
                 vias: bent ? [p1, p2] : [],
                 st: ha && hb ? "on" : ha || hb ? "edge" : "off",
                 fog: vis.get(n.id) === "fog" || (!!m && vis.get(m.id) === "fog"),
@@ -713,11 +732,70 @@ function TreeMenuInner({ s, model, reduced, onBuy, onRespec, onClose }: TreeMenu
         }
         return out;
     }, [m.owned, vis, sel, near]); // eslint-disable-line react-hooks/exhaustive-deps
+    /** packets: one path of owned traces per section colour, drawn on a canvas (see drawPk) so the dashes never repaint the SVG */
     const packets = useMemo(() => {
-        const by: Record<string, string> = {};
-        for (const l of links) if (l.st === "on") by[l.col] = (by[l.col] ?? "") + l.d;
+        const by: Record<string, [number, number][][]> = {};
+        for (const l of links) if (l.st === "on") (by[l.col] ??= []).push(l.pts);
         return Object.entries(by);
     }, [links]);
+    const pkc = useRef<HTMLCanvasElement>(null);
+    const pkRef = useRef<SVGPathElement>(null);
+    const pkData = useRef(packets);
+    pkData.current = packets;
+    const pkIdx = useRef(-1);
+    /** Draw the packets for the current camera and animation step: same dash (10 on, 150 off, 1.9 s in 38 steps) the SVG used to animate. */
+    const drawPk = useCallback((force = false) => {
+        const cv = pkc.current, r = root.current;
+        if (!cv || !r) return;
+        const { w, h } = dims.current;
+        const { cx, cy, k } = cam.current;
+        const x = w / 2 - cx * k, y = h / 2 - cy * k;
+        const dpr = Math.min(2, window.devicePixelRatio || 1);
+        const bw = Math.round(w * dpr), bh = Math.round(h * dpr);
+        if (cv.width !== bw || cv.height !== bh) { cv.width = bw; cv.height = bh; cv.style.width = `${w}px`; cv.style.height = `${h}px`; force = true; }
+        const ctx = cv.getContext("2d");
+        if (!ctx) return;
+        ctx.setTransform(1, 0, 0, 1, 0, 0);
+        ctx.clearRect(0, 0, bw, bh);
+        const t = Math.max(0, pkIdx.current) / 38;
+        ctx.setTransform(dpr * k, 0, 0, dpr * k, dpr * x, dpr * y);
+        ctx.lineWidth = 5; ctx.lineCap = "square"; ctx.lineJoin = "miter";
+        ctx.setLineDash([10, 150]); ctx.lineDashOffset = -160 * t;
+        ctx.globalAlpha = r.hasAttribute("data-focus") ? 0.35 : 1;
+        const wx0 = cx - w / 2 / k - 20, wx1 = cx + w / 2 / k + 20, wy0 = cy - h / 2 / k - 20, wy1 = cy + h / 2 / k + 20;
+        const col = pkRef.current ? getComputedStyle(pkRef.current).stroke : "#fff";
+        for (const [, paths] of pkData.current) {
+            ctx.strokeStyle = col && col !== "none" ? col : "#fff";
+            ctx.beginPath();
+            for (const pts of paths) {
+                // skip traces entirely off screen
+                let x0 = Infinity, x1 = -Infinity, y0 = Infinity, y1 = -Infinity;
+                for (const [px, py] of pts) { x0 = Math.min(x0, px); x1 = Math.max(x1, px); y0 = Math.min(y0, py); y1 = Math.max(y1, py); }
+                if (x1 < wx0 || x0 > wx1 || y1 < wy0 || y0 > wy1) continue;
+                ctx.moveTo(pts[0][0], pts[0][1]);
+                for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i][0], pts[i][1]);
+            }
+            ctx.stroke();
+        }
+        ctx.globalAlpha = 1;
+    }, []);
+    drawPkRef.current = drawPk;
+    // the dash steps 20 times a second; nothing else about the packets changes, so nothing is drawn in between
+    useEffect(() => {
+        if (reduced || !packets.length) { pkIdx.current = -1; pkc.current?.getContext("2d")?.clearRect(0, 0, 1e5, 1e5); return; }
+        let raf = 0, focus = false;
+        const loop = (now: number) => {
+            const idx = Math.floor(((now % 1900) / 1900) * 38);
+            const f = !!root.current?.hasAttribute("data-focus");
+            if (idx !== pkIdx.current || f !== focus) { pkIdx.current = idx; focus = f; drawPk(); }
+            raf = requestAnimationFrame(loop);
+        };
+        pkIdx.current = 0;
+        apply();
+        drawPk(true);
+        raf = requestAnimationFrame(loop);
+        return () => cancelAnimationFrame(raf);
+    }, [packets, reduced, drawPk]); // eslint-disable-line react-hooks/exhaustive-deps
 
     // section labels sit just past the furthest visible node of each section
     const labels = useMemo(() => m.sections.map((b) => {
@@ -799,8 +877,9 @@ function TreeMenuInner({ s, model, reduced, onBuy, onRespec, onClose }: TreeMenu
                         {links.map((l) => <path key={"b" + l.key} className="nf-tl-bed" d={l.d} data-st={l.st} data-fog={l.fog ? "" : undefined} style={{ ["--c" as string]: l.col } as CSSProperties} />)}
                         {links.map((l) => <path key={l.key} className="nf-tl" d={l.d} data-st={l.st} data-fog={l.fog ? "" : undefined} data-near={l.near ? "" : undefined} style={{ ["--c" as string]: l.col } as CSSProperties} />)}
                         {links.map((l) => l.vias.map(([x, y], i) => <rect key={l.key + "v" + i} className="nf-tl-via" x={x - 6} y={y - 6} width={12} height={12} data-st={l.st} data-fog={l.fog ? "" : undefined} data-near={l.near ? "" : undefined} style={{ ["--c" as string]: l.col } as CSSProperties} />))}
-                        {!reduced && packets.map(([col, d]) => <path key={col} className="nf-tl-pk" d={d} style={{ ["--c" as string]: col } as CSSProperties} />)}
+                        <path ref={pkRef} className="nf-tl-pk" d="" />
                     </svg>
+                    <canvas ref={pkc} className="nf-tm-pk" aria-hidden="true" />
                     <button
                         type="button"
                         className="nf-tn nf-tn-core"

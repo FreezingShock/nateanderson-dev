@@ -3,7 +3,7 @@
 // or wait it out). Nothing ever takes stock from you, and time away just lets an event run out. Pure rules, no React: the numbers
 // live in ZE_TUNE (engine.ts, because the engine reads them), the strip on the zone panel is components/nodefarm/zone-event.tsx.
 import {
-    MATS, STATS, TICK_HOOKS, TIERS, ZE_TUNE, derive, droneRate, isUnlocked, overclockMult, postOf, press, resonancePair, statDef, zeOut,
+    MATS, STATS, TICK_HOOKS, TIERS, ZE_TUNE, derive, droneRate, isUnlocked, overclockMult, postOf, press, resonancePair, statDef, zeOut, fwFieldOp, fwZeGap, fwZeLong,
     type ButtonStat, type MatId, type State, type StatId, type ZoneEvActive, type ZoneEvKind, type ZoneEvState,
 } from "./engine";
 import { LORE } from "./lore";
@@ -58,7 +58,7 @@ export function kindsFor(s: State, zone: StatId): ZoneEvKind[] {
     const out: ZoneEvKind[] = ["surge", "resonance"];
     if (hasButtons(zone)) out.push("clearance");
     if (hasStock(zone)) out.push("vein");
-    if (s.life.secs >= ZE_TUNE.faultFrom) out.push("fault");
+    if (s.life.secs >= ZE_TUNE.faultFrom && !fwFieldOp(s)) out.push("fault"); // Field operator (Firmware): no Faults
     // Drone convoy needs Drones that actually press this zone (armed, or posted to it)
     if (zone !== "bytes" && zone !== "reboot" && s.drones.some((n, k) => n > 0 && (postOf(s, k) === zone || (!postOf(s, k) && s.armed.includes(zone))))) out.push("convoy");
     // Rig tune needs a rig bonus on that zone to double
@@ -82,7 +82,8 @@ export function patchCost(s: State): number {
 /** Start an event on a zone (the scheduler and the admin panel both call this). Replaces nothing: events stack only when started by hand. */
 export function zeStart(s: State, kind: ZoneEvKind, zone: StatId): ZoneEvActive {
     const z = ensureZe(s);
-    const e: ZoneEvActive = { id: z.seen + 1, kind, zone, left: ZE_TUNE.secs[kind], total: ZE_TUNE.secs[kind] };
+    const secs = ZE_TUNE.secs[kind] * fwZeLong(s); // Lightning rod (Firmware)
+    const e: ZoneEvActive = { id: z.seen + 1, kind, zone, left: secs, total: secs };
     z.act.push(e);
     (z.log ??= []).push({ kind, zone, at: s.life.secs });
     if (z.log.length > ZE_TUNE.logMax) z.log.splice(0, z.log.length - ZE_TUNE.logMax);
@@ -163,7 +164,7 @@ export function zeStep(s: State, dt: number) {
     z.wait = Math.max(0, z.wait - dt);
     if (z.wait > 0 || dt > 5) return;
     const r = rollEvent(s);
-    z.wait = ZE_TUNE.gap[0] + Math.random() * (ZE_TUNE.gap[1] - ZE_TUNE.gap[0]);
+    z.wait = (ZE_TUNE.gap[0] + Math.random() * (ZE_TUNE.gap[1] - ZE_TUNE.gap[0])) * fwZeGap(s); // Weather eye (Firmware)
     if (r) zeStart(s, r.kind, r.zone);
 }
 if (!TICK_HOOKS.includes(zeStep)) TICK_HOOKS.push(zeStep);
