@@ -9,6 +9,8 @@ import {
     type State,
 } from "./engine";
 import { LOGS, logNo } from "./story";
+import { zeTitle, zoneLabel } from "./zoneevents";
+import { ENTRIES, unlocked as unlockedEntries } from "./codex";
 
 export const NF_PATH = "/creations/games/node-farm";
 export const NF_SAVE_KEY = "nf-save-v1";
@@ -71,6 +73,11 @@ export function recordSections(s: State): RecordSection[] {
         { id: "life", title: "Lifetime", blurb: "Survives every Ascend.", rows: life },
         { id: "prog", title: "Progress", blurb: "Goals, secrets, tree and perks.", rows: prog },
     ];
+    if (s.ze?.seen) {
+        const log = s.ze.log ?? [];
+        const rows: [string, string][] = [["Seen", `${s.ze.seen}`], ...[...log].reverse().map((e): [string, string] => [zeTitle(e.kind, e.zone), `${zoneLabel(e.zone)}, ${fmtTime(Math.max(0, s.life.secs - e.at))} ago`])];
+        out.push({ id: "zev", title: "Zone events", blurb: "The last dozen, newest first.", rows });
+    }
     if (mats.length) out.splice(1, 0, { id: "mats", title: "Materials", blurb: "Held, nodes and output per second.", rows: mats });
     if (s.lab.seen) out.push({ id: "lab", title: "Exploit Lab", blurb: "Research and stock survive Ascend; Intel does not.", rows: [
         ["Intel", `${fmt(s.lab.intel)} · +${fmt(intelRate(s, d.bytesPerSec))}/s`],
@@ -104,7 +111,7 @@ export interface NfLine {
 const t = (text: string, k?: NfLine["k"]): NfLine => ({ t: text, k });
 const row = (a: string, b: string, go?: string): NfLine => ({ a, b, go });
 
-export const NF_SUBS = ["stats", "goals", "secrets", "logs", "archive", "news", "open", "anim", "fs", "fullscreen", "art", "core", "admin"];
+export const NF_SUBS = ["stats", "goals", "secrets", "logs", "archive", "news", "open", "codex", "anim", "fs", "fullscreen", "art", "core", "admin"];
 
 export interface NfResult {
     lines: NfLine[];
@@ -134,7 +141,7 @@ export function nfCommand(s: State, args: string[]): NfResult {
             row("goals", `${c.goals}/${c.goalTotal}`),
             row("secrets", `${c.secrets}/${c.secretTotal}`),
             ...(handSeen(s) ? [row("handovers", `${s.hand.count}  (${s.hand.keys} keys)`)] : []),
-            t("nf stats · nf goals · nf secrets · nf logs · nf news · nf lab · nf handover · nf cron · nf archive · nf open", "dim"),
+            t("nf stats · nf goals · nf secrets · nf logs · nf news · nf lab · nf handover · nf cron · nf archive · nf codex · nf open", "dim"),
         ];
     } else if (sub === "stats") {
         lines = recordSections(s).flatMap((sec) => [t(sec.title.toLowerCase(), "hi"), ...sec.rows.map(([a, b]) => row(a.toLowerCase(), b))]);
@@ -160,6 +167,22 @@ export function nfCommand(s: State, args: string[]): NfResult {
             lines = [t(`logs ${s.logs.length}/${LOGS.length}`, "hi")];
             LOGS.forEach((l, i) => lines.push(s.logs.includes(l.id) ? row(logNo(i), l.title.toLowerCase()) : row(logNo(i), "????")));
             lines.push(t("nf logs <number> to read one.", "dim"));
+        }
+    } else if (sub === "codex") {
+        const open = unlockedEntries(s);
+        const q = args.slice(1).join(" ").toLowerCase();
+        const e = q ? open.find((x) => x.id === q || x.title.toLowerCase() === q) : undefined;
+        if (e) {
+            lines = [t(e.title.toLowerCase(), "hi")];
+            for (const b of e.body(s)) {
+                if ("p" in b) lines.push(t(b.p));
+                else if ("note" in b) lines.push(t(b.note, "dim"));
+                else if ("rows" in b) b.rows.forEach(([k, v]) => lines.push(row(k.toLowerCase(), v)));
+                else b.list.forEach(([k, v]) => lines.push(row(k.toLowerCase(), v)));
+            }
+        } else {
+            lines = [t(`codex ${open.length}/${ENTRIES.length}`, "hi"), ...open.map((x) => row(x.id, x.title.toLowerCase()))];
+            lines.push(t(q ? `no codex entry: ${q}. nf codex <name> reads one.` : "nf codex <name> reads one. press C in the game for the window.", q ? "err" : "dim"));
         }
     } else if (sub === "archive") {
         const seen = loadSeen();
@@ -236,7 +259,7 @@ export function nfCommand(s: State, args: string[]): NfResult {
     } else if (sub === "whoami") {
         lines = [t("node-01. one core, no clearance, and a growing farm."), ...secret("x_self")];
     } else {
-        lines = [t(`nf: unknown: ${args[0]}`, "err"), t("nf stats · nf goals · nf secrets · nf logs · nf news · nf lab · nf handover · nf cron · nf archive · nf open", "dim")];
+        lines = [t(`nf: unknown: ${args[0]}`, "err"), t("nf stats · nf goals · nf secrets · nf logs · nf news · nf lab · nf handover · nf cron · nf archive · nf codex · nf open", "dim")];
     }
     return { lines, unlocked: found };
 }
