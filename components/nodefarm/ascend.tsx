@@ -133,7 +133,7 @@ function Flow({ s, d, gain, confirm, onAscend }: { s: State; d: D; gain: number;
 function Perks({ s, onPerk }: { s: State; onPerk: (id: PerkId) => void }) {
     return (
         <section className="nf-ax-perks" data-cx-i="3">
-            <header className="nf-sys-h"><h3>Perks</h3><p>{s.ap} AP to spend. Perks survive every Ascend.</p></header>
+            <header className="nf-sys-h" data-path="ascend/perks"><h3>Perks</h3><p>{s.ap} AP to spend. Perks survive every Ascend.</p></header>
             <ul>
                 {PERKS.map((p, i) => {
                     const lvl = s.perks[p.id];
@@ -173,7 +173,7 @@ function Gateway({ s, onTree }: { s: State; onTree: () => void }) {
     };
     return (
         <section className="nf-ax-gate" data-cx-i="2" data-go={go ? "" : undefined}>
-            <header className="nf-sys-h">
+            <header className="nf-sys-h" data-path="ascend/tree">
                 <h3>Prestige tree</h3>
                 <p>{TREE.length} upgrades in five sections, bought with AP and kept through every Ascend. {s.ap} AP to spend, {owned} of {TREE_FULL} owned.</p>
             </header>
@@ -200,7 +200,7 @@ function Mounts({ s, onMount }: { s: State; onMount: (slot: number, mat: MatId |
     if (!slots) return null;
     return (
         <section className="nf-mounts" data-cx-i="4">
-            <header className="nf-sys-h">
+            <header className="nf-sys-h" data-path="ascend/mounts">
                 <h3>Mounted drives</h3>
                 <p>The producers of a mounted material survive every Ascend. Change a pick any time; only what is mounted when you Ascend is kept.</p>
             </header>
