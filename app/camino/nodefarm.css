@@ -262,7 +262,7 @@
 @media (hover: hover) { .ctos .nf-mini:not(:disabled):hover { border-color: var(--cm-cyan); } }
 @media (hover: none) { .ctos .nf-mini { min-height: 44px; } }
 
-@media (max-width: 420px) { .ctos .nf-row-h { gap: 9px; padding-inline: 10px; } .ctos .nf-row-n b { font-size: 18px; } .ctos .nf-flavor { font-size: 12.5px; } .ctos .nf-btns { grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); } }
+@media (max-width: 420px) { .ctos .nf-row-h { gap: 9px; padding-inline: 10px; } .ctos .nf-row-n b { font-size: 18px; } .ctos .nf-flavor { font-size: 12.5px; } .ctos .nf-btns { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 @media (prefers-reduced-motion: reduce) {
     .ctos .nf *, .ctos .nf { animation: none !important; transition: none !important; }
 }
@@ -283,7 +283,7 @@
 .ctos .nf-row { container-type: inline-size; }
 .ctos .nf-btns { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 @container (min-width: 640px) { .ctos .nf-btns { grid-template-columns: repeat(6, minmax(0, 1fr)); } }
-@container (max-width: 289px) { .ctos .nf-btns { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@container (max-width: 459px) { .ctos .nf-btns { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 @media (max-width: 640px) {
     .ctos .nf-chain li:not(.nf-chain-all) { display: none; }
     .ctos .nf-chain { padding: 8px; justify-content: flex-end; }
@@ -529,3 +529,11 @@ body.nf-win-open .ctos .cm-section.ruled { z-index: 60; }
 @media (hover: none) { .ctos .nf-keys-sec { display: none; } }
 body.nf-calm .nf *, body.nf-calm .nf { animation: none !important; transition: none !important; }
 body.nf-calm [class^="nf-"], body.nf-calm [class*=" nf-"] { animation-duration: 1ms !important; animation-iteration-count: 1 !important; }
+
+/* phone: two buttons across so tier names and costs fit; the cost wraps at its space instead of running under the sprite, and the pips stay one line */
+.ctos .nf-btn-c { max-width: calc(100% - 38px); }
+.ctos .nf-btn-fn { min-width: 0; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ctos .nf-pips { flex: 0 0 auto; }
+@media (max-width: 420px) { .ctos .nf-btn-top { gap: 6px; } .ctos .nf-pips { gap: 1px; } .ctos .nf-pips i { width: 3px; height: 3px; } }
+/* leaf-shaped skins: keep the text clear of the big rounded corner now that the shape clips */
+.ctos .nf-row[data-stat="chrono"] .nf-btn, .ctos .nf-row[data-stat="aether"] .nf-btn { padding-left: 16px; }
