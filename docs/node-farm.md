@@ -146,6 +146,30 @@ Code: pure rules and snapshots in `lib/nodefarm/admin.ts`, panel in `components/
 - The tab title shows `<rate>/s · Node Farm` while the tab is in the background.
 - Menu "Calm motion" (`nf-calm-v1`) forces reduced motion on top of the OS setting: the `reduced` prop everywhere plus `body.nf-calm` CSS. Menu also shows when the game last saved.
 
+## Zone art
+
+Each zone panel shows a staged dither scene in its blank space: right of the description, below the title bar, above the spec
+lines and buttons. It grows from stage 0 (backdrop only) to stage 7 (seven sprites, each bigger than the last).
+
+- **Stage logic** (`lib/nodefarm/zone-art.ts`): 60% *afford* (how many of the zone's six buttons you can pay for now, plus a
+  log-scale fraction toward the next) and 40% *owned* (units bought this run, log scale). Paying for the zone's top button
+  always means stage 7. Bytes uses the Multiplier buttons (what Bytes buy) and counts Multiplier tiers running; Reboots use
+  the Reboot count only (their prices climb with each Reboot). The shown stage never drops until Ascend (kept per browser in
+  `nf-zone-art-v1`, not in the save), so Bytes and Multipliers show the best Reboot cycle of the run. In the pacing sim the
+  early zones reach 7 in about 0.6 to 1.5 h, Aether reaches about 3 by the first Ascend.
+- **Panel** (`components/nodefarm/zone-art.tsx`, `app/camino/nodefarm-zone-art.css`): one element per zone, measured only
+  when the panel resizes. Nate's placement rule (2026-11-12): the whole scene shows, never cut; it fills from the white title
+  bar down to the spec lines and runs to the panel's right edge; it is scaled to fit (snapped to whole device pixels, so 2x on
+  a normal screen, 1.5x on a 2x screen, up to 3x) and the panel opens a little room above the spec lines when needed. The
+  description gets a dark wash and the big number a dark pool behind it. Phones give it its own band under the header.
+  Folded panels hide it on phones and dim it on desktop. Frames step at 6 fps with CSS, paused offscreen and for reduced
+  motion. No filter, mask or blend on the animated layer.
+- **Art** (`scripts/naos-art/nodefarm_zone_kit.py` plus one script per lane, e.g. `nodefarm-zone-bytes.py`): sheet
+  `public/naos/nodefarm/zone-<id>.{png,webp}`, cells 288 x 96 art px, 6 frames across, 8 stages down (1728 x 768). Rows 0 to
+  31 are sky/backdrop that reaches the title bar, sprites live lower down; the whole cell is always visible. RAMPS and BAYER from `nodefarm-icons.py`, busy backdrops and several on-palette accents (Nate's pick),
+  WebP lossless under 30 KB. Add the zone id to `ZONE_ART` to switch a sheet on.
+- **Preview**: `nf art 0` to `nf art 7` in the console shows every zone at one stage for this visit; `nf art live` goes back.
+
 ## Older windows refresh (Map, Goals, Records, Menu), 2026-11-12
 Brought up to the Ascend window's level. Shared parts in `components/nodefarm/win-kit.tsx`: `WinBanner` (dither art from `public/naos/nodefarm/win-<map|goals|records|menu>.webp`, drawn by `scripts/naos-art/nodefarm-window-art.py`, with a `$ cd ~/...` code readout), `Frame` (corner-bracket section with a `// path` heading), `DataLines` (`key ..... value`) and `HoldButton` (press and hold; a click with no press behind it arms, a second click fires). Styles: `app/camino/nodefarm-windows.css` (`nf-wk-*`).
 - Goals: each tier is a circuit rail of badge nodes; a segment lights when both ends are done. The line under the rail reads out the hovered, tapped, or next goal.
