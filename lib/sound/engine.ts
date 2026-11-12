@@ -374,7 +374,8 @@ export function setHum(s: { level: number; boost?: boolean } | null) {
     }
     const h = humNodes;
     const t = ctx.currentTime;
-    const lv = Math.max(0, Math.min(1, s.level));
+    // a NaN level (from a huge save number) would make every setTargetAtTime throw, so fall back to silence
+    const lv = Number.isFinite(s.level) ? Math.max(0, Math.min(1, s.level)) : 0;
     const f = 55 * (1 + lv * 0.5) * (s.boost ? 1.5 : 1);
     for (const o of [h.a, h.b]) o.frequency.setTargetAtTime(f, t, 0.4);
     h.sub.frequency.setTargetAtTime(f / 2, t, 0.4);
