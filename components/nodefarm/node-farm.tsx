@@ -7,6 +7,7 @@ import { useSoundPrefs } from "@/lib/sound/use-sound";
 import {
     TUNE, overclockMult, overclockSecs, respec, ascend, autoBuy, breach, button, buyDrone, buyNode, buyPerk, toggleArm, checkGoals, derive, exportSave, fmt, fmtTime, fresh, getNumFmt, setNumFmt, type NumFmt, isUnlocked, offline, parseSave, press, STATS, tick,
     apEach, dropFill, hasFeature, openDrop, pressMax, setMount, statDef,
+    buyLabNode, cancelCompile, compile, deploy, labNode, labOpen, payload, type PayloadId,
     type ButtonStat, type MatId, type State,
 } from "@/lib/nodefarm/engine";
 import type { NfLive } from "@/lib/nodefarm/records";
@@ -20,6 +21,7 @@ import dynamic from "next/dynamic";
 // own and is fetched quietly once the board is idle.
 const loadTree = () => import("./tree");
 const TreeMenu = dynamic(() => loadTree().then((m) => ({ default: m.TreeMenu })), { ssr: false });
+import { LabHud, LabZone, labModel, labReady } from "./lab";
 import { eraOf } from "@/lib/nodefarm/scenery";
 import { DroneBay } from "./drones";
 import { Chain, StatRow } from "./stat-row";
@@ -87,6 +89,9 @@ export function NodeFarm() {
     const [side, setSide] = useState<Tab>("goals");
     const [win, setWin] = useState<"" | "map" | "goals" | "records" | "ascend" | "menu">("");
     const [treeOpen, setTreeOpen] = useState(false);
+    /** the Exploit Lab's research tree (same menu as the prestige tree, blue lab skin) */
+    const [labTree, setLabTree] = useState(false);
+    const labPrev = useRef<{ s: State | null; seen: boolean; compiled: number }>({ s: null, seen: false, compiled: 0 });
     const treeOpenRef = useRef(false);
     treeOpenRef.current = treeOpen;
 
@@ -425,6 +430,18 @@ export function NodeFarm() {
                     save();
                 }
             }
+            // Exploit Lab: say when it opens and when a compile lands in stock
+            const lp = labPrev.current;
+            if (lp.s === s) {
+                if (s.lab.seen && !lp.seen) {
+                    juice.emit({ t: "milestone", title: "Exploit Lab decrypted", sub: "Intel now runs alongside Bytes. Research a recipe, compile it, deploy it." });
+                    feedStore.push([...call(idTok("lab"), "mount", [strTok("~/lab")]), pun(" → "), strTok("intel online")], { tone: "good", type: true });
+                    sfx("nfDecrypt");
+                }
+                const made = s.life.compiled - lp.compiled;
+                if (made > 0) feedStore.batch("lab:compiled", () => [...call(idTok("gcc"), "link", [strTok(`${s.lab.last ?? "payload"}.c`)]), pun(" → "), num(`+${made}`), txt(" "), com("// in stock")], made, 4000);
+            }
+            labPrev.current = { s, seen: s.lab.seen, compiled: s.life.compiled };
             f.reboots = s.reboot;
             f.ap = s.ap;
             if (prevUnlocked.current && f.unlocked > prevUnlocked.current) sfx("nfDecrypt");
@@ -450,6 +467,7 @@ export function NodeFarm() {
         (stat: ButtonStat, tier: number, quiet = false) => {
             const s = g.current;
             const was = s.reboot;
+            const intelWas = s.lab.intel;
             const owned = stat === "reboot" ? 0 : s.bought[stat][tier];
             let gainNow = button(s, stat, tier).gain;
             // Buy max (Batch job node): one press buys as many as the balance allows
@@ -465,7 +483,7 @@ export function NodeFarm() {
             if (owned === 0 && tier > 0 && !quiet && stat !== "reboot") juice.emit({ t: "tier", stat, tier });
             if (stat === "reboot") {
                 sfx("nfReboot");
-                feedStore.push([...call(idTok("system"), "reboot"), pun(" → "), num(`×${fmt(s.reboot - was)}`), txt(" "), { k: "c", v: `// cache wiped, reboot #${fmt(s.reboot)}` }], { tone: "good", type: true });
+                feedStore.push([...call(idTok("system"), "reboot"), pun(" → "), num(`×${fmt(s.reboot - was)}`), txt(" "), { k: "c", v: `// cache wiped, reboot #${fmt(s.reboot)}${s.lab.intel - intelWas >= 1 ? `, crash dump +${fmt(s.lab.intel - intelWas)} intel` : ""}` }], { tone: "good", type: true });
             } else {
                 if (owned === 0 && tier > 0 && !quiet) sfx("nfTierUp", { tier });
                 else sfx("nfBuy", { tier, stat });
@@ -490,6 +508,7 @@ export function NodeFarm() {
                 log(`${def.title.toUpperCase()} CLEARED. Overclock x${fmt(overclockMult(s))} ${r.stacked ? `extended to ${Math.round(s.overclock)} s` : `for ${Math.round(overclockSecs(s))} s`}.`, "good");
                 if (r.zero) log(`ZERO-DAY: ${fmt(r.zero.bytes ?? 0)} Bytes and 10 minutes of every material paid out.`, "good");
                 if (r.echo) log("ECHO: something knocked back. Another event is coming.", "hot");
+                if (r.intel >= 1) feedStore.push([...call(idTok("lab"), "capture", [strTok("trace")]), pun(" → "), num(`+${fmt(r.intel)} intel`)], { tone: "good", type: true });
                 return { echo: r.echo };
             } else log(`${def.title} lost. No cost.`, "warn");
         },
@@ -618,7 +637,7 @@ export function NodeFarm() {
     }, [ready]);
 
     // ---- keyboard: one letter per window. Off while typing, with a modifier, over another panel or during an event.
-    const keyApi = useRef<{ open: (w: "map" | "goals" | "records" | "ascend" | "menu" | "tree") => void; max: () => void }>({ open: () => {}, max: () => {} });
+    const keyApi = useRef<{ open: (w: "map" | "goals" | "records" | "ascend" | "menu" | "tree") => void; max: () => void; lab: () => void }>({ open: () => {}, max: () => {}, lab: () => {} });
     useEffect(() => {
         if (!ready) return;
         const onKey = (e: KeyboardEvent) => {
@@ -629,6 +648,7 @@ export function NodeFarm() {
             const w = ({ m: "map", o: "goals", l: "records", a: "ascend", s: "menu", t: "tree" } as const)[e.key.toLowerCase() as "m"];
             if (w) { e.preventDefault(); keyApi.current.open(w); }
             else if (e.key.toLowerCase() === "b") keyApi.current.max();
+            else if (e.key.toLowerCase() === "r") { e.preventDefault(); keyApi.current.lab(); }
         };
         window.addEventListener("keydown", onKey);
         return () => window.removeEventListener("keydown", onKey);
@@ -672,9 +692,23 @@ export function NodeFarm() {
         setWin(w);
         setTabBoth(w);
     };
+    const openLab = () => { if (!labOpen(s)) return; setWin(""); setTreeOpen(false); setLabTree(true); sfx("tab"); };
+    const doDeploy = (id: PayloadId) => {
+        const p = payload(id);
+        const r = deploy(s, id);
+        if (!r.ok) return sfx("deny");
+        sfx(p.kind === "buff" ? "nfTierUp" : "nfGoal", { tier: 3 });
+        juice.emit({ t: "milestone", title: `${p.name} deployed`, sub: r.stacked ? "Already running: its time was extended." : p.blurb });
+        const tail = r.paid ? `paid ${fmt(r.paid.bytes ?? 0)} B` : r.stacked ? "extended" : p.kind === "charge" ? "armed" : p.kind === "buff" ? "running" : "done";
+        feedStore.push([...call(idTok("payload"), "deploy", [strTok(id)]), pun(" → "), strTok(tail)], { tone: "hot", type: true });
+        save();
+        bump((n) => n + 1);
+    };
     const treeSeenK = s.life.ascends > 0 || s.ap > 0 || s.tree.length > 0;
     keyApi.current = {
+        lab: () => { if (labTree) setLabTree(false); else if (!treeOpen) openLab(); },
         open: (w) => {
+            if (labTree) return;
             if (treeOpen) { if (w === "tree") setTreeOpen(false); return; }
             if (w === "tree") { if (treeSeenK) openWin("tree"); return; }
             if (win === w) closeWin();
@@ -686,7 +720,15 @@ export function NodeFarm() {
     const step = nextStep(s, d);
     const goTo = (t?: Target) => {
         if (!t) return;
+        if (t.win === "lab") return openLab();
         if (t.win) return openWin(t.win);
+        if (t.lab) {
+            setTab("stats");
+            if (folded.lab) setFold({ ...folded, lab: false });
+            sfx("tab");
+            setTimeout(() => document.querySelector<HTMLElement>(`.nf [data-stat="lab"]`)?.scrollIntoView({ behavior: reduced ? "auto" : "smooth", block: "center" }), 90);
+            return;
+        }
         setTab("stats");
         const key = t.drone !== undefined ? "drones" : t.stat;
         if (!key) return;
@@ -712,6 +754,7 @@ export function NodeFarm() {
                         <span className="nf-sub">Bytes · +{fmt(d.bytesPerSec)}/s</span>
                     </div>
                 </div>
+                <LabHud s={s} />
                 {s.overclock > 0 && (
                     <div className="nf-oc" role="status">
                         <NfIcon name="spark" /> OVERCLOCK x{overclockMult(s)} · {Math.ceil(s.overclock)}s
@@ -737,6 +780,7 @@ export function NodeFarm() {
                         </button>
                     ))}
                     {treeSeen && <button type="button" className="nf-dock-b" aria-haspopup="dialog" data-guide={step.target?.win === "tree" ? "" : undefined} onClick={() => openWin("tree")}>Tree</button>}
+                    {labOpen(s) && <button type="button" className="nf-dock-b nf-dock-lab" aria-haspopup="dialog" data-ready={labReady(s) ? "" : undefined} data-guide={step.target?.win === "lab" ? "" : undefined} onClick={openLab}>Lab</button>}
                 </div>
             </header>
             <GuideStrip step={step} onGo={() => goTo(step.target)} onMap={() => openWin("map")} mapOpen={win === "map"} />
@@ -749,6 +793,7 @@ export function NodeFarm() {
                     </button>
                 ))}
                 {treeSeen && <button type="button" className="nf-tab" aria-haspopup="dialog" data-guide={step.target?.win === "tree" ? "" : undefined} onClick={() => openWin("tree")}>Tree</button>}
+                {labOpen(s) && <button type="button" className="nf-tab nf-dock-lab" aria-haspopup="dialog" data-ready={labReady(s) ? "" : undefined} data-guide={step.target?.win === "lab" ? "" : undefined} onClick={openLab}>Lab</button>}
             </nav>
 
             {stale && (
@@ -760,7 +805,7 @@ export function NodeFarm() {
             )}
             {toast && <div className="nf-toast" role="status"><NfIcon name="spark" /> Goal: {toast}</div>}
 
-            <EventLayer game={g} ready={ready} enabled={evOn} busy={!!win || treeOpen || !!away || !!confirm} reduced={reduced} onEngage={evEngage} onResult={evResult} onMiss={evMiss} onDisable={() => setEvents(false)} />
+            <EventLayer game={g} ready={ready} enabled={evOn} busy={!!win || treeOpen || labTree || !!away || !!confirm} reduced={reduced} onEngage={evEngage} onResult={evResult} onMiss={evMiss} onDisable={() => setEvents(false)} />
             <Juice reduced={reduced} />
 
             <section className="nf-pane nf-corepane" data-pane="core" aria-label="Core">
@@ -781,6 +826,19 @@ export function NodeFarm() {
 
             <section className="nf-pane nf-statspane" data-pane="stats" aria-label="Stats and buttons">
                 <Chain s={s} d={d} allOpen={!STATS.every((x) => folded[x.id])} onAll={(open) => setFold(Object.fromEntries(STATS.map((x) => [x.id, !open])))} max={buyMax} onMax={() => { const v = !buyMax; setBuyMax(v); sfx("tab"); try { localStorage.setItem(MAX_KEY, v ? "1" : "0"); } catch {} }} />
+                {labOpen(s) && (
+                    <LabZone
+                        s={s}
+                        d={d}
+                        open={!folded.lab}
+                        onToggle={() => { setFold({ ...folded, lab: !folded.lab }); sfx("tab"); }}
+                        onResearch={openLab}
+                        guided={!!step.target?.lab || step.target?.win === "lab"}
+                        onCompile={(id) => { if (compile(s, id)) { sfx("nfBuy", { tier: 2 }); feedStore.push([...call(idTok("gcc"), "compile", [strTok(`${id}.c`)]), pun(" → "), strTok("queued")], { tone: "good" }); bump((n) => n + 1); } else sfx("deny"); }}
+                        onCancel={(i) => { if (cancelCompile(s, i)) { sfx("tab"); bump((n) => n + 1); } }}
+                        onDeploy={(id) => doDeploy(id)}
+                    />
+                )}
                 {isUnlocked(s, "aether") && (
                     <DroneBay s={s} guided={step.target?.drone} open={!folded.drones} onToggle={() => { setFold({ ...folded, drones: !folded.drones }); sfx("tab"); }} onBuy={(k) => { if (buyDrone(s, k)) { sfx("nfBuy", { tier: k }); feedStore.push([...call(idTok("drones"), "deploy", [strTok(`T${k + 1}`)]), pun(" → "), strTok("online")], { tone: "good", type: true }); bump((n) => n + 1); } else sfx("deny"); }} />
                 )}
@@ -848,6 +906,23 @@ export function NodeFarm() {
             </section>
             {adminOn && !adminOpen && <button type="button" className="nf-ad-tab" onClick={() => setAdminOpen(true)} aria-label="Open the root console"><i />root</button>}
             {adminOn && adminOpen && <AdminPanel host={adminHost} />}
+            {labTree && (
+                <TreeMenu
+                    s={s}
+                    model={labModel(s)}
+                    ver={`${s.lab.nodes.length}|${Math.floor(s.lab.intel)}`}
+                    reduced={reduced}
+                    onBuy={(id) => {
+                        if (!buyLabNode(s, id)) return sfx("deny");
+                        sfx("nfBuy", { tier: 4 });
+                        const n = labNode(id);
+                        feedStore.push([...call(idTok("lab"), "research", [strTok(n.name)]), pun(" → "), strTok(n.fx.recipe ? "recipe unlocked" : "installed")], { tone: "good", type: true });
+                        save();
+                        bump((x) => x + 1);
+                    }}
+                    onClose={() => setLabTree(false)}
+                />
+            )}
             {treeOpen && (
                 <TreeMenu
                     s={s}

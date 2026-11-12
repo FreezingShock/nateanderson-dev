@@ -476,8 +476,10 @@ export interface State {
     autoArmed: string[];
     /** AP refunded when an old tree was replaced, shown once in the feed and then cleared */
     treeRefund?: number;
+    /** Exploit Lab: Intel, research nodes, compile queue, payload stock and running buffs (see LabState) */
+    lab: LabState;
     // lifetime counters (survive Ascend)
-    life: { bytes: number; taps: number; reboots: number; ascends: number; intrusions: number; secs: number; presses: number; capped: number; peakBps: number; apTotal: number };
+    life: { bytes: number; taps: number; reboots: number; ascends: number; intrusions: number; secs: number; presses: number; capped: number; peakBps: number; apTotal: number; intel: number; compiled: number; deployed: number };
     overclock: number; // seconds left
 }
 
@@ -513,7 +515,8 @@ export function fresh(now = Date.now()): State {
         dropAt: 0,
         runWins: 0,
         autoArmed: [],
-        life: { bytes: 0, taps: 0, reboots: 0, ascends: 0, intrusions: 0, secs: 0, presses: 0, capped: 0, peakBps: 0, apTotal: 0 },
+        life: { bytes: 0, taps: 0, reboots: 0, ascends: 0, intrusions: 0, secs: 0, presses: 0, capped: 0, peakBps: 0, apTotal: 0, intel: 0, compiled: 0, deployed: 0 },
+        lab: freshLab(),
         overclock: 0,
     };
 }
@@ -545,18 +548,19 @@ export function derive(s: State): Derived {
         chAll: boost(s.chrono, k.chAll),
     };
     const tf = treeFx(s);
+    const lb = labBuffs(s);
     const droneLv = s.drones.reduce((a, b) => a + b, 0);
     const global = (1 + s.perks.power * 0.15) * (1 + tf.global) * apGlobal(s) * (1 + s.ach.length * (TUNE.achBonus + tf.goals)) * (1 + tiersDone(s) * TUNE.tierBonus)
-        * (1 + droneLv * tf.droneGlobal) * (1 + s.runWins * tf.winBoost) * boosts.chAll * (s.overclock > 0 ? overclockMult(s) : 1);
+        * (1 + droneLv * tf.droneGlobal) * (1 + s.runWins * tf.winBoost) * boosts.chAll * (s.overclock > 0 ? overclockMult(s) : 1) * lb.global;
     const rebootStrength = TUNE.rebootStrength * boosts.cuReboot * (1 + tf.reboot);
-    const multGainMult = (1 + rebootStrength * s.reboot) * (1 + tf.multGain);
-    const bytesPerSec = s.mult * boosts.cuBytes * global * (1 + tf.bytes);
+    const multGainMult = (1 + rebootStrength * s.reboot) * (1 + tf.multGain) * lb.mult;
+    const bytesPerSec = s.mult * boosts.cuBytes * global * (1 + tf.bytes) * lb.bytes;
     // each material is boosted by the one after it in the chain
     const boostedBy: Record<MatId, number> = { copper: boosts.siCu, silicon: boosts.qzSi, quartz: boosts.aeQz, aether: boosts.ruAe, runes: boosts.sgRu, starglass: boosts.vsSg, voidsteel: boosts.chVs, chrono: 1 };
     // Cross-talk: each material is also boosted by the one two steps up the chain, at the weaker late-chain strength
     if (tf.features.includes("crosstalk")) MATS.forEach((m, i) => { const up = MATS[i + 2]; if (up) boostedBy[m] *= boost(s[up], TUNE.boostK.ruAe); });
     const rates = {} as Record<MatId, number>;
-    for (const m of MATS) rates[m] = s.prod[m] * TUNE.perProducer[m] * boostedBy[m] * (1 + (tf.mats[m] ?? 0)) * global;
+    for (const m of MATS) rates[m] = s.prod[m] * TUNE.perProducer[m] * boostedBy[m] * (1 + (tf.mats[m] ?? 0)) * global * (FORGE_MATS.includes(m) ? lb.forge : 1);
     return { global, bytesPerSec, rebootStrength, multGainMult, rates, offlineCap: Math.max(1, TUNE.offlineCapHours + s.perks.offline * 4 + tf.offline) * 3600, boosts };
 }
 
@@ -602,9 +606,16 @@ export function press(s: State, stat: ButtonStat, tier: number): boolean {
     const b = button(s, stat, tier);
     if (amount(s, b.pays) < b.cost) return false;
     if (stat === "reboot") {
-        s.reboot += b.gain;
+        // Logic bomb (Exploit Lab): an armed charge multiplies this Reboot
+        const bomb = s.lab.armed.indexOf("logicbomb");
+        const gain = bomb >= 0 ? Math.round(b.gain * (1 + payloadV(s, payload("logicbomb")))) : b.gain;
+        if (bomb >= 0) s.lab.armed.splice(bomb, 1);
+        // a crash dump: the Reboot banks the Intel buffer (it refills over LAB_TUNE.dumpSecs)
+        labLump(s, s.lab.dump);
+        s.lab.dump = 0;
+        s.reboot += gain;
         s.life.presses += 1;
-        s.life.reboots += b.gain;
+        s.life.reboots += gain;
         s.mult = Math.max(1, s.mult * treeFx(s).rebootKeep);
         s.bought.mult.fill(0);
         s.bytes = derive(s).bytesPerSec * (10 * s.perks.start + treeFx(s).start);
@@ -628,7 +639,7 @@ export function buyDrone(s: State, tier: number): boolean {
     s.drones[tier] += 1;
     return true;
 }
-export const droneRate = (s: State, tier: number) => s.drones[tier] * TUNE.drone.rate * (1 + treeFx(s).drone);
+export const droneRate = (s: State, tier: number) => s.drones[tier] * TUNE.drone.rate * (1 + treeFx(s).drone) * labBuffs(s).drone;
 export function toggleArm(s: State, stat: string) {
     s.armed = s.armed.includes(stat) ? s.armed.filter((x) => x !== stat) : [...s.armed, stat];
 }
@@ -668,6 +679,7 @@ export function tick(s: State, dt: number, eff = 1) {
     if (s.overclock > 0) s.overclock = Math.max(0, s.overclock - dt);
     s.life.secs += dt;
     if (d.bytesPerSec > s.life.peakBps) s.life.peakBps = d.bytesPerSec;
+    labStep(s, dt, d.bytesPerSec);
     droneStep(s, dt, eff);
     watchdogStep(s);
     autoArm(s);
@@ -677,13 +689,13 @@ export const overclockMult = (s: State) => { const f = treeFx(s); return (TUNE.o
 export const overclockSecs = (s: State) => { const f = treeFx(s); return Math.max(5, (TUNE.overclockSecs + s.perks.overclock * 5 + f.overclock) * (1 + f.ocTime)); };
 
 /** Production for `secs` seconds at the current rate (Bytes and every material), paid at once. Used by the Dead drop and Zero-day. */
-export function payout(s: State, secs: number) {
+export function payout(s: State, secs: number, only?: readonly MatId[]) {
     const d = derive(s);
     const oc = s.overclock > 0 ? overclockMult(s) : 1; // a lump is never paid at Overclock rate
     const gain: Partial<Record<StatId, number>> = { bytes: (d.bytesPerSec / oc) * secs };
     s.bytes += gain.bytes!;
     s.life.bytes += gain.bytes!;
-    for (const m of MATS) { const v = (d.rates[m] / oc) * secs; if (v > 0) { s[m] += v; gain[m] = v; } }
+    for (const m of only ?? MATS) { const v = (d.rates[m] / oc) * secs; if (v > 0) { s[m] += v; gain[m] = v; } }
     return gain;
 }
 
@@ -697,7 +709,8 @@ export function breach(s: State, rnd: () => number = Math.random) {
     s.runWins += 1;
     const zero = f.zeroDay > 0 && rnd() < f.zeroDay ? payout(s, TUNE.zeroDayPays) : null;
     const echo = f.echo > 0 && rnd() < f.echo;
-    return { stacked, zero, echo };
+    const intel = labLump(s, LAB_TUNE.eventSecs);
+    return { stacked, zero, echo, intel };
 }
 /** How much sooner events come (Wide-band scanner perk plus Static), as a fraction off the gap. */
 export const eventHaste = (s: State) => 1 - Math.max(0.3, (1 - s.perks.scanner * 0.08) * (1 - treeFx(s).eventRate));
@@ -755,7 +768,7 @@ export const apOnAscend = (s: State) => {
     if (s.aether < TUNE.ascendAether) return 0;
     let raw = Math.pow(s.aether / TUNE.apPerAether, TUNE.apPow);
     for (const m of ["runes", "starglass", "voidsteel", "chrono"] as const) raw += Math.pow(s[m] / TUNE.apPer[m], TUNE.apPow);
-    let gain = raw * (1 + treeFx(s).ap);
+    let gain = raw * (1 + treeFx(s).ap) * (s.lab.armed.includes("zeroclick") ? 1 + payload("zeroclick").v : 1);
     if (TUNE.apGainSoft > 0 && gain > TUNE.apGainSoft) gain = TUNE.apGainSoft * (1 + Math.log(gain / TUNE.apGainSoft));
     return Math.floor(gain);
 };
@@ -768,7 +781,8 @@ export function ascend(s: State) {
     const mounts = s.mounts.slice(0, tf.mounts);
     const keptProd = Object.fromEntries(mounts.map((m) => [m, Math.floor(s.prod[m] * TUNE.mountKeep)]));
     const keptDrones = s.drones.map((lv) => Math.max(Math.floor(lv * tf.droneKeep), tf.kitDrones));
-    const keep = { ap: s.ap + gain, perks: s.perks, ach: s.ach, achAt: s.achAt, logs: s.logs, tree: s.tree, armed: s.armed, mounts: s.mounts, watchdog: s.watchdog, dropAt: s.dropAt, autoArmed: s.autoArmed, life: { ...s.life, ascends: s.life.ascends + 1, apTotal: s.life.apTotal + gain }, started: s.started };
+    const lab: LabState = { ...s.lab, intel: 0, run: [], armed: s.lab.armed.filter((x) => x !== "zeroclick"), dump: LAB_TUNE.dumpSecs };
+    const keep = { lab, ap: s.ap + gain, perks: s.perks, ach: s.ach, achAt: s.achAt, logs: s.logs, tree: s.tree, armed: s.armed, mounts: s.mounts, watchdog: s.watchdog, dropAt: s.dropAt, autoArmed: s.autoArmed, life: { ...s.life, ascends: s.life.ascends + 1, apTotal: s.life.apTotal + gain }, started: s.started };
     const n = fresh(s.at);
     Object.assign(n, keep);
     Object.assign(s, n);
@@ -887,6 +901,7 @@ export const SECRETS: Secret[] = [
     { id: "x_night", name: "Night shift", clue: "The farm runs at all hours. So do you.", how: "Had Node Farm open between 3 and 4 in the morning.", test: () => new Date().getHours() === 3 },
     { id: "x_haul", name: "Long haul", clue: "Stay a very long time.", how: "Played for 24 hours in total.", test: (s) => s.life.secs >= 86400 },
     { id: "x_duck", name: "Quack", clue: "Some of the best help is cheap and very quiet.", how: "Bought the Rubber duck in the prestige tree.", test: (s) => s.tree.includes("duck") },
+    { id: "x_fork", name: "Fork bomb", clue: "Ask the console to copy itself until the machine gives up.", how: "Ran `nf fork` in the console." },
     { id: "x_tank", name: "Full tank", clue: "Leave it alone until the standby cells are full.", how: "Came back to a full standby report.", test: (s) => s.life.capped >= 1 },
 ];
 export const secretDone = (s: State, x: Secret) => s.ach.includes(x.id);
@@ -932,6 +947,360 @@ export function autoBuy(s: State): number {
     return n;
 }
 
+// ---- Exploit Lab (research). Intel runs alongside Bytes: a trickle that grows with the log of Bytes/s, plus lumps from
+// Reboots (crash dumps) and quick-time event wins. Intel buys nodes in a small research tree (kept through Ascend); most
+// nodes unlock a recipe. Recipes compile (a short timer, in a queue, also while away) into payloads you stock and deploy:
+// timed buffs, one-shot charges and instant effects. Opens with Silicon. See docs/node-farm.md "Exploit Lab".
+export type LabSec = "exploits" | "malware" | "infra";
+export type PayloadId = "sniffer" | "worm" | "logicbomb" | "ransom" | "kernel" | "rootkit" | "trojan" | "botnet" | "zeroclick" | "polymorph";
+export type PayloadKind = "buff" | "charge" | "instant";
+export interface PayloadDef {
+    id: PayloadId;
+    sec: LabSec;
+    name: string;
+    kind: PayloadKind;
+    /** what it does, one plain line */
+    blurb: string;
+    /** short HUD tag while it runs or is armed */
+    tag: string;
+    /** seconds to compile */
+    compile: number;
+    /** seconds a buff runs */
+    dur: number;
+    /** strength: buffs multiply by (1 + v) */
+    v: number;
+    /** the Intel part of the price: this many seconds of the base Intel trickle (Fiber tap and Root shell not counted), at least 10 */
+    intel: number;
+    /** the material part of the price: `secs` of its current output, at least `floor` */
+    mat: { stat: StatId; secs: number; floor: number };
+}
+export const LAB_TUNE = {
+    intelK: 0.006, // Intel per second = intelK * log10(1 + Bytes/s)^intelPow
+    intelPow: 2,
+    dumpSecs: 25, // a Reboot banks up to this many seconds of Intel (crash dump), refilling as time passes
+    eventSecs: 90, // an event win banks this many seconds of Intel
+    queue: 3, // compile queue length
+    slots: 2, // buffs running at once
+    stockMax: 5, // stock per payload
+    maxRun: 3600, // a buff's time left never goes past this
+    nodeCost: [80, 600, 600, 5000, 5000, 30000], // Intel per slot
+    labScale: 1, // scales every research node price (pacing knob)
+    opensAt: "silicon" as StatId,
+};
+export const LAB_SECS: { id: LabSec; name: string; blurb: string; color: string }[] = [
+    { id: "exploits", name: "Exploits", blurb: "Payloads for Bytes, Multipliers and Reboots.", color: "#59b8ff" },
+    { id: "malware", name: "Malware", blurb: "Payloads for materials, Drones, events and Ascend.", color: "#8f9bff" },
+    { id: "infra", name: "Infra", blurb: "The lab itself: Intel, compile speed, slots.", color: "#5ff0e8" },
+];
+const P = (id: PayloadId, sec: LabSec, name: string, kind: PayloadKind, blurb: string, tag: string, compile: number, dur: number, v: number, intel: number, mat: PayloadDef["mat"]): PayloadDef => ({ id, sec, name, kind, blurb, tag, compile, dur, v, intel, mat });
+export const PAYLOADS: PayloadDef[] = [
+    P("sniffer", "exploits", "Packet sniffer", "buff", "Bytes x2 for 10 minutes.", "SNIFF", 300, 600, 1, 180, { stat: "bytes", secs: 180, floor: 1e4 }),
+    P("worm", "exploits", "Worm", "buff", "Multiplier buttons add x2 for 10 minutes.", "WORM", 300, 600, 1, 240, { stat: "copper", secs: 180, floor: 50 }),
+    P("logicbomb", "exploits", "Logic bomb", "charge", "Arms your next Reboot: it gives x3 Reboots.", "BOMB", 480, 0, 2, 200, { stat: "copper", secs: 240, floor: 80 }),
+    P("ransom", "exploits", "Ransomware", "instant", "Pays out 10 minutes of Bytes, Copper, Silicon and Quartz at once.", "", 1800, 0, 600, 400, { stat: "silicon", secs: 240, floor: 60 }),
+    P("kernel", "exploits", "Kernel exploit", "buff", "Everything x2 for 5 minutes.", "KERNEL", 900, 300, 1, 900, { stat: "quartz", secs: 300, floor: 200 }),
+    P("rootkit", "malware", "Rootkit", "buff", "Copper, Silicon and Quartz x1.75 for 15 minutes.", "ROOTKIT", 900, 900, 0.75, 240, { stat: "silicon", secs: 180, floor: 30 }),
+    P("trojan", "malware", "Trojan", "instant", "Starts an Overclock right now, as if you won an event.", "", 900, 0, 0, 150, { stat: "copper", secs: 120, floor: 40 }),
+    P("botnet", "malware", "Botnet", "buff", "Drones press twice as fast for 10 minutes.", "BOTNET", 300, 600, 1, 300, { stat: "aether", secs: 240, floor: 5 }),
+    P("zeroclick", "malware", "Zero-click", "charge", "Arms your next Ascend: it pays x1.25 AP.", "0-CLICK", 1800, 0, 0.25, 1200, { stat: "runes", secs: 300, floor: 10 }),
+    P("polymorph", "malware", "Polymorph", "instant", "Doubles the time left on every running payload.", "", 900, 0, 1, 600, { stat: "aether", secs: 300, floor: 20 }),
+];
+const PAY_BY = new Map(PAYLOADS.map((p) => [p.id, p]));
+export const payload = (id: PayloadId) => PAY_BY.get(id)!;
+
+export interface LabFx {
+    recipe?: PayloadId;
+    intel?: number; // Intel x(1 + this)
+    compile?: number; // compiles x(1 + this) as fast
+    queue?: number; // extra queue places
+    slots?: number; // extra buff slots
+    potency?: LabSec; // that section's buffs are 50% stronger
+    longer?: LabSec; // that section's buffs last twice as long
+    dumps?: number; // Reboot and event Intel x(1 + this)
+    cron?: boolean; // an empty queue repeats the last compile
+}
+export interface LabNode {
+    id: string;
+    branch: LabSec;
+    kind: TreeKind;
+    name: string;
+    blurb: string;
+    flavor: string;
+    cost: number;
+    links: string[];
+    fx: LabFx;
+    x: number;
+    y: number;
+    ix: number;
+    sprite: string;
+    entry?: boolean;
+}
+// Each section is a small diamond: entry, two paths of two, keystone. 0 entry | 1, 3 upper | 2, 4 lower | 5 keystone.
+const LAB_SLOTS: [number, number, number[]][] = [[2.3, 0, []], [3.9, -1.1, [0]], [3.9, 1.1, [0]], [5.7, -1.25, [1]], [5.7, 1.25, [2]], [7.5, 0, [3, 4]]];
+type LabRow = [slot: number, id: string, kind: TreeKind, name: string, blurb: string, flavor: string, fx: LabFx];
+const LAB_ARMS: Record<LabSec, LabRow[]> = {
+    exploits: [
+        [0, "rx_sniffer", "minor", "Packet sniffer", "Recipe: Packet sniffer. Bytes x2 for 10 minutes.", "Listen first. The wire tells you everything if you let it talk.", { recipe: "sniffer" }],
+        [1, "rx_worm", "minor", "Worm", "Recipe: Worm. Multiplier buttons add x2 for 10 minutes.", "It copies itself into every amp on the stack. The amps don't mind.", { recipe: "worm" }],
+        [2, "rx_logicbomb", "minor", "Logic bomb", "Recipe: Logic bomb. Your next Reboot gives x3 Reboots.", "Set it, forget it, and let the next restart do the work.", { recipe: "logicbomb" }],
+        [3, "rx_obfuscate", "notable", "Obfuscation", "Exploits buffs are 50% stronger.", "Same code, uglier. Nothing on the line recognises it anymore.", { potency: "exploits" }],
+        [4, "rx_ransom", "minor", "Ransomware", "Recipe: Ransomware. Pays out 10 minutes of Bytes, Copper, Silicon and Quartz at once.", "Lock it, then charge the node for its own key. The node always pays.", { recipe: "ransom" }],
+        [5, "rx_kernel", "keystone", "Kernel exploit", "Recipe: Kernel exploit. Everything x2 for 5 minutes.", "Ring zero. For five minutes nothing on this node says no.", { recipe: "kernel" }],
+    ],
+    malware: [
+        [0, "rx_rootkit", "minor", "Rootkit", "Recipe: Rootkit. Copper, Silicon and Quartz x1.75 for 15 minutes.", "Dig in under the forge. It runs hotter when it can't see you.", { recipe: "rootkit" }],
+        [1, "rx_trojan", "minor", "Trojan", "Recipe: Trojan. Starts an Overclock right now.", "Looks like a gift. Is a gift, mostly.", { recipe: "trojan" }],
+        [2, "rx_botnet", "minor", "Botnet", "Recipe: Botnet. Drones press twice as fast for 10 minutes.", "Lent the Drones a few thousand extra hands. Nobody asked whose.", { recipe: "botnet" }],
+        [3, "rx_mutate", "notable", "Mutation", "Malware buffs last twice as long.", "Every copy a little different. The scanner gave up counting.", { longer: "malware" }],
+        [4, "rx_zeroclick", "minor", "Zero-click", "Recipe: Zero-click. Your next Ascend pays x1.25 AP.", "No prompt, no warning, more points on the way up.", { recipe: "zeroclick" }],
+        [5, "rx_polymorph", "keystone", "Polymorph", "Recipe: Polymorph. Doubles the time left on every running payload.", "It wears whatever is already running and makes it last.", { recipe: "polymorph" }],
+    ],
+    infra: [
+        [0, "rx_tap", "minor", "Fiber tap", "Intel x2.", "Spliced a second line into the trunk. Twice the gossip.", { intel: 1 }],
+        [1, "rx_flags", "minor", "Compiler flags", "Compiles run twice as fast, and the queue holds 5.", "-O3 and a prayer.", { compile: 1, queue: 2 }],
+        [2, "rx_crashlog", "minor", "Crash collector", "Reboots and event wins give x3 Intel.", "Every crash leaves a dump. Every dump has a secret in it.", { dumps: 2 }],
+        [3, "rx_socket", "notable", "Second socket", "Run one more buff at once (3).", "Another socket on the bench. Two hands were never enough.", { slots: 1 }],
+        [4, "rx_cron", "notable", "Cron job", "When the queue empties, it compiles your last recipe again if you can pay.", "Every minute, on the minute, the same small job. It never forgets.", { cron: true }],
+        [5, "rx_rootshell", "keystone", "Root shell", "Intel x3 and one more buff slot (4).", "Prompt ends in a hash now. The whole lab answers to it.", { intel: 2, slots: 1 }],
+    ],
+};
+const LAB_ORDER: LabSec[] = ["exploits", "malware", "infra"];
+function buildLab(): LabNode[] {
+    const out: LabNode[] = [];
+    LAB_ORDER.forEach((arm, ai) => {
+        const th = -Math.PI / 2 + (ai * 2 * Math.PI) / LAB_ORDER.length;
+        const c = Math.cos(th), sn = Math.sin(th);
+        const ids: string[] = [];
+        for (const [slot, id, kind, name, blurb, flavor, fx] of LAB_ARMS[arm]) {
+            const [u, v] = LAB_SLOTS[slot];
+            out.push({
+                id, branch: arm, kind, name, blurb, flavor, fx,
+                cost: Math.round(LAB_TUNE.nodeCost[slot] * (kind === "notable" ? 1.3 : 1) * LAB_TUNE.labScale),
+                links: slot === 0 ? ["core"] : [],
+                x: +(u * c - v * sn).toFixed(3), y: +(u * sn + v * c).toFixed(3),
+                ix: out.length, sprite: id,
+                ...(slot === 0 ? { entry: true } : {}),
+            });
+            ids[slot] = id;
+        }
+        LAB_SLOTS.forEach(([, , ls], slot) => ls.forEach((l) => {
+            const A = out.find((n) => n.id === ids[slot])!, B = out.find((n) => n.id === ids[l])!;
+            A.links.push(B.id);
+            B.links.push(A.id);
+        }));
+    });
+    return out;
+}
+export const LAB: LabNode[] = buildLab();
+const LAB_BY = new Map(LAB.map((n) => [n.id, n]));
+export const labNode = (id: string) => LAB_BY.get(id)!;
+export const labHas = (s: State, id: string) => s.lab.nodes.includes(id);
+export const labNodeOpen = (s: State, n: LabNode) => n.links.some((l) => l === "core" || s.lab.nodes.includes(l));
+export function labVis(s: State, n: LabNode): NodeVis {
+    if (s.lab.nodes.includes(n.id) || labNodeOpen(s, n)) return "shown";
+    return n.links.some((l) => l !== "core" && labNodeOpen(s, LAB_BY.get(l)!)) ? "fog" : "hidden";
+}
+/** The lab is open once Silicon has been reached in any run (it stays open after Ascend). */
+export const labOpen = (s: State) => s.lab.seen;
+
+export interface LabState {
+    seen: boolean;
+    intel: number;
+    nodes: string[];
+    queue: { id: PayloadId; left: number }[];
+    stock: Partial<Record<PayloadId, number>>;
+    run: { id: PayloadId; left: number }[];
+    armed: PayloadId[];
+    last: PayloadId | null;
+    /** seconds of crash-dump Intel banked and ready for the next Reboot */
+    dump: number;
+}
+export const freshLab = (): LabState => ({ seen: false, intel: 0, nodes: [], queue: [], stock: {}, run: [], armed: [], last: null, dump: LAB_TUNE.dumpSecs });
+
+const LFX_CACHE = new WeakMap<string[], { n: number; v: ReturnType<typeof labFxRaw> }>();
+export function labFx(s: State) {
+    const c = LFX_CACHE.get(s.lab.nodes);
+    if (c && c.n === s.lab.nodes.length) return c.v;
+    const v = labFxRaw(s);
+    LFX_CACHE.set(s.lab.nodes, { n: s.lab.nodes.length, v });
+    return v;
+}
+function labFxRaw(s: State) {
+    const o = { recipes: [] as PayloadId[], intel: 0, compile: 0, queue: 0, slots: 0, potency: [] as LabSec[], longer: [] as LabSec[], dumps: 0, cron: false };
+    for (const id of s.lab.nodes) {
+        const f = LAB_BY.get(id)?.fx;
+        if (!f) continue;
+        if (f.recipe) o.recipes.push(f.recipe);
+        o.intel = mulIn(o.intel, f.intel);
+        o.compile = mulIn(o.compile, f.compile);
+        o.queue += f.queue ?? 0;
+        o.slots += f.slots ?? 0;
+        if (f.potency) o.potency.push(f.potency);
+        if (f.longer) o.longer.push(f.longer);
+        o.dumps += f.dumps ?? 0;
+        if (f.cron) o.cron = true;
+    }
+    return o;
+}
+export const labQueueMax = (s: State) => LAB_TUNE.queue + labFx(s).queue;
+export const labSlots = (s: State) => LAB_TUNE.slots + labFx(s).slots;
+export const hasRecipe = (s: State, id: PayloadId) => labFx(s).recipes.includes(id);
+/** A buff's strength right now (Obfuscation makes Exploits buffs 50% stronger). */
+export const payloadV = (s: State, p: PayloadDef) => p.v * (labFx(s).potency.includes(p.sec) ? 1.5 : 1);
+export const payloadDur = (s: State, p: PayloadDef) => p.dur * (labFx(s).longer.includes(p.sec) ? 2 : 1);
+export const compileSecs = (s: State, p: PayloadDef) => p.compile / (1 + labFx(s).compile);
+/** Intel per second right now. Uses the log of Bytes/s so it stays steady from one era to the next. */
+export function intelRate(s: State, bytesPerSec = derive(s).bytesPerSec): number {
+    if (!s.lab.seen) return 0;
+    return LAB_TUNE.intelK * Math.pow(Math.log10(1 + Math.max(0, bytesPerSec)), LAB_TUNE.intelPow) * (1 + labFx(s).intel);
+}
+/** What compiling one payload costs right now. */
+export function payloadCost(s: State, p: PayloadDef, d: Derived = derive(s)) {
+    const rate = p.mat.stat === "bytes" ? d.bytesPerSec : (d.rates as Record<string, number>)[p.mat.stat] ?? 0;
+    const base = intelRate(s, d.bytesPerSec) / (1 + labFx(s).intel);
+    return { intel: Math.max(10, Math.round(base * p.intel)), mat: p.mat.stat, amount: Math.max(p.mat.floor, rate * p.mat.secs) };
+}
+/** The materials Rootkit and Ransomware work on. Aether and the deep ones are left alone: Aether gates Ascend, and paying it out halved the whole game in the sim. */
+export const FORGE_MATS: readonly MatId[] = ["copper", "silicon", "quartz"];
+/** Buff multipliers from running payloads, for derive. */
+export function labBuffs(s: State) {
+    const o = { bytes: 1, mult: 1, forge: 1, global: 1, drone: 1 };
+    for (const r of s.lab.run) {
+        const p = PAY_BY.get(r.id);
+        if (!p || r.left <= 0) continue;
+        const x = 1 + payloadV(s, p);
+        if (p.id === "sniffer") o.bytes *= x;
+        else if (p.id === "worm") o.mult *= x;
+        else if (p.id === "kernel") o.global *= x;
+        else if (p.id === "rootkit") o.forge *= x;
+        else if (p.id === "botnet") o.drone *= x;
+    }
+    return o;
+}
+export const isRunning = (s: State, id: PayloadId) => s.lab.run.some((r) => r.id === id && r.left > 0);
+export const isArmed = (s: State, id: PayloadId) => s.lab.armed.includes(id);
+
+export function buyLabNode(s: State, id: string): boolean {
+    const n = LAB_BY.get(id);
+    if (!n || s.lab.nodes.includes(id) || !labNodeOpen(s, n) || s.lab.intel < n.cost) return false;
+    s.lab.intel -= n.cost;
+    s.lab.nodes.push(id);
+    return true;
+}
+export type CompileFail = "recipe" | "queue" | "stock" | "intel" | "mat";
+/** Why a compile can't start right now, or null if it can. */
+export function compileBlock(s: State, id: PayloadId, d?: Derived): CompileFail | null {
+    const p = PAY_BY.get(id);
+    if (!p || !hasRecipe(s, id)) return "recipe";
+    if (s.lab.queue.length >= labQueueMax(s)) return "queue";
+    if ((s.lab.stock[id] ?? 0) + s.lab.queue.filter((q) => q.id === id).length >= LAB_TUNE.stockMax) return "stock";
+    const c = payloadCost(s, p, d);
+    if (s.lab.intel < c.intel) return "intel";
+    if (amount(s, c.mat) < c.amount) return "mat";
+    return null;
+}
+export function compile(s: State, id: PayloadId): boolean {
+    if (compileBlock(s, id)) return false;
+    const p = PAY_BY.get(id)!;
+    const c = payloadCost(s, p);
+    s.lab.intel -= c.intel;
+    (s[c.mat] as number) = amount(s, c.mat) - c.amount;
+    s.lab.queue.push({ id, left: compileSecs(s, p) });
+    s.lab.last = id;
+    return true;
+}
+/** Take the newest queued compile back out and refund it in full. */
+export function cancelCompile(s: State, i: number): boolean {
+    const q = s.lab.queue[i];
+    if (!q) return false;
+    const p = PAY_BY.get(q.id)!;
+    const c = payloadCost(s, p);
+    s.lab.intel += c.intel;
+    (s[c.mat] as number) = amount(s, c.mat) + c.amount;
+    s.lab.queue.splice(i, 1);
+    return true;
+}
+export type DeployFail = "stock" | "slots" | "armed";
+export function deployBlock(s: State, id: PayloadId): DeployFail | null {
+    const p = PAY_BY.get(id);
+    if (!p || (s.lab.stock[id] ?? 0) < 1) return "stock";
+    if (p.kind === "charge" && s.lab.armed.includes(id)) return "armed";
+    if (p.kind === "buff" && !isRunning(s, id) && s.lab.run.filter((r) => r.left > 0).length >= labSlots(s)) return "slots";
+    return null;
+}
+/** Deploy one payload from stock. A buff that is already running gets its full time added on (up to an hour). */
+export function deploy(s: State, id: PayloadId): { ok: boolean; paid?: Partial<Record<StatId, number>>; stacked?: boolean } {
+    if (deployBlock(s, id)) return { ok: false };
+    const p = PAY_BY.get(id)!;
+    s.lab.stock[id] = (s.lab.stock[id] ?? 0) - 1;
+    s.life.deployed += 1;
+    if (p.kind === "buff") {
+        const r = s.lab.run.find((x) => x.id === id && x.left > 0);
+        if (r) { r.left = Math.min(LAB_TUNE.maxRun, r.left + payloadDur(s, p)); return { ok: true, stacked: true }; }
+        s.lab.run = s.lab.run.filter((x) => x.left > 0);
+        s.lab.run.push({ id, left: payloadDur(s, p) });
+        return { ok: true };
+    }
+    if (p.kind === "charge") { s.lab.armed.push(id); return { ok: true }; }
+    if (id === "ransom") return { ok: true, paid: payout(s, p.v, FORGE_MATS) };
+    if (id === "trojan") { s.overclock = Math.max(s.overclock, overclockSecs(s)); return { ok: true }; }
+    if (id === "polymorph") { for (const r of s.lab.run) if (r.left > 0) r.left = Math.min(LAB_TUNE.maxRun, r.left * 2); return { ok: true }; }
+    return { ok: true };
+}
+/** What the owned research nodes add up to, as label and value rows for the research tree readout. */
+export function labTotals(s: State): [string, string][] {
+    const f = labFx(s);
+    const rows: [string, string][] = [];
+    rows.push(["Recipes", `${f.recipes.length} of ${PAYLOADS.length}`]);
+    if (f.intel) rows.push(["Intel", `x${+(1 + f.intel).toFixed(2)}`]);
+    if (f.compile) rows.push(["Compile speed", `x${+(1 + f.compile).toFixed(2)}`]);
+    rows.push(["Queue", `${labQueueMax(s)} places`]);
+    rows.push(["Buffs at once", String(labSlots(s))]);
+    if (f.dumps) rows.push(["Dump Intel", `x${1 + f.dumps}`]);
+    for (const sec of f.potency) rows.push([`${LAB_SECS.find((x) => x.id === sec)!.name} buffs`, "+50% stronger"]);
+    for (const sec of f.longer) rows.push([`${LAB_SECS.find((x) => x.id === sec)!.name} buffs`, "last twice as long"]);
+    if (f.cron) rows.push(["Cron job", "repeats your last compile"]);
+    return rows;
+}
+/** Bank crash-dump Intel (on a Reboot) or event Intel. Returns the Intel added. */
+function labLump(s: State, secs: number): number {
+    if (!s.lab.seen) return 0;
+    const got = intelRate(s) * secs * (1 + labFx(s).dumps);
+    s.lab.intel += got;
+    s.life.intel += got;
+    return got;
+}
+/** Advance the lab by dt seconds: Intel, the compile queue, running buffs and the dump buffer. Returns payloads finished. */
+export function labStep(s: State, dt: number, bytesPerSec: number): PayloadId[] {
+    const L = s.lab;
+    if (!L.seen) {
+        if (!isUnlocked(s, LAB_TUNE.opensAt)) return [];
+        L.seen = true;
+    }
+    const gain = intelRate(s, bytesPerSec) * dt;
+    L.intel += gain;
+    s.life.intel += gain;
+    L.dump = Math.min(LAB_TUNE.dumpSecs, L.dump + dt);
+    for (const r of L.run) r.left = Math.max(0, r.left - dt);
+    if (L.run.some((r) => r.left <= 0)) L.run = L.run.filter((r) => r.left > 0);
+    const done: PayloadId[] = [];
+    let t = dt;
+    while (t > 0 && L.queue.length) {
+        const q = L.queue[0];
+        const use = Math.min(t, q.left);
+        q.left -= use;
+        t -= use;
+        if (q.left <= 1e-9) {
+            L.queue.shift();
+            L.stock[q.id] = Math.min(LAB_TUNE.stockMax, (L.stock[q.id] ?? 0) + 1);
+            s.life.compiled += 1;
+            done.push(q.id);
+            if (!L.queue.length && labFx(s).cron && L.last) compile(s, L.last);
+        }
+    }
+    return done;
+}
+
 // ---- saving
 export function exportSave(s: State): string {
     return btoa(JSON.stringify({ ...s, at: Date.now() }));
@@ -950,6 +1319,7 @@ export function parseSave(raw: string): State | null {
         if (typeof n.watchdog !== "boolean") n.watchdog = true;
         if (!Number.isFinite(n.dropAt)) n.dropAt = 0;
         if (!Number.isFinite(n.runWins)) n.runWins = 0;
+        n.lab = parseLab(o.lab);
         const back = migrateTree(n);
         if (back > 0) n.treeRefund = (n.treeRefund ?? 0) + back;
         if (!Array.isArray(n.ach)) n.ach = [];
@@ -962,6 +1332,26 @@ export function parseSave(raw: string): State | null {
     } catch {
         return null;
     }
+}
+
+/** A saved lab, checked field by field; anything odd falls back to a fresh lab. */
+function parseLab(o: unknown): LabState {
+    const b = freshLab();
+    if (!o || typeof o !== "object") return b;
+    const x = o as Partial<LabState>;
+    const pid = (v: unknown): v is PayloadId => typeof v === "string" && PAY_BY.has(v as PayloadId);
+    const num = (v: unknown, d = 0) => (typeof v === "number" && Number.isFinite(v) ? v : d);
+    return {
+        seen: !!x.seen,
+        intel: Math.max(0, num(x.intel)),
+        nodes: Array.isArray(x.nodes) ? [...new Set(x.nodes.filter((id) => LAB_BY.has(id)))] : [],
+        queue: Array.isArray(x.queue) ? x.queue.filter((q) => q && pid(q.id)).map((q) => ({ id: q.id, left: Math.max(0, num(q.left)) })) : [],
+        stock: Object.fromEntries(Object.entries(x.stock ?? {}).filter(([k, v]) => pid(k) && num(v) > 0).map(([k, v]) => [k, Math.min(LAB_TUNE.stockMax, Math.floor(num(v)))])),
+        run: Array.isArray(x.run) ? x.run.filter((r) => r && pid(r.id) && num(r.left) > 0).map((r) => ({ id: r.id, left: Math.min(LAB_TUNE.maxRun, num(r.left)) })) : [],
+        armed: Array.isArray(x.armed) ? [...new Set(x.armed.filter(pid))] : [],
+        last: pid(x.last) ? x.last : null,
+        dump: Math.min(LAB_TUNE.dumpSecs, Math.max(0, num(x.dump, LAB_TUNE.dumpSecs))),
+    };
 }
 
 // ---- number formatting
