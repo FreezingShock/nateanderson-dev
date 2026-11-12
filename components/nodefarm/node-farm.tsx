@@ -21,6 +21,7 @@ import { Chain, StatRow } from "./stat-row";
 import { Feed } from "./feed";
 import { FeedStore, buyToks, call, com, droneToks, fromText, id as idTok, num, p as pun, str as strTok, txt, unlockToks, type FeedTone } from "@/lib/nodefarm/feed";
 import { LORE } from "@/lib/nodefarm/lore";
+import { LOGS, logNo, recoverLogs } from "@/lib/nodefarm/story";
 import { Juice, juice, checkMilestones } from "./juice";
 import { GuideStrip, Tip, TipCtx, type TipApi, type TipState } from "./guide";
 import { MapPanel } from "./map";
@@ -232,6 +233,20 @@ export function NodeFarm() {
                     }
             prevIds.current = openIds;
             if (tickN.current % 10 === 5) checkMilestones(s, d.bytesPerSec);
+            if (tickN.current % 10 === 7) {
+                // story logs: a log is stored the first time it is within reach. A save from before logs existed gets them all at once, quietly.
+                const got = recoverLogs(s);
+                if (got.length) {
+                    const loud = got.length <= 2;
+                    for (const l of got.slice(loud ? 0 : -1)) {
+                        const no = logNo(LOGS.findIndex((x) => x.id === l.id));
+                        feedStore.push([...call(idTok("logs"), "recover", [strTok(no)]), txt(" "), com(`// ${l.title.toLowerCase()}`)], { tone: "hot", type: true });
+                        if (loud) juice.emit({ t: "milestone", title: `Log ${no} recovered`, sub: `${l.title}. Read it in Records.` });
+                    }
+                    if (!loud) log(`${got.length} old logs recovered. Read them in Records.`, "hot");
+                    save();
+                }
+            }
             f.reboots = s.reboot;
             f.ap = s.ap;
             if (prevUnlocked.current && f.unlocked > prevUnlocked.current) sfx("nfDecrypt");

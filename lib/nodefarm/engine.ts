@@ -314,6 +314,8 @@ export interface State {
     ach: string[];
     /** when each goal or secret was done, ms epoch (for the goal log) */
     achAt: Record<string, number>;
+    /** ids of the story logs recovered so far (lib/nodefarm/story.ts, kept through Ascend) */
+    logs: string[];
     /** Drone levels per button tier (reset on Ascend) */
     drones: number[];
     /** fractional presses waiting to fire, per tier */
@@ -349,6 +351,7 @@ export function fresh(now = Date.now()): State {
         perks: { scanner: 0, auto: 0, overclock: 0, offline: 0, start: 0, power: 0 },
         ach: [],
         achAt: {},
+        logs: [],
         drones: Array(TIERS).fill(0),
         droneAcc: Array(TIERS).fill(0),
         armed: [],
@@ -524,7 +527,7 @@ export const canAscend = (s: State) => apOnAscend(s) >= 1;
 export function ascend(s: State) {
     const gain = apOnAscend(s);
     if (gain < 1) return 0;
-    const keep = { ap: s.ap + gain, perks: s.perks, ach: s.ach, achAt: s.achAt, tree: s.tree, armed: s.armed, life: { ...s.life, ascends: s.life.ascends + 1, apTotal: s.life.apTotal + gain }, started: s.started };
+    const keep = { ap: s.ap + gain, perks: s.perks, ach: s.ach, achAt: s.achAt, logs: s.logs, tree: s.tree, armed: s.armed, life: { ...s.life, ascends: s.life.ascends + 1, apTotal: s.life.apTotal + gain }, started: s.started };
     const n = fresh(s.at);
     Object.assign(n, keep);
     Object.assign(s, n);
@@ -695,6 +698,7 @@ export function parseSave(raw: string): State | null {
         for (const k of Object.keys(n.bought) as ButtonStat[]) if (!Array.isArray(n.bought[k]) || n.bought[k].length !== TIERS) n.bought[k] = Array(TIERS).fill(0);
         if (!Array.isArray(n.tree)) n.tree = [];
         if (!Array.isArray(n.ach)) n.ach = [];
+        if (!Array.isArray(n.logs)) n.logs = [];
         n.achAt = { ...(o.achAt && typeof o.achAt === "object" ? o.achAt : {}) };
         if (!Array.isArray(n.armed)) n.armed = [];
         for (const k of ["drones", "droneAcc"] as const) if (!Array.isArray(n[k]) || n[k].length !== TIERS || n[k].some((x: number) => !Number.isFinite(x))) n[k] = Array(TIERS).fill(0);
