@@ -475,7 +475,9 @@ body.nf-win-open .ctos .cm-section.ruled { z-index: 60; }
 .ctos .nf-btn[data-tier="5"] { --rar: #ff4fa3; }
 /* The tier colour reads the same on every stat: edge bar, name and pips all use it (the stat's own colour stays on the card and the numbers). */
 .ctos .nf-rar { position: absolute; z-index: 3; left: 0; top: 0; bottom: 0; width: 4px; background: var(--rar); opacity: .8; pointer-events: none; }
-.ctos .nf-btn[data-afford] .nf-rar { opacity: 1; box-shadow: 1px 0 8px color-mix(in srgb, var(--rar) 80%, transparent); }
+.ctos .nf-btn[data-afford] .nf-rar { opacity: 1; }
+/* the bar must never poke past a rounded or cut button: clip every skin to its own shape */
+.ctos .nf-btn { overflow: clip; }
 .ctos .nf-btn[data-tier="5"] .nf-rar { background: linear-gradient(180deg, #ff4fa3, #ffb02e, #ff4fa3); }
 .ctos .nf-btn .nf-btn-name { color: color-mix(in srgb, var(--rar) 80%, #8a8a8a); }
 .ctos .nf-btn[data-afford] .nf-btn-name { color: color-mix(in srgb, var(--rar) 55%, #fff); }
