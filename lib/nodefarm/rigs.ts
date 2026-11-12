@@ -6,7 +6,7 @@
 // Adding a zone: add a RIGS entry, and a case in muls() and/or step() if the rig changes output or runs on a clock.
 // Keep every boost to its own zone or a named neighbour, and never a power-law boost on everything.
 import {
-    MATS, RIG_HOOKS, STATS, TUNE, derive, isUnlocked, overclockMult, overclockSecs, sinceReboot,
+    MATS, RIG_HOOKS, STATS, TUNE, derive, fwRigCost, isUnlocked, overclockMult, overclockSecs, sinceReboot,
     type Derived, type MatId, type RigState, type State, type StatId,
 } from "./engine";
 
@@ -108,7 +108,7 @@ export const RIGS: RigDef[] = [
     R("basalt", "Drill bit", "hazard", "The bit wears while Basalt runs and a worn bit drags Basalt down to 50%. Coolant clears the wear and adds a bonus, but burns a share of Bloom.", "+3% cool bonus and 1.5% less Bloom burned"),
     R("magma", "Eruptions", "timing", "Pressure builds on its own clock. Each eruption pays a lump of Magma and heats the shaft above, so Basalt runs at ×1.5 for a minute.", "erupts 6% sooner and heat lasts 10 s longer"),
     R("geodes", "Ringing", "link", "The vault rings with the Crystal vault far above. Geodes grow with the Quartz you hold, up to ×3.", "a louder ring"),
-    R("core", "Convection", "meta", "Heat rises through the arc. Every rig level owned in zones 18 to 24 strengthens the core.", "+0.3% per level below"),
+    R("sunstone", "Convection", "meta", "Heat rises through the arc. Every rig level owned in zones 18 to 24 strengthens the Sunstone.", "+0.3% per level below"),
     R("origin", "Rewrite", "meta", "Spend Origin to rewrite another zone's rig. Each rewrite raises that rig's level cap by one, up to three, forever.", ""),
 ];
 export const RIG_BY = new Map(RIGS.map((r) => [r.zone, r]));
@@ -168,7 +168,7 @@ export function rigPrice(s: State, key: string, d?: Derived): { pays: StatId; co
     const pays = rigPays(zone);
     const maxed = lv >= rigCap(s, zone);
     const rate = baseRate(s, pays, d);
-    const cost = rate > 0 ? rate * 60 * T.minutes[Math.min(lv, T.minutes.length - 1)] : Infinity;
+    const cost = rate > 0 ? rate * 60 * T.minutes[Math.min(lv, T.minutes.length - 1)] * fwRigCost(s) : Infinity; // Field kit (Firmware)
     return { pays, cost, maxed };
 }
 export function buyRig(s: State, key: string): boolean {
@@ -277,7 +277,7 @@ export const heatSecs = (s: State) => T.heatSecs + T.heatSecsLv * L(s, "magma");
 export const ringMul = (s: State) => Math.min(T.ringMax, 1 + (T.ring + T.ringLv * L(s, "geodes")) * Math.log10(1 + Math.max(0, s.quartz)));
 export const DESCENT_RIGS: StatId[] = ["spores", "mycelium", "pollen", "bloom", "basalt", "magma", "geodes"];
 export const convLevels = (s: State) => DESCENT_RIGS.reduce((a, z) => a + rigLv(s, z), 0);
-export const convMul = (s: State) => 1 + convLevels(s) * (T.conv + T.convLv * L(s, "core"));
+export const convMul = (s: State) => 1 + convLevels(s) * (T.conv + T.convLv * L(s, "sunstone"));
 
 /** Every rig's output multiplier, by zone. Only open zones count. */
 export function muls(s: State): Partial<Record<StatId, number>> {
@@ -308,7 +308,7 @@ export function muls(s: State): Partial<Record<StatId, number>> {
     if (open("basalt")) { mul("basalt", basaltYield(s)); if (r.cool) mul("bloom", 1 - coolBurn(s)); }
     if (open("magma") && (r.heat ?? 0) > 0) mul("basalt", T.heat);
     if (open("geodes")) mul("geodes", ringMul(s));
-    if (open("core")) mul("core", convMul(s));
+    if (open("sunstone")) mul("sunstone", convMul(s));
     return m;
 }
 

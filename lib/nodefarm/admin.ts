@@ -2,12 +2,12 @@
 // snapshots; no React. Turned on from the naOS console (`nf admin on`, `nf admin max`) and driven by
 // components/nodefarm/admin.tsx. Easy to remove: delete this file, admin.tsx, nodefarm-admin.css, and the few
 // `admin` lines in node-farm.tsx, events.tsx and components/cm/console.tsx.
-import { grantScripts } from "./scripts";
+import { BUY_STATS, SCRIPTS, SCRIPT_TUNE, auto, grantScripts, setRunning } from "./scripts";
 import { maxRigs } from "./rigs";
 import {
     DRONE_TREE, DRONE_TUNE, POSTABLE, freshDr, modMax,
-    FW, handover, GOALS, LAB, LAB_TUNE, MATS, PAYLOADS, PERKS, SECRETS, STATS, TIERS, TREE, TREE_FULL, TUNE, ascend, ascendNeed, apOnAscend, derive, droneMax, exportSave, freshLab, fullTreeIds, parseSave, tick, treeFx, treeSpent, unlock,
-    type MatId, type PerkDef, type State, type StatId,
+    FW, HAND_TUNE, PROTOS, handover, GOALS, LAB, LAB_TUNE, MATS, PAYLOADS, PERKS, SECRETS, STATS, TIERS, TREE, TREE_FULL, TUNE, ascend, ascendNeed, apOnAscend, derive, droneMax, exportSave, freshLab, fullTreeIds, parseSave, tick, treeFx, treeSpent, unlock,
+    type MatId, type PerkDef, type ScriptId, type State, type StatId,
 } from "./engine";
 import { LOGS } from "./story";
 import { ERAS } from "./scenery";
@@ -152,6 +152,32 @@ export function clearLab(s: State) {
     s.lab = { ...freshLab(), seen: s.lab.seen };
 }
 
+// ---- Scripts
+export { grantScripts };
+/** Teach one script (stopped), plus every tier buy.sh needs when it is the buy script. */
+export function teachScript(s: State, id: ScriptId) {
+    const a = auto(s);
+    a.learn[id] = SCRIPT_TUNE.learn[id];
+    if (!a.own.includes(id)) a.own.push(id);
+    if (id === "buy") for (const st of BUY_STATS) { a.taught[st] = Array(TIERS).fill(SCRIPT_TUNE.teachTier); a.buy[st] = 63; }
+}
+/** Forget one script: it stops, and has to be learned by hand again. */
+export function forgetScript(s: State, id: ScriptId) {
+    const a = auto(s);
+    setRunning(s, id, false);
+    a.own = a.own.filter((x) => x !== id);
+    a.learn[id] = 0;
+    a.on[id] = false;
+}
+/** Forget every script and everything the scheduler saw you do by hand. */
+export function forgetScripts(s: State) {
+    for (const x of SCRIPTS) forgetScript(s, x.id);
+    const a = auto(s);
+    a.taught = {};
+    a.buy = {};
+}
+export const scriptCount = (s: State) => auto(s).own.length;
+
 // ---- the whole lot
 /** Everything: every tree node, every perk, Drones, goals, secrets, logs, a pile of every material and prestige. */
 export function maxOut(s: State) {
@@ -201,6 +227,8 @@ export function forceHandover(s: State): number {
 export function addKeys(s: State, n: number) { s.hand.keys += n; s.hand.keysTotal += n; }
 /** Flash every Firmware node (no Keys spent). */
 export function ownAllFw(s: State) { s.hand.fw = FW.map((n) => n.id); }
+/** Every protocol at its top mastery rank. */
+export function maxProtoRanks(s: State) { s.hand.rank = Object.fromEntries(PROTOS.map((p) => [p.id, HAND_TUNE.rankMax])); }
 
 /** Make the run look like it is in era `n`: open every material up to its first stat and empty the ones after. */
 export function jumpEra(s: State, n: number) {

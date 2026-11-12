@@ -8,9 +8,10 @@ import {
 } from "@/lib/nodefarm/engine";
 import { ZONE_EVENTS, ensureZe, zeClear, zeStart, zoneLabel } from "@/lib/nodefarm/zoneevents";
 import {
-    ARMABLE, RESOURCES, addKeys, addStat, forceHandover, ownAllFw, clearLab, clearLogs, clearPerks, dropSnap, forceAscend, grantGoals, grantLab, grantLogs, grantSecrets, jumpEra, maxDrones, maxOut, maxPerks, overwrite, ownAllNodes, parseAmount, refundTree,
-    revokeGoals, setAP, setDrone, setPerk, setProd, setStat, skipTime, snapState, snaps, takeSnap, toggleNode, toggleSecret, type Snap,
+    ARMABLE, RESOURCES, addKeys, addStat, forceHandover, maxProtoRanks, ownAllFw, clearLab, clearLogs, clearPerks, dropSnap, forceAscend, grantGoals, grantLab, grantLogs, grantSecrets, jumpEra, maxDrones, maxOut, maxPerks, overwrite, ownAllNodes, parseAmount, refundTree,
+    forgetScript, forgetScripts, grantScripts, scriptCount, teachScript, revokeGoals, setAP, setDrone, setPerk, setProd, setStat, skipTime, snapState, snaps, takeSnap, toggleNode, toggleSecret, type Snap,
 } from "@/lib/nodefarm/admin";
+import { SCRIPTS, isOn, setRunning } from "@/lib/nodefarm/scripts";
 import { EVENTS, type EventKind } from "@/lib/nodefarm/events";
 import { ERAS } from "@/lib/nodefarm/scenery";
 import { LOGS } from "@/lib/nodefarm/story";
@@ -258,7 +259,7 @@ function AdminPanelInner({ host }: { host: AdminHost }) {
                                     <button type="button" className="nf-ad-go" onClick={() => act(maxOut, "everything granted: tree, perks, Drones, goals, secrets, logs, lab, prestiges, materials")}>
                                         <i aria-hidden="true" />
                                         <span>Max out everything</span>
-                                        <small>40 tree nodes · every perk · Drones · goals · secrets · logs · lab · all materials</small>
+                                        <small>{TREE_FULL} tree nodes · every perk · Drones · goals · secrets · logs · lab · scripts · all materials</small>
                                     </button>
                                     <div className="nf-ad-grid">
                                         <Btn onClick={() => act(ownAllNodes, "every tree node owned")}>Own every tree node</Btn>
@@ -301,6 +302,7 @@ function AdminPanelInner({ host }: { host: AdminHost }) {
                                         <Btn onClick={() => act((x) => `handed over: +${forceHandover(x)} Keys`, "forced a Handover")}>Force Handover</Btn>
                                         <Btn onClick={() => act((x) => addKeys(x, 20), "+20 Keys")}>+20 Keys</Btn>
                                         <Btn onClick={() => act(ownAllFw, "every Firmware flashed")}>All Firmware</Btn>
+                                        <Btn onClick={() => act(maxProtoRanks, "every protocol at rank III")}>Max ranks</Btn>
                                     </div>
                                     <div className="nf-ad-line">
                                         <span className="nf-ad-k">Overclock</span>
@@ -451,6 +453,26 @@ function AdminPanelInner({ host }: { host: AdminHost }) {
                                         <Btn onClick={() => act(clearRigs, "rigs cleared")}>Clear rigs</Btn>
                                     </div>
                                     {RIGS.map((r) => <p key={r.zone} className="nf-ad-p">{rigLine(s, r.zone)}</p>)}
+                                </Sec>
+
+                                <Sec n={11} title="Scripts" hint={`${scriptCount(s)}/${SCRIPTS.length} learned`} {...sec("scripts")}>
+                                    <div className="nf-ad-line">
+                                        <Btn onClick={() => act(grantScripts, "every script learned (stopped)")}>Teach all</Btn>
+                                        <Btn onClick={() => act((x) => { grantScripts(x); for (const sc of SCRIPTS) setRunning(x, sc.id, true); }, "every script learned and running")}>Teach all and run</Btn>
+                                        <Btn onClick={() => act(forgetScripts, "scripts forgotten")}>Forget all</Btn>
+                                    </div>
+                                    {SCRIPTS.map((sc) => {
+                                        const own = s.auto?.own.includes(sc.id) ?? false;
+                                        const on = isOn(s, sc.id);
+                                        return (
+                                            <div className="nf-ad-line" key={sc.id}>
+                                                <span className="nf-ad-k">{sc.file}</span>
+                                                <b className="nf-ad-v">{own ? (on ? "running" : "stopped") : "not learned"}</b>
+                                                <Btn on={own} onClick={() => act((x) => { if (own) forgetScript(x, sc.id); else teachScript(x, sc.id); }, `${sc.file} ${own ? "forgotten" : "learned"}`)}>{own ? "Forget" : "Teach"}</Btn>
+                                                <Btn disabled={!own} on={on} onClick={() => act((x) => { setRunning(x, sc.id, !on); }, `${sc.file} ${on ? "stopped" : "running"}`)}>{on ? "Stop" : "Run"}</Btn>
+                                            </div>
+                                        );
+                                    })}
                                 </Sec>
                             </div>
                         </div>

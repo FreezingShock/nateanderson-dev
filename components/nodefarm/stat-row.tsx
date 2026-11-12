@@ -1,7 +1,7 @@
 "use client";
 
 import { useContext, useEffect, useRef, type CSSProperties } from "react";
-import { MATS, ROMAN, STATS, TIERS, button, postOf, zoneRank, derive, droneBoost, originAp, paradoxOc, bloomKeys, coreAll, singularityAll, fmt, fmtTime, hasFeature, isUnlocked, statDef, type ButtonStat, type State, type StatId } from "@/lib/nodefarm/engine";
+import { MATS, ROMAN, STATS, TIERS, button, postOf, zoneRank, derive, droneBoost, originAp, paradoxOc, bloomKeys, sunstoneAll, singularityAll, fmt, fmtTime, hasFeature, isUnlocked, statDef, type ButtonStat, type State, type StatId } from "@/lib/nodefarm/engine";
 import { LORE } from "@/lib/nodefarm/lore";
 import { fnCaption } from "@/lib/nodefarm/feed";
 import { buttonTip, exact, unlockInfo, type Target } from "@/lib/nodefarm/guide";
@@ -69,15 +69,15 @@ function effects(id: StatId, s: State, d: D): [string, string][] {
             return [["Feeds Basalt", `×${fmt(d.boosts.mgBa)}`], ["Own output", `${fmt(d.rates.magma)}/s`]];
         case "geodes":
             return [["Feeds Magma", `×${fmt(d.boosts.geMg)}`], ["Own output", `${fmt(d.rates.geodes)}/s`]];
-        case "core":
-            return [["Feeds Geodes", `×${fmt(d.boosts.coGe)}`], ["Everything", `×${fmt(coreAll(s))}`]];
+        case "sunstone":
+            return [["Feeds Geodes", `×${fmt(d.boosts.suGe)}`], ["Everything", `×${fmt(sunstoneAll(s))}`]];
     }
 }
 
 /** The signal chain: who boosts whom, with live multipliers. Sits above the stat dossiers. Only the zones you have reached, plus the next one, are drawn. */
 export function Chain({ s, d, onAll, allOpen, onIdle, onJump }: { s: State; d: D; onAll: (open: boolean) => void; allOpen: boolean; onIdle?: () => void; onJump?: (id: StatId) => void }) {
     const feed: Partial<Record<StatId, string>> = {
-        core: `Geodes ×${fmt(d.boosts.coGe)}`,
+        sunstone: `Geodes ×${fmt(d.boosts.suGe)}`,
         geodes: `Magma ×${fmt(d.boosts.geMg)}`,
         magma: `Basalt ×${fmt(d.boosts.mgBa)}`,
         basalt: `Bloom ×${fmt(d.boosts.baBl)}`,

@@ -5,7 +5,7 @@ import { SCRIPTS, auto, isOn, learnPart, scriptNext, scriptOpen } from "./script
 import { OPERATORS, archiveOf, loadSeen, pickNews } from "./news";
 import {
     GOALS, GOAL_TIERS, LAB, MATS, PAYLOADS, PERKS, SECRETS, TIER_NAMES, TREE, TREE_FULL, apOnAscend, intelRate, derive, fmt, fmtTime, goalDone, statDef, tiersDone, unlock,
-    FW, handSeen, keysOnHandover, protoDef,
+    FW, PROTOS, ROMAN, handSeen, keysOnHandover, protoDef, protoRank,
     type State,
 } from "./engine";
 import { LOGS, logNo } from "./story";
@@ -85,6 +85,7 @@ export function recordSections(s: State): RecordSection[] {
         ["Keys held", `${fmt(s.hand.keys)} · ${fmt(s.hand.keysTotal)} earned`],
         ["Firmware", `${s.hand.fw.length} / ${FW.length}`],
         ["Protocol", s.hand.proto ? `${protoDef(s.hand.proto).op}, ${protoDef(s.hand.proto).name}${s.hand.proto2 ? ` + ${protoDef(s.hand.proto2).op}` : ""}` : "none yet"],
+        ["Protocol ranks", PROTOS.map((p) => `${p.op} ${ROMAN[protoRank(s, p.id)] || "-"}`).join(" · ")],
         ["Next Handover", keysOnHandover(s) ? `+${keysOnHandover(s)} Keys` : "reach node zero"],
         ...s.hand.notes.slice(-5).reverse().map((n) => [`Note, cycle ${n.n}`, n.text] as [string, string]),
     ] });
@@ -103,7 +104,7 @@ export interface NfLine {
 const t = (text: string, k?: NfLine["k"]): NfLine => ({ t: text, k });
 const row = (a: string, b: string, go?: string): NfLine => ({ a, b, go });
 
-export const NF_SUBS = ["stats", "goals", "secrets", "logs", "archive", "news", "open", "anim", "fs", "fullscreen", "art", "core"];
+export const NF_SUBS = ["stats", "goals", "secrets", "logs", "archive", "news", "open", "anim", "fs", "fullscreen", "art", "core", "admin"];
 
 export interface NfResult {
     lines: NfLine[];
@@ -182,6 +183,7 @@ export function nfCommand(s: State, args: string[]): NfResult {
     } else if (sub === "ping") {
         const host = (args[1] ?? "").toLowerCase();
         if (host === "127.0.0.1" || host === "localhost") lines = [t("64 bytes from 127.0.0.1: time=0.001 ms"), t("that was you."), ...secret("x_loop")];
+        else if (host === "node-00") lines = [t("no reply from node-00. it answers last."), ...secret("x_zero")];
         else if (host) lines = [t(`ping: ${args[1]}: no route from the node. it only talks to itself.`, "err")];
         else lines = [t("ping what?", "err")];
     } else if (sub === "sudo") {
@@ -211,6 +213,7 @@ export function nfCommand(s: State, args: string[]): NfResult {
                 row("keys", `${fmt(s.hand.keys)} held, ${fmt(s.hand.keysTotal)} earned`),
                 row("firmware", `${s.hand.fw.length}/${FW.length}`),
                 row("protocol", s.hand.proto ? `${protoDef(s.hand.proto).op.toLowerCase()} (${protoDef(s.hand.proto).name.toLowerCase()})` : "none"),
+                row("ranks", PROTOS.map((p) => `${p.op.toLowerCase()} ${ROMAN[protoRank(s, p.id)] || "-"}`).join("  ")),
                 row("next", k ? `+${k} keys, ready` : "start Origin production"),
                 ...s.hand.notes.slice(-3).reverse().map((n) => row(`cycle ${n.n}`, n.text)),
             ];
@@ -226,6 +229,10 @@ export function nfCommand(s: State, args: string[]): NfResult {
         lines.push(t(nx ? `next: ${nx.text}` : "every script is learned and running.", "dim"));
     } else if (sub === "fork") {
         lines = [t(":(){ :|:& };:"), t("fork: retry: Resource temporarily unavailable", "err"), t("the node copied itself 4,096 times, then everyone calmed down."), ...secret("x_fork")];
+    } else if (sub === "rm" && args.join(" ").toLowerCase().includes("-rf /")) {
+        lines = [t("rm: cannot remove '/': it is not your node to delete.", "err"), t("the operators before you tried.", "dim"), ...secret("x_rm")];
+    } else if (sub === "kill") {
+        lines = [t("kill: the drone is not listening. it never was."), ...secret("x_kill")];
     } else if (sub === "whoami") {
         lines = [t("node-01. one core, no clearance, and a growing farm."), ...secret("x_self")];
     } else {
