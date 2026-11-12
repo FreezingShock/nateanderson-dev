@@ -3,6 +3,7 @@
 import "@/app/camino/nodefarm-events.css";
 import { useCallback, useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type MutableRefObject } from "react";
 import { createPortal } from "react-dom";
+import { keyIsTyping } from "@/lib/nodefarm/keys";
 import { cxPlay, useCodeReveal } from "@/lib/nodefarm/cx";
 import { sfx } from "@/lib/sound/sounds";
 import { EVENTS, EVENT_TUNE, RARITY, nextGapMs, pickEvent, rogueChoices, rollLoot, type EventDef, type EventKind, type Loot } from "@/lib/nodefarm/events";
@@ -31,7 +32,11 @@ interface LayerProps {
     onDisable: () => void;
 }
 
+/** Event keys stay quiet while typing, with a modifier held, or under search or the console. */
+const evKeyOff = (e: KeyboardEvent) => keyIsTyping(e) || !!document.querySelector(".nv-scrim, .cn-panel");
+
 /** Schedules quick-time events and shows each one in the middle of the screen. */
+
 export function EventLayer({ game, busy, enabled, ready, reduced, onEngage, onResult, onMiss, onDisable }: LayerProps) {
     const [act, setAct] = useState<Active | null>(null);
     const [timeUp, setTimeUp] = useState(false);
@@ -144,13 +149,14 @@ export function EventLayer({ game, busy, enabled, ready, reduced, onEngage, onRe
     useEffect(() => {
         if (!act) return;
         const onKey = (e: KeyboardEvent) => {
+            if (evKeyOff(e)) return;
             if (e.key === "Escape") {
                 e.preventDefault();
                 skip();
             }
         };
-        window.addEventListener("keydown", onKey);
-        return () => window.removeEventListener("keydown", onKey);
+        window.addEventListener("keydown", onKey, true);
+        return () => window.removeEventListener("keydown", onKey, true);
     }, [act, skip]);
     useEffect(() => {
         if (!act || act.stage !== "incoming") return;
@@ -366,6 +372,7 @@ function Rogue(p: BodyProps) {
     );
     useEffect(() => {
         const onKey = (e: KeyboardEvent) => {
+            if (evKeyOff(e)) return;
             if (e.key >= "1" && e.key <= String(opts.length)) pick(Number(e.key) - 1);
         };
         window.addEventListener("keydown", onKey);
@@ -447,6 +454,7 @@ function Vault(p: BodyProps) {
     }, []);
     useEffect(() => {
         const dn = (e: KeyboardEvent) => {
+            if (evKeyOff(e)) return;
             if (e.code === "Space" && !e.repeat) { e.preventDefault(); press(); }
         };
         const up = (e: KeyboardEvent) => {
@@ -531,6 +539,7 @@ function Relay(p: BodyProps) {
     }, [full, total, done]);
     useEffect(() => {
         const onKey = (e: KeyboardEvent) => {
+            if (evKeyOff(e)) return;
             if (e.code === "Space" || e.code === "Enter") {
                 if ((e.target as HTMLElement)?.tagName === "BUTTON") return;
                 e.preventDefault();
@@ -574,6 +583,7 @@ function Packet(p: BodyProps) {
     }, [need, done]);
     useEffect(() => {
         const onKey = (e: KeyboardEvent) => {
+            if (evKeyOff(e)) return;
             if ((e.code === "Space" || e.code === "Enter") && (e.target as HTMLElement)?.tagName !== "BUTTON") {
                 e.preventDefault();
                 crack();

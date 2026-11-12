@@ -13,6 +13,7 @@ import {
     type ButtonStat, type MatId, type State, type StatId,
 } from "@/lib/nodefarm/engine";
 import { initFx } from "@/lib/nodefarm/fx";
+import { keyIsTyping, keyOverlay } from "@/lib/nodefarm/keys";
 import type { NfLive } from "@/lib/nodefarm/records";
 import { Core, freshCoreFeed, type CoreFeed } from "./core";
 import { PART_WHY, SKIN_WHY, coreLook, corePreview, skinOpen } from "@/lib/nodefarm/core-look";
@@ -214,12 +215,14 @@ export function NodeFarm() {
     }, [win]);
     useEffect(() => {
         if (!win) return;
-        const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") closeWin(); };
-        window.addEventListener("keydown", onKey);
+        // Escape closes only the top layer: search, the console, an event, a tree or a full-screen moment above the window keep their own Escape
+        const onKey = (e: KeyboardEvent) => { if (e.key === "Escape" && !keyOverlay() && !document.querySelector(".nf-tm-host")) closeWin(); };
+        // capture phase: the console or search closes itself on this same Escape, and must still count as open here
+        window.addEventListener("keydown", onKey, true);
         // clears reveal transforms and lifts the board above the hero while a window is open (see nodefarm.css)
         document.body.classList.add("nf-win-open");
         document.querySelector<HTMLElement>(`.nf [data-pane="${win}"] .nf-win-x`)?.focus();
-        return () => { window.removeEventListener("keydown", onKey); document.body.classList.remove("nf-win-open"); };
+        return () => { window.removeEventListener("keydown", onKey, true); document.body.classList.remove("nf-win-open"); };
     }, [win]);
     useEffect(() => {
         try { if (localStorage.getItem(FS_KEY) === "1") setFsState(true); } catch {}
@@ -233,10 +236,7 @@ export function NodeFarm() {
             setFs(v === undefined ? !fsRef.current : v);
         };
         const onKey = (e: KeyboardEvent) => {
-            if (e.ctrlKey || e.metaKey || e.altKey) return;
-            const t = e.target as HTMLElement | null;
-            if (t && (t.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName))) return;
-            if (document.querySelector(".cn-panel, .nv-find, .nf-tm-host, .nf-aw")) return;
+            if (keyIsTyping(e) || keyOverlay() || document.querySelector(".nf-tm-host")) return;
             if (e.key === "f" || e.key === "F") { e.preventDefault(); setFs(!fsRef.current); }
             else if (e.key === "Escape" && fsRef.current && !winRef.current) setFs(false);
         };
@@ -904,10 +904,7 @@ export function NodeFarm() {
     useEffect(() => {
         if (!ready) return;
         const onKey = (e: KeyboardEvent) => {
-            if (e.ctrlKey || e.metaKey || e.altKey || e.isComposing) return;
-            const el = e.target as HTMLElement | null;
-            if (el && (el.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(el.tagName))) return;
-            if (document.querySelector(".nv-scrim, .nf-ev-scrim:not([data-out]), .nf-aw, .nf-rx")) return;
+            if (keyIsTyping(e) || keyOverlay()) return;
             // P presses the glowing button of the next step; holding it keeps buying like holding the button does
             if (e.key.toLowerCase() === "p") { e.preventDefault(); keyApi.current.press(e.repeat); return; }
             // 1 to 6 press that tier on the zone in the middle of the screen
@@ -1092,7 +1089,7 @@ export function NodeFarm() {
         }, 40);
     };
     keyApi.current.arc = (dir) => {
-        if (win || treeOpen || labTree) return;
+        if (win || treeOpenRef.current) return;
         const ids = shownArcIds(s);
         if (!ids.length) return;
         const cur = ids.findIndex((id) => !folded[arcKey(id)]);
@@ -1100,7 +1097,7 @@ export function NodeFarm() {
         focusArc(ids[cur < 0 ? (dir > 0 ? 0 : ids.length - 1) : (cur + dir + ids.length) % ids.length]);
     };
     keyApi.current.fold = () => {
-        if (win || treeOpen || labTree) return;
+        if (win || treeOpenRef.current) return;
         const mid = window.innerHeight / 2;
         let best: HTMLElement | null = null;
         let gap = Infinity;
@@ -1120,7 +1117,7 @@ export function NodeFarm() {
         sfx("tab");
     };
     keyApi.current.tier = (k, held) => {
-        if (win || treeOpen || labTree) return;
+        if (win || treeOpenRef.current) return;
         // the open zone nearest the middle of the screen
         const mid = window.innerHeight / 2;
         let best: HTMLElement | null = null;
@@ -1137,10 +1134,10 @@ export function NodeFarm() {
         const b = row.querySelector<HTMLButtonElement>(`.nf-btn[data-tier="${k}"]`);
         if (b) b.click();
     };
-    keyApi.current.go = () => { if (!win && !treeOpen && !labTree) goTo(step.target); };
+    keyApi.current.go = () => { if (!win && !treeOpenRef.current) goTo(step.target); };
     keyApi.current.press = (held) => {
         const t = step.target;
-        if (win || treeOpen || labTree || !t) return;
+        if (win || treeOpenRef.current || !t) return;
         // nothing to press (a window, a Drone or the lab): P does what Show me does
         if (!t.stat || t.tier === undefined) { if (!held) goTo(t); return; }
         if (held && t.stat === "reboot") return;
@@ -1180,6 +1177,7 @@ export function NodeFarm() {
                 )}
                 <div className="nf-hud-side">
                     {!fs && <button type="button" className="nf-fsb" onClick={() => { setFs(true); sfx("tab"); }} aria-label="Full screen">Full</button>}
+                    <button type="button" className="nf-fsb nf-keysb" onClick={() => window.dispatchEvent(new Event("cm:keys"))} aria-haspopup="dialog" aria-label="Keyboard shortcuts" title="Keyboard shortcuts (?)">Keys ?</button>
                     <span className="nf-hud-n"><NfIcon name="reboot" /> {fmt(s.reboot)}<small>RBT</small></span>
                     <span className="nf-hud-n"><NfIcon name="mult" /> {fmt(s.mult)}<small>MUL</small></span>
                     {s.ap > 0 && <span className="nf-hud-n"><NfIcon name="ascend" /> {s.ap}<small>AP</small></span>}

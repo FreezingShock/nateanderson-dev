@@ -27,3 +27,4 @@ body.nf-fs .ctos .g-frame, body.nf-fs .ctos .g-body, body.nf-fs .ctos .cm-sectio
     .ctos .nf[data-fs][data-win] .nf-sidepane { top: 56px; max-height: calc(100dvh - 56px - 28px); }
 }
 @media (prefers-reduced-motion: reduce) { .ctos .nf[data-fs] { animation: none; } }
+@media (min-width: 1000px) { .ctos .nf-fsb.nf-keysb { display: inline-flex; align-items: center; } }
