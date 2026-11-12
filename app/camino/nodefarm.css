@@ -571,11 +571,11 @@ body.nf-win-open .ctos .cm-section.ruled { z-index: 60; }
 .ctos .nf-ev { position: relative; width: min(94vw, 440px); max-height: calc(100dvh - 32px); overflow: auto; display: grid; gap: 16px; padding: 22px 22px 18px; background: #0a0a0a; border: 1px solid var(--cm-ctos-block); box-shadow: 0 0 0 6px #000, 0 30px 90px #000; touch-action: manipulation; }
 .ctos .nf-ev[data-stage="incoming"] { border-color: #ff6a3d; }
 .ctos .nf-ev[data-stage="result"][data-won] { border-color: var(--cm-cyan); }
-.ctos .nf-ev-br { position: absolute; width: 12px; height: 12px; pointer-events: none; border: 2px solid #ff6a3d; }
-.ctos .nf-ev-br[data-c="tl"] { left: -6px; top: -6px; border-right: 0; border-bottom: 0; }
-.ctos .nf-ev-br[data-c="tr"] { right: -6px; top: -6px; border-left: 0; border-bottom: 0; }
-.ctos .nf-ev-br[data-c="bl"] { left: -6px; bottom: -6px; border-right: 0; border-top: 0; }
-.ctos .nf-ev-br[data-c="br"] { right: -6px; bottom: -6px; border-left: 0; border-top: 0; }
+.ctos .nf-ev-br { position: absolute; width: 12px; height: 12px; pointer-events: none; border: 2px solid #ff6a3d; z-index: 2; }
+.ctos .nf-ev-br[data-c="tl"] { left: 5px; top: 5px; border-right: 0; border-bottom: 0; }
+.ctos .nf-ev-br[data-c="tr"] { right: 5px; top: 5px; border-left: 0; border-bottom: 0; }
+.ctos .nf-ev-br[data-c="bl"] { left: 5px; bottom: 5px; border-right: 0; border-top: 0; }
+.ctos .nf-ev-br[data-c="br"] { right: 5px; bottom: 5px; border-left: 0; border-top: 0; }
 .ctos .nf-ev-top { display: flex; justify-content: space-between; gap: 8px; font: 700 var(--cm-ctos-t-micro)/1.2 var(--cm-mono); letter-spacing: .12em; text-transform: uppercase; color: #ffd3a8; }
 .ctos .nf-ev-top span { color: var(--cm-ctos-meta); font-weight: 500; }
 .ctos .nf-ev-name { margin: 0; font: 700 22px/1.1 var(--cm-mono); letter-spacing: .04em; text-transform: uppercase; color: #fff; }
@@ -640,10 +640,15 @@ body.nf-win-open .ctos .cm-section.ruled { z-index: 60; }
 .ctos .nf-btn[data-tier="3"] { --rar: #b46bff; }
 .ctos .nf-btn[data-tier="4"] { --rar: #ffb02e; }
 .ctos .nf-btn[data-tier="5"] { --rar: #ff4fa3; }
-.ctos .nf-rar { position: absolute; z-index: 3; left: 0; top: 0; bottom: 0; width: 3px; background: var(--rar); opacity: .45; pointer-events: none; }
-.ctos .nf-btn[data-afford] .nf-rar { opacity: 1; box-shadow: 1px 0 6px color-mix(in srgb, var(--rar) 70%, transparent); }
+/* The tier colour reads the same on every stat: edge bar, name and pips all use it (the stat's own colour stays on the card and the numbers). */
+.ctos .nf-rar { position: absolute; z-index: 3; left: 0; top: 0; bottom: 0; width: 4px; background: var(--rar); opacity: .8; pointer-events: none; }
+.ctos .nf-btn[data-afford] .nf-rar { opacity: 1; box-shadow: 1px 0 8px color-mix(in srgb, var(--rar) 80%, transparent); }
 .ctos .nf-btn[data-tier="5"] .nf-rar { background: linear-gradient(180deg, #ff4fa3, #ffb02e, #ff4fa3); }
+.ctos .nf-btn .nf-btn-name { color: color-mix(in srgb, var(--rar) 80%, #8a8a8a); }
 .ctos .nf-btn[data-afford] .nf-btn-name { color: color-mix(in srgb, var(--rar) 55%, #fff); }
+.ctos .nf-btn .nf-pips, .ctos .nf-btn[data-afford] .nf-pips { color: var(--rar); }
+.ctos .nf-btn[data-tier="5"] .nf-pips, .ctos .nf-btn[data-tier="5"] .nf-btn-name { color: #ff7fc0; }
+.ctos .nf-btn:not([data-afford]) .nf-pips i { opacity: .65; }
 .ctos .nf-btn[data-afford][data-tier="5"]:not(:active) { animation: nfRarGlow 2.4s ease-in-out infinite; }
 @keyframes nfRarGlow { 0%, 100% { box-shadow: 0 0 10px color-mix(in srgb, var(--c) 30%, transparent); } 50% { box-shadow: 0 0 18px color-mix(in srgb, var(--rar) 60%, transparent); } }
 
