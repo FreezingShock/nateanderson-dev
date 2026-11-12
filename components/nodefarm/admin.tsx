@@ -1,6 +1,6 @@
 "use client";
 
-import { memo, useCallback, useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
+import { memo, useCallback, useEffect, useRef, useState, type CSSProperties, type PointerEvent as RPointerEvent, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import {
     BRANCHES, GOALS, GOAL_TIERS, MATS, PERKS, SECRETS, TIERS, TIER_NAMES, TREE, apOnAscend, adminFlags, derive, droneMax, exportSave, fmt, fmtTime, fresh, parseSave, statDef, treeFx,
@@ -115,13 +115,29 @@ function Step({ name, color, lvl, max, note, onSet }: { name: string; color?: st
     );
 }
 
+const GEO_KEY = "nf-admin-ui-v1"; // window position, size and minimized state (per device)
+interface Geo { x: number; y: number; w: number; h: number; min: boolean }
+function clampGeo(g: Geo): Geo {
+    const vw = window.innerWidth, vh = window.innerHeight;
+    const w = Math.round(Math.max(300, Math.min(g.w, vw - 8)));
+    const h = Math.round(Math.max(240, Math.min(g.h, vh - 8)));
+    const bh = g.min ? 44 : h;
+    return { min: g.min, w, h, x: Math.round(Math.max(4, Math.min(g.x, vw - w - 4))), y: Math.round(Math.max(4, Math.min(g.y, vh - bh - 4))) };
+}
+function loadGeo(): Geo {
+    const vw = window.innerWidth, vh = window.innerHeight;
+    const w = Math.min(400, vw - 16), h = Math.min(560, vh - 120);
+    const def: Geo = { x: vw - w - 16, y: vw < 700 ? Math.max(60, vh - h - 70) : 72, w, h, min: false };
+    try { const o = JSON.parse(localStorage.getItem(GEO_KEY) ?? "null"); if (o && [o.x, o.y, o.w, o.h].every(Number.isFinite)) return clampGeo({ ...o, min: !!o.min }); } catch {}
+    return clampGeo(def);
+}
+
 function AdminPanelInner({ host }: { host: AdminHost }) {
     const root = useRef<HTMLDivElement>(null);
     const [, rev] = useState(0);
     const [note, setNote] = useState("> root console ready");
     const [openSec, setOpenSec] = useState<Record<string, boolean>>(() => {
-        const wide = typeof matchMedia === "function" && matchMedia("(min-width: 900px)").matches;
-        return { grant: true, time: wide, run: wide, snap: true, res: wide, prod: false, tree: false, perks: false, goals: false };
+        return { grant: true, time: false, run: false, snap: false, res: false, prod: false, tree: false, perks: false, goals: false };
     });
     const [speed, setSpeedState] = useState(host.getSpeed());
     const [reveal, setReveal] = useState(adminFlags.reveal);
@@ -134,27 +150,65 @@ function AdminPanelInner({ host }: { host: AdminHost }) {
 
     useEffect(() => { const iv = setInterval(() => rev((n) => n + 1), 600); return () => clearInterval(iv); }, []);
 
-    // open: print the panel in; close: delete it out, then unmount
+    // ---- the window: a small floating panel you can drag, resize and minimize. Position and size are kept per device.
+    const scrollEl = useRef<HTMLDivElement>(null);
+    const [geo, setGeo] = useState<Geo>(() => loadGeo());
+    const geoRef = useRef(geo);
+    geoRef.current = geo;
+    const commit = useCallback((g: Geo) => {
+        const c = clampGeo(g);
+        geoRef.current = c;
+        setGeo(c);
+        try { localStorage.setItem(GEO_KEY, JSON.stringify(c)); } catch {}
+    }, []);
+    // open: the CRT switch-on; close: it switches off, then the panel unmounts (the "root" tab brings it back)
     const closing = useRef(false);
     useEffect(() => {
         const el = root.current;
         cxClear(el);
-        codeReveal(el, { dir: "in", rows: ":scope [data-cx-i]" });
-        const prev = document.body.style.overflow;
-        document.body.style.overflow = "hidden";
-        return () => { document.body.style.overflow = prev; };
+        codeReveal(el, { dir: "in", style: "crt", rows: ":scope [data-cx-i]" });
     }, []);
     const close = useCallback(() => {
         if (closing.current) return;
         closing.current = true;
-        codeReveal(root.current, { dir: "out", rows: ":scope [data-cx-i]" }).then(host.close);
+        codeReveal(root.current, { dir: "out", style: "crt", rows: ":scope [data-cx-i]" }).then(host.close);
     }, [host]);
+    const minimize = useCallback(() => {
+        const sc = scrollEl.current;
+        const g = geoRef.current;
+        if (g.min) {
+            commit({ ...g, min: false });
+            requestAnimationFrame(() => codeReveal(scrollEl.current, { bare: true, rows: ":scope [data-cx-i]", ms: 240 }));
+        } else {
+            codeReveal(sc, { dir: "out", bare: true, rows: ":scope [data-cx-i]", ms: 180 }).then(() => { cxClear(sc); commit({ ...geoRef.current, min: true }); });
+        }
+    }, [commit]);
     useEffect(() => {
-        // Escape closes the panel, unless a site layer (the naOS console, search, the menu) is open on top and wants it
-        const onKey = (e: KeyboardEvent) => { if (e.key === "Escape" && !document.querySelector(".nv-scrim, .cn-panel, .nv-panel")) { e.stopPropagation(); close(); } };
-        window.addEventListener("keydown", onKey, true);
-        return () => window.removeEventListener("keydown", onKey, true);
-    }, [close]);
+        const onAdmin = (e: Event) => { const d = (e as CustomEvent<{ open?: boolean }>).detail; if (d?.open && geoRef.current.min) minimize(); };
+        const onResize = () => commit(geoRef.current);
+        window.addEventListener("nf:admin", onAdmin);
+        window.addEventListener("resize", onResize);
+        return () => { window.removeEventListener("nf:admin", onAdmin); window.removeEventListener("resize", onResize); };
+    }, [minimize, commit]);
+    const drag = (e: RPointerEvent, mode: "move" | "size") => {
+        if ((e.pointerType === "mouse" && e.button !== 0) || (e.target as HTMLElement).closest("button")) return;
+        const el = root.current;
+        if (!el) return;
+        e.preventDefault();
+        const start = { px: e.clientX, py: e.clientY, ...geoRef.current };
+        let cur: Geo = start;
+        const move = (ev: PointerEvent) => {
+            const dx = ev.clientX - start.px, dy = ev.clientY - start.py;
+            cur = clampGeo(mode === "move" ? { ...start, x: start.x + dx, y: start.y + dy } : { ...start, w: start.w + dx, h: start.h + dy });
+            el.style.left = `${cur.x}px`; el.style.top = `${cur.y}px`; el.style.width = `${cur.w}px`;
+            if (!cur.min) el.style.height = `${cur.h}px`;
+        };
+        const up = () => { window.removeEventListener("pointermove", move); window.removeEventListener("pointerup", up); window.removeEventListener("pointercancel", up); el.removeAttribute("data-drag"); commit(cur); };
+        el.setAttribute("data-drag", mode);
+        window.addEventListener("pointermove", move);
+        window.addEventListener("pointerup", up);
+        window.addEventListener("pointercancel", up);
+    };
 
     const act = (fn: (s: State) => void | string, msg: string) => {
         const r = fn(host.get());
@@ -173,13 +227,14 @@ function AdminPanelInner({ host }: { host: AdminHost }) {
 
     return createPortal(
         <div className="ctos nf-ad-host">
-            <div className="nf-ad" ref={root} role="dialog" aria-modal="true" aria-label="Node Farm root console">
-                <header className="nf-ad-bar">
-                    <span className="nf-ad-bt">naOS // node.farm // root console</span>
+            <div className="nf-ad" ref={root} role="region" aria-label="Node Farm root console" data-min={geo.min ? "" : undefined} style={{ left: geo.x, top: geo.y, width: geo.w, height: geo.min ? undefined : geo.h }}>
+                <header className="nf-ad-bar" onPointerDown={(e) => drag(e, "move")} onDoubleClick={minimize}>
+                    <span className="nf-ad-bt">naOS // root console</span>
                     <span className="nf-ad-arm" aria-live="polite"><i />armed</span>
-                    <button type="button" className="nf-ad-close" onClick={close} aria-label="Close the root console"><i /></button>
+                    <button type="button" className="nf-ad-bb" onClick={minimize} aria-label={geo.min ? "Expand the root console" : "Minimize the root console"} aria-expanded={!geo.min}><i data-min={geo.min ? "" : undefined} /></button>
+                    <button type="button" className="nf-ad-bb nf-ad-close" onClick={close} aria-label="Hide the root console"><i /></button>
                 </header>
-                <div className="nf-ad-scroll">
+                <div className="nf-ad-scroll" ref={scrollEl}>
                     <div className="nf-ad-wrap">
                         {/* banner: code readout over dither */}
                         <div className="nf-ad-stage" data-cx-i={0}>
@@ -244,7 +299,7 @@ function AdminPanelInner({ host }: { host: AdminHost }) {
                                     </div>
                                     <div className="nf-ad-line">
                                         <span className="nf-ad-k">Quick-time event</span>
-                                        <span className="nf-ad-opts">{EVENTS.map((e) => <Btn key={e.kind} onClick={() => { host.fire(e.kind); setNote(`> ${e.title} sent`); close(); }}>{e.title}</Btn>)}</span>
+                                        <span className="nf-ad-opts">{EVENTS.map((e) => <Btn key={e.kind} onClick={() => { host.fire(e.kind); setNote(`> ${e.title} sent`); }}>{e.title}</Btn>)}</span>
                                     </div>
                                     <div className="nf-ad-line">
                                         <span className="nf-ad-k">Jump to era</span>
@@ -368,6 +423,7 @@ function AdminPanelInner({ host }: { host: AdminHost }) {
                         <p className="nf-ad-foot">admin mode is on this device only. nf admin off hides it. nf admin restore real returns your real save.</p>
                     </div>
                 </div>
+                <i className="nf-ad-rz" onPointerDown={(e) => drag(e, "size")} aria-hidden="true" />
             </div>
         </div>,
         document.body,

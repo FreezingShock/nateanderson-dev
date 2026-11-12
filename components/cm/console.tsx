@@ -11,6 +11,7 @@ import { parseSave, type State as NfState } from "@/lib/nodefarm/engine";
 import { isAdmin, maxOut, overwrite, setAdmin, snapState, snaps, takeSnap } from "@/lib/nodefarm/admin";
 import { NF_PATH, NF_SAVE_KEY, NF_SUBS, nfCommand, type NfLive } from "@/lib/nodefarm/records";
 import { CX_STYLES, cxOverride, setCxOverride, type CxStyle } from "@/lib/nodefarm/cx";
+import { getStagePreview, setStagePreview } from "@/lib/nodefarm/zone-art";
 import { setPrefs } from "@/lib/sound/engine";
 import { sfx } from "@/lib/sound/sounds";
 import { useSoundPrefs } from "@/lib/sound/use-sound";
@@ -186,6 +187,31 @@ function runNf(args: string[]): Line[] {
         }
         return [t(`menu animation: ${cxOverride() ?? "auto"}. nf anim auto · nf anim ${CX_STYLES.join(" · nf anim ")}`)];
     }
+    if ((args[0] ?? "").toLowerCase() === "art") {
+        // preview the staged zone art at one stage (this visit only)
+        const v = (args[1] ?? "").toLowerCase();
+        if (/^[0-7]$/.test(v)) {
+            setStagePreview(Number(v));
+            return [t(`every zone now shows stage ${v} of 7. nf art live goes back to your real progress.`)];
+        }
+        if (v === "live" || v === "off") {
+            setStagePreview(null);
+            return [t("zone art back to your real progress.")];
+        }
+        const p = getStagePreview();
+        return [t(`zone art: ${p == null ? "live" : `stage ${p}`}. nf art 0-7 · nf art live`)];
+    }
+    const sub0 = (args[0] ?? "").toLowerCase();
+    if (sub0 === "fullscreen" || sub0 === "fs") {
+        // full screen needs the game on the page; it answers the nf:live event
+        const probe: { live?: NfLive } = {};
+        window.dispatchEvent(new CustomEvent("nf:live", { detail: probe }));
+        if (!probe.live) return [t("full screen needs the game open:", "dim"), { t: NF_PATH, go: NF_PATH }];
+        const a = (args[1] ?? "").toLowerCase();
+        const on = a === "on" ? true : a === "off" ? false : undefined;
+        window.dispatchEvent(new CustomEvent("nf:fs", { detail: { on } }));
+        return [t(on === undefined ? "full screen toggled. F also does it." : `full screen ${a}.`)];
+    }
     const ref: { live?: NfLive } = {};
     window.dispatchEvent(new CustomEvent("nf:live", { detail: ref }));
     let state = ref.live?.s ?? null;
@@ -322,9 +348,9 @@ const COMMANDS: Cmd[] = [
     },
     {
         name: "nf",
-        usage: "nf [stats|goals|secrets|anim]",
+        usage: "nf [stats|goals|secrets|anim|fs]",
         desc: "Node Farm readout, goals and secrets",
-        long: ["nf · nf stats · nf goals · nf secrets · nf open · nf anim auto|print|decrypt|crt. Works with the game open or from your saved game."],
+        long: ["nf · nf stats · nf goals · nf secrets · nf open · nf anim auto|print|decrypt|crt · nf fs [on|off] (full screen). Works with the game open or from your saved game."],
         run: (args) => runNf(args),
     },
     {

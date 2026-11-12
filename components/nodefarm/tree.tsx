@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type KeyboardEvent as RKeyboardEvent, type PointerEvent as RPointerEvent } from "react";
+import { memo, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type KeyboardEvent as RKeyboardEvent, type PointerEvent as RPointerEvent } from "react";
 import { createPortal } from "react-dom";
 import { TreeBackdrop, TreeDust, type TreeBackdropHandle } from "./tree-backdrop";
 import { TreeSprite, type SpriteState } from "./tree-sprite";
@@ -145,7 +145,12 @@ function ScrambleName({ text, reduced }: { text: string; reduced: boolean }) {
     return <span ref={el} aria-hidden="true">{text}</span>;
 }
 
-export function TreeMenu({ s, reduced, onBuy, onRespec, onClose }: { s: State; reduced: boolean; onBuy: (id: string) => void; onRespec: () => number; onClose: () => void }) {
+type TreeMenuProps = { s: State; /** changes whenever the tree, AP or anything else the menu shows changes (the State object itself is mutated in place) */ ver: string; reduced: boolean; onBuy: (id: string) => void; onRespec: () => number; onClose: () => void };
+
+/** The game re-renders ten times a second; the menu only needs to follow when what it shows changes. */
+export const TreeMenu = memo(TreeMenuInner, (a, b) => a.s === b.s && a.ver === b.ver && a.reduced === b.reduced);
+
+function TreeMenuInner({ s, reduced, onBuy, onRespec, onClose }: TreeMenuProps) {
     const root = useRef<HTMLDivElement>(null);
     const view = useRef<HTMLDivElement>(null);
     const world = useRef<HTMLDivElement>(null);
