@@ -151,7 +151,7 @@ function Ledger({ s }: { s: State }) {
         `Rig levels${f.rigKeep ? ` (half stay: Rig memory)` : ""}`,
     ];
     const keeps = [
-        "Goals, secrets and story logs",
+        "Goals, secrets and operator logs",
         "Exploit Lab research",
         ...(s.auto?.own.length ? ["Scripts you have learned"] : []),
         ...(s.dr?.nodes.length || masteryRanks(s) ? ["The hangar: postings, mastery and the drone tree"] : []),

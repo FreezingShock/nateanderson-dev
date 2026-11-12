@@ -214,7 +214,7 @@ export interface TreeNode {
     cost: number;
     /** section slot, 0 to 7 (set by the layout) */
     slot?: number;
-    /** neighbours (both directions); "core" is the free start */
+    /** neighbors (both directions); "core" is the free start */
     links: string[];
     fx: TreeFx;
     /** position in tree units (the menu multiplies by its grid size) */
@@ -230,7 +230,7 @@ export interface TreeNode {
     chain?: { id: string; step: number; of: number };
     /** the deeper tree (2026-11-12): junctions, forks and ranked nodes. Absent on the first 40. */
     form?: "junction" | "fork" | "ranked";
-    /** junction: every one of these must be owned (both sections), not just one neighbour */
+    /** junction: every one of these must be owned (both sections), not just one neighbor */
     req?: string[];
     /** fork: the other side of the pair. Owning one locks the other; buying the other swaps for free */
     excl?: string;
@@ -275,7 +275,7 @@ const ARMS: Record<Branch, Row[]> = {
         [3, "mount1", "notable", "Mounted drive I", "Pick one material on the Ascend pane. Its producers survive every Ascend.", "Bolted a drive to the floor. The dark cannot take what is bolted down.", { mounts: 1 }],
         [4, "deepvein", "minor", "Deep vein", "Runes, Starglass, Voidsteel and Chrono x2.", "The seam keeps going past where the map ends.", { mats: { runes: 1, starglass: 1, voidsteel: 1, chrono: 1 } }],
         [5, "mount2", "minor", "Mounted drive II", "A second mounted drive.", "Second drive, same bolts. The floor is getting crowded.", { mounts: 1 }],
-        [6, "crosstalk", "notable", "Cross-talk", "Every material also boosts the one two steps down the chain.", "The materials started talking past their neighbours. I let them.", { feature: "crosstalk" }],
+        [6, "crosstalk", "notable", "Cross-talk", "Every material also boosts the one two steps down the chain.", "The materials started talking past their neighbors. I let them.", { feature: "crosstalk" }],
         [7, "overpress", "keystone", "Overpressure", "Every material x3.", "Every pipe at full pressure. The forge sings one long note.", { mats: ALL_MATS(2) }],
         [8, "specialist", "notable", "Specialist", "The newest material you produce x8.", "Pick one seam and dig until it rings.", { specialist: 7 }],
         [9, "generalist", "notable", "Generalist", "Every material x2.5.", "A little of everything, all of it hot.", { mats: ALL_MATS(1.5) }],
@@ -1654,7 +1654,7 @@ const LAB_ARMS: Record<LabSec, LabRow[]> = {
         [0, "rx_sniffer", "minor", "Packet sniffer", "Payload: Packet sniffer. Bytes x2 for 10 minutes.", "Listen first. The wire tells you everything if you let it talk.", { recipe: "sniffer" }],
         [1, "rx_worm", "minor", "Worm", "Payload: Worm. Multiplier buttons add x2 for 10 minutes.", "It copies itself into every amp on the stack. The amps don't mind.", { recipe: "worm" }],
         [2, "rx_logicbomb", "minor", "Logic bomb", "Payload: Logic bomb. Your next Reboot gives x3 Reboots.", "Set it, forget it, and let the next restart do the work.", { recipe: "logicbomb" }],
-        [3, "rx_obfuscate", "notable", "Obfuscation", "Exploits buffs are 50% stronger.", "Same code, uglier. Nothing on the line recognises it anymore.", { potency: "exploits" }],
+        [3, "rx_obfuscate", "notable", "Obfuscation", "Exploits buffs are 50% stronger.", "Same code, uglier. Nothing on the line recognizes it anymore.", { potency: "exploits" }],
         [4, "rx_ransom", "minor", "Ransomware", "Payload: Ransomware. Pays out 10 minutes of Bytes, Copper, Silicon and Quartz at once.", "Lock it, then charge the node for its own key. The node always pays.", { recipe: "ransom" }],
         [5, "rx_kernel", "keystone", "Kernel exploit", "Payload: Kernel exploit. Everything x2 for 5 minutes.", "Ring zero. For five minutes nothing on this node says no.", { recipe: "kernel" }],
     ],
@@ -2338,7 +2338,7 @@ const FW_ARMS: Record<FwSec, FwRow[]> = {
         [2, "fw_labimage", "minor", "Lab image", "Ascend keeps your Intel and running payloads.", "The bench gets imaged before every wipe.", { labKeep: true }],
         [3, "fw_deepimprint", "notable", "Deep imprint", "Handover also keeps the upper path of every tree section.", "Walk the same path enough times and it stays walked.", { keepUpper: true }],
         [4, "fw_droneram", "notable", "Drone RAM", "Drones keep half their levels through Ascend.", "Osk gave every Drone a little memory. They remember the buttons.", { droneKeep: 0.5 }],
-        [5, "fw_tape", "keystone", "Tape backup", "Handover gives back a quarter of the AP your tree cost.", "Everything important on one tape. The tape is labelled. Tamsin labelled it.", { apRefund: 0.25 }],
+        [5, "fw_tape", "keystone", "Tape backup", "Handover gives back a quarter of the AP your tree cost.", "Everything important on one tape. The tape is labeled. Tamsin labeled it.", { apRefund: 0.25 }],
     ],
     relay: [
         [0, "fw_keysmith", "minor", "Keysmith", "Handovers pay x1.5 Keys.", "Cut a spare. Then cut a spare of the spare.", { keys: 0.5 }],
@@ -2352,7 +2352,7 @@ const FW_ARMS: Record<FwSec, FwRow[]> = {
         [0, "fw_rigmem", "minor", "Rig memory", "Handover keeps half of every rig level.", "The rigs were built by hand. Hands remember.", { rigKeep: 0.5 }],
         [1, "fw_rod", "minor", "Lightning rod", "Zone events last 50% longer.", "Give the weather something tall to hold on to.", { zeLong: 0.5 }],
         [2, "fw_recorder", "minor", "Flight recorder", "Ascend and Handover keep half your Parts and mod levels in the hangar.", "The orange box survives everything. That is the whole point of it.", { modKeep: 0.5 }],
-        [3, "fw_fieldkit", "notable", "Field kit", "Rig levels cost 40% less.", "Every zone gets a toolbox. Somebody finally labelled the drawers.", { rigCost: 0.4 }],
+        [3, "fw_fieldkit", "notable", "Field kit", "Rig levels cost 40% less.", "Every zone gets a toolbox. Somebody finally labeled the drawers.", { rigCost: 0.4 }],
         [4, "fw_weather", "notable", "Weather eye", "Zone events come twice as often.", "Watch the zones long enough and you can feel the next one coming.", { zeOften: 1 }],
         [5, "fw_fieldop", "keystone", "Field operator", "Faults stop happening, and Surges run twice as strong.", "Walk the floor every shift. Nothing breaks where someone is looking.", { fieldOp: true }],
     ],
@@ -2794,5 +2794,5 @@ SECRETS.push(
     { id: "x_kill", name: "Kill signal", clue: "Tell a Drone it is done.", how: "Ran `nf kill` in the console." },
     { id: "x_zero", name: "Zero reply", clue: "Ping the node that came before this one.", how: "Ran `nf ping node-00` in the console." },
     { id: "x_hands", name: "Hands off", clue: "Let it decide when to leave.", how: "A Script ran an Ascend for you.", test: (s) => (s.auto?.ran.ascend ?? 0) >= 1 },
-    { id: "x_edit", name: "Edit history", clue: "The root chamber lets you rewrite its neighbours. Keep going.", how: "Rewrote rigs 12 times.", test: (s) => (s.rig?.rw ?? 0) >= 12 },
+    { id: "x_edit", name: "Edit history", clue: "The root chamber lets you rewrite its neighbors. Keep going.", how: "Rewrote rigs 12 times.", test: (s) => (s.rig?.rw ?? 0) >= 12 },
 );
