@@ -213,7 +213,7 @@ function Mounts({ s, onMount }: { s: State; onMount: (slot: number, mat: MatId |
                             {MATS.map((m) => {
                                 const other = s.mounts.includes(m) && cur !== m;
                                 return (
-                                    <button key={m} type="button" className="nf-mini" aria-pressed={cur === m} disabled={other} style={{ ["--c" as string]: statDef(m).color }} onClick={() => onMount(i, cur === m ? null : m)} title={other ? "Already on another drive" : undefined}>
+                                    <button key={m} type="button" className="nf-mini" aria-pressed={cur === m} disabled={other} style={{ ["--c" as string]: statDef(m).color }} onClick={() => onMount(i, cur === m ? null : m)} title={other ? "Already on another drive" : statDef(m).name} aria-label={`${statDef(m).name}${other ? ", already on another drive" : ""}`}>
                                         {statDef(m).short}
                                     </button>
                                 );
