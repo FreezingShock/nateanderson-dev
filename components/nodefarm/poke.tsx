@@ -378,6 +378,7 @@ export function PokeLayer({ s, d, root, coreFeed, feed, reduced, onChange, onGo,
         }
         const got = vent(s);
         if (!got) return;
+        coreFeed.current.flareAt = performance.now(); // the core's big flash and shockwave
         sfx("nfGoal");
         navigator.vibrate?.(12);
         popAt(el, lumpText(got), "#ff2d8a", reduced);
@@ -386,6 +387,8 @@ export function PokeLayer({ s, d, root, coreFeed, feed, reduced, onChange, onGo,
         onChange();
     };
     const scan = (z: StatId) => {
+        coreFeed.current.lastPulse = performance.now();
+        coreFeed.current.pulseStat = STATS.findIndex((x) => x.id === z); // the core answers in the scanned zone's colour
         const r = zoneRate(s, z);
         const row = document.querySelector(`.nf [data-stat="${z}"]`);
         row?.setAttribute("data-pk-ping", "");
