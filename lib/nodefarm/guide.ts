@@ -2,7 +2,7 @@
 // engine (no React), so every number comes from `TUNE` and the engine's own `button`/`derive` and follows any rebalance.
 import {
     GOALS, MATS, PERKS, TIERS, TREE, TUNE, REBOOT_UNLOCK,
-    LAB, PAYLOADS, intelRate, amount, apOnAscend, button, canAfford, canAscend, derive, droneCost, droneMax, droneRate, dronesOpen, fmt, fmtTime, goalDone, hasNode, isUnlocked, nodeOpen, statDef,
+    LAB, PAYLOADS, intelRate, amount, apOnAscend, button, canAfford, canAscend, derive, droneBoost, droneCost, droneMax, droneRate, dronesOpen, originAp, paradoxOc, singularityAll, fmt, fmtTime, goalDone, hasNode, isUnlocked, nodeOpen, statDef,
     type ButtonStat, type Derived, type MatId, type State, type StatId,
 } from "./engine";
 import { LORE } from "./lore";
@@ -198,6 +198,12 @@ export function feedLine(id: StatId, s: State, d: Derived): string {
         case "starglass": return `Runes ×${fmt(b.sgRu)}`;
         case "voidsteel": return `Starglass ×${fmt(b.vsSg)}`;
         case "chrono": return `Voidsteel ×${fmt(b.chVs)}, everything ×${fmt(b.chAll)}`;
+        case "nebula": return `Chrono ×${fmt(b.nbCh)}`;
+        case "pulsars": return `Nebula ×${fmt(b.puNb)}`;
+        case "singularity": return `Pulsars ×${fmt(b.snPu)}, everything ×${fmt(singularityAll(s))}`;
+        case "engrams": return `Singularity ×${fmt(b.egSn)}, Drones ×${fmt(droneBoost(s))}`;
+        case "paradox": return `Engrams ×${fmt(b.pxEg)}, Overclock ×${fmt(paradoxOc(s))}`;
+        case "origin": return `Paradox ×${fmt(b.orPx)}, AP on Ascend ×${fmt(originAp(s))}`;
     }
 }
 

@@ -168,6 +168,22 @@ body > .nf-tm-host { position: fixed; inset: 0; z-index: 1000; }
 .ctos .nf-tm[data-lod="far"] .nf-tn:not([data-sel]) .nf-tn-l, .ctos .nf-tm[data-lod="far"] .nf-tn-cost { display: none; }
 .ctos .nf-tm[data-lod="far"] .nf-tn[data-kind="keystone"] .nf-tn-l { display: block; }
 
+/* the deeper tree: a small mono tag above junctions and forks, rank pips above ranked nodes */
+.ctos .nf-tn-form { position: absolute; left: 50%; bottom: calc(100% + 10px); translate: -50% 0; display: flex; gap: 4px; padding: 2px 6px; background: #04070bdd; border: 1px solid color-mix(in srgb, var(--c) 45%, transparent); font: 700 10px/1.2 var(--cm-mono); letter-spacing: .14em; text-transform: uppercase; color: var(--c); white-space: nowrap; pointer-events: none; }
+.ctos .nf-tn-form i { width: 9px; height: 9px; border: 1px solid var(--c); background: #04070b; }
+.ctos .nf-tn-form i[data-on] { background: var(--c); box-shadow: 0 0 6px var(--c); }
+.ctos .nf-tn[data-kind="keystone"] .nf-tn-form { bottom: calc(100% + 16px); }
+.ctos .nf-tn[data-form="junction"] .nf-tn-form { border-style: dashed; }
+.ctos .nf-tn[data-st="locked"] .nf-tn-form, .ctos .nf-tn[data-swap] .nf-tn-form { opacity: .6; }
+.ctos .nf-tm[data-lod="far"] .nf-tn-form { display: none; }
+/* the unchosen side of a fork: a swap, not progress, so it stays quiet */
+.ctos .nf-tn[data-swap] { opacity: .72; }
+.ctos .nf-tn[data-swap]:not([data-vis="fog"])::before { animation: none; opacity: 0; }
+.ctos .nf-tn[data-swap]:hover, .ctos .nf-tn[data-swap][data-sel] { opacity: 1; }
+/* a ranked node with a rank you can afford: owned, but its brackets keep pulsing */
+.ctos .nf-tn[data-more]:not([data-vis="fog"])::before { animation: nfTnReady 1.5s ease-in-out infinite; }
+.ctos .nf-tm-need[data-tone="fork"], .ctos .nf-tm-need[data-tone="rank"] { color: color-mix(in srgb, var(--c) 70%, #8aa0b4); }
+
 /* ---- the card, anchored at the node */
 .ctos .nf-tm-lead { position: absolute; z-index: 4; left: 0; top: 0; visibility: hidden; background: repeating-linear-gradient(90deg, var(--c) 0 4px, transparent 4px 7px); opacity: .8; pointer-events: none; }
 .ctos .nf-tm-card {
@@ -255,6 +271,7 @@ body > .nf-tm-host { position: fixed; inset: 0; z-index: 1000; }
 @media (prefers-reduced-motion: reduce) {
     .ctos .nf-tm, .ctos .nf-tm-hc, .ctos .nf-tm-toast, .ctos .nf-tm-caret { animation: none; }
     .ctos .nf-tn[data-st="ready"]:not([data-vis="fog"])::before { animation: none; opacity: .8; }
+    .ctos .nf-tn[data-more]:not([data-vis="fog"])::before { animation: none; opacity: .8; }
     .ctos .nf-tn[data-flash] .nf-tn-body, .ctos .nf-tn[data-flash] .nf-tn-face::after, .ctos .nf-tn[data-new], .ctos .nf-tn-halo, .ctos .nf-tl { animation: none; }
     .ctos .nf-tl[data-st="edge"] { stroke-dasharray: none; }
     .ctos .nf-tn, .ctos .nf-tn-body, .ctos .nf-tn-shadow { transition: none; }

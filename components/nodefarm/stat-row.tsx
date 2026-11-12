@@ -1,7 +1,7 @@
 "use client";
 
 import { useContext, useEffect, useRef } from "react";
-import { MATS, STATS, TIERS, button, derive, fmt, fmtTime, hasFeature, isUnlocked, statDef, type ButtonStat, type State, type StatId } from "@/lib/nodefarm/engine";
+import { MATS, STATS, TIERS, button, derive, droneBoost, originAp, paradoxOc, singularityAll, fmt, fmtTime, hasFeature, isUnlocked, statDef, type ButtonStat, type State, type StatId } from "@/lib/nodefarm/engine";
 import { LORE } from "@/lib/nodefarm/lore";
 import { fnCaption } from "@/lib/nodefarm/feed";
 import { buttonTip, unlockInfo, type Target } from "@/lib/nodefarm/guide";
@@ -39,12 +39,30 @@ function effects(id: StatId, s: State, d: D): [string, string][] {
             return [["Feeds Starglass", `×${fmt(d.boosts.vsSg)}`], ["Own output", `${fmt(d.rates.voidsteel)}/s`]];
         case "chrono":
             return [["Feeds Voidsteel", `×${fmt(d.boosts.chVs)}`], ["Everything", `×${fmt(d.boosts.chAll)}`]];
+        case "nebula":
+            return [["Feeds Chrono", `×${fmt(d.boosts.nbCh)}`], ["Own output", `${fmt(d.rates.nebula)}/s`]];
+        case "pulsars":
+            return [["Feeds Nebula", `×${fmt(d.boosts.puNb)}`], ["Own output", `${fmt(d.rates.pulsars)}/s`]];
+        case "singularity":
+            return [["Feeds Pulsars", `×${fmt(d.boosts.snPu)}`], ["Everything", `×${fmt(singularityAll(s))}`]];
+        case "engrams":
+            return [["Feeds Singularity", `×${fmt(d.boosts.egSn)}`], ["Drone speed", `×${fmt(droneBoost(s))}`]];
+        case "paradox":
+            return [["Feeds Engrams", `×${fmt(d.boosts.pxEg)}`], ["Overclock", `×${fmt(paradoxOc(s))}`]];
+        case "origin":
+            return [["Feeds Paradox", `×${fmt(d.boosts.orPx)}`], ["AP on Ascend", `×${fmt(originAp(s))}`]];
     }
 }
 
 /** The signal chain: who boosts whom, with live multipliers. Sits above the stat dossiers. Only the zones you have reached, plus the next one, are drawn. */
 export function Chain({ s, d, onAll, allOpen, max, onMax }: { s: State; d: D; onAll: (open: boolean) => void; allOpen: boolean; max?: boolean; onMax?: () => void }) {
     const feed: Partial<Record<StatId, string>> = {
+        origin: `Paradox ×${fmt(d.boosts.orPx)}`,
+        paradox: `Engrams ×${fmt(d.boosts.pxEg)}`,
+        engrams: `Singularity ×${fmt(d.boosts.egSn)}`,
+        singularity: `Pulsars ×${fmt(d.boosts.snPu)}`,
+        pulsars: `Nebula ×${fmt(d.boosts.puNb)}`,
+        nebula: `Chrono ×${fmt(d.boosts.nbCh)}`,
         chrono: `Voidsteel ×${fmt(d.boosts.chVs)}`,
         voidsteel: `Starglass ×${fmt(d.boosts.vsSg)}`,
         starglass: `Runes ×${fmt(d.boosts.sgRu)}`,

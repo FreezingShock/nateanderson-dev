@@ -3,7 +3,7 @@
 // not open). No React, no DOM.
 import { OPERATORS, archiveOf, loadSeen, pickNews } from "./news";
 import {
-    GOALS, GOAL_TIERS, LAB, MATS, PAYLOADS, PERKS, SECRETS, TIER_NAMES, TREE, apOnAscend, intelRate, derive, fmt, fmtTime, goalDone, statDef, tiersDone, unlock,
+    GOALS, GOAL_TIERS, LAB, MATS, PAYLOADS, PERKS, SECRETS, TIER_NAMES, TREE, TREE_FULL, apOnAscend, intelRate, derive, fmt, fmtTime, goalDone, statDef, tiersDone, unlock,
     type State,
 } from "./engine";
 import { LOGS, logNo } from "./story";
@@ -60,7 +60,7 @@ export function recordSections(s: State): RecordSection[] {
         ["Goal tiers", `${tiersDone(s)} / ${GOAL_TIERS}`],
         ["Secrets", `${c.secrets} / ${c.secretTotal}`],
         ["Goal bonus", `+${pct(((1 + s.ach.length * 0.02) * (1 + tiersDone(s) * 0.08) - 1) * 100)}`],
-        ["Tree nodes", `${s.tree.length} / ${TREE.length}`],
+        ["Tree nodes", `${s.tree.length} / ${TREE_FULL}`],
         ["Perk levels", `${perkLv} / ${perkMax}`],
         ["AP unspent", String(s.ap)],
     ];

@@ -1,7 +1,8 @@
 "use client";
 
 import { useRef, useState, type CSSProperties } from "react";
-import { BRANCHES, GOALS, GOAL_TIERS, STATS, TIER_NAMES, TREE, TUNE, amount, apEach, apOnAscend, canAscend, derive, droneCost, dronesOpen, fmt, goalDone, hasNode, intelRate, isUnlocked, LAB, LAB_SECS, PAYLOADS, hasRecipe, tiersDone, MATS, type MatId, type State, type StatId } from "@/lib/nodefarm/engine";
+import { BRANCHES, GOALS, GOAL_TIERS, STATS, TIER_NAMES, TREE, TREE_FULL, TUNE, fullTreeIds, amount, apEach, apOnAscend, canAscend, derive, droneCost, dronesOpen, fmt, goalDone, hasNode, intelRate, isUnlocked, LAB, LAB_SECS, PAYLOADS, hasRecipe, tiersDone, MATS, type MatId, type State, type StatId } from "@/lib/nodefarm/engine";
+const FULL = new Set(fullTreeIds());
 import { feedLine, nextStep, unlockInfo } from "@/lib/nodefarm/guide";
 import { LORE } from "@/lib/nodefarm/lore";
 import { NfIcon, type NfIconName } from "./icon";
@@ -50,7 +51,7 @@ export function MapPanel({ s, d, onTree, onWin, onLab }: { s: State; d: D; onTre
                 readout={[
                     ["~/map", ""],
                     ["ZONES", `${online} / ${STATS.length} online`],
-                    ["TREE", `${owned} / ${TREE.length} nodes`],
+                    ["TREE", `${owned} / ${TREE_FULL} nodes`],
                     ["GOALS", `${goals} / ${GOALS.length}`],
                     ...(s.lab.seen ? [["LAB", `${s.lab.nodes.length} / ${LAB.length} research`] as [string, string]] : []),
                 ]}
@@ -126,11 +127,11 @@ export function MapPanel({ s, d, onTree, onWin, onLab }: { s: State; d: D; onTre
                 </Frame>
             </div>
 
-            <Frame i={6} color="#2fd8e8" className="nf-wk-treefr" path="sys/tree" title="Prestige tree" aside={<>{fmt(s.ap)} AP to spend</>} note={`${owned} of ${TREE.length} nodes in five sections, bought with AP. Nothing in it resets.`}>
+            <Frame i={6} color="#2fd8e8" className="nf-wk-treefr" path="sys/tree" title="Prestige tree" aside={<>{fmt(s.ap)} AP to spend</>} note={`${owned} of ${TREE_FULL} nodes in five sections, bought with AP. Nothing in it resets.`}>
                 <ul className="nf-wk-branches">
                     {BRANCHES.map((b) => {
-                        const mine = TREE.filter((n) => n.branch === b.id);
-                        const have = mine.filter((n) => hasNode(s, n.id)).length;
+                        const mine = TREE.filter((n) => n.branch === b.id && FULL.has(n.id)); // one side of each fork
+                        const have = TREE.filter((n) => n.branch === b.id && hasNode(s, n.id)).length;
                         return (
                             <li key={b.id} style={{ ["--c" as string]: b.color } as CSSProperties}>
                                 <b>{b.name}</b>

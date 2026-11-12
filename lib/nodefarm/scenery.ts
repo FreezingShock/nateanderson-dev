@@ -14,7 +14,7 @@ export const ERAS = [
     { name: "Monolith", stats: ["runes"] },
     { name: "Glass", stats: ["starglass"] },
     { name: "Eclipse", stats: ["voidsteel"] },
-    { name: "Clockwork", stats: ["chrono"] },
+    { name: "Clockwork", stats: ["chrono", "nebula", "pulsars", "singularity", "engrams", "paradox", "origin"] },
 ] as const;
 
 export function eraOf(s: State): number {
