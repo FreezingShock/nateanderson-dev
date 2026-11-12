@@ -681,3 +681,17 @@ body.nf-win-open .ctos .cm-section.ruled { z-index: 60; }
 .ctos .nf-mount-b .nf-mini { min-width: 48px; }
 .ctos .nf-mount-b .nf-mini[aria-pressed="true"] { border-color: var(--c); color: var(--c); background: #111; }
 .ctos .nf-mounts { grid-column: 1 / -1; }
+
+/* ---- menu additions: save files, backup, settings, keys, other-tab notice */
+.ctos .nf-file { display: inline-flex; align-items: center; position: relative; cursor: pointer; }
+.ctos .nf-file input { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; font-size: 16px; }
+.ctos .nf-file:focus-within { outline: 2px solid var(--cm-cyan); outline-offset: 3px; }
+.ctos .nf-backup { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 10px; font: 400 var(--cm-ctos-t-ui)/1.4 var(--cm-mono); color: var(--cm-mute); }
+.ctos .nf-vol input { width: 100%; accent-color: var(--cm-cyan); min-height: 28px; }
+.ctos .nf-fmt { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 12px; }
+.ctos .nf-fmt-l { font: 500 var(--cm-ctos-t-micro)/1 var(--cm-mono); letter-spacing: .1em; text-transform: uppercase; color: var(--cm-ctos-meta); margin-right: 4px; }
+.ctos .nf-keys dt { min-width: 5.5em; }
+.ctos .nf-stale { position: fixed; z-index: 80; left: 12px; right: 12px; bottom: 12px; display: flex; flex-wrap: wrap; align-items: center; gap: 8px 10px; padding: 12px 14px; background: #120d00; border: 1px solid #f0a53c; color: var(--cm-fg); font: 400 var(--cm-ctos-t-ui)/1.4 var(--cm-mono); }
+.ctos .nf-stale span { flex: 1 1 260px; }
+@media (min-width: 900px) { .ctos .nf-stale { left: auto; max-width: 560px; } }
+@media (hover: none) { .ctos .nf-keys-sec { display: none; } }
