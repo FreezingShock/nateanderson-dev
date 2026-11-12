@@ -2625,6 +2625,12 @@ function renameCore(o: Record<string, any>) {
     if (Array.isArray(o.ach)) o.ach = o.ach.map((v: unknown) => (v === "co1" ? "su1" : v));
     if (o.achAt && typeof o.achAt === "object" && "co1" in o.achAt) { o.achAt.su1 = o.achAt.co1; delete o.achAt.co1; }
     if (o.rig?.rwAim === "core") o.rig.rwAim = "sunstone";
+    if (o.seen && typeof o.seen === "object") mv(o.seen); // arc progress bits
+    if (o.dr && typeof o.dr === "object") { // posted Drones and their services
+        if (Array.isArray(o.dr.post)) o.dr.post = o.dr.post.map((v: unknown) => (v === "core" ? "sunstone" : v));
+        mv(o.dr.svc);
+    }
+    if (Array.isArray(o.ze?.act)) for (const e of o.ze.act) if (e && e.zone === "core") e.zone = "sunstone"; // a vein or fault still running
 }
 export function parseSave(raw: string): State | null {
     try {

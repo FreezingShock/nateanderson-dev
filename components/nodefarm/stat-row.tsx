@@ -13,6 +13,7 @@ import { ZoneArt } from "./zone-art";
 import { ZoneRig } from "./rig";
 import { ZoneEvent } from "./zone-event";
 import { eventsFor, zoneEvDef, type ZeChoice } from "@/lib/nodefarm/zoneevents";
+import { readyCount } from "@/lib/nodefarm/layout";
 
 type D = ReturnType<typeof derive>;
 export type PressFn = (stat: ButtonStat, tier: number, quiet?: boolean) => boolean;
@@ -74,7 +75,7 @@ function effects(id: StatId, s: State, d: D): [string, string][] {
 }
 
 /** The signal chain: who boosts whom, with live multipliers. Sits above the stat dossiers. Only the zones you have reached, plus the next one, are drawn. */
-export function Chain({ s, d, onAll, allOpen }: { s: State; d: D; onAll: (open: boolean) => void; allOpen: boolean }) {
+export function Chain({ s, d, onAll, allOpen, onIdle, onJump }: { s: State; d: D; onAll: (open: boolean) => void; allOpen: boolean; onIdle?: () => void; onJump?: (id: StatId) => void }) {
     const feed: Partial<Record<StatId, string>> = {
         sunstone: `Geodes ×${fmt(d.boosts.suGe)}`,
         geodes: `Magma ×${fmt(d.boosts.geMg)}`,
@@ -118,16 +119,25 @@ export function Chain({ s, d, onAll, allOpen }: { s: State; d: D; onAll: (open: 
             )}
             {shown.map((def, i) => {
                 const open = isUnlocked(s, def.id);
-                return (
-                    <li key={def.id} data-open={open ? "" : undefined} data-ev={open && eventsFor(s, def.id).length ? "" : undefined} style={{ ["--c" as string]: def.color, ["--ev" as string]: zoneEvDef(eventsFor(s, def.id)[0]?.kind ?? "surge").color }}>
+                const rdy = open ? readyCount(s, def.id) : 0;
+                const body = (
+                    <>
                         <NfIcon name={open ? (def.id as NfIconName) : "lock"} />
                         <b>{def.short}</b>
                         <small>{open ? feed[def.id] : "encrypted"}</small>
+                    </>
+                );
+                return (
+                    <li key={def.id} data-open={open ? "" : undefined} data-ready={rdy ? "" : undefined} data-ev={open && eventsFor(s, def.id).length ? "" : undefined} style={{ ["--c" as string]: def.color, ["--ev" as string]: zoneEvDef(eventsFor(s, def.id)[0]?.kind ?? "surge").color }}>
+                        {open && onJump ? (
+                            <button type="button" className="nf-chain-b" onClick={() => onJump(def.id)} aria-label={`Go to ${def.name}${rdy ? `, ${rdy} button${rdy > 1 ? "s" : ""} ready` : ""}`}>{body}</button>
+                        ) : body}
                         {i < shown.length - 1 && <i aria-hidden="true">▸</i>}
                     </li>
                 );
             })}
             <li className="nf-chain-all">
+                {onIdle && <button type="button" className="nf-mini" onClick={onIdle} title="Fold every zone with nothing to buy">Fold idle</button>}
                 <button type="button" className="nf-mini" onClick={() => onAll(!allOpen)}>{allOpen ? "Minimize all" : "Expand all"}</button>
             </li>
         </ol>
@@ -170,10 +180,12 @@ export function StatRow({ id, s, d, onPress, onArm, onWatchdog, open: expanded, 
     const bodyId = `nf-body-${id}`;
     const evs = eventsFor(s, id);
     return (
-        <article className="nf-row" style={{ ["--c" as string]: def.color, ...(evs.length ? { ["--ev" as string]: zoneEvDef(evs[0].kind).color } : null) }} data-ev={evs.length ? "" : undefined} data-stat={id} data-open={expanded ? "true" : "false"} data-ready={!expanded && ready > 0 ? "" : undefined} data-guide={guide?.stat === id ? "" : undefined} data-art={hasZoneArt(id) ? "" : undefined} onClick={(e) => { if (!expanded && !(e.target as HTMLElement).closest("button")) onToggle(); }}>
+        <article className="nf-row" style={{ ["--c" as string]: def.color, ...(evs.length ? { ["--ev" as string]: zoneEvDef(evs[0].kind).color } : null) }} data-ev={evs.length ? "" : undefined} data-stat={id} data-open={expanded ? "true" : "false"} data-ready={!expanded && ready > 0 ? "" : undefined} data-guide={guide?.stat === id ? "" : undefined} data-art={hasZoneArt(id) ? "" : undefined}>
             <ZoneArt id={id} s={s} />
             <div className="nf-bar-t">
+                <span className="nf-bar-ic" aria-hidden="true"><NfIcon name={id as NfIconName} /></span>
                 <span>ZONE {String(STATS.findIndex((x) => x.id === id) + 1).padStart(2, "0")} // {lore.zone}</span>
+                {!expanded && <span className="nf-bar-v" title={exact(amt)}><b>{fmt(amt)}</b> {def.short}{rate > 0 && <small> +{fmt(rate)}/s</small>}</span>}
                 <span className="nf-bar-s">{buttons > 0 ? `${ready}/${buttons} ready` : "online"}</span>
                 <button type="button" className="nf-fold" aria-expanded={expanded} aria-controls={bodyId} aria-label={`${expanded ? "Minimize" : "Expand"} ${def.name}`} onClick={onToggle}>
                     <i aria-hidden="true" />

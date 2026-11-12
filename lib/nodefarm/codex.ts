@@ -355,6 +355,8 @@ export const ENTRIES: CodexEntry[] = [
                 ["G", "Show me the next step"],
                 ["P", "Press the glowing button (hold to keep going)"],
                 ["1 to 6", "Press that tier on the zone in the middle of the screen"],
+                ["Q / E", "Open the previous or next arc"],
+                ["Z", "Fold or open the zone in the middle of the screen"],
                 ["F", "Full screen"],
                 ["Esc", "Close the open window"],
             ];
