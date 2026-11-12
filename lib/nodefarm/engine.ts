@@ -966,11 +966,21 @@ export function parseSave(raw: string): State | null {
 
 // ---- number formatting
 const SUF = ["", "K", "M", "B", "T", "Qa", "Qi", "Sx", "Sp", "Oc", "No", "Dc"];
+/** How big numbers print: short suffixes (1.2M), scientific (1.2e6) or engineering (1.2e6 in steps of three). A per-device setting. */
+export type NumFmt = "short" | "sci" | "eng";
+let numFmt: NumFmt = "short";
+export function setNumFmt(f: NumFmt) { numFmt = f; }
+export function getNumFmt(): NumFmt { return numFmt; }
 export function fmt(n: number, digits = 2): string {
     if (!Number.isFinite(n)) return "∞";
     if (n < 0) return "-" + fmt(-n, digits);
     if (n < 1000) return n < 10 && n % 1 ? n.toFixed(digits) : n < 100 && n % 1 ? n.toFixed(Math.max(0, digits - 1)) : Math.floor(n).toString();
+    if (numFmt === "sci") return n.toExponential(2).replace("+", "");
     const e = Math.floor(Math.log10(n) / 3);
+    if (numFmt === "eng") {
+        const v = n / Math.pow(1000, e);
+        return (v < 10 ? v.toFixed(2) : v < 100 ? v.toFixed(1) : v.toFixed(0)) + "e" + e * 3;
+    }
     if (e >= SUF.length) return n.toExponential(2).replace("+", "");
     const v = n / Math.pow(1000, e);
     return (v < 10 ? v.toFixed(2) : v < 100 ? v.toFixed(1) : v.toFixed(0)) + SUF[e];

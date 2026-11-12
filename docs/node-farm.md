@@ -131,3 +131,11 @@ Where they show: a typed `logs.recover("004")` feed line and a milestone banner 
 Unadvertised testing tools, on this device only. Turn on from the naOS console (backtick): `nf admin on` arms it and opens the panel, `nf admin max` grants everything (tree, perks, Drones, goals, secrets, logs, prestiges, materials), `nf admin panel` reopens the panel, `nf admin snap|snaps|restore [n|real]` manage snapshots, `nf admin off` hides it. Turning it on stores your real save as the `real save` snapshot first.
 
 Code: pure rules and snapshots in `lib/nodefarm/admin.ts`, panel in `components/nodefarm/admin.tsx`, styles in `app/camino/nodefarm-admin.css`. The game side is a few lines in `node-farm.tsx` (admin state, speed multiplier in the tick loop, `nf:admin` and `nf:live.changed`), `events.tsx` (`nf:fire` listener) and `engine.ts` (`adminFlags.reveal`). To remove admin mode later, delete those three files and those lines, plus `nfAdmin` in `components/cm/console.tsx`. Test scripts: `/mnt/project-files/portfolio/node-farm-admin/` (`run.mjs`, `panel.mjs`, `extra.mjs`).
+
+## Save safety, settings and keys (feature check)
+- Import asks twice when the current save has progress, and a backup slot (`nf-backup-v1`, one save) is written before an import, a wipe or a restore; Menu has Restore backup. A save that cannot be read is copied to `nf-corrupt-v1` instead of being overwritten.
+- A second tab on the same save is detected through the `storage` event: that tab stops saving and shows a notice with Load latest save / Save from here.
+- Menu: Download file and Open file (plain-text save code), Volume (the site-wide master volume), Numbers (short, scientific, engineering; `nf-numfmt-v1`, `setNumFmt` in the engine).
+- Keys (only on the Node Farm page, off while typing, with a modifier, over another panel or during an event): M Map, O Goals, L Records, A Ascend, S Menu, T Tree, B Buy max.
+- The tab title shows `<rate>/s · Node Farm` while the tab is in the background.
+- Menu "Calm motion" (`nf-calm-v1`) forces reduced motion on top of the OS setting: the `reduced` prop everywhere plus `body.nf-calm` CSS. Menu also shows when the game last saved.

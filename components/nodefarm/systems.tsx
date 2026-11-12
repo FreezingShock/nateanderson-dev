@@ -1,7 +1,7 @@
 "use client";
 
 import { PixelIcon } from "@/components/cm/pixel-icons";
-import { GOALS, GOAL_TIERS, SECRETS, TIER_NAMES, TUNE, fmt, fmtTime, goalDone, tiersDone, type State } from "@/lib/nodefarm/engine";
+import { GOALS, GOAL_TIERS, SECRETS, TIER_NAMES, TUNE, fmt, fmtTime, goalDone, tiersDone, type NumFmt, type State } from "@/lib/nodefarm/engine";
 import { goalCounts, recordSections } from "@/lib/nodefarm/records";
 import { LOGS, logNo } from "@/lib/nodefarm/story";
 import { NfIcon } from "./icon";
@@ -109,10 +109,12 @@ export function RecordsPanel({ s }: { s: State }) {
 }
 
 export function MenuPanel({
-    s, soundOn, onSound, humOn, onHum, eventsOn, onEvents, ioText, setIoText, ioMsg, onExport, onImport, confirm, onReset,
+    s, soundOn, onSound, humOn, onHum, eventsOn, onEvents, ioText, setIoText, ioMsg, onExport, onImport, importConfirm, onDownload, onUpload, backup, onRestore, volume, onVolume, calm, osCalm, onCalm, lastSave, numFmt, onNumFmt, hasMax, confirm, onReset,
 }: {
-    s: State; soundOn: boolean; onSound: () => void; humOn: boolean; onHum: () => void; eventsOn: boolean; onEvents: () => void; ioText: string; setIoText: (v: string) => void; ioMsg: string; onExport: () => void; onImport: () => void; confirm: boolean; onReset: () => void;
+    s: State; soundOn: boolean; onSound: () => void; humOn: boolean; onHum: () => void; eventsOn: boolean; onEvents: () => void; ioText: string; setIoText: (v: string) => void; ioMsg: string; onExport: () => void; onImport: () => void; importConfirm: boolean; onDownload: () => void; onUpload: (f: File) => void;
+    backup: { at: number; why: string } | null; onRestore: () => void; volume: number; onVolume: (v: number) => void; calm: boolean; osCalm: boolean; onCalm: () => void; lastSave: number; numFmt: NumFmt; onNumFmt: (f: NumFmt) => void; hasMax: boolean; confirm: boolean; onReset: () => void;
 }) {
+    const FORMATS: [NumFmt, string][] = [["short", "1.2M"], ["sci", "1.2e6"], ["eng", "1.2e6 / e3"]];
     const facts: [string, string][] = [
         ["Played", fmtTime(s.life.secs)],
         ["Presses", fmt(s.life.presses)],
@@ -132,17 +134,46 @@ export function MenuPanel({
             <section>
                 <header className="nf-sys-h"><h3>Save</h3><p>Stored in this browser. Move it with a code.</p></header>
                 <div className="nf-menu-row">
-                    <button type="button" className="nf-mini" aria-pressed={soundOn} onClick={onSound}>Sound: {soundOn ? "on" : "off"}</button>
-                    <button type="button" className="nf-mini" aria-pressed={humOn} onClick={onHum}>Hum: {humOn ? "on" : "off"}</button>
-                    <button type="button" className="nf-mini" aria-pressed={eventsOn} onClick={onEvents}>Events: {eventsOn ? "on" : "off"}</button>
-                    <button type="button" className="nf-mini" onClick={onExport}>Export</button>
-                    <button type="button" className="nf-mini" onClick={onImport}>Import</button>
+                    <button type="button" className="nf-mini" onClick={onExport}>Export code</button>
+                    <button type="button" className="nf-mini" onClick={onDownload}>Download file</button>
+                    <label className="nf-mini nf-file">Open file<input type="file" accept=".txt,text/plain" onChange={(e) => { const f = e.target.files?.[0]; if (f) onUpload(f); e.target.value = ""; }} /></label>
+                    <button type="button" className="nf-mini" data-guide={importConfirm ? "" : undefined} onClick={onImport}>{importConfirm ? "Confirm import" : "Import"}</button>
                 </div>
                 <label className="nf-io">
                     <span>Save code</span>
                     <textarea value={ioText} onChange={(e) => setIoText(e.target.value)} rows={3} spellCheck={false} placeholder="Export to get a code, or paste one here and press Import." />
                 </label>
+                <p className="nf-io-msg">{lastSave ? `Last saved ${new Date(lastSave).toLocaleTimeString()}. Saves every 5 s and when you leave.` : "Saves every 5 s and when you leave."}</p>
                 {ioMsg && <p className="nf-io-msg" role="status">{ioMsg}</p>}
+                {backup && (
+                    <div className="nf-backup">
+                        <span>Backup from {new Date(backup.at).toLocaleString()} ({backup.why}).</span>
+                        <button type="button" className="nf-mini" onClick={onRestore}>Restore backup</button>
+                    </div>
+                )}
+            </section>
+            <section>
+                <header className="nf-sys-h"><h3>Settings</h3><p>Kept on this device, not in the save.</p></header>
+                <div className="nf-menu-row">
+                    <button type="button" className="nf-mini" aria-pressed={soundOn} onClick={onSound}>Sound: {soundOn ? "on" : "off"}</button>
+                    <button type="button" className="nf-mini" aria-pressed={humOn} onClick={onHum}>Hum: {humOn ? "on" : "off"}</button>
+                    <button type="button" className="nf-mini" aria-pressed={eventsOn} onClick={onEvents}>Events: {eventsOn ? "on" : "off"}</button>
+                    <button type="button" className="nf-mini" aria-pressed={calm || osCalm} disabled={osCalm} onClick={onCalm} title={osCalm ? "Your device already asks for less motion" : undefined}>Calm motion: {calm || osCalm ? "on" : "off"}</button>
+                </div>
+                <label className="nf-io nf-vol">
+                    <span>Volume {Math.round(volume * 100)}%</span>
+                    <input type="range" min={0} max={1} step={0.05} value={volume} onChange={(e) => onVolume(Number(e.target.value))} aria-label="Master volume (all site sounds)" />
+                </label>
+                <div className="nf-fmt" role="group" aria-label="Number format">
+                    <span className="nf-fmt-l">Numbers</span>
+                    {FORMATS.map(([k, ex]) => <button key={k} type="button" className="nf-mini" aria-pressed={numFmt === k} onClick={() => onNumFmt(k)}>{ex}</button>)}
+                </div>
+            </section>
+            <section className="nf-keys-sec">
+                <header className="nf-sys-h"><h3>Keys</h3><p>Single letters, off while typing.</p></header>
+                <dl className="nf-facts nf-keys">
+                    {([["M", "Map"], ["O", "Goals"], ["L", "Records"], ["A", "Ascend"], ["S", "Menu"], ["T", "Tree"], ...(hasMax ? [["B", "Buy max on or off"]] : []), ["Esc", "Close the open window"], ["Hold a button", "Keep buying"]] as [string, string][]).map(([k, v]) => <div key={k}><dt>{k}</dt><dd>{v}</dd></div>)}
+                </dl>
             </section>
             <section className="nf-danger-zone">
                 <header className="nf-sys-h"><h3>Danger</h3><p>Deletes this save. Export first if unsure.</p></header>
