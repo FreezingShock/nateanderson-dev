@@ -14,6 +14,7 @@ import type { NfLive } from "@/lib/nodefarm/records";
 import { Core, type CoreFeed } from "./core";
 import { NfIcon } from "./icon";
 import { EventLayer } from "./events";
+import { RARITY, payLoot, type Loot } from "@/lib/nodefarm/events";
 import { AwayReport, type Away } from "./away";
 import { Scenery, SceneWindow } from "./scenery";
 import dynamic from "next/dynamic";
@@ -43,6 +44,7 @@ import { codeReveal, cxClear } from "@/lib/nodefarm/cx";
 
 const KEY = "nf-save-v1";
 const EV_KEY = "nf-events-v1"; // "off" when quick-time events are switched off (per device)
+const FS_KEY = "nf-fs-v1"; // full screen mode on or off (per device)
 const HUM_KEY = "nf-hum-v1"; // reactor hum on or off (per device)
 const UI_KEY = "nf-ui-v1"; // which stat panels are minimized (per device, not part of the game save)
 const MAX_KEY = "nf-max-v1"; // "1" when Buy max (Batch job node) is switched on (per device)
@@ -92,6 +94,9 @@ export function NodeFarm() {
     /** the Exploit Lab's research tree (same menu as the prestige tree, blue lab skin) */
     const [labTree, setLabTree] = useState(false);
     const labPrev = useRef<{ s: State | null; seen: boolean; compiled: number }>({ s: null, seen: false, compiled: 0 });
+    // stable on purpose: the tree's modal effect re-runs whenever this changes, and this component re-renders ten times a second
+    const closeTree = useCallback(() => setTreeOpen(false), []);
+    const closeLab = useCallback(() => setLabTree(false), []);
     const treeOpenRef = useRef(false);
     treeOpenRef.current = treeOpen;
 
@@ -119,6 +124,26 @@ export function NodeFarm() {
     const [ioText, setIoText] = useState("");
     const [ioMsg, setIoMsg] = useState("");
     const [buyMax, setBuyMax] = useState(false);
+    const [fs, setFsState] = useState(false);
+    const fsApi = useRef(false);
+    // full screen: the board fills the viewport and the site's bar and dock step aside. Where the browser has a Fullscreen API (not iPhone) it goes truly full screen too.
+    const setFs = useCallback((on: boolean) => {
+        setFsState(on);
+        try { localStorage.setItem(FS_KEY, on ? "1" : "0"); } catch {}
+        const d = document as Document & { webkitFullscreenElement?: Element; webkitExitFullscreen?: () => void };
+        const el = document.documentElement as HTMLElement & { webkitRequestFullscreen?: () => void };
+        try {
+            if (on && !(d.fullscreenElement || d.webkitFullscreenElement)) {
+                if (el.requestFullscreen) { fsApi.current = true; el.requestFullscreen().catch(() => { fsApi.current = false; }); }
+                else if (el.webkitRequestFullscreen) { fsApi.current = true; el.webkitRequestFullscreen(); }
+            } else if (!on && (d.fullscreenElement || d.webkitFullscreenElement)) {
+                fsApi.current = false;
+                if (d.exitFullscreen) d.exitFullscreen().catch(() => {}); else d.webkitExitFullscreen?.();
+            }
+        } catch {}
+    }, []);
+    const fsRef = useRef(fs);
+    fsRef.current = fs;
     const buyMaxRef = useRef(false);
     buyMaxRef.current = buyMax;
     // ---- window open/close: every window prints in and deletes out with the shared code reveal (lib/nodefarm/cx.ts)
@@ -166,6 +191,40 @@ export function NodeFarm() {
         document.querySelector<HTMLElement>(`.nf [data-pane="${win}"] .nf-win-x`)?.focus();
         return () => { window.removeEventListener("keydown", onKey); document.body.classList.remove("nf-win-open"); };
     }, [win]);
+    useEffect(() => {
+        try { if (localStorage.getItem(FS_KEY) === "1") setFsState(true); } catch {}
+        // the browser left real full screen (Esc): leave the in-page mode with it
+        const onChange = () => {
+            const d = document as Document & { webkitFullscreenElement?: Element };
+            if (!(d.fullscreenElement || d.webkitFullscreenElement) && fsApi.current) { fsApi.current = false; setFsState(false); try { localStorage.setItem(FS_KEY, "0"); } catch {} }
+        };
+        const onCmd = (e: Event) => {
+            const v = (e as CustomEvent<{ on?: boolean }>).detail?.on;
+            setFs(v === undefined ? !fsRef.current : v);
+        };
+        const onKey = (e: KeyboardEvent) => {
+            if (e.ctrlKey || e.metaKey || e.altKey) return;
+            const t = e.target as HTMLElement | null;
+            if (t && (t.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName))) return;
+            if (document.querySelector(".cn-panel, .nv-find, .nf-tm-host, .nf-aw")) return;
+            if (e.key === "f" || e.key === "F") { e.preventDefault(); setFs(!fsRef.current); }
+            else if (e.key === "Escape" && fsRef.current && !winRef.current) setFs(false);
+        };
+        document.addEventListener("fullscreenchange", onChange);
+        document.addEventListener("webkitfullscreenchange", onChange);
+        window.addEventListener("nf:fs", onCmd);
+        window.addEventListener("keydown", onKey);
+        return () => {
+            document.removeEventListener("fullscreenchange", onChange);
+            document.removeEventListener("webkitfullscreenchange", onChange);
+            window.removeEventListener("nf:fs", onCmd);
+            window.removeEventListener("keydown", onKey);
+        };
+    }, [setFs]);
+    useEffect(() => {
+        document.body.classList.toggle("nf-fs", fs);
+        return () => document.body.classList.remove("nf-fs");
+    }, [fs]);
     const [snd, setSnd] = useSoundPrefs();
     const [hum, setHumOn] = useState(true);
     const humRef = useRef(true);
@@ -498,14 +557,16 @@ export function NodeFarm() {
         [log, feedStore],
     );
 
-    // ---- quick-time events (components/nodefarm/events.tsx): a win gives the timed Overclock, a miss costs nothing
+    // ---- quick-time events (components/nodefarm/events.tsx): a win gives the timed Overclock plus its loot roll, a miss costs nothing
     const evResult = useCallback(
-        (def: { title: string }, won: boolean) => {
+        (def: { title: string }, won: boolean, loot?: Loot | null) => {
             const s = g.current;
             if (won) {
                 const r = breach(s);
+                if (loot) payLoot(s, loot);
                 bump((x) => x + 1);
                 log(`${def.title.toUpperCase()} CLEARED. Overclock x${fmt(overclockMult(s))} ${r.stacked ? `extended to ${Math.round(s.overclock)} s` : `for ${Math.round(overclockSecs(s))} s`}.`, "good");
+                if (loot) log(`LOOT // ${RARITY[loot.rarity].name.toUpperCase()}: ${loot.label}.`, loot.rarity >= 3 ? "hot" : "good");
                 if (r.zero) log(`ZERO-DAY: ${fmt(r.zero.bytes ?? 0)} Bytes and 10 minutes of every material paid out.`, "good");
                 if (r.echo) log("ECHO: something knocked back. Another event is coming.", "hot");
                 if (r.intel >= 1) feedStore.push([...call(idTok("lab"), "capture", [strTok("trace")]), pun(" → "), num(`+${fmt(r.intel)} intel`)], { tone: "good", type: true });
@@ -744,7 +805,13 @@ export function NodeFarm() {
 
     return (
         <TipCtx.Provider value={tipApi}>
-        <div className="nf" ref={root} data-tab={tab} data-side={sideShown} data-win={win || undefined} data-oc={s.overclock > 0 ? "" : undefined}>
+        <div className="nf" ref={root} data-tab={tab} data-side={sideShown} data-win={win || undefined} data-fs={fs ? "" : undefined} data-oc={s.overclock > 0 ? "" : undefined}>
+            {fs && (
+                <div className="nf-fsbar">
+                    <span>NODE.FARM // FULL SCREEN</span>
+                    <button type="button" className="nf-fsbar-x" onClick={() => { setFs(false); sfx("tab"); }} aria-label="Exit full screen">Exit <kbd>F</kbd></button>
+                </div>
+            )}
             <Scenery era={era} />
             <header className="nf-hud">
                 <div className="nf-hud-main">
@@ -757,10 +824,11 @@ export function NodeFarm() {
                 <LabHud s={s} />
                 {s.overclock > 0 && (
                     <div className="nf-oc" role="status">
-                        <NfIcon name="spark" /> OVERCLOCK x{overclockMult(s)} · {Math.ceil(s.overclock)}s
+                        <NfIcon name="spark" /> OVERCLOCK x{fmt(overclockMult(s))} · {Math.ceil(s.overclock)}s
                     </div>
                 )}
                 <div className="nf-hud-side">
+                    {!fs && <button type="button" className="nf-fsb" onClick={() => { setFs(true); sfx("tab"); }} aria-label="Full screen">Full</button>}
                     <span><NfIcon name="reboot" /> {fmt(s.reboot)}</span>
                     <span><NfIcon name="mult" /> {fmt(s.mult)}</span>
                     {s.ap > 0 && <span><NfIcon name="ascend" /> {s.ap} AP</span>}
@@ -781,6 +849,7 @@ export function NodeFarm() {
                     ))}
                     {treeSeen && <button type="button" className="nf-dock-b" aria-haspopup="dialog" data-guide={step.target?.win === "tree" ? "" : undefined} onClick={() => openWin("tree")}>Tree</button>}
                     {labOpen(s) && <button type="button" className="nf-dock-b nf-dock-lab" aria-haspopup="dialog" data-ready={labReady(s) ? "" : undefined} data-guide={step.target?.win === "lab" ? "" : undefined} onClick={openLab}>Lab</button>}
+                    <button type="button" className="nf-dock-b" aria-pressed={fs} onClick={() => { setFs(!fs); sfx("tab"); }}>{fs ? "Exit full" : "Full screen"}</button>
                 </div>
             </header>
             <GuideStrip step={step} onGo={() => goTo(step.target)} onMap={() => openWin("map")} mapOpen={win === "map"} />
@@ -920,7 +989,7 @@ export function NodeFarm() {
                         save();
                         bump((x) => x + 1);
                     }}
-                    onClose={() => setLabTree(false)}
+                    onClose={closeLab}
                 />
             )}
             {treeOpen && (
@@ -930,7 +999,7 @@ export function NodeFarm() {
                     reduced={reduced}
                     onBuy={(id) => { if (buyNode(s, id)) { sfx("nfBuy", { tier: 4 }); bump((n) => n + 1); } else sfx("deny"); }}
                     onRespec={() => { const back = respec(s); sfx("tab"); log(`Tree respec: ${fmt(back)} AP refunded.`, "good"); save(); bump((n) => n + 1); return back; }}
-                    onClose={() => setTreeOpen(false)}
+                    onClose={closeTree}
                 />
             )}
             <Tip host={root} tip={tip} />

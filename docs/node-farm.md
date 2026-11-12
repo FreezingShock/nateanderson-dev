@@ -14,7 +14,7 @@ button tiers (+1, +5, +25, +125, +625, +3125; each tier costs about 8 to 10 time
 - Runes, Starglass, Voidsteel and Chrono are the deep materials (unlock at 150 Aether, 200 Runes, 250 Starglass, 300 Voidsteel; a quarter of that after your first Ascend). Same rules as the others, each boosts the one below, Chrono adds a little to everything. They also add to the AP you earn (`TUNE.apPer`).
 - Prestige tree (see "Prestige tree" below): 40 nodes in five sections, bought with AP, kept through Ascend. `state.tree` holds owned ids; old saves are refunded for nodes that no longer exist.
 - Ascend (400 Aether): wipes everything except goals, perks and lifetime stats for Ascension Points (+30 percent to everything each) and five perks.
-- There is no tapping: progress comes from buttons only (Nate did not want a Cookie Clicker). The core is a live display: its outer arc shows progress to the cheapest Reboot and it pulses on every press. Quick-time events (see below) appear every 3 to 5 minutes; clearing one gives a x6 Overclock for 20 s.
+- There is no tapping: progress comes from buttons only (Nate did not want a Cookie Clicker). The core is a live display: its outer arc shows progress to the cheapest Reboot and it pulses on every press. Quick-time events (see below) appear every 3 to 5 minutes; clearing one gives the timed Overclock plus a rarity loot roll.
 - Offline progress is capped at 8 hours (Standby cells perk: +4 h per level). Nothing is auto-bought. Returning after more than a minute away opens a full-screen standby report (components/nodefarm/away.tsx): time banked, a standby-window meter, what each resource gained, and a Collect button. Everything is already banked when it opens; Esc or Collect closes it.
 
 
@@ -116,7 +116,16 @@ A second currency and a small research tree that run alongside Bytes. Built 2026
 - Console `nf lab`, Records "Exploit Lab" section, guide steps `lab-research` and `lab-compile`, keyboard `r` opens the lab tree, admin `grantLab` / `clearLab`.
 
 ## Quick-time events
-`lib/nodefarm/events.ts` holds the event list and every timing number (`EVENT_TUNE`); `components/nodefarm/events.tsx` is the `EventLayer` that schedules them and draws each one as a centered card over a dim scrim (never in a menu). Flow: incoming card (Engage / Skip, 15 s then it passes, controls lock for 0.65 s so a stray tap can't start one) then the live challenge then a short result card. Four types: Intrusion (four-key memory sequence), Power surge (hold, release in the green band, 3 tries), Signal lock (stop the sweep in the zone, 3 tries), Breach trace (hit 4 of 5 lit nodes on a 3 x 3 grid). Winning calls `breach()` (the timed Overclock); missing or skipping costs nothing. All of them work with touch, mouse and keyboard (1 to 4, 1 to 9, Space, Escape skips), the card is an `alertdialog` and returns focus when it closes. Events can be switched off from the card or the Menu (`nf-events-v1` in localStorage). To add a type: add it to `EVENTS`, add a body component in `events.tsx`, and style it under `.nf-ev`.
+`lib/nodefarm/events.ts` holds the event list, every timing number (`EVENT_TUNE`) and the loot maths; `components/nodefarm/events.tsx` is the `EventLayer` that schedules them; styles are in `app/camino/nodefarm-events.css`. The layer is portaled to `<body>` (or a full-screen element smaller than the page), so the card centers on the visible screen whatever the scroll. Flow: incoming card (Engage / Skip, 15 s then it passes, controls lock for 0.65 s so a stray tap can't start one) then the live event then a loot result card.
+
+Nate dislikes reaction, memory, puzzle and guessing games, so no event tests reflexes (the four from #145, Intrusion, Power surge, Signal lock and Breach trace, were retired for that). Five types, each with its own colour and dithered canvas art:
+- Traffic spike (cyan): the card docks as a strip above the site dock and you play the real board; every buy press fills a 15-press contract. Cash out any time.
+- Rogue process (purple): pick one of two or three shown outcomes (Quarantine = Bytes, Exploit = extra Overclock, Harvest = newest material), all at one rolled rarity.
+- Cold storage (green): hold to decrypt six rows of a hex dump; let go to pause, cash out any time, every open row counts.
+- Relay cascade (amber): five relays charge in turn; a full relay waits for you; pressing within 0.9 s of it filling builds the chain.
+- Dead packet (pink): three presses crack it open.
+
+Each body reports a quality from 0 to 1; when the clock runs out it reports what it has so far. From `winAt` (0.25) it is a win: node-farm.tsx calls `breach()` (Overclock, so the Anomaly tree nodes keep working) then `payLoot()`. Loot rarity uses the board's six rarity colours; better quality shifts the roll up. Loot is a lump of Bytes or of the newest material (seconds of plain, non-Overclock output) or extra Overclock seconds, sized so engaging every event adds about +40% over the Overclock alone. Skipping or closing with too little done costs nothing. Touch, mouse and keyboard all work (1 to 3, Space, Escape skips); the card is an `alertdialog` (the docked spike strip is a `status`) and returns focus when it closes. Events can be switched off from the card or the Menu (`nf-events-v1`). Admin `nf:fire` shows any kind right away. To add a type: add it to `EVENTS`, add a body that calls `useDone(props, sofar)`, and style it in nodefarm-events.css. Timers whose deps include callbacks from node-farm.tsx get reset by its 10 Hz re-render, so keep such callbacks in refs.
 
 ## Scenery (dither backdrops per era)
 - Art: `scripts/naos-art/nodefarm-scenes.py` draws nine original 480 x 270 landscapes plus an Ascend piece into `public/naos/nodefarm/scene-<n>.{png,webp}` (`scene-ascend` for Ascend). Two-tone palette PNGs (era colour at 55% for the dither, full colour for lit lines), about 1 to 6 KB each. Every scene tiles sideways without a seam, so a wide board repeats it. Rebuild with `python3 scripts/naos-art/nodefarm-scenes.py` (or `... 3 ascend`).
@@ -140,6 +149,10 @@ Where they show: a typed `logs.recover("004")` feed line and a milestone banner 
 
 ## News lines (lib/nodefarm/news.ts)
 Every 20 to 30 s one short line drops into the terminal feed (typed out, skipped when the tab is hidden, a window is open or the feed was busy in the last 5 s). Lines are in the previous-operator voice (Nate picked that tone and "mixed into the terminal feed"): `op` (prev.op), `past` (four earlier operators of node-01: wren, tamsin, osk, vael, all gone), `note` (dim node comment), `hint` (how to progress) and `wry`. Each line has a stage window (index of the newest unlocked stat) and an optional state test, so early lines talk about wires and late ones about Runes and Chrono. `pickNews(state, recent)` skips the last 40 shown. Past-operator messages shown are remembered in `localStorage["nf-news-v1"]`. Console: `nf news` prints a random fitting line, `nf archive [name]` lists what has been found of each operator. Add lines to `BASE` or `PAST`; new past messages go at the end of the operator's block (keys are array positions, so inserting resets what players have "seen"). Names and fates of the four operators were written by Claude on Nate's ask for more lore; he has not confirmed them.
+
+## Full screen
+`Full screen` (HUD button on phone, dock button on desktop, key `F`, console `nf fs [on|off]`) sets `body.nf-fs` and `data-fs` on `.nf`. The site's top bar, page dock and footer are hidden and the board becomes `position: fixed` (z-index 70, inside `main`, so body-level pop-ups, the tree and the offline report stay above it). A sticky bar at the top shows `Exit F`; Esc closes an open window first, then leaves full screen. Where the browser has a Fullscreen API (not iPhone) it also requests real full screen on `<html>` and leaving real full screen with Esc leaves the mode. The mode is remembered per browser (`nf-fs-v1`) and comes back as the in-page mode on the next visit (browsers need a tap for real full screen). CSS: app/camino/nodefarm-fs.css. The tree falls back to its full-screen framing because the site bar is hidden. Checks: /mnt/project-files/portfolio/node-farm-fullscreen/ (fs.mjs, fs-states.mjs).
+
 ## Admin mode (root console)
 
 Unadvertised testing tools, on this device only. Once on, the panel floats over the game (drag the bar, resize from the corner, minimize with the − button or a double-click; position and size are remembered) and stays across visits; the × hides it and a small "root" tab brings it back. Turn on from the naOS console (backtick): `nf admin on` arms it and opens the panel, `nf admin max` grants everything (tree, perks, Drones, goals, secrets, logs, prestiges, materials), `nf admin panel` reopens the panel, `nf admin snap|snaps|restore [n|real]` manage snapshots, `nf admin off` hides it. Turning it on stores your real save as the `real save` snapshot first.
@@ -153,6 +166,36 @@ Code: pure rules and snapshots in `lib/nodefarm/admin.ts`, panel in `components/
 - Keys (only on the Node Farm page, off while typing, with a modifier, over another panel or during an event): M Map, O Goals, L Records, A Ascend, S Menu, T Tree, B Buy max.
 - The tab title shows `<rate>/s · Node Farm` while the tab is in the background.
 - Menu "Calm motion" (`nf-calm-v1`) forces reduced motion on top of the OS setting: the `reduced` prop everywhere plus `body.nf-calm` CSS. Menu also shows when the game last saved.
+
+## Zone art
+
+Each zone panel shows a staged dither scene in its blank space: right of the description, below the title bar, above the spec
+lines and buttons. It grows from stage 0 (backdrop only) to stage 7 (seven sprites, each bigger than the last).
+
+- **Stage logic** (`lib/nodefarm/zone-art.ts`): 60% *afford* (how many of the zone's six buttons you can pay for now, plus a
+  log-scale fraction toward the next) and 40% *owned* (units bought this run, log scale). Paying for the zone's top button
+  always means stage 7. Bytes uses the Multiplier buttons (what Bytes buy) and counts Multiplier tiers running; Reboots use
+  the Reboot count only (their prices climb with each Reboot). The shown stage never drops until Ascend (kept per browser in
+  `nf-zone-art-v1`, not in the save), so Bytes and Multipliers show the best Reboot cycle of the run. In the pacing sim the
+  early zones reach 7 in about 0.6 to 1.5 h, Aether reaches about 3 by the first Ascend.
+- **Panel** (`components/nodefarm/zone-art.tsx`, `app/camino/nodefarm-zone-art.css`): one element per zone, measured only
+  when the panel resizes. Nate's placement rule (2026-11-12): the whole scene shows, never cut; it fills from the white title
+  bar down to the spec lines and runs to the panel's right edge; it is scaled to fit (snapped to whole device pixels, so 2x on
+  a normal screen, 1.5x on a 2x screen, up to 3x) and the panel opens a little room above the spec lines when needed. The
+  description gets a dark wash and the big number a dark pool behind it. Phones give it its own band under the header.
+  Folded panels hide it on phones and dim it on desktop. Frames step at 6 fps with CSS, paused offscreen and for reduced
+  motion. No filter, mask or blend on the animated layer.
+- **Art** (`scripts/naos-art/nodefarm_zone_kit.py` plus one script per lane, e.g. `nodefarm-zone-bytes.py`): sheet
+  `public/naos/nodefarm/zone-<id>.{png,webp}`, cells 288 x 96 art px, 6 frames across, 8 stages down (1728 x 768). Rows 0 to
+  31 are sky/backdrop that reaches the title bar, sprites live lower down; the whole cell is always visible. RAMPS and BAYER from `nodefarm-icons.py`, busy backdrops and several on-palette accents (Nate's pick),
+  WebP lossless under 30 KB. Add the zone id to `ZONE_ART` to switch a sheet on.
+- **Zones 02 to 04** (`scripts/naos-art/nodefarm-zone-art.py`, its own primitives on the same RAMPS and Bayer): Amp Bay grows hex modules into a breathing hex reactor with pulse rings, meters and a cyan core; Power Room grows power glyphs into a console, a battery tower, a coil pylon and a power core throwing arcs; Trace Foundry grows copper bars into a spool, a pouring crucible, a bar pyramid and a foundry. A lit floor bus with moving pulses ties each scene together. Run `python3 scripts/naos-art/nodefarm-zone-art.py [mult|reboot|copper] [--preview DIR]`.
+- **Zones 05 to 08** (`scripts/naos-art/nodefarm-zones-05-08.py`): Fab Cleanroom, Crystal Vault, Signal Void, Glyph Hall. Sprites
+  1 to 6 follow each zone's button names (Die to Megafab, Shard to Cavern, Spark to Rift, Mark to Grimoire); sprite 7 is the
+  capstone (fab tower, resonance spire, signal gate, hall gate) and stands left of sprite 6 to keep clear of the big number.
+  Each zone adds two shade ramps of its own hue and a far layer for the sky (cleanroom ceiling and racks, crystal
+  silhouettes, aurora, carved wall with torches). Nate picked the strong halo behind the sprites.
+- **Preview**: `nf art 0` to `nf art 7` in the console shows every zone at one stage for this visit; `nf art live` goes back.
 
 ## Older windows refresh (Map, Goals, Records, Menu), 2026-11-12
 Brought up to the Ascend window's level. Shared parts in `components/nodefarm/win-kit.tsx`: `WinBanner` (dither art from `public/naos/nodefarm/win-<map|goals|records|menu>.webp`, drawn by `scripts/naos-art/nodefarm-window-art.py`, with a `$ cd ~/...` code readout), `Frame` (corner-bracket section with a `// path` heading), `DataLines` (`key ..... value`) and `HoldButton` (press and hold; a click with no press behind it arms, a second click fires). Styles: `app/camino/nodefarm-windows.css` (`nf-wk-*`).

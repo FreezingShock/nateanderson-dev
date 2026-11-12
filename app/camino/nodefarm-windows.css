@@ -265,16 +265,25 @@
 @media (hover: hover) { .ctos .nf-dr-list .nf-mini:not(:disabled):hover { background: var(--c); color: #0a0a0a; } }
 .ctos .nf-dr-pips i[data-f] { box-shadow: 0 0 6px color-mix(in srgb, var(--c) 50%, transparent); }
 
-/* ==== unlock and milestone banners: a strip pinned under the site bar, the board's width (left and width set in components/nodefarm/juice.tsx) */
-html body .nf-jb { left: var(--jb-left, 8px); top: 64px; translate: none; width: var(--jb-w, min(92vw, 560px)); min-height: 56px; padding: 8px 18px 8px 10px; gap: 14px; border-left-width: 4px; }
-html body .nf-jb:not([data-first]) { width: var(--jb-w, min(92vw, 420px)); padding: 6px 18px 6px 10px; min-height: 48px; }
-html body .nf-jb .nf-jb-t { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 14px; }
-html body .nf-jb .nf-jb-t b { font-size: clamp(14px, 2.6vw, 18px); }
-html body .nf-jb .nf-jb-t span { flex: 1 1 200px; }
+/* ==== unlock and milestone banners: a compact card centred on the board, near the top of the part in view, sized to its
+   text (position and max width set by placeBanner in components/nodefarm/juice.tsx). It opens sideways from a centre line,
+   decrypts or prints its rows (lib/nodefarm/cx.ts), shows a draining timer, then shuts to a line like a CRT going off. */
+html body .nf-jb { left: var(--jb-x, 50%); top: var(--jb-y, 96px); translate: -50% 0; width: max-content; max-width: var(--jb-max, min(92vw, 480px)); min-width: min(240px, 92vw); padding: 8px 22px 10px 10px; gap: 12px; animation: nfJbOpen 260ms steps(6, end) both; }
+html body .nf-jb:not([data-first]) { width: max-content; padding: 8px 20px 10px 10px; gap: 12px; }
+html body .nf-jb .nf-jb-t { gap: 3px; }
 html body .nf-jb .nf-ic.l { --s: 32px; }
-/* while a game window is open the strip waits underneath it */
+html body .nf-jb[data-out] { animation: nfJbShut 220ms steps(5, end) forwards; }
+html body .nf-jb .nf-jb-t b { font-size: clamp(14px, 3.4vw, 17px); }
+html body .nf-jb:not([data-first]) .nf-jb-t b { font-size: clamp(14px, 3.4vw, 16px); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+html body .nf-jb .nf-jb-t span { max-width: 36ch; }
+html body .nf-jb-tm { position: absolute !important; left: 0; right: 0; bottom: 0; height: 2px; z-index: 3 !important; background: var(--c); transform-origin: 0 50%; animation: nfJbTm var(--ms, 1500ms) linear both; opacity: .85; }
+@keyframes nfJbOpen { 0% { clip-path: inset(calc(50% - 1px) 50% calc(50% - 1px) 50%); } 50% { clip-path: inset(calc(50% - 1px) 0 calc(50% - 1px) 0); } 100% { clip-path: inset(0 0 0 0); } }
+@keyframes nfJbShut { 0% { clip-path: inset(0 0 0 0); } 55% { clip-path: inset(calc(50% - 1px) 0 calc(50% - 1px) 0); opacity: 1; } 100% { clip-path: inset(calc(50% - 1px) 50% calc(50% - 1px) 50%); opacity: .4; } }
+@keyframes nfJbTm { from { transform: scaleX(1); } to { transform: scaleX(0); } }
+@media (prefers-reduced-motion: reduce) { html body .nf-jb, html body .nf-jb-tm { animation: none !important; } }
+/* while a game window is open the card waits underneath it */
 body.nf-win-open .nf-jb { z-index: 59; }
-@media (max-width: 559px) { html body .nf-jb .nf-jb-t span { display: none; } }
+@media (max-width: 559px) { html body .nf-jb { min-width: 0; } }
 
 /* Menu additions (#170 features in the config look) */
 .ctos .nf-wk-cfg li > button:disabled { cursor: default; opacity: .7; }

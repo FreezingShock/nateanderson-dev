@@ -8,6 +8,8 @@ import { buttonTip, unlockInfo, type Target } from "@/lib/nodefarm/guide";
 import { TipCtx } from "./guide";
 import { NfIcon, NfTierIcon, type NfIconName } from "./icon";
 import { useFoldReveal } from "@/lib/nodefarm/cx";
+import { hasZoneArt } from "@/lib/nodefarm/zone-art";
+import { ZoneArt } from "./zone-art";
 
 type D = ReturnType<typeof derive>;
 export type PressFn = (stat: ButtonStat, tier: number, quiet?: boolean) => boolean;
@@ -125,7 +127,8 @@ export function StatRow({ id, s, d, onPress, onArm, onWatchdog, open: expanded, 
     const ready = id === "bytes" ? 0 : Array.from({ length: TIERS }, (_, k) => k).filter((k) => (s[button(s, id as ButtonStat, k).pays] as number) >= button(s, id as ButtonStat, k).cost).length;
     const bodyId = `nf-body-${id}`;
     return (
-        <article className="nf-row" style={{ ["--c" as string]: def.color }} data-stat={id} data-open={expanded ? "true" : "false"} data-ready={!expanded && ready > 0 ? "" : undefined} data-guide={guide?.stat === id ? "" : undefined} onClick={(e) => { if (!expanded && !(e.target as HTMLElement).closest("button")) onToggle(); }}>
+        <article className="nf-row" style={{ ["--c" as string]: def.color }} data-stat={id} data-open={expanded ? "true" : "false"} data-ready={!expanded && ready > 0 ? "" : undefined} data-guide={guide?.stat === id ? "" : undefined} data-art={hasZoneArt(id) ? "" : undefined} onClick={(e) => { if (!expanded && !(e.target as HTMLElement).closest("button")) onToggle(); }}>
+            <ZoneArt id={id} s={s} />
             <div className="nf-bar-t">
                 <span>ZONE {String(STATS.findIndex((x) => x.id === id) + 1).padStart(2, "0")} // {lore.zone}</span>
                 <span className="nf-bar-s">{buttons > 0 ? `${ready}/${buttons} ready` : "online"}</span>
@@ -186,6 +189,7 @@ function BuyBtn({ s, d, stat, tier, onPress, guided }: { s: State; d: D; stat: B
     const afford = (s[b.pays] as number) >= b.cost;
     const t = useRef<ReturnType<typeof setTimeout> | null>(null);
     const iv = useRef<ReturnType<typeof setInterval> | null>(null);
+    const pending = useRef(false); // touch: a press waiting for release
     const stop = () => {
         if (t.current) clearTimeout(t.current);
         if (iv.current) clearInterval(iv.current);
@@ -214,18 +218,35 @@ function BuyBtn({ s, d, stat, tier, onPress, guided }: { s: State; d: D; stat: B
                 if (e.pointerType === "mouse" && e.button !== 0) return;
                 // no hover on touch: show the tip for a moment after the tap, so a button you cannot afford yet still explains itself
                 if (e.pointerType !== "mouse") tips.show(e.currentTarget, build, { ms: 2600, guided });
+                stop();
+                if (e.pointerType !== "mouse") {
+                    // touch: a finger that lands here may be scrolling the page, so buy on release (a scroll cancels the pointer
+                    // first). Held for 0.35 s it buys and then repeats like a mouse hold.
+                    pending.current = true;
+                    if (isReboot) return;
+                    t.current = setTimeout(() => {
+                        pending.current = false;
+                        onPress(stat, tier);
+                        iv.current = setInterval(() => {
+                            if (!onPress(stat, tier, true)) stop();
+                        }, 100);
+                    }, 350);
+                    return;
+                }
                 onPress(stat, tier);
                 if (isReboot) return;
-                stop();
                 t.current = setTimeout(() => {
                     iv.current = setInterval(() => {
                         if (!onPress(stat, tier, true)) stop();
                     }, 100);
                 }, 400);
             }}
-            onPointerUp={stop}
-            onPointerLeave={(e) => { stop(); if (e.pointerType === "mouse") tips.hide(e.currentTarget); }}
-            onPointerCancel={stop}
+            onPointerUp={() => {
+                stop();
+                if (pending.current) { pending.current = false; onPress(stat, tier); }
+            }}
+            onPointerLeave={(e) => { stop(); pending.current = false; if (e.pointerType === "mouse") tips.hide(e.currentTarget); }}
+            onPointerCancel={() => { stop(); pending.current = false; }}
             onClick={(e) => e.detail === 0 && onPress(stat, tier)}
             onContextMenu={(e) => e.preventDefault()}
         >

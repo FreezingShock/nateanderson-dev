@@ -93,7 +93,7 @@ export interface NfLine {
 const t = (text: string, k?: NfLine["k"]): NfLine => ({ t: text, k });
 const row = (a: string, b: string, go?: string): NfLine => ({ a, b, go });
 
-export const NF_SUBS = ["stats", "goals", "secrets", "logs", "archive", "news", "open", "anim"];
+export const NF_SUBS = ["stats", "goals", "secrets", "logs", "archive", "news", "open", "anim", "fs", "fullscreen", "art"];
 
 export interface NfResult {
     lines: NfLine[];
