@@ -22,7 +22,11 @@ export function MiniHud({ bytes, rate, step, onGo, paused }: { bytes: number; ra
             if (!hud || !strip || !nf) return setShow(false);
             const gone = strip.getBoundingClientRect().bottom < 64;
             const inGame = nf.getBoundingClientRect().bottom > 220;
-            setShow(gone && inGame);
+            // phones: the tab grid is the way around, so never cover it
+            const tabs = document.querySelector<HTMLElement>(".nf-tabs");
+            const tr = tabs && getComputedStyle(tabs).display !== "none" ? tabs.getBoundingClientRect() : null;
+            const tabsInView = !!tr && tr.bottom > 64 && tr.top < window.innerHeight - 100;
+            setShow(gone && inGame && !tabsInView);
         };
         const on = () => { if (!raf) raf = requestAnimationFrame(calc); };
         const fs = () => { const f = document.fullscreenElement; setHost(f && f !== document.documentElement ? f : document.body); on(); };

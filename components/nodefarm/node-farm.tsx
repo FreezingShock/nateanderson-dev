@@ -834,6 +834,14 @@ export function NodeFarm() {
         setTab(t);
         if (SIDE.includes(t)) setSide(t);
         sfx("tab");
+        // phones: the section opens under the tab grid, usually below the fold, so a tap would look like nothing happened
+        if (window.innerWidth < 1000) {
+            requestAnimationFrame(() => requestAnimationFrame(() => {
+                const bar = document.querySelector<HTMLElement>(".nf-tabs");
+                if (!bar) return;
+                window.scrollTo({ top: Math.max(0, bar.getBoundingClientRect().top + window.scrollY - 64), behavior: reduced ? "auto" : "smooth" });
+            }));
+        }
     };
     const openWin = (w: "map" | "goals" | "records" | "ascend" | "menu" | "tree") => {
         if (w === "tree") { setWin(""); setTreeOpen(true); sfx("tab"); return; }
