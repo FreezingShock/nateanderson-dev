@@ -1,5 +1,6 @@
 "use client";
 
+import { backupLine, type Backup } from "@/lib/nodefarm/backups";
 import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { PixelIcon } from "@/components/cm/pixel-icons";
 import { codeReveal } from "@/lib/nodefarm/cx";
@@ -234,10 +235,10 @@ export function RecordsPanel({ s }: { s: State }) {
 // Save files, backup, volume, calm motion, number format and keys came in with #170 and keep their behaviour.
 
 export function MenuPanel({
-    s, soundOn, onSound, humOn, onHum, eventsOn, onEvents, ioText, setIoText, ioMsg, onExport, onImport, importConfirm, onDownload, onUpload, backup, onRestore, volume, onVolume, calm, osCalm, onCalm, jumpOn, onJump, lastSave, numFmt, onNumFmt, onReset,
+    s, soundOn, onSound, humOn, onHum, eventsOn, onEvents, ioText, setIoText, ioMsg, onExport, onImport, importConfirm, onDownload, onUpload, backups, onRestore, onRecover, volume, onVolume, calm, osCalm, onCalm, jumpOn, onJump, lastSave, numFmt, onNumFmt, onReset,
 }: {
     s: State; soundOn: boolean; onSound: () => void; humOn: boolean; onHum: () => void; eventsOn: boolean; onEvents: () => void; ioText: string; setIoText: (v: string) => void; ioMsg: string; onExport: () => void; onImport: () => void; importConfirm: boolean; onDownload: () => void; onUpload: (f: File) => void;
-    backup: { at: number; why: string } | null; onRestore: () => void; volume: number; onVolume: (v: number) => void; calm: boolean; osCalm: boolean; onCalm: () => void; jumpOn: boolean; onJump: () => void; lastSave: number; numFmt: NumFmt; onNumFmt: (f: NumFmt) => void; confirm?: boolean; onReset: () => void;
+    backups: Backup[]; onRestore: (b: Backup) => void; onRecover: (b: Backup) => void; volume: number; onVolume: (v: number) => void; calm: boolean; osCalm: boolean; onCalm: () => void; jumpOn: boolean; onJump: () => void; lastSave: number; numFmt: NumFmt; onNumFmt: (f: NumFmt) => void; confirm?: boolean; onReset: () => void;
 }) {
     const keys: [string, string][] = [["M", "Map"], ["O", "Goals"], ["L", "Records"], ["A", "Ascend"], ["S", "Menu"], ["T", "Tree"], ["G", "Show me the next step"], ["P", "Press the glowing button (hold to keep going)"], ["1 to 6", "Press that tier on the zone in the middle of the screen"], ["Q / E", "Open the previous or next arc"], ["Z", "Fold or open the zone in the middle of the screen"], ["Click a header", "Fold or open that panel"], ["Esc", "Close the open window"], ["Hold a button", "Keep buying"]];
     return (
@@ -254,7 +255,7 @@ export function MenuPanel({
             />
             <div className="nf-wk-cols nf-wk-menu">
                 <SettingsFrame soundOn={soundOn} onSound={onSound} humOn={humOn} onHum={onHum} eventsOn={eventsOn} onEvents={onEvents} volume={volume} onVolume={onVolume} calm={calm} osCalm={osCalm} onCalm={onCalm} jumpOn={jumpOn} onJump={onJump} numFmt={numFmt} onNumFmt={onNumFmt} />
-                <Frame i={2} color="#2fd8e8" path="config/save.key" title="Save code" note="Your save lives in this browser. Export a code or a file to move it, or paste one to load it.">
+                <Frame i={2} color="#2fd8e8" path="config/save.key" title="Save code" note="Your save lives in this browser. Export a code or a file to move it, or paste one to load it. Restoring a backup keeps the save you leave as a new backup.">
                     <label className="nf-wk-term">
                         <span className="nf-wk-term-h"><span aria-hidden="true">$</span> cat save.key</span>
                         <textarea value={ioText} onChange={(e) => setIoText(e.target.value)} rows={4} spellCheck={false} placeholder="Export to print a code here, or paste one and press Import." aria-label="Save code" />
@@ -266,10 +267,20 @@ export function MenuPanel({
                         <label className="nf-wk-btn nf-wk-file">Open file<input type="file" accept=".txt,text/plain" onChange={(e) => { const f = e.target.files?.[0]; if (f) onUpload(f); e.target.value = ""; }} /></label>
                     </div>
                     {ioMsg && <p className="nf-wk-msg" role="status">{"> "}{ioMsg}</p>}
-                    {backup && (
+                    {backups.length > 0 && (
                         <div className="nf-wk-backup">
-                            <DataLines rows={[["backup", `${new Date(backup.at).toLocaleString()} (${backup.why})`]]} />
-                            <button type="button" className="nf-wk-btn" onClick={onRestore}>Restore backup</button>
+                            <p className="nf-wk-msg nf-wk-bk-h">{"> "}backups // the game keeps these for you</p>
+                            <ul className="nf-wk-bk">
+                                {backups.map((b) => {
+                                    const l = backupLine(b);
+                                    return (
+                                        <li key={`${b.at}-${b.kind}`}>
+                                            <span className="nf-wk-bk-t"><b>{l.when}</b> {l.what}{b.daily ? " (daily)" : ""}<small>{l.how}</small></span>
+                                            <button type="button" className="nf-wk-btn" onClick={() => (b.kind === "lost" ? onRecover(b) : onRestore(b))}>{b.kind === "lost" ? "Copy out" : "Restore"}</button>
+                                        </li>
+                                    );
+                                })}
+                            </ul>
                         </div>
                     )}
                 </Frame>
