@@ -2,19 +2,16 @@
    (components/nodefarm/tree-sprite.tsx). Art: scripts/naos-art/nodefarm-tree-bg.py and nodefarm-tree-sprites.py.
    Everything that moves is a transform or opacity, so panning stays on the compositor. */
 
-/* ---- backdrop: 4 tiling layers far to near, then the world layer, then a vignette ---- */
-.nf-bd { position: absolute; inset: 0; z-index: 0; overflow: hidden; pointer-events: none; background: #04060b; contain: strict; }
-.nf-bd-l { position: absolute; left: 0; top: 0; width: 300vw; height: 300vh; transform-origin: 0 0; will-change: transform; }
-.nf-bd-d { position: absolute; inset: 0; display: block; background-repeat: repeat; background-size: 1024px 1024px; image-rendering: pixelated; animation: nfBdDrift var(--drift, 0s) linear infinite; }
-.nf-bd[data-soft] .nf-bd-d, .nf-bd[data-soft] .nf-bd-w i { image-rendering: auto; }
-.nf-bd-l[data-l="0"] .nf-bd-d { background-image: url(/naos/nodefarm/tree-bg-0.webp); --drift: 600s; }
-.nf-bd-l[data-l="1"] .nf-bd-d { background-image: url(/naos/nodefarm/tree-bg-1.webp); --drift: 420s; opacity: .75; }
-.nf-bd-l[data-l="2"] .nf-bd-d { background-image: url(/naos/nodefarm/tree-bg-2.webp); --drift: 300s; }
-.nf-bd-l[data-l="3"] .nf-bd-d { background-image: url(/naos/nodefarm/tree-bg-3.webp); --drift: 200s; opacity: .7; }
-/* a second copy of the star layer, shifted half a tile, fading in and out: stars that twinkle */
-.nf-bd-l[data-l="2"] .nf-bd-tw { background-position: 512px 341px; opacity: 0; animation: nfBdDrift 300s linear infinite, nfBdTw 5.2s steps(4) infinite; }
-@keyframes nfBdDrift { from { transform: translateX(0); } to { transform: translateX(-1024px); } }
-@keyframes nfBdTw { 0%, 100% { opacity: 0; } 40% { opacity: .9; } 60% { opacity: .6; } }
+/* ---- backdrop: 3 tiling layers far to near, then the world layer, then a vignette ---- */
+.nf-bd { position: absolute; inset: 0; z-index: 0; overflow: hidden; pointer-events: none; contain: strict; }
+.nf-bd-l { --t: 1024px; position: absolute; left: 0; top: 0; width: 0; height: 0; overflow: hidden; contain: strict; will-change: transform; }
+.nf-bd-d { position: absolute; inset: 0; display: block; background-repeat: repeat; background-size: var(--t) var(--t); image-rendering: pixelated; }
+.nf-bd[data-soft] .nf-bd-w i { image-rendering: auto; }
+.nf-bd-l[data-l="0"] .nf-bd-d { background-image: url(/naos/nodefarm/tree-bg-0.webp); }
+.nf-bd-l[data-l="1"] .nf-bd-d { background-image: url(/naos/nodefarm/tree-bg-1.webp); animation: nfBdDrift 300s linear infinite; will-change: transform; }
+.nf-bd-l[data-l="2"] .nf-bd-d { background-image: url(/naos/nodefarm/tree-bg-2.webp); opacity: .7; }
+/* the star layer drifts sideways by exactly one tile per loop, so it never seams; the far layers hold still */
+@keyframes nfBdDrift { from { transform: translateX(0); } to { transform: translateX(calc(var(--t) * -1)); } }
 
 .nf-bd-w { position: absolute; left: 0; top: 0; width: 0; height: 0; transform-origin: 0 0; will-change: transform; }
 .nf-bd-w i { position: absolute; display: block; translate: -50% -50%; background: center / 100% 100% no-repeat; image-rendering: pixelated; transition: opacity .5s ease; }
@@ -48,7 +45,6 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-    .nf-bd-d, .nf-bd-core { animation: none; }
-    .nf-bd-l[data-l="2"] .nf-bd-tw { animation: none; opacity: 0; }
+    .nf-bd-l .nf-bd-d, .nf-bd-core { animation: none; }
     .nf-ts[data-st="owned"] { animation: none; }
 }
