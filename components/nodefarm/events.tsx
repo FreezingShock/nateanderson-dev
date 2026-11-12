@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState, type MutableRefObject } from "react";
+import { cxPlay, useCodeReveal } from "@/lib/nodefarm/cx";
 import { sfx } from "@/lib/sound/sounds";
 import { EVENT_TUNE, nextGapMs, pickEvent, type EventDef, type EventKind } from "@/lib/nodefarm/events";
 import { eventHaste, overclockMult, overclockSecs, type State } from "@/lib/nodefarm/engine";
@@ -128,15 +129,30 @@ export function EventLayer({ game, busy, enabled, ready, reduced, onEngage, onRe
         return () => clearTimeout(t);
     }, [act, close, onMiss]);
 
-    if (!act) return null;
-    const { def, stage } = act;
+    // the card prints in when an event arrives, reprints its body on each stage, and deletes out when it ends
+    // (code reveal, lib/nodefarm/cx.ts). While it deletes out, the last state stays on screen, inert.
+    const card = useRef<HTMLDivElement>(null);
+    const lastAct = useRef<Active | null>(null);
+    if (act) lastAct.current = act;
+    const shown = useCodeReveal(card, !!act, { rows: ":scope > :not(.nf-ev-br)" });
+    const stageKey = act ? `${act.id}:${act.stage}` : "";
+    const prevStage = useRef("");
+    useEffect(() => {
+        const was = prevStage.current;
+        prevStage.current = stageKey;
+        if (stageKey && was && was.split(":")[0] === stageKey.split(":")[0]) cxPlay(card.current, { bare: true, sound: false, rows: ":scope > :not(.nf-ev-br):not(.nf-ev-top)" });
+    }, [stageKey]);
+
+    const view = act ?? (shown ? lastAct.current : null);
+    if (!view) return null;
+    const { def, stage } = view;
     return (
-        <div className="nf-ev-scrim" data-stage={stage}>
-            <div className="nf-ev" role="alertdialog" aria-modal="true" aria-labelledby="nf-ev-t" aria-describedby="nf-ev-d" data-kind={def.kind} data-stage={stage} data-reduced={reduced ? "" : undefined}>
+        <div className="nf-ev-scrim" data-stage={stage} data-out={act ? undefined : ""} inert={!act}>
+            <div ref={card} className="nf-ev" role="alertdialog" aria-modal="true" aria-labelledby="nf-ev-t" aria-describedby="nf-ev-d" data-kind={def.kind} data-stage={stage} data-reduced={reduced ? "" : undefined}>
                 <i className="nf-ev-br" data-c="tl" /><i className="nf-ev-br" data-c="tr" /><i className="nf-ev-br" data-c="bl" /><i className="nf-ev-br" data-c="br" />
                 <div className="nf-ev-top">
                     <b id="nf-ev-t">{def.code}</b>
-                    <span>{stage === "incoming" ? "incoming" : stage === "live" ? "live" : act.won ? "cleared" : "lost"}</span>
+                    <span>{stage === "incoming" ? "incoming" : stage === "live" ? "live" : view.won ? "cleared" : "lost"}</span>
                 </div>
 
                 {stage === "incoming" && <Incoming def={def} onEngage={engage} onSkip={skip} onOff={() => { sfx("close"); onDisable(); }} />}
@@ -144,13 +160,13 @@ export function EventLayer({ game, busy, enabled, ready, reduced, onEngage, onRe
                     <>
                         <p id="nf-ev-d" className="nf-ev-hint">{def.hint}</p>
                         <Body def={def} onDone={finish} reduced={reduced} />
-                        <Clock key={act.id} secs={def.secs} onEnd={() => finish(false)} />
+                        <Clock key={view.id} secs={def.secs} onEnd={() => finish(false)} />
                         <div className="nf-ev-foot"><button type="button" className="nf-ev-link" onClick={skip}>Skip</button></div>
                     </>
                 )}
                 {stage === "result" && (
-                    <p id="nf-ev-d" className="nf-ev-result" role="status" data-won={act.won ? "" : undefined}>
-                        {act.won ? `Cleared. Overclock x${overclockMult(game.current)} for ${overclockSecs(game.current)} s.` : "Lost. No cost, the next one will come."}
+                    <p id="nf-ev-d" className="nf-ev-result" role="status" data-won={view.won ? "" : undefined}>
+                        {view.won ? `Cleared. Overclock x${overclockMult(game.current)} for ${overclockSecs(game.current)} s.` : "Lost. No cost, the next one will come."}
                     </p>
                 )}
             </div>

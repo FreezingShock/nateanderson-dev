@@ -1,7 +1,8 @@
 "use client";
 
 import "@/app/camino/nodefarm-juice.css";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
+import { codeReveal } from "@/lib/nodefarm/cx";
 import { createPortal } from "react-dom";
 import { TUNE, STATS, fmt, isUnlocked, statDef, type ButtonStat, type State, type StatId } from "@/lib/nodefarm/engine";
 import { LORE } from "@/lib/nodefarm/lore";
@@ -241,12 +242,21 @@ export function Juice({ reduced }: { reduced: boolean }) {
         later(next, 400);
     }, [later, next]);
 
+    // banners print in and delete out with the shared code reveal (lib/nodefarm/cx.ts); the timing above is unchanged
+    const jb = useRef<HTMLDivElement>(null);
+    const curKey = cur?.key ?? 0;
+    const curOut = !!cur?.out;
+    useLayoutEffect(() => {
+        if (!curKey) return;
+        codeReveal(jb.current, { dir: curOut ? "out" : "in", rows: ".nf-jb-ic, .nf-jb-t > *", sound: false, ms: curOut ? 200 : 320 });
+    }, [curKey, curOut]);
+
     if (!host) return null;
     return createPortal(
         <>
             <div ref={layer} className="nf-pops" aria-hidden="true" />
             {cur && (
-                <div className="nf-jb" key={cur.key} data-kind={cur.kind} data-out={cur.out ? "" : undefined} data-first={cur.first ? "" : undefined} role="status" style={{ ["--c" as string]: cur.color, ["--ms" as string]: `${cur.ms}ms` }}>
+                <div ref={jb} className="nf-jb" key={cur.key} data-kind={cur.kind} data-out={cur.out ? "" : undefined} data-first={cur.first ? "" : undefined} role="status" style={{ ["--c" as string]: cur.color, ["--ms" as string]: `${cur.ms}ms` }}>
                     <i className="nf-jb-br" aria-hidden="true" />
                     <span className="nf-jb-ic"><NfIcon name={cur.icon} large={cur.kind !== "tier"} /></span>
                     <div className="nf-jb-t">
