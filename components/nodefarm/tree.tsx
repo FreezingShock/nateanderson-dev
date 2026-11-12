@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type KeyboardEvent as RKeyboardEvent, type PointerEvent as RPointerEvent } from "react";
 import { createPortal } from "react-dom";
-import { TreeBackdrop, type TreeBackdropHandle } from "./tree-backdrop";
+import { TreeBackdrop, TreeDust, type TreeBackdropHandle } from "./tree-backdrop";
 import { TreeSprite, type SpriteState } from "./tree-sprite";
 import { SPRITE_CELLS } from "@/lib/nodefarm/tree-sprites";
 import * as Engine from "@/lib/nodefarm/engine";
@@ -33,7 +33,8 @@ type Extra = TreeNode & { flavor?: string; sprite?: string };
 function NodeIcon({ n, st, fog }: { n: TreeNode | null; st: NodeState; fog: boolean }) {
     const key = n ? (n as Extra).sprite ?? n.id : "core";
     if (SPRITE_CELLS[key]) {
-        const ss: SpriteState = fog ? "hidden" : st === "owned" ? "owned" : st === "locked" ? "locked" : "open";
+        // locked nodes stay a dark silhouette until they touch something you own (Nate picked this, 2026-11-12)
+        const ss: SpriteState = fog || st === "locked" ? "hidden" : st === "owned" ? "owned" : "open";
         return (
             <>
                 <TreeSprite sprite={key} state={ss} className="nf-tn-spr" />
@@ -654,6 +655,7 @@ export function TreeMenu({ s, reduced, onBuy, onRespec, onClose }: { s: State; r
                         );
                     })}
                 </div>
+                <TreeDust />
             </div>
             <span className="nf-tm-zoom" role="group" aria-label="Zoom">
                 <button type="button" className="nf-tm-b sq" aria-label="Zoom in" onClick={() => { const { w, h } = dims.current; zoomAt(w / 2, h / 2, 1.33, true); }}>+</button>

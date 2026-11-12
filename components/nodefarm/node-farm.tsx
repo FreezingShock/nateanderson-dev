@@ -6,7 +6,8 @@ import { setHum } from "@/lib/sound/engine";
 import { useSoundPrefs } from "@/lib/sound/use-sound";
 import {
     TUNE, overclockMult, overclockSecs, respec, ascend, autoBuy, breach, button, buyDrone, buyNode, buyPerk, toggleArm, checkGoals, derive, exportSave, fmt, fmtTime, fresh, isUnlocked, offline, parseSave, press, STATS, tick,
-    type ButtonStat, type State,
+    apEach, dropFill, hasFeature, openDrop, pressMax, setMount, statDef,
+    type ButtonStat, type MatId, type State,
 } from "@/lib/nodefarm/engine";
 import type { NfLive } from "@/lib/nodefarm/records";
 import { Core, type CoreFeed } from "./core";
@@ -32,6 +33,7 @@ const KEY = "nf-save-v1";
 const EV_KEY = "nf-events-v1"; // "off" when quick-time events are switched off (per device)
 const HUM_KEY = "nf-hum-v1"; // reactor hum on or off (per device)
 const UI_KEY = "nf-ui-v1"; // which stat panels are minimized (per device, not part of the game save)
+const MAX_KEY = "nf-max-v1"; // "1" when Buy max (Batch job node) is switched on (per device)
 type Tab = "core" | "stats" | "map" | "goals" | "records" | "ascend" | "menu";
 const SIDE: Tab[] = ["map", "goals", "records", "ascend", "menu"];
 const TAB_LABEL: Record<Tab, string> = { core: "Core", stats: "Stats", map: "Map", goals: "Goals", records: "Records", ascend: "Ascend", menu: "Menu" };
@@ -64,6 +66,9 @@ export function NodeFarm() {
     const [confirm, setConfirm] = useState<"" | "ascend" | "reset">("");
     const [ioText, setIoText] = useState("");
     const [ioMsg, setIoMsg] = useState("");
+    const [buyMax, setBuyMax] = useState(false);
+    const buyMaxRef = useRef(false);
+    buyMaxRef.current = buyMax;
     useEffect(() => {
         if (!win) return;
         const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") setWin(""); };
@@ -121,6 +126,7 @@ export function NodeFarm() {
             const u = localStorage.getItem(UI_KEY);
             if (u) setFolded(JSON.parse(u));
             if (localStorage.getItem(EV_KEY) === "off") setEvOn(false);
+            if (localStorage.getItem(MAX_KEY) === "1") setBuyMax(true);
             if (localStorage.getItem(HUM_KEY) === "0") {
                 humRef.current = false;
                 setHumOn(false);
@@ -139,7 +145,12 @@ export function NodeFarm() {
         const greet = first
             ? ["naOS // node.farm online", "Link established. 1 node, no clearance.", "Buy your first Multiplier. The core grows with everything you build."]
             : ["naOS // node.farm resumed", `Session restored. ${fmt(s.life.presses)} buttons pressed, ${fmt(s.life.reboots)} reboots on record.`];
-        greet.forEach((t, i) => setTimeout(() => log(t, i === 0 ? "good" : undefined), 180 + i * 900));
+        if (s.treeRefund) {
+            // the 40-node tree replaced the old one: say once what came back
+            greet.push(`The prestige tree was rebuilt with 40 new nodes. ${fmt(s.treeRefund)} AP from your old nodes is back to spend.`);
+            delete s.treeRefund;
+        }
+        greet.forEach((t, i) => setTimeout(() => log(t, i === 0 || i === 2 ? "good" : undefined), 180 + i * 900));
         setReady(true);
     }, [log]);
 
@@ -272,11 +283,14 @@ export function NodeFarm() {
             const s = g.current;
             const was = s.reboot;
             const owned = stat === "reboot" ? 0 : s.bought[stat][tier];
-            const gainNow = button(s, stat, tier).gain;
-            if (!press(s, stat, tier)) {
+            let gainNow = button(s, stat, tier).gain;
+            // Buy max (Batch job node): one press buys as many as the balance allows
+            const n = stat !== "reboot" && buyMaxRef.current && hasFeature(s, "buymax") ? pressMax(s, stat, tier) : press(s, stat, tier) ? 1 : 0;
+            if (!n) {
                 if (!quiet) sfx("deny");
                 return false;
             }
+            gainNow *= n;
             feed.current.lastPulse = performance.now();
             dronePrev.current.manual += 1;
             juice.emit({ t: "press", stat, tier, gain: gainNow, quiet });
@@ -303,8 +317,12 @@ export function NodeFarm() {
         (def: { title: string }, won: boolean) => {
             const s = g.current;
             if (won) {
-                breach(s);
-                log(`${def.title.toUpperCase()} CLEARED. Overclock x${overclockMult(s)} for ${overclockSecs(s)} s.`, "good");
+                const r = breach(s);
+                bump((x) => x + 1);
+                log(`${def.title.toUpperCase()} CLEARED. Overclock x${fmt(overclockMult(s))} ${r.stacked ? `extended to ${Math.round(s.overclock)} s` : `for ${Math.round(overclockSecs(s))} s`}.`, "good");
+                if (r.zero) log(`ZERO-DAY: ${fmt(r.zero.bytes ?? 0)} Bytes and 10 minutes of every material paid out.`, "good");
+                if (r.echo) log("ECHO: something knocked back. Another event is coming.", "hot");
+                return { echo: r.echo };
             } else log(`${def.title} lost. No cost.`, "warn");
         },
         [log],
@@ -329,7 +347,7 @@ export function NodeFarm() {
         setConfirm("");
         if (gain) {
             sfx("nfAscend");
-            juice.emit({ t: "ascend", gain, ap: g.current.ap, n: g.current.life.ascends });
+            juice.emit({ t: "ascend", gain, ap: g.current.ap, n: g.current.life.ascends, each: apEach(g.current) });
             feedStore.push([...call(idTok("system"), "ascend"), pun(" → "), num(`+${gain} AP`), txt(" "), { k: "c", v: "// everything else wiped" }], { tone: "good", type: true });
             setSide("ascend");
             save();
@@ -412,6 +430,14 @@ export function NodeFarm() {
                     <span><NfIcon name="reboot" /> {fmt(s.reboot)}</span>
                     <span><NfIcon name="mult" /> {fmt(s.mult)}</span>
                     {s.ap > 0 && <span><NfIcon name="ascend" /> {s.ap} AP</span>}
+                    {hasFeature(s, "deaddrop") && <DeadDrop s={s} onOpen={() => {
+                        const got = openDrop(s);
+                        if (!got) return sfx("deny");
+                        sfx("nfGoal");
+                        log(`Dead drop opened: ${Object.entries(got).map(([k, v]) => `${fmt(v ?? 0)} ${statDef(k as MatId).name}`).join(", ")}.`, "good");
+                        save();
+                        bump((x) => x + 1);
+                    }} />}
                 </div>
                 <div className="nf-dock" role="group" aria-label="Game windows">
                     {(["map", "goals", "records", "ascend", "menu"] as const).map((w) => (
@@ -456,14 +482,14 @@ export function NodeFarm() {
             </section>
 
             <section className="nf-pane nf-statspane" data-pane="stats" aria-label="Stats and buttons">
-                <Chain s={s} d={d} allOpen={!STATS.every((x) => folded[x.id])} onAll={(open) => setFold(Object.fromEntries(STATS.map((x) => [x.id, !open])))} />
+                <Chain s={s} d={d} allOpen={!STATS.every((x) => folded[x.id])} onAll={(open) => setFold(Object.fromEntries(STATS.map((x) => [x.id, !open])))} max={buyMax} onMax={() => { const v = !buyMax; setBuyMax(v); sfx("tab"); try { localStorage.setItem(MAX_KEY, v ? "1" : "0"); } catch {} }} />
                 {isUnlocked(s, "aether") && (
                     <DroneBay s={s} guided={step.target?.drone} open={!folded.drones} onToggle={() => { setFold({ ...folded, drones: !folded.drones }); sfx("tab"); }} onBuy={(k) => { if (buyDrone(s, k)) { sfx("nfBuy", { tier: k }); feedStore.push([...call(idTok("drones"), "deploy", [strTok(`T${k + 1}`)]), pun(" → "), strTok("online")], { tone: "good", type: true }); bump((n) => n + 1); } else sfx("deny"); }} />
                 )}
                 {STATS.map((def) => {
                     if (!isUnlocked(s, def.id) && def.id !== firstLocked) return null;
                     return (
-                        <StatRow key={def.id} id={def.id} s={s} d={d} guide={guideTarget} onPress={doPress} onArm={() => { toggleArm(s, def.id); sfx("tab"); bump((n) => n + 1); }} open={!folded[def.id]} onToggle={() => { setFold({ ...folded, [def.id]: !folded[def.id] }); sfx("tab"); }} />
+                        <StatRow key={def.id} id={def.id} s={s} d={d} guide={guideTarget} onPress={doPress} onArm={() => { toggleArm(s, def.id); sfx("tab"); bump((n) => n + 1); }} onWatchdog={() => { s.watchdog = !s.watchdog; sfx("tab"); log(`Watchdog timer ${s.watchdog ? "on: Reboots run themselves" : "off"}.`, s.watchdog ? "good" : "warn"); bump((n) => n + 1); }} open={!folded[def.id]} onToggle={() => { setFold({ ...folded, [def.id]: !folded[def.id] }); sfx("tab"); }} />
                     );
                 })}
                 {laterLocked.length > 0 && (
@@ -488,7 +514,7 @@ export function NodeFarm() {
                 <WinBar title="Records" onClose={() => setWin("")} /><RecordsPanel s={s} /></section>
             <section className="nf-pane nf-sidepane" data-pane="ascend" aria-label="Ascend" role="dialog" aria-modal="false">
                 <WinBar title="Ascend" onClose={() => setWin("")} />
-                <AscendPanel s={s} d={d} confirm={confirm === "ascend"} onAscend={doAscend} onPerk={(id) => { if (buyPerk(s, id)) { sfx("nfBuy", { tier: 3 }); bump((n) => n + 1); } }} onTree={() => openWin("tree")} />
+                <AscendPanel s={s} d={d} confirm={confirm === "ascend"} onAscend={doAscend} onPerk={(id) => { if (buyPerk(s, id)) { sfx("nfBuy", { tier: 3 }); bump((n) => n + 1); } }} onTree={() => openWin("tree")} onMount={(i, m) => { if (setMount(s, i, m)) { sfx("tab"); save(); bump((n) => n + 1); } }} />
             </section>
             <section className="nf-pane nf-sidepane" data-pane="menu" aria-label="Menu" role="dialog" aria-modal="false">
                 <WinBar title="Menu" onClose={() => setWin("")} />
@@ -504,7 +530,7 @@ export function NodeFarm() {
                     setIoText={setIoText}
                     ioMsg={ioMsg}
                     onExport={() => { save(); const code = exportSave(g.current); setIoText(code); setIoMsg("Copy this code to move your save."); navigator.clipboard?.writeText(code).then(() => setIoMsg("Save code copied.")).catch(() => {}); }}
-                    onImport={() => { const n = parseSave(ioText); if (n) { n.at = Date.now(); g.current = n; tipApi.hide(); prevIds.current = null; save(); setIoMsg("Save loaded."); log("Save imported.", "good"); } else setIoMsg("That code isn't a Node Farm save."); }}
+                    onImport={() => { const n = parseSave(ioText); if (n) { n.at = Date.now(); if (n.treeRefund) { log(`Old tree nodes refunded: ${fmt(n.treeRefund)} AP.`, "good"); delete n.treeRefund; } g.current = n; tipApi.hide(); prevIds.current = null; save(); setIoMsg("Save loaded."); log("Save imported.", "good"); } else setIoMsg("That code isn't a Node Farm save."); }}
                     confirm={confirm === "reset"}
                     onReset={doReset}
                 />
@@ -523,6 +549,15 @@ export function NodeFarm() {
         </div>
         </TipCtx.Provider>
     );
+}
+
+/** Dead drop (Systems node): a cache that fills over real hours. A thin meter in the HUD, a button once it is full. */
+function DeadDrop({ s, onOpen }: { s: State; onOpen: () => void }) {
+    const f = dropFill(s);
+    const left = (1 - f) * TUNE.dropHours * 3600;
+    return f >= 1
+        ? <button type="button" className="nf-drop" data-ready="" onClick={onOpen} aria-label="Open the Dead drop">DROP READY</button>
+        : <span className="nf-drop" title={`Dead drop fills in ${fmtTime(left)}`} aria-label={`Dead drop ${Math.floor(f * 100)}% full, ready in ${fmtTime(left)}`}><i style={{ width: `${f * 100}%` }} />DROP {Math.floor(f * 100)}%</span>;
 }
 
 function WinBar({ title, onClose }: { title: string; onClose: () => void }) {

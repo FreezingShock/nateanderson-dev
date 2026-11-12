@@ -23,7 +23,7 @@ export type JuiceEvent =
     | { t: "tier"; stat: ButtonStat; tier: number }
     | { t: "unlock"; id: StatId }
     | { t: "milestone"; title: string; sub: string }
-    | { t: "ascend"; gain: number; ap: number; n: number };
+    | { t: "ascend"; gain: number; ap: number; n: number; each?: number };
 
 const subs = new Set<(e: JuiceEvent) => void>();
 export const juice = { emit: (e: JuiceEvent) => subs.forEach((f) => f(e)) };
@@ -128,7 +128,7 @@ export function Juice({ reduced }: { reduced: boolean }) {
     const [host, setHost] = useState<HTMLElement | null>(null);
     const layer = useRef<HTMLDivElement>(null);
     const [cur, setCur] = useState<(Banner & { out?: boolean }) | null>(null);
-    const [asc, setAsc] = useState<{ gain: number; ap: number; n: number } | null>(null);
+    const [asc, setAsc] = useState<{ gain: number; ap: number; n: number; each?: number } | null>(null);
     const queue = useRef<Banner[]>([]);
     const showing = useRef(false);
     const holding = useRef(false);
@@ -222,7 +222,7 @@ export function Juice({ reduced }: { reduced: boolean }) {
                 holding.current = true;
                 queue.current = [];
                 setCur(null);
-                setAsc({ gain: e.gain, ap: e.ap, n: e.n });
+                setAsc({ gain: e.gain, ap: e.ap, n: e.n, each: e.each });
                 if (!rm) buzz([30, 50, 30, 50, 90]);
             }
         };
@@ -266,7 +266,7 @@ export function Juice({ reduced }: { reduced: boolean }) {
 }
 
 // ---- the Ascend sequence: charge the core, flash, then the report. Click, Enter or Esc skips the charge, then closes.
-function AscendSeq({ data, reduced, onClose }: { data: { gain: number; ap: number; n: number }; reduced: boolean; onClose: () => void }) {
+function AscendSeq({ data, reduced, onClose }: { data: { gain: number; ap: number; n: number; each?: number }; reduced: boolean; onClose: () => void }) {
     const feed = useRef<CoreFeed>({ progress: reduced ? 1 : 0, overclock: false, unlocked: STATS.length, speed: 0.25, lastPulse: -1e9, reboots: 64, ap: reduced ? data.ap : Math.max(0, data.ap - data.gain) });
     const [phase, setPhase] = useState<"charge" | "show">(reduced ? "show" : "charge");
     const [canClose, setCanClose] = useState(reduced);
@@ -342,7 +342,7 @@ function AscendSeq({ data, reduced, onClose }: { data: { gain: number; ap: numbe
                     <p className="nf-rx-k">Ascension {data.n}</p>
                     <h2 className="nf-rx-h">Root access granted</h2>
                     <p className="nf-rx-gain"><b ref={num}>{data.gain}</b> <span>Ascension {data.gain === 1 ? "Point" : "Points"}</span></p>
-                    <p className="nf-rx-line">{data.ap} AP total. Each one adds {Math.round(TUNE.apBonus * 100)}% to everything.</p>
+                    <p className="nf-rx-line">{data.ap} AP total. Each one adds {Math.round((data.each ?? TUNE.apBonus) * 100)}% to everything.</p>
                     <p className="nf-rx-line nf-rx-note">{ascendNote(data.n)}</p>
                     <p className="nf-rx-line dim">Wiped: Bytes, Multipliers, Reboots, materials and Drones. Kept: goals, perks and the tree.</p>
                     <p className="nf-rx-go" data-ready={canClose ? "" : undefined}>{canClose ? "Tap to continue" : "\u00a0"}</p>

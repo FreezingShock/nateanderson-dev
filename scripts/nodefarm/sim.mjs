@@ -8,6 +8,7 @@ const merge = (a, b) => { for (const [k, v] of Object.entries(b)) a[k] = v && ty
 if (process.env.NF_TUNE) merge(E.TUNE, JSON.parse(process.env.NF_TUNE));
 const s = E.fresh(0);
 if (!process.env.NF_NODRONES) s.armed = ["mult", "copper", "silicon", "quartz", "aether", "runes", "starglass", "voidsteel", "chrono"]; // the bot arms every stat once it has Drones
+if (process.env.NF_NODRONES) s.autoArmed = ["mult", "copper", "silicon", "quartz", "aether", "runes", "starglass", "voidsteel", "chrono"]; // keep Standing orders from arming anything
 const marks = {};
 const ascents = [];
 const mark = (k, t) => { if (!(k in marks)) marks[k] = t; };
@@ -57,10 +58,14 @@ while (t < hours * 3600) {
             }
         }
         for (const n of treeOrder) if (!s.tree.includes(n.id) && E.buyNode(s, n.id)) mark("node " + n.id, t);
+        // mounted drives: the bot keeps its deepest materials; the Dead drop is opened as soon as it is full
+        const mats = ["chrono", "voidsteel", "starglass", "runes", "aether"].filter((m) => s.prod[m] > 0).slice(0, E.mountSlots(s));
+        mats.forEach((m, i) => E.setMount(s, i, m));
+        if (E.openDrop(s, t * 1000)) mark("first drop", t);
         // leftover AP goes into the Power core, then Cold cache
         if (s.tree.length === E.TREE.length || s.ap > 40) { while (E.buyPerk(s, "power")); }
         if (s.tree.length === E.TREE.length) mark("tree done", t);
-        if (s.tree.length === E.TREE.length && s.chrono > 1e3) break;
+        if (s.tree.length === E.TREE.length && s.chrono > 1e3 && !process.env.NF_NOSTOP) break;
     }
 }
 console.log("ascends", ascents.map(([a, g, ap]) => `${(a / 3600).toFixed(0)}h +${g} (ap ${ap})`).join(", "));

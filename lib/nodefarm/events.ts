@@ -36,8 +36,9 @@ export const EVENT_TUNE = {
     resultMs: 1700,
 };
 
-export const nextGapMs = (scanner: number, rnd = Math.random()) =>
-    (EVENT_TUNE.every[0] + rnd * (EVENT_TUNE.every[1] - EVENT_TUNE.every[0])) * 1000 * Math.max(0.4, 1 - scanner * 0.08);
+/** `haste` is the fraction taken off the gap (engine `eventHaste`: Wide-band scanner perk and the Static node). */
+export const nextGapMs = (haste: number, rnd = Math.random()) =>
+    (EVENT_TUNE.every[0] + rnd * (EVENT_TUNE.every[1] - EVENT_TUNE.every[0])) * 1000 * (1 - haste);
 
 /** Pick a kind that is unlocked and not the one just shown (unless it is the only one). */
 export function pickEvent(progress: number, last: EventKind | null, rnd = Math.random()): EventDef | null {

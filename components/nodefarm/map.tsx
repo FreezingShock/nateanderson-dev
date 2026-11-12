@@ -1,6 +1,6 @@
 "use client";
 
-import { BRANCHES, GOALS, GOAL_TIERS, PERKS, STATS, TIER_NAMES, TREE, TUNE, amount, apOnAscend, canAscend, derive, droneCost, dronesOpen, fmt, goalDone, hasNode, isUnlocked, tiersDone, MATS, type MatId, type State, type StatId } from "@/lib/nodefarm/engine";
+import { BRANCHES, GOALS, GOAL_TIERS, PERKS, STATS, TIER_NAMES, TREE, TUNE, amount, apEach, apOnAscend, canAscend, derive, droneCost, dronesOpen, fmt, goalDone, hasNode, isUnlocked, tiersDone, MATS, type MatId, type State, type StatId } from "@/lib/nodefarm/engine";
 import { feedLine, nextStep, unlockInfo } from "@/lib/nodefarm/guide";
 import { LORE } from "@/lib/nodefarm/lore";
 import { NfIcon, type NfIconName } from "./icon";
@@ -90,7 +90,7 @@ export function MapPanel({ s, d, onTree, onWin }: { s: State; d: D; onTree: () =
             <div className="nf-mp-cards">
                 <section className="nf-mp-card" style={{ ["--c" as string]: "#6bffc9" }}>
                     <b>Ascend</b>
-                    <p>Wipes the run, keeps goals, perks and the tree, and pays Ascension Points. Each AP adds +{TUNE.apBonus * 100}% to everything.</p>
+                    <p>Wipes the run, keeps goals, perks and the tree, and pays Ascension Points. Each AP adds +{Math.round(apEach(s) * 100)}% to everything.</p>
                     <span className="nf-bar sm" aria-hidden="true"><i style={{ width: `${Math.min(100, (s.aether / TUNE.ascendAether) * 100)}%` }} /></span>
                     <small>{canAscend(s) ? `Ready: +${fmt(apOnAscend(s))} AP now.` : `${fmt(s.aether)} / ${fmt(TUNE.ascendAether)} Aether to open it.`}</small>
                     <button type="button" className="nf-mini" onClick={() => onWin("ascend")}>Open Ascend</button>

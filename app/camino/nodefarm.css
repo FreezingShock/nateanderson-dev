@@ -317,7 +317,7 @@
 .ctos .nf-hud, .ctos .nf-chain, .ctos .nf-tier, .ctos .nf-asc-card, .ctos .nf-away { position: relative; overflow: hidden; border-left-width: 1px; border-color: color-mix(in srgb, var(--c, var(--cm-cyan)) 35%, #1c1c1c); }
 .ctos .nf-hud::after, .ctos .nf-chain::after, .ctos .nf-tier::after, .ctos .nf-asc-card::after, .ctos .nf-away::after { content: ""; position: absolute; left: 0; right: 0; top: 0; height: 6px; pointer-events: none; background: repeating-conic-gradient(var(--c, #2fd8e8) 0 25%, transparent 0 50%) 0 0 / 4px 4px; opacity: .5; -webkit-mask-image: linear-gradient(90deg, #000, transparent 75%); mask-image: linear-gradient(90deg, #000, transparent 75%); }
 .ctos .nf-chain { padding-top: 16px; }
-.ctos .nf-chain-all { margin-left: auto; align-self: center; padding: 0 !important; opacity: 1 !important; }
+.ctos .nf-chain-all { display: flex; gap: 6px; margin-left: auto; align-self: center; padding: 0 !important; opacity: 1 !important; }
 .ctos .nf-chain-all::after { content: none; }
 .ctos .nf-perks li[data-maxed] { border-color: #6bffc9; }
 .ctos .nf-log { background-image: repeating-linear-gradient(0deg, transparent 0 3px, #ffffff05 3px 4px); }
@@ -331,7 +331,7 @@
 @container (min-width: 640px) { .ctos .nf-btns { grid-template-columns: repeat(6, minmax(0, 1fr)); } }
 @container (max-width: 289px) { .ctos .nf-btns { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 @media (max-width: 640px) {
-    .ctos .nf-chain li { display: none; }
+    .ctos .nf-chain li:not(.nf-chain-all) { display: none; }
     .ctos .nf-chain { padding: 8px; justify-content: flex-end; }
     .ctos .nf-chain::after { content: none; }
     .ctos .nf-bar-t { letter-spacing: .06em; padding-left: 10px; gap: 8px; }
@@ -679,3 +679,22 @@ body.nf-win-open .ctos .cm-section.ruled { z-index: 60; }
 .ctos .nf-log-list b { display: block; font: 500 11px/1.3 var(--cm-mono); letter-spacing: 0.08em; color: #ffc53a; }
 .ctos .nf-log-list p { margin: 6px 0 0; font: 400 14px/1.55 var(--cm-mono); color: var(--cm-fg, #ddd); }
 .ctos .nf-log-list li.lock b { color: #6a6a6a; }
+
+/* ---- systems the prestige tree unlocks (lib/nodefarm/engine.ts treeFx features) */
+/* Dead drop: a thin fill meter in the HUD, a lit button once it is full */
+.ctos .nf-drop { position: relative; display: inline-flex; align-items: center; min-height: 28px; padding: 0 10px; overflow: hidden; background: #0a0a0a; border: 1px solid var(--nf-line); color: var(--cm-mute); font: 600 var(--cm-ctos-t-micro)/1 var(--cm-mono); letter-spacing: .12em; }
+.ctos .nf-drop i { position: absolute; inset: auto 0 0 0; width: 0; height: 2px; background: #6bffc9; }
+.ctos .nf-drop[data-ready] { border-color: #6bffc9; color: #6bffc9; cursor: pointer; animation: nfDropPulse 1.6s ease-in-out infinite; }
+@keyframes nfDropPulse { 50% { background: rgba(107, 255, 201, .12); } }
+@media (hover: none) { .ctos .nf-drop[data-ready] { min-height: 44px; } }
+@media (prefers-reduced-motion: reduce) { .ctos .nf-drop[data-ready] { animation: none; } }
+/* Forecast: time to afford on each button */
+.ctos .nf-btn-c .nf-eta { color: #6bffc9; font-style: normal; }
+/* Mounted drives on the Ascend pane */
+.ctos .nf-mounts { display: grid; gap: 12px; padding: 18px; background: #0b0b0b; border: 1px solid var(--nf-line); border-left: 3px solid #ffc53a; }
+.ctos .nf-mount { display: grid; gap: 8px; }
+.ctos .nf-mount-k { font: 600 var(--cm-ctos-t-micro)/1.3 var(--cm-mono); letter-spacing: .12em; color: var(--cm-mute); }
+.ctos .nf-mount-b { display: flex; flex-wrap: wrap; gap: 6px; }
+.ctos .nf-mount-b .nf-mini { min-width: 48px; }
+.ctos .nf-mount-b .nf-mini[aria-pressed="true"] { border-color: var(--c); color: var(--c); background: #111; }
+.ctos .nf-mounts { grid-column: 1 / -1; }

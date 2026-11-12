@@ -1,6 +1,6 @@
 "use client";
 
-import { forwardRef, useImperativeHandle, useMemo, useRef } from "react";
+import { forwardRef, useEffect, useImperativeHandle, useMemo, useRef } from "react";
 import { TREE, BRANCHES, type Branch } from "@/lib/nodefarm/engine";
 import "@/app/camino/nodefarm-tree-art.css";
 
@@ -12,7 +12,10 @@ import "@/app/camino/nodefarm-tree-art.css";
  *   move(x, y, k)   the world transform the menu applies: translate(x px, y px) scale(k)
  *   resize(w, h)    the view size in px (on mount and on resize)
  *   focus(branch)   tint toward one section (hover or select), or null
- * Art: scripts/naos-art/nodefarm-tree-bg.py -> public/naos/nodefarm/tree-bg-0..2, tree-core, tree-sec-<branch>.
+ * TreeDust (below) is a fourth, nearest layer that the menu renders ABOVE its nodes: dust that drifts past in front of
+ * the tree and moves faster than the nodes (depth > 1), which is what sells the depth. It follows the backdrop's camera
+ * by itself; the menu only places it.
+ * Art: scripts/naos-art/nodefarm-tree-bg.py -> public/naos/nodefarm/tree-bg-0..2, tree-dust, tree-core, tree-sec-<branch>.
  * Styles: app/camino/nodefarm-tree-art.css. Decorative: aria-hidden, no pointer events.
  */
 export interface TreeBackdropHandle {
@@ -25,14 +28,46 @@ export interface TreeBackdropHandle {
 const TILE = 512;
 const PX = 2;
 const T = TILE * PX;
-/** how far each layer follows the camera (0 = fixed to the screen, 1 = glued to the nodes), far to near */
-const DEPTH = [0.08, 0.35, 0.6];
+/** how far each layer follows the camera (0 = fixed to the screen, 1 = glued to the nodes), far to near (Nate picked "strong depth") */
+const DEPTH = [0.1, 0.45, 0.85];
 /** how much of the zoom each layer takes */
-const ZOOM = [0.1, 0.4, 0.7];
-/** layer scale, rounded to 2 percent steps so zooming only repaints a layer now and then */
-const scaleOf = (i: number, k: number) => Math.round((1 + (k - 1) * ZOOM[i]) * 50) / 50;
+const ZOOM = [0.15, 0.55, 0.95];
+/** the dust in front of the nodes: moves and zooms faster than the world */
+const DUST = { depth: 1.35, zoom: 1.25 };
 /** only this layer drifts while idle (it needs one extra tile of width for it) */
 const DRIFT = 1;
+/** this layer also sways in a slow loop, so it needs this much slack on every side */
+const SWAY = 2;
+const SLACK = 40;
+
+type View = { w: number; h: number; x: number; y: number; k: number };
+type Layer = { el: HTMLDivElement; s: number };
+/** Size (only when the scale steps) and place one tiling layer. Pans write only a translate. */
+function paintLayer(L: Layer, v: View, depth: number, zoom: number, extraW = 0, slack = 0) {
+    // scale rounded to 2 percent steps so zooming only repaints a layer now and then
+    const s = Math.max(0.2, Math.round((1 + (v.k - 1) * zoom) * 50) / 50);
+    const ts = T * s;
+    if (L.s !== s) {
+        // the view plus one tile (plus any drift or sway room), with the tile drawn at this scale
+        L.s = s;
+        L.el.style.width = `${Math.ceil(v.w + ts * (1 + extraW) + slack * 2)}px`;
+        L.el.style.height = `${Math.ceil(v.h + ts + slack * 2)}px`;
+        L.el.style.setProperty("--t", `${ts.toFixed(2)}px`);
+    }
+    const cx = (v.w / 2 - v.x) / v.k;
+    const cy = (v.h / 2 - v.y) / v.k;
+    const mod = (n: number) => ((n % ts) + ts) % ts;
+    const lx = mod(v.w / 2 - cx * depth * v.k) - ts - slack;
+    const ly = mod(v.h / 2 - cy * depth * v.k) - ts - slack;
+    L.el.style.transform = `translate3d(${lx.toFixed(1)}px, ${ly.toFixed(1)}px, 0)`;
+}
+
+// the backdrop and the dust share one camera; the dust registers here and the backdrop paints it on every move
+const shared: { view: View; dust: Set<Layer> } = { view: { w: 0, h: 0, x: 0, y: 0, k: 1 }, dust: new Set() };
+const paintDust = (L: Layer) => {
+    if (shared.view.w) paintLayer(L, shared.view, DUST.depth, DUST.zoom, 1);
+};
+
 /** world size of the halo and the section nebulae in css px at zoom 1 (art px x 2 and x 4) */
 const CORE = 800;
 const SEC = 1024;
@@ -56,36 +91,22 @@ export const TreeBackdrop = forwardRef<TreeBackdropHandle, { unit?: number }>(fu
     );
 
     useImperativeHandle(ref, () => {
-        // per layer: the scale it was last sized for, so a pan only writes a translate
-        const sized: number[] = DEPTH.map(() => 0);
+        const ls: (Layer | null)[] = DEPTH.map(() => null);
         const paint = () => {
-            const { w, h, x, y, k } = view.current;
-            if (!w || !h) return;
-            // camera centre in world px at zoom 1
-            const cx = (w / 2 - x) / k;
-            const cy = (h / 2 - y) / k;
+            const v = view.current;
+            if (!v.w || !v.h) return;
+            shared.view = v;
             layers.current.forEach((el, i) => {
                 if (!el) return;
-                const s = scaleOf(i, k);
-                const ts = T * s;
-                if (sized[i] !== s) {
-                    // the layer is the view plus one tile (two for the drifting one), with the tile drawn at this scale:
-                    // a layout and paint, but only when the zoom crosses a 2 percent step
-                    sized[i] = s;
-                    el.style.width = `${Math.ceil(w + ts * (i === DRIFT ? 2 : 1))}px`;
-                    el.style.height = `${Math.ceil(h + ts)}px`;
-                    el.style.setProperty("--t", `${ts.toFixed(2)}px`);
-                }
-                const mod = (v: number) => ((v % ts) + ts) % ts;
-                const lx = mod(w / 2 - cx * DEPTH[i] * k) - ts;
-                const ly = mod(h / 2 - cy * DEPTH[i] * k) - ts;
-                el.style.transform = `translate3d(${lx.toFixed(1)}px, ${ly.toFixed(1)}px, 0)`;
+                if (!ls[i] || ls[i]!.el !== el) ls[i] = { el, s: 0 };
+                paintLayer(ls[i]!, v, DEPTH[i], ZOOM[i], i === DRIFT ? 1 : 0, i === SWAY ? SLACK : 0);
             });
-            if (world.current) world.current.style.transform = `translate3d(${x.toFixed(1)}px, ${y.toFixed(1)}px, 0) scale(${k.toFixed(4)})`;
+            shared.dust.forEach(paintDust);
+            if (world.current) world.current.style.transform = `translate3d(${v.x.toFixed(1)}px, ${v.y.toFixed(1)}px, 0) scale(${v.k.toFixed(4)})`;
             // below 1:1 the dither would alias into moire, so let the browser average it into a soft glow
             const r = root.current;
             if (r) {
-                const soft = k < 0.95;
+                const soft = v.k < 0.95;
                 if (soft !== (r.dataset.soft !== undefined)) {
                     if (soft) r.dataset.soft = "";
                     else delete r.dataset.soft;
@@ -100,7 +121,8 @@ export const TreeBackdrop = forwardRef<TreeBackdropHandle, { unit?: number }>(fu
             resize(w, h) {
                 if (w === view.current.w && h === view.current.h) return;
                 Object.assign(view.current, { w, h });
-                sized.fill(0);
+                ls.forEach((L) => { if (L) L.s = 0; });
+                shared.dust.forEach((L) => { L.s = 0; });
                 paint();
             },
             focus(branch) {
@@ -129,3 +151,22 @@ export const TreeBackdrop = forwardRef<TreeBackdropHandle, { unit?: number }>(fu
         </div>
     );
 });
+
+/** Dust that drifts in front of the nodes. Render it after the world (above the nodes); it never takes pointer events. */
+export function TreeDust() {
+    const el = useRef<HTMLDivElement>(null);
+    useEffect(() => {
+        if (!el.current) return;
+        const L: Layer = { el: el.current, s: 0 };
+        shared.dust.add(L);
+        paintDust(L);
+        return () => { shared.dust.delete(L); };
+    }, []);
+    return (
+        <div className="nf-dust" aria-hidden="true">
+            <div ref={el} className="nf-bd-l nf-dust-l">
+                <i className="nf-bd-d" />
+            </div>
+        </div>
+    );
+}

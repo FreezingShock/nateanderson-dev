@@ -1,7 +1,7 @@
 "use client";
 
 import { PixelIcon } from "@/components/cm/pixel-icons";
-import { BRANCHES, GOALS, GOAL_TIERS, PERKS, TREE, hasNode, SECRETS, TIER_NAMES, TUNE, apOnAscend, canAscend, derive, fmt, fmtTime, goalDone, tiersDone, type State } from "@/lib/nodefarm/engine";
+import { BRANCHES, GOALS, GOAL_TIERS, MATS, PERKS, TREE, hasNode, SECRETS, TIER_NAMES, TUNE, apEach, apGlobal, apOnAscend, mountSlots, statDef, type MatId, canAscend, derive, fmt, fmtTime, goalDone, tiersDone, type State } from "@/lib/nodefarm/engine";
 import { goalCounts, recordSections } from "@/lib/nodefarm/records";
 import { LOGS, logNo } from "@/lib/nodefarm/story";
 import { NfIcon } from "./icon";
@@ -129,15 +129,47 @@ function TreeCard({ s, onOpen }: { s: State; onOpen: () => void }) {
     );
 }
 
-export function AscendPanel({ s, d, confirm, onAscend, onPerk, onTree }: { s: State; d: D; confirm: boolean; onAscend: () => void; onPerk: (id: (typeof PERKS)[number]["id"]) => void; onTree: () => void }) {
+/** Mounted drives (Forge nodes): pick materials whose producers survive Ascend. */
+function Mounts({ s, onMount }: { s: State; onMount: (slot: number, mat: MatId | null) => void }) {
+    const slots = mountSlots(s);
+    if (!slots) return null;
+    return (
+        <section className="nf-mounts">
+            <header className="nf-sys-h">
+                <h3>Mounted drives</h3>
+                <p>The producers of a mounted material survive every Ascend. Change a pick any time; only what is mounted when you Ascend is kept.</p>
+            </header>
+            {Array.from({ length: slots }, (_, i) => {
+                const cur = s.mounts[i];
+                return (
+                    <div key={i} className="nf-mount" role="group" aria-label={`Drive ${i + 1}`}>
+                        <span className="nf-mount-k">DRIVE {String(i + 1).padStart(2, "0")} // {cur ? `${statDef(cur).name.toUpperCase()}, ${fmt(s.prod[cur])} producers` : "EMPTY"}</span>
+                        <div className="nf-mount-b">
+                            {MATS.map((m) => {
+                                const other = s.mounts.includes(m) && cur !== m;
+                                return (
+                                    <button key={m} type="button" className="nf-mini" aria-pressed={cur === m} disabled={other} style={{ ["--c" as string]: statDef(m).color }} onClick={() => onMount(i, cur === m ? null : m)} title={other ? "Already on another drive" : undefined}>
+                                        {statDef(m).short}
+                                    </button>
+                                );
+                            })}
+                        </div>
+                    </div>
+                );
+            })}
+        </section>
+    );
+}
+
+export function AscendPanel({ s, d, confirm, onAscend, onPerk, onTree, onMount }: { s: State; d: D; confirm: boolean; onAscend: () => void; onPerk: (id: (typeof PERKS)[number]["id"]) => void; onTree: () => void; onMount: (slot: number, mat: MatId | null) => void }) {
     const gain = apOnAscend(s);
-    const after = (1 + (s.ap + gain) * TUNE.apBonus) / (1 + s.ap * TUNE.apBonus);
+    const after = apGlobal(s, gain) / apGlobal(s);
     return (
         <div className="nf-sys nf-asc-grid">
             <section className="nf-asc">
                 <header className="nf-sys-h">
                     <h3>Ascend</h3>
-                    <p>Wipe the whole run. You keep goals, perks, the tree and lifetime stats, and get Ascension Points (AP). Each AP adds +{TUNE.apBonus * 100}% to everything, permanently.</p>
+                    <p>Wipe the whole run. You keep goals, perks, the tree and lifetime stats, and get Ascension Points (AP). Each AP adds +{Math.round(apEach(s) * 100)}% to everything, permanently{TUNE.apBonusFromEarned ? ", and spending it on perks or the tree never lowers that" : ""}.</p>
                 </header>
                 <div className="nf-asc-art" aria-hidden="true" />
                 <div className="nf-asc-card">
@@ -179,6 +211,7 @@ export function AscendPanel({ s, d, confirm, onAscend, onPerk, onTree }: { s: St
                     })}
                 </ul>
             </section>
+            <Mounts s={s} onMount={onMount} />
             <TreeCard s={s} onOpen={onTree} />
         </div>
     );
