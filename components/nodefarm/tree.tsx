@@ -5,7 +5,7 @@ import { createPortal } from "react-dom";
 import { TreeBackdrop, TreeDust, type TreeBackdropHandle } from "./tree-backdrop";
 import { TreeSprite, type SpriteState } from "./tree-sprite";
 import { SPRITE_CELLS } from "@/lib/nodefarm/tree-sprites";
-import { cardReveal, irisFrom, readTry, type TreeTry } from "./tree-try";
+import { cardGlitch } from "./card-glitch";
 import * as Engine from "@/lib/nodefarm/engine";
 import { BRANCHES, TREE, fmt, hasNode, nodeOpen, treeFx, treeNode, type State, type TreeNode } from "@/lib/nodefarm/engine";
 
@@ -39,8 +39,8 @@ const RING: Map<string, number> = (() => {
     }
     return d;
 })();
-const BOOT_MS: Record<TreeTry["open"], number> = { boot: 1400, iris: 800, zoom: 1150 };
-const CLOSE_MS = 340;
+const BOOT_MS = 1150;
+const CLOSE_MS = 320;
 type NodeState = "owned" | "ready" | "open" | "locked";
 type Extra = TreeNode & { flavor?: string; sprite?: string };
 
@@ -176,7 +176,6 @@ export function TreeMenu({ s, reduced, onBuy, onRespec, onClose }: { s: State; r
     const [msg, setMsg] = useState("");
     const [showTot, setShowTot] = useState(false);
     /** opening and closing: "in" plays the boot sequence, "out" the collapse before the menu unmounts */
-    const [tr] = useState<TreeTry>(readTry);
     const [boot, setBoot] = useState<"in" | "done" | "out">(reduced ? "done" : "in");
     const bootRef = useRef(boot);
     bootRef.current = boot;
@@ -390,19 +389,13 @@ export function TreeMenu({ s, reduced, onBuy, onRespec, onClose }: { s: State; r
         const el = view.current;
         const raf = requestAnimationFrame(() => {
             if (bootRef.current !== "in") return fit(false);
-            // boot: start close on the core, then pull back to the fitted view while the rings decrypt
+            // zoom through the core (Nate's pick): start far past the usual zoom limit inside the core, then fall back to
+            // the fitted view while the rings unfold outward
             const t = fitTarget();
-            if (tr.open === "iris") return jump(t.cx, t.cy, t.k);
-            if (tr.open === "zoom") {
-                // straight through the core: start far past the usual zoom limit, then fall back to the fitted view
-                stop();
-                cam.current = { cx: 0, cy: 0, k: 5.5 };
-                apply();
-                bootT.current.push(window.setTimeout(() => { if (!touched.current) flyTo(t.cx, t.cy, t.k, 900); }, 60));
-                return;
-            }
-            jump(0, 0, Math.min(KMAX, t.k * 2.3));
-            bootT.current.push(window.setTimeout(() => { if (!touched.current) flyTo(t.cx, t.cy, t.k, 950); }, 230));
+            stop();
+            cam.current = { cx: 0, cy: 0, k: 3.4 };
+            apply();
+            bootT.current.push(window.setTimeout(() => { if (!touched.current) flyTo(t.cx, t.cy, t.k, 900); }, 60));
         });
         const ro = new ResizeObserver(() => {
             measure();
@@ -441,7 +434,7 @@ export function TreeMenu({ s, reduced, onBuy, onRespec, onClose }: { s: State; r
     // the boot ends on its own, or early on any key, click or wheel
     useEffect(() => {
         if (bootRef.current !== "in") return;
-        const t = window.setTimeout(() => setBoot((b) => (b === "in" ? "done" : b)), BOOT_MS[tr.open]);
+        const t = window.setTimeout(() => setBoot((b) => (b === "in" ? "done" : b)), BOOT_MS);
         const list = bootT.current;
         return () => { window.clearTimeout(t); list.forEach((x) => window.clearTimeout(x)); };
     }, []);
@@ -450,8 +443,6 @@ export function TreeMenu({ s, reduced, onBuy, onRespec, onClose }: { s: State; r
     useEffect(() => {
         const mq = window.matchMedia("(min-width: 900px)");
         const lay = () => {
-            if (tr.frame === "bounds") return layBounds();
-            if (tr.frame === "full") return;
             const a = document.querySelector(".nv-top .nv-start")?.getBoundingClientRect();
             const b = document.querySelector(".nv-top .nv-tools")?.getBoundingClientRect();
             const on = mq.matches && !!a && !!b && a.width > 0 && b.width > 0;
@@ -464,24 +455,10 @@ export function TreeMenu({ s, reduced, onBuy, onRespec, onClose }: { s: State; r
             el.style.setProperty("--tm-t", `${Math.round(a.top)}px`);
             el.style.setProperty("--tm-h", `${Math.round(a.height)}px`);
         };
-        // preview: the tree as a window over the game board only, site bar and dock left as they are
-        const layBounds = () => {
-            const el = root.current, g = document.querySelector(".nf")?.getBoundingClientRect();
-            if (!el || !g || !mq.matches) { document.body.classList.remove("nf-tm-bounds"); el?.removeAttribute("data-frame"); return; }
-            const nav = document.querySelector(".nv-top")?.getBoundingClientRect();
-            const dock = document.querySelector(".cm-dock")?.getBoundingClientRect();
-            const top = Math.max(g.top, (nav?.bottom ?? 0) + 12);
-            const bottom = Math.min(g.bottom, (dock && dock.height ? dock.top : window.innerHeight) - 12);
-            document.body.classList.add("nf-tm-bounds");
-            el.dataset.frame = "bounds";
-            Object.assign(el.style, { top: `${Math.round(top)}px`, left: `${Math.round(Math.max(12, g.left))}px`, width: `${Math.round(Math.min(g.width, window.innerWidth - 24))}px`, height: `${Math.round(Math.max(320, bottom - top))}px` });
-        };
         lay();
-        const o = irisFrom(), rr = root.current?.getBoundingClientRect();
-        if (o && rr) { root.current!.style.setProperty("--ix", `${Math.round(o.x - rr.left)}px`); root.current!.style.setProperty("--iy", `${Math.round(o.y - rr.top)}px`); }
         window.addEventListener("resize", lay);
         mq.addEventListener("change", lay);
-        return () => { window.removeEventListener("resize", lay); mq.removeEventListener("change", lay); document.body.classList.remove("nf-tm-chrome", "nf-tm-bounds"); };
+        return () => { window.removeEventListener("resize", lay); mq.removeEventListener("change", lay); document.body.classList.remove("nf-tm-chrome"); };
     }, []);
 
     // the dock tab: the site's page dock slides up over the tree, the tab rides on top of it
@@ -536,10 +513,10 @@ export function TreeMenu({ s, reduced, onBuy, onRespec, onClose }: { s: State; r
     useLayoutEffect(() => {
         const el = card.current;
         if (!el) return;
-        if (shown) { void cardReveal(el, "in", tr.anim); return; }
+        if (shown) { void cardGlitch(el, "in"); return; }
         if (!leaving) return;
         const id = leaving;
-        void cardReveal(el, "out", tr.anim).then(() => setLeaving((l) => (l === id ? null : l)));
+        void cardGlitch(el, "out").then(() => setLeaving((l) => (l === id ? null : l)));
     }, [shown, leaving]);
     useEffect(() => { bd.current?.focus(shown && shown !== "core" ? treeNode(shown).branch : null); }, [shown]);
 
@@ -725,19 +702,6 @@ export function TreeMenu({ s, reduced, onBuy, onRespec, onClose }: { s: State; r
         requestAnimationFrame(() => fit());
     };
 
-    // the boot sequence's terminal lines (real counts, taken once at open)
-    const bootLines = useMemo(() => {
-        const inRange = TREE.filter((n) => vis.get(n.id) === "shown").length;
-        const fog = TREE.filter((n) => vis.get(n.id) === "fog").length;
-        return [
-            "naos@node-01:~$ tree --mount",
-            `> read ${TREE.length} nodes ......... ok`,
-            `> decrypt ${inRange} in range ...... ok`,
-            fog ? `> ${fog} encrypted // signal weak` : "> no encrypted nodes left",
-            `> ${owned} installed // ${fmt(s.ap)} AP free`,
-        ];
-    }, []); // eslint-disable-line react-hooks/exhaustive-deps
-
     // the card's content
     const cn = cardId && cardId !== "core" ? (treeNode(cardId) as Extra) : null;
     const cvis = cn ? vis.get(cn.id) : null;
@@ -748,7 +712,7 @@ export function TreeMenu({ s, reduced, onBuy, onRespec, onClose }: { s: State; r
     // portaled to <body> so no page transition or scroll reveal transform can shift the fixed layer
     return createPortal(
         <div className="ctos nf-tm-host">
-        <div className="nf-tm" ref={root} role="dialog" aria-modal="true" aria-label="Prestige tree" data-lod="near" data-focus={sel ? "" : undefined} data-boot={boot} data-open={tr.open} data-type={tr.type} data-chrome={chrome ? "" : undefined} onKeyDown={keys}>
+        <div className="nf-tm" ref={root} role="dialog" aria-modal="true" aria-label="Prestige tree" data-lod="near" data-focus={sel ? "" : undefined} data-boot={boot} data-chrome={chrome ? "" : undefined} onKeyDown={keys}>
             <header className="nf-tm-bar">
                 <span className="nf-tm-t">naOS // node.farm // prestige tree</span>
                 <span className="nf-tm-ap" aria-live="polite"><b>{fmt(s.ap)}</b> AP<small>{owned}/{TREE.length} nodes{ready ? ` // ${ready} ready` : ""}</small></span>
@@ -918,13 +882,6 @@ export function TreeMenu({ s, reduced, onBuy, onRespec, onClose }: { s: State; r
                 <button type="button" className="nf-tm-dockb" aria-expanded={dockOpen} aria-label={dockOpen ? "Hide the page dock" : "Show the page dock"} onClick={() => setDockOpen((v) => !v)}>
                     <i aria-hidden="true" />&lt;/&gt; pages
                 </button>
-            )}
-            {boot === "in" && tr.open === "boot" && (
-                <div className="nf-tm-boot" aria-hidden="true">
-                    <div className="nf-tm-boot-t">
-                        {bootLines.map((l, i) => <span key={i} style={{ ["--n" as string]: l.length, ["--d" as string]: `${80 + i * 150}ms` } as CSSProperties}>{l}</span>)}
-                    </div>
-                </div>
             )}
             {rows.length > 0 && (
                 <>
