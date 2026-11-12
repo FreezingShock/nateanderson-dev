@@ -16,9 +16,9 @@ function watch(el: HTMLElement | null) {
     return () => io?.unobserve(el);
 }
 
-// Colour icon sheet for Node Farm, 64 x 64 cells, 21 across, eight frames down, drawn by scripts/naos-art/nodefarm-icons64.py.
+// Colour icon sheet for Node Farm, 64 x 64 cells, 29 across, eight frames down, drawn by scripts/naos-art/nodefarm-icons64.py.
 // Cell order below must match ICON_ORDER in that script. The CSS lives in app/camino/nodefarm.css (.nf-ic, .l, .r).
-const ORDER = ["bytes", "mult", "reboot", "copper", "silicon", "quartz", "aether", "ascend", "alert", "lock", "spark", "runes", "starglass", "voidsteel", "chrono", "engrams", "paradox", "origin", "nebula", "pulsars", "singularity"] as const;
+const ORDER = ["bytes", "mult", "reboot", "copper", "silicon", "quartz", "aether", "ascend", "alert", "lock", "spark", "runes", "starglass", "voidsteel", "chrono", "engrams", "paradox", "origin", "nebula", "pulsars", "singularity", "spores", "mycelium", "pollen", "bloom", "basalt", "magma", "geodes", "core"] as const;
 export type NfIconName = (typeof ORDER)[number];
 
 export function NfIcon({ name, large = false, responsive = false, className = "" }: { name: NfIconName; large?: boolean; responsive?: boolean; className?: string }) {
@@ -32,7 +32,7 @@ const TIER_ROWS = ["mult", "reboot", "copper", "silicon", "quartz", "aether", "r
 
 // 64 px button sprites: one sheet per stat (six tiers across, eight frames down), drawn by scripts/naos-art/nodefarm-icons64.py
 // from scripts/naos-art/nodefarm_tiers64_<stat>.py. scripts/nodefarm/stamp-art.mjs checks every listed sheet exists and is 384 x 512.
-const TIC64 = ["mult", "reboot", "copper", "silicon", "quartz", "aether", "runes", "starglass", "voidsteel", "chrono", "nebula", "pulsars", "singularity", "engrams", "paradox", "origin"] as const;
+const TIC64 = ["mult", "reboot", "copper", "silicon", "quartz", "aether", "runes", "starglass", "voidsteel", "chrono", "nebula", "pulsars", "singularity", "engrams", "paradox", "origin", "spores", "mycelium", "pollen", "bloom", "basalt", "magma", "geodes", "core"] as const;
 
 export function NfTierIcon({ stat, tier }: { stat: string; tier: number }) {
     if ((TIC64 as readonly string[]).includes(stat)) {
