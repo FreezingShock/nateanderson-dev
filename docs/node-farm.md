@@ -178,6 +178,11 @@ lines and buttons. It grows from stage 0 (backdrop only) to stage 7 (seven sprit
   31 are sky/backdrop that reaches the title bar, sprites live lower down; the whole cell is always visible. RAMPS and BAYER from `nodefarm-icons.py`, busy backdrops and several on-palette accents (Nate's pick),
   WebP lossless under 30 KB. Add the zone id to `ZONE_ART` to switch a sheet on.
 - **Zones 02 to 04** (`scripts/naos-art/nodefarm-zone-art.py`, its own primitives on the same RAMPS and Bayer): Amp Bay grows hex modules into a breathing hex reactor with pulse rings, meters and a cyan core; Power Room grows power glyphs into a console, a battery tower, a coil pylon and a power core throwing arcs; Trace Foundry grows copper bars into a spool, a pouring crucible, a bar pyramid and a foundry. A lit floor bus with moving pulses ties each scene together. Run `python3 scripts/naos-art/nodefarm-zone-art.py [mult|reboot|copper] [--preview DIR]`.
+- **Zones 05 to 08** (`scripts/naos-art/nodefarm-zones-05-08.py`): Fab Cleanroom, Crystal Vault, Signal Void, Glyph Hall. Sprites
+  1 to 6 follow each zone's button names (Die to Megafab, Shard to Cavern, Spark to Rift, Mark to Grimoire); sprite 7 is the
+  capstone (fab tower, resonance spire, signal gate, hall gate) and stands left of sprite 6 to keep clear of the big number.
+  Each zone adds two shade ramps of its own hue and a far layer for the sky (cleanroom ceiling and racks, crystal
+  silhouettes, aurora, carved wall with torches). Nate picked the strong halo behind the sprites.
 - **Preview**: `nf art 0` to `nf art 7` in the console shows every zone at one stage for this visit; `nf art live` goes back.
 
 ## Older windows refresh (Map, Goals, Records, Menu), 2026-11-12
