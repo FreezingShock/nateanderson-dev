@@ -3,7 +3,7 @@
 import {
     chOff,
     GOALS, MATS, PERKS, TIERS, TREE, TUNE, REBOOT_UNLOCK,
-    ARC_MATS, LAB, PAYLOADS, intelRate, amount, apOnAscend, ascendNeed, unlockNeed, FW, fwNodeOpen, keysOnHandover, treeComplete, button, canAfford, canAscend, derive, droneBoost, droneCost, droneMax, droneRate, dronesOpen, postOf, postX, zoneRank, ROMAN, originAp, paradoxOc, bloomKeys, sunstoneAll, singularityAll, fmt, fmtTime, goalDone, hasNode, isUnlocked, nodeOpen, statDef,
+    ARC_MATS, LAB, LAB_TUNE, PAYLOADS, STATS, apGlobal, apSpent, labHas, labNodeOpen, treeFx, intelRate, amount, apOnAscend, ascendNeed, unlockNeed, FW, fwNodeOpen, keysOnHandover, treeComplete, button, canAfford, canAscend, derive, droneBoost, droneCost, droneMax, droneRate, dronesOpen, postOf, postX, zoneRank, ROMAN, originAp, paradoxOc, bloomKeys, sunstoneAll, singularityAll, fmt, fmtTime, goalDone, hasNode, isUnlocked, nodeOpen, statDef,
     type ButtonStat, type Derived, type MatId, type State, type StatId,
 } from "./engine";
 import { LORE } from "./lore";
@@ -31,6 +31,10 @@ export interface Step {
     unit: string;
     /** seconds until `need`, when something is producing toward it */
     eta: number | null;
+    /** the stat being earned toward `need`, so the panel can show the live rate */
+    pay?: StatId;
+    /** replaces the plain "cur / need unit" line when the numbers need words (Spend AP) */
+    meter?: string;
     target?: Target;
 }
 
@@ -104,14 +108,23 @@ function canSpendAp(s: State): boolean {
     return TREE.some((n) => !hasNode(s, n.id) && nodeOpen(s, n) && s.ap >= n.cost);
 }
 
+/** What the player can buy with their AP right now: how many picks, the cheapest, and whether any is on the tree. */
+export function apPicks(s: State): { count: number; cheapest: number; tree: boolean } {
+    const costs: number[] = [];
+    let tree = false;
+    for (const p of PERKS) if (s.perks[p.id] < p.max && s.ap >= p.cost(s.perks[p.id])) costs.push(p.cost(s.perks[p.id]));
+    for (const n of TREE) if (!hasNode(s, n.id) && nodeOpen(s, n) && s.ap >= n.cost) { costs.push(n.cost); tree = true; }
+    return { count: costs.length, cheapest: costs.length ? Math.min(...costs) : 0, tree };
+}
+
 /** The single most useful thing to do now. Always returns something: the chain, then the nearest goal. */
 export function nextStep(s: State, d: Derived): Step {
     const training = s.life.ascends === 0;
-    const mk = (o: Omit<Step, "kicker" | "eta" | "frac"> & { kicker?: string; eta?: number | null; frac?: number; pay?: StatId }): Step => ({
+    const mk = (o: Omit<Step, "kicker" | "eta" | "frac"> & { kicker?: string; eta?: number | null; frac?: number }): Step => ({
         kicker: o.kicker ?? "NEXT STEP",
         eta: o.eta !== undefined ? o.eta : o.pay ? etaTo(s, d, o.pay, o.need) : null,
         frac: o.frac ?? fracOf(o.cur, o.need),
-        id: o.id, title: o.title, why: o.why, cur: o.cur, need: o.need, unit: o.unit, target: o.target,
+        id: o.id, title: o.title, why: o.why, cur: o.cur, need: o.need, unit: o.unit, target: o.target, pay: o.pay, meter: o.meter,
     });
 
     // ---- the opening, one thing at a time
@@ -129,8 +142,11 @@ export function nextStep(s: State, d: Derived): Step {
     }
 
     // ---- spend Ascension Points before anything else once you have them
+    // the bar shows AP invested out of all AP held, so it fills as you spend (it used to read a fixed "1 / 1" while the title said 14)
     if (canSpendAp(s)) {
-        return mk({ id: "spend-ap", title: `Spend ${fmt(s.ap)} Ascension Points`, why: "Perks and tree nodes are permanent and survive every Ascend. Open the tree to pick one.", cur: 1, need: 1, unit: "AP", target: { win: TREE.some((n) => !hasNode(s, n.id) && nodeOpen(s, n) && s.ap >= n.cost) ? "tree" : "ascend" } });
+        const spent = apSpent(s);
+        const picks = apPicks(s);
+        return mk({ id: "spend-ap", title: `Spend ${fmt(s.ap)} Ascension Points`, why: `${picks.count} pick${picks.count === 1 ? "" : "s"} you can afford right now, cheapest ${fmt(picks.cheapest)} AP. Tree nodes and perks are permanent and survive every Ascend.`, cur: spent, need: spent + s.ap, unit: "AP", meter: `${fmt(spent)} / ${fmt(spent + s.ap)} AP invested`, target: { win: picks.tree ? "tree" : "ascend" } });
     }
 
     // ---- Handover (the reset past Ascend): flash Firmware with Keys you hold, and hand over once the tree is whole
@@ -148,7 +164,10 @@ export function nextStep(s: State, d: Derived): Step {
         if (s.lab.intel >= need * 0.5) return mk({ id: "lab-research", kicker: "EXPLOIT LAB", title: "Research your first payload", why: "Intel runs alongside Bytes. Open the research tree and pick Packet sniffer or Rootkit.", cur: s.lab.intel, need, unit: "IN", eta: s.lab.intel >= need ? null : (need - s.lab.intel) / Math.max(1e-9, intelRate(s, d.bytesPerSec)), target: { win: "lab" } });
     }
     if (s.lab.nodes.length > 0 && s.life.compiled === 0 && s.lab.queue.length === 0 && PAYLOADS.some((p) => s.lab.nodes.includes(`rx_${p.id}`))) {
-        return mk({ id: "lab-compile", kicker: "EXPLOIT LAB", title: "Compile your first payload", why: "Press Compile in the Lab. When it lands in stock, press Deploy for the buff.", cur: 0, need: 1, unit: "", eta: null, target: { lab: true } });
+        // the Intel part of the cheapest recipe you own, so the bar means something (it used to sit at 0 / 1)
+        const owned = PAYLOADS.filter((p) => s.lab.nodes.includes(`rx_${p.id}`));
+        const need = Math.min(...owned.map((p) => p.intel));
+        return mk({ id: "lab-compile", kicker: "EXPLOIT LAB", title: "Compile your first payload", why: "Press Compile in the Lab. When it lands in stock, press Deploy for the buff.", cur: s.lab.intel, need, unit: "IN", eta: s.lab.intel >= need ? null : (need - s.lab.intel) / Math.max(1e-9, intelRate(s, d.bytesPerSec)), target: { lab: true } });
     }
 
     // ---- the chain, one zone at a time: Copper, Silicon, Quartz, Aether, then (after an Ascend) the deep materials
@@ -201,9 +220,84 @@ export function nextStep(s: State, d: Derived): Step {
     if (best) {
         const g = best.g;
         const first = g.target < 1;
-        return mk({ id: `goal-${g.id}`, title: `Goal: ${g.name}`, why: g.hint, cur: first ? Math.min(1, g.cur(s)) : g.cur(s), need: first ? 1 : g.target, frac: best.f, unit: "", target: { win: "goals" } });
+        const cur = g.cur(s);
+        return mk({ id: `goal-${g.id}`, title: `Goal: ${g.name}`, why: g.hint, cur: first ? Math.min(1, cur) : cur, need: first ? 1 : g.target, frac: best.f, unit: "", meter: first ? (cur > 0 ? "done" : "not yet") : `${fmt(Math.min(cur, g.target))} / ${fmt(g.target)} · ${Math.round(best.f * 100)}%`, target: { win: "goals" } });
     }
     return mk({ id: "done", title: "Every goal done", why: "The farm is yours. Chase more AP or the whole tree.", cur: 1, need: 1, unit: "", target: { win: "ascend" } });
+}
+
+// ---- live readouts under the next step: one cell per system, each one a jump to where it lives. Locked systems stay
+// visible as a dim teaser that says what opens them, so the road ahead is always on screen.
+
+export type NxIcon = "target" | "map" | "ascend" | "ap" | "key" | "goal" | "lab" | "drone" | "clock" | "tree" | "intel" | "play" | "lock";
+export interface Cell {
+    id: "zone" | "ascend" | "ap" | "goals" | "lab" | "drones";
+    icon: NxIcon;
+    label: string;
+    value: string;
+    sub: string;
+    frac: number;
+    color: string;
+    state: "live" | "ready" | "locked";
+    target?: Target;
+}
+
+export function telemetry(s: State, d: Derived): Cell[] {
+    const out: Cell[] = [];
+    // next zone to decrypt
+    const next = STATS.find((x) => !isUnlocked(s, x.id));
+    if (next) {
+        const u = unlockInfo(s, next.id);
+        const i = STATS.findIndex((x) => x.id === next.id);
+        const below = STATS[i - 1]?.id as StatId | undefined;
+        const pay: StatId | undefined = next.id === "reboot" ? (u.unit === "B" ? "bytes" : undefined) : next.id === "copper" ? undefined : below;
+        const eta = pay ? etaText(etaTo(s, d, pay, u.need)) : "";
+        out.push({ id: "zone", icon: "key", label: "Next zone", value: next.name, sub: `${fmt(u.cur)} / ${fmt(u.need)} ${u.unit}${eta ? ` · ${eta}` : ""}`, frac: u.frac, color: next.color, state: "live", target: below && below !== "bytes" ? aim(s, below as ButtonStat) : aim(s, "mult") });
+    } else out.push({ id: "zone", icon: "key", label: "Zones", value: "All online", sub: `${STATS.length} zones decrypted`, frac: 1, color: "#2fd8e8", state: "live" });
+
+    // Ascend
+    const ae = statDef("aether");
+    if (!isUnlocked(s, "aether") && s.life.ascends === 0) out.push({ id: "ascend", icon: "ascend", label: "Ascend", value: "Locked", sub: "Decrypt Aether first", frac: 0, color: "#ff2d8a", state: "locked" });
+    else if (canAscend(s)) out.push({ id: "ascend", icon: "ascend", label: "Ascend", value: `+${fmt(apOnAscend(s))} AP`, sub: `ready · ascend #${s.life.ascends + 1}`, frac: 1, color: "#ff2d8a", state: "ready", target: { win: "ascend" } });
+    else {
+        const eta = etaText(etaTo(s, d, "aether", TUNE.ascendAether));
+        out.push({ id: "ascend", icon: "ascend", label: "Ascend", value: `${fmt(s.aether)} / ${fmt(TUNE.ascendAether)} ${ae.short}`, sub: eta ? `about ${eta}` : `build ${ae.name} nodes`, frac: fracOf(s.aether, TUNE.ascendAether), color: "#ff2d8a", state: "live", target: s.prod.aether > 0 ? aim(s, "aether") : { win: "ascend" } });
+    }
+
+    // Ascension Points
+    if (s.life.ascends === 0 && s.ap <= 0 && s.tree.length === 0) out.push({ id: "ap", icon: "ap", label: "AP", value: "Locked", sub: "Earned by Ascending", frac: 0, color: "#a98bff", state: "locked" });
+    else {
+        const picks = apPicks(s);
+        const spent = apSpent(s);
+        out.push({ id: "ap", icon: "ap", label: "AP", value: `${fmt(s.ap)} AP banked`, sub: picks.count ? `${picks.count} pick${picks.count === 1 ? "" : "s"} open · all ×${fmt(apGlobal(s))}` : `all ×${fmt(apGlobal(s))} · ${fmt(spent)} invested`, frac: fracOf(spent, spent + s.ap), color: "#a98bff", state: picks.count ? "ready" : "live", target: { win: picks.count && !picks.tree ? "ascend" : "tree" } });
+    }
+
+    // Goals
+    const done = GOALS.filter((g) => goalDone(s, g)).length;
+    out.push({ id: "goals", icon: "goal", label: "Goals", value: `${done} / ${GOALS.length}`, sub: done === GOALS.length ? "every goal done" : `${GOALS.length - done} to go`, frac: fracOf(done, GOALS.length), color: "#ffc53a", state: "live", target: { win: "goals" } });
+
+    // Exploit Lab
+    if (!s.lab.seen) out.push({ id: "lab", icon: "lab", label: "Exploit Lab", value: "Locked", sub: `Opens with ${statDef(LAB_TUNE.opensAt).name}`, frac: 0, color: "#9fd0ff", state: "locked" });
+    else {
+        const open = LAB.filter((n) => !labHas(s, n.id) && labNodeOpen(s, n));
+        const ready = open.filter((n) => s.lab.intel >= n.cost).length;
+        const cheap = open.length ? Math.min(...open.map((n) => n.cost)) : 0;
+        const stock = Object.values(s.lab.stock).reduce((a, b) => a + (b ?? 0), 0);
+        const rate = intelRate(s, d.bytesPerSec);
+        const sub = ready ? `${ready} research ready` : open.length ? `next ${fmt(cheap)} IN${rate > 0 ? ` · ${etaText((cheap - s.lab.intel) / rate)}` : ""}` : "tree complete";
+        out.push({ id: "lab", icon: "lab", label: "Exploit Lab", value: `${fmt(s.lab.intel)} Intel`, sub: `${sub}${stock ? ` · ${stock} in stock` : s.lab.queue.length ? ` · ${s.lab.queue.length} compiling` : ""}`, frac: open.length ? fracOf(s.lab.intel, cheap) : 1, color: "#9fd0ff", state: ready ? "ready" : "live", target: { win: "lab" } });
+    }
+
+    // Drones
+    if (!dronesOpen(s)) out.push({ id: "drones", icon: "drone", label: "Drones", value: "Locked", sub: "Opens with Aether", frac: 0, color: "#6bffc9", state: "locked" });
+    else {
+        const lv = s.drones.reduce((a, b) => a + b, 0);
+        let k = -1;
+        for (let t = 0; t < s.drones.length; t++) if (s.drones[t] < droneMax(s) && (k < 0 || droneCost(s, t) < droneCost(s, k))) k = t;
+        const cost = k >= 0 ? droneCost(s, k) : 0;
+        out.push({ id: "drones", icon: "drone", label: "Drones", value: `${lv} level${lv === 1 ? "" : "s"}`, sub: k < 0 ? "fleet maxed" : `T${k + 1} ${DRONE_NAMES[k]} ${fmt(cost)} AE`, frac: k < 0 ? 1 : fracOf(s.aether, cost), color: "#6bffc9", state: k >= 0 && s.aether >= cost ? "ready" : "live", target: { drone: Math.max(0, k) } });
+    }
+    return out;
 }
 
 /** One line on what a stat gives the chain right now, with live multipliers. Used by the chain strip and the progress map. */

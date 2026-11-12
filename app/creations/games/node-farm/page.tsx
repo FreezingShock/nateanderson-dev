@@ -11,6 +11,7 @@ import "@/app/camino/nodefarm-fs.css";
 import "@/app/camino/nodefarm-fx.css";
 import "@/app/camino/nodefarm-windows.css";
 import "@/app/camino/nodefarm-switcher.css";
+import "@/app/camino/nodefarm-next.css";
 import "@/app/camino/nodefarm-admin.css";
 import "@/app/camino/nodefarm-phone.css";
 import "@/app/camino/nodefarm-layout.css";
