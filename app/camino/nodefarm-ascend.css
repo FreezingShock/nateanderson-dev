@@ -1,0 +1,173 @@
+/* ==========================================================================
+   Node Farm: the Ascend window (components/nodefarm/ascend.tsx), reworked 2026-11-12.
+   Stage (art + Aether climbing the tower) | Flow (Aether -> Ascend -> AP, hold to Ascend)
+   Gateway into the prestige tree        | Perks
+   Mounted drives under both. Sharp ctOS panels, corner brackets, plain data lines.
+   Colours: Aether is its stat colour (#6bffc9), AP is magenta (the Ascend art), the tree is cyan.
+   ========================================================================== */
+.ctos .nf-ax { --ae: #6bffc9; --ap: #ff2d8a; display: grid; gap: 22px; }
+@media (min-width: 900px) {
+    .ctos .nf-ax { grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); grid-template-areas: "stage flow" "gate perks" "mounts mounts"; align-items: stretch; }
+    .ctos .nf-ax-stage { grid-area: stage; }
+    .ctos .nf-ax-flow { grid-area: flow; }
+    .ctos .nf-ax-gate { grid-area: gate; align-self: start; }
+    .ctos .nf-ax-perks { grid-area: perks; align-self: start; }
+    .ctos .nf-ax .nf-mounts { grid-area: mounts; }
+}
+
+/* shared bracket frame */
+.ctos .nf-ax-stage, .ctos .nf-ax-flow, .ctos .nf-ax-gate {
+    --br: var(--c, var(--cm-cyan));
+    position: relative; background-color: #0a0a0a; border: 1px solid color-mix(in srgb, var(--br) 30%, #1c1c1c);
+}
+.ctos .nf-ax-stage::before, .ctos .nf-ax-flow::before, .ctos .nf-ax-gate::before {
+    content: ""; position: absolute; inset: -1px; pointer-events: none; z-index: 2; transition: inset .22s steps(4);
+    background-image:
+        linear-gradient(var(--br), var(--br)), linear-gradient(var(--br), var(--br)),
+        linear-gradient(var(--br), var(--br)), linear-gradient(var(--br), var(--br)),
+        linear-gradient(var(--br), var(--br)), linear-gradient(var(--br), var(--br)),
+        linear-gradient(var(--br), var(--br)), linear-gradient(var(--br), var(--br));
+    background-size: 12px 2px, 2px 12px, 12px 2px, 2px 12px, 12px 2px, 2px 12px, 12px 2px, 2px 12px;
+    background-position: 0 0, 0 0, 100% 0, 100% 0, 0 100%, 0 100%, 100% 100%, 100% 100%;
+    background-repeat: no-repeat;
+}
+
+/* ---- stage: the art, the tower lighting up, a code readout and the charge column */
+.ctos .nf-ax-stage { --c: var(--ap); min-height: 300px; overflow: hidden; display: grid; }
+.ctos .nf-ax-art {
+    position: absolute; inset: 0;
+    background:
+        radial-gradient(circle at 50% 100%, color-mix(in srgb, var(--ap) 22%, transparent) 0 1px, transparent 1.5px) 0 0 / 4px 4px,
+        #070707;
+    -webkit-mask-image: none; mask-image: none;
+}
+.ctos .nf-ax-art::after { content: ""; position: absolute; inset: 0; background: linear-gradient(#0a0a0a 0, transparent 30%, transparent 70%, #0a0a0acc 100%); pointer-events: none; }
+.ctos .nf-ax-tower { position: absolute; left: 50%; bottom: 0; width: 480px; height: 270px; margin-left: -240px; background: url(/naos/nodefarm/scene-ascend.webp) 0 0 / 480px 270px no-repeat; image-rendering: pixelated; z-index: 1; }
+.ctos .nf-ax-ring { position: absolute; left: 198px; width: 84px; height: 14px; top: calc(116px - var(--i) * 26px); opacity: 0; border: 2px solid var(--ae); border-radius: 50%; background: radial-gradient(circle, color-mix(in srgb, var(--ae) 60%, transparent) 0 .8px, transparent 1.2px) 0 0 / 3px 3px; box-shadow: 0 0 12px color-mix(in srgb, var(--ae) 45%, transparent); transition: opacity .3s steps(3); }
+.ctos .nf-ax-ring[data-on] { opacity: .85; animation: nfAxRing 2.4s steps(6) calc(var(--i) * -.3s) infinite; }
+@keyframes nfAxRing { 0%, 100% { opacity: .85; } 50% { opacity: .5; } }
+.ctos .nf-ax-beacon { position: absolute; left: 216px; top: -36px; width: 48px; height: 48px; opacity: 0; background: radial-gradient(circle, #fff 0 1px, var(--ae) 1.5px 2px, transparent 2.5px) 0 0 / 4px 4px; -webkit-mask-image: radial-gradient(closest-side, #000, transparent); mask-image: radial-gradient(closest-side, #000, transparent); }
+.ctos .nf-ax-stage[data-ready] .nf-ax-beacon { opacity: 1; animation: nfAxBeacon 1.6s steps(4) infinite; }
+@keyframes nfAxBeacon { 0%, 100% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.6); opacity: .55; } }
+.ctos .nf-ax-scan { position: absolute; left: 0; right: 0; top: 0; height: 2px; z-index: 1; background: color-mix(in srgb, var(--ap) 70%, transparent); opacity: .5; animation: nfAxScan 4.8s linear infinite; }
+@keyframes nfAxScan { from { transform: translateY(0); } to { transform: translateY(300px); } }
+.ctos .nf-ax-code { position: relative; z-index: 3; align-self: start; display: grid; gap: 4px; padding: 14px 16px; font: 500 var(--cm-ctos-t-micro)/1.35 var(--cm-mono); letter-spacing: .1em; color: var(--cm-mute); text-transform: uppercase; }
+.ctos .nf-ax-code > span:first-child { color: var(--ap); font-weight: 700; }
+.ctos .nf-ax-code b { display: inline-block; min-width: 7ch; color: var(--cm-ctos-meta); font-weight: 500; }
+.ctos .nf-ax-code em { font-style: normal; color: var(--cm-fg); }
+.ctos .nf-ax-code em[data-st="ready"] { color: #0a0a0a; background: var(--ae); padding: 1px 5px; }
+.ctos .nf-ax-col { position: absolute; z-index: 3; right: 14px; top: 14px; bottom: 14px; width: 12px; display: grid; grid-template-rows: repeat(12, 1fr); gap: 3px; }
+.ctos .nf-ax-col i { background: #151515; border: 1px solid #ffffff14; }
+.ctos .nf-ax-col i[data-on] { background: var(--ae); border-color: var(--ae); box-shadow: 0 0 8px color-mix(in srgb, var(--ae) 45%, transparent); }
+
+/* ---- flow: three steps joined by a trace, then the hold button */
+.ctos .nf-ax-flow { --c: var(--ae); display: grid; align-content: space-between; gap: 16px; padding: 18px 18px 18px; }
+.ctos .nf-ax-steps { list-style: none; margin: 0; padding: 0; display: grid; gap: 0; position: relative; }
+.ctos .nf-ax-steps li { position: relative; display: grid; gap: 6px; padding: 0 0 18px 22px; }
+.ctos .nf-ax-steps li:last-child { padding-bottom: 0; }
+/* the trace: a node square per step and a line down to the next one, with a pulse travelling down it */
+.ctos .nf-ax-steps li::before { content: ""; position: absolute; left: 0; top: 3px; width: 8px; height: 8px; background: var(--c); box-shadow: 0 0 0 3px #0a0a0a, 0 0 0 4px color-mix(in srgb, var(--c) 50%, transparent); }
+.ctos .nf-ax-steps li:not(:last-child)::after { content: ""; position: absolute; left: 3px; top: 16px; bottom: 2px; width: 2px; background: linear-gradient(var(--c), color-mix(in srgb, var(--c) 25%, #1c1c1c)); }
+.ctos .nf-ax-steps[data-ready] li:not(:last-child)::after { background: repeating-linear-gradient(var(--c) 0 4px, transparent 4px 8px) 0 0 / 2px 8px; animation: nfAxFlow .6s linear infinite; }
+@keyframes nfAxFlow { to { background-position: 0 8px; } }
+.ctos .nf-ax-k { font: 700 var(--cm-ctos-t-micro)/1 var(--cm-mono); letter-spacing: .14em; text-transform: uppercase; color: var(--c); }
+.ctos .nf-ax-v { display: flex; align-items: center; flex-wrap: wrap; gap: 4px 10px; }
+.ctos .nf-ax-v b { font: 700 clamp(24px, 3vw, 30px)/1 var(--cm-display); letter-spacing: -.03em; color: var(--cm-fg); font-variant-numeric: tabular-nums; }
+.ctos .nf-ax-v small, .ctos .nf-ax-n, .ctos .nf-ax-g small { font: 500 var(--cm-ctos-t-micro)/1.4 var(--cm-mono); letter-spacing: .06em; color: var(--cm-ctos-meta); }
+.ctos .nf-ax-n { max-width: 46ch; }
+.ctos .nf-ax-steps .nf-bar { --c: var(--ae); max-width: 320px; }
+.ctos .nf-ax-g { display: flex; align-items: baseline; flex-wrap: wrap; gap: 8px; font: 700 15px/1 var(--cm-mono); color: var(--cm-fg); font-variant-numeric: tabular-nums; }
+.ctos .nf-ax-g small { text-transform: uppercase; letter-spacing: .12em; }
+.ctos .nf-ax-g em { font-style: normal; color: var(--cm-ctos-meta); }
+.ctos .nf-ax-g b[data-up] { color: var(--cm-cyan); }
+
+/* hold to Ascend: a white plate that fills magenta from the left while held */
+.ctos .nf-ax-go { position: relative; overflow: hidden; width: 100%; min-height: 54px; padding: 0 14px; background: var(--cm-ctos-block); border: 0; color: var(--cm-ctos-ink); font: 700 var(--cm-ctos-t-ui)/1.2 var(--cm-mono); letter-spacing: .08em; text-transform: uppercase; cursor: pointer; touch-action: none; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
+.ctos .nf-ax-go:disabled { background: #141414; color: var(--cm-ctos-meta); cursor: default; outline: 1px dashed #ffffff1f; outline-offset: -5px; }
+.ctos .nf-ax-go:focus-visible { outline: 2px solid var(--cm-cyan); outline-offset: 3px; }
+.ctos .nf-ax-go-fill { position: absolute; inset: 0; background: repeating-linear-gradient(90deg, var(--ap) 0 6px, color-mix(in srgb, var(--ap) 70%, #000) 6px 8px); transform: scaleX(0); transform-origin: 0 50%; }
+.ctos .nf-ax-go[data-hold] .nf-ax-go-fill { transform: scaleX(1); transition: transform var(--hold, 1.2s) steps(24); }
+.ctos .nf-ax-go[data-hold], .ctos .nf-ax-go[data-confirm] { color: #fff; }
+.ctos .nf-ax-go[data-confirm] { background: var(--ap); }
+.ctos .nf-ax-go-t { position: relative; }
+.ctos .nf-ax-go:not(:disabled):hover { box-shadow: 0 0 0 1px var(--cm-ctos-block), 0 0 0 4px #0a0a0a, 0 0 0 5px var(--ap); }
+
+/* ---- gateway into the prestige tree */
+.ctos .nf-ax-gate { --c: var(--cm-cyan); padding: 18px; }
+.ctos .nf-ax-portal { position: relative; display: grid; grid-template-columns: minmax(0, 290px) minmax(0, 1fr); grid-template-areas: "art secs" "cmd cmd"; gap: 14px 16px; width: 100%; padding: 0; background: none; border: 0; color: inherit; text-align: left; cursor: pointer; }
+.ctos .nf-ax-portal:focus-visible { outline: 2px solid var(--cm-cyan); outline-offset: 4px; }
+.ctos .nf-ax-portal-art { grid-area: art; position: relative; aspect-ratio: 1; overflow: hidden; background: radial-gradient(circle, #2fd8e81f 0 1px, transparent 1.5px) 0 0 / 4px 4px, #060606; border: 1px solid #ffffff14; transition: transform .24s steps(4); }
+.ctos .nf-ax-mini { position: absolute; inset: 6%; width: 88%; height: 88%; overflow: visible; transition: transform .24s steps(4); }
+.ctos .nf-ax-spokes line { stroke-width: .08; stroke-dasharray: .25 .35; opacity: .45; }
+.ctos .nf-ax-links line { stroke: #ffffff2e; stroke-width: .12; }
+.ctos .nf-ax-links line[data-on] { stroke: var(--cm-cyan); stroke-width: .16; }
+.ctos .nf-ax-nd { fill: #0a0a0a; stroke: var(--c); stroke-width: .16; }
+.ctos .nf-ax-nd[data-st="own"] { fill: var(--c); }
+.ctos .nf-ax-nd[data-st="open"] { animation: nfAxBlink 1.4s steps(2) infinite; }
+.ctos .nf-ax-nd[data-st="fog"] { fill: #111; stroke: #ffffff2a; stroke-dasharray: .2 .2; }
+@keyframes nfAxBlink { 50% { fill: color-mix(in srgb, var(--c) 35%, #0a0a0a); } }
+.ctos .nf-ax-core { fill: var(--cm-ctos-block); stroke: var(--cm-cyan); stroke-width: .2; }
+.ctos .nf-ax-sweep { position: absolute; inset: -20%; background: conic-gradient(from 0deg, transparent 0 80%, #2fd8e824 92%, #2fd8e866 100%); animation: nfAxSweep 6s linear infinite; }
+@keyframes nfAxSweep { to { transform: rotate(1turn); } }
+.ctos .nf-ax-secs { grid-area: secs; list-style: none; margin: 0; padding: 0; display: grid; align-content: center; gap: 2px; }
+.ctos .nf-ax-secs li { display: flex; justify-content: space-between; gap: 8px; padding: 7px 0 7px 10px; border-left: 2px solid var(--c); border-bottom: 1px dashed #ffffff14; }
+.ctos .nf-ax-secs b { color: var(--c); font: 700 var(--cm-ctos-t-micro)/1 var(--cm-mono); letter-spacing: .12em; text-transform: uppercase; }
+.ctos .nf-ax-secs small { color: var(--cm-ctos-meta); font: 600 var(--cm-ctos-t-micro)/1 var(--cm-mono); font-variant-numeric: tabular-nums; }
+.ctos .nf-ax-cmd { grid-area: cmd; display: flex; align-items: center; gap: 10px; min-height: 48px; padding: 0 16px; border: 1px solid var(--cm-cyan); color: var(--cm-cyan); font: 700 var(--cm-ctos-t-ui)/1 var(--cm-mono); letter-spacing: .08em; text-transform: uppercase; }
+.ctos .nf-ax-cmd em { font-style: normal; }
+.ctos .nf-ax-cmd i { width: 9px; height: 16px; background: currentColor; animation: nfAxCaret 1s steps(2) infinite; }
+.ctos .nf-ax-cmd::after { content: "→"; margin-left: auto; font-weight: 700; }
+@keyframes nfAxCaret { 50% { opacity: 0; } }
+.ctos .nf-ax-portal:hover .nf-ax-cmd, .ctos .nf-ax-portal:focus-visible .nf-ax-cmd { background: var(--cm-cyan); color: var(--cm-cyan-ink, #0a0a0a); }
+.ctos .nf-ax-portal:hover .nf-ax-mini { transform: scale(1.05); }
+/* dial-in before the tree opens: brackets snap in, the miniature leans toward you, the command fills */
+.ctos .nf-ax-gate[data-go]::before { inset: 10px; }
+.ctos .nf-ax-gate[data-go] .nf-ax-portal-art { transform: scale(1.04); border-color: var(--cm-cyan); }
+.ctos .nf-ax-gate[data-go] .nf-ax-mini { transform: scale(1.3); }
+.ctos .nf-ax-gate[data-go] .nf-ax-cmd { background: var(--cm-cyan); color: #0a0a0a; }
+
+/* ---- perks: plain spec rows */
+.ctos .nf-ax-perks ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.ctos .nf-ax-perks li { display: grid; grid-template-columns: auto minmax(0, 1fr) auto auto; align-items: center; gap: 12px; padding: 10px 12px; background: var(--nf-ground); border: 1px solid var(--nf-line); }
+.ctos .nf-ax-perks li[data-can] { border-color: color-mix(in srgb, var(--ap) 55%, #1c1c1c); }
+.ctos .nf-ax-perks li[data-maxed] { border-color: #6bffc955; }
+.ctos .nf-ax-pn { align-self: start; padding: 3px 5px; background: #151515; color: var(--cm-ctos-meta); font: 700 var(--cm-ctos-t-micro)/1 var(--cm-mono); letter-spacing: .08em; }
+.ctos .nf-ax-perks li[data-can] .nf-ax-pn { background: var(--ap); color: #fff; }
+.ctos .nf-ax-pt { display: grid; gap: 4px; min-width: 0; }
+.ctos .nf-ax-pt b { font: 600 var(--cm-ctos-t-ui)/1.2 var(--cm-display); color: var(--cm-fg); }
+.ctos .nf-ax-pt small { font: 400 var(--cm-ctos-t-micro)/1.4 var(--cm-mono); color: var(--cm-ctos-meta); }
+.ctos .nf-ax-pips { display: flex; flex-wrap: wrap; gap: 2px; margin-top: 2px; }
+.ctos .nf-ax-pips i { width: 8px; height: 4px; background: #222; }
+.ctos .nf-ax-pips i[data-on] { background: var(--ap); }
+.ctos .nf-ax-lv { font: 600 var(--cm-ctos-t-micro)/1 var(--cm-mono); letter-spacing: .08em; color: var(--cm-ctos-meta); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.ctos .nf-ax-perks .nf-mini:not(:disabled) { border-color: var(--ap); color: var(--cm-fg); }
+.ctos .nf-ax-perks .nf-mini:not(:disabled):hover { background: var(--ap); color: #fff; }
+
+/* ---- variant B (mockup only until Nate picks): art as a wide banner, the flow as one row across */
+.ctos .nf-ax[data-ax="banner"] { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); grid-template-areas: "stage stage" "flow flow" "gate perks" "mounts mounts"; }
+.ctos .nf-ax[data-ax="banner"] .nf-ax-flow { grid-template-columns: minmax(0, 1fr) 280px; align-items: center; }
+.ctos .nf-ax[data-ax="banner"] .nf-ax-steps { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; }
+.ctos .nf-ax[data-ax="banner"] .nf-ax-steps li { padding: 18px 0 0; }
+.ctos .nf-ax[data-ax="banner"] .nf-ax-steps li::before { top: 0; }
+.ctos .nf-ax[data-ax="banner"] .nf-ax-steps li:not(:last-child)::after { left: 16px; right: -12px; top: 3px; bottom: auto; width: auto; height: 2px; background: linear-gradient(90deg, var(--c), color-mix(in srgb, var(--c) 25%, #1c1c1c)); animation: none; }
+
+/* ---- phone: one column, the gateway before perks */
+@media (max-width: 899px) {
+    .ctos .nf-ax-stage { min-height: 330px; }
+    .ctos .nf-ax-tower { transform: scale(.85); transform-origin: 50% 100%; }
+    .ctos .nf-ax-portal { grid-template-columns: minmax(0, 1fr) minmax(0, 130px); }
+    .ctos .nf-ax-perks li { grid-template-columns: auto minmax(0, 1fr) auto; }
+    .ctos .nf-ax-lv { display: none; }
+}
+@media (max-width: 420px) {
+    .ctos .nf-ax-portal { grid-template-columns: 1fr; grid-template-areas: "art" "secs" "cmd"; }
+    .ctos .nf-ax-portal-art { max-height: 220px; justify-self: center; width: min(100%, 220px); }
+    .ctos .nf-ax-secs { grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 12px; }
+}
+
+/* touch and narrow screens: no constant motion (perf rule); reduced motion: nothing moves */
+@media (hover: none), (max-width: 900px) { .ctos .nf-ax-scan, .ctos .nf-ax-sweep { animation: none; display: none; } }
+@media (prefers-reduced-motion: reduce) {
+    .ctos .nf-ax *, .ctos .nf-ax *::before, .ctos .nf-ax *::after, .ctos .nf-ax-gate::before { animation: none !important; transition: none !important; }
+    .ctos .nf-ax-scan, .ctos .nf-ax-sweep { display: none; }
+}

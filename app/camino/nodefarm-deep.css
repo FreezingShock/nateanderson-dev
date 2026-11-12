@@ -14,10 +14,3 @@
 .ctos .nf-row[data-stat="chrono"] .nf-btn { border: 2px solid #5a2a18; border-radius: 50px 4px 50px 4px; background: #160d09; }
 .ctos .nf-row[data-stat="chrono"] .nf-btn[data-afford] { border-color: var(--c); background: #301710; }
 
-.ctos .nf-tree-wrap { grid-column: 1 / -1; }
-.ctos .nf-tree-sum { list-style: none; display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 10px; margin: 0 0 14px; padding: 0; }
-.ctos .nf-tree-sum li { display: flex; justify-content: space-between; align-items: baseline; padding: 9px 12px; background: #0c0c0c; border: 1px solid #ffffff1f; border-top: 2px solid var(--c); }
-.ctos .nf-tree-sum b { color: var(--c); font: 700 var(--cm-ctos-t-ui)/1 var(--cm-mono); letter-spacing: .1em; text-transform: uppercase; }
-.ctos .nf-tree-sum small { color: var(--cm-mute); font: 600 var(--cm-ctos-t-micro)/1 var(--cm-mono); }
-.ctos .nf-tree-open { min-height: 44px; padding: 0 22px; border-color: var(--cm-cyan); color: var(--cm-cyan); }
-.ctos .nf-tree-open:hover { background: var(--cm-ctos-block); color: var(--cm-ctos-ink); }

@@ -1,12 +1,11 @@
 "use client";
 
 import { PixelIcon } from "@/components/cm/pixel-icons";
-import { BRANCHES, GOALS, GOAL_TIERS, MATS, PERKS, TREE, hasNode, SECRETS, TIER_NAMES, TUNE, apEach, apGlobal, apOnAscend, mountSlots, statDef, type MatId, canAscend, derive, fmt, fmtTime, goalDone, tiersDone, type State } from "@/lib/nodefarm/engine";
+import { GOALS, GOAL_TIERS, SECRETS, TIER_NAMES, TUNE, fmt, fmtTime, goalDone, tiersDone, type State } from "@/lib/nodefarm/engine";
 import { goalCounts, recordSections } from "@/lib/nodefarm/records";
 import { LOGS, logNo } from "@/lib/nodefarm/story";
 import { NfIcon } from "./icon";
 
-type D = ReturnType<typeof derive>;
 const ROMAN = ["", "I", "II", "III", "IV", "V", "VI", "VII"];
 const TIER_COLOR = ["", "#2fd8e8", "#b6f04a", "#f0a53c", "#ff2d8a", "#f4f4f2", "#ffc53a", "#9a7bff"];
 const stamp = (ms?: number) => {
@@ -105,114 +104,6 @@ export function RecordsPanel({ s }: { s: State }) {
                         : <li key={l.id} className="lock"><b>LOG {logNo(i)} // ????</b></li>))}
                 </ol>
             </section>
-        </div>
-    );
-}
-
-/** Summary of the prestige tree on the Ascend pane, with the way into the full-screen menu. */
-function TreeCard({ s, onOpen }: { s: State; onOpen: () => void }) {
-    const owned = s.tree.length;
-    return (
-        <section className="nf-tree-wrap nf-tree-card">
-            <header className="nf-sys-h">
-                <h3>Prestige tree</h3>
-                <p>{TREE.length} upgrades in five sections, bought with AP and kept through every Ascend. {s.ap} AP to spend, {owned} of {TREE.length} owned.</p>
-            </header>
-            <ul className="nf-tree-sum">
-                {BRANCHES.map((b) => {
-                    const mine = TREE.filter((n) => n.branch === b.id);
-                    return <li key={b.id} style={{ ["--c" as string]: b.color }}><b>{b.name}</b><small>{mine.filter((n) => hasNode(s, n.id)).length}/{mine.length}</small></li>;
-                })}
-            </ul>
-            <button type="button" className="nf-mini nf-tree-open" onClick={onOpen}>Open the tree</button>
-        </section>
-    );
-}
-
-/** Mounted drives (Forge nodes): pick materials whose producers survive Ascend. */
-function Mounts({ s, onMount }: { s: State; onMount: (slot: number, mat: MatId | null) => void }) {
-    const slots = mountSlots(s);
-    if (!slots) return null;
-    return (
-        <section className="nf-mounts">
-            <header className="nf-sys-h">
-                <h3>Mounted drives</h3>
-                <p>The producers of a mounted material survive every Ascend. Change a pick any time; only what is mounted when you Ascend is kept.</p>
-            </header>
-            {Array.from({ length: slots }, (_, i) => {
-                const cur = s.mounts[i];
-                return (
-                    <div key={i} className="nf-mount" role="group" aria-label={`Drive ${i + 1}`}>
-                        <span className="nf-mount-k">DRIVE {String(i + 1).padStart(2, "0")} // {cur ? `${statDef(cur).name.toUpperCase()}, ${fmt(s.prod[cur])} producers` : "EMPTY"}</span>
-                        <div className="nf-mount-b">
-                            {MATS.map((m) => {
-                                const other = s.mounts.includes(m) && cur !== m;
-                                return (
-                                    <button key={m} type="button" className="nf-mini" aria-pressed={cur === m} disabled={other} style={{ ["--c" as string]: statDef(m).color }} onClick={() => onMount(i, cur === m ? null : m)} title={other ? "Already on another drive" : undefined}>
-                                        {statDef(m).short}
-                                    </button>
-                                );
-                            })}
-                        </div>
-                    </div>
-                );
-            })}
-        </section>
-    );
-}
-
-export function AscendPanel({ s, d, confirm, onAscend, onPerk, onTree, onMount }: { s: State; d: D; confirm: boolean; onAscend: () => void; onPerk: (id: (typeof PERKS)[number]["id"]) => void; onTree: () => void; onMount: (slot: number, mat: MatId | null) => void }) {
-    const gain = apOnAscend(s);
-    const after = apGlobal(s, gain) / apGlobal(s);
-    return (
-        <div className="nf-sys nf-asc-grid">
-            <section className="nf-asc">
-                <header className="nf-sys-h">
-                    <h3>Ascend</h3>
-                    <p>Wipe the whole run. You keep goals, perks, the tree and lifetime stats, and get Ascension Points (AP). Each AP adds +{Math.round(apEach(s) * 100)}% to everything, permanently{TUNE.apBonusFromEarned ? ", and spending it on perks or the tree never lowers that" : ""}.</p>
-                </header>
-                <div className="nf-asc-art" aria-hidden="true" />
-                <div className="nf-asc-card">
-                    <NfIcon name="ascend" large />
-                    <div className="nf-asc-stats">
-                        <span><small>Aether</small><b>{fmt(s.aether)} / {fmt(TUNE.ascendAether)}</b></span>
-                        {s.runes > 0 && <span><small>Deep materials add</small><b>{`Runes ${fmt(s.runes)}`}{s.starglass > 0 ? ` · Starglass ${fmt(s.starglass)}` : ""}</b></span>}
-                        <span><small>AP now</small><b>{s.ap}</b></span>
-                        <span><small>On ascend</small><b>{gain > 0 ? `+${gain} AP` : "locked"}</b></span>
-                        <span><small>Global</small><b>{gain > 0 ? `×${fmt(d.global)} → ×${fmt(d.global * after)}` : `×${fmt(d.global)}`}</b></span>
-                    </div>
-                    <div className="nf-bar" role="progressbar" aria-valuemin={0} aria-valuemax={TUNE.ascendAether} aria-valuenow={Math.min(s.aether, TUNE.ascendAether)} aria-label="Aether toward Ascend"><i style={{ width: `${Math.min(100, (s.aether / TUNE.ascendAether) * 100)}%` }} /></div>
-                    <button type="button" className="nf-ascend" disabled={!canAscend(s)} onClick={onAscend}>
-                        {canAscend(s) ? (confirm ? `Confirm: wipe and gain ${gain} AP` : `Ascend for ${gain} AP`) : `Need ${fmt(TUNE.ascendAether)} Aether`}
-                    </button>
-                </div>
-            </section>
-            <section className="nf-perks-wrap">
-                <header className="nf-sys-h"><h3>Perks</h3><p>{s.ap} AP to spend. Perks survive every Ascend.</p></header>
-                <ul className="nf-perks">
-                    {PERKS.map((p) => {
-                        const lvl = s.perks[p.id];
-                        const cost = p.cost(lvl);
-                        const maxed = lvl >= p.max;
-                        return (
-                            <li key={p.id} data-maxed={maxed ? "" : undefined}>
-                                <span className="nf-perk-t">
-                                    <b>{p.name}</b>
-                                    <small>{p.blurb}</small>
-                                    <span className="nf-pipbar" aria-label={`Level ${lvl} of ${p.max}`}>
-                                        {Array.from({ length: p.max }, (_, i) => <i key={i} data-on={i < lvl ? "" : undefined} />)}
-                                    </span>
-                                </span>
-                                <button type="button" className="nf-mini" disabled={maxed || s.ap < cost} onClick={() => onPerk(p.id)}>
-                                    {maxed ? "Max" : `${cost} AP`}
-                                </button>
-                            </li>
-                        );
-                    })}
-                </ul>
-            </section>
-            <Mounts s={s} onMount={onMount} />
-            <TreeCard s={s} onOpen={onTree} />
         </div>
     );
 }

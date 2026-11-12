@@ -27,7 +27,8 @@ import { Juice, juice, checkMilestones } from "./juice";
 import { GuideStrip, Tip, TipCtx, type TipApi, type TipState } from "./guide";
 import { MapPanel } from "./map";
 import { nextStep, type Target } from "@/lib/nodefarm/guide";
-import { AscendPanel, GoalsPanel, MenuPanel, RecordsPanel } from "./systems";
+import { GoalsPanel, MenuPanel, RecordsPanel } from "./systems";
+import { AscendPanel } from "./ascend";
 
 const KEY = "nf-save-v1";
 const EV_KEY = "nf-events-v1"; // "off" when quick-time events are switched off (per device)
@@ -337,8 +338,8 @@ export function NodeFarm() {
         if (!on) log("Quick-time events off. Turn them back on in the Menu.", "warn");
     }, [log]);
 
-    const doAscend = () => {
-        if (confirm !== "ascend") {
+    const doAscend = (now = false) => {
+        if (!now && confirm !== "ascend") {
             setConfirm("ascend");
             setTimeout(() => setConfirm((c) => (c === "ascend" ? "" : c)), 4000);
             return;
