@@ -41,7 +41,7 @@ TOP = 10                     # sprite tops stay at old row 10 (sheet row 42) or 
 QUIET = (0, 0, 0, 0)         # v1 top-right box, retired in contract v2
 
 # x centre of each sprite (index 1..7)
-SLOT = {1: 44, 2: 58, 3: 76, 4: 100, 5: 132, 6: 180, 7: 248}
+SLOT = {1: 36, 2: 50, 3: 67, 4: 90, 5: 120, 6: 170, 7: 232}
 
 
 def hexc(h):
