@@ -3,6 +3,7 @@
 import { useContext, useEffect, useRef } from "react";
 import { MATS, STATS, TIERS, button, derive, fmt, isUnlocked, statDef, type ButtonStat, type State, type StatId } from "@/lib/nodefarm/engine";
 import { LORE } from "@/lib/nodefarm/lore";
+import { fnCaption } from "@/lib/nodefarm/feed";
 import { buttonTip, unlockInfo, type Target } from "@/lib/nodefarm/guide";
 import { TipCtx } from "./guide";
 import { NfIcon, NfTierIcon, type NfIconName } from "./icon";
@@ -99,6 +100,9 @@ export function StatRow({ id, s, d, onPress, onArm, open: expanded, onToggle, gu
                     <span className="nf-lk-k">ZONE {String(STATS.findIndex((x) => x.id === id) + 1).padStart(2, "0")} // ENCRYPTED</span>
                     <b>{def.name}</b>
                     <small>Unlocks at: {u.label.charAt(0).toLowerCase() + u.label.slice(1)}.</small>
+                    <code className="nf-lk-code" aria-hidden="true">
+                        <span data-k="kw">if</span><span data-k="p"> (</span><span data-k="id">{u.unit.toLowerCase()}</span><span data-k="p"> &gt;= </span><span data-k="num">{fmt(u.need)}</span><span data-k="p">) </span><span data-k="id" style={{ ["--tc" as string]: def.color }}>{id}</span><span data-k="p">.</span><span data-k="fn">decrypt</span><span data-k="p">()</span>
+                    </code>
                     <span className="nf-lk-m">
                         <span className="nf-bar sm" role="progressbar" aria-label={`Progress to decrypt ${def.name}`} aria-valuemin={0} aria-valuemax={100} aria-valuenow={pct}><i style={{ width: `${pct}%` }} /></span>
                         <small>{fmt(u.cur)} / {fmt(u.need)} {u.unit}</small>
@@ -217,8 +221,10 @@ function BuyBtn({ s, stat, tier, onPress, guided }: { s: State; stat: ButtonStat
                 </span>
             </span>
             {guided && <i className="nf-gd-c" aria-hidden="true" />}
+            <i className="nf-rar" aria-hidden="true" />
             <NfTierIcon stat={stat} tier={tier} />
             <span className="nf-btn-g">+{fmt(b.gain)}</span>
+            <span className="nf-btn-fn" aria-hidden="true">{fnCaption(stat, b.gain)}</span>
             <span className="nf-btn-c">{fmt(b.cost)} {pays.short}{owned > 0 && <em> · ×{owned}</em>}</span>
         </button>
     );
