@@ -9,6 +9,7 @@ import {
     type State,
 } from "./engine";
 import { LOGS, logNo } from "./story";
+import { END_STAGES, END_STEPS, buildBlock, endSeen, endStage, lastZone, stageCost } from "./ending";
 
 export const NF_PATH = "/creations/games/node-farm";
 export const NF_SAVE_KEY = "nf-save-v1";
@@ -133,7 +134,7 @@ export function nfCommand(s: State, args: string[]): NfResult {
             row("goals", `${c.goals}/${c.goalTotal}`),
             row("secrets", `${c.secrets}/${c.secretTotal}`),
             ...(handSeen(s) ? [row("handovers", `${s.hand.count}  (${s.hand.keys} keys)`)] : []),
-            t("nf stats · nf goals · nf secrets · nf logs · nf news · nf lab · nf handover · nf cron · nf archive · nf open", "dim"),
+            t("nf stats · nf goals · nf secrets · nf logs · nf news · nf lab · nf handover · nf end · nf cron · nf archive · nf open", "dim"),
         ];
     } else if (sub === "stats") {
         lines = recordSections(s).flatMap((sec) => [t(sec.title.toLowerCase(), "hi"), ...sec.rows.map(([a, b]) => row(a.toLowerCase(), b))]);
@@ -215,6 +216,20 @@ export function nfCommand(s: State, args: string[]): NfResult {
                 ...s.hand.notes.slice(-3).reverse().map((n) => row(`cycle ${n.n}`, n.text)),
             ];
         }
+    } else if (sub === "end" || sub === "ending") {
+        if (!endSeen(s)) lines = [t("end: the last zone is still dark. keep going.", "err")];
+        else {
+            const st = endStage(s);
+            const c = stageCost(Math.min(st, END_STEPS - 1));
+            const b = buildBlock(s);
+            lines = [
+                t("final build // node zero", "hi"),
+                row("stages", `${st}/${END_STEPS}${st ? `  (${END_STAGES.slice(0, st).join(", ").toLowerCase()})` : ""}`),
+                ...(st < END_STEPS ? [row("next", `${END_STAGES[st].toLowerCase()}: ${fmt(c.mat)} ${statDef(lastZone()).name.toLowerCase()} + ${c.keys} keys`), row("status", b ? b.toLowerCase() : "ready, build it in the handover window")] : [row("status", "node zero is awake")]),
+                row("endings", fmt(s.end?.stars ?? 0)),
+                ...(s.end?.logs ?? []).slice(-3).reverse().map((l) => row(`operator ${l.n}`, l.text)),
+            ];
+        }
     } else if (sub === "cron" || sub === "crontab") {
         const a = auto(s);
         lines = [t(`crontab -l  // ${a.own.length}/${SCRIPTS.length} scripts learned`, "hi")];
@@ -229,7 +244,7 @@ export function nfCommand(s: State, args: string[]): NfResult {
     } else if (sub === "whoami") {
         lines = [t("node-01. one core, no clearance, and a growing farm."), ...secret("x_self")];
     } else {
-        lines = [t(`nf: unknown: ${args[0]}`, "err"), t("nf stats · nf goals · nf secrets · nf logs · nf news · nf lab · nf handover · nf cron · nf archive · nf open", "dim")];
+        lines = [t(`nf: unknown: ${args[0]}`, "err"), t("nf stats · nf goals · nf secrets · nf logs · nf news · nf lab · nf handover · nf end · nf cron · nf archive · nf open", "dim")];
     }
     return { lines, unlocked: found };
 }

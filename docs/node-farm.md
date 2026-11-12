@@ -325,3 +325,11 @@ About every 8 to 14 minutes of play (first one after 8 minutes of life), one unl
 - Only online ticks (5 s or less) start an event; time away just runs the clock down. The scripts/sim never imports `zoneevents.ts`, so `sim.mjs` pacing is unchanged.
 - Shown as a centered card (`ZoneEventCard`, no scrim, plain events close after 7 s, a vein or fault waits for an answer or "Decide later"), a readout on the zone panel (`ZoneEvent`, with the answers if you deferred) and a dot on the signal chain. Reveal is decrypt.
 - Admin panel, Run section: zone picker, one button per event, Clear, and Next in 5 s.
+
+## Ending (final build, end screen, New operator), 2026-11-12
+- Rules: `lib/nodefarm/ending.ts` (`END_TUNE` holds every number; saved state `State.end`, parsed by `parseEnd` in engine.ts and kept through Ascend and Handover because `fresh()` has no `end` key). UI: `components/nodefarm/ending.tsx`, styles `app/camino/nodefarm-ending.css` (`nf-end*`), art `scene-ending.webp` from `scripts/naos-art/nodefarm-ending-art.py` (run `stamp-art.mjs` after).
+- The last zone is whatever is last in `STATS`, so new zones move the ending with them. Once it has a producer, the Final build shows in the Handover window: five stages (`END_STAGES`), each paid in that zone's material plus Keys. Stages are kept through every reset. The guide points at a stage as soon as it is affordable; `nf end` prints the build in the console.
+- The fifth stage asks to confirm, then opens the end screen (full screen, CRT reveal): art, the four past operators with their protocol lines, any earlier endings' logs, you, your lifetime numbers, and a box for your own log (160 characters). It opens once by itself (it reopens on load until closed); "Replay the ending" in the Handover window shows it again.
+- Keep running closes it and play continues. New operator (asks to confirm, keeps a backup in Menu) starts a fresh save that keeps only `end.stars` and `end.logs`; your last log shows as a milestone and in the Final build panel of the new run.
+- Copy in `END_COPY` and the stage names are drafts until Nate signs them off.
+- Test: /mnt/project-files/portfolio/node-farm-ending/end.mjs (`SITE_PASSWORD=ci-password node end.mjs <repo> <base> <outdir>`, server started with the same password).

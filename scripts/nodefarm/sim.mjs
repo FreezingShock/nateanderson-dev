@@ -14,6 +14,8 @@ if (!process.env.NF_NORIGS) {
     RG = await import("../../lib/nodefarm/rigs.ts");
     if (process.env.NF_RIGTUNE) merge(RG.RIG_TUNE, JSON.parse(process.env.NF_RIGTUNE)); // same as NF_TUNE, for RIG_TUNE
 }
+// The ending (lib/nodefarm/ending.ts): the bot builds a final-build stage as soon as it can afford one.
+const END = RG ? await import("../../lib/nodefarm/ending.ts") : null;
 const s = E.fresh(0);
 if (!process.env.NF_NODRONES) s.armed = ["mult", ...E.MATS]; // the bot arms every stat once it has Drones
 if (process.env.NF_NODRONES) s.autoArmed = ["mult", ...E.MATS]; // keep Standing orders from arming anything
@@ -145,10 +147,12 @@ while (t < hours * 3600) {
             }
             continue;
         }
+        if (END) while (END.buildStage(s, t * 1000)) mark("end stage " + s.end.stage, t);
         if (allRanks && s.origin > 0 && !process.env.NF_NOSTOP && s.hand.count >= HANDS) break;
     }
 }
 if (HANDS) console.log("handovers", handLog.map(([a, k], i) => `${(a / 3600).toFixed(1)}h +${k} keys${i ? ` (cycle ${((a - handLog[i - 1][0]) / 3600).toFixed(1)}h)` : ""}`).join(", "), "fw", s.hand.fw.length + "/" + E.FW.length);
+if (END) console.log("ending", `stage ${s.end?.stage ?? 0}/${END.END_STEPS}`, "last zone", END.lastZone(), E.fmt(s[END.lastZone()]), "producers", E.fmt(s.prod[END.lastZone()]), "keys", s.hand.keys);
 console.log("ascends", ascents.map(([a, g, ap]) => `${(a / 3600).toFixed(0)}h +${g} (ap ${ap})`).join(", "));
 const h = (x) => (x / 3600).toFixed(2) + " h";
 for (const [k, v] of Object.entries(marks)) if (k !== "lastReboot") console.log(k.padEnd(14), h(v));

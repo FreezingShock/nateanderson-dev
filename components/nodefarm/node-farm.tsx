@@ -56,6 +56,8 @@ import { ZoneEventCard } from "./zone-event";
 import { zeChoose, zoneEvDef, zoneLabel, type ZeChoice } from "@/lib/nodefarm/zoneevents";
 import { ARCS, arcKey, arcOf } from "@/lib/nodefarm/arcs";
 import { ArcHead } from "./arcs";
+import { EndScreen, FinalBuild } from "./ending";
+import { END_STAGES, END_STEPS, buildStage, carryEnd, closeEnding, endPending, endSeen } from "@/lib/nodefarm/ending";
 
 const KEY = "nf-save-v1";
 const EV_KEY = "nf-events-v1"; // "off" when quick-time events are switched off (per device)
@@ -140,6 +142,8 @@ export function NodeFarm() {
     const schedPress = useRef<{ s: State | null; n: number }>({ s: null, n: 0 });
     const schedRef = useRef<(s: State) => void>(() => {});
     const [away, setAway] = useState<Away | null>(null);
+    /** the end screen is open (final build done, or a replay from the Handover window) */
+    const [ending, setEnding] = useState(false);
     const [toast, setToast] = useState<string | null>(null);
     const [evOn, setEvOn] = useState(true);
     const [osReduced, setReduced] = useState(false);
@@ -531,6 +535,7 @@ export function NodeFarm() {
             prevIds.current = openIds;
             if (tickN.current % 10 === 5) checkMilestones(s, d.bytesPerSec);
             if (tickN.current % 10 === 3) schedRef.current(s);
+            if (tickN.current % 10 === 9 && endPending(s)) setEnding(true);
             if (tickN.current % 10 === 7) {
                 // story logs: a log is stored the first time it is within reach. A save from before logs existed gets them all at once, quietly.
                 const got = recoverLogs(s);
@@ -936,6 +941,48 @@ export function NodeFarm() {
         save();
         bump((n) => n + 1);
     };
+    // ---- the ending: build a stage of the final build; the last one opens the end screen
+    const doBuild = () => {
+        const st = buildStage(s);
+        if (!st) return sfx("deny");
+        const name = END_STAGES[st - 1];
+        feedStore.push([...call(idTok("node0"), "build", [strTok(name.toLowerCase())]), pun(" → "), num(`${st}/${END_STEPS}`), txt(" "), com(st >= END_STEPS ? "// node zero is awake" : "// kept through every reset")], { tone: "good", type: true });
+        if (st >= END_STEPS) {
+            keepBackup("at the ending");
+            setWin("");
+            setEnding(true);
+        } else {
+            sfx("nfTierUp", { tier: 4 });
+            juice.emit({ t: "milestone", title: `Final build: ${name}`, sub: `Stage ${st} of ${END_STEPS} built. It is kept through Ascend and Handover.` });
+        }
+        save();
+        bump((n) => n + 1);
+    };
+    const endKeep = (logText: string) => {
+        closeEnding(s, logText);
+        setEnding(false);
+        log("Node zero is awake. The farm keeps running.", "good");
+        save();
+        bump((n) => n + 1);
+    };
+    const endNew = (logText: string) => {
+        closeEnding(s, logText);
+        keepBackup("before New operator");
+        const carry = carryEnd(s);
+        const n = fresh();
+        n.end = carry;
+        g.current = n;
+        prevIds.current = null;
+        tipApi.hide();
+        setEnding(false);
+        setWin("");
+        feedStore.clear();
+        const last = carry.logs.at(-1);
+        log(`New operator. Ending ${carry.stars} is kept, and the old save is in Menu as a backup.`, "good");
+        if (last) juice.emit({ t: "milestone", title: `Log from operator ${last.n}`, sub: last.text });
+        save();
+        bump((x) => x + 1);
+    };
     const doDeploy = (id: PayloadId) => {
         const p = payload(id);
         const r = deploy(s, id);
@@ -1076,7 +1123,7 @@ export function NodeFarm() {
             {toast && <div className="nf-toast" role="status"><NfIcon name="spark" /> Goal: {toast}</div>}
 
             <ZoneEventCard s={s} id={zeCard} onChoose={onZoneEv} onClose={closeZeCard} reduced={reduced} />
-            <EventLayer game={g} ready={ready} enabled={evOn} busy={!!win || treeOpen || labTree || droneTree || fwTree || !!away || !!confirm} reduced={reduced} onEngage={evEngage} onResult={evResult} onMiss={evMiss} onDisable={() => setEvents(false)} />
+            <EventLayer game={g} ready={ready} enabled={evOn} busy={!!win || treeOpen || labTree || droneTree || fwTree || !!away || ending || !!confirm} reduced={reduced} onEngage={evEngage} onResult={evResult} onMiss={evMiss} onDisable={() => setEvents(false)} />
             <Juice reduced={reduced} />
 
             <section className="nf-pane nf-corepane" data-pane="core" aria-label="Core">
@@ -1191,6 +1238,7 @@ export function NodeFarm() {
                         onFirmware={openFw}
                         onProto={(id, second) => { if (setProto(s, id, second)) { sfx("tab"); log(`Protocol: ${protoDef(id).op}, ${protoDef(id).name}${second ? " (Dual boot, half strength)" : ""}.`, "good"); save(); bump((n) => n + 1); } }}
                     />
+                    {endSeen(s) && <FinalBuild s={s} onBuild={doBuild} onReplay={() => { setWin(""); setEnding(true); }} />}
                 </section>
             )}
             <section className="nf-pane nf-sidepane" data-pane="menu" aria-label="Menu" role="dialog" aria-modal="false">
@@ -1291,6 +1339,7 @@ export function NodeFarm() {
             )}
             <Tip host={root} tip={tip} />
             {away && <AwayReport away={away} era={era} reduced={reduced} onClose={() => setAway(null)} />}
+            {ending && !away && <EndScreen s={s} reduced={reduced} onKeep={endKeep} onNew={endNew} />}
         </div>
         </TipCtx.Provider>
     );

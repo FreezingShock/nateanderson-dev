@@ -179,6 +179,8 @@ export const ART_V: Record<string, string> = {
     "scene-9.webp": "70a2f587",
     "scene-ascend.png": "e3c3dcac",
     "scene-ascend.webp": "1518a5f9",
+    "scene-ending.png": "14756697",
+    "scene-ending.webp": "cfa0dbc4",
     "scene-handover.png": "44eb27e8",
     "scene-handover.webp": "5fbebb64",
     "sched-icons.png": "b47cb77a",
