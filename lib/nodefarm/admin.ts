@@ -6,7 +6,7 @@ import { BUY_STATS, SCRIPTS, SCRIPT_TUNE, auto, grantScripts, setRunning } from 
 import { maxRigs } from "./rigs";
 import {
     DRONE_TREE, DRONE_TUNE, MODS, POSTABLE, freshDr, modMax,
-    FW, handover, GOALS, LAB, LAB_TUNE, MATS, PAYLOADS, PERKS, SECRETS, STATS, TIERS, TREE, TREE_FULL, TUNE, ascend, ascendNeed, apOnAscend, derive, droneMax, exportSave, freshLab, fullTreeIds, parseSave, tick, treeFx, treeSpent, unlock,
+    FW, HAND_TUNE, PROTOS, handover, GOALS, LAB, LAB_TUNE, MATS, PAYLOADS, PERKS, SECRETS, STATS, TIERS, TREE, TREE_FULL, TUNE, ascend, ascendNeed, apOnAscend, derive, droneMax, exportSave, freshLab, fullTreeIds, parseSave, tick, treeFx, treeSpent, unlock,
     type MatId, type PerkDef, type ScriptId, type State, type StatId,
 } from "./engine";
 import { LOGS } from "./story";
@@ -227,6 +227,8 @@ export function forceHandover(s: State): number {
 export function addKeys(s: State, n: number) { s.hand.keys += n; s.hand.keysTotal += n; }
 /** Flash every Firmware node (no Keys spent). */
 export function ownAllFw(s: State) { s.hand.fw = FW.map((n) => n.id); }
+/** Every protocol at its top mastery rank. */
+export function maxProtoRanks(s: State) { s.hand.rank = Object.fromEntries(PROTOS.map((p) => [p.id, HAND_TUNE.rankMax])); }
 
 /** Make the run look like it is in era `n`: open every material up to its first stat and empty the ones after. */
 export function jumpEra(s: State, n: number) {
