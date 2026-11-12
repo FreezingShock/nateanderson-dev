@@ -10,14 +10,14 @@ body.nf-lowfx .ctos .nf-tn-halo, body.nf-lowfx .ctos .nf-tn[data-st="ready"]::be
 body.nf-lowfx .ctos .nf-tn-shadow, body.nf-lowfx .ctos .nf-tn[data-sel] .nf-tn-shadow { filter: none; }
 body.nf-lowfx .ctos .nf-tn[data-st="owned"] .nf-tn-ic { filter: none; }
 body.nf-lowfx .ctos .nf-tn-body { transition-duration: 0s; }
-body.nf-lowfx .nf-bd-l .nf-bd-d, body.nf-lowfx .nf-bd-core, body.nf-lowfx .nf-ts[data-st="owned"] { animation: none; will-change: auto; }
-body.nf-lowfx .nf-bd-l[data-l="2"], body.nf-lowfx .nf-dust { display: none; } /* the sway layer and the dust in front of the nodes */
+body.nf-lowfx .nf-ts[data-st="owned"] { animation: none; will-change: auto; }
+body.nf-lowfx .nf-bdl, body.nf-lowfx .nf-bdw-p[data-pulse], body.nf-lowfx .nf-bdw-s { animation: none; }
+body.nf-lowfx .nf-bdl[data-low], body.nf-lowfx .nf-bdw-s, body.nf-lowfx .nf-dust { display: none; } /* the sway layer, the radar sweep and the dust in front of the nodes */
 body.nf-lowfx .ctos .nf-tm-card { box-shadow: 8px 8px 0 #000b; }
 
 /* ---- lab, firewall and hangar backdrops ---- */
-body.nf-lowfx .nf-lbd-g[data-l="3"], body.nf-lowfx .nf-fbd-g[data-l="3"], body.nf-lowfx .nf-lbd-core, body.nf-lowfx .nf-fbd-core,
-body.nf-lowfx .nf-lbd-scan, body.nf-lowfx .nf-fbd-scan, body.nf-lowfx .nf-hbd-sweep, body.nf-lowfx .ctos .nf-hx-art { animation: none; will-change: auto; }
-body.nf-lowfx .nf-lbd-scan, body.nf-lowfx .nf-fbd-scan, body.nf-lowfx .nf-hbd-sweep { display: none; }
+body.nf-lowfx .nf-lbd-scan, body.nf-lowfx .nf-fbd-scan, body.nf-lowfx .ctos .nf-hx-art { animation: none; will-change: auto; }
+body.nf-lowfx .nf-lbd-scan, body.nf-lowfx .nf-fbd-scan { display: none; }
 body.nf-lowfx .ctos .nf-hg-berth .nf-hg-fly { animation: none; }
 
 /* ---- windows: scan lines, drifting skies, rings and flows ---- */
@@ -37,3 +37,6 @@ body.nf-lowfx .ctos .nf-ev-relays button[data-st="full"] { animation: none; }
 .ctos .nf-st { list-style: none; margin: 0; padding: 0; display: grid; gap: 18px; }
 .ctos .nf-st-g { display: grid; gap: 6px; }
 .ctos .nf-st-h { margin: 0; padding-left: 12px; font: 600 11px/1 var(--cm-mono); letter-spacing: .16em; text-transform: uppercase; color: var(--cm-ctos-meta); }
+
+/* ---- board panels scrolled out of view (components/nodefarm/offscreen.ts sets data-off): their loops stand still until they come back ---- */
+.ctos .nf [data-off], .ctos .nf [data-off] *, .ctos .nf [data-off] *::before, .ctos .nf [data-off] *::after { animation-play-state: paused !important; }

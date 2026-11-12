@@ -2,17 +2,18 @@
 
 import type { CSSProperties } from "react";
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
-import { sfx } from "@/lib/sound/sounds";
+import { nfx as sfx, nfx, humVol } from "@/lib/nodefarm/sound";
 import { setHum } from "@/lib/sound/engine";
 import { useSoundPrefs } from "@/lib/sound/use-sound";
 import {
-    TUNE, overclockMult, overclockSecs, respec, ascend, autoBuy, breach, button, buyDrone, buyNode, canAfford, buyPerk, toggleArm, checkGoals, derive, exportSave, fmt, fmtTime, fresh, getNumFmt, setNumFmt, type NumFmt, isUnlocked, parseSave, press, STATS, tick,
+    TUNE, overclockMult, overclockSecs, respec, ascend, canAscend, autoBuy, breach, button, buyDrone, buyNode, canAfford, buyPerk, toggleArm, checkGoals, derive, exportSave, fmt, fmtTime, fresh, getNumFmt, setNumFmt, type NumFmt, isUnlocked, parseSave, press, STATS, tick,
     apEach, dropFill, hasFeature, openDrop, setMount, statDef,
     buyLabNode, cancelCompile, compile, deploy, labNode, labOpen, payload, type PayloadId,
     chOff, buyFw, fwNode, handSeen, handover, protoDef, protoRank, respecFw, setProto, type ProtoId,
     type ButtonStat, type MatId, type State, type StatId,
 } from "@/lib/nodefarm/engine";
 import { initFx } from "@/lib/nodefarm/fx";
+import { keyIsTyping, keyOverlay } from "@/lib/nodefarm/keys";
 import type { NfLive } from "@/lib/nodefarm/records";
 import { Core, freshCoreFeed, type CoreFeed } from "./core";
 import { PART_WHY, SKIN_WHY, coreLook, corePreview, skinOpen } from "@/lib/nodefarm/core-look";
@@ -42,7 +43,7 @@ import { markSeen, newsToks, pickNews } from "@/lib/nodefarm/news";
 import { LORE } from "@/lib/nodefarm/lore";
 import { LOGS, logNo, recoverLogs } from "@/lib/nodefarm/story";
 import { Juice, juice, checkMilestones, onJuice } from "./juice";
-import { GuideStrip, Tip, TipCtx, type TipApi, type TipState } from "./guide";
+import { GuideStrip, Tip, TipCtx, type TipApi, type TipState, type TipStore } from "./guide";
 import { MapPanel } from "./map";
 import { nextStep, type Target } from "@/lib/nodefarm/guide";
 import { GoalsPanel, MenuPanel, RecordsPanel } from "./systems";
@@ -61,10 +62,15 @@ import { ZoneEventCard } from "./zone-event";
 import { zeChoose, zoneEvDef, zoneLabel, type ZeChoice } from "@/lib/nodefarm/zoneevents";
 import { ARCS, arcKey, arcOf } from "@/lib/nodefarm/arcs";
 import { ArcHead } from "./arcs";
+import { Hold } from "./hold";
+import { useOffscreenPause } from "./offscreen";
+import { ArcRail, ArcStep } from "./arc-rail";
 import { PokeLayer } from "./poke";
 import { StressPanel, StressStrip } from "./stress";
 import { chOpen, leaveTest, startTest, takeChNews, testDef, RANKS, type TestId } from "@/lib/nodefarm/stress";
 import { ACC_KEY, blankFoldTarget, readyCount, shownArcIds, soloArc } from "@/lib/nodefarm/layout";
+
+import { AUTO_GAP, addBackup, readBackups, type Backup } from "@/lib/nodefarm/backups";
 
 const KEY = "nf-save-v1";
 const EV_KEY = "nf-events-v1"; // "off" when quick-time events are switched off (per device)
@@ -74,34 +80,21 @@ const UI_KEY = "nf-ui-v1"; // which stat panels are minimized (per device, not p
 const JUMP_KEY = "nf-jump-v1"; // "off" when the page should not scroll to the board on a return visit (per device)
 const CALM_KEY = "nf-calm-v1"; // "1" when motion is forced calm, on top of the OS setting (per device)
 const FMT_KEY = "nf-numfmt-v1"; // number format: short | sci | eng (per device)
-const BACKUP_KEY = "nf-backup-v1"; // the save as it was just before an import, a wipe or a failed load (one slot)
-const CORRUPT_KEY = "nf-corrupt-v1"; // raw text of a save that could not be read, kept instead of being overwritten
 type Tab = "core" | "stats" | "map" | "goals" | "records" | "ascend" | "handover" | "stress" | "codex" | "menu";
 const SIDE: Tab[] = ["map", "goals", "records", "ascend", "handover", "stress", "codex", "menu"];
 type Win = "map" | "goals" | "records" | "ascend" | "handover" | "stress" | "codex" | "menu";
 
-function load(): { s: State | null; unreadable: boolean } {
+function load(): { s: State | null; unreadable: boolean; raw: string } {
     try {
         const raw = localStorage.getItem(KEY);
-        if (!raw) return { s: null, unreadable: false };
+        if (!raw) return { s: null, unreadable: false, raw: "" };
         const s = parseSave(raw);
-        // a save that will not parse (damaged, or from a newer build) must not be overwritten five seconds later
-        if (!s) {
-            try { localStorage.setItem(CORRUPT_KEY, raw); } catch {}
-        }
-        return { s, unreadable: !s };
+        // a save that will not parse (damaged, or from a newer build) must not be overwritten five seconds later: its text goes
+        // to the backup list (lib/nodefarm/backups.ts) where it can be copied out
+        if (!s) addBackup("lost", "could not be read", raw);
+        return { s, unreadable: !s, raw };
     } catch {
-        return { s: null, unreadable: false };
-    }
-}
-
-export type Backup = { at: number; why: string; code: string };
-function readBackup(): Backup | null {
-    try {
-        const b = JSON.parse(localStorage.getItem(BACKUP_KEY) ?? "null");
-        return b && typeof b.code === "string" && parseSave(b.code) ? b : null;
-    } catch {
-        return null;
+        return { s: null, unreadable: false, raw: "" };
     }
 }
 
@@ -110,7 +103,8 @@ const hasProgress = (s: State) => s.life.presses > 0 || s.life.secs > 60;
 export function NodeFarm() {
     const g = useRef<State>(null as unknown as State);
     const [ready, setReady] = useState(false);
-    const [, bump] = useState(0);
+    const [ver, bump] = useState(0); // bumped by whatever the player or a system just did
+    const [, tickBump] = useState(0); // bumped by the 10 Hz loop only (see Hold: hidden parts follow ver, not this)
     const [tab, setTab] = useState<Tab>("core");
     const [side, setSide] = useState<Tab>("goals");
     const [win, setWin] = useState<"" | Win>("");
@@ -163,7 +157,8 @@ export function NodeFarm() {
     const staleRef = useRef(false);
     staleRef.current = stale;
     const [numFmt, setNumFmtState] = useState<NumFmt>("short");
-    const [backup, setBackup] = useState<Backup | null>(null);
+    const [backups, setBackups] = useState<Backup[]>([]);
+    const autoAt = useRef(0); // when the last automatic backup was checked for
     const [ioText, setIoText] = useState("");
     const [ioMsg, setIoMsg] = useState("");
     const [fs, setFsState] = useState(false);
@@ -224,12 +219,14 @@ export function NodeFarm() {
     }, [win]);
     useEffect(() => {
         if (!win) return;
-        const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") closeWin(); };
-        window.addEventListener("keydown", onKey);
+        // Escape closes only the top layer: search, the console, an event, a tree or a full-screen moment above the window keep their own Escape
+        const onKey = (e: KeyboardEvent) => { if (e.key === "Escape" && !keyOverlay() && !document.querySelector(".nf-tm-host")) closeWin(); };
+        // capture phase: the console or search closes itself on this same Escape, and must still count as open here
+        window.addEventListener("keydown", onKey, true);
         // clears reveal transforms and lifts the board above the hero while a window is open (see nodefarm.css)
         document.body.classList.add("nf-win-open");
         document.querySelector<HTMLElement>(`.nf [data-pane="${win}"] .nf-win-x`)?.focus();
-        return () => { window.removeEventListener("keydown", onKey); document.body.classList.remove("nf-win-open"); };
+        return () => { window.removeEventListener("keydown", onKey, true); document.body.classList.remove("nf-win-open"); };
     }, [win]);
     useEffect(() => {
         try { if (localStorage.getItem(FS_KEY) === "1") setFsState(true); } catch {}
@@ -243,10 +240,7 @@ export function NodeFarm() {
             setFs(v === undefined ? !fsRef.current : v);
         };
         const onKey = (e: KeyboardEvent) => {
-            if (e.ctrlKey || e.metaKey || e.altKey) return;
-            const t = e.target as HTMLElement | null;
-            if (t && (t.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName))) return;
-            if (document.querySelector(".cn-panel, .nv-find, .nf-tm-host, .nf-aw")) return;
+            if (keyIsTyping(e) || keyOverlay() || document.querySelector(".nf-tm-host")) return;
             if (e.key === "f" || e.key === "F") { e.preventDefault(); setFs(!fsRef.current); }
             else if (e.key === "Escape" && fsRef.current && !winRef.current) setFs(false);
         };
@@ -281,7 +275,17 @@ export function NodeFarm() {
     };
     // tooltips: one layer at the root, driven from the buttons (hover and focus on desktop, a short flash after a tap on touch)
     const root = useRef<HTMLDivElement>(null);
-    const [tip, setTip] = useState<TipState | null>(null);
+    // the tooltip lives in its own little store so hovering a button does not re-render the whole board (components/nodefarm/guide.tsx Tip)
+    const tipStore = useMemo<TipStore>(() => {
+        let cur: TipState | null = null;
+        const subs = new Set<() => void>();
+        return {
+            get: () => cur,
+            set: (f) => { const n = typeof f === "function" ? f(cur) : f; if (n !== cur) { cur = n; subs.forEach((x) => x()); } },
+            sub: (fn) => { subs.add(fn); return () => { subs.delete(fn); }; },
+        };
+    }, []);
+    const setTip = tipStore.set;
     const tipTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
     const tipApi = useMemo<TipApi>(
         () => ({
@@ -297,13 +301,14 @@ export function NodeFarm() {
                 setTip((t) => (!el || t?.el === el ? null : t));
             },
         }),
-        [],
+        [setTip],
     );
     const feed = useRef<CoreFeed>(freshCoreFeed());
     const skinsWas = useRef<boolean[] | null>(null);
     // the core flares on milestones, unlocks and tier-ups
     useEffect(() => onJuice((e) => {
         if (e.t === "milestone" || e.t === "unlock" || e.t === "tier") feed.current.flareAt = performance.now();
+        if (e.t === "milestone") nfx("nfGoal");
     }), []);
     const saved = useRef(0);
     const warnedSave = useRef(false);
@@ -324,7 +329,6 @@ export function NodeFarm() {
             if (localStorage.getItem(JUMP_KEY) === "off") setJumpOn(false);
             const nf = localStorage.getItem(FMT_KEY);
             if (nf === "sci" || nf === "eng") { setNumFmt(nf); setNumFmtState(nf); }
-            setBackup(readBackup());
             if (localStorage.getItem(HUM_KEY) === "0") {
                 humRef.current = false;
                 setHumOn(false);
@@ -333,6 +337,10 @@ export function NodeFarm() {
         const timers: ReturnType<typeof setTimeout>[] = [];
         const got = load();
         const s = got.s ?? fresh();
+        // the save exactly as the last visit left it, before anything below touches it
+        if (got.s && hasProgress(got.s)) addBackup("auto", "when the game opened", got.raw);
+        autoAt.current = Date.now();
+        setBackups(readBackups());
         if (got.unreadable) timers.push(setTimeout(() => log("The saved game could not be read. It is kept in this browser; a new game starts.", "warn"), 1800));
         const first = s.life.secs === 0 && s.life.presses === 0;
         const gap = (Date.now() - s.at) / 1000;
@@ -413,9 +421,15 @@ export function NodeFarm() {
         if (!s || staleRef.current) return;
         try {
             s.at = Date.now();
-            localStorage.setItem(KEY, JSON.stringify(s));
+            const text = JSON.stringify(s);
+            localStorage.setItem(KEY, text);
             saved.current = Date.now();
             setLastSave(saved.current);
+            // a rolling backup every half hour of play (skipped when nothing changed since the last one)
+            if (saved.current - autoAt.current >= AUTO_GAP && hasProgress(s)) {
+                autoAt.current = saved.current;
+                setBackups(addBackup("auto", "every half hour", text));
+            }
         } catch {
             // storage full or blocked (private mode): say so once instead of failing silently
             if (!warnedSave.current) { warnedSave.current = true; log("This browser would not store the save. Export a code from Menu so nothing is lost.", "warn"); }
@@ -504,6 +518,8 @@ export function NodeFarm() {
         });
     }, [ready, arcCount]); // eslint-disable-line react-hooks/exhaustive-deps
 
+    useOffscreenPause(root, ready);
+
     // ---- the game loop: 10 ticks a second, real elapsed time, so a throttled background tab catches up on return
     useEffect(() => {
         if (!ready) return;
@@ -546,7 +562,7 @@ export function NodeFarm() {
                         const zd = zoneEvDef(ev.kind);
                         feedStore.push([...call(idTok("zone"), "event", [strTok(ev.kind)]), pun(" → "), strTok(zoneLabel(ev.zone))], { tone: zd.good ? "hot" : "warn", type: true });
                         setZeCard(ev.id);
-                        sfx("nfAlert");
+                        nfx("nfZone", { good: zd.good });
                     }
                 }
                 zeSeen.current = { s, n: zn };
@@ -622,7 +638,7 @@ export function NodeFarm() {
             skinsWas.current = skins;
             if (prevUnlocked.current && f.unlocked > prevUnlocked.current) sfx("nfDecrypt");
             prevUnlocked.current = f.unlocked;
-            setHum(humRef.current ? { level: Math.min(1, f.speed * 0.75 + (f.unlocked / 7) * 0.25), boost: f.overclock } : null);
+            setHum(humRef.current ? { level: Math.min(1, f.speed * 0.75 + (f.unlocked / 7) * 0.25), boost: f.overclock, vol: humVol() } : null);
             for (const n of takeChNews(s)) {
                 const t = testDef(n.id);
                 sfx("nfTierUp", { tier: 3 });
@@ -636,7 +652,7 @@ export function NodeFarm() {
                 setTimeout(() => setToast((t) => (t === goal.name ? null : t)), 3200);
             }
             // a full-screen tree hides the board, so the page only needs to follow once a second (the game itself still ticks ten times a second)
-            if (!treeOpenRef.current || tickN.current % 10 === 0) bump((n) => n + 1);
+            if (!treeOpenRef.current || tickN.current % 10 === 0) tickBump((n) => n + 1);
         }, 100);
         return () => {
             clearInterval(iv);
@@ -708,7 +724,7 @@ export function NodeFarm() {
             const r = zeChoose(g.current, id, c);
             if (!r.ok) { sfx("deny"); return; }
             teachEvent(g.current);
-            sfx("nfBuy", { tier: 2 });
+            nfx("nfBuy", { tier: 2 }, "events");
             if (c === "mine") log(`Vein mined: +${fmt(r.paid ?? 0)} ${statDef(r.stat ?? "bytes").name}.`, "good");
             else if (c === "patch") log(`Fault patched for ${fmt(r.paid ?? 0)} Bytes.`, "good");
             else log(c === "run" ? "Vein left running." : "Fault left to run out.", "good");
@@ -763,6 +779,7 @@ export function NodeFarm() {
             setTimeout(() => setConfirm((c) => (c === "ascend" ? "" : c)), 4000);
             return;
         }
+        if (g.current && canAscend(g.current)) keepBackup("before Ascend");
         const gain = ascend(g.current);
         setConfirm("");
         if (gain) {
@@ -776,12 +793,8 @@ export function NodeFarm() {
     };
 
     // ---- save safety
-    const keepBackup = (why: string) => {
-        try {
-            const b: Backup = { at: Date.now(), why, code: exportSave(g.current) };
-            localStorage.setItem(BACKUP_KEY, JSON.stringify(b));
-            setBackup(b);
-        } catch {}
+    const keepBackup = (why: string, force = true) => {
+        setBackups(addBackup(why.startsWith("before Ascend") ? "auto" : "event", why, JSON.stringify(g.current), { force }));
     };
     // two tabs on one save overwrite each other: when another tab writes, this one stops saving and says so
     useEffect(() => {
@@ -816,14 +829,15 @@ export function NodeFarm() {
         setConfirm("");
         applySave(n, "Save imported.");
     };
-    const doRestore = () => {
-        const b = readBackup();
-        const n = b && parseSave(b.code);
-        if (!b || !n) { setIoMsg("No backup to restore."); return; }
-        const swap = { at: Date.now(), why: "before restore", code: exportSave(g.current) };
+    const doRestore = (b: Backup) => {
+        const n = b.kind === "lost" ? null : parseSave(b.code);
+        if (!n) { setIoMsg("That backup cannot be read."); return; }
+        // the save in play goes to the list first, so a restore can be undone
+        if (hasProgress(g.current)) keepBackup("before restore");
         applySave(n, "Backup restored.");
-        try { localStorage.setItem(BACKUP_KEY, JSON.stringify(swap)); setBackup(swap); } catch {}
     };
+    /** a save that could not be read: its text goes in the box so it can be copied out and mended */
+    const doRecover = (b: Backup) => { setIoText(b.code); setIoMsg("The unreadable save is in the box. Copy it somewhere safe before you do anything else."); };
     const doDownload = () => {
         save();
         try {
@@ -907,10 +921,7 @@ export function NodeFarm() {
     useEffect(() => {
         if (!ready) return;
         const onKey = (e: KeyboardEvent) => {
-            if (e.ctrlKey || e.metaKey || e.altKey || e.isComposing) return;
-            const el = e.target as HTMLElement | null;
-            if (el && (el.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(el.tagName))) return;
-            if (document.querySelector(".nv-scrim, .nf-ev-scrim:not([data-out]), .nf-aw, .nf-rx")) return;
+            if (keyIsTyping(e) || keyOverlay()) return;
             // P presses the glowing button of the next step; holding it keeps buying like holding the button does
             if (e.key.toLowerCase() === "p") { e.preventDefault(); keyApi.current.press(e.repeat); return; }
             // 1 to 6 press that tier on the zone in the middle of the screen
@@ -1001,7 +1012,7 @@ export function NodeFarm() {
         const from = s.hand.proto;
         const keys = handover(s, proto, note, proto2);
         if (!keys) return sfx("deny");
-        sfx("nfAscend");
+        sfx("nfHandover");
         const p = protoDef(proto);
         const milestone = () => juice.emit({ t: "milestone", title: `Handover ${s.hand.count}: +${keys} Keys`, sub: `${p.op}'s protocol is running: ${p.name}. Flash Firmware with your Keys.` });
         setCut({ n: s.hand.count, keys, from, fromRank: from ? protoRank(s, from) : 0, to: proto, note: s.hand.notes.at(-1)?.n === s.hand.count ? s.hand.notes.at(-1)!.text : "", after: milestone });
@@ -1015,7 +1026,7 @@ export function NodeFarm() {
         keepBackup("before a stress test");
         if (!startTest(s, id)) return sfx("deny");
         const t = testDef(id);
-        sfx("nfAscend");
+        sfx("nfStress");
         juice.emit({ t: "milestone", title: `Stress test: ${t.name}`, sub: `${t.rule} Your run is stored and comes back when you leave.` });
         feedStore.push([...call(idTok("stress"), "start", [strTok(id)]), pun(" → "), strTok("run stored"), txt(" "), com("// fresh run under the fault")], { tone: "hot", type: true });
         prevIds.current = null;
@@ -1026,7 +1037,7 @@ export function NodeFarm() {
     const doLeaveStress = () => {
         const got = leaveTest(s);
         if (got < 0) return sfx("deny");
-        sfx("nfGoal");
+        nfx("nfGoal", undefined, "runs");
         juice.emit({ t: "milestone", title: "Run restored", sub: `${got} rank${got === 1 ? "" : "s"} cleared in that test. Everything else is as you left it.` });
         feedStore.push([...call(idTok("stress"), "leave"), pun(" → "), strTok("run restored")], { tone: "good", type: true });
         prevIds.current = null;
@@ -1083,7 +1094,10 @@ export function NodeFarm() {
         sfx("tab");
         setTimeout(() => document.querySelector<HTMLElement>(`.nf [data-stat="${key}"]`)?.scrollIntoView({ behavior: reduced ? "auto" : "smooth", block: "center" }), 90);
     };
-    // one arc at a time: open this arc, fold the others, and bring its header up if it is off screen
+    // the arc rail: the picked arc is the newest one not folded (the fold record keeps the pick across reloads)
+    const liveArcs = shownArcIds(s);
+    const selArc = [...liveArcs].reverse().find((id) => !folded[arcKey(id)]) ?? liveArcs[liveArcs.length - 1];
+    // pick an arc on the rail: fold the others, and bring its header up if it is off screen
     const focusArc = (id: string) => {
         setFold(soloArc(folded, id));
         sfx("tab");
@@ -1095,15 +1109,15 @@ export function NodeFarm() {
         }, 40);
     };
     keyApi.current.arc = (dir) => {
-        if (win || treeOpen || labTree) return;
-        const ids = shownArcIds(s);
+        if (win || treeOpenRef.current) return;
+        const ids = liveArcs;
         if (!ids.length) return;
-        const cur = ids.findIndex((id) => !folded[arcKey(id)]);
+        const cur = ids.indexOf(selArc);
         setTab("stats");
         focusArc(ids[cur < 0 ? (dir > 0 ? 0 : ids.length - 1) : (cur + dir + ids.length) % ids.length]);
     };
     keyApi.current.fold = () => {
-        if (win || treeOpen || labTree) return;
+        if (win || treeOpenRef.current) return;
         const mid = window.innerHeight / 2;
         let best: HTMLElement | null = null;
         let gap = Infinity;
@@ -1123,7 +1137,7 @@ export function NodeFarm() {
         sfx("tab");
     };
     keyApi.current.tier = (k, held) => {
-        if (win || treeOpen || labTree) return;
+        if (win || treeOpenRef.current) return;
         // the open zone nearest the middle of the screen
         const mid = window.innerHeight / 2;
         let best: HTMLElement | null = null;
@@ -1140,10 +1154,10 @@ export function NodeFarm() {
         const b = row.querySelector<HTMLButtonElement>(`.nf-btn[data-tier="${k}"]`);
         if (b) b.click();
     };
-    keyApi.current.go = () => { if (!win && !treeOpen && !labTree) goTo(step.target); };
+    keyApi.current.go = () => { if (!win && !treeOpenRef.current) goTo(step.target); };
     keyApi.current.press = (held) => {
         const t = step.target;
-        if (win || treeOpen || labTree || !t) return;
+        if (win || treeOpenRef.current || !t) return;
         // nothing to press (a window, a Drone or the lab): P does what Show me does
         if (!t.stat || t.tier === undefined) { if (!held) goTo(t); return; }
         if (held && t.stat === "reboot") return;
@@ -1157,6 +1171,13 @@ export function NodeFarm() {
     const laterLocked = STATS.filter((x) => !isUnlocked(s, x.id) && x.id !== firstLocked);
     const guideTarget = step.target && !step.target.win ? step.target : undefined;
 
+    // Hold keys: a hidden copy refreshes about three times a second (slow) or at once when something was done (ver)
+    const slow = Math.floor(tickN.current / 3);
+    const slow2 = Math.floor(tickN.current / 2); // open system panels follow at 5 Hz
+    const hk = `${ver}|${slow}`;
+    const foldSig = JSON.stringify(folded);
+    const guideKey = `${step.target?.drone ?? ""}${step.target?.lab ?? ""}${step.target?.win ?? ""}`;
+    const onPane = (id: string) => win === id || tab === id;
     return (
         <TipCtx.Provider value={tipApi}>
         <div className="nf" ref={root} data-tab={tab} data-side={sideShown} data-win={win || undefined} data-fs={fs ? "" : undefined} data-oc={s.overclock > 0 ? "" : undefined}>
@@ -1183,6 +1204,7 @@ export function NodeFarm() {
                 )}
                 <div className="nf-hud-side">
                     {!fs && <button type="button" className="nf-fsb" onClick={() => { setFs(true); sfx("tab"); }} aria-label="Full screen">Full</button>}
+                    <button type="button" className="nf-fsb nf-keysb" onClick={() => window.dispatchEvent(new Event("cm:keys"))} aria-haspopup="dialog" aria-label="Keyboard shortcuts" title="Keyboard shortcuts (?)">Keys ?</button>
                     <span className="nf-hud-n"><NfIcon name="reboot" /> {fmt(s.reboot)}<small>RBT</small></span>
                     <span className="nf-hud-n"><NfIcon name="mult" /> {fmt(s.mult)}<small>MUL</small></span>
                     {s.ap > 0 && <span className="nf-hud-n"><NfIcon name="ascend" /> {s.ap}<small>AP</small></span>}
@@ -1196,20 +1218,20 @@ export function NodeFarm() {
                         bump((x) => x + 1);
                     }} />}
                 </div>
-                <Dock info={sw} open={win} treeSeen={treeSeen} lab={labOpen(s)} guideWin={step.target?.win} fs={fs} onOpen={(w) => (w === "lab" ? openLab() : win === w ? closeWin() : openWin(w))} onFs={() => { setFs(!fs); sfx("tab"); }} />
-                <StressStrip s={s} onOpen={() => openWin("stress")} />
+                <Hold live={false} k={`${hk}|${win}|${fs}|${treeSeen}|${guideKey}`}><Dock info={sw} open={win} treeSeen={treeSeen} lab={labOpen(s)} guideWin={step.target?.win} fs={fs} onOpen={(w) => (w === "lab" ? openLab() : win === w ? closeWin() : openWin(w))} onFs={() => { setFs(!fs); sfx("tab"); }} /></Hold>
+                <Hold live={false} k={hk}><StressStrip s={s} onOpen={() => openWin("stress")} /></Hold>
             </header>
             <GuideStrip step={step} onGo={() => goTo(step.target)} onMap={() => openWin("map")} mapOpen={win === "map"} />
             <MiniHud bytes={s.bytes} rate={d.bytesPerSec} step={step} onGo={() => goTo(step.target)} paused={!!win || treeOpen || labTree || !!away || !!confirm} />
             {win && <button type="button" className="nf-scrim" aria-label="Close window" tabIndex={-1} onClick={closeWin} />}
 
-            <PhoneTabs info={sw} tab={tab} treeSeen={treeSeen} lab={labOpen(s)} guideWin={step.target?.win} onTab={(t) => setTabBoth(t)} onTree={() => openWin("tree")} onLab={openLab} />
+            <Hold live={false} k={`${hk}|${tab}|${treeSeen}|${guideKey}`}><PhoneTabs info={sw} tab={tab} treeSeen={treeSeen} lab={labOpen(s)} guideWin={step.target?.win} onTab={(t) => setTabBoth(t)} onTree={() => openWin("tree")} onLab={openLab} /></Hold>
 
             {stale && (
                 <div className="nf-stale" role="alert">
                     <span>Node Farm is open in another tab. This tab stopped saving so the two don&apos;t overwrite each other.</span>
                     <button type="button" className="nf-mini" onClick={() => location.reload()}>Load latest save</button>
-                    <button type="button" className="nf-mini" onClick={() => { setStale(false); staleRef.current = false; save(); }}>Save from here</button>
+                    <button type="button" className="nf-mini" onClick={() => { try { const other = localStorage.getItem(KEY); if (other) setBackups(addBackup("event", "before this tab saved over another", other, { force: true })); } catch {} setStale(false); staleRef.current = false; save(); }}>Save from here</button>
                 </div>
             )}
             {toast && <div className="nf-toast" role="status"><NfIcon name="spark" /> Goal: {toast}</div>}
@@ -1236,8 +1258,9 @@ export function NodeFarm() {
             </section>
 
             <section className="nf-pane nf-statspane" data-pane="stats" aria-label="Stats and buttons" onClick={(e) => blankFoldTarget(e.target as HTMLElement)?.click()}>
-                <Chain s={s} d={d} allOpen={!STATS.every((x) => folded[x.id])} onAll={(open) => setFold({ ...folded, ...Object.fromEntries(STATS.map((x) => [x.id, !open])), ...(open ? Object.fromEntries(ARCS.map((a) => [arcKey(a.id), false])) : {}) })} onIdle={foldIdle} onJump={(id) => goTo({ stat: id as Target["stat"] })} />
+                <Hold live={false} k={`${hk}|${foldSig}`}><Chain s={s} d={d} allOpen={!STATS.every((x) => folded[x.id])} onAll={(open) => setFold({ ...folded, ...Object.fromEntries(STATS.map((x) => [x.id, !open])) })} onIdle={foldIdle} onJump={(id) => goTo({ stat: id as Target["stat"] })} /></Hold>
                 {labOpen(s) && (
+                    <Hold live={false} k={`${ver}|${folded.lab ? slow : slow2}|${foldSig}|${guideKey}`}>
                     <LabZone
                         s={s}
                         d={d}
@@ -1249,22 +1272,26 @@ export function NodeFarm() {
                         onCancel={(i) => { if (cancelCompile(s, i)) { sfx("tab"); bump((n) => n + 1); } }}
                         onDeploy={(id) => doDeploy(id)}
                     />
+                    </Hold>
                 )}
                 {schedOpen(s) && (
+                    <Hold live={false} k={`${ver}|${folded.sched ? slow : slow2}|${foldSig}|${guideKey}`}>
                     <ScriptsZone
                         s={s}
                         open={!folded.sched}
                         onToggle={() => { setFold({ ...folded, sched: !folded.sched }); sfx("tab"); }}
-                        onChange={(msg) => { sfx("tab"); if (msg) feedStore.push([...call(idTok("cron"), msg.endsWith("running") ? "start" : "stop", [strTok(msg.split(" ")[0])])], { tone: msg.endsWith("running") ? "good" : "warn" }); save(); bump((n) => n + 1); }}
+                        onChange={(msg) => { nfx(msg ? "nfScript" : "tab", { on: !!msg?.endsWith("running") }, "automation"); if (msg) feedStore.push([...call(idTok("cron"), msg.endsWith("running") ? "start" : "stop", [strTok(msg.split(" ")[0])])], { tone: msg.endsWith("running") ? "good" : "warn" }); save(); bump((n) => n + 1); }}
                     />
+                    </Hold>
                 )}
                 {isUnlocked(s, "aether") && (
+                    <Hold live={false} k={`${ver}|${folded.drones ? slow : slow2}|${foldSig}|${guideKey}`}>
                     <DroneBay
                         s={s}
                         guided={step.target?.drone}
                         open={!folded.drones}
                         onToggle={() => { setFold({ ...folded, drones: !folded.drones }); sfx("tab"); }}
-                        onBuy={(k) => { if (buyDrone(s, k)) { sfx("nfBuy", { tier: k }); feedStore.push([...call(idTok("drones"), "deploy", [strTok(`T${k + 1}`)]), pun(" → "), strTok("online")], { tone: "good", type: true }); bump((n) => n + 1); } else sfx("deny"); }}
+                        onBuy={(k) => { if (buyDrone(s, k)) { sfx("nfDrone", { tier: k }); feedStore.push([...call(idTok("drones"), "deploy", [strTok(`T${k + 1}`)]), pun(" → "), strTok("online")], { tone: "good", type: true }); bump((n) => n + 1); } else sfx("deny"); }}
                         onPost={(k, st) => {
                             if (!setPost(s, k, st)) return sfx("deny");
                             sfx("tab");
@@ -1274,26 +1301,30 @@ export function NodeFarm() {
                         }}
                         onMod={(k, m) => {
                             if (!buyMod(s, k, m)) return sfx("deny");
-                            sfx("nfBuy", { tier: Math.min(5, k + 1) });
+                            sfx("nfDrone", { tier: Math.min(5, k + 1) });
                             feedStore.push([...call(idTok("drones"), "refit", [strTok(`T${k + 1}`), pun(", "), strTok(MODS[m].id)]), pun(" → "), num(`lv ${s.dr.mods[k][m]}`)], { tone: "good" });
                             bump((n) => n + 1);
                         }}
                         onTree={() => { setWin(""); setTreeOpen(false); setLabTree(false); setDroneTree(true); sfx("tab"); }}
                     />
+                    </Hold>
                 )}
+                <Hold live={false} k={`${hk}|${foldSig}|${selArc}`}><ArcRail s={s} arcs={liveArcs} sel={selArc} onPick={focusArc} /></Hold>
                 {ARCS.map((arc, ai) => {
                     const shown = arc.zones.filter((z) => isUnlocked(s, z as StatId) || z === firstLocked);
                     if (!shown.length) return null;
                     const preview = !shown.some((z) => isUnlocked(s, z as StatId)); // only the next encrypted zone: always shown
-                    const arcOpen = preview || !folded[arcKey(arc.id)];
+                    if (!preview && arc.id !== selArc) return null; // the rail shows one arc at a time
+                    const arcOpen = true;
                     return (
-                        <div key={arc.id} className="nf-arcgrp" data-arc={arc.id} data-preview={preview ? "" : undefined} role="group" aria-label={arc.name} style={{ ["--arc" as string]: arc.color } as CSSProperties}>
-                            <ArcHead arc={arc} no={ai + 1} s={s} open={arcOpen} onToggle={() => { if (preview) return; if (arcOpen) { setFold({ ...folded, [arcKey(arc.id)]: true }); sfx("tab"); } else focusArc(arc.id); }} />
+                        <div key={arc.id} className="nf-arcgrp" data-arc={arc.id} data-preview={preview ? "" : undefined} data-rail="" role="group" aria-label={arc.name} style={{ ["--arc" as string]: arc.color } as CSSProperties}>
+                            <Hold live={false} k={`${hk}|${foldSig}`}><ArcHead arc={arc} no={ai + 1} s={s} open={arcOpen} onToggle={() => {}} /></Hold>
                             {arcOpen && (
                                 <div id={`nf-arc-${arc.id}`} className="nf-arc-zones">
                                     {shown.map((id) => (
                                         <StatRow key={id} id={id as StatId} s={s} d={d} guide={guideTarget} onPress={doPress} onArm={() => { toggleArm(s, id as StatId); sfx("tab"); bump((n) => n + 1); }} onWatchdog={() => { s.watchdog = !s.watchdog; sfx("tab"); log(`Watchdog timer ${s.watchdog ? "on: Reboots run themselves" : "off"}.`, s.watchdog ? "good" : "warn"); bump((n) => n + 1); }} open={!folded[id]} onToggle={() => { setFold({ ...folded, [id]: !folded[id] }); sfx("tab"); }} onZoneEv={onZoneEv} zeCard={zeCard} />
                                     ))}
+                                    {!preview && <ArcStep s={s} arcs={liveArcs} sel={selArc} onPick={focusArc} />}
                                 </div>
                             )}
                         </div>
@@ -1312,40 +1343,43 @@ export function NodeFarm() {
             </section>
 
             <section className="nf-pane nf-sidepane" data-pane="map" aria-label="Progress map" role="dialog" aria-modal="false">
-                <WinBar id="map" info={sw} treeSeen={treeSeen} lab={labOpen(s)} onSwitch={(w) => (w === "lab" ? openLab() : openWin(w))} onClose={closeWin} />
-                <MapPanel s={s} d={d} onTree={() => openWin("tree")} onWin={(w) => openWin(w)} onLab={() => { closeWin(); openLab(); }} />
+                <Hold live={onPane("map")} k=""><WinBar id="map" info={sw} treeSeen={treeSeen} lab={labOpen(s)} onSwitch={(w) => (w === "lab" ? openLab() : openWin(w))} onClose={closeWin} /></Hold>
+                <Hold live={onPane("map")} k=""><MapPanel s={s} d={d} onTree={() => openWin("tree")} onWin={(w) => openWin(w)} onLab={() => { closeWin(); openLab(); }} /></Hold>
             </section>
             <section className="nf-pane nf-sidepane" data-pane="goals" aria-label="Goals" role="dialog" aria-modal="false">
-                <WinBar id="goals" info={sw} treeSeen={treeSeen} lab={labOpen(s)} onSwitch={(w) => (w === "lab" ? openLab() : openWin(w))} onClose={closeWin} /><GoalsPanel s={s} /></section>
+                <Hold live={onPane("goals")} k=""><WinBar id="goals" info={sw} treeSeen={treeSeen} lab={labOpen(s)} onSwitch={(w) => (w === "lab" ? openLab() : openWin(w))} onClose={closeWin} /></Hold><Hold live={onPane("goals")} k=""><GoalsPanel s={s} /></Hold></section>
             <section className="nf-pane nf-sidepane" data-pane="records" aria-label="Records" role="dialog" aria-modal="false">
-                <WinBar id="records" info={sw} treeSeen={treeSeen} lab={labOpen(s)} onSwitch={(w) => (w === "lab" ? openLab() : openWin(w))} onClose={closeWin} /><RecordsPanel s={s} /></section>
+                <Hold live={onPane("records")} k=""><WinBar id="records" info={sw} treeSeen={treeSeen} lab={labOpen(s)} onSwitch={(w) => (w === "lab" ? openLab() : openWin(w))} onClose={closeWin} /></Hold><Hold live={onPane("records")} k=""><RecordsPanel s={s} /></Hold></section>
             <section className="nf-pane nf-sidepane" data-pane="ascend" aria-label="Ascend" role="dialog" aria-modal="false">
-                <WinBar id="ascend" info={sw} treeSeen={treeSeen} lab={labOpen(s)} onSwitch={(w) => (w === "lab" ? openLab() : openWin(w))} onClose={closeWin} />
-                <AscendPanel s={s} d={d} confirm={confirm === "ascend"} onAscend={doAscend} onPerk={(id) => { if (buyPerk(s, id)) { sfx("nfBuy", { tier: 3 }); bump((n) => n + 1); } }} onTree={() => openWin("tree")} onMount={(i, m) => { if (setMount(s, i, m)) { sfx("tab"); save(); bump((n) => n + 1); } }} />
+                <Hold live={onPane("ascend")} k=""><WinBar id="ascend" info={sw} treeSeen={treeSeen} lab={labOpen(s)} onSwitch={(w) => (w === "lab" ? openLab() : openWin(w))} onClose={closeWin} /></Hold>
+                <Hold live={onPane("ascend")} k=""><AscendPanel s={s} d={d} confirm={confirm === "ascend"} onAscend={doAscend} onPerk={(id) => { if (buyPerk(s, id)) { sfx("nfBuy", { tier: 3 }); bump((n) => n + 1); } }} onTree={() => openWin("tree")} onMount={(i, m) => { if (setMount(s, i, m)) { sfx("tab"); save(); bump((n) => n + 1); } }} /></Hold>
             </section>
             {handSeen(s) && (
                 <section className="nf-pane nf-sidepane" data-pane="handover" aria-label="Handover" role="dialog" aria-modal="false">
-                    <WinBar id="handover" info={sw} treeSeen={treeSeen} lab={labOpen(s)} onSwitch={(w) => (w === "lab" ? openLab() : openWin(w))} onClose={closeWin} />
+                    <Hold live={onPane("handover")} k=""><WinBar id="handover" info={sw} treeSeen={treeSeen} lab={labOpen(s)} onSwitch={(w) => (w === "lab" ? openLab() : openWin(w))} onClose={closeWin} /></Hold>
+                    <Hold live={onPane("handover")} k="">
                     <HandoverPanel
                         s={s}
                         onHandover={doHandover}
                         onFirmware={openFw}
                         onProto={(id, second) => { if (setProto(s, id, second)) { sfx("tab"); log(`Protocol: ${protoDef(id).op}, ${protoDef(id).name}${second ? " (Dual boot, half strength)" : ""}.`, "good"); save(); bump((n) => n + 1); } }}
                     />
+                    </Hold>
                 </section>
             )}
             {chOpen(s) && (
                 <section className="nf-pane nf-sidepane" data-pane="stress" aria-label="Stress tests" role="dialog" aria-modal="false">
-                    <WinBar id="stress" info={sw} treeSeen={treeSeen} lab={labOpen(s)} onSwitch={(w) => (w === "lab" ? openLab() : openWin(w))} onClose={closeWin} />
-                    <StressPanel s={s} onStart={doStress} onLeave={doLeaveStress} />
+                    <Hold live={onPane("stress")} k=""><WinBar id="stress" info={sw} treeSeen={treeSeen} lab={labOpen(s)} onSwitch={(w) => (w === "lab" ? openLab() : openWin(w))} onClose={closeWin} /></Hold>
+                    <Hold live={onPane("stress")} k=""><StressPanel s={s} onStart={doStress} onLeave={doLeaveStress} /></Hold>
                 </section>
             )}
             <section className="nf-pane nf-sidepane" data-pane="codex" aria-label="Codex" role="dialog" aria-modal="false">
-                <WinBar id="codex" info={sw} treeSeen={treeSeen} lab={labOpen(s)} onSwitch={(w) => (w === "lab" ? openLab() : openWin(w))} onClose={closeWin} />
-                <CodexPanel s={s} shown={win === "codex" || (tab === "codex" && !win)} onOpen={(w) => (w === "lab" ? (closeWin(), openLab()) : openWin(w))} />
+                <Hold live={onPane("codex")} k=""><WinBar id="codex" info={sw} treeSeen={treeSeen} lab={labOpen(s)} onSwitch={(w) => (w === "lab" ? openLab() : openWin(w))} onClose={closeWin} /></Hold>
+                <Hold live={onPane("codex")} k=""><CodexPanel s={s} shown={win === "codex" || (tab === "codex" && !win)} onOpen={(w) => (w === "lab" ? (closeWin(), openLab()) : openWin(w))} /></Hold>
             </section>
             <section className="nf-pane nf-sidepane" data-pane="menu" aria-label="Menu" role="dialog" aria-modal="false">
-                <WinBar id="menu" info={sw} treeSeen={treeSeen} lab={labOpen(s)} onSwitch={(w) => (w === "lab" ? openLab() : openWin(w))} onClose={closeWin} />
+                <Hold live={onPane("menu")} k=""><WinBar id="menu" info={sw} treeSeen={treeSeen} lab={labOpen(s)} onSwitch={(w) => (w === "lab" ? openLab() : openWin(w))} onClose={closeWin} /></Hold>
+                <Hold live={onPane("menu")} k="">
                 <MenuPanel
                     s={s}
                     soundOn={snd.on}
@@ -1362,8 +1396,9 @@ export function NodeFarm() {
                     importConfirm={confirm === "import"}
                     onDownload={doDownload}
                     onUpload={doUpload}
-                    backup={backup}
+                    backups={backups}
                     onRestore={doRestore}
+                    onRecover={doRecover}
                     volume={snd.master}
                     onVolume={(v) => setSnd({ master: v })}
                     calm={calm}
@@ -1376,6 +1411,7 @@ export function NodeFarm() {
                     onNumFmt={setFormat}
                     onReset={() => doReset(true)}
                 />
+                </Hold>
             </section>
             {adminOn && !adminOpen && <button type="button" className="nf-ad-tab" onClick={() => setAdminOpen(true)} aria-label="Open the root console"><i />root</button>}
             {adminOn && adminOpen && <AdminPanel host={adminHost} />}
@@ -1404,7 +1440,7 @@ export function NodeFarm() {
                     reduced={reduced}
                     onBuy={(id) => {
                         if (!buyDroneNode(s, id)) return sfx("deny");
-                        sfx("nfBuy", { tier: 4 });
+                        nfx("nfDrone", { tier: 4 });
                         feedStore.push([...call(idTok("hangar"), "fit", [strTok(droneNode(id).name)]), pun(" → "), strTok("installed")], { tone: "good", type: true });
                         save();
                         bump((x) => x + 1);
@@ -1441,7 +1477,7 @@ export function NodeFarm() {
                     onClose={closeTree}
                 />
             )}
-            <Tip host={root} tip={tip} />
+            <Tip host={root} store={tipStore} />
             {away && <AwayReport away={away} era={era} reduced={reduced} onClose={() => setAway(null)} />}
         </div>
         </TipCtx.Provider>

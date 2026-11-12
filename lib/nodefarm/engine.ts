@@ -95,7 +95,7 @@ export const TUNE = {
     logK: { snAll: 0.1, egDrone: 0.15, pxOc: 0.15, orAp: 0.1, crosstalk: 0.12, blKeys: 0.1, suAll: 0.08 },
     boostPow: 0.38,
     chAllCap: 1e6, // Chrono boosts EVERYTHING, including Chrono: past this amount the boost grows only with log10 (a power law fed itself to 1e300 once Engrams opened)
-    unlockAt: { copper: 1, silicon: 150, quartz: 300, aether: 500, runes: 150, starglass: 200, voidsteel: 250, chrono: 300, nebula: 300, pulsars: 300, singularity: 300, engrams: 350, paradox: 400, origin: 450, spores: 500, mycelium: 550, pollen: 600, bloom: 650, basalt: 700, magma: 750, geodes: 800, sunstone: 850 } as Record<string, number>, // copper: Reboots; the rest: amount of the stat below
+    unlockAt: { copper: 1, silicon: 150, quartz: 300, aether: 500, runes: 150, starglass: 200, voidsteel: 250, chrono: 2000, nebula: 300, pulsars: 300, singularity: 300, engrams: 350, paradox: 400, origin: 450, spores: 500, mycelium: 550, pollen: 600, bloom: 650, basalt: 700, magma: 750, geodes: 800, sunstone: 850 } as Record<string, number>, // copper: Reboots; the rest: amount of the stat below
     overclockMult: 6,
     overclockSecs: 20,
     offlineCapHours: 8,
@@ -214,7 +214,7 @@ export interface TreeNode {
     cost: number;
     /** section slot, 0 to 7 (set by the layout) */
     slot?: number;
-    /** neighbours (both directions); "core" is the free start */
+    /** neighbors (both directions); "core" is the free start */
     links: string[];
     fx: TreeFx;
     /** position in tree units (the menu multiplies by its grid size) */
@@ -230,7 +230,7 @@ export interface TreeNode {
     chain?: { id: string; step: number; of: number };
     /** the deeper tree (2026-11-12): junctions, forks and ranked nodes. Absent on the first 40. */
     form?: "junction" | "fork" | "ranked";
-    /** junction: every one of these must be owned (both sections), not just one neighbour */
+    /** junction: every one of these must be owned (both sections), not just one neighbor */
     req?: string[];
     /** fork: the other side of the pair. Owning one locks the other; buying the other swaps for free */
     excl?: string;
@@ -275,7 +275,7 @@ const ARMS: Record<Branch, Row[]> = {
         [3, "mount1", "notable", "Mounted drive I", "Pick one material on the Ascend pane. Its producers survive every Ascend.", "Bolted a drive to the floor. The dark cannot take what is bolted down.", { mounts: 1 }],
         [4, "deepvein", "minor", "Deep vein", "Runes, Starglass, Voidsteel and Chrono x2.", "The seam keeps going past where the map ends.", { mats: { runes: 1, starglass: 1, voidsteel: 1, chrono: 1 } }],
         [5, "mount2", "minor", "Mounted drive II", "A second mounted drive.", "Second drive, same bolts. The floor is getting crowded.", { mounts: 1 }],
-        [6, "crosstalk", "notable", "Cross-talk", "Every material also boosts the one two steps down the chain.", "The materials started talking past their neighbours. I let them.", { feature: "crosstalk" }],
+        [6, "crosstalk", "notable", "Cross-talk", "Every material also boosts the one two steps down the chain.", "The materials started talking past their neighbors. I let them.", { feature: "crosstalk" }],
         [7, "overpress", "keystone", "Overpressure", "Every material x3.", "Every pipe at full pressure. The forge sings one long note.", { mats: ALL_MATS(2) }],
         [8, "specialist", "notable", "Specialist", "The newest material you produce x8.", "Pick one seam and dig until it rings.", { specialist: 7 }],
         [9, "generalist", "notable", "Generalist", "Every material x2.5.", "A little of everything, all of it hot.", { mats: ALL_MATS(1.5) }],
@@ -688,8 +688,6 @@ export interface State {
     ch?: import("./stress").ChState;
     /** Zone events (lib/nodefarm/zoneevents.ts): the running event, the timer to the next one and a count. Reset on Ascend. Created on first use. */
     ze?: ZoneEvState;
-    /** Touch layer: caches waiting in zone art and the core vent (rules in lib/nodefarm/poke.ts, repaired there so old saves load) */
-    poke?: PokeState;
     /** Which button tiers were ever pressed, per stat, as a bit mask. Kept through Ascend; arcs clear when every tier of every zone in them is set. */
     seen?: Partial<Record<ButtonStat, number>>;
     // lifetime counters (survive Ascend)
@@ -750,19 +748,6 @@ export interface AutoState {
     rebuild?: boolean;
     seenHand?: number;
     restPerks?: boolean;
-}
-/** Touch layer (lib/nodefarm/poke.ts): caches that wait in a zone's art until tapped, and the core vent's charge. */
-export interface PokeState {
-    /** caches waiting: id, zone, and where along the scene they sit (0..1) */
-    c: { id: number; z: StatId; x: number }[];
-    /** online seconds until the next cache */
-    next: number;
-    /** vent charge in seconds (full at POKE_TUNE.ventCharge) */
-    vent: number;
-    /** lifetime counts: caches opened, vents, caches spawned (also the id counter) */
-    got: number;
-    vents: number;
-    n: number;
 }
 /** Called at the end of every tick (and so also through time away). Scripts add themselves here. */
 export const TICK_HOOKS: ((s: State, dt: number) => void)[] = [];
@@ -1654,7 +1639,7 @@ const LAB_ARMS: Record<LabSec, LabRow[]> = {
         [0, "rx_sniffer", "minor", "Packet sniffer", "Payload: Packet sniffer. Bytes x2 for 10 minutes.", "Listen first. The wire tells you everything if you let it talk.", { recipe: "sniffer" }],
         [1, "rx_worm", "minor", "Worm", "Payload: Worm. Multiplier buttons add x2 for 10 minutes.", "It copies itself into every amp on the stack. The amps don't mind.", { recipe: "worm" }],
         [2, "rx_logicbomb", "minor", "Logic bomb", "Payload: Logic bomb. Your next Reboot gives x3 Reboots.", "Set it, forget it, and let the next restart do the work.", { recipe: "logicbomb" }],
-        [3, "rx_obfuscate", "notable", "Obfuscation", "Exploits buffs are 50% stronger.", "Same code, uglier. Nothing on the line recognises it anymore.", { potency: "exploits" }],
+        [3, "rx_obfuscate", "notable", "Obfuscation", "Exploits buffs are 50% stronger.", "Same code, uglier. Nothing on the line recognizes it anymore.", { potency: "exploits" }],
         [4, "rx_ransom", "minor", "Ransomware", "Payload: Ransomware. Pays out 10 minutes of Bytes, Copper, Silicon and Quartz at once.", "Lock it, then charge the node for its own key. The node always pays.", { recipe: "ransom" }],
         [5, "rx_kernel", "keystone", "Kernel exploit", "Payload: Kernel exploit. Everything x2 for 5 minutes.", "Ring zero. For five minutes nothing on this node says no.", { recipe: "kernel" }],
     ],
@@ -2277,7 +2262,7 @@ export const HAND_TUNE = {
     bootProd: 10, // Bootloader: producers on Copper to Aether
     afterglow: 180, // Afterglow: seconds of Overclock at the start of every Ascend
     noteMax: 140, // characters in a handover note
-    apPerHand: 1, // every Handover done: AP on Ascend x(1 + this * Handovers), so each cycle rebuilds the tree faster
+    apPerHand: 0.25, // every Handover done: AP on Ascend x(1 + this * Handovers), so each cycle rebuilds the tree faster (was 1: cycles shrank to minutes)
     rankStep: 0.25, // protocol mastery: each rank runs that protocol x(1 + this) stronger
     rankMax: 3, // ranks I to III, one per cycle you finish on that protocol
 };
@@ -2338,7 +2323,7 @@ const FW_ARMS: Record<FwSec, FwRow[]> = {
         [2, "fw_labimage", "minor", "Lab image", "Ascend keeps your Intel and running payloads.", "The bench gets imaged before every wipe.", { labKeep: true }],
         [3, "fw_deepimprint", "notable", "Deep imprint", "Handover also keeps the upper path of every tree section.", "Walk the same path enough times and it stays walked.", { keepUpper: true }],
         [4, "fw_droneram", "notable", "Drone RAM", "Drones keep half their levels through Ascend.", "Osk gave every Drone a little memory. They remember the buttons.", { droneKeep: 0.5 }],
-        [5, "fw_tape", "keystone", "Tape backup", "Handover gives back a quarter of the AP your tree cost.", "Everything important on one tape. The tape is labelled. Tamsin labelled it.", { apRefund: 0.25 }],
+        [5, "fw_tape", "keystone", "Tape backup", "Handover gives back a quarter of the AP your tree cost.", "Everything important on one tape. The tape is labeled. Tamsin labeled it.", { apRefund: 0.25 }],
     ],
     relay: [
         [0, "fw_keysmith", "minor", "Keysmith", "Handovers pay x1.5 Keys.", "Cut a spare. Then cut a spare of the spare.", { keys: 0.5 }],
@@ -2352,7 +2337,7 @@ const FW_ARMS: Record<FwSec, FwRow[]> = {
         [0, "fw_rigmem", "minor", "Rig memory", "Handover keeps half of every rig level.", "The rigs were built by hand. Hands remember.", { rigKeep: 0.5 }],
         [1, "fw_rod", "minor", "Lightning rod", "Zone events last 50% longer.", "Give the weather something tall to hold on to.", { zeLong: 0.5 }],
         [2, "fw_recorder", "minor", "Flight recorder", "Ascend and Handover keep half your Parts and mod levels in the hangar.", "The orange box survives everything. That is the whole point of it.", { modKeep: 0.5 }],
-        [3, "fw_fieldkit", "notable", "Field kit", "Rig levels cost 40% less.", "Every zone gets a toolbox. Somebody finally labelled the drawers.", { rigCost: 0.4 }],
+        [3, "fw_fieldkit", "notable", "Field kit", "Rig levels cost 40% less.", "Every zone gets a toolbox. Somebody finally labeled the drawers.", { rigCost: 0.4 }],
         [4, "fw_weather", "notable", "Weather eye", "Zone events come twice as often.", "Watch the zones long enough and you can feel the next one coming.", { zeOften: 1 }],
         [5, "fw_fieldop", "keystone", "Field operator", "Faults stop happening, and Surges run twice as strong.", "Walk the floor every shift. Nothing breaks where someone is looking.", { fieldOp: true }],
     ],
@@ -2627,8 +2612,24 @@ function parseHand(o: unknown): HandState {
 }
 
 // ---- saving
+/** Save codes are base64 of the UTF-8 save text. (btoa alone throws on a curly quote or an emoji, which a Handover note can hold.) */
+function toCode(text: string): string {
+    const bytes = new TextEncoder().encode(text);
+    let bin = "";
+    for (let i = 0; i < bytes.length; i += 0x8000) bin += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
+    return btoa(bin);
+}
+/** Codes from before that fix are Latin-1 text; they are not valid UTF-8 if they hold an accent, so they fall back to as-is. */
+function fromCode(code: string): string {
+    const bin = atob(code);
+    try {
+        return new TextDecoder("utf-8", { fatal: true }).decode(Uint8Array.from(bin, (c) => c.charCodeAt(0)));
+    } catch {
+        return bin;
+    }
+}
 export function exportSave(s: State): string {
-    return btoa(JSON.stringify({ ...s, at: Date.now() }));
+    return toCode(JSON.stringify({ ...s, at: Date.now() }));
 }
 /** Zone 25 was called Core (id "core") on integration for a few hours before it became Sunstone. Move those saves over. */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -2649,7 +2650,7 @@ function renameCore(o: Record<string, any>) {
 }
 export function parseSave(raw: string): State | null {
     try {
-        const o = JSON.parse(raw.trim().startsWith("{") ? raw : atob(raw.trim()));
+        const o = JSON.parse(raw.trim().startsWith("{") ? raw : fromCode(raw.trim()));
         renameCore(o);
         if (!o || o.v !== 1 || typeof o.bytes !== "number") return null;
         const base = fresh();
@@ -2794,5 +2795,5 @@ SECRETS.push(
     { id: "x_kill", name: "Kill signal", clue: "Tell a Drone it is done.", how: "Ran `nf kill` in the console." },
     { id: "x_zero", name: "Zero reply", clue: "Ping the node that came before this one.", how: "Ran `nf ping node-00` in the console." },
     { id: "x_hands", name: "Hands off", clue: "Let it decide when to leave.", how: "A Script ran an Ascend for you.", test: (s) => (s.auto?.ran.ascend ?? 0) >= 1 },
-    { id: "x_edit", name: "Edit history", clue: "The root chamber lets you rewrite its neighbours. Keep going.", how: "Rewrote rigs 12 times.", test: (s) => (s.rig?.rw ?? 0) >= 12 },
+    { id: "x_edit", name: "Edit history", clue: "The root chamber lets you rewrite its neighbors. Keep going.", how: "Rewrote rigs 12 times.", test: (s) => (s.rig?.rw ?? 0) >= 12 },
 );

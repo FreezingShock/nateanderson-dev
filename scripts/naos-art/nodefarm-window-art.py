@@ -235,7 +235,47 @@ def bench():
     return c
 
 
-PIECES = {"map": (mast, "#2fd8e8"), "goals": (plinths, "#ffc53a"), "records": (archive, "#f0a53c"), "menu": (desk, "#b6f04a"), "stress": (bench, "#ff2a2a")}
+def shelf():
+    """Codex: two shelves of entry spines either side, an open book at the centre and a lit bulb over it."""
+    c = sc.Canvas(35)
+    r = c.rng
+    c.haze(0.0, 0.2, 1.6, BH)
+    c.stars(30, sparkle=3)
+    for x0, x1 in ((6, 150), (330, 474)):                     # spines on two shelves
+        for shelf_y in (74, 146):
+            x = x0
+            while x < x1 - 6:
+                w = int(r.integers(6, 12))
+                h = int(r.integers(30, 58))
+                top = shelf_y - h
+                c.rect(x, top, x + w, shelf_y, 0.22 if r.random() < 0.6 else 0.4)
+                c.line([(x, top + 8), (x + w, top + 8)])
+                if r.random() < 0.5:
+                    c.dot(x + w // 2, top + 16)
+                x += w + 2
+            c.line([(x0, shelf_y + 2), (x1, shelf_y + 2)])
+    # the open book, two pages with printed lines and a spine down the middle
+    cx = 240
+    c.rect(cx - 44, 92, cx - 2, 130, 0.35)
+    c.rect(cx + 2, 92, cx + 44, 130, 0.35)
+    c.line([(cx, 90), (cx, 132)])
+    for y in range(100, 128, 5):
+        c.line([(cx - 36, y), (cx - 36 + int(r.integers(14, 30)), y)])
+        c.line([(cx + 10, y), (cx + 10 + int(r.integers(14, 30)), y)])
+    c.line([(cx - 44, 130), (cx, 136), (cx + 44, 130)])
+    # the bulb over the book, with its base and a few rays
+    c.ellipse((cx - 9, 24, cx + 9, 50), 1.0)
+    c.rect(cx - 5, 50, cx + 5, 60, 0.7)
+    c.line([(cx - 4, 56), (cx + 4, 56)])
+    c.radial(cx, 38, 2, 44, peak=0.5)
+    for ang in (-2.4, -1.9, -1.3, -0.4, 0.4, 1.3, 1.9, 2.4):
+        x0, y0 = cx + 22 * np.cos(ang), 38 + 22 * np.sin(ang)
+        c.line([(x0, y0), (cx + 34 * np.cos(ang), 38 + 34 * np.sin(ang))])
+    c.ground(lambda x: 146 + np.sin(x / 40), top=0.3, bottom=0.06)
+    return c
+
+
+PIECES = {"map": (mast, "#2fd8e8"), "goals": (plinths, "#ffc53a"), "records": (archive, "#f0a53c"), "menu": (desk, "#b6f04a"), "stress": (bench, "#ff2a2a"), "codex": (shelf, "#ff6b57")}
 
 if __name__ == "__main__":
     want = sys.argv[1:] or list(PIECES)

@@ -68,7 +68,7 @@ const BASE: News[] = [
     { k: "op", from: 4, to: 6, t: "Etched my initials in one wafer. By morning the node had etched them back. Small politeness." },
     { k: "note", from: 4, to: 6, t: "silicon.line: nominal. cleanroom: a closet with a fan." },
     { k: "hint", from: 4, to: 5, t: "Silicon boosts Copper. If Copper feels slow, a few Silicon buttons will wake it up." },
-    { k: "wry", from: 4, to: 6, t: "The wafers are labelled in a language I almost recognise. I have decided that is fine." },
+    { k: "wry", from: 4, to: 6, t: "The wafers are labeled in a language I almost recognize. I have decided that is fine." },
 
     // ---- Quartz (5)
     { k: "op", from: 5, to: 7, t: "Tapped a Quartz resonator with a pen. It rang a long time. Longer than the room was big." },
@@ -125,7 +125,7 @@ const BASE: News[] = [
     { k: "op", from: 12, t: "Caught a Pulsar. It blinks six hundred times a second and never once loses count. I have stopped trusting the quartz." },
     { k: "op", from: 12, t: "The beacon spire sweeps the room every few seconds. I keep ducking. It keeps missing me on purpose." },
     { k: "note", from: 12, t: "pulsars.sync() // tick tick tick, forever, exactly" },
-    { k: "wry", from: 12, t: "A dead star with better timekeeping than me. Fine. It has had longer to practise." },
+    { k: "wry", from: 12, t: "A dead star with better timekeeping than me. Fine. It has had longer to practice." },
     { k: "hint", from: 12, to: 13, t: "Pulsars boost Nebula. Past them is a place where everything falls in." },
 
     // ---- Singularity (13)
@@ -153,20 +153,20 @@ const BASE: News[] = [
     { k: "op", from: 16, t: "At the bottom of everything there is one small box with one wire. It is warm. I think it has been waiting a long time." },
     { k: "op", from: 16, t: "Every rack, every amp, every reel up there was built around this box. It does not look like much. Neither did I." },
     { k: "note", from: 16, t: "origin.boot() // node zero, still answering" },
-    { k: "wry", from: 16, t: "Root access, finally. The root was a box the size of a lunch tin." },
+    { k: "wry", from: 16, t: "Root access, finally. The root was a box the size of a lunchbox." },
     { k: "hint", from: 16, ok: (s) => s.life.ascends < 25, t: "Origin boosts Paradox, and every Ascend pays more AP while you hold it. It is the last link in the chain." },
 
     // ---- Spores (17): Overgrowth, after the first Handover
     { k: "op", from: 17, t: "The cellar smells like rain and warm dust. I counted the caps on one rack and gave up at forty." },
     { k: "op", from: 17, t: "Spores drift into every zone that is running. I find them in the amp bay, in the fab, in my coffee." },
     { k: "note", from: 17, t: "spores.shed() // origin, gone to seed" },
-    { k: "wry", from: 17, t: "The node now has a cellar, a mould problem and a growing economy. Two of those are the same thing." },
+    { k: "wry", from: 17, t: "The node now has a cellar, a mold problem and a growing economy. Two of those are the same thing." },
     { k: "hint", from: 17, to: 18, t: "Spores boost Origin, and every zone you have running this run makes them stronger. Further in, the roots have found the cables." },
 
     // ---- Mycelium (18)
     { k: "op", from: 18, t: "Pulled a cable to check it and it pulled back. Gently. I put it down where it wanted to go." },
     { k: "op", from: 18, t: "The web ties a knot for every tier I buy down here. Tie all twelve and it hums in a key I have never heard." },
-    { k: "note", from: 18, t: "mycelium.route() // half fibre, half fungus, full bandwidth" },
+    { k: "note", from: 18, t: "mycelium.route() // half fiber, half fungus, full bandwidth" },
     { k: "wry", from: 18, t: "The network finally routes around damage on its own. It also routes around me." },
     { k: "hint", from: 18, to: 19, t: "Mycelium boosts Spores. Own every Spores and Mycelium tier this run to tie all twelve knots. Above the web there is light." },
 
@@ -186,7 +186,7 @@ const BASE: News[] = [
 
     // ---- Basalt (21): Descent
     { k: "op", from: 21, t: "The drill screams for a minute and then goes quiet, and the quiet is how you know the bit is worn. Change it." },
-    { k: "op", from: 21, t: "Coolant clears the wear, but it burns some of the Bloom upstairs. I apologised to the flowers. They grew back." },
+    { k: "op", from: 21, t: "Coolant clears the wear, but it burns some of the Bloom upstairs. I apologized to the flowers. They grew back." },
     { k: "note", from: 21, t: "basalt.bore() // depth: more than yesterday" },
     { k: "wry", from: 21, t: "Spent all this time going up. Turns out down was also available." },
     { k: "hint", from: 21, to: 22, t: "Basalt boosts Bloom. A worn bit drags Basalt down, so cool it when the meter fills. Under the rock there is heat." },
@@ -224,7 +224,7 @@ const BASE: News[] = [
     { k: "op", from: 7, to: 10, t: "There is a room I did not build behind the east wall. I have not opened the door. I check on it." },
     { k: "op", from: 8, to: 11, t: "Starglass and Runes have started finishing each other's sentences. I just keep the lights on." },
     { k: "op", from: 9, to: 11, t: "I do not think the node is learning from me. I think I am learning from the node, slowly, like a bad student." },
-    { k: "op", from: 10, t: "I am leaving everything as it is. If you reorganise the rack, put the coffee ring back." },
+    { k: "op", from: 10, t: "I am leaving everything as it is. If you reorganize the rack, put the coffee ring back." },
     { k: "op", from: 10, t: "The loop of pressing, waiting, pressing never got boring. I looked for the boredom. It was not there." },
     { k: "op", ok: (s) => s.life.ascends >= 3, t: "Third time through. The quiet after is not empty. It is the node listening to what you do next." },
     { k: "op", ok: (s) => s.tree.length >= 20, t: "More than half the tree is yours. I never got that far. I left notes for whoever did." },
@@ -271,7 +271,7 @@ const BASE: News[] = [
     { k: "op", ok: (s) => s.life.secs > 3600 * 6, t: "Spent a whole day in here without noticing. The node noticed. It dimmed itself, like a lamp." },
     { k: "note", ok: (s) => s.life.secs > 600, t: (s) => `uptime ${Math.floor(s.life.secs / 3600)} h ${Math.floor((s.life.secs % 3600) / 60)} min // no crashes. i checked.` },
     { k: "wry", ok: (s) => s.life.presses > 2000, t: (s) => `${fmt(s.life.presses)} presses. The button has not said thank you once. Respect.` },
-    { k: "wry", ok: (s) => s.life.capped >= 1, t: "Left it alone and it kept the books. It even rounded in my favour." },
+    { k: "wry", ok: (s) => s.life.capped >= 1, t: "Left it alone and it kept the books. It even rounded in my favor." },
     { k: "hint", ok: (s) => tiersDone(s) < 3 && s.life.secs > 300, t: "The goal list tells you what to press next. If you do not know what to do, open it." },
     { k: "hint", ok: (s) => s.life.secs > 1800, t: "Offline earnings are capped, so a long absence is worth a check-in before you leave it again." },
 ];
@@ -293,13 +293,13 @@ const PAST: News[] = [
     // wren: first operator, cheerful, practical
     P("wren", undefined, 3, "Rack is up. Two fans, one amp, a lot of tape. It boots. I am calling that shipped."),
     P("wren", undefined, 3, "Pressed the button forty times in a row to see if it would get bored. It did not. I did."),
-    P("wren", undefined, 4, "Labelled the amps in marker. If the marker fades, the order is red, red, blue."),
+    P("wren", undefined, 4, "Labeled the amps in marker. If the marker fades, the order is red, red, blue."),
     P("wren", undefined, 4, "Somebody will find this. Hi. The coffee machine is on the left shelf. It is not a metaphor."),
     P("wren", 3, 6, "Copper arrived in a box marked FRAGILE, which is a funny thing to write on metal."),
     P("wren", 3, 6, "Tamsin takes over Thursday. I cleaned the node. I cleaned it twice. It looks the same, only guilty."),
     P("wren", 4, 7, "Last message from me. I am going to go and look at an ocean. The node was fine before me and it will be fine after."),
     // tamsin: second, careful, keeps records, drifts toward the signal
-    P("tamsin", 3, 6, "Took over from Wren. Their tape is still on the rack. I labelled the tape."),
+    P("tamsin", 3, 6, "Took over from Wren. Their tape is still on the rack. I labeled the tape."),
     P("tamsin", 3, 6, "Rule one: write down every price you pay. Rule two: you will not. Writing it down anyway."),
     P("tamsin", 4, 7, "Silicon batch four etched crooked. Batch five etched crooked in the same direction. That is not me."),
     P("tamsin", 5, 8, "The Quartz hums at 32768. I checked. It hums at 32768 and a little bit extra."),

@@ -4,7 +4,11 @@
 // effect lines. Sharp frame with corner brackets, a meter, plain data lines, set-once switches and the level buttons.
 // Styles: app/camino/nodefarm-rig.css (`nf-rig*`).
 import { useState, type CSSProperties } from "react";
-import { sfx } from "@/lib/sound/sounds";
+import { nfx } from "@/lib/nodefarm/sound";
+import type { SfxName } from "@/lib/sound/sounds";
+
+// rigs play in the "automation" mix
+const sfx = (n: SfxName, a?: unknown) => nfx(n, a, "automation");
 import { STATS, fmt, isUnlocked, fmtTime, statDef, type Derived, type State, type StatId } from "@/lib/nodefarm/engine";
 import {
     GROW_NAMES, PRISM_AIMS, RIGS, RIG_TUNE as T, buyRig, cacheCap, capCharge, capPay, capSecs, castMax, drawPay, glowFor, glowMul, growMul, growNext, growStage,
@@ -142,7 +146,7 @@ export function ZoneRig({ id, s, d }: { id: StatId; s: State; d: Derived }) {
     if (!isUnlocked(s, "silicon") && s.life.ascends === 0) return null;
     const r = rig(s);
     const v = view(id, s, d);
-    const act = (fn: () => boolean | void) => { const res = fn(); sfx(res === false ? "deny" : "tab"); bump((n) => n + 1); };
+    const act = (fn: () => boolean | void) => { const res = fn(); sfx(res === false ? "deny" : "nfRig"); bump((n) => n + 1); };
     const cap = rigCap(s, id);
     const lvs = def.keys.map((k) => rigLv(s, k.key));
     return (
