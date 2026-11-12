@@ -651,6 +651,8 @@ export interface State {
     hand: HandState;
     /** Scripts (lib/nodefarm/scripts.ts): what you taught the scheduler and how each script is set. Kept through Ascend. Created on first use. */
     auto?: AutoState;
+    /** Zone events (lib/nodefarm/zoneevents.ts): the running event, the timer to the next one and a count. Reset on Ascend. Created on first use. */
+    ze?: ZoneEvState;
     // lifetime counters (survive Ascend)
     life: { bytes: number; taps: number; reboots: number; ascends: number; intrusions: number; secs: number; presses: number; capped: number; peakBps: number; apTotal: number; intel: number; compiled: number; deployed: number };
     overclock: number; // seconds left
@@ -693,6 +695,76 @@ export interface AutoState {
 }
 /** Called at the end of every tick (and so also through time away). Scripts add themselves here. */
 export const TICK_HOOKS: ((s: State, dt: number) => void)[] = [];
+
+// ---- Zone events: the numbers and the two reads the rest of the engine needs (spawning and choices live in lib/nodefarm/zoneevents.ts)
+export type ZoneEvKind = "surge" | "clearance" | "resonance" | "vein" | "fault";
+export interface ZoneEvActive {
+    /** a running number, so the screen can tell a new event from the one it already showed */
+    id: number;
+    kind: ZoneEvKind;
+    zone: StatId;
+    /** seconds left, and the length it started with */
+    left: number;
+    total: number;
+    /** vein and fault: you have answered the choice (Let it run, Wait it out), so the buttons go away. Mining and patching end the event instead. */
+    picked?: boolean;
+}
+export interface ZoneEvState {
+    act: ZoneEvActive[];
+    /** game seconds until the next event may start */
+    wait: number;
+    /** events seen, and how many of each kind (for the feed and Records) */
+    seen: number;
+    kinds: Partial<Record<ZoneEvKind, number>>;
+    /** the zone of the last event, so the next one lands somewhere else */
+    last?: StatId;
+}
+export const ZE_TUNE = {
+    /** gap between events in game seconds, [min, max]; the first one waits for `first` seconds of life */
+    gap: [480, 840] as [number, number],
+    first: 480,
+    /** how long each lasts, seconds */
+    secs: { surge: 180, clearance: 180, resonance: 180, vein: 240, fault: 180 } as Record<ZoneEvKind, number>,
+    /** relative odds of each kind */
+    odds: { surge: 3, clearance: 2, resonance: 2, vein: 2, fault: 1 } as Record<ZoneEvKind, number>,
+    /** output multipliers */
+    surge: 2,
+    resonance: 1.6,
+    vein: 2,
+    fault: 0.5,
+    /** Clearance: price multiplier on that zone's buttons */
+    clearance: 0.6,
+    /** Rich vein: seconds of the zone's output paid at once if you Mine it */
+    mine: 240,
+    /** Fault: seconds of Bytes output a Patch costs */
+    patch: 25,
+    /** no Fault before this much life */
+    faultFrom: 900,
+};
+/** The zone a Resonance also lifts: the one below it in the chain (Bytes pairs with Multipliers). */
+export const resonancePair = (zone: StatId): StatId => { const i = STATS.findIndex((x) => x.id === zone); return STATS[i > 0 ? i - 1 : 1].id; };
+/** Output multiplier an event puts on a zone (1 when none). Bytes: Bytes per second. Multipliers: button strength. Reboots: Reboot strength. Materials: their rate. */
+export function zeOut(s: State, id: StatId): number {
+    const a = s.ze?.act;
+    if (!a || !a.length) return 1;
+    let x = 1;
+    for (const e of a) {
+        if (e.left <= 0) continue;
+        if (e.kind === "surge" && e.zone === id) x *= ZE_TUNE.surge;
+        else if (e.kind === "vein" && e.zone === id) x *= ZE_TUNE.vein;
+        else if (e.kind === "fault" && e.zone === id) x *= ZE_TUNE.fault;
+        else if (e.kind === "resonance" && (e.zone === id || resonancePair(e.zone) === id)) x *= ZE_TUNE.resonance;
+    }
+    return x;
+}
+/** Price multiplier on a zone's buttons (Clearance). */
+export function zeCost(s: State, stat: StatId): number {
+    const a = s.ze?.act;
+    if (!a || !a.length) return 1;
+    let x = 1;
+    for (const e of a) if (e.kind === "clearance" && e.zone === stat && e.left > 0) x *= ZE_TUNE.clearance;
+    return x;
+}
 
 export function fresh(now = Date.now()): State {
     return {
@@ -788,10 +860,10 @@ export function derive(s: State): Derived {
         * (1 + droneLv * tf.droneGlobal) * (1 + s.runWins * tf.winBoost) * boosts.chAll * singularityAll(s) * (s.overclock > 0 ? overclockMult(s) : 1) * lb.global
         * (tf.perNode ? 1 + tf.perNode * treeCount(s) : 1) * foundryAll(s);
     const wren = protoK(s, "wren");
-    const rebootStrength = TUNE.rebootStrength * boosts.cuReboot * (1 + tf.reboot) * (tf.ocReboot && s.overclock > 0 ? 1 + tf.ocReboot : 1) * (1 + wren);
-    const multGainMult = (1 + rebootStrength * s.reboot) * (1 + tf.multGain) * lb.mult * masteryMul(s, "mult") * (1 + 2 * wren);
+    const rebootStrength = TUNE.rebootStrength * boosts.cuReboot * (1 + tf.reboot) * (tf.ocReboot && s.overclock > 0 ? 1 + tf.ocReboot : 1) * (1 + wren) * zeOut(s, "reboot");
+    const multGainMult = (1 + rebootStrength * s.reboot) * (1 + tf.multGain) * lb.mult * masteryMul(s, "mult") * (1 + 2 * wren) * zeOut(s, "mult");
     // capped like every amount, so a runaway late game can never write Infinity (null in JSON) into the save
-    const bytesPerSec = Math.min(CAP, s.mult * boosts.cuBytes * global * (1 + tf.bytes) * lb.bytes * runBytes(s, tf));
+    const bytesPerSec = Math.min(CAP, s.mult * boosts.cuBytes * global * (1 + tf.bytes) * lb.bytes * runBytes(s, tf) * zeOut(s, "bytes"));
     // each material is boosted by the one after it in the chain
     const boostedBy: Record<MatId, number> = { copper: boosts.siCu, silicon: boosts.qzSi, quartz: boosts.aeQz, aether: boosts.ruAe, runes: boosts.sgRu, starglass: boosts.vsSg, voidsteel: boosts.chVs, chrono: boosts.nbCh, nebula: boosts.puNb, pulsars: boosts.snPu, singularity: boosts.egSn, engrams: boosts.pxEg, paradox: boosts.orPx, origin: 1 };
     // Cross-talk: each material is also boosted by the one two steps up the chain. Log-scaled: a power-law boost here made a second
@@ -802,7 +874,7 @@ export function derive(s: State): Derived {
     let newest: MatId | null = null;
     if (tf.specialist) for (const m of MATS) if (s.prod[m] > 0) newest = m;
     const rates = {} as Record<MatId, number>;
-    for (const m of MATS) rates[m] = Math.min(CAP, s.prod[m] * TUNE.perProducer[m] * boostedBy[m] * (1 + (tf.mats[m] ?? 0)) * global * (FORGE_MATS.includes(m) ? lb.forge : 1) * bus * (m === newest ? 1 + tf.specialist : 1) * masteryMul(s, m));
+    for (const m of MATS) rates[m] = Math.min(CAP, s.prod[m] * TUNE.perProducer[m] * boostedBy[m] * (1 + (tf.mats[m] ?? 0)) * global * (FORGE_MATS.includes(m) ? lb.forge : 1) * bus * (m === newest ? 1 + tf.specialist : 1) * masteryMul(s, m) * zeOut(s, m));
     return { global, bytesPerSec, rebootStrength, multGainMult, rates, offlineCap: Math.max(1, TUNE.offlineCapHours + s.perks.offline * 4 + tf.offline + (handFx(s).standby ? HAND_TUNE.standbyHours : 0)) * 3600, boosts };
 }
 
@@ -825,12 +897,12 @@ export const gainFor = (stat: ButtonStat, tier: number) => TUNE.gainBase[stat] *
 export function button(s: State, stat: ButtonStat, tier: number) {
     if (stat === "reboot") {
         const tf = treeFx(s);
-        const cost = TUNE.rebootBase * Math.pow(TUNE.rebootRatio, tier) * Math.pow(TUNE.rebootGrowth, s.reboot * (1 - tf.growth)) * tf.discount;
+        const cost = TUNE.rebootBase * Math.pow(TUNE.rebootRatio, tier) * Math.pow(TUNE.rebootGrowth, s.reboot * (1 - tf.growth)) * tf.discount * zeCost(s, "reboot");
         return { cost, gain: Math.max(1, Math.round(Math.pow(TUNE.rebootGainRatio, tier))), pays: "mult" as StatId };
     }
     const c = TUNE.cost[stat];
     const tf = treeFx(s);
-    const cost = c.base * Math.pow(c.ratio, tier) * Math.pow(c.growth, s.bought[stat][tier] * (1 - tf.growth)) * tf.discount;
+    const cost = c.base * Math.pow(c.ratio, tier) * Math.pow(c.growth, s.bought[stat][tier] * (1 - tf.growth)) * tf.discount * zeCost(s, stat);
     let gain = gainFor(stat, tier);
     if (stat === "mult") gain *= derive(s).multGainMult;
     return { cost, gain, pays: statDef(stat).pays as StatId };
@@ -1107,6 +1179,7 @@ export function ascend(s: State) {
     for (const [m, v] of Object.entries(keptProd)) s.prod[m as MatId] = Math.max(s.prod[m as MatId], v);
     s.drones = keptDrones.map((lv, k) => Math.max(lv, Math.floor(oldDrones[k] * hf.droneKeep))); // Drone RAM (Firmware)
     bootKit(s);
+    if (s.ze) s.ze.act = []; // a running zone event ends with the run (its count and timer stay)
     return gain;
 }
 
@@ -2291,6 +2364,7 @@ export function parseSave(raw: string): State | null {
         if (!Number.isFinite(n.runWins)) n.runWins = 0;
         n.lab = parseLab(o.lab);
         n.dr = parseDr(o.dr);
+        n.ze = parseZe(o.ze);
         n.hand = parseHand(o.hand);
         const back = migrateTree(n);
         if (back > 0) n.treeRefund = (n.treeRefund ?? 0) + back;
@@ -2304,6 +2378,25 @@ export function parseSave(raw: string): State | null {
     } catch {
         return null;
     }
+}
+
+/** Saved zone events, checked field by field (an event whose zone or kind is unknown is dropped). */
+function parseZe(o: unknown): ZoneEvState | undefined {
+    if (!o || typeof o !== "object") return undefined;
+    const x = o as Partial<ZoneEvState>;
+    const num = (v: unknown, d = 0) => (typeof v === "number" && Number.isFinite(v) ? v : d);
+    const kinds = Object.keys(ZE_TUNE.secs);
+    const ids = STATS.map((st) => st.id as string);
+    const act = (Array.isArray(x.act) ? x.act : [])
+        .filter((e) => e && kinds.includes(e.kind) && ids.includes(e.zone) && num(e.left) > 0)
+        .map((e) => ({ id: num(e.id), kind: e.kind, zone: e.zone, left: Math.min(num(e.left), ZE_TUNE.secs[e.kind]), total: ZE_TUNE.secs[e.kind], picked: !!e.picked }));
+    return {
+        act,
+        wait: Math.max(0, Math.min(ZE_TUNE.gap[1], num(x.wait, ZE_TUNE.first))),
+        seen: Math.max(0, Math.floor(num(x.seen))),
+        kinds: Object.fromEntries(Object.entries(x.kinds ?? {}).filter(([k, v]) => kinds.includes(k) && num(v) > 0).map(([k, v]) => [k, Math.floor(num(v))])),
+        last: ids.includes(x.last as string) ? x.last : undefined,
+    };
 }
 
 /** A saved lab, checked field by field; anything odd falls back to a fresh lab. */

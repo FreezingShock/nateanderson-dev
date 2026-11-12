@@ -1,6 +1,7 @@
 import "@/app/camino/games.css";
 import "@/app/camino/nodefarm.css";
 import "@/app/camino/nodefarm-deep.css";
+import "@/app/camino/nodefarm-arcs.css";
 import "@/app/camino/nodefarm-scenery.css";
 import "@/app/camino/nodefarm-zone-art.css";
 import "@/app/camino/nodefarm-tree.css";

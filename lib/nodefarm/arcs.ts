@@ -1,0 +1,18 @@
+// Zone arcs: the board groups its zones into chapters. Add a new arc (or new zone ids to an arc) here and the board,
+// the headers and the remembered collapse state follow; nothing else lists the groups.
+import { STATS } from "./engine";
+
+export type Arc = { id: string; name: string; blurb: string; color: string; zones: readonly string[]; /** era scene file (scene-<n>.webp) used as the header art; arcs without one get a colour wash */ scene?: number };
+
+export const ARCS: readonly Arc[] = [
+    { id: "rack", name: "The rack", blurb: "Bytes, amps and the first power.", color: "#2fd8e8", zones: ["bytes", "mult", "reboot", "copper"], scene: 1 },
+    { id: "fab", name: "The fab", blurb: "Wafers, crystal and raw signal.", color: "#7aa2ff", zones: ["silicon", "quartz", "aether"], scene: 4 },
+    { id: "hollow", name: "The hollow", blurb: "Glyphs, glass, void metal and stopped time.", color: "#9a7bff", zones: ["runes", "starglass", "voidsteel", "chrono"], scene: 8 },
+    { id: "deep", name: "Deep space", blurb: "Gas, dead stars and a point that pulls.", color: "#ff8ad8", zones: ["nebula", "pulsars", "singularity"], scene: 11 },
+    { id: "origin", name: "The origin", blurb: "Memory, mirrors and the first node.", color: "#3dff6e", zones: ["engrams", "paradox", "origin"], scene: 13 },
+];
+
+export const arcKey = (id: string) => `arc:${id}`;
+export const arcOf = (stat: string) => ARCS.find((a) => a.zones.includes(stat));
+/** Zone number (01 to 17), the same one the zone panels print. */
+export const zoneNo = (id: string) => STATS.findIndex((x) => x.id === id) + 1;
