@@ -36,6 +36,9 @@ RAMPS = {
     "sg": ramp("#102532", "#3a6a84", "#7cb4d2", "#bfeaff", "#f4fcff"),
     "vs": ramp("#0c0818", "#2a1f55", "#5d46b0", "#9a7bff", "#e0d4ff"),
     "ch": ramp("#2b0f05", "#7a2a10", "#c9501f", "#ff7a4a", "#ffd8b8"),
+    "nb": ramp("#2a0a22", "#7a1f62", "#c94aa3", "#ff8ad8", "#ffe0f4"),
+    "pu": ramp("#061f2a", "#0f5a74", "#2aa6c8", "#64e6ff", "#e0faff"),
+    "sn": ramp("#2a1504", "#7a3f0a", "#c97418", "#ffb14a", "#fff0cc"),
     "eg": ramp("#24160b", "#6b4424", "#b07a4a", "#e8b98a", "#fff0dc"),
     "px": ramp("#15161f", "#454a63", "#8a90ad", "#dfe3f5", "#ffffff"),
     "or": ramp("#03200b", "#0b5a24", "#17a33f", "#3dff6e", "#d4ffe0"),
@@ -311,6 +314,58 @@ def chrono_t(c, t):
     return c
 
 
+# ---- deep space (Nebula, Pulsars, Singularity), same tier convention as above.
+def nebula_t(c, t):
+    """A cloud of star-nursery gas: soft lobes that grow and stack, with new stars lit inside."""
+    lobes = [(16, 18, 7), (10, 20, 5), (22, 20, 5.5), (13, 13, 5), (21, 13, 4.5), (7, 15, 3.5), (25, 15, 3.5)][: 3 + min(4, t)]
+    k = 1 + t * 0.08
+    m = np.zeros((N, N), bool)
+    for x, y, r in lobes:
+        m |= disc(16 + (x - 16) * k, 17 + (y - 17) * k, r * k)
+    c.fill(m, 0.25 + 0.55 * lin(4, 28, 26, 6), "nb")
+    core = disc(16, 17, 3 + t * 0.4)
+    c.fill(core & m, 0.85, "nb", outline=False)
+    for i, (x, y) in enumerate([(12, 15), (20, 19), (17, 12), (9, 19), (23, 14), (15, 21)][: 1 + t]):
+        c.set(rect(x, y, x + 1, y + 1), RAMPS["wh"][4])
+        if i < t - 1:
+            c.set(rect(x - 1, y, x, y + 1) | rect(x + 1, y, x + 2, y + 1), RAMPS["pu"][3])
+    return c
+
+
+def pulsars_t(c, t):
+    """A spinning dead star: a bright core with two beams that get longer and sharper, and rings of field lines."""
+    cx, cy = 16, 16
+    L = 7 + t * 1.7
+    beam = poly([(cx - 1.3, cy), (cx - 3.5 - L * 0.35, cy - L), (cx + 0.5 - L * 0.25, cy - L - 1), (cx + 1.3, cy)])
+    beam |= poly([(cx + 1.3, cy), (cx + 3.5 + L * 0.35, cy + L), (cx - 0.5 + L * 0.25, cy + L + 1), (cx - 1.3, cy)])
+    c.fill(beam, 0.4 + 0.5 * (1 - np.hypot(xx - cx, yy - cy) / (L + 2)), "pu", outline=False)
+    for k in range(min(2, t // 2 + 1)):
+        rr = 5 + k * 3 + t * 0.3
+        ring = disc(cx, cy, rr, rr * 0.45) & ~disc(cx, cy, rr - 1, rr * 0.45 - 1)
+        c.set(ring & ~disc(cx, cy, 3), RAMPS["pu"][2 + (k == 0)])
+    c.fill(disc(cx, cy, 3 + t * 0.25), 0.9, "pu")
+    c.set(disc(cx - 0.5, cy - 0.5, 1.2), RAMPS["wh"][4])
+    return c
+
+
+def singularity_t(c, t):
+    """A black hole: a dark centre with a glowing accretion disk that widens and brightens, and a lensed halo above."""
+    cx, cy = 16, 16
+    R = 9 + t * 0.9
+    disk = disc(cx, cy, R, R * 0.32) & ~disc(cx, cy, R * 0.45, R * 0.15)
+    halo = disc(cx, cy - 0.5, R * 0.6) & ~disc(cx, cy - 0.5, R * 0.6 - 1.2 - t * 0.15)
+    c.fill(halo & (yy < cy), 0.6 + 0.08 * t, "sn", outline=False)
+    c.fill(disk & (yy >= cy - 0.5), 0.35 + 0.55 * (1 - np.abs(xx - cx) / R), "sn")
+    hole = disc(cx, cy - 0.5, R * 0.42)
+    c.set(hole, (6, 4, 2))
+    c.fill(disk & (yy < cy - 0.5) & ~hole, 0.25 + 0.4 * (1 - np.abs(xx - cx) / R), "sn", outline=False)
+    c.set(disc(cx, cy - 0.5, R * 0.42 + 0.9) & ~hole & (yy < cy), RAMPS["sn"][4])
+    if t >= 3:
+        for x, y in [(cx - R - 1, cy - 4), (cx + R, cy + 3), (cx + 3, cy - R * 0.6 - 3)][: t - 2]:
+            c.set(rect(x, y, x + 1, y + 1), RAMPS["wh"][4])
+    return c
+
+
 # ---- the last three materials (Engrams, Paradox, Origin), same tier convention as above.
 def engrams_t(c, t):
     """A film reel of recorded memory: a metal flange with cut-outs over a dark coil of film. The reel grows, more frames
@@ -427,7 +482,8 @@ ICONS = [("bytes", bytes_), ("mult", mult), ("reboot", reboot), ("copper", coppe
          ("aether", aether), ("ascend", ascend), ("alert", alert), ("lock", lock), ("spark", spark),
          ("runes", lambda: runes_t(Canvas(), 4)), ("starglass", lambda: starglass_t(Canvas(), 4)),
          ("voidsteel", lambda: voidsteel_t(Canvas(), 4)), ("chrono", lambda: chrono_t(Canvas(), 4)),
-         ("engrams", lambda: engrams_t(Canvas(), 4)), ("paradox", lambda: paradox_t(Canvas(), 4)), ("origin", lambda: origin_t(Canvas(), 4))]
+         ("engrams", lambda: engrams_t(Canvas(), 4)), ("paradox", lambda: paradox_t(Canvas(), 4)), ("origin", lambda: origin_t(Canvas(), 4)),
+         ("nebula", lambda: nebula_t(Canvas(), 4)), ("pulsars", lambda: pulsars_t(Canvas(), 4)), ("singularity", lambda: singularity_t(Canvas(), 4))]
 
 
 def main():

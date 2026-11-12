@@ -23,7 +23,7 @@ body .nf-pop.big { font-size: 20px; animation-duration: 1000ms; }
 body .nf-pop i { position: absolute; left: 50%; top: 50%; width: 3px; height: 3px; background: var(--c, #2fd8e8); animation: nfSpark 420ms steps(5) both; }
 
 /* ---- banners (decrypted stat, new button tier, milestone) */
-body .nf-ic { --s: 32px; display: inline-block; flex: none; width: var(--s); height: var(--s); background: url(/naos/nodefarm/icons-anim.webp) calc(var(--i) * var(--s) * -1) 0 / calc(var(--s) * 18) calc(var(--s) * 4) no-repeat; animation: nfFrame 1s steps(4) infinite; image-rendering: pixelated; vertical-align: middle; }
+body .nf-ic { --s: 32px; display: inline-block; flex: none; width: var(--s); height: var(--s); background: url(/naos/nodefarm/icons-anim.webp) calc(var(--i) * var(--s) * -1) 0 / calc(var(--s) * 21) calc(var(--s) * 4) no-repeat; animation: nfFrame 1s steps(4) infinite; image-rendering: pixelated; vertical-align: middle; }
 body .nf-ic.l { --s: 64px; }
 body .nf-jb { position: fixed; z-index: 66; left: 50%; top: clamp(96px, 28vh, 300px); translate: -50% 0; width: min(92vw, 560px); display: flex; align-items: center; gap: 14px; padding: 14px 20px 14px 14px; background: #090909; color: var(--cm-fg, #eee); border: 1px solid color-mix(in srgb, var(--c) 55%, #1c1c1c); border-left: 3px solid var(--c); box-shadow: 0 0 0 4px #000a, 0 18px 50px #000c; pointer-events: none; overflow: hidden; }
 body .nf-jb::before { content: ""; position: absolute; inset: 0; pointer-events: none; background: radial-gradient(circle, color-mix(in srgb, var(--c) 70%, transparent) .9px, transparent 1.4px) 0 0 / 5px 5px; opacity: .45; -webkit-mask-image: linear-gradient(100deg, #000 0%, transparent 55%); mask-image: linear-gradient(100deg, #000 0%, transparent 55%); }

@@ -3,6 +3,9 @@
 .ctos .nf-row[data-stat="starglass"] { --zone: repeating-linear-gradient(45deg, color-mix(in srgb, var(--c) 24%, transparent) 0 1px, transparent 1px 20px), repeating-linear-gradient(-45deg, color-mix(in srgb, var(--c) 18%, transparent) 0 1px, transparent 1px 20px); }
 .ctos .nf-row[data-stat="voidsteel"] { --zone: repeating-radial-gradient(circle at 12% 110%, transparent 0 10px, color-mix(in srgb, var(--c) 28%, transparent) 10px 11px); }
 .ctos .nf-row[data-stat="chrono"] { --zone: repeating-conic-gradient(from 0deg at 90% 50%, color-mix(in srgb, var(--c) 26%, transparent) 0 2deg, transparent 2deg 12deg); }
+.ctos .nf-row[data-stat="nebula"] { --zone: radial-gradient(ellipse at 80% 40%, color-mix(in srgb, var(--c) 18%, transparent), transparent 60%), radial-gradient(ellipse at 20% 80%, color-mix(in srgb, #64e6ff 10%, transparent), transparent 50%); }
+.ctos .nf-row[data-stat="pulsars"] { --zone: repeating-linear-gradient(115deg, transparent 0 22px, color-mix(in srgb, var(--c) 22%, transparent) 22px 23px, transparent 23px 60px); }
+.ctos .nf-row[data-stat="singularity"] { --zone: repeating-radial-gradient(ellipse at 88% 55%, transparent 0 8px, color-mix(in srgb, var(--c) 22%, transparent) 8px 9px); }
 .ctos .nf-row[data-stat="engrams"] { --zone: repeating-linear-gradient(90deg, color-mix(in srgb, var(--c) 30%, transparent) 0 3px, transparent 3px 7px) 0 0 / 100% 4px no-repeat, repeating-linear-gradient(90deg, color-mix(in srgb, var(--c) 30%, transparent) 0 3px, transparent 3px 7px) 0 100% / 100% 4px no-repeat, repeating-linear-gradient(90deg, color-mix(in srgb, var(--c) 12%, transparent) 0 1px, transparent 1px 26px); }
 .ctos .nf-row[data-stat="paradox"] { --zone: repeating-linear-gradient(60deg, color-mix(in srgb, #2fd8e8 16%, transparent) 0 1px, transparent 1px 16px), repeating-linear-gradient(-60deg, color-mix(in srgb, #ff2d8a 16%, transparent) 0 1px, transparent 1px 16px), repeating-linear-gradient(0deg, color-mix(in srgb, var(--c) 12%, transparent) 0 1px, transparent 1px 16px); }
 .ctos .nf-row[data-stat="origin"] { --zone: repeating-linear-gradient(0deg, color-mix(in srgb, var(--c) 18%, transparent) 0 1px, transparent 1px 3px), radial-gradient(circle at 88% 60%, color-mix(in srgb, var(--c) 16%, transparent), transparent 55%); }
@@ -16,6 +19,13 @@
 .ctos .nf-row[data-stat="voidsteel"] .nf-btn:active { transform: translateY(3px); box-shadow: 0 1px 0 #3b2c80; }
 .ctos .nf-row[data-stat="chrono"] .nf-btn { border: 2px solid #5a2a18; border-radius: 50px 4px 50px 4px; background: #160d09; }
 .ctos .nf-row[data-stat="chrono"] .nf-btn[data-afford] { border-color: var(--c); background: #301710; }
+/* Nebula: soft cloud glass. Pulsars: a hard sweep line. Singularity: a dark well with a bright rim */
+.ctos .nf-row[data-stat="nebula"] .nf-btn { border: 1px solid #7a1f62; border-radius: 6px 2px 6px 2px; background: radial-gradient(ellipse at 30% 20%, #3a0f30, #170612 70%); }
+.ctos .nf-row[data-stat="nebula"] .nf-btn[data-afford] { border-color: var(--c); background: radial-gradient(ellipse at 30% 20%, #6a1d55, #2a0a22 70%); }
+.ctos .nf-row[data-stat="pulsars"] .nf-btn { border: 1px solid #0f5a74; border-left-width: 3px; border-radius: 0; background: #061218; }
+.ctos .nf-row[data-stat="pulsars"] .nf-btn[data-afford] { border-color: var(--c); background: linear-gradient(115deg, #061f2a 0 40%, #0f3a4a 50%, #061f2a 60%); }
+.ctos .nf-row[data-stat="singularity"] .nf-btn { border: 2px solid #3a1f06; border-radius: 3px; background: radial-gradient(circle at 50% 50%, #000 0 40%, #1a0e04 70%); }
+.ctos .nf-row[data-stat="singularity"] .nf-btn[data-afford] { border-color: var(--c); box-shadow: inset 0 0 0 1px #000, inset 0 0 8px -2px var(--c); background: radial-gradient(circle at 50% 50%, #000 0 40%, #2a1504 75%); }
 /* Engrams: a frame of film, sprocket holes along the top and bottom edges */
 .ctos .nf-row[data-stat="engrams"] .nf-btn { border: 2px solid #4a3020; border-radius: 1px; background: repeating-linear-gradient(90deg, #6b4424 0 3px, transparent 3px 7px) 0 2px / 100% 2px no-repeat, repeating-linear-gradient(90deg, #6b4424 0 3px, transparent 3px 7px) 0 calc(100% - 2px) / 100% 2px no-repeat, #140d08; }
 .ctos .nf-row[data-stat="engrams"] .nf-btn[data-afford] { border-color: var(--c); background: repeating-linear-gradient(90deg, var(--c) 0 3px, transparent 3px 7px) 0 2px / 100% 2px no-repeat, repeating-linear-gradient(90deg, var(--c) 0 3px, transparent 3px 7px) 0 calc(100% - 2px) / 100% 2px no-repeat, #2a1a0e; }

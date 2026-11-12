@@ -210,6 +210,19 @@ const DEFS = {
                     [0, 0.07, 0.14].forEach((at, i) => blip("game", base * (i % 2 ? 1.2 : 1), { at, dur: 0.025, gain: 0.05, cutoff: 3200 }));
                     tone("game", { f: base * 0.5, at: 0.2, dur: 0.25, gain: 0.04, glide: 1.5, cutoff: 1800, attack: 0.02 });
                     break;
+                case "nebula":
+                    // a soft swell, like gas catching light
+                    if (!calm()) whoosh("game", { from: 300, to: 900 + t * 120, dur: 0.25, gain: 0.025 });
+                    tone("game", { f: base * 0.75, dur: 0.35, gain: 0.045, attack: 0.08, cutoff: 2200 });
+                    break;
+                case "pulsars":
+                    // three exact ticks, the last one higher
+                    [0, 0.05, 0.1].forEach((at, i) => blip("game", base * (i === 2 ? 2 : 1.5), { at, dur: 0.018, gain: 0.05, cutoff: 5200 }));
+                    break;
+                case "singularity":
+                    // a deep note bending down into silence
+                    tone("game", { f: base * 0.5, dur: 0.4, gain: 0.07, glide: 0.4, cutoff: 1200, attack: 0.01 });
+                    break;
                 case "engrams":
                     // a tape deck: the play key thunks, then a short warble as the tape comes up to speed
                     keyClick("game", { f: 700, gain: 0.06, q: 1.5 });

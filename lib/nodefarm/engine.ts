@@ -2,7 +2,7 @@
 // directly in Node. Numbers are plain doubles; a full run stays far below 1e308.
 
 /** Producer materials in chain order. Each is paid in the one before it (Copper in Bytes) and boosts that one in turn. */
-export const MATS = ["copper", "silicon", "quartz", "aether", "runes", "starglass", "voidsteel", "chrono", "engrams", "paradox", "origin"] as const;
+export const MATS = ["copper", "silicon", "quartz", "aether", "runes", "starglass", "voidsteel", "chrono", "nebula", "pulsars", "singularity", "engrams", "paradox", "origin"] as const;
 export type MatId = (typeof MATS)[number];
 export type StatId = "bytes" | "mult" | "reboot" | MatId;
 export type ButtonStat = Exclude<StatId, "bytes">;
@@ -32,7 +32,10 @@ export const STATS: StatDef[] = [
     { id: "starglass", name: "Starglass", short: "SG", role: "Fused starlight. Boosts Runes.", pays: "runes", color: "#bfeaff" },
     { id: "voidsteel", name: "Voidsteel", short: "VS", role: "Metal from an empty place. Boosts Starglass.", pays: "starglass", color: "#9a7bff" },
     { id: "chrono", name: "Chrono", short: "CH", role: "Held time. Boosts Voidsteel and everything a little.", pays: "voidsteel", color: "#ff7a4a" },
-    { id: "engrams", name: "Engrams", short: "EG", role: "Recorded memory. Boosts Chrono, and Drones press faster.", pays: "chrono", color: "#e8b98a" },
+    { id: "nebula", name: "Nebula", short: "NB", role: "Star-nursery gas. Boosts Chrono.", pays: "chrono", color: "#ff8ad8" },
+    { id: "pulsars", name: "Pulsars", short: "PU", role: "Dead stars that keep perfect time. Boost Nebula.", pays: "nebula", color: "#64e6ff" },
+    { id: "singularity", name: "Singularity", short: "SN", role: "A point everything falls into. Boosts Pulsars, and pulls on everything a little.", pays: "pulsars", color: "#ffb14a" },
+    { id: "engrams", name: "Engrams", short: "EG", role: "Recorded memory. Boosts Singularity, and Drones press faster.", pays: "singularity", color: "#e8b98a" },
     { id: "paradox", name: "Paradox", short: "PX", role: "Folded logic. Boosts Engrams, and Overclock hits harder.", pays: "engrams", color: "#dfe3f5" },
     { id: "origin", name: "Origin", short: "OR", role: "The first node. Boosts Paradox, and every Ascend pays more AP.", pays: "paradox", color: "#3dff6e" },
 ];
@@ -52,12 +55,15 @@ export const TUNE = {
         starglass: { base: 40, ratio: 10, growth: 1.12 },
         voidsteel: { base: 50, ratio: 10, growth: 1.12 },
         chrono: { base: 60, ratio: 10, growth: 1.12 },
-        engrams: { base: 30, ratio: 10, growth: 1.12 },
-        paradox: { base: 15, ratio: 10, growth: 1.12 },
-        origin: { base: 8, ratio: 10, growth: 1.12 },
+        nebula: { base: 30, ratio: 10, growth: 1.12 },
+        pulsars: { base: 25, ratio: 10, growth: 1.12 },
+        singularity: { base: 20, ratio: 10, growth: 1.12 },
+        engrams: { base: 15, ratio: 10, growth: 1.12 },
+        paradox: { base: 10, ratio: 10, growth: 1.12 },
+        origin: { base: 6, ratio: 10, growth: 1.12 },
     } as Record<string, { base: number; ratio: number; growth: number }>,
     // how much one press of tier k adds (Multipliers, or producers for materials)
-    gainBase: { mult: 1, copper: 1, silicon: 1, quartz: 1, aether: 1, runes: 1, starglass: 1, voidsteel: 1, chrono: 1, engrams: 1, paradox: 1, origin: 1 } as Record<string, number>,
+    gainBase: { mult: 1, copper: 1, silicon: 1, quartz: 1, aether: 1, runes: 1, starglass: 1, voidsteel: 1, chrono: 1, nebula: 1, pulsars: 1, singularity: 1, engrams: 1, paradox: 1, origin: 1 } as Record<string, number>,
     gainRatio: 5,
     // reboot tier k: costs rebootBase * rebootRatio^k * rebootGrowth^R Multipliers, adds rebootGainRatio^k Reboots
     rebootBase: 100,
@@ -65,18 +71,18 @@ export const TUNE = {
     rebootGrowth: 1.12,
     rebootGainRatio: 2.6,
     rebootStrength: 0.7, // each Reboot adds this much to Multiplier button gains
-    perProducer: { copper: 0.05, silicon: 0.03, quartz: 0.016, aether: 0.008, runes: 0.0025, starglass: 0.0012, voidsteel: 0.0006, chrono: 0.0003, engrams: 0.00015, paradox: 0.00008, origin: 0.00004 } as Record<string, number>,
-    boostK: { cuReboot: 0.09, cuBytes: 0.02, siCu: 0.2, qzSi: 0.2, aeQz: 0.2, ruAe: 0.12, sgRu: 0.12, vsSg: 0.12, chVs: 0.12, chAll: 0.03, egCh: 0.12, pxEg: 0.12, orPx: 0.12 },
+    perProducer: { copper: 0.05, silicon: 0.03, quartz: 0.016, aether: 0.008, runes: 0.0025, starglass: 0.0012, voidsteel: 0.0006, chrono: 0.0003, nebula: 0.0002, pulsars: 0.00017, singularity: 0.00016, engrams: 0.00015, paradox: 0.00008, origin: 0.00004 } as Record<string, number>,
+    boostK: { cuReboot: 0.09, cuBytes: 0.02, siCu: 0.2, qzSi: 0.2, aeQz: 0.2, ruAe: 0.12, sgRu: 0.12, vsSg: 0.12, chVs: 0.12, chAll: 0.03, nbCh: 0.12, puNb: 0.12, snPu: 0.12, egSn: 0.12, pxEg: 0.12, orPx: 0.12 },
     // the extras on the last three materials grow with log10 of the amount, so they cannot feed back into a runaway
-    logK: { egDrone: 0.15, pxOc: 0.15, orAp: 0.1 },
+    logK: { snAll: 0.1, egDrone: 0.15, pxOc: 0.15, orAp: 0.1 },
     boostPow: 0.38,
-    unlockAt: { copper: 1, silicon: 150, quartz: 300, aether: 500, runes: 150, starglass: 200, voidsteel: 250, chrono: 300, engrams: 350, paradox: 400, origin: 450 } as Record<string, number>, // copper: Reboots; the rest: amount of the stat below
+    unlockAt: { copper: 1, silicon: 150, quartz: 300, aether: 500, runes: 150, starglass: 200, voidsteel: 250, chrono: 300, nebula: 300, pulsars: 300, singularity: 300, engrams: 350, paradox: 400, origin: 450 } as Record<string, number>, // copper: Reboots; the rest: amount of the stat below
     overclockMult: 6,
     overclockSecs: 20,
     offlineCapHours: 8,
     ascendAether: 400,
     apPerAether: 60, // AP = floor((aether / apPerAether)^apPow + (runes / apPer.runes)^apPow + ...)
-    apPer: { runes: 90, starglass: 45, voidsteel: 27, chrono: 14, engrams: 1, paradox: 0.5, origin: 0.2 } as Record<string, number>,
+    apPer: { runes: 90, starglass: 45, voidsteel: 27, chrono: 14, nebula: 8, pulsars: 4, singularity: 2, engrams: 1, paradox: 0.5, origin: 0.2 } as Record<string, number>,
     apPow: 0.3, // AP grows with amount^apPow; a low power stops Ascends from snowballing
     apBonus: 0.3,
     achBonus: 0.02,
@@ -457,6 +463,9 @@ export interface State {
     starglass: number;
     voidsteel: number;
     chrono: number;
+    nebula: number;
+    pulsars: number;
+    singularity: number;
     engrams: number;
     paradox: number;
     origin: number;
@@ -512,6 +521,9 @@ export function fresh(now = Date.now()): State {
         starglass: 0,
         voidsteel: 0,
         chrono: 0,
+        nebula: 0,
+        pulsars: 0,
+        singularity: 0,
         engrams: 0,
         paradox: 0,
         origin: 0,
@@ -546,7 +558,7 @@ export interface Derived {
     multGainMult: number;
     rates: Record<MatId, number>;
     offlineCap: number; // seconds
-    boosts: { cuReboot: number; cuBytes: number; siCu: number; qzSi: number; aeQz: number; ruAe: number; sgRu: number; vsSg: number; chVs: number; chAll: number; egCh: number; pxEg: number; orPx: number };
+    boosts: { cuReboot: number; cuBytes: number; siCu: number; qzSi: number; aeQz: number; ruAe: number; sgRu: number; vsSg: number; chVs: number; chAll: number; nbCh: number; puNb: number; snPu: number; egSn: number; pxEg: number; orPx: number };
 }
 
 export function derive(s: State): Derived {
@@ -562,7 +574,10 @@ export function derive(s: State): Derived {
         vsSg: boost(s.voidsteel, k.vsSg),
         chVs: boost(s.chrono, k.chVs),
         chAll: boost(s.chrono, k.chAll),
-        egCh: boost(s.engrams, k.egCh),
+        nbCh: boost(s.nebula, k.nbCh),
+        puNb: boost(s.pulsars, k.puNb),
+        snPu: boost(s.singularity, k.snPu),
+        egSn: boost(s.engrams, k.egSn),
         pxEg: boost(s.paradox, k.pxEg),
         orPx: boost(s.origin, k.orPx),
     };
@@ -570,12 +585,12 @@ export function derive(s: State): Derived {
     const lb = labBuffs(s);
     const droneLv = s.drones.reduce((a, b) => a + b, 0);
     const global = (1 + s.perks.power * 0.15) * (1 + tf.global) * apGlobal(s) * (1 + s.ach.length * (TUNE.achBonus + tf.goals)) * (1 + tiersDone(s) * TUNE.tierBonus)
-        * (1 + droneLv * tf.droneGlobal) * (1 + s.runWins * tf.winBoost) * boosts.chAll * (s.overclock > 0 ? overclockMult(s) : 1) * lb.global;
+        * (1 + droneLv * tf.droneGlobal) * (1 + s.runWins * tf.winBoost) * boosts.chAll * singularityAll(s) * (s.overclock > 0 ? overclockMult(s) : 1) * lb.global;
     const rebootStrength = TUNE.rebootStrength * boosts.cuReboot * (1 + tf.reboot);
     const multGainMult = (1 + rebootStrength * s.reboot) * (1 + tf.multGain) * lb.mult;
     const bytesPerSec = s.mult * boosts.cuBytes * global * (1 + tf.bytes) * lb.bytes;
     // each material is boosted by the one after it in the chain
-    const boostedBy: Record<MatId, number> = { copper: boosts.siCu, silicon: boosts.qzSi, quartz: boosts.aeQz, aether: boosts.ruAe, runes: boosts.sgRu, starglass: boosts.vsSg, voidsteel: boosts.chVs, chrono: boosts.egCh, engrams: boosts.pxEg, paradox: boosts.orPx, origin: 1 };
+    const boostedBy: Record<MatId, number> = { copper: boosts.siCu, silicon: boosts.qzSi, quartz: boosts.aeQz, aether: boosts.ruAe, runes: boosts.sgRu, starglass: boosts.vsSg, voidsteel: boosts.chVs, chrono: boosts.nbCh, nebula: boosts.puNb, pulsars: boosts.snPu, singularity: boosts.egSn, engrams: boosts.pxEg, paradox: boosts.orPx, origin: 1 };
     // Cross-talk: each material is also boosted by the one two steps up the chain, at the weaker late-chain strength
     if (tf.features.includes("crosstalk")) MATS.forEach((m, i) => { const up = MATS[i + 2]; if (up) boostedBy[m] *= boost(s[up], TUNE.boostK.ruAe); });
     const rates = {} as Record<MatId, number>;
@@ -658,8 +673,9 @@ export function buyDrone(s: State, tier: number): boolean {
     s.drones[tier] += 1;
     return true;
 }
-/** Engrams make Drones press faster, Paradox makes Overclock stronger, Origin adds AP. Log-scale so none of them can run away. */
+/** Singularity pulls on everything, Engrams make Drones press faster, Paradox makes Overclock stronger, Origin adds AP. Log-scale so none of them can run away. */
 const logBoost = (amount: number, k: number) => 1 + k * Math.log10(1 + Math.max(0, amount));
+export const singularityAll = (s: State) => logBoost(s.singularity, TUNE.logK.snAll);
 export const droneBoost = (s: State) => logBoost(s.engrams, TUNE.logK.egDrone);
 export const paradoxOc = (s: State) => logBoost(s.paradox, TUNE.logK.pxOc);
 export const originAp = (s: State) => logBoost(s.origin, TUNE.logK.orAp);
@@ -905,13 +921,13 @@ export const GOALS: Goal[] = [
     G("ch1k", "Spare hours", "Hold 1,000 Chrono.", 7, "chrono", 1e3, (s) => s.chrono),
     G("asc20", "Habit of leaving", "Ascend 20 times.", 7, "ascend", 20, life("ascends")),
     G("tr18", "Whole tree", "Own every node in the prestige tree.", 7, "ascend", TREE.length, (s) => s.tree.length),
-    // VIII SOURCE: the last three zones, where the node's past turns up
+    // VIII SOURCE: the six zones past Chrono, out into space and then down to where the node began
+    G("nb1", "Stardust", "Gather your first Nebula.", 8, "nebula", 1e-9, (s) => s.nebula),
+    G("pu1", "Lighthouse keeper", "Catch your first Pulsar.", 8, "pulsars", 1e-9, (s) => s.pulsars),
+    G("sn1", "Point of no return", "Reach the first Singularity.", 8, "singularity", 1e-9, (s) => s.singularity),
     G("eg1", "Deja vu", "Record your first Engram.", 8, "engrams", 1e-9, (s) => s.engrams),
-    G("eg1k", "Total recall", "Hold 1,000 Engrams.", 8, "engrams", 1e3, (s) => s.engrams),
     G("px1", "Both at once", "Fold your first Paradox.", 8, "paradox", 1e-9, (s) => s.paradox),
-    G("px1k", "Strange loop", "Hold 1,000 Paradox.", 8, "paradox", 1e3, (s) => s.paradox),
     G("or1", "Node zero", "Reach the first Origin.", 8, "origin", 1e-9, (s) => s.origin),
-    G("asc30", "Thirtieth floor", "Ascend 30 times.", 8, "ascend", 30, life("ascends")),
 ];
 
 // ---- secrets. They show as ???? until found, with a clue. Console ones are unlocked by commands (components/cm/console.tsx -> lib/nodefarm/records.ts);
@@ -1357,7 +1373,7 @@ export function parseSave(raw: string): State | null {
         n.achAt = { ...(o.achAt && typeof o.achAt === "object" ? o.achAt : {}) };
         if (!Array.isArray(n.armed)) n.armed = [];
         for (const k of ["drones", "droneAcc"] as const) if (!Array.isArray(n[k]) || n[k].length !== TIERS || n[k].some((x: number) => !Number.isFinite(x))) n[k] = Array(TIERS).fill(0);
-        for (const k of ["bytes", "mult", "reboot", "copper", "silicon", "quartz", "aether", "runes", "starglass", "voidsteel", "chrono", "engrams", "paradox", "origin", "ap"] as const) if (!Number.isFinite(n[k])) n[k] = base[k];
+        for (const k of ["bytes", "mult", "reboot", "copper", "silicon", "quartz", "aether", "runes", "starglass", "voidsteel", "chrono", "nebula", "pulsars", "singularity", "engrams", "paradox", "origin", "ap"] as const) if (!Number.isFinite(n[k])) n[k] = base[k];
         return n;
     } catch {
         return null;
