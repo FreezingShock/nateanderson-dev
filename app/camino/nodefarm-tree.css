@@ -1,11 +1,14 @@
-/* Node Farm prestige tree menu (components/nodefarm/tree.tsx): a full-screen pan and zoom web of nodes.
+/* Node Farm prestige tree menu (components/nodefarm/tree.tsx): a full-screen camera over a web of nodes.
+   Nodes are raised bevelled tiles (an extruded block, a ground shadow, a tilt toward the pointer). Links are rows of
+   square beads; owned paths carry packets. The card is anchored next to the node in screen space.
    Art: scripts/naos-art/nodefarm-tree.py -> public/naos/nodefarm/tree-nodes (32 px cells, 8 per row) and tree-bg. */
-.ctos .nf-tm { --px: 0px; --py: 0px; position: fixed; inset: 0; z-index: 1000; display: block; overflow: hidden; background: #05070a; color: var(--cm-fg); font-family: var(--cm-mono); animation: nfIn .18s ease both; overscroll-behavior: contain; }
-.ctos .nf-tm-bg { position: absolute; inset: 0; pointer-events: none; background: radial-gradient(ellipse at 50% 45%, #0f1a26 0, #06080c 72%); }
-.ctos .nf-tm-bg::before { content: ""; position: absolute; inset: 0; background: url(/naos/nodefarm/tree-bg.webp) var(--px) var(--py) / 1920px 1080px; image-rendering: pixelated; opacity: .6; }
-.ctos .nf-tm-bg::after { content: ""; position: absolute; inset: 0; background: radial-gradient(ellipse at center, transparent 55%, #000d 100%), repeating-linear-gradient(0deg, transparent 0 2px, #0003 2px 3px); }
+body > .nf-tm-host { position: fixed; inset: 0; z-index: 1000; }
+.ctos .nf-tm { position: fixed; inset: 0; z-index: 1000; display: block; overflow: hidden; background: #04060a; color: var(--cm-fg); font-family: var(--cm-mono); animation: nfIn .18s ease both; overscroll-behavior: contain; }
 
-.ctos .nf-tm-bar { position: absolute; z-index: 5; left: 0; right: 0; top: 0; display: flex; align-items: center; gap: 10px; height: 44px; padding-left: 16px; background: var(--cm-ctos-block); color: var(--cm-ctos-ink); font: 700 var(--cm-ctos-t-micro)/1 var(--cm-mono); letter-spacing: .14em; text-transform: uppercase; }
+/* the backdrop (parallax layers, core halo, section nebulae) is components/nodefarm/tree-backdrop.tsx, styled in nodefarm-tree-art.css */
+
+/* ---- top bar */
+.ctos .nf-tm-bar { position: absolute; z-index: 6; left: 0; right: 0; top: 0; display: flex; align-items: center; gap: 10px; height: 44px; padding-left: 16px; background: var(--cm-ctos-block); color: var(--cm-ctos-ink); font: 700 var(--cm-ctos-t-micro)/1 var(--cm-mono); letter-spacing: .14em; text-transform: uppercase; }
 .ctos .nf-tm-t { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .ctos .nf-tm-ap { display: inline-flex; align-items: baseline; gap: 6px; white-space: nowrap; }
 .ctos .nf-tm-ap b { font-size: 18px; letter-spacing: 0; }
@@ -15,7 +18,7 @@
 .ctos .nf-tm-b:disabled { opacity: .4; cursor: default; }
 .ctos .nf-tm-b[data-danger] { background: #ff2d8a; color: #0a0a0a; }
 .ctos .nf-tm-b.sq { width: 34px; padding: 0; font-size: 16px; }
-.ctos .nf-tm-b:focus-visible, .ctos .nf-tm-x:focus-visible { outline: 2px solid var(--cm-cyan); outline-offset: 2px; }
+.ctos .nf-tm-b:focus-visible, .ctos .nf-tm-x:focus-visible, .ctos .nf-tm-buy:focus-visible { outline: 2px solid var(--cm-cyan); outline-offset: 2px; }
 .ctos .nf-tm-x { display: grid; place-items: center; width: 48px; height: 44px; background: var(--cm-ctos-ink); border: 0; cursor: pointer; }
 .ctos .nf-tm-x i { position: relative; width: 16px; height: 16px; }
 .ctos .nf-tm-x i::before, .ctos .nf-tm-x i::after { content: ""; position: absolute; left: 0; right: 0; top: 7px; height: 2px; background: var(--cm-ctos-block); rotate: 45deg; }
@@ -23,87 +26,209 @@
 .ctos .nf-tm-x:hover { background: var(--cm-cyan); }
 .ctos .nf-tm-x:hover i::before, .ctos .nf-tm-x:hover i::after { background: #0a0a0a; }
 
+/* ---- the camera */
 .ctos .nf-tm-view { position: absolute; inset: 44px 0 0 0; overflow: hidden; touch-action: none; cursor: grab; user-select: none; -webkit-user-select: none; }
 .ctos .nf-tm-view:active { cursor: grabbing; }
 .ctos .nf-tm-view:focus-visible { outline: 2px solid var(--cm-cyan); outline-offset: -4px; }
-.ctos .nf-tm-world { position: absolute; left: 0; top: 0; width: 0; height: 0; transform-origin: 0 0; will-change: transform; }
-.ctos .nf-tm-world[data-anim] { transition: transform .38s cubic-bezier(.2, .8, .2, 1); }
+.ctos .nf-tm-world { position: absolute; z-index: 1; left: 0; top: 0; width: 0; height: 0; transform-origin: 0 0; will-change: transform; }
 
-/* sections: a tinted wedge with its own dither pattern, plus faint rings and links */
-.ctos .nf-tm-wedge { position: absolute; left: 0; top: 0; translate: -50% -50%; pointer-events: none; -webkit-mask-image: radial-gradient(circle, transparent 3%, #000 10%, #000 56%, transparent 70%); mask-image: radial-gradient(circle, transparent 3%, #000 10%, #000 56%, transparent 70%); }
-.ctos .nf-tm-wedge::before { content: ""; position: absolute; inset: 0; background: conic-gradient(from var(--from), color-mix(in srgb, var(--c) 17%, transparent) 0 72deg, transparent 72deg); }
-.ctos .nf-tm-wedge::after { content: ""; position: absolute; inset: 0; opacity: .55; -webkit-mask-image: conic-gradient(from var(--from), #000 0 72deg, transparent 72deg); mask-image: conic-gradient(from var(--from), #000 0 72deg, transparent 72deg); background: var(--pat); }
-.ctos .nf-tm-wedge[data-arm="signal"] { --pat: repeating-linear-gradient(0deg, color-mix(in srgb, var(--c) 30%, transparent) 0 1px, transparent 1px 10px); }
-.ctos .nf-tm-wedge[data-arm="forge"] { --pat: radial-gradient(circle, color-mix(in srgb, var(--c) 45%, transparent) 1.4px, transparent 1.9px) 0 0 / 9px 9px; }
-.ctos .nf-tm-wedge[data-arm="systems"] { --pat: linear-gradient(color-mix(in srgb, var(--c) 26%, transparent) 1px, transparent 1px) 0 0 / 22px 22px, linear-gradient(90deg, color-mix(in srgb, var(--c) 26%, transparent) 1px, transparent 1px) 0 0 / 22px 22px; }
-.ctos .nf-tm-wedge[data-arm="drones"] { --pat: repeating-linear-gradient(135deg, color-mix(in srgb, var(--c) 32%, transparent) 0 2px, transparent 2px 12px); }
-.ctos .nf-tm-wedge[data-arm="anomaly"] { --pat: repeating-linear-gradient(60deg, color-mix(in srgb, var(--c) 26%, transparent) 0 1px, transparent 1px 16px), repeating-linear-gradient(-60deg, color-mix(in srgb, var(--c) 22%, transparent) 0 1px, transparent 1px 16px); }
-.ctos .nf-tm-ring { position: absolute; left: 0; top: 0; translate: -50% -50%; border: 1px dashed #ffffff1f; border-radius: 50%; pointer-events: none; }
-.ctos .nf-tm-links { position: absolute; left: 0; top: 0; translate: -50% -50%; overflow: visible; pointer-events: none; }
-.ctos .nf-tm-links line { stroke-linecap: round; }
-.ctos .nf-tm-links line[data-st="off"] { stroke: #ffffff17; stroke-width: 2; }
-.ctos .nf-tm-links line[data-st="edge"] { stroke: color-mix(in srgb, var(--c) 55%, transparent); stroke-width: 2.5; stroke-dasharray: 6 7; }
-.ctos .nf-tm-links line[data-st="on"] { stroke: var(--c); stroke-width: 4; }
-.ctos .nf-tm-sec { position: absolute; translate: -50% -50%; display: grid; gap: 4px; justify-items: center; text-align: center; padding: 8px 16px 10px; background: #070a0ecc; border: 1px solid color-mix(in srgb, var(--c) 45%, #111); border-top: 3px solid var(--c); pointer-events: none; white-space: nowrap; }
-.ctos .nf-tm-sec b { font: 700 26px/1 var(--cm-display); letter-spacing: -.01em; text-transform: lowercase; color: var(--c); }
+/* ---- links: a dark bed under a row of square beads; owned paths are bright and carry packets outward */
+.ctos .nf-tm-links { position: absolute; left: 0; top: 0; overflow: visible; pointer-events: none; }
+.ctos .nf-tl-bed { stroke: #000; stroke-width: 9; stroke-linecap: square; opacity: .45; transition: opacity .3s; }
+.ctos .nf-tl-bed[data-fog] { opacity: .15; }
+.ctos .nf-tl-bed[data-st="on"] { stroke: color-mix(in srgb, var(--c) 32%, #000); stroke-width: 10; opacity: .9; }
+.ctos .nf-tm[data-focus] .nf-tl-bed { opacity: .12; }
+.ctos .nf-tl { stroke-linecap: square; stroke-dasharray: 0 14; transition: opacity .3s, stroke .3s; }
+.ctos .nf-tl[data-st="off"] { stroke: #8fa2b8; stroke-width: 4; opacity: .28; }
+.ctos .nf-tl[data-st="edge"] { stroke: var(--c); stroke-width: 5; opacity: .7; animation: nfBead 1.4s linear infinite; }
+.ctos .nf-tl[data-st="on"] { stroke: var(--c); stroke-width: 7; }
+.ctos .nf-tl[data-fog] { opacity: .14; animation: none; }
+.ctos .nf-tm[data-focus] .nf-tl:not([data-near]) { opacity: .12; }
+.ctos .nf-tm[data-focus] .nf-tl[data-near] { opacity: 1; }
+.ctos .nf-tl-pk { fill: none; stroke: #fff; stroke-width: 6; stroke-linecap: square; stroke-dasharray: 6 8 6 112; animation: nfPacket 1.9s linear infinite; }
+.ctos .nf-tm[data-focus] .nf-tl-pk { opacity: .35; }
+@keyframes nfBead { to { stroke-dashoffset: -14; } }
+@keyframes nfPacket { from { stroke-dashoffset: 0; } to { stroke-dashoffset: -132; } }
+
+/* ---- section labels: a white ctOS slab with the section colour on the left */
+.ctos .nf-tm-sec { position: absolute; translate: -50% -50%; display: grid; gap: 5px; justify-items: start; padding: 9px 16px 10px 14px; background: #06090dd9; border-left: 4px solid var(--c); box-shadow: 6px 6px 0 #000a; pointer-events: none; white-space: nowrap; transition: opacity .3s; }
+.ctos .nf-tm-sec[data-side="r"] { translate: 0 -50%; }
+.ctos .nf-tm-sec[data-side="l"] { translate: -100% -50%; justify-items: end; text-align: right; border-left: 0; border-right: 4px solid var(--c); padding: 9px 14px 10px 16px; }
+.ctos .nf-tm-sec b { font: 700 28px/1 var(--cm-display); letter-spacing: -.01em; text-transform: lowercase; color: var(--c); }
 .ctos .nf-tm-sec small { font: 600 var(--cm-ctos-t-micro)/1.2 var(--cm-mono); letter-spacing: .06em; color: var(--cm-mute); }
+.ctos .nf-tm[data-focus] .nf-tm-sec { opacity: .35; }
 
-/* nodes */
-.ctos .nf-tn { --sz: 64px; position: absolute; width: var(--sz); height: var(--sz); translate: -50% -50%; padding: 0; background: none; border: 0; cursor: pointer; color: var(--cm-fg); }
-.ctos .nf-tn[data-kind="keystone"], .ctos .nf-tn[data-kind="core"] { --sz: 96px; }
-.ctos .nf-tn::after { content: ""; position: absolute; inset: -10px; }
-.ctos .nf-tn-ic { display: block; width: var(--sz); height: var(--sz); background: url(/naos/nodefarm/tree-nodes.webp) calc(var(--col) * var(--sz) * -1) calc(var(--row) * var(--sz) * -1) / calc(var(--sz) * 8) auto no-repeat; image-rendering: pixelated; transition: opacity .2s, filter .2s; }
-.ctos .nf-tn[data-st="locked"] .nf-tn-ic { opacity: .34; filter: grayscale(.8); }
-.ctos .nf-tn[data-st="open"] .nf-tn-ic { opacity: .72; filter: saturate(.7); }
-.ctos .nf-tn[data-st="owned"] .nf-tn-ic { filter: drop-shadow(0 0 6px color-mix(in srgb, var(--c) 75%, transparent)) brightness(1.15); }
-.ctos .nf-tn[data-st="ready"] .nf-tn-ic { filter: drop-shadow(0 0 4px color-mix(in srgb, var(--c) 55%, transparent)); }
-.ctos .nf-tn-core .nf-tn-ic { filter: drop-shadow(0 0 10px #fff6); }
-.ctos .nf-tn::before { content: ""; position: absolute; inset: -5px; border: 2px solid var(--c); border-radius: 50%; opacity: 0; pointer-events: none; }
-.ctos .nf-tn[data-st="ready"]::before { animation: nfTnReady 1.6s ease-in-out infinite; }
-.ctos .nf-tn[data-flash]::before { animation: nfTnFlash .7s ease-out both; }
-.ctos .nf-tn[data-sel]::before { opacity: 1; border-style: dashed; inset: -8px; animation: none; }
-.ctos .nf-tn:focus-visible { outline: 2px solid var(--cm-cyan); outline-offset: 6px; }
-.ctos .nf-tn-l { position: absolute; left: 50%; top: calc(100% + 2px); translate: -50% 0; padding: 2px 6px; background: #05070ccc; font: 600 11px/1.2 var(--cm-mono); letter-spacing: .04em; color: var(--cm-mute); white-space: nowrap; text-transform: lowercase; pointer-events: none; }
+/* ---- nodes: a raised tile. Ground shadow stays put; the body lifts and tilts (perspective) over it. */
+.ctos .nf-tn { --sz: 88px; --rx: 0deg; --ry: 0deg; --lift: 0px; --ex: #10141a; --ex2: #07090c; --rim: #3a4350; position: absolute; width: var(--sz); height: var(--sz); translate: -50% -50%; padding: 0; background: none; border: 0; cursor: pointer; color: var(--cm-fg); transition: opacity .3s, scale .25s cubic-bezier(.2, .8, .2, 1); }
+.ctos .nf-tn::after { content: ""; position: absolute; inset: -12px; } /* bigger hit area */
+.ctos .nf-tn-shadow { position: absolute; left: 4%; right: -6%; top: 14%; bottom: -14%; background: #000; opacity: .55; filter: blur(6px); transform: translate(calc(var(--lift) * -0.6), calc(var(--lift) * -0.9)); transition: transform .2s, opacity .2s; pointer-events: none; }
+.ctos .nf-tn-body {
+    position: absolute; inset: 0; display: grid; place-items: center;
+    transform: perspective(520px) translateY(var(--lift)) rotateX(var(--rx)) rotateY(var(--ry));
+    transition: transform .2s cubic-bezier(.2, .8, .2, 1), box-shadow .25s;
+    background: linear-gradient(145deg, #2c333d 0, #161a20 48%, #0b0e12 100%);
+    /* bevel (light top-left, dark bottom-right) and a stepped extrusion that reads as a block */
+    box-shadow:
+        inset 2px 2px 0 #ffffff2e, inset -3px -3px 0 #0009,
+        1px 1px 0 var(--ex), 2px 2px 0 var(--ex), 3px 3px 0 var(--ex), 4px 4px 0 var(--ex), 5px 5px 0 var(--ex2), 6px 6px 0 var(--ex2);
+}
+.ctos .nf-tn-face { position: relative; display: grid; place-items: center; width: calc(100% - 14px); height: calc(100% - 14px); border: 2px solid var(--rim); background: radial-gradient(circle at 50% 45%, #1b222b 0, #0a0d11 75%), #0a0d11; box-shadow: inset 0 0 0 1px #000, inset 0 0 16px #000c; transition: border-color .25s, box-shadow .25s; }
+/* dither grain on the face */
+.ctos .nf-tn-face::before { content: ""; position: absolute; inset: 0; background: radial-gradient(circle, #ffffff10 0 .8px, transparent 1px) 0 0 / 4px 4px; pointer-events: none; }
+.ctos .nf-tn-ic { position: relative; display: block; width: calc(var(--sz) * .6); height: calc(var(--sz) * .6); background: url(/naos/nodefarm/tree-nodes.webp) calc(var(--col) * var(--sz) * -.6) calc(var(--row) * var(--sz) * -.6) / calc(var(--sz) * .6 * 8) auto no-repeat; image-rendering: pixelated; transition: opacity .25s, filter .25s; }
+.ctos .nf-tn-spr { position: relative; }
+.ctos .nf-tn[data-st="open"] .nf-tn-spr { opacity: .8; filter: saturate(.6); }
+.ctos .nf-tn[data-vis="fog"] .nf-tn-spr { opacity: .7; }
+.ctos .nf-tn-qo { position: absolute; inset: 0; display: grid; place-items: center; color: #8a97a8; font-size: calc(var(--sz) * .3); opacity: .85; }
+.ctos .nf-tn-q { position: relative; font: 700 calc(var(--sz) * .36)/1 var(--cm-mono); font-style: normal; color: #5b6878; text-shadow: 2px 2px 0 #000; }
+
+/* sizes and weight per kind */
+.ctos .nf-tn[data-kind="notable"] .nf-tn-face { border-width: 3px; outline: 1px solid var(--rim); outline-offset: -8px; }
+.ctos .nf-tn[data-kind="keystone"] .nf-tn-face, .ctos .nf-tn[data-kind="core"] .nf-tn-face { border-width: 3px; outline: 2px solid var(--rim); outline-offset: -10px; }
+.ctos .nf-tn[data-kind="keystone"] .nf-tn-body, .ctos .nf-tn[data-kind="core"] .nf-tn-body {
+    box-shadow:
+        inset 3px 3px 0 #ffffff33, inset -4px -4px 0 #000a,
+        1px 1px 0 var(--ex), 2px 2px 0 var(--ex), 3px 3px 0 var(--ex), 4px 4px 0 var(--ex), 5px 5px 0 var(--ex), 6px 6px 0 var(--ex), 7px 7px 0 var(--ex2), 8px 8px 0 var(--ex2), 9px 9px 0 var(--ex2);
+}
+/* keystone halo: corner brackets that slowly breathe outside the tile */
+.ctos .nf-tn-halo {
+    --br: color-mix(in srgb, var(--c) 70%, transparent);
+    position: absolute; inset: -16px; pointer-events: none;
+    background-image: linear-gradient(var(--br), var(--br)), linear-gradient(var(--br), var(--br)), linear-gradient(var(--br), var(--br)), linear-gradient(var(--br), var(--br)), linear-gradient(var(--br), var(--br)), linear-gradient(var(--br), var(--br)), linear-gradient(var(--br), var(--br)), linear-gradient(var(--br), var(--br));
+    background-size: 22px 3px, 3px 22px, 22px 3px, 3px 22px, 22px 3px, 3px 22px, 22px 3px, 3px 22px;
+    background-position: 0 0, 0 0, 100% 0, 100% 0, 0 100%, 0 100%, 100% 100%, 100% 100%;
+    background-repeat: no-repeat;
+    animation: nfHalo 3.2s ease-in-out infinite;
+}
+.ctos .nf-tn[data-st="locked"] .nf-tn-halo, .ctos .nf-tn[data-vis="fog"] .nf-tn-halo { --br: #ffffff26; animation: none; }
+@keyframes nfHalo { 0%, 100% { inset: -16px; opacity: .65; } 50% { inset: -22px; opacity: 1; } }
+
+/* states */
+.ctos .nf-tn[data-st="locked"] .nf-tn-ic { opacity: .3; filter: grayscale(1) brightness(.7); }
+.ctos .nf-tn[data-st="open"] { --rim: color-mix(in srgb, var(--c) 45%, #2a2f36); }
+.ctos .nf-tn[data-st="open"] .nf-tn-ic { opacity: .75; filter: saturate(.55); }
+.ctos .nf-tn[data-st="ready"] { --rim: var(--c); --ex: color-mix(in srgb, var(--c) 28%, #0b0e12); }
+.ctos .nf-tn[data-st="ready"] .nf-tn-face { box-shadow: inset 0 0 0 1px #000, inset 0 0 18px color-mix(in srgb, var(--c) 35%, transparent); }
+.ctos .nf-tn[data-st="owned"] { --rim: var(--c); --ex: color-mix(in srgb, var(--c) 55%, #000); --ex2: color-mix(in srgb, var(--c) 30%, #000); }
+.ctos .nf-tn[data-st="owned"] .nf-tn-body { background: linear-gradient(145deg, color-mix(in srgb, var(--c) 55%, #fff) 0, color-mix(in srgb, var(--c) 70%, #000) 50%, color-mix(in srgb, var(--c) 35%, #000) 100%); }
+.ctos .nf-tn[data-st="owned"] .nf-tn-face { background: radial-gradient(circle at 50% 45%, color-mix(in srgb, var(--c) 30%, #0a0d11) 0, #0a0d11 78%); box-shadow: inset 0 0 0 1px #000, inset 0 0 20px color-mix(in srgb, var(--c) 45%, transparent), 0 0 22px color-mix(in srgb, var(--c) 45%, transparent); }
+.ctos .nf-tn[data-st="owned"] .nf-tn-ic { filter: brightness(1.15) drop-shadow(0 0 4px color-mix(in srgb, var(--c) 70%, transparent)); }
+.ctos .nf-tn[data-vis="fog"] { --rim: #333b46; cursor: help; }
+.ctos .nf-tn[data-vis="fog"] .nf-tn-body { background: linear-gradient(145deg, #1a1e24, #0b0d10); }
+.ctos .nf-tn[data-vis="fog"] .nf-tn-face { background: repeating-linear-gradient(45deg, #0c0f13 0 3px, #11151a 3px 6px); }
+.ctos .nf-tn[data-vis="fog"] .nf-tn-shadow { opacity: .35; }
+
+/* the "you can buy this" call: corner brackets that pulse just outside the tile */
+.ctos .nf-tn::before {
+    --br: var(--c);
+    content: ""; position: absolute; inset: -9px; pointer-events: none; opacity: 0;
+    background-image: linear-gradient(var(--br), var(--br)), linear-gradient(var(--br), var(--br)), linear-gradient(var(--br), var(--br)), linear-gradient(var(--br), var(--br)), linear-gradient(var(--br), var(--br)), linear-gradient(var(--br), var(--br)), linear-gradient(var(--br), var(--br)), linear-gradient(var(--br), var(--br));
+    background-size: 14px 3px, 3px 14px, 14px 3px, 3px 14px, 14px 3px, 3px 14px, 14px 3px, 3px 14px;
+    background-position: 0 0, 0 0, 100% 0, 100% 0, 0 100%, 0 100%, 100% 100%, 100% 100%;
+    background-repeat: no-repeat;
+}
+.ctos .nf-tn[data-st="ready"]:not([data-vis="fog"])::before { animation: nfTnReady 1.5s ease-in-out infinite; }
+
+/* hover, focus and selection: the tile lifts toward you */
+.ctos .nf-tn:hover, .ctos .nf-tn:focus-visible { --lift: -6px; z-index: 2; }
+.ctos .nf-tn:hover .nf-tn-shadow, .ctos .nf-tn:focus-visible .nf-tn-shadow { opacity: .4; }
+.ctos .nf-tn[data-sel] { --lift: -10px; z-index: 3; scale: 1.14; }
+.ctos .nf-tn[data-sel]::before { opacity: 1; inset: -14px; --br: #fff; animation: none; }
+.ctos .nf-tn[data-sel] .nf-tn-shadow { opacity: .35; filter: blur(10px); }
+.ctos .nf-tn:focus-visible { outline: none; }
+.ctos .nf-tn:focus-visible .nf-tn-face { outline: 2px solid var(--cm-cyan); outline-offset: 4px; }
+.ctos .nf-tm[data-focus] .nf-tn[data-dim] { opacity: .38; }
+
+/* buying: a ring of light bursts off the tile; newly revealed nodes decrypt in */
+.ctos .nf-tn[data-flash] .nf-tn-body { animation: nfTnBuy .7s cubic-bezier(.2, .8, .2, 1); }
+.ctos .nf-tn[data-flash] .nf-tn-face::after { content: ""; position: absolute; inset: -6px; border: 3px solid var(--c); animation: nfTnBurst .8s ease-out both; pointer-events: none; }
+.ctos .nf-tn[data-new] { animation: nfTnReveal .9s cubic-bezier(.2, .8, .2, 1) both; }
+@keyframes nfTnReady { 0%, 100% { opacity: 0; inset: -8px; } 50% { opacity: 1; inset: -13px; } }
+@keyframes nfTnBuy { 0% { scale: 1; } 30% { scale: .9; } 65% { scale: 1.08; } 100% { scale: 1; } }
+@keyframes nfTnBurst { from { opacity: 1; inset: -6px; } to { opacity: 0; inset: -40px; } }
+@keyframes nfTnReveal { 0% { opacity: 0; scale: .5; filter: brightness(3); } 45% { opacity: 1; filter: brightness(2); } 100% { opacity: 1; scale: 1; filter: none; } }
+
+/* labels under the tile */
+.ctos .nf-tn-l { position: absolute; left: 50%; top: calc(100% + 12px); translate: -50% 0; padding: 3px 7px; background: #04070bdd; font: 700 12px/1.2 var(--cm-mono); letter-spacing: .04em; color: var(--cm-fg); white-space: nowrap; text-transform: lowercase; pointer-events: none; }
+.ctos .nf-tn-cost { position: absolute; left: 50%; top: calc(100% + 34px); translate: -50% 0; font: 700 11px/1 var(--cm-mono); letter-spacing: .06em; color: #ffc53a; white-space: nowrap; pointer-events: none; text-shadow: 1px 1px 0 #000; }
+.ctos .nf-tn[data-kind="keystone"] .nf-tn-l, .ctos .nf-tn[data-kind="core"] .nf-tn-l { top: calc(100% + 24px); font-size: 14px; }
+.ctos .nf-tn[data-kind="keystone"] .nf-tn-cost { top: calc(100% + 48px); }
 .ctos .nf-tn[data-st="owned"] .nf-tn-l { color: var(--c); }
-.ctos .nf-tn[data-st="locked"] .nf-tn-l { opacity: .55; }
-.ctos .nf-tm[data-lod="far"] .nf-tn:not([data-sel]) .nf-tn-l { display: none; }
+.ctos .nf-tn[data-st="locked"] .nf-tn-l, .ctos .nf-tn[data-st="locked"] .nf-tn-cost { opacity: .55; }
+.ctos .nf-tn[data-st="open"] .nf-tn-cost { color: var(--cm-ctos-meta); }
+.ctos .nf-tn[data-vis="fog"] .nf-tn-l { color: #5b6878; letter-spacing: .14em; }
+.ctos .nf-tm[data-lod="far"] .nf-tn:not([data-sel]) .nf-tn-l, .ctos .nf-tm[data-lod="far"] .nf-tn-cost { display: none; }
 .ctos .nf-tm[data-lod="far"] .nf-tn[data-kind="keystone"] .nf-tn-l { display: block; }
-@keyframes nfTnReady { 0%, 100% { opacity: 0; scale: .96; } 50% { opacity: .85; scale: 1.06; } }
-@keyframes nfTnFlash { from { opacity: 1; scale: .9; } to { opacity: 0; scale: 1.7; } }
 
-/* floating controls, the detail card and the readout */
+/* ---- the card, anchored at the node */
+.ctos .nf-tm-lead { position: absolute; z-index: 4; left: 0; top: 0; visibility: hidden; background: repeating-linear-gradient(90deg, var(--c) 0 4px, transparent 4px 7px); opacity: .8; pointer-events: none; }
+.ctos .nf-tm-card {
+    --br: var(--c);
+    position: absolute; z-index: 5; left: 0; top: 0; display: grid; gap: 9px; align-content: start; width: 340px; max-width: calc(100vw - 24px); padding: 16px 18px 16px;
+    background-color: #070a0ef5; border: 1px solid color-mix(in srgb, var(--c) 35%, #1a1a1a); border-top: 3px solid var(--c);
+    box-shadow: 10px 12px 0 #000b, 0 0 40px color-mix(in srgb, var(--c) 16%, transparent);
+    background-image: linear-gradient(var(--br), var(--br)), linear-gradient(var(--br), var(--br)), linear-gradient(var(--br), var(--br)), linear-gradient(var(--br), var(--br));
+    background-size: 12px 2px, 2px 12px, 12px 2px, 2px 12px;
+    background-position: 100% 100%, 100% 100%, 0 100%, 0 100%;
+    background-repeat: no-repeat;
+    animation: nfCardIn .22s cubic-bezier(.2, .8, .2, 1) both;
+}
+.ctos .nf-tm-card[data-pinned] { border-color: color-mix(in srgb, var(--c) 60%, #1a1a1a); }
+.ctos .nf-tm-card[data-kind="keystone"] { width: 380px; border-top-width: 5px; }
+.ctos .nf-tm-k { display: flex; justify-content: space-between; gap: 10px; font: 700 var(--cm-ctos-t-micro)/1.3 var(--cm-mono); letter-spacing: .12em; color: var(--c); text-transform: uppercase; }
+.ctos .nf-tm-st { padding: 1px 6px; background: var(--c); color: #05070a; }
+.ctos .nf-tm-card[data-st="locked"] .nf-tm-st, .ctos .nf-tm-card[data-st="fog"] .nf-tm-st { background: #2a3038; color: var(--cm-mute); }
+.ctos .nf-tm-card[data-st="open"] .nf-tm-st { background: transparent; color: var(--c); box-shadow: inset 0 0 0 1px var(--c); }
+.ctos .nf-tm-n { font: 700 28px/1.05 var(--cm-display); letter-spacing: -.02em; text-transform: lowercase; color: #fff; text-shadow: 3px 3px 0 #000; }
+.ctos .nf-tm-card[data-kind="keystone"] .nf-tm-n { font-size: 34px; }
+.ctos .nf-tm-card p { margin: 0; }
+.ctos .nf-tm-fx { font: 500 16px/1.45 var(--cm-display); color: var(--cm-fg); }
+.ctos .nf-tm-fx b { color: var(--c); font-weight: 800; }
+.ctos .nf-tm-flv { font: italic 400 14px/1.45 var(--cm-display); color: var(--cm-mute); border-left: 2px solid color-mix(in srgb, var(--c) 50%, transparent); padding-left: 10px; }
+.ctos .nf-tm-need { font: 500 var(--cm-ctos-t-micro)/1.45 var(--cm-mono); color: var(--cm-ctos-meta); }
+.ctos .nf-tm-msg { color: var(--cm-cyan); font: 600 var(--cm-ctos-t-micro)/1.4 var(--cm-mono); }
+.ctos .nf-tm-a { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding-top: 10px; border-top: 1px dashed #ffffff26; }
+.ctos .nf-tm-cost { display: grid; gap: 3px; }
+.ctos .nf-tm-cost b { font: 700 20px/1 var(--cm-mono); color: #ffc53a; }
+.ctos .nf-tm-card[data-st="owned"] .nf-tm-cost b { color: var(--c); }
+.ctos .nf-tm-cost small { font: 600 var(--cm-ctos-t-micro)/1 var(--cm-mono); color: var(--cm-ctos-meta); }
+.ctos .nf-tm-buy { min-height: 42px; padding: 0 18px; background: var(--c); color: #05070a; border: 0; font: 800 var(--cm-ctos-t-micro)/1 var(--cm-mono); letter-spacing: .14em; text-transform: uppercase; cursor: pointer; box-shadow: 4px 4px 0 color-mix(in srgb, var(--c) 35%, #000); transition: translate .12s, box-shadow .12s; }
+.ctos .nf-tm-buy:hover:not(:disabled) { translate: -2px -2px; box-shadow: 6px 6px 0 color-mix(in srgb, var(--c) 35%, #000); }
+.ctos .nf-tm-buy:active:not(:disabled) { translate: 2px 2px; box-shadow: 1px 1px 0 color-mix(in srgb, var(--c) 35%, #000); }
+.ctos .nf-tm-buy:disabled { background: #1a1f26; color: var(--cm-ctos-meta); box-shadow: none; cursor: default; }
+@keyframes nfCardIn { from { opacity: 0; scale: .96; } to { opacity: 1; scale: 1; } }
+
+/* ---- floating controls, hint and readout */
 .ctos .nf-tm-zoom { position: absolute; z-index: 4; left: 12px; top: 56px; display: grid; gap: 3px; }
 .ctos .nf-tm-zoom .nf-tm-b { background: #0a0a0aee; border: 1px solid #ffffff2e; }
-.ctos .nf-tm-card { position: absolute; z-index: 4; display: grid; gap: 8px; align-content: start; padding: 14px 16px 16px; background: #090c10f2; border: 1px solid color-mix(in srgb, var(--c) 40%, #1a1a1a); border-top: 3px solid var(--c); right: 16px; top: 60px; width: 340px; max-height: calc(100dvh - 90px); overflow: auto; }
-.ctos .nf-tm-k { font: 700 var(--cm-ctos-t-micro)/1.3 var(--cm-mono); letter-spacing: .12em; color: var(--c); text-transform: uppercase; }
-.ctos .nf-tm-n { font: 700 24px/1.1 var(--cm-display); letter-spacing: -.02em; text-transform: lowercase; }
-.ctos .nf-tm-card p { margin: 0; font: 400 15px/1.45 var(--cm-display); color: var(--cm-mute); }
-.ctos .nf-tm-card .nf-tm-need { font: 400 var(--cm-ctos-t-micro)/1.4 var(--cm-mono); color: var(--cm-ctos-meta); }
-.ctos .nf-tm-card .nf-tm-msg { color: var(--cm-cyan); font: 600 var(--cm-ctos-t-micro)/1.4 var(--cm-mono); }
-.ctos .nf-tm-a { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; padding-top: 6px; border-top: 1px dashed #ffffff22; }
-.ctos .nf-tm-a small { font: 600 var(--cm-ctos-t-micro)/1.2 var(--cm-mono); color: var(--cm-ctos-meta); }
-.ctos .nf-tm-a .nf-mini:not(:disabled) { border-color: var(--c); color: var(--c); }
-.ctos .nf-tm-tot { position: absolute; z-index: 3; left: 16px; bottom: 16px; width: 250px; max-height: 42dvh; overflow: auto; margin: 0; padding: 10px 12px; background: #090c10e6; border: 1px solid #ffffff22; border-top: 2px solid var(--cm-cyan); }
+.ctos .nf-tm-hint { position: absolute; z-index: 3; left: 50%; bottom: 18px; translate: -50% 0; margin: 0; padding: 7px 12px; max-width: calc(100vw - 32px); background: #06090ddd; border-left: 3px solid var(--cm-cyan); font: 600 var(--cm-ctos-t-micro)/1.3 var(--cm-mono); letter-spacing: .08em; color: var(--cm-mute); text-transform: uppercase; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; pointer-events: none; }
+.ctos .nf-tm-totb { display: none; }
+.ctos .nf-tm-tot { position: absolute; z-index: 3; left: 16px; bottom: 16px; width: 250px; max-height: 42dvh; overflow: auto; margin: 0; padding: 10px 12px; background: #090c10e6; border: 1px solid #ffffff22; border-top: 2px solid var(--cm-cyan); box-shadow: 6px 6px 0 #000a; }
 .ctos .nf-tm-tot > div { display: flex; justify-content: space-between; gap: 10px; padding: 3px 0; font: 500 var(--cm-ctos-t-micro)/1.3 var(--cm-mono); }
 .ctos .nf-tm-tot dt { color: var(--cm-ctos-meta); }
 .ctos .nf-tm-tot dd { margin: 0; color: var(--cm-fg); font-weight: 700; text-align: right; }
 .ctos .nf-tm-tot .nf-tm-th { grid-column: 1 / -1; margin: 0 0 4px; font: 700 var(--cm-ctos-t-micro)/1 var(--cm-mono); letter-spacing: .14em; color: var(--cm-cyan); text-transform: uppercase; }
+.ctos .nf-tm[data-focus] .nf-tm-tot { opacity: .5; }
 
 @media (max-width: 899px) {
-    .ctos .nf-tm-card { left: 0; right: 0; top: auto; bottom: 0; width: auto; max-height: 40dvh; border-width: 3px 0 0; padding-bottom: calc(16px + env(safe-area-inset-bottom)); }
-    .ctos .nf-tm-tot { display: none; }
     .ctos .nf-tm-t { display: none; }
     .ctos .nf-tm-bar { justify-content: flex-start; }
     .ctos .nf-tm-ap { flex: 1; }
     .ctos .nf-tm-zoom { top: 52px; }
     .ctos .nf-tm-b { min-height: 38px; }
     .ctos .nf-tm-b.sq { width: 42px; }
+    .ctos .nf-tm-card, .ctos .nf-tm-card[data-kind="keystone"] { width: min(340px, calc(100vw - 24px)); padding: 14px 15px; }
+    .ctos .nf-tm-n, .ctos .nf-tm-card[data-kind="keystone"] .nf-tm-n { font-size: 24px; }
+    .ctos .nf-tm-totb { display: block; position: absolute; z-index: 4; right: 12px; top: 52px; background: #0a0a0aee; border: 1px solid #ffffff2e; }
+    .ctos .nf-tm-tot { display: none; left: auto; right: 12px; top: 96px; bottom: auto; }
+    .ctos .nf-tm-tot[data-open] { display: block; }
+    .ctos .nf-tm-hint { bottom: calc(14px + env(safe-area-inset-bottom)); }
 }
 @media (prefers-reduced-motion: reduce) {
-    .ctos .nf-tm { animation: none; }
-    .ctos .nf-tn[data-st="ready"]::before { animation: none; opacity: .6; }
-    .ctos .nf-tn[data-flash]::before { animation: none; }
-    .ctos .nf-tm-world[data-anim] { transition: none; }
+    .ctos .nf-tm, .ctos .nf-tm-card { animation: none; }
+    .ctos .nf-tn[data-st="ready"]:not([data-vis="fog"])::before { animation: none; opacity: .8; }
+    .ctos .nf-tn[data-flash] .nf-tn-body, .ctos .nf-tn[data-flash] .nf-tn-face::after, .ctos .nf-tn[data-new], .ctos .nf-tn-halo, .ctos .nf-tl { animation: none; }
+    .ctos .nf-tn, .ctos .nf-tn-body, .ctos .nf-tn-shadow { transition: none; }
 }
 
 /* the menu owns the whole screen: tuck the site bar and dock away while it is open */
