@@ -262,8 +262,8 @@ def sg_5(c, f):
     x = SLOT[5]
     c.glow(x, BASE - 12, 16, "sg", 0.9, 0)
     plinth(c, x, BASE, 22, 4)
-    crystal(c, x - 7, BASE - 4, 7, 12, -0.05, -1.5)
-    crystal(c, x + 7, BASE - 4, 6, 10, -0.05, 1.5)
+    crystal(c, x - 7, BASE - 4, 7, 12, -0.05, -1.5, "qz")
+    crystal(c, x + 7, BASE - 4, 6, 10, -0.05, 1.5, "cyan")
     crystal(c, x, BASE - 4, 10, 20)
     star(c, x, BASE - 27, 4 + 0.6 * tw(f, 5), 0.4, "sg")
 
@@ -281,8 +281,8 @@ def sg_6(c, f):
         c.set(c.rect(x - 8, y, x + 9, y + 1) & tw_, RAMPS["gr"][1])
     door = c.rect(x - 2, BASE - 6, x + 2, BASE)
     c.set(door, RAMPS["cyan"][2 if f % 3 else 3])
-    win = c.rect(x - 5, BASE - 16, x - 3, BASE - 14) | c.rect(x + 3, BASE - 16, x + 5, BASE - 14)
-    c.set(win, RAMPS["sg"][3])
+    c.set(c.rect(x - 5, BASE - 16, x - 3, BASE - 14), RAMPS["rn"][3 if f % 2 else 4])
+    c.set(c.rect(x + 3, BASE - 16, x + 5, BASE - 14), RAMPS["lime"][3])
     # dome
     dome = c.disc(x, BASE - 18, 11, 9) & (c.yy < BASE - 18)
     c.fill(dome, 0.25 + 0.65 * c.lin(x + 8, BASE - 18, x - 6, BASE - 27), "sg")
@@ -320,7 +320,7 @@ def sg_7(c, f):
         c.fill(col, 0.15 + 0.6 * c.lin(px - 3, 0, px + 3, 0) * (0.6 + 0.4 * c.lin(0, BASE, 0, BASE - 38)), "sg", hi=3)
         for y in (BASE - 30, BASE - 8):
             c.set(c.rect(px - 3, y, px + 3, y + 1), RAMPS["cyan"][2])
-        crystal(c, px, BASE - 38, 7, 12, 0.05, side * 0.5)
+        crystal(c, px, BASE - 38, 7, 12, 0.05, side * 0.5, "qz" if side < 0 else "cyan")
     arch = c.ring(x, BASE - 38, 24, 2, 12) & (c.yy < BASE - 38)
     c.fill(arch, 0.25 + 0.55 * c.lin(x - 24, 0, x + 24, 0), "sg", hi=3)
     # constellation in the arch
@@ -347,41 +347,11 @@ def sg_7(c, f):
     star(c, x, sy, 9, 0.35, "sg", 0.24, rot)
     c.set(c.disc(x, sy, 1.6), RAMPS["sg"][4])
     # small crystals at the pillar feet
-    crystal(c, x - 15, BASE, 5, 8, -0.05, -1)
-    crystal(c, x + 16, BASE, 5, 7, -0.05, 1)
+    crystal(c, x - 15, BASE, 5, 8, -0.05, -1, "qz")
+    crystal(c, x + 16, BASE, 5, 7, -0.05, 1, "mag")
+    crystal(c, x - 10, BASE, 3, 5, -0.05, 0, "lime")
+    crystal(c, x + 11, BASE, 3, 5, -0.05, 0, "cyan")
     orbiters(c, x, sy, 30, 6, 4, f, 1, True, "mag", 0.2)
-
-
-def sg_bg(c, f):
-    rng = np.random.default_rng(9)
-    hz = BASE - 2
-    # haze rising from the horizon, right-heavy
-    c.haze(c.rect(0, hz - 22, W, hz + 2) & ((c.bayer + .5) < 0.6 * c.lin(0, hz - 22, 0, hz) * (0.3 + 0.7 * c.lin(0, 0, W, 0))), "sg", 1, 70)
-    # distant crystal skyline (dark shades only so the sprites stay on top)
-    for i in range(30):
-        x = 30 + i * 9 + rng.uniform(-3, 3)
-        h = rng.uniform(4, 14) * (0.5 + 0.6 * x / W)
-        w = rng.uniform(4, 8)
-        m = c.poly([(x - w / 2, hz), (x - w / 2, hz - h * 0.6), (x, hz - h), (x + w / 2, hz - h * 0.6), (x + w / 2, hz)]) & c.empty()
-        c.fill(m, 0.05 + 0.45 * c.lin(0, hz, 0, hz - h) * c.lin(0, 0, W, 0), "sg", outline=False, lo=0, hi=1)
-    # floor lattice
-    c.set(c.rect(0, hz, W, hz + 1), RAMPS["sg"][1])
-    for i in range(-10, 40):
-        m = c.line(144 + i * 4, hz, 144 + i * 12, H, 1) & (c.yy > hz + 1) & c.empty()
-        c.set(m, RAMPS["sg"][0])
-    # stars
-    for i in range(48):
-        x, y = rng.uniform(20, W - 2), rng.uniform(2, hz - 12)
-        b = tw(f, i)
-        rn = ["sg", "cyan", "mag"][i % 3]
-        if b > 0.3:
-            c.px(x, y, RAMPS[rn][1 if b < .65 else (2 if b < .9 else 3)], True)
-    # faint constellation, centre top (clear of the quiet corner)
-    pts = [(120, 8), (138, 14), (156, 9), (176, 16), (194, 7)]
-    for (x0, y0), (x1, y1) in zip(pts, pts[1:]):
-        c.set(c.line(x0, y0, x1, y1, 1) & ((c.xx.astype(int) % 3) == 0) & c.empty(), RAMPS["cyan"][1])
-    for i, (x, y) in enumerate(pts):
-        c.px(x, y, RAMPS["sg"][3 if tw(f, i * 2) > .5 else 2])
 
 
 # =====================================================================================================================
@@ -450,6 +420,9 @@ def furnace(c, cx, base, w, h, f, chimney=False):
     mouth = c.poly([(cx - mw / 2, base - 3), (cx - mw / 2, base - 3 - mh * 0.6), (cx, base - 3 - mh), (cx + mw / 2, base - 3 - mh * 0.6), (cx + mw / 2, base - 3)])
     mouth_fire(c, mouth, base - 3 - mh, base - 3, f)
     c.outline(mouth, "vs")
+    for i, rn in enumerate(("cyan", "lime", "rn")):
+        if w >= 16:
+            c.px(cx - w / 2 + 2 + i * 2, base - h + 5, RAMPS[rn][4 if (f + i) % 3 == 0 else 2])
     if chimney:
         cw = max(3, w * 0.22)
         x1 = cx + w / 2 - 2
@@ -586,7 +559,7 @@ def vs_7(c, f):
         c.fill(p, 0.2 + 0.4 * c.lin(px - 2, 0, px + 2, 0), "gr")
         for y in range(BASE - 44, BASE - 4, 6):
             lit = ((y // 6) + f) % 3 == 0
-            c.set(c.rect(px - 2, y, px + 2, y + 1), RAMPS["vs"][4 if lit else 1])
+            c.set(c.rect(px - 2, y, px + 2, y + 1), RAMPS[["cyan", "vs", "lime"][(y // 6) % 3]][4 if lit else 1])
         c.fill(c.rect(px - 3, BASE - 48, px + 3, BASE - 45), 0.7, "vs")
         beam = c.line(px, BASE - 47, x + side * 13, ry - 2, 1) & c.empty()
         c.set(beam, RAMPS["mag"][3 if (f + (side > 0)) % 2 == 0 else 2])
@@ -608,43 +581,10 @@ def vs_7(c, f):
     # ingots ready at its feet
     stack(c, x - 18, BASE, 6, 2)
     stack(c, x + 19, BASE, 6, 3, hot_top=True)
-
-
-def vs_bg(c, f):
-    rng = np.random.default_rng(10)
-    # riveted hex plating, very faint, thickening to the right
-    q = 9
-    col = (c.xx // q).astype(int)
-    off = (col % 2) * q / 2
-    lx = c.xx - col * q
-    ly = (c.yy + off) % q
-    seam = ((lx < 1) | (ly < 1)) & (c.yy < BASE - 3)
-    c.set(seam & ((c.bayer + .5) < 0.45 * c.lin(20, 0, W, 0)), RAMPS["vs"][0])
-    c.set((np.abs(lx - 2) < .6) & (np.abs(ly - 2) < .6) & (c.yy < BASE - 3) & ((c.bayer + .5) < 0.5 * c.lin(60, 0, W, 0)), RAMPS["vs"][1])
-    # haze of heat over the floor
-    c.haze(c.rect(0, BASE - 20, W, BASE - 2) & ((c.bayer + .5) < c.lin(0, BASE - 20, 0, BASE - 2) * 0.8 * c.lin(0, 0, W, 0)), "mag", 0, 80)
-    # hanging chains with hooks (keep out of the quiet corner)
-    for i, x in enumerate([118, 190]):
-        ln = 14 + (i * 9) % 16
-        for y in range(0, ln, 2):
-            c.px(x, y, RAMPS["gr"][1 if (y // 2) % 2 else 2], True)
-        c.set(c.ring(x, ln + 2, 2.2, 1) & (c.yy > ln + 1) & c.empty(), RAMPS["gr"][2])
-    # molten channel along the floor, flowing left over the loop
-    chan = c.rect(0, BASE, W, BASE + 2)
-    flow = 0.5 + 0.5 * np.sin(TAU * (c.xx / 24 + f / FRAMES))
-    c.fill(chan, (0.25 + 0.7 * flow) * (0.3 + 0.7 * c.lin(0, 0, W, 0)), "mag", outline=False, hi=4)
-    c.set(c.rect(0, BASE - 1, W, BASE), RAMPS["vs"][1])
-    # a distant void ring on the back wall
-    c.set(c.ring(196, 20, 9, 1) & ((c.bayer + .5) < .6) & c.empty(), RAMPS["vs"][1])
-    c.set(c.ring(196, 20, 5, 1) & ((c.bayer + .5) < .5) & c.empty(), RAMPS["mag"][1])
-    # embers rising
-    for i in range(34):
-        x0, y0 = rng.uniform(40, W), rng.uniform(16, BASE - 2)
-        t = (f / FRAMES + rng.uniform()) % 1
-        y = y0 - 8 * t
-        if x0 > QUIET[0] and y < QUIET[3]:
-            continue
-        c.px(x0 + math.sin(TAU * (t + i * .1)), y, RAMPS[["mag", "rn"][i % 2]][2 if t < .6 else 1], True)
+    # coolant lines into the cradle
+    for side, rn in ((-1, "cyan"), (1, "lime")):
+        c.set(c.line(x + side * 26, BASE - 6, x + side * 20, BASE - 10, 1.2), RAMPS[rn][2])
+        c.px(x + side * (26 - (f % 3) * 2), BASE - 6 - (f % 3) * 1.3, RAMPS[rn][4])
 
 
 # =====================================================================================================================
@@ -771,7 +711,9 @@ def ch_4(c, f):
     cy = BASE - 11
     track = c.ring(x, cy, 10, 1.6)
     ang = (np.arctan2(c.yy - cy, c.xx - x) / TAU - f / FRAMES) % 1
-    c.fill(track, 1 - ang, "ch", outline=False, lo=1, hi=4, amp=0.0)
+    c.fill(track & (ang < 0.34), 1 - ang * 2, "ch", outline=False, lo=1, hi=4, amp=0.0)
+    c.fill(track & (ang >= 0.34) & (ang < 0.67), 1.2 - ang, "rn", outline=False, lo=1, hi=3, amp=0.0)
+    c.fill(track & (ang >= 0.67), 1.3 - ang, "cyan", outline=False, lo=1, hi=3, amp=0.0)
     a = TAU * f / FRAMES
     c.spark(x + 9.2 * math.cos(a), cy + 9.2 * math.sin(a), RAMPS["wh"][4], 1)
     for k in range(4):
@@ -785,6 +727,7 @@ def ch_5(c, f):
     c.glow(x, BASE - 14, 18, "ch", 0.8, 0)
     gear(c, x + 10, BASE - 18, 7, 8, f, "rn", 1)
     gear(c, x - 10, BASE - 8, 6, 7, f, "ch", -1)
+    gear(c, x + 11, BASE - 5, 4, 6, f, "cyan", -1)
     hourglass(c, x, BASE - 14, 28, f, 0.58)
 
 
@@ -823,7 +766,8 @@ def ch_7(c, f):
     c.set(fl & (((c.xx - x + 64) // 5).astype(int) % 2 == 0), RAMPS["ch"][2])
     # side gears
     gear(c, x - 24, BASE - 9, 9, 10, f, "rn", 1)
-    gear(c, x - 26, BASE - 26, 6, 7, f, "ch", -1)
+    gear(c, x - 26, BASE - 26, 6, 7, f, "cyan", -1)
+    gear(c, x + 27, BASE - 28, 5, 6, f, "qz", 1)
     gear(c, x + 24, BASE - 11, 10, 11, f, "ch", -1)
     # the dial
     dial(c, x, cy, 20, f, 24)
@@ -844,41 +788,225 @@ def ch_7(c, f):
     motes(c, 18, f, 77, (x - 32, BASE - 58, x + 32, BASE - 4), ("ch", "cyan", "wh"))
 
 
+# =====================================================================================================================
+# backdrops (Nate picked "busier, more colour": dense scenery in several palette ramps, kept to dark shades 0-2 so the
+# sprites still read on top, bright accents only as small moving points)
+# =====================================================================================================================
+def quiet_dim(c):
+    """Under the big number only dark shades survive."""
+    x0, y0, x1, y1 = QUIET
+    q = c.rect(x0, y0, x1, y1) & (c.img[..., 3] == 255) & (c.img[..., :3].max(axis=2) > 120)
+    c.img[q] = (0, 0, 0, 0)
+
+
+def ribbon(c, y0, amp, freq, phase, th, rn, alpha, shade=1):
+    """An aurora ribbon: translucent haze band with a dotted bright edge, its wave shifting one period per loop."""
+    yc = y0 + amp * np.sin(TAU * (c.xx / freq + phase))
+    band = (c.yy > yc) & (c.yy < yc + th + 3 * np.sin(TAU * (c.xx / (freq * 0.7) + phase * 2)))
+    c.haze(band & ((c.bayer + .5) < 0.75 * c.lin(0, 0, W, 0) + 0.15), rn, shade, alpha)
+    edge = (np.abs(c.yy - yc) < 0.6) & (((c.xx.astype(int) + int(phase * 40)) % 5) == 0) & c.empty()
+    c.set(edge & ((c.bayer + .5) < 0.1 + 0.5 * c.lin(0, 0, W, 0)), RAMPS[rn][2])
+
+
+def sg_bg(c, f):
+    rng = np.random.default_rng(9)
+    hz = BASE - 2
+    ph = f / FRAMES
+    # a pale ringed planet low in the middle of the sky
+    px_, py_ = 150, 18
+    pl = c.disc(px_, py_, 9)
+    c.fill(pl, 0.25 + 0.5 * c.lin(px_ - 9, py_ + 9, px_ + 9, py_ - 9), "qz", outline=False, lo=0, hi=2)
+    c.set(pl & (np.abs(c.yy - py_ - 2 - (c.xx - px_) * 0.15) < 0.6), RAMPS["qz"][1])
+    ringm = c.ring(px_, py_, 15, 1, 3.2) & ~(pl & (c.yy < py_ + (c.xx - px_) * 0.0))
+    c.set(ringm & c.empty(), RAMPS["cyan"][2])
+    # aurora ribbons
+    ribbon(c, 6, 3, 90, ph, 5, "cyan", 60)
+    ribbon(c, 13, 4, 120, -ph + .3, 4, "qz", 55)
+    ribbon(c, 22, 3, 70, ph + .6, 3, "lime", 45, 0)
+    # stars in every accent
+    for i in range(130):
+        x, y = rng.uniform(16, W - 2), rng.uniform(2, hz - 10)
+        b = tw(f, i)
+        rn = ["sg", "cyan", "mag", "qz", "lime", "rn"][i % 6]
+        if b > 0.25:
+            c.px(x, y, RAMPS[rn][1 if b < .55 else (2 if b < .85 else 3)], True)
+        if b > 0.93 and i % 5 == 0:
+            c.spark(x, y, RAMPS[rn][2], 1, True)
+    # two constellations
+    for pts, rn in (([(70, 30), (84, 24), (98, 28), (110, 20)], "cyan"), ([(178, 8), (192, 14), (204, 6)], "mag")):
+        for (x0, y0), (x1, y1) in zip(pts, pts[1:]):
+            c.set(c.line(x0, y0, x1, y1, 1) & ((c.xx.astype(int) % 3) == 0) & c.empty(), RAMPS[rn][1])
+        for i, (x, y) in enumerate(pts):
+            c.px(x, y, RAMPS["sg"][3 if tw(f, i * 2 + y) > .5 else 2])
+    # drifting shards (one shard spacing per loop)
+    for i in range(14):
+        x0 = (i * 37 + 60 * ph * 0) % W
+        y0 = 26 + (i * 13) % 26
+        x = (x0 + 6 * ph + i * 3) % W
+        rn = ["cyan", "qz", "mag", "sg"][i % 4]
+        d = c.poly([(x, y0 - 1.5), (x + 1, y0), (x, y0 + 1.5), (x - 1, y0)]) & c.empty()
+        c.set(d, RAMPS[rn][2])
+    # haze on the horizon, layered
+    c.haze(c.rect(0, hz - 20, W, hz + 2) & ((c.bayer + .5) < 0.7 * c.lin(0, hz - 20, 0, hz) * (0.3 + 0.7 * c.lin(0, 0, W, 0))), "cyan", 1, 70)
+    # crystal skyline in three ramps, two depths
+    for depth, (n, hmin, hmax, shades) in enumerate([(34, 6, 18, (0, 1)), (26, 3, 10, (1, 2))]):
+        for i in range(n):
+            x = 24 + i * (264 / n) + rng.uniform(-3, 3)
+            h = rng.uniform(hmin, hmax) * (0.5 + 0.6 * x / W)
+            w = rng.uniform(4, 9) * (1 - depth * 0.3)
+            rn = ["sg", "cyan", "qz", "sg", "mag"][(i + depth) % 5]
+            m = c.poly([(x - w / 2, hz), (x - w / 2, hz - h * 0.6), (x, hz - h), (x + w / 2, hz - h * 0.6), (x + w / 2, hz)]) & c.empty()
+            c.fill(m, c.lin(0, hz, 0, hz - h) * (0.3 + 0.7 * c.lin(0, 0, W, 0)), rn, outline=False, lo=shades[0], hi=shades[1])
+            if depth == 1 and i % 3 == 0:
+                c.px(x, hz - h + 1, RAMPS[rn][3 if tw(f, i) > .6 else 2])
+    # floor lattice with glints running along the rails
+    c.set(c.rect(0, hz, W, hz + 1), RAMPS["sg"][1])
+    for i in range(-10, 40):
+        m = c.line(144 + i * 4, hz, 144 + i * 12, H, 1) & (c.yy > hz + 1) & c.empty()
+        c.set(m, RAMPS[["sg", "cyan", "qz"][i % 3]][1 if i % 2 else 0])
+    for i in range(10):
+        x = (i * 29 + 29 * ph * 0 + f * 5) % W
+        c.px(x, hz, RAMPS[["cyan", "mag", "lime"][i % 3]][3])
+    quiet_dim(c)
+
+
+def vs_bg(c, f):
+    rng = np.random.default_rng(10)
+    ph = f / FRAMES
+    # riveted plating
+    q = 9
+    col = (c.xx // q).astype(int)
+    lx = c.xx - col * q
+    ly = (c.yy + (col % 2) * q / 2) % q
+    seam = ((lx < 1) | (ly < 1)) & (c.yy < BASE - 3)
+    c.set(seam & ((c.bayer + .5) < 0.5 * c.lin(20, 0, W, 0)), RAMPS["vs"][0])
+    # big pipes: one along the top, two dropping down, joints, valve wheels, a gauge
+    def pipe(mask, rn, horiz):
+        g = c.lin(0, 0, 0, 1) if False else None
+        c.fill(mask & c.empty(), 0.5, rn, outline=False, lo=0, hi=2, amp=0.0)
+    top = c.rect(40, 9, W, 13)
+    c.fill(top & c.empty(), 0.0, "gr", outline=False, lo=1, hi=1)
+    c.set(c.rect(40, 9, W, 10) & c.empty(), RAMPS["gr"][2])
+    for x in range(52, W, 26):
+        c.set(c.rect(x, 8, x + 3, 14), RAMPS["gr"][2])
+    for x, rn in ((96, "cyan"), (136, "rn")):
+        d = c.rect(x, 13, x + 4, BASE - 1)
+        c.fill(d & c.empty(), 0.0, "gr", outline=False, lo=1, hi=1)
+        c.set(c.rect(x, 13, x + 1, BASE - 1) & c.empty(), RAMPS["gr"][2])
+        # coolant pulse running down the pipe
+        y = 14 + ((f * 7) % (BASE - 16))
+        c.set(c.rect(x + 1, y, x + 3, y + 3), RAMPS[rn][3])
+        w_ = c.ring(x + 2, 30, 4, 1)
+        c.set(w_, RAMPS[rn][2])
+        c.set(c.line(x - 1, 30, x + 5, 30, 1) & c.disc(x + 2, 30, 4), RAMPS[rn][2])
+    # monitors on the wall with scrolling readouts (code theme)
+    for mx, my, rn in ((58, 22, "cyan"), (166, 26, "lime"), (180, 40, "mag")):
+        scr = c.rect(mx, my, mx + 12, my + 8)
+        c.set(scr, RAMPS["gr"][0])
+        c.set(c.ring(mx + 6, my + 4, 7, 1, 5) & False, RAMPS["gr"][1])
+        c.outline(scr, "gr", 1)
+        for k in range(10):
+            hgt = 1 + int(3 * (0.5 + 0.5 * math.sin(k * 1.3 + f * TAU / FRAMES + mx)))
+            c.set(c.rect(mx + 1 + k, my + 7 - hgt, mx + 2 + k, my + 7), RAMPS[rn][2 if k % 2 else 3])
+    # wall vents breathing heat
+    for vx in (210, 240):
+        for k in range(3):
+            c.set(c.rect(vx, 30 + k * 3, vx + 14, 31 + k * 3), RAMPS["mag" if (f + k) % 3 else "rn"][2])
+    # hazard stripe beam
+    beam = c.rect(40, 42, 92, 45)
+    stripes = ((c.xx + c.yy).astype(int) // 3) % 2 == 0
+    c.set(beam & stripes & c.empty(), RAMPS["rn"][2])
+    c.set(beam & ~stripes & c.empty(), RAMPS["gr"][1])
+    # hanging chains
+    for i, x in enumerate([118, 196]):
+        ln = 16 + i * 8
+        for y in range(14, ln, 2):
+            c.px(x, y, RAMPS["gr"][1 if (y // 2) % 2 else 2], True)
+        c.set(c.ring(x, ln + 2, 2.2, 1) & (c.yy > ln + 1) & c.empty(), RAMPS["gr"][2])
+    # heat haze
+    c.haze(c.rect(0, BASE - 22, W, BASE - 2) & ((c.bayer + .5) < c.lin(0, BASE - 22, 0, BASE - 2) * 0.8 * c.lin(0, 0, W, 0)), "mag", 0, 80)
+    # molten channel and a conveyor of small ingots sliding right one gap per loop
+    chan = c.rect(0, BASE, W, BASE + 2)
+    flow = 0.5 + 0.5 * np.sin(TAU * (c.xx / 24 + ph))
+    c.fill(chan, (0.25 + 0.7 * flow) * (0.3 + 0.7 * c.lin(0, 0, W, 0)), "mag", outline=False, hi=4)
+    c.set(c.rect(0, BASE - 1, W, BASE), RAMPS["vs"][1])
+    for k in range(30):
+        x = 40 + k * 12 + 12 * ph
+        if x < W - 3:
+            c.set(c.rect(x, BASE - 3, x + 4, BASE - 1) & c.empty(), RAMPS[["vs", "rn", "cyan"][k % 3]][2])
+    # far void ring
+    c.set(c.ring(226, 18, 8, 1) & ((c.bayer + .5) < .7) & c.empty(), RAMPS["qz"][1])
+    c.set(c.ring(226, 18, 4.5, 1) & ((c.bayer + .5) < .6) & c.empty(), RAMPS["mag"][1])
+    # embers in three colours
+    for i in range(60):
+        x0, y0 = rng.uniform(30, W), rng.uniform(14, BASE - 2)
+        t = (ph + rng.uniform()) % 1
+        y = y0 - 9 * t
+        c.px(x0 + math.sin(TAU * (t + i * .1)), y, RAMPS[["mag", "rn", "qz"][i % 3]][2 if t < .6 else 1], True)
+    quiet_dim(c)
+
+
 def ch_bg(c, f):
     rng = np.random.default_rng(11)
-    # a vast faint dial whose arcs run across the panel
+    ph = f / FRAMES
+    # window light falling across the room
+    for k in range(3):
+        x0 = 120 + k * 46
+        shaft = c.poly([(x0, 0), (x0 + 16, 0), (x0 - 24, BASE), (x0 - 44, BASE)])
+        c.haze(shaft & ((c.bayer + .5) < 0.45), "rn", 1, 50)
+    # vast dial arcs in two colours
     cx, cy, r = 190, 92, 80
-    for k, rr in enumerate([r, r - 7, r - 18, r - 34]):
-        m = c.ring(cx, cy, rr, 1) & ((c.bayer + .5) < [0.6, 0.4, 0.35, 0.3][k]) & (c.yy < BASE - 1)
-        c.set(m, RAMPS["ch"][1 if k % 2 == 0 else 0])
+    for k, (rr, rn) in enumerate([(r, "ch"), (r - 7, "rn"), (r - 18, "cyan"), (r - 34, "ch")]):
+        m = c.ring(cx, cy, rr, 1) & ((c.bayer + .5) < [0.7, 0.5, 0.45, 0.35][k]) & (c.yy < BASE - 1)
+        c.set(m & c.empty(), RAMPS[rn][1])
     for k in range(60):
         a = k * TAU / 60 + TAU / 2
         big = k % 5 == 0
         d0, d1 = r - 1, r - (6 if big else 3)
-        m = c.line(cx + d0 * math.cos(a), cy + d0 * math.sin(a), cx + d1 * math.cos(a), cy + d1 * math.sin(a), 1) & (c.yy < BASE - 1) & not_quiet(c)
-        c.set(m, RAMPS["ch"][1])
-    # a frozen sweep hand on that dial that shivers in place
+        m = c.line(cx + d0 * math.cos(a), cy + d0 * math.sin(a), cx + d1 * math.cos(a), cy + d1 * math.sin(a), 1) & (c.yy < BASE - 1) & c.empty()
+        c.set(m, RAMPS["rn" if big else "ch"][2 if big else 1])
     sa = -2.0 + [0, .012, .018, .012, 0, -.012][f]
-    c.set(c.line(cx, cy, cx + (r - 8) * math.cos(sa), cy + (r - 8) * math.sin(sa), 1) & (c.yy < BASE - 1), RAMPS["ch"][1])
-    # gear silhouettes
-    for gx, gy, gr, t, d in [(110, 2, 13, 12, 1), (136, 12, 7, 8, -1)]:
-        rot = d * (TAU / t) * (f / FRAMES)
+    c.set(c.line(cx, cy, cx + (r - 8) * math.cos(sa), cy + (r - 8) * math.sin(sa), 1) & (c.yy < BASE - 1) & c.empty(), RAMPS["ch"][2])
+    # small clocks hanging on chains, each a different colour, all stopped
+    for i, (hx, ln, rr, rn) in enumerate([(60, 18, 5, "cyan"), (88, 10, 4, "qz"), (112, 24, 6, "lime"), (176, 14, 5, "rn"), (204, 30, 4, "mag")]):
+        for y in range(0, ln - rr, 2):
+            c.px(hx, y, RAMPS["gr"][1], True)
+        face = c.disc(hx, ln, rr) & c.empty()
+        c.fill(face, 0.3, rn, outline=False, lo=0, hi=1)
+        c.set(c.ring(hx, ln, rr, 1) & c.empty() | (c.ring(hx, ln, rr, 1) & face), RAMPS[rn][2])
+        c.set(c.line(hx, ln, hx + rr * 0.6 * math.cos(i), ln + rr * 0.6 * math.sin(i), 1), RAMPS[rn][3])
+        c.px(hx, ln, RAMPS["wh"][3])
+    # a shelf with tiny hourglasses and books
+    sy = 40
+    c.set(c.rect(30, sy, 96, sy + 1), RAMPS["ch"][2])
+    for k in range(9):
+        bx = 34 + k * 7
+        if k % 3 == 1:
+            c.set(c.poly([(bx, sy - 6), (bx + 4, sy - 6), (bx + 2.5, sy - 3), (bx + 4, sy), (bx, sy), (bx + 1.5, sy - 3)]) & c.empty(), RAMPS["cyan"][1])
+            c.set(c.rect(bx, sy - 7, bx + 5, sy - 6), RAMPS["rn"][2])
+        else:
+            hgt = 5 + (k * 3) % 3
+            c.set(c.rect(bx, sy - hgt, bx + 3, sy) & c.empty(), RAMPS[["qz", "lime", "mag", "rn"][k % 4]][1])
+            c.set(c.rect(bx, sy - hgt + 1, bx + 3, sy - hgt + 2) & c.empty(), RAMPS[["qz", "lime", "mag", "rn"][k % 4]][2])
+    # gear outlines turning at the top
+    for gx, gy, gr, t, d in [(140, 2, 13, 8, 1), (162, 14, 7, 7, -1)]:
+        rot = d * (TAU / t) * ph
         ang = np.arctan2(c.yy - gy, c.xx - gx) - rot
         dd = np.hypot(c.xx - gx, c.yy - gy)
         body = ((dd <= gr * 0.76) | ((dd <= gr) & (np.cos(ang * t) > 0.25))) & ~c.disc(gx, gy, gr * 0.35)
         edge = np.zeros_like(body)
         edge[1:, :] |= ~body[:-1, :]; edge[:-1, :] |= ~body[1:, :]; edge[:, 1:] |= ~body[:, :-1]; edge[:, :-1] |= ~body[:, 1:]
-        c.set(body & edge & c.empty(), RAMPS["ch"][1])
-    # warm haze in the room, floor line
+        c.set(body & edge & c.empty(), RAMPS["rn"][1])
+    # room haze, checker floor
     c.haze(c.rect(0, BASE - 18, W, BASE) & ((c.bayer + .5) < c.lin(0, BASE - 18, 0, BASE) * 0.7 * c.lin(0, 0, W, 0)), "ch", 1, 60)
-    c.set(c.rect(0, BASE, W, BASE + 1), RAMPS["ch"][1])
-    c.fill(c.rect(0, BASE + 1, W, H), 0.25 * c.lin(0, 0, W, 0), "ch", outline=False, lo=0, hi=1)
-    motes(c, 46, f, 5, (30, 4, W - 2, BASE - 2))
-    # keep the corner under the big number clear of bright motes
-    x0, y0, x1, y1 = QUIET
-    q = c.rect(x0, y0, x1, y1) & (c.img[..., 3] == 255)
-    bright = q & (c.img[..., :3].max(axis=2) > 140)
-    c.img[bright] = (0, 0, 0, 0)
+    c.set(c.rect(0, BASE, W, BASE + 1), RAMPS["rn"][2])
+    fl = c.rect(0, BASE + 1, W, H)
+    chk = (((c.xx // 4).astype(int) + (c.yy // 1).astype(int)) % 2) == 0
+    c.set(fl & chk & ((c.bayer + .5) < 0.2 + 0.8 * c.lin(0, 0, W, 0)), RAMPS["ch"][1])
+    # dust held in the air, in every accent
+    motes(c, 110, f, 5, (24, 2, W - 2, BASE - 2), ("ch", "rn", "cyan", "qz", "lime", "wh"))
+    quiet_dim(c)
+
 
 
 # =====================================================================================================================
