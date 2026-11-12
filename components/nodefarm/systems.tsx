@@ -240,7 +240,7 @@ export function MenuPanel({
     s: State; soundOn: boolean; onSound: () => void; humOn: boolean; onHum: () => void; eventsOn: boolean; onEvents: () => void; ioText: string; setIoText: (v: string) => void; ioMsg: string; onExport: () => void; onImport: () => void; importConfirm: boolean; onDownload: () => void; onUpload: (f: File) => void;
     backups: Backup[]; onRestore: (b: Backup) => void; onRecover: (b: Backup) => void; volume: number; onVolume: (v: number) => void; calm: boolean; osCalm: boolean; onCalm: () => void; jumpOn: boolean; onJump: () => void; lastSave: number; numFmt: NumFmt; onNumFmt: (f: NumFmt) => void; confirm?: boolean; onReset: () => void;
 }) {
-    const keys: [string, string][] = [["M", "Map"], ["O", "Goals"], ["L", "Records"], ["A", "Ascend"], ["S", "Menu"], ["T", "Tree"], ["G", "Show me the next step"], ["P", "Press the glowing button (hold to keep going)"], ["1 to 6", "Press that tier on the zone in the middle of the screen"], ["Esc", "Close the open window"], ["Hold a button", "Keep buying"]];
+    const keys: [string, string][] = [["M", "Map"], ["O", "Goals"], ["L", "Records"], ["A", "Ascend"], ["S", "Menu"], ["T", "Tree"], ["G", "Show me the next step"], ["P", "Press the glowing button (hold to keep going)"], ["1 to 6", "Press that tier on the zone in the middle of the screen"], ["Q / E", "Open the previous or next arc"], ["Z", "Fold or open the zone in the middle of the screen"], ["Click a header", "Fold or open that panel"], ["Esc", "Close the open window"], ["Hold a button", "Keep buying"]];
     return (
         <div className="nf-sys nf-wk">
             <WinBanner

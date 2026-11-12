@@ -62,6 +62,7 @@ import { zeChoose, zoneEvDef, zoneLabel, type ZeChoice } from "@/lib/nodefarm/zo
 import { ARCS, arcKey, arcOf } from "@/lib/nodefarm/arcs";
 import { ArcHead } from "./arcs";
 import { AUTO_GAP, addBackup, readBackups, type Backup } from "@/lib/nodefarm/backups";
+import { ACC_KEY, blankFoldTarget, readyCount, shownArcIds, soloArc } from "@/lib/nodefarm/layout";
 
 const KEY = "nf-save-v1";
 const EV_KEY = "nf-events-v1"; // "off" when quick-time events are switched off (per device)
@@ -478,6 +479,25 @@ export function NodeFarm() {
         } catch {}
     }, []);
 
+    // ---- board layout: one arc open at a time. An old save is tidied once to show only the newest arc, and when a new
+    // arc reaches the board it opens and the others fold. "Expand all" still opens everything.
+    const arcCount = ready && g.current ? shownArcIds(g.current).length : 0;
+    const arcCountRef = useRef(-1);
+    useEffect(() => {
+        if (!ready || !g.current) return;
+        const ids = shownArcIds(g.current);
+        const prev = arcCountRef.current;
+        arcCountRef.current = ids.length;
+        if (!ids.length) return;
+        setFolded((f) => {
+            if (!(prev === -1 ? !f[ACC_KEY] : ids.length > prev)) return f;
+            // the first tidy also folds the big system panels (Lab, Scripts, Hangar): their title bars still show what they are doing
+            const next = { ...soloArc(f, ids[ids.length - 1]), [ACC_KEY]: true, ...(prev === -1 ? { lab: true, sched: true, drones: true } : {}) };
+            try { localStorage.setItem(UI_KEY, JSON.stringify(next)); } catch {}
+            return next;
+        });
+    }, [ready, arcCount]); // eslint-disable-line react-hooks/exhaustive-deps
+
     // ---- the game loop: 10 ticks a second, real elapsed time, so a throttled background tab catches up on return
     useEffect(() => {
         if (!ready) return;
@@ -869,7 +889,7 @@ export function NodeFarm() {
     }, [ready]);
 
     // ---- keyboard: one letter per window. Off while typing, with a modifier, over another panel or during an event.
-    const keyApi = useRef<{ open: (w: Win | "tree") => void; lab: () => void; fw: () => void; go: () => void; press: (held: boolean) => void; tier: (k: number, held: boolean) => void }>({ open: () => {}, lab: () => {}, fw: () => {}, go: () => {}, press: () => {}, tier: () => {} });
+    const keyApi = useRef<{ open: (w: Win | "tree") => void; lab: () => void; fw: () => void; go: () => void; press: (held: boolean) => void; tier: (k: number, held: boolean) => void; arc: (dir: number) => void; fold: () => void }>({ open: () => {}, lab: () => {}, fw: () => {}, go: () => {}, press: () => {}, tier: () => {}, arc: () => {}, fold: () => {} });
     useEffect(() => {
         if (!ready) return;
         const onKey = (e: KeyboardEvent) => {
@@ -887,6 +907,9 @@ export function NodeFarm() {
             else if (e.key.toLowerCase() === "k") { e.preventDefault(); keyApi.current.fw(); }
             else if (e.key.toLowerCase() === "r") { e.preventDefault(); keyApi.current.lab(); }
             else if (e.key.toLowerCase() === "g") { e.preventDefault(); keyApi.current.go(); }
+            // Q and E step to the previous or next arc ([ and ] belong to the site); Z folds or opens the zone in the middle
+            else if (e.key.toLowerCase() === "q" || e.key.toLowerCase() === "e") { e.preventDefault(); keyApi.current.arc(e.key.toLowerCase() === "e" ? 1 : -1); }
+            else if (e.key.toLowerCase() === "z") { e.preventDefault(); keyApi.current.fold(); }
         };
         window.addEventListener("keydown", onKey);
         return () => window.removeEventListener("keydown", onKey);
@@ -989,6 +1012,8 @@ export function NodeFarm() {
         go: () => {},
         press: () => {},
         tier: () => {},
+        arc: () => {},
+        fold: () => {},
         lab: () => { if (labTree) setLabTree(false); else if (!treeOpen && !fwTree && !droneTree) openLab(); },
         fw: () => { if (fwTree) setFwTree(false); else if (!treeOpen && !labTree && !droneTree) openFw(); },
         open: (w) => {
@@ -1016,9 +1041,48 @@ export function NodeFarm() {
         const key = t.drone !== undefined ? "drones" : t.stat;
         if (!key) return;
         const arc = arcOf(key);
-        if (folded[key] || (arc && folded[arcKey(arc.id)])) setFold({ ...folded, [key]: false, ...(arc ? { [arcKey(arc.id)]: false } : {}) });
+        if (folded[key] || (arc && folded[arcKey(arc.id)])) setFold({ ...(arc ? soloArc(folded, arc.id) : folded), [key]: false });
         sfx("tab");
         setTimeout(() => document.querySelector<HTMLElement>(`.nf [data-stat="${key}"]`)?.scrollIntoView({ behavior: reduced ? "auto" : "smooth", block: "center" }), 90);
+    };
+    // one arc at a time: open this arc, fold the others, and bring its header up if it is off screen
+    const focusArc = (id: string) => {
+        setFold(soloArc(folded, id));
+        sfx("tab");
+        setTimeout(() => {
+            const h = document.querySelector<HTMLElement>(`.nf-arcgrp[data-arc="${id}"]`);
+            if (!h) return;
+            const top = h.getBoundingClientRect().top;
+            if (top < 70 || top > window.innerHeight * 0.55) window.scrollTo({ top: window.scrollY + top - 96, behavior: reduced ? "auto" : "smooth" });
+        }, 40);
+    };
+    keyApi.current.arc = (dir) => {
+        if (win || treeOpen || labTree) return;
+        const ids = shownArcIds(s);
+        if (!ids.length) return;
+        const cur = ids.findIndex((id) => !folded[arcKey(id)]);
+        setTab("stats");
+        focusArc(ids[cur < 0 ? (dir > 0 ? 0 : ids.length - 1) : (cur + dir + ids.length) % ids.length]);
+    };
+    keyApi.current.fold = () => {
+        if (win || treeOpen || labTree) return;
+        const mid = window.innerHeight / 2;
+        let best: HTMLElement | null = null;
+        let gap = Infinity;
+        document.querySelectorAll<HTMLElement>(".nf-statspane .nf-row[data-open]").forEach((row) => {
+            const r = row.getBoundingClientRect();
+            if (!r.height) return;
+            const dist = r.top <= mid && r.bottom >= mid ? 0 : Math.min(Math.abs(r.top - mid), Math.abs(r.bottom - mid));
+            if (dist < gap) { gap = dist; best = row; }
+        });
+        (best as HTMLElement | null)?.querySelector<HTMLButtonElement>(":scope > .nf-bar-t .nf-fold")?.click();
+    };
+    // fold every zone with nothing to buy, so the zones that need you sit together
+    const foldIdle = () => {
+        const next = { ...folded };
+        for (const x of STATS) if (isUnlocked(s, x.id)) next[x.id] = x.id === "bytes" || readyCount(s, x.id) === 0;
+        setFold(next);
+        sfx("tab");
     };
     keyApi.current.tier = (k, held) => {
         if (win || treeOpen || labTree) return;
@@ -1131,8 +1195,8 @@ export function NodeFarm() {
                 <SceneWindow era={era} />
             </section>
 
-            <section className="nf-pane nf-statspane" data-pane="stats" aria-label="Stats and buttons">
-                <Chain s={s} d={d} allOpen={!STATS.every((x) => folded[x.id])} onAll={(open) => setFold({ ...folded, ...Object.fromEntries(STATS.map((x) => [x.id, !open])), ...(open ? Object.fromEntries(ARCS.map((a) => [arcKey(a.id), false])) : {}) })} />
+            <section className="nf-pane nf-statspane" data-pane="stats" aria-label="Stats and buttons" onClick={(e) => blankFoldTarget(e.target as HTMLElement)?.click()}>
+                <Chain s={s} d={d} allOpen={!STATS.every((x) => folded[x.id])} onAll={(open) => setFold({ ...folded, ...Object.fromEntries(STATS.map((x) => [x.id, !open])), ...(open ? Object.fromEntries(ARCS.map((a) => [arcKey(a.id), false])) : {}) })} onIdle={foldIdle} onJump={(id) => goTo({ stat: id as Target["stat"] })} />
                 {labOpen(s) && (
                     <LabZone
                         s={s}
@@ -1180,10 +1244,11 @@ export function NodeFarm() {
                 {ARCS.map((arc, ai) => {
                     const shown = arc.zones.filter((z) => isUnlocked(s, z as StatId) || z === firstLocked);
                     if (!shown.length) return null;
-                    const arcOpen = !folded[arcKey(arc.id)];
+                    const preview = !shown.some((z) => isUnlocked(s, z as StatId)); // only the next encrypted zone: always shown
+                    const arcOpen = preview || !folded[arcKey(arc.id)];
                     return (
-                        <div key={arc.id} className="nf-arcgrp" data-arc={arc.id} role="group" aria-label={arc.name} style={{ ["--arc" as string]: arc.color } as CSSProperties}>
-                            <ArcHead arc={arc} no={ai + 1} s={s} open={arcOpen} onToggle={() => { setFold({ ...folded, [arcKey(arc.id)]: arcOpen }); sfx("tab"); }} />
+                        <div key={arc.id} className="nf-arcgrp" data-arc={arc.id} data-preview={preview ? "" : undefined} role="group" aria-label={arc.name} style={{ ["--arc" as string]: arc.color } as CSSProperties}>
+                            <ArcHead arc={arc} no={ai + 1} s={s} open={arcOpen} onToggle={() => { if (preview) return; if (arcOpen) { setFold({ ...folded, [arcKey(arc.id)]: true }); sfx("tab"); } else focusArc(arc.id); }} />
                             {arcOpen && (
                                 <div id={`nf-arc-${arc.id}`} className="nf-arc-zones">
                                     {shown.map((id) => (
