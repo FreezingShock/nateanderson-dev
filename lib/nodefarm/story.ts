@@ -48,6 +48,16 @@ export const LOGS: Log[] = [
     { id: "engrams", title: "Archive", text: "Through the horizon there is an archive of film, and every operator before me is on it. I sat and watched all of it. Then I watched it again.", test: open("engrams") },
     { id: "paradox", title: "Mirror stair", text: "The stair past the archive goes both ways at once. I went down it and came out above where I started. The node thought that was funny. So did I, eventually.", test: open("paradox") },
     { id: "origin", title: "Node zero", text: "At the bottom there is one node. Not a rack, not a farm. One small box and one wire. Everyone who ran this place ended up here, and now you have too. Say hello. It remembers you.", test: open("origin") },
+    // found after your first Handover: the same operator followed the roots past node zero, up (Overgrowth) and down (Descent)
+    { id: "spores", title: "Cellar", text: "If you can read this, you handed the node over and came back anyway. So did I. Under node zero the roots kept growing, and the old cellar is full of them. The racks down there grew caps.", test: open("spores") },
+    { id: "mycelium", title: "Web", text: "The roots found the cable runs and followed them. Half the network is fibre and half is fungus now, and I cannot tell which half carries the load. Neither can the node. It does not seem to mind.", test: open("mycelium") },
+    { id: "pollen", title: "Daylight", text: "The roots broke into the glass hall and found daylight. Real daylight, on a ten minute clock. I sat through a whole day and a whole night, and the farm grew both times.", test: open("pollen") },
+    { id: "bloom", title: "In flower", text: "The farm flowered. Petals on the racks, pollen in the fans, and the reactor sitting in the middle of it like it planned this. I left the seeds in a jar for whoever comes next.", test: open("bloom") },
+    { id: "basalt", title: "Bedrock", text: "The roots go down as well as up. Under the cellar they stop at rock, so I started drilling. The bit wears out faster than I do. There is a spare on the hook by the ladder. Use it.", test: open("basalt") },
+    { id: "magma", title: "Pipeline", text: "Laid the farm's last pipeline over a river of magma. It erupts on its own clock and the whole shaft warms up after. I time my tea by it now.", test: open("magma") },
+    { id: "geodes", title: "Ringing", text: "Found a stone the size of a hall, hollow and lined with light. When I tap it, the Crystal vault rings back from the top of the farm. Every zone I built is still listening to the others.", test: open("geodes") },
+    // zone 25 leaves room for the ending (a last build, and your own log)
+    { id: "core", title: "Bottom", text: "At the very bottom there is a sun held in clamps, and its heat rises through everything we built. There is room down here for one more thing. I did not build it. I think it is meant to be yours.", test: open("core") },
 ];
 
 export const logNo = (i: number) => String(i + 1).padStart(3, "0");
