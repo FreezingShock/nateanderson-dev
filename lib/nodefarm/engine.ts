@@ -85,7 +85,7 @@ export const TUNE = {
     mountKeep: 1, // fraction of a mounted material's producers kept through Ascend
     apSoft: 100, // past this many AP, each extra AP counts less toward the global bonus (AP^apSoftPow), so Ascends cannot run away
     apSoftPow: 0.5,
-    rankCost: 2.2, // each rank of a ranked tree node costs this much more than the last
+    rankCost: 1.6, // each rank of a ranked tree node costs this much more than the last
     coldStartSecs: 90, // Cold start: how long the Bytes boost lasts after each Reboot
     longHaulMins: 4, // Long haul: Bytes gain +100% for every this many minutes since the last Reboot
     longHaulMax: 8, // ...up to this many extra
@@ -216,7 +216,7 @@ const SLOTS: [number, number, number[]][] = [
 const SLOT_COST = [4, 10, 12, 24, 24, 48, 48, 140];
 // Past each keystone (the deeper tree): 8 and 9 are a fork pair, 10 is the ranked tip that opens from either fork.
 const OUTER: [number, number, number[]][] = [[11.5, -1.3, [7]], [11.5, 1.3, [7]], [13.4, 0, [8, 9]]];
-const OUTER_COST = [400, 400, 300];
+const OUTER_COST = [400, 400, 200];
 type Row = [slot: number, id: string, kind: TreeKind, name: string, blurb: string, flavor: string, fx: TreeFx, cost?: number];
 const ALL_MATS = (v: number) => Object.fromEntries(MATS.map((m) => [m, v])) as Record<MatId, number>;
 const ARMS: Record<Branch, Row[]> = {
