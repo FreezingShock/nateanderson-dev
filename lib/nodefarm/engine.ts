@@ -692,8 +692,6 @@ export interface State {
     ch?: import("./stress").ChState;
     /** Zone events (lib/nodefarm/zoneevents.ts): the running event, the timer to the next one and a count. Reset on Ascend. Created on first use. */
     ze?: ZoneEvState;
-    /** Touch layer: caches waiting in zone art and the core vent (rules in lib/nodefarm/poke.ts, repaired there so old saves load) */
-    poke?: PokeState;
     /** Which button tiers were ever pressed, per stat, as a bit mask. Kept through Ascend; arcs clear when every tier of every zone in them is set. */
     seen?: Partial<Record<ButtonStat, number>>;
     // lifetime counters (survive Ascend)
@@ -754,19 +752,6 @@ export interface AutoState {
     rebuild?: boolean;
     seenHand?: number;
     restPerks?: boolean;
-}
-/** Touch layer (lib/nodefarm/poke.ts): caches that wait in a zone's art until tapped, and the core vent's charge. */
-export interface PokeState {
-    /** caches waiting: id, zone, and where along the scene they sit (0..1) */
-    c: { id: number; z: StatId; x: number }[];
-    /** online seconds until the next cache */
-    next: number;
-    /** vent charge in seconds (full at POKE_TUNE.ventCharge) */
-    vent: number;
-    /** lifetime counts: caches opened, vents, caches spawned (also the id counter) */
-    got: number;
-    vents: number;
-    n: number;
 }
 /** Called at the end of every tick (and so also through time away). Scripts add themselves here. */
 export const TICK_HOOKS: ((s: State, dt: number) => void)[] = [];
