@@ -9,7 +9,12 @@
 .nf-bd[data-soft] .nf-bd-w i { image-rendering: auto; }
 .nf-bd-l[data-l="0"] .nf-bd-d { background-image: url(/naos/nodefarm/tree-bg-0.webp); }
 .nf-bd-l[data-l="1"] .nf-bd-d { background-image: url(/naos/nodefarm/tree-bg-1.webp); animation: nfBdDrift 300s linear infinite; will-change: transform; }
-.nf-bd-l[data-l="2"] .nf-bd-d { background-image: url(/naos/nodefarm/tree-bg-2.webp); opacity: .7; }
+.nf-bd-l[data-l="2"] .nf-bd-d { background-image: url(/naos/nodefarm/tree-bg-2.webp); opacity: .8; animation: nfBdSway 17s ease-in-out infinite alternate; will-change: transform; }
+/* the near layer sways in a slow loop (the layer has 40 px of slack on each side for it) */
+@keyframes nfBdSway { 0% { transform: translate(-28px, -14px); } 50% { transform: translate(10px, 18px); } 100% { transform: translate(28px, -8px); } }
+/* dust in front of the nodes (TreeDust, rendered after the world): faster than the nodes, drifting, see-through */
+.nf-dust { position: absolute; inset: 0; z-index: 2; overflow: hidden; pointer-events: none; contain: strict; }
+.nf-dust-l .nf-bd-d { background-image: url(/naos/nodefarm/tree-dust.webp); opacity: .55; animation: nfBdDrift 140s linear infinite reverse; will-change: transform; }
 /* the star layer drifts sideways by exactly one tile per loop, so it never seams; the far layers hold still */
 @keyframes nfBdDrift { from { transform: translateX(0); } to { transform: translateX(calc(var(--t) * -1)); } }
 
@@ -46,5 +51,6 @@
 
 @media (prefers-reduced-motion: reduce) {
     .nf-bd-l .nf-bd-d, .nf-bd-core { animation: none; }
+    .nf-dust { display: none; }
     .nf-ts[data-st="owned"] { animation: none; }
 }

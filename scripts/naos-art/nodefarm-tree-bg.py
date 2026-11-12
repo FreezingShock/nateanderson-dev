@@ -7,6 +7,7 @@ Run:  python3 scripts/naos-art/nodefarm-tree-bg.py            (everything)
 Output (public/naos/nodefarm/):
   tree-bg-0..2.{png,webp}   far to near. 512 x 512 art px, each tiles seamlessly on both axes, drawn 2 css px per pixel.
                             0 is opaque (deep space with the nebula baked in); 1 (stars) and 2 (near motes) are transparent.
+  tree-dust.{png,webp}      the nearest layer, drawn in front of the nodes (TreeDust). Transparent, very sparse.
   tree-core.{png,webp}      the halo behind the core, 400 x 400 art px, transparent, drawn in world space.
   tree-sec-<branch>.{png,webp}  one 256 x 256 transparent nebula per section, drawn in world space behind that arm.
 Palette PNGs (index 0 is transparent on 1 to 3 and the world pieces). Everything is procedural: Bayer 4 x 4 dither over
@@ -340,6 +341,39 @@ def sec_piece(name, col, seed):
     save(idx, pal, f"tree-sec-{name}")
 
 
+def dust():
+    """The nearest layer, drawn in front of the nodes: a few big out-of-focus dither discs and short streaks. Very sparse
+    and see-through, so it passes over the tree without hiding a node for long."""
+    rng = np.random.default_rng(71)
+    pal = [(0, 0, 0), (200, 214, 240), (120, 136, 170)]
+    for _, c in SECS:
+        pal += [mix(BASE, c, 0.7)]
+    idx = np.zeros((T, T), np.uint8)
+    b = bayer(T, T)
+    yy, xx = np.indices((T, T))
+    placed = []
+    for _ in range(5):
+        for _try in range(60):
+            cx, cy = (int(v) for v in rng.integers(0, T, 2))
+            if all(min(abs(cx - px), T - abs(cx - px)) ** 2 + min(abs(cy - py), T - abs(cy - py)) ** 2 > 180 ** 2 for px, py in placed):
+                break
+        placed.append((cx, cy))
+        r = int(rng.integers(26, 48))
+        col = 3 + int(rng.integers(0, len(SECS))) if rng.random() < 0.6 else 2
+        dx = np.minimum(abs(xx - cx), T - abs(xx - cx))
+        dy = np.minimum(abs(yy - cy), T - abs(yy - cy))
+        dist = np.sqrt(dx * dx + dy * dy) / r
+        # a bokeh disc: thin in the middle, a brighter rim, all through a sparse dither
+        dens = np.where(dist < 1, 0.1 + 0.22 * dist ** 3, 0)
+        idx[(dens > b) & (dist < 1)] = col
+    for _ in range(16):
+        x, y = (int(v) for v in rng.integers(0, T, 2))
+        L = int(rng.integers(3, 9))
+        for k in range(L):
+            wrap_put(idx, x + k, y + k // 3, 1 if k < L - 2 else 2)
+    save(idx, pal, "tree-dust")
+
+
 def merge_far():
     """Bake the nebula into the deep-space tile: one opaque far layer instead of two (each full-screen layer costs a
     composite per frame while panning)."""
@@ -366,6 +400,7 @@ def main(args):
         merge_far()
         layer2()
         layer3()
+        dust()
     if "core" in want:
         core_halo()
     if "secs" in want:
