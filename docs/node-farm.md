@@ -171,7 +171,7 @@ Code: pure rules and snapshots in `lib/nodefarm/admin.ts`, panel in `components/
 - Import asks twice when the current save has progress, and a backup slot (`nf-backup-v1`, one save) is written before an import, a wipe or a restore; Menu has Restore backup. A save that cannot be read is copied to `nf-corrupt-v1` instead of being overwritten.
 - A second tab on the same save is detected through the `storage` event: that tab stops saving and shows a notice with Load latest save / Save from here.
 - Menu: Download file and Open file (plain-text save code), Volume (the site-wide master volume), Numbers (short, scientific, engineering; `nf-numfmt-v1`, `setNumFmt` in the engine).
-- Keys (only on the Node Farm page, off while typing, with a modifier, over another panel or during an event): M Map, O Goals, L Records, A Ascend, S Menu, T Tree, B Buy max.
+- Keys (only on the Node Farm page, off while typing, with a modifier, over another panel or during an event): M Map, O Goals, L Records, A Ascend, S Menu, T Tree, B Buy max, R Lab, G Show me (the next step), P press the glowing button of the next step (hold to keep buying, never repeats a Reboot; when there is nothing to press it acts like Show me).
 - The tab title shows `<rate>/s · Node Farm` while the tab is in the background.
 - Menu "Calm motion" (`nf-calm-v1`) forces reduced motion on top of the OS setting: the `reduced` prop everywhere plus `body.nf-calm` CSS. Menu also shows when the game last saved.
 
@@ -228,6 +228,14 @@ Checks: /mnt/project-files/portfolio/node-farm-refresh/ (`checks.mjs` interactio
 After regenerating any Node Farm art run `node scripts/nodefarm/stamp-art.mjs` (it rewrites the stamps in app/camino/*.css
 and lib/nodefarm/art-version.ts; build code URLs with `nfArt(file)`). `npm run build` runs it with `--check` first and
 fails if a stamp is stale or if the icon/tier sheets don't match ORDER/TIER_ROWS in components/nodefarm/icon.tsx and the CSS sizes.
+
+## First 30 minutes audit (2026-11-12, QOL pass)
+- Scripts in /mnt/project-files/portfolio/node-farm-first30/ (`play.mjs` fresh-save bot on a fake clock, `checks.mjs` for the items below).
+- HUD chips for Reboots, Multipliers and AP now carry RBT / MUL / AP labels and hover titles (a new player saw two unlabelled numbers).
+- The guided button always shows its time-to-afford (before, only with the Forecast node), so the glowing button says how long to wait.
+- A background tab that has its next step ready shows "● ready" in the tab title.
+- Coming back to a save (20+ presses, no hash) scrolls the board under the site bar once; a first visit still starts on the intro.
+- Keys G and P, listed in Menu.
 
 ## Balance audit (2026-11-12)
 Whole game simulated together (17 zones, 60-node tree, Exploit Lab) with `NF_ASC_GAP=1`. Two runaways found and fixed:
