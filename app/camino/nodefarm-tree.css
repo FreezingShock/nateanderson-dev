@@ -3,22 +3,9 @@
    square beads; owned paths carry packets. The card is anchored next to the node in screen space.
    Art: scripts/naos-art/nodefarm-tree.py -> public/naos/nodefarm/tree-nodes (32 px cells, 8 per row) and tree-bg. */
 body > .nf-tm-host { position: fixed; inset: 0; z-index: 1000; }
-.ctos .nf-tm { --fc: transparent; position: fixed; inset: 0; z-index: 1000; display: block; overflow: hidden; background: #04060a; color: var(--cm-fg); font-family: var(--cm-mono); animation: nfIn .18s ease both; overscroll-behavior: contain; }
+.ctos .nf-tm { position: fixed; inset: 0; z-index: 1000; display: block; overflow: hidden; background: #04060a; color: var(--cm-fg); font-family: var(--cm-mono); animation: nfIn .18s ease both; overscroll-behavior: contain; }
 
-/* ---- backdrop: three parallax layers moved by the camera (transform only), plus a vignette with a section tint */
-.ctos .nf-tm-bg { position: absolute; inset: 0; overflow: hidden; pointer-events: none; background: radial-gradient(ellipse at 50% 50%, #0d1724 0, #05080d 70%); }
-.ctos .nf-tm-bgl { position: absolute; inset: -900px; will-change: transform; }
-.ctos .nf-tm-bgl[data-l="0"] { background: url(/naos/nodefarm/tree-bg.webp) 0 0 / 1280px 720px; image-rendering: pixelated; opacity: .42; }
-.ctos .nf-tm-bgl[data-l="1"] {
-    background:
-        radial-gradient(circle, #9fd8ff 0 1px, transparent 1.5px) 0 0 / 61px 59px,
-        radial-gradient(circle, #ffffff 0 1px, transparent 1.5px) 23px 31px / 97px 89px,
-        radial-gradient(circle, #ffd27a 0 1px, transparent 1.5px) 40px 11px / 131px 127px;
-    opacity: .5;
-}
-.ctos .nf-tm-bgl[data-l="2"] { opacity: .8; }
-.ctos .nf-tm-bgl[data-l="2"]::before { content: ""; position: absolute; inset: 0; background: radial-gradient(circle, #e6f7ff 0 1.2px, transparent 1.8px) 9px 14px / 173px 181px, radial-gradient(circle, #ffffff 0 1.6px, transparent 2.2px) 88px 120px / 241px 229px; }
-.ctos .nf-tm-bgv { position: absolute; inset: 0; background: radial-gradient(ellipse at 50% 55%, color-mix(in srgb, var(--fc) 14%, transparent) 0, transparent 60%), radial-gradient(ellipse at center, transparent 50%, #000c 100%), repeating-linear-gradient(0deg, transparent 0 2px, #0003 2px 3px); transition: background .4s; }
+/* the backdrop (parallax layers, core halo, section nebulae) is components/nodefarm/tree-backdrop.tsx, styled in nodefarm-tree-art.css */
 
 /* ---- top bar */
 .ctos .nf-tm-bar { position: absolute; z-index: 6; left: 0; right: 0; top: 0; display: flex; align-items: center; gap: 10px; height: 44px; padding-left: 16px; background: var(--cm-ctos-block); color: var(--cm-ctos-ink); font: 700 var(--cm-ctos-t-micro)/1 var(--cm-mono); letter-spacing: .14em; text-transform: uppercase; }
@@ -43,7 +30,7 @@ body > .nf-tm-host { position: fixed; inset: 0; z-index: 1000; }
 .ctos .nf-tm-view { position: absolute; inset: 44px 0 0 0; overflow: hidden; touch-action: none; cursor: grab; user-select: none; -webkit-user-select: none; }
 .ctos .nf-tm-view:active { cursor: grabbing; }
 .ctos .nf-tm-view:focus-visible { outline: 2px solid var(--cm-cyan); outline-offset: -4px; }
-.ctos .nf-tm-world { position: absolute; left: 0; top: 0; width: 0; height: 0; transform-origin: 0 0; will-change: transform; }
+.ctos .nf-tm-world { position: absolute; z-index: 1; left: 0; top: 0; width: 0; height: 0; transform-origin: 0 0; will-change: transform; }
 
 /* ---- links: a dark bed under a row of square beads; owned paths are bright and carry packets outward */
 .ctos .nf-tm-links { position: absolute; left: 0; top: 0; overflow: visible; pointer-events: none; }
@@ -54,11 +41,11 @@ body > .nf-tm-host { position: fixed; inset: 0; z-index: 1000; }
 .ctos .nf-tl { stroke-linecap: square; stroke-dasharray: 0 14; transition: opacity .3s, stroke .3s; }
 .ctos .nf-tl[data-st="off"] { stroke: #8fa2b8; stroke-width: 4; opacity: .28; }
 .ctos .nf-tl[data-st="edge"] { stroke: var(--c); stroke-width: 5; opacity: .7; animation: nfBead 1.4s linear infinite; }
-.ctos .nf-tl[data-st="on"] { stroke: var(--c); stroke-width: 7; filter: drop-shadow(0 0 4px var(--c)); }
+.ctos .nf-tl[data-st="on"] { stroke: var(--c); stroke-width: 7; }
 .ctos .nf-tl[data-fog] { opacity: .14; animation: none; }
 .ctos .nf-tm[data-focus] .nf-tl:not([data-near]) { opacity: .12; }
 .ctos .nf-tm[data-focus] .nf-tl[data-near] { opacity: 1; }
-.ctos .nf-tl-pk { fill: none; stroke: #fff; stroke-width: 6; stroke-linecap: square; stroke-dasharray: 6 8 6 112; filter: drop-shadow(0 0 5px var(--c)); animation: nfPacket 1.9s linear infinite; }
+.ctos .nf-tl-pk { fill: none; stroke: #fff; stroke-width: 6; stroke-linecap: square; stroke-dasharray: 6 8 6 112; animation: nfPacket 1.9s linear infinite; }
 .ctos .nf-tm[data-focus] .nf-tl-pk { opacity: .35; }
 @keyframes nfBead { to { stroke-dashoffset: -14; } }
 @keyframes nfPacket { from { stroke-dashoffset: 0; } to { stroke-dashoffset: -132; } }
@@ -89,6 +76,9 @@ body > .nf-tm-host { position: fixed; inset: 0; z-index: 1000; }
 /* dither grain on the face */
 .ctos .nf-tn-face::before { content: ""; position: absolute; inset: 0; background: radial-gradient(circle, #ffffff10 0 .8px, transparent 1px) 0 0 / 4px 4px; pointer-events: none; }
 .ctos .nf-tn-ic { position: relative; display: block; width: calc(var(--sz) * .6); height: calc(var(--sz) * .6); background: url(/naos/nodefarm/tree-nodes.webp) calc(var(--col) * var(--sz) * -.6) calc(var(--row) * var(--sz) * -.6) / calc(var(--sz) * .6 * 8) auto no-repeat; image-rendering: pixelated; transition: opacity .25s, filter .25s; }
+.ctos .nf-tn-spr { position: relative; }
+.ctos .nf-tn[data-st="open"] .nf-tn-spr { opacity: .8; filter: saturate(.6); }
+.ctos .nf-tn[data-vis="fog"] .nf-tn-spr { opacity: .55; }
 .ctos .nf-tn-q { position: relative; font: 700 calc(var(--sz) * .36)/1 var(--cm-mono); font-style: normal; color: #5b6878; text-shadow: 2px 2px 0 #000; }
 
 /* sizes and weight per kind */

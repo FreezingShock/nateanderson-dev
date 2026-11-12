@@ -1,7 +1,10 @@
 "use client";
 
-import { forwardRef, useCallback, useEffect, useImperativeHandle, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type KeyboardEvent as RKeyboardEvent, type PointerEvent as RPointerEvent } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type KeyboardEvent as RKeyboardEvent, type PointerEvent as RPointerEvent } from "react";
 import { createPortal } from "react-dom";
+import { TreeBackdrop, type TreeBackdropHandle } from "./tree-backdrop";
+import { TreeSprite, type SpriteState } from "./tree-sprite";
+import { SPRITE_CELLS } from "@/lib/nodefarm/tree-sprites";
 import * as Engine from "@/lib/nodefarm/engine";
 import { BRANCHES, TREE, fmt, hasNode, nodeOpen, treeFx, treeNode, type State, type TreeNode } from "@/lib/nodefarm/engine";
 
@@ -24,7 +27,17 @@ const easeInOut = (t: number) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t 
 
 type Vis = "shown" | "fog" | "hidden";
 type NodeState = "owned" | "ready" | "open" | "locked";
-type Extra = TreeNode & { flavor?: string };
+type Extra = TreeNode & { flavor?: string; sprite?: string };
+
+/** The node's icon: the art thread's sprite when the sheet has this key, else the older shared sheet. */
+function NodeIcon({ n, st, fog }: { n: TreeNode | null; st: NodeState; fog: boolean }) {
+    const key = n ? (n as Extra).sprite ?? n.id : "core";
+    if (SPRITE_CELLS[key]) {
+        const ss: SpriteState = fog ? "hidden" : st === "owned" ? "owned" : st === "locked" ? "locked" : "open";
+        return <TreeSprite sprite={key} state={ss} className="nf-tn-spr" />;
+    }
+    return fog ? <i className="nf-tn-q">?</i> : <i className="nf-tn-ic" />;
+}
 
 // The upgrades data may ship its own reveal rule (`nodeVis`); until then, graph distance from what you own decides.
 const engineVis = (Engine as unknown as { nodeVis?: (s: State, n: TreeNode) => Vis }).nodeVis;
@@ -111,49 +124,13 @@ function ScrambleName({ text, reduced }: { text: string; reduced: boolean }) {
     return <span ref={el} aria-hidden="true">{text}</span>;
 }
 
-/* ---- backdrop: parallax layers that follow the camera. The art thread's TreeBackdrop uses the same handle. */
-export interface BackdropHandle {
-    move: (x: number, y: number, k: number) => void;
-    resize: (w: number, h: number) => void;
-    focus?: (branch: string | null) => void;
-}
-const DEPTHS = [0.06, 0.18, 0.4];
-const LocalBackdrop = forwardRef<BackdropHandle, { reduced: boolean }>(function LocalBackdrop({ reduced }, ref) {
-    const layers = useRef<(HTMLDivElement | null)[]>([]);
-    const size = useRef({ w: 0, h: 0 });
-    useImperativeHandle(ref, () => ({
-        move(x, y, k) {
-            const { w, h } = size.current;
-            layers.current.forEach((el, i) => {
-                if (!el) return;
-                const d = reduced ? 0 : DEPTHS[i];
-                // offset of the core from the screen centre, scaled down by depth; zoom nudges near layers a little
-                const ox = (x - w / 2) * d, oy = (y - h / 2) * d;
-                const s = 1 + (k - 1) * d * 0.5;
-                el.style.transform = `translate3d(${ox.toFixed(1)}px, ${oy.toFixed(1)}px, 0) scale(${s.toFixed(3)})`;
-            });
-        },
-        resize(w, h) { size.current = { w, h }; },
-        focus(b) {
-            const root = layers.current[0]?.parentElement;
-            if (root) root.style.setProperty("--fc", b ? BCOL[b] ?? "transparent" : "transparent");
-        },
-    }), [reduced]);
-    return (
-        <div className="nf-tm-bg" aria-hidden="true">
-            {DEPTHS.map((_, i) => <div key={i} className="nf-tm-bgl" data-l={i} ref={(el) => { layers.current[i] = el; }} />)}
-            <div className="nf-tm-bgv" />
-        </div>
-    );
-});
-
 export function TreeMenu({ s, reduced, onBuy, onRespec, onClose }: { s: State; reduced: boolean; onBuy: (id: string) => void; onRespec: () => number; onClose: () => void }) {
     const root = useRef<HTMLDivElement>(null);
     const view = useRef<HTMLDivElement>(null);
     const world = useRef<HTMLDivElement>(null);
     const card = useRef<HTMLElement>(null);
     const lead = useRef<HTMLSpanElement>(null);
-    const bd = useRef<BackdropHandle>(null);
+    const bd = useRef<TreeBackdropHandle>(null);
     /** camera: the world point at the centre of the view (px at zoom 1, core = 0,0) and the zoom */
     const cam = useRef({ cx: 0, cy: 0, k: 1 });
     const glide = useRef(0);
@@ -386,7 +363,7 @@ export function TreeMenu({ s, reduced, onBuy, onRespec, onClose }: { s: State; r
     const shown = hov ?? (sel || null);
     cardFor.current = shown;
     useLayoutEffect(() => { measure(); placeCard(); });
-    useEffect(() => { bd.current?.focus?.(shown && shown !== "core" ? treeNode(shown).branch : null); }, [shown]);
+    useEffect(() => { bd.current?.focus(shown && shown !== "core" ? treeNode(shown).branch : null); }, [shown]);
 
     // ---- pointers: one finger or the mouse pans, two fingers pinch
     const pos = (e: RPointerEvent) => {
@@ -569,7 +546,6 @@ export function TreeMenu({ s, reduced, onBuy, onRespec, onClose }: { s: State; r
     return createPortal(
         <div className="ctos nf-tm-host">
         <div className="nf-tm" ref={root} role="dialog" aria-modal="true" aria-label="Prestige tree" data-lod="near" data-focus={sel ? "" : undefined} onKeyDown={keys}>
-            <LocalBackdrop ref={bd} reduced={reduced} />
             <header className="nf-tm-bar">
                 <span className="nf-tm-t">naOS // node.farm // prestige tree</span>
                 <span className="nf-tm-ap" aria-live="polite"><b>{fmt(s.ap)}</b> AP<small>{owned}/{TREE.length} nodes{ready ? ` // ${ready} ready` : ""}</small></span>
@@ -591,6 +567,7 @@ export function TreeMenu({ s, reduced, onBuy, onRespec, onClose }: { s: State; r
                 onClickCapture={(e) => { if (gest.current.suppress) { e.stopPropagation(); e.preventDefault(); } }}
                 onClick={(e) => { if (e.target === view.current || e.target === world.current) { setSel(""); setHov(null); } }}
             >
+                <TreeBackdrop ref={bd} unit={U} />
                 <div className="nf-tm-world" ref={world}>
                     <svg className="nf-tm-links" width={2} height={2} aria-hidden="true">
                         {links.map((l) => <line key={"b" + l.key} className="nf-tl-bed" x1={l.ax} y1={l.ay} x2={l.bx} y2={l.by} data-st={l.st} data-fog={l.fog ? "" : undefined} style={{ ["--c" as string]: l.col } as CSSProperties} />)}
@@ -621,7 +598,7 @@ export function TreeMenu({ s, reduced, onBuy, onRespec, onClose }: { s: State; r
                     >
                         <span className="nf-tn-shadow" />
                         <span className="nf-tn-halo" />
-                        <span className="nf-tn-body"><span className="nf-tn-face"><i className="nf-tn-ic" /></span></span>
+                        <span className="nf-tn-body"><span className="nf-tn-face"><NodeIcon n={null} st="owned" fog={false} /></span></span>
                         <span className="nf-tn-l">core</span>
                     </button>
                     {TREE.map((n) => {
@@ -654,7 +631,7 @@ export function TreeMenu({ s, reduced, onBuy, onRespec, onClose }: { s: State; r
                                 <span className="nf-tn-shadow" />
                                 {n.kind === "keystone" && <span className="nf-tn-halo" />}
                                 <span className="nf-tn-body">
-                                    <span className="nf-tn-face">{fog ? <i className="nf-tn-q">?</i> : <i className="nf-tn-ic" />}</span>
+                                    <span className="nf-tn-face"><NodeIcon n={n} st={st} fog={fog} /></span>
                                 </span>
                                 <span className="nf-tn-l">{fog ? "encrypted" : n.name}</span>
                                 {!fog && st !== "owned" && <span className="nf-tn-cost">{n.cost} AP</span>}
