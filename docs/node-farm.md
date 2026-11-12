@@ -301,7 +301,8 @@ Every zone keeps its six buttons and has one rig: a meter, one rule, and a level
 - New zones (arc past Origin): add a `RIGS` entry and a case in `muls()` and/or `step()`.
 - Admin section 10 "Zone rigs": max every rig, fill meters, clear. `nf admin max` maxes rigs too.
 - Sim: rigs join unless `NF_NORIGS=1` (`NF_RIGTUNE` merges over `RIG_TUNE`); the bot buys any level it can pay four times over.
-  The first numbers took the whole tree from 39.2 h to 27.4 h, so most boosts were halved: now see the PR for the run.
+  The first numbers took the whole tree from 39.2 h to 27.4 h, so most boosts were halved. Now (Drone bot, 2026-11-12): first Ascend
+  2.84 h -> 2.60 h, Chrono 14.0 -> 12.5 h, Nebula 26.7 -> 24.9 h, Origin 37.8 -> 35.2 h, whole tree 39.2 -> 36.4 h (about 7% faster).
 ## Zone events
 About every 8 to 14 minutes of play (first one after 8 minutes of life), one unlocked zone gets a short event. Rules and the roll are in `lib/nodefarm/zoneevents.ts`; every number is `ZE_TUNE` in `engine.ts` (the engine reads it in `derive` and `button` through `zeOut` and `zeCost`). State is `s.ze` (optional, so old saves load): the running event, a timer, counts. Ascend ends a running event.
 
