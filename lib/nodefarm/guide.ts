@@ -2,7 +2,7 @@
 // engine (no React), so every number comes from `TUNE` and the engine's own `button`/`derive` and follows any rebalance.
 import {
     GOALS, MATS, PERKS, TIERS, TREE, TUNE, REBOOT_UNLOCK,
-    LAB, PAYLOADS, intelRate, amount, apOnAscend, button, canAfford, canAscend, derive, droneBoost, droneCost, droneMax, droneRate, dronesOpen, originAp, paradoxOc, singularityAll, fmt, fmtTime, goalDone, hasNode, isUnlocked, nodeOpen, statDef,
+    ARC_MATS, LAB, PAYLOADS, intelRate, amount, apOnAscend, ascendNeed, unlockNeed, FW, fwNodeOpen, keysOnHandover, treeComplete, button, canAfford, canAscend, derive, droneBoost, droneCost, droneMax, droneRate, dronesOpen, postOf, postX, zoneRank, ROMAN, originAp, paradoxOc, bloomKeys, coreAll, singularityAll, fmt, fmtTime, goalDone, hasNode, isUnlocked, nodeOpen, statDef,
     type ButtonStat, type Derived, type MatId, type State, type StatId,
 } from "./engine";
 import { LORE } from "./lore";
@@ -12,7 +12,7 @@ export interface Target {
     stat?: ButtonStat;
     tier?: number;
     drone?: number;
-    win?: "ascend" | "goals" | "tree" | "lab";
+    win?: "ascend" | "goals" | "tree" | "lab" | "handover";
     /** scroll to the Exploit Lab zone on the board */
     lab?: boolean;
 }
@@ -82,12 +82,14 @@ export function unlockInfo(s: State, id: StatId): { label: string; cur: number; 
         const need = button(s, "reboot", 0).cost;
         return { label: "Run your first Reboot", cur: s.mult, need, unit: "MUL", frac: isUnlocked(s, "reboot") ? fracOf(s.mult, need) : 0 };
     }
+    // the Overgrowth and Descent arcs stay shut until the first Handover
+    if (ARC_MATS.includes(id as MatId) && !(s.hand?.count > 0)) return { label: "Hand the node over once", cur: 0, need: 1, unit: "HANDOVER", frac: 0 };
     const i = MATS.indexOf(id as MatId);
     const below = MATS[i - 1] as MatId | undefined;
     if (!below) return { label: "", cur: 0, need: 1, unit: "", frac: 0 };
     // after your first Ascend a zone opens at a quarter of the usual amount (same rule as isUnlocked)
     const quarter = s.life.ascends > 0 && s.life.reboots >= TUNE.unlockAt.copper;
-    const need = TUNE.unlockAt[id] / (quarter ? 4 : 1);
+    const need = unlockNeed(s, id) / (quarter ? 4 : 1);
     return { label: `Hold ${fmt(need)} ${statDef(below).name}`, cur: amount(s, below), need, unit: statDef(below).short, frac: fracOf(amount(s, below), need) };
 }
 
@@ -127,10 +129,19 @@ export function nextStep(s: State, d: Derived): Step {
         return mk({ id: "spend-ap", title: `Spend ${fmt(s.ap)} Ascension Points`, why: "Perks and tree nodes are permanent and survive every Ascend. Open the tree to pick one.", cur: 1, need: 1, unit: "AP", target: { win: TREE.some((n) => !hasNode(s, n.id) && nodeOpen(s, n) && s.ap >= n.cost) ? "tree" : "ascend" } });
     }
 
+    // ---- Handover (the reset past Ascend): flash Firmware with Keys you hold, and hand over once the tree is whole
+    if (s.hand.keys > 0 && FW.some((n) => !s.hand.fw.includes(n.id) && fwNodeOpen(s, n) && s.hand.keys >= n.cost)) {
+        return mk({ id: "flash-fw", kicker: "HANDOVER", title: `Flash Firmware with ${fmt(s.hand.keys)} Keys`, why: "Firmware is kept through every Handover and changes how every run starts and what survives.", cur: 1, need: 1, unit: "KEY", target: { win: "handover" } });
+    }
+    const hk = keysOnHandover(s);
+    if (hk > 0 && (treeComplete(s) || s.hand.count > 0)) {
+        return mk({ id: "handover", kicker: "NODE ZERO", title: `Hand over for +${fmt(hk)} Keys`, why: "Pass the node to the next operator. It wipes AP, perks and the tree too, and Keys buy Firmware that changes every later run.", cur: s.prod.origin, need: 1, unit: "OR", target: { win: "handover" } });
+    }
+
     // ---- the Exploit Lab, once, when it opens: research a recipe, then compile and deploy it
     if (s.lab.seen && s.lab.nodes.length === 0) {
         const need = Math.min(...LAB.filter((n) => n.links.includes("core")).map((n) => n.cost));
-        if (s.lab.intel >= need * 0.5) return mk({ id: "lab-research", kicker: "EXPLOIT LAB", title: "Research your first recipe", why: "Intel runs alongside Bytes. Open the research tree and pick Packet sniffer or Rootkit.", cur: s.lab.intel, need, unit: "IN", eta: s.lab.intel >= need ? null : (need - s.lab.intel) / Math.max(1e-9, intelRate(s, d.bytesPerSec)), target: { win: "lab" } });
+        if (s.lab.intel >= need * 0.5) return mk({ id: "lab-research", kicker: "EXPLOIT LAB", title: "Research your first payload", why: "Intel runs alongside Bytes. Open the research tree and pick Packet sniffer or Rootkit.", cur: s.lab.intel, need, unit: "IN", eta: s.lab.intel >= need ? null : (need - s.lab.intel) / Math.max(1e-9, intelRate(s, d.bytesPerSec)), target: { win: "lab" } });
     }
     if (s.lab.nodes.length > 0 && s.life.compiled === 0 && s.lab.queue.length === 0 && PAYLOADS.some((p) => s.lab.nodes.includes(`rx_${p.id}`))) {
         return mk({ id: "lab-compile", kicker: "EXPLOIT LAB", title: "Compile your first payload", why: "Press Compile in the Lab. When it lands in stock, press Deploy for the buff.", cur: 0, need: 1, unit: "", eta: null, target: { lab: true } });
@@ -144,14 +155,19 @@ export function nextStep(s: State, d: Derived): Step {
             // Aether is online: Drones are cheap, then Ascend is the next big step
             const drones = s.drones.reduce((a, b) => a + b, 0);
             if (dronesOpen(s) && drones === 0 && s.aether >= droneCost(s, 0)) {
-                return mk({ id: "first-drone", title: "Build a Drone", why: "Drones press buttons for you, even while you are away. Open the Drone bay and build a Probe.", cur: s.aether, need: droneCost(s, 0), unit: "AE", pay: "aether", target: { drone: 0 } });
+                return mk({ id: "first-drone", title: "Build a Drone", why: "Drones press buttons for you, even while you are away. Open the Drone hangar and build a Probe.", cur: s.aether, need: droneCost(s, 0), unit: "AE", pay: "aether", target: { drone: 0 } });
+            }
+            // once, after the first Drone: post it somewhere so the hangar's mastery and Cores start
+            if (drones > 0 && s.dr.post.every((p) => !p) && zoneRank(s, "mult") === 0 && !s.dr.nodes.length && !Object.keys(s.dr.svc).length) {
+                const k = s.drones.findIndex((x) => x > 0);
+                return mk({ id: "post-drone", kicker: "DRONE HANGAR", title: "Post a Drone to a zone", why: "Pick a zone in a Drone's Posting menu. It presses only there, faster, and earns that zone permanent mastery and a Core per rank.", cur: 0, need: 1, unit: "", eta: null, target: { drone: k } });
             }
             if (training) {
                 if (canAscend(s)) {
                     const gain = apOnAscend(s);
-                    return mk({ id: "ascend", title: `Ascend for +${fmt(gain)} AP`, why: "Ascending wipes this run but keeps goals, perks, the tree and lab research, and every AP boosts everything for good.", cur: s.aether, need: TUNE.ascendAether, unit: "AE", target: { win: "ascend" } });
+                    return mk({ id: "ascend", title: `Ascend for +${fmt(gain)} AP`, why: "Ascending wipes this run but keeps goals, perks, the tree and lab research, and every AP boosts everything for good.", cur: s.aether, need: ascendNeed(s), unit: "AE", target: { win: "ascend" } });
                 }
-                return mk({ id: "reach-ascend", title: "Reach Ascend", why: `Hold ${fmt(TUNE.ascendAether)} Aether to Ascend: a reset that gives permanent power.`, cur: s.aether, need: TUNE.ascendAether, unit: "AE", pay: "aether", target: aim(s, "aether") });
+                return mk({ id: "reach-ascend", title: "Reach Ascend", why: `Hold ${fmt(ascendNeed(s))} Aether to Ascend: a reset that gives permanent power.`, cur: s.aether, need: ascendNeed(s), unit: "AE", pay: "aether", target: aim(s, "aether") });
             }
         }
         if (!isUnlocked(s, m)) {
@@ -168,7 +184,7 @@ export function nextStep(s: State, d: Derived): Step {
 
     // ---- chain is running: Ascend if it pays, otherwise the nearest goal
     if (canAscend(s)) {
-        return mk({ id: "ascend", title: `Ascend for +${fmt(apOnAscend(s))} AP`, why: "A fresh run with more permanent power. Spend the AP on perks and the tree.", cur: s.aether, need: TUNE.ascendAether, unit: "AE", target: { win: "ascend" } });
+        return mk({ id: "ascend", title: `Ascend for +${fmt(apOnAscend(s))} AP`, why: "A fresh run with more permanent power. Spend the AP on perks and the tree.", cur: s.aether, need: ascendNeed(s), unit: "AE", target: { win: "ascend" } });
     }
     let best: { g: (typeof GOALS)[number]; f: number } | null = null;
     for (const g of GOALS) {
@@ -207,6 +223,14 @@ export function feedLine(id: StatId, s: State, d: Derived): string {
         case "engrams": return `Singularity ×${fmt(b.egSn)}, Drones ×${fmt(droneBoost(s))}`;
         case "paradox": return `Engrams ×${fmt(b.pxEg)}, Overclock ×${fmt(paradoxOc(s))}`;
         case "origin": return `Paradox ×${fmt(b.orPx)}, AP on Ascend ×${fmt(originAp(s))}`;
+        case "spores": return `Origin ×${fmt(b.spOr)}`;
+        case "mycelium": return `Spores ×${fmt(b.mySp)}`;
+        case "pollen": return `Mycelium ×${fmt(b.poMy)}`;
+        case "bloom": return `Pollen ×${fmt(b.blPo)}, Keys on Handover ×${fmt(bloomKeys(s))}`;
+        case "basalt": return `Bloom ×${fmt(b.baBl)}`;
+        case "magma": return `Basalt ×${fmt(b.mgBa)}`;
+        case "geodes": return `Magma ×${fmt(b.geMg)}`;
+        case "core": return `Geodes ×${fmt(b.coGe)}, everything ×${fmt(coreAll(s))}`;
     }
 }
 
@@ -264,7 +288,7 @@ export function buttonTip(s: State, stat: ButtonStat, tier: number): TipInfo {
         title: LORE[stat].tiers[tier],
         note: stat === "reboot" ? undefined : "Hold the button to keep buying.",
         rows,
-        status: afford ? (stat === "reboot" ? "Ready. Press to reboot." : "Ready. Press to buy.") : `Short by ${fmt(b.cost - have)} ${pays.short}${etaText(eta) ? `, about ${etaText(eta)}` : ""}.`,
+        status: afford ? (stat === "reboot" ? "Ready. Press to Reboot." : "Ready. Press to buy.") : `Short by ${fmt(b.cost - have)} ${pays.short}${etaText(eta) ? `, about ${etaText(eta)}` : ""}.`,
         tone: afford ? "ok" : "wait",
     };
 }
@@ -275,12 +299,18 @@ export function droneTip(s: State, tier: number): TipInfo {
     const maxed = lvl >= droneMax(s);
     const cost = droneCost(s, tier);
     const afford = !maxed && s.aether >= cost;
+    const post = postOf(s, tier);
+    const per = (r: number) => (post ? r * postX(s, tier) : r);
     const rows: [string, string][] = [
-        ["Presses", `tier ${tier + 1} buttons on every armed stat`],
-        ["Now", `${fmt(droneRate(s, tier))} presses/s`],
+        ["Presses", post ? `tier ${tier + 1} on ${statDef(post).name} only, x${fmt(postX(s, tier))}` : `tier ${tier + 1} buttons on every armed stat`],
+        ["Now", `${fmt(per(droneRate(s, tier)))} presses/s`],
     ];
+    if (post) rows.push(["Mastery", `${statDef(post).name} ${ROMAN[zoneRank(s, post)] || "unranked"}`]);
     if (!maxed) {
-        rows.push(["After", `${fmt(droneRate(s, tier) + TUNE.drone.rate)} presses/s`]);
+        s.drones[tier] += 1;
+        const next = droneRate(s, tier);
+        s.drones[tier] -= 1;
+        rows.push(["After", `${fmt(per(next))} presses/s`]);
         rows.push(["Cost", `${fmt(cost)} Aether`]);
         rows.push(["You have", `${fmt(s.aether)} AE`]);
     }
@@ -288,9 +318,9 @@ export function droneTip(s: State, tier: number): TipInfo {
     const eta = etaTo(s, derive(s), "aether", cost);
     return {
         color: statDef("aether").color,
-        kicker: "Drone bay",
+        kicker: "DRONE HANGAR",
         title: `T${tier + 1} ${DRONE_NAMES[tier]}`,
-        note: "Arm a stat in its zone so Drones press for it.",
+        note: post ? "Posted: it works one zone, faster, and builds that zone's mastery." : "Sweeping: it presses every stat you arm in its zone. Post it to one zone to build mastery.",
         rows,
         status: maxed ? "Maxed." : afford ? `Ready. ${lvl ? "Upgrade" : "Build"} it.` : `Short by ${fmt(cost - s.aether)} AE${etaText(eta) ? `, about ${etaText(eta)}` : ""}.`,
         tone: afford || maxed ? "ok" : "wait",

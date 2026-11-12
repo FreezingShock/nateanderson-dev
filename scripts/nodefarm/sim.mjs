@@ -6,6 +6,14 @@ const hours = Number(process.argv[2] || 24 * 14);
 // NF_TUNE='{"perProducer":{"copper":0.02}}' deep-merges over TUNE so numbers can be tried without editing the engine.
 const merge = (a, b) => { for (const [k, v] of Object.entries(b)) a[k] = v && typeof v === "object" && !Array.isArray(v) && a[k] && typeof a[k] === "object" ? merge(a[k], v) : v; return a; };
 if (process.env.NF_TUNE) merge(E.TUNE, JSON.parse(process.env.NF_TUNE));
+// Zone rigs (lib/nodefarm/rigs.ts) join in unless NF_NORIGS=1. rigs.ts imports "./engine" without an extension, so resolve that to .ts.
+let RG = null;
+if (!process.env.NF_NORIGS) {
+    const { registerHooks } = await import("node:module");
+    registerHooks({ resolve(spec, ctx, next) { try { return next(spec, ctx); } catch (e) { if (spec.startsWith(".")) return next(spec + ".ts", ctx); throw e; } } });
+    RG = await import("../../lib/nodefarm/rigs.ts");
+    if (process.env.NF_RIGTUNE) merge(RG.RIG_TUNE, JSON.parse(process.env.NF_RIGTUNE)); // same as NF_TUNE, for RIG_TUNE
+}
 const s = E.fresh(0);
 if (!process.env.NF_NODRONES) s.armed = ["mult", ...E.MATS]; // the bot arms every stat once it has Drones
 if (process.env.NF_NODRONES) s.autoArmed = ["mult", ...E.MATS]; // keep Standing orders from arming anything
@@ -22,6 +30,8 @@ const FULL = new Set(E.fullTreeIds()); // NF_BAN=id,id: the bot never buys these
 for (const id of (process.env.NF_BAN || "").split(",")) FULL.delete(id); // the bot takes the first side of every fork
 // Ascend policy: ascend as soon as AP gain is at least max(2, 40% of AP already held), a typical player keeps going for a while first.
 let t = 0, nextBuy = 0;
+const HANDS = Number(process.env.NF_HAND || 0);
+const handLog = [];
 const dt = 0.5;
 while (t < hours * 3600) {
     E.tick(s, dt);
@@ -43,8 +53,31 @@ while (t < hours * 3600) {
                 if (s.mult >= b.cost * 1.0 && (s.mult >= b.cost * 1.3 || t - (marks.lastReboot || 0) > 900)) { E.press(s, "reboot", k); marks.lastReboot = t; break; }
             }
         }
+        // Zone rigs: buy any level the bot can pay four times over; scrubbers stay on, the forge draws 10%, the prism aims at Copper
+        if (RG) {
+            if (E.isUnlocked(s, "voidsteel")) RG.setRig(s, "draw", 0.1);
+            for (const d of RG.RIGS) for (const k of d.keys) { const p = RG.rigPrice(s, k.key); if (!p.maxed && E.amount(s, p.pays) >= p.cost * 4 && RG.buyRig(s, k.key)) mark("rig " + k.key + " " + RG.rigLv(s, k.key), t); }
+            if (E.isUnlocked(s, "origin") && s.origin >= RG.rewritePrice(s) * 4) { const z = RG.RIGS.find((d) => d.zone !== "origin" && (RG.rig(s).re[d.zone] ?? 0) < 3); if (z) RG.rewrite(s, z.zone); }
+        }
         // Drones: cheapest tier first, paid in Aether
         if (!process.env.NF_NODRONES && E.dronesOpen(s)) for (let k = 0; k < E.TIERS; k++) if (s.aether >= E.droneCost(s, k) * 3 && E.buyDrone(s, k)) mark("drone " + k, t);
+        // Drone hangar (NF_NOHANGAR=1 skips it): post each Drone to the open zone with the lowest mastery (newest zone wins ties),
+        // buy the cheapest mod, then the cheapest drone tree node
+        if (!process.env.NF_NODRONES && !process.env.NF_NOHANGAR && s.drones.some((x) => x > 0)) {
+            if (t % 120 < 3) {
+                const open = E.POSTABLE.filter((st) => E.isUnlocked(s, st)).sort((a, b) => E.zoneRank(s, a) - E.zoneRank(s, b) || E.POSTABLE.indexOf(b) - E.POSTABLE.indexOf(a));
+                for (let k = 0; k < E.TIERS; k++) E.setPost(s, k, s.drones[k] > 0 ? open[k % open.length] ?? null : null);
+            }
+            for (let more = true; more;) {
+                more = false;
+                let best = null;
+                for (let k = 0; k < E.TIERS; k++) for (let m = 0; m < 3; m++) if (!E.modBlock(s, k, m)) { const c = E.modCost(s, k, m); if (!best || c < best[2]) best = [k, m, c]; }
+                if (best && E.buyMod(s, best[0], best[1])) more = true;
+            }
+            for (const n of [...E.DRONE_TREE].sort((a, b) => a.cost - b.cost)) if (E.buyDroneNode(s, n.id)) mark("dnode " + n.id, t);
+            const r = E.masteryRanks(s);
+            for (const x of [1, 5, 15, 30, 45, 60, 75]) if (r >= x) mark(`mastery ${x}`, t);
+        }
         E.checkGoals(s);
         // NF_TRACE=<minutes>: print a status line every that many play minutes (to find walls and runaways)
         if (process.env.NF_TRACE && t >= (marks.nextTrace || 0)) { marks.nextTrace = t + 60 * Number(process.env.NF_TRACE); console.log("t", (t / 3600).toFixed(2), "b/s", E.fmt(E.derive(s).bytesPerSec), "ae", E.fmt(s.aether), "or", E.fmt(s.origin), "px", E.fmt(s.paradox), "ap+", E.apOnAscend(s), "asc", s.life.ascends, "tree", s.tree.length, "G", E.fmt(E.derive(s).global), "ap", s.ap, "mounts", s.mounts.join("+"), "prod", MATS_P(s)); }
@@ -98,9 +131,24 @@ while (t < hours * 3600) {
         if (allRanks || s.ap > 40) { while (E.buyPerk(s, "power")); }
         if (E.treeComplete(s)) mark("tree whole", t);
         if (allRanks) mark("tree done", t);
-        if (allRanks && s.origin > 0 && !process.env.NF_NOSTOP) break;
+        // NF_HAND=n: hand over up to n times (the reset past Ascend) once the tree is done and Origin is producing.
+        // NF_PROTO picks the protocol (default wren). Firmware is bought cheapest first.
+        if (HANDS > 0 && E.treeComplete(s) && E.handOpen(s) && s.hand.count < HANDS) {
+            const keys = E.handover(s, process.env.NF_PROTO || "wren", "", "osk");
+            handLog.push([t, keys]);
+            mark("handover " + s.hand.count, t);
+            ascents.length = 0;
+            for (let more = true; more;) {
+                more = false;
+                const next = E.FW.filter((n) => !s.hand.fw.includes(n.id) && E.fwNodeOpen(s, n)).sort((a, b) => a.cost - b.cost)[0];
+                if (next && E.buyFw(s, next.id)) { more = true; mark("fw " + next.id, t); }
+            }
+            continue;
+        }
+        if (allRanks && s.origin > 0 && !process.env.NF_NOSTOP && s.hand.count >= HANDS) break;
     }
 }
+if (HANDS) console.log("handovers", handLog.map(([a, k], i) => `${(a / 3600).toFixed(1)}h +${k} keys${i ? ` (cycle ${((a - handLog[i - 1][0]) / 3600).toFixed(1)}h)` : ""}`).join(", "), "fw", s.hand.fw.length + "/" + E.FW.length);
 console.log("ascends", ascents.map(([a, g, ap]) => `${(a / 3600).toFixed(0)}h +${g} (ap ${ap})`).join(", "));
 const h = (x) => (x / 3600).toFixed(2) + " h";
 for (const [k, v] of Object.entries(marks)) if (k !== "lastReboot") console.log(k.padEnd(14), h(v));

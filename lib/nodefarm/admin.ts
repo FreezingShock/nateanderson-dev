@@ -3,8 +3,10 @@
 // components/nodefarm/admin.tsx. Easy to remove: delete this file, admin.tsx, nodefarm-admin.css, and the few
 // `admin` lines in node-farm.tsx, events.tsx and components/cm/console.tsx.
 import { BUY_STATS, SCRIPTS, SCRIPT_TUNE, auto, grantScripts, setRunning } from "./scripts";
+import { maxRigs } from "./rigs";
 import {
-    GOALS, LAB, LAB_TUNE, MATS, PAYLOADS, PERKS, SECRETS, STATS, TIERS, TREE, TREE_FULL, TUNE, ascend, apOnAscend, derive, droneMax, exportSave, freshLab, fullTreeIds, parseSave, tick, treeFx, treeSpent, unlock,
+    DRONE_TREE, DRONE_TUNE, POSTABLE, freshDr, modMax,
+    FW, handover, GOALS, LAB, LAB_TUNE, MATS, PAYLOADS, PERKS, SECRETS, STATS, TIERS, TREE, TREE_FULL, TUNE, ascend, ascendNeed, apOnAscend, derive, droneMax, exportSave, freshLab, fullTreeIds, parseSave, tick, treeFx, treeSpent, unlock,
     type MatId, type PerkDef, type ScriptId, type State, type StatId,
 } from "./engine";
 import { LOGS } from "./story";
@@ -114,7 +116,14 @@ export const maxPerks = (s: State) => { for (const p of PERKS) s.perks[p.id] = p
 export const clearPerks = (s: State) => { for (const p of PERKS) s.perks[p.id] = 0; };
 export function setDrone(s: State, tier: number, lvl: number) { s.drones[tier] = Math.max(0, Math.min(droneMax(s), Math.floor(lvl))); }
 export const ARMABLE = ["mult", ...MATS] as string[];
-export function maxDrones(s: State) { for (let k = 0; k < TIERS; k++) s.drones[k] = droneMax(s); s.armed = [...ARMABLE]; }
+export function maxDrones(s: State) {
+    s.dr.nodes = DRONE_TREE.map((n) => n.id);
+    for (let k = 0; k < TIERS; k++) { s.drones[k] = droneMax(s); s.dr.mods[k] = [modMax(s, 0), modMax(s, 1), modMax(s, 2)]; }
+    for (const st of POSTABLE) s.dr.svc[st] = Math.max(s.dr.svc[st] ?? 0, DRONE_TUNE.rankAt[DRONE_TUNE.rankAt.length - 1]);
+    s.armed = [...ARMABLE];
+}
+/** Wipe the hangar: postings, mastery, Parts, mods and the drone tree. */
+export function clearHangar(s: State) { s.dr = freshDr(); }
 export function grantGoals(s: State, tier?: number) { for (const g of GOALS) if (tier === undefined || g.tier === tier) unlock(s, g.id); }
 export function revokeGoals(s: State, tier?: number) {
     const ids = new Set(GOALS.filter((g) => tier === undefined || g.tier === tier).map((g) => g.id));
@@ -180,6 +189,7 @@ export function maxOut(s: State) {
     grantLogs(s);
     grantLab(s);
     grantScripts(s);
+    maxRigs(s);
     s.life.ascends = Math.max(s.life.ascends, 10);
     s.life.reboots = Math.max(s.life.reboots, 1000);
     s.life.apTotal = Math.max(s.life.apTotal, 1000);
@@ -204,9 +214,19 @@ export function skipTime(s: State, secs: number): number {
 
 /** Ascend now even if there is not enough Aether (adds just enough first). Returns the AP gained. */
 export function forceAscend(s: State): number {
-    if (apOnAscend(s) < 1) s.aether = Math.max(s.aether, TUNE.ascendAether);
+    if (apOnAscend(s) < 1) s.aether = Math.max(s.aether, ascendNeed(s));
     return ascend(s);
 }
+
+/** Hand over now even before node zero (gives one Origin producer first). Returns the Keys gained. */
+export function forceHandover(s: State): number {
+    if (s.prod.origin < 1) { s.prod.origin = 1; s.origin = Math.max(s.origin, 1); }
+    return handover(s, s.hand.proto ?? "wren", "", s.hand.proto2);
+}
+/** Add Keys. */
+export function addKeys(s: State, n: number) { s.hand.keys += n; s.hand.keysTotal += n; }
+/** Flash every Firmware node (no Keys spent). */
+export function ownAllFw(s: State) { s.hand.fw = FW.map((n) => n.id); }
 
 /** Make the run look like it is in era `n`: open every material up to its first stat and empty the ones after. */
 export function jumpEra(s: State, n: number) {

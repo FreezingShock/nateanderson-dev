@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, type CSSProperties } from "react";
-import { BRANCHES, MATS, PERKS, TREE, TREE_FULL, TUNE, apEach, apGlobal, apOnAscend, canAscend, derive, fmt, hasNode, mountSlots, statDef, type MatId, type State } from "@/lib/nodefarm/engine";
+import { BRANCHES, MATS, PERKS, TREE, TREE_FULL, TUNE, apEach, apGlobal, apOnAscend, canAscend, derive, fmt, hasNode, mountSlots, statDef, type MatId, type State, ascendNeed } from "@/lib/nodefarm/engine";
 import { NfIcon } from "./icon";
 
 // The Ascend window (2026-11-12 rework): the art is the stage, the Aether charge climbs beside the tower, a three-step
@@ -15,7 +15,7 @@ const SEGS = 12;
 const RINGS = 5; // the five rings on the tower in scene-ascend, lit from the bottom as Aether climbs
 
 /** Press and hold to Ascend. A quick tap or an assistive-tech click falls back to the old two-step confirm. */
-function HoldAscend({ ready, gain, confirm, onAscend }: { ready: boolean; gain: number; confirm: boolean; onAscend: (now?: boolean) => void }) {
+function HoldAscend({ ready, gain, need, confirm, onAscend }: { ready: boolean; gain: number; need: number; confirm: boolean; onAscend: (now?: boolean) => void }) {
     const [hold, setHold] = useState(false);
     const [nudge, setNudge] = useState(false);
     const t = useRef<number | undefined>(undefined);
@@ -68,7 +68,7 @@ function HoldAscend({ ready, gain, confirm, onAscend }: { ready: boolean; gain: 
         >
             <i className="nf-ax-go-fill" aria-hidden="true" />
             <span className="nf-ax-go-t">
-                {!ready ? `Need ${fmt(TUNE.ascendAether)} Aether` : confirm ? `Confirm: wipe and gain ${gain} AP` : hold ? "Keep holding" : nudge ? "Keep holding to Ascend" : `Hold to Ascend · +${gain} AP`}
+                {!ready ? `Need ${fmt(need)} Aether` : confirm ? `Confirm: wipe and gain ${gain} AP` : hold ? "Keep holding" : nudge ? "Keep holding to Ascend" : `Hold to Ascend · +${gain} AP`}
             </span>
         </button>
     );
@@ -76,7 +76,7 @@ function HoldAscend({ ready, gain, confirm, onAscend }: { ready: boolean; gain: 
 
 /** The art with the charge: a segmented Aether column beside the tower and a beacon that lights when it is full. */
 function Stage({ s, gain }: { s: State; gain: number }) {
-    const pct = Math.min(1, s.aether / TUNE.ascendAether);
+    const pct = Math.min(1, s.aether / ascendNeed(s));
     const lit = Math.floor(pct * SEGS);
     const ready = gain > 0;
     return (
@@ -90,10 +90,10 @@ function Stage({ s, gain }: { s: State; gain: number }) {
             </div>
             <div className="nf-ax-code" aria-hidden="true">
                 <span>ASCEND.SYS // NODE-01{s.life.ascends ? ` // RUN ${String(s.life.ascends + 1).padStart(2, "0")}` : ""}</span>
-                <span><b>aether</b> {fmt(Math.min(s.aether, TUNE.ascendAether))} / {fmt(TUNE.ascendAether)} <em>{Math.floor(pct * 100)}%</em></span>
+                <span><b>aether</b> {fmt(Math.min(s.aether, ascendNeed(s)))} / {fmt(ascendNeed(s))} <em>{Math.floor(pct * 100)}%</em></span>
                 <span><b>status</b> <em data-st={ready ? "ready" : "charge"}>{ready ? "READY" : "CHARGING"}</em></span>
             </div>
-            <div className="nf-ax-col" role="meter" aria-label="Aether toward Ascend" aria-valuemin={0} aria-valuemax={TUNE.ascendAether} aria-valuenow={Math.min(s.aether, TUNE.ascendAether)}>
+            <div className="nf-ax-col" role="meter" aria-label="Aether toward Ascend" aria-valuemin={0} aria-valuemax={ascendNeed(s)} aria-valuenow={Math.min(s.aether, ascendNeed(s))}>
                 {Array.from({ length: SEGS }, (_, i) => <i key={i} data-on={SEGS - 1 - i < lit ? "" : undefined} />)}
             </div>
         </section>
@@ -103,21 +103,21 @@ function Stage({ s, gain }: { s: State; gain: number }) {
 /** Aether -> Ascend -> AP, as three plain data steps joined by a trace. */
 function Flow({ s, d, gain, confirm, onAscend }: { s: State; d: D; gain: number; confirm: boolean; onAscend: (now?: boolean) => void }) {
     const after = apGlobal(s, gain) / apGlobal(s);
-    const deep = (["runes", "starglass", "voidsteel", "chrono", "nebula", "pulsars", "singularity", "engrams", "paradox", "origin"] as const).filter((m) => s[m] > 0);
+    const deep = (["runes", "starglass", "voidsteel", "chrono", "nebula", "pulsars", "singularity", "engrams", "paradox", "origin", "spores", "mycelium", "pollen", "bloom", "basalt", "magma", "geodes", "core"] as const).filter((m) => s[m] > 0);
     const ready = canAscend(s);
     return (
         <section className="nf-ax-flow" data-cx-i="1">
             <ol className="nf-ax-steps" data-ready={ready ? "" : undefined}>
                 <li style={{ ["--c" as string]: statDef("aether").color }}>
                     <span className="nf-ax-k" data-cx-scr="">01 // Charge</span>
-                    <span className="nf-ax-v"><NfIcon name="aether" /><b>{fmt(s.aether)}</b><small>/ {fmt(TUNE.ascendAether)} Aether</small></span>
-                    <span className="nf-bar sm" aria-hidden="true"><i style={{ width: `${Math.min(100, (s.aether / TUNE.ascendAether) * 100)}%` }} /></span>
+                    <span className="nf-ax-v"><NfIcon name="aether" /><b>{fmt(s.aether)}</b><small>/ {fmt(ascendNeed(s))} Aether</small></span>
+                    <span className="nf-bar sm" aria-hidden="true"><i style={{ width: `${Math.min(100, (s.aether / ascendNeed(s)) * 100)}%` }} /></span>
                     {deep.length > 0 && <small className="nf-ax-n">Deep materials add AP too: {deep.map((m) => `${statDef(m).name} ${fmt(s[m])}`).join(", ")}</small>}
                 </li>
                 <li style={{ ["--c" as string]: "#ff2d8a" }}>
                     <span className="nf-ax-k" data-cx-scr="">02 // Ascend</span>
                     <span className="nf-ax-v"><NfIcon name="ascend" /><b>{gain > 0 ? `+${gain}` : "0"}</b><small>AP on Ascend</small></span>
-                    <small className="nf-ax-n">Wipes the whole run. Keeps goals, perks, the tree, lab research and stock, and lifetime stats.</small>
+                    <small className="nf-ax-n">Wipes the run. Keeps goals, perks, the tree, lab research and stock, scripts, and lifetime stats.</small>
                 </li>
                 <li style={{ ["--c" as string]: "var(--cm-cyan)" }}>
                     <span className="nf-ax-k" data-cx-scr="">03 // Spend or hold</span>
@@ -125,7 +125,7 @@ function Flow({ s, d, gain, confirm, onAscend }: { s: State; d: D; gain: number;
                     <span className="nf-ax-g"><small>Global</small><b>×{fmt(d.global)}</b>{gain > 0 && <><em aria-hidden="true">→</em><b data-up="">×{fmt(d.global * after)}</b></>}</span>
                 </li>
             </ol>
-            <HoldAscend ready={ready} gain={gain} confirm={confirm} onAscend={onAscend} />
+            <HoldAscend ready={ready} gain={gain} need={ascendNeed(s)} confirm={confirm} onAscend={onAscend} />
         </section>
     );
 }
