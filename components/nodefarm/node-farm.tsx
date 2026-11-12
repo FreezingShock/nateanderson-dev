@@ -303,8 +303,11 @@ export function NodeFarm() {
         (def: { title: string }, won: boolean) => {
             const s = g.current;
             if (won) {
-                breach(s);
-                log(`${def.title.toUpperCase()} CLEARED. Overclock x${overclockMult(s)} for ${overclockSecs(s)} s.`, "good");
+                const r = breach(s);
+                log(`${def.title.toUpperCase()} CLEARED. Overclock x${fmt(overclockMult(s))} ${r.stacked ? `extended to ${Math.round(s.overclock)} s` : `for ${Math.round(overclockSecs(s))} s`}.`, "good");
+                if (r.zero) log(`ZERO-DAY: ${fmt(r.zero.bytes ?? 0)} Bytes and 10 minutes of every material paid out.`, "good");
+                if (r.echo) log("ECHO: something knocked back. Another event is coming.", "hot");
+                return { echo: r.echo };
             } else log(`${def.title} lost. No cost.`, "warn");
         },
         [log],
