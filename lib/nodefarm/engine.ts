@@ -179,7 +179,7 @@ export interface TreeFx {
     feature?: Feature;
 }
 /** Systems a node switches on. The UI checks them with `hasFeature`. */
-export type Feature = "buymax" | "watchdog" | "forecast" | "deaddrop" | "orders" | "ghostline" | "crosstalk" | "duck";
+export type Feature = "watchdog" | "forecast" | "deaddrop" | "orders" | "ghostline" | "crosstalk" | "duck";
 export type TreeKind = "minor" | "notable" | "keystone";
 export type Branch = "signal" | "forge" | "systems" | "drones" | "anomaly";
 export type NodeVis = "shown" | "fog" | "hidden";
@@ -193,6 +193,8 @@ export interface TreeNode {
     /** one short lore line for the tooltip */
     flavor: string;
     cost: number;
+    /** section slot, 0 to 7 (set by the layout) */
+    slot?: number;
     /** neighbours (both directions); "core" is the free start */
     links: string[];
     fx: TreeFx;
@@ -237,11 +239,10 @@ const ALL_MATS = (v: number) => Object.fromEntries(MATS.map((m) => [m, v])) as R
 const ARMS: Record<Branch, Row[]> = {
     signal: [
         [0, "linecode", "minor", "Line coding", "Bytes x2.", "Clean edges on every bit. The wire finally sounds like a wire.", { bytes: 1 }],
-        [1, "batchjob", "minor", "Batch job", "Unlocks Buy max: one press buys as many as you can afford.", "Queue it up, walk away, come back to a receipt.", { feature: "buymax" }],
         [2, "echocancel", "minor", "Echo cancel", "Reboots keep 10% of your Multipliers.", "Most of the signal survives the restart. The rest was noise anyway.", { rebootKeep: 0.1 }],
         [3, "headstart", "minor", "Head start", "Every Ascend starts with 25 Reboots.", "The node remembers the way back. It just needs a push.", { kitReboot: 25 }],
         [4, "hotswap", "minor", "Hot swap", "Reboot power x2.", "Swapped the board while it was still warm. It did not notice.", { reboot: 1 }],
-        [5, "watchdog", "notable", "Watchdog timer", "Auto-Reboot: Reboots for you at the best tier you can afford. Switch it in the Reboot zone.", "A timer that kicks the node when it stalls. The node has stopped stalling.", { feature: "watchdog" }],
+        [5, "watchdog", "notable", "Watchdog timer", "Auto-Reboot: Reboots for you at the best tier you can afford. Switch it on the Reboot row.", "A timer that kicks the node when it stalls. The node has stopped stalling.", { feature: "watchdog" }],
         [6, "flatrate", "notable", "Flat rate", "Button prices climb 40% slower each time you buy.", "Renegotiated with the grid. They did not read the fine print.", { growth: 0.4 }],
         [7, "overdrive", "keystone", "Overdrive", "Everything x3.", "Past the red line the hum goes quiet. That is when it works hardest.", { global: 2 }],
         [8, "coldstart", "notable", "Cold start", "For 90 s after every Reboot, Bytes x10.", "The first breath after a restart is the loudest.", { coldStart: 9 }],
@@ -266,7 +267,7 @@ const ARMS: Record<Branch, Row[]> = {
         [1, "carrier1", "minor", "Carrier I", "Each AP adds a third more to everything.", "Boosted the carrier. The points carry further.", { apEach: 1 / 3 }],
         [2, "forecast", "minor", "Forecast", "Every button shows how long until you can afford it.", "Every price comes with an arrival time now.", { feature: "forecast" }],
         [3, "carrier2", "notable", "Carrier II", "Each AP adds another third more.", "Louder carrier, same message, more of it lands.", { apEach: 1 / 3 }],
-        [4, "ledger", "minor", "Ledger", "Each goal and secret gives +4% instead of +2%.", "Wrote down every win. The node reads the list at night.", { goals: 0.02 }],
+        [4, "ledger", "minor", "Ledger", "Each goal and secret gives +4%.", "Wrote down every win. The node reads the list at night.", { goals: 0.02 }],
         [5, "carrier3", "minor", "Carrier III", "Each AP adds another third more: twice the bonus with all three.", "The carrier is all you hear now.", { apEach: 1 / 3 }],
         [6, "deaddrop", "notable", "Dead drop", "A cache fills over 4 hours of real time, even while away. Open it for 1 hour of production.", "Someone leaves a box at the node. No note. Always the right size.", { feature: "deaddrop" }],
         [7, "coldstore", "keystone", "Cold storage", "AP from every Ascend x2.", "Packed the whole run in ice. It thaws worth twice as much.", { ap: 1 }],
@@ -276,11 +277,11 @@ const ARMS: Record<Branch, Row[]> = {
     ],
     drones: [
         [0, "wake", "minor", "Wake routine", "Every Ascend starts with a level 1 Drone on every tier.", "They boot before I do.", { kitDrones: 1 }],
-        [1, "sparecell", "minor", "Spare cells", "Drones go up to level 13 (was 10).", "Extra cells in every chassis. Heavier, happier.", { droneMax: 3 }],
+        [1, "sparecell", "minor", "Spare cells", "Drones go up to level 13.", "Extra cells in every chassis. Heavier, happier.", { droneMax: 3 }],
         [2, "orders", "minor", "Standing orders", "New stats are armed for Drones the moment they open.", "Told them once. They remember.", { feature: "orders" }],
         [3, "overwatch", "minor", "Overwatch", "Drones press twice as fast.", "One watches, one presses, they swap every hour.", { drone: 1 }],
         [4, "bulkorder", "minor", "Bulk order", "Drones cost 50% less Aether.", "Bought them by the crate. The crate was cheaper than the box.", { droneCost: 0.5 }],
-        [5, "graveyard", "notable", "Graveyard shift", "Drones work at full speed while you are away (was half).", "Nobody told them it was night.", { droneOff: 0.5 }],
+        [5, "graveyard", "notable", "Graveyard shift", "Drones work at full speed while you are away.", "Nobody told them it was night.", { droneOff: 0.5 }],
         [6, "hivemem", "notable", "Hive memory", "Drones keep half their levels through every Ascend.", "They remember the old floor plan.", { droneKeep: 0.5 }],
         [7, "swarm", "keystone", "Swarm protocol", "Each Drone level adds +3% to everything.", "A hundred small hands, one big push.", { droneGlobal: 0.03 }],
         [8, "widenet", "notable", "Wide net", "Every Drone presses 60% faster.", "Spread thin and everywhere at once.", { drone: 0.6 }],
@@ -291,7 +292,7 @@ const ARMS: Record<Branch, Row[]> = {
         [0, "static", "minor", "Static", "Quick-time events come 30% more often.", "There is always someone on the line now.", { eventRate: 0.3 }],
         [1, "longfuse", "minor", "Long fuse", "Overclocks last twice as long.", "Slower burn, same bang.", { ocTime: 1 }],
         [2, "duck", "minor", "Rubber duck", "Does nothing. Listens, though.", "Explained the whole farm to it. Found two bugs.", { feature: "duck" }, 1],
-        [3, "resonant", "minor", "Resonant noise", "Overclock is x12 instead of x6.", "Tuned the static until it hums in key.", { ocMult: 6 }],
+        [3, "resonant", "minor", "Resonant noise", "Overclock is x12.", "Tuned the static until it hums in key.", { ocMult: 6 }],
         [4, "ghostline", "minor", "Ghost line", "Winning an event during an Overclock adds its time instead of restarting it.", "Two boosts, one wire. They queue politely.", { feature: "ghostline" }],
         [5, "echo", "notable", "Echo", "Winning an event has a 1 in 3 chance to bring the next one right away.", "Answered the knock and something knocked back.", { echo: 1 / 3 }],
         [6, "zeroday", "notable", "Zero-day", "One in five event wins also pays 10 minutes of production.", "An open door nobody else has found yet.", { zeroDay: 0.2 }],
@@ -338,7 +339,7 @@ function buildTree(): TreeNode[] {
                 cost: Math.round(base * TUNE.treeCost),
                 links: slot === 0 ? ["core"] : [],
                 x: +(u * c - v * sn).toFixed(3), y: +(u * sn + v * c).toFixed(3),
-                ix: out.length, sprite: id,
+                ix: out.length, sprite: id, slot,
                 ...(slot === 0 ? { entry: true } : {}),
                 ...(ch ? { chain: { id: ch[0], step: ch[1], of: ch[2] } } : {}),
                 ...(form ? { form } : {}),
@@ -346,7 +347,7 @@ function buildTree(): TreeNode[] {
             } as TreeNode);
             ids[slot] = id;
         }
-        if (!pass) { SLOTS.forEach(([, , ls], slot) => ls.forEach((l) => link(ids[slot], ids[l]))); return; }
+        if (!pass) { SLOTS.forEach(([, , ls], slot) => ids[slot] && ls.forEach((l) => link(ids[slot], ids[l] ?? ids[0]))); return; }
         OUTER.forEach(([, , ls], k) => ls.forEach((l) => link(ids[SLOTS.length + k], ids[l])));
         byId(ids[8]).excl = ids[9];
         byId(ids[9]).excl = ids[8];
@@ -506,7 +507,7 @@ export function treeTotals(s: State): [string, string][] {
     if (f.droneTierGoal) rows.push(["Night crew", `+${f.droneTierGoal * tiersDone(s)} Drone levels`]);
     if (f.frenzy) rows.push(["Swarm alarm", `Drones x${TUNE.frenzyX} for ${TUNE.frenzySecs} s per win`]);
     if (f.ocReboot) rows.push(["Overclock Reboot power", `x${1 + f.ocReboot}`]);
-    const named: Record<Feature, string> = { buymax: "Buy max", watchdog: "Watchdog timer", forecast: "Forecast", deaddrop: "Dead drop", orders: "Standing orders", ghostline: "Ghost line", crosstalk: "Cross-talk", duck: "Rubber duck" };
+    const named: Record<Feature, string> = { watchdog: "Watchdog timer", forecast: "Forecast", deaddrop: "Dead drop", orders: "Standing orders", ghostline: "Ghost line", crosstalk: "Cross-talk", duck: "Rubber duck" };
     if (f.features.length) rows.push(["Systems", f.features.map((k) => named[k]).join(", ")]);
     return rows;
 }
@@ -1055,12 +1056,6 @@ export function autoArm(s: State): string[] {
     }
     return out;
 }
-/** Buy max: press one button as many times as the balance allows (Batch job). Returns the number bought. */
-export function pressMax(s: State, stat: Exclude<ButtonStat, "reboot">, tier: number, cap = 1000): number {
-    let n = 0;
-    while (n < cap && press(s, stat, tier)) n++;
-    return n;
-}
 /** Material slots on Mounted drives. */
 export const mountSlots = (s: State) => treeFx(s).mounts;
 export function setMount(s: State, slot: number, mat: MatId | null) {
@@ -1364,20 +1359,20 @@ const LAB_SLOTS: [number, number, number[]][] = [[2.3, 0, []], [3.9, -1.1, [0]],
 type LabRow = [slot: number, id: string, kind: TreeKind, name: string, blurb: string, flavor: string, fx: LabFx];
 const LAB_ARMS: Record<LabSec, LabRow[]> = {
     exploits: [
-        [0, "rx_sniffer", "minor", "Packet sniffer", "Recipe: Packet sniffer. Bytes x2 for 10 minutes.", "Listen first. The wire tells you everything if you let it talk.", { recipe: "sniffer" }],
-        [1, "rx_worm", "minor", "Worm", "Recipe: Worm. Multiplier buttons add x2 for 10 minutes.", "It copies itself into every amp on the stack. The amps don't mind.", { recipe: "worm" }],
-        [2, "rx_logicbomb", "minor", "Logic bomb", "Recipe: Logic bomb. Your next Reboot gives x3 Reboots.", "Set it, forget it, and let the next restart do the work.", { recipe: "logicbomb" }],
+        [0, "rx_sniffer", "minor", "Packet sniffer", "Payload: Packet sniffer. Bytes x2 for 10 minutes.", "Listen first. The wire tells you everything if you let it talk.", { recipe: "sniffer" }],
+        [1, "rx_worm", "minor", "Worm", "Payload: Worm. Multiplier buttons add x2 for 10 minutes.", "It copies itself into every amp on the stack. The amps don't mind.", { recipe: "worm" }],
+        [2, "rx_logicbomb", "minor", "Logic bomb", "Payload: Logic bomb. Your next Reboot gives x3 Reboots.", "Set it, forget it, and let the next restart do the work.", { recipe: "logicbomb" }],
         [3, "rx_obfuscate", "notable", "Obfuscation", "Exploits buffs are 50% stronger.", "Same code, uglier. Nothing on the line recognises it anymore.", { potency: "exploits" }],
-        [4, "rx_ransom", "minor", "Ransomware", "Recipe: Ransomware. Pays out 10 minutes of Bytes, Copper, Silicon and Quartz at once.", "Lock it, then charge the node for its own key. The node always pays.", { recipe: "ransom" }],
-        [5, "rx_kernel", "keystone", "Kernel exploit", "Recipe: Kernel exploit. Everything x2 for 5 minutes.", "Ring zero. For five minutes nothing on this node says no.", { recipe: "kernel" }],
+        [4, "rx_ransom", "minor", "Ransomware", "Payload: Ransomware. Pays out 10 minutes of Bytes, Copper, Silicon and Quartz at once.", "Lock it, then charge the node for its own key. The node always pays.", { recipe: "ransom" }],
+        [5, "rx_kernel", "keystone", "Kernel exploit", "Payload: Kernel exploit. Everything x2 for 5 minutes.", "Ring zero. For five minutes nothing on this node says no.", { recipe: "kernel" }],
     ],
     malware: [
-        [0, "rx_rootkit", "minor", "Rootkit", "Recipe: Rootkit. Copper, Silicon and Quartz x1.75 for 15 minutes.", "Dig in under the forge. It runs hotter when it can't see you.", { recipe: "rootkit" }],
-        [1, "rx_trojan", "minor", "Trojan", "Recipe: Trojan. Starts an Overclock right now.", "Looks like a gift. Is a gift, mostly.", { recipe: "trojan" }],
-        [2, "rx_botnet", "minor", "Botnet", "Recipe: Botnet. Drones press twice as fast for 10 minutes.", "Lent the Drones a few thousand extra hands. Nobody asked whose.", { recipe: "botnet" }],
+        [0, "rx_rootkit", "minor", "Rootkit", "Payload: Rootkit. Copper, Silicon and Quartz x1.75 for 15 minutes.", "Dig in under the forge. It runs hotter when it can't see you.", { recipe: "rootkit" }],
+        [1, "rx_trojan", "minor", "Trojan", "Payload: Trojan. Starts an Overclock right now.", "Looks like a gift. Is a gift, mostly.", { recipe: "trojan" }],
+        [2, "rx_botnet", "minor", "Botnet", "Payload: Botnet. Drones press twice as fast for 10 minutes.", "Lent the Drones a few thousand extra hands. Nobody asked whose.", { recipe: "botnet" }],
         [3, "rx_mutate", "notable", "Mutation", "Malware buffs last twice as long.", "Every copy a little different. The scanner gave up counting.", { longer: "malware" }],
-        [4, "rx_zeroclick", "minor", "Zero-click", "Recipe: Zero-click. Your next Ascend pays x1.25 AP.", "No prompt, no warning, more points on the way up.", { recipe: "zeroclick" }],
-        [5, "rx_polymorph", "keystone", "Polymorph", "Recipe: Polymorph. Doubles the time left on every running payload.", "It wears whatever is already running and makes it last.", { recipe: "polymorph" }],
+        [4, "rx_zeroclick", "minor", "Zero-click", "Payload: Zero-click. Your next Ascend pays x1.25 AP.", "No prompt, no warning, more points on the way up.", { recipe: "zeroclick" }],
+        [5, "rx_polymorph", "keystone", "Polymorph", "Payload: Polymorph. Doubles the time left on every running payload.", "It wears whatever is already running and makes it last.", { recipe: "polymorph" }],
     ],
     infra: [
         [0, "rx_tap", "minor", "Fiber tap", "Intel x2.", "Spliced a second line into the trunk. Twice the gossip.", { intel: 1 }],
@@ -1710,7 +1705,7 @@ const DRONE_ARMS: Record<DroneSec, DroneRow[]> = {
         [5, "dx_hivemind", "keystone", "Hivemind", "Drones press twice as fast, and every mastery rank adds 1% more.", "Six frames, one thought. The thought is mostly about buttons.", { speed: 1, rankSpeed: 0.01 }],
     ],
     dispatch: [
-        [0, "dx_orders", "minor", "Field orders", "Posted Drones press x4 on their zone (was x3).", "Clear orders, one zone each. Nobody wanders.", { postX: 1 }],
+        [0, "dx_orders", "minor", "Field orders", "Posted Drones press x4 on their zone.", "Clear orders, one zone each. Nobody wanders.", { postX: 1 }],
         [1, "dx_patrol", "minor", "Patrol logs", "Sweeping Drones also build mastery, at a quarter of the rate.", "They write down every zone they pass. Most of it is useful.", { sweepSvc: 0.25 }],
         [2, "dx_tour", "minor", "Long tour", "Mastery builds twice as fast.", "Same zone, same shift, every day. They learn the creaks.", { svc: 1 }],
         [3, "dx_fieldops", "notable", "Field ops", "Mastery bonuses are 50% stronger.", "The veterans train the new frames. Nobody asked them to.", { rankPow: 0.5 }],
@@ -2164,7 +2159,7 @@ export function handKeeps(s: State): string[] {
     return s.tree.filter((id) => {
         const n = BY_ID.get(id);
         if (!n || n.form) return false;
-        const slot = n.ix % 8; // the first 40 nodes are 8 per section in slot order
+        const slot = n.slot;
         return (hf.keepEntry && slot === 0) || (hf.keepUpper && (slot === 1 || slot === 3 || slot === 5));
     });
 }

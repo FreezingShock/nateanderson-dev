@@ -75,7 +75,7 @@ export function recordSections(s: State): RecordSection[] {
     if (s.lab.seen) out.push({ id: "lab", title: "Exploit Lab", blurb: "Research and stock survive Ascend; Intel does not.", rows: [
         ["Intel", `${fmt(s.lab.intel)} · +${fmt(intelRate(s, d.bytesPerSec))}/s`],
         ["Research", `${s.lab.nodes.length} / ${LAB.length}`],
-        ["Recipes", `${PAYLOADS.filter((p) => s.lab.nodes.includes(`rx_${p.id}`)).length} / ${PAYLOADS.length}`],
+        ["Payloads", `${PAYLOADS.filter((p) => s.lab.nodes.includes(`rx_${p.id}`)).length} / ${PAYLOADS.length}`],
         ["Intel, lifetime", fmt(s.life.intel)],
         ["Payloads compiled", fmt(s.life.compiled)],
         ["Payloads deployed", fmt(s.life.deployed)],
