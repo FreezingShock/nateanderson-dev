@@ -1002,7 +1002,7 @@ ARC = {
     19: ("shaft", shaft_far, shaft_near, shaft_fx, (240, 170, 2.0)),
     20: ("magma", magma_far, magma_near, magma_fx, (200, 180, 2.0)),
     21: ("geode", geode_far, geode_near, geode_fx, (240, 190, 2.0)),
-    22: ("core", core_far, core_near, core_fx, (240, 140, 1.9)),
+    22: ("sun", core_far, core_near, core_fx, (240, 140, 1.9)),
 }
 K.ERAS.update(ARC)
 

@@ -88,7 +88,7 @@ export function prestigeModel(s: State): TreeModel {
         level: (n) => nodeLevel(s, n.id), price: (n) => nodeCost(s, treeNode(n.id)), spent: () => treeSpent(s),
         keptNote: "kept through Ascend", buyWord: "Install", prompt: "~/tree $", respec: true,
         fogText: "Signal too weak to read. Buy a node next to it to decrypt this one.",
-        core: { kicker: "core.root", name: "The core", fx: "Every section grows out of here. A node opens once it touches the core or a node you own; the next ring decrypts as you buy toward it.", quote: "Respec is free and refunds every AP.", color: "#e8f6ff" },
+        core: { kicker: "hub.root", name: "The hub", fx: "Every section grows out of here. A node opens once it touches the hub or a node you own; the next ring decrypts as you buy toward it.", quote: "Respec is free and refunds every AP.", color: "#e8f6ff" },
     };
 }
 
@@ -808,7 +808,7 @@ function TreeMenuInner({ s, model, reduced, onBuy, onRespec, onClose }: TreeMenu
                         data-st="owned"
                         data-sel={sel === "core" ? "" : undefined}
                         data-dim={sel && !near.has("core") ? "" : undefined}
-                        aria-label="Core. Every section starts here."
+                        aria-label={lab || root_ || hangar ? "Core. Every section starts here." : "Hub. Every section starts here."}
                         style={{ ["--sz" as string]: `${SZ.core}px`, ["--c" as string]: "#e8f6ff", ["--col" as string]: 4, ["--row" as string]: 7 } as CSSProperties}
                         onClick={() => pick("core")}
                         
@@ -820,7 +820,7 @@ function TreeMenuInner({ s, model, reduced, onBuy, onRespec, onClose }: TreeMenu
                         <span className="nf-tn-shadow" />
                         <span className="nf-tn-halo" />
                         <span className="nf-tn-body"><span className="nf-tn-face"><NodeIcon n={null} st="owned" fog={false} core={lab ? "rx_core" : root_ ? "fw_core" : hangar ? "dx_core" : undefined} /></span></span>
-                        <span className="nf-tn-l">core</span>
+                        <span className="nf-tn-l">{lab || root_ || hangar ? "core" : "hub"}</span>
                     </button>
                     {TREE.map((n) => {
                         const v = vis.get(n.id) ?? "hidden";
