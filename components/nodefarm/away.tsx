@@ -21,7 +21,7 @@ export interface Away {
     gain: Record<string, number>;
 }
 
-const ORDER: StatId[] = ["bytes", "copper", "silicon", "quartz", "aether", "runes", "starglass", "voidsteel", "chrono"];
+const ORDER: StatId[] = ["bytes", "copper", "silicon", "quartz", "aether", "runes", "starglass", "voidsteel", "chrono", "engrams", "paradox", "origin"];
 const COUNT_MS = 1500;
 
 /** Full-screen "welcome back" report. Everything is already banked when it opens; Collect only closes it. */

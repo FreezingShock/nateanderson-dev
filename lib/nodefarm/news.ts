@@ -16,7 +16,7 @@ interface News {
     t: string | ((s: State) => string);
 }
 
-/** How far the farm has got: the index of the newest unlocked stat (0 = Bytes only, 10 = Chrono). */
+/** How far the farm has got: the index of the newest unlocked stat (0 = Bytes only, 10 = Chrono, 13 = Origin). */
 export const stageOf = (s: State) => {
     let top = 0;
     STATS.forEach((d, i) => {
@@ -100,7 +100,7 @@ const BASE: News[] = [
     { k: "op", from: 9, to: 11, t: "Voidsteel does not reflect. It just stops the light and thinks about it." },
     { k: "op", from: 9, to: 11, t: "Poured a bar on the floor. It cooled in the shape of a floor tile. I did not plan that." },
     { k: "note", from: 9, to: 11, t: "voidsteel.pour() // from an empty place" },
-    { k: "hint", from: 9, to: 10, t: "Voidsteel boosts Starglass. Chrono is the last material, and it nudges everything a little." },
+    { k: "hint", from: 9, to: 10, t: "Voidsteel boosts Starglass. Chrono is past it, and it nudges everything a little." },
     { k: "wry", from: 9, to: 11, t: "The metal came from nowhere. Nowhere is surprisingly well stocked." },
 
     // ---- Chrono (10)
@@ -109,6 +109,28 @@ const BASE: News[] = [
     { k: "note", from: 10, t: "chrono.hold() // time about to leave, caught in time" },
     { k: "wry", from: 10, t: "I am three minutes early to everything now. Nobody has noticed. The node has." },
     { k: "hint", from: 10, ok: (s) => s.life.ascends < 3, t: "Late game is Ascend again and again, spending AP in the tree. The node does not mind repeats." },
+    { k: "hint", from: 10, to: 11, t: "Chrono is not the bottom of the node. Hold enough of it and something under the Still room starts to play back." },
+
+    // ---- Engrams (11)
+    { k: "op", from: 11, t: "There is a room under the Still room full of film. Every reel is somebody who sat in this chair. I have not found mine yet." },
+    { k: "op", from: 11, t: "Played a reel at random. Somebody laughing at the fans for being too loud. The fans are still too loud." },
+    { k: "note", from: 11, t: "engrams.play() // recorded, rewound, recorded again" },
+    { k: "wry", from: 11, t: "The archive has no index. It has a feeling about where things are, and it is usually right." },
+    { k: "hint", from: 11, to: 12, t: "Engrams boost Chrono and make the Drones press faster. Keep the reels turning and the Mirror stair opens." },
+
+    // ---- Paradox (12)
+    { k: "op", from: 12, t: "The stair past the archive goes up and down at the same time. I counted the steps both ways and got the same number." },
+    { k: "op", from: 12, t: "Folded a Paradox and it came back unfolded, then folded, then both. I wrote down all three. They are the same note." },
+    { k: "note", from: 12, t: "paradox.fold() // true && !true, held still" },
+    { k: "wry", from: 12, t: "I would explain the Mirror stair, but I already did, tomorrow." },
+    { k: "hint", from: 12, to: 13, t: "Paradox boosts Engrams and makes every Overclock hit harder. Win events while it is high." },
+
+    // ---- Origin (13)
+    { k: "op", from: 13, t: "At the bottom of everything there is one small box with one wire. It is warm. I think it has been waiting a long time." },
+    { k: "op", from: 13, t: "Every rack, every amp, every reel up there was built around this box. It does not look like much. Neither did I." },
+    { k: "note", from: 13, t: "origin.boot() // node zero, still answering" },
+    { k: "wry", from: 13, t: "Root access, finally. The root was a box the size of a lunch tin." },
+    { k: "hint", from: 13, ok: (s) => s.life.ascends < 25, t: "Origin boosts Paradox, and every Ascend pays more AP while you hold it. It is the last link in the chain." },
 
     // ---- more of the middle and the end
     { k: "op", from: 3, to: 6, t: "I measure my days in Reboots now. Today was a good one. Fourteen, and none of them hurt." },

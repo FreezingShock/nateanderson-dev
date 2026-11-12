@@ -210,6 +210,21 @@ const DEFS = {
                     [0, 0.07, 0.14].forEach((at, i) => blip("game", base * (i % 2 ? 1.2 : 1), { at, dur: 0.025, gain: 0.05, cutoff: 3200 }));
                     tone("game", { f: base * 0.5, at: 0.2, dur: 0.25, gain: 0.04, glide: 1.5, cutoff: 1800, attack: 0.02 });
                     break;
+                case "engrams":
+                    // a tape deck: the play key thunks, then a short warble as the tape comes up to speed
+                    keyClick("game", { f: 700, gain: 0.06, q: 1.5 });
+                    tone("game", { f: base * 0.5, at: 0.04, dur: 0.24, gain: 0.05, glide: 1.06, cutoff: 1600, attack: 0.03, type: "triangle" });
+                    break;
+                case "paradox":
+                    // the same note twice, one rising and one falling, so it lands in two places at once
+                    tone("game", { f: base, dur: 0.2, gain: 0.04, glide: 1.5, cutoff: 3600, attack: 0.005 });
+                    tone("game", { f: base * 1.5, dur: 0.2, gain: 0.04, glide: 0.667, cutoff: 3600, attack: 0.005 });
+                    break;
+                case "origin":
+                    // a terminal bell: one low root note under a clean high blip
+                    tone("game", { f: base * 0.25, dur: 0.35, gain: 0.07, harm: 0.3, cutoff: 900, attack: 0.01 });
+                    blip("game", base * 2, { at: 0.03, dur: 0.05, gain: 0.05, cutoff: 4200 });
+                    break;
                 default:
                     blip("game", base, { dur: 0.05, gain: 0.06, cutoff: 2600 });
                     blip("game", base * 1.5, { at: 0.055, dur: 0.07, gain: 0.06, cutoff: 3000 });

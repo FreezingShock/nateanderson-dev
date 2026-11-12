@@ -2,7 +2,7 @@
 // engine (no React), so every number comes from `TUNE` and the engine's own `button`/`derive` and follows any rebalance.
 import {
     GOALS, MATS, PERKS, TIERS, TREE, TUNE, REBOOT_UNLOCK,
-    amount, apOnAscend, button, canAfford, canAscend, derive, droneCost, droneMax, droneRate, dronesOpen, fmt, fmtTime, goalDone, hasNode, isUnlocked, nodeOpen, statDef,
+    amount, apOnAscend, button, canAfford, canAscend, derive, droneBoost, droneCost, droneMax, droneRate, dronesOpen, originAp, paradoxOc, fmt, fmtTime, goalDone, hasNode, isUnlocked, nodeOpen, statDef,
     type ButtonStat, type Derived, type MatId, type State, type StatId,
 } from "./engine";
 import { LORE } from "./lore";
@@ -187,6 +187,9 @@ export function feedLine(id: StatId, s: State, d: Derived): string {
         case "starglass": return `Runes ×${fmt(b.sgRu)}`;
         case "voidsteel": return `Starglass ×${fmt(b.vsSg)}`;
         case "chrono": return `Voidsteel ×${fmt(b.chVs)}, everything ×${fmt(b.chAll)}`;
+        case "engrams": return `Chrono ×${fmt(b.egCh)}, Drones ×${fmt(droneBoost(s))}`;
+        case "paradox": return `Engrams ×${fmt(b.pxEg)}, Overclock ×${fmt(paradoxOc(s))}`;
+        case "origin": return `Paradox ×${fmt(b.orPx)}, AP on Ascend ×${fmt(originAp(s))}`;
     }
 }
 

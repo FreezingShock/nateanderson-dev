@@ -2,7 +2,7 @@
 // directly in Node. Numbers are plain doubles; a full run stays far below 1e308.
 
 /** Producer materials in chain order. Each is paid in the one before it (Copper in Bytes) and boosts that one in turn. */
-export const MATS = ["copper", "silicon", "quartz", "aether", "runes", "starglass", "voidsteel", "chrono"] as const;
+export const MATS = ["copper", "silicon", "quartz", "aether", "runes", "starglass", "voidsteel", "chrono", "engrams", "paradox", "origin"] as const;
 export type MatId = (typeof MATS)[number];
 export type StatId = "bytes" | "mult" | "reboot" | MatId;
 export type ButtonStat = Exclude<StatId, "bytes">;
@@ -32,6 +32,9 @@ export const STATS: StatDef[] = [
     { id: "starglass", name: "Starglass", short: "SG", role: "Fused starlight. Boosts Runes.", pays: "runes", color: "#bfeaff" },
     { id: "voidsteel", name: "Voidsteel", short: "VS", role: "Metal from an empty place. Boosts Starglass.", pays: "starglass", color: "#9a7bff" },
     { id: "chrono", name: "Chrono", short: "CH", role: "Held time. Boosts Voidsteel and everything a little.", pays: "voidsteel", color: "#ff7a4a" },
+    { id: "engrams", name: "Engrams", short: "EG", role: "Recorded memory. Boosts Chrono, and Drones press faster.", pays: "chrono", color: "#e8b98a" },
+    { id: "paradox", name: "Paradox", short: "PX", role: "Folded logic. Boosts Engrams, and Overclock hits harder.", pays: "engrams", color: "#dfe3f5" },
+    { id: "origin", name: "Origin", short: "OR", role: "The first node. Boosts Paradox, and every Ascend pays more AP.", pays: "paradox", color: "#3dff6e" },
 ];
 
 export const statDef = (id: StatId) => STATS.find((s) => s.id === id)!;
@@ -49,9 +52,12 @@ export const TUNE = {
         starglass: { base: 40, ratio: 10, growth: 1.12 },
         voidsteel: { base: 50, ratio: 10, growth: 1.12 },
         chrono: { base: 60, ratio: 10, growth: 1.12 },
+        engrams: { base: 30, ratio: 10, growth: 1.12 },
+        paradox: { base: 15, ratio: 10, growth: 1.12 },
+        origin: { base: 8, ratio: 10, growth: 1.12 },
     } as Record<string, { base: number; ratio: number; growth: number }>,
     // how much one press of tier k adds (Multipliers, or producers for materials)
-    gainBase: { mult: 1, copper: 1, silicon: 1, quartz: 1, aether: 1, runes: 1, starglass: 1, voidsteel: 1, chrono: 1 } as Record<string, number>,
+    gainBase: { mult: 1, copper: 1, silicon: 1, quartz: 1, aether: 1, runes: 1, starglass: 1, voidsteel: 1, chrono: 1, engrams: 1, paradox: 1, origin: 1 } as Record<string, number>,
     gainRatio: 5,
     // reboot tier k: costs rebootBase * rebootRatio^k * rebootGrowth^R Multipliers, adds rebootGainRatio^k Reboots
     rebootBase: 100,
@@ -59,16 +65,18 @@ export const TUNE = {
     rebootGrowth: 1.12,
     rebootGainRatio: 2.6,
     rebootStrength: 0.7, // each Reboot adds this much to Multiplier button gains
-    perProducer: { copper: 0.05, silicon: 0.03, quartz: 0.016, aether: 0.008, runes: 0.0025, starglass: 0.0012, voidsteel: 0.0006, chrono: 0.0003 } as Record<string, number>,
-    boostK: { cuReboot: 0.09, cuBytes: 0.02, siCu: 0.2, qzSi: 0.2, aeQz: 0.2, ruAe: 0.12, sgRu: 0.12, vsSg: 0.12, chVs: 0.12, chAll: 0.03 },
+    perProducer: { copper: 0.05, silicon: 0.03, quartz: 0.016, aether: 0.008, runes: 0.0025, starglass: 0.0012, voidsteel: 0.0006, chrono: 0.0003, engrams: 0.00015, paradox: 0.00008, origin: 0.00004 } as Record<string, number>,
+    boostK: { cuReboot: 0.09, cuBytes: 0.02, siCu: 0.2, qzSi: 0.2, aeQz: 0.2, ruAe: 0.12, sgRu: 0.12, vsSg: 0.12, chVs: 0.12, chAll: 0.03, egCh: 0.12, pxEg: 0.12, orPx: 0.12 },
+    // the extras on the last three materials grow with log10 of the amount, so they cannot feed back into a runaway
+    logK: { egDrone: 0.15, pxOc: 0.15, orAp: 0.1 },
     boostPow: 0.38,
-    unlockAt: { copper: 1, silicon: 150, quartz: 300, aether: 500, runes: 150, starglass: 200, voidsteel: 250, chrono: 300 } as Record<string, number>, // copper: Reboots; the rest: amount of the stat below
+    unlockAt: { copper: 1, silicon: 150, quartz: 300, aether: 500, runes: 150, starglass: 200, voidsteel: 250, chrono: 300, engrams: 350, paradox: 400, origin: 450 } as Record<string, number>, // copper: Reboots; the rest: amount of the stat below
     overclockMult: 6,
     overclockSecs: 20,
     offlineCapHours: 8,
     ascendAether: 400,
     apPerAether: 60, // AP = floor((aether / apPerAether)^apPow + (runes / apPer.runes)^apPow + ...)
-    apPer: { runes: 90, starglass: 45, voidsteel: 27, chrono: 14 } as Record<string, number>,
+    apPer: { runes: 90, starglass: 45, voidsteel: 27, chrono: 14, engrams: 1, paradox: 0.5, origin: 0.2 } as Record<string, number>,
     apPow: 0.3, // AP grows with amount^apPow; a low power stops Ascends from snowballing
     apBonus: 0.3,
     achBonus: 0.02,
@@ -99,7 +107,7 @@ export interface PerkDef {
 export const PERKS: PerkDef[] = [
     { id: "power", name: "Power core", blurb: "+15% to everything per level.", max: 20, cost: (l) => 1 + l },
     { id: "scanner", name: "Wide-band scanner", blurb: "Intrusions arrive 8% sooner per level.", max: 6, cost: (l) => 1 + l },
-    { id: "auto", name: "Autoloader", blurb: "Auto-buys for you, one stat per level (Multipliers, then Copper up to Chrono).", max: 9, cost: (l) => 3 + l * 2 },
+    { id: "auto", name: "Autoloader", blurb: "Auto-buys for you, one stat per level (Multipliers, then each material up the chain).", max: 12, cost: (l) => 3 + l * 2 },
     { id: "overclock", name: "Overclock coils", blurb: "Intrusion boosts last +5 s per level.", max: 6, cost: (l) => 2 + l * 2 },
     { id: "offline", name: "Standby cells", blurb: "Offline time banks +4 hours per level.", max: 6, cost: (l) => 2 + l * 2 },
     { id: "start", name: "Cold cache", blurb: "Start each Reboot with 10 seconds of Bytes per level.", max: 10, cost: (l) => 1 + Math.floor(l / 2) },
@@ -449,6 +457,9 @@ export interface State {
     starglass: number;
     voidsteel: number;
     chrono: number;
+    engrams: number;
+    paradox: number;
+    origin: number;
     prod: Record<MatId, number>;
     bought: Record<ButtonStat, number[]>;
     ap: number;
@@ -499,6 +510,9 @@ export function fresh(now = Date.now()): State {
         starglass: 0,
         voidsteel: 0,
         chrono: 0,
+        engrams: 0,
+        paradox: 0,
+        origin: 0,
         prod: Object.fromEntries(MATS.map((m) => [m, 0])) as Record<MatId, number>,
         bought: Object.fromEntries((["mult", "reboot", ...MATS] as ButtonStat[]).map((k) => [k, Array(TIERS).fill(0)])) as Record<ButtonStat, number[]>,
         ap: 0,
@@ -529,7 +543,7 @@ export interface Derived {
     multGainMult: number;
     rates: Record<MatId, number>;
     offlineCap: number; // seconds
-    boosts: { cuReboot: number; cuBytes: number; siCu: number; qzSi: number; aeQz: number; ruAe: number; sgRu: number; vsSg: number; chVs: number; chAll: number };
+    boosts: { cuReboot: number; cuBytes: number; siCu: number; qzSi: number; aeQz: number; ruAe: number; sgRu: number; vsSg: number; chVs: number; chAll: number; egCh: number; pxEg: number; orPx: number };
 }
 
 export function derive(s: State): Derived {
@@ -545,6 +559,9 @@ export function derive(s: State): Derived {
         vsSg: boost(s.voidsteel, k.vsSg),
         chVs: boost(s.chrono, k.chVs),
         chAll: boost(s.chrono, k.chAll),
+        egCh: boost(s.engrams, k.egCh),
+        pxEg: boost(s.paradox, k.pxEg),
+        orPx: boost(s.origin, k.orPx),
     };
     const tf = treeFx(s);
     const droneLv = s.drones.reduce((a, b) => a + b, 0);
@@ -554,7 +571,7 @@ export function derive(s: State): Derived {
     const multGainMult = (1 + rebootStrength * s.reboot) * (1 + tf.multGain);
     const bytesPerSec = s.mult * boosts.cuBytes * global * (1 + tf.bytes);
     // each material is boosted by the one after it in the chain
-    const boostedBy: Record<MatId, number> = { copper: boosts.siCu, silicon: boosts.qzSi, quartz: boosts.aeQz, aether: boosts.ruAe, runes: boosts.sgRu, starglass: boosts.vsSg, voidsteel: boosts.chVs, chrono: 1 };
+    const boostedBy: Record<MatId, number> = { copper: boosts.siCu, silicon: boosts.qzSi, quartz: boosts.aeQz, aether: boosts.ruAe, runes: boosts.sgRu, starglass: boosts.vsSg, voidsteel: boosts.chVs, chrono: boosts.egCh, engrams: boosts.pxEg, paradox: boosts.orPx, origin: 1 };
     // Cross-talk: each material is also boosted by the one two steps up the chain, at the weaker late-chain strength
     if (tf.features.includes("crosstalk")) MATS.forEach((m, i) => { const up = MATS[i + 2]; if (up) boostedBy[m] *= boost(s[up], TUNE.boostK.ruAe); });
     const rates = {} as Record<MatId, number>;
@@ -630,7 +647,12 @@ export function buyDrone(s: State, tier: number): boolean {
     s.drones[tier] += 1;
     return true;
 }
-export const droneRate = (s: State, tier: number) => s.drones[tier] * TUNE.drone.rate * (1 + treeFx(s).drone);
+/** Engrams make Drones press faster, Paradox makes Overclock stronger, Origin adds AP. Log-scale so none of them can run away. */
+const logBoost = (amount: number, k: number) => 1 + k * Math.log10(1 + Math.max(0, amount));
+export const droneBoost = (s: State) => logBoost(s.engrams, TUNE.logK.egDrone);
+export const paradoxOc = (s: State) => logBoost(s.paradox, TUNE.logK.pxOc);
+export const originAp = (s: State) => logBoost(s.origin, TUNE.logK.orAp);
+export const droneRate = (s: State, tier: number) => s.drones[tier] * TUNE.drone.rate * (1 + treeFx(s).drone) * droneBoost(s);
 export function toggleArm(s: State, stat: string) {
     s.armed = s.armed.includes(stat) ? s.armed.filter((x) => x !== stat) : [...s.armed, stat];
 }
@@ -655,18 +677,17 @@ export function droneStep(s: State, dt: number, eff = 1): number {
     return made;
 }
 
+/** Ceiling for every amount (doubles overflow to Infinity just past 1.8e308). */
+export const CAP = 1e300;
+
 export function tick(s: State, dt: number, eff = 1) {
     const d = derive(s);
     s.bytes += d.bytesPerSec * dt;
     s.life.bytes += d.bytesPerSec * dt;
-    s.copper += d.rates.copper * dt;
-    s.silicon += d.rates.silicon * dt;
-    s.quartz += d.rates.quartz * dt;
-    s.aether += d.rates.aether * dt;
-    s.runes += d.rates.runes * dt;
-    s.starglass += d.rates.starglass * dt;
-    s.voidsteel += d.rates.voidsteel * dt;
-    s.chrono += d.rates.chrono * dt;
+    // amounts stop at CAP so a very long post-tree run can never reach Infinity and break the save
+    for (const m of MATS) s[m] = Math.min(CAP, s[m] + d.rates[m] * dt);
+    if (s.bytes > CAP) s.bytes = CAP;
+    if (s.life.bytes > CAP) s.life.bytes = CAP;
     if (s.overclock > 0) s.overclock = Math.max(0, s.overclock - dt);
     s.life.secs += dt;
     if (d.bytesPerSec > s.life.peakBps) s.life.peakBps = d.bytesPerSec;
@@ -675,7 +696,7 @@ export function tick(s: State, dt: number, eff = 1) {
     autoArm(s);
 }
 
-export const overclockMult = (s: State) => { const f = treeFx(s); return (TUNE.overclockMult + f.ocMult) * (1 + f.ocX); };
+export const overclockMult = (s: State) => { const f = treeFx(s); return (TUNE.overclockMult + f.ocMult) * (1 + f.ocX) * paradoxOc(s); };
 export const overclockSecs = (s: State) => { const f = treeFx(s); return Math.max(5, (TUNE.overclockSecs + s.perks.overclock * 5 + f.overclock) * (1 + f.ocTime)); };
 
 /** Production for `secs` seconds at the current rate (Bytes and every material), paid at once. Used by the Dead drop and Zero-day. */
@@ -756,8 +777,8 @@ export function setMount(s: State, slot: number, mat: MatId | null) {
 export const apOnAscend = (s: State) => {
     if (s.aether < TUNE.ascendAether) return 0;
     let raw = Math.pow(s.aether / TUNE.apPerAether, TUNE.apPow);
-    for (const m of ["runes", "starglass", "voidsteel", "chrono"] as const) raw += Math.pow(s[m] / TUNE.apPer[m], TUNE.apPow);
-    let gain = raw * (1 + treeFx(s).ap);
+    for (const [m, per] of Object.entries(TUNE.apPer)) raw += Math.pow(s[m as MatId] / per, TUNE.apPow);
+    let gain = raw * (1 + treeFx(s).ap) * originAp(s);
     if (TUNE.apGainSoft > 0 && gain > TUNE.apGainSoft) gain = TUNE.apGainSoft * (1 + Math.log(gain / TUNE.apGainSoft));
     return Math.floor(gain);
 };
@@ -795,7 +816,7 @@ export function buyPerk(s: State, id: PerkDef["id"]): boolean {
 export function offline(s: State, seconds: number) {
     const cap = derive(s).offlineCap;
     const secs = Math.min(Math.max(0, seconds), cap);
-    const before = { bytes: s.bytes, copper: s.copper, silicon: s.silicon, quartz: s.quartz, aether: s.aether, runes: s.runes, starglass: s.starglass, voidsteel: s.voidsteel, chrono: s.chrono };
+    const before = Object.fromEntries((["bytes", ...MATS] as const).map((k) => [k, s[k]])) as Record<"bytes" | MatId, number>;
     const steps = Math.min(600, Math.max(1, Math.ceil(secs / 20)));
     const dt = secs / steps;
     const oc = s.overclock;
@@ -803,7 +824,7 @@ export function offline(s: State, seconds: number) {
     const pressesBefore = s.life.presses;
     for (let i = 0; i < steps; i++) tick(s, dt, Math.min(1, TUNE.drone.offline + treeFx(s).droneOff));
     s.overclock = Math.max(0, oc - secs);
-    return { secs, capped: seconds > cap, drones: s.life.presses - pressesBefore, gain: { bytes: s.bytes - before.bytes, copper: s.copper - before.copper, silicon: s.silicon - before.silicon, quartz: s.quartz - before.quartz, aether: s.aether - before.aether, runes: s.runes - before.runes, starglass: s.starglass - before.starglass, voidsteel: s.voidsteel - before.voidsteel, chrono: s.chrono - before.chrono } };
+    return { secs, capped: seconds > cap, drones: s.life.presses - pressesBefore, gain: Object.fromEntries((["bytes", ...MATS] as const).map((k) => [k, s[k] - before[k]])) as Record<"bytes" | MatId, number> };
 }
 
 // ---- goals. Five tiers of six. Each goal gives a small permanent boost (TUNE.achBonus) and a full tier gives a bigger one (TUNE.tierBonus).
@@ -812,12 +833,12 @@ export interface Goal {
     name: string;
     hint: string;
     tier: number; // 1..GOAL_TIERS
-    icon: "bytes" | "mult" | "reboot" | "copper" | "silicon" | "quartz" | "aether" | "runes" | "starglass" | "voidsteel" | "chrono" | "alert" | "ascend" | "spark" | "lock";
+    icon: StatId | "alert" | "ascend" | "spark" | "lock";
     cur: (s: State) => number;
     target: number;
 }
-export const GOAL_TIERS = 7;
-export const TIER_NAMES = ["", "Access", "Operator", "Admin", "Root", "Kernel", "Deep", "Zero"];
+export const GOAL_TIERS = 8;
+export const TIER_NAMES = ["", "Access", "Operator", "Admin", "Root", "Kernel", "Deep", "Zero", "Source"];
 const G = (id: string, name: string, hint: string, tier: number, icon: Goal["icon"], target: number, cur: (s: State) => number): Goal => ({ id, name, hint, tier, icon, cur, target });
 const life = (k: keyof State["life"]) => (s: State) => s.life[k];
 export const GOALS: Goal[] = [
@@ -870,6 +891,13 @@ export const GOALS: Goal[] = [
     G("ch1k", "Spare hours", "Hold 1,000 Chrono.", 7, "chrono", 1e3, (s) => s.chrono),
     G("asc20", "Habit of leaving", "Ascend 20 times.", 7, "ascend", 20, life("ascends")),
     G("tr18", "Whole tree", "Own every node in the prestige tree.", 7, "ascend", TREE.length, (s) => s.tree.length),
+    // VIII SOURCE: the last three zones, where the node's past turns up
+    G("eg1", "Deja vu", "Record your first Engram.", 8, "engrams", 1e-9, (s) => s.engrams),
+    G("eg1k", "Total recall", "Hold 1,000 Engrams.", 8, "engrams", 1e3, (s) => s.engrams),
+    G("px1", "Both at once", "Fold your first Paradox.", 8, "paradox", 1e-9, (s) => s.paradox),
+    G("px1k", "Strange loop", "Hold 1,000 Paradox.", 8, "paradox", 1e3, (s) => s.paradox),
+    G("or1", "Node zero", "Reach the first Origin.", 8, "origin", 1e-9, (s) => s.origin),
+    G("asc30", "Thirtieth floor", "Ascend 30 times.", 8, "ascend", 30, life("ascends")),
 ];
 
 // ---- secrets. They show as ???? until found, with a clue. Console ones are unlocked by commands (components/cm/console.tsx -> lib/nodefarm/records.ts);
@@ -918,7 +946,7 @@ export function checkGoals(s: State): { id: string; name: string; secret?: boole
 
 /** Autoloader perk: each level unlocks auto-buying for one stat. Buys at most one button per stat per call. */
 export function autoBuy(s: State): number {
-    const order: ButtonStat[] = ["mult", "copper", "silicon", "quartz", "aether", "runes", "starglass", "voidsteel", "chrono"];
+    const order: ButtonStat[] = ["mult", ...MATS];
     let n = 0;
     for (let i = 0; i < Math.min(order.length, s.perks.auto); i++) {
         const st = order[i];
@@ -959,7 +987,7 @@ export function parseSave(raw: string): State | null {
         n.achAt = { ...(o.achAt && typeof o.achAt === "object" ? o.achAt : {}) };
         if (!Array.isArray(n.armed)) n.armed = [];
         for (const k of ["drones", "droneAcc"] as const) if (!Array.isArray(n[k]) || n[k].length !== TIERS || n[k].some((x: number) => !Number.isFinite(x))) n[k] = Array(TIERS).fill(0);
-        for (const k of ["bytes", "mult", "reboot", "copper", "silicon", "quartz", "aether", "runes", "starglass", "voidsteel", "chrono", "ap"] as const) if (!Number.isFinite(n[k])) n[k] = base[k];
+        for (const k of ["bytes", "mult", "reboot", "copper", "silicon", "quartz", "aether", "runes", "starglass", "voidsteel", "chrono", "engrams", "paradox", "origin", "ap"] as const) if (!Number.isFinite(n[k])) n[k] = base[k];
         return n;
     } catch {
         return null;
