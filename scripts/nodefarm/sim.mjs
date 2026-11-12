@@ -102,7 +102,7 @@ while (t < hours * 3600) {
         if (allRanks) mark("tree done", t);
         // NF_HAND=n: hand over up to n times (the reset past Ascend) once the tree is done and Origin is producing.
         // NF_PROTO picks the protocol (default wren). Firmware is bought cheapest first.
-        if (HANDS > 0 && allRanks && E.handOpen(s) && s.hand.count < HANDS) {
+        if (HANDS > 0 && E.treeComplete(s) && E.handOpen(s) && s.hand.count < HANDS) {
             const keys = E.handover(s, process.env.NF_PROTO || "wren", "", "osk");
             handLog.push([t, keys]);
             mark("handover " + s.hand.count, t);

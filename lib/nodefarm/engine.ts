@@ -1000,7 +1000,7 @@ export const apOnAscend = (s: State) => {
     let raw = Math.pow(s.aether / TUNE.apPerAether, TUNE.apPow);
     for (const [m, per] of Object.entries(TUNE.apPer)) raw += Math.pow(s[m as MatId] / per, TUNE.apPow);
     const tf = treeFx(s);
-    let gain = raw * (1 + tf.ap) * originAp(s) * (s.lab.armed.includes("zeroclick") ? 1 + payload("zeroclick").v : 1) * (tf.apPerMat ? 1 + tf.apPerMat * MATS.filter((m) => s.prod[m] > 0).length : 1);
+    let gain = raw * (1 + tf.ap) * originAp(s) * (s.lab.armed.includes("zeroclick") ? 1 + payload("zeroclick").v : 1) * (tf.apPerMat ? 1 + tf.apPerMat * MATS.filter((m) => s.prod[m] > 0).length : 1) * handAp(s);
     if (TUNE.apGainSoft > 0 && gain > TUNE.apGainSoft) gain = TUNE.apGainSoft * (1 + Math.log(gain / TUNE.apGainSoft));
     return Math.floor(gain);
 };
@@ -1567,6 +1567,7 @@ export const HAND_TUNE = {
     bootProd: 10, // Bootloader: producers on Copper to Aether
     afterglow: 180, // Afterglow: seconds of Overclock at the start of every Ascend
     noteMax: 140, // characters in a handover note
+    apPerHand: 1, // every Handover done: AP on Ascend x(1 + this * Handovers), so each cycle rebuilds the tree faster
 };
 export const PROTOS: { id: ProtoId; op: string; name: string; blurb: string; flavor: string; color: string }[] = [
     { id: "wren", op: "Wren", name: "Tape and fans", blurb: "Multiplier buttons add x3 and Reboots hit x2 as hard.", flavor: "Get it booting first. Make it pretty never.", color: "#b6f04a" },
@@ -1729,6 +1730,8 @@ export function protoK(s: State, id: ProtoId): number {
 }
 /** Lineage: everything +50% per Handover done. */
 export const handGlobal = (s: State) => (s.hand ? 1 + handFx(s).lineage * s.hand.count : 1);
+/** The node remembers: every Handover done multiplies AP on Ascend. */
+export const handAp = (s: State) => (s.hand ? 1 + HAND_TUNE.apPerHand * s.hand.count : 1);
 /** Aether you need to Ascend (Short fuse halves it). */
 export const ascendNeed = (s: State) => TUNE.ascendAether * (s.hand ? handFx(s).ascendAt : 1);
 const ROOT_MATS: readonly MatId[] = ["engrams", "paradox", "origin"];
