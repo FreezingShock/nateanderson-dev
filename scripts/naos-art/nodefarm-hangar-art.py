@@ -85,41 +85,71 @@ class Canvas:
 
 
 def deck():
+    """Deck plates with variety: tread plate, glowing grates, cable trenches, coolant channels, painted bay markings."""
     rnd = random.Random(7)
     n = 256
     c = Canvas(n, n, True)
-    P = 64
-    # plates: each its own tone, lit from the top left, tileable because plates align to the tile
-    for py in range(0, n, P):
-        for px in range(0, n, P):
-            m = (c.x >= px) & (c.x < px + P) & (c.y >= py) & (c.y < py + P)
-            base = 0.35 + rnd.random() * 0.25
-            v = base + 0.25 * (1 - ((c.x - px) + (c.y - py)) / (2 * P))
-            c.fill(m, np.clip(v, 0, 1), "steel", soft=False)
-            # tread pattern on some plates
-            if rnd.random() < 0.45:
-                tm = m & (((c.x - px) + 2 * (c.y - py)) % 8 < 2) & (((c.x - px) // 8 + (c.y - py) // 8) % 2 == 0)
-                c.fill(tm, 0.95, "steel", soft=False)
-            # seams and rivets
-            c.rect(px, py, px + P, py + 1, "#05070a")
-            c.rect(px, py, px + 1, py + P, "#05070a")
-            c.rect(px + 1, py + 1, px + P, py + 2, "#2a3446")
-            for rx, ry in ((4, 4), (P - 5, 4), (4, P - 5), (P - 5, P - 5)):
-                c.px(px + rx, py + ry, "#3c4a60")
-                c.px(px + rx + 1, py + ry + 1, "#05070a")
-    # stains: amber oil, mint coolant, rust, violet ion scorch (wrapping)
+    P_ = 64
+    kinds = ["tread", "grate", "trench", "plain", "mark", "coolant", "plain", "grate", "tread", "mark", "plain", "trench", "coolant", "tread", "grate", "plain"]
+    rnd.shuffle(kinds)
+    glow_ramps = ["d0", "d1", "d2", "d3", "d4", "d5", "amber", "mint"]
+    for pi, (py, px) in enumerate([(y, x) for y in range(0, n, P_) for x in range(0, n, P_)]):
+        kind = kinds[pi]
+        lx, ly = c.x - px, c.y - py
+        m = (lx >= 0) & (lx < P_) & (ly >= 0) & (ly < P_)
+        base = 0.4 + rnd.random() * 0.2
+        v = base + 0.25 * (1 - (lx + ly) / (2 * P_))
+        c.fill(m, np.clip(v, 0, 1), "steel", soft=False)
+        if kind == "tread":
+            tm = m & (((lx + 2 * ly) % 8) < 2) & (((lx // 8) + (ly // 8)) % 2 == 0)
+            c.fill(tm, 0.95, "steel", soft=False)
+        elif kind == "grate":
+            g = glow_ramps[rnd.randrange(len(glow_ramps))]
+            inner = m & (lx > 6) & (lx < P_ - 6) & (ly > 6) & (ly < P_ - 6)
+            d = np.hypot(lx - P_ / 2, ly - P_ / 2) / (P_ / 2)
+            c.fill(inner, np.clip(0.58 - d * 0.5, 0, 1), g, dither=1.3, soft=False)
+            bars = inner & ((lx % 6) < 2)
+            c.fill(bars, 0.15, "steel", soft=False)
+            c.fill(inner & ((ly % 16) < 1), 0.1, "steel", soft=False)
+        elif kind == "trench":
+            tr = m & (ly > 26) & (ly < 40)
+            c.fill(tr, 0.02, "steel", soft=False)
+            for k, col in enumerate(("d0", "d2", "d4", "mint")):
+                yy = 28 + k * 3
+                cab = m & (ly >= yy) & (ly < yy + 2) & ((lx + k * 7) % 40 < 34)
+                c.fill(cab, 0.55 + 0.25 * np.sin(lx / 5.0 + k) , col, soft=False)
+            c.fill(m & ((ly == 25) | (ly == 40)), 0.9, "steel", soft=False)
+        elif kind == "coolant":
+            ch = m & (lx > 24) & (lx < 40)
+            c.fill(ch, 0.05, "steel", soft=False)
+            flow = ch & (lx > 26) & (lx < 38)
+            c.fill(flow, np.clip(0.45 + 0.35 * np.sin((ly + lx * 0.3) / 3.0), 0, 1), "mint", dither=1.2, soft=False)
+        elif kind == "mark":
+            col = glow_ramps[rnd.randrange(6)]
+            # chevrons pointing to the pad, painted and worn
+            for k in range(3):
+                cy0 = 14 + k * 14
+                chev = m & (np.abs(lx - 32) * 0.7 + (ly - cy0) > 0) & (np.abs(lx - 32) * 0.7 + (ly - cy0) < 5) & (np.abs(lx - 32) < 20)
+                worn = np.random.default_rng(pi * 7 + k).random(chev.shape) < 0.12
+                c.fill(chev & ~worn, 0.7, col, soft=False)
+        # seams and rivets
+        c.rect(px, py, px + P_, py + 1, "#05070a")
+        c.rect(px, py, px + 1, py + P_, "#05070a")
+        c.rect(px + 1, py + 1, px + P_, py + 2, "#2a3446")
+        for rx, ry in ((4, 4), (P_ - 5, 4), (4, P_ - 5), (P_ - 5, P_ - 5)):
+            c.px(px + rx, py + ry, "#3c4a60")
+            c.px(px + rx + 1, py + ry + 1, "#05070a")
+    # a few oil and coolant stains, wrapping
     for ramp, k in (("amber", 2), ("mint", 1), ("rust", 2)):
         for _ in range(k):
-            cx, cy, r = rnd.random() * n, rnd.random() * n, 10 + rnd.random() * 22
+            cx, cy, r = rnd.random() * n, rnd.random() * n, 8 + rnd.random() * 14
             dx = np.minimum(abs(c.x - cx), n - abs(c.x - cx))
             dy = np.minimum(abs(c.y - cy), n - abs(c.y - cy))
             d = np.sqrt(dx * dx + (dy * 1.3) ** 2) / r
-            m = d < 1
-            c.fill(m, np.clip((1 - d) * 0.55, 0, 1), ramp, dither=1.4)
-    # a painted taxi line along one seam: solid hazard paint, a few chipped pixels
+            c.fill(d < 1, np.clip((1 - d) * 0.5, 0, 1), ramp, dither=1.4)
+    # a hazard taxi line along one seam row
     m = (c.y >= 126) & (c.y < 130)
-    chip = np.random.default_rng(3).random(m.shape) < 0.08
-    c.fill(m & ~chip, 0.6, "haz", soft=False)
+    c.fill(m, (((c.x + c.y) // 4) % 2) * 0.7, "haz", soft=False)
     c.save("hangar-bg-0")
 
 

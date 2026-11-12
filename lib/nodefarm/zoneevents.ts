@@ -3,7 +3,7 @@
 // or wait it out). Nothing ever takes stock from you, and time away just lets an event run out. Pure rules, no React: the numbers
 // live in ZE_TUNE (engine.ts, because the engine reads them), the strip on the zone panel is components/nodefarm/zone-event.tsx.
 import {
-    MATS, STATS, TICK_HOOKS, TIERS, ZE_TUNE, derive, droneRate, isUnlocked, overclockMult, postOf, press, resonancePair, statDef, zeOut, fwFieldOp, fwZeGap, fwZeLong,
+    MATS, STATS, TICK_HOOKS, TIERS, ZE_TUNE, derive, droneEventPace, droneRate, isUnlocked, overclockMult, postOf, press, resonancePair, statDef, zeOut, fwFieldOp, fwZeGap, fwZeLong,
     type ButtonStat, type MatId, type State, type StatId, type ZoneEvActive, type ZoneEvKind, type ZoneEvState,
 } from "./engine";
 import { LORE } from "./lore";
@@ -157,7 +157,7 @@ export function zeStep(s: State, dt: number) {
     const z = ensureZe(s);
     if (z.act.length) {
         if (dt <= 5) for (const e of z.act) if (e.kind === "convoy" && e.left > 0) convoyStep(s, e, dt);
-        for (const e of z.act) e.left -= dt;
+        for (const e of z.act) e.left -= dt * droneEventPace(s, e.zone, e.kind !== "fault"); // a posted Drone stretches good events and patches faults
         if (z.act.some((e) => e.left <= 0)) z.act = z.act.filter((e) => e.left > 0);
     }
     if (z.act.length) return;

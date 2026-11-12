@@ -769,6 +769,8 @@ export interface RigState {
     seeds?: number;
     // run meters (reset on Ascend)
     cache: number;
+    /** the Packet cache's cap at the last tick (Hot swap reads it without a derive) */
+    cacheCapAt: number;
     quiet: number;
     pour: number;
     casts: number;
@@ -1140,7 +1142,7 @@ export function droneStep(s: State, dt: number, eff = 1): number {
     const fx = droneFx(s);
     const sweep = s.armed.filter((st) => st !== "bytes" && st !== "reboot" && isUnlocked(s, st as StatId)) as ButtonStat[];
     let made = 0;
-    let units = 0;
+    let parts = 0;
     const pressN = (st: ButtonStat, tier: number, n: number) => { for (let i = 0; i < n; i++) { if (!press(s, st, tier)) break; made++; } };
     for (let k = 0; k < TIERS; k++) {
         if (s.drones[k] <= 0) continue;
@@ -1149,6 +1151,8 @@ export function droneStep(s: State, dt: number, eff = 1): number {
         const sweepRate = post ? (fx.garrison ? base : 0) : base * (1 + fx.sweep);
         const postRate = post ? base * postX(s, k) : 0;
         const reach = (D.mods[k]?.[2] ?? 0) * DRONE_TUNE.reachEach;
+        const salv = 1 + (D.mods[k]?.[4] ?? 0) * DRONE_TUNE.salvageEach;
+        let units = 0;
         // sweeping
         if (sweepRate > 0 && sweep.length) {
             s.droneAcc[k] = Math.min(s.droneAcc[k] + sweepRate, TUNE.drone.burst);
@@ -1163,7 +1167,7 @@ export function droneStep(s: State, dt: number, eff = 1): number {
             const n = Math.floor(D.pacc[k]);
             if (n >= 1) { D.pacc[k] -= n; pressN(post, k, n); }
             units += postRate;
-            addSvc(s, post, postRate, fx);
+            addSvc(s, post, postRate * (1 + (D.mods[k]?.[3] ?? 0) * DRONE_TUNE.tunerEach), fx);
         }
         // reach: the tier below, on the same zones
         if (reach > 0 && k > 0) {
@@ -1174,8 +1178,9 @@ export function droneStep(s: State, dt: number, eff = 1): number {
                 if (n >= 1) { D.racc[k] -= n; for (const st of zones) pressN(st, k - 1, n); }
             }
         }
+        parts += units * salv;
     }
-    if (units > 0) D.parts = Math.min(CAP, D.parts + units * DRONE_TUNE.partK * (1 + fx.parts));
+    if (parts > 0) D.parts = Math.min(CAP, D.parts + parts * DRONE_TUNE.partK * (1 + fx.parts));
     return made;
 }
 
@@ -1880,6 +1885,12 @@ export const DRONE_TUNE = {
     partK: 0.1, // Parts per attempted press
     reachEach: 0.2, // each Reach level presses the tier below at this share of the Drone's speed
     servoEach: 0.25, // each Servo level: Drone speed +this
+    tunerEach: 0.25, // each Tuner level: mastery from this Drone's posting +this
+    salvageEach: 0.3, // each Salvager level: Parts from this Drone +this
+    masteredSpeed: 0.02, // every zone at mastery V: every Drone +this speed
+    rigCut: 0.06, // each mastery rank on a zone: its rig upgrades cost this much less
+    eventLonger: 0.5, // a good zone event on a zone with a posted Drone lasts this much longer
+    faultFaster: 1, // a fault on a zone with a posted Drone clears this much faster
     uplinkEach: 1, // each Uplink level: posting speed +this (x3 -> x4)
     modMax: 5,
     modBase: 25, // a mod costs modBase * modGrowth^level * modTier^tier Parts
@@ -1892,12 +1903,15 @@ export const DRONE_TUNE = {
 };
 /** Zones a Drone can work: every button stat except Reboots, in chain order. */
 export const POSTABLE: readonly ButtonStat[] = ["mult", ...MATS];
-export type ModId = "servo" | "uplink" | "reach";
+export type ModId = "servo" | "uplink" | "reach" | "tuner" | "salvage";
 export const MODS: { id: ModId; name: string; blurb: string }[] = [
     { id: "servo", name: "Servo", blurb: "presses 25% faster per level" },
     { id: "uplink", name: "Uplink", blurb: "posting speed +1x per level" },
     { id: "reach", name: "Reach", blurb: "also presses the tier below at 20% per level" },
+    { id: "tuner", name: "Tuner", blurb: "builds mastery 25% faster per level while posted" },
+    { id: "salvage", name: "Salvager", blurb: "salvages 30% more Parts per level" },
 ];
+export const MOD_COUNT = MODS.length;
 export interface DroneState {
     /** each tier's posting, or null to sweep every armed zone (kept through Ascend) */
     post: (ButtonStat | null)[];
@@ -1913,7 +1927,7 @@ export interface DroneState {
     pacc: number[];
     racc: number[];
 }
-export const freshDr = (): DroneState => ({ post: Array(TIERS).fill(null), svc: {}, parts: 0, mods: Array.from({ length: TIERS }, () => [0, 0, 0]), nodes: [], pacc: Array(TIERS).fill(0), racc: Array(TIERS).fill(0) });
+export const freshDr = (): DroneState => ({ post: Array(TIERS).fill(null), svc: {}, parts: 0, mods: Array.from({ length: TIERS }, () => Array(MOD_COUNT).fill(0)), nodes: [], pacc: Array(TIERS).fill(0), racc: Array(TIERS).fill(0) });
 
 // -- the drone tree
 export type DroneSec = "flight" | "dispatch" | "salvage";
@@ -2036,6 +2050,17 @@ export function masteryMul(s: State, st: ButtonStat): number {
     const r = zoneRank(s, st);
     return r ? 1 + (DRONE_TUNE.rankX[r] - 1) * (1 + droneFx(s).rankPow) : 1;
 }
+/** Zones at mastery V. */
+export const masteredZones = (s: State) => POSTABLE.filter((st) => zoneRank(s, st) >= DRONE_TUNE.rankAt.length).length;
+/** Rig upgrades on a zone cost less with its mastery (rigs.ts). */
+export const rigMasteryCut = (s: State, zone: StatId) => (s.dr && POSTABLE.includes(zone as ButtonStat) ? 1 - DRONE_TUNE.rigCut * zoneRank(s, zone as ButtonStat) : 1);
+/** How fast a zone event's clock runs: a posted Drone makes good events last longer and faults clear sooner (zoneevents.ts). */
+export function droneEventPace(s: State, zone: StatId, good: boolean): number {
+    if (!s.dr) return 1;
+    const here = s.dr.post.some((p, k) => p === zone && s.drones[k] > 0 && isUnlocked(s, zone));
+    if (!here) return 1;
+    return good ? 1 / (1 + DRONE_TUNE.eventLonger) : 1 + DRONE_TUNE.faultFaster;
+}
 export const masteryRanks = (s: State) => POSTABLE.reduce((a, st) => a + zoneRank(s, st), 0);
 /** Cores: one per mastery rank ever earned, minus what the drone tree has spent. */
 export const coresEarned = (s: State) => masteryRanks(s);
@@ -2071,6 +2096,8 @@ export function hangarSpeed(s: State, tier: number): number {
     let x = (1 + (s.dr.mods[tier]?.[0] ?? 0) * DRONE_TUNE.servoEach) * (1 + fx.speed);
     if (fx.formation) x *= 1 + fx.formation * s.dr.post.filter((p, k) => p && s.drones[k] > 0 && isUnlocked(s, p)).length;
     if (fx.rankSpeed) x *= 1 + fx.rankSpeed * masteryRanks(s);
+    const mastered = masteredZones(s);
+    if (mastered) x *= 1 + DRONE_TUNE.masteredSpeed * mastered;
     return x;
 }
 /** Parts salvaged per second right now (the same sums droneStep makes). */
@@ -2081,8 +2108,9 @@ export function partsRate(s: State): number {
     for (let k = 0; k < TIERS; k++) {
         if (s.drones[k] <= 0) continue;
         const r = droneRate(s, k), post = postOf(s, k);
-        if (post) u += r * postX(s, k) + (fx.garrison ? r * sweep : 0);
-        else u += r * (1 + fx.sweep) * sweep;
+        const salv = 1 + (s.dr.mods[k]?.[4] ?? 0) * DRONE_TUNE.salvageEach;
+        if (post) u += (r * postX(s, k) + (fx.garrison ? r * sweep : 0)) * salv;
+        else u += r * (1 + fx.sweep) * sweep * salv;
     }
     return u * DRONE_TUNE.partK * (1 + fx.parts);
 }
@@ -2094,12 +2122,12 @@ export function svcRate(s: State, st: ButtonStat): number {
     for (let k = 0; k < TIERS; k++) {
         if (s.drones[k] <= 0) continue;
         const r = droneRate(s, k), post = postOf(s, k);
-        if (post === st) u += r * postX(s, k);
+        if (post === st) u += r * postX(s, k) * (1 + (s.dr.mods[k]?.[3] ?? 0) * DRONE_TUNE.tunerEach);
         if (fx.sweepSvc && armed && (!post || fx.garrison)) u += r * (post ? 1 : 1 + fx.sweep) * fx.sweepSvc;
     }
     return u * (1 + fx.svc);
 }
-export const modLevels = (s: State) => s.dr.mods.reduce((a, m) => a + m[0] + m[1] + m[2], 0);
+export const modLevels = (s: State) => s.dr.mods.reduce((a, m) => a + m.reduce((x, y) => x + y, 0), 0);
 /** Foundry: everything +1% per mod level. */
 export const foundryAll = (s: State) => (s.dr ? 1 + droneFx(s).modGlobal * modLevels(s) : 1);
 
@@ -2114,7 +2142,7 @@ export function modBlock(s: State, tier: number, mod: number): ModFail | null {
     return null;
 }
 export function buyMod(s: State, tier: number, mod: number): boolean {
-    if (tier < 0 || tier >= TIERS || mod < 0 || mod > 2 || modBlock(s, tier, mod)) return false;
+    if (tier < 0 || tier >= TIERS || mod < 0 || mod >= MOD_COUNT || modBlock(s, tier, mod)) return false;
     s.dr.parts -= modCost(s, tier, mod);
     s.dr.mods[tier][mod] += 1;
     return true;
@@ -2140,6 +2168,7 @@ export function droneTreeTotals(s: State): [string, string][] {
     const f = droneFx(s);
     const rows: [string, string][] = [];
     rows.push(["Mastery ranks", `${masteryRanks(s)} of ${POSTABLE.length * 5}`]);
+    if (masteredZones(s)) rows.push(["Mastered zones", `${masteredZones(s)}, Drones +${Math.round(masteredZones(s) * DRONE_TUNE.masteredSpeed * 100)}%`]);
     if (f.speed) rows.push(["Drone speed", `x${+(1 + f.speed).toFixed(2)}`]);
     if (f.formation) rows.push(["Formation", `+${Math.round(f.formation * 100)}% per posted Drone`]);
     if (f.off) rows.push(["Away speed", `+${Math.round(f.off * 100)}%`]);
@@ -2182,7 +2211,7 @@ function parseDr(o: unknown): DroneState {
         post: Array.isArray(x.post) && x.post.length === TIERS ? x.post.map((p) => (POSTABLE.includes(p as ButtonStat) ? (p as ButtonStat) : null)) : b.post,
         svc: Object.fromEntries(Object.entries(x.svc ?? {}).filter(([k, v]) => POSTABLE.includes(k as ButtonStat) && num(v) > 0).map(([k, v]) => [k, num(v)])),
         parts: Math.max(0, num(x.parts)),
-        mods: Array.isArray(x.mods) && x.mods.length === TIERS ? x.mods.map((m) => (Array.isArray(m) && m.length === 3 ? m.map((lv) => Math.max(0, Math.floor(num(lv)))) : [0, 0, 0])) : b.mods,
+        mods: Array.isArray(x.mods) && x.mods.length === TIERS ? x.mods.map((m) => Array.from({ length: MOD_COUNT }, (_, i) => (Array.isArray(m) ? Math.max(0, Math.floor(num(m[i]))) : 0))) : b.mods,
         nodes: Array.isArray(x.nodes) ? [...new Set(x.nodes.filter((id) => DT_BY.has(id)))] : [],
         pacc: arr(x.pacc),
         racc: arr(x.racc),
