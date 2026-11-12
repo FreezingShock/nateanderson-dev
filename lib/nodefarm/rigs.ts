@@ -6,7 +6,7 @@
 // Adding a zone: add a RIGS entry, and a case in muls() and/or step() if the rig changes output or runs on a clock.
 // Keep every boost to its own zone or a named neighbour, and never a power-law boost on everything.
 import {
-    MATS, RIG_HOOKS, STATS, TUNE, derive, fwRigCost, isUnlocked, overclockMult, overclockSecs, sinceReboot,
+    MATS, RIG_HOOKS, STATS, TUNE, derive, fwRigCost, rigMasteryCut, isUnlocked, overclockMult, overclockSecs, sinceReboot,
     type Derived, type MatId, type RigState, type State, type StatId,
 } from "./engine";
 import { ARCS } from "./arcs";
@@ -169,7 +169,7 @@ export function rigPrice(s: State, key: string, d?: Derived): { pays: StatId; co
     const pays = rigPays(zone);
     const maxed = lv >= rigCap(s, zone);
     const rate = baseRate(s, pays, d);
-    const cost = rate > 0 ? rate * 60 * T.minutes[Math.min(lv, T.minutes.length - 1)] * fwRigCost(s) : Infinity; // Field kit (Firmware)
+    const cost = rate > 0 ? rate * 60 * T.minutes[Math.min(lv, T.minutes.length - 1)] * fwRigCost(s) * rigMasteryCut(s, zone) : Infinity; // Field kit (Firmware), Drone mastery
     return { pays, cost, maxed };
 }
 export function buyRig(s: State, key: string): boolean {
