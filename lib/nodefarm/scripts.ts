@@ -56,7 +56,7 @@ export interface ScriptDef {
     color: string;
 }
 export const SCRIPTS: ScriptDef[] = [
-    { id: "buy", file: "buy.sh", name: "Auto-buy", color: "#b6f04a", blurb: "Presses the button tiers you taught it, on the stats you tick, and keeps a reserve.", teach: (n) => `Press any buy button by hand ${n} more time${n === 1 ? "" : "s"}.`, flavor: "It watched your hands for a while. Then it asked if it could try." },
+    { id: "buy", file: "buy.sh", name: "Auto-buy", color: "#b6f04a", blurb: "Auto-buy script: presses the button tiers you taught it, on the stats you tick, and keeps a reserve.", teach: (n) => `Press any buy button by hand ${n} more time${n === 1 ? "" : "s"}.`, flavor: "It watched your hands for a while. Then it asked if it could try." },
     { id: "reboot", file: "reboot.sh", name: "Auto-Reboot", color: "#ff2d8a", blurb: "Reboots at the best tier you can afford once Multipliers reach a multiple of its price.", teach: (n) => `Reboot by hand ${n} more time${n === 1 ? "" : "s"}.`, flavor: "Kill, wait, start. The same three words every time, so it learned them." },
     { id: "compile", file: "compile.sh", name: "Auto-compile", color: "#4aa3ff", blurb: "Keeps the recipes you pick stocked, compiling whenever the queue and your Intel allow.", teach: (n) => `Compile ${n} more payload${n === 1 ? "" : "s"} by hand in the Exploit Lab.`, flavor: "make all. It has never once forgotten the flags." },
     { id: "deploy", file: "deploy.sh", name: "Auto-deploy", color: "#8f9bff", blurb: "Deploys the payloads you pick from stock: buffs when they run out, charges when unarmed.", teach: (n) => `Deploy ${n} more payload${n === 1 ? "" : "s"} by hand.`, flavor: "Fire and forget, then fire again on the minute." },

@@ -139,7 +139,7 @@ export interface PerkDef {
 export const PERKS: PerkDef[] = [
     { id: "power", name: "Power core", blurb: "+15% to everything per level.", max: 20, cost: (l) => 1 + l },
     { id: "scanner", name: "Wide-band scanner", blurb: "Quick-time events arrive 8% sooner per level.", max: 6, cost: (l) => 1 + l },
-    { id: "auto", name: "Autoloader", blurb: "Auto-buys for you, one stat per level (Multipliers, then each material up the chain).", max: 12, cost: (l) => 3 + l * 2 },
+    { id: "auto", name: "Autoloader", blurb: "Buys one stat per level by itself, with no script needed (Multipliers, then each material up the chain).", max: 12, cost: (l) => 3 + l * 2 },
     { id: "overclock", name: "Overclock coils", blurb: "Overclocks last +5 s longer per level.", max: 6, cost: (l) => 2 + l * 2 },
     { id: "offline", name: "Standby cells", blurb: "Standby window +4 hours per level.", max: 6, cost: (l) => 2 + l * 2 },
     { id: "start", name: "Cold cache", blurb: "Start each Reboot with 10 seconds of Bytes per level.", max: 10, cost: (l) => 1 + Math.floor(l / 2) },
