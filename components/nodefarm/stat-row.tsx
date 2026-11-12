@@ -1,24 +1,14 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useContext, useEffect, useRef } from "react";
 import { MATS, STATS, TIERS, button, derive, fmt, isUnlocked, statDef, type ButtonStat, type State, type StatId } from "@/lib/nodefarm/engine";
 import { LORE } from "@/lib/nodefarm/lore";
+import { buttonTip, unlockInfo, type Target } from "@/lib/nodefarm/guide";
+import { TipCtx } from "./guide";
 import { NfIcon, NfTierIcon, type NfIconName } from "./icon";
 
 type D = ReturnType<typeof derive>;
 export type PressFn = (stat: ButtonStat, tier: number, quiet?: boolean) => boolean;
-
-const UNLOCK_HINT: Record<string, string> = {
-    reboot: "Earn 600 Bytes in total",
-    copper: "Reboot once",
-    silicon: "Hold 150 Copper",
-    quartz: "Hold 300 Silicon",
-    aether: "Hold 500 Quartz",
-    runes: "Hold 150 Aether",
-    starglass: "Hold 200 Runes",
-    voidsteel: "Hold 250 Starglass",
-    chrono: "Hold 300 Voidsteel",
-};
 
 /** What this stat is doing for you right now, as label and value pairs for the spec lines. */
 function effects(id: StatId, s: State, d: D): [string, string][] {
@@ -48,7 +38,7 @@ function effects(id: StatId, s: State, d: D): [string, string][] {
     }
 }
 
-/** The signal chain: who boosts whom, with live multipliers. Sits above the stat dossiers. */
+/** The signal chain: who boosts whom, with live multipliers. Sits above the stat dossiers. Only the zones you have reached, plus the next one, are drawn. */
 export function Chain({ s, d, onAll, allOpen }: { s: State; d: D; onAll: (open: boolean) => void; allOpen: boolean }) {
     const feed: Partial<Record<StatId, string>> = {
         chrono: `Voidsteel ×${fmt(d.boosts.chVs)}`,
@@ -64,16 +54,27 @@ export function Chain({ s, d, onAll, allOpen }: { s: State; d: D; onAll: (open: 
         bytes: `+${fmt(d.bytesPerSec)}/s`,
     };
     const order = [...STATS].reverse();
+    const firstLocked = STATS.find((x) => !isUnlocked(s, x.id));
+    const hidden = firstLocked ? STATS.length - STATS.indexOf(firstLocked) - 1 : 0;
+    const shown = order.slice(hidden);
     return (
         <ol className="nf-chain" aria-label="Signal chain: each stat boosts the next">
-            {order.map((def, i) => {
+            {hidden > 0 && (
+                <li className="nf-chain-more" aria-label={`${hidden} more zones still encrypted`}>
+                    <NfIcon name="lock" />
+                    <b>+{hidden}</b>
+                    <small>encrypted</small>
+                    <i aria-hidden="true">▸</i>
+                </li>
+            )}
+            {shown.map((def, i) => {
                 const open = isUnlocked(s, def.id);
                 return (
                     <li key={def.id} data-open={open ? "" : undefined} style={{ ["--c" as string]: def.color }}>
                         <NfIcon name={open ? (def.id as NfIconName) : "lock"} />
                         <b>{def.short}</b>
                         <small>{open ? feed[def.id] : "encrypted"}</small>
-                        {i < order.length - 1 && <i aria-hidden="true">▸</i>}
+                        {i < shown.length - 1 && <i aria-hidden="true">▸</i>}
                     </li>
                 );
             })}
@@ -84,17 +85,24 @@ export function Chain({ s, d, onAll, allOpen }: { s: State; d: D; onAll: (open: 
     );
 }
 
-export function StatRow({ id, s, d, onPress, onArm, open: expanded, onToggle }: { id: StatId; s: State; d: D; onPress: PressFn; onArm: () => void; open: boolean; onToggle: () => void }) {
+export function StatRow({ id, s, d, onPress, onArm, open: expanded, onToggle, guide }: { id: StatId; s: State; d: D; onPress: PressFn; onArm: () => void; open: boolean; onToggle: () => void; guide?: Target }) {
     const def = statDef(id);
     const lore = LORE[id];
     const open = isUnlocked(s, id);
     if (!open) {
+        const u = unlockInfo(s, id);
+        const pct = Math.round(u.frac * 100);
         return (
-            <article className="nf-row nf-locked" style={{ ["--c" as string]: def.color }}>
+            <article className="nf-row nf-locked" style={{ ["--c" as string]: def.color }} data-stat={id}>
                 <span className="nf-plate"><NfIcon name="lock" /></span>
-                <div>
-                    <b>ENCRYPTED // {def.name}</b>
-                    <small>{UNLOCK_HINT[id]} to decrypt.</small>
+                <div className="nf-lk">
+                    <span className="nf-lk-k">ZONE {String(STATS.findIndex((x) => x.id === id) + 1).padStart(2, "0")} // ENCRYPTED</span>
+                    <b>{def.name}</b>
+                    <small>Unlocks at: {u.label.charAt(0).toLowerCase() + u.label.slice(1)}.</small>
+                    <span className="nf-lk-m">
+                        <span className="nf-bar sm" role="progressbar" aria-label={`Progress to decrypt ${def.name}`} aria-valuemin={0} aria-valuemax={100} aria-valuenow={pct}><i style={{ width: `${pct}%` }} /></span>
+                        <small>{fmt(u.cur)} / {fmt(u.need)} {u.unit}</small>
+                    </span>
                 </div>
             </article>
         );
@@ -107,7 +115,7 @@ export function StatRow({ id, s, d, onPress, onArm, open: expanded, onToggle }: 
     const ready = id === "bytes" ? 0 : Array.from({ length: TIERS }, (_, k) => k).filter((k) => (s[button(s, id as ButtonStat, k).pays] as number) >= button(s, id as ButtonStat, k).cost).length;
     const bodyId = `nf-body-${id}`;
     return (
-        <article className="nf-row" style={{ ["--c" as string]: def.color }} data-stat={id} data-open={expanded ? "true" : "false"} data-ready={!expanded && ready > 0 ? "" : undefined} onClick={(e) => { if (!expanded && !(e.target as HTMLElement).closest("button")) onToggle(); }}>
+        <article className="nf-row" style={{ ["--c" as string]: def.color }} data-stat={id} data-open={expanded ? "true" : "false"} data-ready={!expanded && ready > 0 ? "" : undefined} data-guide={guide?.stat === id ? "" : undefined} onClick={(e) => { if (!expanded && !(e.target as HTMLElement).closest("button")) onToggle(); }}>
             <div className="nf-bar-t">
                 <span>ZONE {String(STATS.findIndex((x) => x.id === id) + 1).padStart(2, "0")} // {lore.zone}</span>
                 <span className="nf-bar-s">{buttons > 0 ? `${ready}/${buttons} ready` : "online"}</span>
@@ -144,7 +152,7 @@ export function StatRow({ id, s, d, onPress, onArm, open: expanded, onToggle }: 
                     {id !== "bytes" && (
                         <div className="nf-btns">
                             {Array.from({ length: TIERS }, (_, k) => (
-                                <BuyBtn key={k} s={s} stat={id as ButtonStat} tier={k} onPress={onPress} />
+                                <BuyBtn key={k} s={s} stat={id as ButtonStat} tier={k} onPress={onPress} guided={guide?.stat === id && guide.tier === k} />
                             ))}
                         </div>
                     )}
@@ -155,7 +163,8 @@ export function StatRow({ id, s, d, onPress, onArm, open: expanded, onToggle }: 
 }
 
 // A buy button, skinned per stat in CSS. Press once to buy; hold to keep buying (after 0.4 s, then 10 a second).
-function BuyBtn({ s, stat, tier, onPress }: { s: State; stat: ButtonStat; tier: number; onPress: PressFn }) {
+function BuyBtn({ s, stat, tier, onPress, guided }: { s: State; stat: ButtonStat; tier: number; onPress: PressFn; guided: boolean }) {
+    const tips = useContext(TipCtx);
     const b = button(s, stat, tier);
     const pays = statDef(b.pays);
     const afford = (s[b.pays] as number) >= b.cost;
@@ -167,6 +176,7 @@ function BuyBtn({ s, stat, tier, onPress }: { s: State; stat: ButtonStat; tier: 
         t.current = iv.current = null;
     };
     useEffect(() => stop, []);
+    const build = () => buttonTip(s, stat, tier);
     const isReboot = stat === "reboot";
     const name = LORE[stat].tiers[tier];
     const owned = isReboot ? 0 : s.bought[stat][tier];
@@ -176,9 +186,15 @@ function BuyBtn({ s, stat, tier, onPress }: { s: State; stat: ButtonStat; tier: 
             className="nf-btn"
             data-afford={afford ? "" : undefined}
             data-tier={tier}
+            data-guide={guided ? "" : undefined}
             aria-label={`${name}: ${isReboot ? "Reboot for" : "buy"} +${fmt(b.gain)} ${statDef(stat).name} for ${fmt(b.cost)} ${pays.name}${owned ? `, owned ${owned}` : ""}`}
+            onPointerEnter={(e) => { if (e.pointerType === "mouse") tips.show(e.currentTarget, build, { guided }); }}
+            onFocus={(e) => { if (e.currentTarget.matches(":focus-visible")) tips.show(e.currentTarget, build, { guided }); }}
+            onBlur={(e) => tips.hide(e.currentTarget)}
             onPointerDown={(e) => {
                 if (e.pointerType === "mouse" && e.button !== 0) return;
+                // no hover on touch: show the tip for a moment after the tap, so a button you cannot afford yet still explains itself
+                if (e.pointerType !== "mouse") tips.show(e.currentTarget, build, { ms: 2600, guided });
                 onPress(stat, tier);
                 if (isReboot) return;
                 stop();
@@ -189,7 +205,7 @@ function BuyBtn({ s, stat, tier, onPress }: { s: State; stat: ButtonStat; tier: 
                 }, 400);
             }}
             onPointerUp={stop}
-            onPointerLeave={stop}
+            onPointerLeave={(e) => { stop(); if (e.pointerType === "mouse") tips.hide(e.currentTarget); }}
             onPointerCancel={stop}
             onClick={(e) => e.detail === 0 && onPress(stat, tier)}
             onContextMenu={(e) => e.preventDefault()}
@@ -200,6 +216,7 @@ function BuyBtn({ s, stat, tier, onPress }: { s: State; stat: ButtonStat; tier: 
                     {Array.from({ length: tier + 1 }, (_, i) => <i key={i} />)}
                 </span>
             </span>
+            {guided && <i className="nf-gd-c" aria-hidden="true" />}
             <NfTierIcon stat={stat} tier={tier} />
             <span className="nf-btn-g">+{fmt(b.gain)}</span>
             <span className="nf-btn-c">{fmt(b.cost)} {pays.short}{owned > 0 && <em> · ×{owned}</em>}</span>

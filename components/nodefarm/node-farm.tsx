@@ -16,15 +16,18 @@ import { AwayReport, type Away } from "./away";
 import { DroneBay } from "./drones";
 import { Chain, StatRow } from "./stat-row";
 import { Juice, juice, checkMilestones } from "./juice";
+import { GuideStrip, Tip, TipCtx, type TipApi, type TipState } from "./guide";
+import { MapPanel } from "./map";
+import { nextStep, type Target } from "@/lib/nodefarm/guide";
 import { AscendPanel, GoalsPanel, MenuPanel, RecordsPanel } from "./systems";
 
 const KEY = "nf-save-v1";
 const EV_KEY = "nf-events-v1"; // "off" when quick-time events are switched off (per device)
 const HUM_KEY = "nf-hum-v1"; // reactor hum on or off (per device)
 const UI_KEY = "nf-ui-v1"; // which stat panels are minimized (per device, not part of the game save)
-type Tab = "core" | "stats" | "goals" | "records" | "ascend" | "menu";
-const SIDE: Tab[] = ["goals", "records", "ascend", "menu"];
-const TAB_LABEL: Record<Tab, string> = { core: "Core", stats: "Stats", goals: "Goals", records: "Records", ascend: "Ascend", menu: "Menu" };
+type Tab = "core" | "stats" | "map" | "goals" | "records" | "ascend" | "menu";
+const SIDE: Tab[] = ["map", "goals", "records", "ascend", "menu"];
+const TAB_LABEL: Record<Tab, string> = { core: "Core", stats: "Stats", map: "Map", goals: "Goals", records: "Records", ascend: "Ascend", menu: "Menu" };
 type Line = { id: number; t: string; text: string; tone?: "good" | "warn" | "hot" };
 
 const clock = () => new Date().toTimeString().slice(0, 8);
@@ -44,7 +47,7 @@ export function NodeFarm() {
     const [, bump] = useState(0);
     const [tab, setTab] = useState<Tab>("core");
     const [side, setSide] = useState<Tab>("goals");
-    const [win, setWin] = useState<"" | "goals" | "records" | "ascend" | "menu">("");
+    const [win, setWin] = useState<"" | "map" | "goals" | "records" | "ascend" | "menu">("");
     const [folded, setFolded] = useState<Record<string, boolean>>({});
     const [lines, setLines] = useState<Line[]>([]);
     const [away, setAway] = useState<Away | null>(null);
@@ -77,6 +80,26 @@ export function NodeFarm() {
         } catch {}
         if (!next) setHum(null);
     };
+    // tooltips: one layer at the root, driven from the buttons (hover and focus on desktop, a short flash after a tap on touch)
+    const root = useRef<HTMLDivElement>(null);
+    const [tip, setTip] = useState<TipState | null>(null);
+    const tipTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const tipApi = useMemo<TipApi>(
+        () => ({
+            show: (el, build, o) => {
+                if (tipTimer.current) clearTimeout(tipTimer.current);
+                tipTimer.current = null;
+                setTip({ el, build, guided: o?.guided });
+                if (o?.ms) tipTimer.current = setTimeout(() => setTip((t) => (t?.el === el ? null : t)), o.ms);
+            },
+            hide: (el) => {
+                if (tipTimer.current) clearTimeout(tipTimer.current);
+                tipTimer.current = null;
+                setTip((t) => (!el || t?.el === el ? null : t));
+            },
+        }),
+        [],
+    );
     const feed = useRef<CoreFeed>({ progress: 0, overclock: false, unlocked: 1, speed: 0, lastPulse: -1e9, reboots: 0, ap: 0 });
     const ids = useRef(1);
     const saved = useRef(0);
@@ -281,6 +304,7 @@ export function NodeFarm() {
         }
         g.current = fresh();
         prevIds.current = null;
+        tipApi.hide();
         setConfirm("");
         setLines([]);
         log("Save wiped. Starting clean.", "warn");
@@ -304,9 +328,29 @@ export function NodeFarm() {
         if (SIDE.includes(t)) setSide(t);
         sfx("tab");
     };
+    const openWin = (w: "map" | "goals" | "records" | "ascend" | "menu") => {
+        setWin(w);
+        setTabBoth(w);
+    };
+    // the next-step guide: what to do, and a button that opens the right zone and scrolls to what glows
+    const step = nextStep(s, d);
+    const goTo = (t?: Target) => {
+        if (!t) return;
+        if (t.win) return openWin(t.win);
+        setTab("stats");
+        const key = t.drone !== undefined ? "drones" : t.stat;
+        if (!key) return;
+        if (folded[key]) setFold({ ...folded, [key]: false });
+        sfx("tab");
+        setTimeout(() => document.querySelector<HTMLElement>(`.nf [data-stat="${key}"]`)?.scrollIntoView({ behavior: reduced ? "auto" : "smooth", block: "center" }), 90);
+    };
+    const firstLocked = STATS.find((x) => !isUnlocked(s, x.id))?.id;
+    const laterLocked = STATS.filter((x) => !isUnlocked(s, x.id) && x.id !== firstLocked);
+    const guideTarget = step.target && !step.target.win ? step.target : undefined;
 
     return (
-        <div className="nf" data-tab={tab} data-side={sideShown} data-win={win || undefined} data-oc={s.overclock > 0 ? "" : undefined}>
+        <TipCtx.Provider value={tipApi}>
+        <div className="nf" ref={root} data-tab={tab} data-side={sideShown} data-win={win || undefined} data-oc={s.overclock > 0 ? "" : undefined}>
             <header className="nf-hud">
                 <div className="nf-hud-main">
                     <NfIcon name="bytes" responsive />
@@ -326,18 +370,19 @@ export function NodeFarm() {
                     {s.ap > 0 && <span><NfIcon name="ascend" /> {s.ap} AP</span>}
                 </div>
                 <div className="nf-dock" role="group" aria-label="Game windows">
-                    {(["goals", "records", "ascend", "menu"] as const).map((w) => (
-                        <button key={w} type="button" className="nf-dock-b" aria-haspopup="dialog" onClick={() => { setWin(w); sfx("tab"); }}>
+                    {(["map", "goals", "records", "ascend", "menu"] as const).map((w) => (
+                        <button key={w} type="button" className="nf-dock-b" aria-haspopup="dialog" data-guide={step.target?.win === w ? "" : undefined} onClick={() => { setWin(w); sfx("tab"); }}>
                             {TAB_LABEL[w]}
                         </button>
                     ))}
                 </div>
             </header>
+            <GuideStrip step={step} onGo={() => goTo(step.target)} onMap={() => openWin("map")} mapOpen={win === "map"} />
             {win && <button type="button" className="nf-scrim" aria-label="Close window" tabIndex={-1} onClick={() => setWin("")} />}
 
             <nav className="nf-tabs" aria-label="Game sections">
-                {(["core", "stats", "goals", "records", "ascend", "menu"] as Tab[]).map((t) => (
-                    <button key={t} type="button" className="nf-tab" aria-pressed={tab === t} data-tab-btn={t} onClick={() => setTabBoth(t)}>
+                {(["core", "stats", "map", "goals", "records", "ascend", "menu"] as Tab[]).map((t) => (
+                    <button key={t} type="button" className="nf-tab" aria-pressed={tab === t} data-guide={step.target?.win === t ? "" : undefined} data-tab-btn={t} onClick={() => setTabBoth(t)}>
                         {TAB_LABEL[t]}
                     </button>
                 ))}
@@ -371,12 +416,31 @@ export function NodeFarm() {
 
             <section className="nf-pane nf-statspane" data-pane="stats" aria-label="Stats and buttons">
                 <Chain s={s} d={d} allOpen={!STATS.every((x) => folded[x.id])} onAll={(open) => setFold(Object.fromEntries(STATS.map((x) => [x.id, !open])))} />
-                <DroneBay s={s} open={!folded.drones} onToggle={() => { setFold({ ...folded, drones: !folded.drones }); sfx("tab"); }} onBuy={(k) => { if (buyDrone(s, k)) { sfx("nfBuy", { tier: k }); log(`Drone T${k + 1} online.`, "good"); bump((n) => n + 1); } else sfx("deny"); }} />
-                {STATS.map((def) => (
-                    <StatRow key={def.id} id={def.id} s={s} d={d} onPress={doPress} onArm={() => { toggleArm(s, def.id); sfx("tab"); bump((n) => n + 1); }} open={!folded[def.id]} onToggle={() => { setFold({ ...folded, [def.id]: !folded[def.id] }); sfx("tab"); }} />
-                ))}
+                {isUnlocked(s, "aether") && (
+                    <DroneBay s={s} guided={step.target?.drone} open={!folded.drones} onToggle={() => { setFold({ ...folded, drones: !folded.drones }); sfx("tab"); }} onBuy={(k) => { if (buyDrone(s, k)) { sfx("nfBuy", { tier: k }); log(`Drone T${k + 1} online.`, "good"); bump((n) => n + 1); } else sfx("deny"); }} />
+                )}
+                {STATS.map((def) => {
+                    if (!isUnlocked(s, def.id) && def.id !== firstLocked) return null;
+                    return (
+                        <StatRow key={def.id} id={def.id} s={s} d={d} guide={guideTarget} onPress={doPress} onArm={() => { toggleArm(s, def.id); sfx("tab"); bump((n) => n + 1); }} open={!folded[def.id]} onToggle={() => { setFold({ ...folded, [def.id]: !folded[def.id] }); sfx("tab"); }} />
+                    );
+                })}
+                {laterLocked.length > 0 && (
+                    <article className="nf-row nf-locked nf-more">
+                        <span className="nf-plate"><NfIcon name="lock" /></span>
+                        <div className="nf-lk">
+                            <span className="nf-lk-k">BEYOND // ENCRYPTED</span>
+                            <b>{laterLocked.length} more zone{laterLocked.length > 1 ? "s" : ""}</b>
+                            <small>{laterLocked.map((x) => x.name).join(", ")}. Each one opens after the one before it.</small>
+                        </div>
+                    </article>
+                )}
             </section>
 
+            <section className="nf-pane nf-sidepane" data-pane="map" aria-label="Progress map" role="dialog" aria-modal="false">
+                <WinBar title="Map" onClose={() => setWin("")} />
+                <MapPanel s={s} d={d} onNode={(id) => { if (buyNode(s, id)) { sfx("nfBuy", { tier: 3 }); bump((n) => n + 1); } }} onWin={(w) => openWin(w)} />
+            </section>
             <section className="nf-pane nf-sidepane" data-pane="goals" aria-label="Goals" role="dialog" aria-modal="false">
                 <WinBar title="Goals" onClose={() => setWin("")} /><GoalsPanel s={s} /></section>
             <section className="nf-pane nf-sidepane" data-pane="records" aria-label="Records" role="dialog" aria-modal="false">
@@ -399,13 +463,15 @@ export function NodeFarm() {
                     setIoText={setIoText}
                     ioMsg={ioMsg}
                     onExport={() => { save(); const code = exportSave(g.current); setIoText(code); setIoMsg("Copy this code to move your save."); navigator.clipboard?.writeText(code).then(() => setIoMsg("Save code copied.")).catch(() => {}); }}
-                    onImport={() => { const n = parseSave(ioText); if (n) { n.at = Date.now(); g.current = n; prevIds.current = null; save(); setIoMsg("Save loaded."); log("Save imported.", "good"); } else setIoMsg("That code isn't a Node Farm save."); }}
+                    onImport={() => { const n = parseSave(ioText); if (n) { n.at = Date.now(); g.current = n; tipApi.hide(); prevIds.current = null; save(); setIoMsg("Save loaded."); log("Save imported.", "good"); } else setIoMsg("That code isn't a Node Farm save."); }}
                     confirm={confirm === "reset"}
                     onReset={doReset}
                 />
             </section>
+            <Tip host={root} tip={tip} />
             {away && <AwayReport away={away} reduced={reduced} onClose={() => setAway(null)} />}
         </div>
+        </TipCtx.Provider>
     );
 }
 
