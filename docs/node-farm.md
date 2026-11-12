@@ -265,3 +265,27 @@ Learned automation, in `lib/nodefarm/scripts.ts` (rules, registers `scriptStep` 
 - Feed: `cron.run("buy.sh") ×n` batched lines; script presses are kept out of the Drone sweep count (`state.auto.presses`). Console `nf cron` lists every script. Admin `nf admin max` teaches all of them (`grantScripts`).
 - Art: `scripts/naos-art/nodefarm-sched-scene.py` draws `zone-sched` (the cron room, one machine per script learned, the clock daemon at buy.sh v3) and `sched-icons` (32 px, 4 frames per script).
 - Pacing: the greedy sim bot already plays perfectly, so scripts do not change the sim; they move a real player toward the bot's numbers.
+
+## Zone rigs (one mechanic per zone), 2026-11-12
+Every zone keeps its six buttons and has one rig: a meter, one rule, and a level track. Rules in `lib/nodefarm/rigs.ts`
+(every number in `RIG_TUNE`; importing the file fills the engine's `RIG_HOOKS`), panel `components/nodefarm/rig.tsx`
+(drawn in each zone body by `StatRow`), styles `app/camino/nodefarm-rig.css` (`nf-rig*`). Save state `state.rig`
+(`RigState` in engine.ts), made or repaired on first use by `rig(s)`, so old saves load.
+- Nate's picks (2026-11-12): rig levels are kept through Ascend (meters, charges and clocks reset with the run); hazards are a
+  real drain (Cleanroom dust can take Silicon down to 60% of its rate).
+- Levels cost minutes of the zone's own output (`RIG_TUNE.minutes`: 2, 6, 15, 40, 100 min; Bytes for zones 01 to 03), never
+  paid at Overclock rate. Cap 5; Root chamber's Rewrite adds up to +3 per rig (levels 6 to 8 cost 240, 600, 1500 min).
+- The rigs: 01 Packet cache (carry: Bytes cache poured back on Reboot), 02 Gain staging (Multiplier tiers owned this Reboot),
+  03 Capacitor (charge between Reboots pays extra Reboots), 04 Batch pour (timed Copper lump plus casts), 05 Air scrubbers
+  (dust hazard; scrubbers burn Copper), 06 Crystal growth (Quartz stages over the run), 07 Afterglow (spare Aether at Ascend
+  speeds Copper to Quartz next run), 08 Carvings (three glyph tracks: Aether, Runes, Quartz), 09 Prism beam (aim at Bytes or
+  Copper to Runes), 10 Void draw (0/10/25% of Starglass into Voidsteel), 11 Stillness (Chrono up to x3 the longer you press
+  nothing yourself; `rigManual` in doPress resets it), 12 Weather (12 min clock: clear, front x0.67, storm x2), 13 Beacon
+  (free Overclock every 30 pulses), 14 Gravity well (material presses add mass, log boost), 15 Index (goals, secrets, logs),
+  16 Mirror (boosts the running material with the fewest producers), 17 Rewrite (raises other rigs' caps).
+- Boosts touch only their own zone or a named neighbour, and the big ones are log-scaled or capped. Never add a power-law boost
+  on everything.
+- New zones (arc past Origin): add a `RIGS` entry and a case in `muls()` and/or `step()`.
+- Admin section 10 "Zone rigs": max every rig, fill meters, clear. `nf admin max` maxes rigs too.
+- Sim: rigs join unless `NF_NORIGS=1` (`NF_RIGTUNE` merges over `RIG_TUNE`); the bot buys any level it can pay four times over.
+  The first numbers took the whole tree from 39.2 h to 27.4 h, so most boosts were halved: now see the PR for the run.

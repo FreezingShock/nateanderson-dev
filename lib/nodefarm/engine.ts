@@ -649,6 +649,8 @@ export interface State {
     dr: DroneState;
     /** Scripts (lib/nodefarm/scripts.ts): what you taught the scheduler and how each script is set. Kept through Ascend. Created on first use. */
     auto?: AutoState;
+    /** Zone rigs (lib/nodefarm/rigs.ts): one machine per zone. Levels kept through Ascend, meters reset. Created on first use. */
+    rig?: RigState;
     // lifetime counters (survive Ascend)
     life: { bytes: number; taps: number; reboots: number; ascends: number; intrusions: number; secs: number; presses: number; capped: number; peakBps: number; apTotal: number; intel: number; compiled: number; deployed: number };
     overclock: number; // seconds left
@@ -691,6 +693,51 @@ export interface AutoState {
 }
 /** Called at the end of every tick (and so also through time away). Scripts add themselves here. */
 export const TICK_HOOKS: ((s: State, dt: number) => void)[] = [];
+
+/** Zone rigs: one machine per zone (rules in lib/nodefarm/rigs.ts, which fills RIG_HOOKS when it is imported).
+ *  Levels and settings are kept through Ascend; meters, charges and timers belong to the run. */
+export interface RigState {
+    /** rig levels by key (a zone id, or "runes:echo" style keys for the Glyph hall's three carvings) */
+    lv: Record<string, number>;
+    /** Root chamber rewrites: extra level cap per zone */
+    re: Record<string, number>;
+    /** rewrites done in total (prices the next) */
+    rw: number;
+    // settings (kept)
+    scrub: boolean;
+    aim: string;
+    draw: number;
+    rwAim: string;
+    // run meters (reset on Ascend)
+    cache: number;
+    quiet: number;
+    pour: number;
+    casts: number;
+    dust: number;
+    grow: number;
+    glow: number;
+    glowLeft: number;
+    wx: number;
+    pulse: number;
+    pulses: number;
+    fired: number;
+    well: number;
+}
+/** Filled by lib/nodefarm/rigs.ts. Every hook is optional, so the engine (and the sim) run the same without rigs. */
+export const RIG_HOOKS: {
+    /** per-zone output multipliers, computed once per derive */
+    muls?: (s: State) => Partial<Record<StatId, number>>;
+    /** the Reboots a Reboot press pays, after the rig's say */
+    reboot?: (s: State, gain: number) => number;
+    /** right after a Reboot has wiped Bytes */
+    afterReboot?: (s: State) => void;
+    /** after any non-Reboot button press */
+    spend?: (s: State, stat: ButtonStat, tier: number) => void;
+    /** every tick, with the tick's derived numbers */
+    step?: (s: State, dt: number, d: Derived) => void;
+    /** the rig state the new run starts with (called before Ascend wipes the run) */
+    ascend?: (s: State) => RigState | undefined;
+} = {};
 
 export function fresh(now = Date.now()): State {
     return {
@@ -785,8 +832,9 @@ export function derive(s: State): Derived {
         * (1 + droneLv * tf.droneGlobal) * (1 + s.runWins * tf.winBoost) * boosts.chAll * singularityAll(s) * (s.overclock > 0 ? overclockMult(s) : 1) * lb.global
         * (tf.perNode ? 1 + tf.perNode * treeCount(s) : 1) * foundryAll(s);
     const rebootStrength = TUNE.rebootStrength * boosts.cuReboot * (1 + tf.reboot) * (tf.ocReboot && s.overclock > 0 ? 1 + tf.ocReboot : 1);
-    const multGainMult = (1 + rebootStrength * s.reboot) * (1 + tf.multGain) * lb.mult * masteryMul(s, "mult");
-    const bytesPerSec = s.mult * boosts.cuBytes * global * (1 + tf.bytes) * lb.bytes * runBytes(s, tf);
+    const rig = RIG_HOOKS.muls ? RIG_HOOKS.muls(s) : {};
+    const multGainMult = (1 + rebootStrength * s.reboot) * (1 + tf.multGain) * lb.mult * masteryMul(s, "mult") * (rig.mult ?? 1);
+    const bytesPerSec = s.mult * boosts.cuBytes * global * (1 + tf.bytes) * lb.bytes * runBytes(s, tf) * (rig.bytes ?? 1);
     // each material is boosted by the one after it in the chain
     const boostedBy: Record<MatId, number> = { copper: boosts.siCu, silicon: boosts.qzSi, quartz: boosts.aeQz, aether: boosts.ruAe, runes: boosts.sgRu, starglass: boosts.vsSg, voidsteel: boosts.chVs, chrono: boosts.nbCh, nebula: boosts.puNb, pulsars: boosts.snPu, singularity: boosts.egSn, engrams: boosts.pxEg, paradox: boosts.orPx, origin: 1 };
     // Cross-talk: each material is also boosted by the one two steps up the chain. Log-scaled: a power-law boost here made a second
@@ -797,7 +845,7 @@ export function derive(s: State): Derived {
     let newest: MatId | null = null;
     if (tf.specialist) for (const m of MATS) if (s.prod[m] > 0) newest = m;
     const rates = {} as Record<MatId, number>;
-    for (const m of MATS) rates[m] = s.prod[m] * TUNE.perProducer[m] * boostedBy[m] * (1 + (tf.mats[m] ?? 0)) * global * (FORGE_MATS.includes(m) ? lb.forge : 1) * bus * (m === newest ? 1 + tf.specialist : 1) * masteryMul(s, m);
+    for (const m of MATS) rates[m] = s.prod[m] * TUNE.perProducer[m] * boostedBy[m] * (1 + (tf.mats[m] ?? 0)) * global * (FORGE_MATS.includes(m) ? lb.forge : 1) * bus * (m === newest ? 1 + tf.specialist : 1) * masteryMul(s, m) * (rig[m] ?? 1);
     return { global, bytesPerSec, rebootStrength, multGainMult, rates, offlineCap: Math.max(1, TUNE.offlineCapHours + s.perks.offline * 4 + tf.offline) * 3600, boosts };
 }
 
@@ -858,7 +906,8 @@ export function press(s: State, stat: ButtonStat, tier: number): boolean {
     if (stat === "reboot") {
         // Logic bomb (Exploit Lab): an armed charge multiplies this Reboot
         const bomb = s.lab.armed.indexOf("logicbomb");
-        const gain = bomb >= 0 ? Math.round(b.gain * (1 + payloadV(s, payload("logicbomb")))) : b.gain;
+        let gain = bomb >= 0 ? Math.round(b.gain * (1 + payloadV(s, payload("logicbomb")))) : b.gain;
+        if (RIG_HOOKS.reboot) gain = RIG_HOOKS.reboot(s, gain);
         if (bomb >= 0) s.lab.armed.splice(bomb, 1);
         // a crash dump: the Reboot banks the Intel buffer (it refills over LAB_TUNE.dumpSecs)
         labLump(s, s.lab.dump);
@@ -870,6 +919,7 @@ export function press(s: State, stat: ButtonStat, tier: number): boolean {
         s.mult = Math.max(1, s.mult * treeFx(s).rebootKeep);
         s.bought.mult.fill(0);
         s.bytes = derive(s).bytesPerSec * (10 * s.perks.start + treeFx(s).start);
+        RIG_HOOKS.afterReboot?.(s);
         return true;
     }
     (s[b.pays] as number) = amount(s, b.pays) - b.cost;
@@ -877,6 +927,7 @@ export function press(s: State, stat: ButtonStat, tier: number): boolean {
     s.bought[stat][tier] += 1;
     if (stat === "mult") s.mult += b.gain;
     else s.prod[stat] += b.gain;
+    RIG_HOOKS.spend?.(s, stat, tier);
     return true;
 }
 
@@ -972,6 +1023,7 @@ export function tick(s: State, dt: number, eff = 1) {
     s.life.secs += dt;
     if (d.bytesPerSec > s.life.peakBps) s.life.peakBps = d.bytesPerSec;
     labStep(s, dt, d.bytesPerSec);
+    RIG_HOOKS.step?.(s, dt, d);
     droneStep(s, dt, eff);
     watchdogStep(s);
     autoArm(s);
@@ -1086,7 +1138,8 @@ export function ascend(s: State) {
     const keptDrones = s.drones.map((lv) => Math.max(Math.floor(lv * tf.droneKeep), tf.kitDrones));
     const lab: LabState = { ...s.lab, intel: 0, run: [], armed: s.lab.armed.filter((x) => x !== "zeroclick"), dump: LAB_TUNE.dumpSecs };
     const dr = drOnAscend(s);
-    const keep = { lab, dr, ap: s.ap + gain, perks: s.perks, ach: s.ach, achAt: s.achAt, logs: s.logs, tree: s.tree, treeLv: s.treeLv, armed: s.armed, mounts: s.mounts, watchdog: s.watchdog, dropAt: s.dropAt, autoArmed: s.autoArmed, auto: s.auto, life: { ...s.life, ascends: s.life.ascends + 1, apTotal: s.life.apTotal + gain }, started: s.started };
+    const rig = RIG_HOOKS.ascend ? RIG_HOOKS.ascend(s) : s.rig;
+    const keep = { lab, dr, rig, ap: s.ap + gain, perks: s.perks, ach: s.ach, achAt: s.achAt, logs: s.logs, tree: s.tree, treeLv: s.treeLv, armed: s.armed, mounts: s.mounts, watchdog: s.watchdog, dropAt: s.dropAt, autoArmed: s.autoArmed, auto: s.auto, life: { ...s.life, ascends: s.life.ascends + 1, apTotal: s.life.apTotal + gain }, started: s.started };
     const n = fresh(s.at);
     Object.assign(n, keep);
     Object.assign(s, n);

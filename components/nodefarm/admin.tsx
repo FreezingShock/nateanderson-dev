@@ -14,6 +14,7 @@ import { EVENTS, type EventKind } from "@/lib/nodefarm/events";
 import { ERAS } from "@/lib/nodefarm/scenery";
 import { LOGS } from "@/lib/nodefarm/story";
 import { codeReveal, cxClear } from "@/lib/nodefarm/cx";
+import { RIGS, clearRigs, fillRigs, maxRigs, rigLine } from "@/lib/nodefarm/rigs";
 
 // Node Farm admin panel ("root console"): a full-screen operator console opened by `nf admin on` in the naOS console.
 // Plain bracket panels with data lines, no tabs or chips. Sections fold with the shared code reveal. Styles:
@@ -419,6 +420,15 @@ function AdminPanelInner({ host }: { host: AdminHost }) {
                                     </div>
                                     <h4 className="nf-ad-h">Story logs</h4>
                                     <div className="nf-ad-line"><b className="nf-ad-v">{s.logs.length}/{LOGS.length}</b><Btn onClick={() => act(grantLogs, "every log recovered")}>Recover all</Btn><Btn onClick={() => act(clearLogs, "logs cleared")}>Clear</Btn></div>
+                                </Sec>
+
+                                <Sec n={10} title="Zone rigs" hint="one machine per zone" {...sec("rigs")}>
+                                    <div className="nf-ad-grid">
+                                        <Btn onClick={() => act(maxRigs, "every rig maxed and rewritten")}>Max every rig</Btn>
+                                        <Btn onClick={() => act(fillRigs, "rig meters filled: cache, casts, growth, stillness, afterglow, storm, beacon")}>Fill rig meters</Btn>
+                                        <Btn onClick={() => act(clearRigs, "rigs cleared")}>Clear rigs</Btn>
+                                    </div>
+                                    {RIGS.map((r) => <p key={r.zone} className="nf-ad-p">{rigLine(s, r.zone)}</p>)}
                                 </Sec>
                             </div>
                         </div>
