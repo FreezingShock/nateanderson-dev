@@ -4,8 +4,7 @@ Glyph Hall (runes). Follows the zone art contract v1 (see docs/node-farm.md, "Zo
 Each zone gets one sheet: 8 rows (stage 0..7) by 6 columns (animation frames), 288 x 64 art pixels per cell. Row 0 is the
 backdrop alone. Row n adds sprite n to row n-1, so a stage change reads as "something new appeared". Sprite n is a bigger,
 richer version of the zone's 32 px icon: tiers 1..6 follow the zone's button names (Die, Wafer, Batch...) and sprite 7 is
-the capstone. Sprites sit on one floor line, small ones on the left, big ones on the right; sprite 7 stands left of the
-quiet top-right corner (the big number sits there) and sprite 6 takes the far right.
+the capstone. Sprites stand on one floor line, small ones on the left and big ones on the right (the panel crops the left).
 
 Everything is procedural and original: flat shapes shaded through a 4x4 Bayer threshold into five-step colour ramps. Zone
 ramps come from nodefarm-icons.py; each zone adds two deeper or hotter shade ramps of its own hue (ZONE_RAMPS below), so a
@@ -37,7 +36,7 @@ CW, CH = 288, 64      # one cell, art pixels
 FRAMES = 6            # 6 fps loop
 STAGES = 7            # rows 1..7 (row 0 is the backdrop)
 BY = CH - 1           # floor row: every sprite stands on it
-QUIET = (252, 0, 288, 30)  # top-right box under the big number and its two sub-lines: backdrop only
+TOP = 10  # rows 0..9 can sit under the title bar at 3x: backdrop only (contract v2)
 
 
 def hexc(h):
@@ -421,10 +420,10 @@ def si_sprite(c, n, cx, f):
         cassette(c, cx - 25, BY - 13, 8, 13, f)
     elif n == 7:    # FAB TOWER: the whole plant
         c.glow(cx, BY - 28, 34, "si", 0.38, ry=36)
-        si_tower(c, cx - 10, BY - 46, 20, 46, f)
+        si_tower(c, cx - 10, BY - 42, 20, 42, f)
         annex(c, cx - 27, BY - 16, 17, 16, f, 0)
         annex(c, cx + 10, BY - 20, 16, 20, f, 2)
-        beam(c, cx - 2.5, BY - 61, BY - 54, f, w=1)
+        beam(c, cx - 2.5, BY - 53, BY - 50, f, w=1)
         conveyor(c, cx - 27, cx + 26, BY - 2, f, items=4)
 
 
@@ -577,7 +576,7 @@ def qz_sprite(c, n, cx, f):
         ring_pulse(c, cx, BY - 1, f, 26, "qz", n=3)
         for i, (dx, w, h, lean, rp) in enumerate([(-15, 6, 16, -4, "qzp"), (15, 6, 18, 4, "qzp"), (-8, 8, 30, -2, "qz2"), (8, 8, 32, 2, "qz2")]):
             crystal(c, cx + dx, BY, w, h, f, rp=rp, lean=lean, phase=i * .2)
-        crystal(c, cx, BY, 13, 54, f, phase=0.0)
+        crystal(c, cx, BY, 13, 52, f, phase=0.0)
         for k in range(4):     # orbiting shards: in front on the low half of the orbit, behind on the top half
             a = 2 * math.pi * (f / FRAMES + k / 4)
             sx = cx + math.cos(a) * 20
@@ -725,19 +724,19 @@ def ae_sprite(c, n, cx, f):
             c.fill(c.rect(cx + dx, y - sz, cx + dx + sz, y), 0.4, "gr", outline=False)
         c.fill(c.poly([(cx - 13, BY), (cx + 13, BY), (cx + 7, BY - 2), (cx - 7, BY - 2)]), 0.3, "gr")
     elif n == 7:    # SIGNAL GATE: a ring portal on a stand, the void turning inside, motes orbiting
-        cy = BY - 30
+        cy = BY - 28
         c.glow(cx, cy, 30, "ae", 0.42, ry=32)
-        inside = c.disc(cx, cy, 20, 23)
+        inside = c.disc(cx, cy, 18, 20)
         ang = c.ang(cx, cy)
-        rr = np.hypot((c.xx + .5 - cx) / 20, (c.yy + .5 - cy) / 23)
+        rr = np.hypot((c.xx + .5 - cx) / 18, (c.yy + .5 - cy) / 20)
         swirl = (np.sin(ang * 3 + rr * 9 - 2 * math.pi * f / FRAMES) + 1) / 2
         c.fill(inside, 0.08 + 0.42 * swirl * (1 - rr) + 0.15 * (1 - rr), "ae2", outline=False, dith=1.0)
-        frame = c.ring(cx, cy, 24, 27, 4)
-        c.fill(frame, 0.25 + 0.4 * c.lin(cx - 24, cy - 27, cx + 24, cy + 27) * -1 + 0.4, "gr")
+        frame = c.ring(cx, cy, 22, 24, 4)
+        c.fill(frame, 0.25 + 0.4 * c.lin(cx - 22, cy - 24, cx + 22, cy + 24) * -1 + 0.4, "gr")
         segs = 16
         for k in range(segs):
             a = 2 * math.pi * k / segs
-            x, y = cx + math.cos(a) * 22, cy + math.sin(a) * 25
+            x, y = cx + math.cos(a) * 20, cy + math.sin(a) * 22
             on = (k - f * 2) % 4 == 0 or (k % 2 == 0)
             c.set(c.rect(x - .5, y - .5, x + 1, y + 1), RAMPS["ae"][4] if (k - f * 2) % 4 == 0 else RAMPS["ae"][2])
         c.fill(c.poly([(cx - 18, BY), (cx + 18, BY), (cx + 10, BY - 5), (cx - 10, BY - 5)]), 0.35, "gr")
@@ -867,16 +866,16 @@ def rn_sprite(c, n, cx, f):
         c.glow(cx, BY - 30, 32, "rn", 0.4, ry=34)
         c.fill(c.rect(cx - 27, BY - 3, cx + 27, BY + 1), 0.35, "st")
         c.fill(c.rect(cx - 23, BY - 6, cx + 23, BY - 3), 0.45, "st")
-        pillar(c, cx - 17, BY - 6, 9, 42, f, 5, 0.0)
-        pillar(c, cx + 17, BY - 6, 9, 42, f, 5, 0.5)
-        lint = c.rect(cx - 25, BY - 55, cx + 25, BY - 48)
-        c.fill(lint, 0.35 + 0.3 * (1 - c.lin(0, BY - 55, 0, BY - 48)), "st")
-        c.set(c.rect(cx - 25, BY - 55, cx + 25, BY - 54), RAMPS["st"][3])
+        pillar(c, cx - 17, BY - 6, 9, 39, f, 5, 0.0)
+        pillar(c, cx + 17, BY - 6, 9, 39, f, 5, 0.5)
+        lint = c.rect(cx - 25, BY - 52, cx + 25, BY - 45)
+        c.fill(lint, 0.35 + 0.3 * (1 - c.lin(0, BY - 52, 0, BY - 45)), "st")
+        c.set(c.rect(cx - 25, BY - 52, cx + 25, BY - 51), RAMPS["st"][3])
         for k in range(8):
             gx = cx - 22 + k * 5.6
             hot = (k - f) % 4 == 0
-            glyph(c, gx, BY - 53, 4, 4, k % 3, RAMPS["rn"][4] if hot else RAMPS["rn"][2])
-        sy = BY - 30 + sn(f) * 1.5
+            glyph(c, gx, BY - 50, 4, 4, k % 3, RAMPS["rn"][4] if hot else RAMPS["rn"][2])
+        sy = BY - 27 + sn(f) * 1.5
         c.glow(cx, sy, 11, "rno", 0.55)
         dia = c.poly([(cx, sy - 9), (cx + 7, sy), (cx, sy + 9), (cx - 7, sy)])
         c.fill(dia, 0.55 + 0.35 * c.lin(cx - 7, sy + 9, cx + 7, sy - 9), "rn")
@@ -908,8 +907,8 @@ def rn_backdrop(b, f):
 
 
 # ------------------------------------------------------------------------------------------- layout and output
-# Sprite centres on the 288 px floor. Sprite 7 stands centre-right; sprite 6 ends before the big number (x 252+), which keeps the top-right quiet.
-X = {1: 46, 2: 59, 3: 75, 4: 97, 5: 125, 6: 233, 7: 174}
+# Sprite centres on the 288 px floor, small to big left to right (the panel crops the scene on its left, so the newest stay in view).
+X = {1: 58, 2: 72, 3: 90, 4: 116, 5: 150, 6: 196, 7: 254}
 ZONES = {
     "silicon": (si_sprite, si_backdrop),
     "quartz": (qz_sprite, qz_backdrop),
@@ -928,8 +927,9 @@ def cell(zone, stage, f):
         sprite(layer, n, X[n], f)
         m = (layer.img[..., 3] > 0) & (c.img[..., 3] == 0)
         c.img[m] = layer.img[m]
-    qx0, qy0, qx1, qy1 = QUIET
-    c.img[qy0:qy1, qx0:qx1] = 0   # halos fade out under the big number; no sprite body reaches this box
+    if (c.img[:TOP - 3, :, 3] > 0).any() and stage:
+        print(f"  warn: {zone} stage {stage} frame {f}: sprite pixels above row {TOP - 3}")
+    c.img[:TOP] = 0   # only backdrop under the title bar
     out = b.img.copy()
     m = c.img[..., 3] > 0
     out[m] = c.img[m]
@@ -966,7 +966,7 @@ def main():
         sh.save(png, optimize=True)
         sh.save(webp, lossless=True, quality=100, method=6)
         kb = (png.stat().st_size / 1024, webp.stat().st_size / 1024)
-        flag = "" if kb[0] <= 300 and kb[1] <= 120 else "  OVER BUDGET"
+        flag = "" if kb[0] <= 300 and kb[1] <= 30 else "  OVER BUDGET"
         print(f"{zone}: {sh.size}  png {kb[0]:.0f} KB  webp {kb[1]:.0f} KB{flag}")
         if "--preview" in sys.argv:
             preview(zone, sh)
