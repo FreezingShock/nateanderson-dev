@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState, type MutableRefObject } from "react";
 import { cxPlay, useCodeReveal } from "@/lib/nodefarm/cx";
 import { sfx } from "@/lib/sound/sounds";
-import { EVENT_TUNE, nextGapMs, pickEvent, type EventDef, type EventKind } from "@/lib/nodefarm/events";
+import { EVENTS, EVENT_TUNE, nextGapMs, pickEvent, type EventDef, type EventKind } from "@/lib/nodefarm/events";
 import { eventHaste, overclockMult, overclockSecs, type State } from "@/lib/nodefarm/engine";
 
 type Stage = "incoming" | "live" | "result";
@@ -60,6 +60,19 @@ export function EventLayer({ game, busy, enabled, ready, reduced, onEngage, onRe
     useEffect(() => {
         if (!enabled) setAct(null);
     }, [enabled]);
+
+    // admin mode (`nf:fire`, components/nodefarm/admin.tsx): show a chosen event right away
+    useEffect(() => {
+        const onFire = (e: Event) => {
+            const def = EVENTS.find((x) => x.kind === (e as CustomEvent<EventKind>).detail);
+            if (!def || actRef.current) return;
+            last.current = def.kind;
+            setAct({ def, id: ids.current++, stage: "incoming", won: false });
+            sfx("nfAlert");
+        };
+        window.addEventListener("nf:fire", onFire);
+        return () => window.removeEventListener("nf:fire", onFire);
+    }, []);
 
     // restore focus to whatever had it when the event opened
     const returnTo = useRef<HTMLElement | null>(null);

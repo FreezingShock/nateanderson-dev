@@ -29,6 +29,9 @@ import { MapPanel } from "./map";
 import { nextStep, type Target } from "@/lib/nodefarm/guide";
 import { GoalsPanel, MenuPanel, RecordsPanel } from "./systems";
 import { AscendPanel } from "./ascend";
+import { AdminPanel, type AdminHost } from "./admin";
+import { isAdmin, setAdmin } from "@/lib/nodefarm/admin";
+import { adminFlags } from "@/lib/nodefarm/engine";
 import { codeReveal, cxClear } from "@/lib/nodefarm/cx";
 
 const KEY = "nf-save-v1";
@@ -79,6 +82,10 @@ export function NodeFarm() {
     const [side, setSide] = useState<Tab>("goals");
     const [win, setWin] = useState<"" | "map" | "goals" | "records" | "ascend" | "menu">("");
     const [treeOpen, setTreeOpen] = useState(false);
+    // admin mode (lib/nodefarm/admin.ts): turned on from the naOS console with `nf admin on`; unadvertised
+    const [adminOn, setAdminOn] = useState(false);
+    const [adminOpen, setAdminOpen] = useState(false);
+    const speedRef = useRef(1);
     const [folded, setFolded] = useState<Record<string, boolean>>({});
     const feedStore = useMemo(() => new FeedStore(), []);
     useEffect(() => () => feedStore.dispose(), [feedStore]);
@@ -280,6 +287,39 @@ export function NodeFarm() {
         };
     }, [ready, save]);
 
+    // ---- admin mode: the console flips `nf-admin-v1` and fires `nf:admin`; the panel is components/nodefarm/admin.tsx
+    useEffect(() => {
+        if (!ready) return;
+        setAdminOn(isAdmin());
+        const onAdmin = (e: Event) => {
+            const d = (e as CustomEvent<{ on?: boolean; open?: boolean }>).detail ?? {};
+            if (d.on === false) { setAdminOn(false); setAdminOpen(false); speedRef.current = 1; adminFlags.reveal = false; }
+            else if (d.on) { setAdminOn(true); if (d.open) { setWin(""); setTreeOpen(false); setAdminOpen(true); } }
+        };
+        window.addEventListener("nf:admin", onAdmin);
+        return () => window.removeEventListener("nf:admin", onAdmin);
+    }, [ready]);
+    const adminHost = useMemo<AdminHost>(
+        () => ({
+            get: () => g.current,
+            changed: () => { prevIds.current = null; tipApi.hide(); save(); bump((n) => n + 1); },
+            log: (text, tone) => log(text, tone),
+            getSpeed: () => speedRef.current,
+            setSpeed: (n) => { speedRef.current = n; },
+            previewAway: (secs) => {
+                const copy = structuredClone(g.current);
+                const r = offline(copy, secs);
+                setAdminOpen(false);
+                setAway({ ...r, gap: secs, cap: derive(copy).offlineCap });
+            },
+            fire: (kind) => window.dispatchEvent(new CustomEvent("nf:fire", { detail: kind })),
+            close: () => setAdminOpen(false),
+            exit: () => { setAdmin(false, null); },
+        }),
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+        [log, save, tipApi],
+    );
+
     const setFold = useCallback((next: Record<string, boolean>) => {
         setFolded(next);
         try {
@@ -300,7 +340,9 @@ export function NodeFarm() {
                 if (gap > 60 && r.capped) s.life.capped += 1;
                 if (gap > 60) setAway({ ...r, gap, cap: derive(s).offlineCap });
             } else {
-                tick(s, Math.max(0, gap));
+                const sp = speedRef.current;
+                if (sp > 1) { const n = Math.ceil((gap * sp) / 5); for (let i = 0; i < n; i++) tick(s, (gap * sp) / n); }
+                else tick(s, Math.max(0, gap));
                 // presses nobody clicked (Drones, Autoloader) are counted from the lifetime total, then batched into one feed line
                 const dp = dronePrev.current;
                 if (dp.s === s) {
@@ -760,6 +802,8 @@ export function NodeFarm() {
                     onReset={doReset}
                 />
             </section>
+            {adminOn && !adminOpen && <button type="button" className="nf-ad-tab" onClick={() => setAdminOpen(true)} aria-label="Open the root console"><i />root</button>}
+            {adminOn && adminOpen && <AdminPanel host={adminHost} />}
             {treeOpen && (
                 <TreeMenu
                     s={s}
