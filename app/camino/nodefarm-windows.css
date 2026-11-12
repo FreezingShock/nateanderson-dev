@@ -27,11 +27,13 @@
 }
 .ctos .nf-wk-art { position: absolute; inset: 0; pointer-events: none; }
 .ctos .nf-wk-art::after { content: ""; position: absolute; inset: 0; background: linear-gradient(90deg, #070707 0, #070707cc 18%, transparent 40%, transparent 70%, #070707aa 100%); }
-.ctos .nf-wk-art i { position: absolute; left: 50%; bottom: 0; width: 480px; height: 150px; margin-left: -240px; background: url(/naos/nodefarm/win-map.webp?v=6933fe25) 0 0 / 480px 150px no-repeat; image-rendering: pixelated; }
-.ctos .nf-wk-ban[data-art="goals"] .nf-wk-art i { background-image: url(/naos/nodefarm/win-goals.webp?v=2bd320e4); }
-.ctos .nf-wk-ban[data-art="records"] .nf-wk-art i { background-image: url(/naos/nodefarm/win-records.webp?v=7e21e5af); }
-.ctos .nf-wk-ban[data-art="menu"] .nf-wk-art i { background-image: url(/naos/nodefarm/win-menu.webp?v=80416805); }
+.ctos .nf-wk-art i { position: absolute; left: 50%; bottom: 0; width: 480px; height: 150px; margin-left: -240px; background: url(/naos/nodefarm/win-map.webp?v=9fdce178) 0 0 / 480px 150px no-repeat; image-rendering: pixelated; }
+.ctos .nf-wk-ban[data-art="goals"] .nf-wk-art i { background-image: url(/naos/nodefarm/win-goals.webp?v=49882b0d); }
+.ctos .nf-wk-ban[data-art="records"] .nf-wk-art i { background-image: url(/naos/nodefarm/win-records.webp?v=cc4ab0e2); }
+.ctos .nf-wk-ban[data-art="menu"] .nf-wk-art i { background-image: url(/naos/nodefarm/win-menu.webp?v=ce534520); }
 @media (min-width: 900px) { .ctos .nf-wk-art i { left: 58%; } }
+/* phone: the readout sits on top of the full-colour art, so darken the art under the text more */
+@media (max-width: 719px) { .ctos .nf-wk-art::after { background: linear-gradient(90deg, #070707f0 0, #070707c8 55%, #07070760 100%); } }
 .ctos .nf-wk-scan { position: absolute; left: 0; right: 0; top: 0; height: 2px; background: color-mix(in srgb, var(--c) 70%, transparent); opacity: .45; animation: nfWkScan 5.2s linear infinite; pointer-events: none; }
 @keyframes nfWkScan { from { transform: translateY(0); } to { transform: translateY(170px); } }
 .ctos .nf-wk-code { position: relative; z-index: 3; margin: 0; display: grid; gap: 4px; font: 500 var(--cm-ctos-t-micro)/1.35 var(--cm-mono); letter-spacing: .1em; text-transform: uppercase; }

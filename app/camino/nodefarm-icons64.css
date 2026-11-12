@@ -1,10 +1,9 @@
 /* Node Farm 64 px button sprites (scripts/naos-art/nodefarm-icons64.py, components/nodefarm/icon.tsx TIC64).
-   Sheet per stat: six tiers across, eight frames down, 64 px cells. The sprite is drawn at --ts and snapped so one art pixel is a
-   whole number of device pixels where that is possible: 2 device px on 3x phones, 1.5 on 2x screens is avoided by using 1x (32px)
-   only where the button is too small, otherwise 48px. It never covers the cost line: .nf-btn-c keeps clear of it. */
+   Sheet per stat: six tiers across, eight frames down, 64 px cells, shown at --ts (48 px desktop, 40 px phone). Pixelated on
+   dense screens, smoothed at 1x. It never covers the cost line: .nf-btn-c keeps clear of it. */
 .ctos .nf .nf-tic.nf-tic64 {
     width: var(--ts); height: var(--ts); right: 6px; bottom: 5px;
-    background-repeat: no-repeat;
+    background-repeat: no-repeat; image-rendering: pixelated;
     background-size: calc(var(--ts) * 6) calc(var(--ts) * 8);
     background-position: calc(var(--t) * var(--ts) * -1) 0;
     animation: nfTic64 1s steps(8) infinite paused;

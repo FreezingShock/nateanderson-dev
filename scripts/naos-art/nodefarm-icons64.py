@@ -84,9 +84,27 @@ def build_icons():
           "drawn:", [n for n in ICON_ORDER if icon_fn(n)])
 
 
+def build_sched():
+    """Scripts zone icons (nodefarm_icons64_sched.py): eight frames across, one row per script, 512 x 384."""
+    mod = importlib.import_module("nodefarm_icons64_sched")
+    N, F = K.N, K.FRAMES
+    sheet = np.zeros((N * len(mod.DRAW), N * F, 4), np.uint8)
+    for r, fn in enumerate(mod.DRAW):
+        for f in range(F):
+            c = K.Canvas()
+            fn(c, f / F)
+            sheet[r * N:(r + 1) * N, f * N:(f + 1) * N] = c.finish().img
+    img = K.to_image(sheet)
+    K.save_pair(img, OUT / "sched-icons64")
+    K.contact(img, 3).save("/tmp/nf64-sched.png")
+    print(f"sched-icons64: {img.size}, webp {(OUT / 'sched-icons64.webp').stat().st_size / 1000:.1f} KB")
+
+
 if __name__ == "__main__":
     args = sys.argv[1:]
     if not args or "icons" in args:
         build_icons()
-    for s in [a for a in args if a != "icons"] or ([] if args else stats_with_art()):
+    if not args or "sched" in args:
+        build_sched()
+    for s in [a for a in args if a not in ("icons", "sched")] or ([] if args else stats_with_art()):
         build(s)
