@@ -307,6 +307,12 @@ Every zone keeps its six buttons and has one rig: a meter, one rule, and a level
 - Boosts touch only their own zone or a named neighbour, and the big ones are log-scaled or capped. Never add a power-law boost
   on everything.
 - New zones (arc past Origin): add a `RIGS` entry and a case in `muls()` and/or `step()`.
+- Zones 18 to 25 (Overgrowth and Descent): 18 Spread (each running material zone strengthens Spores), 19 Knots (Spores and
+  Mycelium tiers owned this run; all twelve double it), 20 Daylight (10 min clock: day Pollen x1.4, night Pollen x0.8 but
+  Spores and Mycelium x1.3), 21 Seed bank (each Ascend banks one seed per tenfold Bloom held, up to 30, kept through Ascend;
+  +2% Bloom each), 22 Drill bit (wear hazard down to 50% Basalt; coolant clears it and adds a bonus but burns Bloom),
+  23 Eruptions (timed Magma lump that heats the shaft: Basalt x1.5 for a minute), 24 Ringing (Geodes grow with Quartz held,
+  log, capped x3), 25 Convection (each rig level in zones 18 to 24 strengthens the last zone).
 - Admin section 10 "Zone rigs": max every rig, fill meters, clear. `nf admin max` maxes rigs too.
 - Sim: rigs join unless `NF_NORIGS=1` (`NF_RIGTUNE` merges over `RIG_TUNE`); the bot buys any level it can pay four times over.
   The first numbers took the whole tree from 39.2 h to 27.4 h, so most boosts were halved. Now (Drone bot, 2026-11-12): first Ascend

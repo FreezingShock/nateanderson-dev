@@ -741,6 +741,10 @@ export interface RigState {
     aim: string;
     draw: number;
     rwAim: string;
+    /** 22 Bedrock shaft: coolant on the drill bit (optional, old saves have none) */
+    cool?: boolean;
+    /** 21 Bloom core: seeds banked at each Ascend (kept through Ascend) */
+    seeds?: number;
     // run meters (reset on Ascend)
     cache: number;
     quiet: number;
@@ -755,6 +759,11 @@ export interface RigState {
     pulses: number;
     fired: number;
     well: number;
+    /** 20 Canopy hall day clock, 22 drill bit wear (0..1), 23 Magma line pressure clock and seconds of shaft heat left */
+    sun?: number;
+    wear?: number;
+    vent?: number;
+    heat?: number;
 }
 /** Filled by lib/nodefarm/rigs.ts. Every hook is optional, so the engine (and the sim) run the same without rigs. */
 export const RIG_HOOKS: {
