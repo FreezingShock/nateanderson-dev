@@ -1,6 +1,7 @@
 // Node Farm records and console commands. Pure: takes a State, returns data or printed lines. The Records window reads
 // `recordSections`; the naOS console's `nf` command runs `nfCommand` against the live game (or the saved one when the game is
 // not open). No React, no DOM.
+import { OPERATORS, archiveOf, loadSeen, pickNews } from "./news";
 import {
     GOALS, GOAL_TIERS, MATS, PERKS, SECRETS, TIER_NAMES, TREE, apOnAscend, derive, fmt, fmtTime, goalDone, statDef, tiersDone, unlock,
     type State,
@@ -84,7 +85,7 @@ export interface NfLine {
 const t = (text: string, k?: NfLine["k"]): NfLine => ({ t: text, k });
 const row = (a: string, b: string, go?: string): NfLine => ({ a, b, go });
 
-export const NF_SUBS = ["stats", "goals", "secrets", "logs", "open", "anim"];
+export const NF_SUBS = ["stats", "goals", "secrets", "logs", "archive", "news", "open", "anim", "fs", "fullscreen", "art"];
 
 export interface NfResult {
     lines: NfLine[];
@@ -113,7 +114,7 @@ export function nfCommand(s: State, args: string[]): NfResult {
             row("ascensions", `${s.life.ascends}  (${s.ap} AP)`),
             row("goals", `${c.goals}/${c.goalTotal}`),
             row("secrets", `${c.secrets}/${c.secretTotal}`),
-            t("nf stats · nf goals · nf secrets · nf logs · nf open", "dim"),
+            t("nf stats · nf goals · nf secrets · nf logs · nf archive · nf open", "dim"),
         ];
     } else if (sub === "stats") {
         lines = recordSections(s).flatMap((sec) => [t(sec.title.toLowerCase(), "hi"), ...sec.rows.map(([a, b]) => row(a.toLowerCase(), b))]);
@@ -140,6 +141,22 @@ export function nfCommand(s: State, args: string[]): NfResult {
             LOGS.forEach((l, i) => lines.push(s.logs.includes(l.id) ? row(logNo(i), l.title.toLowerCase()) : row(logNo(i), "????")));
             lines.push(t("nf logs <number> to read one.", "dim"));
         }
+    } else if (sub === "archive") {
+        const seen = loadSeen();
+        const who = OPERATORS.find((o) => o.id === (args[1] ?? "").toLowerCase());
+        if (who) {
+            const msgs = archiveOf(who.id, seen);
+            lines = [t(`${who.id} // ${who.about.toLowerCase()}`, "hi")];
+            msgs.forEach((m, i) => lines.push(m.seen ? row(String(i + 1).padStart(2, "0"), m.text) : row(String(i + 1).padStart(2, "0"), "????")));
+            lines.push(t("messages show up in the feed as you progress. each one you see is kept here.", "dim"));
+        } else {
+            lines = [t("operators of node-01 (all gone)", "hi")];
+            for (const o of OPERATORS) lines.push(row(o.id, `${archiveOf(o.id, seen).filter((m) => m.seen).length}/${archiveOf(o.id, seen).length}  ${o.about.toLowerCase()}`));
+            lines.push(t("nf archive <name> to read what you have found of one.", "dim"));
+        }
+    } else if (sub === "news") {
+        const p = pickNews(s, []);
+        lines = p ? [t(p.k === "past" ? `${p.op}@node01 > ${p.text}` : p.text)] : [t("no news.", "dim")];
     } else if (sub === "open") {
         lines = [t(`${NF_PATH}`, "dim")];
         lines[0].go = NF_PATH;
@@ -153,7 +170,7 @@ export function nfCommand(s: State, args: string[]): NfResult {
     } else if (sub === "whoami") {
         lines = [t("node-01. one core, no clearance, and a growing farm."), ...secret("x_self")];
     } else {
-        lines = [t(`nf: unknown: ${args[0]}`, "err"), t("nf stats · nf goals · nf secrets · nf logs · nf open", "dim")];
+        lines = [t(`nf: unknown: ${args[0]}`, "err"), t("nf stats · nf goals · nf secrets · nf logs · nf archive · nf open", "dim")];
     }
     return { lines, unlocked: found };
 }

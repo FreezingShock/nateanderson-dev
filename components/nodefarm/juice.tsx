@@ -249,8 +249,19 @@ export function Juice({ reduced }: { reduced: boolean }) {
     const curKind = cur?.kind;
     useLayoutEffect(() => {
         if (!curKey) return;
-        codeReveal(jb.current, { dir: curOut ? "out" : "in", style: curKind === "milestone" ? "print" : "decrypt", rows: ".nf-jb-ic, .nf-jb-t > *", sound: false, ms: curOut ? 200 : 320 });
+        // The banner is a compact card centered on the board, docked on the game panel's title strip, sized to its text and never wider than the board. It steps down below the admin console when the two would touch.
+        // Re-placed on scroll and resize while it shows. (Nate 2026-11-12: the full-width strip "spans way too far".)
+        if (!curOut) placeBanner(jb.current);
+        codeReveal(jb.current, { dir: curOut ? "out" : "in", style: curKind === "milestone" ? "print" : "decrypt", rows: ".nf-jb-ic, .nf-jb-t > *", sound: false, ms: curOut ? 220 : 420 });
     }, [curKey, curOut, curKind]);
+    useEffect(() => {
+        if (!curKey) return;
+        let raf = 0;
+        const on = () => { cancelAnimationFrame(raf); raf = requestAnimationFrame(() => placeBanner(jb.current)); };
+        addEventListener("scroll", on, { passive: true, capture: true });
+        addEventListener("resize", on);
+        return () => { cancelAnimationFrame(raf); removeEventListener("scroll", on, { capture: true }); removeEventListener("resize", on); };
+    }, [curKey]);
 
     if (!host) return null;
     return createPortal(
@@ -266,14 +277,57 @@ export function Juice({ reduced }: { reduced: boolean }) {
                             {cur.pips ? <span className="nf-pips" aria-hidden="true">{Array.from({ length: cur.pips }, (_, i) => <i key={i} />)}</span> : null}
                         </small>
                         <b><Scr text={cur.title} on={!reduced && !calm() && cur.first} /></b>
-                        <span>{cur.sub}</span>
+                        {cur.first && cur.kind === "unlock" ? <span>{cur.sub}</span> : null}
                     </div>
+                    <i className="nf-jb-tm" aria-hidden="true" />
                 </div>
             )}
             {asc && <AscendSeq data={asc} reduced={reduced || calm()} onClose={closeAsc} />}
         </>,
         host,
     );
+}
+
+/** Put the banner at the horizontal centre of the board, on the game panel's title strip (or under the site bar), and
+ *  clear of the floating admin console. Writes --jb-x, --jb-y and --jb-max (app/camino/nodefarm-windows.css). */
+function placeBanner(el: HTMLElement | null) {
+    const board = document.querySelector<HTMLElement>(".ctos .nf") ?? document.querySelector<HTMLElement>(".nf");
+    if (!el || !board) return;
+    const b = board.getBoundingClientRect();
+    const vw = innerWidth;
+    const vh = innerHeight;
+    const left = Math.max(8, b.left);
+    const right = Math.min(vw - 8, b.right);
+    el.style.setProperty("--jb-max", `${Math.max(240, Math.min(480, right - left - 24))}px`);
+    const w = el.offsetWidth;
+    const h = el.offsetHeight;
+    const cx = Math.round(Math.min(Math.max((left + right) / 2, w / 2 + 8), vw - w / 2 - 8));
+    const bar = document.querySelector(".nv-top")?.getBoundingClientRect().bottom ?? 56;
+    // dock on the game panel's title strip ("naOS // node.farm ... ready") so the score under it stays readable; once that
+    // strip has scrolled under the site bar, sit just below the bar
+    const frame = board.closest(".g-frame") ?? board;
+    const strip = frame.querySelector(".g-top")?.getBoundingClientRect();
+    const fr = frame.getBoundingClientRect();
+    const home = strip && strip.top >= bar + 4 ? strip.top : Math.max(bar + 10, fr.top);
+    let y = home;
+    const ad = document.querySelector(".nf-ad")?.getBoundingClientRect();
+    const hits = (x: number, top: number) => !!ad && ad.width > 0 && ad.left < x + w / 2 + 10 && ad.right > x - w / 2 - 10 && ad.top < top + h + 10 && ad.bottom > top - 10;
+    let x = cx;
+    if (hits(x, y)) y = ad!.bottom + 12;
+    const floor = Math.min(fr.bottom, vh) - h - 14;
+    if (y > floor) {
+        // no room under the console: go back to the top and slide sideways into the wider free side of the board
+        y = home;
+        if (hits(x, y)) {
+            const roomL = ad!.left - left;
+            const roomR = right - ad!.right;
+            // the console sits above the banner anyway; only move aside when the banner fits beside it
+            if (Math.max(roomL, roomR) >= w + 12) x = roomL >= roomR ? Math.max(left + w / 2, ad!.left - 12 - w / 2) : Math.min(right - w / 2, ad!.right + 12 + w / 2);
+        }
+    }
+    const cxFinal = Math.round(Math.min(Math.max(x, w / 2 + 8), vw - w / 2 - 8));
+    el.style.setProperty("--jb-x", `${cxFinal}px`);
+    el.style.setProperty("--jb-y", `${Math.round(y)}px`);
 }
 
 // ---- the Ascend sequence: charge the core, flash, then the report. Click, Enter or Esc skips the charge, then closes.
