@@ -6,7 +6,7 @@ import { sfx } from "@/lib/sound/sounds";
 import { setHum } from "@/lib/sound/engine";
 import { useSoundPrefs } from "@/lib/sound/use-sound";
 import {
-    TUNE, overclockMult, overclockSecs, respec, ascend, autoBuy, breach, button, buyDrone, buyNode, canAfford, buyPerk, toggleArm, checkGoals, derive, exportSave, fmt, fmtTime, fresh, getNumFmt, setNumFmt, type NumFmt, isUnlocked, parseSave, press, STATS, tick,
+    TUNE, overclockMult, overclockSecs, respec, ascend, canAscend, autoBuy, breach, button, buyDrone, buyNode, canAfford, buyPerk, toggleArm, checkGoals, derive, exportSave, fmt, fmtTime, fresh, getNumFmt, setNumFmt, type NumFmt, isUnlocked, parseSave, press, STATS, tick,
     apEach, dropFill, hasFeature, openDrop, setMount, statDef,
     buyLabNode, cancelCompile, compile, deploy, labNode, labOpen, payload, type PayloadId,
     chOff, buyFw, fwNode, handSeen, handover, protoDef, protoRank, respecFw, setProto, type ProtoId,
@@ -66,6 +66,8 @@ import { StressPanel, StressStrip } from "./stress";
 import { chOpen, leaveTest, startTest, takeChNews, testDef, RANKS, type TestId } from "@/lib/nodefarm/stress";
 import { ACC_KEY, blankFoldTarget, readyCount, shownArcIds, soloArc } from "@/lib/nodefarm/layout";
 
+import { AUTO_GAP, addBackup, readBackups, type Backup } from "@/lib/nodefarm/backups";
+
 const KEY = "nf-save-v1";
 const EV_KEY = "nf-events-v1"; // "off" when quick-time events are switched off (per device)
 const FS_KEY = "nf-fs-v1"; // full screen mode on or off (per device)
@@ -74,34 +76,21 @@ const UI_KEY = "nf-ui-v1"; // which stat panels are minimized (per device, not p
 const JUMP_KEY = "nf-jump-v1"; // "off" when the page should not scroll to the board on a return visit (per device)
 const CALM_KEY = "nf-calm-v1"; // "1" when motion is forced calm, on top of the OS setting (per device)
 const FMT_KEY = "nf-numfmt-v1"; // number format: short | sci | eng (per device)
-const BACKUP_KEY = "nf-backup-v1"; // the save as it was just before an import, a wipe or a failed load (one slot)
-const CORRUPT_KEY = "nf-corrupt-v1"; // raw text of a save that could not be read, kept instead of being overwritten
 type Tab = "core" | "stats" | "map" | "goals" | "records" | "ascend" | "handover" | "stress" | "codex" | "menu";
 const SIDE: Tab[] = ["map", "goals", "records", "ascend", "handover", "stress", "codex", "menu"];
 type Win = "map" | "goals" | "records" | "ascend" | "handover" | "stress" | "codex" | "menu";
 
-function load(): { s: State | null; unreadable: boolean } {
+function load(): { s: State | null; unreadable: boolean; raw: string } {
     try {
         const raw = localStorage.getItem(KEY);
-        if (!raw) return { s: null, unreadable: false };
+        if (!raw) return { s: null, unreadable: false, raw: "" };
         const s = parseSave(raw);
-        // a save that will not parse (damaged, or from a newer build) must not be overwritten five seconds later
-        if (!s) {
-            try { localStorage.setItem(CORRUPT_KEY, raw); } catch {}
-        }
-        return { s, unreadable: !s };
+        // a save that will not parse (damaged, or from a newer build) must not be overwritten five seconds later: its text goes
+        // to the backup list (lib/nodefarm/backups.ts) where it can be copied out
+        if (!s) addBackup("lost", "could not be read", raw);
+        return { s, unreadable: !s, raw };
     } catch {
-        return { s: null, unreadable: false };
-    }
-}
-
-export type Backup = { at: number; why: string; code: string };
-function readBackup(): Backup | null {
-    try {
-        const b = JSON.parse(localStorage.getItem(BACKUP_KEY) ?? "null");
-        return b && typeof b.code === "string" && parseSave(b.code) ? b : null;
-    } catch {
-        return null;
+        return { s: null, unreadable: false, raw: "" };
     }
 }
 
@@ -163,7 +152,8 @@ export function NodeFarm() {
     const staleRef = useRef(false);
     staleRef.current = stale;
     const [numFmt, setNumFmtState] = useState<NumFmt>("short");
-    const [backup, setBackup] = useState<Backup | null>(null);
+    const [backups, setBackups] = useState<Backup[]>([]);
+    const autoAt = useRef(0); // when the last automatic backup was checked for
     const [ioText, setIoText] = useState("");
     const [ioMsg, setIoMsg] = useState("");
     const [fs, setFsState] = useState(false);
@@ -324,7 +314,6 @@ export function NodeFarm() {
             if (localStorage.getItem(JUMP_KEY) === "off") setJumpOn(false);
             const nf = localStorage.getItem(FMT_KEY);
             if (nf === "sci" || nf === "eng") { setNumFmt(nf); setNumFmtState(nf); }
-            setBackup(readBackup());
             if (localStorage.getItem(HUM_KEY) === "0") {
                 humRef.current = false;
                 setHumOn(false);
@@ -333,6 +322,10 @@ export function NodeFarm() {
         const timers: ReturnType<typeof setTimeout>[] = [];
         const got = load();
         const s = got.s ?? fresh();
+        // the save exactly as the last visit left it, before anything below touches it
+        if (got.s && hasProgress(got.s)) addBackup("auto", "when the game opened", got.raw);
+        autoAt.current = Date.now();
+        setBackups(readBackups());
         if (got.unreadable) timers.push(setTimeout(() => log("The saved game could not be read. It is kept in this browser; a new game starts.", "warn"), 1800));
         const first = s.life.secs === 0 && s.life.presses === 0;
         const gap = (Date.now() - s.at) / 1000;
@@ -413,9 +406,15 @@ export function NodeFarm() {
         if (!s || staleRef.current) return;
         try {
             s.at = Date.now();
-            localStorage.setItem(KEY, JSON.stringify(s));
+            const text = JSON.stringify(s);
+            localStorage.setItem(KEY, text);
             saved.current = Date.now();
             setLastSave(saved.current);
+            // a rolling backup every half hour of play (skipped when nothing changed since the last one)
+            if (saved.current - autoAt.current >= AUTO_GAP && hasProgress(s)) {
+                autoAt.current = saved.current;
+                setBackups(addBackup("auto", "every half hour", text));
+            }
         } catch {
             // storage full or blocked (private mode): say so once instead of failing silently
             if (!warnedSave.current) { warnedSave.current = true; log("This browser would not store the save. Export a code from Menu so nothing is lost.", "warn"); }
@@ -763,6 +762,7 @@ export function NodeFarm() {
             setTimeout(() => setConfirm((c) => (c === "ascend" ? "" : c)), 4000);
             return;
         }
+        if (g.current && canAscend(g.current)) keepBackup("before Ascend");
         const gain = ascend(g.current);
         setConfirm("");
         if (gain) {
@@ -776,12 +776,8 @@ export function NodeFarm() {
     };
 
     // ---- save safety
-    const keepBackup = (why: string) => {
-        try {
-            const b: Backup = { at: Date.now(), why, code: exportSave(g.current) };
-            localStorage.setItem(BACKUP_KEY, JSON.stringify(b));
-            setBackup(b);
-        } catch {}
+    const keepBackup = (why: string, force = true) => {
+        setBackups(addBackup(why.startsWith("before Ascend") ? "auto" : "event", why, JSON.stringify(g.current), { force }));
     };
     // two tabs on one save overwrite each other: when another tab writes, this one stops saving and says so
     useEffect(() => {
@@ -816,14 +812,15 @@ export function NodeFarm() {
         setConfirm("");
         applySave(n, "Save imported.");
     };
-    const doRestore = () => {
-        const b = readBackup();
-        const n = b && parseSave(b.code);
-        if (!b || !n) { setIoMsg("No backup to restore."); return; }
-        const swap = { at: Date.now(), why: "before restore", code: exportSave(g.current) };
+    const doRestore = (b: Backup) => {
+        const n = b.kind === "lost" ? null : parseSave(b.code);
+        if (!n) { setIoMsg("That backup cannot be read."); return; }
+        // the save in play goes to the list first, so a restore can be undone
+        if (hasProgress(g.current)) keepBackup("before restore");
         applySave(n, "Backup restored.");
-        try { localStorage.setItem(BACKUP_KEY, JSON.stringify(swap)); setBackup(swap); } catch {}
     };
+    /** a save that could not be read: its text goes in the box so it can be copied out and mended */
+    const doRecover = (b: Backup) => { setIoText(b.code); setIoMsg("The unreadable save is in the box. Copy it somewhere safe before you do anything else."); };
     const doDownload = () => {
         save();
         try {
@@ -1209,7 +1206,7 @@ export function NodeFarm() {
                 <div className="nf-stale" role="alert">
                     <span>Node Farm is open in another tab. This tab stopped saving so the two don&apos;t overwrite each other.</span>
                     <button type="button" className="nf-mini" onClick={() => location.reload()}>Load latest save</button>
-                    <button type="button" className="nf-mini" onClick={() => { setStale(false); staleRef.current = false; save(); }}>Save from here</button>
+                    <button type="button" className="nf-mini" onClick={() => { try { const other = localStorage.getItem(KEY); if (other) setBackups(addBackup("event", "before this tab saved over another", other, { force: true })); } catch {} setStale(false); staleRef.current = false; save(); }}>Save from here</button>
                 </div>
             )}
             {toast && <div className="nf-toast" role="status"><NfIcon name="spark" /> Goal: {toast}</div>}
@@ -1362,8 +1359,9 @@ export function NodeFarm() {
                     importConfirm={confirm === "import"}
                     onDownload={doDownload}
                     onUpload={doUpload}
-                    backup={backup}
+                    backups={backups}
                     onRestore={doRestore}
+                    onRecover={doRecover}
                     volume={snd.master}
                     onVolume={(v) => setSnd({ master: v })}
                     calm={calm}
