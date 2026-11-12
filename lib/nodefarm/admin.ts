@@ -3,6 +3,7 @@
 // components/nodefarm/admin.tsx. Easy to remove: delete this file, admin.tsx, nodefarm-admin.css, and the few
 // `admin` lines in node-farm.tsx, events.tsx and components/cm/console.tsx.
 import {
+    DRONE_TREE, DRONE_TUNE, POSTABLE, freshDr, modMax,
     GOALS, LAB, LAB_TUNE, MATS, PAYLOADS, PERKS, SECRETS, STATS, TIERS, TREE, TREE_FULL, TUNE, ascend, apOnAscend, derive, droneMax, exportSave, freshLab, fullTreeIds, parseSave, tick, treeFx, treeSpent, unlock,
     type MatId, type PerkDef, type State, type StatId,
 } from "./engine";
@@ -113,7 +114,14 @@ export const maxPerks = (s: State) => { for (const p of PERKS) s.perks[p.id] = p
 export const clearPerks = (s: State) => { for (const p of PERKS) s.perks[p.id] = 0; };
 export function setDrone(s: State, tier: number, lvl: number) { s.drones[tier] = Math.max(0, Math.min(droneMax(s), Math.floor(lvl))); }
 export const ARMABLE = ["mult", ...MATS] as string[];
-export function maxDrones(s: State) { for (let k = 0; k < TIERS; k++) s.drones[k] = droneMax(s); s.armed = [...ARMABLE]; }
+export function maxDrones(s: State) {
+    s.dr.nodes = DRONE_TREE.map((n) => n.id);
+    for (let k = 0; k < TIERS; k++) { s.drones[k] = droneMax(s); s.dr.mods[k] = [modMax(s, 0), modMax(s, 1), modMax(s, 2)]; }
+    for (const st of POSTABLE) s.dr.svc[st] = Math.max(s.dr.svc[st] ?? 0, DRONE_TUNE.rankAt[DRONE_TUNE.rankAt.length - 1]);
+    s.armed = [...ARMABLE];
+}
+/** Wipe the hangar: postings, mastery, Parts, mods and the drone tree. */
+export function clearHangar(s: State) { s.dr = freshDr(); }
 export function grantGoals(s: State, tier?: number) { for (const g of GOALS) if (tier === undefined || g.tier === tier) unlock(s, g.id); }
 export function revokeGoals(s: State, tier?: number) {
     const ids = new Set(GOALS.filter((g) => tier === undefined || g.tier === tier).map((g) => g.id));

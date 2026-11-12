@@ -43,6 +43,23 @@ while (t < hours * 3600) {
         }
         // Drones: cheapest tier first, paid in Aether
         if (!process.env.NF_NODRONES && E.dronesOpen(s)) for (let k = 0; k < E.TIERS; k++) if (s.aether >= E.droneCost(s, k) * 3 && E.buyDrone(s, k)) mark("drone " + k, t);
+        // Drone hangar (NF_NOHANGAR=1 skips it): post each Drone to the open zone with the lowest mastery (newest zone wins ties),
+        // buy the cheapest mod, then the cheapest drone tree node
+        if (!process.env.NF_NODRONES && !process.env.NF_NOHANGAR && s.drones.some((x) => x > 0)) {
+            if (t % 120 < 3) {
+                const open = E.POSTABLE.filter((st) => E.isUnlocked(s, st)).sort((a, b) => E.zoneRank(s, a) - E.zoneRank(s, b) || E.POSTABLE.indexOf(b) - E.POSTABLE.indexOf(a));
+                for (let k = 0; k < E.TIERS; k++) E.setPost(s, k, s.drones[k] > 0 ? open[k % open.length] ?? null : null);
+            }
+            for (let more = true; more;) {
+                more = false;
+                let best = null;
+                for (let k = 0; k < E.TIERS; k++) for (let m = 0; m < 3; m++) if (!E.modBlock(s, k, m)) { const c = E.modCost(s, k, m); if (!best || c < best[2]) best = [k, m, c]; }
+                if (best && E.buyMod(s, best[0], best[1])) more = true;
+            }
+            for (const n of [...E.DRONE_TREE].sort((a, b) => a.cost - b.cost)) if (E.buyDroneNode(s, n.id)) mark("dnode " + n.id, t);
+            const r = E.masteryRanks(s);
+            for (const x of [1, 5, 15, 30, 45, 60, 75]) if (r >= x) mark(`mastery ${x}`, t);
+        }
         E.checkGoals(s);
         if (s.reboot >= 1) mark("first reboot", t);
         if (s.life.reboots >= 25) mark("25 reboots", t);
