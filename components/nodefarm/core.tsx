@@ -88,7 +88,7 @@ export function Core({ feed, reduced }: { feed: React.MutableRefObject<CoreFeed>
                 const s = `${f.zone}|${f.skin}|${f.event}|${f.fw}|${f.rigs.join()}|${f.parts}|${f.overclock}|${f.unlocked}|${Math.round(f.progress * 40)}|${Math.min(24, f.ap)}|${Math.min(8, Math.floor(Math.log2(1 + f.reboots)))}`;
                 if (s === sig && now - lastDraw < 4000) return;
                 sig = s;
-            } else if (now - lastDraw < 33 && !(now - f.lastPulse < 40)) return;
+            } else if (now - lastDraw < (document.body.classList.contains("nf-lowfx") ? 80 : 33) && !(now - f.lastPulse < 40)) return;
             lastDraw = now;
             if (f.zone !== zone) {
                 prevZone = zone;

@@ -17,7 +17,7 @@ button tiers (+1, +5, +25, +125, +625, +3125; each tier costs about 8 to 10 time
 - Prestige tree (see "Prestige tree" below): 40 nodes in five sections, bought with AP, kept through Ascend. `state.tree` holds owned ids; old saves are refunded for nodes that no longer exist.
 - Ascend (400 Aether): wipes everything except goals, perks and lifetime stats for Ascension Points (+30 percent to everything each) and five perks.
 - There is no tapping: progress comes from buttons only (Nate did not want a Cookie Clicker). The core is a live display: its outer arc shows progress to the cheapest Reboot and it pulses on every press. Quick-time events (see below) appear every 3 to 5 minutes; clearing one gives the timed Overclock plus a rarity loot roll.
-- Offline progress is capped at 8 hours (Standby cells perk: +4 h per level). Nothing is auto-bought. Returning after more than a minute away opens a full-screen standby report (components/nodefarm/away.tsx): time banked, a standby-window meter, what each resource gained, and a Collect button. Everything is already banked when it opens; Esc or Collect closes it.
+- Offline progress is capped at 8 hours (Standby cells perk: +4 h per level). Nothing is auto-bought. Returning after more than a minute away opens a full-screen standby report (components/nodefarm/away.tsx): time banked, a standby-window meter, what each resource gained, and a Collect button. Everything is already banked when it opens; Esc or Collect closes it. `lib/nodefarm/offline.ts` (`catchUp`) wraps the engine's `offline` and reads what each system did, shown as plain data groups under the resource tiles (Scripts, Drone hangar, Zone rigs, Exploit Lab, Zone events). What runs while away: production, Drones (away speed), Scripts except ascend.sh, rig meters, Lab Intel and the compile queue, and the clocks of events and payloads. What does not: quick-time events, new zone events (a running one only runs out) and anything that needs a choice. Steps are 10 s while Scripts are owned (20 s otherwise), and a step is cut at the moment a timed boost ends (Overclock, Swarm alarm, zone event, payload), so a boost counts only for the time it had left. Check: /mnt/project-files/portfolio/node-farm-offline/ (report.mjs, offline-check.mjs).
 
 
 ## Ascend window
@@ -170,7 +170,7 @@ Each body reports a quality from 0 to 1; when the clock runs out it reports what
 
 ## Story logs (lore)
 
-Premise (Nate picked "inherited node", 2026-11-12): you took over node-01 from a previous operator who left logs. `lib/nodefarm/story.ts` holds the 25 logs, each with a test on the game state (stat unlocked, reboot count, tree branch finished, goal rank, and so on). Numbers follow writing order, so early finds leave gaps. A log is stored in `State.logs` the first time its test passes (checked in the tick, `node-farm.tsx`) and is kept through Ascend. A save from before logs existed gets them all at once, with one quiet feed line.
+Premise (Nate picked "inherited node", 2026-11-12): you took over node-01 from a previous operator who left logs. `lib/nodefarm/story.ts` holds the logs (039 by zone 25; 032 to 039 open with zones 18 to 25, after the first Handover), each with a test on the game state (stat unlocked, reboot count, tree branch finished, goal rank, and so on). Numbers follow writing order, so early finds leave gaps. A log is stored in `State.logs` the first time its test passes (checked in the tick, `node-farm.tsx`) and is kept through Ascend. A save from before logs existed gets them all at once, with one quiet feed line.
 
 Where they show: a typed `logs.recover("004")` feed line and a milestone banner when one is found, the "Operator logs" list in the Records window, `nf logs` and `nf logs <number>` in the console, and one operator line on the Ascend screen (`ASCEND_NOTES`). The Ascend notes quote log numbers 012 and 017, so keep those in step if the order of `LOGS` changes. To add a log, append to the end of `LOGS` (inserting renumbers every later log).
 
@@ -338,7 +338,16 @@ About every 8 to 14 minutes of play (first one after 8 minutes of life), one unl
 - Only online ticks (5 s or less) start an event; time away just runs the clock down. The scripts/sim never imports `zoneevents.ts`, so `sim.mjs` pacing is unchanged.
 - Shown as a centered card (`ZoneEventCard`, no scrim, plain events close after 7 s, a vein or fault waits for an answer or "Decide later"), a readout on the zone panel (`ZoneEvent`, with the answers if you deferred) and a dot on the signal chain. Reveal is decrypt.
 - Admin panel, Run section: zone picker, one button per event, Clear, and Next in 5 s.
+- Rig machines (2026-11-12, round 2): each rig has a 96 x 64 dither machine, 4 states (empty, started, past half, full) x 6
+  frames, drawn by `scripts/naos-art/nodefarm-rigs.py` (kit `nodefarm_rig_kit.py`) into `public/naos/nodefarm/rigs.webp`. Row
+  order is `RIG_ORDER` in the script and `ART_ROWS` in rig.tsx; the state comes from the rig's meter (`artState`), Weather from
+  its sky. Run the stamper after regenerating.
+- Arc links: when every rig in an arc reaches lv 3, 5 and 8 (`LINK_TUNE`), the arc's zones get x1.02, x1.04, x1.06 and the arc's
+  named interaction turns on (`ARC_LINKS`): Hot swap (rack), Clean growth (fab), Still light (hollow), Storm pulse (deep),
+  Recall (origin), Pollination (overgrowth), Quench (descent). The arc's level is its lowest rig level (the Glyph hall counts its lowest glyph). Shown on each rig panel.
 
+## Settings and low-effects mode
+The Menu window's `config/node.cfg` block lives in `components/nodefarm/settings.tsx` (sound, hum, volume, calm, effects, events, jump, number format). All per device, not in the save. Effects level (`full | low | auto`) is in `lib/nodefarm/fx.ts`: `initFx()` runs at boot, `setFxMode`, `useLowFx()`, window event `nf:fx`, and CSS hooks `body.nf-lowfx` / `body[data-nf-fx="low"]`. Auto measures the median frame time once (about 3.5 s after boot) and goes low under about 40 fps. Console: `nf fx full|low|auto`. The heavy-effect list for low mode is `app/camino/nodefarm-fx.css`: add new loops, drifting layers, blurs and big glows there. Low mode never hides information, and `body.nf-calm` is a separate switch.
 ## QOL batch 3 (2026-11-12, late-game layout pass)
 - `audit.mjs` and `tour3.mjs` in /mnt/project-files/portfolio/node-farm-first30/ seed a late save (`nf admin max` through the console), open every zone and list overflowing or tiny controls at 1440, 390 and 360.
 - The Drone hangar rows were clipped past the right edge on phones once drone levels pass 10 (20 pips, the posting list and the third mod were cut off): `nodefarm-hangar.css` now lets the row shrink and the pips squeeze.

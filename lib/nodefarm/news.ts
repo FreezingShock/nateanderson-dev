@@ -1,7 +1,7 @@
 // The news lines: now and then a short line from the previous operator (or the node itself) drops into the terminal feed.
 // Every line is tied to how far you have got, so early lines talk about wires and later ones about Runes and Chrono.
 // Picking is pure (see pickNews): it skips anything shown recently, so a long session does not loop.
-import { STATS, TREE, TREE_FULL, fmt, isUnlocked, tiersDone, type State } from "./engine";
+import { STATS, TREE, TREE_FULL, fmt, isUnlocked, statDef, tiersDone, type State } from "./engine";
 import { com, id, kw, p, txt, type Tok } from "./feed";
 
 export type NewsKind = "op" | "note" | "hint" | "wry" | "past";
@@ -15,6 +15,9 @@ interface News {
     ok?: (s: State) => boolean;
     t: string | ((s: State) => string);
 }
+
+/** Display name of the zone 25 material (it may be renamed). */
+const lastMat = () => statDef("sunstone").name;
 
 /** How far the farm has got: the index of the newest unlocked stat (0 = Bytes only, 10 = Chrono, 16 = Origin). */
 export const stageOf = (s: State) => {
@@ -152,6 +155,62 @@ const BASE: News[] = [
     { k: "note", from: 16, t: "origin.boot() // node zero, still answering" },
     { k: "wry", from: 16, t: "Root access, finally. The root was a box the size of a lunch tin." },
     { k: "hint", from: 16, ok: (s) => s.life.ascends < 25, t: "Origin boosts Paradox, and every Ascend pays more AP while you hold it. It is the last link in the chain." },
+
+    // ---- Spores (17): Overgrowth, after the first Handover
+    { k: "op", from: 17, t: "The cellar smells like rain and warm dust. I counted the caps on one rack and gave up at forty." },
+    { k: "op", from: 17, t: "Spores drift into every zone that is running. I find them in the amp bay, in the fab, in my coffee." },
+    { k: "note", from: 17, t: "spores.shed() // origin, gone to seed" },
+    { k: "wry", from: 17, t: "The node now has a cellar, a mould problem and a growing economy. Two of those are the same thing." },
+    { k: "hint", from: 17, to: 18, t: "Spores boost Origin, and every zone you have running this run makes them stronger. Further in, the roots have found the cables." },
+
+    // ---- Mycelium (18)
+    { k: "op", from: 18, t: "Pulled a cable to check it and it pulled back. Gently. I put it down where it wanted to go." },
+    { k: "op", from: 18, t: "The web ties a knot for every tier I buy down here. Tie all twelve and it hums in a key I have never heard." },
+    { k: "note", from: 18, t: "mycelium.route() // half fibre, half fungus, full bandwidth" },
+    { k: "wry", from: 18, t: "The network finally routes around damage on its own. It also routes around me." },
+    { k: "hint", from: 18, to: 19, t: "Mycelium boosts Spores. Own every Spores and Mycelium tier this run to tie all twelve knots. Above the web there is light." },
+
+    // ---- Pollen (19)
+    { k: "op", from: 19, t: "The glass hall gets a sunrise every ten minutes. I have seen more of them this week than in my whole life." },
+    { k: "op", from: 19, t: "At night the Pollen slows and the cellar grows faster. The farm takes turns, like it learned to share." },
+    { k: "note", from: 19, t: "pollen.lift() // gold, airborne, smells faintly of solder" },
+    { k: "wry", from: 19, t: "I keep a jacket on the chair for the nights. They are short, but they are cold." },
+    { k: "hint", from: 19, to: 20, t: "Pollen boosts Mycelium. Days lift Pollen and nights feed the two zones below it. Keep it going and the whole farm flowers." },
+
+    // ---- Bloom (20)
+    { k: "op", from: 20, t: "Every rack has a flower on it now. I did not water any of them. I think the reactor did." },
+    { k: "op", from: 20, t: "Banked a jar of seeds before I ascended. They were still there when the board came back. Some things the node lets you keep." },
+    { k: "note", from: 20, t: "bloom.open() // in flower, all racks" },
+    { k: "wry", from: 20, t: "Built a forge, a beacon and a black hole. The flowers are what I would show people first." },
+    { k: "hint", from: 20, to: 21, t: "Bloom boosts Pollen and raises the Keys every Handover pays. Each Ascend banks seeds from the Bloom you hold. The roots also go down." },
+
+    // ---- Basalt (21): Descent
+    { k: "op", from: 21, t: "The drill screams for a minute and then goes quiet, and the quiet is how you know the bit is worn. Change it." },
+    { k: "op", from: 21, t: "Coolant clears the wear, but it burns some of the Bloom upstairs. I apologised to the flowers. They grew back." },
+    { k: "note", from: 21, t: "basalt.bore() // depth: more than yesterday" },
+    { k: "wry", from: 21, t: "Spent all this time going up. Turns out down was also available." },
+    { k: "hint", from: 21, to: 22, t: "Basalt boosts Bloom. A worn bit drags Basalt down, so cool it when the meter fills. Under the rock there is heat." },
+
+    // ---- Magma (22)
+    { k: "op", from: 22, t: "The pipeline runs over a river of magma. The railing is warm in the morning and hot by lunch." },
+    { k: "op", from: 22, t: "Every eruption sends heat up the shaft and the drill runs faster for a minute. I set the coffee pot on the vent. It works." },
+    { k: "note", from: 22, t: "magma.vent() // pressure: building. it is always building." },
+    { k: "wry", from: 22, t: "The node's last pipeline crosses a lava river. It started as one wire. Scope creep." },
+    { k: "hint", from: 22, to: 23, t: "Magma boosts Basalt. Each eruption pays a lump of Magma and heats the shaft above. Deeper down, something is ringing." },
+
+    // ---- Geodes (23)
+    { k: "op", from: 23, t: "Inside the geode the racks read the crystal like a disk. Every surface is a sector. I have not found the end of the drive." },
+    { k: "op", from: 23, t: "Tapped the vault wall and the Crystal vault rang back from the top of the farm. The quartz I bought on day one is still paying." },
+    { k: "note", from: 23, t: "geodes.read() // hollow, lit from inside, 0 bad sectors" },
+    { k: "wry", from: 23, t: "Found a cathedral inside a rock. Not a single chair." },
+    { k: "hint", from: 23, to: 24, t: "Geodes boost Magma and grow with the Quartz you hold. At the bottom of the shaft there is light that is not crystal." },
+
+    // ---- zone 25 (24): the material name is read from STATS so a rename carries through
+    { k: "op", from: 24, t: "The heat from the bottom rises through every zone. Somewhere above me the amp bay is a little warmer than it needs to be." },
+    { k: "op", from: 24, t: "Every rig I tuned on the way down makes the clamps glow brighter. Nothing down here is wasted, not even the mistakes." },
+    { k: "note", from: 24, t: () => `${lastMat().toLowerCase()}.hold() // clamps: holding. temperature: yes.` },
+    { k: "wry", from: 24, t: "Reached the bottom of everything. It is bright, loud and too warm. Like the first rack, really." },
+    { k: "hint", from: 24, t: () => `${lastMat()} boosts Geodes and everything a little, and every rig level in zones 18 to 24 makes it stronger.` },
 
     // ---- more of the middle and the end
     { k: "op", from: 3, to: 6, t: "I measure my days in Reboots now. Today was a good one. Fourteen, and none of them hurt." },

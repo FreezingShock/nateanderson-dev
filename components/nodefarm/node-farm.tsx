@@ -6,12 +6,13 @@ import { sfx } from "@/lib/sound/sounds";
 import { setHum } from "@/lib/sound/engine";
 import { useSoundPrefs } from "@/lib/sound/use-sound";
 import {
-    TUNE, overclockMult, overclockSecs, respec, ascend, autoBuy, breach, button, buyDrone, buyNode, canAfford, buyPerk, toggleArm, checkGoals, derive, exportSave, fmt, fmtTime, fresh, getNumFmt, setNumFmt, type NumFmt, isUnlocked, offline, parseSave, press, STATS, tick,
+    TUNE, overclockMult, overclockSecs, respec, ascend, autoBuy, breach, button, buyDrone, buyNode, canAfford, buyPerk, toggleArm, checkGoals, derive, exportSave, fmt, fmtTime, fresh, getNumFmt, setNumFmt, type NumFmt, isUnlocked, parseSave, press, STATS, tick,
     apEach, dropFill, hasFeature, openDrop, setMount, statDef,
     buyLabNode, cancelCompile, compile, deploy, labNode, labOpen, payload, type PayloadId,
     buyFw, fwNode, handSeen, handover, protoDef, protoRank, respecFw, setProto, type ProtoId,
     type ButtonStat, type MatId, type State, type StatId,
 } from "@/lib/nodefarm/engine";
+import { initFx } from "@/lib/nodefarm/fx";
 import type { NfLive } from "@/lib/nodefarm/records";
 import { Core, freshCoreFeed, type CoreFeed } from "./core";
 import { PART_WHY, SKIN_WHY, coreLook, corePreview, skinOpen } from "@/lib/nodefarm/core-look";
@@ -21,6 +22,7 @@ import { EventLayer } from "./events";
 import { MiniHud } from "./mini-hud";
 import { RARITY, payLoot, type Loot } from "@/lib/nodefarm/events";
 import { AwayReport, type Away } from "./away";
+import { catchUp } from "@/lib/nodefarm/offline";
 import { Scenery, SceneWindow } from "./scenery";
 import dynamic from "next/dynamic";
 // The prestige tree (menu, backdrop, sprites) is the biggest piece of the game and most visits never open it, so it loads on its
@@ -46,6 +48,8 @@ import { exact, nextStep, type Target } from "@/lib/nodefarm/guide";
 import { GoalsPanel, MenuPanel, RecordsPanel } from "./systems";
 import { AscendPanel } from "./ascend";
 import { HandoverPanel, fwModel } from "./handover";
+import { CodexPanel } from "./codex";
+import { unlocked as codexUnlocked } from "@/lib/nodefarm/codex";
 import { HandoverCut, type HandCutInfo } from "./handover-cut";
 import { Dock, PhoneTabs, WinBar, swInfo } from "./switcher";
 import { AdminPanel, type AdminHost } from "./admin";
@@ -69,9 +73,9 @@ const CALM_KEY = "nf-calm-v1"; // "1" when motion is forced calm, on top of the 
 const FMT_KEY = "nf-numfmt-v1"; // number format: short | sci | eng (per device)
 const BACKUP_KEY = "nf-backup-v1"; // the save as it was just before an import, a wipe or a failed load (one slot)
 const CORRUPT_KEY = "nf-corrupt-v1"; // raw text of a save that could not be read, kept instead of being overwritten
-type Tab = "core" | "stats" | "map" | "goals" | "records" | "ascend" | "handover" | "menu";
-const SIDE: Tab[] = ["map", "goals", "records", "ascend", "handover", "menu"];
-type Win = "map" | "goals" | "records" | "ascend" | "handover" | "menu";
+type Tab = "core" | "stats" | "map" | "goals" | "records" | "ascend" | "handover" | "codex" | "menu";
+const SIDE: Tab[] = ["map", "goals", "records", "ascend", "handover", "codex", "menu"];
+type Win = "map" | "goals" | "records" | "ascend" | "handover" | "codex" | "menu";
 
 function load(): { s: State | null; unreadable: boolean } {
     try {
@@ -308,6 +312,7 @@ export function NodeFarm() {
     // ---- boot: load the save, bank offline time, print the greeting
     useEffect(() => {
         setReduced(window.matchMedia("(prefers-reduced-motion: reduce)").matches);
+        initFx();
         try {
             const u = localStorage.getItem(UI_KEY);
             if (u) setFolded(JSON.parse(u));
@@ -330,7 +335,7 @@ export function NodeFarm() {
         const gap = (Date.now() - s.at) / 1000;
         g.current = s;
         if (gap > 60 && !first) {
-            const r = offline(s, gap);
+            const r = catchUp(s, gap);
             if (r.capped) s.life.capped += 1;
             setAway({ ...r, gap, cap: derive(s).offlineCap });
         }
@@ -458,7 +463,7 @@ export function NodeFarm() {
             setSpeed: (n) => { speedRef.current = n; },
             previewAway: (secs) => {
                 const copy = structuredClone(g.current);
-                const r = offline(copy, secs);
+                const r = catchUp(copy, secs);
                 setAway({ ...r, gap: secs, cap: derive(copy).offlineCap });
             },
             fire: (kind) => window.dispatchEvent(new CustomEvent("nf:fire", { detail: kind })),
@@ -504,7 +509,7 @@ export function NodeFarm() {
             const gap = (now - s.at) / 1000;
             s.at = now;
             if (gap > 3) {
-                const r = offline(s, gap);
+                const r = catchUp(s, gap);
                 if (gap > 60 && r.capped) s.life.capped += 1;
                 if (gap > 60) setAway({ ...r, gap, cap: derive(s).offlineCap });
             } else {
@@ -901,7 +906,7 @@ export function NodeFarm() {
             // 1 to 6 press that tier on the zone in the middle of the screen
             if (/^[1-6]$/.test(e.key)) { e.preventDefault(); keyApi.current.tier(Number(e.key) - 1, e.repeat); return; }
             if (e.repeat) return;
-            const w = ({ m: "map", o: "goals", l: "records", a: "ascend", h: "handover", s: "menu", t: "tree" } as const)[e.key.toLowerCase() as "m"];
+            const w = ({ m: "map", o: "goals", l: "records", a: "ascend", h: "handover", c: "codex", s: "menu", t: "tree" } as const)[e.key.toLowerCase() as "m"];
             if (w) { e.preventDefault(); keyApi.current.open(w); }
             else if (e.key.toLowerCase() === "k") { e.preventDefault(); keyApi.current.fw(); }
             else if (e.key.toLowerCase() === "r") { e.preventDefault(); keyApi.current.lab(); }
@@ -913,6 +918,22 @@ export function NodeFarm() {
         window.addEventListener("keydown", onKey);
         return () => window.removeEventListener("keydown", onKey);
     }, [ready]);
+
+    // codex: a feed line when a system you just reached gets its entry
+    const codexAnn = useRef<Set<string> | null>(null);
+    useEffect(() => {
+        if (!ready) return;
+        const timer = window.setInterval(() => {
+            const st = g.current;
+            if (!st) return;
+            const now = codexUnlocked(st);
+            const prev = codexAnn.current;
+            codexAnn.current = new Set(now.map((e) => e.id));
+            if (!prev) return;
+            for (const e of now) if (!prev.has(e.id)) feedStore.push([...call(idTok("codex"), "entry", [strTok(e.id)]), pun(" "), com(`// ${e.title.toLowerCase()}. press C`)], { tone: "good", type: true });
+        }, 2000);
+        return () => window.clearInterval(timer);
+    }, [ready]); // eslint-disable-line react-hooks/exhaustive-deps
 
     const doReset = (now = false) => {
         if (!now && confirm !== "reset") {
@@ -1277,6 +1298,10 @@ export function NodeFarm() {
                     />
                 </section>
             )}
+            <section className="nf-pane nf-sidepane" data-pane="codex" aria-label="Codex" role="dialog" aria-modal="false">
+                <WinBar id="codex" info={sw} treeSeen={treeSeen} lab={labOpen(s)} onSwitch={(w) => (w === "lab" ? openLab() : openWin(w))} onClose={closeWin} />
+                <CodexPanel s={s} shown={win === "codex" || (tab === "codex" && !win)} onOpen={(w) => (w === "lab" ? (closeWin(), openLab()) : openWin(w))} />
+            </section>
             <section className="nf-pane nf-sidepane" data-pane="menu" aria-label="Menu" role="dialog" aria-modal="false">
                 <WinBar id="menu" info={sw} treeSeen={treeSeen} lab={labOpen(s)} onSwitch={(w) => (w === "lab" ? openLab() : openWin(w))} onClose={closeWin} />
                 <MenuPanel

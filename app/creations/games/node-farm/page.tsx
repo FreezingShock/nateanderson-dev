@@ -8,6 +8,7 @@ import "@/app/camino/nodefarm-tree.css";
 import "@/app/camino/nodefarm-code.css";
 import "@/app/camino/nodefarm-ascend.css";
 import "@/app/camino/nodefarm-fs.css";
+import "@/app/camino/nodefarm-fx.css";
 import "@/app/camino/nodefarm-windows.css";
 import "@/app/camino/nodefarm-switcher.css";
 import "@/app/camino/nodefarm-admin.css";

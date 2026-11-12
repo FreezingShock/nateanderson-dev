@@ -9,6 +9,7 @@ import {
     MATS, RIG_HOOKS, STATS, TUNE, derive, fwRigCost, isUnlocked, overclockMult, overclockSecs, sinceReboot,
     type Derived, type MatId, type RigState, type State, type StatId,
 } from "./engine";
+import { ARCS } from "./arcs";
 
 export const RIG_TUNE = {
     /** minutes of the zone's own output each level costs, by the level you are buying (index 0 buys level 1) */
@@ -116,7 +117,7 @@ export const rigDef = (id: StatId) => RIG_BY.get(id);
 const KEY_ZONE = new Map(RIGS.flatMap((r) => r.keys.map((k) => [k.key, r.zone] as const)));
 
 export function freshRig(): RigState {
-    return { lv: {}, re: {}, rw: 0, scrub: true, aim: "copper", draw: 0, rwAim: "bytes", cool: true, seeds: 0, cache: 0, quiet: 0, pour: 0, casts: 0, dust: 0, grow: 0, glow: 0, glowLeft: 0, wx: 0, pulse: 0, pulses: 0, fired: 0, well: 0, sun: 0, wear: 0, vent: 0, heat: 0 };
+    return { lv: {}, re: {}, rw: 0, scrub: true, aim: "copper", draw: 0, rwAim: "bytes", cool: true, seeds: 0, cache: 0, cacheCapAt: 0, quiet: 0, pour: 0, casts: 0, dust: 0, grow: 0, glow: 0, glowLeft: 0, wx: 0, pulse: 0, pulses: 0, fired: 0, well: 0, sun: 0, wear: 0, vent: 0, heat: 0 };
 }
 const num = (v: unknown, d = 0) => (typeof v === "number" && Number.isFinite(v) ? v : d);
 /** The rig state, made or repaired on first use (old saves have none). */
@@ -135,7 +136,7 @@ export function rig(s: State): RigState {
         rwAim: typeof o.rwAim === "string" && RIG_BY.has(o.rwAim as StatId) && o.rwAim !== "origin" ? o.rwAim : b.rwAim,
         cool: typeof o.cool === "boolean" ? o.cool : true,
     };
-    for (const k of ["cache", "quiet", "pour", "casts", "dust", "grow", "glow", "glowLeft", "wx", "pulse", "pulses", "fired", "well", "seeds", "sun", "wear", "vent", "heat"] as const) r[k] = Math.max(0, num(o[k]));
+    for (const k of ["cache", "cacheCapAt", "quiet", "pour", "casts", "dust", "grow", "glow", "glowLeft", "wx", "pulse", "pulses", "fired", "well", "seeds", "sun", "wear", "vent", "heat"] as const) r[k] = Math.max(0, num(o[k]));
     r.dust = Math.min(1, r.dust);
     r.wear = Math.min(1, r.wear ?? 0);
     s.rig = r;
@@ -205,12 +206,44 @@ export function setRig(s: State, k: "scrub" | "aim" | "draw" | "rwAim" | "cool",
     if (k === "rwAim" && RIG_BY.has(v as StatId) && v !== "origin") r.rwAim = v as string;
 }
 
+// ---- arc links: every rig in an arc levelled together lights the arc's link (Nate's card: milestones at lv 3, 5, 8)
+export const LINK_TUNE = { at: [3, 5, 8], mul: [1.02, 1.04, 1.06] };
+export interface ArcLink { arc: string; name: string; rule: string }
+/** One named interaction per arc, on from the first milestone. Arcs without an entry only get the output bonus. */
+export const ARC_LINKS: Record<string, ArcLink> = {
+    rack: { arc: "rack", name: "Hot swap", rule: "the Capacitor charges twice as fast while the Packet cache is full" },
+    fab: { arc: "fab", name: "Clean growth", rule: "crystals grow 50% faster while the cleanroom has no dust" },
+    hollow: { arc: "hollow", name: "Still light", rule: "the Prism beam grows up to 50% brighter with Stillness" },
+    deep: { arc: "deep", name: "Storm pulse", rule: "the Beacon pulses twice as fast during storms" },
+    origin: { arc: "origin", name: "Recall", rule: "each rewrite is filed in the Index as a record" },
+    overgrowth: { arc: "overgrowth", name: "Pollination", rule: "banked seeds count double during the day" },
+    descent: { arc: "descent", name: "Quench", rule: "each eruption clears a quarter of the drill wear" },
+};
+/** The level an arc's rigs count as for its link: the lowest rig level in the arc (the Glyph hall counts its lowest glyph). */
+export function arcLevel(s: State, arcId: string): number {
+    const arc = ARCS.find((a) => a.id === arcId);
+    if (!arc) return 0;
+    let lo = Infinity;
+    for (const z of arc.zones) {
+        const d = RIG_BY.get(z as StatId);
+        if (!d || !d.keys.length) continue;
+        lo = Math.min(lo, ...d.keys.map((k) => rigLv(s, k.key)));
+    }
+    return Number.isFinite(lo) ? lo : 0;
+}
+/** 0 to 3: how many of the arc's link milestones are lit. */
+export const linkTier = (s: State, arcId: string) => LINK_TUNE.at.filter((n) => arcLevel(s, arcId) >= n).length;
+export const linkOn = (s: State, arcId: string) => linkTier(s, arcId) > 0;
+export const arcOfZone = (zone: StatId) => ARCS.find((a) => a.zones.includes(zone));
+
 // ---- the rules
 export const cacheCap = (s: State, bps: number) => bps * (T.cacheSecs + T.cacheSecsLv * L(s, "bytes"));
 export const stagesLit = (s: State) => s.bought.mult.filter((n) => n > 0).length;
 export const stagingMul = (s: State) => { const n = stagesLit(s); return 1 + n * (T.stage + T.stageLv * L(s, "mult")) * (n >= 6 ? 2 : 1); };
 export const capSecs = (s: State) => T.capSecs * Math.max(0.3, 1 - T.capSecsLv * L(s, "reboot"));
-export const capCharge = (s: State) => Math.min(1, sinceReboot(s) / capSecs(s));
+export const capCharge = (s: State) => Math.min(1, sinceReboot(s) / capSecs(s) * (linkOn(s, "rack") && cacheFull(s) ? 2 : 1));
+/** Packet cache at 98% or more of its cap (for Hot swap). Uses the rate saved by the last tick, so it never calls derive. */
+const cacheFull = (s: State) => { const r = rig(s); return r.cache > 0 && r.cache >= r.cacheCapAt * 0.98; };
 export const capPay = (s: State) => T.capPay + T.capPayLv * L(s, "reboot");
 export const pourSecs = (s: State) => T.pourSecs * Math.max(0.3, 1 - T.pourLv * L(s, "copper"));
 export const castMax = (s: State) => T.casts + T.castsLv * L(s, "copper");
@@ -227,7 +260,7 @@ export const glowMul = (s: State) => { const r = rig(s); return r.glowLeft > 0 ?
 export const glowFor = (s: State) => { const ex = s.aether - TUNE.ascendAether; return ex > 0 ? Math.min(T.glowMax, Math.log10(1 + ex) * (T.glowK + T.glowKLv * L(s, "aether"))) : 0; };
 export const glowSecs = (s: State) => (T.glowMins + T.glowMinsLv * L(s, "aether")) * 60;
 export const glyphMul = (s: State, key: string) => 1 + T.glyph * rigLv(s, key);
-export const prismMul = (s: State) => Math.min(T.prismMax, 1 + (T.prism + T.prismLv * L(s, "starglass")) * Math.log10(1 + Math.max(0, s.starglass)));
+export const prismMul = (s: State) => Math.min(T.prismMax, 1 + (T.prism + T.prismLv * L(s, "starglass")) * Math.log10(1 + Math.max(0, s.starglass)) * (linkOn(s, "hollow") ? 1 + 0.5 * stillFrac(s) : 1));
 export const drawPay = (s: State) => 1 + rig(s).draw * (T.drawK + T.drawKLv * L(s, "voidsteel"));
 export const stillFrac = (s: State) => Math.min(1, rig(s).quiet / (T.stillMins * 60 * Math.max(0.3, 1 - T.stillLv * L(s, "chrono"))));
 export const stillMul = (s: State) => 1 + T.stillMax * stillFrac(s);
@@ -241,9 +274,9 @@ export function weather(s: State): { phase: "clear" | "front" | "storm"; mul: nu
     if (t < clear + front) return { phase: "front", mul: 1 - 1 / T.front, left: clear + front - t };
     return { phase: "storm", mul: T.storm, left: cyc - t };
 }
-export const pulseSecs = (s: State) => T.pulseSecs * Math.max(0.3, 1 - T.pulseLv * L(s, "pulsars"));
+export const pulseSecs = (s: State) => T.pulseSecs * Math.max(0.3, 1 - T.pulseLv * L(s, "pulsars")) / (linkOn(s, "deep") && weather(s).phase === "storm" ? 2 : 1);
 export const wellMul = (s: State) => 1 + (T.well + T.wellLv * L(s, "singularity")) * Math.log10(1 + rig(s).well);
-export const indexed = (s: State) => s.ach.length + s.logs.length;
+export const indexed = (s: State) => s.ach.length + s.logs.length + (linkOn(s, "origin") ? rig(s).rw : 0);
 export const indexMul = (s: State) => 1 + (T.index + T.indexLv * L(s, "engrams")) * indexed(s);
 /** The material zone furthest behind (fewest producers among those running, Copper to Engrams). */
 export function mirrored(s: State): MatId | null {
@@ -266,7 +299,7 @@ export function daylight(s: State): { phase: "day" | "night"; mul: number; below
     return { phase: "night", mul: T.night, below: T.nightGrow, left: T.sunMins * 60 - t };
 }
 export const seedMax = (s: State) => T.seedMax + T.seedMaxLv * L(s, "bloom");
-export const seedMul = (s: State) => 1 + T.seed * (rig(s).seeds ?? 0);
+export const seedMul = (s: State) => 1 + T.seed * (rig(s).seeds ?? 0) * (linkOn(s, "overgrowth") && daylight(s).phase === "day" ? 2 : 1);
 /** Seeds an Ascend right now would bank (one per tenfold Bloom held). */
 export const seedsFor = (s: State) => Math.floor(Math.log10(1 + Math.max(0, s.bloom)));
 export const coolBonus = (s: State) => T.coolBonus + T.coolBonusLv * L(s, "basalt");
@@ -309,6 +342,7 @@ export function muls(s: State): Partial<Record<StatId, number>> {
     if (open("magma") && (r.heat ?? 0) > 0) mul("basalt", T.heat);
     if (open("geodes")) mul("geodes", ringMul(s));
     if (open("sunstone")) mul("sunstone", convMul(s));
+    for (const a of ARCS) { const k = linkTier(s, a.id); if (k > 0) for (const z of a.zones) mul(z as StatId, LINK_TUNE.mul[k - 1]); }
     return m;
 }
 
@@ -321,7 +355,8 @@ function step(s: State, dt: number, d: Derived) {
     const oc = s.overclock > 0 ? overclockMult(s) : 1;
     // 01 Packet cache
     const bps = d.bytesPerSec / oc;
-    r.cache = Math.min(cacheCap(s, bps), r.cache + bps * (T.cacheFill + T.cacheFillLv * L(s, "bytes")) * dt);
+    r.cacheCapAt = cacheCap(s, bps);
+    r.cache = Math.min(r.cacheCapAt, r.cache + bps * (T.cacheFill + T.cacheFillLv * L(s, "bytes")) * dt);
     // 04 Batch pour
     if (s.prod.copper > 0) {
         r.pour += dt;
@@ -336,7 +371,7 @@ function step(s: State, dt: number, d: Derived) {
     // 05 Air scrubbers
     if (isUnlocked(s, "silicon")) r.dust = r.scrub ? Math.max(0, r.dust - dt / T.dustDown) : Math.min(1, r.dust + dt / T.dustUp);
     // 06 Crystal growth
-    if (s.prod.quartz > 0) r.grow += dt;
+    if (s.prod.quartz > 0) r.grow += dt * (linkOn(s, "fab") && r.dust <= 0 ? 1.5 : 1);
     // 07 Afterglow
     if (r.glowLeft > 0) r.glowLeft = Math.max(0, r.glowLeft - dt);
     // 12 Weather
@@ -370,6 +405,7 @@ function step(s: State, dt: number, d: Derived) {
             r.vent -= n * per;
             s.magma += (d.rates.magma / oc) * T.ventPays * n;
             r.heat = heatSecs(s);
+            if (linkOn(s, "descent")) r.wear = Math.max(0, (r.wear ?? 0) - 0.25);
         }
     }
 }

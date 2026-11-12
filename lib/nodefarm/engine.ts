@@ -769,6 +769,8 @@ export interface RigState {
     seeds?: number;
     // run meters (reset on Ascend)
     cache: number;
+    /** the Packet cache's cap at the last tick (Hot swap reads it without a derive) */
+    cacheCapAt: number;
     quiet: number;
     pour: number;
     casts: number;
@@ -1320,17 +1322,36 @@ export function buyPerk(s: State, id: PerkDef["id"]): boolean {
     return true;
 }
 
-/** Catch up for time away. Production only; nothing is bought for you. Returns what was gained. */
+/** Catch up for time away. Production only; nothing is bought for you (except by the scripts you taught). Returns what was gained.
+ *  The steps are short (10 s) while scripts are running, and a step never runs past the moment a timed boost ends (Overclock,
+ *  Swarm alarm, a zone event, a deployed payload), so a boost counts for exactly the time it had left, not a whole step. */
 export function offline(s: State, seconds: number) {
     const cap = derive(s).offlineCap;
     const secs = Math.min(Math.max(0, seconds), cap);
     const before = Object.fromEntries((["bytes", ...MATS] as const).map((k) => [k, s[k]])) as Record<"bytes" | MatId, number>;
-    const steps = Math.min(600, Math.max(1, Math.ceil(secs / 20)));
+    const per = s.auto?.own.length ? 10 : 20;
+    const steps = Math.min(2400, Math.max(1, Math.ceil(secs / per)));
     const dt = secs / steps;
     const oc = s.overclock;
     s.overclock = 0; // an intrusion boost doesn't carry through time away
     const pressesBefore = s.life.presses;
-    for (let i = 0; i < steps; i++) tick(s, dt, handFx(s).standby ? 1 : Math.min(1, TUNE.drone.offline + treeFx(s).droneOff + droneFx(s).off));
+    const eff = handFx(s).standby ? 1 : Math.min(1, TUNE.drone.offline + treeFx(s).droneOff + droneFx(s).off);
+    const nextEnd = () => {
+        let m = Infinity;
+        if (s.overclock > 0) m = Math.min(m, s.overclock);
+        if (s.frenzy) m = Math.min(m, s.frenzy);
+        for (const e of s.ze?.act ?? []) if (e.left > 0) m = Math.min(m, e.left);
+        for (const r of s.lab.run) if (r.left > 0) m = Math.min(m, r.left);
+        return m;
+    };
+    for (let i = 0; i < steps; i++) {
+        let left = dt;
+        for (let guard = 0; left > 1e-9 && guard < 40; guard++) {
+            const h = guard === 39 ? left : Math.min(left, Math.max(0.05, nextEnd()));
+            tick(s, h, eff);
+            left -= h;
+        }
+    }
     s.overclock = Math.max(0, oc - secs);
     return { secs, capped: seconds > cap, drones: s.life.presses - pressesBefore, gain: Object.fromEntries((["bytes", ...MATS] as const).map((k) => [k, s[k] - before[k]])) as Record<"bytes" | MatId, number> };
 }
