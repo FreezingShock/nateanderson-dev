@@ -56,7 +56,7 @@ export function AwayReport({ away, era, reduced, onClose }: { away: Away; era: n
         const prev = html.style.overflow;
         html.style.overflow = "hidden";
         sfx("nfGoal");
-        codeReveal(panel.current, { dir: "in", rows: "[data-cx-i]", sound: false, ms: 420 });
+        codeReveal(panel.current, { dir: "in", style: "crt", rows: "[data-cx-i]", sound: false, ms: 420 });
         wrap.current?.querySelectorAll<HTMLElement>(".nf-aw-bar [data-cx-scr]").forEach((t) => scrambleNow(t));
         return () => {
             html.style.overflow = prev;
@@ -75,7 +75,7 @@ export function AwayReport({ away, era, reduced, onClose }: { away: Away; era: n
         leaving.current = true;
         sfx("nfBuy", { tier: 3 });
         wrap.current?.setAttribute("data-out", "");
-        codeReveal(panel.current, { dir: "out", rows: "[data-cx-i]" }).then(onClose);
+        codeReveal(panel.current, { dir: "out", style: "crt", rows: "[data-cx-i]" }).then(onClose);
     };
 
     // keys work wherever focus is: Esc closes, Tab stays on the button

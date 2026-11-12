@@ -33,27 +33,31 @@ export interface CxOpts {
     bare?: boolean;
     /** play the print / delete ticks (default: on for framed reveals, off for bare ones) */
     sound?: boolean;
-    /** animation style; defaults to the game-wide pick (`cxStyle()`) */
+    /** animation style for this use (default print); `nf anim` can override it for testing */
     style?: CxStyle;
 }
 
-/** The three looks Nate is choosing between. "print" is the default. */
+/**
+ * The three looks, each with its own job (Nate, 2026-11-12): "print" for milestones (and tooltips and the tree card),
+ * "decrypt" for unlocks and quick-time events, "crt" for panels (windows, the offline report, folding zones).
+ * Callers pass `style`; with none it is "print".
+ */
 export type CxStyle = "print" | "decrypt" | "crt";
 export const CX_STYLES: CxStyle[] = ["print", "decrypt", "crt"];
 const STYLE_KEY = "nf-cx-style";
-/** The game-wide style: `?cx=decrypt` in the URL or `nf cx <style>` in the console (saved per browser), else print. */
-export function cxStyle(): CxStyle {
+/** A testing override that forces one style everywhere: `?cx=decrypt` or `nf anim decrypt` (per browser). null = each use's own. */
+export function cxOverride(): CxStyle | null {
     try {
-        const q = new URLSearchParams(location.search).get("cx");
-        const v = (q || localStorage.getItem(STYLE_KEY) || "print") as CxStyle;
-        return CX_STYLES.includes(v) ? v : "print";
+        const v = new URLSearchParams(location.search).get("cx") || localStorage.getItem(STYLE_KEY);
+        return v && CX_STYLES.includes(v as CxStyle) ? (v as CxStyle) : null;
     } catch {
-        return "print";
+        return null;
     }
 }
-export function setCxStyle(v: CxStyle) {
+export function setCxOverride(v: CxStyle | null) {
     try {
-        localStorage.setItem(STYLE_KEY, v);
+        if (v) localStorage.setItem(STYLE_KEY, v);
+        else localStorage.removeItem(STYLE_KEY);
     } catch {}
 }
 
@@ -253,7 +257,8 @@ export function codeReveal(el: HTMLElement | null, opts: CxOpts = {}): Promise<v
         const color = getComputedStyle(el).getPropertyValue("--cx-c").trim() || "";
         if (opts.sound ?? !opts.bare) sfx(dir === "in" ? "nfPrint" : "nfDelete", rows.length);
 
-        const style = opts.style ?? cxStyle();
+        const style = cxOverride() ?? opts.style ?? "print";
+        if (style !== "print" && dir === "in") el.querySelectorAll<HTMLElement>("[data-cx-scr]").forEach((t) => scrambleNow(t, Math.min(520, total + 160)));
         if (style === "decrypt") playDecrypt(el, dir, rows, total, !!opts.bare, color, run);
         else if (style === "crt") playCrt(el, dir, rows, total, !!opts.bare, color, run);
         else {
@@ -446,7 +451,7 @@ export function useCodeReveal<T extends HTMLElement>(ref: RefObject<T | null>, o
  * A folding panel body: rows print in when it expands and delete when it folds (no frame, no sound; the fold
  * button already clicks). Skips the first render so a page load does not animate every zone.
  */
-export function useFoldReveal<T extends HTMLElement>(ref: RefObject<T | null>, open: boolean, rows = ":scope > *") {
+export function useFoldReveal<T extends HTMLElement>(ref: RefObject<T | null>, open: boolean, rows = ":scope > *", style: CxStyle = "crt") {
     const first = useRef(true);
     useEffect(() => {
         if (first.current) {
@@ -455,7 +460,7 @@ export function useFoldReveal<T extends HTMLElement>(ref: RefObject<T | null>, o
         }
         const el = ref.current;
         if (!el) return;
-        if (open) codeReveal(el, { bare: true, rows, ms: 260 });
-        else codeReveal(el, { dir: "out", bare: true, rows, ms: 260 });
-    }, [open, ref, rows]);
+        if (open) codeReveal(el, { bare: true, rows, ms: 260, style });
+        else codeReveal(el, { dir: "out", bare: true, rows, ms: 260, style });
+    }, [open, ref, rows, style]);
 }
