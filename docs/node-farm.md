@@ -126,6 +126,12 @@ Premise (Nate picked "inherited node", 2026-11-12): you took over node-01 from a
 
 Where they show: a typed `logs.recover("004")` feed line and a milestone banner when one is found, the "Operator logs" list in the Records window, `nf logs` and `nf logs <number>` in the console, and one operator line on the Ascend screen (`ASCEND_NOTES`). The Ascend notes quote log numbers 012 and 017, so keep those in step if the order of `LOGS` changes. To add a log, append to the end of `LOGS` (inserting renumbers every later log).
 
+## Admin mode (root console)
+
+Unadvertised testing tools, on this device only. Turn on from the naOS console (backtick): `nf admin on` arms it and opens the panel, `nf admin max` grants everything (tree, perks, Drones, goals, secrets, logs, prestiges, materials), `nf admin panel` reopens the panel, `nf admin snap|snaps|restore [n|real]` manage snapshots, `nf admin off` hides it. Turning it on stores your real save as the `real save` snapshot first.
+
+Code: pure rules and snapshots in `lib/nodefarm/admin.ts`, panel in `components/nodefarm/admin.tsx`, styles in `app/camino/nodefarm-admin.css`. The game side is a few lines in `node-farm.tsx` (admin state, speed multiplier in the tick loop, `nf:admin` and `nf:live.changed`), `events.tsx` (`nf:fire` listener) and `engine.ts` (`adminFlags.reveal`). To remove admin mode later, delete those three files and those lines, plus `nfAdmin` in `components/cm/console.tsx`. Test scripts: `/mnt/project-files/portfolio/node-farm-admin/` (`run.mjs`, `panel.mjs`, `extra.mjs`).
+
 ## Save safety, settings and keys (feature check)
 - Import asks twice when the current save has progress, and a backup slot (`nf-backup-v1`, one save) is written before an import, a wipe or a restore; Menu has Restore backup. A save that cannot be read is copied to `nf-corrupt-v1` instead of being overwritten.
 - A second tab on the same save is detected through the `storage` event: that tab stops saving and shows a notice with Load latest save / Save from here.
