@@ -1,13 +1,15 @@
 "use client";
 
+import type { CSSProperties } from "react";
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { sfx } from "@/lib/sound/sounds";
 import { setHum } from "@/lib/sound/engine";
 import { useSoundPrefs } from "@/lib/sound/use-sound";
 import {
-    TUNE, overclockMult, overclockSecs, respec, ascend, autoBuy, breach, button, buyDrone, buyNode, canAfford, buyPerk, toggleArm, checkGoals, derive, exportSave, fmt, fmtTime, fresh, getNumFmt, setNumFmt, type NumFmt, isUnlocked, offline, parseSave, press, STATS, tick,
+    TUNE, overclockMult, overclockSecs, respec, ascend, autoBuy, breach, button, buyDrone, buyNode, canAfford, buyPerk, toggleArm, checkGoals, derive, exportSave, fmt, fmtTime, fresh, getNumFmt, setNumFmt, type NumFmt, isUnlocked, offline, parseSave, press, STATS, tick, type StatId,
     apEach, dropFill, hasFeature, openDrop, pressMax, setMount, statDef,
     buyLabNode, cancelCompile, compile, deploy, labNode, labOpen, payload, type PayloadId,
+    buyFw, fwNode, handSeen, handover, protoDef, respecFw, setProto, type ProtoId,
     type ButtonStat, type MatId, type State,
 } from "@/lib/nodefarm/engine";
 import type { NfLive } from "@/lib/nodefarm/records";
@@ -42,12 +44,17 @@ import { MapPanel } from "./map";
 import { exact, nextStep, type Target } from "@/lib/nodefarm/guide";
 import { GoalsPanel, MenuPanel, RecordsPanel } from "./systems";
 import { AscendPanel } from "./ascend";
+import { HandoverPanel, fwModel } from "./handover";
 import { Dock, PhoneTabs, WinBar, swInfo } from "./switcher";
 import { AdminPanel, type AdminHost } from "./admin";
 import { isAdmin, setAdmin } from "@/lib/nodefarm/admin";
 import { adminFlags, buyDroneNode, buyMod, droneNode, masteryRanks, MODS, respecDrones, setPost } from "@/lib/nodefarm/engine";
 import { DRONE_NAMES } from "@/lib/nodefarm/guide";
 import { codeReveal, cxClear } from "@/lib/nodefarm/cx";
+import { ZoneEventCard } from "./zone-event";
+import { zeChoose, zoneEvDef, zoneLabel, type ZeChoice } from "@/lib/nodefarm/zoneevents";
+import { ARCS, arcKey, arcOf } from "@/lib/nodefarm/arcs";
+import { ArcHead } from "./arcs";
 
 const KEY = "nf-save-v1";
 const EV_KEY = "nf-events-v1"; // "off" when quick-time events are switched off (per device)
@@ -60,8 +67,9 @@ const CALM_KEY = "nf-calm-v1"; // "1" when motion is forced calm, on top of the 
 const FMT_KEY = "nf-numfmt-v1"; // number format: short | sci | eng (per device)
 const BACKUP_KEY = "nf-backup-v1"; // the save as it was just before an import, a wipe or a failed load (one slot)
 const CORRUPT_KEY = "nf-corrupt-v1"; // raw text of a save that could not be read, kept instead of being overwritten
-type Tab = "core" | "stats" | "map" | "goals" | "records" | "ascend" | "menu";
-const SIDE: Tab[] = ["map", "goals", "records", "ascend", "menu"];
+type Tab = "core" | "stats" | "map" | "goals" | "records" | "ascend" | "handover" | "menu";
+const SIDE: Tab[] = ["map", "goals", "records", "ascend", "handover", "menu"];
+type Win = "map" | "goals" | "records" | "ascend" | "handover" | "menu";
 
 function load(): { s: State | null; unreadable: boolean } {
     try {
@@ -96,7 +104,7 @@ export function NodeFarm() {
     const [, bump] = useState(0);
     const [tab, setTab] = useState<Tab>("core");
     const [side, setSide] = useState<Tab>("goals");
-    const [win, setWin] = useState<"" | "map" | "goals" | "records" | "ascend" | "menu">("");
+    const [win, setWin] = useState<"" | Win>("");
     const [treeOpen, setTreeOpen] = useState(false);
     /** the Exploit Lab's research tree (same menu as the prestige tree, blue lab skin) */
     const [labTree, setLabTree] = useState(false);
@@ -105,10 +113,17 @@ export function NodeFarm() {
     const closeDrones = useCallback(() => setDroneTree(false), []);
     /** mastery ranks last seen, so a rank up gets one feed line and a banner */
     const rankPrev = useRef<{ s: State | null; n: number }>({ s: null, n: 0 });
+    /** zone events: the one announced by the centered card, and the last event id this screen has seen (for the feed) */
+    const [zeCard, setZeCard] = useState<number | null>(null);
+    const closeZeCard = useCallback(() => setZeCard(null), []);
+    const zeSeen = useRef<{ s: State | null; n: number }>({ s: null, n: 0 });
     const labPrev = useRef<{ s: State | null; seen: boolean; compiled: number }>({ s: null, seen: false, compiled: 0 });
     // stable on purpose: the tree's modal effect re-runs whenever this changes, and this component re-renders ten times a second
     const closeTree = useCallback(() => setTreeOpen(false), []);
     const closeLab = useCallback(() => setLabTree(false), []);
+    /** the Handover Firmware tree (same menu, green phosphor skin) */
+    const [fwTree, setFwTree] = useState(false);
+    const closeFw = useCallback(() => setFwTree(false), []);
     const treeOpenRef = useRef(false);
     treeOpenRef.current = treeOpen;
 
@@ -332,7 +347,7 @@ export function NodeFarm() {
     // ---- news lines: every so often one short line (past operator, operator, node note, hint) drops into the feed,
     // chosen for how far the farm has got. Skipped when the tab is hidden, a window is open, or the feed is busy.
     const busyRef = useRef(false);
-    busyRef.current = !!win || treeOpen || droneTree || !!away || !!confirm;
+    busyRef.current = !!win || treeOpen || droneTree || fwTree || !!away || !!confirm;
     useEffect(() => {
         if (!ready) return;
         let to: ReturnType<typeof setTimeout>;
@@ -489,6 +504,19 @@ export function NodeFarm() {
                     juice.emit({ t: "milestone", title: "Zone mastery up", sub: `Your posted Drones earned a rank. ${rn} ranks so far; spend the Core in the drone tree.` });
                 }
                 rankPrev.current = { s, n: rn };
+                // zone events: a new one gets a feed line and the centered card (only while this save is loaded and the tab is showing)
+                const zs = zeSeen.current;
+                const zn = s.ze?.seen ?? 0;
+                if (zs.s === s && zn > zs.n && s.ze) {
+                    const ev = s.ze.act[s.ze.act.length - 1];
+                    if (ev && !document.hidden) {
+                        const zd = zoneEvDef(ev.kind);
+                        feedStore.push([...call(idTok("zone"), "event", [strTok(ev.kind)]), pun(" → "), strTok(zoneLabel(ev.zone))], { tone: zd.good ? "hot" : "warn", type: true });
+                        setZeCard(ev.id);
+                        sfx("nfAlert");
+                    }
+                }
+                zeSeen.current = { s, n: zn };
             }
             if (++tickN.current % 10 === 0 && s.perks.auto > 0) autoBuy(s);
             const d = derive(s);
@@ -629,6 +657,19 @@ export function NodeFarm() {
         [log],
     );
     const evMiss = useCallback((def: { title: string }) => log(`${def.title} ignored. It passed.`, "warn"), [log]);
+    const onZoneEv = useCallback(
+        (id: number, c: ZeChoice) => {
+            const r = zeChoose(g.current, id, c);
+            if (!r.ok) { sfx("deny"); return; }
+            sfx("nfBuy", { tier: 2 });
+            if (c === "mine") log(`Vein mined: +${fmt(r.paid ?? 0)} ${statDef(r.stat ?? "bytes").name}.`, "good");
+            else if (c === "patch") log(`Fault patched for ${fmt(r.paid ?? 0)} Bytes.`, "good");
+            else log(c === "run" ? "Vein left running." : "Fault left to run out.", "good");
+            save();
+            bump((x) => x + 1);
+        },
+        [log, save],
+    );
     const evEngage = useCallback((def: { title: string }) => log(`${def.title} engaged.`, "hot"), [log]);
     const setEvents = useCallback((on: boolean) => {
         setEvOn(on);
@@ -814,7 +855,7 @@ export function NodeFarm() {
     }, [ready]);
 
     // ---- keyboard: one letter per window. Off while typing, with a modifier, over another panel or during an event.
-    const keyApi = useRef<{ open: (w: "map" | "goals" | "records" | "ascend" | "menu" | "tree") => void; max: () => void; lab: () => void; go: () => void; press: (held: boolean) => void; tier: (k: number, held: boolean) => void }>({ open: () => {}, max: () => {}, lab: () => {}, go: () => {}, press: () => {}, tier: () => {} });
+    const keyApi = useRef<{ open: (w: Win | "tree") => void; max: () => void; lab: () => void; fw: () => void; go: () => void; press: (held: boolean) => void; tier: (k: number, held: boolean) => void }>({ open: () => {}, max: () => {}, lab: () => {}, fw: () => {}, go: () => {}, press: () => {}, tier: () => {} });
     useEffect(() => {
         if (!ready) return;
         const onKey = (e: KeyboardEvent) => {
@@ -827,8 +868,9 @@ export function NodeFarm() {
             // 1 to 6 press that tier on the zone in the middle of the screen
             if (/^[1-6]$/.test(e.key)) { e.preventDefault(); keyApi.current.tier(Number(e.key) - 1, e.repeat); return; }
             if (e.repeat) return;
-            const w = ({ m: "map", o: "goals", l: "records", a: "ascend", s: "menu", t: "tree" } as const)[e.key.toLowerCase() as "m"];
+            const w = ({ m: "map", o: "goals", l: "records", a: "ascend", h: "handover", s: "menu", t: "tree" } as const)[e.key.toLowerCase() as "m"];
             if (w) { e.preventDefault(); keyApi.current.open(w); }
+            else if (e.key.toLowerCase() === "k") { e.preventDefault(); keyApi.current.fw(); }
             else if (e.key.toLowerCase() === "b") keyApi.current.max();
             else if (e.key.toLowerCase() === "r") { e.preventDefault(); keyApi.current.lab(); }
             else if (e.key.toLowerCase() === "g") { e.preventDefault(); keyApi.current.go(); }
@@ -878,12 +920,27 @@ export function NodeFarm() {
             }));
         }
     };
-    const openWin = (w: "map" | "goals" | "records" | "ascend" | "menu" | "tree") => {
+    const openWin = (w: Win | "tree") => {
         if (w === "tree") { setWin(""); setTreeOpen(true); sfx("tab"); return; }
+        if (w === "handover" && !handSeen(s)) return;
         setWin(w);
         setTabBoth(w);
     };
-    const openLab = () => { if (!labOpen(s)) return; setWin(""); setTreeOpen(false); setLabTree(true); sfx("tab"); };
+    const openLab = () => { if (!labOpen(s)) return; setWin(""); setTreeOpen(false); setFwTree(false); setLabTree(true); sfx("tab"); };
+    const fwSeen = s.hand.count > 0 || s.hand.keys > 0;
+    const openFw = () => { if (!fwSeen) return; setWin(""); setTreeOpen(false); setLabTree(false); setFwTree(true); sfx("tab"); };
+    const doHandover = (proto: ProtoId, note: string, proto2: ProtoId | null) => {
+        keepBackup("before Handover");
+        const keys = handover(s, proto, note, proto2);
+        if (!keys) return sfx("deny");
+        sfx("nfAscend");
+        const p = protoDef(proto);
+        juice.emit({ t: "milestone", title: `Handover ${s.hand.count}: +${keys} Keys`, sub: `${p.op}'s protocol is running: ${p.name}. Flash Firmware with your Keys.` });
+        feedStore.push([...call(idTok("system"), "handover", [strTok(p.op.toLowerCase())]), pun(" → "), num(`+${keys} Keys`), txt(" "), { k: "c", v: "// node handed over" }], { tone: "good", type: true });
+        prevIds.current = null;
+        save();
+        bump((n) => n + 1);
+    };
     const doDeploy = (id: PayloadId) => {
         const p = payload(id);
         const r = deploy(s, id);
@@ -901,9 +958,10 @@ export function NodeFarm() {
         go: () => {},
         press: () => {},
         tier: () => {},
-        lab: () => { if (labTree) setLabTree(false); else if (!treeOpen) openLab(); },
+        lab: () => { if (labTree) setLabTree(false); else if (!treeOpen && !fwTree && !droneTree) openLab(); },
+        fw: () => { if (fwTree) setFwTree(false); else if (!treeOpen && !labTree && !droneTree) openFw(); },
         open: (w) => {
-            if (labTree) return;
+            if (labTree || fwTree || droneTree) return;
             if (treeOpen) { if (w === "tree") setTreeOpen(false); return; }
             if (w === "tree") { if (treeSeenK) openWin("tree"); return; }
             if (win === w) closeWin();
@@ -927,7 +985,8 @@ export function NodeFarm() {
         setTab("stats");
         const key = t.drone !== undefined ? "drones" : t.stat;
         if (!key) return;
-        if (folded[key]) setFold({ ...folded, [key]: false });
+        const arc = arcOf(key);
+        if (folded[key] || (arc && folded[arcKey(arc.id)])) setFold({ ...folded, [key]: false, ...(arc ? { [arcKey(arc.id)]: false } : {}) });
         sfx("tab");
         setTimeout(() => document.querySelector<HTMLElement>(`.nf [data-stat="${key}"]`)?.scrollIntoView({ behavior: reduced ? "auto" : "smooth", block: "center" }), 90);
     };
@@ -1022,7 +1081,8 @@ export function NodeFarm() {
             )}
             {toast && <div className="nf-toast" role="status"><NfIcon name="spark" /> Goal: {toast}</div>}
 
-            <EventLayer game={g} ready={ready} enabled={evOn} busy={!!win || treeOpen || labTree || droneTree || !!away || !!confirm} reduced={reduced} onEngage={evEngage} onResult={evResult} onMiss={evMiss} onDisable={() => setEvents(false)} />
+            <ZoneEventCard s={s} id={zeCard} onChoose={onZoneEv} onClose={closeZeCard} reduced={reduced} />
+            <EventLayer game={g} ready={ready} enabled={evOn} busy={!!win || treeOpen || labTree || droneTree || fwTree || !!away || !!confirm} reduced={reduced} onEngage={evEngage} onResult={evResult} onMiss={evMiss} onDisable={() => setEvents(false)} />
             <Juice reduced={reduced} />
 
             <section className="nf-pane nf-corepane" data-pane="core" aria-label="Core">
@@ -1042,7 +1102,7 @@ export function NodeFarm() {
             </section>
 
             <section className="nf-pane nf-statspane" data-pane="stats" aria-label="Stats and buttons">
-                <Chain s={s} d={d} allOpen={!STATS.every((x) => folded[x.id])} onAll={(open) => setFold(Object.fromEntries(STATS.map((x) => [x.id, !open])))} max={buyMax} onMax={() => { const v = !buyMax; setBuyMax(v); sfx("tab"); try { localStorage.setItem(MAX_KEY, v ? "1" : "0"); } catch {} }} />
+                <Chain s={s} d={d} allOpen={!STATS.every((x) => folded[x.id])} onAll={(open) => setFold({ ...folded, ...Object.fromEntries(STATS.map((x) => [x.id, !open])), ...(open ? Object.fromEntries(ARCS.map((a) => [arcKey(a.id), false])) : {}) })} max={buyMax} onMax={() => { const v = !buyMax; setBuyMax(v); sfx("tab"); try { localStorage.setItem(MAX_KEY, v ? "1" : "0"); } catch {} }} />
                 {labOpen(s) && (
                     <LabZone
                         s={s}
@@ -1087,10 +1147,21 @@ export function NodeFarm() {
                         onTree={() => { setWin(""); setTreeOpen(false); setLabTree(false); setDroneTree(true); sfx("tab"); }}
                     />
                 )}
-                {STATS.map((def) => {
-                    if (!isUnlocked(s, def.id) && def.id !== firstLocked) return null;
+                {ARCS.map((arc, ai) => {
+                    const shown = arc.zones.filter((z) => isUnlocked(s, z as StatId) || z === firstLocked);
+                    if (!shown.length) return null;
+                    const arcOpen = !folded[arcKey(arc.id)];
                     return (
-                        <StatRow key={def.id} id={def.id} s={s} d={d} guide={guideTarget} onPress={doPress} onArm={() => { toggleArm(s, def.id); sfx("tab"); bump((n) => n + 1); }} onWatchdog={() => { s.watchdog = !s.watchdog; sfx("tab"); log(`Watchdog timer ${s.watchdog ? "on: Reboots run themselves" : "off"}.`, s.watchdog ? "good" : "warn"); bump((n) => n + 1); }} open={!folded[def.id]} onToggle={() => { setFold({ ...folded, [def.id]: !folded[def.id] }); sfx("tab"); }} />
+                        <div key={arc.id} className="nf-arcgrp" data-arc={arc.id} role="group" aria-label={arc.name} style={{ ["--arc" as string]: arc.color } as CSSProperties}>
+                            <ArcHead arc={arc} no={ai + 1} s={s} open={arcOpen} onToggle={() => { setFold({ ...folded, [arcKey(arc.id)]: arcOpen }); sfx("tab"); }} />
+                            {arcOpen && (
+                                <div id={`nf-arc-${arc.id}`} className="nf-arc-zones">
+                                    {shown.map((id) => (
+                                        <StatRow key={id} id={id as StatId} s={s} d={d} guide={guideTarget} onPress={doPress} onArm={() => { toggleArm(s, id as StatId); sfx("tab"); bump((n) => n + 1); }} onWatchdog={() => { s.watchdog = !s.watchdog; sfx("tab"); log(`Watchdog timer ${s.watchdog ? "on: Reboots run themselves" : "off"}.`, s.watchdog ? "good" : "warn"); bump((n) => n + 1); }} open={!folded[id]} onToggle={() => { setFold({ ...folded, [id]: !folded[id] }); sfx("tab"); }} onZoneEv={onZoneEv} zeCard={zeCard} />
+                                    ))}
+                                </div>
+                            )}
+                        </div>
                     );
                 })}
                 {laterLocked.length > 0 && (
@@ -1117,6 +1188,17 @@ export function NodeFarm() {
                 <WinBar id="ascend" info={sw} treeSeen={treeSeen} lab={labOpen(s)} onSwitch={(w) => (w === "lab" ? openLab() : openWin(w))} onClose={closeWin} />
                 <AscendPanel s={s} d={d} confirm={confirm === "ascend"} onAscend={doAscend} onPerk={(id) => { if (buyPerk(s, id)) { sfx("nfBuy", { tier: 3 }); bump((n) => n + 1); } }} onTree={() => openWin("tree")} onMount={(i, m) => { if (setMount(s, i, m)) { sfx("tab"); save(); bump((n) => n + 1); } }} />
             </section>
+            {handSeen(s) && (
+                <section className="nf-pane nf-sidepane" data-pane="handover" aria-label="Handover" role="dialog" aria-modal="false">
+                    <WinBar id="handover" info={sw} treeSeen={treeSeen} lab={labOpen(s)} onSwitch={(w) => (w === "lab" ? openLab() : openWin(w))} onClose={closeWin} />
+                    <HandoverPanel
+                        s={s}
+                        onHandover={doHandover}
+                        onFirmware={openFw}
+                        onProto={(id, second) => { if (setProto(s, id, second)) { sfx("tab"); log(`Protocol: ${protoDef(id).op}, ${protoDef(id).name}${second ? " (Dual boot, half strength)" : ""}.`, "good"); save(); bump((n) => n + 1); } }}
+                    />
+                </section>
+            )}
             <section className="nf-pane nf-sidepane" data-pane="menu" aria-label="Menu" role="dialog" aria-modal="false">
                 <WinBar id="menu" info={sw} treeSeen={treeSeen} lab={labOpen(s)} onSwitch={(w) => (w === "lab" ? openLab() : openWin(w))} onClose={closeWin} />
                 <MenuPanel
@@ -1185,6 +1267,23 @@ export function NodeFarm() {
                     }}
                     onRespec={() => { const back = respecDrones(s); sfx("tab"); log(`Drone tree respec: ${fmt(back)} Cores back.`, "good"); save(); bump((n) => n + 1); return back; }}
                     onClose={closeDrones}
+                />
+            )}
+            {fwTree && (
+                <TreeMenu
+                    s={s}
+                    model={fwModel(s)}
+                    ver={`${s.hand.fw.join(",")}|${s.hand.keys}`}
+                    reduced={reduced}
+                    onBuy={(id) => {
+                        if (!buyFw(s, id)) return sfx("deny");
+                        sfx("nfBuy", { tier: 5 });
+                        feedStore.push([...call(idTok("fw"), "flash", [strTok(fwNode(id).name)]), pun(" → "), strTok("ok")], { tone: "good", type: true });
+                        save();
+                        bump((x) => x + 1);
+                    }}
+                    onRespec={() => { const back = respecFw(s); sfx("tab"); log(`Firmware respec: ${fmt(back)} Keys back.`, "good"); save(); bump((n) => n + 1); return back; }}
+                    onClose={closeFw}
                 />
             )}
             {treeOpen && (
