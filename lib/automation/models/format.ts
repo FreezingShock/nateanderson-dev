@@ -42,8 +42,12 @@ export const MOTION = {
 } as const;
 export type MotionValue = (typeof MOTION)[keyof typeof MOTION];
 
+/** Shape of a slide or bob motion, in -1..1. "sine" is the default. */
+export type AnimWave = "sine" | "stamp" | "crank";
+
 export interface PartAnim {
-    kind: "spin" | "slide" | "bob" | "pulse";
+    /** "swing" rocks about the pivot: angle = amp * sin(2pi(t*speed + phase)), amp in radians. */
+    kind: "spin" | "slide" | "bob" | "pulse" | "swing";
     axis: Axis;
     /** Turns per second for spin, cycles per second for the others. */
     speed: number;
@@ -53,6 +57,8 @@ export interface PartAnim {
     phase: number;
     /** Which state the animation runs in. */
     when: ModelState;
+    /** Shape for slide and bob. "stamp" slams down then lifts slowly, "crank" follows a crank and rod. */
+    wave?: AnimWave;
 }
 
 export interface ModelPart {

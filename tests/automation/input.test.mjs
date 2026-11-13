@@ -245,3 +245,25 @@ test("board with an origin: cells outside its window are rejected", () => {
     assert.equal(c.tap({ x: 0, z: 0 }), 1);
     assert.equal(c.tap({ x: 20, z: 0 }), 0);
 });
+
+test("mount writes the camera view to a Three-shaped sink each frame", () => {
+    const writes = [];
+    const sink = {
+        position: { set: (x, y, z) => writes.push(["pos", x, y, z]) },
+        lookAt: (x, y, z) => writes.push(["look", x, y, z]),
+        fov: 0,
+        aspect: 1,
+        updateProjectionMatrix() {
+            writes.push(["proj"]);
+        },
+    };
+    const el = { style: {}, addEventListener() {}, removeEventListener() {}, getBoundingClientRect: () => ({ left: 0, top: 0, width: 400, height: 800 }) };
+    const m = A.mount(sink, el, { board, world: memWorld(), tools: [belt, machine], keyTarget: null, initialPose: { target: A.vec(10, 0, 10), distance: 30 } });
+    assert.deepEqual(writes.find((w) => w[0] === "look").slice(1), [10, 0, 10]);
+    assert.ok(Math.abs(sink.fov - (DEFAULT_LIMITS.fovY * 180) / Math.PI) < 1e-9, "fov written in degrees");
+    assert.equal(sink.aspect, 0.5);
+    writes.length = 0;
+    m.update(1 / 60);
+    assert.ok(writes.some((w) => w[0] === "pos") && writes.some((w) => w[0] === "proj"), "update writes each frame");
+    m.destroy();
+});

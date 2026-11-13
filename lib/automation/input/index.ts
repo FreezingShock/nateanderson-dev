@@ -156,3 +156,51 @@ export function createInputController(opts: InputOptions): InputController {
         },
     };
 }
+
+// Minimal shape of a THREE.PerspectiveCamera. Duck-typed so this folder never imports three.
+export interface ViewSink {
+    position: { set(x: number, y: number, z: number): unknown };
+    lookAt(x: number, y: number, z: number): void;
+    fov: number;
+    aspect: number;
+    updateProjectionMatrix(): void;
+}
+
+export interface MountOptions extends Omit<InputOptions, "element" | "keyTarget"> {
+    // Keyboard listener target. Defaults to window.
+    keyTarget?: Window | null;
+}
+
+export interface MountedInput {
+    controller: InputController;
+    // Call once per frame: advances the camera and writes its view to the sink.
+    update(dt: number): void;
+    destroy(): void;
+}
+
+// Hooks the input layer up to a camera the page already owns. The renderer keeps the camera; this module
+// moves it. Do not run OrbitControls on the same camera at the same time.
+export function mount(camera: ViewSink, domElement: HTMLElement, options: MountOptions): MountedInput {
+    const controller = createInputController({ ...options, element: domElement, keyTarget: options.keyTarget });
+    const write = () => {
+        const rect = domElement.getBoundingClientRect();
+        const aspect = rect.width > 0 && rect.height > 0 ? rect.width / rect.height : 1;
+        const view = controller.camera.view(aspect);
+        camera.position.set(view.eye.x, view.eye.y, view.eye.z);
+        camera.lookAt(view.target.x, view.target.y, view.target.z);
+        camera.fov = (view.fovY * 180) / Math.PI;
+        camera.aspect = aspect;
+        camera.updateProjectionMatrix();
+    };
+    write();
+    return {
+        controller,
+        update(dt: number) {
+            controller.update(dt);
+            write();
+        },
+        destroy() {
+            controller.destroy();
+        },
+    };
+}
