@@ -157,12 +157,20 @@ test("Stress test: every test can start and be left on a late state without NaN"
     }
 });
 
+test("Tree respec keeps Mounted drives; the drive slots come back when the nodes are bought again", () => {
+    const s = loadFixture("release-post-ascend.json");
+    s.mounts = ["copper"];
+    E.respec(s);
+    assert.deepEqual(s.mounts, ["copper"], "the drive assignment survives a tree respec");
+});
+
 test("Stress test: locked resets are refused inside a test, and tiers pressed in a test stay pressed", () => {
     const s = loadFixture("release-post-ascend.json");
     s.aether = E.ascendNeed(s) * 2;
     assert.ok(ST.startTest(s, "thin"));
     assert.equal(E.respec(s), 0, "tree respec refused in a test");
     assert.equal(E.respecFw(s), 0, "Firmware respec refused in a test");
+    assert.equal(E.respecDrones(s), 0, "Drone tree respec refused in a test");
     assert.equal(E.ascend(s), 0, "Ascend refused in a test");
     assert.equal(E.handover(s, "wren"), 0, "Handover refused in a test");
     (s.seen ??= {}).copper = 0b11;

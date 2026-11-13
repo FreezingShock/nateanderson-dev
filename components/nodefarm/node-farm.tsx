@@ -1485,7 +1485,7 @@ export function NodeFarm() {
                         save();
                         bump((x) => x + 1);
                     }}
-                    onRespec={() => { const back = respecDrones(s); sfx("tab"); log(`Drone tree respec: ${fmt(back)} Cores back.`, "good"); save(); bump((n) => n + 1); return back; }}
+                    onRespec={() => { if (lockedNote("The drone tree respec")) return 0; const back = respecDrones(s); sfx("tab"); log(`Drone tree respec: ${fmt(back)} Cores back.`, "good"); save(); bump((n) => n + 1); return back; }}
                     onClose={closeDrones}
                 />
             )}
