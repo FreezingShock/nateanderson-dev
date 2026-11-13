@@ -30,6 +30,7 @@ import {
 import type { VoxelIsland } from "@/lib/automation/render";
 import type { BuildWorld, MountedInput } from "@/lib/automation/input";
 import { getMachineModel } from "@/lib/automation/models/machines";
+import { BrassworkExtras, type AwayReport } from "./extras";
 import { bw, bwHum, bwSetEnabled } from "@/lib/brasswork/sound";
 
 const W = 18;
@@ -73,6 +74,9 @@ export function BrassworkHost() {
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const [data, setData] = useState<HudData>(() => hudData(freshWorld(), CAT, null, START_SETTINGS));
     const [note, setNote] = useState("");
+    const [away, setAway] = useState<AwayReport | null>(null);
+    const snap = useRef<(() => string) | null>(null);
+    const snapshot = useCallback(() => snap.current?.() ?? null, []);
     const ctl = useRef<{
         setTool: (id: string | null) => void;
         select: (id: string | null) => void;
@@ -142,7 +146,16 @@ export function BrassworkHost() {
 
             // Away time: catch up the simulation for the time the tab was closed (capped by the catalog).
             const away = Math.max(0, (Date.now() - savedAt) / 1000);
-            if (away > 5) advance(world, Math.min(away, CAT.tune.maxAwaySeconds), 1, CAT);
+            if (away > 5) {
+                const before = new Map(hudData(world, CAT, null, settings).resources.map((r) => [r.id, r.amount]));
+                advance(world, Math.min(away, CAT.tune.maxAwaySeconds), 1, CAT);
+                const gains = hudData(world, CAT, null, settings)
+                    .resources.map((r) => ({ name: r.name, amount: r.amount - (before.get(r.id) ?? 0) }))
+                    .filter((g) => g.amount >= 1)
+                    .sort((a, b) => b.amount - a.amount)
+                    .slice(0, 8);
+                if (away >= 120) setAway({ seconds: Math.min(away, CAT.tune.maxAwaySeconds), gains });
+            }
 
             // Sound cues from what changed since the last refresh: a milestone finished, a blueprint bought.
             const doneMilestones = new Set<string>();
@@ -301,6 +314,7 @@ export function BrassworkHost() {
             };
             raf = requestAnimationFrame(frame);
 
+            snap.current = () => island.snapshot();
             island.resize();
             island.start();
             refresh();
@@ -312,6 +326,7 @@ export function BrassworkHost() {
                 island.dispose();
                 bwHum(null);
                 ctl.current = null;
+                snap.current = null;
             };
         })();
         return () => {
@@ -333,6 +348,7 @@ export function BrassworkHost() {
                 <Link href="/creations/games" className="bw-back">
                     Back to Games
                 </Link>
+                <BrassworkExtras snapshot={snapshot} away={away} />
                 {note && <p className="bw-note">{note}</p>}
             </AutomationHud>
         </div>
