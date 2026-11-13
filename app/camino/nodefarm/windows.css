@@ -65,7 +65,7 @@
 .ctos .nf-wk-fa em { font-style: normal; font-weight: 500; color: var(--cm-ctos-meta); text-transform: uppercase; margin-left: 6px; }
 .ctos .nf-wk-note { margin: -6px 0 0; font: 400 var(--cm-ctos-t-ui)/1.45 var(--cm-display); color: var(--cm-mute); max-width: 62ch; }
 .ctos .nf-wk-cols { display: grid; gap: 22px; }
-@media (min-width: 720px) { .ctos .nf-wk-cols { grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: start; } }
+@media (min-width: 720px) { .ctos .nf-wk-cols { grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: stretch; } }
 
 /* ---- data lines: key ........ value */
 .ctos .nf-wk-dl { margin: 0; display: grid; gap: 7px; }
@@ -110,7 +110,7 @@
 .ctos .nf-wk-ring { position: absolute; left: -1px; bottom: -1px; top: -1px; width: 3px; background: #ffffff10; }
 .ctos .nf-wk-ring i { position: absolute; left: 0; right: 0; bottom: 0; background: var(--c); }
 .ctos .nf-wk-tick { position: absolute; right: -7px; top: -7px; display: grid; place-items: center; width: 18px; height: 18px; background: var(--c); color: #0a0a0a; }
-.ctos .nf-wk-read { margin: 0; display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px; padding: 9px 12px; background: #070707; border-left: 3px solid var(--c); font: 400 var(--cm-ctos-t-micro)/1.4 var(--cm-mono); color: var(--cm-ctos-meta); min-height: 40px; }
+.ctos .nf-wk-read { margin: 0; display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px; padding: 9px 12px; background: #070707; border-left: 0; background-image: var(--nf-brk); background-repeat: no-repeat; font: 400 var(--cm-ctos-t-micro)/1.4 var(--cm-mono); color: var(--cm-ctos-meta); min-height: 40px; }
 .ctos .nf-wk-read-k { color: var(--c); font-weight: 700; letter-spacing: .06em; }
 .ctos .nf-wk-read b { font: 700 var(--cm-ctos-t-ui)/1.2 var(--cm-display); color: var(--cm-fg); }
 .ctos .nf-wk-read-t { flex: 1 1 180px; }
@@ -133,12 +133,12 @@
 @media (min-width: 720px) { .ctos .nf-wk-logs { grid-template-columns: minmax(200px, 260px) minmax(0, 1fr); align-items: start; } }
 .ctos .nf-wk-loglist { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; max-height: 340px; overflow: auto; overscroll-behavior: contain; scrollbar-width: thin; }
 @media (max-width: 719px) { .ctos .nf-wk-loglist { grid-template-columns: repeat(2, minmax(0, 1fr)); max-height: 220px; } }
-.ctos .nf-wk-loglist button { width: 100%; display: flex; align-items: baseline; gap: 10px; min-height: 34px; padding: 6px 10px; background: #0d0d0d; border: 0; border-left: 2px solid transparent; color: var(--cm-fg); text-align: left; cursor: pointer; font: 400 var(--cm-ctos-t-micro)/1.25 var(--cm-mono); }
+.ctos .nf-wk-loglist button { width: 100%; display: flex; align-items: baseline; gap: 10px; min-height: 34px; padding: 6px 10px; background: #0d0d0d; border: 0; border-bottom: 1px dashed #ffffff12; color: var(--cm-fg); text-align: left; cursor: pointer; font: 400 var(--cm-ctos-t-micro)/1.25 var(--cm-mono); }
 .ctos .nf-wk-loglist button span { color: var(--c); font-weight: 700; }
 .ctos .nf-wk-loglist button b { font-weight: 500; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .ctos .nf-wk-loglist button[data-lock] { color: var(--cm-ctos-meta); }
 .ctos .nf-wk-loglist button[data-lock] span { color: var(--cm-ctos-meta); }
-.ctos .nf-wk-loglist button[aria-pressed="true"] { background: color-mix(in srgb, var(--c) 14%, #0a0a0a); border-left-color: var(--c); }
+.ctos .nf-wk-loglist button[aria-pressed="true"] { background-color: color-mix(in srgb, var(--c) 12%, #0a0a0a); background-image: var(--nf-brk); background-repeat: no-repeat; }
 @media (hover: hover) { .ctos .nf-wk-loglist button:hover { background: #161616; } }
 .ctos .nf-wk-logbody { position: relative; min-height: 180px; padding: 16px 18px; background: #050605; border: 1px solid color-mix(in srgb, var(--c) 25%, #1c1c1c); background-image: repeating-linear-gradient(0deg, transparent 0 3px, #ffffff05 3px 4px); }
 .ctos .nf-wk-logh { margin: 0 0 12px; font: 700 var(--cm-ctos-t-micro)/1.2 var(--cm-mono); letter-spacing: .12em; color: var(--c); }
@@ -148,14 +148,18 @@
 @keyframes nfWkCaret { 50% { opacity: 0; } }
 .ctos .nf-wk-logf { margin: 14px 0 0; font: 500 var(--cm-ctos-t-micro)/1 var(--cm-mono); letter-spacing: .1em; color: var(--cm-ctos-meta); text-align: right; }
 
+/* Corner brackets for set rows and the selected log line (the colour comes from --c). Replaces the coloured side strips. */
+.ctos .nf-wk { --nf-brk: linear-gradient(var(--c, #2fd8e8), var(--c, #2fd8e8)) left top / 9px 1px, linear-gradient(var(--c, #2fd8e8), var(--c, #2fd8e8)) left top / 1px 9px, linear-gradient(var(--c, #2fd8e8), var(--c, #2fd8e8)) right bottom / 9px 1px, linear-gradient(var(--c, #2fd8e8), var(--c, #2fd8e8)) right bottom / 1px 9px; }
+
 /* ==== Menu */
 .ctos .nf-wk-menu .nf-wk-fr:first-child { grid-column: 1 / -1; }
 .ctos .nf-wk-cfg { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
 .ctos .nf-wk-cfg li > button {
     width: 100%; display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px; min-height: 44px; padding: 10px 12px; cursor: pointer; text-align: left;
-    background: #0d0d0d; border: 0; border-left: 2px solid #ffffff1c; color: var(--cm-fg); font: 400 14px/1.3 var(--cm-mono);
+    background: #0d0d0d; border: 0; border-bottom: 1px dashed #ffffff1c; color: var(--cm-fg); font: 400 14px/1.3 var(--cm-mono); position: relative;
 }
-.ctos .nf-wk-cfg li > button[aria-checked="true"] { border-left-color: var(--c); }
+/* A set option gets corner brackets in its colour, not a side strip. */
+.ctos .nf-wk-cfg li > button[aria-checked="true"] { background-color: color-mix(in srgb, var(--c) 7%, #0d0d0d); background-image: var(--nf-brk); background-repeat: no-repeat; }
 .ctos .nf-wk-box { display: inline-flex; flex: none; color: var(--c); font-weight: 700; white-space: pre; }
 .ctos .nf-wk-box::before { content: "["; color: var(--cm-ctos-meta); }
 .ctos .nf-wk-box::after { content: "]"; color: var(--cm-ctos-meta); }
@@ -280,7 +284,7 @@ body.nf-win-open .nf-jb { z-index: 59; }
 
 /* Menu additions (#170 features in the config look) */
 .ctos .nf-wk-cfg li > button:disabled { cursor: default; opacity: .7; }
-.ctos .nf-wk-cfgrow > label, .ctos .nf-wk-cfgrow > div { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; min-height: 44px; padding: 8px 12px; background: #0d0d0d; border-left: 2px solid #ffffff1c; font: 400 14px/1.3 var(--cm-mono); color: var(--cm-fg); }
+.ctos .nf-wk-cfgrow > label, .ctos .nf-wk-cfgrow > div { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; min-height: 44px; padding: 8px 12px; background: #0d0d0d; border-bottom: 1px dashed #ffffff1c; font: 400 14px/1.3 var(--cm-mono); color: var(--cm-fg); }
 .ctos .nf-wk-cfgrow .nf-wk-box { color: var(--cm-ctos-meta); }
 .ctos .nf-wk-cfgrow input[type="range"] { flex: 1 1 160px; accent-color: var(--c); min-height: 28px; }
 @media (hover: none) { .ctos .nf-wk-cfgrow input[type="range"] { min-height: 40px; } }

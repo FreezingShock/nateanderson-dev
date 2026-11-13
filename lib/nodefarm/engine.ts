@@ -2,12 +2,13 @@
 // directly in Node. Numbers are plain doubles; a full run stays far below 1e308.
 
 /** Producer materials in chain order. Each is paid in the one before it (Copper in Bytes) and boosts that one in turn. */
-export const MATS = ["copper", "silicon", "quartz", "aether", "runes", "starglass", "voidsteel", "chrono", "nebula", "pulsars", "singularity", "engrams", "paradox", "origin", "spores", "mycelium", "pollen", "bloom", "basalt", "magma", "geodes", "sunstone"] as const;
+export const MATS = ["copper", "silicon", "quartz", "aether", "runes", "starglass", "voidsteel", "chrono", "nebula", "pulsars", "singularity", "engrams", "paradox", "origin", "spores", "mycelium", "pollen", "bloom", "basalt", "magma", "geodes", "sunstone", "corona", "plasma", "lattice", "radiance"] as const;
 /** The two arcs past Root Chamber (Overgrowth, then Descent). They stay shut until the first Handover. */
-export const ARC_MATS: readonly MatId[] = ["spores", "mycelium", "pollen", "bloom", "basalt", "magma", "geodes", "sunstone"];
+/** The Overgrowth and Descent arcs (zones 18 to 25) and Undersun (26 to 29, after the ending). */
+export const ARC_MATS: readonly MatId[] = ["spores", "mycelium", "pollen", "bloom", "basalt", "magma", "geodes", "sunstone", "corona", "plasma", "lattice", "radiance"];
 /** Handovers needed before each arc zone can open: two new zones per Handover, so every early Handover gets something new.
  *  Without this all eight opened within an hour of each other (sim, 2026-11-12). NF_ARCGATE='{"pollen":1}' tries other numbers in the sim. */
-export const ARC_GATE: Record<string, number> = { spores: 1, mycelium: 1, pollen: 2, bloom: 2, basalt: 3, magma: 3, geodes: 4, sunstone: 4 };
+export const ARC_GATE: Record<string, number> = { spores: 1, mycelium: 1, pollen: 2, bloom: 2, basalt: 3, magma: 3, geodes: 4, sunstone: 4, corona: 5, plasma: 5, lattice: 6, radiance: 6 };
 export const arcGateNeed = (id: string) => ARC_GATE[id] ?? 0;
 export type MatId = (typeof MATS)[number];
 export type StatId = "bytes" | "mult" | "reboot" | MatId;
@@ -52,6 +53,10 @@ export const STATS: StatDef[] = [
     { id: "magma", name: "Magma", short: "MG", role: "Heat on the way down. Boosts Basalt.", pays: "basalt", color: "#ff9a2a" },
     { id: "geodes", name: "Geodes", short: "GE", role: "Hollow stones full of light. Boost Magma.", pays: "magma", color: "#c77aff" },
     { id: "sunstone", name: "Sunstone", short: "SU", role: "A buried sun at the bottom of everything. Boosts Geodes, and everything a little.", pays: "geodes", color: "#ffd04a" },
+    { id: "corona", name: "Corona", short: "CN", role: "The sun's bright rim, past the last clamp. Boosts Sunstone.", pays: "sunstone", color: "#ffe27a" },
+    { id: "plasma", name: "Plasma", short: "PL", role: "Charged gas torn off the rim. Boosts Corona.", pays: "corona", color: "#ff5ad0" },
+    { id: "lattice", name: "Lattice", short: "LT", role: "A grid of light that holds the plasma still. Boosts Plasma.", pays: "plasma", color: "#7afff0" },
+    { id: "radiance", name: "Radiance", short: "RD", role: "The light the sun throws back at the dark. Boosts Lattice, and everything a little.", pays: "lattice", color: "#8dff9a" },
 ];
 
 export const statDef = (id: StatId) => STATS.find((s) => s.id === id)!;
@@ -83,9 +88,13 @@ export const TUNE = {
         magma: { base: 3, ratio: 10, growth: 1.12 },
         geodes: { base: 3, ratio: 10, growth: 1.12 },
         sunstone: { base: 3, ratio: 10, growth: 1.12 },
+        corona: { base: 3, ratio: 10, growth: 1.12 },
+        plasma: { base: 3, ratio: 10, growth: 1.12 },
+        lattice: { base: 3, ratio: 10, growth: 1.12 },
+        radiance: { base: 3, ratio: 10, growth: 1.12 },
     } as Record<string, { base: number; ratio: number; growth: number }>,
     // how much one press of tier k adds (Multipliers, or producers for materials)
-    gainBase: { mult: 1, copper: 1, silicon: 1, quartz: 1, aether: 1, runes: 1, starglass: 1, voidsteel: 1, chrono: 1, nebula: 1, pulsars: 1, singularity: 1, engrams: 1, paradox: 1, origin: 1, spores: 1, mycelium: 1, pollen: 1, bloom: 1, basalt: 1, magma: 1, geodes: 1, sunstone: 1 } as Record<string, number>,
+    gainBase: { mult: 1, copper: 1, silicon: 1, quartz: 1, aether: 1, runes: 1, starglass: 1, voidsteel: 1, chrono: 1, nebula: 1, pulsars: 1, singularity: 1, engrams: 1, paradox: 1, origin: 1, spores: 1, mycelium: 1, pollen: 1, bloom: 1, basalt: 1, magma: 1, geodes: 1, sunstone: 1, corona: 1, plasma: 1, lattice: 1, radiance: 1 } as Record<string, number>,
     gainRatio: 5,
     // reboot tier k: costs rebootBase * rebootRatio^k * rebootGrowth^R Multipliers, adds rebootGainRatio^k Reboots
     rebootBase: 100,
@@ -93,19 +102,19 @@ export const TUNE = {
     rebootGrowth: 1.12,
     rebootGainRatio: 2.6,
     rebootStrength: 0.7, // each Reboot adds this much to Multiplier button gains
-    perProducer: { copper: 0.05, silicon: 0.03, quartz: 0.016, aether: 0.008, runes: 0.0025, starglass: 0.0012, voidsteel: 0.0006, chrono: 0.0003, nebula: 0.0002, pulsars: 0.00017, singularity: 0.00016, engrams: 0.00015, paradox: 0.00008, origin: 0.00004, spores: 0.00003, mycelium: 0.000025, pollen: 0.00002, bloom: 0.000016, basalt: 0.000012, magma: 0.00001, geodes: 0.000008, sunstone: 0.000006 } as Record<string, number>,
-    boostK: { cuReboot: 0.09, cuBytes: 0.02, siCu: 0.2, qzSi: 0.2, aeQz: 0.2, ruAe: 0.12, sgRu: 0.12, vsSg: 0.12, chVs: 0.12, chAll: 0.03, nbCh: 0.12, puNb: 0.12, snPu: 0.12, egSn: 0.12, pxEg: 0.12, orPx: 0.12, spOr: 0.12, mySp: 0.12, poMy: 0.12, blPo: 0.12, baBl: 0.12, mgBa: 0.12, geMg: 0.12, suGe: 0.12 },
+    perProducer: { copper: 0.05, silicon: 0.03, quartz: 0.016, aether: 0.008, runes: 0.0025, starglass: 0.0012, voidsteel: 0.0006, chrono: 0.0003, nebula: 0.0002, pulsars: 0.00017, singularity: 0.00016, engrams: 0.00015, paradox: 0.00008, origin: 0.00004, spores: 0.00003, mycelium: 0.000025, pollen: 0.00002, bloom: 0.000016, basalt: 0.000012, magma: 0.00001, geodes: 0.000008, sunstone: 0.000006, corona: 0.000005, plasma: 0.000004, lattice: 0.000003, radiance: 0.0000025 } as Record<string, number>,
+    boostK: { cuReboot: 0.09, cuBytes: 0.02, siCu: 0.2, qzSi: 0.2, aeQz: 0.2, ruAe: 0.12, sgRu: 0.12, vsSg: 0.12, chVs: 0.12, chAll: 0.03, nbCh: 0.12, puNb: 0.12, snPu: 0.12, egSn: 0.12, pxEg: 0.12, orPx: 0.12, spOr: 0.12, mySp: 0.12, poMy: 0.12, blPo: 0.12, baBl: 0.12, mgBa: 0.12, geMg: 0.12, suGe: 0.12, cnSu: 0.12, plCn: 0.12, ltPl: 0.12, raLt: 0.12 },
     // the extras on the last three materials grow with log10 of the amount, so they cannot feed back into a runaway
-    logK: { snAll: 0.1, egDrone: 0.15, pxOc: 0.15, orAp: 0.1, crosstalk: 0.12, blKeys: 0.1, suAll: 0.08 },
+    logK: { snAll: 0.1, egDrone: 0.15, pxOc: 0.15, orAp: 0.1, crosstalk: 0.12, blKeys: 0.1, suAll: 0.08, raAll: 0.08 },
     boostPow: 0.38,
     chAllCap: 1e6, // Chrono boosts EVERYTHING, including Chrono: past this amount the boost grows only with log10 (a power law fed itself to 1e300 once Engrams opened)
-    unlockAt: { copper: 1, silicon: 150, quartz: 300, aether: 500, runes: 150, starglass: 800, voidsteel: 2500, chrono: 1000, nebula: 300, pulsars: 300, singularity: 300, engrams: 350, paradox: 400, origin: 450, spores: 500, mycelium: 550, pollen: 600, bloom: 650, basalt: 700, magma: 750, geodes: 800, sunstone: 850 } as Record<string, number>, // copper: Reboots; the rest: amount of the stat below
+    unlockAt: { copper: 1, silicon: 150, quartz: 300, aether: 500, runes: 150, starglass: 800, voidsteel: 2500, chrono: 1000, nebula: 300, pulsars: 300, singularity: 300, engrams: 350, paradox: 400, origin: 450, spores: 500, mycelium: 550, pollen: 600, bloom: 650, basalt: 700, magma: 750, geodes: 800, sunstone: 850, corona: 900, plasma: 950, lattice: 1000, radiance: 1050 } as Record<string, number>, // copper: Reboots; the rest: amount of the stat below
     overclockMult: 6,
     overclockSecs: 20,
     offlineCapHours: 8,
     ascendAether: 400,
     apPerAether: 60, // AP = floor((aether / apPerAether)^apPow + (runes / apPer.runes)^apPow + ...)
-    apPer: { runes: 90, starglass: 45, voidsteel: 27, chrono: 14, nebula: 8, pulsars: 4, singularity: 2, engrams: 1, paradox: 0.5, origin: 0.2, spores: 0.1, mycelium: 0.05, pollen: 0.025, bloom: 0.012, basalt: 0.006, magma: 0.003, geodes: 0.0015, sunstone: 0.0008 } as Record<string, number>,
+    apPer: { runes: 90, starglass: 45, voidsteel: 27, chrono: 14, nebula: 8, pulsars: 4, singularity: 2, engrams: 1, paradox: 0.5, origin: 0.2, spores: 0.1, mycelium: 0.05, pollen: 0.025, bloom: 0.012, basalt: 0.006, magma: 0.003, geodes: 0.0015, sunstone: 0.0008, corona: 0.0004, plasma: 0.0002, lattice: 0.0001, radiance: 0.00005 } as Record<string, number>,
     apPow: 0.3, // AP grows with amount^apPow; a low power stops Ascends from snowballing
     apBonus: 0.3,
     achBonus: 0.02,
@@ -254,8 +263,8 @@ const SLOTS: [number, number, number[]][] = [
 ];
 const SLOT_COST = [4, 10, 12, 24, 24, 48, 48, 140];
 // Past each keystone (the deeper tree): 8 and 9 are a fork pair, 10 is the ranked tip that opens from either fork.
-const OUTER: [number, number, number[]][] = [[11.5, -1.3, [7]], [11.5, 1.3, [7]], [13.4, 0, [8, 9]]];
-const OUTER_COST = [400, 400, 200];
+const OUTER: [number, number, number[]][] = [[11.5, -1.3, [7]], [11.5, 1.3, [7]], [13.4, 0, [8, 9]], [15.4, 0, [10]]];
+const OUTER_COST = [400, 400, 200, 700];
 type Row = [slot: number, id: string, kind: TreeKind, name: string, blurb: string, flavor: string, fx: TreeFx, cost?: number];
 const ALL_MATS = (v: number) => Object.fromEntries(MATS.map((m) => [m, v])) as Record<MatId, number>;
 const ARMS: Record<Branch, Row[]> = {
@@ -270,6 +279,7 @@ const ARMS: Record<Branch, Row[]> = {
         [8, "coldstart", "notable", "Cold start", "For 90 s after every Reboot, Bytes x10.", "The first breath after a restart is the loudest.", { coldStart: 9 }],
         [9, "longhaul", "notable", "Long haul", "Bytes +100% for every 4 minutes since your last Reboot, up to x9.", "Leave it running long enough and it stops asking why.", { longHaul: 1 }],
         [10, "clockskew", "keystone", "Clock skew", "Bytes x1.5 per rank.", "Ran the clock a hair fast. Nobody has complained yet.", { bytes: 0.5 }],
+        [11, "afterburn", "keystone", "Afterburn", "Reboots keep 10 minutes of Bytes.", "The restart is a launch. Nothing you built stays on the pad.", { start: 600 }],
     ],
     forge: [
         [0, "furnace", "minor", "Furnace tuning", "Copper and Silicon x2.", "Hotter, steadier, cleaner. The slag pile is shrinking.", { mats: { copper: 1, silicon: 1 } }],
@@ -283,6 +293,7 @@ const ARMS: Record<Branch, Row[]> = {
         [8, "specialist", "notable", "Specialist", "The newest material you produce x8.", "Pick one seam and dig until it rings.", { specialist: 7 }],
         [9, "generalist", "notable", "Generalist", "Every material x2.5.", "A little of everything, all of it hot.", { mats: ALL_MATS(1.5) }],
         [10, "alloy", "keystone", "Alloy", "Every material x1.4 per rank.", "Mix two metals and both forget what they were.", { mats: ALL_MATS(0.4) }],
+        [11, "kilnliner", "keystone", "Kiln liner", "Engrams, Paradox and Origin x2.", "Lined the kiln with the last good brick. The heat stays in.", { mats: { engrams: 1, paradox: 1, origin: 1 } }],
     ],
     systems: [
         [0, "standby", "minor", "Standby plus", "Standby window +8 hours.", "Bigger cells, longer naps.", { offline: 8 }],
@@ -296,6 +307,7 @@ const ARMS: Record<Branch, Row[]> = {
         [8, "hoarder", "notable", "Hoarder", "Each unspent AP adds half again as much to everything.", "Kept the points in a jar. The jar hums.", { apEach: 0.5 }],
         [9, "investor", "notable", "Investor", "+4% to everything for every tree node and rank you own.", "Every node pays a little rent to the others.", { perNode: 0.04 }],
         [10, "archive", "keystone", "Archive", "AP from every Ascend x1.08 per rank.", "Every run gets filed. The filing cabinet is worth something now.", { ap: 0.08 }],
+        [11, "bargain", "keystone", "Bargain bin", "Buttons cost 10% less.", "Found a crate of parts nobody ordered. Every one of them fits.", { discount: 0.1 }],
     ],
     drones: [
         [0, "wake", "minor", "Wake routine", "Every Ascend starts with a level 1 Drone on every tier.", "They boot before I do.", { kitDrones: 1 }],
@@ -309,6 +321,7 @@ const ARMS: Record<Branch, Row[]> = {
         [8, "widenet", "notable", "Wide net", "Every Drone presses 60% faster.", "Spread thin and everywhere at once.", { drone: 0.6 }],
         [9, "spearhead", "notable", "Spearhead", "Your highest-tier Drone presses x6.", "One Drone out front. The rest follow its lights.", { spearhead: 5 }],
         [10, "firmware", "keystone", "Firmware", "Drones press 30% faster per rank.", "Flashed them again. They boot a little smarter each time.", { drone: 0.3 }],
+        [11, "hangarlights", "keystone", "Hangar lights", "Drones go up to level 6 more.", "Strung up every light in the hangar. The Drones read the lights and keep going.", { droneMax: 6 }],
     ],
     anomaly: [
         [0, "static", "minor", "Static", "Zone events come 30% more often.", "There is always someone on the line now.", { eventRate: 0.3 }],
@@ -322,6 +335,7 @@ const ARMS: Record<Branch, Row[]> = {
         [8, "storm", "notable", "Storm chaser", "Zone events come 50% more often.", "Stopped waiting for the knock. Started going looking.", { eventRate: 0.5 }],
         [9, "patient", "notable", "Patient", "Every event win also pays 5 minutes of production.", "Let it knock twice. The second knock brings gifts.", { winPay: 300 }],
         [10, "afterimage", "keystone", "Afterimage", "Overclock x1.15 per rank.", "The boost leaves a shape on the screen after it ends.", { ocX: 0.15 }],
+        [11, "longburn", "keystone", "Long burn", "Overclocks last a minute longer.", "The fuse burns slower. Nobody measured it until now.", { overclock: 60 }],
     ],
 };
 // Junctions sit between two neighbouring sections and need the node on each side (arm slot 6 and the next arm's slot 5).
@@ -354,7 +368,7 @@ function buildTree(): TreeNode[] {
             const [u, v] = all[slot];
             const ch = CHAINS[id];
             const outer = slot >= SLOTS.length;
-            const form = !outer ? undefined : slot === 10 ? "ranked" : "fork";
+            const form = slot === 8 || slot === 9 ? "fork" : slot === 10 ? "ranked" : undefined;
             const base = price ?? (outer ? OUTER_COST[slot - SLOTS.length] : SLOT_COST[slot] * (kind === "notable" ? 1.3 : 1));
             out.push({
                 id, branch: arm, kind, name, blurb, flavor, fx,
@@ -641,6 +655,10 @@ export interface State {
     magma: number;
     geodes: number;
     sunstone: number;
+    corona: number;
+    plasma: number;
+    lattice: number;
+    radiance: number;
     prod: Record<MatId, number>;
     bought: Record<ButtonStat, number[]>;
     ap: number;
@@ -775,6 +793,11 @@ export interface RigState {
     rwAim: string;
     /** 22 Bedrock shaft: coolant on the drill bit (optional, old saves have none) */
     cool?: boolean;
+    /** 28 Scaffold: Lattice charges banked at each Ascend (kept through Ascend) */
+    scaf?: number;
+    /** 26 Flares: seconds of Corona output toward the next flare, and seconds of the flare left (run meters) */
+    flare?: number;
+    flareLeft?: number;
     /** 21 Bloom core: seeds banked at each Ascend (kept through Ascend) */
     seeds?: number;
     // run meters (reset on Ascend)
@@ -947,6 +970,10 @@ export function fresh(now = Date.now()): State {
         magma: 0,
         geodes: 0,
         sunstone: 0,
+        corona: 0,
+        plasma: 0,
+        lattice: 0,
+        radiance: 0,
         prod: Object.fromEntries(MATS.map((m) => [m, 0])) as Record<MatId, number>,
         bought: Object.fromEntries((["mult", "reboot", ...MATS] as ButtonStat[]).map((k) => [k, Array(TIERS).fill(0)])) as Record<ButtonStat, number[]>,
         ap: 0,
@@ -989,7 +1016,7 @@ export interface Derived {
     multGainMult: number;
     rates: Record<MatId, number>;
     offlineCap: number; // seconds
-    boosts: { cuReboot: number; cuBytes: number; siCu: number; qzSi: number; aeQz: number; ruAe: number; sgRu: number; vsSg: number; chVs: number; chAll: number; nbCh: number; puNb: number; snPu: number; egSn: number; pxEg: number; orPx: number; spOr: number; mySp: number; poMy: number; blPo: number; baBl: number; mgBa: number; geMg: number; suGe: number };
+    boosts: { cuReboot: number; cuBytes: number; siCu: number; qzSi: number; aeQz: number; ruAe: number; sgRu: number; vsSg: number; chVs: number; chAll: number; nbCh: number; puNb: number; snPu: number; egSn: number; pxEg: number; orPx: number; spOr: number; mySp: number; poMy: number; blPo: number; baBl: number; mgBa: number; geMg: number; suGe: number; cnSu: number; plCn: number; ltPl: number; raLt: number };
 }
 
 export function derive(s: State): Derived {
@@ -1019,6 +1046,10 @@ export function derive(s: State): Derived {
         mgBa: boost(s.magma, k.mgBa),
         geMg: boost(s.geodes, k.geMg),
         suGe: boost(s.sunstone, k.suGe),
+        cnSu: boost(s.corona, k.cnSu),
+        plCn: boost(s.plasma, k.plCn),
+        ltPl: boost(s.lattice, k.ltPl),
+        raLt: boost(s.radiance, k.raLt),
     };
     const tf = treeFx(s);
     const lb = labBuffs(s);
@@ -1027,7 +1058,7 @@ export function derive(s: State): Derived {
     // a Brownout stress test runs without perks, unspent AP and the goal bonuses
     const global = (ch?.bare ? 1 : (1 + s.perks.power * 0.15) * apGlobal(s) * (1 + achPoints(s) * (TUNE.achBonus + tf.goals) * (1 + protoK(s, "tamsin"))) * (1 + tiersDone(s) * TUNE.tierBonus)) * (1 + tf.global) * handGlobal(s) * (ARC_HOOKS.cleared ? 1 + TUNE.arcBonus * ARC_HOOKS.cleared(s) : 1) * (ch?.global ?? 1)
         * (1 + droneLv * tf.droneGlobal) * (1 + s.runWins * tf.winBoost) * boosts.chAll * singularityAll(s) * (s.overclock > 0 ? overclockMult(s) : 1) * lb.global
-        * (tf.perNode ? 1 + tf.perNode * treeCount(s) : 1) * foundryAll(s) * sunstoneAll(s);
+        * (tf.perNode ? 1 + tf.perNode * treeCount(s) : 1) * foundryAll(s) * sunstoneAll(s) * radianceAll(s);
     const wren = protoK(s, "wren");
     const rig = RIG_HOOKS.muls ? RIG_HOOKS.muls(s) : {};
     const rebootStrength = TUNE.rebootStrength * boosts.cuReboot * (1 + tf.reboot) * (tf.ocReboot && s.overclock > 0 ? 1 + tf.ocReboot : 1) * (1 + wren) * zeOut(s, "reboot");
@@ -1035,7 +1066,7 @@ export function derive(s: State): Derived {
     // capped like every amount, so a runaway late game can never write Infinity (null in JSON) into the save
     const bytesPerSec = Math.min(CAP, s.mult * boosts.cuBytes * global * (1 + tf.bytes) * lb.bytes * runBytes(s, tf) * zeOut(s, "bytes") * (rig.bytes ?? 1) * (ch?.bytes ?? 1));
     // each material is boosted by the one after it in the chain
-    const boostedBy: Record<MatId, number> = { copper: boosts.siCu, silicon: boosts.qzSi, quartz: boosts.aeQz, aether: boosts.ruAe, runes: boosts.sgRu, starglass: boosts.vsSg, voidsteel: boosts.chVs, chrono: boosts.nbCh, nebula: boosts.puNb, pulsars: boosts.snPu, singularity: boosts.egSn, engrams: boosts.pxEg, paradox: boosts.orPx, origin: boosts.spOr, spores: boosts.mySp, mycelium: boosts.poMy, pollen: boosts.blPo, bloom: boosts.baBl, basalt: boosts.mgBa, magma: boosts.geMg, geodes: boosts.suGe, sunstone: 1 };
+    const boostedBy: Record<MatId, number> = { copper: boosts.siCu, silicon: boosts.qzSi, quartz: boosts.aeQz, aether: boosts.ruAe, runes: boosts.sgRu, starglass: boosts.vsSg, voidsteel: boosts.chVs, chrono: boosts.nbCh, nebula: boosts.puNb, pulsars: boosts.snPu, singularity: boosts.egSn, engrams: boosts.pxEg, paradox: boosts.orPx, origin: boosts.spOr, spores: boosts.mySp, mycelium: boosts.poMy, pollen: boosts.blPo, bloom: boosts.baBl, basalt: boosts.mgBa, magma: boosts.geMg, geodes: boosts.suGe, sunstone: boosts.cnSu, corona: boosts.plCn, plasma: boosts.ltPl, lattice: boosts.raLt, radiance: 1 };
     if (ch?.noChain) for (const m of MATS) boostedBy[m] = 1; // Broken chain stress test
     // Cross-talk: each material is also boosted by the one two steps up the chain. Log-scaled: a power-law boost here made a second
     // feedback loop through all fourteen materials and the sim hit Infinity within minutes of buying it (balance audit 2026-11-12).
@@ -1161,6 +1192,8 @@ export const originAp = (s: State) => logBoost(s.origin, TUNE.logK.orAp);
 /** Bloom: every Handover pays more Keys. Sunstone: everything a little. Both log-scaled like the Origin arc extras. */
 export const bloomKeys = (s: State) => logBoost(s.bloom, TUNE.logK.blKeys);
 export const sunstoneAll = (s: State) => logBoost(s.sunstone, TUNE.logK.suAll);
+/** Radiance: everything a little, log-scaled like Sunstone. */
+export const radianceAll = (s: State) => logBoost(s.radiance, TUNE.logK.raAll);
 /** The highest Drone tier with a level, or -1. */
 const topDrone = (s: State) => { for (let k = s.drones.length - 1; k >= 0; k--) if (s.drones[k] > 0) return k; return -1; };
 export const droneRate = (s: State, tier: number) => {
@@ -1320,11 +1353,14 @@ export function ascend(s: State) {
     const tf = treeFx(s);
     const mounts = s.mounts.slice(0, tf.mounts);
     const keptProd = Object.fromEntries(mounts.map((m) => [m, Math.floor(s.prod[m] * TUNE.mountKeep)]));
-    const keptDrones = s.drones.map((lv) => Math.max(Math.floor(lv * tf.droneKeep), tf.kitDrones));
+    // a Beacon armed for this Ascend keeps every Drone level (and is spent here)
+    const beacon = s.lab.armed.includes("beacon");
+    const keptDrones = s.drones.map((lv) => (beacon ? lv : Math.max(Math.floor(lv * tf.droneKeep), tf.kitDrones)));
     const oldDrones = s.drones.slice();
     const hf = handFx(s);
     // after the first Handover, Ascend keeps Intel and running payloads (base Handover, HAND_BASE)
-    const lab: LabState = { ...s.lab, intel: hf.labKeep ? s.lab.intel : 0, run: hf.labKeep ? s.lab.run : [], armed: s.lab.armed.filter((x) => x !== "zeroclick"), dump: LAB_TUNE.dumpSecs };
+    const keepIntel = Math.floor(s.lab.intel * labFx(s).intelKeep);
+    const lab: LabState = { ...s.lab, intel: hf.labKeep ? s.lab.intel : keepIntel, run: hf.labKeep ? s.lab.run : [], armed: s.lab.armed.filter((x) => x !== "zeroclick" && x !== "beacon"), dump: LAB_TUNE.dumpSecs };
     const hand: HandState = { ...s.hand, cycleAp: s.hand.cycleAp + gain };
     const dr = drOnAscend(s);
     const rig = RIG_HOOKS.ascend ? RIG_HOOKS.ascend(s) : s.rig;
@@ -1403,8 +1439,8 @@ export interface Goal {
     cur: (s: State) => number;
     target: number;
 }
-export const GOAL_TIERS = 12;
-export const TIER_NAMES = ["", "Access", "Operator", "Admin", "Root", "Kernel", "Deep", "Zero", "Source", "Bedrock", "Daemon", "Subsystem", "Firmware"];
+export const GOAL_TIERS = 13;
+export const TIER_NAMES = ["", "Access", "Operator", "Admin", "Root", "Kernel", "Deep", "Zero", "Source", "Bedrock", "Daemon", "Subsystem", "Firmware", "Undersun"];
 const G = (id: string, name: string, hint: string, tier: number, icon: Goal["icon"], target: number, cur: (s: State) => number): Goal => ({ id, name, hint, tier, icon, cur, target });
 const life = (k: keyof State["life"]) => (s: State) => s.life[k];
 export const GOALS: Goal[] = [
@@ -1473,6 +1509,10 @@ export const GOALS: Goal[] = [
     G("mg1", "Running hot", "Tap your first Magma.", 9, "magma", 1e-9, (s) => s.magma),
     G("ge1", "Hollow", "Crack your first Geode.", 9, "geodes", 1e-9, (s) => s.geodes),
     G("su1", "The bottom", "Reach the buried sun.", 9, "sunstone", 1e-9, (s) => s.sunstone),
+    G("cn1", "Rim light", "Catch your first Corona.", 9, "corona", 1e-9, (s) => s.corona),
+    G("pl1", "Charged", "Tap your first Plasma.", 9, "plasma", 1e-9, (s) => s.plasma),
+    G("lt1", "Held still", "Set your first Lattice.", 9, "lattice", 1e-9, (s) => s.lattice),
+    G("au1", "Glare", "Catch your first Radiance.", 9, "radiance", 1e-9, (s) => s.radiance),
 ];
 
 // ---- secrets. They show as ???? until found, with a clue. Console ones are unlocked by commands (components/cm/console.tsx -> lib/nodefarm/records.ts);
@@ -1525,7 +1565,7 @@ export function checkGoals(s: State): { id: string; name: string; secret?: boole
 // nodes unlock a recipe. Recipes compile (a short timer, in a queue, also while away) into payloads you stock and deploy:
 // timed buffs, one-shot charges and instant effects. Opens with Silicon. See docs/node-farm.md "Exploit Lab".
 export type LabSec = "exploits" | "malware" | "infra";
-export type PayloadId = "sniffer" | "worm" | "logicbomb" | "ransom" | "kernel" | "rootkit" | "trojan" | "botnet" | "zeroclick" | "polymorph";
+export type PayloadId = "sniffer" | "worm" | "logicbomb" | "ransom" | "kernel" | "shellcode" | "rootkit" | "trojan" | "botnet" | "zeroclick" | "polymorph" | "beacon";
 export type PayloadKind = "buff" | "charge" | "instant";
 export interface PayloadDef {
     id: PayloadId;
@@ -1556,7 +1596,7 @@ export const LAB_TUNE = {
     slots: 2, // buffs running at once
     stockMax: 5, // stock per payload
     maxRun: 3600, // a buff's time left never goes past this
-    nodeCost: [80, 600, 600, 5000, 5000, 30000], // Intel per slot
+    nodeCost: [80, 600, 600, 5000, 5000, 30000, 60000, 60000], // Intel per slot (slots 6 and 7 are the late pair past each keystone)
     labScale: 1, // scales every research node price (pacing knob)
     opensAt: "silicon" as StatId,
 };
@@ -1577,6 +1617,8 @@ export const PAYLOADS: PayloadDef[] = [
     P("botnet", "malware", "Botnet", "buff", "Drones press twice as fast for 10 minutes.", "BOTNET", 300, 600, 1, 300, { stat: "aether", secs: 240, floor: 5 }),
     P("zeroclick", "malware", "Zero-click", "charge", "Arms your next Ascend: it pays x1.25 AP.", "0-CLICK", 1800, 0, 0.25, 1200, { stat: "runes", secs: 300, floor: 10 }),
     P("polymorph", "malware", "Polymorph", "instant", "Doubles the time left on every running payload.", "", 900, 0, 1, 600, { stat: "aether", secs: 300, floor: 20 }),
+    P("shellcode", "exploits", "Shellcode", "buff", "Compiles run x3 for 10 minutes.", "SHELL", 900, 600, 2, 700, { stat: "quartz", secs: 240, floor: 150 }),
+    P("beacon", "malware", "Beacon", "charge", "Arms your next Ascend: every Drone keeps its level.", "BEACON", 1200, 0, 1, 900, { stat: "runes", secs: 240, floor: 8 }),
 ];
 const PAY_BY = new Map(PAYLOADS.map((p) => [p.id, p]));
 export const payload = (id: PayloadId) => PAY_BY.get(id)!;
@@ -1591,6 +1633,8 @@ export interface LabFx {
     longer?: LabSec; // that section's buffs last twice as long
     dumps?: number; // Reboot and event Intel x(1 + this)
     cron?: boolean; // an empty queue repeats the last compile
+    stock?: number; // stock per payload +this (on top of LAB_TUNE.stockMax)
+    intelKeep?: number; // share of Intel kept through every Ascend (summed, capped at 1)
 }
 export interface LabNode {
     id: string;
@@ -1609,7 +1653,7 @@ export interface LabNode {
     entry?: boolean;
 }
 // Each section is a small diamond: entry, two paths of two, keystone. 0 entry | 1, 3 upper | 2, 4 lower | 5 keystone.
-const LAB_SLOTS: [number, number, number[]][] = [[2.3, 0, []], [3.9, -1.1, [0]], [3.9, 1.1, [0]], [5.7, -1.25, [1]], [5.7, 1.25, [2]], [7.5, 0, [3, 4]]];
+const LAB_SLOTS: [number, number, number[]][] = [[2.3, 0, []], [3.9, -1.1, [0]], [3.9, 1.1, [0]], [5.7, -1.25, [1]], [5.7, 1.25, [2]], [7.5, 0, [3, 4]], [9.2, -0.9, [5]], [9.2, 0.9, [5]]];
 type LabRow = [slot: number, id: string, kind: TreeKind, name: string, blurb: string, flavor: string, fx: LabFx];
 const LAB_ARMS: Record<LabSec, LabRow[]> = {
     exploits: [
@@ -1619,6 +1663,8 @@ const LAB_ARMS: Record<LabSec, LabRow[]> = {
         [3, "rx_obfuscate", "notable", "Obfuscation", "Exploits buffs are 50% stronger.", "Same code, uglier. Nothing on the line recognizes it anymore.", { potency: "exploits" }],
         [4, "rx_ransom", "minor", "Ransomware", "Payload: Ransomware. Pays out 10 minutes of Bytes, Copper, Silicon and Quartz at once.", "Lock it, then charge the node for its own key. The node always pays.", { recipe: "ransom" }],
         [5, "rx_kernel", "keystone", "Kernel exploit", "Payload: Kernel exploit. Everything x2 for 5 minutes.", "Ring zero. For five minutes nothing on this node says no.", { recipe: "kernel" }],
+        [6, "rx_shellcode", "minor", "Shellcode", "Payload: Shellcode. Compiles run x3 for 10 minutes.", "Hand-written machine code. The compiler stops arguing.", { recipe: "shellcode" }],
+        [7, "rx_stockpile", "notable", "Stockpile", "Every payload keeps 3 more in stock.", "Nobody leaves a good payload on the shelf.", { stock: 3 }],
     ],
     malware: [
         [0, "rx_rootkit", "minor", "Rootkit", "Payload: Rootkit. Copper, Silicon and Quartz x1.75 for 15 minutes.", "Dig in under the forge. It runs hotter when it can't see you.", { recipe: "rootkit" }],
@@ -1627,6 +1673,8 @@ const LAB_ARMS: Record<LabSec, LabRow[]> = {
         [3, "rx_mutate", "notable", "Mutation", "Malware buffs last twice as long.", "Every copy a little different. The scanner gave up counting.", { longer: "malware" }],
         [4, "rx_zeroclick", "minor", "Zero-click", "Payload: Zero-click. Your next Ascend pays x1.25 AP.", "No prompt, no warning, more points on the way up.", { recipe: "zeroclick" }],
         [5, "rx_polymorph", "keystone", "Polymorph", "Payload: Polymorph. Doubles the time left on every running payload.", "It wears whatever is already running and makes it last.", { recipe: "polymorph" }],
+        [6, "rx_beacon", "minor", "Beacon", "Payload: Beacon. Arms your next Ascend: every Drone keeps its level.", "Phones home once, right before the wipe. Remembers where everything was.", { recipe: "beacon" }],
+        [7, "rx_packer", "notable", "Packer", "Malware buffs are 50% stronger.", "Compressed, encrypted, and it hits harder once it unpacks.", { potency: "malware" }],
     ],
     infra: [
         [0, "rx_tap", "minor", "Fiber tap", "Intel x2.", "Spliced a second line into the trunk. Twice the gossip.", { intel: 1 }],
@@ -1635,6 +1683,8 @@ const LAB_ARMS: Record<LabSec, LabRow[]> = {
         [3, "rx_socket", "notable", "Second socket", "Run one more buff at once (3).", "Another socket on the bench. Two hands were never enough.", { slots: 1 }],
         [4, "rx_cron", "notable", "Cron job", "When the queue empties, it compiles your last recipe again if you can pay.", "Every minute, on the minute, the same small job. It never forgets.", { cron: true }],
         [5, "rx_rootshell", "keystone", "Root shell", "Intel x3 and one more buff slot (4).", "Prompt ends in a hash now. The whole lab answers to it.", { intel: 2, slots: 1 }],
+        [6, "rx_archive", "minor", "Cold archive", "Keep a quarter of your Intel through every Ascend.", "Nothing gets deleted. It gets moved somewhere colder.", { intelKeep: 0.25 }],
+        [7, "rx_mirror", "notable", "Mirror port", "Intel x1.5.", "A second port on the trunk, mirrored and quietly billing.", { intel: 0.5 }],
     ],
 };
 const LAB_ORDER: LabSec[] = ["exploits", "malware", "infra"];
@@ -1667,6 +1717,10 @@ function buildLab(): LabNode[] {
 export const LAB: LabNode[] = buildLab();
 const LAB_BY = new Map(LAB.map((n) => [n.id, n]));
 export const labNode = (id: string) => LAB_BY.get(id)!;
+/** Stock each payload can hold: LAB_TUNE.stockMax plus the Stockpile-style bonuses in the owned research nodes. */
+export const stockCap = (nodes: string[]) => LAB_TUNE.stockMax + nodes.reduce((a, id) => a + (LAB_BY.get(id)?.fx.stock ?? 0), 0);
+/** The highest stock any save can hold (saves are clamped to this, then to stockCap of their own nodes). */
+export const STOCK_CAP_MAX = LAB_TUNE.stockMax + 3;
 export const labHas = (s: State, id: string) => s.lab.nodes.includes(id);
 export const labNodeOpen = (s: State, n: LabNode) => n.links.some((l) => l === "core" || s.lab.nodes.includes(l));
 export function labVis(s: State, n: LabNode): NodeVis {
@@ -1699,7 +1753,7 @@ export function labFx(s: State) {
     return v;
 }
 function labFxRaw(s: State) {
-    const o = { recipes: [] as PayloadId[], intel: 0, compile: 0, queue: 0, slots: 0, potency: [] as LabSec[], longer: [] as LabSec[], dumps: 0, cron: false };
+    const o = { recipes: [] as PayloadId[], intel: 0, compile: 0, queue: 0, slots: 0, potency: [] as LabSec[], longer: [] as LabSec[], dumps: 0, cron: false, stock: 0, intelKeep: 0 };
     for (const id of s.lab.nodes) {
         const f = LAB_BY.get(id)?.fx;
         if (!f) continue;
@@ -1712,6 +1766,8 @@ function labFxRaw(s: State) {
         if (f.longer) o.longer.push(f.longer);
         o.dumps += f.dumps ?? 0;
         if (f.cron) o.cron = true;
+        o.stock += f.stock ?? 0;
+        o.intelKeep = Math.min(1, o.intelKeep + (f.intelKeep ?? 0));
     }
     return o;
 }
@@ -1721,7 +1777,7 @@ export const hasRecipe = (s: State, id: PayloadId) => labFx(s).recipes.includes(
 /** A buff's strength right now (Obfuscation makes Exploits buffs 50% stronger). */
 export const payloadV = (s: State, p: PayloadDef) => p.v * (labFx(s).potency.includes(p.sec) ? 1.5 : 1);
 export const payloadDur = (s: State, p: PayloadDef) => p.dur * (labFx(s).longer.includes(p.sec) ? 2 : 1);
-export const compileSecs = (s: State, p: PayloadDef) => p.compile / (1 + labFx(s).compile);
+export const compileSecs = (s: State, p: PayloadDef) => p.compile / ((1 + labFx(s).compile) * labBuffs(s).compile);
 /** Intel per second right now. Uses the log of Bytes/s so it stays steady from one era to the next. */
 export function intelRate(s: State, bytesPerSec = derive(s).bytesPerSec): number {
     if (!s.lab.seen) return 0;
@@ -1737,7 +1793,7 @@ export function payloadCost(s: State, p: PayloadDef, d: Derived = derive(s)) {
 export const FORGE_MATS: readonly MatId[] = ["copper", "silicon", "quartz"];
 /** Buff multipliers from running payloads, for derive. */
 export function labBuffs(s: State) {
-    const o = { bytes: 1, mult: 1, forge: 1, global: 1, drone: 1 };
+    const o = { bytes: 1, mult: 1, forge: 1, global: 1, drone: 1, compile: 1 };
     for (const r of s.lab.run) {
         const p = PAY_BY.get(r.id);
         if (!p || r.left <= 0) continue;
@@ -1747,6 +1803,7 @@ export function labBuffs(s: State) {
         else if (p.id === "kernel") o.global *= x;
         else if (p.id === "rootkit") o.forge *= x;
         else if (p.id === "botnet") o.drone *= x;
+        else if (p.id === "shellcode") o.compile *= x;
     }
     return o;
 }
@@ -1766,7 +1823,7 @@ export function compileBlock(s: State, id: PayloadId, d?: Derived): CompileFail 
     const p = PAY_BY.get(id);
     if (!p || !hasRecipe(s, id)) return "recipe";
     if (s.lab.queue.length >= labQueueMax(s)) return "queue";
-    if ((s.lab.stock[id] ?? 0) + s.lab.queue.filter((q) => q.id === id).length >= LAB_TUNE.stockMax) return "stock";
+    if ((s.lab.stock[id] ?? 0) + s.lab.queue.filter((q) => q.id === id).length >= stockCap(s.lab.nodes)) return "stock";
     const c = payloadCost(s, p, d);
     if (s.lab.intel < c.intel) return "intel";
     if (amount(s, c.mat) < c.amount) return "mat";
@@ -1865,7 +1922,7 @@ export function labStep(s: State, dt: number, bytesPerSec: number): PayloadId[] 
         t -= use;
         if (q.left <= 1e-9) {
             L.queue.shift();
-            L.stock[q.id] = Math.min(LAB_TUNE.stockMax, (L.stock[q.id] ?? 0) + 1);
+            L.stock[q.id] = Math.min(stockCap(L.nodes), (L.stock[q.id] ?? 0) + 1);
             s.life.compiled += 1;
             done.push(q.id);
             if (!L.queue.length && labFx(s).cron && L.last) compile(s, L.last);
@@ -1878,7 +1935,7 @@ export function labStep(s: State, dt: number, bytesPerSec: number): PayloadId[] 
 //  - postings and zone mastery (forever): post a Drone to one zone and it presses only there, faster; its work there builds
 //    that zone's mastery (ranks I to V, a permanent boost to the zone's output). Every rank earns one Core.
 //  - Parts and mods (one run): every press a Drone attempts salvages Parts; Parts buy three mods per Drone (Servo, Uplink, Reach).
-//  - the drone tree (forever): Cores buy nodes in a small 18-node tree on the shared tree menu (amber "hangar" skin).
+//  - the drone tree (forever): Cores buy nodes in a small 24-node tree on the shared tree menu (amber "hangar" skin).
 // See docs/node-farm.md "Drone hangar".
 export const DRONE_TUNE = {
     postX: 3, // a posted Drone presses this many times as fast on its zone
@@ -1899,7 +1956,7 @@ export const DRONE_TUNE = {
     // service (attempted presses on a zone) needed for mastery ranks I..V, and each rank's output multiplier
     rankAt: [500, 10000, 200000, 4000000, 80000000],
     rankX: [1, 1.05, 1.1, 1.16, 1.23, 1.35],
-    nodeCost: [1, 2, 2, 4, 4, 8], // Cores per tree slot
+    nodeCost: [1, 2, 2, 4, 4, 8, 12, 16], // Cores per tree slot (slots 6 and 7: the late pair past each keystone)
 };
 /** Zones a Drone can work: every button stat except Reboots, in chain order. */
 export const POSTABLE: readonly ButtonStat[] = ["mult", ...MATS];
@@ -1963,6 +2020,8 @@ const DRONE_ARMS: Record<DroneSec, DroneRow[]> = {
         [3, "dx_overdrive", "notable", "Overdrive", "Servo mods go to level 8.", "The servos were rated for five. They took eight without a word.", { servoMax: 3 }],
         [4, "dx_slipstream", "notable", "Slipstream", "Posting speed +2x on every Drone.", "Each one rides the wake of the one before it.", { postX: 2 }],
         [5, "dx_hivemind", "keystone", "Hivemind", "Drones press twice as fast, and every mastery rank adds 1% more.", "Six frames, one thought. The thought is mostly about buttons.", { speed: 1, rankSpeed: 0.01 }],
+        [6, "dx_redline", "minor", "Redline", "Every mastery rank adds 2% more to Drone speed.", "Pushed past the sticker. The sticker was a suggestion.", { rankSpeed: 0.02 }],
+        [7, "dx_wingmen", "notable", "Wingmen", "Every Drone presses 20% faster for each Drone on a posting.", "They fly tighter the more wings are out there.", { formation: 0.2 }],
     ],
     dispatch: [
         [0, "dx_orders", "minor", "Field orders", "Posted Drones press x4 on their zone.", "Clear orders, one zone each. Nobody wanders.", { postX: 1 }],
@@ -1971,6 +2030,8 @@ const DRONE_ARMS: Record<DroneSec, DroneRow[]> = {
         [3, "dx_fieldops", "notable", "Field ops", "Mastery bonuses are 50% stronger.", "The veterans train the new frames. Nobody asked them to.", { rankPow: 0.5 }],
         [4, "dx_relay", "notable", "Relay mast", "Each posting also builds half as much mastery in the next zone up the chain.", "Every posting gets a mast. The mast talks to the zone next door.", { relay: 0.5 }],
         [5, "dx_garrison", "keystone", "Garrison", "Posting speed +2x, and mastery builds 50% faster.", "Stationed for good. They know every creak of the zone.", { postX: 2, svc: 0.5 }],
+        [6, "dx_groundcrew", "minor", "Ground crew", "Mastery builds 25% faster.", "Someone has to keep the zones tidy between shifts.", { svc: 0.25 }],
+        [7, "dx_fullmast", "notable", "Full mast", "Each posting builds all of its mastery in the next zone up the chain.", "The mast talks to the zone next door, and the zone next door listens.", { relay: 1 }],
     ],
     salvage: [
         [0, "dx_scrap", "minor", "Scrapper", "Parts x2.", "Every press sheds a little metal. Now somebody sweeps it up.", { parts: 1 }],
@@ -1979,6 +2040,8 @@ const DRONE_ARMS: Record<DroneSec, DroneRow[]> = {
         [3, "dx_blackbox", "notable", "Black box", "Keep half your mod levels and Parts through every Ascend.", "The frames reset. The flight recorders don't.", { modKeep: 0.5 }],
         [4, "dx_frames", "notable", "Spare frames", "Drones go 2 levels higher.", "Two more chassis on the rack, wired and waiting.", { droneMax: 2 }],
         [5, "dx_foundry", "keystone", "Foundry", "Every mod level adds +1% to everything.", "The hangar builds its own parts now. Then it builds better ones.", { modGlobal: 0.01 }],
+        [6, "dx_sparebin", "minor", "Spare bin", "Mods cost 30% less.", "Every bolt in the bin is the right size. Mostly.", { modCost: 0.3 }],
+        [7, "dx_modbay", "notable", "Mod bay", "Every mod level adds +0.5% to everything.", "A bay just for mods. It keeps them tuned between runs.", { modGlobal: 0.005 }],
     ],
 };
 const DRONE_ORDER: DroneSec[] = ["flight", "dispatch", "salvage"];
@@ -2293,6 +2356,7 @@ const FW_ARMS: Partial<Record<FwSec, FwRow[]>> = {
         [3, "fw_dual", "notable", "Dual boot", "Run a second protocol at half strength.", "Two operators on one node. They take turns with the chair.", { dual: true }],
         [4, "fw_rootpath", "notable", "Root path", "Engrams, Paradox and Origin open at a quarter of the usual amount.", "There is a shorter way down to node zero. It was always there.", { rootPath: 0.25 }],
         [5, "fw_lineage", "keystone", "Lineage", "Everything +50% for every Handover you have done.", "Every operator who left made the node a little stronger.", { lineage: 0.5 }],
+        [6, "fw_keypress", "keystone", "Key press", "Handovers pay 50% more Keys.", "Ran the Keys through the press twice. They come out thicker.", { keys: 0.5 }],
     ],
     field: [
         [0, "fw_rod", "minor", "Lightning rod", "Zone events last 50% longer.", "Give the weather something tall to hold on to.", { zeLong: 0.5 }],
@@ -2301,11 +2365,12 @@ const FW_ARMS: Partial<Record<FwSec, FwRow[]>> = {
         [3, "fw_weather", "notable", "Weather eye", "Zone events come twice as often.", "Watch the zones long enough and you can feel the next one coming.", { zeOften: 1 }],
         [4, "fw_shortfuse", "notable", "Short fuse", "Ascend needs half the usual Aether.", "You know where the top is now. Go up sooner.", { ascendAt: 0.5 }],
         [5, "fw_fieldop", "keystone", "Field operator", "Faults stop happening, and Surges run twice as strong.", "Walk the floor every shift. Nothing breaks where someone is looking.", { fieldOp: true }],
+        [6, "fw_sparepart", "keystone", "Spare parts", "Rig levels cost 20% less again.", "A drawer of spare parts nobody else knew about. Now everyone does.", { rigCost: 0.2 }],
     ],
 };
 const FW_ORDER: FwSec[] = ["relay", "field"];
 // same small diamond as the lab tree: entry, two paths of two, keystone
-const FW_SLOTS: [number, number, number[]][] = [[2.3, 0, []], [3.9, -1.1, [0]], [3.9, 1.1, [0]], [5.7, -1.25, [1]], [5.7, 1.25, [2]], [7.5, 0, [3, 4]]];
+const FW_SLOTS: [number, number, number[]][] = [[2.3, 0, []], [3.9, -1.1, [0]], [3.9, 1.1, [0]], [5.7, -1.25, [1]], [5.7, 1.25, [2]], [7.5, 0, [3, 4]], [9.3, 0, [5]]];
 // nodes that changed size when they moved arms draw from rows appended at the new size
 const FW_SPRITE: Record<string, string> = { fw_fastpath: "fw_fastpath_s", fw_fieldkit: "fw_fieldkit_s", fw_shortfuse: "fw_shortfuse_m" };
 function buildFw(): FwNode[] {
@@ -2319,7 +2384,7 @@ function buildFw(): FwNode[] {
             const [u, v] = FW_SLOTS[slot];
             out.push({
                 id, branch: arm, kind, name, blurb, flavor, fx,
-                cost: Math.max(1, Math.round(HAND_TUNE.nodeCost[slot] * (kind === "notable" ? 1.25 : 1) * HAND_TUNE.fwScale)),
+                cost: Math.max(1, Math.round((HAND_TUNE.nodeCost[slot] ?? HAND_TUNE.nodeCost[HAND_TUNE.nodeCost.length - 1] * 2) * (kind === "notable" ? 1.25 : 1) * HAND_TUNE.fwScale)),
                 links: slot === 0 ? ["core"] : [],
                 x: +(u * c - v * sn).toFixed(3), y: +(u * sn + v * c).toFixed(3),
                 ix: out.length, sprite: FW_SPRITE[id] ?? id,
@@ -2659,7 +2724,7 @@ export function parseSave(raw: string): State | null {
         for (const k of ["drones", "droneAcc"] as const) if (!Array.isArray(n[k]) || n[k].length !== TIERS || n[k].some((x: number) => !Number.isFinite(x))) n[k] = Array(TIERS).fill(0);
         // 2026-11-12: the Autoloader perk and sweeping Drones were removed (Scripts are the only automation layer)
         migrateAutomation(n, o);
-        for (const k of ["bytes", "mult", "reboot", "copper", "silicon", "quartz", "aether", "runes", "starglass", "voidsteel", "chrono", "nebula", "pulsars", "singularity", "engrams", "paradox", "origin", "spores", "mycelium", "pollen", "bloom", "basalt", "magma", "geodes", "sunstone", "ap"] as const) if (!Number.isFinite(n[k])) n[k] = base[k];
+        for (const k of ["bytes", "mult", "reboot", "copper", "silicon", "quartz", "aether", "runes", "starglass", "voidsteel", "chrono", "nebula", "pulsars", "singularity", "engrams", "paradox", "origin", "spores", "mycelium", "pollen", "bloom", "basalt", "magma", "geodes", "sunstone", "corona", "plasma", "lattice", "radiance", "ap"] as const) if (!Number.isFinite(n[k])) n[k] = base[k];
         return n;
     } catch {
         return null;
@@ -2758,7 +2823,7 @@ function parseLab(o: unknown): LabState {
         intel: Math.max(0, num(x.intel)),
         nodes: Array.isArray(x.nodes) ? [...new Set(x.nodes.filter((id) => LAB_BY.has(id)))] : [],
         queue: Array.isArray(x.queue) ? x.queue.filter((q) => q && pid(q.id)).map((q) => ({ id: q.id, left: Math.max(0, num(q.left)) })) : [],
-        stock: Object.fromEntries(Object.entries(x.stock ?? {}).filter(([k, v]) => pid(k) && num(v) > 0).map(([k, v]) => [k, Math.min(LAB_TUNE.stockMax, Math.floor(num(v)))])),
+        stock: Object.fromEntries(Object.entries(x.stock ?? {}).filter(([k, v]) => pid(k) && num(v) > 0).map(([k, v]) => [k, Math.min(STOCK_CAP_MAX, Math.floor(num(v)))])),
         run: Array.isArray(x.run) ? x.run.filter((r) => r && pid(r.id) && num(r.left) > 0).map((r) => ({ id: r.id, left: Math.min(LAB_TUNE.maxRun, num(r.left)) })) : [],
         armed: Array.isArray(x.armed) ? [...new Set(x.armed.filter(pid))] : [],
         last: pid(x.last) ? x.last : null,
@@ -2845,9 +2910,22 @@ SECRETS.push(
     { id: "x_pid", name: "Process one", clue: "Find the process that started everything.", how: "Ran `nf ps` in the console." },
     { id: "x_top", name: "Load average", clue: "Ask what the node is busy with.", how: "Ran `nf top` in the console." },
     { id: "x_flash", name: "Write protected", clue: "Try to rewrite the firmware by hand.", how: "Ran `nf flash` in the console." },
+    { id: "x_sun", name: "Sunrise", clue: "Ask the node when the sun comes up.", how: "Ran `nf sun` in the console." },
+    { id: "x_nohup", name: "Nohup", clue: "Ask the node to keep going when you leave.", how: "Ran `nf nohup` in the console." },
+);
+
+// ---- Undersun (zones 26 to 29, after the ending): tier XIII, six goals. Pushed after the tier table above, so tier XII is untouched.
+const rigLevels = (s: State, ids: string[]) => ids.reduce((a, z) => a + (s.rig?.lv?.[z] ?? 0), 0);
+GOALS.push(
+    G("us1", "Bright side", "Gather your first Corona.", 13, "ascend", 1e-9, (s) => s.corona),
+    G("us2", "Charged", "Gather your first Plasma.", 13, "ascend", 1e-9, (s) => s.plasma),
+    G("us3", "Held", "Gather your first Lattice.", 13, "ascend", 1e-9, (s) => s.lattice),
+    G("us4", "Curtain", "Gather your first Radiance.", 13, "ascend", 1e-9, (s) => s.radiance),
+    G("us5", "Undersun rigs", "Reach 10 levels across the Corona, Plasma and Lattice rigs.", 13, "copper", 10, (s) => rigLevels(s, ["corona", "plasma", "lattice"])),
+    G("us6", "Hold the glow", "Hold 100 Radiance.", 13, "ascend", 100, (s) => s.radiance),
 );
 /** The twelve stage secrets (one per tier) count half, so they add +1% each rather than +2%. */
-export const STAGE_SECRET_IDS = ["x_help", "x_strict", "x_sysctl", "x_su", "x_dmesg", "x_tree", "x_urandom", "x_epoch", "x_dig", "x_pid", "x_top", "x_flash"];
+export const STAGE_SECRET_IDS = ["x_help", "x_strict", "x_sysctl", "x_su", "x_dmesg", "x_tree", "x_urandom", "x_epoch", "x_dig", "x_pid", "x_top", "x_flash", "x_sun", "x_nohup"];
 /** Goals and secrets, with the stage secrets at half weight. Every bonus that used to count s.ach.length uses this. */
 export function achPoints(s: State): number {
     let n = s.ach.length;

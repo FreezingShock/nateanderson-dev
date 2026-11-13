@@ -347,4 +347,7 @@ FW_NODES = {
     "fw_fastpath_s": ("fw_fastpath_s", "field", "s", CYAN),
     "fw_fieldkit_s": ("fw_fieldkit_s", "field", "s", AMBER),
     "fw_shortfuse_m": ("fw_shortfuse_m", "field", "m", RED),
+    # 2026-11-13: one keystone tail past Lineage (Relay) and past Field operator (Field)
+    "fw_keypress": ("runestone", "relay", "l", AMBER),
+    "fw_sparepart": ("ram", "field", "l", CYAN),
 }

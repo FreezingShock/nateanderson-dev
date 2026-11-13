@@ -301,7 +301,7 @@ def prism(c, p, f):
         c.set(bm, col, 255 if f > 0 else 110)
     if f > 0:
         c.spark(48, 28, 1 + int(f * 2), P["white"][2])
-    status_strip(c, f, "sg")
+    status_strip(c, f, "steel")
 
 
 # ---------------------------------------------------------------- 10 Hollow forge: Void draw
@@ -646,14 +646,60 @@ def convection(c, p, f):
         t = (p + k / 6) % 1
         c.set(rect(36 + k * 4, 50 - t * 40, 37 + k * 4, 51 - t * 40), P["co"][5])
     status_strip(c, f, "co")
+def flares(c, p, f):
+    """26 Flares: the rim throws a flare on a clock; while it burns the loop runs twice as fast."""
+    floor_plate(c)
+    core = orb(c, 32, 30, 11, "co", v=0.15 * f)
+    c.glow(core, ("co", 5), r=4, a=120)
+    burning = int(f * 4) % 2 == 0
+    for k in range(10):
+        a = 2 * math.pi * k / 10 + p * math.pi * (4 if burning else 1)
+        c.set(rect(32 + math.cos(a) * 16 - 1, 30 + math.sin(a) * 16 - 1, 32 + math.cos(a) * 16 + 1, 30 + math.sin(a) * 16 + 1), P["co"][5 if burning else 3])
+    status_strip(c, f, "co")
+
+
+def field(c, p, f):
+    """27 Field: a coil of plasma wire; each Corona level tightens the field and speeds the spin."""
+    floor_plate(c)
+    for k in range(3):
+        ang = k * math.pi / 3 + p * math.pi
+        loop = ring(32, 30, 20 - k * 3, 18 - k * 3, 0.45)
+        c.set(loop & (((angle(32, 30) - ang / (2 * math.pi)) % 1) < 0.3), P["mg"][4 if k <= int(f * 3) else 2])
+    c.glow(disc(32, 30, 5), ("mg", len(P["mg"]) - 2), r=4, a=110)
+    c.set(disc(32, 30, 4), P["mg"][-1])
+    status_strip(c, f, "mg")
+
+
+def scaffold(c, p, f):
+    """28 Scaffold: a lattice of cells; the charges kept through Ascend light the first cells, the rest blink with the phase."""
+    floor_plate(c)
+    lit = int(f * 6) + 1
+    for i in range(4):
+        for j in range(3):
+            n = j * 4 + i
+            on = n < lit or ((n + int(p * 12)) % 7 == 0)
+            c.fill(rect(14 + i * 9, 16 + j * 10, 20 + i * 9, 23 + j * 10), 0.95 if on else 0.3, "steel", outline="steel")
+    status_strip(c, f, "steel")
+
+
+def veil(c, p, f):
+    """29 Veil: a dome of light with curtain folds, thickening with every level in the arc."""
+    floor_plate(c)
+    m = disc(32, 44, 22, 20) & (Y < 44)
+    c.fill(m, 0.3 + 0.3 * wave(p), "steel", outline="steel")
+    for k in range(5):
+        x = 16 + k * 8
+        c.set(rect(x, 24 + int(4 * math.sin(p * 2 * math.pi + k)), x + 1, 42), P["steel"][6 if k < f * 5 + 1 else 3])
+    status_strip(c, f, "steel")
 
 RIG_ORDER = ["bytes", "mult", "reboot", "copper", "silicon", "quartz", "aether", "runes", "starglass", "voidsteel", "chrono",
              "nebula", "pulsars", "singularity", "engrams", "paradox", "origin",
-             "spores", "mycelium", "pollen", "bloom", "basalt", "magma", "geodes", "sunstone"]
+             "spores", "mycelium", "pollen", "bloom", "basalt", "magma", "geodes", "sunstone", "corona", "plasma", "lattice", "radiance"]
 DRAW = {"bytes": cache, "mult": staging, "reboot": capacitor, "copper": pour, "silicon": scrubbers, "quartz": crystals, "aether": afterglow, "runes": carvings,
         "starglass": prism, "voidsteel": voiddraw, "chrono": stillness, "nebula": weather, "pulsars": beacon, "singularity": well, "engrams": index,
         "paradox": mirror, "origin": rewrite, "spores": spread, "mycelium": knots, "pollen": daylight, "bloom": seedbank,
-        "basalt": drill, "magma": eruption, "geodes": ringing, "sunstone": convection}
+        "basalt": drill, "magma": eruption, "geodes": ringing, "sunstone": convection,
+        "corona": flares, "plasma": field, "lattice": scaffold, "radiance": veil}
 
 
 def blank(c, p, f):

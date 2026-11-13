@@ -12,6 +12,7 @@ export const ARCS: readonly Arc[] = [
     { id: "origin", name: "The origin", blurb: "Memory, mirrors and the first node.", color: "#3dff6e", zones: ["engrams", "paradox", "origin"], scene: 13 },
     { id: "overgrowth", name: "Overgrowth", blurb: "Spores, threads, pollen and the farm in flower. Two zones open with each of the first two Handovers.", color: "#5cf0c0", zones: ["spores", "mycelium", "pollen", "bloom"], scene: 18 },
     { id: "descent", name: "Descent", blurb: "Rock, magma, hollow stone and a buried sun. Two zones open with each of the third and fourth Handovers.", color: "#ff9a2a", zones: ["basalt", "magma", "geodes", "sunstone"], scene: 22 },
+    { id: "undersun", name: "Under the sun", blurb: "The light that leaves the sun: a bright rim, charged plasma, a grid that holds it and the radiance it throws back. Opens after the ending, two zones per Handover from the fifth.", color: "#ffe27a", zones: ["corona", "plasma", "lattice", "radiance"], scene: 23 },
 ];
 
 export const arcKey = (id: string) => `arc:${id}`;

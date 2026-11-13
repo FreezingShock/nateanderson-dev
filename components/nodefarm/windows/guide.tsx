@@ -1,6 +1,8 @@
 "use client";
 
-import { createContext, memo, useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore, type CSSProperties, type RefObject } from "react";
+import { createContext, memo, useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore, type CSSProperties, type MouseEvent, type RefObject } from "react";
+
+const PHONE_Q = "(max-width: 559px)";
 import { cxPlay, useCodeReveal } from "@/lib/nodefarm/cx";
 import { apOnAscend, button, canAfford, canAscend, droneCost, droneMax, fmt, statDef, type Derived, type State, type StatId } from "@/lib/nodefarm/engine";
 import { DRONE_NAMES, etaRate, etaText, incomeOf, telemetry, type NxIcon, type Step, type Target, type TipInfo } from "@/lib/nodefarm/content/guide";
@@ -80,8 +82,19 @@ export function GuideStrip({ s, d, step, onGo, onDo, onCell, onMap, mapOpen }: {
     const done = step.frac >= 1;
     // the readout row can be folded away (remembered per browser)
     const [folded, setFolded] = useState(false);
-    useEffect(() => { try { setFolded(localStorage.getItem(STORE) === "0"); } catch {} }, []);
+    // Phones start with the readouts folded (the card is the next step, the readouts are extra).
+    // A tap on blank space on a phone toggles them too; buttons, links and the readout list never do.
+    useEffect(() => {
+        let stored: string | null = null;
+        try { stored = localStorage.getItem(STORE); } catch {}
+        setFolded(stored === null ? matchMedia(PHONE_Q).matches : stored === "0");
+    }, []);
     const fold = () => { const v = !folded; setFolded(v); try { localStorage.setItem(STORE, v ? "0" : "1"); } catch {} };
+    const blankFold = (e: MouseEvent<HTMLElement>) => {
+        if (!matchMedia(PHONE_Q).matches) return;
+        if ((e.target as HTMLElement).closest("button, a, input, select, textarea, label, .nf-nx-cells, .nf-nx-also")) return;
+        fold();
+    };
     // a new step decrypts in (the unlock look); the first paint does not
     const text = useRef<HTMLDivElement>(null);
     const prev = useRef(step.id);
@@ -90,7 +103,7 @@ export function GuideStrip({ s, d, step, onGo, onDo, onCell, onMap, mapOpen }: {
         prev.current = step.id;
     }, [step.id]);
     return (
-        <aside className="nf-guide nf-nx" data-step={step.id} data-plate={p} data-done={done ? "" : undefined} aria-label="Next step" style={{ ["--c" as string]: color } as CSSProperties}>
+        <aside className="nf-guide nf-nx" onClick={blankFold} data-folded={folded ? "" : undefined} data-step={step.id} data-plate={p} data-done={done ? "" : undefined} aria-label="Next step" style={{ ["--c" as string]: color } as CSSProperties}>
             <div className="nf-nx-plate" aria-hidden="true" style={{ ["--p" as string]: PLATES.indexOf(p) } as CSSProperties}>
                 {stat && <span className="nf-nx-stat"><NfIcon name={stat as NfIconName} /></span>}
                 <span className="nf-nx-tag">{PLATE_TAG[p]}</span>

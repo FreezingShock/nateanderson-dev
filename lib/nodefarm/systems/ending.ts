@@ -4,7 +4,7 @@
 // plays the end screen once. Play continues afterwards, and "New operator" starts a fresh save that keeps the star count
 // and the log you left, which the next run finds as its first log. Every number is in END_TUNE (balance thread owns them).
 // Pure rules, no React. docs/node-farm.md "Ending".
-import { END_LOG_MAX, STATS, fmt, isUnlocked, type EndLog, type EndState, type MatId, type State } from "../engine";
+import { END_LOG_MAX, fmt, isUnlocked, statDef, type EndLog, type EndState, type MatId, type State } from "../engine";
 
 export type { EndLog, EndState };
 
@@ -36,8 +36,9 @@ export const END_COLORS = ["#ffd04a", "#2fd8e8", "#b6f04a", "#f08a3c", "#c8f6ff"
 
 export const freshEnd = (): EndState => ({ stage: 0, doneAt: 0, seen: false, stars: 0, logs: [] });
 
-/** The last zone in the game (whatever the newest arc ends on). */
-export const lastZone = (): MatId => STATS[STATS.length - 1].id as MatId;
+/** The zone the final build is paid in: the buried sun (zone 25). Undersun (zones 26 to 29) opens after the ending, so this stays
+ *  put when more zones come after it. */
+export const lastZone = (): MatId => "sunstone";
 
 /** The save's ending state, created on first use. */
 export function endOf(s: State): EndState {
@@ -62,7 +63,7 @@ export function buildBlock(s: State): string | null {
     if (stage >= END_STEPS) return "built";
     if (s.ch?.run) return "Locked until you leave the test";
     const z = lastZone();
-    const name = STATS[STATS.length - 1].name;
+    const name = statDef(lastZone()).name;
     if (!endOpen(s)) return `Start ${name} production`;
     const c = stageCost(stage);
     if ((s[z] as number) < c.mat) return `Need ${fmt(c.mat)} ${name}`;
@@ -135,4 +136,4 @@ export const END_COPY = {
     buildDone: "Node zero is awake.",
     inherited: "Log from operator {n}",
 };
-export const endText = (t: string, s: State) => t.replace("{zone}", STATS[STATS.length - 1].name.replace(/^The /, "the ")).replace("{n}", String(Math.max(1, s.end?.stars ?? 1)));
+export const endText = (t: string, s: State) => t.replace("{zone}", statDef(lastZone()).name.replace(/^The /, "the ")).replace("{n}", String(Math.max(1, s.end?.stars ?? 1)));

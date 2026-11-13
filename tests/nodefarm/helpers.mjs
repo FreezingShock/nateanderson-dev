@@ -16,6 +16,7 @@ export const ST = await import(resolve(root, "lib/nodefarm/systems/stress.ts"));
 export const EV = await import(resolve(root, "lib/nodefarm/events.ts"));
 export const AD = await import(resolve(root, "lib/nodefarm/systems/admin.ts"));
 export const AR = await import(resolve(root, "lib/nodefarm/zones/arcs.ts"));
+export const END = await import(resolve(root, "lib/nodefarm/systems/ending.ts"));
 export const OFF = await import(resolve(root, "lib/nodefarm/offline.ts"));
 export const { LOGS } = await import(resolve(root, "lib/nodefarm/content/story.ts"));
 

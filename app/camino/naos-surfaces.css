@@ -31,7 +31,7 @@
 :where(.ctos) .cm-card { background-color: var(--cm-ctos-panel); border-color: var(--cm-ctos-edge); }
 
 /* Stats strip: the About, History and Blog strips floated on the art; they now share the hero strip's plate. */
-.ctos .meta.stats { background: var(--cm-ctos-panel); border: 1px solid var(--cm-ctos-edge); border-left: 3px solid var(--cm-pop-magenta); }
+.ctos .meta.stats { background: var(--cm-ctos-panel); border: 1px solid var(--cm-ctos-edge); }
 .ctos .meta.stats > div { border-left-color: var(--cm-hair-hi); }
 
 /* ---- 2. Hover and live ------------------------------------------------------------------------------------------- */
