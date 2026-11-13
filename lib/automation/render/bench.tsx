@@ -11,6 +11,7 @@ import { useEffect, useRef } from "react";
 import { createVoxelIsland, type VoxelIsland } from "./index";
 import { heightAt } from "./terrain";
 import { EXAMPLE_BLOCK } from "../models/examples";
+import { scatterProps } from "../models/props";
 
 declare global {
     interface Window {
@@ -67,6 +68,23 @@ export default function VoxelIslandBench() {
                 rot: 1,
             });
             island.setGhost(EXAMPLE_BLOCK, { x: 2, z: 2 }, 0, false);
+        }
+
+        if (q.get("scenery") === "1") {
+            island.setScenery(
+                scatterProps({
+                    heightAt,
+                    isFree: () => true,
+                    waterLevel: -1.3,
+                    minX: -20,
+                    maxX: 20,
+                    minZ: -14,
+                    maxZ: 14,
+                    density: Number(q.get("density") ?? 1),
+                    factoryDistance: (x, z) => Math.hypot(x, z),
+                    clearRadius: 3,
+                })
+            );
         }
 
         if (q.get("belts") === "1") {
