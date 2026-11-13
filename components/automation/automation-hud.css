@@ -931,3 +931,27 @@
     cursor: pointer;
   }
 }
+
+/* Layout fixes: a status word stays on the same line as its name, and a milestone reward never hangs off the edge. */
+.ab-build-name .ab-dim {
+  white-space: nowrap;
+}
+
+.ab-milestone-top {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 2px 10px;
+}
+
+.ab-milestone-top .ab-dim {
+  white-space: nowrap;
+}
+
+/* Wider palette on desktop so locked rows keep the name and status on one line. */
+@media (min-width: 760px) {
+  .ab-pal {
+    width: 356px;
+  }
+}
