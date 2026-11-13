@@ -1204,10 +1204,15 @@ export function droneStep(s: State, dt: number, eff = 1): number {
 /** Ceiling for every amount (doubles overflow to Infinity just past 1.8e308). */
 export const CAP = 1e300;
 
+/** Every Bytes added to lifetime Bytes, summed on the side. offline() reads it for the standby report: the lifetime counter is too
+ *  large to subtract (a few thousand Bytes vanish next to 1e40), and s.bytes is reset by every Reboot. */
+export const lifeTally = { bytes: 0 };
+export function addLifeBytes(s: State, v: number) { s.life.bytes += v; lifeTally.bytes += v; }
+
 export function tick(s: State, dt: number, eff = 1) {
     const d = derive(s);
     s.bytes += d.bytesPerSec * dt;
-    s.life.bytes += d.bytesPerSec * dt;
+    addLifeBytes(s, d.bytesPerSec * dt);
     // amounts stop at CAP so a very long post-tree run can never reach Infinity and break the save
     for (const m of MATS) s[m] = Math.min(CAP, s[m] + d.rates[m] * dt);
     if (s.bytes > CAP) s.bytes = CAP;
@@ -1232,7 +1237,7 @@ export function payout(s: State, secs: number, only?: readonly MatId[]) {
     const oc = s.overclock > 0 ? overclockMult(s) : 1; // a lump is never paid at Overclock rate
     const gain: Partial<Record<StatId, number>> = { bytes: (d.bytesPerSec / oc) * secs };
     s.bytes += gain.bytes!;
-    s.life.bytes += gain.bytes!;
+    addLifeBytes(s, gain.bytes!);
     for (const m of only ?? MATS) { const v = (d.rates[m] / oc) * secs; if (v > 0) { s[m] += v; gain[m] = v; } }
     return gain;
 }
@@ -1345,15 +1350,20 @@ export function buyPerk(s: State, id: PerkDef["id"]): boolean {
     return true;
 }
 
+export const OFFLINE_STEP_S = 1;
+export const OFFLINE_MAX_STEPS = 7200;
+
 /** Catch up for time away. Production only; nothing is bought for you (except by the scripts you taught). Returns what was gained.
- *  The steps are short (10 s) while scripts are running, and a step never runs past the moment a timed boost ends (Overclock,
+ *  The steps are about a second (see OFFLINE_STEP_S), and a step never runs past the moment a timed boost ends (Overclock,
  *  Swarm alarm, a zone event, a deployed payload), so a boost counts for exactly the time it had left, not a whole step. */
 export function offline(s: State, seconds: number) {
     const cap = derive(s).offlineCap;
     const secs = Math.min(Math.max(0, seconds), cap);
-    const before = Object.fromEntries((["bytes", ...MATS] as const).map((k) => [k, s[k]])) as Record<"bytes" | MatId, number>;
-    const per = s.auto?.own.length ? 10 : 20;
-    const steps = Math.min(2400, Math.max(1, Math.ceil(secs / per)));
+    const before = Object.fromEntries(MATS.map((k) => [k, s[k]])) as Record<MatId, number>;
+    lifeTally.bytes = 0;
+    // Steps are about a second long while the gap allows it (7200 steps at most: an hour runs in 1 s steps, an 8 h gap in 4 s steps). Longer steps
+    // under-credit Drones, whose presses are paid from the stock at the start of a step, and Watchdog Reboots, which fire at most once a tick.
+    const steps = Math.min(OFFLINE_MAX_STEPS, Math.max(1, Math.ceil(secs / OFFLINE_STEP_S)));
     const dt = secs / steps;
     const oc = s.overclock;
     s.overclock = 0; // an intrusion boost doesn't carry through time away
@@ -1376,7 +1386,9 @@ export function offline(s: State, seconds: number) {
         }
     }
     s.overclock = Math.max(0, oc - secs);
-    return { secs, capped: seconds > cap, drones: s.life.presses - pressesBefore, gain: Object.fromEntries((["bytes", ...MATS] as const).map((k) => [k, s[k] - before[k]])) as Record<"bytes" | MatId, number> };
+    const gain = Object.fromEntries(MATS.map((k) => [k, s[k] - before[k]])) as Record<"bytes" | MatId, number>;
+    gain.bytes = lifeTally.bytes;
+    return { secs, capped: seconds > cap, drones: s.life.presses - pressesBefore, gain };
 }
 
 // ---- goals. Five tiers of six. Each goal gives a small permanent boost (TUNE.achBonus) and a full tier gives a bigger one (TUNE.tierBonus).

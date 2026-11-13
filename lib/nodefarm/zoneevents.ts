@@ -3,6 +3,7 @@
 // or wait it out). Nothing ever takes stock from you, and time away just lets an event run out. Pure rules, no React: the numbers
 // live in ZE_TUNE (engine.ts, because the engine reads them), the strip on the zone panel is components/nodefarm/zone-event.tsx.
 import {
+    addLifeBytes,
     MATS, STATS, TICK_HOOKS, TIERS, ZE_TUNE, breach, chOff, derive, droneEventPace, eventHaste, droneRate, isUnlocked, overclockMult, postOf, press, resonancePair, statDef, zeOut, fwFieldOp, fwZeGap, fwZeLong,
     type ButtonStat, type MatId, type State, type StatId, type ZoneEvActive, type ZoneEvKind, type ZoneEvState,
 } from "./engine";
@@ -133,7 +134,7 @@ export function zeChoose(s: State, id: number, choice: ZeChoice): ZeResult {
     if (!z || !e || e.picked) return { ok: false };
     if (e.kind === "vein" && choice === "mine") {
         const v = mineAmount(s, e.zone);
-        if (e.zone === "bytes") { s.bytes += v; s.life.bytes += v; } else s[e.zone as MatId] += v;
+        if (e.zone === "bytes") { s.bytes += v; addLifeBytes(s, v); } else s[e.zone as MatId] += v;
         z.act = z.act.filter((x) => x !== e);
         return { ok: true, paid: v, stat: e.zone, win: breach(s) };
     }

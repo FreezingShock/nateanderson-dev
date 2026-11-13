@@ -36,6 +36,15 @@ test("the Ascend, Handover, Ascend loop keeps every number sane", () => {
     assert.equal(s.hand.count, 2);
 });
 
+// Zone events draw from Math.random, so each run gets the same seed: otherwise a 24 h absence (capped to 8 h) and an 8 h one
+// differ by the random draws alone, and "a longer absence is never worth less" fails on luck.
+function seeded(seed, fn) {
+    const real = Math.random;
+    let a = seed >>> 0;
+    Math.random = () => { a = (a + 0x6d2b79f5) >>> 0; let t = a; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
+    try { return fn(); } finally { Math.random = real; }
+}
+
 test("away time: 10 min, 1 h, 8 h and 24 h at several stages give finite, non-negative gains within the cap", () => {
     const stages = [["early", loadFixture("release-early.json")], ["deep", loadFixture("release-deep.json")], ["maxed", maxed()]];
     for (const [name, base] of stages) {
@@ -43,7 +52,7 @@ test("away time: 10 min, 1 h, 8 h and 24 h at several stages give finite, non-ne
         for (const secs of [600, 3600, 8 * 3600, 24 * 3600]) {
             const s = clone(base);
             const cap = E.derive(s).offlineCap;
-            const r = E.offline(s, secs);
+            const r = seeded(7, () => E.offline(s, secs));
             const label = `${name} ${secs}s`;
             assert.deepEqual(problems(s), [], label);
             assert.ok(r.secs <= cap + 1e-6 && r.secs <= secs, `${label}: counted time within cap`);
@@ -53,7 +62,7 @@ test("away time: 10 min, 1 h, 8 h and 24 h at several stages give finite, non-ne
             assert.ok(s.life.bytes >= base.life.bytes, `${label}: lifetime Bytes never drop`);
             assert.ok(s.life.bytes >= last, `${label}: a longer absence is never worth less`);
             last = s.life.bytes;
-            const away = OFF.catchUp(clone(base), secs);
+            const away = seeded(7, () => OFF.catchUp(clone(base), secs));
             assert.deepEqual(nonFin(away), [], `${label}: report has no NaN`);
         }
     }
