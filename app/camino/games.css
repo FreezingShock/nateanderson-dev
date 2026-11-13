@@ -111,15 +111,18 @@
 }
 
 /* ---- Flag Guesser (components/games/flag-guesser.tsx) ---- */
+/* The board keeps a zero grid gap. While the round is live each tile is scaled down inside its cell, which gives the
+   6px seams without animating layout; the final reveal scales the tiles back to fill the cells. */
 .fg-board {
     perspective: 900px;
-    transition: gap var(--cm-d-reveal) ease;
 }
 .fg-tile {
     position: relative;
     transform-style: preserve-3d;
-    transition: transform var(--cm-d-slow) cubic-bezier(0.22, 1, 0.36, 1);
+    scale: .94;
+    transition: transform var(--cm-d-slow) cubic-bezier(0.22, 1, 0.36, 1), scale var(--cm-d-reveal) ease;
 }
+.fg-board[data-done="true"] .fg-tile { scale: 1; }
 .fg-tile[data-open="true"] { transform: rotateY(180deg); }
 .fg-face {
     position: absolute;
