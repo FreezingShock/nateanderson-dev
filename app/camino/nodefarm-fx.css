@@ -31,7 +31,6 @@ body.nf-lowfx .ctos .nf-scn-far, body.nf-lowfx .ctos .nf-scn-near, body.nf-lowfx
 body.nf-lowfx .ctos .nf[data-oc] { animation: none; }
 body.nf-lowfx .ctos .nf-btn[data-afford][data-tier="5"] { animation: none; }
 body.nf-lowfx .ctos .nf-row > .nf-art, body.nf-lowfx .ctos .nf-sch-scene, body.nf-lowfx .ctos .nf-lab-scene { animation: none; }
-body.nf-lowfx .ctos .nf-ev-relays button[data-st="full"] { animation: none; }
 
 /* ---- settings block groups (components/nodefarm/settings.tsx) ---- */
 .ctos .nf-st { list-style: none; margin: 0; padding: 0; display: grid; gap: 18px; }

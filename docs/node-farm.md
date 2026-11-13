@@ -72,7 +72,7 @@ One open/close animation for every window, card and pop-up ("terminal print"): t
 - `--cx-c` sets the bracket/caret/scan colour (falls back to `--c`, then cyan). `bare` skips the frame for things that sit inline.
 - Windows (Map, Goals, Records, Ascend, Menu) go through `closeWin()` in node-farm.tsx; on phones a tab switch prints the section's rows in. Put `data-cx-i` on a panel's sections to control the print order; without any, the pane's second-level children print.
 - `data-cx-scr` replaces the text node, so only put it on static labels (use an sr-only twin like WinBar does).
-- Where it is used: windows (node-farm.tsx), the offline report (away.tsx, rows tagged, backdrop fades), quick-time event cards (events.tsx: prints in, reprints the body on each stage, deletes out while the last state stays on screen inert), banners (juice.tsx, timing unchanged), tooltips (guide.tsx `Tip`: reprints when the target changes, deletes out on leave), folding zones and the Drone bay (`useFoldReveal`, rows only, first render skipped). The tree card and the Ascend window use it from their own files.
+- Where it is used: windows (node-farm.tsx), the offline report (away.tsx, rows tagged, backdrop fades), zone event cards (zone-event.tsx: prints in, reprints the body on each stage, deletes out while the last state stays on screen inert), banners (juice.tsx, timing unchanged), tooltips (guide.tsx `Tip`: reprints when the target changes, deletes out on leave), folding zones and the Drone bay (`useFoldReveal`, rows only, first render skipped). The tree card and the Ascend window use it from their own files.
 - Sound: `nfPrint` (soft key ticks, one per row) on a framed "in", `nfDelete` on a framed "out"; bare reveals are silent. Pass `sound` to override.
 - Three styles, each with its job (Nate, 2026-11-12): `print` for milestones (banners), tooltips and the tree card; `decrypt` (rows under flickering glyph noise that resolves left to right) for unlock and tier banners and quick-time event cards; `crt` (monitor switch on/off; folds flicker) for panels: windows, phone tab sections, the offline report and folding zones. Callers pass `style` (default print). `nf anim <style>` or `?cx=<style>` forces one style everywhere for testing; `nf anim auto` clears it. CRT animates `transform`, so it fits elements that position with `translate`/`left`, not `transform`.
 - Banners sit under an open window (z-index 55 while `body.nf-win-open`) instead of covering it.
@@ -133,18 +133,6 @@ A second currency and a small research tree that run alongside Bytes. Built 2026
 - `TreeMenu` takes a `TreeModel` (nodes, sections, owned, wallet, unit, open/vis/totals, core, theme, respec). `prestigeModel(s)` is the default, so a third tree only needs a model.
 - Pacing (sim, `NF_NOLAB=1` turns the lab bot off, `NF_LABSKIP=id,id` skips recipes): no Drones, first Ascend 3.26 h -> 2.67 h, tree 60 h -> 42.5 h; with Drones 4.8 h -> 4.0 h, tree 75-86 h -> 50 h. The bot deploys every buff the moment it lands, so a real player gains less. Slow it with `LAB_TUNE.labScale` or the payload numbers.
 - Console `nf lab`, Records "Exploit Lab" section, guide steps `lab-research` and `lab-compile`, keyboard `r` opens the lab tree, admin `grantLab` / `clearLab`.
-
-## Quick-time events
-`lib/nodefarm/events.ts` holds the event list, every timing number (`EVENT_TUNE`) and the loot maths; `components/nodefarm/events.tsx` is the `EventLayer` that schedules them; styles are in `app/camino/nodefarm-events.css`. The layer is portaled to `<body>` (or a full-screen element smaller than the page), so the card centers on the visible screen whatever the scroll. Flow: incoming card (Engage / Skip, 15 s then it passes, controls lock for 0.65 s so a stray tap can't start one) then the live event then a loot result card.
-
-Nate dislikes reaction, memory, puzzle and guessing games, so no event tests reflexes (the four from #145, Intrusion, Power surge, Signal lock and Breach trace, were retired for that). Five types, each with its own colour and dithered canvas art:
-- Traffic spike (cyan): the card docks as a strip above the site dock and you play the real board; every buy press fills a 15-press contract. Cash out any time.
-- Rogue process (purple): pick one of two or three shown outcomes (Quarantine = Bytes, Exploit = extra Overclock, Harvest = newest material), all at one rolled rarity.
-- Cold storage (green): hold to decrypt six rows of a hex dump; let go to pause, cash out any time, every open row counts.
-- Relay cascade (amber): five relays charge in turn; a full relay waits for you; pressing within 0.9 s of it filling builds the chain.
-- Dead packet (pink): three presses crack it open.
-
-Each body reports a quality from 0 to 1; when the clock runs out it reports what it has so far. From `winAt` (0.25) it is a win: node-farm.tsx calls `breach()` (Overclock, so the Anomaly tree nodes keep working) then `payLoot()`. Loot rarity uses the board's six rarity colours; better quality shifts the roll up. Loot is a lump of Bytes or of the newest material (seconds of plain, non-Overclock output) or extra Overclock seconds, sized so engaging every event adds about +40% over the Overclock alone. Skipping or closing with too little done costs nothing. Touch, mouse and keyboard all work (1 to 3, Space, Escape skips); the card is an `alertdialog` (the docked spike strip is a `status`) and returns focus when it closes. Events can be switched off from the card or the Menu (`nf-events-v1`). Admin `nf:fire` shows any kind right away. To add a type: add it to `EVENTS`, add a body that calls `useDone(props, sofar)`, and style it in nodefarm-events.css. Timers whose deps include callbacks from node-farm.tsx get reset by its 10 Hz re-render, so keep such callbacks in refs.
 
 ## Reactor core (lib/nodefarm/core-art.ts, core-look.ts, components/nodefarm/core.tsx), 2026-11-12
 - One 144 px buffer shown at 2x. `core-art.ts` is the renderer and imports nothing from the game, so `node scripts/naos-art/core-preview.mjs <dir> [frames]` draws a contact sheet of every stage and look (and prints ms per frame) with the same code. `core-look.ts` reads the save: zone colours, chroma, structures. `core-parts.ts` lists the structures.
@@ -350,6 +338,12 @@ About every 11 to 19 minutes of play (first one after 8 minutes of life), one un
   named interaction turns on (`ARC_LINKS`): Hot swap (rack), Clean growth (fab), Still light (hollow), Storm pulse (deep),
   Recall (origin), Pollination (overgrowth), Quench (descent). The arc's level is its lowest rig level (the Glyph hall counts its lowest glyph). Shown on each rig panel.
 
+### One event system (2026-11-13)
+The old quick-time layer is gone (Nate: "one system, cut 3 bodies"). Rogue process (pick one of three offers) and Cold storage (hold to decrypt six rows) are now zone event kinds `rogue` and `vault`, shown on the same centered card, with one timer (`z.wait`) and one switch (Menu, saved as `s.ze.off`; the old per-device `nf-events-v1` "off" moves into the save on load). Traffic spike, Relay cascade and Dead packet were cut with `EventLayer`, `nextGapMs` and `pickEvent`. `lib/nodefarm/events.ts` keeps only the loot maths and `EVENT_TUNE` (`winAt`, `vaultRows`, `vaultRowMs`).
+- A win (mine a vein, patch a fault, pick a Rogue offer, cash out Cold storage from `winAt` of the rows) calls `breach()` inside `zeChoose` / `zeVault`, so Overclock, Zero-day, Echo, Patient, Swarm alarm, Spike protocol and the Intel pay all still work. Letting an event run is not a win. Rogue and Cold storage also pay a loot roll.
+- `eventHaste` (Wide-band scanner, Static, Storm chaser, Vael) now shortens the one gap. Echo sets the next event to 5 s.
+- Nothing was spent on the cut events, so there was nothing to refund and no save field to migrate beyond `ze.off` and the optional `rar` on a running Rogue process. `life.intrusions` is kept and now counts zone event wins.
+
 ## Touch layer (caches, core vent, figure tips, links, zone menu), 2026-11-12
 Rules in `lib/nodefarm/poke.ts` (every number in `POKE_TUNE`, state `s.poke`, registers in `TICK_HOOKS`, so `sim.mjs` pacing is unchanged); UI in `components/nodefarm/poke.tsx` (`PokeLayer`), styles `app/camino/nodefarm-poke.css` (`nf-pk*`). Nate dislikes reflex tests and tap-clicker mashing, so nothing here needs speed and nothing pays for repeat taps.
 - **Caches**: after 3 min of online play, then every 6 to 10 min, a crate drops into one open zone's scene and waits forever (up to 3 at once; while 3 wait, none drop). A tap pays 60 s of that zone's plain output (Multipliers, Reboots and Bytes zones pay Bytes). A folded panel shows the crate in its title bar. Caches in a zone that closes again (Ascend, Handover) move to the Uplink rack.
@@ -386,7 +380,7 @@ styles app/camino/nodefarm-stress.css (`nf-st-*`), banner art `win-stress` from 
 - Leaving restores the stored run through `parseSave`, merges goals, logs, lifetime stats and learned scripts, and shifts
   the run's game-time stamps (`rebootAt`, `hand.cycleAt`) by the test's length. Lab, hangar and rig buys made in a test are undone.
 - Tests: Brownout (perks, unspent AP and goal bonuses off), Grounded (no Drones), Cold tree, Narrow band (tiers 1 to 3),
-  Thin pipe (Bytes/s x0.1), Dead air (no quick-time or zone events), Broken chain (materials don't boost the one below),
+  Thin pipe (Bytes/s x0.1), Dead air (no zone events), Broken chain (materials don't boost the one below),
   Short leash (30, 90, 240 min of game time per rank).
 - Pacing check: `DUMP=/tmp/s.json node --experimental-strip-types scripts/nodefarm/sim.mjs 12` then
   `node --experimental-strip-types scripts/nodefarm/stress-sim.mjs /tmp/s.json 6` (also checks the run comes back intact).

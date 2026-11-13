@@ -145,7 +145,7 @@ export function Chain({ s, d, onAll, allOpen, onIdle, onJump }: { s: State; d: D
     );
 }
 
-export function StatRow({ id, s, d, onPress, onArm, onWatchdog, open: expanded, onToggle, guide, onZoneEv, zeCard }: { id: StatId; s: State; d: D; onPress: PressFn; onArm: () => void; onWatchdog?: () => void; open: boolean; onToggle: () => void; guide?: Target; onZoneEv?: (id: number, c: ZeChoice) => void; zeCard?: number | null }) {
+export function StatRow({ id, s, d, onPress, onArm, onWatchdog, open: expanded, onToggle, guide, onZoneEv, zeCard, onZeOpen }: { id: StatId; s: State; d: D; onPress: PressFn; onArm: () => void; onWatchdog?: () => void; open: boolean; onToggle: () => void; guide?: Target; onZoneEv?: (id: number, c: ZeChoice) => void; zeCard?: number | null; onZeOpen?: (id: number) => void }) {
     const def = statDef(id);
     const lore = LORE[id];
     const bodyIn = useRef<HTMLDivElement>(null);
@@ -204,7 +204,7 @@ export function StatRow({ id, s, d, onPress, onArm, onWatchdog, open: expanded, 
                     {prod > 0 && <small>{fmt(prod)} nodes</small>}
                 </div>
             </header>
-            {evs.map((e) => <ZoneEvent key={e.id} s={s} zone={id} e={e} onChoose={(i, c) => onZoneEv?.(i, c)} cardId={zeCard} />)}
+            {evs.map((e) => <ZoneEvent key={e.id} s={s} zone={id} e={e} onChoose={(i, c) => onZoneEv?.(i, c)} cardId={zeCard} onOpen={onZeOpen} />)}
             <div className="nf-body" id={bodyId}>
                 <div className="nf-body-in" ref={bodyIn} inert={!expanded}>
                     {/* a folded zone cannot be read, so its body keeps its last render and comes back fresh the moment it opens */}

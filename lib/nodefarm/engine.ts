@@ -138,7 +138,7 @@ export interface PerkDef {
 
 export const PERKS: PerkDef[] = [
     { id: "power", name: "Power core", blurb: "+15% to everything per level.", max: 20, cost: (l) => 1 + l },
-    { id: "scanner", name: "Wide-band scanner", blurb: "Quick-time events arrive 8% sooner per level.", max: 6, cost: (l) => 1 + l },
+    { id: "scanner", name: "Wide-band scanner", blurb: "Zone events arrive 8% sooner per level.", max: 6, cost: (l) => 1 + l },
     { id: "auto", name: "Autoloader", blurb: "Buys one stat per level by itself, with no script needed (Multipliers, then each material up the chain).", max: 12, cost: (l) => 3 + l * 2 },
     { id: "overclock", name: "Overclock coils", blurb: "Overclocks last +5 s longer per level.", max: 6, cost: (l) => 2 + l * 2 },
     { id: "offline", name: "Standby cells", blurb: "Standby window +4 hours per level.", max: 6, cost: (l) => 2 + l * 2 },
@@ -177,7 +177,7 @@ export interface TreeFx {
     droneKeep?: number; // fraction of Drone levels kept through Ascend
     droneGlobal?: number; // everything +this per Drone level owned
     mounts?: number; // Mounted drive slots
-    eventRate?: number; // quick-time events come this fraction sooner
+    eventRate?: number; // zone events come this fraction sooner
     ocTime?: number; // Overclock length x(1 + this)
     ocX?: number; // Overclock multiplier x(1 + this)
     winBoost?: number; // everything +this per event win, until the next Ascend
@@ -242,7 +242,7 @@ export const BRANCHES: { id: Branch; name: string; blurb: string; color: string 
     { id: "forge", name: "Forge", blurb: "Materials, from Copper to Chrono.", color: "#ffc53a" },
     { id: "systems", name: "Systems", blurb: "Time away, goals and AP.", color: "#6bffc9" },
     { id: "drones", name: "Drones", blurb: "More Drones, faster Drones, Drones that remember.", color: "#ff4d6d" },
-    { id: "anomaly", name: "Anomaly", blurb: "Quick-time events, Overclock and odd things.", color: "#9a7bff" },
+    { id: "anomaly", name: "Anomaly", blurb: "Zone events, Overclock and odd things.", color: "#9a7bff" },
 ];
 // Slot layout per section, in units along the arm (u) and sideways (v), with the slots each one links back to.
 // 0 entry | 1, 3, 5 the upper path | 2, 4, 6 the lower path | 7 keystone. Spacing keeps big nodes apart (>= 1.8 units, 2.3 by the keystone).
@@ -308,7 +308,7 @@ const ARMS: Record<Branch, Row[]> = {
         [10, "firmware", "keystone", "Firmware", "Drones press 30% faster per rank.", "Flashed them again. They boot a little smarter each time.", { drone: 0.3 }],
     ],
     anomaly: [
-        [0, "static", "minor", "Static", "Quick-time events come 30% more often.", "There is always someone on the line now.", { eventRate: 0.3 }],
+        [0, "static", "minor", "Static", "Zone events come 30% more often.", "There is always someone on the line now.", { eventRate: 0.3 }],
         [1, "longfuse", "minor", "Long fuse", "Overclocks last twice as long.", "Slower burn, same bang.", { ocTime: 1 }],
         [2, "duck", "minor", "Rubber duck", "Does nothing. Listens, though.", "Explained the whole farm to it. Found two bugs.", { feature: "duck" }, 1],
         [3, "resonant", "minor", "Resonant noise", "Overclock is x12.", "Tuned the static until it hums in key.", { ocMult: 6 }],
@@ -316,7 +316,7 @@ const ARMS: Record<Branch, Row[]> = {
         [5, "echo", "notable", "Echo", "Winning an event has a 1 in 3 chance to bring the next one right away.", "Answered the knock and something knocked back.", { echo: 1 / 3 }],
         [6, "zeroday", "notable", "Zero-day", "One in five event wins also pays 10 minutes of production.", "An open door nobody else has found yet.", { zeroDay: 0.2 }],
         [7, "spike", "keystone", "Spike protocol", "Overclock x2 again, and every event win adds +2% to everything until the next Ascend.", "Every knock makes the node a little louder.", { ocX: 1, winBoost: 0.02 }],
-        [8, "storm", "notable", "Storm chaser", "Quick-time events come 50% more often.", "Stopped waiting for the knock. Started going looking.", { eventRate: 0.5 }],
+        [8, "storm", "notable", "Storm chaser", "Zone events come 50% more often.", "Stopped waiting for the knock. Started going looking.", { eventRate: 0.5 }],
         [9, "patient", "notable", "Patient", "Every event win also pays 5 minutes of production.", "Let it knock twice. The second knock brings gifts.", { winPay: 300 }],
         [10, "afterimage", "keystone", "Afterimage", "Overclock x1.15 per rank.", "The boost leaves a shape on the screen after it ends.", { ocX: 0.15 }],
     ],
@@ -837,7 +837,7 @@ export const CH_HOOKS: {
 } = {};
 export const chOff = (s: State, what: ChOff) => !!CH_HOOKS.off?.(s, what);
 // ---- Zone events: the numbers and the two reads the rest of the engine needs (spawning and choices live in lib/nodefarm/zoneevents.ts)
-export type ZoneEvKind = "surge" | "clearance" | "resonance" | "vein" | "fault" | "convoy" | "tune";
+export type ZoneEvKind = "surge" | "clearance" | "resonance" | "vein" | "fault" | "convoy" | "tune" | "rogue" | "vault";
 export interface ZoneEvActive {
     /** a running number, so the screen can tell a new event from the one it already showed */
     id: number;
@@ -850,6 +850,8 @@ export interface ZoneEvActive {
     picked?: boolean;
     /** convoy: fractional extra Drone presses waiting to fire, per tier */
     acc?: number[];
+    /** rogue: the rarity (0 to 5) all three offers were rolled at, so the card can rebuild them */
+    rar?: number;
 }
 export interface ZoneEvState {
     act: ZoneEvActive[];
@@ -862,15 +864,17 @@ export interface ZoneEvState {
     last?: StatId;
     /** the last dozen events, newest last (`at` is life.secs when it started), for Records */
     log?: { kind: ZoneEvKind; zone: StatId; at: number }[];
+    /** events switched off in Menu: nothing new starts (the one on screen runs out) */
+    off?: boolean;
 }
 export const ZE_TUNE = {
     /** gap between events in game seconds, [min, max]; the first one waits for `first` seconds of life */
     gap: [660, 1140] as [number, number],
     first: 480,
     /** how long each lasts, seconds */
-    secs: { surge: 150, clearance: 150, resonance: 150, vein: 210, fault: 150, convoy: 150, tune: 150 } as Record<ZoneEvKind, number>,
+    secs: { surge: 150, clearance: 150, resonance: 150, vein: 210, fault: 150, convoy: 150, tune: 150, rogue: 120, vault: 120 } as Record<ZoneEvKind, number>,
     /** relative odds of each kind */
-    odds: { surge: 3, clearance: 2, resonance: 2, vein: 2, fault: 1, convoy: 1.5, tune: 1.5 } as Record<ZoneEvKind, number>,
+    odds: { surge: 3, clearance: 2, resonance: 2, vein: 2, fault: 1, convoy: 1.5, tune: 1.5, rogue: 1.5, vault: 1.5 } as Record<ZoneEvKind, number>,
     /** output multipliers (trimmed after the balance audit: the first numbers cut a Drone-bot Origin run from about 38 h to 26 to 32 h) */
     surge: 1.4,
     resonance: 1.3,
@@ -1259,7 +1263,7 @@ export function payout(s: State, secs: number, only?: readonly MatId[]) {
     return gain;
 }
 
-/** Win a quick-time event: a timed Overclock, plus whatever the Anomaly nodes add. `rnd` is injectable for tests.
+/** Win a zone event (Rogue process, Cold storage, mining a vein, patching a fault): a timed Overclock, plus whatever the Anomaly nodes add. `rnd` is injectable for tests.
  *  Returns what happened so the UI can say it. */
 export function breach(s: State, rnd: () => number = Math.random) {
     const f = treeFx(s);
@@ -1433,7 +1437,7 @@ export const GOALS: Goal[] = [
     G("m100", "Stacked", "Hold 100 Multipliers.", 1, "mult", 100, (s) => s.mult),
     G("r1", "Cold boot", "Reboot once.", 1, "reboot", 1, life("reboots")),
     G("cu1", "Trace lines", "Mine your first Copper.", 1, "copper", 1e-9, (s) => s.copper),
-    G("int1", "Counter-hack", "Win a quick-time event.", 1, "alert", 1, life("intrusions")),
+    G("int1", "Counter-hack", "Win a zone event.", 1, "alert", 1, life("intrusions")),
     // II OPERATOR
     G("tap500", "Calloused", "Press 500 buttons.", 2, "spark", 500, life("presses")),
     G("b1m", "Bandwidth", "Earn 1 million Bytes.", 2, "bytes", 1e6, life("bytes")),
@@ -1447,7 +1451,7 @@ export const GOALS: Goal[] = [
     G("r100", "Triple digits", "Reach 100 Reboots.", 3, "reboot", 100, life("reboots")),
     G("si1k", "Fab line", "Hold 1,000 Silicon.", 3, "silicon", 1e3, (s) => s.silicon),
     G("qz1", "Resonance", "Mine your first Quartz.", 3, "quartz", 1e-9, (s) => s.quartz),
-    G("int25", "Watchdog", "Win 25 quick-time events.", 3, "alert", 25, life("intrusions")),
+    G("int25", "Watchdog", "Win 25 zone events.", 3, "alert", 25, life("intrusions")),
     // IV ROOT
     G("p25k", "Muscle memory", "Press 25,000 buttons.", 4, "spark", 25000, life("presses")),
     G("b1t", "Whole network", "Earn 1 trillion Bytes.", 4, "bytes", 1e12, life("bytes")),
@@ -1559,7 +1563,7 @@ export function autoBuy(s: State): number {
 }
 
 // ---- Exploit Lab (research). Intel runs alongside Bytes: a trickle that grows with the log of Bytes/s, plus lumps from
-// Reboots (crash dumps) and quick-time event wins. Intel buys nodes in a small research tree (kept through Ascend); most
+// Reboots (crash dumps) and zone event wins. Intel buys nodes in a small research tree (kept through Ascend); most
 // nodes unlock a recipe. Recipes compile (a short timer, in a queue, also while away) into payloads you stock and deploy:
 // timed buffs, one-shot charges and instant effects. Opens with Silicon. See docs/node-farm.md "Exploit Lab".
 export type LabSec = "exploits" | "malware" | "infra";
@@ -2714,13 +2718,14 @@ function parseZe(o: unknown): ZoneEvState | undefined {
     const ids = STATS.map((st) => st.id as string);
     const act = (Array.isArray(x.act) ? x.act : [])
         .filter((e) => e && kinds.includes(e.kind) && ids.includes(e.zone) && num(e.left) > 0)
-        .map((e) => ({ id: num(e.id), kind: e.kind, zone: e.zone, left: Math.min(num(e.left), ZE_TUNE.secs[e.kind]), total: ZE_TUNE.secs[e.kind], picked: !!e.picked }));
+        .map((e) => ({ id: num(e.id), kind: e.kind, zone: e.zone, left: Math.min(num(e.left), ZE_TUNE.secs[e.kind]), total: ZE_TUNE.secs[e.kind], picked: !!e.picked, ...(e.kind === "rogue" ? { rar: Math.max(0, Math.min(5, Math.floor(num(e.rar)))) } : {}) }));
     return {
         act,
         wait: Math.max(0, Math.min(ZE_TUNE.gap[1], num(x.wait, ZE_TUNE.first))),
         seen: Math.max(0, Math.floor(num(x.seen))),
         kinds: Object.fromEntries(Object.entries(x.kinds ?? {}).filter(([k, v]) => kinds.includes(k) && num(v) > 0).map(([k, v]) => [k, Math.floor(num(v))])),
         last: ids.includes(x.last as string) ? x.last : undefined,
+        off: x.off === true ? true : undefined,
         log: (Array.isArray(x.log) ? x.log : []).filter((e) => e && kinds.includes(e.kind) && ids.includes(e.zone)).slice(-ZE_TUNE.logMax).map((e) => ({ kind: e.kind, zone: e.zone, at: num(e.at) })),
     };
 }

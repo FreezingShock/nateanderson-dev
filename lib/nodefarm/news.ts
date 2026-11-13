@@ -261,7 +261,7 @@ const BASE: News[] = [
     // ---- Events and secrets
     { k: "op", ok: (s) => s.life.intrusions >= 1, t: "Another knock on the node. I answered it again. Same silence after. Same relief." },
     { k: "note", ok: (s) => s.runWins >= 1, t: (s) => `events won this run: ${fmt(s.runWins)} // spike protocol is counting` },
-    { k: "hint", ok: (s) => s.life.intrusions === 0 && s.life.secs > 600, t: "Quick-time events come every few minutes. Answer them when they land in the middle of the screen. Missing one costs nothing." },
+    { k: "hint", ok: (s) => s.life.intrusions === 0 && s.life.secs > 600, t: "Zone events come every few minutes. Answer them when they land in the middle of the screen. Missing one costs nothing." },
     { k: "wry", ok: (s) => s.ach.length >= 5, t: "Goals are just chores with a better soundtrack." },
     { k: "hint", ok: (s) => s.ach.length >= 3, t: "Some goals are not on the list. A few commands in the naOS console are worth trying." },
     { k: "op", ok: (s) => s.logs.length >= 8, t: (s) => `${fmt(s.logs.length)} of my old entries recovered. I forgot half of what I wrote. That is why I wrote it down.` },

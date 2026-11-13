@@ -1,6 +1,6 @@
 // Time away: runs the engine's catch-up and reads what each system did meanwhile, for the standby report (components/nodefarm/away.tsx).
 // What runs while you are away: production, Drones (at their away speed), Scripts (all but ascend.sh, which needs the game open), rig meters,
-// Exploit Lab Intel and the compile queue, and the clocks of zone events and deployed payloads. What does not: quick-time events, new
+// Exploit Lab Intel and the compile queue, and the clocks of zone events and deployed payloads. What does not: new zone events, new
 // zone events (a running one only runs out), and anything that needs a decision (buying, deploying, Ascending, Handover).
 import { POSTABLE, fmt, offline, statDef, zoneRank, type ButtonStat, type State, type StatId } from "./engine";
 import { SCRIPT_BY } from "./scripts";
