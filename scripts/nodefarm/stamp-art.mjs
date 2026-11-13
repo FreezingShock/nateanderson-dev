@@ -63,7 +63,6 @@ const list = (name) => {
     return m ? m[1].split(",").map((x) => x.trim()).filter(Boolean).length : 0;
 };
 const icons = list("ORDER");
-const rows = list("TIER_ROWS");
 const allCss = readdirSync(CSS_DIR).filter((n) => n.endsWith(".css")).map((n) => [n, readFileSync(join(CSS_DIR, n), "utf8")]);
 {
     const { w, h } = pngSize("icons64.png");
@@ -75,13 +74,7 @@ for (const [n, src] of allCss) {
         if (+m[1] !== icons) errors.push(`${n}: icon sheet sized for ${m[1]} icons, ORDER lists ${icons}`);
         if (+m[2] !== 8) errors.push(`${n}: icon sheet sized for ${m[2]} frames, icons64 has 8`);
     }
-    for (const m of src.matchAll(/tiers-anim\.webp[^;]*?\/ (\d+)px (\d+)px/g)) {
-        if (+m[2] !== rows * 128) errors.push(`${n}: tier sheet sized ${m[2]}px tall, TIER_ROWS needs ${rows * 128}px`);
-    }
 }
-const t = pngSize("tiers-anim.png");
-if (t.h !== rows * 128) errors.push(`tiers-anim.png has ${t.h / 128} rows but icon.tsx TIER_ROWS lists ${rows}`);
-if (pngSize("tiers.png").h !== rows * 32) errors.push(`tiers.png row count does not match TIER_ROWS (${rows})`);
 // 64 px button sprites: one sheet per stat in TIC64, six tiers across by eight frames down.
 const tic64 = (iconSrc.match(/const TIC64 = \[([^\]]*)\]/)?.[1] ?? "").split(",").map((x) => x.trim().replace(/"/g, "")).filter(Boolean);
 for (const st of tic64) {
@@ -89,10 +82,24 @@ for (const st of tic64) {
     const { w, h } = pngSize(`tic-${st}.png`);
     if (w !== 384 || h !== 512) errors.push(`tic-${st}.png is ${w}x${h}, expected 384x512 (6 tiers x 8 frames of 64 px)`);
 }
+// Every button stat needs a 64 px sheet: the old 32 px fallback is gone, so a missing one would show no sprite.
+{
+    const eng = readFileSync(join(ROOT, "lib/nodefarm/engine.ts"), "utf8");
+    const mats = (eng.match(/export const MATS = \[([^\]]*)\]/)?.[1] ?? "").split(",").map((x) => x.trim().replace(/"/g, "")).filter(Boolean);
+    for (const st of ["mult", "reboot", ...mats]) if (!tic64.includes(st)) errors.push(`button stat ${st} has no 64 px sheet (add it to TIC64 in icon.tsx)`);
+}
+// Scripts zone icons: six scripts by eight 64 px frames.
+{
+    const { w, h } = pngSize("sched-icons64.png");
+    const rowsSrc = readFileSync(join(ROOT, "components/nodefarm/scripts.tsx"), "utf8").match(/const ROW[^{]*\{([^}]*)\}/)?.[1] ?? "";
+    const rows = rowsSrc.split(",").filter((x) => x.includes(":")).length;
+    if (w !== 512 || h !== rows * 64) errors.push(`sched-icons64.png is ${w}x${h}, expected 512x${rows * 64} (8 frames x ${rows} scripts of 64 px, ROW in scripts.tsx)`);
+    for (const [n, src] of allCss) for (const m of src.matchAll(/sched-icons64\.webp[^;]*?calc\(var\(--si\) \* 8\) calc\(var\(--si\) \* (\d+)\)/g)) if (+m[1] !== rows) errors.push(`${n}: sched-icons64 sized for ${m[1]} rows, ROW lists ${rows}`);
+}
 
 if (errors.length) {
     console.error("Node Farm art check failed:\n  " + errors.join("\n  "));
     if (check) console.error("Fix the sheet, or run `node scripts/nodefarm/stamp-art.mjs` to refresh the stamps.");
     process.exit(1);
 }
-if (check) console.log(`Node Farm art ok (${Object.keys(hash).length} files, ${icons} icons, ${rows} tier rows)`);
+if (check) console.log(`Node Farm art ok (${Object.keys(hash).length} files, ${icons} icons, ${tic64.length} tier sheets)`);

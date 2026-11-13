@@ -203,11 +203,16 @@ export function WinBar({ id, info, treeSeen, lab, onSwitch, onClose }: { id: Win
                         data-on={w === id ? "" : undefined}
                         data-hot={info[w].hot ? "" : undefined}
                         aria-current={w === id ? "true" : undefined}
-                        aria-label={`${SW[w].label}${SW[w].key ? ` (${SW[w].key})` : ""}`}
-                        title={`${SW[w].label}${SW[w].key ? ` · ${SW[w].key}` : ""}`}
+                        aria-label={`${SW[w].label}${SW[w].key ? ` (${SW[w].key})` : ""}: ${info[w].read}`}
                         onClick={() => w !== id && onSwitch(w)}
                     >
                         <PixelIcon name={SW[w].icon} size={16} />
+                        {/* hover / focus card: the name types in, then its live line and key print under it */}
+                        <span className="nf-sw-tip" aria-hidden="true">
+                            <b style={{ ["--len" as string]: SW[w].label.length } as CSSProperties}>{SW[w].label}</b>
+                            <span className="nf-sw-tip-r">{w === id ? "you are here" : info[w].read}</span>
+                            {SW[w].key && <kbd>{SW[w].key}</kbd>}
+                        </span>
                     </button>
                 ))}
             </span>

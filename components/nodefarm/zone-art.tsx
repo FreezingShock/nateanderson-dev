@@ -141,6 +141,7 @@ export function ZoneArt({ id, s }: { id: StatId; s: State }) {
         <i
             ref={el}
             className="nf-art"
+            data-zone={id}
             aria-hidden="true"
             data-stage={stage}
             data-up={up ? "" : undefined}

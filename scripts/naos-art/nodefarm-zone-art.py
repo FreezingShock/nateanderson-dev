@@ -1,5 +1,8 @@
 """Node Farm staged zone art for zones 02 to 04: Amp Bay (Multipliers), Power Room (Reboots), Trace Foundry (Copper).
 
+After re-running: python3 scripts/naos-art/zone-art-lift.py <ids> (lit room behind the dim zones, audit item 3),
+then zone-art-skirt.py <ids>, then node scripts/nodefarm/stamp-art.mjs.
+
 Follows the zone art contract (docs/node-farm.md, "Zone art"): one sheet per zone, 8 rows (stages) by 6 columns (frames), each cell
 288 x 64 art px on a transparent background. Row 0 is the empty bay: a faint backdrop haze. Rows 1 to 7 are cumulative: stage n shows
 sprites 1..n, each a bigger and richer version of the zone's 32 px icon (heights about 8, 12, 16, 22, 30, 40, 56 px), plus the

@@ -103,7 +103,7 @@ One open/close animation for every window, card and pop-up ("terminal print"): t
   - Menu: a mono tag above junctions and forks ("junction", "fork", "swap"), five rank pips above ranked nodes, card lines for needs both / fork / ranked, the buy button reads Swap or Rank N. Test: /mnt/project-files/portfolio/node-farm-tree/deep/deep.mjs.
 - Layout: each section is a diamond along its arm (`SLOTS`): entry at 2.4 units, an upper path (slots 1, 3, 5) and a lower path (2, 4, 6), keystone at 9.6 units. No bridges between sections. Spacing is at least 1.87 units between any two nodes. Node fields the menu and art read: `kind` (minor, notable, keystone), `flavor`, `sprite` (= id), `ix` (index in `TREE`), `entry`, `chain` (Carrier I to III, Mounted drive I and II).
 - Reveal: `nodeVis(s, n)` gives `shown` (owned or buyable: touches the core or an owned node), `fog` (one step past a shown node: a silhouette, no name or cost) or `hidden`.
-- Costs: `SLOT_COST` by slot (4 to 140 AP), notables x1.3, the Rubber duck 1 AP, all scaled by `TUNE.treeCost`. **Respec** (`respec`) is free, refunds every AP and clears the Mounted drives.
+- Costs: `SLOT_COST` by slot (4 to 140 AP), notables x1.3, the Rubber duck 1 AP, all scaled by `TUNE.treeCost`. **Respec** (`respec`) is free, refunds every AP and keeps the Mounted drives (their slots return when the drive nodes are bought again).
 - AP bonus: +30% per AP held, so spending AP lowers it until respec (Nate kept this 2026-11-12; `TUNE.apBonusFromEarned` would count spent AP too, but the sim then finishes the tree in 12 to 19 h). Carrier nodes raise the per-AP value (`apEach`). `TUNE.apGainSoft` puts a log knee on Ascends above 250 AP so AP cannot run off to infinity after the tree is done.
 - Pacing (sim): first Ascend 3.3 h, whole tree 60.3 h without Drones, 75 h with the bot arming Drones (Nate's target: about 60 h).
 - Effects (`treeFx`, cached per tree array): boosts written "xN" multiply with each other (`bytes`, `global`, `reboot`, `mats`, `ap`, `drone`, `ocTime`, `ocX`). The others: `growth` (prices climb slower), `rebootKeep`, `unlockMul`, starting kits (`kitReboot`, `kitProd`, `kitDrones`, applied in `ascend`), `droneKeep`, `droneGlobal`, `mounts`, `eventRate` (`eventHaste`), `winBoost` (`state.runWins`), `zeroDay` and `echo` (returned by `breach`). `treeTotals(s)` turns them into readout rows for the menu.
@@ -236,7 +236,7 @@ Checks: /mnt/project-files/portfolio/node-farm-refresh/ (`checks.mjs` interactio
 ## Window switcher (components/nodefarm/switcher.tsx, app/camino/nodefarm-switcher.css), 2026-11-12
 - One colour per window, used on its rail slot, phone tab, title bar and frame (`SW` in switcher.tsx, `--sw` in CSS): Map cyan, Goals gold, Records amber, Ascend pink, Tree violet, Lab blueprint blue (opens the Exploit Lab menu, pip when a research node is affordable), Menu lime; phone-only Core mint and Zones blue. Icons are the shared 12 px pixel set (`ascend`, `tree`, `expand` were added for this).
 - Desktop: a module rail along the bottom of the HUD (`Dock`): icon, label (scrambles once per hover), one live data line, letter key. A slot whose window wants a look gets a lit pip and a pulsing colour edge: Ascend ready, tree AP that can buy a node, logs recovered since Records was last opened (`nf-sw-v1`, per browser). Full screen is the last, icon-only slot.
-- Windows: the coloured title bar (`WinBar`) carries the window's icon, name, path, live line, a hop strip of every window (switch without closing; the new one CRT-prints in) and its key. Phone: `PhoneTabs`, a 4-across grid with icon, label and data line.
+- Windows: the coloured title bar (`WinBar`) carries the window's icon, name, path, live line, a hop strip of every window (switch without closing; the new one CRT-prints in) and its key. Hop icons sit on a dark rack in their own colours; hover or keyboard focus drops a card under the icon where the name types in with a caret, then its live line and key print in (instant under calm or reduced motion). Phone: `PhoneTabs`, a 4-across grid with icon, label and data line.
 - Live lines come from `swInfo()` (a plain function, called every render after the boot return, so not a hook).
 - Check: /mnt/project-files/portfolio/node-farm-switcher/shots.mjs.
 
@@ -386,7 +386,7 @@ styles app/camino/nodefarm-stress.css (`nf-st-*`), banner art `win-stress` from 
   that keeps perks, AP, the tree (not in Cold tree), Firmware, the protocol, lab research and learned scripts.
 - Ranks I, II and III clear when Aether, Starglass and Chrono open (`CH_TUNE.goals`). The best rank per test is kept forever
   and pays a small boost (`CH_TUNE.pay`) through Ascend and Handover.
-- Locked during a test: Ascend, Handover, tree buys and respec, perks, Firmware (`chOff(s, "prestige")`).
+- Locked during a test: Ascend, Handover, tree buys and respec, perks, Firmware, and the drone tree respec (`chOff(s, "prestige")`).
 - Leaving restores the stored run through `parseSave`, merges goals, logs, lifetime stats and learned scripts, and shifts
   the run's game-time stamps (`rebootAt`, `hand.cycleAt`) by the test's length. Lab, hangar and rig buys made in a test are undone.
 - Tests: Brownout (perks, unspent AP and goal bonuses off), Grounded (no Drones), Cold tree, Narrow band (tiers 1 to 3),
@@ -425,11 +425,21 @@ Rules for tests: they must not change game behaviour, and the keep/wipe rules in
 What each reset keeps and wipes is checked by `tests/nodefarm/resets.test.mjs` (runs in `npm run test:nodefarm`) and printed field by field by `scripts/nodefarm/reset-audit.mjs`. The confirm screens and the Handover ledger say the same thing; `scripts/nodefarm/reset-browser.mjs` checks those screens on a production build.
 
 - **Reboot** wipes Bytes, Multipliers and Multiplier tiers, banks the crash-dump Intel, and consumes an armed Logic bomb. Everything else stays.
-- **Ascend** wipes the run, Drones, Parts, Intel, Reboots (to the kit) and the production. It keeps goals, achievements, logs, perks, the tree, lab research and stock, scripts, the hangar's postings, Keys, Firmware, rig levels, the stress test ranks, arc progress and lifetime stats.
-- **Handover** wipes everything Ascend wipes, plus AP, perks (half with Perk cache), the tree (Imprint and Deep imprint keep some nodes), Mounted drives, Lab Intel and stock, rig levels (half with Rig memory), and the hangar's Parts and mod levels (part with Flight recorder and Black box). It keeps what Ascend keeps, minus the lab image, and zone event history.
+- **Ascend** wipes the run, Drones, Parts, Reboots and the production. After the first Handover it keeps Intel and running payloads, half the Drone levels, and starts with the kit (25 Reboots, 10 producers on CU to AE, a 3 minute Overclock). Before that, Reboots and production go to the plain start. It keeps goals, achievements, logs, perks, the tree, lab research and stock, scripts, the hangar's postings, Keys, Firmware, rig levels, the stress test ranks, arc progress and lifetime stats.
+- **Handover** wipes everything Ascend wipes, plus the run's AP (a quarter of the tree's AP comes back as a refund), most of the perks, most of the tree (the entry and upper path of each section stay, and the base Handover keeps are built in), Mounted drives, Lab Intel and stock, half the rig levels, and half the hangar's Parts and mod levels. Keeps: goals, secrets, logs, lifetime stats, lab research, learned scripts, the hangar's nodes and postings, the stress test ranks, zone event history, Keys, Firmware, and the note.
 - **Stress test start** puts the real run aside and starts a fresh one. **Leave** puts it back. Goals, achievements, logs, scripts, lifetime stats, cleared ranks and which tiers were pressed come along. Everything else from inside the test is discarded.
-- **Locked during a test:** Ascend, Handover, the prestige tree, perks and Firmware (buys and respec).
-- **Tree respec** refunds AP and clears Mounted drives. **Firmware respec** refunds Keys. **Drone tree respec** refunds Cores.
+- **Locked during a test:** Ascend, Handover, the prestige tree (buys and respec), perks, Firmware (buys and respec) and the drone tree respec.
+- **Tree respec** refunds AP and keeps Mounted drives (their slots return when the drive nodes are bought again). **Firmware respec** refunds Keys. **Drone tree respec** refunds Cores.
 - **Wipe save** replaces the save with a fresh one. **Import** and **restore** replace it, after a backup. Backups: Ascend, Handover, wipe, import, restore and stress test starts are `event` backups (newest 3).
 
 Dead stretch fix (balance round 4): after the Chrono gate moved to 2000 the mid-game replay found 15 h with no new zone between Voidsteel (8 h) and Chrono (23 h). The gates are now Starglass 800, Voidsteel 2500, Chrono 1000, which opens them at about 6 h, 12 h and 22 h (Drone bot; No-Drones 6, 15, 23), so the longest gap is about 10 h (7.5 h for the slow bot). A new opener inside the gap (a rig, feature or event) would still help; that is a content call for Nate.
+
+### Balance audit, round 5 (2026-11-13)
+
+Integration with #254 (two arc zones per Handover), #260 (Handover keeps), #264 (Scripts only, Drones post), #266 (one event system), caches and vent gone (#252). `NF_ASC_GAP=1`, `NF_HAND=6`, no events modelled:
+
+- Drone bot: first Ascend 2.5 h, Chrono 21.4 h, Origin 28.1 h, tree whole 32.4 h, Handovers 32.4, 36.4, 40.4, 44.4, 45.4, 49.4 h, Firmware 12/12 about 49 h.
+- No-Drones bot: 2.2 h, 22.7 h, 28.0 h, 32.5 h, Handovers 32.5 to 49.5 h, same cycles.
+- Cycles are now 4 h (one of 1 h), set by the hourly Ascend cap rather than by `apPerHand`, so that knob no longer moves them. Without the ending the game finishes near 50 h of bot time; END_TUNE (#229) is the tail to tune, not the Handover knobs.
+- Endgame Bytes from a bot save are path sensitive (posting one Drone tier alone swings an hour of Bytes 0.17x to 4.3x), so compare rates or lifetime at the same press count, not Bytes after N hours. Tick size 0.1 to 1 s agrees within 1% with Drones on.
+- sim.mjs had two `snap` definitions after two threads merged (syntax error); the second is now `snapOnce`.

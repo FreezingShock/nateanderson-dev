@@ -26,19 +26,14 @@ export function NfIcon({ name, large = false, responsive = false, className = ""
     return <span ref={watch} aria-hidden="true" className={`nf-ic${large ? " l" : ""}${responsive ? " r" : ""} ${className}`.trim()} style={{ ["--i" as string]: i } as CSSProperties} />;
 }
 
-// Older 32 px tier sheet (scripts/naos-art/nodefarm-tier-icons.py), kept as the fallback for a stat that has no 64 px sheet yet.
-// Row order below must match ROWS in that script.
-const TIER_ROWS = ["mult", "reboot", "copper", "silicon", "quartz", "aether", "runes", "starglass", "voidsteel", "chrono", "nebula", "pulsars", "singularity", "engrams", "paradox", "origin"] as const;
-
 // 64 px button sprites: one sheet per stat (six tiers across, eight frames down), drawn by scripts/naos-art/nodefarm-icons64.py
-// from scripts/naos-art/nodefarm_tiers64_<stat>.py. scripts/nodefarm/stamp-art.mjs checks every listed sheet exists and is 384 x 512.
+// from scripts/naos-art/nodefarm_tiers64_<stat>.py. scripts/nodefarm/stamp-art.mjs checks every button stat is listed and every
+// sheet exists at 384 x 512 (the old 32 px tiers-anim fallback is retired).
 const TIC64 = ["mult", "reboot", "copper", "silicon", "quartz", "aether", "runes", "starglass", "voidsteel", "chrono", "nebula", "pulsars", "singularity", "engrams", "paradox", "origin", "spores", "mycelium", "pollen", "bloom", "basalt", "magma", "geodes", "sunstone"] as const;
 
 export function NfTierIcon({ stat, tier }: { stat: string; tier: number }) {
     if ((TIC64 as readonly string[]).includes(stat)) {
         return <span ref={watch} aria-hidden="true" className="nf-tic nf-tic64" style={{ ["--t" as string]: tier, backgroundImage: `url(${nfArt(`tic-${stat}.webp`)})` } as CSSProperties} />;
     }
-    const r = TIER_ROWS.indexOf(stat as (typeof TIER_ROWS)[number]);
-    if (r < 0) return null;
-    return <span aria-hidden="true" className="nf-tic" style={{ ["--r" as string]: r, ["--t" as string]: tier } as CSSProperties} />;
+    return null;
 }

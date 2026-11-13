@@ -93,7 +93,9 @@ const pick = (s, paths) => Object.fromEntries(paths.map((p) => [p, p.split(".").
     check("Ascend keeps Mounted drive material", same(s.mounts, before.mounts));
     check("Ascend keeps the lifetime Ascend count (+1)", s.life.ascends === before.life.ascends + 1);
     check("Ascend wipes Bytes, Multipliers, Reboots and Multiplier tiers", s.bytes === 0 && s.mult === 1 && s.reboot !== before.reboot && s.bought.mult.every((x) => x === 0));
-    check("Ascend wipes the Intel (no Lab image in this save)", s.lab.intel === 0 && s.lab.run.length === 0);
+    // Intel and running payloads: wiped until the first Handover, kept after it (HAND_BASE, #260)
+    const afterFirst = before.hand.count > 0;
+    check(afterFirst ? "Ascend keeps Intel and running payloads (a Handover has happened)" : "Ascend wipes Intel and running payloads (no Handover yet)", afterFirst ? s.lab.intel === before.lab.intel && s.lab.run.length === before.lab.run.length : s.lab.intel === 0 && s.lab.run.length === 0);
     check("Ascend keeps the lab's stock and armed charges", same(s.lab.stock, before.lab.stock) && same(s.lab.armed, before.lab.armed));
     check("Ascend keeps the Standing orders (armed stats)", same(s.armed, before.armed));
     check("Ascend keeps rig levels and wipes meters", same(s.rig.lv, before.rig.lv) && s.rig.cache === 0);
@@ -116,9 +118,9 @@ const pick = (s, paths) => Object.fromEntries(paths.map((p) => [p, p.split(".").
     check("Handover keeps the zone event history", s.ze?.seen === before.ze.seen && same(s.ze.log, before.ze.log));
     check("Handover keeps Keys and Firmware, and ranks up the protocol it ran", s.hand.keys === before.hand.keys + keys && same(s.hand.fw, before.hand.fw) && s.hand.rank.wren === before.hand.rank.wren + 1);
     check("Handover keeps the stress test ranks", same(s.ch.done, before.ch.done));
-    check("Handover wipes the tree, AP and perks", s.tree.length < before.tree.length && s.ap <= before.ap + 1);
+    check("Handover keeps the tree's entry and upper path, a quarter of its AP, and half the perks", s.tree.length > 0 && s.tree.length < before.tree.length && Math.abs(s.ap - Math.floor(E.treeSpent(before) * 0.25)) <= 1 && Object.entries(before.perks).every(([k, v]) => (s.perks[k] ?? 0) <= Math.ceil(v / 2)), `tree ${before.tree.length} -> ${s.tree.length}, ap ${before.ap} -> ${s.ap}`);
     check("Handover wipes Mounted drives, Drones and Lab Intel/stock", s.mounts.length === 0 && s.drones.every((x) => x === 0) && s.lab.intel === 0 && Object.keys(s.lab.stock).length === 0);
-    check("Handover wipes the rig levels (no Rig memory here)", Object.values(s.rig.lv).every((x) => x === 0));
+    check("Handover keeps half the rig levels (rounded up)", Object.keys(before.rig.lv).every((k) => (s.rig.lv[k] ?? 0) <= Math.ceil((before.rig.lv[k] ?? 0) / 2)));
     check("Handover keeps the note and count", s.hand.count === before.hand.count + 1 && s.hand.notes.at(-1)?.text === "a note for the next operator");
     note("Handover resets the hangar's Parts and mod levels unless Flight recorder or Black box keeps half (the ledger now lists this)", s.dr.parts === before.dr.parts, `parts ${before.dr.parts} -> ${s.dr.parts}`);
 }
@@ -173,7 +175,7 @@ const pick = (s, paths) => Object.fromEntries(paths.map((p) => [p, p.split(".").
     const back = E.respec(s);
     results.tables.respec_tree = verdicts(before, s, "Tree respec").rows;
     check("tree respec refunds the AP the nodes cost", back > 0 && s.ap === before.ap + back);
-    note("tree respec also clears Mounted drives (code: respec() sets mounts = [])", s.mounts.length === 0);
+    check("tree respec keeps Mounted drives", same(s.mounts, before.mounts));
 }
 {
     const s = rich(); const before = rich();
@@ -195,7 +197,7 @@ const pick = (s, paths) => Object.fromEntries(paths.map((p) => [p, p.split(".").
     const treeBack = E.respec(s);
     check("tree respec is refused during a stress test", treeBack === 0);
     const droneBack = E.respecDrones(s);
-    note("drone tree respec during a test (the window does not list the drone tree as locked)", droneBack === 0, `refunded ${droneBack} Cores inside the test`);
+    check("drone tree respec is refused during a stress test", droneBack === 0, `refunded ${droneBack} Cores inside the test`);
     const perkOK = E.buyPerk(s, "scanner");
     check("perks are refused during a stress test", !perkOK);
 }
@@ -211,7 +213,7 @@ const pick = (s, paths) => Object.fromEntries(paths.map((p) => [p, p.split(".").
 
 // ---- 8. Save round trip (export, then import or restore a backup)
 {
-    const s = rich();
+    const s = E.parseSave(JSON.stringify(rich())); // a current save: the legacy migrations have already run
     const back = E.parseSave(E.exportSave(s));
     const res = verdicts(s, back, "Export then import");
     results.tables.roundtrip = res.rows;

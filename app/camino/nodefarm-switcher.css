@@ -83,19 +83,50 @@
     @media (max-width: 1099px) { .ctos .nf-sw-cap { display: none; } .ctos .nf-hud .nf-sw { grid-template-columns: repeat(var(--n), minmax(0, 1fr)) auto; } }
 
     /* ---- window title bar */
-    .ctos .nf-win-bar.nf-sw-bar { gap: 0; padding-left: 0; min-height: 40px; background: var(--sw); color: #0a0a0a; box-shadow: 0 1px 0 #0a0a0a; }
+    .ctos .nf-win-bar.nf-sw-bar { z-index: 12; gap: 0; padding-left: 0; min-height: 40px; background: var(--sw); color: #0a0a0a; box-shadow: 0 1px 0 #0a0a0a; }
     .ctos .nf-sw-bar > span { flex: none; }
     .ctos .nf-sw-bar > .nf-sw-bar-t { flex: 1; display: flex; align-items: baseline; gap: 12px; min-width: 0; padding: 0 14px; overflow: hidden; white-space: nowrap; }
     .ctos .nf-sw-bar-ic { display: grid; place-items: center; align-self: stretch; width: 44px; background: #0a0a0a; color: var(--sw); line-height: 0; }
     .ctos .nf-sw-bar-t b { font: 700 13px/1 var(--cm-mono); letter-spacing: .18em; text-transform: uppercase; }
     .ctos .nf-sw-bar-p { font: 600 11px/1 var(--cm-mono); letter-spacing: .06em; text-transform: none; opacity: .62; overflow: hidden; text-overflow: ellipsis; }
     .ctos .nf-sw-bar-r { align-self: stretch; display: grid; place-items: center; padding: 0 14px; border-left: 1px solid #0a0a0a33; font: 700 11px/1 var(--cm-mono); letter-spacing: .1em; text-transform: uppercase; white-space: nowrap; font-variant-numeric: tabular-nums; }
-    .ctos .nf-sw-hop { display: flex; align-self: stretch; border-left: 1px solid #0a0a0a33; }
-    .ctos .nf-sw-hb { position: relative; display: grid; place-items: center; width: 36px; padding: 0; background: transparent; border: 0; color: #0a0a0a; opacity: .5; cursor: pointer; line-height: 0; transition: opacity 120ms steps(3, end), background-color 120ms steps(3, end); }
-    .ctos .nf-sw-hb:hover { opacity: 1; background: #0a0a0a22; }
-    .ctos .nf-sw-hb:focus-visible { opacity: 1; outline: 2px solid #0a0a0a; outline-offset: -4px; }
-    .ctos .nf-sw-hb[data-on] { opacity: 1; background: #0a0a0a; color: var(--sw); cursor: default; }
-    .ctos .nf-sw-hb[data-hot]:not([data-on])::after { content: ""; position: absolute; right: 6px; top: 7px; width: 5px; height: 5px; background: #0a0a0a; animation: nfSwPip 1s steps(2, end) infinite; }
+    /* hop strip: a dark rack where every window shows in its own colour; hover types the name into a card below */
+    .ctos .nf-sw-hop { display: flex; align-self: stretch; background: #0a0a0a; border-left: 1px solid #0a0a0a; }
+    .ctos .nf-sw-hb { position: relative; display: grid; place-items: center; width: 36px; padding: 0; background: transparent; border: 0; color: var(--sw); cursor: pointer; line-height: 0; }
+    .ctos .nf-sw-hb > svg { opacity: .55; filter: saturate(.55); transition: opacity 120ms steps(3, end), filter 120ms steps(3, end), translate 120ms steps(3, end); }
+    .ctos .nf-sw-hb::before { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 2px; background: var(--sw); transform: scaleX(0); transition: transform 140ms steps(4, end); }
+    .ctos .nf-sw-hb:hover, .ctos .nf-sw-hb:focus-visible { background: color-mix(in srgb, var(--sw) 16%, #0a0a0a); }
+    .ctos .nf-sw-hb:hover > svg, .ctos .nf-sw-hb:focus-visible > svg { opacity: 1; filter: drop-shadow(0 0 5px color-mix(in srgb, var(--sw) 75%, transparent)); translate: 0 -1px; }
+    .ctos .nf-sw-hb:hover::before, .ctos .nf-sw-hb:focus-visible::before { transform: scaleX(1); }
+    .ctos .nf-sw-hb:focus-visible { outline: 2px solid var(--sw); outline-offset: -4px; }
+    .ctos .nf-sw-hb[data-on] { background: var(--sw); color: #0a0a0a; cursor: default; }
+    .ctos .nf-sw-hb[data-on] > svg { opacity: 1; filter: none; translate: none; }
+    .ctos .nf-sw-hb[data-hot]:not([data-on])::after { content: ""; position: absolute; right: 5px; top: 6px; width: 5px; height: 5px; background: var(--sw); box-shadow: 0 0 6px var(--sw); animation: nfSwPip 1s steps(2, end) infinite; }
+
+    .ctos .nf-sw-tip {
+        position: absolute; z-index: 5; top: calc(100% + 6px); left: 50%; translate: -50% 0;
+        display: grid; grid-template-columns: auto auto; align-items: center; gap: 6px 12px;
+        min-width: 150px; padding: 10px 12px 9px; background: #0b0b0b; border: 1px solid color-mix(in srgb, var(--sw) 55%, #1c1c1c); border-top: 2px solid var(--sw);
+        box-shadow: 0 0 0 4px #000a, 0 12px 30px #000c; text-align: left; line-height: 1; white-space: nowrap; pointer-events: none;
+        visibility: hidden; opacity: 0; clip-path: inset(0 0 100% 0);
+    }
+    /* the first and last few cards hang inward so they never leave the window */
+    .ctos .nf-sw-hb:nth-last-child(-n+3) .nf-sw-tip { left: auto; right: -1px; translate: none; }
+    .ctos .nf-sw-tip::before { content: ""; position: absolute; top: -8px; left: 50%; margin-left: -4px; border: 4px solid transparent; border-bottom-color: var(--sw); }
+    .ctos .nf-sw-hb:nth-last-child(-n+3) .nf-sw-tip::before { left: auto; right: 13px; margin: 0; }
+    .ctos .nf-sw-tip b { grid-column: 1 / -1; justify-self: start; position: relative; display: block; overflow: hidden; width: calc(var(--len) * (1ch + .16em) + 2px); padding-right: 10px; font: 700 13px/1 var(--cm-mono); letter-spacing: .16em; text-transform: uppercase; color: var(--sw); }
+    .ctos .nf-sw-tip b::after { content: ""; position: absolute; right: 0; top: 0; bottom: 0; width: 7px; background: var(--sw); }
+    .ctos .nf-sw-tip-r { font: 500 11px/1 var(--cm-mono); letter-spacing: .04em; color: #cfcfcf; font-variant-numeric: tabular-nums; }
+    .ctos .nf-sw-tip kbd { justify-self: end; font: 600 11px/1 var(--cm-mono); padding: 3px 5px 2px; border: 1px solid color-mix(in srgb, var(--sw) 60%, #1c1c1c); color: var(--sw); }
+
+    @keyframes nfSwTipIn { from { clip-path: inset(0 0 100% 0); } to { clip-path: inset(0 0 0 0); } }
+    @keyframes nfSwType { from { width: 0; } }
+    @keyframes nfSwCaret { 50% { opacity: 0; } }
+    @keyframes nfSwLine { from { opacity: 0; translate: -4px 0; } }
+    .ctos .nf-sw-hb:hover .nf-sw-tip, .ctos .nf-sw-hb:focus-visible .nf-sw-tip { visibility: visible; opacity: 1; clip-path: inset(0 0 0 0); animation: nfSwTipIn 110ms steps(4, end) both; }
+    .ctos .nf-sw-hb:hover .nf-sw-tip b, .ctos .nf-sw-hb:focus-visible .nf-sw-tip b { animation: nfSwType calc(var(--len) * 34ms) steps(var(--len), end) 90ms both; }
+    .ctos .nf-sw-hb:hover .nf-sw-tip b::after, .ctos .nf-sw-hb:focus-visible .nf-sw-tip b::after { animation: nfSwCaret .7s steps(1, end) calc(90ms + var(--len) * 34ms) infinite; }
+    .ctos .nf-sw-hb:hover .nf-sw-tip-r, .ctos .nf-sw-hb:hover .nf-sw-tip kbd, .ctos .nf-sw-hb:focus-visible .nf-sw-tip-r, .ctos .nf-sw-hb:focus-visible .nf-sw-tip kbd { animation: nfSwLine 120ms steps(3, end) calc(110ms + var(--len) * 34ms) both; }
     .ctos .nf-sw-bar > .nf-sw-k { align-self: center; margin: 0 10px; background: transparent; border-color: #0a0a0a55; color: #0a0a0a; }
     .ctos .nf-sw-bar .nf-win-x { height: auto; align-self: stretch; width: 44px; background: #0a0a0a; }
     .ctos .nf-sw-bar .nf-win-x i::before, .ctos .nf-sw-bar .nf-win-x i::after { background: var(--sw); }
@@ -147,6 +178,7 @@
 
 @media (prefers-reduced-motion: reduce) {
     .ctos .nf-sw-pip, .ctos .nf-sw-b[data-hot]::before, .ctos .nf-sw-hb[data-hot]::after { animation: none; }
+    .ctos .nf-sw-hb .nf-sw-tip, .ctos .nf-sw-hb .nf-sw-tip *, .ctos .nf-sw-hb .nf-sw-tip b::after { animation: none !important; }
 }
 
 /* nine or ten windows in the rail: the key badge would cut the label and the status line, so it shows on hover and focus only */
