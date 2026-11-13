@@ -22,7 +22,7 @@
 .ctos .nf-hg-fly .nf-sp-d { filter: drop-shadow(0 6px 0 #0008); }
 /* docked Drones sit dim in their cradle; posted Drones fly sorties out of the top and come back */
 .ctos .nf-hg-berth[data-mode="dock"] .nf-hg-fly { opacity: .55; }
-.ctos .nf-hg-berth[data-mode="out"] .nf-hg-fly { animation: nfHgSortie 6s cubic-bezier(.5, 0, .5, 1) infinite; animation-delay: calc(var(--k) * -1s); }
+.ctos .nf-hg-berth[data-mode="out"] .nf-hg-fly { animation: nfHgSortie var(--dur, 6s) cubic-bezier(.5, 0, .5, 1) infinite; animation-delay: calc(var(--k) * -0.8s); }
 .ctos .nf-hg-berth[data-mode="out"]::before { content: ""; position: absolute; left: 50%; top: 0; width: 2px; height: 60%; margin-left: -1px; background: linear-gradient(var(--z), transparent); opacity: .55; animation: nfHgBeam 6s ease-in-out infinite; animation-delay: calc(var(--k) * -1s); }
 .ctos .nf-hg-tag { position: absolute; left: 50%; bottom: 6%; translate: -50% 0; padding: 2px 6px; background: #05070ae6; border: 1px solid color-mix(in srgb, var(--z) 60%, #283244); color: var(--z); font: 700 10px/1.2 var(--cm-mono); letter-spacing: .1em; text-transform: uppercase; white-space: nowrap; }
 .ctos .nf-hg-berth[data-mode="empty"] .nf-hg-tag { color: #5a6478; border-color: #283244; }

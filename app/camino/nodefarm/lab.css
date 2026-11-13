@@ -187,3 +187,14 @@
 .ctos .nf-row.nf-lab::before { image-rendering: pixelated; opacity: .55; }
 /* the recipe fact line on a research node's card */
 .nf-tm .nf-tm-spec { margin: 0; padding: 6px 10px; font: 600 var(--cm-ctos-t-micro)/1.5 var(--cm-mono); letter-spacing: .04em; color: #b7c9e4; background: #001a40; border-left: 2px solid var(--lab-warn, #f9f1a5); }
+
+/* Compile packets: while a payload is being compiled, three packets run along the bottom of its queue row toward the stock
+   end (lab.tsx `nf-lab-pk`). Decoration only, so low-effects and reduced motion hide them. */
+.ctos .nf-lab-q li[data-active] { position: relative; }
+.ctos .nf-lab-pk { position: absolute; left: 0; right: 0; bottom: 0; height: 3px; overflow: hidden; pointer-events: none; }
+.ctos .nf-lab-pk b { position: absolute; top: 0; width: 8px; height: 3px; background: var(--c); box-shadow: 0 0 6px var(--c); animation: nfLabPk 1.6s linear infinite; }
+.ctos .nf-lab-pk b:nth-child(2) { animation-delay: -0.53s; }
+.ctos .nf-lab-pk b:nth-child(3) { animation-delay: -1.07s; }
+@keyframes nfLabPk { from { left: -8px; } to { left: 100%; } }
+body.nf-lowfx .ctos .nf-lab-pk { display: none; }
+@media (prefers-reduced-motion: reduce) { .ctos .nf-lab-pk { display: none; } }

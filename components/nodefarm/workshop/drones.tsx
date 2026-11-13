@@ -160,8 +160,10 @@ function Berths({ s }: { s: State }) {
                 const lvl = s.drones[k];
                 const post = postOf(s, k);
                 const mode = lvl <= 0 ? "empty" : post ? "out" : "dock";
+                // a sortie's cycle follows the real press rate: faster postings fly faster (2.2 s at the fastest, 6 s at the slowest)
+                const pace = post ? Math.max(2.2, Math.min(6, 6 / Math.sqrt(Math.max(1, droneRate(s, k) * postX(s, k))))) : 6;
                 return (
-                    <span key={k} className="nf-hg-berth" data-mode={mode} style={{ ["--c" as string]: DRONE_COLOURS[k], ["--z" as string]: post ? statDef(post).color : DRONE_COLOURS[k], ["--k" as string]: k } as CSSProperties}>
+                    <span key={k} className="nf-hg-berth" data-mode={mode} style={{ ["--c" as string]: DRONE_COLOURS[k], ["--z" as string]: post ? statDef(post).color : DRONE_COLOURS[k], ["--k" as string]: k, ["--dur" as string]: `${pace.toFixed(2)}s` } as CSSProperties}>
                         {lvl > 0 && <span className="nf-hg-fly"><span className="nf-sp-d" data-on="" style={{ ["--k" as string]: k } as CSSProperties} /></span>}
                         <span className="nf-hg-tag" data-long={lvl <= 0 || !post ? "" : undefined} data-short={lvl <= 0 ? `T${k + 1}` : "DCK"}>{lvl <= 0 ? `T${k + 1} empty` : post ? `→ ${statDef(post).short}` : "docked"}</span>
                     </span>

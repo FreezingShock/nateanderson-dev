@@ -169,6 +169,7 @@ export function LabZone({ s, d, open, onToggle, onCompile, onCancel, onDeploy, o
                                                 <li key={i} data-active={i === 0 ? "" : undefined} style={{ ["--c" as string]: SEC_COL[p.sec], ["--f" as string]: i === 0 ? 1 - q.left / total : 0 } as CSSProperties}>
                                                     <span className="nf-lab-qn">{i === 0 ? "gcc" : "wait"} {p.id}.c</span>
                                                     <i className="nf-lab-qbar" aria-hidden="true" />
+                                                    {i === 0 && <i className="nf-lab-pk" aria-hidden="true"><b /><b /><b /></i>}
                                                     <span className="nf-lab-qt">{fmtTime(i === 0 ? q.left : total)}</span>
                                                     <button type="button" className="nf-lab-x" onClick={() => onCancel(i)} aria-label={`Cancel ${p.name} and refund it`}><i aria-hidden="true" /></button>
                                                 </li>

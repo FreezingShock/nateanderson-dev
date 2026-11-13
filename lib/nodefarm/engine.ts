@@ -1565,7 +1565,7 @@ export function checkGoals(s: State): { id: string; name: string; secret?: boole
 // nodes unlock a recipe. Recipes compile (a short timer, in a queue, also while away) into payloads you stock and deploy:
 // timed buffs, one-shot charges and instant effects. Opens with Silicon. See docs/node-farm.md "Exploit Lab".
 export type LabSec = "exploits" | "malware" | "infra";
-export type PayloadId = "sniffer" | "worm" | "logicbomb" | "ransom" | "kernel" | "shellcode" | "rootkit" | "trojan" | "botnet" | "zeroclick" | "polymorph" | "beacon";
+export type PayloadId = "sniffer" | "worm" | "logicbomb" | "ransom" | "kernel" | "shellcode" | "sqlinject" | "rootkit" | "trojan" | "botnet" | "zeroclick" | "polymorph" | "beacon" | "dropper";
 export type PayloadKind = "buff" | "charge" | "instant";
 export interface PayloadDef {
     id: PayloadId;
@@ -1596,7 +1596,7 @@ export const LAB_TUNE = {
     slots: 2, // buffs running at once
     stockMax: 5, // stock per payload
     maxRun: 3600, // a buff's time left never goes past this
-    nodeCost: [80, 600, 600, 5000, 5000, 30000, 60000, 60000], // Intel per slot (slots 6 and 7 are the late pair past each keystone)
+    nodeCost: [80, 600, 600, 5000, 5000, 30000, 60000, 60000, 120000, 120000], // Intel per slot (6 and 7: the late pair past each keystone; 8 and 9: the tail past those)
     labScale: 1, // scales every research node price (pacing knob)
     opensAt: "silicon" as StatId,
 };
@@ -1619,6 +1619,8 @@ export const PAYLOADS: PayloadDef[] = [
     P("polymorph", "malware", "Polymorph", "instant", "Doubles the time left on every running payload.", "", 900, 0, 1, 600, { stat: "aether", secs: 300, floor: 20 }),
     P("shellcode", "exploits", "Shellcode", "buff", "Compiles run x3 for 10 minutes.", "SHELL", 900, 600, 2, 700, { stat: "quartz", secs: 240, floor: 150 }),
     P("beacon", "malware", "Beacon", "charge", "Arms your next Ascend: every Drone keeps its level.", "BEACON", 1200, 0, 1, 900, { stat: "runes", secs: 240, floor: 8 }),
+    P("sqlinject", "exploits", "SQL injection", "buff", "Intel x3 for 10 minutes.", "SQLI", 600, 600, 2, 500, { stat: "bytes", secs: 300, floor: 2e4 }),
+    P("dropper", "malware", "Dropper", "instant", "Hands the hangar 400 Parts at once.", "", 1200, 0, 400, 450, { stat: "silicon", secs: 150, floor: 50 }),
 ];
 const PAY_BY = new Map(PAYLOADS.map((p) => [p.id, p]));
 export const payload = (id: PayloadId) => PAY_BY.get(id)!;
@@ -1653,7 +1655,7 @@ export interface LabNode {
     entry?: boolean;
 }
 // Each section is a small diamond: entry, two paths of two, keystone. 0 entry | 1, 3 upper | 2, 4 lower | 5 keystone.
-const LAB_SLOTS: [number, number, number[]][] = [[2.3, 0, []], [3.9, -1.1, [0]], [3.9, 1.1, [0]], [5.7, -1.25, [1]], [5.7, 1.25, [2]], [7.5, 0, [3, 4]], [9.2, -0.9, [5]], [9.2, 0.9, [5]]];
+const LAB_SLOTS: [number, number, number[]][] = [[2.3, 0, []], [3.9, -1.1, [0]], [3.9, 1.1, [0]], [5.7, -1.25, [1]], [5.7, 1.25, [2]], [7.5, 0, [3, 4]], [9.2, -0.9, [5]], [9.2, 0.9, [5]], [11, -1.3, [6]], [11, 1.3, [7]]];
 type LabRow = [slot: number, id: string, kind: TreeKind, name: string, blurb: string, flavor: string, fx: LabFx];
 const LAB_ARMS: Record<LabSec, LabRow[]> = {
     exploits: [
@@ -1665,6 +1667,8 @@ const LAB_ARMS: Record<LabSec, LabRow[]> = {
         [5, "rx_kernel", "keystone", "Kernel exploit", "Payload: Kernel exploit. Everything x2 for 5 minutes.", "Ring zero. For five minutes nothing on this node says no.", { recipe: "kernel" }],
         [6, "rx_shellcode", "minor", "Shellcode", "Payload: Shellcode. Compiles run x3 for 10 minutes.", "Hand-written machine code. The compiler stops arguing.", { recipe: "shellcode" }],
         [7, "rx_stockpile", "notable", "Stockpile", "Every payload keeps 3 more in stock.", "Nobody leaves a good payload on the shelf.", { stock: 3 }],
+        [8, "rx_sqlinject", "minor", "SQL injection", "Payload: SQL injection. Intel x3 for 10 minutes.", "Asks the database nicely, then nicely again, until it answers with everything.", { recipe: "sqlinject" }],
+        [9, "rx_fuzzer", "notable", "Fuzzer", "Compiles run 50% faster, and the queue holds 1 more.", "Feeds it garbage until something breaks. Then it writes down why.", { compile: 0.5, queue: 1 }],
     ],
     malware: [
         [0, "rx_rootkit", "minor", "Rootkit", "Payload: Rootkit. Copper, Silicon and Quartz x1.75 for 15 minutes.", "Dig in under the forge. It runs hotter when it can't see you.", { recipe: "rootkit" }],
@@ -1675,6 +1679,8 @@ const LAB_ARMS: Record<LabSec, LabRow[]> = {
         [5, "rx_polymorph", "keystone", "Polymorph", "Payload: Polymorph. Doubles the time left on every running payload.", "It wears whatever is already running and makes it last.", { recipe: "polymorph" }],
         [6, "rx_beacon", "minor", "Beacon", "Payload: Beacon. Arms your next Ascend: every Drone keeps its level.", "Phones home once, right before the wipe. Remembers where everything was.", { recipe: "beacon" }],
         [7, "rx_packer", "notable", "Packer", "Malware buffs are 50% stronger.", "Compressed, encrypted, and it hits harder once it unpacks.", { potency: "malware" }],
+        [8, "rx_dropper", "minor", "Dropper", "Payload: Dropper. Hands the hangar 400 Parts at once.", "Small, quiet, and it always brings a parcel.", { recipe: "dropper" }],
+        [9, "rx_sandbox", "notable", "Sandbox", "Exploits buffs last twice as long.", "Lets the exploits run long enough to be sure they worked.", { longer: "exploits" }],
     ],
     infra: [
         [0, "rx_tap", "minor", "Fiber tap", "Intel x2.", "Spliced a second line into the trunk. Twice the gossip.", { intel: 1 }],
@@ -1685,6 +1691,8 @@ const LAB_ARMS: Record<LabSec, LabRow[]> = {
         [5, "rx_rootshell", "keystone", "Root shell", "Intel x3 and one more buff slot (4).", "Prompt ends in a hash now. The whole lab answers to it.", { intel: 2, slots: 1 }],
         [6, "rx_archive", "minor", "Cold archive", "Keep a quarter of your Intel through every Ascend.", "Nothing gets deleted. It gets moved somewhere colder.", { intelKeep: 0.25 }],
         [7, "rx_mirror", "notable", "Mirror port", "Intel x1.5.", "A second port on the trunk, mirrored and quietly billing.", { intel: 0.5 }],
+        [8, "rx_vault", "minor", "Dump vault", "Reboot and event Intel +100% on top of the dump multipliers.", "Every crash goes in a vault now. Nothing gets thrown away.", { dumps: 1 }],
+        [9, "rx_quorum", "notable", "Quorum", "The compile queue holds 3 more.", "Three jobs have to agree before anything gets dropped. Slower, fuller, safer.", { queue: 3 }],
     ],
 };
 const LAB_ORDER: LabSec[] = ["exploits", "malware", "infra"];
@@ -1781,19 +1789,19 @@ export const compileSecs = (s: State, p: PayloadDef) => p.compile / ((1 + labFx(
 /** Intel per second right now. Uses the log of Bytes/s so it stays steady from one era to the next. */
 export function intelRate(s: State, bytesPerSec = derive(s).bytesPerSec): number {
     if (!s.lab.seen) return 0;
-    return LAB_TUNE.intelK * Math.pow(Math.log10(1 + Math.max(0, bytesPerSec)), LAB_TUNE.intelPow) * (1 + labFx(s).intel) * (1 + 2 * protoK(s, "tamsin"));
+    return LAB_TUNE.intelK * Math.pow(Math.log10(1 + Math.max(0, bytesPerSec)), LAB_TUNE.intelPow) * (1 + labFx(s).intel) * labBuffs(s).intel * (1 + 2 * protoK(s, "tamsin"));
 }
 /** What compiling one payload costs right now. */
 export function payloadCost(s: State, p: PayloadDef, d: Derived = derive(s)) {
     const rate = p.mat.stat === "bytes" ? d.bytesPerSec : (d.rates as Record<string, number>)[p.mat.stat] ?? 0;
-    const base = intelRate(s, d.bytesPerSec) / (1 + labFx(s).intel) / (1 + 2 * protoK(s, "tamsin"));
+    const base = intelRate(s, d.bytesPerSec) / (1 + labFx(s).intel) / labBuffs(s).intel / (1 + 2 * protoK(s, "tamsin"));
     return { intel: Math.max(10, Math.round(base * p.intel)), mat: p.mat.stat, amount: Math.max(p.mat.floor, rate * p.mat.secs) };
 }
 /** The materials Rootkit and Ransomware work on. Aether and the deep ones are left alone: Aether gates Ascend, and paying it out halved the whole game in the sim. */
 export const FORGE_MATS: readonly MatId[] = ["copper", "silicon", "quartz"];
 /** Buff multipliers from running payloads, for derive. */
 export function labBuffs(s: State) {
-    const o = { bytes: 1, mult: 1, forge: 1, global: 1, drone: 1, compile: 1 };
+    const o = { bytes: 1, mult: 1, forge: 1, global: 1, drone: 1, compile: 1, intel: 1 };
     for (const r of s.lab.run) {
         const p = PAY_BY.get(r.id);
         if (!p || r.left <= 0) continue;
@@ -1804,6 +1812,7 @@ export function labBuffs(s: State) {
         else if (p.id === "rootkit") o.forge *= x;
         else if (p.id === "botnet") o.drone *= x;
         else if (p.id === "shellcode") o.compile *= x;
+        else if (p.id === "sqlinject") o.intel *= x;
     }
     return o;
 }
@@ -1875,6 +1884,7 @@ export function deploy(s: State, id: PayloadId): { ok: boolean; paid?: Partial<R
     if (id === "ransom") return { ok: true, paid: payout(s, p.v, FORGE_MATS) };
     if (id === "trojan") { s.overclock = Math.max(s.overclock, overclockSecs(s)); return { ok: true }; }
     if (id === "polymorph") { for (const r of s.lab.run) if (r.left > 0) r.left = Math.min(LAB_TUNE.maxRun, r.left * 2); return { ok: true }; }
+    if (id === "dropper") { s.dr.parts = Math.min(CAP, s.dr.parts + p.v); return { ok: true }; }
     return { ok: true };
 }
 /** What the owned research nodes add up to, as label and value rows for the research tree readout. */
@@ -1956,7 +1966,7 @@ export const DRONE_TUNE = {
     // service (attempted presses on a zone) needed for mastery ranks I..V, and each rank's output multiplier
     rankAt: [500, 10000, 200000, 4000000, 80000000],
     rankX: [1, 1.05, 1.1, 1.16, 1.23, 1.35],
-    nodeCost: [1, 2, 2, 4, 4, 8, 12, 16], // Cores per tree slot (slots 6 and 7: the late pair past each keystone)
+    nodeCost: [1, 2, 2, 4, 4, 8, 12, 16, 20, 24], // Cores per tree slot (6 and 7: the late pair past each keystone; 8 and 9: the tail past those)
 };
 /** Zones a Drone can work: every button stat except Reboots, in chain order. */
 export const POSTABLE: readonly ButtonStat[] = ["mult", ...MATS];
@@ -2022,6 +2032,8 @@ const DRONE_ARMS: Record<DroneSec, DroneRow[]> = {
         [5, "dx_hivemind", "keystone", "Hivemind", "Drones press twice as fast, and every mastery rank adds 1% more.", "Six frames, one thought. The thought is mostly about buttons.", { speed: 1, rankSpeed: 0.01 }],
         [6, "dx_redline", "minor", "Redline", "Every mastery rank adds 2% more to Drone speed.", "Pushed past the sticker. The sticker was a suggestion.", { rankSpeed: 0.02 }],
         [7, "dx_wingmen", "notable", "Wingmen", "Every Drone presses 20% faster for each Drone on a posting.", "They fly tighter the more wings are out there.", { formation: 0.2 }],
+        [8, "dx_vector", "minor", "Vectoring", "Every Drone presses 30% faster.", "Thrust goes where the work is. Mostly down.", { speed: 0.3 }],
+        [9, "dx_thrust", "notable", "Thrust bank", "Every mastery rank adds 3% more to Drone speed.", "Every rank they earn, they fly a little harder about it.", { rankSpeed: 0.03 }],
     ],
     dispatch: [
         [0, "dx_orders", "minor", "Field orders", "Posted Drones press x4 on their zone.", "Clear orders, one zone each. Nobody wanders.", { postX: 1 }],
@@ -2032,6 +2044,8 @@ const DRONE_ARMS: Record<DroneSec, DroneRow[]> = {
         [5, "dx_garrison", "keystone", "Garrison", "Posting speed +2x, and mastery builds 50% faster.", "Stationed for good. They know every creak of the zone.", { postX: 2, svc: 0.5 }],
         [6, "dx_groundcrew", "minor", "Ground crew", "Mastery builds 25% faster.", "Someone has to keep the zones tidy between shifts.", { svc: 0.25 }],
         [7, "dx_fullmast", "notable", "Full mast", "Each posting builds all of its mastery in the next zone up the chain.", "The mast talks to the zone next door, and the zone next door listens.", { relay: 1 }],
+        [8, "dx_depot", "minor", "Depot", "Mastery builds 50% faster.", "A depot near every zone. The crews stop walking back.", { svc: 0.5 }],
+        [9, "dx_barrage", "notable", "Barrage", "Posting speed +1x on every Drone.", "Every posting goes out twice as loud.", { postX: 1 }],
     ],
     salvage: [
         [0, "dx_scrap", "minor", "Scrapper", "Parts x2.", "Every press sheds a little metal. Now somebody sweeps it up.", { parts: 1 }],
@@ -2042,6 +2056,8 @@ const DRONE_ARMS: Record<DroneSec, DroneRow[]> = {
         [5, "dx_foundry", "keystone", "Foundry", "Every mod level adds +1% to everything.", "The hangar builds its own parts now. Then it builds better ones.", { modGlobal: 0.01 }],
         [6, "dx_sparebin", "minor", "Spare bin", "Mods cost 30% less.", "Every bolt in the bin is the right size. Mostly.", { modCost: 0.3 }],
         [7, "dx_modbay", "notable", "Mod bay", "Every mod level adds +0.5% to everything.", "A bay just for mods. It keeps them tuned between runs.", { modGlobal: 0.005 }],
+        [8, "dx_forge", "minor", "Forge", "Parts +50%.", "Scrap comes in, parts come out, and the rest gets melted down again.", { parts: 0.5 }],
+        [9, "dx_vault", "notable", "Parts vault", "Drones cost 30% less Aether.", "The supplier now delivers to the back door.", { droneCost: 0.3 }],
     ],
 };
 const DRONE_ORDER: DroneSec[] = ["flight", "dispatch", "salvage"];

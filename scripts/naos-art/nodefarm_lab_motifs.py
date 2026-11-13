@@ -302,6 +302,77 @@ def rx_mirror(s):
     s.dot(0.72, 0.5, 0.04, "glow")
 
 
+# ---------------------------------------------------------------------------------------------- tail (slots 8 and 9)
+@motif
+def rx_sqlinject(s):
+    # a database cylinder with a tiny prompt pushing a row out of it
+    s.ell(0.2, 0.08, 0.8, 0.26, "metal")
+    s.rect(0.2, 0.17, 0.8, 0.7, "main")
+    s.ell(0.2, 0.62, 0.8, 0.8, "metal")
+    s.line([(0.2, 0.36), (0.8, 0.36)], 0.03, "dark")
+    s.line([(0.2, 0.52), (0.8, 0.52)], 0.03, "dark")
+    s.rect(0.34, 0.84, 0.66, 0.92, WARN, True)
+    s.poly([(0.62, 0.44), (0.9, 0.44), (0.84, 0.36), (0.9, 0.44), (0.84, 0.52)], "acc", True)
+
+
+@motif
+def rx_fuzzer(s):
+    # a jagged signal fed in one end and cracking open a box at the other
+    s.line([(0.06, 0.5), (0.2, 0.5), (0.28, 0.24), (0.36, 0.76), (0.44, 0.34), (0.52, 0.5)], 0.05, "acc")
+    s.rect(0.56, 0.22, 0.94, 0.8, "metal")
+    s.rect(0.6, 0.28, 0.9, 0.74, NAVY)
+    s.line([(0.66, 0.4), (0.76, 0.5), (0.66, 0.6), (0.84, 0.46)], 0.04, LIME)
+    s.dot(0.8, 0.66, 0.03, PALE, True)
+
+
+@motif
+def rx_dropper(s):
+    # a small crate with a parcel label dropping through a hatch
+    s.rect(0.08, 0.7, 0.92, 0.9, "dark")
+    s.rect(0.08, 0.7, 0.92, 0.76, "metal")
+    s.rect(0.26, 0.2, 0.74, 0.58, "main")
+    s.rect(0.34, 0.3, 0.66, 0.46, PALE)
+    s.line([(0.3, 0.36), (0.7, 0.36)], 0.02, "dark", True)
+    s.poly([(0.42, 0.04), (0.58, 0.04), (0.5, 0.14)], "acc", True)
+
+
+@motif
+def rx_sandbox(s):
+    # a glass box with a process running slowly inside, held in time
+    s.rect(0.1, 0.1, 0.9, 0.9, "metal")
+    s.rect(0.16, 0.16, 0.84, 0.84, NAVY)
+    s.ring(0.3, 0.3, 0.7, 0.7, 0.06, AQUA)
+    s.arc(0.3, 0.3, 0.7, 0.7, 300, 60, 0.07, "acc")
+    s.dot(0.5, 0.5, 0.05, PALE)
+    s.rect(0.22, 0.82, 0.78, 0.88, "dark", True)
+
+
+@motif
+def rx_vault(s):
+    # a round vault door with its wheel, dumps stacked behind it
+    s.rect(0.06, 0.1, 0.36, 0.9, "dark")
+    for i in range(4):
+        s.rect(0.1, 0.18 + i * 0.18, 0.32, 0.3 + i * 0.18, "metal", True)
+    s.ring(0.42, 0.22, 0.94, 0.78, 0.07, "metal")
+    s.ell(0.5, 0.3, 0.86, 0.7, "dark")
+    s.ring(0.5, 0.3, 0.86, 0.7, 0.04, "acc")
+    for k in range(4):
+        import math as _m
+        a = _m.radians(k * 90)
+        s.line([(0.68, 0.5), (0.68 + 0.14 * _m.cos(a), 0.5 + 0.14 * _m.sin(a))], 0.03, "glow")
+
+
+@motif
+def rx_quorum(s):
+    # three voting pips over one gate, all three lit before it opens
+    for i, x in enumerate((0.26, 0.5, 0.74)):
+        s.ell(x - 0.11, 0.1, x + 0.11, 0.32, "acc" if i < 3 else "dark")
+        s.dot(x, 0.21, 0.04, PALE, True)
+    s.rect(0.14, 0.44, 0.86, 0.9, "main")
+    s.rect(0.22, 0.52, 0.78, 0.82, NAVY)
+    s.rect(0.3, 0.6, 0.7, 0.76, LIME)
+
+
 LAB_NODES = {
     "rx_core": ("rx_corelab", "labcore", "l", WARN),
     "rx_sniffer": ("rx_sniffer", "exploits", "s", WARN),
@@ -328,4 +399,10 @@ LAB_NODES = {
     "rx_packer": ("rx_packer", "malware", "m", LIME),
     "rx_archive": ("rx_archive", "infra", "s", PALE),
     "rx_mirror": ("rx_mirror", "infra", "m", LIME),
+    "rx_sqlinject": ("rx_sqlinject", "exploits", "s", WARN),
+    "rx_fuzzer": ("rx_fuzzer", "exploits", "m", LIME),
+    "rx_dropper": ("rx_dropper", "malware", "s", RED),
+    "rx_sandbox": ("rx_sandbox", "malware", "m", AQUA),
+    "rx_vault": ("rx_vault", "infra", "s", PALE),
+    "rx_quorum": ("rx_quorum", "infra", "m", WARN),
 }
