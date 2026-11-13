@@ -7,11 +7,14 @@ import { skills, SKILL_CATEGORIES, type SkillCategory } from "@/lib/about-data";
 import { NOW_FEED, PATH, PROFILE_LEAD } from "@/lib/identity";
 import { launcherLinks, navItems } from "@/lib/nav";
 import { navigateWithCurtain } from "@/lib/motion/navigate";
-import { parseSave, type State as NfState } from "@/lib/nodefarm/engine";
-import { isAdmin, maxOut, overwrite, setAdmin, snapState, snaps, takeSnap } from "@/lib/nodefarm/admin";
+import { STATS as NF_STATS, isUnlocked as nfUnlocked, parseSave, type State as NfState } from "@/lib/nodefarm/engine";
+import { isAdmin, maxOut, overwrite, setAdmin, snapState, snaps, takeSnap } from "@/lib/nodefarm/systems/admin";
 import { NF_PATH, NF_SAVE_KEY, NF_SUBS, nfCommand, type NfLive } from "@/lib/nodefarm/records";
 import { CX_STYLES, cxOverride, setCxOverride, type CxStyle } from "@/lib/nodefarm/cx";
-import { getStagePreview, setStagePreview } from "@/lib/nodefarm/zone-art";
+import { getFxMode, getLowFx, setFxMode } from "@/lib/nodefarm/fx";
+import { getStagePreview, setStagePreview } from "@/lib/nodefarm/zones/zone-art";
+import { PART_WHY, SKIN_WHY, coreLook, coreMode, corePreview, setCoreMode, setCorePreview, skinOpen } from "@/lib/nodefarm/art/core-look";
+import { PART_ORDER, SKINS } from "@/lib/nodefarm/art/core-parts";
 import { setPrefs } from "@/lib/sound/engine";
 import { sfx } from "@/lib/sound/sounds";
 import { useSoundPrefs } from "@/lib/sound/use-sound";
@@ -133,7 +136,7 @@ const levenshtein = (a: string, b: string) => {
 const listGroup = (targets: Target[], g: Target["group"]): Line[] =>
     targets.filter((x) => x.group === g).map((x) => row(x.id, x.hint, x.href));
 
-/** `nf admin ...`: Node Farm root console. Not listed in help or tab completion. The panel is components/nodefarm/admin.tsx. */
+/** `nf admin ...`: Node Farm root console. Not listed in help or tab completion. The panel is components/nodefarm/windows/admin.tsx. */
 function nfAdmin(args: string[], state: NfState, live?: NfLive): Line[] {
     const sub = (args[0] ?? "").toLowerCase();
     const done = () => {
@@ -171,6 +174,50 @@ function nfAdmin(args: string[], state: NfState, live?: NfLive): Line[] {
     return [t(isAdmin() ? "admin is on." : "admin is off.", "hi"), t("nf admin on · off · max · panel · snap · snaps · restore [n|real]", "dim")];
 }
 
+/** `nf core ...`: the reactor core's look (zone colours, an unlocked skin or a pinned zone) and a preview of its structures. */
+function nfCore(args: string[], state: NfState): Line[] {
+    const v = (args[0] ?? "").toLowerCase();
+    const usage = t(`nf core zone · ${SKINS.slice(1).join(" · ")} · <zone name> · parts 0-${PART_ORDER.length} · parts live`, "dim");
+    if (v === "zone" || v === "auto") {
+        setCoreMode("zone");
+        return [t("the core follows the newest zone you've worked in.")];
+    }
+    const skin = SKINS.find((k) => k === v);
+    if (skin && skin !== "zone") {
+        if (!skinOpen(state, skin)) return [t(`${skin} unlocks at ${SKIN_WHY[skin]}.`, "dim")];
+        setCoreMode(skin);
+        return [t(`${skin} on. nf core zone goes back to zone colours.`, "hi")];
+    }
+    if (v === "parts") {
+        const n = (args[1] ?? "").toLowerCase();
+        if (/^\d{1,2}$/.test(n) && Number(n) <= PART_ORDER.length) {
+            setCorePreview(Number(n));
+            return [t(`the core shows ${Number(n)} of ${PART_ORDER.length} structures. nf core parts live goes back to your real progress.`)];
+        }
+        if (n === "live" || n === "off") {
+            setCorePreview(null);
+            return [t("core structures back to your real progress.")];
+        }
+    }
+    const pin = v ? NF_STATS.find((x) => x.id === v || x.name.toLowerCase() === v || x.short.toLowerCase() === v) : undefined;
+    if (pin) {
+        if (!nfUnlocked(state, pin.id)) return [t(`${pin.name} isn't open yet.`, "dim")];
+        setCoreMode(pin.id);
+        return [t(`the core wears ${pin.name}'s colours. nf core zone follows your newest zone again.`)];
+    }
+    const look = coreLook(state);
+    const m = coreMode();
+    const built = PART_ORDER.filter((_, k) => look.parts & (1 << k));
+    const nextPart = PART_ORDER.find((_, k) => !(look.parts & (1 << k)));
+    return [
+        t(`core look: ${look.skin > 0 ? SKINS[look.skin] : m === "zone" || (SKINS as readonly string[]).includes(m) ? `newest zone (${NF_STATS[look.zone].name})` : NF_STATS[look.zone].name}`, "hi"),
+        t(`skins: ${(["chroma", "aurora", "gold", "mono"] as const).map((k) => (skinOpen(state, k) ? k : `${k} (at ${SKIN_WHY[k]})`)).join(", ")}`),
+        t(`structures ${built.length} of ${PART_ORDER.length}${corePreview() != null ? " (preview)" : ""}${built.length ? `: ${built.join(", ")}` : ""}`),
+        ...(nextPart && corePreview() == null ? [t(`next structure: ${nextPart}, at ${PART_WHY[nextPart]}.`, "dim")] : []),
+        usage,
+    ];
+}
+
 /** `nf`: Node Farm from the console. Talks to the open game when there is one (it answers the `nf:live` event), otherwise reads and writes the saved game. */
 function runNf(args: string[]): Line[] {
     if ((args[0] ?? "").toLowerCase() === "open") return [{ t: NF_PATH, go: NF_PATH }];
@@ -186,6 +233,14 @@ function runNf(args: string[]): Line[] {
             return [t("menus back to their own styles: print for milestones, decrypt for unlocks and events, crt for panels.")];
         }
         return [t(`menu animation: ${cxOverride() ?? "auto"}. nf anim auto · nf anim ${CX_STYLES.join(" · nf anim ")}`)];
+    }
+    if ((args[0] ?? "").toLowerCase() === "fx") {
+        const v = (args[1] ?? "").toLowerCase();
+        if (v === "full" || v === "low" || v === "auto") {
+            setFxMode(v);
+            return [t(`effects: ${v}.`)];
+        }
+        return [t(`effects: ${getFxMode()}${getFxMode() === "auto" ? ` (running ${getLowFx() ? "low" : "full"})` : ""}. nf fx full · low · auto`)];
     }
     if ((args[0] ?? "").toLowerCase() === "art") {
         // preview the staged zone art at one stage (this visit only)
@@ -222,7 +277,13 @@ function runNf(args: string[]): Line[] {
         } catch {}
     }
     if (!state) return [t("no node found. start one first:", "dim"), { t: NF_PATH, go: NF_PATH }];
-    if ((args[0] ?? "").toLowerCase() === "admin") return nfAdmin(args.slice(1), state, ref.live);
+    if ((args[0] ?? "").toLowerCase() === "admin") {
+        const out = nfAdmin(args.slice(1), state, ref.live);
+        // the panel lives on the game page, so from anywhere else point at it
+        if (!ref.live && isAdmin() && ["on", "max", "panel"].includes((args[1] ?? "").toLowerCase())) out.push(t("the panel opens on the game page:", "dim"), { t: NF_PATH, go: NF_PATH });
+        return out;
+    }
+    if ((args[0] ?? "").toLowerCase() === "core") return nfCore(args.slice(1), state);
     const r = nfCommand(state, args);
     if (r.unlocked.length) {
         if (ref.live) ref.live.notify(r.unlocked);
@@ -348,10 +409,20 @@ const COMMANDS: Cmd[] = [
     },
     {
         name: "nf",
-        usage: "nf [stats|goals|secrets|anim|fs]",
+        usage: "nf [stats|goals|secrets|admin|anim|fx|fs]",
         desc: "Node Farm readout, goals and secrets",
-        long: ["nf · nf stats · nf goals · nf secrets · nf open · nf anim auto|print|decrypt|crt · nf fs [on|off] (full screen). Works with the game open or from your saved game."],
+        long: ["nf · nf stats · nf goals · nf secrets · nf open · nf anim auto|print|decrypt|crt · nf fx full|low|auto (effects level) · nf fs [on|off] (full screen) · nf keys (key sheet) · nf core [zone|chroma|aurora|gold|mono|<zone>|parts 0-13] · nf admin (testing panel, see admin). Works with the game open or from your saved game."],
         run: (args) => runNf(args),
+    },
+    {
+        name: "admin",
+        usage: "admin [on|off|max|panel]",
+        desc: "Node Farm admin panel (testing tools)",
+        long: [
+            "admin or admin on opens the panel: speed up to x100, skip time, force Ascend, fire events, jump era, edit any stat, tree node, Drone or script.",
+            "admin max grants everything · admin panel reopens it · admin off hides it · admin snap|snaps|restore [n|real] for snapshots. It stores your real save first; admin restore real brings it back. Same as nf admin.",
+        ],
+        run: (args) => runNf(["admin", ...(args.length ? args : ["on"])]),
     },
     {
         name: "history",

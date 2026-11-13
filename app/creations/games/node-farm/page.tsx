@@ -1,19 +1,24 @@
 import "@/app/camino/games.css";
-import "@/app/camino/nodefarm.css";
-import "@/app/camino/nodefarm-deep.css";
-import "@/app/camino/nodefarm-scenery.css";
-import "@/app/camino/nodefarm-zone-art.css";
-import "@/app/camino/nodefarm-tree.css";
-import "@/app/camino/nodefarm-code.css";
-import "@/app/camino/nodefarm-ascend.css";
-import "@/app/camino/nodefarm-fs.css";
-import "@/app/camino/nodefarm-windows.css";
-import "@/app/camino/nodefarm-switcher.css";
-import "@/app/camino/nodefarm-admin.css";
-import "@/app/camino/nodefarm-phone.css";
+import "@/app/camino/nodefarm/base.css";
+import "@/app/camino/nodefarm/deep.css";
+import "@/app/camino/nodefarm/arcs.css";
+import "@/app/camino/nodefarm/scenery.css";
+import "@/app/camino/nodefarm/zone-art.css";
+import "@/app/camino/nodefarm/tree.css";
+import "@/app/camino/nodefarm/code.css";
+import "@/app/camino/nodefarm/ascend.css";
+import "@/app/camino/nodefarm/fs.css";
+import "@/app/camino/nodefarm/fx.css";
+import "@/app/camino/nodefarm/windows.css";
+import "@/app/camino/nodefarm/switcher.css";
+import "@/app/camino/nodefarm/next.css";
+import "@/app/camino/nodefarm/admin.css";
+import "@/app/camino/nodefarm/phone.css";
+import "@/app/camino/nodefarm/layout.css";
 import { CreationsShell, Section } from "@/components/creations-sections";
 import { GameFrame } from "@/components/games/naos";
 import { NodeFarm } from "@/components/nodefarm/node-farm";
+import { NodeFarmBoundary } from "@/components/nodefarm/board/error-boundary";
 import { NaosBackdrop } from "@/components/cm/naos-art";
 import { pageMeta } from "@/lib/seo";
 
@@ -38,7 +43,9 @@ export default function NodeFarmPage() {
                 <Section id="play" no="01" label="Play" title="Hack the node." ctos>
                     <div className="nf-bleed">
                         <GameFrame code="node.farm" foot={["saves on this device", "offline up to 8 h"]}>
-                        <NodeFarm />
+                        <NodeFarmBoundary>
+                            <NodeFarm />
+                        </NodeFarmBoundary>
                     </GameFrame>
                     </div>
                 </Section>

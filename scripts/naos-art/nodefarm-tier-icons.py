@@ -3,7 +3,7 @@
 Sixteen rows (Multipliers to Chrono, then Nebula, Pulsars, Singularity, Engrams, Paradox, Origin) by six columns (tier 1 to 6), written to
 public/naos/nodefarm/tiers.{png,webp}. Each stat has one motif that grows with the tier (bigger, more parts, brighter), so
 the sixth button of a stat clearly looks like the final form of the first. Reuses the drawing helpers of nodefarm-icons.py.
-To add a stat: write a function (canvas, t) like the ones below and append it to ROWS; components/nodefarm/icon.tsx reads
+To add a stat: write a function (canvas, t) like the ones below and append it to ROWS; components/nodefarm/board/icon.tsx reads
 the same row order. Run: python3 scripts/naos-art/nodefarm-tier-icons.py
 """
 import importlib.util

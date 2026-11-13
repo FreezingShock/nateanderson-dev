@@ -238,6 +238,30 @@ const DEFS = {
                     tone("game", { f: base * 0.25, dur: 0.35, gain: 0.07, harm: 0.3, cutoff: 900, attack: 0.01 });
                     blip("game", base * 2, { at: 0.03, dur: 0.05, gain: 0.05, cutoff: 4200 });
                     break;
+                case "spores":
+                case "mycelium":
+                case "pollen":
+                case "bloom":
+                    // Overgrowth: a soft woody pluck that rises, like a stem springing back
+                    tone("game", { f: base * 0.75, dur: 0.22, gain: 0.05, glide: 1.25, cutoff: 1800, attack: 0.008, type: "triangle" });
+                    blip("game", base * 1.5, { at: 0.05, dur: 0.06, gain: 0.035, cutoff: 3000 });
+                    break;
+                case "basalt":
+                case "magma":
+                case "geodes":
+                case "sunstone":
+                    // Descent: a low struck-stone thud with a bright chip on top
+                    tone("game", { f: base * 0.25, dur: 0.3, gain: 0.07, glide: 0.8, harm: 0.4, cutoff: 700, attack: 0.004 });
+                    blip("game", base * 3, { at: 0.02, dur: 0.03, gain: 0.03, cutoff: 5200 });
+                    break;
+                case "corona":
+                case "plasma":
+                case "lattice":
+                case "radiance":
+                    // Undersun: a bright shimmer that rises and settles, like light coming off a grid
+                    tone("game", { f: base * 0.5, dur: 0.34, gain: 0.04, glide: 1.6, cutoff: 4200, attack: 0.012, type: "sine" });
+                    blip("game", base * 2, { at: 0.06, dur: 0.05, gain: 0.03, cutoff: 5600 });
+                    break;
                 default:
                     blip("game", base, { dur: 0.05, gain: 0.06, cutoff: 2600 });
                     blip("game", base * 1.5, { at: 0.055, dur: 0.07, gain: 0.06, cutoff: 3000 });
@@ -318,6 +342,140 @@ const DEFS = {
             tone("game", { f: 82, dur: 2.4, gain: 0.1, attack: 0.5, cutoff: 420 });
             [440, 660, 880, 1100, 1320, 1760, 2200].forEach((f, i) => blip("game", f, { at: 0.8 + i * 0.09, dur: 0.14, gain: 0.06, cutoff: 3400 }));
             [880, 1320, 1760].forEach((f) => tone("game", { f, at: 1.5, dur: 1.4, gain: 0.05, harm: 0.25, attack: 0.04, cutoff: 3600 }));
+        },
+    },
+
+    // ---- Node Farm sound pass. Same voices as above (clicks, square blips, soft sine bodies, filtered sweeps), one job each,
+    // so every system is recognisable by ear. Volumes are mixed per system in lib/nodefarm/sound.ts.
+
+    // a Handover: where Ascend is bolts and a rising ladder, this is a baton passing. Three slow key thumps, a low swell
+    // that opens up into an open fifth, then one small answering chirp, like the next operator acknowledging.
+    nfHandover: {
+        tier: 4,
+        bus: "game",
+        gap: 1500,
+        play: () => {
+            [0, 0.22, 0.44].forEach((at, i) => { keyClick("game", { at, f: 520 + i * 160, gain: 0.08, q: 2 }); blip("game", 70 + i * 14, { at, dur: 0.16, gain: 0.07, cutoff: 420, type: "sine" }); });
+            if (!calm()) whoosh("game", { from: 140, to: 1800, dur: 1.5, gain: 0.05, at: 0.5, q: 0.7 });
+            tone("game", { f: 110, at: 0.5, dur: 2.2, gain: 0.09, attack: 0.6, cutoff: 380 });
+            [220, 330, 440].forEach((f, i) => tone("game", { f, at: 1.4 + i * 0.05, dur: 1.5, gain: 0.05, harm: 0.2, attack: 0.08, cutoff: 3000 }));
+            blip("game", 1760, { at: 2.1, dur: 0.07, gain: 0.04, cutoff: 3600 });
+            blip("game", 2640, { at: 2.18, dur: 0.1, gain: 0.04, cutoff: 3800 });
+        },
+    },
+    // a stress test starting: two low warning thumps, a tightening sweep, then a lock clicking shut
+    nfStress: {
+        tier: 3,
+        bus: "game",
+        gap: 800,
+        play: () => {
+            [0, 0.18].forEach((at) => { blip("game", 96, { at, dur: 0.14, gain: 0.08, cutoff: 500, type: "sine" }); keyClick("game", { at, f: 800, gain: 0.06, q: 2 }); });
+            if (!calm()) scan(220, 900, 0.3, 0.025);
+            keyClick("game", { at: 0.4, f: 2600, gain: 0.07, q: 4 });
+            blip("game", 880, { at: 0.42, dur: 0.06, gain: 0.05, cutoff: 2600 });
+            blip("game", 660, { at: 0.5, dur: 0.12, gain: 0.05, cutoff: 2200 });
+        },
+    },
+    // a script switching on or off: a quick three-tick run, rising when it starts and falling when it stops
+    nfScript: {
+        tier: 1,
+        bus: "game",
+        gap: 120,
+        play: (a: { on?: boolean } | undefined) => {
+            const up = a?.on !== false;
+            [0, 1, 2].forEach((i) => {
+                const f = 880 * Math.pow(1.122, (up ? i : 2 - i) * 2);
+                keyClick("game", { at: i * 0.04, f: 2200, gain: 0.02, q: 5 });
+                blip("game", f, { at: i * 0.04, dur: 0.03, gain: 0.04, cutoff: 2800 });
+            });
+        },
+    },
+    // a drone being bought or posted: a small servo whine that rises, and a latch
+    nfDrone: {
+        tier: 2,
+        bus: "game",
+        gap: 70,
+        play: (a: { tier?: number } | undefined) => {
+            const t = Math.max(0, Math.min(5, a?.tier ?? 0));
+            const base = 520 * Math.pow(1.0595, t * 2);
+            tone("game", { f: base, dur: 0.16, gain: 0.04, glide: 1.6, cutoff: 2000, attack: 0.02, type: "triangle" });
+            keyClick("game", { at: 0.15, f: 1500, gain: 0.05, q: 3 });
+            blip("game", base * 2, { at: 0.16, dur: 0.04, gain: 0.04, cutoff: 3000 });
+        },
+    },
+    // a rig being upgraded: a low machine clunk, two ratchet clicks, then a short lift
+    nfRig: {
+        tier: 2,
+        bus: "game",
+        gap: 80,
+        play: () => {
+            blip("game", 110, { dur: 0.1, gain: 0.08, glide: 0.7, cutoff: 600, type: "sine" });
+            keyClick("game", { at: 0.02, f: 700, gain: 0.07, q: 1.5 });
+            [0.09, 0.14].forEach((at) => keyClick("game", { at, f: 2000, gain: 0.035, q: 4 }));
+            blip("game", 740, { at: 0.18, dur: 0.05, gain: 0.045, cutoff: 2400 });
+            blip("game", 1110, { at: 0.23, dur: 0.07, gain: 0.045, cutoff: 2800 });
+        },
+    },
+    // a zone event arriving: good ones are a rising two-note ping, faults are a falling pair with a low buzz under it
+    nfZone: {
+        tier: 3,
+        bus: "game",
+        gap: 800,
+        play: (a: { good?: boolean } | undefined) => {
+            if (a?.good !== false) {
+                tone("game", { f: 990, dur: 0.2, gain: 0.05, harm: 0.2, attack: 0.005, cutoff: 3600 });
+                tone("game", { f: 1485, at: 0.1, dur: 0.3, gain: 0.05, harm: 0.2, attack: 0.005, cutoff: 3800 });
+            } else {
+                blip("game", 740, { dur: 0.09, gain: 0.05, cutoff: 2200 });
+                blip("game", 555, { at: 0.1, dur: 0.12, gain: 0.05, cutoff: 2000 });
+                tone("game", { f: 74, dur: 0.3, gain: 0.05, cutoff: 400, type: "sawtooth", attack: 0.01 });
+            }
+        },
+    },
+    // a supply cache cracking open: a latch, a quick run of coin ticks falling into place, two bright pings
+    nfCache: {
+        tier: 3,
+        bus: "game",
+        gap: 400,
+        play: () => {
+            keyClick("game", { f: 900, gain: 0.07, q: 2 });
+            for (let i = 0; i < 4; i++) keyClick("game", { at: 0.06 + i * 0.035, f: 2800 - i * 200, gain: 0.03, q: 6 });
+            tone("game", { f: 1568, at: 0.2, dur: 0.3, gain: 0.05, harm: 0.15, attack: 0.004, cutoff: 4200 });
+            tone("game", { f: 2093, at: 0.27, dur: 0.34, gain: 0.04, harm: 0.15, attack: 0.004, cutoff: 4400 });
+        },
+    },
+    // the core venting: a hiss that falls away, a deep thud, one clear note ringing out
+    nfVent: {
+        tier: 3,
+        bus: "game",
+        gap: 800,
+        play: () => {
+            if (!calm()) whoosh("game", { from: 3200, to: 380, dur: 0.6, gain: 0.07, q: 0.6 });
+            blip("game", 80, { dur: 0.3, gain: 0.1, glide: 0.6, cutoff: 400, type: "sine" });
+            keyClick("game", { f: 600, gain: 0.08, q: 1.5 });
+            tone("game", { f: 1174, at: 0.12, dur: 0.7, gain: 0.05, harm: 0.25, attack: 0.01, cutoff: 3600 });
+        },
+    },
+    // turning a Codex page: a dry paper tick and a short soft pitch step
+    nfPage: {
+        tier: 1,
+        bus: "ui",
+        gap: 90,
+        play: () => {
+            if (!calm()) whoosh("ui", { from: 1200, to: 3200, dur: 0.08, gain: 0.015, q: 1.2 });
+            keyClick("ui", { at: 0.05, f: 2000, gain: 0.02, q: 4 });
+        },
+    },
+    // the last log of the last build: a long low root with a slow ladder up to an open chord and a closing bell.
+    // Reserved for the ending screen (it plays through the same mixer, system "runs").
+    nfEnd: {
+        tier: 4,
+        bus: "game",
+        gap: 4000,
+        play: () => {
+            tone("game", { f: 55, dur: 5, gain: 0.1, attack: 1.2, cutoff: 300 });
+            [220, 277, 330, 440, 554, 660, 880].forEach((f, i) => tone("game", { f, at: 0.8 + i * 0.28, dur: 2.4, gain: 0.04, harm: 0.2, attack: 0.05, cutoff: 3200 }));
+            tone("game", { f: 1760, at: 3.2, dur: 1.8, gain: 0.04, harm: 0.3, attack: 0.004, cutoff: 4200 });
         },
     },
 

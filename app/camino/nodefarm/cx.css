@@ -1,0 +1,23 @@
+/* Code reveal overlay (lib/nodefarm/cx.ts). The layer only lives while a window prints in. */
+.nf-cx-fx { position: absolute !important; left: 0; right: 0; z-index: 40; pointer-events: none; --k: var(--cx-c, var(--c, #2fd8e8)); }
+.nf-cx-fx b { position: absolute; width: 12px; height: 12px; border: 0 solid var(--k); opacity: 0; }
+.nf-cx-fx b:nth-child(1) { left: 0; top: 0; border-left-width: 2px; border-top-width: 2px; }
+.nf-cx-fx b:nth-child(2) { right: 0; top: 0; border-right-width: 2px; border-top-width: 2px; }
+.nf-cx-fx b:nth-child(3) { left: 0; bottom: 0; border-left-width: 2px; border-bottom-width: 2px; }
+.nf-cx-fx b:nth-child(4) { right: 0; bottom: 0; border-right-width: 2px; border-bottom-width: 2px; }
+.nf-cx-fx s { position: absolute; left: 0; right: 0; height: 2px; background: var(--k); box-shadow: 0 0 10px var(--k), 0 0 2px var(--k); opacity: 0; text-decoration: none; }
+.nf-cx-fx u { position: absolute; width: 7px; background: var(--k); opacity: 0; text-decoration: none; }
+@media (prefers-reduced-motion: reduce) { .nf-cx-fx { display: none; } }
+
+/* full-screen offline report: the backdrop fades while its panel deletes out */
+body .nf-aw[data-out] { opacity: 0; transition: opacity .12s steps(3, end) .06s; }
+/* banners wait while a window is open (juice.tsx); one already on screen is hidden so it never covers what you're reading */
+body.nf-win-open .nf-jb { visibility: hidden; }
+/* event scrim fades while its card deletes out */
+.ctos .nf-ev-scrim[data-out] { opacity: 0; transition: opacity .12s steps(3, end) .06s; }
+.ctos .nf-ev { --cx-c: #ff6a3d; }
+
+/* decrypt: glyph noise over each row */
+.nf-cx-fx .nf-cx-noise { position: absolute; display: block; overflow: hidden; white-space: pre; text-decoration: none; background: #0b0b0b; color: var(--k); font: 500 12px/13px var(--cm-mono, monospace); letter-spacing: .02em; opacity: .9; }
+/* crt: scanlines over the whole window while it switches on or off */
+.nf-cx-fx em { position: absolute; inset: 0; opacity: 0; background: repeating-linear-gradient(0deg, transparent 0 2px, color-mix(in srgb, var(--k) 22%, transparent) 2px 3px); }

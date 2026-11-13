@@ -2,7 +2,14 @@
 // directly in Node. Numbers are plain doubles; a full run stays far below 1e308.
 
 /** Producer materials in chain order. Each is paid in the one before it (Copper in Bytes) and boosts that one in turn. */
-export const MATS = ["copper", "silicon", "quartz", "aether", "runes", "starglass", "voidsteel", "chrono", "nebula", "pulsars", "singularity", "engrams", "paradox", "origin"] as const;
+export const MATS = ["copper", "silicon", "quartz", "aether", "runes", "starglass", "voidsteel", "chrono", "nebula", "pulsars", "singularity", "engrams", "paradox", "origin", "spores", "mycelium", "pollen", "bloom", "basalt", "magma", "geodes", "sunstone", "corona", "plasma", "lattice", "radiance"] as const;
+/** The two arcs past Root Chamber (Overgrowth, then Descent). They stay shut until the first Handover. */
+/** The Overgrowth and Descent arcs (zones 18 to 25) and Undersun (26 to 29, after the ending). */
+export const ARC_MATS: readonly MatId[] = ["spores", "mycelium", "pollen", "bloom", "basalt", "magma", "geodes", "sunstone", "corona", "plasma", "lattice", "radiance"];
+/** Handovers needed before each arc zone can open: two new zones per Handover, so every early Handover gets something new.
+ *  Without this all eight opened within an hour of each other (sim, 2026-11-12). NF_ARCGATE='{"pollen":1}' tries other numbers in the sim. */
+export const ARC_GATE: Record<string, number> = { spores: 1, mycelium: 1, pollen: 2, bloom: 2, basalt: 3, magma: 3, geodes: 4, sunstone: 4, corona: 5, plasma: 5, lattice: 6, radiance: 6 };
+export const arcGateNeed = (id: string) => ARC_GATE[id] ?? 0;
 export type MatId = (typeof MATS)[number];
 export type StatId = "bytes" | "mult" | "reboot" | MatId;
 export type ButtonStat = Exclude<StatId, "bytes">;
@@ -38,6 +45,18 @@ export const STATS: StatDef[] = [
     { id: "engrams", name: "Engrams", short: "EG", role: "Recorded memory. Boosts Singularity, and Drones press faster.", pays: "singularity", color: "#e8b98a" },
     { id: "paradox", name: "Paradox", short: "PX", role: "Folded logic. Boosts Engrams, and Overclock hits harder.", pays: "engrams", color: "#dfe3f5" },
     { id: "origin", name: "Origin", short: "OR", role: "The first node. Boosts Paradox, and every Ascend pays more AP.", pays: "paradox", color: "#3dff6e" },
+    { id: "spores", name: "Spores", short: "SP", role: "What the roots shed past node zero. Boost Origin.", pays: "origin", color: "#5cf0c0" },
+    { id: "mycelium", name: "Mycelium", short: "MY", role: "Roots grown into a network. Boosts Spores.", pays: "spores", color: "#c8bdff" },
+    { id: "pollen", name: "Pollen", short: "PO", role: "Carried up into the light. Boosts Mycelium.", pays: "mycelium", color: "#f2e44a" },
+    { id: "bloom", name: "Bloom", short: "BL", role: "The farm in flower. Boosts Pollen, and every Handover pays more Keys.", pays: "pollen", color: "#ff7aa0" },
+    { id: "basalt", name: "Basalt", short: "BA", role: "Rock under the roots. Boosts Bloom.", pays: "bloom", color: "#8e99a8" },
+    { id: "magma", name: "Magma", short: "MG", role: "Heat on the way down. Boosts Basalt.", pays: "basalt", color: "#ff9a2a" },
+    { id: "geodes", name: "Geodes", short: "GE", role: "Hollow stones full of light. Boost Magma.", pays: "magma", color: "#c77aff" },
+    { id: "sunstone", name: "Sunstone", short: "SU", role: "A buried sun at the bottom of everything. Boosts Geodes, and everything a little.", pays: "geodes", color: "#ffd04a" },
+    { id: "corona", name: "Corona", short: "CN", role: "The sun's bright rim, past the last clamp. Boosts Sunstone.", pays: "sunstone", color: "#ffe27a" },
+    { id: "plasma", name: "Plasma", short: "PL", role: "Charged gas torn off the rim. Boosts Corona.", pays: "corona", color: "#ff5ad0" },
+    { id: "lattice", name: "Lattice", short: "LT", role: "A grid of light that holds the plasma still. Boosts Plasma.", pays: "plasma", color: "#7afff0" },
+    { id: "radiance", name: "Radiance", short: "RD", role: "The light the sun throws back at the dark. Boosts Lattice, and everything a little.", pays: "lattice", color: "#8dff9a" },
 ];
 
 export const statDef = (id: StatId) => STATS.find((s) => s.id === id)!;
@@ -61,9 +80,21 @@ export const TUNE = {
         engrams: { base: 15, ratio: 10, growth: 1.12 },
         paradox: { base: 10, ratio: 10, growth: 1.12 },
         origin: { base: 6, ratio: 10, growth: 1.12 },
+        spores: { base: 5, ratio: 10, growth: 1.12 },
+        mycelium: { base: 5, ratio: 10, growth: 1.12 },
+        pollen: { base: 4, ratio: 10, growth: 1.12 },
+        bloom: { base: 4, ratio: 10, growth: 1.12 },
+        basalt: { base: 4, ratio: 10, growth: 1.12 },
+        magma: { base: 3, ratio: 10, growth: 1.12 },
+        geodes: { base: 3, ratio: 10, growth: 1.12 },
+        sunstone: { base: 3, ratio: 10, growth: 1.12 },
+        corona: { base: 3, ratio: 10, growth: 1.12 },
+        plasma: { base: 3, ratio: 10, growth: 1.12 },
+        lattice: { base: 3, ratio: 10, growth: 1.12 },
+        radiance: { base: 3, ratio: 10, growth: 1.12 },
     } as Record<string, { base: number; ratio: number; growth: number }>,
     // how much one press of tier k adds (Multipliers, or producers for materials)
-    gainBase: { mult: 1, copper: 1, silicon: 1, quartz: 1, aether: 1, runes: 1, starglass: 1, voidsteel: 1, chrono: 1, nebula: 1, pulsars: 1, singularity: 1, engrams: 1, paradox: 1, origin: 1 } as Record<string, number>,
+    gainBase: { mult: 1, copper: 1, silicon: 1, quartz: 1, aether: 1, runes: 1, starglass: 1, voidsteel: 1, chrono: 1, nebula: 1, pulsars: 1, singularity: 1, engrams: 1, paradox: 1, origin: 1, spores: 1, mycelium: 1, pollen: 1, bloom: 1, basalt: 1, magma: 1, geodes: 1, sunstone: 1, corona: 1, plasma: 1, lattice: 1, radiance: 1 } as Record<string, number>,
     gainRatio: 5,
     // reboot tier k: costs rebootBase * rebootRatio^k * rebootGrowth^R Multipliers, adds rebootGainRatio^k Reboots
     rebootBase: 100,
@@ -71,25 +102,26 @@ export const TUNE = {
     rebootGrowth: 1.12,
     rebootGainRatio: 2.6,
     rebootStrength: 0.7, // each Reboot adds this much to Multiplier button gains
-    perProducer: { copper: 0.05, silicon: 0.03, quartz: 0.016, aether: 0.008, runes: 0.0025, starglass: 0.0012, voidsteel: 0.0006, chrono: 0.0003, nebula: 0.0002, pulsars: 0.00017, singularity: 0.00016, engrams: 0.00015, paradox: 0.00008, origin: 0.00004 } as Record<string, number>,
-    boostK: { cuReboot: 0.09, cuBytes: 0.02, siCu: 0.2, qzSi: 0.2, aeQz: 0.2, ruAe: 0.12, sgRu: 0.12, vsSg: 0.12, chVs: 0.12, chAll: 0.03, nbCh: 0.12, puNb: 0.12, snPu: 0.12, egSn: 0.12, pxEg: 0.12, orPx: 0.12 },
+    perProducer: { copper: 0.05, silicon: 0.03, quartz: 0.016, aether: 0.008, runes: 0.0025, starglass: 0.0012, voidsteel: 0.0006, chrono: 0.0003, nebula: 0.0002, pulsars: 0.00017, singularity: 0.00016, engrams: 0.00015, paradox: 0.00008, origin: 0.00004, spores: 0.00003, mycelium: 0.000025, pollen: 0.00002, bloom: 0.000016, basalt: 0.000012, magma: 0.00001, geodes: 0.000008, sunstone: 0.000006, corona: 0.000005, plasma: 0.000004, lattice: 0.000003, radiance: 0.0000025 } as Record<string, number>,
+    boostK: { cuReboot: 0.09, cuBytes: 0.02, siCu: 0.2, qzSi: 0.2, aeQz: 0.2, ruAe: 0.12, sgRu: 0.12, vsSg: 0.12, chVs: 0.12, chAll: 0.03, nbCh: 0.12, puNb: 0.12, snPu: 0.12, egSn: 0.12, pxEg: 0.12, orPx: 0.12, spOr: 0.12, mySp: 0.12, poMy: 0.12, blPo: 0.12, baBl: 0.12, mgBa: 0.12, geMg: 0.12, suGe: 0.12, cnSu: 0.12, plCn: 0.12, ltPl: 0.12, raLt: 0.12 },
     // the extras on the last three materials grow with log10 of the amount, so they cannot feed back into a runaway
-    logK: { snAll: 0.1, egDrone: 0.15, pxOc: 0.15, orAp: 0.1 },
+    logK: { snAll: 0.1, egDrone: 0.15, pxOc: 0.15, orAp: 0.1, crosstalk: 0.12, blKeys: 0.1, suAll: 0.08, raAll: 0.08 },
     boostPow: 0.38,
-    unlockAt: { copper: 1, silicon: 150, quartz: 300, aether: 500, runes: 150, starglass: 200, voidsteel: 250, chrono: 300, nebula: 300, pulsars: 300, singularity: 300, engrams: 350, paradox: 400, origin: 450 } as Record<string, number>, // copper: Reboots; the rest: amount of the stat below
+    chAllCap: 1e6, // Chrono boosts EVERYTHING, including Chrono: past this amount the boost grows only with log10 (a power law fed itself to 1e300 once Engrams opened)
+    unlockAt: { copper: 1, silicon: 150, quartz: 300, aether: 500, runes: 150, starglass: 800, voidsteel: 2500, chrono: 1000, nebula: 300, pulsars: 300, singularity: 300, engrams: 350, paradox: 400, origin: 450, spores: 500, mycelium: 550, pollen: 600, bloom: 650, basalt: 700, magma: 750, geodes: 800, sunstone: 850, corona: 900, plasma: 950, lattice: 1000, radiance: 1050 } as Record<string, number>, // copper: Reboots; the rest: amount of the stat below
     overclockMult: 6,
     overclockSecs: 20,
     offlineCapHours: 8,
     ascendAether: 400,
     apPerAether: 60, // AP = floor((aether / apPerAether)^apPow + (runes / apPer.runes)^apPow + ...)
-    apPer: { runes: 90, starglass: 45, voidsteel: 27, chrono: 14, nebula: 8, pulsars: 4, singularity: 2, engrams: 1, paradox: 0.5, origin: 0.2 } as Record<string, number>,
+    apPer: { runes: 90, starglass: 45, voidsteel: 27, chrono: 14, nebula: 8, pulsars: 4, singularity: 2, engrams: 1, paradox: 0.5, origin: 0.2, spores: 0.1, mycelium: 0.05, pollen: 0.025, bloom: 0.012, basalt: 0.006, magma: 0.003, geodes: 0.0015, sunstone: 0.0008, corona: 0.0004, plasma: 0.0002, lattice: 0.0001, radiance: 0.00005 } as Record<string, number>,
     apPow: 0.3, // AP grows with amount^apPow; a low power stops Ascends from snowballing
     apBonus: 0.3,
     achBonus: 0.02,
+    arcBonus: 0.05, // global bonus for each arc whose every button has been pressed at least once (lib/nodefarm/zones/arcs.ts)
     tierBonus: 0.08, // extra global bonus for each fully completed goal tier
-    // Drones: one per button tier, bought with Aether. Each level presses that tier's button on every armed stat, droneRate times a second.
+    // Drones: one per button tier, bought with Aether. Each level presses that tier's button on its posted zone (postX times droneRate a second); docked Drones do nothing.
     drone: { max: 10, base: 25, ratio: 6, growth: 1.7, rate: 0.25, offline: 0.5, burst: 200 },
-    autoReserve: 10, // the Autoloader only buys when the balance is at least this many times the price
     treeCost: 1, // scales every tree node price (pacing knob for the sim)
     apBonusFromEarned: false, // true: the AP bonus also counts AP spent on nodes and perks. Off because the sim then finishes the tree in 12 to 19 h (AP feeds itself); spending AP is the brake
     watchdogReserve: 1.5, // Watchdog timer Reboots once you hold this many times the price in Multipliers
@@ -109,7 +141,7 @@ export const TUNE = {
 };
 
 export interface PerkDef {
-    id: "scanner" | "auto" | "overclock" | "offline" | "start" | "power";
+    id: "scanner" | "overclock" | "offline" | "start" | "power";
     name: string;
     blurb: string;
     max: number;
@@ -118,10 +150,9 @@ export interface PerkDef {
 
 export const PERKS: PerkDef[] = [
     { id: "power", name: "Power core", blurb: "+15% to everything per level.", max: 20, cost: (l) => 1 + l },
-    { id: "scanner", name: "Wide-band scanner", blurb: "Intrusions arrive 8% sooner per level.", max: 6, cost: (l) => 1 + l },
-    { id: "auto", name: "Autoloader", blurb: "Auto-buys for you, one stat per level (Multipliers, then each material up the chain).", max: 12, cost: (l) => 3 + l * 2 },
-    { id: "overclock", name: "Overclock coils", blurb: "Intrusion boosts last +5 s per level.", max: 6, cost: (l) => 2 + l * 2 },
-    { id: "offline", name: "Standby cells", blurb: "Offline time banks +4 hours per level.", max: 6, cost: (l) => 2 + l * 2 },
+    { id: "scanner", name: "Wide-band scanner", blurb: "Zone events arrive 8% sooner per level.", max: 6, cost: (l) => 1 + l },
+    { id: "overclock", name: "Overclock coils", blurb: "Overclocks last +5 s longer per level.", max: 6, cost: (l) => 2 + l * 2 },
+    { id: "offline", name: "Standby cells", blurb: "Standby window +4 hours per level.", max: 6, cost: (l) => 2 + l * 2 },
     { id: "start", name: "Cold cache", blurb: "Start each Reboot with 10 seconds of Bytes per level.", max: 10, cost: (l) => 1 + Math.floor(l / 2) },
 ];
 
@@ -157,7 +188,7 @@ export interface TreeFx {
     droneKeep?: number; // fraction of Drone levels kept through Ascend
     droneGlobal?: number; // everything +this per Drone level owned
     mounts?: number; // Mounted drive slots
-    eventRate?: number; // quick-time events come this fraction sooner
+    eventRate?: number; // zone events come this fraction sooner
     ocTime?: number; // Overclock length x(1 + this)
     ocX?: number; // Overclock multiplier x(1 + this)
     winBoost?: number; // everything +this per event win, until the next Ascend
@@ -178,7 +209,8 @@ export interface TreeFx {
     feature?: Feature;
 }
 /** Systems a node switches on. The UI checks them with `hasFeature`. */
-export type Feature = "buymax" | "watchdog" | "forecast" | "deaddrop" | "orders" | "ghostline" | "crosstalk" | "duck";
+export type Feature = "watchdog" | "forecast" | "deaddrop" | "orders" | "ghostline" | "crosstalk" | "duck";
+export const FEATURE_NAME: Record<Feature, string> = { watchdog: "Watchdog timer", forecast: "Forecast", deaddrop: "Dead drop", orders: "Standing orders", ghostline: "Ghost line", crosstalk: "Cross-talk", duck: "Rubber duck" };
 export type TreeKind = "minor" | "notable" | "keystone";
 export type Branch = "signal" | "forge" | "systems" | "drones" | "anomaly";
 export type NodeVis = "shown" | "fog" | "hidden";
@@ -192,7 +224,9 @@ export interface TreeNode {
     /** one short lore line for the tooltip */
     flavor: string;
     cost: number;
-    /** neighbours (both directions); "core" is the free start */
+    /** section slot, 0 to 7 (set by the layout) */
+    slot?: number;
+    /** neighbors (both directions); "core" is the free start */
     links: string[];
     fx: TreeFx;
     /** position in tree units (the menu multiplies by its grid size) */
@@ -208,7 +242,7 @@ export interface TreeNode {
     chain?: { id: string; step: number; of: number };
     /** the deeper tree (2026-11-12): junctions, forks and ranked nodes. Absent on the first 40. */
     form?: "junction" | "fork" | "ranked";
-    /** junction: every one of these must be owned (both sections), not just one neighbour */
+    /** junction: every one of these must be owned (both sections), not just one neighbor */
     req?: string[];
     /** fork: the other side of the pair. Owning one locks the other; buying the other swaps for free */
     excl?: string;
@@ -220,7 +254,7 @@ export const BRANCHES: { id: Branch; name: string; blurb: string; color: string 
     { id: "forge", name: "Forge", blurb: "Materials, from Copper to Chrono.", color: "#ffc53a" },
     { id: "systems", name: "Systems", blurb: "Time away, goals and AP.", color: "#6bffc9" },
     { id: "drones", name: "Drones", blurb: "More Drones, faster Drones, Drones that remember.", color: "#ff4d6d" },
-    { id: "anomaly", name: "Anomaly", blurb: "Quick-time events, Overclock and odd things.", color: "#9a7bff" },
+    { id: "anomaly", name: "Anomaly", blurb: "Zone events, Overclock and odd things.", color: "#9a7bff" },
 ];
 // Slot layout per section, in units along the arm (u) and sideways (v), with the slots each one links back to.
 // 0 entry | 1, 3, 5 the upper path | 2, 4, 6 the lower path | 7 keystone. Spacing keeps big nodes apart (>= 1.8 units, 2.3 by the keystone).
@@ -229,23 +263,23 @@ const SLOTS: [number, number, number[]][] = [
 ];
 const SLOT_COST = [4, 10, 12, 24, 24, 48, 48, 140];
 // Past each keystone (the deeper tree): 8 and 9 are a fork pair, 10 is the ranked tip that opens from either fork.
-const OUTER: [number, number, number[]][] = [[11.5, -1.3, [7]], [11.5, 1.3, [7]], [13.4, 0, [8, 9]]];
-const OUTER_COST = [400, 400, 200];
+const OUTER: [number, number, number[]][] = [[11.5, -1.3, [7]], [11.5, 1.3, [7]], [13.4, 0, [8, 9]], [15.4, 0, [10]]];
+const OUTER_COST = [400, 400, 200, 700];
 type Row = [slot: number, id: string, kind: TreeKind, name: string, blurb: string, flavor: string, fx: TreeFx, cost?: number];
 const ALL_MATS = (v: number) => Object.fromEntries(MATS.map((m) => [m, v])) as Record<MatId, number>;
 const ARMS: Record<Branch, Row[]> = {
     signal: [
         [0, "linecode", "minor", "Line coding", "Bytes x2.", "Clean edges on every bit. The wire finally sounds like a wire.", { bytes: 1 }],
-        [1, "batchjob", "minor", "Batch job", "Unlocks Buy max: one press buys as many as you can afford.", "Queue it up, walk away, come back to a receipt.", { feature: "buymax" }],
         [2, "echocancel", "minor", "Echo cancel", "Reboots keep 10% of your Multipliers.", "Most of the signal survives the restart. The rest was noise anyway.", { rebootKeep: 0.1 }],
         [3, "headstart", "minor", "Head start", "Every Ascend starts with 25 Reboots.", "The node remembers the way back. It just needs a push.", { kitReboot: 25 }],
         [4, "hotswap", "minor", "Hot swap", "Reboot power x2.", "Swapped the board while it was still warm. It did not notice.", { reboot: 1 }],
-        [5, "watchdog", "notable", "Watchdog timer", "Auto-Reboot: Reboots for you at the best tier you can afford. Switch it in the Reboot zone.", "A timer that kicks the node when it stalls. The node has stopped stalling.", { feature: "watchdog" }],
+        [5, "watchdog", "notable", "Watchdog timer", "Auto-Reboot: Reboots for you at the best tier you can afford. Switch it on the Reboot row.", "A timer that kicks the node when it stalls. The node has stopped stalling.", { feature: "watchdog" }],
         [6, "flatrate", "notable", "Flat rate", "Button prices climb 40% slower each time you buy.", "Renegotiated with the grid. They did not read the fine print.", { growth: 0.4 }],
         [7, "overdrive", "keystone", "Overdrive", "Everything x3.", "Past the red line the hum goes quiet. That is when it works hardest.", { global: 2 }],
         [8, "coldstart", "notable", "Cold start", "For 90 s after every Reboot, Bytes x10.", "The first breath after a restart is the loudest.", { coldStart: 9 }],
         [9, "longhaul", "notable", "Long haul", "Bytes +100% for every 4 minutes since your last Reboot, up to x9.", "Leave it running long enough and it stops asking why.", { longHaul: 1 }],
         [10, "clockskew", "keystone", "Clock skew", "Bytes x1.5 per rank.", "Ran the clock a hair fast. Nobody has complained yet.", { bytes: 0.5 }],
+        [11, "afterburn", "keystone", "Afterburn", "Reboots keep 10 minutes of Bytes.", "The restart is a launch. Nothing you built stays on the pad.", { start: 600 }],
     ],
     forge: [
         [0, "furnace", "minor", "Furnace tuning", "Copper and Silicon x2.", "Hotter, steadier, cleaner. The slag pile is shrinking.", { mats: { copper: 1, silicon: 1 } }],
@@ -254,50 +288,54 @@ const ARMS: Record<Branch, Row[]> = {
         [3, "mount1", "notable", "Mounted drive I", "Pick one material on the Ascend pane. Its producers survive every Ascend.", "Bolted a drive to the floor. The dark cannot take what is bolted down.", { mounts: 1 }],
         [4, "deepvein", "minor", "Deep vein", "Runes, Starglass, Voidsteel and Chrono x2.", "The seam keeps going past where the map ends.", { mats: { runes: 1, starglass: 1, voidsteel: 1, chrono: 1 } }],
         [5, "mount2", "minor", "Mounted drive II", "A second mounted drive.", "Second drive, same bolts. The floor is getting crowded.", { mounts: 1 }],
-        [6, "crosstalk", "notable", "Cross-talk", "Every material also boosts the one two steps down the chain.", "The materials started talking past their neighbours. I let them.", { feature: "crosstalk" }],
+        [6, "crosstalk", "notable", "Cross-talk", "Every material also boosts the one two steps down the chain.", "The materials started talking past their neighbors. I let them.", { feature: "crosstalk" }],
         [7, "overpress", "keystone", "Overpressure", "Every material x3.", "Every pipe at full pressure. The forge sings one long note.", { mats: ALL_MATS(2) }],
         [8, "specialist", "notable", "Specialist", "The newest material you produce x8.", "Pick one seam and dig until it rings.", { specialist: 7 }],
         [9, "generalist", "notable", "Generalist", "Every material x2.5.", "A little of everything, all of it hot.", { mats: ALL_MATS(1.5) }],
         [10, "alloy", "keystone", "Alloy", "Every material x1.4 per rank.", "Mix two metals and both forget what they were.", { mats: ALL_MATS(0.4) }],
+        [11, "kilnliner", "keystone", "Kiln liner", "Engrams, Paradox and Origin x2.", "Lined the kiln with the last good brick. The heat stays in.", { mats: { engrams: 1, paradox: 1, origin: 1 } }],
     ],
     systems: [
-        [0, "standby", "minor", "Standby plus", "Offline time banks +8 hours.", "Bigger cells, longer naps.", { offline: 8 }],
+        [0, "standby", "minor", "Standby plus", "Standby window +8 hours.", "Bigger cells, longer naps.", { offline: 8 }],
         [1, "carrier1", "minor", "Carrier I", "Each AP adds a third more to everything.", "Boosted the carrier. The points carry further.", { apEach: 1 / 3 }],
         [2, "forecast", "minor", "Forecast", "Every button shows how long until you can afford it.", "Every price comes with an arrival time now.", { feature: "forecast" }],
         [3, "carrier2", "notable", "Carrier II", "Each AP adds another third more.", "Louder carrier, same message, more of it lands.", { apEach: 1 / 3 }],
-        [4, "ledger", "minor", "Ledger", "Each goal and secret gives +4% instead of +2%.", "Wrote down every win. The node reads the list at night.", { goals: 0.02 }],
+        [4, "ledger", "minor", "Ledger", "Each goal and secret gives +4%.", "Wrote down every win. The node reads the list at night.", { goals: 0.02 }],
         [5, "carrier3", "minor", "Carrier III", "Each AP adds another third more: twice the bonus with all three.", "The carrier is all you hear now.", { apEach: 1 / 3 }],
         [6, "deaddrop", "notable", "Dead drop", "A cache fills over 4 hours of real time, even while away. Open it for 1 hour of production.", "Someone leaves a box at the node. No note. Always the right size.", { feature: "deaddrop" }],
         [7, "coldstore", "keystone", "Cold storage", "AP from every Ascend x2.", "Packed the whole run in ice. It thaws worth twice as much.", { ap: 1 }],
         [8, "hoarder", "notable", "Hoarder", "Each unspent AP adds half again as much to everything.", "Kept the points in a jar. The jar hums.", { apEach: 0.5 }],
         [9, "investor", "notable", "Investor", "+4% to everything for every tree node and rank you own.", "Every node pays a little rent to the others.", { perNode: 0.04 }],
         [10, "archive", "keystone", "Archive", "AP from every Ascend x1.08 per rank.", "Every run gets filed. The filing cabinet is worth something now.", { ap: 0.08 }],
+        [11, "bargain", "keystone", "Bargain bin", "Buttons cost 10% less.", "Found a crate of parts nobody ordered. Every one of them fits.", { discount: 0.1 }],
     ],
     drones: [
         [0, "wake", "minor", "Wake routine", "Every Ascend starts with a level 1 Drone on every tier.", "They boot before I do.", { kitDrones: 1 }],
-        [1, "sparecell", "minor", "Spare cells", "Drones go up to level 13 (was 10).", "Extra cells in every chassis. Heavier, happier.", { droneMax: 3 }],
-        [2, "orders", "minor", "Standing orders", "New stats are armed for Drones the moment they open.", "Told them once. They remember.", { feature: "orders" }],
+        [1, "sparecell", "minor", "Spare cells", "Drones go up to level 13.", "Extra cells in every chassis. Heavier, happier.", { droneMax: 3 }],
+        [2, "orders", "minor", "Standing orders", "buy.sh ticks every new stat the moment it opens.", "Told them once. They remember.", { feature: "orders" }],
         [3, "overwatch", "minor", "Overwatch", "Drones press twice as fast.", "One watches, one presses, they swap every hour.", { drone: 1 }],
         [4, "bulkorder", "minor", "Bulk order", "Drones cost 50% less Aether.", "Bought them by the crate. The crate was cheaper than the box.", { droneCost: 0.5 }],
-        [5, "graveyard", "notable", "Graveyard shift", "Drones work at full speed while you are away (was half).", "Nobody told them it was night.", { droneOff: 0.5 }],
+        [5, "graveyard", "notable", "Graveyard shift", "Drones work at full speed while you are away.", "Nobody told them it was night.", { droneOff: 0.5 }],
         [6, "hivemem", "notable", "Hive memory", "Drones keep half their levels through every Ascend.", "They remember the old floor plan.", { droneKeep: 0.5 }],
         [7, "swarm", "keystone", "Swarm protocol", "Each Drone level adds +3% to everything.", "A hundred small hands, one big push.", { droneGlobal: 0.03 }],
         [8, "widenet", "notable", "Wide net", "Every Drone presses 60% faster.", "Spread thin and everywhere at once.", { drone: 0.6 }],
         [9, "spearhead", "notable", "Spearhead", "Your highest-tier Drone presses x6.", "One Drone out front. The rest follow its lights.", { spearhead: 5 }],
         [10, "firmware", "keystone", "Firmware", "Drones press 30% faster per rank.", "Flashed them again. They boot a little smarter each time.", { drone: 0.3 }],
+        [11, "hangarlights", "keystone", "Hangar lights", "Drones go up to level 6 more.", "Strung up every light in the hangar. The Drones read the lights and keep going.", { droneMax: 6 }],
     ],
     anomaly: [
-        [0, "static", "minor", "Static", "Quick-time events come 30% more often.", "There is always someone on the line now.", { eventRate: 0.3 }],
+        [0, "static", "minor", "Static", "Zone events come 30% more often.", "There is always someone on the line now.", { eventRate: 0.3 }],
         [1, "longfuse", "minor", "Long fuse", "Overclocks last twice as long.", "Slower burn, same bang.", { ocTime: 1 }],
         [2, "duck", "minor", "Rubber duck", "Does nothing. Listens, though.", "Explained the whole farm to it. Found two bugs.", { feature: "duck" }, 1],
-        [3, "resonant", "minor", "Resonant noise", "Overclock is x12 instead of x6.", "Tuned the static until it hums in key.", { ocMult: 6 }],
+        [3, "resonant", "minor", "Resonant noise", "Overclock is x12.", "Tuned the static until it hums in key.", { ocMult: 6 }],
         [4, "ghostline", "minor", "Ghost line", "Winning an event during an Overclock adds its time instead of restarting it.", "Two boosts, one wire. They queue politely.", { feature: "ghostline" }],
         [5, "echo", "notable", "Echo", "Winning an event has a 1 in 3 chance to bring the next one right away.", "Answered the knock and something knocked back.", { echo: 1 / 3 }],
         [6, "zeroday", "notable", "Zero-day", "One in five event wins also pays 10 minutes of production.", "An open door nobody else has found yet.", { zeroDay: 0.2 }],
         [7, "spike", "keystone", "Spike protocol", "Overclock x2 again, and every event win adds +2% to everything until the next Ascend.", "Every knock makes the node a little louder.", { ocX: 1, winBoost: 0.02 }],
-        [8, "storm", "notable", "Storm chaser", "Quick-time events come 50% more often.", "Stopped waiting for the knock. Started going looking.", { eventRate: 0.5 }],
+        [8, "storm", "notable", "Storm chaser", "Zone events come 50% more often.", "Stopped waiting for the knock. Started going looking.", { eventRate: 0.5 }],
         [9, "patient", "notable", "Patient", "Every event win also pays 5 minutes of production.", "Let it knock twice. The second knock brings gifts.", { winPay: 300 }],
         [10, "afterimage", "keystone", "Afterimage", "Overclock x1.15 per rank.", "The boost leaves a shape on the screen after it ends.", { ocX: 0.15 }],
+        [11, "longburn", "keystone", "Long burn", "Overclocks last a minute longer.", "The fuse burns slower. Nobody measured it until now.", { overclock: 60 }],
     ],
 };
 // Junctions sit between two neighbouring sections and need the node on each side (arm slot 6 and the next arm's slot 5).
@@ -330,14 +368,14 @@ function buildTree(): TreeNode[] {
             const [u, v] = all[slot];
             const ch = CHAINS[id];
             const outer = slot >= SLOTS.length;
-            const form = !outer ? undefined : slot === 10 ? "ranked" : "fork";
+            const form = slot === 8 || slot === 9 ? "fork" : slot === 10 ? "ranked" : undefined;
             const base = price ?? (outer ? OUTER_COST[slot - SLOTS.length] : SLOT_COST[slot] * (kind === "notable" ? 1.3 : 1));
             out.push({
                 id, branch: arm, kind, name, blurb, flavor, fx,
                 cost: Math.round(base * TUNE.treeCost),
                 links: slot === 0 ? ["core"] : [],
                 x: +(u * c - v * sn).toFixed(3), y: +(u * sn + v * c).toFixed(3),
-                ix: out.length, sprite: id,
+                ix: out.length, sprite: id, slot,
                 ...(slot === 0 ? { entry: true } : {}),
                 ...(ch ? { chain: { id: ch[0], step: ch[1], of: ch[2] } } : {}),
                 ...(form ? { form } : {}),
@@ -345,7 +383,7 @@ function buildTree(): TreeNode[] {
             } as TreeNode);
             ids[slot] = id;
         }
-        if (!pass) { SLOTS.forEach(([, , ls], slot) => ls.forEach((l) => link(ids[slot], ids[l]))); return; }
+        if (!pass) { SLOTS.forEach(([, , ls], slot) => ids[slot] && ls.forEach((l) => link(ids[slot], ids[l] ?? ids[0]))); return; }
         OUTER.forEach(([, , ls], k) => ls.forEach((l) => link(ids[SLOTS.length + k], ids[l])));
         byId(ids[8]).excl = ids[9];
         byId(ids[9]).excl = ids[8];
@@ -388,7 +426,7 @@ export const fullTreeIds = () => TREE.filter((n) => !(n.form === "fork" && n.exc
 export const treeComplete = (s: State) => s.tree.length >= TREE_FULL;
 /** Progressive reveal (Nate, 2026-11-12): owned and buyable nodes are shown; one step past a shown node is fog (a
  *  silhouette at its real size, no name or cost); everything further out is hidden. */
-/** Admin mode: show every node, fog or not (components/nodefarm/admin.tsx). */
+/** Admin mode: show every node, fog or not (components/nodefarm/windows/admin.tsx). */
 export const adminFlags = { reveal: false };
 export function nodeVis(s: State, n: TreeNode): NodeVis {
     if (adminFlags.reveal) return "shown";
@@ -400,7 +438,7 @@ export function nodeVis(s: State, n: TreeNode): NodeVis {
 /** Buy a node, the next rank of a ranked node, or swap a fork: buying the other side of an owned fork refunds it first. */
 export function buyNode(s: State, id: string): boolean {
     const n = BY_ID.get(id);
-    if (!n || nodeMaxed(s, n) || !nodeOpen(s, n)) return false;
+    if (!n || nodeMaxed(s, n) || !nodeOpen(s, n) || chOff(s, "prestige")) return false;
     const cost = nodeCost(s, n);
     const swap = n.excl && s.tree.includes(n.excl) ? BY_ID.get(n.excl)! : null;
     const back = swap ? nodeSpent(s, swap) : 0;
@@ -413,11 +451,12 @@ export function buyNode(s: State, id: string): boolean {
 }
 /** Take every node back and refund the AP spent on it. Costs nothing. Returns the AP refunded. */
 export function respec(s: State): number {
+    if (chOff(s, "prestige")) return 0;
     const back = treeSpent(s);
     s.ap += back;
     s.tree = [];
     s.treeLv = {};
-    s.mounts = [];
+    // Mounted drives stay assigned: their slots come back when the drive nodes are bought again
     // Drone levels that only the removed nodes allowed (extra levels per tier) go with them
     s.drones = s.drones.map((lv) => Math.min(lv, droneMax(s)));
     return back;
@@ -427,6 +466,8 @@ const LEGACY_COST: Record<string, number> = Object.fromEntries(
     "sg1:6,sg2:10,sg3:10,sg4:20,sg5:32,sg7:13,sg6:60,sg8:25,sg9:31,sg10:36,sg11:63,sgk:98,fg1:6,fg2:12,fg7:6,fg3:16,fg8:14,fg9:17,fg4:28,fg10:24,fg5:44,fg11:39,fg6:68,fgk:91,sy1:6,sy2:10,sy3:12,sy4:24,sy6:48,sy5:28,sy7:28,sy8:22,sy9:28,sy10:34,sy11:56,syk:91,dr1:6,dr2:8,dr3:10,dr4:14,dr5:17,dr6:18,dr7:24,dr8:28,dr9:32,dr10:42,dr11:63,drk:98,an1:7,an2:10,an3:10,an4:15,an5:18,an6:17,an7:28,an8:28,an9:38,an10:39,an11:77,ank:98"
         .split(",").map((p) => [p.split(":")[0], Number(p.split(":")[1])]),
 );
+/** Batch job (signal arm, slot 1) was removed with the Buy toggle; it cost 10 AP, so an old save gets that back. */
+LEGACY_COST.batchjob = 10;
 /** Drop node ids that are not in this tree and give their AP back. Returns the AP refunded. */
 export function migrateTree(s: State): number {
     let back = 0;
@@ -445,7 +486,7 @@ export function migrateTree(s: State): number {
     s.ap += back;
     return back;
 }
-export const hasFeature = (s: State, f: Feature) => s.tree.some((id) => BY_ID.get(id)?.fx.feature === f);
+export const hasFeature = (s: State, f: Feature) => s.tree.some((id) => BY_ID.get(id)?.fx.feature === f) || (PREINSTALLED.includes(f) && !!s.hand && handFx(s).preinstall);
 /** AP spent on owned nodes and perks. With TUNE.apBonusFromEarned the AP bonus counts this too, so spending never lowers it. */
 export function apSpent(s: State): number {
     let n = treeSpent(s);
@@ -505,8 +546,7 @@ export function treeTotals(s: State): [string, string][] {
     if (f.droneTierGoal) rows.push(["Night crew", `+${f.droneTierGoal * tiersDone(s)} Drone levels`]);
     if (f.frenzy) rows.push(["Swarm alarm", `Drones x${TUNE.frenzyX} for ${TUNE.frenzySecs} s per win`]);
     if (f.ocReboot) rows.push(["Overclock Reboot power", `x${1 + f.ocReboot}`]);
-    const named: Record<Feature, string> = { buymax: "Buy max", watchdog: "Watchdog timer", forecast: "Forecast", deaddrop: "Dead drop", orders: "Standing orders", ghostline: "Ghost line", crosstalk: "Cross-talk", duck: "Rubber duck" };
-    if (f.features.length) rows.push(["Systems", f.features.map((k) => named[k]).join(", ")]);
+    if (f.features.length) rows.push(["Systems", f.features.map((k) => FEATURE_NAME[k]).join(", ")]);
     return rows;
 }
 
@@ -607,6 +647,18 @@ export interface State {
     engrams: number;
     paradox: number;
     origin: number;
+    spores: number;
+    mycelium: number;
+    pollen: number;
+    bloom: number;
+    basalt: number;
+    magma: number;
+    geodes: number;
+    sunstone: number;
+    corona: number;
+    plasma: number;
+    lattice: number;
+    radiance: number;
     prod: Record<MatId, number>;
     bought: Record<ButtonStat, number[]>;
     ap: number;
@@ -614,14 +666,17 @@ export interface State {
     ach: string[];
     /** when each goal or secret was done, ms epoch (for the goal log) */
     achAt: Record<string, number>;
-    /** ids of the story logs recovered so far (lib/nodefarm/story.ts, kept through Ascend) */
+    /** ids of the story logs recovered so far (lib/nodefarm/content/story.ts, kept through Ascend) */
     logs: string[];
     /** Drone levels per button tier (reset on Ascend) */
     drones: number[];
-    /** fractional presses waiting to fire, per tier */
+    /** unused since Drones stopped sweeping (posted Drones keep their own in dr.pacc); kept so old saves load */
     droneAcc: number[];
-    /** stats the Drones are allowed to press (kept through Ascend) */
+    /** legacy: stats armed for sweeping Drones or covered by the removed Autoloader perk. The save migration fills it and
+     * scripts.ts hands it to buy.sh once, then empties it (lib/nodefarm/systems/scripts.ts `migrateArmed`). */
     armed: string[];
+    /** set by the save migration when `armed` really was automated (sweeping Drones or the Autoloader) and goes to buy.sh */
+    armedToBuy?: boolean;
     /** owned prestige-tree node ids (bought with AP, kept through Ascend) */
     tree: string[];
     /** ranks above 1 of ranked tree nodes, by id (kept through Ascend; an owned ranked node without an entry is rank 1) */
@@ -638,15 +693,251 @@ export interface State {
     dropAt: number;
     /** event wins this run (Spike protocol), reset on Ascend */
     runWins: number;
-    /** stats Standing orders has already armed once, so a stat you disarm stays disarmed */
+    /** stats Standing orders has already ticked for buy.sh once, so a stat you untick stays unticked */
     autoArmed: string[];
     /** AP refunded when an old tree was replaced, shown once in the feed and then cleared */
     treeRefund?: number;
     /** Exploit Lab: Intel, research nodes, compile queue, payload stock and running buffs (see LabState) */
     lab: LabState;
+    /** Drone hangar: postings, zone mastery, Parts, mods and the drone tree (see DroneState) */
+    dr: DroneState;
+    /** Handover (the reset past Ascend): Keys, Firmware, the protocol and your handover notes (see HandState) */
+    hand: HandState;
+    /** Scripts (lib/nodefarm/systems/scripts.ts): what you taught the scheduler and how each script is set. Kept through Ascend. Created on first use. */
+    auto?: AutoState;
+    /** Zone rigs (lib/nodefarm/zones/rigs.ts): one machine per zone. Levels kept through Ascend, meters reset. Created on first use. */
+    rig?: RigState;
+    /** Stress tests (lib/nodefarm/systems/stress.ts): cleared ranks, and while a test runs, the real run stored aside. Created on first use. */
+    ch?: import("./systems/stress").ChState;
+    /** Zone events (lib/nodefarm/zones/zoneevents.ts): the running event, the timer to the next one and a count. Reset on Ascend. Created on first use. */
+    ze?: ZoneEvState;
+    /** The ending (lib/nodefarm/systems/ending.ts): final build stages, stars and the logs you left. Kept through everything. Created on first use. */
+    end?: EndState;
+    /** Which button tiers were ever pressed, per stat, as a bit mask. Kept through Ascend; arcs clear when every tier of every zone in them is set. */
+    seen?: Partial<Record<ButtonStat, number>>;
     // lifetime counters (survive Ascend)
     life: { bytes: number; taps: number; reboots: number; ascends: number; intrusions: number; secs: number; presses: number; capped: number; peakBps: number; apTotal: number; intel: number; compiled: number; deployed: number };
     overclock: number; // seconds left
+}
+
+/** Scripts: learned automation (rules live in lib/nodefarm/systems/scripts.ts, which registers itself in TICK_HOOKS). */
+export type ScriptId = "buy" | "reboot" | "compile" | "deploy" | "drop" | "ascend" | "rig" | "event" | "restore";
+export interface AutoState {
+    /** manual presses per stat and tier, lifetime (buy.sh may only press tiers you pressed by hand) */
+    taught: Record<string, number[]>;
+    /** manual actions counted toward learning each script */
+    learn: Partial<Record<ScriptId, number>>;
+    /** learned scripts */
+    own: ScriptId[];
+    /** running switches (reboot.sh uses the Watchdog switch, `watchdog`) */
+    on: Partial<Record<ScriptId, boolean>>;
+    /** buy.sh: bitmask of the tiers it may press, per stat */
+    buy: Record<string, number>;
+    /** buy.sh: only buys while the balance is at least this many times the price */
+    keep: number;
+    /** reboot.sh: Reboots once Multipliers reach this many times the best price */
+    rebootX: number;
+    /** compile.sh: keep each recipe stocked up to this many */
+    stockTo: Partial<Record<PayloadId, number>>;
+    /** deploy.sh: payloads it deploys */
+    dep: PayloadId[];
+    /** ascend.sh: Ascends once the AP on offer is this many times the last Ascend's */
+    ascX: number;
+    /** AP the last Ascend paid, and life.secs when it happened (ascend.sh) */
+    lastAp: number;
+    runAt: number;
+    /** ascends and apTotal seen, to notice an Ascend from anywhere */
+    seenAsc: number;
+    seenAp: number;
+    /** cycle timers and actions run per script (buy.sh's version comes from its total) */
+    acc: Partial<Record<ScriptId, number>>;
+    ran: Partial<Record<ScriptId, number>>;
+    /** buttons pressed by scripts, so the feed can tell them from Drone presses */
+    presses: number;
+    // second batch (optional, so first-batch saves load as they are)
+    /** reboot.sh: wait for a full Capacitor (zone 03 rig); deploy a stocked Logic bomb first */
+    capWait?: boolean;
+    bombFirst?: boolean;
+    /** ascend.sh: deploy a stocked Zero-click first */
+    zeroFirst?: boolean;
+    /** rig.sh: zones whose rig it upgrades, and the reserve it keeps (times the price) */
+    rigs?: Record<string, boolean>;
+    rigX?: number;
+    /** event.sh: how it answers a Rich vein and a Fault */
+    vein?: "mine" | "run";
+    fault?: "patch" | "wait";
+    /** restore.sh: the build saved before the last Handover (tree order, ranks, perks), whether it is rebuilding, and what it rebuilds */
+    build?: string[];
+    buildLv?: Record<string, number>;
+    buildPerks?: Record<string, number>;
+    rebuild?: boolean;
+    seenHand?: number;
+    restPerks?: boolean;
+}
+/** Called at the end of every tick (and so also through time away). Scripts add themselves here. */
+export const TICK_HOOKS: ((s: State, dt: number) => void)[] = [];
+
+/** Zone rigs: one machine per zone (rules in lib/nodefarm/zones/rigs.ts, which fills RIG_HOOKS when it is imported).
+ *  Levels and settings are kept through Ascend; meters, charges and timers belong to the run. */
+export interface RigState {
+    /** rig levels by key (a zone id, or "runes:echo" style keys for the Glyph hall's three carvings) */
+    lv: Record<string, number>;
+    /** Root chamber rewrites: extra level cap per zone */
+    re: Record<string, number>;
+    /** rewrites done in total (prices the next) */
+    rw: number;
+    // settings (kept)
+    scrub: boolean;
+    aim: string;
+    draw: number;
+    rwAim: string;
+    /** 22 Bedrock shaft: coolant on the drill bit (optional, old saves have none) */
+    cool?: boolean;
+    /** 28 Scaffold: Lattice charges banked at each Ascend (kept through Ascend) */
+    scaf?: number;
+    /** 26 Flares: seconds of Corona output toward the next flare, and seconds of the flare left (run meters) */
+    flare?: number;
+    flareLeft?: number;
+    /** 21 Bloom core: seeds banked at each Ascend (kept through Ascend) */
+    seeds?: number;
+    // run meters (reset on Ascend)
+    cache: number;
+    /** the Packet cache's cap at the last tick (Hot swap reads it without a derive) */
+    cacheCapAt: number;
+    quiet: number;
+    pour: number;
+    casts: number;
+    dust: number;
+    grow: number;
+    glow: number;
+    glowLeft: number;
+    wx: number;
+    pulse: number;
+    pulses: number;
+    fired: number;
+    well: number;
+    /** 20 Canopy hall day clock, 22 drill bit wear (0..1), 23 Magma line pressure clock and seconds of shaft heat left */
+    sun?: number;
+    wear?: number;
+    vent?: number;
+    heat?: number;
+}
+/** Filled by lib/nodefarm/zones/rigs.ts. Every hook is optional, so the engine (and the sim) run the same without rigs. */
+export const RIG_HOOKS: {
+    /** per-zone output multipliers, computed once per derive */
+    muls?: (s: State) => Partial<Record<StatId, number>>;
+    /** the Reboots a Reboot press pays, after the rig's say */
+    reboot?: (s: State, gain: number) => number;
+    /** right after a Reboot has wiped Bytes */
+    afterReboot?: (s: State) => void;
+    /** after any non-Reboot button press */
+    spend?: (s: State, stat: ButtonStat, tier: number) => void;
+    /** every tick, with the tick's derived numbers */
+    step?: (s: State, dt: number, d: Derived) => void;
+    /** the rig state the new run starts with (called before Ascend wipes the run) */
+    ascend?: (s: State) => RigState | undefined;
+} = {};
+
+/** Stress tests (challenge runs, lib/nodefarm/systems/stress.ts fills these when it is imported): a running test switches one
+ *  system off or changes a number, and cleared ranks pay small permanent boosts. Every hook is optional. */
+export type ChOff = "drones" | "events" | "prestige";
+export interface ChMuls { global: number; drone: number; bytes: number; mats: number; mult: number; ap: number; oc: number; offlineH: number; bare: boolean; noChain: boolean }
+export const CH_HOOKS: {
+    /** a running test switches this system off */
+    off?: (s: State, what: ChOff) => boolean;
+    /** the boosts from cleared ranks, times the running test's rule */
+    muls?: (s: State) => ChMuls;
+    /** a running test's rule on a button's cost and gain (a cost of Infinity locks it) */
+    button?: (s: State, stat: ButtonStat, tier: number, b: { cost: number; gain: number }) => void;
+} = {};
+export const chOff = (s: State, what: ChOff) => !!CH_HOOKS.off?.(s, what);
+// ---- Zone events: the numbers and the two reads the rest of the engine needs (spawning and choices live in lib/nodefarm/zones/zoneevents.ts)
+export type ZoneEvKind = "surge" | "clearance" | "resonance" | "vein" | "fault" | "convoy" | "tune" | "rogue" | "vault";
+export interface ZoneEvActive {
+    /** a running number, so the screen can tell a new event from the one it already showed */
+    id: number;
+    kind: ZoneEvKind;
+    zone: StatId;
+    /** seconds left, and the length it started with */
+    left: number;
+    total: number;
+    /** vein and fault: you have answered the choice (Let it run, Wait it out), so the buttons go away. Mining and patching end the event instead. */
+    picked?: boolean;
+    /** convoy: fractional extra Drone presses waiting to fire, per tier */
+    acc?: number[];
+    /** rogue: the rarity (0 to 5) all three offers were rolled at, so the card can rebuild them */
+    rar?: number;
+}
+export interface ZoneEvState {
+    act: ZoneEvActive[];
+    /** game seconds until the next event may start */
+    wait: number;
+    /** events seen, and how many of each kind (for the feed and Records) */
+    seen: number;
+    kinds: Partial<Record<ZoneEvKind, number>>;
+    /** the zone of the last event, so the next one lands somewhere else */
+    last?: StatId;
+    /** the last dozen events, newest last (`at` is life.secs when it started), for Records */
+    log?: { kind: ZoneEvKind; zone: StatId; at: number }[];
+    /** events switched off in Menu: nothing new starts (the one on screen runs out) */
+    off?: boolean;
+}
+export const ZE_TUNE = {
+    /** gap between events in game seconds, [min, max]; the first one waits for `first` seconds of life */
+    gap: [660, 1140] as [number, number],
+    first: 480,
+    /** how long each lasts, seconds */
+    secs: { surge: 150, clearance: 150, resonance: 150, vein: 210, fault: 150, convoy: 150, tune: 150, rogue: 120, vault: 120 } as Record<ZoneEvKind, number>,
+    /** relative odds of each kind */
+    odds: { surge: 3, clearance: 2, resonance: 2, vein: 2, fault: 1, convoy: 1.5, tune: 1.5, rogue: 1.5, vault: 1.5 } as Record<ZoneEvKind, number>,
+    /** output multipliers (trimmed after the balance audit: the first numbers cut a Drone-bot Origin run from about 38 h to 26 to 32 h) */
+    surge: 1.4,
+    resonance: 1.3,
+    vein: 1.4,
+    fault: 0.6,
+    /** Clearance: price multiplier on that zone's buttons */
+    clearance: 0.75,
+    /** Rich vein: seconds of the zone's output paid at once if you Mine it */
+    mine: 150,
+    /** Fault: seconds of Bytes output a Patch costs */
+    patch: 25,
+    /** no Fault before this much life */
+    faultFrom: 900,
+    /** Drone convoy: your Drones press that zone this many times as often */
+    convoy: 2.5,
+    /** Rig tune: the zone rig's bonus counts this many times over */
+    tune: 2,
+    /** events kept in the log */
+    logMax: 12,
+};
+/** The zone a Resonance also lifts: the one below it in the chain (Bytes pairs with Multipliers). */
+export const resonancePair = (zone: StatId): StatId => { const i = STATS.findIndex((x) => x.id === zone); return STATS[i > 0 ? i - 1 : 1].id; };
+/** Output multiplier an event puts on a zone (1 when none). Bytes: Bytes per second. Multipliers: button strength. Reboots: Reboot strength. Materials: their rate. */
+export function zeOut(s: State, id: StatId): number {
+    const a = s.ze?.act;
+    if (!a || !a.length) return 1;
+    let x = 1;
+    for (const e of a) {
+        if (e.left <= 0) continue;
+        if (e.kind === "surge" && e.zone === id) x *= fwFieldOp(s) ? 1 + (ZE_TUNE.surge - 1) * 2 : ZE_TUNE.surge;
+        else if (e.kind === "vein" && e.zone === id) x *= ZE_TUNE.vein;
+        else if (e.kind === "fault" && e.zone === id) x *= ZE_TUNE.fault;
+        else if (e.kind === "resonance" && (e.zone === id || resonancePair(e.zone) === id)) x *= ZE_TUNE.resonance;
+    }
+    return x;
+}
+/** The zone whose rig a Rig tune is running on (its bonus counts ZE_TUNE.tune times), or null. */
+export function zeTuned(s: State): StatId | null {
+    const e = s.ze?.act.find((x) => x.kind === "tune" && x.left > 0);
+    return e ? e.zone : null;
+}
+/** Price multiplier on a zone's buttons (Clearance). */
+export function zeCost(s: State, stat: StatId): number {
+    const a = s.ze?.act;
+    if (!a || !a.length) return 1;
+    let x = 1;
+    for (const e of a) if (e.kind === "clearance" && e.zone === stat && e.left > 0) x *= ZE_TUNE.clearance;
+    return x;
 }
 
 export function fresh(now = Date.now()): State {
@@ -671,10 +962,22 @@ export function fresh(now = Date.now()): State {
         engrams: 0,
         paradox: 0,
         origin: 0,
+        spores: 0,
+        mycelium: 0,
+        pollen: 0,
+        bloom: 0,
+        basalt: 0,
+        magma: 0,
+        geodes: 0,
+        sunstone: 0,
+        corona: 0,
+        plasma: 0,
+        lattice: 0,
+        radiance: 0,
         prod: Object.fromEntries(MATS.map((m) => [m, 0])) as Record<MatId, number>,
         bought: Object.fromEntries((["mult", "reboot", ...MATS] as ButtonStat[]).map((k) => [k, Array(TIERS).fill(0)])) as Record<ButtonStat, number[]>,
         ap: 0,
-        perks: { scanner: 0, auto: 0, overclock: 0, offline: 0, start: 0, power: 0 },
+        perks: { scanner: 0, overclock: 0, offline: 0, start: 0, power: 0 },
         ach: [],
         achAt: {},
         logs: [],
@@ -692,10 +995,18 @@ export function fresh(now = Date.now()): State {
         autoArmed: [],
         life: { bytes: 0, taps: 0, reboots: 0, ascends: 0, intrusions: 0, secs: 0, presses: 0, capped: 0, peakBps: 0, apTotal: 0, intel: 0, compiled: 0, deployed: 0 },
         lab: freshLab(),
+        dr: freshDr(),
+        hand: freshHand(),
         overclock: 0,
     };
 }
 
+/** Like boost, but past `cap` the amount only counts by its log10, so a boost on everything cannot feed the material that makes it. */
+const boostCapped = (amount: number, k: number, cap: number) => {
+    const a = Math.max(0, amount);
+    if (a <= cap) return 1 + k * Math.pow(a, TUNE.boostPow);
+    return 1 + k * Math.pow(cap, TUNE.boostPow) * (1 + Math.log10(a / cap));
+};
 const boost = (amount: number, k: number) => 1 + k * Math.pow(Math.max(0, amount), TUNE.boostPow);
 
 export interface Derived {
@@ -705,7 +1016,7 @@ export interface Derived {
     multGainMult: number;
     rates: Record<MatId, number>;
     offlineCap: number; // seconds
-    boosts: { cuReboot: number; cuBytes: number; siCu: number; qzSi: number; aeQz: number; ruAe: number; sgRu: number; vsSg: number; chVs: number; chAll: number; nbCh: number; puNb: number; snPu: number; egSn: number; pxEg: number; orPx: number };
+    boosts: { cuReboot: number; cuBytes: number; siCu: number; qzSi: number; aeQz: number; ruAe: number; sgRu: number; vsSg: number; chVs: number; chAll: number; nbCh: number; puNb: number; snPu: number; egSn: number; pxEg: number; orPx: number; spOr: number; mySp: number; poMy: number; blPo: number; baBl: number; mgBa: number; geMg: number; suGe: number; cnSu: number; plCn: number; ltPl: number; raLt: number };
 }
 
 export function derive(s: State): Derived {
@@ -720,34 +1031,53 @@ export function derive(s: State): Derived {
         sgRu: boost(s.starglass, k.sgRu),
         vsSg: boost(s.voidsteel, k.vsSg),
         chVs: boost(s.chrono, k.chVs),
-        chAll: boost(s.chrono, k.chAll),
+        chAll: boostCapped(s.chrono, k.chAll, TUNE.chAllCap),
         nbCh: boost(s.nebula, k.nbCh),
         puNb: boost(s.pulsars, k.puNb),
         snPu: boost(s.singularity, k.snPu),
         egSn: boost(s.engrams, k.egSn),
         pxEg: boost(s.paradox, k.pxEg),
         orPx: boost(s.origin, k.orPx),
+        spOr: boost(s.spores, k.spOr),
+        mySp: boost(s.mycelium, k.mySp),
+        poMy: boost(s.pollen, k.poMy),
+        blPo: boost(s.bloom, k.blPo),
+        baBl: boost(s.basalt, k.baBl),
+        mgBa: boost(s.magma, k.mgBa),
+        geMg: boost(s.geodes, k.geMg),
+        suGe: boost(s.sunstone, k.suGe),
+        cnSu: boost(s.corona, k.cnSu),
+        plCn: boost(s.plasma, k.plCn),
+        ltPl: boost(s.lattice, k.ltPl),
+        raLt: boost(s.radiance, k.raLt),
     };
     const tf = treeFx(s);
     const lb = labBuffs(s);
     const droneLv = s.drones.reduce((a, b) => a + b, 0);
-    const global = (1 + s.perks.power * 0.15) * (1 + tf.global) * apGlobal(s) * (1 + s.ach.length * (TUNE.achBonus + tf.goals)) * (1 + tiersDone(s) * TUNE.tierBonus)
+    const ch = CH_HOOKS.muls?.(s);
+    // a Brownout stress test runs without perks, unspent AP and the goal bonuses
+    const global = (ch?.bare ? 1 : (1 + s.perks.power * 0.15) * apGlobal(s) * (1 + achPoints(s) * (TUNE.achBonus + tf.goals) * (1 + protoK(s, "tamsin"))) * (1 + tiersDone(s) * TUNE.tierBonus)) * (1 + tf.global) * handGlobal(s) * (ARC_HOOKS.cleared ? 1 + TUNE.arcBonus * ARC_HOOKS.cleared(s) : 1) * (ch?.global ?? 1)
         * (1 + droneLv * tf.droneGlobal) * (1 + s.runWins * tf.winBoost) * boosts.chAll * singularityAll(s) * (s.overclock > 0 ? overclockMult(s) : 1) * lb.global
-        * (tf.perNode ? 1 + tf.perNode * treeCount(s) : 1);
-    const rebootStrength = TUNE.rebootStrength * boosts.cuReboot * (1 + tf.reboot) * (tf.ocReboot && s.overclock > 0 ? 1 + tf.ocReboot : 1);
-    const multGainMult = (1 + rebootStrength * s.reboot) * (1 + tf.multGain) * lb.mult;
-    const bytesPerSec = s.mult * boosts.cuBytes * global * (1 + tf.bytes) * lb.bytes * runBytes(s, tf);
+        * (tf.perNode ? 1 + tf.perNode * treeCount(s) : 1) * foundryAll(s) * sunstoneAll(s) * radianceAll(s);
+    const wren = protoK(s, "wren");
+    const rig = RIG_HOOKS.muls ? RIG_HOOKS.muls(s) : {};
+    const rebootStrength = TUNE.rebootStrength * boosts.cuReboot * (1 + tf.reboot) * (tf.ocReboot && s.overclock > 0 ? 1 + tf.ocReboot : 1) * (1 + wren) * zeOut(s, "reboot");
+    const multGainMult = (1 + rebootStrength * s.reboot) * (1 + tf.multGain) * lb.mult * masteryMul(s, "mult") * (1 + 2 * wren) * zeOut(s, "mult") * (rig.mult ?? 1) * (ch?.mult ?? 1);
+    // capped like every amount, so a runaway late game can never write Infinity (null in JSON) into the save
+    const bytesPerSec = Math.min(CAP, s.mult * boosts.cuBytes * global * (1 + tf.bytes) * lb.bytes * runBytes(s, tf) * zeOut(s, "bytes") * (rig.bytes ?? 1) * (ch?.bytes ?? 1));
     // each material is boosted by the one after it in the chain
-    const boostedBy: Record<MatId, number> = { copper: boosts.siCu, silicon: boosts.qzSi, quartz: boosts.aeQz, aether: boosts.ruAe, runes: boosts.sgRu, starglass: boosts.vsSg, voidsteel: boosts.chVs, chrono: boosts.nbCh, nebula: boosts.puNb, pulsars: boosts.snPu, singularity: boosts.egSn, engrams: boosts.pxEg, paradox: boosts.orPx, origin: 1 };
-    // Cross-talk: each material is also boosted by the one two steps up the chain, at the weaker late-chain strength
-    if (tf.features.includes("crosstalk")) MATS.forEach((m, i) => { const up = MATS[i + 2]; if (up) boostedBy[m] *= boost(s[up], TUNE.boostK.ruAe); });
+    const boostedBy: Record<MatId, number> = { copper: boosts.siCu, silicon: boosts.qzSi, quartz: boosts.aeQz, aether: boosts.ruAe, runes: boosts.sgRu, starglass: boosts.vsSg, voidsteel: boosts.chVs, chrono: boosts.nbCh, nebula: boosts.puNb, pulsars: boosts.snPu, singularity: boosts.egSn, engrams: boosts.pxEg, paradox: boosts.orPx, origin: boosts.spOr, spores: boosts.mySp, mycelium: boosts.poMy, pollen: boosts.blPo, bloom: boosts.baBl, basalt: boosts.mgBa, magma: boosts.geMg, geodes: boosts.suGe, sunstone: boosts.cnSu, corona: boosts.plCn, plasma: boosts.ltPl, lattice: boosts.raLt, radiance: 1 };
+    if (ch?.noChain) for (const m of MATS) boostedBy[m] = 1; // Broken chain stress test
+    // Cross-talk: each material is also boosted by the one two steps up the chain. Log-scaled: a power-law boost here made a second
+    // feedback loop through all fourteen materials and the sim hit Infinity within minutes of buying it (balance audit 2026-11-12).
+    if (tf.features.includes("crosstalk")) MATS.forEach((m, i) => { const up = MATS[i + 2]; if (up) boostedBy[m] *= logBoost(s[up], TUNE.logK.crosstalk); });
     // Bus bar (Reboots feed every material) and Specialist (the newest material you produce)
     const bus = tf.busbar ? 1 + tf.busbar * Math.log10(1 + s.reboot) : 1;
     let newest: MatId | null = null;
     if (tf.specialist) for (const m of MATS) if (s.prod[m] > 0) newest = m;
     const rates = {} as Record<MatId, number>;
-    for (const m of MATS) rates[m] = s.prod[m] * TUNE.perProducer[m] * boostedBy[m] * (1 + (tf.mats[m] ?? 0)) * global * (FORGE_MATS.includes(m) ? lb.forge : 1) * bus * (m === newest ? 1 + tf.specialist : 1);
-    return { global, bytesPerSec, rebootStrength, multGainMult, rates, offlineCap: Math.max(1, TUNE.offlineCapHours + s.perks.offline * 4 + tf.offline) * 3600, boosts };
+    for (const m of MATS) rates[m] = Math.min(CAP, s.prod[m] * TUNE.perProducer[m] * boostedBy[m] * (1 + (tf.mats[m] ?? 0)) * global * (FORGE_MATS.includes(m) ? lb.forge : 1) * bus * (m === newest ? 1 + tf.specialist : 1) * masteryMul(s, m) * zeOut(s, m) * (rig[m] ?? 1) * (ch?.mats ?? 1));
+    return { global, bytesPerSec, rebootStrength, multGainMult, rates, offlineCap: Math.max(1, TUNE.offlineCapHours + s.perks.offline * 4 + tf.offline + (handFx(s).standby ? HAND_TUNE.standbyHours : 0) + (ch?.offlineH ?? 0)) * 3600, boosts };
 }
 
 /** Nodes plus extra ranks owned (Investor). */
@@ -769,14 +1099,16 @@ export const gainFor = (stat: ButtonStat, tier: number) => TUNE.gainBase[stat] *
 export function button(s: State, stat: ButtonStat, tier: number) {
     if (stat === "reboot") {
         const tf = treeFx(s);
-        const cost = TUNE.rebootBase * Math.pow(TUNE.rebootRatio, tier) * Math.pow(TUNE.rebootGrowth, s.reboot * (1 - tf.growth)) * tf.discount;
-        return { cost, gain: Math.max(1, Math.round(Math.pow(TUNE.rebootGainRatio, tier))), pays: "mult" as StatId };
+        const b = { cost: TUNE.rebootBase * Math.pow(TUNE.rebootRatio, tier) * Math.pow(TUNE.rebootGrowth, s.reboot * (1 - tf.growth)) * tf.discount * zeCost(s, "reboot"), gain: Math.max(1, Math.round(Math.pow(TUNE.rebootGainRatio, tier))) };
+        CH_HOOKS.button?.(s, stat, tier, b);
+        return { cost: b.cost, gain: b.gain, pays: "mult" as StatId };
     }
     const c = TUNE.cost[stat];
     const tf = treeFx(s);
-    const cost = c.base * Math.pow(c.ratio, tier) * Math.pow(c.growth, s.bought[stat][tier] * (1 - tf.growth)) * tf.discount;
+    const cost = c.base * Math.pow(c.ratio, tier) * Math.pow(c.growth, s.bought[stat][tier] * (1 - tf.growth)) * tf.discount * zeCost(s, stat);
     let gain = gainFor(stat, tier);
     if (stat === "mult") gain *= derive(s).multGainMult;
+    if (CH_HOOKS.button) { const b = { cost, gain }; CH_HOOKS.button(s, stat, tier, b); return { cost: b.cost, gain: b.gain, pays: statDef(stat).pays as StatId }; }
     return { cost, gain, pays: statDef(stat).pays as StatId };
 }
 
@@ -793,10 +1125,11 @@ export function isUnlocked(s: State, id: StatId): boolean {
     if (id === "bytes" || id === "mult") return true;
     if (id === "reboot") return s.life.bytes >= REBOOT_UNLOCK.bytes || s.reboot > 0 || s.mult >= REBOOT_UNLOCK.mult;
     if (id === "copper") return s.life.reboots >= TUNE.unlockAt.copper;
+    if (ARC_MATS.includes(id as MatId) && (s.hand?.count ?? 0) < arcGateNeed(id)) return false;
     const i = MATS.indexOf(id as MatId);
     const below = MATS[i - 1];
     // after your first Ascend a stat opens at a quarter of the usual amount
-    const need = TUNE.unlockAt[id] * treeFx(s).unlockMul;
+    const need = unlockNeed(s, id);
     return s.prod[id as MatId] > 0 || amount(s, below) >= need || (s.life.ascends > 0 && s.life.reboots >= TUNE.unlockAt.copper && amount(s, below) >= need / 4);
 }
 
@@ -804,10 +1137,12 @@ export function isUnlocked(s: State, id: StatId): boolean {
 export function press(s: State, stat: ButtonStat, tier: number): boolean {
     const b = button(s, stat, tier);
     if (amount(s, b.pays) < b.cost) return false;
+    (s.seen ??= {})[stat] = ((s.seen[stat] ?? 0) | (1 << tier));
     if (stat === "reboot") {
         // Logic bomb (Exploit Lab): an armed charge multiplies this Reboot
         const bomb = s.lab.armed.indexOf("logicbomb");
-        const gain = bomb >= 0 ? Math.round(b.gain * (1 + payloadV(s, payload("logicbomb")))) : b.gain;
+        let gain = bomb >= 0 ? Math.round(b.gain * (1 + payloadV(s, payload("logicbomb")))) : b.gain;
+        if (RIG_HOOKS.reboot) gain = RIG_HOOKS.reboot(s, gain);
         if (bomb >= 0) s.lab.armed.splice(bomb, 1);
         // a crash dump: the Reboot banks the Intel buffer (it refills over LAB_TUNE.dumpSecs)
         labLump(s, s.lab.dump);
@@ -819,6 +1154,7 @@ export function press(s: State, stat: ButtonStat, tier: number): boolean {
         s.mult = Math.max(1, s.mult * treeFx(s).rebootKeep);
         s.bought.mult.fill(0);
         s.bytes = derive(s).bytesPerSec * (10 * s.perks.start + treeFx(s).start);
+        RIG_HOOKS.afterReboot?.(s);
         return true;
     }
     (s[b.pays] as number) = amount(s, b.pays) - b.cost;
@@ -826,18 +1162,26 @@ export function press(s: State, stat: ButtonStat, tier: number): boolean {
     s.bought[stat][tier] += 1;
     if (stat === "mult") s.mult += b.gain;
     else s.prod[stat] += b.gain;
+    RIG_HOOKS.spend?.(s, stat, tier);
     return true;
 }
 
-export const droneMax = (s: State) => { const f = treeFx(s); return TUNE.drone.max + f.droneMax + (f.droneTierGoal ? f.droneTierGoal * tiersDone(s) : 0); };
-export const droneCost = (s: State, tier: number) => TUNE.drone.base * Math.pow(TUNE.drone.ratio, tier) * Math.pow(TUNE.drone.growth, s.drones[tier]) * treeFx(s).droneCost;
-export const dronesOpen = (s: State) => s.aether > 0 || s.prod.aether > 0 || s.life.ascends > 0;
+export const droneMax = (s: State) => { const f = treeFx(s); return TUNE.drone.max + f.droneMax + droneFx(s).droneMax + (f.droneTierGoal ? f.droneTierGoal * tiersDone(s) : 0); };
+export const droneCost = (s: State, tier: number) => TUNE.drone.base * Math.pow(TUNE.drone.ratio, tier) * Math.pow(TUNE.drone.growth, s.drones[tier]) * treeFx(s).droneCost * (1 - droneFx(s).droneCost) / (1 + protoK(s, "osk"));
+export const dronesOpen = (s: State) => !chOff(s, "drones") && (s.aether > 0 || s.prod.aether > 0 || s.life.ascends > 0);
 export function buyDrone(s: State, tier: number): boolean {
     const c = droneCost(s, tier);
-    if (!dronesOpen(s) || s.drones[tier] >= droneMax(s) || s.aether < c) return false;
+    if (!dronesOpen(s) || chOff(s, "drones") || s.drones[tier] >= droneMax(s) || s.aether < c) return false;
     s.aether -= c;
     s.drones[tier] += 1;
+    // a Drone only works posted, so a docked tier goes straight to a zone (change it in the hangar)
+    if (s.dr && !s.dr.post[tier]) s.dr.post[tier] = firstPost(s);
     return true;
+}
+/** Where a newly bought Drone goes: the newest open zone no other Drone works, else the newest open zone. */
+export function firstPost(s: State): ButtonStat | null {
+    const open = POSTABLE.filter((st) => isUnlocked(s, st)).reverse();
+    return open.find((st) => !s.dr.post.includes(st)) ?? open[0] ?? null;
 }
 /** Singularity pulls on everything, Engrams make Drones press faster, Paradox makes Overclock stronger, Origin adds AP. Log-scale so none of them can run away. */
 const logBoost = (amount: number, k: number) => 1 + k * Math.log10(1 + Math.max(0, amount));
@@ -845,46 +1189,65 @@ export const singularityAll = (s: State) => logBoost(s.singularity, TUNE.logK.sn
 export const droneBoost = (s: State) => logBoost(s.engrams, TUNE.logK.egDrone);
 export const paradoxOc = (s: State) => logBoost(s.paradox, TUNE.logK.pxOc);
 export const originAp = (s: State) => logBoost(s.origin, TUNE.logK.orAp);
+/** Bloom: every Handover pays more Keys. Sunstone: everything a little. Both log-scaled like the Origin arc extras. */
+export const bloomKeys = (s: State) => logBoost(s.bloom, TUNE.logK.blKeys);
+export const sunstoneAll = (s: State) => logBoost(s.sunstone, TUNE.logK.suAll);
+/** Radiance: everything a little, log-scaled like Sunstone. */
+export const radianceAll = (s: State) => logBoost(s.radiance, TUNE.logK.raAll);
 /** The highest Drone tier with a level, or -1. */
 const topDrone = (s: State) => { for (let k = s.drones.length - 1; k >= 0; k--) if (s.drones[k] > 0) return k; return -1; };
 export const droneRate = (s: State, tier: number) => {
     const f = treeFx(s);
-    let r = s.drones[tier] * TUNE.drone.rate * (1 + f.drone) * labBuffs(s).drone * droneBoost(s);
+    let r = s.drones[tier] * TUNE.drone.rate * (1 + f.drone) * labBuffs(s).drone * droneBoost(s) * hangarSpeed(s, tier) * (1 + 2 * protoK(s, "osk")) * (CH_HOOKS.muls ? CH_HOOKS.muls(s).drone : 1);
     if (f.spearhead && r > 0 && topDrone(s) === tier) r *= 1 + f.spearhead; // Spearhead: the top tier you own
     if (f.frenzy && (s.frenzy ?? 0) > 0) r *= TUNE.frenzyX; // Swarm alarm
     return r;
 };
-export function toggleArm(s: State, stat: string) {
-    s.armed = s.armed.includes(stat) ? s.armed.filter((x) => x !== stat) : [...s.armed, stat];
-}
-/** Let the Drones press for dt seconds. eff scales their speed (time away runs slower). Returns presses made. */
+/** Let the Drones press for dt seconds. eff scales their speed (time away runs slower). Returns presses made.
+ * A Drone works only once posted: it presses its tier on its zone, DRONE_TUNE.postX times as fast, and its work there builds
+ * that zone's mastery. An unposted Drone is docked and does nothing (Scripts are the automation layer, Nate 2026-11-12).
+ * Reach mods also press the tier below on the same zone. Every press a Drone attempts salvages a little Parts. */
 export function droneStep(s: State, dt: number, eff = 1): number {
-    if (!s.armed.length) return 0;
+    if (chOff(s, "drones")) return 0;
+    const D = s.dr;
+    const fx = droneFx(s);
     let made = 0;
+    let parts = 0;
+    const pressN = (st: ButtonStat, tier: number, n: number) => { for (let i = 0; i < n; i++) { if (!press(s, st, tier)) break; made++; } };
     for (let k = 0; k < TIERS; k++) {
-        if (s.drones[k] <= 0) continue;
-        s.droneAcc[k] = Math.min(s.droneAcc[k] + droneRate(s, k) * dt * eff, TUNE.drone.burst);
-        let n = Math.floor(s.droneAcc[k]);
-        if (n < 1) continue;
-        s.droneAcc[k] -= n;
-        for (const st of STATS) {
-            if (st.id === "bytes" || st.id === "reboot" || !s.armed.includes(st.id) || !isUnlocked(s, st.id)) continue;
-            for (let i = 0; i < n; i++) {
-                if (!press(s, st.id as ButtonStat, k)) break;
-                made++;
-            }
+        const post = postOf(s, k);
+        if (s.drones[k] <= 0 || !post) continue;
+        const postRate = droneRate(s, k) * dt * eff * postX(s, k);
+        const reach = (D.mods[k]?.[2] ?? 0) * DRONE_TUNE.reachEach;
+        const salv = 1 + (D.mods[k]?.[4] ?? 0) * DRONE_TUNE.salvageEach;
+        D.pacc[k] = Math.min(D.pacc[k] + postRate, TUNE.drone.burst * 4);
+        const n = Math.floor(D.pacc[k]);
+        if (n >= 1) { D.pacc[k] -= n; pressN(post, k, n); }
+        addSvc(s, post, postRate * (1 + (D.mods[k]?.[3] ?? 0) * DRONE_TUNE.tunerEach), fx);
+        // reach: the tier below, on the same zone
+        if (reach > 0 && k > 0) {
+            D.racc[k] = Math.min(D.racc[k] + postRate * reach, TUNE.drone.burst);
+            const r = Math.floor(D.racc[k]);
+            if (r >= 1) { D.racc[k] -= r; pressN(post, k - 1, r); }
         }
+        parts += postRate * salv;
     }
+    if (parts > 0) D.parts = Math.min(CAP, D.parts + parts * DRONE_TUNE.partK * (1 + fx.parts));
     return made;
 }
 
 /** Ceiling for every amount (doubles overflow to Infinity just past 1.8e308). */
 export const CAP = 1e300;
 
+/** Every Bytes added to lifetime Bytes, summed on the side. offline() reads it for the standby report: the lifetime counter is too
+ *  large to subtract (a few thousand Bytes vanish next to 1e40), and s.bytes is reset by every Reboot. */
+export const lifeTally = { bytes: 0 };
+export function addLifeBytes(s: State, v: number) { s.life.bytes += v; lifeTally.bytes += v; }
+
 export function tick(s: State, dt: number, eff = 1) {
     const d = derive(s);
     s.bytes += d.bytesPerSec * dt;
-    s.life.bytes += d.bytesPerSec * dt;
+    addLifeBytes(s, d.bytesPerSec * dt);
     // amounts stop at CAP so a very long post-tree run can never reach Infinity and break the save
     for (const m of MATS) s[m] = Math.min(CAP, s[m] + d.rates[m] * dt);
     if (s.bytes > CAP) s.bytes = CAP;
@@ -894,13 +1257,14 @@ export function tick(s: State, dt: number, eff = 1) {
     s.life.secs += dt;
     if (d.bytesPerSec > s.life.peakBps) s.life.peakBps = d.bytesPerSec;
     labStep(s, dt, d.bytesPerSec);
+    RIG_HOOKS.step?.(s, dt, d);
     droneStep(s, dt, eff);
     watchdogStep(s);
-    autoArm(s);
+    for (const h of TICK_HOOKS) h(s, dt);
 }
 
 export const overclockMult = (s: State) => { const f = treeFx(s); return (TUNE.overclockMult + f.ocMult) * (1 + f.ocX) * paradoxOc(s); };
-export const overclockSecs = (s: State) => { const f = treeFx(s); return Math.max(5, (TUNE.overclockSecs + s.perks.overclock * 5 + f.overclock) * (1 + f.ocTime)); };
+export const overclockSecs = (s: State) => { const f = treeFx(s); return Math.max(5, (TUNE.overclockSecs + s.perks.overclock * 5 + f.overclock) * (1 + f.ocTime) * (CH_HOOKS.muls ? CH_HOOKS.muls(s).oc : 1)); };
 
 /** Production for `secs` seconds at the current rate (Bytes and every material), paid at once. Used by the Dead drop and Zero-day. */
 export function payout(s: State, secs: number, only?: readonly MatId[]) {
@@ -908,12 +1272,12 @@ export function payout(s: State, secs: number, only?: readonly MatId[]) {
     const oc = s.overclock > 0 ? overclockMult(s) : 1; // a lump is never paid at Overclock rate
     const gain: Partial<Record<StatId, number>> = { bytes: (d.bytesPerSec / oc) * secs };
     s.bytes += gain.bytes!;
-    s.life.bytes += gain.bytes!;
+    addLifeBytes(s, gain.bytes!);
     for (const m of only ?? MATS) { const v = (d.rates[m] / oc) * secs; if (v > 0) { s[m] += v; gain[m] = v; } }
     return gain;
 }
 
-/** Win a quick-time event: a timed Overclock, plus whatever the Anomaly nodes add. `rnd` is injectable for tests.
+/** Win a zone event (Rogue process, Cold storage, mining a vein, patching a fault): a timed Overclock, plus whatever the Anomaly nodes add. `rnd` is injectable for tests.
  *  Returns what happened so the UI can say it. */
 export function breach(s: State, rnd: () => number = Math.random) {
     const f = treeFx(s);
@@ -924,21 +1288,29 @@ export function breach(s: State, rnd: () => number = Math.random) {
     const zero = f.zeroDay > 0 && rnd() < f.zeroDay ? payout(s, TUNE.zeroDayPays) : null;
     const echo = f.echo > 0 && rnd() < f.echo;
     const intel = labLump(s, LAB_TUNE.eventSecs);
-    const paid = f.winPay > 0 ? payout(s, f.winPay) : null; // Patient
+    const listen = protoK(s, "vael") * HAND_TUNE.vaelPay; // Vael's protocol: every win pays a little production
+    const paid = f.winPay + listen > 0 ? payout(s, f.winPay + listen) : null; // Patient
     const frenzy = f.frenzy > 0;
     if (frenzy) s.frenzy = TUNE.frenzySecs; // Swarm alarm
     return { stacked, zero, echo, intel, paid, frenzy };
 }
 /** How much sooner events come (Wide-band scanner perk plus Static), as a fraction off the gap. */
-export const eventHaste = (s: State) => 1 - Math.max(0.3, (1 - s.perks.scanner * 0.08) * (1 - treeFx(s).eventRate));
+export const eventHaste = (s: State) => 1 - Math.max(0.3, (1 - s.perks.scanner * 0.08) * (1 - treeFx(s).eventRate)) / (1 + protoK(s, "vael"));
 
 // ---- Watchdog timer (auto-Reboot) and the Dead drop
 /** Press the best affordable Reboot once you hold TUNE.watchdogReserve times its price. Returns the tier pressed, or -1. */
 export function watchdogStep(s: State): number {
+    // once reboot.sh is learned it runs the rule itself (lib/nodefarm/systems/scripts.ts, with the Capacitor and Logic bomb options)
+    if (s.auto?.own.includes("reboot")) return -1;
     if (!s.watchdog || !hasFeature(s, "watchdog") || !isUnlocked(s, "reboot")) return -1;
+    const x = TUNE.watchdogReserve;
     for (let k = TIERS - 1; k >= 0; k--) {
         const b = button(s, "reboot", k);
-        if (s.mult >= b.cost * TUNE.watchdogReserve) return press(s, "reboot", k) ? k : -1;
+        if (s.mult >= b.cost * x) {
+            if (!press(s, "reboot", k)) return -1;
+            if (s.auto) s.auto.ran.reboot = (s.auto.ran.reboot ?? 0) + 1;
+            return k;
+        }
     }
     return -1;
 }
@@ -953,23 +1325,6 @@ export function openDrop(s: State, now = Date.now()) {
     s.dropAt = now;
     return payout(s, TUNE.dropPays);
 }
-/** Standing orders: arm each stat once, the first time it is open. */
-export function autoArm(s: State): string[] {
-    if (!hasFeature(s, "orders")) return [];
-    const out: string[] = [];
-    for (const st of STATS) {
-        if (st.id === "bytes" || st.id === "reboot" || s.autoArmed.includes(st.id) || !isUnlocked(s, st.id)) continue;
-        s.autoArmed.push(st.id);
-        if (!s.armed.includes(st.id)) { s.armed.push(st.id); out.push(st.id); }
-    }
-    return out;
-}
-/** Buy max: press one button as many times as the balance allows (Batch job). Returns the number bought. */
-export function pressMax(s: State, stat: Exclude<ButtonStat, "reboot">, tier: number, cap = 1000): number {
-    let n = 0;
-    while (n < cap && press(s, stat, tier)) n++;
-    return n;
-}
 /** Material slots on Mounted drives. */
 export const mountSlots = (s: State) => treeFx(s).mounts;
 export function setMount(s: State, slot: number, mat: MatId | null) {
@@ -982,11 +1337,11 @@ export function setMount(s: State, slot: number, mat: MatId | null) {
 }
 
 export const apOnAscend = (s: State) => {
-    if (s.aether < TUNE.ascendAether) return 0;
+    if (s.aether < ascendNeed(s) || chOff(s, "prestige")) return 0;
     let raw = Math.pow(s.aether / TUNE.apPerAether, TUNE.apPow);
     for (const [m, per] of Object.entries(TUNE.apPer)) raw += Math.pow(s[m as MatId] / per, TUNE.apPow);
     const tf = treeFx(s);
-    let gain = raw * (1 + tf.ap) * originAp(s) * (s.lab.armed.includes("zeroclick") ? 1 + payload("zeroclick").v : 1) * (tf.apPerMat ? 1 + tf.apPerMat * MATS.filter((m) => s.prod[m] > 0).length : 1);
+    let gain = raw * (1 + tf.ap) * originAp(s) * (s.lab.armed.includes("zeroclick") ? 1 + payload("zeroclick").v : 1) * (tf.apPerMat ? 1 + tf.apPerMat * MATS.filter((m) => s.prod[m] > 0).length : 1) * handAp(s) * (CH_HOOKS.muls ? CH_HOOKS.muls(s).ap : 1);
     if (TUNE.apGainSoft > 0 && gain > TUNE.apGainSoft) gain = TUNE.apGainSoft * (1 + Math.log(gain / TUNE.apGainSoft));
     return Math.floor(gain);
 };
@@ -998,9 +1353,18 @@ export function ascend(s: State) {
     const tf = treeFx(s);
     const mounts = s.mounts.slice(0, tf.mounts);
     const keptProd = Object.fromEntries(mounts.map((m) => [m, Math.floor(s.prod[m] * TUNE.mountKeep)]));
-    const keptDrones = s.drones.map((lv) => Math.max(Math.floor(lv * tf.droneKeep), tf.kitDrones));
-    const lab: LabState = { ...s.lab, intel: 0, run: [], armed: s.lab.armed.filter((x) => x !== "zeroclick"), dump: LAB_TUNE.dumpSecs };
-    const keep = { lab, ap: s.ap + gain, perks: s.perks, ach: s.ach, achAt: s.achAt, logs: s.logs, tree: s.tree, treeLv: s.treeLv, armed: s.armed, mounts: s.mounts, watchdog: s.watchdog, dropAt: s.dropAt, autoArmed: s.autoArmed, life: { ...s.life, ascends: s.life.ascends + 1, apTotal: s.life.apTotal + gain }, started: s.started };
+    // a Beacon armed for this Ascend keeps every Drone level (and is spent here)
+    const beacon = s.lab.armed.includes("beacon");
+    const keptDrones = s.drones.map((lv) => (beacon ? lv : Math.max(Math.floor(lv * tf.droneKeep), tf.kitDrones)));
+    const oldDrones = s.drones.slice();
+    const hf = handFx(s);
+    // after the first Handover, Ascend keeps Intel and running payloads (base Handover, HAND_BASE)
+    const keepIntel = Math.floor(s.lab.intel * labFx(s).intelKeep);
+    const lab: LabState = { ...s.lab, intel: hf.labKeep ? s.lab.intel : keepIntel, run: hf.labKeep ? s.lab.run : [], armed: s.lab.armed.filter((x) => x !== "zeroclick" && x !== "beacon"), dump: LAB_TUNE.dumpSecs };
+    const hand: HandState = { ...s.hand, cycleAp: s.hand.cycleAp + gain };
+    const dr = drOnAscend(s);
+    const rig = RIG_HOOKS.ascend ? RIG_HOOKS.ascend(s) : s.rig;
+    const keep = { lab, dr, hand, rig, seen: s.seen, ap: s.ap + gain, perks: s.perks, ach: s.ach, achAt: s.achAt, logs: s.logs, tree: s.tree, treeLv: s.treeLv, armed: s.armed, mounts: s.mounts, watchdog: s.watchdog, dropAt: s.dropAt, autoArmed: s.autoArmed, auto: s.auto, life: { ...s.life, ascends: s.life.ascends + 1, apTotal: s.life.apTotal + gain }, started: s.started };
     const n = fresh(s.at);
     Object.assign(n, keep);
     Object.assign(s, n);
@@ -1009,32 +1373,60 @@ export function ascend(s: State) {
     s.rebootAt = s.life.secs;
     for (const [m, v] of Object.entries(tf.kitProd)) s.prod[m as MatId] += v;
     for (const [m, v] of Object.entries(keptProd)) s.prod[m as MatId] = Math.max(s.prod[m as MatId], v);
-    s.drones = keptDrones;
+    s.drones = keptDrones.map((lv, k) => Math.max(lv, Math.floor(oldDrones[k] * hf.droneKeep))); // half the Drone levels stay after the first Handover (HAND_BASE)
+    bootKit(s);
+    if (s.ze) s.ze.act = []; // a running zone event ends with the run (its count and timer stay)
     return gain;
 }
 
 export function buyPerk(s: State, id: PerkDef["id"]): boolean {
     const p = PERKS.find((x) => x.id === id)!;
     const lvl = s.perks[id];
-    if (lvl >= p.max || s.ap < p.cost(lvl)) return false;
+    if (lvl >= p.max || s.ap < p.cost(lvl) || chOff(s, "prestige")) return false;
     s.ap -= p.cost(lvl);
     s.perks[id] += 1;
     return true;
 }
 
-/** Catch up for time away. Production only; nothing is bought for you. Returns what was gained. */
+export const OFFLINE_STEP_S = 1;
+export const OFFLINE_MAX_STEPS = 7200;
+
+/** Catch up for time away. Production only; nothing is bought for you (except by the scripts you taught). Returns what was gained.
+ *  The steps are about a second (see OFFLINE_STEP_S), and a step never runs past the moment a timed boost ends (Overclock,
+ *  Swarm alarm, a zone event, a deployed payload), so a boost counts for exactly the time it had left, not a whole step. */
 export function offline(s: State, seconds: number) {
     const cap = derive(s).offlineCap;
     const secs = Math.min(Math.max(0, seconds), cap);
-    const before = Object.fromEntries((["bytes", ...MATS] as const).map((k) => [k, s[k]])) as Record<"bytes" | MatId, number>;
-    const steps = Math.min(600, Math.max(1, Math.ceil(secs / 20)));
+    const before = Object.fromEntries(MATS.map((k) => [k, s[k]])) as Record<MatId, number>;
+    lifeTally.bytes = 0;
+    // Steps are about a second long while the gap allows it (7200 steps at most: an hour runs in 1 s steps, an 8 h gap in 4 s steps). Longer steps
+    // under-credit Drones, whose presses are paid from the stock at the start of a step, and Watchdog Reboots, which fire at most once a tick.
+    const steps = Math.min(OFFLINE_MAX_STEPS, Math.max(1, Math.ceil(secs / OFFLINE_STEP_S)));
     const dt = secs / steps;
     const oc = s.overclock;
     s.overclock = 0; // an intrusion boost doesn't carry through time away
     const pressesBefore = s.life.presses;
-    for (let i = 0; i < steps; i++) tick(s, dt, Math.min(1, TUNE.drone.offline + treeFx(s).droneOff));
+    const eff = handFx(s).standby ? 1 : Math.min(1, TUNE.drone.offline + treeFx(s).droneOff + droneFx(s).off);
+    const nextEnd = () => {
+        let m = Infinity;
+        if (s.overclock > 0) m = Math.min(m, s.overclock);
+        if (s.frenzy) m = Math.min(m, s.frenzy);
+        for (const e of s.ze?.act ?? []) if (e.left > 0) m = Math.min(m, e.left);
+        for (const r of s.lab.run) if (r.left > 0) m = Math.min(m, r.left);
+        return m;
+    };
+    for (let i = 0; i < steps; i++) {
+        let left = dt;
+        for (let guard = 0; left > 1e-9 && guard < 40; guard++) {
+            const h = guard === 39 ? left : Math.min(left, Math.max(0.05, nextEnd()));
+            tick(s, h, eff);
+            left -= h;
+        }
+    }
     s.overclock = Math.max(0, oc - secs);
-    return { secs, capped: seconds > cap, drones: s.life.presses - pressesBefore, gain: Object.fromEntries((["bytes", ...MATS] as const).map((k) => [k, s[k] - before[k]])) as Record<"bytes" | MatId, number> };
+    const gain = Object.fromEntries(MATS.map((k) => [k, s[k] - before[k]])) as Record<"bytes" | MatId, number>;
+    gain.bytes = lifeTally.bytes;
+    return { secs, capped: seconds > cap, drones: s.life.presses - pressesBefore, gain };
 }
 
 // ---- goals. Five tiers of six. Each goal gives a small permanent boost (TUNE.achBonus) and a full tier gives a bigger one (TUNE.tierBonus).
@@ -1047,8 +1439,8 @@ export interface Goal {
     cur: (s: State) => number;
     target: number;
 }
-export const GOAL_TIERS = 8;
-export const TIER_NAMES = ["", "Access", "Operator", "Admin", "Root", "Kernel", "Deep", "Zero", "Source"];
+export const GOAL_TIERS = 13;
+export const TIER_NAMES = ["", "Access", "Operator", "Admin", "Root", "Kernel", "Deep", "Zero", "Source", "Bedrock", "Daemon", "Subsystem", "Firmware", "Undersun"];
 const G = (id: string, name: string, hint: string, tier: number, icon: Goal["icon"], target: number, cur: (s: State) => number): Goal => ({ id, name, hint, tier, icon, cur, target });
 const life = (k: keyof State["life"]) => (s: State) => s.life[k];
 export const GOALS: Goal[] = [
@@ -1058,7 +1450,7 @@ export const GOALS: Goal[] = [
     G("m100", "Stacked", "Hold 100 Multipliers.", 1, "mult", 100, (s) => s.mult),
     G("r1", "Cold boot", "Reboot once.", 1, "reboot", 1, life("reboots")),
     G("cu1", "Trace lines", "Mine your first Copper.", 1, "copper", 1e-9, (s) => s.copper),
-    G("int1", "Counter-hack", "Win an intrusion.", 1, "alert", 1, life("intrusions")),
+    G("int1", "Counter-hack", "Win a zone event.", 1, "alert", 1, life("intrusions")),
     // II OPERATOR
     G("tap500", "Calloused", "Press 500 buttons.", 2, "spark", 500, life("presses")),
     G("b1m", "Bandwidth", "Earn 1 million Bytes.", 2, "bytes", 1e6, life("bytes")),
@@ -1072,7 +1464,7 @@ export const GOALS: Goal[] = [
     G("r100", "Triple digits", "Reach 100 Reboots.", 3, "reboot", 100, life("reboots")),
     G("si1k", "Fab line", "Hold 1,000 Silicon.", 3, "silicon", 1e3, (s) => s.silicon),
     G("qz1", "Resonance", "Mine your first Quartz.", 3, "quartz", 1e-9, (s) => s.quartz),
-    G("int25", "Watchdog", "Win 25 intrusions.", 3, "alert", 25, life("intrusions")),
+    G("int25", "Watchdog", "Win 25 zone events.", 3, "alert", 25, life("intrusions")),
     // IV ROOT
     G("p25k", "Muscle memory", "Press 25,000 buttons.", 4, "spark", 25000, life("presses")),
     G("b1t", "Whole network", "Earn 1 trillion Bytes.", 4, "bytes", 1e12, life("bytes")),
@@ -1108,6 +1500,19 @@ export const GOALS: Goal[] = [
     G("eg1", "Deja vu", "Record your first Engram.", 8, "engrams", 1e-9, (s) => s.engrams),
     G("px1", "Both at once", "Fold your first Paradox.", 8, "paradox", 1e-9, (s) => s.paradox),
     G("or1", "Node zero", "Reach the first Origin.", 8, "origin", 1e-9, (s) => s.origin),
+    // IX BEDROCK: the two arcs past Root Chamber, up through the farm (Overgrowth) and then down to the buried sun (Descent)
+    G("sp1", "Damp", "Grow your first Spores.", 9, "spores", 1e-9, (s) => s.spores),
+    G("my1", "Wired in", "Spin your first Mycelium.", 9, "mycelium", 1e-9, (s) => s.mycelium),
+    G("po1", "Daylight", "Gather your first Pollen.", 9, "pollen", 1e-9, (s) => s.pollen),
+    G("bl1", "In flower", "Open your first Bloom.", 9, "bloom", 1e-9, (s) => s.bloom),
+    G("ba1", "Hard floor", "Cut your first Basalt.", 9, "basalt", 1e-9, (s) => s.basalt),
+    G("mg1", "Running hot", "Tap your first Magma.", 9, "magma", 1e-9, (s) => s.magma),
+    G("ge1", "Hollow", "Crack your first Geode.", 9, "geodes", 1e-9, (s) => s.geodes),
+    G("su1", "The bottom", "Reach the buried sun.", 9, "sunstone", 1e-9, (s) => s.sunstone),
+    G("cn1", "Rim light", "Catch your first Corona.", 9, "corona", 1e-9, (s) => s.corona),
+    G("pl1", "Charged", "Tap your first Plasma.", 9, "plasma", 1e-9, (s) => s.plasma),
+    G("lt1", "Held still", "Set your first Lattice.", 9, "lattice", 1e-9, (s) => s.lattice),
+    G("au1", "Glare", "Catch your first Radiance.", 9, "radiance", 1e-9, (s) => s.radiance),
 ];
 
 // ---- secrets. They show as ???? until found, with a clue. Console ones are unlocked by commands (components/cm/console.tsx -> lib/nodefarm/records.ts);
@@ -1124,8 +1529,8 @@ export const SECRETS: Secret[] = [
     { id: "x_loop", name: "Loopback", clue: "Ask the console to ping home.", how: "Ran `nf ping 127.0.0.1` in the console." },
     { id: "x_sudo", name: "Not in the sudoers file", clue: "Try to take control from the console.", how: "Ran `nf sudo` in the console." },
     { id: "x_self", name: "Self aware", clue: "Ask the node who it is.", how: "Ran `nf whoami` in the console." },
-    { id: "x_night", name: "Night shift", clue: "The farm runs at all hours. So do you.", how: "Had Node Farm open between 3 and 4 in the morning.", test: () => new Date().getHours() === 3 },
-    { id: "x_haul", name: "Long haul", clue: "Stay a very long time.", how: "Played for 24 hours in total.", test: (s) => s.life.secs >= 86400 },
+    { id: "x_night", name: "Small hours", clue: "The farm runs at all hours. So do you.", how: "Had Node Farm open between 3 and 4 in the morning.", test: () => new Date().getHours() === 3 },
+    { id: "x_haul", name: "Full day", clue: "Stay a very long time.", how: "Played for 24 hours in total.", test: (s) => s.life.secs >= 86400 },
     { id: "x_duck", name: "Quack", clue: "Some of the best help is cheap and very quiet.", how: "Bought the Rubber duck in the prestige tree.", test: (s) => s.tree.includes("duck") },
     { id: "x_fork", name: "Fork bomb", clue: "Ask the console to copy itself until the machine gives up.", how: "Ran `nf fork` in the console." },
     { id: "x_tank", name: "Full tank", clue: "Leave it alone until the standby cells are full.", how: "Came back to a full standby report.", test: (s) => s.life.capped >= 1 },
@@ -1155,30 +1560,12 @@ export function checkGoals(s: State): { id: string; name: string; secret?: boole
     return out;
 }
 
-/** Autoloader perk: each level unlocks auto-buying for one stat. Buys at most one button per stat per call. */
-export function autoBuy(s: State): number {
-    const order: ButtonStat[] = ["mult", ...MATS];
-    let n = 0;
-    for (let i = 0; i < Math.min(order.length, s.perks.auto); i++) {
-        const st = order[i];
-        if (!isUnlocked(s, st)) continue;
-        for (let k = TIERS - 1; k >= 0; k--) {
-            const b = button(s, st, k);
-            if (amount(s, b.pays) >= b.cost * TUNE.autoReserve) {
-                if (press(s, st, k)) n++;
-                break;
-            }
-        }
-    }
-    return n;
-}
-
 // ---- Exploit Lab (research). Intel runs alongside Bytes: a trickle that grows with the log of Bytes/s, plus lumps from
-// Reboots (crash dumps) and quick-time event wins. Intel buys nodes in a small research tree (kept through Ascend); most
+// Reboots (crash dumps) and zone event wins. Intel buys nodes in a small research tree (kept through Ascend); most
 // nodes unlock a recipe. Recipes compile (a short timer, in a queue, also while away) into payloads you stock and deploy:
 // timed buffs, one-shot charges and instant effects. Opens with Silicon. See docs/node-farm.md "Exploit Lab".
 export type LabSec = "exploits" | "malware" | "infra";
-export type PayloadId = "sniffer" | "worm" | "logicbomb" | "ransom" | "kernel" | "rootkit" | "trojan" | "botnet" | "zeroclick" | "polymorph";
+export type PayloadId = "sniffer" | "worm" | "logicbomb" | "ransom" | "kernel" | "shellcode" | "sqlinject" | "rootkit" | "trojan" | "botnet" | "zeroclick" | "polymorph" | "beacon" | "dropper";
 export type PayloadKind = "buff" | "charge" | "instant";
 export interface PayloadDef {
     id: PayloadId;
@@ -1209,7 +1596,7 @@ export const LAB_TUNE = {
     slots: 2, // buffs running at once
     stockMax: 5, // stock per payload
     maxRun: 3600, // a buff's time left never goes past this
-    nodeCost: [80, 600, 600, 5000, 5000, 30000], // Intel per slot
+    nodeCost: [80, 600, 600, 5000, 5000, 30000, 60000, 60000, 120000, 120000], // Intel per slot (6 and 7: the late pair past each keystone; 8 and 9: the tail past those)
     labScale: 1, // scales every research node price (pacing knob)
     opensAt: "silicon" as StatId,
 };
@@ -1230,6 +1617,10 @@ export const PAYLOADS: PayloadDef[] = [
     P("botnet", "malware", "Botnet", "buff", "Drones press twice as fast for 10 minutes.", "BOTNET", 300, 600, 1, 300, { stat: "aether", secs: 240, floor: 5 }),
     P("zeroclick", "malware", "Zero-click", "charge", "Arms your next Ascend: it pays x1.25 AP.", "0-CLICK", 1800, 0, 0.25, 1200, { stat: "runes", secs: 300, floor: 10 }),
     P("polymorph", "malware", "Polymorph", "instant", "Doubles the time left on every running payload.", "", 900, 0, 1, 600, { stat: "aether", secs: 300, floor: 20 }),
+    P("shellcode", "exploits", "Shellcode", "buff", "Compiles run x3 for 10 minutes.", "SHELL", 900, 600, 2, 700, { stat: "quartz", secs: 240, floor: 150 }),
+    P("beacon", "malware", "Beacon", "charge", "Arms your next Ascend: every Drone keeps its level.", "BEACON", 1200, 0, 1, 900, { stat: "runes", secs: 240, floor: 8 }),
+    P("sqlinject", "exploits", "SQL injection", "buff", "Intel x3 for 10 minutes.", "SQLI", 600, 600, 2, 500, { stat: "bytes", secs: 300, floor: 2e4 }),
+    P("dropper", "malware", "Dropper", "instant", "Hands the hangar 400 Parts at once.", "", 1200, 0, 400, 450, { stat: "silicon", secs: 150, floor: 50 }),
 ];
 const PAY_BY = new Map(PAYLOADS.map((p) => [p.id, p]));
 export const payload = (id: PayloadId) => PAY_BY.get(id)!;
@@ -1244,6 +1635,8 @@ export interface LabFx {
     longer?: LabSec; // that section's buffs last twice as long
     dumps?: number; // Reboot and event Intel x(1 + this)
     cron?: boolean; // an empty queue repeats the last compile
+    stock?: number; // stock per payload +this (on top of LAB_TUNE.stockMax)
+    intelKeep?: number; // share of Intel kept through every Ascend (summed, capped at 1)
 }
 export interface LabNode {
     id: string;
@@ -1262,24 +1655,32 @@ export interface LabNode {
     entry?: boolean;
 }
 // Each section is a small diamond: entry, two paths of two, keystone. 0 entry | 1, 3 upper | 2, 4 lower | 5 keystone.
-const LAB_SLOTS: [number, number, number[]][] = [[2.3, 0, []], [3.9, -1.1, [0]], [3.9, 1.1, [0]], [5.7, -1.25, [1]], [5.7, 1.25, [2]], [7.5, 0, [3, 4]]];
+const LAB_SLOTS: [number, number, number[]][] = [[2.3, 0, []], [3.9, -1.1, [0]], [3.9, 1.1, [0]], [5.7, -1.25, [1]], [5.7, 1.25, [2]], [7.5, 0, [3, 4]], [9.2, -0.9, [5]], [9.2, 0.9, [5]], [11, -1.3, [6]], [11, 1.3, [7]]];
 type LabRow = [slot: number, id: string, kind: TreeKind, name: string, blurb: string, flavor: string, fx: LabFx];
 const LAB_ARMS: Record<LabSec, LabRow[]> = {
     exploits: [
-        [0, "rx_sniffer", "minor", "Packet sniffer", "Recipe: Packet sniffer. Bytes x2 for 10 minutes.", "Listen first. The wire tells you everything if you let it talk.", { recipe: "sniffer" }],
-        [1, "rx_worm", "minor", "Worm", "Recipe: Worm. Multiplier buttons add x2 for 10 minutes.", "It copies itself into every amp on the stack. The amps don't mind.", { recipe: "worm" }],
-        [2, "rx_logicbomb", "minor", "Logic bomb", "Recipe: Logic bomb. Your next Reboot gives x3 Reboots.", "Set it, forget it, and let the next restart do the work.", { recipe: "logicbomb" }],
-        [3, "rx_obfuscate", "notable", "Obfuscation", "Exploits buffs are 50% stronger.", "Same code, uglier. Nothing on the line recognises it anymore.", { potency: "exploits" }],
-        [4, "rx_ransom", "minor", "Ransomware", "Recipe: Ransomware. Pays out 10 minutes of Bytes, Copper, Silicon and Quartz at once.", "Lock it, then charge the node for its own key. The node always pays.", { recipe: "ransom" }],
-        [5, "rx_kernel", "keystone", "Kernel exploit", "Recipe: Kernel exploit. Everything x2 for 5 minutes.", "Ring zero. For five minutes nothing on this node says no.", { recipe: "kernel" }],
+        [0, "rx_sniffer", "minor", "Packet sniffer", "Payload: Packet sniffer. Bytes x2 for 10 minutes.", "Listen first. The wire tells you everything if you let it talk.", { recipe: "sniffer" }],
+        [1, "rx_worm", "minor", "Worm", "Payload: Worm. Multiplier buttons add x2 for 10 minutes.", "It copies itself into every amp on the stack. The amps don't mind.", { recipe: "worm" }],
+        [2, "rx_logicbomb", "minor", "Logic bomb", "Payload: Logic bomb. Your next Reboot gives x3 Reboots.", "Set it, forget it, and let the next restart do the work.", { recipe: "logicbomb" }],
+        [3, "rx_obfuscate", "notable", "Obfuscation", "Exploits buffs are 50% stronger.", "Same code, uglier. Nothing on the line recognizes it anymore.", { potency: "exploits" }],
+        [4, "rx_ransom", "minor", "Ransomware", "Payload: Ransomware. Pays out 10 minutes of Bytes, Copper, Silicon and Quartz at once.", "Lock it, then charge the node for its own key. The node always pays.", { recipe: "ransom" }],
+        [5, "rx_kernel", "keystone", "Kernel exploit", "Payload: Kernel exploit. Everything x2 for 5 minutes.", "Ring zero. For five minutes nothing on this node says no.", { recipe: "kernel" }],
+        [6, "rx_shellcode", "minor", "Shellcode", "Payload: Shellcode. Compiles run x3 for 10 minutes.", "Hand-written machine code. The compiler stops arguing.", { recipe: "shellcode" }],
+        [7, "rx_stockpile", "notable", "Stockpile", "Every payload keeps 3 more in stock.", "Nobody leaves a good payload on the shelf.", { stock: 3 }],
+        [8, "rx_sqlinject", "minor", "SQL injection", "Payload: SQL injection. Intel x3 for 10 minutes.", "Asks the database nicely, then nicely again, until it answers with everything.", { recipe: "sqlinject" }],
+        [9, "rx_fuzzer", "notable", "Fuzzer", "Compiles run 50% faster, and the queue holds 1 more.", "Feeds it garbage until something breaks. Then it writes down why.", { compile: 0.5, queue: 1 }],
     ],
     malware: [
-        [0, "rx_rootkit", "minor", "Rootkit", "Recipe: Rootkit. Copper, Silicon and Quartz x1.75 for 15 minutes.", "Dig in under the forge. It runs hotter when it can't see you.", { recipe: "rootkit" }],
-        [1, "rx_trojan", "minor", "Trojan", "Recipe: Trojan. Starts an Overclock right now.", "Looks like a gift. Is a gift, mostly.", { recipe: "trojan" }],
-        [2, "rx_botnet", "minor", "Botnet", "Recipe: Botnet. Drones press twice as fast for 10 minutes.", "Lent the Drones a few thousand extra hands. Nobody asked whose.", { recipe: "botnet" }],
+        [0, "rx_rootkit", "minor", "Rootkit", "Payload: Rootkit. Copper, Silicon and Quartz x1.75 for 15 minutes.", "Dig in under the forge. It runs hotter when it can't see you.", { recipe: "rootkit" }],
+        [1, "rx_trojan", "minor", "Trojan", "Payload: Trojan. Starts an Overclock right now.", "Looks like a gift. Is a gift, mostly.", { recipe: "trojan" }],
+        [2, "rx_botnet", "minor", "Botnet", "Payload: Botnet. Drones press twice as fast for 10 minutes.", "Lent the Drones a few thousand extra hands. Nobody asked whose.", { recipe: "botnet" }],
         [3, "rx_mutate", "notable", "Mutation", "Malware buffs last twice as long.", "Every copy a little different. The scanner gave up counting.", { longer: "malware" }],
-        [4, "rx_zeroclick", "minor", "Zero-click", "Recipe: Zero-click. Your next Ascend pays x1.25 AP.", "No prompt, no warning, more points on the way up.", { recipe: "zeroclick" }],
-        [5, "rx_polymorph", "keystone", "Polymorph", "Recipe: Polymorph. Doubles the time left on every running payload.", "It wears whatever is already running and makes it last.", { recipe: "polymorph" }],
+        [4, "rx_zeroclick", "minor", "Zero-click", "Payload: Zero-click. Your next Ascend pays x1.25 AP.", "No prompt, no warning, more points on the way up.", { recipe: "zeroclick" }],
+        [5, "rx_polymorph", "keystone", "Polymorph", "Payload: Polymorph. Doubles the time left on every running payload.", "It wears whatever is already running and makes it last.", { recipe: "polymorph" }],
+        [6, "rx_beacon", "minor", "Beacon", "Payload: Beacon. Arms your next Ascend: every Drone keeps its level.", "Phones home once, right before the wipe. Remembers where everything was.", { recipe: "beacon" }],
+        [7, "rx_packer", "notable", "Packer", "Malware buffs are 50% stronger.", "Compressed, encrypted, and it hits harder once it unpacks.", { potency: "malware" }],
+        [8, "rx_dropper", "minor", "Dropper", "Payload: Dropper. Hands the hangar 400 Parts at once.", "Small, quiet, and it always brings a parcel.", { recipe: "dropper" }],
+        [9, "rx_sandbox", "notable", "Sandbox", "Exploits buffs last twice as long.", "Lets the exploits run long enough to be sure they worked.", { longer: "exploits" }],
     ],
     infra: [
         [0, "rx_tap", "minor", "Fiber tap", "Intel x2.", "Spliced a second line into the trunk. Twice the gossip.", { intel: 1 }],
@@ -1288,6 +1689,10 @@ const LAB_ARMS: Record<LabSec, LabRow[]> = {
         [3, "rx_socket", "notable", "Second socket", "Run one more buff at once (3).", "Another socket on the bench. Two hands were never enough.", { slots: 1 }],
         [4, "rx_cron", "notable", "Cron job", "When the queue empties, it compiles your last recipe again if you can pay.", "Every minute, on the minute, the same small job. It never forgets.", { cron: true }],
         [5, "rx_rootshell", "keystone", "Root shell", "Intel x3 and one more buff slot (4).", "Prompt ends in a hash now. The whole lab answers to it.", { intel: 2, slots: 1 }],
+        [6, "rx_archive", "minor", "Cold archive", "Keep a quarter of your Intel through every Ascend.", "Nothing gets deleted. It gets moved somewhere colder.", { intelKeep: 0.25 }],
+        [7, "rx_mirror", "notable", "Mirror port", "Intel x1.5.", "A second port on the trunk, mirrored and quietly billing.", { intel: 0.5 }],
+        [8, "rx_vault", "minor", "Dump vault", "Reboot and event Intel +100% on top of the dump multipliers.", "Every crash goes in a vault now. Nothing gets thrown away.", { dumps: 1 }],
+        [9, "rx_quorum", "notable", "Quorum", "The compile queue holds 3 more.", "Three jobs have to agree before anything gets dropped. Slower, fuller, safer.", { queue: 3 }],
     ],
 };
 const LAB_ORDER: LabSec[] = ["exploits", "malware", "infra"];
@@ -1320,6 +1725,10 @@ function buildLab(): LabNode[] {
 export const LAB: LabNode[] = buildLab();
 const LAB_BY = new Map(LAB.map((n) => [n.id, n]));
 export const labNode = (id: string) => LAB_BY.get(id)!;
+/** Stock each payload can hold: LAB_TUNE.stockMax plus the Stockpile-style bonuses in the owned research nodes. */
+export const stockCap = (nodes: string[]) => LAB_TUNE.stockMax + nodes.reduce((a, id) => a + (LAB_BY.get(id)?.fx.stock ?? 0), 0);
+/** The highest stock any save can hold (saves are clamped to this, then to stockCap of their own nodes). */
+export const STOCK_CAP_MAX = LAB_TUNE.stockMax + 3;
 export const labHas = (s: State, id: string) => s.lab.nodes.includes(id);
 export const labNodeOpen = (s: State, n: LabNode) => n.links.some((l) => l === "core" || s.lab.nodes.includes(l));
 export function labVis(s: State, n: LabNode): NodeVis {
@@ -1352,7 +1761,7 @@ export function labFx(s: State) {
     return v;
 }
 function labFxRaw(s: State) {
-    const o = { recipes: [] as PayloadId[], intel: 0, compile: 0, queue: 0, slots: 0, potency: [] as LabSec[], longer: [] as LabSec[], dumps: 0, cron: false };
+    const o = { recipes: [] as PayloadId[], intel: 0, compile: 0, queue: 0, slots: 0, potency: [] as LabSec[], longer: [] as LabSec[], dumps: 0, cron: false, stock: 0, intelKeep: 0 };
     for (const id of s.lab.nodes) {
         const f = LAB_BY.get(id)?.fx;
         if (!f) continue;
@@ -1365,6 +1774,8 @@ function labFxRaw(s: State) {
         if (f.longer) o.longer.push(f.longer);
         o.dumps += f.dumps ?? 0;
         if (f.cron) o.cron = true;
+        o.stock += f.stock ?? 0;
+        o.intelKeep = Math.min(1, o.intelKeep + (f.intelKeep ?? 0));
     }
     return o;
 }
@@ -1374,23 +1785,23 @@ export const hasRecipe = (s: State, id: PayloadId) => labFx(s).recipes.includes(
 /** A buff's strength right now (Obfuscation makes Exploits buffs 50% stronger). */
 export const payloadV = (s: State, p: PayloadDef) => p.v * (labFx(s).potency.includes(p.sec) ? 1.5 : 1);
 export const payloadDur = (s: State, p: PayloadDef) => p.dur * (labFx(s).longer.includes(p.sec) ? 2 : 1);
-export const compileSecs = (s: State, p: PayloadDef) => p.compile / (1 + labFx(s).compile);
+export const compileSecs = (s: State, p: PayloadDef) => p.compile / ((1 + labFx(s).compile) * labBuffs(s).compile);
 /** Intel per second right now. Uses the log of Bytes/s so it stays steady from one era to the next. */
 export function intelRate(s: State, bytesPerSec = derive(s).bytesPerSec): number {
     if (!s.lab.seen) return 0;
-    return LAB_TUNE.intelK * Math.pow(Math.log10(1 + Math.max(0, bytesPerSec)), LAB_TUNE.intelPow) * (1 + labFx(s).intel);
+    return LAB_TUNE.intelK * Math.pow(Math.log10(1 + Math.max(0, bytesPerSec)), LAB_TUNE.intelPow) * (1 + labFx(s).intel) * labBuffs(s).intel * (1 + 2 * protoK(s, "tamsin"));
 }
 /** What compiling one payload costs right now. */
 export function payloadCost(s: State, p: PayloadDef, d: Derived = derive(s)) {
     const rate = p.mat.stat === "bytes" ? d.bytesPerSec : (d.rates as Record<string, number>)[p.mat.stat] ?? 0;
-    const base = intelRate(s, d.bytesPerSec) / (1 + labFx(s).intel);
+    const base = intelRate(s, d.bytesPerSec) / (1 + labFx(s).intel) / labBuffs(s).intel / (1 + 2 * protoK(s, "tamsin"));
     return { intel: Math.max(10, Math.round(base * p.intel)), mat: p.mat.stat, amount: Math.max(p.mat.floor, rate * p.mat.secs) };
 }
 /** The materials Rootkit and Ransomware work on. Aether and the deep ones are left alone: Aether gates Ascend, and paying it out halved the whole game in the sim. */
 export const FORGE_MATS: readonly MatId[] = ["copper", "silicon", "quartz"];
 /** Buff multipliers from running payloads, for derive. */
 export function labBuffs(s: State) {
-    const o = { bytes: 1, mult: 1, forge: 1, global: 1, drone: 1 };
+    const o = { bytes: 1, mult: 1, forge: 1, global: 1, drone: 1, compile: 1, intel: 1 };
     for (const r of s.lab.run) {
         const p = PAY_BY.get(r.id);
         if (!p || r.left <= 0) continue;
@@ -1400,6 +1811,8 @@ export function labBuffs(s: State) {
         else if (p.id === "kernel") o.global *= x;
         else if (p.id === "rootkit") o.forge *= x;
         else if (p.id === "botnet") o.drone *= x;
+        else if (p.id === "shellcode") o.compile *= x;
+        else if (p.id === "sqlinject") o.intel *= x;
     }
     return o;
 }
@@ -1419,7 +1832,7 @@ export function compileBlock(s: State, id: PayloadId, d?: Derived): CompileFail 
     const p = PAY_BY.get(id);
     if (!p || !hasRecipe(s, id)) return "recipe";
     if (s.lab.queue.length >= labQueueMax(s)) return "queue";
-    if ((s.lab.stock[id] ?? 0) + s.lab.queue.filter((q) => q.id === id).length >= LAB_TUNE.stockMax) return "stock";
+    if ((s.lab.stock[id] ?? 0) + s.lab.queue.filter((q) => q.id === id).length >= stockCap(s.lab.nodes)) return "stock";
     const c = payloadCost(s, p, d);
     if (s.lab.intel < c.intel) return "intel";
     if (amount(s, c.mat) < c.amount) return "mat";
@@ -1471,6 +1884,7 @@ export function deploy(s: State, id: PayloadId): { ok: boolean; paid?: Partial<R
     if (id === "ransom") return { ok: true, paid: payout(s, p.v, FORGE_MATS) };
     if (id === "trojan") { s.overclock = Math.max(s.overclock, overclockSecs(s)); return { ok: true }; }
     if (id === "polymorph") { for (const r of s.lab.run) if (r.left > 0) r.left = Math.min(LAB_TUNE.maxRun, r.left * 2); return { ok: true }; }
+    if (id === "dropper") { s.dr.parts = Math.min(CAP, s.dr.parts + p.v); return { ok: true }; }
     return { ok: true };
 }
 /** What the owned research nodes add up to, as label and value rows for the research tree readout. */
@@ -1518,7 +1932,7 @@ export function labStep(s: State, dt: number, bytesPerSec: number): PayloadId[] 
         t -= use;
         if (q.left <= 1e-9) {
             L.queue.shift();
-            L.stock[q.id] = Math.min(LAB_TUNE.stockMax, (L.stock[q.id] ?? 0) + 1);
+            L.stock[q.id] = Math.min(stockCap(L.nodes), (L.stock[q.id] ?? 0) + 1);
             s.life.compiled += 1;
             done.push(q.id);
             if (!L.queue.length && labFx(s).cron && L.last) compile(s, L.last);
@@ -1527,17 +1941,781 @@ export function labStep(s: State, dt: number, bytesPerSec: number): PayloadId[] 
     return done;
 }
 
+// ---- Drone hangar. Drones grow into a system you build across Ascends, on three clocks:
+//  - postings and zone mastery (forever): post a Drone to one zone and it presses only there, faster; its work there builds
+//    that zone's mastery (ranks I to V, a permanent boost to the zone's output). Every rank earns one Core.
+//  - Parts and mods (one run): every press a Drone attempts salvages Parts; Parts buy three mods per Drone (Servo, Uplink, Reach).
+//  - the drone tree (forever): Cores buy nodes in a small 24-node tree on the shared tree menu (amber "hangar" skin).
+// See docs/node-farm.md "Drone hangar".
+export const DRONE_TUNE = {
+    postX: 3, // a posted Drone presses this many times as fast on its zone
+    partK: 0.1, // Parts per attempted press
+    reachEach: 0.2, // each Reach level presses the tier below at this share of the Drone's speed
+    servoEach: 0.25, // each Servo level: Drone speed +this
+    tunerEach: 0.25, // each Tuner level: mastery from this Drone's posting +this
+    salvageEach: 0.3, // each Salvager level: Parts from this Drone +this
+    masteredSpeed: 0.02, // every zone at mastery V: every Drone +this speed
+    rigCut: 0.06, // each mastery rank on a zone: its rig upgrades cost this much less
+    eventLonger: 0.5, // a good zone event on a zone with a posted Drone lasts this much longer
+    faultFaster: 1, // a fault on a zone with a posted Drone clears this much faster
+    uplinkEach: 1, // each Uplink level: posting speed +this (x3 -> x4)
+    modMax: 5,
+    modBase: 25, // a mod costs modBase * modGrowth^level * modTier^tier Parts
+    modGrowth: 3,
+    modTier: 2.5,
+    // service (attempted presses on a zone) needed for mastery ranks I..V, and each rank's output multiplier
+    rankAt: [500, 10000, 200000, 4000000, 80000000],
+    rankX: [1, 1.05, 1.1, 1.16, 1.23, 1.35],
+    nodeCost: [1, 2, 2, 4, 4, 8, 12, 16, 20, 24], // Cores per tree slot (6 and 7: the late pair past each keystone; 8 and 9: the tail past those)
+};
+/** Zones a Drone can work: every button stat except Reboots, in chain order. */
+export const POSTABLE: readonly ButtonStat[] = ["mult", ...MATS];
+export type ModId = "servo" | "uplink" | "reach" | "tuner" | "salvage";
+export const MODS: { id: ModId; name: string; blurb: string }[] = [
+    { id: "servo", name: "Servo", blurb: "presses 25% faster per level" },
+    { id: "uplink", name: "Uplink", blurb: "posting speed +1x per level" },
+    { id: "reach", name: "Reach", blurb: "also presses the tier below at 20% per level" },
+    { id: "tuner", name: "Tuner", blurb: "builds mastery 25% faster per level while posted" },
+    { id: "salvage", name: "Salvager", blurb: "salvages 30% more Parts per level" },
+];
+export const MOD_COUNT = MODS.length;
+export interface DroneState {
+    /** each tier's posting, or null when it is docked (kept through Ascend) */
+    post: (ButtonStat | null)[];
+    /** service per zone: presses attempted there by posted Drones (kept forever) */
+    svc: Partial<Record<ButtonStat, number>>;
+    /** Parts, salvaged from presses (reset on Ascend) */
+    parts: number;
+    /** mod levels [tier][servo, uplink, reach] (reset on Ascend) */
+    mods: number[][];
+    /** owned drone tree nodes (kept through Ascend) */
+    nodes: string[];
+    /** fractional presses waiting, posted and reach (per tier) */
+    pacc: number[];
+    racc: number[];
+}
+export const freshDr = (): DroneState => ({ post: Array(TIERS).fill(null), svc: {}, parts: 0, mods: Array.from({ length: TIERS }, () => Array(MOD_COUNT).fill(0)), nodes: [], pacc: Array(TIERS).fill(0), racc: Array(TIERS).fill(0) });
+
+// -- the drone tree
+export type DroneSec = "flight" | "dispatch" | "salvage";
+export const DRONE_SECS: { id: DroneSec; name: string; blurb: string; color: string }[] = [
+    { id: "flight", name: "Flight", blurb: "How fast every Drone presses.", color: "#ffb14a" },
+    { id: "dispatch", name: "Dispatch", blurb: "Postings and zone mastery.", color: "#6bffc9" },
+    { id: "salvage", name: "Salvage", blurb: "Parts, mods and the hangar itself.", color: "#ff7a4a" },
+];
+export interface DroneFx {
+    speed?: number; // every Drone x(1 + this)
+    off?: number; // added to Drone speed while away
+    formation?: number; // every Drone +this per posted Drone
+    servoMax?: number; // extra Servo levels
+    rankSpeed?: number; // every Drone +this per mastery rank
+    postX?: number; // posting speed +this
+    svc?: number; // mastery builds x(1 + this) as fast
+    rankPow?: number; // mastery bonuses x(1 + this) stronger
+    relay?: number; // a posting also gives this share of its mastery to the next zone up the chain
+    parts?: number; // Parts x(1 + this)
+    modCost?: number; // mods cost this fraction less
+    droneCost?: number; // Drones cost this fraction less Aether
+    modKeep?: number; // share of mod levels and Parts kept through Ascend
+    droneMax?: number; // extra Drone levels per tier
+    modGlobal?: number; // everything +this per mod level owned
+}
+export interface DroneNode { id: string; branch: DroneSec; kind: TreeKind; name: string; blurb: string; flavor: string; cost: number; links: string[]; fx: DroneFx; x: number; y: number; ix: number; sprite: string }
+type DroneRow = [slot: number, id: string, kind: TreeKind, name: string, blurb: string, flavor: string, fx: DroneFx];
+const DRONE_ARMS: Record<DroneSec, DroneRow[]> = {
+    flight: [
+        [0, "dx_burner", "minor", "Afterburner", "Every Drone presses 50% faster.", "Bolted a second fan on. The hangar smells like ozone now.", { speed: 0.5 }],
+        [1, "dx_formation", "minor", "Formation", "Every Drone presses 10% faster for each Drone on a posting.", "They fly tighter when someone is out front.", { formation: 0.1 }],
+        [2, "dx_night", "minor", "Night flight", "Drones work 25% harder while you are away.", "Running lights off. They know the way.", { off: 0.25 }],
+        [3, "dx_overdrive", "notable", "Overdrive", "Servo mods go to level 8.", "The servos were rated for five. They took eight without a word.", { servoMax: 3 }],
+        [4, "dx_slipstream", "notable", "Slipstream", "Posting speed +2x on every Drone.", "Each one rides the wake of the one before it.", { postX: 2 }],
+        [5, "dx_hivemind", "keystone", "Hivemind", "Drones press twice as fast, and every mastery rank adds 1% more.", "Six frames, one thought. The thought is mostly about buttons.", { speed: 1, rankSpeed: 0.01 }],
+        [6, "dx_redline", "minor", "Redline", "Every mastery rank adds 2% more to Drone speed.", "Pushed past the sticker. The sticker was a suggestion.", { rankSpeed: 0.02 }],
+        [7, "dx_wingmen", "notable", "Wingmen", "Every Drone presses 20% faster for each Drone on a posting.", "They fly tighter the more wings are out there.", { formation: 0.2 }],
+        [8, "dx_vector", "minor", "Vectoring", "Every Drone presses 30% faster.", "Thrust goes where the work is. Mostly down.", { speed: 0.3 }],
+        [9, "dx_thrust", "notable", "Thrust bank", "Every mastery rank adds 3% more to Drone speed.", "Every rank they earn, they fly a little harder about it.", { rankSpeed: 0.03 }],
+    ],
+    dispatch: [
+        [0, "dx_orders", "minor", "Field orders", "Posted Drones press x4 on their zone.", "Clear orders, one zone each. Nobody wanders.", { postX: 1 }],
+        [1, "dx_patrol", "minor", "Patrol logs", "Mastery builds 50% faster.", "They write down every shift. Most of it is useful.", { svc: 0.5 }],
+        [2, "dx_tour", "minor", "Long tour", "Mastery builds twice as fast.", "Same zone, same shift, every day. They learn the creaks.", { svc: 1 }],
+        [3, "dx_fieldops", "notable", "Field ops", "Mastery bonuses are 50% stronger.", "The veterans train the new frames. Nobody asked them to.", { rankPow: 0.5 }],
+        [4, "dx_relay", "notable", "Relay mast", "Each posting also builds half as much mastery in the next zone up the chain.", "Every posting gets a mast. The mast talks to the zone next door.", { relay: 0.5 }],
+        [5, "dx_garrison", "keystone", "Garrison", "Posting speed +2x, and mastery builds 50% faster.", "Stationed for good. They know every creak of the zone.", { postX: 2, svc: 0.5 }],
+        [6, "dx_groundcrew", "minor", "Ground crew", "Mastery builds 25% faster.", "Someone has to keep the zones tidy between shifts.", { svc: 0.25 }],
+        [7, "dx_fullmast", "notable", "Full mast", "Each posting builds all of its mastery in the next zone up the chain.", "The mast talks to the zone next door, and the zone next door listens.", { relay: 1 }],
+        [8, "dx_depot", "minor", "Depot", "Mastery builds 50% faster.", "A depot near every zone. The crews stop walking back.", { svc: 0.5 }],
+        [9, "dx_barrage", "notable", "Barrage", "Posting speed +1x on every Drone.", "Every posting goes out twice as loud.", { postX: 1 }],
+    ],
+    salvage: [
+        [0, "dx_scrap", "minor", "Scrapper", "Parts x2.", "Every press sheds a little metal. Now somebody sweeps it up.", { parts: 1 }],
+        [1, "dx_refit", "minor", "Refit bench", "Mods cost 40% less.", "A proper bench, a proper light. Refits take half the swearing.", { modCost: 0.4 }],
+        [2, "dx_credit", "minor", "Hangar credit", "Drones cost 40% less Aether.", "The supplier knows the hangar by name now.", { droneCost: 0.4 }],
+        [3, "dx_blackbox", "notable", "Black box", "Keep half your mod levels and Parts through every Ascend.", "The frames reset. The flight recorders don't.", { modKeep: 0.5 }],
+        [4, "dx_frames", "notable", "Spare frames", "Drones go 2 levels higher.", "Two more chassis on the rack, wired and waiting.", { droneMax: 2 }],
+        [5, "dx_foundry", "keystone", "Foundry", "Every mod level adds +1% to everything.", "The hangar builds its own parts now. Then it builds better ones.", { modGlobal: 0.01 }],
+        [6, "dx_sparebin", "minor", "Spare bin", "Mods cost 30% less.", "Every bolt in the bin is the right size. Mostly.", { modCost: 0.3 }],
+        [7, "dx_modbay", "notable", "Mod bay", "Every mod level adds +0.5% to everything.", "A bay just for mods. It keeps them tuned between runs.", { modGlobal: 0.005 }],
+        [8, "dx_forge", "minor", "Forge", "Parts +50%.", "Scrap comes in, parts come out, and the rest gets melted down again.", { parts: 0.5 }],
+        [9, "dx_vault", "notable", "Parts vault", "Drones cost 30% less Aether.", "The supplier now delivers to the back door.", { droneCost: 0.3 }],
+    ],
+};
+const DRONE_ORDER: DroneSec[] = ["flight", "dispatch", "salvage"];
+function buildDroneTree(): DroneNode[] {
+    const out: DroneNode[] = [];
+    DRONE_ORDER.forEach((arm, ai) => {
+        // arms point down-left, up and down-right, so the tree reads as a three-rotor frame
+        const th = -Math.PI / 2 + (ai * 2 * Math.PI) / DRONE_ORDER.length;
+        const c = Math.cos(th), sn = Math.sin(th);
+        const ids: string[] = [];
+        for (const [slot, id, kind, name, blurb, flavor, fx] of DRONE_ARMS[arm]) {
+            const [u, v] = LAB_SLOTS[slot];
+            out.push({ id, branch: arm, kind, name, blurb, flavor, fx, cost: DRONE_TUNE.nodeCost[slot], links: slot === 0 ? ["core"] : [], x: +(u * c - v * sn).toFixed(3), y: +(u * sn + v * c).toFixed(3), ix: out.length, sprite: id });
+            ids[slot] = id;
+        }
+        LAB_SLOTS.forEach(([, , ls], slot) => ls.forEach((l) => {
+            const A = out.find((n) => n.id === ids[slot])!, B = out.find((n) => n.id === ids[l])!;
+            A.links.push(B.id);
+            B.links.push(A.id);
+        }));
+    });
+    return out;
+}
+export const DRONE_TREE: DroneNode[] = buildDroneTree();
+const DT_BY = new Map(DRONE_TREE.map((n) => [n.id, n]));
+export const droneNode = (id: string) => DT_BY.get(id)!;
+type DroneFxSum = Required<DroneFx>;
+let dfxKey = "";
+let dfxVal: DroneFxSum | null = null;
+/** What the owned drone tree nodes add up to (cached on the owned list). */
+export function droneFx(s: State): DroneFxSum {
+    const nodes = s.dr?.nodes ?? [];
+    const key = nodes.join(",");
+    if (dfxVal && key === dfxKey) return dfxVal;
+    const o: DroneFxSum = { speed: 0, off: 0, formation: 0, servoMax: 0, rankSpeed: 0, postX: 0, svc: 0, rankPow: 0, relay: 0, parts: 0, modCost: 0, droneCost: 0, modKeep: 0, droneMax: 0, modGlobal: 0 };
+    for (const id of nodes) {
+        const f = DT_BY.get(id)?.fx;
+        if (!f) continue;
+        for (const [k, v] of Object.entries(f)) {
+            if (k === "speed") o.speed = (1 + o.speed) * (1 + (v as number)) - 1; // speed boosts multiply
+            else { const r = o as unknown as Record<string, number>; r[k] = (r[k] ?? 0) + (v as number); }
+        }
+    }
+    dfxKey = key;
+    dfxVal = o;
+    return o;
+}
+export const droneTreeHas = (s: State, id: string) => s.dr.nodes.includes(id);
+export const droneNodeOpen = (s: State, n: DroneNode) => n.links.some((l) => l === "core" || s.dr.nodes.includes(l));
+export function droneVis(s: State, n: DroneNode): NodeVis {
+    if (s.dr.nodes.includes(n.id) || droneNodeOpen(s, n)) return "shown";
+    return n.links.some((l) => l !== "core" && droneNodeOpen(s, DT_BY.get(l)!)) ? "fog" : "hidden";
+}
+
+// -- mastery
+export const zoneSvc = (s: State, st: ButtonStat) => s.dr.svc[st] ?? 0;
+export function rankOf(svc: number): number { let r = 0; while (r < DRONE_TUNE.rankAt.length && svc >= DRONE_TUNE.rankAt[r]) r++; return r; }
+export const zoneRank = (s: State, st: ButtonStat) => rankOf(zoneSvc(s, st));
+/** Service needed for the next rank, or null at rank V. */
+export const nextRankAt = (s: State, st: ButtonStat) => { const r = zoneRank(s, st); return r < DRONE_TUNE.rankAt.length ? DRONE_TUNE.rankAt[r] : null; };
+export const ROMAN = ["", "I", "II", "III", "IV", "V"];
+/** A zone's output multiplier from its mastery rank. */
+export function masteryMul(s: State, st: ButtonStat): number {
+    if (!s.dr) return 1;
+    const r = zoneRank(s, st);
+    return r ? 1 + (DRONE_TUNE.rankX[r] - 1) * (1 + droneFx(s).rankPow) : 1;
+}
+/** Zones at mastery V. */
+export const masteredZones = (s: State) => POSTABLE.filter((st) => zoneRank(s, st) >= DRONE_TUNE.rankAt.length).length;
+/** Rig upgrades on a zone cost less with its mastery (rigs.ts). */
+export const rigMasteryCut = (s: State, zone: StatId) => (s.dr && POSTABLE.includes(zone as ButtonStat) ? 1 - DRONE_TUNE.rigCut * zoneRank(s, zone as ButtonStat) : 1);
+/** How fast a zone event's clock runs: a posted Drone makes good events last longer and faults clear sooner (zoneevents.ts). */
+export function droneEventPace(s: State, zone: StatId, good: boolean): number {
+    if (!s.dr) return 1;
+    const here = s.dr.post.some((p, k) => p === zone && s.drones[k] > 0 && isUnlocked(s, zone));
+    if (!here) return 1;
+    return good ? 1 / (1 + DRONE_TUNE.eventLonger) : 1 + DRONE_TUNE.faultFaster;
+}
+export const masteryRanks = (s: State) => POSTABLE.reduce((a, st) => a + zoneRank(s, st), 0);
+/** Cores: one per mastery rank ever earned, minus what the drone tree has spent. */
+export const coresEarned = (s: State) => masteryRanks(s);
+export const coresSpent = (s: State) => s.dr.nodes.reduce((a, id) => a + (DT_BY.get(id)?.cost ?? 0), 0);
+export const cores = (s: State) => Math.max(0, coresEarned(s) - coresSpent(s));
+function addSvc(s: State, st: ButtonStat, n: number, fx: DroneFxSum) {
+    const v = n * (1 + fx.svc);
+    s.dr.svc[st] = Math.min(CAP, (s.dr.svc[st] ?? 0) + v);
+    if (fx.relay) {
+        const i = POSTABLE.indexOf(st);
+        const nb = POSTABLE[i + 1] ?? POSTABLE[i - 1];
+        if (nb) s.dr.svc[nb] = Math.min(CAP, (s.dr.svc[nb] ?? 0) + v * fx.relay);
+    }
+}
+
+// -- postings and speed
+/** Where a tier's Drone works: its posted zone while that zone is open, or null (docked). */
+export function postOf(s: State, tier: number): ButtonStat | null {
+    const p = s.dr.post[tier];
+    return p && isUnlocked(s, p) ? p : null;
+}
+export function setPost(s: State, tier: number, st: ButtonStat | null): boolean {
+    if (tier < 0 || tier >= TIERS) return false;
+    if (st !== null && (!POSTABLE.includes(st) || !isUnlocked(s, st))) return false;
+    s.dr.post[tier] = st;
+    return true;
+}
+export const postX = (s: State, tier: number) => DRONE_TUNE.postX + droneFx(s).postX + (s.dr.mods[tier]?.[1] ?? 0) * DRONE_TUNE.uplinkEach;
+/** The hangar's part of a Drone's speed: Servo, the tree, Formation and Hivemind. */
+export function hangarSpeed(s: State, tier: number): number {
+    if (!s.dr) return 1;
+    const fx = droneFx(s);
+    let x = (1 + (s.dr.mods[tier]?.[0] ?? 0) * DRONE_TUNE.servoEach) * (1 + fx.speed);
+    if (fx.formation) x *= 1 + fx.formation * s.dr.post.filter((p, k) => p && s.drones[k] > 0 && isUnlocked(s, p)).length;
+    if (fx.rankSpeed) x *= 1 + fx.rankSpeed * masteryRanks(s);
+    const mastered = masteredZones(s);
+    if (mastered) x *= 1 + DRONE_TUNE.masteredSpeed * mastered;
+    return x;
+}
+/** Parts salvaged per second right now (the same sums droneStep makes). */
+export function partsRate(s: State): number {
+    const fx = droneFx(s);
+    let u = 0;
+    for (let k = 0; k < TIERS; k++) {
+        if (s.drones[k] <= 0 || !postOf(s, k)) continue;
+        u += droneRate(s, k) * postX(s, k) * (1 + (s.dr.mods[k]?.[4] ?? 0) * DRONE_TUNE.salvageEach);
+    }
+    return u * DRONE_TUNE.partK * (1 + fx.parts);
+}
+/** Mastery per second on a zone from the Drones posted there. */
+export function svcRate(s: State, st: ButtonStat): number {
+    const fx = droneFx(s);
+    let u = 0;
+    for (let k = 0; k < TIERS; k++) {
+        if (s.drones[k] <= 0) continue;
+        const r = droneRate(s, k), post = postOf(s, k);
+        if (post === st) u += r * postX(s, k) * (1 + (s.dr.mods[k]?.[3] ?? 0) * DRONE_TUNE.tunerEach);
+    }
+    return u * (1 + fx.svc);
+}
+export const modLevels = (s: State) => s.dr.mods.reduce((a, m) => a + m.reduce((x, y) => x + y, 0), 0);
+/** Foundry: everything +1% per mod level. */
+export const foundryAll = (s: State) => (s.dr ? 1 + droneFx(s).modGlobal * modLevels(s) : 1);
+
+// -- mods
+export const modMax = (s: State, mod: number) => DRONE_TUNE.modMax + (mod === 0 ? droneFx(s).servoMax : 0);
+export const modCost = (s: State, tier: number, mod: number) => DRONE_TUNE.modBase * Math.pow(DRONE_TUNE.modGrowth, s.dr.mods[tier][mod]) * Math.pow(DRONE_TUNE.modTier, tier) * (1 - droneFx(s).modCost);
+export type ModFail = "drone" | "max" | "parts";
+export function modBlock(s: State, tier: number, mod: number): ModFail | null {
+    if (s.drones[tier] <= 0) return "drone";
+    if (s.dr.mods[tier][mod] >= modMax(s, mod)) return "max";
+    if (s.dr.parts < modCost(s, tier, mod)) return "parts";
+    return null;
+}
+export function buyMod(s: State, tier: number, mod: number): boolean {
+    if (tier < 0 || tier >= TIERS || mod < 0 || mod >= MOD_COUNT || modBlock(s, tier, mod)) return false;
+    s.dr.parts -= modCost(s, tier, mod);
+    s.dr.mods[tier][mod] += 1;
+    return true;
+}
+
+// -- tree buying
+export function buyDroneNode(s: State, id: string): boolean {
+    const n = DT_BY.get(id);
+    if (!n || s.dr.nodes.includes(id) || !droneNodeOpen(s, n) || cores(s) < n.cost) return false;
+    s.dr.nodes.push(id);
+    return true;
+}
+/** Free respec: every Core comes back. Mod levels above the new caps are trimmed, without refund. Returns Cores refunded. */
+export function respecDrones(s: State): number {
+    if (chOff(s, "prestige")) return 0;
+    const back = coresSpent(s);
+    s.dr.nodes = [];
+    for (const m of s.dr.mods) m[0] = Math.min(m[0], modMax(s, 0));
+    s.drones = s.drones.map((lv) => Math.min(lv, droneMax(s)));
+    return back;
+}
+/** What the owned drone tree gives, as label and value rows for the tree readout. */
+export function droneTreeTotals(s: State): [string, string][] {
+    const f = droneFx(s);
+    const rows: [string, string][] = [];
+    rows.push(["Mastery ranks", `${masteryRanks(s)} of ${POSTABLE.length * 5}`]);
+    if (masteredZones(s)) rows.push(["Mastered zones", `${masteredZones(s)}, Drones +${Math.round(masteredZones(s) * DRONE_TUNE.masteredSpeed * 100)}%`]);
+    if (f.speed) rows.push(["Drone speed", `x${+(1 + f.speed).toFixed(2)}`]);
+    if (f.formation) rows.push(["Formation", `+${Math.round(f.formation * 100)}% per posted Drone`]);
+    if (f.off) rows.push(["Away speed", `+${Math.round(f.off * 100)}%`]);
+    if (f.servoMax) rows.push(["Servo cap", `level ${DRONE_TUNE.modMax + f.servoMax}`]);
+    if (f.rankSpeed) rows.push(["Hivemind", `+${Math.round(f.rankSpeed * masteryRanks(s) * 100)}% speed`]);
+    rows.push(["Posting speed", `x${DRONE_TUNE.postX + f.postX} before Uplink`]);
+    if (f.svc) rows.push(["Mastery speed", `x${1 + f.svc}`]);
+    if (f.rankPow) rows.push(["Mastery bonus", `+${Math.round(f.rankPow * 100)}% stronger`]);
+    if (f.relay) rows.push(["Relay mast", `${Math.round(f.relay * 100)}% to the next zone`]);
+    if (f.parts) rows.push(["Parts", `x${1 + f.parts}`]);
+    if (f.modCost) rows.push(["Mod prices", `-${Math.round(f.modCost * 100)}%`]);
+    if (f.droneCost) rows.push(["Drone prices", `-${Math.round(f.droneCost * 100)}%`]);
+    if (f.modKeep) rows.push(["Kept on Ascend", `${Math.round(f.modKeep * 100)}% of mods and Parts`]);
+    if (f.droneMax) rows.push(["Drone levels", `+${f.droneMax}`]);
+    if (f.modGlobal) rows.push(["Foundry", `+${Math.round(f.modGlobal * modLevels(s) * 100)}% everything`]);
+    return rows;
+}
+/** The hangar after an Ascend: postings, mastery and the tree stay; Parts and mods reset (Black box keeps a share). */
+export function drOnAscend(s: State): DroneState {
+    const keep = Math.max(droneFx(s).modKeep, s.hand ? handFx(s).modKeep : 0);
+    return {
+        ...s.dr,
+        parts: Math.floor(s.dr.parts * keep),
+        mods: s.dr.mods.map((m) => m.map((lv) => Math.floor(lv * keep))),
+        pacc: Array(TIERS).fill(0),
+        racc: Array(TIERS).fill(0),
+    };
+}
+/** A saved hangar, checked field by field; anything odd falls back to fresh. */
+function parseDr(o: unknown): DroneState {
+    const b = freshDr();
+    if (!o || typeof o !== "object") return b;
+    const x = o as Partial<DroneState>;
+    const num = (v: unknown, d = 0) => (typeof v === "number" && Number.isFinite(v) ? v : d);
+    const arr = (v: unknown) => (Array.isArray(v) && v.length === TIERS ? v.map((n) => Math.max(0, num(n))) : Array(TIERS).fill(0));
+    return {
+        post: Array.isArray(x.post) && x.post.length === TIERS ? x.post.map((p) => (POSTABLE.includes(p as ButtonStat) ? (p as ButtonStat) : null)) : b.post,
+        svc: Object.fromEntries(Object.entries(x.svc ?? {}).filter(([k, v]) => POSTABLE.includes(k as ButtonStat) && num(v) > 0).map(([k, v]) => [k, num(v)])),
+        parts: Math.max(0, num(x.parts)),
+        mods: Array.isArray(x.mods) && x.mods.length === TIERS ? x.mods.map((m) => Array.from({ length: MOD_COUNT }, (_, i) => (Array.isArray(m) ? Math.max(0, Math.floor(num(m[i]))) : 0))) : b.mods,
+        nodes: Array.isArray(x.nodes) ? [...new Set(x.nodes.filter((id) => DT_BY.has(id)))] : [],
+        pacc: arr(x.pacc),
+        racc: arr(x.racc),
+    };
+}
+
+// ---- Handover: the reset past Ascend (second prestige layer). Reaching Node zero (Origin production) lets you hand the
+// node to the next operator, the way Wren, Tamsin, Osk and Vael did. It wipes everything Ascend wipes plus AP, perks, the
+// prestige tree, Drones, Mounted drives and the lab's Intel and stock. It keeps goals, secrets, logs, lifetime stats and
+// Exploit Lab research. It pays Keys, which buy Firmware (a small green tree that changes the rules of every later run),
+// and you pick one operator protocol that shapes the next cycle. docs/node-farm.md "Handover".
+export type ProtoId = "wren" | "tamsin" | "osk" | "vael";
+export type FwSec = "boot" | "memory" | "relay" | "field";
+export const HAND_TUNE = {
+    needProd: 1, // Origin producers you need this run before you can hand over
+    keysPerNode: 1 / 6, // Keys per prestige-tree node (and extra rank) owned at the Handover
+    keysPerOriginLog: 1, // Keys grow with the square root of Origin's power of ten (1e9 Origin: +3, 1e100: +10)
+    keysBase: 1, // every Handover pays at least this
+    nodeCost: [2, 3, 3, 6, 6, 12], // Keys per Firmware slot (notables x1.25): about eight Handovers to own all 24
+    fwScale: 1, // scales every Firmware price (pacing knob)
+    protoX: 2, // a protocol's main boost: x(1 + protoX); Dual boot runs the second one at half
+    vaelPay: 120, // seconds of production every event win pays under Vael's protocol
+    standbyHours: 8, // Hot standby: extra offline hours
+    warmReboots: 25, // base Handover: Reboots every Ascend starts with
+    bootProd: 10, // base Handover: producers on Copper to Aether at every Ascend
+    afterglow: 180, // base Handover: seconds of Overclock at the start of every Ascend
+    noteMax: 140, // characters in a handover note
+    apPerHand: 0.25, // every Handover done: AP on Ascend x(1 + this * Handovers), so each cycle rebuilds the tree faster (was 1: cycles shrank to minutes)
+    rankStep: 0.25, // protocol mastery: each rank runs that protocol x(1 + this) stronger
+    rankMax: 3, // ranks I to III, one per cycle you finish on that protocol
+};
+export const PROTOS: { id: ProtoId; op: string; name: string; blurb: string; flavor: string; color: string }[] = [
+    { id: "wren", op: "Wren", name: "Tape and fans", blurb: "Multiplier buttons add x3 and Reboots hit x2 as hard.", flavor: "Get it booting first. Make it pretty never.", color: "#b6f04a" },
+    { id: "tamsin", op: "Tamsin", name: "Ledger", blurb: "Intel x3, and every goal and secret gives twice its bonus.", flavor: "Write down every price you pay. You will want it later.", color: "#2fd8e8" },
+    { id: "osk", op: "Osk", name: "Screwdriver", blurb: "Drones press x3 as fast and cost half.", flavor: "If you do a thing twice, build a Drone for it.", color: "#f08a3c" },
+    { id: "vael", op: "Vael", name: "Listening", blurb: "Events come twice as often, and every win pays 2 minutes of production.", flavor: "Answer every knock. Somebody is always there.", color: "#ffc53a" },
+];
+export const protoDef = (id: ProtoId) => PROTOS.find((p) => p.id === id)!;
+export interface FwFx {
+    kitReboot?: number; // every Ascend starts with this many Reboots
+    kitProd?: number; // every Ascend starts with this many producers on Copper, Silicon, Quartz and Aether
+    afterglow?: number; // every Ascend starts with this many seconds of Overclock
+    unlockMul?: number; // materials open at this fraction of the usual amount
+    rootPath?: number; // Engrams, Paradox and Origin open at this fraction
+    ascendAt?: number; // Ascend needs this fraction of the usual Aether
+    preinstall?: boolean; // Watchdog timer, Standing orders and Forecast work without their tree nodes
+    keepEntry?: boolean; // Handover keeps the entry node of every tree section
+    keepUpper?: boolean; // Handover keeps the upper path of every tree section
+    perkKeep?: number; // Handover keeps this fraction of every perk's levels
+    labKeep?: boolean; // Ascend keeps Intel and running payloads
+    droneKeep?: number; // Drones keep this fraction of their levels through Ascend
+    apRefund?: number; // Handover gives back this fraction of the AP the tree cost
+    keys?: number; // Handovers pay x(1 + this) Keys
+    anyAscend?: boolean; // the protocol can be changed at any time
+    standby?: boolean; // more offline hours, Drones at full speed while away
+    dual?: boolean; // a second protocol runs at half strength
+    lineage?: number; // everything +this per Handover done
+    rigKeep?: number; // Handover keeps this share of every rig level
+    zeLong?: number; // zone events last x(1 + this)
+    modKeep?: number; // Ascend and Handover keep this share of the hangar's Parts and mod levels
+    rigCost?: number; // rig levels cost this fraction less
+    zeOften?: number; // zone events come x(1 + this) as often
+    fieldOp?: boolean; // no more Faults, and Surges run twice as strong
+}
+/** Tree systems that work without their node once you have handed over (base Handover). */
+export const PREINSTALLED: Feature[] = ["watchdog", "orders", "forecast"];
+export interface FwNode { id: string; branch: FwSec; kind: TreeKind; name: string; blurb: string; flavor: string; cost: number; links: string[]; fx: FwFx; x: number; y: number; ix: number; sprite: string; entry?: boolean }
+export const FW_SECS: { id: FwSec; name: string; blurb: string; color: string }[] = [
+    { id: "relay", name: "Relay", blurb: "Keys, protocols and the long haul.", color: "#64e6ff" },
+    { id: "field", name: "Field", blurb: "Rigs, zone events and shortcuts.", color: "#ff7ab6" },
+];
+/**
+ * What every Handover keeps and every Ascend after the first Handover starts with. These used to be 12 Firmware nodes
+ * (Warm boot, Preinstalled, Afterglow, Bootloader, Imprint, Perk cache, Lab image, Deep imprint, Drone RAM, Tape backup,
+ * Rig memory, Flight recorder); Nate made them the default on 2026-11-12, so Firmware only buys new rules.
+ */
+export const HAND_BASE: FwFx = {
+    kitReboot: HAND_TUNE.warmReboots, kitProd: HAND_TUNE.bootProd, afterglow: HAND_TUNE.afterglow, preinstall: true,
+    keepEntry: true, keepUpper: true, perkKeep: 0.5, labKeep: true, droneKeep: 0.5, apRefund: 0.25, rigKeep: 0.5, modKeep: 0.5,
+};
+/** Keys each removed Firmware node cost before the fold, for the save migration (migrateFw). */
+const FW_OLD_COST: Record<string, number> = { fw_warm: 2, fw_preinstall: 3, fw_afterglow: 3, fw_bootloader: 8, fw_fastpath: 8, fw_shortfuse: 12, fw_imprint: 2, fw_perkcache: 3, fw_labimage: 3, fw_deepimprint: 8, fw_droneram: 8, fw_tape: 12, fw_keysmith: 2, fw_desk: 3, fw_standby: 3, fw_dual: 8, fw_rootpath: 8, fw_lineage: 12, fw_rigmem: 2, fw_rod: 3, fw_recorder: 3, fw_fieldkit: 8, fw_weather: 8, fw_fieldop: 12 };
+type FwRow = [slot: number, id: string, kind: TreeKind, name: string, blurb: string, flavor: string, fx: FwFx];
+// Firmware buys new rules only. What it used to sell back after a Handover (kits, keeps, the AP refund) is now the base
+// Handover (HAND_BASE, Nate's pick 2026-11-12 from the systems audit); old saves get those Keys back (migrateFw).
+const FW_ARMS: Partial<Record<FwSec, FwRow[]>> = {
+    relay: [
+        [0, "fw_keysmith", "minor", "Keysmith", "Handovers pay x1.5 Keys.", "Cut a spare. Then cut a spare of the spare.", { keys: 0.5 }],
+        [1, "fw_desk", "minor", "Operator's desk", "Change your protocol at any time, not only at a Handover.", "A chair, a lamp, and the right to change your mind.", { anyAscend: true }],
+        [2, "fw_standby", "minor", "Hot standby", "Time away banks 8 more hours, and Drones work at full speed while you are gone.", "The node does not sleep. It only waits.", { standby: true }],
+        [3, "fw_dual", "notable", "Dual boot", "Run a second protocol at half strength.", "Two operators on one node. They take turns with the chair.", { dual: true }],
+        [4, "fw_rootpath", "notable", "Root path", "Engrams, Paradox and Origin open at a quarter of the usual amount.", "There is a shorter way down to node zero. It was always there.", { rootPath: 0.25 }],
+        [5, "fw_lineage", "keystone", "Lineage", "Everything +50% for every Handover you have done.", "Every operator who left made the node a little stronger.", { lineage: 0.5 }],
+        [6, "fw_keypress", "keystone", "Key press", "Handovers pay 50% more Keys.", "Ran the Keys through the press twice. They come out thicker.", { keys: 0.5 }],
+    ],
+    field: [
+        [0, "fw_rod", "minor", "Lightning rod", "Zone events last 50% longer.", "Give the weather something tall to hold on to.", { zeLong: 0.5 }],
+        [1, "fw_fastpath", "minor", "Fast path", "Every material opens at half the usual amount.", "Shorter cable, same signal.", { unlockMul: 0.5 }],
+        [2, "fw_fieldkit", "minor", "Field kit", "Rig levels cost 40% less.", "Every zone gets a toolbox. Somebody finally labeled the drawers.", { rigCost: 0.4 }],
+        [3, "fw_weather", "notable", "Weather eye", "Zone events come twice as often.", "Watch the zones long enough and you can feel the next one coming.", { zeOften: 1 }],
+        [4, "fw_shortfuse", "notable", "Short fuse", "Ascend needs half the usual Aether.", "You know where the top is now. Go up sooner.", { ascendAt: 0.5 }],
+        [5, "fw_fieldop", "keystone", "Field operator", "Faults stop happening, and Surges run twice as strong.", "Walk the floor every shift. Nothing breaks where someone is looking.", { fieldOp: true }],
+        [6, "fw_sparepart", "keystone", "Spare parts", "Rig levels cost 20% less again.", "A drawer of spare parts nobody else knew about. Now everyone does.", { rigCost: 0.2 }],
+    ],
+};
+const FW_ORDER: FwSec[] = ["relay", "field"];
+// same small diamond as the lab tree: entry, two paths of two, keystone
+const FW_SLOTS: [number, number, number[]][] = [[2.3, 0, []], [3.9, -1.1, [0]], [3.9, 1.1, [0]], [5.7, -1.25, [1]], [5.7, 1.25, [2]], [7.5, 0, [3, 4]], [9.3, 0, [5]]];
+// nodes that changed size when they moved arms draw from rows appended at the new size
+const FW_SPRITE: Record<string, string> = { fw_fastpath: "fw_fastpath_s", fw_fieldkit: "fw_fieldkit_s", fw_shortfuse: "fw_shortfuse_m" };
+function buildFw(): FwNode[] {
+    const out: FwNode[] = [];
+    FW_ORDER.forEach((arm, ai) => {
+        // two arms, left and right of node zero, so it never looks like the lab's or the hangar's three-armed trees
+        const th = Math.PI + (ai * 2 * Math.PI) / FW_ORDER.length;
+        const c = Math.cos(th), sn = Math.sin(th);
+        const ids: string[] = [];
+        for (const [slot, id, kind, name, blurb, flavor, fx] of FW_ARMS[arm] ?? []) {
+            const [u, v] = FW_SLOTS[slot];
+            out.push({
+                id, branch: arm, kind, name, blurb, flavor, fx,
+                cost: Math.max(1, Math.round((HAND_TUNE.nodeCost[slot] ?? HAND_TUNE.nodeCost[HAND_TUNE.nodeCost.length - 1] * 2) * (kind === "notable" ? 1.25 : 1) * HAND_TUNE.fwScale)),
+                links: slot === 0 ? ["core"] : [],
+                x: +(u * c - v * sn).toFixed(3), y: +(u * sn + v * c).toFixed(3),
+                ix: out.length, sprite: FW_SPRITE[id] ?? id,
+                ...(slot === 0 ? { entry: true } : {}),
+            });
+            ids[slot] = id;
+        }
+        FW_SLOTS.forEach(([, , ls], slot) => ls.forEach((l) => {
+            const A = out.find((n) => n.id === ids[slot])!, B = out.find((n) => n.id === ids[l])!;
+            A.links.push(B.id);
+            B.links.push(A.id);
+        }));
+    });
+    return out;
+}
+export const FW: FwNode[] = buildFw();
+const FW_BY = new Map(FW.map((n) => [n.id, n]));
+export const fwNode = (id: string) => FW_BY.get(id)!;
+export const fwHas = (s: State, id: string) => s.hand.fw.includes(id);
+export const fwNodeOpen = (s: State, n: FwNode) => n.links.some((l) => l === "core" || s.hand.fw.includes(l));
+export function fwVis(s: State, n: FwNode): NodeVis {
+    if (s.hand.fw.includes(n.id) || fwNodeOpen(s, n)) return "shown";
+    return n.links.some((l) => l !== "core" && fwNodeOpen(s, FW_BY.get(l)!)) ? "fog" : "hidden";
+}
+
+export interface HandNote { n: number; text: string; at: number; proto: ProtoId | null }
+export interface HandState {
+    /** Keys held */
+    keys: number;
+    /** owned Firmware node ids */
+    fw: string[];
+    /** the protocol running this cycle, and the second one (Dual boot) */
+    proto: ProtoId | null;
+    proto2: ProtoId | null;
+    /** Handovers done */
+    count: number;
+    /** Keys earned in all */
+    keysTotal: number;
+    /** AP earned by Ascends since the last Handover (shown on the window) */
+    cycleAp: number;
+    /** life.secs when this cycle started */
+    cycleAt: number;
+    /** the notes you left at each Handover, oldest first */
+    notes: HandNote[];
+    /** protocol mastery: cycles finished on each protocol (ranks I to III) */
+    rank: Partial<Record<ProtoId, number>>;
+    /** Firmware layout version: 2 = the keeps are base Handover (older saves get their Keys back once) */
+    fwv: number;
+}
+export const freshHand = (): HandState => ({ keys: 0, fw: [], proto: null, proto2: null, count: 0, keysTotal: 0, cycleAp: 0, cycleAt: 0, notes: [], rank: {}, fwv: 2 });
+
+const HFX_CACHE = new WeakMap<string[], { n: number; base: boolean; v: ReturnType<typeof handFxRaw> }>();
+/** What the owned Firmware adds up to, plus the base Handover keeps once one is done. Cached per Firmware array. */
+export function handFx(s: State) {
+    const arr = s.hand.fw;
+    const base = s.hand.count > 0;
+    const hit = HFX_CACHE.get(arr);
+    if (hit && hit.n === arr.length && hit.base === base) return hit.v;
+    const v = handFxRaw(arr, base);
+    HFX_CACHE.set(arr, { n: arr.length, base, v });
+    return v;
+}
+function handFxRaw(ids: string[], base: boolean) {
+    const o = { kitReboot: 0, kitProd: 0, afterglow: 0, unlockMul: 1, rootPath: 1, ascendAt: 1, preinstall: false, keepEntry: false, keepUpper: false, perkKeep: 0, labKeep: false, droneKeep: 0, apRefund: 0, keys: 0, anyAscend: false, standby: false, dual: false, lineage: 0, rigKeep: 0, zeLong: 0, modKeep: 0, rigCost: 0, zeOften: 0, fieldOp: false };
+    const all: FwFx[] = ids.map((id) => FW_BY.get(id)?.fx).filter((f): f is FwFx => !!f);
+    if (base) all.unshift(HAND_BASE);
+    for (const f of all) {
+        o.kitReboot += f.kitReboot ?? 0;
+        o.kitProd += f.kitProd ?? 0;
+        o.afterglow += f.afterglow ?? 0;
+        o.unlockMul *= f.unlockMul ?? 1;
+        o.rootPath *= f.rootPath ?? 1;
+        o.ascendAt *= f.ascendAt ?? 1;
+        o.perkKeep = Math.max(o.perkKeep, f.perkKeep ?? 0);
+        o.droneKeep = Math.max(o.droneKeep, f.droneKeep ?? 0);
+        o.apRefund += f.apRefund ?? 0;
+        o.keys += f.keys ?? 0;
+        o.lineage += f.lineage ?? 0;
+        o.rigKeep = Math.max(o.rigKeep, f.rigKeep ?? 0);
+        o.modKeep = Math.max(o.modKeep, f.modKeep ?? 0);
+        o.zeLong += f.zeLong ?? 0;
+        o.rigCost += f.rigCost ?? 0;
+        o.zeOften += f.zeOften ?? 0;
+        for (const k of ["preinstall", "keepEntry", "keepUpper", "labKeep", "anyAscend", "standby", "dual", "fieldOp"] as const) if (f[k]) o[k] = true;
+    }
+    return o;
+}
+/** Protocol mastery rank (0 to 3): cycles you have finished on that protocol. */
+export const protoRank = (s: State, id: ProtoId) => Math.min(HAND_TUNE.rankMax, s.hand?.rank?.[id] ?? 0);
+/** How strongly a protocol runs: 1 for the main one, 0.5 for the Dual boot one, else 0; each mastery rank adds 25%. */
+export function protoK(s: State, id: ProtoId): number {
+    if (!s.hand) return 0;
+    const base = s.hand.proto === id ? 1 : s.hand.proto2 === id && handFx(s).dual ? 0.5 : 0;
+    return base ? base * (1 + HAND_TUNE.rankStep * protoRank(s, id)) : 0;
+}
+/** Field: rig prices, zone event length and gap, and the Field operator keystone (read by rigs.ts and zoneevents.ts). */
+export const fwRigCost = (s: State) => (s.hand ? Math.max(0.2, 1 - handFx(s).rigCost) : 1);
+export const fwZeLong = (s: State) => (s.hand ? 1 + handFx(s).zeLong : 1);
+export const fwZeGap = (s: State) => (s.hand ? 1 / (1 + handFx(s).zeOften) : 1);
+export const fwFieldOp = (s: State) => !!s.hand && handFx(s).fieldOp;
+/** Lineage: everything +50% per Handover done. */
+/** Arc clears (lib/nodefarm/zones/arcs.ts fills this when it is imported, like RIG_HOOKS): how many arcs have every button pressed once. */
+export const ARC_HOOKS: { cleared?: (s: State) => number } = {};
+export const handGlobal = (s: State) => (s.hand ? 1 + handFx(s).lineage * s.hand.count : 1);
+/** The node remembers: every Handover done multiplies AP on Ascend. */
+export const handAp = (s: State) => (s.hand ? 1 + HAND_TUNE.apPerHand * s.hand.count : 1);
+/** Aether you need to Ascend (Short fuse halves it). */
+export const ascendNeed = (s: State) => TUNE.ascendAether * (s.hand ? handFx(s).ascendAt : 1);
+const ROOT_MATS: readonly MatId[] = ["engrams", "paradox", "origin"];
+/** How much of the stat below a material needs before it opens (the tree's Assay, Fast path and Root path). */
+export function unlockNeed(s: State, id: StatId): number {
+    const hf = s.hand ? handFx(s) : null;
+    return TUNE.unlockAt[id] * treeFx(s).unlockMul * (hf ? hf.unlockMul * (ROOT_MATS.includes(id as MatId) ? hf.rootPath : 1) : 1);
+}
+/** Starting kit from Firmware, applied at the start of every Ascend and Handover. */
+function bootKit(s: State) {
+    const hf = handFx(s);
+    s.reboot += hf.kitReboot;
+    for (const m of ["copper", "silicon", "quartz", "aether"] as const) s.prod[m] += hf.kitProd;
+    if (hf.afterglow > 0) s.overclock = Math.max(s.overclock, hf.afterglow);
+}
+
+/** Node zero: the run has Origin producers. */
+export const handOpen = (s: State) => s.prod.origin >= HAND_TUNE.needProd;
+/** Has the player ever seen the Handover (Origin opened, or one done)? */
+export const handSeen = (s: State) => s.hand.count > 0 || isUnlocked(s, "origin");
+/** Keys a Handover would pay right now (0 when it is not open). */
+export function keysOnHandover(s: State): number {
+    if (!handOpen(s) || chOff(s, "prestige")) return 0;
+    const raw = HAND_TUNE.keysBase + treeCount(s) * HAND_TUNE.keysPerNode + Math.sqrt(Math.log10(1 + Math.max(0, s.origin))) * HAND_TUNE.keysPerOriginLog;
+    return Math.floor(raw * (1 + handFx(s).keys) * bloomKeys(s));
+}
+/** Which prestige tree nodes a Handover keeps: the entry and the upper path of every section (19 on a whole tree). */
+export function handKeeps(s: State, hf = handFxRaw(s.hand.fw, true)): string[] {
+    if (!hf.keepEntry && !hf.keepUpper) return [];
+    return s.tree.filter((id) => {
+        const n = BY_ID.get(id);
+        if (!n || n.form) return false;
+        const slot = n.slot;
+        return (hf.keepEntry && slot === 0) || (hf.keepUpper && (slot === 1 || slot === 3 || slot === 5));
+    });
+}
+/**
+ * Hand the node over. Wipes the run, AP, perks, the prestige tree, Drones, Mounted drives, rig levels and the lab's Intel and stock;
+ * keeps goals, secrets, logs, lifetime stats, lab research, learned Scripts, the hangar, zone event history, Keys and Firmware. Returns the Keys paid (0 = not allowed).
+ */
+export function handover(s: State, proto: ProtoId | null, note = "", proto2: ProtoId | null = null): number {
+    const gain = keysOnHandover(s);
+    if (gain < 1) return 0;
+    // the base keeps apply from the very first Handover (handFx only adds them once one is done)
+    const hf = handFxRaw(s.hand.fw, true);
+    const kept = handKeeps(s, hf);
+    const refund = Math.floor(treeSpent(s) * hf.apRefund);
+    const perks = Object.fromEntries(Object.entries(s.perks).map(([k, v]) => [k, Math.floor(v * hf.perkKeep)])) as State["perks"];
+    const text = note.replace(/\s+/g, " ").trim().slice(0, HAND_TUNE.noteMax);
+    const hand: HandState = {
+        ...s.hand,
+        keys: s.hand.keys + gain,
+        keysTotal: s.hand.keysTotal + gain,
+        count: s.hand.count + 1,
+        cycleAp: 0,
+        cycleAt: s.life.secs,
+        proto,
+        proto2: hf.dual && proto2 !== proto ? proto2 : null,
+        notes: text ? [...s.hand.notes, { n: s.hand.count + 1, text, at: s.at, proto }].slice(-50) : s.hand.notes,
+        // the protocol you finish a cycle on ranks up
+        rank: s.hand.proto ? { ...s.hand.rank, [s.hand.proto]: Math.min(HAND_TUNE.rankMax, (s.hand.rank[s.hand.proto] ?? 0) + 1) } : s.hand.rank,
+    };
+    const lab: LabState = { ...freshLab(), seen: s.lab.seen, nodes: s.lab.nodes, last: s.lab.last };
+    // rigs: switches stay, half of every level stays; zone events keep their history and timer, a running one ends
+    const r0 = RIG_HOOKS.ascend ? RIG_HOOKS.ascend(s) : s.rig;
+    const scale = (o: Record<string, number> | undefined) => Object.fromEntries(Object.entries(o ?? {}).map(([k, v]) => [k, Math.floor(v * hf.rigKeep)]).filter(([, v]) => (v as number) > 0));
+    const rig = r0 ? { ...r0, lv: scale(r0.lv), re: scale(r0.re), rw: Math.floor((r0.rw ?? 0) * hf.rigKeep) } : r0;
+    const ze = s.ze ? { ...s.ze, act: [] } : s.ze;
+    const keep = { hand, lab, rig, ze, ap: refund, perks, tree: kept, treeLv: {}, ach: s.ach, achAt: s.achAt, logs: s.logs, armed: s.armed, watchdog: s.watchdog, dropAt: s.dropAt, autoArmed: s.autoArmed, auto: s.auto, dr: drOnAscend(s), life: { ...s.life }, started: s.started };
+    const n = fresh(s.at);
+    Object.assign(n, keep);
+    Object.assign(s, n);
+    s.rebootAt = s.life.secs;
+    bootKit(s);
+    return gain;
+}
+/** Switch protocol between Handovers (Operator's desk). */
+export const canSwitchProto = (s: State) => handFx(s).anyAscend && s.hand.count > 0;
+export function setProto(s: State, id: ProtoId | null, second = false): boolean {
+    if (second) {
+        if (!handFx(s).dual || id === s.hand.proto) return false;
+        s.hand.proto2 = id;
+        return true;
+    }
+    s.hand.proto = id;
+    if (s.hand.proto2 === id) s.hand.proto2 = null;
+    return true;
+}
+export function buyFw(s: State, id: string): boolean {
+    const n = FW_BY.get(id);
+    if (!n || s.hand.fw.includes(id) || !fwNodeOpen(s, n) || s.hand.keys < n.cost || chOff(s, "prestige")) return false;
+    s.hand.keys -= n.cost;
+    s.hand.fw = [...s.hand.fw, id];
+    return true;
+}
+/** Firmware respec: free, refunds every Key. */
+export function respecFw(s: State): number {
+    if (chOff(s, "prestige")) return 0; // locked during a stress test, like the other prestige buys
+    const back = s.hand.fw.reduce((a, id) => a + (FW_BY.get(id)?.cost ?? 0), 0);
+    s.hand.keys += back;
+    s.hand.fw = [];
+    if (!handFx(s).dual) s.hand.proto2 = null;
+    return back;
+}
+export function fwTotals(s: State): [string, string][] {
+    const f = handFxRaw(s.hand.fw, false); // Firmware's own effects; the base keeps are listed on the Handover window
+    const rows: [string, string][] = [];
+    if (f.kitReboot) rows.push(["Ascend starts with", `${f.kitReboot} Reboots`]);
+    if (f.kitProd) rows.push(["Starting producers", `${f.kitProd} on CU, SI, QZ, AE`]);
+    if (f.afterglow) rows.push(["Opening Overclock", fmtTime(f.afterglow)]);
+    if (f.unlockMul < 1) rows.push(["Materials open at", `${Math.round(f.unlockMul * 100)}%`]);
+    if (f.rootPath < 1) rows.push(["Origin arc opens at", `${Math.round(f.unlockMul * f.rootPath * 100)}%`]);
+    if (f.ascendAt < 1) rows.push(["Ascend needs", `${fmt(TUNE.ascendAether * f.ascendAt)} AE`]);
+    if (f.preinstall) rows.push(["Preinstalled", "Watchdog, Orders, Forecast"]);
+    if (f.keepEntry || f.keepUpper) rows.push(["Handover keeps", `${(f.keepEntry ? 5 : 0) + (f.keepUpper ? 15 : 0)} tree nodes`]);
+    if (f.perkKeep) rows.push(["Perks kept", `${Math.round(f.perkKeep * 100)}%`]);
+    if (f.labKeep) rows.push(["Ascend keeps", "Intel and payloads"]);
+    if (f.droneKeep) rows.push(["Drone levels kept", `${Math.round(f.droneKeep * 100)}%`]);
+    if (f.apRefund) rows.push(["Tree AP back", `${Math.round(f.apRefund * 100)}%`]);
+    if (f.keys) rows.push(["Keys", `x${fmt(1 + f.keys)}`]);
+    if (f.anyAscend) rows.push(["Protocol", "change any time"]);
+    if (f.standby) rows.push(["Time away", `+${HAND_TUNE.standbyHours} h, Drones full speed`]);
+    if (f.dual) rows.push(["Dual boot", "second protocol at half"]);
+    if (f.lineage) rows.push(["Lineage", `x${fmt(handGlobal(s))} everything`]);
+    if (f.rigKeep) rows.push(["Rig levels kept", `${Math.round(f.rigKeep * 100)}%`]);
+    if (f.zeLong) rows.push(["Zone events last", `x${fmt(1 + f.zeLong)}`]);
+    if (f.modKeep) rows.push(["Hangar kept", `${Math.round(f.modKeep * 100)}% of Parts and mods`]);
+    if (f.rigCost) rows.push(["Rig prices", `-${Math.round(Math.min(0.8, f.rigCost) * 100)}%`]);
+    if (f.zeOften) rows.push(["Zone events", `x${fmt(1 + f.zeOften)} as often`]);
+    if (f.fieldOp) rows.push(["Field operator", "no Faults, Surges x2"]);
+    return rows;
+}
+function parseHand(o: unknown): HandState {
+    const b = freshHand();
+    if (!o || typeof o !== "object") return b;
+    const x = o as Partial<HandState>;
+    const num = (v: unknown, d = 0) => (typeof v === "number" && Number.isFinite(v) ? v : d);
+    const pid = (v: unknown): ProtoId | null => (PROTOS.some((p) => p.id === v) ? (v as ProtoId) : null);
+    const owned: string[] = Array.isArray(x.fw) ? [...new Set(x.fw.filter((id): id is string => typeof id === "string"))] : [];
+    let keys = Math.max(0, Math.floor(num(x.keys)));
+    // migrateFw: saves from before the keeps became base Handover get back every Key spent on a node that left Firmware,
+    // and the difference on nodes that moved to a cheaper slot
+    if (num(x.fwv) < 2) for (const id of owned) keys += Math.max(0, (FW_OLD_COST[id] ?? 0) - (FW_BY.get(id)?.cost ?? 0));
+    return {
+        fwv: 2,
+        keys,
+        fw: owned.filter((id) => FW_BY.has(id)),
+        proto: pid(x.proto),
+        proto2: pid(x.proto2),
+        count: Math.max(0, Math.floor(num(x.count))),
+        keysTotal: Math.max(0, Math.floor(num(x.keysTotal))),
+        cycleAp: Math.max(0, num(x.cycleAp)),
+        cycleAt: Math.max(0, num(x.cycleAt)),
+        notes: Array.isArray(x.notes) ? x.notes.filter((v) => v && typeof v.text === "string").map((v) => ({ n: Math.floor(num(v.n)), text: String(v.text).slice(0, HAND_TUNE.noteMax), at: num(v.at), proto: pid(v.proto) })).slice(-50) : [],
+        rank: Object.fromEntries(Object.entries(x.rank && typeof x.rank === "object" ? x.rank : {}).filter(([k, v]) => PROTOS.some((p) => p.id === k) && num(v) > 0).map(([k, v]) => [k, Math.min(HAND_TUNE.rankMax, Math.floor(num(v)))])),
+    };
+}
+
 // ---- saving
+/** Save codes are base64 of the UTF-8 save text. (btoa alone throws on a curly quote or an emoji, which a Handover note can hold.) */
+function toCode(text: string): string {
+    const bytes = new TextEncoder().encode(text);
+    let bin = "";
+    for (let i = 0; i < bytes.length; i += 0x8000) bin += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
+    return btoa(bin);
+}
+/** Codes from before that fix are Latin-1 text; they are not valid UTF-8 if they hold an accent, so they fall back to as-is. */
+function fromCode(code: string): string {
+    const bin = atob(code);
+    try {
+        return new TextDecoder("utf-8", { fatal: true }).decode(Uint8Array.from(bin, (c) => c.charCodeAt(0)));
+    } catch {
+        return bin;
+    }
+}
 export function exportSave(s: State): string {
-    return btoa(JSON.stringify({ ...s, at: Date.now() }));
+    return toCode(JSON.stringify({ ...s, at: Date.now() }));
+}
+/** Zone 25 was called Core (id "core") on integration for a few hours before it became Sunstone. Move those saves over. */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function renameCore(o: Record<string, any>) {
+    if (!o || typeof o !== "object" || !("core" in o) || "sunstone" in o) return;
+    const mv = (x: Record<string, unknown> | undefined) => { if (x && typeof x === "object" && "core" in x) { x.sunstone = x.core; delete x.core; } };
+    mv(o); mv(o.prod); mv(o.bought); mv(o.rig?.lv); mv(o.rig?.re); mv(o.auto?.taught);
+    for (const k of ["armed", "autoArmed", "mounts"]) if (Array.isArray(o[k])) o[k] = o[k].map((v: unknown) => (v === "core" ? "sunstone" : v));
+    if (Array.isArray(o.ach)) o.ach = o.ach.map((v: unknown) => (v === "co1" ? "su1" : v));
+    if (o.achAt && typeof o.achAt === "object" && "co1" in o.achAt) { o.achAt.su1 = o.achAt.co1; delete o.achAt.co1; }
+    if (o.rig?.rwAim === "core") o.rig.rwAim = "sunstone";
+    if (o.seen && typeof o.seen === "object") mv(o.seen); // arc progress bits
+    if (o.dr && typeof o.dr === "object") { // posted Drones and their services
+        if (Array.isArray(o.dr.post)) o.dr.post = o.dr.post.map((v: unknown) => (v === "core" ? "sunstone" : v));
+        mv(o.dr.svc);
+    }
+    if (Array.isArray(o.ze?.act)) for (const e of o.ze.act) if (e && e.zone === "core") e.zone = "sunstone"; // a vein or fault still running
 }
 export function parseSave(raw: string): State | null {
     try {
-        const o = JSON.parse(raw.trim().startsWith("{") ? raw : atob(raw.trim()));
+        const o = JSON.parse(raw.trim().startsWith("{") ? raw : fromCode(raw.trim()));
+        renameCore(o);
         if (!o || o.v !== 1 || typeof o.bytes !== "number") return null;
         const base = fresh();
         const n = { ...base, ...o, prod: { ...base.prod, ...o.prod }, perks: { ...base.perks, ...o.perks }, life: { ...base.life, ...o.life }, bought: { ...base.bought, ...o.bought } } as State;
         for (const k of Object.keys(n.bought) as ButtonStat[]) if (!Array.isArray(n.bought[k]) || n.bought[k].length !== TIERS) n.bought[k] = Array(TIERS).fill(0);
+        // saves from before arcs: what is built right now stands in for what was ever pressed (Reboot buttons are not counted, so tier 1 if any Reboot happened)
+        if (!n.seen) {
+            n.seen = {};
+            for (const k of Object.keys(n.bought) as ButtonStat[]) n.seen[k] = n.bought[k].reduce((m, c, i) => m | (c > 0 ? 1 << i : 0), 0);
+            if (n.life.reboots > 0) n.seen.reboot = (n.seen.reboot ?? 0) | 1;
+        }
         if (!Array.isArray(n.tree)) n.tree = [];
         if (!n.treeLv || typeof n.treeLv !== "object") n.treeLv = {};
         if (!Number.isFinite(n.rebootAt)) n.rebootAt = 0;
@@ -1549,6 +2727,10 @@ export function parseSave(raw: string): State | null {
         if (!Number.isFinite(n.dropAt)) n.dropAt = 0;
         if (!Number.isFinite(n.runWins)) n.runWins = 0;
         n.lab = parseLab(o.lab);
+        n.dr = parseDr(o.dr);
+        n.ze = parseZe(o.ze);
+        n.hand = parseHand(o.hand);
+        n.end = parseEnd(o.end);
         const back = migrateTree(n);
         if (back > 0) n.treeRefund = (n.treeRefund ?? 0) + back;
         if (!Array.isArray(n.ach)) n.ach = [];
@@ -1556,11 +2738,93 @@ export function parseSave(raw: string): State | null {
         n.achAt = { ...(o.achAt && typeof o.achAt === "object" ? o.achAt : {}) };
         if (!Array.isArray(n.armed)) n.armed = [];
         for (const k of ["drones", "droneAcc"] as const) if (!Array.isArray(n[k]) || n[k].length !== TIERS || n[k].some((x: number) => !Number.isFinite(x))) n[k] = Array(TIERS).fill(0);
-        for (const k of ["bytes", "mult", "reboot", "copper", "silicon", "quartz", "aether", "runes", "starglass", "voidsteel", "chrono", "nebula", "pulsars", "singularity", "engrams", "paradox", "origin", "ap"] as const) if (!Number.isFinite(n[k])) n[k] = base[k];
+        // 2026-11-12: the Autoloader perk and sweeping Drones were removed (Scripts are the only automation layer)
+        migrateAutomation(n, o);
+        for (const k of ["bytes", "mult", "reboot", "copper", "silicon", "quartz", "aether", "runes", "starglass", "voidsteel", "chrono", "nebula", "pulsars", "singularity", "engrams", "paradox", "origin", "spores", "mycelium", "pollen", "bloom", "basalt", "magma", "geodes", "sunstone", "corona", "plasma", "lattice", "radiance", "ap"] as const) if (!Number.isFinite(n[k])) n[k] = base[k];
         return n;
     } catch {
         return null;
     }
+}
+
+/** The ending's saved state (rules in lib/nodefarm/systems/ending.ts). Here so loading a save needs no import from ending.ts. */
+export interface EndLog { n: number; text: string; at: number }
+export interface EndState {
+    /** stages of the final build done (0 to END_STEPS in ending.ts) */
+    stage: number;
+    /** when the last stage was built (ms epoch); 0 = not yet */
+    doneAt: number;
+    /** the end screen has been shown and closed */
+    seen: boolean;
+    /** endings reached across every operator (the star count) */
+    stars: number;
+    /** logs you left at each ending, oldest first; the newest is the first thing a New operator reads */
+    logs: EndLog[];
+}
+export const END_LOG_MAX = 160;
+export function parseEnd(o: unknown): EndState | undefined {
+    if (!o || typeof o !== "object") return undefined;
+    const x = o as Partial<EndState>;
+    const num = (v: unknown, d = 0) => (typeof v === "number" && Number.isFinite(v) ? v : d);
+    return {
+        stage: Math.max(0, Math.min(5, Math.floor(num(x.stage)))),
+        doneAt: Math.max(0, num(x.doneAt)),
+        seen: !!x.seen,
+        stars: Math.max(0, Math.floor(num(x.stars))),
+        logs: Array.isArray(x.logs) ? x.logs.filter((l) => l && typeof l.text === "string").map((l) => ({ n: Math.max(1, Math.floor(num(l.n, 1))), text: String(l.text).slice(0, END_LOG_MAX), at: num(l.at) })).slice(-20) : [],
+    };
+}
+
+/** Old saves from before Scripts became the only automation layer (Nate, 2026-11-12):
+ * - the Autoloader perk is refunded in full (3, 5, 7... AP per level) and the stats it covered join `armed`;
+ * - every Drone tier with levels but no posting is posted, to an armed zone first (newest first), else the newest open zone,
+ *   so nothing that was working stops; `armed` then goes to buy.sh as ticked stats (scripts.ts migrateArmed). */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function migrateAutomation(n: State, o: Record<string, any>) {
+    const lv = Math.max(0, Math.min(12, Math.floor(Number(o.perks?.auto) || 0)));
+    delete (n.perks as Record<string, number>).auto;
+    // armed stats only mattered while a Drone was sweeping them (built, no posting); otherwise nothing pressed them
+    const swept = !!n.dr && n.drones.some((d, k) => d > 0 && !n.dr.post[k]);
+    if (lv > 0) {
+        const back = 3 * lv + lv * (lv - 1); // the old cost: 3 + 2 per level bought
+        n.ap += back;
+        n.treeRefund = (n.treeRefund ?? 0) + back;
+        const order: ButtonStat[] = ["mult", ...MATS];
+        if (!swept) n.armed = [];
+        for (const st of order.slice(0, lv)) if (!n.armed.includes(st)) n.armed.push(st);
+    }
+    if (swept || lv > 0) n.armedToBuy = true;
+    if (!n.dr || !swept) return;
+    const open = POSTABLE.filter((st) => isUnlocked(n, st)).reverse();
+    const armedOpen = open.filter((st) => n.armed.includes(st));
+    const pool = armedOpen.length ? armedOpen : open;
+    let i = 0;
+    for (let k = 0; k < TIERS; k++) {
+        if (n.drones[k] <= 0 || n.dr.post[k] || !pool.length) continue;
+        // a zone no other Drone works yet, else round the pool again
+        n.dr.post[k] = pool.find((st) => !n.dr.post.includes(st)) ?? pool[i++ % pool.length];
+    }
+}
+
+/** Saved zone events, checked field by field (an event whose zone or kind is unknown is dropped). */
+function parseZe(o: unknown): ZoneEvState | undefined {
+    if (!o || typeof o !== "object") return undefined;
+    const x = o as Partial<ZoneEvState>;
+    const num = (v: unknown, d = 0) => (typeof v === "number" && Number.isFinite(v) ? v : d);
+    const kinds = Object.keys(ZE_TUNE.secs);
+    const ids = STATS.map((st) => st.id as string);
+    const act = (Array.isArray(x.act) ? x.act : [])
+        .filter((e) => e && kinds.includes(e.kind) && ids.includes(e.zone) && num(e.left) > 0)
+        .map((e) => ({ id: num(e.id), kind: e.kind, zone: e.zone, left: Math.min(num(e.left), ZE_TUNE.secs[e.kind]), total: ZE_TUNE.secs[e.kind], picked: !!e.picked, ...(e.kind === "rogue" ? { rar: Math.max(0, Math.min(5, Math.floor(num(e.rar)))) } : {}) }));
+    return {
+        act,
+        wait: Math.max(0, Math.min(ZE_TUNE.gap[1], num(x.wait, ZE_TUNE.first))),
+        seen: Math.max(0, Math.floor(num(x.seen))),
+        kinds: Object.fromEntries(Object.entries(x.kinds ?? {}).filter(([k, v]) => kinds.includes(k) && num(v) > 0).map(([k, v]) => [k, Math.floor(num(v))])),
+        last: ids.includes(x.last as string) ? x.last : undefined,
+        off: x.off === true ? true : undefined,
+        log: (Array.isArray(x.log) ? x.log : []).filter((e) => e && kinds.includes(e.kind) && ids.includes(e.zone)).slice(-ZE_TUNE.logMax).map((e) => ({ kind: e.kind, zone: e.zone, at: num(e.at) })),
+    };
 }
 
 /** A saved lab, checked field by field; anything odd falls back to a fresh lab. */
@@ -1575,7 +2839,7 @@ function parseLab(o: unknown): LabState {
         intel: Math.max(0, num(x.intel)),
         nodes: Array.isArray(x.nodes) ? [...new Set(x.nodes.filter((id) => LAB_BY.has(id)))] : [],
         queue: Array.isArray(x.queue) ? x.queue.filter((q) => q && pid(q.id)).map((q) => ({ id: q.id, left: Math.max(0, num(q.left)) })) : [],
-        stock: Object.fromEntries(Object.entries(x.stock ?? {}).filter(([k, v]) => pid(k) && num(v) > 0).map(([k, v]) => [k, Math.min(LAB_TUNE.stockMax, Math.floor(num(v)))])),
+        stock: Object.fromEntries(Object.entries(x.stock ?? {}).filter(([k, v]) => pid(k) && num(v) > 0).map(([k, v]) => [k, Math.min(STOCK_CAP_MAX, Math.floor(num(v)))])),
         run: Array.isArray(x.run) ? x.run.filter((r) => r && pid(r.id) && num(r.left) > 0).map((r) => ({ id: r.id, left: Math.min(LAB_TUNE.maxRun, num(r.left)) })) : [],
         armed: Array.isArray(x.armed) ? [...new Set(x.armed.filter(pid))] : [],
         last: pid(x.last) ? x.last : null,
@@ -1608,4 +2872,79 @@ export function fmtTime(sec: number): string {
     sec = Math.floor(sec);
     const h = Math.floor(sec / 3600), m = Math.floor((sec % 3600) / 60), x = sec % 60;
     return h ? `${h}h ${m}m` : m ? `${m}m ${x}s` : `${x}s`;
+}
+
+// ---- goals and secrets for the systems that came after the first eight tiers: Scripts, the Drone hangar, zone rigs, zone events,
+// the Exploit Lab, the reactor core and Handover. Pushed here (after every table they read exists) so the base list stays untouched.
+// Each one counts as a normal goal (TUNE.achBonus), and a full tier gives TUNE.tierBonus like the rest.
+const ranSum = (s: State) => Object.values(s.auto?.ran ?? {}).reduce((a, n) => a + (n ?? 0), 0);
+const rigSum = (s: State) => Object.values(s.rig?.lv ?? {}).reduce((a, n) => a + n, 0);
+const bestRank = (s: State) => Math.max(0, ...POSTABLE.map((st) => zoneRank(s, st)));
+/** Same rule as coreParts in core-look.ts: every structure is on the reactor core. */
+const coreFull = (s: State) =>
+    (s.life.reboots >= 1 || s.reboot > 0) && isUnlocked(s, "copper") && s.lab.seen && (s.drones.some((n) => n > 0) || Object.keys(s.dr?.svc ?? {}).length > 0) &&
+    s.life.ascends >= 1 && (s.auto?.own.length ?? 0) > 0 && isUnlocked(s, "nebula") && isUnlocked(s, "engrams") && isUnlocked(s, "origin");
+GOALS.push(
+    // X  DAEMON: Scripts and Drones
+    G("sc1", "Taught it", "Learn your first Script.", 10, "spark", 1, (s) => s.auto?.own.length ?? 0),
+    G("sc6", "Full crontab", "Learn all six Scripts.", 10, "spark", 6, (s) => s.auto?.own.length ?? 0),
+    G("sr1k", "Unattended", "Let Scripts run 1,000 actions.", 10, "spark", 1000, ranSum),
+    G("dp1", "Sent out", "Post a Drone to a zone.", 10, "mult", 1, (s) => s.dr?.post.filter((x) => x).length ?? 0),
+    G("dm3", "Regular", "Reach mastery rank III in a zone.", 10, "mult", 3, bestRank),
+    G("dt18", "Full hangar", "Own every node in the Drone tree.", 10, "mult", DRONE_TREE.length, (s) => s.dr?.nodes.length ?? 0),
+    // XI SUBSYSTEM: rigs, zone events, the lab, the core
+    G("rg1", "Rigged", "Buy your first rig level.", 11, "copper", 1, rigSum),
+    G("rg25", "Tuned", "Reach 25 rig levels in total.", 11, "copper", 25, rigSum),
+    G("ze1", "Anomaly", "See a zone event.", 11, "alert", 1, (s) => s.ze?.seen ?? 0),
+    G("lb1", "Live fire", "Deploy your first payload.", 11, "alert", 1, life("deployed")),
+    G("lb18", "Full stack", "Research every Exploit Lab node.", 11, "alert", LAB.length, (s) => s.lab.nodes.length),
+    G("cr9", "Fully bolted", "Get every structure onto the reactor core.", 11, "ascend", 1, (s) => (coreFull(s) ? 1 : 0)),
+    // XII FIRMWARE: Handover
+    G("hd1", "Handed over", "Hand the node over once.", 12, "origin", 1, (s) => s.hand?.count ?? 0),
+    G("hd5", "Fifth operator", "Hand the node over 5 times.", 12, "origin", 5, (s) => s.hand?.count ?? 0),
+    G("hk100", "Keyring", "Earn 100 Keys in total.", 12, "origin", 100, (s) => s.hand?.keysTotal ?? 0),
+    G("hn3", "Notes to self", "Leave 3 handover notes.", 12, "origin", 3, (s) => s.hand?.notes.length ?? 0),
+    G("fw9", "Flashed", "Own 9 Firmware nodes.", 12, "origin", 9, (s) => s.hand?.fw.length ?? 0),
+    G("fw18", "Full image", "Own every Firmware node.", 12, "origin", FW.length, (s) => s.hand?.fw.length ?? 0),
+);
+SECRETS.push(
+    { id: "x_rm", name: "Permission denied", clue: "Try to delete everything from the console.", how: "Ran `nf rm -rf /` in the console." },
+    { id: "x_kill", name: "Kill signal", clue: "Tell a Drone it is done.", how: "Ran `nf kill` in the console." },
+    { id: "x_zero", name: "Zero reply", clue: "Ping the node that came before this one.", how: "Ran `nf ping node-00` in the console." },
+    { id: "x_hands", name: "Hands off", clue: "Let it decide when to leave.", how: "A Script ran an Ascend for you.", test: (s) => (s.auto?.ran.ascend ?? 0) >= 1 },
+    { id: "x_edit", name: "Edit history", clue: "The root chamber lets you rewrite its neighbors. Keep going.", how: "Rewrote rigs 12 times.", test: (s) => (s.rig?.rw ?? 0) >= 12 },
+    // one hidden secret for each stage (tiers I to XII). Console ones are handled in records.ts.
+    { id: "x_help", name: "Read the manual", clue: "The console has a manual. Nobody reads it.", how: "Ran `nf man` in the console." },
+    { id: "x_strict", name: "Strict mode", clue: "Some shells refuse to go on after an error. Ask for that.", how: "Ran `nf set -e` in the console." },
+    { id: "x_sysctl", name: "Read only", clue: "Ask the kernel what it is not allowed to change.", how: "Ran `nf sysctl` in the console." },
+    { id: "x_su", name: "Become root", clue: "Ask to be someone else for a minute.", how: "Ran `nf su` in the console." },
+    { id: "x_dmesg", name: "Ring buffer", clue: "Read what the kernel said while it was booting.", how: "Ran `nf dmesg` in the console." },
+    { id: "x_tree", name: "Sit under it", clue: "Ask the tree where its branches go.", how: "Ran `nf tree` in the console." },
+    { id: "x_urandom", name: "Noise floor", clue: "Read from the random device until the terminal fills.", how: "Ran `nf cat /dev/urandom` in the console." },
+    { id: "x_epoch", name: "Unix time", clue: "Ask the node what day it started on.", how: "Ran `nf date` in the console." },
+    { id: "x_dig", name: "Nothing answers", clue: "Dig for a name past the last zone.", how: "Ran `nf dig` in the console." },
+    { id: "x_pid", name: "Process one", clue: "Find the process that started everything.", how: "Ran `nf ps` in the console." },
+    { id: "x_top", name: "Load average", clue: "Ask what the node is busy with.", how: "Ran `nf top` in the console." },
+    { id: "x_flash", name: "Write protected", clue: "Try to rewrite the firmware by hand.", how: "Ran `nf flash` in the console." },
+    { id: "x_sun", name: "Sunrise", clue: "Ask the node when the sun comes up.", how: "Ran `nf sun` in the console." },
+    { id: "x_nohup", name: "Nohup", clue: "Ask the node to keep going when you leave.", how: "Ran `nf nohup` in the console." },
+);
+
+// ---- Undersun (zones 26 to 29, after the ending): tier XIII, six goals. Pushed after the tier table above, so tier XII is untouched.
+const rigLevels = (s: State, ids: string[]) => ids.reduce((a, z) => a + (s.rig?.lv?.[z] ?? 0), 0);
+GOALS.push(
+    G("us1", "Bright side", "Gather your first Corona.", 13, "ascend", 1e-9, (s) => s.corona),
+    G("us2", "Charged", "Gather your first Plasma.", 13, "ascend", 1e-9, (s) => s.plasma),
+    G("us3", "Held", "Gather your first Lattice.", 13, "ascend", 1e-9, (s) => s.lattice),
+    G("us4", "Curtain", "Gather your first Radiance.", 13, "ascend", 1e-9, (s) => s.radiance),
+    G("us5", "Undersun rigs", "Reach 10 levels across the Corona, Plasma and Lattice rigs.", 13, "copper", 10, (s) => rigLevels(s, ["corona", "plasma", "lattice"])),
+    G("us6", "Hold the glow", "Hold 100 Radiance.", 13, "ascend", 100, (s) => s.radiance),
+);
+/** The twelve stage secrets (one per tier) count half, so they add +1% each rather than +2%. */
+export const STAGE_SECRET_IDS = ["x_help", "x_strict", "x_sysctl", "x_su", "x_dmesg", "x_tree", "x_urandom", "x_epoch", "x_dig", "x_pid", "x_top", "x_flash", "x_sun", "x_nohup"];
+/** Goals and secrets, with the stage secrets at half weight. Every bonus that used to count s.ach.length uses this. */
+export function achPoints(s: State): number {
+    let n = s.ach.length;
+    for (const id of STAGE_SECRET_IDS) if (s.ach.includes(id)) n -= 0.5;
+    return n;
 }

@@ -4,9 +4,9 @@
 // /naos/* is cached for a week (next.config.ts) and regenerated sheets keep their names. When a sheet grows (new icons,
 // new tier rows) a browser would keep the old image while the new CSS scales it to the new size, so every sprite
 // shows a sliver of its neighbour. This script stamps each `url(/naos/nodefarm/<file>)` in app/camino/*.css with
-// `?v=<content hash>` and writes lib/nodefarm/art-version.ts for URLs built in code, so a changed sheet gets a new URL.
+// `?v=<content hash>` and writes lib/nodefarm/art/art-version.ts for URLs built in code, so a changed sheet gets a new URL.
 //
-// It also checks that the icon and tier sheets match the lists in components/nodefarm/icon.tsx and the sizes in CSS.
+// It also checks that the icon and tier sheets match the lists in components/nodefarm/board/icon.tsx and the sizes in CSS.
 //
 //   node scripts/nodefarm/stamp-art.mjs          rewrite stamps (run after regenerating any art)
 //   node scripts/nodefarm/stamp-art.mjs --check  fail if a stamp is stale or a sheet doesn't match (runs in prebuild)
@@ -17,7 +17,7 @@ import { join } from "node:path";
 const ROOT = new URL("../..", import.meta.url).pathname;
 const ART = join(ROOT, "public/naos/nodefarm");
 const CSS_DIR = join(ROOT, "app/camino");
-const TS_OUT = join(ROOT, "lib/nodefarm/art-version.ts");
+const TS_OUT = join(ROOT, "lib/nodefarm/art/art-version.ts");
 const check = process.argv.includes("--check");
 const errors = [];
 
@@ -51,39 +51,55 @@ export const ART_V: Record<string, string> = ${JSON.stringify(hash, null, 4).rep
 export const nfArt = (file: string) => \`/naos/nodefarm/\${file}?v=\${ART_V[file] ?? "0"}\`;
 `;
 if (!existsSync(TS_OUT) || readFileSync(TS_OUT, "utf8") !== ts) {
-    if (check) errors.push("lib/nodefarm/art-version.ts is stale");
-    else { writeFileSync(TS_OUT, ts); console.log("wrote lib/nodefarm/art-version.ts"); }
+    if (check) errors.push("lib/nodefarm/art/art-version.ts is stale");
+    else { writeFileSync(TS_OUT, ts); console.log("wrote lib/nodefarm/art/art-version.ts"); }
 }
 
 // 3. Sheet maths: icon columns and tier rows must match the lists and the CSS sizes.
 const pngSize = (f) => { const b = readFileSync(join(ART, f)); return { w: b.readUInt32BE(16), h: b.readUInt32BE(20) }; };
-const iconSrc = readFileSync(join(ROOT, "components/nodefarm/icon.tsx"), "utf8");
+const iconSrc = readFileSync(join(ROOT, "components/nodefarm/board/icon.tsx"), "utf8");
 const list = (name) => {
     const m = iconSrc.match(new RegExp(`const ${name} = \\[([^\\]]*)\\]`));
     return m ? m[1].split(",").map((x) => x.trim()).filter(Boolean).length : 0;
 };
 const icons = list("ORDER");
-const rows = list("TIER_ROWS");
 const allCss = readdirSync(CSS_DIR).filter((n) => n.endsWith(".css")).map((n) => [n, readFileSync(join(CSS_DIR, n), "utf8")]);
-for (const f of ["icons.png", "icons-anim.png"]) {
-    const { w } = pngSize(f);
-    if (w !== icons * 32) errors.push(`${f} is ${w / 32} icons wide but icon.tsx ORDER lists ${icons}`);
+{
+    const { w, h } = pngSize("icons64.png");
+    if (w !== icons * 64) errors.push(`icons64.png is ${w / 64} icons wide but icon.tsx ORDER lists ${icons}`);
+    if (h !== 64 * 8) errors.push(`icons64.png should be eight 64 px frames tall, is ${h}px`);
 }
 for (const [n, src] of allCss) {
-    for (const m of src.matchAll(/icons-anim\.webp[^;]*?calc\(var\(--s\) \* (\d+)\)/g)) {
+    for (const m of src.matchAll(/icons64\.webp[^;]*?calc\(var\(--s\) \* (\d+)\) calc\(var\(--s\) \* (\d+)\)/g)) {
         if (+m[1] !== icons) errors.push(`${n}: icon sheet sized for ${m[1]} icons, ORDER lists ${icons}`);
-    }
-    for (const m of src.matchAll(/tiers-anim\.webp[^;]*?\/ (\d+)px (\d+)px/g)) {
-        if (+m[2] !== rows * 128) errors.push(`${n}: tier sheet sized ${m[2]}px tall, TIER_ROWS needs ${rows * 128}px`);
+        if (+m[2] !== 8) errors.push(`${n}: icon sheet sized for ${m[2]} frames, icons64 has 8`);
     }
 }
-const t = pngSize("tiers-anim.png");
-if (t.h !== rows * 128) errors.push(`tiers-anim.png has ${t.h / 128} rows but icon.tsx TIER_ROWS lists ${rows}`);
-if (pngSize("tiers.png").h !== rows * 32) errors.push(`tiers.png row count does not match TIER_ROWS (${rows})`);
+// 64 px button sprites: one sheet per stat in TIC64, six tiers across by eight frames down.
+const tic64 = (iconSrc.match(/const TIC64 = \[([^\]]*)\]/)?.[1] ?? "").split(",").map((x) => x.trim().replace(/"/g, "")).filter(Boolean);
+for (const st of tic64) {
+    if (!hash[`tic-${st}.png`] || !hash[`tic-${st}.webp`]) { errors.push(`tic-${st}.{png,webp} missing (listed in icon.tsx TIC64)`); continue; }
+    const { w, h } = pngSize(`tic-${st}.png`);
+    if (w !== 384 || h !== 512) errors.push(`tic-${st}.png is ${w}x${h}, expected 384x512 (6 tiers x 8 frames of 64 px)`);
+}
+// Every button stat needs a 64 px sheet: the old 32 px fallback is gone, so a missing one would show no sprite.
+{
+    const eng = readFileSync(join(ROOT, "lib/nodefarm/engine.ts"), "utf8");
+    const mats = (eng.match(/export const MATS = \[([^\]]*)\]/)?.[1] ?? "").split(",").map((x) => x.trim().replace(/"/g, "")).filter(Boolean);
+    for (const st of ["mult", "reboot", ...mats]) if (!tic64.includes(st)) errors.push(`button stat ${st} has no 64 px sheet (add it to TIC64 in icon.tsx)`);
+}
+// Scripts zone icons: six scripts by eight 64 px frames.
+{
+    const { w, h } = pngSize("sched-icons64.png");
+    const rowsSrc = readFileSync(join(ROOT, "components/nodefarm/workshop/scripts.tsx"), "utf8").match(/const ROW[^{]*\{([^}]*)\}/)?.[1] ?? "";
+    const rows = rowsSrc.split(",").filter((x) => x.includes(":")).length;
+    if (w !== 512 || h !== rows * 64) errors.push(`sched-icons64.png is ${w}x${h}, expected 512x${rows * 64} (8 frames x ${rows} scripts of 64 px, ROW in scripts.tsx)`);
+    for (const [n, src] of allCss) for (const m of src.matchAll(/sched-icons64\.webp[^;]*?calc\(var\(--si\) \* 8\) calc\(var\(--si\) \* (\d+)\)/g)) if (+m[1] !== rows) errors.push(`${n}: sched-icons64 sized for ${m[1]} rows, ROW lists ${rows}`);
+}
 
 if (errors.length) {
     console.error("Node Farm art check failed:\n  " + errors.join("\n  "));
     if (check) console.error("Fix the sheet, or run `node scripts/nodefarm/stamp-art.mjs` to refresh the stamps.");
     process.exit(1);
 }
-if (check) console.log(`Node Farm art ok (${Object.keys(hash).length} files, ${icons} icons, ${rows} tier rows)`);
+if (check) console.log(`Node Farm art ok (${Object.keys(hash).length} files, ${icons} icons, ${tic64.length} tier sheets)`);

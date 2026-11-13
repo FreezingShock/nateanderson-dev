@@ -1,0 +1,95 @@
+/* ==========================================================================
+   Node Farm game feel (components/nodefarm/board/juice.tsx): press pop-ups, banners and the Ascend sequence.
+   Everything lives in portals on <body>, so every rule is scoped under `body`. Transform and opacity only.
+   ========================================================================== */
+@keyframes nfPopUp {
+    0% { opacity: 0; transform: translate(-50%, 6px) scale(.6); }
+    14% { opacity: 1; transform: translate(-50%, -4px) scale(1.18); }
+    30% { transform: translate(-50%, -10px) scale(1); }
+    100% { opacity: 0; transform: translate(-50%, -54px) scale(1); }
+}
+@keyframes nfSpark { from { transform: translate(0, 0); opacity: 1; } to { transform: translate(var(--dx), var(--dy)); opacity: 0; } }
+@keyframes nfRxIn { from { opacity: 0; } to { opacity: 1; } }
+@keyframes nfRxLine { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+@keyframes nfRxType { from { max-width: 0; } to { max-width: 21ch; } }
+@keyframes nfRxShake { 0% { transform: translate(0, 0); } 33% { transform: translate(2px, -1px); } 66% { transform: translate(-2px, 1px); } 100% { transform: translate(0, 0); } }
+@keyframes nfRxFlash { 0% { opacity: .85; } 100% { opacity: 0; } }
+@keyframes nfRxBlink { 50% { opacity: .35; } }
+@keyframes nfRxOut { from { opacity: 1; } to { opacity: 0; } }
+
+/* ---- press pop-ups */
+body .nf-pops { position: fixed; inset: 0; z-index: 64; pointer-events: none; overflow: hidden; contain: strict; }
+body .nf-pop { position: absolute; transform: translate(-50%, 0); white-space: nowrap; font: 700 15px/1 var(--cm-mono); letter-spacing: .02em; color: var(--c, #2fd8e8); font-variant-numeric: tabular-nums; text-shadow: 1px 0 #000, -1px 0 #000, 0 1px #000, 0 -1px #000; animation: nfPopUp 760ms cubic-bezier(.2, .7, .3, 1) both; will-change: transform, opacity; }
+body .nf-pop.big { font-size: 20px; animation-duration: 1000ms; }
+body .nf-pop i { position: absolute; left: 50%; top: 50%; width: 3px; height: 3px; background: var(--c, #2fd8e8); animation: nfSpark 420ms steps(5) both; }
+
+/* ---- banners (decrypted stat, new button tier, milestone) */
+body .nf-ic { --s: 32px; display: inline-block; flex: none; width: var(--s); height: var(--s); background: url(/naos/nodefarm/icons64.webp?v=31120abc) calc(var(--i) * var(--s) * -1) 0 / calc(var(--s) * 33) calc(var(--s) * 8) no-repeat; animation: nfFrame 1.2s steps(8) infinite; image-rendering: pixelated; vertical-align: middle; }
+body .nf-ic.l { --s: 64px; }
+body .nf-jb { position: fixed; z-index: 66; left: 50%; top: clamp(96px, 28vh, 300px); translate: -50% 0; width: min(92vw, 560px); display: flex; align-items: center; gap: 14px; padding: 14px 20px 14px 14px; background: #090909; color: var(--cm-fg, #eee); border: 1px solid color-mix(in srgb, var(--c) 55%, #1c1c1c); border-left: 3px solid var(--c); box-shadow: 0 0 0 4px #000a, 0 18px 50px #000c; pointer-events: none; overflow: hidden; }
+body .nf-jb::before { content: ""; position: absolute; inset: 0; pointer-events: none; background: radial-gradient(circle, color-mix(in srgb, var(--c) 70%, transparent) .9px, transparent 1.4px) 0 0 / 5px 5px; opacity: .45; -webkit-mask-image: linear-gradient(100deg, #000 0%, transparent 55%); mask-image: linear-gradient(100deg, #000 0%, transparent 55%); }
+body .nf-jb::after { content: ""; position: absolute; inset: 0; pointer-events: none; background: repeating-linear-gradient(0deg, transparent 0 3px, #0000003a 3px 4px); }
+/* in and out: the code reveal (lib/nodefarm/cx.ts) */
+body .nf-jb > * { position: relative; z-index: 1; }
+body .nf-jb-br { position: absolute !important; inset: 5px; z-index: 2 !important; pointer-events: none; background:
+    linear-gradient(var(--c), var(--c)) 0 0 / 10px 1px no-repeat, linear-gradient(var(--c), var(--c)) 0 0 / 1px 10px no-repeat,
+    linear-gradient(var(--c), var(--c)) 100% 0 / 10px 1px no-repeat, linear-gradient(var(--c), var(--c)) 100% 0 / 1px 10px no-repeat,
+    linear-gradient(var(--c), var(--c)) 0 100% / 10px 1px no-repeat, linear-gradient(var(--c), var(--c)) 0 100% / 1px 10px no-repeat,
+    linear-gradient(var(--c), var(--c)) 100% 100% / 10px 1px no-repeat, linear-gradient(var(--c), var(--c)) 100% 100% / 1px 10px no-repeat; }
+body .nf-jb-ic { display: grid; place-items: center; flex: none; }
+body .nf-jb-t { display: grid; gap: 4px; min-width: 0; }
+body .nf-jb-t small { display: flex; align-items: center; gap: 10px; font: 700 11px/1 var(--cm-mono); letter-spacing: .16em; text-transform: uppercase; color: var(--c); }
+body .nf-jb-t b { font: 700 clamp(16px, 4.4vw, 22px)/1.15 var(--cm-mono); letter-spacing: .02em; text-transform: uppercase; overflow-wrap: anywhere; }
+body .nf-jb-t span { font: 400 13px/1.35 var(--cm-mono); color: var(--cm-mute, #9a9a9a); }
+body .nf-jb .nf-pips { display: inline-flex; gap: 3px; }
+body .nf-jb .nf-pips i { width: 6px; height: 6px; background: var(--c); }
+/* repeat unlocks and tier-ups are the short version: one line, small icon */
+body .nf-jb:not([data-first]) { width: min(92vw, 420px); padding: 9px 16px 9px 10px; gap: 10px; }
+body .nf-jb:not([data-first]) .nf-jb-t span { display: none; }
+body .nf-jb:not([data-first]) .nf-jb-t b { font-size: clamp(14px, 3.8vw, 17px); }
+body .nf-jb[data-kind="unlock"][data-first] { border-width: 2px; border-left-width: 4px; }
+body .nf-jb[data-kind="unlock"]:not([data-first]) .nf-ic.l, body .nf-jb[data-kind="tier"] .nf-ic.l { --s: 32px; }
+
+/* ---- the Ascend sequence */
+body .nf-rx { position: fixed; inset: 0; z-index: 2147483100; display: flex; flex-direction: column; background: #050505; color: var(--cm-fg, #eee); overscroll-behavior: contain; cursor: pointer; outline: none; animation: nfRxIn 300ms steps(5) both; }
+body .nf-rx::before { content: ""; position: absolute; inset: 0; pointer-events: none; background: repeating-conic-gradient(#2fd8e8 0 25%, transparent 0 50%) 0 0 / 6px 6px; opacity: .09; -webkit-mask-image: radial-gradient(90% 70% at 50% 40%, #000, transparent 75%); mask-image: radial-gradient(90% 70% at 50% 40%, #000, transparent 75%); }
+body .nf-rx::after { content: ""; position: absolute; inset: 0; pointer-events: none; background: repeating-linear-gradient(0deg, transparent 0 3px, #0000003a 3px 4px); }
+body .nf-rx[data-phase="show"]::before { background-image: repeating-conic-gradient(#6bffc9 0 25%, transparent 0 50%); }
+body .nf-rx-bar { position: relative; z-index: 1; display: flex; justify-content: space-between; align-items: center; gap: 12px; min-height: 40px; padding: 0 16px; background: var(--cm-ctos-block, #2fd8e8); color: var(--cm-ctos-ink, #000); font: 700 11px/1 var(--cm-mono); letter-spacing: .14em; text-transform: uppercase; }
+@media (max-width: 480px) { body .nf-rx-bar span:last-child { display: none; } }
+body .nf-rx-body { position: relative; z-index: 1; flex: 1; overflow-y: auto; display: grid; align-content: center; justify-items: center; gap: 22px; padding: clamp(16px, 4vh, 40px) clamp(16px, 4vw, 40px); }
+body .nf-rx-core canvas { display: block; width: 288px; height: 288px; image-rendering: pixelated; }
+@media (min-width: 700px) and (min-height: 780px) { body .nf-rx-core canvas { width: 432px; height: 432px; } }
+body .nf-rx[data-phase="charge"] .nf-rx-core { animation: nfRxShake 120ms steps(3) infinite; }
+body .nf-rx-out { display: grid; justify-items: center; gap: 12px; text-align: center; max-width: 640px; visibility: hidden; }
+body .nf-rx-out[data-on] { visibility: visible; }
+body .nf-rx-out > * { margin: 0; opacity: 0; }
+body .nf-rx-out[data-on] > * { animation: nfRxLine 300ms steps(4) both; }
+body .nf-rx-out[data-on] > :nth-child(1) { animation-delay: 0ms; }
+body .nf-rx-out[data-on] > :nth-child(2) { animation-delay: 80ms; }
+body .nf-rx-out[data-on] > :nth-child(3) { animation-delay: 500ms; }
+body .nf-rx-out[data-on] > :nth-child(4) { animation-delay: 1500ms; }
+body .nf-rx-out[data-on] > :nth-child(5) { animation-delay: 1750ms; }
+body .nf-rx-out[data-on] > :nth-child(6) { animation-delay: 2400ms; }
+body .nf-rx-k { font: 700 11px/1 var(--cm-mono); letter-spacing: .2em; text-transform: uppercase; color: #6bffc9; }
+body .nf-rx-h { display: inline-block; overflow: hidden; white-space: nowrap; max-width: 21ch; font: 700 clamp(22px, 5.2vw, 38px)/1.1 var(--cm-mono); letter-spacing: .04em; text-transform: uppercase; }
+body .nf-rx-out[data-on] > .nf-rx-h { opacity: 1; animation: nfRxType 800ms steps(19) 100ms both; }
+body .nf-rx-gain { display: flex; align-items: baseline; gap: 12px; font: 700 13px/1 var(--cm-mono); letter-spacing: .14em; text-transform: uppercase; color: #6bffc9; }
+body .nf-rx-gain b { font: 700 clamp(34px, 8vw, 56px)/1 var(--cm-display); letter-spacing: -.02em; font-variant-numeric: tabular-nums; }
+body .nf-rx-line { font: 400 14px/1.45 var(--cm-mono); color: var(--cm-fg, #eee); }
+body .nf-rx-line.dim { color: var(--cm-mute, #9a9a9a); font-size: 13px; }
+body .nf-rx-go { font: 700 11px/1 var(--cm-mono); letter-spacing: .2em; text-transform: uppercase; color: #2fd8e8; animation: nfRxBlink 1s steps(2) infinite; }
+/* exit: the sequence fades out in four steps before it unmounts (AscendSeq close) */
+body .nf-rx[data-phase="leave"] { animation: nfRxOut 240ms steps(4, end) both; pointer-events: none; }
+body .nf-rx-flash { position: absolute; inset: 0; z-index: 5; pointer-events: none; background: #aef6ff; animation: nfRxFlash 620ms steps(7) forwards; }
+
+@media (prefers-reduced-motion: reduce) {
+    body .nf-jb, body .nf-rx, body .nf-rx-core { animation: none !important; }
+    body .nf-jb[data-out] { opacity: 0; }
+    body .nf-rx-out > * { opacity: 1 !important; animation: none !important; }
+    body .nf-rx-h { max-width: none; }
+    body .nf-rx-go { animation: none; }
+    body .nf-rx-flash { display: none; }
+}
+
+body .nf-rx-note { color: #ffc53a; font-size: 13px; }

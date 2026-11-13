@@ -1,0 +1,61 @@
+/* Staged zone art (components/nodefarm/zones/zone-art.tsx). Sheet: 6 frames across, 8 stages down, 288 x 96 art px per cell
+   (rows 0-31 headroom backdrop). Drawn at --s screen px per art pixel, right-anchored and cropped on the left to --w; the box
+   runs from --t (the title bar) to --b (the floor, just above the spec lines) and the cell sits on its floor, so the headroom
+   is cut to whatever height the panel has. All set by the component when the panel resizes. Contract: docs/node-farm.md.
+   Perf: one painted element per zone, background-position stepped at 6 fps, no filter, mask or blend on it, paused offscreen.
+   Left skirt (--sk, scripts/naos-art/zone-art-skirt.py): a static 128 x 96 strip drawn just left of the cell on the same
+   floor, carrying the backdrop on and dissolving it in Bayer dither, so the scene fizzles out instead of ending in a hard
+   edge. The box is widened by the component to fit it (still capped at the panel width). */
+.ctos .nf-row > .nf-art {
+    --s: 2; --w: 0px; --b: 160px; --t: 34px; --h: 96px; --tf: -80px; --nx: 0px; --ny: 0px; --nw: 0px; --nh: 0px;
+    --x0: calc(var(--w) - 288px * var(--s));
+    --xk: calc(var(--x0) - 128px * var(--s));
+    --yk: calc(var(--b) - var(--t) - var(--h) * var(--s));
+    --y0: calc(var(--b) - var(--t) - var(--h) * var(--s) * (var(--st) + 1));
+    position: absolute; z-index: 1; right: 0; top: var(--t);
+    width: var(--w); height: calc(var(--b) - var(--t));
+    pointer-events: none;
+    /* layer 1: dark wash behind the description, layer 2: dark pool behind the big number, layer 3: the sheet, layer 4: the skirt */
+    background-image:
+        linear-gradient(90deg, rgb(10 10 10 / .9), rgb(10 10 10 / .82) var(--tf), transparent calc(var(--tf) + 90px)),
+        radial-gradient(closest-side, rgb(0 0 0 / .85), rgb(0 0 0 / .6) 55%, transparent),
+        var(--art), var(--sk, none);
+    background-repeat: no-repeat;
+    /* the sheet's earlier frames sit left of the cell as it steps, so the sheet is clipped to the content box, which starts
+       where the cell does (padding = the skirt's room); every other layer paints the whole box */
+    box-sizing: border-box; padding-left: max(0px, var(--x0));
+    background-clip: border-box, border-box, content-box, border-box;
+    background-origin: padding-box;
+    background-size: 100% 100%, var(--nw) var(--nh), calc(1728px * var(--s)) calc(var(--h) * 8 * var(--s)), calc(128px * var(--s)) calc(var(--h) * var(--s));
+    background-position: 0 0, var(--nx) var(--ny), var(--x0) var(--y0), var(--xk) var(--yk);
+    image-rendering: pixelated;
+    animation: nfArtRun 1s steps(6) infinite paused;
+}
+.ctos .nf-row > .nf-art[data-run] { animation-play-state: running; }
+@keyframes nfArtRun {
+    from { background-position: 0 0, var(--nx) var(--ny), var(--x0) var(--y0), var(--xk) var(--yk); }
+    to { background-position: 0 0, var(--nx) var(--ny), calc(var(--x0) - 1728px * var(--s)) var(--y0), var(--xk) var(--yk); }
+}
+
+/* folded: the scene sits on the panel floor and dims, so the skyline still shows behind the header */
+.ctos .nf-row[data-open="false"] > .nf-art { top: auto; bottom: 0; opacity: .45; }
+
+/* a stage up: the new sprite blinks in, stepped like the dither (opacity only) */
+.ctos .nf-row > .nf-art[data-up] { animation: nfArtRun 1s steps(6) infinite, nfArtUp .8s steps(4) both; }
+@keyframes nfArtUp {
+    0%, 50% { opacity: .25; }
+    25%, 75%, 100% { opacity: 1; }
+}
+
+/* wide panels: room for the 3x sprites above the spec lines (set by the component, 0 to 48 px) */
+.ctos .nf-row[data-art] .nf-spec { margin-top: calc(14px + var(--art-pad, 0px)); }
+
+/* phones: the scene gets its own band between the header and the description */
+@media (max-width: 639px) {
+    .ctos .nf-row[data-art] .nf-brief { margin-top: var(--art-band, 128px); }
+    .ctos .nf-row[data-open="false"] > .nf-art { display: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .ctos .nf-row > .nf-art, .ctos .nf-row > .nf-art[data-up] { animation: none; }
+}

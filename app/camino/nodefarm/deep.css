@@ -1,0 +1,72 @@
+/* Node Farm, deep chain and prestige tree: skins for Runes to Origin and the tree panel. Scoped under .ctos .nf. */
+.ctos .nf-row[data-stat="runes"] { --zone: repeating-linear-gradient(90deg, color-mix(in srgb, var(--c) 26%, transparent) 0 2px, transparent 2px 18px), repeating-linear-gradient(0deg, color-mix(in srgb, var(--c) 14%, transparent) 0 1px, transparent 1px 12px); }
+.ctos .nf-row[data-stat="starglass"] { --zone: repeating-linear-gradient(45deg, color-mix(in srgb, var(--c) 24%, transparent) 0 1px, transparent 1px 20px), repeating-linear-gradient(-45deg, color-mix(in srgb, var(--c) 18%, transparent) 0 1px, transparent 1px 20px); }
+.ctos .nf-row[data-stat="voidsteel"] { --zone: repeating-radial-gradient(circle at 12% 110%, transparent 0 10px, color-mix(in srgb, var(--c) 28%, transparent) 10px 11px); }
+.ctos .nf-row[data-stat="chrono"] { --zone: repeating-conic-gradient(from 0deg at 90% 50%, color-mix(in srgb, var(--c) 26%, transparent) 0 2deg, transparent 2deg 12deg); }
+.ctos .nf-row[data-stat="nebula"] { --zone: radial-gradient(ellipse at 80% 40%, color-mix(in srgb, var(--c) 18%, transparent), transparent 60%), radial-gradient(ellipse at 20% 80%, color-mix(in srgb, #64e6ff 10%, transparent), transparent 50%); }
+.ctos .nf-row[data-stat="pulsars"] { --zone: repeating-linear-gradient(115deg, transparent 0 22px, color-mix(in srgb, var(--c) 22%, transparent) 22px 23px, transparent 23px 60px); }
+.ctos .nf-row[data-stat="singularity"] { --zone: repeating-radial-gradient(ellipse at 88% 55%, transparent 0 8px, color-mix(in srgb, var(--c) 22%, transparent) 8px 9px); }
+.ctos .nf-row[data-stat="engrams"] { --zone: repeating-linear-gradient(90deg, color-mix(in srgb, var(--c) 30%, transparent) 0 3px, transparent 3px 7px) 0 0 / 100% 4px no-repeat, repeating-linear-gradient(90deg, color-mix(in srgb, var(--c) 30%, transparent) 0 3px, transparent 3px 7px) 0 100% / 100% 4px no-repeat, repeating-linear-gradient(90deg, color-mix(in srgb, var(--c) 12%, transparent) 0 1px, transparent 1px 26px); }
+.ctos .nf-row[data-stat="paradox"] { --zone: repeating-linear-gradient(60deg, color-mix(in srgb, #2fd8e8 16%, transparent) 0 1px, transparent 1px 16px), repeating-linear-gradient(-60deg, color-mix(in srgb, #ff2d8a 16%, transparent) 0 1px, transparent 1px 16px), repeating-linear-gradient(0deg, color-mix(in srgb, var(--c) 12%, transparent) 0 1px, transparent 1px 16px); }
+.ctos .nf-row[data-stat="origin"] { --zone: repeating-linear-gradient(0deg, color-mix(in srgb, var(--c) 18%, transparent) 0 1px, transparent 1px 3px), radial-gradient(circle at 88% 60%, color-mix(in srgb, var(--c) 16%, transparent), transparent 55%); }
+
+.ctos .nf-row[data-stat="runes"] .nf-btn { border: 2px solid #4a3a10; border-radius: 2px; background: #15110a; }
+.ctos .nf-row[data-stat="runes"] .nf-btn[data-afford] { border-color: var(--c); background: #2a2108; box-shadow: inset 0 0 0 3px #15110a, inset 0 0 0 4px color-mix(in srgb, var(--c) 60%, transparent); }
+.ctos .nf-row[data-stat="starglass"] .nf-btn { border: 1px solid #5d7a88; border-radius: 0; background: linear-gradient(135deg, #1a2328, #10161a); }
+.ctos .nf-row[data-stat="starglass"] .nf-btn[data-afford] { border-color: var(--c); background: linear-gradient(135deg, #2c3f49, #17232a 60%, #2c3f49); }
+.ctos .nf-row[data-stat="voidsteel"] .nf-btn { border: 2px solid #2b2150; border-radius: 3px; background: #0d0a1a; box-shadow: 0 4px 0 #07050f; margin-bottom: 4px; }
+.ctos .nf-row[data-stat="voidsteel"] .nf-btn[data-afford] { border-color: var(--c); background: #1c1440; box-shadow: 0 4px 0 #3b2c80; }
+.ctos .nf-row[data-stat="voidsteel"] .nf-btn:active { transform: translateY(3px); box-shadow: 0 1px 0 #3b2c80; }
+.ctos .nf-row[data-stat="chrono"] .nf-btn { border: 2px solid #5a2a18; border-radius: 50px 4px 50px 4px; background: #160d09; }
+.ctos .nf-row[data-stat="chrono"] .nf-btn[data-afford] { border-color: var(--c); background: #301710; }
+/* Nebula: soft cloud glass. Pulsars: a hard sweep line. Singularity: a dark well with a bright rim */
+.ctos .nf-row[data-stat="nebula"] .nf-btn { border: 1px solid #7a1f62; border-radius: 6px 2px 6px 2px; background: radial-gradient(ellipse at 30% 20%, #3a0f30, #170612 70%); }
+.ctos .nf-row[data-stat="nebula"] .nf-btn[data-afford] { border-color: var(--c); background: radial-gradient(ellipse at 30% 20%, #6a1d55, #2a0a22 70%); }
+.ctos .nf-row[data-stat="pulsars"] .nf-btn { border: 1px solid #0f5a74; border-left-width: 3px; border-radius: 0; background: #061218; }
+.ctos .nf-row[data-stat="pulsars"] .nf-btn[data-afford] { border-color: var(--c); background: linear-gradient(115deg, #061f2a 0 40%, #0f3a4a 50%, #061f2a 60%); }
+.ctos .nf-row[data-stat="singularity"] .nf-btn { border: 2px solid #3a1f06; border-radius: 3px; background: radial-gradient(circle at 50% 50%, #000 0 40%, #1a0e04 70%); }
+.ctos .nf-row[data-stat="singularity"] .nf-btn[data-afford] { border-color: var(--c); box-shadow: inset 0 0 0 1px #000, inset 0 0 8px -2px var(--c); background: radial-gradient(circle at 50% 50%, #000 0 40%, #2a1504 75%); }
+/* Engrams: a frame of film, sprocket holes along the top and bottom edges */
+.ctos .nf-row[data-stat="engrams"] .nf-btn { border: 2px solid #4a3020; border-radius: 1px; background: repeating-linear-gradient(90deg, #6b4424 0 3px, transparent 3px 7px) 0 2px / 100% 2px no-repeat, repeating-linear-gradient(90deg, #6b4424 0 3px, transparent 3px 7px) 0 calc(100% - 2px) / 100% 2px no-repeat, #140d08; }
+.ctos .nf-row[data-stat="engrams"] .nf-btn[data-afford] { border-color: var(--c); background: repeating-linear-gradient(90deg, var(--c) 0 3px, transparent 3px 7px) 0 2px / 100% 2px no-repeat, repeating-linear-gradient(90deg, var(--c) 0 3px, transparent 3px 7px) 0 calc(100% - 2px) / 100% 2px no-repeat, #2a1a0e; }
+/* Paradox: one button in two places, a cyan and a magenta ghost edge either side */
+.ctos .nf-row[data-stat="paradox"] .nf-btn { border: 1px solid #454a63; border-radius: 0; background: #0f1016; box-shadow: -2px 0 0 #0b5a6b, 2px 0 0 #7d0f45; }
+.ctos .nf-row[data-stat="paradox"] .nf-btn[data-afford] { border-color: var(--c); background: linear-gradient(90deg, #1a1c28, #23263a 50%, #1a1c28); box-shadow: -2px 0 0 #2fd8e8, 2px 0 0 #ff2d8a; }
+/* Origin: a phosphor terminal, green on black with scanlines */
+.ctos .nf-row[data-stat="origin"] .nf-btn { border: 1px solid #0b5a24; border-radius: 0; background: repeating-linear-gradient(0deg, #04130a 0 1px, #020a05 1px 3px); }
+.ctos .nf-row[data-stat="origin"] .nf-btn[data-afford] { border-color: var(--c); background: repeating-linear-gradient(0deg, #0a2c14 0 1px, #04170a 1px 3px); box-shadow: 0 0 0 1px #03200b, 0 0 10px -2px color-mix(in srgb, var(--c) 55%, transparent); }
+
+
+/* ---- the Overgrowth and Descent arcs (zones 18 to 25): a zone texture and a button skin each, same rules as above ---- */
+.ctos .nf-row[data-stat="spores"] { --zone: radial-gradient(circle at 18% 70%, color-mix(in srgb, var(--c) 14%, transparent) 0 2px, transparent 3px) 0 0 / 26px 22px, radial-gradient(circle at 88% 60%, color-mix(in srgb, var(--c) 14%, transparent), transparent 55%); }
+.ctos .nf-row[data-stat="mycelium"] { --zone: repeating-linear-gradient(35deg, color-mix(in srgb, var(--c) 12%, transparent) 0 1px, transparent 1px 19px), repeating-linear-gradient(-55deg, color-mix(in srgb, var(--c) 10%, transparent) 0 1px, transparent 1px 23px); }
+.ctos .nf-row[data-stat="pollen"] { --zone: linear-gradient(115deg, transparent 30%, color-mix(in srgb, var(--c) 10%, transparent) 30% 42%, transparent 42% 58%, color-mix(in srgb, var(--c) 7%, transparent) 58% 66%, transparent 66%); }
+.ctos .nf-row[data-stat="bloom"] { --zone: radial-gradient(circle at 86% 55%, color-mix(in srgb, var(--c) 18%, transparent), transparent 50%), radial-gradient(circle at 70% 120%, color-mix(in srgb, #a64ed0 14%, transparent), transparent 55%); }
+.ctos .nf-row[data-stat="basalt"] { --zone: repeating-linear-gradient(0deg, color-mix(in srgb, var(--c) 10%, transparent) 0 1px, transparent 1px 9px, color-mix(in srgb, var(--c) 5%, transparent) 9px 14px, transparent 14px 22px); }
+.ctos .nf-row[data-stat="magma"] { --zone: linear-gradient(0deg, color-mix(in srgb, var(--c) 18%, transparent), transparent 45%), repeating-linear-gradient(80deg, color-mix(in srgb, var(--c) 8%, transparent) 0 1px, transparent 1px 21px); }
+.ctos .nf-row[data-stat="geodes"] { --zone: conic-gradient(from 30deg at 86% 55%, color-mix(in srgb, var(--c) 12%, transparent) 0 10deg, transparent 10deg 30deg, color-mix(in srgb, var(--c) 10%, transparent) 30deg 38deg, transparent 38deg 60deg, color-mix(in srgb, var(--c) 12%, transparent) 60deg 68deg, transparent 68deg); }
+.ctos .nf-row[data-stat="sunstone"] { --zone: radial-gradient(circle at 86% 55%, color-mix(in srgb, #fffbe0 18%, transparent), color-mix(in srgb, var(--c) 12%, transparent) 25%, transparent 55%); }
+/* Spores: damp stone with a teal glow underneath */
+.ctos .nf-row[data-stat="spores"] .nf-btn { border: 1px solid #0e5a4c; border-radius: 0; background: linear-gradient(0deg, #06201b, #0a1210 60%); }
+.ctos .nf-row[data-stat="spores"] .nf-btn[data-afford] { border-color: var(--c); background: linear-gradient(0deg, #0b3a30, #0b1a16 70%); box-shadow: 0 2px 0 -1px #1fa585; }
+/* Mycelium: pale threads on violet */
+.ctos .nf-row[data-stat="mycelium"] .nf-btn { border: 1px solid #3f3470; border-radius: 0; background: #0f0c1c; }
+.ctos .nf-row[data-stat="mycelium"] .nf-btn[data-afford] { border-color: var(--c); background: repeating-linear-gradient(35deg, #1c1638 0 1px, #130f26 1px 6px); }
+/* Pollen: a sunlit slat */
+.ctos .nf-row[data-stat="pollen"] .nf-btn { border: 1px solid #5a520e; border-radius: 0; background: #12110a; }
+.ctos .nf-row[data-stat="pollen"] .nf-btn[data-afford] { border-color: var(--c); background: linear-gradient(115deg, #1a180a 30%, #2a2610 30% 45%, #1a180a 45%); }
+/* Bloom: coral with a soft halo */
+.ctos .nf-row[data-stat="bloom"] .nf-btn { border: 1px solid #7c1240; border-radius: 0; background: #16070e; }
+.ctos .nf-row[data-stat="bloom"] .nf-btn[data-afford] { border-color: var(--c); background: radial-gradient(ellipse at 50% 120%, #3e0a22, #1a0810 70%); box-shadow: 0 0 10px -3px color-mix(in srgb, var(--c) 60%, transparent); }
+/* Basalt: cut stone, hard bevel */
+.ctos .nf-row[data-stat="basalt"] .nf-btn { border: 1px solid #2e3440; border-radius: 0; background: #101216; box-shadow: inset 1px 1px 0 #434b58, inset -1px -1px 0 #08090c; }
+.ctos .nf-row[data-stat="basalt"] .nf-btn[data-afford] { border-color: var(--c); background: #181b21; box-shadow: inset 1px 1px 0 #8e99a8, inset -1px -1px 0 #08090c; }
+/* Magma: a crust with heat coming up from below */
+.ctos .nf-row[data-stat="magma"] .nf-btn { border: 1px solid #7a2006; border-radius: 0; background: #140805; }
+.ctos .nf-row[data-stat="magma"] .nf-btn[data-afford] { border-color: var(--c); background: linear-gradient(0deg, #5a1a06, #1a0a05 65%); box-shadow: 0 2px 0 -1px #ff7a1a; }
+/* Geodes: a faceted violet face */
+.ctos .nf-row[data-stat="geodes"] .nf-btn { border: 1px solid #38145e; border-radius: 0; background: #0f0818; }
+.ctos .nf-row[data-stat="geodes"] .nf-btn[data-afford] { border-color: var(--c); background: linear-gradient(135deg, #2a1048 25%, #1a0c2c 25% 50%, #22103c 50% 75%, #1a0c2c 75%); }
+/* Core: white-gold heat */
+.ctos .nf-row[data-stat="sunstone"] .nf-btn { border: 1px solid #80460a; border-radius: 0; background: #140c04; }
+.ctos .nf-row[data-stat="sunstone"] .nf-btn[data-afford] { border-color: var(--c); background: radial-gradient(ellipse at 50% 50%, #4a2a06, #1a0f04 75%); box-shadow: 0 0 0 1px #3e2604, 0 0 12px -3px color-mix(in srgb, var(--c) 65%, transparent); }

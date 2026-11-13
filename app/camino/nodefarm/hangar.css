@@ -1,0 +1,167 @@
+/* Node Farm Drone hangar (components/nodefarm/workshop/drones.tsx, hangar-backdrop.tsx): the board's hangar zone (.nf-hg), the drone
+   tree's amber "hangar" skin over the shared tree menu (.nf-tm[data-theme="hangar"]) and its hangar-floor backdrop (.nf-hbd).
+   Look: charcoal deck steel, hazard amber for the hangar's own chrome, every Drone in its own colour, section colours flight
+   amber #ffb14a, dispatch mint #6bffc9, salvage rust #ff7a4a. Art: scripts/naos-art/nodefarm-hangar-art.py. */
+.ctos { --hg-amber: #ffb14a; --hg-haz: #ffd23a; --hg-deck: #0c0f15; --hg-ink: #fff3dc; --hg-steel: #283244; }
+
+/* ---- board zone */
+.ctos .nf-hg .nf-bar-t { background: linear-gradient(90deg, #2a1c06, #14100a 70%); color: var(--hg-ink); box-shadow: inset 0 -2px var(--hg-amber); }
+.ctos .nf-hg .nf-fold i { border-color: var(--hg-ink); }
+.ctos .nf-hg .nf-bar-s { color: var(--hg-haz); }
+.ctos .nf-hg .nf-body-in { display: grid; gap: 16px; }
+.ctos .nf-hg .nf-brief { margin: 0; border-top-color: #ffb14a44; }
+.ctos .nf-hg .nf-brief b { color: var(--hg-ink); font-weight: 600; }
+
+/* the berths: the painted hangar strip with the live sprites on top, one column per tier lined up with the art */
+.ctos .nf-hg-bay { position: relative; display: grid; grid-template-columns: repeat(6, 1fr); aspect-ratio: 360 / 84; width: 100%; max-width: 100%; background: url(/naos/nodefarm/hangar-bay.webp?v=d4e92507) center / 100% 100% no-repeat, #0c0f15; image-rendering: pixelated; border: 1px solid var(--hg-steel); overflow: hidden; }
+.ctos .nf-hg-bay::after { content: ""; position: absolute; inset: 0; pointer-events: none; background: repeating-linear-gradient(0deg, transparent 0 3px, #0000001c 3px 4px); }
+.ctos .nf-hg-berth { position: relative; display: block; min-width: 0; }
+.ctos .nf-hg-fly { position: absolute; left: 50%; top: 22%; width: 64px; height: 64px; margin-left: -32px; scale: .78; transform-origin: 50% 70%; }
+@media (min-width: 900px) { .ctos .nf-hg-fly { scale: 1; top: 18%; } }
+@media (max-width: 559px) { .ctos .nf-hg-fly { scale: .5; top: 6%; } .ctos .nf-hg-tag { font-size: 9px; padding: 1px 3px; letter-spacing: .04em; } .ctos .nf-hg-tag[data-long] { font-size: 0; } .ctos .nf-hg-tag[data-long]::after { content: attr(data-short); font-size: 9px; } }
+.ctos .nf-hg-fly .nf-sp-d { filter: drop-shadow(0 6px 0 #0008); }
+/* docked Drones sit dim in their cradle; posted Drones fly sorties out of the top and come back */
+.ctos .nf-hg-berth[data-mode="dock"] .nf-hg-fly { opacity: .55; }
+.ctos .nf-hg-berth[data-mode="out"] .nf-hg-fly { animation: nfHgSortie var(--dur, 6s) cubic-bezier(.5, 0, .5, 1) infinite; animation-delay: calc(var(--k) * -0.8s); }
+.ctos .nf-hg-berth[data-mode="out"]::before { content: ""; position: absolute; left: 50%; top: 0; width: 2px; height: 60%; margin-left: -1px; background: linear-gradient(var(--z), transparent); opacity: .55; animation: nfHgBeam 6s ease-in-out infinite; animation-delay: calc(var(--k) * -1s); }
+.ctos .nf-hg-tag { position: absolute; left: 50%; bottom: 6%; translate: -50% 0; padding: 2px 6px; background: #05070ae6; border: 1px solid color-mix(in srgb, var(--z) 60%, #283244); color: var(--z); font: 700 10px/1.2 var(--cm-mono); letter-spacing: .1em; text-transform: uppercase; white-space: nowrap; }
+.ctos .nf-hg-berth[data-mode="empty"] .nf-hg-tag { color: #5a6478; border-color: #283244; }
+@keyframes nfHgSortie {
+    0%, 12% { translate: 0 0; scale: .78; opacity: 1; }
+    40% { translate: 0 -70px; scale: .4; opacity: 0; }
+    60% { translate: 0 -70px; scale: .4; opacity: 0; }
+    88%, 100% { translate: 0 0; scale: .78; opacity: 1; }
+}
+@keyframes nfHgBeam { 0%, 12%, 88%, 100% { opacity: .15; } 40%, 60% { opacity: .7; } }
+
+/* wallet and the way into the drone tree */
+.ctos .nf-hg-top { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 14px 24px; }
+.ctos .nf-hg-wallet { display: flex; flex-wrap: wrap; gap: 12px 32px; margin: 0; }
+.ctos .nf-hg-wallet div { display: grid; grid-template-columns: auto auto; align-items: baseline; gap: 2px 10px; }
+.ctos .nf-hg-wallet dt { font: 700 var(--cm-ctos-t-micro)/1 var(--cm-mono); letter-spacing: .14em; text-transform: uppercase; color: var(--hg-amber); }
+.ctos .nf-hg-wallet dd { margin: 0; font: 700 28px/1 var(--cm-mono); color: var(--hg-ink); font-variant-numeric: tabular-nums; }
+.ctos .nf-hg-wallet small { grid-column: 1 / -1; font: 400 var(--cm-ctos-t-micro)/1.3 var(--cm-mono); color: var(--cm-ctos-meta); letter-spacing: .04em; }
+.ctos .nf-hg-go { display: inline-flex; align-items: center; gap: 14px; min-height: 44px; padding: 0 16px; background: #14100a; color: var(--hg-ink); border: 1px solid #ffb14a66; font: 600 var(--cm-ctos-t-ui)/1 var(--cm-mono); cursor: pointer; box-shadow: 4px 4px 0 #000; transition: translate .12s, box-shadow .12s, border-color .2s; }
+.ctos .nf-hg-go b { padding: 4px 8px; background: #2a1c06; color: var(--hg-amber); font: 800 var(--cm-ctos-t-micro)/1 var(--cm-mono); letter-spacing: .12em; text-transform: uppercase; }
+.ctos .nf-hg-go[data-ready] { border-color: var(--hg-haz); }
+.ctos .nf-hg-go[data-ready] b { background: var(--hg-haz); color: #1a1400; animation: nfHgReady 1.8s ease-in-out infinite; }
+.ctos .nf-hg-go:disabled { cursor: default; color: var(--cm-ctos-meta); border-color: #283244; box-shadow: none; }
+.ctos .nf-hg-go:not(:disabled):hover { translate: -2px -2px; box-shadow: 6px 6px 0 #000; border-color: var(--hg-amber); }
+.ctos .nf-hg-go:focus-visible { outline: 2px solid var(--hg-amber); outline-offset: 3px; }
+@keyframes nfHgReady { 0%, 100% { opacity: 1; } 50% { opacity: .7; } }
+
+/* roster: the old one-line Drone row becomes a head line, with a control line under it once the Drone is built */
+.ctos .nf-hg .nf-dr-list li { display: block; padding: 0; }
+.ctos .nf-hg .nf-dr-list li::before { top: 38px; margin-top: 0; }
+.ctos .nf-hg-head { position: relative; display: grid; grid-template-columns: auto minmax(0, 1.2fr) auto auto; align-items: center; gap: 8px 16px; padding: 10px 12px; }
+@media (min-width: 560px) { .ctos .nf-hg-head { grid-template-columns: auto minmax(0, 1fr) 132px 180px; } }
+@media (max-width: 559px) { .ctos .nf-hg-head { grid-template-columns: auto 1fr; } .ctos .nf-hg-head .nf-sp-d { grid-column: 1; grid-row: 1 / 3; } .ctos .nf-hg-head .nf-dr-n { grid-column: 2; grid-row: 1; } .ctos .nf-hg-head .nf-dr-pips { grid-column: 2; grid-row: 2; } .ctos .nf-hg-head .nf-mini { grid-column: 1 / -1; grid-row: 3; width: 100%; min-height: 44px; } }
+.ctos .nf-hg-ctl { display: grid; grid-template-columns: minmax(0, 1fr); gap: 10px; padding: 10px 12px 12px; border-top: 1px dashed #ffffff14; }
+@media (min-width: 1200px) { .ctos .nf-hg-ctl { grid-template-columns: minmax(220px, 1fr) minmax(0, 2.4fr); align-items: center; } }
+.ctos .nf-hg-post { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: 10px; }
+.ctos .nf-hg-post span { font: 700 var(--cm-ctos-t-micro)/1 var(--cm-mono); letter-spacing: .14em; text-transform: uppercase; color: var(--cm-ctos-meta); }
+.ctos .nf-hg-post select { min-width: 0; width: 100%; min-height: 40px; padding: 0 30px 0 10px; appearance: none; background: #0d0d0d linear-gradient(45deg, transparent 50%, var(--c) 50%) right 14px center / 6px 6px no-repeat; border: 1px solid color-mix(in srgb, var(--c) 45%, #2a2a2a); border-radius: 0; color: var(--cm-fg); font: 500 var(--cm-ctos-t-ui)/1 var(--cm-mono); cursor: pointer; }
+@media (max-width: 559px) { .ctos .nf-hg-post select { font-size: 16px; } }
+.ctos .nf-hg-post select:focus-visible { outline: 2px solid var(--c); outline-offset: 2px; }
+.ctos .nf-hg-mods { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+@media (min-width: 900px) { .ctos .nf-hg-mods { grid-template-columns: repeat(5, minmax(0, 1fr)); } }
+@media (max-width: 559px) { .ctos .nf-hg-mods { grid-template-columns: repeat(2, minmax(0, 1fr)); } .ctos .nf-hg-mods > :last-child { grid-column: 1 / -1; } }
+.ctos .nf-hg-mod { display: grid; grid-template-columns: auto 1fr; grid-template-rows: auto auto; align-items: center; gap: 4px 8px; min-height: 44px; padding: 6px 8px; background: #0d0d0d; border: 1px solid #2a2a2a; border-left: 2px solid var(--c); color: var(--cm-fg); text-align: left; cursor: pointer; font: 700 10.5px/1 var(--cm-mono); letter-spacing: .1em; }
+.ctos .nf-hg-mod small { grid-column: 1 / -1; font: 500 var(--cm-ctos-t-micro)/1 var(--cm-mono); letter-spacing: .04em; color: var(--hg-haz); }
+.ctos .nf-hg-mod:disabled { cursor: default; border-left-color: #333; }
+.ctos .nf-hg-mod:disabled small { color: var(--cm-ctos-meta); }
+@media (hover: hover) { .ctos .nf-hg-mod:not(:disabled):hover { background: color-mix(in srgb, var(--c) 16%, #0d0d0d); border-color: var(--c); } }
+.ctos .nf-hg-mod:focus-visible { outline: 2px solid var(--c); outline-offset: 2px; }
+.ctos .nf-hg-lv { display: flex; gap: 2px; justify-self: end; }
+.ctos .nf-hg-lv i { width: 5px; height: 9px; background: #1a1a1a; border: 1px solid #333; }
+.ctos .nf-hg-lv i[data-f] { background: var(--c); border-color: var(--c); }
+
+/* zone mastery: plain data lines */
+.ctos .nf-hg-h { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px; margin: 0 0 8px; font: 700 var(--cm-ctos-t-micro)/1 var(--cm-mono); letter-spacing: .14em; text-transform: uppercase; color: var(--hg-amber); }
+.ctos .nf-hg-h::before { content: "//"; color: #7a5a2a; }
+.ctos .nf-hg-h small { font-weight: 500; letter-spacing: .04em; text-transform: none; color: var(--cm-ctos-meta); }
+.ctos .nf-hg-ms ol { list-style: none; margin: 0; padding: 0; display: grid; gap: 3px; }
+.ctos .nf-hg-ms li { display: grid; grid-template-columns: minmax(0, 8.5em) auto minmax(40px, 1fr) auto; grid-template-areas: "n r b x" "s s s h"; align-items: center; gap: 4px 12px; padding: 7px 10px; background: #0a0a0a; border-left: 3px solid color-mix(in srgb, var(--c) 40%, #1a1a1a); font: 500 var(--cm-ctos-t-ui)/1.1 var(--cm-mono); }
+@media (min-width: 760px) { .ctos .nf-hg-ms li { grid-template-columns: minmax(0, 9em) auto minmax(60px, 1fr) minmax(0, 11em) 4.5em 5em; grid-template-areas: "n r b s x h"; } }
+.ctos .nf-hg-ms li[data-live] { border-left-color: var(--c); background: linear-gradient(90deg, color-mix(in srgb, var(--c) 9%, #0a0a0a), #0a0a0a 50%); }
+.ctos .nf-hg-ms b { grid-area: n; color: var(--c); font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* 360 wide: the name column is ~60px, so "Multipliers" was cut off; the name takes the full first row instead */
+@media (max-width: 379px) {
+    .ctos .nf-hg-ms li { grid-template-columns: auto minmax(40px, 1fr) auto auto; grid-template-areas: "n n n n" "r b b x" "s s s h"; }
+    .ctos .nf-hg-ms b { overflow: visible; text-overflow: clip; }
+}
+.ctos .nf-hg-rk { grid-area: r; display: flex; gap: 3px; }
+.ctos .nf-hg-rk i { width: 9px; height: 9px; rotate: 45deg; background: #181818; border: 1px solid #333; }
+.ctos .nf-hg-rk i[data-f] { background: var(--c); border-color: var(--c); box-shadow: 0 0 6px color-mix(in srgb, var(--c) 60%, transparent); }
+.ctos .nf-hg-bar { grid-area: b; position: relative; height: 6px; background: #161616; overflow: hidden; }
+.ctos .nf-hg-bar i { position: absolute; inset: 0 auto 0 0; width: calc(var(--f) * 100%); background: repeating-linear-gradient(90deg, var(--c) 0 3px, color-mix(in srgb, var(--c) 60%, #000) 3px 4px); transition: width .4s linear; }
+.ctos .nf-hg-ms li[data-live] .nf-hg-bar::after { content: ""; position: absolute; inset: 0; background: linear-gradient(90deg, transparent, #ffffff40, transparent); width: 30%; animation: nfHgRun 1.6s linear infinite; }
+@keyframes nfHgRun { from { translate: -100% 0; } to { translate: 400% 0; } }
+.ctos .nf-hg-ms small { grid-area: s; color: var(--cm-ctos-meta); font-size: var(--cm-ctos-t-micro); font-variant-numeric: tabular-nums; }
+.ctos .nf-hg-ms em { grid-area: x; font-style: normal; color: var(--hg-ink); text-align: right; font-variant-numeric: tabular-nums; }
+.ctos .nf-hg-here { grid-area: h; display: flex; gap: 3px; justify-content: flex-end; }
+.ctos .nf-hg-here i { width: 8px; height: 8px; background: var(--c); box-shadow: 0 0 5px var(--c); }
+
+/* posted Drones shown in the zone they work (stat-row.tsx) */
+.ctos .nf-arm-post { display: inline-flex; align-items: center; gap: 6px; margin-left: auto; font: 600 var(--cm-ctos-t-micro)/1 var(--cm-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--cm-ctos-meta); }
+.ctos .nf-arm-post i { display: block; width: 8px; height: 8px; background: var(--d); box-shadow: 0 0 5px var(--d); animation: nfHgBlink 1.4s steps(2) infinite; }
+.ctos .nf-arm-post b { color: var(--c); }
+@keyframes nfHgBlink { 50% { opacity: .35; } }
+
+@media (prefers-reduced-motion: reduce) {
+    .ctos .nf-hg-fly, .ctos .nf-hg-berth::before, .ctos .nf-hg-go b, .ctos .nf-hg-bar::after, .ctos .nf-arm-post i { animation: none !important; }
+}
+
+/* ---- tree menu skin */
+.ctos .nf-tm[data-theme="hangar"] { background: #07090d; }
+.ctos .nf-tm[data-theme="hangar"] .nf-tm-bar { background: #14100a; color: var(--hg-ink); box-shadow: inset 0 -2px var(--hg-amber); }
+.ctos .nf-tm[data-theme="hangar"] .nf-tm-ps1 { margin-right: 10px; font-style: normal; color: var(--hg-haz); letter-spacing: .06em; }
+.ctos .nf-tm[data-theme="hangar"] .nf-tm-x { background: var(--hg-ink); }
+.ctos .nf-tm[data-theme="hangar"] .nf-tm-x i::before, .ctos .nf-tm[data-theme="hangar"] .nf-tm-x i::after { background: #14100a; }
+.ctos .nf-tm[data-theme="hangar"] .nf-tm-x:hover { background: var(--hg-amber); }
+.ctos .nf-tm[data-theme="hangar"] .nf-tm-b { background: #1a140a; color: var(--hg-ink); }
+.ctos .nf-tm[data-theme="hangar"] .nf-tm-b:hover:not(:disabled) { background: var(--hg-amber); color: #140e04; }
+.ctos .nf-tm[data-theme="hangar"] .nf-tm-zoom .nf-tm-b { background: #1a140aee; border-color: #ffb14a55; }
+.ctos .nf-tm[data-theme="hangar"] .nf-tn { --ex: #2a1f10; --ex2: #120c05; --rim: #6a4a1e; }
+.ctos .nf-tm[data-theme="hangar"] .nf-tn-face { background: radial-gradient(circle at 50% 42%, #2a2418 0, #0f0d09 78%), #0f0d09; }
+.ctos .nf-tm[data-theme="hangar"] .nf-tn-face::before { background: repeating-linear-gradient(45deg, #ffd23a0d 0 4px, transparent 4px 8px); }
+.ctos .nf-tm[data-theme="hangar"] .nf-tn[data-st="owned"] .nf-tn-face { background: radial-gradient(circle at 50% 42%, color-mix(in srgb, var(--c) 34%, #0f0d09) 0, #0f0d09 80%); }
+.ctos .nf-tm[data-theme="hangar"] .nf-tn[data-vis="fog"] { --rim: #3a2c18; }
+.ctos .nf-tm[data-theme="hangar"] .nf-tn[data-vis="fog"] .nf-tn-body { background: linear-gradient(145deg, #1c160c, #0a0805); }
+.ctos .nf-tm[data-theme="hangar"] .nf-tn[data-vis="fog"] .nf-tn-face { background: repeating-linear-gradient(45deg, #14100a 0 4px, #2a1f0c 4px 8px); border-style: dashed; }
+.ctos .nf-tm[data-theme="hangar"] .nf-tn-l { background: #14100ae6; color: var(--hg-ink); border-left: 2px solid var(--c); }
+.ctos .nf-tm[data-theme="hangar"] .nf-tn-cost { color: var(--hg-haz); }
+.ctos .nf-tm[data-theme="hangar"] .nf-tn-shadow { background: #000; }
+.ctos .nf-tm[data-theme="hangar"] .nf-tl-bed { stroke: #050403; }
+.ctos .nf-tm[data-theme="hangar"] .nf-tl[data-st="off"] { stroke: #6a5a40; }
+.ctos .nf-tm[data-theme="hangar"] .nf-tl-via { fill: #0f0d09; stroke: #6a5a40; }
+.ctos .nf-tm[data-theme="hangar"] .nf-tl-pk { stroke: var(--hg-haz); }
+.ctos .nf-tm[data-theme="hangar"] .nf-tm-sec { background: #14100ae0; box-shadow: 6px 6px 0 #000c; border-top: 3px solid var(--hg-haz); }
+.ctos .nf-tm[data-theme="hangar"] .nf-tm-sec b { font-family: var(--cm-mono); font-size: 22px; letter-spacing: .04em; text-transform: uppercase; }
+.ctos .nf-tm[data-theme="hangar"] .nf-tm-sec small { color: #c9b89a; }
+.ctos .nf-tm[data-theme="hangar"] .nf-tm-card { background: #14100a; border-color: #ffb14a66; color: var(--hg-ink); box-shadow: 8px 8px 0 #000c; }
+.ctos .nf-tm[data-theme="hangar"] .nf-tm-card .nf-tm-k { color: #c9b89a; }
+.ctos .nf-tm[data-theme="hangar"] .nf-tm-fx { background: linear-gradient(90deg, color-mix(in srgb, var(--c) 22%, #14100a) 0, #1a140a 72%); }
+.ctos .nf-tm[data-theme="hangar"] .nf-tm-fx b { color: var(--hg-haz); }
+.ctos .nf-tm[data-theme="hangar"] .nf-tm-flv { background: #1a140a; color: #e6d6b8; }
+.ctos .nf-tm[data-theme="hangar"] .nf-tm-need, .ctos .nf-tm[data-theme="hangar"] .nf-tm-cost small { color: #c9b89a; }
+.ctos .nf-tm[data-theme="hangar"] .nf-tm-buy:disabled { background: #2a2010; color: #8a7a5a; }
+.ctos .nf-tm[data-theme="hangar"] .nf-tm-lead { background: var(--c); }
+.ctos .nf-tm[data-theme="hangar"] .nf-tm-hint { background: #14100af2; border-color: #ffb14a33; border-top-color: var(--hg-amber); }
+.ctos .nf-tm[data-theme="hangar"] .nf-tm-hint::before { background: conic-gradient(var(--hg-amber) 25%, transparent 0 50%, var(--hg-amber) 0 75%, transparent 0) 0 0 / 4px 4px; }
+.ctos .nf-tm[data-theme="hangar"] .nf-tm-ps { color: var(--hg-haz); }
+.ctos .nf-tm[data-theme="hangar"] .nf-tm-caret { background: var(--hg-ink); }
+.ctos .nf-tm[data-theme="hangar"] .nf-tm-tot { background: #14100af2; border-color: #ffb14a44; }
+.ctos .nf-tm[data-theme="hangar"] .nf-tm-th { color: var(--hg-amber); }
+.ctos .nf-tm[data-theme="hangar"] .nf-tm-toast, .ctos .nf-tm[data-theme="hangar"] .nf-tm-msg { background: #14100a; color: var(--hg-ink); }
+
+/* ---- hangar-floor backdrop */
+.nf-hbd { position: absolute; inset: 0; z-index: 0; overflow: hidden; pointer-events: none; contain: strict; background: radial-gradient(ellipse at 50% 46%, #1a1610 0, #0c0e12 45%, #040506 100%); }
+.nf-hbd-vig { position: absolute; inset: 0; display: block; background: radial-gradient(ellipse at center, transparent 55%, #000000d0 100%), repeating-linear-gradient(0deg, transparent 0 3px, #00000018 3px 4px); }
+
+/* late game on a phone: up to 20 level pips, a 5-column track and a long posting name pushed the whole row past the screen edge, hiding the posting list and the third mod */
+.ctos .nf-hg .nf-dr-list li { min-width: 0; overflow: hidden; }
+.ctos .nf-hg-head, .ctos .nf-hg-ctl, .ctos .nf-hg-post, .ctos .nf-hg-mods { min-width: 0; }
+.ctos .nf-hg-head .nf-dr-pips { min-width: 0; }
+.ctos .nf-hg-head .nf-dr-pips i { flex: 1 1 0; min-width: 2px; max-width: 8px; }
+@media (max-width: 559px) { .ctos .nf-hg-head { grid-template-columns: auto minmax(0, 1fr) auto; } .ctos .nf-hg-mod { min-width: 0; overflow: hidden; } }

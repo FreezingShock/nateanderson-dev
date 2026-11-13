@@ -202,12 +202,7 @@ def main():
                 sheet[y:y + N, t * N:(t + 1) * N] = img
     save(Image.fromarray(sheet, "RGBA"), out / "tiers-anim", "/tmp/nf-anim-tiers.png")
 
-    # --- drones: 6 across, 4 frames down
-    sheet = np.zeros((N * FRAMES, N * 6, 4), np.uint8)
-    for t in range(6):
-        for f in range(FRAMES):
-            sheet[f * N:(f + 1) * N, t * N:(t + 1) * N] = drone(t, f).img
-    save(Image.fromarray(sheet, "RGBA"), out / "drones", "/tmp/nf-anim-drones.png")
+    # --- drones: now drawn at 64 px by scripts/naos-art/nodefarm-drones64.py (this old 32 px version is kept for reference only)
 
 
 def save(im, stem, contact):

@@ -1,5 +1,8 @@
 """Node Farm staged zone art for zone 09 Prism Court (Starglass), zone 10 Hollow Forge (Voidsteel) and zone 11 Still Room (Chrono).
 
+After re-running: python3 scripts/naos-art/zone-art-lift.py <ids> (lit room behind the dim zones, audit item 3),
+then zone-art-skirt.py <ids>, then node scripts/nodefarm/stamp-art.mjs.
+
 Follows the staged zone art contract v2: one sheet per zone at public/naos/nodefarm/zone-<statId>,
 cells of 288 x 64 art px, 8 rows (row 0 is the bare backdrop, row n adds sprite n on top of row n-1) by 6 frames across, a
 6-frame loop at 6 fps. Sprites grow from about 8 px to 56 px tall; each one is a bigger, richer take on the zone's 32 px icon.

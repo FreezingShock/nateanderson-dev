@@ -5,16 +5,28 @@ Origin).
 Follows the staged zone art contract v4 (docs/node-farm.md, "Zone art"; kit in nodefarm_zone_kit.py): one sheet per zone at
 public/naos/nodefarm/zone-<statId>, cells of 288 x 96 art px, 8 rows (row 0 is the bare backdrop, row n adds sprite n on top of
 row n-1) by 6 frames across, a 6-frame loop at 6 fps. Rows 0-31 reach up to the panel's title bar; sprites stand on the floor at
-row 94. Sprites 1-6 follow the zone's six button tiers (lib/nodefarm/lore.ts), sprite 7 is the zone's namesake.
+row 94. Sprites 1-6 follow the zone's six button tiers (lib/nodefarm/content/lore.ts), sprite 7 is the zone's namesake.
 
-Everything is flat shapes shaded through the 4x4 Bayer threshold into the ramps of nodefarm-icons.py (the zone ramp, a couple
-of accents, plus wh/gr). Alpha is 0 or 255 except the backdrop haze (alpha <= 90, shades 0-1 only).
+Backdrop: the zone's own era scene (nodefarm-scenes-deep.py, eras 9 to 14, the same world the page scenery shows) drawn as a
+panorama of its lower band at 0.6x, its fx layer stepped in time with the panel, so panel and page read as one place (the way
+zone-art-18-25.py builds its panels). Near-black sky gets a dithered wash in the zone ramp's two darkest shades so the panel
+reads lit, not empty (art audit 2026-11-13, item 3: these panels read dark next to the lab and the Overgrowth zones).
+
+Sprites are flat shapes shaded through the 4x4 Bayer threshold into the ramps of nodefarm-icons.py, drawn on their own layer
+and laid over the backdrop (glows blend). Sprites 1-6 are drawn larger than they are written (SCALE): the drawing grid is
+remapped around each sprite's foot, so they come out bigger at full resolution with 1 px outlines and native dither, not
+pixel-doubled. LAYOUT spreads them evenly from the description's edge to the hero.
 
 Placement: the far left (about 60 px) sits behind the zone description, so it only gets backdrop; the top right sits under the
 big number, so the hero (sprite 7) stands right of centre and low. Sprites walk up in size from left to right.
 
+Skirt: this script also writes zone-<id>-skirt (listed in HAND in zone-art-skirt.py): the 128 px of the same world just left
+of the cell, dissolved with that script's rule, so the scene really continues instead of mirroring.
+
 Run: python3 scripts/naos-art/zone-art-12-17.py [nebula|pulsars|singularity|engrams|paradox|origin ...]
+     then node scripts/nodefarm/stamp-art.mjs
 """
+import importlib.util
 import math
 import sys
 from pathlib import Path
@@ -70,12 +82,14 @@ def twinkle(c, f, n, seed, box, ramps, alpha=255):
             c.shade(rect(round(x), round(y), round(x) + 1, round(y) + 1), rn, 2, alpha)
 
 
-def ground(c, rn, f, accent="cyan"):
-    """Floor line with a seam pattern and a slow light travelling along it."""
+def ground(c, rn, f, accent="cyan", x0=0, lights=True):
+    """Floor line with a seam pattern and a slow light travelling along it. x0 shifts the seams (for the skirt strip)."""
     c.fill(rect(0, FLOOR, W, FLOOR + 2), 0.25, rn)
     c.shade(rect(0, FLOOR, W, FLOOR + 1), rn, 2)
-    for x in range(0, W, 12):
+    for x in range(-x0 % 12, W, 12):
         c.shade(rect(x, FLOOR + 1, x + 1, FLOOR + 2), rn, 0)
+    if not lights:
+        return
     p = (f / F) * 48
     for k in range(6):
         x = int(p + k * 48) % W
@@ -85,7 +99,7 @@ def ground(c, rn, f, accent="cyan"):
 # =====================================================================================================================
 # zone 12 ENGRAM ARCHIVE  /  Engrams.  Ramps: eg (sepia film), accents cyan (projector light) + mag (memory glitch) + rn
 # =====================================================================================================================
-OP_COLS = ["lime", "cyan", "cu", "rn"]  # four small lights, one per earlier operator of the node (colours from lib/nodefarm/news.ts)
+OP_COLS = ["lime", "cyan", "cu", "rn"]  # four small lights, one per earlier operator of the node (colours from lib/nodefarm/content/news.ts)
 
 
 def reel(c, cx, cy, R, f, holes=4, spin=1, rn="eg", film=True):
@@ -134,52 +148,6 @@ def film_strip(c, x0, y0, x1, y1, f, w=5, lit=("cyan", "mag", "eg"), seed=0, scr
         c.shade(m & body, rn, 3 if on else 1)
         k += 1
         t += 6
-
-
-def stacks_bg(c, f):
-    """Far wall: archive shelves of reels and boxes, receding into the dark, with blinking index lights on the shelf ends.
-    Shelves are haze (dark shades, part alpha) so the sprites read on top; only the index lights and dust are bright."""
-    c.haze(rect(0, 0, W, FLOOR), 0.15 + 0.35 * lin(0, 0, 0, FLOOR), "eg", alpha=45)
-    units = [(0, 50, 4), (66, 112, 16), (128, 170, 24), (186, 232, 14), (244, 288, 6)]
-    for i, (x0, x1, top) in enumerate(units):
-        posts = rect(x0, top, x0 + 2, FLOOR) | rect(x1 - 2, top, x1, FLOOR)
-        c.shade(posts & ((yy % 2) == 0), "eg", 1)
-        for y in range(top + 10, FLOOR, 13):
-            c.shade(rect(x0, y, x1, y + 1), "eg", 1)
-            x = x0 + 3
-            k = 0
-            while x < x1 - 6:
-                kind = hsh(i, y, k) % 5
-                if kind < 2:
-                    r = 3 + (hsh(i, y, k, 1) % 3)
-                    m = disc(x + r, y - r, r) & ~disc(x + r, y - r, 1)
-                    c.haze(m, 0.8 + 0.2 * kind, "eg", alpha=90)
-                    c.shade(disc(x + r, y - r, r) & ~disc(x + r, y - r, r - 0.7) & ((xx + yy) % 2 == 0), "eg", 1)
-                    x += 2 * r + 1
-                elif kind < 4:
-                    h = 5 + hsh(i, y, k, 2) % 5
-                    c.haze(rect(x, y - h, x + 4, y), 0.7 + 0.2 * (kind - 2), "eg", alpha=90)
-                    lab = ["cyan", "mag", "rn", "lime", "eg", "si"][hsh(i, y, k, 3) % 6]
-                    c.shade(rect(x + 1, y - h + 1, x + 3, y - h + 2), lab, 2)
-                    x += 5
-                else:
-                    x += 3
-                k += 1
-            rn = ["cyan", "mag", "rn", "lime", "eg"][(i + y) % 5]
-            on = (f + i + y // 13) % 3 != 0
-            c.shade(rect(x1 - 5, y + 1, x1 - 4, y + 2), rn, 3 if on else 1)
-    # ceiling lamps casting thin cyan cones
-    for lx in (58, 178, 238):
-        cone = poly([(lx - 2, 0), (lx + 2, 0), (lx + 18, FLOOR), (lx - 18, FLOOR)])
-        c.haze(cone, 0.3 + 0.6 * (1 - lin(0, 0, 0, FLOOR)), "cyan", alpha=55)
-        c.shade(rect(lx - 2, 0, lx + 3, 2), "cyan", 3)
-        c.shade(rect(lx - 1, 2, lx + 2, 3), "cyan", 4)
-    # hanging film strips from the ceiling, swaying a little
-    for i, (x, length) in enumerate([(14, 30), (40, 18), (122, 24), (150, 14), (208, 22), (270, 28)]):
-        sway = math.sin(TAU * (f / F) + i) * 1.2
-        film_strip(c, x, 0, x + sway, length, f, w=5, seed=i, scroll=False)
-    # dust in the lamp light
-    twinkle(c, f, 46, 1201, (0, 0, W, FLOOR - 4), ["eg", "cyan", "mag", "rn"])
 
 
 def eg_1(c, f):
@@ -360,22 +328,6 @@ def eg_7(c, f):
     twinkle(c, f, 10, 1707, (x - 30, base - 70, x + 30, base - 40), ["eg", "cyan", "mag"])
 
 
-def engrams(stage, f):
-    c = K.Cell()
-    fns = [eg_1, eg_2, eg_3, eg_4, eg_5, eg_6, eg_7]
-    # draw sprites back to front: the hero first so the smaller ones stand in front of its beam
-    order = [6, 5, 4, 3, 2, 1, 0]
-    fg = K.Cell()
-    for i in order:
-        if i < stage:
-            fns[i](fg, f)
-    ground(fg, "eg", f, "cyan")
-    bg = K.Cell()
-    stacks_bg(bg, f)
-    fg.under(bg)
-    return fg
-
-
 # =====================================================================================================================
 # zone 13 MIRROR STAIR  /  Paradox.  Ramps: px (silver), accents cyan + mag (a chromatic split, things in two places at once)
 # =====================================================================================================================
@@ -391,63 +343,6 @@ def plinth(c, cx, w, h, rn="px"):
     c.fill(rect(cx - w / 2, top, cx + w / 2, FLOOR), 0.25 + 0.3 * lin(cx - w / 2, top, cx + w / 2, FLOOR), rn, outline=True)
     c.shade(rect(cx - w / 2, top, cx + w / 2, top + 1), rn, 4)
     return top
-
-
-def stairs_bg(c, f):
-    """Impossible architecture in the dark: flights of stairs that climb into each other, a checker floor, the whole room
-    mirrored faintly in the headroom, and shards of mirror drifting with cyan and magenta edges."""
-    c.haze(rect(0, 0, W, FLOOR), 0.2 + 0.4 * lin(0, FLOOR, 0, 0), "px", alpha=40)
-    # checker floor band in perspective
-    for row in range(4):
-        y0 = FLOOR - 2 - row * 3
-        sz = 12 - row * 2
-        off = (row % 2) * sz / 2
-        for k in range(int(W / sz) + 2):
-            x0 = k * sz - off
-            if (k + row) % 2 == 0:
-                c.haze(rect(x0, y0 - 3, x0 + sz, y0), 0.95, "px", alpha=70)
-    # flights of stairs: each a run of steps, outlined in silver, some upside down in the headroom
-    def flight(x0, y0, n, step_w, step_h, dirn=1, flip=False, rn="px", sh=1):
-        for k in range(n):
-            x = x0 + k * step_w * dirn
-            y = y0 - k * step_h if not flip else y0 + k * step_h
-            tread = rect(min(x, x + step_w * dirn), y - 1, max(x, x + step_w * dirn), y)
-            riser = rect(x, y - step_h, x + 1, y) if not flip else rect(x, y, x + 1, y + step_h)
-            c.shade(tread, rn, sh)
-            c.shade(riser & ((yy % 2) == 0), rn, sh)
-    flight(4, 90, 9, 6, 5, 1, sh=2)
-    flight(40, 22, 5, 5, 4, 1, flip=True, rn="si")
-    flight(96, 92, 6, 5, 4, 1, rn="si", sh=2)
-    flight(200, 40, 5, 5, 4, -1, rn="mag", sh=1)
-    flight(26, 50, 5, 5, 4, -1, rn="cyan", sh=1)
-    flight(70, 46, 6, 6, 5, -1)
-    flight(118, 30, 7, 5, 4, 1, flip=True, rn="si", sh=1)
-    flight(170, 88, 8, 5, 5, 1, rn="si")
-    flight(282, 60, 7, 6, 4, -1)
-    flight(232, 2, 6, 6, 4, -1, flip=True)
-    # big faint arches, one the right way up and its mirror hanging from the ceiling
-    for ax, ay, r, up in ((100, FLOOR, 30, True), (100, 0, 30, False), (250, FLOOR, 36, True)):
-        ring = disc(ax, ay, r, r * 1.1) & ~disc(ax, ay, r - 3, r * 1.1 - 3)
-        ring &= (yy <= ay) if up else (yy >= ay)
-        c.haze(ring, 0.9, "si", alpha=80)
-        c.shade(ring & ((xx * 7 + yy) % 9 == 0), "si", 2)
-    # landing lamps in cyan and magenta
-    for i, (lx, ly) in enumerate(((52, 60), (112, 14), (176, 66), (228, 22), (270, 52), (20, 30))):
-        c.shade(rect(lx, ly, lx + 2, ly + 2), ["cyan", "mag"][i % 2], 4 if (f + i) % 3 else 2)
-        c.haze(disc(lx + 1, ly + 1, 6), 0.9, ["cyan", "mag"][i % 2], alpha=60)
-    # pillars that do not quite meet
-    for x, y0, y1 in ((60, 4, 70), (150, 0, 50), (214, 30, 92)):
-        c.haze(rect(x, y0, x + 5, y1), 0.9, "px", alpha=80)
-        c.shade(rect(x, y0, x + 1, y1) & ((yy % 3) != 0), "px", 1)
-    # drifting mirror shards
-    for i in range(9):
-        cx = 10 + rnd(1301, i, 1) * 268
-        cy = 4 + rnd(1301, i, 2) * 64 + math.sin(TAU * f / F + i) * 1.5
-        r = 2 + rnd(1301, i, 3) * 3
-        sh = poly([(cx, cy - r), (cx + r * 0.7, cy), (cx, cy + r * 0.8), (cx - r * 0.6, cy + 0.2)])
-        c.fill(sh, 0.4 + 0.4 * ((f + i) % 3 == 0), "px", dither=0.5)
-        ghost(c, sh, f + i)
-    twinkle(c, f, 34, 1302, (0, 0, W, FLOOR - 6), ["px", "cyan", "mag", "si"])
 
 
 def px_1(c, f):
@@ -605,19 +500,6 @@ def px_7(c, f):
     twinkle(c, f, 12, 1707, (x - 40, base - 74, x + 40, base - 40), ["px", "cyan", "mag"])
 
 
-def paradox(stage, f):
-    fns = [px_1, px_2, px_3, px_4, px_5, px_6, px_7]
-    fg = K.Cell()
-    for i in [6, 5, 4, 3, 2, 1, 0]:
-        if i < stage:
-            fns[i](fg, f)
-    ground(fg, "px", f, "mag")
-    bg = K.Cell()
-    stairs_bg(bg, f)
-    fg.under(bg)
-    return fg
-
-
 # =====================================================================================================================
 # zone 14 ROOT CHAMBER  /  Origin.  Ramps: or (phosphor green), accents gr (metal), cyan + rn (old status lights)
 # =====================================================================================================================
@@ -657,43 +539,6 @@ def crt(c, x0, y0, w, h, f, seed=0, text=True):
             if y < y0 + h - 4:
                 c.shade(rect(x0 + 3, y, x0 + 3 + ln, y + 1) & sc, "or", 3 if k == (f % max(1, (h - 5) // 2)) else 2)
     c.shade(rect(x0 + w - 4, y0 + h - 2, x0 + w - 3, y0 + h - 1), "or", 4 if f % 2 else 2)
-
-
-def roots_bg(c, f):
-    """A cavern under everything: roots and cables coming down from the dark and spreading over the floor, old monitors
-    caught in them, green binary drifting down like dust."""
-    c.haze(rect(0, 0, W, FLOOR), 0.25 + 0.4 * lin(0, 0, 0, FLOOR), "or", alpha=40)
-    # falling binary columns (very faint)
-    for i in range(18):
-        x = 6 + i * 16 + (i % 3) * 3
-        off = (f * 2 + hsh(1401, i) % 30)
-        for k in range(6):
-            y = (off + k * 14) % (FLOOR - 4)
-            bit = hsh(i, k, f // 3) % 2
-            m = rect(x, y, x + 1, y + 3) if bit else (rect(x - 1, y, x + 2, y + 1) | rect(x - 1, y + 2, x + 2, y + 3) | rect(x - 1, y, x, y + 3) | rect(x + 1, y, x + 2, y + 3))
-            c.shade(m, "or", 1)
-    # roots from the ceiling
-    for i, (x, length, w) in enumerate([(8, 70, 3), (30, 40, 2), (58, 86, 4), (96, 30, 2), (124, 52, 3), (166, 24, 2), (196, 60, 3), (232, 36, 2), (266, 80, 4), (282, 46, 2)]):
-        pts = wiggle(x, -2, x + (hsh(i) % 9) - 4, length, 8, 3 + w, i)
-        root_line(c, pts, w, "or", 1, glow=rnd(1402, i), f=f)
-        for b in range(2):  # side shoots
-            k = 2 + b * 3
-            if k < len(pts):
-                bx, by = pts[k]
-                d = -1 if (i + b) % 2 else 1
-                root_line(c, wiggle(bx, by, bx + d * (6 + w * 2), by + 8 + w * 2, 3, 1.5, i + b), max(1, w - 1), "or", 1)
-    # floor roots spreading sideways
-    for i, (x0, x1) in enumerate([(0, 70), (40, 150), (120, 230), (200, 288)]):
-        pts = [(x0 + (x1 - x0) * t / 6, FLOOR - 1 - abs(math.sin(t + i)) * 3) for t in range(7)]
-        root_line(c, pts, 2, "or", 1, glow=rnd(1403, i), f=f)
-    # monitors caught in the roots
-    for i, (x, y, w, h) in enumerate([(14, 40, 14, 11), (100, 18, 12, 10), (176, 32, 13, 11), (246, 12, 12, 9)]):
-        crt(c, x, y, w, h, f, seed=i)
-    # status lights in the dark
-    for i, (lx, ly) in enumerate([(44, 64), (82, 12), (140, 70), (214, 8), (256, 66), (24, 8)]):
-        rn = ["cyan", "rn", "or"][i % 3]
-        c.shade(rect(lx, ly, lx + 2, ly + 1), rn, 4 if (f + i) % 3 else 1)
-    twinkle(c, f, 40, 1404, (0, 0, W, FLOOR - 4), ["or", "or", "cyan", "rn"])
 
 
 def or_1(c, f):
@@ -836,21 +681,8 @@ def or_7(c, f):
     twinkle(c, f, 14, 1407, (x - 44, 0, x + 44, base - 20), ["or", "or", "cyan"])
 
 
-def origin(stage, f):
-    fns = [or_1, or_2, or_3, or_4, or_5, or_6, or_7]
-    fg = K.Cell()
-    for i in [6, 5, 4, 3, 2, 1, 0]:
-        if i < stage:
-            fns[i](fg, f)
-    ground(fg, "or", f, "or")
-    bg = K.Cell()
-    roots_bg(bg, f)
-    fg.under(bg)
-    return fg
-
-
 # =====================================================================================================================
-# shared space backdrop pieces
+# shared space pieces (stars and gas clouds the nebula sprites use)
 # =====================================================================================================================
 def starfield(c, f, seed, n=70, ramps=("wh", "pu", "nb")):
     for i in range(n):
@@ -886,30 +718,6 @@ def cloud(c, cx, cy, r, rn, seed, f, alpha=90, drift=1.0):
 # =====================================================================================================================
 # zone 12 CLOUD DECK  /  Nebula.  Ramps: nb (rose), accents pu (blue starlight) + wh, gr for the deck
 # =====================================================================================================================
-def deck_bg(c, f):
-    """An observation deck: a great window of struts looking out on pink and blue star-nursery clouds."""
-    starfield(c, f, 1201)
-    cloud(c, 60, 30, 34, "nb", 1, f)
-    cloud(c, 170, 18, 40, "nb", 2, f, drift=1.5)
-    cloud(c, 120, 60, 26, "pu", 3, f)
-    cloud(c, 250, 50, 30, "nb", 4, f)
-    cloud(c, 20, 70, 20, "pu", 5, f)
-    # window struts (dark metal) with rivets
-    for x in (0, 96, 192, 286):
-        c.fill(rect(x, 0, x + 3, FLOOR), 0.15, "gr")
-        for y in range(4, FLOOR, 10):
-            c.shade(rect(x + 1, y, x + 2, y + 1), "gr", 3)
-    c.fill(rect(0, 0, W, 3), 0.15, "gr")
-    for x0 in (3, 99, 195):  # curved top of each pane
-        arc = disc(x0 + 46.5, 46, 47, 46) & ~disc(x0 + 46.5, 48, 46, 45) & (yy < 30)
-        c.shade(arc, "gr", 1)
-    # deck railing
-    c.fill(rect(0, FLOOR - 14, W, FLOOR - 12), 0.35, "gr")
-    for x in range(4, W, 14):
-        c.shade(rect(x, FLOOR - 12, x + 1, FLOOR), "gr", 2)
-    c.shade(rect(0, FLOOR - 14, W, FLOOR - 13), "nb", 2)
-
-
 def jar(c, x, base, w, h, f, rn="nb", seed=0):
     body = rect(x - w / 2, base - h, x + w / 2, base - 2)
     c.fill(rect(x - w / 2 - 1, base - 2, x + w / 2 + 1, base), 0.4, "gr")
@@ -1034,19 +842,6 @@ def nb_7(c, f):
     c.shade(rect(x - 1, cy - R - 8, x + 1, cy - R - 4), "gr", 3)
 
 
-def nebula(stage, f):
-    fns = [nb_1, nb_2, nb_3, nb_4, nb_5, nb_6, nb_7]
-    fg = K.Cell()
-    for i in [6, 5, 4, 3, 2, 1, 0]:
-        if i < stage:
-            fns[i](fg, f)
-    ground(fg, "gr", f, "nb")
-    bg = K.Cell()
-    deck_bg(bg, f)
-    fg.under(bg)
-    return fg
-
-
 # =====================================================================================================================
 # zone 13 BEACON SPIRE  /  Pulsars.  Ramps: pu (electric blue), accents wh + sn (warm lamp) + mag
 # =====================================================================================================================
@@ -1059,27 +854,6 @@ def beam(c, x, y, angle, length, width, rn="pu", alpha=80):
     c.shade(m & (((xx * 5 + yy * 3) % 7) == 0), rn, 2)
     c.shade(line(x, y, x + math.cos(a) * length * 0.7, y + math.sin(a) * length * 0.7, 1), rn, 3)
     return m
-
-
-def spire_bg(c, f):
-    """Deep space with lattice spires on the horizon, each topped by a blinking lamp, and slow sweeping beams overhead."""
-    starfield(c, f, 1301, n=90, ramps=("wh", "pu", "pu", "mag"))
-    cloud(c, 210, 20, 30, "si", 6, f, alpha=70)
-    cloud(c, 40, 24, 24, "pu", 7, f, alpha=60)
-    for i, (x, h, w) in enumerate([(14, 60, 8), (52, 40, 6), (108, 70, 9), (150, 34, 5), (228, 56, 7), (272, 76, 9)]):
-        top = FLOOR - h
-        legs = line(x - w, FLOOR, x, top, 1) | line(x + w, FLOOR, x, top, 1)
-        for y in range(int(top) + 6, FLOOR, 6):
-            q = (y - top) / h
-            legs |= line(x - w * q, y, x + w * q, y + 6 * 0.9, 1)
-        c.shade(legs, "pu", 1)
-        lit = (f + i) % 3 == 0
-        c.shade(rect(x - 1, top - 2, x + 1, top), "mag" if i % 2 else "sn", 4 if lit else 2)
-        if lit:
-            c.haze(disc(x, top - 1, 5), 0.95, "mag" if i % 2 else "sn", alpha=70)
-    for k in range(2):  # sweeping beams from far beacons
-        a = -math.pi / 2 + math.sin(TAU * f / F + k * 2) * 0.6
-        beam(c, 108 if k == 0 else 272, FLOOR - (70 if k == 0 else 76), a + (0.3 if k else -0.3), 70, 6, "pu", alpha=50)
 
 
 def pu_1(c, f):
@@ -1193,59 +967,9 @@ def pu_7(c, f):
     twinkle(c, f, 12, 1707, (x - 40, base - 80, x + 40, base - 30), ["pu", "wh", "mag"])
 
 
-def pulsars(stage, f):
-    fns = [pu_1, pu_2, pu_3, pu_4, pu_5, pu_6, pu_7]
-    fg = K.Cell()
-    for i in [6, 5, 4, 3, 2, 1, 0]:
-        if i < stage:
-            fns[i](fg, f)
-    ground(fg, "gr", f, "pu")
-    bg = K.Cell()
-    spire_bg(bg, f)
-    fg.under(bg)
-    return fg
-
-
 # =====================================================================================================================
 # zone 14 EVENT HORIZON  /  Singularity.  Ramps: sn (accretion gold), accents mag + pu, wh
 # =====================================================================================================================
-def warp_bg(c, f):
-    """Space bent toward a point off the right edge: a warped grid, stars stretched into streaks, matter streaming in."""
-    gx, gy = 250, 50
-    for i in range(80):
-        x = rnd(1401, i, 1) * W
-        y = rnd(1401, i, 2) * (FLOOR - 4)
-        d = math.hypot(x - gx, y - gy)
-        L = max(0, 6 - d / 25)
-        ang = math.atan2(gy - y, gx - x)
-        rn = ["wh", "sn", "pu", "mag"][i % 4]
-        sh = 3 if (f + i) % 5 == 0 else 2 if i % 3 == 0 else 1
-        c.shade(line(x, y, x + math.cos(ang) * L, y + math.sin(ang) * L, 1) if L > 1 else rect(x, y, x + 1, y + 1), rn, sh)
-    # warped grid: horizontal lines bending down toward the well
-    for k in range(9):
-        y0 = 6 + k * 10
-        pts = []
-        for x in range(0, W + 1, 4):
-            d = math.hypot(x - gx, y0 - gy)
-            pts.append((x, y0 + 900 / (d + 30) * (1 if y0 > gy else -1) * 0.6))
-        m = np.zeros((H, W), bool)
-        for (x0, y0_), (x1, y1) in zip(pts, pts[1:]):
-            m |= line(x0, y0_, x1, y1, 1)
-        c.shade(m & (((xx + f) % 3) == 0), "sn" if k % 2 else "mag", 1)
-    for k in range(10):  # vertical lines
-        x0 = 8 + k * 28
-        pts = []
-        for y in range(0, FLOOR + 1, 4):
-            d = math.hypot(x0 - gx, y - gy)
-            pts.append((x0 + 900 / (d + 30) * (1 if x0 > gx else -1) * 0.8, y))
-        m = np.zeros((H, W), bool)
-        for (a0, b0), (a1, b1) in zip(pts, pts[1:]):
-            m |= line(a0, b0, a1, b1, 1)
-        c.shade(m & (((yy + f) % 3) == 0), "pu", 1)
-    cloud(c, 60, 30, 26, "mag", 8, f, alpha=60)
-    cloud(c, 150, 70, 22, "sn", 9, f, alpha=60)
-
-
 def hole(c, x, cy, R, f, tilt=0.32, rn="sn"):
     """A black hole: dark centre, glowing disk turning (bright clumps move round), lensed back of the disk over the top."""
     back = disc(x, cy, R, R * tilt) & ~disc(x, cy, R * 0.45, R * tilt * 0.45) & (yy < cy)
@@ -1359,22 +1083,160 @@ def sn_7(c, f):
     twinkle(c, f, 14, 1707, (x - 50, base - 80, x + 40, base - 10), ["sn", "wh", "mag"])
 
 
-def singularity(stage, f):
-    fns = [sn_1, sn_2, sn_3, sn_4, sn_5, sn_6, sn_7]
-    fg = K.Cell()
-    for i in [6, 5, 4, 3, 2, 1, 0]:
-        if i < stage:
-            fns[i](fg, f)
-    ground(fg, "gr", f, "sn")
-    bg = K.Cell()
-    warp_bg(bg, f)
-    fg.under(bg)
-    return fg
+# =====================================================================================================================
+# composing a panel: era scene backdrop, sprites scaled up over it, the floor line
+# =====================================================================================================================
+def _load(name, file):
+    spec = importlib.util.spec_from_file_location(name, Path(__file__).resolve().parent / file)
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod
 
 
-ZONES = {"nebula": nebula, "pulsars": pulsars, "singularity": singularity, "engrams": engrams, "paradox": paradox, "origin": origin}
+SCN = _load("nodefarm_scenes_deep", "nodefarm-scenes-deep.py")
+SKIRT = _load("zone_art_skirt", "zone-art-skirt.py")
+VIEW = 0.6  # backdrop scale: the whole 480 px world fits across the cell
+
+# zone: (era, world x offset, world top row). Offsets put each era's centrepiece where it helps: Beacon's lighthouse and
+# the Horizon hole left of the sprites, the Root crystal left of centre, and the Mirror stair behind the hero, which then stands in front of it.
+BAND = {"nebula": (9, 0, 80), "pulsars": (10, 65, 95), "singularity": (11, 40, 100), "engrams": (12, 0, 100),
+        "paradox": (13, -170, 100), "origin": (14, 40, 100)}
+# how much of the era scene's brightness the panel keeps (the bright scenes are held back a little more)
+DIM = {"nebula": 0.68, "pulsars": 0.95, "singularity": 0.95, "engrams": 0.8, "paradox": 0.95, "origin": 0.95}
+# sky wash: ramp, glow centre (x, y) and radius in cell px
+WASH = {"nebula": ("nb", 150, 30, 170), "pulsars": ("pu", 120, 40, 150), "singularity": ("sn", 120, 30, 120),
+        "engrams": ("eg", 150, 20, 160), "paradox": ("vs", 246, 40, 160), "origin": ("or", 246, 60, 150)}
+# sprite prefix, floor ramp, floor light, right edge of the run of sprites 1-6 (where the hero starts)
+ZONE = {"nebula": ("nb", "gr", "nb", 222), "pulsars": ("pu", "gr", "pu", 222), "singularity": ("sn", "gr", "sn", 214),
+        "engrams": ("eg", "eg", "cyan", 244), "paradox": ("px", "px", "mag", 230), "origin": ("or", "or", "or", 206)}
+SCALE = (2.0, 1.85, 1.6, 1.3, 1.15, 1.0)  # sprites 1-6 at most; the hero keeps its size
+LEFT = 60  # the run of sprites starts past the description
+OVERLAP = 6  # px a sprite may stand in front of the next one
+MIN_SMALL = 1.5  # sprites 1-3 never shrink below this: they are the ones that read too small
+
+
+def backdrop(zone, f, w=W, x0=0):
+    """The era scene band, w px wide starting x0 px right of the cell's left edge, frame f of the panel loop. Opaque."""
+    era, ox, oy = BAND[zone]
+    _, far, near, fx, _ = SCN.ERAS[era]
+    v = SCN.View(w, H, VIEW, ox + x0 / VIEW, oy)
+    img = SCN.over(SCN.over(far(v).img, near(v).img), fx(v, round(f * SCN.FRAMES / F) % SCN.FRAMES).img)
+    out = img.copy()
+    out[..., 3] = 255
+    rn, cx, cy, r = WASH[zone]
+    ramp = np.array(RAMPS[rn])
+    gy, gx = np.mgrid[0:H, 0:w].astype(float)
+    gx += x0
+    sky = (img[..., :3] @ [0.299, 0.587, 0.114] < 24) | (img[..., 3] == 0)
+    glow = np.clip(1 - np.hypot((gx - cx) / r, (gy - cy) / (r * 0.55)), 0, 1)
+    idx = np.floor(0.25 + 0.35 * gy / H + 0.9 * glow + v.bayer * 0.9).astype(int)  # 0 keeps the sky, 1 and 2 are shades 0, 1
+    for i in (1, 2):
+        out[sky & (idx == i), :3] = ramp[i - 1]
+    out[..., :3] = (out[..., :3] * DIM[zone]).astype(np.uint8)
+    return out
+
+
+class scaled:
+    """Inside this block, sprite code written for the cell draws s times larger: the sprite's foot at (ax, FLOOR) lands on
+    (tx, FLOOR). It swaps the coordinate grids that the mask helpers read and wraps poly, so every shape is evaluated at
+    full resolution (crisp 1 px outlines, native dither)."""
+
+    def __init__(self, s, ax, tx):
+        self.s, self.ax, self.tx = s, ax, tx
+
+    def __enter__(self):
+        global xx, yy, poly
+        self.saved = (K.xx, K.yy, xx, yy, poly)
+        s, ax, tx, kpoly = self.s, self.ax, self.tx, self.saved[4]
+        K.xx = xx = ax + (self.saved[0] + 0.5 - tx) / s - 0.5
+        K.yy = yy = FLOOR + (self.saved[1] + 0.5 - FLOOR) / s - 0.5
+        poly = lambda pts, ss=4: kpoly([(tx + (x - ax) * s, FLOOR + (y - FLOOR) * s) for x, y in pts], ss)  # noqa: E731
+
+    def __exit__(self, *exc):
+        global xx, yy, poly
+        K.xx, K.yy, xx, yy, poly = self.saved
+
+
+def layout(zone):
+    """(sprite fns 1-7, [(scale, source centre x, target centre x) for sprites 1-6]). Each sprite is measured over its whole
+    loop by the columns where it has some body (3+ opaque px, so loose sparks and twinkles don't count). 1-6 then spread
+    evenly from LEFT to the hero. When they don't fit, 4-6 shrink first (down to 1x), then 1-3 (down to MIN_SMALL), then
+    they stand further in front of each other (down to -OVERLAP gaps) and the last ones reach into the hero."""
+    pre, _, _, right = ZONE[zone]
+    fns = [globals()[f"{pre}_{i}"] for i in range(1, 8)]
+    spans = []
+    for fn in fns[:6]:
+        body = np.zeros(W, bool)
+        for f in range(F):
+            c = K.Cell()
+            fn(c, f)
+            body |= (c.img[..., 3] == 255).sum(0) >= 3
+        xs = np.nonzero(body)[0]
+        spans.append((xs.min(), xs.max() + 1))
+    scales = list(SCALE)
+    for group, floor in (((3, 4, 5), 1.0), ((0, 1, 2), MIN_SMALL)):
+        for _ in range(30):
+            widths = [(b - a) * s for (a, b), s in zip(spans, scales)]
+            if sum(widths) - 5 * OVERLAP <= right - LEFT:
+                break
+            for i in group:
+                scales[i] = max(floor, scales[i] * 0.96)
+    widths = [(b - a) * s for (a, b), s in zip(spans, scales)]
+    gap = max(-OVERLAP, (right - LEFT - sum(widths)) / 5)
+    x, out = LEFT, []
+    for (a, b), s, w in zip(spans, scales, widths):
+        out.append((s, (a + b) / 2, x + w / 2))
+        x += w + gap
+    return fns, out
+
+
+def blend(dst, src):
+    """src over dst: opaque pixels replace, part-alpha glows mix in."""
+    a = src[..., 3:4] / 255.0
+    m = src[..., 3] > 0
+    dst[..., :3] = np.where(m[..., None], src[..., :3] * a + dst[..., :3] * (1 - a), dst[..., :3]).astype(np.uint8)
+
+
+def panel(zone):
+    fns, lay = layout(zone)
+    _, floor_rn, light, _ = ZONE[zone]
+    bgs = [backdrop(zone, f) for f in range(F)]
+
+    def draw(stage, f):
+        fg = K.Cell()
+        if stage >= 7:
+            fns[6](fg, f)                      # the hero first, so the smaller ones stand in front of its glow
+        for i in range(min(stage, 6) - 1, -1, -1):
+            s, ax, tx = lay[i]
+            with scaled(s, ax, tx):
+                fns[i](fg, f)
+        ground(fg, floor_rn, f, light)
+        out = bgs[f].copy()
+        blend(out, fg.img)
+        c = K.Cell()
+        c.img = out
+        return c
+    return draw
+
+
+def skirt(zone):
+    """The world just left of the cell (stage 0, frame 0, floor seams lined up), dissolved like every other skirt."""
+    sw = SKIRT.SKW
+    strip = backdrop(zone, 0, sw, -sw)
+    fl = K.Cell()
+    ground(fl, ZONE[zone][1], 0, x0=-sw, lights=False)
+    blend(strip, fl.img[:, :sw])
+    im = SKIRT.dissolve(strip)
+    for ext, kw in (("png", {"optimize": True}), ("webp", {"lossless": True, "quality": 100, "method": 6})):
+        p = K.OUT / f"zone-{zone}-skirt.{ext}"
+        im.save(p, **kw)
+    print(f"  zone-{zone}-skirt.webp: {p.stat().st_size / 1000:.1f} KB")
+
+
+ZONES = ("nebula", "pulsars", "singularity", "engrams", "paradox", "origin")
 
 if __name__ == "__main__":
-    for z in sys.argv[1:] or list(ZONES):
+    for z in sys.argv[1:] or ZONES:
         print(z)
-        K.save_sheet(z, ZONES[z])
+        K.save_sheet(z, panel(z))
+        skirt(z)

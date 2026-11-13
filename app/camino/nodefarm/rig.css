@@ -1,0 +1,74 @@
+/* Node Farm zone rigs (components/nodefarm/zones/rig.tsx): one machine per zone, inside the zone body. Sharp frame with corner
+   brackets in the zone colour (--c), a stepped meter, plain data lines, set-once switches and level buttons. No pills. */
+.ctos .nf-rig { position: relative; display: grid; gap: 10px; margin-top: 18px; padding: 14px 16px 16px; background: linear-gradient(180deg, color-mix(in srgb, var(--c) 7%, #0b0b0b) 0, #0b0b0b 70%); border: 1px solid color-mix(in srgb, var(--c) 30%, var(--nf-line, #2a2a2a)); }
+.ctos .nf-rig::before, .ctos .nf-rig::after { content: ""; position: absolute; width: 10px; height: 10px; border: solid var(--c); pointer-events: none; }
+.ctos .nf-rig::before { top: -1px; left: -1px; border-width: 2px 0 0 2px; }
+.ctos .nf-rig::after { bottom: -1px; right: -1px; border-width: 0 2px 2px 0; }
+.ctos .nf-rig[data-warn] { border-color: color-mix(in srgb, #ff5a3c 55%, transparent); }
+.ctos .nf-rig[data-warn]::before, .ctos .nf-rig[data-warn]::after { border-color: #ff5a3c; }
+
+/* the rig machine: a 96 x 64 dither sprite, 4 states x 6 frames per row (scripts/naos-art/nodefarm-rigs.py) */
+.ctos .nf-rig { grid-template-columns: auto minmax(0, 1fr); grid-template-rows: auto auto 1fr; column-gap: 18px; }
+.ctos .nf-rig-m { align-self: start; }
+.ctos .nf-rig > :not(.nf-rig-art) { grid-column: 2; }
+.ctos .nf-rig > .nf-rig-ups, .ctos .nf-rig > .nf-rig-ctl, .ctos .nf-rig > .nf-rig-spec, .ctos .nf-rig > .nf-rig-link { grid-column: 1 / -1; }
+.ctos .nf-rig:not(:has(.nf-rig-art)) > * { grid-column: 1 / -1; }
+.ctos .nf-rig-art { --sc: 2; grid-column: 1; grid-row: 1 / span 3; align-self: start; display: block; width: calc(96px * var(--sc)); height: calc(64px * var(--sc));
+    background: url(/naos/nodefarm/rigs.webp?v=b25474a7) no-repeat; background-size: calc(2304px * var(--sc)) auto; image-rendering: pixelated;
+    background-position: calc(var(--st, 0) * -576px * var(--sc)) calc(var(--row, 0) * -64px * var(--sc)); animation: nfRigArt .9s steps(6) infinite; }
+@keyframes nfRigArt {
+    from { background-position-x: calc(var(--st, 0) * -576px * var(--sc)); }
+    to { background-position-x: calc((var(--st, 0) + 1) * -576px * var(--sc)); }
+}
+.ctos .nf-rig-h { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: 4px 16px; }
+.ctos .nf-rig-k { font: 700 var(--cm-ctos-t-micro)/1.2 var(--cm-mono); letter-spacing: .14em; text-transform: uppercase; color: var(--c); }
+.ctos .nf-rig-lv { font: 600 var(--cm-ctos-t-micro)/1.2 var(--cm-mono); letter-spacing: .08em; color: var(--cm-ctos-meta); font-variant-numeric: tabular-nums; }
+.ctos .nf-rig-rule { margin: 0; max-width: 78ch; font: 500 var(--cm-ctos-t-ui)/1.5 var(--cm-sans, inherit); color: var(--cm-fg); }
+
+/* meter: twenty steps, filled in the zone colour; a warning rig fills red */
+.ctos .nf-rig-m { display: grid; grid-template-columns: minmax(0, 1fr); gap: 6px; }
+.ctos .nf-rig-bar { position: relative; display: block; height: 10px; background: #050505; border: 1px solid color-mix(in srgb, var(--c) 35%, #222); overflow: hidden; }
+.ctos .nf-rig-bar i { position: absolute; inset: 0 auto 0 0; background: var(--c); transition: width .3s steps(6); }
+.ctos .nf-rig-bar::after { content: ""; position: absolute; inset: 0; background: repeating-linear-gradient(90deg, transparent 0 calc(5% - 1px), #050505 calc(5% - 1px) 5%); pointer-events: none; }
+.ctos .nf-rig[data-warn] .nf-rig-bar i { background: #ff5a3c; }
+.ctos .nf-rig-m small { font: 500 var(--cm-ctos-t-micro)/1.3 var(--cm-mono); color: var(--cm-ctos-meta); overflow-wrap: anywhere; }
+.ctos .nf-row[data-stat] .nf-rig .nf-rig-spec { margin: 0; }
+.ctos .nf-rig-spec dd { white-space: normal; text-align: right; overflow-wrap: anywhere; }
+.ctos .nf-rig-spec dt { white-space: normal; }
+
+/* switches */
+.ctos .nf-rig-ctl { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; }
+.ctos .nf-rig-ctl > span:first-child { min-width: 9ch; font: 600 var(--cm-ctos-t-micro)/1 var(--cm-mono); letter-spacing: .1em; text-transform: uppercase; color: var(--cm-ctos-meta); }
+.ctos .nf-rig-opts { display: flex; flex-wrap: wrap; gap: 6px; min-width: 0; }
+.ctos .nf-rig .nf-mini[aria-pressed="true"] { border-color: var(--c); color: var(--c); background: color-mix(in srgb, var(--c) 10%, #151515); }
+.ctos .nf-rig-zones .nf-mini { min-width: 44px; padding: 0 8px; }
+
+/* level buttons */
+.ctos .nf-rig-ups { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 8px; }
+.ctos :where(button).nf-rig-up { display: grid; gap: 4px; padding: 10px 12px; text-align: left; background: #101010; border: 1px solid var(--nf-line, #2a2a2a); border-left: 3px solid color-mix(in srgb, var(--c) 35%, #222); color: var(--cm-fg); cursor: pointer; font: 500 var(--cm-ctos-t-micro)/1.35 var(--cm-mono); }
+.ctos .nf-rig-up[data-afford] { border-left-color: var(--c); background: linear-gradient(90deg, color-mix(in srgb, var(--c) 12%, #101010) 0, #101010 70%); }
+.ctos .nf-rig-up:disabled { cursor: default; opacity: .7; }
+.ctos .nf-rig-up:focus-visible { outline: 2px solid var(--cm-cyan); outline-offset: 3px; }
+@media (hover: hover) { .ctos .nf-rig-up[data-afford]:hover { border-color: var(--c); } }
+.ctos .nf-rig-up-t { font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--c); }
+.ctos .nf-rig-up-d { color: var(--cm-fg); }
+.ctos .nf-rig-up-c { color: var(--cm-ctos-meta); font-variant-numeric: tabular-nums; }
+.ctos .nf-rig-up[data-afford] .nf-rig-up-c { color: var(--cm-fg); }
+
+@media (max-width: 560px) {
+    .ctos .nf-rig { padding: 12px 12px 14px; grid-template-columns: minmax(0, 1fr); grid-template-rows: none; }
+    .ctos .nf-rig > * { grid-column: 1 / -1 !important; }
+    .ctos .nf-rig-art { --sc: 1.5; grid-row: auto; justify-self: center; }
+    .ctos .nf-rig-ups { grid-template-columns: minmax(0, 1fr); }
+}
+@media (prefers-reduced-motion: reduce) { .ctos .nf-rig-bar i { transition: none; } .ctos .nf-rig-art { animation: none; } }
+@media (max-width: 560px) {
+    .ctos .nf-rig-zones { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); width: 100%; }
+    .ctos .nf-rig-zones .nf-mini { min-width: 0; min-height: 40px; padding: 0; }
+}
+
+/* arc link line: the rigs of one arc levelled together */
+.ctos .nf-rig-link { grid-column: 1 / -1; display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 12px; padding-top: 8px; border-top: 1px dashed color-mix(in srgb, var(--c) 30%, #2a2a2a); font: 500 var(--cm-ctos-t-micro)/1.45 var(--cm-mono); color: var(--cm-ctos-meta); }
+.ctos .nf-rig-link b { font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--cm-fg); }
+.ctos .nf-rig-link[data-on] b { color: var(--c); }
+.ctos .nf-rig-link i { font-style: normal; letter-spacing: .2em; color: var(--c); }
