@@ -23,6 +23,8 @@ import { buildWater } from "./water";
 import { PixelDitherPass } from "./postfx";
 import { Lighting } from "./lighting";
 import { buildClouds } from "./clouds";
+import type { Placement } from "../models/props";
+import { Scenery } from "./scenery";
 import {
     ModelRenderer,
     type ModelCell,
@@ -107,6 +109,13 @@ export interface VoxelIsland {
     ): void;
     /** Hides the placement preview. */
     clearGhost(): void;
+    /**
+     * Replaces all scenery. Each placement is a props catalog id with a free position, rotY and scale.
+     * Drawn instanced with LOD past LOD_DISTANCE and wind sway.
+     */
+    setScenery(placements: readonly Placement[]): void;
+    /** 0..1 share of placements to keep (low fx uses 0.5). Keeps the same subset as it drops. */
+    setSceneryDensity(d: number): void;
     setDither(on: boolean): void;
     setPixelSize(px: number): void;
     setQuality(level: number | "auto"): void;
@@ -172,6 +181,7 @@ export function createVoxelIsland(
     const terrainMesher = new ChunkMesher(terrainGrid, blocks, blockMaterial);
     const objectMesher = new ChunkMesher(objectGrid, blocks, blockMaterial);
     const models = new ModelRenderer(scene, heightAt);
+    const scenery = new Scenery(scene);
     scene.add(terrainMesher.group, objectMesher.group);
 
     const { grassSites } = buildTerrain(terrainGrid, blocks);
@@ -340,6 +350,7 @@ export function createVoxelIsland(
         objectMesher.update(preset.rebuildsPerFrame);
 
         models.update();
+        scenery.update(camera.position);
         post.render(scene, camera);
         const info = renderer.info.render;
         drawCalls = info.calls;
@@ -399,6 +410,12 @@ export function createVoxelIsland(
         },
         setGhost(model, cell, rot, valid) {
             models.setGhost(model, cell, rot, valid);
+        },
+        setScenery(placements: readonly Placement[]) {
+            scenery.setPlacements(placements);
+        },
+        setSceneryDensity(d) {
+            scenery.setDensity(d);
         },
         clearGhost() {
             models.clearGhost();
@@ -475,6 +492,7 @@ export function createVoxelIsland(
             glowMesher.dispose();
             glowMaterial.dispose();
             models.dispose();
+            scenery.dispose();
             clouds.dispose();
             grass.dispose();
             water.geometry.dispose();
