@@ -207,6 +207,7 @@ export interface World {
     buildings: Record<number, Building>;
     power: PowerSnapshot;
     progress: Progress;
+    wind: number; // 0 to 1, rises and falls in gusts; read by the renderer (sway, windmill speed)
 }
 
 export type PlaceResult = { ok: true; id: number } | { ok: false; reason: string };

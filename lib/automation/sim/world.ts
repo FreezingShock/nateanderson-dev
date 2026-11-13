@@ -116,12 +116,19 @@ export function createWorld(opts: CreateOptions = {}, cat: Catalog = DEFAULT_CAT
         buildings: {},
         power: { supply: 0, demand: 0, satisfaction: 1 },
         progress: { blueprints: 0, researched: [], milestonesDone: [], delivered: {}, prestiges: 0 },
+        wind: 0.5,
     };
     const hub = newBuilding(world, HUB, hubCell.x, hubCell.z, 0);
     world.hubId = hub.id;
     for (const s of opts.startStock ?? []) hub.input[s.item] = (hub.input[s.item] ?? 0) + s.qty;
     rebuildIndex(world, cat);
     return world;
+}
+
+// Gusts from summed sines of the clock, so the same time always gives the same wind (no RNG to save).
+export function windAt(t: number): number {
+    const v = 0.5 + 0.25 * Math.sin(t / 37) + 0.15 * Math.sin(t / 11 + 1) + 0.1 * Math.sin(t / 5.3 + 2.5);
+    return Math.min(1, Math.max(0, v));
 }
 
 function newBuilding(world: World, type: string, x: number, z: number, rot: Rot): Building {
@@ -374,6 +381,7 @@ export function step(world: World, dt: number, cat: Catalog = DEFAULT_CATALOG): 
     const index = indexOf(world, cat);
     const ids = Object.keys(world.buildings).map(Number);
     const defs = new Map<number, Resolved>();
+    world.wind = windAt(world.time);
     let supply = 0;
     let demand = 0;
     for (const id of ids) {

@@ -41,5 +41,6 @@ export function deserialize(text: string): World {
     w.deposits ??= {};
     w.progress ??= { blueprints: 0, researched: [], milestonesDone: [], delivered: {}, prestiges: 0 };
     w.power ??= { supply: 0, demand: 0, satisfaction: 1 };
+    w.wind ??= 0.5;
     return w as World;
 }
