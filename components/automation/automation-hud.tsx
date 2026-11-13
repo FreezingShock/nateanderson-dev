@@ -44,6 +44,8 @@ export function AutomationHud({
   const [screen, setScreen] = useState<Screen | null>(null);
   // Phone only: which panel is open as a bottom sheet over the stage.
   const [sheet, setSheet] = useState<"pal" | "factory" | null>(null);
+  // Phone only: the "More" sheet lists the drawers, so the bottom bar stays at four tabs.
+  const [more, setMore] = useState(false);
   const mode = data.settings.numberFormat;
 
   useEffect(() => {
@@ -122,24 +124,70 @@ export function AutomationHud({
 
         <div className="ab-center">
           <div className="ab-stage">{children}</div>
-          <div className="ab-sheet-toggles">
+          <nav className="ab-tabbar" aria-label="Menus">
             <button
               type="button"
-              className="ab-text-btn"
-              aria-expanded={sheet === "pal"}
-              onClick={() => setSheet((c) => (c === "pal" ? null : "pal"))}
+              className="ab-tab"
+              aria-pressed={sheet === "pal"}
+              onClick={() => {
+                setMore(false);
+                setSheet((c) => (c === "pal" ? null : "pal"));
+              }}
             >
-              Machines
+              <span className="ab-tab-label">Machines</span>
             </button>
             <button
               type="button"
-              className="ab-text-btn"
-              aria-expanded={sheet === "factory"}
-              onClick={() => setSheet((c) => (c === "factory" ? null : "factory"))}
+              className="ab-tab"
+              aria-pressed={sheet === "factory"}
+              onClick={() => {
+                setMore(false);
+                setSheet((c) => (c === "factory" ? null : "factory"));
+              }}
             >
-              Milestones
+              <span className="ab-tab-label">Milestones</span>
             </button>
-          </div>
+            <button
+              type="button"
+              className="ab-tab"
+              aria-pressed={screen === "research"}
+              onClick={() => {
+                setMore(false);
+                setScreen((s) => (s === "research" ? null : "research"));
+              }}
+            >
+              <span className="ab-tab-label">Research</span>
+            </button>
+            <button
+              type="button"
+              className="ab-tab"
+              aria-pressed={more}
+              onClick={() => {
+                setSheet(null);
+                setMore((m) => !m);
+              }}
+            >
+              <span className="ab-tab-label">More</span>
+            </button>
+          </nav>
+          {more && (
+            <div className="ab-more" role="menu" aria-label="More menus">
+              {(["expedition", "stats", "settings"] as const).map((d) => (
+                <button
+                  key={d}
+                  type="button"
+                  role="menuitem"
+                  className="ab-more-item"
+                  onClick={() => {
+                    setMore(false);
+                    setDrawer(d);
+                  }}
+                >
+                  {DRAWER_TITLE[d]}
+                </button>
+              ))}
+            </div>
+          )}
           <p className="ab-next">
             <span className="ab-next-label">Next</span>
             <span className="ab-next-text">{next.text}</span>
