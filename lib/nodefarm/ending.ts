@@ -19,10 +19,10 @@ export const END_TUNE = {
     logMax: END_LOG_MAX,
 };
 
-/** Stage names, shown on the build. Draft copy, waiting on Nate. */
+/** Stage names, shown on the build (approved by Nate 2026-11-13). */
 export const END_STAGES = ["Power", "Clock", "Memory", "Voice", "Wake"] as const;
 export const END_STEPS = END_STAGES.length;
-/** One line per socket, shown when you tap it on the schematic. Draft copy, waiting on Nate. */
+/** One line per socket, shown when you tap it on the schematic (approved 2026-11-13). */
 export const END_STAGE_LINES = [
     "Run a line from the buried sun up to node zero.",
     "Give node zero a clock it keeps by itself.",
@@ -111,7 +111,7 @@ export const inheritedLog = (s: State): EndLog | null => {
 };
 
 /**
- * End screen and build copy. DRAFT: written for Nate to approve or rewrite; nothing here is final until he says so.
+ * End screen and build copy, approved by Nate 2026-11-13.
  * `{zone}` is the last zone's name, `{n}` your operator number.
  */
 export const END_COPY = {

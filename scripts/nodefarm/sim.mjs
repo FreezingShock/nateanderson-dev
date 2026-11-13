@@ -50,7 +50,7 @@ import { writeFileSync as _wf, mkdirSync as _mk } from "node:fs";
 const SNAP = process.env.NF_SNAP;
 if (SNAP) _mk(SNAP, { recursive: true });
 const snapped = new Set();
-const snap = (name) => { if (!SNAP || snapped.has(name)) return; snapped.add(name); s.at = Date.now(); _wf(`${SNAP}/${name}.json`, JSON.stringify(s)); console.log("snap", name, (t / 3600).toFixed(2) + " h"); };
+const snapOnce = (name) => { if (!SNAP || snapped.has(name)) return; snapped.add(name); s.at = Date.now(); _wf(`${SNAP}/${name}.json`, JSON.stringify(s)); console.log("snap", name, (t / 3600).toFixed(2) + " h"); };
 const handLog = [];
 const dt = Number(process.env.NF_DT || 0.5); // tick size in seconds (the live game ticks at 0.1)
 while (t < hours * 3600) {
@@ -104,7 +104,7 @@ while (t < hours * 3600) {
         if (ZE && s.ze) for (const e of [...s.ze.act]) { if (e.kind === "vein") ZE.zeChoose(s, e.id, "mine"); else if (e.kind === "fault") ZE.zeChoose(s, e.id, "patch"); }
         // NF_TRACE=<minutes>: print a status line every that many play minutes (to find walls and runaways)
         if (process.env.NF_TRACE && t >= (marks.nextTrace || 0)) { marks.nextTrace = t + 60 * Number(process.env.NF_TRACE); console.log("t", (t / 3600).toFixed(2), "b/s", E.fmt(E.derive(s).bytesPerSec), "ae", E.fmt(s.aether), "or", E.fmt(s.origin), "px", E.fmt(s.paradox), "ap+", E.apOnAscend(s), "asc", s.life.ascends, "tree", s.tree.length, "G", E.fmt(E.derive(s).global), "ap", s.ap, "mounts", s.mounts.join("+"), "prod", MATS_P(s)); }
-        if (SNAP) { if (E.treeComplete(s)) snap("tree-whole"); if (firstHandT && t - firstHandT > 3600) snap("hand1-plus1h"); for (const m of E.MATS) if (s[m] > 0) snap("zone-" + m); }
+        if (SNAP) { if (E.treeComplete(s)) snapOnce("tree-whole"); if (firstHandT && t - firstHandT > 3600) snapOnce("hand1-plus1h"); for (const m of E.MATS) if (s[m] > 0) snapOnce("zone-" + m); }
         for (const k of [3, 5, 7, 9, 11]) if (s.sunstone >= 10 ** k) mark(`sunstone 1e${k}` + (s.hand.count ? ` (H${s.hand.count})` : ""), t); // the ending's stage costs run 1e3 to 1e11
         if (s.reboot >= 1) mark("first reboot", t);
         if (s.life.reboots >= 25) mark("25 reboots", t);
@@ -162,7 +162,7 @@ while (t < hours * 3600) {
             const keys = E.handover(s, process.env.NF_PROTO || "wren", "", "osk");
             handLog.push([t, keys]);
             mark("handover " + s.hand.count, t);
-            snap("handover-" + s.hand.count);
+            snapOnce("handover-" + s.hand.count);
             if (s.hand.count === 1) firstHandT = t;
             ascents.length = 0;
             for (let more = true; more;) {
