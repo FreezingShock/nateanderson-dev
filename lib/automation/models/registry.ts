@@ -5,6 +5,7 @@ import { EXAMPLE_BLOCK } from "./examples";
 import { BELT_MODELS } from "./belts/models";
 import { ITEM_MODEL_LIST } from "./items";
 import { allMachineModels } from "./machines";
+import { propModels } from "./props";
 import { resourceModel, resourcePreviewModels } from "./resources";
 
 export const MODEL_REGISTRY: VoxelModel[] = [
@@ -12,6 +13,7 @@ export const MODEL_REGISTRY: VoxelModel[] = [
     ...allMachineModels(),
     ...resourcePreviewModels(),
     ...BELT_MODELS,
+    ...propModels(),
     ...ITEM_MODEL_LIST,
 ];
 
