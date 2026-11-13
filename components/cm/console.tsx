@@ -15,6 +15,8 @@ import { getFxMode, getLowFx, setFxMode } from "@/lib/nodefarm/fx";
 import { getStagePreview, setStagePreview } from "@/lib/nodefarm/zones/zone-art";
 import { PART_WHY, SKIN_WHY, coreLook, coreMode, corePreview, setCoreMode, setCorePreview, skinOpen } from "@/lib/nodefarm/art/core-look";
 import { PART_ORDER, SKINS } from "@/lib/nodefarm/art/core-parts";
+import { SW_PATH, SW_SAVE_KEY, SW_SUBS, swCommand } from "@/lib/starwright/commands";
+import { parse as swParse, serialize as swSerialize, type State as SwState } from "@/lib/starwright/engine";
 import { setPrefs } from "@/lib/sound/engine";
 import { sfx } from "@/lib/sound/sounds";
 import { useSoundPrefs } from "@/lib/sound/use-sound";
@@ -296,6 +298,39 @@ function runNf(args: string[]): Line[] {
     return r.lines;
 }
 
+/** `sw`: Starwright from the console. Talks to the open game when there is one (it answers the `sw:live` event), otherwise reads and writes the saved game. */
+function runSw(args: string[]): Line[] {
+    const sub = (args[0] ?? "").toLowerCase();
+    if (sub === "open") return [{ t: SW_PATH, go: SW_PATH }];
+    if (sub === "fs" || sub === "fullscreen") {
+        const probe: { live?: unknown } = {};
+        window.dispatchEvent(new CustomEvent("sw:live", { detail: probe }));
+        if (!probe.live) return [t("full screen needs the game open:", "dim"), { t: SW_PATH, go: SW_PATH }];
+        window.dispatchEvent(new CustomEvent("sw:fs"));
+        return [t("full screen toggled.")];
+    }
+    const ref: { live?: { s: SwState | null; changed: () => void } } = {};
+    window.dispatchEvent(new CustomEvent("sw:live", { detail: ref }));
+    let state: SwState | null = ref.live?.s ?? null;
+    if (!state) {
+        try {
+            const raw = localStorage.getItem(SW_SAVE_KEY);
+            state = raw ? swParse(JSON.parse(raw)) : null;
+        } catch {}
+    }
+    if (!state) return [t("no star found. light one first:", "dim"), { t: SW_PATH, go: SW_PATH }];
+    const r = swCommand(state, args);
+    if (r.changed) {
+        if (ref.live) ref.live.changed();
+        else {
+            try {
+                localStorage.setItem(SW_SAVE_KEY, swSerialize(state));
+            } catch {}
+        }
+    }
+    return r.lines.map((x) => t(x.t, x.k));
+}
+
 const COMMANDS: Cmd[] = [
     {
         name: "help",
@@ -413,6 +448,13 @@ const COMMANDS: Cmd[] = [
         desc: "Node Farm readout, goals and secrets",
         long: ["nf · nf stats · nf goals · nf secrets · nf open · nf anim auto|print|decrypt|crt · nf fx full|low|auto (effects level) · nf fs [on|off] (full screen) · nf keys (key sheet) · nf core [zone|chroma|aurora|gold|mono|<zone>|parts 0-13] · nf admin (testing panel, see admin). Works with the game open or from your saved game."],
         run: (args) => runNf(args),
+    },
+    {
+        name: "sw",
+        usage: "sw [stats|fuse|collapse|perks|planets|name|neutron|hole|open|fs]",
+        desc: "Starwright readout and actions",
+        long: ["sw · sw stats · sw fuse <element> [1-3] buys a burner tier · sw collapse (supernova) · sw perks [id] · sw pulsar [id] · sw planets [id] · sw neutron · sw hole · sw name <name> · sw open · sw fs. Works with the game open or from your saved game."],
+        run: (args) => runSw(args),
     },
     {
         name: "admin",
@@ -672,6 +714,7 @@ export function NaosConsole({ onClose, prefill }: { onClose: () => void; prefill
         else if (first === "ls" || first === "dir") pool = ["pages", "projects", "games", "sections", ...navItems.filter((n) => n.children?.length).map((n) => slug(n.label))];
         else if (first === "sound") pool = ["on", "off"];
         else if (first === "nf") pool = NF_SUBS;
+        else if (first === "sw") pool = SW_SUBS;
         else if (first === "help" || first === "man") pool = NAMES;
         else return;
         const m = pool.filter((p) => p.startsWith(last));

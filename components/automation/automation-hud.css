@@ -864,3 +864,128 @@
 .ab-build-groups > .ab-section.ab-panel > .ab-section-body {
   padding: 2px 6px 6px;
 }
+
+/* ---- phone bottom bar: four tabs replace the top menu row and the old sheet toggles ---- */
+.ab-tabbar {
+  display: none;
+}
+
+@media (max-width: 759px) {
+  .ab-top .ab-nav {
+    display: none;
+  }
+
+  .ab-sheet-toggles {
+    display: none !important;
+  }
+
+  .ab-tabbar {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 6px;
+    padding: 8px 10px 10px;
+    margin-top: auto;
+    position: relative;
+    z-index: 4;
+    background: var(--ab-panel);
+    border-top: 1px solid var(--ab-line);
+  }
+
+  .ab-tab {
+    min-height: 44px;
+    padding: 6px 4px;
+    background: transparent;
+    border: 1px solid var(--ab-line-soft);
+    color: var(--ab-dim);
+    font-size: 12px;
+    letter-spacing: 0.02em;
+    cursor: pointer;
+  }
+
+  .ab-tab[aria-pressed="true"] {
+    border-color: var(--ab-brass-hi);
+    color: var(--ab-brass-hi);
+  }
+
+  .ab-more {
+    position: absolute;
+    right: 10px;
+    bottom: 62px;
+    z-index: 5;
+    display: grid;
+    gap: 6px;
+    min-width: 200px;
+    padding: 10px;
+    background: var(--ab-panel);
+    border: 1px solid var(--ab-brass);
+  }
+
+  .ab-more-item {
+    min-height: 44px;
+    padding: 8px 12px;
+    background: transparent;
+    border: 1px solid var(--ab-line-soft);
+    color: var(--ab-text, inherit);
+    text-align: left;
+    font-size: 13px;
+    cursor: pointer;
+  }
+}
+
+/* Layout fixes: a status word stays on the same line as its name, and a milestone reward never hangs off the edge. */
+.ab-build-name .ab-dim {
+  white-space: nowrap;
+}
+
+.ab-milestone-top {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 2px 10px;
+}
+
+.ab-milestone-top .ab-dim {
+  white-space: nowrap;
+}
+
+/* Wider palette on desktop so locked rows keep the name and status on one line. */
+@media (min-width: 760px) {
+  .ab-pal {
+    width: 356px;
+  }
+}
+
+/* HUD glyphs: sized by uiIconStyle, set beside a text label. */
+.ab-ico {
+  display: inline-block;
+  flex: none;
+  vertical-align: middle;
+  margin-right: 6px;
+}
+
+.ab-tab {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+}
+
+.ab-tab .ab-ico {
+  margin: 0;
+}
+
+/* Desktop hierarchy: Research is the main progression step, so it is the one filled button in the top bar. */
+.ab-text-btn.ab-primary {
+  background: var(--ab-brass);
+  border-color: var(--ab-brass-hi);
+  color: #1a1209;
+  font-weight: 600;
+}
+
+.ab-text-btn.ab-primary:hover:not(:disabled),
+.ab-text-btn.ab-primary[aria-expanded="true"] {
+  background: var(--ab-brass-hi);
+  color: #1a1209;
+}

@@ -14,10 +14,15 @@ import { ResearchScreen } from "./research-screen";
 import { PrestigeScreen } from "./prestige-screen";
 import "./brasswork-skin.css";
 import { canAfford } from "./format";
+import { uiIconStyle } from "@/lib/automation/icons/ui";
+
+/** A 24px HUD glyph. Decorative: the text beside it carries the name. */
+const Ico = ({ id }: { id: string }) => <span className="ab-ico" style={uiIconStyle(id, 24)} aria-hidden="true" />;
 
 type Drawer = "expedition" | "stats" | "settings";
 type Screen = "research" | "prestige";
 
+const DRAWER_ICON: Record<Drawer, string> = { expedition: "expedition", stats: "stats", settings: "settings" };
 const DRAWER_TITLE: Record<Drawer, string> = {
   expedition: "Expedition",
   stats: "Production stats",
@@ -44,6 +49,8 @@ export function AutomationHud({
   const [screen, setScreen] = useState<Screen | null>(null);
   // Phone only: which panel is open as a bottom sheet over the stage.
   const [sheet, setSheet] = useState<"pal" | "factory" | null>(null);
+  // Phone only: the "More" sheet lists the drawers, so the bottom bar stays at four tabs.
+  const [more, setMore] = useState(false);
   const mode = data.settings.numberFormat;
 
   useEffect(() => {
@@ -84,10 +91,11 @@ export function AutomationHud({
         <nav className="ab-nav" aria-label="Workshop views">
           <button
             type="button"
-            className="ab-text-btn"
+            className="ab-text-btn ab-primary"
             aria-expanded={screen === "research"}
             onClick={() => setScreen((s) => (s === "research" ? null : "research"))}
           >
+            <Ico id="research" />
             Research
           </button>
           {(["expedition", "stats", "settings"] as const).map((d) => (
@@ -98,6 +106,7 @@ export function AutomationHud({
               aria-expanded={drawer === d}
               onClick={() => toggle(d)}
             >
+              <Ico id={DRAWER_ICON[d]} />
               {DRAWER_TITLE[d]}
             </button>
           ))}
@@ -122,24 +131,75 @@ export function AutomationHud({
 
         <div className="ab-center">
           <div className="ab-stage">{children}</div>
-          <div className="ab-sheet-toggles">
+          <nav className="ab-tabbar" aria-label="Menus">
             <button
               type="button"
-              className="ab-text-btn"
-              aria-expanded={sheet === "pal"}
-              onClick={() => setSheet((c) => (c === "pal" ? null : "pal"))}
+              className="ab-tab"
+              aria-pressed={sheet === "pal"}
+              onClick={() => {
+                setMore(false);
+                setSheet((c) => (c === "pal" ? null : "pal"));
+              }}
             >
-              Machines
+              <Ico id="machines" />
+              <span className="ab-tab-label">Machines</span>
             </button>
             <button
               type="button"
-              className="ab-text-btn"
-              aria-expanded={sheet === "factory"}
-              onClick={() => setSheet((c) => (c === "factory" ? null : "factory"))}
+              className="ab-tab"
+              aria-pressed={sheet === "factory"}
+              onClick={() => {
+                setMore(false);
+                setSheet((c) => (c === "factory" ? null : "factory"));
+              }}
             >
-              Milestones
+              <Ico id="milestones" />
+              <span className="ab-tab-label">Milestones</span>
             </button>
-          </div>
+            <button
+              type="button"
+              className="ab-tab"
+              aria-pressed={screen === "research"}
+              onClick={() => {
+                setMore(false);
+                setScreen((s) => (s === "research" ? null : "research"));
+              }}
+            >
+              <Ico id="research" />
+              <span className="ab-tab-label">Research</span>
+            </button>
+            <button
+              type="button"
+              className="ab-tab"
+              aria-pressed={more}
+              onClick={() => {
+                setSheet(null);
+                setMore((m) => !m);
+              }}
+            >
+              <Ico id="help" />
+              <span className="ab-tab-label">More</span>
+            </button>
+          </nav>
+          {more && (
+            <div className="ab-more" role="menu" aria-label="More menus">
+              {(["expedition", "stats", "settings"] as const).map((d) => (
+                <button
+                  key={d}
+                  type="button"
+                  role="menuitem"
+                  className="ab-more-item"
+                  onClick={() => {
+                    setMore(false);
+                    setDrawer(d);
+                  }}
+                >
+                  <Ico id={DRAWER_ICON[d]} />
+                  {DRAWER_TITLE[d]}
+                </button>
+              ))}
+            </div>
+          )}
           <p className="ab-next">
             <span className="ab-next-label">Next</span>
             <span className="ab-next-text">{next.text}</span>
