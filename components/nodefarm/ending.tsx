@@ -6,7 +6,7 @@ import { codeReveal } from "@/lib/nodefarm/cx";
 import { scrambleNow } from "@/lib/motion/engine";
 import { sfx } from "@/lib/sound/sounds";
 import { PROTOS, fmt, fmtTime, statDef, type State } from "@/lib/nodefarm/engine";
-import { END_COPY, END_STAGES, END_STEPS, END_TUNE, buildBlock, endOpen, endStage, endText, inheritedLog, lastZone, stageCost } from "@/lib/nodefarm/ending";
+import { END_COLORS, END_COPY, END_SOCKETS, END_STAGES, END_STAGE_LINES, END_STEPS, END_TUNE, buildBlock, endOpen, endStage, endText, inheritedLog, lastZone, stageCost } from "@/lib/nodefarm/ending";
 import { goalCounts } from "@/lib/nodefarm/records";
 import { LOGS } from "@/lib/nodefarm/story";
 import { NfIcon } from "./icon";
@@ -21,62 +21,109 @@ const SUN = "#ffd04a";
 const FRAMES = 4;
 const date = (ms: number) => new Date(ms).toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" });
 
-/** Five stage cells, then the next stage's two costs as data lines, and the build button. */
+/** A pixel key, filled when held. */
+const KeyPip = ({ on }: { on: boolean }) => (
+    <svg className="nf-end-key" data-on={on ? "" : undefined} viewBox="0 0 9 5" aria-hidden="true" shapeRendering="crispEdges">
+        <path d="M0 1h1v3H0zM1 0h2v1H1zM1 4h2v1H1zM3 1h1v3H3zM4 2h5v1H4zM6 3h1v1H6zM8 3h1v2H8z" />
+    </svg>
+);
+
+const POUR_MS = 1400;
+
+/** The Final build, drawn as a cut-away of node zero over the buried sun: tap a socket to read it, hold to pour power
+ *  into the next one. The art steps one frame per stage built; while you hold, the next frame rises from the floor. */
 export function FinalBuild({ s, onBuild, onReplay }: { s: State; onBuild: () => void; onReplay: () => void }) {
     const stage = endStage(s);
     const done = stage >= END_STEPS;
     const z = lastZone();
     const def = statDef(z);
     const block = buildBlock(s);
-    const c = stageCost(Math.min(stage, END_STEPS - 1));
+    const [pick, setPick] = useState<number | null>(null);
+    const sel = pick ?? Math.min(stage, END_STEPS - 1);
+    const c = stageCost(sel);
     const have = s[z] as number;
-    const last = stage === END_STEPS - 1;
-    const [ask, setAsk] = useState(false);
-    useEffect(() => { if (!ask) return; const t = window.setTimeout(() => setAsk(false), 4000); return () => window.clearTimeout(t); }, [ask]);
+    const st = sel < stage ? "built" : sel === stage ? "next" : "sealed";
+    const [hold, setHold] = useState(false);
+    const t = useRef<number | undefined>(undefined);
+    const stop = () => { window.clearTimeout(t.current); t.current = undefined; setHold(false); };
+    const start = () => {
+        if (block || t.current) return;
+        setPick(null);
+        setHold(true);
+        sfx("tab");
+        t.current = window.setTimeout(() => { t.current = undefined; setHold(false); onBuild(); }, POUR_MS);
+    };
+    useEffect(() => () => window.clearTimeout(t.current), []);
     const inh = inheritedLog(s);
+    const keysShown = Math.min(c.keys, 12);
     return (
-        <section className="nf-end-build" data-cx-i="3" data-done={done ? "" : undefined} style={{ ["--c" as string]: SUN } as CSSProperties} aria-label="Final build">
+        <section className="nf-end-build" data-cx-i="3" data-done={done ? "" : undefined} aria-label="Final build">
             <i className="nf-end-br" aria-hidden="true" />
             <header className="nf-end-bh">
                 <span data-cx-scr="">{END_COPY.buildHead}</span>
-                <b>{done ? "COMPLETE" : `STAGE ${stage + 1}/${END_STEPS}`}</b>
+                <b>{done ? "AWAKE" : `${stage}/${END_STEPS} SOCKETS LIVE`}</b>
             </header>
-            <p className="nf-end-intro">{done ? END_COPY.buildDone : endText(END_COPY.buildIntro, s)}</p>
-            <ol className="nf-end-cells" aria-label={`${stage} of ${END_STEPS} stages built`}>
+            <div className="nf-end-sch" data-hold={hold ? "" : undefined} style={{ ["--f" as string]: stage, ["--pour" as string]: `${POUR_MS}ms` } as CSSProperties}>
+                <i className="nf-end-sch-art" aria-hidden="true" />
+                {!done && <i className="nf-end-sch-pour" aria-hidden="true" style={{ ["--n" as string]: stage + 1 } as CSSProperties} />}
+                <span className="nf-end-sch-tag" aria-hidden="true">{def.name.toUpperCase()} · {fmt(have)}</span>
                 {END_STAGES.map((name, i) => (
-                    <li key={name} data-st={i < stage ? "built" : i === stage ? "next" : "lock"}>
-                        <span>{String(i + 1).padStart(2, "0")}</span>
-                        <b>{name}</b>
-                    </li>
+                    <button
+                        key={name}
+                        type="button"
+                        className="nf-end-sock"
+                        data-st={i < stage ? "built" : i === stage ? "next" : "sealed"}
+                        data-sel={sel === i ? "" : undefined}
+                        style={{ left: `${END_SOCKETS[i][0]}%`, top: `${END_SOCKETS[i][1]}%`, ["--c" as string]: END_COLORS[i] } as CSSProperties}
+                        aria-label={`Socket ${i + 1}: ${name}${i < stage ? ", built" : i === stage ? ", next" : ", sealed"}`}
+                        aria-pressed={sel === i}
+                        onClick={() => { setPick(i); sfx("tab"); }}
+                    />
                 ))}
-            </ol>
-            {!done && (
-                <>
-                    <dl className="nf-end-cost">
-                        <div style={{ ["--c" as string]: def.color } as CSSProperties}>
+            </div>
+            <div className="nf-end-read" style={{ ["--c" as string]: END_COLORS[sel] } as CSSProperties} aria-live="polite">
+                <i className="nf-end-br" aria-hidden="true" />
+                <div className="nf-end-read-h">
+                    <span>SOCKET {String(sel + 1).padStart(2, "0")}</span>
+                    <b>{END_STAGES[sel]}</b>
+                    <em data-st={st}>{st === "built" ? "LIVE" : st === "next" ? (block ? "WAITING" : "READY") : "SEALED"}</em>
+                </div>
+                <p>{END_STAGE_LINES[sel]}</p>
+                {st !== "built" && (
+                    <dl className="nf-end-need">
+                        <div>
                             <dt><NfIcon name={z as "bytes"} />{def.name}</dt>
                             <dd><b>{fmt(Math.min(have, c.mat))}</b> / {fmt(c.mat)}</dd>
-                            <i aria-hidden="true"><em style={{ width: `${Math.min(1, have / c.mat) * 100}%` }} /></i>
+                            <i className="nf-end-heat" aria-hidden="true"><em style={{ width: `${Math.min(1, have / c.mat) * 100}%` }} /></i>
                         </div>
-                        <div style={{ ["--c" as string]: "#ffc53a" } as CSSProperties}>
+                        <div>
                             <dt>Keys</dt>
                             <dd><b>{Math.min(s.hand.keys, c.keys)}</b> / {c.keys}</dd>
-                            <i aria-hidden="true"><em style={{ width: `${Math.min(1, s.hand.keys / c.keys) * 100}%` }} /></i>
+                            <span className="nf-end-keys" aria-hidden="true">{Array.from({ length: keysShown }, (_, k) => <KeyPip key={k} on={k < Math.round((Math.min(s.hand.keys, c.keys) / c.keys) * keysShown)} />)}</span>
                         </div>
                     </dl>
+                )}
+            </div>
+            {!done && (
+                <>
                     {!endOpen(s) && <p className="nf-end-note">Build one {def.name} producer this run to work on the build.</p>}
                     <button
                         type="button"
                         className="nf-end-go"
                         disabled={!!block}
-                        onClick={() => {
-                            if (block) return;
-                            if (last && !ask) { setAsk(true); sfx("tab"); return; }
-                            setAsk(false);
-                            onBuild();
-                        }}
+                        data-hold={hold ? "" : undefined}
+                        style={{ ["--pour" as string]: `${POUR_MS}ms` } as CSSProperties}
+                        onPointerDown={(e) => { if (e.button === 0) { e.currentTarget.setPointerCapture?.(e.pointerId); start(); } }}
+                        onPointerUp={() => { if (t.current) stop(); }}
+                        onPointerCancel={() => stop()}
+                        onLostPointerCapture={() => { if (t.current) stop(); }}
+                        onKeyDown={(e) => { if ((e.key === "Enter" || e.key === " ") && !e.repeat) { e.preventDefault(); start(); } }}
+                        onKeyUp={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); if (t.current) stop(); } }}
+                        onBlur={() => { if (t.current) stop(); }}
+                        onContextMenu={(e) => e.preventDefault()}
                     >
-                        {block ? block : last ? (ask ? "Confirm: wake node zero" : `Build ${END_STAGES[stage]} · wake node zero`) : `Build stage ${stage + 1}: ${END_STAGES[stage]}`}
+                        <i className="nf-end-go-fill" aria-hidden="true" />
+                        <span>{block ? block : hold ? `Pouring into ${END_STAGES[stage]}` : stage === END_STEPS - 1 ? `Hold to wake node zero` : `Hold to pour: ${END_STAGES[stage]}`}</span>
                     </button>
                 </>
             )}
@@ -86,11 +133,12 @@ export function FinalBuild({ s, onBuild, onReplay }: { s: State; onBuild: () => 
                         <div><dt>Woken</dt><dd>{s.end?.doneAt ? date(s.end.doneAt) : "now"}</dd></div>
                         <div><dt>Endings</dt><dd>{s.end?.stars ?? 1}</dd></div>
                     </dl>
-                    <button type="button" className="nf-end-go nf-end-ghost" onClick={onReplay}>Replay the ending</button>
+                    <button type="button" className="nf-end-go nf-end-ghost" onClick={onReplay}><span>Replay the ending</span></button>
                 </div>
             )}
             {inh && (
                 <blockquote className="nf-end-inh">
+                    <i className="nf-end-br" aria-hidden="true" />
                     <span>{END_COPY.inherited.replace("{n}", String(inh.n))}</span>
                     <p>{inh.text}</p>
                 </blockquote>
@@ -104,6 +152,7 @@ export function EndScreen({ s, reduced, onKeep, onNew }: { s: State; reduced: bo
     const [host, setHost] = useState<Element | null>(null);
     const [log, setLog] = useState(() => s.end?.logs.at(-1)?.n === s.end?.stars ? s.end?.logs.at(-1)?.text ?? "" : "");
     const [ask, setAsk] = useState(false);
+    const [who, setWho] = useState(0);
     const panel = useRef<HTMLElement>(null);
     const wrap = useRef<HTMLDivElement>(null);
     const first = useRef<HTMLTextAreaElement>(null);
@@ -124,6 +173,20 @@ export function EndScreen({ s, reduced, onKeep, onNew }: { s: State; reduced: bo
         return () => { html.style.overflow = prev; back?.focus?.(); };
     }, [host, reduced]);
     useEffect(() => { if (!ask) return; const t = window.setTimeout(() => setAsk(false), 5000); return () => window.clearTimeout(t); }, [ask]);
+    // the roll: each lamp's line comes up as it lights, once, until you tap a lamp or start typing
+    const touched = useRef(false);
+    const opsLen = PROTOS.length + (s.end?.logs ?? []).filter((l) => l.n < Math.max(1, s.end?.stars ?? 1)).length + 1;
+    useEffect(() => {
+        if (reduced) return;
+        let i = 0;
+        const iv = window.setInterval(() => {
+            if (touched.current) return window.clearInterval(iv);
+            i += 1;
+            if (i >= opsLen) return window.clearInterval(iv);
+            setWho(i);
+        }, 2600);
+        return () => window.clearInterval(iv);
+    }, [opsLen, reduced]);
 
     const leave = (fn: (log: string) => void) => {
         if (leaving.current) return;
@@ -153,6 +216,12 @@ export function EndScreen({ s, reduced, onKeep, onNew }: { s: State; reduced: bo
         ["Logs read", `${s.logs.length}/${LOGS.length}`],
     ];
     const n = Math.max(1, s.end?.stars ?? 1);
+    // the lamps on the wall: the four past operators, any earlier endings of yours, then you (lit once you write a log)
+    const ops = [
+        ...PROTOS.map((p, i) => ({ key: p.id, name: p.op, color: p.color, col: i, lit: true, kicker: `${p.op} // ${p.name}`, line: p.flavor })),
+        ...(s.end?.logs ?? []).filter((l) => l.n < n).map((l) => ({ key: `op${l.n}`, name: `Op ${l.n}`, color: "#c8f6ff", col: 4, lit: true, kicker: `Operator ${l.n} // your log`, line: l.text })),
+        { key: "you", name: END_COPY.youName, color: "#c8f6ff", col: 4, lit: !!log.trim(), kicker: `Operator ${n} // you`, line: log.trim() || END_COPY.youLine.replace("{n}", String(n)) },
+    ];
 
     if (!host) return null;
     return createPortal(
@@ -170,34 +239,44 @@ export function EndScreen({ s, reduced, onKeep, onNew }: { s: State; reduced: bo
                     <p className="nf-end-lead" data-cx-i="3">{endText(END_COPY.lead, s)}</p>
 
                     <h3 className="nf-end-h" data-cx-i="4" data-cx-scr="">{END_COPY.creditsHead}</h3>
-                    <ol className="nf-end-ops" data-cx-i="5">
-                        {PROTOS.map((p, i) => (
-                            <li key={p.id} style={{ ["--c" as string]: p.color, ["--d" as string]: `${i * 140}ms` } as CSSProperties}>
-                                <b>{p.op}</b>
-                                <span>{p.flavor}</span>
-                            </li>
-                        ))}
-                        {(s.end?.logs ?? []).filter((l) => l.n < n).map((l, i) => (
-                            <li key={`p${l.n}-${l.at}`} style={{ ["--c" as string]: "#c8f6ff", ["--d" as string]: `${(PROTOS.length + i) * 140}ms` } as CSSProperties}>
-                                <b>Operator {l.n}</b>
-                                <span>{l.text}</span>
-                            </li>
-                        ))}
-                        <li data-you="" style={{ ["--c" as string]: "#c8f6ff", ["--d" as string]: `${(PROTOS.length + 1) * 140}ms` } as CSSProperties}>
-                            <b>{END_COPY.youName}</b>
-                            <span>{log.trim() || END_COPY.youLine.replace("{n}", String(n))}</span>
-                        </li>
-                    </ol>
+                    <div className="nf-end-wall" data-cx-i="5">
+                        <div className="nf-end-lamps" role="tablist" aria-label={END_COPY.creditsHead}>
+                            {ops.map((o, i) => (
+                                <button
+                                    key={o.key}
+                                    type="button"
+                                    role="tab"
+                                    className="nf-end-lamp"
+                                    data-lit={o.lit ? "" : undefined}
+                                    aria-selected={who === i}
+                                    style={{ ["--c" as string]: o.color, ["--col" as string]: o.col, ["--d" as string]: o.key === "you" ? "0ms" : `${700 + i * 260}ms` } as CSSProperties}
+                                    onClick={() => { touched.current = true; setWho(i); sfx("tab"); }}
+                                >
+                                    <i aria-hidden="true" />
+                                    <span>{o.name}</span>
+                                </button>
+                            ))}
+                        </div>
+                        <div className="nf-end-quote" role="tabpanel" style={{ ["--c" as string]: ops[who].color } as CSSProperties}>
+                            <i className="nf-end-br" aria-hidden="true" />
+                            <span className="nf-end-quote-k">{ops[who].kicker}</span>
+                            <p key={who}>{ops[who].line}</p>
+                        </div>
+                    </div>
 
                     <h3 className="nf-end-h" data-cx-i="6" data-cx-scr="">{END_COPY.statsHead}</h3>
-                    <dl className="nf-aw-facts nf-end-stats" data-cx-i="7">
-                        {stats.map(([k, v]) => <div key={k}><dt>{k}</dt><dd>{v}</dd></div>)}
-                    </dl>
+                    <div className="nf-end-slip" data-cx-i="7">
+                        <i className="nf-end-br" aria-hidden="true" />
+                        <span className="nf-end-slip-h" aria-hidden="true">SHIFT.LOG // NODE-00 // OPERATOR {String(n).padStart(2, "0")}</span>
+                        <dl>
+                            {stats.map(([k, v]) => <div key={k}><dt>{k}</dt><i aria-hidden="true" /><dd>{v}</dd></div>)}
+                        </dl>
+                    </div>
 
                     <label className="nf-end-log" data-cx-i="8">
                         <span className="nf-end-h">{END_COPY.logHead}</span>
                         <small>{END_COPY.logHint}</small>
-                        <textarea ref={first} value={log} maxLength={END_TUNE.logMax} rows={3} onChange={(e) => setLog(e.target.value)} spellCheck />
+                        <textarea ref={first} value={log} maxLength={END_TUNE.logMax} rows={3} onChange={(e) => setLog(e.target.value)} onFocus={() => { touched.current = true; setWho(ops.length - 1); }} spellCheck />
                         <small className="nf-end-count" aria-hidden="true">{log.length}/{END_TUNE.logMax}</small>
                     </label>
 

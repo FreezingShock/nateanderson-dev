@@ -1,6 +1,11 @@
 """Ending art (dither, multicolour, original): the end screen banner for Node Farm's final build.
 
 Writes to public/naos/nodefarm/:
+  end-build     320 x 140, opaque, 6 frames stacked (0 to 5 stages built): the final build as a cut-away. The buried
+                sun under the floor, five conduits rising to five sockets in an arc round node zero, each socket with its
+                own glyph and colour. A built stage's conduit runs gold and its socket burns; at 5 a light column rises.
+  end-lamps     24 x 40 cells, transparent, 5 columns (wren, tamsin, osk, vael, you) x 2 rows (off, lit): wall lamps
+                for the end screen's operator roll.
   scene-ending  480 x 160, opaque, 4 frames stacked: node zero awake. The buried sun glows under the floor, a column of
                 light rises through the box, rings pulse out, the wire runs gold, and five lamps burn on the wall: the
                 four past operators in their protocol colours and a fifth, white-cyan, for you.
@@ -105,5 +110,124 @@ def scene():
     print("  scene-ending", im.size)
 
 
+# stage sockets: glyph (7 x 7), ramp, position on the arc
+GLYPHS = {
+    "power": ["...#...", "..##...", ".##....", "#######", "....##.", "...##..", "...#..."],
+    "clock": [".#####.", "#..#..#", "#..#..#", "#..###.", "#.....#", "#.....#", ".#####."],
+    "memory": ["#.#.#.#", "#######", "#.....#", "#.###.#", "#.....#", "#######", "#.#.#.#"],
+    "voice": ["...#...", ".#.#.#.", "##.#.##", "#######", "##.#.##", ".#.#.#.", "...#..."],
+    "wake": ["..###..", ".#...#.", "#..#..#", "#.###.#", "#..#..#", ".#...#.", "..###.."],
+}
+STAGES = [("power", "sun"), ("clock", "tcyan"), ("memory", "lime"), ("voice", "orange"), ("wake", "you")]
+
+
+def build():
+    W, H, F = 320, 140, 6
+    gx, sun_y, box_y = 160, 176, 8
+    frames = []
+    # sockets on an arc above the floor, left to right
+    sockets = [(gx + math.cos(math.radians(a)) * 118, 90 - math.sin(math.radians(a)) * 40) for a in (168, 132, 90, 48, 12)]
+    for f in range(F):
+        cv = Canvas(W)
+        cv.img[..., 3] = 255
+        n = cv.n
+        y, x = cv.y, cv.x
+        nz = noise(n, 8, 271)
+        cv.fill(np.ones((n, n), bool), np.clip(0.1 + 0.26 * (y / H) + 0.18 * nz, 0, 1), "dusk")
+        # the buried sun: brighter with every stage
+        r = np.hypot((x - gx) / 1.5, y - sun_y)
+        heat = 0.45 + 0.11 * f
+        sun = np.clip(1 - r / 120, 0, 1) ** 1.5 * heat
+        cv.fill((sun > 0) & (y < H), sun, "sun", dither=1.0)
+        # floor line and rock strata
+        for xx in range(0, W):
+            cv.dot(xx, 112, "sun", 2 if f else 1)
+        for k, yy in enumerate((118, 125, 133)):
+            for xx in range(k * 3, W, 5 + k):
+                cv.dot(xx, yy, "dusk", 4)
+        # node zero
+        lit_box = f >= 5
+        bx, by = gx - 14, box_y
+        cv.dot(bx, by, "sun" if lit_box else "dusk", 3 if lit_box else 4, w=28, h=20)
+        cv.dot(bx + 1, by + 1, "sun" if lit_box else "tcyan", 4 if lit_box else 1, w=26, h=3)
+        cv.dot(bx + 2, by + 6, "dusk", 0, w=24, h=12)
+        for k in range(5):
+            on = k < f
+            cv.dot(bx + 4 + k * 4, by + 10, STAGES[k][1], 4 if on else 1, w=2, h=2)
+        if lit_box:
+            col = (np.abs(x - gx) < 7) & (y < box_y)
+            cv.fill(col, np.clip(0.4 + 0.6 * (1 - np.abs(x - gx) / 7), 0, 1), "you", dither=1.0)
+            for rad in (30, 44):
+                ring = (np.abs(np.hypot((x - gx) / 1.6, y - (box_y + 10)) - rad) < 0.6) & (y < 112)
+                cv.fill(ring, np.full(ring.shape, 0.6), "sun", dither=0.6)
+        # conduits: from the sun's crown up to each socket, then a short lead into node zero
+        for i, (sx, sy) in enumerate(sockets):
+            built = i < f
+            ramp, base = ("sun", 4) if built else ("dusk", 4)
+            x0, y0 = gx + (i - 2) * 9, 112
+            steps = 60
+            for t in range(steps + 1):
+                u = t / steps
+                cx = (1 - u) ** 2 * x0 + 2 * (1 - u) * u * (x0 + (sx - x0) * 0.1) + u * u * sx
+                cy = (1 - u) ** 2 * y0 + 2 * (1 - u) * u * (sy + 20) + u * u * (sy + 6)
+                shade = base if not built else (4 if (t // 3) % 3 == 0 else 3)
+                cv.dot(cx, cy, ramp, shade, w=2, h=1)
+                if not built:
+                    cv.dot(cx, cy + 1, "dusk", 3)
+            for t in range(24):  # lead from socket to node zero
+                u = t / 23
+                lx = sx + (gx + (i - 2) * 4 - sx) * u
+                ly = sy - 6 + (box_y + 18 - (sy - 6)) * u
+                cv.dot(lx, ly, "sun" if built else "dusk", 3 if built else 3)
+            # socket housing
+            glyph, gr = STAGES[i]
+            cv.dot(sx - 7, sy - 7, "dusk", 4, w=15, h=15)
+            cv.dot(sx - 6, sy - 6, "dusk", 1, w=13, h=13)
+            for j, row in enumerate(GLYPHS[glyph]):
+                for k, ch in enumerate(row):
+                    if ch == "#":
+                        cv.dot(sx - 3 + k, sy - 3 + j, gr if built else "dusk", 4 if built else 3)
+            if built:
+                halo = (np.abs(np.hypot(x - sx, y - sy) - 10) < 0.7)
+                cv.fill(halo, np.full(halo.shape, 0.7), gr, dither=0.6)
+        frames.append(cv.img[:H, :W].copy())
+    im = Image.fromarray(np.concatenate(frames, axis=0), "RGBA")
+    im.save(OUT / "end-build.png", optimize=True)
+    im.save(OUT / "end-build.webp", lossless=True, quality=100, method=6)
+    print("  end-build", im.size)
+
+
+def lamps():
+    CW, CH = 24, 40
+    ramps = ("lime", "tcyan", "orange", "amber", "you")
+    sheet = np.zeros((CH * 2, CW * 5, 4), np.uint8)
+    for row in range(2):
+        for i, ramp in enumerate(ramps):
+            cv = Canvas(48)
+            on = row == 1
+            cx = 12
+            if on:
+                glow = np.clip(1 - np.hypot(cv.x - cx, cv.y - 13) / 13, 0, 1) ** 1.4
+                cv.fill(glow > 0.05, glow * 0.55, ramp, dither=1.0)
+            cv.dot(cx - 7, 2, "dusk", 4, w=15, h=24)  # housing
+            cv.dot(cx - 6, 3, "dusk", 2, w=13, h=22)
+            cv.dot(cx - 5, 5, ramp, 3 if on else 0, w=11, h=11)  # lens
+            cv.dot(cx - 3, 7, ramp, 4 if on else 1, w=7, h=7)
+            if on:
+                cv.dot(cx - 1, 8, "you", 4, w=2, h=2)
+            cv.dot(cx - 5, 18, ramp, 2 if on else 0, w=11, h=3)  # name plate
+            cv.dot(cx - 1, 26, "dusk", 3, w=3, h=10)  # stem
+            for d in range(4):
+                cv.dot(cx, 27 + d * 3, ramp, 3 if on else 0)
+            cv.dot(cx - 6, 36, "dusk", 4, w=13, h=3)  # foot
+            sheet[row * CH:(row + 1) * CH, i * CW:(i + 1) * CW] = cv.img[:CH, :CW]
+    im = Image.fromarray(sheet, "RGBA")
+    im.save(OUT / "end-lamps.png", optimize=True)
+    im.save(OUT / "end-lamps.webp", lossless=True, quality=100, method=6)
+    print("  end-lamps", im.size)
+
+
 if __name__ == "__main__":
     scene()
+    build()
+    lamps()

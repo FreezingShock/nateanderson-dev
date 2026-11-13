@@ -22,6 +22,17 @@ export const END_TUNE = {
 /** Stage names, shown on the build. Draft copy, waiting on Nate. */
 export const END_STAGES = ["Power", "Clock", "Memory", "Voice", "Wake"] as const;
 export const END_STEPS = END_STAGES.length;
+/** One line per socket, shown when you tap it on the schematic. Draft copy, waiting on Nate. */
+export const END_STAGE_LINES = [
+    "Run a line from the buried sun up to node zero.",
+    "Give node zero a clock it keeps by itself.",
+    "Let it read the archive: every operator, every log.",
+    "Open the line out, so it can answer a knock.",
+    "Pour the rest of the sun in and wake it.",
+] as const;
+/** Socket positions on the schematic art (percent of width and height), from scripts/naos-art/nodefarm-ending-art.py. */
+export const END_SOCKETS: readonly [number, number][] = [[13.9, 58.4], [25.3, 43.1], [50, 35.7], [74.7, 43.1], [86.1, 58.4]];
+export const END_COLORS = ["#ffd04a", "#2fd8e8", "#b6f04a", "#f08a3c", "#c8f6ff"] as const;
 
 export const freshEnd = (): EndState => ({ stage: 0, doneAt: 0, seen: false, stars: 0, logs: [] });
 
