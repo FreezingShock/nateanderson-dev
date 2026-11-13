@@ -28,7 +28,6 @@ export const PLACEHOLDER_TREE: RecipeTree = {
         { item: "ore-b", baseRatePerMin: 30 },
     ],
     research: [],
-    structures: [],
     milestones: [],
     prestige: { name: "Open a new workshop", keeps: ["blueprints", "research", "routes"], resets: ["machines", "stock"] },
 };
