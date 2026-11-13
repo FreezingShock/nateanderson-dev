@@ -31,7 +31,8 @@ for (const f of readdirSync(dir).filter((x) => x.endsWith(".json")).sort()) {
     // tree nodes that no longer exist are refunded in AP (checked above); everything else must still be there
     for (const k of ["ach", "logs", "tree", "mounts", "armed"]) for (const id of old[k] ?? []) if (!a[k].includes(id) && !(k === "tree" && !E.TREE.some((n) => n.id === id))) fail(f, `${k} lost ${id}`);
     for (const k of Object.keys(old.prod ?? {})) if (a.prod[k] !== old.prod[k]) fail(f, `prod.${k} changed`);
-    for (const k of Object.keys(old.perks ?? {})) if (a.perks[k] !== old.perks[k]) fail(f, `perks.${k} changed ${old.perks[k]} -> ${a.perks[k]}`);
+    // the Autoloader perk ("auto") was removed 2026-11-12 and refunded in AP
+    for (const k of Object.keys(old.perks ?? {})) if (k !== "auto" && a.perks[k] !== old.perks[k]) fail(f, `perks.${k} changed ${old.perks[k]} -> ${a.perks[k]}`);
     for (const k of Object.keys(old.bought ?? {})) if (JSON.stringify(a.bought[k]) !== JSON.stringify(old.bought[k])) fail(f, `bought.${k} changed`);
     if (a.started !== old.started) fail(f, "started changed");
     if (old.lab) { for (const id of old.lab.nodes ?? []) if (!a.lab.nodes.includes(id)) fail(f, `lab lost ${id}`); if (a.lab.intel !== old.lab.intel) fail(f, "lab intel changed"); }

@@ -1,0 +1,158 @@
+/* Node Farm next step console (components/nodefarm/guide.tsx GuideStrip, art from scripts/naos-art/nodefarm-next-art.py).
+   --c is the colour of the kind of step (growth lime, reboot magenta, tree violet, lab blue...), set inline on the panel;
+   each readout cell carries its own --c. Sharp panel, corner brackets, plain data lines: no pills, no tabs. */
+
+.ctos .nf-guide.nf-nx {
+    --br: var(--c);
+    grid-template-columns: minmax(0, 1fr);
+    gap: 14px 22px;
+    padding: 14px 16px;
+    border-color: color-mix(in srgb, var(--c) 38%, #1c1c1c);
+    background-color: #0a0c0d;
+    transition: border-color .4s;
+}
+.ctos .nf-nx::before { background: repeating-conic-gradient(var(--c) 0 25%, transparent 0 50%) 0 0 / 4px 4px; }
+.ctos .nf-nx .nf-gd-k { color: var(--c); }
+
+/* ---- the plate: an animated scene for the kind of step, 4 frames */
+.ctos .nf-nx-plate {
+    --w: 80px; --h: 56px;
+    position: relative; flex: none; width: var(--w); height: var(--h);
+    background: url(/naos/nodefarm/next-plates.webp?v=f4275ffd) 0 calc(var(--p) * var(--h) * -1) / calc(var(--w) * 4) calc(var(--h) * 11) no-repeat;
+    image-rendering: pixelated;
+    border: 1px solid color-mix(in srgb, var(--c) 45%, #1c1c1c);
+    box-shadow: 0 0 0 3px #050606, 0 0 24px -6px color-mix(in srgb, var(--c) 50%, transparent);
+    animation: nfNxPlate 1.1s steps(4) infinite;
+}
+@keyframes nfNxPlate { to { background-position-x: calc(var(--w) * -4); } }
+.ctos .nf-nx-plate::after { content: ""; position: absolute; inset: 0; pointer-events: none; background: repeating-linear-gradient(180deg, #0000 0 2px, #0006 2px 3px); }
+.ctos .nf-nx-stat { position: absolute; right: -6px; bottom: -6px; z-index: 1; display: grid; place-items: center; width: 26px; height: 26px; background: #070809; border: 1px solid color-mix(in srgb, var(--c) 55%, #1c1c1c); }
+.ctos .nf-nx-stat .nf-ic { zoom: .75; }
+.ctos .nf-nx-tag { display: none; }
+
+/* ---- text */
+.ctos .nf-nx .nf-gd-text { align-content: center; }
+.ctos .nf-nx .nf-gd-t { overflow-wrap: anywhere; }
+
+/* ---- meter: big readout + percent, bar, and two plain data lines (eta, rate) */
+.ctos .nf-nx .nf-gd-bar { --c: inherit; height: 12px; }
+.ctos .nf-nx-mh { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; font-family: var(--cm-mono); font-variant-numeric: tabular-nums; }
+.ctos .nf-nx-mh b { font: 700 var(--cm-ctos-t-ui)/1.2 var(--cm-mono); color: var(--cm-fg); overflow-wrap: anywhere; }
+.ctos .nf-nx-mh span { font: 700 var(--cm-ctos-t-micro)/1 var(--cm-mono); letter-spacing: .08em; color: var(--c); text-transform: uppercase; }
+.ctos .nf-nx-dl { margin: 0; display: grid; gap: 3px; }
+.ctos .nf-nx-dl > div { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 8px; }
+.ctos .nf-nx-dl > div::after { content: none; }
+.ctos .nf-nx-dl dt { display: inline-flex; align-items: center; gap: 6px; font: 600 var(--cm-ctos-t-micro)/1 var(--cm-mono); letter-spacing: .1em; text-transform: uppercase; color: var(--cm-ctos-meta); }
+.ctos .nf-nx-dl dt::after { content: ""; display: block; }
+.ctos .nf-nx-dl dd { grid-column: 3; margin: 0; font: 600 var(--cm-ctos-t-micro)/1.3 var(--cm-mono); color: var(--cm-fg); font-variant-numeric: tabular-nums; text-align: right; }
+/* the dotted leader between label and value, like the windows' data lines */
+.ctos .nf-nx-dl > div { background: radial-gradient(circle, #ffffff2e .8px, transparent 1.2px) 0 55% / 5px 5px repeat-x; }
+.ctos .nf-nx-dl dt, .ctos .nf-nx-dl dd { background: #0a0c0d; padding-right: 6px; }
+.ctos .nf-nx-dl dd { padding: 0 0 0 6px; }
+.ctos .nf-nx-dl .nf-nx-i { --s: 12px; }
+
+/* ---- icons: 24 px pixel art (scripts/naos-art/nodefarm-next-art.py), shown at 24 or a crisp 12 */
+.ctos .nf-nx-i { --s: 24px; display: inline-block; flex: none; width: var(--s); height: var(--s); background: url(/naos/nodefarm/next-icons.webp?v=62622631) calc(var(--i) * var(--s) * -1) 0 / calc(var(--s) * 13) var(--s) no-repeat; image-rendering: pixelated; vertical-align: middle; }
+
+/* ---- actions: the big button does the step (or takes you there), then Find / Map / fold */
+.ctos .nf-nx .nf-gd-act { display: grid; gap: 8px; align-content: center; }
+.ctos .nf-nx .nf-gd-go { position: relative; justify-content: flex-start; gap: 12px; min-height: 52px; padding: 8px 18px 8px 12px; background: var(--c); border-color: var(--c); color: #0a0a0a; text-align: left; overflow: hidden; }
+.ctos .nf-nx .nf-gd-go > span { display: grid; gap: 3px; }
+.ctos .nf-nx .nf-gd-go b { font: 700 var(--cm-ctos-t-ui)/1 var(--cm-mono); letter-spacing: .1em; text-transform: uppercase; }
+.ctos .nf-nx .nf-gd-go small { font: 600 var(--cm-ctos-t-micro)/1 var(--cm-mono); letter-spacing: .04em; text-transform: none; opacity: .75; }
+.ctos .nf-nx .nf-gd-go .nf-nx-i { background-color: #0a0a0a; box-shadow: 0 0 0 3px #0a0a0a; }
+/* a dither sheen sweeps the button when it can do the step right now */
+.ctos .nf-nx .nf-gd-go[data-kind="do"]::after { content: ""; position: absolute; top: 0; bottom: 0; left: -40%; width: 40%; pointer-events: none; background: repeating-conic-gradient(#fff6 0 25%, transparent 0 50%) 0 0 / 4px 4px; -webkit-mask-image: linear-gradient(90deg, transparent, #000, transparent); mask-image: linear-gradient(90deg, transparent, #000, transparent); animation: nfNxSheen 2.4s ease-in-out infinite; }
+@keyframes nfNxSheen { 0%, 40% { transform: translateX(0); } 100% { transform: translateX(360%); } }
+.ctos .nf-nx-sec { display: flex; gap: 8px; }
+.ctos .nf-nx-sec .nf-gd-map { flex: 1; min-height: 36px; padding: 0 10px; gap: 6px; }
+.ctos .nf-nx-sec .nf-gd-map .nf-nx-i { --s: 12px; }
+.ctos .nf-nx-sec .nf-nx-fold { flex: none; width: 36px; padding: 0; font-size: 15px; }
+.ctos .nf-nx .nf-gd-map[aria-pressed="true"] { border-color: var(--c); color: var(--c); }
+@media (hover: hover) {
+    .ctos .nf-nx .nf-gd-go:hover { background: var(--cm-fg); border-color: var(--cm-fg); }
+}
+.ctos .nf-nx .nf-gd-go:focus-visible, .ctos .nf-nx .nf-gd-map:focus-visible { outline-color: var(--c); }
+
+/* ---- live readouts: one cell per system, each a jump to where it lives; locked ones stay dim and say what opens them */
+.ctos .nf-nx-cells { grid-column: 1 / -1; list-style: none; margin: 0; padding: 12px 0 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; border-top: 1px dashed #ffffff1c; }
+.ctos .nf-nx-cell {
+    position: relative; width: 100%; height: 100%; display: grid; grid-template-columns: auto minmax(0, 1fr); grid-template-rows: auto auto auto auto; column-gap: 9px; row-gap: 2px; align-items: center;
+    padding: 9px 10px 11px; text-align: left; cursor: pointer; color: var(--cm-fg);
+    background: linear-gradient(90deg, color-mix(in srgb, var(--c) 9%, #0a0b0c), #0a0b0c 70%);
+    border: 1px solid #ffffff14; border-left: 2px solid color-mix(in srgb, var(--c) 70%, #000);
+    font: inherit;
+}
+.ctos .nf-nx-cell > .nf-nx-i { grid-row: 1 / 3; align-self: start; }
+.ctos .nf-nx-cl { font: 700 var(--cm-ctos-t-micro)/1 var(--cm-mono); letter-spacing: .12em; text-transform: uppercase; color: color-mix(in srgb, var(--c) 80%, #fff); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ctos .nf-nx-cl em { font-style: normal; color: var(--c); animation: nfNxBlink 1.2s steps(2) infinite; }
+@keyframes nfNxBlink { 50% { opacity: .35; } }
+.ctos .nf-nx-cell b { font: 700 var(--cm-ctos-t-ui)/1.15 var(--cm-mono); font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.ctos .nf-nx-cell small { grid-column: 1 / -1; font: 500 var(--cm-ctos-t-micro)/1.35 var(--cm-mono); color: var(--cm-ctos-meta); font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.ctos .nf-nx-cell > i { grid-column: 1 / -1; display: block; height: 3px; margin-top: 5px; background: #ffffff10; }
+.ctos .nf-nx-cell > i > i { display: block; height: 100%; background: repeating-linear-gradient(90deg, var(--c) 0 4px, transparent 4px 5px); transition: width .25s linear; }
+.ctos .nf-nx-cell[data-state="ready"] { border-color: color-mix(in srgb, var(--c) 45%, #1c1c1c); border-left-color: var(--c); box-shadow: inset 0 0 18px -8px var(--c); }
+.ctos .nf-nx-cell[data-state="locked"] { cursor: default; opacity: .55; background: repeating-linear-gradient(135deg, #0a0b0c 0 5px, #0d0f10 5px 10px); border-left-color: #2a2f33; }
+.ctos .nf-nx-cell[data-state="locked"] .nf-nx-cl { color: var(--cm-ctos-meta); }
+.ctos .nf-nx-cell:disabled:not([data-state="locked"]) { cursor: default; }
+@media (hover: hover) {
+    .ctos .nf-nx-cell:not(:disabled):hover { border-color: color-mix(in srgb, var(--c) 60%, #1c1c1c); background: linear-gradient(90deg, color-mix(in srgb, var(--c) 18%, #0a0b0c), #0a0b0c 80%); }
+}
+.ctos .nf-nx-cell:focus-visible { outline: 2px solid var(--c); outline-offset: 2px; }
+
+/* ---- phone: plate beside the kicker and title, then everything stacks */
+@media (max-width: 559px) {
+    .ctos .nf-guide.nf-nx { grid-template-columns: auto minmax(0, 1fr); padding: 12px 12px 12px 14px; gap: 12px 14px; }
+    .ctos .nf-nx .nf-gd-text { display: contents; }
+    .ctos .nf-nx-plate { grid-row: 1 / 3; align-self: start; }
+    .ctos .nf-nx .nf-gd-k { grid-column: 2; align-self: end; }
+    .ctos .nf-nx .nf-gd-t { grid-column: 2; align-self: start; font-size: 19px; }
+    .ctos .nf-nx .nf-gd-why, .ctos .nf-nx .nf-gd-meter, .ctos .nf-nx .nf-gd-act { grid-column: 1 / -1; }
+    .ctos .nf-nx .nf-gd-why { margin-top: -2px; }
+    .ctos .nf-nx-sec .nf-gd-map:not(.nf-nx-fold) { padding: 0 12px; }
+    .ctos .nf-nx-sec { gap: 6px; }
+    .ctos .nf-nx-cells { gap: 5px; padding-top: 10px; }
+    .ctos .nf-nx-cell { padding: 7px 8px 8px; column-gap: 7px; }
+    .ctos .nf-nx-cell > .nf-nx-i { --s: 12px; grid-row: 1; }
+    .ctos .nf-nx-cell b { grid-column: 1 / -1; font-size: 13px; }
+    .ctos .nf-nx-cl { letter-spacing: .08em; }
+    .ctos .nf-nx-cl em { display: none; }
+}
+
+/* ---- tablet: plate + text on top, meter and actions side by side, readouts three across */
+@media (min-width: 560px) {
+    .ctos .nf-guide.nf-nx { grid-template-columns: auto minmax(0, 1fr) minmax(0, 1fr); }
+    .ctos .nf-nx-plate { --w: 160px; --h: 112px; grid-row: 1 / 3; }
+    .ctos .nf-nx-tag { display: block; position: absolute; left: 6px; top: 5px; z-index: 1; font: 700 10px/1 var(--cm-mono); letter-spacing: .14em; text-transform: uppercase; color: var(--c); text-shadow: 0 1px 0 #000, 0 0 6px #000; }
+    .ctos .nf-nx-stat { width: 40px; height: 40px; }
+    .ctos .nf-nx-stat .nf-ic { zoom: 1; }
+    .ctos .nf-nx .nf-gd-text { grid-column: 2 / -1; }
+    .ctos .nf-nx .nf-gd-meter { grid-column: 2; }
+    .ctos .nf-nx .nf-gd-act { grid-column: 3; }
+    .ctos .nf-nx-cells { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+
+/* ---- desktop: one row (plate, text, meter, actions), readouts six across underneath */
+@media (min-width: 1100px) {
+    .ctos .nf-guide.nf-nx { grid-template-columns: auto minmax(0, 1.35fr) minmax(240px, 1fr) minmax(210px, auto); align-items: center; padding: 16px 18px 14px 22px; }
+    .ctos .nf-nx-plate { grid-row: auto; }
+    .ctos .nf-nx .nf-gd-text, .ctos .nf-nx .nf-gd-meter, .ctos .nf-nx .nf-gd-act { grid-column: auto; }
+    .ctos .nf-nx-cells { grid-template-columns: repeat(6, minmax(0, 1fr)); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .ctos .nf-nx-plate, .ctos .nf-nx .nf-gd-go::after, .ctos .nf-nx-cl em { animation: none !important; }
+}
+
+/* ---- also ready: other things the player can do right now, one plain line each under the main step */
+.ctos .nf-nx-also { grid-column: 1 / -1; list-style: none; margin: 0; padding: 8px 0 0; display: flex; flex-wrap: wrap; gap: 4px 22px; border-top: 1px dashed color-mix(in srgb, var(--c) 30%, #1c1c1c); }
+.ctos .nf-nx-also button { all: unset; cursor: pointer; font: 600 var(--cm-ctos-t-micro)/1.4 var(--cm-mono); color: var(--cm-fg); }
+.ctos .nf-nx-also button span { color: var(--c); }
+.ctos .nf-nx-also button:hover, .ctos .nf-nx-also button:focus-visible { color: var(--c); text-decoration: underline; text-underline-offset: 3px; }
+.ctos .nf-nx-also button:focus-visible { outline: 1px solid var(--c); outline-offset: 2px; }
+/* Touch: the also-ready links and the Map and Hide buttons were 15 to 36px tall. Give them a real finger target. */
+@media (hover: none) {
+    .ctos .nf-nx-also button { display: inline-flex; align-items: center; min-height: 40px; }
+    .ctos .nf-nx-sec .nf-gd-map { min-height: 44px; }
+    .ctos .nf-nx-sec .nf-nx-fold { width: 44px; }
+}

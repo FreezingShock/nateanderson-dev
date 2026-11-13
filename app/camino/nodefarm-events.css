@@ -1,4 +1,4 @@
-/* Node Farm quick-time events (components/nodefarm/events.tsx). The layer is portaled to <body> inside `.ctos.nf-ev-host`,
+/* Node Farm event cards: Rogue process and Cold storage bodies (components/nodefarm/zone-event.tsx), plus shared bits used by the mini HUD. Portaled to <body> inside `.ctos.nf-ev-host`,
    so every rule is scoped `.ctos .nf-ev*`. Each card takes its event's colour as `--k` (the rarity colour on a loot result).
    Sharp ctOS panel: no rounding, corner brackets, square-pixel dither art, chunky pressed buttons. */
 @keyframes nfEvScrim { from { opacity: 0; } }
@@ -54,23 +54,6 @@
 .ctos .nf-ev-bar { height: 10px; background: #111; border: 1px solid var(--nf-line); overflow: hidden; }
 .ctos .nf-ev-bar i { display: block; height: 100%; transform-origin: left; background: repeating-linear-gradient(90deg, var(--k) 0 6px, transparent 6px 8px); transition: transform .12s linear; }
 
-/* Traffic spike: docked strip just above the site dock while live; the board (and the phone tabs at the top) stay usable */
-.ctos .nf-ev-scrim[data-docked] { place-items: end center; padding-bottom: calc(92px + env(safe-area-inset-bottom)); background: none; pointer-events: none; }
-.ctos .nf-ev-scrim[data-docked] .nf-ev { pointer-events: auto; width: min(94vw, 620px); gap: 8px; padding: 12px 14px 10px; border-left: 4px solid var(--k); animation: nfEvDock .2s steps(4, end) both; }
-.ctos .nf-ev-spike { grid-template-columns: auto minmax(0, 1fr) auto auto; align-items: center; gap: 12px; }
-.ctos .nf-ev-spike-t { display: grid; gap: 6px; min-width: 0; }
-.ctos .nf-ev-spike-t small { font: 600 var(--cm-ctos-t-micro)/1.2 var(--cm-mono); letter-spacing: .12em; text-transform: uppercase; color: var(--k); }
-.ctos .nf-ev-count { font: 700 20px/1 var(--cm-mono); color: #fff; font-variant-numeric: tabular-nums; }
-@media (max-width: 520px) {
-    .ctos .nf-ev-scrim[data-docked] { padding: 0 8px calc(80px + env(safe-area-inset-bottom)); }
-    .ctos .nf-ev-scrim[data-docked] .nf-ev { gap: 6px; padding: 8px 10px 8px; box-shadow: 0 0 0 3px #000, 0 12px 40px #000; }
-    .ctos .nf-ev-scrim[data-docked] .nf-ev-top { font-size: 10.5px; }
-    .ctos .nf-ev-spike { grid-template-columns: auto minmax(0, 1fr) auto auto; gap: 8px; }
-    .ctos .nf-ev-spike-t small { font-size: 10.5px; letter-spacing: .08em; }
-    .ctos .nf-ev-count { font-size: 16px; }
-    .ctos .nf-ev-spike .nf-ev-mini { min-height: 36px; padding: 0 8px; font-size: 11px; }
-}
-
 /* Rogue process: three shown outcomes */
 .ctos .nf-ev-opts { display: grid; gap: 8px; }
 .ctos .nf-ev-opt { display: grid; grid-template-columns: 32px minmax(0, 1fr); gap: 12px; align-items: center; min-height: 64px; padding: 10px 12px; text-align: left; background: #101010; border: 1px solid #2a2a2a; border-left: 3px solid var(--c); color: var(--cm-fg); cursor: pointer; }
@@ -86,22 +69,6 @@
 .ctos .nf-ev-vault span[data-cur] { color: color-mix(in srgb, var(--k) 55%, #34454b); }
 @media (max-width: 400px) { .ctos .nf-ev-vault { font-size: 12px; } }
 
-/* Relay cascade */
-.ctos .nf-ev-relays { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; }
-.ctos .nf-ev-relays button { position: relative; height: 104px; padding: 0 0 10px; display: grid; align-content: end; justify-items: center; background: #101010; border: 2px solid #2a2a2a; border-bottom-width: 5px; color: var(--cm-ctos-meta); font: 700 11px/1 var(--cm-mono); letter-spacing: .1em; text-transform: uppercase; overflow: hidden; cursor: default; }
-.ctos .nf-ev-relays button i { position: absolute; left: 5px; right: 5px; bottom: 26px; top: 6px; transform-origin: bottom; transform: scaleY(0); background: repeating-linear-gradient(0deg, var(--k) 0 5px, transparent 5px 7px); }
-.ctos .nf-ev-relays button span { position: relative; }
-.ctos .nf-ev-relays button[data-st="charge"] i { animation: nfEvFill linear forwards; }
-.ctos .nf-ev-relays button[data-st="full"] { border-color: var(--k); color: #fff; cursor: pointer; animation: nfEvPulse .9s steps(6) infinite; }
-.ctos .nf-ev-relays button[data-st="full"] i { transform: none; }
-.ctos .nf-ev-relays button[data-st="full"]:active { transform: translateY(3px); border-bottom-width: 2px; }
-.ctos .nf-ev-relays button[data-st="done"] { color: var(--k); border-color: #333; }
-.ctos .nf-ev-relays button:disabled { opacity: 1; }
-
-/* Dead packet */
-.ctos .nf-ev-crate[data-shake] { animation: nfEvShake .22s steps(5) both; }
-.ctos .nf-ev-crate[data-open] .nf-ev-art { filter: brightness(1.3); }
-
 /* loot result */
 .ctos .nf-ev-loot { display: grid; grid-template-columns: 64px minmax(0, 1fr); gap: 16px; align-items: center; padding: 14px; background: color-mix(in srgb, var(--c) 8%, #0b0b0b); border: 1px solid var(--c); border-top-width: 3px; }
 .ctos .nf-ev-loot-ic { display: grid; place-items: center; animation: nfEvPop .32s steps(6) both; }
@@ -114,8 +81,7 @@
 .ctos .nf-ev .nf-ic.l { --s: 64px; }
 
 @media (prefers-reduced-motion: reduce) {
-    .ctos .nf-ev-scrim, .ctos .nf-ev, .ctos .nf-ev-crate, .ctos .nf-ev-loot-ic, .ctos .nf-ev-relays button { animation: none !important; }
+    .ctos .nf-ev-scrim, .ctos .nf-ev, .ctos .nf-ev-loot-ic { animation: none !important; }
     .ctos .nf-ev-wait i, .ctos .nf-ev-clock i { animation-duration: 0s !important; }
-    .ctos .nf-ev-relays button[data-st="charge"] i { transform: scaleY(.5); }
 }
-@media (max-height: 600px) { .ctos .nf-ev { gap: 10px; padding: 16px 16px 12px; } .ctos .nf-ev-name { font-size: 18px; } .ctos .nf-ev-relays button { height: 80px; } }
+@media (max-height: 600px) { .ctos .nf-ev { gap: 10px; padding: 16px 16px 12px; } .ctos .nf-ev-name { font-size: 18px; } }

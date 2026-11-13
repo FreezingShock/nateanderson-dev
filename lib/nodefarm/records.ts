@@ -55,7 +55,7 @@ export function recordSections(s: State): RecordSection[] {
         ["Reboots ever", fmt(s.life.reboots)],
         ["Ascensions", String(s.life.ascends)],
         ["AP earned", String(s.life.apTotal)],
-        ["Quick-time events won", String(s.life.intrusions)],
+        ["Zone events won", String(s.life.intrusions)],
         ["Standby filled", `${s.life.capped} time${s.life.capped === 1 ? "" : "s"}`],
     ];
     const mats: [string, string][] = MATS.filter((m) => s[m] > 0 || s.prod[m] > 0).map((m) => [statDef(m).name, `${fmt(s[m])} · ${fmt(s.prod[m])} nodes · +${fmt(d.rates[m])}/s`]);

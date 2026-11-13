@@ -17,7 +17,6 @@ const order = [...E.MATS].reverse().concat("mult");
 for (const def of ST.TESTS) {
     if (only.length && !only.includes(def.id)) continue;
     const s = E.parseSave(readFileSync(file, "utf8"));
-    s.armed = ["mult", ...E.MATS];
     const before = JSON.stringify({ ...s, ch: undefined });
     if (!ST.startTest(s, def.id)) { console.log(def.id, "did not start"); continue; }
     const marks = [];

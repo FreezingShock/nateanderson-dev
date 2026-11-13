@@ -54,33 +54,10 @@
 
 /* ---- phosphor backdrop */
 .nf-fbd { position: absolute; inset: 0; z-index: 0; overflow: hidden; pointer-events: none; contain: strict; background: radial-gradient(ellipse at 50% 46%, #0b4a22 0, #052a12 42%, #010a04 100%); }
-.nf-fbd-g { position: absolute; inset: 0; will-change: background-position; }
-.nf-fbd-g[data-l="0"] { background-image: url(/naos/nodefarm/fw-bg-0.webp?v=9acc7861); image-rendering: pixelated; opacity: .62; }
-.nf-fbd-g[data-l="1"] { background-image: linear-gradient(#3dff6e10 1px, transparent 1px), linear-gradient(90deg, #3dff6e10 1px, transparent 1px); opacity: .9; }
-.nf-fbd-g[data-l="2"] { background-image: linear-gradient(#3dff6e22 1px, transparent 1px), linear-gradient(90deg, #3dff6e22 1px, transparent 1px); }
-.nf-fbd-g[data-l="3"] { background-image: url(/naos/nodefarm/fw-bg-2.webp?v=fa655e51); image-rendering: pixelated; opacity: .8; animation: nfFbdSway 14s ease-in-out infinite alternate; }
-/* the world grid: dotted crosses at every half unit, glued to the nodes */
-.nf-fbd-g[data-l="4"] { background-image: radial-gradient(circle, #b6ffc866 0 1.5px, transparent 2px); opacity: .7; }
-.nf-fbd-w { position: absolute; left: 0; top: 0; width: 0; height: 0; transform-origin: 0 0; will-change: transform; }
-.nf-fbd-w i { position: absolute; display: block; translate: -50% -50%; border-radius: 50%; }
-.nf-fbd-core { width: 1152px; height: 1152px; background: url(/naos/nodefarm/fw-core.webp?v=35397844) center / 100% 100% no-repeat; image-rendering: pixelated; animation: nfFbdPulse 6s ease-in-out infinite; }
-.nf-fbd-sec { width: 1536px; height: 1536px; background: center / 100% 100% no-repeat; image-rendering: pixelated; opacity: .5; transition: opacity .5s; }
-.nf-fbd-sec[data-sec="boot"] { background-image: url(/naos/nodefarm/fw-sec-boot.webp?v=b2ab2878); }
-.nf-fbd-sec[data-sec="memory"] { background-image: url(/naos/nodefarm/fw-sec-memory.webp?v=938deae0); }
-.nf-fbd-sec[data-sec="relay"] { background-image: url(/naos/nodefarm/fw-sec-relay.webp?v=23d16257); }
-.nf-fbd-sec[data-sec="field"] { background-image: url(/naos/nodefarm/fw-sec-field.webp?v=21781a76); }
-.nf-fbd[data-focus] .nf-fbd-sec { opacity: .3; }
-.nf-fbd[data-focus="boot"] .nf-fbd-sec[data-sec="boot"], .nf-fbd[data-focus="memory"] .nf-fbd-sec[data-sec="memory"], .nf-fbd[data-focus="relay"] .nf-fbd-sec[data-sec="relay"], .nf-fbd[data-focus="field"] .nf-fbd-sec[data-sec="field"] { opacity: 1; }
-/* drafting circles round the core, dashed like construction lines */
-.nf-fbd-ring { border: 2px dashed #3dff6e2e; border-radius: 50%; }
-.nf-fbd-ring[data-r="2"] { border-style: solid; border-width: 1px; border-color: #3dff6e1f; }
-.nf-fbd-ring[data-r="3"] { border-color: #3dff6e14; }
 .nf-fbd-scan { position: absolute; left: 0; right: 0; top: 0; height: 30%; display: block; background: linear-gradient(transparent, #3dff6e0d 70%, #b6ffc81a 99%, transparent); animation: nfFbdScan 9s linear infinite; }
 .nf-fbd-vig { position: absolute; inset: 0; display: block; background: radial-gradient(ellipse at center, transparent 55%, #000a03cc 100%), repeating-linear-gradient(0deg, transparent 0 3px, #00000018 3px 4px); }
-@keyframes nfFbdPulse { 0%, 100% { opacity: .8; } 50% { opacity: 1; } }
-@keyframes nfFbdSway { from { translate: -8px 0; } to { translate: 8px 6px; } }
 @keyframes nfFbdScan { from { translate: 0 -100%; } to { translate: 0 400%; } }
-@media (prefers-reduced-motion: reduce) { .nf-fbd-core, .nf-fbd-scan, .nf-fbd-g { animation: none; } .nf-fbd-scan { display: none; } }
+@media (prefers-reduced-motion: reduce) { .nf-fbd-scan { animation: none; display: none; } }
 
 /* ---- the Handover window */
 .ctos .nf-hx { --g: #3dff6e; --key: #ffc53a; display: grid; gap: 22px; }
