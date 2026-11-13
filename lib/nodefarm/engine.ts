@@ -1439,8 +1439,8 @@ export interface Goal {
     cur: (s: State) => number;
     target: number;
 }
-export const GOAL_TIERS = 12;
-export const TIER_NAMES = ["", "Access", "Operator", "Admin", "Root", "Kernel", "Deep", "Zero", "Source", "Bedrock", "Daemon", "Subsystem", "Firmware"];
+export const GOAL_TIERS = 13;
+export const TIER_NAMES = ["", "Access", "Operator", "Admin", "Root", "Kernel", "Deep", "Zero", "Source", "Bedrock", "Daemon", "Subsystem", "Firmware", "Undersun"];
 const G = (id: string, name: string, hint: string, tier: number, icon: Goal["icon"], target: number, cur: (s: State) => number): Goal => ({ id, name, hint, tier, icon, cur, target });
 const life = (k: keyof State["life"]) => (s: State) => s.life[k];
 export const GOALS: Goal[] = [
@@ -2910,9 +2910,22 @@ SECRETS.push(
     { id: "x_pid", name: "Process one", clue: "Find the process that started everything.", how: "Ran `nf ps` in the console." },
     { id: "x_top", name: "Load average", clue: "Ask what the node is busy with.", how: "Ran `nf top` in the console." },
     { id: "x_flash", name: "Write protected", clue: "Try to rewrite the firmware by hand.", how: "Ran `nf flash` in the console." },
+    { id: "x_sun", name: "Sunrise", clue: "Ask the node when the sun comes up.", how: "Ran `nf sun` in the console." },
+    { id: "x_nohup", name: "Nohup", clue: "Ask the node to keep going when you leave.", how: "Ran `nf nohup` in the console." },
+);
+
+// ---- Undersun (zones 26 to 29, after the ending): tier XIII, six goals. Pushed after the tier table above, so tier XII is untouched.
+const rigLevels = (s: State, ids: string[]) => ids.reduce((a, z) => a + (s.rig?.lv?.[z] ?? 0), 0);
+GOALS.push(
+    G("us1", "Bright side", "Gather your first Corona.", 13, "ascend", 1e-9, (s) => s.corona),
+    G("us2", "Charged", "Gather your first Plasma.", 13, "ascend", 1e-9, (s) => s.plasma),
+    G("us3", "Held", "Gather your first Lattice.", 13, "ascend", 1e-9, (s) => s.lattice),
+    G("us4", "Curtain", "Gather your first Radiance.", 13, "ascend", 1e-9, (s) => s.radiance),
+    G("us5", "Undersun rigs", "Reach 10 levels across the Corona, Plasma and Lattice rigs.", 13, "copper", 10, (s) => rigLevels(s, ["corona", "plasma", "lattice"])),
+    G("us6", "Hold the glow", "Hold 100 Radiance.", 13, "ascend", 100, (s) => s.radiance),
 );
 /** The twelve stage secrets (one per tier) count half, so they add +1% each rather than +2%. */
-export const STAGE_SECRET_IDS = ["x_help", "x_strict", "x_sysctl", "x_su", "x_dmesg", "x_tree", "x_urandom", "x_epoch", "x_dig", "x_pid", "x_top", "x_flash"];
+export const STAGE_SECRET_IDS = ["x_help", "x_strict", "x_sysctl", "x_su", "x_dmesg", "x_tree", "x_urandom", "x_epoch", "x_dig", "x_pid", "x_top", "x_flash", "x_sun", "x_nohup"];
 /** Goals and secrets, with the stage secrets at half weight. Every bonus that used to count s.ach.length uses this. */
 export function achPoints(s: State): number {
     let n = s.ach.length;

@@ -3,7 +3,7 @@
 // Terms follow the game: zones, Reboot, Ascend, Handover, events (every event is a zone event now; the ones on a
 // zone panel), Drone hangar, Standby window, payload (never "recipe"). Add an entry by appending to ENTRIES.
 import {
-    DRONE_TREE, DRONE_TUNE, FW, GOALS, GOAL_TIERS, HAND_TUNE, LAB, LAB_TUNE, MATS, PAYLOADS, PERKS, PROTOS, REBOOT_UNLOCK, SECRETS, STATS, TIERS, TREE, TUNE, ZE_TUNE,
+    DRONE_TREE, DRONE_TUNE, FW, GOALS, GOAL_TIERS, HAND_TUNE, TIER_NAMES, LAB, LAB_TUNE, MATS, PAYLOADS, PERKS, PROTOS, REBOOT_UNLOCK, SECRETS, STATS, TIERS, TREE, TUNE, ZE_TUNE,
     dronesOpen, handSeen, isUnlocked, labOpen, statDef, type State, type StatId,
 } from "../engine";
 import { ARCS, zoneNo } from "../zones/arcs";
@@ -124,6 +124,18 @@ export const ENTRIES: CodexEntry[] = [
         open: { win: "goals", label: "Open Goals" },
     },
     {
+        id: "tiers", group: "basics", title: "Goal tiers", gate: (s) => s.ach.length > 0, where: "key O",
+        body: (s) => [
+            { p: `A tier is finished when every goal in it is done. Each finished tier adds +${pct(TUNE.tierBonus)} on top of the goal bonus, and tiers stay finished through Ascend and Handover.` },
+            { rows: Array.from({ length: GOAL_TIERS }, (_, k) => k + 1).map((t): [string, string] => {
+                const gs = GOALS.filter((g) => g.tier === t);
+                const n = gs.filter((g) => s.ach.includes(g.id)).length;
+                return [`${t} ${TIER_NAMES[t]}`, `${n}/${gs.length}${n === gs.length ? "  done" : ""}`];
+            }) },
+        ],
+        open: { win: "goals", label: "Open Goals" },
+    },
+    {
         id: "records", group: "basics", title: "Records and operator logs", gate: () => true, where: "key L",
         body: () => [
             { p: "Records lists this run, your materials, lifetime totals and progress." },
@@ -183,6 +195,20 @@ export const ENTRIES: CodexEntry[] = [
             ];
         },
     },
+    {
+        id: "undersun", group: "zones", title: "Undersun", gate: (s) => isUnlocked(s, "corona"), where: "zones 26 to 29",
+        body: () => [
+            { p: "Undersun opens after the ending, past the last clamp on the sun. Four zones, each one paying the one before it: the rim, the plasma, the grid and the glow." },
+            { rows: [
+                [zone("corona"), `pays Sunstone, flares speed the farm`],
+                [zone("plasma"), `pays Corona`],
+                [zone("lattice"), `pays Plasma, keeps charge through Ascend`],
+                [zone("radiance"), `pays Lattice, lifts everything a little`],
+            ] },
+            { p: "Corona, Plasma and Lattice have rigs. Their levels add up to the Veil, which raises Radiance output. Tier XIII of the goals is all of Undersun." },
+        ],
+    },
+
     // ------------------------------------------------------------------ systems
     {
         id: "rigs", group: "systems", title: "Zone rigs", gate: (s) => isUnlocked(s, "silicon"), where: "inside each zone",

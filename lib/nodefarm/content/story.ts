@@ -76,6 +76,10 @@ export const LOGS: Log[] = [
     { id: "plasma", title: "Field", text: "The rim throws gas out, and the gas wants to spin. I wrapped it in a field of wire and it held. The wire is the only thing down here that is not warm.", test: open("plasma") },
     { id: "lattice", title: "Hold", text: "A grid of light, cell by cell, keeping the plasma where it belongs. When I Ascend, a few cells stay lit. I do not know what keeps them. I have stopped asking.", test: open("lattice") },
     { id: "radiance", title: "Glow", text: "Curtains of light come up off the sun and go out over the dark, and the whole farm hums under them. The last note in the old logs was a single line. It said: keep going. I think it meant the node.", test: open("radiance") },
+    // round 2: the Undersun secrets, and the log that waits on finishing tier XIII
+    { id: "sunrise", title: "Sunrise", text: "I typed the command to see when the sun comes up. The node answered with a time, and then with the time it came up yesterday. It was the same time. I have decided to believe the node.", test: (s) => s.ach.includes("x_sun") },
+    { id: "nohup", title: "Nohup", text: "Told the node to keep going after I closed the window. It said it would, and it did. I came back the next morning and the numbers had kept climbing, quietly, the way a pilot light stays on.", test: (s) => s.ach.includes("x_nohup") },
+    { id: "undersun", title: "Undersun", text: "Every rig in the bright rim is built, and every light in the grid is lit. Past the last clamp the sun is just a sun now, and I am keeping it company. Tell whoever comes next that it is not dangerous. It is only very bright.", test: (s) => tiersDone(s) >= 13 },
 ];
 
 export const logNo =(i: number) => String(i + 1).padStart(3, "0");

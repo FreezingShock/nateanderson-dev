@@ -19,6 +19,8 @@ const CONSOLE = [
     ["x_pid", ["ps"]],
     ["x_top", ["top"]],
     ["x_flash", ["flash"]],
+    ["x_sun", ["sun"]],
+    ["x_nohup", ["nohup"]],
 ];
 
 test("console secrets: each command unlocks its secret once, and the matching log comes back", () => {
@@ -38,9 +40,9 @@ test("secret names are unique (no duplicate Night shift or Long haul)", () => {
     assert.equal(new Set(names).size, names.length, names.join(", "));
 });
 
-test("the 12 new stage secrets are one per tier, and every tier has a log that waits on them", () => {
-    const newIds = E.SECRETS.filter((x) => /^x_(help|strict|sysctl|su|dmesg|tree|urandom|epoch|dig|pid|top|flash)$/.test(x.id)).map((x) => x.id);
-    assert.equal(newIds.length, 12);
+test("the 14 new stage secrets are one per tier, and every tier has a log that waits on them", () => {
+    const newIds = E.SECRETS.filter((x) => /^x_(help|strict|sysctl|su|dmesg|tree|urandom|epoch|dig|pid|top|flash|sun|nohup)$/.test(x.id)).map((x) => x.id);
+    assert.equal(newIds.length, 14);
     for (const id of newIds) {
         const s = E.fresh(0);
         s.ach.push(id);
