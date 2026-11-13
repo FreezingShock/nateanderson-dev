@@ -427,3 +427,13 @@ What each reset keeps and wipes is checked by `tests/nodefarm/resets.test.mjs` (
 - **Wipe save** replaces the save with a fresh one. **Import** and **restore** replace it, after a backup. Backups: Ascend, Handover, wipe, import, restore and stress test starts are `event` backups (newest 3).
 
 Dead stretch fix (balance round 4): after the Chrono gate moved to 2000 the mid-game replay found 15 h with no new zone between Voidsteel (8 h) and Chrono (23 h). The gates are now Starglass 800, Voidsteel 2500, Chrono 1000, which opens them at about 6 h, 12 h and 22 h (Drone bot; No-Drones 6, 15, 23), so the longest gap is about 10 h (7.5 h for the slow bot). A new opener inside the gap (a rig, feature or event) would still help; that is a content call for Nate.
+
+### Balance audit, round 5 (2026-11-13)
+
+Integration with #254 (two arc zones per Handover), #260 (Handover keeps), #264 (Scripts only, Drones post), #266 (one event system), caches and vent gone (#252). `NF_ASC_GAP=1`, `NF_HAND=6`, no events modelled:
+
+- Drone bot: first Ascend 2.5 h, Chrono 21.4 h, Origin 28.1 h, tree whole 32.4 h, Handovers 32.4, 36.4, 40.4, 44.4, 45.4, 49.4 h, Firmware 12/12 about 49 h.
+- No-Drones bot: 2.2 h, 22.7 h, 28.0 h, 32.5 h, Handovers 32.5 to 49.5 h, same cycles.
+- Cycles are now 4 h (one of 1 h), set by the hourly Ascend cap rather than by `apPerHand`, so that knob no longer moves them. Without the ending the game finishes near 50 h of bot time; END_TUNE (#229) is the tail to tune, not the Handover knobs.
+- Endgame Bytes from a bot save are path sensitive (posting one Drone tier alone swings an hour of Bytes 0.17x to 4.3x), so compare rates or lifetime at the same press count, not Bytes after N hours. Tick size 0.1 to 1 s agrees within 1% with Drones on.
+- sim.mjs had two `snap` definitions after two threads merged (syntax error); the second is now `snapOnce`.
