@@ -1025,7 +1025,7 @@ export function derive(s: State): Derived {
     const droneLv = s.drones.reduce((a, b) => a + b, 0);
     const ch = CH_HOOKS.muls?.(s);
     // a Brownout stress test runs without perks, unspent AP and the goal bonuses
-    const global = (ch?.bare ? 1 : (1 + s.perks.power * 0.15) * apGlobal(s) * (1 + s.ach.length * (TUNE.achBonus + tf.goals) * (1 + protoK(s, "tamsin"))) * (1 + tiersDone(s) * TUNE.tierBonus)) * (1 + tf.global) * handGlobal(s) * (ARC_HOOKS.cleared ? 1 + TUNE.arcBonus * ARC_HOOKS.cleared(s) : 1) * (ch?.global ?? 1)
+    const global = (ch?.bare ? 1 : (1 + s.perks.power * 0.15) * apGlobal(s) * (1 + achPoints(s) * (TUNE.achBonus + tf.goals) * (1 + protoK(s, "tamsin"))) * (1 + tiersDone(s) * TUNE.tierBonus)) * (1 + tf.global) * handGlobal(s) * (ARC_HOOKS.cleared ? 1 + TUNE.arcBonus * ARC_HOOKS.cleared(s) : 1) * (ch?.global ?? 1)
         * (1 + droneLv * tf.droneGlobal) * (1 + s.runWins * tf.winBoost) * boosts.chAll * singularityAll(s) * (s.overclock > 0 ? overclockMult(s) : 1) * lb.global
         * (tf.perNode ? 1 + tf.perNode * treeCount(s) : 1) * foundryAll(s) * sunstoneAll(s);
     const wren = protoK(s, "wren");
@@ -2846,3 +2846,11 @@ SECRETS.push(
     { id: "x_top", name: "Load average", clue: "Ask what the node is busy with.", how: "Ran `nf top` in the console." },
     { id: "x_flash", name: "Write protected", clue: "Try to rewrite the firmware by hand.", how: "Ran `nf flash` in the console." },
 );
+/** The twelve stage secrets (one per tier) count half, so they add +1% each rather than +2%. */
+export const STAGE_SECRET_IDS = ["x_help", "x_strict", "x_sysctl", "x_su", "x_dmesg", "x_tree", "x_urandom", "x_epoch", "x_dig", "x_pid", "x_top", "x_flash"];
+/** Goals and secrets, with the stage secrets at half weight. Every bonus that used to count s.ach.length uses this. */
+export function achPoints(s: State): number {
+    let n = s.ach.length;
+    for (const id of STAGE_SECRET_IDS) if (s.ach.includes(id)) n -= 0.5;
+    return n;
+}

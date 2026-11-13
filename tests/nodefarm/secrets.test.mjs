@@ -47,3 +47,13 @@ test("the 12 new stage secrets are one per tier, and every tier has a log that w
         assert.ok(LOGS.some((l) => l.test(s) && !l.test(E.fresh(0))), `${id} reveals a log`);
     }
 });
+
+test("bonus weight: a stage secret counts half a goal, every other goal or secret counts whole", async () => {
+    const { achPoints } = E;
+    const s = E.fresh(0);
+    assert.equal(achPoints(s), 0);
+    s.ach.push("tap10", "x_loop");
+    assert.equal(achPoints(s), 2);
+    s.ach.push("x_help", "x_flash");
+    assert.equal(achPoints(s), 3, "two stage secrets add 1 between them");
+});

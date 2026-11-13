@@ -4,7 +4,7 @@
 import { SCRIPTS, auto, isOn, learnPart, scriptNext, scriptOpen } from "./systems/scripts";
 import { OPERATORS, archiveOf, loadSeen, pickNews } from "./content/news";
 import {
-    GOALS, GOAL_TIERS, LAB, MATS, PAYLOADS, PERKS, SECRETS, TIER_NAMES, TREE, TREE_FULL, apOnAscend, intelRate, derive, fmt, fmtTime, goalDone, statDef, tiersDone, unlock,
+    GOALS, GOAL_TIERS, LAB, MATS, PAYLOADS, PERKS, SECRETS, TIER_NAMES, TREE, TREE_FULL, apOnAscend, intelRate, derive, fmt, fmtTime, goalDone, statDef, tiersDone, unlock, achPoints,
     FW, PROTOS, ROMAN, handSeen, keysOnHandover, protoDef, protoRank,
     type State,
 } from "./engine";
@@ -64,7 +64,7 @@ export function recordSections(s: State): RecordSection[] {
         ["Goals", `${c.goals} / ${c.goalTotal}`],
         ["Goal tiers", `${tiersDone(s)} / ${GOAL_TIERS}`],
         ["Secrets", `${c.secrets} / ${c.secretTotal}`],
-        ["Goal bonus", `+${pct(((1 + s.ach.length * 0.02) * (1 + tiersDone(s) * 0.08) - 1) * 100)}`],
+        ["Goal bonus", `+${pct(((1 + achPoints(s) * 0.02) * (1 + tiersDone(s) * 0.08) - 1) * 100)}`],
         ["Tree nodes", `${s.tree.length} / ${TREE_FULL}`],
         ["Perk levels", `${perkLv} / ${perkMax}`],
         ["AP unspent", String(s.ap)],

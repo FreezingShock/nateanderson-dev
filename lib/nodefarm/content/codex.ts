@@ -110,7 +110,7 @@ export const ENTRIES: CodexEntry[] = [
     {
         id: "goals", group: "basics", title: "Goals and secrets", gate: () => true, where: "key O",
         body: () => [
-            { p: `${GOAL_TIERS} tiers of goals, ${GOALS.length} in all. Each goal or secret gives +${pct(TUNE.achBonus)} to everything, and a finished tier gives +${pct(TUNE.tierBonus)}. They are kept through Ascend.` },
+            { p: `${GOAL_TIERS} tiers of goals, ${GOALS.length} in all. Each goal or secret gives +${pct(TUNE.achBonus)} to everything (the twelve stage secrets give half that), and a finished tier gives +${pct(TUNE.tierBonus)}. They are kept through Ascend.` },
             { p: "Secrets show as ???? with a clue. Some are found by playing a certain way and some by trying things in the console." },
         ],
         open: { win: "goals", label: "Open Goals" },
