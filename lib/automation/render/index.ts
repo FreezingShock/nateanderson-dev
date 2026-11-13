@@ -23,6 +23,13 @@ import { buildWater } from "./water";
 import { PixelDitherPass } from "./postfx";
 import { Lighting } from "./lighting";
 import { buildClouds } from "./clouds";
+import {
+    ModelRenderer,
+    type ModelCell,
+    type ObjectState,
+    type PlaceOptions,
+} from "./models";
+import type { VoxelModel, Rot as ModelRot } from "../models/format";
 import { FrameGovernor } from "./governor";
 
 export { heightAt, Stamper, VoxelGrid, TERRAIN_CELL, OBJECT_CELL };
@@ -84,6 +91,22 @@ export interface VoxelIsland {
     removeObject(id: string): void;
     /** Removes every voxel added with addObject, addGlow or the legacy stamp calls. */
     clearObjects(): void;
+    /**
+     * Places an animated voxel model under a stable id. It is removed by removeObject and clearObjects.
+     * Its footprint sits on opts.cell, one world unit per board cell.
+     */
+    placeModel(id: string, model: VoxelModel, opts: PlaceOptions): void;
+    /** Drives a placed model: working flag, its own clock in seconds, and charge 0..1. Unknown ids are ignored. */
+    setObjectState(id: string, state: ObjectState): void;
+    /** Shows a translucent placement preview. Green when valid, red when not. */
+    setGhost(
+        model: VoxelModel,
+        cell: ModelCell,
+        rot: ModelRot,
+        valid: boolean
+    ): void;
+    /** Hides the placement preview. */
+    clearGhost(): void;
     setDither(on: boolean): void;
     setPixelSize(px: number): void;
     setQuality(level: number | "auto"): void;
@@ -148,6 +171,7 @@ export function createVoxelIsland(
     const objectGrid = new VoxelGrid(OBJECT_CELL);
     const terrainMesher = new ChunkMesher(terrainGrid, blocks, blockMaterial);
     const objectMesher = new ChunkMesher(objectGrid, blocks, blockMaterial);
+    const models = new ModelRenderer(scene, heightAt);
     scene.add(terrainMesher.group, objectMesher.group);
 
     const { grassSites } = buildTerrain(terrainGrid, blocks);
@@ -315,6 +339,7 @@ export function createVoxelIsland(
         terrainMesher.update(preset.rebuildsPerFrame);
         objectMesher.update(preset.rebuildsPerFrame);
 
+        models.update();
         post.render(scene, camera);
         const info = renderer.info.render;
         drawCalls = info.calls;
@@ -358,11 +383,25 @@ export function createVoxelIsland(
             for (const [i, j, k] of rec.solid) objectGrid.set(i, j, k, 0);
             for (const [i, j, k] of rec.glow) glowGrid.set(i, j, k, 0);
             objectCells.delete(id);
+            models.remove(id);
             objectMesher.update();
             glowMesher.update();
         },
         clearObjects() {
             for (const id of [...objectCells.keys()]) this.removeObject(id);
+            models.clear();
+        },
+        placeModel(id, model, opts) {
+            models.place(id, model, opts);
+        },
+        setObjectState(id, state) {
+            models.setState(id, state);
+        },
+        setGhost(model, cell, rot, valid) {
+            models.setGhost(model, cell, rot, valid);
+        },
+        clearGhost() {
+            models.clearGhost();
         },
         setDither(on) {
             post.setDither(on);
@@ -435,6 +474,7 @@ export function createVoxelIsland(
             objectMesher.dispose();
             glowMesher.dispose();
             glowMaterial.dispose();
+            models.dispose();
             clouds.dispose();
             grass.dispose();
             water.geometry.dispose();
