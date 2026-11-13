@@ -206,6 +206,7 @@ export function startTest(s: State, id: TestId, now = Date.now()): boolean {
         armed: s.armed, watchdog: s.watchdog, dropAt: s.dropAt, autoArmed: s.autoArmed, auto: s.auto, life: { ...s.life }, started: s.started, seen: s.seen,
         hand: s.hand, lab: { ...freshLab(), seen: s.lab.seen, nodes: s.lab.nodes, last: s.lab.last }, dr: drOnAscend(s),
         rig: RIG_HOOKS.ascend ? RIG_HOOKS.ascend(s) : s.rig, mounts: [],
+        end: s.end, // the ending's build is shown in a test but locked there (lib/nodefarm/ending.ts buildBlock); the stored run keeps the real copy
     };
     const n = fresh(s.at);
     Object.assign(n, keep);

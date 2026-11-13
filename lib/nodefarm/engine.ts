@@ -693,6 +693,8 @@ export interface State {
     ch?: import("./stress").ChState;
     /** Zone events (lib/nodefarm/zoneevents.ts): the running event, the timer to the next one and a count. Reset on Ascend. Created on first use. */
     ze?: ZoneEvState;
+    /** The ending (lib/nodefarm/ending.ts): final build stages, stars and the logs you left. Kept through everything. Created on first use. */
+    end?: EndState;
     /** Which button tiers were ever pressed, per stat, as a bit mask. Kept through Ascend; arcs clear when every tier of every zone in them is set. */
     seen?: Partial<Record<ButtonStat, number>>;
     // lifetime counters (survive Ascend)
@@ -2647,6 +2649,7 @@ export function parseSave(raw: string): State | null {
         n.dr = parseDr(o.dr);
         n.ze = parseZe(o.ze);
         n.hand = parseHand(o.hand);
+        n.end = parseEnd(o.end);
         const back = migrateTree(n);
         if (back > 0) n.treeRefund = (n.treeRefund ?? 0) + back;
         if (!Array.isArray(n.ach)) n.ach = [];
@@ -2661,6 +2664,34 @@ export function parseSave(raw: string): State | null {
     } catch {
         return null;
     }
+}
+
+/** The ending's saved state (rules in lib/nodefarm/ending.ts). Here so loading a save needs no import from ending.ts. */
+export interface EndLog { n: number; text: string; at: number }
+export interface EndState {
+    /** stages of the final build done (0 to END_STEPS in ending.ts) */
+    stage: number;
+    /** when the last stage was built (ms epoch); 0 = not yet */
+    doneAt: number;
+    /** the end screen has been shown and closed */
+    seen: boolean;
+    /** endings reached across every operator (the star count) */
+    stars: number;
+    /** logs you left at each ending, oldest first; the newest is the first thing a New operator reads */
+    logs: EndLog[];
+}
+export const END_LOG_MAX = 160;
+export function parseEnd(o: unknown): EndState | undefined {
+    if (!o || typeof o !== "object") return undefined;
+    const x = o as Partial<EndState>;
+    const num = (v: unknown, d = 0) => (typeof v === "number" && Number.isFinite(v) ? v : d);
+    return {
+        stage: Math.max(0, Math.min(5, Math.floor(num(x.stage)))),
+        doneAt: Math.max(0, num(x.doneAt)),
+        seen: !!x.seen,
+        stars: Math.max(0, Math.floor(num(x.stars))),
+        logs: Array.isArray(x.logs) ? x.logs.filter((l) => l && typeof l.text === "string").map((l) => ({ n: Math.max(1, Math.floor(num(l.n, 1))), text: String(l.text).slice(0, END_LOG_MAX), at: num(l.at) })).slice(-20) : [],
+    };
 }
 
 /** Old saves from before Scripts became the only automation layer (Nate, 2026-11-12):

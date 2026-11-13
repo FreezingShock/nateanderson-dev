@@ -1,5 +1,6 @@
 // Node Farm guidance: what to do next, why a zone is still locked, and what a button will do. Pure rules on top of the
 // engine (no React), so every number comes from `TUNE` and the engine's own `button`/`derive` and follows any rebalance.
+import { END_STAGES, END_STEPS, buildBlock, endStage } from "./ending";
 import {
     chOff,
     GOALS, MATS, PERKS, TIERS, TREE, TUNE, REBOOT_UNLOCK,
@@ -225,6 +226,11 @@ function coreStep(s: State, d: Derived): Step {
     // ---- Handover (the reset past Ascend): flash Firmware with Keys you hold, and hand over once the tree is whole
     if (s.hand.keys > 0 && FW.some((n) => !s.hand.fw.includes(n.id) && fwNodeOpen(s, n) && s.hand.keys >= n.cost)) {
         return mk({ id: "flash-fw", kicker: "HANDOVER", title: `Flash Firmware with ${fmt(s.hand.keys)} Keys`, why: "Firmware is kept through every Handover and changes how every run starts and what survives.", cur: 1, need: 1, unit: "KEY", target: { win: "handover" } });
+    }
+    // ---- the ending: a final-build stage you can pay for right now
+    if (!buildBlock(s)) {
+        const st = endStage(s);
+        return mk({ id: "final-build", kicker: "FINAL BUILD", title: `Build stage ${st + 1}: ${END_STAGES[st]}`, why: `Node zero's final build, stage ${st + 1} of ${END_STEPS}. Built stages are kept through Ascend and Handover.`, cur: 1, need: 1, unit: "KEY", target: { win: "handover" } });
     }
     const hk = keysOnHandover(s);
     if (hk > 0 && (treeComplete(s) || s.hand.count > 0)) {
