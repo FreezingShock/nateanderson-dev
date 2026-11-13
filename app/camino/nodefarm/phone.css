@@ -33,3 +33,21 @@
     .ctos .nf .nf-bar-t > span { min-width: 0; overflow-wrap: anywhere; white-space: normal !important; overflow: visible; text-overflow: clip !important; }
     .ctos .nf .nf-lab-flow span, .ctos .nf .nf-lab-flow b { white-space: normal !important; overflow: visible; text-overflow: clip !important; overflow-wrap: anywhere; }
 }
+
+/* Refine pass (phone): the map's signal chain is 25 rows, so each row runs tighter here (52px to 40px) and the
+   stacked HUD loses a row. Keys ? is a keyboard shortcut, so it is hidden on touch screens below desktop width. */
+@media (max-width: 819px) {
+    .ctos .nf-wk-chain { gap: 3px; }
+    .ctos .nf-wk-chain::before { left: 19px; top: 16px; bottom: 16px; }
+    .ctos .nf-wk-chain li[data-state="done"]::after { left: 19px; }
+    .ctos .nf-wk-chain button { min-height: 40px; gap: 10px; padding: 2px 8px 2px 2px; }
+    .ctos .nf-wk-cn { width: 36px; height: 36px; box-shadow: 0 0 0 3px #0b0b0b; }
+    .ctos .nf-wk-cl b { font-size: 14px; }
+}
+@media (max-width: 999px) {
+    .ctos .nf-fsb.nf-keysb { display: none; }
+}
+@media (max-width: 719px) {
+    .ctos .nf-hud { padding: 10px 12px; gap: 8px 12px; }
+    .ctos .nf-hud-side { gap: 6px 12px; }
+}
