@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, type ReactNode } from "react";
+import "@/components/brasswork-ui/brass-kit.css";
 import "./automation-hud.css";
 import type { HudActions, HudData } from "./types";
 import { ResourceStrip } from "./resource-strip";
@@ -10,6 +11,7 @@ import { Milestones, PrestigeCard, Section } from "./factory-sections";
 import { ExpeditionList, SettingsList, StatsList } from "./drawers";
 import { ResearchScreen } from "./research-screen";
 import { PrestigeScreen } from "./prestige-screen";
+import "./brasswork-skin.css";
 import { canAfford } from "./format";
 
 type Drawer = "expedition" | "stats" | "settings";
@@ -59,7 +61,7 @@ export function AutomationHud({
 
   return (
     <div
-      className="ab-root"
+      className="ab-root bw"
       data-drawer={drawer ?? "none"}
       data-inspect={data.selected ? "on" : "off"}
       data-lowfx={data.settings.lowFx}
