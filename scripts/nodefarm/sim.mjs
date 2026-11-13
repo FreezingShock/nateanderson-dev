@@ -24,8 +24,6 @@ let ARCS = null;
     if (RG && process.env.NF_RIGTUNE) merge(RG.RIG_TUNE, JSON.parse(process.env.NF_RIGTUNE)); // same as NF_TUNE, for RIG_TUNE
 }
 const s = E.fresh(0);
-if (!process.env.NF_NODRONES) s.armed = ["mult", ...E.MATS]; // the bot arms every stat once it has Drones
-if (process.env.NF_NODRONES) s.autoArmed = ["mult", ...E.MATS]; // keep Standing orders from arming anything
 const marks = {};
 const ascents = [];
 // NF_SNAP=<dir>: write a save file when a milestone first lands and at fixed play times (scripts/nodefarm/guide-audit.mjs reads them)

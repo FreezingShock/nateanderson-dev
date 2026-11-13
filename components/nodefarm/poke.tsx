@@ -4,7 +4,7 @@
 // - Exact-number tips on every figure (HUD, core readout, zone numbers, spec lines, signal chain) through the shared tip
 //   layer, found by delegation so the panels themselves need no change. Hover on desktop, a tap on touch.
 // - Links: a signal chain stop or a "Feeds ..." spec line jumps to that zone.
-// - Zone quick menu: right-click or long-press a zone panel: scan it, arm Drones, jump to its neighbours.
+// - Zone quick menu: right-click or long-press a zone panel: scan it, tick it for buy.sh, jump to its neighbours.
 // Nothing here runs per frame: it all waits for input.
 
 import { useContext, useEffect, useRef, useState, type CSSProperties, type MutableRefObject } from "react";
@@ -298,9 +298,9 @@ export function PokeLayer({ s, d, root, coreFeed, feed, reduced, onChange, onGo,
     if (menu && typeof document !== "undefined") {
         const z = menu.z;
         const n = neighbours(z);
-        const canArm = z !== "bytes" && z !== "reboot" && s.drones.some((x) => x > 0);
+        const canArm = z !== "bytes" && z !== "reboot" && !!s.auto?.own.includes("buy");
         const items: { k: string; label: string; act: () => void }[] = [{ k: "scan", label: "Scan zone", act: () => scan(z) }];
-        if (canArm) items.push({ k: "arm", label: s.armed.includes(z) ? "Disarm Drones here" : "Arm Drones here", act: () => onArm(z) });
+        if (canArm) items.push({ k: "arm", label: s.auto?.buy[z] ? "Stop buy.sh here" : "Let buy.sh buy here", act: () => onArm(z) });
         if (n.fedBy && isUnlocked(s, n.fedBy)) items.push({ k: "up", label: `Feeder: ${zoneName(n.fedBy)}`, act: () => onGo({ stat: n.fedBy as Target["stat"] }) });
         if (n.feeds) items.push({ k: "down", label: `Feeds: ${zoneName(n.feeds)}`, act: () => onGo({ stat: n.feeds as Target["stat"] }) });
         if (isUnlocked(s, "aether")) items.push({ k: "bay", label: "Open the Drone bay", act: () => onGo({ drone: 0 }) });

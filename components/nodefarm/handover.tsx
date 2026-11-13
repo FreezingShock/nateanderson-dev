@@ -2,8 +2,8 @@
 
 import { useEffect, useRef, useState, type CSSProperties } from "react";
 import {
-    ARC_MATS, arcGateNeed, FEATURE_NAME, FW, FW_SECS, HAND_BASE, PREINSTALLED, HAND_TUNE, PROTOS, canSwitchProto, fmt, fmtTime, fwNode, fwNodeOpen, fwTotals, fwVis, handFx, handKeeps, handOpen, isUnlocked,
-    keysOnHandover, masteryRanks, protoDef, protoRank, ROMAN, statDef, treeCount, treeSpent, type ProtoId, type State,
+    ARC_MATS, arcGateNeed, FEATURE_NAME, FW, FW_SECS, HAND_BASE, PREINSTALLED, HAND_TUNE, PROTOS, canSwitchProto, droneFx, fmt, fmtTime, fwNode, fwNodeOpen, fwTotals, fwVis, handFx, handKeeps, handOpen, isUnlocked,
+    chOff, keysOnHandover, masteryRanks, protoDef, protoRank, ROMAN, statDef, treeCount, treeSpent, type ProtoId, type State,
 } from "@/lib/nodefarm/engine";
 import { NfIcon } from "./icon";
 import type { TreeModel } from "./tree";
@@ -36,7 +36,7 @@ export function fwModel(s: State): TreeModel {
 export const fwReady = (s: State) => FW.filter((n) => !s.hand.fw.includes(n.id) && fwNodeOpen(s, n) && s.hand.keys >= n.cost).length;
 
 /** Press and hold to hand over. A click with no press behind it (screen readers) asks twice instead. */
-function HoldHandover({ ready, keys, onGo }: { ready: boolean; keys: number; onGo: () => void }) {
+function HoldHandover({ ready, keys, locked, onGo }: { ready: boolean; keys: number; locked: boolean; onGo: () => void }) {
     const [hold, setHold] = useState(false);
     const [nudge, setNudge] = useState(false);
     const [ask, setAsk] = useState(false);
@@ -85,7 +85,7 @@ function HoldHandover({ ready, keys, onGo }: { ready: boolean; keys: number; onG
         >
             <i className="nf-hx-go-fill" aria-hidden="true" />
             <span className="nf-hx-go-t">
-                {!ready ? "Reach node zero first" : ask ? `Confirm: hand over for ${keys} Keys` : hold ? "Keep holding" : nudge ? "Keep holding to hand over" : `Hold to hand over · +${keys} Keys`}
+                {locked ? "Locked until you leave the test" : !ready ? "Reach node zero first" : ask ? `Confirm: hand over for ${keys} Keys` : hold ? "Keep holding" : nudge ? "Keep holding to hand over" : `Hold to hand over · +${keys} Keys`}
             </span>
         </button>
     );
@@ -135,7 +135,7 @@ function Flow({ s, keys, onGo }: { s: State; keys: number; onGo: () => void }) {
                     <small className="nf-hx-n">Firmware is kept through every Handover.</small>
                 </li>
             </ol>
-            <HoldHandover ready={keys > 0} keys={keys} onGo={onGo} />
+            <HoldHandover ready={keys > 0} keys={keys} locked={chOff(s, "prestige")} onGo={onGo} />
         </section>
     );
 }
@@ -143,19 +143,23 @@ function Flow({ s, keys, onGo }: { s: State; keys: number; onGo: () => void }) {
 /** What goes and what stays, as two plain lists. */
 function Ledger({ s }: { s: State }) {
     const kept = handKeeps(s).length;
+    const baseMod = HAND_BASE.modKeep ?? 0;
+    const modKeep = Math.max(baseMod, droneFx(s).modKeep);
     const back = Math.floor(treeSpent(s) * (HAND_BASE.apRefund ?? 0));
     const wipes = [
         "This run: every stat, button and producer",
         "AP and perks (half of every perk's levels stay)",
         `The prestige tree${kept ? ` (${kept} nodes stay: the entry and upper path of each section)` : ""}${back ? `, and ${fmt(back)} AP back, a quarter of what it cost` : ""}`,
         "Drones, Mounted drives and Exploit Lab Intel and stock",
-        "Rig levels (half of every level stays) and half the hangar's Parts and mods",
+        `Parts and mod levels in the hangar (${Math.round(modKeep * 100)}% stay${modKeep > baseMod ? ": Black box" : ""})`,
+        "Rig levels (half of every level stays)",
     ];
     const keeps = [
         `Every Ascend after this starts with ${HAND_TUNE.warmReboots} Reboots, ${HAND_TUNE.bootProd} producers on CU to AE and a ${Math.round(HAND_TUNE.afterglow / 60)} minute Overclock, and keeps Intel, payloads and half the Drone levels`,
         `${PREINSTALLED.map((k) => FEATURE_NAME[k]).join(", ").replace(/, ([^,]*)$/, " and $1")} work without their tree nodes`,
         "Goals, secrets and operator logs",
         "Exploit Lab research",
+        "Cleared stress test ranks",
         ...(s.auto?.own.length ? ["Scripts you have learned"] : []),
         ...(s.dr?.nodes.length || masteryRanks(s) ? ["The hangar: postings, mastery and the drone tree"] : []),
         "Rig switches and zone event history",
