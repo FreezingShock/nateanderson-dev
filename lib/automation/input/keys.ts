@@ -11,6 +11,7 @@ export type KeyAction =
     | { type: "toggle-delete" }
     | { type: "tool"; index: number }
     | { type: "pan"; forward: number; right: number }
+    | { type: "walk"; dir: WalkDir; down: boolean }
     | { type: "zoom"; factor: number }
     | { type: "space"; down: boolean };
 
@@ -26,6 +27,10 @@ export interface KeyLike {
 
 const PAN_STEP = 1.5;
 
+// WASD pans the camera while held. The index keeps a set of held keys and moves the target each frame.
+export type WalkDir = "w" | "a" | "s" | "d";
+const WALK_KEYS: readonly string[] = ["w", "a", "s", "d"];
+
 export function mapKey(e: KeyLike): KeyAction | null {
     const mod = !!(e.ctrlKey || e.metaKey);
     if (e.altKey) return null;
@@ -33,6 +38,11 @@ export function mapKey(e: KeyLike): KeyAction | null {
     const down = e.type !== "keyup";
 
     if (key === " " || key === "Spacebar") return { type: "space", down };
+    // WASD is held-state, so it is handled before the keydown-only checks below. Ctrl/Cmd combos fall
+    // through so Ctrl+D and friends keep their browser meaning.
+    if (WALK_KEYS.includes(key) && !e.altKey && !mod) {
+        return { type: "walk", dir: key as WalkDir, down };
+    }
     if (!down) return null;
 
     if (mod) {
