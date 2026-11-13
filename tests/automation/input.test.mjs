@@ -231,3 +231,17 @@ test("createInputController wires tools by id and keys without a DOM", () => {
     ctl.update(1 / 60);
     ctl.destroy();
 });
+
+test("board with an origin: cells outside its window are rejected", () => {
+    const b = { width: 18, depth: 12, originX: -9, originZ: -6 };
+    assert.equal(A.cellInBoard({ x: -9, z: -6 }, b), true);
+    assert.equal(A.cellInBoard({ x: 8, z: 5 }, b), true);
+    assert.equal(A.cellInBoard({ x: 9, z: 0 }, b), false);
+    assert.equal(A.cellInBoard({ x: 0, z: -7 }, b), false);
+    const world = memWorld();
+    const c = new A.BuildController({ world, board: b });
+    c.setTool(machine);
+    assert.equal(c.tap({ x: -9, z: -6 }), 1);
+    assert.equal(c.tap({ x: 0, z: 0 }), 1);
+    assert.equal(c.tap({ x: 20, z: 0 }), 0);
+});

@@ -11,6 +11,9 @@ export interface Cell {
 export interface BoardSize {
     width: number;
     depth: number;
+    // Lowest cell on the board. Defaults to 0. The factory plateau starts at (-9, -6).
+    originX?: number;
+    originZ?: number;
 }
 
 export const DIRS: readonly { dx: number; dz: number }[] = [
@@ -23,7 +26,9 @@ export const DIRS: readonly { dx: number; dz: number }[] = [
 export const cellKey = (c: Cell): string => `${c.x},${c.z}`;
 
 export function cellInBoard(c: Cell, board: BoardSize): boolean {
-    return c.x >= 0 && c.z >= 0 && c.x < board.width && c.z < board.depth;
+    const ox = board.originX ?? 0;
+    const oz = board.originZ ?? 0;
+    return c.x >= ox && c.z >= oz && c.x < ox + board.width && c.z < oz + board.depth;
 }
 
 export function rotate(rot: Rot, quarterTurns = 1): Rot {
