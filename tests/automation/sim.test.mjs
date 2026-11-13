@@ -243,7 +243,7 @@ test("prestige keeps blueprints, research and belts, and resets machines and sto
     buildRoute(w, { x: 5, z: 10 }, hubAt, t);
     w.progress.blueprints = 5;
     S.buyResearch(w, t, "r1");
-    S.prestige(w, t);
+    S.prestige(w, t, "ridge");
     const kinds = Object.values(w.buildings).map((b) => b.type);
     assert.ok(!kinds.includes("drill"));
     assert.ok(kinds.includes("belt"));
@@ -262,21 +262,22 @@ test("day-night clock: noon is full sun, midnight-ish is dark, the day count adv
     w.time = len * 2.1; assert.equal(S.dayClock(w, CAT).day, 2);
 });
 
-test("hudData reports stock, rates, machine status, milestones, research and a next step", () => {
+test("hudData reports resources with net rates, machine status, selected detail, milestones and the next step", () => {
     const w = base(CAT, {}, { power: true });
     ok(S.place(w, "drill", 5, 10, 0));
     buildRoute(w, { x: 5, z: 10 }, hubAt);
     S.advance(w, 30, 0.1);
     const h = S.hudData(w, CAT, S.buildingAt(w, 5, 10).id);
-    const ore = h.stock.find((r) => r.item === "ore-a");
-    assert.ok(ore && ore.qty > 0 && Math.abs(ore.perSecond - 0.5) < 1e-9, "drill rate shows as 0.5 per second");
-    assert.equal(h.machines.find((m) => m.type === "drill").status, "running");
-    assert.equal(h.selected.type, "drill");
-    assert.equal(h.power.satisfaction, 1);
-    assert.ok(h.nextStep.length > 0);
-    assert.equal(typeof h.wind, "number");
-    const unpowered = S.hudData(base(CAT, {}, { power: false }), CAT);
-    assert.equal(unpowered.power.satisfaction, 1, "no demand, no shortage");
+    const ore = h.resources.find((r) => r.id === "ore-a");
+    assert.ok(ore && ore.amount > 0 && Math.abs(ore.perSecond - 0.5) < 1e-9, "drill nets 0.5 per second");
+    assert.equal(h.machines.find((m) => m.id === "drill").status, "running");
+    assert.equal(h.machines.find((m) => m.id === "drill").count, 1);
+    assert.equal(h.selected.id, "drill");
+    assert.ok(h.selected.rates.some((r) => r.label.includes("out")));
+    assert.equal(h.stats.find((x) => x.label === "Power").value.length > 0, true);
+    assert.ok(h.nextStep.text.length > 0);
+    assert.equal(h.prestige.ready, false);
+    assert.equal(h.settings.numberFormat, "short");
 });
 
 test("actions wrap the world operations and return the same results", () => {
@@ -286,5 +287,21 @@ test("actions wrap the world operations and return the same results", () => {
     assert.equal(S.actions.setRecipe(w, sm.id, "smelt-a", CAT).ok, true);
     assert.equal(S.actions.setRecipe(w, sm.id, "press-x", CAT).ok, false);
     assert.equal(S.actions.buyResearch(w, "nope", CAT).ok, false);
-    assert.equal(S.actions.prestige(w, CAT).ok, true);
+    assert.equal(S.actions.prestige(w, "ridge", CAT).ok, true);
+});
+
+test("prestige offers three sites, moves the hub and nodes to the chosen site, and applies its bonus", () => {
+    const a = S.offerSites(7);
+    const b = S.offerSites(7);
+    assert.equal(a.length, 3);
+    assert.deepEqual(a.map((s) => s.id), b.map((s) => s.id), "same seed, same offer");
+    assert.equal(new Set(a.map((s) => s.id)).size, 3);
+    const w = base();
+    const site = a[0];
+    S.prestige(w, CAT, site.id);
+    assert.equal(w.width, site.width);
+    assert.equal(w.buildings[w.hubId].x, site.hub.x);
+    assert.equal(w.progress.site, site.id);
+    assert.equal(w.progress.bonus.miner, site.bonus.miner);
+    assert.equal(S.prestige(w, CAT, "nowhere").ok, false);
 });

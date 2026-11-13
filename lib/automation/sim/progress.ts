@@ -1,6 +1,7 @@
 // Progression: milestone deliveries grant blueprints, research is bought with blueprints, and the one prestige resets the factory.
 // Imports types only, so world.ts can call checkMilestones without a cycle.
-import type { ActionResult, Catalog, World } from "../types";
+import type { ActionResult, Building, Catalog, World } from "../types";
+import { SITES, type SiteDef } from "./data";
 
 function researchedIn(world: World, nodeId: string): boolean {
     return world.progress.researched.includes(nodeId);
@@ -51,21 +52,49 @@ export function dayClock(world: World, cat: Catalog): { phase: number; day: numb
     return { phase, day, isNight, solar };
 }
 
-// Prestige: "Open a new workshop". Keeps blueprints, research, milestones done, routes (belts) and counts the run.
-// Resets machines, drills, generators and the hub stock. Belts stay where they are so routes survive.
-export function prestige(world: World, cat: Catalog): ActionResult {
-    const keptBelts: World["buildings"] = {}; // belts keep their place and their type
-    for (const id of Object.keys(world.buildings).map(Number)) {
-        const b = world.buildings[id];
-        if (b.type === "belt" || b.type === "belt-fast") keptBelts[id] = { ...b, input: {}, output: {}, lane: [] };
+// Three sites to choose from, drawn from the list by a seed, so one run offers the same three every time.
+export function offerSites(seed: number, count = 3): SiteDef[] {
+    const pool = [...SITES];
+    let state = (seed >>> 0) || 1;
+    const next = () => {
+        state = (Math.imul(state, 1664525) + 1013904223) >>> 0;
+        return state / 4294967296;
+    };
+    const out: SiteDef[] = [];
+    while (out.length < count && pool.length > 0) {
+        const i = Math.floor(next() * pool.length);
+        out.push(pool.splice(i, 1)[0]);
     }
-    const hubId = world.hubId;
-    const hub = world.buildings[hubId];
-    const kept: World["buildings"] = { [hubId]: { ...hub, input: {}, output: {}, lane: [], recipe: null, crafting: false, progress: 0, acc: 0 } };
-    for (const id of Object.keys(keptBelts).map(Number)) kept[id] = keptBelts[id];
-    world.buildings = kept;
+    return out;
+}
+
+// Prestige: "Open a new workshop". Keeps blueprints, research, milestones done, and any belt that still fits the new floor.
+// Resets machines, drills, generators and the hub stock. The hub and the nodes move to the chosen site.
+export function prestige(world: World, cat: Catalog, siteId: string): ActionResult {
+    const site = SITES.find((x) => x.id === siteId);
+    if (!site) return { ok: false, reason: "no such site" };
+    const hub = world.buildings[world.hubId];
+    const newHub: Building = { ...hub, x: site.hub.x, z: site.hub.z, input: {}, output: {}, lane: [], recipe: null, crafting: false, progress: 0, acc: 0 };
+    const keep: World["buildings"] = { [world.hubId]: newHub };
+    const taken = new Set<string>([`${site.hub.x},${site.hub.z}`, `${site.hub.x + 1},${site.hub.z}`, `${site.hub.x},${site.hub.z + 1}`, `${site.hub.x + 1},${site.hub.z + 1}`]);
+    for (const id of Object.keys(world.buildings).map(Number)) {
+        if (id === world.hubId) continue;
+        const b = world.buildings[id];
+        if (b.type !== "belt" && b.type !== "belt-copper" && b.type !== "belt-steel") continue;
+        if (b.x < 0 || b.z < 0 || b.x >= site.width || b.z >= site.depth) continue;
+        if (taken.has(`${b.x},${b.z}`)) continue;
+        keep[id] = { ...b, input: {}, output: {}, lane: [] };
+        taken.add(`${b.x},${b.z}`);
+    }
+    world.buildings = keep;
+    world.width = site.width;
+    world.depth = site.depth;
+    world.deposits = {};
+    for (const n of site.nodes) world.deposits[`${n.x},${n.z}`] = { item: n.item, purity: n.purity };
     world.power = { supply: 0, demand: 0, satisfaction: 1 };
     world.progress.prestiges += 1;
     world.progress.delivered = {};
+    world.progress.site = site.id;
+    world.progress.bonus = { ...site.bonus };
     return { ok: true };
 }

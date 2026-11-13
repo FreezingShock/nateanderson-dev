@@ -115,7 +115,7 @@ export function createWorld(opts: CreateOptions = {}, cat: Catalog = DEFAULT_CAT
         deposits: {},
         buildings: {},
         power: { supply: 0, demand: 0, satisfaction: 1 },
-        progress: { blueprints: 0, researched: [], milestonesDone: [], delivered: {}, prestiges: 0 },
+        progress: { blueprints: 0, researched: [], milestonesDone: [], delivered: {}, prestiges: 0, site: null, bonus: { miner: 1, power: 1 } },
         wind: 0.5,
     };
     const hub = newBuilding(world, HUB, hubCell.x, hubCell.z, 0);
@@ -315,7 +315,7 @@ function stepMiner(world: World, cat: Catalog, b: Building, r: Resolved, dt: num
     if (!dep) return;
     const node = cat.tree.nodes.find((n) => n.item === dep.item);
     if (!node) return;
-    const perSecond = (node.baseRatePerMin / 60) * dep.purity * r.speed * sat;
+    const perSecond = (node.baseRatePerMin / 60) * dep.purity * r.speed * sat * world.progress.bonus.miner;
     b.acc += perSecond * dt;
     while (b.acc >= 1) {
         const have = b.output[dep.item] ?? 0;
@@ -389,7 +389,7 @@ export function step(world: World, dt: number, cat: Catalog = DEFAULT_CATALOG): 
         const r = resolve(cat, b.type);
         if (!r) continue;
         defs.set(id, r);
-        supply += r.supply;
+        supply += r.supply * (r.kind === "generator" ? world.progress.bonus.power : 1);
         if (r.kind === "miner" || r.kind === "crafter") demand += r.power;
     }
     const satisfaction = demand <= 0 ? 1 : Math.min(1, supply / demand);

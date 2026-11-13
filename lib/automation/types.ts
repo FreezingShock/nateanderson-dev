@@ -194,6 +194,8 @@ export interface Progress {
     milestonesDone: string[];
     delivered: Record<string, number>; // cumulative items that reached the hub
     prestiges: number;
+    site: string | null; // island site picked at the last prestige
+    bonus: { miner: number; power: number }; // multipliers from the site
 }
 
 export interface World {
@@ -213,64 +215,115 @@ export interface World {
 export type PlaceResult = { ok: true; id: number } | { ok: false; reason: string };
 export type ActionResult = { ok: true } | { ok: false; reason: string };
 
-// ---- HUD view types (Simulation thread). Read-only snapshots for the panels; the panels never mutate the world. ----
+export type NumberFormat = "short" | "full";
 
-export type MachineStatus = "running" | "idle" | "stalled-output" | "missing-input" | "unpowered" | "no-recipe";
+export type ResourceGroup = "raw" | "part";
 
-export interface HudStockRow {
-    item: string;
+export type ResourceView = {
+  id: string;
+  name: string;
+  group: ResourceGroup;
+  /** Placeholder code shown inside the icon until the design thread supplies art. */
+  glyph: string;
+  amount: number;
+  /** Net change per second. Negative values show as a drain. */
+  perSecond: number;
+};
+
+export type Line = { resourceId: string; amount: number };
+
+export type MachineStatus = "running" | "idle" | "starved" | "blocked";
+
+export type MachineView = {
+  id: string;
+  name: string;
+  glyph: string;
+  unlocked: boolean;
+  /** Shown in place of the cost line while the machine is locked. */
+  lockedReason?: string;
+  /** How many of this machine the player owns. */
+  count: number;
+  /** Cost to build one more. */
+  cost: Line[];
+  status: MachineStatus;
+};
+
+export type MachineDetail = MachineView & {
+  recipe: {
     name: string;
-    qty: number;
-    perSecond: number; // theoretical rate from the machines that make it right now
-}
+    inputs: Line[];
+    outputs: Line[];
+    seconds: number;
+  };
+  rates: { label: string; value: string }[];
+  buffers: { resourceId: string; have: number; max: number }[];
+};
 
-export interface HudMachineRow {
-    id: number;
-    type: string;
-    name: string;
-    count: number; // how many of this type on the island
-    status: MachineStatus;
-}
+/** Expedition areas, shown in the expedition drawer. */
+export type AreaView = {
+  id: string;
+  name: string;
+  note: string;
+  state: "current" | "open" | "locked";
+};
 
-export interface HudBuilding {
-    id: number;
-    type: string;
-    name: string;
-    recipe: string | null;
-    status: MachineStatus;
-    progress: number; // 0 to 1 for the current batch
-    perSecond: number; // theoretical output rate
-    input: Record<string, number>;
-    output: Record<string, number>;
-}
+/** A milestone delivery. Completing one grants blueprints. */
+export type MilestoneView = {
+  id: string;
+  name: string;
+  /** Plain line, e.g. "Deliver 500 plates". */
+  goal: string;
+  progress: number; // 0..1
+  blueprintReward: number;
+  done: boolean;
+};
 
-export interface HudMilestone {
-    id: string;
-    name: string;
-    blueprints: number;
-    done: boolean;
-    progress: number; // 0 to 1, the least-complete delivery
-}
+/** A research node, unlocked by spending blueprints. */
+export type ResearchNode = {
+  id: string;
+  name: string;
+  note: string;
+  blueprintCost: number;
+  requires: string[];
+  state: "done" | "available" | "locked";
+};
 
-export interface HudResearch {
-    id: string;
-    name: string;
-    cost: number;
-    state: "bought" | "available" | "locked";
-}
+export type PrestigeView = {
+  ready: boolean;
+  /** Plain line on what is needed, e.g. "Reach 1 M brass made". */
+  requirement: string;
+  /** What the player keeps or gains, e.g. "+5% speed per workshop". */
+  gain: string;
+};
 
-export interface HudData {
-    time: number;
-    day: number;
-    isNight: boolean;
-    wind: number;
-    power: { supply: number; demand: number; satisfaction: number };
-    blueprints: number;
-    stock: HudStockRow[];
-    machines: HudMachineRow[];
-    selected: HudBuilding | null;
-    milestones: HudMilestone[];
-    research: HudResearch[];
-    prestige: { name: string; count: number; keeps: string[]; resets: string[] };
-    nextStep: string;
-}
+export type StatLine = { label: string; value: string };
+
+export type NextStepView = {
+  text: string;
+  /** Optional button that acts on the hint, such as selecting the next machine. */
+  actionLabel?: string;
+  actionId?: string;
+};
+
+export type HudSettings = {
+  sound: boolean;
+  reduceMotion: boolean;
+  /** Low-fx: turns off the animated extras (scramble, dither shimmer, drawer slides). */
+  lowFx: boolean;
+  numberFormat: NumberFormat;
+  showRates: boolean;
+};
+
+export type HudData = {
+  resources: ResourceView[];
+  machines: MachineView[];
+  selected: MachineDetail | null;
+  areas: AreaView[];
+  milestones: MilestoneView[];
+  blueprints: number;
+  research: ResearchNode[];
+  prestige: PrestigeView;
+  stats: StatLine[];
+  nextStep: NextStepView;
+  settings: HudSettings;
+};
