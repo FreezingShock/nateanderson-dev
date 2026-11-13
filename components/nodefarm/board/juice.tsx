@@ -164,6 +164,7 @@ export function Juice({ reduced }: { reduced: boolean }) {
     const timers = useRef<ReturnType<typeof setTimeout>[]>([]);
     const seenU = useRef<Set<string>>(new Set());
     const lastBtn = useRef<HTMLElement | null>(null);
+    const lastTick = useRef(0);
     const acc = useRef<{ sum: number; stat: ButtonStat; el: HTMLElement | null; timer: ReturnType<typeof setTimeout> | null }>({ sum: 0, stat: "mult", el: null, timer: null });
     useEffect(() => setHost(document.body), []);
 
@@ -227,6 +228,16 @@ export function Juice({ reduced }: { reduced: boolean }) {
                     a.sum += e.gain; a.stat = e.stat; a.el = el;
                     if (!a.timer) a.timer = setTimeout(flush, 300);
                     return;
+                }
+                // the button's own gain figure ticks up on each buy (throttled, so a held button stays calm)
+                const g = el.querySelector<HTMLElement>(".nf-btn-g");
+                const nowT = performance.now();
+                if (g && nowT - lastTick.current > 110) {
+                    lastTick.current = nowT;
+                    try {
+                        g.getAnimations().filter((x) => (x as Animation & { id?: string }).id === "nf-gtick").forEach((x) => x.cancel());
+                        g.animate([{ transform: "translateY(-3px)", color: "#fff" }, { transform: "none" }], { duration: 120, easing: "steps(3, end)", id: "nf-gtick" });
+                    } catch {}
                 }
                 if (e.stat === "reboot") popAt(layer.current, el.getBoundingClientRect(), `REBOOT +${fmt(e.gain)}`, color, { big: true, sparks: 8 });
                 else popAt(layer.current, el.getBoundingClientRect(), `+${fmt(e.gain)}`, color, { big: e.tier >= 3, sparks: e.tier >= 3 ? 6 : 3 });

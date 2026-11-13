@@ -20,6 +20,7 @@ import { PART_WHY, SKIN_WHY, coreLook, corePreview, skinOpen } from "@/lib/nodef
 import { PART_ORDER, SKINS } from "@/lib/nodefarm/art/core-parts";
 import { NfIcon } from "./board/icon";
 import { MiniHud } from "./board/mini-hud";
+import { TickNum } from "./board/tick";
 import { RARITY } from "@/lib/nodefarm/events";
 import type { Away } from "./windows/away";
 import { catchUp } from "@/lib/nodefarm/offline";
@@ -1300,7 +1301,7 @@ export function NodeFarm() {
                 <div className="nf-hud-main">
                     <NfIcon name="bytes" responsive />
                     <div>
-                        <b className="nf-big">{fmt(s.bytes)}</b>
+                        <TickNum className="nf-big" value={s.bytes} text={fmt(s.bytes)} />
                         <span className="nf-sub">Bytes · +{fmt(d.bytesPerSec)}/s</span>
                     </div>
                 </div>
