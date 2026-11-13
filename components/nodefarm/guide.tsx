@@ -3,7 +3,7 @@
 import { createContext, memo, useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore, type CSSProperties, type RefObject } from "react";
 import { cxPlay, useCodeReveal } from "@/lib/nodefarm/cx";
 import { apOnAscend, button, canAfford, canAscend, droneCost, droneMax, fmt, statDef, type Derived, type State, type StatId } from "@/lib/nodefarm/engine";
-import { DRONE_NAMES, etaText, incomeOf, telemetry, type NxIcon, type Step, type Target, type TipInfo } from "@/lib/nodefarm/guide";
+import { DRONE_NAMES, etaRate, etaText, incomeOf, telemetry, type NxIcon, type Step, type Target, type TipInfo } from "@/lib/nodefarm/guide";
 import { NfIcon, type NfIconName } from "./icon";
 
 // ---- the next step console: always under the HUD. An animated plate for the kind of step, what to do and why, a live meter
@@ -109,7 +109,7 @@ export function GuideStrip({ s, d, step, onGo, onDo, onCell, onMap, mapOpen }: {
                     <i style={{ width: `${pct}%` }} />
                 </span>
                 <dl className="nf-nx-dl">
-                    <div><dt><NxIc name="clock" /> eta</dt><dd>{done ? "now" : eta || (step.pay ? "start producing" : "ready when you are")}</dd></div>
+                    <div><dt><NxIc name="clock" /> eta</dt><dd>{done ? "now" : eta ? (step.eta !== null && step.eta > 600 && step.pay ? etaRate(step.eta) + ", less as you build" : eta) : (step.pay ? "start producing" : "ready when you are")}</dd></div>
                     {step.pay && <div><dt><NxIc name="intel" /> rate</dt><dd>{rate > 0 ? `+${fmt(rate)} ${statDef(step.pay).short}/s` : "not producing"}</dd></div>}
                 </dl>
             </div>
