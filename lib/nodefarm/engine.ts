@@ -201,6 +201,7 @@ export interface TreeFx {
 }
 /** Systems a node switches on. The UI checks them with `hasFeature`. */
 export type Feature = "watchdog" | "forecast" | "deaddrop" | "orders" | "ghostline" | "crosstalk" | "duck";
+export const FEATURE_NAME: Record<Feature, string> = { watchdog: "Watchdog timer", forecast: "Forecast", deaddrop: "Dead drop", orders: "Standing orders", ghostline: "Ghost line", crosstalk: "Cross-talk", duck: "Rubber duck" };
 export type TreeKind = "minor" | "notable" | "keystone";
 export type Branch = "signal" | "forge" | "systems" | "drones" | "anomaly";
 export type NodeVis = "shown" | "fog" | "hidden";
@@ -441,7 +442,7 @@ export function respec(s: State): number {
     s.ap += back;
     s.tree = [];
     s.treeLv = {};
-    s.mounts = [];
+    // Mounted drives stay assigned: their slots come back when the drive nodes are bought again
     // Drone levels that only the removed nodes allowed (extra levels per tier) go with them
     s.drones = s.drones.map((lv) => Math.min(lv, droneMax(s)));
     return back;
@@ -531,8 +532,7 @@ export function treeTotals(s: State): [string, string][] {
     if (f.droneTierGoal) rows.push(["Night crew", `+${f.droneTierGoal * tiersDone(s)} Drone levels`]);
     if (f.frenzy) rows.push(["Swarm alarm", `Drones x${TUNE.frenzyX} for ${TUNE.frenzySecs} s per win`]);
     if (f.ocReboot) rows.push(["Overclock Reboot power", `x${1 + f.ocReboot}`]);
-    const named: Record<Feature, string> = { watchdog: "Watchdog timer", forecast: "Forecast", deaddrop: "Dead drop", orders: "Standing orders", ghostline: "Ghost line", crosstalk: "Cross-talk", duck: "Rubber duck" };
-    if (f.features.length) rows.push(["Systems", f.features.map((k) => named[k]).join(", ")]);
+    if (f.features.length) rows.push(["Systems", f.features.map((k) => FEATURE_NAME[k]).join(", ")]);
     return rows;
 }
 
@@ -1204,10 +1204,15 @@ export function droneStep(s: State, dt: number, eff = 1): number {
 /** Ceiling for every amount (doubles overflow to Infinity just past 1.8e308). */
 export const CAP = 1e300;
 
+/** Every Bytes added to lifetime Bytes, summed on the side. offline() reads it for the standby report: the lifetime counter is too
+ *  large to subtract (a few thousand Bytes vanish next to 1e40), and s.bytes is reset by every Reboot. */
+export const lifeTally = { bytes: 0 };
+export function addLifeBytes(s: State, v: number) { s.life.bytes += v; lifeTally.bytes += v; }
+
 export function tick(s: State, dt: number, eff = 1) {
     const d = derive(s);
     s.bytes += d.bytesPerSec * dt;
-    s.life.bytes += d.bytesPerSec * dt;
+    addLifeBytes(s, d.bytesPerSec * dt);
     // amounts stop at CAP so a very long post-tree run can never reach Infinity and break the save
     for (const m of MATS) s[m] = Math.min(CAP, s[m] + d.rates[m] * dt);
     if (s.bytes > CAP) s.bytes = CAP;
@@ -1232,7 +1237,7 @@ export function payout(s: State, secs: number, only?: readonly MatId[]) {
     const oc = s.overclock > 0 ? overclockMult(s) : 1; // a lump is never paid at Overclock rate
     const gain: Partial<Record<StatId, number>> = { bytes: (d.bytesPerSec / oc) * secs };
     s.bytes += gain.bytes!;
-    s.life.bytes += gain.bytes!;
+    addLifeBytes(s, gain.bytes!);
     for (const m of only ?? MATS) { const v = (d.rates[m] / oc) * secs; if (v > 0) { s[m] += v; gain[m] = v; } }
     return gain;
 }
@@ -1316,7 +1321,7 @@ export function ascend(s: State) {
     const keptDrones = s.drones.map((lv) => Math.max(Math.floor(lv * tf.droneKeep), tf.kitDrones));
     const oldDrones = s.drones.slice();
     const hf = handFx(s);
-    // Lab image (Firmware) keeps Intel and running payloads through Ascend
+    // after the first Handover, Ascend keeps Intel and running payloads (base Handover, HAND_BASE)
     const lab: LabState = { ...s.lab, intel: hf.labKeep ? s.lab.intel : 0, run: hf.labKeep ? s.lab.run : [], armed: s.lab.armed.filter((x) => x !== "zeroclick"), dump: LAB_TUNE.dumpSecs };
     const hand: HandState = { ...s.hand, cycleAp: s.hand.cycleAp + gain };
     const dr = drOnAscend(s);
@@ -1330,7 +1335,7 @@ export function ascend(s: State) {
     s.rebootAt = s.life.secs;
     for (const [m, v] of Object.entries(tf.kitProd)) s.prod[m as MatId] += v;
     for (const [m, v] of Object.entries(keptProd)) s.prod[m as MatId] = Math.max(s.prod[m as MatId], v);
-    s.drones = keptDrones.map((lv, k) => Math.max(lv, Math.floor(oldDrones[k] * hf.droneKeep))); // Drone RAM (Firmware)
+    s.drones = keptDrones.map((lv, k) => Math.max(lv, Math.floor(oldDrones[k] * hf.droneKeep))); // half the Drone levels stay after the first Handover (HAND_BASE)
     bootKit(s);
     if (s.ze) s.ze.act = []; // a running zone event ends with the run (its count and timer stay)
     return gain;
@@ -1345,15 +1350,20 @@ export function buyPerk(s: State, id: PerkDef["id"]): boolean {
     return true;
 }
 
+export const OFFLINE_STEP_S = 1;
+export const OFFLINE_MAX_STEPS = 7200;
+
 /** Catch up for time away. Production only; nothing is bought for you (except by the scripts you taught). Returns what was gained.
- *  The steps are short (10 s) while scripts are running, and a step never runs past the moment a timed boost ends (Overclock,
+ *  The steps are about a second (see OFFLINE_STEP_S), and a step never runs past the moment a timed boost ends (Overclock,
  *  Swarm alarm, a zone event, a deployed payload), so a boost counts for exactly the time it had left, not a whole step. */
 export function offline(s: State, seconds: number) {
     const cap = derive(s).offlineCap;
     const secs = Math.min(Math.max(0, seconds), cap);
-    const before = Object.fromEntries((["bytes", ...MATS] as const).map((k) => [k, s[k]])) as Record<"bytes" | MatId, number>;
-    const per = s.auto?.own.length ? 10 : 20;
-    const steps = Math.min(2400, Math.max(1, Math.ceil(secs / per)));
+    const before = Object.fromEntries(MATS.map((k) => [k, s[k]])) as Record<MatId, number>;
+    lifeTally.bytes = 0;
+    // Steps are about a second long while the gap allows it (7200 steps at most: an hour runs in 1 s steps, an 8 h gap in 4 s steps). Longer steps
+    // under-credit Drones, whose presses are paid from the stock at the start of a step, and Watchdog Reboots, which fire at most once a tick.
+    const steps = Math.min(OFFLINE_MAX_STEPS, Math.max(1, Math.ceil(secs / OFFLINE_STEP_S)));
     const dt = secs / steps;
     const oc = s.overclock;
     s.overclock = 0; // an intrusion boost doesn't carry through time away
@@ -1376,7 +1386,9 @@ export function offline(s: State, seconds: number) {
         }
     }
     s.overclock = Math.max(0, oc - secs);
-    return { secs, capped: seconds > cap, drones: s.life.presses - pressesBefore, gain: Object.fromEntries((["bytes", ...MATS] as const).map((k) => [k, s[k] - before[k]])) as Record<"bytes" | MatId, number> };
+    const gain = Object.fromEntries(MATS.map((k) => [k, s[k] - before[k]])) as Record<"bytes" | MatId, number>;
+    gain.bytes = lifeTally.bytes;
+    return { secs, capped: seconds > cap, drones: s.life.presses - pressesBefore, gain };
 }
 
 // ---- goals. Five tiers of six. Each goal gives a small permanent boost (TUNE.achBonus) and a full tier gives a bigger one (TUNE.tierBonus).
@@ -2133,6 +2145,7 @@ export function buyDroneNode(s: State, id: string): boolean {
 }
 /** Free respec: every Core comes back. Mod levels above the new caps are trimmed, without refund. Returns Cores refunded. */
 export function respecDrones(s: State): number {
+    if (chOff(s, "prestige")) return 0;
     const back = coresSpent(s);
     s.dr.nodes = [];
     for (const m of s.dr.mods) m[0] = Math.min(m[0], modMax(s, 0));
@@ -2208,9 +2221,9 @@ export const HAND_TUNE = {
     protoX: 2, // a protocol's main boost: x(1 + protoX); Dual boot runs the second one at half
     vaelPay: 120, // seconds of production every event win pays under Vael's protocol
     standbyHours: 8, // Hot standby: extra offline hours
-    warmReboots: 25, // Warm boot
-    bootProd: 10, // Bootloader: producers on Copper to Aether
-    afterglow: 180, // Afterglow: seconds of Overclock at the start of every Ascend
+    warmReboots: 25, // base Handover: Reboots every Ascend starts with
+    bootProd: 10, // base Handover: producers on Copper to Aether at every Ascend
+    afterglow: 180, // base Handover: seconds of Overclock at the start of every Ascend
     noteMax: 140, // characters in a handover note
     apPerHand: 0.25, // every Handover done: AP on Ascend x(1 + this * Handovers), so each cycle rebuilds the tree faster (was 1: cycles shrank to minutes)
     rankStep: 0.25, // protocol mastery: each rank runs that protocol x(1 + this) stronger
@@ -2249,32 +2262,28 @@ export interface FwFx {
     zeOften?: number; // zone events come x(1 + this) as often
     fieldOp?: boolean; // no more Faults, and Surges run twice as strong
 }
+/** Tree systems that work without their node once you have handed over (base Handover). */
 export const PREINSTALLED: Feature[] = ["watchdog", "orders", "forecast"];
 export interface FwNode { id: string; branch: FwSec; kind: TreeKind; name: string; blurb: string; flavor: string; cost: number; links: string[]; fx: FwFx; x: number; y: number; ix: number; sprite: string; entry?: boolean }
 export const FW_SECS: { id: FwSec; name: string; blurb: string; color: string }[] = [
-    { id: "boot", name: "Boot", blurb: "How every run starts.", color: "#3dff6e" },
-    { id: "memory", name: "Memory", blurb: "What survives Ascend and Handover.", color: "#ffc53a" },
     { id: "relay", name: "Relay", blurb: "Keys, protocols and the long haul.", color: "#64e6ff" },
-    { id: "field", name: "Field", blurb: "Rigs, zone events and the hangar.", color: "#ff7ab6" },
+    { id: "field", name: "Field", blurb: "Rigs, zone events and shortcuts.", color: "#ff7ab6" },
 ];
+/**
+ * What every Handover keeps and every Ascend after the first Handover starts with. These used to be 12 Firmware nodes
+ * (Warm boot, Preinstalled, Afterglow, Bootloader, Imprint, Perk cache, Lab image, Deep imprint, Drone RAM, Tape backup,
+ * Rig memory, Flight recorder); Nate made them the default on 2026-11-12, so Firmware only buys new rules.
+ */
+export const HAND_BASE: FwFx = {
+    kitReboot: HAND_TUNE.warmReboots, kitProd: HAND_TUNE.bootProd, afterglow: HAND_TUNE.afterglow, preinstall: true,
+    keepEntry: true, keepUpper: true, perkKeep: 0.5, labKeep: true, droneKeep: 0.5, apRefund: 0.25, rigKeep: 0.5, modKeep: 0.5,
+};
+/** Keys each removed Firmware node cost before the fold, for the save migration (migrateFw). */
+const FW_OLD_COST: Record<string, number> = { fw_warm: 2, fw_preinstall: 3, fw_afterglow: 3, fw_bootloader: 8, fw_fastpath: 8, fw_shortfuse: 12, fw_imprint: 2, fw_perkcache: 3, fw_labimage: 3, fw_deepimprint: 8, fw_droneram: 8, fw_tape: 12, fw_keysmith: 2, fw_desk: 3, fw_standby: 3, fw_dual: 8, fw_rootpath: 8, fw_lineage: 12, fw_rigmem: 2, fw_rod: 3, fw_recorder: 3, fw_fieldkit: 8, fw_weather: 8, fw_fieldop: 12 };
 type FwRow = [slot: number, id: string, kind: TreeKind, name: string, blurb: string, flavor: string, fx: FwFx];
-const FW_ARMS: Record<FwSec, FwRow[]> = {
-    boot: [
-        [0, "fw_warm", "minor", "Warm boot", `Every Ascend starts with ${HAND_TUNE.warmReboots} Reboots.`, "Leave the fans running between operators. The rack never gets cold.", { kitReboot: HAND_TUNE.warmReboots }],
-        [1, "fw_preinstall", "minor", "Preinstalled", "Watchdog timer, Standing orders and Forecast work without their tree nodes.", "The good tools ship with the box now.", { preinstall: true }],
-        [2, "fw_afterglow", "minor", "Afterglow", "Every Ascend starts with a 3 minute Overclock.", "The node comes back up still warm from the last run.", { afterglow: HAND_TUNE.afterglow }],
-        [3, "fw_bootloader", "notable", "Bootloader", `Every Ascend starts with ${HAND_TUNE.bootProd} producers on Copper, Silicon, Quartz and Aether.`, "Skip the tutorial. The node knows the way to the forge.", { kitProd: HAND_TUNE.bootProd }],
-        [4, "fw_fastpath", "notable", "Fast path", "Every material opens at half the usual amount.", "Shorter cable, same signal.", { unlockMul: 0.5 }],
-        [5, "fw_shortfuse", "keystone", "Short fuse", "Ascend needs half the usual Aether.", "You know where the top is now. Go up sooner.", { ascendAt: 0.5 }],
-    ],
-    memory: [
-        [0, "fw_imprint", "minor", "Imprint", "Handover keeps the entry node of every prestige tree section.", "The first five nodes leave a mark the wipe can't reach.", { keepEntry: true }],
-        [1, "fw_perkcache", "minor", "Perk cache", "Handover keeps half of every perk's levels.", "Taped the perk settings to the inside of the case.", { perkKeep: 0.5 }],
-        [2, "fw_labimage", "minor", "Lab image", "Ascend keeps your Intel and running payloads.", "The bench gets imaged before every wipe.", { labKeep: true }],
-        [3, "fw_deepimprint", "notable", "Deep imprint", "Handover also keeps the upper path of every tree section.", "Walk the same path enough times and it stays walked.", { keepUpper: true }],
-        [4, "fw_droneram", "notable", "Drone RAM", "Drones keep half their levels through Ascend.", "Osk gave every Drone a little memory. They remember the buttons.", { droneKeep: 0.5 }],
-        [5, "fw_tape", "keystone", "Tape backup", "Handover gives back a quarter of the AP your tree cost.", "Everything important on one tape. The tape is labeled. Tamsin labeled it.", { apRefund: 0.25 }],
-    ],
+// Firmware buys new rules only. What it used to sell back after a Handover (kits, keeps, the AP refund) is now the base
+// Handover (HAND_BASE, Nate's pick 2026-11-12 from the systems audit); old saves get those Keys back (migrateFw).
+const FW_ARMS: Partial<Record<FwSec, FwRow[]>> = {
     relay: [
         [0, "fw_keysmith", "minor", "Keysmith", "Handovers pay x1.5 Keys.", "Cut a spare. Then cut a spare of the spare.", { keys: 0.5 }],
         [1, "fw_desk", "minor", "Operator's desk", "Change your protocol at any time, not only at a Handover.", "A chair, a lamp, and the right to change your mind.", { anyAscend: true }],
@@ -2284,32 +2293,34 @@ const FW_ARMS: Record<FwSec, FwRow[]> = {
         [5, "fw_lineage", "keystone", "Lineage", "Everything +50% for every Handover you have done.", "Every operator who left made the node a little stronger.", { lineage: 0.5 }],
     ],
     field: [
-        [0, "fw_rigmem", "minor", "Rig memory", "Handover keeps half of every rig level.", "The rigs were built by hand. Hands remember.", { rigKeep: 0.5 }],
-        [1, "fw_rod", "minor", "Lightning rod", "Zone events last 50% longer.", "Give the weather something tall to hold on to.", { zeLong: 0.5 }],
-        [2, "fw_recorder", "minor", "Flight recorder", "Ascend and Handover keep half your Parts and mod levels in the hangar.", "The orange box survives everything. That is the whole point of it.", { modKeep: 0.5 }],
-        [3, "fw_fieldkit", "notable", "Field kit", "Rig levels cost 40% less.", "Every zone gets a toolbox. Somebody finally labeled the drawers.", { rigCost: 0.4 }],
-        [4, "fw_weather", "notable", "Weather eye", "Zone events come twice as often.", "Watch the zones long enough and you can feel the next one coming.", { zeOften: 1 }],
+        [0, "fw_rod", "minor", "Lightning rod", "Zone events last 50% longer.", "Give the weather something tall to hold on to.", { zeLong: 0.5 }],
+        [1, "fw_fastpath", "minor", "Fast path", "Every material opens at half the usual amount.", "Shorter cable, same signal.", { unlockMul: 0.5 }],
+        [2, "fw_fieldkit", "minor", "Field kit", "Rig levels cost 40% less.", "Every zone gets a toolbox. Somebody finally labeled the drawers.", { rigCost: 0.4 }],
+        [3, "fw_weather", "notable", "Weather eye", "Zone events come twice as often.", "Watch the zones long enough and you can feel the next one coming.", { zeOften: 1 }],
+        [4, "fw_shortfuse", "notable", "Short fuse", "Ascend needs half the usual Aether.", "You know where the top is now. Go up sooner.", { ascendAt: 0.5 }],
         [5, "fw_fieldop", "keystone", "Field operator", "Faults stop happening, and Surges run twice as strong.", "Walk the floor every shift. Nothing breaks where someone is looking.", { fieldOp: true }],
     ],
 };
-const FW_ORDER: FwSec[] = ["boot", "memory", "relay", "field"];
+const FW_ORDER: FwSec[] = ["relay", "field"];
 // same small diamond as the lab tree: entry, two paths of two, keystone
 const FW_SLOTS: [number, number, number[]][] = [[2.3, 0, []], [3.9, -1.1, [0]], [3.9, 1.1, [0]], [5.7, -1.25, [1]], [5.7, 1.25, [2]], [7.5, 0, [3, 4]]];
+// nodes that changed size when they moved arms draw from rows appended at the new size
+const FW_SPRITE: Record<string, string> = { fw_fastpath: "fw_fastpath_s", fw_fieldkit: "fw_fieldkit_s", fw_shortfuse: "fw_shortfuse_m" };
 function buildFw(): FwNode[] {
     const out: FwNode[] = [];
     FW_ORDER.forEach((arm, ai) => {
-        // four arms on the diagonals (an X), so it never looks like the lab's or the hangar's three-armed trees
-        const th = -Math.PI / 2 + Math.PI / 4 + (ai * 2 * Math.PI) / FW_ORDER.length;
+        // two arms, left and right of node zero, so it never looks like the lab's or the hangar's three-armed trees
+        const th = Math.PI + (ai * 2 * Math.PI) / FW_ORDER.length;
         const c = Math.cos(th), sn = Math.sin(th);
         const ids: string[] = [];
-        for (const [slot, id, kind, name, blurb, flavor, fx] of FW_ARMS[arm]) {
+        for (const [slot, id, kind, name, blurb, flavor, fx] of FW_ARMS[arm] ?? []) {
             const [u, v] = FW_SLOTS[slot];
             out.push({
                 id, branch: arm, kind, name, blurb, flavor, fx,
                 cost: Math.max(1, Math.round(HAND_TUNE.nodeCost[slot] * (kind === "notable" ? 1.25 : 1) * HAND_TUNE.fwScale)),
                 links: slot === 0 ? ["core"] : [],
                 x: +(u * c - v * sn).toFixed(3), y: +(u * sn + v * c).toFixed(3),
-                ix: out.length, sprite: id,
+                ix: out.length, sprite: FW_SPRITE[id] ?? id,
                 ...(slot === 0 ? { entry: true } : {}),
             });
             ids[slot] = id;
@@ -2353,24 +2364,27 @@ export interface HandState {
     notes: HandNote[];
     /** protocol mastery: cycles finished on each protocol (ranks I to III) */
     rank: Partial<Record<ProtoId, number>>;
+    /** Firmware layout version: 2 = the keeps are base Handover (older saves get their Keys back once) */
+    fwv: number;
 }
-export const freshHand = (): HandState => ({ keys: 0, fw: [], proto: null, proto2: null, count: 0, keysTotal: 0, cycleAp: 0, cycleAt: 0, notes: [], rank: {} });
+export const freshHand = (): HandState => ({ keys: 0, fw: [], proto: null, proto2: null, count: 0, keysTotal: 0, cycleAp: 0, cycleAt: 0, notes: [], rank: {}, fwv: 2 });
 
-const HFX_CACHE = new WeakMap<string[], { n: number; v: ReturnType<typeof handFxRaw> }>();
-/** What the owned Firmware adds up to. Cached per Firmware array. */
+const HFX_CACHE = new WeakMap<string[], { n: number; base: boolean; v: ReturnType<typeof handFxRaw> }>();
+/** What the owned Firmware adds up to, plus the base Handover keeps once one is done. Cached per Firmware array. */
 export function handFx(s: State) {
     const arr = s.hand.fw;
+    const base = s.hand.count > 0;
     const hit = HFX_CACHE.get(arr);
-    if (hit && hit.n === arr.length) return hit.v;
-    const v = handFxRaw(arr);
-    HFX_CACHE.set(arr, { n: arr.length, v });
+    if (hit && hit.n === arr.length && hit.base === base) return hit.v;
+    const v = handFxRaw(arr, base);
+    HFX_CACHE.set(arr, { n: arr.length, base, v });
     return v;
 }
-function handFxRaw(ids: string[]) {
+function handFxRaw(ids: string[], base: boolean) {
     const o = { kitReboot: 0, kitProd: 0, afterglow: 0, unlockMul: 1, rootPath: 1, ascendAt: 1, preinstall: false, keepEntry: false, keepUpper: false, perkKeep: 0, labKeep: false, droneKeep: 0, apRefund: 0, keys: 0, anyAscend: false, standby: false, dual: false, lineage: 0, rigKeep: 0, zeLong: 0, modKeep: 0, rigCost: 0, zeOften: 0, fieldOp: false };
-    for (const id of ids) {
-        const f = FW_BY.get(id)?.fx;
-        if (!f) continue;
+    const all: FwFx[] = ids.map((id) => FW_BY.get(id)?.fx).filter((f): f is FwFx => !!f);
+    if (base) all.unshift(HAND_BASE);
+    for (const f of all) {
         o.kitReboot += f.kitReboot ?? 0;
         o.kitProd += f.kitProd ?? 0;
         o.afterglow += f.afterglow ?? 0;
@@ -2436,9 +2450,8 @@ export function keysOnHandover(s: State): number {
     const raw = HAND_TUNE.keysBase + treeCount(s) * HAND_TUNE.keysPerNode + Math.sqrt(Math.log10(1 + Math.max(0, s.origin))) * HAND_TUNE.keysPerOriginLog;
     return Math.floor(raw * (1 + handFx(s).keys) * bloomKeys(s));
 }
-/** Which prestige tree nodes a Handover keeps (Imprint, Deep imprint). */
-export function handKeeps(s: State): string[] {
-    const hf = handFx(s);
+/** Which prestige tree nodes a Handover keeps: the entry and the upper path of every section (19 on a whole tree). */
+export function handKeeps(s: State, hf = handFxRaw(s.hand.fw, true)): string[] {
     if (!hf.keepEntry && !hf.keepUpper) return [];
     return s.tree.filter((id) => {
         const n = BY_ID.get(id);
@@ -2454,8 +2467,9 @@ export function handKeeps(s: State): string[] {
 export function handover(s: State, proto: ProtoId | null, note = "", proto2: ProtoId | null = null): number {
     const gain = keysOnHandover(s);
     if (gain < 1) return 0;
-    const hf = handFx(s);
-    const kept = handKeeps(s);
+    // the base keeps apply from the very first Handover (handFx only adds them once one is done)
+    const hf = handFxRaw(s.hand.fw, true);
+    const kept = handKeeps(s, hf);
     const refund = Math.floor(treeSpent(s) * hf.apRefund);
     const perks = Object.fromEntries(Object.entries(s.perks).map(([k, v]) => [k, Math.floor(v * hf.perkKeep)])) as State["perks"];
     const text = note.replace(/\s+/g, " ").trim().slice(0, HAND_TUNE.noteMax);
@@ -2473,7 +2487,7 @@ export function handover(s: State, proto: ProtoId | null, note = "", proto2: Pro
         rank: s.hand.proto ? { ...s.hand.rank, [s.hand.proto]: Math.min(HAND_TUNE.rankMax, (s.hand.rank[s.hand.proto] ?? 0) + 1) } : s.hand.rank,
     };
     const lab: LabState = { ...freshLab(), seen: s.lab.seen, nodes: s.lab.nodes, last: s.lab.last };
-    // rigs: switches stay, levels go (Rig memory keeps a share); zone events keep their history and timer, a running one ends
+    // rigs: switches stay, half of every level stays; zone events keep their history and timer, a running one ends
     const r0 = RIG_HOOKS.ascend ? RIG_HOOKS.ascend(s) : s.rig;
     const scale = (o: Record<string, number> | undefined) => Object.fromEntries(Object.entries(o ?? {}).map(([k, v]) => [k, Math.floor(v * hf.rigKeep)]).filter(([, v]) => (v as number) > 0));
     const rig = r0 ? { ...r0, lv: scale(r0.lv), re: scale(r0.re), rw: Math.floor((r0.rw ?? 0) * hf.rigKeep) } : r0;
@@ -2515,7 +2529,7 @@ export function respecFw(s: State): number {
     return back;
 }
 export function fwTotals(s: State): [string, string][] {
-    const f = handFx(s);
+    const f = handFxRaw(s.hand.fw, false); // Firmware's own effects; the base keeps are listed on the Handover window
     const rows: [string, string][] = [];
     if (f.kitReboot) rows.push(["Ascend starts with", `${f.kitReboot} Reboots`]);
     if (f.kitProd) rows.push(["Starting producers", `${f.kitProd} on CU, SI, QZ, AE`]);
@@ -2548,9 +2562,15 @@ function parseHand(o: unknown): HandState {
     const x = o as Partial<HandState>;
     const num = (v: unknown, d = 0) => (typeof v === "number" && Number.isFinite(v) ? v : d);
     const pid = (v: unknown): ProtoId | null => (PROTOS.some((p) => p.id === v) ? (v as ProtoId) : null);
+    const owned: string[] = Array.isArray(x.fw) ? [...new Set(x.fw.filter((id): id is string => typeof id === "string"))] : [];
+    let keys = Math.max(0, Math.floor(num(x.keys)));
+    // migrateFw: saves from before the keeps became base Handover get back every Key spent on a node that left Firmware,
+    // and the difference on nodes that moved to a cheaper slot
+    if (num(x.fwv) < 2) for (const id of owned) keys += Math.max(0, (FW_OLD_COST[id] ?? 0) - (FW_BY.get(id)?.cost ?? 0));
     return {
-        keys: Math.max(0, Math.floor(num(x.keys))),
-        fw: Array.isArray(x.fw) ? [...new Set(x.fw.filter((id) => FW_BY.has(id)))] : [],
+        fwv: 2,
+        keys,
+        fw: owned.filter((id) => FW_BY.has(id)),
         proto: pid(x.proto),
         proto2: pid(x.proto2),
         count: Math.max(0, Math.floor(num(x.count))),

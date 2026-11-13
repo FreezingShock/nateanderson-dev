@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState, type CSSProperties } from "react";
 import {
-    ARC_MATS, arcGateNeed, FW, FW_SECS, HAND_TUNE, PROTOS, canSwitchProto, droneFx, fmt, fmtTime, fwNode, fwNodeOpen, fwTotals, fwVis, handFx, handKeeps, handOpen, isUnlocked,
+    ARC_MATS, arcGateNeed, FEATURE_NAME, FW, FW_SECS, HAND_BASE, PREINSTALLED, HAND_TUNE, PROTOS, canSwitchProto, droneFx, fmt, fmtTime, fwNode, fwNodeOpen, fwTotals, fwVis, handFx, handKeeps, handOpen, isUnlocked,
     chOff, keysOnHandover, masteryRanks, protoDef, protoRank, ROMAN, statDef, treeCount, treeSpent, type ProtoId, type State,
 } from "@/lib/nodefarm/engine";
 import { NfIcon } from "./icon";
@@ -142,19 +142,21 @@ function Flow({ s, keys, onGo }: { s: State; keys: number; onGo: () => void }) {
 
 /** What goes and what stays, as two plain lists. */
 function Ledger({ s }: { s: State }) {
-    const f = handFx(s);
     const kept = handKeeps(s).length;
-    const modKeep = Math.max(f.modKeep, droneFx(s).modKeep);
-    const back = Math.floor(treeSpent(s) * f.apRefund);
+    const baseMod = HAND_BASE.modKeep ?? 0;
+    const modKeep = Math.max(baseMod, droneFx(s).modKeep);
+    const back = Math.floor(treeSpent(s) * (HAND_BASE.apRefund ?? 0));
     const wipes = [
         "This run: every stat, button and producer",
-        `AP and perks${f.perkKeep ? ` (half the perk levels stay: Perk cache)` : ""}`,
-        `The prestige tree${kept ? ` (${kept} nodes stay: Imprint)` : ""}${back ? `, ${fmt(back)} AP back (Tape backup)` : ""}`,
+        "AP and perks (half of every perk's levels stay)",
+        `The prestige tree${kept ? ` (${kept} nodes stay: the entry and upper path of each section)` : ""}${back ? `, and ${fmt(back)} AP back, a quarter of what it cost` : ""}`,
         "Drones, Mounted drives and Exploit Lab Intel and stock",
-        `Parts and mod levels in the hangar${modKeep ? ` (${Math.round(modKeep * 100)}% stay: Flight recorder, Black box)` : ""}`,
-        `Rig levels${f.rigKeep ? ` (half stay: Rig memory)` : ""}`,
+        `Parts and mod levels in the hangar (${Math.round(modKeep * 100)}% stay${modKeep > baseMod ? ": Black box" : ""})`,
+        "Rig levels (half of every level stays)",
     ];
     const keeps = [
+        `Every Ascend after this starts with ${HAND_TUNE.warmReboots} Reboots, ${HAND_TUNE.bootProd} producers on CU to AE and a ${Math.round(HAND_TUNE.afterglow / 60)} minute Overclock, and keeps Intel, payloads and half the Drone levels`,
+        `${PREINSTALLED.map((k) => FEATURE_NAME[k]).join(", ").replace(/, ([^,]*)$/, " and $1")} work without their tree nodes`,
         "Goals, secrets and operator logs",
         "Exploit Lab research",
         "Cleared stress test ranks",
@@ -221,7 +223,7 @@ function Gateway({ s, onFirmware }: { s: State; onFirmware: () => void }) {
         <section className="nf-hx-gate" data-cx-i="4">
             <header className="nf-sys-h" data-path="handover/firmware">
                 <h3>Firmware</h3>
-                <p>{FW.length} upgrades in {["one", "two", "three", "four", "five"][FW_SECS.length - 1]} sections, flashed with Keys. {s.hand.keys} Keys held{ready ? `, ${ready} ready to flash` : ""}.</p>
+                <p>{FW.length} new rules in {["one", "two", "three", "four", "five"][FW_SECS.length - 1]} sections, flashed with Keys. {s.hand.keys} Keys held{ready ? `, ${ready} ready to flash` : ""}.</p>
             </header>
             <button type="button" className="nf-hx-portal" onClick={onFirmware} aria-label="Open the Firmware tree" disabled={s.hand.count === 0 && s.hand.keys === 0} title={s.hand.count === 0 && s.hand.keys === 0 ? "Your first Handover pays the Keys" : undefined}>
                 <span className="nf-hx-glass" aria-hidden="true"><i data-l="0" /><i data-l="1" /><i className="nf-hx-glass-core" /></span>

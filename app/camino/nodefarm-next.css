@@ -150,3 +150,9 @@
 .ctos .nf-nx-also button span { color: var(--c); }
 .ctos .nf-nx-also button:hover, .ctos .nf-nx-also button:focus-visible { color: var(--c); text-decoration: underline; text-underline-offset: 3px; }
 .ctos .nf-nx-also button:focus-visible { outline: 1px solid var(--c); outline-offset: 2px; }
+/* Touch: the also-ready links and the Map and Hide buttons were 15 to 36px tall. Give them a real finger target. */
+@media (hover: none) {
+    .ctos .nf-nx-also button { display: inline-flex; align-items: center; min-height: 40px; }
+    .ctos .nf-nx-sec .nf-gd-map { min-height: 44px; }
+    .ctos .nf-nx-sec .nf-nx-fold { width: 44px; }
+}

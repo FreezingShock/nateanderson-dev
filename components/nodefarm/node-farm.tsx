@@ -12,7 +12,7 @@ import {
     chOff, buyFw, fwNode, handSeen, handover, keysOnHandover, protoDef, protoRank, respecFw, setProto, type ProtoId,
     type ButtonStat, type MatId, type State, type StatId,
 } from "@/lib/nodefarm/engine";
-import { initFx } from "@/lib/nodefarm/fx";
+import { getLowFx, initFx } from "@/lib/nodefarm/fx";
 import { keyIsTyping, keyOverlay } from "@/lib/nodefarm/keys";
 import type { NfLive } from "@/lib/nodefarm/records";
 import { Core, freshCoreFeed, type CoreFeed } from "./core";
@@ -21,7 +21,7 @@ import { PART_ORDER, SKINS } from "@/lib/nodefarm/core-parts";
 import { NfIcon } from "./icon";
 import { MiniHud } from "./mini-hud";
 import { RARITY } from "@/lib/nodefarm/events";
-import { AwayReport, type Away } from "./away";
+import type { Away } from "./away";
 import { catchUp } from "@/lib/nodefarm/offline";
 import { Scenery, SceneWindow } from "./scenery";
 import dynamic from "next/dynamic";
@@ -29,6 +29,16 @@ import dynamic from "next/dynamic";
 // own and is fetched quietly once the board is idle.
 const loadTree = () => import("./tree");
 const TreeMenu = dynamic(() => loadTree().then((m) => ({ default: m.TreeMenu })), { ssr: false });
+// Window panels load the first time their window opens (see `latch` in NodeFarm), so their code and styles stay out of the first load.
+const AwayReport = dynamic(() => import("./away").then((m) => ({ default: m.AwayReport })), { ssr: false });
+const HandoverCut = dynamic(() => import("./handover-cut").then((m) => ({ default: m.HandoverCut })), { ssr: false });
+const AdminPanel = dynamic(() => import("./admin").then((m) => ({ default: m.AdminPanel })), { ssr: false });
+const MapPanel = dynamic(() => import("./map").then((m) => ({ default: m.MapPanel })), { ssr: false });
+const GoalsPanel = dynamic(() => import("./systems").then((m) => ({ default: m.GoalsPanel })), { ssr: false });
+const RecordsPanel = dynamic(() => import("./systems").then((m) => ({ default: m.RecordsPanel })), { ssr: false });
+const MenuPanel = dynamic(() => import("./systems").then((m) => ({ default: m.MenuPanel })), { ssr: false });
+const AscendPanel = dynamic(() => import("./ascend").then((m) => ({ default: m.AscendPanel })), { ssr: false });
+const CodexPanel = dynamic(() => import("./codex").then((m) => ({ default: m.CodexPanel })), { ssr: false });
 import { LabHud, LabZone, labModel, labReady } from "./lab";
 import { ScriptsZone } from "./scripts";
 import { SCRIPTS, SCRIPT_BY, toggleBuyStat, ascendDue, ascendPrep, learnStep, teachEvent, schedOpen, teachAscend, teachCompile, teachDeploy, teachDrop, teachPress } from "@/lib/nodefarm/scripts";
@@ -43,16 +53,16 @@ import { LORE } from "@/lib/nodefarm/lore";
 import { LOGS, logNo, recoverLogs } from "@/lib/nodefarm/story";
 import { Juice, juice, checkMilestones, onJuice } from "./juice";
 import { GuideStrip, Tip, TipCtx, type TipApi, type TipState, type TipStore } from "./guide";
-import { MapPanel } from "./map";
+
 import { nextStep, type Target } from "@/lib/nodefarm/guide";
-import { GoalsPanel, MenuPanel, RecordsPanel } from "./systems";
-import { AscendPanel } from "./ascend";
+
+
 import { HandoverPanel, fwModel } from "./handover";
-import { CodexPanel } from "./codex";
+
 import { unlocked as codexUnlocked } from "@/lib/nodefarm/codex";
-import { HandoverCut, type HandCutInfo } from "./handover-cut";
+import type { HandCutInfo } from "./handover-cut";
 import { Dock, PhoneTabs, WinBar, swInfo } from "./switcher";
-import { AdminPanel, type AdminHost } from "./admin";
+import type { AdminHost } from "./admin";
 import { isAdmin, setAdmin } from "@/lib/nodefarm/admin";
 import { adminFlags, buyDroneNode, buyMod, droneNode, masteryRanks, MODS, respecDrones, setPost } from "@/lib/nodefarm/engine";
 import { DRONE_NAMES } from "@/lib/nodefarm/guide";
@@ -62,7 +72,7 @@ import { zeChoose, zeVault, zoneEvDef, zoneLabel, type ZeChoice, type ZeResult }
 import { ARCS, arcKey, arcOf } from "@/lib/nodefarm/arcs";
 import { ArcHead } from "./arcs";
 import { Hold } from "./hold";
-import { useOffscreenPause } from "./offscreen";
+import { isOff, useOffscreenPause } from "./offscreen";
 import { ArcRail, ArcStep } from "./arc-rail";
 import { PokeLayer } from "./poke";
 import { StressPanel, StressStrip } from "./stress";
@@ -101,6 +111,8 @@ const hasProgress = (s: State) => s.life.presses > 0 || s.life.secs > 60;
 
 export function NodeFarm() {
     const g = useRef<State>(null as unknown as State);
+    // Panels that have been opened at least once (see `latch` below). Declared with the other refs so hook order never changes.
+    const opened = useRef(new Set<string>());
     const [ready, setReady] = useState(false);
     const [ver, bump] = useState(0); // bumped by whatever the player or a system just did
     const [, tickBump] = useState(0); // bumped by the 10 Hz loop only (see Hold: hidden parts follow ver, not this)
@@ -658,8 +670,9 @@ export function NodeFarm() {
                 sfx("nfGoal");
                 setTimeout(() => setToast((t) => (t === goal.name ? null : t)), 3200);
             }
-            // a full-screen tree hides the board, so the page only needs to follow once a second (the game itself still ticks ten times a second)
-            if (!treeOpenRef.current || tickN.current % 10 === 0) tickBump((n) => n + 1);
+            // a full-screen tree hides the board (1 Hz); low effects (a slow device, chosen or auto) redraws the page at 5 Hz. The game itself still ticks ten times a second.
+            const every = treeOpenRef.current ? 10 : getLowFx() ? 2 : 1;
+            if (tickN.current % every === 0) tickBump((n) => n + 1);
         }, 100);
         return () => {
             clearInterval(iv);
@@ -1212,10 +1225,14 @@ export function NodeFarm() {
     // Hold keys: a hidden copy refreshes about three times a second (slow) or at once when something was done (ver)
     const slow = Math.floor(tickN.current / 3);
     const slow2 = Math.floor(tickN.current / 2); // open system panels follow at 5 Hz
+    // a system panel scrolled out of view refreshes about once a second
+    const rate = (stat: string, isFolded: boolean) => (isOff(stat) ? Math.floor(tickN.current / 10) : isFolded ? slow : slow2);
     const hk = `${ver}|${slow}`;
     const foldSig = JSON.stringify(folded);
     const guideKey = `${step.target?.drone ?? ""}${step.target?.lab ?? ""}${step.target?.win ?? ""}`;
     const onPane = (id: string) => win === id || tab === id;
+    // Mount-on-first-open: once a pane has been shown, its panel stays mounted (Hold keeps it while the pane is closed).
+    const latch = (id: string) => { if (onPane(id)) opened.current.add(id); return opened.current.has(id); };
     return (
         <TipCtx.Provider value={tipApi}>
         <div className="nf" ref={root} data-tab={tab} data-side={sideShown} data-win={win || undefined} data-fs={fs ? "" : undefined} data-oc={s.overclock > 0 ? "" : undefined}>
@@ -1259,7 +1276,7 @@ export function NodeFarm() {
                 <Hold live={false} k={`${hk}|${win}|${fs}|${treeSeen}|${guideKey}`}><Dock info={sw} open={win} treeSeen={treeSeen} lab={labOpen(s)} guideWin={step.target?.win} fs={fs} onOpen={(w) => (w === "lab" ? openLab() : win === w ? closeWin() : openWin(w))} onFs={() => { setFs(!fs); sfx("tab"); }} /></Hold>
                 <Hold live={false} k={hk}><StressStrip s={s} onOpen={() => openWin("stress")} /></Hold>
             </header>
-            <GuideStrip s={s} d={d} step={step} onGo={() => goTo(step.target)} onDo={() => doStep(step.target)} onCell={goTo} onMap={() => openWin("map")} mapOpen={win === "map"} />
+            <Hold live={false} k={`${hk}|${foldSig}|${win === "map"}|${JSON.stringify(step.target ?? null)}`}><GuideStrip s={s} d={d} step={step} onGo={() => goTo(step.target)} onDo={() => doStep(step.target)} onCell={goTo} onMap={() => openWin("map")} mapOpen={win === "map"} /></Hold>
             <MiniHud bytes={s.bytes} rate={d.bytesPerSec} step={step} onGo={() => goTo(step.target)} paused={!!win || treeOpen || labTree || !!away || !!confirm} />
             {win && <button type="button" className="nf-scrim" aria-label="Close window" tabIndex={-1} onClick={closeWin} />}
 
@@ -1297,7 +1314,7 @@ export function NodeFarm() {
             <section className="nf-pane nf-statspane" data-pane="stats" aria-label="Stats and buttons" onClick={(e) => blankFoldTarget(e.target as HTMLElement)?.click()}>
                 <Hold live={false} k={`${hk}|${foldSig}`}><Chain s={s} d={d} allOpen={!STATS.every((x) => folded[x.id])} onAll={(open) => setFold({ ...folded, ...Object.fromEntries(STATS.map((x) => [x.id, !open])) })} onIdle={foldIdle} onJump={(id) => goTo({ stat: id as Target["stat"] })} /></Hold>
                 {labOpen(s) && (
-                    <Hold live={false} k={`${ver}|${folded.lab ? slow : slow2}|${foldSig}|${guideKey}`}>
+                    <Hold live={false} k={`${ver}|${rate("lab", !!folded.lab)}|${foldSig}|${guideKey}`}>
                     <LabZone
                         s={s}
                         d={d}
@@ -1312,7 +1329,7 @@ export function NodeFarm() {
                     </Hold>
                 )}
                 {schedOpen(s) && (
-                    <Hold live={false} k={`${ver}|${folded.sched ? slow : slow2}|${foldSig}|${guideKey}`}>
+                    <Hold live={false} k={`${ver}|${rate("sched", !!folded.sched)}|${foldSig}|${guideKey}`}>
                     <ScriptsZone
                         s={s}
                         open={!folded.sched}
@@ -1322,7 +1339,7 @@ export function NodeFarm() {
                     </Hold>
                 )}
                 {isUnlocked(s, "aether") && (
-                    <Hold live={false} k={`${ver}|${folded.drones ? slow : slow2}|${foldSig}|${guideKey}`}>
+                    <Hold live={false} k={`${ver}|${rate("drones", !!folded.drones)}|${foldSig}|${guideKey}`}>
                     <DroneBay
                         s={s}
                         guided={step.target?.drone}
@@ -1381,15 +1398,15 @@ export function NodeFarm() {
 
             <section className="nf-pane nf-sidepane" data-pane="map" aria-label="Progress map" role="dialog" aria-modal="false">
                 <Hold live={onPane("map")} k=""><WinBar id="map" info={sw} treeSeen={treeSeen} lab={labOpen(s)} onSwitch={(w) => (w === "lab" ? openLab() : openWin(w))} onClose={closeWin} /></Hold>
-                <Hold live={onPane("map")} k=""><MapPanel s={s} d={d} onTree={() => openWin("tree")} onWin={(w) => openWin(w)} onLab={() => { closeWin(); openLab(); }} /></Hold>
+                <Hold live={onPane("map")} k="">{latch("map") && <MapPanel s={s} d={d} onTree={() => openWin("tree")} onWin={(w) => openWin(w)} onLab={() => { closeWin(); openLab(); }} />}</Hold>
             </section>
             <section className="nf-pane nf-sidepane" data-pane="goals" aria-label="Goals" role="dialog" aria-modal="false">
-                <Hold live={onPane("goals")} k=""><WinBar id="goals" info={sw} treeSeen={treeSeen} lab={labOpen(s)} onSwitch={(w) => (w === "lab" ? openLab() : openWin(w))} onClose={closeWin} /></Hold><Hold live={onPane("goals")} k=""><GoalsPanel s={s} /></Hold></section>
+                <Hold live={onPane("goals")} k=""><WinBar id="goals" info={sw} treeSeen={treeSeen} lab={labOpen(s)} onSwitch={(w) => (w === "lab" ? openLab() : openWin(w))} onClose={closeWin} /></Hold><Hold live={onPane("goals")} k="">{latch("goals") && <GoalsPanel s={s} />}</Hold></section>
             <section className="nf-pane nf-sidepane" data-pane="records" aria-label="Records" role="dialog" aria-modal="false">
-                <Hold live={onPane("records")} k=""><WinBar id="records" info={sw} treeSeen={treeSeen} lab={labOpen(s)} onSwitch={(w) => (w === "lab" ? openLab() : openWin(w))} onClose={closeWin} /></Hold><Hold live={onPane("records")} k=""><RecordsPanel s={s} /></Hold></section>
+                <Hold live={onPane("records")} k=""><WinBar id="records" info={sw} treeSeen={treeSeen} lab={labOpen(s)} onSwitch={(w) => (w === "lab" ? openLab() : openWin(w))} onClose={closeWin} /></Hold><Hold live={onPane("records")} k="">{latch("records") && <RecordsPanel s={s} />}</Hold></section>
             <section className="nf-pane nf-sidepane" data-pane="ascend" aria-label="Ascend" role="dialog" aria-modal="false">
                 <Hold live={onPane("ascend")} k=""><WinBar id="ascend" info={sw} treeSeen={treeSeen} lab={labOpen(s)} onSwitch={(w) => (w === "lab" ? openLab() : openWin(w))} onClose={closeWin} /></Hold>
-                <Hold live={onPane("ascend")} k=""><AscendPanel s={s} d={d} confirm={confirm === "ascend"} onAscend={doAscend} onPerk={(id) => { if (buyPerk(s, id)) { sfx("nfBuy", { tier: 3 }); bump((n) => n + 1); } else lockedNote("Perks"); }} onTree={() => openWin("tree")} onMount={(i, m) => { if (setMount(s, i, m)) { sfx("tab"); save(); bump((n) => n + 1); } }} /></Hold>
+                <Hold live={onPane("ascend")} k="">{latch("ascend") && <AscendPanel s={s} d={d} confirm={confirm === "ascend"} onAscend={doAscend} onPerk={(id) => { if (buyPerk(s, id)) { sfx("nfBuy", { tier: 3 }); bump((n) => n + 1); } else lockedNote("Perks"); }} onTree={() => openWin("tree")} onMount={(i, m) => { if (setMount(s, i, m)) { sfx("tab"); save(); bump((n) => n + 1); } }} />}</Hold>
             </section>
             {handSeen(s) && (
                 <section className="nf-pane nf-sidepane" data-pane="handover" aria-label="Handover" role="dialog" aria-modal="false">
@@ -1412,11 +1429,11 @@ export function NodeFarm() {
             )}
             <section className="nf-pane nf-sidepane" data-pane="codex" aria-label="Codex" role="dialog" aria-modal="false">
                 <Hold live={onPane("codex")} k=""><WinBar id="codex" info={sw} treeSeen={treeSeen} lab={labOpen(s)} onSwitch={(w) => (w === "lab" ? openLab() : openWin(w))} onClose={closeWin} /></Hold>
-                <Hold live={onPane("codex")} k=""><CodexPanel s={s} shown={win === "codex" || (tab === "codex" && !win)} onOpen={(w) => (w === "lab" ? (closeWin(), openLab()) : openWin(w))} /></Hold>
+                <Hold live={onPane("codex")} k="">{latch("codex") && <CodexPanel s={s} shown={win === "codex" || (tab === "codex" && !win)} onOpen={(w) => (w === "lab" ? (closeWin(), openLab()) : openWin(w))} />}</Hold>
             </section>
             <section className="nf-pane nf-sidepane" data-pane="menu" aria-label="Menu" role="dialog" aria-modal="false">
                 <Hold live={onPane("menu")} k=""><WinBar id="menu" info={sw} treeSeen={treeSeen} lab={labOpen(s)} onSwitch={(w) => (w === "lab" ? openLab() : openWin(w))} onClose={closeWin} /></Hold>
-                <Hold live={onPane("menu")} k="">
+                <Hold live={onPane("menu")} k="">{latch("menu") && (
                 <MenuPanel
                     s={s}
                     soundOn={snd.on}
@@ -1447,7 +1464,7 @@ export function NodeFarm() {
                     numFmt={numFmt}
                     onNumFmt={setFormat}
                     onReset={() => doReset(true)}
-                />
+                />)}
                 </Hold>
             </section>
             {adminOn && !adminOpen && <button type="button" className="nf-ad-tab" onClick={() => setAdminOpen(true)} aria-label="Open the root console"><i />root</button>}
@@ -1482,7 +1499,7 @@ export function NodeFarm() {
                         save();
                         bump((x) => x + 1);
                     }}
-                    onRespec={() => { const back = respecDrones(s); sfx("tab"); log(`Drone tree respec: ${fmt(back)} Cores back.`, "good"); save(); bump((n) => n + 1); return back; }}
+                    onRespec={() => { if (lockedNote("The drone tree respec")) return 0; const back = respecDrones(s); sfx("tab"); log(`Drone tree respec: ${fmt(back)} Cores back.`, "good"); save(); bump((n) => n + 1); return back; }}
                     onClose={closeDrones}
                 />
             )}

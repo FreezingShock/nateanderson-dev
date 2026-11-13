@@ -18,6 +18,7 @@ body > .nf-tm-host { position: fixed; inset: 0; z-index: 1000; }
 .ctos .nf-tm-b:disabled { opacity: .4; cursor: default; }
 .ctos .nf-tm-b[data-danger] { background: #ff2d8a; color: #0a0a0a; }
 .ctos .nf-tm-b.sq { width: 34px; padding: 0; font-size: 16px; }
+@media (hover: none) { .ctos .nf-tm-b { min-height: 40px; } .ctos .nf-tm-b.sq { width: 40px; } }
 .ctos .nf-tm-b:focus-visible, .ctos .nf-tm-x:focus-visible, .ctos .nf-tm-buy:focus-visible { outline: 2px solid var(--cm-cyan); outline-offset: 2px; }
 .ctos .nf-tm-x { display: grid; place-items: center; width: 48px; height: 44px; background: var(--cm-ctos-ink); border: 0; cursor: pointer; }
 .ctos .nf-tm-x i { position: relative; width: 16px; height: 16px; }
@@ -286,6 +287,8 @@ body.nf-tm-open .nv-scrim { z-index: 1003; }
 /* the opaque menu covers the board: skip its layout and paint (tree.tsx pins the board's height first, so the page keeps its length) */
 body.nf-tm-covered .nf { content-visibility: hidden; }
 
+/* the page under an open tree is hidden, not just covered: a covered page still re-rasters on every pan and zoom frame */
+body.nf-tm-open .cm-main, body.nf-tm-open .sf-foot { visibility: hidden; }
 /* ---- desktop framing (Nate, 2026-11-12): the site's top-left and top-right clusters stay, the tree's own bar slots in
    between them on the same line, and the page dock waits behind a "</> pages" tab at the bottom */
 body.nf-tm-chrome .nv-top { visibility: visible; z-index: 1001; background-color: transparent; border-color: transparent; }

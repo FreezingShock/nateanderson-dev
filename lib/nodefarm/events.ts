@@ -2,7 +2,7 @@
 // (lib/nodefarm/zoneevents.ts); the quick-time scheduler and the Relay, Packet and Traffic spike events are gone.
 // Pure data, numbers and payout maths here; the card lives in components/nodefarm/zone-event.tsx.
 
-import { MATS, derive, fmt, isUnlocked, statDef, type MatId, type State, type StatId } from "./engine";
+import { MATS, addLifeBytes, derive, fmt, isUnlocked, statDef, type MatId, type State, type StatId } from "./engine";
 
 export const EVENT_TUNE = {
     /** an event counts as a win (Overclock + tree nodes) from this much done */
@@ -107,7 +107,7 @@ export function payLoot(s: State, loot: Loot): number {
     }
     const v = d.bytesPerSec * loot.secs;
     s.bytes += v;
-    s.life.bytes += v;
+    addLifeBytes(s, v);
     return v;
 }
 

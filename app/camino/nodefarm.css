@@ -23,11 +23,11 @@
 }
 .ctos .nf-boot { min-height: 280px; place-content: center; text-align: center; font: 500 var(--cm-ctos-t-ui)/1.6 var(--cm-mono); color: var(--cm-mute); letter-spacing: .1em; text-transform: uppercase; }
 .ctos .nf-boot-t { color: var(--cm-cyan); display: block; }
-.ctos .nf .nf-ic, body .nf-aw .nf-ic { --s: 32px; display: inline-block; flex: none; width: var(--s); height: var(--s); background: url(/naos/nodefarm/icons64.webp?v=46dfd4ae) calc(var(--i) * var(--s) * -1) 0 / calc(var(--s) * 29) calc(var(--s) * 8) no-repeat; animation: nfFrame 1.2s steps(8) infinite; animation-delay: calc(var(--i) * -.23s); image-rendering: pixelated; vertical-align: middle; }
+.ctos .nf .nf-ic, body .nf-aw .nf-ic { --s: 32px; display: inline-block; flex: none; width: var(--s); height: var(--s); background: url(/naos/nodefarm/icons64.webp?v=5cb0242c) calc(var(--i) * var(--s) * -1) 0 / calc(var(--s) * 29) calc(var(--s) * 8) no-repeat; animation: nfFrame 1.2s steps(8) infinite; animation-delay: calc(var(--i) * -.23s); image-rendering: pixelated; vertical-align: middle; }
 .ctos .nf .nf-ic.l, .ctos .nf .nf-ic.r, body .nf-aw .nf-ic.l { --s: 64px; }
 /* tier icon: bottom-right of a buy button, a whole 32 px of the 192 x 192 sheet (row = stat, column = tier) */
-.ctos .nf .nf-tic { position: absolute; right: 8px; bottom: 6px; z-index: 1; width: 32px; height: 32px; background: url(/naos/nodefarm/tiers-anim.webp?v=4901cc01) calc(var(--t) * -32px) calc(var(--r) * -32px) / 192px 2048px no-repeat; animation: nfTierFrame 1.1s steps(4) infinite paused; image-rendering: pixelated; pointer-events: none; opacity: .55; filter: grayscale(.7) brightness(.8); transition: opacity 120ms, filter 120ms; }
-.ctos .nf .nf-btn[data-afford] .nf-tic { opacity: 1; filter: none; animation-play-state: running; animation-delay: calc((var(--r) * 3 + var(--t)) * -.17s); }
+.ctos .nf .nf-tic { position: absolute; z-index: 1; pointer-events: none; opacity: .55; filter: grayscale(.7) brightness(.8); transition: opacity 120ms, filter 120ms; }
+.ctos .nf .nf-btn[data-afford] .nf-tic { opacity: 1; filter: none; }
 @media (max-width: 639px) { .ctos .nf .nf-ic.r { --s: 32px; } }
 .ctos .nf :where(button) { font: inherit; color: inherit; touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
 .ctos .nf :where(button):disabled { cursor: not-allowed; }
@@ -340,7 +340,7 @@ body .nf-aw-sys dl div { display: flex; justify-content: space-between; gap: 14p
 body .nf-aw-sys dl div:last-child { border-bottom: 0; padding-bottom: 0; }
 body .nf-aw-sys dt { font: 400 var(--cm-ctos-t-ui)/1.35 var(--cm-mono); color: var(--cm-mute); }
 body .nf-aw-sys dd { margin: 0; font: 600 var(--cm-ctos-t-ui)/1.35 var(--cm-mono); color: var(--cm-fg); text-align: right; font-variant-numeric: tabular-nums; }
-@media (max-width: 519px) { body .nf-aw-sys { grid-template-columns: 1fr; } }
+@media (max-width: 519px) { body .nf-aw-sys { grid-template-columns: 1fr; } body .nf-aw-sys dl div { flex-direction: column; gap: 2px; } body .nf-aw-sys dd { text-align: left; } }
 body .nf-aw-note { margin: 0; padding: 10px 12px; border: 1px solid #5a4a14; border-left: 3px solid #f0c23c; background: #14110a; font: 400 var(--cm-ctos-t-ui)/1.5 var(--cm-mono); color: var(--cm-mute); }
 body .nf-aw-go { justify-self: stretch; min-height: 56px; padding: 0 24px; background: var(--cm-ctos-block); color: var(--cm-ctos-ink); border: 0; font: 800 var(--cm-ctos-t-ui)/1 var(--cm-mono); letter-spacing: .16em; text-transform: uppercase; cursor: pointer; }
 @media (min-width: 720px) { body .nf-aw-go { justify-self: start; min-width: 320px; } }
@@ -455,7 +455,8 @@ body.nf-win-open .ctos .cm-section.ruled { z-index: 60; }
 /* ---- locked zones: say what opens them, and how close you are */
 .ctos .nf-locked { align-items: flex-start; }
 .ctos .nf-lk { display: grid; gap: 4px; min-width: 0; flex: 1; }
-.ctos .nf-lk-k { font: 700 var(--cm-ctos-t-micro)/1 var(--cm-mono); letter-spacing: .14em; color: var(--c); opacity: .8; }
+/* The lock line sits over dither art, so it gets full opacity and a dark outline to hold against the pattern. */
+.ctos .nf-lk-k { font: 700 var(--cm-ctos-t-micro)/1 var(--cm-mono); letter-spacing: .14em; color: var(--c); text-shadow: 0 0 2px #000, 0 0 4px #000, 0 1px 0 #000; }
 .ctos .nf-lk b { font: 700 20px/1.1 var(--cm-display); letter-spacing: -.02em; text-transform: lowercase; color: var(--cm-mute); }
 .ctos .nf-lk-m { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 10px; margin-top: 6px; max-width: 420px; }
 .ctos .nf-lk-m .nf-bar { --c: var(--c); }
@@ -474,7 +475,6 @@ body.nf-win-open .ctos .cm-section.ruled { z-index: 60; }
    (grey, green, blue, purple, gold, pink) mark the six button tiers on top of each stat's own colour.
    ========================================================================== */
 @keyframes nfFrame { to { background-position-y: calc(var(--s) * -8); } }
-@keyframes nfTierFrame { to { background-position-y: calc(var(--r) * -32px - 2048px); } }
 @keyframes nfDroneFrame { to { background-position-y: -512px; } }
 
 .ctos .nf-sp-d { display: block; width: 64px; height: 64px; flex: none; background: url(/naos/nodefarm/drones.webp?v=4ecf8762) calc(var(--k) * -64px) 0 / 384px 512px no-repeat; image-rendering: pixelated; filter: grayscale(1) brightness(.55); animation: nfDroneFrame .9s steps(8) infinite paused; }
