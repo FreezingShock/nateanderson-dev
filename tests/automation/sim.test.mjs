@@ -332,11 +332,39 @@ test("the default catalog is the Recipe thread's tree, with its generators and c
 });
 
 test("the spring store is a battery with a 0 to 1 charge per building, and the hub is 3 by 3", () => {
-    const w = base(CAT, {}, { power: false });
+    const real = S.DEFAULT_CATALOG; // spring_store is in the Recipe tree, not the placeholder
+    const w = base(real, { startStock: [{ item: "iron_gear", qty: 50 }, { item: "steel_ingot", qty: 50 }, { item: "copper_wire", qty: 50 }] }, { power: false });
     w.windPin = 0.9;
-    const st = ok(S.place(w, "spring_store", 30, 30, 0, CAT));
-    S.step(w, 0.5, CAT);
-    const c = S.chargeOf(w, CAT);
+    const st = ok(S.place(w, "spring_store", 30, 30, 0, real));
+    S.step(w, 0.5, real);
+    const c = S.chargeOf(w, real);
+    assert.equal(S.resolve(real, "spring_store").storageKj, 600);
     assert.ok(c[st.id] > 0 && c[st.id] <= 1, "the store charges in strong wind");
-    assert.equal(S.resolve(CAT, "hub").footprint.w, 3);
+    assert.equal(S.resolve(real, "hub").footprint.w, 3);
+});
+
+test("HUD research nodes carry glyph, unlocks and a board layout; prestige lists keeps, leaves and sites", () => {
+    const w = S.createWorld({ width: 64, depth: 64, hub: hubAt }, S.DEFAULT_CATALOG);
+    const h = S.hudData(w, S.DEFAULT_CATALOG);
+    const gears = h.research.find((n) => n.id === "gears");
+    assert.equal(typeof gears.glyph, "string");
+    assert.ok(gears.glyph.length > 0 && gears.glyph.length <= 2);
+    assert.ok(gears.unlocks.length >= 1 && gears.unlocks.every((u) => typeof u === "string" && u.length > 0));
+    for (const n of h.research) {
+        assert.ok(Number.isInteger(n.column) && n.column >= 0 && Number.isInteger(n.row) && n.row >= 0);
+        for (const q of n.requires) {
+            const dep = h.research.find((x) => x.id === q);
+            assert.ok(dep.column < n.column, `${n.id} sits right of ${q}`);
+        }
+    }
+    assert.deepEqual(h.prestige.keeps, S.DEFAULT_CATALOG.tree.prestige.keeps);
+    assert.deepEqual(h.prestige.leaves, S.DEFAULT_CATALOG.tree.prestige.resets);
+    assert.equal(h.prestige.sites.length, S.SITES.length);
+});
+
+test("a new world starts with the starter kit unless the caller gives stock", () => {
+    const w = S.createWorld({ width: 64, depth: 64, hub: hubAt }, S.DEFAULT_CATALOG);
+    for (const s of S.STARTER_KIT) assert.equal(S.stock(w, s.item), s.qty);
+    const empty = S.createWorld({ width: 64, depth: 64, hub: hubAt, startStock: [] }, S.DEFAULT_CATALOG);
+    assert.equal(S.stock(empty, "iron_plate"), 0);
 });
