@@ -5,6 +5,10 @@
 export const MATS = ["copper", "silicon", "quartz", "aether", "runes", "starglass", "voidsteel", "chrono", "nebula", "pulsars", "singularity", "engrams", "paradox", "origin", "spores", "mycelium", "pollen", "bloom", "basalt", "magma", "geodes", "sunstone"] as const;
 /** The two arcs past Root Chamber (Overgrowth, then Descent). They stay shut until the first Handover. */
 export const ARC_MATS: readonly MatId[] = ["spores", "mycelium", "pollen", "bloom", "basalt", "magma", "geodes", "sunstone"];
+/** Handovers needed before each arc zone can open: two new zones per Handover, so every early Handover gets something new.
+ *  Without this all eight opened within an hour of each other (sim, 2026-11-12). NF_ARCGATE='{"pollen":1}' tries other numbers in the sim. */
+export const ARC_GATE: Record<string, number> = { spores: 1, mycelium: 1, pollen: 2, bloom: 2, basalt: 3, magma: 3, geodes: 4, sunstone: 4 };
+export const arcGateNeed = (id: string) => ARC_GATE[id] ?? 0;
 export type MatId = (typeof MATS)[number];
 export type StatId = "bytes" | "mult" | "reboot" | MatId;
 export type ButtonStat = Exclude<StatId, "bytes">;
@@ -95,7 +99,7 @@ export const TUNE = {
     logK: { snAll: 0.1, egDrone: 0.15, pxOc: 0.15, orAp: 0.1, crosstalk: 0.12, blKeys: 0.1, suAll: 0.08 },
     boostPow: 0.38,
     chAllCap: 1e6, // Chrono boosts EVERYTHING, including Chrono: past this amount the boost grows only with log10 (a power law fed itself to 1e300 once Engrams opened)
-    unlockAt: { copper: 1, silicon: 150, quartz: 300, aether: 500, runes: 150, starglass: 200, voidsteel: 250, chrono: 2000, nebula: 300, pulsars: 300, singularity: 300, engrams: 350, paradox: 400, origin: 450, spores: 500, mycelium: 550, pollen: 600, bloom: 650, basalt: 700, magma: 750, geodes: 800, sunstone: 850 } as Record<string, number>, // copper: Reboots; the rest: amount of the stat below
+    unlockAt: { copper: 1, silicon: 150, quartz: 300, aether: 500, runes: 150, starglass: 800, voidsteel: 2500, chrono: 1000, nebula: 300, pulsars: 300, singularity: 300, engrams: 350, paradox: 400, origin: 450, spores: 500, mycelium: 550, pollen: 600, bloom: 650, basalt: 700, magma: 750, geodes: 800, sunstone: 850 } as Record<string, number>, // copper: Reboots; the rest: amount of the stat below
     overclockMult: 6,
     overclockSecs: 20,
     offlineCapHours: 8,
@@ -107,9 +111,8 @@ export const TUNE = {
     achBonus: 0.02,
     arcBonus: 0.05, // global bonus for each arc whose every button has been pressed at least once (lib/nodefarm/arcs.ts)
     tierBonus: 0.08, // extra global bonus for each fully completed goal tier
-    // Drones: one per button tier, bought with Aether. Each level presses that tier's button on every armed stat, droneRate times a second.
+    // Drones: one per button tier, bought with Aether. Each level presses that tier's button on its posted zone (postX times droneRate a second); docked Drones do nothing.
     drone: { max: 10, base: 25, ratio: 6, growth: 1.7, rate: 0.25, offline: 0.5, burst: 200 },
-    autoReserve: 10, // the Autoloader only buys when the balance is at least this many times the price
     treeCost: 1, // scales every tree node price (pacing knob for the sim)
     apBonusFromEarned: false, // true: the AP bonus also counts AP spent on nodes and perks. Off because the sim then finishes the tree in 12 to 19 h (AP feeds itself); spending AP is the brake
     watchdogReserve: 1.5, // Watchdog timer Reboots once you hold this many times the price in Multipliers
@@ -129,7 +132,7 @@ export const TUNE = {
 };
 
 export interface PerkDef {
-    id: "scanner" | "auto" | "overclock" | "offline" | "start" | "power";
+    id: "scanner" | "overclock" | "offline" | "start" | "power";
     name: string;
     blurb: string;
     max: number;
@@ -139,7 +142,6 @@ export interface PerkDef {
 export const PERKS: PerkDef[] = [
     { id: "power", name: "Power core", blurb: "+15% to everything per level.", max: 20, cost: (l) => 1 + l },
     { id: "scanner", name: "Wide-band scanner", blurb: "Quick-time events arrive 8% sooner per level.", max: 6, cost: (l) => 1 + l },
-    { id: "auto", name: "Autoloader", blurb: "Buys one stat per level by itself, with no script needed (Multipliers, then each material up the chain).", max: 12, cost: (l) => 3 + l * 2 },
     { id: "overclock", name: "Overclock coils", blurb: "Overclocks last +5 s longer per level.", max: 6, cost: (l) => 2 + l * 2 },
     { id: "offline", name: "Standby cells", blurb: "Standby window +4 hours per level.", max: 6, cost: (l) => 2 + l * 2 },
     { id: "start", name: "Cold cache", blurb: "Start each Reboot with 10 seconds of Bytes per level.", max: 10, cost: (l) => 1 + Math.floor(l / 2) },
@@ -297,7 +299,7 @@ const ARMS: Record<Branch, Row[]> = {
     drones: [
         [0, "wake", "minor", "Wake routine", "Every Ascend starts with a level 1 Drone on every tier.", "They boot before I do.", { kitDrones: 1 }],
         [1, "sparecell", "minor", "Spare cells", "Drones go up to level 13.", "Extra cells in every chassis. Heavier, happier.", { droneMax: 3 }],
-        [2, "orders", "minor", "Standing orders", "New stats are armed for Drones the moment they open.", "Told them once. They remember.", { feature: "orders" }],
+        [2, "orders", "minor", "Standing orders", "buy.sh ticks every new stat the moment it opens.", "Told them once. They remember.", { feature: "orders" }],
         [3, "overwatch", "minor", "Overwatch", "Drones press twice as fast.", "One watches, one presses, they swap every hour.", { drone: 1 }],
         [4, "bulkorder", "minor", "Bulk order", "Drones cost 50% less Aether.", "Bought them by the crate. The crate was cheaper than the box.", { droneCost: 0.5 }],
         [5, "graveyard", "notable", "Graveyard shift", "Drones work at full speed while you are away.", "Nobody told them it was night.", { droneOff: 0.5 }],
@@ -650,10 +652,13 @@ export interface State {
     logs: string[];
     /** Drone levels per button tier (reset on Ascend) */
     drones: number[];
-    /** fractional presses waiting to fire, per tier */
+    /** unused since Drones stopped sweeping (posted Drones keep their own in dr.pacc); kept so old saves load */
     droneAcc: number[];
-    /** stats the Drones are allowed to press (kept through Ascend) */
+    /** legacy: stats armed for sweeping Drones or covered by the removed Autoloader perk. The save migration fills it and
+     * scripts.ts hands it to buy.sh once, then empties it (lib/nodefarm/scripts.ts `migrateArmed`). */
     armed: string[];
+    /** set by the save migration when `armed` really was automated (sweeping Drones or the Autoloader) and goes to buy.sh */
+    armedToBuy?: boolean;
     /** owned prestige-tree node ids (bought with AP, kept through Ascend) */
     tree: string[];
     /** ranks above 1 of ranked tree nodes, by id (kept through Ascend; an owned ranked node without an entry is rank 1) */
@@ -670,7 +675,7 @@ export interface State {
     dropAt: number;
     /** event wins this run (Spike protocol), reset on Ascend */
     runWins: number;
-    /** stats Standing orders has already armed once, so a stat you disarm stays disarmed */
+    /** stats Standing orders has already ticked for buy.sh once, so a stat you untick stays unticked */
     autoArmed: string[];
     /** AP refunded when an old tree was replaced, shown once in the feed and then cleared */
     treeRefund?: number;
@@ -688,8 +693,6 @@ export interface State {
     ch?: import("./stress").ChState;
     /** Zone events (lib/nodefarm/zoneevents.ts): the running event, the timer to the next one and a count. Reset on Ascend. Created on first use. */
     ze?: ZoneEvState;
-    /** Touch layer: caches waiting in zone art and the core vent (rules in lib/nodefarm/poke.ts, repaired there so old saves load) */
-    poke?: PokeState;
     /** Which button tiers were ever pressed, per stat, as a bit mask. Kept through Ascend; arcs clear when every tier of every zone in them is set. */
     seen?: Partial<Record<ButtonStat, number>>;
     // lifetime counters (survive Ascend)
@@ -750,19 +753,6 @@ export interface AutoState {
     rebuild?: boolean;
     seenHand?: number;
     restPerks?: boolean;
-}
-/** Touch layer (lib/nodefarm/poke.ts): caches that wait in a zone's art until tapped, and the core vent's charge. */
-export interface PokeState {
-    /** caches waiting: id, zone, and where along the scene they sit (0..1) */
-    c: { id: number; z: StatId; x: number }[];
-    /** online seconds until the next cache */
-    next: number;
-    /** vent charge in seconds (full at POKE_TUNE.ventCharge) */
-    vent: number;
-    /** lifetime counts: caches opened, vents, caches spawned (also the id counter) */
-    got: number;
-    vents: number;
-    n: number;
 }
 /** Called at the end of every tick (and so also through time away). Scripts add themselves here. */
 export const TICK_HOOKS: ((s: State, dt: number) => void)[] = [];
@@ -954,7 +944,7 @@ export function fresh(now = Date.now()): State {
         prod: Object.fromEntries(MATS.map((m) => [m, 0])) as Record<MatId, number>,
         bought: Object.fromEntries((["mult", "reboot", ...MATS] as ButtonStat[]).map((k) => [k, Array(TIERS).fill(0)])) as Record<ButtonStat, number[]>,
         ap: 0,
-        perks: { scanner: 0, auto: 0, overclock: 0, offline: 0, start: 0, power: 0 },
+        perks: { scanner: 0, overclock: 0, offline: 0, start: 0, power: 0 },
         ach: [],
         achAt: {},
         logs: [],
@@ -1098,7 +1088,7 @@ export function isUnlocked(s: State, id: StatId): boolean {
     if (id === "bytes" || id === "mult") return true;
     if (id === "reboot") return s.life.bytes >= REBOOT_UNLOCK.bytes || s.reboot > 0 || s.mult >= REBOOT_UNLOCK.mult;
     if (id === "copper") return s.life.reboots >= TUNE.unlockAt.copper;
-    if (ARC_MATS.includes(id as MatId) && !(s.hand?.count > 0)) return false;
+    if (ARC_MATS.includes(id as MatId) && (s.hand?.count ?? 0) < arcGateNeed(id)) return false;
     const i = MATS.indexOf(id as MatId);
     const below = MATS[i - 1];
     // after your first Ascend a stat opens at a quarter of the usual amount
@@ -1147,7 +1137,14 @@ export function buyDrone(s: State, tier: number): boolean {
     if (!dronesOpen(s) || chOff(s, "drones") || s.drones[tier] >= droneMax(s) || s.aether < c) return false;
     s.aether -= c;
     s.drones[tier] += 1;
+    // a Drone only works posted, so a docked tier goes straight to a zone (change it in the hangar)
+    if (s.dr && !s.dr.post[tier]) s.dr.post[tier] = firstPost(s);
     return true;
+}
+/** Where a newly bought Drone goes: the newest open zone no other Drone works, else the newest open zone. */
+export function firstPost(s: State): ButtonStat | null {
+    const open = POSTABLE.filter((st) => isUnlocked(s, st)).reverse();
+    return open.find((st) => !s.dr.post.includes(st)) ?? open[0] ?? null;
 }
 /** Singularity pulls on everything, Engrams make Drones press faster, Paradox makes Overclock stronger, Origin adds AP. Log-scale so none of them can run away. */
 const logBoost = (amount: number, k: number) => 1 + k * Math.log10(1 + Math.max(0, amount));
@@ -1167,56 +1164,34 @@ export const droneRate = (s: State, tier: number) => {
     if (f.frenzy && (s.frenzy ?? 0) > 0) r *= TUNE.frenzyX; // Swarm alarm
     return r;
 };
-export function toggleArm(s: State, stat: string) {
-    s.armed = s.armed.includes(stat) ? s.armed.filter((x) => x !== stat) : [...s.armed, stat];
-}
 /** Let the Drones press for dt seconds. eff scales their speed (time away runs slower). Returns presses made.
- * A Drone with no posting sweeps: it presses its tier on every armed zone. A posted Drone presses only its zone, DRONE_TUNE.postX
- * times as fast, and its work there builds that zone's mastery. Reach mods also press the tier below. Every press a Drone
- * attempts salvages a little Parts. */
+ * A Drone works only once posted: it presses its tier on its zone, DRONE_TUNE.postX times as fast, and its work there builds
+ * that zone's mastery. An unposted Drone is docked and does nothing (Scripts are the automation layer, Nate 2026-11-12).
+ * Reach mods also press the tier below on the same zone. Every press a Drone attempts salvages a little Parts. */
 export function droneStep(s: State, dt: number, eff = 1): number {
     if (chOff(s, "drones")) return 0;
     const D = s.dr;
     const fx = droneFx(s);
-    const sweep = s.armed.filter((st) => st !== "bytes" && st !== "reboot" && isUnlocked(s, st as StatId)) as ButtonStat[];
     let made = 0;
     let parts = 0;
     const pressN = (st: ButtonStat, tier: number, n: number) => { for (let i = 0; i < n; i++) { if (!press(s, st, tier)) break; made++; } };
     for (let k = 0; k < TIERS; k++) {
-        if (s.drones[k] <= 0) continue;
-        const base = droneRate(s, k) * dt * eff;
         const post = postOf(s, k);
-        const sweepRate = post ? (fx.garrison ? base : 0) : base * (1 + fx.sweep);
-        const postRate = post ? base * postX(s, k) : 0;
+        if (s.drones[k] <= 0 || !post) continue;
+        const postRate = droneRate(s, k) * dt * eff * postX(s, k);
         const reach = (D.mods[k]?.[2] ?? 0) * DRONE_TUNE.reachEach;
         const salv = 1 + (D.mods[k]?.[4] ?? 0) * DRONE_TUNE.salvageEach;
-        let units = 0;
-        // sweeping
-        if (sweepRate > 0 && sweep.length) {
-            s.droneAcc[k] = Math.min(s.droneAcc[k] + sweepRate, TUNE.drone.burst);
-            const n = Math.floor(s.droneAcc[k]);
-            if (n >= 1) { s.droneAcc[k] -= n; for (const st of sweep) pressN(st, k, n); }
-            units += sweepRate * sweep.length;
-            if (fx.sweepSvc) for (const st of sweep) addSvc(s, st, sweepRate * fx.sweepSvc, fx);
-        }
-        // posted
-        if (post) {
-            D.pacc[k] = Math.min(D.pacc[k] + postRate, TUNE.drone.burst * 4);
-            const n = Math.floor(D.pacc[k]);
-            if (n >= 1) { D.pacc[k] -= n; pressN(post, k, n); }
-            units += postRate;
-            addSvc(s, post, postRate * (1 + (D.mods[k]?.[3] ?? 0) * DRONE_TUNE.tunerEach), fx);
-        }
-        // reach: the tier below, on the same zones
+        D.pacc[k] = Math.min(D.pacc[k] + postRate, TUNE.drone.burst * 4);
+        const n = Math.floor(D.pacc[k]);
+        if (n >= 1) { D.pacc[k] -= n; pressN(post, k, n); }
+        addSvc(s, post, postRate * (1 + (D.mods[k]?.[3] ?? 0) * DRONE_TUNE.tunerEach), fx);
+        // reach: the tier below, on the same zone
         if (reach > 0 && k > 0) {
-            const zones = [...(post ? [post] : []), ...(sweepRate > 0 ? sweep : [])];
-            if (zones.length) {
-                D.racc[k] = Math.min(D.racc[k] + (post ? postRate : sweepRate) * reach, TUNE.drone.burst);
-                const n = Math.floor(D.racc[k]);
-                if (n >= 1) { D.racc[k] -= n; for (const st of zones) pressN(st, k - 1, n); }
-            }
+            D.racc[k] = Math.min(D.racc[k] + postRate * reach, TUNE.drone.burst);
+            const r = Math.floor(D.racc[k]);
+            if (r >= 1) { D.racc[k] -= r; pressN(post, k - 1, r); }
         }
-        parts += units * salv;
+        parts += postRate * salv;
     }
     if (parts > 0) D.parts = Math.min(CAP, D.parts + parts * DRONE_TUNE.partK * (1 + fx.parts));
     return made;
@@ -1241,7 +1216,6 @@ export function tick(s: State, dt: number, eff = 1) {
     RIG_HOOKS.step?.(s, dt, d);
     droneStep(s, dt, eff);
     watchdogStep(s);
-    autoArm(s);
     for (const h of TICK_HOOKS) h(s, dt);
 }
 
@@ -1306,17 +1280,6 @@ export function openDrop(s: State, now = Date.now()) {
     if (dropFill(s, now) < 1) return null;
     s.dropAt = now;
     return payout(s, TUNE.dropPays);
-}
-/** Standing orders: arm each stat once, the first time it is open. */
-export function autoArm(s: State): string[] {
-    if (!hasFeature(s, "orders")) return [];
-    const out: string[] = [];
-    for (const st of STATS) {
-        if (st.id === "bytes" || st.id === "reboot" || s.autoArmed.includes(st.id) || !isUnlocked(s, st.id)) continue;
-        s.autoArmed.push(st.id);
-        if (!s.armed.includes(st.id)) { s.armed.push(st.id); out.push(st.id); }
-    }
-    return out;
 }
 /** Material slots on Mounted drives. */
 export const mountSlots = (s: State) => treeFx(s).mounts;
@@ -1537,25 +1500,6 @@ export function checkGoals(s: State): { id: string; name: string; secret?: boole
     for (const g of GOALS) if (!s.ach.includes(g.id) && g.cur(s) >= g.target && unlock(s, g.id)) out.push(g);
     for (const x of SECRETS) if (x.test && !s.ach.includes(x.id) && x.test(s) && unlock(s, x.id)) out.push({ id: x.id, name: x.name, secret: true });
     return out;
-}
-
-/** Autoloader perk: each level unlocks auto-buying for one stat. Buys at most one button per stat per call. */
-export function autoBuy(s: State): number {
-    const order: ButtonStat[] = ["mult", ...MATS];
-    let n = 0;
-    for (let i = 0; i < Math.min(order.length, s.perks.auto); i++) {
-        const st = order[i];
-        if (!isUnlocked(s, st)) continue;
-        if (s.auto?.on.buy && s.auto.buy[st]) continue; // buy.sh has this stat: its rules win
-        for (let k = TIERS - 1; k >= 0; k--) {
-            const b = button(s, st, k);
-            if (amount(s, b.pays) >= b.cost * TUNE.autoReserve) {
-                if (press(s, st, k)) n++;
-                break;
-            }
-        }
-    }
-    return n;
 }
 
 // ---- Exploit Lab (research). Intel runs alongside Bytes: a trickle that grows with the log of Bytes/s, plus lumps from
@@ -1951,7 +1895,7 @@ export const MODS: { id: ModId; name: string; blurb: string }[] = [
 ];
 export const MOD_COUNT = MODS.length;
 export interface DroneState {
-    /** each tier's posting, or null to sweep every armed zone (kept through Ascend) */
+    /** each tier's posting, or null when it is docked (kept through Ascend) */
     post: (ButtonStat | null)[];
     /** service per zone: presses attempted there by posted Drones (kept forever) */
     svc: Partial<Record<ButtonStat, number>>;
@@ -1979,14 +1923,11 @@ export interface DroneFx {
     off?: number; // added to Drone speed while away
     formation?: number; // every Drone +this per posted Drone
     servoMax?: number; // extra Servo levels
-    sweep?: number; // sweeping Drones x(1 + this)
     rankSpeed?: number; // every Drone +this per mastery rank
     postX?: number; // posting speed +this
-    sweepSvc?: number; // sweeping earns this share of mastery
     svc?: number; // mastery builds x(1 + this) as fast
     rankPow?: number; // mastery bonuses x(1 + this) stronger
     relay?: number; // a posting also gives this share of its mastery to the next zone up the chain
-    garrison?: boolean; // posted Drones also sweep
     parts?: number; // Parts x(1 + this)
     modCost?: number; // mods cost this fraction less
     droneCost?: number; // Drones cost this fraction less Aether
@@ -2002,16 +1943,16 @@ const DRONE_ARMS: Record<DroneSec, DroneRow[]> = {
         [1, "dx_formation", "minor", "Formation", "Every Drone presses 10% faster for each Drone on a posting.", "They fly tighter when someone is out front.", { formation: 0.1 }],
         [2, "dx_night", "minor", "Night flight", "Drones work 25% harder while you are away.", "Running lights off. They know the way.", { off: 0.25 }],
         [3, "dx_overdrive", "notable", "Overdrive", "Servo mods go to level 8.", "The servos were rated for five. They took eight without a word.", { servoMax: 3 }],
-        [4, "dx_slipstream", "notable", "Slipstream", "Sweeping Drones press 50% faster.", "Each one rides the wake of the one before it.", { sweep: 0.5 }],
+        [4, "dx_slipstream", "notable", "Slipstream", "Posting speed +2x on every Drone.", "Each one rides the wake of the one before it.", { postX: 2 }],
         [5, "dx_hivemind", "keystone", "Hivemind", "Drones press twice as fast, and every mastery rank adds 1% more.", "Six frames, one thought. The thought is mostly about buttons.", { speed: 1, rankSpeed: 0.01 }],
     ],
     dispatch: [
         [0, "dx_orders", "minor", "Field orders", "Posted Drones press x4 on their zone.", "Clear orders, one zone each. Nobody wanders.", { postX: 1 }],
-        [1, "dx_patrol", "minor", "Patrol logs", "Sweeping Drones also build mastery, at a quarter of the rate.", "They write down every zone they pass. Most of it is useful.", { sweepSvc: 0.25 }],
+        [1, "dx_patrol", "minor", "Patrol logs", "Mastery builds 50% faster.", "They write down every shift. Most of it is useful.", { svc: 0.5 }],
         [2, "dx_tour", "minor", "Long tour", "Mastery builds twice as fast.", "Same zone, same shift, every day. They learn the creaks.", { svc: 1 }],
         [3, "dx_fieldops", "notable", "Field ops", "Mastery bonuses are 50% stronger.", "The veterans train the new frames. Nobody asked them to.", { rankPow: 0.5 }],
         [4, "dx_relay", "notable", "Relay mast", "Each posting also builds half as much mastery in the next zone up the chain.", "Every posting gets a mast. The mast talks to the zone next door.", { relay: 0.5 }],
-        [5, "dx_garrison", "keystone", "Garrison", "Posted Drones also sweep every armed zone at full speed.", "Stationed, and still somehow everywhere.", { garrison: true }],
+        [5, "dx_garrison", "keystone", "Garrison", "Posting speed +2x, and mastery builds 50% faster.", "Stationed for good. They know every creak of the zone.", { postX: 2, svc: 0.5 }],
     ],
     salvage: [
         [0, "dx_scrap", "minor", "Scrapper", "Parts x2.", "Every press sheds a little metal. Now somebody sweeps it up.", { parts: 1 }],
@@ -2046,7 +1987,7 @@ function buildDroneTree(): DroneNode[] {
 export const DRONE_TREE: DroneNode[] = buildDroneTree();
 const DT_BY = new Map(DRONE_TREE.map((n) => [n.id, n]));
 export const droneNode = (id: string) => DT_BY.get(id)!;
-type DroneFxSum = Required<Omit<DroneFx, "garrison">> & { garrison: boolean };
+type DroneFxSum = Required<DroneFx>;
 let dfxKey = "";
 let dfxVal: DroneFxSum | null = null;
 /** What the owned drone tree nodes add up to (cached on the owned list). */
@@ -2054,13 +1995,12 @@ export function droneFx(s: State): DroneFxSum {
     const nodes = s.dr?.nodes ?? [];
     const key = nodes.join(",");
     if (dfxVal && key === dfxKey) return dfxVal;
-    const o: DroneFxSum = { speed: 0, off: 0, formation: 0, servoMax: 0, sweep: 0, rankSpeed: 0, postX: 0, sweepSvc: 0, svc: 0, rankPow: 0, relay: 0, garrison: false, parts: 0, modCost: 0, droneCost: 0, modKeep: 0, droneMax: 0, modGlobal: 0 };
+    const o: DroneFxSum = { speed: 0, off: 0, formation: 0, servoMax: 0, rankSpeed: 0, postX: 0, svc: 0, rankPow: 0, relay: 0, parts: 0, modCost: 0, droneCost: 0, modKeep: 0, droneMax: 0, modGlobal: 0 };
     for (const id of nodes) {
         const f = DT_BY.get(id)?.fx;
         if (!f) continue;
         for (const [k, v] of Object.entries(f)) {
-            if (k === "garrison") o.garrison = o.garrison || !!v;
-            else if (k === "speed") o.speed = (1 + o.speed) * (1 + (v as number)) - 1; // speed boosts multiply
+            if (k === "speed") o.speed = (1 + o.speed) * (1 + (v as number)) - 1; // speed boosts multiply
             else { const r = o as unknown as Record<string, number>; r[k] = (r[k] ?? 0) + (v as number); }
         }
     }
@@ -2115,7 +2055,7 @@ function addSvc(s: State, st: ButtonStat, n: number, fx: DroneFxSum) {
 }
 
 // -- postings and speed
-/** Where a tier's Drone works: its posted zone while that zone is open, or null (it sweeps). */
+/** Where a tier's Drone works: its posted zone while that zone is open, or null (docked). */
 export function postOf(s: State, tier: number): ButtonStat | null {
     const p = s.dr.post[tier];
     return p && isUnlocked(s, p) ? p : null;
@@ -2141,27 +2081,21 @@ export function hangarSpeed(s: State, tier: number): number {
 /** Parts salvaged per second right now (the same sums droneStep makes). */
 export function partsRate(s: State): number {
     const fx = droneFx(s);
-    const sweep = s.armed.filter((st) => st !== "bytes" && st !== "reboot" && isUnlocked(s, st as StatId)).length;
     let u = 0;
     for (let k = 0; k < TIERS; k++) {
-        if (s.drones[k] <= 0) continue;
-        const r = droneRate(s, k), post = postOf(s, k);
-        const salv = 1 + (s.dr.mods[k]?.[4] ?? 0) * DRONE_TUNE.salvageEach;
-        if (post) u += (r * postX(s, k) + (fx.garrison ? r * sweep : 0)) * salv;
-        else u += r * (1 + fx.sweep) * sweep * salv;
+        if (s.drones[k] <= 0 || !postOf(s, k)) continue;
+        u += droneRate(s, k) * postX(s, k) * (1 + (s.dr.mods[k]?.[4] ?? 0) * DRONE_TUNE.salvageEach);
     }
     return u * DRONE_TUNE.partK * (1 + fx.parts);
 }
-/** Mastery per second on a zone from the Drones posted there (and patrols). */
+/** Mastery per second on a zone from the Drones posted there. */
 export function svcRate(s: State, st: ButtonStat): number {
     const fx = droneFx(s);
-    const armed = s.armed.includes(st) && isUnlocked(s, st);
     let u = 0;
     for (let k = 0; k < TIERS; k++) {
         if (s.drones[k] <= 0) continue;
         const r = droneRate(s, k), post = postOf(s, k);
         if (post === st) u += r * postX(s, k) * (1 + (s.dr.mods[k]?.[3] ?? 0) * DRONE_TUNE.tunerEach);
-        if (fx.sweepSvc && armed && (!post || fx.garrison)) u += r * (post ? 1 : 1 + fx.sweep) * fx.sweepSvc;
     }
     return u * (1 + fx.svc);
 }
@@ -2211,14 +2145,11 @@ export function droneTreeTotals(s: State): [string, string][] {
     if (f.formation) rows.push(["Formation", `+${Math.round(f.formation * 100)}% per posted Drone`]);
     if (f.off) rows.push(["Away speed", `+${Math.round(f.off * 100)}%`]);
     if (f.servoMax) rows.push(["Servo cap", `level ${DRONE_TUNE.modMax + f.servoMax}`]);
-    if (f.sweep) rows.push(["Sweeping", `x${1 + f.sweep}`]);
     if (f.rankSpeed) rows.push(["Hivemind", `+${Math.round(f.rankSpeed * masteryRanks(s) * 100)}% speed`]);
     rows.push(["Posting speed", `x${DRONE_TUNE.postX + f.postX} before Uplink`]);
-    if (f.sweepSvc) rows.push(["Patrol mastery", `${Math.round(f.sweepSvc * 100)}%`]);
     if (f.svc) rows.push(["Mastery speed", `x${1 + f.svc}`]);
     if (f.rankPow) rows.push(["Mastery bonus", `+${Math.round(f.rankPow * 100)}% stronger`]);
     if (f.relay) rows.push(["Relay mast", `${Math.round(f.relay * 100)}% to the next zone`]);
-    if (f.garrison) rows.push(["Garrison", "posted Drones also sweep"]);
     if (f.parts) rows.push(["Parts", `x${1 + f.parts}`]);
     if (f.modCost) rows.push(["Mod prices", `-${Math.round(f.modCost * 100)}%`]);
     if (f.droneCost) rows.push(["Drone prices", `-${Math.round(f.droneCost * 100)}%`]);
@@ -2698,10 +2629,43 @@ export function parseSave(raw: string): State | null {
         n.achAt = { ...(o.achAt && typeof o.achAt === "object" ? o.achAt : {}) };
         if (!Array.isArray(n.armed)) n.armed = [];
         for (const k of ["drones", "droneAcc"] as const) if (!Array.isArray(n[k]) || n[k].length !== TIERS || n[k].some((x: number) => !Number.isFinite(x))) n[k] = Array(TIERS).fill(0);
+        // 2026-11-12: the Autoloader perk and sweeping Drones were removed (Scripts are the only automation layer)
+        migrateAutomation(n, o);
         for (const k of ["bytes", "mult", "reboot", "copper", "silicon", "quartz", "aether", "runes", "starglass", "voidsteel", "chrono", "nebula", "pulsars", "singularity", "engrams", "paradox", "origin", "spores", "mycelium", "pollen", "bloom", "basalt", "magma", "geodes", "sunstone", "ap"] as const) if (!Number.isFinite(n[k])) n[k] = base[k];
         return n;
     } catch {
         return null;
+    }
+}
+
+/** Old saves from before Scripts became the only automation layer (Nate, 2026-11-12):
+ * - the Autoloader perk is refunded in full (3, 5, 7... AP per level) and the stats it covered join `armed`;
+ * - every Drone tier with levels but no posting is posted, to an armed zone first (newest first), else the newest open zone,
+ *   so nothing that was working stops; `armed` then goes to buy.sh as ticked stats (scripts.ts migrateArmed). */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function migrateAutomation(n: State, o: Record<string, any>) {
+    const lv = Math.max(0, Math.min(12, Math.floor(Number(o.perks?.auto) || 0)));
+    delete (n.perks as Record<string, number>).auto;
+    // armed stats only mattered while a Drone was sweeping them (built, no posting); otherwise nothing pressed them
+    const swept = !!n.dr && n.drones.some((d, k) => d > 0 && !n.dr.post[k]);
+    if (lv > 0) {
+        const back = 3 * lv + lv * (lv - 1); // the old cost: 3 + 2 per level bought
+        n.ap += back;
+        n.treeRefund = (n.treeRefund ?? 0) + back;
+        const order: ButtonStat[] = ["mult", ...MATS];
+        if (!swept) n.armed = [];
+        for (const st of order.slice(0, lv)) if (!n.armed.includes(st)) n.armed.push(st);
+    }
+    if (swept || lv > 0) n.armedToBuy = true;
+    if (!n.dr || !swept) return;
+    const open = POSTABLE.filter((st) => isUnlocked(n, st)).reverse();
+    const armedOpen = open.filter((st) => n.armed.includes(st));
+    const pool = armedOpen.length ? armedOpen : open;
+    let i = 0;
+    for (let k = 0; k < TIERS; k++) {
+        if (n.drones[k] <= 0 || n.dr.post[k] || !pool.length) continue;
+        // a zone no other Drone works yet, else round the pool again
+        n.dr.post[k] = pool.find((st) => !n.dr.post.includes(st)) ?? pool[i++ % pool.length];
     }
 }
 
