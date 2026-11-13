@@ -146,6 +146,7 @@ export function AutomationHud({
               numberFormat={mode}
               canBuild={canAfford(data.selected.cost, data.resources)}
               onBuild={actions.onBuild}
+              onSetRecipe={actions.onSetRecipe}
               onClose={() => actions.onSelect(null)}
             />
           )}

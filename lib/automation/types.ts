@@ -294,6 +294,9 @@ export type MachineDetail = MachineView & {
   };
   rates: { label: string; value: string }[];
   buffers: { resourceId: string; have: number; max: number }[];
+  /** Crafters only: the building's current recipe id and every unlocked recipe it can run (base and alternates). */
+  recipeId?: string | null;
+  recipeOptions?: { id: string; name: string; alternate: boolean }[];
 };
 
 /** Expedition areas, shown in the expedition drawer. */
