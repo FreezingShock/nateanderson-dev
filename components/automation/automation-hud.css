@@ -975,3 +975,17 @@
 .ab-tab .ab-ico {
   margin: 0;
 }
+
+/* Desktop hierarchy: Research is the main progression step, so it is the one filled button in the top bar. */
+.ab-text-btn.ab-primary {
+  background: var(--ab-brass);
+  border-color: var(--ab-brass-hi);
+  color: #1a1209;
+  font-weight: 600;
+}
+
+.ab-text-btn.ab-primary:hover:not(:disabled),
+.ab-text-btn.ab-primary[aria-expanded="true"] {
+  background: var(--ab-brass-hi);
+  color: #1a1209;
+}
