@@ -120,7 +120,8 @@ export interface RecipeTree {
     research: ResearchDef[];
     milestones: MilestoneDef[];
     prestige: PrestigeDef;
-    structures: StructureDef[];
+    /** Non-machine structures (hub, orrery stages). Optional so placeholder catalogs still typecheck. */
+    structures?: StructureDef[];
 }
 
 // ---- Engine types (Simulation thread). Content above is owned by the Recipe thread; the engine below is owned by Simulation. ----
