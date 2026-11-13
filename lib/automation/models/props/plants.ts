@@ -9,7 +9,7 @@ export function bush(seed: number, dots?: "berry" | "blossom"): PropModel {
     const R = rng(seed * 19 + 4);
     const v = new Vox(`plant.bush${dots ? "." + dots : ""}.${seed}`);
     const r = 5.5 + R() * 3;
-    const pal = LEAF.bush;
+    const pal = seed % 3 === 0 ? LEAF.bush : LEAF.bushFall;
     const paint = (i: number, j: number, k: number) => pal[clamp(Math.floor(noise3(i * 0.3, j * 0.3, k * 0.3, seed) * 4.4 - 0.2), 0, 3)];
     const lobes = 2 + Math.floor(R() * 3);
     for (let n = 0; n < lobes; n++) {
@@ -20,7 +20,7 @@ export function bush(seed: number, dots?: "berry" | "blossom"): PropModel {
     // Light tops, darker skirt, and dots on the outer shell.
     const dot = dots === "berry" ? [0xc4362f, 0xa82a2a] : [FLOWER.rose, FLOWER.white, 0xf0b8c8];
     v.forEach((i, j, k, c) => {
-        if (!v.has(i, j + 1, k)) c.c = mix(c.c, 0x8cbc52, 0.3 + hash3(i, j, k, seed) * 0.25);
+        if (!v.has(i, j + 1, k)) c.c = mix(c.c, pal === LEAF.bush ? 0x8cbc52 : 0xe0a050, 0.3 + hash3(i, j, k, seed) * 0.25);
         const open = !v.has(i + 1, j, k) || !v.has(i - 1, j, k) || !v.has(i, j, k + 1) || !v.has(i, j, k - 1) || !v.has(i, j + 1, k);
         if (dots && open && j > 1 && hash3(i, j, k, seed + 5) < (dots === "berry" ? 0.07 : 0.12)) c.c = dot[Math.floor(hash3(k, i, j, seed) * dot.length)];
     });
