@@ -1,7 +1,7 @@
 // Brasswork: the resource and recipe tree. Every number here is a first-pass
 // balance value for the design thread to tune. Rates are per minute.
 // Balance notes and open taste calls live in /mnt/project-files/portfolio/automation-game/recipes.md.
-import type { MachineDef, RecipeTree, Stage } from "../types";
+import type { MachineDef, RecipeTree, Stage, StructureDef } from "../types";
 
 export const STAGE_NAMES: Record<Stage, string> = {
     0: "Raw",
@@ -48,6 +48,29 @@ const MACHINES: MachineDef[] = [
         buildCost: [{ item: "iron_gear", qty: 4 }, { item: "copper_wire", qty: 6 }, { item: "steel_ingot", qty: 4 }],
         note: "Stored spring power. More output, reaches 4 cells.",
     },
+    {
+        id: "spring_store",
+        name: "Spring store",
+        unlockStage: 3,
+        speed: 1,
+        footprint: { w: 2, d: 2 },
+        powerKw: 0,
+        storageKj: 600,
+        generatesKw: 120,
+        supplyRange: 4,
+        buildCost: [{ item: "iron_gear", qty: 2 }, { item: "steel_ingot", qty: 2 }, { item: "copper_wire", qty: 4 }],
+        note: "The battery. Stores spare power in a wound spring and gives it back when demand outruns supply.",
+    },
+];
+
+/** Structures that are not crafting machines. Ids match the voxel models. */
+const STRUCTURES: StructureDef[] = [
+    { id: "hub", name: "Hub", footprint: { w: 3, d: 3 }, note: "The workshop core. Receives deliveries and holds stock." },
+    { id: "orrery_0", name: "Orrery, foundation", footprint: { w: 6, d: 6 }, stage: 0 },
+    { id: "orrery_1", name: "Orrery, frame", footprint: { w: 6, d: 6 }, stage: 1 },
+    { id: "orrery_2", name: "Orrery, rings", footprint: { w: 6, d: 6 }, stage: 2 },
+    { id: "orrery_3", name: "Orrery, lenses", footprint: { w: 6, d: 6 }, stage: 3 },
+    { id: "orrery_4", name: "Orrery, complete", footprint: { w: 6, d: 6 }, stage: 4 },
 ];
 
 const ITEMS = [
@@ -214,4 +237,5 @@ export const RECIPE_TREE: RecipeTree = {
         keeps: ["blueprints", "research", "routes", "unlocked designs"],
         resets: ["machines", "stock"],
     },
+    structures: STRUCTURES.map((st) => ({ ...st, footprint: { ...st.footprint } })),
 };
