@@ -15,11 +15,12 @@ import {
     dayClock,
     deserialize,
     footprintCells,
-    offerSites,
     hudData,
     resolve,
+    SITES,
     serialize,
     windAt,
+    type HudData,
     type HudSettings,
     type Rot,
     type World,
@@ -48,35 +49,16 @@ function freshWorld(): World {
     return w;
 }
 
-// The sim's research nodes carry no grid position, glyph or unlock line; the HUD's research screen needs them.
-// Column is the depth in the requires chain (0..4), row is the order within a column.
-function forHud(d: ReturnType<typeof hudData>, seed: number): HudViewData {
-    const byId = new Map(d.research.map((n) => [n.id, n]));
-    const depth = new Map<string, number>();
-    const depthOf = (id: string, seen = new Set<string>()): number => {
-        if (depth.has(id)) return depth.get(id)!;
-        if (seen.has(id)) return 0;
-        seen.add(id);
-        const n = byId.get(id);
-        const v = n && n.requires.length ? 1 + Math.max(...n.requires.map((r) => depthOf(r, seen))) : 0;
-        depth.set(id, v);
-        return v;
-    };
-    const rows: Record<number, number> = {};
-    const research = d.research.map((n) => {
-        const column = Math.min(4, depthOf(n.id));
-        const row = Math.min(4, (rows[column] = (rows[column] ?? -1) + 1));
-        return { ...n, glyph: n.name.replace(/[^A-Za-z0-9]/g, "").slice(0, 2).toUpperCase() || "?", unlocks: n.note, column, row };
-    });
-    const sites = offerSites(seed).map((x) => ({
+// The HUD's research screen shows one unlock line per node; the sim returns a list of names.
+function forHud(d: HudData): HudViewData {
+    const sites = SITES.filter((x) => d.prestige.sites.includes(x.name)).map((x) => ({
         id: x.id,
         name: x.name,
         floor: `${x.width} by ${x.depth} floor`,
         ore: `${x.nodes.length} resource nodes`,
         bonus: `x${x.bonus.miner} mining, x${x.bonus.power} power`,
     }));
-    const prestige = { ready: d.prestige.ready, requirement: d.prestige.requirement, keeps: ["Blueprints", "Research", "Belts"], leaves: ["Machines", "Stock"], sites };
-    return { ...d, research, prestige };
+    return { ...d, research: d.research.map((n) => ({ ...n, unlocks: n.unlocks.join(", ") })), prestige: { ...d.prestige, sites } };
 }
 
 function loadWorld(): { world: World; savedAt: number } {
@@ -96,7 +78,7 @@ export function BrassworkHost() {
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const [data, setData] = useState<HudViewData>(() => {
         const w = freshWorld();
-        return forHud(hudData(w, CAT, null, START_SETTINGS), 1);
+        return forHud(hudData(w, CAT, null, START_SETTINGS));
     });
     const [note, setNote] = useState("");
     const ctl = useRef<{
@@ -154,7 +136,7 @@ export function BrassworkHost() {
             const away = Math.max(0, (Date.now() - savedAt) / 1000);
             if (away > 5) advance(world, Math.min(away, CAT.tune.maxAwaySeconds), 1, CAT);
 
-            const refresh = () => setData(forHud(hudData(world, CAT, selectedId, settings), world.progress.prestiges + 1));
+            const refresh = () => setData(forHud(hudData(world, CAT, selectedId, settings)));
             const save = () => {
                 try {
                     localStorage.setItem(SAVE_KEY, JSON.stringify({ text: serialize(world), savedAt: Date.now() }));
