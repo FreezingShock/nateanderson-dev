@@ -15,6 +15,7 @@
 @keyframes nfRxShake { 0% { transform: translate(0, 0); } 33% { transform: translate(2px, -1px); } 66% { transform: translate(-2px, 1px); } 100% { transform: translate(0, 0); } }
 @keyframes nfRxFlash { 0% { opacity: .85; } 100% { opacity: 0; } }
 @keyframes nfRxBlink { 50% { opacity: .35; } }
+@keyframes nfRxOut { from { opacity: 1; } to { opacity: 0; } }
 
 /* ---- press pop-ups */
 body .nf-pops { position: fixed; inset: 0; z-index: 64; pointer-events: none; overflow: hidden; contain: strict; }
@@ -78,6 +79,8 @@ body .nf-rx-gain b { font: 700 clamp(34px, 8vw, 56px)/1 var(--cm-display); lette
 body .nf-rx-line { font: 400 14px/1.45 var(--cm-mono); color: var(--cm-fg, #eee); }
 body .nf-rx-line.dim { color: var(--cm-mute, #9a9a9a); font-size: 13px; }
 body .nf-rx-go { font: 700 11px/1 var(--cm-mono); letter-spacing: .2em; text-transform: uppercase; color: #2fd8e8; animation: nfRxBlink 1s steps(2) infinite; }
+/* exit: the sequence fades out in four steps before it unmounts (AscendSeq close) */
+body .nf-rx[data-phase="leave"] { animation: nfRxOut 240ms steps(4, end) both; pointer-events: none; }
 body .nf-rx-flash { position: absolute; inset: 0; z-index: 5; pointer-events: none; background: #aef6ff; animation: nfRxFlash 620ms steps(7) forwards; }
 
 @media (prefers-reduced-motion: reduce) {
