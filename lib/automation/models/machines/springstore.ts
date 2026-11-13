@@ -1,6 +1,6 @@
 // Spring store, 2x2. Holds wound springs: three stacked brass barrels on a column, each with a slit that
 // shows the coil, and a big gauge on the front. The gauge needle part ("needle") should be driven by the
-// renderer from the stored charge; the default swing is only a placeholder.
+// renderer from the sim's chargeOf(world, catalog) (0..1); the default swing is only a placeholder.
 
 import { Builder, spin, swing } from "./builder";
 import { C } from "./palette";
@@ -44,5 +44,7 @@ export function springStore() {
     b.box(10, 21, 19, 11, 24, 20, C.sootD);
     b.body();
     statusLamp(b, 16, 2, 16);
+    // Power family: timber-staved barrels with brass hoops.
+    b.retone({ [C.brassD]: C.wood, [C.brassM]: C.cuD });
     return b.build();
 }

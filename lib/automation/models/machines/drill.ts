@@ -70,5 +70,7 @@ export function drill() {
     b.box(13, 8, 15, 17, 9, 17, C.ironD);
     speckle(b, 1, 0, 1, 19, 2, 19, C.steel, C.steelD, 6);
     statusLamp(b, 4, 4, 16);
+    // Forming family: iron and steel bodies, brass kept for trim and moving parts.
+    b.retone({ [C.brassD]: C.ironD, [C.brassM]: C.iron });
     return b.build();
 }

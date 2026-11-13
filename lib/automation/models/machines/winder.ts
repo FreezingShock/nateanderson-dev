@@ -50,5 +50,7 @@ export function winder() {
     b.box(9, 6, 0, 11, 8, 6, C.iron);
     b.box(8, 5, 1, 12, 9, 3, C.brass);
     statusLamp(b, 4, 4, 17);
+    // Power family: timber frames with brass fittings.
+    b.retone({ [C.brassD]: C.wood, [C.brassM]: C.wood });
     return b.build();
 }

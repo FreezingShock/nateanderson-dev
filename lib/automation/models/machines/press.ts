@@ -47,5 +47,7 @@ export function press() {
     hopperBack(b, 0);
     chuteFront(b, 0);
     statusLamp(b, 16, 4, 25);
+    // Forming family: iron and steel bodies, brass kept for trim and moving parts.
+    b.retone({ [C.brassD]: C.ironD, [C.brassM]: C.iron });
     return b.build();
 }

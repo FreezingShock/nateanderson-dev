@@ -250,6 +250,12 @@ export class Builder {
         return this;
     }
 
+    /** Swap palette colours across every part, e.g. to give a machine family its own body tone. */
+    retone(map: Record<number, number>) {
+        for (const p of this.parts) for (const [k, c] of p.grid) if (map[c] !== undefined) p.grid.set(k, map[c]);
+        return this;
+    }
+
     /**
      * Pack into the shared format. Pivots are snapped down to whole voxels (pos is Int16 relative to the
      * pivot), so author spinning parts with their centre on a voxel grid line across the spin axis.
