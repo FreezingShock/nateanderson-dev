@@ -5,6 +5,7 @@
 //   quality=auto|0|1|2   dither=0|1   lowfx=0|1   t=0..1 (time of day)   cycle=0|1
 //   machines=N           stamps N simple machines across the island for load testing
 //   model=1              places the example machine and a placement ghost
+//   orbit=0|1            0 = orbit: false, so an input module owns the camera
 import { useEffect, useRef } from "react";
 import { createVoxelIsland, type VoxelIsland } from "./index";
 import { heightAt } from "./terrain";
@@ -34,6 +35,7 @@ export default function VoxelIslandBench() {
             lowFx: q.get("lowfx") === "1",
             timeOfDay: q.get("t") ? Number(q.get("t")) : 0.5,
             cycle: q.get("cycle") === "1",
+            orbit: q.get("orbit") !== "0",
         });
 
         const machines = Number(q.get("machines") ?? 0);

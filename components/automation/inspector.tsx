@@ -1,4 +1,4 @@
-import type { MachineDetail, NumberFormat, ResourceView } from "./types";
+import type { MachineDetail, NumberFormat, ResourceView } from "@/lib/automation/types";
 import { fmtNum, resourceName } from "./format";
 
 /** Machine inspector: recipe, rates and buffers for the selected machine. */
