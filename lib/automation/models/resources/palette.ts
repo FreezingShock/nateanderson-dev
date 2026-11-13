@@ -60,12 +60,12 @@ export const RESOURCE_COLORS: Record<StockId, ResourceColors> = {
         host: 0x7a7068,
         hostDark: 0x6b625a,
     },
-    // "Pale, light stone from the high bank": layered blue-silver shelves. Kept
-    // cool on purpose so the warm sun never turns it cream like quartz.
+    // "Pale, light stone from the high bank": tan bauxite shelves with ochre
+    // bands and silver flecks. Nate's pick (2026-11-13), matches the item icon.
     aluminium_ore: {
-        main: 0x98b2d4,
-        dark: 0x63748e,
-        accent: 0xdde8f5,
+        main: 0xd4c4a0,
+        dark: 0xa8784c,
+        accent: 0xcdd6e0,
         host: 0x7a7068,
         hostDark: 0x6b625a,
     },
