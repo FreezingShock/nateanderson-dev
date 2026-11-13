@@ -653,6 +653,8 @@ export interface State {
     /** legacy: stats armed for sweeping Drones or covered by the removed Autoloader perk. The save migration fills it and
      * scripts.ts hands it to buy.sh once, then empties it (lib/nodefarm/scripts.ts `migrateArmed`). */
     armed: string[];
+    /** set by the save migration when `armed` really was automated (sweeping Drones or the Autoloader) and goes to buy.sh */
+    armedToBuy?: boolean;
     /** owned prestige-tree node ids (bought with AP, kept through Ascend) */
     tree: string[];
     /** ranks above 1 of ranked tree nodes, by id (kept through Ascend; an owned ranked node without an entry is rank 1) */
@@ -2640,14 +2642,18 @@ export function parseSave(raw: string): State | null {
 function migrateAutomation(n: State, o: Record<string, any>) {
     const lv = Math.max(0, Math.min(12, Math.floor(Number(o.perks?.auto) || 0)));
     delete (n.perks as Record<string, number>).auto;
+    // armed stats only mattered while a Drone was sweeping them (built, no posting); otherwise nothing pressed them
+    const swept = !!n.dr && n.drones.some((d, k) => d > 0 && !n.dr.post[k]);
     if (lv > 0) {
         const back = 3 * lv + lv * (lv - 1); // the old cost: 3 + 2 per level bought
         n.ap += back;
         n.treeRefund = (n.treeRefund ?? 0) + back;
         const order: ButtonStat[] = ["mult", ...MATS];
+        if (!swept) n.armed = [];
         for (const st of order.slice(0, lv)) if (!n.armed.includes(st)) n.armed.push(st);
     }
-    if (!n.dr || !n.armed.length) return; // a save with nothing armed had no sweeping Drones
+    if (swept || lv > 0) n.armedToBuy = true;
+    if (!n.dr || !swept) return;
     const open = POSTABLE.filter((st) => isUnlocked(n, st)).reverse();
     const armedOpen = open.filter((st) => n.armed.includes(st));
     const pool = armedOpen.length ? armedOpen : open;

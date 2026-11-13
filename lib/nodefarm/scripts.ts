@@ -450,7 +450,7 @@ function every(a: AutoState, id: ScriptId, dt: number, cycle: number, fn: () => 
 /** Old saves: stats that sweeping Drones or the removed Autoloader perk pressed come to buy.sh once (engine migrateAutomation
  * fills `armed`). buy.sh is learned and running, each stat ticked, and every tier the save has bought counts as taught. */
 export function migrateArmed(s: State) {
-    if (!s.armed.length) return;
+    if (!s.armedToBuy) return;
     const a = auto(s);
     for (const st of s.armed) {
         if (!BUY_STATS.includes(st as ButtonStat)) continue;
@@ -462,6 +462,7 @@ export function migrateArmed(s: State) {
     a.learn.buy = Math.max(a.learn.buy ?? 0, SCRIPT_TUNE.learn.buy);
     a.on.buy = true;
     s.armed = [];
+    delete s.armedToBuy;
 }
 const ALL_TIERS = (1 << TIERS) - 1;
 /** Standing orders (tree node): every stat is ticked for buy.sh the first time it opens; untick it and it stays off. */
@@ -475,7 +476,7 @@ function standingOrders(s: State, a: AutoState) {
 }
 
 export function scriptStep(s: State, dt: number) {
-    if (s.armed.length) migrateArmed(s);
+    if (s.armedToBuy) migrateArmed(s);
     const a = s.auto;
     if (!a) return;
     standingOrders(s, a);
