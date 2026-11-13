@@ -31,7 +31,9 @@ import {
 import type { VoxelIsland } from "@/lib/automation/render";
 import type { BuildWorld, MountedInput } from "@/lib/automation/input";
 import { getMachineModel } from "@/lib/automation/models/machines";
-import { BELT_MODELS, beltModelId, pickBeltTile, type PieceKind } from "@/lib/automation/models/belts";
+import { pickBeltTile, type PieceKind, type PiecePlacement } from "@/lib/automation/models/belts";
+import { WATER_LEVEL } from "@/lib/automation/render/config";
+import { scatterProps } from "@/lib/automation/models/props";
 import { BrassworkExtras, type AwayReport, type Mood } from "./extras";
 import { bw, bwHum, bwSetEnabled } from "@/lib/brasswork/sound";
 
@@ -47,12 +49,11 @@ const NODE_SPOTS: [number, number][] = [[2, 2], [2, 8], [15, 2], [15, 8], [8, 1]
 // Sim cells run 0..W-1, 0..D-1. The renderer and the input module share one frame where the plateau starts at (-9, -6).
 const BOARD = { width: W, depth: D, originX: -W / 2, originZ: -D / 2 };
 
-const BELT_BY_ID = new Map(BELT_MODELS.map((m) => [m.id, m]));
 const BELT_TIER: Record<string, number> = { belt: 0, "belt-copper": 1, "belt-steel": 2 };
 const FACE: readonly (readonly [number, number])[] = [[0, 1], [1, 0], [0, -1], [-1, 0]];
 
 /** Which belt tile a plain sim belt cell should show, from what feeds it and what it feeds. */
-function beltTile(world: World, b: { x: number; z: number; rot: number; type: string }): { id: string; rot: number } {
+function beltTile(world: World, b: { x: number; z: number; rot: number; type: string }): PiecePlacement["kind"] {
     const at = (x: number, z: number) => buildingAt(world, x, z, CAT);
     const isBelt = (t?: string) => !!t && t in BELT_TIER;
     const [fx, fz] = FACE[b.rot];
@@ -71,7 +72,7 @@ function beltTile(world: World, b: { x: number; z: number; rot: number; type: st
         frontIsMachine: !!front && !isBelt(front.type),
         backIsMachine: !!back && !isBelt(back.type) && back.type !== "hub",
     });
-    return { id: beltModelId(kind, BELT_TIER[b.type] ?? 0), rot: b.rot };
+    return kind;
 }
 
 const TYPE_COLORS: Record<string, number> = { hub: 0xc59a52, drill: 0x7f8ca3, power: 0xc4682f };
@@ -132,9 +133,21 @@ export function BrassworkHost() {
             let settings = { ...START_SETTINGS };
             let selectedId: number | null = null;
             const drawn = new Set<number>();
-            const beltDrawn = new Map<number, { id: string; rot: number }>();
 
             const island: VoxelIsland = createVoxelIsland(canvas, { quality: "auto", dither: true, timeOfDay: 0.4, cycle: false, orbit: false });
+            [1.2, 2, 3].forEach((v, tier) => island.setBeltSpeed(tier, v));
+            // Natural scenery around the plateau; nothing grows on it, and trees keep clear of the machines.
+            island.setScenery(
+                scatterProps({
+                    heightAt,
+                    isFree: (x, z) => !(Math.abs(x) < 9.6 && Math.abs(z) < 6.6),
+                    waterLevel: WATER_LEVEL,
+                    minX: -26, maxX: 26, minZ: -20, maxZ: 20,
+                    seed: 7,
+                    factoryDistance: (x, z) => Math.hypot(Math.max(Math.abs(x) - 9.2, 0), Math.max(Math.abs(z) - 6.2, 0)),
+                    clearRadius: 2.5,
+                })
+            );
             const center = (x: number, z: number, w: number, d: number): [number, number] => [x + w / 2 - W / 2, z + d / 2 - D / 2];
 
             // Keep the scene in step with the world: draw new buildings, remove the ones that are gone.
@@ -143,22 +156,16 @@ export function BrassworkHost() {
                     if (!world.buildings[id]) {
                         island.removeObject(`b${id}`);
                         drawn.delete(id);
-                        beltDrawn.delete(id);
                     }
                 }
                 // Belts pick their tile from their neighbours, so a placement or removal can change the cells around it.
+                const pieces: PiecePlacement[] = [];
                 for (const b of Object.values(world.buildings)) {
                     if (!(b.type in BELT_TIER)) continue;
-                    const want = beltTile(world, b);
-                    const have = beltDrawn.get(b.id);
-                    if (have && have.id === want.id && have.rot === want.rot) continue;
-                    const model = BELT_BY_ID.get(want.id);
-                    if (!model) continue;
-                    island.removeObject(`b${b.id}`);
-                    island.placeModel(`b${b.id}`, model, { cell: { x: b.x - W / 2, z: b.z - D / 2 }, rot: want.rot as 0 | 1 | 2 | 3 });
-                    beltDrawn.set(b.id, want);
+                    pieces.push({ kind: beltTile(world, b), tier: BELT_TIER[b.type], x: b.x - W / 2, z: b.z - D / 2, rot: b.rot as 0 | 1 | 2 | 3 });
                     drawn.add(b.id);
                 }
+                island.setBelts(pieces);
                 for (const b of Object.values(world.buildings)) {
                     if (drawn.has(b.id)) continue;
                     drawn.add(b.id);
@@ -337,6 +344,8 @@ export function BrassworkHost() {
                     settings = { ...settings, ...p };
                     bwSetEnabled(settings.sound);
                     island.setLowFx(settings.lowFx || settings.reduceMotion);
+                    island.setSceneryDensity(settings.lowFx || settings.reduceMotion ? 0.5 : 1);
+                    [1.2, 2, 3].forEach((v, tier) => island.setBeltSpeed(tier, settings.reduceMotion ? 0 : v));
                     refresh();
                 },
             };
