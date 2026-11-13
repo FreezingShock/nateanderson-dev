@@ -87,6 +87,7 @@ export function BrassworkHost() {
         setTool: (id: string | null) => void;
         select: (id: string | null) => void;
         research: (id: string) => void;
+        setRecipe: (id: string) => void;
         prestige: (id: string) => void;
         settings: (p: Partial<HudSettings>) => void;
     } | null>(null);
@@ -270,6 +271,12 @@ export function BrassworkHost() {
                     setNote(r.ok ? "" : r.reason);
                     refresh();
                 },
+                setRecipe: (recipeId) => {
+                    if (selectedId === null) return;
+                    const r = simActions.setRecipe(world, selectedId, recipeId, CAT);
+                    setNote(r.ok ? "" : r.reason);
+                    refresh();
+                },
                 prestige: (id) => {
                     const r = simActions.prestige(world, id, CAT);
                     if (!r.ok) return setNote(r.reason);
@@ -345,12 +352,13 @@ export function BrassworkHost() {
     const onBuild = useCallback((id: string) => ctl.current?.setTool(id), []);
     const onSelect = useCallback((id: string | null) => ctl.current?.select(id), []);
     const onResearch = useCallback((id: string) => ctl.current?.research(id), []);
+    const onSetRecipe = useCallback((id: string) => ctl.current?.setRecipe(id), []);
     const onPrestige = useCallback((id: string) => ctl.current?.prestige(id), []);
     const onSettings = useCallback((p: Partial<HudSettings>) => ctl.current?.settings(p), []);
 
     return (
         <div className="bw-root">
-            <AutomationHud data={data} actions={{ onBuild, onSelect, onResearch, onPrestige, onSettings }}>
+            <AutomationHud data={data} actions={{ onBuild, onSelect, onResearch, onSetRecipe, onPrestige, onSettings }}>
                 <canvas ref={canvasRef} className="bw-canvas" />
                 <Link href="/creations/games" className="bw-back">
                     Back to Games
