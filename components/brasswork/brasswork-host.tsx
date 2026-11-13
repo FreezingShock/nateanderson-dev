@@ -78,7 +78,7 @@ function freshWorld(): World {
 
 // The HUD's research screen shows one unlock line per node; the sim returns a list of names.
 function forHud(d: HudData): HudViewData {
-    const sites = SITES.filter((x) => d.prestige.sites.includes(x.name)).map((x) => ({
+    const sites = SITES.filter((x) => d.prestige.sites.some((s) => s.id === x.id)).map((x) => ({
         id: x.id,
         name: x.name,
         floor: `${x.width} by ${x.depth} floor`,

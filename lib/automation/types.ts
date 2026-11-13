@@ -322,6 +322,15 @@ export type ResearchNode = {
   state: "done" | "available" | "locked";
 };
 
+/** One island site offered at prestige: what it is and what it changes. */
+export type PrestigeSite = {
+  id: string;
+  name: string;
+  blurb: string;
+  /** Plain lines on the bonus, e.g. "Miners +15%". */
+  modifiers: string[];
+};
+
 export type PrestigeView = {
   ready: boolean;
   /** Plain line on what is needed, e.g. "Reach 1 M brass made". */
@@ -332,8 +341,8 @@ export type PrestigeView = {
   keeps: string[];
   /** Things that reset on a workshop, from the tree. */
   leaves: string[];
-  /** Names of the island sites the player can move to. */
-  sites: string[];
+  /** The island sites the player can move to. */
+  sites: PrestigeSite[];
 };
 
 export type StatLine = { label: string; value: string };
