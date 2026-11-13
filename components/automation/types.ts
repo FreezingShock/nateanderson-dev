@@ -7,6 +7,8 @@ export * from "@/lib/automation/types";
 export type HudActions = {
   onBuild: (machineId: string) => void;
   onSelect: (machineId: string | null) => void;
+  /** Crafters: switch the selected building to another unlocked recipe. */
+  onSetRecipe?: (recipeId: string) => void;
   onNextStep?: (actionId: string) => void;
   onSelectArea?: (areaId: string) => void;
   onResearch?: (nodeId: string) => void;

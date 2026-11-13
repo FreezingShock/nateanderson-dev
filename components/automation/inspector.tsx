@@ -8,6 +8,7 @@ export function Inspector({
   numberFormat,
   canBuild,
   onBuild,
+  onSetRecipe,
   onClose,
 }: {
   detail: MachineDetail | null;
@@ -15,6 +16,7 @@ export function Inspector({
   numberFormat: NumberFormat;
   canBuild: boolean;
   onBuild: (id: string) => void;
+  onSetRecipe?: (recipeId: string) => void;
   onClose: () => void;
 }) {
   if (!detail) {
@@ -60,6 +62,23 @@ export function Inspector({
           <dd>{detail.recipe.seconds} s</dd>
         </div>
       </dl>
+
+      {onSetRecipe && detail.recipeOptions && detail.recipeOptions.length > 1 && (
+        <div role="group" aria-label="Recipe">
+          {detail.recipeOptions.map((o) => (
+            <button
+              key={o.id}
+              type="button"
+              className="ab-list-btn"
+              aria-pressed={o.id === detail.recipeId}
+              onClick={() => onSetRecipe(o.id)}
+            >
+              {o.name}
+              {o.alternate ? " (alternate)" : ""}
+            </button>
+          ))}
+        </div>
+      )}
 
       <p className="ab-flow">
         <span>{flow(detail.recipe.inputs)}</span>
