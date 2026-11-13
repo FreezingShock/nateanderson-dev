@@ -442,7 +442,7 @@ export function respec(s: State): number {
     s.ap += back;
     s.tree = [];
     s.treeLv = {};
-    s.mounts = [];
+    // Mounted drives stay assigned: their slots come back when the drive nodes are bought again
     // Drone levels that only the removed nodes allowed (extra levels per tier) go with them
     s.drones = s.drones.map((lv) => Math.min(lv, droneMax(s)));
     return back;
@@ -2133,6 +2133,7 @@ export function buyDroneNode(s: State, id: string): boolean {
 }
 /** Free respec: every Core comes back. Mod levels above the new caps are trimmed, without refund. Returns Cores refunded. */
 export function respecDrones(s: State): number {
+    if (chOff(s, "prestige")) return 0;
     const back = coresSpent(s);
     s.dr.nodes = [];
     for (const m of s.dr.mods) m[0] = Math.min(m[0], modMax(s, 0));

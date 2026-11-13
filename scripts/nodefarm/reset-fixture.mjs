@@ -28,7 +28,7 @@ export function richSave(E, R) {
     s.aether = 9000; s.prod.origin = 3; s.origin = 800; s.engrams = 50; s.bloom = 20;
     for (const k of Object.keys(s.bought)) s.bought[k] = [3, 2, 1, 0, 0, 0];
     s.ap = 40;
-    s.perks = { scanner: 2, auto: 1, overclock: 1, offline: 1, start: 1, power: 1 };
+    s.perks = { scanner: 2, overclock: 1, offline: 1, start: 1, power: 1 }; // no Autoloader: the perk was removed (migrateAutomation refunds old saves)
     s.ach = ["goal_first", "secret_x"]; s.achAt = { goal_first: NOW - 5e6, secret_x: NOW - 1e6 };
     s.logs = ["log_1", "log_2"];
     s.drones = [2, 1, 0, 0, 0, 0]; s.droneAcc = [0.4, 0, 0, 0, 0, 0];
