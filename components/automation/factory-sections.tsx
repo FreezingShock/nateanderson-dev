@@ -65,20 +65,20 @@ export function Milestones({ milestones }: { milestones: MilestoneView[] }) {
 
 export function PrestigeCard({
   prestige,
-  onPrestige,
+  onOpen,
 }: {
   prestige: PrestigeView;
-  onPrestige?: () => void;
+  onOpen?: () => void;
 }) {
   return (
     <div className="ab-prestige" data-ready={prestige.ready}>
       <p className="ab-dim">{prestige.requirement}</p>
-      <p>{prestige.gain}</p>
+      <p className="ab-dim">Keeps blueprints, research and records. Leaves machines, belts and stock.</p>
       <button
         type="button"
         className="ab-action"
-        disabled={!prestige.ready || !onPrestige}
-        onClick={onPrestige}
+        disabled={!onOpen}
+        onClick={onOpen}
       >
         Open a new workshop
       </button>

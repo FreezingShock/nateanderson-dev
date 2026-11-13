@@ -1,6 +1,5 @@
 // Typed props for Brasswork's 2D interface (the HUD around the 3D view).
-// The simulation (lib/automation/sim/) and recipe data (lib/automation/data/)
-// will build these views later; until then mock.ts supplies them.
+// HudData is the contract: the simulation's hudData() returns it.
 
 export type NumberFormat = "short" | "full";
 
@@ -42,6 +41,7 @@ export type MachineDetail = MachineView & {
     outputs: Line[];
     seconds: number;
   };
+  /** Theoretical rates at full buffers and current power, not measured. */
   rates: { label: string; value: string }[];
   buffers: { resourceId: string; have: number; max: number }[];
 };
@@ -69,18 +69,40 @@ export type MilestoneView = {
 export type ResearchNode = {
   id: string;
   name: string;
-  note: string;
+  /** Placeholder code for the node icon. */
+  glyph: string;
+  /** Plain line on what the node unlocks, e.g. "Photocell recipe". */
+  unlocks: string;
   blueprintCost: number;
+  /** Grid position: column 0..4 (stage), row 0..4 within the grid. */
+  column: number;
+  row: number;
+  /** Ids of nodes that must be researched first. */
   requires: string[];
   state: "done" | "available" | "locked";
 };
 
+/** One of the island sites a prestige can move the workshop to. */
+export type PrestigeSite = {
+  id: string;
+  name: string;
+  floor: string;
+  /** Plain line on the site's ore, e.g. "3 in range, 1 pure". */
+  ore: string;
+  /** Plain line on the bonus, e.g. "+12 BP, x1.9 speed". */
+  bonus: string;
+};
+
 export type PrestigeView = {
   ready: boolean;
-  /** Plain line on what is needed, e.g. "Reach 1 M brass made". */
+  /** Plain line on what is needed, e.g. "Reach 1 M iron made". */
   requirement: string;
-  /** What the player keeps or gains, e.g. "+5% speed per workshop". */
-  gain: string;
+  /** Things kept across the move. */
+  keeps: string[];
+  /** Things left behind on the old site. */
+  leaves: string[];
+  /** Sites to choose from. The player picks one, then holds to confirm. */
+  sites: PrestigeSite[];
 };
 
 export type StatLine = { label: string; value: string };
@@ -121,6 +143,7 @@ export type HudActions = {
   onNextStep?: (actionId: string) => void;
   onSelectArea?: (areaId: string) => void;
   onResearch?: (nodeId: string) => void;
-  onPrestige?: () => void;
+  /** Called once the player has picked a site and held to confirm. */
+  onPrestige?: (siteId: string) => void;
   onSettings: (patch: Partial<HudSettings>) => void;
 };

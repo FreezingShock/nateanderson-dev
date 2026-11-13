@@ -7,14 +7,16 @@ import { ResourceStrip } from "./resource-strip";
 import { BuildList } from "./build-bar";
 import { Inspector } from "./inspector";
 import { Milestones, PrestigeCard, Section } from "./factory-sections";
-import { ExpeditionList, ResearchTree, SettingsList, StatsList } from "./drawers";
+import { ExpeditionList, SettingsList, StatsList } from "./drawers";
+import { ResearchScreen } from "./research-screen";
+import { PrestigeScreen } from "./prestige-screen";
 import { canAfford } from "./format";
 
-type Drawer = "expedition" | "research" | "stats" | "settings";
+type Drawer = "expedition" | "stats" | "settings";
+type Screen = "research" | "prestige";
 
 const DRAWER_TITLE: Record<Drawer, string> = {
   expedition: "Expedition",
-  research: "Research",
   stats: "Production stats",
   settings: "Settings",
 };
@@ -23,7 +25,8 @@ const DRAWER_TITLE: Record<Drawer, string> = {
  * Brasswork's 2D interface, drawn over the 3D workshop.
  * Layout follows the design mock: machine palette on the left, the 3D floor in
  * the centre with the status line along its bottom, and the inspector and
- * milestones on the right. `children` is the 3D view slot.
+ * milestones on the right. Research and prestige open as full-screen views.
+ * `children` is the 3D view slot.
  */
 export function AutomationHud({
   data,
@@ -35,16 +38,19 @@ export function AutomationHud({
   children?: ReactNode;
 }) {
   const [drawer, setDrawer] = useState<Drawer | null>(null);
+  const [screen, setScreen] = useState<Screen | null>(null);
   const mode = data.settings.numberFormat;
 
   useEffect(() => {
-    if (!drawer) return;
+    if (!drawer && !screen) return;
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setDrawer(null);
+      if (e.key !== "Escape") return;
+      if (screen) setScreen(null);
+      else setDrawer(null);
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [drawer]);
+  }, [drawer, screen]);
 
   const toggle = (d: Drawer) => setDrawer((cur) => (cur === d ? null : d));
   const selectedId = data.selected?.id ?? null;
@@ -70,7 +76,15 @@ export function AutomationHud({
           numberFormat={mode}
         />
         <nav className="ab-nav" aria-label="Workshop views">
-          {(["expedition", "research", "stats", "settings"] as const).map((d) => (
+          <button
+            type="button"
+            className="ab-text-btn"
+            aria-expanded={screen === "research"}
+            onClick={() => setScreen((s) => (s === "research" ? null : "research"))}
+          >
+            Research
+          </button>
+          {(["expedition", "stats", "settings"] as const).map((d) => (
             <button
               key={d}
               type="button"
@@ -138,7 +152,7 @@ export function AutomationHud({
           </Section>
 
           <Section title="Prestige" defaultOpen={false}>
-            <PrestigeCard prestige={data.prestige} onPrestige={actions.onPrestige} />
+            <PrestigeCard prestige={data.prestige} onOpen={() => setScreen("prestige")} />
           </Section>
         </aside>
 
@@ -154,13 +168,6 @@ export function AutomationHud({
               {drawer === "expedition" && (
                 <ExpeditionList areas={data.areas} onSelectArea={actions.onSelectArea} />
               )}
-              {drawer === "research" && (
-                <ResearchTree
-                  nodes={data.research}
-                  blueprints={data.blueprints}
-                  onResearch={actions.onResearch}
-                />
-              )}
               {drawer === "stats" && <StatsList stats={data.stats} />}
               {drawer === "settings" && (
                 <SettingsList settings={data.settings} onChange={actions.onSettings} />
@@ -169,6 +176,26 @@ export function AutomationHud({
           </aside>
         )}
       </div>
+
+      {screen === "research" && (
+        <ResearchScreen
+          nodes={data.research}
+          blueprints={data.blueprints}
+          onResearch={actions.onResearch}
+          onClose={() => setScreen(null)}
+        />
+      )}
+
+      {screen === "prestige" && (
+        <PrestigeScreen
+          prestige={data.prestige}
+          onConfirm={(siteId) => {
+            actions.onPrestige?.(siteId);
+            setScreen(null);
+          }}
+          onClose={() => setScreen(null)}
+        />
+      )}
     </div>
   );
 }
