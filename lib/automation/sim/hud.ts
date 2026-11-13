@@ -123,7 +123,7 @@ export function hudData(world: World, cat: Catalog = DEFAULT_CATALOG, selectedId
             unlocked,
             lockedReason: unlocked ? undefined : `Unlocks at stage ${m.unlockStage}`,
             count: count[m.id] ?? 0,
-            cost: lines(cat.machine[m.id]?.cost ?? []),
+            cost: lines(m.buildCost ?? []),
             status: statusOf[m.id] ?? "idle",
         };
     });

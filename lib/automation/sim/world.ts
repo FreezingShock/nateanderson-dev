@@ -1,16 +1,18 @@
 // Core simulation: placement, the fixed tick, belts, crafting, mining, power, and offline catch-up.
 // Deterministic: buildings update in id order, so the same world and the same steps always give the same result.
 import type { ActionResult, Building, Catalog, Cell, Footprint, Deposit, PlaceResult, Rot, Stack, World, EngineDef } from "../types";
-import { DIR_DX, DIR_DZ } from "../types";
+import { DIR_DX, DIR_DZ} from "../types";
 import { DEFAULT_CATALOG } from "./data";
 import { checkMilestones } from "./progress";
 
 export const DRILL = "drill"; // the tree machine that sits on a resource node
+export const SPRING = "spring_winder"; // the battery generator
 export const HUB = "hub";
 
 export type Kind = "hub" | "belt" | "generator" | "miner" | "crafter";
 
 export interface Resolved {
+    id: string;
     kind: Kind;
     name: string;
     footprint: Footprint;
@@ -18,6 +20,7 @@ export interface Resolved {
     cost: Stack[];
     power: number;
     supply: number;
+    range: number; // generators: covers consumers whose centre is within this many cells
     speed: number;
     spacing: number;
     beltSpeed: number;
@@ -28,6 +31,7 @@ export function resolve(cat: Catalog, type: string): Resolved | null {
     const e: EngineDef | undefined = cat.engine[type];
     if (e) {
         return {
+            id: type,
             kind: e.kind,
             name: e.name,
             footprint: e.footprint,
@@ -35,6 +39,7 @@ export function resolve(cat: Catalog, type: string): Resolved | null {
             cost: e.cost,
             power: 0,
             supply: e.supply ?? 0,
+            range: 0,
             speed: 1,
             spacing: e.belt?.spacing ?? 0,
             beltSpeed: e.belt?.speed ?? 0,
@@ -43,15 +48,17 @@ export function resolve(cat: Catalog, type: string): Resolved | null {
     }
     const m = cat.tree.machines.find((x) => x.id === type);
     if (!m) return null;
-    const spec = cat.machine[type];
+    const gen = m.generatesKw ?? 0;
     return {
-        kind: type === DRILL ? "miner" : "crafter",
+        id: type,
+        kind: gen > 0 ? "generator" : type === DRILL ? "miner" : "crafter",
         name: m.name,
         footprint: m.footprint,
         placeable: true,
-        cost: spec?.cost ?? [],
-        power: spec?.power ?? 0,
-        supply: 0,
+        cost: m.buildCost ?? [],
+        power: m.powerKw,
+        supply: gen,
+        range: m.supplyRange ?? 0,
         speed: m.speed,
         spacing: 0,
         beltSpeed: 0,
@@ -117,6 +124,7 @@ export function createWorld(opts: CreateOptions = {}, cat: Catalog = DEFAULT_CAT
         power: { supply: 0, demand: 0, satisfaction: 1 },
         progress: { blueprints: 0, researched: [], milestonesDone: [], delivered: {}, prestiges: 0, site: null, bonus: { miner: 1, power: 1 } },
         wind: 0.5,
+        windPin: null,
     };
     const hub = newBuilding(world, HUB, hubCell.x, hubCell.z, 0);
     world.hubId = hub.id;
@@ -133,7 +141,7 @@ export function windAt(t: number): number {
 
 function newBuilding(world: World, type: string, x: number, z: number, rot: Rot): Building {
     const id = world.nextId++;
-    const b: Building = { id, type, x, z, rot, recipe: null, crafting: false, progress: 0, input: {}, output: {}, acc: 0, lane: [], rr: 0 };
+    const b: Building = { id, type, x, z, rot, recipe: null, crafting: false, progress: 0, input: {}, output: {}, acc: 0, lane: [], rr: 0, charge: 0 };
     world.buildings[id] = b;
     return b;
 }
@@ -375,32 +383,87 @@ function moveLane(world: World, cat: Catalog, index: Map<string, number>, b: Bui
     }
 }
 
-// Advance the world by dt seconds. Order: power, machines, belts, output pushes, milestones.
+// Power. Generators cover consumers by range (centre to centre, Chebyshev). A windmill gives its peak
+// scaled by wind (full at wind 0.5 and above). A wound spring is a battery: it charges while the wind is
+// above 0.5 and releases its stored energy in calm air. Each generator shares its output among the
+// consumers it covers, and a consumer runs at the share it receives (capped at 1).
+function centreOf(b: Building, fp: Footprint): [number, number] {
+    const cells = footprintCells(b, fp);
+    const xs = cells.map((c) => c[0]);
+    const zs = cells.map((c) => c[1]);
+    return [(Math.min(...xs) + Math.max(...xs)) / 2, (Math.min(...zs) + Math.max(...zs)) / 2];
+}
+
+function updatePower(world: World, cat: Catalog, defs: Map<number, Resolved>, dt: number): Map<number, number> {
+    const gens: { id: number; cx: number; cz: number; range: number; out: number }[] = [];
+    const consumers: { id: number; cx: number; cz: number; need: number }[] = [];
+    let supply = 0;
+    let demand = 0;
+    for (const id of Object.keys(world.buildings).map(Number)) {
+        const b = world.buildings[id];
+        const r = defs.get(id);
+        if (!r) continue;
+        if (r.kind === "generator") {
+            const [cx, cz] = centreOf(b, r.footprint);
+            let out: number;
+            if (r.id === SPRING) {
+                const cap = r.supply * cat.tune.springSeconds;
+                if (world.wind > 0.5) {
+                    b.charge = Math.min(cap, b.charge + r.supply * (world.wind - 0.5) * 2 * dt);
+                    out = 0;
+                } else {
+                    out = Math.min(r.supply, b.charge / dt);
+                    b.charge = Math.max(0, b.charge - out * dt);
+                }
+            } else {
+                out = r.supply * Math.min(1, 2 * world.wind);
+            }
+            gens.push({ id, cx, cz, range: r.range, out });
+            supply += out;
+        } else if ((r.kind === "miner" || r.kind === "crafter") && r.power > 0) {
+            const [cx, cz] = centreOf(b, r.footprint);
+            consumers.push({ id, cx, cz, need: r.power });
+            demand += r.power;
+        }
+    }
+    // How many consumers each generator reaches, so its output can be shared.
+    const reach = gens.map((g) => consumers.filter((c) => Math.max(Math.abs(c.cx - g.cx), Math.abs(c.cz - g.cz)) <= g.range));
+    const received = new Map<number, number>();
+    gens.forEach((g, gi) => {
+        const share = g.out / Math.max(1, reach[gi].length);
+        for (const c of reach[gi]) received.set(c.id, (received.get(c.id) ?? 0) + share);
+    });
+    const sat = new Map<number, number>();
+    let got = 0;
+    for (const c of consumers) {
+        const v = Math.min(1, (received.get(c.id) ?? 0) / c.need);
+        sat.set(c.id, v);
+        got += Math.min(c.need, received.get(c.id) ?? 0);
+    }
+    world.power = { supply, demand, satisfaction: demand <= 0 ? 1 : Math.min(1, got / demand) };
+    return sat;
+}
+
+// Advance the world by dt seconds. Order: wind, power, machines, belts, output pushes, milestones.
 export function step(world: World, dt: number, cat: Catalog = DEFAULT_CATALOG): void {
     if (dt <= 0) return;
     const index = indexOf(world, cat);
     const ids = Object.keys(world.buildings).map(Number);
     const defs = new Map<number, Resolved>();
-    world.wind = windAt(world.time);
-    let supply = 0;
-    let demand = 0;
     for (const id of ids) {
-        const b = world.buildings[id];
-        const r = resolve(cat, b.type);
-        if (!r) continue;
-        defs.set(id, r);
-        supply += r.supply * (r.kind === "generator" ? world.progress.bonus.power : 1);
-        if (r.kind === "miner" || r.kind === "crafter") demand += r.power;
+        const r = resolve(cat, world.buildings[id].type);
+        if (r) defs.set(id, r);
     }
-    const satisfaction = demand <= 0 ? 1 : Math.min(1, supply / demand);
-    world.power = { supply, demand, satisfaction };
+    world.wind = world.windPin ?? windAt(world.time);
+    const sat = updatePower(world, cat, defs, dt);
 
     for (const id of ids) {
         const r = defs.get(id);
         if (!r) continue;
         const b = world.buildings[id];
-        if (r.kind === "miner") stepMiner(world, cat, b, r, dt, satisfaction);
-        else if (r.kind === "crafter") stepCrafter(cat, b, r, dt, satisfaction);
+        const s = sat.get(id) ?? 1;
+        if (r.kind === "miner") stepMiner(world, cat, b, r, dt, s);
+        else if (r.kind === "crafter") stepCrafter(cat, b, r, dt, s);
     }
     for (const id of ids) {
         const r = defs.get(id);

@@ -144,12 +144,6 @@ export interface EngineDef {
     supply?: number; // kW, generators only
 }
 
-/** Cost and power for a machine from the tree. Machines not listed here cost nothing and draw no power. */
-export interface MachineSpec {
-    cost: Stack[];
-    power: number; // kW drawn while running
-}
-
 export interface Tune {
     maxAwaySeconds: number;
     fineWindow: number;
@@ -158,12 +152,12 @@ export interface Tune {
     inputBufferMult: number; // a crafter holds this many batches' worth of each input
     defaultOutputCap: number; // per item
     dayLength: number; // seconds for one full day-night cycle
+    springSeconds: number; // a wound spring stores this many seconds of its own output
 }
 
 export interface Catalog {
     tree: RecipeTree;
-    engine: Record<string, EngineDef>;
-    machine: Record<string, MachineSpec>;
+    engine: Record<string, EngineDef>; // hub and belts only; machines, power and costs come from tree
     tune: Tune;
 }
 
@@ -186,6 +180,7 @@ export interface Building {
     acc: number;
     lane: BeltItem[];
     rr: number;
+    charge: number; // wound spring: stored energy in kJ (battery); 0 for other buildings
 }
 
 export interface Deposit {
@@ -221,6 +216,7 @@ export interface World {
     power: PowerSnapshot;
     progress: Progress;
     wind: number; // 0 to 1, rises and falls in gusts; read by the renderer (sway, windmill speed)
+    windPin: number | null; // a fixed wind for still-air play and tests; null follows the gusts
 }
 
 export type PlaceResult = { ok: true; id: number } | { ok: false; reason: string };

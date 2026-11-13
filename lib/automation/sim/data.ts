@@ -1,6 +1,7 @@
 // Engine data and a small placeholder tree for tests. The real tree is RECIPE_TREE in lib/automation/data/tree.ts (Recipe thread).
 // Engine numbers live here (belts, hub, costs, power, tuning), never in the engine code.
-import type { Catalog, EngineDef, MachineSpec, RecipeTree, Tune } from "../types";
+import type { Catalog, EngineDef, RecipeTree, Tune } from "../types";
+import { RECIPE_TREE } from "../data/tree";
 
 export const PLACEHOLDER_TREE: RecipeTree = {
     items: [
@@ -11,9 +12,11 @@ export const PLACEHOLDER_TREE: RecipeTree = {
         { id: "part-x", name: "Part X", stage: 2, kind: "part" },
     ],
     machines: [
-        { id: "drill", name: "Node drill", unlockStage: 0, speed: 1, footprint: { w: 1, d: 1 } },
-        { id: "smelter", name: "Smelter", unlockStage: 1, speed: 1, footprint: { w: 2, d: 2 } },
-        { id: "press", name: "Press", unlockStage: 2, speed: 1, footprint: { w: 2, d: 2 } },
+        { id: "drill", name: "Node drill", unlockStage: 0, speed: 1, footprint: { w: 1, d: 1 }, powerKw: 30, buildCost: [{ item: "plate-a", qty: 4 }] },
+        { id: "smelter", name: "Smelter", unlockStage: 1, speed: 1, footprint: { w: 2, d: 2 }, powerKw: 60, buildCost: [{ item: "plate-a", qty: 6 }] },
+        { id: "press", name: "Press", unlockStage: 2, speed: 1, footprint: { w: 2, d: 2 }, powerKw: 90, buildCost: [{ item: "plate-a", qty: 8 }, { item: "plate-b", qty: 4 }] },
+        { id: "windmill", name: "Windmill", unlockStage: 0, speed: 1, footprint: { w: 2, d: 2 }, powerKw: 0, generatesKw: 30, supplyRange: 6, buildCost: [{ item: "plate-a", qty: 10 }] },
+        { id: "spring_winder", name: "Spring winder", unlockStage: 0, speed: 1, footprint: { w: 2, d: 2 }, powerKw: 0, generatesKw: 60, supplyRange: 4, buildCost: [{ item: "plate-a", qty: 10 }, { item: "plate-b", qty: 5 }] },
     ],
     recipes: [
         { id: "smelt-a", machine: "smelter", inputs: [{ item: "ore-a", qty: 2 }], output: { item: "plate-a", qty: 1 }, craftSeconds: 3 },
@@ -29,18 +32,12 @@ export const PLACEHOLDER_TREE: RecipeTree = {
     prestige: { name: "Open a new workshop", keeps: ["blueprints", "research", "routes"], resets: ["machines", "stock"] },
 };
 
-export const ENGINE_DATA: { engine: Record<string, EngineDef>; machine: Record<string, MachineSpec>; tune: Tune } = {
+export const ENGINE_DATA: { engine: Record<string, EngineDef>; tune: Tune } = {
     engine: {
         hub: { kind: "hub", name: "Core hub", footprint: { w: 2, d: 2 }, cost: [], placeable: false },
         belt: { kind: "belt", name: "Brass belt", footprint: { w: 1, d: 1 }, cost: [{ item: "plate-a", qty: 1 }], belt: { speed: 1, spacing: 0.25 } },
         "belt-copper": { kind: "belt", name: "Copper belt", footprint: { w: 1, d: 1 }, cost: [{ item: "plate-a", qty: 2 }, { item: "plate-b", qty: 1 }], belt: { speed: 2, spacing: 0.25 } },
         "belt-steel": { kind: "belt", name: "Steel belt", footprint: { w: 1, d: 1 }, cost: [{ item: "plate-a", qty: 3 }, { item: "plate-b", qty: 2 }], belt: { speed: 4, spacing: 0.25 } },
-        "power-plant": { kind: "generator", name: "Power plant", footprint: { w: 2, d: 2 }, cost: [{ item: "plate-a", qty: 10 }, { item: "plate-b", qty: 5 }], supply: 150 },
-    },
-    machine: {
-        drill: { cost: [{ item: "plate-a", qty: 4 }], power: 30 },
-        smelter: { cost: [{ item: "plate-a", qty: 6 }], power: 60 },
-        press: { cost: [{ item: "plate-a", qty: 8 }, { item: "plate-b", qty: 4 }], power: 90 },
     },
     tune: {
         maxAwaySeconds: 8 * 3600,
@@ -50,17 +47,22 @@ export const ENGINE_DATA: { engine: Record<string, EngineDef>; machine: Record<s
         inputBufferMult: 2,
         defaultOutputCap: 20,
         dayLength: 1200,
+        springSeconds: 120,
     },
 };
 
+// The engine runs on the real tree. Tests and the placeholder run use PLACEHOLDER_CATALOG.
 export const PLACEHOLDER_CATALOG: Catalog = {
     tree: PLACEHOLDER_TREE,
     engine: ENGINE_DATA.engine,
-    machine: ENGINE_DATA.machine,
     tune: ENGINE_DATA.tune,
 };
 
-export const DEFAULT_CATALOG: Catalog = PLACEHOLDER_CATALOG;
+export const DEFAULT_CATALOG: Catalog = {
+    tree: RECIPE_TREE,
+    engine: ENGINE_DATA.engine,
+    tune: ENGINE_DATA.tune,
+};
 
 // Island sites offered at "Open a new workshop". Each has its own nodes, floor size, hub spot and one bonus.
 export interface SiteDef {
