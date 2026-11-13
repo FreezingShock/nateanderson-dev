@@ -222,15 +222,15 @@ export const ENTRIES: CodexEntry[] = [
     {
         id: "drones", group: "systems", title: "Drones", gate: (s) => dronesOpen(s), where: "the Drone hangar zone",
         body: () => [
-            { p: `One Drone per button tier, T1 to T6, bought with Aether up to level ${TUNE.drone.max}. Each level presses its tier's button ${TUNE.drone.rate} times a second on every stat you have armed.` },
+            { p: `One Drone per button tier, T1 to T6, bought with Aether up to level ${TUNE.drone.max}. A Drone works only once it is posted to a zone: each level presses its tier's button there, ${TUNE.drone.rate} times a second times the posting speed, and builds that zone's mastery. A new Drone posts itself to the newest zone no other Drone works.` },
             {
                 rows: [
                     ["Price", `${TUNE.drone.base} Aether, x${TUNE.drone.ratio} per tier, x${TUNE.drone.growth} per level`],
-                    ["Armed", "switch on each zone. Reboots are never automated"],
+                    ["Posting", "the menu on each Drone in the hangar. Docked Drones do nothing"],
                     ["Away", `${pct(TUNE.drone.offline)} speed`],
                 ],
             },
-            { p: "Drones reset on Ascend. Which stats are armed is kept." },
+            { p: "Drone levels reset on Ascend. Postings and mastery are kept. For buying on every zone, use buy.sh (Scripts)." },
         ],
     },
     {
@@ -292,7 +292,7 @@ export const ENTRIES: CodexEntry[] = [
                     ["Ranked", "tips you can buy up to 5 times."],
                 ],
             },
-            { p: "Some nodes switch on whole systems: the Watchdog timer (Reboots for you), Forecast, the Dead drop (a payout that fills over 4 real hours, even while you are away), Standing orders (auto-arm for Drones) and Mounted drives (keep producers through Ascend)." },
+            { p: "Some nodes switch on whole systems: the Watchdog timer (Reboots for you), Forecast, the Dead drop (a payout that fills over 4 real hours, even while you are away), Standing orders (buy.sh ticks every new stat) and Mounted drives (keep producers through Ascend)." },
             { note: "Respec is free and refunds all your AP." },
         ],
         open: { win: "tree", label: "Open the tree" },

@@ -113,11 +113,3 @@ export function payLoot(s: State, loot: Loot): number {
 
 /** Rates without the Overclock, so a lump is never paid (or promised) at Overclock rate. */
 const plainRates = (s: State) => derive({ ...s, overclock: 0 });
-
-/** Rogue process: the choices (three once a material is running, two before), all at one rolled rarity so the pick is about kind, not luck. */
-export function rogueChoices(s: State, rnd = Math.random): Loot[] {
-    const rarity = rollRarity(0.5, rnd);
-    const out = [makeLoot(s, "burst", rarity), makeLoot(s, "overtime", rarity)];
-    if (newestMat(s)) out.push(makeLoot(s, "cache", rarity));
-    return out;
-}

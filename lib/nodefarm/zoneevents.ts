@@ -64,8 +64,8 @@ export function kindsFor(s: State, zone: StatId): ZoneEvKind[] {
     if (hasButtons(zone)) out.push("clearance");
     if (hasStock(zone)) out.push("vein");
     if (s.life.secs >= ZE_TUNE.faultFrom && !fwFieldOp(s)) out.push("fault"); // Field operator (Firmware): no Faults
-    // Drone convoy needs Drones that actually press this zone (armed, or posted to it)
-    if (zone !== "bytes" && zone !== "reboot" && s.drones.some((n, k) => n > 0 && (postOf(s, k) === zone || (!postOf(s, k) && s.armed.includes(zone))))) out.push("convoy");
+    // Drone convoy needs Drones posted to this zone
+    if (zone !== "bytes" && zone !== "reboot" && s.drones.some((n, k) => n > 0 && postOf(s, k) === zone)) out.push("convoy");
     // Rig tune needs a rig bonus on that zone to double
     if ((muls(s)[zone] ?? 1) > 1) out.push("tune");
     // Rogue process and Cold storage (the old card events) wait until the first minutes are over
@@ -182,7 +182,7 @@ function convoyStep(s: State, e: ZoneEvActive, dt: number) {
     for (let k = 0; k < TIERS; k++) {
         if (s.drones[k] <= 0) continue;
         const post = postOf(s, k);
-        if (post ? post !== e.zone : !s.armed.includes(e.zone)) continue;
+        if (post !== e.zone) continue;
         acc[k] = Math.min(acc[k] + droneRate(s, k) * dt * (ZE_TUNE.convoy - 1), 40);
         const n = Math.floor(acc[k]);
         if (n < 1) continue;

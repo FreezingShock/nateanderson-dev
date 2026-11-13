@@ -8,7 +8,7 @@ import {
 } from "@/lib/nodefarm/engine";
 import { ZONE_EVENTS, ensureZe, zeClear, zeStart, zoneLabel } from "@/lib/nodefarm/zoneevents";
 import {
-    ARMABLE, RESOURCES, addKeys, addStat, forceHandover, maxProtoRanks, ownAllFw, clearLab, clearLogs, clearPerks, dropSnap, forceAscend, grantGoals, grantLab, grantLogs, grantSecrets, jumpEra, maxDrones, maxOut, maxPerks, overwrite, ownAllNodes, parseAmount, refundTree,
+    RESOURCES, tickAllBuy, addKeys, addStat, forceHandover, maxProtoRanks, ownAllFw, clearLab, clearLogs, clearPerks, dropSnap, forceAscend, grantGoals, grantLab, grantLogs, grantSecrets, jumpEra, maxDrones, maxOut, maxPerks, overwrite, ownAllNodes, parseAmount, refundTree,
     forgetScript, forgetScripts, grantScripts, scriptCount, teachScript, revokeGoals, setAP, setDrone, setPerk, setProd, setStat, skipTime, snapState, snaps, takeSnap, toggleNode, toggleSecret, type Snap,
 } from "@/lib/nodefarm/admin";
 import { SCRIPTS, isOn, setRunning } from "@/lib/nodefarm/scripts";
@@ -264,7 +264,7 @@ function AdminPanelInner({ host }: { host: AdminHost }) {
                                         <Btn onClick={() => act((x) => { refundTree(x); }, "tree cleared, AP refunded")}>Clear tree, refund AP</Btn>
                                         <Btn onClick={() => act(maxPerks, "every perk maxed")}>Max every perk</Btn>
                                         <Btn onClick={() => act(clearPerks, "perks cleared")}>Clear perks</Btn>
-                                        <Btn onClick={() => act(maxDrones, "Drones maxed and armed")}>Max Drones, arm all</Btn>
+                                        <Btn onClick={() => act(maxDrones, "Drones maxed and posted")}>Max Drones, post all</Btn>
                                         <Btn onClick={() => act((x) => { grantGoals(x); grantSecrets(x); }, "every goal and secret done")}>Every goal and secret</Btn>
                                         <Btn onClick={() => act(grantLogs, "every operator log recovered")}>Recover all logs</Btn>
                                         <Btn onClick={() => act(grantLab, "lab researched, Intel and stock filled")}>Research the whole lab</Btn>
@@ -410,8 +410,8 @@ function AdminPanelInner({ host }: { host: AdminHost }) {
                                     <p className="nf-ad-p">Drones, one per button tier. Max is {droneMax(s)} per tier with this tree.</p>
                                     {Array.from({ length: TIERS }, (_, k) => <Step key={k} name={`Drone tier ${k + 1}`} color="#6bffc9" lvl={s.drones[k]} max={droneMax(s)} onSet={(n) => act((x) => setDrone(x, k, n), `Drone tier ${k + 1} level ${n}`)} />)}
                                     <div className="nf-ad-line">
-                                        <Btn on={s.armed.length >= ARMABLE.length} onClick={() => act((x) => { x.armed = x.armed.length >= ARMABLE.length ? [] : [...ARMABLE]; }, "Drone arming toggled")}>Arm every stat</Btn>
-                                        <small className="nf-ad-note">{s.armed.length} of {ARMABLE.length} stats armed · {treeFx(s).mounts} mount slot{treeFx(s).mounts === 1 ? "" : "s"}</small>
+                                        <Btn onClick={() => act(tickAllBuy, "buy.sh ticked on every stat")}>buy.sh on every stat</Btn>
+                                        <small className="nf-ad-note">{treeFx(s).mounts} mount slot{treeFx(s).mounts === 1 ? "" : "s"}</small>
                                     </div>
                                 </Sec>
 

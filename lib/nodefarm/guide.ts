@@ -486,8 +486,8 @@ export function droneTip(s: State, tier: number): TipInfo {
     const post = postOf(s, tier);
     const per = (r: number) => (post ? r * postX(s, tier) : r);
     const rows: [string, string][] = [
-        ["Presses", post ? `tier ${tier + 1} on ${statDef(post).name} only, x${fmt(postX(s, tier))}` : `tier ${tier + 1} buttons on every armed stat`],
-        ["Now", `${fmt(per(droneRate(s, tier)))} presses/s`],
+        ["Presses", post ? `tier ${tier + 1} on ${statDef(post).name} only, x${fmt(postX(s, tier))}` : "nothing while docked: pick a zone in its Posting menu"],
+        ["Now", `${post ? fmt(per(droneRate(s, tier))) : "0"} presses/s`],
     ];
     if (post) rows.push(["Mastery", `${statDef(post).name} ${ROMAN[zoneRank(s, post)] || "unranked"}`]);
     if (!maxed) {
@@ -504,7 +504,7 @@ export function droneTip(s: State, tier: number): TipInfo {
         color: statDef("aether").color,
         kicker: "DRONE HANGAR",
         title: `T${tier + 1} ${DRONE_NAMES[tier]}`,
-        note: post ? "Posted: it works one zone, faster, and builds that zone's mastery." : "Sweeping: it presses every stat you arm in its zone. Post it to one zone to build mastery.",
+        note: post ? "Posted: it works one zone, faster, and builds that zone's mastery." : "Docked: it does nothing. Post it to a zone in the hangar to put it to work.",
         rows,
         status: maxed ? "Maxed." : afford ? `Ready. ${lvl ? "Upgrade" : "Build"} it.` : `Short by ${fmt(cost - s.aether)} AE${etaText(eta) ? `, about ${etaText(eta)}` : ""}.`,
         tone: afford || maxed ? "ok" : "wait",
