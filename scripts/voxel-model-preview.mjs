@@ -43,7 +43,7 @@ await page.goto(
 await page.waitForFunction(
     () =>
         window.__modelPreview?.ready === true ||
-        document.querySelector("p") !== null,
+        document.querySelector("[data-preview-error]") !== null,
     null,
     { timeout: 60000 }
 );
@@ -51,7 +51,7 @@ const dataUrl = await page.evaluate(() =>
     window.__modelPreview ? window.__modelPreview.snapshot() : null
 );
 if (!dataUrl) {
-    const text = await page.textContent("p");
+    const text = await page.textContent("[data-preview-error]").catch(() => "preview did not start");
     console.error(text);
     process.exit(2);
 }
