@@ -254,8 +254,8 @@ const SLOTS: [number, number, number[]][] = [
 ];
 const SLOT_COST = [4, 10, 12, 24, 24, 48, 48, 140];
 // Past each keystone (the deeper tree): 8 and 9 are a fork pair, 10 is the ranked tip that opens from either fork.
-const OUTER: [number, number, number[]][] = [[11.5, -1.3, [7]], [11.5, 1.3, [7]], [13.4, 0, [8, 9]]];
-const OUTER_COST = [400, 400, 200];
+const OUTER: [number, number, number[]][] = [[11.5, -1.3, [7]], [11.5, 1.3, [7]], [13.4, 0, [8, 9]], [15.4, 0, [10]]];
+const OUTER_COST = [400, 400, 200, 700];
 type Row = [slot: number, id: string, kind: TreeKind, name: string, blurb: string, flavor: string, fx: TreeFx, cost?: number];
 const ALL_MATS = (v: number) => Object.fromEntries(MATS.map((m) => [m, v])) as Record<MatId, number>;
 const ARMS: Record<Branch, Row[]> = {
@@ -270,6 +270,7 @@ const ARMS: Record<Branch, Row[]> = {
         [8, "coldstart", "notable", "Cold start", "For 90 s after every Reboot, Bytes x10.", "The first breath after a restart is the loudest.", { coldStart: 9 }],
         [9, "longhaul", "notable", "Long haul", "Bytes +100% for every 4 minutes since your last Reboot, up to x9.", "Leave it running long enough and it stops asking why.", { longHaul: 1 }],
         [10, "clockskew", "keystone", "Clock skew", "Bytes x1.5 per rank.", "Ran the clock a hair fast. Nobody has complained yet.", { bytes: 0.5 }],
+        [11, "afterburn", "keystone", "Afterburn", "Reboots keep 10 minutes of Bytes.", "The restart is a launch. Nothing you built stays on the pad.", { start: 600 }],
     ],
     forge: [
         [0, "furnace", "minor", "Furnace tuning", "Copper and Silicon x2.", "Hotter, steadier, cleaner. The slag pile is shrinking.", { mats: { copper: 1, silicon: 1 } }],
@@ -283,6 +284,7 @@ const ARMS: Record<Branch, Row[]> = {
         [8, "specialist", "notable", "Specialist", "The newest material you produce x8.", "Pick one seam and dig until it rings.", { specialist: 7 }],
         [9, "generalist", "notable", "Generalist", "Every material x2.5.", "A little of everything, all of it hot.", { mats: ALL_MATS(1.5) }],
         [10, "alloy", "keystone", "Alloy", "Every material x1.4 per rank.", "Mix two metals and both forget what they were.", { mats: ALL_MATS(0.4) }],
+        [11, "kilnliner", "keystone", "Kiln liner", "Engrams, Paradox and Origin x2.", "Lined the kiln with the last good brick. The heat stays in.", { mats: { engrams: 1, paradox: 1, origin: 1 } }],
     ],
     systems: [
         [0, "standby", "minor", "Standby plus", "Standby window +8 hours.", "Bigger cells, longer naps.", { offline: 8 }],
@@ -296,6 +298,7 @@ const ARMS: Record<Branch, Row[]> = {
         [8, "hoarder", "notable", "Hoarder", "Each unspent AP adds half again as much to everything.", "Kept the points in a jar. The jar hums.", { apEach: 0.5 }],
         [9, "investor", "notable", "Investor", "+4% to everything for every tree node and rank you own.", "Every node pays a little rent to the others.", { perNode: 0.04 }],
         [10, "archive", "keystone", "Archive", "AP from every Ascend x1.08 per rank.", "Every run gets filed. The filing cabinet is worth something now.", { ap: 0.08 }],
+        [11, "bargain", "keystone", "Bargain bin", "Buttons cost 10% less.", "Found a crate of parts nobody ordered. Every one of them fits.", { discount: 0.1 }],
     ],
     drones: [
         [0, "wake", "minor", "Wake routine", "Every Ascend starts with a level 1 Drone on every tier.", "They boot before I do.", { kitDrones: 1 }],
@@ -309,6 +312,7 @@ const ARMS: Record<Branch, Row[]> = {
         [8, "widenet", "notable", "Wide net", "Every Drone presses 60% faster.", "Spread thin and everywhere at once.", { drone: 0.6 }],
         [9, "spearhead", "notable", "Spearhead", "Your highest-tier Drone presses x6.", "One Drone out front. The rest follow its lights.", { spearhead: 5 }],
         [10, "firmware", "keystone", "Firmware", "Drones press 30% faster per rank.", "Flashed them again. They boot a little smarter each time.", { drone: 0.3 }],
+        [11, "hangarlights", "keystone", "Hangar lights", "Drones go up to level 6 more.", "Strung up every light in the hangar. The Drones read the lights and keep going.", { droneMax: 6 }],
     ],
     anomaly: [
         [0, "static", "minor", "Static", "Zone events come 30% more often.", "There is always someone on the line now.", { eventRate: 0.3 }],
@@ -322,6 +326,7 @@ const ARMS: Record<Branch, Row[]> = {
         [8, "storm", "notable", "Storm chaser", "Zone events come 50% more often.", "Stopped waiting for the knock. Started going looking.", { eventRate: 0.5 }],
         [9, "patient", "notable", "Patient", "Every event win also pays 5 minutes of production.", "Let it knock twice. The second knock brings gifts.", { winPay: 300 }],
         [10, "afterimage", "keystone", "Afterimage", "Overclock x1.15 per rank.", "The boost leaves a shape on the screen after it ends.", { ocX: 0.15 }],
+        [11, "longburn", "keystone", "Long burn", "Overclocks last a minute longer.", "The fuse burns slower. Nobody measured it until now.", { overclock: 60 }],
     ],
 };
 // Junctions sit between two neighbouring sections and need the node on each side (arm slot 6 and the next arm's slot 5).
@@ -354,7 +359,7 @@ function buildTree(): TreeNode[] {
             const [u, v] = all[slot];
             const ch = CHAINS[id];
             const outer = slot >= SLOTS.length;
-            const form = !outer ? undefined : slot === 10 ? "ranked" : "fork";
+            const form = slot === 8 || slot === 9 ? "fork" : slot === 10 ? "ranked" : undefined;
             const base = price ?? (outer ? OUTER_COST[slot - SLOTS.length] : SLOT_COST[slot] * (kind === "notable" ? 1.3 : 1));
             out.push({
                 id, branch: arm, kind, name, blurb, flavor, fx,
@@ -2293,6 +2298,7 @@ const FW_ARMS: Partial<Record<FwSec, FwRow[]>> = {
         [3, "fw_dual", "notable", "Dual boot", "Run a second protocol at half strength.", "Two operators on one node. They take turns with the chair.", { dual: true }],
         [4, "fw_rootpath", "notable", "Root path", "Engrams, Paradox and Origin open at a quarter of the usual amount.", "There is a shorter way down to node zero. It was always there.", { rootPath: 0.25 }],
         [5, "fw_lineage", "keystone", "Lineage", "Everything +50% for every Handover you have done.", "Every operator who left made the node a little stronger.", { lineage: 0.5 }],
+        [6, "fw_keypress", "keystone", "Key press", "Handovers pay 50% more Keys.", "Ran the Keys through the press twice. They come out thicker.", { keys: 0.5 }],
     ],
     field: [
         [0, "fw_rod", "minor", "Lightning rod", "Zone events last 50% longer.", "Give the weather something tall to hold on to.", { zeLong: 0.5 }],
@@ -2301,11 +2307,12 @@ const FW_ARMS: Partial<Record<FwSec, FwRow[]>> = {
         [3, "fw_weather", "notable", "Weather eye", "Zone events come twice as often.", "Watch the zones long enough and you can feel the next one coming.", { zeOften: 1 }],
         [4, "fw_shortfuse", "notable", "Short fuse", "Ascend needs half the usual Aether.", "You know where the top is now. Go up sooner.", { ascendAt: 0.5 }],
         [5, "fw_fieldop", "keystone", "Field operator", "Faults stop happening, and Surges run twice as strong.", "Walk the floor every shift. Nothing breaks where someone is looking.", { fieldOp: true }],
+        [6, "fw_sparepart", "keystone", "Spare parts", "Rig levels cost 20% less again.", "A drawer of spare parts nobody else knew about. Now everyone does.", { rigCost: 0.2 }],
     ],
 };
 const FW_ORDER: FwSec[] = ["relay", "field"];
 // same small diamond as the lab tree: entry, two paths of two, keystone
-const FW_SLOTS: [number, number, number[]][] = [[2.3, 0, []], [3.9, -1.1, [0]], [3.9, 1.1, [0]], [5.7, -1.25, [1]], [5.7, 1.25, [2]], [7.5, 0, [3, 4]]];
+const FW_SLOTS: [number, number, number[]][] = [[2.3, 0, []], [3.9, -1.1, [0]], [3.9, 1.1, [0]], [5.7, -1.25, [1]], [5.7, 1.25, [2]], [7.5, 0, [3, 4]], [9.3, 0, [5]]];
 // nodes that changed size when they moved arms draw from rows appended at the new size
 const FW_SPRITE: Record<string, string> = { fw_fastpath: "fw_fastpath_s", fw_fieldkit: "fw_fieldkit_s", fw_shortfuse: "fw_shortfuse_m" };
 function buildFw(): FwNode[] {
@@ -2319,7 +2326,7 @@ function buildFw(): FwNode[] {
             const [u, v] = FW_SLOTS[slot];
             out.push({
                 id, branch: arm, kind, name, blurb, flavor, fx,
-                cost: Math.max(1, Math.round(HAND_TUNE.nodeCost[slot] * (kind === "notable" ? 1.25 : 1) * HAND_TUNE.fwScale)),
+                cost: Math.max(1, Math.round((HAND_TUNE.nodeCost[slot] ?? HAND_TUNE.nodeCost[HAND_TUNE.nodeCost.length - 1] * 2) * (kind === "notable" ? 1.25 : 1) * HAND_TUNE.fwScale)),
                 links: slot === 0 ? ["core"] : [],
                 x: +(u * c - v * sn).toFixed(3), y: +(u * sn + v * c).toFixed(3),
                 ix: out.length, sprite: FW_SPRITE[id] ?? id,

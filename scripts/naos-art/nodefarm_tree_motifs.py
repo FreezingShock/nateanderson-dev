@@ -836,4 +836,10 @@ NODES = {
     "nightcrew": ("pod", "systems", "m", HOT),
     "swarmalarm": ("siren", "drones", "m", VOID),
     "feedback": ("gainknob", "anomaly", "m", CYAN),
+    # the apex tail past each ranked tip (keystones, pure boosts; 2026-11-13)
+    "afterburn": ("overdrive", "signal", "l", FIRE),
+    "kilnliner": ("heatsink", "forge", "l", COPPER),
+    "bargain": ("flag", "systems", "l", MINT),
+    "hangarlights": ("gyro", "drones", "l", HOT),
+    "longburn": ("coil", "anomaly", "l", VOID),
 }
