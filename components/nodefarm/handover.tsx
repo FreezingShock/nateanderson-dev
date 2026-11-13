@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState, type CSSProperties } from "react";
 import {
-    FW, FW_SECS, HAND_TUNE, PROTOS, canSwitchProto, droneFx, fmt, fmtTime, fwNode, fwNodeOpen, fwTotals, fwVis, handFx, handKeeps, handOpen, isUnlocked,
+    ARC_MATS, arcGateNeed, FW, FW_SECS, HAND_TUNE, PROTOS, canSwitchProto, droneFx, fmt, fmtTime, fwNode, fwNodeOpen, fwTotals, fwVis, handFx, handKeeps, handOpen, isUnlocked,
     chOff, keysOnHandover, masteryRanks, protoDef, protoRank, ROMAN, statDef, treeCount, treeSpent, type ProtoId, type State,
 } from "@/lib/nodefarm/engine";
 import { NfIcon } from "./icon";
@@ -114,6 +114,8 @@ function Flow({ s, keys, onGo }: { s: State; keys: number; onGo: () => void }) {
     const open = handOpen(s);
     const nodes = treeCount(s);
     const fwOwned = s.hand.fw.length;
+    // zones this Handover opens (ARC_GATE): two at a time, so each early Handover has something new to climb to
+    const opens = ARC_MATS.filter((m) => arcGateNeed(m) === s.hand.count + 1).map((m) => statDef(m).name);
     return (
         <section className="nf-hx-flow" data-cx-i="1">
             <ol className="nf-hx-steps" data-ready={open ? "" : undefined}>
@@ -125,7 +127,7 @@ function Flow({ s, keys, onGo }: { s: State; keys: number; onGo: () => void }) {
                 <li style={{ ["--c" as string]: "#ffc53a" }}>
                     <span className="nf-hx-k" data-cx-scr="">02 // Hand over</span>
                     <span className="nf-hx-v"><b>{keys > 0 ? `+${keys}` : "0"}</b><small>Keys</small></span>
-                    <small className="nf-hx-n">From {nodes} tree nodes and ranks, plus {fmt(s.origin)} Origin.{handFx(s).keys ? ` Keysmith x${fmt(1 + handFx(s).keys)}.` : ""}</small>
+                    <small className="nf-hx-n">From {nodes} tree nodes and ranks, plus {fmt(s.origin)} Origin.{handFx(s).keys ? ` Keysmith x${fmt(1 + handFx(s).keys)}.` : ""}{opens.length ? ` Unlocks ${opens.join(" and ")} once you climb back.` : ""}</small>
                 </li>
                 <li style={{ ["--c" as string]: ROOT_GREEN }}>
                     <span className="nf-hx-k" data-cx-scr="">03 // Flash firmware</span>
