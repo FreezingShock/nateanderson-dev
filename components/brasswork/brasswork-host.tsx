@@ -256,7 +256,7 @@ export function BrassworkHost() {
                 },
                 check: (kind, x, z, rot) => grid.check(kind, x + ox, z + oz, rot),
             };
-            const tools = [...CAT.tree.machines.map((m) => m.id), "power-plant", "belt", "belt-copper", "belt-steel"].map((id) => {
+            const tools = [...CAT.tree.machines.map((m) => m.id), "belt", "belt-copper", "belt-steel"].map((id) => {
                 const r = resolve(CAT, id);
                 return { id, label: r?.name ?? id, line: id in BELT_TIER, footprint: r ? { w: r.footprint.w, d: r.footprint.d } : undefined };
             });
