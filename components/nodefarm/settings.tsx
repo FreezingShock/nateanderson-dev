@@ -95,7 +95,7 @@ export function SettingsFrame(p: SettingsProps) {
                     </li>
                 ))}
                 {group("play", [
-                    { key: "events", on: p.eventsOn, flip: p.onEvents, note: "quick-time events every few minutes" },
+                    { key: "events", on: p.eventsOn, flip: p.onEvents, note: "zone events every few minutes" },
                     { key: "jump", on: p.jumpOn, flip: p.onJump, note: "scroll to the board when you come back to a save" },
                 ], (
                     <li className="nf-wk-cfgrow">

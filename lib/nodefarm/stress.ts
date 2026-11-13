@@ -49,7 +49,7 @@ export const TESTS: TestDef[] = [
     { id: "cold", n: 3, icon: "tree", name: "Cold tree", rule: "The prestige tree is switched off.", plan: "Perks and AP still count. The tree comes back when you leave.", pays: (r) => `AP on Ascend ${pct(P.cold * r)}` },
     { id: "narrow", n: 4, icon: "layers", name: "Narrow band", rule: `Only the first ${CH_TUNE.narrow} tiers of every button.`, plan: "The cheap tiers have to do all the work.", pays: (r) => `Multiplier gain ${pct(P.narrow * r)}` },
     { id: "thin", n: 5, icon: "send", name: "Thin pipe", rule: "Bytes/s cut to a tenth.", plan: "Bytes are scarce, so pick the Multiplier and Copper tiers that pay back fastest.", pays: (r) => `Bytes ${pct(P.thin * r)}` },
-    { id: "dead", n: 6, icon: "volumeOff", name: "Dead air", rule: "No quick-time events and no zone events.", plan: "No Overclock and no event payouts. Pure production.", pays: (r) => `Overclock time ${pct(P.dead * r)}` },
+    { id: "dead", n: 6, icon: "volumeOff", name: "Dead air", rule: "No zone events.", plan: "No Overclock and no event payouts. Pure production.", pays: (r) => `Overclock time ${pct(P.dead * r)}` },
     { id: "chain", n: 7, icon: "infinity", name: "Broken chain", rule: "Materials stop boosting the one below them.", plan: "Every zone stands on its own buttons. Spread out instead of rushing deep.", pays: (r) => `every material ${pct(P.chain * r)}` },
     { id: "leash", n: 8, icon: "flag", name: "Short leash", rule: `Each rank has a time limit: ${CH_TUNE.leash.join(", ")} min of game time.`, plan: "Game time, so time away counts toward each limit. Each later rank gets a longer limit.", pays: (r) => `offline cap +${P.leash * r} h` },
 ];

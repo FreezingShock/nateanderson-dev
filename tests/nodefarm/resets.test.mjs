@@ -54,7 +54,7 @@ test("Handover: wipes the run, AP and tree; keeps goals, logs, lifetime, lab res
     AD.ownAllFw(s);
     s.ze = ZE.freshZe(); s.ze.seen = 7; s.ze.kinds = { surge: 3 };
     const a = snap(s);
-    const refund = Math.floor(E.treeSpent(s) * E.handFx(s).apRefund);
+    const refund = Math.floor(E.treeSpent(s) * E.HAND_BASE.apRefund); // a quarter of the tree's AP comes back on every Handover
     const keys = E.handover(s, "wren", "kept note", "osk");
     assert.ok(keys >= 1, "maxed state can hand over");
     assert.equal(s.hand.count, a.hand.count + 1);
@@ -72,13 +72,40 @@ test("Handover: wipes the run, AP and tree; keeps goals, logs, lifetime, lab res
     assert.deepEqual(s.ze.kinds, { surge: 3 });
     assert.deepEqual(s.ze.act, [], "a running zone event ends");
     assert.ok(s.tree.every((id) => a.tree.includes(id)), "no node appears from nowhere");
-    assert.ok(s.tree.length < a.tree.length, "the prestige tree is wiped (Imprint keeps only some)");
-    assert.equal(s.ap, refund, "AP is wiped down to the Firmware refund of what the tree cost");
+    assert.ok(s.tree.length < a.tree.length, "the prestige tree is wiped (the entry and upper path of each section stay)");
+    assert.equal(s.ap, refund, "AP is wiped down to the base refund of what the tree cost");
     assert.ok(s.drones.every((d, i) => d <= a.drones[i]), "Drones are wiped");
     assert.ok(s.bytes < a.bytes && s.aether < a.aether && s.prod.aether < a.prod.aether, "the run resets");
     for (const [k, v] of Object.entries(s.rig.lv)) assert.ok(v <= (a.rig.lv[k] ?? 0), `rig ${k} level never rises on Handover`);
     for (const k of ["scrub", "aim", "draw", "cool"]) if (k in a.rig) assert.equal(s.rig[k], a.rig[k], `rig switch ${k} stays`);
     assert.deepEqual(problems(s), []);
+});
+
+test("Handover keeps are the default: a first Handover with no Firmware keeps the tree's spine, half the perks and half the rigs", () => {
+    const s = maxed();
+    s.hand = E.freshHand();
+    const a = snap(s);
+    const kept = E.handKeeps(s);
+    assert.ok(kept.length > 0 && kept.length <= 20, "entry and upper path of each section");
+    E.handover(s, "wren");
+    assert.deepEqual([...s.tree].sort(), [...kept].sort());
+    for (const [k, v] of Object.entries(a.perks)) assert.equal(s.perks[k], Math.floor(v * 0.5), `perk ${k} keeps half`);
+    assert.equal(s.ap, Math.floor(E.treeSpent(a) * 0.25));
+    assert.ok(s.reboot >= E.HAND_TUNE.warmReboots, "the next run starts with the kit");
+    assert.equal(E.hasFeature(s, "watchdog"), true, "Watchdog comes preinstalled");
+});
+
+test("Firmware fold: an old save gets back the Keys spent on nodes that became base Handover", () => {
+    const s = maxed();
+    s.hand = { ...E.freshHand(), count: 3, keys: 1, fw: ["fw_warm", "fw_imprint", "fw_tape", "fw_keysmith", "fw_fastpath"] };
+    delete s.hand.fwv;
+    const back = E.parseSave(JSON.stringify(s));
+    // warm 2 + imprint 2 + tape 12 gone; keysmith unchanged; fast path 8 -> 3
+    assert.equal(back.hand.keys, 1 + 2 + 2 + 12 + 5);
+    assert.deepEqual(back.hand.fw, ["fw_keysmith", "fw_fastpath"]);
+    assert.equal(back.hand.fwv, 2);
+    const again = E.parseSave(JSON.stringify(back));
+    assert.equal(again.hand.keys, back.hand.keys, "the refund is paid once");
 });
 
 test("Handover rigs and zone events are not wiped to nothing (they wiped each other once)", () => {
