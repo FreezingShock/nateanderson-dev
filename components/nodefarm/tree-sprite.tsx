@@ -1,4 +1,4 @@
-import type { CSSProperties } from "react";
+import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { SPRITE_CELLS, SPRITE_PX } from "@/lib/nodefarm/tree-sprites";
 import "@/app/camino/nodefarm-tree-art.css";
 
@@ -25,7 +25,29 @@ export function spriteSize(sprite: string, scale = 2) {
     return (c ? SPRITE_PX[c[0]] : SPRITE_PX.s) * scale;
 }
 
-export function TreeSprite({ sprite, state, scale = 2, className }: { sprite: string; state: SpriteState; scale?: number; className?: string }) {
+/**
+ * lazy: the sheet is requested only once the sprite is near the screen. For sprites in folded panels, which are laid out
+ * (so their background would download) but not seen. Sticky once near. Default off: the tree menu's sprites load as before.
+ */
+export function TreeSprite({ sprite, state, scale = 2, className, lazy = false }: { sprite: string; state: SpriteState; scale?: number; className?: string; lazy?: boolean }) {
+    const el = useRef<HTMLElement>(null);
+    const [near, setNear] = useState(!lazy);
+    useEffect(() => {
+        if (!lazy || near) return;
+        const node = el.current;
+        if (!node || typeof IntersectionObserver === "undefined") {
+            setNear(true);
+            return;
+        }
+        const io = new IntersectionObserver((e) => {
+            if (e.some((x) => x.isIntersecting)) {
+                setNear(true);
+                io.disconnect();
+            }
+        }, { rootMargin: "400px 0px" });
+        io.observe(node);
+        return () => io.disconnect();
+    }, [lazy, near]);
     const cell = SPRITE_CELLS[sprite];
     const sz = cell ? cell[0] : "s";
     const px = SPRITE_PX[sz] * scale;
@@ -35,5 +57,17 @@ export function TreeSprite({ sprite, state, scale = 2, className }: { sprite: st
         "--col": COL[state],
         "--ph": `${(-phase(sprite) * 7).toFixed(2)}s`,
     } as CSSProperties;
-    return <i className={`nf-ts${className ? ` ${className}` : ""}`} data-sz={sz} data-st={state} data-miss={cell ? undefined : ""} style={style} aria-hidden="true" />;
+    return (
+        <i
+            ref={el}
+            className={`nf-ts${className ? ` ${className}` : ""}`}
+            data-sz={sz}
+            data-st={state}
+            data-miss={cell ? undefined : ""}
+            data-lazy={lazy ? "" : undefined}
+            data-near={near ? "" : undefined}
+            style={style}
+            aria-hidden="true"
+        />
+    );
 }

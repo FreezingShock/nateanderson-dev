@@ -124,7 +124,7 @@ export const ART_V: Record<string, string> = {
     "scene-18.png": "932e762b",
     "scene-18.webp": "0f0e7d5c",
     "scene-19-far.webp": "6fe24b63",
-    "scene-19-fx.webp": "da39a3ee",
+    "scene-19-fx.webp": "a2c04c3f",
     "scene-19-near.webp": "773c7319",
     "scene-19.png": "ec3761de",
     "scene-19.webp": "059c6bc6",
