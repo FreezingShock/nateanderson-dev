@@ -4,10 +4,12 @@
 // headless timing script (scripts/voxel-island-bench.mjs). Query options:
 //   quality=auto|0|1|2   dither=0|1   lowfx=0|1   t=0..1 (time of day)   cycle=0|1
 //   machines=N           stamps N simple machines across the island for load testing
+//   model=1              places the example machine and a placement ghost
 //   orbit=0|1            0 = orbit: false, so an input module owns the camera
 import { useEffect, useRef } from "react";
 import { createVoxelIsland, type VoxelIsland } from "./index";
 import { heightAt } from "./terrain";
+import { EXAMPLE_BLOCK } from "../models/examples";
 
 declare global {
     interface Window {
@@ -57,6 +59,14 @@ export default function VoxelIslandBench() {
             s.box(-2.8, 0.6, -1.95, 0.6, 0.4, 0.1, 0xffb347);
             s.box(-2.8, 0.6, 4.05, 0.6, 0.4, 0.1, 0xffb347);
         });
+
+        if (q.get("model") === "1") {
+            island.placeModel("example", EXAMPLE_BLOCK, {
+                cell: { x: -6, z: 2 },
+                rot: 1,
+            });
+            island.setGhost(EXAMPLE_BLOCK, { x: 2, z: 2 }, 0, false);
+        }
 
         island.resize();
         island.start();

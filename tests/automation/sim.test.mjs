@@ -145,7 +145,7 @@ test("gridView: get, set, idempotent set on covered cells, refusal on conflict, 
     const w = base();
     const g = S.gridView(w, CAT);
     assert.equal(g.set(20, 20, { kind: "belt", rot: 1 }).ok, true);
-    assert.deepEqual(g.get(20, 20), { kind: "belt", rot: 1 });
+    assert.deepEqual(g.get(20, 20), { kind: "belt", rot: 1, anchor: { x: 20, z: 20 } });
     assert.equal(g.set(20, 20, { kind: "belt", rot: 1 }).ok, true);
     assert.equal(g.set(20, 20, { kind: "belt", rot: 3 }).ok, false);
     assert.equal(g.set(20, 20, null).ok, true);

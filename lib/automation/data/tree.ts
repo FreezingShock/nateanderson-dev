@@ -1,7 +1,7 @@
 // Brasswork: the resource and recipe tree. Every number here is a first-pass
 // balance value for the design thread to tune. Rates are per minute.
 // Balance notes and open taste calls live in /mnt/project-files/portfolio/automation-game/recipes.md.
-import type { MachineDef, RecipeTree, Stage, StructureDef } from "../types";
+import type { MachineDef, RecipeTree, Stage, StructureDef, Stack } from "../types";
 
 export const STAGE_NAMES: Record<Stage, string> = {
     0: "Raw",
@@ -71,7 +71,50 @@ const STRUCTURES: StructureDef[] = [
     { id: "orrery_2", name: "Orrery, rings", footprint: { w: 6, d: 6 }, stage: 2 },
     { id: "orrery_3", name: "Orrery, lenses", footprint: { w: 6, d: 6 }, stage: 3 },
     { id: "orrery_4", name: "Orrery, complete", footprint: { w: 6, d: 6 }, stage: 4 },
+    // Logistics. Ids match the sim engine and the belt models. Costs and unlocks are a first pass.
+    ...logisticsPieces(),
 ];
+
+/** Brass pieces at stage 2, copper at stage 3, steel at stage 4 (each tier adds its own wire or steel). */
+function logisticsPieces(): StructureDef[] {
+    const junction = { w: 1, d: 1 };
+    const brass: { id: string; name: string; cost: { item: string; qty: number }[]; note: string }[] = [
+        { id: "belt-splitter", name: "Splitter", cost: [{ item: "iron_rod", qty: 2 }, { item: "iron_plate", qty: 2 }], note: "Sends items front and both sides." },
+        { id: "belt-merger", name: "Merger", cost: [{ item: "iron_rod", qty: 2 }, { item: "iron_plate", qty: 2 }], note: "Joins belts; pushes forward only." },
+        { id: "belt-underground-in", name: "Tunnel entrance", cost: [{ item: "iron_plate", qty: 3 }, { item: "iron_rod", qty: 3 }], note: "Sends items up to 5 cells under other belts." },
+        { id: "belt-underground-out", name: "Tunnel exit", cost: [{ item: "iron_plate", qty: 3 }, { item: "iron_rod", qty: 3 }], note: "Where a tunnel comes back up." },
+        { id: "belt-loader", name: "Loader", cost: [{ item: "iron_plate", qty: 2 }, { item: "iron_rod", qty: 2 }], note: "Fills storage, the dock or the hub from belts." },
+        { id: "belt-unloader", name: "Unloader", cost: [{ item: "iron_plate", qty: 2 }, { item: "iron_rod", qty: 2 }], note: "Pulls from storage or the hub onto belts." },
+    ];
+    const tierExtra: Record<"copper" | "steel", { item: string; qty: number }> = {
+        copper: { item: "copper_wire", qty: 4 },
+        steel: { item: "steel_ingot", qty: 4 },
+    };
+    const tierStage: Record<"copper" | "steel", Stage> = { copper: 3, steel: 4 };
+    const tierRate: Record<"brass" | "copper" | "steel", number> = { brass: 1, copper: 2, steel: 4 };
+    const out: StructureDef[] = [];
+    for (const p of brass) {
+        out.push({ id: p.id, name: p.name, footprint: junction, unlockStage: 2, tier: "brass", rate: tierRate.brass, buildCost: p.cost, note: p.note });
+        for (const t of ["copper", "steel"] as const) {
+            out.push({
+                id: `${p.id}-${t}`,
+                name: `${p.name} (${t})`,
+                footprint: junction,
+                unlockStage: tierStage[t],
+                tier: t,
+                rate: tierRate[t],
+                buildCost: [...p.cost.map((s) => ({ ...s })), { ...tierExtra[t] }],
+                note: p.note,
+            });
+        }
+    }
+    out.push(
+        { id: "belt-crate", name: "Crate", footprint: { w: 1, d: 1 }, unlockStage: 2, capacity: 200, buildCost: [{ item: "iron_plate", qty: 8 }, { item: "iron_screw", qty: 8 }], note: "Holds 200 of each item." },
+        { id: "belt-strongbox", name: "Strongbox", footprint: { w: 2, d: 2 }, unlockStage: 3, capacity: 1000, buildCost: [{ item: "aluminium_casing", qty: 4 }, { item: "iron_plate", qty: 8 }], note: "Holds 1000 of each item." },
+        { id: "belt-dock", name: "Dock", footprint: { w: 3, d: 3 }, unlockStage: 2, buildCost: [{ item: "iron_plate", qty: 12 }, { item: "iron_screw", qty: 12 }, { item: "copper_wire", qty: 6 }], note: "A delivery sink, like the hub." },
+    );
+    return out;
+}
 
 const ITEMS = [
     // Stage 0: raw, pulled from nodes on the island

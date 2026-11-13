@@ -48,6 +48,16 @@ export interface StructureDef {
     footprint: { w: number; d: number };
     /** Build stage for multi-stage structures (the orrery is 0 to 4). Absent for single-stage ones. */
     stage?: number;
+    /** Items spent to place it. */
+    buildCost?: Stack[];
+    /** First stage where it can be placed (logistics pieces). */
+    unlockStage?: Stage;
+    /** Belt tier for logistics pieces: brass 1 item/s, copper 2, steel 4. Absent for untiered pieces. */
+    tier?: "brass" | "copper" | "steel";
+    /** Items per second, for tiered belt pieces. */
+    rate?: number;
+    /** Items held per item type, for storage (crate, strongbox). */
+    capacity?: number;
     note?: string;
 }
 
@@ -322,6 +332,15 @@ export type ResearchNode = {
   state: "done" | "available" | "locked";
 };
 
+/** One island site offered at prestige: what it is and what it changes. */
+export type PrestigeSite = {
+  id: string;
+  name: string;
+  blurb: string;
+  /** Plain lines on the bonus, e.g. "Miners +15%". */
+  modifiers: string[];
+};
+
 export type PrestigeView = {
   ready: boolean;
   /** Plain line on what is needed, e.g. "Reach 1 M brass made". */
@@ -332,8 +351,8 @@ export type PrestigeView = {
   keeps: string[];
   /** Things that reset on a workshop, from the tree. */
   leaves: string[];
-  /** Names of the island sites the player can move to. */
-  sites: string[];
+  /** The island sites the player can move to. */
+  sites: PrestigeSite[];
 };
 
 export type StatLine = { label: string; value: string };
