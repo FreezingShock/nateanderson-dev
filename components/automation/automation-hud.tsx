@@ -21,7 +21,9 @@ const DRAWER_TITLE: Record<Drawer, string> = {
 
 /**
  * Brasswork's 2D interface, drawn over the 3D workshop.
- * `children` is the stage slot for the 3D view. Everything else is props-driven.
+ * Layout follows the design mock: machine palette on the left, the 3D floor in
+ * the centre with the status line along its bottom, and the inspector and
+ * milestones on the right. `children` is the 3D view slot.
  */
 export function AutomationHud({
   data,
@@ -47,6 +49,7 @@ export function AutomationHud({
   const toggle = (d: Drawer) => setDrawer((cur) => (cur === d ? null : d));
   const selectedId = data.selected?.id ?? null;
   const next = data.nextStep;
+  const openMachines = data.machines.filter((m) => m.unlocked).length;
 
   return (
     <div
@@ -81,45 +84,12 @@ export function AutomationHud({
         </nav>
       </header>
 
-      <p className="ab-next">
-        <span className="ab-next-label">Next</span>
-        <span className="ab-next-text">{next.text}</span>
-        {next.actionId && next.actionLabel && (
-          <button
-            type="button"
-            className="ab-text-btn"
-            onClick={() => {
-              const id = next.actionId!;
-              if (actions.onNextStep) actions.onNextStep(id);
-              else actions.onSelect(id);
-            }}
-          >
-            {next.actionLabel}
-          </button>
-        )}
-      </p>
-
       <div className="ab-body">
-      <div className="ab-stage">{children}</div>
-
-      <aside className="ab-factory" aria-label="Factory panel">
-        <header className="ab-factory-head">
-          <h2 className="ab-h">Factory</h2>
-          <span className="ab-dim">{data.machines.filter((m) => m.unlocked).length} machines open</span>
-        </header>
-
-        {data.selected && (
-          <Inspector
-            detail={data.selected}
-            resources={data.resources}
-            numberFormat={mode}
-            canBuild={canAfford(data.selected.cost, data.resources)}
-            onBuild={actions.onBuild}
-            onClose={() => actions.onSelect(null)}
-          />
-        )}
-
-        <Section title="Build" meta="tap a row to build">
+        <aside className="ab-pal" aria-label="Machines">
+          <header className="ab-factory-head">
+            <h2 className="ab-h">Machines</h2>
+            <span className="ab-dim">{openMachines} open</span>
+          </header>
           <BuildList
             machines={data.machines}
             resources={data.resources}
@@ -128,47 +98,76 @@ export function AutomationHud({
             onBuild={actions.onBuild}
             onSelect={actions.onSelect}
           />
-        </Section>
-
-        <Section title="Milestones" meta={`${data.blueprints} blueprints`}>
-          <Milestones milestones={data.milestones} />
-        </Section>
-
-        <Section title="Prestige" defaultOpen={false}>
-          <PrestigeCard prestige={data.prestige} onPrestige={actions.onPrestige} />
-        </Section>
-      </aside>
-
-      {drawer && (
-        <aside
-          className="ab-drawer"
-          role="dialog"
-          aria-label={DRAWER_TITLE[drawer]}
-        >
-          <header className="ab-head">
-            <h2 className="ab-h">{DRAWER_TITLE[drawer]}</h2>
-            <button type="button" className="ab-text-btn" onClick={() => setDrawer(null)}>
-              Close
-            </button>
-          </header>
-          <div className="ab-drawer-body">
-            {drawer === "expedition" && (
-              <ExpeditionList areas={data.areas} onSelectArea={actions.onSelectArea} />
-            )}
-            {drawer === "research" && (
-              <ResearchTree
-                nodes={data.research}
-                blueprints={data.blueprints}
-                onResearch={actions.onResearch}
-              />
-            )}
-            {drawer === "stats" && <StatsList stats={data.stats} />}
-            {drawer === "settings" && (
-              <SettingsList settings={data.settings} onChange={actions.onSettings} />
-            )}
-          </div>
         </aside>
-      )}
+
+        <div className="ab-center">
+          <div className="ab-stage">{children}</div>
+          <p className="ab-next">
+            <span className="ab-next-label">Next</span>
+            <span className="ab-next-text">{next.text}</span>
+            {next.actionId && next.actionLabel && (
+              <button
+                type="button"
+                className="ab-text-btn"
+                onClick={() => {
+                  const id = next.actionId!;
+                  if (actions.onNextStep) actions.onNextStep(id);
+                  else actions.onSelect(id);
+                }}
+              >
+                {next.actionLabel}
+              </button>
+            )}
+          </p>
+        </div>
+
+        <aside className="ab-factory" aria-label="Factory panel">
+          {data.selected && (
+            <Inspector
+              detail={data.selected}
+              resources={data.resources}
+              numberFormat={mode}
+              canBuild={canAfford(data.selected.cost, data.resources)}
+              onBuild={actions.onBuild}
+              onClose={() => actions.onSelect(null)}
+            />
+          )}
+
+          <Section title="Milestones" meta={`${data.blueprints} blueprints`}>
+            <Milestones milestones={data.milestones} />
+          </Section>
+
+          <Section title="Prestige" defaultOpen={false}>
+            <PrestigeCard prestige={data.prestige} onPrestige={actions.onPrestige} />
+          </Section>
+        </aside>
+
+        {drawer && (
+          <aside className="ab-drawer" role="dialog" aria-label={DRAWER_TITLE[drawer]}>
+            <header className="ab-head">
+              <h2 className="ab-h">{DRAWER_TITLE[drawer]}</h2>
+              <button type="button" className="ab-text-btn" onClick={() => setDrawer(null)}>
+                Close
+              </button>
+            </header>
+            <div className="ab-drawer-body">
+              {drawer === "expedition" && (
+                <ExpeditionList areas={data.areas} onSelectArea={actions.onSelectArea} />
+              )}
+              {drawer === "research" && (
+                <ResearchTree
+                  nodes={data.research}
+                  blueprints={data.blueprints}
+                  onResearch={actions.onResearch}
+                />
+              )}
+              {drawer === "stats" && <StatsList stats={data.stats} />}
+              {drawer === "settings" && (
+                <SettingsList settings={data.settings} onChange={actions.onSettings} />
+              )}
+            </div>
+          </aside>
+        )}
       </div>
     </div>
   );

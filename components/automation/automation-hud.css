@@ -57,6 +57,32 @@
   flex-direction: row;
 }
 
+/* Left: machine palette. Centre: the floor, with the status line at its bottom. */
+
+.ab-pal {
+  --ab-br: var(--ab-brass);
+  position: relative;
+  z-index: 2;
+  flex: none;
+  align-self: stretch;
+  width: 320px;
+  margin: 16px 0 16px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 16px 14px 14px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.ab-center {
+  position: relative;
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
 /* ---- stage (3D view slot) ---- */
 
 .ab-stage {
@@ -138,6 +164,7 @@
 
 /* Corner brackets: four L shapes drawn in the background stack. */
 .ab-panel,
+.ab-pal,
 .ab-factory,
 .ab-drawer {
   --ab-br: var(--ab-brass);
@@ -261,10 +288,10 @@
   flex-wrap: wrap;
   align-items: center;
   gap: 6px 12px;
-  margin: 0;
+  margin: auto 0 0;
   padding: 8px 16px;
   background: var(--ab-panel-2);
-  border-bottom: 1px solid var(--ab-line-soft);
+  border-top: 1px solid var(--ab-line-soft);
   font-size: 14px;
 }
 
@@ -555,9 +582,9 @@
   position: absolute;
   z-index: 4;
   top: 16px;
-  left: 16px;
+  left: 352px;
   bottom: 16px;
-  width: min(380px, calc(100% - 32px));
+  width: min(380px, calc(100% - 720px));
   display: flex;
   flex-direction: column;
   gap: 10px;
@@ -711,8 +738,21 @@
     padding: 12px 12px 10px;
   }
 
-  .ab-root[data-drawer]:not([data-drawer="none"]) .ab-factory {
+  .ab-root[data-drawer]:not([data-drawer="none"]) .ab-factory,
+  .ab-root[data-drawer]:not([data-drawer="none"]) .ab-pal {
     display: none;
+  }
+
+  .ab-pal {
+    width: auto;
+    max-height: 32dvh;
+    margin: 0;
+    padding: 10px 12px;
+  }
+
+  .ab-center {
+    flex: 1 1 auto;
+    min-height: 0;
   }
 
   .ab-drawer {
