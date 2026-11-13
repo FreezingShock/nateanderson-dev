@@ -177,7 +177,7 @@ export const ENTRIES: CodexEntry[] = [
     },
     // ------------------------------------------------------------------ systems
     {
-        id: "rigs", group: "systems", title: "Zone rigs", gate: () => true, where: "inside each zone",
+        id: "rigs", group: "systems", title: "Zone rigs", gate: (s) => isUnlocked(s, "silicon"), where: "inside each zone",
         body: (s) => [
             { p: `Every zone has one rig: a meter, one rule and a level track. A level costs minutes of that zone's own output (${RIG_TUNE.minutes.slice(0, 5).join(", ")}), and a rig stops at level ${RIG_TUNE.baseCap}. Levels stay through Ascend; meters, charges and clocks reset with the run.` },
             { list: RIGS.filter((r) => isUnlocked(s, r.zone)).map((r): [string, string] => [`${String(zoneNo(r.zone)).padStart(2, "0")} ${r.name}`, r.rule]) },
@@ -398,4 +398,5 @@ export function markCodexSeen(id: string) {
     set.add(id);
     try { localStorage.setItem(KEY, JSON.stringify([...set])); } catch {}
 }
-export const codexNew = (s: State): CodexEntry[] => { const seen = codexSeen(); return unlocked(s).filter((e) => !seen.has(e.id)); };
+/** The basics and reference entries are on file from the first second, so they never count as new; only what the player reaches does. */
+export const codexNew = (s: State): CodexEntry[] => { const seen = codexSeen(); return unlocked(s).filter((e) => e.group !== "basics" && e.group !== "ref" && !seen.has(e.id)); };

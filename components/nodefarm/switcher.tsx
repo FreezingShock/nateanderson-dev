@@ -75,9 +75,9 @@ export function swInfo(s: State, bps: number, lastSave: number, fs: boolean, lab
         map: { read: `zone ${pad(zones)}` }, // same numbering as the Map window and the zone names everywhere else (Bytes is zone 01, Sunstone 25)
         goals: { read: `${g.goals}/${GOALS.length}` },
         records: { read: newLogs ? `${newLogs} new` : `${s.logs.length} logs`, hot: newLogs > 0 },
-        ascend: { read: ready ? `ready +${fmt(apOnAscend(s))}` : `${fmt(s.aether)}/${fmt(ascendNeed(s))} AE`, hot: ready },
+        ascend: { read: ready ? `ready +${fmt(apOnAscend(s))}` : `${fmt(s.aether)}/${fmt(ascendNeed(s))} AE`, hot: ready, hide: !isUnlocked(s, "aether") && s.life.ascends === 0 },
         tree: { read: spend ? `${s.ap} AP free` : `${s.tree.length}/${TREE.length}`, hot: spend },
-        codex: (() => { const n = codexNew(s).length; return { read: n ? `${n} new` : `${codexOpen(s).length} entries`, hot: n > 0 }; })(),
+        codex: (() => { const n = codexNew(s).length; return { read: n ? `${n} new` : `${codexOpen(s).length} entries`, hot: n > 0, hide: s.reboot < 1 && s.life.ascends === 0 }; })(),
         menu: { read: ago < 0 ? "not saved" : ago < 60 ? `saved ${ago}s` : `saved ${Math.floor(ago / 60)}m` },
         lab: { read: labReady ? `${labReady} ready` : `${fmt(s.lab.intel)} intel`, hot: labReady > 0 },
         full: { read: fs ? "on" : "off" },
@@ -151,7 +151,7 @@ export function PhoneTabs({ info, tab, treeSeen, lab, guideWin, onTab, onTree, o
     const ids: Exclude<SwId, "full">[] = ["core", "stats", ...WIN_ORDER.filter((w) => shown(w, treeSeen, lab, info))];
     // 8 sections sit four across, 9 three across, 10 five across, so no row is left with one; 11 and 12 go four across
     return (
-        <nav className="nf-tabs nf-sw-ph" aria-label="Game sections" data-cols={ids.length === 10 ? 5 : undefined} style={{ ["--cols" as string]: ids.length === 9 ? 3 : ids.length === 10 ? 5 : 4 } as CSSProperties}>
+        <nav className="nf-tabs nf-sw-ph" aria-label="Game sections" data-cols={ids.length === 10 ? 5 : undefined} style={{ ["--cols" as string]: ids.length === 9 || ids.length === 6 ? 3 : ids.length === 10 ? 5 : 4 } as CSSProperties}>
             {ids.map((t) => {
                 const def = SW[t];
                 const on = tab === t;
