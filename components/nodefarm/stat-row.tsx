@@ -216,11 +216,16 @@ export function StatRow({ id, s, d, onPress, onArm, onWatchdog, open: expanded, 
                         ))}
                     </dl>
                     <ZoneRig id={id} s={s} d={d} />
-                    {id !== "bytes" && id !== "reboot" && s.drones.some((x) => x > 0) && (
+                    {id !== "bytes" && id !== "reboot" && (s.dr.post.some((p, k) => p === id && s.drones[k] > 0) || zoneRank(s, id as ButtonStat) > 0) && (
                         <div className="nf-arm">
                             <span>Drones</span>
                             <PostedHere s={s} id={id as ButtonStat} />
-                            <button type="button" className="nf-mini" aria-pressed={s.armed.includes(id)} onClick={onArm}>{s.armed.includes(id) ? "Armed" : "Off"}</button>
+                        </div>
+                    )}
+                    {id !== "bytes" && id !== "reboot" && s.auto?.own.includes("buy") && (
+                        <div className="nf-arm">
+                            <span>buy.sh</span>
+                            <button type="button" className="nf-mini" aria-pressed={!!s.auto.buy[id]} onClick={onArm}>{s.auto.buy[id] ? "Auto" : "Off"}</button>
                         </div>
                     )}
                     {id === "reboot" && onWatchdog && hasFeature(s, "watchdog") && (
