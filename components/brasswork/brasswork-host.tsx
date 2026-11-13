@@ -30,12 +30,14 @@ import {
 import type { VoxelIsland } from "@/lib/automation/render";
 import type { BuildWorld, MountedInput } from "@/lib/automation/input";
 import { getMachineModel } from "@/lib/automation/models/machines";
+import { BrassworkExtras, type AwayReport } from "./extras";
+import { bw, bwHum, bwSetEnabled } from "@/lib/brasswork/sound";
 
 const W = 18;
 const D = 12;
 const SAVE_KEY = "brasswork-save-v1";
 const CAT = DEFAULT_CATALOG;
-const START_SETTINGS: HudSettings = { sound: false, reduceMotion: false, lowFx: false, numberFormat: "short", showRates: true };
+const START_SETTINGS: HudSettings = { sound: true, reduceMotion: false, lowFx: false, numberFormat: "short", showRates: true };
 
 // Resource node spots, one per ore in the recipe tree. Placeholder layout until the site design lands.
 const NODE_SPOTS: [number, number][] = [[2, 2], [2, 8], [15, 2], [15, 8], [8, 1]];
@@ -72,6 +74,9 @@ export function BrassworkHost() {
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const [data, setData] = useState<HudData>(() => hudData(freshWorld(), CAT, null, START_SETTINGS));
     const [note, setNote] = useState("");
+    const [away, setAway] = useState<AwayReport | null>(null);
+    const snap = useRef<(() => string) | null>(null);
+    const snapshot = useCallback(() => snap.current?.() ?? null, []);
     const ctl = useRef<{
         setTool: (id: string | null) => void;
         select: (id: string | null) => void;
@@ -141,9 +146,37 @@ export function BrassworkHost() {
 
             // Away time: catch up the simulation for the time the tab was closed (capped by the catalog).
             const away = Math.max(0, (Date.now() - savedAt) / 1000);
-            if (away > 5) advance(world, Math.min(away, CAT.tune.maxAwaySeconds), 1, CAT);
+            if (away > 5) {
+                const before = new Map(hudData(world, CAT, null, settings).resources.map((r) => [r.id, r.amount]));
+                advance(world, Math.min(away, CAT.tune.maxAwaySeconds), 1, CAT);
+                const gains = hudData(world, CAT, null, settings)
+                    .resources.map((r) => ({ name: r.name, amount: r.amount - (before.get(r.id) ?? 0) }))
+                    .filter((g) => g.amount >= 1)
+                    .sort((a, b) => b.amount - a.amount)
+                    .slice(0, 8);
+                if (away >= 120) setAway({ seconds: Math.min(away, CAT.tune.maxAwaySeconds), gains });
+            }
 
-            const refresh = () => setData(hudData(world, CAT, selectedId, settings));
+            // Sound cues from what changed since the last refresh: a milestone finished, a blueprint bought.
+            const doneMilestones = new Set<string>();
+            let doneResearch = -1;
+            let started = false;
+            const refresh = () => {
+                const d = hudData(world, CAT, selectedId, settings);
+                const ms = d.milestones.filter((m) => m.done);
+                const rs = d.research.filter((r) => r.state === "done").length;
+                if (started) {
+                    if (ms.some((m) => !doneMilestones.has(m.id))) bw("milestone");
+                    else if (rs > doneResearch) bw("research");
+                }
+                ms.forEach((m) => doneMilestones.add(m.id));
+                doneResearch = rs;
+                started = true;
+                const running = Object.values(world.buildings).filter((b) => b.crafting).length;
+                const total = Object.keys(world.buildings).length;
+                bwHum(settings.sound && total > 1 ? Math.min(1, 0.25 + running / Math.max(1, total - 1)) : null);
+                setData(d);
+            };
             const save = () => {
                 try {
                     localStorage.setItem(SAVE_KEY, JSON.stringify({ text: serialize(world), savedAt: Date.now() }));
@@ -174,8 +207,11 @@ export function BrassworkHost() {
                 initialPose: { target: { x: 0, y: 0, z: 0 }, yaw: 0.6, pitch: 0.75, distance: 18 },
                 limits: { bounds: { minX: -14, maxX: 14, minZ: -10, maxZ: 10 }, minDistance: 5, maxDistance: 34, minPitch: 0.35, maxPitch: 1.2, topDownPitch: 1.5, fovY: 0.55, smoothing: 12 },
                 onEvent: (e) => {
-                    if (e.type === "invalid") setNote(e.reason);
-                    else if (e.type === "place" || e.type === "remove") {
+                    if (e.type === "invalid") {
+                        setNote(e.reason);
+                        bw("invalid");
+                    } else if (e.type === "place" || e.type === "remove") {
+                        bw(e.type);
                         setNote("");
                         syncScene();
                         refresh();
@@ -231,12 +267,14 @@ export function BrassworkHost() {
                 prestige: (id) => {
                     const r = simActions.prestige(world, id, CAT);
                     if (!r.ok) return setNote(r.reason);
+                    bw("prestige");
                     save();
                     syncScene();
                     refresh();
                 },
                 settings: (p) => {
                     settings = { ...settings, ...p };
+                    bwSetEnabled(settings.sound);
                     island.setLowFx(settings.lowFx || settings.reduceMotion);
                     refresh();
                 },
@@ -276,6 +314,7 @@ export function BrassworkHost() {
             };
             raf = requestAnimationFrame(frame);
 
+            snap.current = () => island.snapshot();
             island.resize();
             island.start();
             refresh();
@@ -285,7 +324,9 @@ export function BrassworkHost() {
                 input.destroy();
                 window.removeEventListener("resize", onResize);
                 island.dispose();
+                bwHum(null);
                 ctl.current = null;
+                snap.current = null;
             };
         })();
         return () => {
@@ -307,6 +348,7 @@ export function BrassworkHost() {
                 <Link href="/creations/games" className="bw-back">
                     Back to Games
                 </Link>
+                <BrassworkExtras snapshot={snapshot} away={away} />
                 {note && <p className="bw-note">{note}</p>}
             </AutomationHud>
         </div>

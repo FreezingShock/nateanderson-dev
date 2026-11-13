@@ -1,0 +1,14 @@
+.bx-tools { position: absolute; top: 10px; right: 10px; z-index: 6; display: flex; gap: 6px; }
+.bx-btn { padding: 6px 12px; font-size: 12px; letter-spacing: .06em; text-transform: uppercase; }
+.bx-flash { position: fixed; inset: 0; z-index: 20; background: #fff4d8; pointer-events: none; animation: bx-flash .5s ease-out forwards; }
+@keyframes bx-flash { from { opacity: .85; } to { opacity: 0; } }
+.bx-scrim { position: fixed; inset: 0; z-index: 30; display: grid; place-items: center; padding: 16px; background: rgba(8, 5, 2, .72); animation: bx-in .18s ease-out; }
+@keyframes bx-in { from { opacity: 0; } to { opacity: 1; } }
+.bx-card { color: #efe2c4; background: #1a1209; border: 2px solid #c59a52; box-shadow: 0 3px 0 #6b4f26, 0 12px 40px rgba(0,0,0,.6); width: min(440px, 100%); max-height: 100%; overflow: auto; padding: 18px 20px; }
+.bx-h { margin: 14px 0 4px; font-size: 11px; letter-spacing: .12em; text-transform: uppercase; opacity: .75; }
+.bx-key { white-space: nowrap; font-variant-numeric: tabular-nums; color: var(--bw-amber, #ffb347); }
+.bx-lead { margin: 6px 0 12px; font-size: 15px; line-height: 1.45; }
+.bx-card .bw-title { margin: 0 0 8px; font-size: 14px; letter-spacing: .14em; text-transform: uppercase; color: #ffb347; }
+.bx-card .bw-row { border-bottom: 1px dotted rgba(210,154,60,.28); }
+.bx-card .bw-btn { margin-top: 16px; width: 100%; }
+@media (prefers-reduced-motion: reduce) { .bx-flash, .bx-scrim { animation: none; } }
