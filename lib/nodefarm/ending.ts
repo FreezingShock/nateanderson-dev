@@ -10,9 +10,9 @@ export type { EndLog, EndState };
 
 export const END_TUNE = {
     /** Keys per stage */
-    keys: [2, 3, 5, 8, 12],
+    keys: [8, 14, 24, 40, 60],
     /** last-zone material per stage (spent) */
-    mat: [1e3, 1e5, 1e7, 1e9, 1e11],
+    mat: [1e6, 1e9, 1e12, 1e15, 1e18],
     /** producers the last zone needs this run before the build opens */
     needProd: 1,
     /** characters in the log you leave */
