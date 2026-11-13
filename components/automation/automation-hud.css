@@ -338,6 +338,35 @@
   padding-top: 8px;
 }
 
+/* Each factory block is its own bounded panel: a hairline frame inside the corner brackets,
+   a full-width header that toggles it (blank space in the header counts), and a body that
+   only shows when open. Sharp corners, no side strip, no pills. */
+.ab-section.ab-panel,
+.ab-inspect-panel {
+  border: 1px solid var(--ab-line-soft);
+  padding: 0;
+  margin: 0;
+}
+
+.ab-section.ab-panel > .ab-section-head {
+  min-height: 44px;
+  margin: 0;
+  padding: 10px 14px;
+  align-items: center;
+}
+
+.ab-section.ab-panel > .ab-section-body {
+  padding: 4px 14px 14px;
+}
+
+.ab-section.ab-panel[data-open="false"] > .ab-section-head {
+  padding-bottom: 10px;
+}
+
+.ab-inspect-panel {
+  padding: 12px 14px 14px;
+}
+
 .ab-section-head {
   display: flex;
   align-items: baseline;

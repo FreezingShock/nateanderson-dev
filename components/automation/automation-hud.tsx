@@ -161,15 +161,17 @@ export function AutomationHud({
 
         <aside className="ab-factory" aria-label="Factory panel">
           {data.selected && (
-            <Inspector
-              detail={data.selected}
-              resources={data.resources}
-              numberFormat={mode}
-              canBuild={canAfford(data.selected.cost, data.resources)}
-              onBuild={actions.onBuild}
-              onSetRecipe={actions.onSetRecipe}
-              onClose={() => actions.onSelect(null)}
-            />
+            <section className="ab-panel ab-inspect-panel" aria-label="Selected machine">
+              <Inspector
+                detail={data.selected}
+                resources={data.resources}
+                numberFormat={mode}
+                canBuild={canAfford(data.selected.cost, data.resources)}
+                onBuild={actions.onBuild}
+                onSetRecipe={actions.onSetRecipe}
+                onClose={() => actions.onSelect(null)}
+              />
+            </section>
           )}
 
           <Section title="Milestones" meta={`${data.blueprints} blueprints`}>
