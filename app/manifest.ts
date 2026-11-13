@@ -9,10 +9,29 @@ export default function manifest(): MetadataRoute.Manifest {
         short_name: "Nate's Portfolio",
         description:
             "Games, renders, and systems, built while studying construction management.",
+        id: "/",
         start_url: "/",
+        scope: "/",
+        lang: "en-US",
+        dir: "ltr",
         display: "standalone",
+        display_override: ["standalone", "minimal-ui"],
+        orientation: "any",
+        categories: ["entertainment", "games"],
         background_color: "#1a1a1a",
         theme_color: "#1a1a1a",
+        shortcuts: [
+            {
+                name: "Games",
+                short_name: "Games",
+                url: "/creations/games",
+            },
+            {
+                name: "Node Farm",
+                short_name: "Node Farm",
+                url: "/creations/games/node-farm",
+            },
+        ],
         icons: [
             {
                 src: "/icon.svg",
