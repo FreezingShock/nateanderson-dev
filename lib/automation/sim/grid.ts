@@ -113,7 +113,7 @@ export function autoRoute(world: World, from: Cell, to: Cell, belt = "belt", cat
         const c = path[i];
         let rot: Rot;
         if (i + 1 < path.length) rot = dirTo(c, path[i + 1]);
-        else rot = toB ? dirTo(c, to) : dirOfGoalFallback(c, to);
+        else rot = toB ? intoBuildingRot(c, toB.id, cat, world) : dirOfGoalFallback(c, to);
         cells.push({ x: c.x, z: c.z, rot, kind: belt });
     }
     return { ok: true, cells };
@@ -155,4 +155,14 @@ function neighbours(world: World, cells: Cell[]): Cell[] {
         }
     }
     return out;
+}
+
+// The last belt must face the building it feeds, whichever side of it the route reached. Aiming at the building's anchor
+// points the belt away from a 3 by 3 hub when the route arrives on its far edge.
+function intoBuildingRot(c: Cell, buildingId: number, cat: Catalog, world: World): Rot {
+    for (let d = 0; d < 4; d++) {
+        const adj = { x: c.x + DIR_DX[d], z: c.z + DIR_DZ[d] };
+        if (buildingAt(world, adj.x, adj.z, cat)?.id === buildingId) return dirTo(c, adj);
+    }
+    return 0;
 }
