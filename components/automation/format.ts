@@ -1,4 +1,4 @@
-import type { Line, NumberFormat, ResourceView } from "./types";
+import type { Line, NumberFormat, ResourceView } from "@/lib/automation/types";
 
 const UNITS = [
   [1e9, "B"],

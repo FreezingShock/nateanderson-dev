@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import "./automation-screens.css";
-import type { PrestigeView } from "./types";
+import type { PrestigeView } from "@/lib/automation/types";
 
 const HOLD_MS = 1200;
 const TICK_MS = 30;
@@ -78,17 +78,6 @@ export function PrestigeScreen({
               }}
             >
               <span className="ab-site-name">{s.name}</span>
-              <span className="ab-data">
-                <span>
-                  <span className="ab-dim">Floor</span> {s.floor}
-                </span>
-                <span>
-                  <span className="ab-dim">Ore</span> {s.ore}
-                </span>
-                <span>
-                  <span className="ab-dim">Bonus</span> {s.bonus}
-                </span>
-              </span>
             </button>
           ))}
         </div>

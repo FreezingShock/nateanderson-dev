@@ -27,6 +27,12 @@ import { place as placeRaw, setRecipe as setRecipeRaw, resolve } from "./world";
 
 export const DEFAULT_SETTINGS: HudSettings = { sound: false, reduceMotion: false, lowFx: false, numberFormat: "short", showRates: true };
 
+// Bonus as a signed percent line, e.g. 1.15 becomes "+15%".
+const pct = (x: number): string => {
+    const v = Math.round((x - 1) * 100);
+    return `${v >= 0 ? "+" : ""}${v}%`;
+};
+
 const glyphOf = (name: string): string => name.replace(/[^A-Za-z0-9]/g, "").slice(0, 2).toUpperCase() || "?";
 
 function nameOf(cat: Catalog, id: string): string {
@@ -225,7 +231,12 @@ export function hudData(world: World, cat: Catalog = DEFAULT_CATALOG, selectedId
             gain: `Keeps ${cat.tree.prestige.keeps.join(", ")}. Resets ${cat.tree.prestige.resets.join(" and ")}.`,
             keeps: [...cat.tree.prestige.keeps],
             leaves: [...cat.tree.prestige.resets],
-            sites: SITES.map((s) => s.name),
+            sites: SITES.map((s) => ({
+                id: s.id,
+                name: s.name,
+                blurb: s.blurb,
+                modifiers: [`Miners ${pct(s.bonus.miner)}`, `Power ${pct(s.bonus.power)}`],
+            })),
         },
         stats,
         nextStep: nextStepOf(world, machines, milestones),

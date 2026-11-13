@@ -159,15 +159,34 @@ export class PointerInput {
         this.changed();
     };
 
+    // Touch long-press (no movement for holdMs). What it does depends on what is under the finger:
+    //   building under the finger: quarter-turn that building (Delete tool removes it instead)
+    //   empty cell, machine tool: quarter-turn the ghost
+    //   empty cell, line tool (belts): start a drag-to-place line
     private onHold(id: number): void {
         const p = this.pointers.get(id);
         if (!p || p.mode !== "pending") return;
         p.hold = undefined;
-        if (!this.opts.build.getTool()) return;
         const cell = this.cellAt(p.x, p.y);
+        const build = this.opts.build;
+        const tool = build.getTool();
         if (!cell) return;
+        if (build.peek(cell)) {
+            if (tool?.id === "delete") build.deleteAt(cell);
+            else build.rotateAt(cell);
+            p.mode = "ignored";
+            this.changed();
+            return;
+        }
+        if (!tool) return;
+        if (!tool.line) {
+            build.rotateCw();
+            p.mode = "ignored";
+            this.changed();
+            return;
+        }
         p.mode = "stroke";
-        this.opts.build.beginStroke(cell);
+        build.beginStroke(cell);
         this.changed();
     }
 

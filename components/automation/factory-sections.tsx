@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, type ReactNode } from "react";
-import type { MilestoneView, PrestigeView } from "./types";
+import type { MilestoneView, PrestigeView } from "@/lib/automation/types";
 
 /** A collapsible block. The whole header row is the toggle, so a tap on blank space opens it. */
 export function Section({
