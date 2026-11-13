@@ -5,3 +5,9 @@
 .ctos .bw-pieces code { font-size: 13px; opacity: .7; }
 .ctos .bw-pieces em { font-style: normal; font-size: 12px; text-transform: uppercase; letter-spacing: .08em; color: var(--cm-amber); }
 @media (max-width: 640px) { .ctos .bw-pieces li { grid-template-columns: 1fr auto; } .ctos .bw-pieces code { display: none; } }
+
+/* The game's HUD replaces the site chrome on this route. The page wipe (.cm-wipe) is left alone so navigation transitions keep working. */
+html.bw-route .cm-dock,
+html.bw-route .nv-top,
+html.bw-route .cm-pgauge,
+html.bw-route .sf-foot { display: none !important; }
