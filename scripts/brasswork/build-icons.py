@@ -41,7 +41,9 @@ def catalog():
 def main():
     cat = catalog()
     # Structures: one icon per art id; every orrery build stage shares the orrery icon.
-    struct_art = {s[0]: ("orrery" if s[0].startswith("orrery") else s[0]) for s in cat["structures"]}
+    # Logistics pieces (belt-*) are drawn in a later pass; until then they have no icon and are skipped here.
+    struct_art = {s[0]: ("orrery" if s[0].startswith("orrery") else s[0]) for s in cat["structures"]
+                  if not s[0].startswith("belt-")}
     struct_ids = sorted(set(struct_art.values()), key=list(struct_art.values()).index)
     ids = [i[0] for i in cat["items"]] + [m[0] for m in cat["machines"]] + struct_ids
     draw = {**bw_items.DRAW, **bw_machines.DRAW, **bw_machines.STRUCT}
