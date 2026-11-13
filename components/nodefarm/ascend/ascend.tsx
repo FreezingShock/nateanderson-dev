@@ -103,7 +103,7 @@ function Stage({ s, gain }: { s: State; gain: number }) {
 /** Aether -> Ascend -> AP, as three plain data steps joined by a trace. */
 function Flow({ s, d, gain, confirm, onAscend }: { s: State; d: D; gain: number; confirm: boolean; onAscend: (now?: boolean) => void }) {
     const after = apGlobal(s, gain) / apGlobal(s);
-    const deep = (["runes", "starglass", "voidsteel", "chrono", "nebula", "pulsars", "singularity", "engrams", "paradox", "origin", "spores", "mycelium", "pollen", "bloom", "basalt", "magma", "geodes", "sunstone"] as const).filter((m) => s[m] > 0);
+    const deep = (["runes", "starglass", "voidsteel", "chrono", "nebula", "pulsars", "singularity", "engrams", "paradox", "origin", "spores", "mycelium", "pollen", "bloom", "basalt", "magma", "geodes", "sunstone", "corona", "plasma", "lattice", "radiance"] as const).filter((m) => s[m] > 0);
     const ready = canAscend(s);
     return (
         <section className="nf-ax-flow" data-cx-i="1">

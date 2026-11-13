@@ -34,6 +34,10 @@ export const ERAS: readonly Era[] = [
     { name: "Magma", stats: ["magma"], drift: 540 },
     { name: "Geode", stats: ["geodes"], drift: 0 },
     { name: "Sun", stats: ["sunstone"], drift: 900 },
+    { name: "Rim", stats: ["corona"], drift: 600 },
+    { name: "Spin", stats: ["plasma"], drift: 540 },
+    { name: "Hold", stats: ["lattice"], drift: 720 },
+    { name: "Glow", stats: ["radiance"], drift: 480 },
 ];
 
 /** True for the eras drawn in layers (far, near, animated overlay). */

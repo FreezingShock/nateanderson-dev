@@ -15,13 +15,14 @@ import {
     indexMul, indexed, mirrorMul, mirrored, pourSecs, prismMul, pulseSecs, rewrite, rewritePrice, rig, rigCap, rigDef, rigLv, rigPrice, scrubBurn, setRig,
     siliconYield, stagesLit, ARC_LINKS, LINK_TUNE, arcLevel, arcOfZone, linkTier, stagingMul, stillFrac, stillMul, weather, wellMul, zoneNo,
     runningZones, spreadMul, knotsTied, knotMul, daylight, seedMax, seedMul, seedsFor, basaltYield, coolBurn, ventSecs, heatSecs, ringMul, convLevels, convMul, DESCENT_RIGS,
+    flareEvery, flareSecs, fieldMul, scafMax, scafMul, scafFor, veilMul, UNDERSUN_RIGS,
 } from "@/lib/nodefarm/zones/rigs";
 import "@/app/camino/nodefarm/rig.css";
 
 type Line = [string, string];
 /** Row order of public/naos/nodefarm/rigs.webp (scripts/naos-art/nodefarm-rigs.py RIG_ORDER). */
 const ART_ROWS: StatId[] = ["bytes", "mult", "reboot", "copper", "silicon", "quartz", "aether", "runes", "starglass", "voidsteel", "chrono", "nebula", "pulsars", "singularity", "engrams", "paradox", "origin",
-    "spores", "mycelium", "pollen", "bloom", "basalt", "magma", "geodes", "sunstone"];
+    "spores", "mycelium", "pollen", "bloom", "basalt", "magma", "geodes", "sunstone", "corona", "plasma", "lattice", "radiance"];
 /** Which of the four drawn states to show: empty, started, past half, full. Weather shows its sky instead of its clock. */
 function artState(id: StatId, s: State, frac: number): number {
     if (id === "pollen") return s.prod.pollen > 0 && daylight(s).phase === "day" ? 3 : 0;
@@ -131,6 +132,23 @@ function view(id: StatId, s: State, d: Derived): View {
         case "sunstone": {
             const n = convLevels(s);
             return { frac: n / (DESCENT_RIGS.length * (T.baseCap + T.rewriteMax)), meter: `${n} rig levels below`, lines: [["Sunstone output", x(convMul(s))]] };
+        }
+        case "corona": {
+            const per = flareEvery(s);
+            const burning = (r.flareLeft ?? 0) > 0;
+            return { frac: burning ? 1 : (r.flare ?? 0) / per, meter: burning ? `flare burning, ${fmtTime(r.flareLeft ?? 0)} left` : s.prod.corona > 0 ? `next flare in ${fmtTime(per - (r.flare ?? 0))}` : "quiet until Corona runs", lines: [["Flare every", fmtTime(per)], ["Flare burns", fmtTime(flareSecs(s))]] };
+        }
+        case "plasma": {
+            const m = fieldMul(s);
+            return { frac: (m - 1) / (T.fieldMax - 1), meter: `field from ${rigLv(s, "corona")} Corona levels`, lines: [["Plasma output", x(m)]] };
+        }
+        case "lattice": {
+            const n = rig(s).scaf ?? 0;
+            return { frac: n / Math.max(1, scafMax(s)), meter: `${n} charges kept through Ascend`, lines: [["Lattice output", x(scafMul(s))], ["Next Ascend", `+${scafFor(s)} charges`]] };
+        }
+        case "radiance": {
+            const n = UNDERSUN_RIGS.reduce((a, z) => a + rigLv(s, z), 0);
+            return { frac: n / (UNDERSUN_RIGS.length * (T.baseCap + T.rewriteMax)), meter: `${n} rig levels across 26 to 28`, lines: [["Radiance output", x(veilMul(s))]] };
         }
         default:
             return { frac: 0, meter: "", lines: [] };

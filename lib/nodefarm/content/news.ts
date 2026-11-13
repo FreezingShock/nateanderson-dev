@@ -197,6 +197,16 @@ const BASE: News[] = [
     { k: "note", from: 22, t: "magma.vent() // pressure: building. it is always building." },
     { k: "wry", from: 22, t: "The node's last pipeline crosses a lava river. It started as one wire. Scope creep." },
     { k: "hint", from: 22, to: 23, t: "Magma boosts Basalt. Each eruption pays a lump of Magma and heats the shaft above. Deeper down, something is ringing." },
+    // ---- Undersun (26 to 29): opens after the ending
+    { k: "op", from: 26, t: "The last clamp is off. The rim is bright enough that the racks dim their screens to read it." },
+    { k: "note", from: 26, t: "corona.flare() // burning. the fans run faster and nobody has to ask them to." },
+    { k: "wry", from: 26, t: "The ending said the node runs on its own now. It did not say what to do with the sun. Flares, apparently." },
+    { k: "op", from: 27, t: "The plasma field hums at the pitch of the fans. Turned the fans off once to test it. The field got quieter and so did I." },
+    { k: "note", from: 27, t: "plasma.spin() // field: holding. the wire is the only cold thing left." },
+    { k: "op", from: 28, t: "The lattice keeps a few cells lit through Ascend. Each one remembers a tenfold of light it was given. The racks say thank you, with the fans." },
+    { k: "wry", from: 28, t: "A grid of light is a lot of cells to hold still. I count them every night. The count goes up." },
+    { k: "op", from: 29, t: "Curtains of light are going out over the dark, one fold at a time. The farm is quieter than it has ever been, and it is still running." },
+    { k: "note", from: 29, t: "radiance.fold() // glow: steady. the operator is still here. keep going." },
 
     // ---- Geodes (23)
     { k: "op", from: 23, t: "Inside the geode the racks read the crystal like a disk. Every surface is a sector. I have not found the end of the drive." },

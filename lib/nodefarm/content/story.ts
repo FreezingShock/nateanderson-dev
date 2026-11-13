@@ -58,6 +58,11 @@ export const LOGS: Log[] = [
     { id: "geodes", title: "Ringing", text: "Found a stone the size of a hall, hollow and lined with light. When I tap it, the Crystal vault rings back from the top of the farm. Every zone I built is still listening to the others.", test: open("geodes") },
     // zone 25 leaves room for the ending (a last build, and your own log)
     { id: "sunstone", title: "Bottom", text: "At the very bottom there is a sun held in clamps, and its heat rises through everything we built. There is room down here for one more thing. I did not build it. I think it is meant to be yours.", test: open("sunstone") },
+    // Undersun: found after the ending. The operator keeps going, past the last clamp
+    { id: "corona", title: "Rim", text: "I took the last clamp off by accident. The sun did not mind. Its edge is bright enough to read by, and it throws flares on a clock I can almost predict. The node runs faster while one is burning.", test: open("corona") },
+    { id: "plasma", title: "Field", text: "The rim throws gas out, and the gas wants to spin. I wrapped it in a field of wire and it held. The wire is the only thing down here that is not warm.", test: open("plasma") },
+    { id: "lattice", title: "Hold", text: "A grid of light, cell by cell, keeping the plasma where it belongs. When I Ascend, a few cells stay lit. I do not know what keeps them. I have stopped asking.", test: open("lattice") },
+    { id: "radiance", title: "Glow", text: "Curtains of light come up off the sun and go out over the dark, and the whole farm hums under them. The last note in the old logs was a single line. It said: keep going. I think it meant the node.", test: open("radiance") },
 ];
 
 export const logNo = (i: number) => String(i + 1).padStart(3, "0");
