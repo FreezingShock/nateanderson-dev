@@ -12,7 +12,7 @@ import {
     chOff, buyFw, fwNode, handSeen, handover, keysOnHandover, protoDef, protoRank, respecFw, setProto, type ProtoId,
     type ButtonStat, type MatId, type State, type StatId,
 } from "@/lib/nodefarm/engine";
-import { initFx } from "@/lib/nodefarm/fx";
+import { getLowFx, initFx } from "@/lib/nodefarm/fx";
 import { keyIsTyping, keyOverlay } from "@/lib/nodefarm/keys";
 import type { NfLive } from "@/lib/nodefarm/records";
 import { Core, freshCoreFeed, type CoreFeed } from "./core";
@@ -63,7 +63,7 @@ import { zeChoose, zoneEvDef, zoneLabel, type ZeChoice } from "@/lib/nodefarm/zo
 import { ARCS, arcKey, arcOf } from "@/lib/nodefarm/arcs";
 import { ArcHead } from "./arcs";
 import { Hold } from "./hold";
-import { useOffscreenPause } from "./offscreen";
+import { isOff, useOffscreenPause } from "./offscreen";
 import { ArcRail, ArcStep } from "./arc-rail";
 import { PokeLayer } from "./poke";
 import { StressPanel, StressStrip } from "./stress";
@@ -658,8 +658,9 @@ export function NodeFarm() {
                 sfx("nfGoal");
                 setTimeout(() => setToast((t) => (t === goal.name ? null : t)), 3200);
             }
-            // a full-screen tree hides the board, so the page only needs to follow once a second (the game itself still ticks ten times a second)
-            if (!treeOpenRef.current || tickN.current % 10 === 0) tickBump((n) => n + 1);
+            // a full-screen tree hides the board (1 Hz); low effects (a slow device, chosen or auto) redraws the page at 5 Hz. The game itself still ticks ten times a second.
+            const every = treeOpenRef.current ? 10 : getLowFx() ? 2 : 1;
+            if (tickN.current % every === 0) tickBump((n) => n + 1);
         }, 100);
         return () => {
             clearInterval(iv);
@@ -1202,6 +1203,8 @@ export function NodeFarm() {
     // Hold keys: a hidden copy refreshes about three times a second (slow) or at once when something was done (ver)
     const slow = Math.floor(tickN.current / 3);
     const slow2 = Math.floor(tickN.current / 2); // open system panels follow at 5 Hz
+    // a system panel scrolled out of view refreshes about once a second
+    const rate = (stat: string, isFolded: boolean) => (isOff(stat) ? Math.floor(tickN.current / 10) : isFolded ? slow : slow2);
     const hk = `${ver}|${slow}`;
     const foldSig = JSON.stringify(folded);
     const guideKey = `${step.target?.drone ?? ""}${step.target?.lab ?? ""}${step.target?.win ?? ""}`;
@@ -1249,7 +1252,7 @@ export function NodeFarm() {
                 <Hold live={false} k={`${hk}|${win}|${fs}|${treeSeen}|${guideKey}`}><Dock info={sw} open={win} treeSeen={treeSeen} lab={labOpen(s)} guideWin={step.target?.win} fs={fs} onOpen={(w) => (w === "lab" ? openLab() : win === w ? closeWin() : openWin(w))} onFs={() => { setFs(!fs); sfx("tab"); }} /></Hold>
                 <Hold live={false} k={hk}><StressStrip s={s} onOpen={() => openWin("stress")} /></Hold>
             </header>
-            <GuideStrip s={s} d={d} step={step} onGo={() => goTo(step.target)} onDo={() => doStep(step.target)} onCell={goTo} onMap={() => openWin("map")} mapOpen={win === "map"} />
+            <Hold live={false} k={`${hk}|${foldSig}|${win === "map"}|${JSON.stringify(step.target ?? null)}`}><GuideStrip s={s} d={d} step={step} onGo={() => goTo(step.target)} onDo={() => doStep(step.target)} onCell={goTo} onMap={() => openWin("map")} mapOpen={win === "map"} /></Hold>
             <MiniHud bytes={s.bytes} rate={d.bytesPerSec} step={step} onGo={() => goTo(step.target)} paused={!!win || treeOpen || labTree || !!away || !!confirm} />
             {win && <button type="button" className="nf-scrim" aria-label="Close window" tabIndex={-1} onClick={closeWin} />}
 
@@ -1288,7 +1291,7 @@ export function NodeFarm() {
             <section className="nf-pane nf-statspane" data-pane="stats" aria-label="Stats and buttons" onClick={(e) => blankFoldTarget(e.target as HTMLElement)?.click()}>
                 <Hold live={false} k={`${hk}|${foldSig}`}><Chain s={s} d={d} allOpen={!STATS.every((x) => folded[x.id])} onAll={(open) => setFold({ ...folded, ...Object.fromEntries(STATS.map((x) => [x.id, !open])) })} onIdle={foldIdle} onJump={(id) => goTo({ stat: id as Target["stat"] })} /></Hold>
                 {labOpen(s) && (
-                    <Hold live={false} k={`${ver}|${folded.lab ? slow : slow2}|${foldSig}|${guideKey}`}>
+                    <Hold live={false} k={`${ver}|${rate("lab", !!folded.lab)}|${foldSig}|${guideKey}`}>
                     <LabZone
                         s={s}
                         d={d}
@@ -1303,7 +1306,7 @@ export function NodeFarm() {
                     </Hold>
                 )}
                 {schedOpen(s) && (
-                    <Hold live={false} k={`${ver}|${folded.sched ? slow : slow2}|${foldSig}|${guideKey}`}>
+                    <Hold live={false} k={`${ver}|${rate("sched", !!folded.sched)}|${foldSig}|${guideKey}`}>
                     <ScriptsZone
                         s={s}
                         open={!folded.sched}
@@ -1313,7 +1316,7 @@ export function NodeFarm() {
                     </Hold>
                 )}
                 {isUnlocked(s, "aether") && (
-                    <Hold live={false} k={`${ver}|${folded.drones ? slow : slow2}|${foldSig}|${guideKey}`}>
+                    <Hold live={false} k={`${ver}|${rate("drones", !!folded.drones)}|${foldSig}|${guideKey}`}>
                     <DroneBay
                         s={s}
                         guided={step.target?.drone}
