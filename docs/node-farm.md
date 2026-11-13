@@ -214,6 +214,12 @@ lines and buttons. It grows from stage 0 (backdrop only) to stage 7 (seven sprit
   capstone (fab tower, resonance spire, signal gate, hall gate) and stands left of sprite 6 to keep clear of the big number.
   Each zone adds two shade ramps of its own hue and a far layer for the sky (cleanroom ceiling and racks, crystal
   silhouettes, aurora, carved wall with torches). Nate picked the strong halo behind the sprites.
+- **Zones 12 to 17** (`scripts/naos-art/zone-art-12-17.py`, redone 2026-11-13 for the art audit's "dim panels" item): the
+  backdrop is the zone's own era scene (eras 9 to 14 from `nodefarm-scenes-deep.py`) as a 0.6x panorama of its lower band,
+  fx stepped with the panel, with a dithered sky wash in the zone ramp so space zones read lit (the way `zone-art-18-25.py`
+  does it). The hand-drawn sprites stay; 1 to 6 are drawn up to 2x larger by remapping the drawing grid around each sprite's
+  foot (crisp, not pixel-doubled) and spread from the description's edge to the hero. Their skirts come from the same world
+  left of the cell (listed in `HAND` in `zone-art-skirt.py`), not a mirror.
 - **Preview**: `nf art 0` to `nf art 7` in the console shows every zone at one stage for this visit; `nf art live` goes back.
 
 ## Older windows refresh (Map, Goals, Records, Menu), 2026-11-12
