@@ -10,6 +10,7 @@ import {
     DEFAULT_CATALOG,
     actions as simActions,
     advance,
+    chargeOf,
     addDeposit,
     createWorld,
     dayClock,
@@ -26,12 +27,9 @@ import {
     type Rot,
     type World,
 } from "@/lib/automation/sim";
-import type { Stamper } from "@/lib/automation/render";
 import type { VoxelIsland } from "@/lib/automation/render";
 import type { BuildWorld, MountedInput } from "@/lib/automation/input";
 import { getMachineModel } from "@/lib/automation/models/machines";
-import type { VoxelModel } from "@/lib/automation/models/format";
-import { TAG } from "@/lib/automation/models/format";
 
 const W = 18;
 const D = 12;
@@ -44,24 +42,6 @@ const NODE_SPOTS: [number, number][] = [[2, 2], [2, 8], [15, 2], [15, 8], [8, 1]
 
 // Sim cells run 0..W-1, 0..D-1. The renderer and the input module share one frame where the plateau starts at (-9, -6).
 const BOARD = { width: W, depth: D, originX: -W / 2, originZ: -D / 2 };
-
-/** Stamps a machine model into the voxel scene, rotated about its footprint. Static: animated parts are not played yet. */
-function stampModel(s: Stamper, glow: Stamper, model: VoxelModel, wx: number, wz: number, rot: number, fw: number, fd: number) {
-    const Wv = fw * 10;
-    const Dv = fd * 10;
-    for (const part of model.parts) {
-        if (part.when && !part.when.includes("always")) continue;
-        const n = part.colors.length;
-        for (let i = 0; i < n; i++) {
-            const x = part.pos[i * 3] + part.pivot[0];
-            const y = part.pos[i * 3 + 1] + part.pivot[1];
-            const z = part.pos[i * 3 + 2] + part.pivot[2];
-            const [rx, rz] = rot === 1 ? [z, Wv - 1 - x] : rot === 2 ? [Wv - 1 - x, Dv - 1 - z] : rot === 3 ? [Dv - 1 - z, x] : [x, z];
-            const target = part.tags && part.tags[i] === TAG.GLOW ? glow : s;
-            target.box(wx + rx * 0.1 + 0.05, y * 0.1, wz + rz * 0.1 + 0.05, 0.1, 0.1, 0.1, model.palette[part.colors[i]]);
-        }
-    }
-}
 
 const TYPE_COLORS: Record<string, number> = { hub: 0xc59a52, drill: 0x7f8ca3, power: 0xc4682f };
 const ORE_COLORS: Record<string, number> = { iron_ore: 0x8e3b28, copper_ore: 0x58b09a, coal: 0x25252b, quartz: 0xf2cfe0, aluminium_ore: 0x98b2d4 };
@@ -120,7 +100,6 @@ export function BrassworkHost() {
                 for (const id of [...drawn]) {
                     if (!world.buildings[id]) {
                         island.removeObject(`b${id}`);
-                        island.removeObject(`g${id}`);
                         drawn.delete(id);
                     }
                 }
@@ -143,7 +122,7 @@ export function BrassworkHost() {
                         // A model bigger than its sim footprint (the hub) is centred on it.
                         const ox = minX - W / 2 + (bw - mw) / 2;
                         const oz = minZ - D / 2 + (bd - md) / 2;
-                        island.addObject(`b${b.id}`, (s) => island.addGlow(`g${b.id}`, (g) => stampModel(s, g, model, ox, oz, b.rot, fp.w, fp.d)));
+                        island.placeModel(`b${b.id}`, model, { cell: { x: ox, z: oz }, rot: b.rot });
                     } else {
                         const [cx, cz] = center(minX, minZ, bw, bd);
                         const color = TYPE_COLORS[b.type] ?? (r.kind === "generator" ? TYPE_COLORS.power : 0x9aa4b8);
@@ -204,6 +183,32 @@ export function BrassworkHost() {
                 },
             });
 
+            // Placement preview: the input module owns the ghost, the renderer draws it.
+            let ghostKey = "";
+            const updateGhost = () => {
+                const g = input.controller.build.ghost();
+                const c = g?.cells[0];
+                const model = g ? getMachineModel(g.tool.id) : undefined;
+                const key = g && c && model ? `${g.tool.id}:${c.x},${c.z},${g.rot},${c.valid}` : "";
+                if (key === ghostKey) return;
+                ghostKey = key;
+                if (g && c && model) island.setGhost(model, { x: c.x, z: c.z }, g.rot, c.valid);
+                else island.clearGhost();
+            };
+
+            // Push each machine's working flag, clock and charge to the renderer so parts move and lamps glow.
+            const pushStates = () => {
+                const charge = chargeOf(world, CAT);
+                const sat = world.power.satisfaction;
+                for (const id of drawn) {
+                    const b = world.buildings[id];
+                    if (!b) continue;
+                    const r = resolve(CAT, b.type);
+                    const working = r ? (r.kind === "miner" ? sat > 0 : r.kind === "generator" ? true : b.crafting) : false;
+                    island.setObjectState(`b${id}`, { working, t: world.time, charge: charge[id] ?? 1 });
+                }
+            };
+
             ctl.current = {
                 setTool: (id) => {
                     input.controller.setToolById(id);
@@ -250,6 +255,8 @@ export function BrassworkHost() {
                 const dt = Math.min(1, (now - last) / 1000);
                 last = now;
                 input.update(dt);
+                updateGhost();
+                pushStates();
                 if (!document.hidden) {
                     advance(world, dt, 0.1, CAT);
                     island.setWind(world.wind ?? windAt(world.time));
