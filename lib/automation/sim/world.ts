@@ -1,6 +1,6 @@
 // Core simulation: placement, the fixed tick, belts, crafting, mining, power, and offline catch-up.
 // Deterministic: buildings update in id order, so the same world and the same steps always give the same result.
-import type { ActionResult, Building, Catalog, Cell, Footprint, Deposit, PlaceResult, Rot, Stack, World, EngineDef } from "../types";
+import type { ActionResult, Building, Catalog, Cell, Footprint, Deposit, PlaceResult, Rot, Stack, World, EngineDef, LogisticsKind } from "../types";
 import { DIR_DX, DIR_DZ} from "../types";
 import { DEFAULT_CATALOG } from "./data";
 import { checkMilestones } from "./progress";
@@ -10,7 +10,12 @@ export const SPRING = "spring_winder"; // the battery generator
 export const BATTERIES = ["spring_winder", "spring_store"]; // wound springs: store wind surplus, release it in calm air
 export const HUB = "hub";
 
-export type Kind = "hub" | "belt" | "generator" | "miner" | "crafter";
+export type Kind = "hub" | "dock" | "belt" | "generator" | "miner" | "crafter" | "storage" | LogisticsKind;
+
+// Logistics pieces that pass items through a small buffer (in b.output) and push them on each tick.
+const JUNCTIONS: Kind[] = ["splitter", "merger", "tunnel-in", "tunnel-out", "loader", "unloader"];
+const TUNNEL_REACH = 5; // cells a tunnel can jump
+const isJunction = (k: Kind) => JUNCTIONS.includes(k);
 
 export interface Resolved {
     id: string;
@@ -27,6 +32,8 @@ export interface Resolved {
     beltSpeed: number;
     outputCap: number;
     storageKj: number; // batteries: capacity in kJ from the tree (0 when the machine stores nothing)
+    rate: number; // logistics: items per second
+    capacity: number; // storage: per item; logistics: buffer size
 }
 
 // Capacity of a battery in kJ. The tree's storageKj wins; otherwise a wound spring holds springSeconds of its own output.
@@ -52,6 +59,8 @@ export function resolve(cat: Catalog, type: string): Resolved | null {
             beltSpeed: e.belt?.speed ?? 0,
             outputCap: cat.tune.defaultOutputCap,
             storageKj: 0,
+            rate: e.rate ?? 0,
+            capacity: e.capacity ?? 0,
         };
     }
     const m = cat.tree.machines.find((x) => x.id === type);
@@ -73,6 +82,8 @@ export function resolve(cat: Catalog, type: string): Resolved | null {
         beltSpeed: 0,
         outputCap: cat.tune.defaultOutputCap,
         storageKj: m.storageKj ?? 0,
+        rate: 0,
+        capacity: 0,
     };
 }
 
@@ -266,9 +277,25 @@ function accept(world: World, cat: Catalog, index: Map<string, number>, tx: numb
     if (!r) return false;
     switch (r.kind) {
         case "hub":
+        case "dock":
             b.input[item] = (b.input[item] ?? 0) + 1;
             world.progress.delivered[item] = (world.progress.delivered[item] ?? 0) + 1;
             return true;
+        case "storage":
+            if ((b.input[item] ?? 0) >= r.capacity) return false;
+            b.input[item] = (b.input[item] ?? 0) + 1;
+            return true;
+        case "splitter":
+        case "merger":
+        case "tunnel-in":
+        case "tunnel-out":
+        case "loader": {
+            // Buffers hold up to `capacity` items in all, and move them on in pushOutput.
+            const held = Object.values(b.output).reduce((a, n) => a + n, 0);
+            if (held >= r.capacity) return false;
+            b.output[item] = (b.output[item] ?? 0) + 1;
+            return true;
+        }
         case "crafter": {
             const rec = recipeById(cat, b.recipe);
             const need = rec?.inputs.find((s) => s.item === item);
@@ -317,23 +344,91 @@ function portsOf(b: Building, fp: Footprint): Port[] {
     return out;
 }
 
-function pushOutput(world: World, cat: Catalog, index: Map<string, number>, b: Building, r: Resolved): void {
+// Which neighbouring cells a building may push into. Miners and crafters push everywhere; logistics pieces are directional.
+function allowedPort(world: World, cat: Catalog, index: Map<string, number>, b: Building, r: Resolved, p: Port): boolean {
+    const fwdX = b.x + DIR_DX[b.rot];
+    const fwdZ = b.z + DIR_DZ[b.rot];
+    const behindX = b.x - DIR_DX[b.rot];
+    const behindZ = b.z - DIR_DZ[b.rot];
+    const target = index.get(keyOf(p.tx, p.tz));
+    const tk = target === undefined ? null : resolve(cat, world.buildings[target].type)?.kind ?? null;
+    switch (r.kind) {
+        case "splitter": return !(p.tx === behindX && p.tz === behindZ);
+        case "merger": return p.tx === fwdX && p.tz === fwdZ;
+        case "tunnel-out": return p.tx === fwdX && p.tz === fwdZ;
+        case "loader": return tk === "storage" || tk === "dock" || tk === "hub";
+        case "unloader": return tk === "belt";
+        default: return true;
+    }
+}
+
+// Push buffered items out. `budget` caps how many items go this tick (junctions move `rate` a second; miners and crafters are unlimited).
+function pushOutput(world: World, cat: Catalog, index: Map<string, number>, b: Building, r: Resolved, budget = Infinity): number {
     const items = Object.keys(b.output);
-    if (items.length === 0) return;
-    const ports = portsOf(b, r.footprint);
-    if (ports.length === 0) return;
+    if (items.length === 0) return 0;
+    const ports = portsOf(b, r.footprint).filter((p) => allowedPort(world, cat, index, b, r, p));
+    if (ports.length === 0) return 0;
+    let moved = 0;
     for (const item of items) {
         let n = b.output[item];
-        for (let i = 0; i < ports.length && n > 0; i++) {
+        for (let i = 0; i < ports.length && n > 0 && moved < budget; i++) {
             const p = ports[(b.rr + i) % ports.length];
             if (accept(world, cat, index, p.tx, p.tz, item, p.fx, p.fz)) {
                 n--;
+                moved++;
                 b.rr = (b.rr + i + 1) % ports.length;
             }
         }
         if (n > 0) b.output[item] = n;
         else delete b.output[item];
     }
+    return moved;
+}
+
+// A tunnel entrance sends each item to the exit up to TUNNEL_REACH cells ahead; the items skip the cells between.
+function pushTunnel(world: World, cat: Catalog, index: Map<string, number>, b: Building, budget: number): number {
+    let moved = 0;
+    for (let d = 1; d <= TUNNEL_REACH && moved < budget; d++) {
+        const tx = b.x + DIR_DX[b.rot] * d;
+        const tz = b.z + DIR_DZ[b.rot] * d;
+        const id = index.get(keyOf(tx, tz));
+        if (id === undefined) continue;
+        const exit = world.buildings[id];
+        if (resolve(cat, exit.type)?.kind !== "tunnel-out") break;
+        for (const item of Object.keys(b.output)) {
+            while ((b.output[item] ?? 0) > 0 && moved < budget) {
+                if (!accept(world, cat, index, tx, tz, item, b.x, b.z)) return moved;
+                b.output[item]--;
+                moved++;
+            }
+            if (!b.output[item]) delete b.output[item];
+        }
+        return moved;
+    }
+    return moved;
+}
+
+// Unloader: pulls up to `budget` items out of the storage or hub cells beside it into its own buffer. Returns how many it took.
+function pullIntoUnloader(world: World, cat: Catalog, index: Map<string, number>, b: Building, r: Resolved, budget: number): number {
+    let took = 0;
+    for (const p of portsOf(b, r.footprint)) {
+        const id = index.get(keyOf(p.tx, p.tz));
+        if (id === undefined) continue;
+        const src = world.buildings[id];
+        const sk = resolve(cat, src.type)?.kind;
+        if (sk !== "storage" && sk !== "hub") continue;
+        for (const item of Object.keys(src.input)) {
+            while (took < budget && (src.input[item] ?? 0) > 0) {
+                const held = Object.values(b.output).reduce((a, n) => a + n, 0);
+                if (held >= r.capacity) return took;
+                src.input[item]--;
+                b.output[item] = (b.output[item] ?? 0) + 1;
+                took++;
+            }
+            if (!src.input[item]) delete src.input[item];
+        }
+    }
+    return took;
 }
 
 function stepMiner(world: World, cat: Catalog, b: Building, r: Resolved, dt: number, sat: number): void {
@@ -489,7 +584,25 @@ export function step(world: World, dt: number, cat: Catalog = DEFAULT_CATALOG): 
     }
     for (const id of ids) {
         const r = defs.get(id);
-        if (r && (r.kind === "miner" || r.kind === "crafter")) pushOutput(world, cat, index, world.buildings[id], r);
+        if (!r) continue;
+        const b = world.buildings[id];
+        if (r.kind === "miner" || r.kind === "crafter") pushOutput(world, cat, index, b, r);
+        else if (isJunction(r.kind)) {
+            // Junctions move `rate` items a second; spare time does not bank up.
+            b.acc = Math.min((b.acc ?? 0) + r.rate * dt, r.rate);
+            const budget = Math.floor(b.acc);
+            let moved: number;
+            if (r.kind === "unloader") {
+                // The unloader's rate limits what it takes from storage; its buffer then goes out unlimited.
+                moved = pullIntoUnloader(world, cat, index, b, r, budget);
+                pushOutput(world, cat, index, b, r);
+            } else if (r.kind === "tunnel-in") {
+                moved = pushTunnel(world, cat, index, b, budget);
+            } else {
+                moved = pushOutput(world, cat, index, b, r, budget);
+            }
+            b.acc -= moved;
+        }
     }
     world.time += dt;
     checkMilestones(world, cat);

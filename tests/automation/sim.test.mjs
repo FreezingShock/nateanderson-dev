@@ -368,3 +368,67 @@ test("a new world starts with the starter kit unless the caller gives stock", ()
     const empty = S.createWorld({ width: 64, depth: 64, hub: hubAt, startStock: [] }, S.DEFAULT_CATALOG);
     assert.equal(S.stock(empty, "iron_plate"), 0);
 });
+
+test("logistics ids match the belt model ids, with brass, copper and steel tiers", () => {
+    const E = CAT.engine;
+    assert.equal(E["belt-splitter"].kind, "splitter");
+    assert.equal(E["belt-splitter-copper"].rate, 2);
+    assert.equal(E["belt-splitter-steel"].rate, 4);
+    assert.equal(E["belt-underground-in-steel"].kind, "tunnel-in");
+    assert.equal(E["belt-underground-out"].kind, "tunnel-out");
+    assert.equal(E["belt-loader"].kind, "loader");
+    assert.equal(E["belt-unloader-copper"].kind, "unloader");
+    assert.equal(E["belt-merger"].kind, "merger");
+    assert.equal(E["belt-crate"].kind, "storage");
+    assert.equal(E["belt-crate"].capacity, 200);
+    assert.equal(E["belt-strongbox"].capacity, 1000);
+    assert.equal(E["belt-crate-copper"], undefined, "crates are not tiered");
+    assert.equal(E["belt-dock"].footprint.w, 3);
+});
+
+test("an unloader pulls from a crate at its rate onto a belt beside it", () => {
+    const w = base(CAT, { startStock: [{ item: "iron_plate", qty: 200 }, { item: "iron_gear", qty: 50 }, { item: "copper_wire", qty: 50 }, { item: "steel_ingot", qty: 50 }, { item: "plate-a", qty: 50 }] }, { power: false });
+    const crate = w.buildings[ok(S.place(w, "belt-crate", 40, 40, 0, CAT)).id];
+    crate.input["ore-a"] = 5;
+    ok(S.place(w, "belt-unloader", 41, 40, 0, CAT));
+    const belt = w.buildings[ok(S.place(w, "belt", 42, 40, 0, CAT)).id];
+    S.advance(w, 3, 0.1, CAT);
+    assert.ok(belt.lane.length >= 2 && belt.lane.length <= 3, `about 1 item a second, got ${belt.lane.length}`);
+    assert.equal(crate.input["ore-a"], 5 - belt.lane.length, "the crate gives up what the belt took");
+});
+
+test("a splitter sends its items out the front and both sides, never back", () => {
+    const w = base(CAT, { startStock: [{ item: "iron_plate", qty: 200 }, { item: "iron_gear", qty: 50 }, { item: "copper_wire", qty: 50 }, { item: "steel_ingot", qty: 50 }, { item: "plate-a", qty: 50 }] }, { power: false });
+    const sp = w.buildings[ok(S.place(w, "belt-splitter", 20, 20, 0, CAT)).id];
+    const front = w.buildings[ok(S.place(w, "belt", 20, 21, 0, CAT)).id];
+    const right = w.buildings[ok(S.place(w, "belt", 21, 20, 1, CAT)).id];
+    const left = w.buildings[ok(S.place(w, "belt", 19, 20, 3, CAT)).id];
+    const back = w.buildings[ok(S.place(w, "belt", 20, 19, 0, CAT)).id];
+    sp.output["ore-a"] = 3;
+    S.advance(w, 6, 0.1, CAT);
+    const total = front.lane.length + right.lane.length + left.lane.length;
+    assert.equal(total, 3, "all three items leave");
+    assert.equal(back.lane.length, 0, "nothing goes back into the feed");
+    assert.ok([front, right, left].filter((b) => b.lane.length > 0).length >= 2, "items spread over more than one side");
+});
+
+test("a merger only pushes forward", () => {
+    const w = base(CAT, { startStock: [{ item: "iron_plate", qty: 200 }, { item: "iron_gear", qty: 50 }, { item: "copper_wire", qty: 50 }, { item: "steel_ingot", qty: 50 }, { item: "plate-a", qty: 50 }] }, { power: false });
+    const mg = w.buildings[ok(S.place(w, "belt-merger", 20, 20, 0, CAT)).id];
+    const front = w.buildings[ok(S.place(w, "belt", 20, 21, 0, CAT)).id];
+    const side = w.buildings[ok(S.place(w, "belt", 21, 20, 1, CAT)).id];
+    mg.output["ore-a"] = 2;
+    S.advance(w, 4, 0.1, CAT);
+    assert.equal(front.lane.length, 2);
+    assert.equal(side.lane.length, 0);
+});
+
+test("a delivery dock takes belt items and counts them as delivered", () => {
+    const w = base(CAT, { startStock: [{ item: "iron_plate", qty: 200 }, { item: "iron_gear", qty: 50 }, { item: "copper_wire", qty: 50 }, { item: "steel_ingot", qty: 50 }, { item: "plate-a", qty: 50 }] }, { power: false });
+    const dock = w.buildings[ok(S.place(w, "belt-dock", 30, 30, 0, CAT)).id];
+    const belt = w.buildings[ok(S.place(w, "belt", 31, 33, 2, CAT)).id];
+    belt.lane.push({ item: "ore-a", pos: 0.99 });
+    S.step(w, 0.1, CAT);
+    assert.equal(w.progress.delivered["ore-a"], 1);
+    assert.equal(dock.input["ore-a"], 1);
+});

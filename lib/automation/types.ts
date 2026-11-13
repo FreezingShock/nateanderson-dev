@@ -148,14 +148,20 @@ export interface BeltSpec {
 }
 
 /** Engine-only buildings: belts, the hub and generators. Machines from the tree are not listed here. */
+export type LogisticsKind = "splitter" | "merger" | "tunnel-in" | "tunnel-out" | "loader" | "unloader";
+
 export interface EngineDef {
-    kind: "hub" | "belt" | "generator";
+    kind: "hub" | "belt" | "generator" | "dock" | "storage" | LogisticsKind;
     name: string;
     footprint: Footprint;
     cost: Stack[]; // paid from the hub stock; half comes back on removal
     placeable?: boolean; // default true
     belt?: BeltSpec;
     supply?: number; // kW, generators only
+    /** Logistics pieces: items moved per second (brass 1, copper 2, steel 4). */
+    rate?: number;
+    /** Storage: items kept per item type. Logistics pieces: items held in their buffer. */
+    capacity?: number;
 }
 
 export interface Tune {
