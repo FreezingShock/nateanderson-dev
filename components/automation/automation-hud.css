@@ -832,24 +832,9 @@
 }
 
 /* ---- stage toggles: desktop keeps the tools on the stage; phone puts the sheet toggles on the bottom edge ---- */
-.ab-sheet-toggles {
-  display: none;
-}
 
 @media (max-width: 759px) {
-  .ab-sheet-toggles {
-    display: flex;
-    gap: 8px;
-    padding: 8px 12px 0;
-    margin-top: auto;
-    position: relative;
-    z-index: 4;
-  }
 
-  .ab-sheet-toggles .ab-text-btn {
-    flex: 1 1 0;
-    min-height: 44px;
-  }
 }
 
 /* Groups carry their own titles, so the palette's top heading would repeat the first group. */
@@ -875,9 +860,6 @@
     display: none;
   }
 
-  .ab-sheet-toggles {
-    display: none !important;
-  }
 
   .ab-tabbar {
     display: grid;
