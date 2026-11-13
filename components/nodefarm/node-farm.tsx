@@ -15,70 +15,70 @@ import {
 import { getLowFx, initFx } from "@/lib/nodefarm/fx";
 import { keyIsTyping, keyOverlay } from "@/lib/nodefarm/keys";
 import type { NfLive } from "@/lib/nodefarm/records";
-import { Core, freshCoreFeed, type CoreFeed } from "./core";
-import { PART_WHY, SKIN_WHY, coreLook, corePreview, skinOpen } from "@/lib/nodefarm/core-look";
-import { PART_ORDER, SKINS } from "@/lib/nodefarm/core-parts";
-import { NfIcon } from "./icon";
-import { MiniHud } from "./mini-hud";
+import { Core, freshCoreFeed, type CoreFeed } from "./zones/core";
+import { PART_WHY, SKIN_WHY, coreLook, corePreview, skinOpen } from "@/lib/nodefarm/art/core-look";
+import { PART_ORDER, SKINS } from "@/lib/nodefarm/art/core-parts";
+import { NfIcon } from "./board/icon";
+import { MiniHud } from "./board/mini-hud";
 import { RARITY } from "@/lib/nodefarm/events";
-import type { Away } from "./away";
+import type { Away } from "./windows/away";
 import { catchUp } from "@/lib/nodefarm/offline";
-import { Scenery, SceneWindow } from "./scenery";
+import { Scenery, SceneWindow } from "./zones/scenery";
 import dynamic from "next/dynamic";
 // The prestige tree (menu, backdrop, sprites) is the biggest piece of the game and most visits never open it, so it loads on its
 // own and is fetched quietly once the board is idle.
-const loadTree = () => import("./tree");
+const loadTree = () => import("./tree/tree");
 const TreeMenu = dynamic(() => loadTree().then((m) => ({ default: m.TreeMenu })), { ssr: false });
 // Window panels load the first time their window opens (see `latch` in NodeFarm), so their code and styles stay out of the first load.
-const AwayReport = dynamic(() => import("./away").then((m) => ({ default: m.AwayReport })), { ssr: false });
-const HandoverCut = dynamic(() => import("./handover-cut").then((m) => ({ default: m.HandoverCut })), { ssr: false });
-const AdminPanel = dynamic(() => import("./admin").then((m) => ({ default: m.AdminPanel })), { ssr: false });
-const MapPanel = dynamic(() => import("./map").then((m) => ({ default: m.MapPanel })), { ssr: false });
-const GoalsPanel = dynamic(() => import("./systems").then((m) => ({ default: m.GoalsPanel })), { ssr: false });
-const RecordsPanel = dynamic(() => import("./systems").then((m) => ({ default: m.RecordsPanel })), { ssr: false });
-const MenuPanel = dynamic(() => import("./systems").then((m) => ({ default: m.MenuPanel })), { ssr: false });
-const AscendPanel = dynamic(() => import("./ascend").then((m) => ({ default: m.AscendPanel })), { ssr: false });
-const CodexPanel = dynamic(() => import("./codex").then((m) => ({ default: m.CodexPanel })), { ssr: false });
-import { LabHud, LabZone, labModel, labReady } from "./lab";
-import { ScriptsZone } from "./scripts";
-import { SCRIPTS, SCRIPT_BY, toggleBuyStat, ascendDue, ascendPrep, learnStep, teachEvent, schedOpen, teachAscend, teachCompile, teachDeploy, teachDrop, teachPress } from "@/lib/nodefarm/scripts";
-import { eraOf } from "@/lib/nodefarm/scenery";
-import { DroneBay, droneModel } from "./drones";
-import { rigManual } from "@/lib/nodefarm/rigs";
-import { Chain, StatRow } from "./stat-row";
-import { Feed } from "./feed";
+const AwayReport = dynamic(() => import("./windows/away").then((m) => ({ default: m.AwayReport })), { ssr: false });
+const HandoverCut = dynamic(() => import("./ascend/handover-cut").then((m) => ({ default: m.HandoverCut })), { ssr: false });
+const AdminPanel = dynamic(() => import("./windows/admin").then((m) => ({ default: m.AdminPanel })), { ssr: false });
+const MapPanel = dynamic(() => import("./windows/map").then((m) => ({ default: m.MapPanel })), { ssr: false });
+const GoalsPanel = dynamic(() => import("./windows/systems").then((m) => ({ default: m.GoalsPanel })), { ssr: false });
+const RecordsPanel = dynamic(() => import("./windows/systems").then((m) => ({ default: m.RecordsPanel })), { ssr: false });
+const MenuPanel = dynamic(() => import("./windows/systems").then((m) => ({ default: m.MenuPanel })), { ssr: false });
+const AscendPanel = dynamic(() => import("./ascend/ascend").then((m) => ({ default: m.AscendPanel })), { ssr: false });
+const CodexPanel = dynamic(() => import("./windows/codex").then((m) => ({ default: m.CodexPanel })), { ssr: false });
+import { LabHud, LabZone, labModel, labReady } from "./workshop/lab";
+import { ScriptsZone } from "./workshop/scripts";
+import { SCRIPTS, SCRIPT_BY, toggleBuyStat, ascendDue, ascendPrep, learnStep, teachEvent, schedOpen, teachAscend, teachCompile, teachDeploy, teachDrop, teachPress } from "@/lib/nodefarm/systems/scripts";
+import { eraOf } from "@/lib/nodefarm/zones/scenery";
+import { DroneBay, droneModel } from "./workshop/drones";
+import { rigManual } from "@/lib/nodefarm/zones/rigs";
+import { Chain, StatRow } from "./board/stat-row";
+import { Feed } from "./board/feed";
 import { FeedStore, buyToks, call, com, droneToks, fromText, id as idTok, num, p as pun, str as strTok, txt, unlockToks, type FeedTone } from "@/lib/nodefarm/feed";
-import { markSeen, newsToks, pickNews } from "@/lib/nodefarm/news";
-import { LORE } from "@/lib/nodefarm/lore";
-import { LOGS, logNo, recoverLogs } from "@/lib/nodefarm/story";
-import { Juice, juice, checkMilestones, onJuice } from "./juice";
-import { GuideStrip, Tip, TipCtx, type TipApi, type TipState, type TipStore } from "./guide";
+import { markSeen, newsToks, pickNews } from "@/lib/nodefarm/content/news";
+import { LORE } from "@/lib/nodefarm/content/lore";
+import { LOGS, logNo, recoverLogs } from "@/lib/nodefarm/content/story";
+import { Juice, juice, checkMilestones, onJuice } from "./board/juice";
+import { GuideStrip, Tip, TipCtx, type TipApi, type TipState, type TipStore } from "./windows/guide";
 
-import { nextStep, type Target } from "@/lib/nodefarm/guide";
+import { nextStep, type Target } from "@/lib/nodefarm/content/guide";
 
 
-import { HandoverPanel, fwModel } from "./handover";
+import { HandoverPanel, fwModel } from "./ascend/handover";
 
-import { unlocked as codexUnlocked } from "@/lib/nodefarm/codex";
-import type { HandCutInfo } from "./handover-cut";
-import { Dock, PhoneTabs, WinBar, swInfo } from "./switcher";
-import type { AdminHost } from "./admin";
-import { isAdmin, setAdmin } from "@/lib/nodefarm/admin";
+import { unlocked as codexUnlocked } from "@/lib/nodefarm/content/codex";
+import type { HandCutInfo } from "./ascend/handover-cut";
+import { Dock, PhoneTabs, WinBar, swInfo } from "./windows/switcher";
+import type { AdminHost } from "./windows/admin";
+import { isAdmin, setAdmin } from "@/lib/nodefarm/systems/admin";
 import { adminFlags, buyDroneNode, buyMod, droneNode, masteryRanks, MODS, respecDrones, setPost } from "@/lib/nodefarm/engine";
-import { DRONE_NAMES } from "@/lib/nodefarm/guide";
+import { DRONE_NAMES } from "@/lib/nodefarm/content/guide";
 import { codeReveal, cxClear } from "@/lib/nodefarm/cx";
-import { ZoneEventCard } from "./zone-event";
-import { zeChoose, zeVault, zoneEvDef, zoneLabel, type ZeChoice, type ZeResult } from "@/lib/nodefarm/zoneevents";
-import { ARCS, arcKey, arcOf } from "@/lib/nodefarm/arcs";
-import { ArcHead } from "./arcs";
-import { EndScreen, FinalBuild } from "./ending";
-import { END_STAGES, END_STEPS, buildStage, carryEnd, closeEnding, endPending, endSeen } from "@/lib/nodefarm/ending";
-import { Hold } from "./hold";
-import { isOff, useOffscreenPause } from "./offscreen";
-import { ArcRail, ArcStep } from "./arc-rail";
-import { PokeLayer } from "./poke";
-import { StressPanel, StressStrip } from "./stress";
-import { chOpen, leaveTest, startTest, takeChNews, testDef, RANKS, type TestId } from "@/lib/nodefarm/stress";
+import { ZoneEventCard } from "./zones/zone-event";
+import { zeChoose, zeVault, zoneEvDef, zoneLabel, type ZeChoice, type ZeResult } from "@/lib/nodefarm/zones/zoneevents";
+import { ARCS, arcKey, arcOf } from "@/lib/nodefarm/zones/arcs";
+import { ArcHead } from "./zones/arcs";
+import { EndScreen, FinalBuild } from "./ascend/ending";
+import { END_STAGES, END_STEPS, buildStage, carryEnd, closeEnding, endPending, endSeen } from "@/lib/nodefarm/systems/ending";
+import { Hold } from "./board/hold";
+import { isOff, useOffscreenPause } from "./board/offscreen";
+import { ArcRail, ArcStep } from "./zones/arc-rail";
+import { PokeLayer } from "./windows/poke";
+import { StressPanel, StressStrip } from "./windows/stress";
+import { chOpen, leaveTest, startTest, takeChNews, testDef, RANKS, type TestId } from "@/lib/nodefarm/systems/stress";
 import { ACC_KEY, blankFoldTarget, readyCount, shownArcIds, soloArc } from "@/lib/nodefarm/layout";
 
 import { AUTO_GAP, addBackup, readBackups, type Backup } from "@/lib/nodefarm/backups";
@@ -146,7 +146,7 @@ export function NodeFarm() {
     // a full-screen tree (prestige, Exploit Lab, Drone, Firmware) hides the board, so the game loop barely re-renders it
     treeOpenRef.current = treeOpen || labTree || droneTree || fwTree;
 
-    // admin mode (lib/nodefarm/admin.ts): turned on from the naOS console with `nf admin on`; unadvertised
+    // admin mode (lib/nodefarm/systems/admin.ts): turned on from the naOS console with `nf admin on`; unadvertised
     const [adminOn, setAdminOn] = useState(false);
     const [adminOpen, setAdminOpen] = useState(false);
     const speedRef = useRef(1);
@@ -154,7 +154,7 @@ export function NodeFarm() {
     const feedStore = useMemo(() => new FeedStore(), []);
     useEffect(() => () => feedStore.dispose(), [feedStore]);
     const dronePrev = useRef<{ s: State | null; presses: number; manual: number }>({ s: null, presses: 0, manual: 0 });
-    // Scripts (lib/nodefarm/scripts.ts): what each script had done at the last check, for the feed, and its own presses
+    // Scripts (lib/nodefarm/systems/scripts.ts): what each script had done at the last check, for the feed, and its own presses
     const schedPrev = useRef<{ s: State | null; ran: Record<string, number> }>({ s: null, ran: {} });
     const schedPress = useRef<{ s: State | null; n: number }>({ s: null, n: 0 });
     const schedRef = useRef<(s: State) => void>(() => {});
@@ -237,7 +237,7 @@ export function NodeFarm() {
         const onKey = (e: KeyboardEvent) => { if (e.key === "Escape" && !keyOverlay() && !document.querySelector(".nf-tm-host")) closeWin(); };
         // capture phase: the console or search closes itself on this same Escape, and must still count as open here
         window.addEventListener("keydown", onKey, true);
-        // clears reveal transforms and lifts the board above the hero while a window is open (see nodefarm.css)
+        // clears reveal transforms and lifts the board above the hero while a window is open (see nodefarm/base.css)
         document.body.classList.add("nf-win-open");
         document.querySelector<HTMLElement>(`.nf [data-pane="${win}"] .nf-win-x`)?.focus();
         return () => { window.removeEventListener("keydown", onKey, true); document.body.classList.remove("nf-win-open"); };
@@ -289,7 +289,7 @@ export function NodeFarm() {
     };
     // tooltips: one layer at the root, driven from the buttons (hover and focus on desktop, a short flash after a tap on touch)
     const root = useRef<HTMLDivElement>(null);
-    // the tooltip lives in its own little store so hovering a button does not re-render the whole board (components/nodefarm/guide.tsx Tip)
+    // the tooltip lives in its own little store so hovering a button does not re-render the whole board (components/nodefarm/windows/guide.tsx Tip)
     const tipStore = useMemo<TipStore>(() => {
         let cur: TipState | null = null;
         const subs = new Set<() => void>();
@@ -422,7 +422,7 @@ export function NodeFarm() {
         const onLive = (e: Event) => {
             (e as CustomEvent<{ live?: NfLive }>).detail.live = {
                 s: g.current,
-                // admin tools rewrote the state (lib/nodefarm/admin.ts): no banner flood, save, redraw
+                // admin tools rewrote the state (lib/nodefarm/systems/admin.ts): no banner flood, save, redraw
                 changed: () => { prevIds.current = null; tipApi.hide(); save(); bump((n) => n + 1); },
                 notify: (found) => {
                     for (const f of found) {
@@ -481,7 +481,7 @@ export function NodeFarm() {
         return () => (idle ? w.cancelIdleCallback?.(id) : window.clearTimeout(id));
     }, [ready]);
 
-    // ---- admin mode: the console flips `nf-admin-v1` and fires `nf:admin`; the panel is components/nodefarm/admin.tsx
+    // ---- admin mode: the console flips `nf-admin-v1` and fires `nf:admin`; the panel is components/nodefarm/windows/admin.tsx
     useEffect(() => {
         if (!ready) return;
         const on = isAdmin();
@@ -636,7 +636,7 @@ export function NodeFarm() {
             labPrev.current = { s, seen: s.lab.seen, compiled: s.life.compiled };
             f.reboots = s.reboot;
             f.ap = s.ap;
-            // the core's colours and structures (lib/nodefarm/core-look.ts); a structure that bolts on says so in the feed
+            // the core's colours and structures (lib/nodefarm/art/core-look.ts); a structure that bolts on says so in the feed
             const look = coreLook(s);
             const partsWas = f.parts;
             f.zone = look.zone;
@@ -1107,7 +1107,7 @@ export function NodeFarm() {
         save();
         bump((x) => x + 1);
     };
-    // stress tests (lib/nodefarm/stress.ts): the real run is stored inside the save and comes back on leave
+    // stress tests (lib/nodefarm/systems/stress.ts): the real run is stored inside the save and comes back on leave
     const doStress = (id: TestId) => {
         keepBackup("before a stress test");
         if (!startTest(s, id)) return sfx("deny");

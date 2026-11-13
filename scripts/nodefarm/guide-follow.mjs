@@ -4,7 +4,7 @@
 const { registerHooks } = await import("node:module");
 registerHooks({ resolve(spec, ctx, next) { try { return next(spec, ctx); } catch (e) { if (spec.startsWith(".")) return next(spec + ".ts", ctx); throw e; } } });
 const E = await import("../../lib/nodefarm/engine.ts");
-const G = await import("../../lib/nodefarm/guide.ts");
+const G = await import("../../lib/nodefarm/content/guide.ts");
 const mins = Number(process.argv[2] || 90);
 const s = E.fresh(0);
 let last = "", since = 0, promised = null;

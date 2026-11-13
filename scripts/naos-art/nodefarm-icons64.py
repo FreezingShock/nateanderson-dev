@@ -4,7 +4,7 @@
 
 Each stat's art lives in its own module, nodefarm_tiers64_<stat>.py, exposing draw(t, p) -> Canvas for tier t (0..5) at phase
 p in [0, 1). Sprites draw the tier's name (Copper: Wire, Trace, Coil, Busbar, Spool, Foundry) and grow in size, parts and
-motion up the tiers. components/nodefarm/icon.tsx lists the stats that have a sheet (TIC64); scripts/nodefarm/stamp-art.mjs
+motion up the tiers. components/nodefarm/board/icon.tsx lists the stats that have a sheet (TIC64); scripts/nodefarm/stamp-art.mjs
 checks that every listed stat has a sheet of the right size.
 
 Run: python3 scripts/naos-art/nodefarm-icons64.py [stat ...]   (no args = every stat with a module), then
@@ -45,7 +45,7 @@ def build(stat):
     print(f"tic-{stat}: {img.size}, webp {size / 1024:.1f} KB")
 
 
-# Zone/stat icon sheet: same order as ORDER in components/nodefarm/icon.tsx, eight frames down.
+# Zone/stat icon sheet: same order as ORDER in components/nodefarm/board/icon.tsx, eight frames down.
 ICON_ORDER = ["bytes", "mult", "reboot", "copper", "silicon", "quartz", "aether", "ascend", "alert", "lock", "spark", "runes",
               "starglass", "voidsteel", "chrono", "engrams", "paradox", "origin", "nebula", "pulsars", "singularity",
               "spores", "mycelium", "pollen", "bloom", "basalt", "magma", "geodes", "sunstone"]

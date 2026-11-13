@@ -9,22 +9,22 @@ if (process.env.NF_TUNE) merge(E.TUNE, JSON.parse(process.env.NF_TUNE));
 if (process.env.NF_ARCGATE) merge(E.ARC_GATE, JSON.parse(process.env.NF_ARCGATE)); // handovers each arc zone needs (ARC_GATE)
 if (process.env.NF_HANDTUNE) merge(E.HAND_TUNE, JSON.parse(process.env.NF_HANDTUNE)); // same, for Handover's HAND_TUNE
 if (process.env.NF_ZETUNE) merge(E.ZE_TUNE, JSON.parse(process.env.NF_ZETUNE)); // same, for the zone events' ZE_TUNE
-// Zone rigs (lib/nodefarm/rigs.ts) join in unless NF_NORIGS=1. rigs.ts imports "./engine" without an extension, so resolve that to .ts.
+// Zone rigs (lib/nodefarm/zones/rigs.ts) join in unless NF_NORIGS=1. rigs.ts imports "./engine" without an extension, so resolve that to .ts.
 let RG = null;
 // NF_ZONEEV=1: zone events run too (random, so results vary); the bot mines every Rich vein and patches every Fault at once.
 let ZE = null;
-// Arc clear bonus (lib/nodefarm/arcs.ts) is on unless NF_NOARCS=1: the bot presses every button once as soon as it can pay for it.
+// Arc clear bonus (lib/nodefarm/zones/arcs.ts) is on unless NF_NOARCS=1: the bot presses every button once as soon as it can pay for it.
 let ARCS = null;
 {
     const { registerHooks } = await import("node:module");
     registerHooks({ resolve(spec, ctx, next) { try { return next(spec, ctx); } catch (e) { if (spec.startsWith(".")) return next(spec + ".ts", ctx); throw e; } } });
-    if (!process.env.NF_NORIGS) RG = await import("../../lib/nodefarm/rigs.ts");
-    if (!process.env.NF_NOARCS) ARCS = await import("../../lib/nodefarm/arcs.ts");
-    if (process.env.NF_ZONEEV) ZE = await import("../../lib/nodefarm/zoneevents.ts");
+    if (!process.env.NF_NORIGS) RG = await import("../../lib/nodefarm/zones/rigs.ts");
+    if (!process.env.NF_NOARCS) ARCS = await import("../../lib/nodefarm/zones/arcs.ts");
+    if (process.env.NF_ZONEEV) ZE = await import("../../lib/nodefarm/zones/zoneevents.ts");
     if (RG && process.env.NF_RIGTUNE) merge(RG.RIG_TUNE, JSON.parse(process.env.NF_RIGTUNE)); // same as NF_TUNE, for RIG_TUNE
 }
-// The ending (lib/nodefarm/ending.ts): the bot builds a final-build stage as soon as it can afford one.
-const END = RG ? await import("../../lib/nodefarm/ending.ts") : null;
+// The ending (lib/nodefarm/systems/ending.ts): the bot builds a final-build stage as soon as it can afford one.
+const END = RG ? await import("../../lib/nodefarm/systems/ending.ts") : null;
 if (END && process.env.NF_ENDTUNE) Object.assign(END.END_TUNE, JSON.parse(process.env.NF_ENDTUNE)); // e.g. {"keys":[2,3,5,8,12],"mat":[1e3,1e5,1e7,1e9,1e11]} (JSON has no 1e3: use 1000)
 const s = E.fresh(0);
 const marks = {};

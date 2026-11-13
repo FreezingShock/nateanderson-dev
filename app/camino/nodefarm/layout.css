@@ -1,0 +1,108 @@
+/* Board layout, less scrolling (2026-11-12): one-line folded zones, slim folded arcs, a clickable signal chain, and
+   click-on-blank-space folding. Loaded last so it wins over nodefarm/base.css, nodefarm/arcs.css and nodefarm/zone-art.css. */
+
+/* ---- folded zone: one line. The title bar carries the icon, amount and rate; the name line and art hide. */
+.ctos .nf-bar-ic { display: none; }
+.ctos .nf-bar-t > .nf-bar-ic + span { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ctos .nf-bar-t > .nf-bar-ic:first-child { flex: none; }
+.ctos .nf-bar-v { flex: none; color: color-mix(in srgb, var(--c) 45%, #fff); font: 600 var(--cm-ctos-t-micro)/1 var(--cm-mono); letter-spacing: .06em; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.ctos .nf-bar-v b { font-weight: 700; color: #fff; }
+.ctos .nf-bar-v small { font: inherit; opacity: .8; }
+.ctos .nf-row[data-stat][data-open="false"] > .nf-row-h { display: none; }
+.ctos .nf-row[data-stat][data-open="false"] > .nf-art { display: none; }
+.ctos .nf-row[data-stat][data-open="false"] .nf-bar-ic { display: grid; place-items: center; width: 22px; height: 22px; overflow: hidden; }
+.ctos .nf-row[data-stat][data-open="false"] .nf-bar-ic .nf-ic { scale: .7; }
+.ctos .nf-row[data-stat][data-open="false"] > .nf-bar-t { padding-left: 8px; }
+.ctos .nf-row[data-open="false"] .nf-body-in > :last-child { margin-bottom: 0; }
+
+/* ---- spacing: folded rows stack tight, open zones keep their generous margin */
+.ctos .nf-arc-zones { gap: 8px; }
+.ctos .nf-arc-zones > .nf-row[data-open="true"] { margin-block: 8px; }
+.ctos .nf-arc-zones > .nf-row[data-open="true"]:first-child { margin-top: 0; }
+.ctos .nf-arc-zones > .nf-row[data-open="true"]:last-child { margin-bottom: 0; }
+
+/* ---- folded arc: a slim strip with the name, zones online, what is ready and the progress line */
+.ctos .nf-arc[data-open="false"] { margin-top: 10px; }
+.ctos .nf-arcgrp:first-child > .nf-arc { margin-top: 4px; }
+.ctos .nf-arc[data-open="false"] .nf-arc-b { min-height: 0; padding-top: 9px; padding-bottom: 9px; row-gap: 6px; background: linear-gradient(90deg, color-mix(in srgb, var(--c) 14%, #07090d) 0 50%, rgba(7,9,13,.75) 100%), var(--arc-art, none) right center / cover no-repeat, color-mix(in srgb, var(--c) 10%, #07090d); }
+.ctos .nf-arc[data-open="false"] .nf-arc-d { display: none; }
+.ctos .nf-arc[data-open="false"] .nf-arc-p { height: 3px; }
+.ctos .nf-arc[data-ready][data-open="false"] .nf-arc-b { border-color: var(--c); box-shadow: 0 0 18px color-mix(in srgb, var(--c) 22%, transparent); }
+.ctos .nf-arc[data-ready][data-open="false"] .nf-arc-s { animation: nfLayPulse 1.6s steps(2, end) infinite; }
+@keyframes nfLayPulse { 50% { opacity: .55; } }
+
+/* ---- blank space folds: show it is clickable */
+.ctos .nf-statspane .nf-row[data-open="true"] > .nf-bar-t,
+.ctos .nf-statspane .nf-row[data-open="true"] > .nf-row-h { cursor: pointer; }
+@media (hover: hover) {
+    .ctos .nf-statspane .nf-row[data-open="true"] > .nf-row-h:hover { background: color-mix(in srgb, var(--c) 6%, transparent); }
+}
+
+/* ---- signal chain: each open zone is a jump link; zones with something to buy glow */
+.ctos .nf-chain-b { all: unset; box-sizing: border-box; display: grid; grid-template-columns: auto auto; grid-template-rows: auto auto; column-gap: 6px; align-items: center; cursor: pointer; }
+.ctos .nf-chain-b .nf-ic { grid-row: 1 / 3; }
+.ctos .nf-chain-b:focus-visible { outline: 2px solid var(--c); outline-offset: 2px; }
+@media (hover: hover) { .ctos .nf-chain-b:hover b { text-decoration: underline; text-underline-offset: 3px; } }
+.ctos .nf-chain li[data-ready] { box-shadow: inset 0 -2px var(--c); background: color-mix(in srgb, var(--c) 10%, transparent); }
+.ctos .nf-chain li[data-ready] small { color: color-mix(in srgb, var(--c) 50%, #fff); }
+
+/* phones hide the chain; keep the zones that need you as a jump row */
+@media (max-width: 640px) {
+    .ctos .nf-chain li[data-ready]:not(.nf-chain-all) { display: grid; padding: 4px 8px 4px 4px; }
+    .ctos .nf-chain li[data-ready] > i { display: none; }
+    .ctos .nf-chain { justify-content: flex-start; }
+    .ctos .nf-chain .nf-chain-all { flex-basis: 100%; justify-content: flex-end; }
+    .ctos .nf-bar-v small { display: none; }
+}
+
+/* an arc that only holds the next encrypted zone stays open and has nothing to fold */
+.ctos .nf-arcgrp[data-preview] .nf-arc-i { visibility: hidden; }
+.ctos .nf-arcgrp[data-preview] .nf-arc-b { cursor: default; }
+
+/* folded arcs stack as a tight list instead of the board's 30px block gap */
+.ctos .nf-statspane > .nf-arcgrp:has(> .nf-arc[data-open="false"]) + .nf-arcgrp:has(> .nf-arc[data-open="false"]) { margin-top: -22px; }
+.ctos .nf-arcgrp > .nf-arc[data-open="false"] { margin-top: 0; }
+
+/* phones: a folded zone stays one line (the phone sheet lets title bars wrap) */
+@media (max-width: 719px) {
+    .ctos .nf .nf-row[data-stat][data-open="false"] > .nf-bar-t > .nf-bar-ic + span { white-space: nowrap !important; overflow: hidden; text-overflow: ellipsis !important; overflow-wrap: normal; }
+    .ctos .nf .nf-row[data-stat][data-open="false"] > .nf-bar-t > .nf-bar-v { white-space: nowrap !important; }
+}
+
+/* ---- arc rail (Nate picked it 2026-11-12): one cell per arc, only the picked arc renders under it */
+.ctos .nf-arcgrp[data-rail] .nf-arc-i { visibility: hidden; }
+.ctos .nf-arcgrp[data-rail] .nf-arc-b { cursor: default; }
+.ctos .nf-rail { display: grid; grid-template-columns: repeat(var(--n), minmax(0, 1fr)); gap: 6px; margin: 0; }
+.ctos .nf-rail-b { all: unset; box-sizing: border-box; position: relative; display: grid; grid-template-rows: auto auto auto; gap: 4px; min-width: 0; padding: 9px 10px 12px; cursor: pointer; background: color-mix(in srgb, var(--c) 6%, #0a0a0a); border: 1px solid color-mix(in srgb, var(--c) 30%, #1c1c1c); border-top: 2px solid color-mix(in srgb, var(--c) 45%, #1c1c1c); font-family: var(--cm-mono); transition: background .15s, border-color .15s; }
+.ctos .nf-rail-k { color: var(--c); font: 700 var(--cm-ctos-t-micro)/1 var(--cm-mono); letter-spacing: .14em; }
+.ctos .nf-rail-b b { color: #eef6f8; font: 700 13px/1.15 var(--cm-mono); letter-spacing: .02em; text-transform: lowercase; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ctos .nf-rail-b small { color: var(--cm-ctos-meta); font: 600 var(--cm-ctos-t-micro)/1 var(--cm-mono); letter-spacing: .08em; text-transform: uppercase; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ctos .nf-rail-p { position: absolute; left: 0; right: 0; bottom: 0; height: 3px; background: color-mix(in srgb, var(--c) 14%, #000); }
+.ctos .nf-rail-p i { display: block; height: 100%; background: var(--c); }
+.ctos .nf-rail-b[data-ready] small { color: var(--c); animation: nfLayPulse 1.6s steps(2, end) infinite; }
+.ctos .nf-rail-b[data-done] small { color: color-mix(in srgb, var(--c) 60%, #fff); }
+.ctos .nf-rail-b[aria-current] { background: color-mix(in srgb, var(--c) 20%, #07090d); border-color: var(--c); border-top-color: var(--c); box-shadow: 0 0 18px color-mix(in srgb, var(--c) 22%, transparent); }
+.ctos .nf-rail-b[aria-current]::before, .ctos .nf-rail-b[aria-current]::after { content: ""; position: absolute; width: 8px; height: 8px; border: 2px solid var(--c); pointer-events: none; }
+.ctos .nf-rail-b[aria-current]::before { left: -3px; top: -4px; border-right: 0; border-bottom: 0; }
+.ctos .nf-rail-b[aria-current]::after { right: -3px; bottom: -3px; border-left: 0; border-top: 0; }
+.ctos .nf-rail-b[aria-current] small { color: #eef6f8; }
+.ctos .nf-rail-b:focus-visible { outline: 2px solid var(--c); outline-offset: 2px; }
+@media (hover: hover) { .ctos .nf-rail-b:not([aria-current]):hover { background: color-mix(in srgb, var(--c) 13%, #0a0a0a); border-color: color-mix(in srgb, var(--c) 65%, #1c1c1c); } }
+.ctos .nf-statspane > .nf-rail + .nf-arcgrp > .nf-arc { margin-top: -14px; }
+@media (max-width: 999px) { .ctos .nf-rail { grid-template-columns: repeat(auto-fill, minmax(118px, 1fr)); } }
+@media (max-width: 640px) { .ctos .nf-rail { gap: 5px; } .ctos .nf-rail-b { padding: 8px 8px 10px; } .ctos .nf-rail-b b { font-size: 12px; } }
+
+/* step to the neighbouring arc from the bottom of the open one */
+.ctos .nf-arcstep { display: flex; justify-content: space-between; gap: 10px; flex-wrap: wrap; margin-top: 6px; }
+.ctos .nf-arcstep-b { all: unset; box-sizing: border-box; display: inline-flex; align-items: center; gap: 8px; min-height: 40px; padding: 0 14px; cursor: pointer; color: var(--c); background: color-mix(in srgb, var(--c) 8%, #0a0a0a); border: 1px solid color-mix(in srgb, var(--c) 40%, #1c1c1c); font: 700 var(--cm-ctos-t-micro)/1.2 var(--cm-mono); letter-spacing: .12em; }
+.ctos .nf-arcstep-b span { opacity: .7; }
+.ctos .nf-arcstep-b[data-ready] { border-color: var(--c); }
+.ctos .nf-arcstep-b:focus-visible { outline: 2px solid var(--c); outline-offset: 2px; }
+@media (hover: hover) { .ctos .nf-arcstep-b:hover { background: color-mix(in srgb, var(--c) 18%, #0a0a0a); } }
+@media (max-width: 640px) { .ctos .nf-rail { grid-template-columns: repeat(3, minmax(0, 1fr)); } .ctos .nf-rail-b small { letter-spacing: .04em; } }
+
+/* the game stopped on a render error (components/nodefarm/board/error-boundary.tsx): the page stays, the save is untouched */
+.ctos .nf-crash { display: grid; gap: 12px; justify-items: start; margin: 24px; padding: 20px 18px; background: #0a0a0a; border: 1px solid #ff6a3d; color: var(--cm-fg); font: 400 var(--cm-ctos-t-ui)/1.5 var(--cm-mono); }
+.ctos .nf-crash-t { margin: 0; color: #ff6a3d; font: 700 var(--cm-ctos-t-micro)/1 var(--cm-mono); letter-spacing: .14em; text-transform: uppercase; }
+.ctos .nf-crash-d { margin: 0; max-width: 60ch; }
+.ctos .nf-crash-go { min-height: 44px; padding: 0 16px; background: var(--cm-ctos-block); border: 0; color: var(--cm-ctos-ink); font: 700 var(--cm-ctos-t-micro)/1 var(--cm-mono); letter-spacing: .1em; text-transform: uppercase; cursor: pointer; touch-action: manipulation; }

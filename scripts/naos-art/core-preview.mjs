@@ -1,4 +1,4 @@
-// Renders the reactor core (lib/nodefarm/core-art.ts) at every structure stage into a contact sheet, plus animation frames.
+// Renders the reactor core (lib/nodefarm/art/core-art.ts) at every structure stage into a contact sheet, plus animation frames.
 // usage: node scripts/naos-art/core-preview.mjs <outDir> [frames]
 // Writes sheet.png (one row per look, one column per stage) and, with frames > 0, f000.png... of the same sheet over time.
 import { createRequire } from "node:module";
@@ -15,7 +15,7 @@ const frames = Number(process.argv[3] ?? 0);
 mkdirSync(out, { recursive: true });
 
 // core-art.ts imports its part list from core-parts.ts; inline both so the page needs no bundler
-const src = readFileSync(join(root, "lib/nodefarm/core-parts.ts"), "utf8") + readFileSync(join(root, "lib/nodefarm/core-art.ts"), "utf8").replace(/^import .*$|^export \{.*$/gm, "");
+const src = readFileSync(join(root, "lib/nodefarm/art/core-parts.ts"), "utf8") + readFileSync(join(root, "lib/nodefarm/art/core-art.ts"), "utf8").replace(/^import .*$|^export \{.*$/gm, "");
 const js = ts.transpileModule(src, { compilerOptions: { target: ts.ScriptTarget.ES2020, module: ts.ModuleKind.ESNext } }).outputText.replace(/export /g, "");
 const eng = readFileSync(join(root, "lib/nodefarm/engine.ts"), "utf8");
 const colors = [...eng.matchAll(/\{ id: "(\w+)", name: "[^"]+", short: "[^"]+", role: "[^"]*",(?: pays: "\w+",)? color: "(#[0-9a-f]{6})" \}/g)].map((m) => m[2]);

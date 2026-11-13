@@ -1,5 +1,5 @@
 """Zone rig machines: one 96 x 64 dither machine per rig, 6 frames x 4 fill states, drawn from the rig's meter.
-Writes public/naos/nodefarm/rigs.{png,webp} (row order = RIG_ORDER, shared with components/nodefarm/rig.tsx) and a
+Writes public/naos/nodefarm/rigs.{png,webp} (row order = RIG_ORDER, shared with components/nodefarm/zones/rig.tsx) and a
 preview. Run: python3 scripts/naos-art/nodefarm-rigs.py [ids...]
 """
 import math

@@ -7,7 +7,7 @@ Output (public/naos/nodefarm/):
   tree-spr-m.{png,webp}   notable nodes, 40 px cells
   tree-spr-l.{png,webp}   keystones and the core, 64 px cells
   Each sheet has one row per sprite and 6 columns: glint frames 0..3 (frame 0 is the plain icon), locked, hidden.
-  lib/nodefarm/tree-sprites.ts  the sprite map (key -> sheet, row), generated; do not edit by hand.
+  lib/nodefarm/art/tree-sprites.ts  the sprite map (key -> sheet, row), generated; do not edit by hand.
 
 How a sprite is made: a motif (a small function) draws flat parts, each with a material (the section colour, an accent
 colour, metal, glow or ink). The shader then gives every part a hue-shifted 4-tone ramp lit from the top left, a dark
@@ -284,7 +284,7 @@ def main(args):
         f.write("\n".join(lines) + "\n};\n")
         f.write(f"export const SPRITE_PX = {{ s: {SIZES['s']}, m: {SIZES['m']}, l: {SIZES['l']} }} as const;\n")
         f.write("export const SPRITE_ROWS = { " + ", ".join(f"{k}: {len(by[k])}" for k in ("s", "m", "l")) + " } as const;\n")
-    print("wrote lib/nodefarm/tree-sprites.ts with", len(lines), "sprites")
+    print("wrote lib/nodefarm/art/tree-sprites.ts with", len(lines), "sprites")
 
 
 if __name__ == "__main__":

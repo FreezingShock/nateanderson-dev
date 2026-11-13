@@ -5,7 +5,7 @@ Origin).
 Follows the staged zone art contract v4 (docs/node-farm.md, "Zone art"; kit in nodefarm_zone_kit.py): one sheet per zone at
 public/naos/nodefarm/zone-<statId>, cells of 288 x 96 art px, 8 rows (row 0 is the bare backdrop, row n adds sprite n on top of
 row n-1) by 6 frames across, a 6-frame loop at 6 fps. Rows 0-31 reach up to the panel's title bar; sprites stand on the floor at
-row 94. Sprites 1-6 follow the zone's six button tiers (lib/nodefarm/lore.ts), sprite 7 is the zone's namesake.
+row 94. Sprites 1-6 follow the zone's six button tiers (lib/nodefarm/content/lore.ts), sprite 7 is the zone's namesake.
 
 Backdrop: the zone's own era scene (nodefarm-scenes-deep.py, eras 9 to 14, the same world the page scenery shows) drawn as a
 panorama of its lower band at 0.6x, its fx layer stepped in time with the panel, so panel and page read as one place (the way
@@ -99,7 +99,7 @@ def ground(c, rn, f, accent="cyan", x0=0, lights=True):
 # =====================================================================================================================
 # zone 12 ENGRAM ARCHIVE  /  Engrams.  Ramps: eg (sepia film), accents cyan (projector light) + mag (memory glitch) + rn
 # =====================================================================================================================
-OP_COLS = ["lime", "cyan", "cu", "rn"]  # four small lights, one per earlier operator of the node (colours from lib/nodefarm/news.ts)
+OP_COLS = ["lime", "cyan", "cu", "rn"]  # four small lights, one per earlier operator of the node (colours from lib/nodefarm/content/news.ts)
 
 
 def reel(c, cx, cy, R, f, holes=4, spin=1, rn="eg", film=True):

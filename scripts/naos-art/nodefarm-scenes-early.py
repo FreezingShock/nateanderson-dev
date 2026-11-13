@@ -1199,7 +1199,7 @@ def clockwork_fx(v, f):
 
 
 # ---------------------------------------------------------------------------------------------------------------------
-# era table: n -> (name, far, near, fx, close-up focus (x, y, scale)). Drift speeds live in lib/nodefarm/scenery.ts.
+# era table: n -> (name, far, near, fx, close-up focus (x, y, scale)). Drift speeds live in lib/nodefarm/zones/scenery.ts.
 # ---------------------------------------------------------------------------------------------------------------------
 ERAS = {
     0: ("uplink", uplink_far, uplink_near, uplink_fx, (300, 136, 2.0)),

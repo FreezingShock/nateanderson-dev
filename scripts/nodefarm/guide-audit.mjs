@@ -6,7 +6,7 @@ import { resolve } from "node:path";
 const { registerHooks } = await import("node:module");
 registerHooks({ resolve(spec, ctx, next) { try { return next(spec, ctx); } catch (e) { if (spec.startsWith(".")) return next(spec + ".ts", ctx); throw e; } } });
 const E = await import("../../lib/nodefarm/engine.ts");
-const G = await import("../../lib/nodefarm/guide.ts");
+const G = await import("../../lib/nodefarm/content/guide.ts");
 const dir = process.argv[2];
 const filt = process.argv[3] ? new RegExp(process.argv[3]) : null;
 for (const f of readdirSync(dir).filter((x) => x.endsWith(".json") && (!filt || filt.test(x))).sort()) {

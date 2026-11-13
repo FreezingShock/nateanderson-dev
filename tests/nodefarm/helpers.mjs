@@ -9,15 +9,15 @@ registerHooks({ resolve(spec, ctx, next) { try { return next(spec, ctx); } catch
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
 export const E = await import(resolve(root, "lib/nodefarm/engine.ts"));
-export const RG = await import(resolve(root, "lib/nodefarm/rigs.ts"));
-export const SC = await import(resolve(root, "lib/nodefarm/scripts.ts"));
-export const ZE = await import(resolve(root, "lib/nodefarm/zoneevents.ts"));
-export const ST = await import(resolve(root, "lib/nodefarm/stress.ts"));
+export const RG = await import(resolve(root, "lib/nodefarm/zones/rigs.ts"));
+export const SC = await import(resolve(root, "lib/nodefarm/systems/scripts.ts"));
+export const ZE = await import(resolve(root, "lib/nodefarm/zones/zoneevents.ts"));
+export const ST = await import(resolve(root, "lib/nodefarm/systems/stress.ts"));
 export const EV = await import(resolve(root, "lib/nodefarm/events.ts"));
-export const AD = await import(resolve(root, "lib/nodefarm/admin.ts"));
-export const AR = await import(resolve(root, "lib/nodefarm/arcs.ts"));
+export const AD = await import(resolve(root, "lib/nodefarm/systems/admin.ts"));
+export const AR = await import(resolve(root, "lib/nodefarm/zones/arcs.ts"));
 export const OFF = await import(resolve(root, "lib/nodefarm/offline.ts"));
-export const { LOGS } = await import(resolve(root, "lib/nodefarm/story.ts"));
+export const { LOGS } = await import(resolve(root, "lib/nodefarm/content/story.ts"));
 
 export const FIXTURES = resolve(root, "scripts/nodefarm/fixtures");
 export const fixtureNames = () => readdirSync(FIXTURES).filter((f) => f.endsWith(".json")).sort();

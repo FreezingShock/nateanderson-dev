@@ -8,11 +8,11 @@ export const NOW = 1_700_000_000_000;
 export async function loadEngine() {
     const E = await import("../../lib/nodefarm/engine.ts");
     // importing these fills the engine hooks (rig, stress, zone event, script, arc and poke rules) the same way the game does
-    const R = await import("../../lib/nodefarm/rigs.ts");
-    const ST = await import("../../lib/nodefarm/stress.ts");
-    await import("../../lib/nodefarm/zoneevents.ts");
-    await import("../../lib/nodefarm/scripts.ts");
-    await import("../../lib/nodefarm/arcs.ts");
+    const R = await import("../../lib/nodefarm/zones/rigs.ts");
+    const ST = await import("../../lib/nodefarm/systems/stress.ts");
+    await import("../../lib/nodefarm/zones/zoneevents.ts");
+    await import("../../lib/nodefarm/systems/scripts.ts");
+    await import("../../lib/nodefarm/zones/arcs.ts");
     await import("../../lib/nodefarm/poke.ts");
     return { E, R, ST };
 }

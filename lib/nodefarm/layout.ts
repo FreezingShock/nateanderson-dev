@@ -1,6 +1,6 @@
 // Board layout helpers (less scrolling): which arcs are on the board, how many buttons a zone can pay for, and the
 // "click blank space to fold" rule. Pure functions, no React.
-import { ARCS, arcKey } from "./arcs";
+import { ARCS, arcKey } from "./zones/arcs";
 import { STATS, TIERS, button, isUnlocked, type ButtonStat, type State, type StatId } from "./engine";
 
 /** Set in the fold record once the one-arc-at-a-time layout has tidied an old save's arcs. */

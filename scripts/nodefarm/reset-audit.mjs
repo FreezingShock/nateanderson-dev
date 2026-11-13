@@ -3,7 +3,7 @@
 // It also checks the claims the confirm screens make (the expected column below), and exits 1 if any check fails.
 //   node --experimental-strip-types scripts/nodefarm/reset-audit.mjs            (table + checks)
 //   node --experimental-strip-types scripts/nodefarm/reset-audit.mjs --json     (the raw verdicts)
-// Rules are in lib/nodefarm/engine.ts (ascend, handover, respec, fresh) and lib/nodefarm/stress.ts (startTest, leaveTest).
+// Rules are in lib/nodefarm/engine.ts (ascend, handover, respec, fresh) and lib/nodefarm/systems/stress.ts (startTest, leaveTest).
 import { loadEngine, richSave, NOW } from "./reset-fixture.mjs";
 const { E, R, ST } = await loadEngine();
 const rich = () => richSave(E, R);

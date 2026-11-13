@@ -8,13 +8,13 @@ import { NOW_FEED, PATH, PROFILE_LEAD } from "@/lib/identity";
 import { launcherLinks, navItems } from "@/lib/nav";
 import { navigateWithCurtain } from "@/lib/motion/navigate";
 import { STATS as NF_STATS, isUnlocked as nfUnlocked, parseSave, type State as NfState } from "@/lib/nodefarm/engine";
-import { isAdmin, maxOut, overwrite, setAdmin, snapState, snaps, takeSnap } from "@/lib/nodefarm/admin";
+import { isAdmin, maxOut, overwrite, setAdmin, snapState, snaps, takeSnap } from "@/lib/nodefarm/systems/admin";
 import { NF_PATH, NF_SAVE_KEY, NF_SUBS, nfCommand, type NfLive } from "@/lib/nodefarm/records";
 import { CX_STYLES, cxOverride, setCxOverride, type CxStyle } from "@/lib/nodefarm/cx";
 import { getFxMode, getLowFx, setFxMode } from "@/lib/nodefarm/fx";
-import { getStagePreview, setStagePreview } from "@/lib/nodefarm/zone-art";
-import { PART_WHY, SKIN_WHY, coreLook, coreMode, corePreview, setCoreMode, setCorePreview, skinOpen } from "@/lib/nodefarm/core-look";
-import { PART_ORDER, SKINS } from "@/lib/nodefarm/core-parts";
+import { getStagePreview, setStagePreview } from "@/lib/nodefarm/zones/zone-art";
+import { PART_WHY, SKIN_WHY, coreLook, coreMode, corePreview, setCoreMode, setCorePreview, skinOpen } from "@/lib/nodefarm/art/core-look";
+import { PART_ORDER, SKINS } from "@/lib/nodefarm/art/core-parts";
 import { setPrefs } from "@/lib/sound/engine";
 import { sfx } from "@/lib/sound/sounds";
 import { useSoundPrefs } from "@/lib/sound/use-sound";
@@ -136,7 +136,7 @@ const levenshtein = (a: string, b: string) => {
 const listGroup = (targets: Target[], g: Target["group"]): Line[] =>
     targets.filter((x) => x.group === g).map((x) => row(x.id, x.hint, x.href));
 
-/** `nf admin ...`: Node Farm root console. Not listed in help or tab completion. The panel is components/nodefarm/admin.tsx. */
+/** `nf admin ...`: Node Farm root console. Not listed in help or tab completion. The panel is components/nodefarm/windows/admin.tsx. */
 function nfAdmin(args: string[], state: NfState, live?: NfLive): Line[] {
     const sub = (args[0] ?? "").toLowerCase();
     const done = () => {

@@ -1,17 +1,17 @@
 // Node Farm records and console commands. Pure: takes a State, returns data or printed lines. The Records window reads
 // `recordSections`; the naOS console's `nf` command runs `nfCommand` against the live game (or the saved one when the game is
 // not open). No React, no DOM.
-import { SCRIPTS, auto, isOn, learnPart, scriptNext, scriptOpen } from "./scripts";
-import { OPERATORS, archiveOf, loadSeen, pickNews } from "./news";
+import { SCRIPTS, auto, isOn, learnPart, scriptNext, scriptOpen } from "./systems/scripts";
+import { OPERATORS, archiveOf, loadSeen, pickNews } from "./content/news";
 import {
     GOALS, GOAL_TIERS, LAB, MATS, PAYLOADS, PERKS, SECRETS, TIER_NAMES, TREE, TREE_FULL, apOnAscend, intelRate, derive, fmt, fmtTime, goalDone, statDef, tiersDone, unlock,
     FW, PROTOS, ROMAN, handSeen, keysOnHandover, protoDef, protoRank,
     type State,
 } from "./engine";
-import { LOGS, logNo } from "./story";
-import { END_STAGES, END_STEPS, buildBlock, endSeen, endStage, lastZone, stageCost } from "./ending";
-import { zeTitle, zoneLabel } from "./zoneevents";
-import { ENTRIES, unlocked as unlockedEntries } from "./codex";
+import { LOGS, logNo } from "./content/story";
+import { END_STAGES, END_STEPS, buildBlock, endSeen, endStage, lastZone, stageCost } from "./systems/ending";
+import { zeTitle, zoneLabel } from "./zones/zoneevents";
+import { ENTRIES, unlocked as unlockedEntries } from "./content/codex";
 
 export const NF_PATH = "/creations/games/node-farm";
 export const NF_SAVE_KEY = "nf-save-v1";

@@ -1,0 +1,555 @@
+/* ==========================================================================
+   Node Farm (components/nodefarm). Every rule is scoped under `.ctos .nf`.
+   The game is the one place on the site that uses more than the cyan accent: each stat carries its own colour
+   (`--c` on the row) and its own button skin, drawn from the icon sheet in public/naos/nodefarm.
+   ========================================================================== */
+@keyframes nfLine { from { clip-path: inset(0 100% 0 0); } to { clip-path: inset(0 0 0 0); } }
+@keyframes nfPulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.06); } }
+@keyframes nfToast { 0% { opacity: 0; transform: translate(-50%, 8px); } 12%, 85% { opacity: 1; transform: translate(-50%, 0); } 100% { opacity: 0; } }
+@keyframes nfOc { 0%, 100% { box-shadow: inset 0 0 0 1px #ff2d8a55; } 50% { box-shadow: inset 0 0 0 2px #ff2d8aaa; } }
+@keyframes nfHack { from { transform: scaleX(1); } to { transform: scaleX(0); } }
+@keyframes nfScrim { from { opacity: 0; } }
+@keyframes nfIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+
+.ctos .nf {
+    --nf-line: var(--cm-hair-hi);
+    --nf-ground: #0e0e0e;
+    position: relative;
+    display: grid;
+    gap: 14px;
+    min-width: 0;
+    grid-template-columns: minmax(0, 1fr);
+    font-family: var(--cm-display);
+}
+.ctos .nf-boot { min-height: 280px; place-content: center; text-align: center; font: 500 var(--cm-ctos-t-ui)/1.6 var(--cm-mono); color: var(--cm-mute); letter-spacing: .1em; text-transform: uppercase; }
+.ctos .nf-boot-t { color: var(--cm-cyan); display: block; }
+.ctos .nf .nf-ic, body .nf-aw .nf-ic { --s: 32px; display: inline-block; flex: none; width: var(--s); height: var(--s); background: url(/naos/nodefarm/icons64.webp?v=5cb0242c) calc(var(--i) * var(--s) * -1) 0 / calc(var(--s) * 29) calc(var(--s) * 8) no-repeat; animation: nfFrame 1.2s steps(8) infinite; animation-delay: calc(var(--i) * -.23s); image-rendering: pixelated; vertical-align: middle; }
+.ctos .nf .nf-ic.l, .ctos .nf .nf-ic.r, body .nf-aw .nf-ic.l { --s: 64px; }
+/* tier icon: bottom-right of a buy button, a whole 32 px of the 192 x 192 sheet (row = stat, column = tier) */
+.ctos .nf .nf-tic { position: absolute; z-index: 1; pointer-events: none; opacity: .55; filter: grayscale(.7) brightness(.8); transition: opacity 120ms, filter 120ms; }
+.ctos .nf .nf-btn[data-afford] .nf-tic { opacity: 1; filter: none; }
+@media (max-width: 639px) { .ctos .nf .nf-ic.r { --s: 32px; } }
+.ctos .nf :where(button) { font: inherit; color: inherit; touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
+.ctos .nf :where(button):disabled { cursor: not-allowed; }
+
+/* ---- HUD */
+.ctos .nf-hud { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px 18px; padding: 12px 14px; background: #0c0c0c; border: 1px solid var(--nf-line); border-left: 3px solid var(--cm-cyan); }
+.ctos .nf-hud-main { display: flex; align-items: center; gap: 12px; min-width: 0; }
+.ctos .nf-big { display: block; font: 700 clamp(26px, 5vw, 38px)/1 var(--cm-display); letter-spacing: -.03em; color: var(--cm-fg); font-variant-numeric: tabular-nums; }
+.ctos .nf-sub { display: block; margin-top: 3px; font: 500 var(--cm-ctos-t-micro)/1.3 var(--cm-mono); letter-spacing: .1em; text-transform: uppercase; color: var(--cm-ctos-meta); }
+.ctos .nf-hud-side { display: flex; flex-wrap: wrap; gap: 6px 16px; font: 600 var(--cm-ctos-t-ui)/1 var(--cm-mono); color: var(--cm-mute); font-variant-numeric: tabular-nums; }
+.ctos .nf-hud-side span { display: inline-flex; align-items: center; gap: 6px; }
+.ctos .nf-hud-side .nf-hud-n small { font: 600 var(--cm-ctos-t-micro)/1 var(--cm-mono); letter-spacing: .12em; color: var(--cm-mute); opacity: .7; }
+.ctos .nf-oc { display: inline-flex; align-items: center; gap: 8px; padding: 8px 12px; background: #ff2d8a22; border: 1px solid #ff2d8a; color: #ffc2de; font: 700 var(--cm-ctos-t-micro)/1 var(--cm-mono); letter-spacing: .12em; }
+.ctos .nf[data-oc] { animation: nfOc 1s ease-in-out infinite; }
+.ctos .nf[data-oc] .nf-big { color: #ff8cbc; }
+
+/* ---- tabs. Phones: five. Desktop: only the three systems tabs (Core and Stats are always on screen). */
+.ctos .nf-tabs { display: grid; grid-template-columns: repeat(auto-fill, minmax(72px, 1fr)); gap: 4px; }
+.ctos .nf-tab { min-height: 44px; padding: 0 4px; background: #101010; border: 1px solid var(--nf-line); color: var(--cm-mute); font: 600 var(--cm-ctos-t-micro)/1 var(--cm-mono); letter-spacing: .1em; text-transform: uppercase; cursor: pointer; }
+.ctos .nf-tab[aria-pressed="true"] { background: var(--cm-ctos-block); color: var(--cm-ctos-ink); border-color: var(--cm-ctos-block); }
+@media (max-width: 480px) { .ctos .nf-tab { letter-spacing: .02em; font-size: 11px; padding: 0 2px; } }
+.ctos .nf-tab:focus-visible { outline: 2px solid var(--cm-cyan); outline-offset: 2px; }
+
+.ctos .nf-pane { display: none; min-width: 0; }
+.ctos .nf[data-tab="core"] [data-pane="core"],
+.ctos .nf[data-tab="stats"] [data-pane="stats"],
+.ctos .nf[data-tab="map"] [data-pane="map"],
+.ctos .nf[data-tab="goals"] [data-pane="goals"],
+.ctos .nf[data-tab="records"] [data-pane="records"],
+.ctos .nf[data-tab="ascend"] [data-pane="ascend"],
+.ctos .nf[data-tab="handover"] [data-pane="handover"],
+.ctos .nf[data-tab="codex"] [data-pane="codex"],
+.ctos .nf[data-tab="menu"] [data-pane="menu"] { display: block; }
+.ctos .nf[data-tab="stats"] .nf-statspane { display: grid; }
+
+.ctos .nf-dock, .ctos .nf-win-bar, .ctos .nf-scrim { display: none; }
+
+/* Desktop: reactor rail on the left (it stays in view), zones in two columns, and Goals / Ascend / Menu as windows over the board. */
+@media (min-width: 1000px) {
+    .ctos .nf { grid-template-columns: 300px minmax(0, 1fr); grid-template-areas: "hud hud" "guide guide" "core stats"; align-items: start; }
+    .ctos .nf-guide { grid-area: guide; }
+    .ctos .nf-hud { grid-area: hud; }
+    .ctos .nf-corepane { grid-area: core; display: block; position: sticky; top: 76px; }
+    .ctos .nf-statspane { grid-area: stats; display: grid; }
+    .ctos .nf-tabs { display: none; }
+    .ctos .nf-dock { display: flex; gap: 6px; }
+    .ctos .nf-dock-b { min-height: 38px; padding: 0 16px; background: #101010; border: 1px solid var(--nf-line); color: var(--cm-mute); font: 600 var(--cm-ctos-t-micro)/1 var(--cm-mono); letter-spacing: .12em; text-transform: uppercase; cursor: pointer; }
+    .ctos .nf-dock-b:hover { background: var(--cm-ctos-block); color: var(--cm-ctos-ink); border-color: var(--cm-ctos-block); }
+    .ctos .nf-dock-b:focus-visible { outline: 2px solid var(--cm-cyan); outline-offset: 2px; }
+    .ctos .nf[data-tab] .nf-sidepane { display: none; }
+    .ctos .nf[data-win="map"][data-tab] [data-pane="map"], .ctos .nf[data-win="goals"][data-tab] [data-pane="goals"], .ctos .nf[data-win="records"][data-tab] [data-pane="records"], .ctos .nf[data-win="ascend"][data-tab] [data-pane="ascend"], .ctos .nf[data-win="handover"][data-tab] [data-pane="handover"], .ctos .nf[data-win="codex"][data-tab] [data-pane="codex"], .ctos .nf[data-win="menu"][data-tab] [data-pane="menu"] {
+        display: block; position: fixed; z-index: 90; left: 50%; top: 84px; translate: -50% 0; width: min(1040px, 94vw); max-height: calc(100dvh - 84px - 104px); overflow: auto; overscroll-behavior: contain; padding: 0 20px 22px; background: #0b0b0b; border: 1px solid var(--cm-ctos-block); box-shadow: 0 0 0 6px #000a, 0 30px 90px #000; }
+    .ctos .nf-scrim { display: block; position: fixed; inset: 0; z-index: 85; background: #000b; border: 0; padding: 0; cursor: default; animation: nfScrim .16s steps(4, end) both; transition: opacity .16s steps(4, end); }
+    .ctos .nf[data-closing] .nf-scrim { opacity: 0; }
+    .ctos .nf-win-bar { display: flex; align-items: center; position: sticky; top: 0; z-index: 3; margin: 0 -20px 18px; padding-left: 16px; min-height: 36px; background: var(--cm-ctos-block); color: var(--cm-ctos-ink); font: 700 var(--cm-ctos-t-micro)/1 var(--cm-mono); letter-spacing: .14em; text-transform: uppercase; }
+    .ctos .nf-win-bar > span { flex: 1; }
+    .ctos .nf-win-x { display: grid; place-items: center; width: 40px; height: 36px; background: var(--cm-ctos-ink); border: 0; cursor: pointer; }
+    .ctos .nf-win-x i { position: relative; width: 14px; height: 14px; }
+    .ctos .nf-win-x i::before, .ctos .nf-win-x i::after { content: ""; position: absolute; left: 0; right: 0; top: 6px; height: 2px; background: var(--cm-ctos-block); rotate: 45deg; }
+    .ctos .nf-win-x i::after { rotate: -45deg; }
+    .ctos .nf-win-x:hover { background: var(--cm-cyan); }
+    .ctos .nf-win-x:hover i::before, .ctos .nf-win-x:hover i::after { background: #0a0a0a; }
+    .ctos .nf-win-x:focus-visible { outline: 2px solid var(--cm-cyan); outline-offset: -4px; }
+}
+
+/* ---- the core */
+.ctos .nf-core-wrap { position: relative; display: grid; place-items: center; padding: 6px 0; }
+.ctos .nf-core { position: relative; display: grid; place-items: center; width: min(100%, 288px); aspect-ratio: 1; }
+.ctos .nf-core-cv { width: 100%; height: 100%; image-rendering: pixelated; pointer-events: none; }
+.ctos .nf-core-tag { position: absolute; bottom: 4%; left: 50%; translate: -50% 0; font: 700 var(--cm-ctos-t-micro)/1 var(--cm-mono); letter-spacing: .16em; color: var(--cm-ctos-meta); background: #0c0c0cd9; padding: 4px 8px; pointer-events: none; white-space: nowrap; }
+.ctos .nf-readout { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1px; margin: 8px 0 0; background: var(--nf-line); border: 1px solid var(--nf-line); }
+.ctos .nf-readout > div { background: #0c0c0c; padding: 8px 10px; min-width: 0; }
+.ctos .nf-readout dt { font: 500 var(--cm-ctos-t-micro)/1 var(--cm-mono); letter-spacing: .1em; text-transform: uppercase; color: var(--cm-ctos-meta); }
+.ctos .nf-readout dd { margin: 5px 0 0; font: 700 15px/1 var(--cm-mono); color: var(--cm-fg); font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.ctos .nf-away { display: grid; gap: 6px; margin-top: 10px; padding: 10px 12px; background: #0c0c0c; border: 1px solid var(--cm-cyan); font: 400 var(--cm-ctos-t-ui)/1.4 var(--cm-mono); color: var(--cm-mute); }
+.ctos .nf-away b { color: var(--cm-fg); font-weight: 700; }
+.ctos .nf-log { list-style: none; margin: 10px 0 0; padding: 10px 12px; min-height: 148px; display: flex; flex-direction: column; justify-content: flex-end; gap: 5px; background: #0a0a0a; border: 1px solid var(--nf-line); font: 400 var(--cm-ctos-t-micro)/1.45 var(--cm-mono); color: var(--cm-mute); overflow: hidden; }
+.ctos .nf-log li { overflow-wrap: anywhere; }
+.ctos .nf-log li:last-child { animation: nfLine .45s steps(18) both; color: var(--cm-fg); }
+.ctos .nf-log time { color: var(--cm-ctos-meta); }
+
+/* ---- toast, intrusion target, trace minigame */
+.ctos .nf-toast { position: fixed; z-index: 60; left: 50%; bottom: 96px; display: inline-flex; align-items: center; gap: 8px; padding: 9px 14px; background: var(--cm-ctos-block); color: var(--cm-ctos-ink); font: 700 var(--cm-ctos-t-ui)/1 var(--cm-mono); letter-spacing: .04em; animation: nfToast 3.2s ease both; pointer-events: none; white-space: nowrap; max-width: 92%; overflow: hidden; text-overflow: ellipsis; }
+
+/* ---- signal chain (above the stats) */
+.ctos .nf-chain { list-style: none; display: flex; flex-wrap: wrap; align-items: stretch; gap: 4px 2px; margin: 0; padding: 10px 12px; background: #0a0a0a; border: 1px solid var(--nf-line); border-top: 2px solid var(--cm-cyan); }
+.ctos .nf-chain li { --c: #66767f; position: relative; display: grid; grid-template-columns: auto auto; grid-template-rows: auto auto; column-gap: 6px; align-items: center; padding: 4px 14px 4px 4px; min-width: 0; opacity: .55; }
+.ctos .nf-chain li[data-open] { opacity: 1; }
+.ctos .nf-chain .nf-ic { grid-row: 1 / 3; }
+.ctos .nf-chain b { font: 700 var(--cm-ctos-t-micro)/1 var(--cm-mono); letter-spacing: .1em; color: var(--c); }
+.ctos .nf-chain small { font: 500 var(--cm-ctos-t-micro)/1.2 var(--cm-mono); color: var(--cm-ctos-meta); white-space: nowrap; }
+.ctos .nf-chain i { position: absolute; right: 2px; top: 50%; translate: 0 -50%; font-style: normal; color: var(--cm-dim); }
+
+/* ---- stat dossiers: square ctOS zones. A white title bar, corner brackets, a dithered zone backdrop, and plain spec lines. */
+.ctos .nf-statspane { gap: 30px; align-content: start; }
+.ctos .nf-row { --c: #2fd8e8; --br: color-mix(in srgb, var(--c) 90%, #fff); position: relative; isolation: isolate; overflow: hidden; background-color: var(--nf-ground); border: 1px solid color-mix(in srgb, var(--c) 30%, #1c1c1c); min-width: 0;
+    background-image: linear-gradient(var(--br), var(--br)), linear-gradient(var(--br), var(--br)), linear-gradient(var(--br), var(--br)), linear-gradient(var(--br), var(--br)), linear-gradient(var(--br), var(--br)), linear-gradient(var(--br), var(--br)), linear-gradient(var(--br), var(--br)), linear-gradient(var(--br), var(--br));
+    background-size: 16px 2px, 2px 16px, 16px 2px, 2px 16px, 16px 2px, 2px 16px, 16px 2px, 2px 16px;
+    background-position: left bottom, left bottom, right bottom, right bottom, left bottom, left bottom, right bottom, right bottom;
+    background-repeat: no-repeat; }
+.ctos .nf-row > * { position: relative; z-index: 2; }
+.ctos .nf-row::before { content: ""; position: absolute; inset: 0; z-index: 0; pointer-events: none; opacity: .5; background: var(--zone, none); -webkit-mask-image: linear-gradient(160deg, #000 0%, #0007 45%, transparent 85%); mask-image: linear-gradient(160deg, #000 0%, #0007 45%, transparent 85%); }
+.ctos .nf-row::after { content: ""; position: absolute; inset: 0; z-index: 1; pointer-events: none; opacity: .5; background: radial-gradient(circle, color-mix(in srgb, var(--c) 70%, transparent) .9px, transparent 1.4px) 0 0 / 5px 5px; -webkit-mask-image: linear-gradient(200deg, #000 0%, transparent 38%); mask-image: linear-gradient(200deg, #000 0%, transparent 38%); }
+.ctos .nf-row[data-stat="bytes"] { --zone: repeating-linear-gradient(90deg, color-mix(in srgb, var(--c) 22%, transparent) 0 1px, transparent 1px 14px), repeating-linear-gradient(0deg, color-mix(in srgb, var(--c) 12%, transparent) 0 1px, transparent 1px 28px); }
+.ctos .nf-row[data-stat="mult"] { --zone: repeating-linear-gradient(0deg, color-mix(in srgb, var(--c) 26%, transparent) 0 3px, transparent 3px 9px); }
+.ctos .nf-row[data-stat="reboot"] { --zone: repeating-linear-gradient(135deg, color-mix(in srgb, var(--c) 24%, transparent) 0 6px, transparent 6px 16px); }
+.ctos .nf-row[data-stat="copper"] { --zone: linear-gradient(90deg, transparent 0 22px, color-mix(in srgb, var(--c) 30%, transparent) 22px 24px, transparent 24px), linear-gradient(0deg, transparent 0 30px, color-mix(in srgb, var(--c) 22%, transparent) 30px 31px, transparent 31px), radial-gradient(circle, var(--c) 2px, transparent 2.6px); }
+.ctos .nf-row[data-stat="silicon"] { --zone: linear-gradient(color-mix(in srgb, var(--c) 28%, transparent) 1px, transparent 1px), linear-gradient(90deg, color-mix(in srgb, var(--c) 28%, transparent) 1px, transparent 1px); }
+.ctos .nf-row[data-stat="quartz"] { --zone: repeating-linear-gradient(60deg, color-mix(in srgb, var(--c) 26%, transparent) 0 1px, transparent 1px 22px), repeating-linear-gradient(-60deg, color-mix(in srgb, var(--c) 20%, transparent) 0 1px, transparent 1px 22px); }
+.ctos .nf-row[data-stat="aether"] { --zone: repeating-radial-gradient(circle at 88% -10%, transparent 0 16px, color-mix(in srgb, var(--c) 30%, transparent) 16px 17px); }
+.ctos .nf-row[data-stat="copper"]::before { background-size: 48px 48px; }
+.ctos .nf-row[data-stat="silicon"]::before { background-size: 14px 14px; }
+
+/* white title bar, like the naOS status card header */
+.ctos .nf-bar-t { display: flex; align-items: center; gap: 12px; padding: 0 0 0 14px; min-height: 34px; background: var(--cm-ctos-block); color: var(--cm-ctos-ink); font: 700 var(--cm-ctos-t-micro)/1 var(--cm-mono); letter-spacing: .14em; text-transform: uppercase; }
+.ctos .nf-bar-t > span:first-child { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ctos .nf-bar-s { font-weight: 600; letter-spacing: .1em; }
+.ctos .nf-row[data-ready] .nf-bar-s { background: var(--c); color: #0a0a0a; padding: 4px 7px; }
+.ctos .nf-fold { display: grid; place-items: center; flex: none; width: 36px; height: 34px; background: var(--cm-ctos-ink); border: 0; cursor: pointer; }
+.ctos .nf-fold i { width: 8px; height: 8px; border-right: 2px solid var(--cm-ctos-block); border-bottom: 2px solid var(--cm-ctos-block); rotate: 45deg; translate: 0 -2px; transition: rotate .2s ease, translate .2s ease; }
+.ctos .nf-row[data-open="false"] .nf-fold i { rotate: -45deg; translate: -2px 0; }
+.ctos .nf-fold:focus-visible { outline: 2px solid var(--c); outline-offset: -4px; }
+@media (hover: hover) { .ctos .nf-fold:hover { background: var(--c); } .ctos .nf-fold:hover i { border-color: #0a0a0a; } }
+
+.ctos .nf-row-h { display: flex; align-items: center; gap: 14px; padding: 16px 18px 12px; }
+.ctos .nf-plate { display: grid; place-items: center; flex: none; padding: 6px; background: radial-gradient(circle at 50% 40%, color-mix(in srgb, var(--c) 45%, #111), #0b0b0b 75%); clip-path: polygon(25% 0, 75% 0, 100% 50%, 75% 100%, 25% 100%, 0 50%); }
+.ctos .nf-row-t { flex: 1; min-width: 0; }
+.ctos .nf-row-t b { display: block; font: 700 22px/1 var(--cm-display); letter-spacing: -.03em; color: var(--cm-fg); text-transform: lowercase; }
+.ctos .nf-row-t b em { font: 600 var(--cm-ctos-t-micro)/1 var(--cm-mono); font-style: normal; letter-spacing: .12em; color: var(--c); margin-left: 8px; text-transform: uppercase; }
+.ctos .nf-code { display: block; margin-top: 6px; font: 500 var(--cm-ctos-t-micro)/1.2 var(--cm-mono); letter-spacing: .12em; text-transform: uppercase; color: var(--cm-ctos-meta); }
+.ctos .nf-row-n { text-align: right; flex: none; }
+.ctos .nf-row-n b { display: block; font: 700 24px/1 var(--cm-mono); color: var(--c); font-variant-numeric: tabular-nums; }
+.ctos .nf-row-n small { display: block; margin-top: 5px; font: 500 var(--cm-ctos-t-micro)/1 var(--cm-mono); letter-spacing: .06em; color: var(--cm-ctos-meta); }
+.ctos .nf-row[data-ready] { box-shadow: 0 0 0 1px color-mix(in srgb, var(--c) 55%, transparent), 0 0 20px color-mix(in srgb, var(--c) 16%, transparent); }
+
+/* collapsible body: animate the grid row from 1fr to 0fr */
+.ctos .nf-body { display: grid; grid-template-rows: 1fr; transition: grid-template-rows .28s cubic-bezier(.22, 1, .36, 1); }
+.ctos .nf-row[data-open="false"] .nf-body { grid-template-rows: 0fr; }
+.ctos .nf-body-in { min-height: 0; overflow: hidden; padding: 0 18px; }
+.ctos .nf-body-in > :last-child { margin-bottom: 20px; }
+.ctos .nf-row[data-open="false"] .nf-body-in { visibility: hidden; transition: visibility 0s .28s; }
+
+.ctos .nf-brief { margin: 4px 0 0; padding: 12px 0 0; border-top: 1px solid color-mix(in srgb, var(--c) 35%, transparent); max-width: 66ch; font: 400 var(--cm-ctos-t-ui)/1.55 var(--cm-display); color: var(--cm-mute); }
+.ctos .nf-spec { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 6px 28px; margin: 14px 0 0; }
+.ctos .nf-spec > div { display: flex; align-items: baseline; gap: 8px; min-width: 0; }
+.ctos .nf-spec dt { font: 500 var(--cm-ctos-t-micro)/1.2 var(--cm-mono); letter-spacing: .1em; text-transform: uppercase; color: var(--cm-ctos-meta); white-space: nowrap; }
+.ctos .nf-spec i { flex: 1; min-width: 12px; align-self: end; margin-bottom: 3px; border-bottom: 1px dotted color-mix(in srgb, var(--c) 55%, transparent); }
+.ctos .nf-spec dd { margin: 0; font: 700 var(--cm-ctos-t-ui)/1.2 var(--cm-mono); color: var(--cm-fg); white-space: nowrap; }
+.ctos .nf-locked { display: flex; align-items: center; gap: 12px; padding: 16px 18px; opacity: .85; border-color: var(--nf-line); }
+.ctos .nf-locked::before, .ctos .nf-locked::after { content: none; }
+.ctos .nf-locked .nf-plate { filter: grayscale(1); }
+.ctos .nf-locked b { display: block; font: 700 var(--cm-ctos-t-ui)/1.2 var(--cm-mono); letter-spacing: .08em; color: var(--cm-mute); }
+.ctos .nf-locked small { display: block; margin-top: 4px; font: 400 var(--cm-ctos-t-ui)/1.3 var(--cm-display); color: var(--cm-ctos-meta); }
+
+/* ---- the buttons. One base, then a skin per stat. */
+.ctos .nf-btns { display: grid; grid-template-columns: repeat(auto-fill, minmax(118px, 1fr)); gap: 10px; margin-top: 18px; }
+.ctos .nf-btn { --edge: color-mix(in srgb, var(--c) 40%, #000); position: relative; display: grid; gap: 5px; align-content: space-between; justify-items: start; text-align: left; min-height: 86px; padding: 9px 10px 8px; background: #141414; border: 1px solid var(--nf-line); color: var(--cm-ctos-meta); cursor: pointer; user-select: none; -webkit-user-select: none; transition: transform 60ms steps(2), box-shadow 60ms steps(2), border-color 80ms; isolation: isolate; }
+.ctos .nf-btn > span { position: relative; z-index: 2; }
+.ctos .nf-btn-top { display: flex; align-items: center; justify-content: space-between; gap: 6px; width: 100%; }
+.ctos .nf-btn-name { font: 600 var(--cm-ctos-t-micro)/1.1 var(--cm-mono); letter-spacing: .08em; text-transform: uppercase; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ctos .nf-pips { display: inline-flex; gap: 2px; flex: none; }
+.ctos .nf-pips i { width: 4px; height: 4px; background: currentColor; opacity: .8; }
+.ctos .nf-btn-g { font: 700 19px/1 var(--cm-mono); font-variant-numeric: tabular-nums; color: var(--cm-mute); }
+.ctos .nf-btn-c { font: 500 var(--cm-ctos-t-micro)/1.1 var(--cm-mono); letter-spacing: .02em; font-variant-numeric: tabular-nums; }
+.ctos .nf-btn-c em { font-style: normal; color: var(--c); }
+.ctos .nf-btn[data-afford] { color: var(--cm-fg); }
+.ctos .nf-btn[data-afford] .nf-btn-g { color: var(--cm-fg); }
+.ctos .nf-btn[data-afford] .nf-pips { color: var(--c); }
+.ctos .nf-btn:focus-visible, .ctos .nf-mini:focus-visible { outline: 2px solid var(--cm-cyan); outline-offset: 3px; }
+.ctos .nf-btn[data-afford][data-tier="3"], .ctos .nf-btn[data-afford][data-tier="4"], .ctos .nf-btn[data-afford][data-tier="5"] { box-shadow: 0 0 12px color-mix(in srgb, var(--c) 35%, transparent); }
+
+/* Multipliers: keycaps */
+.ctos .nf-row[data-stat="mult"] .nf-btn { border-radius: 8px; background: linear-gradient(180deg, #232323, #161616); border: 1px solid #333; box-shadow: 0 5px 0 #070707, inset 0 1px 0 #ffffff12; margin-bottom: 5px; }
+.ctos .nf-row[data-stat="mult"] .nf-btn[data-afford] { background: linear-gradient(180deg, color-mix(in srgb, var(--c) 30%, #1a1a1a), color-mix(in srgb, var(--c) 12%, #131313)); border-color: var(--c); box-shadow: 0 5px 0 var(--edge), inset 0 1px 0 #ffffff30; }
+.ctos .nf-row[data-stat="mult"] .nf-btn:active { transform: translateY(4px); box-shadow: 0 1px 0 var(--edge); }
+
+/* Reboots: guarded power switches with a status LED and a hazard strip */
+.ctos .nf-row[data-stat="reboot"] .nf-btn { border: 2px solid #4a1230; border-radius: 4px; background: #130a0f; padding-left: 26px; padding-bottom: 14px; }
+.ctos .nf-row[data-stat="reboot"] .nf-btn::before { content: ""; position: absolute; left: 9px; top: 12px; width: 8px; height: 8px; border-radius: 50%; background: #3a1a28; z-index: 2; }
+.ctos .nf-row[data-stat="reboot"] .nf-btn::after { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 6px; background: repeating-linear-gradient(135deg, #4a1230 0 5px, #130a0f 5px 10px); z-index: 1; }
+.ctos .nf-row[data-stat="reboot"] .nf-btn[data-afford] { border-color: var(--c); background: #2a0f1e; }
+.ctos .nf-row[data-stat="reboot"] .nf-btn[data-afford]::before { background: var(--c); box-shadow: 0 0 8px var(--c); }
+.ctos .nf-row[data-stat="reboot"] .nf-btn[data-afford]::after { background: repeating-linear-gradient(135deg, var(--c) 0 5px, #130a0f 5px 10px); }
+.ctos .nf-row[data-stat="reboot"] .nf-btn:active { transform: scale(.97); }
+
+/* Copper: riveted plates */
+.ctos .nf-row[data-stat="copper"] .nf-btn { border: 2px solid #5a2a10; border-radius: 3px; background:
+    radial-gradient(circle at 6px 6px, #f08a3c 0 2px, transparent 2.5px), radial-gradient(circle at calc(100% - 6px) 6px, #f08a3c 0 2px, transparent 2.5px),
+    radial-gradient(circle at 6px calc(100% - 6px), #f08a3c 0 2px, transparent 2.5px), radial-gradient(circle at calc(100% - 6px) calc(100% - 6px), #f08a3c 0 2px, transparent 2.5px),
+    repeating-linear-gradient(90deg, #2a1a10 0 2px, #231509 2px 5px); padding: 14px 16px 12px; }
+.ctos .nf-row[data-stat="copper"] .nf-btn[data-afford] { border-color: var(--c); background:
+    radial-gradient(circle at 6px 6px, #ffd9a8 0 2px, transparent 2.5px), radial-gradient(circle at calc(100% - 6px) 6px, #ffd9a8 0 2px, transparent 2.5px),
+    radial-gradient(circle at 6px calc(100% - 6px), #ffd9a8 0 2px, transparent 2.5px), radial-gradient(circle at calc(100% - 6px) calc(100% - 6px), #ffd9a8 0 2px, transparent 2.5px),
+    repeating-linear-gradient(90deg, #7a3f1b 0 2px, #6a3414 2px 5px); }
+.ctos .nf-row[data-stat="copper"] .nf-btn:active { transform: translateY(2px); }
+
+/* Silicon: chips with pins and a notch */
+.ctos .nf-row[data-stat="silicon"] .nf-btn { margin-inline: 5px; border: 1px solid #2b3f8a; border-radius: 2px; background: linear-gradient(#0f1530, #0b1024), repeating-linear-gradient(0deg, transparent 0 7px, #ffffff08 7px 8px); }
+.ctos .nf-row[data-stat="silicon"] .nf-btn::before, .ctos .nf-row[data-stat="silicon"] .nf-btn::after { content: ""; position: absolute; top: 8px; bottom: 8px; width: 5px; background: repeating-linear-gradient(180deg, #4f72d8 0 3px, transparent 3px 7px); }
+.ctos .nf-row[data-stat="silicon"] .nf-btn::before { left: -6px; }
+.ctos .nf-row[data-stat="silicon"] .nf-btn::after { right: -6px; }
+.ctos .nf-row[data-stat="silicon"] .nf-btn[data-afford] { border-color: var(--c); background: linear-gradient(#1b2a66, #121c46); }
+.ctos .nf-row[data-stat="silicon"] .nf-btn[data-afford]::before, .ctos .nf-row[data-stat="silicon"] .nf-btn[data-afford]::after { background: repeating-linear-gradient(180deg, #d6e4ff 0 3px, transparent 3px 7px); }
+.ctos .nf-row[data-stat="silicon"] .nf-btn:active { transform: translateY(2px); }
+
+/* Quartz: cut-corner crystals with a glint */
+.ctos .nf-row[data-stat="quartz"] .nf-btn { --cut: 11px; border: 0; padding: 12px 14px; background: color-mix(in srgb, var(--c) 35%, #1a1a1a); clip-path: polygon(var(--cut) 0, calc(100% - var(--cut)) 0, 100% var(--cut), 100% calc(100% - var(--cut)), calc(100% - var(--cut)) 100%, var(--cut) 100%, 0 calc(100% - var(--cut)), 0 var(--cut)); }
+.ctos .nf-row[data-stat="quartz"] .nf-btn::before { content: ""; position: absolute; inset: 2px; z-index: 0; background: linear-gradient(115deg, transparent 0 38%, #ffffff1c 38% 46%, transparent 46% 100%), linear-gradient(160deg, #1d1224, #120a18); clip-path: polygon(var(--cut) 0, calc(100% - var(--cut)) 0, 100% var(--cut), 100% calc(100% - var(--cut)), calc(100% - var(--cut)) 100%, var(--cut) 100%, 0 calc(100% - var(--cut)), 0 var(--cut)); }
+.ctos .nf-row[data-stat="quartz"] .nf-btn[data-afford] { background: var(--c); }
+.ctos .nf-row[data-stat="quartz"] .nf-btn[data-afford]::before { background: linear-gradient(115deg, transparent 0 38%, #ffffff30 38% 46%, transparent 46% 100%), linear-gradient(160deg, #4a1d63, #2a1038); }
+.ctos .nf-row[data-stat="quartz"] .nf-btn:active { transform: scale(.97); }
+
+/* Aether: orbs with a double ring and glow */
+.ctos .nf-row[data-stat="aether"] .nf-btn { margin: 4px; border: 2px solid #1d6b52; border-radius: 26px 8px 26px 8px; background: radial-gradient(circle at 50% 130%, #0f6b5255 0 35%, transparent 62%), #0b1411; box-shadow: 0 0 0 3px #0e0e0e, 0 0 0 4px #1d6b5266; }
+.ctos .nf-row[data-stat="aether"] .nf-btn[data-afford] { border-color: var(--c); background: radial-gradient(circle at 50% 130%, color-mix(in srgb, var(--c) 55%, transparent) 0 38%, transparent 66%), #0d1c17; box-shadow: 0 0 0 3px #0e0e0e, 0 0 0 4px var(--c), 0 0 18px color-mix(in srgb, var(--c) 40%, transparent); }
+.ctos .nf-row[data-stat="aether"] .nf-btn:active { transform: scale(.96); }
+
+@media (hover: hover) {
+    .ctos .nf-btn[data-afford]:hover { filter: brightness(1.18); }
+}
+
+/* ---- Systems (Goals, Ascend, Menu) */
+.ctos .nf-sys-h { margin-bottom: 14px; }
+.ctos .nf-sys-h h3 { margin: 0; font: 700 var(--cm-ctos-t-h3)/1.1 var(--cm-display); letter-spacing: -.02em; color: var(--cm-fg); }
+.ctos .nf-sys-h p { margin: 6px 0 0; max-width: 72ch; font: 400 var(--cm-ctos-t-ui)/1.5 var(--cm-display); color: var(--cm-mute); }
+.ctos .nf-sys-h p b { color: var(--cm-fg); font-weight: 600; }
+/* Same `// path` line the Frame sections use (win-kit), so every section heading reads the same. */
+.ctos .nf-sys-h[data-path]::before { content: "// " attr(data-path); display: block; margin-bottom: 8px; font: 600 var(--cm-ctos-t-micro)/1 var(--cm-mono); letter-spacing: .12em; color: var(--c, var(--cm-cyan)); }
+.ctos .nf-bar { --c: #6bffc9; width: 100%; height: 10px; background: #050505; border: 1px solid var(--nf-line); }
+.ctos .nf-bar.sm { height: 6px; }
+.ctos .nf-bar i { display: block; height: 100%; background: repeating-linear-gradient(90deg, var(--c) 0 6px, color-mix(in srgb, var(--c) 60%, #000) 6px 8px); }
+
+
+.ctos .nf-mini { min-height: 36px; padding: 0 12px; background: #151515; border: 1px solid var(--nf-line); color: var(--cm-fg); font: 600 var(--cm-ctos-t-micro)/1 var(--cm-mono); letter-spacing: .08em; text-transform: uppercase; cursor: pointer; white-space: nowrap; }
+.ctos .nf-mini:disabled { color: var(--cm-ctos-meta); opacity: .6; }
+.ctos .nf-mini[aria-pressed="true"] { border-color: var(--cm-cyan); color: var(--cm-cyan); }
+@media (hover: hover) { .ctos .nf-mini:not(:disabled):hover { border-color: var(--cm-cyan); } }
+@media (hover: none) { .ctos .nf-mini { min-height: 44px; } }
+
+@media (max-width: 420px) { .ctos .nf-row-h { gap: 9px; padding-inline: 10px; } .ctos .nf-row-n b { font-size: 18px; } .ctos .nf-flavor { font-size: 12.5px; } .ctos .nf-btns { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (prefers-reduced-motion: reduce) {
+    .ctos .nf *, .ctos .nf { animation: none !important; transition: none !important; }
+}
+
+
+/* ---- shared panel look: square corners, a dithered top edge, more air */
+.ctos .nf { gap: 26px; }
+.ctos .nf-hud, .ctos .nf-chain, .ctos .nf-away { position: relative; overflow: hidden; border-left-width: 1px; border-color: color-mix(in srgb, var(--c, var(--cm-cyan)) 35%, #1c1c1c); }
+.ctos .nf-hud::after, .ctos .nf-chain::after, .ctos .nf-away::after { content: ""; position: absolute; left: 0; right: 0; top: 0; height: 6px; pointer-events: none; background: repeating-conic-gradient(var(--c, #2fd8e8) 0 25%, transparent 0 50%) 0 0 / 4px 4px; opacity: .5; -webkit-mask-image: linear-gradient(90deg, #000, transparent 75%); mask-image: linear-gradient(90deg, #000, transparent 75%); }
+.ctos .nf-chain { padding-top: 16px; }
+.ctos .nf-chain-all { display: flex; gap: 6px; margin-left: auto; align-self: center; padding: 0 !important; opacity: 1 !important; }
+.ctos .nf-chain-all::after { content: none; }
+.ctos .nf-log { background-image: repeating-linear-gradient(0deg, transparent 0 3px, #ffffff05 3px 4px); }
+
+.ctos .nf-row[data-open="false"] { cursor: pointer; }
+.ctos .nf-row[data-open="false"]:hover { border-color: color-mix(in srgb, var(--c) 70%, #1c1c1c); }
+/* buttons always fill whole rows: 6 across, or 3x2, or 2x3 on very narrow zones */
+.ctos .nf-row { container-type: inline-size; }
+.ctos .nf-btns { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+@container (min-width: 640px) { .ctos .nf-btns { grid-template-columns: repeat(6, minmax(0, 1fr)); } }
+@container (max-width: 459px) { .ctos .nf-btns { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 640px) {
+    .ctos .nf-chain li:not(.nf-chain-all) { display: none; }
+    .ctos .nf-chain { padding: 8px; justify-content: flex-end; }
+    .ctos .nf-chain::after { content: none; }
+    .ctos .nf-bar-t { letter-spacing: .06em; padding-left: 10px; gap: 8px; }
+    .ctos .nf-bar-s { letter-spacing: .04em; }
+}
+
+/* wide board on big screens: the frame breaks out of the page column */
+@media (min-width: 1240px) {
+    .ctos .nf-bleed { width: min(calc(100vw - 80px), 1760px); margin-left: calc(50% - min(calc(50vw - 40px), 880px)); }
+}
+
+/* ---- standby report: a full-screen takeover when you return after time away */
+body .nf-aw { --nf-line: var(--cm-hair-hi); --nf-ground: #0e0e0e; position: fixed; inset: 0; z-index: 2147483000; display: flex; flex-direction: column; background: #070707; color: var(--cm-fg); overscroll-behavior: contain; animation: nf-aw-in 260ms steps(5) both; }
+body .nf-aw::before { content: ""; position: absolute; inset: 0; pointer-events: none; background: repeating-conic-gradient(#2fd8e8 0 25%, transparent 0 50%) 0 0 / 6px 6px; opacity: .07; -webkit-mask-image: radial-gradient(120% 90% at 50% 0%, #000, transparent 70%); mask-image: radial-gradient(120% 90% at 50% 0%, #000, transparent 70%); }
+body .nf-aw::after { content: ""; position: absolute; inset: 0; pointer-events: none; background: repeating-linear-gradient(0deg, transparent 0 3px, #0000003a 3px 4px); }
+body .nf-aw-bar { position: relative; z-index: 1; display: flex; justify-content: space-between; align-items: center; gap: 12px; min-height: 40px; padding: 0 16px; background: var(--cm-ctos-block); color: var(--cm-ctos-ink); font: 700 var(--cm-ctos-t-micro)/1 var(--cm-mono); letter-spacing: .14em; text-transform: uppercase; }
+body .nf-aw-body { position: relative; z-index: 1; flex: 1; overflow-y: auto; display: grid; place-items: start center; padding: clamp(20px, 5vw, 56px) clamp(16px, 4vw, 40px); }
+body .nf-aw-panel { position: relative; margin-block: auto; width: min(100%, 880px); display: grid; gap: clamp(14px, 2.4vw, 22px); padding: clamp(22px, 4vw, 44px); background: #0c0c0c; border: 1px solid var(--nf-line); border-top: 3px solid var(--cm-cyan); }
+body .nf-aw-br { position: absolute; inset: 7px; pointer-events: none; --b: var(--cm-cyan);
+    background:
+        linear-gradient(var(--b), var(--b)) 0 0 / 14px 2px, linear-gradient(var(--b), var(--b)) 0 0 / 2px 14px,
+        linear-gradient(var(--b), var(--b)) 100% 0 / 14px 2px, linear-gradient(var(--b), var(--b)) 100% 0 / 2px 14px,
+        linear-gradient(var(--b), var(--b)) 0 100% / 14px 2px, linear-gradient(var(--b), var(--b)) 0 100% / 2px 14px,
+        linear-gradient(var(--b), var(--b)) 100% 100% / 14px 2px, linear-gradient(var(--b), var(--b)) 100% 100% / 2px 14px;
+    background-repeat: no-repeat; }
+body .nf-aw-kicker { margin: 0; font: 600 var(--cm-ctos-t-micro)/1.3 var(--cm-mono); letter-spacing: .16em; text-transform: uppercase; color: var(--cm-cyan); }
+body .nf-aw-title { margin: 0; font: 800 clamp(28px, 6vw, 56px)/1.02 var(--cm-display); letter-spacing: -.01em; text-transform: uppercase; }
+body .nf-aw-time { margin: 0; font: 700 clamp(40px, 11vw, 96px)/1 var(--cm-mono); color: var(--cm-cyan); font-variant-numeric: tabular-nums; letter-spacing: -.02em; }
+body .nf-aw-sum { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+body .nf-aw-meter-h { display: flex; justify-content: space-between; gap: 12px; margin-bottom: 6px; font: 600 var(--cm-ctos-t-micro)/1 var(--cm-mono); letter-spacing: .1em; text-transform: uppercase; color: var(--cm-mute); }
+body .nf-aw-track { height: 14px; background: #050505; border: 1px solid var(--nf-line); padding: 2px; }
+body .nf-aw-track i { display: block; height: 100%; background: repeating-linear-gradient(90deg, var(--cm-cyan) 0 6px, #0f6b74 6px 8px); }
+body .nf-aw-gain { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 10px; }
+body .nf-aw-gain li { display: grid; grid-template-columns: auto 1fr; grid-template-rows: auto auto; column-gap: 14px; align-items: center; padding: 12px 14px; background: var(--nf-ground); border: 1px solid color-mix(in srgb, var(--c) 35%, #1c1c1c); animation: nf-aw-row 320ms steps(4) both; animation-delay: var(--d); }
+body .nf-aw-gain .nf-ic { grid-row: 1 / 3; }
+body .nf-aw-name { font: 600 var(--cm-ctos-t-micro)/1.2 var(--cm-mono); letter-spacing: .12em; text-transform: uppercase; color: var(--cm-mute); align-self: end; }
+body .nf-aw-gain b { font: 700 clamp(22px, 4vw, 30px)/1.15 var(--cm-mono); color: var(--c); font-variant-numeric: tabular-nums; align-self: start; overflow-wrap: anywhere; }
+body .nf-aw-facts { margin: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 1px; background: var(--nf-line); border: 1px solid var(--nf-line); }
+body .nf-aw-facts div { padding: 10px 12px; background: #0a0a0a; }
+body .nf-aw-facts dt { font: 500 var(--cm-ctos-t-micro)/1.2 var(--cm-mono); letter-spacing: .12em; text-transform: uppercase; color: var(--cm-mute); }
+body .nf-aw-facts dd { margin: 4px 0 0; font: 600 var(--cm-ctos-t-ui)/1.2 var(--cm-mono); color: var(--cm-fg); font-variant-numeric: tabular-nums; }
+body .nf-aw-sys { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 10px; }
+body .nf-aw-sys section { padding: 12px 14px; background: #0a0a0a; border: 1px solid var(--nf-line); }
+body .nf-aw-sys h3 { margin: 0 0 8px; font: 500 var(--cm-ctos-t-micro)/1.2 var(--cm-mono); letter-spacing: .12em; text-transform: uppercase; color: var(--cm-cyan); }
+body .nf-aw-sys dl { margin: 0; display: grid; gap: 6px; }
+body .nf-aw-sys dl div { display: flex; justify-content: space-between; gap: 14px; align-items: baseline; padding-bottom: 6px; border-bottom: 1px dotted #26262a; }
+body .nf-aw-sys dl div:last-child { border-bottom: 0; padding-bottom: 0; }
+body .nf-aw-sys dt { font: 400 var(--cm-ctos-t-ui)/1.35 var(--cm-mono); color: var(--cm-mute); }
+body .nf-aw-sys dd { margin: 0; font: 600 var(--cm-ctos-t-ui)/1.35 var(--cm-mono); color: var(--cm-fg); text-align: right; font-variant-numeric: tabular-nums; }
+@media (max-width: 519px) { body .nf-aw-sys { grid-template-columns: 1fr; } body .nf-aw-sys dl div { flex-direction: column; gap: 2px; } body .nf-aw-sys dd { text-align: left; } }
+body .nf-aw-note { margin: 0; padding: 10px 12px; border: 1px solid #5a4a14; border-left: 3px solid #f0c23c; background: #14110a; font: 400 var(--cm-ctos-t-ui)/1.5 var(--cm-mono); color: var(--cm-mute); }
+body .nf-aw-go { justify-self: stretch; min-height: 56px; padding: 0 24px; background: var(--cm-ctos-block); color: var(--cm-ctos-ink); border: 0; font: 800 var(--cm-ctos-t-ui)/1 var(--cm-mono); letter-spacing: .16em; text-transform: uppercase; cursor: pointer; }
+@media (min-width: 720px) { body .nf-aw-go { justify-self: start; min-width: 320px; } }
+body .nf-aw-go:hover { background: var(--cm-cyan); }
+body .nf-aw-go:focus-visible { outline: 3px solid var(--cm-cyan); outline-offset: 3px; }
+@keyframes nf-aw-in { from { opacity: 0; } }
+@keyframes nf-aw-row { from { opacity: 0; translate: 0 8px; } }
+@media (prefers-reduced-motion: reduce) { body .nf-aw, body .nf-aw-gain li { animation: none; } }
+@media (max-width: 639px) { body .nf-aw-body { place-items: start center; padding-bottom: 28px; } body .nf-aw-bar-r { display: none; } }
+@media (max-width: 519px) { body .nf-aw-facts { grid-template-columns: 1fr; } }
+
+/* ---- goal log lines, secrets and the Records window */
+/* ---- Drone bay and the per-stat arm switch */
+.ctos .nf-dr-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.ctos .nf-dr-list li { display: grid; grid-template-columns: auto minmax(0, 1.2fr) auto auto; align-items: center; gap: 8px 16px; padding: 10px 12px; background: #0a0a0a; border: 1px solid var(--nf-line); border-left: 3px solid #2a3a36; }
+.ctos .nf-dr-list li[data-on] { border-left-color: var(--c); }
+.ctos .nf-dr-n { display: grid; gap: 3px; min-width: 0; }
+.ctos .nf-dr-n b { font: 700 var(--cm-ctos-t-ui)/1.2 var(--cm-mono); letter-spacing: .06em; text-transform: uppercase; color: var(--cm-fg); }
+.ctos .nf-dr-n small { font: 400 var(--cm-ctos-t-micro)/1.2 var(--cm-mono); color: var(--cm-ctos-meta); letter-spacing: .06em; }
+.ctos .nf-dr-pips { display: flex; gap: 3px; }
+.ctos .nf-dr-pips i { width: 8px; height: 14px; background: #161616; border: 1px solid var(--nf-line); }
+.ctos .nf-dr-pips i[data-f] { background: var(--c); border-color: var(--c); }
+.ctos .nf-dr-glyph { font: 700 24px/1 var(--cm-mono); color: var(--c); }
+.ctos .nf-arm { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 0 0 12px; padding: 8px 12px; background: #0a0a0a; border: 1px solid var(--nf-line); border-left: 3px solid #6bffc9; font: 600 var(--cm-ctos-t-micro)/1 var(--cm-mono); letter-spacing: .12em; text-transform: uppercase; color: var(--cm-mute); }
+@media (max-width: 559px) { .ctos .nf-dr-list li { grid-template-columns: auto 1fr auto; } .ctos .nf-dr-pips { grid-column: 2; } .ctos .nf-dr-list .nf-mini { grid-column: 3; grid-row: 1 / 3; } .ctos .nf-dr-list .nf-sp-d { grid-row: 1 / 3; } }
+.ctos .nf-dr .nf-brief { margin-bottom: 14px; }
+
+/* While a window is open: drop the identity transform a settled scroll-reveal leaves on the section (it would turn the section into the containing block for the fixed window), and lift the section above the hero. */
+body.nf-win-open .ctos .g-frame, body.nf-win-open .ctos .cm-section, body.nf-win-open .ctos .nf-bleed, body.nf-win-open .ctos [data-rx] { transform: none !important; filter: none !important; will-change: auto !important; }
+/* A window is opaque: the scroll reveal fades the page wrappers it sits in (.g-body, .g-frame, .nf-bleed), and the hero showed through the panel near the top. */
+body.nf-win-open .ctos .g-frame, body.nf-win-open .ctos .g-body, body.nf-win-open .ctos .nf-bleed { opacity: 1 !important; }
+body.nf-win-open .ctos .cm-section.ruled { z-index: 60; }
+
+
+/* ==========================================================================
+   Guidance: the next-step strip, glow on the button it points at, tooltips, locked zones, and the progress map.
+   Same look as the rest of the game: sharp corners, corner brackets, a dithered edge, plain data lines.
+   ========================================================================== */
+@keyframes nfGlow { 0%, 100% { box-shadow: 0 0 0 1px var(--c, #2fd8e8), 0 0 10px color-mix(in srgb, var(--c, #2fd8e8) 40%, transparent); } 50% { box-shadow: 0 0 0 2px var(--c, #2fd8e8), 0 0 22px color-mix(in srgb, var(--c, #2fd8e8) 70%, transparent); } }
+@keyframes nfBrk { 0%, 100% { inset: 3px; } 50% { inset: 6px; } }
+@keyframes nfTipIn { from { opacity: 0; translate: 0 4px; } to { opacity: 1; translate: 0 0; } }
+
+/* corner brackets, drawn with two gradients so they stay pixel-sharp */
+.ctos .nf-guide, .ctos .nf-tip {
+    --br: var(--cm-cyan);
+    background-image:
+        linear-gradient(var(--br), var(--br)), linear-gradient(var(--br), var(--br)),
+        linear-gradient(var(--br), var(--br)), linear-gradient(var(--br), var(--br)),
+        linear-gradient(var(--br), var(--br)), linear-gradient(var(--br), var(--br)),
+        linear-gradient(var(--br), var(--br)), linear-gradient(var(--br), var(--br));
+    background-size: 10px 2px, 2px 10px, 10px 2px, 2px 10px, 10px 2px, 2px 10px, 10px 2px, 2px 10px;
+    background-position: 0 0, 0 0, 100% 0, 100% 0, 0 100%, 0 100%, 100% 100%, 100% 100%;
+    background-repeat: no-repeat;
+}
+
+/* ---- the strip */
+.ctos .nf-guide { position: relative; display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px 24px; padding: 14px 18px 14px 20px; background-color: #0b0d0e; border: 1px solid color-mix(in srgb, var(--cm-cyan) 35%, #1c1c1c); }
+.ctos .nf-guide::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 6px; pointer-events: none; background: repeating-conic-gradient(var(--cm-cyan) 0 25%, transparent 0 50%) 0 0 / 4px 4px; opacity: .55; -webkit-mask-image: linear-gradient(180deg, #000, transparent 90%); mask-image: linear-gradient(180deg, #000, transparent 90%); }
+.ctos .nf-gd-text { display: grid; gap: 4px; min-width: 0; }
+.ctos .nf-gd-k { font: 700 var(--cm-ctos-t-micro)/1 var(--cm-mono); letter-spacing: .16em; color: var(--cm-cyan); }
+.ctos .nf-gd-t { font: 700 clamp(18px, 3.4vw, 24px)/1.1 var(--cm-display); letter-spacing: -.02em; color: var(--cm-fg); text-transform: lowercase; }
+.ctos .nf-gd-why { margin: 0; max-width: 72ch; font: 400 var(--cm-ctos-t-ui)/1.45 var(--cm-display); color: var(--cm-mute); }
+.ctos .nf-gd-meter { display: grid; gap: 6px; align-content: center; min-width: 0; }
+.ctos .nf-gd-meter small { font: 600 var(--cm-ctos-t-micro)/1.3 var(--cm-mono); letter-spacing: .04em; color: var(--cm-ctos-meta); font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.ctos .nf-gd-bar { --c: var(--cm-cyan); height: 12px; position: relative; }
+.ctos .nf-gd-bar i { position: relative; transition: width .25s linear; }
+/* the leading edge fades out in a dither, like the art around it */
+.ctos .nf-gd-bar i::after { content: ""; position: absolute; left: 100%; top: 0; bottom: 0; width: 10px; background: repeating-conic-gradient(var(--c) 0 25%, transparent 0 50%) 0 0 / 4px 4px; -webkit-mask-image: linear-gradient(90deg, #000, transparent); mask-image: linear-gradient(90deg, #000, transparent); }
+.ctos .nf-gd-act { display: flex; gap: 8px; align-items: stretch; }
+.ctos .nf-gd-go, .ctos .nf-gd-map { min-height: 44px; padding: 0 16px; border: 1px solid var(--nf-line); font: 700 var(--cm-ctos-t-micro)/1 var(--cm-mono); letter-spacing: .12em; text-transform: uppercase; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 8px; }
+.ctos .nf-gd-go { flex: 1; background: var(--cm-cyan); border-color: var(--cm-cyan); color: #0a0a0a; }
+.ctos .nf-gd-go .nf-ic { --s: 32px; zoom: .5; }
+.ctos .nf-gd-map { background: #101010; color: var(--cm-mute); }
+.ctos .nf-gd-map[aria-pressed="true"] { border-color: var(--cm-cyan); color: var(--cm-cyan); }
+@media (hover: hover) {
+    .ctos .nf-gd-go:hover { background: var(--cm-fg); border-color: var(--cm-fg); }
+    .ctos .nf-gd-map:hover { background: var(--cm-ctos-block); color: var(--cm-ctos-ink); border-color: var(--cm-ctos-block); }
+}
+.ctos .nf-gd-go:focus-visible, .ctos .nf-gd-map:focus-visible { outline: 2px solid var(--cm-cyan); outline-offset: 3px; }
+@media (min-width: 900px) { .ctos .nf-guide { grid-template-columns: minmax(0, 1.5fr) minmax(220px, 1fr) auto; align-items: center; } }
+
+/* ---- glow on whatever the guide points at */
+.ctos .nf-btn[data-guide], .ctos .nf-dock-b[data-guide], .ctos .nf-tab[data-guide], .ctos .nf-mini[data-guide] { animation: nfGlow 1.6s ease-in-out infinite; z-index: 3; }
+.ctos .nf-btn[data-guide]:not([data-afford]) { animation: none; box-shadow: 0 0 0 1px color-mix(in srgb, var(--c) 55%, transparent); }
+.ctos .nf-gd-c { position: absolute; inset: 3px; z-index: 3; pointer-events: none; animation: nfBrk 1.6s ease-in-out infinite; --br: var(--c);
+    background: linear-gradient(var(--br), var(--br)) 0 0 / 8px 2px no-repeat, linear-gradient(var(--br), var(--br)) 0 0 / 2px 8px no-repeat, linear-gradient(var(--br), var(--br)) 100% 0 / 8px 2px no-repeat, linear-gradient(var(--br), var(--br)) 100% 0 / 2px 8px no-repeat,
+        linear-gradient(var(--br), var(--br)) 0 100% / 8px 2px no-repeat, linear-gradient(var(--br), var(--br)) 0 100% / 2px 8px no-repeat, linear-gradient(var(--br), var(--br)) 100% 100% / 8px 2px no-repeat, linear-gradient(var(--br), var(--br)) 100% 100% / 2px 8px no-repeat; }
+.ctos .nf-btn[data-guide]:not([data-afford]) .nf-gd-c { opacity: .55; animation: none; }
+.ctos .nf-row[data-guide]:not([data-open="true"]) { box-shadow: 0 0 0 1px color-mix(in srgb, var(--c) 70%, transparent), 0 0 22px color-mix(in srgb, var(--c) 20%, transparent); }
+.ctos .nf-row[data-guide] .nf-bar-s::before { content: "NEXT"; color: #0a0a0a; background: var(--c); padding: 3px 6px; margin-right: 8px; }
+.ctos .nf-dock-b[data-guide], .ctos .nf-tab[data-guide] { --c: var(--cm-cyan); border-color: var(--cm-cyan); color: var(--cm-cyan); }
+@media (prefers-reduced-motion: reduce) {
+    .ctos .nf-btn[data-guide], .ctos .nf-dock-b[data-guide], .ctos .nf-tab[data-guide], .ctos .nf-mini[data-guide], .ctos .nf-gd-c, .ctos .nf-tip { animation: none; }
+    .ctos .nf-btn[data-guide] { box-shadow: 0 0 0 2px var(--c); }
+}
+
+/* ---- tooltip */
+.ctos .nf-tip { --br: var(--c); position: absolute; z-index: 95; width: min(300px, calc(100vw - 24px)); padding: 12px 14px 12px; background-color: #080a0b; border: 1px solid color-mix(in srgb, var(--c) 40%, #1c1c1c); box-shadow: 0 14px 40px #000d; pointer-events: none; }
+.ctos .nf-tip::after { content: ""; position: absolute; left: var(--ax, 50%); width: 8px; height: 8px; margin-left: -4px; background: #080a0b; border: 1px solid color-mix(in srgb, var(--c) 40%, #1c1c1c); rotate: 45deg; }
+.ctos .nf-tip[data-side="up"]::after { bottom: -5px; border-top: 0; border-left: 0; }
+.ctos .nf-tip[data-side="down"]::after { top: -5px; border-bottom: 0; border-right: 0; }
+.ctos .nf-tip-h { display: grid; gap: 4px; padding-bottom: 8px; border-bottom: 1px solid color-mix(in srgb, var(--c) 30%, transparent); }
+.ctos .nf-tip-h span { font: 700 var(--cm-ctos-t-micro)/1.2 var(--cm-mono); letter-spacing: .12em; text-transform: uppercase; color: var(--c); }
+.ctos .nf-tip-h b { font: 700 19px/1.1 var(--cm-display); letter-spacing: -.02em; color: var(--cm-fg); text-transform: lowercase; }
+.ctos .nf-tip-n { margin: 8px 0 0; font: 400 var(--cm-ctos-t-micro)/1.35 var(--cm-mono); color: var(--cm-ctos-meta); }
+.ctos .nf-tip-d { display: grid; gap: 4px; margin: 10px 0 0; }
+.ctos .nf-tip-d > div { display: flex; align-items: baseline; gap: 8px; font: 500 var(--cm-ctos-t-micro)/1.3 var(--cm-mono); }
+.ctos .nf-tip-d dt { flex: none; color: var(--cm-ctos-meta); letter-spacing: .06em; text-transform: uppercase; }
+.ctos .nf-tip-d i { flex: 1; min-width: 6px; border-bottom: 1px dotted #ffffff30; translate: 0 -3px; }
+.ctos .nf-tip-d dd { margin: 0; color: var(--cm-fg); font-variant-numeric: tabular-nums; text-align: right; }
+.ctos .nf-tip-s { margin: 10px 0 0; padding: 7px 9px; font: 700 var(--cm-ctos-t-micro)/1.3 var(--cm-mono); letter-spacing: .04em; background: #101214; border-left: 3px solid var(--cm-mute); color: var(--cm-mute); }
+.ctos .nf-tip[data-tone="ok"] .nf-tip-s { border-left-color: var(--c); color: var(--cm-fg); }
+
+/* ---- locked zones: say what opens them, and how close you are */
+.ctos .nf-locked { align-items: flex-start; }
+.ctos .nf-lk { display: grid; gap: 4px; min-width: 0; flex: 1; }
+/* The lock line sits over dither art, so it gets full opacity and a dark outline to hold against the pattern. */
+.ctos .nf-lk-k { font: 700 var(--cm-ctos-t-micro)/1 var(--cm-mono); letter-spacing: .14em; color: var(--c); text-shadow: 0 0 2px #000, 0 0 4px #000, 0 1px 0 #000; }
+.ctos .nf-lk b { font: 700 20px/1.1 var(--cm-display); letter-spacing: -.02em; text-transform: lowercase; color: var(--cm-mute); }
+.ctos .nf-lk-m { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 10px; margin-top: 6px; max-width: 420px; }
+.ctos .nf-lk-m .nf-bar { --c: var(--c); }
+.ctos .nf-lk-m small { margin: 0; font: 600 var(--cm-ctos-t-micro)/1 var(--cm-mono); font-variant-numeric: tabular-nums; color: var(--cm-ctos-meta); }
+.ctos .nf-more { opacity: .6; --c: #66767f; }
+.ctos .nf-more small { max-width: 60ch; }
+.ctos .nf-chain-more { --c: #66767f; }
+.ctos .nf-chain-more b { color: var(--cm-ctos-meta); }
+
+
+/* ---- event cards: app/camino/nodefarm/events.css (imported by components/nodefarm/zones/zone-event.tsx) */
+
+/* ==========================================================================
+   Colour and sprites. Every icon, button tier and Drone is a four-frame loop (scripts/naos-art/nodefarm-sprites.py); CSS steps the
+   frames down the sheet, so there is no JS and no layout work. Button tiers only animate once you can afford them. Rarity colours
+   (grey, green, blue, purple, gold, pink) mark the six button tiers on top of each stat's own colour.
+   ========================================================================== */
+@keyframes nfFrame { to { background-position-y: calc(var(--s) * -8); } }
+@keyframes nfDroneFrame { to { background-position-y: -512px; } }
+
+.ctos .nf-sp-d { display: block; width: 64px; height: 64px; flex: none; background: url(/naos/nodefarm/drones.webp?v=4ecf8762) calc(var(--k) * -64px) 0 / 384px 512px no-repeat; image-rendering: pixelated; filter: grayscale(1) brightness(.55); animation: nfDroneFrame .9s steps(8) infinite paused; }
+.ctos .nf-sp-d[data-on] { filter: none; animation-play-state: running; animation-delay: calc(var(--k) * -.15s); }
+.ctos .nf-locked .nf-sp-d { --k: 0; filter: grayscale(1) brightness(.7); }
+
+.ctos .nf-btn[data-tier="0"] { --rar: #9aa7ad; }
+.ctos .nf-btn[data-tier="1"] { --rar: #5be37d; }
+.ctos .nf-btn[data-tier="2"] { --rar: #4aa8ff; }
+.ctos .nf-btn[data-tier="3"] { --rar: #b46bff; }
+.ctos .nf-btn[data-tier="4"] { --rar: #ffb02e; }
+.ctos .nf-btn[data-tier="5"] { --rar: #ff4fa3; }
+/* The tier colour reads the same on every stat: edge bar, name and pips all use it (the stat's own colour stays on the card and the numbers). */
+.ctos .nf-rar { position: absolute; z-index: 3; left: 0; top: 0; bottom: 0; width: 4px; background: var(--rar); opacity: .8; pointer-events: none; }
+.ctos .nf-btn[data-afford] .nf-rar { opacity: 1; }
+/* the bar must never poke past a rounded or cut button: clip every skin to its own shape */
+.ctos .nf-btn { overflow: clip; }
+.ctos .nf-btn[data-tier="5"] .nf-rar { background: linear-gradient(180deg, #ff4fa3, #ffb02e, #ff4fa3); }
+.ctos .nf-btn .nf-btn-name { color: color-mix(in srgb, var(--rar) 80%, #8a8a8a); }
+.ctos .nf-btn[data-afford] .nf-btn-name { color: color-mix(in srgb, var(--rar) 55%, #fff); }
+.ctos .nf-btn .nf-pips, .ctos .nf-btn[data-afford] .nf-pips { color: var(--rar); }
+.ctos .nf-btn[data-tier="5"] .nf-pips, .ctos .nf-btn[data-tier="5"] .nf-btn-name { color: #ff7fc0; }
+.ctos .nf-btn:not([data-afford]) .nf-pips i { opacity: .65; }
+.ctos .nf-btn[data-afford][data-tier="5"]:not(:active) { animation: nfRarGlow 2.4s ease-in-out infinite; }
+@keyframes nfRarGlow { 0%, 100% { box-shadow: 0 0 10px color-mix(in srgb, var(--c) 30%, transparent); } 50% { box-shadow: 0 0 18px color-mix(in srgb, var(--rar) 60%, transparent); } }
+
+@media (prefers-reduced-motion: reduce) {
+    .ctos .nf .nf-ic, body .nf-aw .nf-ic, body .nf-ic, .ctos .nf .nf-tic, .ctos .nf-sp-d, .ctos .nf-btn[data-tier="5"] { animation: none !important; }
+}
+/* long tier names plus up to six pips overflowed the button on a phone: let the name shrink and ellipsise */
+.ctos .nf-btn, .ctos .nf-btn-top { min-width: 0; }
+.ctos .nf-btn-name { min-width: 0; flex: 0 1 auto; }
+
+
+/* ---- systems the prestige tree unlocks (lib/nodefarm/engine.ts treeFx features) */
+/* Dead drop: a thin fill meter in the HUD, a lit button once it is full */
+.ctos .nf-drop { position: relative; display: inline-flex; align-items: center; min-height: 28px; padding: 0 10px; overflow: hidden; background: #0a0a0a; border: 1px solid var(--nf-line); color: var(--cm-mute); font: 600 var(--cm-ctos-t-micro)/1 var(--cm-mono); letter-spacing: .12em; }
+.ctos .nf-drop i { position: absolute; inset: auto 0 0 0; width: 0; height: 2px; background: #6bffc9; }
+.ctos .nf-drop[data-ready] { border-color: #6bffc9; color: #6bffc9; cursor: pointer; animation: nfDropPulse 1.6s ease-in-out infinite; }
+@keyframes nfDropPulse { 50% { background: rgba(107, 255, 201, .12); } }
+@media (hover: none) { .ctos .nf-drop[data-ready] { min-height: 44px; } }
+@media (prefers-reduced-motion: reduce) { .ctos .nf-drop[data-ready] { animation: none; } }
+/* Forecast: time to afford on each button */
+.ctos .nf-btn-c .nf-eta { color: #6bffc9; font-style: normal; }
+/* Mounted drives on the Ascend pane */
+.ctos .nf-mounts { display: grid; gap: 12px; padding: 18px; background: #0b0b0b; border: 1px solid var(--nf-line); border-left: 3px solid #ffc53a; }
+.ctos .nf-mount { display: grid; gap: 8px; }
+.ctos .nf-mount-k { font: 600 var(--cm-ctos-t-micro)/1.3 var(--cm-mono); letter-spacing: .12em; color: var(--cm-mute); }
+.ctos .nf-mount-b { display: flex; flex-wrap: wrap; gap: 6px; }
+.ctos .nf-mount-b .nf-mini { min-width: 48px; }
+.ctos .nf-mount-b .nf-mini[aria-pressed="true"] { border-color: var(--c); color: var(--c); background: #111; }
+.ctos .nf-mounts { grid-column: 1 / -1; }
+
+/* ---- menu additions: save files, backup, settings, keys, other-tab notice */
+.ctos .nf-file { display: inline-flex; align-items: center; position: relative; cursor: pointer; }
+.ctos .nf-file input { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; font-size: 16px; }
+.ctos .nf-file:focus-within { outline: 2px solid var(--cm-cyan); outline-offset: 3px; }
+.ctos .nf-backup { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 10px; font: 400 var(--cm-ctos-t-ui)/1.4 var(--cm-mono); color: var(--cm-mute); }
+.ctos .nf-vol input { width: 100%; accent-color: var(--cm-cyan); min-height: 28px; }
+.ctos .nf-fmt { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 12px; }
+.ctos .nf-fmt-l { font: 500 var(--cm-ctos-t-micro)/1 var(--cm-mono); letter-spacing: .1em; text-transform: uppercase; color: var(--cm-ctos-meta); margin-right: 4px; }
+.ctos .nf-keys dt { min-width: 5.5em; }
+.ctos .nf-stale { position: fixed; z-index: 80; left: 12px; right: 12px; bottom: 12px; display: flex; flex-wrap: wrap; align-items: center; gap: 8px 10px; padding: 12px 14px; background: #120d00; border: 1px solid #f0a53c; color: var(--cm-fg); font: 400 var(--cm-ctos-t-ui)/1.4 var(--cm-mono); }
+.ctos .nf-stale span { flex: 1 1 260px; }
+@media (min-width: 900px) { .ctos .nf-stale { left: auto; max-width: 560px; } }
+@media (hover: none) { .ctos .nf-keys-sec { display: none; } }
+body.nf-calm .nf *, body.nf-calm .nf { animation: none !important; transition: none !important; }
+body.nf-calm [class^="nf-"], body.nf-calm [class*=" nf-"] { animation-duration: 1ms !important; animation-iteration-count: 1 !important; }
+
+/* phone: two buttons across so tier names and costs fit; the cost wraps at its space instead of running under the sprite, and the pips stay one line */
+.ctos .nf-btn-c { max-width: calc(100% - 38px); }
+.ctos .nf-btn-fn { min-width: 0; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ctos .nf-pips { flex: 0 0 auto; }
+@media (max-width: 420px) { .ctos .nf-btn-top { gap: 6px; } .ctos .nf-pips { gap: 1px; } .ctos .nf-pips i { width: 3px; height: 3px; } }
+/* leaf-shaped skins: keep the text clear of the big rounded corner now that the shape clips */
+.ctos .nf-row[data-stat="chrono"] .nf-btn, .ctos .nf-row[data-stat="aether"] .nf-btn { padding-left: 16px; }

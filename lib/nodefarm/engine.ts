@@ -109,7 +109,7 @@ export const TUNE = {
     apPow: 0.3, // AP grows with amount^apPow; a low power stops Ascends from snowballing
     apBonus: 0.3,
     achBonus: 0.02,
-    arcBonus: 0.05, // global bonus for each arc whose every button has been pressed at least once (lib/nodefarm/arcs.ts)
+    arcBonus: 0.05, // global bonus for each arc whose every button has been pressed at least once (lib/nodefarm/zones/arcs.ts)
     tierBonus: 0.08, // extra global bonus for each fully completed goal tier
     // Drones: one per button tier, bought with Aether. Each level presses that tier's button on its posted zone (postX times droneRate a second); docked Drones do nothing.
     drone: { max: 10, base: 25, ratio: 6, growth: 1.7, rate: 0.25, offline: 0.5, burst: 200 },
@@ -412,7 +412,7 @@ export const fullTreeIds = () => TREE.filter((n) => !(n.form === "fork" && n.exc
 export const treeComplete = (s: State) => s.tree.length >= TREE_FULL;
 /** Progressive reveal (Nate, 2026-11-12): owned and buyable nodes are shown; one step past a shown node is fog (a
  *  silhouette at its real size, no name or cost); everything further out is hidden. */
-/** Admin mode: show every node, fog or not (components/nodefarm/admin.tsx). */
+/** Admin mode: show every node, fog or not (components/nodefarm/windows/admin.tsx). */
 export const adminFlags = { reveal: false };
 export function nodeVis(s: State, n: TreeNode): NodeVis {
     if (adminFlags.reveal) return "shown";
@@ -648,14 +648,14 @@ export interface State {
     ach: string[];
     /** when each goal or secret was done, ms epoch (for the goal log) */
     achAt: Record<string, number>;
-    /** ids of the story logs recovered so far (lib/nodefarm/story.ts, kept through Ascend) */
+    /** ids of the story logs recovered so far (lib/nodefarm/content/story.ts, kept through Ascend) */
     logs: string[];
     /** Drone levels per button tier (reset on Ascend) */
     drones: number[];
     /** unused since Drones stopped sweeping (posted Drones keep their own in dr.pacc); kept so old saves load */
     droneAcc: number[];
     /** legacy: stats armed for sweeping Drones or covered by the removed Autoloader perk. The save migration fills it and
-     * scripts.ts hands it to buy.sh once, then empties it (lib/nodefarm/scripts.ts `migrateArmed`). */
+     * scripts.ts hands it to buy.sh once, then empties it (lib/nodefarm/systems/scripts.ts `migrateArmed`). */
     armed: string[];
     /** set by the save migration when `armed` really was automated (sweeping Drones or the Autoloader) and goes to buy.sh */
     armedToBuy?: boolean;
@@ -685,15 +685,15 @@ export interface State {
     dr: DroneState;
     /** Handover (the reset past Ascend): Keys, Firmware, the protocol and your handover notes (see HandState) */
     hand: HandState;
-    /** Scripts (lib/nodefarm/scripts.ts): what you taught the scheduler and how each script is set. Kept through Ascend. Created on first use. */
+    /** Scripts (lib/nodefarm/systems/scripts.ts): what you taught the scheduler and how each script is set. Kept through Ascend. Created on first use. */
     auto?: AutoState;
-    /** Zone rigs (lib/nodefarm/rigs.ts): one machine per zone. Levels kept through Ascend, meters reset. Created on first use. */
+    /** Zone rigs (lib/nodefarm/zones/rigs.ts): one machine per zone. Levels kept through Ascend, meters reset. Created on first use. */
     rig?: RigState;
-    /** Stress tests (lib/nodefarm/stress.ts): cleared ranks, and while a test runs, the real run stored aside. Created on first use. */
-    ch?: import("./stress").ChState;
-    /** Zone events (lib/nodefarm/zoneevents.ts): the running event, the timer to the next one and a count. Reset on Ascend. Created on first use. */
+    /** Stress tests (lib/nodefarm/systems/stress.ts): cleared ranks, and while a test runs, the real run stored aside. Created on first use. */
+    ch?: import("./systems/stress").ChState;
+    /** Zone events (lib/nodefarm/zones/zoneevents.ts): the running event, the timer to the next one and a count. Reset on Ascend. Created on first use. */
     ze?: ZoneEvState;
-    /** The ending (lib/nodefarm/ending.ts): final build stages, stars and the logs you left. Kept through everything. Created on first use. */
+    /** The ending (lib/nodefarm/systems/ending.ts): final build stages, stars and the logs you left. Kept through everything. Created on first use. */
     end?: EndState;
     /** Which button tiers were ever pressed, per stat, as a bit mask. Kept through Ascend; arcs clear when every tier of every zone in them is set. */
     seen?: Partial<Record<ButtonStat, number>>;
@@ -702,7 +702,7 @@ export interface State {
     overclock: number; // seconds left
 }
 
-/** Scripts: learned automation (rules live in lib/nodefarm/scripts.ts, which registers itself in TICK_HOOKS). */
+/** Scripts: learned automation (rules live in lib/nodefarm/systems/scripts.ts, which registers itself in TICK_HOOKS). */
 export type ScriptId = "buy" | "reboot" | "compile" | "deploy" | "drop" | "ascend" | "rig" | "event" | "restore";
 export interface AutoState {
     /** manual presses per stat and tier, lifetime (buy.sh may only press tiers you pressed by hand) */
@@ -759,7 +759,7 @@ export interface AutoState {
 /** Called at the end of every tick (and so also through time away). Scripts add themselves here. */
 export const TICK_HOOKS: ((s: State, dt: number) => void)[] = [];
 
-/** Zone rigs: one machine per zone (rules in lib/nodefarm/rigs.ts, which fills RIG_HOOKS when it is imported).
+/** Zone rigs: one machine per zone (rules in lib/nodefarm/zones/rigs.ts, which fills RIG_HOOKS when it is imported).
  *  Levels and settings are kept through Ascend; meters, charges and timers belong to the run. */
 export interface RigState {
     /** rig levels by key (a zone id, or "runes:echo" style keys for the Glyph hall's three carvings) */
@@ -799,7 +799,7 @@ export interface RigState {
     vent?: number;
     heat?: number;
 }
-/** Filled by lib/nodefarm/rigs.ts. Every hook is optional, so the engine (and the sim) run the same without rigs. */
+/** Filled by lib/nodefarm/zones/rigs.ts. Every hook is optional, so the engine (and the sim) run the same without rigs. */
 export const RIG_HOOKS: {
     /** per-zone output multipliers, computed once per derive */
     muls?: (s: State) => Partial<Record<StatId, number>>;
@@ -815,7 +815,7 @@ export const RIG_HOOKS: {
     ascend?: (s: State) => RigState | undefined;
 } = {};
 
-/** Stress tests (challenge runs, lib/nodefarm/stress.ts fills these when it is imported): a running test switches one
+/** Stress tests (challenge runs, lib/nodefarm/systems/stress.ts fills these when it is imported): a running test switches one
  *  system off or changes a number, and cleared ranks pay small permanent boosts. Every hook is optional. */
 export type ChOff = "drones" | "events" | "prestige";
 export interface ChMuls { global: number; drone: number; bytes: number; mats: number; mult: number; ap: number; oc: number; offlineH: number; bare: boolean; noChain: boolean }
@@ -828,7 +828,7 @@ export const CH_HOOKS: {
     button?: (s: State, stat: ButtonStat, tier: number, b: { cost: number; gain: number }) => void;
 } = {};
 export const chOff = (s: State, what: ChOff) => !!CH_HOOKS.off?.(s, what);
-// ---- Zone events: the numbers and the two reads the rest of the engine needs (spawning and choices live in lib/nodefarm/zoneevents.ts)
+// ---- Zone events: the numbers and the two reads the rest of the engine needs (spawning and choices live in lib/nodefarm/zones/zoneevents.ts)
 export type ZoneEvKind = "surge" | "clearance" | "resonance" | "vein" | "fault" | "convoy" | "tune" | "rogue" | "vault";
 export interface ZoneEvActive {
     /** a running number, so the screen can tell a new event from the one it already showed */
@@ -1267,7 +1267,7 @@ export const eventHaste = (s: State) => 1 - Math.max(0.3, (1 - s.perks.scanner *
 // ---- Watchdog timer (auto-Reboot) and the Dead drop
 /** Press the best affordable Reboot once you hold TUNE.watchdogReserve times its price. Returns the tier pressed, or -1. */
 export function watchdogStep(s: State): number {
-    // once reboot.sh is learned it runs the rule itself (lib/nodefarm/scripts.ts, with the Capacitor and Logic bomb options)
+    // once reboot.sh is learned it runs the rule itself (lib/nodefarm/systems/scripts.ts, with the Capacitor and Logic bomb options)
     if (s.auto?.own.includes("reboot")) return -1;
     if (!s.watchdog || !hasFeature(s, "watchdog") || !isUnlocked(s, "reboot")) return -1;
     const x = TUNE.watchdogReserve;
@@ -2421,7 +2421,7 @@ export const fwZeLong = (s: State) => (s.hand ? 1 + handFx(s).zeLong : 1);
 export const fwZeGap = (s: State) => (s.hand ? 1 / (1 + handFx(s).zeOften) : 1);
 export const fwFieldOp = (s: State) => !!s.hand && handFx(s).fieldOp;
 /** Lineage: everything +50% per Handover done. */
-/** Arc clears (lib/nodefarm/arcs.ts fills this when it is imported, like RIG_HOOKS): how many arcs have every button pressed once. */
+/** Arc clears (lib/nodefarm/zones/arcs.ts fills this when it is imported, like RIG_HOOKS): how many arcs have every button pressed once. */
 export const ARC_HOOKS: { cleared?: (s: State) => number } = {};
 export const handGlobal = (s: State) => (s.hand ? 1 + handFx(s).lineage * s.hand.count : 1);
 /** The node remembers: every Handover done multiplies AP on Ascend. */
@@ -2666,7 +2666,7 @@ export function parseSave(raw: string): State | null {
     }
 }
 
-/** The ending's saved state (rules in lib/nodefarm/ending.ts). Here so loading a save needs no import from ending.ts. */
+/** The ending's saved state (rules in lib/nodefarm/systems/ending.ts). Here so loading a save needs no import from ending.ts. */
 export interface EndLog { n: number; text: string; at: number }
 export interface EndState {
     /** stages of the final build done (0 to END_STEPS in ending.ts) */

@@ -5,7 +5,7 @@ import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { E, ZE, fixtureNames, loadFixture, clone } from "./helpers.mjs";
 
-const G = await import(resolve(dirname(fileURLToPath(import.meta.url)), "../../lib/nodefarm/guide.ts"));
+const G = await import(resolve(dirname(fileURLToPath(import.meta.url)), "../../lib/nodefarm/content/guide.ts"));
 const step = (s) => G.nextStep(s, E.derive(s));
 
 test("every fixture gets a titled step with a finite meter", () => {

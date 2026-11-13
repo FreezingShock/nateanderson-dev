@@ -1,0 +1,27 @@
+/* Node Farm 64 px button sprites (scripts/naos-art/nodefarm-icons64.py, components/nodefarm/board/icon.tsx TIC64).
+   Sheet per stat: six tiers across, eight frames down, 64 px cells, shown at --ts (48 px desktop, 40 px phone). Pixelated on
+   dense screens, smoothed at 1x. It never covers the cost line: .nf-btn-c keeps clear of it. */
+.ctos .nf .nf-tic.nf-tic64 {
+    width: var(--ts); height: var(--ts); right: 6px; bottom: 5px;
+    background-repeat: no-repeat; image-rendering: pixelated;
+    background-size: calc(var(--ts) * 6) calc(var(--ts) * 8);
+    background-position: calc(var(--t) * var(--ts) * -1) 0;
+    animation: nfTic64 1s steps(8) infinite paused;
+}
+.ctos .nf .nf-btn[data-afford] .nf-tic.nf-tic64 { animation-play-state: running; animation-delay: calc(var(--t) * -.13s); }
+@keyframes nfTic64 { to { background-position-y: calc(var(--ts) * -8); } }
+.ctos .nf .nf-btn { --ts: 48px; }
+.ctos .nf .nf-btn:has(.nf-tic64) .nf-btn-c { max-width: calc(100% - var(--ts) - 2px); }
+.ctos .nf .nf-btn:has(.nf-tic64) .nf-btn-fn { max-width: calc(100% - 40px); }
+@media (prefers-reduced-motion: reduce) { .ctos .nf .nf-tic.nf-tic64 { animation: none !important; } }
+/* 1x screens: a 64 px sprite shown at 32 or 48 CSS px would drop pixel rows; let the browser average them instead */
+@media (max-resolution: 1.4dppx) {
+    .ctos .nf .nf-tic.nf-tic64, .ctos .nf .nf-ic:not(.l), body .nf-aw .nf-ic:not(.l), .ctos .nf-ev .nf-ic:not(.l) { image-rendering: auto; }
+}
+/* phone: two buttons across. A slightly smaller sprite keeps clear of the wrapped function caption above it. */
+@media (max-width: 719px) {
+    .ctos .nf .nf-btn { --ts: 40px; }
+    .ctos .nf .nf-btn:has(.nf-tic64) .nf-btn-fn { max-width: 100%; }
+}
+/* off-screen sprites hold still (components/nodefarm/board/icon.tsx sets data-vis while one is in view) */
+.ctos .nf-ic:not([data-vis]), body .nf-ic:not([data-vis]), .ctos .nf .nf-tic.nf-tic64:not([data-vis]) { animation-play-state: paused !important; }

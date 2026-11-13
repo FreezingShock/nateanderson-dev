@@ -1,4 +1,4 @@
-"""Scripts zone icons at 64 px, one per script (ROW order in components/nodefarm/scripts.tsx), eight frames each.
+"""Scripts zone icons at 64 px, one per script (ROW order in components/nodefarm/workshop/scripts.tsx), eight frames each.
 Each is drawn in its script's colour so the crontab rows read at a glance. Built by nodefarm-icons64.py (target `sched`)
 into public/naos/nodefarm/sched-icons64.{png,webp}: eight frames across, nine rows down (512 x 576)."""
 import math
@@ -213,4 +213,4 @@ def restore(c, p):
     c.glow(m, P["lime"][5], 2, 90, 1)
 
 
-DRAW = [buy, reboot, compile_, deploy, drop, ascend, rig, event, restore]  # ROW order in components/nodefarm/scripts.tsx
+DRAW = [buy, reboot, compile_, deploy, drop, ascend, rig, event, restore]  # ROW order in components/nodefarm/workshop/scripts.tsx
