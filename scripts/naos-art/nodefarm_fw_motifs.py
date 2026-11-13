@@ -310,6 +310,11 @@ def fw_fieldop(s):
     s.rect(0.46, 0.06, 0.54, 0.3, "glow")
 
 
+# the same drawings at their new size (the old rows still hold the old size, unused)
+for _old in ("fw_fastpath", "fw_fieldkit", "fw_shortfuse"):
+    motif.__globals__["MOTIFS"][_old + ("_m" if _old == "fw_shortfuse" else "_s")] = motif.__globals__["MOTIFS"][_old]
+
+
 FW_NODES = {
     "fw_core": ("fw_corebox", "fwcore", "l", AMBER),
     "fw_warm": ("fw_warm", "boot", "s", AMBER),
@@ -337,4 +342,9 @@ FW_NODES = {
     "fw_fieldkit": ("fw_fieldkit", "field", "m", AMBER),
     "fw_weather": ("fw_weather", "field", "m", CYAN),
     "fw_fieldop": ("fw_fieldop", "field", "l", PHOS),
+    # 2026-11-12: the keeps became base Handover, so Fast path, Field kit and Short fuse moved into the Field arm at a new
+    # size; the old rows stay where they are and these are appended
+    "fw_fastpath_s": ("fw_fastpath_s", "field", "s", CYAN),
+    "fw_fieldkit_s": ("fw_fieldkit_s", "field", "s", AMBER),
+    "fw_shortfuse_m": ("fw_shortfuse_m", "field", "m", RED),
 }

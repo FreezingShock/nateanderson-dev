@@ -303,10 +303,10 @@ export const ENTRIES: CodexEntry[] = [
             { p: `A Handover is the reset past Ascend. It opens once Origin is producing. Hold the button for ${1.6} seconds. A backup is kept first.` },
             {
                 rows: [
-                    ["Wipes", "the run, AP, perks, the prestige tree and its ranks, Drones, Mounted drives, lab Intel, stock, queue and buffs"],
-                    ["Keeps", "goals, secrets, logs, lifetime stats, lab research, Keys, Firmware and your notes"],
+                    ["Wipes", "the run, AP, half of every perk, most of the prestige tree and its ranks, Drones, Mounted drives, half of every rig level, lab Intel, stock, queue and buffs"],
+                    ["Keeps", "the entry and upper path of every tree section (19 nodes on a whole tree), a quarter of the tree's AP, half your perks, rigs and hangar Parts, goals, secrets, logs, lifetime stats, lab research, Scripts, Keys, Firmware and your notes"],
                     ["Pays", "Keys, from the tree nodes you own and how much Origin you hold. A whole tree pays about 13 to 20"],
-                    ["After", `Ascends pay AP x(1 + ${HAND_TUNE.apPerHand} per Handover done)`],
+                    ["After", `Ascends pay AP x(1 + ${HAND_TUNE.apPerHand} per Handover done). Every Ascend starts with ${HAND_TUNE.warmReboots} Reboots, ${HAND_TUNE.bootProd} producers on Copper to Aether and a ${HAND_TUNE.afterglow / 60} minute Overclock, keeps Intel, payloads and half the Drone levels, and Watchdog, Standing orders and Forecast work without their nodes`],
                 ],
             },
             { p: `You can leave a note of up to ${HAND_TUNE.noteMax} characters for whoever runs the node next.` },
@@ -316,7 +316,7 @@ export const ENTRIES: CodexEntry[] = [
     {
         id: "firmware", group: "prestige", title: "Firmware and protocols", gate: (s) => s.hand.count > 0 || s.hand.keys > 0, where: "key K",
         body: () => [
-            { p: `Firmware is a tree of ${FW.length} nodes in three arms (Boot, Memory, Relay), bought with Keys at ${HAND_TUNE.nodeCost[0]} to ${HAND_TUNE.nodeCost[HAND_TUNE.nodeCost.length - 1]} each. It is kept forever and respec is free.` },
+            { p: `Firmware is a tree of ${FW.length} nodes in two arms (Relay for Keys and protocols, Field for rigs, zone events and shortcuts), bought with Keys at ${HAND_TUNE.nodeCost[0]} to ${HAND_TUNE.nodeCost[HAND_TUNE.nodeCost.length - 1]} each. Every node adds a new rule; what a Handover keeps is already built in. Firmware is kept forever and respec is free.` },
             { p: "At each Handover you pick one protocol, named for an earlier operator. Dual boot runs a second one at half strength. The Operator's desk lets you switch any time." },
             { list: PROTOS.map((x): [string, string] => [`${x.op}, ${x.name}`, x.blurb]) },
         ],
