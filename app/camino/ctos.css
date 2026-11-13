@@ -310,7 +310,7 @@ body.ctos-on .cm-sec-rule { background: linear-gradient(90deg, rgba(244, 244, 24
 }
 
 /* ---- Hero stats: one strip, cyan left edge, dither under each figure ------------------------------------------- */
-.ctos .cm-hero .meta.stats { display: inline-grid; grid-auto-flow: column; gap: 0; border: 1px solid var(--cm-hair-hi); border-left: 3px solid var(--cm-pop-magenta); background: var(--cm-ctos-panel); width: fit-content; max-width: 100%; }
+.ctos .cm-hero .meta.stats { display: inline-grid; grid-auto-flow: column; gap: 0; border: 1px solid var(--cm-hair-hi); background: var(--cm-ctos-panel); width: fit-content; max-width: 100%; }
 .ctos .meta.stats > div { position: relative; padding: 11px 20px 14px 14px; border-left: 1px solid var(--cm-hair); isolation: isolate; min-width: 96px; }
 .ctos .meta.stats > div:first-child { border-left: 0; }
 .ctos .meta.stats > div::after { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 22px; z-index: -1; pointer-events: none; background-image: radial-gradient(circle, rgba(244, 244, 242, .5) 0 30%, transparent 34%); background-size: 4px 4px; -webkit-mask-image: linear-gradient(0deg, #000, transparent); mask-image: linear-gradient(0deg, #000, transparent); opacity: .4; }
