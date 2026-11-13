@@ -120,7 +120,7 @@ export function StressPanel({ s, onStart, onLeave }: { s: State; onStart: (id: T
                 </p>
             )}
 
-            <Frame path="stress/tests" title="eight faults" i={3} note={run ? "One test at a time. Leave the running test to start another." : "Starting a test stores your run and starts a fresh one under the rule. Nothing is lost."}>
+            <Frame path="stress/tests" title="eight faults" i={3} note={run ? "One test at a time. Leave the running test to start another." : "Starting a test stores your run and starts a fresh one under the rule. Leaving brings your real run back as it was. Cleared ranks, goals, achievements, logs, scripts and lifetime stats from the test carry over."}>
                 <div className="nf-st-grid">
                     {TESTS.map((t, i) => <Card key={t.id} s={s} t={t} i={4 + i} busy={!!run} onStart={onStart} />)}
                 </div>
@@ -134,9 +134,9 @@ export function StressPanel({ s, onStart, onLeave }: { s: State; onStart: (id: T
                     <DataLines
                         rows={[
                             ["your run", "stored, back on leave"],
-                            ["kept", "ranks, goals, logs, scripts"],
+                            ["kept", "ranks, goals, achievements, logs, scripts, lifetime stats"],
                             ["locked", "Ascend, Handover, tree, Firmware"],
-                            ["undone on leave", "lab, hangar and rig buys"],
+                            ["undone on leave", "lab, hangar, rig and event progress"],
                             ["time away", "counts as test time"],
                         ]}
                     />

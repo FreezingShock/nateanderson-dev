@@ -409,4 +409,17 @@ Sim coverage (balance round 4): `sim.mjs` now loads the arc clear bonus by defau
 | `systems.test.mjs` | Scripts, drones, rigs, quick-time events, zone events (every kind in every zone), the lab, goals, secrets, the prestige tree and fork swaps do not throw or make NaN; ids are unique and every tree, lab, Firmware and drone node can be reached from the core |
 
 Rules for tests: they must not change game behaviour, and the keep/wipe rules in `resets.test.mjs` are the source of truth for what a reset keeps, so change them in the same PR as the engine change. `tests/nodefarm/helpers.mjs` has the loader (it hooks module resolution like the bundler does), `maxed()` (a late-game state built with admin's `maxOut`), `play()` (a greedy bot) and `problems()` (NaN and negatives). To add a save fixture, run `scripts/nodefarm/save-gen.mjs` against an older build and drop the JSON in `scripts/nodefarm/fixtures`; every test that loops over fixtures picks it up. Known cost: a maxed state with all Drones is slow to tick (about 60 ms a tick), so tests keep those runs short.
+
+## Reset rules (keep and wipe)
+
+What each reset keeps and wipes is checked by `tests/nodefarm/resets.test.mjs` (runs in `npm run test:nodefarm`) and printed field by field by `scripts/nodefarm/reset-audit.mjs`. The confirm screens and the Handover ledger say the same thing; `scripts/nodefarm/reset-browser.mjs` checks those screens on a production build.
+
+- **Reboot** wipes Bytes, Multipliers and Multiplier tiers, banks the crash-dump Intel, and consumes an armed Logic bomb. Everything else stays.
+- **Ascend** wipes the run, Drones, Parts, Intel, Reboots (to the kit) and the production. It keeps goals, achievements, logs, perks, the tree, lab research and stock, scripts, the hangar's postings, Keys, Firmware, rig levels, the stress test ranks, arc progress and lifetime stats.
+- **Handover** wipes everything Ascend wipes, plus AP, perks (half with Perk cache), the tree (Imprint and Deep imprint keep some nodes), Mounted drives, Lab Intel and stock, rig levels (half with Rig memory), and the hangar's Parts and mod levels (part with Flight recorder and Black box). It keeps what Ascend keeps, minus the lab image, and zone event history.
+- **Stress test start** puts the real run aside and starts a fresh one. **Leave** puts it back. Goals, achievements, logs, scripts, lifetime stats, cleared ranks and which tiers were pressed come along. Everything else from inside the test is discarded.
+- **Locked during a test:** Ascend, Handover, the prestige tree, perks and Firmware (buys and respec).
+- **Tree respec** refunds AP and clears Mounted drives. **Firmware respec** refunds Keys. **Drone tree respec** refunds Cores.
+- **Wipe save** replaces the save with a fresh one. **Import** and **restore** replace it, after a backup. Backups: Ascend, Handover, wipe, import, restore and stress test starts are `event` backups (newest 3).
+
 Dead stretch fix (balance round 4): after the Chrono gate moved to 2000 the mid-game replay found 15 h with no new zone between Voidsteel (8 h) and Chrono (23 h). The gates are now Starglass 800, Voidsteel 2500, Chrono 1000, which opens them at about 6 h, 12 h and 22 h (Drone bot; No-Drones 6, 15, 23), so the longest gap is about 10 h (7.5 h for the slow bot). A new opener inside the gap (a rig, feature or event) would still help; that is a content call for Nate.

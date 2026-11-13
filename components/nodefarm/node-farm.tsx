@@ -9,7 +9,7 @@ import {
     TUNE, ZE_TUNE, overclockMult, overclockSecs, respec, ascend, canAscend, button, buyDrone, buyNode, canAfford, buyPerk, checkGoals, derive, exportSave, fmt, fmtTime, fresh, getNumFmt, setNumFmt, type NumFmt, isUnlocked, parseSave, press, STATS, tick,
     apEach, dropFill, hasFeature, openDrop, setMount, statDef,
     buyLabNode, cancelCompile, compile, deploy, labNode, labOpen, payload, type PayloadId,
-    chOff, buyFw, fwNode, handSeen, handover, protoDef, protoRank, respecFw, setProto, type ProtoId,
+    chOff, buyFw, fwNode, handSeen, handover, keysOnHandover, protoDef, protoRank, respecFw, setProto, type ProtoId,
     type ButtonStat, type MatId, type State, type StatId,
 } from "@/lib/nodefarm/engine";
 import { initFx } from "@/lib/nodefarm/fx";
@@ -314,6 +314,13 @@ export function NodeFarm() {
 
     // plain text lines get a level tag and highlighted numbers; code-style lines go through feedStore.push with tokens
     const log = useCallback((text: string, tone?: FeedTone) => feedStore.push(fromText(text, tone), { tone, type: true }), [feedStore]);
+    /** Ascend, Handover, the tree and Firmware are locked while a stress test runs: say so instead of doing nothing. */
+    const lockedNote = (what: string) => {
+        if (!g.current || !chOff(g.current, "prestige")) return false;
+        log(`${what} is locked while a stress test runs. Leave the test to use it.`, "warn");
+        sfx("deny");
+        return true;
+    };
 
     // ---- boot: load the save, bank offline time, print the greeting
     useEffect(() => {
@@ -783,6 +790,7 @@ export function NodeFarm() {
     };
 
     const doAscend = (now = false) => {
+        if (lockedNote("Ascend")) return;
         if (!now && confirm !== "ascend") {
             setConfirm("ascend");
             setTimeout(() => setConfirm((c) => (c === "ascend" ? "" : c)), 4000);
@@ -803,7 +811,7 @@ export function NodeFarm() {
 
     // ---- save safety
     const keepBackup = (why: string, force = true) => {
-        setBackups(addBackup(why.startsWith("before Ascend") ? "auto" : "event", why, JSON.stringify(g.current), { force }));
+        setBackups(addBackup("event", why, JSON.stringify(g.current), { force }));
     };
     // two tabs on one save overwrite each other: when another tab writes, this one stops saving and says so
     useEffect(() => {
@@ -1018,6 +1026,8 @@ export function NodeFarm() {
     const fwSeen = s.hand.count > 0 || s.hand.keys > 0;
     const openFw = () => { if (!fwSeen) return; setWin(""); setTreeOpen(false); setLabTree(false); setFwTree(true); sfx("tab"); };
     const doHandover = (proto: ProtoId, note: string, proto2: ProtoId | null) => {
+        if (lockedNote("Handover")) return;
+        if (keysOnHandover(s) < 1) return sfx("deny"); // nothing to hand over yet: no backup for a press that does nothing
         keepBackup("before Handover");
         const from = s.hand.proto;
         const keys = handover(s, proto, note, proto2);
@@ -1379,7 +1389,7 @@ export function NodeFarm() {
                 <Hold live={onPane("records")} k=""><WinBar id="records" info={sw} treeSeen={treeSeen} lab={labOpen(s)} onSwitch={(w) => (w === "lab" ? openLab() : openWin(w))} onClose={closeWin} /></Hold><Hold live={onPane("records")} k=""><RecordsPanel s={s} /></Hold></section>
             <section className="nf-pane nf-sidepane" data-pane="ascend" aria-label="Ascend" role="dialog" aria-modal="false">
                 <Hold live={onPane("ascend")} k=""><WinBar id="ascend" info={sw} treeSeen={treeSeen} lab={labOpen(s)} onSwitch={(w) => (w === "lab" ? openLab() : openWin(w))} onClose={closeWin} /></Hold>
-                <Hold live={onPane("ascend")} k=""><AscendPanel s={s} d={d} confirm={confirm === "ascend"} onAscend={doAscend} onPerk={(id) => { if (buyPerk(s, id)) { sfx("nfBuy", { tier: 3 }); bump((n) => n + 1); } }} onTree={() => openWin("tree")} onMount={(i, m) => { if (setMount(s, i, m)) { sfx("tab"); save(); bump((n) => n + 1); } }} /></Hold>
+                <Hold live={onPane("ascend")} k=""><AscendPanel s={s} d={d} confirm={confirm === "ascend"} onAscend={doAscend} onPerk={(id) => { if (buyPerk(s, id)) { sfx("nfBuy", { tier: 3 }); bump((n) => n + 1); } else lockedNote("Perks"); }} onTree={() => openWin("tree")} onMount={(i, m) => { if (setMount(s, i, m)) { sfx("tab"); save(); bump((n) => n + 1); } }} /></Hold>
             </section>
             {handSeen(s) && (
                 <section className="nf-pane nf-sidepane" data-pane="handover" aria-label="Handover" role="dialog" aria-modal="false">
@@ -1484,13 +1494,13 @@ export function NodeFarm() {
                     ver={`${s.hand.fw.join(",")}|${s.hand.keys}`}
                     reduced={reduced}
                     onBuy={(id) => {
-                        if (!buyFw(s, id)) return sfx("deny");
+                        if (!buyFw(s, id)) { if (!lockedNote("Firmware")) sfx("deny"); return; }
                         sfx("nfBuy", { tier: 5 });
                         feedStore.push([...call(idTok("fw"), "flash", [strTok(fwNode(id).name)]), pun(" → "), strTok("ok")], { tone: "good", type: true });
                         save();
                         bump((x) => x + 1);
                     }}
-                    onRespec={() => { const back = respecFw(s); sfx("tab"); log(`Firmware respec: ${fmt(back)} Keys back.`, "good"); save(); bump((n) => n + 1); return back; }}
+                    onRespec={() => { if (lockedNote("The Firmware respec")) return 0; const back = respecFw(s); sfx("tab"); log(`Firmware respec: ${fmt(back)} Keys back.`, "good"); save(); bump((n) => n + 1); return back; }}
                     onClose={closeFw}
                 />
             )}
@@ -1499,8 +1509,8 @@ export function NodeFarm() {
                     s={s}
                     ver={`${s.tree.join(",")}|${s.ap}|${JSON.stringify(s.treeLv ?? {})}`}
                     reduced={reduced}
-                    onBuy={(id) => { if (buyNode(s, id)) { sfx("nfBuy", { tier: 4 }); bump((n) => n + 1); } else sfx("deny"); }}
-                    onRespec={() => { const back = respec(s); sfx("tab"); log(`Tree respec: ${fmt(back)} AP refunded.`, "good"); save(); bump((n) => n + 1); return back; }}
+                    onBuy={(id) => { if (buyNode(s, id)) { sfx("nfBuy", { tier: 4 }); bump((n) => n + 1); } else if (!lockedNote("The prestige tree")) sfx("deny"); }}
+                    onRespec={() => { if (lockedNote("The tree respec")) return 0; const back = respec(s); sfx("tab"); log(`Tree respec: ${fmt(back)} AP refunded.`, "good"); save(); bump((n) => n + 1); return back; }}
                     onClose={closeTree}
                 />
             )}
