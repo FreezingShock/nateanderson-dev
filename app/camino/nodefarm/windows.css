@@ -336,3 +336,18 @@ body.nf-fs .ctos .nf-mh { top: 46px; }
 /* key hints on desktop only: a touch screen has no keyboard to press them with */
 .ctos .nf-kbd { display: none; margin-left: 8px; padding: 2px 5px; border: 1px solid currentColor; font: 600 10px/1 var(--cm-mono); opacity: .6; }
 @media (hover: hover) and (pointer: fine) { .ctos .nf-kbd { display: inline-block; } }
+
+/* ==== Settings hover preview: one card above the list. It explains the line under the pointer or focus, and shows its live value.
+   Sharp corners with bracket frames, no pills, no side strip. */
+.ctos .nf-st-pv { list-style: none; margin: 0 0 10px; }
+.ctos .nf-st-pv-in, .ctos .nf-st-pv-hint { position: relative; display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 14px; align-items: center; min-height: 84px; padding: 14px 16px; background: color-mix(in srgb, var(--c, #b6f04a) 6%, #080a08); border: 1px solid color-mix(in srgb, var(--c, #b6f04a) 30%, #1c1c1c); animation: nfPvIn .22s steps(4, end) both; }
+.ctos .nf-st-pv-hint { display: block; font: 400 var(--cm-ctos-t-micro)/1.3 var(--cm-mono); letter-spacing: .06em; color: var(--cm-ctos-meta); }
+.ctos .nf-st-pv-in::before, .ctos .nf-st-pv-in::after { content: ""; position: absolute; width: 10px; height: 10px; border: 0 solid var(--c, #b6f04a); pointer-events: none; }
+.ctos .nf-st-pv-in::before { left: -1px; top: -1px; border-left-width: 2px; border-top-width: 2px; }
+.ctos .nf-st-pv-in::after { right: -1px; bottom: -1px; border-right-width: 2px; border-bottom-width: 2px; }
+.ctos .nf-st-pv-in > .nf-ic { --s: 44px; }
+.ctos .nf-st-pv-in b { display: block; font: 700 17px/1.1 var(--cm-display); letter-spacing: -.01em; color: var(--cm-fg); text-transform: lowercase; }
+.ctos .nf-st-pv-in b small { font: 600 var(--cm-ctos-t-micro)/1 var(--cm-mono); letter-spacing: .12em; text-transform: uppercase; color: var(--c, #b6f04a); margin-left: 6px; }
+.ctos .nf-st-pv-in p { margin: 6px 0 0; font: 400 13px/1.45 var(--cm-mono); color: var(--cm-ctos-meta); }
+@keyframes nfPvIn { from { opacity: 0; } to { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .ctos .nf-st-pv-in, .ctos .nf-st-pv-hint { animation: none; } }
