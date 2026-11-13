@@ -1,7 +1,7 @@
 """Scripts (scheduler) panel scene and script icons for Node Farm.
 
 Scene: same contract as the zone sheets (scripts/naos-art/nodefarm_zone_kit.py): 288 x 96 cells, 11 stage rows, 6 frames,
-writes public/naos/nodefarm/zone-sched.{png,webp}. Stage = scripts learned (lib/nodefarm/scripts.ts, `schedStage`).
+writes public/naos/nodefarm/zone-sched.{png,webp}. Stage = scripts learned (lib/nodefarm/systems/scripts.ts, `schedStage`).
   0 the cron room: an amber terminal wall with a crontab scrolling, a wall clock, a server floor
   1 buy.sh      a pick arm over a conveyor, dropping lime blocks
   2 reboot.sh   a magenta breaker panel whose lever throws and sparks
@@ -13,7 +13,7 @@ writes public/naos/nodefarm/zone-sched.{png,webp}. Stage = scripts learned (lib/
   8 event.sh    a radar dish sweeping the sky, a blip lighting on the sweep
   9 restore.sh  a tape archive on the wall, reels turning
   10            the daemon: an amber clock-face drone keeping time over the room (all scripts learned, or buy.sh v3)
-Icons: public/naos/nodefarm/sched-icons.{png,webp}, 32 px cells, one row per script (ROW in components/nodefarm/scripts.tsx), 4 frames.
+Icons: public/naos/nodefarm/sched-icons.{png,webp}, 32 px cells, one row per script (ROW in components/nodefarm/workshop/scripts.tsx), 4 frames.
 Run: python3 scripts/naos-art/nodefarm-sched-scene.py
 """
 import math

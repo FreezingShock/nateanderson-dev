@@ -1,5 +1,5 @@
 // Node Farm effects level: one switch other code can hook.
-//   full: everything runs.  low: the expensive decoration stops (see app/camino/nodefarm-fx.css).  auto: low while this
+//   full: everything runs.  low: the expensive decoration stops (see app/camino/nodefarm/fx.css).  auto: low while this
 //   device is struggling, full again once it has recovered. Auto keeps watching the frame rate the whole time it is on,
 //   so a machine that is slow only at first (or only in one window) doesn't get stuck in the wrong state. Auto is also
 //   low while the OS asks for reduced motion (prefers-reduced-motion); an explicit full ignores that setting.

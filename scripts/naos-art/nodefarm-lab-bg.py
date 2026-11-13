@@ -6,7 +6,7 @@ Writes to public/naos/nodefarm/:
   lab-sec-*    384 px, transparent: one plate per section (exploits / malware / infra), a coloured dither nebula with that
                section's motif (bracket code, virus cells, circuit traces)
   lab-core     384 px, transparent: drafting rings, ticks and a glow around the root
-The menu (components/nodefarm/lab-backdrop.tsx) tiles the first two at camera depths and places the plates in the world.
+The menu (components/nodefarm/workshop/lab-backdrop.tsx) tiles the first two at camera depths and places the plates in the world.
 Run: python3 scripts/naos-art/nodefarm-lab-bg.py
 """
 import math

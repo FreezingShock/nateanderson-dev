@@ -1,7 +1,7 @@
 """Exploit Lab panel scene: a staged dither workbench that fills in as research is bought.
 
 Same contract as the zone sheets (scripts/naos-art/nodefarm_zone_kit.py): 288 x 96 cells, 8 stage rows, 6 frames, writes
-public/naos/nodefarm/zone-lab.{png,webp}. Stage = research progress (components/nodefarm/lab.tsx, `labStage`).
+public/naos/nodefarm/zone-lab.{png,webp}. Stage = research progress (components/nodefarm/workshop/lab.tsx, `labStage`).
   0 bare bench under the blueprint wall      4 virus vats (the "concoctions") bubbling in four colours
   1 a CRT with scrolling code                 5 a wide scope screen with a waveform
   2 a sniffer mast with a blinking router     6 a botnet dish and a swarm of drones in the sky

@@ -8,8 +8,8 @@ Writes to public/naos/nodefarm/:
   fw-core        384 px, transparent: phosphor rings round node zero
   scene-handover 480 x 160, opaque, 4 frames stacked: the Root Chamber, one small box with one wire at the foot of the
                  mirror stair, the four operator lamps on the wall and a key turning in the air
-The tree menu (components/nodefarm/fw-backdrop.tsx) tiles the first two and places the plates; the Handover window
-(components/nodefarm/handover.tsx) steps through the banner frames. Shares the Canvas and noise helpers of
+The tree menu (components/nodefarm/ascend/fw-backdrop.tsx) tiles the first two and places the plates; the Handover window
+(components/nodefarm/ascend/handover.tsx) steps through the banner frames. Shares the Canvas and noise helpers of
 nodefarm-lab-bg.py. Run: python3 scripts/naos-art/nodefarm-handover-art.py
 """
 import importlib.util
@@ -283,7 +283,7 @@ def scene():
 def cut():
     """The Handover moment, 320 x 180, 8 frames stacked: an operator's desk seen from behind in a dark room. 0-2 the lamp is
     on and the terminal scrolls; 3 the lamp flickers; 4-5 the room goes dark and the screen holds one key; 6-7 the screen
-    boots bright green for the next operator. components/nodefarm/handover-cut.tsx steps through it."""
+    boots bright green for the next operator. components/nodefarm/ascend/handover-cut.tsx steps through it."""
     W, H, F = 320, 180, 8
     frames = []
     for f in range(F):

@@ -3,7 +3,7 @@
 Run:  python3 scripts/naos-art/nodefarm-next-art.py
 Output:
   public/naos/nodefarm/next-plates.{png,webp}  PW x PH art pixels per plate, FRAMES columns (animation), one row per plate
-                                                (order: PLATES below, must match PLATES in components/nodefarm/guide.tsx)
+                                                (order: PLATES below, must match PLATES in components/nodefarm/windows/guide.tsx)
   public/naos/nodefarm/next-icons.{png,webp}   IC x IC per icon, one row (order: ICONS below, must match NX_ICONS there)
 
 Shading works like nodefarm-icons.py: flat shapes with a gradient, quantised to a 5-step colour ramp through a Bayer 4x4

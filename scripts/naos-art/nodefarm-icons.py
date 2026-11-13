@@ -2,7 +2,7 @@
 
 Every icon is built from flat shapes shaded with a gradient that is quantised to a 5-step colour ramp through a Bayer 4x4
 threshold, so the shading reads as dither, not as smooth colour. Run: python3 scripts/naos-art/nodefarm-icons.py
-Order of the cells is ICONS below; the React side (components/nodefarm/icon.tsx) uses the same order.
+Order of the cells is ICONS below; the React side (components/nodefarm/board/icon.tsx) uses the same order.
 """
 import math
 from pathlib import Path

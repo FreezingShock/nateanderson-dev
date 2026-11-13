@@ -1,4 +1,4 @@
-// Touch layer rules: helpers for the figure tips, links and the zone quick menu (components/nodefarm/poke.tsx).
+// Touch layer rules: helpers for the figure tips, links and the zone quick menu (components/nodefarm/windows/poke.tsx).
 // Caches and the core vent were cut on 2026-11-12 (systems audit: tap-for-a-lump overlapped the Dead drop). Saves that still
 // carry `poke` just ignore it.
 import { MATS, STATS, derive, overclockMult, type MatId, type State, type StatId } from "./engine";

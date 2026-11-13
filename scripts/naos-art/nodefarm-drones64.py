@@ -3,7 +3,7 @@
 Run:  python3 scripts/naos-art/nodefarm-drones64.py            (writes the sheet)
       python3 scripts/naos-art/nodefarm-drones64.py --sample   (also a 4x contact sheet in /tmp/nf-drones64.png)
 Output: public/naos/nodefarm/drones.{png,webp}, 6 tiers across, 8 frames down (384 x 512). CSS steps the frames down the
-sheet (`.nf-sp-d`, `nfDroneFrame` in app/camino/nodefarm.css). Then run scripts/nodefarm/stamp-art.mjs.
+sheet (`.nf-sp-d`, `nfDroneFrame` in app/camino/nodefarm/base.css). Then run scripts/nodefarm/stamp-art.mjs.
 
 Each tier is its own machine, not the same hull with parts added:
   T1 Probe      cyan scout pod under one top rotor, a scanning lens and a feeler antenna

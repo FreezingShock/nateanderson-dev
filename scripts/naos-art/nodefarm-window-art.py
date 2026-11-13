@@ -4,7 +4,7 @@ Run:  python3 scripts/naos-art/nodefarm-window-art.py              (all)
       python3 scripts/naos-art/nodefarm-window-art.py map goals    (just those)
 Then: node scripts/nodefarm/stamp-art.mjs
 Output: public/naos/nodefarm/win-<name>.{png,webp}, 480 x 150 art pixels, shown 1:1 in the banner at the top of each window
-(components/nodefarm/win-kit.tsx, app/camino/nodefarm-windows.css). Drawn with nodefarm_wide_kit, the wide-canvas version of the
+(components/nodefarm/windows/win-kit.tsx, app/camino/nodefarm/windows.css). Drawn with nodefarm_wide_kit, the wide-canvas version of the
 64 px icon kit, so the banners share the icons' hue-shifted ramps, rim light, outline and glow. Sky and mist are see-through
 dither, so the window's own halftone floor still shows. The left third sits under the readout and is faded by the CSS, so
 each piece keeps its subject in the middle and right. Everything is procedural; nothing is traced or borrowed.

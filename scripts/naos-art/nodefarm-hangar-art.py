@@ -4,7 +4,7 @@ Writes to public/naos/nodefarm/:
   hangar-bg-0   256 px tile, opaque: steel deck plates seen from above, seams, rivets, oil and coolant stains, paint
   hangar-pad    384 px, transparent: the landing pad under the drone tree's core, hazard ring, guide lights
   hangar-bay    360 x 84, opaque: the board's hangar strip, six berths (one per Drone tier) under a crane rail; berth i is
-                centred at (i + 0.5) / 6 of the width so the live Drone sprites (components/nodefarm/drones.tsx) line up
+                centred at (i + 0.5) / 6 of the width so the live Drone sprites (components/nodefarm/workshop/drones.tsx) line up
 Run: python3 scripts/naos-art/nodefarm-hangar-art.py
 """
 import math

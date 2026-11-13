@@ -1,0 +1,189 @@
+/* Node Farm window switcher (components/nodefarm/windows/switcher.tsx): desktop module rail under the HUD, phone section grid,
+   and the coloured window title bar with its hop strip. Every window keeps one colour (--sw) everywhere. Sharp edges,
+   no pills: 1 px hairlines, a 2 px colour edge, dither wash, plain mono data lines. */
+
+/* ---- each window's colour also tints its frame */
+.ctos .nf-sidepane[data-pane="map"] { --sw: #2fd8e8; }
+.ctos .nf-sidepane[data-pane="goals"] { --sw: #ffc53a; }
+.ctos .nf-sidepane[data-pane="records"] { --sw: #f0a53c; }
+.ctos .nf-sidepane[data-pane="ascend"] { --sw: #ff2d8a; }
+.ctos .nf-sidepane[data-pane="handover"] { --sw: #3dff6e; }
+.ctos .nf-sidepane[data-pane="codex"] { --sw: #ff6b57; }
+.ctos .nf-sidepane[data-pane="menu"] { --sw: #b6f04a; }
+
+@keyframes nfSwPip { 50% { opacity: .25; } }
+@keyframes nfSwHot { 0%, 100% { opacity: .55; } 50% { opacity: 1; } }
+
+.ctos .nf-sw-pip { position: absolute; width: 6px; height: 6px; background: var(--sw); box-shadow: 0 0 0 2px #0a0a0a, 0 0 8px var(--sw); animation: nfSwPip 1s steps(2, end) infinite; pointer-events: none; }
+.ctos .nf-sw-ic { display: grid; place-items: center; color: var(--sw); line-height: 0; }
+.ctos .nf-sw-k { font: 600 11px/1 var(--cm-mono); letter-spacing: .04em; padding: 3px 5px 2px; border: 1px solid var(--nf-line); color: var(--cm-ctos-meta); background: #0a0a0a; }
+
+/* ---- desktop rail */
+@media (min-width: 1000px) {
+    .ctos .nf-hud .nf-sw {
+        flex: 1 0 100%;
+        display: grid;
+        grid-template-columns: auto repeat(var(--n), minmax(0, 1fr)) auto;
+        gap: 1px;
+        margin: 2px -14px -12px;
+        background: var(--nf-line);
+        border-top: 1px solid var(--nf-line);
+    }
+    .ctos .nf-sw-cap { display: grid; place-items: center; padding: 0 14px; background: #090909; font: 600 11px/1 var(--cm-mono); letter-spacing: .12em; color: var(--cm-ctos-meta); text-transform: uppercase; white-space: nowrap; }
+    .ctos .nf-sw-b {
+        position: relative;
+        display: grid;
+        grid-template-columns: 28px minmax(0, 1fr) auto;
+        align-items: center;
+        gap: 10px;
+        min-height: 56px;
+        padding: 9px 12px 9px 14px;
+        background: #0c0c0c;
+        border: 0;
+        text-align: left;
+        cursor: pointer;
+        overflow: hidden;
+        isolation: isolate;
+    }
+    .ctos .nf-sw-b[data-compact] { grid-template-columns: 24px auto; padding: 9px 14px; }
+    /* the 2 px colour edge prints in from the left; dither wash behind */
+    .ctos .nf-sw-b::before { content: ""; position: absolute; left: 0; right: 0; top: 0; height: 2px; background: var(--sw); transform: scaleX(0); transform-origin: 0 50%; transition: transform 160ms steps(5, end); }
+    .ctos .nf-sw-b::after {
+        content: ""; position: absolute; inset: 0; z-index: -1; opacity: 0; pointer-events: none;
+        background: repeating-conic-gradient(var(--sw) 0 25%, transparent 0 50%) 0 0 / 4px 4px;
+        -webkit-mask-image: linear-gradient(90deg, #000, transparent 70%); mask-image: linear-gradient(90deg, #000, transparent 70%);
+        transition: opacity 160ms steps(4, end);
+    }
+    .ctos .nf-sw-b .nf-sw-ic svg { transition: filter 160ms steps(4, end); }
+    .ctos .nf-sw-t { display: grid; gap: 5px; min-width: 0; }
+    .ctos .nf-sw-l { font: 700 12px/1 var(--cm-mono); letter-spacing: .16em; text-transform: uppercase; color: #dcdcdc; white-space: nowrap; }
+    .ctos .nf-sw-r { font: 500 11px/1 var(--cm-mono); letter-spacing: .04em; color: var(--cm-ctos-meta); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-variant-numeric: tabular-nums; }
+    .ctos .nf-sw-b .nf-sw-pip { left: 8px; top: 9px; }
+
+    .ctos .nf-sw-b:hover::before, .ctos .nf-sw-b[data-on]::before, .ctos .nf-sw-b:focus-visible::before { transform: scaleX(1); }
+    .ctos .nf-sw-b:hover::after { opacity: .14; }
+    .ctos .nf-sw-b:hover { background: #0f0f0f; box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--sw) 40%, transparent); }
+    .ctos .nf-sw-b:hover .nf-sw-ic svg { filter: drop-shadow(0 0 6px color-mix(in srgb, var(--sw) 70%, transparent)); }
+    .ctos .nf-sw-b:hover .nf-sw-l { color: #fff; }
+    .ctos .nf-sw-b:hover .nf-sw-k { border-color: var(--sw); color: var(--sw); }
+    .ctos .nf-sw-b:active { background: color-mix(in srgb, var(--sw) 16%, #0c0c0c); }
+    .ctos .nf-sw-b:focus-visible { outline: 2px solid var(--sw); outline-offset: -2px; }
+    .ctos .nf-sw-b[data-on] { background: color-mix(in srgb, var(--sw) 12%, #0c0c0c); }
+    .ctos .nf-sw-b[data-on]::after { opacity: .22; }
+    .ctos .nf-sw-b[data-on] .nf-sw-l { color: var(--sw); }
+    .ctos .nf-sw-b[data-hot] .nf-sw-r { color: var(--sw); }
+    .ctos .nf-sw-b[data-hot]::before { transform: scaleX(1); animation: nfSwHot 1.6s steps(4, end) infinite; }
+    .ctos .nf-sw-b[data-guide] { animation: nfGlow 1.6s ease-in-out infinite; --c: var(--sw); z-index: 3; }
+    .ctos .nf-sw-b[data-guide]::before { transform: scaleX(1); }
+    .ctos .nf-sw-b[data-compact][aria-pressed="true"] .nf-sw-ic { color: #0a0a0a; }
+    .ctos .nf-sw-b[data-compact][aria-pressed="true"] { background: var(--sw); }
+
+    /* narrower desktops: drop the key hints first, then the cap */
+    @media (max-width: 1279px) { .ctos .nf-sw-b:not([data-compact]) .nf-sw-k { display: none; } .ctos .nf-sw-b { grid-template-columns: 24px minmax(0, 1fr); gap: 8px; padding-left: 12px; } }
+    @media (max-width: 1099px) { .ctos .nf-sw-cap { display: none; } .ctos .nf-hud .nf-sw { grid-template-columns: repeat(var(--n), minmax(0, 1fr)) auto; } }
+
+    /* ---- window title bar */
+    .ctos .nf-win-bar.nf-sw-bar { z-index: 12; gap: 0; padding-left: 0; min-height: 40px; background: var(--sw); color: #0a0a0a; box-shadow: 0 1px 0 #0a0a0a; }
+    .ctos .nf-sw-bar > span { flex: none; }
+    .ctos .nf-sw-bar > .nf-sw-bar-t { flex: 1; display: flex; align-items: baseline; gap: 12px; min-width: 0; padding: 0 14px; overflow: hidden; white-space: nowrap; }
+    .ctos .nf-sw-bar-ic { display: grid; place-items: center; align-self: stretch; width: 44px; background: #0a0a0a; color: var(--sw); line-height: 0; }
+    .ctos .nf-sw-bar-t b { font: 700 13px/1 var(--cm-mono); letter-spacing: .18em; text-transform: uppercase; }
+    .ctos .nf-sw-bar-p { font: 600 11px/1 var(--cm-mono); letter-spacing: .06em; text-transform: none; opacity: .62; overflow: hidden; text-overflow: ellipsis; }
+    .ctos .nf-sw-bar-r { align-self: stretch; display: grid; place-items: center; padding: 0 14px; border-left: 1px solid #0a0a0a33; font: 700 11px/1 var(--cm-mono); letter-spacing: .1em; text-transform: uppercase; white-space: nowrap; font-variant-numeric: tabular-nums; }
+    /* hop strip: a dark rack where every window shows in its own colour; hover types the name into a card below */
+    .ctos .nf-sw-hop { display: flex; align-self: stretch; background: #0a0a0a; border-left: 1px solid #0a0a0a; }
+    .ctos .nf-sw-hb { position: relative; display: grid; place-items: center; width: 36px; padding: 0; background: transparent; border: 0; color: var(--sw); cursor: pointer; line-height: 0; }
+    .ctos .nf-sw-hb > svg { opacity: .55; filter: saturate(.55); transition: opacity 120ms steps(3, end), filter 120ms steps(3, end), translate 120ms steps(3, end); }
+    .ctos .nf-sw-hb::before { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 2px; background: var(--sw); transform: scaleX(0); transition: transform 140ms steps(4, end); }
+    .ctos .nf-sw-hb:hover, .ctos .nf-sw-hb:focus-visible { background: color-mix(in srgb, var(--sw) 16%, #0a0a0a); }
+    .ctos .nf-sw-hb:hover > svg, .ctos .nf-sw-hb:focus-visible > svg { opacity: 1; filter: drop-shadow(0 0 5px color-mix(in srgb, var(--sw) 75%, transparent)); translate: 0 -1px; }
+    .ctos .nf-sw-hb:hover::before, .ctos .nf-sw-hb:focus-visible::before { transform: scaleX(1); }
+    .ctos .nf-sw-hb:focus-visible { outline: 2px solid var(--sw); outline-offset: -4px; }
+    .ctos .nf-sw-hb[data-on] { background: var(--sw); color: #0a0a0a; cursor: default; }
+    .ctos .nf-sw-hb[data-on] > svg { opacity: 1; filter: none; translate: none; }
+    .ctos .nf-sw-hb[data-hot]:not([data-on])::after { content: ""; position: absolute; right: 5px; top: 6px; width: 5px; height: 5px; background: var(--sw); box-shadow: 0 0 6px var(--sw); animation: nfSwPip 1s steps(2, end) infinite; }
+
+    .ctos .nf-sw-tip {
+        position: absolute; z-index: 5; top: calc(100% + 6px); left: 50%; translate: -50% 0;
+        display: grid; grid-template-columns: auto auto; align-items: center; gap: 6px 12px;
+        min-width: 150px; padding: 10px 12px 9px; background: #0b0b0b; border: 1px solid color-mix(in srgb, var(--sw) 55%, #1c1c1c); border-top: 2px solid var(--sw);
+        box-shadow: 0 0 0 4px #000a, 0 12px 30px #000c; text-align: left; line-height: 1; white-space: nowrap; pointer-events: none;
+        visibility: hidden; opacity: 0; clip-path: inset(0 0 100% 0);
+    }
+    /* the first and last few cards hang inward so they never leave the window */
+    .ctos .nf-sw-hb:nth-last-child(-n+3) .nf-sw-tip { left: auto; right: -1px; translate: none; }
+    .ctos .nf-sw-tip::before { content: ""; position: absolute; top: -8px; left: 50%; margin-left: -4px; border: 4px solid transparent; border-bottom-color: var(--sw); }
+    .ctos .nf-sw-hb:nth-last-child(-n+3) .nf-sw-tip::before { left: auto; right: 13px; margin: 0; }
+    .ctos .nf-sw-tip b { grid-column: 1 / -1; justify-self: start; position: relative; display: block; overflow: hidden; width: calc(var(--len) * (1ch + .16em) + 2px); padding-right: 10px; font: 700 13px/1 var(--cm-mono); letter-spacing: .16em; text-transform: uppercase; color: var(--sw); }
+    .ctos .nf-sw-tip b::after { content: ""; position: absolute; right: 0; top: 0; bottom: 0; width: 7px; background: var(--sw); }
+    .ctos .nf-sw-tip-r { font: 500 11px/1 var(--cm-mono); letter-spacing: .04em; color: #cfcfcf; font-variant-numeric: tabular-nums; }
+    .ctos .nf-sw-tip kbd { justify-self: end; font: 600 11px/1 var(--cm-mono); padding: 3px 5px 2px; border: 1px solid color-mix(in srgb, var(--sw) 60%, #1c1c1c); color: var(--sw); }
+
+    @keyframes nfSwTipIn { from { clip-path: inset(0 0 100% 0); } to { clip-path: inset(0 0 0 0); } }
+    @keyframes nfSwType { from { width: 0; } }
+    @keyframes nfSwCaret { 50% { opacity: 0; } }
+    @keyframes nfSwLine { from { opacity: 0; translate: -4px 0; } }
+    .ctos .nf-sw-hb:hover .nf-sw-tip, .ctos .nf-sw-hb:focus-visible .nf-sw-tip { visibility: visible; opacity: 1; clip-path: inset(0 0 0 0); animation: nfSwTipIn 110ms steps(4, end) both; }
+    .ctos .nf-sw-hb:hover .nf-sw-tip b, .ctos .nf-sw-hb:focus-visible .nf-sw-tip b { animation: nfSwType calc(var(--len) * 34ms) steps(var(--len), end) 90ms both; }
+    .ctos .nf-sw-hb:hover .nf-sw-tip b::after, .ctos .nf-sw-hb:focus-visible .nf-sw-tip b::after { animation: nfSwCaret .7s steps(1, end) calc(90ms + var(--len) * 34ms) infinite; }
+    .ctos .nf-sw-hb:hover .nf-sw-tip-r, .ctos .nf-sw-hb:hover .nf-sw-tip kbd, .ctos .nf-sw-hb:focus-visible .nf-sw-tip-r, .ctos .nf-sw-hb:focus-visible .nf-sw-tip kbd { animation: nfSwLine 120ms steps(3, end) calc(110ms + var(--len) * 34ms) both; }
+    .ctos .nf-sw-bar > .nf-sw-k { align-self: center; margin: 0 10px; background: transparent; border-color: #0a0a0a55; color: #0a0a0a; }
+    .ctos .nf-sw-bar .nf-win-x { height: auto; align-self: stretch; width: 44px; background: #0a0a0a; }
+    .ctos .nf-sw-bar .nf-win-x i::before, .ctos .nf-sw-bar .nf-win-x i::after { background: var(--sw); }
+    .ctos .nf-sw-bar .nf-win-x:hover { background: #fff; }
+    .ctos .nf-sw-bar .nf-win-x:hover i::before, .ctos .nf-sw-bar .nf-win-x:hover i::after { background: #0a0a0a; }
+    .ctos .nf-sw-bar .nf-win-x:focus-visible { outline-color: var(--sw); }
+    @media (max-width: 1179px) { .ctos .nf-sw-bar-p, .ctos .nf-sw-bar > .nf-sw-k { display: none; } }
+
+    /* the open window's frame takes its colour */
+    .ctos .nf[data-win][data-tab] .nf-sidepane[data-pane] { border-color: var(--sw); box-shadow: 0 0 0 6px #000a, 0 0 48px color-mix(in srgb, var(--sw) 16%, transparent), 0 30px 90px #000; }
+}
+
+/* ---- phone section grid */
+.ctos .nf-sw-ph { grid-template-columns: repeat(var(--cols, 4), minmax(0, 1fr)); gap: 4px; }
+.ctos .nf-sw-ph .nf-tab {
+    position: relative;
+    display: grid;
+    grid-template-rows: 22px auto auto;
+    justify-items: center;
+    align-content: center;
+    gap: 4px;
+    min-height: 66px;
+    padding: 8px 4px 7px;
+    background: #0e0e0e;
+    border: 1px solid var(--nf-line);
+    color: inherit;
+    font: inherit;
+    letter-spacing: 0;
+    text-transform: none;
+    overflow: hidden;
+}
+.ctos .nf-sw-ph .nf-tab::before { content: ""; position: absolute; left: -1px; right: -1px; top: -1px; height: 2px; background: var(--sw); opacity: 0; }
+.ctos .nf-sw-ph .nf-sw-l { max-width: 100%; font: 700 11px/1 var(--cm-mono); letter-spacing: .1em; text-transform: uppercase; color: #d8d8d8; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ctos .nf-sw-ph .nf-sw-r { max-width: 100%; font: 500 11px/1 var(--cm-mono); letter-spacing: 0; color: var(--cm-ctos-meta); white-space: normal; overflow-wrap: anywhere; overflow: hidden; text-overflow: ellipsis; font-variant-numeric: tabular-nums; }
+/* the readout wraps to a second line instead of cutting "1000 AP free" to "1000 AP f…" in a 60px cell */
+@media (min-width: 360px) { .ctos .nf-sw-ph .nf-sw-r { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; line-height: 1.15; } }
+.ctos .nf-sw-ph .nf-sw-pip { right: 6px; top: 6px; }
+.ctos .nf-sw-ph .nf-tab[aria-pressed="true"] { background: color-mix(in srgb, var(--sw) 14%, #0e0e0e); border-color: color-mix(in srgb, var(--sw) 70%, #1c1c1c); color: inherit; }
+.ctos .nf-sw-ph .nf-tab[aria-pressed="true"]::before { opacity: 1; }
+.ctos .nf-sw-ph .nf-tab[aria-pressed="true"] .nf-sw-l { color: var(--sw); }
+.ctos .nf-sw-ph .nf-tab[data-hot] .nf-sw-r { color: var(--sw); }
+.ctos .nf-sw-ph .nf-tab:active { background: color-mix(in srgb, var(--sw) 22%, #0e0e0e); }
+.ctos .nf-sw-ph .nf-tab:focus-visible { outline: 2px solid var(--sw); outline-offset: 2px; }
+.ctos .nf-sw-ph .nf-tab[data-guide] { --c: var(--sw); border-color: var(--sw); }
+/* ten sections in five columns: smaller labels so Handover and Records are not cut short */
+.ctos .nf-sw-ph[data-cols="5"] .nf-sw-l { font-size: 10px; letter-spacing: .02em; }
+.ctos .nf-sw-ph[data-cols="5"] .nf-sw-r { font-size: 10px; letter-spacing: 0; }
+@media (max-width: 359px) { .ctos .nf-sw-ph .nf-sw-r { display: none; } .ctos .nf-sw-ph .nf-tab { min-height: 54px; grid-template-rows: 22px auto; } }
+
+@media (prefers-reduced-motion: reduce) {
+    .ctos .nf-sw-pip, .ctos .nf-sw-b[data-hot]::before, .ctos .nf-sw-hb[data-hot]::after { animation: none; }
+    .ctos .nf-sw-hb .nf-sw-tip, .ctos .nf-sw-hb .nf-sw-tip *, .ctos .nf-sw-hb .nf-sw-tip b::after { animation: none !important; }
+}
+
+/* nine or ten windows in the rail: the key badge would cut the label and the status line, so it shows on hover and focus only */
+@media (min-width: 1000px) and (max-width: 1699px) {
+    .ctos .nf-sw[data-many] .nf-sw-b:not([data-compact]) .nf-sw-k { display: none; }
+    .ctos .nf-sw[data-many] .nf-sw-b:not([data-compact]):is(:hover, :focus-visible) .nf-sw-k { display: block; position: absolute; right: 6px; top: 6px; }
+    .ctos .nf-sw[data-many] .nf-sw-b { grid-template-columns: 24px minmax(0, 1fr); gap: 8px; padding-left: 12px; }
+}

@@ -11,7 +11,7 @@ Output (public/naos/nodefarm/):
   tree-core.{png,webp}      the halo behind the core, 400 x 400 art px, transparent, drawn in world space.
   tree-sec-<branch>.{png,webp}  one 256 x 256 transparent nebula per section, drawn in world space behind that arm.
 Palette PNGs (index 0 is transparent on 1 to 3 and the world pieces). Everything is procedural: Bayer 4 x 4 dither over
-periodic FFT noise, hand-placed shapes, no traced or borrowed art. components/nodefarm/tree-backdrop.tsx moves them.
+periodic FFT noise, hand-placed shapes, no traced or borrowed art. components/nodefarm/tree/tree-backdrop.tsx moves them.
 """
 import math
 import os

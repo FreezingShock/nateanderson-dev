@@ -4,9 +4,9 @@
 // /naos/* is cached for a week (next.config.ts) and regenerated sheets keep their names. When a sheet grows (new icons,
 // new tier rows) a browser would keep the old image while the new CSS scales it to the new size, so every sprite
 // shows a sliver of its neighbour. This script stamps each `url(/naos/nodefarm/<file>)` in app/camino/*.css with
-// `?v=<content hash>` and writes lib/nodefarm/art-version.ts for URLs built in code, so a changed sheet gets a new URL.
+// `?v=<content hash>` and writes lib/nodefarm/art/art-version.ts for URLs built in code, so a changed sheet gets a new URL.
 //
-// It also checks that the icon and tier sheets match the lists in components/nodefarm/icon.tsx and the sizes in CSS.
+// It also checks that the icon and tier sheets match the lists in components/nodefarm/board/icon.tsx and the sizes in CSS.
 //
 //   node scripts/nodefarm/stamp-art.mjs          rewrite stamps (run after regenerating any art)
 //   node scripts/nodefarm/stamp-art.mjs --check  fail if a stamp is stale or a sheet doesn't match (runs in prebuild)
@@ -17,7 +17,7 @@ import { join } from "node:path";
 const ROOT = new URL("../..", import.meta.url).pathname;
 const ART = join(ROOT, "public/naos/nodefarm");
 const CSS_DIR = join(ROOT, "app/camino");
-const TS_OUT = join(ROOT, "lib/nodefarm/art-version.ts");
+const TS_OUT = join(ROOT, "lib/nodefarm/art/art-version.ts");
 const check = process.argv.includes("--check");
 const errors = [];
 
@@ -51,13 +51,13 @@ export const ART_V: Record<string, string> = ${JSON.stringify(hash, null, 4).rep
 export const nfArt = (file: string) => \`/naos/nodefarm/\${file}?v=\${ART_V[file] ?? "0"}\`;
 `;
 if (!existsSync(TS_OUT) || readFileSync(TS_OUT, "utf8") !== ts) {
-    if (check) errors.push("lib/nodefarm/art-version.ts is stale");
-    else { writeFileSync(TS_OUT, ts); console.log("wrote lib/nodefarm/art-version.ts"); }
+    if (check) errors.push("lib/nodefarm/art/art-version.ts is stale");
+    else { writeFileSync(TS_OUT, ts); console.log("wrote lib/nodefarm/art/art-version.ts"); }
 }
 
 // 3. Sheet maths: icon columns and tier rows must match the lists and the CSS sizes.
 const pngSize = (f) => { const b = readFileSync(join(ART, f)); return { w: b.readUInt32BE(16), h: b.readUInt32BE(20) }; };
-const iconSrc = readFileSync(join(ROOT, "components/nodefarm/icon.tsx"), "utf8");
+const iconSrc = readFileSync(join(ROOT, "components/nodefarm/board/icon.tsx"), "utf8");
 const list = (name) => {
     const m = iconSrc.match(new RegExp(`const ${name} = \\[([^\\]]*)\\]`));
     return m ? m[1].split(",").map((x) => x.trim()).filter(Boolean).length : 0;
@@ -91,7 +91,7 @@ for (const st of tic64) {
 // Scripts zone icons: six scripts by eight 64 px frames.
 {
     const { w, h } = pngSize("sched-icons64.png");
-    const rowsSrc = readFileSync(join(ROOT, "components/nodefarm/scripts.tsx"), "utf8").match(/const ROW[^{]*\{([^}]*)\}/)?.[1] ?? "";
+    const rowsSrc = readFileSync(join(ROOT, "components/nodefarm/workshop/scripts.tsx"), "utf8").match(/const ROW[^{]*\{([^}]*)\}/)?.[1] ?? "";
     const rows = rowsSrc.split(",").filter((x) => x.includes(":")).length;
     if (w !== 512 || h !== rows * 64) errors.push(`sched-icons64.png is ${w}x${h}, expected 512x${rows * 64} (8 frames x ${rows} scripts of 64 px, ROW in scripts.tsx)`);
     for (const [n, src] of allCss) for (const m of src.matchAll(/sched-icons64\.webp[^;]*?calc\(var\(--si\) \* 8\) calc\(var\(--si\) \* (\d+)\)/g)) if (+m[1] !== rows) errors.push(`${n}: sched-icons64 sized for ${m[1]} rows, ROW lists ${rows}`);

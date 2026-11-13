@@ -2,7 +2,7 @@
 
 import { useEffect, useLayoutEffect, useRef, useState, type RefObject } from "react";
 import { prefersReducedMotion, scrambleNow, settleScramble } from "@/lib/motion/engine";
-import "@/app/camino/nodefarm-cx.css";
+import "@/app/camino/nodefarm/cx.css";
 import { nfx } from "@/lib/nodefarm/sound";
 
 /*

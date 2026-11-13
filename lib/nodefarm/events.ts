@@ -1,6 +1,6 @@
 // Loot for zone events. Rogue process (pick one of three offers) and Cold storage (hold to decrypt rows) are zone events now
-// (lib/nodefarm/zoneevents.ts); the quick-time scheduler and the Relay, Packet and Traffic spike events are gone.
-// Pure data, numbers and payout maths here; the card lives in components/nodefarm/zone-event.tsx.
+// (lib/nodefarm/zones/zoneevents.ts); the quick-time scheduler and the Relay, Packet and Traffic spike events are gone.
+// Pure data, numbers and payout maths here; the card lives in components/nodefarm/zones/zone-event.tsx.
 
 import { MATS, addLifeBytes, derive, fmt, isUnlocked, statDef, type MatId, type State, type StatId } from "./engine";
 

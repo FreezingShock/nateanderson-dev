@@ -2,7 +2,7 @@
 
 Nate (2026-11-12): the zone panel art "cuts off too abruptly on the left side, so the art itself should extend further and
 fizzle out". Each zone sheet (zone-<id>.png, 288 x 96 cells) gets a static companion, zone-<id>-skirt.{png,webp}: SKW x 96
-art px, drawn directly left of the cell at the same scale and on the same floor (app/camino/nodefarm-zone-art.css).
+art px, drawn directly left of the cell at the same scale and on the same floor (app/camino/nodefarm/zone-art.css).
 
 How a skirt is made: the stage-0, frame-0 cell's left SKW columns are mirrored, so the join is seamless, then dissolved with
 the 4x4 Bayer threshold plus a little ragged noise: every pixel is either kept as it is or dropped (no alpha fade, no new

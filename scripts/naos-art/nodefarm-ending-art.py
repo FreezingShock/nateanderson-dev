@@ -9,7 +9,7 @@ Writes to public/naos/nodefarm/:
   scene-ending  480 x 160, opaque, 4 frames stacked: node zero awake. The buried sun glows under the floor, a column of
                 light rises through the box, rings pulse out, the wire runs gold, and five lamps burn on the wall: the
                 four past operators in their protocol colours and a fifth, white-cyan, for you.
-The end screen (components/nodefarm/ending.tsx) steps through the frames. Reuses the Canvas, noise and ramps of
+The end screen (components/nodefarm/ascend/ending.tsx) steps through the frames. Reuses the Canvas, noise and ramps of
 nodefarm-handover-art.py. Run: python3 scripts/naos-art/nodefarm-ending-art.py
 """
 import importlib.util
