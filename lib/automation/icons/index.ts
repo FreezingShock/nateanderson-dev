@@ -3,11 +3,11 @@ import type { CSSProperties } from "react";
 
 /** One sheet holds every item and machine icon: 64 px art cells, 8 across, row by row. */
 export const ICON_SHEET = {
-    url: "/brasswork/icons/items.webp?v=9027b3bc",
-    png: "/brasswork/icons/items.png?v=9027b3bc",
+    url: "/brasswork/icons/items.webp?v=8810dcce",
+    png: "/brasswork/icons/items.png?v=8810dcce",
     cell: 64,
     cols: 8,
-    rows: 5,
+    rows: 6,
 } as const;
 
 /** Sheet cell of each item, keyed by the item ids in lib/automation/data/tree.ts. */
@@ -54,13 +54,25 @@ export const MACHINE_ICONS = {
     fabricator: 35,
     windmill: 36,
     spring_winder: 37,
+    spring_store: 38,
+} as const;
+
+/** Sheet cell of each structure (hub, orrery build stages share one orrery icon), keyed by structure id. */
+export const STRUCTURE_ICONS = {
+    hub: 39,
+    orrery_0: 40,
+    orrery_1: 40,
+    orrery_2: 40,
+    orrery_3: 40,
+    orrery_4: 40,
 } as const;
 
 export type ItemIconId = keyof typeof ITEM_ICONS;
 export type MachineIconId = keyof typeof MACHINE_ICONS;
-export type IconId = ItemIconId | MachineIconId;
+export type StructureIconId = keyof typeof STRUCTURE_ICONS;
+export type IconId = ItemIconId | MachineIconId | StructureIconId;
 
-const CELLS: Record<string, number> = { ...ITEM_ICONS, ...MACHINE_ICONS };
+const CELLS: Record<string, number> = { ...ITEM_ICONS, ...MACHINE_ICONS, ...STRUCTURE_ICONS };
 
 /** Sheet cell for an item or machine id, or undefined if the id has no icon. */
 export function iconCell(id: string): number | undefined {

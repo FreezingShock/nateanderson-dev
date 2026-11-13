@@ -8,7 +8,7 @@ from bw_items import FIT, done, gear_outline, new  # noqa: F401
 from icon3d import Scene  # noqa: F401
 from nodefarm_icon_kit import P, X, Y, disc, line, lin, path, poly
 
-DRAW = {}
+DRAW = {}  # machines; STRUCT below holds hub and orrery
 
 
 def machine(fn):
@@ -228,4 +228,82 @@ def spring_winder(p=0):
     q = sc.pt((-14, 26, 0))
     c.fill(line(cx, cy, *q, 1.6 * k), 0.6, "iron")
     c.fill(disc(*q, 2 * k), 0.85, "brass", outline="brass")
+    return done(c)
+
+
+@machine
+def spring_store(p=0):
+    """Spring store: a squat brass drum banded in steel, the coiled mainspring showing through a window, a charge gauge."""
+    c, sc = new(cy=52, s=1.0, sh=(32, 57, 24, 3.2))
+    plinth(sc, 14, 14)
+    sc.cylinder((0, 3, 0), (0, 22, 0), 12, "brass", -0.05, n=24)
+    for y in (6, 18):
+        sc.cylinder((0, y, 0), (0, y + 2, 0), 12.6, "gun", 0.05, n=24)
+    sc.cylinder((0, 22, 0), (0, 25, 0), 9, "gun", 0.1, n=20)
+    sc.cylinder((0, 25, 0), (0, 29, 0), 2.2, "iron", 0.1, n=10)
+    sc.paint(c)
+    k = FIT["k"]
+    win = poly([sc.pt((x, y, 12.3)) for x, y in [(-5, 9), (5, 9), (5, 17), (-5, 17)]])
+    c.fill(win, 0.15, "coal")
+    ys, xs = np.nonzero(win)
+    cx, cy = xs.mean(), ys.mean()
+    pts = [(cx + math.cos(t) * (0.6 + t * 0.4) * k, cy + math.sin(t) * (0.6 + t * 0.4) * k * 0.8)
+           for t in np.linspace(0, 4.4 * math.pi, 160)]
+    c.fill(path(pts, 1.1 * k) & win, 0.9, "brass")
+    g = sc.pt((9, 13, 8.6))
+    c.fill(disc(*g, 2.6 * k), 0.8, "cream", outline="brass")
+    c.set(line(g[0], g[1], g[0] + 1.6 * k, g[1] - 1.6 * k, 0.9), P["patina"][2])
+    return done(c)
+
+
+STRUCT = {}
+
+
+def structure(fn):
+    STRUCT[fn.__name__] = fn
+    return fn
+
+
+@structure
+def hub(p=0):
+    """Hub: the workshop core, a brick-and-copper hall with a brass clock gable and a lit door."""
+    c, sc = new(cy=52, s=0.95, sh=(32, 57, 26, 3.4))
+    plinth(sc, 17, 15)
+    sc.box(-15, 15, 3, 20, -12, 12, "brick", 0.0)
+    roof_b = [(-16, 20, 13), (16, 20, 13), (16, 20, -13), (-16, 20, -13)]
+    roof_t = [(-16, 30, 0.5), (16, 30, 0.5), (16, 30, -0.5), (-16, 30, -0.5)]
+    sc.prism(roof_b, roof_t, "cu", 0.0)
+    sc.cylinder((0, 22, 13.2), (0, 22, 14.4), 4.5, "brass", 0.05, n=18)
+    sc.paint(c)
+    window(c, sc, [(-4, 3, 12.1), (4, 3, 12.1), (4, 13, 12.1), (-4, 13, 12.1)])
+    k = FIT["k"]
+    q = sc.pt((0, 22, 14.5))
+    c.fill(disc(*q, 3.2 * k * 0.95), 0.85, "cream")
+    c.set(line(q[0], q[1], q[0], q[1] - 2.4 * k, 0.9), P["steel"][1])
+    c.set(line(q[0], q[1], q[0] + 1.8 * k, q[1], 0.9), P["steel"][1])
+    for x in (-11, 11):
+        window(c, sc, [(x - 2, 9, 12.1), (x + 2, 9, 12.1), (x + 2, 14, 12.1), (x - 2, 14, 12.1)])
+    return done(c)
+
+
+@structure
+def orrery(p=0):
+    """Sky orrery: brass armillary rings round a glowing sun on a stepped pedestal, a small planet on one ring."""
+    c, sc = new(cy=52, s=0.95, sh=(32, 57, 22, 3.2))
+    sc.cylinder((0, 0, 0), (0, 4, 0), 13, "gun", 0.05, n=24)
+    sc.cylinder((0, 4, 0), (0, 8, 0), 8, "brass", -0.05, n=20)
+    sc.cylinder((0, 8, 0), (0, 16, 0), 2, "brass", 0.0, n=10)
+    sc.paint(c)
+    k = FIT["k"] * 0.95
+    cx, cy = sc.pt((0, 30, 0))
+    sun = disc(cx, cy, 6.5 * k)
+    c.glow(sun, P["glow"][3], 4, 130, 2)
+    c.fill(sun, 1.05 - np.hypot(X - cx + 2, Y - cy + 2) / (9 * k), "glow")
+    from nodefarm_icon_kit import tilted_ring
+    for rx, ry, tilt, v in [(19, 6, -18, 0.8), (16, 9, 35, 0.65), (13, 13, 0, 0.5)]:
+        m, front = tilted_ring(cx, cy, rx * k, ry * k, tilt, 1.8 * k)
+        c.fill(m & ~(front) & ~sun, v - 0.25, "brass")
+        c.fill(m & front, v, "brass")
+    px, py = cx + 18 * k * math.cos(0.5), cy + 6 * k * math.sin(0.5)
+    c.fill(disc(px, py, 2.6 * k), 0.7, "patina", outline="patina")
     return done(c)

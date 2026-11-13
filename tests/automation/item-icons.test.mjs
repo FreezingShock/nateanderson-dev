@@ -1,4 +1,4 @@
-// Brasswork item art: every catalog item and machine has a cell on the icon sheet.
+// Brasswork item art: every catalog item, machine and structure has a cell on the icon sheet.
 import test from "node:test";
 import assert from "node:assert/strict";
 import { existsSync, readFileSync } from "node:fs";
@@ -25,13 +25,18 @@ test("every machine has an icon cell", () => {
     for (const m of RECIPE_TREE.machines) assert.ok(m.id in icons, `${m.id} has no icon`);
 });
 
+test("every structure has an icon cell", () => {
+    const icons = table("STRUCTURE_ICONS");
+    for (const st of RECIPE_TREE.structures ?? []) assert.ok(st.id in icons, `${st.id} has no icon`);
+});
+
 test("the icon sheet exists and fits every cell", () => {
     const png = resolve(root, "public/brasswork/icons/items.png");
     assert.ok(existsSync(png));
     const b = readFileSync(png);
     const w = b.readUInt32BE(16);
     const h = b.readUInt32BE(20);
-    const cells = Object.values({ ...table("ITEM_ICONS"), ...table("MACHINE_ICONS") });
+    const cells = Object.values({ ...table("ITEM_ICONS"), ...table("MACHINE_ICONS"), ...table("STRUCTURE_ICONS") });
     assert.equal(w % 64, 0);
     assert.ok(Math.max(...cells) < (w / 64) * (h / 64));
 });
