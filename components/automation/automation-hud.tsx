@@ -42,6 +42,8 @@ export function AutomationHud({
 }) {
   const [drawer, setDrawer] = useState<Drawer | null>(null);
   const [screen, setScreen] = useState<Screen | null>(null);
+  // Phone only: which panel is open as a bottom sheet over the stage.
+  const [sheet, setSheet] = useState<"pal" | "factory" | null>(null);
   const mode = data.settings.numberFormat;
 
   useEffect(() => {
@@ -64,6 +66,7 @@ export function AutomationHud({
     <div
       className="ab-root bw"
       data-drawer={drawer ?? "none"}
+      data-sheet={sheet ?? "none"}
       data-inspect={data.selected ? "on" : "off"}
       data-lowfx={data.settings.lowFx}
       data-reduce={data.settings.reduceMotion}
@@ -119,6 +122,24 @@ export function AutomationHud({
 
         <div className="ab-center">
           <div className="ab-stage">{children}</div>
+          <div className="ab-sheet-toggles">
+            <button
+              type="button"
+              className="ab-text-btn"
+              aria-expanded={sheet === "pal"}
+              onClick={() => setSheet((c) => (c === "pal" ? null : "pal"))}
+            >
+              Machines
+            </button>
+            <button
+              type="button"
+              className="ab-text-btn"
+              aria-expanded={sheet === "factory"}
+              onClick={() => setSheet((c) => (c === "factory" ? null : "factory"))}
+            >
+              Milestones
+            </button>
+          </div>
           <p className="ab-next">
             <span className="ab-next-label">Next</span>
             <span className="ab-next-text">{next.text}</span>
