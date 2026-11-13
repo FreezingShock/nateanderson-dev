@@ -467,7 +467,6 @@ export function FlagGuesser() {
                 <div
                     className="fg-board grid aspect-[4/3] w-full grid-cols-3 grid-rows-2"
                     data-done={!playing}
-                    style={{ gap: playing ? 6 : 0 }}
                     role="img"
                     aria-label={
                         playing
