@@ -12,6 +12,7 @@ import { LOGS, logNo } from "./content/story";
 import { END_STAGES, END_STEPS, buildBlock, endSeen, endStage, lastZone, stageCost } from "./systems/ending";
 import { zeTitle, zoneLabel } from "./zones/zoneevents";
 import { ENTRIES, unlocked as unlockedEntries } from "./content/codex";
+import { etaRate, exact, nextStep } from "./content/guide";
 
 export const NF_PATH = "/creations/games/node-farm";
 export const NF_SAVE_KEY = "nf-save-v1";
@@ -111,6 +112,8 @@ export interface NfLine {
 }
 const t = (text: string, k?: NfLine["k"]): NfLine => ({ t: text, k });
 const row = (a: string, b: string, go?: string): NfLine => ({ a, b, go });
+/** The console's command list. Keep it in step with nfCommand below. */
+const CONSOLE_HELP = "nf help · nf next · nf rate · nf find <word> · nf stats · nf goals · nf secrets · nf logs · nf news · nf lab · nf handover · nf end · nf cron · nf archive · nf codex · nf open";
 
 export const NF_SUBS = ["stats", "goals", "secrets", "logs", "archive", "news", "open", "codex", "anim", "fs", "fullscreen", "art", "core", "admin", "keys"];
 
@@ -131,7 +134,7 @@ export function nfCommand(s: State, args: string[]): NfResult {
         return [t(`secret found: ${x.name}`, "hi"), t("logged in Node Farm.", "dim")];
     };
     let lines: NfLine[];
-    if (!sub) {
+    if (!sub || sub === "help") {
         const d = derive(s);
         const c = goalCounts(s);
         lines = [
@@ -142,8 +145,39 @@ export function nfCommand(s: State, args: string[]): NfResult {
             row("goals", `${c.goals}/${c.goalTotal}`),
             row("secrets", `${c.secrets}/${c.secretTotal}`),
             ...(handSeen(s) ? [row("handovers", `${s.hand.count}  (${s.hand.keys} keys)`)] : []),
-            t("nf stats · nf goals · nf secrets · nf logs · nf news · nf lab · nf handover · nf end · nf cron · nf archive · nf codex · nf open", "dim"),
+            t(CONSOLE_HELP, "dim"),
         ];
+    } else if (sub === "next") {
+        const st = nextStep(s, derive(s));
+        lines = [
+            t(`next: ${st.title.toLowerCase()}`, "hi"),
+            t(st.why, "dim"),
+            row("progress", `${fmt(st.cur)} / ${fmt(st.need)} ${st.unit}`),
+            row("eta", etaRate(st.eta) || "now"),
+        ];
+    } else if (sub === "rate") {
+        const d = derive(s);
+        lines = [t("income per second", "hi"), row("bytes", `${fmt(d.bytesPerSec)}/s`)];
+        for (const m of MATS) {
+            if (d.rates[m] > 0) lines.push(row(statDef(m).name.toLowerCase(), `${exact(d.rates[m])}/s  (you have ${fmt(s[m])})`));
+        }
+        if (lines.length === 2) lines.push(t("nothing is producing yet. press the glowing button.", "dim"));
+    } else if (sub === "find") {
+        const q = args.slice(1).join(" ").trim().toLowerCase();
+        if (!q) lines = [t("nf find <word>: searches your goals, found secrets and recovered logs.", "dim")];
+        else {
+            const hits: NfLine[] = [];
+            for (const g of GOALS) {
+                if (`${g.name} ${g.hint}`.toLowerCase().includes(q)) hits.push(row(`goal ${g.name.toLowerCase()}`, goalDone(s, g) ? "done" : g.hint));
+            }
+            for (const x of SECRETS) {
+                if (s.ach.includes(x.id) && `${x.name} ${x.how}`.toLowerCase().includes(q)) hits.push(row(`secret ${x.name.toLowerCase()}`, x.how));
+            }
+            LOGS.forEach((l, i) => {
+                if (s.logs.includes(l.id) && `${l.title} ${l.text}`.toLowerCase().includes(q)) hits.push(row(`log ${logNo(i)}`, l.title.toLowerCase()));
+            });
+            lines = hits.length ? [t(`${hits.length} match${hits.length === 1 ? "" : "es"} for "${q}"`, "hi"), ...hits.slice(0, 12)] : [t(`nothing found for "${q}". only goals, found secrets and recovered logs are searched.`, "dim")];
+        }
     } else if (sub === "stats") {
         lines = recordSections(s).flatMap((sec) => [t(sec.title.toLowerCase(), "hi"), ...sec.rows.map(([a, b]) => row(a.toLowerCase(), b))]);
     } else if (sub === "goals") {
@@ -277,7 +311,7 @@ export function nfCommand(s: State, args: string[]): NfResult {
     } else if (sub === "whoami") {
         lines = [t("node-01. one core, no clearance, and a growing farm."), ...secret("x_self")];
     } else {
-        lines = [t(`nf: unknown: ${args[0]}`, "err"), t("nf stats · nf goals · nf secrets · nf logs · nf news · nf lab · nf handover · nf end · nf cron · nf archive · nf codex · nf open", "dim")];
+        lines = [t(`nf: unknown: ${args[0]}`, "err"), t(CONSOLE_HELP, "dim")];
     }
     return { lines, unlocked: found };
 }
