@@ -7,7 +7,7 @@
 // Rewards are lumps at the plain rate (never at Overclock rate), like the Dead drop. State is `s.poke` (PokeState in
 // engine.ts), repaired by `poke(s)`. Registers itself in TICK_HOOKS when imported. Time away (ticks over 5 s) does not
 // charge or drop anything.
-import { MATS, STATS, TICK_HOOKS, derive, isUnlocked, overclockMult, statDef, fmt, type MatId, type PokeState, type State, type StatId } from "./engine";
+import { MATS, STATS, TICK_HOOKS, addLifeBytes, derive, isUnlocked, overclockMult, statDef, fmt, type MatId, type PokeState, type State, type StatId } from "./engine";
 
 export const POKE_TUNE = {
     /** online seconds before the first cache of a save */
@@ -88,7 +88,7 @@ export function openCache(s: State, id: number): { zone: StatId; stat: StatId; a
     const c = p.c.find((x) => x.id === id);
     if (!c) return null;
     const pay = cachePay(s, c.z);
-    if (pay.stat === "bytes") { s.bytes += pay.amount; s.life.bytes += pay.amount; } else s[pay.stat as MatId] += pay.amount;
+    if (pay.stat === "bytes") { s.bytes += pay.amount; addLifeBytes(s, pay.amount); } else s[pay.stat as MatId] += pay.amount;
     p.c = p.c.filter((x) => x !== c);
     p.got += 1;
     return { zone: c.z, ...pay };
@@ -112,7 +112,7 @@ export function vent(s: State): Partial<Record<StatId, number>> | null {
     if (p.vent < POKE_TUNE.ventCharge) return null;
     const got = ventPay(s);
     for (const [k, v] of Object.entries(got) as [StatId, number][]) {
-        if (k === "bytes") { s.bytes += v; s.life.bytes += v; } else s[k as MatId] += v;
+        if (k === "bytes") { s.bytes += v; addLifeBytes(s, v); } else s[k as MatId] += v;
     }
     p.vent = 0;
     p.vents += 1;

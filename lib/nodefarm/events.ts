@@ -3,7 +3,7 @@
 // nodes keep working) plus a loot roll whose rarity climbs with how much of the event you did.
 // Pure data, numbers and payout maths here; the UI lives in components/nodefarm/events.tsx.
 
-import { MATS, derive, fmt, isUnlocked, statDef, type MatId, type State, type StatId } from "./engine";
+import { MATS, addLifeBytes, derive, fmt, isUnlocked, statDef, type MatId, type State, type StatId } from "./engine";
 
 export type EventKind = "spike" | "rogue" | "vault" | "relay" | "packet";
 
@@ -163,7 +163,7 @@ export function payLoot(s: State, loot: Loot): number {
     }
     const v = d.bytesPerSec * loot.secs;
     s.bytes += v;
-    s.life.bytes += v;
+    addLifeBytes(s, v);
     return v;
 }
 
