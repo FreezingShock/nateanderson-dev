@@ -248,10 +248,10 @@ export const building: BuildingItem[] = [
 // ----------------------------------------------------------------- running
 
 export const runningStats = [
-    { label: "XC 3-mile PR", value: "15:36", color: "var(--cm-amber)" },
-    { label: "1600m", value: "4:36", color: "var(--cm-good)" },
+    { label: "XC 3-mile PR", value: "15:36", color: "var(--cm-cyan)" },
+    { label: "1600m", value: "4:36", color: "var(--cm-cyan)" },
     { label: "Years running", value: "4", color: "var(--cm-cyan)" },
-    { label: "Role", value: "Captain", color: "var(--cm-violet)" },
+    { label: "Role", value: "Captain", color: "var(--cm-cyan)" },
 ];
 
 export const runningPlan = [
@@ -259,7 +259,7 @@ export const runningPlan = [
         when: "Now",
         title: "Captain of Cross Country & Track",
         detail: "Leading the team through senior year.",
-        color: "var(--cm-violet)",
+        color: "var(--cm-cyan)",
         href: "/timeline#personal-5",
     },
 ];
