@@ -1,6 +1,6 @@
 // Checks and solver for the Brasswork tree. Pure functions, no imports beyond types,
 // so scripts/automation/check-recipes.mjs and the tests can run them under Node.
-import type { RecipeDef, RecipeTree } from "./types";
+import type { RecipeDef, RecipeTree } from "../types";
 
 export interface Issue {
     level: "error" | "warn";

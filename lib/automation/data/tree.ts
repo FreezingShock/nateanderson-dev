@@ -1,7 +1,7 @@
 // Brasswork: the resource and recipe tree. Every number here is a first-pass
 // balance value for the design thread to tune. Rates are per minute.
 // Balance notes and open taste calls live in /mnt/project-files/portfolio/automation-game/recipes.md.
-import type { MachineDef, RecipeTree, Stage } from "./types";
+import type { MachineDef, RecipeTree, Stage } from "../types";
 
 export const STAGE_NAMES: Record<Stage, string> = {
     0: "Raw",

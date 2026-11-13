@@ -28,6 +28,14 @@ export interface MachineDef {
     speed: number;
     /** Footprint on the voxel island grid, in cells. */
     footprint: { w: number; d: number };
+    /** Power drawn while running, in kW. 0 for none. */
+    powerKw: number;
+    /** Power made, in kW. Only generators set this (windmill, spring winder). */
+    generatesKw?: number;
+    /** Generators only: how far power reaches, in grid cells. Zones are range-based, no pipes. */
+    supplyRange?: number;
+    /** Items spent to place the machine. Missing means free. */
+    buildCost?: Stack[];
     note?: string;
 }
 
@@ -37,8 +45,9 @@ export interface Stack {
 }
 
 /**
- * One recipe per item (v1). A recipe makes exactly one output stack.
- * craftSeconds is the time for one craft at speed 1.
+ * A recipe makes exactly one output stack. craftSeconds is the time for one craft at speed 1.
+ * Each item has one base recipe. Alternates (alternate: true) are unlocked by a research node and
+ * are only used when a caller picks them with solve()'s choice map.
  */
 export interface RecipeDef {
     id: string;
@@ -46,6 +55,8 @@ export interface RecipeDef {
     inputs: Stack[];
     output: Stack;
     craftSeconds: number;
+    /** Optional recipe, unlocked by research and only used when chosen. Default false (base). */
+    alternate?: boolean;
 }
 
 /** A raw resource. A drill on a `normal` node produces baseRatePerMin at speed 1. */
