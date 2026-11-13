@@ -6,7 +6,7 @@ import { nfx as sfx, nfx, humVol } from "@/lib/nodefarm/sound";
 import { setHum } from "@/lib/sound/engine";
 import { useSoundPrefs } from "@/lib/sound/use-sound";
 import {
-    TUNE, overclockMult, overclockSecs, respec, ascend, canAscend, autoBuy, breach, button, buyDrone, buyNode, canAfford, buyPerk, toggleArm, checkGoals, derive, exportSave, fmt, fmtTime, fresh, getNumFmt, setNumFmt, type NumFmt, isUnlocked, parseSave, press, STATS, tick,
+    TUNE, overclockMult, overclockSecs, respec, ascend, canAscend, breach, button, buyDrone, buyNode, canAfford, buyPerk, checkGoals, derive, exportSave, fmt, fmtTime, fresh, getNumFmt, setNumFmt, type NumFmt, isUnlocked, parseSave, press, STATS, tick,
     apEach, dropFill, hasFeature, openDrop, setMount, statDef,
     buyLabNode, cancelCompile, compile, deploy, labNode, labOpen, payload, type PayloadId,
     chOff, buyFw, fwNode, handSeen, handover, protoDef, protoRank, respecFw, setProto, type ProtoId,
@@ -32,7 +32,7 @@ const loadTree = () => import("./tree");
 const TreeMenu = dynamic(() => loadTree().then((m) => ({ default: m.TreeMenu })), { ssr: false });
 import { LabHud, LabZone, labModel, labReady } from "./lab";
 import { ScriptsZone } from "./scripts";
-import { SCRIPTS, SCRIPT_BY, ascendDue, ascendPrep, learnStep, teachEvent, schedOpen, teachAscend, teachCompile, teachDeploy, teachDrop, teachPress } from "@/lib/nodefarm/scripts";
+import { SCRIPTS, SCRIPT_BY, toggleBuyStat, ascendDue, ascendPrep, learnStep, teachEvent, schedOpen, teachAscend, teachCompile, teachDeploy, teachDrop, teachPress } from "@/lib/nodefarm/scripts";
 import { eraOf } from "@/lib/nodefarm/scenery";
 import { DroneBay, droneModel } from "./drones";
 import { rigManual } from "@/lib/nodefarm/rigs";
@@ -536,13 +536,13 @@ export function NodeFarm() {
                 const sp = speedRef.current;
                 if (sp > 1) { const n = Math.ceil((gap * sp) / 5); for (let i = 0; i < n; i++) tick(s, (gap * sp) / n); }
                 else tick(s, Math.max(0, gap));
-                // presses nobody clicked (Drones, Autoloader) are counted from the lifetime total, then batched into one feed line
+                // presses nobody clicked (posted Drones) are counted from the lifetime total, then batched into one feed line
                 const dp = dronePrev.current;
                 const scriptMade = schedPress.current.s === s ? (s.auto?.presses ?? 0) - schedPress.current.n : 0;
                 schedPress.current = { s, n: s.auto?.presses ?? 0 };
                 if (dp.s === s) {
                     const made = s.life.presses - dp.presses - dp.manual - scriptMade;
-                    if (made > 0) feedStore.batch("drone", (n, sum) => droneToks(sum, s.armed.length, !s.drones.some((x) => x > 0)), made, 4000);
+                    if (made > 0) feedStore.batch("drone", (n, sum) => droneToks(sum, s.dr.post.filter((p, k) => p && s.drones[k] > 0).length), made, 4000);
                 }
                 dronePrev.current = { s, presses: s.life.presses, manual: 0 };
                 // zone mastery: a rank up gets a feed line and a banner (only for ranks earned while this save is loaded)
@@ -567,7 +567,7 @@ export function NodeFarm() {
                 }
                 zeSeen.current = { s, n: zn };
             }
-            if (++tickN.current % 10 === 0 && s.perks.auto > 0) autoBuy(s);
+            ++tickN.current;
             const d = derive(s);
             const f = feed.current;
             f.progress = Math.min(1, s.mult / button(s, "reboot", 0).cost);
@@ -1257,7 +1257,7 @@ export function NodeFarm() {
             <ZoneEventCard s={s} id={zeCard} onChoose={onZoneEv} onClose={closeZeCard} reduced={reduced} />
             <EventLayer game={g} ready={ready} enabled={evOn && !chOff(s, "events")} busy={!!win || treeOpen || labTree || droneTree || fwTree || !!cut || !!away || !!confirm} reduced={reduced} onEngage={evEngage} onResult={evResult} onMiss={evMiss} onDisable={() => setEvents(false)} />
             <Juice reduced={reduced} />
-            {d && <PokeLayer s={s} d={d} root={root} coreFeed={feed} feed={feedStore} reduced={reduced} onChange={() => { save(); bump((n) => n + 1); }} onGo={goTo} onArm={(z) => { toggleArm(s, z); sfx("tab"); log(`Drones ${s.armed.includes(z) ? "armed on" : "pulled off"} ${statDef(z).name}.`, "good"); save(); bump((n) => n + 1); }} />}
+            {d && <PokeLayer s={s} d={d} root={root} coreFeed={feed} feed={feedStore} reduced={reduced} onChange={() => { save(); bump((n) => n + 1); }} onGo={goTo} onArm={(z) => { toggleBuyStat(s, z); sfx("tab"); log(`buy.sh ${s.auto?.buy[z] ? "now buys" : "stopped on"} ${statDef(z).name}.`, "good"); save(); bump((n) => n + 1); }} />}
 
             <section className="nf-pane nf-corepane" data-pane="core" aria-label="Core">
                 <div className="nf-core-wrap">
@@ -1313,7 +1313,7 @@ export function NodeFarm() {
                         onPost={(k, st) => {
                             if (!setPost(s, k, st)) return sfx("deny");
                             sfx("tab");
-                            feedStore.push([...call(idTok("drones"), st ? "post" : "sweep", [strTok(`T${k + 1}`), ...(st ? [pun(", "), strTok(st)] : [])]), pun(" → "), strTok(st ? `${DRONE_NAMES[k]} on station` : "patrolling armed zones")], { tone: "good" });
+                            feedStore.push([...call(idTok("drones"), st ? "post" : "dock", [strTok(`T${k + 1}`), ...(st ? [pun(", "), strTok(st)] : [])]), pun(" → "), strTok(st ? `${DRONE_NAMES[k]} on station` : "docked, idle")], { tone: "good" });
                             save();
                             bump((n) => n + 1);
                         }}
@@ -1340,7 +1340,7 @@ export function NodeFarm() {
                             {arcOpen && (
                                 <div id={`nf-arc-${arc.id}`} className="nf-arc-zones">
                                     {shown.map((id) => (
-                                        <StatRow key={id} id={id as StatId} s={s} d={d} guide={guideTarget} onPress={doPress} onArm={() => { toggleArm(s, id as StatId); sfx("tab"); bump((n) => n + 1); }} onWatchdog={() => { s.watchdog = !s.watchdog; sfx("tab"); log(`Watchdog timer ${s.watchdog ? "on: Reboots run themselves" : "off"}.`, s.watchdog ? "good" : "warn"); bump((n) => n + 1); }} open={!folded[id]} onToggle={() => { setFold({ ...folded, [id]: !folded[id] }); sfx("tab"); }} onZoneEv={onZoneEv} zeCard={zeCard} />
+                                        <StatRow key={id} id={id as StatId} s={s} d={d} guide={guideTarget} onPress={doPress} onArm={() => { toggleBuyStat(s, id); sfx("tab"); bump((n) => n + 1); }} onWatchdog={() => { s.watchdog = !s.watchdog; sfx("tab"); log(`Watchdog timer ${s.watchdog ? "on: Reboots run themselves" : "off"}.`, s.watchdog ? "good" : "warn"); bump((n) => n + 1); }} open={!folded[id]} onToggle={() => { setFold({ ...folded, [id]: !folded[id] }); sfx("tab"); }} onZoneEv={onZoneEv} zeCard={zeCard} />
                                     ))}
                                     {!preview && <ArcStep s={s} arcs={liveArcs} sel={selArc} onPick={focusArc} />}
                                 </div>
