@@ -17,7 +17,7 @@ export function Section({
 }) {
   const [open, setOpen] = useState(defaultOpen);
   return (
-    <section className="ab-section" data-open={open}>
+    <section className="ab-section ab-panel" data-open={open}>
       <button
         type="button"
         className="ab-section-head"
