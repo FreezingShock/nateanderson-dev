@@ -78,6 +78,12 @@ export function PrestigeScreen({
               }}
             >
               <span className="ab-site-name">{s.name}</span>
+              <span className="ab-dim">{s.blurb}</span>
+              <ul className="ab-plain">
+                {s.modifiers.map((m) => (
+                  <li key={m}>{m}</li>
+                ))}
+              </ul>
             </button>
           ))}
         </div>
