@@ -148,6 +148,7 @@ export default function ModelPreview() {
     if (error) {
         return (
             <p
+                data-preview-error
                 style={{
                     padding: 24,
                     fontFamily: "monospace",
