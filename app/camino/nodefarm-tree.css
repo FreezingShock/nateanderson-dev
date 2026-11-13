@@ -45,6 +45,8 @@ body > .nf-tm-host { position: fixed; inset: 0; z-index: 1000; }
 .ctos .nf-tl[data-st="on"] { stroke: var(--c); stroke-width: 5; animation: nfTracePulse 2.6s steps(13) infinite; }
 .ctos .nf-tl[data-fog] { opacity: .15; animation: none; }
 .ctos .nf-tm[data-focus] .nf-tl:not([data-near]) { opacity: .12; animation: none; }
+/* while the camera pans or zooms (data-pan, set by components/nodefarm/backdrop-canvas.ts) the dash steps hold still, so a pan frame never repaints the links */
+.ctos .nf-tm[data-pan] .nf-tl { animation-play-state: paused; }
 .ctos .nf-tm[data-focus] .nf-tl[data-near] { opacity: 1; }
 /* vias at the bends: a dark pad with a ring in the trace colour */
 .ctos .nf-tl-via { fill: #05070a; stroke: #6b7a8c; stroke-width: 2.5; opacity: .55; transition: opacity .3s; }

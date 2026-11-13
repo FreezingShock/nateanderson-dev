@@ -472,6 +472,18 @@ function Vault(p: BodyProps) {
         };
     }, [press, release]);
     useEffect(() => () => cancelAnimationFrame(raf.current), []);
+    // alt-tab or a tab switch mid-hold swallows the key-up or pointer-up, so the hold would stay latched and keep decrypting.
+    // Losing focus or the tab lets go, and the rows opened so far stay open.
+    useEffect(() => {
+        const letGo = () => release();
+        const hide = () => { if (document.visibilityState === "hidden") release(); };
+        window.addEventListener("blur", letGo);
+        document.addEventListener("visibilitychange", hide);
+        return () => {
+            window.removeEventListener("blur", letGo);
+            document.removeEventListener("visibilitychange", hide);
+        };
+    }, [release]);
     // the row being decrypted churns while you hold
     useEffect(() => {
         if (!held || reduced) return;
@@ -498,6 +510,7 @@ function Vault(p: BodyProps) {
                 onPointerDown={(e) => { e.preventDefault(); (e.target as HTMLElement).setPointerCapture?.(e.pointerId); press(); }}
                 onPointerUp={release}
                 onPointerCancel={release}
+                onLostPointerCapture={release}
                 onContextMenu={(e) => e.preventDefault()}
                 onKeyDown={(e) => { if (e.code === "Space" || e.code === "Enter") e.preventDefault(); }}
             >
