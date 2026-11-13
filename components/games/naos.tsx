@@ -87,7 +87,7 @@ function GameCard({ game, index }: { game: Game; index: number }) {
     const tone = game.status === "playable" ? "live" : game.status === "building" ? "warn" : "";
     const inner = (
         <>
-            <div className="cm-row" style={{ justifyContent: "space-between" }}>
+            <div className="cm-row g-tile-head" style={{ justifyContent: "space-between" }}>
                 <span className="cm-state">{String(index + 1).padStart(2, "0")} / {game.slug}</span>
                 <span className="g-tags">
                     {game.format && <span className="cm-tag flat">{game.format}</span>}
@@ -107,7 +107,10 @@ function GameCard({ game, index }: { game: Game; index: number }) {
                     </li>
                 ))}
             </ul>
-            <span className="st">{game.href ? "Play now →" : "Not built yet"}</span>
+            <span className="g-play">
+                <span>{game.href ? "Play" : "Not built yet"}</span>
+                {game.href && <span aria-hidden="true" className="g-play-arrow">→</span>}
+            </span>
         </>
     );
     return game.href ? (

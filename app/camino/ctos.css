@@ -281,6 +281,11 @@ body.ctos-on .cm-sec-rule { background: linear-gradient(90deg, rgba(244, 244, 24
 
 .p-foot { display: flex; align-items: center; gap: 12px; padding: 9px 14px; border-top: 1px dashed var(--cm-hair-hi); font: 500 var(--cm-ctos-t-micro)/1 var(--cm-mono); letter-spacing: .16em; text-transform: uppercase; color: var(--cm-ctos-meta); }
 .p-foot span:last-child { margin-left: auto; }
+/* Phones: the footer stays on one line. Tighter tracking keeps "profile / class of 2027" and the coordinates from wrapping. */
+@media (max-width: 480px) {
+    .p-foot { gap: 8px; padding: 9px 12px; letter-spacing: .1em; }
+    .p-foot > span { white-space: nowrap; }
+}
 .pf-now, .pf-path, .pf-id { display: flex; flex-direction: column; }
 .pf-now .pf-feed, .pf-path .pf-steps { flex: 1; }
 .pf-now .p-foot, .pf-path .p-foot, .pf-id .p-foot { margin-top: auto; }

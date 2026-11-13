@@ -332,10 +332,50 @@
 }
 .ctos .cm-grid.g-grid > .cm-card.g-card:nth-child(n) b { color: #f4f4f2; }
 .ctos .cm-grid.g-grid > .cm-card.g-card:nth-child(n) p { color: var(--cm-mute); }
-.ctos .cm-grid.g-grid > .cm-card.g-card:nth-child(n) .st { color: var(--cm-cyan); }
+.ctos .cm-grid.g-grid > .cm-card.g-card:nth-child(n) .g-play { color: var(--cm-cyan); }
 .ctos .cm-grid.g-grid > .cm-card.g-card .cm-pill { color: #d6d6d2; border-color: var(--cm-hair-hi); background: #161616; }
 .ctos .cm-grid.g-grid > .cm-card.g-card p { background: none; }
 .ctos .g-pills { list-style: none; margin: 2px 0 0; padding: 0; }
+
+/* Launcher tile: the whole card is the button. Title and blurb sit on top, and a full-width play bar (48px tall,
+   the touch target) anchors the bottom edge. The bar fills cyan on hover and focus. Unbuilt cards keep the same
+   bar with no arrow, so every tile has the same footprint. */
+.ctos .cm-grid.g-grid > .cm-card.g-card {
+    padding: 16px 0 0;
+    gap: 10px;
+}
+.ctos .g-card > :is(.g-tile-head, b, p, .g-pills, .g-screen) { margin-left: 16px; margin-right: 16px; }
+.ctos .g-card > .g-tile-head { margin-top: 0; }
+.ctos .g-card > b { font: 600 22px/1.05 var(--cm-display); letter-spacing: -.01em; }
+.ctos .cm-grid.g-grid > .cm-card.g-card > b { color: #f4f4f2; }
+.ctos .g-card > p { min-height: 2.8em; }
+.ctos .g-card .g-pills { margin-bottom: 14px; }
+.ctos .g-play {
+    margin-top: auto;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    min-height: 48px;
+    padding: 0 16px;
+    border-top: 1px solid var(--cm-hair-hi);
+    background: rgba(47, 216, 232, .07);
+    font: 700 var(--cm-ctos-t-tag)/1 var(--cm-mono);
+    letter-spacing: .14em;
+    text-transform: uppercase;
+    transition: background-color var(--cm-d-base) var(--cm-ease), color var(--cm-d-base) var(--cm-ease);
+}
+.ctos .g-play-arrow { font-size: 16px; letter-spacing: 0; transition: transform var(--cm-d-base) var(--cm-ease); }
+.ctos .cm-grid.g-grid > .cm-card.g-card:hover .g-play,
+.ctos .cm-grid.g-grid > .cm-card.g-card:focus-visible .g-play {
+    background: var(--cm-cyan);
+    color: #050607;
+}
+.ctos .g-card:hover .g-play-arrow { transform: translateX(4px); }
+.ctos .g-card:focus-visible { outline: 2px solid var(--cm-cyan); outline-offset: 3px; }
+@media (prefers-reduced-motion: reduce) {
+    .ctos .g-card:hover .g-play-arrow { transform: none; }
+}
 
 /* Card tags: the format (Daily or Unlimited) sits beside the status tag. */
 .ctos .g-tags { display: inline-flex; flex-wrap: wrap; gap: 6px; justify-content: flex-end; }
@@ -388,6 +428,9 @@
 
 @media (max-width: 760px) {
     .ctos .g-card .g-screen { height: 124px; }
+}
+@media (max-width: 480px) {
+    .ctos .g-hub-nav a { padding: 14px 16px; }
 }
 @media (prefers-reduced-motion: reduce) {
     .ctos .g-card:hover .g-screen svg { transition: none; transform: none; }
