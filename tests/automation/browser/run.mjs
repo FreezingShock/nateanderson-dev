@@ -137,6 +137,8 @@ const state = (page) => page.evaluate(() => window.__auto.snapshot());
     s = await state(page);
     check("desktop: right drag orbits", Math.abs(s.yaw - y0) > 0.05);
 
+    const barDisplay = await page.evaluate(() => getComputedStyle(document.querySelector(".bw-touch-bar")).display);
+    check("desktop: touch bar stays hidden on a wide mouse layout", barDisplay === "none", barDisplay);
     check("desktop: no script errors", errors.length === 0, errors.slice(0, 3).join(" | "));
     await ctx.close();
 }
@@ -213,6 +215,44 @@ const state = (page) => page.evaluate(() => window.__auto.snapshot());
     await page.waitForTimeout(400);
     s = await state(page);
     check("phone: two-finger rotate turns the camera", Math.abs(s.yaw - y0) > 0.3, `${y0.toFixed(2)} -> ${s.yaw.toFixed(2)}`);
+
+    // Long-press on an empty cell with a machine tool turns the ghost.
+    await page.evaluate(() => window.__auto.ctl.setToolById("machine"));
+    const e = await px(page, 9, 9);
+    await touch("touchStart", [{ x: e.x, y: e.y, id: 1 }]);
+    await page.waitForTimeout(450);
+    await touch("touchEnd", []);
+    await page.waitForTimeout(100);
+    s = await state(page);
+    check("phone: long-press on an empty cell turns the ghost", s.rot === 1 && !s.items.some((i) => i.x === 9 && i.z === 9), `rot ${s.rot}`);
+
+    // Long-press on a placed machine turns that machine, in place.
+    await page.evaluate(() => window.__auto.focus(6, 6));
+    await page.waitForTimeout(200);
+    const m = await px(page, 6, 6);
+    await touch("touchStart", [{ x: m.x, y: m.y, id: 1 }]);
+    await page.waitForTimeout(450);
+    await touch("touchEnd", []);
+    await page.waitForTimeout(100);
+    s = await state(page);
+    const placed = s.items.find((i) => i.x === 6 && i.z === 6);
+    check("phone: long-press on a machine turns it", placed && placed.rot === 1, JSON.stringify(placed));
+
+    // The on-screen bar: six buttons, each at least 48 by 48 CSS pixels.
+    const sizes = await page.evaluate(() => [...document.querySelectorAll(".bw-touch-bar button")].map((b) => {
+        const r = b.getBoundingClientRect();
+        return [r.width, r.height];
+    }));
+    check("phone: six touch-bar buttons, each at least 48 by 48", sizes.length === 6 && sizes.every(([w, h]) => w >= 48 && h >= 48), JSON.stringify(sizes));
+    check("phone: touch bar is visible", await page.evaluate(() => getComputedStyle(document.querySelector(".bw-touch-bar")).display !== "none"));
+
+    // Tapping the Top button switches to top-down.
+    await page.tap('button[aria-label="Top-down view"]');
+    await page.waitForTimeout(900);
+    s = await state(page);
+    check("phone: Top button switches to top-down", s.topDown && s.pitch > 1.3, `pitch ${s.pitch.toFixed(2)}`);
+    await page.tap('button[aria-label="Top-down view"]');
+    await page.waitForTimeout(300);
 
     check("phone: no script errors", errors.length === 0, errors.slice(0, 3).join(" | "));
     await ctx.close();
