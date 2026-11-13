@@ -26,7 +26,6 @@ import {
     type Rot,
     type World,
 } from "@/lib/automation/sim";
-import type { HudData as HudViewData } from "@/components/automation/types";
 import type { Stamper } from "@/lib/automation/render";
 import type { VoxelIsland } from "@/lib/automation/render";
 import type { BuildWorld, MountedInput } from "@/lib/automation/input";
@@ -76,18 +75,6 @@ function freshWorld(): World {
     return w;
 }
 
-// The HUD's research screen shows one unlock line per node; the sim returns a list of names.
-function forHud(d: HudData): HudViewData {
-    const sites = SITES.filter((x) => d.prestige.sites.includes(x.name)).map((x) => ({
-        id: x.id,
-        name: x.name,
-        floor: `${x.width} by ${x.depth} floor`,
-        ore: `${x.nodes.length} resource nodes`,
-        bonus: `x${x.bonus.miner} mining, x${x.bonus.power} power`,
-    }));
-    return { ...d, research: d.research.map((n) => ({ ...n, unlocks: n.unlocks.join(", ") })), prestige: { ...d.prestige, sites } };
-}
-
 function loadWorld(): { world: World; savedAt: number } {
     try {
         const raw = localStorage.getItem(SAVE_KEY);
@@ -103,10 +90,7 @@ function loadWorld(): { world: World; savedAt: number } {
 
 export function BrassworkHost() {
     const canvasRef = useRef<HTMLCanvasElement>(null);
-    const [data, setData] = useState<HudViewData>(() => {
-        const w = freshWorld();
-        return forHud(hudData(w, CAT, null, START_SETTINGS));
-    });
+    const [data, setData] = useState<HudData>(() => hudData(freshWorld(), CAT, null, START_SETTINGS));
     const [note, setNote] = useState("");
     const ctl = useRef<{
         setTool: (id: string | null) => void;
@@ -180,7 +164,7 @@ export function BrassworkHost() {
             const away = Math.max(0, (Date.now() - savedAt) / 1000);
             if (away > 5) advance(world, Math.min(away, CAT.tune.maxAwaySeconds), 1, CAT);
 
-            const refresh = () => setData(forHud(hudData(world, CAT, selectedId, settings)));
+            const refresh = () => setData(hudData(world, CAT, selectedId, settings));
             const save = () => {
                 try {
                     localStorage.setItem(SAVE_KEY, JSON.stringify({ text: serialize(world), savedAt: Date.now() }));

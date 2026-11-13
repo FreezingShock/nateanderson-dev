@@ -1,4 +1,4 @@
-import type { MachineView, NumberFormat, ResourceView } from "./types";
+import type { MachineView, NumberFormat, ResourceView } from "@/lib/automation/types";
 import { canAfford, costText } from "./format";
 import { Glyph } from "./resource-strip";
 
