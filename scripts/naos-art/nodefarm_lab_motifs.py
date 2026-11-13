@@ -229,6 +229,79 @@ def rx_corelab(s):
     s.rect(0.68, 0.68, 0.76, 0.71, "acc", True)
 
 
+# ---------------------------------------------------------------------------------------------- late pair (slots 6 and 7)
+@motif
+def rx_shellcode(s):
+    # a terminal window full of hex: raw bytes, no compiler between you and the machine
+    _screen(s, 0.08, 0.12, 0.92, 0.9)
+    for i, (x0, x1) in enumerate(((0.16, 0.44), (0.16, 0.62), (0.16, 0.36), (0.16, 0.54))):
+        y = 0.22 + i * 0.13
+        s.rect(x0, y, x1, y + 0.06, "acc" if i % 2 else "glow", True)
+    s.rect(0.16, 0.8, 0.22, 0.86, WARN, True)
+
+
+@motif
+def rx_stockpile(s):
+    # three canisters stacked on a shelf, each banded
+    s.rect(0.06, 0.86, 0.94, 0.94, "dark")
+    for i, x in enumerate((0.1, 0.38, 0.66)):
+        top = 0.28 if i == 1 else 0.4
+        s.rect(x, top, x + 0.26, 0.86, "metal")
+        s.ell(x, top - 0.06, x + 0.26, top + 0.06, "main")
+        s.rect(x, 0.5, x + 0.26, 0.56, "acc")
+        s.rect(x, 0.66, x + 0.26, 0.7, "acc")
+    s.rect(0.44, 0.1, 0.56, 0.2, PALE, True)
+
+
+@motif
+def rx_beacon(s):
+    # a mast with three rings of signal around it
+    s.line([(0.5, 0.9), (0.5, 0.3)], 0.06, "metal")
+    s.line([(0.4, 0.9), (0.5, 0.3), (0.6, 0.9)], 0.05, "dark")
+    s.dot(0.5, 0.26, 0.07, "acc")
+    s.arc(0.26, 0.04, 0.74, 0.52, 200, 340, 0.05, "glow")
+    s.arc(0.14, -0.04, 0.86, 0.68, 205, 335, 0.04, "main")
+    s.line([(0.3, 0.92), (0.7, 0.92)], 0.04, "dark", True)
+
+
+@motif
+def rx_packer(s):
+    # a block squeezed flat between two clamps, a smaller one coming out
+    s.rect(0.36, 0.22, 0.64, 0.78, "main")
+    s.rect(0.4, 0.3, 0.6, 0.7, "acc")
+    s.rect(0.08, 0.2, 0.2, 0.8, "metal")
+    s.rect(0.8, 0.2, 0.92, 0.8, "metal")
+    s.poly([(0.2, 0.44), (0.3, 0.5), (0.2, 0.56)], "dark", True)
+    s.poly([(0.8, 0.44), (0.7, 0.5), (0.8, 0.56)], "dark", True)
+    s.rect(0.44, 0.44, 0.56, 0.56, LIME, True)
+
+
+@motif
+def rx_archive(s):
+    # a filing box with a cold seal and frost marks on the lid
+    s.rect(0.14, 0.34, 0.86, 0.9, "metal")
+    s.rect(0.14, 0.2, 0.86, 0.36, "main")
+    s.rect(0.4, 0.3, 0.6, 0.4, "dark")
+    s.rect(0.44, 0.54, 0.56, 0.6, "acc", True)
+    for x, y in ((0.2, 0.12), (0.8, 0.12), (0.5, 0.06)):
+        s.line([(x - 0.04, y), (x + 0.04, y)], 0.03, PALE, True)
+        s.line([(x, y - 0.04), (x, y + 0.04)], 0.03, PALE, True)
+
+
+@motif
+def rx_mirror(s):
+    # two mirrored ports either side of a dashed axis
+    for i in range(5):
+        y = 0.1 + i * 0.18
+        s.line([(0.5, y), (0.5, y + 0.1)], 0.02, "dark", True)
+    s.poly([(0.08, 0.2), (0.44, 0.34), (0.44, 0.66), (0.08, 0.8)], "main")
+    s.poly([(0.92, 0.2), (0.56, 0.34), (0.56, 0.66), (0.92, 0.8)], AQUA)
+    s.rect(0.2, 0.42, 0.36, 0.58, "dark")
+    s.rect(0.64, 0.42, 0.8, 0.58, "dark")
+    s.dot(0.28, 0.5, 0.04, "glow")
+    s.dot(0.72, 0.5, 0.04, "glow")
+
+
 LAB_NODES = {
     "rx_core": ("rx_corelab", "labcore", "l", WARN),
     "rx_sniffer": ("rx_sniffer", "exploits", "s", WARN),
@@ -249,4 +322,10 @@ LAB_NODES = {
     "rx_socket": ("rx_socket", "infra", "m", LIME),
     "rx_cron": ("rx_cron", "infra", "m", WARN),
     "rx_rootshell": ("rx_rootshell", "infra", "l", LIME),
+    "rx_shellcode": ("rx_shellcode", "exploits", "s", WARN),
+    "rx_stockpile": ("rx_stockpile", "exploits", "m", PALE),
+    "rx_beacon": ("rx_beacon", "malware", "s", LIME),
+    "rx_packer": ("rx_packer", "malware", "m", LIME),
+    "rx_archive": ("rx_archive", "infra", "s", PALE),
+    "rx_mirror": ("rx_mirror", "infra", "m", LIME),
 }

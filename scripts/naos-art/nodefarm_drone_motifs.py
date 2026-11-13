@@ -253,6 +253,76 @@ def dx_foundry(s):
         s.dot(x, y, 0.025, "acc")
 
 
+# ---------------------------------------------------------------------------------------------- late pair (slots 6 and 7)
+@motif
+def dx_redline(s):
+    # a rev gauge with the needle pinned in the red
+    s.arc(0.06, 0.1, 0.94, 0.98, 180, 360, 0.09, "metal")
+    s.arc(0.6, 0.1, 0.94, 0.98, 300, 360, 0.09, RED)
+    s.line([(0.5, 0.62), (0.8, 0.22)], 0.05, "glow")
+    s.dot(0.5, 0.62, 0.07, "dark")
+    s.rect(0.14, 0.82, 0.86, 0.9, "dark", True)
+
+
+@motif
+def dx_wingmen(s):
+    # two rotors flying in tight formation
+    for cx in (0.3, 0.7):
+        for dx, dy in ((-1, -1), (1, -1), (-1, 1), (1, 1)):
+            s.line([(cx, 0.5), (cx + dx * 0.12, 0.5 + dy * 0.12)], 0.05, "dark")
+            s.ring(cx + dx * 0.12 - 0.07, 0.5 + dy * 0.12 - 0.07, cx + dx * 0.12 + 0.07, 0.5 + dy * 0.12 + 0.07, 0.03, "metal")
+        s.rect(cx - 0.07, 0.43, cx + 0.07, 0.57, "main")
+        s.dot(cx, 0.5, 0.025, "acc")
+    s.line([(0.3, 0.14), (0.7, 0.14)], 0.03, "glow", True)
+    s.poly([(0.46, 0.14), (0.54, 0.14), (0.5, 0.06)], HAZ, True)
+
+
+@motif
+def dx_groundcrew(s):
+    # a hard hat on a clipboard
+    s.rect(0.2, 0.22, 0.8, 0.9, "dark")
+    s.rect(0.28, 0.3, 0.72, 0.8, PALE)
+    for i in range(3):
+        s.rect(0.34, 0.4 + i * 0.12, 0.66, 0.44 + i * 0.12, "dark", True)
+    s.ell(0.22, 0.12, 0.78, 0.4, MINT)
+    s.rect(0.14, 0.34, 0.86, 0.4, MINT)
+
+
+@motif
+def dx_fullmast(s):
+    # two masts joined by a full-width beam: the posting carries everything next door
+    s.rect(0.1, 0.22, 0.26, 0.92, "metal")
+    s.rect(0.74, 0.22, 0.9, 0.92, "metal")
+    s.line([(0.18, 0.3), (0.82, 0.3)], 0.06, RED)
+    s.line([(0.18, 0.5), (0.82, 0.5)], 0.04, "dark")
+    s.rect(0.34, 0.6, 0.66, 0.74, "main")
+    s.dot(0.18, 0.2, 0.05, RED, True)
+    s.dot(0.82, 0.2, 0.05, RED, True)
+
+
+@motif
+def dx_sparebin(s):
+    # a bin of nuts and bolts
+    s.poly([(0.14, 0.4), (0.86, 0.4), (0.78, 0.9), (0.22, 0.9)], "dark")
+    s.rect(0.14, 0.34, 0.86, 0.44, "metal")
+    for x, y in ((0.3, 0.2), (0.52, 0.14), (0.7, 0.24)):
+        s.ngon(x, y, 0.1, 6, 0, HAZ)
+        s.dot(x, y, 0.035, "dark", True)
+    s.rect(0.36, 0.56, 0.64, 0.66, "acc", True)
+
+
+@motif
+def dx_modbay(s):
+    # a rack with three mod cards slotted in
+    s.rect(0.08, 0.08, 0.92, 0.92, "dark")
+    for i in range(3):
+        x = 0.14 + i * 0.27
+        s.rect(x, 0.16, x + 0.2, 0.84, "metal")
+        s.rect(x + 0.04, 0.24, x + 0.16, 0.5, SKY)
+        s.dot(x + 0.1, 0.7, 0.04, "acc")
+        s.line([(x + 0.04, 0.6), (x + 0.16, 0.6)], 0.02, "ink", True)
+
+
 DRONE_NODES = {
     "dx_core": ("dx_bay", "hangarcore", "l", HAZ),
     "dx_burner": ("dx_burner", "flight", "s", RED),
@@ -273,4 +343,10 @@ DRONE_NODES = {
     "dx_blackbox": ("dx_blackbox", "salvage", "m", "#ff8a2a"),
     "dx_frames": ("dx_frames", "salvage", "m", MINT),
     "dx_foundry": ("dx_foundry", "salvage", "l", HAZ),
+    "dx_redline": ("dx_redline", "flight", "s", RED),
+    "dx_wingmen": ("dx_wingmen", "flight", "m", HAZ),
+    "dx_groundcrew": ("dx_groundcrew", "dispatch", "s", MINT),
+    "dx_fullmast": ("dx_fullmast", "dispatch", "m", RED),
+    "dx_sparebin": ("dx_sparebin", "salvage", "s", HAZ),
+    "dx_modbay": ("dx_modbay", "salvage", "m", SKY),
 }

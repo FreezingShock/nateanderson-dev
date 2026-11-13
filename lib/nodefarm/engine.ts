@@ -1320,11 +1320,14 @@ export function ascend(s: State) {
     const tf = treeFx(s);
     const mounts = s.mounts.slice(0, tf.mounts);
     const keptProd = Object.fromEntries(mounts.map((m) => [m, Math.floor(s.prod[m] * TUNE.mountKeep)]));
-    const keptDrones = s.drones.map((lv) => Math.max(Math.floor(lv * tf.droneKeep), tf.kitDrones));
+    // a Beacon armed for this Ascend keeps every Drone level (and is spent here)
+    const beacon = s.lab.armed.includes("beacon");
+    const keptDrones = s.drones.map((lv) => (beacon ? lv : Math.max(Math.floor(lv * tf.droneKeep), tf.kitDrones)));
     const oldDrones = s.drones.slice();
     const hf = handFx(s);
     // after the first Handover, Ascend keeps Intel and running payloads (base Handover, HAND_BASE)
-    const lab: LabState = { ...s.lab, intel: hf.labKeep ? s.lab.intel : 0, run: hf.labKeep ? s.lab.run : [], armed: s.lab.armed.filter((x) => x !== "zeroclick"), dump: LAB_TUNE.dumpSecs };
+    const keepIntel = Math.floor(s.lab.intel * labFx(s).intelKeep);
+    const lab: LabState = { ...s.lab, intel: hf.labKeep ? s.lab.intel : keepIntel, run: hf.labKeep ? s.lab.run : [], armed: s.lab.armed.filter((x) => x !== "zeroclick" && x !== "beacon"), dump: LAB_TUNE.dumpSecs };
     const hand: HandState = { ...s.hand, cycleAp: s.hand.cycleAp + gain };
     const dr = drOnAscend(s);
     const rig = RIG_HOOKS.ascend ? RIG_HOOKS.ascend(s) : s.rig;
@@ -1525,7 +1528,7 @@ export function checkGoals(s: State): { id: string; name: string; secret?: boole
 // nodes unlock a recipe. Recipes compile (a short timer, in a queue, also while away) into payloads you stock and deploy:
 // timed buffs, one-shot charges and instant effects. Opens with Silicon. See docs/node-farm.md "Exploit Lab".
 export type LabSec = "exploits" | "malware" | "infra";
-export type PayloadId = "sniffer" | "worm" | "logicbomb" | "ransom" | "kernel" | "rootkit" | "trojan" | "botnet" | "zeroclick" | "polymorph";
+export type PayloadId = "sniffer" | "worm" | "logicbomb" | "ransom" | "kernel" | "shellcode" | "rootkit" | "trojan" | "botnet" | "zeroclick" | "polymorph" | "beacon";
 export type PayloadKind = "buff" | "charge" | "instant";
 export interface PayloadDef {
     id: PayloadId;
@@ -1556,7 +1559,7 @@ export const LAB_TUNE = {
     slots: 2, // buffs running at once
     stockMax: 5, // stock per payload
     maxRun: 3600, // a buff's time left never goes past this
-    nodeCost: [80, 600, 600, 5000, 5000, 30000], // Intel per slot
+    nodeCost: [80, 600, 600, 5000, 5000, 30000, 60000, 60000], // Intel per slot (slots 6 and 7 are the late pair past each keystone)
     labScale: 1, // scales every research node price (pacing knob)
     opensAt: "silicon" as StatId,
 };
@@ -1577,6 +1580,8 @@ export const PAYLOADS: PayloadDef[] = [
     P("botnet", "malware", "Botnet", "buff", "Drones press twice as fast for 10 minutes.", "BOTNET", 300, 600, 1, 300, { stat: "aether", secs: 240, floor: 5 }),
     P("zeroclick", "malware", "Zero-click", "charge", "Arms your next Ascend: it pays x1.25 AP.", "0-CLICK", 1800, 0, 0.25, 1200, { stat: "runes", secs: 300, floor: 10 }),
     P("polymorph", "malware", "Polymorph", "instant", "Doubles the time left on every running payload.", "", 900, 0, 1, 600, { stat: "aether", secs: 300, floor: 20 }),
+    P("shellcode", "exploits", "Shellcode", "buff", "Compiles run x3 for 10 minutes.", "SHELL", 900, 600, 2, 700, { stat: "quartz", secs: 240, floor: 150 }),
+    P("beacon", "malware", "Beacon", "charge", "Arms your next Ascend: every Drone keeps its level.", "BEACON", 1200, 0, 1, 900, { stat: "runes", secs: 240, floor: 8 }),
 ];
 const PAY_BY = new Map(PAYLOADS.map((p) => [p.id, p]));
 export const payload = (id: PayloadId) => PAY_BY.get(id)!;
@@ -1591,6 +1596,8 @@ export interface LabFx {
     longer?: LabSec; // that section's buffs last twice as long
     dumps?: number; // Reboot and event Intel x(1 + this)
     cron?: boolean; // an empty queue repeats the last compile
+    stock?: number; // stock per payload +this (on top of LAB_TUNE.stockMax)
+    intelKeep?: number; // share of Intel kept through every Ascend (summed, capped at 1)
 }
 export interface LabNode {
     id: string;
@@ -1609,7 +1616,7 @@ export interface LabNode {
     entry?: boolean;
 }
 // Each section is a small diamond: entry, two paths of two, keystone. 0 entry | 1, 3 upper | 2, 4 lower | 5 keystone.
-const LAB_SLOTS: [number, number, number[]][] = [[2.3, 0, []], [3.9, -1.1, [0]], [3.9, 1.1, [0]], [5.7, -1.25, [1]], [5.7, 1.25, [2]], [7.5, 0, [3, 4]]];
+const LAB_SLOTS: [number, number, number[]][] = [[2.3, 0, []], [3.9, -1.1, [0]], [3.9, 1.1, [0]], [5.7, -1.25, [1]], [5.7, 1.25, [2]], [7.5, 0, [3, 4]], [9.2, -0.9, [5]], [9.2, 0.9, [5]]];
 type LabRow = [slot: number, id: string, kind: TreeKind, name: string, blurb: string, flavor: string, fx: LabFx];
 const LAB_ARMS: Record<LabSec, LabRow[]> = {
     exploits: [
@@ -1619,6 +1626,8 @@ const LAB_ARMS: Record<LabSec, LabRow[]> = {
         [3, "rx_obfuscate", "notable", "Obfuscation", "Exploits buffs are 50% stronger.", "Same code, uglier. Nothing on the line recognizes it anymore.", { potency: "exploits" }],
         [4, "rx_ransom", "minor", "Ransomware", "Payload: Ransomware. Pays out 10 minutes of Bytes, Copper, Silicon and Quartz at once.", "Lock it, then charge the node for its own key. The node always pays.", { recipe: "ransom" }],
         [5, "rx_kernel", "keystone", "Kernel exploit", "Payload: Kernel exploit. Everything x2 for 5 minutes.", "Ring zero. For five minutes nothing on this node says no.", { recipe: "kernel" }],
+        [6, "rx_shellcode", "minor", "Shellcode", "Payload: Shellcode. Compiles run x3 for 10 minutes.", "Hand-written machine code. The compiler stops arguing.", { recipe: "shellcode" }],
+        [7, "rx_stockpile", "notable", "Stockpile", "Every payload keeps 3 more in stock.", "Nobody leaves a good payload on the shelf.", { stock: 3 }],
     ],
     malware: [
         [0, "rx_rootkit", "minor", "Rootkit", "Payload: Rootkit. Copper, Silicon and Quartz x1.75 for 15 minutes.", "Dig in under the forge. It runs hotter when it can't see you.", { recipe: "rootkit" }],
@@ -1627,6 +1636,8 @@ const LAB_ARMS: Record<LabSec, LabRow[]> = {
         [3, "rx_mutate", "notable", "Mutation", "Malware buffs last twice as long.", "Every copy a little different. The scanner gave up counting.", { longer: "malware" }],
         [4, "rx_zeroclick", "minor", "Zero-click", "Payload: Zero-click. Your next Ascend pays x1.25 AP.", "No prompt, no warning, more points on the way up.", { recipe: "zeroclick" }],
         [5, "rx_polymorph", "keystone", "Polymorph", "Payload: Polymorph. Doubles the time left on every running payload.", "It wears whatever is already running and makes it last.", { recipe: "polymorph" }],
+        [6, "rx_beacon", "minor", "Beacon", "Payload: Beacon. Arms your next Ascend: every Drone keeps its level.", "Phones home once, right before the wipe. Remembers where everything was.", { recipe: "beacon" }],
+        [7, "rx_packer", "notable", "Packer", "Malware buffs are 50% stronger.", "Compressed, encrypted, and it hits harder once it unpacks.", { potency: "malware" }],
     ],
     infra: [
         [0, "rx_tap", "minor", "Fiber tap", "Intel x2.", "Spliced a second line into the trunk. Twice the gossip.", { intel: 1 }],
@@ -1635,6 +1646,8 @@ const LAB_ARMS: Record<LabSec, LabRow[]> = {
         [3, "rx_socket", "notable", "Second socket", "Run one more buff at once (3).", "Another socket on the bench. Two hands were never enough.", { slots: 1 }],
         [4, "rx_cron", "notable", "Cron job", "When the queue empties, it compiles your last recipe again if you can pay.", "Every minute, on the minute, the same small job. It never forgets.", { cron: true }],
         [5, "rx_rootshell", "keystone", "Root shell", "Intel x3 and one more buff slot (4).", "Prompt ends in a hash now. The whole lab answers to it.", { intel: 2, slots: 1 }],
+        [6, "rx_archive", "minor", "Cold archive", "Keep a quarter of your Intel through every Ascend.", "Nothing gets deleted. It gets moved somewhere colder.", { intelKeep: 0.25 }],
+        [7, "rx_mirror", "notable", "Mirror port", "Intel x1.5.", "A second port on the trunk, mirrored and quietly billing.", { intel: 0.5 }],
     ],
 };
 const LAB_ORDER: LabSec[] = ["exploits", "malware", "infra"];
@@ -1667,6 +1680,10 @@ function buildLab(): LabNode[] {
 export const LAB: LabNode[] = buildLab();
 const LAB_BY = new Map(LAB.map((n) => [n.id, n]));
 export const labNode = (id: string) => LAB_BY.get(id)!;
+/** Stock each payload can hold: LAB_TUNE.stockMax plus the Stockpile-style bonuses in the owned research nodes. */
+export const stockCap = (nodes: string[]) => LAB_TUNE.stockMax + nodes.reduce((a, id) => a + (LAB_BY.get(id)?.fx.stock ?? 0), 0);
+/** The highest stock any save can hold (saves are clamped to this, then to stockCap of their own nodes). */
+export const STOCK_CAP_MAX = LAB_TUNE.stockMax + 3;
 export const labHas = (s: State, id: string) => s.lab.nodes.includes(id);
 export const labNodeOpen = (s: State, n: LabNode) => n.links.some((l) => l === "core" || s.lab.nodes.includes(l));
 export function labVis(s: State, n: LabNode): NodeVis {
@@ -1699,7 +1716,7 @@ export function labFx(s: State) {
     return v;
 }
 function labFxRaw(s: State) {
-    const o = { recipes: [] as PayloadId[], intel: 0, compile: 0, queue: 0, slots: 0, potency: [] as LabSec[], longer: [] as LabSec[], dumps: 0, cron: false };
+    const o = { recipes: [] as PayloadId[], intel: 0, compile: 0, queue: 0, slots: 0, potency: [] as LabSec[], longer: [] as LabSec[], dumps: 0, cron: false, stock: 0, intelKeep: 0 };
     for (const id of s.lab.nodes) {
         const f = LAB_BY.get(id)?.fx;
         if (!f) continue;
@@ -1712,6 +1729,8 @@ function labFxRaw(s: State) {
         if (f.longer) o.longer.push(f.longer);
         o.dumps += f.dumps ?? 0;
         if (f.cron) o.cron = true;
+        o.stock += f.stock ?? 0;
+        o.intelKeep = Math.min(1, o.intelKeep + (f.intelKeep ?? 0));
     }
     return o;
 }
@@ -1721,7 +1740,7 @@ export const hasRecipe = (s: State, id: PayloadId) => labFx(s).recipes.includes(
 /** A buff's strength right now (Obfuscation makes Exploits buffs 50% stronger). */
 export const payloadV = (s: State, p: PayloadDef) => p.v * (labFx(s).potency.includes(p.sec) ? 1.5 : 1);
 export const payloadDur = (s: State, p: PayloadDef) => p.dur * (labFx(s).longer.includes(p.sec) ? 2 : 1);
-export const compileSecs = (s: State, p: PayloadDef) => p.compile / (1 + labFx(s).compile);
+export const compileSecs = (s: State, p: PayloadDef) => p.compile / ((1 + labFx(s).compile) * labBuffs(s).compile);
 /** Intel per second right now. Uses the log of Bytes/s so it stays steady from one era to the next. */
 export function intelRate(s: State, bytesPerSec = derive(s).bytesPerSec): number {
     if (!s.lab.seen) return 0;
@@ -1737,7 +1756,7 @@ export function payloadCost(s: State, p: PayloadDef, d: Derived = derive(s)) {
 export const FORGE_MATS: readonly MatId[] = ["copper", "silicon", "quartz"];
 /** Buff multipliers from running payloads, for derive. */
 export function labBuffs(s: State) {
-    const o = { bytes: 1, mult: 1, forge: 1, global: 1, drone: 1 };
+    const o = { bytes: 1, mult: 1, forge: 1, global: 1, drone: 1, compile: 1 };
     for (const r of s.lab.run) {
         const p = PAY_BY.get(r.id);
         if (!p || r.left <= 0) continue;
@@ -1747,6 +1766,7 @@ export function labBuffs(s: State) {
         else if (p.id === "kernel") o.global *= x;
         else if (p.id === "rootkit") o.forge *= x;
         else if (p.id === "botnet") o.drone *= x;
+        else if (p.id === "shellcode") o.compile *= x;
     }
     return o;
 }
@@ -1766,7 +1786,7 @@ export function compileBlock(s: State, id: PayloadId, d?: Derived): CompileFail 
     const p = PAY_BY.get(id);
     if (!p || !hasRecipe(s, id)) return "recipe";
     if (s.lab.queue.length >= labQueueMax(s)) return "queue";
-    if ((s.lab.stock[id] ?? 0) + s.lab.queue.filter((q) => q.id === id).length >= LAB_TUNE.stockMax) return "stock";
+    if ((s.lab.stock[id] ?? 0) + s.lab.queue.filter((q) => q.id === id).length >= stockCap(s.lab.nodes)) return "stock";
     const c = payloadCost(s, p, d);
     if (s.lab.intel < c.intel) return "intel";
     if (amount(s, c.mat) < c.amount) return "mat";
@@ -1865,7 +1885,7 @@ export function labStep(s: State, dt: number, bytesPerSec: number): PayloadId[] 
         t -= use;
         if (q.left <= 1e-9) {
             L.queue.shift();
-            L.stock[q.id] = Math.min(LAB_TUNE.stockMax, (L.stock[q.id] ?? 0) + 1);
+            L.stock[q.id] = Math.min(stockCap(L.nodes), (L.stock[q.id] ?? 0) + 1);
             s.life.compiled += 1;
             done.push(q.id);
             if (!L.queue.length && labFx(s).cron && L.last) compile(s, L.last);
@@ -1878,7 +1898,7 @@ export function labStep(s: State, dt: number, bytesPerSec: number): PayloadId[] 
 //  - postings and zone mastery (forever): post a Drone to one zone and it presses only there, faster; its work there builds
 //    that zone's mastery (ranks I to V, a permanent boost to the zone's output). Every rank earns one Core.
 //  - Parts and mods (one run): every press a Drone attempts salvages Parts; Parts buy three mods per Drone (Servo, Uplink, Reach).
-//  - the drone tree (forever): Cores buy nodes in a small 18-node tree on the shared tree menu (amber "hangar" skin).
+//  - the drone tree (forever): Cores buy nodes in a small 24-node tree on the shared tree menu (amber "hangar" skin).
 // See docs/node-farm.md "Drone hangar".
 export const DRONE_TUNE = {
     postX: 3, // a posted Drone presses this many times as fast on its zone
@@ -1899,7 +1919,7 @@ export const DRONE_TUNE = {
     // service (attempted presses on a zone) needed for mastery ranks I..V, and each rank's output multiplier
     rankAt: [500, 10000, 200000, 4000000, 80000000],
     rankX: [1, 1.05, 1.1, 1.16, 1.23, 1.35],
-    nodeCost: [1, 2, 2, 4, 4, 8], // Cores per tree slot
+    nodeCost: [1, 2, 2, 4, 4, 8, 12, 16], // Cores per tree slot (slots 6 and 7: the late pair past each keystone)
 };
 /** Zones a Drone can work: every button stat except Reboots, in chain order. */
 export const POSTABLE: readonly ButtonStat[] = ["mult", ...MATS];
@@ -1963,6 +1983,8 @@ const DRONE_ARMS: Record<DroneSec, DroneRow[]> = {
         [3, "dx_overdrive", "notable", "Overdrive", "Servo mods go to level 8.", "The servos were rated for five. They took eight without a word.", { servoMax: 3 }],
         [4, "dx_slipstream", "notable", "Slipstream", "Posting speed +2x on every Drone.", "Each one rides the wake of the one before it.", { postX: 2 }],
         [5, "dx_hivemind", "keystone", "Hivemind", "Drones press twice as fast, and every mastery rank adds 1% more.", "Six frames, one thought. The thought is mostly about buttons.", { speed: 1, rankSpeed: 0.01 }],
+        [6, "dx_redline", "minor", "Redline", "Every mastery rank adds 2% more to Drone speed.", "Pushed past the sticker. The sticker was a suggestion.", { rankSpeed: 0.02 }],
+        [7, "dx_wingmen", "notable", "Wingmen", "Every Drone presses 20% faster for each Drone on a posting.", "They fly tighter the more wings are out there.", { formation: 0.2 }],
     ],
     dispatch: [
         [0, "dx_orders", "minor", "Field orders", "Posted Drones press x4 on their zone.", "Clear orders, one zone each. Nobody wanders.", { postX: 1 }],
@@ -1971,6 +1993,8 @@ const DRONE_ARMS: Record<DroneSec, DroneRow[]> = {
         [3, "dx_fieldops", "notable", "Field ops", "Mastery bonuses are 50% stronger.", "The veterans train the new frames. Nobody asked them to.", { rankPow: 0.5 }],
         [4, "dx_relay", "notable", "Relay mast", "Each posting also builds half as much mastery in the next zone up the chain.", "Every posting gets a mast. The mast talks to the zone next door.", { relay: 0.5 }],
         [5, "dx_garrison", "keystone", "Garrison", "Posting speed +2x, and mastery builds 50% faster.", "Stationed for good. They know every creak of the zone.", { postX: 2, svc: 0.5 }],
+        [6, "dx_groundcrew", "minor", "Ground crew", "Mastery builds 25% faster.", "Someone has to keep the zones tidy between shifts.", { svc: 0.25 }],
+        [7, "dx_fullmast", "notable", "Full mast", "Each posting builds all of its mastery in the next zone up the chain.", "The mast talks to the zone next door, and the zone next door listens.", { relay: 1 }],
     ],
     salvage: [
         [0, "dx_scrap", "minor", "Scrapper", "Parts x2.", "Every press sheds a little metal. Now somebody sweeps it up.", { parts: 1 }],
@@ -1979,6 +2003,8 @@ const DRONE_ARMS: Record<DroneSec, DroneRow[]> = {
         [3, "dx_blackbox", "notable", "Black box", "Keep half your mod levels and Parts through every Ascend.", "The frames reset. The flight recorders don't.", { modKeep: 0.5 }],
         [4, "dx_frames", "notable", "Spare frames", "Drones go 2 levels higher.", "Two more chassis on the rack, wired and waiting.", { droneMax: 2 }],
         [5, "dx_foundry", "keystone", "Foundry", "Every mod level adds +1% to everything.", "The hangar builds its own parts now. Then it builds better ones.", { modGlobal: 0.01 }],
+        [6, "dx_sparebin", "minor", "Spare bin", "Mods cost 30% less.", "Every bolt in the bin is the right size. Mostly.", { modCost: 0.3 }],
+        [7, "dx_modbay", "notable", "Mod bay", "Every mod level adds +0.5% to everything.", "A bay just for mods. It keeps them tuned between runs.", { modGlobal: 0.005 }],
     ],
 };
 const DRONE_ORDER: DroneSec[] = ["flight", "dispatch", "salvage"];
@@ -2758,7 +2784,7 @@ function parseLab(o: unknown): LabState {
         intel: Math.max(0, num(x.intel)),
         nodes: Array.isArray(x.nodes) ? [...new Set(x.nodes.filter((id) => LAB_BY.has(id)))] : [],
         queue: Array.isArray(x.queue) ? x.queue.filter((q) => q && pid(q.id)).map((q) => ({ id: q.id, left: Math.max(0, num(q.left)) })) : [],
-        stock: Object.fromEntries(Object.entries(x.stock ?? {}).filter(([k, v]) => pid(k) && num(v) > 0).map(([k, v]) => [k, Math.min(LAB_TUNE.stockMax, Math.floor(num(v)))])),
+        stock: Object.fromEntries(Object.entries(x.stock ?? {}).filter(([k, v]) => pid(k) && num(v) > 0).map(([k, v]) => [k, Math.min(STOCK_CAP_MAX, Math.floor(num(v)))])),
         run: Array.isArray(x.run) ? x.run.filter((r) => r && pid(r.id) && num(r.left) > 0).map((r) => ({ id: r.id, left: Math.min(LAB_TUNE.maxRun, num(r.left)) })) : [],
         armed: Array.isArray(x.armed) ? [...new Set(x.armed.filter(pid))] : [],
         last: pid(x.last) ? x.last : null,
