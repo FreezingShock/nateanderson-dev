@@ -36,6 +36,18 @@ export interface MachineDef {
     supplyRange?: number;
     /** Items spent to place the machine. Missing means free. */
     buildCost?: Stack[];
+    /** Storage capacity in kJ. Only batteries set this (spring store). */
+    storageKj?: number;
+    note?: string;
+}
+
+/** A placed structure that is not a crafting machine: the hub, and the Sky orrery's build stages. */
+export interface StructureDef {
+    id: string;
+    name: string;
+    footprint: { w: number; d: number };
+    /** Build stage for multi-stage structures (the orrery is 0 to 4). Absent for single-stage ones. */
+    stage?: number;
     note?: string;
 }
 
@@ -108,6 +120,7 @@ export interface RecipeTree {
     research: ResearchDef[];
     milestones: MilestoneDef[];
     prestige: PrestigeDef;
+    structures: StructureDef[];
 }
 
 // ---- Engine types (Simulation thread). Content above is owned by the Recipe thread; the engine below is owned by Simulation. ----
