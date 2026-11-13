@@ -4,6 +4,7 @@ import { useState } from "react";
 import "./automation-screens.css";
 import type { ResearchNode } from "@/lib/automation/types";
 import { Glyph } from "./resource-strip";
+import { uiIconStyle } from "@/lib/automation/icons/ui";
 
 const COLUMNS = ["Base", "Parts", "Components", "Clockworks", "Megaproject"];
 const X0 = 24;
@@ -40,7 +41,7 @@ export function ResearchScreen({
   return (
     <section className="ab-screen" aria-label="Research">
       <header className="ab-screen-head">
-        <h2 className="ab-h">Research</h2>
+        <h2 className="ab-h"><span className="ab-ico" style={uiIconStyle("research", 20)} aria-hidden="true" />Research</h2>
         <span className="ab-dim">Blueprints {blueprints}</span>
         <button type="button" className="ab-text-btn ab-screen-close" onClick={onClose}>
           Close

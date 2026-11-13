@@ -246,7 +246,10 @@ export function AutomationHud({
         {drawer && (
           <aside className="ab-drawer" role="dialog" aria-label={DRAWER_TITLE[drawer]}>
             <header className="ab-head">
-              <h2 className="ab-h">{DRAWER_TITLE[drawer]}</h2>
+              <h2 className="ab-h">
+                <Ico id={DRAWER_ICON[drawer]} />
+                {DRAWER_TITLE[drawer]}
+              </h2>
               <button type="button" className="ab-text-btn" onClick={() => setDrawer(null)}>
                 Close
               </button>
