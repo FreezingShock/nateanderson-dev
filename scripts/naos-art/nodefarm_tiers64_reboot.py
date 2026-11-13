@@ -8,13 +8,13 @@ from nodefarm_icon_kit import (Canvas, P, X, Y, angle, box, disc, lin, line, orb
                                tilted_ring, wave)
 
 
-def power(c, cx, cy, R, w, pal="mag", fill=1.0, gap=0.16, v=0.0):
+def power(c, cx, cy, R, w, pal="mag", fill=1.0, gap=0.16, v=0.0, unlit=0.0):
     """Power symbol: an open ring (gap at the top) and a bar; `fill` lights the ring clockwise from the gap."""
     r = np.hypot(X - cx, Y - cy)
     a = (angle(cx, cy) + 0.25) % 1.0  # 0 at the top, clockwise
     ringm = (r <= R) & (r >= R - w) & (a > gap / 2) & (a < 1 - gap / 2)
     lit = ringm & ((a - gap / 2) / (1 - gap) <= fill)
-    c.fill(ringm, 0.25 + v + 0.25 * (1 - lin(cx - R, cy - R, cx + R, cy + R)), pal, outline=pal)
+    c.fill(ringm, 0.25 + unlit + v + 0.25 * (1 - lin(cx - R, cy - R, cx + R, cy + R)), pal, outline=pal)
     c.fill(lit, 0.75 + v + 0.2 * (1 - lin(cx - R, cy - R, cx + R, cy + R)), pal)
     bar = rect(cx - w / 2, cy - R - 2, cx + w / 2, cy + 1)
     c.fill(bar, 0.9 + v, pal, outline=pal)
@@ -160,6 +160,6 @@ def icon(p):
     """Zone icon: the power mark, its ring filling and the bar flaring each loop."""
     c = Canvas()
     shadow(c, 32, 18, 60)
-    m = power(c, 32, 34, 22, 6.5, fill=min(1.0, p * 1.4), gap=0.2)
+    m = power(c, 32, 34, 22, 6.5, fill=min(1.0, p * 1.4), gap=0.2, unlit=0.2)
     c.glow(m, P["mag"][4], 3, int(60 + 120 * wave(p)), 2)
     return c.finish()
