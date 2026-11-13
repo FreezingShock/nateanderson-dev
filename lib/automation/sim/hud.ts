@@ -279,8 +279,8 @@ function nextStepOf(world: World, machines: MachineView[], milestones: Milestone
     const crafters = machines.filter((m) => m.id !== "drill").reduce((a, m) => a + m.count, 0);
     const next = milestones.find((m) => !m.done);
     if (drills === 0) return { text: "Place a drill on a resource node to start the flow.", actionLabel: "Select drill", actionId: "drill" };
-    if (crafters === 0) return { text: "Add a smelter and set its recipe so ore becomes plates.", actionLabel: "Select smelter", actionId: "smelter" };
-    if (world.power.satisfaction < 1) return { text: "Machines are short of power. Add a generator." };
+    if (crafters === 0) return { text: "Add a kiln and set its recipe to smelt ore into ingots.", actionLabel: "Select kiln", actionId: "kiln" };
+    if (world.power.satisfaction < 1) return { text: "Machines are short of power. Place a windmill within 6 cells of them.", actionLabel: "Select windmill", actionId: "windmill" };
     if (next) return { text: `Next delivery: ${next.goal} for ${next.blueprintReward} blueprints.` };
     return { text: "Keep the factory running and plan the next milestone." };
 }

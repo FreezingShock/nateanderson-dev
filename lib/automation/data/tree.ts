@@ -17,7 +17,7 @@ export const PURITY = { impure: 0.5, normal: 1, pure: 2 } as const;
 
 const MACHINES: MachineDef[] = [
     { id: "drill", name: "Drill", unlockStage: 0, speed: 1, footprint: { w: 2, d: 2 }, powerKw: 6, note: "Sits on a resource node." },
-    { id: "kiln", name: "Kiln", unlockStage: 1, speed: 1, footprint: { w: 2, d: 2 }, powerKw: 12, note: "Smelts ore into ingots." },
+    { id: "kiln", name: "Kiln", unlockStage: 0, speed: 1, footprint: { w: 2, d: 2 }, powerKw: 12, note: "Smelts ore into ingots." },
     { id: "furnace", name: "Furnace", unlockStage: 1, speed: 1, footprint: { w: 2, d: 3 }, powerKw: 36, note: "Alloys and high-heat work. Coal is an input." },
     { id: "press", name: "Stamp press", unlockStage: 2, speed: 1, footprint: { w: 2, d: 3 }, powerKw: 18, note: "Stamps plates, sheets and beams." },
     { id: "lathe", name: "Lathe", unlockStage: 2, speed: 1, footprint: { w: 1, d: 2 }, powerKw: 10, note: "Cuts rods, screws and gears." },
@@ -27,7 +27,7 @@ const MACHINES: MachineDef[] = [
     {
         id: "windmill",
         name: "Windmill",
-        unlockStage: 2,
+        unlockStage: 0,
         speed: 1,
         footprint: { w: 2, d: 2 },
         powerKw: 0,
@@ -250,7 +250,7 @@ const RESEARCH = [
 
 // Blueprints granted per stage: 10 + 20 + 30 + 35 + 40 = 135. The megaproject's path needs 109 of it.
 const MILESTONES = [
-    { id: "ms_smelting", name: "First smelt run", stage: 1, deliver: [{ item: "iron_ingot", qty: 50 }, { item: "copper_ingot", qty: 30 }, { item: "silicon", qty: 10 }], blueprints: 10 },
+    { id: "ms_smelting", name: "First smelt run", stage: 1, deliver: [{ item: "iron_ingot", qty: 50 }, { item: "copper_ingot", qty: 30 }], blueprints: 10 },
     { id: "ms_forming", name: "Plate line online", stage: 2, deliver: [{ item: "iron_plate", qty: 60 }, { item: "copper_wire", qty: 60 }, { item: "steel_ingot", qty: 30 }, { item: "aluminium_sheet", qty: 20 }], blueprints: 20 },
     { id: "ms_components", name: "Components crate", stage: 3, deliver: [{ item: "iron_gear", qty: 30 }, { item: "circuit_board", qty: 20 }, { item: "aluminium_casing", qty: 20 }, { item: "frame", qty: 20 }, { item: "steel_beam", qty: 10 }], blueprints: 30 },
     { id: "ms_clockworks", name: "Clockwork shipment", stage: 4, deliver: [{ item: "motor", qty: 10 }, { item: "servo", qty: 6 }, { item: "photocell", qty: 10 }, { item: "quartz_lens", qty: 4 }], blueprints: 35 },
