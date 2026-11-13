@@ -283,6 +283,8 @@ export type MachineView = {
   /** Cost to build one more. */
   cost: Line[];
   status: MachineStatus;
+  /** Palette section. Absent means "machines". */
+  group?: "machines" | "power" | "logistics";
 };
 
 export type MachineDetail = MachineView & {
@@ -294,6 +296,9 @@ export type MachineDetail = MachineView & {
   };
   rates: { label: string; value: string }[];
   buffers: { resourceId: string; have: number; max: number }[];
+  /** Crafters only: the building's current recipe id and every unlocked recipe it can run (base and alternates). */
+  recipeId?: string | null;
+  recipeOptions?: { id: string; name: string; alternate: boolean }[];
 };
 
 /** Expedition areas, shown in the expedition drawer. */

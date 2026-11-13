@@ -23,6 +23,8 @@ import { buildWater } from "./water";
 import { PixelDitherPass } from "./postfx";
 import { Lighting } from "./lighting";
 import { buildClouds } from "./clouds";
+import type { Placement } from "../models/props";
+import { Scenery } from "./scenery";
 import {
     ModelRenderer,
     type ModelCell,
@@ -30,6 +32,12 @@ import {
     type PlaceOptions,
 } from "./models";
 import type { VoxelModel, Rot as ModelRot } from "../models/format";
+import {
+    createBeltKit,
+    type BeltKit,
+    type PiecePlacement,
+} from "../models/belts";
+import type { Matrix4 } from "three";
 import { FrameGovernor } from "./governor";
 
 export { heightAt, Stamper, VoxelGrid, TERRAIN_CELL, OBJECT_CELL };
@@ -107,6 +115,24 @@ export interface VoxelIsland {
     ): void;
     /** Hides the placement preview. */
     clearGhost(): void;
+    /**
+     * Replaces all scenery. Each placement is a props catalog id with a free position, rotY and scale.
+     * Drawn instanced with LOD past LOD_DISTANCE and wind sway.
+     */
+    setScenery(placements: readonly Placement[]): void;
+    /** 0..1 share of placements to keep (low fx uses 0.5). Keeps the same subset as it drops. */
+    setSceneryDensity(d: number): void;
+    /** Places belt pieces (cells in the board frame). Replaces every belt piece. */
+    setBelts(list: readonly PiecePlacement[]): void;
+    /** Cells per second for a belt tier (0 stops it). Tiers are brass 0, copper 1, steel 2. */
+    setBeltSpeed(tier: number, cellsPerSecond: number): void;
+    /** Matrix for an item riding a belt piece. `t` is 0..1 over the cell. */
+    beltItemMatrix(
+        p: PiecePlacement,
+        t: number,
+        out: Matrix4,
+        path?: number
+    ): Matrix4;
     setDither(on: boolean): void;
     setPixelSize(px: number): void;
     setQuality(level: number | "auto"): void;
@@ -172,6 +198,16 @@ export function createVoxelIsland(
     const terrainMesher = new ChunkMesher(terrainGrid, blocks, blockMaterial);
     const objectMesher = new ChunkMesher(objectGrid, blocks, blockMaterial);
     const models = new ModelRenderer(scene, heightAt);
+    const scenery = new Scenery(scene);
+    // Belt kit, created on first use. Its slats and gears run on the GPU from one phase per tier.
+    let belts: BeltKit | null = null;
+    const ensureBelts = (): BeltKit => {
+        if (!belts) {
+            belts = createBeltKit();
+            scene.add(belts.object);
+        }
+        return belts;
+    };
     scene.add(terrainMesher.group, objectMesher.group);
 
     const { grassSites } = buildTerrain(terrainGrid, blocks);
@@ -315,6 +351,8 @@ export function createVoxelIsland(
         animUniforms.uTime.value = elapsed;
         animUniforms.uWind.value = lowFx ? 0 : windStrength / 0.5;
         animUniforms.uWave.value = lowFx ? 0 : 1;
+        // Belts keep moving under low fx: one uniform per tier, so it costs nothing.
+        belts?.update(dt);
         if (cycle) lighting.setTime(cycleT, !lowFx);
         lighting.sky.follow(camera.position);
         clouds.update();
@@ -340,6 +378,7 @@ export function createVoxelIsland(
         objectMesher.update(preset.rebuildsPerFrame);
 
         models.update();
+        scenery.update(camera.position);
         post.render(scene, camera);
         const info = renderer.info.render;
         drawCalls = info.calls;
@@ -399,6 +438,21 @@ export function createVoxelIsland(
         },
         setGhost(model, cell, rot, valid) {
             models.setGhost(model, cell, rot, valid);
+        },
+        setScenery(placements: readonly Placement[]) {
+            scenery.setPlacements(placements);
+        },
+        setSceneryDensity(d) {
+            scenery.setDensity(d);
+        },
+        setBelts(list: readonly PiecePlacement[]) {
+            ensureBelts().setPieces(list);
+        },
+        setBeltSpeed(tier, cellsPerSecond) {
+            ensureBelts().setSpeed(tier, cellsPerSecond);
+        },
+        beltItemMatrix(p, t, out: Matrix4, path) {
+            return ensureBelts().itemMatrix(p, t, out, path);
         },
         clearGhost() {
             models.clearGhost();
@@ -475,6 +529,11 @@ export function createVoxelIsland(
             glowMesher.dispose();
             glowMaterial.dispose();
             models.dispose();
+            scenery.dispose();
+            if (belts) {
+                scene.remove(belts.object);
+                belts.dispose();
+            }
             clouds.dispose();
             grass.dispose();
             water.geometry.dispose();

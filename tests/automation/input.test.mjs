@@ -267,3 +267,138 @@ test("mount writes the camera view to a Three-shaped sink each frame", () => {
     assert.ok(writes.some((w) => w[0] === "pos") && writes.some((w) => w[0] === "proj"), "update writes each frame");
     m.destroy();
 });
+
+// A world that keeps multi-cell buildings whole, like the sim: one anchor, a footprint of cells pointing at it.
+function fpWorld(sizes, check) {
+    const buildings = new Map(); // anchorKey -> { kind, rot, anchor }
+    const owner = new Map(); // cellKey -> anchorKey
+    const cellsOf = (kind, ax, az, rot) => {
+        const f = sizes[kind] ?? { w: 1, d: 1 };
+        return A.footprintOffsets(f, rot).map((o) => ({ x: ax + o.dx, z: az + o.dz }));
+    };
+    return {
+        buildings,
+        owner,
+        get(x, z) {
+            const k = owner.get(`${x},${z}`);
+            return k ? buildings.get(k) : null;
+        },
+        set(x, z, item) {
+            if (item === null) {
+                const k = owner.get(`${x},${z}`);
+                if (!k) return;
+                const b = buildings.get(k);
+                for (const c of cellsOf(b.kind, b.anchor.x, b.anchor.z, b.rot)) owner.delete(`${c.x},${c.z}`);
+                buildings.delete(k);
+                return;
+            }
+            const anchor = { x, z };
+            const key = `${x},${z}`;
+            buildings.set(key, { kind: item.kind, rot: item.rot, anchor });
+            for (const c of cellsOf(item.kind, x, z, item.rot)) owner.set(`${c.x},${c.z}`, key);
+        },
+        check,
+    };
+}
+
+test("footprint offsets match the sim: rotation 1 and 3 swap width and depth", () => {
+    const f = { w: 3, d: 1 };
+    assert.deepEqual(A.footprintOffsets(f, 0), [{ dx: 0, dz: 0 }, { dx: 1, dz: 0 }, { dx: 2, dz: 0 }]);
+    assert.deepEqual(A.footprintOffsets(f, 1), [{ dx: 0, dz: 0 }, { dx: 0, dz: 1 }, { dx: 0, dz: 2 }]);
+    assert.deepEqual(A.footprintOffsets(f, 3).length, 3);
+    assert.equal(A.footprintOffsets({ w: 2, d: 2 }, 2).length, 4);
+    assert.equal(A.footprintOffsets(undefined, 0).length, 1);
+});
+
+test("2x2 ghost covers four cells; one occupied cell makes the whole footprint invalid", () => {
+    const world = fpWorld({ smelter: { w: 2, d: 2 } });
+    const b = new A.BuildController({ world, board });
+    const smelter = { id: "smelter", label: "Smelter", line: false, footprint: { w: 2, d: 2 } };
+    b.setTool(smelter);
+    b.setHover({ x: 4, z: 4 });
+    let g = b.ghost();
+    assert.equal(g.cells.length, 4);
+    assert.ok(g.cells.every((c) => c.valid && c.ax === 4 && c.az === 4));
+    assert.equal(g.validCount, 1);
+    // A machine sits on (5, 5): the footprint overlaps it.
+    world.set(5, 5, { kind: "drill", rot: 0 });
+    g = b.ghost();
+    const bad = g.cells.filter((c) => !c.valid);
+    assert.equal(bad.length, 1, "only the overlapping cell is marked");
+    assert.equal(bad[0].reason, "occupied");
+    assert.equal(g.validCount, 0);
+    assert.equal(b.tap({ x: 4, z: 4 }), 0, "a footprint that does not fit places nothing");
+});
+
+test("placing a 2x2 stores one building; undo and redo treat it as a whole", () => {
+    const world = fpWorld({ smelter: { w: 2, d: 2 } });
+    const b = new A.BuildController({ world, board });
+    b.setTool({ id: "smelter", label: "Smelter", line: false, footprint: { w: 2, d: 2 } });
+    assert.equal(b.tap({ x: 2, z: 3 }), 1);
+    assert.equal(world.buildings.size, 1);
+    assert.equal(world.get(3, 4).anchor.x, 2, "covered cell resolves to the anchor");
+    assert.ok(b.undo());
+    assert.equal(world.buildings.size, 0, "one undo removes the whole building");
+    assert.ok(b.redo());
+    assert.equal(world.buildings.size, 1);
+});
+
+test("rotating a 2x1 footprint changes which cells the ghost covers", () => {
+    const world = fpWorld({ press: { w: 2, d: 1 } });
+    const b = new A.BuildController({ world, board });
+    b.setTool({ id: "press", label: "Press", line: false, footprint: { w: 2, d: 1 } });
+    b.setHover({ x: 6, z: 6 });
+    const east = b.ghost().cells.map((c) => [c.x, c.z]);
+    assert.deepEqual(east, [[6, 6], [7, 6]]);
+    b.rotateCw();
+    const north = b.ghost().cells.map((c) => [c.x, c.z]);
+    assert.deepEqual(north, [[6, 6], [6, 7]]);
+});
+
+test("delete on a multi-cell building removes it once, even when several of its cells are selected", () => {
+    const world = fpWorld({ smelter: { w: 2, d: 2 } });
+    const b = new A.BuildController({ world, board });
+    b.setTool({ id: "smelter", label: "Smelter", line: false, footprint: { w: 2, d: 2 } });
+    b.tap({ x: 8, z: 8 });
+    b.setTool(A.DELETE_TOOL);
+    b.beginStroke({ x: 8, z: 8 });
+    b.updateStroke({ x: 9, z: 9 });
+    assert.equal(b.endStroke(), 1, "one building removed");
+    assert.equal(world.buildings.size, 0);
+});
+
+test("rotateAt turns a building in place, keeps it whole, and undo restores it in one step", () => {
+    const world = fpWorld({ press: { w: 2, d: 1 } });
+    const b = new A.BuildController({ world, board });
+    b.setTool({ id: "press", label: "Press", line: false, footprint: { w: 2, d: 1 } });
+    b.tap({ x: 6, z: 6 });
+    assert.deepEqual(world.buildings.get("6,6").rot, 0);
+    assert.equal(b.rotateAt({ x: 7, z: 6 }), true, "a covered cell turns the building");
+    assert.equal(world.buildings.size, 1, "still one building");
+    assert.equal(world.buildings.get("6,6").rot, 1);
+    assert.equal(world.get(6, 7)?.anchor?.z, 6, "the new footprint covers (6, 7)");
+    assert.ok(b.undo());
+    assert.equal(world.buildings.get("6,6").rot, 0, "undo restores the old rotation");
+    assert.ok(b.redo());
+    assert.equal(world.buildings.get("6,6").rot, 1, "redo turns it again");
+});
+
+test("rotateAt refuses a turn that would overlap another building, and leaves the building as it was", () => {
+    // The sim's check covers the whole footprint. Here the turned press (rot 1) runs into a block on (6, 7).
+    const world = fpWorld({ press: { w: 2, d: 1 } }, (kind, x, z, rot) => (rot === 1 && x === 6 && z === 6 ? "blocked" : null));
+    const b = new A.BuildController({ world, board });
+    b.setTool({ id: "press", label: "Press", line: false, footprint: { w: 2, d: 1 } });
+    b.tap({ x: 6, z: 6 });
+    const events = [];
+    const b2 = new A.BuildController({ world, board, onEvent: (e) => events.push(e) });
+    assert.equal(b2.rotateAt({ x: 6, z: 6 }), false);
+    assert.equal(world.buildings.get("6,6").rot, 0, "building unchanged");
+    assert.equal(events.at(-1).type, "invalid");
+});
+
+test("rotateAt on an empty cell does nothing", () => {
+    const world = fpWorld({ press: { w: 2, d: 1 } });
+    const b = new A.BuildController({ world, board });
+    assert.equal(b.rotateAt({ x: 3, z: 3 }), false);
+    assert.equal(b.canUndo(), false);
+});

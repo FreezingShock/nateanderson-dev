@@ -140,7 +140,7 @@ const STOCK: Record<
     },
     aluminium_ore(b, fill, s) {
         const C = RESOURCE_COLORS.aluminium_ore;
-        // flat slabs stacked in layers, alternating silver and cream
+        // flat slabs stacked in layers, alternating tan and ochre
         if (fill <= 0) return;
         const layers = Math.max(1, Math.round(fill * (WALL + 2)));
         for (let y = 1; y <= layers; y++) {
@@ -148,7 +148,7 @@ const STOCK: Record<
             const shrink = y > WALL ? 1 : 0;
             for (let x = -IN + shrink; x < IN - shrink - off; x++)
                 for (let z = -IN + shrink + off; z < IN - shrink; z++)
-                    b.set(x, y, z, y % 2 ? C.main : C.accent);
+                    b.set(x, y, z, y % 2 ? C.main : C.dark);
         }
         b.paint(
             (x, y, z) =>

@@ -22,7 +22,7 @@ import type {
     World,
 } from "../types";
 import { DEFAULT_CATALOG, SITES } from "./data";
-import { dayClock, buyResearch as buyResearchRaw, prestige as prestigeRaw } from "./progress";
+import { unlockedRecipes, dayClock, buyResearch as buyResearchRaw, prestige as prestigeRaw } from "./progress";
 import { place as placeRaw, setRecipe as setRecipeRaw, resolve } from "./world";
 
 export const DEFAULT_SETTINGS: HudSettings = { sound: false, reduceMotion: false, lowFx: false, numberFormat: "short", showRates: true };
@@ -106,7 +106,12 @@ export function hudData(world: World, cat: Catalog = DEFAULT_CATALOG, selectedId
     for (const id of Object.keys(world.buildings).map(Number)) {
         const b = world.buildings[id];
         const r = resolve(cat, b.type);
-        if (!r || r.kind === "hub" || r.kind === "belt" || r.kind === "generator") continue;
+        if (!r || r.kind === "hub") continue;
+        // Belts and generators are palette entries too: count them, but they have no item flow of their own here.
+        if (r.kind === "belt" || r.kind === "generator") {
+            count[b.type] = (count[b.type] ?? 0) + 1;
+            continue;
+        }
         const f = flowOf(world, cat, b);
         flows.set(id, f);
         for (const k of Object.keys(f.makes)) net[k] = (net[k] ?? 0) + f.makes[k];
@@ -121,6 +126,8 @@ export function hudData(world: World, cat: Catalog = DEFAULT_CATALOG, selectedId
         return { id: item, name, group: stage === 0 ? "raw" : "part", glyph: glyphOf(name), amount: Math.floor(hub.input[item] ?? 0), perSecond: net[item] ?? 0 };
     });
 
+    // Palette: crafting machines, then power generators from the tree, then logistics (belts and the
+    // engine-only pieces). The hub is never listed.
     const machines: MachineView[] = cat.tree.machines.map((m) => {
         const unlocked = unlockedMachine(world, cat, m.unlockStage);
         return {
@@ -132,8 +139,26 @@ export function hudData(world: World, cat: Catalog = DEFAULT_CATALOG, selectedId
             count: count[m.id] ?? 0,
             cost: lines(m.buildCost ?? []),
             status: statusOf[m.id] ?? "idle",
+            group: m.generatesKw ? "power" : "machines",
         };
     });
+    for (const [id, e] of Object.entries(cat.engine)) {
+        if (e.kind === "hub" || e.placeable === false) continue;
+        const st = cat.tree.structures?.find((x) => x.id === id);
+        const unlocked = st?.unlockStage === undefined || unlockedMachine(world, cat, st.unlockStage);
+        const name = st?.name ?? e.name;
+        machines.push({
+            id,
+            name,
+            glyph: glyphOf(name),
+            unlocked,
+            lockedReason: unlocked ? undefined : `Unlocks at stage ${st?.unlockStage}`,
+            count: count[id] ?? 0,
+            cost: lines(st?.buildCost ?? e.cost),
+            status: statusOf[id] ?? "idle",
+            group: "logistics",
+        });
+    }
 
     let selected: MachineDetail | null = null;
     if (selectedId !== null && world.buildings[selectedId]) {
@@ -149,6 +174,11 @@ export function hudData(world: World, cat: Catalog = DEFAULT_CATALOG, selectedId
                 recipe: rec
                     ? { name: rec.id, inputs: lines(rec.inputs), outputs: lines([rec.output]), seconds: rec.craftSeconds }
                     : { name: "No recipe", inputs: [], outputs: [], seconds: 0 },
+                recipeId: b.recipe,
+                recipeOptions: unlockedRecipes(world, cat)
+                    .map((id) => cat.tree.recipes.find((x) => x.id === id)!)
+                    .filter((r) => r.machine === b.type)
+                    .map((r) => ({ id: r.id, name: nameOf(cat, r.output.item), alternate: !!r.alternate })),
                 rates: [
                     ...Object.keys(f.makes).map((k) => ({ label: `${nameOf(cat, k)} out`, value: `${f.makes[k].toFixed(2)} /s` })),
                     ...Object.keys(f.uses).map((k) => ({ label: `${nameOf(cat, k)} in`, value: `${f.uses[k].toFixed(2)} /s` })),

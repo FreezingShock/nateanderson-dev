@@ -244,3 +244,5 @@
   .ab-root.bw .ab-prestige-body { flex-direction: column; }
   .ab-root.bw .ab-screen-body { overflow-y: auto; }
 }
+.ab-root.bw .ab-site .ab-plain { margin: 4px 0 0; }
+.ab-root.bw .ab-site .ab-plain li { color: var(--bw-amber); text-shadow: 0 0 6px rgba(255, 179, 71, 0.35); font-size: 14px; }
