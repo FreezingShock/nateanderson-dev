@@ -94,9 +94,20 @@ export const PLACEHOLDER_CATALOG: Catalog = {
     tune: ENGINE_DATA.tune,
 };
 
+// The three plain belts cost placeholder plates in ENGINE_DATA (the tests and the placeholder run use them).
+// On the real tree brass belts are free and copper and steel cost real items.
+const REAL_BELT_COST: Record<string, Stack[]> = {
+    belt: [], // brass belts are free, so a new player can run smelter to hub at once
+    "belt-copper": [{ item: "iron_plate", qty: 1 }, { item: "copper_wire", qty: 1 }],
+    "belt-steel": [{ item: "iron_plate", qty: 1 }, { item: "copper_wire", qty: 1 }, { item: "steel_ingot", qty: 1 }],
+};
+
 export const DEFAULT_CATALOG: Catalog = {
     tree: RECIPE_TREE,
-    engine: ENGINE_DATA.engine,
+    engine: {
+        ...ENGINE_DATA.engine,
+        ...Object.fromEntries(Object.entries(REAL_BELT_COST).map(([id, cost]) => [id, { ...ENGINE_DATA.engine[id], cost }])),
+    },
     tune: ENGINE_DATA.tune,
 };
 
