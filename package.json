@@ -7,6 +7,8 @@
         "prebuild": "node scripts/nodefarm/stamp-art.mjs --check",
         "build": "next build",
         "test:nodefarm": "node --experimental-strip-types --no-warnings --test --test-reporter=spec \"tests/nodefarm/*.test.mjs\" \"tests/games/*.test.mjs\" \"tests/automation/*.test.mjs\"",
+        "test:automation": "node --experimental-strip-types --no-warnings --test --test-reporter=spec \"tests/automation/*.test.mjs\"",
+        "test:automation:browser": "node tests/automation/browser/run.mjs",
         "start": "next start",
         "lint": "next lint",
         "test:shell": "node scripts/games/shell-check.mjs",

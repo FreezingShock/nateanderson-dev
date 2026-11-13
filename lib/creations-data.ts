@@ -272,7 +272,17 @@ export const GAME_MODES: GameMode[] = [
         tagline: "Build the machine that does the work.",
         about: "Automation games are about setting up systems that run on their own, then improving them.",
         coming: "Next up. No automation game is playable yet.",
-        games: [],
+        games: [
+            {
+                slug: "brasswork",
+                title: "Brasswork",
+                status: "building",
+                icon: Ic.Settings,
+                blurb: "A clockwork-workshop factory on a 3D voxel island. Place machines on a grid, refine ores into parts, and send expeditions out from the workshop.",
+                features: ["3D island", "Machines on a grid", "Expeditions"],
+                href: "/creations/games/brasswork",
+            },
+        ],
     },
 ];
 
