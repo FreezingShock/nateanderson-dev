@@ -4,7 +4,7 @@ import { useState } from "react";
 import { AutomationHud } from "./automation-hud";
 import { canAfford } from "./format";
 import { detailFor, mockHud } from "./mock";
-import type { HudData, HudSettings, MachineView } from "./types";
+import type { HudData, HudSettings, MachineView } from "@/lib/automation/types";
 
 /**
  * Local preview harness: holds mock state so builds, selection and settings can be

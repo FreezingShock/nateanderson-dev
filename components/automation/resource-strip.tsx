@@ -1,4 +1,4 @@
-import type { ResourceView, NumberFormat } from "./types";
+import type { ResourceView, NumberFormat } from "@/lib/automation/types";
 import { fmtNum, fmtRate } from "./format";
 
 /**

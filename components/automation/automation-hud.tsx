@@ -2,7 +2,8 @@
 
 import { useEffect, useState, type ReactNode } from "react";
 import "./automation-hud.css";
-import type { HudActions, HudData } from "./types";
+import type { HudData } from "@/lib/automation/types";
+import type { HudActions } from "./types";
 import { ResourceStrip } from "./resource-strip";
 import { BuildList } from "./build-bar";
 import { Inspector } from "./inspector";
