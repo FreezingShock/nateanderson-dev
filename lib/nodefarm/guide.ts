@@ -75,6 +75,9 @@ const NF2 = new Intl.NumberFormat("en-US", { maximumFractionDigits: 2 });
 const NF0 = new Intl.NumberFormat("en-US", { maximumFractionDigits: 0 });
 export const exact = (n: number) => (!Number.isFinite(n) ? "" : Math.abs(n) >= 1e15 ? n.toExponential(4) : (Math.abs(n) < 100 ? NF2 : NF0).format(n));
 
+/** A wait that assumes today's income: past half an hour it is only a ceiling, because every node you build shortens it. */
+export const etaRate = (eta: number | null) => (eta === null || eta <= 0 ? "" : eta > 1800 ? "30m+ at this rate" : `${fmtTime(eta)} at this rate`);
+
 /** Short form for a wait: "about 4m 10s". Null when nothing is producing toward it. */
 export const etaText = (eta: number | null) => (eta === null || eta <= 0 ? "" : eta > 99 * 3600 ? "a very long time" : fmtTime(eta));
 
@@ -280,7 +283,7 @@ function coreStep(s: State, d: Derived): Step {
             const u = unlockInfo(s, m);
             // a zone far off is a wait; if Ascend is ready, that is the better thing to do meanwhile
             const wait = etaTo(s, d, MATS[i - 1] as StatId, u.need);
-            if (!training && canAscend(s) && (wait === null || wait > 1200)) return mk({ id: "ascend", title: `Ascend for +${fmt(apOnAscend(s))} AP`, why: `${def.name} is ${wait === null ? "not close" : "about " + etaText(wait) + " away"}. A fresh run is faster and every AP boosts everything.`, cur: s.aether, need: ascendNeed(s), unit: "AE", target: { win: "ascend" } });
+            if (!training && canAscend(s) && (wait === null || wait > 7200)) return mk({ id: "ascend", title: `Ascend for +${fmt(apOnAscend(s))} AP`, why: `${def.name} is ${wait === null ? "not close" : "hours away at this rate"}. A fresh run is faster and every AP boosts everything.`, cur: s.aether, need: ascendNeed(s), unit: "AE", target: { win: "ascend" } });
             const below = MATS[i - 1];
             return mk({ id: `decrypt-${m}`, title: `Decrypt ${def.name}`, why: `${u.label}. Build more ${statDef(below).name} nodes to get there faster.`, cur: u.cur, need: u.need, frac: u.frac, unit: u.unit, pay: below, target: aim(s, below as ButtonStat) });
         }
@@ -337,7 +340,7 @@ export function telemetry(s: State, d: Derived): Cell[] {
         const i = STATS.findIndex((x) => x.id === next.id);
         const below = STATS[i - 1]?.id as StatId | undefined;
         const pay: StatId | undefined = next.id === "reboot" ? (u.unit === "B" ? "bytes" : undefined) : next.id === "copper" ? undefined : below;
-        const eta = pay ? etaText(etaTo(s, d, pay, u.need)) : "";
+        const eta = pay ? etaRate(etaTo(s, d, pay, u.need)) : "";
         out.push({ id: "zone", icon: "key", label: "Next zone", value: next.name, sub: `${fmt(u.cur)} / ${fmt(u.need)} ${u.unit}${eta ? ` · ${eta}` : ""}`, frac: u.frac, color: next.color, state: "live", target: below && below !== "bytes" ? aim(s, below as ButtonStat) : aim(s, "mult") });
     } else out.push({ id: "zone", icon: "key", label: "Zones", value: "All online", sub: `${STATS.length} zones decrypted`, frac: 1, color: "#2fd8e8", state: "live" });
 
@@ -346,8 +349,8 @@ export function telemetry(s: State, d: Derived): Cell[] {
     if (!isUnlocked(s, "aether") && s.life.ascends === 0) out.push({ id: "ascend", icon: "ascend", label: "Ascend", value: "Locked", sub: "Decrypt Aether first", frac: 0, color: "#ff2d8a", state: "locked" });
     else if (canAscend(s)) out.push({ id: "ascend", icon: "ascend", label: "Ascend", value: `+${fmt(apOnAscend(s))} AP`, sub: `ready · ascend #${s.life.ascends + 1}`, frac: 1, color: "#ff2d8a", state: "ready", target: { win: "ascend" } });
     else {
-        const eta = etaText(etaTo(s, d, "aether", TUNE.ascendAether));
-        out.push({ id: "ascend", icon: "ascend", label: "Ascend", value: `${fmt(s.aether)} / ${fmt(TUNE.ascendAether)} ${ae.short}`, sub: eta ? `about ${eta}` : `build ${ae.name} nodes`, frac: fracOf(s.aether, TUNE.ascendAether), color: "#ff2d8a", state: "live", target: s.prod.aether > 0 ? aim(s, "aether") : { win: "ascend" } });
+        const eta = etaRate(etaTo(s, d, "aether", TUNE.ascendAether));
+        out.push({ id: "ascend", icon: "ascend", label: "Ascend", value: `${fmt(s.aether)} / ${fmt(TUNE.ascendAether)} ${ae.short}`, sub: eta ? eta : `build ${ae.name} nodes`, frac: fracOf(s.aether, TUNE.ascendAether), color: "#ff2d8a", state: "live", target: s.prod.aether > 0 ? aim(s, "aether") : { win: "ascend" } });
     }
 
     // Ascension Points
