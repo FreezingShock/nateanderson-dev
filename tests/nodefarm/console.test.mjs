@@ -54,3 +54,12 @@ test("find returns a found goal by name and says so when nothing matches", () =>
     assert.ok(text(run(s, "find", word)).toLowerCase().includes(g.name.toLowerCase()), "goal found");
     assert.ok(text(run(s, "find", "zzqqxx")).includes("nothing found"), "no match message");
 });
+
+test("why explains a stat, and says so for unknown names", () => {
+    const s = clone(loadFixture(fixtureNames()[0]));
+    const out = text(run(s, "why", "copper"));
+    assert.ok(out.includes("why it moves") && out.includes("you have") && out.includes("paid in"), "copper breakdown");
+    assert.ok(text(run(s, "why", "bytes")).includes("multipliers"), "bytes breakdown");
+    assert.ok(text(run(s, "why", "nope")).includes("no stat called"), "unknown stat");
+    assert.ok(text(run(s, "why")).includes("nf why <stat>"), "usage line");
+});
