@@ -3,7 +3,7 @@
 import {
     chOff,
     GOALS, MATS, PERKS, TIERS, TREE, TUNE, REBOOT_UNLOCK,
-    ARC_MATS, LAB, LAB_TUNE, PAYLOADS, STATS, apGlobal, apSpent, labHas, labNodeOpen, treeFx, intelRate, amount, apOnAscend, ascendNeed, unlockNeed, FW, fwNodeOpen, keysOnHandover, treeComplete, button, canAfford, canAscend, derive, droneBoost, droneCost, droneMax, droneRate, dronesOpen, postOf, postX, zoneRank, ROMAN, originAp, paradoxOc, bloomKeys, sunstoneAll, singularityAll, fmt, fmtTime, goalDone, TREE_FULL, handOpen, HAND_TUNE, cores, DRONE_TREE, droneNodeOpen, modBlock, MOD_COUNT, hasNode, isUnlocked, nodeOpen, statDef,
+    ARC_MATS, arcGateNeed, LAB, LAB_TUNE, PAYLOADS, STATS, apGlobal, apSpent, labHas, labNodeOpen, treeFx, intelRate, amount, apOnAscend, ascendNeed, unlockNeed, FW, fwNodeOpen, keysOnHandover, treeComplete, button, canAfford, canAscend, derive, droneBoost, droneCost, droneMax, droneRate, dronesOpen, postOf, postX, zoneRank, ROMAN, originAp, paradoxOc, bloomKeys, sunstoneAll, singularityAll, fmt, fmtTime, goalDone, TREE_FULL, handOpen, HAND_TUNE, cores, DRONE_TREE, droneNodeOpen, modBlock, MOD_COUNT, hasNode, isUnlocked, nodeOpen, statDef,
     type ButtonStat, type Derived, type MatId, type State, type StatId,
 } from "./engine";
 import { LORE } from "./lore";
@@ -107,8 +107,8 @@ export function unlockInfo(s: State, id: StatId): { label: string; cur: number; 
         const need = button(s, "reboot", 0).cost;
         return { label: "Run your first Reboot", cur: s.mult, need, unit: "MUL", frac: isUnlocked(s, "reboot") ? fracOf(s.mult, need) : 0 };
     }
-    // the Overgrowth and Descent arcs stay shut until the first Handover
-    if (ARC_MATS.includes(id as MatId) && !(s.hand?.count > 0)) return { label: "Hand the node over once", cur: 0, need: 1, unit: "HANDOVER", frac: 0 };
+    // the Overgrowth and Descent zones stay shut until enough Handovers (ARC_GATE)
+    if (ARC_MATS.includes(id as MatId) && (s.hand?.count ?? 0) < arcGateNeed(id)) { const need = arcGateNeed(id); return { label: need <= 1 ? "Hand the node over once" : `Hand the node over ${need} times`, cur: s.hand?.count ?? 0, need, unit: "HANDOVER", frac: fracOf(s.hand?.count ?? 0, need) }; }
     const i = MATS.indexOf(id as MatId);
     const below = MATS[i - 1] as MatId | undefined;
     if (!below) return { label: "", cur: 0, need: 1, unit: "", frac: 0 };
@@ -271,9 +271,9 @@ function coreStep(s: State, d: Derived): Step {
                 return mk({ id: "reach-ascend", title: "Reach Ascend", why: `Hold ${fmt(ascendNeed(s))} Aether to Ascend: a reset that gives permanent power.`, cur: s.aether, need: ascendNeed(s), unit: "AE", pay: "aether", target: aim(s, "aether") });
             }
         }
-        if (!isUnlocked(s, m) && ARC_MATS.includes(m) && !(s.hand?.count > 0)) {
+        if (!isUnlocked(s, m) && ARC_MATS.includes(m) && (s.hand?.count ?? 0) < arcGateNeed(m)) {
             // the Overgrowth and Descent arcs open at the first Handover, which wants the whole tree and an Origin node
-            if (!treeComplete(s)) return mk({ id: "finish-tree", kicker: "NODE ZERO", title: "Finish the prestige tree", why: "Hand the node over once the whole tree is yours. That opens Overgrowth and Descent, zones 18 to 25.", cur: s.tree.length, need: TREE_FULL, unit: "NODES", target: { win: "tree" } });
+            if (!(s.hand?.count > 0) && !treeComplete(s)) return mk({ id: "finish-tree", kicker: "NODE ZERO", title: "Finish the prestige tree", why: "Hand the node over once the whole tree is yours. The first Handover opens zones 18 and 19, and each one after opens two more, up to 25.", cur: s.tree.length, need: TREE_FULL, unit: "NODES", target: { win: "tree" } });
             if (!handOpen(s)) return mk({ id: "open-handover", kicker: "NODE ZERO", title: "Build an Origin node", why: "The Handover opens once an Origin node is running. Then hand the node over.", cur: s.prod.origin, need: HAND_TUNE.needProd, unit: "OR", pay: "origin", target: aim(s, "origin" as ButtonStat) });
         }
         if (!isUnlocked(s, m)) {

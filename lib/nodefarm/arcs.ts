@@ -10,8 +10,8 @@ export const ARCS: readonly Arc[] = [
     { id: "hollow", name: "The hollow", blurb: "Glyphs, glass, void metal and stopped time.", color: "#9a7bff", zones: ["runes", "starglass", "voidsteel", "chrono"], scene: 8 },
     { id: "deep", name: "Deep space", blurb: "Gas, dead stars and a point that pulls.", color: "#ff8ad8", zones: ["nebula", "pulsars", "singularity"], scene: 11 },
     { id: "origin", name: "The origin", blurb: "Memory, mirrors and the first node.", color: "#3dff6e", zones: ["engrams", "paradox", "origin"], scene: 13 },
-    { id: "overgrowth", name: "Overgrowth", blurb: "Spores, threads, pollen and the farm in flower. Opens after the first Handover.", color: "#5cf0c0", zones: ["spores", "mycelium", "pollen", "bloom"], scene: 18 },
-    { id: "descent", name: "Descent", blurb: "Rock, magma, hollow stone and a buried sun. Opens after the first Handover.", color: "#ff9a2a", zones: ["basalt", "magma", "geodes", "sunstone"], scene: 22 },
+    { id: "overgrowth", name: "Overgrowth", blurb: "Spores, threads, pollen and the farm in flower. Two zones open with each of the first two Handovers.", color: "#5cf0c0", zones: ["spores", "mycelium", "pollen", "bloom"], scene: 18 },
+    { id: "descent", name: "Descent", blurb: "Rock, magma, hollow stone and a buried sun. Two zones open with each of the third and fourth Handovers.", color: "#ff9a2a", zones: ["basalt", "magma", "geodes", "sunstone"], scene: 22 },
 ];
 
 export const arcKey = (id: string) => `arc:${id}`;
