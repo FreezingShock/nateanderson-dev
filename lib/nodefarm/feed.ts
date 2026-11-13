@@ -79,10 +79,10 @@ export function unlockToks(stat: StatId, zone: string, no: number): Tok[] {
     return [...call(statId(stat), "decrypt"), p(" → "), str("online"), txt(" "), com(`// zone ${String(no).padStart(2, "0")}: ${zone}`)];
 }
 
-export function droneToks(n: number, armed: number, auto: boolean): Tok[] {
-    const t = call(id(auto ? "auto" : "drones"), auto ? "buy" : "sweep");
+export function droneToks(n: number, posted: number): Tok[] {
+    const t = call(id("drones"), "work");
     t.push(txt(" "), num(`×${fmt(n)}`));
-    if (armed > 0) t.push(p(" → "), com(`${armed} armed`));
+    if (posted > 0) t.push(p(" → "), com(`${posted} posted`));
     return t;
 }
 

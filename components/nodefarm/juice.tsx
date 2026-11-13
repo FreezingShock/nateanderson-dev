@@ -427,7 +427,7 @@ function AscendSeq({ data, reduced, onClose }: { data: { gain: number; ap: numbe
                     <p className="nf-rx-gain"><b ref={num}>{data.gain}</b> <span>Ascension {data.gain === 1 ? "Point" : "Points"}</span></p>
                     <p className="nf-rx-line">{data.ap} AP total. Each one adds {Math.round((data.each ?? TUNE.apBonus) * 100)}% to everything.</p>
                     <p className="nf-rx-line nf-rx-note">{ascendNote(data.n)}</p>
-                    <p className="nf-rx-line dim">Wiped: Bytes, Multipliers, Reboots, unmounted materials and Drones. Kept: goals, perks, the tree, lab research and stock, scripts and lifetime stats.</p>
+                    <p className="nf-rx-line dim">Wiped: Bytes, Multipliers, Reboots, unmounted materials, Drones, Parts and Intel. Kept: goals, perks, the tree, lab research and stock, scripts, Keys, Firmware, the hangar's postings, rig levels and lifetime stats.</p>
                     <p className="nf-rx-go" data-ready={canClose ? "" : undefined}>{canClose ? "Tap to continue" : "\u00a0"}</p>
                 </div>
             </div>

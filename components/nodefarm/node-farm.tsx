@@ -6,10 +6,10 @@ import { nfx as sfx, nfx, humVol } from "@/lib/nodefarm/sound";
 import { setHum } from "@/lib/sound/engine";
 import { useSoundPrefs } from "@/lib/sound/use-sound";
 import {
-    TUNE, overclockMult, overclockSecs, respec, ascend, canAscend, autoBuy, breach, button, buyDrone, buyNode, canAfford, buyPerk, toggleArm, checkGoals, derive, exportSave, fmt, fmtTime, fresh, getNumFmt, setNumFmt, type NumFmt, isUnlocked, parseSave, press, STATS, tick,
+    TUNE, ZE_TUNE, overclockMult, overclockSecs, respec, ascend, canAscend, button, buyDrone, buyNode, canAfford, buyPerk, checkGoals, derive, exportSave, fmt, fmtTime, fresh, getNumFmt, setNumFmt, type NumFmt, isUnlocked, parseSave, press, STATS, tick,
     apEach, dropFill, hasFeature, openDrop, setMount, statDef,
     buyLabNode, cancelCompile, compile, deploy, labNode, labOpen, payload, type PayloadId,
-    chOff, buyFw, fwNode, handSeen, handover, protoDef, protoRank, respecFw, setProto, type ProtoId,
+    chOff, buyFw, fwNode, handSeen, handover, keysOnHandover, protoDef, protoRank, respecFw, setProto, type ProtoId,
     type ButtonStat, type MatId, type State, type StatId,
 } from "@/lib/nodefarm/engine";
 import { initFx } from "@/lib/nodefarm/fx";
@@ -19,9 +19,8 @@ import { Core, freshCoreFeed, type CoreFeed } from "./core";
 import { PART_WHY, SKIN_WHY, coreLook, corePreview, skinOpen } from "@/lib/nodefarm/core-look";
 import { PART_ORDER, SKINS } from "@/lib/nodefarm/core-parts";
 import { NfIcon } from "./icon";
-import { EventLayer } from "./events";
 import { MiniHud } from "./mini-hud";
-import { RARITY, payLoot, type Loot } from "@/lib/nodefarm/events";
+import { RARITY } from "@/lib/nodefarm/events";
 import { AwayReport, type Away } from "./away";
 import { catchUp } from "@/lib/nodefarm/offline";
 import { Scenery, SceneWindow } from "./scenery";
@@ -32,7 +31,7 @@ const loadTree = () => import("./tree");
 const TreeMenu = dynamic(() => loadTree().then((m) => ({ default: m.TreeMenu })), { ssr: false });
 import { LabHud, LabZone, labModel, labReady } from "./lab";
 import { ScriptsZone } from "./scripts";
-import { SCRIPTS, SCRIPT_BY, ascendDue, ascendPrep, learnStep, teachEvent, schedOpen, teachAscend, teachCompile, teachDeploy, teachDrop, teachPress } from "@/lib/nodefarm/scripts";
+import { SCRIPTS, SCRIPT_BY, toggleBuyStat, ascendDue, ascendPrep, learnStep, teachEvent, schedOpen, teachAscend, teachCompile, teachDeploy, teachDrop, teachPress } from "@/lib/nodefarm/scripts";
 import { eraOf } from "@/lib/nodefarm/scenery";
 import { DroneBay, droneModel } from "./drones";
 import { rigManual } from "@/lib/nodefarm/rigs";
@@ -59,7 +58,7 @@ import { adminFlags, buyDroneNode, buyMod, droneNode, masteryRanks, MODS, respec
 import { DRONE_NAMES } from "@/lib/nodefarm/guide";
 import { codeReveal, cxClear } from "@/lib/nodefarm/cx";
 import { ZoneEventCard } from "./zone-event";
-import { zeChoose, zoneEvDef, zoneLabel, type ZeChoice } from "@/lib/nodefarm/zoneevents";
+import { zeChoose, zeVault, zoneEvDef, zoneLabel, type ZeChoice, type ZeResult } from "@/lib/nodefarm/zoneevents";
 import { ARCS, arcKey, arcOf } from "@/lib/nodefarm/arcs";
 import { ArcHead } from "./arcs";
 import { Hold } from "./hold";
@@ -73,7 +72,7 @@ import { ACC_KEY, blankFoldTarget, readyCount, shownArcIds, soloArc } from "@/li
 import { AUTO_GAP, addBackup, readBackups, type Backup } from "@/lib/nodefarm/backups";
 
 const KEY = "nf-save-v1";
-const EV_KEY = "nf-events-v1"; // "off" when quick-time events are switched off (per device)
+const EV_KEY = "nf-events-v1"; // old per-device "off" for the card events; moved into the save as ze.off when a save loads
 const FS_KEY = "nf-fs-v1"; // full screen mode on or off (per device)
 const HUM_KEY = "nf-hum-v1"; // reactor hum on or off (per device)
 const UI_KEY = "nf-ui-v1"; // which stat panels are minimized (per device, not part of the game save)
@@ -147,7 +146,6 @@ export function NodeFarm() {
     const schedRef = useRef<(s: State) => void>(() => {});
     const [away, setAway] = useState<Away | null>(null);
     const [toast, setToast] = useState<string | null>(null);
-    const [evOn, setEvOn] = useState(true);
     const [osReduced, setReduced] = useState(false);
     const [calm, setCalm] = useState(false);
     const reduced = osReduced || calm;
@@ -316,6 +314,13 @@ export function NodeFarm() {
 
     // plain text lines get a level tag and highlighted numbers; code-style lines go through feedStore.push with tokens
     const log = useCallback((text: string, tone?: FeedTone) => feedStore.push(fromText(text, tone), { tone, type: true }), [feedStore]);
+    /** Ascend, Handover, the tree and Firmware are locked while a stress test runs: say so instead of doing nothing. */
+    const lockedNote = (what: string) => {
+        if (!g.current || !chOff(g.current, "prestige")) return false;
+        log(`${what} is locked while a stress test runs. Leave the test to use it.`, "warn");
+        sfx("deny");
+        return true;
+    };
 
     // ---- boot: load the save, bank offline time, print the greeting
     useEffect(() => {
@@ -324,7 +329,6 @@ export function NodeFarm() {
         try {
             const u = localStorage.getItem(UI_KEY);
             if (u) setFolded(JSON.parse(u));
-            if (localStorage.getItem(EV_KEY) === "off") setEvOn(false);
             if (localStorage.getItem(CALM_KEY) === "1") setCalm(true);
             if (localStorage.getItem(JUMP_KEY) === "off") setJumpOn(false);
             const nf = localStorage.getItem(FMT_KEY);
@@ -345,6 +349,10 @@ export function NodeFarm() {
         const first = s.life.secs === 0 && s.life.presses === 0;
         const gap = (Date.now() - s.at) / 1000;
         g.current = s;
+        try {
+            // the card events used to have their own per-device switch; it now lives in the save with the zone events
+            if (localStorage.getItem(EV_KEY) === "off") { (s.ze ??= { act: [], wait: ZE_TUNE.first, seen: 0, kinds: {} }).off = true; localStorage.removeItem(EV_KEY); }
+        } catch {}
         if (gap > 60 && !first) {
             const r = catchUp(s, gap);
             if (r.capped) s.life.capped += 1;
@@ -483,7 +491,6 @@ export function NodeFarm() {
                 const r = catchUp(copy, secs);
                 setAway({ ...r, gap: secs, cap: derive(copy).offlineCap });
             },
-            fire: (kind) => window.dispatchEvent(new CustomEvent("nf:fire", { detail: kind })),
             close: () => setAdminOpen(false),
             exit: () => { setAdmin(false, null); },
         }),
@@ -536,13 +543,13 @@ export function NodeFarm() {
                 const sp = speedRef.current;
                 if (sp > 1) { const n = Math.ceil((gap * sp) / 5); for (let i = 0; i < n; i++) tick(s, (gap * sp) / n); }
                 else tick(s, Math.max(0, gap));
-                // presses nobody clicked (Drones, Autoloader) are counted from the lifetime total, then batched into one feed line
+                // presses nobody clicked (posted Drones) are counted from the lifetime total, then batched into one feed line
                 const dp = dronePrev.current;
                 const scriptMade = schedPress.current.s === s ? (s.auto?.presses ?? 0) - schedPress.current.n : 0;
                 schedPress.current = { s, n: s.auto?.presses ?? 0 };
                 if (dp.s === s) {
                     const made = s.life.presses - dp.presses - dp.manual - scriptMade;
-                    if (made > 0) feedStore.batch("drone", (n, sum) => droneToks(sum, s.armed.length, !s.drones.some((x) => x > 0)), made, 4000);
+                    if (made > 0) feedStore.batch("drone", (n, sum) => droneToks(sum, s.dr.post.filter((p, k) => p && s.drones[k] > 0).length), made, 4000);
                 }
                 dronePrev.current = { s, presses: s.life.presses, manual: 0 };
                 // zone mastery: a rank up gets a feed line and a banner (only for ranks earned while this save is loaded)
@@ -567,7 +574,7 @@ export function NodeFarm() {
                 }
                 zeSeen.current = { s, n: zn };
             }
-            if (++tickN.current % 10 === 0 && s.perks.auto > 0) autoBuy(s);
+            ++tickN.current;
             const d = derive(s);
             const f = feed.current;
             f.progress = Math.min(1, s.mult / button(s, "reboot", 0).cost);
@@ -698,27 +705,23 @@ export function NodeFarm() {
         [log, feedStore],
     );
 
-    // ---- quick-time events (components/nodefarm/events.tsx): a win gives the timed Overclock plus its loot roll, a miss costs nothing
-    const evResult = useCallback(
-        (def: { title: string }, won: boolean, loot?: Loot | null) => {
+    // ---- zone events: answering one (Mine, Patch, a Rogue process offer, a Cold storage cash-out) is a win. A win gives the timed
+    // Overclock plus whatever the Anomaly nodes add, and a loot roll for the two card events. Ignoring an event costs nothing.
+    const evWin = useCallback(
+        (r: ZeResult) => {
             const s = g.current;
-            if (won) {
-                const r = breach(s);
-                if (loot) payLoot(s, loot);
-                bump((x) => x + 1);
-                log(`${def.title.toUpperCase()} CLEARED. Overclock x${fmt(overclockMult(s))} ${r.stacked ? `extended to ${Math.round(s.overclock)} s` : `for ${Math.round(overclockSecs(s))} s`}.`, "good");
-                if (loot) log(`LOOT // ${RARITY[loot.rarity].name.toUpperCase()}: ${loot.label}.`, loot.rarity >= 3 ? "hot" : "good");
-                if (r.zero) log(`ZERO-DAY: ${fmt(r.zero.bytes ?? 0)} Bytes and 10 minutes of every material paid out.`, "good");
-                if (r.echo) log("ECHO: something knocked back. Another event is coming.", "hot");
-                if (r.intel >= 1) feedStore.push([...call(idTok("lab"), "capture", [strTok("trace")]), pun(" → "), num(`+${fmt(r.intel)} intel`)], { tone: "good", type: true });
-                if (r.paid) log(`PATIENT: ${fmt(r.paid.bytes ?? 0)} Bytes and 5 minutes of every material paid out.`, "good");
-                if (r.frenzy) log("SWARM ALARM: the Drones are in a frenzy, x4 speed for 60 s.", "hot");
-                return { echo: r.echo };
-            } else log(`${def.title} lost. No cost.`, "warn");
+            const w = r.win;
+            if (!w) return;
+            log(`Overclock x${fmt(overclockMult(s))} ${w.stacked ? `extended to ${Math.round(s.overclock)} s` : `for ${Math.round(overclockSecs(s))} s`}.`, "good");
+            if (r.loot) log(`LOOT // ${RARITY[r.loot.rarity].name.toUpperCase()}: ${r.loot.label}.`, r.loot.rarity >= 3 ? "hot" : "good");
+            if (w.zero) log(`ZERO-DAY: ${fmt(w.zero.bytes ?? 0)} Bytes and 10 minutes of every material paid out.`, "good");
+            if (w.echo) { if (s.ze) s.ze.wait = Math.min(s.ze.wait, 5); log("ECHO: something knocked back. Another event is coming.", "hot"); }
+            if (w.intel >= 1) feedStore.push([...call(idTok("lab"), "capture", [strTok("trace")]), pun(" → "), num(`+${fmt(w.intel)} intel`)], { tone: "good", type: true });
+            if (w.paid) log(`PATIENT: ${fmt(w.paid.bytes ?? 0)} Bytes and 5 minutes of every material paid out.`, "good");
+            if (w.frenzy) log("SWARM ALARM: the Drones are in a frenzy, x4 speed for 60 s.", "hot");
         },
-        [log],
+        [log, feedStore],
     );
-    const evMiss = useCallback((def: { title: string }) => log(`${def.title} ignored. It passed.`, "warn"), [log]);
     const onZoneEv = useCallback(
         (id: number, c: ZeChoice) => {
             const r = zeChoose(g.current, id, c);
@@ -727,20 +730,33 @@ export function NodeFarm() {
             nfx("nfBuy", { tier: 2 }, "events");
             if (c === "mine") log(`Vein mined: +${fmt(r.paid ?? 0)} ${statDef(r.stat ?? "bytes").name}.`, "good");
             else if (c === "patch") log(`Fault patched for ${fmt(r.paid ?? 0)} Bytes.`, "good");
+            else if (r.loot) log(`Rogue process dealt with.`, "good");
             else log(c === "run" ? "Vein left running." : "Fault left to run out.", "good");
+            evWin(r);
             save();
             bump((x) => x + 1);
         },
-        [log, save],
+        [log, save, evWin],
     );
-    const evEngage = useCallback((def: { title: string }) => log(`${def.title} engaged.`, "hot"), [log]);
+    const onVault = useCallback(
+        (id: number, rows: number) => {
+            const r = zeVault(g.current, id, rows);
+            if (!r.ok) return;
+            teachEvent(g.current);
+            nfx("nfBuy", { tier: 2 }, "events");
+            log(r.win ? `Cold storage cashed out: ${rows} rows.` : "Cold storage closed with nothing opened.", r.win ? "good" : "warn");
+            evWin(r);
+            save();
+            bump((x) => x + 1);
+        },
+        [log, save, evWin],
+    );
     const setEvents = useCallback((on: boolean) => {
-        setEvOn(on);
-        try {
-            localStorage.setItem(EV_KEY, on ? "on" : "off");
-        } catch {}
-        if (!on) log("Quick-time events off. Turn them back on in the Menu.", "warn");
-    }, [log]);
+        const z = (g.current.ze ??= { act: [], wait: ZE_TUNE.first, seen: 0, kinds: {} });
+        z.off = on ? undefined : true;
+        if (!on) log("Events off. Turn them back on in the Menu.", "warn");
+        save();
+    }, [log, save]);
 
     // ---- Scripts: announce newly learned scripts, batch what each one did into the feed, and run ascend.sh (online only)
     schedRef.current = (s: State) => {
@@ -774,6 +790,7 @@ export function NodeFarm() {
     };
 
     const doAscend = (now = false) => {
+        if (lockedNote("Ascend")) return;
         if (!now && confirm !== "ascend") {
             setConfirm("ascend");
             setTimeout(() => setConfirm((c) => (c === "ascend" ? "" : c)), 4000);
@@ -794,7 +811,7 @@ export function NodeFarm() {
 
     // ---- save safety
     const keepBackup = (why: string, force = true) => {
-        setBackups(addBackup(why.startsWith("before Ascend") ? "auto" : "event", why, JSON.stringify(g.current), { force }));
+        setBackups(addBackup("event", why, JSON.stringify(g.current), { force }));
     };
     // two tabs on one save overwrite each other: when another tab writes, this one stops saving and says so
     useEffect(() => {
@@ -973,6 +990,7 @@ export function NodeFarm() {
     };
 
     const s = g.current;
+    const evOn = !s?.ze?.off;
     const d = useMemo(() => (s ? derive(s) : null), [s, s?.bytes]); // eslint-disable-line react-hooks/exhaustive-deps
     if (!ready || !s || !d) {
         return (
@@ -1008,6 +1026,8 @@ export function NodeFarm() {
     const fwSeen = s.hand.count > 0 || s.hand.keys > 0;
     const openFw = () => { if (!fwSeen) return; setWin(""); setTreeOpen(false); setLabTree(false); setFwTree(true); sfx("tab"); };
     const doHandover = (proto: ProtoId, note: string, proto2: ProtoId | null) => {
+        if (lockedNote("Handover")) return;
+        if (keysOnHandover(s) < 1) return sfx("deny"); // nothing to hand over yet: no backup for a press that does nothing
         keepBackup("before Handover");
         const from = s.hand.proto;
         const keys = handover(s, proto, note, proto2);
@@ -1254,10 +1274,9 @@ export function NodeFarm() {
             )}
             {toast && <div className="nf-toast" role="status"><NfIcon name="spark" /> Goal: {toast}</div>}
 
-            <ZoneEventCard s={s} id={zeCard} onChoose={onZoneEv} onClose={closeZeCard} reduced={reduced} />
-            <EventLayer game={g} ready={ready} enabled={evOn && !chOff(s, "events")} busy={!!win || treeOpen || labTree || droneTree || fwTree || !!cut || !!away || !!confirm} reduced={reduced} onEngage={evEngage} onResult={evResult} onMiss={evMiss} onDisable={() => setEvents(false)} />
+            <ZoneEventCard s={s} id={zeCard} onChoose={onZoneEv} onVault={onVault} onClose={closeZeCard} reduced={reduced} />
             <Juice reduced={reduced} />
-            {d && <PokeLayer s={s} d={d} root={root} coreFeed={feed} feed={feedStore} reduced={reduced} onChange={() => { save(); bump((n) => n + 1); }} onGo={goTo} onArm={(z) => { toggleArm(s, z); sfx("tab"); log(`Drones ${s.armed.includes(z) ? "armed on" : "pulled off"} ${statDef(z).name}.`, "good"); save(); bump((n) => n + 1); }} />}
+            {d && <PokeLayer s={s} d={d} root={root} coreFeed={feed} feed={feedStore} reduced={reduced} onChange={() => { save(); bump((n) => n + 1); }} onGo={goTo} onArm={(z) => { toggleBuyStat(s, z); sfx("tab"); log(`buy.sh ${s.auto?.buy[z] ? "now buys" : "stopped on"} ${statDef(z).name}.`, "good"); save(); bump((n) => n + 1); }} />}
 
             <section className="nf-pane nf-corepane" data-pane="core" aria-label="Core">
                 <div className="nf-core-wrap">
@@ -1313,7 +1332,7 @@ export function NodeFarm() {
                         onPost={(k, st) => {
                             if (!setPost(s, k, st)) return sfx("deny");
                             sfx("tab");
-                            feedStore.push([...call(idTok("drones"), st ? "post" : "sweep", [strTok(`T${k + 1}`), ...(st ? [pun(", "), strTok(st)] : [])]), pun(" → "), strTok(st ? `${DRONE_NAMES[k]} on station` : "patrolling armed zones")], { tone: "good" });
+                            feedStore.push([...call(idTok("drones"), st ? "post" : "dock", [strTok(`T${k + 1}`), ...(st ? [pun(", "), strTok(st)] : [])]), pun(" → "), strTok(st ? `${DRONE_NAMES[k]} on station` : "docked, idle")], { tone: "good" });
                             save();
                             bump((n) => n + 1);
                         }}
@@ -1340,7 +1359,7 @@ export function NodeFarm() {
                             {arcOpen && (
                                 <div id={`nf-arc-${arc.id}`} className="nf-arc-zones">
                                     {shown.map((id) => (
-                                        <StatRow key={id} id={id as StatId} s={s} d={d} guide={guideTarget} onPress={doPress} onArm={() => { toggleArm(s, id as StatId); sfx("tab"); bump((n) => n + 1); }} onWatchdog={() => { s.watchdog = !s.watchdog; sfx("tab"); log(`Watchdog timer ${s.watchdog ? "on: Reboots run themselves" : "off"}.`, s.watchdog ? "good" : "warn"); bump((n) => n + 1); }} open={!folded[id]} onToggle={() => { setFold({ ...folded, [id]: !folded[id] }); sfx("tab"); }} onZoneEv={onZoneEv} zeCard={zeCard} />
+                                        <StatRow key={id} id={id as StatId} s={s} d={d} guide={guideTarget} onPress={doPress} onArm={() => { toggleBuyStat(s, id); sfx("tab"); bump((n) => n + 1); }} onWatchdog={() => { s.watchdog = !s.watchdog; sfx("tab"); log(`Watchdog timer ${s.watchdog ? "on: Reboots run themselves" : "off"}.`, s.watchdog ? "good" : "warn"); bump((n) => n + 1); }} open={!folded[id]} onToggle={() => { setFold({ ...folded, [id]: !folded[id] }); sfx("tab"); }} onZoneEv={onZoneEv} zeCard={zeCard} onZeOpen={setZeCard} />
                                     ))}
                                     {!preview && <ArcStep s={s} arcs={liveArcs} sel={selArc} onPick={focusArc} />}
                                 </div>
@@ -1370,7 +1389,7 @@ export function NodeFarm() {
                 <Hold live={onPane("records")} k=""><WinBar id="records" info={sw} treeSeen={treeSeen} lab={labOpen(s)} onSwitch={(w) => (w === "lab" ? openLab() : openWin(w))} onClose={closeWin} /></Hold><Hold live={onPane("records")} k=""><RecordsPanel s={s} /></Hold></section>
             <section className="nf-pane nf-sidepane" data-pane="ascend" aria-label="Ascend" role="dialog" aria-modal="false">
                 <Hold live={onPane("ascend")} k=""><WinBar id="ascend" info={sw} treeSeen={treeSeen} lab={labOpen(s)} onSwitch={(w) => (w === "lab" ? openLab() : openWin(w))} onClose={closeWin} /></Hold>
-                <Hold live={onPane("ascend")} k=""><AscendPanel s={s} d={d} confirm={confirm === "ascend"} onAscend={doAscend} onPerk={(id) => { if (buyPerk(s, id)) { sfx("nfBuy", { tier: 3 }); bump((n) => n + 1); } }} onTree={() => openWin("tree")} onMount={(i, m) => { if (setMount(s, i, m)) { sfx("tab"); save(); bump((n) => n + 1); } }} /></Hold>
+                <Hold live={onPane("ascend")} k=""><AscendPanel s={s} d={d} confirm={confirm === "ascend"} onAscend={doAscend} onPerk={(id) => { if (buyPerk(s, id)) { sfx("nfBuy", { tier: 3 }); bump((n) => n + 1); } else lockedNote("Perks"); }} onTree={() => openWin("tree")} onMount={(i, m) => { if (setMount(s, i, m)) { sfx("tab"); save(); bump((n) => n + 1); } }} /></Hold>
             </section>
             {handSeen(s) && (
                 <section className="nf-pane nf-sidepane" data-pane="handover" aria-label="Handover" role="dialog" aria-modal="false">
@@ -1475,13 +1494,13 @@ export function NodeFarm() {
                     ver={`${s.hand.fw.join(",")}|${s.hand.keys}`}
                     reduced={reduced}
                     onBuy={(id) => {
-                        if (!buyFw(s, id)) return sfx("deny");
+                        if (!buyFw(s, id)) { if (!lockedNote("Firmware")) sfx("deny"); return; }
                         sfx("nfBuy", { tier: 5 });
                         feedStore.push([...call(idTok("fw"), "flash", [strTok(fwNode(id).name)]), pun(" → "), strTok("ok")], { tone: "good", type: true });
                         save();
                         bump((x) => x + 1);
                     }}
-                    onRespec={() => { const back = respecFw(s); sfx("tab"); log(`Firmware respec: ${fmt(back)} Keys back.`, "good"); save(); bump((n) => n + 1); return back; }}
+                    onRespec={() => { if (lockedNote("The Firmware respec")) return 0; const back = respecFw(s); sfx("tab"); log(`Firmware respec: ${fmt(back)} Keys back.`, "good"); save(); bump((n) => n + 1); return back; }}
                     onClose={closeFw}
                 />
             )}
@@ -1490,8 +1509,8 @@ export function NodeFarm() {
                     s={s}
                     ver={`${s.tree.join(",")}|${s.ap}|${JSON.stringify(s.treeLv ?? {})}`}
                     reduced={reduced}
-                    onBuy={(id) => { if (buyNode(s, id)) { sfx("nfBuy", { tier: 4 }); bump((n) => n + 1); } else sfx("deny"); }}
-                    onRespec={() => { const back = respec(s); sfx("tab"); log(`Tree respec: ${fmt(back)} AP refunded.`, "good"); save(); bump((n) => n + 1); return back; }}
+                    onBuy={(id) => { if (buyNode(s, id)) { sfx("nfBuy", { tier: 4 }); bump((n) => n + 1); } else if (!lockedNote("The prestige tree")) sfx("deny"); }}
+                    onRespec={() => { if (lockedNote("The tree respec")) return 0; const back = respec(s); sfx("tab"); log(`Tree respec: ${fmt(back)} AP refunded.`, "good"); save(); bump((n) => n + 1); return back; }}
                     onClose={closeTree}
                 />
             )}

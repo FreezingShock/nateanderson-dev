@@ -39,7 +39,7 @@ export interface CxOpts {
 
 /**
  * The three looks, each with its own job (Nate, 2026-11-12): "print" for milestones (and tooltips and the tree card),
- * "decrypt" for unlocks and quick-time events, "crt" for panels (windows, the offline report, folding zones).
+ * "decrypt" for unlocks and zone events, "crt" for panels (windows, the offline report, folding zones).
  * Callers pass `style`; with none it is "print".
  */
 export type CxStyle = "print" | "decrypt" | "crt";

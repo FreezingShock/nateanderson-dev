@@ -7,7 +7,7 @@
 //   unlocks     decrypts, goals, milestones, learned scripts
 //   runs        Ascend, Handover, Reboot, stress tests, the ending
 //   automation  scripts, drones, rigs
-//   events      quick-time events and zone events
+//   events      zone events (Rogue process and Cold storage included)
 //   world       caches, core vent, scans
 //   interface   tabs, menus, prints, Codex pages, refusals
 //   hum         the reactor's low drone
@@ -23,7 +23,7 @@ export const NF_SYSTEMS: { id: NfSystem; label: string; note: string; sample: ()
     { id: "unlocks", label: "unlocks", note: "decrypts, goals, milestones", sample: () => nfx("nfDecrypt", undefined, "unlocks") },
     { id: "runs", label: "runs", note: "Ascend, Handover, stress tests", sample: () => nfx("nfHandover", undefined, "runs") },
     { id: "automation", label: "automation", note: "scripts, drones, rigs", sample: () => nfx("nfRig", undefined, "automation") },
-    { id: "events", label: "events", note: "quick-time and zone events", sample: () => nfx("nfZone", { good: true }, "events") },
+    { id: "events", label: "events", note: "zone events", sample: () => nfx("nfZone", { good: true }, "events") },
     { id: "world", label: "world", note: "caches, core vent, scans", sample: () => nfx("nfCache", undefined, "world") },
     { id: "interface", label: "interface", note: "tabs, menus, prints, Codex", sample: () => nfx("nfPrint", 4, "interface") },
     { id: "hum", label: "hum", note: "the reactor drone", sample: () => {} },
