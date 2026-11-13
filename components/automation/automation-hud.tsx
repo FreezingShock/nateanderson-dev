@@ -91,7 +91,7 @@ export function AutomationHud({
         <nav className="ab-nav" aria-label="Workshop views">
           <button
             type="button"
-            className="ab-text-btn"
+            className="ab-text-btn ab-primary"
             aria-expanded={screen === "research"}
             onClick={() => setScreen((s) => (s === "research" ? null : "research"))}
           >
