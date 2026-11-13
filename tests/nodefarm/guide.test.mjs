@@ -40,7 +40,7 @@ test("an affordable final-build stage comes before Firmware, which spends the sa
     s.tree = [...E.fullTreeIds()];
     s.hand.count = 4;
     s.hand.keys = 50;
-    s.prod[E.STATS[E.STATS.length - 1].id] = 1;
-    s[E.STATS[E.STATS.length - 1].id] = 1e15;
+    s.prod.sunstone = 1; // the final build is paid in zone 25; Undersun (26 to 29) comes after it
+    s.sunstone = 1e15;
     assert.equal(step(s).id, "final-build");
 });

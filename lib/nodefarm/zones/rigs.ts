@@ -67,6 +67,14 @@ export const RIG_TUNE = {
     ring: 0.04, ringLv: 0.012, ringMax: 3,
     // 25 Convection: per rig level owned across zones 18 to 24
     conv: 0.01, convLv: 0.003,
+    // 26 Flares: the rim throws a flare every flareEvery seconds of Corona output (shorter with levels, floor flareMin); Corona ×flareMul while it burns
+    flareEvery: 480, flareEveryLv: 40, flareMin: 240, flareSecs: 40, flareSecsLv: 6, flareMul: 2,
+    // 27 Field: Plasma runs faster for every Corona rig level, up to fieldMax
+    field: 0.04, fieldMax: 1.6,
+    // 28 Scaffold: each Ascend banks a charge per tenfold Lattice (kept through Ascend, up to scafMax + scafMaxLv per Lattice level); each charge adds scaf to Lattice
+    scaf: 0.02, scafMax: 4, scafMaxLv: 2,
+    // 29 Veil: per rig level owned across zones 26 to 28
+    veil: 0.01, veilLv: 0.003,
 };
 const T = RIG_TUNE;
 
@@ -110,6 +118,10 @@ export const RIGS: RigDef[] = [
     R("magma", "Eruptions", "timing", "Pressure builds on its own clock. Each eruption pays a lump of Magma and heats the shaft above, so Basalt runs at ×1.5 for a minute.", "erupts 6% sooner and heat lasts 10 s longer"),
     R("geodes", "Ringing", "link", "The vault rings with the Crystal vault far above. Geodes grow with the Quartz you hold, up to ×3.", "a louder ring"),
     R("sunstone", "Convection", "meta", "Heat rises through the arc. Every rig level owned in zones 18 to 24 strengthens the Sunstone.", "+0.3% per level below"),
+    R("corona", "Flares", "timing", "The rim throws a flare every few minutes of Corona output. While a flare burns, Corona runs at twice speed.", "flares 40 s sooner and burn 6 s longer"),
+    R("plasma", "Field", "link", "Plasma rides the field the Corona rig throws. Each Corona rig level speeds Plasma up, to a cap.", "+4% Plasma per Corona level, up to ×1.6"),
+    R("lattice", "Scaffold", "carry", "The grid keeps some of its shape through Ascend. Each Ascend banks a charge per tenfold Lattice held, and each charge speeds Lattice.", "+2% per charge, and the scaffold holds 2 more"),
+    R("radiance", "Veil", "meta", "The radiance thickens with every rig level you own in zones 26 to 28, and each level strengthens Radiance.", "+0.3% per level below"),
     R("origin", "Rewrite", "meta", "Spend Origin to rewrite another zone's rig. Each rewrite raises that rig's level cap by one, up to three, forever.", ""),
 ];
 export const RIG_BY = new Map(RIGS.map((r) => [r.zone, r]));
@@ -117,7 +129,7 @@ export const rigDef = (id: StatId) => RIG_BY.get(id);
 const KEY_ZONE = new Map(RIGS.flatMap((r) => r.keys.map((k) => [k.key, r.zone] as const)));
 
 export function freshRig(): RigState {
-    return { lv: {}, re: {}, rw: 0, scrub: true, aim: "copper", draw: 0, rwAim: "bytes", cool: true, seeds: 0, cache: 0, cacheCapAt: 0, quiet: 0, pour: 0, casts: 0, dust: 0, grow: 0, glow: 0, glowLeft: 0, wx: 0, pulse: 0, pulses: 0, fired: 0, well: 0, sun: 0, wear: 0, vent: 0, heat: 0 };
+    return { lv: {}, re: {}, rw: 0, scrub: true, aim: "copper", draw: 0, rwAim: "bytes", cool: true, seeds: 0, scaf: 0, cache: 0, cacheCapAt: 0, quiet: 0, pour: 0, casts: 0, dust: 0, grow: 0, glow: 0, glowLeft: 0, wx: 0, pulse: 0, pulses: 0, fired: 0, well: 0, sun: 0, wear: 0, vent: 0, heat: 0 };
 }
 const num = (v: unknown, d = 0) => (typeof v === "number" && Number.isFinite(v) ? v : d);
 /** The rig state, made or repaired on first use (old saves have none). */
@@ -136,7 +148,7 @@ export function rig(s: State): RigState {
         rwAim: typeof o.rwAim === "string" && RIG_BY.has(o.rwAim as StatId) && o.rwAim !== "origin" ? o.rwAim : b.rwAim,
         cool: typeof o.cool === "boolean" ? o.cool : true,
     };
-    for (const k of ["cache", "cacheCapAt", "quiet", "pour", "casts", "dust", "grow", "glow", "glowLeft", "wx", "pulse", "pulses", "fired", "well", "seeds", "sun", "wear", "vent", "heat"] as const) r[k] = Math.max(0, num(o[k]));
+    for (const k of ["cache", "cacheCapAt", "quiet", "pour", "casts", "dust", "grow", "glow", "glowLeft", "wx", "pulse", "pulses", "fired", "well", "seeds", "sun", "wear", "vent", "heat", "scaf", "flare", "flareLeft"] as const) r[k] = Math.max(0, num(o[k]));
     r.dust = Math.min(1, r.dust);
     r.wear = Math.min(1, r.wear ?? 0);
     s.rig = r;
@@ -311,6 +323,15 @@ export const ringMul = (s: State) => Math.min(T.ringMax, 1 + (T.ring + T.ringLv 
 export const DESCENT_RIGS: StatId[] = ["spores", "mycelium", "pollen", "bloom", "basalt", "magma", "geodes"];
 export const convLevels = (s: State) => DESCENT_RIGS.reduce((a, z) => a + rigLv(s, z), 0);
 export const convMul = (s: State) => 1 + convLevels(s) * (T.conv + T.convLv * L(s, "sunstone"));
+// ---- Undersun (zones 26 to 29, after the ending)
+export const UNDERSUN_RIGS: StatId[] = ["corona", "plasma", "lattice"];
+export const flareSecs = (s: State) => T.flareSecs + T.flareSecsLv * L(s, "corona");
+export const flareEvery = (s: State) => Math.max(T.flareMin, T.flareEvery - T.flareEveryLv * L(s, "corona"));
+export const fieldMul = (s: State) => Math.min(T.fieldMax, 1 + T.field * L(s, "corona"));
+export const scafMax = (s: State) => T.scafMax + T.scafMaxLv * L(s, "lattice");
+export const scafFor = (s: State) => Math.floor(Math.log10(1 + Math.max(0, s.lattice)));
+export const scafMul = (s: State) => 1 + T.scaf * (rig(s).scaf ?? 0);
+export const veilMul = (s: State) => 1 + UNDERSUN_RIGS.reduce((a, z) => a + rigLv(s, z), 0) * (T.veil + T.veilLv * L(s, "radiance"));
 
 /** Every rig's output multiplier, by zone. Only open zones count. */
 export function muls(s: State): Partial<Record<StatId, number>> {
@@ -342,6 +363,10 @@ export function muls(s: State): Partial<Record<StatId, number>> {
     if (open("magma") && (r.heat ?? 0) > 0) mul("basalt", T.heat);
     if (open("geodes")) mul("geodes", ringMul(s));
     if (open("sunstone")) mul("sunstone", convMul(s));
+    if (open("corona") && (r.flareLeft ?? 0) > 0) mul("corona", T.flareMul);
+    if (open("plasma")) mul("plasma", fieldMul(s));
+    if (open("lattice")) mul("lattice", scafMul(s));
+    if (open("radiance")) mul("radiance", veilMul(s));
     for (const a of ARCS) { const k = linkTier(s, a.id); if (k > 0) for (const z of a.zones) mul(z as StatId, LINK_TUNE.mul[k - 1]); }
     // a zone event, Rig tune: that zone's rig bonus counts several times over (only a bonus: a rig that costs output is left alone)
     const tuned = zeTuned(s);
@@ -411,6 +436,16 @@ function step(s: State, dt: number, d: Derived) {
             if (linkOn(s, "descent")) r.wear = Math.max(0, (r.wear ?? 0) - 0.25);
         }
     }
+    // 26 Flares: a flare is due every flareEvery seconds of Corona output and burns for flareSecs
+    if ((r.flareLeft ?? 0) > 0) r.flareLeft = Math.max(0, (r.flareLeft ?? 0) - dt);
+    if (s.prod.corona > 0) {
+        r.flare = (r.flare ?? 0) + dt;
+        const every = flareEvery(s);
+        if (r.flare >= every) {
+            r.flare -= every;
+            r.flareLeft = flareSecs(s);
+        }
+    }
 }
 
 RIG_HOOKS.muls = muls;
@@ -422,7 +457,9 @@ RIG_HOOKS.ascend = (s) => {
     const r = rig(s);
     const glow = glowFor(s);
     const seeds = isUnlocked(s, "bloom") ? Math.min(seedMax(s), (r.seeds ?? 0) + seedsFor(s)) : r.seeds ?? 0;
-    return { ...freshRig(), lv: r.lv, re: r.re, rw: r.rw, scrub: r.scrub, aim: r.aim, draw: r.draw, rwAim: r.rwAim, cool: r.cool, seeds, quiet: r.quiet, glow, glowLeft: glow > 0 ? glowSecs(s) : 0 };
+    // Scaffold charges: one per tenfold Lattice held at Ascend, kept like seeds
+    const scaf = isUnlocked(s, "lattice") ? Math.min(scafMax(s), (r.scaf ?? 0) + scafFor(s)) : r.scaf ?? 0;
+    return { ...freshRig(), lv: r.lv, re: r.re, rw: r.rw, scrub: r.scrub, aim: r.aim, draw: r.draw, rwAim: r.rwAim, cool: r.cool, seeds, scaf, quiet: r.quiet, glow, glowLeft: glow > 0 ? glowSecs(s) : 0 };
 };
 
 /** Short live readouts for the console and the admin panel. */

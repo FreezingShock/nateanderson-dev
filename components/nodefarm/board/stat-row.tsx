@@ -1,7 +1,7 @@
 "use client";
 
 import { memo, useContext, useEffect, useRef, type CSSProperties } from "react";
-import { MATS, ROMAN, STATS, TIERS, button, postOf, zoneRank, derive, droneBoost, originAp, paradoxOc, bloomKeys, sunstoneAll, singularityAll, fmt, fmtTime, hasFeature, isUnlocked, statDef, type ButtonStat, type State, type StatId } from "@/lib/nodefarm/engine";
+import { MATS, ROMAN, STATS, TIERS, button, postOf, zoneRank, derive, droneBoost, originAp, paradoxOc, bloomKeys, sunstoneAll, radianceAll, singularityAll, fmt, fmtTime, hasFeature, isUnlocked, statDef, type ButtonStat, type State, type StatId } from "@/lib/nodefarm/engine";
 import { LORE } from "@/lib/nodefarm/content/lore";
 import { fnCaption } from "@/lib/nodefarm/feed";
 import { buttonTip, exact, unlockInfo, type Target } from "@/lib/nodefarm/content/guide";
@@ -72,6 +72,14 @@ function effects(id: StatId, s: State, d: D): [string, string][] {
             return [["Feeds Magma", `×${fmt(d.boosts.geMg)}`], ["Own output", `${fmt(d.rates.geodes)}/s`]];
         case "sunstone":
             return [["Feeds Geodes", `×${fmt(d.boosts.suGe)}`], ["Everything", `×${fmt(sunstoneAll(s))}`]];
+        case "corona":
+            return [["Feeds Sunstone", `×${fmt(d.boosts.cnSu)}`], ["Own output", `${fmt(d.rates.corona)}/s`]];
+        case "plasma":
+            return [["Feeds Corona", `×${fmt(d.boosts.plCn)}`], ["Own output", `${fmt(d.rates.plasma)}/s`]];
+        case "lattice":
+            return [["Feeds Plasma", `×${fmt(d.boosts.ltPl)}`], ["Own output", `${fmt(d.rates.lattice)}/s`]];
+        case "radiance":
+            return [["Feeds Lattice", `×${fmt(d.boosts.raLt)}`], ["Everything", `×${fmt(radianceAll(s))}`]];
     }
 }
 
@@ -79,6 +87,10 @@ function effects(id: StatId, s: State, d: D): [string, string][] {
 export function Chain({ s, d, onAll, allOpen, onIdle, onJump }: { s: State; d: D; onAll: (open: boolean) => void; allOpen: boolean; onIdle?: () => void; onJump?: (id: StatId) => void }) {
     const feed: Partial<Record<StatId, string>> = {
         sunstone: `Geodes ×${fmt(d.boosts.suGe)}`,
+        corona: `Sunstone ×${fmt(d.boosts.cnSu)}`,
+        plasma: `Corona ×${fmt(d.boosts.plCn)}`,
+        lattice: `Plasma ×${fmt(d.boosts.ltPl)}`,
+        radiance: `Lattice ×${fmt(d.boosts.raLt)}`,
         geodes: `Magma ×${fmt(d.boosts.geMg)}`,
         magma: `Basalt ×${fmt(d.boosts.mgBa)}`,
         basalt: `Bloom ×${fmt(d.boosts.baBl)}`,

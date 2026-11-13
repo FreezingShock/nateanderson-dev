@@ -36,4 +36,9 @@ export const LORE: Record<StatId, Lore> = {
     magma: { code: "MG-LINE // FLOW", zone: "Magma line", flavor: "The farm's last pipeline runs over a river of it. The heat hardens the Basalt as it climbs.", tiers: ["Ember", "Vent", "Seep", "Flow", "Lake", "Caldera"] },
     geodes: { code: "GE-VAULT // HOLLOW", zone: "Geode vault", flavor: "A stone the size of a hall, hollow and lined with light. The racks inside read the crystal like a disk. It cools the Magma into shape.", tiers: ["Pebble", "Nodule", "Druse", "Cavity", "Vault", "Cathedral"] },
     sunstone: { code: "SU-DEEP // BOTTOM", zone: "The buried sun", flavor: "A white sun held in clamps at the bottom of everything. It feeds the Geodes, and warms the whole farm a little.", tiers: ["Spark", "Ingot", "Furnace", "Mantle", "Star", "Sun"] },
+    // Undersun: past the ending, where the sun's light leaves the clamps
+    corona: { code: "CN-RIM // FLARE", zone: "Solar rim", flavor: "Past the last clamp the sun's bright edge keeps throwing light out. It feeds the Sunstone, and the flares make it run faster for a while.", tiers: ["Glint", "Streamer", "Loop", "Arc", "Crown", "Corona"] },
+    plasma: { code: "PL-FIELD // SPIN", zone: "Plasma field", flavor: "Charged gas torn off the rim and spun into a field. It feeds the Corona, and every Corona rig you build speeds it up.", tiers: ["Wisp", "Filament", "Plume", "Torus", "Stream", "Plasma"] },
+    lattice: { code: "LT-GRID // HOLD", zone: "Lattice hall", flavor: "A grid of light that holds the plasma still. It feeds the Plasma, and the charges it keeps through Ascend make it stronger each time.", tiers: ["Pin", "Strut", "Truss", "Cell", "Frame", "Lattice"] },
+    radiance: { code: "RD-SKY // GLOW", zone: "Glow shelf", flavor: "The light the sun throws back at the dark, in curtains. It feeds the Lattice, and it lifts everything a little.", tiers: ["Glimmer", "Ribbon", "Curtain", "Fold", "Veil", "Radiance"] },
 };

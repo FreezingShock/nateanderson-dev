@@ -254,6 +254,14 @@ const DEFS = {
                     tone("game", { f: base * 0.25, dur: 0.3, gain: 0.07, glide: 0.8, harm: 0.4, cutoff: 700, attack: 0.004 });
                     blip("game", base * 3, { at: 0.02, dur: 0.03, gain: 0.03, cutoff: 5200 });
                     break;
+                case "corona":
+                case "plasma":
+                case "lattice":
+                case "radiance":
+                    // Undersun: a bright shimmer that rises and settles, like light coming off a grid
+                    tone("game", { f: base * 0.5, dur: 0.34, gain: 0.04, glide: 1.6, cutoff: 4200, attack: 0.012, type: "sine" });
+                    blip("game", base * 2, { at: 0.06, dur: 0.05, gain: 0.03, cutoff: 5600 });
+                    break;
                 default:
                     blip("game", base, { dur: 0.05, gain: 0.06, cutoff: 2600 });
                     blip("game", base * 1.5, { at: 0.055, dur: 0.07, gain: 0.06, cutoff: 3000 });

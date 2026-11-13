@@ -467,3 +467,15 @@ With the first draft costs (Keys 2, 3, 5, 8, 12 and Sunstone 1e3 to 1e11) the Su
 - Stages 1 to 4 are paced by Keys, the last by Sunstone (the 1e18 price is reached about 15 h after stage 4). Keys end nearly spent (14 and 10 left).
 - Sim flag `NF_ENDTUNE='{"keys":[...],"mat":[...]}'` tries a set without editing the file.
 - The endgame hour with Drones on makes about half the Bytes of the same save with Drones zeroed (2.1e24 vs 4.3e24, same presses). The swing depends on which tier is posted (0.17x to 4.3x), so it is stock-sensitive late boosts, not a tick or Drone-speed bug; no knob changed for it.
+
+## Undersun (zones 26 to 29, after the ending), 2026-11-13
+- Four zones past Sunstone: 26 Corona (Solar rim, Flares rig), 27 Plasma (Plasma field, Field rig), 28 Lattice (Lattice hall, Scaffold rig),
+  29 Radiance (Glow shelf, Veil rig). Arc `undersun` in lib/nodefarm/zones/arcs.ts, scene era 23 (its header art).
+- ARC_GATE: Corona and Plasma open at Handover 5, Lattice and Radiance at Handover 6 (the arc-gate table in engine.ts).
+- The ending stays in zone 25: `lastZone()` in systems/ending.ts is pinned to Sunstone, so the final build and its end screen are unchanged.
+  Undersun is post-ending play. Zone events, guide, feed and the sound mixer pick the new zones up from MATS and the arc table.
+- Rigs: lib/nodefarm/zones/rigs.ts (`UNDERSUN_RIGS`). Flares is a timed rule (Corona ×2 while a flare burns), Field and Veil are
+  neighbour and meta links, Scaffold banks charges through Ascend (saved in `rig.scaf`). Flare clock fields are `rig.flare` and `rig.flareLeft`.
+- Art: scripts/naos-art/nodefarm_arc64_undersun.py (24 motifs), nodefarm_tiers64_<stat>.py stubs, nodefarm-scenes-undersun.py (eras 23 to 26),
+  zone-art-26-29.py, four rig drawings in nodefarm-rigs.py. The icon sheet is 33 cells wide (the CSS calc uses * 33).
+- Art is generated procedurally and has not been reviewed by Nate yet.
