@@ -990,3 +990,29 @@
     font-size: 12px;
   }
 }
+
+/* Menu screens and drawers use the same framed-panel system as the factory panels: a brass header band with a bright title. */
+.ab-screen-head,
+.ab-drawer > .ab-head {
+  background: linear-gradient(rgba(197, 154, 82, 0.16), rgba(197, 154, 82, 0.03));
+  border-bottom: 1px solid var(--ab-line-soft);
+  padding: 12px 16px;
+  min-height: 52px;
+  align-items: center;
+}
+
+.ab-screen-head .ab-h,
+.ab-drawer > .ab-head .ab-h {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--ab-brass-hi);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  font-size: 13px;
+}
+
+.ab-drawer > .ab-head .ab-text-btn,
+.ab-screen-head .ab-text-btn {
+  min-height: 44px;
+}
