@@ -206,7 +206,11 @@ export const mockHud: HudData = {
     gain: "+5% speed per workshop kept",
     keeps: ["Blueprints and research", "Unlocked designs", "Routes found", "One free machine of each kind", "Records"],
     leaves: ["Machines and belts", "Stored stock", "Fleets on expedition"],
-    sites: ["Workshop 3, The Quarry Flats", "Workshop 2, The East Shore", "Workshop 4, The High Pass"],
+    sites: [
+      { id: "quarry-flats", name: "Workshop 3, The Quarry Flats", blurb: "Flat ground near the old pits.", modifiers: ["Miners +10%"] },
+      { id: "east-shore", name: "Workshop 2, The East Shore", blurb: "Open to the wind off the water.", modifiers: ["Power +15%"] },
+      { id: "high-pass", name: "Workshop 4, The High Pass", blurb: "A narrow ledge with rich seams.", modifiers: ["Miners +20%", "Power -5%"] },
+    ],
   },
   stats: [
     { label: "Iron made", value: "12,406" },

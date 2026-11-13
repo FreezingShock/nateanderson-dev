@@ -104,6 +104,7 @@ export const DEFAULT_CATALOG: Catalog = {
 export interface SiteDef {
     id: string;
     name: string;
+    blurb: string;
     width: number;
     depth: number;
     hub: { x: number; z: number };
@@ -112,8 +113,8 @@ export interface SiteDef {
 }
 
 export const SITES: SiteDef[] = [
-    { id: "ridge", name: "Iron ridge", width: 56, depth: 56, hub: { x: 26, z: 26 }, nodes: [{ x: 8, z: 26, item: "ore-a", purity: 1 }, { x: 12, z: 30, item: "ore-b", purity: 1 }], bonus: { miner: 1.15, power: 1 } },
-    { id: "cove", name: "Copper cove", width: 64, depth: 48, hub: { x: 30, z: 20 }, nodes: [{ x: 6, z: 10, item: "ore-a", purity: 2 }, { x: 6, z: 14, item: "ore-b", purity: 0.5 }], bonus: { miner: 1, power: 1.2 } },
-    { id: "high-bank", name: "High bank", width: 72, depth: 72, hub: { x: 34, z: 34 }, nodes: [{ x: 14, z: 34, item: "ore-a", purity: 1 }, { x: 20, z: 40, item: "ore-b", purity: 1 }, { x: 14, z: 40, item: "ore-a", purity: 0.5 }], bonus: { miner: 1, power: 1.1 } },
-    { id: "quarry", name: "Old quarry", width: 48, depth: 48, hub: { x: 22, z: 22 }, nodes: [{ x: 6, z: 22, item: "ore-b", purity: 2 }], bonus: { miner: 1.25, power: 0.9 } },
+    { id: "ridge", name: "Iron ridge", blurb: "Open ground with iron close to the surface.", width: 56, depth: 56, hub: { x: 26, z: 26 }, nodes: [{ x: 8, z: 26, item: "ore-a", purity: 1 }, { x: 12, z: 30, item: "ore-b", purity: 1 }], bonus: { miner: 1.15, power: 1 } },
+    { id: "cove", name: "Copper cove", blurb: "A sheltered cove with strong wind power.", width: 64, depth: 48, hub: { x: 30, z: 20 }, nodes: [{ x: 6, z: 10, item: "ore-a", purity: 2 }, { x: 6, z: 14, item: "ore-b", purity: 0.5 }], bonus: { miner: 1, power: 1.2 } },
+    { id: "high-bank", name: "High bank", blurb: "A tall bank with two rich seams.", width: 72, depth: 72, hub: { x: 34, z: 34 }, nodes: [{ x: 14, z: 34, item: "ore-a", purity: 1 }, { x: 20, z: 40, item: "ore-b", purity: 1 }, { x: 14, z: 40, item: "ore-a", purity: 0.5 }], bonus: { miner: 1, power: 1.1 } },
+    { id: "quarry", name: "Old quarry", blurb: "A worked-out quarry with dense, pure ore.", width: 48, depth: 48, hub: { x: 22, z: 22 }, nodes: [{ x: 6, z: 22, item: "ore-b", purity: 2 }], bonus: { miner: 1.25, power: 0.9 } },
 ];

@@ -20,10 +20,10 @@ export function PrestigeScreen({
   onConfirm?: (siteId: string) => void;
   onClose: () => void;
 }) {
-  const [siteId, setSiteId] = useState<string | null>(prestige.sites[0] ?? null);
+  const [siteId, setSiteId] = useState<string | null>(prestige.sites[0]?.id ?? null);
   const [held, setHeld] = useState(0);
   const timer = useRef<ReturnType<typeof setInterval> | null>(null);
-  const site = prestige.sites.find((s) => s === siteId) ?? null;
+  const site = prestige.sites.find((s) => s.id === siteId) ?? null;
   const canHold = prestige.ready && !!site && !!onConfirm;
 
   const stop = () => {
@@ -42,7 +42,7 @@ export function PrestigeScreen({
       setHeld(pct);
       if (pct >= 1) {
         stop();
-        onConfirm?.(site);
+        onConfirm?.(site.id);
       }
     }, TICK_MS);
   };
@@ -66,18 +66,18 @@ export function PrestigeScreen({
         <div className="ab-sites" role="radiogroup" aria-label="Choose a site">
           {prestige.sites.map((s) => (
             <button
-              key={s}
+              key={s.id}
               type="button"
               role="radio"
-              aria-checked={s === siteId}
+              aria-checked={s.id === siteId}
               className="ab-site"
-              data-selected={s === siteId}
+              data-selected={s.id === siteId}
               onClick={() => {
                 release();
-                setSiteId(s);
+                setSiteId(s.id);
               }}
             >
-              <span className="ab-site-name">{s}</span>
+              <span className="ab-site-name">{s.name}</span>
             </button>
           ))}
         </div>
@@ -116,7 +116,7 @@ export function PrestigeScreen({
           <span className="ab-hold-fill" style={{ width: `${held * 100}%` }} aria-hidden="true" />
           <span className="ab-hold-label">
             {prestige.ready
-              ? `Hold to open ${site ?? "a new workshop"}`
+              ? `Hold to open ${site?.name ?? "a new workshop"}`
               : "Not ready yet"}
           </span>
         </button>
