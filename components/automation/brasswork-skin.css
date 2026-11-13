@@ -136,3 +136,19 @@
 .ab-root.bw .ab-node-cost { color: var(--bw-amber); text-shadow: 0 0 6px rgba(255, 179, 71, 0.4); }
 .ab-root.bw .ab-link { stroke: var(--bw-brass-lo); }
 .ab-root.bw .ab-screen-close { color: var(--bw-brass-hi); }
+
+/* ---- phone: keep the bar and panels inside the viewport ---- */
+@media (max-width: 759px) {
+  .ab-root.bw .ab-res { gap: 4px; }
+  .ab-root.bw .ab-res-list { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px 6px; width: 100%; }
+  .ab-root.bw .ab-res-item { grid-template-columns: auto 1fr; column-gap: 6px; font-size: 13px; }
+  .ab-root.bw .ab-res-item .ab-glyph { grid-row: span 2; width: 28px; height: 28px; font-size: 10px; margin: 2px; }
+  .ab-root.bw .ab-res-name { display: none; }
+  .ab-root.bw .ab-res-rate { grid-column: 2; font-size: 11px; }
+  .ab-root.bw .ab-nav { gap: 4px; }
+  .ab-root.bw .ab-nav .ab-text-btn { padding: 6px 2px; font-size: 10px; letter-spacing: 0.02em; line-height: 1.1; min-width: 0; }
+  .ab-root.bw .ab-pal, .ab-root.bw .ab-factory, .ab-root.bw .ab-drawer { border-width: 4px; }
+  .ab-root.bw .ab-pal::before, .ab-root.bw .ab-factory::before, .ab-root.bw .ab-drawer::before { inset: -4px; }
+  .ab-root.bw .ab-factory { max-height: 36dvh; }
+  .ab-root.bw .ab-pal { max-height: 22dvh; }
+}
