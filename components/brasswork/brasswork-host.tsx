@@ -10,6 +10,7 @@ import {
     DEFAULT_CATALOG,
     actions as simActions,
     advance,
+    buildingAt,
     chargeOf,
     addDeposit,
     createWorld,
@@ -30,6 +31,7 @@ import {
 import type { VoxelIsland } from "@/lib/automation/render";
 import type { BuildWorld, MountedInput } from "@/lib/automation/input";
 import { getMachineModel } from "@/lib/automation/models/machines";
+import { BELT_MODELS, beltModelId, pickBeltTile, type PieceKind } from "@/lib/automation/models/belts";
 import { BrassworkExtras, type AwayReport, type Mood } from "./extras";
 import { bw, bwHum, bwSetEnabled } from "@/lib/brasswork/sound";
 
@@ -44,6 +46,33 @@ const NODE_SPOTS: [number, number][] = [[2, 2], [2, 8], [15, 2], [15, 8], [8, 1]
 
 // Sim cells run 0..W-1, 0..D-1. The renderer and the input module share one frame where the plateau starts at (-9, -6).
 const BOARD = { width: W, depth: D, originX: -W / 2, originZ: -D / 2 };
+
+const BELT_BY_ID = new Map(BELT_MODELS.map((m) => [m.id, m]));
+const BELT_TIER: Record<string, number> = { belt: 0, "belt-copper": 1, "belt-steel": 2 };
+const FACE: readonly (readonly [number, number])[] = [[0, 1], [1, 0], [0, -1], [-1, 0]];
+
+/** Which belt tile a plain sim belt cell should show, from what feeds it and what it feeds. */
+function beltTile(world: World, b: { x: number; z: number; rot: number; type: string }): { id: string; rot: number } {
+    const at = (x: number, z: number) => buildingAt(world, x, z, CAT);
+    const isBelt = (t?: string) => !!t && t in BELT_TIER;
+    const [fx, fz] = FACE[b.rot];
+    const [lx, lz] = FACE[(b.rot + 3) % 4];
+    const [rx, rz] = FACE[(b.rot + 1) % 4];
+    const back = at(b.x - fx, b.z - fz);
+    const left = at(b.x + lx, b.z + lz);
+    const right = at(b.x + rx, b.z + rz);
+    const front = at(b.x + fx, b.z + fz);
+    const feeds = (n: ReturnType<typeof at>, dx: number, dz: number) => !!n && isBelt(n.type) && FACE[n.rot][0] === dx && FACE[n.rot][1] === dz;
+    const kind: PieceKind = pickBeltTile({
+        back: feeds(back, fx, fz),
+        left: feeds(left, -lx, -lz),
+        right: feeds(right, -rx, -rz),
+        front: !!front,
+        frontIsMachine: !!front && !isBelt(front.type),
+        backIsMachine: !!back && !isBelt(back.type) && back.type !== "hub",
+    });
+    return { id: beltModelId(kind, BELT_TIER[b.type] ?? 0), rot: b.rot };
+}
 
 const TYPE_COLORS: Record<string, number> = { hub: 0xc59a52, drill: 0x7f8ca3, power: 0xc4682f };
 const ORE_COLORS: Record<string, number> = { iron_ore: 0x8e3b28, copper_ore: 0x58b09a, coal: 0x25252b, quartz: 0xf2cfe0, aluminium_ore: 0x98b2d4 };
@@ -103,6 +132,7 @@ export function BrassworkHost() {
             let settings = { ...START_SETTINGS };
             let selectedId: number | null = null;
             const drawn = new Set<number>();
+            const beltDrawn = new Map<number, { id: string; rot: number }>();
 
             const island: VoxelIsland = createVoxelIsland(canvas, { quality: "auto", dither: true, timeOfDay: 0.4, cycle: false, orbit: false });
             const center = (x: number, z: number, w: number, d: number): [number, number] => [x + w / 2 - W / 2, z + d / 2 - D / 2];
@@ -113,7 +143,21 @@ export function BrassworkHost() {
                     if (!world.buildings[id]) {
                         island.removeObject(`b${id}`);
                         drawn.delete(id);
+                        beltDrawn.delete(id);
                     }
+                }
+                // Belts pick their tile from their neighbours, so a placement or removal can change the cells around it.
+                for (const b of Object.values(world.buildings)) {
+                    if (!(b.type in BELT_TIER)) continue;
+                    const want = beltTile(world, b);
+                    const have = beltDrawn.get(b.id);
+                    if (have && have.id === want.id && have.rot === want.rot) continue;
+                    const model = BELT_BY_ID.get(want.id);
+                    if (!model) continue;
+                    island.removeObject(`b${b.id}`);
+                    island.placeModel(`b${b.id}`, model, { cell: { x: b.x - W / 2, z: b.z - D / 2 }, rot: want.rot as 0 | 1 | 2 | 3 });
+                    beltDrawn.set(b.id, want);
+                    drawn.add(b.id);
                 }
                 for (const b of Object.values(world.buildings)) {
                     if (drawn.has(b.id)) continue;
@@ -205,9 +249,9 @@ export function BrassworkHost() {
                 },
                 check: (kind, x, z, rot) => grid.check(kind, x + ox, z + oz, rot),
             };
-            const tools = [...CAT.tree.machines.map((m) => m.id), "power-plant"].map((id) => {
+            const tools = [...CAT.tree.machines.map((m) => m.id), "power-plant", "belt", "belt-copper", "belt-steel"].map((id) => {
                 const r = resolve(CAT, id);
-                return { id, label: r?.name ?? id, line: false, footprint: r ? { w: r.footprint.w, d: r.footprint.d } : undefined };
+                return { id, label: r?.name ?? id, line: id in BELT_TIER, footprint: r ? { w: r.footprint.w, d: r.footprint.d } : undefined };
             });
             const input: MountedInput = mount(island.camera, canvas, {
                 touchBar: true,
