@@ -51,3 +51,13 @@
     .ctos .nf-hud { padding: 10px 12px; gap: 8px 12px; }
     .ctos .nf-hud-side { gap: 6px 12px; }
 }
+
+/* Round 2 (phone): zone cards take less height. The art and the bracket frame stay; only paddings and gaps shrink. */
+@media (max-width: 719px) {
+    .ctos .nf-row-h { padding: 12px 14px 10px; gap: 10px; }
+    .ctos .nf-row-t b { font-size: 19px; }
+    .ctos .nf-row-n b { font-size: 20px; }
+    .ctos .nf-spec { margin-top: 10px; gap: 4px 20px; }
+    .ctos .nf-btns { gap: 6px; margin-top: 12px; }
+    .ctos .nf-body-in { padding: 0 14px; }
+}
