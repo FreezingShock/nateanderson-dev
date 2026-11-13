@@ -39,6 +39,8 @@
 .nf-ts { display: block; flex: none; width: var(--px); height: var(--px); background-image: url(/naos/nodefarm/tree-spr-s.webp?v=78b909f2); background-repeat: no-repeat; background-size: calc(var(--px) * 6) auto; background-position: calc(var(--col) * var(--px) * -1) calc(var(--row) * var(--px) * -1); image-rendering: pixelated; }
 .nf-ts[data-sz="m"] { background-image: url(/naos/nodefarm/tree-spr-m.webp?v=f5c179de); }
 .nf-ts[data-sz="l"] { background-image: url(/naos/nodefarm/tree-spr-l.webp?v=88b74d71); }
+/* lazy sprites (folded panels) hold their sheet back until they are near the screen; see TreeSprite */
+.nf-ts[data-lazy]:not([data-near]) { background-image: none; }
 .nf-ts[data-miss] { background: none; }
 /* owned: a shine sweeps across now and then (frames 1 to 3), offset per node */
 .nf-ts[data-st="owned"] { animation: nfTsShine 7s steps(1) infinite; animation-delay: var(--ph, 0s); }
