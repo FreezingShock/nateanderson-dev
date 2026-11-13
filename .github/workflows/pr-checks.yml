@@ -86,11 +86,15 @@ jobs:
                   npm install --no-audit --no-fund
                   npx playwright install --with-deps chromium
             - name: Screenshot base and head
+              # The two runs use separate servers and output folders, so they go side by side.
               run: |
                   (cd base && npx next start -p 3124 > ../base.log 2>&1 &)
                   (cd head && npx next start -p 3123 > ../head.log 2>&1 &)
-                  (cd base && node ../head/scripts/ci/shots.mjs http://localhost:3124 ../shots/base)
-                  (cd head && node scripts/ci/shots.mjs http://localhost:3123 ../shots/head)
+                  (cd base && node ../head/scripts/ci/shots.mjs http://localhost:3124 ../shots/base) &
+                  p1=$!
+                  (cd head && node scripts/ci/shots.mjs http://localhost:3123 ../shots/head) &
+                  p2=$!
+                  wait $p1 && wait $p2
             - name: Diff
               run: node head/scripts/ci/diff.mjs shots/base shots/head shots/diff
             - name: Summary
