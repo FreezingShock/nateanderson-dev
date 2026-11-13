@@ -1,13 +1,18 @@
 // Shape stamps for building objects (machines, props) at voxel resolution. Each stamp takes world
 // units and writes cells whose centres fall inside the shape, so curves stay smooth at any cell size.
-import { VoxelGrid } from "./grid";
 import { BlockRegistry } from "./mesher";
 
+/** Anything stamps can write into: a grid, or a recorder that keeps the cells it touches. */
+export interface StampTarget {
+    readonly cell: number;
+    set(i: number, j: number, k: number, id: number): void;
+}
+
 export class Stamper {
-    private readonly grid: VoxelGrid;
+    private readonly grid: StampTarget;
     private readonly blocks: BlockRegistry;
 
-    constructor(grid: VoxelGrid, blocks: BlockRegistry) {
+    constructor(grid: StampTarget, blocks: BlockRegistry) {
         this.grid = grid;
         this.blocks = blocks;
     }
