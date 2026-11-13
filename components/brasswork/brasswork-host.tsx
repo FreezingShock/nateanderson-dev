@@ -350,6 +350,23 @@ export function BrassworkHost() {
                 },
             };
 
+            // Dev-only test hook for the headless playthrough. Off unless the URL has ?bwdev=1; it changes nothing for players.
+            const devHook = new URLSearchParams(window.location.search).has("bwdev");
+            if (devHook) {
+                (window as unknown as { __bwdev: unknown }).__bwdev = {
+                    getWorld: () => world,
+                    CAT,
+                    sim: simActions,
+                    placeAt: (type: string, x: number, z: number, rot: Rot = 0) => {
+                        const r = simActions.place(world, type, x, z, rot, CAT);
+                        syncScene();
+                        refresh();
+                        return r;
+                    },
+                    refresh,
+                };
+            }
+
             const onResize = () => island.resize();
             window.addEventListener("resize", onResize);
 
