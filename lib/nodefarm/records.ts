@@ -12,7 +12,7 @@ import { LOGS, logNo } from "./content/story";
 import { END_STAGES, END_STEPS, buildBlock, endSeen, endStage, lastZone, stageCost } from "./systems/ending";
 import { zeTitle, zoneLabel } from "./zones/zoneevents";
 import { ENTRIES, unlocked as unlockedEntries } from "./content/codex";
-import { etaRate, exact, nextStep } from "./content/guide";
+import { etaRate, exact, incomeOf, nextStep } from "./content/guide";
 
 export const NF_PATH = "/creations/games/node-farm";
 export const NF_SAVE_KEY = "nf-save-v1";
@@ -113,7 +113,7 @@ export interface NfLine {
 const t = (text: string, k?: NfLine["k"]): NfLine => ({ t: text, k });
 const row = (a: string, b: string, go?: string): NfLine => ({ a, b, go });
 /** The console's command list. Keep it in step with nfCommand below. */
-const CONSOLE_HELP = "nf help · nf next · nf rate · nf find <word> · nf stats · nf goals · nf secrets · nf logs · nf news · nf lab · nf handover · nf end · nf cron · nf archive · nf codex · nf open";
+const CONSOLE_HELP = "nf help · nf next · nf rate · nf why <stat> · nf find <word> · nf stats · nf goals · nf secrets · nf logs · nf news · nf lab · nf handover · nf end · nf cron · nf archive · nf codex · nf open";
 
 export const NF_SUBS = ["stats", "goals", "secrets", "logs", "archive", "news", "open", "codex", "anim", "fs", "fullscreen", "art", "core", "admin", "keys"];
 
@@ -162,6 +162,27 @@ export function nfCommand(s: State, args: string[]): NfResult {
             if (d.rates[m] > 0) lines.push(row(statDef(m).name.toLowerCase(), `${exact(d.rates[m])}/s  (you have ${fmt(s[m])})`));
         }
         if (lines.length === 2) lines.push(t("nothing is producing yet. press the glowing button.", "dim"));
+    } else if (sub === "why") {
+        const want = args.slice(1).join(" ").trim().toLowerCase();
+        const hit = want === "bytes" ? "bytes" : MATS.find((m) => m === want || statDef(m).name.toLowerCase() === want || statDef(m).short.toLowerCase() === want);
+        if (!want) lines = [t("nf why <stat>: what feeds a stat, and what it is making right now. try nf why copper.", "dim")];
+        else if (!hit) lines = [t(`nf why: no stat called "${want}".`, "err")];
+        else {
+            const d = derive(s);
+            const rate = incomeOf(s, d, hit);
+            lines = [t(`${statDef(hit).name.toLowerCase()} // why it moves`, "hi")];
+            if (hit === "bytes") {
+                lines.push(row("rate", `${fmt(rate)}/s`), row("multipliers", fmt(s.mult)), row("fed by", "every button, the global multiplier and Reboots"));
+            } else {
+                const i = MATS.indexOf(hit);
+                const above = i === 0 ? "bytes" : MATS[i - 1];
+                const owned = s.prod[hit] ?? 0;
+                lines.push(row("you have", fmt(s[hit])), row("rate", `${exact(rate)}/s`), row("producers", fmt(owned)));
+                if (owned > 0 && rate > 0) lines.push(row("per producer", `${exact(rate / owned)}/s`));
+                lines.push(row("paid in", statDef(above).name.toLowerCase()));
+                if (rate <= 0) lines.push(t("nothing is making it yet. buy a producer tier to start.", "dim"));
+            }
+        }
     } else if (sub === "find") {
         const q = args.slice(1).join(" ").trim().toLowerCase();
         if (!q) lines = [t("nf find <word>: searches your goals, found secrets and recovered logs.", "dim")];
