@@ -3,10 +3,12 @@
 import type { VoxelModel } from "./format";
 import { EXAMPLE_BLOCK } from "./examples";
 import { ITEM_MODEL_LIST } from "./items";
+import { allMachineModels } from "./machines";
 import { resourceModel, resourcePreviewModels } from "./resources";
 
 export const MODEL_REGISTRY: VoxelModel[] = [
     EXAMPLE_BLOCK,
+    ...allMachineModels(),
     ...resourcePreviewModels(),
     ...ITEM_MODEL_LIST,
 ];

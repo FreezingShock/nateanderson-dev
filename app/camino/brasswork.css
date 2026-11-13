@@ -1,10 +1,10 @@
-.ctos .bw-host { padding: 24px 20px; display: grid; gap: 16px; min-height: 240px; align-content: center; }
-.ctos .bw-lead { margin: 0; font-size: 18px; }
-.ctos .bw-pieces { list-style: none; margin: 0; padding: 0; display: grid; gap: 1px; }
-.ctos .bw-pieces li { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; gap: 16px; align-items: baseline; padding: 10px 0; border-top: 1px solid color-mix(in srgb, currentColor 18%, transparent); font-size: 15px; }
-.ctos .bw-pieces code { font-size: 13px; opacity: .7; }
-.ctos .bw-pieces em { font-style: normal; font-size: 12px; text-transform: uppercase; letter-spacing: .08em; color: var(--cm-amber); }
-@media (max-width: 640px) { .ctos .bw-pieces li { grid-template-columns: 1fr auto; } .ctos .bw-pieces code { display: none; } }
+/* Brasswork fills the viewport: the HUD (components/automation) draws its own header, panels and 3D stage. */
+.bw-root { position: fixed; inset: 0; z-index: 5; background: #0d0a06; }
+.bw-root .ab-root { height: 100%; }
+.bw-canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; }
+.bw-back { position: absolute; top: 10px; left: 10px; padding: 6px 10px; font-size: 12px; letter-spacing: .06em; text-transform: uppercase; color: #efe2c4; background: rgba(20,15,9,.85); border: 1px solid #4a3a22; text-decoration: none; }
+.bw-back:hover { border-color: #c59a52; }
+.bw-note { position: absolute; left: 50%; bottom: 14px; transform: translateX(-50%); margin: 0; padding: 6px 12px; max-width: 90%; font-size: 14px; color: #efe2c4; background: rgba(20,15,9,.9); border: 1px solid #4a3a22; pointer-events: none; }
 
 /* The game's HUD replaces the site chrome on this route. The page wipe (.cm-wipe) is left alone so navigation transitions keep working. */
 html.bw-route .cm-dock,

@@ -26,6 +26,12 @@ export interface Resolved {
     spacing: number;
     beltSpeed: number;
     outputCap: number;
+    storageKj: number; // batteries: capacity in kJ from the tree (0 when the machine stores nothing)
+}
+
+// Capacity of a battery in kJ. The tree's storageKj wins; otherwise a wound spring holds springSeconds of its own output.
+export function capacityOf(r: Resolved, cat: Catalog): number {
+    return r.storageKj > 0 ? r.storageKj : r.supply * cat.tune.springSeconds;
 }
 
 export function resolve(cat: Catalog, type: string): Resolved | null {
@@ -45,6 +51,7 @@ export function resolve(cat: Catalog, type: string): Resolved | null {
             spacing: e.belt?.spacing ?? 0,
             beltSpeed: e.belt?.speed ?? 0,
             outputCap: cat.tune.defaultOutputCap,
+            storageKj: 0,
         };
     }
     const m = cat.tree.machines.find((x) => x.id === type);
@@ -65,6 +72,7 @@ export function resolve(cat: Catalog, type: string): Resolved | null {
         spacing: 0,
         beltSpeed: 0,
         outputCap: cat.tune.defaultOutputCap,
+        storageKj: m.storageKj ?? 0,
     };
 }
 
@@ -108,6 +116,14 @@ export function footprintCells(b: { x: number; z: number; rot: Rot }, fp: Footpr
     return out;
 }
 
+// Stock a new world starts with when the caller gives none: enough for two drills, a kiln and a run of belts.
+// Drill and kiln have no build cost in the Recipe tree yet, so this covers them and the belts; see STATUS.md.
+export const STARTER_KIT: Stack[] = [
+    { item: "iron_plate", qty: 40 },
+    { item: "copper_wire", qty: 20 },
+    { item: "iron_gear", qty: 6 },
+];
+
 export function createWorld(opts: CreateOptions = {}, cat: Catalog = DEFAULT_CATALOG): World {
     const width = opts.width ?? 64;
     const depth = opts.depth ?? 64;
@@ -130,7 +146,7 @@ export function createWorld(opts: CreateOptions = {}, cat: Catalog = DEFAULT_CAT
     };
     const hub = newBuilding(world, HUB, hubCell.x, hubCell.z, 0);
     world.hubId = hub.id;
-    for (const s of opts.startStock ?? []) hub.input[s.item] = (hub.input[s.item] ?? 0) + s.qty;
+    for (const s of opts.startStock ?? STARTER_KIT) hub.input[s.item] = (hub.input[s.item] ?? 0) + s.qty;
     rebuildIndex(world, cat);
     return world;
 }
@@ -409,7 +425,7 @@ function updatePower(world: World, cat: Catalog, defs: Map<number, Resolved>, dt
             const [cx, cz] = centreOf(b, r.footprint);
             let out: number;
             if (BATTERIES.includes(r.id)) {
-                const cap = r.supply * cat.tune.springSeconds;
+                const cap = capacityOf(r, cat);
                 if (world.wind > 0.5) {
                     b.charge = Math.min(cap, b.charge + r.supply * (world.wind - 0.5) * 2 * dt);
                     out = 0;
@@ -521,7 +537,7 @@ export function chargeOf(world: World, cat: Catalog = DEFAULT_CATALOG): Record<n
         const b = world.buildings[id];
         const r = resolve(cat, b.type);
         if (!r || !BATTERIES.includes(r.id)) continue;
-        const cap = r.supply * cat.tune.springSeconds;
+        const cap = capacityOf(r, cat);
         out[id] = cap > 0 ? Math.min(1, b.charge / cap) : 0;
     }
     return out;

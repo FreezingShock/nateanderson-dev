@@ -87,6 +87,7 @@ function unlockedMachine(world: World, cat: Catalog, unlockStage: number): boole
     return cat.tree.milestones.some((m) => m.stage >= unlockStage && world.progress.milestonesDone.includes(m.id));
 }
 
+// selectedId is a building id (the id the HUD got from a placed building), not a machine type id.
 export function hudData(world: World, cat: Catalog = DEFAULT_CATALOG, selectedId: number | null = null, settings: HudSettings = DEFAULT_SETTINGS): HudData {
     const clock = dayClock(world, cat);
     const hub = world.buildings[world.hubId];
@@ -176,10 +177,29 @@ export function hudData(world: World, cat: Catalog = DEFAULT_CATALOG, selectedId
         };
     });
 
+    // Board layout: a node sits one column right of its deepest prerequisite; rows are slots in tree order.
+    const depth = new Map<string, number>();
+    const depthOf = (id: string, seen = new Set<string>()): number => {
+        if (depth.has(id)) return depth.get(id)!;
+        if (seen.has(id)) return 0; // a cycle in the tree would be a data bug; do not loop on it
+        seen.add(id);
+        const node = cat.tree.research.find((x) => x.id === id);
+        const d = node && node.requires.length ? 1 + Math.max(...node.requires.map((q) => depthOf(q, seen))) : 0;
+        depth.set(id, d);
+        return d;
+    };
+    const slotInColumn = new Map<number, number>();
     const research: ResearchNode[] = cat.tree.research.map((n) => {
         const done = world.progress.researched.includes(n.id);
         const ready = n.requires.every((q) => world.progress.researched.includes(q));
-        return { id: n.id, name: n.name, note: n.note ?? "", blueprintCost: n.cost, requires: n.requires, state: done ? "done" : ready ? "available" : "locked" };
+        const column = depthOf(n.id);
+        const row = slotInColumn.get(column) ?? 0;
+        slotInColumn.set(column, row + 1);
+        const unlocks = n.recipes.map((rid) => {
+            const rec = cat.tree.recipes.find((x) => x.id === rid);
+            return rec ? nameOf(cat, rec.output.item) : rid;
+        });
+        return { id: n.id, name: n.name, glyph: glyphOf(n.name), note: n.note ?? "", blueprintCost: n.cost, requires: n.requires, unlocks, column, row, state: done ? "done" : ready ? "available" : "locked" };
     });
 
     const allDone = milestones.length > 0 && milestones.every((m) => m.done);
@@ -202,7 +222,10 @@ export function hudData(world: World, cat: Catalog = DEFAULT_CATALOG, selectedId
         prestige: {
             ready: allDone,
             requirement: allDone ? "Ready: choose one of three sites" : "Finish every milestone delivery",
-            gain: `Keeps blueprints, research and belts. Resets machines and stock.`,
+            gain: `Keeps ${cat.tree.prestige.keeps.join(", ")}. Resets ${cat.tree.prestige.resets.join(" and ")}.`,
+            keeps: [...cat.tree.prestige.keeps],
+            leaves: [...cat.tree.prestige.resets],
+            sites: SITES.map((s) => s.name),
         },
         stats,
         nextStep: nextStepOf(world, machines, milestones),
@@ -221,7 +244,7 @@ function nextStepOf(world: World, machines: MachineView[], milestones: Milestone
     return { text: "Keep the factory running and plan the next milestone." };
 }
 
-// Actions for the HUD. Each one is a thin wrapper, so the HUD never edits the world directly.
+// Actions for the HUD. The HUD passes the building id of what it selected (hudData's selectedId), never a type id. Each one is a thin wrapper, so the HUD never edits the world directly.
 export const actions = {
     place(world: World, type: string, x: number, z: number, rot: Rot, cat: Catalog = DEFAULT_CATALOG): PlaceResult {
         return placeRaw(world, type, x, z, rot, cat);
