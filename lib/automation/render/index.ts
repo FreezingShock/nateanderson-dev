@@ -15,7 +15,7 @@ import {
 } from "./config";
 import { VoxelGrid } from "./grid";
 import { BlockRegistry, ChunkMesher } from "./mesher";
-import { Stamper } from "./stamps";
+import { Stamper, type StampTarget } from "./stamps";
 import { buildTerrain, heightAt } from "./terrain";
 import { applyHeightFog } from "./fog";
 import { animUniforms, GrassLayer } from "./grass";
@@ -48,6 +48,12 @@ export interface VoxelIslandOptions {
     budgetMs?: number;
     /** Blades per grass site before the quality density is applied. */
     bladesPerSite?: number;
+    /**
+     * Built-in orbit camera with the top-down tween. Default true. Pass false when an input module owns
+     * the camera: the renderer then never moves it, and the caller sets position, target and fov. The
+     * renderer still sets the aspect ratio on resize.
+     */
+    orbit?: boolean;
 }
 
 export interface IslandStats {
@@ -65,8 +71,19 @@ export interface IslandStats {
 }
 
 export interface VoxelIsland {
-    /** Stamp object voxels (machines, props). Chunks mesh before this returns. */
+    /** Stamp object voxels (machines, props). Chunks mesh before this returns. Not removable. */
     stamp(build: (s: Stamper) => void): void;
+    /**
+     * Add object voxels under a stable id, so they can be removed later. Objects should not overlap;
+     * removing one clears every cell it wrote, including cells another object also wrote.
+     */
+    addObject(id: string, build: (s: Stamper) => void): void;
+    /** Glow voxels under a stable id (unlit mesh). See addObject. */
+    addGlow(id: string, build: (s: Stamper) => void): void;
+    /** Removes the object or glow voxels added under `id`. Unknown ids are ignored. */
+    removeObject(id: string): void;
+    /** Removes every voxel added with addObject, addGlow or the legacy stamp calls. */
+    clearObjects(): void;
     setDither(on: boolean): void;
     setPixelSize(px: number): void;
     setQuality(level: number | "auto"): void;
@@ -85,7 +102,8 @@ export interface VoxelIsland {
     /** Stamp unlit glow voxels (furnace windows). Drawn as a separate flat mesh at 0xffd070. */
     stampGlow(build: (s: Stamper) => void): void;
     readonly camera: THREE.PerspectiveCamera;
-    readonly controls: OrbitControls;
+    /** The built-in orbit controls, or null when `orbit: false`. */
+    readonly controls: OrbitControls | null;
     dispose(): void;
 }
 
@@ -179,14 +197,44 @@ export function createVoxelIsland(
     let cycleT = options.timeOfDay ?? 0.5;
     let elapsed = 0;
 
-    const controls = new OrbitControls(camera, canvas);
-    controls.target.copy(DEFAULT_TARGET);
-    controls.enableDamping = true;
-    controls.dampingFactor = 0.08;
-    controls.minDistance = 6;
-    controls.maxDistance = 60;
-    controls.maxPolarAngle = Math.PI * 0.47;
-    controls.update();
+    const orbit = options.orbit ?? true;
+    const controls: OrbitControls | null = orbit
+        ? new OrbitControls(camera, canvas)
+        : null;
+    if (controls) {
+        controls.target.copy(DEFAULT_TARGET);
+        controls.enableDamping = true;
+        controls.dampingFactor = 0.08;
+        controls.minDistance = 6;
+        controls.maxDistance = 60;
+        controls.maxPolarAngle = Math.PI * 0.47;
+        controls.update();
+    }
+
+    // Object voxels keyed by id, so removeObject can clear exactly what an object wrote.
+    const objectCells = new Map<
+        string,
+        { solid: [number, number, number][]; glow: [number, number, number][] }
+    >();
+    let anonCount = 0;
+    const recordFor = (id: string) => {
+        let rec = objectCells.get(id);
+        if (!rec) {
+            rec = { solid: [], glow: [] };
+            objectCells.set(id, rec);
+        }
+        return rec;
+    };
+    const recorder = (
+        grid: VoxelGrid,
+        sink: [number, number, number][]
+    ): StampTarget => ({
+        cell: grid.cell,
+        set(i, j, k, id) {
+            sink.push([i, j, k]);
+            grid.set(i, j, k, id);
+        },
+    });
 
     // Top-down tween state.
     let topDown = false;
@@ -247,18 +295,21 @@ export function createVoxelIsland(
         lighting.sky.follow(camera.position);
         clouds.update();
 
-        if (tweening) {
-            const k = 1 - Math.exp(-dt * 6);
-            const goalPos = topDown ? TOP_CAMERA : DEFAULT_CAMERA;
-            const goalTarget = DEFAULT_TARGET;
-            camera.position.lerp(goalPos, k);
-            controls.target.lerp(
-                topDown ? new THREE.Vector3(0.6, 0, 0.2) : goalTarget,
-                k
-            );
-            if (camera.position.distanceTo(goalPos) < 0.02) tweening = false;
+        if (controls) {
+            if (tweening) {
+                const k = 1 - Math.exp(-dt * 6);
+                const goalPos = topDown ? TOP_CAMERA : DEFAULT_CAMERA;
+                const goalTarget = DEFAULT_TARGET;
+                camera.position.lerp(goalPos, k);
+                controls.target.lerp(
+                    topDown ? new THREE.Vector3(0.6, 0, 0.2) : goalTarget,
+                    k
+                );
+                if (camera.position.distanceTo(goalPos) < 0.02)
+                    tweening = false;
+            }
+            controls.update();
         }
-        controls.update();
 
         const preset = QUALITY_PRESETS[level];
         terrainMesher.update(preset.rebuildsPerFrame);
@@ -289,8 +340,29 @@ export function createVoxelIsland(
         camera,
         controls,
         stamp(build) {
-            build(new Stamper(objectGrid, blocks));
+            this.addObject(`anon-${anonCount++}`, build);
+        },
+        addObject(id, build) {
+            build(
+                new Stamper(recorder(objectGrid, recordFor(id).solid), blocks)
+            );
             objectMesher.update();
+        },
+        addGlow(id, build) {
+            build(new Stamper(recorder(glowGrid, recordFor(id).glow), blocks));
+            glowMesher.update();
+        },
+        removeObject(id) {
+            const rec = objectCells.get(id);
+            if (!rec) return;
+            for (const [i, j, k] of rec.solid) objectGrid.set(i, j, k, 0);
+            for (const [i, j, k] of rec.glow) glowGrid.set(i, j, k, 0);
+            objectCells.delete(id);
+            objectMesher.update();
+            glowMesher.update();
+        },
+        clearObjects() {
+            for (const id of [...objectCells.keys()]) this.removeObject(id);
         },
         setDither(on) {
             post.setDither(on);
@@ -314,6 +386,8 @@ export function createVoxelIsland(
             lighting.setTime(t, !lowFx);
         },
         setTopDown(on) {
+            // Only the built-in orbit camera tweens. With orbit: false the input module owns the view.
+            if (!controls) return;
             topDown = on;
             tweening = true;
         },
@@ -325,8 +399,7 @@ export function createVoxelIsland(
             rafId = requestAnimationFrame(tick);
         },
         stampGlow(build) {
-            build(new Stamper(glowGrid, blocks));
-            glowMesher.update();
+            this.addGlow(`anon-${anonCount++}`, build);
         },
         stop() {
             running = false;
@@ -357,7 +430,7 @@ export function createVoxelIsland(
         },
         dispose() {
             this.stop();
-            controls.dispose();
+            controls?.dispose();
             terrainMesher.dispose();
             objectMesher.dispose();
             glowMesher.dispose();
