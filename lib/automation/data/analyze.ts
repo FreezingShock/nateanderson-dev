@@ -50,7 +50,7 @@ export function checkTree(tree: RecipeTree): Issue[] {
         }
     }
     const structureIds = new Set<string>();
-    for (const st of tree.structures) {
+    for (const st of tree.structures ?? []) {
         if (structureIds.has(st.id)) err(`duplicate structure id ${st.id}`);
         structureIds.add(st.id);
         if (machines.has(st.id)) err(`structure ${st.id} clashes with a machine id`);
