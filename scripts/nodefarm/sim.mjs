@@ -6,16 +6,22 @@ const hours = Number(process.argv[2] || 24 * 14);
 // NF_TUNE='{"perProducer":{"copper":0.02}}' deep-merges over TUNE so numbers can be tried without editing the engine.
 const merge = (a, b) => { for (const [k, v] of Object.entries(b)) a[k] = v && typeof v === "object" && !Array.isArray(v) && a[k] && typeof a[k] === "object" ? merge(a[k], v) : v; return a; };
 if (process.env.NF_TUNE) merge(E.TUNE, JSON.parse(process.env.NF_TUNE));
+if (process.env.NF_ARCGATE) merge(E.ARC_GATE, JSON.parse(process.env.NF_ARCGATE)); // handovers each arc zone needs (ARC_GATE)
 if (process.env.NF_HANDTUNE) merge(E.HAND_TUNE, JSON.parse(process.env.NF_HANDTUNE)); // same, for Handover's HAND_TUNE
 if (process.env.NF_ZETUNE) merge(E.ZE_TUNE, JSON.parse(process.env.NF_ZETUNE)); // same, for the zone events' ZE_TUNE
 // Zone rigs (lib/nodefarm/rigs.ts) join in unless NF_NORIGS=1. rigs.ts imports "./engine" without an extension, so resolve that to .ts.
 let RG = null;
 // NF_ZONEEV=1: zone events run too (random, so results vary); the bot mines every Rich vein and patches every Fault at once.
 let ZE = null;
-if (!process.env.NF_NORIGS || process.env.NF_ZONEEV) {
+// Arc clear bonus (lib/nodefarm/arcs.ts) is on unless NF_NOARCS=1: the bot presses every button once as soon as it can pay for it.
+// NF_POKE=1: caches and the Core vent (lib/nodefarm/poke.ts) too, the bot claims every one at once (so an upper bound, about +10%).
+let POKE = null, ARCS = null;
+{
     const { registerHooks } = await import("node:module");
     registerHooks({ resolve(spec, ctx, next) { try { return next(spec, ctx); } catch (e) { if (spec.startsWith(".")) return next(spec + ".ts", ctx); throw e; } } });
     if (!process.env.NF_NORIGS) RG = await import("../../lib/nodefarm/rigs.ts");
+    if (!process.env.NF_NOARCS) ARCS = await import("../../lib/nodefarm/arcs.ts");
+    if (process.env.NF_POKE) POKE = await import("../../lib/nodefarm/poke.ts");
     if (process.env.NF_ZONEEV) ZE = await import("../../lib/nodefarm/zoneevents.ts");
     if (RG && process.env.NF_RIGTUNE) merge(RG.RIG_TUNE, JSON.parse(process.env.NF_RIGTUNE)); // same as NF_TUNE, for RIG_TUNE
 }
@@ -32,8 +38,14 @@ const labSkip = (process.env.NF_LABSKIP || "").split(","); // payload ids the bo
 const FULL = new Set(E.fullTreeIds()); // NF_BAN=id,id: the bot never buys these nodes (to see what one node does)
 for (const id of (process.env.NF_BAN || "").split(",")) FULL.delete(id); // the bot takes the first side of every fork
 // Ascend policy: ascend as soon as AP gain is at least max(2, 40% of AP already held), a typical player keeps going for a while first.
-let t = 0, nextBuy = 0;
+let t = 0, nextBuy = 0, firstHandT = 0;
 const HANDS = Number(process.env.NF_HAND || 0);
+// NF_SNAP=<dir>: write a loadable save (s.at = now) at each milestone: tree whole, each Handover (just after it), 1 h after the first Handover, each zone's first production.
+import { writeFileSync as _wf, mkdirSync as _mk } from "node:fs";
+const SNAP = process.env.NF_SNAP;
+if (SNAP) _mk(SNAP, { recursive: true });
+const snapped = new Set();
+const snap = (name) => { if (!SNAP || snapped.has(name)) return; snapped.add(name); s.at = Date.now(); _wf(`${SNAP}/${name}.json`, JSON.stringify(s)); console.log("snap", name, (t / 3600).toFixed(2) + " h"); };
 const handLog = [];
 const dt = Number(process.env.NF_DT || 0.5); // tick size in seconds (the live game ticks at 0.1)
 while (t < hours * 3600) {
@@ -82,9 +94,13 @@ while (t < hours * 3600) {
             for (const x of [1, 5, 15, 30, 45, 60, 75]) if (r >= x) mark(`mastery ${x}`, t);
         }
         E.checkGoals(s);
+        if (ARCS) for (const st of order) { if (st === "mult" || !E.isUnlocked(s, st)) continue; for (let k = 0; k < E.TIERS; k++) if (!((s.seen?.[st] ?? 0) & (1 << k))) { const b = E.button(s, st, k); if (E.amount(s, b.pays) >= b.cost) E.press(s, st, k); } }
+        if (POKE) { for (const c of [...POKE.poke(s).c]) POKE.openCache(s, c.id); if (POKE.ventReady(s)) POKE.vent(s); }
         if (ZE && s.ze) for (const e of [...s.ze.act]) { if (e.kind === "vein") ZE.zeChoose(s, e.id, "mine"); else if (e.kind === "fault") ZE.zeChoose(s, e.id, "patch"); }
         // NF_TRACE=<minutes>: print a status line every that many play minutes (to find walls and runaways)
         if (process.env.NF_TRACE && t >= (marks.nextTrace || 0)) { marks.nextTrace = t + 60 * Number(process.env.NF_TRACE); console.log("t", (t / 3600).toFixed(2), "b/s", E.fmt(E.derive(s).bytesPerSec), "ae", E.fmt(s.aether), "or", E.fmt(s.origin), "px", E.fmt(s.paradox), "ap+", E.apOnAscend(s), "asc", s.life.ascends, "tree", s.tree.length, "G", E.fmt(E.derive(s).global), "ap", s.ap, "mounts", s.mounts.join("+"), "prod", MATS_P(s)); }
+        if (SNAP) { if (E.treeComplete(s)) snap("tree-whole"); if (firstHandT && t - firstHandT > 3600) snap("hand1-plus1h"); for (const m of E.MATS) if (s[m] > 0) snap("zone-" + m); }
+        for (const k of [3, 5, 7, 9, 11]) if (s.sunstone >= 10 ** k) mark(`sunstone 1e${k}` + (s.hand.count ? ` (H${s.hand.count})` : ""), t); // the ending's stage costs run 1e3 to 1e11
         if (s.reboot >= 1) mark("first reboot", t);
         if (s.life.reboots >= 25) mark("25 reboots", t);
         if (s.copper > 0) mark("copper", t);
@@ -141,6 +157,8 @@ while (t < hours * 3600) {
             const keys = E.handover(s, process.env.NF_PROTO || "wren", "", "osk");
             handLog.push([t, keys]);
             mark("handover " + s.hand.count, t);
+            snap("handover-" + s.hand.count);
+            if (s.hand.count === 1) firstHandT = t;
             ascents.length = 0;
             for (let more = true; more;) {
                 more = false;

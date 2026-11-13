@@ -55,16 +55,22 @@ test("walking the chain opens the zones 04 to 17 one after another, never skippi
     for (const m of E.ARC_MATS) assert.equal(E.isUnlocked(s, m), false, `${m} stays shut before the first Handover`);
 });
 
-test("zones 18 to 25 open after the first Handover, in order, and never before", () => {
+test("zones 18 to 25 open two at a time, one pair per Handover (ARC_GATE), in order, and never before", () => {
     assert.deepEqual([...E.ARC_MATS], ids.slice(17));
     const s = E.fresh(0);
     s.life.reboots = 1000;
     for (const m of E.MATS) s[m] = 1e30;
     for (const m of E.ARC_MATS) assert.equal(E.isUnlocked(s, m), false, `${m}: shut with a full stockpile before a Handover`);
-    s.hand.count = 1;
+    // each Handover opens exactly two more zones
+    s.origin = 1e30;
+    for (let h = 1; h <= 4; h++) {
+        s.hand.count = h;
+        const open = E.ARC_MATS.filter((m) => E.isUnlocked(s, m));
+        assert.deepEqual(open, E.ARC_MATS.slice(0, h * 2), `Handover ${h} opens zones up to ${h * 2 + 16}`);
+    }
+    s.hand.count = 4;
     for (const m of E.ARC_MATS) s[m] = 0;
     let prev = "origin";
-    s.origin = 1e30;
     for (const m of E.ARC_MATS) {
         assert.equal(E.isUnlocked(s, m), true, `${m} opens off ${prev} after a Handover`);
         s[m] = 1e30;
@@ -72,7 +78,7 @@ test("zones 18 to 25 open after the first Handover, in order, and never before",
     }
     // a zone that is producing stays open even when its stock is spent
     const t = E.fresh(0);
-    t.hand.count = 1; t.prod.geodes = 1;
+    t.hand.count = 4; t.prod.geodes = 1;
     assert.equal(E.isUnlocked(t, "geodes"), true);
 });
 
