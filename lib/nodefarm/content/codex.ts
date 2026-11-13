@@ -3,7 +3,7 @@
 // Terms follow the game: zones, Reboot, Ascend, Handover, events (every event is a zone event now; the ones on a
 // zone panel), Drone hangar, Standby window, payload (never "recipe"). Add an entry by appending to ENTRIES.
 import {
-    DRONE_TREE, DRONE_TUNE, FW, GOALS, GOAL_TIERS, HAND_TUNE, LAB, LAB_TUNE, MATS, PAYLOADS, PERKS, PROTOS, REBOOT_UNLOCK, STATS, TIERS, TREE, TUNE, ZE_TUNE,
+    DRONE_TREE, DRONE_TUNE, FW, GOALS, GOAL_TIERS, HAND_TUNE, LAB, LAB_TUNE, MATS, PAYLOADS, PERKS, PROTOS, REBOOT_UNLOCK, SECRETS, STATS, TIERS, TREE, TUNE, ZE_TUNE,
     dronesOpen, handSeen, isUnlocked, labOpen, statDef, type State, type StatId,
 } from "../engine";
 import { ARCS, zoneNo } from "../zones/arcs";
@@ -110,8 +110,16 @@ export const ENTRIES: CodexEntry[] = [
     {
         id: "goals", group: "basics", title: "Goals and secrets", gate: () => true, where: "key O",
         body: () => [
-            { p: `${GOAL_TIERS} tiers of goals, ${GOALS.length} in all. Each goal or secret gives +${pct(TUNE.achBonus)} to everything, and a finished tier gives +${pct(TUNE.tierBonus)}. They are kept through Ascend.` },
+            { p: `${GOAL_TIERS} tiers of goals, ${GOALS.length} in all. Each goal or secret gives +${pct(TUNE.achBonus)} to everything (the twelve stage secrets give half that), and a finished tier gives +${pct(TUNE.tierBonus)}. They are kept through Ascend.` },
             { p: "Secrets show as ???? with a clue. Some are found by playing a certain way and some by trying things in the console." },
+        ],
+        open: { win: "goals", label: "Open Goals" },
+    },
+    {
+        id: "secrets", group: "basics", title: "Secrets and console finds", gate: (s) => SECRETS.some((x) => s.ach.includes(x.id)), where: "console, nf secrets",
+        body: (s) => [
+            { p: `${SECRETS.filter((x) => s.ach.includes(x.id)).length} of ${SECRETS.length} secrets found. Each one is a bonus like a goal, and it stays through Ascend and Handover.` },
+            { p: "Each secret shows as ???? with a clue until you find it. Some want a question asked of the console, and some want you to play a certain way for a while. Several of them bring back an operator log, so check the Records window after you find one." },
         ],
         open: { win: "goals", label: "Open Goals" },
     },

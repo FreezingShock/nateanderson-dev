@@ -4,7 +4,7 @@ import { backupLine, type Backup } from "@/lib/nodefarm/backups";
 import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { PixelIcon } from "@/components/cm/pixel-icons";
 import { codeReveal } from "@/lib/nodefarm/cx";
-import { GOALS, GOAL_TIERS, SECRETS, TIER_NAMES, TUNE, fmt, fmtTime, goalDone, tiersDone, type Goal, type NumFmt, type State } from "@/lib/nodefarm/engine";
+import { GOALS, GOAL_TIERS, SECRETS, TIER_NAMES, TUNE, fmt, fmtTime, goalDone, tiersDone, achPoints, type Goal, type NumFmt, type State } from "@/lib/nodefarm/engine";
 import { goalCounts, recordSections } from "@/lib/nodefarm/records";
 import { LOGS, logNo } from "@/lib/nodefarm/content/story";
 import { NfIcon } from "../board/icon";
@@ -22,7 +22,7 @@ const stamp = (ms?: number) => {
     const d = new Date(ms);
     return `${d.toLocaleDateString(undefined, { month: "short", day: "numeric" })} ${d.toTimeString().slice(0, 5)}`;
 };
-const bonusNow = (s: State) => ((1 + s.ach.length * TUNE.achBonus) * (1 + tiersDone(s) * TUNE.tierBonus) - 1) * 100;
+const bonusNow = (s: State) => ((1 + achPoints(s) * TUNE.achBonus) * (1 + tiersDone(s) * TUNE.tierBonus) - 1) * 100;
 
 // ---------------------------------------------------------------------------------------------------------------------
 // Goals: each tier is a circuit rail of badge nodes that light up when done. The line under the rail reads out one goal:
@@ -92,7 +92,7 @@ export function GoalsPanel({ s }: { s: State }) {
                 bigLabel="to everything"
             />
             <p className="nf-wk-lead" data-cx-i="1">
-                Every goal or secret adds <b>+{TUNE.achBonus * 100}%</b> to everything. Finish all six in a tier for <b>+{TUNE.tierBonus * 100}%</b> more.
+                Every goal or secret adds <b>+{TUNE.achBonus * 100}%</b> to everything (the twelve stage secrets add half that). Finish all six in a tier for <b>+{TUNE.tierBonus * 100}%</b> more.
             </p>
             <div className="nf-wk-tiers">
                 {Array.from({ length: GOAL_TIERS }, (_, k) => k + 1).map((t) => {

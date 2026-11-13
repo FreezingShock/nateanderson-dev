@@ -4,7 +4,7 @@
 import { SCRIPTS, auto, isOn, learnPart, scriptNext, scriptOpen } from "./systems/scripts";
 import { OPERATORS, archiveOf, loadSeen, pickNews } from "./content/news";
 import {
-    GOALS, GOAL_TIERS, LAB, MATS, PAYLOADS, PERKS, SECRETS, TIER_NAMES, TREE, TREE_FULL, apOnAscend, intelRate, derive, fmt, fmtTime, goalDone, statDef, tiersDone, unlock,
+    GOALS, GOAL_TIERS, LAB, MATS, PAYLOADS, PERKS, SECRETS, TIER_NAMES, TREE, TREE_FULL, apOnAscend, intelRate, derive, fmt, fmtTime, goalDone, statDef, tiersDone, unlock, achPoints,
     FW, PROTOS, ROMAN, handSeen, keysOnHandover, protoDef, protoRank,
     type State,
 } from "./engine";
@@ -12,6 +12,7 @@ import { LOGS, logNo } from "./content/story";
 import { END_STAGES, END_STEPS, buildBlock, endSeen, endStage, lastZone, stageCost } from "./systems/ending";
 import { zeTitle, zoneLabel } from "./zones/zoneevents";
 import { ENTRIES, unlocked as unlockedEntries } from "./content/codex";
+import { etaRate, exact, nextStep } from "./content/guide";
 
 export const NF_PATH = "/creations/games/node-farm";
 export const NF_SAVE_KEY = "nf-save-v1";
@@ -64,7 +65,7 @@ export function recordSections(s: State): RecordSection[] {
         ["Goals", `${c.goals} / ${c.goalTotal}`],
         ["Goal tiers", `${tiersDone(s)} / ${GOAL_TIERS}`],
         ["Secrets", `${c.secrets} / ${c.secretTotal}`],
-        ["Goal bonus", `+${pct(((1 + s.ach.length * 0.02) * (1 + tiersDone(s) * 0.08) - 1) * 100)}`],
+        ["Goal bonus", `+${pct(((1 + achPoints(s) * 0.02) * (1 + tiersDone(s) * 0.08) - 1) * 100)}`],
         ["Tree nodes", `${s.tree.length} / ${TREE_FULL}`],
         ["Perk levels", `${perkLv} / ${perkMax}`],
         ["AP unspent", String(s.ap)],
@@ -111,6 +112,8 @@ export interface NfLine {
 }
 const t = (text: string, k?: NfLine["k"]): NfLine => ({ t: text, k });
 const row = (a: string, b: string, go?: string): NfLine => ({ a, b, go });
+/** The console's command list. Keep it in step with nfCommand below. */
+const CONSOLE_HELP = "nf help · nf next · nf rate · nf find <word> · nf stats · nf goals · nf secrets · nf logs · nf news · nf lab · nf handover · nf end · nf cron · nf archive · nf codex · nf open";
 
 export const NF_SUBS = ["stats", "goals", "secrets", "logs", "archive", "news", "open", "codex", "anim", "fs", "fullscreen", "art", "core", "admin", "keys"];
 
@@ -131,7 +134,7 @@ export function nfCommand(s: State, args: string[]): NfResult {
         return [t(`secret found: ${x.name}`, "hi"), t("logged in Node Farm.", "dim")];
     };
     let lines: NfLine[];
-    if (!sub) {
+    if (!sub || sub === "help") {
         const d = derive(s);
         const c = goalCounts(s);
         lines = [
@@ -142,8 +145,39 @@ export function nfCommand(s: State, args: string[]): NfResult {
             row("goals", `${c.goals}/${c.goalTotal}`),
             row("secrets", `${c.secrets}/${c.secretTotal}`),
             ...(handSeen(s) ? [row("handovers", `${s.hand.count}  (${s.hand.keys} keys)`)] : []),
-            t("nf stats · nf goals · nf secrets · nf logs · nf news · nf lab · nf handover · nf end · nf cron · nf archive · nf codex · nf open", "dim"),
+            t(CONSOLE_HELP, "dim"),
         ];
+    } else if (sub === "next") {
+        const st = nextStep(s, derive(s));
+        lines = [
+            t(`next: ${st.title.toLowerCase()}`, "hi"),
+            t(st.why, "dim"),
+            row("progress", `${fmt(st.cur)} / ${fmt(st.need)} ${st.unit}`),
+            row("eta", etaRate(st.eta) || "now"),
+        ];
+    } else if (sub === "rate") {
+        const d = derive(s);
+        lines = [t("income per second", "hi"), row("bytes", `${fmt(d.bytesPerSec)}/s`)];
+        for (const m of MATS) {
+            if (d.rates[m] > 0) lines.push(row(statDef(m).name.toLowerCase(), `${exact(d.rates[m])}/s  (you have ${fmt(s[m])})`));
+        }
+        if (lines.length === 2) lines.push(t("nothing is producing yet. press the glowing button.", "dim"));
+    } else if (sub === "find") {
+        const q = args.slice(1).join(" ").trim().toLowerCase();
+        if (!q) lines = [t("nf find <word>: searches your goals, found secrets and recovered logs.", "dim")];
+        else {
+            const hits: NfLine[] = [];
+            for (const g of GOALS) {
+                if (`${g.name} ${g.hint}`.toLowerCase().includes(q)) hits.push(row(`goal ${g.name.toLowerCase()}`, goalDone(s, g) ? "done" : g.hint));
+            }
+            for (const x of SECRETS) {
+                if (s.ach.includes(x.id) && `${x.name} ${x.how}`.toLowerCase().includes(q)) hits.push(row(`secret ${x.name.toLowerCase()}`, x.how));
+            }
+            LOGS.forEach((l, i) => {
+                if (s.logs.includes(l.id) && `${l.title} ${l.text}`.toLowerCase().includes(q)) hits.push(row(`log ${logNo(i)}`, l.title.toLowerCase()));
+            });
+            lines = hits.length ? [t(`${hits.length} match${hits.length === 1 ? "" : "es"} for "${q}"`, "hi"), ...hits.slice(0, 12)] : [t(`nothing found for "${q}". only goals, found secrets and recovered logs are searched.`, "dim")];
+        }
     } else if (sub === "stats") {
         lines = recordSections(s).flatMap((sec) => [t(sec.title.toLowerCase(), "hi"), ...sec.rows.map(([a, b]) => row(a.toLowerCase(), b))]);
     } else if (sub === "goals") {
@@ -276,8 +310,34 @@ export function nfCommand(s: State, args: string[]): NfResult {
         lines = [t("kill: the drone is not listening. it never was."), ...secret("x_kill")];
     } else if (sub === "whoami") {
         lines = [t("node-01. one core, no clearance, and a growing farm."), ...secret("x_self")];
+    } else if (sub === "man") {
+        lines = [t("man: no manual entry for node-01. try nf help, or read the codex (key C).", "dim"), ...secret("x_help")];
+    } else if (sub === "set") {
+        lines = args.includes("-e")
+            ? [t("set: -e on. the node stops at the first error from now on.", "hi"), ...secret("x_strict")]
+            : [t("set: nothing to set. try set -e.", "err")];
+    } else if (sub === "sysctl") {
+        lines = [t("kernel.node.lock = 1", "dim"), t("sysctl: read-only parameter. set by an operator who is no longer here.", "err"), ...secret("x_sysctl")];
+    } else if (sub === "su") {
+        lines = [t("su: authentication failure. the node asked if you were sure, and you were not.", "err"), ...secret("x_su")];
+    } else if (sub === "dmesg") {
+        lines = [t("[    0.000] boot: node-01 starting", "dim"), t("[    0.412] operator changed", "dim"), ...secret("x_dmesg")];
+    } else if (sub === "tree") {
+        lines = [t("/ ├─ signal ├─ forge ├─ systems", "dim"), t("the branches moved a little when you looked. nothing else did.", "dim"), ...secret("x_tree")];
+    } else if (sub === "cat" && args.join(" ").toLowerCase().includes("/dev/urandom")) {
+        lines = [t("7f 45 c2 9a 01 e4 3b 90 ...", "dim"), t("none of it is yours.", "dim"), ...secret("x_urandom")];
+    } else if (sub === "date") {
+        lines = [t("Thu Jan  1 00:00:00 UTC 1970", "dim"), t("that is where it starts. you were not here yet.", "dim"), ...secret("x_epoch")];
+    } else if (sub === "dig") {
+        lines = [t("dig: ;; no answer for node-00.farm", "err"), t("dig: ;; no answer for the operator", "err"), ...secret("x_dig")];
+    } else if (sub === "ps") {
+        lines = [t("  PID  NAME", "dim"), t("    1  init (started the farm)", "dim"), t("    2  you", "dim"), ...secret("x_pid")];
+    } else if (sub === "top") {
+        lines = [t("load average: 0.97 0.99 1.02", "dim"), t("every drone is busy. the fans hum in a key nobody tuned.", "dim"), ...secret("x_top")];
+    } else if (sub === "flash") {
+        lines = [t("flash: firmware is write protected. the lock note says: hand it over first.", "err"), ...secret("x_flash")];
     } else {
-        lines = [t(`nf: unknown: ${args[0]}`, "err"), t("nf stats · nf goals · nf secrets · nf logs · nf news · nf lab · nf handover · nf end · nf cron · nf archive · nf codex · nf open", "dim")];
+        lines = [t(`nf: unknown: ${args[0]}`, "err"), t(CONSOLE_HELP, "dim")];
     }
     return { lines, unlocked: found };
 }
