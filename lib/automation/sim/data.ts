@@ -1,6 +1,6 @@
 // Engine data and a small placeholder tree for tests. The real tree is RECIPE_TREE in lib/automation/data/tree.ts (Recipe thread).
 // Engine numbers live here (belts, hub, costs, power, tuning), never in the engine code.
-import type { Catalog, EngineDef, RecipeTree, Tune } from "../types";
+import type { Catalog, EngineDef, LogisticsKind, RecipeTree, Stack, Tune } from "../types";
 import { RECIPE_TREE } from "../data/tree";
 
 export const PLACEHOLDER_TREE: RecipeTree = {
@@ -28,13 +28,48 @@ export const PLACEHOLDER_TREE: RecipeTree = {
         { item: "ore-b", baseRatePerMin: 30 },
     ],
     research: [],
-    structures: [],
     milestones: [],
     prestige: { name: "Open a new workshop", keeps: ["blueprints", "research", "routes"], resets: ["machines", "stock"] },
 };
 
+// Logistics pieces. Ids match the belt model ids in #325: belt-<kind> for brass, belt-<kind>-copper and belt-<kind>-steel for the other tiers.
+const TIER_NAMES = ["Brass", "Copper", "Steel"];
+const TIER_SUFFIX = ["", "-copper", "-steel"];
+const TIER_RATE = [1, 2, 4]; // items per second, the same ladder as the belts
+const TIER_EXTRA: Stack[][] = [[], [{ item: "copper_wire", qty: 2 }], [{ item: "steel_ingot", qty: 2 }]];
+
+const LOGISTICS_TIERED: { kind: LogisticsKind; slug: string; label: string; cost: Stack[] }[] = [
+    { kind: "splitter", slug: "splitter", label: "Splitter", cost: [{ item: "iron_plate", qty: 2 }, { item: "iron_gear", qty: 1 }] },
+    { kind: "merger", slug: "merger", label: "Merger", cost: [{ item: "iron_plate", qty: 2 }, { item: "iron_gear", qty: 1 }] },
+    { kind: "tunnel-in", slug: "underground-in", label: "Tunnel entrance", cost: [{ item: "iron_plate", qty: 3 }] },
+    { kind: "tunnel-out", slug: "underground-out", label: "Tunnel exit", cost: [{ item: "iron_plate", qty: 3 }] },
+    { kind: "loader", slug: "loader", label: "Loader", cost: [{ item: "iron_plate", qty: 2 }, { item: "iron_gear", qty: 2 }] },
+    { kind: "unloader", slug: "unloader", label: "Unloader", cost: [{ item: "iron_plate", qty: 2 }, { item: "iron_gear", qty: 2 }] },
+];
+
+function logisticsEngine(): Record<string, EngineDef> {
+    const out: Record<string, EngineDef> = {};
+    for (const p of LOGISTICS_TIERED) {
+        for (let t = 0; t < TIER_NAMES.length; t++) {
+            out[`belt-${p.slug}${TIER_SUFFIX[t]}`] = {
+                kind: p.kind,
+                name: `${TIER_NAMES[t]} ${p.label.toLowerCase()}`,
+                footprint: { w: 1, d: 1 },
+                cost: [...p.cost, ...TIER_EXTRA[t]],
+                rate: TIER_RATE[t],
+                capacity: 8,
+            };
+        }
+    }
+    out["belt-crate"] = { kind: "storage", name: "Storage crate", footprint: { w: 1, d: 1 }, cost: [{ item: "iron_plate", qty: 4 }, { item: "iron_gear", qty: 2 }], capacity: 200 };
+    out["belt-strongbox"] = { kind: "storage", name: "Strongbox", footprint: { w: 1, d: 1 }, cost: [{ item: "iron_plate", qty: 4 }, { item: "steel_ingot", qty: 4 }], capacity: 1000 };
+    out["belt-dock"] = { kind: "dock", name: "Delivery dock", footprint: { w: 3, d: 3 }, cost: [{ item: "iron_plate", qty: 12 }, { item: "copper_wire", qty: 6 }] };
+    return out;
+}
+
 export const ENGINE_DATA: { engine: Record<string, EngineDef>; tune: Tune } = {
     engine: {
+        ...logisticsEngine(),
         hub: { kind: "hub", name: "Core hub", footprint: { w: 3, d: 3 }, cost: [], placeable: false },
         belt: { kind: "belt", name: "Brass belt", footprint: { w: 1, d: 1 }, cost: [{ item: "plate-a", qty: 1 }], belt: { speed: 1, spacing: 0.25 } },
         "belt-copper": { kind: "belt", name: "Copper belt", footprint: { w: 1, d: 1 }, cost: [{ item: "plate-a", qty: 2 }, { item: "plate-b", qty: 1 }], belt: { speed: 2, spacing: 0.25 } },
