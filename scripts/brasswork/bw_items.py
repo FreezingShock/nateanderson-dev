@@ -99,11 +99,11 @@ def ore_pile(sc, pal, seeds, squash=0.72, jitter=0.22):
 @item
 def iron_ore(p=0):
     c, sc = new()
-    ore_pile(sc, "rock", (3, 11, 7))
+    ore_pile(sc, "ironore", (3, 11, 7))
     sc.paint(c)
     body = c.img[..., 3] == 255
-    c.fill(veins(body, 0.32, 0.55), 0.5, "rust")
-    speckle(c, body, 9, 1, "rust", 0.8, 1.5)
+    c.fill(veins(body, 0.32, 0.55), 0.3, "ironore")
+    speckle(c, body, 7, 1, "iron", 0.8, 1.6)
     return done(c)
 
 

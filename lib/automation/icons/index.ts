@@ -3,8 +3,8 @@ import type { CSSProperties } from "react";
 
 /** One sheet holds every item and machine icon: 64 px art cells, 8 across, row by row. */
 export const ICON_SHEET = {
-    url: "/brasswork/icons/items.webp?v=70378a92",
-    png: "/brasswork/icons/items.png?v=70378a92",
+    url: "/brasswork/icons/items.webp?v=9027b3bc",
+    png: "/brasswork/icons/items.png?v=9027b3bc",
     cell: 64,
     cols: 8,
     rows: 5,
