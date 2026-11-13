@@ -100,10 +100,11 @@ for (const [dev, opts] of [["desktop", { viewport: { width: 1440, height: 900 } 
     ok(shown, "sleep: report did not show after the clock jumped 3 h");
     if (shown) notes.push(`sleep 3 h: ${await p.locator(".nf-aw-sum").innerText()}`);
     await p.click(".nf-aw-go").catch(() => {}); await p.waitForTimeout(1200);
-    await p.waitForTimeout(500);
+    await p.waitForTimeout(5500); // the game saves every 5 s
     const sv = await readSave(p);
     ok(!hasNaN(sv), "sleep: NaN or Infinity in the save");
-    ok(sv.life.bytes > before, "sleep: lifetime Bytes did not rise");
+    // Lifetime Bytes near 1e39 cannot show a 5M gain in a double, so this only checks it did not fall; the report row shows the gain.
+    ok(sv.life.bytes >= before, `sleep: lifetime Bytes fell (${before} -> ${sv.life.bytes})`);
     // reload keeps it
     const kept = sv.life.bytes;
     await p.reload({ waitUntil: "networkidle" });
