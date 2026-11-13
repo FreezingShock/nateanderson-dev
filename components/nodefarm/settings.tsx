@@ -88,7 +88,7 @@ export function SettingsFrame(p: SettingsProps) {
                             <span className="nf-wk-k">effects</span>
                             <span className="nf-wk-eq" aria-hidden="true">=</span>
                             <span className="nf-wk-pick">
-                                {FX_MODES.map((m) => <button key={m} type="button" aria-pressed={fx === m} onClick={() => setFxMode(m)}>{m}</button>)}
+                                {FX_MODES.map((m) => <button key={m} type="button" aria-pressed={fx === m} onClick={() => setFxMode(m)}>{fx === m ? `[${m}]` : m}</button>)}
                             </span>
                             <span className="nf-wk-c">{"// "}{FX_NOTE[fx]}{fx === "auto" ? ` (now ${low ? "low" : "full"})` : ""}</span>
                         </div>
@@ -104,7 +104,7 @@ export function SettingsFrame(p: SettingsProps) {
                             <span className="nf-wk-k">numbers</span>
                             <span className="nf-wk-eq" aria-hidden="true">=</span>
                             <span className="nf-wk-pick">
-                                {FORMATS.map(([k, ex]) => <button key={k} type="button" aria-pressed={p.numFmt === k} onClick={() => p.onNumFmt(k)}>{ex}</button>)}
+                                {FORMATS.map(([k, ex]) => <button key={k} type="button" aria-pressed={p.numFmt === k} onClick={() => p.onNumFmt(k)}>{p.numFmt === k ? `[${ex}]` : ex}</button>)}
                             </span>
                         </div>
                     </li>

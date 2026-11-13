@@ -39,9 +39,9 @@
 .ctos .nf-st-n { font: 700 var(--cm-ctos-t-micro)/1 var(--cm-mono); letter-spacing: .1em; color: var(--cm-ctos-meta); }
 .ctos .nf-st-ic { display: grid; place-items: center; width: 30px; height: 30px; flex: none; background: color-mix(in srgb, var(--c) 14%, #0a0a0a); border: 1px solid color-mix(in srgb, var(--c) 45%, transparent); color: var(--c); }
 .ctos .nf-st-card h4 { flex: 1; min-width: 0; margin: 0; font: 700 17px/1.1 var(--cm-display); color: var(--cm-fg); text-transform: lowercase; }
-.ctos .nf-st-pips { display: flex; gap: 3px; flex: none; }
-.ctos .nf-st-pips i { display: grid; place-items: center; min-width: 26px; height: 20px; padding: 0 4px; font: 700 11px/1 var(--cm-mono); font-style: normal; color: var(--cm-ctos-meta); background: #111; border: 1px solid #ffffff1a; }
-.ctos .nf-st-pips i[data-on] { color: #0a0a0a; background: var(--c); border-color: var(--c); }
+.ctos .nf-st-pips { display: flex; gap: 10px; flex: none; }
+.ctos .nf-st-pips i { display: inline-block; font: 700 11px/1 var(--cm-mono); font-style: normal; color: var(--cm-ctos-meta); }
+.ctos .nf-st-pips i[data-on] { color: var(--c); }
 .ctos .nf-st-rule { margin: 0; font: 600 15px/1.4 var(--cm-display); color: var(--cm-fg); }
 .ctos .nf-st-plan { margin: -4px 0 0; font: 400 var(--cm-ctos-t-ui)/1.45 var(--cm-display); color: var(--cm-mute); }
 .ctos .nf-st-dl { gap: 6px; }
