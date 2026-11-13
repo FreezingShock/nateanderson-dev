@@ -1,0 +1,154 @@
+/* Brasswork skin: restyles the HUD and screens with the GUI kit (components/brasswork-ui).
+   Styling only; markup and props are unchanged. Loaded after the HUD and screen sheets. */
+
+.ab-root.bw {
+  --ab-panel: #2a1b0e;
+  --ab-panel-2: #35230f;
+  --ab-line: #6a4a22;
+  --ab-text: #f0dfb8;
+  --ab-dim: #b09a6c;
+  --ab-brass: #d29a3c;
+  --ab-brass-hi: #f4cf7e;
+  font-family: var(--bw-font);
+  background: transparent;
+}
+
+/* panels: riveted brass frame around a dithered wood inset */
+.ab-root.bw .ab-pal,
+.ab-root.bw .ab-factory,
+.ab-root.bw .ab-drawer,
+.ab-root.bw .ab-panel {
+  border: 7px solid transparent;
+  background:
+    var(--bw-dither) padding-box,
+    var(--bw-grain) padding-box,
+    linear-gradient(180deg, var(--bw-wood-hi), var(--bw-wood) 40%, var(--bw-wood-lo)) padding-box,
+    var(--bw-dither-lite) border-box,
+    linear-gradient(135deg, var(--bw-brass-hi) 0%, var(--bw-brass) 22%, var(--bw-brass-lo) 62%, var(--bw-brass) 100%) border-box;
+  box-shadow:
+    inset 0 3px 8px rgba(0, 0, 0, 0.65),
+    0 3px 0 var(--bw-brass-dk),
+    0 8px 14px rgba(0, 0, 0, 0.55);
+}
+.ab-root.bw .ab-pal::before,
+.ab-root.bw .ab-factory::before,
+.ab-root.bw .ab-drawer::before {
+  content: ""; position: absolute; inset: -7px; pointer-events: none; z-index: 5;
+  background:
+    var(--bw-rivet) 0 0 / 9px 9px no-repeat,
+    var(--bw-rivet) 100% 0 / 9px 9px no-repeat,
+    var(--bw-rivet) 0 100% / 9px 9px no-repeat,
+    var(--bw-rivet) 100% 100% / 9px 9px no-repeat;
+}
+
+.ab-root.bw .ab-top {
+  background: var(--bw-dither-lite), linear-gradient(180deg, #4a3118, #2a1b0e);
+  border-bottom: 3px solid var(--bw-brass-lo);
+  box-shadow: inset 0 1px 0 rgba(255, 220, 150, 0.45), 0 4px 0 var(--bw-brass-dk), 0 8px 12px rgba(0, 0, 0, 0.5);
+}
+.ab-root.bw .ab-brand-name { color: var(--bw-brass-hi); text-shadow: 0 1px 0 #000; }
+.ab-root.bw .ab-res-amt { color: var(--bw-amber); text-shadow: 0 0 6px rgba(255, 179, 71, 0.4); }
+
+/* section heads become engraved plates */
+.ab-root.bw .ab-section-head,
+.ab-root.bw .ab-h {
+  color: var(--bw-brass-hi); text-shadow: 0 1px 0 #000; letter-spacing: 0.2em;
+}
+.ab-root.bw .ab-section-head {
+  background: var(--bw-dither-lite), linear-gradient(180deg, #2a1b0e, #1b1109);
+  box-shadow: inset 0 1px 0 rgba(255, 200, 120, 0.18), 0 1px 0 rgba(210, 154, 60, 0.35);
+}
+
+/* buttons: brass slabs that press */
+.ab-root.bw .ab-action,
+.ab-root.bw .ab-hold,
+.ab-root.bw .ab-text-btn {
+  border: 0; border-radius: 0; color: #2a1606; font-weight: 400; letter-spacing: 0.12em; text-transform: uppercase;
+  text-shadow: 0 1px 0 rgba(255, 230, 160, 0.55);
+  background: var(--bw-dither-lite), linear-gradient(180deg, var(--bw-brass-hi) 0%, var(--bw-brass) 45%, #b4782a 100%);
+  box-shadow: inset 1px 1px 0 rgba(255, 245, 200, 0.7), inset -1px -1px 0 rgba(90, 50, 10, 0.7), 0 4px 0 var(--bw-brass-dk), 0 8px 8px rgba(0, 0, 0, 0.5);
+  transition: transform 0.07s, box-shadow 0.07s, filter 0.12s;
+}
+.ab-root.bw .ab-action:hover:not(:disabled),
+.ab-root.bw .ab-hold:hover:not(:disabled),
+.ab-root.bw .ab-text-btn:hover:not(:disabled) { background: var(--bw-dither-lite), linear-gradient(180deg, var(--bw-brass-hi) 0%, var(--bw-brass) 45%, #b4782a 100%); filter: brightness(1.12); }
+.ab-root.bw .ab-action:active:not(:disabled),
+.ab-root.bw .ab-text-btn:active:not(:disabled) { transform: translateY(3px); box-shadow: inset 1px 1px 0 rgba(90, 50, 10, 0.6), 0 1px 0 var(--bw-brass-dk); filter: brightness(0.92); }
+.ab-root.bw .ab-action:disabled,
+.ab-root.bw .ab-hold:disabled,
+.ab-root.bw .ab-text-btn:disabled {
+  color: #6d5a3b; text-shadow: none; filter: none; border: 0;
+  background: var(--bw-dither), linear-gradient(180deg, #3d3020, #2b2116);
+  box-shadow: inset 1px 1px 0 rgba(255, 200, 120, 0.12), 0 4px 0 #120c06;
+}
+.ab-root.bw .ab-hold-fill { background: linear-gradient(180deg, #ffd88a, var(--bw-amber)); mix-blend-mode: multiply; opacity: 0.8; }
+.ab-root.bw .ab-text-btn { padding: 4px 10px; font-size: 12px; }
+
+/* progress bars: glass tube with amber fill */
+.ab-root.bw .ab-bar {
+  height: 14px; padding: 2px; border: 0; background: #0b0703;
+  box-shadow: inset 0 2px 4px #000, 0 0 0 2px var(--bw-brass-lo), 0 0 0 3px rgba(255, 230, 160, 0.35);
+}
+.ab-root.bw .ab-bar-fill {
+  background: var(--bw-dither-lite), linear-gradient(180deg, #ffd88a, var(--bw-amber) 45%, #c4682f);
+  box-shadow: 0 0 8px rgba(255, 179, 71, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.5);
+}
+
+/* icon frame (placeholder glyph and real icons) */
+.ab-root.bw .ab-glyph {
+  border: 0; color: var(--bw-brass-hi); text-shadow: 0 1px 0 #000;
+  background: var(--bw-dither), linear-gradient(180deg, #1b1109, #2e1f12);
+  box-shadow: inset 0 3px 6px #000, 0 0 0 2px var(--bw-brass-lo), 0 0 0 3px rgba(255, 235, 170, 0.45), 0 3px 0 2px var(--bw-brass-dk);
+  margin: 3px;
+}
+
+/* build rows and list buttons become palette slots */
+.ab-root.bw .ab-build-row,
+.ab-root.bw .ab-list-btn,
+.ab-root.bw .ab-research-row {
+  background: var(--bw-dither), var(--bw-grain), linear-gradient(180deg, #46301c, #2f2013);
+  box-shadow: inset 1px 1px 0 rgba(255, 200, 120, 0.28), inset -1px -1px 0 rgba(0, 0, 0, 0.6), 0 3px 0 #120b05;
+  border: 0; margin-bottom: 6px; padding-left: 8px;
+}
+.ab-root.bw .ab-build-row[data-selected="true"],
+.ab-root.bw .ab-list-btn[aria-pressed="true"] {
+  background: var(--bw-dither), linear-gradient(180deg, #6a4a1e, #4b3114);
+  box-shadow: inset 0 0 0 2px var(--bw-amber), inset 0 0 14px rgba(255, 179, 71, 0.35), 0 3px 0 #120b05;
+}
+.ab-root.bw .ab-list-btn:active:not(:disabled) { transform: translateY(2px); }
+
+/* screens: full-screen workshop backdrop, tree nodes as slabs */
+.ab-root.bw .ab-screen {
+  background: var(--bw-dither), var(--bw-grain), radial-gradient(ellipse at 50% 0%, #4a2f1a, #140d08 75%);
+}
+.ab-root.bw .ab-node,
+.ab-root.bw .ab-site {
+  border: 0; border-radius: 0;
+  background: var(--bw-dither), var(--bw-grain), linear-gradient(180deg, #46301c, #2f2013);
+  box-shadow: inset 1px 1px 0 rgba(255, 200, 120, 0.28), inset -1px -1px 0 rgba(0, 0, 0, 0.6), 0 4px 0 #120b05, 0 8px 10px rgba(0, 0, 0, 0.45);
+  transition: transform 0.08s, filter 0.12s;
+}
+.ab-root.bw .ab-node:hover,
+.ab-root.bw .ab-site:hover { filter: brightness(1.18); transform: translateY(-1px); }
+.ab-root.bw .ab-node[aria-pressed="true"] { box-shadow: inset 0 0 0 2px var(--bw-amber), inset 0 0 14px rgba(255, 179, 71, 0.35), 0 4px 0 #120b05; }
+.ab-root.bw .ab-node[data-state="done"] { background: var(--bw-dither), linear-gradient(180deg, #6a4a1e, #4b3114); }
+.ab-root.bw .ab-node[data-state="locked"] { filter: grayscale(0.6) brightness(0.7); opacity: 1; }
+.ab-root.bw .ab-node-cost { color: var(--bw-amber); text-shadow: 0 0 6px rgba(255, 179, 71, 0.4); }
+.ab-root.bw .ab-link { stroke: var(--bw-brass-lo); }
+.ab-root.bw .ab-screen-close { color: var(--bw-brass-hi); }
+
+/* ---- phone: keep the bar and panels inside the viewport ---- */
+@media (max-width: 759px) {
+  .ab-root.bw .ab-res { gap: 4px; }
+  .ab-root.bw .ab-res-list { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px 6px; width: 100%; }
+  .ab-root.bw .ab-res-item { grid-template-columns: auto 1fr; column-gap: 6px; font-size: 13px; }
+  .ab-root.bw .ab-res-item .ab-glyph { grid-row: span 2; width: 28px; height: 28px; font-size: 10px; margin: 2px; }
+  .ab-root.bw .ab-res-name { display: none; }
+  .ab-root.bw .ab-res-rate { grid-column: 2; font-size: 11px; }
+  .ab-root.bw .ab-nav { gap: 4px; }
+  .ab-root.bw .ab-nav .ab-text-btn { padding: 6px 2px; font-size: 10px; letter-spacing: 0.02em; line-height: 1.1; min-width: 0; }
+  .ab-root.bw .ab-pal, .ab-root.bw .ab-factory, .ab-root.bw .ab-drawer { border-width: 4px; }
+  .ab-root.bw .ab-pal::before, .ab-root.bw .ab-factory::before, .ab-root.bw .ab-drawer::before { inset: -4px; }
+  .ab-root.bw .ab-factory { max-height: 36dvh; }
+  .ab-root.bw .ab-pal { max-height: 22dvh; }
+}

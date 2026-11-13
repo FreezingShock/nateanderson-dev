@@ -131,6 +131,16 @@ export class OrbitCamera {
         this.goal.distance = clamp(this.goal.distance * factor, this.limits.minDistance, this.limits.maxDistance);
     }
 
+    // Moves the target to a ground point at once, clamped to the bounds. Used to frame a point, e.g. a
+    // building picked from a list.
+    setTarget(x: number, z: number): void {
+        const b = this.limits.bounds;
+        const tx = clamp(x, b.minX, b.maxX);
+        const tz = clamp(z, b.minZ, b.maxZ);
+        this.cur.target = vec(tx, this.cur.target.y, tz);
+        this.goal.target = vec(tx, this.goal.target.y, tz);
+    }
+
     // Snaps everything to the goal. Used by tests and on first frame.
     settle(): void {
         this.cur = this.clampPose(this.goal);

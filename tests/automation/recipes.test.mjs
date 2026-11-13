@@ -56,7 +56,8 @@ test("power is positive for the orrery and generators need a supply figure", () 
 
 test("structures and the spring store match the model ids and footprints", () => {
     const ids = RECIPE_TREE.structures.map((s) => s.id);
-    assert.deepEqual(ids, ["hub", "orrery_0", "orrery_1", "orrery_2", "orrery_3", "orrery_4"]);
+    assert.deepEqual(ids.slice(0, 6), ["hub", "orrery_0", "orrery_1", "orrery_2", "orrery_3", "orrery_4"]);
+    for (const id of ["belt-splitter", "belt-unloader-steel", "belt-crate", "belt-strongbox", "belt-dock"]) assert.ok(ids.includes(id), id);
     assert.deepEqual(RECIPE_TREE.structures.find((s) => s.id === "hub").footprint, { w: 3, d: 3 });
     for (const s of RECIPE_TREE.structures.filter((x) => x.id.startsWith("orrery_"))) assert.deepEqual(s.footprint, { w: 6, d: 6 });
     const store = RECIPE_TREE.machines.find((m) => m.id === "spring_store");
