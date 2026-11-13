@@ -2503,6 +2503,7 @@ export function buyFw(s: State, id: string): boolean {
 }
 /** Firmware respec: free, refunds every Key. */
 export function respecFw(s: State): number {
+    if (chOff(s, "prestige")) return 0; // locked during a stress test, like the other prestige buys
     const back = s.hand.fw.reduce((a, id) => a + (FW_BY.get(id)?.cost ?? 0), 0);
     s.hand.keys += back;
     s.hand.fw = [];

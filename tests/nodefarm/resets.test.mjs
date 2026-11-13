@@ -129,3 +129,16 @@ test("Stress test: every test can start and be left on a late state without NaN"
         assert.deepEqual(problems(s), [], `${t.id} after leaving`);
     }
 });
+
+test("Stress test: locked resets are refused inside a test, and tiers pressed in a test stay pressed", () => {
+    const s = loadFixture("release-post-ascend.json");
+    s.aether = E.ascendNeed(s) * 2;
+    assert.ok(ST.startTest(s, "thin"));
+    assert.equal(E.respec(s), 0, "tree respec refused in a test");
+    assert.equal(E.respecFw(s), 0, "Firmware respec refused in a test");
+    assert.equal(E.ascend(s), 0, "Ascend refused in a test");
+    assert.equal(E.handover(s, "wren"), 0, "Handover refused in a test");
+    (s.seen ??= {}).copper = 0b11;
+    ST.leaveTest(s);
+    assert.equal((s.seen.copper ?? 0) & 0b11, 0b11, "a tier pressed in the test stays pressed after leaving");
+});
