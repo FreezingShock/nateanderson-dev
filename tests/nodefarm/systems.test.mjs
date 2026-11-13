@@ -108,7 +108,7 @@ test("zone events: every kind in every zone starts, answers, ticks and ends", ()
     assert.doesNotThrow(() => ZE.zeClear(s));
 });
 
-test("quick-time events: loot of every kind and rarity pays a finite amount", () => {
+test("event loot: every kind and rarity pays a finite amount", () => {
     for (const [name, s] of states()) {
         for (const kind of ["burst", "cache", "overtime"]) for (let rarity = 0; rarity < EV.RARITY.length; rarity++) {
             const loot = EV.makeLoot(s, kind, rarity);
@@ -118,10 +118,7 @@ test("quick-time events: loot of every kind and rarity pays a finite amount", ()
             assert.deepEqual(problems(c), [], `${name}: ${kind} r${rarity}`);
         }
         for (const q of [0, 0.25, 0.5, 1]) assert.doesNotThrow(() => EV.rollLoot(s, q), name);
-        assert.doesNotThrow(() => EV.rogueChoices(s), name);
-        for (const k of ["spike", "rogue", "vault", "relay", "packet", null]) assert.doesNotThrow(() => EV.pickEvent(1, k), name);
     }
-    for (const e of EV.EVENTS) assert.equal(EV.eventDef(e.kind), e);
     assert.doesNotThrow(() => { const s = maxed(); E.breach(s); });
 });
 

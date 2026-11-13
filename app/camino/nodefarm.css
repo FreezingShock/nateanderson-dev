@@ -466,7 +466,7 @@ body.nf-win-open .ctos .cm-section.ruled { z-index: 60; }
 .ctos .nf-chain-more b { color: var(--cm-ctos-meta); }
 
 
-/* ---- quick-time events: app/camino/nodefarm-events.css (imported by components/nodefarm/events.tsx) */
+/* ---- event cards: app/camino/nodefarm-events.css (imported by components/nodefarm/zone-event.tsx) */
 
 /* ==========================================================================
    Colour and sprites. Every icon, button tier and Drone is a four-frame loop (scripts/naos-art/nodefarm-sprites.py); CSS steps the

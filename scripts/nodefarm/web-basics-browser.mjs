@@ -4,6 +4,9 @@
 //   (start the build with SITE_PASSWORD=ci-password SITE_GATE_SECRET=x next start -p 3123)
 // Exits 1 if any check fails. Safari and audio cannot be run here.
 import { createRequire } from "node:module";
+import { readFileSync } from "node:fs";
+import { dirname, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 import { unlock } from "../ci/lib.mjs";
 const { chromium } = createRequire(import.meta.url)("playwright");
 const base = (process.argv[2] || "http://localhost:3123").replace(/\/$/, "");
@@ -13,10 +16,10 @@ const res = [];
 const ok = (c, m) => { res.push(c); console.log(c ? "PASS" : "FAIL", m); };
 const browser = await chromium.launch();
 
-const page = async (vp = { width: 1280, height: 800 }, init = null) => {
+const page = async (vp = { width: 1280, height: 800 }, init = null, ...initArgs) => {
     const ctx = await browser.newContext({ viewport: vp, deviceScaleFactor: 1 });
     await ctx.addCookies([{ name: cookie[0], value: cookie.slice(1).join("="), url: base }]);
-    if (init) await ctx.addInitScript(init);
+    if (init) await ctx.addInitScript(init, initArgs.length > 1 ? initArgs : initArgs[0]);
     const p = await ctx.newPage();
     p.errs = [];
     p.on("pageerror", (e) => p.errs.push(e.message));
@@ -108,14 +111,24 @@ const save = (p) => p.evaluate(() => JSON.parse(localStorage.getItem("nf-save-v1
 
 // 6. cold storage: a hold that loses focus lets go, and keeps the rows already open
 {
-    const { ctx, p } = await page();
-    await p.goto(url, { waitUntil: "networkidle" });
-    await p.waitForTimeout(1500);
-    await p.evaluate(() => window.dispatchEvent(new CustomEvent("nf:fire", { detail: "vault" })));
-    const go = p.locator(".nf-ev-go");
-    await go.waitFor({ state: "visible", timeout: 5000 }).catch(() => {});
-    await p.waitForTimeout(1500);
-    if (await go.count()) await go.click({ force: true }).catch(() => {});
+    // zone events pick their kind with Math.random; the mid-game fixture waits 2 s for its first event, and a few fixed rolls are
+    // tried until one lands on Cold storage
+    const seed = readFileSync(resolve(dirname(fileURLToPath(import.meta.url)), "fixtures", "release-mid.json"), "utf8");
+    let ctx, p;
+    for (const r of [0.97, 0.92, 0.88, 0.84, 0.8, 0.76]) {
+        ({ ctx, p } = await page(undefined, ([s, rv]) => {
+            if (sessionStorage.getItem("seeded")) return;
+            sessionStorage.setItem("seeded", "1");
+            const o = JSON.parse(s);
+            o.at = Date.now(); o.life.secs = Math.max(3000, o.life.secs); o.ze = { act: [], wait: 2, seen: 0, kinds: {} };
+            localStorage.setItem("nf-save-v1", JSON.stringify(o));
+            Math.random = () => rv;
+        }, seed, r));
+        await p.goto(url, { waitUntil: "networkidle" });
+        await p.locator(".nf-zc").waitFor({ timeout: 6000 }).catch(() => {});
+        if ((await p.locator(".nf-ev-hold").count()) > 0) break;
+        await ctx.close();
+    }
     const btn = p.locator(".nf-ev-hold");
     ok((await btn.count()) === 1, "cold storage: the vault card opens");
     if ((await btn.count()) === 1) {
