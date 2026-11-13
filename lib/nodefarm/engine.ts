@@ -1025,7 +1025,7 @@ export function derive(s: State): Derived {
     const droneLv = s.drones.reduce((a, b) => a + b, 0);
     const ch = CH_HOOKS.muls?.(s);
     // a Brownout stress test runs without perks, unspent AP and the goal bonuses
-    const global = (ch?.bare ? 1 : (1 + s.perks.power * 0.15) * apGlobal(s) * (1 + s.ach.length * (TUNE.achBonus + tf.goals) * (1 + protoK(s, "tamsin"))) * (1 + tiersDone(s) * TUNE.tierBonus)) * (1 + tf.global) * handGlobal(s) * (ARC_HOOKS.cleared ? 1 + TUNE.arcBonus * ARC_HOOKS.cleared(s) : 1) * (ch?.global ?? 1)
+    const global = (ch?.bare ? 1 : (1 + s.perks.power * 0.15) * apGlobal(s) * (1 + achPoints(s) * (TUNE.achBonus + tf.goals) * (1 + protoK(s, "tamsin"))) * (1 + tiersDone(s) * TUNE.tierBonus)) * (1 + tf.global) * handGlobal(s) * (ARC_HOOKS.cleared ? 1 + TUNE.arcBonus * ARC_HOOKS.cleared(s) : 1) * (ch?.global ?? 1)
         * (1 + droneLv * tf.droneGlobal) * (1 + s.runWins * tf.winBoost) * boosts.chAll * singularityAll(s) * (s.overclock > 0 ? overclockMult(s) : 1) * lb.global
         * (tf.perNode ? 1 + tf.perNode * treeCount(s) : 1) * foundryAll(s) * sunstoneAll(s);
     const wren = protoK(s, "wren");
@@ -1489,8 +1489,8 @@ export const SECRETS: Secret[] = [
     { id: "x_loop", name: "Loopback", clue: "Ask the console to ping home.", how: "Ran `nf ping 127.0.0.1` in the console." },
     { id: "x_sudo", name: "Not in the sudoers file", clue: "Try to take control from the console.", how: "Ran `nf sudo` in the console." },
     { id: "x_self", name: "Self aware", clue: "Ask the node who it is.", how: "Ran `nf whoami` in the console." },
-    { id: "x_night", name: "Night shift", clue: "The farm runs at all hours. So do you.", how: "Had Node Farm open between 3 and 4 in the morning.", test: () => new Date().getHours() === 3 },
-    { id: "x_haul", name: "Long haul", clue: "Stay a very long time.", how: "Played for 24 hours in total.", test: (s) => s.life.secs >= 86400 },
+    { id: "x_night", name: "Small hours", clue: "The farm runs at all hours. So do you.", how: "Had Node Farm open between 3 and 4 in the morning.", test: () => new Date().getHours() === 3 },
+    { id: "x_haul", name: "Full day", clue: "Stay a very long time.", how: "Played for 24 hours in total.", test: (s) => s.life.secs >= 86400 },
     { id: "x_duck", name: "Quack", clue: "Some of the best help is cheap and very quiet.", how: "Bought the Rubber duck in the prestige tree.", test: (s) => s.tree.includes("duck") },
     { id: "x_fork", name: "Fork bomb", clue: "Ask the console to copy itself until the machine gives up.", how: "Ran `nf fork` in the console." },
     { id: "x_tank", name: "Full tank", clue: "Leave it alone until the standby cells are full.", how: "Came back to a full standby report.", test: (s) => s.life.capped >= 1 },
@@ -2832,4 +2832,25 @@ SECRETS.push(
     { id: "x_zero", name: "Zero reply", clue: "Ping the node that came before this one.", how: "Ran `nf ping node-00` in the console." },
     { id: "x_hands", name: "Hands off", clue: "Let it decide when to leave.", how: "A Script ran an Ascend for you.", test: (s) => (s.auto?.ran.ascend ?? 0) >= 1 },
     { id: "x_edit", name: "Edit history", clue: "The root chamber lets you rewrite its neighbors. Keep going.", how: "Rewrote rigs 12 times.", test: (s) => (s.rig?.rw ?? 0) >= 12 },
+    // one hidden secret for each stage (tiers I to XII). Console ones are handled in records.ts.
+    { id: "x_help", name: "Read the manual", clue: "The console has a manual. Nobody reads it.", how: "Ran `nf man` in the console." },
+    { id: "x_strict", name: "Strict mode", clue: "Some shells refuse to go on after an error. Ask for that.", how: "Ran `nf set -e` in the console." },
+    { id: "x_sysctl", name: "Read only", clue: "Ask the kernel what it is not allowed to change.", how: "Ran `nf sysctl` in the console." },
+    { id: "x_su", name: "Become root", clue: "Ask to be someone else for a minute.", how: "Ran `nf su` in the console." },
+    { id: "x_dmesg", name: "Ring buffer", clue: "Read what the kernel said while it was booting.", how: "Ran `nf dmesg` in the console." },
+    { id: "x_tree", name: "Sit under it", clue: "Ask the tree where its branches go.", how: "Ran `nf tree` in the console." },
+    { id: "x_urandom", name: "Noise floor", clue: "Read from the random device until the terminal fills.", how: "Ran `nf cat /dev/urandom` in the console." },
+    { id: "x_epoch", name: "Unix time", clue: "Ask the node what day it started on.", how: "Ran `nf date` in the console." },
+    { id: "x_dig", name: "Nothing answers", clue: "Dig for a name past the last zone.", how: "Ran `nf dig` in the console." },
+    { id: "x_pid", name: "Process one", clue: "Find the process that started everything.", how: "Ran `nf ps` in the console." },
+    { id: "x_top", name: "Load average", clue: "Ask what the node is busy with.", how: "Ran `nf top` in the console." },
+    { id: "x_flash", name: "Write protected", clue: "Try to rewrite the firmware by hand.", how: "Ran `nf flash` in the console." },
 );
+/** The twelve stage secrets (one per tier) count half, so they add +1% each rather than +2%. */
+export const STAGE_SECRET_IDS = ["x_help", "x_strict", "x_sysctl", "x_su", "x_dmesg", "x_tree", "x_urandom", "x_epoch", "x_dig", "x_pid", "x_top", "x_flash"];
+/** Goals and secrets, with the stage secrets at half weight. Every bonus that used to count s.ach.length uses this. */
+export function achPoints(s: State): number {
+    let n = s.ach.length;
+    for (const id of STAGE_SECRET_IDS) if (s.ach.includes(id)) n -= 0.5;
+    return n;
+}
