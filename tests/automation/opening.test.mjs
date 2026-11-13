@@ -55,3 +55,20 @@ test("a route into a 3 by 3 hub ends with a belt facing the hub, from any side",
     for (let dz2 = 0; dz2 < 3; dz2++) for (let dx2 = 0; dx2 < 3; dx2++) hubCells.add(`${HUB.x + dx2},${HUB.z + dz2}`);
     assert.ok(hubCells.has(`${last.x + dx},${last.z + dz}`), "last belt points into the hub");
 });
+
+// Stage chain: walk the milestones in order. Before each one, the machines its items come from must be open
+// given only the milestones already delivered, so no milestone waits on machines only it would unlock.
+test("each milestone can be delivered with machines open before it", () => {
+    const tree = CAT.tree;
+    const world = S.createWorld({ width: 18, depth: 12, hub: HUB }, CAT);
+    for (const m of tree.milestones) {
+        for (const d of m.deliver) {
+            const recipe = tree.recipes.find((r) => r.output.item === d.item);
+            if (!recipe) continue;
+            const mach = tree.machines.find((x) => x.id === recipe.machine);
+            if (!mach) continue;
+            assert.ok(S.unlockedMachine(world, CAT, mach.unlockStage), `${m.id} needs ${mach.id}, which is locked before it`);
+        }
+        world.progress.milestonesDone.push(m.id);
+    }
+});
