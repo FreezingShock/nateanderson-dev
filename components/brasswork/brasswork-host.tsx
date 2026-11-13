@@ -205,8 +205,12 @@ export function BrassworkHost() {
                 },
                 check: (kind, x, z, rot) => grid.check(kind, x + ox, z + oz, rot),
             };
-            const tools = [...CAT.tree.machines.map((m) => m.id), "power-plant"].map((id) => ({ id, label: resolve(CAT, id)?.name ?? id, line: false }));
+            const tools = [...CAT.tree.machines.map((m) => m.id), "power-plant"].map((id) => {
+                const r = resolve(CAT, id);
+                return { id, label: r?.name ?? id, line: false, footprint: r ? { w: r.footprint.w, d: r.footprint.d } : undefined };
+            });
             const input: MountedInput = mount(island.camera, canvas, {
+                touchBar: true,
                 board: BOARD,
                 world: buildWorld,
                 tools,
@@ -230,7 +234,7 @@ export function BrassworkHost() {
             let ghostKey = "";
             const updateGhost = () => {
                 const g = input.controller.build.ghost();
-                const c = g?.cells[0];
+                const c = g && g.cells.length ? { x: Math.min(...g.cells.map((k) => k.x)), z: Math.min(...g.cells.map((k) => k.z)), valid: g.cells.every((k) => k.valid) } : undefined;
                 const model = g ? getMachineModel(g.tool.id) : undefined;
                 const key = g && c && model ? `${g.tool.id}:${c.x},${c.z},${g.rot},${c.valid}` : "";
                 if (key === ghostKey) return;
