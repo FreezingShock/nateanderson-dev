@@ -53,3 +53,15 @@ test("power is positive for the orrery and generators need a supply figure", () 
     assert.ok(generatorsFor(RECIPE_TREE, res.powerKw, "spring_winder") < generatorsFor(RECIPE_TREE, res.powerKw, "windmill"));
     for (const g of RECIPE_TREE.machines.filter((m) => m.generatesKw)) assert.ok(g.supplyRange > 0);
 });
+
+test("structures and the spring store match the model ids and footprints", () => {
+    const ids = RECIPE_TREE.structures.map((s) => s.id);
+    assert.deepEqual(ids, ["hub", "orrery_0", "orrery_1", "orrery_2", "orrery_3", "orrery_4"]);
+    assert.deepEqual(RECIPE_TREE.structures.find((s) => s.id === "hub").footprint, { w: 3, d: 3 });
+    for (const s of RECIPE_TREE.structures.filter((x) => x.id.startsWith("orrery_"))) assert.deepEqual(s.footprint, { w: 6, d: 6 });
+    const store = RECIPE_TREE.machines.find((m) => m.id === "spring_store");
+    assert.deepEqual(store.footprint, { w: 2, d: 2 });
+    assert.ok(store.storageKj > 0);
+    assert.ok(RECIPE_TREE.machines.some((m) => m.id === "windmill" && m.generatesKw > 0));
+    assert.ok(RECIPE_TREE.machines.some((m) => m.id === "spring_winder" && m.generatesKw > 0));
+});
