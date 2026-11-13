@@ -7,7 +7,7 @@ import { E, LOGS } from "./helpers.mjs";
 const { nfCommand } = await import("../../lib/nodefarm/records.ts");
 
 const CONSOLE = [
-    ["x_help", ["help"]],
+    ["x_help", ["man"]],
     ["x_strict", ["set", "-e"]],
     ["x_sysctl", ["sysctl"]],
     ["x_su", ["su"]],

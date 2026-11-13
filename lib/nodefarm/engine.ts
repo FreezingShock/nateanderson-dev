@@ -2833,7 +2833,7 @@ SECRETS.push(
     { id: "x_hands", name: "Hands off", clue: "Let it decide when to leave.", how: "A Script ran an Ascend for you.", test: (s) => (s.auto?.ran.ascend ?? 0) >= 1 },
     { id: "x_edit", name: "Edit history", clue: "The root chamber lets you rewrite its neighbors. Keep going.", how: "Rewrote rigs 12 times.", test: (s) => (s.rig?.rw ?? 0) >= 12 },
     // one hidden secret for each stage (tiers I to XII). Console ones are handled in records.ts.
-    { id: "x_help", name: "Read the manual", clue: "The console has a manual. Nobody reads it.", how: "Ran `nf help` in the console." },
+    { id: "x_help", name: "Read the manual", clue: "The console has a manual. Nobody reads it.", how: "Ran `nf man` in the console." },
     { id: "x_strict", name: "Strict mode", clue: "Some shells refuse to go on after an error. Ask for that.", how: "Ran `nf set -e` in the console." },
     { id: "x_sysctl", name: "Read only", clue: "Ask the kernel what it is not allowed to change.", how: "Ran `nf sysctl` in the console." },
     { id: "x_su", name: "Become root", clue: "Ask to be someone else for a minute.", how: "Ran `nf su` in the console." },

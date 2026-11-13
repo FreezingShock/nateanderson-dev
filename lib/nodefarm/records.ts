@@ -310,8 +310,8 @@ export function nfCommand(s: State, args: string[]): NfResult {
         lines = [t("kill: the drone is not listening. it never was."), ...secret("x_kill")];
     } else if (sub === "whoami") {
         lines = [t("node-01. one core, no clearance, and a growing farm."), ...secret("x_self")];
-    } else if (sub === "help") {
-        lines = [t("manual: nf stats · nf goals · nf secrets · nf logs · nf open. the full list is in the codex (key C).", "dim"), ...secret("x_help")];
+    } else if (sub === "man") {
+        lines = [t("man: no manual entry for node-01. try nf help, or read the codex (key C).", "dim"), ...secret("x_help")];
     } else if (sub === "set") {
         lines = args.includes("-e")
             ? [t("set: -e on. the node stops at the first error from now on.", "hi"), ...secret("x_strict")]
