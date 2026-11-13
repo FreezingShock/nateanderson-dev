@@ -22,7 +22,7 @@ import type {
     World,
 } from "../types";
 import { DEFAULT_CATALOG, SITES } from "./data";
-import { dayClock, buyResearch as buyResearchRaw, prestige as prestigeRaw } from "./progress";
+import { unlockedRecipes, dayClock, buyResearch as buyResearchRaw, prestige as prestigeRaw } from "./progress";
 import { place as placeRaw, setRecipe as setRecipeRaw, resolve } from "./world";
 
 export const DEFAULT_SETTINGS: HudSettings = { sound: false, reduceMotion: false, lowFx: false, numberFormat: "short", showRates: true };
@@ -149,6 +149,11 @@ export function hudData(world: World, cat: Catalog = DEFAULT_CATALOG, selectedId
                 recipe: rec
                     ? { name: rec.id, inputs: lines(rec.inputs), outputs: lines([rec.output]), seconds: rec.craftSeconds }
                     : { name: "No recipe", inputs: [], outputs: [], seconds: 0 },
+                recipeId: b.recipe,
+                recipeOptions: unlockedRecipes(world, cat)
+                    .map((id) => cat.tree.recipes.find((x) => x.id === id)!)
+                    .filter((r) => r.machine === b.type)
+                    .map((r) => ({ id: r.id, name: nameOf(cat, r.output.item), alternate: !!r.alternate })),
                 rates: [
                     ...Object.keys(f.makes).map((k) => ({ label: `${nameOf(cat, k)} out`, value: `${f.makes[k].toFixed(2)} /s` })),
                     ...Object.keys(f.uses).map((k) => ({ label: `${nameOf(cat, k)} in`, value: `${f.uses[k].toFixed(2)} /s` })),

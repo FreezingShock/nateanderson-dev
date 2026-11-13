@@ -5,7 +5,7 @@
 //   copper_ore     grey rock streaked teal, with bright copper nuggets
 //   coal           black angular slabs stacked on dark rock
 //   quartz         pink-white crystal spires with glinting tips
-//   aluminium_ore  pale terraced shelves in silver and cream bands
+//   aluminium_ore  tan bauxite shelves with ochre bands and silver flecks
 //
 // Purity (0.5 impure, 1 normal, 2 pure, as in the sim) sets the size and how
 // much ore shows. `remaining` (1 full, 0 worked out) gives the depleted look.
@@ -403,8 +403,8 @@ function aluminium(ctx: Ctx): void {
     const { b, r, size, amt, depleted } = ctx;
     const [ox, oz] = LAYOUTS[ctx.variant % LAYOUTS.length][0];
     const layers = depleted ? 2 : count(ctx, 3, 4, 5);
-    // terraced shelves, each smaller and shifted, banded silver / cream / shade
-    const bands = [C.main, C.accent, C.main, C.dark, C.main, C.accent];
+    // terraced shelves, each smaller and shifted, banded tan / ochre
+    const bands = [C.main, C.dark, C.main, C.main, C.dark, C.main];
     let y = 0;
     let cx = ox * 0.5,
         cz = oz * 0.5;

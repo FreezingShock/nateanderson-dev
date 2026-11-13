@@ -2,6 +2,7 @@
 // their folder's list, then list them here.
 import type { VoxelModel } from "./format";
 import { EXAMPLE_BLOCK } from "./examples";
+import { BELT_MODELS } from "./belts/models";
 import { ITEM_MODEL_LIST } from "./items";
 import { allMachineModels } from "./machines";
 import { resourceModel, resourcePreviewModels } from "./resources";
@@ -10,6 +11,7 @@ export const MODEL_REGISTRY: VoxelModel[] = [
     EXAMPLE_BLOCK,
     ...allMachineModels(),
     ...resourcePreviewModels(),
+    ...BELT_MODELS,
     ...ITEM_MODEL_LIST,
 ];
 

@@ -87,6 +87,7 @@ export function BrassworkHost() {
         setTool: (id: string | null) => void;
         select: (id: string | null) => void;
         research: (id: string) => void;
+        setRecipe: (id: string) => void;
         prestige: (id: string) => void;
         settings: (p: Partial<HudSettings>) => void;
     } | null>(null);
@@ -204,8 +205,12 @@ export function BrassworkHost() {
                 },
                 check: (kind, x, z, rot) => grid.check(kind, x + ox, z + oz, rot),
             };
-            const tools = [...CAT.tree.machines.map((m) => m.id), "power-plant"].map((id) => ({ id, label: resolve(CAT, id)?.name ?? id, line: false }));
+            const tools = [...CAT.tree.machines.map((m) => m.id), "power-plant"].map((id) => {
+                const r = resolve(CAT, id);
+                return { id, label: r?.name ?? id, line: false, footprint: r ? { w: r.footprint.w, d: r.footprint.d } : undefined };
+            });
             const input: MountedInput = mount(island.camera, canvas, {
+                touchBar: true,
                 board: BOARD,
                 world: buildWorld,
                 tools,
@@ -229,7 +234,7 @@ export function BrassworkHost() {
             let ghostKey = "";
             const updateGhost = () => {
                 const g = input.controller.build.ghost();
-                const c = g?.cells[0];
+                const c = g && g.cells.length ? { x: Math.min(...g.cells.map((k) => k.x)), z: Math.min(...g.cells.map((k) => k.z)), valid: g.cells.every((k) => k.valid) } : undefined;
                 const model = g ? getMachineModel(g.tool.id) : undefined;
                 const key = g && c && model ? `${g.tool.id}:${c.x},${c.z},${g.rot},${c.valid}` : "";
                 if (key === ghostKey) return;
@@ -267,6 +272,12 @@ export function BrassworkHost() {
                 },
                 research: (id) => {
                     const r = simActions.buyResearch(world, id, CAT);
+                    setNote(r.ok ? "" : r.reason);
+                    refresh();
+                },
+                setRecipe: (recipeId) => {
+                    if (selectedId === null) return;
+                    const r = simActions.setRecipe(world, selectedId, recipeId, CAT);
                     setNote(r.ok ? "" : r.reason);
                     refresh();
                 },
@@ -345,12 +356,13 @@ export function BrassworkHost() {
     const onBuild = useCallback((id: string) => ctl.current?.setTool(id), []);
     const onSelect = useCallback((id: string | null) => ctl.current?.select(id), []);
     const onResearch = useCallback((id: string) => ctl.current?.research(id), []);
+    const onSetRecipe = useCallback((id: string) => ctl.current?.setRecipe(id), []);
     const onPrestige = useCallback((id: string) => ctl.current?.prestige(id), []);
     const onSettings = useCallback((p: Partial<HudSettings>) => ctl.current?.settings(p), []);
 
     return (
         <div className="bw-root">
-            <AutomationHud data={data} actions={{ onBuild, onSelect, onResearch, onPrestige, onSettings }}>
+            <AutomationHud data={data} actions={{ onBuild, onSelect, onResearch, onSetRecipe, onPrestige, onSettings }}>
                 <canvas ref={canvasRef} className="bw-canvas" />
                 <Link href="/creations/games" className="bw-back">
                     Back to Games

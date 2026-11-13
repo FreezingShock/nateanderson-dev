@@ -11,3 +11,12 @@ html.bw-route .cm-dock,
 html.bw-route .nv-top,
 html.bw-route .cm-pgauge,
 html.bw-route .sf-foot { display: none !important; }
+
+/* Phone: give the 3D stage about half the screen. The panels above and below it scroll inside smaller boxes, and the
+   next-step line gets its own row under the stage so the touch buttons do not cover it. */
+@media (max-width: 759px) {
+    .bw-root .ab-pal { max-height: 22dvh; }
+    .bw-root .ab-factory { max-height: 26dvh; }
+    .bw-root .ab-center { min-height: 42dvh; }
+    .bw-root .ab-stage { bottom: 92px; }
+}
