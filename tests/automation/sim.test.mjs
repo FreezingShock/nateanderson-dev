@@ -330,3 +330,13 @@ test("the default catalog is the Recipe thread's tree, with its generators and c
     const w = S.createWorld({ width: 64, depth: 64, hub: hubAt, startStock: [{ item: "plate-a", qty: 500 }] });
     assert.equal(S.place(w, "windmill", 20, 20, 0, CAT).ok, true);
 });
+
+test("the spring store is a battery with a 0 to 1 charge per building, and the hub is 3 by 3", () => {
+    const w = base(CAT, {}, { power: false });
+    w.windPin = 0.9;
+    const st = ok(S.place(w, "spring_store", 30, 30, 0, CAT));
+    S.step(w, 0.5, CAT);
+    const c = S.chargeOf(w, CAT);
+    assert.ok(c[st.id] > 0 && c[st.id] <= 1, "the store charges in strong wind");
+    assert.equal(S.resolve(CAT, "hub").footprint.w, 3);
+});

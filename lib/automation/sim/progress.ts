@@ -76,7 +76,8 @@ export function prestige(world: World, cat: Catalog, siteId: string): ActionResu
     const hub = world.buildings[world.hubId];
     const newHub: Building = { ...hub, x: site.hub.x, z: site.hub.z, input: {}, output: {}, lane: [], recipe: null, crafting: false, progress: 0, acc: 0 };
     const keep: World["buildings"] = { [world.hubId]: newHub };
-    const taken = new Set<string>([`${site.hub.x},${site.hub.z}`, `${site.hub.x + 1},${site.hub.z}`, `${site.hub.x},${site.hub.z + 1}`, `${site.hub.x + 1},${site.hub.z + 1}`]);
+    const taken = new Set<string>();
+    for (let dz = 0; dz < 3; dz++) for (let dx = 0; dx < 3; dx++) taken.add(`${site.hub.x + dx},${site.hub.z + dz}`); // hub is 3 by 3
     for (const id of Object.keys(world.buildings).map(Number)) {
         if (id === world.hubId) continue;
         const b = world.buildings[id];

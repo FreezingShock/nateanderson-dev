@@ -17,6 +17,7 @@ export const PLACEHOLDER_TREE: RecipeTree = {
         { id: "press", name: "Press", unlockStage: 2, speed: 1, footprint: { w: 2, d: 2 }, powerKw: 90, buildCost: [{ item: "plate-a", qty: 8 }, { item: "plate-b", qty: 4 }] },
         { id: "windmill", name: "Windmill", unlockStage: 0, speed: 1, footprint: { w: 2, d: 2 }, powerKw: 0, generatesKw: 30, supplyRange: 6, buildCost: [{ item: "plate-a", qty: 10 }] },
         { id: "spring_winder", name: "Spring winder", unlockStage: 0, speed: 1, footprint: { w: 2, d: 2 }, powerKw: 0, generatesKw: 60, supplyRange: 4, buildCost: [{ item: "plate-a", qty: 10 }, { item: "plate-b", qty: 5 }] },
+        { id: "spring_store", name: "Spring store", unlockStage: 0, speed: 1, footprint: { w: 2, d: 2 }, powerKw: 0, generatesKw: 40, supplyRange: 4, buildCost: [{ item: "plate-a", qty: 8 }] },
     ],
     recipes: [
         { id: "smelt-a", machine: "smelter", inputs: [{ item: "ore-a", qty: 2 }], output: { item: "plate-a", qty: 1 }, craftSeconds: 3 },
@@ -34,7 +35,7 @@ export const PLACEHOLDER_TREE: RecipeTree = {
 
 export const ENGINE_DATA: { engine: Record<string, EngineDef>; tune: Tune } = {
     engine: {
-        hub: { kind: "hub", name: "Core hub", footprint: { w: 2, d: 2 }, cost: [], placeable: false },
+        hub: { kind: "hub", name: "Core hub", footprint: { w: 3, d: 3 }, cost: [], placeable: false },
         belt: { kind: "belt", name: "Brass belt", footprint: { w: 1, d: 1 }, cost: [{ item: "plate-a", qty: 1 }], belt: { speed: 1, spacing: 0.25 } },
         "belt-copper": { kind: "belt", name: "Copper belt", footprint: { w: 1, d: 1 }, cost: [{ item: "plate-a", qty: 2 }, { item: "plate-b", qty: 1 }], belt: { speed: 2, spacing: 0.25 } },
         "belt-steel": { kind: "belt", name: "Steel belt", footprint: { w: 1, d: 1 }, cost: [{ item: "plate-a", qty: 3 }, { item: "plate-b", qty: 2 }], belt: { speed: 4, spacing: 0.25 } },

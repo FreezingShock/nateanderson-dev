@@ -7,6 +7,7 @@ import { checkMilestones } from "./progress";
 
 export const DRILL = "drill"; // the tree machine that sits on a resource node
 export const SPRING = "spring_winder"; // the battery generator
+export const BATTERIES = ["spring_winder", "spring_store"]; // wound springs: store wind surplus, release it in calm air
 export const HUB = "hub";
 
 export type Kind = "hub" | "belt" | "generator" | "miner" | "crafter";
@@ -49,9 +50,10 @@ export function resolve(cat: Catalog, type: string): Resolved | null {
     const m = cat.tree.machines.find((x) => x.id === type);
     if (!m) return null;
     const gen = m.generatesKw ?? 0;
+    const battery = BATTERIES.includes(type);
     return {
         id: type,
-        kind: gen > 0 ? "generator" : type === DRILL ? "miner" : "crafter",
+        kind: gen > 0 || battery ? "generator" : type === DRILL ? "miner" : "crafter",
         name: m.name,
         footprint: m.footprint,
         placeable: true,
@@ -406,7 +408,7 @@ function updatePower(world: World, cat: Catalog, defs: Map<number, Resolved>, dt
         if (r.kind === "generator") {
             const [cx, cz] = centreOf(b, r.footprint);
             let out: number;
-            if (r.id === SPRING) {
+            if (BATTERIES.includes(r.id)) {
                 const cap = r.supply * cat.tune.springSeconds;
                 if (world.wind > 0.5) {
                     b.charge = Math.min(cap, b.charge + r.supply * (world.wind - 0.5) * 2 * dt);
@@ -510,4 +512,17 @@ export function summary(world: World) {
         counts[t] = (counts[t] ?? 0) + 1;
     }
     return { time: world.time, counts, stock: { ...world.buildings[world.hubId].input }, power: { ...world.power } };
+}
+
+// Stored charge of every battery, as 0 to 1 of its capacity. The spring-store needle is driven from this.
+export function chargeOf(world: World, cat: Catalog = DEFAULT_CATALOG): Record<number, number> {
+    const out: Record<number, number> = {};
+    for (const id of Object.keys(world.buildings).map(Number)) {
+        const b = world.buildings[id];
+        const r = resolve(cat, b.type);
+        if (!r || !BATTERIES.includes(r.id)) continue;
+        const cap = r.supply * cat.tune.springSeconds;
+        out[id] = cap > 0 ? Math.min(1, b.charge / cap) : 0;
+    }
+    return out;
 }
