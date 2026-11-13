@@ -26,7 +26,8 @@ ROOT = Path(__file__).resolve().parents[2]
 ART = ROOT / "public/naos/nodefarm"
 CW, CH = 288, 96   # cell
 SKW = 128          # skirt width in art px
-HAND: set[str] = set()
+# skirts drawn by their zone script from the world left of the cell (zone-art-12-17.py)
+HAND: set[str] = {"nebula", "pulsars", "singularity", "engrams", "paradox", "origin"}
 B4 = np.array([[0, 8, 2, 10], [12, 4, 14, 6], [3, 11, 1, 9], [15, 7, 13, 5]]) / 16.0
 
 
@@ -52,7 +53,13 @@ def backdrop(sheet: Image.Image) -> np.ndarray:
 
 def skirt(sheet: Image.Image) -> Image.Image:
     a = backdrop(sheet)
-    s = a[:, ::-1]                                   # mirror: column SKW-1 of the skirt = column 0 of the cell
+    return dissolve(a[:, ::-1], a)                   # mirror: column SKW-1 of the skirt = column 0 of the cell
+
+
+def dissolve(s: np.ndarray, a: np.ndarray | None = None) -> Image.Image:
+    """Fizzle out an SKW x 96 RGBA strip that joins the cell on its right edge. `a` is where the darker shades are looked
+    up (default: the strip itself). Zone scripts that draw the real world left of the cell call this directly."""
+    a = s if a is None else a
     h, w = s.shape[:2]
     y, x = np.mgrid[0:h, 0:w].astype(float)
     d = 1 - (x + 0.5) / w                            # 0 at the join, 1 at the far left
