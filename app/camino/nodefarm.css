@@ -324,7 +324,7 @@ body .nf-aw-meter-h { display: flex; justify-content: space-between; gap: 12px; 
 body .nf-aw-track { height: 14px; background: #050505; border: 1px solid var(--nf-line); padding: 2px; }
 body .nf-aw-track i { display: block; height: 100%; background: repeating-linear-gradient(90deg, var(--cm-cyan) 0 6px, #0f6b74 6px 8px); }
 body .nf-aw-gain { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 10px; }
-body .nf-aw-gain li { display: grid; grid-template-columns: auto 1fr; grid-template-rows: auto auto; column-gap: 14px; align-items: center; padding: 12px 14px; background: var(--nf-ground); border: 1px solid color-mix(in srgb, var(--c) 35%, #1c1c1c); border-left: 3px solid var(--c); animation: nf-aw-row 320ms steps(4) both; animation-delay: var(--d); }
+body .nf-aw-gain li { display: grid; grid-template-columns: auto 1fr; grid-template-rows: auto auto; column-gap: 14px; align-items: center; padding: 12px 14px; background: var(--nf-ground); border: 1px solid color-mix(in srgb, var(--c) 35%, #1c1c1c); animation: nf-aw-row 320ms steps(4) both; animation-delay: var(--d); }
 body .nf-aw-gain .nf-ic { grid-row: 1 / 3; }
 body .nf-aw-name { font: 600 var(--cm-ctos-t-micro)/1.2 var(--cm-mono); letter-spacing: .12em; text-transform: uppercase; color: var(--cm-mute); align-self: end; }
 body .nf-aw-gain b { font: 700 clamp(22px, 4vw, 30px)/1.15 var(--cm-mono); color: var(--c); font-variant-numeric: tabular-nums; align-self: start; overflow-wrap: anywhere; }
