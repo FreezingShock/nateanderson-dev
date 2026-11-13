@@ -116,6 +116,14 @@ export function footprintCells(b: { x: number; z: number; rot: Rot }, fp: Footpr
     return out;
 }
 
+// Stock a new world starts with when the caller gives none: enough for two drills, a kiln and a run of belts.
+// Drill and kiln have no build cost in the Recipe tree yet, so this covers them and the belts; see STATUS.md.
+export const STARTER_KIT: Stack[] = [
+    { item: "iron_plate", qty: 40 },
+    { item: "copper_wire", qty: 20 },
+    { item: "iron_gear", qty: 6 },
+];
+
 export function createWorld(opts: CreateOptions = {}, cat: Catalog = DEFAULT_CATALOG): World {
     const width = opts.width ?? 64;
     const depth = opts.depth ?? 64;
@@ -138,7 +146,7 @@ export function createWorld(opts: CreateOptions = {}, cat: Catalog = DEFAULT_CAT
     };
     const hub = newBuilding(world, HUB, hubCell.x, hubCell.z, 0);
     world.hubId = hub.id;
-    for (const s of opts.startStock ?? []) hub.input[s.item] = (hub.input[s.item] ?? 0) + s.qty;
+    for (const s of opts.startStock ?? STARTER_KIT) hub.input[s.item] = (hub.input[s.item] ?? 0) + s.qty;
     rebuildIndex(world, cat);
     return world;
 }
