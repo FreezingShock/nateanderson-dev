@@ -31,7 +31,7 @@ const MAKERS: Record<string, () => VoxelModel> = {
     windmill,
     spring_winder: winder,
     spring_store: springStore,
-    orrery,
+    orrery_4: orrery,
 };
 
 export const MACHINE_IDS = Object.keys(MAKERS);
@@ -50,7 +50,7 @@ export const MACHINE_NAMES: Record<string, string> = {
     windmill: "Windmill",
     spring_winder: "Spring winder",
     spring_store: "Spring store",
-    orrery: "Sky orrery",
+    orrery_4: "Sky orrery",
 };
 
 const cache = new Map<string, VoxelModel>();

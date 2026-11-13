@@ -30,7 +30,7 @@ function scaffold(b: Builder, y0: number, y1: number, r: number) {
 
 export function orreryModel(stage = ORRERY_MAX_STAGE): VoxelModel {
     const st = Math.max(0, Math.min(ORRERY_MAX_STAGE, Math.floor(stage)));
-    const b = new Builder(st === ORRERY_MAX_STAGE ? "orrery" : `orrery_${st}`, "Sky orrery", 6, 6);
+    const b = new Builder(`orrery_${st}`, "Sky orrery", 6, 6);
     // Stage 0: stepped round foundation with a brass track and four anchor blocks.
     plinth(b, 2);
     b.cyl("y", X, Z, 27, 2, 4, C.steelD);

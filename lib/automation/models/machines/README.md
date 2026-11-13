@@ -2,7 +2,7 @@
 
 Voxel models for every building, in the shared format (`../format.ts`). Built from code on first use.
 
-- `getMachineModel(id)`: drill, kiln, furnace, press, lathe, drawer, assembler, fabricator, hub, windmill, spring_winder, spring_store, orrery.
+- `getMachineModel(id)`: drill, kiln, furnace, press, lathe, drawer, assembler, fabricator, hub, windmill, spring_winder, spring_store, orrery_4.
 - `getOrreryModel(stage)`: the Sky orrery at stage 0 (foundation) to 4 (complete). `ORRERY_STAGES` has the names. Stages under way show a timber scaffold.
 - `poseAt(anim, t, working)`: reference evaluator for part animations, including `swing` and slide `wave` ("stamp", "crank"). Feed `t` from the machine's own clock so parts stop where they are when it idles.
 
