@@ -88,9 +88,11 @@ function bufferCap(cat: Catalog, rec: { inputs: { item: string; qty: number }[] 
     return inp ? inp.qty * cat.tune.inputBufferMult : cat.tune.defaultOutputCap;
 }
 
-function unlockedMachine(world: World, cat: Catalog, unlockStage: number): boolean {
+// A stage-N machine opens once a milestone of stage N-1 or later is delivered. Stage 1 finishes the first milestone,
+// and each later stage opens on the one before it, so the chain never waits on itself.
+export function unlockedMachine(world: World, cat: Catalog, unlockStage: number): boolean {
     if (unlockStage === 0) return true;
-    return cat.tree.milestones.some((m) => m.stage >= unlockStage && world.progress.milestonesDone.includes(m.id));
+    return cat.tree.milestones.some((m) => m.stage >= unlockStage - 1 && world.progress.milestonesDone.includes(m.id));
 }
 
 // selectedId is a building id (the id the HUD got from a placed building), not a machine type id.

@@ -9,4 +9,4 @@ export type { SiteDef } from "./data";
 export { gridView, autoRoute } from "./grid";
 export type { GridItem, GridView, RouteCell, RouteResult } from "./grid";
 export { serialize, deserialize, SAVE_FORMAT, SAVE_VERSION } from "./save";
-export { hudData, actions } from "./hud";
+export { hudData, actions, unlockedMachine } from "./hud";
