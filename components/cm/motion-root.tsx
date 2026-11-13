@@ -8,7 +8,7 @@ import { navItems } from "@/lib/nav";
 
 type Dir = "fwd" | "back" | "down" | "up";
 /** Panels: when they have closed on the seam (the route push), the minimum hold with the name up, and the full exit. */
-const SHUTTER = { cover: 220, hold: 240, exit: 350 };
+const SHUTTER = { cover: 220, hold: 240, exit: 290 };
 
 const rankOf = (p: string) =>
     navItems.findIndex((n) => (n.href === "/" ? p === "/" : p === n.href || p.startsWith(n.href + "/")));

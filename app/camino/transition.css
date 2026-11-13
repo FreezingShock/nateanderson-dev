@@ -21,7 +21,7 @@ html[data-xition="hold"] .cm-main, html[data-xition="hold"] .sf-foot { opacity: 
   --acc: #2fd8e8;
   --x-cover: .22s;   /* the panels close */
   --x-name: .18s;    /* the readout, name and blurb settle */
-  --x-exit: .32s;    /* the panels open */
+  --x-exit: .28s;    /* the panels open */
   position: fixed; inset: 0; z-index: var(--cm-z-curtain); pointer-events: none; visibility: hidden;
 }
 html[data-xition] .cm-wipe, html[data-xin] .cm-wipe { visibility: visible; }
@@ -89,16 +89,16 @@ html[data-xition="hold"] .cm-wipe .bl { opacity: 1; transform: none; }
 
 /* ---- Open: the panels leave through their outer edges, the text fades ----------------------------------------- */
 html[data-dir="fwd"][data-xin] .cm-shut.a, html[data-dir="back"][data-xin] .cm-shut.a {
-  animation: x-sh-a-h-out var(--x-exit) var(--cm-ease-cut) .04s both;
+  animation: x-sh-a-h-out var(--x-exit) var(--cm-ease-cut) 0s both;
 }
 html[data-dir="fwd"][data-xin] .cm-shut.b, html[data-dir="back"][data-xin] .cm-shut.b {
-  animation: x-sh-b-h-out var(--x-exit) var(--cm-ease-cut) .04s both;
+  animation: x-sh-b-h-out var(--x-exit) var(--cm-ease-cut) 0s both;
 }
 html[data-dir="down"][data-xin] .cm-shut.a, html[data-dir="up"][data-xin] .cm-shut.a {
-  animation: x-sh-a-v-out var(--x-exit) var(--cm-ease-cut) .04s both;
+  animation: x-sh-a-v-out var(--x-exit) var(--cm-ease-cut) 0s both;
 }
 html[data-dir="down"][data-xin] .cm-shut.b, html[data-dir="up"][data-xin] .cm-shut.b {
-  animation: x-sh-b-v-out var(--x-exit) var(--cm-ease-cut) .04s both;
+  animation: x-sh-b-v-out var(--x-exit) var(--cm-ease-cut) 0s both;
 }
 html[data-xin] .cm-wipe .k, html[data-xin] .cm-wipe::after, html[data-xin] .cm-wipe .bl {
   animation: x-fade-out calc(var(--x-exit) * .5) linear forwards;
