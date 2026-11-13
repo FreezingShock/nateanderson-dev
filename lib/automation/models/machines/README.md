@@ -4,7 +4,7 @@ Voxel models for every building, in the shared format (`../format.ts`). Built fr
 
 - `getMachineModel(id)`: drill, kiln, furnace, press, lathe, drawer, assembler, fabricator, hub, windmill, spring_winder, spring_store, orrery_4.
 - `getOrreryModel(stage)`: the Sky orrery at stage 0 (foundation) to 4 (complete). `ORRERY_STAGES` has the names. Stages under way show a timber scaffold.
-- `poseAt(anim, t, working)`: reference evaluator for part animations, including `swing` and slide `wave` ("stamp", "crank"). Feed `t` from the machine's own clock so parts stop where they are when it idles.
+- `poseAt` and `wave` are re-exported from the shared `../anim.ts`.
 
 Conventions: authored at rot 0, origin at the footprint's min corner, 10 voxels per cell. Inputs on the back (-z) with patina-rimmed hoppers; outputs on the front (+z) as brass chutes with a cream arrow on top. Every machine has a status lamp part (`lamp`) that pulses while working. Turning parts need whole-voxel pivots across their axis (the builder throws otherwise).
 

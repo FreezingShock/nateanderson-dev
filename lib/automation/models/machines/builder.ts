@@ -2,7 +2,7 @@
 // Boxes are half-open: box(0,0,0, 20,2,20) fills x 0..19, y 0..1, z 0..19.
 
 import { TAG, type Axis, type ModelPart, type ModelState, type PortRef, type ModelLight, type VoxelModel, type Rot } from "../format";
-import type { MachineAnim } from "./anim";
+import type { PartAnim as MachineAnim } from "../format";
 import { PALETTE, GLOW_COLORS } from "./palette";
 
 type PartAnim = MachineAnim;
@@ -295,7 +295,7 @@ export class Builder {
             });
             const part: ModelPart = { id: p.id, pivot: pv, pos, colors };
             if (anyGlow) part.tags = tags;
-            if (p.anim) part.anim = p.anim as unknown as ModelPart["anim"];
+            if (p.anim) part.anim = p.anim;
             parts.push(part);
         }
         return {

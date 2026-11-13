@@ -99,5 +99,5 @@ export function faceCount(model: VoxelModel): number {
 }
 
 export { ORRERY_STAGES, ORRERY_MAX_STAGE };
-export { poseAt, wave, type PartPose, type MachineAnim } from "./anim";
+export { poseAt, wave, type PartPose } from "../anim";
 export { PALETTE, C as PAL } from "./palette";
