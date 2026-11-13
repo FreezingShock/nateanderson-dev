@@ -144,12 +144,6 @@ export interface EngineDef {
     supply?: number; // kW, generators only
 }
 
-/** Cost and power for a machine from the tree. Machines not listed here cost nothing and draw no power. */
-export interface MachineSpec {
-    cost: Stack[];
-    power: number; // kW drawn while running
-}
-
 export interface Tune {
     maxAwaySeconds: number;
     fineWindow: number;
@@ -158,12 +152,12 @@ export interface Tune {
     inputBufferMult: number; // a crafter holds this many batches' worth of each input
     defaultOutputCap: number; // per item
     dayLength: number; // seconds for one full day-night cycle
+    springSeconds: number; // a wound spring stores this many seconds of its own output
 }
 
 export interface Catalog {
     tree: RecipeTree;
-    engine: Record<string, EngineDef>;
-    machine: Record<string, MachineSpec>;
+    engine: Record<string, EngineDef>; // hub and belts only; machines, power and costs come from tree
     tune: Tune;
 }
 
@@ -186,6 +180,7 @@ export interface Building {
     acc: number;
     lane: BeltItem[];
     rr: number;
+    charge: number; // wound spring: stored energy in kJ (battery); 0 for other buildings
 }
 
 export interface Deposit {
@@ -205,6 +200,8 @@ export interface Progress {
     milestonesDone: string[];
     delivered: Record<string, number>; // cumulative items that reached the hub
     prestiges: number;
+    site: string | null; // island site picked at the last prestige
+    bonus: { miner: number; power: number }; // multipliers from the site
 }
 
 export interface World {
@@ -218,7 +215,122 @@ export interface World {
     buildings: Record<number, Building>;
     power: PowerSnapshot;
     progress: Progress;
+    wind: number; // 0 to 1, rises and falls in gusts; read by the renderer (sway, windmill speed)
+    windPin: number | null; // a fixed wind for still-air play and tests; null follows the gusts
 }
 
 export type PlaceResult = { ok: true; id: number } | { ok: false; reason: string };
 export type ActionResult = { ok: true } | { ok: false; reason: string };
+
+export type NumberFormat = "short" | "full";
+
+export type ResourceGroup = "raw" | "part";
+
+export type ResourceView = {
+  id: string;
+  name: string;
+  group: ResourceGroup;
+  /** Placeholder code shown inside the icon until the design thread supplies art. */
+  glyph: string;
+  amount: number;
+  /** Net change per second. Negative values show as a drain. */
+  perSecond: number;
+};
+
+export type Line = { resourceId: string; amount: number };
+
+export type MachineStatus = "running" | "idle" | "starved" | "blocked";
+
+export type MachineView = {
+  id: string;
+  name: string;
+  glyph: string;
+  unlocked: boolean;
+  /** Shown in place of the cost line while the machine is locked. */
+  lockedReason?: string;
+  /** How many of this machine the player owns. */
+  count: number;
+  /** Cost to build one more. */
+  cost: Line[];
+  status: MachineStatus;
+};
+
+export type MachineDetail = MachineView & {
+  recipe: {
+    name: string;
+    inputs: Line[];
+    outputs: Line[];
+    seconds: number;
+  };
+  rates: { label: string; value: string }[];
+  buffers: { resourceId: string; have: number; max: number }[];
+};
+
+/** Expedition areas, shown in the expedition drawer. */
+export type AreaView = {
+  id: string;
+  name: string;
+  note: string;
+  state: "current" | "open" | "locked";
+};
+
+/** A milestone delivery. Completing one grants blueprints. */
+export type MilestoneView = {
+  id: string;
+  name: string;
+  /** Plain line, e.g. "Deliver 500 plates". */
+  goal: string;
+  progress: number; // 0..1
+  blueprintReward: number;
+  done: boolean;
+};
+
+/** A research node, unlocked by spending blueprints. */
+export type ResearchNode = {
+  id: string;
+  name: string;
+  note: string;
+  blueprintCost: number;
+  requires: string[];
+  state: "done" | "available" | "locked";
+};
+
+export type PrestigeView = {
+  ready: boolean;
+  /** Plain line on what is needed, e.g. "Reach 1 M brass made". */
+  requirement: string;
+  /** What the player keeps or gains, e.g. "+5% speed per workshop". */
+  gain: string;
+};
+
+export type StatLine = { label: string; value: string };
+
+export type NextStepView = {
+  text: string;
+  /** Optional button that acts on the hint, such as selecting the next machine. */
+  actionLabel?: string;
+  actionId?: string;
+};
+
+export type HudSettings = {
+  sound: boolean;
+  reduceMotion: boolean;
+  /** Low-fx: turns off the animated extras (scramble, dither shimmer, drawer slides). */
+  lowFx: boolean;
+  numberFormat: NumberFormat;
+  showRates: boolean;
+};
+
+export type HudData = {
+  resources: ResourceView[];
+  machines: MachineView[];
+  selected: MachineDetail | null;
+  areas: AreaView[];
+  milestones: MilestoneView[];
+  blueprints: number;
+  research: ResearchNode[];
+  prestige: PrestigeView;
+  stats: StatLine[];
+  nextStep: NextStepView;
+  settings: HudSettings;
+};
