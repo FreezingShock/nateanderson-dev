@@ -99,3 +99,15 @@ test("tile picker", () => {
     assert.equal(pickBeltTile(n({ back: true, frontIsMachine: true })), "portIn");
     assert.equal(pickBeltTile(n({ backIsMachine: true })), "portOut");
 });
+
+test("every kit piece converts to a valid shared voxel model", async () => {
+    const { BELT_MODELS } = await import("../../lib/automation/models/belts/models.ts");
+    const { validateModel } = await import("../../lib/automation/models/format.ts");
+    const ids = new Set();
+    for (const m of BELT_MODELS) {
+        validateModel(m);
+        assert.ok(!ids.has(m.id), `unique id ${m.id}`);
+        ids.add(m.id);
+    }
+    assert.equal(BELT_MODELS.length, PIECE_KINDS.length + 2);
+});
