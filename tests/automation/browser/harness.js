@@ -1,6 +1,6 @@
 // Plain test scene: a canvas grid drawn with the same projection the renderer will use, so picking is checked
 // against real screen positions. No Three.js here; the renderer thread owns that.
-import { createInputController, project, vec } from "./input/index.js";
+import { createInputController, createTouchBar, project, vec, DELETE_TOOL } from "./input/index.js";
 
 const board = { width: 20, depth: 20 };
 const items = new Map();
@@ -30,6 +30,22 @@ const ctl = createInputController({
     onChange: () => {},
 });
 ctl.camera.settle();
+
+// The on-screen bar, wired the same way mount() wires it.
+const touchBar = createTouchBar({
+    container: document.body,
+    isTopDown: () => ctl.camera.isTopDown(),
+    onTopDown: () => ctl.camera.toggleTopDown(),
+    onRotate: () => {
+        const h = ctl.build.getHover();
+        if (h && ctl.build.peek(h)) ctl.build.rotateAt(h);
+        else ctl.build.rotateCw();
+    },
+    onUndo: () => ctl.build.undo(),
+    onRedo: () => ctl.build.redo(),
+    onRemove: () => ctl.build.setTool(DELETE_TOOL),
+    onCancel: () => (ctl.build.isStroking() ? ctl.build.cancelStroke() : ctl.build.setTool(null)),
+});
 
 function resize() {
     canvas.width = innerWidth * dpr;
@@ -82,6 +98,10 @@ requestAnimationFrame(frame);
 
 window.__auto = {
     ctl,
+    touchBar,
+    focus(x, z) {
+        ctl.camera.setTarget(x, z);
+    },
     cellPx(x, z) {
         const r = canvas.getBoundingClientRect();
         const s = toScreen(ctl.camera.view(r.width / r.height), vec(x + 0.5, 0, z + 0.5));

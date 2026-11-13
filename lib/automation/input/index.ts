@@ -6,6 +6,7 @@ export { BuildController, DELETE_TOOL, footprintOffsets, type Footprint, type Of
 export { type Cell, type Rot, type BoardSize, cellKey, cellInBoard, lineCells, rotate } from "./grid";
 export { mapKey, type KeyAction, type KeyLike } from "./keys";
 export { PointerInput, type PointerOptions } from "./pointer";
+export { createTouchBar, type TouchBar, type TouchBarOptions } from "./touch-bar";
 export { vec, type Vec3 } from "./math";
 
 import { type BoardSize } from "./grid";
@@ -13,6 +14,7 @@ import { type HeightFn } from "./picking";
 import { OrbitCamera, type CameraLimits, type OrbitPose, DEFAULT_LIMITS } from "./camera";
 import { BuildController, type BuildWorld, type ToolSpec, DELETE_TOOL, type BuildEvent } from "./build";
 import { PointerInput } from "./pointer";
+import { createTouchBar, type TouchBar } from "./touch-bar";
 import { mapKey, type KeyAction } from "./keys";
 
 export interface InputOptions {
@@ -169,10 +171,13 @@ export interface ViewSink {
 export interface MountOptions extends Omit<InputOptions, "element" | "keyTarget"> {
     // Keyboard listener target. Defaults to window.
     keyTarget?: Window | null;
+    // Adds the on-screen touch bar (top-down, rotate, undo, redo, remove, cancel) to this container. Off by default.
+    touchBar?: { container: HTMLElement } | boolean;
 }
 
 export interface MountedInput {
     controller: InputController;
+    touchBar?: TouchBar;
     // Call once per frame: advances the camera and writes its view to the sink.
     update(dt: number): void;
     destroy(): void;
@@ -181,7 +186,36 @@ export interface MountedInput {
 // Hooks the input layer up to a camera the page already owns. The renderer keeps the camera; this module
 // moves it. Do not run OrbitControls on the same camera at the same time.
 export function mount(camera: ViewSink, domElement: HTMLElement, options: MountOptions): MountedInput {
-    const controller = createInputController({ ...options, element: domElement, keyTarget: options.keyTarget });
+    const { touchBar: touchBarOpt, ...inputOpts } = options;
+    const controller = createInputController({ ...inputOpts, element: domElement, keyTarget: options.keyTarget });
+    let touchBar: TouchBar | undefined;
+    if (touchBarOpt) {
+        const container = typeof touchBarOpt === "object" ? touchBarOpt.container : domElement.parentElement ?? domElement;
+        const b = controller.build;
+        const pick = (fn: () => void) => () => {
+            fn();
+            touchBar?.sync();
+        };
+        touchBar = createTouchBar({
+            container,
+            isTopDown: () => controller.camera.isTopDown(),
+            onTopDown: pick(() => controller.camera.toggleTopDown()),
+            onRotate: pick(() => {
+                const h = b.getHover();
+                if (h && b.peek(h)) b.rotateAt(h);
+                else b.rotateCw();
+            }),
+            onUndo: pick(() => b.undo()),
+            onRedo: pick(() => b.redo()),
+            onRemove: pick(() => {
+                b.setTool(DELETE_TOOL);
+            }),
+            onCancel: pick(() => {
+                if (b.isStroking()) b.cancelStroke();
+                else b.setTool(null);
+            }),
+        });
+    }
     const write = () => {
         const rect = domElement.getBoundingClientRect();
         const aspect = rect.width > 0 && rect.height > 0 ? rect.width / rect.height : 1;
@@ -195,11 +229,13 @@ export function mount(camera: ViewSink, domElement: HTMLElement, options: MountO
     write();
     return {
         controller,
+        touchBar,
         update(dt: number) {
             controller.update(dt);
             write();
         },
         destroy() {
+            touchBar?.destroy();
             controller.destroy();
         },
     };

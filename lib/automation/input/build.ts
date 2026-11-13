@@ -74,6 +74,7 @@ export interface Ghost {
 export type BuildEvent =
     | { type: "place"; count: number }
     | { type: "remove"; count: number }
+    | { type: "rotate" }
     | { type: "invalid"; reason: string }
     | { type: "undo" }
     | { type: "redo" };
@@ -206,6 +207,34 @@ export class BuildController {
         return 1;
     }
 
+    // What covers this cell, or null. Used by the touch long-press.
+    peek(cell: Cell): ItemRef | null {
+        return this.world.get(cell.x, cell.z);
+    }
+
+    // Quarter-turns the building that covers this cell, in one undo step. The building is lifted first so
+    // its own cells don't block the check. Returns false when the turned footprint doesn't fit.
+    rotateAt(cell: Cell): boolean {
+        const here = this.world.get(cell.x, cell.z);
+        if (!here) return false;
+        const anchor = here.anchor ?? { x: cell.x, z: cell.z };
+        const next: ItemRef = { kind: here.kind, rot: rotate(here.rot, 1), anchor };
+        this.world.set(anchor.x, anchor.z, null);
+        const reason = this.world.check ? this.world.check(next.kind, anchor.x, anchor.z, next.rot) : null;
+        if (reason) {
+            this.world.set(anchor.x, anchor.z, here);
+            this.onEvent?.({ type: "invalid", reason });
+            return false;
+        }
+        this.world.set(anchor.x, anchor.z, next);
+        this.undoStack.push([{ x: anchor.x, z: anchor.z, before: here, after: next }]);
+        if (this.undoStack.length > this.historyLimit) this.undoStack.shift();
+        this.redoStack = [];
+        this.onEvent?.({ type: "rotate" });
+        this.emit();
+        return true;
+    }
+
     ghost(): Ghost | null {
         if (!this.tool) return null;
         const tool = this.tool;
@@ -251,7 +280,7 @@ export class BuildController {
     undo(): boolean {
         const edits = this.undoStack.pop();
         if (!edits) return false;
-        for (let i = edits.length - 1; i >= 0; i--) this.world.set(edits[i].x, edits[i].z, edits[i].before);
+        for (let i = edits.length - 1; i >= 0; i--) applyEdit(this.world, edits[i], "undo");
         this.redoStack.push(edits);
         this.onEvent?.({ type: "undo" });
         this.emit();
@@ -261,7 +290,7 @@ export class BuildController {
     redo(): boolean {
         const edits = this.redoStack.pop();
         if (!edits) return false;
-        for (const e of edits) this.world.set(e.x, e.z, e.after);
+        for (const e of edits) applyEdit(this.world, e, "redo");
         this.undoStack.push(edits);
         this.onEvent?.({ type: "redo" });
         this.emit();
@@ -331,13 +360,13 @@ export class BuildController {
         return this.commitEdits(edits, "place");
     }
 
-    private commitEdits(edits: Edit[], kind: "place" | "remove"): number {
+    private commitEdits(edits: Edit[], kind: "place" | "remove" | "rotate"): number {
         if (edits.length === 0) return 0;
-        for (const e of edits) this.world.set(e.x, e.z, e.after);
+        for (const e of edits) applyEdit(this.world, e, "redo");
         this.undoStack.push(edits);
         if (this.undoStack.length > this.historyLimit) this.undoStack.shift();
         this.redoStack = [];
-        this.onEvent?.({ type: kind, count: edits.length });
+        this.onEvent?.(kind === "rotate" ? { type: "rotate" } : { type: kind, count: edits.length });
         this.emit();
         return edits.length;
     }
@@ -345,4 +374,13 @@ export class BuildController {
     private emit(): void {
         for (const fn of this.listeners) fn();
     }
+}
+
+// Writes one edit forwards (redo) or backwards (undo). A rotation has both a before and an after, so the
+// old building is lifted before the new one goes in. Placements and removals have one side, so only that side runs.
+function applyEdit(world: BuildWorld, e: Edit, dir: "undo" | "redo"): void {
+    const from = dir === "redo" ? e.before : e.after;
+    const to = dir === "redo" ? e.after : e.before;
+    if (from) world.set(e.x, e.z, null);
+    if (to) world.set(e.x, e.z, to);
 }

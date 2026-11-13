@@ -366,3 +366,39 @@ test("delete on a multi-cell building removes it once, even when several of its 
     assert.equal(b.endStroke(), 1, "one building removed");
     assert.equal(world.buildings.size, 0);
 });
+
+test("rotateAt turns a building in place, keeps it whole, and undo restores it in one step", () => {
+    const world = fpWorld({ press: { w: 2, d: 1 } });
+    const b = new A.BuildController({ world, board });
+    b.setTool({ id: "press", label: "Press", line: false, footprint: { w: 2, d: 1 } });
+    b.tap({ x: 6, z: 6 });
+    assert.deepEqual(world.buildings.get("6,6").rot, 0);
+    assert.equal(b.rotateAt({ x: 7, z: 6 }), true, "a covered cell turns the building");
+    assert.equal(world.buildings.size, 1, "still one building");
+    assert.equal(world.buildings.get("6,6").rot, 1);
+    assert.equal(world.get(6, 7)?.anchor?.z, 6, "the new footprint covers (6, 7)");
+    assert.ok(b.undo());
+    assert.equal(world.buildings.get("6,6").rot, 0, "undo restores the old rotation");
+    assert.ok(b.redo());
+    assert.equal(world.buildings.get("6,6").rot, 1, "redo turns it again");
+});
+
+test("rotateAt refuses a turn that would overlap another building, and leaves the building as it was", () => {
+    // The sim's check covers the whole footprint. Here the turned press (rot 1) runs into a block on (6, 7).
+    const world = fpWorld({ press: { w: 2, d: 1 } }, (kind, x, z, rot) => (rot === 1 && x === 6 && z === 6 ? "blocked" : null));
+    const b = new A.BuildController({ world, board });
+    b.setTool({ id: "press", label: "Press", line: false, footprint: { w: 2, d: 1 } });
+    b.tap({ x: 6, z: 6 });
+    const events = [];
+    const b2 = new A.BuildController({ world, board, onEvent: (e) => events.push(e) });
+    assert.equal(b2.rotateAt({ x: 6, z: 6 }), false);
+    assert.equal(world.buildings.get("6,6").rot, 0, "building unchanged");
+    assert.equal(events.at(-1).type, "invalid");
+});
+
+test("rotateAt on an empty cell does nothing", () => {
+    const world = fpWorld({ press: { w: 2, d: 1 } });
+    const b = new A.BuildController({ world, board });
+    assert.equal(b.rotateAt({ x: 3, z: 3 }), false);
+    assert.equal(b.canUndo(), false);
+});
