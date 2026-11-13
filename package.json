@@ -6,13 +6,14 @@
         "dev": "next dev --turbopack",
         "prebuild": "node scripts/nodefarm/stamp-art.mjs --check",
         "build": "next build",
-        "test:nodefarm": "node --experimental-strip-types --no-warnings --test --test-reporter=spec \"tests/nodefarm/*.test.mjs\" \"tests/games/*.test.mjs\"",
+        "test:nodefarm": "node --experimental-strip-types --no-warnings --test --test-reporter=spec \"tests/nodefarm/*.test.mjs\" \"tests/games/*.test.mjs\" \"tests/automation/*.test.mjs\"",
         "test:automation": "node --experimental-strip-types --no-warnings --test --test-reporter=spec \"tests/automation/*.test.mjs\"",
         "test:automation:browser": "node tests/automation/browser/run.mjs",
         "start": "next start",
         "lint": "next lint",
         "test:shell": "node scripts/games/shell-check.mjs",
-        "format": "prettier --write \"**/*.{js,jsx,ts,tsx,json,css,scss,md}\""
+        "format": "prettier --write \"**/*.{js,jsx,ts,tsx,json,css,scss,md}\"",
+        "check:automation": "node --experimental-strip-types --no-warnings scripts/automation/check-recipes.mjs"
     },
     "dependencies": {
         "@radix-ui/react-icons": "^1.3.2",
