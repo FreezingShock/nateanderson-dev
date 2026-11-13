@@ -15,7 +15,7 @@ import { OrbitCamera, type CameraLimits, type OrbitPose, DEFAULT_LIMITS } from "
 import { BuildController, type BuildWorld, type ToolSpec, DELETE_TOOL, type BuildEvent } from "./build";
 import { PointerInput } from "./pointer";
 import { createTouchBar, type TouchBar } from "./touch-bar";
-import { mapKey, type KeyAction } from "./keys";
+import { mapKey, type KeyAction, type WalkDir } from "./keys";
 
 export interface InputOptions {
     element: HTMLElement;
@@ -46,6 +46,9 @@ const isTyping = (t: EventTarget | null): boolean => {
     const tag = el.tagName;
     return tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT" || el.isContentEditable === true;
 };
+
+// Units per second of ground travel, per unit of camera distance. At the default zoom this crosses the island in about 2 s.
+const WALK_SPEED_PER_DISTANCE = 0.7;
 
 export function createInputController(opts: InputOptions): InputController {
     const camera = new OrbitCamera(opts.limits ?? DEFAULT_LIMITS, opts.initialPose);
@@ -112,8 +115,14 @@ export function createInputController(opts: InputOptions): InputController {
             case "space":
                 pointer.setSpace(a.down);
                 return true;
+            case "walk":
+                return false;
         }
     };
+
+    // Held WASD keys. update(dt) turns them into camera movement every frame.
+    const held = new Set<WalkDir>();
+    const onBlur = () => held.clear();
 
     const onKey = (e: KeyboardEvent) => {
         if (isTyping(e.target) || e.defaultPrevented) return;
@@ -127,6 +136,15 @@ export function createInputController(opts: InputOptions): InputController {
             type: e.type,
         });
         if (!action) return;
+        if (action.type === "walk") {
+            if (action.down) {
+                held.add(action.dir);
+                e.preventDefault();
+            } else {
+                held.delete(action.dir);
+            }
+            return;
+        }
         if (apply(action)) {
             e.preventDefault();
             opts.onChange?.();
@@ -136,6 +154,7 @@ export function createInputController(opts: InputOptions): InputController {
     if (kt) {
         kt.addEventListener("keydown", onKey);
         kt.addEventListener("keyup", onKey);
+        kt.addEventListener("blur", onBlur);
     }
 
     const unsub = build.subscribe(() => opts.onChange?.());
@@ -146,6 +165,17 @@ export function createInputController(opts: InputOptions): InputController {
         pointer,
         setToolById,
         update(dt: number) {
+            if (held.size > 0) {
+                const step = Math.min(Math.max(0, dt), 0.1);
+                const fwd = (held.has("w") ? 1 : 0) - (held.has("s") ? 1 : 0);
+                const side = (held.has("d") ? 1 : 0) - (held.has("a") ? 1 : 0);
+                if (fwd !== 0 || side !== 0) {
+                    // Speed scales with zoom so a close view and a far view both feel right.
+                    const speed = WALK_SPEED_PER_DISTANCE * camera.pose().distance * step;
+                    const len = Math.hypot(fwd, side);
+                    camera.panWorld((fwd / len) * speed, (side / len) * speed);
+                }
+            }
             camera.update(dt);
         },
         destroy() {
@@ -154,7 +184,9 @@ export function createInputController(opts: InputOptions): InputController {
             if (kt) {
                 kt.removeEventListener("keydown", onKey);
                 kt.removeEventListener("keyup", onKey);
+                kt.removeEventListener("blur", onBlur);
             }
+            held.clear();
         },
     };
 }

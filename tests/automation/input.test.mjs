@@ -4,7 +4,7 @@ import assert from "node:assert/strict";
 import { load } from "./helpers.mjs";
 
 const A = await load("lib/automation/input/index.ts");
-const { DEFAULT_LIMITS } = A;
+const { DEFAULT_LIMITS, mapKey } = A;
 const board = { width: 20, depth: 20 };
 
 // A tiny in-memory world with the same shape the simulation will provide.
@@ -401,4 +401,11 @@ test("rotateAt on an empty cell does nothing", () => {
     const b = new A.BuildController({ world, board });
     assert.equal(b.rotateAt({ x: 3, z: 3 }), false);
     assert.equal(b.canUndo(), false);
+});
+
+test("WASD maps to held walk actions, not keydown pans", () => {
+    assert.deepEqual(mapKey({ key: "w", type: "keydown" }), { type: "walk", dir: "w", down: true });
+    assert.deepEqual(mapKey({ key: "D", type: "keydown" }), { type: "walk", dir: "d", down: true });
+    assert.deepEqual(mapKey({ key: "a", type: "keyup" }), { type: "walk", dir: "a", down: false });
+    assert.equal(mapKey({ key: "s", ctrlKey: true, type: "keydown" }), null);
 });

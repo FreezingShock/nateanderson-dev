@@ -28,6 +28,7 @@ const KEYS: { group: string; rows: [string, string][] }[] = [
         group: "Camera",
         rows: [
             ["Drag", "Orbit"],
+            ["W A S D", "Pan across the floor (hold)"],
             ["Arrow keys", "Pan across the floor"],
             ["+ and -", "Zoom"],
             ["T", "Top-down view"],
