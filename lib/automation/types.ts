@@ -120,7 +120,8 @@ export interface RecipeTree {
     research: ResearchDef[];
     milestones: MilestoneDef[];
     prestige: PrestigeDef;
-    structures: StructureDef[];
+    /** Non-machine structures (hub, orrery stages). Optional so placeholder catalogs still typecheck. */
+    structures?: StructureDef[];
 }
 
 // ---- Engine types (Simulation thread). Content above is owned by the Recipe thread; the engine below is owned by Simulation. ----
@@ -302,9 +303,16 @@ export type MilestoneView = {
 export type ResearchNode = {
   id: string;
   name: string;
+  /** Two-letter glyph for the node icon. */
+  glyph: string;
   note: string;
   blueprintCost: number;
   requires: string[];
+  /** Names of the items this node unlocks recipes for, e.g. "Iron gear". */
+  unlocks: string[];
+  /** Layout on the research board: column is depth in the requires graph, row is the slot within that column. */
+  column: number;
+  row: number;
   state: "done" | "available" | "locked";
 };
 
@@ -314,6 +322,12 @@ export type PrestigeView = {
   requirement: string;
   /** What the player keeps or gains, e.g. "+5% speed per workshop". */
   gain: string;
+  /** Things that carry over a workshop, from the tree. */
+  keeps: string[];
+  /** Things that reset on a workshop, from the tree. */
+  leaves: string[];
+  /** Names of the island sites the player can move to. */
+  sites: string[];
 };
 
 export type StatLine = { label: string; value: string };

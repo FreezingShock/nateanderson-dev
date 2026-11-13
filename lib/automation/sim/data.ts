@@ -17,7 +17,6 @@ export const PLACEHOLDER_TREE: RecipeTree = {
         { id: "press", name: "Press", unlockStage: 2, speed: 1, footprint: { w: 2, d: 2 }, powerKw: 90, buildCost: [{ item: "plate-a", qty: 8 }, { item: "plate-b", qty: 4 }] },
         { id: "windmill", name: "Windmill", unlockStage: 0, speed: 1, footprint: { w: 2, d: 2 }, powerKw: 0, generatesKw: 30, supplyRange: 6, buildCost: [{ item: "plate-a", qty: 10 }] },
         { id: "spring_winder", name: "Spring winder", unlockStage: 0, speed: 1, footprint: { w: 2, d: 2 }, powerKw: 0, generatesKw: 60, supplyRange: 4, buildCost: [{ item: "plate-a", qty: 10 }, { item: "plate-b", qty: 5 }] },
-        { id: "spring_store", name: "Spring store", unlockStage: 0, speed: 1, footprint: { w: 2, d: 2 }, powerKw: 0, generatesKw: 40, supplyRange: 4, buildCost: [{ item: "plate-a", qty: 8 }] },
     ],
     recipes: [
         { id: "smelt-a", machine: "smelter", inputs: [{ item: "ore-a", qty: 2 }], output: { item: "plate-a", qty: 1 }, craftSeconds: 3 },
@@ -28,6 +27,7 @@ export const PLACEHOLDER_TREE: RecipeTree = {
         { item: "ore-a", baseRatePerMin: 30 },
         { item: "ore-b", baseRatePerMin: 30 },
     ],
+    structures: [],
     research: [],
     milestones: [],
     prestige: { name: "Open a new workshop", keeps: ["blueprints", "research", "routes"], resets: ["machines", "stock"] },
