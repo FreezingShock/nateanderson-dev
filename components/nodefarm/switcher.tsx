@@ -72,7 +72,7 @@ export function swInfo(s: State, bps: number, lastSave: number, fs: boolean, lab
     return {
         core: { read: `${fmt(bps)}/s` },
         stats: { read: `${pad(zones)}/${pad(STATS.length)} open` },
-        map: { read: `zone ${pad(zones - 1)}` }, // same numbering as the Map window (Bytes is zone 00)
+        map: { read: `zone ${pad(zones)}` }, // same numbering as the Map window and the zone names everywhere else (Bytes is zone 01, Sunstone 25)
         goals: { read: `${g.goals}/${GOALS.length}` },
         records: { read: newLogs ? `${newLogs} new` : `${s.logs.length} logs`, hot: newLogs > 0 },
         ascend: { read: ready ? `ready +${fmt(apOnAscend(s))}` : `${fmt(s.aether)}/${fmt(ascendNeed(s))} AE`, hot: ready },

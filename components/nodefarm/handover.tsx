@@ -2,8 +2,8 @@
 
 import { useEffect, useRef, useState, type CSSProperties } from "react";
 import {
-    FW, FW_SECS, HAND_TUNE, PROTOS, canSwitchProto, fmt, fmtTime, fwNode, fwNodeOpen, fwTotals, fwVis, handFx, handKeeps, handOpen, isUnlocked,
-    keysOnHandover, masteryRanks, protoDef, protoRank, ROMAN, statDef, treeCount, treeSpent, type ProtoId, type State,
+    ARC_MATS, arcGateNeed, FW, FW_SECS, HAND_TUNE, PROTOS, canSwitchProto, droneFx, fmt, fmtTime, fwNode, fwNodeOpen, fwTotals, fwVis, handFx, handKeeps, handOpen, isUnlocked,
+    chOff, keysOnHandover, masteryRanks, protoDef, protoRank, ROMAN, statDef, treeCount, treeSpent, type ProtoId, type State,
 } from "@/lib/nodefarm/engine";
 import { NfIcon } from "./icon";
 import type { TreeModel } from "./tree";
@@ -36,7 +36,7 @@ export function fwModel(s: State): TreeModel {
 export const fwReady = (s: State) => FW.filter((n) => !s.hand.fw.includes(n.id) && fwNodeOpen(s, n) && s.hand.keys >= n.cost).length;
 
 /** Press and hold to hand over. A click with no press behind it (screen readers) asks twice instead. */
-function HoldHandover({ ready, keys, onGo }: { ready: boolean; keys: number; onGo: () => void }) {
+function HoldHandover({ ready, keys, locked, onGo }: { ready: boolean; keys: number; locked: boolean; onGo: () => void }) {
     const [hold, setHold] = useState(false);
     const [nudge, setNudge] = useState(false);
     const [ask, setAsk] = useState(false);
@@ -85,7 +85,7 @@ function HoldHandover({ ready, keys, onGo }: { ready: boolean; keys: number; onG
         >
             <i className="nf-hx-go-fill" aria-hidden="true" />
             <span className="nf-hx-go-t">
-                {!ready ? "Reach node zero first" : ask ? `Confirm: hand over for ${keys} Keys` : hold ? "Keep holding" : nudge ? "Keep holding to hand over" : `Hold to hand over · +${keys} Keys`}
+                {locked ? "Locked until you leave the test" : !ready ? "Reach node zero first" : ask ? `Confirm: hand over for ${keys} Keys` : hold ? "Keep holding" : nudge ? "Keep holding to hand over" : `Hold to hand over · +${keys} Keys`}
             </span>
         </button>
     );
@@ -114,6 +114,8 @@ function Flow({ s, keys, onGo }: { s: State; keys: number; onGo: () => void }) {
     const open = handOpen(s);
     const nodes = treeCount(s);
     const fwOwned = s.hand.fw.length;
+    // zones this Handover opens (ARC_GATE): two at a time, so each early Handover has something new to climb to
+    const opens = ARC_MATS.filter((m) => arcGateNeed(m) === s.hand.count + 1).map((m) => statDef(m).name);
     return (
         <section className="nf-hx-flow" data-cx-i="1">
             <ol className="nf-hx-steps" data-ready={open ? "" : undefined}>
@@ -125,7 +127,7 @@ function Flow({ s, keys, onGo }: { s: State; keys: number; onGo: () => void }) {
                 <li style={{ ["--c" as string]: "#ffc53a" }}>
                     <span className="nf-hx-k" data-cx-scr="">02 // Hand over</span>
                     <span className="nf-hx-v"><b>{keys > 0 ? `+${keys}` : "0"}</b><small>Keys</small></span>
-                    <small className="nf-hx-n">From {nodes} tree nodes and ranks, plus {fmt(s.origin)} Origin.{handFx(s).keys ? ` Keysmith x${fmt(1 + handFx(s).keys)}.` : ""}</small>
+                    <small className="nf-hx-n">From {nodes} tree nodes and ranks, plus {fmt(s.origin)} Origin.{handFx(s).keys ? ` Keysmith x${fmt(1 + handFx(s).keys)}.` : ""}{opens.length ? ` Unlocks ${opens.join(" and ")} once you climb back.` : ""}</small>
                 </li>
                 <li style={{ ["--c" as string]: ROOT_GREEN }}>
                     <span className="nf-hx-k" data-cx-scr="">03 // Flash firmware</span>
@@ -133,7 +135,7 @@ function Flow({ s, keys, onGo }: { s: State; keys: number; onGo: () => void }) {
                     <small className="nf-hx-n">Firmware is kept through every Handover.</small>
                 </li>
             </ol>
-            <HoldHandover ready={keys > 0} keys={keys} onGo={onGo} />
+            <HoldHandover ready={keys > 0} keys={keys} locked={chOff(s, "prestige")} onGo={onGo} />
         </section>
     );
 }
@@ -142,17 +144,20 @@ function Flow({ s, keys, onGo }: { s: State; keys: number; onGo: () => void }) {
 function Ledger({ s }: { s: State }) {
     const f = handFx(s);
     const kept = handKeeps(s).length;
+    const modKeep = Math.max(f.modKeep, droneFx(s).modKeep);
     const back = Math.floor(treeSpent(s) * f.apRefund);
     const wipes = [
         "This run: every stat, button and producer",
         `AP and perks${f.perkKeep ? ` (half the perk levels stay: Perk cache)` : ""}`,
         `The prestige tree${kept ? ` (${kept} nodes stay: Imprint)` : ""}${back ? `, ${fmt(back)} AP back (Tape backup)` : ""}`,
         "Drones, Mounted drives and Exploit Lab Intel and stock",
+        `Parts and mod levels in the hangar${modKeep ? ` (${Math.round(modKeep * 100)}% stay: Flight recorder, Black box)` : ""}`,
         `Rig levels${f.rigKeep ? ` (half stay: Rig memory)` : ""}`,
     ];
     const keeps = [
         "Goals, secrets and operator logs",
         "Exploit Lab research",
+        "Cleared stress test ranks",
         ...(s.auto?.own.length ? ["Scripts you have learned"] : []),
         ...(s.dr?.nodes.length || masteryRanks(s) ? ["The hangar: postings, mastery and the drone tree"] : []),
         "Rig switches and zone event history",

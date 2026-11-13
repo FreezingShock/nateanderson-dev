@@ -40,7 +40,6 @@ while (t < END) {
             if (s.mult >= b.cost && (s.mult >= b.cost * 1.3 || t % 900 < 3)) { E.press(s, "reboot", k); break; }
         }
         if (has("dronesOpen") && E.dronesOpen(s)) for (let k = 0; k < E.TIERS; k++) if (s.aether >= E.droneCost(s, k) * 3) E.buyDrone(s, k);
-        s.armed = ["mult", ...E.MATS];
         E.checkGoals(s);
         if (s.lab?.seen) {
             for (const n of [...E.LAB].sort((a, b) => a.cost - b.cost)) if (!s.lab.nodes.includes(n.id)) E.buyLabNode(s, n.id);
