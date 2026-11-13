@@ -3,18 +3,32 @@
 // Zone rig panel: the one machine each zone has (rules in lib/nodefarm/rigs.ts). Drawn inside every zone body, under the
 // effect lines. Sharp frame with corner brackets, a meter, plain data lines, set-once switches and the level buttons.
 // Styles: app/camino/nodefarm-rig.css (`nf-rig*`).
-import { useState } from "react";
-import { sfx } from "@/lib/sound/sounds";
-import { STATS, fmt, fmtTime, statDef, type Derived, type State, type StatId } from "@/lib/nodefarm/engine";
+import { useState, type CSSProperties } from "react";
+import { nfx } from "@/lib/nodefarm/sound";
+import type { SfxName } from "@/lib/sound/sounds";
+
+// rigs play in the "automation" mix
+const sfx = (n: SfxName, a?: unknown) => nfx(n, a, "automation");
+import { STATS, fmt, isUnlocked, fmtTime, statDef, type Derived, type State, type StatId } from "@/lib/nodefarm/engine";
 import {
     GROW_NAMES, PRISM_AIMS, RIGS, RIG_TUNE as T, buyRig, cacheCap, capCharge, capPay, capSecs, castMax, drawPay, glowFor, glowMul, growMul, growNext, growStage,
     indexMul, indexed, mirrorMul, mirrored, pourSecs, prismMul, pulseSecs, rewrite, rewritePrice, rig, rigCap, rigDef, rigLv, rigPrice, scrubBurn, setRig,
-    siliconYield, stagesLit, stagingMul, stillFrac, stillMul, weather, wellMul, zoneNo,
+    siliconYield, stagesLit, ARC_LINKS, LINK_TUNE, arcLevel, arcOfZone, linkTier, stagingMul, stillFrac, stillMul, weather, wellMul, zoneNo,
     runningZones, spreadMul, knotsTied, knotMul, daylight, seedMax, seedMul, seedsFor, basaltYield, coolBurn, ventSecs, heatSecs, ringMul, convLevels, convMul, DESCENT_RIGS,
 } from "@/lib/nodefarm/rigs";
 import "@/app/camino/nodefarm-rig.css";
 
 type Line = [string, string];
+/** Row order of public/naos/nodefarm/rigs.webp (scripts/naos-art/nodefarm-rigs.py RIG_ORDER). */
+const ART_ROWS: StatId[] = ["bytes", "mult", "reboot", "copper", "silicon", "quartz", "aether", "runes", "starglass", "voidsteel", "chrono", "nebula", "pulsars", "singularity", "engrams", "paradox", "origin",
+    "spores", "mycelium", "pollen", "bloom", "basalt", "magma", "geodes", "sunstone"];
+/** Which of the four drawn states to show: empty, started, past half, full. Weather shows its sky instead of its clock. */
+function artState(id: StatId, s: State, frac: number): number {
+    if (id === "pollen") return s.prod.pollen > 0 && daylight(s).phase === "day" ? 3 : 0;
+    if (id === "magma") return (rig(s).heat ?? 0) > 0 ? 3 : frac >= 0.5 ? 2 : frac > 0.02 ? 1 : 0;
+    if (id === "nebula") { const w = weather(s); return s.prod.nebula > 0 ? (w.phase === "storm" ? 3 : w.phase === "front" ? 2 : 0) : 0; }
+    return frac >= 0.999 ? 3 : frac >= 0.5 ? 2 : frac > 0.02 ? 1 : 0;
+}
 interface View { frac: number; meter: string; lines: Line[]; warn?: boolean }
 const x = (v: number) => `×${fmt(v)}`;
 const name = (id: string) => statDef(id as StatId).name;
@@ -114,9 +128,9 @@ function view(id: StatId, s: State, d: Derived): View {
             const m = ringMul(s);
             return { frac: (m - 1) / (T.ringMax - 1), meter: `ringing with ${fmt(s.quartz)} Quartz`, lines: [["Geodes output", x(m)]] };
         }
-        case "core": {
+        case "sunstone": {
             const n = convLevels(s);
-            return { frac: n / (DESCENT_RIGS.length * (T.baseCap + T.rewriteMax)), meter: `${n} rig levels below`, lines: [["Core output", x(convMul(s))]] };
+            return { frac: n / (DESCENT_RIGS.length * (T.baseCap + T.rewriteMax)), meter: `${n} rig levels below`, lines: [["Sunstone output", x(convMul(s))]] };
         }
         default:
             return { frac: 0, meter: "", lines: [] };
@@ -127,13 +141,17 @@ export function ZoneRig({ id, s, d }: { id: StatId; s: State; d: Derived }) {
     const [, bump] = useState(0);
     const def = rigDef(id);
     if (!def) return null;
+    // Rigs are the second layer of every zone: they stay out of sight until Silicon is open (about the fifth minute, when their
+    // first upgrade is in reach), so the first zones show only their buttons and the one next step.
+    if (!isUnlocked(s, "silicon") && s.life.ascends === 0) return null;
     const r = rig(s);
     const v = view(id, s, d);
-    const act = (fn: () => boolean | void) => { const res = fn(); sfx(res === false ? "deny" : "tab"); bump((n) => n + 1); };
+    const act = (fn: () => boolean | void) => { const res = fn(); sfx(res === false ? "deny" : "nfRig"); bump((n) => n + 1); };
     const cap = rigCap(s, id);
     const lvs = def.keys.map((k) => rigLv(s, k.key));
     return (
         <section className="nf-rig" data-kind={def.kind} data-warn={v.warn ? "" : undefined} aria-label={`Zone rig: ${def.name}`}>
+            {ART_ROWS.includes(id) && <i className="nf-rig-art" aria-hidden="true" style={{ ["--row" as string]: ART_ROWS.indexOf(id), ["--st" as string]: artState(id, s, v.frac) } as CSSProperties} />}
             <header className="nf-rig-h">
                 <span className="nf-rig-k">RIG // {def.name}</span>
                 {def.keys.length > 0 && <span className="nf-rig-lv">lv {lvs.join(" · ")} / {cap}</span>}
@@ -194,6 +212,7 @@ export function ZoneRig({ id, s, d }: { id: StatId; s: State; d: Derived }) {
                     })}
                 </div>
             )}
+            <ArcLinkLine id={id} s={s} />
         </section>
     );
 }
@@ -224,5 +243,27 @@ function Rewrite({ s, d, act }: { s: State; d: Derived; act: (fn: () => boolean 
                 </button>
             </div>
         </>
+    );
+}
+
+const ROMAN3 = ["I", "II", "III"];
+/** The arc this zone sits in: its link's name and rule, how many milestones are lit, and what lights the next. */
+function ArcLinkLine({ id, s }: { id: StatId; s: State }) {
+    const arc = arcOfZone(id);
+    if (!arc) return null;
+    const link = ARC_LINKS[arc.id];
+    const tier = linkTier(s, arc.id);
+    const lv = arcLevel(s, arc.id);
+    const next = LINK_TUNE.at[tier];
+    const bonus = tier > 0 ? `${arc.name} zones ×${LINK_TUNE.mul[tier - 1]}` : "";
+    return (
+        <p className="nf-rig-link" data-on={tier > 0 ? "" : undefined}>
+            <b>Arc link // {link?.name ?? arc.name}</b>
+            <i aria-label={`${tier} of 3 milestones lit`}>{ROMAN3.map((r, k) => (k < tier ? r : "·")).join(" ")}</i>
+            <span>
+                {tier > 0 ? `${link ? `On: ${link.rule}. ` : ""}${bonus}.` : link ? `Lights at lv ${LINK_TUNE.at[0]}: ${link.rule}.` : ""}
+                {next ? ` Next: every rig in ${arc.name} at lv ${next} (lowest is ${lv}).` : " Fully lit."}
+            </span>
+        </p>
     );
 }

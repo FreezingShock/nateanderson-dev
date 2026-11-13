@@ -91,7 +91,10 @@ for (const st of tic64) {
 // Scripts zone icons: six scripts by eight 64 px frames.
 {
     const { w, h } = pngSize("sched-icons64.png");
-    if (w !== 512 || h !== 384) errors.push(`sched-icons64.png is ${w}x${h}, expected 512x384 (8 frames x 6 scripts of 64 px)`);
+    const rowsSrc = readFileSync(join(ROOT, "components/nodefarm/scripts.tsx"), "utf8").match(/const ROW[^{]*\{([^}]*)\}/)?.[1] ?? "";
+    const rows = rowsSrc.split(",").filter((x) => x.includes(":")).length;
+    if (w !== 512 || h !== rows * 64) errors.push(`sched-icons64.png is ${w}x${h}, expected 512x${rows * 64} (8 frames x ${rows} scripts of 64 px, ROW in scripts.tsx)`);
+    for (const [n, src] of allCss) for (const m of src.matchAll(/sched-icons64\.webp[^;]*?calc\(var\(--si\) \* 8\) calc\(var\(--si\) \* (\d+)\)/g)) if (+m[1] !== rows) errors.push(`${n}: sched-icons64 sized for ${m[1]} rows, ROW lists ${rows}`);
 }
 
 if (errors.length) {

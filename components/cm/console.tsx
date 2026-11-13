@@ -11,9 +11,10 @@ import { STATS as NF_STATS, isUnlocked as nfUnlocked, parseSave, type State as N
 import { isAdmin, maxOut, overwrite, setAdmin, snapState, snaps, takeSnap } from "@/lib/nodefarm/admin";
 import { NF_PATH, NF_SAVE_KEY, NF_SUBS, nfCommand, type NfLive } from "@/lib/nodefarm/records";
 import { CX_STYLES, cxOverride, setCxOverride, type CxStyle } from "@/lib/nodefarm/cx";
+import { getFxMode, getLowFx, setFxMode } from "@/lib/nodefarm/fx";
 import { getStagePreview, setStagePreview } from "@/lib/nodefarm/zone-art";
-import { PART_WHY, chromaOpen, coreLook, coreMode, corePreview, setCoreMode, setCorePreview } from "@/lib/nodefarm/core-look";
-import { PART_ORDER } from "@/lib/nodefarm/core-parts";
+import { PART_WHY, SKIN_WHY, coreLook, coreMode, corePreview, setCoreMode, setCorePreview, skinOpen } from "@/lib/nodefarm/core-look";
+import { PART_ORDER, SKINS } from "@/lib/nodefarm/core-parts";
 import { setPrefs } from "@/lib/sound/engine";
 import { sfx } from "@/lib/sound/sounds";
 import { useSoundPrefs } from "@/lib/sound/use-sound";
@@ -173,22 +174,23 @@ function nfAdmin(args: string[], state: NfState, live?: NfLive): Line[] {
     return [t(isAdmin() ? "admin is on." : "admin is off.", "hi"), t("nf admin on · off · max · panel · snap · snaps · restore [n|real]", "dim")];
 }
 
-/** `nf core ...`: the reactor core's colours (zone, chroma or a pinned zone) and a preview of its structures. */
+/** `nf core ...`: the reactor core's look (zone colours, an unlocked skin or a pinned zone) and a preview of its structures. */
 function nfCore(args: string[], state: NfState): Line[] {
     const v = (args[0] ?? "").toLowerCase();
-    const usage = t("nf core zone · chroma · <zone name> · parts 0-9 · parts live", "dim");
+    const usage = t(`nf core zone · ${SKINS.slice(1).join(" · ")} · <zone name> · parts 0-${PART_ORDER.length} · parts live`, "dim");
     if (v === "zone" || v === "auto") {
         setCoreMode("zone");
         return [t("the core follows the newest zone you've worked in.")];
     }
-    if (v === "chroma") {
-        if (!chromaOpen(state)) return [t("chroma unlocks at your first Ascend.", "dim")];
-        setCoreMode("chroma");
-        return [t("chroma on. the core cycles through every zone you've opened. nf core zone turns it off.", "hi")];
+    const skin = SKINS.find((k) => k === v);
+    if (skin && skin !== "zone") {
+        if (!skinOpen(state, skin)) return [t(`${skin} unlocks at ${SKIN_WHY[skin]}.`, "dim")];
+        setCoreMode(skin);
+        return [t(`${skin} on. nf core zone goes back to zone colours.`, "hi")];
     }
     if (v === "parts") {
         const n = (args[1] ?? "").toLowerCase();
-        if (/^\d$/.test(n)) {
+        if (/^\d{1,2}$/.test(n) && Number(n) <= PART_ORDER.length) {
             setCorePreview(Number(n));
             return [t(`the core shows ${Number(n)} of ${PART_ORDER.length} structures. nf core parts live goes back to your real progress.`)];
         }
@@ -208,7 +210,8 @@ function nfCore(args: string[], state: NfState): Line[] {
     const built = PART_ORDER.filter((_, k) => look.parts & (1 << k));
     const nextPart = PART_ORDER.find((_, k) => !(look.parts & (1 << k)));
     return [
-        t(`core colours: ${m === "chroma" ? (look.chroma ? "chroma" : "chroma (locked until your first Ascend)") : m === "zone" ? `newest zone (${NF_STATS[look.zone].name})` : NF_STATS[look.zone].name}`, "hi"),
+        t(`core look: ${look.skin > 0 ? SKINS[look.skin] : m === "zone" || (SKINS as readonly string[]).includes(m) ? `newest zone (${NF_STATS[look.zone].name})` : NF_STATS[look.zone].name}`, "hi"),
+        t(`skins: ${(["chroma", "aurora", "gold", "mono"] as const).map((k) => (skinOpen(state, k) ? k : `${k} (at ${SKIN_WHY[k]})`)).join(", ")}`),
         t(`structures ${built.length} of ${PART_ORDER.length}${corePreview() != null ? " (preview)" : ""}${built.length ? `: ${built.join(", ")}` : ""}`),
         ...(nextPart && corePreview() == null ? [t(`next structure: ${nextPart}, at ${PART_WHY[nextPart]}.`, "dim")] : []),
         usage,
@@ -230,6 +233,14 @@ function runNf(args: string[]): Line[] {
             return [t("menus back to their own styles: print for milestones, decrypt for unlocks and events, crt for panels.")];
         }
         return [t(`menu animation: ${cxOverride() ?? "auto"}. nf anim auto · nf anim ${CX_STYLES.join(" · nf anim ")}`)];
+    }
+    if ((args[0] ?? "").toLowerCase() === "fx") {
+        const v = (args[1] ?? "").toLowerCase();
+        if (v === "full" || v === "low" || v === "auto") {
+            setFxMode(v);
+            return [t(`effects: ${v}.`)];
+        }
+        return [t(`effects: ${getFxMode()}${getFxMode() === "auto" ? ` (running ${getLowFx() ? "low" : "full"})` : ""}. nf fx full · low · auto`)];
     }
     if ((args[0] ?? "").toLowerCase() === "art") {
         // preview the staged zone art at one stage (this visit only)
@@ -398,9 +409,9 @@ const COMMANDS: Cmd[] = [
     },
     {
         name: "nf",
-        usage: "nf [stats|goals|secrets|admin|anim|fs]",
+        usage: "nf [stats|goals|secrets|admin|anim|fx|fs]",
         desc: "Node Farm readout, goals and secrets",
-        long: ["nf · nf stats · nf goals · nf secrets · nf open · nf anim auto|print|decrypt|crt · nf fs [on|off] (full screen) · nf core [zone|chroma|<zone>|parts 0-9] · nf admin (testing panel, see admin). Works with the game open or from your saved game."],
+        long: ["nf · nf stats · nf goals · nf secrets · nf open · nf anim auto|print|decrypt|crt · nf fx full|low|auto (effects level) · nf fs [on|off] (full screen) · nf keys (key sheet) · nf core [zone|chroma|aurora|gold|mono|<zone>|parts 0-13] · nf admin (testing panel, see admin). Works with the game open or from your saved game."],
         run: (args) => runNf(args),
     },
     {

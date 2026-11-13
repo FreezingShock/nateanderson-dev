@@ -3,7 +3,7 @@
 import { useEffect, useLayoutEffect, useRef, useState, type RefObject } from "react";
 import { prefersReducedMotion, scrambleNow, settleScramble } from "@/lib/motion/engine";
 import "@/app/camino/nodefarm-cx.css";
-import { sfx } from "@/lib/sound/sounds";
+import { nfx } from "@/lib/nodefarm/sound";
 
 /*
  * Code reveal ("terminal print"): the one open/close animation for every Node Farm window, card and pop-up.
@@ -39,7 +39,7 @@ export interface CxOpts {
 
 /**
  * The three looks, each with its own job (Nate, 2026-11-12): "print" for milestones (and tooltips and the tree card),
- * "decrypt" for unlocks and quick-time events, "crt" for panels (windows, the offline report, folding zones).
+ * "decrypt" for unlocks and zone events, "crt" for panels (windows, the offline report, folding zones).
  * Callers pass `style`; with none it is "print".
  */
 export type CxStyle = "print" | "decrypt" | "crt";
@@ -255,7 +255,7 @@ export function codeReveal(el: HTMLElement | null, opts: CxOpts = {}): Promise<v
         const run: Run = { anims, fx: null, timer: 0, done: resolve };
         runs.set(el, run);
         const color = getComputedStyle(el).getPropertyValue("--cx-c").trim() || "";
-        if (opts.sound ?? !opts.bare) sfx(dir === "in" ? "nfPrint" : "nfDelete", rows.length);
+        if (opts.sound ?? !opts.bare) nfx(dir === "in" ? "nfPrint" : "nfDelete", rows.length);
 
         const style = cxOverride() ?? opts.style ?? "print";
         if (style !== "print" && dir === "in") el.querySelectorAll<HTMLElement>("[data-cx-scr]").forEach((t) => scrambleNow(t, Math.min(520, total + 160)));

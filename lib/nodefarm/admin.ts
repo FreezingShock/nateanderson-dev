@@ -5,8 +5,8 @@
 import { BUY_STATS, SCRIPTS, SCRIPT_TUNE, auto, grantScripts, setRunning } from "./scripts";
 import { maxRigs } from "./rigs";
 import {
-    DRONE_TREE, DRONE_TUNE, POSTABLE, freshDr, modMax,
-    FW, handover, GOALS, LAB, LAB_TUNE, MATS, PAYLOADS, PERKS, SECRETS, STATS, TIERS, TREE, TREE_FULL, TUNE, ascend, ascendNeed, apOnAscend, derive, droneMax, exportSave, freshLab, fullTreeIds, parseSave, tick, treeFx, treeSpent, unlock,
+    DRONE_TREE, DRONE_TUNE, MODS, POSTABLE, freshDr, isUnlocked, modMax,
+    FW, HAND_TUNE, PROTOS, handover, GOALS, LAB, LAB_TUNE, MATS, PAYLOADS, PERKS, SECRETS, STATS, TIERS, TREE, TREE_FULL, TUNE, ascend, ascendNeed, apOnAscend, derive, droneMax, exportSave, freshLab, fullTreeIds, parseSave, tick, treeFx, treeSpent, unlock,
     type MatId, type PerkDef, type ScriptId, type State, type StatId,
 } from "./engine";
 import { LOGS } from "./story";
@@ -115,12 +115,20 @@ export function setPerk(s: State, id: PerkDef["id"], lvl: number) { s.perks[id] 
 export const maxPerks = (s: State) => { for (const p of PERKS) s.perks[p.id] = p.max; };
 export const clearPerks = (s: State) => { for (const p of PERKS) s.perks[p.id] = 0; };
 export function setDrone(s: State, tier: number, lvl: number) { s.drones[tier] = Math.max(0, Math.min(droneMax(s), Math.floor(lvl))); }
-export const ARMABLE = ["mult", ...MATS] as string[];
 export function maxDrones(s: State) {
     s.dr.nodes = DRONE_TREE.map((n) => n.id);
-    for (let k = 0; k < TIERS; k++) { s.drones[k] = droneMax(s); s.dr.mods[k] = [modMax(s, 0), modMax(s, 1), modMax(s, 2)]; }
+    for (let k = 0; k < TIERS; k++) { s.drones[k] = droneMax(s); s.dr.mods[k] = MODS.map((_, i) => modMax(s, i)); }
     for (const st of POSTABLE) s.dr.svc[st] = Math.max(s.dr.svc[st] ?? 0, DRONE_TUNE.rankAt[DRONE_TUNE.rankAt.length - 1]);
-    s.armed = [...ARMABLE];
+    // every tier posted, newest open zones first (Drones only work posted)
+    const open = POSTABLE.filter((st) => isUnlocked(s, st)).reverse();
+    for (let k = 0; k < TIERS; k++) if (!s.dr.post[k] && open.length) s.dr.post[k] = open[k % open.length];
+}
+/** buy.sh learned, running and ticked on every stat, with every tier taught. */
+export function tickAllBuy(s: State) {
+    const a = auto(s);
+    for (const st of BUY_STATS) { a.taught[st] = Array(TIERS).fill(SCRIPT_TUNE.teachTier); a.buy[st] = (1 << TIERS) - 1; }
+    if (!a.own.includes("buy")) a.own.push("buy");
+    setRunning(s, "buy", true);
 }
 /** Wipe the hangar: postings, mastery, Parts, mods and the drone tree. */
 export function clearHangar(s: State) { s.dr = freshDr(); }
@@ -227,6 +235,8 @@ export function forceHandover(s: State): number {
 export function addKeys(s: State, n: number) { s.hand.keys += n; s.hand.keysTotal += n; }
 /** Flash every Firmware node (no Keys spent). */
 export function ownAllFw(s: State) { s.hand.fw = FW.map((n) => n.id); }
+/** Every protocol at its top mastery rank. */
+export function maxProtoRanks(s: State) { s.hand.rank = Object.fromEntries(PROTOS.map((p) => [p.id, HAND_TUNE.rankMax])); }
 
 /** Make the run look like it is in era `n`: open every material up to its first stat and empty the ones after. */
 export function jumpEra(s: State, n: number) {

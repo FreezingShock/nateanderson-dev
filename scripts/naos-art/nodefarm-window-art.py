@@ -273,6 +273,137 @@ def desk():
     return c.finish()
 
 
+# ---------------------------------------------------------------- Stress tests: the test bench
+def bench():
+    """A server node clamped on a test bench, probe leads sagging to a scope whose trace runs flat then spikes, sparks."""
+    c = g.canvas()
+    r = np.random.default_rng(35)
+    sky(c, 120, "deep", "red", 0.32, seed=35)
+    # bench top and legs
+    top_ = g.rect(6, 132, 474, 137)
+    c.fill(top_, 0.55 + 0.3 * (1 - g.lin(6, 132, 474, 137)), "steel", outline="steel")
+    c.fill(g.rect(6, 137, 474, 150), 0.18, "steel")
+    for lx in (30, 450):
+        c.fill(g.rect(lx - 4, 137, lx + 4, 150), 0.4, "steel", outline="steel")
+    # the node under test: a rack unit with blinking bays, held in a clamp frame
+    nx = 150
+    f, t, s = box(c, nx - 62, 60, 124, 68, 6, "steel", -0.08)
+    for k, y in enumerate(range(66, 124, 11)):
+        c.fill(g.rect(nx - 56, y, nx + 56, y + 8), 0.3, "steel", outline="steel")
+        c.set(g.rect(nx - 50, y + 3, nx - 20, y + 5), ("ink", 0))
+        for j in range(5):
+            if r.random() < 0.6:
+                col = ("red", 3) if (k + j) % 4 == 0 else ("lime", 5)
+                c.set(g.rect(nx + 22 + j * 6, y + 3, nx + 24 + j * 6, y + 5), col)
+    for px in (nx - 74, nx + 74):
+        c.fill(g.rect(px - 4, 38, px + 4, 132), 0.55 + 0.3 * (1 - g.lin(px - 4, 38, px + 4, 132)), "brass", outline="brass")
+    c.fill(g.rect(nx - 80, 33, nx + 82, 41), 0.6, "brass", outline="brass")
+    c.fill(g.rect(nx - 2, 41, nx + 2, 60), 0.7, "steel")
+    c.fill(g.rect(nx - 7, 20, nx + 7, 33), 0.7, "steel", outline="steel")
+    c.set(g.rect(nx - 10, 22, nx + 10, 24), ("steel", 6))
+    # the scope
+    sx0, sy0, sx1, sy1 = 300, 28, 452, 112
+    shell = g.rect(sx0, sy0, sx1, sy1)
+    c.fill(shell, 0.3 + 0.35 * (1 - g.lin(sx0, sy0, sx1, sy1)), "steel", outline="steel")
+    c.rim(shell, ("steel", 6))
+    scr = g.rect(sx0 + 6, sy0 + 6, sx1 - 6, sy1 - 20)
+    c.fill(scr, 0.1 + 0.1 * (1 - g.radial((sx0 + sx1) / 2, (sy0 + sy1) / 2, 80, 40)), "teal")
+    for gx in range(sx0 + 18, sx1 - 6, 16):
+        c.set(g.rect(gx, sy0 + 6, gx + 1, sy1 - 20) & (g.B4 < -0.1), ("teal", 2))
+    mid = (sy0 + sy1 - 14) / 2
+    pts = []
+    for x in range(sx0 + 8, sx1 - 7, 2):
+        fx = (x - sx0) / (sx1 - sx0)
+        amp = 3 if fx < 0.55 else 3 + (fx - 0.55) * 75
+        y = mid + amp * math.sin(x * 0.55) * (1 if r.random() < 0.9 else 1.5)
+        pts.append((x, max(sy0 + 8, min(sy1 - 22, y))))
+    trace = g.path(pts, 1.4)
+    calm = trace & (X < sx0 + 0.55 * (sx1 - sx0))
+    c.set(trace, ("red", 3))
+    c.set(calm, ("teal", 4))
+    c.glow(trace & ~calm, ("red", 3), 2, 120, 1, over=True)
+    for k in range(5):
+        kx = sx0 + 20 + k * 28
+        knob = g.disc(kx, sy1 - 9, 4.5)
+        c.fill(knob, 0.5 + 0.4 * (1 - g.radial(kx - 1.5, sy1 - 10.5, 6)), "steel", outline="steel")
+    c.fill(g.rect(sx0 + 40, sy1, sx1 - 40, 132), 0.3, "steel", outline="steel")
+    # probe leads, red / yellow / black, sagging from the node to the scope
+    for k, ((y0, y1), col) in enumerate(zip(((80, 92), (98, 100), (114, 106)), (("red", 3), ("gold", 4), ("steel", 2)))):
+        x0, x1 = nx + 62, sx0
+        lead = [(x0 + (x1 - x0) * tt, y0 + (y1 - y0) * tt + 18 * math.sin(math.pi * tt)) for tt in np.linspace(0, 1, 24)]
+        c.set(g.path(lead, 1.6), col)
+        c.fill(g.rect(x0 - 2, y0 - 2, x0 + 4, y0 + 3), 0.8, col[0], outline=col[0])
+    # the stress: arcs off the clamp and a hot glow
+    for sx_, sy_ in ((nx + 74, 48), (nx - 74, 70)):
+        x, y = sx_, sy_
+        bolt = [(x, y)]
+        for _ in range(5):
+            x += int(r.integers(-7, 8))
+            y -= int(r.integers(4, 9))
+            bolt.append((x, y))
+        bm = g.path(bolt, 1.4)
+        c.set(bm, ("white", 2))
+        c.glow(bm, ("red", 3), 3, 150, 2)
+        for _ in range(6):
+            c.spark(sx_ + int(r.integers(-12, 13)), sy_ + int(r.integers(-14, 6)), int(r.integers(0, 2)), ("gold", 5), ("white", 2))
+    c.light(nx + 74, 48, 34, ("red", 3), 80)
+    return c.finish()
+
+
+# ---------------------------------------------------------------- Codex: the shelves and the open book
+def shelf():
+    """Two shelves of coloured spines either side, an open book in the middle under a lit bulb."""
+    c = g.canvas()
+    r = np.random.default_rng(36)
+    sky(c, 110, "deep", "dusk", 0.3, seed=36)
+    spine_pals = ["red", "cu", "si", "ae", "rn", "qz", "teal", "gold", "nb"]
+    for x0, x1 in ((4, 176), (324, 476)):
+        for shelf_y in (74, 144):
+            plank = g.rect(x0, shelf_y, x1, shelf_y + 4)
+            x = x0 + 2
+            while x < x1 - 8:
+                w = int(r.integers(6, 12))
+                h = int(r.integers(32, 58))
+                top = shelf_y - h
+                pal = spine_pals[int(r.integers(0, len(spine_pals)))]
+                lean = r.random() < 0.08
+                sp = g.poly([(x, shelf_y), (x + w, shelf_y), (x + w + 6, top + 2), (x + 6, top)]) if lean else g.rect(x, top, x + w, shelf_y)
+                c.fill(sp, 0.3 + 0.35 * (1 - g.lin(x, top, x + w, shelf_y)), pal, outline=pal)
+                c.set(g.rect(x + 1, top + 6, x + w - 1, top + 8) & sp, ("gold", 4))
+                if r.random() < 0.5:
+                    c.set(g.rect(x + 1, shelf_y - 10, x + w - 1, shelf_y - 9) & sp, ("gold", 3))
+                x += w + (8 if lean else 1)
+            c.fill(plank, 0.4 + 0.3 * (1 - g.lin(x0, shelf_y, x1, shelf_y + 4)), "rn", outline="rn")
+    # floor
+    c.fill(Y >= 146, 0.2, "rn")
+    cx = 250
+    # the bulb over the book
+    c.light(cx, 40, 110, ("gold", 4), 90, 70)
+    c.fill(g.line(cx, 0, cx, 22, 1), 0.4, "steel")
+    bulb = g.disc(cx, 36, 10, 13)
+    c.fill(bulb, 0.75 + 0.25 * (1 - g.radial(cx - 3, 31, 12)), "gold", outline="gold")
+    c.set(g.path([(cx - 4, 40), (cx - 2, 33), (cx, 40), (cx + 2, 33), (cx + 4, 40)], 1), ("white", 2))
+    c.fill(g.rect(cx - 5, 22, cx + 5, 26), 0.6, "brass", outline="brass")
+    c.glow(bulb, ("gold", 4), 8, 160, 4)
+    for ang in (-2.6, -2.0, -1.2, -0.5, 0.5, 1.2, 2.0, 2.6):
+        x0, y0 = cx + 22 * math.cos(ang), 36 + 22 * math.sin(ang)
+        c.set(g.line(x0, y0, cx + 30 * math.cos(ang), 36 + 30 * math.sin(ang), 1) & (g.B4 < 0.3), ("gold", 4))
+    # the open book on a small stand
+    c.fill(g.poly([(cx - 30, 146), (cx + 30, 146), (cx + 16, 132), (cx - 16, 132)]), 0.4, "rn", outline="rn")
+    lp = g.poly([(cx - 48, 96), (cx - 2, 100), (cx - 2, 134), (cx - 50, 130)])
+    rp = g.poly([(cx + 2, 100), (cx + 48, 96), (cx + 50, 130), (cx + 2, 134)])
+    c.fill(lp, 0.6 + 0.35 * (1 - g.lin(cx - 50, 96, cx, 134)), "eg", outline="eg")
+    c.fill(rp, 0.5 + 0.3 * (1 - g.lin(cx, 96, cx + 50, 134)), "eg", outline="eg")
+    c.set(g.line(cx, 98, cx, 135, 1.6), ("rn", 2))
+    for y in range(106, 128, 5):
+        c.set(g.rect(cx - 42, y, cx - 42 + int(r.integers(14, 32)), y + 1), ("film", 1))
+        c.set(g.rect(cx + 8, y, cx + 8 + int(r.integers(14, 32)), y + 1), ("film", 1))
+    c.set(g.rect(cx + 8, 103, cx + 22, 105), ("red", 3))
+    for sx_, sy_ in ((cx - 30, 86), (cx + 34, 80), (cx + 6, 70)):
+        c.spark(sx_, sy_, 1, ("gold", 5), ("white", 2))
+    return c.finish()
+
+
 def vignette(c, side=72, top=26):
     """Dither the art out toward the left, right and top edges so it melts into the banner instead of ending in a box."""
     fade = np.minimum.reduce([np.clip(X / side, 0, 1), np.clip((BW - X) / side, 0, 1), np.clip(Y / top, 0, 1)])
@@ -280,7 +411,7 @@ def vignette(c, side=72, top=26):
     return c
 
 
-PIECES = {"map": mast, "goals": plinths, "records": archive, "menu": desk}
+PIECES = {"map": mast, "goals": plinths, "records": archive, "menu": desk, "stress": bench, "codex": shelf}
 
 if __name__ == "__main__":
     want = sys.argv[1:] or list(PIECES)

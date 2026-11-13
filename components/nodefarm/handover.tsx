@@ -2,8 +2,8 @@
 
 import { useEffect, useRef, useState, type CSSProperties } from "react";
 import {
-    FW, FW_SECS, HAND_TUNE, PROTOS, canSwitchProto, fmt, fmtTime, fwNode, fwNodeOpen, fwTotals, fwVis, handFx, handKeeps, handOpen, isUnlocked,
-    keysOnHandover, protoDef, statDef, treeCount, treeSpent, type ProtoId, type State,
+    ARC_MATS, arcGateNeed, FEATURE_NAME, FW, FW_SECS, HAND_BASE, PREINSTALLED, HAND_TUNE, PROTOS, canSwitchProto, droneFx, fmt, fmtTime, fwNode, fwNodeOpen, fwTotals, fwVis, handFx, handKeeps, handOpen, isUnlocked,
+    chOff, keysOnHandover, masteryRanks, protoDef, protoRank, ROMAN, statDef, treeCount, treeSpent, type ProtoId, type State,
 } from "@/lib/nodefarm/engine";
 import { NfIcon } from "./icon";
 import type { TreeModel } from "./tree";
@@ -36,7 +36,7 @@ export function fwModel(s: State): TreeModel {
 export const fwReady = (s: State) => FW.filter((n) => !s.hand.fw.includes(n.id) && fwNodeOpen(s, n) && s.hand.keys >= n.cost).length;
 
 /** Press and hold to hand over. A click with no press behind it (screen readers) asks twice instead. */
-function HoldHandover({ ready, keys, onGo }: { ready: boolean; keys: number; onGo: () => void }) {
+function HoldHandover({ ready, keys, locked, onGo }: { ready: boolean; keys: number; locked: boolean; onGo: () => void }) {
     const [hold, setHold] = useState(false);
     const [nudge, setNudge] = useState(false);
     const [ask, setAsk] = useState(false);
@@ -85,7 +85,7 @@ function HoldHandover({ ready, keys, onGo }: { ready: boolean; keys: number; onG
         >
             <i className="nf-hx-go-fill" aria-hidden="true" />
             <span className="nf-hx-go-t">
-                {!ready ? "Reach node zero first" : ask ? `Confirm: hand over for ${keys} Keys` : hold ? "Keep holding" : nudge ? "Keep holding to hand over" : `Hold to hand over · +${keys} Keys`}
+                {locked ? "Locked until you leave the test" : !ready ? "Reach node zero first" : ask ? `Confirm: hand over for ${keys} Keys` : hold ? "Keep holding" : nudge ? "Keep holding to hand over" : `Hold to hand over · +${keys} Keys`}
             </span>
         </button>
     );
@@ -114,6 +114,8 @@ function Flow({ s, keys, onGo }: { s: State; keys: number; onGo: () => void }) {
     const open = handOpen(s);
     const nodes = treeCount(s);
     const fwOwned = s.hand.fw.length;
+    // zones this Handover opens (ARC_GATE): two at a time, so each early Handover has something new to climb to
+    const opens = ARC_MATS.filter((m) => arcGateNeed(m) === s.hand.count + 1).map((m) => statDef(m).name);
     return (
         <section className="nf-hx-flow" data-cx-i="1">
             <ol className="nf-hx-steps" data-ready={open ? "" : undefined}>
@@ -125,7 +127,7 @@ function Flow({ s, keys, onGo }: { s: State; keys: number; onGo: () => void }) {
                 <li style={{ ["--c" as string]: "#ffc53a" }}>
                     <span className="nf-hx-k" data-cx-scr="">02 // Hand over</span>
                     <span className="nf-hx-v"><b>{keys > 0 ? `+${keys}` : "0"}</b><small>Keys</small></span>
-                    <small className="nf-hx-n">From {nodes} tree nodes and ranks, plus {fmt(s.origin)} Origin.{handFx(s).keys ? ` Keysmith x${fmt(1 + handFx(s).keys)}.` : ""}</small>
+                    <small className="nf-hx-n">From {nodes} tree nodes and ranks, plus {fmt(s.origin)} Origin.{handFx(s).keys ? ` Keysmith x${fmt(1 + handFx(s).keys)}.` : ""}{opens.length ? ` Unlocks ${opens.join(" and ")} once you climb back.` : ""}</small>
                 </li>
                 <li style={{ ["--c" as string]: ROOT_GREEN }}>
                     <span className="nf-hx-k" data-cx-scr="">03 // Flash firmware</span>
@@ -133,23 +135,37 @@ function Flow({ s, keys, onGo }: { s: State; keys: number; onGo: () => void }) {
                     <small className="nf-hx-n">Firmware is kept through every Handover.</small>
                 </li>
             </ol>
-            <HoldHandover ready={keys > 0} keys={keys} onGo={onGo} />
+            <HoldHandover ready={keys > 0} keys={keys} locked={chOff(s, "prestige")} onGo={onGo} />
         </section>
     );
 }
 
 /** What goes and what stays, as two plain lists. */
 function Ledger({ s }: { s: State }) {
-    const f = handFx(s);
     const kept = handKeeps(s).length;
-    const back = Math.floor(treeSpent(s) * f.apRefund);
+    const baseMod = HAND_BASE.modKeep ?? 0;
+    const modKeep = Math.max(baseMod, droneFx(s).modKeep);
+    const back = Math.floor(treeSpent(s) * (HAND_BASE.apRefund ?? 0));
     const wipes = [
         "This run: every stat, button and producer",
-        `AP and perks${f.perkKeep ? ` (half the perk levels stay: Perk cache)` : ""}`,
-        `The prestige tree${kept ? ` (${kept} nodes stay: Imprint)` : ""}${back ? `, ${fmt(back)} AP back (Tape backup)` : ""}`,
+        "AP and perks (half of every perk's levels stay)",
+        `The prestige tree${kept ? ` (${kept} nodes stay: the entry and upper path of each section)` : ""}${back ? `, and ${fmt(back)} AP back, a quarter of what it cost` : ""}`,
         "Drones, Mounted drives and Exploit Lab Intel and stock",
+        `Parts and mod levels in the hangar (${Math.round(modKeep * 100)}% stay${modKeep > baseMod ? ": Black box" : ""})`,
+        "Rig levels (half of every level stays)",
     ];
-    const keeps = ["Goals, secrets and story logs", "Exploit Lab research", ...(s.auto?.own.length ? ["Scripts you have learned"] : []), "Lifetime stats and your Ascend count", "Keys, Firmware and your notes"];
+    const keeps = [
+        `Every Ascend after this starts with ${HAND_TUNE.warmReboots} Reboots, ${HAND_TUNE.bootProd} producers on CU to AE and a ${Math.round(HAND_TUNE.afterglow / 60)} minute Overclock, and keeps Intel, payloads and half the Drone levels`,
+        `${PREINSTALLED.map((k) => FEATURE_NAME[k]).join(", ").replace(/, ([^,]*)$/, " and $1")} work without their tree nodes`,
+        "Goals, secrets and operator logs",
+        "Exploit Lab research",
+        "Cleared stress test ranks",
+        ...(s.auto?.own.length ? ["Scripts you have learned"] : []),
+        ...(s.dr?.nodes.length || masteryRanks(s) ? ["The hangar: postings, mastery and the drone tree"] : []),
+        "Rig switches and zone event history",
+        "Lifetime stats and your Ascend count",
+        "Keys, Firmware, protocol ranks and your notes",
+    ];
     return (
         <section className="nf-hx-ledger" data-cx-i="3">
             <div><h4>Wipes</h4><ul>{wipes.map((x) => <li key={x}>{x}</li>)}</ul></div>
@@ -165,19 +181,22 @@ function Protocols({ s, pick, pick2, onPick, onPick2 }: { s: State; pick: ProtoI
     const running = s.hand.proto;
     return (
         <section className="nf-hx-proto" data-cx-i="2">
-            <header className="nf-sys-h">
+            <header className="nf-sys-h" data-path="handover/protocol">
                 <h3>Protocol</h3>
                 <p>
                     {s.hand.count === 0 ? "The next operator runs one of the old operators' protocols for the whole cycle. Pick it before you hand over." : live ? "Operator's desk: a change takes effect at once." : "Your pick takes effect at the next Handover."}
                     {running ? ` Running now: ${protoDef(running).op}, ${protoDef(running).name}.` : ""}
+                    {" "}Hand over on a protocol and it ranks up (I to III), each rank 25% stronger.
                 </p>
             </header>
             <div className="nf-hx-ops" role="radiogroup" aria-label="Protocol">
                 {PROTOS.map((p) => {
                     const on = pick === p.id;
+                    const rk = protoRank(s, p.id);
                     return (
                         <button key={p.id} type="button" role="radio" aria-checked={on} className="nf-hx-op" data-run={running === p.id ? "" : undefined} style={{ ["--c" as string]: p.color } as CSSProperties} onClick={() => onPick(p.id)}>
                             <span className="nf-hx-op-k">{p.op.toUpperCase()} // {running === p.id ? "RUNNING" : on ? "PICKED" : "PROTOCOL"}</span>
+                            <span className="nf-hx-rank" aria-label={`Rank ${rk} of ${HAND_TUNE.rankMax}`}>{Array.from({ length: HAND_TUNE.rankMax }, (_, i) => <i key={i} data-on={i < rk ? "" : undefined} />)}<small>{rk ? `RANK ${ROMAN[rk]} · x${(1 + HAND_TUNE.rankStep * rk).toFixed(2)}` : "UNRANKED"}</small></span>
                             <b>{p.name}</b>
                             <span className="nf-hx-op-fx">{p.blurb}</span>
                             <q>{p.flavor}</q>
@@ -202,9 +221,9 @@ function Gateway({ s, onFirmware }: { s: State; onFirmware: () => void }) {
     const ready = fwReady(s);
     return (
         <section className="nf-hx-gate" data-cx-i="4">
-            <header className="nf-sys-h">
+            <header className="nf-sys-h" data-path="handover/firmware">
                 <h3>Firmware</h3>
-                <p>{FW.length} upgrades in three sections, flashed with Keys. {s.hand.keys} Keys held{ready ? `, ${ready} ready to flash` : ""}.</p>
+                <p>{FW.length} new rules in {["one", "two", "three", "four", "five"][FW_SECS.length - 1]} sections, flashed with Keys. {s.hand.keys} Keys held{ready ? `, ${ready} ready to flash` : ""}.</p>
             </header>
             <button type="button" className="nf-hx-portal" onClick={onFirmware} aria-label="Open the Firmware tree" disabled={s.hand.count === 0 && s.hand.keys === 0} title={s.hand.count === 0 && s.hand.keys === 0 ? "Your first Handover pays the Keys" : undefined}>
                 <span className="nf-hx-glass" aria-hidden="true"><i data-l="0" /><i data-l="1" /><i className="nf-hx-glass-core" /></span>
@@ -227,7 +246,7 @@ function Gateway({ s, onFirmware }: { s: State; onFirmware: () => void }) {
 function Notes({ s, note, setNote }: { s: State; note: string; setNote: (v: string) => void }) {
     return (
         <section className="nf-hx-notes" data-cx-i="5">
-            <header className="nf-sys-h">
+            <header className="nf-sys-h" data-path="handover/note">
                 <h3>Handover note</h3>
                 <p>Optional. Every operator before you left one. Yours shows up here and in Records.</p>
             </header>

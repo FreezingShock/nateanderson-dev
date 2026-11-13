@@ -4,9 +4,10 @@ import { useEffect, useRef, useState } from "react";
 import { codeReveal } from "@/lib/nodefarm/cx";
 import { scrambleNow } from "@/lib/motion/engine";
 import { createPortal } from "react-dom";
-import { sfx } from "@/lib/sound/sounds";
-import { fmt, fmtTime, statDef, type StatId } from "@/lib/nodefarm/engine";
+import { nfx as sfx } from "@/lib/nodefarm/sound";
+import { MATS, fmt, fmtTime, statDef, type StatId } from "@/lib/nodefarm/engine";
 import { NfIcon } from "./icon";
+import type { SysGroup } from "@/lib/nodefarm/offline";
 
 export interface Away {
     /** seconds actually banked (capped) */
@@ -19,9 +20,11 @@ export interface Away {
     /** buttons the Drones pressed while you were away */
     drones: number;
     gain: Record<string, number>;
+    /** what the scripts, Drones, rigs, Lab and zone events did meanwhile */
+    sys: SysGroup[];
 }
 
-const ORDER: StatId[] = ["bytes", "copper", "silicon", "quartz", "aether", "runes", "starglass", "voidsteel", "chrono", "nebula", "pulsars", "singularity", "engrams", "paradox", "origin", "spores", "mycelium", "pollen", "bloom", "basalt", "magma", "geodes", "core"];
+const ORDER: StatId[] = ["bytes", ...MATS];
 const COUNT_MS = 1500;
 
 /** Full-screen "welcome back" report. Everything is already banked when it opens; Collect only closes it. */
@@ -121,7 +124,7 @@ export function AwayReport({ away, era, reduced, onClose }: { away: Away; era: n
                     <p className="nf-aw-time" aria-hidden="true" data-cx-i="2">{fmtTime(away.secs * p)}</p>
                     <p id="nf-aw-sum" className="nf-aw-sum" data-cx-i="3">
                         {fmtTime(away.secs)} banked{away.capped ? `. You were away ${fmtTime(away.gap)}, but standby holds ${fmtTime(away.cap)}.` : "."}
-                        {" "}{rows.map((id) => `${fmt(away.gain[id])} ${statDef(id).name}`).join(", ")} collected.
+                        {" "}{rows.map((id) => `${fmt(away.gain[id])} ${statDef(id).name}`).join(", ")} collected.{away.sys.length ? ` ${away.sys.map((g) => `${g.title}: ${g.lines.map((l) => `${l.label} ${l.value}`).join(", ")}`).join(". ")}.` : ""}
                     </p>
 
                     <div className="nf-aw-meter" aria-hidden="true" data-cx-i="4">
@@ -144,10 +147,20 @@ export function AwayReport({ away, era, reduced, onClose }: { away: Away; era: n
 
                     <dl className="nf-aw-facts" data-cx-i="6">
                         {rate > 0 && <div><dt>Avg rate</dt><dd>{fmt(rate)} Bytes/s</dd></div>}
-                        {away.drones > 0 && <div><dt>Drone presses</dt><dd>{fmt(away.drones)}</dd></div>}
-                        <div><dt>Away</dt><dd>{fmtTime(away.gap)}</dd></div>
+                                                <div><dt>Away</dt><dd>{fmtTime(away.gap)}</dd></div>
                         <div><dt>Window</dt><dd>{fmtTime(away.cap)}</dd></div>
                     </dl>
+
+                    {away.sys.length > 0 && (
+                        <div className="nf-aw-sys" data-cx-i="7">
+                            {away.sys.map((g) => (
+                                <section key={g.id} aria-label={g.title}>
+                                    <h3>{g.title}</h3>
+                                    <dl>{g.lines.map((l) => <div key={l.label}><dt>{l.label}</dt><dd>{l.value}</dd></div>)}</dl>
+                                </section>
+                            ))}
+                        </div>
+                    )}
 
                     {away.capped && <p className="nf-aw-note" data-cx-i="7">Standby was full for {fmtTime(away.gap - away.cap)}. Standby cells in Ascend add 4 hours each.</p>}
 

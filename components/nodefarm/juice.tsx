@@ -31,6 +31,11 @@ export type JuiceEvent =
 
 const subs = new Set<(e: JuiceEvent) => void>();
 export const juice = { emit: (e: JuiceEvent) => subs.forEach((f) => f(e)) };
+/** listen to game-feel events from outside the Juice layer (the reactor core flares on them); returns the unsubscribe */
+export const onJuice = (f: (e: JuiceEvent) => void) => {
+    subs.add(f);
+    return () => void subs.delete(f);
+};
 
 // ---- milestones: thresholds on things already in the game state. Seen ones are remembered per device (not in the save).
 const SEEN_KEY = "nf-juice-v1";
@@ -342,10 +347,10 @@ function AscendSeq({ data, reduced, onClose }: { data: { gain: number; ap: numbe
     if (!look.current) {
         const probe: { live?: NfLive } = {};
         window.dispatchEvent(new CustomEvent("nf:live", { detail: probe }));
-        look.current = probe.live ? coreLook(probe.live.s) : { zone: 0, chroma: false, parts: PART.ring1, drones: 0, glyphs: 0 };
+        look.current = probe.live ? coreLook(probe.live.s) : { zone: 0, skin: 0, parts: PART.ring1, drones: 0, glyphs: 0, rigs: [], fw: 0, event: 0 };
     }
-    const lk = look.current;
-    const feed = useRef<CoreFeed>({ ...freshCoreFeed(), progress: reduced ? 1 : 0, unlocked: STATS.length, speed: 0.25, reboots: 64, ap: reduced ? data.ap : Math.max(0, data.ap - data.gain), zone: lk.zone, chroma: lk.chroma, parts: reduced || data.n > 1 ? lk.parts : lk.parts & ~PART.ring1, drones: lk.drones, glyphs: lk.glyphs });
+    const lk = look.current!;
+    const feed = useRef<CoreFeed>({ ...freshCoreFeed(), progress: reduced ? 1 : 0, unlocked: STATS.length, speed: 0.25, reboots: 64, ap: reduced ? data.ap : Math.max(0, data.ap - data.gain), zone: lk.zone, skin: lk.skin, rigs: lk.rigs, fw: lk.fw, parts: reduced || data.n > 1 ? lk.parts : lk.parts & ~PART.ring1, drones: lk.drones, glyphs: lk.glyphs });
     const [phase, setPhase] = useState<"charge" | "show">(reduced ? "show" : "charge");
     const [canClose, setCanClose] = useState(reduced);
     const num = useRef<HTMLElement>(null);
@@ -422,7 +427,7 @@ function AscendSeq({ data, reduced, onClose }: { data: { gain: number; ap: numbe
                     <p className="nf-rx-gain"><b ref={num}>{data.gain}</b> <span>Ascension {data.gain === 1 ? "Point" : "Points"}</span></p>
                     <p className="nf-rx-line">{data.ap} AP total. Each one adds {Math.round((data.each ?? TUNE.apBonus) * 100)}% to everything.</p>
                     <p className="nf-rx-line nf-rx-note">{ascendNote(data.n)}</p>
-                    <p className="nf-rx-line dim">Wiped: Bytes, Multipliers, Reboots, unmounted materials and Drones. Kept: goals, perks, the tree, lab research and stock, scripts and lifetime stats.</p>
+                    <p className="nf-rx-line dim">Wiped: Bytes, Multipliers, Reboots, unmounted materials, Drones, Parts and Intel. Kept: goals, perks, the tree, lab research and stock, scripts, Keys, Firmware, the hangar's postings, rig levels and lifetime stats.</p>
                     <p className="nf-rx-go" data-ready={canClose ? "" : undefined}>{canClose ? "Tap to continue" : "\u00a0"}</p>
                 </div>
             </div>

@@ -6,20 +6,32 @@ const hours = Number(process.argv[2] || 24 * 14);
 // NF_TUNE='{"perProducer":{"copper":0.02}}' deep-merges over TUNE so numbers can be tried without editing the engine.
 const merge = (a, b) => { for (const [k, v] of Object.entries(b)) a[k] = v && typeof v === "object" && !Array.isArray(v) && a[k] && typeof a[k] === "object" ? merge(a[k], v) : v; return a; };
 if (process.env.NF_TUNE) merge(E.TUNE, JSON.parse(process.env.NF_TUNE));
+if (process.env.NF_ARCGATE) merge(E.ARC_GATE, JSON.parse(process.env.NF_ARCGATE)); // handovers each arc zone needs (ARC_GATE)
+if (process.env.NF_HANDTUNE) merge(E.HAND_TUNE, JSON.parse(process.env.NF_HANDTUNE)); // same, for Handover's HAND_TUNE
+if (process.env.NF_ZETUNE) merge(E.ZE_TUNE, JSON.parse(process.env.NF_ZETUNE)); // same, for the zone events' ZE_TUNE
 // Zone rigs (lib/nodefarm/rigs.ts) join in unless NF_NORIGS=1. rigs.ts imports "./engine" without an extension, so resolve that to .ts.
 let RG = null;
-if (!process.env.NF_NORIGS) {
+// NF_ZONEEV=1: zone events run too (random, so results vary); the bot mines every Rich vein and patches every Fault at once.
+let ZE = null;
+// Arc clear bonus (lib/nodefarm/arcs.ts) is on unless NF_NOARCS=1: the bot presses every button once as soon as it can pay for it.
+let ARCS = null;
+{
     const { registerHooks } = await import("node:module");
     registerHooks({ resolve(spec, ctx, next) { try { return next(spec, ctx); } catch (e) { if (spec.startsWith(".")) return next(spec + ".ts", ctx); throw e; } } });
-    RG = await import("../../lib/nodefarm/rigs.ts");
-    if (process.env.NF_RIGTUNE) merge(RG.RIG_TUNE, JSON.parse(process.env.NF_RIGTUNE)); // same as NF_TUNE, for RIG_TUNE
+    if (!process.env.NF_NORIGS) RG = await import("../../lib/nodefarm/rigs.ts");
+    if (!process.env.NF_NOARCS) ARCS = await import("../../lib/nodefarm/arcs.ts");
+    if (process.env.NF_ZONEEV) ZE = await import("../../lib/nodefarm/zoneevents.ts");
+    if (RG && process.env.NF_RIGTUNE) merge(RG.RIG_TUNE, JSON.parse(process.env.NF_RIGTUNE)); // same as NF_TUNE, for RIG_TUNE
 }
 const s = E.fresh(0);
-if (!process.env.NF_NODRONES) s.armed = ["mult", ...E.MATS]; // the bot arms every stat once it has Drones
-if (process.env.NF_NODRONES) s.autoArmed = ["mult", ...E.MATS]; // keep Standing orders from arming anything
 const marks = {};
 const ascents = [];
-const mark = (k, t) => { if (!(k in marks)) marks[k] = t; };
+// NF_SNAP=<dir>: write a save file when a milestone first lands and at fixed play times (scripts/nodefarm/guide-audit.mjs reads them)
+const { writeFileSync: wf, mkdirSync: mk } = await import("node:fs");
+if (process.env.NF_SNAP) mk(process.env.NF_SNAP, { recursive: true });
+const snap = (name, t) => { if (process.env.NF_SNAP) { s.at = Date.now(); wf(`${process.env.NF_SNAP}/${String(Math.round(t / 60)).padStart(6, "0")}m-${name.replace(/\W+/g, "-")}.json`, JSON.stringify(s)); } };
+const mark = (k, t) => { if (!(k in marks)) { marks[k] = t; if (process.env.NF_SNAP && /^(first reboot|copper|silicon|quartz|aether|runes|chrono|voidsteel|origin|sunstone|bloom|geodes|can ascend|ascend [135]|lab open|lab done|drone 0|handover \d|tree whole|first drop|dnode|mastery 15|rig .* 3)/.test(k) && !/^dnode|^rig/.test(k) || /^(mastery 15)$/.test(k)) snap(k, t); } };
+const SNAP_AT = [5, 20, 60, 120, 240, 480, 1440].map((m) => m * 60);
 const MATS_P = (s) => E.MATS.map((m) => E.fmt(s.prod[m])).join("/");
 const order = [...E.MATS].reverse().concat("mult");
 const treeOrder = [...E.TREE].sort((a, b) => a.cost - b.cost);
@@ -29,13 +41,20 @@ const labSkip = (process.env.NF_LABSKIP || "").split(","); // payload ids the bo
 const FULL = new Set(E.fullTreeIds()); // NF_BAN=id,id: the bot never buys these nodes (to see what one node does)
 for (const id of (process.env.NF_BAN || "").split(",")) FULL.delete(id); // the bot takes the first side of every fork
 // Ascend policy: ascend as soon as AP gain is at least max(2, 40% of AP already held), a typical player keeps going for a while first.
-let t = 0, nextBuy = 0;
+let t = 0, nextBuy = 0, firstHandT = 0;
 const HANDS = Number(process.env.NF_HAND || 0);
+// NF_SNAP=<dir>: write a loadable save (s.at = now) at each milestone: tree whole, each Handover (just after it), 1 h after the first Handover, each zone's first production.
+import { writeFileSync as _wf, mkdirSync as _mk } from "node:fs";
+const SNAP = process.env.NF_SNAP;
+if (SNAP) _mk(SNAP, { recursive: true });
+const snapped = new Set();
+const snap = (name) => { if (!SNAP || snapped.has(name)) return; snapped.add(name); s.at = Date.now(); _wf(`${SNAP}/${name}.json`, JSON.stringify(s)); console.log("snap", name, (t / 3600).toFixed(2) + " h"); };
 const handLog = [];
-const dt = 0.5;
+const dt = Number(process.env.NF_DT || 0.5); // tick size in seconds (the live game ticks at 0.1)
 while (t < hours * 3600) {
     E.tick(s, dt);
     t += dt;
+    if (SNAP_AT.length && t >= SNAP_AT[0]) snap("t" + SNAP_AT.shift() / 60 + "m", t);
     if (t >= nextBuy) {
         nextBuy = t + 3;
         // buy: for each stat, the most expensive affordable tier is a good greedy choice when cost < 25% of balance
@@ -71,7 +90,7 @@ while (t < hours * 3600) {
             for (let more = true; more;) {
                 more = false;
                 let best = null;
-                for (let k = 0; k < E.TIERS; k++) for (let m = 0; m < 3; m++) if (!E.modBlock(s, k, m)) { const c = E.modCost(s, k, m); if (!best || c < best[2]) best = [k, m, c]; }
+                for (let k = 0; k < E.TIERS; k++) for (let m = 0; m < E.MOD_COUNT; m++) if (!E.modBlock(s, k, m)) { const c = E.modCost(s, k, m); if (!best || c < best[2]) best = [k, m, c]; }
                 if (best && E.buyMod(s, best[0], best[1])) more = true;
             }
             for (const n of [...E.DRONE_TREE].sort((a, b) => a.cost - b.cost)) if (E.buyDroneNode(s, n.id)) mark("dnode " + n.id, t);
@@ -79,8 +98,12 @@ while (t < hours * 3600) {
             for (const x of [1, 5, 15, 30, 45, 60, 75]) if (r >= x) mark(`mastery ${x}`, t);
         }
         E.checkGoals(s);
+        if (ARCS) for (const st of order) { if (st === "mult" || !E.isUnlocked(s, st)) continue; for (let k = 0; k < E.TIERS; k++) if (!((s.seen?.[st] ?? 0) & (1 << k))) { const b = E.button(s, st, k); if (E.amount(s, b.pays) >= b.cost) E.press(s, st, k); } }
+        if (ZE && s.ze) for (const e of [...s.ze.act]) { if (e.kind === "vein") ZE.zeChoose(s, e.id, "mine"); else if (e.kind === "fault") ZE.zeChoose(s, e.id, "patch"); }
         // NF_TRACE=<minutes>: print a status line every that many play minutes (to find walls and runaways)
         if (process.env.NF_TRACE && t >= (marks.nextTrace || 0)) { marks.nextTrace = t + 60 * Number(process.env.NF_TRACE); console.log("t", (t / 3600).toFixed(2), "b/s", E.fmt(E.derive(s).bytesPerSec), "ae", E.fmt(s.aether), "or", E.fmt(s.origin), "px", E.fmt(s.paradox), "ap+", E.apOnAscend(s), "asc", s.life.ascends, "tree", s.tree.length, "G", E.fmt(E.derive(s).global), "ap", s.ap, "mounts", s.mounts.join("+"), "prod", MATS_P(s)); }
+        if (SNAP) { if (E.treeComplete(s)) snap("tree-whole"); if (firstHandT && t - firstHandT > 3600) snap("hand1-plus1h"); for (const m of E.MATS) if (s[m] > 0) snap("zone-" + m); }
+        for (const k of [3, 5, 7, 9, 11]) if (s.sunstone >= 10 ** k) mark(`sunstone 1e${k}` + (s.hand.count ? ` (H${s.hand.count})` : ""), t); // the ending's stage costs run 1e3 to 1e11
         if (s.reboot >= 1) mark("first reboot", t);
         if (s.life.reboots >= 25) mark("25 reboots", t);
         if (s.copper > 0) mark("copper", t);
@@ -137,6 +160,8 @@ while (t < hours * 3600) {
             const keys = E.handover(s, process.env.NF_PROTO || "wren", "", "osk");
             handLog.push([t, keys]);
             mark("handover " + s.hand.count, t);
+            snap("handover-" + s.hand.count);
+            if (s.hand.count === 1) firstHandT = t;
             ascents.length = 0;
             for (let more = true; more;) {
                 more = false;

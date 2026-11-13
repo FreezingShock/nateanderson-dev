@@ -13,7 +13,7 @@
 
 /* hero: the cron room scene (grows one machine per script learned), the count and the next step */
 .ctos .nf-sch-hero { --sc: 2; position: relative; display: grid; grid-template: "top scene" auto "note scene" 1fr / minmax(0, 1fr) auto; gap: 14px 24px; }
-.ctos .nf-sch-scene { grid-area: scene; position: relative; display: block; width: calc(288px * var(--sc)); height: calc(96px * var(--sc)); border: 1px solid var(--sch-line); box-shadow: 4px 4px 0 #000; background: url(/naos/nodefarm/zone-sched.webp?v=3971628d) no-repeat; background-size: calc(1728px * var(--sc)) calc(768px * var(--sc)); background-position: 0 calc(var(--st, 0) * -96px * var(--sc)); image-rendering: pixelated; animation: nfSchScene 1s steps(6) infinite; pointer-events: none; }
+.ctos .nf-sch-scene { grid-area: scene; position: relative; display: block; width: calc(288px * var(--sc)); height: calc(96px * var(--sc)); border: 1px solid var(--sch-line); box-shadow: 4px 4px 0 #000; background: url(/naos/nodefarm/zone-sched.webp?v=89d42333) no-repeat; background-size: calc(1728px * var(--sc)) calc(1056px * var(--sc)); background-position: 0 calc(var(--st, 0) * -96px * var(--sc)); image-rendering: pixelated; animation: nfSchScene 1s steps(6) infinite; pointer-events: none; }
 .ctos .nf-sch-scene::after { content: ""; position: absolute; inset: 0; background: repeating-linear-gradient(0deg, transparent 0 3px, #00000026 3px 4px); }
 @keyframes nfSchScene { from { background-position-x: 0; } to { background-position-x: calc(-1728px * var(--sc)); } }
 .ctos .nf-sch-top { grid-area: top; display: grid; gap: 10px; align-self: start; }
@@ -40,7 +40,7 @@
 .ctos .nf-sch-s[data-st="run"]::before { top: -1px; right: -1px; border-width: 2px 2px 0 0; }
 .ctos .nf-sch-s[data-st="run"]::after { bottom: -1px; right: -1px; border-width: 0 2px 2px 0; }
 .ctos .nf-sch-h { display: grid; grid-template-columns: auto minmax(0, 1fr) auto auto; align-items: center; gap: 12px; }
-.ctos .nf-sch-ic { --si: 40px; display: block; width: var(--si); height: var(--si); background: url(/naos/nodefarm/sched-icons64.webp?v=8b06917f) 0 calc(var(--r) * var(--si) * -1) / calc(var(--si) * 8) calc(var(--si) * 6) no-repeat; image-rendering: pixelated; }
+.ctos .nf-sch-ic { --si: 40px; display: block; width: var(--si); height: var(--si); background: url(/naos/nodefarm/sched-icons64.webp?v=2f9f6a9f) 0 calc(var(--r) * var(--si) * -1) / calc(var(--si) * 8) calc(var(--si) * 9) no-repeat; image-rendering: pixelated; }
 .ctos .nf-sch-s[data-st="lock"] .nf-sch-ic { filter: grayscale(1) brightness(.5); }
 .ctos .nf-sch-ic[data-on] { animation: nfSchIcon 1s steps(8) infinite; }
 @keyframes nfSchIcon { from { background-position-x: 0; } to { background-position-x: calc(var(--si) * -8); } }
@@ -115,9 +115,18 @@
     .ctos .nf-sch-pay li { grid-template-columns: minmax(0, 1fr) auto; row-gap: 4px; }
     .ctos .nf-sch-pay li > :last-child { grid-column: 1 / -1; justify-self: start; }
     .ctos .nf-sch-pay b { white-space: normal; overflow-wrap: anywhere; }
+    /* rig names are short, so rig.sh keeps one line per zone: name, level, tick */
+    .ctos .nf-sch-rigs li { grid-template-columns: minmax(0, 1fr) auto auto; }
+    .ctos .nf-sch-rigs li > :last-child { grid-column: auto; }
     .ctos .nf-sch-line { line-height: 1.9; }
     .ctos .nf-sch-line > span { display: block; margin: 2px 0 0; line-height: 1.5; }
 }
 @media (hover: none) { .ctos .nf-sch-tiers button, .ctos .nf-sch-cyc, .ctos .nf-sch-stat, .ctos .nf-sch-tick { min-height: 40px; } .ctos .nf-sch-run { min-height: 44px; } }
 @media (prefers-reduced-motion: reduce) { .ctos .nf-sch-scene, .ctos .nf-sch-ic[data-on], .ctos .nf-sch-run, .ctos .nf-sch-ps::after, .ctos .nf-sch-st::before { animation: none !important; } }
 body.nf-calm .ctos .nf-sch-scene, body.nf-calm .ctos .nf-sch-ic[data-on] { animation: none; }
+/* chained rules under a script (reboot.sh: Capacitor, Logic bomb; ascend.sh: Zero-click; restore.sh: perks) */
+.ctos .nf-sch-chains { display: flex; flex-wrap: wrap; gap: 4px 22px; padding-left: 12px; border-left: 2px dashed color-mix(in srgb, var(--c) 45%, transparent); }
+.ctos .nf-sch-chain { min-height: 32px; text-align: left; white-space: normal; }
+.ctos .nf-sch-chain::before { content: "&&"; margin-right: 2px; font: 700 var(--cm-ctos-t-micro)/1 var(--cm-mono); color: var(--sch-line); }
+.ctos .nf-sch-rigs li { border-left-color: color-mix(in srgb, var(--c) 55%, transparent); }
+@media (hover: none) { .ctos .nf-sch-chain { min-height: 40px; } }

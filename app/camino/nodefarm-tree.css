@@ -45,6 +45,8 @@ body > .nf-tm-host { position: fixed; inset: 0; z-index: 1000; }
 .ctos .nf-tl[data-st="on"] { stroke: var(--c); stroke-width: 5; animation: nfTracePulse 2.6s steps(13) infinite; }
 .ctos .nf-tl[data-fog] { opacity: .15; animation: none; }
 .ctos .nf-tm[data-focus] .nf-tl:not([data-near]) { opacity: .12; animation: none; }
+/* while the camera pans or zooms (data-pan, set by components/nodefarm/backdrop-canvas.ts) the dash steps hold still, so a pan frame never repaints the links */
+.ctos .nf-tm[data-pan] .nf-tl { animation-play-state: paused; }
 .ctos .nf-tm[data-focus] .nf-tl[data-near] { opacity: 1; }
 /* vias at the bends: a dark pad with a ring in the trace colour */
 .ctos .nf-tl-via { fill: #05070a; stroke: #6b7a8c; stroke-width: 2.5; opacity: .55; transition: opacity .3s; }
@@ -52,11 +54,11 @@ body > .nf-tm-host { position: fixed; inset: 0; z-index: 1000; }
 .ctos .nf-tl-via[data-st="on"] { fill: color-mix(in srgb, var(--c) 35%, #000); stroke: var(--c); opacity: 1; }
 .ctos .nf-tl-via[data-fog] { opacity: .15; }
 .ctos .nf-tm[data-focus] .nf-tl-via:not([data-near]) { opacity: .12; }
-.ctos .nf-tl-pk { stroke: #fff; stroke-width: 5; stroke-dasharray: 10 150; animation: nfPacket 1.9s steps(38) infinite; }
-.ctos .nf-tm[data-focus] .nf-tl-pk { opacity: .35; }
+/* packets are drawn on the canvas below (tree.tsx drawPk); this hidden path only carries the theme's packet colour */
+.ctos .nf-tl-pk { stroke: #fff; display: none; }
+.ctos .nf-tm-pk { position: absolute; left: 0; top: 0; transform-origin: 0 0; pointer-events: none; }
 @keyframes nfTrace { to { stroke-dashoffset: -24; } }
 @keyframes nfTracePulse { 0%, 100% { opacity: .75; } 50% { opacity: 1; } }
-@keyframes nfPacket { from { stroke-dashoffset: 0; } to { stroke-dashoffset: -160; } }
 
 /* ---- section labels: a white ctOS slab with the section colour on the left */
 .ctos .nf-tm-sec { position: absolute; translate: -50% -50%; display: grid; gap: 5px; justify-items: start; padding: 9px 16px 10px 14px; background: #06090dd9; border-left: 4px solid var(--c); box-shadow: 6px 6px 0 #000a; pointer-events: none; white-space: nowrap; transition: opacity .3s; }
@@ -281,6 +283,8 @@ body > .nf-tm-host { position: fixed; inset: 0; z-index: 1000; }
 body.nf-tm-open .nv-top, body.nf-tm-open .cm-dock, body.nf-tm-open .nf-jb, body.nf-tm-open .nf-pops { visibility: hidden; }
 /* the site map, search and console still open above the tree */
 body.nf-tm-open .nv-scrim { z-index: 1003; }
+/* the opaque menu covers the board: skip its layout and paint (tree.tsx pins the board's height first, so the page keeps its length) */
+body.nf-tm-covered .nf { content-visibility: hidden; }
 
 /* ---- desktop framing (Nate, 2026-11-12): the site's top-left and top-right clusters stay, the tree's own bar slots in
    between them on the same line, and the page dock waits behind a "</> pages" tab at the bottom */

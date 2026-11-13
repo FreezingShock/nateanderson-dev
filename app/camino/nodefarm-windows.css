@@ -31,9 +31,8 @@
 .ctos .nf-wk-ban[data-art="goals"] .nf-wk-art i { background-image: url(/naos/nodefarm/win-goals.webp?v=49882b0d); }
 .ctos .nf-wk-ban[data-art="records"] .nf-wk-art i { background-image: url(/naos/nodefarm/win-records.webp?v=cc4ab0e2); }
 .ctos .nf-wk-ban[data-art="menu"] .nf-wk-art i { background-image: url(/naos/nodefarm/win-menu.webp?v=ce534520); }
+.ctos .nf-wk-ban[data-art="codex"] .nf-wk-art i { background-image: url(/naos/nodefarm/win-codex.webp?v=fb47c778); }
 @media (min-width: 900px) { .ctos .nf-wk-art i { left: 58%; } }
-/* phone: the readout sits on top of the full-colour art, so darken the art under the text more */
-@media (max-width: 719px) { .ctos .nf-wk-art::after { background: linear-gradient(90deg, #070707f0 0, #070707c8 55%, #07070760 100%); } }
 .ctos .nf-wk-scan { position: absolute; left: 0; right: 0; top: 0; height: 2px; background: color-mix(in srgb, var(--c) 70%, transparent); opacity: .45; animation: nfWkScan 5.2s linear infinite; pointer-events: none; }
 @keyframes nfWkScan { from { transform: translateY(0); } to { transform: translateY(170px); } }
 .ctos .nf-wk-code { position: relative; z-index: 3; margin: 0; display: grid; gap: 4px; font: 500 var(--cm-ctos-t-micro)/1.35 var(--cm-mono); letter-spacing: .1em; text-transform: uppercase; }
@@ -47,7 +46,7 @@
 .ctos .nf-wk-big span { font: 600 var(--cm-ctos-t-micro)/1 var(--cm-mono); letter-spacing: .14em; text-transform: uppercase; color: var(--cm-ctos-meta); }
 @media (max-width: 559px) {
     .ctos .nf-wk-ban { flex-direction: column; min-height: 190px; }
-    .ctos .nf-wk-big { justify-items: start; text-align: left; padding: 6px 10px 6px 0; background: #070707d9; box-shadow: 10px 0 14px #070707d9; }
+    .ctos .nf-wk-big, .ctos .nf-wk-code { justify-items: start; text-align: left; padding: 6px 10px 6px 0; background: #070707d9; box-shadow: 10px 0 14px #070707d9; }
     .ctos .nf-wk-art i { opacity: .8; }
     .ctos .nf-wk-art::after { background: linear-gradient(180deg, #070707 0, #070707bb 45%, transparent 75%); }
 }
@@ -161,6 +160,9 @@
 .ctos .nf-wk-box::before { content: "["; color: var(--cm-ctos-meta); }
 .ctos .nf-wk-box::after { content: "]"; color: var(--cm-ctos-meta); }
 .ctos .nf-wk-k { min-width: 7ch; color: var(--cm-fg); }
+.ctos .nf-wk-cfgrow .nf-wk-k { min-width: 11ch; }
+.ctos button.nf-wk-k { background: none; border: 0; padding: 0; font: inherit; text-align: left; cursor: pointer; text-decoration: underline dotted #ffffff40; text-underline-offset: 3px; }
+.ctos button.nf-wk-k:hover, .ctos button.nf-wk-k:focus-visible { color: var(--c, #5be3ff); }
 .ctos .nf-wk-eq { color: var(--cm-ctos-meta); }
 .ctos .nf-wk-cfg b { min-width: 3ch; color: var(--c); }
 .ctos .nf-wk-cfg li > button[aria-checked="false"] b { color: #ff8cbc; }
@@ -241,19 +243,7 @@
     .ctos .nf-wk-scan, .ctos .nf-wk-caret, .ctos .nf-wk-nodes li[data-next] button, .ctos .nf-wk-chain li[data-here] .nf-wk-ct, .ctos .nf-wk-chain li[data-here] .nf-wk-cn { animation: none !important; }
 }
 
-/* ==== next step strip: a sprite tile for what it points at, and a code kicker */
-.ctos .nf-gd-ic { display: none; }
-@media (min-width: 560px) {
-    .ctos .nf-guide { grid-template-columns: auto minmax(0, 1fr); }
-    .ctos .nf-gd-ic { display: grid; place-items: center; grid-row: span 3; align-self: center; width: 76px; height: 76px; background: radial-gradient(circle, color-mix(in srgb, var(--cm-cyan) 30%, transparent) .9px, transparent 1.4px) 0 0 / 4px 4px, #070809; border: 1px solid color-mix(in srgb, var(--cm-cyan) 40%, #1c1c1c); }
-    .ctos .nf-guide > :not(.nf-gd-ic) { grid-column: 2; }
-}
-@media (min-width: 900px) {
-    .ctos .nf-guide { grid-template-columns: auto minmax(0, 1.5fr) minmax(220px, 1fr) auto; }
-    .ctos .nf-gd-ic { grid-row: auto; }
-    .ctos .nf-guide > :not(.nf-gd-ic) { grid-column: auto; }
-}
-.ctos .nf-gd-k > span { color: var(--cm-ctos-meta); letter-spacing: .06em; }
+/* next step strip: moved to nodefarm-next.css (the console overhaul) */
 
 /* ==== Drone bay: a dithered pad under each sprite in its colour, columns that line up, a coloured buy button */
 .ctos .nf-dr-list li { position: relative; background: linear-gradient(90deg, color-mix(in srgb, var(--c) 7%, #0a0a0a), #0a0a0a 40%); }
@@ -304,6 +294,14 @@ body.nf-win-open .nf-jb { z-index: 59; }
 .ctos .nf-wk-file input { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; font-size: 16px; }
 .ctos .nf-wk-file:focus-within { outline: 2px solid var(--c, var(--cm-cyan)); outline-offset: 2px; }
 .ctos .nf-wk-backup { display: grid; gap: 10px; padding-top: 12px; border-top: 1px dashed #ffffff1c; }
+.ctos .nf-wk-bk { margin: 0; padding: 0; list-style: none; display: grid; gap: 0; border: 1px solid #ffffff14; }
+.ctos .nf-wk-bk li { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 9px 12px; }
+.ctos .nf-wk-bk li + li { border-top: 1px dashed #ffffff14; }
+.ctos .nf-wk-bk-t { min-width: 0; display: grid; gap: 3px; font: 500 var(--cm-ctos-t-ui)/1.3 var(--cm-mono); color: var(--cm-mute); }
+.ctos .nf-wk-bk-t b { color: var(--cm-fg); font-weight: 700; margin-right: 4px; }
+.ctos .nf-wk-bk-t small { font-size: var(--cm-ctos-t-micro); color: var(--cm-ctos-meta); }
+.ctos .nf-wk-bk .nf-wk-btn { flex: none; min-height: 34px; padding: 0 12px; }
+@media (hover: none) { .ctos .nf-wk-bk .nf-wk-btn { min-height: 44px; } }
 @media (hover: none) { .ctos .nf-wk-keys { display: none; } }
 
 /* ---- mini HUD (components/nodefarm/mini-hud.tsx): a one-line readout under the site bar once the HUD has scrolled away */

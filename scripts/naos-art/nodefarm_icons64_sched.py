@@ -1,6 +1,6 @@
-"""Scripts zone icons at 64 px, one per script (SCRIPTS order in lib/nodefarm/scripts.ts), eight frames each.
+"""Scripts zone icons at 64 px, one per script (ROW order in components/nodefarm/scripts.tsx), eight frames each.
 Each is drawn in its script's colour so the crontab rows read at a glance. Built by nodefarm-icons64.py (target `sched`)
-into public/naos/nodefarm/sched-icons64.{png,webp}: eight frames across, six rows down (512 x 384)."""
+into public/naos/nodefarm/sched-icons64.{png,webp}: eight frames across, nine rows down (512 x 576)."""
 import math
 
 import numpy as np
@@ -140,4 +140,77 @@ def ascend(c, p):
     c.fill(star4(32, 8, 3 + 2 * wave(p, 3), 1), 1.0, "white")
 
 
-DRAW = [buy, reboot, compile_, deploy, drop, ascend]
+def rig(c, p):
+    """Auto-rig: an orange pumpjack nodding over a well head, the counterweight swinging, a drop of ore glowing at the pipe."""
+    shadow(c, 32, 24, 60)
+    c.fill(rect(8, 52, 56, 57), 0.45, "steel", outline="steel")
+    c.fill(poly([(26, 52), (30, 26), (34, 26), (38, 52)]), 0.5, "cu", outline="cu")
+    a = 0.32 * math.sin(2 * math.pi * p)
+    cx, cy = 32, 26
+    hx, hy = cx - 20 * math.cos(a), cy - 20 * math.sin(a)
+    tx, ty = cx + 18 * math.cos(a), cy + 18 * math.sin(a)
+    c.fill(path([(hx, hy), (tx, ty)], 4), 0.75, "cu", outline="cu")
+    head = poly([(hx - 2, hy - 6), (hx + 4, hy - 4), (hx + 4, hy + 4), (hx - 2, hy + 7)])
+    c.fill(head, 0.85, "cu", outline="cu")
+    c.fill(path([(hx - 1, hy + 6), (hx - 1, 50)], 1.2), 0.6, "steel")
+    c.fill(disc(cx, cy, 2.6), 0.9, "steel", outline="steel")
+    # crank and counterweight on the right
+    c.fill(disc(46, 44, 7), 0.4, "steel", outline="steel")
+    cwx, cwy = 46 + 5 * math.cos(2 * math.pi * p), 44 + 5 * math.sin(2 * math.pi * p)
+    c.fill(disc(cwx, cwy, 3.4), 0.85, "ember", outline="ember")
+    c.fill(path([(tx, ty), (cwx, cwy)], 1.4), 0.6, "steel")
+    c.fill(rect(10, 46, 18, 52), 0.5, "steel", outline="steel")
+    ore = disc(14, 43, 2.2 + wave(p) * 0.8)
+    c.fill(ore, 1.0, "gold")
+    c.glow(ore, P["gold"][4], 2, 140, 1)
+
+
+def event(c, p):
+    """Auto-answer: a pickaxe swinging into a gold vein in dark rock, nuggets and sparks flying on each strike."""
+    shadow(c, 32, 26, 60)
+    rock = poly([(6, 58), (8, 34), (20, 26), (34, 30), (48, 24), (58, 34), (58, 58)])
+    c.fill(rock, 0.25 + 0.3 * (1 - lin(6, 24, 58, 58)), "stone", outline="stone")
+    vein = path([(10, 52), (22, 44), (30, 46), (42, 38), (54, 40)], 3)
+    c.fill(vein & rock, 0.7 + 0.25 * wave(p, 2), "gold")
+    c.glow(vein & rock, P["gold"][4], 2, 90, 1)
+    hit = (p * 2) % 1.0
+    # swing: raised (handle up) to struck (head in the vein), pivoting at the grip
+    k = min(1.0, hit / 0.45) if hit < 0.45 else 1 - (hit - 0.45) / 0.55
+    th = math.radians(-70 - 92 * k * k)
+    gx, gy = 54, 52
+    hx, hy = gx + 30 * math.cos(th), gy + 30 * math.sin(th)
+    c.fill(path([(gx, gy), (hx, hy)], 3.4), 0.3 + 0.15 * (1 - lin(gx, gy, hx, hy)), "eg", outline="eg")
+    nx, ny = -math.sin(th), math.cos(th)
+    dx, dy = math.cos(th), math.sin(th)
+    head = path([(hx + 12 * nx - 3 * dx, hy + 12 * ny - 3 * dy), (hx + 1 * dx, hy + 1 * dy), (hx - 12 * nx - 3 * dx, hy - 12 * ny - 3 * dy)], 4)
+    c.fill(head, 0.5 + 0.4 * (1 - lin(hx - 12, hy - 12, hx + 12, hy + 12)), "steel", outline="steel")
+    c.rim(head, P["steel"][6])
+    if 0.4 < hit < 0.75:
+        q = (hit - 0.4) / 0.35
+        tip = (hx + 12 * nx - 3 * dx, hy + 12 * ny - 3 * dy)
+        for ddx, ddy in ((-5, -8), (3, -11), (8, -5), (-9, -3)):
+            c.spark(tip[0] + ddx * (0.4 + q), tip[1] + ddy * (0.4 + q), 1, ("gold", 5), ("white", 2))
+        c.fill(disc(tip[0] - 5 - 7 * q, tip[1] - 4 - 9 * q + 12 * q * q, 2), 1.0, "gold")
+
+def restore(c, p):
+    """Auto-restore: a small prestige-tree node being rebuilt inside a lime restore arrow that runs round it."""
+    shadow(c, 32, 20, 60)
+    tile = poly([(32, 20), (44, 32), (32, 44), (20, 32)])
+    lit = (p * 4) % 1.0
+    c.fill(tile, 0.3 + 0.5 * (1 - lin(20, 20, 44, 44)), "violet", outline="violet")
+    c.fill(disc(32, 32, 4.5), 0.6 + 0.4 * lit, "lime", outline="lime")
+    for k, (x, y) in enumerate(((32, 10), (54, 32), (32, 54), (10, 32))):
+        done = k < int(p * 4) + 1
+        c.fill(path([(32, 32), (x, y)], 1.2) & ~tile, 0.8 if done else 0.3, "lime" if done else "steel")
+        c.fill(disc(x, y, 3.2), 0.8 if done else 0.3, "lime" if done else "steel", outline="lime" if done else "steel")
+    a0 = 2 * math.pi * p
+    m = ring(32, 32, 27, 24) & (((np.arctan2(Y - 32, X - 32) - a0) % (2 * math.pi)) < 4.6)
+    c.fill(m, 0.75, "lime")
+    ex, ey = 32 + 25.5 * math.cos(a0 + 4.6), 32 + 25.5 * math.sin(a0 + 4.6)
+    tx, ty = -math.sin(a0 + 4.6), math.cos(a0 + 4.6)
+    nx, ny = math.cos(a0 + 4.6), math.sin(a0 + 4.6)
+    c.fill(poly([(ex + 6 * tx, ey + 6 * ty), (ex - 5 * nx, ey - 5 * ny), (ex + 5 * nx, ey + 5 * ny)]), 0.95, "lime", outline="lime")
+    c.glow(m, P["lime"][5], 2, 90, 1)
+
+
+DRAW = [buy, reboot, compile_, deploy, drop, ascend, rig, event, restore]  # ROW order in components/nodefarm/scripts.tsx

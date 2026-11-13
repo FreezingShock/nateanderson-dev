@@ -4,7 +4,11 @@ import { usePathname } from "next/navigation";
 import { useCallback, useEffect, useRef, useState, type KeyboardEvent as ReactKeyboardEvent } from "react";
 import { navItems } from "@/lib/nav";
 import { navigateWithCurtain } from "@/lib/motion/navigate";
+import { NF_KEY_GROUPS, NF_KEYS_NOTE } from "@/lib/nodefarm/keys";
 import "./keys.css";
+
+const NF_PATH = "/creations/games/node-farm";
+const onFarm = (path: string) => path === NF_PATH || path.startsWith(NF_PATH + "/");
 
 /** How long a `g` press waits for its section number. */
 const CHORD_MS = 1500;
@@ -35,7 +39,7 @@ const GROUPS: { title: string; rows: Row[] }[] = [
     {
         title: "Go to",
         rows: [
-            { keys: ["g", "0–6"], sep: "then", label: "Go to a section. The numbers match the site map." },
+            { keys: ["g", "0–6"], sep: "then", label: "Go to a section. The numbers match the site map. Off in Node Farm, where G is the game's next-step key." },
             { keys: ["[", "]"], sep: "or", label: "Previous or next section. The list wraps at the ends." },
         ],
     },
@@ -59,6 +63,7 @@ const GROUPS: { title: string; rows: Row[] }[] = [
 export function KeyboardShortcuts() {
     const path = usePathname();
     const [open, setOpen] = useState(false);
+    const farm = onFarm(path);
     const returnTo = useRef<HTMLElement | null>(null);
     const panel = useRef<HTMLElement>(null);
     // When the last key was a `g`, so the next digit can complete the jump.
@@ -89,8 +94,9 @@ export function KeyboardShortcuts() {
                 chord.current = 0;
                 return;
             }
-            // Another panel (search, site map, console) owns the keys while it is open.
-            if (document.querySelector(".nv-scrim")) {
+            // Another panel (search, site map, console) owns the keys while it is open. So does a tree, an event or a
+            // full-screen moment in Node Farm, which stay modal: no section jumps out from under them.
+            if (document.querySelector(".nv-scrim, .nf-tm-host, .nf-ev-scrim:not([data-out]), .nf-aw, .nf-rx, .nf-hcut")) {
                 chord.current = 0;
                 return;
             }
@@ -109,7 +115,8 @@ export function KeyboardShortcuts() {
             }
             chord.current = 0;
 
-            if (key.toLowerCase() === "g") {
+            // Node Farm uses G for its next-step key, so the chord prefix would fire together with it.
+            if (key.toLowerCase() === "g" && !onFarm(window.location.pathname)) {
                 // No preventDefault: a game that starts typing on a plain letter still gets it.
                 chord.current = now;
                 return;
@@ -188,8 +195,8 @@ export function KeyboardShortcuts() {
                     </button>
                 </div>
                 <div className="nv-keys-body" role="region" aria-label="Keyboard shortcuts" tabIndex={0}>
-                    {GROUPS.map((g) => (
-                        <section key={g.title} className="nv-keys-group">
+                    {[...(farm ? NF_KEY_GROUPS.map((g) => ({ title: g.title, rows: g.rows.map((r): Row => ({ keys: r.keys, label: r.needs ? `${r.label} (once unlocked)` : r.label })) })) : []), ...GROUPS].map((g) => (
+                        <section key={g.title} className="nv-keys-group" data-short={g.title.startsWith("Node Farm: windows") ? "" : undefined}>
                             <h2 className="nv-keys-h">{g.title}</h2>
                             <dl className="nv-keys-list">
                                 {g.rows.map((r) => (
@@ -208,6 +215,7 @@ export function KeyboardShortcuts() {
                             </dl>
                         </section>
                     ))}
+                    {farm && <p className="nv-keys-note">{NF_KEYS_NOTE}</p>}
                     <p className="nv-keys-note">
                         Shortcuts pause while you type in a field. On a phone, use the menu, search and console buttons in the top bar.
                     </p>
