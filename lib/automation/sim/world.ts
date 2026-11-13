@@ -44,13 +44,15 @@ export function capacityOf(r: Resolved, cat: Catalog): number {
 export function resolve(cat: Catalog, type: string): Resolved | null {
     const e: EngineDef | undefined = cat.engine[type];
     if (e) {
+        // The Recipe tree owns the logistics numbers (cost, rate, capacity, footprint) when it lists the id; the engine's own values are the fallback.
+        const st = cat.tree.structures?.find((x) => x.id === type);
         return {
             id: type,
             kind: e.kind,
-            name: e.name,
-            footprint: e.footprint,
+            name: st?.name ?? e.name,
+            footprint: st?.footprint ?? e.footprint,
             placeable: e.placeable !== false,
-            cost: e.cost,
+            cost: st?.buildCost ?? e.cost,
             power: 0,
             supply: e.supply ?? 0,
             range: 0,
@@ -59,8 +61,8 @@ export function resolve(cat: Catalog, type: string): Resolved | null {
             beltSpeed: e.belt?.speed ?? 0,
             outputCap: cat.tune.defaultOutputCap,
             storageKj: 0,
-            rate: e.rate ?? 0,
-            capacity: e.capacity ?? 0,
+            rate: st?.rate ?? e.rate ?? 0,
+            capacity: st?.capacity ?? e.capacity ?? 0,
         };
     }
     const m = cat.tree.machines.find((x) => x.id === type);

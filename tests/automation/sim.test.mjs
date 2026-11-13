@@ -432,3 +432,15 @@ test("a delivery dock takes belt items and counts them as delivered", () => {
     assert.equal(w.progress.delivered["ore-a"], 1);
     assert.equal(dock.input["ore-a"], 1);
 });
+
+test("logistics costs, rates and footprints come from the Recipe tree when it lists the id", () => {
+    const real = S.DEFAULT_CATALOG;
+    const crate = real.tree.structures.find((x) => x.id === "belt-crate");
+    const r = S.resolve(real, "belt-crate");
+    assert.deepEqual(r.cost, crate.buildCost);
+    assert.equal(r.capacity, crate.capacity);
+    const dock = S.resolve(real, "belt-dock");
+    assert.equal(dock.footprint.w, 3);
+    const steel = real.tree.structures.find((x) => x.id === "belt-splitter-steel");
+    if (steel) assert.equal(S.resolve(real, "belt-splitter-steel").rate, steel.rate);
+});
