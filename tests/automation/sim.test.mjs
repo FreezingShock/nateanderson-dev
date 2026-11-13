@@ -332,11 +332,13 @@ test("the default catalog is the Recipe thread's tree, with its generators and c
 });
 
 test("the spring store is a battery with a 0 to 1 charge per building, and the hub is 3 by 3", () => {
-    const w = base(CAT, {}, { power: false });
+    const real = S.DEFAULT_CATALOG; // spring_store is in the Recipe tree, not the placeholder
+    const w = base(real, { startStock: [{ item: "iron_gear", qty: 50 }, { item: "steel_ingot", qty: 50 }, { item: "copper_wire", qty: 50 }] }, { power: false });
     w.windPin = 0.9;
-    const st = ok(S.place(w, "spring_store", 30, 30, 0, CAT));
-    S.step(w, 0.5, CAT);
-    const c = S.chargeOf(w, CAT);
+    const st = ok(S.place(w, "spring_store", 30, 30, 0, real));
+    S.step(w, 0.5, real);
+    const c = S.chargeOf(w, real);
+    assert.equal(S.resolve(real, "spring_store").storageKj, 600);
     assert.ok(c[st.id] > 0 && c[st.id] <= 1, "the store charges in strong wind");
-    assert.equal(S.resolve(CAT, "hub").footprint.w, 3);
+    assert.equal(S.resolve(real, "hub").footprint.w, 3);
 });
