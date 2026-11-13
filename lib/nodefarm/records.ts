@@ -334,6 +334,10 @@ export function nfCommand(s: State, args: string[]): NfResult {
         lines = [t("  PID  NAME", "dim"), t("    1  init (started the farm)", "dim"), t("    2  you", "dim"), ...secret("x_pid")];
     } else if (sub === "top") {
         lines = [t("load average: 0.97 0.99 1.02", "dim"), t("every drone is busy. the fans hum in a key nobody tuned.", "dim"), ...secret("x_top")];
+    } else if (sub === "sun") {
+        lines = [t("sun: up at 06:12, same as yesterday. the clamps are off.", "dim"), t("nothing is watching the sun but the farm.", "dim"), ...secret("x_sun")];
+    } else if (sub === "nohup") {
+        lines = [t("nohup: ignoring hangup. the node keeps running after you close the window.", "dim"), ...secret("x_nohup")];
     } else if (sub === "flash") {
         lines = [t("flash: firmware is write protected. the lock note says: hand it over first.", "err"), ...secret("x_flash")];
     } else {
