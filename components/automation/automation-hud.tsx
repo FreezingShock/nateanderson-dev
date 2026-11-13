@@ -14,10 +14,15 @@ import { ResearchScreen } from "./research-screen";
 import { PrestigeScreen } from "./prestige-screen";
 import "./brasswork-skin.css";
 import { canAfford } from "./format";
+import { uiIconStyle } from "@/lib/automation/icons/ui";
+
+/** A 24px HUD glyph. Decorative: the text beside it carries the name. */
+const Ico = ({ id }: { id: string }) => <span className="ab-ico" style={uiIconStyle(id, 24)} aria-hidden="true" />;
 
 type Drawer = "expedition" | "stats" | "settings";
 type Screen = "research" | "prestige";
 
+const DRAWER_ICON: Record<Drawer, string> = { expedition: "expedition", stats: "stats", settings: "settings" };
 const DRAWER_TITLE: Record<Drawer, string> = {
   expedition: "Expedition",
   stats: "Production stats",
@@ -90,6 +95,7 @@ export function AutomationHud({
             aria-expanded={screen === "research"}
             onClick={() => setScreen((s) => (s === "research" ? null : "research"))}
           >
+            <Ico id="research" />
             Research
           </button>
           {(["expedition", "stats", "settings"] as const).map((d) => (
@@ -100,6 +106,7 @@ export function AutomationHud({
               aria-expanded={drawer === d}
               onClick={() => toggle(d)}
             >
+              <Ico id={DRAWER_ICON[d]} />
               {DRAWER_TITLE[d]}
             </button>
           ))}
@@ -134,6 +141,7 @@ export function AutomationHud({
                 setSheet((c) => (c === "pal" ? null : "pal"));
               }}
             >
+              <Ico id="machines" />
               <span className="ab-tab-label">Machines</span>
             </button>
             <button
@@ -145,6 +153,7 @@ export function AutomationHud({
                 setSheet((c) => (c === "factory" ? null : "factory"));
               }}
             >
+              <Ico id="milestones" />
               <span className="ab-tab-label">Milestones</span>
             </button>
             <button
@@ -156,6 +165,7 @@ export function AutomationHud({
                 setScreen((s) => (s === "research" ? null : "research"));
               }}
             >
+              <Ico id="research" />
               <span className="ab-tab-label">Research</span>
             </button>
             <button
@@ -167,6 +177,7 @@ export function AutomationHud({
                 setMore((m) => !m);
               }}
             >
+              <Ico id="help" />
               <span className="ab-tab-label">More</span>
             </button>
           </nav>
@@ -183,6 +194,7 @@ export function AutomationHud({
                     setDrawer(d);
                   }}
                 >
+                  <Ico id={DRAWER_ICON[d]} />
                   {DRAWER_TITLE[d]}
                 </button>
               ))}

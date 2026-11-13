@@ -1,4 +1,5 @@
 "use client";
+import { uiIconStyle } from "@/lib/automation/icons/ui";
 
 // Small extras around the Brasswork stage: photo mode (P), the key sheet (?) and the welcome-back report. They sit on
 // top of the HUD and use the brass kit's bw-* classes. The host passes in a snapshot function and the away report.
@@ -98,16 +99,20 @@ export function BrassworkExtras({ snapshot, away, mood, onMood }: { snapshot: ()
         <>
             <div className="bx-tools">
                 <button type="button" className="bw-btn bx-btn" onClick={photo} title="Photo (P)" aria-label="Take a photo of the island">
-                    Photo
+                    <span className="ab-ico bx-ico" style={uiIconStyle("photo", 20)} aria-hidden="true" />
+                    <span className="bx-lbl">Photo</span>
                 </button>
                 <button type="button" className="bw-btn bx-btn" onClick={() => onMood(MOODS[(MOODS.indexOf(mood) + 1) % MOODS.length])} title="Light (L)" aria-label={`Light: ${mood}. Click to change`}>
-                    Light: {mood}
+                    <span className="ab-ico bx-ico" style={uiIconStyle("light", 20)} aria-hidden="true" />
+                    <span className="bx-lbl">Light: {mood}</span>
                 </button>
                 <button type="button" className="bw-btn bx-btn" onClick={() => setCodex(true)} title="Codex (C)" aria-label="Open the machine codex">
-                    Codex
+                    <span className="ab-ico bx-ico" style={uiIconStyle("codex", 20)} aria-hidden="true" />
+                    <span className="bx-lbl">Codex</span>
                 </button>
                 <button type="button" className="bw-btn bx-btn" onClick={() => setSheet(true)} title="Keys (H)" aria-label="Show keys">
-                    Keys
+                    <span className="ab-ico bx-ico" style={uiIconStyle("keys", 20)} aria-hidden="true" />
+                    <span className="bx-lbl">Keys</span>
                 </button>
             </div>
             {codex && <Codex onClose={() => setCodex(false)} />}

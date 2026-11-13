@@ -955,3 +955,23 @@
     width: 356px;
   }
 }
+
+/* HUD glyphs: sized by uiIconStyle, set beside a text label. */
+.ab-ico {
+  display: inline-block;
+  flex: none;
+  vertical-align: middle;
+  margin-right: 6px;
+}
+
+.ab-tab {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+}
+
+.ab-tab .ab-ico {
+  margin: 0;
+}
