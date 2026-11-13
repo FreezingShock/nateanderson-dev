@@ -10,7 +10,7 @@ const FORMATS: [NumFmt, string][] = [["short", "1.2M"], ["sci", "1.2e6"], ["eng"
 const FX_NOTE: Record<FxMode, string> = {
     full: "everything runs",
     low: "no drifting layers, loops or blurs: for slow machines",
-    auto: "measures this device once, then picks",
+    auto: "low on slow devices or when reduced motion is on",
 };
 
 export type SettingsProps = {

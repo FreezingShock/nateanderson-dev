@@ -1,7 +1,8 @@
 // Node Farm effects level: one switch other code can hook.
 //   full: everything runs.  low: the expensive decoration stops (see app/camino/nodefarm-fx.css).  auto: low while this
 //   device is struggling, full again once it has recovered. Auto keeps watching the frame rate the whole time it is on,
-//   so a machine that is slow only at first (or only in one window) doesn't get stuck in the wrong state.
+//   so a machine that is slow only at first (or only in one window) doesn't get stuck in the wrong state. Auto is also
+//   low while the OS asks for reduced motion (prefers-reduced-motion); an explicit full ignores that setting.
 // Hooks for other code:
 //   CSS      body.nf-lowfx { ... }          (also body[data-nf-fx="low"])
 //   plain JS getLowFx()
@@ -37,8 +38,13 @@ let low = false;
 let watching = false;
 const subs = new Set<() => void>();
 
+/** The OS asks for less motion. Auto treats that as low, so the heavy loops stop without a manual switch. */
+function reducedMotion(): boolean {
+    return typeof window !== "undefined" && !!window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+}
+
 function apply() {
-    const next = mode === "low" || (mode === "auto" && autoLow);
+    const next = mode === "low" || (mode === "auto" && (autoLow || reducedMotion()));
     if (typeof document !== "undefined") {
         document.body.classList.toggle("nf-lowfx", next);
         document.body.dataset.nfFx = next ? "low" : "full";
@@ -151,6 +157,10 @@ export function initFx() {
         if (v === "low" || v === "full" || v === "auto") mode = v;
     } catch {}
     listenVisibility();
+    try {
+        // follow the OS setting while the game is open
+        window.matchMedia("(prefers-reduced-motion: reduce)").addEventListener("change", () => { if (mode === "auto") apply(); });
+    } catch {}
     if (mode === "auto") startWatch();
     apply();
 }
