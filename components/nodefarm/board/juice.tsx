@@ -385,11 +385,21 @@ function AscendSeq({ data, reduced, onClose }: { data: { gain: number; ap: numbe
     const feed = useRef<CoreFeed>({ ...freshCoreFeed(), progress: reduced ? 1 : 0, unlocked: STATS.length, speed: 0.25, reboots: 64, ap: reduced ? data.ap : Math.max(0, data.ap - data.gain), zone: lk.zone, skin: lk.skin, rigs: lk.rigs, fw: lk.fw, parts: reduced || data.n > 1 ? lk.parts : lk.parts & ~PART.ring1, drones: lk.drones, glyphs: lk.glyphs });
     const [phase, setPhase] = useState<"charge" | "show">(reduced ? "show" : "charge");
     const [canClose, setCanClose] = useState(reduced);
+    const [leaving, setLeaving] = useState(false); // the exit plays (240 ms) before the sequence unmounts
+    const leavingRef = useRef(false);
     const num = useRef<HTMLElement>(null);
     const t0 = useRef(0);
     const phaseRef = useRef(phase);
     phaseRef.current = phase;
     const ref = useRef<HTMLDivElement>(null);
+
+    // leaving: the sequence fades out, then the parent unmounts it. Pressed once; the timers and taps share this path.
+    const close = useCallback(() => {
+        if (leavingRef.current) return;
+        leavingRef.current = true;
+        setLeaving(true);
+        window.setTimeout(onClose, reduced ? 0 : 240);
+    }, [onClose, reduced]);
 
     const reveal = useCallback(() => {
         const f = feed.current;
@@ -421,7 +431,7 @@ function AscendSeq({ data, reduced, onClose }: { data: { gain: number; ap: numbe
     useEffect(() => {
         if (phase !== "show") return;
         t0.current = performance.now();
-        const to = [setTimeout(() => setCanClose(true), reduced ? 0 : 1300), setTimeout(onClose, 14000)];
+        const to = [setTimeout(() => setCanClose(true), reduced ? 0 : 1300), setTimeout(close, 14000)];
         let raf = 0;
         if (!reduced && num.current) {
             const el = num.current;
@@ -434,9 +444,9 @@ function AscendSeq({ data, reduced, onClose }: { data: { gain: number; ap: numbe
             raf = requestAnimationFrame(tick);
         }
         return () => { to.forEach(clearTimeout); cancelAnimationFrame(raf); };
-    }, [phase, reduced, data.gain, onClose]);
+    }, [phase, reduced, data.gain, close]);
 
-    const act = () => { if (phase === "charge") reveal(); else if (canClose) onClose(); };
+    const act = () => { if (phase === "charge") reveal(); else if (canClose) close(); };
     useEffect(() => {
         const key = (e: KeyboardEvent) => {
             if (e.key === "Escape" || e.key === "Enter" || e.key === " ") { e.preventDefault(); act(); }
@@ -446,7 +456,7 @@ function AscendSeq({ data, reduced, onClose }: { data: { gain: number; ap: numbe
     });
 
     return (
-        <div ref={ref} tabIndex={-1} className="nf-rx" data-phase={phase} role="dialog" aria-modal="true" aria-label="Ascended" onClick={act}>
+        <div ref={ref} tabIndex={-1} className="nf-rx" data-phase={leaving ? "leave" : phase} role="dialog" aria-modal="true" aria-label="Ascended" onClick={act}>
             <div className="nf-rx-bar">
                 <span>naOS // node.farm // root access</span>
                 <span>{phase === "charge" ? "CHARGING CORE" : "ACCESS GRANTED"}</span>
