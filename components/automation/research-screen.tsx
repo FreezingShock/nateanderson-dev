@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import "./automation-screens.css";
-import type { ResearchNode } from "./types";
+import type { ResearchNode } from "@/lib/automation/types";
 import { Glyph } from "./resource-strip";
 
 const COLUMNS = ["Base", "Parts", "Components", "Clockworks", "Megaproject"];
@@ -102,7 +102,7 @@ export function ResearchScreen({
                     <span className="ab-node-sub">
                       {n.state === "locked"
                         ? `needs ${n.requires.length} more`
-                        : `unlocks ${n.unlocks}`}
+                        : `unlocks ${n.unlocks.join(", ")}`}
                     </span>
                   </span>
                 </button>
@@ -136,7 +136,7 @@ export function ResearchScreen({
                 </div>
                 <div>
                   <dt>Unlocks</dt>
-                  <dd>{sel.unlocks}</dd>
+                  <dd>{sel.unlocks.join(", ")}</dd>
                 </div>
                 <div>
                   <dt>State</dt>

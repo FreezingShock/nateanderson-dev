@@ -8,6 +8,8 @@ import { footprintCells, keyOf, placeError, place, remove, resolve, buildingAt }
 export interface GridItem {
     kind: string;
     rot: Rot;
+    /** The cell the building is anchored at. Returned by get() so undo puts a multi-cell building back in place. */
+    anchor?: Cell;
 }
 
 export interface GridView {
@@ -20,7 +22,7 @@ export function gridView(world: World, cat: Catalog = DEFAULT_CATALOG): GridView
     return {
         get(x, z) {
             const b = buildingAt(world, x, z, cat);
-            return b ? { kind: b.type, rot: b.rot } : null;
+            return b ? { kind: b.type, rot: b.rot, anchor: { x: b.x, z: b.z } } : null;
         },
         set(x, z, item) {
             const here = buildingAt(world, x, z, cat);
