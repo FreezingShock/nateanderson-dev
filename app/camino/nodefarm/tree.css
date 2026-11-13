@@ -332,3 +332,10 @@ body.nf-tm-chrome.nf-tm-dock .cm-dock { visibility: visible; z-index: 1001; anim
     .ctos .nf-tm-dockb, .ctos .nf-tm-dockb i { transition: none; }
 }
 
+
+/* A node just bought or fitted: one bright trace runs once down each link into it (tree.tsx `fresh`). Overlay path, so the
+   looping "on" animation on the trace underneath is untouched. pathLength="100" makes the run the same speed on every link. */
+.ctos .nf-tl-fx { fill: none; stroke: var(--c); stroke-width: 6; stroke-linecap: round; stroke-dasharray: 12 200; stroke-dashoffset: 12; pointer-events: none; filter: drop-shadow(0 0 4px var(--c)); animation: nfLinkRun 1.1s cubic-bezier(.3, .7, .3, 1) forwards; }
+@keyframes nfLinkRun { to { stroke-dashoffset: -100; } }
+body.nf-lowfx .ctos .nf-tl-fx { display: none; }
+@media (prefers-reduced-motion: reduce) { .ctos .nf-tl-fx { display: none; } }

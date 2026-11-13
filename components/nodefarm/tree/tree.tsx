@@ -704,7 +704,7 @@ function TreeMenuInner({ s, model, reduced, onBuy, onRespec, onClose }: TreeMenu
     // links are circuit traces: a straight run, a 45 degree bend, a straight run (vias at the bends), on a dark bed.
     // Owned traces light up and carry packets outward (one packet path per section).
     const links = useMemo(() => {
-        const out: { key: string; d: string; pts: [number, number][]; vias: [number, number][]; col: string; st: "on" | "edge" | "off"; fog: boolean; near: boolean }[] = [];
+        const out: { key: string; a: string; b: string; d: string; pts: [number, number][]; vias: [number, number][]; col: string; st: "on" | "edge" | "off"; fog: boolean; near: boolean }[] = [];
         const have = (id: string) => id === "core" || m.owned.includes(id);
         for (const n of TREE) for (const l of n.links) {
             if (l !== "core" && n.id > l) continue;
@@ -721,7 +721,7 @@ function TreeMenuInner({ s, model, reduced, onBuy, onRespec, onClose }: TreeMenu
             const f = (v: number) => v.toFixed(1);
             const bent = dg > 4 && run > 4;
             out.push({
-                key: a.id + "-" + b.id, col: BCOL[n.branch],
+                key: a.id + "-" + b.id, a: a.id, b: b.id, col: BCOL[n.branch],
                 d: `M${f(a.x)} ${f(a.y)}L${f(p1[0])} ${f(p1[1])}L${f(p2[0])} ${f(p2[1])}L${f(b.x)} ${f(b.y)}`,
                 pts: [[a.x, a.y], p1, p2, [b.x, b.y]],
                 vias: bent ? [p1, p2] : [],
@@ -732,6 +732,19 @@ function TreeMenuInner({ s, model, reduced, onBuy, onRespec, onClose }: TreeMenu
         }
         return out;
     }, [m.owned, vis, sel, near]); // eslint-disable-line react-hooks/exhaustive-deps
+    /** Nodes owned since the last change: a bright trace runs once down each link into them (the .nf-tl-fx overlay). */
+    const [ownedNow, setOwnedNow] = useState<string[]>([]);
+    const ownedSeen = useRef<string[] | null>(null);
+    useEffect(() => {
+        const prev = ownedSeen.current;
+        ownedSeen.current = m.owned;
+        if (!prev) return;
+        const added = m.owned.filter((id) => !prev.includes(id));
+        if (!added.length) return;
+        setOwnedNow(added);
+        const t = window.setTimeout(() => setOwnedNow([]), 1300);
+        return () => window.clearTimeout(t);
+    }, [m.owned]);
     /** packets: one path of owned traces per section color, drawn on a canvas (see drawPk) so the dashes never repaint the SVG */
     const packets = useMemo(() => {
         const by: Record<string, [number, number][][]> = {};
@@ -876,6 +889,7 @@ function TreeMenuInner({ s, model, reduced, onBuy, onRespec, onClose }: TreeMenu
                     <svg className="nf-tm-links" width={2} height={2} aria-hidden="true">
                         {links.map((l) => <path key={"b" + l.key} className="nf-tl-bed" d={l.d} data-st={l.st} data-fog={l.fog ? "" : undefined} style={{ ["--c" as string]: l.col } as CSSProperties} />)}
                         {links.map((l) => <path key={l.key} className="nf-tl" d={l.d} data-st={l.st} data-fog={l.fog ? "" : undefined} data-near={l.near ? "" : undefined} style={{ ["--c" as string]: l.col } as CSSProperties} />)}
+                        {ownedNow.length > 0 && links.filter((l) => l.st === "on" && (ownedNow.includes(l.a) || ownedNow.includes(l.b))).map((l) => <path key={"f" + l.key} className="nf-tl-fx" pathLength={100} d={l.d} style={{ ["--c" as string]: l.col } as CSSProperties} />)}
                         {links.map((l) => l.vias.map(([x, y], i) => <rect key={l.key + "v" + i} className="nf-tl-via" x={x - 6} y={y - 6} width={12} height={12} data-st={l.st} data-fog={l.fog ? "" : undefined} data-near={l.near ? "" : undefined} style={{ ["--c" as string]: l.col } as CSSProperties} />))}
                         <path ref={pkRef} className="nf-tl-pk" d="" />
                     </svg>
