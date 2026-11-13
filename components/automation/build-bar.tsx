@@ -1,4 +1,3 @@
-import { Fragment } from "react";
 import type {
   MachineView,
   NumberFormat,
@@ -6,8 +5,11 @@ import type {
 } from "@/lib/automation/types";
 import { canAfford, costText } from "./format";
 import { Glyph } from "./resource-strip";
+import { Section } from "./factory-sections";
 
-const GROUP_TITLE: Record<"machines" | "power" | "logistics", string> = {
+type GroupId = "machines" | "power" | "logistics";
+
+const GROUP_TITLE: Record<GroupId, string> = {
   machines: "Machines",
   power: "Power",
   logistics: "Logistics",
@@ -29,20 +31,18 @@ export function BuildList({
   onBuild: (id: string) => void;
   onSelect: (id: string | null) => void;
 }) {
-  return (
-    <ul className="ab-build" aria-label="Machines to build">
-      {machines.map((m, i) => {
+  // One framed panel per group, in the order the groups first appear. Each panel collapses from its header.
+  const groups: { id: GroupId; items: MachineView[] }[] = [];
+  for (const m of machines) {
+    const id = (m.group ?? "machines") as GroupId;
+    let g = groups.find((x) => x.id === id);
+    if (!g) groups.push((g = { id, items: [] }));
+    g.items.push(m);
+  }
+  const renderRow = (m: MachineView) => {
         const ok = m.unlocked && canAfford(m.cost, resources);
         const selected = m.id === selectedId;
-        const group = m.group ?? "machines";
-        const heading = group !== (machines[i - 1]?.group ?? "machines");
         return (
-          <Fragment key={m.id}>
-            {heading && (
-              <li className="ab-build-group ab-dim" role="presentation">
-                {GROUP_TITLE[group]}
-              </li>
-            )}
             <li
               className="ab-row ab-build-row"
               data-selected={selected}
@@ -85,9 +85,20 @@ export function BuildList({
                 Info
               </button>
             </li>
-          </Fragment>
+        );
+  };
+  return (
+    <div className="ab-build-groups">
+      {groups.map((g) => {
+        const openCount = g.items.filter((m) => m.unlocked).length;
+        return (
+          <Section key={g.id} title={GROUP_TITLE[g.id]} meta={`${openCount} open`}>
+            <ul className="ab-build" aria-label={`${GROUP_TITLE[g.id]} to build`}>
+              {g.items.map(renderRow)}
+            </ul>
+          </Section>
         );
       })}
-    </ul>
+    </div>
   );
 }
