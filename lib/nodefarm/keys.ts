@@ -33,7 +33,7 @@ export const NF_KEY_GROUPS: { title: string; rows: NfKeyRow[] }[] = [
         title: "Node Farm: in a window or event",
         rows: [
             { keys: ["Esc"], label: "Closes the top layer only: the sheet, search or console first, then an event, then the window. In a tree, the first press lets go of the picked node." },
-            { keys: ["Space", "Enter"], label: "Play a quick-time event. Digits pick an option when the card shows several." },
+            { keys: ["Space", "Enter"], label: "Digits pick a Rogue process offer; hold Space to decrypt Cold storage." },
             { keys: ["←↑↓→", "+", "−", "0"], label: "In a tree: pan, zoom, fit" },
         ],
     },

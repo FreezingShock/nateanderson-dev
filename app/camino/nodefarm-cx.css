@@ -13,7 +13,7 @@
 body .nf-aw[data-out] { opacity: 0; transition: opacity .12s steps(3, end) .06s; }
 /* banners wait while a window is open (juice.tsx); one already on screen is hidden so it never covers what you're reading */
 body.nf-win-open .nf-jb { visibility: hidden; }
-/* quick-time event scrim fades while its card deletes out */
+/* event scrim fades while its card deletes out */
 .ctos .nf-ev-scrim[data-out] { opacity: 0; transition: opacity .12s steps(3, end) .06s; }
 .ctos .nf-ev { --cx-c: #ff6a3d; }
 

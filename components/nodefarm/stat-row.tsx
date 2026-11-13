@@ -145,7 +145,7 @@ export function Chain({ s, d, onAll, allOpen, onIdle, onJump }: { s: State; d: D
     );
 }
 
-export function StatRow({ id, s, d, onPress, onArm, onWatchdog, open: expanded, onToggle, guide, onZoneEv, zeCard }: { id: StatId; s: State; d: D; onPress: PressFn; onArm: () => void; onWatchdog?: () => void; open: boolean; onToggle: () => void; guide?: Target; onZoneEv?: (id: number, c: ZeChoice) => void; zeCard?: number | null }) {
+export function StatRow({ id, s, d, onPress, onArm, onWatchdog, open: expanded, onToggle, guide, onZoneEv, zeCard, onZeOpen }: { id: StatId; s: State; d: D; onPress: PressFn; onArm: () => void; onWatchdog?: () => void; open: boolean; onToggle: () => void; guide?: Target; onZoneEv?: (id: number, c: ZeChoice) => void; zeCard?: number | null; onZeOpen?: (id: number) => void }) {
     const def = statDef(id);
     const lore = LORE[id];
     const bodyIn = useRef<HTMLDivElement>(null);
@@ -204,7 +204,7 @@ export function StatRow({ id, s, d, onPress, onArm, onWatchdog, open: expanded, 
                     {prod > 0 && <small>{fmt(prod)} nodes</small>}
                 </div>
             </header>
-            {evs.map((e) => <ZoneEvent key={e.id} s={s} zone={id} e={e} onChoose={(i, c) => onZoneEv?.(i, c)} cardId={zeCard} />)}
+            {evs.map((e) => <ZoneEvent key={e.id} s={s} zone={id} e={e} onChoose={(i, c) => onZoneEv?.(i, c)} cardId={zeCard} onOpen={onZeOpen} />)}
             <div className="nf-body" id={bodyId}>
                 <div className="nf-body-in" ref={bodyIn} inert={!expanded}>
                     {/* a folded zone cannot be read, so its body keeps its last render and comes back fresh the moment it opens */}
@@ -216,11 +216,16 @@ export function StatRow({ id, s, d, onPress, onArm, onWatchdog, open: expanded, 
                         ))}
                     </dl>
                     <ZoneRig id={id} s={s} d={d} />
-                    {id !== "bytes" && id !== "reboot" && s.drones.some((x) => x > 0) && (
+                    {id !== "bytes" && id !== "reboot" && (s.dr.post.some((p, k) => p === id && s.drones[k] > 0) || zoneRank(s, id as ButtonStat) > 0) && (
                         <div className="nf-arm">
                             <span>Drones</span>
                             <PostedHere s={s} id={id as ButtonStat} />
-                            <button type="button" className="nf-mini" aria-pressed={s.armed.includes(id)} onClick={onArm}>{s.armed.includes(id) ? "Armed" : "Off"}</button>
+                        </div>
+                    )}
+                    {id !== "bytes" && id !== "reboot" && s.auto?.own.includes("buy") && (
+                        <div className="nf-arm">
+                            <span>buy.sh</span>
+                            <button type="button" className="nf-mini" aria-pressed={!!s.auto.buy[id]} onClick={onArm}>{s.auto.buy[id] ? "Auto" : "Off"}</button>
                         </div>
                     )}
                     {id === "reboot" && onWatchdog && hasFeature(s, "watchdog") && (

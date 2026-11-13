@@ -1,8 +1,9 @@
 // Node Farm stress tests (challenge runs). After the first Ascend you can put the node under a fault: your real run is
 // stored aside, a fresh run starts with one rule switched on, and you clear ranks I, II and III by opening Aether, Starglass
 // and Chrono. Each rank pays a small permanent boost, kept through Ascend and Handover. Leaving (cleared or not) puts the
-// real run back exactly as it was. Goals, logs and scripts learned during a test are kept; Ascend, Handover, the prestige
-// tree, perks and Firmware are locked while a test runs.
+// real run back exactly as it was. Goals, achievements, logs, scripts learned, which button tiers were pressed (arc
+// progress) and lifetime stats from a test are kept. Everything else in the run (Keys, research, Drones, AP, perks, rig levels,
+// zone events) goes back to the real run. Ascend, Handover, the prestige tree, perks and Firmware are locked while a test runs.
 //
 // Rules are pure (no React). Importing this file fills the engine's CH_HOOKS and adds a tick hook. The window is
 // components/nodefarm/stress.tsx. See docs/node-farm.md "Stress tests". Reward sizes belong to the balance pass: CH_TUNE.
@@ -48,7 +49,7 @@ export const TESTS: TestDef[] = [
     { id: "cold", n: 3, icon: "tree", name: "Cold tree", rule: "The prestige tree is switched off.", plan: "Perks and AP still count. The tree comes back when you leave.", pays: (r) => `AP on Ascend ${pct(P.cold * r)}` },
     { id: "narrow", n: 4, icon: "layers", name: "Narrow band", rule: `Only the first ${CH_TUNE.narrow} tiers of every button.`, plan: "The cheap tiers have to do all the work.", pays: (r) => `Multiplier gain ${pct(P.narrow * r)}` },
     { id: "thin", n: 5, icon: "send", name: "Thin pipe", rule: "Bytes/s cut to a tenth.", plan: "Bytes are scarce, so pick the Multiplier and Copper tiers that pay back fastest.", pays: (r) => `Bytes ${pct(P.thin * r)}` },
-    { id: "dead", n: 6, icon: "volumeOff", name: "Dead air", rule: "No quick-time events and no zone events.", plan: "No Overclock and no event payouts. Pure production.", pays: (r) => `Overclock time ${pct(P.dead * r)}` },
+    { id: "dead", n: 6, icon: "volumeOff", name: "Dead air", rule: "No zone events.", plan: "No Overclock and no event payouts. Pure production.", pays: (r) => `Overclock time ${pct(P.dead * r)}` },
     { id: "chain", n: 7, icon: "infinity", name: "Broken chain", rule: "Materials stop boosting the one below them.", plan: "Every zone stands on its own buttons. Spread out instead of rushing deep.", pays: (r) => `every material ${pct(P.chain * r)}` },
     { id: "leash", n: 8, icon: "flag", name: "Short leash", rule: `Each rank has a time limit: ${CH_TUNE.leash.join(", ")} min of game time.`, plan: "Game time, so time away counts toward each limit. Each later rank gets a longer limit.", pays: (r) => `offline cap +${P.leash * r} h` },
 ];
@@ -202,7 +203,7 @@ export function startTest(s: State, id: TestId, now = Date.now()): boolean {
     const cold = id === "cold";
     const keep: Partial<State> = {
         ap: s.ap, perks: s.perks, ach: s.ach, achAt: s.achAt, logs: s.logs, tree: cold ? [] : s.tree, treeLv: cold ? {} : s.treeLv,
-        armed: s.armed, watchdog: s.watchdog, dropAt: s.dropAt, autoArmed: s.autoArmed, auto: s.auto, life: { ...s.life }, started: s.started,
+        armed: s.armed, watchdog: s.watchdog, dropAt: s.dropAt, autoArmed: s.autoArmed, auto: s.auto, life: { ...s.life }, started: s.started, seen: s.seen,
         hand: s.hand, lab: { ...freshLab(), seen: s.lab.seen, nodes: s.lab.nodes, last: s.lab.last }, dr: drOnAscend(s),
         rig: RIG_HOOKS.ascend ? RIG_HOOKS.ascend(s) : s.rig, mounts: [],
     };
@@ -213,6 +214,12 @@ export function startTest(s: State, id: TestId, now = Date.now()): boolean {
     OK.add(n.ch);
     swap(s, n);
     return true;
+}
+
+function mergeSeen(a: Partial<Record<ButtonStat, number>> | undefined, b: Partial<Record<ButtonStat, number>> | undefined) {
+    const out: Partial<Record<ButtonStat, number>> = { ...(a ?? {}) };
+    for (const [k, v] of Object.entries(b ?? {})) out[k as ButtonStat] = (out[k as ButtonStat] ?? 0) | (v ?? 0);
+    return out;
 }
 
 /** Leave the running test: the real run comes back as it was. Ranks cleared, goals, logs, lifetime stats and learned
@@ -233,6 +240,8 @@ export function leaveTest(s: State): number {
     back.ach = [...back.ach, ...s.ach.filter((x) => !back.ach.includes(x))];
     back.achAt = { ...s.achAt, ...back.achAt };
     back.logs = [...back.logs, ...s.logs.filter((x) => !back.logs.includes(x))];
+    // which tiers were ever pressed only ever turns on, so a tier pressed inside the test stays pressed (arc progress)
+    back.seen = mergeSeen(back.seen, s.seen);
     if (s.auto) back.auto = s.auto;
     back.life = { ...s.life };
     // the stored run's clocks are game-time stamps, so they move forward by the time the test took

@@ -27,7 +27,7 @@ def warm(c, p):
     shadow(c, 32, 14, 54)
     c.fill(disc(32, 37, 16), 0.45 + 0.4 * (1 - lin(16, 21, 48, 53)), "steel", outline="steel")
     c.fill(disc(32, 37, 13.5), 0.12, "violet")
-    m = power(c, 32, 37, 10, 3.2, fill=p)
+    m = power(c, 32, 37, 10, 3.2, fill=p, v=0.12)
     c.set(ring(32, 37, 16, 15.2) & (Y < 31), P["steel"][6])
     c.glow(m, P["mag"][4], 2, int(60 + 100 * p), 1)
 
@@ -157,9 +157,22 @@ def draw(t, p):
 
 
 def icon(p):
-    """Zone icon: the power mark, its ring filling and the bar flaring each loop."""
+    """Zone icon: the power mark on a dark bezel, bright enough to read on the board, a light sweep running round the ring."""
     c = Canvas()
-    shadow(c, 32, 18, 60)
-    m = power(c, 32, 34, 22, 6.5, fill=min(1.0, p * 1.4), gap=0.2)
-    c.glow(m, P["mag"][4], 3, int(60 + 120 * wave(p)), 2)
+    shadow(c, 32, 22, 61)
+    plate = disc(32, 33, 27)
+    c.fill(plate, 0.3 + 0.4 * (1 - lin(6, 6, 58, 60)), "steel", outline="steel")
+    c.fill(disc(32, 33, 23.5), 0.14 + 0.08 * (1 - radial(26, 26, 28)), "violet")
+    c.set(ring(32, 33, 27, 26.2) & (Y < 26), P["steel"][6])
+    m = power(c, 32, 35, 16, 5.2, fill=1.0, gap=0.2, v=-0.2)
+    # a bright sweep running clockwise round the ring, and the bar flaring once per loop
+    a = (angle(32, 35) + 0.25) % 1.0
+    r = np.hypot(X - 32, Y - 35)
+    head = (0.1 + p * 0.8) % 1.0
+    sweep = (r <= 16) & (r >= 10.8) & (((head - a) % 1.0) < 0.12) & (a > 0.1) & (a < 0.9)
+    c.set(sweep, P["mag"][5])
+    c.set(sweep & (((head - a) % 1.0) < 0.04), P["white"][2])
+    flare = wave(p)
+    c.set(rect(31.5, 17, 32.5, 34), P["mag"][6] if flare > 0.5 else P["mag"][5])
+    c.glow(m, P["mag"][4], 3, int(110 + 110 * flare), 2)
     return c.finish()

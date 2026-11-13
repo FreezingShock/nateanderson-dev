@@ -14,23 +14,24 @@ let RG = null;
 // NF_ZONEEV=1: zone events run too (random, so results vary); the bot mines every Rich vein and patches every Fault at once.
 let ZE = null;
 // Arc clear bonus (lib/nodefarm/arcs.ts) is on unless NF_NOARCS=1: the bot presses every button once as soon as it can pay for it.
-// NF_POKE=1: caches and the Core vent (lib/nodefarm/poke.ts) too, the bot claims every one at once (so an upper bound, about +10%).
-let POKE = null, ARCS = null;
+let ARCS = null;
 {
     const { registerHooks } = await import("node:module");
     registerHooks({ resolve(spec, ctx, next) { try { return next(spec, ctx); } catch (e) { if (spec.startsWith(".")) return next(spec + ".ts", ctx); throw e; } } });
     if (!process.env.NF_NORIGS) RG = await import("../../lib/nodefarm/rigs.ts");
     if (!process.env.NF_NOARCS) ARCS = await import("../../lib/nodefarm/arcs.ts");
-    if (process.env.NF_POKE) POKE = await import("../../lib/nodefarm/poke.ts");
     if (process.env.NF_ZONEEV) ZE = await import("../../lib/nodefarm/zoneevents.ts");
     if (RG && process.env.NF_RIGTUNE) merge(RG.RIG_TUNE, JSON.parse(process.env.NF_RIGTUNE)); // same as NF_TUNE, for RIG_TUNE
 }
 const s = E.fresh(0);
-if (!process.env.NF_NODRONES) s.armed = ["mult", ...E.MATS]; // the bot arms every stat once it has Drones
-if (process.env.NF_NODRONES) s.autoArmed = ["mult", ...E.MATS]; // keep Standing orders from arming anything
 const marks = {};
 const ascents = [];
-const mark = (k, t) => { if (!(k in marks)) marks[k] = t; };
+// NF_SNAP=<dir>: write a save file when a milestone first lands and at fixed play times (scripts/nodefarm/guide-audit.mjs reads them)
+const { writeFileSync: wf, mkdirSync: mk } = await import("node:fs");
+if (process.env.NF_SNAP) mk(process.env.NF_SNAP, { recursive: true });
+const snap = (name, t) => { if (process.env.NF_SNAP) { s.at = Date.now(); wf(`${process.env.NF_SNAP}/${String(Math.round(t / 60)).padStart(6, "0")}m-${name.replace(/\W+/g, "-")}.json`, JSON.stringify(s)); } };
+const mark = (k, t) => { if (!(k in marks)) { marks[k] = t; if (process.env.NF_SNAP && /^(first reboot|copper|silicon|quartz|aether|runes|chrono|voidsteel|origin|sunstone|bloom|geodes|can ascend|ascend [135]|lab open|lab done|drone 0|handover \d|tree whole|first drop|dnode|mastery 15|rig .* 3)/.test(k) && !/^dnode|^rig/.test(k) || /^(mastery 15)$/.test(k)) snap(k, t); } };
+const SNAP_AT = [5, 20, 60, 120, 240, 480, 1440].map((m) => m * 60);
 const MATS_P = (s) => E.MATS.map((m) => E.fmt(s.prod[m])).join("/");
 const order = [...E.MATS].reverse().concat("mult");
 const treeOrder = [...E.TREE].sort((a, b) => a.cost - b.cost);
@@ -53,6 +54,7 @@ const dt = Number(process.env.NF_DT || 0.5); // tick size in seconds (the live g
 while (t < hours * 3600) {
     E.tick(s, dt);
     t += dt;
+    if (SNAP_AT.length && t >= SNAP_AT[0]) snap("t" + SNAP_AT.shift() / 60 + "m", t);
     if (t >= nextBuy) {
         nextBuy = t + 3;
         // buy: for each stat, the most expensive affordable tier is a good greedy choice when cost < 25% of balance
@@ -97,7 +99,6 @@ while (t < hours * 3600) {
         }
         E.checkGoals(s);
         if (ARCS) for (const st of order) { if (st === "mult" || !E.isUnlocked(s, st)) continue; for (let k = 0; k < E.TIERS; k++) if (!((s.seen?.[st] ?? 0) & (1 << k))) { const b = E.button(s, st, k); if (E.amount(s, b.pays) >= b.cost) E.press(s, st, k); } }
-        if (POKE) { for (const c of [...POKE.poke(s).c]) POKE.openCache(s, c.id); if (POKE.ventReady(s)) POKE.vent(s); }
         if (ZE && s.ze) for (const e of [...s.ze.act]) { if (e.kind === "vein") ZE.zeChoose(s, e.id, "mine"); else if (e.kind === "fault") ZE.zeChoose(s, e.id, "patch"); }
         // NF_TRACE=<minutes>: print a status line every that many play minutes (to find walls and runaways)
         if (process.env.NF_TRACE && t >= (marks.nextTrace || 0)) { marks.nextTrace = t + 60 * Number(process.env.NF_TRACE); console.log("t", (t / 3600).toFixed(2), "b/s", E.fmt(E.derive(s).bytesPerSec), "ae", E.fmt(s.aether), "or", E.fmt(s.origin), "px", E.fmt(s.paradox), "ap+", E.apOnAscend(s), "asc", s.life.ascends, "tree", s.tree.length, "G", E.fmt(E.derive(s).global), "ap", s.ap, "mounts", s.mounts.join("+"), "prod", MATS_P(s)); }

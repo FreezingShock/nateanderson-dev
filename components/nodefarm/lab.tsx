@@ -145,7 +145,7 @@ export function LabZone({ s, d, open, onToggle, onCompile, onCancel, onDeploy, o
                                         const full = payloadDur(s, p);
                                         return (
                                             <li key={i} className="nf-lab-slot" style={{ ["--c" as string]: SEC_COL[p.sec], ["--f" as string]: Math.min(1, r.left / full) } as CSSProperties}>
-                                                <TreeSprite sprite={sprite(p.id)} state="owned" scale={1} className="nf-lab-ic" />
+                                                <TreeSprite sprite={sprite(p.id)} state="owned" scale={1} className="nf-lab-ic" lazy />
                                                 <span><b>{p.tag}</b> <small>{fmtTime(r.left)}</small></span>
                                                 <i className="nf-lab-drain" aria-hidden="true" />
                                             </li>
@@ -200,7 +200,7 @@ function Recipe({ s, d, p, onCompile, onDeploy }: { s: State; d: Derived; p: Pay
     const depLabel = run ? `+${fmtTime(payloadDur(s, p))}` : isArmed(s, p.id) ? "Armed" : dep === "slots" ? "Slots full" : "Deploy";
     return (
         <li style={{ ["--c" as string]: SEC_COL[p.sec] } as CSSProperties} data-run={run ? "" : undefined}>
-            <TreeSprite sprite={sprite(p.id)} state="owned" scale={1} className="nf-lab-ic" />
+            <TreeSprite sprite={sprite(p.id)} state="owned" scale={1} className="nf-lab-ic" lazy />
             <span className="nf-lab-n">
                 <b>{p.name}</b> <i>{KIND_WORD[p.kind]} · {fmtTime(compileSecs(s, p))}</i>
                 <small>{effect(s, p)}</small>

@@ -1,7 +1,7 @@
 /* Node Farm Scripts zone (components/nodefarm/scripts.tsx): the scheduler's crontab in amber phosphor. Sharp panel, plain
    data lines, no pills or tabs. Each script line takes its own colour (--c) for the icon, status and toggles.
-   Art: zone-sched (8 stages x 6 frames, 288 x 96) and sched-icons (32 px, 6 rows x 4 frames), both drawn by
-   scripts/naos-art/nodefarm-sched-scene.py. */
+   Art: zone-sched (8 stages x 6 frames, 288 x 96) from scripts/naos-art/nodefarm-sched-scene.py, and sched-icons64
+   (64 px, 6 rows x 8 frames, shown at 40 px) from scripts/naos-art/nodefarm_icons64_sched.py via nodefarm-icons64.py. */
 .ctos { --sch-amber: #ffb000; --sch-ink: #ffe3a6; --sch-dim: #b08a4a; --sch-deep: #140d02; --sch-line: #5c4210; }
 
 .ctos .nf-sch { --c: #ffb000; background: repeating-linear-gradient(0deg, #ffb00008 0 1px, transparent 1px 4px), #0d0a05; border-color: var(--sch-line); }
@@ -40,10 +40,11 @@
 .ctos .nf-sch-s[data-st="run"]::before { top: -1px; right: -1px; border-width: 2px 2px 0 0; }
 .ctos .nf-sch-s[data-st="run"]::after { bottom: -1px; right: -1px; border-width: 0 2px 2px 0; }
 .ctos .nf-sch-h { display: grid; grid-template-columns: auto minmax(0, 1fr) auto auto; align-items: center; gap: 12px; }
-.ctos .nf-sch-ic { display: block; width: 32px; height: 32px; background: url(/naos/nodefarm/sched-icons.webp?v=8001869f) 0 calc(var(--r) * -32px) / 128px 288px no-repeat; image-rendering: pixelated; }
+.ctos .nf-sch-ic { --si: 40px; display: block; width: var(--si); height: var(--si); background: url(/naos/nodefarm/sched-icons64.webp?v=2f9f6a9f) 0 calc(var(--r) * var(--si) * -1) / calc(var(--si) * 8) calc(var(--si) * 9) no-repeat; image-rendering: pixelated; }
 .ctos .nf-sch-s[data-st="lock"] .nf-sch-ic { filter: grayscale(1) brightness(.5); }
-.ctos .nf-sch-ic[data-on] { animation: nfSchIcon .8s steps(4) infinite; }
-@keyframes nfSchIcon { from { background-position-x: 0; } to { background-position-x: -128px; } }
+.ctos .nf-sch-ic[data-on] { animation: nfSchIcon 1s steps(8) infinite; }
+@keyframes nfSchIcon { from { background-position-x: 0; } to { background-position-x: calc(var(--si) * -8); } }
+@media (max-resolution: 1.4dppx) { .ctos .nf-sch-ic { image-rendering: auto; } }
 .ctos .nf-sch-n { display: grid; gap: 3px; min-width: 0; }
 .ctos .nf-sch-n b { font: 700 16px/1.1 var(--cm-mono); color: var(--sch-ink); }
 .ctos .nf-sch-s[data-st="run"] .nf-sch-n b { color: var(--c); }

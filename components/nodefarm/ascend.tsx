@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, type CSSProperties } from "react";
-import { BRANCHES, MATS, PERKS, TREE, TREE_FULL, TUNE, apEach, apGlobal, apOnAscend, canAscend, derive, fmt, hasNode, mountSlots, statDef, type MatId, type State, ascendNeed } from "@/lib/nodefarm/engine";
+import { BRANCHES, MATS, PERKS, TREE, TREE_FULL, TUNE, apEach, apGlobal, apOnAscend, canAscend, chOff, derive, fmt, hasNode, mountSlots, statDef, type MatId, type State, ascendNeed } from "@/lib/nodefarm/engine";
 import { NfIcon } from "./icon";
 
 // The Ascend window (2026-11-12 rework): the art is the stage, the Aether charge climbs beside the tower, a three-step
@@ -15,7 +15,7 @@ const SEGS = 12;
 const RINGS = 5; // the five rings on the tower in scene-ascend, lit from the bottom as Aether climbs
 
 /** Press and hold to Ascend. A quick tap or an assistive-tech click falls back to the old two-step confirm. */
-function HoldAscend({ ready, gain, need, confirm, onAscend }: { ready: boolean; gain: number; need: number; confirm: boolean; onAscend: (now?: boolean) => void }) {
+function HoldAscend({ ready, gain, need, confirm, locked, onAscend }: { ready: boolean; gain: number; need: number; confirm: boolean; locked: boolean; onAscend: (now?: boolean) => void }) {
     const [hold, setHold] = useState(false);
     const [nudge, setNudge] = useState(false);
     const t = useRef<number | undefined>(undefined);
@@ -68,7 +68,7 @@ function HoldAscend({ ready, gain, need, confirm, onAscend }: { ready: boolean; 
         >
             <i className="nf-ax-go-fill" aria-hidden="true" />
             <span className="nf-ax-go-t">
-                {!ready ? `Need ${fmt(need)} Aether` : confirm ? `Confirm: wipe and gain ${gain} AP` : hold ? "Keep holding" : nudge ? "Keep holding to Ascend" : `Hold to Ascend · +${gain} AP`}
+                {locked ? "Locked until you leave the test" : !ready ? `Need ${fmt(need)} Aether` : confirm ? `Confirm: wipe and gain ${gain} AP` : hold ? "Keep holding" : nudge ? "Keep holding to Ascend" : `Hold to Ascend · +${gain} AP`}
             </span>
         </button>
     );
@@ -117,7 +117,7 @@ function Flow({ s, d, gain, confirm, onAscend }: { s: State; d: D; gain: number;
                 <li style={{ ["--c" as string]: "#ff2d8a" }}>
                     <span className="nf-ax-k" data-cx-scr="">02 // Ascend</span>
                     <span className="nf-ax-v"><NfIcon name="ascend" /><b>{gain > 0 ? `+${gain}` : "0"}</b><small>AP on Ascend</small></span>
-                    <small className="nf-ax-n">Wipes the run. Keeps goals, perks, the tree, lab research and stock, scripts, and lifetime stats.</small>
+                    <small className="nf-ax-n">Wipes the run, Drones, Parts and Intel. Keeps goals, perks, the tree, lab research and stock, scripts, Keys, Firmware, the hangar's postings, rig levels and lifetime stats.</small>
                 </li>
                 <li style={{ ["--c" as string]: "var(--cm-cyan)" }}>
                     <span className="nf-ax-k" data-cx-scr="">03 // Spend or hold</span>
@@ -125,7 +125,7 @@ function Flow({ s, d, gain, confirm, onAscend }: { s: State; d: D; gain: number;
                     <span className="nf-ax-g"><small>Global</small><b>×{fmt(d.global)}</b>{gain > 0 && <><em aria-hidden="true">→</em><b data-up="">×{fmt(d.global * after)}</b></>}</span>
                 </li>
             </ol>
-            <HoldAscend ready={ready} gain={gain} need={ascendNeed(s)} confirm={confirm} onAscend={onAscend} />
+            <HoldAscend ready={ready} gain={gain} need={ascendNeed(s)} confirm={confirm} locked={chOff(s, "prestige")} onAscend={onAscend} />
         </section>
     );
 }
