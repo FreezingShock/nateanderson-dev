@@ -212,3 +212,65 @@ export interface World {
 
 export type PlaceResult = { ok: true; id: number } | { ok: false; reason: string };
 export type ActionResult = { ok: true } | { ok: false; reason: string };
+
+// ---- HUD view types (Simulation thread). Read-only snapshots for the panels; the panels never mutate the world. ----
+
+export type MachineStatus = "running" | "idle" | "stalled-output" | "missing-input" | "unpowered" | "no-recipe";
+
+export interface HudStockRow {
+    item: string;
+    name: string;
+    qty: number;
+    perSecond: number; // theoretical rate from the machines that make it right now
+}
+
+export interface HudMachineRow {
+    id: number;
+    type: string;
+    name: string;
+    count: number; // how many of this type on the island
+    status: MachineStatus;
+}
+
+export interface HudBuilding {
+    id: number;
+    type: string;
+    name: string;
+    recipe: string | null;
+    status: MachineStatus;
+    progress: number; // 0 to 1 for the current batch
+    perSecond: number; // theoretical output rate
+    input: Record<string, number>;
+    output: Record<string, number>;
+}
+
+export interface HudMilestone {
+    id: string;
+    name: string;
+    blueprints: number;
+    done: boolean;
+    progress: number; // 0 to 1, the least-complete delivery
+}
+
+export interface HudResearch {
+    id: string;
+    name: string;
+    cost: number;
+    state: "bought" | "available" | "locked";
+}
+
+export interface HudData {
+    time: number;
+    day: number;
+    isNight: boolean;
+    wind: number;
+    power: { supply: number; demand: number; satisfaction: number };
+    blueprints: number;
+    stock: HudStockRow[];
+    machines: HudMachineRow[];
+    selected: HudBuilding | null;
+    milestones: HudMilestone[];
+    research: HudResearch[];
+    prestige: { name: string; count: number; keeps: string[]; resets: string[] };
+    nextStep: string;
+}

@@ -261,3 +261,30 @@ test("day-night clock: noon is full sun, midnight-ish is dark, the day count adv
     w.time = len * 0.75; assert.equal(S.dayClock(w, CAT).isNight, true);
     w.time = len * 2.1; assert.equal(S.dayClock(w, CAT).day, 2);
 });
+
+test("hudData reports stock, rates, machine status, milestones, research and a next step", () => {
+    const w = base(CAT, {}, { power: true });
+    ok(S.place(w, "drill", 5, 10, 0));
+    buildRoute(w, { x: 5, z: 10 }, hubAt);
+    S.advance(w, 30, 0.1);
+    const h = S.hudData(w, CAT, S.buildingAt(w, 5, 10).id);
+    const ore = h.stock.find((r) => r.item === "ore-a");
+    assert.ok(ore && ore.qty > 0 && Math.abs(ore.perSecond - 0.5) < 1e-9, "drill rate shows as 0.5 per second");
+    assert.equal(h.machines.find((m) => m.type === "drill").status, "running");
+    assert.equal(h.selected.type, "drill");
+    assert.equal(h.power.satisfaction, 1);
+    assert.ok(h.nextStep.length > 0);
+    assert.equal(typeof h.wind, "number");
+    const unpowered = S.hudData(base(CAT, {}, { power: false }), CAT);
+    assert.equal(unpowered.power.satisfaction, 1, "no demand, no shortage");
+});
+
+test("actions wrap the world operations and return the same results", () => {
+    const w = base();
+    const sm = S.actions.place(w, "smelter", 20, 20, 0, CAT);
+    assert.equal(sm.ok, true);
+    assert.equal(S.actions.setRecipe(w, sm.id, "smelt-a", CAT).ok, true);
+    assert.equal(S.actions.setRecipe(w, sm.id, "press-x", CAT).ok, false);
+    assert.equal(S.actions.buyResearch(w, "nope", CAT).ok, false);
+    assert.equal(S.actions.prestige(w, CAT).ok, true);
+});
