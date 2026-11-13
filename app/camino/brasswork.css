@@ -1,0 +1,13 @@
+.ctos .bw-host { padding: 24px 20px; display: grid; gap: 16px; min-height: 240px; align-content: center; }
+.ctos .bw-lead { margin: 0; font-size: 18px; }
+.ctos .bw-pieces { list-style: none; margin: 0; padding: 0; display: grid; gap: 1px; }
+.ctos .bw-pieces li { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; gap: 16px; align-items: baseline; padding: 10px 0; border-top: 1px solid color-mix(in srgb, currentColor 18%, transparent); font-size: 15px; }
+.ctos .bw-pieces code { font-size: 13px; opacity: .7; }
+.ctos .bw-pieces em { font-style: normal; font-size: 12px; text-transform: uppercase; letter-spacing: .08em; color: var(--cm-amber); }
+@media (max-width: 640px) { .ctos .bw-pieces li { grid-template-columns: 1fr auto; } .ctos .bw-pieces code { display: none; } }
+
+/* The game's HUD replaces the site chrome on this route. The page wipe (.cm-wipe) is left alone so navigation transitions keep working. */
+html.bw-route .cm-dock,
+html.bw-route .nv-top,
+html.bw-route .cm-pgauge,
+html.bw-route .sf-foot { display: none !important; }

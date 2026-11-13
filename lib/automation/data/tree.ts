@@ -1,7 +1,7 @@
 // Brasswork: the resource and recipe tree. Every number here is a first-pass
 // balance value for the design thread to tune. Rates are per minute.
 // Balance notes and open taste calls live in /mnt/project-files/portfolio/automation-game/recipes.md.
-import type { MachineDef, RecipeTree, Stage } from "./types";
+import type { MachineDef, RecipeTree, Stage } from "../types";
 
 export const STAGE_NAMES: Record<Stage, string> = {
     0: "Raw",
@@ -9,21 +9,45 @@ export const STAGE_NAMES: Record<Stage, string> = {
     2: "Forming",
     3: "Components",
     4: "Clockworks",
-    5: "Megaproject",
+    5: "Sky orrery",
 };
 
 /** Output multipliers for drills on each node purity. */
 export const PURITY = { impure: 0.5, normal: 1, pure: 2 } as const;
 
 const MACHINES: MachineDef[] = [
-    { id: "drill", name: "Node drill", unlockStage: 0, speed: 1, footprint: { w: 2, d: 2 }, note: "Sits on a resource node." },
-    { id: "kiln", name: "Kiln", unlockStage: 1, speed: 1, footprint: { w: 2, d: 2 }, note: "Smelts ore into ingots." },
-    { id: "furnace", name: "Furnace", unlockStage: 1, speed: 1, footprint: { w: 2, d: 3 }, note: "Alloys and high-heat work. Burns coal as an input." },
-    { id: "press", name: "Stamp press", unlockStage: 2, speed: 1, footprint: { w: 2, d: 3 }, note: "Stamps plates, sheets and beams." },
-    { id: "lathe", name: "Lathe", unlockStage: 2, speed: 1, footprint: { w: 1, d: 2 }, note: "Cuts rods, screws and gears." },
-    { id: "drawer", name: "Wire drawer", unlockStage: 2, speed: 1, footprint: { w: 1, d: 2 }, note: "Draws ingots into wire." },
-    { id: "assembler", name: "Assembler", unlockStage: 3, speed: 1, footprint: { w: 3, d: 3 }, note: "Builds components and clockworks." },
-    { id: "fabricator", name: "Fabricator", unlockStage: 5, speed: 1, footprint: { w: 4, d: 4 }, note: "Builds megaproject parts." },
+    { id: "drill", name: "Drill", unlockStage: 0, speed: 1, footprint: { w: 2, d: 2 }, powerKw: 6, note: "Sits on a resource node." },
+    { id: "kiln", name: "Kiln", unlockStage: 1, speed: 1, footprint: { w: 2, d: 2 }, powerKw: 12, note: "Smelts ore into ingots." },
+    { id: "furnace", name: "Furnace", unlockStage: 1, speed: 1, footprint: { w: 2, d: 3 }, powerKw: 36, note: "Alloys and high-heat work. Coal is an input." },
+    { id: "press", name: "Stamp press", unlockStage: 2, speed: 1, footprint: { w: 2, d: 3 }, powerKw: 18, note: "Stamps plates, sheets and beams." },
+    { id: "lathe", name: "Lathe", unlockStage: 2, speed: 1, footprint: { w: 1, d: 2 }, powerKw: 10, note: "Cuts rods, screws and gears." },
+    { id: "drawer", name: "Wire drawer", unlockStage: 2, speed: 1, footprint: { w: 1, d: 2 }, powerKw: 8, note: "Draws ingots into wire." },
+    { id: "assembler", name: "Assembler", unlockStage: 3, speed: 1, footprint: { w: 3, d: 3 }, powerKw: 24, note: "Builds components and clockworks." },
+    { id: "fabricator", name: "Fabricator", unlockStage: 5, speed: 1, footprint: { w: 4, d: 4 }, powerKw: 90, note: "Builds Sky orrery parts." },
+    {
+        id: "windmill",
+        name: "Windmill",
+        unlockStage: 2,
+        speed: 1,
+        footprint: { w: 2, d: 2 },
+        powerKw: 0,
+        generatesKw: 30,
+        supplyRange: 6,
+        buildCost: [{ item: "iron_plate", qty: 4 }, { item: "copper_wire", qty: 6 }],
+        note: "Wind power. Strong in open ground, reaches 6 cells.",
+    },
+    {
+        id: "spring_winder",
+        name: "Spring winder",
+        unlockStage: 3,
+        speed: 1,
+        footprint: { w: 2, d: 2 },
+        powerKw: 0,
+        generatesKw: 60,
+        supplyRange: 4,
+        buildCost: [{ item: "iron_gear", qty: 4 }, { item: "copper_wire", qty: 6 }, { item: "steel_ingot", qty: 4 }],
+        note: "Stored spring power. More output, reaches 4 cells.",
+    },
 ];
 
 const ITEMS = [
@@ -61,14 +85,15 @@ const ITEMS = [
     { id: "photocell", name: "Photocell", stage: 4, kind: "module", note: "Turns light into current." },
     { id: "quartz_lens", name: "Quartz lens", stage: 4, kind: "module", note: "Ground optics for the mirrors." },
 
-    // Stage 5: megaproject parts
-    { id: "sail_panel", name: "Sail panel", stage: 5, kind: "megaproject" },
-    { id: "mirror_cell", name: "Mirror cell", stage: 5, kind: "megaproject" },
-    { id: "relay_core", name: "Relay core", stage: 5, kind: "megaproject" },
-    { id: "lattice_strut", name: "Lattice strut", stage: 5, kind: "megaproject" },
+    // Stage 5: Sky orrery parts (ids stable, names per the design thread)
+    { id: "sail_panel", name: "Lens array", stage: 5, kind: "megaproject", note: "A ring of lenses that gathers light for the orrery." },
+    { id: "mirror_cell", name: "Mirror ring", stage: 5, kind: "megaproject", note: "A polished ring that carries light around the orrery." },
+    { id: "relay_core", name: "Relay core", stage: 5, kind: "megaproject", note: "The hub that passes power around the orrery." },
+    { id: "lattice_strut", name: "Orrery strut", stage: 5, kind: "megaproject", note: "A brass strut that holds the orrery together." },
 ] as const;
 
-// One recipe per item. ids are r_<output>. Inputs are stage-ordered: no input is a later stage than its output.
+// Base recipes (one per item, not in any research node) come first in each group.
+// Alternates are at the bottom and are unlocked by research.
 const RECIPES = [
     // Smelting
     { id: "r_iron_ingot", machine: "kiln", inputs: [{ item: "iron_ore", qty: 1 }], output: { item: "iron_ingot", qty: 1 }, craftSeconds: 2 },
@@ -91,18 +116,36 @@ const RECIPES = [
     { id: "r_aluminium_casing", machine: "assembler", inputs: [{ item: "aluminium_sheet", qty: 2 }, { item: "iron_screw", qty: 4 }], output: { item: "aluminium_casing", qty: 1 }, craftSeconds: 4 },
     { id: "r_frame", machine: "assembler", inputs: [{ item: "iron_plate", qty: 2 }, { item: "iron_screw", qty: 6 }], output: { item: "frame", qty: 1 }, craftSeconds: 6 },
 
-    // Clockworks
+    // Clockworks (copper is in the mid tier: wire in motors and photocells)
     { id: "r_motor", machine: "assembler", inputs: [{ item: "iron_gear", qty: 2 }, { item: "copper_wire", qty: 3 }], output: { item: "motor", qty: 1 }, craftSeconds: 4 },
     { id: "r_servo", machine: "assembler", inputs: [{ item: "motor", qty: 1 }, { item: "circuit_board", qty: 1 }, { item: "iron_gear", qty: 2 }], output: { item: "servo", qty: 1 }, craftSeconds: 5 },
-    { id: "r_photocell", machine: "assembler", inputs: [{ item: "silicon", qty: 2 }, { item: "aluminium_casing", qty: 1 }], output: { item: "photocell", qty: 1 }, craftSeconds: 5 },
+    { id: "r_photocell", machine: "assembler", inputs: [{ item: "silicon", qty: 2 }, { item: "aluminium_casing", qty: 1 }, { item: "copper_wire", qty: 2 }], output: { item: "photocell", qty: 1 }, craftSeconds: 5 },
     { id: "r_quartz_lens", machine: "assembler", inputs: [{ item: "quartz", qty: 6 }, { item: "aluminium_sheet", qty: 2 }], output: { item: "quartz_lens", qty: 1 }, craftSeconds: 6 },
 
-    // Megaproject
+    // Sky orrery
     { id: "r_sail_panel", machine: "fabricator", inputs: [{ item: "frame", qty: 2 }, { item: "photocell", qty: 2 }], output: { item: "sail_panel", qty: 1 }, craftSeconds: 12 },
     { id: "r_mirror_cell", machine: "fabricator", inputs: [{ item: "photocell", qty: 2 }, { item: "quartz_lens", qty: 1 }, { item: "aluminium_casing", qty: 1 }], output: { item: "mirror_cell", qty: 1 }, craftSeconds: 10 },
     { id: "r_relay_core", machine: "fabricator", inputs: [{ item: "servo", qty: 1 }, { item: "circuit_board", qty: 2 }, { item: "copper_wire", qty: 2 }], output: { item: "relay_core", qty: 1 }, craftSeconds: 8 },
     { id: "r_lattice_strut", machine: "fabricator", inputs: [{ item: "steel_beam", qty: 2 }, { item: "frame", qty: 2 }], output: { item: "lattice_strut", qty: 1 }, craftSeconds: 10 },
+
+    // Alternates (research only). Each trades speed, yield or ore for another input.
+    { id: "r_silicon_quartz", machine: "furnace", inputs: [{ item: "quartz", qty: 3 }], output: { item: "silicon", qty: 1 }, craftSeconds: 8 },
+    { id: "r_iron_plate_hammer", machine: "press", inputs: [{ item: "iron_ingot", qty: 2 }], output: { item: "iron_plate", qty: 1 }, craftSeconds: 2 },
+    { id: "r_copper_wire_thin", machine: "drawer", inputs: [{ item: "copper_ingot", qty: 1 }], output: { item: "copper_wire", qty: 3 }, craftSeconds: 3 },
+    { id: "r_iron_screw_bulk", machine: "lathe", inputs: [{ item: "iron_rod", qty: 1 }], output: { item: "iron_screw", qty: 6 }, craftSeconds: 3 },
+    { id: "r_steel_quick", machine: "furnace", inputs: [{ item: "iron_ingot", qty: 2 }, { item: "coal", qty: 1 }], output: { item: "steel_ingot", qty: 1 }, craftSeconds: 2 },
+    { id: "r_frame_fast", machine: "assembler", inputs: [{ item: "iron_plate", qty: 3 }, { item: "iron_screw", qty: 4 }], output: { item: "frame", qty: 1 }, craftSeconds: 4 },
 ] as const;
+
+/** Recipes that are alternates to a base recipe. Unlocked by research, only used when chosen. */
+const ALTERNATE_RECIPES: string[] = [
+    "r_silicon_quartz",
+    "r_iron_plate_hammer",
+    "r_copper_wire_thin",
+    "r_iron_screw_bulk",
+    "r_steel_quick",
+    "r_frame_fast",
+];
 
 const RAW_NODES = [
     { item: "iron_ore", baseRatePerMin: 60 },
@@ -126,30 +169,42 @@ const RESEARCH = [
     { id: "quartz_optics", name: "Quartz optics", cost: 6, requires: ["casings"], recipes: ["r_quartz_lens"] },
     { id: "servos", name: "Servos", cost: 8, requires: ["motors", "circuits"], recipes: ["r_servo"] },
     { id: "photocells", name: "Photocells", cost: 8, requires: ["silicon", "casings"], recipes: ["r_photocell"] },
-    { id: "sail_panels", name: "Sail panels", cost: 10, requires: ["photocells", "frames"], recipes: ["r_sail_panel"] },
-    { id: "mirror_cells", name: "Mirror cells", cost: 10, requires: ["photocells", "quartz_optics"], recipes: ["r_mirror_cell"] },
+    { id: "lens_arrays", name: "Lens arrays", cost: 10, requires: ["photocells", "frames"], recipes: ["r_sail_panel"] },
+    { id: "mirror_rings", name: "Mirror rings", cost: 10, requires: ["photocells", "quartz_optics"], recipes: ["r_mirror_cell"] },
     { id: "relay_cores", name: "Relay cores", cost: 12, requires: ["servos", "circuits"], recipes: ["r_relay_core"] },
-    { id: "lattice_struts", name: "Lattice struts", cost: 10, requires: ["steel_beams", "frames"], recipes: ["r_lattice_strut"] },
+    { id: "orrery_struts", name: "Orrery struts", cost: 10, requires: ["steel_beams", "frames"], recipes: ["r_lattice_strut"] },
+    // Alternates: optional, not on the megaproject's path.
+    { id: "quartz_silicon", name: "Quartz-only silicon", cost: 5, requires: ["silicon"], recipes: ["r_silicon_quartz"], note: "Silicon from quartz alone. Slower, no coal." },
+    { id: "hammered_plates", name: "Hammered plates", cost: 3, requires: [], recipes: ["r_iron_plate_hammer"], note: "Faster plates, more ingot per plate." },
+    { id: "thin_wire", name: "Thin wire", cost: 3, requires: [], recipes: ["r_copper_wire_thin"], note: "More wire per ingot, slower draw." },
+    { id: "bulk_screws", name: "Bulk screws", cost: 3, requires: [], recipes: ["r_iron_screw_bulk"], note: "Six screws per rod, slower cut." },
+    { id: "quick_steel", name: "Quick steel", cost: 4, requires: ["furnace_alloys"], recipes: ["r_steel_quick"], note: "Fast steel, no coal bonus." },
+    { id: "fast_frames", name: "Fast frames", cost: 5, requires: ["frames"], recipes: ["r_frame_fast"], note: "Frames from plates and screws, quicker." },
 ] as const;
 
-// Blueprints granted per stage: 10 + 20 + 30 + 35 + 40 = 135, enough to buy every research node (109).
+// Blueprints granted per stage: 10 + 20 + 30 + 35 + 40 = 135. The megaproject's path needs 109 of it.
 const MILESTONES = [
     { id: "ms_smelting", name: "First smelt run", stage: 1, deliver: [{ item: "iron_ingot", qty: 50 }, { item: "copper_ingot", qty: 30 }, { item: "silicon", qty: 10 }], blueprints: 10 },
     { id: "ms_forming", name: "Plate line online", stage: 2, deliver: [{ item: "iron_plate", qty: 60 }, { item: "copper_wire", qty: 60 }, { item: "steel_ingot", qty: 30 }, { item: "aluminium_sheet", qty: 20 }], blueprints: 20 },
     { id: "ms_components", name: "Components crate", stage: 3, deliver: [{ item: "iron_gear", qty: 30 }, { item: "circuit_board", qty: 20 }, { item: "aluminium_casing", qty: 20 }, { item: "frame", qty: 20 }, { item: "steel_beam", qty: 10 }], blueprints: 30 },
     { id: "ms_clockworks", name: "Clockwork shipment", stage: 4, deliver: [{ item: "motor", qty: 10 }, { item: "servo", qty: 6 }, { item: "photocell", qty: 10 }, { item: "quartz_lens", qty: 4 }], blueprints: 35 },
-    { id: "ms_megaproject", name: "Megaproject, first light", stage: 5, deliver: [{ item: "sail_panel", qty: 3 }, { item: "mirror_cell", qty: 3 }, { item: "relay_core", qty: 3 }, { item: "lattice_strut", qty: 3 }], blueprints: 40 },
+    { id: "ms_megaproject", name: "Sky orrery, first light", stage: 5, deliver: [{ item: "sail_panel", qty: 3 }, { item: "mirror_cell", qty: 3 }, { item: "relay_core", qty: 3 }, { item: "lattice_strut", qty: 3 }], blueprints: 40 },
 ] as const;
 
 export const RECIPE_TREE: RecipeTree = {
     items: ITEMS.map((i) => ({ ...i })),
-    machines: MACHINES,
+    machines: MACHINES.map((m) => ({
+        ...m,
+        footprint: { ...m.footprint },
+        buildCost: m.buildCost?.map((s) => ({ ...s })),
+    })),
     recipes: RECIPES.map((r) => ({
         id: r.id,
         machine: r.machine,
         inputs: r.inputs.map((s) => ({ ...s })),
         output: { ...r.output },
         craftSeconds: r.craftSeconds,
+        alternate: ALTERNATE_RECIPES.includes(r.id),
     })),
     nodes: RAW_NODES.map((n) => ({ ...n })),
     research: RESEARCH.map((n) => ({ ...n, requires: [...n.requires], recipes: [...n.recipes] })),
