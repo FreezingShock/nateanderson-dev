@@ -1,0 +1,22 @@
+/* Brasswork fills the viewport: the HUD (components/automation) draws its own header, panels and 3D stage. */
+.bw-root { position: fixed; inset: 0; z-index: 5; background: #0d0a06; }
+.bw-root .ab-root { height: 100%; }
+.bw-canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; }
+.bw-back { position: absolute; top: 10px; left: 10px; padding: 6px 10px; font-size: 12px; letter-spacing: .06em; text-transform: uppercase; color: #efe2c4; background: rgba(20,15,9,.85); border: 1px solid #4a3a22; text-decoration: none; }
+.bw-back:hover { border-color: #c59a52; }
+.bw-note { position: absolute; left: 50%; bottom: 14px; transform: translateX(-50%); margin: 0; padding: 6px 12px; max-width: 90%; font-size: 14px; color: #efe2c4; background: rgba(20,15,9,.9); border: 1px solid #4a3a22; pointer-events: none; }
+
+/* The game's HUD replaces the site chrome on this route. The page wipe (.cm-wipe) is left alone so navigation transitions keep working. */
+html.bw-route .cm-dock,
+html.bw-route .nv-top,
+html.bw-route .cm-pgauge,
+html.bw-route .sf-foot { display: none !important; }
+
+/* Phone: give the 3D stage about half the screen. The panels above and below it scroll inside smaller boxes, and the
+   next-step line gets its own row under the stage so the touch buttons do not cover it. */
+@media (max-width: 759px) {
+    .bw-root .ab-pal { max-height: 22dvh; }
+    .bw-root .ab-factory { max-height: 26dvh; }
+    .bw-root .ab-center { min-height: 42dvh; }
+    .bw-root .ab-stage { bottom: 92px; }
+}

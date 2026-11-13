@@ -1,0 +1,404 @@
+// Pure logic for the automation input layer: grid lines, keys, camera limits, picking and placement.
+import test from "node:test";
+import assert from "node:assert/strict";
+import { load } from "./helpers.mjs";
+
+const A = await load("lib/automation/input/index.ts");
+const { DEFAULT_LIMITS } = A;
+const board = { width: 20, depth: 20 };
+
+// A tiny in-memory world with the same shape the simulation will provide.
+function memWorld(extra = {}) {
+    const cells = new Map();
+    return {
+        cells,
+        get: (x, z) => cells.get(`${x},${z}`) ?? null,
+        set: (x, z, item) => (item ? cells.set(`${x},${z}`, item) : cells.delete(`${x},${z}`)),
+        check: extra.check,
+    };
+}
+
+const belt = { id: "belt", label: "Belt", line: true };
+const machine = { id: "machine", label: "Machine", line: false };
+
+test("lineCells snaps to the dominant axis and faces the way it was drawn", () => {
+    const east = A.lineCells({ x: 2, z: 5 }, { x: 6, z: 7 }, 0);
+    assert.deepEqual(east.cells.map((c) => [c.x, c.z]), [[2, 5], [3, 5], [4, 5], [5, 5], [6, 5]]);
+    assert.equal(east.rot, 1);
+    const north = A.lineCells({ x: 4, z: 4 }, { x: 5, z: 9 }, 3);
+    assert.equal(north.cells.length, 6);
+    assert.equal(north.rot, 0);
+    const back = A.lineCells({ x: 4, z: 4 }, { x: 4, z: 1 }, 0);
+    assert.equal(back.rot, 2);
+    const zero = A.lineCells({ x: 4, z: 4 }, { x: 4, z: 4 }, 3);
+    assert.deepEqual(zero, { cells: [{ x: 4, z: 4 }], rot: 3 });
+});
+
+test("rotate cycles through the four directions", () => {
+    assert.equal(A.rotate(0), 1);
+    assert.equal(A.rotate(3), 0);
+    assert.equal(A.rotate(0, -1), 3);
+});
+
+test("mapKey: game keys, site keys left alone, typing modifiers ignored", () => {
+    assert.deepEqual(A.mapKey({ key: "r" }), { type: "rotate" });
+    assert.deepEqual(A.mapKey({ key: "r", repeat: true }), null);
+    assert.deepEqual(A.mapKey({ key: "z", ctrlKey: true }), { type: "undo" });
+    assert.deepEqual(A.mapKey({ key: "z", metaKey: true, shiftKey: true }), { type: "redo" });
+    assert.deepEqual(A.mapKey({ key: "3" }), { type: "tool", index: 2 });
+    assert.deepEqual(A.mapKey({ key: "`" }), null, "backtick belongs to the console");
+    assert.deepEqual(A.mapKey({ key: "j", ctrlKey: true }), null, "Ctrl+J belongs to the console");
+    assert.deepEqual(A.mapKey({ key: "/" }), null, "slash opens search");
+    assert.deepEqual(A.mapKey({ key: "r", altKey: true }), null);
+    assert.deepEqual(A.mapKey({ key: " ", type: "keydown" }), { type: "space", down: true });
+    assert.deepEqual(A.mapKey({ key: " ", type: "keyup" }), { type: "space", down: false });
+});
+
+test("camera stays inside its limits and top-down reaches past the tilt max", () => {
+    const cam = new A.OrbitCamera(DEFAULT_LIMITS, { target: { x: 0, y: 0, z: 0 }, distance: 20 });
+    cam.panPixels(100000, 0, 800);
+    assert.ok(cam.pose().target.x >= DEFAULT_LIMITS.bounds.minX - 1e-9, "x clamped to board");
+    cam.zoom(1000);
+    cam.settle();
+    assert.equal(cam.pose().distance, DEFAULT_LIMITS.maxDistance);
+    cam.zoom(0.0000001);
+    cam.settle();
+    assert.equal(cam.pose().distance, DEFAULT_LIMITS.minDistance);
+
+    cam.setTopDown(true);
+    for (let i = 0; i < 200; i++) cam.update(1 / 60);
+    assert.ok(Math.abs(cam.pose().pitch - DEFAULT_LIMITS.topDownPitch) < 1e-3, "top-down pitch reached");
+    cam.setTopDown(false);
+    for (let i = 0; i < 200; i++) cam.update(1 / 60);
+    assert.ok(cam.pose().pitch <= DEFAULT_LIMITS.maxPitch + 1e-9, "back under the tilt max");
+    cam.tilt(10);
+    cam.settle();
+    assert.ok(cam.pose().pitch <= DEFAULT_LIMITS.maxPitch + 1e-9);
+});
+
+test("camera pan follows the finger: dragging right moves the map right", () => {
+    const cam = new A.OrbitCamera(DEFAULT_LIMITS, { target: { x: 16, y: 0, z: 16 }, yaw: 0, pitch: 0.9, distance: 20 });
+    const before = cam.view(1);
+    const b = A.viewBasis(before);
+    cam.panPixels(50, 0, 600); // finger moves right
+    const after = cam.pose().target;
+    const dx = after.x - 16;
+    const dz = after.z - 16;
+    // Target should move left of screen-right, i.e. opposite to the camera's right vector.
+    assert.ok(dx * b.right.x + dz * b.right.z < 0);
+});
+
+test("picking: a projected cell centre picks that same cell (flat and with heights)", () => {
+    const cam = new A.OrbitCamera(DEFAULT_LIMITS, { target: { x: 10, y: 0, z: 10 }, yaw: 0.7, pitch: 0.95, distance: 24 });
+    const view = cam.view(390 / 844);
+    for (const [cx, cz] of [[10, 10], [4, 15], [17, 3], [0, 19]]) {
+        const p = A.vec(cx + 0.5, 0, cz + 0.5);
+        const proj = A.project(view, p);
+        assert.ok(proj.visible);
+        const ray = A.screenRay(view, proj.ndcX, proj.ndcY);
+        const hit = A.pickGround(ray, board);
+        assert.deepEqual(hit.cell, { x: cx, z: cz });
+    }
+    // A tower one cell wide and 3 high should be picked on its top face when it is in front of the ground cell.
+    const heightAt = (x, z) => (x === 10 && z === 10 ? 3 : 0);
+    const top = A.vec(10.5, 3, 10.5);
+    const proj = A.project(view, top);
+    const hit = A.pickGround(A.screenRay(view, proj.ndcX, proj.ndcY), board, heightAt);
+    assert.deepEqual(hit.cell, { x: 10, z: 10 });
+    assert.ok(Math.abs(hit.point.y - 3) < 0.05, "hit lands on the tower top");
+});
+
+test("picking misses off the board", () => {
+    const cam = new A.OrbitCamera(DEFAULT_LIMITS, { target: { x: 0, y: 0, z: 0 }, yaw: 0, pitch: 1.0, distance: 10 });
+    const view = cam.view(1);
+    const sky = A.screenRay(view, 0, 0.99);
+    assert.equal(A.pickGround(sky, board), null, "ray pointing at the sky");
+    const off = A.project(view, A.vec(5.5, 0, -3.5));
+    assert.equal(A.pickGround(A.screenRay(view, off.ndcX, off.ndcY), board), null, "ground behind the board edge");
+});
+
+test("placement: one press places, ghost is valid for empty cells and invalid for occupied", () => {
+    const world = memWorld();
+    const events = [];
+    const b = new A.BuildController({ world, board, onEvent: (e) => events.push(e) });
+    b.setTool(machine);
+    b.setHover({ x: 3, z: 3 });
+    let g = b.ghost();
+    assert.equal(g.cells.length, 1);
+    assert.equal(g.cells[0].valid, true);
+    assert.equal(b.tap({ x: 3, z: 3 }), 1);
+    assert.deepEqual(world.get(3, 3), { kind: "machine", rot: 0 });
+    b.setHover({ x: 3, z: 3 });
+    g = b.ghost();
+    assert.equal(g.cells[0].valid, false);
+    assert.equal(g.cells[0].reason, "same", "identical item is reported as same");
+    b.setTool({ id: "belt", label: "Belt", line: true });
+    b.setHover({ x: 3, z: 3 });
+    assert.equal(b.ghost().cells[0].reason, "occupied", "different item is occupied");
+    b.setTool(machine);
+    assert.equal(b.tap({ x: 3, z: 3 }), 0);
+    assert.equal(events.at(-1).type, "invalid", "a blocked tap reports why");
+});
+
+test("placement: world.check reasons show on the ghost and block placement", () => {
+    const world = memWorld({ check: (kind, x) => (x === 5 ? "blocked" : null) });
+    const b = new A.BuildController({ world, board });
+    b.setTool(machine);
+    b.setHover({ x: 5, z: 1 });
+    assert.equal(b.ghost().cells[0].reason, "blocked");
+    assert.equal(b.tap({ x: 5, z: 1 }), 0);
+});
+
+test("drag a belt line: ghost snaps, invalid cells skipped, one undo reverts the whole line", () => {
+    const world = memWorld({ check: (kind, x, z) => (x === 7 && z === 2 ? "blocked" : null) });
+    const b = new A.BuildController({ world, board });
+    b.setTool(belt);
+    b.beginStroke({ x: 4, z: 2 });
+    b.updateStroke({ x: 9, z: 4 });
+    const g = b.ghost();
+    assert.equal(g.stroking, true);
+    assert.equal(g.cells.length, 6, "dominant axis x, from 4 to 9");
+    assert.equal(g.rot, 1);
+    assert.equal(g.validCount, 5);
+    assert.equal(b.endStroke(), 5);
+    assert.equal(world.get(7, 2), null);
+    assert.deepEqual(world.get(5, 2), { kind: "belt", rot: 1 });
+    assert.ok(b.undo());
+    assert.equal(world.cells.size, 0, "one undo reverts the whole stroke");
+    assert.ok(b.redo());
+    assert.equal(world.cells.size, 5);
+});
+
+test("rotate changes the ghost; placed items keep the rotation they had", () => {
+    const world = memWorld();
+    const b = new A.BuildController({ world, board });
+    b.setTool(machine);
+    b.rotateCw();
+    b.setHover({ x: 1, z: 1 });
+    assert.equal(b.ghost().rot, 1);
+    b.tap({ x: 1, z: 1 });
+    assert.deepEqual(world.get(1, 1), { kind: "machine", rot: 1 });
+});
+
+test("delete tool and Delete key: remove an item, invalid when empty", () => {
+    const world = memWorld();
+    const b = new A.BuildController({ world, board });
+    b.setTool(machine);
+    b.tap({ x: 2, z: 2 });
+    b.setTool(A.DELETE_TOOL);
+    b.setHover({ x: 9, z: 9 });
+    assert.equal(b.ghost().cells[0].reason, "empty");
+    assert.equal(b.deleteAt({ x: 2, z: 2 }), 1);
+    assert.equal(world.get(2, 2), null);
+    assert.equal(b.deleteAt({ x: 2, z: 2 }), 0);
+});
+
+test("a new edit clears redo, history is capped", () => {
+    const world = memWorld();
+    const b = new A.BuildController({ world, board, historyLimit: 2 });
+    b.setTool(machine);
+    b.tap({ x: 0, z: 0 });
+    b.tap({ x: 1, z: 0 });
+    b.tap({ x: 2, z: 0 });
+    assert.ok(b.undo());
+    assert.ok(b.undo());
+    assert.equal(b.undo(), false, "only two steps kept");
+    assert.deepEqual(world.get(0, 0), { kind: "machine", rot: 0 }, "oldest step fell out of history, so its cell stays filled");
+    b.redo();
+    b.tap({ x: 9, z: 9 });
+    assert.equal(b.redo(), false, "new edit cleared redo");
+});
+
+test("cancelStroke drops a drag without placing anything", () => {
+    const world = memWorld();
+    const b = new A.BuildController({ world, board });
+    b.setTool(belt);
+    b.beginStroke({ x: 1, z: 1 });
+    b.updateStroke({ x: 5, z: 1 });
+    b.cancelStroke();
+    assert.equal(world.cells.size, 0);
+    assert.equal(b.isStroking(), false);
+});
+
+test("createInputController wires tools by id and keys without a DOM", () => {
+    const world = memWorld();
+    const el = { style: {}, addEventListener() {}, removeEventListener() {}, getBoundingClientRect: () => ({ left: 0, top: 0, width: 400, height: 800 }) };
+    const ctl = A.createInputController({ element: el, board, world, tools: [belt, machine], keyTarget: null });
+    ctl.setToolById("machine");
+    assert.equal(ctl.build.getTool().id, "machine");
+    ctl.setToolById("nope");
+    assert.equal(ctl.build.getTool(), null);
+    ctl.update(1 / 60);
+    ctl.destroy();
+});
+
+test("board with an origin: cells outside its window are rejected", () => {
+    const b = { width: 18, depth: 12, originX: -9, originZ: -6 };
+    assert.equal(A.cellInBoard({ x: -9, z: -6 }, b), true);
+    assert.equal(A.cellInBoard({ x: 8, z: 5 }, b), true);
+    assert.equal(A.cellInBoard({ x: 9, z: 0 }, b), false);
+    assert.equal(A.cellInBoard({ x: 0, z: -7 }, b), false);
+    const world = memWorld();
+    const c = new A.BuildController({ world, board: b });
+    c.setTool(machine);
+    assert.equal(c.tap({ x: -9, z: -6 }), 1);
+    assert.equal(c.tap({ x: 0, z: 0 }), 1);
+    assert.equal(c.tap({ x: 20, z: 0 }), 0);
+});
+
+test("mount writes the camera view to a Three-shaped sink each frame", () => {
+    const writes = [];
+    const sink = {
+        position: { set: (x, y, z) => writes.push(["pos", x, y, z]) },
+        lookAt: (x, y, z) => writes.push(["look", x, y, z]),
+        fov: 0,
+        aspect: 1,
+        updateProjectionMatrix() {
+            writes.push(["proj"]);
+        },
+    };
+    const el = { style: {}, addEventListener() {}, removeEventListener() {}, getBoundingClientRect: () => ({ left: 0, top: 0, width: 400, height: 800 }) };
+    const m = A.mount(sink, el, { board, world: memWorld(), tools: [belt, machine], keyTarget: null, initialPose: { target: A.vec(10, 0, 10), distance: 30 } });
+    assert.deepEqual(writes.find((w) => w[0] === "look").slice(1), [10, 0, 10]);
+    assert.ok(Math.abs(sink.fov - (DEFAULT_LIMITS.fovY * 180) / Math.PI) < 1e-9, "fov written in degrees");
+    assert.equal(sink.aspect, 0.5);
+    writes.length = 0;
+    m.update(1 / 60);
+    assert.ok(writes.some((w) => w[0] === "pos") && writes.some((w) => w[0] === "proj"), "update writes each frame");
+    m.destroy();
+});
+
+// A world that keeps multi-cell buildings whole, like the sim: one anchor, a footprint of cells pointing at it.
+function fpWorld(sizes, check) {
+    const buildings = new Map(); // anchorKey -> { kind, rot, anchor }
+    const owner = new Map(); // cellKey -> anchorKey
+    const cellsOf = (kind, ax, az, rot) => {
+        const f = sizes[kind] ?? { w: 1, d: 1 };
+        return A.footprintOffsets(f, rot).map((o) => ({ x: ax + o.dx, z: az + o.dz }));
+    };
+    return {
+        buildings,
+        owner,
+        get(x, z) {
+            const k = owner.get(`${x},${z}`);
+            return k ? buildings.get(k) : null;
+        },
+        set(x, z, item) {
+            if (item === null) {
+                const k = owner.get(`${x},${z}`);
+                if (!k) return;
+                const b = buildings.get(k);
+                for (const c of cellsOf(b.kind, b.anchor.x, b.anchor.z, b.rot)) owner.delete(`${c.x},${c.z}`);
+                buildings.delete(k);
+                return;
+            }
+            const anchor = { x, z };
+            const key = `${x},${z}`;
+            buildings.set(key, { kind: item.kind, rot: item.rot, anchor });
+            for (const c of cellsOf(item.kind, x, z, item.rot)) owner.set(`${c.x},${c.z}`, key);
+        },
+        check,
+    };
+}
+
+test("footprint offsets match the sim: rotation 1 and 3 swap width and depth", () => {
+    const f = { w: 3, d: 1 };
+    assert.deepEqual(A.footprintOffsets(f, 0), [{ dx: 0, dz: 0 }, { dx: 1, dz: 0 }, { dx: 2, dz: 0 }]);
+    assert.deepEqual(A.footprintOffsets(f, 1), [{ dx: 0, dz: 0 }, { dx: 0, dz: 1 }, { dx: 0, dz: 2 }]);
+    assert.deepEqual(A.footprintOffsets(f, 3).length, 3);
+    assert.equal(A.footprintOffsets({ w: 2, d: 2 }, 2).length, 4);
+    assert.equal(A.footprintOffsets(undefined, 0).length, 1);
+});
+
+test("2x2 ghost covers four cells; one occupied cell makes the whole footprint invalid", () => {
+    const world = fpWorld({ smelter: { w: 2, d: 2 } });
+    const b = new A.BuildController({ world, board });
+    const smelter = { id: "smelter", label: "Smelter", line: false, footprint: { w: 2, d: 2 } };
+    b.setTool(smelter);
+    b.setHover({ x: 4, z: 4 });
+    let g = b.ghost();
+    assert.equal(g.cells.length, 4);
+    assert.ok(g.cells.every((c) => c.valid && c.ax === 4 && c.az === 4));
+    assert.equal(g.validCount, 1);
+    // A machine sits on (5, 5): the footprint overlaps it.
+    world.set(5, 5, { kind: "drill", rot: 0 });
+    g = b.ghost();
+    const bad = g.cells.filter((c) => !c.valid);
+    assert.equal(bad.length, 1, "only the overlapping cell is marked");
+    assert.equal(bad[0].reason, "occupied");
+    assert.equal(g.validCount, 0);
+    assert.equal(b.tap({ x: 4, z: 4 }), 0, "a footprint that does not fit places nothing");
+});
+
+test("placing a 2x2 stores one building; undo and redo treat it as a whole", () => {
+    const world = fpWorld({ smelter: { w: 2, d: 2 } });
+    const b = new A.BuildController({ world, board });
+    b.setTool({ id: "smelter", label: "Smelter", line: false, footprint: { w: 2, d: 2 } });
+    assert.equal(b.tap({ x: 2, z: 3 }), 1);
+    assert.equal(world.buildings.size, 1);
+    assert.equal(world.get(3, 4).anchor.x, 2, "covered cell resolves to the anchor");
+    assert.ok(b.undo());
+    assert.equal(world.buildings.size, 0, "one undo removes the whole building");
+    assert.ok(b.redo());
+    assert.equal(world.buildings.size, 1);
+});
+
+test("rotating a 2x1 footprint changes which cells the ghost covers", () => {
+    const world = fpWorld({ press: { w: 2, d: 1 } });
+    const b = new A.BuildController({ world, board });
+    b.setTool({ id: "press", label: "Press", line: false, footprint: { w: 2, d: 1 } });
+    b.setHover({ x: 6, z: 6 });
+    const east = b.ghost().cells.map((c) => [c.x, c.z]);
+    assert.deepEqual(east, [[6, 6], [7, 6]]);
+    b.rotateCw();
+    const north = b.ghost().cells.map((c) => [c.x, c.z]);
+    assert.deepEqual(north, [[6, 6], [6, 7]]);
+});
+
+test("delete on a multi-cell building removes it once, even when several of its cells are selected", () => {
+    const world = fpWorld({ smelter: { w: 2, d: 2 } });
+    const b = new A.BuildController({ world, board });
+    b.setTool({ id: "smelter", label: "Smelter", line: false, footprint: { w: 2, d: 2 } });
+    b.tap({ x: 8, z: 8 });
+    b.setTool(A.DELETE_TOOL);
+    b.beginStroke({ x: 8, z: 8 });
+    b.updateStroke({ x: 9, z: 9 });
+    assert.equal(b.endStroke(), 1, "one building removed");
+    assert.equal(world.buildings.size, 0);
+});
+
+test("rotateAt turns a building in place, keeps it whole, and undo restores it in one step", () => {
+    const world = fpWorld({ press: { w: 2, d: 1 } });
+    const b = new A.BuildController({ world, board });
+    b.setTool({ id: "press", label: "Press", line: false, footprint: { w: 2, d: 1 } });
+    b.tap({ x: 6, z: 6 });
+    assert.deepEqual(world.buildings.get("6,6").rot, 0);
+    assert.equal(b.rotateAt({ x: 7, z: 6 }), true, "a covered cell turns the building");
+    assert.equal(world.buildings.size, 1, "still one building");
+    assert.equal(world.buildings.get("6,6").rot, 1);
+    assert.equal(world.get(6, 7)?.anchor?.z, 6, "the new footprint covers (6, 7)");
+    assert.ok(b.undo());
+    assert.equal(world.buildings.get("6,6").rot, 0, "undo restores the old rotation");
+    assert.ok(b.redo());
+    assert.equal(world.buildings.get("6,6").rot, 1, "redo turns it again");
+});
+
+test("rotateAt refuses a turn that would overlap another building, and leaves the building as it was", () => {
+    // The sim's check covers the whole footprint. Here the turned press (rot 1) runs into a block on (6, 7).
+    const world = fpWorld({ press: { w: 2, d: 1 } }, (kind, x, z, rot) => (rot === 1 && x === 6 && z === 6 ? "blocked" : null));
+    const b = new A.BuildController({ world, board });
+    b.setTool({ id: "press", label: "Press", line: false, footprint: { w: 2, d: 1 } });
+    b.tap({ x: 6, z: 6 });
+    const events = [];
+    const b2 = new A.BuildController({ world, board, onEvent: (e) => events.push(e) });
+    assert.equal(b2.rotateAt({ x: 6, z: 6 }), false);
+    assert.equal(world.buildings.get("6,6").rot, 0, "building unchanged");
+    assert.equal(events.at(-1).type, "invalid");
+});
+
+test("rotateAt on an empty cell does nothing", () => {
+    const world = fpWorld({ press: { w: 2, d: 1 } });
+    const b = new A.BuildController({ world, board });
+    assert.equal(b.rotateAt({ x: 3, z: 3 }), false);
+    assert.equal(b.canUndo(), false);
+});

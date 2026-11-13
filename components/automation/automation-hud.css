@@ -1,0 +1,792 @@
+/* Brasswork HUD. Sharp panels, corner brackets, plain data lines.
+   No pill chips, no tabs, no coloured strip on the left of any panel. */
+
+.ab-root {
+  --ab-bg: #0d0a06;
+  --ab-panel: rgba(20, 15, 9, 0.94);
+  --ab-panel-2: rgba(28, 21, 12, 0.94);
+  --ab-line: #4a3a22;
+  --ab-line-soft: rgba(74, 58, 34, 0.55);
+  --ab-text: #efe2c4;
+  --ab-dim: #9c8a66;
+  --ab-brass: #c59a52;
+  --ab-brass-hi: #f0c97a;
+  --ab-ok: #9bc27a;
+  --ab-warn: #e0a24a;
+  --ab-bad: #d4614a;
+  --ab-ease: cubic-bezier(0.2, 0.7, 0.2, 1);
+
+  /* Full screen over the site chrome: the HUD owns the viewport like a game page. */
+  position: fixed;
+  inset: 0;
+  /* Above the site's dock and header. The game page wiring hides site chrome. */
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: var(--ab-bg);
+  color: var(--ab-text);
+  font-size: 15px;
+  line-height: 1.5;
+}
+
+@media (prefers-color-scheme: light) {
+  /* The HUD is always dark: it sits over a dark 3D workshop. */
+  .ab-root {
+    color-scheme: dark;
+  }
+}
+
+.ab-root :where(button, input, select) {
+  font: inherit;
+  color: inherit;
+}
+
+.ab-root button:focus-visible {
+  outline: 2px solid var(--ab-brass-hi);
+  outline-offset: 2px;
+}
+
+/* ---- body row: stage behind, factory beside it, drawer over the stage ---- */
+
+.ab-body {
+  position: relative;
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: row;
+}
+
+/* Left: machine palette. Centre: the floor, with the status line at its bottom. */
+
+.ab-pal {
+  --ab-br: var(--ab-brass);
+  position: relative;
+  z-index: 2;
+  flex: none;
+  align-self: stretch;
+  width: 320px;
+  margin: 16px 0 16px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 16px 14px 14px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.ab-center {
+  position: relative;
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ---- stage (3D view slot) ---- */
+
+.ab-stage {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse at 40% 35%, rgba(197, 154, 82, 0.12), transparent 60%),
+    radial-gradient(rgba(197, 154, 82, 0.07) 1px, transparent 1.2px) 0 0 / 6px 6px,
+    var(--ab-bg);
+}
+
+/* ---- shared bits ---- */
+
+.ab-h {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--ab-brass-hi);
+}
+
+.ab-dim {
+  color: var(--ab-dim);
+  font-size: 13px;
+}
+
+.ab-text-btn {
+  background: transparent;
+  border: 1px solid var(--ab-line);
+  padding: 6px 10px;
+  min-height: 36px;
+  cursor: pointer;
+  font-size: 13px;
+  transition: border-color 0.15s var(--ab-ease), color 0.15s var(--ab-ease);
+}
+
+.ab-text-btn:hover:not(:disabled),
+.ab-text-btn[aria-pressed="true"],
+.ab-text-btn[aria-expanded="true"] {
+  border-color: var(--ab-brass-hi);
+  color: var(--ab-brass-hi);
+}
+
+.ab-text-btn:disabled {
+  color: var(--ab-dim);
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.ab-data {
+  margin: 0;
+}
+
+.ab-data > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 5px 0;
+  border-bottom: 1px dotted var(--ab-line-soft);
+}
+
+.ab-data dt {
+  color: var(--ab-dim);
+}
+
+.ab-data dd {
+  margin: 0;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.ab-data dd[data-status="starved"] {
+  color: var(--ab-warn);
+}
+
+.ab-data dd[data-status="running"] {
+  color: var(--ab-ok);
+}
+
+/* Corner brackets: four L shapes drawn in the background stack. */
+.ab-panel,
+.ab-pal,
+.ab-factory,
+.ab-drawer {
+  --ab-br: var(--ab-brass);
+  background:
+    linear-gradient(var(--ab-br), var(--ab-br)) top left / 12px 2px no-repeat,
+    linear-gradient(var(--ab-br), var(--ab-br)) top left / 2px 12px no-repeat,
+    linear-gradient(var(--ab-br), var(--ab-br)) top right / 12px 2px no-repeat,
+    linear-gradient(var(--ab-br), var(--ab-br)) top right / 2px 12px no-repeat,
+    linear-gradient(var(--ab-br), var(--ab-br)) bottom left / 12px 2px no-repeat,
+    linear-gradient(var(--ab-br), var(--ab-br)) bottom left / 2px 12px no-repeat,
+    linear-gradient(var(--ab-br), var(--ab-br)) bottom right / 12px 2px no-repeat,
+    linear-gradient(var(--ab-br), var(--ab-br)) bottom right / 2px 12px no-repeat,
+    var(--ab-panel);
+}
+
+/* ---- top bar ---- */
+
+.ab-top {
+  position: relative;
+  z-index: 3;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 18px;
+  padding: 12px 16px;
+  background: var(--ab-panel);
+  border-bottom: 1px solid var(--ab-line);
+}
+
+.ab-brand {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.1;
+  min-width: 96px;
+}
+
+.ab-brand-name {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--ab-brass-hi);
+  letter-spacing: 0.04em;
+}
+
+.ab-res {
+  display: flex;
+  flex: 1 1 auto;
+  flex-wrap: wrap;
+  gap: 8px 22px;
+  min-width: 0;
+}
+
+.ab-res-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 16px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.ab-res-item {
+  display: grid;
+  grid-template-columns: auto auto auto;
+  align-items: center;
+  column-gap: 8px;
+}
+
+.ab-res-item[data-empty="true"] {
+  opacity: 0.5;
+}
+
+.ab-res-name {
+  color: var(--ab-dim);
+  font-size: 13px;
+}
+
+.ab-res-amt {
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+}
+
+.ab-res-rate {
+  grid-column: 2 / span 2;
+  font-size: 12px;
+  color: var(--ab-ok);
+  font-variant-numeric: tabular-nums;
+}
+
+.ab-res-rate[data-neg="true"] {
+  color: var(--ab-bad);
+}
+
+.ab-nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-left: auto;
+}
+
+/* placeholder icon: 1-bit dither square with a code */
+.ab-glyph {
+  display: inline-grid;
+  place-items: center;
+  flex: none;
+  border: 1px solid var(--ab-brass);
+  background-color: #17120b;
+  background-image: radial-gradient(rgba(197, 154, 82, 0.55) 1px, transparent 1.3px);
+  background-size: 4px 4px;
+  color: var(--ab-brass-hi);
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  line-height: 1;
+}
+
+/* ---- next step ---- */
+
+.ab-next {
+  position: relative;
+  z-index: 3;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 12px;
+  margin: auto 0 0;
+  padding: 8px 16px;
+  background: var(--ab-panel-2);
+  border-top: 1px solid var(--ab-line-soft);
+  font-size: 14px;
+}
+
+.ab-next-label {
+  color: var(--ab-brass-hi);
+  font-weight: 600;
+  text-transform: uppercase;
+  font-size: 12px;
+  letter-spacing: 0.08em;
+}
+
+.ab-next-text {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+/* ---- factory panel (desktop: right column) ---- */
+
+.ab-factory {
+  position: relative;
+  z-index: 2;
+  flex: none;
+  align-self: stretch;
+  margin: 16px 16px 16px auto;
+  width: 380px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 16px 16px 14px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.ab-factory-head,
+.ab-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.ab-section {
+  border-top: 1px solid var(--ab-line-soft);
+  padding-top: 8px;
+}
+
+.ab-section-head {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  width: 100%;
+  padding: 6px 0;
+  background: transparent;
+  border: 0;
+  text-align: left;
+  cursor: pointer;
+}
+
+.ab-section-head .ab-dim {
+  flex: 1 1 auto;
+}
+
+.ab-chev {
+  color: var(--ab-brass);
+  width: 14px;
+  text-align: center;
+}
+
+.ab-section-body {
+  padding-top: 6px;
+}
+
+/* ---- build list ---- */
+
+.ab-build,
+.ab-list,
+.ab-milestones,
+.ab-buffers {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.ab-row {
+  position: relative;
+  border-bottom: 1px dotted var(--ab-line-soft);
+}
+
+.ab-build-row {
+  display: flex;
+  align-items: stretch;
+}
+
+.ab-build-main {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 6px 8px 0;
+  background: transparent;
+  border: 0;
+  text-align: left;
+  cursor: pointer;
+}
+
+.ab-build-main:disabled {
+  cursor: not-allowed;
+}
+
+.ab-build-row[data-afford="false"] .ab-build-main {
+  opacity: 0.62;
+}
+
+.ab-build-row[data-locked="true"] .ab-glyph {
+  opacity: 0.35;
+}
+
+.ab-build-row[data-selected="true"] {
+  background: rgba(197, 154, 82, 0.08);
+}
+
+.ab-build-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.ab-build-name {
+  font-weight: 600;
+}
+
+.ab-build-cost {
+  color: var(--ab-dim);
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+}
+
+.ab-build-row[data-afford="true"] .ab-build-main:hover .ab-build-name {
+  color: var(--ab-brass-hi);
+}
+
+.ab-status {
+  margin-left: auto;
+  align-self: center;
+  font-size: 12px;
+  color: var(--ab-dim);
+  white-space: nowrap;
+}
+
+.ab-status[data-status="running"] {
+  color: var(--ab-ok);
+}
+
+.ab-status[data-status="starved"] {
+  color: var(--ab-warn);
+}
+
+.ab-status[data-status="blocked"] {
+  color: var(--ab-bad);
+}
+
+.ab-info {
+  align-self: center;
+  background: transparent;
+  border: 1px solid var(--ab-line);
+  padding: 6px 10px;
+  min-height: 36px;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.ab-info:hover,
+.ab-info[aria-pressed="true"] {
+  border-color: var(--ab-brass-hi);
+  color: var(--ab-brass-hi);
+}
+
+/* ---- inspector ---- */
+
+.ab-inspect {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px;
+  border: 1px solid var(--ab-line);
+}
+
+.ab-flow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 10px;
+  margin: 2px 0;
+  font-variant-numeric: tabular-nums;
+}
+
+.ab-arrow {
+  color: var(--ab-brass);
+}
+
+.ab-buffer {
+  display: grid;
+  grid-template-columns: 74px 1fr auto;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+}
+
+.ab-buffer-val {
+  font-variant-numeric: tabular-nums;
+  color: var(--ab-dim);
+}
+
+.ab-bar {
+  display: block;
+  height: 8px;
+  background: #1b150c;
+  border: 1px solid var(--ab-line);
+}
+
+.ab-bar-fill {
+  display: block;
+  height: 100%;
+  background: var(--ab-brass);
+  transition: width 0.3s var(--ab-ease);
+}
+
+.ab-action {
+  align-self: stretch;
+  padding: 9px 12px;
+  background: var(--ab-panel-2);
+  border: 1px solid var(--ab-brass);
+  color: var(--ab-brass-hi);
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.ab-action:hover:not(:disabled) {
+  background: rgba(197, 154, 82, 0.16);
+}
+
+.ab-action:disabled {
+  border-color: var(--ab-line);
+  color: var(--ab-dim);
+  cursor: not-allowed;
+}
+
+/* ---- milestones and prestige ---- */
+
+.ab-milestone {
+  padding: 6px 0 9px;
+  border-bottom: 1px dotted var(--ab-line-soft);
+}
+
+.ab-milestone-top {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.ab-milestone-name {
+  font-weight: 600;
+}
+
+.ab-milestone-goal {
+  color: var(--ab-dim);
+  font-size: 13px;
+  margin: 2px 0 6px;
+}
+
+.ab-milestone[data-done="true"] .ab-milestone-name {
+  color: var(--ab-ok);
+}
+
+.ab-prestige {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.ab-prestige p {
+  margin: 0;
+}
+
+/* ---- expedition / research / stats / settings drawer ---- */
+
+.ab-drawer {
+  position: absolute;
+  z-index: 4;
+  top: 16px;
+  left: 352px;
+  bottom: 16px;
+  width: min(380px, calc(100% - 720px));
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 16px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  animation: ab-drawer-in 0.22s var(--ab-ease);
+}
+
+@keyframes ab-drawer-in {
+  from {
+    opacity: 0;
+    transform: translateX(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.ab-drawer-body {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.ab-list-btn {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 2px 12px;
+  width: 100%;
+  padding: 10px 0;
+  background: transparent;
+  border: 0;
+  text-align: left;
+  cursor: pointer;
+}
+
+.ab-list-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.ab-list-btn:not(:disabled):hover .ab-list-name {
+  color: var(--ab-brass-hi);
+}
+
+.ab-list-btn .ab-dim {
+  grid-column: 1;
+}
+
+.ab-list-name {
+  font-weight: 600;
+}
+
+.ab-state {
+  grid-column: 2;
+  grid-row: 1;
+  align-self: start;
+  font-size: 12px;
+  color: var(--ab-dim);
+}
+
+.ab-row[data-state="current"] .ab-state {
+  color: var(--ab-ok);
+}
+
+.ab-research-row {
+  grid-template-columns: 1fr auto;
+}
+
+.ab-research-row .ab-text-btn {
+  grid-column: 2;
+  grid-row: 1 / span 3;
+  align-self: center;
+}
+
+.ab-research-row > .ab-dim:nth-of-type(2) {
+  grid-column: 1;
+}
+
+.ab-row[data-state="done"] .ab-list-name {
+  color: var(--ab-ok);
+}
+
+.ab-settings {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.ab-setting {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 0;
+  border-bottom: 1px dotted var(--ab-line-soft);
+}
+
+.ab-choices {
+  display: inline-flex;
+  gap: 6px;
+}
+
+/* ---- low fx and reduced motion: no slides, no transitions ---- */
+
+.ab-root[data-lowfx="true"] *,
+.ab-root[data-reduce="true"] * {
+  animation: none !important;
+  transition: none !important;
+}
+
+/* ---- phone: factory becomes a bottom sheet; a drawer replaces it ---- */
+
+@media (max-width: 759px) {
+  .ab-top {
+    padding: 10px 12px;
+  }
+
+  .ab-res {
+    gap: 6px 14px;
+  }
+
+  .ab-nav {
+    width: 100%;
+    margin-left: 0;
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+  }
+
+  .ab-nav .ab-text-btn {
+    padding: 6px 4px;
+    font-size: 12px;
+  }
+
+  .ab-next {
+    padding: 8px 12px;
+    font-size: 13px;
+  }
+
+  .ab-body {
+    flex-direction: column;
+  }
+
+  .ab-factory {
+    margin: auto 0 0;
+    width: auto;
+    max-height: 56dvh;
+    padding: 12px 12px 10px;
+  }
+
+  .ab-root[data-drawer]:not([data-drawer="none"]) .ab-factory,
+  .ab-root[data-drawer]:not([data-drawer="none"]) .ab-pal {
+    display: none;
+  }
+
+  .ab-pal {
+    width: auto;
+    max-height: 32dvh;
+    margin: 0;
+    padding: 10px 12px;
+  }
+
+  .ab-center {
+    flex: 1 1 auto;
+    min-height: 0;
+  }
+
+  .ab-drawer {
+    top: auto;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    width: auto;
+    max-height: 62dvh;
+  }
+
+  .ab-root[data-drawer="none"] .ab-drawer {
+    display: none;
+  }
+
+  .ab-build-main {
+    padding-right: 4px;
+  }
+
+  .ab-inspect {
+    padding: 10px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ab-root * {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+
+/* Sprite-sheet icons sit inside the same brass frame, without the code text. */
+.ab-glyph-art {
+  background-color: #17120b;
+  background-repeat: no-repeat;
+  image-rendering: pixelated;
+}
