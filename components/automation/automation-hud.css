@@ -783,3 +783,10 @@
     transition: none !important;
   }
 }
+
+/* Sprite-sheet icons sit inside the same brass frame, without the code text. */
+.ab-glyph-art {
+  background-color: #17120b;
+  background-repeat: no-repeat;
+  image-rendering: pixelated;
+}

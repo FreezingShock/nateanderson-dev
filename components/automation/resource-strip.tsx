@@ -1,15 +1,37 @@
 import type { ResourceView, NumberFormat } from "@/lib/automation/types";
 import { fmtNum, fmtRate } from "./format";
+import { iconCell, iconStyle } from "@/lib/automation/icons";
 
 /**
- * Placeholder icon. Draws a 1-bit dither square with a two-letter code until
- * the design thread supplies pixel art. Swap the body for an <img> later.
+ * A square badge for an item or machine. Shows the sprite-sheet icon when the id has one
+ * (items, machines), otherwise the two-letter code.
  */
-export function Glyph({ code, size = 32 }: { code: string; size?: number }) {
+export function Glyph({
+  code,
+  size = 32,
+  icon,
+}: {
+  code: string;
+  size?: number;
+  icon?: string;
+}) {
+  if (icon && iconCell(icon) !== undefined) {
+    return (
+      <span
+        className="ab-glyph ab-glyph-art"
+        style={iconStyle(icon, size)}
+        aria-hidden="true"
+      />
+    );
+  }
   return (
     <span
       className="ab-glyph"
-      style={{ width: size, height: size, fontSize: Math.max(9, Math.round(size * 0.34)) }}
+      style={{
+        width: size,
+        height: size,
+        fontSize: Math.max(9, Math.round(size * 0.34)),
+      }}
       aria-hidden="true"
     >
       {code}
@@ -31,8 +53,18 @@ export function ResourceStrip({
 
   return (
     <div className="ab-res" aria-label="Resources">
-      <ResourceList label="Raw" items={raw} showRates={showRates} numberFormat={numberFormat} />
-      <ResourceList label="Parts" items={parts} showRates={showRates} numberFormat={numberFormat} />
+      <ResourceList
+        label="Raw"
+        items={raw}
+        showRates={showRates}
+        numberFormat={numberFormat}
+      />
+      <ResourceList
+        label="Parts"
+        items={parts}
+        showRates={showRates}
+        numberFormat={numberFormat}
+      />
     </div>
   );
 }
@@ -52,7 +84,7 @@ function ResourceList({
     <ul className="ab-res-list" aria-label={label}>
       {items.map((r) => (
         <li key={r.id} className="ab-res-item" data-empty={r.amount <= 0}>
-          <Glyph code={r.glyph} size={28} />
+          <Glyph code={r.glyph} size={28} icon={r.id} />
           <span className="ab-res-name">{r.name}</span>
           <span className="ab-res-amt">{fmtNum(r.amount, numberFormat)}</span>
           {showRates && (
