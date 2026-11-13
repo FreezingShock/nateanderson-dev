@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import "./automation-screens.css";
-import type { PrestigeView } from "./types";
+import type { PrestigeView } from "@/lib/automation/types";
 
 const HOLD_MS = 1200;
 const TICK_MS = 30;
@@ -20,10 +20,10 @@ export function PrestigeScreen({
   onConfirm?: (siteId: string) => void;
   onClose: () => void;
 }) {
-  const [siteId, setSiteId] = useState<string | null>(prestige.sites[0]?.id ?? null);
+  const [siteId, setSiteId] = useState<string | null>(prestige.sites[0] ?? null);
   const [held, setHeld] = useState(0);
   const timer = useRef<ReturnType<typeof setInterval> | null>(null);
-  const site = prestige.sites.find((s) => s.id === siteId) ?? null;
+  const site = prestige.sites.find((s) => s === siteId) ?? null;
   const canHold = prestige.ready && !!site && !!onConfirm;
 
   const stop = () => {
@@ -42,7 +42,7 @@ export function PrestigeScreen({
       setHeld(pct);
       if (pct >= 1) {
         stop();
-        onConfirm?.(site.id);
+        onConfirm?.(site);
       }
     }, TICK_MS);
   };
@@ -66,29 +66,18 @@ export function PrestigeScreen({
         <div className="ab-sites" role="radiogroup" aria-label="Choose a site">
           {prestige.sites.map((s) => (
             <button
-              key={s.id}
+              key={s}
               type="button"
               role="radio"
-              aria-checked={s.id === siteId}
+              aria-checked={s === siteId}
               className="ab-site"
-              data-selected={s.id === siteId}
+              data-selected={s === siteId}
               onClick={() => {
                 release();
-                setSiteId(s.id);
+                setSiteId(s);
               }}
             >
-              <span className="ab-site-name">{s.name}</span>
-              <span className="ab-data">
-                <span>
-                  <span className="ab-dim">Floor</span> {s.floor}
-                </span>
-                <span>
-                  <span className="ab-dim">Ore</span> {s.ore}
-                </span>
-                <span>
-                  <span className="ab-dim">Bonus</span> {s.bonus}
-                </span>
-              </span>
+              <span className="ab-site-name">{s}</span>
             </button>
           ))}
         </div>
@@ -127,7 +116,7 @@ export function PrestigeScreen({
           <span className="ab-hold-fill" style={{ width: `${held * 100}%` }} aria-hidden="true" />
           <span className="ab-hold-label">
             {prestige.ready
-              ? `Hold to open ${site?.name ?? "a new workshop"}`
+              ? `Hold to open ${site ?? "a new workshop"}`
               : "Not ready yet"}
           </span>
         </button>
