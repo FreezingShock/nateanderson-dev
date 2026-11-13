@@ -287,6 +287,8 @@ body.nf-tm-open .nv-scrim { z-index: 1003; }
 /* the opaque menu covers the board: skip its layout and paint (tree.tsx pins the board's height first, so the page keeps its length) */
 body.nf-tm-covered .nf { content-visibility: hidden; }
 
+/* the page under an open tree is hidden, not just covered: a covered page still re-rasters on every pan and zoom frame */
+body.nf-tm-open .cm-main, body.nf-tm-open .sf-foot { visibility: hidden; }
 /* ---- desktop framing (Nate, 2026-11-12): the site's top-left and top-right clusters stay, the tree's own bar slots in
    between them on the same line, and the page dock waits behind a "</> pages" tab at the bottom */
 body.nf-tm-chrome .nv-top { visibility: visible; z-index: 1001; background-color: transparent; border-color: transparent; }

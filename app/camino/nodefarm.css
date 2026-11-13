@@ -340,7 +340,7 @@ body .nf-aw-sys dl div { display: flex; justify-content: space-between; gap: 14p
 body .nf-aw-sys dl div:last-child { border-bottom: 0; padding-bottom: 0; }
 body .nf-aw-sys dt { font: 400 var(--cm-ctos-t-ui)/1.35 var(--cm-mono); color: var(--cm-mute); }
 body .nf-aw-sys dd { margin: 0; font: 600 var(--cm-ctos-t-ui)/1.35 var(--cm-mono); color: var(--cm-fg); text-align: right; font-variant-numeric: tabular-nums; }
-@media (max-width: 519px) { body .nf-aw-sys { grid-template-columns: 1fr; } }
+@media (max-width: 519px) { body .nf-aw-sys { grid-template-columns: 1fr; } body .nf-aw-sys dl div { flex-direction: column; gap: 2px; } body .nf-aw-sys dd { text-align: left; } }
 body .nf-aw-note { margin: 0; padding: 10px 12px; border: 1px solid #5a4a14; border-left: 3px solid #f0c23c; background: #14110a; font: 400 var(--cm-ctos-t-ui)/1.5 var(--cm-mono); color: var(--cm-mute); }
 body .nf-aw-go { justify-self: stretch; min-height: 56px; padding: 0 24px; background: var(--cm-ctos-block); color: var(--cm-ctos-ink); border: 0; font: 800 var(--cm-ctos-t-ui)/1 var(--cm-mono); letter-spacing: .16em; text-transform: uppercase; cursor: pointer; }
 @media (min-width: 720px) { body .nf-aw-go { justify-self: start; min-width: 320px; } }
@@ -370,6 +370,8 @@ body .nf-aw-go:focus-visible { outline: 3px solid var(--cm-cyan); outline-offset
 
 /* While a window is open: drop the identity transform a settled scroll-reveal leaves on the section (it would turn the section into the containing block for the fixed window), and lift the section above the hero. */
 body.nf-win-open .ctos .g-frame, body.nf-win-open .ctos .cm-section, body.nf-win-open .ctos .nf-bleed, body.nf-win-open .ctos [data-rx] { transform: none !important; filter: none !important; will-change: auto !important; }
+/* A window is opaque: the scroll reveal fades the page wrappers it sits in (.g-body, .g-frame, .nf-bleed), and the hero showed through the panel near the top. */
+body.nf-win-open .ctos .g-frame, body.nf-win-open .ctos .g-body, body.nf-win-open .ctos .nf-bleed { opacity: 1 !important; }
 body.nf-win-open .ctos .cm-section.ruled { z-index: 60; }
 
 

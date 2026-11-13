@@ -21,7 +21,7 @@ import { PART_ORDER, SKINS } from "@/lib/nodefarm/core-parts";
 import { NfIcon } from "./icon";
 import { MiniHud } from "./mini-hud";
 import { RARITY } from "@/lib/nodefarm/events";
-import { AwayReport, type Away } from "./away";
+import type { Away } from "./away";
 import { catchUp } from "@/lib/nodefarm/offline";
 import { Scenery, SceneWindow } from "./scenery";
 import dynamic from "next/dynamic";
@@ -29,6 +29,16 @@ import dynamic from "next/dynamic";
 // own and is fetched quietly once the board is idle.
 const loadTree = () => import("./tree");
 const TreeMenu = dynamic(() => loadTree().then((m) => ({ default: m.TreeMenu })), { ssr: false });
+// Window panels load the first time their window opens (see `latch` in NodeFarm), so their code and styles stay out of the first load.
+const AwayReport = dynamic(() => import("./away").then((m) => ({ default: m.AwayReport })), { ssr: false });
+const HandoverCut = dynamic(() => import("./handover-cut").then((m) => ({ default: m.HandoverCut })), { ssr: false });
+const AdminPanel = dynamic(() => import("./admin").then((m) => ({ default: m.AdminPanel })), { ssr: false });
+const MapPanel = dynamic(() => import("./map").then((m) => ({ default: m.MapPanel })), { ssr: false });
+const GoalsPanel = dynamic(() => import("./systems").then((m) => ({ default: m.GoalsPanel })), { ssr: false });
+const RecordsPanel = dynamic(() => import("./systems").then((m) => ({ default: m.RecordsPanel })), { ssr: false });
+const MenuPanel = dynamic(() => import("./systems").then((m) => ({ default: m.MenuPanel })), { ssr: false });
+const AscendPanel = dynamic(() => import("./ascend").then((m) => ({ default: m.AscendPanel })), { ssr: false });
+const CodexPanel = dynamic(() => import("./codex").then((m) => ({ default: m.CodexPanel })), { ssr: false });
 import { LabHud, LabZone, labModel, labReady } from "./lab";
 import { ScriptsZone } from "./scripts";
 import { SCRIPTS, SCRIPT_BY, toggleBuyStat, ascendDue, ascendPrep, learnStep, teachEvent, schedOpen, teachAscend, teachCompile, teachDeploy, teachDrop, teachPress } from "@/lib/nodefarm/scripts";
@@ -43,16 +53,16 @@ import { LORE } from "@/lib/nodefarm/lore";
 import { LOGS, logNo, recoverLogs } from "@/lib/nodefarm/story";
 import { Juice, juice, checkMilestones, onJuice } from "./juice";
 import { GuideStrip, Tip, TipCtx, type TipApi, type TipState, type TipStore } from "./guide";
-import { MapPanel } from "./map";
+
 import { nextStep, type Target } from "@/lib/nodefarm/guide";
-import { GoalsPanel, MenuPanel, RecordsPanel } from "./systems";
-import { AscendPanel } from "./ascend";
+
+
 import { HandoverPanel, fwModel } from "./handover";
-import { CodexPanel } from "./codex";
+
 import { unlocked as codexUnlocked } from "@/lib/nodefarm/codex";
-import { HandoverCut, type HandCutInfo } from "./handover-cut";
+import type { HandCutInfo } from "./handover-cut";
 import { Dock, PhoneTabs, WinBar, swInfo } from "./switcher";
-import { AdminPanel, type AdminHost } from "./admin";
+import type { AdminHost } from "./admin";
 import { isAdmin, setAdmin } from "@/lib/nodefarm/admin";
 import { adminFlags, buyDroneNode, buyMod, droneNode, masteryRanks, MODS, respecDrones, setPost } from "@/lib/nodefarm/engine";
 import { DRONE_NAMES } from "@/lib/nodefarm/guide";
@@ -61,6 +71,8 @@ import { ZoneEventCard } from "./zone-event";
 import { zeChoose, zeVault, zoneEvDef, zoneLabel, type ZeChoice, type ZeResult } from "@/lib/nodefarm/zoneevents";
 import { ARCS, arcKey, arcOf } from "@/lib/nodefarm/arcs";
 import { ArcHead } from "./arcs";
+import { EndScreen, FinalBuild } from "./ending";
+import { END_STAGES, END_STEPS, buildStage, carryEnd, closeEnding, endPending, endSeen } from "@/lib/nodefarm/ending";
 import { Hold } from "./hold";
 import { isOff, useOffscreenPause } from "./offscreen";
 import { ArcRail, ArcStep } from "./arc-rail";
@@ -101,6 +113,8 @@ const hasProgress = (s: State) => s.life.presses > 0 || s.life.secs > 60;
 
 export function NodeFarm() {
     const g = useRef<State>(null as unknown as State);
+    // Panels that have been opened at least once (see `latch` below). Declared with the other refs so hook order never changes.
+    const opened = useRef(new Set<string>());
     const [ready, setReady] = useState(false);
     const [ver, bump] = useState(0); // bumped by whatever the player or a system just did
     const [, tickBump] = useState(0); // bumped by the 10 Hz loop only (see Hold: hidden parts follow ver, not this)
@@ -145,6 +159,8 @@ export function NodeFarm() {
     const schedPress = useRef<{ s: State | null; n: number }>({ s: null, n: 0 });
     const schedRef = useRef<(s: State) => void>(() => {});
     const [away, setAway] = useState<Away | null>(null);
+    /** the end screen is open (final build done, or a replay from the Handover window) */
+    const [ending, setEnding] = useState(false);
     const [toast, setToast] = useState<string | null>(null);
     const [osReduced, setReduced] = useState(false);
     const [calm, setCalm] = useState(false);
@@ -591,6 +607,7 @@ export function NodeFarm() {
             prevIds.current = openIds;
             if (tickN.current % 10 === 5) checkMilestones(s, d.bytesPerSec);
             if (tickN.current % 10 === 3) schedRef.current(s);
+            if (tickN.current % 10 === 9 && endPending(s)) setEnding(true);
             if (tickN.current % 10 === 7) {
                 // story logs: a log is stored the first time it is within reach. A save from before logs existed gets them all at once, quietly.
                 const got = recoverLogs(s);
@@ -1042,6 +1059,54 @@ export function NodeFarm() {
         save();
         bump((n) => n + 1);
     };
+    // ---- the ending: build a stage of the final build; the last one opens the end screen
+    const doBuild = () => {
+        const st = buildStage(s);
+        if (!st) return sfx("deny");
+        const name = END_STAGES[st - 1];
+        feedStore.push([...call(idTok("node0"), "build", [strTok(name.toLowerCase())]), pun(" → "), num(`${st}/${END_STEPS}`), txt(" "), com(st >= END_STEPS ? "// node zero is awake" : "// kept through every reset")], { tone: "good", type: true });
+        if (st >= END_STEPS) {
+            keepBackup("at the ending");
+            setWin("");
+            setEnding(true);
+        } else {
+            sfx("nfTierUp", { tier: 4 });
+            juice.emit({ t: "milestone", title: `Final build: ${name}`, sub: `Stage ${st} of ${END_STEPS} built. It is kept through Ascend and Handover.` });
+        }
+        save();
+        bump((n) => n + 1);
+    };
+    const endKeep = (logText: string) => {
+        closeEnding(s, logText);
+        setEnding(false);
+        log("Node zero is awake. The farm keeps running.", "good");
+        save();
+        bump((n) => n + 1);
+    };
+    const endNew = (logText: string) => {
+        closeEnding(s, logText);
+        keepBackup("before New operator");
+        const carry = carryEnd(s);
+        const n = fresh();
+        n.end = carry;
+        g.current = n;
+        prevIds.current = null;
+        tipApi.hide();
+        setEnding(false);
+        setWin("");
+        feedStore.clear();
+        const last = carry.logs.at(-1);
+        log(`New operator. Ending ${carry.stars} is kept, and the old save is in Menu as a backup.`, "good");
+        document.querySelector<HTMLElement>(".nf")?.scrollIntoView({ block: "start" });
+        // after the fresh save's own first log banner, so yours is the one that stays up
+        if (last) {
+            // the banner comes after the fresh save's own first-log banner; the feed keeps the full text
+            window.setTimeout(() => juice.emit({ t: "milestone", title: `Log from operator ${last.n}`, sub: last.text }), 3200);
+            log(`Log from operator ${last.n}: ${last.text}`, "hot");
+        }
+        save();
+        bump((x) => x + 1);
+    };
     // stress tests (lib/nodefarm/stress.ts): the real run is stored inside the save and comes back on leave
     const doStress = (id: TestId) => {
         keepBackup("before a stress test");
@@ -1219,6 +1284,8 @@ export function NodeFarm() {
     const foldSig = JSON.stringify(folded);
     const guideKey = `${step.target?.drone ?? ""}${step.target?.lab ?? ""}${step.target?.win ?? ""}`;
     const onPane = (id: string) => win === id || tab === id;
+    // Mount-on-first-open: once a pane has been shown, its panel stays mounted (Hold keeps it while the pane is closed).
+    const latch = (id: string) => { if (onPane(id)) opened.current.add(id); return opened.current.has(id); };
     return (
         <TipCtx.Provider value={tipApi}>
         <div className="nf" ref={root} data-tab={tab} data-side={sideShown} data-win={win || undefined} data-fs={fs ? "" : undefined} data-oc={s.overclock > 0 ? "" : undefined}>
@@ -1384,15 +1451,15 @@ export function NodeFarm() {
 
             <section className="nf-pane nf-sidepane" data-pane="map" aria-label="Progress map" role="dialog" aria-modal="false">
                 <Hold live={onPane("map")} k=""><WinBar id="map" info={sw} treeSeen={treeSeen} lab={labOpen(s)} onSwitch={(w) => (w === "lab" ? openLab() : openWin(w))} onClose={closeWin} /></Hold>
-                <Hold live={onPane("map")} k=""><MapPanel s={s} d={d} onTree={() => openWin("tree")} onWin={(w) => openWin(w)} onLab={() => { closeWin(); openLab(); }} /></Hold>
+                <Hold live={onPane("map")} k="">{latch("map") && <MapPanel s={s} d={d} onTree={() => openWin("tree")} onWin={(w) => openWin(w)} onLab={() => { closeWin(); openLab(); }} />}</Hold>
             </section>
             <section className="nf-pane nf-sidepane" data-pane="goals" aria-label="Goals" role="dialog" aria-modal="false">
-                <Hold live={onPane("goals")} k=""><WinBar id="goals" info={sw} treeSeen={treeSeen} lab={labOpen(s)} onSwitch={(w) => (w === "lab" ? openLab() : openWin(w))} onClose={closeWin} /></Hold><Hold live={onPane("goals")} k=""><GoalsPanel s={s} /></Hold></section>
+                <Hold live={onPane("goals")} k=""><WinBar id="goals" info={sw} treeSeen={treeSeen} lab={labOpen(s)} onSwitch={(w) => (w === "lab" ? openLab() : openWin(w))} onClose={closeWin} /></Hold><Hold live={onPane("goals")} k="">{latch("goals") && <GoalsPanel s={s} />}</Hold></section>
             <section className="nf-pane nf-sidepane" data-pane="records" aria-label="Records" role="dialog" aria-modal="false">
-                <Hold live={onPane("records")} k=""><WinBar id="records" info={sw} treeSeen={treeSeen} lab={labOpen(s)} onSwitch={(w) => (w === "lab" ? openLab() : openWin(w))} onClose={closeWin} /></Hold><Hold live={onPane("records")} k=""><RecordsPanel s={s} /></Hold></section>
+                <Hold live={onPane("records")} k=""><WinBar id="records" info={sw} treeSeen={treeSeen} lab={labOpen(s)} onSwitch={(w) => (w === "lab" ? openLab() : openWin(w))} onClose={closeWin} /></Hold><Hold live={onPane("records")} k="">{latch("records") && <RecordsPanel s={s} />}</Hold></section>
             <section className="nf-pane nf-sidepane" data-pane="ascend" aria-label="Ascend" role="dialog" aria-modal="false">
                 <Hold live={onPane("ascend")} k=""><WinBar id="ascend" info={sw} treeSeen={treeSeen} lab={labOpen(s)} onSwitch={(w) => (w === "lab" ? openLab() : openWin(w))} onClose={closeWin} /></Hold>
-                <Hold live={onPane("ascend")} k=""><AscendPanel s={s} d={d} confirm={confirm === "ascend"} onAscend={doAscend} onPerk={(id) => { if (buyPerk(s, id)) { sfx("nfBuy", { tier: 3 }); bump((n) => n + 1); } else lockedNote("Perks"); }} onTree={() => openWin("tree")} onMount={(i, m) => { if (setMount(s, i, m)) { sfx("tab"); save(); bump((n) => n + 1); } }} /></Hold>
+                <Hold live={onPane("ascend")} k="">{latch("ascend") && <AscendPanel s={s} d={d} confirm={confirm === "ascend"} onAscend={doAscend} onPerk={(id) => { if (buyPerk(s, id)) { sfx("nfBuy", { tier: 3 }); bump((n) => n + 1); } else lockedNote("Perks"); }} onTree={() => openWin("tree")} onMount={(i, m) => { if (setMount(s, i, m)) { sfx("tab"); save(); bump((n) => n + 1); } }} />}</Hold>
             </section>
             {handSeen(s) && (
                 <section className="nf-pane nf-sidepane" data-pane="handover" aria-label="Handover" role="dialog" aria-modal="false">
@@ -1404,6 +1471,7 @@ export function NodeFarm() {
                         onFirmware={openFw}
                         onProto={(id, second) => { if (setProto(s, id, second)) { sfx("tab"); log(`Protocol: ${protoDef(id).op}, ${protoDef(id).name}${second ? " (Dual boot, half strength)" : ""}.`, "good"); save(); bump((n) => n + 1); } }}
                     />
+                    {endSeen(s) && <FinalBuild s={s} onBuild={doBuild} onReplay={() => { setWin(""); setEnding(true); }} />}
                     </Hold>
                 </section>
             )}
@@ -1415,11 +1483,11 @@ export function NodeFarm() {
             )}
             <section className="nf-pane nf-sidepane" data-pane="codex" aria-label="Codex" role="dialog" aria-modal="false">
                 <Hold live={onPane("codex")} k=""><WinBar id="codex" info={sw} treeSeen={treeSeen} lab={labOpen(s)} onSwitch={(w) => (w === "lab" ? openLab() : openWin(w))} onClose={closeWin} /></Hold>
-                <Hold live={onPane("codex")} k=""><CodexPanel s={s} shown={win === "codex" || (tab === "codex" && !win)} onOpen={(w) => (w === "lab" ? (closeWin(), openLab()) : openWin(w))} /></Hold>
+                <Hold live={onPane("codex")} k="">{latch("codex") && <CodexPanel s={s} shown={win === "codex" || (tab === "codex" && !win)} onOpen={(w) => (w === "lab" ? (closeWin(), openLab()) : openWin(w))} />}</Hold>
             </section>
             <section className="nf-pane nf-sidepane" data-pane="menu" aria-label="Menu" role="dialog" aria-modal="false">
                 <Hold live={onPane("menu")} k=""><WinBar id="menu" info={sw} treeSeen={treeSeen} lab={labOpen(s)} onSwitch={(w) => (w === "lab" ? openLab() : openWin(w))} onClose={closeWin} /></Hold>
-                <Hold live={onPane("menu")} k="">
+                <Hold live={onPane("menu")} k="">{latch("menu") && (
                 <MenuPanel
                     s={s}
                     soundOn={snd.on}
@@ -1450,7 +1518,7 @@ export function NodeFarm() {
                     numFmt={numFmt}
                     onNumFmt={setFormat}
                     onReset={() => doReset(true)}
-                />
+                />)}
                 </Hold>
             </section>
             {adminOn && !adminOpen && <button type="button" className="nf-ad-tab" onClick={() => setAdminOpen(true)} aria-label="Open the root console"><i />root</button>}
@@ -1519,6 +1587,7 @@ export function NodeFarm() {
             )}
             <Tip host={root} store={tipStore} />
             {away && <AwayReport away={away} era={era} reduced={reduced} onClose={() => setAway(null)} />}
+            {ending && !away && <EndScreen s={s} reduced={reduced} onKeep={endKeep} onNew={endNew} />}
         </div>
         </TipCtx.Provider>
     );

@@ -298,9 +298,9 @@ export class Parallax {
         for (const L of [...this.layers, ...this.front]) {
             L.place(v);
             if (!L.needs(v, settle)) continue;
-            // a layer that has never been drawn (just opened, or resized) draws now; zoom redraws wait their turn
-            if (!L.drawnFor(v)) L.redraw(v);
-            else this.queue.add(L);
+            // every draw waits its turn, one layer per frame. A layer drawn for the first time (the tree just opened, or was
+            // resized) used to draw right here, so opening a tree drew all its layers in one frame and stalled it for about a second
+            this.queue.add(L);
         }
         if (this.queue.size && !this.raf) this.raf = requestAnimationFrame(this.pump);
         if (this.world) this.world.style.transform = `translate3d(${v.x.toFixed(2)}px, ${v.y.toFixed(2)}px, 0) scale(${v.k.toFixed(4)})`;

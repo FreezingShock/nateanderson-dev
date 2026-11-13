@@ -693,6 +693,8 @@ export interface State {
     ch?: import("./stress").ChState;
     /** Zone events (lib/nodefarm/zoneevents.ts): the running event, the timer to the next one and a count. Reset on Ascend. Created on first use. */
     ze?: ZoneEvState;
+    /** The ending (lib/nodefarm/ending.ts): final build stages, stars and the logs you left. Kept through everything. Created on first use. */
+    end?: EndState;
     /** Which button tiers were ever pressed, per stat, as a bit mask. Kept through Ascend; arcs clear when every tier of every zone in them is set. */
     seen?: Partial<Record<ButtonStat, number>>;
     // lifetime counters (survive Ascend)
@@ -1204,10 +1206,15 @@ export function droneStep(s: State, dt: number, eff = 1): number {
 /** Ceiling for every amount (doubles overflow to Infinity just past 1.8e308). */
 export const CAP = 1e300;
 
+/** Every Bytes added to lifetime Bytes, summed on the side. offline() reads it for the standby report: the lifetime counter is too
+ *  large to subtract (a few thousand Bytes vanish next to 1e40), and s.bytes is reset by every Reboot. */
+export const lifeTally = { bytes: 0 };
+export function addLifeBytes(s: State, v: number) { s.life.bytes += v; lifeTally.bytes += v; }
+
 export function tick(s: State, dt: number, eff = 1) {
     const d = derive(s);
     s.bytes += d.bytesPerSec * dt;
-    s.life.bytes += d.bytesPerSec * dt;
+    addLifeBytes(s, d.bytesPerSec * dt);
     // amounts stop at CAP so a very long post-tree run can never reach Infinity and break the save
     for (const m of MATS) s[m] = Math.min(CAP, s[m] + d.rates[m] * dt);
     if (s.bytes > CAP) s.bytes = CAP;
@@ -1232,7 +1239,7 @@ export function payout(s: State, secs: number, only?: readonly MatId[]) {
     const oc = s.overclock > 0 ? overclockMult(s) : 1; // a lump is never paid at Overclock rate
     const gain: Partial<Record<StatId, number>> = { bytes: (d.bytesPerSec / oc) * secs };
     s.bytes += gain.bytes!;
-    s.life.bytes += gain.bytes!;
+    addLifeBytes(s, gain.bytes!);
     for (const m of only ?? MATS) { const v = (d.rates[m] / oc) * secs; if (v > 0) { s[m] += v; gain[m] = v; } }
     return gain;
 }
@@ -1345,15 +1352,20 @@ export function buyPerk(s: State, id: PerkDef["id"]): boolean {
     return true;
 }
 
+export const OFFLINE_STEP_S = 1;
+export const OFFLINE_MAX_STEPS = 7200;
+
 /** Catch up for time away. Production only; nothing is bought for you (except by the scripts you taught). Returns what was gained.
- *  The steps are short (10 s) while scripts are running, and a step never runs past the moment a timed boost ends (Overclock,
+ *  The steps are about a second (see OFFLINE_STEP_S), and a step never runs past the moment a timed boost ends (Overclock,
  *  Swarm alarm, a zone event, a deployed payload), so a boost counts for exactly the time it had left, not a whole step. */
 export function offline(s: State, seconds: number) {
     const cap = derive(s).offlineCap;
     const secs = Math.min(Math.max(0, seconds), cap);
-    const before = Object.fromEntries((["bytes", ...MATS] as const).map((k) => [k, s[k]])) as Record<"bytes" | MatId, number>;
-    const per = s.auto?.own.length ? 10 : 20;
-    const steps = Math.min(2400, Math.max(1, Math.ceil(secs / per)));
+    const before = Object.fromEntries(MATS.map((k) => [k, s[k]])) as Record<MatId, number>;
+    lifeTally.bytes = 0;
+    // Steps are about a second long while the gap allows it (7200 steps at most: an hour runs in 1 s steps, an 8 h gap in 4 s steps). Longer steps
+    // under-credit Drones, whose presses are paid from the stock at the start of a step, and Watchdog Reboots, which fire at most once a tick.
+    const steps = Math.min(OFFLINE_MAX_STEPS, Math.max(1, Math.ceil(secs / OFFLINE_STEP_S)));
     const dt = secs / steps;
     const oc = s.overclock;
     s.overclock = 0; // an intrusion boost doesn't carry through time away
@@ -1376,7 +1388,9 @@ export function offline(s: State, seconds: number) {
         }
     }
     s.overclock = Math.max(0, oc - secs);
-    return { secs, capped: seconds > cap, drones: s.life.presses - pressesBefore, gain: Object.fromEntries((["bytes", ...MATS] as const).map((k) => [k, s[k] - before[k]])) as Record<"bytes" | MatId, number> };
+    const gain = Object.fromEntries(MATS.map((k) => [k, s[k] - before[k]])) as Record<"bytes" | MatId, number>;
+    gain.bytes = lifeTally.bytes;
+    return { secs, capped: seconds > cap, drones: s.life.presses - pressesBefore, gain };
 }
 
 // ---- goals. Five tiers of six. Each goal gives a small permanent boost (TUNE.achBonus) and a full tier gives a bigger one (TUNE.tierBonus).
@@ -2635,6 +2649,7 @@ export function parseSave(raw: string): State | null {
         n.dr = parseDr(o.dr);
         n.ze = parseZe(o.ze);
         n.hand = parseHand(o.hand);
+        n.end = parseEnd(o.end);
         const back = migrateTree(n);
         if (back > 0) n.treeRefund = (n.treeRefund ?? 0) + back;
         if (!Array.isArray(n.ach)) n.ach = [];
@@ -2649,6 +2664,34 @@ export function parseSave(raw: string): State | null {
     } catch {
         return null;
     }
+}
+
+/** The ending's saved state (rules in lib/nodefarm/ending.ts). Here so loading a save needs no import from ending.ts. */
+export interface EndLog { n: number; text: string; at: number }
+export interface EndState {
+    /** stages of the final build done (0 to END_STEPS in ending.ts) */
+    stage: number;
+    /** when the last stage was built (ms epoch); 0 = not yet */
+    doneAt: number;
+    /** the end screen has been shown and closed */
+    seen: boolean;
+    /** endings reached across every operator (the star count) */
+    stars: number;
+    /** logs you left at each ending, oldest first; the newest is the first thing a New operator reads */
+    logs: EndLog[];
+}
+export const END_LOG_MAX = 160;
+export function parseEnd(o: unknown): EndState | undefined {
+    if (!o || typeof o !== "object") return undefined;
+    const x = o as Partial<EndState>;
+    const num = (v: unknown, d = 0) => (typeof v === "number" && Number.isFinite(v) ? v : d);
+    return {
+        stage: Math.max(0, Math.min(5, Math.floor(num(x.stage)))),
+        doneAt: Math.max(0, num(x.doneAt)),
+        seen: !!x.seen,
+        stars: Math.max(0, Math.floor(num(x.stars))),
+        logs: Array.isArray(x.logs) ? x.logs.filter((l) => l && typeof l.text === "string").map((l) => ({ n: Math.max(1, Math.floor(num(l.n, 1))), text: String(l.text).slice(0, END_LOG_MAX), at: num(l.at) })).slice(-20) : [],
+    };
 }
 
 /** Old saves from before Scripts became the only automation layer (Nate, 2026-11-12):
