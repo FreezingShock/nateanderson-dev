@@ -139,10 +139,10 @@ test("exploit lab: every payload compiles and deploys on a state that has the re
 
 test("exploit lab and drone tree: late pairs have art, Shellcode, Stockpile, Cold archive and Beacon do what they say", async () => {
     const { SPRITE_CELLS } = await import("../../lib/nodefarm/art/tree-sprites.ts");
-    const late = ["rx_shellcode", "rx_stockpile", "rx_beacon", "rx_packer", "rx_archive", "rx_mirror", "dx_redline", "dx_wingmen", "dx_groundcrew", "dx_fullmast", "dx_sparebin", "dx_modbay"];
+    const late = ["rx_shellcode", "rx_stockpile", "rx_beacon", "rx_packer", "rx_archive", "rx_mirror", "dx_redline", "dx_wingmen", "dx_groundcrew", "dx_fullmast", "dx_sparebin", "dx_modbay", "rx_sqlinject", "rx_fuzzer", "rx_dropper", "rx_sandbox", "rx_vault", "rx_quorum", "dx_vector", "dx_thrust", "dx_depot", "dx_barrage", "dx_forge", "dx_vault"];
     for (const id of late) assert.ok(SPRITE_CELLS[id], `${id} has a sprite`);
-    assert.equal(E.LAB.length, 24, "the lab has 24 nodes (3 arms of 8)");
-    assert.equal(E.DRONE_TREE.length, 24, "the drone tree has 24 nodes (3 arms of 8)");
+    assert.equal(E.LAB.length, 30, "the lab has 30 nodes (3 arms of 10)");
+    assert.equal(E.DRONE_TREE.length, 30, "the drone tree has 30 nodes (3 arms of 10)");
     // Stockpile raises the stock cap by 3 for every payload; the cap is never below the base
     const st = E.fresh(0);
     assert.equal(E.stockCap(st.lab.nodes), E.LAB_TUNE.stockMax);
@@ -154,6 +154,17 @@ test("exploit lab and drone tree: late pairs have art, Shellcode, Stockpile, Col
     const base = E.compileSecs(sc, p);
     sc.lab.run = [{ id: "shellcode", left: 600 }];
     assert.ok(Math.abs(E.compileSecs(sc, p) - base / 3) < 1e-6, "Shellcode triples compile speed while it runs");
+    // SQL injection: Intel x3 while it runs, and compiles price against the base trickle, not the buff
+    const si = E.fresh(0);
+    si.lab.seen = true; si.lab.nodes = ["rx_sqlinject"]; si.lab.intel = 0;
+    const before = E.intelRate(si);
+    si.lab.run = [{ id: "sqlinject", left: 600 }];
+    assert.ok(Math.abs(E.intelRate(si) / before - 3) < 1e-9, "SQL injection triples Intel while it runs");
+    // Dropper: an instant that drops 400 Parts into the hangar
+    const dp = E.fresh(0);
+    dp.lab.seen = true; dp.lab.stock.dropper = 1;
+    assert.equal(E.deploy(dp, "dropper").ok, true, "Dropper deploys from stock");
+    assert.equal(dp.dr.parts, 400, "Dropper pays 400 Parts");
     // Cold archive and Beacon, checked through an Ascend on a state that can ascend
     const ao = E.fresh(0);
     ao.lab.seen = true; ao.lab.nodes = ["rx_archive"]; ao.lab.intel = 1000;

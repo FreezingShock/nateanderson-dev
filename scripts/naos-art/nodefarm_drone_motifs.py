@@ -323,6 +323,71 @@ def dx_modbay(s):
         s.line([(x + 0.04, 0.6), (x + 0.16, 0.6)], 0.02, "ink", True)
 
 
+# ---------------------------------------------------------------------------------------------- tail (slots 8 and 9)
+@motif
+def dx_vector(s):
+    # a rotor with its thrust nozzle angled down, a little flame underneath
+    s.ring(0.14, 0.14, 0.86, 0.86, 0.06, "metal")
+    s.ngon(0.5, 0.5, 0.2, 6, 0, "dark")
+    s.dot(0.5, 0.5, 0.06, RED)
+    s.poly([(0.4, 0.7), (0.6, 0.7), (0.5, 0.94)], HAZ, True)
+    s.line([(0.5, 0.2), (0.5, 0.04)], 0.04, "glow", True)
+
+
+@motif
+def dx_thrust(s):
+    # three stacked thrust bars climbing up, each one brighter
+    for i, (w, col) in enumerate(((0.5, "dark"), (0.66, "main"), (0.82, HAZ))):
+        y = 0.76 - i * 0.24
+        s.rect(0.5 - w / 2, y, 0.5 + w / 2, y + 0.16, col)
+        s.rect(0.5 - w / 2, y, 0.5 + w / 2, y + 0.03, "glow", True)
+    s.dot(0.5, 0.14, 0.05, MINT, True)
+
+
+@motif
+def dx_depot(s):
+    # a small hangar depot: roof, bay door and a crate ready to go
+    s.poly([(0.08, 0.44), (0.5, 0.14), (0.92, 0.44)], "metal")
+    s.rect(0.14, 0.44, 0.86, 0.9, "dark")
+    s.rect(0.32, 0.56, 0.68, 0.9, "ink")
+    s.rect(0.36, 0.62, 0.64, 0.7, MINT, True)
+    s.rect(0.14, 0.82, 0.3, 0.9, "acc", True)
+
+
+@motif
+def dx_barrage(s):
+    # two posting beams fanning out from one launcher
+    s.rect(0.36, 0.7, 0.64, 0.92, "metal")
+    s.line([(0.5, 0.7), (0.12, 0.2)], 0.06, MINT)
+    s.line([(0.5, 0.7), (0.88, 0.2)], 0.06, MINT)
+    for x, y in ((0.12, 0.2), (0.88, 0.2)):
+        s.ring(x - 0.1, y - 0.1, x + 0.1, y + 0.1, 0.04, "main")
+        s.dot(x, y, 0.04, "glow")
+    s.dot(0.5, 0.6, 0.05, HAZ)
+
+
+@motif
+def dx_forge(s):
+    # an anvil with a rotor blank on it and sparks
+    s.poly([(0.14, 0.7), (0.86, 0.7), (0.7, 0.9), (0.3, 0.9)], "dark")
+    s.rect(0.22, 0.54, 0.78, 0.7, "metal")
+    s.ell(0.3, 0.3, 0.7, 0.56, HAZ)
+    s.ring(0.3, 0.3, 0.7, 0.56, 0.04, "main")
+    for x, y in ((0.12, 0.2), (0.88, 0.16), (0.8, 0.04)):
+        s.dot(x, y, 0.03, HAZ, True)
+
+
+@motif
+def dx_vault(s):
+    # a parts vault door with a bolt bar across it
+    s.rect(0.1, 0.1, 0.9, 0.9, "dark")
+    s.rect(0.16, 0.16, 0.84, 0.84, "metal")
+    s.ring(0.3, 0.3, 0.7, 0.7, 0.05, "main")
+    s.rect(0.22, 0.46, 0.78, 0.54, "dark")
+    s.rect(0.44, 0.44, 0.56, 0.56, SKY)
+    s.dot(0.5, 0.5, 0.03, "glow", True)
+
+
 DRONE_NODES = {
     "dx_core": ("dx_bay", "hangarcore", "l", HAZ),
     "dx_burner": ("dx_burner", "flight", "s", RED),
@@ -349,4 +414,10 @@ DRONE_NODES = {
     "dx_fullmast": ("dx_fullmast", "dispatch", "m", RED),
     "dx_sparebin": ("dx_sparebin", "salvage", "s", HAZ),
     "dx_modbay": ("dx_modbay", "salvage", "m", SKY),
+    "dx_vector": ("dx_vector", "flight", "s", HAZ),
+    "dx_thrust": ("dx_thrust", "flight", "m", PALE),
+    "dx_depot": ("dx_depot", "dispatch", "s", MINT),
+    "dx_barrage": ("dx_barrage", "dispatch", "m", HAZ),
+    "dx_forge": ("dx_forge", "salvage", "s", RED),
+    "dx_vault": ("dx_vault", "salvage", "m", MINT),
 }
