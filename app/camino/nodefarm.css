@@ -370,6 +370,8 @@ body .nf-aw-go:focus-visible { outline: 3px solid var(--cm-cyan); outline-offset
 
 /* While a window is open: drop the identity transform a settled scroll-reveal leaves on the section (it would turn the section into the containing block for the fixed window), and lift the section above the hero. */
 body.nf-win-open .ctos .g-frame, body.nf-win-open .ctos .cm-section, body.nf-win-open .ctos .nf-bleed, body.nf-win-open .ctos [data-rx] { transform: none !important; filter: none !important; will-change: auto !important; }
+/* A window is opaque: the scroll reveal fades the page wrappers it sits in (.g-body, .g-frame, .nf-bleed), and the hero showed through the panel near the top. */
+body.nf-win-open .ctos .g-frame, body.nf-win-open .ctos .g-body, body.nf-win-open .ctos .nf-bleed { opacity: 1 !important; }
 body.nf-win-open .ctos .cm-section.ruled { z-index: 60; }
 
 
