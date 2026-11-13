@@ -10,7 +10,7 @@ const FORMATS: [NumFmt, string][] = [["short", "1.2M"], ["sci", "1.2e6"], ["eng"
 const FX_NOTE: Record<FxMode, string> = {
     full: "everything runs",
     low: "no drifting layers, loops or blurs: for slow machines",
-    auto: "measures this device once, then picks",
+    auto: "low on slow devices or when reduced motion is on",
 };
 
 export type SettingsProps = {
@@ -88,14 +88,14 @@ export function SettingsFrame(p: SettingsProps) {
                             <span className="nf-wk-k">effects</span>
                             <span className="nf-wk-eq" aria-hidden="true">=</span>
                             <span className="nf-wk-pick">
-                                {FX_MODES.map((m) => <button key={m} type="button" aria-pressed={fx === m} onClick={() => setFxMode(m)}>{m}</button>)}
+                                {FX_MODES.map((m) => <button key={m} type="button" aria-pressed={fx === m} onClick={() => setFxMode(m)}>{fx === m ? `[${m}]` : m}</button>)}
                             </span>
                             <span className="nf-wk-c">{"// "}{FX_NOTE[fx]}{fx === "auto" ? ` (now ${low ? "low" : "full"})` : ""}</span>
                         </div>
                     </li>
                 ))}
                 {group("play", [
-                    { key: "events", on: p.eventsOn, flip: p.onEvents, note: "quick-time events every few minutes" },
+                    { key: "events", on: p.eventsOn, flip: p.onEvents, note: "zone events every few minutes" },
                     { key: "jump", on: p.jumpOn, flip: p.onJump, note: "scroll to the board when you come back to a save" },
                 ], (
                     <li className="nf-wk-cfgrow">
@@ -104,7 +104,7 @@ export function SettingsFrame(p: SettingsProps) {
                             <span className="nf-wk-k">numbers</span>
                             <span className="nf-wk-eq" aria-hidden="true">=</span>
                             <span className="nf-wk-pick">
-                                {FORMATS.map(([k, ex]) => <button key={k} type="button" aria-pressed={p.numFmt === k} onClick={() => p.onNumFmt(k)}>{ex}</button>)}
+                                {FORMATS.map(([k, ex]) => <button key={k} type="button" aria-pressed={p.numFmt === k} onClick={() => p.onNumFmt(k)}>{p.numFmt === k ? `[${ex}]` : ex}</button>)}
                             </span>
                         </div>
                     </li>

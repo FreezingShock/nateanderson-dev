@@ -12,7 +12,6 @@ import {
     forgetScript, forgetScripts, grantScripts, scriptCount, teachScript, revokeGoals, setAP, setDrone, setPerk, setProd, setStat, skipTime, snapState, snaps, takeSnap, toggleNode, toggleSecret, type Snap,
 } from "@/lib/nodefarm/admin";
 import { SCRIPTS, isOn, setRunning } from "@/lib/nodefarm/scripts";
-import { EVENTS, type EventKind } from "@/lib/nodefarm/events";
 import { ERAS } from "@/lib/nodefarm/scenery";
 import { LOGS } from "@/lib/nodefarm/story";
 import { codeReveal, cxClear } from "@/lib/nodefarm/cx";
@@ -31,7 +30,6 @@ export interface AdminHost {
     setSpeed: (n: number) => void;
     /** show the offline report for this many seconds away without banking anything */
     previewAway: (secs: number) => void;
-    fire: (kind: EventKind) => void;
     close: () => void;
     exit: () => void;
 }
@@ -309,10 +307,6 @@ function AdminPanelInner({ host }: { host: AdminHost }) {
                                         <Btn onClick={() => act((x) => { x.overclock = 60; }, "overclock 60 s")}>60 s</Btn>
                                         <Btn onClick={() => act((x) => { x.overclock = 600; }, "overclock 10 min")}>10 min</Btn>
                                         <Btn onClick={() => act((x) => { x.overclock = 0; }, "overclock off")}>Off</Btn>
-                                    </div>
-                                    <div className="nf-ad-line">
-                                        <span className="nf-ad-k">Quick-time event</span>
-                                        <span className="nf-ad-opts">{EVENTS.map((e) => <Btn key={e.kind} onClick={() => { host.fire(e.kind); setNote(`> ${e.title} sent`); }}>{e.title}</Btn>)}</span>
                                     </div>
                                     <div className="nf-ad-line">
                                         <span className="nf-ad-k">Zone event</span>

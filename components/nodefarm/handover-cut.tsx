@@ -74,7 +74,7 @@ export function HandoverCut({ info, reduced, onDone }: { info: HandCutInfo; redu
     const beat = BEAT[f];
     const lines = [
         { k: "0", c: from?.color ?? "#3dff6e", text: `operator ${String(info.n).padStart(2, "0")} // logging off`, sub: from ? `${from.op}'s protocol ran this cycle${info.fromRank ? `, now rank ${ROMAN[info.fromRank]}${info.fromRank >= HAND_TUNE.rankMax ? " (max)" : ""}` : ""}` : "the first operator's shift is over" },
-        { k: "1", c: "#ffc53a", text: "lamp off // tree, AP, perks and Drones wiped", sub: "goals, logs, research and the hangar stay" },
+        { k: "1", c: "#ffc53a", text: "lamp off // tree, AP, perks and Drones wiped", sub: "the tree's spine, half your perks and rigs, goals, logs, research and the hangar stay" },
         { k: "2", c: "#ffc53a", text: `+${info.keys} Keys`, sub: "left on the desk for whoever sits down next" },
         { k: "3", c: to.color, text: `operator ${String(info.n + 1).padStart(2, "0")} // logged in`, sub: `${to.op}'s protocol: ${to.name}` },
     ];

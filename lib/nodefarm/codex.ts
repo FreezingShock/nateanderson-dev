@@ -1,6 +1,6 @@
 // Node Farm codex: one short entry per system, hidden until the player has reached it. Pure data and rules, no React.
 // Numbers come from the engine's own tuning tables (TUNE, DRONE_TUNE, ZE_TUNE, ...), so a rebalance changes the text with it.
-// Terms follow the game: zones, Reboot, Ascend, Handover, quick-time events (the card events) vs zone events (the ones on a
+// Terms follow the game: zones, Reboot, Ascend, Handover, events (every event is a zone event now; the ones on a
 // zone panel), Drone hangar, Standby window, payload (never "recipe"). Add an entry by appending to ENTRIES.
 import {
     DRONE_TREE, DRONE_TUNE, FW, GOALS, GOAL_TIERS, HAND_TUNE, LAB, LAB_TUNE, MATS, PAYLOADS, PERKS, PROTOS, REBOOT_UNLOCK, STATS, TIERS, TREE, TUNE, ZE_TUNE,
@@ -11,7 +11,7 @@ import { LORE } from "./lore";
 import { NF_KEY_GROUPS, NF_KEYS_NOTE } from "./keys";
 import { chOpen } from "./stress";
 import { LOGS } from "./story";
-import { EVENTS, EVENT_TUNE } from "./events";
+import { EVENT_TUNE } from "./events";
 import { RIGS, RIG_TUNE } from "./rigs";
 import { SCRIPTS, SCRIPT_TUNE, schedOpen } from "./scripts";
 
@@ -177,35 +177,17 @@ export const ENTRIES: CodexEntry[] = [
     },
     // ------------------------------------------------------------------ systems
     {
-        id: "rigs", group: "systems", title: "Zone rigs", gate: () => true, where: "inside each zone",
+        id: "rigs", group: "systems", title: "Zone rigs", gate: (s) => isUnlocked(s, "silicon"), where: "inside each zone",
         body: (s) => [
             { p: `Every zone has one rig: a meter, one rule and a level track. A level costs minutes of that zone's own output (${RIG_TUNE.minutes.slice(0, 5).join(", ")}), and a rig stops at level ${RIG_TUNE.baseCap}. Levels stay through Ascend; meters, charges and clocks reset with the run.` },
             { list: RIGS.filter((r) => isUnlocked(s, r.zone)).map((r): [string, string] => [`${String(zoneNo(r.zone)).padStart(2, "0")} ${r.name}`, r.rule]) },
         ],
     },
     {
-        id: "qte", group: "systems", title: "Quick-time events", gate: (s) => s.mult + s.reboot >= EVENTS[0].from,
-        where: "a card, every few minutes",
-        body: () => [
-            { p: `A card appears every ${EVENT_TUNE.every[0] / 60} to ${EVENT_TUNE.every[1] / 60} minutes (the Wide-band scanner perk shortens that) and asks if you want to engage. It waits ${EVENT_TUNE.waitSecs} s, then passes. None of them test your reflexes, and skipping costs nothing.` },
-            {
-                list: [
-                    ["Traffic spike", `press buy buttons on the board; ${EVENT_TUNE.spikePresses} presses pay out in full.`],
-                    ["Rogue process", "pick one of the outcomes shown."],
-                    ["Cold storage", `hold to decrypt ${EVENT_TUNE.vaultRows} rows and keep every row you open.`],
-                    ["Dead packet", `press ${EVENT_TUNE.packetHits} times to crack it.`],
-                    ["Relay cascade", `${EVENT_TUNE.relays} relays charge in turn; press each when full. Opens at ${EVENTS.find((e) => e.kind === "relay")!.from} Multipliers plus Reboots.`],
-                ],
-            },
-            { p: `Once you are ${pct(EVENT_TUNE.winAt)} of the way through, it counts as a win: you get an Overclock (everything x${TUNE.overclockMult} for ${TUNE.overclockSecs} s, longer with Overclock coils) and a loot roll with a rarity. A better result rolls a better rarity.` },
-            { note: "Turn them off in Menu or on the card." },
-        ],
-    },
-    {
         id: "zoneevents", group: "systems", title: "Zone events", gate: (s) => s.life.secs >= ZE_TUNE.first || (s.ze?.seen ?? 0) > 0,
-        where: "a card, every 8 to 14 minutes",
+        where: "a card, every 11 to 19 minutes",
         body: () => [
-            { p: `About every ${ZE_TUNE.gap[0] / 60} to ${ZE_TUNE.gap[1] / 60} minutes of play, one open zone gets a short event. Nothing takes stock from you and nothing needs a reflex.` },
+            { p: `About every ${ZE_TUNE.gap[0] / 60} to ${ZE_TUNE.gap[1] / 60} minutes of play, one open zone gets a short event. Nothing takes stock from you and nothing needs a reflex. The Wide-band scanner perk and the Anomaly nodes shorten the wait.` },
             {
                 list: [
                     ["Surge", `the zone's output x${ZE_TUNE.surge} for ${mins(ZE_TUNE.secs.surge)}.`],
@@ -213,9 +195,12 @@ export const ENTRIES: CodexEntry[] = [
                     ["Resonance", `the zone and the one below it x${ZE_TUNE.resonance} for ${mins(ZE_TUNE.secs.resonance)}.`],
                     ["Rich vein", `x${ZE_TUNE.vein} for ${mins(ZE_TUNE.secs.vein)}, or Mine it now for ${mins(ZE_TUNE.mine)} of output at once.`],
                     ["Fault", `output halved for ${mins(ZE_TUNE.secs.fault)}. Patch it for ${ZE_TUNE.patch} s of Bytes, or wait it out. Starts after ${mins(ZE_TUNE.faultFrom)} of play.`],
+                    ["Rogue process", "pick one of three offers, all at one rarity. Opens at 5 Multipliers plus Reboots."],
+                    ["Cold storage", `hold to decrypt ${EVENT_TUNE.vaultRows} rows and keep every row you open.`],
                 ],
             },
-            { p: "Plain events close on their own after 7 seconds. A vein or a fault waits for your answer, or for Decide later. Time away only runs the clock down; it never starts one." },
+            { p: `Mining a vein, patching a fault, picking a Rogue offer and cashing out Cold storage (from ${pct(EVENT_TUNE.winAt)} of the rows) count as a win: you get an Overclock (everything x${TUNE.overclockMult} for ${TUNE.overclockSecs} s, longer with Overclock coils) and the Anomaly nodes fire. The two card events also pay a loot roll. Letting an event run costs nothing.` },
+            { p: "Plain events close on their own after 7 seconds. A vein, a fault, a Rogue process or Cold storage waits for your answer, or for Decide later. Time away only runs the clock down; it never starts one." },
         ],
     },
     {
@@ -224,7 +209,7 @@ export const ENTRIES: CodexEntry[] = [
             { p: "A second currency, Intel, and a small research tree that run beside Bytes. It opens when Silicon does." },
             {
                 list: [
-                    ["Intel", `trickles in from your Bytes per second. Each Reboot banks a crash dump (up to ${LAB_TUNE.dumpSecs} s of trickle) and each quick-time event win pays ${LAB_TUNE.eventSecs} s.`],
+                    ["Intel", `trickles in from your Bytes per second. Each Reboot banks a crash dump (up to ${LAB_TUNE.dumpSecs} s of trickle) and each zone event win pays ${LAB_TUNE.eventSecs} s.`],
                     ["Research", `${LAB.length} nodes in three arms (Exploits, Malware, Infra). Instant, paid in Intel. Most unlock a payload; Infra upgrades the lab.`],
                     ["Compile", `a payload takes time, the queue holds ${LAB_TUNE.queue}, and it keeps running while you are away. Cancelling refunds in full. Stock holds ${LAB_TUNE.stockMax} of each.`],
                     ["Deploy", `buffs last 5 to 15 minutes in ${LAB_TUNE.slots} slots; a charge arms for your next Reboot or Ascend; an instant acts at once.`],
@@ -318,10 +303,10 @@ export const ENTRIES: CodexEntry[] = [
             { p: `A Handover is the reset past Ascend. It opens once Origin is producing. Hold the button for ${1.6} seconds. A backup is kept first.` },
             {
                 rows: [
-                    ["Wipes", "the run, AP, perks, the prestige tree and its ranks, Drones, Mounted drives, lab Intel, stock, queue and buffs"],
-                    ["Keeps", "goals, secrets, logs, lifetime stats, lab research, Keys, Firmware and your notes"],
+                    ["Wipes", "the run, AP, half of every perk, most of the prestige tree and its ranks, Drones, Mounted drives, half of every rig level, lab Intel, stock, queue and buffs"],
+                    ["Keeps", "the entry and upper path of every tree section (19 nodes on a whole tree), a quarter of the tree's AP, half your perks, rigs and hangar Parts, goals, secrets, logs, lifetime stats, lab research, Scripts, Keys, Firmware and your notes"],
                     ["Pays", "Keys, from the tree nodes you own and how much Origin you hold. A whole tree pays about 13 to 20"],
-                    ["After", `Ascends pay AP x(1 + ${HAND_TUNE.apPerHand} per Handover done)`],
+                    ["After", `Ascends pay AP x(1 + ${HAND_TUNE.apPerHand} per Handover done). Every Ascend starts with ${HAND_TUNE.warmReboots} Reboots, ${HAND_TUNE.bootProd} producers on Copper to Aether and a ${HAND_TUNE.afterglow / 60} minute Overclock, keeps Intel, payloads and half the Drone levels, and Watchdog, Standing orders and Forecast work without their nodes`],
                 ],
             },
             { p: `You can leave a note of up to ${HAND_TUNE.noteMax} characters for whoever runs the node next.` },
@@ -331,7 +316,7 @@ export const ENTRIES: CodexEntry[] = [
     {
         id: "firmware", group: "prestige", title: "Firmware and protocols", gate: (s) => s.hand.count > 0 || s.hand.keys > 0, where: "key K",
         body: () => [
-            { p: `Firmware is a tree of ${FW.length} nodes in three arms (Boot, Memory, Relay), bought with Keys at ${HAND_TUNE.nodeCost[0]} to ${HAND_TUNE.nodeCost[HAND_TUNE.nodeCost.length - 1]} each. It is kept forever and respec is free.` },
+            { p: `Firmware is a tree of ${FW.length} nodes in two arms (Relay for Keys and protocols, Field for rigs, zone events and shortcuts), bought with Keys at ${HAND_TUNE.nodeCost[0]} to ${HAND_TUNE.nodeCost[HAND_TUNE.nodeCost.length - 1]} each. Every node adds a new rule; what a Handover keeps is already built in. Firmware is kept forever and respec is free.` },
             { p: "At each Handover you pick one protocol, named for an earlier operator. Dual boot runs a second one at half strength. The Operator's desk lets you switch any time." },
             { list: PROTOS.map((x): [string, string] => [`${x.op}, ${x.name}`, x.blurb]) },
         ],
@@ -342,7 +327,7 @@ export const ENTRIES: CodexEntry[] = [
         body: () => [
             { p: `While you are away the game keeps running for up to ${TUNE.offlineCapHours} hours (Standby cells add 4 hours a level). Drones work at ${pct(TUNE.drone.offline)} speed, the lab keeps compiling and scripts keep working. Come back after more than a minute and the standby report shows what was banked. Nothing is bought for you except by Drones and scripts.` },
             { p: "The game saves to this browser every 5 seconds. Menu has a save code, Download file and Open file, plus a backup written before an import, a wipe or a restore. If a second tab opens the same save, that tab stops saving and says so." },
-            { note: `Menu also holds sound, the reactor hum, quick-time events, calm motion, number format and volume. Full screen is F.` },
+            { note: `Menu also holds sound, the reactor hum, events, calm motion, number format and volume. Full screen is F.` },
         ],
         open: { win: "menu", label: "Open Menu" },
     },
@@ -398,4 +383,5 @@ export function markCodexSeen(id: string) {
     set.add(id);
     try { localStorage.setItem(KEY, JSON.stringify([...set])); } catch {}
 }
-export const codexNew = (s: State): CodexEntry[] => { const seen = codexSeen(); return unlocked(s).filter((e) => !seen.has(e.id)); };
+/** The basics and reference entries are on file from the first second, so they never count as new; only what the player reaches does. */
+export const codexNew = (s: State): CodexEntry[] => { const seen = codexSeen(); return unlocked(s).filter((e) => e.group !== "basics" && e.group !== "ref" && !seen.has(e.id)); };

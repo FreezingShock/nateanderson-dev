@@ -116,15 +116,36 @@ export function ZoneArt({ id, s }: { id: StatId; s: State }) {
         io.observe(node);
         return () => io.disconnect();
     }, []);
+    // The sheets are requested only once the panel is near the screen. A folded panel is still laid out, so its background
+    // would download even though nobody sees it. Sticky: once near, the sheet stays (no unload, no flicker on scroll back).
+    const [near, setNear] = useState(false);
+    useEffect(() => {
+        if (near) return;
+        const node = el.current;
+        if (!node || typeof IntersectionObserver === "undefined") {
+            setNear(true);
+            return;
+        }
+        const io = new IntersectionObserver((e) => {
+            if (e.some((x) => x.isIntersecting)) {
+                setNear(true);
+                io.disconnect();
+            }
+        }, { rootMargin: "400px 0px" });
+        io.observe(node);
+        return () => io.disconnect();
+    }, [near]);
     if (!hasZoneArt(id)) return null;
+    const sheets = near ? { ["--art" as string]: `url(${nfArt(`zone-${id}.webp`)})`, ["--sk" as string]: `url(${nfArt(`zone-${id}-skirt.webp`)})` } : {};
     return (
         <i
             ref={el}
             className="nf-art"
+            data-zone={id}
             aria-hidden="true"
             data-stage={stage}
             data-up={up ? "" : undefined}
-            style={{ ["--st" as string]: stage, ["--art" as string]: `url(${nfArt(`zone-${id}.webp`)})`, ["--sk" as string]: `url(${nfArt(`zone-${id}-skirt.webp`)})` } as CSSProperties}
+            style={{ ["--st" as string]: stage, ...sheets } as CSSProperties}
         />
     );
 }

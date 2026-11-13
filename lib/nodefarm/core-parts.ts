@@ -23,5 +23,5 @@ export const SKINS = ["zone", "chroma", "aurora", "gold", "mono"] as const;
 export type SkinId = (typeof SKINS)[number];
 
 /** Zone event kinds, in the order the renderer's event colours use (index + 1; 0 = no event). */
-export const CORE_EVENTS = ["surge", "clearance", "resonance", "vein", "fault", "convoy", "tune"] as const;
+export const CORE_EVENTS = ["surge", "clearance", "resonance", "vein", "fault", "convoy", "tune", "rogue", "vault"] as const;
 export type PartId = (typeof PART_ORDER)[number];

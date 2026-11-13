@@ -7,6 +7,10 @@ import { useEffect, type RefObject } from "react";
  * (app/camino/nodefarm-fx.css). The board is thousands of elements tall at the late game; nothing below the fold
  * should be animating. A panel is judged against the viewport plus 300px, so it is already moving when it scrolls in.
  */
+const off = new Set<string>();
+/** True while the board panel with this data-stat (lab, sched, drones, a zone id) is scrolled out of view. */
+export const isOff = (stat: string) => off.has(stat);
+
 export function useOffscreenPause(root: RefObject<HTMLElement | null>, on: boolean) {
     useEffect(() => {
         const host = root.current;
@@ -15,8 +19,9 @@ export function useOffscreenPause(root: RefObject<HTMLElement | null>, on: boole
         const io = new IntersectionObserver(
             (list) => {
                 for (const e of list) {
-                    if (e.isIntersecting) e.target.removeAttribute("data-off");
-                    else e.target.setAttribute("data-off", "");
+                    const k = (e.target as HTMLElement).dataset.stat;
+                    if (e.isIntersecting) { e.target.removeAttribute("data-off"); if (k) off.delete(k); }
+                    else { e.target.setAttribute("data-off", ""); if (k) off.add(k); }
                 }
             },
             { rootMargin: "300px 0px" },
@@ -34,6 +39,7 @@ export function useOffscreenPause(root: RefObject<HTMLElement | null>, on: boole
         return () => {
             clearInterval(iv);
             io.disconnect();
+            off.clear();
             host.querySelectorAll("[data-off]").forEach((el) => el.removeAttribute("data-off"));
         };
     }, [root, on]);

@@ -1,4 +1,7 @@
 """Node Farm staged zone art for zones 05 to 08: Fab Cleanroom (silicon), Crystal Vault (quartz), Signal Void (aether) and
+
+After re-running: python3 scripts/naos-art/zone-art-lift.py <ids> (lit room behind the dim zones, audit item 3),
+then zone-art-skirt.py <ids>, then node scripts/nodefarm/stamp-art.mjs.
 Glyph Hall (runes). Follows the zone art contract v1 (see docs/node-farm.md, "Zone art").
 
 Each zone gets one sheet: 8 rows (stage 0..7) by 6 columns (animation frames), 288 x 96 art pixels per cell; rows 0-31

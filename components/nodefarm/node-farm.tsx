@@ -6,22 +6,21 @@ import { nfx as sfx, nfx, humVol } from "@/lib/nodefarm/sound";
 import { setHum } from "@/lib/sound/engine";
 import { useSoundPrefs } from "@/lib/sound/use-sound";
 import {
-    TUNE, overclockMult, overclockSecs, respec, ascend, canAscend, breach, button, buyDrone, buyNode, canAfford, buyPerk, checkGoals, derive, exportSave, fmt, fmtTime, fresh, getNumFmt, setNumFmt, type NumFmt, isUnlocked, parseSave, press, STATS, tick,
+    TUNE, ZE_TUNE, overclockMult, overclockSecs, respec, ascend, canAscend, button, buyDrone, buyNode, canAfford, buyPerk, checkGoals, derive, exportSave, fmt, fmtTime, fresh, getNumFmt, setNumFmt, type NumFmt, isUnlocked, parseSave, press, STATS, tick,
     apEach, dropFill, hasFeature, openDrop, setMount, statDef,
     buyLabNode, cancelCompile, compile, deploy, labNode, labOpen, payload, type PayloadId,
     chOff, buyFw, fwNode, handSeen, handover, keysOnHandover, protoDef, protoRank, respecFw, setProto, type ProtoId,
     type ButtonStat, type MatId, type State, type StatId,
 } from "@/lib/nodefarm/engine";
-import { initFx } from "@/lib/nodefarm/fx";
+import { getLowFx, initFx } from "@/lib/nodefarm/fx";
 import { keyIsTyping, keyOverlay } from "@/lib/nodefarm/keys";
 import type { NfLive } from "@/lib/nodefarm/records";
 import { Core, freshCoreFeed, type CoreFeed } from "./core";
 import { PART_WHY, SKIN_WHY, coreLook, corePreview, skinOpen } from "@/lib/nodefarm/core-look";
 import { PART_ORDER, SKINS } from "@/lib/nodefarm/core-parts";
 import { NfIcon } from "./icon";
-import { EventLayer } from "./events";
 import { MiniHud } from "./mini-hud";
-import { RARITY, payLoot, type Loot } from "@/lib/nodefarm/events";
+import { RARITY } from "@/lib/nodefarm/events";
 import { AwayReport, type Away } from "./away";
 import { catchUp } from "@/lib/nodefarm/offline";
 import { Scenery, SceneWindow } from "./scenery";
@@ -59,11 +58,11 @@ import { adminFlags, buyDroneNode, buyMod, droneNode, masteryRanks, MODS, respec
 import { DRONE_NAMES } from "@/lib/nodefarm/guide";
 import { codeReveal, cxClear } from "@/lib/nodefarm/cx";
 import { ZoneEventCard } from "./zone-event";
-import { zeChoose, zoneEvDef, zoneLabel, type ZeChoice } from "@/lib/nodefarm/zoneevents";
+import { zeChoose, zeVault, zoneEvDef, zoneLabel, type ZeChoice, type ZeResult } from "@/lib/nodefarm/zoneevents";
 import { ARCS, arcKey, arcOf } from "@/lib/nodefarm/arcs";
 import { ArcHead } from "./arcs";
 import { Hold } from "./hold";
-import { useOffscreenPause } from "./offscreen";
+import { isOff, useOffscreenPause } from "./offscreen";
 import { ArcRail, ArcStep } from "./arc-rail";
 import { PokeLayer } from "./poke";
 import { StressPanel, StressStrip } from "./stress";
@@ -73,7 +72,7 @@ import { ACC_KEY, blankFoldTarget, readyCount, shownArcIds, soloArc } from "@/li
 import { AUTO_GAP, addBackup, readBackups, type Backup } from "@/lib/nodefarm/backups";
 
 const KEY = "nf-save-v1";
-const EV_KEY = "nf-events-v1"; // "off" when quick-time events are switched off (per device)
+const EV_KEY = "nf-events-v1"; // old per-device "off" for the card events; moved into the save as ze.off when a save loads
 const FS_KEY = "nf-fs-v1"; // full screen mode on or off (per device)
 const HUM_KEY = "nf-hum-v1"; // reactor hum on or off (per device)
 const UI_KEY = "nf-ui-v1"; // which stat panels are minimized (per device, not part of the game save)
@@ -147,7 +146,6 @@ export function NodeFarm() {
     const schedRef = useRef<(s: State) => void>(() => {});
     const [away, setAway] = useState<Away | null>(null);
     const [toast, setToast] = useState<string | null>(null);
-    const [evOn, setEvOn] = useState(true);
     const [osReduced, setReduced] = useState(false);
     const [calm, setCalm] = useState(false);
     const reduced = osReduced || calm;
@@ -331,7 +329,6 @@ export function NodeFarm() {
         try {
             const u = localStorage.getItem(UI_KEY);
             if (u) setFolded(JSON.parse(u));
-            if (localStorage.getItem(EV_KEY) === "off") setEvOn(false);
             if (localStorage.getItem(CALM_KEY) === "1") setCalm(true);
             if (localStorage.getItem(JUMP_KEY) === "off") setJumpOn(false);
             const nf = localStorage.getItem(FMT_KEY);
@@ -352,6 +349,10 @@ export function NodeFarm() {
         const first = s.life.secs === 0 && s.life.presses === 0;
         const gap = (Date.now() - s.at) / 1000;
         g.current = s;
+        try {
+            // the card events used to have their own per-device switch; it now lives in the save with the zone events
+            if (localStorage.getItem(EV_KEY) === "off") { (s.ze ??= { act: [], wait: ZE_TUNE.first, seen: 0, kinds: {} }).off = true; localStorage.removeItem(EV_KEY); }
+        } catch {}
         if (gap > 60 && !first) {
             const r = catchUp(s, gap);
             if (r.capped) s.life.capped += 1;
@@ -490,7 +491,6 @@ export function NodeFarm() {
                 const r = catchUp(copy, secs);
                 setAway({ ...r, gap: secs, cap: derive(copy).offlineCap });
             },
-            fire: (kind) => window.dispatchEvent(new CustomEvent("nf:fire", { detail: kind })),
             close: () => setAdminOpen(false),
             exit: () => { setAdmin(false, null); },
         }),
@@ -658,8 +658,9 @@ export function NodeFarm() {
                 sfx("nfGoal");
                 setTimeout(() => setToast((t) => (t === goal.name ? null : t)), 3200);
             }
-            // a full-screen tree hides the board, so the page only needs to follow once a second (the game itself still ticks ten times a second)
-            if (!treeOpenRef.current || tickN.current % 10 === 0) tickBump((n) => n + 1);
+            // a full-screen tree hides the board (1 Hz); low effects (a slow device, chosen or auto) redraws the page at 5 Hz. The game itself still ticks ten times a second.
+            const every = treeOpenRef.current ? 10 : getLowFx() ? 2 : 1;
+            if (tickN.current % every === 0) tickBump((n) => n + 1);
         }, 100);
         return () => {
             clearInterval(iv);
@@ -705,27 +706,23 @@ export function NodeFarm() {
         [log, feedStore],
     );
 
-    // ---- quick-time events (components/nodefarm/events.tsx): a win gives the timed Overclock plus its loot roll, a miss costs nothing
-    const evResult = useCallback(
-        (def: { title: string }, won: boolean, loot?: Loot | null) => {
+    // ---- zone events: answering one (Mine, Patch, a Rogue process offer, a Cold storage cash-out) is a win. A win gives the timed
+    // Overclock plus whatever the Anomaly nodes add, and a loot roll for the two card events. Ignoring an event costs nothing.
+    const evWin = useCallback(
+        (r: ZeResult) => {
             const s = g.current;
-            if (won) {
-                const r = breach(s);
-                if (loot) payLoot(s, loot);
-                bump((x) => x + 1);
-                log(`${def.title.toUpperCase()} CLEARED. Overclock x${fmt(overclockMult(s))} ${r.stacked ? `extended to ${Math.round(s.overclock)} s` : `for ${Math.round(overclockSecs(s))} s`}.`, "good");
-                if (loot) log(`LOOT // ${RARITY[loot.rarity].name.toUpperCase()}: ${loot.label}.`, loot.rarity >= 3 ? "hot" : "good");
-                if (r.zero) log(`ZERO-DAY: ${fmt(r.zero.bytes ?? 0)} Bytes and 10 minutes of every material paid out.`, "good");
-                if (r.echo) log("ECHO: something knocked back. Another event is coming.", "hot");
-                if (r.intel >= 1) feedStore.push([...call(idTok("lab"), "capture", [strTok("trace")]), pun(" → "), num(`+${fmt(r.intel)} intel`)], { tone: "good", type: true });
-                if (r.paid) log(`PATIENT: ${fmt(r.paid.bytes ?? 0)} Bytes and 5 minutes of every material paid out.`, "good");
-                if (r.frenzy) log("SWARM ALARM: the Drones are in a frenzy, x4 speed for 60 s.", "hot");
-                return { echo: r.echo };
-            } else log(`${def.title} lost. No cost.`, "warn");
+            const w = r.win;
+            if (!w) return;
+            log(`Overclock x${fmt(overclockMult(s))} ${w.stacked ? `extended to ${Math.round(s.overclock)} s` : `for ${Math.round(overclockSecs(s))} s`}.`, "good");
+            if (r.loot) log(`LOOT // ${RARITY[r.loot.rarity].name.toUpperCase()}: ${r.loot.label}.`, r.loot.rarity >= 3 ? "hot" : "good");
+            if (w.zero) log(`ZERO-DAY: ${fmt(w.zero.bytes ?? 0)} Bytes and 10 minutes of every material paid out.`, "good");
+            if (w.echo) { if (s.ze) s.ze.wait = Math.min(s.ze.wait, 5); log("ECHO: something knocked back. Another event is coming.", "hot"); }
+            if (w.intel >= 1) feedStore.push([...call(idTok("lab"), "capture", [strTok("trace")]), pun(" → "), num(`+${fmt(w.intel)} intel`)], { tone: "good", type: true });
+            if (w.paid) log(`PATIENT: ${fmt(w.paid.bytes ?? 0)} Bytes and 5 minutes of every material paid out.`, "good");
+            if (w.frenzy) log("SWARM ALARM: the Drones are in a frenzy, x4 speed for 60 s.", "hot");
         },
-        [log],
+        [log, feedStore],
     );
-    const evMiss = useCallback((def: { title: string }) => log(`${def.title} ignored. It passed.`, "warn"), [log]);
     const onZoneEv = useCallback(
         (id: number, c: ZeChoice) => {
             const r = zeChoose(g.current, id, c);
@@ -734,20 +731,33 @@ export function NodeFarm() {
             nfx("nfBuy", { tier: 2 }, "events");
             if (c === "mine") log(`Vein mined: +${fmt(r.paid ?? 0)} ${statDef(r.stat ?? "bytes").name}.`, "good");
             else if (c === "patch") log(`Fault patched for ${fmt(r.paid ?? 0)} Bytes.`, "good");
+            else if (r.loot) log(`Rogue process dealt with.`, "good");
             else log(c === "run" ? "Vein left running." : "Fault left to run out.", "good");
+            evWin(r);
             save();
             bump((x) => x + 1);
         },
-        [log, save],
+        [log, save, evWin],
     );
-    const evEngage = useCallback((def: { title: string }) => log(`${def.title} engaged.`, "hot"), [log]);
+    const onVault = useCallback(
+        (id: number, rows: number) => {
+            const r = zeVault(g.current, id, rows);
+            if (!r.ok) return;
+            teachEvent(g.current);
+            nfx("nfBuy", { tier: 2 }, "events");
+            log(r.win ? `Cold storage cashed out: ${rows} rows.` : "Cold storage closed with nothing opened.", r.win ? "good" : "warn");
+            evWin(r);
+            save();
+            bump((x) => x + 1);
+        },
+        [log, save, evWin],
+    );
     const setEvents = useCallback((on: boolean) => {
-        setEvOn(on);
-        try {
-            localStorage.setItem(EV_KEY, on ? "on" : "off");
-        } catch {}
-        if (!on) log("Quick-time events off. Turn them back on in the Menu.", "warn");
-    }, [log]);
+        const z = (g.current.ze ??= { act: [], wait: ZE_TUNE.first, seen: 0, kinds: {} });
+        z.off = on ? undefined : true;
+        if (!on) log("Events off. Turn them back on in the Menu.", "warn");
+        save();
+    }, [log, save]);
 
     // ---- Scripts: announce newly learned scripts, batch what each one did into the feed, and run ascend.sh (online only)
     schedRef.current = (s: State) => {
@@ -981,6 +991,7 @@ export function NodeFarm() {
     };
 
     const s = g.current;
+    const evOn = !s?.ze?.off;
     const d = useMemo(() => (s ? derive(s) : null), [s, s?.bytes]); // eslint-disable-line react-hooks/exhaustive-deps
     if (!ready || !s || !d) {
         return (
@@ -1202,6 +1213,8 @@ export function NodeFarm() {
     // Hold keys: a hidden copy refreshes about three times a second (slow) or at once when something was done (ver)
     const slow = Math.floor(tickN.current / 3);
     const slow2 = Math.floor(tickN.current / 2); // open system panels follow at 5 Hz
+    // a system panel scrolled out of view refreshes about once a second
+    const rate = (stat: string, isFolded: boolean) => (isOff(stat) ? Math.floor(tickN.current / 10) : isFolded ? slow : slow2);
     const hk = `${ver}|${slow}`;
     const foldSig = JSON.stringify(folded);
     const guideKey = `${step.target?.drone ?? ""}${step.target?.lab ?? ""}${step.target?.win ?? ""}`;
@@ -1249,7 +1262,7 @@ export function NodeFarm() {
                 <Hold live={false} k={`${hk}|${win}|${fs}|${treeSeen}|${guideKey}`}><Dock info={sw} open={win} treeSeen={treeSeen} lab={labOpen(s)} guideWin={step.target?.win} fs={fs} onOpen={(w) => (w === "lab" ? openLab() : win === w ? closeWin() : openWin(w))} onFs={() => { setFs(!fs); sfx("tab"); }} /></Hold>
                 <Hold live={false} k={hk}><StressStrip s={s} onOpen={() => openWin("stress")} /></Hold>
             </header>
-            <GuideStrip s={s} d={d} step={step} onGo={() => goTo(step.target)} onDo={() => doStep(step.target)} onCell={goTo} onMap={() => openWin("map")} mapOpen={win === "map"} />
+            <Hold live={false} k={`${hk}|${foldSig}|${win === "map"}|${JSON.stringify(step.target ?? null)}`}><GuideStrip s={s} d={d} step={step} onGo={() => goTo(step.target)} onDo={() => doStep(step.target)} onCell={goTo} onMap={() => openWin("map")} mapOpen={win === "map"} /></Hold>
             <MiniHud bytes={s.bytes} rate={d.bytesPerSec} step={step} onGo={() => goTo(step.target)} paused={!!win || treeOpen || labTree || !!away || !!confirm} />
             {win && <button type="button" className="nf-scrim" aria-label="Close window" tabIndex={-1} onClick={closeWin} />}
 
@@ -1264,8 +1277,7 @@ export function NodeFarm() {
             )}
             {toast && <div className="nf-toast" role="status"><NfIcon name="spark" /> Goal: {toast}</div>}
 
-            <ZoneEventCard s={s} id={zeCard} onChoose={onZoneEv} onClose={closeZeCard} reduced={reduced} />
-            <EventLayer game={g} ready={ready} enabled={evOn && !chOff(s, "events")} busy={!!win || treeOpen || labTree || droneTree || fwTree || !!cut || !!away || !!confirm} reduced={reduced} onEngage={evEngage} onResult={evResult} onMiss={evMiss} onDisable={() => setEvents(false)} />
+            <ZoneEventCard s={s} id={zeCard} onChoose={onZoneEv} onVault={onVault} onClose={closeZeCard} reduced={reduced} />
             <Juice reduced={reduced} />
             {d && <PokeLayer s={s} d={d} root={root} coreFeed={feed} feed={feedStore} reduced={reduced} onChange={() => { save(); bump((n) => n + 1); }} onGo={goTo} onArm={(z) => { toggleBuyStat(s, z); sfx("tab"); log(`buy.sh ${s.auto?.buy[z] ? "now buys" : "stopped on"} ${statDef(z).name}.`, "good"); save(); bump((n) => n + 1); }} />}
 
@@ -1288,7 +1300,7 @@ export function NodeFarm() {
             <section className="nf-pane nf-statspane" data-pane="stats" aria-label="Stats and buttons" onClick={(e) => blankFoldTarget(e.target as HTMLElement)?.click()}>
                 <Hold live={false} k={`${hk}|${foldSig}`}><Chain s={s} d={d} allOpen={!STATS.every((x) => folded[x.id])} onAll={(open) => setFold({ ...folded, ...Object.fromEntries(STATS.map((x) => [x.id, !open])) })} onIdle={foldIdle} onJump={(id) => goTo({ stat: id as Target["stat"] })} /></Hold>
                 {labOpen(s) && (
-                    <Hold live={false} k={`${ver}|${folded.lab ? slow : slow2}|${foldSig}|${guideKey}`}>
+                    <Hold live={false} k={`${ver}|${rate("lab", !!folded.lab)}|${foldSig}|${guideKey}`}>
                     <LabZone
                         s={s}
                         d={d}
@@ -1303,7 +1315,7 @@ export function NodeFarm() {
                     </Hold>
                 )}
                 {schedOpen(s) && (
-                    <Hold live={false} k={`${ver}|${folded.sched ? slow : slow2}|${foldSig}|${guideKey}`}>
+                    <Hold live={false} k={`${ver}|${rate("sched", !!folded.sched)}|${foldSig}|${guideKey}`}>
                     <ScriptsZone
                         s={s}
                         open={!folded.sched}
@@ -1313,7 +1325,7 @@ export function NodeFarm() {
                     </Hold>
                 )}
                 {isUnlocked(s, "aether") && (
-                    <Hold live={false} k={`${ver}|${folded.drones ? slow : slow2}|${foldSig}|${guideKey}`}>
+                    <Hold live={false} k={`${ver}|${rate("drones", !!folded.drones)}|${foldSig}|${guideKey}`}>
                     <DroneBay
                         s={s}
                         guided={step.target?.drone}
@@ -1350,7 +1362,7 @@ export function NodeFarm() {
                             {arcOpen && (
                                 <div id={`nf-arc-${arc.id}`} className="nf-arc-zones">
                                     {shown.map((id) => (
-                                        <StatRow key={id} id={id as StatId} s={s} d={d} guide={guideTarget} onPress={doPress} onArm={() => { toggleBuyStat(s, id); sfx("tab"); bump((n) => n + 1); }} onWatchdog={() => { s.watchdog = !s.watchdog; sfx("tab"); log(`Watchdog timer ${s.watchdog ? "on: Reboots run themselves" : "off"}.`, s.watchdog ? "good" : "warn"); bump((n) => n + 1); }} open={!folded[id]} onToggle={() => { setFold({ ...folded, [id]: !folded[id] }); sfx("tab"); }} onZoneEv={onZoneEv} zeCard={zeCard} />
+                                        <StatRow key={id} id={id as StatId} s={s} d={d} guide={guideTarget} onPress={doPress} onArm={() => { toggleBuyStat(s, id); sfx("tab"); bump((n) => n + 1); }} onWatchdog={() => { s.watchdog = !s.watchdog; sfx("tab"); log(`Watchdog timer ${s.watchdog ? "on: Reboots run themselves" : "off"}.`, s.watchdog ? "good" : "warn"); bump((n) => n + 1); }} open={!folded[id]} onToggle={() => { setFold({ ...folded, [id]: !folded[id] }); sfx("tab"); }} onZoneEv={onZoneEv} zeCard={zeCard} onZeOpen={setZeCard} />
                                     ))}
                                     {!preview && <ArcStep s={s} arcs={liveArcs} sel={selArc} onPick={focusArc} />}
                                 </div>
@@ -1473,7 +1485,7 @@ export function NodeFarm() {
                         save();
                         bump((x) => x + 1);
                     }}
-                    onRespec={() => { const back = respecDrones(s); sfx("tab"); log(`Drone tree respec: ${fmt(back)} Cores back.`, "good"); save(); bump((n) => n + 1); return back; }}
+                    onRespec={() => { if (lockedNote("The drone tree respec")) return 0; const back = respecDrones(s); sfx("tab"); log(`Drone tree respec: ${fmt(back)} Cores back.`, "good"); save(); bump((n) => n + 1); return back; }}
                     onClose={closeDrones}
                 />
             )}
