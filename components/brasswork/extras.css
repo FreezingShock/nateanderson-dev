@@ -1,4 +1,4 @@
-.bx-tools { position: absolute; top: 10px; right: 10px; z-index: 6; display: flex; gap: 6px; }
+.bx-tools { position: absolute; top: 10px; right: 10px; z-index: 6; display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 6px; max-width: calc(100% - 150px); }
 .bx-btn { padding: 6px 12px; font-size: 12px; letter-spacing: .06em; text-transform: uppercase; }
 .bx-flash { position: fixed; inset: 0; z-index: 20; background: #fff4d8; pointer-events: none; animation: bx-flash .5s ease-out forwards; }
 @keyframes bx-flash { from { opacity: .85; } to { opacity: 0; } }
@@ -12,3 +12,10 @@
 .bx-card .bw-row { border-bottom: 1px dotted rgba(210,154,60,.28); }
 .bx-card .bw-btn { margin-top: 16px; width: 100%; }
 @media (prefers-reduced-motion: reduce) { .bx-flash, .bx-scrim { animation: none; } }
+.bx-wide { width: min(560px, 100%); }
+.bx-entry { padding: 4px 0 10px; border-bottom: 2px solid rgba(210,154,60,.35); }
+.bx-name { font-size: 14px; letter-spacing: .08em; opacity: 1; color: #ffb347; margin-top: 14px; }
+.bx-r { text-align: right; }
+.bx-note { margin: 6px 0; font-size: 14px; opacity: .85; }
+.bx-recipe { display: flex; justify-content: space-between; gap: 12px; padding: 4px 0; font-size: 14px; }
+.bx-arrow { opacity: .6; }

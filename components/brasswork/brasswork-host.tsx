@@ -30,7 +30,7 @@ import {
 import type { VoxelIsland } from "@/lib/automation/render";
 import type { BuildWorld, MountedInput } from "@/lib/automation/input";
 import { getMachineModel } from "@/lib/automation/models/machines";
-import { BrassworkExtras, type AwayReport } from "./extras";
+import { BrassworkExtras, type AwayReport, type Mood } from "./extras";
 import { bw, bwHum, bwSetEnabled } from "@/lib/brasswork/sound";
 
 const W = 18;
@@ -75,6 +75,12 @@ export function BrassworkHost() {
     const [data, setData] = useState<HudData>(() => hudData(freshWorld(), CAT, null, START_SETTINGS));
     const [note, setNote] = useState("");
     const [away, setAway] = useState<AwayReport | null>(null);
+    const [mood, setMood] = useState<Mood>("Auto");
+    const moodRef = useRef<Mood>("Auto");
+    const onMood = useCallback((m: Mood) => {
+        moodRef.current = m;
+        setMood(m);
+    }, []);
     const snap = useRef<(() => string) | null>(null);
     const snapshot = useCallback(() => snap.current?.() ?? null, []);
     const ctl = useRef<{
@@ -298,7 +304,8 @@ export function BrassworkHost() {
                 if (!document.hidden) {
                     advance(world, dt, 0.1, CAT);
                     island.setWind(world.wind ?? windAt(world.time));
-                    island.setTimeOfDay(dayClock(world, CAT).phase);
+                    const m = moodRef.current;
+                    island.setTimeOfDay(m === "Auto" ? dayClock(world, CAT).phase : m === "Day" ? 0.05 : m === "Dusk" ? 0.5 : 0.75);
                     sinceHud += dt;
                     sinceSave += dt;
                     if (sinceHud >= 0.25) {
@@ -348,7 +355,7 @@ export function BrassworkHost() {
                 <Link href="/creations/games" className="bw-back">
                     Back to Games
                 </Link>
-                <BrassworkExtras snapshot={snapshot} away={away} />
+                <BrassworkExtras snapshot={snapshot} away={away} mood={mood} onMood={onMood} />
                 {note && <p className="bw-note">{note}</p>}
             </AutomationHud>
         </div>
