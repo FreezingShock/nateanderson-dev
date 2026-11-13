@@ -58,9 +58,22 @@ export const LOGS: Log[] = [
     { id: "geodes", title: "Ringing", text: "Found a stone the size of a hall, hollow and lined with light. When I tap it, the Crystal vault rings back from the top of the farm. Every zone I built is still listening to the others.", test: open("geodes") },
     // zone 25 leaves room for the ending (a last build, and your own log)
     { id: "sunstone", title: "Bottom", text: "At the very bottom there is a sun held in clamps, and its heat rises through everything we built. There is room down here for one more thing. I did not build it. I think it is meant to be yours.", test: open("sunstone") },
+    // found through the hidden secrets, one per stage. They come back as you find each one (appended so the numbers above do not move).
+    { id: "manual", title: "Manual", text: "I wrote a manual for the console at three in the morning, so I would stop asking the node the same questions. It did not help. Read it anyway.", test: (s) => s.ach.includes("x_help") },
+    { id: "strict", title: "Strict", text: "Ran the node in strict mode for a week. One error and it stops and tells me. Wren said that was no way to live. Wren was right, and I kept it on.", test: (s) => s.ach.includes("x_strict") },
+    { id: "lock", title: "Read only", text: "Tamsin locked the kernel settings so nobody could tune the node into the ground. Then Tamsin left and the lock stayed. I still cannot tell what it protects.", test: (s) => s.ach.includes("x_sysctl") },
+    { id: "asked", title: "Asked back", text: "I asked for root once. The node asked me back: are you sure. I said yes. It was quiet for a long time, then gave me a shell with my own name on the prompt. Do not do that to yourself.", test: (s) => s.ach.includes("x_su") },
+    { id: "boot", title: "Boot ring", text: "The kernel logs its own boot if you ask nicely. Mostly it says nothing. Once, halfway through, it says operator changed. There was no one else in the room.", test: (s) => s.ach.includes("x_dmesg") },
+    { id: "roots", title: "Under the tree", text: "Sat with the tree for an hour. It did not grow, but the branches I had bought moved, slightly, like they were listening. Osk says it is the drones. Osk is wrong about most things, and I think about that a lot.", test: (s) => s.ach.includes("x_tree") },
+    { id: "noise", title: "Noise", text: "Read from the random device until the terminal was full. None of it is mine. I hashed it to check. Vael says that is the point. Vael writes the events, so I do not take Vael's word for much.", test: (s) => s.ach.includes("x_urandom") },
+    { id: "epoch", title: "Epoch", text: "The node says it started at zero. I asked it what day that was and it gave me a number and then a date. I do not know who set the clock. I have decided it was whoever wrote the first log.", test: (s) => s.ach.includes("x_epoch") },
+    { id: "dig", title: "Nothing answers", text: "Dug past the last zone for a name, any name, of whoever ran this before Wren. The answer was empty. It was the most honest thing the node has ever said.", test: (s) => s.ach.includes("x_dig") },
+    { id: "pid", title: "Process one", text: "PID 1 is the process that starts all the others. On this node it is the one that started the farm. It is still running. Its owner is listed as the operator, and the operator is not me.", test: (s) => s.ach.includes("x_pid") },
+    { id: "load", title: "Load", text: "The load average stayed up for three days while I was away. Every Drone was busy and the fans were humming in a key I had never heard before. I think the node was practising for someone.", test: (s) => s.ach.includes("x_top") },
+    { id: "firmware", title: "Write protected", text: "The firmware is write protected. The last operator set the lock with a note that says do not touch it until you have handed it over. I have handed it over. I have not touched it. Yet.", test: (s) => s.ach.includes("x_flash") },
 ];
 
-export const logNo = (i: number) => String(i + 1).padStart(3, "0");
+export const logNo =(i: number) => String(i + 1).padStart(3, "0");
 
 /** Logs that are now recoverable but not stored yet. The caller stores them (see recoverLogs). */
 export function newLogs(s: State): Log[] {

@@ -15,7 +15,7 @@ import type { SfxName } from "@/lib/sound/sounds";
 
 // scans play in the "world" mix
 const sfx = (n: SfxName, a?: unknown) => nfx(n, a, "world");
-import { STATS, apGlobal, derive, fmt, fmtTime, isUnlocked, overclockMult, singularityAll, sunstoneAll, statDef, MATS, TUNE, type State, type StatId, type MatId } from "@/lib/nodefarm/engine";
+import { STATS, achPoints, apGlobal, derive, fmt, fmtTime, isUnlocked, overclockMult, singularityAll, sunstoneAll, statDef, MATS, TUNE, type State, type StatId, type MatId } from "@/lib/nodefarm/engine";
 import { exact, type Target, type TipInfo } from "@/lib/nodefarm/content/guide";
 import { LORE } from "@/lib/nodefarm/content/lore";
 import { call, id as idTok, num, p as pun, str as strTok, type FeedStore } from "@/lib/nodefarm/feed";
@@ -74,7 +74,7 @@ function specTip(s: State, z: StatId, label: string, value: string): TipInfo {
 }
 function globalTip(s: State, d: D): TipInfo {
     const ap = apGlobal(s);
-    const goals = 1 + s.ach.length * TUNE.achBonus;
+    const goals = 1 + achPoints(s) * TUNE.achBonus;
     const oc = s.overclock > 0 ? overclockMult(s) : 1;
     const ch = d.boosts.chAll;
     const sn = singularityAll(s) * sunstoneAll(s);

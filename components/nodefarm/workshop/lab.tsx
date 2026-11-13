@@ -4,7 +4,7 @@ import { useRef, type CSSProperties } from "react";
 import { useFoldReveal } from "@/lib/nodefarm/cx";
 import {
     LAB, LAB_SECS, LAB_TUNE, PAYLOADS, compileBlock, compileSecs, deployBlock, fmt, fmtTime, hasRecipe, intelRate, isArmed, labHas, labNode, labNodeOpen,
-    labQueueMax, labSlots, labTotals, labVis, payloadCost, payloadDur, payloadV, statDef, type Derived, type PayloadDef, type PayloadId, type State,
+    labQueueMax, labSlots, labTotals, labVis, payloadCost, payloadDur, payloadV, stockCap, statDef, type Derived, type PayloadDef, type PayloadId, type State,
 } from "@/lib/nodefarm/engine";
 import { TreeSprite } from "../tree/tree-sprite";
 import type { TreeModel } from "../tree/tree";
@@ -198,6 +198,7 @@ function Recipe({ s, d, p, onCompile, onDeploy }: { s: State; d: Derived; p: Pay
     const mat = statDef(c.mat);
     const compileLabel = why === "queue" ? "Queue full" : why === "stock" ? "Stock full" : `Compile · ${fmt(c.intel)} IN + ${fmt(c.amount)} ${mat.short}`;
     const depLabel = run ? `+${fmtTime(payloadDur(s, p))}` : isArmed(s, p.id) ? "Armed" : dep === "slots" ? "Slots full" : "Deploy";
+    const cap = stockCap(s.lab.nodes);
     return (
         <li style={{ ["--c" as string]: SEC_COL[p.sec] } as CSSProperties} data-run={run ? "" : undefined}>
             <TreeSprite sprite={sprite(p.id)} state="owned" scale={1} className="nf-lab-ic" lazy />
@@ -205,8 +206,8 @@ function Recipe({ s, d, p, onCompile, onDeploy }: { s: State; d: Derived; p: Pay
                 <b>{p.name}</b> <i>{KIND_WORD[p.kind]} · {fmtTime(compileSecs(s, p))}</i>
                 <small>{effect(s, p)}</small>
             </span>
-            <span className="nf-lab-stock" aria-label={`${stock} of ${LAB_TUNE.stockMax} in stock`}>
-                {Array.from({ length: LAB_TUNE.stockMax }, (_, i) => <i key={i} data-f={i < stock ? "" : undefined} />)}
+            <span className="nf-lab-stock" aria-label={`${stock} of ${cap} in stock`}>
+                {Array.from({ length: cap }, (_, i) => <i key={i} data-f={i < stock ? "" : undefined} />)}
             </span>
             <span className="nf-lab-acts">
                 <button type="button" className="nf-mini" disabled={!!why} onClick={() => onCompile(p.id)} title={why === "intel" ? `Needs ${fmt(c.intel)} Intel` : why === "mat" ? `Needs ${fmt(c.amount)} ${mat.name}` : undefined}>

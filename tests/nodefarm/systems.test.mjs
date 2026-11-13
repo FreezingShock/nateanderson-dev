@@ -137,6 +137,43 @@ test("exploit lab: every payload compiles and deploys on a state that has the re
     assert.doesNotThrow(() => E.labTotals(s));
 });
 
+test("exploit lab and drone tree: late pairs have art, Shellcode, Stockpile, Cold archive and Beacon do what they say", async () => {
+    const { SPRITE_CELLS } = await import("../../lib/nodefarm/art/tree-sprites.ts");
+    const late = ["rx_shellcode", "rx_stockpile", "rx_beacon", "rx_packer", "rx_archive", "rx_mirror", "dx_redline", "dx_wingmen", "dx_groundcrew", "dx_fullmast", "dx_sparebin", "dx_modbay"];
+    for (const id of late) assert.ok(SPRITE_CELLS[id], `${id} has a sprite`);
+    assert.equal(E.LAB.length, 24, "the lab has 24 nodes (3 arms of 8)");
+    assert.equal(E.DRONE_TREE.length, 24, "the drone tree has 24 nodes (3 arms of 8)");
+    // Stockpile raises the stock cap by 3 for every payload; the cap is never below the base
+    const st = E.fresh(0);
+    assert.equal(E.stockCap(st.lab.nodes), E.LAB_TUNE.stockMax);
+    assert.equal(E.stockCap(["rx_stockpile"]), E.LAB_TUNE.stockMax + 3);
+    // Shellcode: compiles run x3 while it is running
+    const sc = E.fresh(0);
+    sc.lab.seen = true; sc.lab.nodes = ["rx_shellcode"];
+    const p = E.payload("shellcode");
+    const base = E.compileSecs(sc, p);
+    sc.lab.run = [{ id: "shellcode", left: 600 }];
+    assert.ok(Math.abs(E.compileSecs(sc, p) - base / 3) < 1e-6, "Shellcode triples compile speed while it runs");
+    // Cold archive and Beacon, checked through an Ascend on a state that can ascend
+    const ao = E.fresh(0);
+    ao.lab.seen = true; ao.lab.nodes = ["rx_archive"]; ao.lab.intel = 1000;
+    ao.aether = 1e12; ao.ap = 0;
+    if (E.canAscend(ao)) {
+        E.ascend(ao);
+        assert.equal(ao.lab.intel, 250, "Cold archive keeps a quarter of Intel through Ascend");
+    }
+    const bo = E.fresh(0);
+    bo.lab.seen = true; bo.lab.armed = ["beacon"];
+    bo.drones = bo.drones.map(() => 5);
+    bo.aether = 1e12;
+    if (E.canAscend(bo)) {
+        E.ascend(bo);
+        assert.ok(bo.drones.every((lv) => lv === 5), "Beacon keeps every Drone level through Ascend");
+        assert.ok(!bo.lab.armed.includes("beacon"), "Beacon is spent by the Ascend it was armed for");
+    }
+    assert.deepEqual(problems(maxed()), []);
+});
+
 test("prestige tree: buying every node in any order, respec, and the AP books balance", () => {
     const s = E.fresh(0);
     s.ap = 1e9;

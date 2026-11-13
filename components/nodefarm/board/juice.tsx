@@ -90,6 +90,26 @@ const buzz = (p: number | number[]) => {
 };
 const calm = () => typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
+/** A new button tier lights up on the board: a bright flash and a ring that opens and fades, in the stat's colour.
+ *  Transform-free and short; skipped in low effects (box-shadow is paint-heavy) and under reduced motion. */
+function tierRing(stat: ButtonStat, tier: number) {
+    if (typeof document === "undefined" || document.body.classList.contains("nf-lowfx")) return;
+    const b = document.querySelector<HTMLElement>(`.nf-row[data-stat="${stat}"] .nf-btn[data-tier="${tier}"]`);
+    if (!b) return;
+    const c = statDef(stat).color;
+    try {
+        b.getAnimations().filter((x) => (x as Animation & { id?: string }).id === "nf-tier").forEach((x) => x.cancel());
+        b.animate(
+            [
+                { boxShadow: `0 0 0 0px ${c}, 0 0 0px 0px ${c}`, filter: "brightness(2)" },
+                { boxShadow: `0 0 0 3px ${c}, 0 0 24px 6px ${c}`, filter: "brightness(1.3)", offset: 0.3 },
+                { boxShadow: `0 0 0 16px ${c}00, 0 0 0px 0px ${c}00`, filter: "none" },
+            ],
+            { duration: 640, easing: "cubic-bezier(.2,.7,.3,1)", id: "nf-tier" },
+        );
+    } catch {}
+}
+
 // ---- pop-ups
 const MAX_POPS = 14;
 function popAt(layer: HTMLElement, rect: DOMRect, text: string, color: string, o: { big?: boolean; sparks?: number }) {
@@ -144,6 +164,7 @@ export function Juice({ reduced }: { reduced: boolean }) {
     const timers = useRef<ReturnType<typeof setTimeout>[]>([]);
     const seenU = useRef<Set<string>>(new Set());
     const lastBtn = useRef<HTMLElement | null>(null);
+    const lastTick = useRef(0);
     const acc = useRef<{ sum: number; stat: ButtonStat; el: HTMLElement | null; timer: ReturnType<typeof setTimeout> | null }>({ sum: 0, stat: "mult", el: null, timer: null });
     useEffect(() => setHost(document.body), []);
 
@@ -208,9 +229,20 @@ export function Juice({ reduced }: { reduced: boolean }) {
                     if (!a.timer) a.timer = setTimeout(flush, 300);
                     return;
                 }
+                // the button's own gain figure ticks up on each buy (throttled, so a held button stays calm)
+                const g = el.querySelector<HTMLElement>(".nf-btn-g");
+                const nowT = performance.now();
+                if (g && nowT - lastTick.current > 110) {
+                    lastTick.current = nowT;
+                    try {
+                        g.getAnimations().filter((x) => (x as Animation & { id?: string }).id === "nf-gtick").forEach((x) => x.cancel());
+                        g.animate([{ transform: "translateY(-3px)", color: "#fff" }, { transform: "none" }], { duration: 120, easing: "steps(3, end)", id: "nf-gtick" });
+                    } catch {}
+                }
                 if (e.stat === "reboot") popAt(layer.current, el.getBoundingClientRect(), `REBOOT +${fmt(e.gain)}`, color, { big: true, sparks: 8 });
                 else popAt(layer.current, el.getBoundingClientRect(), `+${fmt(e.gain)}`, color, { big: e.tier >= 3, sparks: e.tier >= 3 ? 6 : 3 });
             } else if (e.t === "tier") {
+                if (!rm) tierRing(e.stat, e.tier);
                 const def = statDef(e.stat);
                 push({ key: bk++, kind: "tier", label: "Tier online", title: LORE[e.stat].tiers[e.tier], sub: `${def.name} button ${e.tier + 1} of 6`, icon: e.stat as NfIconName, color: def.color, pips: e.tier + 1, ms: 1500, first: false });
             } else if (e.t === "unlock") {
