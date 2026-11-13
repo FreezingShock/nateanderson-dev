@@ -5,6 +5,7 @@
 //   quality=auto|0|1|2   dither=0|1   lowfx=0|1   t=0..1 (time of day)   cycle=0|1
 //   machines=N           stamps N simple machines across the island for load testing
 //   model=1              places the example machine and a placement ghost
+//   belts=1              places a short belt run and starts it
 //   orbit=0|1            0 = orbit: false, so an input module owns the camera
 import { useEffect, useRef } from "react";
 import { createVoxelIsland, type VoxelIsland } from "./index";
@@ -66,6 +67,21 @@ export default function VoxelIslandBench() {
                 rot: 1,
             });
             island.setGhost(EXAMPLE_BLOCK, { x: 2, z: 2 }, 0, false);
+        }
+
+        if (q.get("belts") === "1") {
+            const run = [0, 1, 2, 3, 4, 5].map((i) => ({
+                kind: "straight" as const,
+                tier: 0,
+                x: -3,
+                z: -2 + i,
+                rot: 0 as const,
+            }));
+            island.setBelts([
+                ...run,
+                { kind: "cornerR", tier: 1, x: -3, z: 4, rot: 0 },
+            ]);
+            island.setBeltSpeed(0, 1);
         }
 
         island.resize();
