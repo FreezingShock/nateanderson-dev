@@ -9,6 +9,8 @@ import { Section } from "./factory-sections";
 
 type GroupId = "machines" | "power" | "logistics";
 
+const GROUP_ICON: Record<GroupId, string> = { machines: "machines", power: "power", logistics: "logistics" };
+
 const GROUP_TITLE: Record<GroupId, string> = {
   machines: "Machines",
   power: "Power",
@@ -92,7 +94,7 @@ export function BuildList({
       {groups.map((g) => {
         const openCount = g.items.filter((m) => m.unlocked).length;
         return (
-          <Section key={g.id} title={GROUP_TITLE[g.id]} meta={`${openCount} open`}>
+          <Section key={g.id} title={GROUP_TITLE[g.id]} icon={GROUP_ICON[g.id]} meta={`${openCount} open`}>
             <ul className="ab-build" aria-label={`${GROUP_TITLE[g.id]} to build`}>
               {g.items.map(renderRow)}
             </ul>

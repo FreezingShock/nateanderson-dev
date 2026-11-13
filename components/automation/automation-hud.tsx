@@ -234,11 +234,11 @@ export function AutomationHud({
             </section>
           )}
 
-          <Section title="Milestones" meta={`${data.blueprints} blueprints`}>
+          <Section title="Milestones" icon="milestones" meta={`${data.blueprints} blueprints`}>
             <Milestones milestones={data.milestones} />
           </Section>
 
-          <Section title="Prestige" defaultOpen={false}>
+          <Section title="Prestige" icon="prestige" defaultOpen={false}>
             <PrestigeCard prestige={data.prestige} onOpen={() => setScreen("prestige")} />
           </Section>
         </aside>
