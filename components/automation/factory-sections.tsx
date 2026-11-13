@@ -2,16 +2,20 @@
 
 import { useState, type ReactNode } from "react";
 import type { MilestoneView, PrestigeView } from "@/lib/automation/types";
+import { uiIconStyle } from "@/lib/automation/icons/ui";
 
 /** A collapsible block. The whole header row is the toggle, so a tap on blank space opens it. */
 export function Section({
   title,
   meta,
+  icon,
   defaultOpen = true,
   children,
 }: {
   title: string;
   meta?: string;
+  /** A HUD glyph id from lib/automation/icons/ui.ts, shown before the title. */
+  icon?: string;
   defaultOpen?: boolean;
   children: ReactNode;
 }) {
@@ -24,6 +28,7 @@ export function Section({
         aria-expanded={open}
         onClick={() => setOpen((v) => !v)}
       >
+        {icon && <span className="ab-ico" style={uiIconStyle(icon, 20)} aria-hidden="true" />}
         <span className="ab-h">{title}</span>
         {meta && <span className="ab-dim">{meta}</span>}
         <span className="ab-chev" aria-hidden="true">

@@ -989,3 +989,22 @@
   background: var(--ab-brass-hi);
   color: #1a1209;
 }
+
+/* Desktop hierarchy: each framed panel header is a brass band, the title is the bright level, and meta text stays dim. */
+@media (min-width: 760px) {
+  .ab-section.ab-panel > .ab-section-head {
+    background: linear-gradient(rgba(197, 154, 82, 0.14), rgba(197, 154, 82, 0.02));
+    border-bottom: 1px solid var(--ab-line-soft);
+  }
+
+  .ab-section.ab-panel > .ab-section-head .ab-h {
+    color: var(--ab-brass-hi);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    font-size: 13px;
+  }
+
+  .ab-section.ab-panel > .ab-section-head .ab-dim {
+    font-size: 12px;
+  }
+}
