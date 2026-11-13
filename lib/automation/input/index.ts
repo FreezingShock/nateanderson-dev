@@ -2,7 +2,7 @@
 // camera.view(aspect) and build.ghost(). The simulation provides a BuildWorld adapter.
 export { OrbitCamera, DEFAULT_LIMITS, type CameraLimits, type CameraBounds, type OrbitPose } from "./camera";
 export { screenRay, project, pickGround, viewBasis, eyeFrom, type View, type Ray, type GroundHit, type HeightFn } from "./picking";
-export { BuildController, DELETE_TOOL, type ToolSpec, type ItemRef, type BuildWorld, type Ghost, type GhostCell, type BuildEvent } from "./build";
+export { BuildController, DELETE_TOOL, footprintOffsets, type Footprint, type Offset, type ToolSpec, type ItemRef, type BuildWorld, type Ghost, type GhostCell, type BuildEvent } from "./build";
 export { type Cell, type Rot, type BoardSize, cellKey, cellInBoard, lineCells, rotate } from "./grid";
 export { mapKey, type KeyAction, type KeyLike } from "./keys";
 export { PointerInput, type PointerOptions } from "./pointer";
