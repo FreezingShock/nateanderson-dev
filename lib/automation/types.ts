@@ -48,6 +48,16 @@ export interface StructureDef {
     footprint: { w: number; d: number };
     /** Build stage for multi-stage structures (the orrery is 0 to 4). Absent for single-stage ones. */
     stage?: number;
+    /** Items spent to place it. */
+    buildCost?: Stack[];
+    /** First stage where it can be placed (logistics pieces). */
+    unlockStage?: Stage;
+    /** Belt tier for logistics pieces: brass 1 item/s, copper 2, steel 4. Absent for untiered pieces. */
+    tier?: "brass" | "copper" | "steel";
+    /** Items per second, for tiered belt pieces. */
+    rate?: number;
+    /** Items held per item type, for storage (crate, strongbox). */
+    capacity?: number;
     note?: string;
 }
 

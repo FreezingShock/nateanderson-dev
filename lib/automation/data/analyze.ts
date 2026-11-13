@@ -55,6 +55,15 @@ export function checkTree(tree: RecipeTree): Issue[] {
         structureIds.add(st.id);
         if (machines.has(st.id)) err(`structure ${st.id} clashes with a machine id`);
         if (!(st.footprint.w > 0 && st.footprint.d > 0)) err(`structure ${st.id} needs a positive footprint`);
+        if (st.unlockStage !== undefined && st.buildCost === undefined) err(`structure ${st.id} has an unlock stage but no build cost`);
+        if (st.rate !== undefined && !(st.rate > 0)) err(`structure ${st.id} needs a positive rate`);
+        if (st.capacity !== undefined && !(st.capacity > 0)) err(`structure ${st.id} needs a positive capacity`);
+        for (const s of st.buildCost ?? []) {
+            const it = items.get(s.item);
+            if (!it) err(`structure ${st.id} costs unknown item ${s.item}`);
+            else if (st.unlockStage !== undefined && it.stage > st.unlockStage) err(`structure ${st.id} (stage ${st.unlockStage}) costs ${s.item} from stage ${it.stage}`);
+            if (!(Number.isInteger(s.qty) && s.qty > 0)) err(`structure ${st.id} build cost for ${s.item} must be a positive integer`);
+        }
     }
     const nodes = new Set<string>();
     for (const n of tree.nodes) {
