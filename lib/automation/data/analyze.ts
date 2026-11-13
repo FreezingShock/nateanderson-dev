@@ -37,6 +37,7 @@ export function checkTree(tree: RecipeTree): Issue[] {
         if (machines.has(m.id)) err(`duplicate machine id ${m.id}`);
         machines.set(m.id, m);
         if (!(m.powerKw >= 0)) err(`machine ${m.id} needs powerKw of 0 or more`);
+        if (m.storageKj !== undefined && !(m.storageKj > 0)) err(`store ${m.id} needs storageKj above 0`);
         if (m.generatesKw !== undefined) {
             if (!(m.generatesKw > 0)) err(`generator ${m.id} needs generatesKw above 0`);
             if (!(m.supplyRange !== undefined && m.supplyRange > 0)) err(`generator ${m.id} needs a supplyRange above 0`);
@@ -47,6 +48,13 @@ export function checkTree(tree: RecipeTree): Issue[] {
             else if (it.stage > m.unlockStage) err(`machine ${m.id} (stage ${m.unlockStage}) costs ${s.item} from stage ${it.stage}`);
             if (!(Number.isInteger(s.qty) && s.qty > 0)) err(`machine ${m.id} build cost for ${s.item} must be a positive integer`);
         }
+    }
+    const structureIds = new Set<string>();
+    for (const st of tree.structures) {
+        if (structureIds.has(st.id)) err(`duplicate structure id ${st.id}`);
+        structureIds.add(st.id);
+        if (machines.has(st.id)) err(`structure ${st.id} clashes with a machine id`);
+        if (!(st.footprint.w > 0 && st.footprint.d > 0)) err(`structure ${st.id} needs a positive footprint`);
     }
     const nodes = new Set<string>();
     for (const n of tree.nodes) {
