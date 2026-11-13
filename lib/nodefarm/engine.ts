@@ -1351,7 +1351,7 @@ export function buyPerk(s: State, id: PerkDef["id"]): boolean {
 }
 
 export const OFFLINE_STEP_S = 1;
-export const OFFLINE_MAX_STEPS = 2400;
+export const OFFLINE_MAX_STEPS = 7200;
 
 /** Catch up for time away. Production only; nothing is bought for you (except by the scripts you taught). Returns what was gained.
  *  The steps are about a second (see OFFLINE_STEP_S), and a step never runs past the moment a timed boost ends (Overclock,
@@ -1361,7 +1361,7 @@ export function offline(s: State, seconds: number) {
     const secs = Math.min(Math.max(0, seconds), cap);
     const before = Object.fromEntries(MATS.map((k) => [k, s[k]])) as Record<MatId, number>;
     lifeTally.bytes = 0;
-    // Steps are about a second long while the gap allows it (2400 steps at most, so an 8 h gap runs in 12 s steps). Longer steps
+    // Steps are about a second long while the gap allows it (7200 steps at most: an hour runs in 1 s steps, an 8 h gap in 4 s steps). Longer steps
     // under-credit Drones, whose presses are paid from the stock at the start of a step, and Watchdog Reboots, which fire at most once a tick.
     const steps = Math.min(OFFLINE_MAX_STEPS, Math.max(1, Math.ceil(secs / OFFLINE_STEP_S)));
     const dt = secs / steps;
