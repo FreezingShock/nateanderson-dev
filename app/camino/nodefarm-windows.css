@@ -284,9 +284,9 @@ body.nf-win-open .nf-jb { z-index: 59; }
 .ctos .nf-wk-cfgrow .nf-wk-box { color: var(--cm-ctos-meta); }
 .ctos .nf-wk-cfgrow input[type="range"] { flex: 1 1 160px; accent-color: var(--c); min-height: 28px; }
 @media (hover: none) { .ctos .nf-wk-cfgrow input[type="range"] { min-height: 40px; } }
-.ctos .nf-wk-pick { display: inline-flex; flex-wrap: wrap; gap: 4px; }
-.ctos .nf-wk-pick button { min-height: 32px; padding: 0 10px; background: #111; border: 1px solid #ffffff1c; color: var(--cm-mute); font: 600 12px/1 var(--cm-mono); cursor: pointer; }
-.ctos .nf-wk-pick button[aria-pressed="true"] { border-color: var(--c); color: var(--c); }
+.ctos .nf-wk-pick { display: inline-flex; flex-wrap: wrap; gap: 4px 14px; }
+.ctos .nf-wk-pick button { min-height: 32px; padding: 0; background: none; border: 0; color: var(--cm-mute); font: 600 12px/1 var(--cm-mono); cursor: pointer; }
+.ctos .nf-wk-pick button[aria-pressed="true"] { color: var(--c); }
 .ctos .nf-wk-pick button:focus-visible { outline: 2px solid var(--c); outline-offset: 2px; }
 @media (hover: none) { .ctos .nf-wk-pick button { min-height: 44px; } }
 .ctos .nf-wk-btn[data-armed] { background: #ff2d8a; border-color: #ff2d8a; color: #0a0a0a; }
