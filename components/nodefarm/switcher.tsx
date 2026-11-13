@@ -72,12 +72,12 @@ export function swInfo(s: State, bps: number, lastSave: number, fs: boolean, lab
     return {
         core: { read: `${fmt(bps)}/s` },
         stats: { read: `${pad(zones)}/${pad(STATS.length)} open` },
-        map: { read: `zone ${pad(zones - 1)}` }, // same numbering as the Map window (Bytes is zone 00)
+        map: { read: `zone ${pad(zones)}` }, // same numbering as the Map window and the zone names everywhere else (Bytes is zone 01, Sunstone 25)
         goals: { read: `${g.goals}/${GOALS.length}` },
         records: { read: newLogs ? `${newLogs} new` : `${s.logs.length} logs`, hot: newLogs > 0 },
-        ascend: { read: ready ? `ready +${fmt(apOnAscend(s))}` : `${fmt(s.aether)}/${fmt(ascendNeed(s))} AE`, hot: ready },
+        ascend: { read: ready ? `ready +${fmt(apOnAscend(s))}` : `${fmt(s.aether)}/${fmt(ascendNeed(s))} AE`, hot: ready, hide: !isUnlocked(s, "aether") && s.life.ascends === 0 },
         tree: { read: spend ? `${s.ap} AP free` : `${s.tree.length}/${TREE.length}`, hot: spend },
-        codex: (() => { const n = codexNew(s).length; return { read: n ? `${n} new` : `${codexOpen(s).length} entries`, hot: n > 0 }; })(),
+        codex: (() => { const n = codexNew(s).length; return { read: n ? `${n} new` : `${codexOpen(s).length} entries`, hot: n > 0, hide: s.reboot < 1 && s.life.ascends === 0 }; })(),
         menu: { read: ago < 0 ? "not saved" : ago < 60 ? `saved ${ago}s` : `saved ${Math.floor(ago / 60)}m` },
         lab: { read: labReady ? `${labReady} ready` : `${fmt(s.lab.intel)} intel`, hot: labReady > 0 },
         full: { read: fs ? "on" : "off" },
@@ -151,7 +151,7 @@ export function PhoneTabs({ info, tab, treeSeen, lab, guideWin, onTab, onTree, o
     const ids: Exclude<SwId, "full">[] = ["core", "stats", ...WIN_ORDER.filter((w) => shown(w, treeSeen, lab, info))];
     // 8 sections sit four across, 9 three across, 10 five across, so no row is left with one; 11 and 12 go four across
     return (
-        <nav className="nf-tabs nf-sw-ph" aria-label="Game sections" data-cols={ids.length === 10 ? 5 : undefined} style={{ ["--cols" as string]: ids.length === 9 ? 3 : ids.length === 10 ? 5 : 4 } as CSSProperties}>
+        <nav className="nf-tabs nf-sw-ph" aria-label="Game sections" data-cols={ids.length === 10 ? 5 : undefined} style={{ ["--cols" as string]: ids.length === 9 || ids.length === 6 ? 3 : ids.length === 10 ? 5 : 4 } as CSSProperties}>
             {ids.map((t) => {
                 const def = SW[t];
                 const on = tab === t;
@@ -203,11 +203,16 @@ export function WinBar({ id, info, treeSeen, lab, onSwitch, onClose }: { id: Win
                         data-on={w === id ? "" : undefined}
                         data-hot={info[w].hot ? "" : undefined}
                         aria-current={w === id ? "true" : undefined}
-                        aria-label={`${SW[w].label}${SW[w].key ? ` (${SW[w].key})` : ""}`}
-                        title={`${SW[w].label}${SW[w].key ? ` · ${SW[w].key}` : ""}`}
+                        aria-label={`${SW[w].label}${SW[w].key ? ` (${SW[w].key})` : ""}: ${info[w].read}`}
                         onClick={() => w !== id && onSwitch(w)}
                     >
                         <PixelIcon name={SW[w].icon} size={16} />
+                        {/* hover / focus card: the name types in, then its live line and key print under it */}
+                        <span className="nf-sw-tip" aria-hidden="true">
+                            <b style={{ ["--len" as string]: SW[w].label.length } as CSSProperties}>{SW[w].label}</b>
+                            <span className="nf-sw-tip-r">{w === id ? "you are here" : info[w].read}</span>
+                            {SW[w].key && <kbd>{SW[w].key}</kbd>}
+                        </span>
                     </button>
                 ))}
             </span>

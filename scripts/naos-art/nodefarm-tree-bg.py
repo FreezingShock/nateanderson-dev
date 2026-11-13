@@ -283,7 +283,10 @@ def sec_piece(name, col, seed):
     dx, dy = xx - c + 0.5, yy - c + 0.5
     r = np.sqrt(dx * dx + dy * dy) / (N / 2)
     b = bayer(N, N)
-    pal = [(0, 0, 0), mix(BASE, col, 0.22), mix(BASE, col, 0.4), mix(BASE, col, 0.7)]
+    # forge (amber) and systems (mint) sink into the dark base far more than the cool hues at the same mix, so they get a
+    # brighter ramp; without it they read as a faint smudge on the live tree (art audit, item 9)
+    lift = 1.4 if name in ("forge", "systems") else 1.0
+    pal = [(0, 0, 0), mix(BASE, col, 0.22 * lift), mix(BASE, col, 0.4 * lift), mix(BASE, col, min(1.0, 0.7 * lift))]
     idx = np.zeros((N, N), np.uint8)
     n = pnoise(rng, N, 6, 2.3)
     d = np.clip((1 - r) * 1.3 * (0.4 + n * 1.0) - 0.08, 0, 1) ** 1.5
@@ -302,14 +305,15 @@ def sec_piece(name, col, seed):
             for y in range(40, 220):
                 x = int(x0 + 3 * math.sin(y / 9 + k))
                 if 0 <= x < N and edge[y, x] and y % 3:
-                    idx[y, x] = 2
-        for _ in range(40):
+                    idx[y, x] = 3 if r[y, x] < 0.5 else 2
+        for _ in range(90):
             x, y = (int(v) for v in rng.integers(30, N - 30, 2))
             if edge[y, x]:
                 idx[y, x] = 3
     elif name == "systems":  # isometric lattice
-        m = (((xx + 2 * yy) % 22 == 0) | ((xx - 2 * yy) % 22 == 0)) & edge & on
-        idx[m] = 2
+        lat = (((xx + 2 * yy) % 22 == 0) | ((xx - 2 * yy) % 22 == 0)) & edge
+        idx[lat & on] = 2
+        idx[lat & (r < 0.55)] = 3  # solid lines in the middle so the lattice still reads when the plate is smoothed
         nodes = (((xx + 2 * yy) % 22 == 0) & ((xx - 2 * yy) % 22 == 0)) & edge
         idx[nodes] = 3
     elif name == "drones":  # honeycomb

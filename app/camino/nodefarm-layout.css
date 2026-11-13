@@ -100,3 +100,9 @@
 .ctos .nf-arcstep-b:focus-visible { outline: 2px solid var(--c); outline-offset: 2px; }
 @media (hover: hover) { .ctos .nf-arcstep-b:hover { background: color-mix(in srgb, var(--c) 18%, #0a0a0a); } }
 @media (max-width: 640px) { .ctos .nf-rail { grid-template-columns: repeat(3, minmax(0, 1fr)); } .ctos .nf-rail-b small { letter-spacing: .04em; } }
+
+/* the game stopped on a render error (components/nodefarm/error-boundary.tsx): the page stays, the save is untouched */
+.ctos .nf-crash { display: grid; gap: 12px; justify-items: start; margin: 24px; padding: 20px 18px; background: #0a0a0a; border: 1px solid #ff6a3d; color: var(--cm-fg); font: 400 var(--cm-ctos-t-ui)/1.5 var(--cm-mono); }
+.ctos .nf-crash-t { margin: 0; color: #ff6a3d; font: 700 var(--cm-ctos-t-micro)/1 var(--cm-mono); letter-spacing: .14em; text-transform: uppercase; }
+.ctos .nf-crash-d { margin: 0; max-width: 60ch; }
+.ctos .nf-crash-go { min-height: 44px; padding: 0 16px; background: var(--cm-ctos-block); border: 0; color: var(--cm-ctos-ink); font: 700 var(--cm-ctos-t-micro)/1 var(--cm-mono); letter-spacing: .1em; text-transform: uppercase; cursor: pointer; touch-action: manipulation; }
