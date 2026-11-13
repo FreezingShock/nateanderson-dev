@@ -1,6 +1,6 @@
 // Node Farm guidance: what to do next, why a zone is still locked, and what a button will do. Pure rules on top of the
 // engine (no React), so every number comes from `TUNE` and the engine's own `button`/`derive` and follows any rebalance.
-import { END_STAGES, END_STEPS, buildBlock, endStage } from "./ending";
+import { END_STAGES, END_STEPS, buildBlock, endDone, endOpen, endStage, lastZone, stageCost } from "./ending";
 import {
     chOff,
     GOALS, MATS, PERKS, TIERS, TREE, TUNE, REBOOT_UNLOCK,
@@ -223,14 +223,14 @@ function coreStep(s: State, d: Derived): Step {
         return mk({ id: "event", kicker: "ZONE EVENT", title: `${zeTitle(ev.kind, ev.zone)} in ${zoneName(ev.zone)}`, why: ev.kind === "vein" ? "Mine it for a burst of that zone's material, or let it run. The card is on screen." : "Patch it before it eats output, or wait it out. The card is on screen.", cur: ev.total - ev.left, need: ev.total, frac: fracOf(ev.total - ev.left, ev.total), unit: "s", eta: ev.left, target: { stat: ev.zone as ButtonStat } });
     }
 
-    // ---- Handover (the reset past Ascend): flash Firmware with Keys you hold, and hand over once the tree is whole
-    if (s.hand.keys > 0 && FW.some((n) => !s.hand.fw.includes(n.id) && fwNodeOpen(s, n) && s.hand.keys >= n.cost)) {
-        return mk({ id: "flash-fw", kicker: "HANDOVER", title: `Flash Firmware with ${fmt(s.hand.keys)} Keys`, why: "Firmware is kept through every Handover and changes how every run starts and what survives.", cur: 1, need: 1, unit: "KEY", target: { win: "handover" } });
-    }
-    // ---- the ending: a final-build stage you can pay for right now
+    // ---- the ending: a final-build stage you can pay for right now comes before Firmware, which spends the same Keys
     if (!buildBlock(s)) {
         const st = endStage(s);
         return mk({ id: "final-build", kicker: "FINAL BUILD", title: `Build stage ${st + 1}: ${END_STAGES[st]}`, why: `Node zero's final build, stage ${st + 1} of ${END_STEPS}. Built stages are kept through Ascend and Handover.`, cur: 1, need: 1, unit: "KEY", target: { win: "handover" } });
+    }
+    // ---- Handover (the reset past Ascend): flash Firmware with Keys you hold, and hand over once the tree is whole
+    if (s.hand.keys > 0 && FW.some((n) => !s.hand.fw.includes(n.id) && fwNodeOpen(s, n) && s.hand.keys >= n.cost)) {
+        return mk({ id: "flash-fw", kicker: "HANDOVER", title: `Flash Firmware with ${fmt(s.hand.keys)} Keys`, why: "Firmware is kept through every Handover and changes how every run starts and what survives.", cur: 1, need: 1, unit: "KEY", target: { win: "handover" } });
     }
     const hk = keysOnHandover(s);
     if (hk > 0 && (treeComplete(s) || s.hand.count > 0)) {
@@ -303,6 +303,14 @@ function coreStep(s: State, d: Derived): Step {
     // ---- chain is running: Ascend if it pays, otherwise the nearest goal
     if (canAscend(s)) {
         return mk({ id: "ascend", title: `Ascend for +${fmt(apOnAscend(s))} AP`, why: "A fresh run with more permanent power. Spend the AP on perks and the tree.", cur: s.aether, need: ascendNeed(s), unit: "AE", target: { win: "ascend" } });
+    }
+    // the final build is open but the next stage is not paid for yet: save toward it before chasing goals
+    if (endOpen(s) && !endDone(s)) {
+        const z = lastZone();
+        const c = stageCost(endStage(s));
+        const have = amount(s, z);
+        const keyShort = s.hand.keys < c.keys;
+        return mk({ id: "final-save", kicker: "FINAL BUILD", title: `Save for stage ${endStage(s) + 1}: ${END_STAGES[endStage(s)]}`, why: buildBlock(s) ?? "Ready.", cur: keyShort ? s.hand.keys : have, need: keyShort ? c.keys : c.mat, unit: keyShort ? "KEY" : statDef(z).short, pay: keyShort ? undefined : z, target: keyShort ? { win: "handover" } : aim(s, z as ButtonStat) });
     }
     let best: { g: (typeof GOALS)[number]; f: number } | null = null;
     for (const g of GOALS) {
