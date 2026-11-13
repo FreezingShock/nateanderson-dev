@@ -452,3 +452,12 @@ Integration with #254 (two arc zones per Handover), #260 (Handover keeps), #264 
 - Keep running closes it and play continues. New operator (asks to confirm, keeps a backup in Menu) starts a fresh save that keeps only `end.stars` and `end.logs`; your last log shows as a milestone and in the Final build panel of the new run.
 - Copy in `END_COPY`, the stage names and socket lines were approved by Nate on 2026-11-13.
 - Test: /mnt/project-files/portfolio/node-farm-ending/end.mjs (`SITE_PASSWORD=ci-password node end.mjs <repo> <base> <outdir>`, server started with the same password).
+
+### Balance audit, round 6: ending costs (2026-11-13)
+
+With the first draft costs (Keys 2, 3, 5, 8, 12 and Sunstone 1e3 to 1e11) the Sunstone price was met within minutes of the zone opening and Keys paid one stage per Handover, so the build finished at 51.7 h and left 29 Keys unused. `END_TUNE` is now Keys 8, 14, 24, 40, 60 (146 in all) and Sunstone 1e6, 1e9, 1e12, 1e15, 1e18. `NF_ASC_GAP=1`, Handovers up to 14, no events modelled:
+
+- Drone bot: stages at 46.6, 47.6, 52.7, 58.7 and 74.0 h. No-Drones bot: 50.8, 50.8, 60.9, 66.6 and 92.7 h. A casual player sits between the two, near the 80 h target.
+- Stages 1 to 4 are paced by Keys, the last by Sunstone (the 1e18 price is reached about 15 h after stage 4). Keys end nearly spent (14 and 10 left).
+- Sim flag `NF_ENDTUNE='{"keys":[...],"mat":[...]}'` tries a set without editing the file.
+- The endgame hour with Drones on makes about half the Bytes of the same save with Drones zeroed (2.1e24 vs 4.3e24, same presses). The swing depends on which tier is posted (0.17x to 4.3x), so it is stock-sensitive late boosts, not a tick or Drone-speed bug; no knob changed for it.
