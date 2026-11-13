@@ -283,6 +283,8 @@ export type MachineView = {
   /** Cost to build one more. */
   cost: Line[];
   status: MachineStatus;
+  /** Palette section. Absent means "machines". */
+  group?: "machines" | "power" | "logistics";
 };
 
 export type MachineDetail = MachineView & {
