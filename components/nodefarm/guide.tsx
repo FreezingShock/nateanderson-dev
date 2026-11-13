@@ -19,7 +19,7 @@ const STORE = "nf-next-v1";
 function plateOf(id: string): { p: Plate; stat?: StatId } {
     if (id === "first-mult" || id === "grow") return { p: "grow", stat: "mult" };
     if (id === "first-reboot") return { p: "reboot" };
-    if (id === "spend-ap" || id === "finish-tree" || id === "open-handover" || id === "handover" || id === "flash-fw") return { p: "tree" };
+    if (id === "spend-ap" || id === "finish-tree" || id === "open-handover" || id === "handover" || id === "flash-fw" || id === "final-build" || id === "final-save") return { p: "tree" };
     if (id === "event") return { p: "goal" };
     if (id === "lab-research") return { p: "lab" };
     if (id === "lab-compile") return { p: "compile" };

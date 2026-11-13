@@ -33,3 +33,14 @@ test("Handover comes before leftover AP, and arc zones before it ask for the tre
     const st = step(s);
     assert.ok(!(st.id.startsWith("decrypt-") && E.ARC_MATS.includes(st.id.slice(8))), `got ${st.id}`);
 });
+
+test("an affordable final-build stage comes before Firmware, which spends the same Keys", () => {
+    const s = clone(loadFixture("release-deep.json"));
+    s.ap = 0;
+    s.tree = [...E.fullTreeIds()];
+    s.hand.count = 4;
+    s.hand.keys = 50;
+    s.prod[E.STATS[E.STATS.length - 1].id] = 1;
+    s[E.STATS[E.STATS.length - 1].id] = 1e15;
+    assert.equal(step(s).id, "final-build");
+});
