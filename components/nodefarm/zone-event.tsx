@@ -102,6 +102,15 @@ function Vault({ s, reduced, onCash }: { s: State; reduced: boolean; onCash: (ro
         return () => { window.removeEventListener("keydown", dn); window.removeEventListener("keyup", up); };
     }, [press, release]);
     useEffect(() => () => cancelAnimationFrame(raf.current), []);
+    // alt-tab or a tab switch mid-hold swallows the key-up or pointer-up, so the hold would stay latched and keep decrypting.
+    // Losing focus or the tab lets go, and the rows opened so far stay open.
+    useEffect(() => {
+        const letGo = () => release();
+        const hide = () => { if (document.visibilityState === "hidden") release(); };
+        window.addEventListener("blur", letGo);
+        document.addEventListener("visibilitychange", hide);
+        return () => { window.removeEventListener("blur", letGo); document.removeEventListener("visibilitychange", hide); };
+    }, [release]);
     useEffect(() => {
         if (!held || reduced) return;
         const iv = setInterval(() => tick((x) => x + 1), 90);
@@ -126,6 +135,7 @@ function Vault({ s, reduced, onCash }: { s: State; reduced: boolean; onCash: (ro
                 onPointerDown={(e) => { e.preventDefault(); (e.target as HTMLElement).setPointerCapture?.(e.pointerId); press(); }}
                 onPointerUp={release}
                 onPointerCancel={release}
+                onLostPointerCapture={release}
                 onContextMenu={(e) => e.preventDefault()}
                 onKeyDown={(e) => { if (e.code === "Space" || e.code === "Enter") e.preventDefault(); }}
             >

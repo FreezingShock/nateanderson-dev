@@ -5,6 +5,10 @@
 export const MATS = ["copper", "silicon", "quartz", "aether", "runes", "starglass", "voidsteel", "chrono", "nebula", "pulsars", "singularity", "engrams", "paradox", "origin", "spores", "mycelium", "pollen", "bloom", "basalt", "magma", "geodes", "sunstone"] as const;
 /** The two arcs past Root Chamber (Overgrowth, then Descent). They stay shut until the first Handover. */
 export const ARC_MATS: readonly MatId[] = ["spores", "mycelium", "pollen", "bloom", "basalt", "magma", "geodes", "sunstone"];
+/** Handovers needed before each arc zone can open: two new zones per Handover, so every early Handover gets something new.
+ *  Without this all eight opened within an hour of each other (sim, 2026-11-12). NF_ARCGATE='{"pollen":1}' tries other numbers in the sim. */
+export const ARC_GATE: Record<string, number> = { spores: 1, mycelium: 1, pollen: 2, bloom: 2, basalt: 3, magma: 3, geodes: 4, sunstone: 4 };
+export const arcGateNeed = (id: string) => ARC_GATE[id] ?? 0;
 export type MatId = (typeof MATS)[number];
 export type StatId = "bytes" | "mult" | "reboot" | MatId;
 export type ButtonStat = Exclude<StatId, "bytes">;
@@ -95,7 +99,7 @@ export const TUNE = {
     logK: { snAll: 0.1, egDrone: 0.15, pxOc: 0.15, orAp: 0.1, crosstalk: 0.12, blKeys: 0.1, suAll: 0.08 },
     boostPow: 0.38,
     chAllCap: 1e6, // Chrono boosts EVERYTHING, including Chrono: past this amount the boost grows only with log10 (a power law fed itself to 1e300 once Engrams opened)
-    unlockAt: { copper: 1, silicon: 150, quartz: 300, aether: 500, runes: 150, starglass: 200, voidsteel: 250, chrono: 2000, nebula: 300, pulsars: 300, singularity: 300, engrams: 350, paradox: 400, origin: 450, spores: 500, mycelium: 550, pollen: 600, bloom: 650, basalt: 700, magma: 750, geodes: 800, sunstone: 850 } as Record<string, number>, // copper: Reboots; the rest: amount of the stat below
+    unlockAt: { copper: 1, silicon: 150, quartz: 300, aether: 500, runes: 150, starglass: 800, voidsteel: 2500, chrono: 1000, nebula: 300, pulsars: 300, singularity: 300, engrams: 350, paradox: 400, origin: 450, spores: 500, mycelium: 550, pollen: 600, bloom: 650, basalt: 700, magma: 750, geodes: 800, sunstone: 850 } as Record<string, number>, // copper: Reboots; the rest: amount of the stat below
     overclockMult: 6,
     overclockSecs: 20,
     offlineCapHours: 8,
@@ -688,8 +692,6 @@ export interface State {
     ch?: import("./stress").ChState;
     /** Zone events (lib/nodefarm/zoneevents.ts): the running event, the timer to the next one and a count. Reset on Ascend. Created on first use. */
     ze?: ZoneEvState;
-    /** Touch layer: caches waiting in zone art and the core vent (rules in lib/nodefarm/poke.ts, repaired there so old saves load) */
-    poke?: PokeState;
     /** Which button tiers were ever pressed, per stat, as a bit mask. Kept through Ascend; arcs clear when every tier of every zone in them is set. */
     seen?: Partial<Record<ButtonStat, number>>;
     // lifetime counters (survive Ascend)
@@ -750,19 +752,6 @@ export interface AutoState {
     rebuild?: boolean;
     seenHand?: number;
     restPerks?: boolean;
-}
-/** Touch layer (lib/nodefarm/poke.ts): caches that wait in a zone's art until tapped, and the core vent's charge. */
-export interface PokeState {
-    /** caches waiting: id, zone, and where along the scene they sit (0..1) */
-    c: { id: number; z: StatId; x: number }[];
-    /** online seconds until the next cache */
-    next: number;
-    /** vent charge in seconds (full at POKE_TUNE.ventCharge) */
-    vent: number;
-    /** lifetime counts: caches opened, vents, caches spawned (also the id counter) */
-    got: number;
-    vents: number;
-    n: number;
 }
 /** Called at the end of every tick (and so also through time away). Scripts add themselves here. */
 export const TICK_HOOKS: ((s: State, dt: number) => void)[] = [];
@@ -1102,7 +1091,7 @@ export function isUnlocked(s: State, id: StatId): boolean {
     if (id === "bytes" || id === "mult") return true;
     if (id === "reboot") return s.life.bytes >= REBOOT_UNLOCK.bytes || s.reboot > 0 || s.mult >= REBOOT_UNLOCK.mult;
     if (id === "copper") return s.life.reboots >= TUNE.unlockAt.copper;
-    if (ARC_MATS.includes(id as MatId) && !(s.hand?.count > 0)) return false;
+    if (ARC_MATS.includes(id as MatId) && (s.hand?.count ?? 0) < arcGateNeed(id)) return false;
     const i = MATS.indexOf(id as MatId);
     const below = MATS[i - 1];
     // after your first Ascend a stat opens at a quarter of the usual amount

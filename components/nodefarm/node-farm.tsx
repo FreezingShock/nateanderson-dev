@@ -1096,7 +1096,14 @@ export function NodeFarm() {
             setTimeout(() => document.querySelector<HTMLElement>(`.nf [data-stat="lab"]`)?.scrollIntoView({ behavior: reduced ? "auto" : "smooth", block: "center" }), 90);
             return;
         }
+        if (t.dtree) { setWin(""); setTreeOpen(false); setLabTree(false); setDroneTree(true); sfx("tab"); return; }
         setTab("stats");
+        if (t.sched) {
+            if (folded.sched) setFold({ ...folded, sched: false });
+            sfx("tab");
+            setTimeout(() => document.querySelector<HTMLElement>(`.nf [data-stat="sched"]`)?.scrollIntoView({ behavior: reduced ? "auto" : "smooth", block: "center" }), 90);
+            return;
+        }
         const key = t.drone !== undefined ? "drones" : t.stat;
         if (!key) return;
         const arc = arcOf(key);
@@ -1174,6 +1181,17 @@ export function NodeFarm() {
         if (!canAfford(s, t.stat, t.tier)) { if (!held) { sfx("deny"); goTo(t); } return; }
         doPress(t.stat, t.tier, held);
     };
+    const doDrone = (k: number) => {
+        if (buyDrone(s, k)) { sfx("nfDrone", { tier: k }); feedStore.push([...call(idTok("drones"), "deploy", [strTok(`T${k + 1}`)]), pun(" → "), strTok("online")], { tone: "good", type: true }); bump((n) => n + 1); return true; }
+        sfx("deny");
+        return false;
+    };
+    // the guide's big button does the step itself when it can: press the glowing button, or build the Drone
+    const doStep = (t?: Target) => {
+        if (t?.stat !== undefined && t.tier !== undefined) return doPress(t.stat, t.tier);
+        if (t?.drone !== undefined) return doDrone(t.drone);
+        return false;
+    };
     const treeSeen = s.life.ascends > 0 || s.ap > 0 || s.tree.length > 0;
     const sw = swInfo(s, d.bytesPerSec, lastSave, fs, labReady(s), win === "records" || (tab === "records" && !win));
     const era = eraOf(s);
@@ -1231,7 +1249,7 @@ export function NodeFarm() {
                 <Hold live={false} k={`${hk}|${win}|${fs}|${treeSeen}|${guideKey}`}><Dock info={sw} open={win} treeSeen={treeSeen} lab={labOpen(s)} guideWin={step.target?.win} fs={fs} onOpen={(w) => (w === "lab" ? openLab() : win === w ? closeWin() : openWin(w))} onFs={() => { setFs(!fs); sfx("tab"); }} /></Hold>
                 <Hold live={false} k={hk}><StressStrip s={s} onOpen={() => openWin("stress")} /></Hold>
             </header>
-            <GuideStrip step={step} onGo={() => goTo(step.target)} onMap={() => openWin("map")} mapOpen={win === "map"} />
+            <GuideStrip s={s} d={d} step={step} onGo={() => goTo(step.target)} onDo={() => doStep(step.target)} onCell={goTo} onMap={() => openWin("map")} mapOpen={win === "map"} />
             <MiniHud bytes={s.bytes} rate={d.bytesPerSec} step={step} onGo={() => goTo(step.target)} paused={!!win || treeOpen || labTree || !!away || !!confirm} />
             {win && <button type="button" className="nf-scrim" aria-label="Close window" tabIndex={-1} onClick={closeWin} />}
 
@@ -1300,7 +1318,7 @@ export function NodeFarm() {
                         guided={step.target?.drone}
                         open={!folded.drones}
                         onToggle={() => { setFold({ ...folded, drones: !folded.drones }); sfx("tab"); }}
-                        onBuy={(k) => { if (buyDrone(s, k)) { sfx("nfDrone", { tier: k }); feedStore.push([...call(idTok("drones"), "deploy", [strTok(`T${k + 1}`)]), pun(" → "), strTok("online")], { tone: "good", type: true }); bump((n) => n + 1); } else sfx("deny"); }}
+                        onBuy={doDrone}
                         onPost={(k, st) => {
                             if (!setPost(s, k, st)) return sfx("deny");
                             sfx("tab");
