@@ -455,7 +455,8 @@ body.nf-win-open .ctos .cm-section.ruled { z-index: 60; }
 /* ---- locked zones: say what opens them, and how close you are */
 .ctos .nf-locked { align-items: flex-start; }
 .ctos .nf-lk { display: grid; gap: 4px; min-width: 0; flex: 1; }
-.ctos .nf-lk-k { font: 700 var(--cm-ctos-t-micro)/1 var(--cm-mono); letter-spacing: .14em; color: var(--c); opacity: .8; }
+/* The lock line sits over dither art, so it gets full opacity and a dark outline to hold against the pattern. */
+.ctos .nf-lk-k { font: 700 var(--cm-ctos-t-micro)/1 var(--cm-mono); letter-spacing: .14em; color: var(--c); text-shadow: 0 0 2px #000, 0 0 4px #000, 0 1px 0 #000; }
 .ctos .nf-lk b { font: 700 20px/1.1 var(--cm-display); letter-spacing: -.02em; text-transform: lowercase; color: var(--cm-mute); }
 .ctos .nf-lk-m { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 10px; margin-top: 6px; max-width: 420px; }
 .ctos .nf-lk-m .nf-bar { --c: var(--c); }

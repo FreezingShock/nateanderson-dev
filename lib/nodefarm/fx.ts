@@ -1,6 +1,7 @@
 // Node Farm effects level: one switch other code can hook.
 //   full: everything runs.  low: the expensive decoration stops (see app/camino/nodefarm-fx.css).  auto: low only when this
-//   device can't hold about 40 fps (measured once, a few seconds after the game opens).
+//   device can't hold about 40 fps (measured once, a few seconds after the game opens), or when the OS asks for reduced motion.
+//   An explicit full keeps everything running, even with reduced motion on.
 // Hooks for other code:
 //   CSS      body.nf-lowfx { ... }          (also body[data-nf-fx="low"])
 //   plain JS getLowFx()
@@ -14,7 +15,8 @@ export const FX_MODES: FxMode[] = ["full", "low", "auto"];
 const KEY = "nf-fx-v1";
 
 let mode: FxMode = "auto"; // the default: measure once and go low only on a slow machine
-let autoLow = false; // what the probe found, only used in auto
+let autoLow = false; // what auto picked: the frame probe or the OS reduced-motion setting, only used in auto
+let measuredLow = false; // what the frame probe found
 let low = false;
 let probed = false;
 let timer: ReturnType<typeof setTimeout> | 0 = 0;
@@ -43,9 +45,20 @@ export function setFxMode(m: FxMode) {
     apply();
 }
 
+/** The OS asks for less motion. Auto treats that as low, so the heavy loops stop without a manual switch. */
+function reducedMotion(): boolean {
+    return typeof window !== "undefined" && !!window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+}
+
+/** Auto is low when the OS asks for less motion or when the frame probe found a slow machine. */
+function pickAuto() {
+    autoLow = reducedMotion() || measuredLow;
+}
+
 /** Median frame time over about 90 frames. Slower than 24 ms (under ~40 fps) counts as a slow machine. */
 function probe() {
     if (probed || typeof window === "undefined") return;
+    if (reducedMotion()) { pickAuto(); apply(); return; } // no need to measure; the probe runs later if the OS setting turns off
     probed = true;
     if (timer) clearTimeout(timer);
     timer = setTimeout(() => {
@@ -57,7 +70,8 @@ function probe() {
             last = t;
             if (dts.length < 90) { requestAnimationFrame(step); return; }
             dts.sort((a, b) => a - b);
-            autoLow = dts[dts.length >> 1] > 24;
+            measuredLow = dts[dts.length >> 1] > 24;
+            pickAuto();
             apply();
         };
         requestAnimationFrame(step);
@@ -69,6 +83,15 @@ let started = false;
 export function initFx() {
     if (started) return;
     started = true;
+    try {
+        // follow the OS setting while the game is open: on turns auto low, off hands auto back to the probe
+        window.matchMedia("(prefers-reduced-motion: reduce)").addEventListener("change", () => {
+            if (mode !== "auto") return;
+            pickAuto();
+            if (!reducedMotion()) probe();
+            apply();
+        });
+    } catch {}
     try {
         const v = localStorage.getItem(KEY);
         if (v === "low" || v === "full" || v === "auto") mode = v;
