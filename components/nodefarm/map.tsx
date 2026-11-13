@@ -84,7 +84,7 @@ export function MapPanel({ s, d, onTree, onWin, onLab }: { s: State; d: D; onTre
                 </ol>
 
                 <article ref={zone} className="nf-wk-zone" data-state={st} style={{ ["--c" as string]: def.color } as CSSProperties} aria-live="polite">
-                    <span className="nf-wk-p">zone.{String(pick).padStart(2, "0")} // {st === "locked" ? "encrypted" : LORE[def.id].code}</span>
+                    <span className="nf-wk-p">zone.{String(pick + 1).padStart(2, "0")} // {st === "locked" ? "encrypted" : LORE[def.id].code}</span>
                     <div className="nf-wk-zh">
                         <NfIcon name={st === "locked" ? "lock" : (def.id as NfIconName)} large />
                         <div>
