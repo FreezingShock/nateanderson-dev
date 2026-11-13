@@ -94,9 +94,20 @@ export const PLACEHOLDER_CATALOG: Catalog = {
     tune: ENGINE_DATA.tune,
 };
 
+// The three plain belts cost placeholder plates in ENGINE_DATA (the tests and the placeholder run use them).
+// On the real tree they cost real items, so a player who has never seen "Plate A" can still lay a belt.
+const REAL_BELT_COST: Record<string, Stack[]> = {
+    belt: [{ item: "iron_plate", qty: 1 }],
+    "belt-copper": [{ item: "iron_plate", qty: 1 }, { item: "copper_wire", qty: 1 }],
+    "belt-steel": [{ item: "iron_plate", qty: 1 }, { item: "copper_wire", qty: 1 }, { item: "steel_ingot", qty: 1 }],
+};
+
 export const DEFAULT_CATALOG: Catalog = {
     tree: RECIPE_TREE,
-    engine: ENGINE_DATA.engine,
+    engine: {
+        ...ENGINE_DATA.engine,
+        ...Object.fromEntries(Object.entries(REAL_BELT_COST).map(([id, cost]) => [id, { ...ENGINE_DATA.engine[id], cost }])),
+    },
     tune: ENGINE_DATA.tune,
 };
 

@@ -208,7 +208,8 @@ export function placeError(world: World, type: string, x: number, z: number, rot
     if (r.kind === "miner" && !world.deposits[keyOf(x, z)]) return "needs a resource node";
     const hub = world.buildings[world.hubId];
     for (const c of r.cost) {
-        if ((hub.input[c.item] ?? 0) < c.qty) return `needs ${c.qty} ${cat.tree.items.find((i) => i.id === c.item)?.name ?? c.item}`;
+        const have = Math.floor(hub.input[c.item] ?? 0);
+        if (have < c.qty) return `needs ${c.qty} ${cat.tree.items.find((i) => i.id === c.item)?.name ?? c.item}, hub has ${have}`;
     }
     return null;
 }
