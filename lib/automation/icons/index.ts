@@ -3,11 +3,11 @@ import type { CSSProperties } from "react";
 
 /** One sheet holds every item and machine icon: 64 px art cells, 8 across, row by row. */
 export const ICON_SHEET = {
-    url: "/brasswork/icons/items.webp?v=8810dcce",
-    png: "/brasswork/icons/items.png?v=8810dcce",
+    url: "/brasswork/icons/items.webp?v=0ff7d54d",
+    png: "/brasswork/icons/items.png?v=0ff7d54d",
     cell: 64,
     cols: 8,
-    rows: 6,
+    rows: 9,
 } as const;
 
 /** Sheet cell of each item, keyed by the item ids in lib/automation/data/tree.ts. */
@@ -65,14 +65,43 @@ export const STRUCTURE_ICONS = {
     orrery_2: 40,
     orrery_3: 40,
     orrery_4: 40,
+    "belt-splitter": 41,
+    "belt-splitter-copper": 42,
+    "belt-splitter-steel": 43,
+    "belt-merger": 44,
+    "belt-merger-copper": 45,
+    "belt-merger-steel": 46,
+    "belt-underground-in": 47,
+    "belt-underground-in-copper": 48,
+    "belt-underground-in-steel": 49,
+    "belt-underground-out": 50,
+    "belt-underground-out-copper": 51,
+    "belt-underground-out-steel": 52,
+    "belt-loader": 53,
+    "belt-loader-copper": 54,
+    "belt-loader-steel": 55,
+    "belt-unloader": 56,
+    "belt-unloader-copper": 57,
+    "belt-unloader-steel": 58,
+    "belt-crate": 59,
+    "belt-strongbox": 60,
+    "belt-dock": 61,
+} as const;
+
+/** Sheet cell of each belt tier (sim building types belt, belt-copper, belt-steel). */
+export const BELT_ICONS = {
+    belt: 62,
+    "belt-copper": 63,
+    "belt-steel": 64,
 } as const;
 
 export type ItemIconId = keyof typeof ITEM_ICONS;
 export type MachineIconId = keyof typeof MACHINE_ICONS;
 export type StructureIconId = keyof typeof STRUCTURE_ICONS;
-export type IconId = ItemIconId | MachineIconId | StructureIconId;
+export type BeltIconId = keyof typeof BELT_ICONS;
+export type IconId = ItemIconId | MachineIconId | StructureIconId | BeltIconId;
 
-const CELLS: Record<string, number> = { ...ITEM_ICONS, ...MACHINE_ICONS, ...STRUCTURE_ICONS };
+const CELLS: Record<string, number> = { ...ITEM_ICONS, ...MACHINE_ICONS, ...STRUCTURE_ICONS, ...BELT_ICONS };
 
 /** Sheet cell for an item or machine id, or undefined if the id has no icon. */
 export function iconCell(id: string): number | undefined {

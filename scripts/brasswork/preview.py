@@ -5,7 +5,8 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 import bw_items as B
 import bw_machines as M
 from nodefarm_icon_kit import to_image, contact
-D = {**B.DRAW, **M.DRAW, **M.STRUCT}
+import bw_logistics as L
+D = {**B.DRAW, **M.DRAW, **M.STRUCT, **L.LOG}
 names = sys.argv[2:] or list(D)
 cols = 8
 rows = (len(names) + cols - 1) // cols

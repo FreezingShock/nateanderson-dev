@@ -12,7 +12,7 @@ const { RECIPE_TREE } = await import(resolve(root, "lib/automation/data/tree.ts"
 const iconSrc = readFileSync(resolve(root, "lib/automation/icons/index.ts"), "utf8");
 const table = (name) => {
     const body = iconSrc.match(new RegExp(`export const ${name} = \\{([^}]*)\\}`))[1];
-    return Object.fromEntries([...body.matchAll(/(\w+): (\d+)/g)].map((m) => [m[1], Number(m[2])]));
+    return Object.fromEntries([...body.matchAll(/"?([\w-]+)"?: (\d+)/g)].map((m) => [m[1], Number(m[2])]));
 };
 
 test("every item has an icon cell", () => {
@@ -27,7 +27,7 @@ test("every machine has an icon cell", () => {
 
 test("every structure has an icon cell", () => {
     const icons = table("STRUCTURE_ICONS");
-    for (const st of (RECIPE_TREE.structures ?? []).filter((s) => !s.id.startsWith("belt-"))) assert.ok(st.id in icons, `${st.id} has no icon`);
+    for (const st of RECIPE_TREE.structures ?? []) assert.ok(st.id in icons, `${st.id} has no icon`);
 });
 
 test("the icon sheet exists and fits every cell", () => {
@@ -36,7 +36,7 @@ test("the icon sheet exists and fits every cell", () => {
     const b = readFileSync(png);
     const w = b.readUInt32BE(16);
     const h = b.readUInt32BE(20);
-    const cells = Object.values({ ...table("ITEM_ICONS"), ...table("MACHINE_ICONS"), ...table("STRUCTURE_ICONS") });
+    const cells = Object.values({ ...table("ITEM_ICONS"), ...table("MACHINE_ICONS"), ...table("STRUCTURE_ICONS"), ...table("BELT_ICONS") });
     assert.equal(w % 64, 0);
     assert.ok(Math.max(...cells) < (w / 64) * (h / 64));
 });
