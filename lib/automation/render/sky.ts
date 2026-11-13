@@ -54,43 +54,46 @@ void main() {
 }`;
 
 export class SkyDome {
-  readonly mesh: THREE.Mesh;
-  private readonly uniforms = {
-    uSun: { value: new THREE.Vector3(...SKY_SUN_DIR).normalize() },
-    uHorizon: { value: new THREE.Color(0xb87a4c) },
-    uMid: { value: new THREE.Color(0xa9505a) },
-    uTop: { value: new THREE.Color(0x241a4a) },
-    uGlow: { value: new THREE.Color(0xffc27a) },
-  };
+    readonly mesh: THREE.Mesh;
+    private readonly uniforms = {
+        uSun: { value: new THREE.Vector3(...SKY_SUN_DIR).normalize() },
+        uHorizon: { value: new THREE.Color(0xb87a4c) },
+        uMid: { value: new THREE.Color(0xa9505a) },
+        uTop: { value: new THREE.Color(0x241a4a) },
+        uGlow: { value: new THREE.Color(0xffc27a) },
+    };
 
-  constructor(scene: THREE.Scene) {
-    const material = new THREE.ShaderMaterial({
-      uniforms: this.uniforms,
-      vertexShader: vertex,
-      fragmentShader: fragment,
-      side: THREE.BackSide,
-      depthWrite: false,
-      fog: false,
-    });
-    this.mesh = new THREE.Mesh(new THREE.SphereGeometry(SKY_RADIUS, 48, 24), material);
-    this.mesh.frustumCulled = false;
-    this.mesh.renderOrder = -1;
-    scene.add(this.mesh);
-  }
+    constructor(scene: THREE.Scene) {
+        const material = new THREE.ShaderMaterial({
+            uniforms: this.uniforms,
+            vertexShader: vertex,
+            fragmentShader: fragment,
+            side: THREE.BackSide,
+            depthWrite: false,
+            fog: false,
+        });
+        this.mesh = new THREE.Mesh(
+            new THREE.SphereGeometry(SKY_RADIUS, 48, 24),
+            material
+        );
+        this.mesh.frustumCulled = false;
+        this.mesh.renderOrder = -1;
+        scene.add(this.mesh);
+    }
 
-  setColors(horizon: number, mid: number, top: number): void {
-    this.uniforms.uHorizon.value.setHex(horizon);
-    this.uniforms.uMid.value.setHex(mid);
-    this.uniforms.uTop.value.setHex(top);
-  }
+    setColors(horizon: number, mid: number, top: number): void {
+        this.uniforms.uHorizon.value.setHex(horizon);
+        this.uniforms.uMid.value.setHex(mid);
+        this.uniforms.uTop.value.setHex(top);
+    }
 
-  /** Keeps the dome centred on the camera so it never reads as near geometry. */
-  follow(position: THREE.Vector3): void {
-    this.mesh.position.copy(position);
-  }
+    /** Keeps the dome centred on the camera so it never reads as near geometry. */
+    follow(position: THREE.Vector3): void {
+        this.mesh.position.copy(position);
+    }
 
-  dispose(): void {
-    this.mesh.geometry.dispose();
-    (this.mesh.material as THREE.Material).dispose();
-  }
+    dispose(): void {
+        this.mesh.geometry.dispose();
+        (this.mesh.material as THREE.Material).dispose();
+    }
 }

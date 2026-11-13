@@ -41,59 +41,64 @@ void main() {
 }`;
 
 export class PixelDitherPass {
-  readonly target: THREE.WebGLRenderTarget;
-  private readonly material: THREE.ShaderMaterial;
-  private readonly scene = new THREE.Scene();
-  private readonly camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
-  private readonly renderer: THREE.WebGLRenderer;
+    readonly target: THREE.WebGLRenderTarget;
+    private readonly material: THREE.ShaderMaterial;
+    private readonly scene = new THREE.Scene();
+    private readonly camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
+    private readonly renderer: THREE.WebGLRenderer;
 
-  constructor(renderer: THREE.WebGLRenderer, pixelSize: number, levels = 6) {
-    this.renderer = renderer;
-    this.target = new THREE.WebGLRenderTarget(1, 1, {
-      minFilter: THREE.NearestFilter,
-      magFilter: THREE.NearestFilter,
-      depthBuffer: true,
-    });
-    this.material = new THREE.ShaderMaterial({
-      uniforms: {
-        tColor: { value: this.target.texture },
-        uPixel: { value: pixelSize },
-        uDither: { value: 1 },
-        uLevels: { value: levels },
-        uExposure: { value: 1.12 },
-      },
-      vertexShader: vertex,
-      fragmentShader: fragment,
-      depthTest: false,
-      depthWrite: false,
-    });
-    this.scene.add(new THREE.Mesh(new THREE.PlaneGeometry(2, 2), this.material));
-  }
+    constructor(renderer: THREE.WebGLRenderer, pixelSize: number, levels = 6) {
+        this.renderer = renderer;
+        this.target = new THREE.WebGLRenderTarget(1, 1, {
+            minFilter: THREE.NearestFilter,
+            magFilter: THREE.NearestFilter,
+            depthBuffer: true,
+        });
+        this.material = new THREE.ShaderMaterial({
+            uniforms: {
+                tColor: { value: this.target.texture },
+                uPixel: { value: pixelSize },
+                uDither: { value: 1 },
+                uLevels: { value: levels },
+                uExposure: { value: 1.12 },
+            },
+            vertexShader: vertex,
+            fragmentShader: fragment,
+            depthTest: false,
+            depthWrite: false,
+        });
+        this.scene.add(
+            new THREE.Mesh(new THREE.PlaneGeometry(2, 2), this.material)
+        );
+    }
 
-  /** Sizes the scene target for a canvas of `cssWidth` by `cssHeight` device pixels at this pixel size. */
-  resize(width: number, height: number, pixelSize: number): void {
-    this.material.uniforms.uPixel.value = pixelSize;
-    this.target.setSize(Math.max(1, Math.floor(width / pixelSize)), Math.max(1, Math.floor(height / pixelSize)));
-  }
+    /** Sizes the scene target for a canvas of `cssWidth` by `cssHeight` device pixels at this pixel size. */
+    resize(width: number, height: number, pixelSize: number): void {
+        this.material.uniforms.uPixel.value = pixelSize;
+        this.target.setSize(
+            Math.max(1, Math.floor(width / pixelSize)),
+            Math.max(1, Math.floor(height / pixelSize))
+        );
+    }
 
-  setDither(on: boolean): void {
-    this.material.uniforms.uDither.value = on ? 1 : 0;
-  }
+    setDither(on: boolean): void {
+        this.material.uniforms.uDither.value = on ? 1 : 0;
+    }
 
-  setLevels(levels: number): void {
-    this.material.uniforms.uLevels.value = levels;
-  }
+    setLevels(levels: number): void {
+        this.material.uniforms.uLevels.value = levels;
+    }
 
-  /** Renders the scene into the target, then the dither pass to the canvas. */
-  render(scene: THREE.Scene, camera: THREE.Camera): void {
-    this.renderer.setRenderTarget(this.target);
-    this.renderer.render(scene, camera);
-    this.renderer.setRenderTarget(null);
-    this.renderer.render(this.scene, this.camera);
-  }
+    /** Renders the scene into the target, then the dither pass to the canvas. */
+    render(scene: THREE.Scene, camera: THREE.Camera): void {
+        this.renderer.setRenderTarget(this.target);
+        this.renderer.render(scene, camera);
+        this.renderer.setRenderTarget(null);
+        this.renderer.render(this.scene, this.camera);
+    }
 
-  dispose(): void {
-    this.target.dispose();
-    this.material.dispose();
-  }
+    dispose(): void {
+        this.target.dispose();
+        this.material.dispose();
+    }
 }
