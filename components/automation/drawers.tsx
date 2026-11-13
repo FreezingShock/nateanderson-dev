@@ -1,4 +1,4 @@
-import type { AreaView, HudSettings, StatLine } from "./types";
+import type { AreaView, HudSettings, StatLine } from "@/lib/automation/types";
 
 export function ExpeditionList({
   areas,
