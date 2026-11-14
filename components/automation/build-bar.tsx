@@ -31,7 +31,7 @@ const TIER_RANK = (id: string) => (id.endsWith("-steel") ? 2 : id.endsWith("-cop
  * Collapses tier variants (plain, -copper, -steel) into one row. The row builds the best unlocked tier,
  * and the name says which tier that is. Locked variants are hidden unless no tier is open yet.
  */
-function collapseTiers(list: MachineView[]): MachineView[] {
+function collapseTiers(list: MachineView[], resources: ResourceView[]): MachineView[] {
   const byBase = new Map<string, MachineView[]>();
   const out: MachineView[] = [];
   for (const m of list) {
@@ -44,8 +44,10 @@ function collapseTiers(list: MachineView[]): MachineView[] {
   return out.map((row) => {
     const tiers = byBase.get(row.id);
     if (!tiers) return row;
+    // Prefer the highest open tier the player can pay for; otherwise show the lowest open tier (brass), never a locked steel row.
     const open = tiers.filter((t) => t.unlocked).sort((a, b) => TIER_RANK(b.id) - TIER_RANK(a.id));
-    const best = open[0] ?? tiers.sort((a, b) => TIER_RANK(a.id) - TIER_RANK(b.id))[0];
+    const affordable = open.find((t) => canAfford(t.cost, resources));
+    const best = affordable ?? open[open.length - 1] ?? [...tiers].sort((a, b) => TIER_RANK(a.id) - TIER_RANK(b.id))[0];
     const count = tiers.reduce((n, t) => n + t.count, 0);
     // Add the tier word only when the name does not already carry it (for example "Steel belt").
     const tier = TIER_RANK(best.id) === 2 ? "steel" : TIER_RANK(best.id) === 1 ? "copper" : "";
@@ -95,7 +97,7 @@ export function BuildList({
 }) {
   // One framed panel per group, in the order the groups first appear. Each panel collapses from its header.
   const groups: { id: GroupId; items: MachineView[] }[] = [];
-  const shown = collapseTiers(machines).sort((a, b) => orderOf(a.id) - orderOf(b.id));
+  const shown = collapseTiers(machines, resources).sort((a, b) => orderOf(a.id) - orderOf(b.id));
   for (const m of shown) {
     const id = (m.group ?? "machines") as GroupId;
     let g = groups.find((x) => x.id === id);
