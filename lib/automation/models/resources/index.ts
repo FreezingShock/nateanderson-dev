@@ -41,3 +41,4 @@ export {
     STOCK_FILLS,
     type Grade,
 } from "./models";
+export { nodeModel, nodeGrade, NODE_STAKES, type NodeGrade } from "./node";

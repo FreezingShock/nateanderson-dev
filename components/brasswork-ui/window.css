@@ -1,0 +1,31 @@
+/* Shared centred menu window. Sized to its content, capped at the stage height, one title row with an art slot.
+   On phones it becomes a bottom sheet. Used by every full menu (research, production stats, expedition, settings). */
+.bw-window-scrim {
+  position: fixed; inset: 0; z-index: 20; display: grid; place-items: center; padding: 16px;
+  background: rgba(8, 6, 3, 0.55);
+}
+.bw-window {
+  position: relative; display: flex; flex-direction: column; min-width: 0;
+  width: min(640px, 100%); max-height: min(78vh, 720px);
+  background: var(--bw-panel, #20170c); border: 2px solid #b8862f;
+  box-shadow: 0 0 0 1px #1a1209, inset 0 1px 0 rgba(255, 220, 150, 0.35), 0 16px 40px rgba(0, 0, 0, 0.5);
+  color: #efe2c4;
+}
+.bw-window[data-size="wide"] { width: min(960px, 100%); }
+.bw-window-head {
+  display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 10px; align-items: center;
+  padding: 10px 12px; border-bottom: 1px solid #4a3a22; background: linear-gradient(180deg, #3a2a14, #241a0c);
+}
+.bw-window-art { width: 32px; height: 32px; display: grid; place-items: center; }
+.bw-window-title { margin: 0; font-size: 18px; letter-spacing: .06em; text-transform: uppercase; color: #ffd98a; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+.bw-window-close {
+  min-height: 36px; padding: 0 12px; border: 2px solid #b8862f; background: #1d160b; color: #f4e4b8;
+  font-family: inherit; font-weight: 600; font-size: 12px; line-height: 1; text-transform: uppercase; letter-spacing: .06em; cursor: pointer; white-space: nowrap;
+}
+.bw-window-close:focus-visible { outline: 2px solid #f4e4b8; outline-offset: 2px; }
+.bw-window-body { overflow: auto; padding: 12px; min-height: 0; }
+
+@media (max-width: 767px) {
+  .bw-window-scrim { place-items: end center; padding: 0; }
+  .bw-window { width: 100%; max-height: 82vh; border-left: 0; border-right: 0; border-bottom: 0; }
+}
