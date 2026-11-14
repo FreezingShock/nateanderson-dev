@@ -69,6 +69,8 @@ export interface Ghost {
     stroking: boolean;
     // Placeable anchors (or, for delete, removable cells).
     validCount: number;
+    // Why the first refused cell is refused, or null when the whole preview is valid. Shown next to the ghost.
+    reason: string | null;
 }
 
 export type BuildEvent =
@@ -287,7 +289,9 @@ export class BuildController {
             if (isDelete) validCount += group.filter((c) => c.valid).length;
             else if (group.every((c) => c.valid)) validCount += 1;
         }
-        return { tool, cells, rot, stroking: this.stroke !== null, validCount };
+        const firstBad = cells.find((c) => !c.valid && c.reason && c.reason !== "same");
+        const reason = isDelete ? (validCount === 0 ? "nothing to remove" : null) : firstBad?.reason ?? null;
+        return { tool, cells, rot, stroking: this.stroke !== null, validCount, reason };
     }
 
     canUndo(): boolean {
