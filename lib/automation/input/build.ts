@@ -1,4 +1,34 @@
-import { type BoardSize, type Cell, type Rot, cellInBoard, cellKey, lineCells, rotate } from "./grid";
+import { type BoardSize, type Cell, type Rot, cellInBoard, cellKey, lineCells, rotate, rotFromDelta } from "./grid";
+
+// Pencil path: walks from the last cell toward the target one cell at a time (x first, then z), so a fast
+// drag still draws a connected line. Stepping back onto the previous cell erases the last one, so dragging
+// back over a stroke undoes it.
+export function extendPath(path: Cell[], target: Cell): Cell[] {
+    const p = path.map((c) => ({ x: c.x, z: c.z }));
+    for (let guard = 0; guard < 400; guard++) {
+        const last = p[p.length - 1];
+        const dx = target.x - last.x;
+        const dz = target.z - last.z;
+        if (dx === 0 && dz === 0) break;
+        const next = Math.abs(dx) >= Math.abs(dz) ? { x: last.x + Math.sign(dx), z: last.z } : { x: last.x, z: last.z + Math.sign(dz) };
+        const back = p.length >= 2 ? p[p.length - 2] : null;
+        if (back && back.x === next.x && back.z === next.z) {
+            p.pop();
+            continue;
+        }
+        p.push(next);
+    }
+    return p;
+}
+
+// Each cell faces the next cell of the path; the last cell faces the way the stroke was going.
+export function pathRots(path: Cell[], fallback: Rot): Rot[] {
+    return path.map((c, i) => {
+        if (i < path.length - 1) return rotFromDelta(path[i + 1].x - c.x, path[i + 1].z - c.z, fallback);
+        if (path.length > 1) return rotFromDelta(c.x - path[i - 1].x, c.z - path[i - 1].z, fallback);
+        return fallback;
+    });
+}
 
 // What the world stores in a cell. The renderer and the simulation own what "kind" means.
 // anchor is the building's anchor cell when the world knows it. Otherwise the cell is its own anchor.
@@ -74,8 +104,8 @@ export interface Ghost {
 }
 
 export type BuildEvent =
-    | { type: "place"; count: number }
-    | { type: "remove"; count: number }
+    | { type: "place"; count: number; cells: Cell[] }
+    | { type: "remove"; count: number; cells: Cell[] }
     | { type: "rotate" }
     | { type: "invalid"; reason: string }
     | { type: "undo" }
@@ -112,7 +142,7 @@ export class BuildController {
     private tool: ToolSpec | null = null;
     private rot: Rot = 0;
     private hover: Cell | null = null;
-    private stroke: { anchor: Cell; cur: Cell } | null = null;
+    private stroke: { anchor: Cell; cur: Cell; path: Cell[] } | null = null;
     private undoStack: Edit[][] = [];
     private redoStack: Edit[][] = [];
     private listeners = new Set<() => void>();
@@ -227,7 +257,7 @@ export class BuildController {
 
     beginStroke(cell: Cell): void {
         if (!this.tool) return;
-        this.stroke = { anchor: { ...cell }, cur: { ...cell } };
+        this.stroke = { anchor: { ...cell }, cur: { ...cell }, path: [{ ...cell }] };
         this.hover = { ...cell };
         this.emit();
     }
@@ -236,6 +266,7 @@ export class BuildController {
         if (!this.stroke) return;
         this.hover = { ...cell };
         this.stroke.cur = { ...cell };
+        if (this.tool?.line) this.stroke.path = extendPath(this.stroke.path, cell);
         this.emit();
     }
 
@@ -326,11 +357,13 @@ export class BuildController {
         const tool = this.tool;
         let anchors: Cell[];
         let rot = this.rot;
+        // Per-anchor rotation: pencil strokes turn at every cell, so each cell carries its own rot.
+        let rots: Rot[] | null = null;
         if (this.stroke) {
             if (tool.line) {
-                const run = lineCells(this.stroke.anchor, this.stroke.cur, this.rot);
-                anchors = run.cells;
-                rot = run.rot;
+                anchors = this.stroke.path;
+                rots = pathRots(anchors, this.rot);
+                rot = rots[rots.length - 1];
             } else {
                 anchors = [this.stroke.anchor];
             }
@@ -343,11 +376,13 @@ export class BuildController {
         const cells: GhostCell[] = [];
         let validCount = 0;
         const isDelete = tool.id === DELETE_TOOL.id;
-        for (const a of anchors) {
+        for (let i = 0; i < anchors.length; i++) {
+            const a = anchors[i];
+            const r = rots ? rots[i] : rot;
             // Deletes and 1 by 1 tools look at one cell per anchor. Footprint tools look at every covered cell.
-            const offsets = isDelete ? [{ dx: 0, dz: 0 }] : footprintOffsets(tool.footprint, rot);
-            const anchorReason = isDelete || !this.world.check ? null : this.world.check(tool.id, a.x, a.z, rot);
-            const group: GhostCell[] = offsets.map((o) => this.evaluate(a.x + o.dx, a.z + o.dz, rot, a, anchorReason));
+            const offsets = isDelete ? [{ dx: 0, dz: 0 }] : footprintOffsets(tool.footprint, r);
+            const anchorReason = isDelete || !this.world.check ? null : this.world.check(tool.id, a.x, a.z, r);
+            const group: GhostCell[] = offsets.map((o) => this.evaluate(a.x + o.dx, a.z + o.dz, r, a, anchorReason));
             cells.push(...group);
             if (isDelete) validCount += group.filter((c) => c.valid).length;
             else if (group.every((c) => c.valid)) validCount += 1;
@@ -455,7 +490,7 @@ export class BuildController {
         this.undoStack.push(edits);
         if (this.undoStack.length > this.historyLimit) this.undoStack.shift();
         this.redoStack = [];
-        this.onEvent?.(kind === "rotate" ? { type: "rotate" } : { type: kind, count: edits.length });
+        this.onEvent?.(kind === "rotate" ? { type: "rotate" } : { type: kind, count: edits.length, cells: edits.map((e) => ({ x: e.x, z: e.z })) });
         this.emit();
         return edits.length;
     }
