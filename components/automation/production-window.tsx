@@ -3,7 +3,8 @@
 import { useEffect, useRef, useState } from "react";
 import "./production-window.css";
 import type { NumberFormat, ResourceView, StatLine } from "@/lib/automation/types";
-import { ArtDivider, ArtGauge, ArtPanel, EmptyState, PanelTitle } from "@/components/brasswork-art";
+import { ArtDivider, ArtGauge, EmptyState } from "@/components/brasswork-art";
+import { MenuWindow } from "@/components/brasswork-ui/window";
 import { fmtNum } from "./format";
 import { Glyph } from "./resource-strip";
 
@@ -26,7 +27,7 @@ const perMin = (n: number) => `${n > 0 ? "+" : ""}${fmtNum(Math.round(n * 60 * 1
 function Emblem() {
   const brass = "#d29a3c", hi = "#f4cf7e", dk = "#6a4a22", ink = "#2a1606";
   return (
-    <svg className="ps-emblem" viewBox="0 0 32 24" width="96" height="72" shapeRendering="crispEdges" aria-hidden="true">
+    <svg className="ps-emblem" viewBox="0 0 32 24" width="40" height="30" shapeRendering="crispEdges" aria-hidden="true">
       <rect x="6" y="2" width="20" height="20" fill={dk} />
       <rect x="7" y="3" width="18" height="18" fill={brass} />
       <rect x="9" y="5" width="14" height="14" fill={ink} />
@@ -114,12 +115,9 @@ export function ProductionWindow({
   ];
 
   return (
-    <div className="ps-backdrop" onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
-      <div className="ps-wrap" role="dialog" aria-label="Production stats" data-layout={layout}>
-        <ArtPanel>
-          <div className="ps-body">
-            <Emblem />
-            <PanelTitle>Production</PanelTitle>
+    <MenuWindow title="Production" art={<Emblem />} label="Production stats" onClose={onClose}>
+      <div className="ps-wrap ps-body" data-layout={layout}>
+          <div className="ps-inner">
             <dl className="ps-facts">
               {facts.map(([k, v]) => (
                 <div key={k}>
@@ -176,10 +174,8 @@ export function ProductionWindow({
               <p className="ps-hint ps-idle">Idle: {idle.map((r) => r.name).join(", ")}</p>
             )}
 
-            <button type="button" className="ab-text-btn ps-close" onClick={onClose}>Close</button>
           </div>
-        </ArtPanel>
       </div>
-    </div>
+    </MenuWindow>
   );
 }
