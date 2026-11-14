@@ -132,7 +132,7 @@ export function footprintCells(b: { x: number; z: number; rot: Rot }, fp: Footpr
 // Stock a new world starts with when the caller gives none: enough for two drills, a kiln and a run of belts.
 // Drill and kiln have no build cost in the Recipe tree yet, so this covers them and the belts; see STATUS.md.
 export const STARTER_KIT: Stack[] = [
-    { item: "iron_plate", qty: 40 },
+    { item: "iron_plate", qty: 80 }, // windmills cost 8 plates each and the press is not open until milestone 1
     { item: "copper_wire", qty: 20 },
     { item: "iron_gear", qty: 6 },
 ];

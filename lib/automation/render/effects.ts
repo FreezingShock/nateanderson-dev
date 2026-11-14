@@ -1,0 +1,204 @@
+// Machine effects: smoke puffs and sparks from working machines. One instanced mesh, one pool,
+// no allocations per frame. Density follows the quality level, and low fx turns it off.
+import * as THREE from "three";
+
+interface Particle {
+    alive: boolean;
+    x: number;
+    y: number;
+    z: number;
+    vx: number;
+    vy: number;
+    vz: number;
+    age: number;
+    life: number;
+    size: number;
+    kind: 0 | 1; // 0 smoke, 1 spark
+}
+
+const POOL = 320;
+const SMOKE_RATE = 5; // puffs per second per working smoking machine, at full density
+const SPARK_RATE = 7;
+const SMOKE_COLOR = new THREE.Color(0x8a8078);
+const SMOKE_COLOR_END = new THREE.Color(0x4a4440);
+const SPARK_COLOR = new THREE.Color(0xffc060);
+const SPARK_COLOR_END = new THREE.Color(0xff6a2a);
+
+export class MachineEffects {
+    readonly mesh: THREE.InstancedMesh;
+    private readonly parts: Particle[] = [];
+    private readonly emitters = new Map<
+        string,
+        {
+            x: number;
+            y: number;
+            z: number;
+            sparks: boolean;
+            working: boolean;
+            acc: number;
+        }
+    >();
+    private density = 1;
+    private enabled = true;
+    private wind = 0.5;
+    private readonly m = new THREE.Matrix4();
+    private readonly c = new THREE.Color();
+    private readonly q = new THREE.Quaternion();
+    private readonly p = new THREE.Vector3();
+    private readonly s = new THREE.Vector3();
+
+    constructor(scene: THREE.Scene) {
+        for (let i = 0; i < POOL; i++) {
+            this.parts.push({
+                alive: false,
+                x: 0,
+                y: 0,
+                z: 0,
+                vx: 0,
+                vy: 0,
+                vz: 0,
+                age: 0,
+                life: 1,
+                size: 0.1,
+                kind: 0,
+            });
+        }
+        const geo = new THREE.BoxGeometry(1, 1, 1);
+        const mat = new THREE.MeshBasicMaterial({ vertexColors: false });
+        this.mesh = new THREE.InstancedMesh(geo, mat, POOL);
+        this.mesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+        this.mesh.frustumCulled = false;
+        this.mesh.count = POOL;
+        this.mesh.instanceColor = new THREE.InstancedBufferAttribute(
+            new Float32Array(POOL * 3),
+            3
+        );
+        this.mesh.instanceColor.setUsage(THREE.DynamicDrawUsage);
+        for (let i = 0; i < POOL; i++) this.hide(i);
+        scene.add(this.mesh);
+    }
+
+    /** Register a working machine's chimney point (world units). Sparks come from furnace-type machines. */
+    setEmitter(id: string, x: number, y: number, z: number, sparks: boolean): void {
+        this.emitters.set(id, { x, y, z, sparks, working: false, acc: 0 });
+    }
+
+    removeEmitter(id: string): void {
+        this.emitters.delete(id);
+    }
+
+    clearEmitters(): void {
+        this.emitters.clear();
+    }
+
+    /** Set working state for an emitter. Idle emitters stop spawning; live puffs finish. */
+    setWorking(id: string, working: boolean): void {
+        const e = this.emitters.get(id);
+        if (e) e.working = working;
+    }
+
+    /** Whether an emitter is registered under this id (machines that smoke, not every placed model). */
+    hasEmitter(id: string): boolean {
+        return this.emitters.has(id);
+    }
+
+    setDensity(d: number): void {
+        this.density = Math.max(0, Math.min(1, d));
+    }
+
+    setEnabled(on: boolean): void {
+        this.enabled = on;
+    }
+
+    setWind(strength: number): void {
+        this.wind = strength;
+    }
+
+    update(dt: number): void {
+        const live = this.enabled && this.density > 0;
+        if (live) {
+            for (const e of this.emitters.values()) {
+                if (!e.working) continue;
+                e.acc += dt * this.density;
+                const rate = e.sparks ? SPARK_RATE : SMOKE_RATE;
+                while (e.acc >= 1 / rate) {
+                    e.acc -= 1 / rate;
+                    this.spawn(e);
+                }
+            }
+        }
+        const drift = (this.wind - 0.5) * 0.6;
+        for (let i = 0; i < POOL; i++) {
+            const p = this.parts[i];
+            if (!p.alive) continue;
+            p.age += dt;
+            if (p.age >= p.life) {
+                p.alive = false;
+                this.hide(i);
+                continue;
+            }
+            if (p.kind === 1) p.vy -= 3.2 * dt; // sparks fall
+            else p.vx += drift * dt; // smoke drifts with the wind
+            p.x += p.vx * dt;
+            p.y += p.vy * dt;
+            p.z += p.vz * dt;
+            const k = p.age / p.life;
+            const grow = p.kind === 0 ? 1 + k * 1.6 : 1 - k * 0.7;
+            this.writeInstance(i, p, k, grow);
+        }
+        this.mesh.instanceMatrix.needsUpdate = true;
+        if (this.mesh.instanceColor) this.mesh.instanceColor.needsUpdate = true;
+    }
+
+    dispose(): void {
+        this.mesh.geometry.dispose();
+        (this.mesh.material as THREE.Material).dispose();
+        this.mesh.dispose();
+        this.mesh.removeFromParent();
+        this.emitters.clear();
+    }
+
+    private spawn(e: { x: number; y: number; z: number; sparks: boolean }): void {
+        const slot = this.parts.findIndex((p) => !p.alive);
+        if (slot < 0) return;
+        const p = this.parts[slot];
+        const kind: 0 | 1 = e.sparks && Math.random() < 0.6 ? 1 : 0;
+        p.alive = true;
+        p.kind = kind;
+        p.age = 0;
+        p.x = e.x + (Math.random() - 0.5) * 0.08;
+        p.y = e.y;
+        p.z = e.z + (Math.random() - 0.5) * 0.08;
+        if (kind === 1) {
+            p.vx = (Math.random() - 0.5) * 1.2;
+            p.vy = 1.4 + Math.random() * 1.2;
+            p.vz = (Math.random() - 0.5) * 1.2;
+            p.life = 0.5 + Math.random() * 0.35;
+            p.size = 0.035;
+        } else {
+            p.vx = 0;
+            p.vy = 0.35 + Math.random() * 0.15;
+            p.vz = 0;
+            p.life = 2.2 + Math.random() * 0.8;
+            p.size = 0.09;
+        }
+    }
+
+    private writeInstance(i: number, p: Particle, k: number, grow: number): void {
+        const size = p.size * grow;
+        this.s.set(size, size, size);
+        this.p.set(p.x, p.y, p.z);
+        this.m.compose(this.p, this.q, this.s);
+        this.mesh.setMatrixAt(i, this.m);
+        if (p.kind === 1) this.c.copy(SPARK_COLOR).lerp(SPARK_COLOR_END, k);
+        else this.c.copy(SMOKE_COLOR).lerp(SMOKE_COLOR_END, k);
+        this.mesh.setColorAt(i, this.c);
+    }
+
+    private hide(i: number): void {
+        this.s.set(0, 0, 0);
+        this.p.set(0, -999, 0);
+        this.m.compose(this.p, this.q, this.s);
+        this.mesh.setMatrixAt(i, this.m);
+    }
+}

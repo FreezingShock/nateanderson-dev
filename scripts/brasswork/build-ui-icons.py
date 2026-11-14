@@ -31,6 +31,7 @@ ORDER = [
     ("undo", "Undo"), ("redo", "Redo"), ("remove", "Remove"), ("map", "Map"),
     ("hammer", "Build"), ("rotate", "Rotate"), ("time", "Time / day"), ("pause", "Pause"),
     ("play", "Play"), ("fast", "Fast forward"), ("help", "Help"), ("info", "Info"),
+    ("close", "Close"), ("back", "Back"), ("lock", "Locked"), ("done", "Done"), ("warn", "Warning"),
 ]
 
 

@@ -16,6 +16,7 @@ mkdirSync(outDir, { recursive: true });
 
 const runs = [
   { name: "desktop-high", viewport: { width: 1440, height: 900 }, query: "quality=2&machines=400" },
+  { name: "fx-desktop", viewport: { width: 1440, height: 900 }, query: "quality=2&fx=1&machines=0" },
   { name: "desktop-low", viewport: { width: 1440, height: 900 }, query: "quality=0&machines=400" },
   { name: "desktop-auto", viewport: { width: 1440, height: 900 }, query: "quality=auto&machines=400" },
   { name: "phone-auto", viewport: { width: 390, height: 844 }, query: "quality=auto&machines=400", mobile: true },

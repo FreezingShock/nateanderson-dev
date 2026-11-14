@@ -55,7 +55,8 @@ function logisticsEngine(): Record<string, EngineDef> {
                 kind: p.kind,
                 name: `${TIER_NAMES[t]} ${p.label.toLowerCase()}`,
                 footprint: { w: 1, d: 1 },
-                cost: [...p.cost, ...TIER_EXTRA[t]],
+                // Brass pieces cost the full recipe; copper and steel pieces cost only their extra items, so they read as cheap upgrades.
+                cost: t === 0 ? p.cost : TIER_EXTRA[t],
                 rate: TIER_RATE[t],
                 capacity: 8,
             };

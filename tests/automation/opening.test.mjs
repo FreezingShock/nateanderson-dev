@@ -72,3 +72,17 @@ test("each milestone can be delivered with machines open before it", () => {
         world.progress.milestonesDone.push(m.id);
     }
 });
+
+
+// The suggested spot covers free ground off the resource nodes and keeps a free cell beside it for a belt.
+test("suggestSpot picks a free spot near the hub with room for a belt", () => {
+    const world = S.createWorld({ width: 18, depth: 12, hub: HUB }, CAT);
+    CAT.tree.nodes.forEach((n, i) => SPOTS[i] && S.addDeposit(world, SPOTS[i][0], SPOTS[i][1], n.item, 1));
+    const spot = S.suggestSpot(world, { w: 2, d: 2 }, CAT);
+    assert.ok(spot, "a spot exists on an empty island");
+    for (const [dx, dz] of [[0, 0], [1, 0], [0, 1], [1, 1]]) {
+        assert.equal(world.deposits[`${spot.x + dx},${spot.z + dz}`], undefined, "not on a node");
+        assert.equal(S.buildingAt(world, spot.x + dx, spot.z + dz, CAT), null, "free ground");
+    }
+    assert.equal(S.place(world, "kiln", spot.x, spot.z, 0, CAT).ok, true);
+});

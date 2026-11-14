@@ -169,60 +169,69 @@ def machines():
 
 @ui
 def photo():
-    """Box camera: leather body, brass top plate, glass lens, flash bulb."""
+    """Photo mode: four brass viewfinder brackets round a big glass lens, so it reads as 'frame a shot'."""
     c = Canvas()
-    plate(c, rect(4, 18, 60, 54), "wood", 0.15, 0.7)
-    plate(c, rect(4, 18, 60, 25), "brass", 0.3, 0.95)
-    plate(c, rect(40, 10, 54, 18), "brass", 0.3, 0.95)
-    plate(c, disc(14, 13, 4.5), "glow", 0.6, 1.0)
-    plate(c, disc(31, 38, 14), "brass")
-    c.fill(disc(31, 38, 9), np.clip(0.15 + 0.6 * G, 0, 1), "cell", dither=0.9)
-    c.set(disc(28, 35, 2.6), P["glass"][-1])
+    br = np.zeros((N, N), bool)
+    for fx, fy in ((0, 0), (1, 0), (0, 1), (1, 1)):
+        x0 = 44 if fx else 4
+        y0 = 44 if fy else 4
+        a = rect(x0, (y0 + 10 if fy else y0), x0 + 16, (y0 + 16 if fy else y0 + 6))
+        b = rect((x0 + 10 if fx else x0), y0, (x0 + 16 if fx else x0 + 6), y0 + 16)
+        br |= a | b
+    plate(c, br)
+    plate(c, disc(32, 32, 15), "gun", 0.15, 0.8)
+    c.fill(disc(32, 32, 10), np.clip(0.1 + 0.7 * G, 0, 1), "cell", dither=0.9)
+    c.set(ring(32, 32, 10, 8.6), P["brass"][4])
+    c.set(disc(28, 28, 3), P["glass"][-1])
     return done(c)
 
 
 @ui
 def light():
-    """Workshop lantern: brass cap and base around a glass chimney with a flame."""
+    """Day and night lighting: a half sun and half moon split down the middle."""
     c = Canvas()
-    glass = rect(18, 18, 46, 50)
-    c.glow(glass, P["glow"][3], r=6, a=120)
-    c.fill(glass, np.clip(0.6 + 0.4 * (1 - np.hypot(X - 32, Y - 36) / 18), 0, 1), "glow", dither=0.9)
-    flame = poly([(32, 22), (38, 36), (35, 43), (29, 43), (26, 36)])
-    c.set(flame, P["glow"][-1])
-    c.set(rect(18, 18, 46, 50) & ((np.abs(X - 23) < 1.2) | (np.abs(X - 41) < 1.2)), P["brass"][2])
-    plate(c, poly([(14, 18), (22, 9), (42, 9), (50, 18)]))
-    plate(c, ring(32, 7, 6, 2.6) & (Y < 9), "brass")
-    plate(c, rect(14, 50, 50, 58))
+    sun = disc(32, 32, 15) & (X < 32)
+    c.glow(sun, P["glow"][3], r=5, a=120)
+    for k in range(5):
+        a = math.pi / 2 + math.pi * (k + 0.5) / 5
+        c.fill(line(32 + 19 * math.cos(a), 32 - 19 * math.sin(a), 32 + 27 * math.cos(a), 32 - 27 * math.sin(a), 5),
+               0.85, "glow")
+    c.fill(sun, np.clip(0.55 + 0.5 * G, 0, 1), "glow", dither=0.9)
+    moon = disc(32, 32, 15) & (X >= 32) & ~disc(40, 26, 10)
+    plate(c, moon, "cream", 0.35, 1.0)
+    c.set(rect(31, 14, 33, 50), P["steel"][0])
+    for x, y in ((50, 14), (56, 26), (46, 50)):
+        c.spark(x, y, 1, P["cream"][-1])
     return done(c)
 
 
 @ui
 def codex():
-    """Bound book: leather cover, brass corners and gear seal, cream page edges."""
+    """Codex: an open book, cream pages with ruled lines and a small gear diagram, brass clasp at the spine."""
     c = Canvas()
-    flat(c, rect(16, 9, 54, 59), "cream", 0.75)
-    for y in range(13, 58, 4):
-        c.set(rect(48, y, 54, y + 1), P["cream"][2])
-    cover = rect(10, 5, 50, 57)
-    plate(c, cover, "brick", 0.15, 0.85)
-    plate(c, rect(10, 5, 17, 57), "brick", 0.05, 0.45)
-    for (x0, y0) in ((42, 5), (42, 49)):
-        plate(c, rect(x0, y0, 50, y0 + 8), "brass")
-    plate(c, gear_mask(31, 31, 10, 7.5, 6, 3), "brass")
+    cover = poly([(2, 18), (32, 22), (62, 18), (62, 52), (32, 56), (2, 52)])
+    plate(c, cover, "brick", 0.15, 0.7)
+    left = poly([(6, 14), (31, 18), (31, 50), (6, 46)])
+    right = poly([(33, 18), (58, 14), (58, 46), (33, 50)])
+    flat(c, left, "cream", 0.85)
+    flat(c, right, "cream", 0.7)
+    for k in range(4):
+        y = 24 + 6 * k
+        c.set(line(10, y - 2, 27, y + 1, 1) , P["cream"][1])
+    c.set(gear_mask(46, 31, 8, 6, 6, 2.4), P["brass"][2])
+    plate(c, rect(30, 16, 34, 54), "brass")
     return done(c)
 
 
 @ui
 def keys():
-    """Typewriter keyboard: brass bed, round cream keys, a space bar."""
+    """Key bindings: one large cream keycap in a brass bed, with a bold K on it."""
     c = Canvas()
-    plate(c, poly([(10, 18), (54, 18), (62, 56), (2, 56)]), "brass", 0.15, 0.8)
-    for row, (y, xs) in enumerate(((27, (16, 26, 36, 46)), (38, (12, 22.5, 33, 43.5, 54)))):
-        for x in xs:
-            c.set(disc(x, y + 1.6, 4.4), P["steel"][0])
-            plate(c, disc(x, y, 4.2), "cream", 0.45, 1.0, rim=False)
-    plate(c, rect(14, 46, 50, 52), "cream", 0.45, 1.0)
+    plate(c, rect(6, 10, 58, 58), "brass", 0.15, 0.75)
+    c.set(rect(12, 14, 52, 50), P["steel"][0])
+    cap = rect(13, 13, 51, 47)
+    plate(c, cap, "cream", 0.5, 1.0)
+    c.set(text_mask("K", 26, 32, 30), P["steel"][1])
     return done(c)
 
 
@@ -413,4 +422,51 @@ def info():
     c = Canvas()
     plate(c, disc(32, 32, 29), "patina", 0.15, 0.8)
     plate(c, text_mask("i", 46, 32, 33), "cream", 0.5, 1.0)
+    return done(c)
+
+
+# ------------------------------------------------------------------ added 2026-11-14 (menu art thread)
+@ui
+def close():
+    """Close: a brass X."""
+    c = Canvas()
+    plate(c, line(14, 14, 50, 50, 10) | line(50, 14, 14, 50, 10))
+    return done(c)
+
+
+@ui
+def back():
+    """Back: a brass arrow pointing left."""
+    c = Canvas()
+    plate(c, poly([(6, 32), (28, 10), (28, 23), (58, 23), (58, 41), (28, 41), (28, 54)]))
+    return done(c)
+
+
+@ui
+def lock():
+    """Locked: an iron padlock with a brass keyhole plate."""
+    c = Canvas()
+    plate(c, ring(32, 24, 14, 8) & (Y < 30), "iron", 0.3, 0.95)
+    body = rect(12, 28, 52, 58)
+    plate(c, body, "brass", 0.2, 0.9)
+    c.set(disc(32, 39, 4) | rect(30, 40, 34, 50), P["steel"][0])
+    return done(c)
+
+
+@ui
+def done_():
+    """Done: a patina tick."""
+    c = Canvas()
+    plate(c, path([(10, 34), (26, 50), (54, 16)], 11), "patina", 0.3, 0.95)
+    return done(c)
+
+
+@ui
+def warn():
+    """Warning: a cream triangle with a brass rim and a bold !"""
+    c = Canvas()
+    tri = poly([(32, 4), (61, 58), (3, 58)])
+    plate(c, tri, "brass")
+    flat(c, poly([(32, 14), (52, 52), (12, 52)]), "cream", 0.8)
+    c.set(rect(29, 24, 35, 40) | disc(32, 46, 3.2), P["steel"][0])
     return done(c)
