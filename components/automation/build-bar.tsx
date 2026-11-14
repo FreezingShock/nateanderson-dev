@@ -47,8 +47,11 @@ function collapseTiers(list: MachineView[]): MachineView[] {
     const open = tiers.filter((t) => t.unlocked).sort((a, b) => TIER_RANK(b.id) - TIER_RANK(a.id));
     const best = open[0] ?? tiers.sort((a, b) => TIER_RANK(a.id) - TIER_RANK(b.id))[0];
     const count = tiers.reduce((n, t) => n + t.count, 0);
-    const tierName = TIER_RANK(best.id) === 2 ? " (steel)" : TIER_RANK(best.id) === 1 ? " (copper)" : "";
-    return { ...best, id: row.id, name: best.name.replace(/ \((copper|steel)\)$/, "") + tierName, count, unlocked: open.length > 0 };
+    // Add the tier word only when the name does not already carry it (for example "Steel belt").
+    const tier = TIER_RANK(best.id) === 2 ? "steel" : TIER_RANK(best.id) === 1 ? "copper" : "";
+    const bare = best.name.replace(/ \((copper|steel)\)$/, "");
+    const name = tier && !new RegExp(tier, "i").test(bare) ? `${bare} (${tier})` : bare;
+    return { ...best, id: row.id, name, count, unlocked: open.length > 0 };
   });
 }
 
