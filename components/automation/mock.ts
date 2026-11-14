@@ -201,15 +201,16 @@ export const mockHud: HudData = {
     { id: "relay", name: "Relay cores", glyph: "RC", note: "Relay core", unlocks: ["Relay core"], blueprintCost: 12, column: 4, row: 0, requires: ["servo", "circ"], state: "locked" },
   ],
   prestige: {
-    ready: false,
+    ready: process.env.NEXT_PUBLIC_PRESTIGE_READY === "1",
     requirement: "Reach 1 M iron made",
     gain: "+5% speed per workshop kept",
     keeps: ["Blueprints and research", "Unlocked designs", "Routes found", "One free machine of each kind", "Records"],
     leaves: ["Machines and belts", "Stored stock", "Fleets on expedition"],
     sites: [
-      { id: "quarry-flats", name: "Workshop 3, The Quarry Flats", blurb: "Flat ground near the old pits.", modifiers: ["Miners +10%"] },
-      { id: "east-shore", name: "Workshop 2, The East Shore", blurb: "Open to the wind off the water.", modifiers: ["Power +15%"] },
-      { id: "high-pass", name: "Workshop 4, The High Pass", blurb: "A narrow ledge with rich seams.", modifiers: ["Miners +20%", "Power -5%"] },
+      { id: "ridge", name: "Iron ridge", blurb: "Open ground with iron close to the surface.", modifiers: ["Miners +15%", "Power Standard"], plan: { width: 56, depth: 56, hub: { x: 26, z: 26 }, miner: 1.15, power: 1, nodes: [{ x: 8, z: 26, item: "iron_ore", purity: 2 }, { x: 12, z: 32, item: "coal", purity: 1 }, { x: 8, z: 38, item: "copper_ore", purity: 1 }, { x: 46, z: 12, item: "quartz", purity: 1 }, { x: 46, z: 42, item: "aluminium_ore", purity: 1 }] } },
+      { id: "cove", name: "Copper cove", blurb: "A sheltered cove with strong wind power.", modifiers: ["Power +20%"], plan: { width: 64, depth: 48, hub: { x: 30, z: 20 }, miner: 1, power: 1.2, nodes: [{ x: 6, z: 10, item: "copper_ore", purity: 2 }, { x: 6, z: 18, item: "aluminium_ore", purity: 1 }, { x: 6, z: 26, item: "iron_ore", purity: 1 }, { x: 6, z: 34, item: "coal", purity: 1 }, { x: 44, z: 12, item: "quartz", purity: 1 }] } },
+      { id: "high-bank", name: "High bank", blurb: "A tall bank with two rich seams.", modifiers: ["Power +10%"], plan: { width: 72, depth: 72, hub: { x: 34, z: 34 }, miner: 1, power: 1.1, nodes: [{ x: 14, z: 34, item: "quartz", purity: 2 }, { x: 20, z: 40, item: "aluminium_ore", purity: 1 }, { x: 58, z: 14, item: "iron_ore", purity: 1 }, { x: 58, z: 58, item: "copper_ore", purity: 1 }, { x: 14, z: 58, item: "coal", purity: 1 }] } },
+      { id: "quarry", name: "Old quarry", blurb: "A worked-out quarry with dense, pure ore.", modifiers: ["Miners +25%", "Power -10%"], plan: { width: 48, depth: 48, hub: { x: 22, z: 22 }, miner: 1.25, power: 0.9, nodes: [{ x: 6, z: 22, item: "iron_ore", purity: 2 }, { x: 6, z: 30, item: "copper_ore", purity: 1 }, { x: 6, z: 38, item: "coal", purity: 1 }, { x: 40, z: 8, item: "quartz", purity: 1 }, { x: 40, z: 40, item: "aluminium_ore", purity: 1 }] } },
     ],
   },
   stats: [

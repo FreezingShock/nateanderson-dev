@@ -13,12 +13,13 @@ threshold, so shading reads as dither, not as smooth colour. What is new at 64 p
 Coordinates are in art pixels on a 64 x 64 grid, origin top-left, light from the top-left.
 """
 import math
+import os
 from pathlib import Path
 
 import numpy as np
 from PIL import Image, ImageDraw
 
-N = 64
+N = int(os.environ.get("NAOS_KIT_N", 64))  # canvas side; Brasswork portraits run the kit at 128
 FRAMES = 8
 _B8 = np.array([
     [0, 32, 8, 40, 2, 34, 10, 42], [48, 16, 56, 24, 50, 18, 58, 26], [12, 44, 4, 36, 14, 46, 6, 38],

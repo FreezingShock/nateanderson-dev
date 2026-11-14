@@ -268,22 +268,32 @@ export function hudData(world: World, cat: Catalog = DEFAULT_CATALOG, selectedId
                 name: s.name,
                 blurb: s.blurb,
                 modifiers: [`Miners ${pct(s.bonus.miner)}`, `Power ${pct(s.bonus.power)}`],
+                plan: { width: s.width, depth: s.depth, hub: s.hub, nodes: s.nodes, miner: s.bonus.miner, power: s.bonus.power },
             })),
         },
         stats,
-        nextStep: nextStepOf(world, machines, milestones),
+        nextStep: nextStepOf(world, cat, machines, milestones),
         settings,
     };
 }
 
-function nextStepOf(world: World, machines: MachineView[], milestones: MilestoneView[]): NextStepView {
+function nextStepOf(world: World, cat: Catalog, machines: MachineView[], milestones: MilestoneView[]): NextStepView {
     const drills = machines.find((m) => m.id === "drill")?.count ?? 0;
     const crafters = machines.filter((m) => m.id !== "drill").reduce((a, m) => a + m.count, 0);
     const next = milestones.find((m) => !m.done);
     if (drills === 0) return { text: "Place a drill on a resource node to start the flow.", actionLabel: "Select drill", actionId: "drill" };
     if (crafters === 0) return { text: "Add a kiln and set its recipe to smelt ore into ingots.", actionLabel: "Select kiln", actionId: "kiln" };
     if (world.power.satisfaction < 1) return { text: "Machines are short of power. Place a windmill within 6 cells of them.", actionLabel: "Select windmill", actionId: "windmill" };
-    if (next) return { text: `Next delivery: ${next.goal} for ${next.blueprintReward} blueprints.` };
+    if (next) {
+        // Progress per item, capped at the target, so the bar says how far the delivery has got.
+        const def = cat.tree.milestones.find((m) => m.id === next.id);
+        const parts = (def?.deliver ?? []).map((s) => {
+            const have = Math.min(s.qty, world.progress.delivered[s.item] ?? 0);
+            return `${nameOf(cat, s.item)} ${have} of ${s.qty}`;
+        });
+        const detail = parts.length ? ` (${parts.join(", ")})` : "";
+        return { text: `Next delivery: ${next.goal}${detail} for ${next.blueprintReward} blueprints.` };
+    }
     return { text: "Keep the factory running and plan the next milestone." };
 }
 
