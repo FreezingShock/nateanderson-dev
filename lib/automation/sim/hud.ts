@@ -417,7 +417,7 @@ function nextStepOf(world: World, cat: Catalog, machines: MachineView[], milesto
             return `${nameOf(cat, s.item)} ${have} of ${s.qty}`;
         });
         const detail = parts.length ? ` (${parts.join(", ")})` : "";
-        return { text: `Next delivery: ${next.goal}${detail} for ${next.blueprintReward} blueprints.` };
+        return { title: next.name, progress: next.progress, text: `${next.goal}${detail}. Reward: ${next.blueprintReward} blueprints.` };
     }
     return { text: "Keep the factory running and plan the next milestone." };
 }
