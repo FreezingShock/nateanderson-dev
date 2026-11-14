@@ -369,17 +369,41 @@ function allowedPort(world: World, cat: Catalog, index: Map<string, number>, b: 
 function pushOutput(world: World, cat: Catalog, index: Map<string, number>, b: Building, r: Resolved, budget = Infinity): number {
     const items = Object.keys(b.output);
     if (items.length === 0) return 0;
-    const ports = portsOf(b, r.footprint).filter((p) => allowedPort(world, cat, index, b, r, p));
-    if (ports.length === 0) return 0;
+    const all = portsOf(b, r.footprint).filter((p) => allowedPort(world, cat, index, b, r, p));
+    if (all.length === 0) return 0;
+    // Hub-bound ports take only what the other ports refuse, so a kiln feeds its presses and furnaces before the hub.
+    // A port counts as hub-bound when it is the hub itself or a belt line that runs into it.
+    const leadsToHub = (p: Port) => {
+        let id = index.get(keyOf(p.tx, p.tz));
+        for (let step = 0; step < 400 && id !== undefined; step++) {
+            const t = world.buildings[id];
+            const kind = resolve(cat, t.type)?.kind;
+            if (kind === "hub") return true;
+            if (kind !== "belt") return false;
+            id = index.get(keyOf(t.x + DIR_DX[t.rot], t.z + DIR_DZ[t.rot]));
+        }
+        return false;
+    };
+    const first = all.filter((p) => !leadsToHub(p));
+    const hubPorts = all.filter(leadsToHub);
     let moved = 0;
     for (const item of items) {
         let n = b.output[item];
-        for (let i = 0; i < ports.length && n > 0 && moved < budget; i++) {
-            const p = ports[(b.rr + i) % ports.length];
+        // Round-robin over the machine-bound ports first.
+        for (let i = 0; i < first.length && n > 0 && moved < budget; i++) {
+            const p = first[(b.rr + i) % first.length];
             if (accept(world, cat, index, p.tx, p.tz, item, p.fx, p.fz)) {
                 n--;
                 moved++;
-                b.rr = (b.rr + i + 1) % ports.length;
+                b.rr = (b.rr + i + 1) % first.length;
+            }
+        }
+        // Then the hub ports, only if every machine port refused the rest.
+        for (let i = 0; i < hubPorts.length && n > 0 && moved < budget; i++) {
+            const p = hubPorts[i];
+            if (accept(world, cat, index, p.tx, p.tz, item, p.fx, p.fz)) {
+                n--;
+                moved++;
             }
         }
         if (n > 0) b.output[item] = n;

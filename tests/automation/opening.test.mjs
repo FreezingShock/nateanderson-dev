@@ -86,3 +86,26 @@ test("suggestSpot picks a free spot near the hub with room for a belt", () => {
     }
     assert.equal(S.place(world, "kiln", spot.x, spot.z, 0, CAT).ok, true);
 });
+
+// A crafter's output goes to its machine-bound outputs first; the hub only takes what they refuse.
+test("a kiln feeds the press beside it before the hub, and the hub gets only the overflow", () => {
+    const world = board();
+    const must = (r) => assert.equal(r.ok, true, r.reason);
+    const kiln = S.place(world, "kiln", 5, 2, 0, CAT);
+    must(kiln);
+    must(S.setRecipe(world, kiln.id, "r_iron_ingot", CAT));
+    const press = S.place(world, "press", 11, 1, 0, CAT);
+    must(press);
+    must(S.setRecipe(world, press.id, "r_iron_plate", CAT));
+    for (const route of [S.autoRoute(world, { x: 5, z: 2 }, { x: 11, z: 1 }, "belt", CAT), S.autoRoute(world, { x: 5, z: 2 }, HUB, "belt", CAT)]) {
+        assert.equal(route.ok, true, route.reason);
+        route.cells.forEach((c) => must(S.place(world, "belt", c.x, c.z, c.rot, CAT)));
+    }
+    // One ingot a second, well under what the press belt can take, so the hub belt should never be used.
+    for (let t = 0; t < 10; t++) {
+        world.buildings[kiln.id].output.iron_ingot = 1;
+        S.advance(world, 1, 0.1, CAT);
+    }
+    assert.equal(world.buildings[world.hubId].input.iron_ingot ?? 0, 0, "the hub gets nothing while the press accepts");
+    assert.ok((world.buildings[press.id].input.iron_ingot ?? 0) > 0, "the press received ingots");
+});
