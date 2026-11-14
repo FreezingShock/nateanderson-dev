@@ -113,6 +113,7 @@ export function BuildList({
         const armed = m.id === armedId;
         return (
             <li
+              key={m.id}
               className="ab-row ab-build-row"
               data-selected={selected}
               data-armed={armed}
