@@ -67,7 +67,6 @@ export function AutomationHud({
   const toggle = (d: Drawer) => setDrawer((cur) => (cur === d ? null : d));
   const selectedId = data.selected?.id ?? null;
   const next = data.nextStep;
-  const openMachines = data.machines.filter((m) => m.unlocked).length;
 
   return (
     <div
@@ -81,7 +80,6 @@ export function AutomationHud({
       <header className="ab-top">
         <div className="ab-brand">
           <span className="ab-brand-name">Brasswork</span>
-          <span className="ab-dim">workshop</span>
         </div>
         <ResourceStrip
           resources={data.resources}
@@ -115,10 +113,8 @@ export function AutomationHud({
 
       <div className="ab-body">
         <aside className="ab-pal" aria-label="Machines">
-          <header className="ab-factory-head">
-            <h2 className="ab-h">Machines</h2>
-            <span className="ab-dim">{openMachines} open</span>
-          </header>
+          {/* The group panels below carry the visible titles and counts; this heading is for screen readers only. */}
+          <h2 className="ab-sr-only">Machines</h2>
           <BuildList
             machines={data.machines}
             resources={data.resources}
