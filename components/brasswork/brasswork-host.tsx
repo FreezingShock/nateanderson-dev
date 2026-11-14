@@ -33,6 +33,7 @@ import { getMachineModel, getHubModel, hubStageFor } from "@/lib/automation/mode
 import { nodeModel, variantForCell, type ResourceId } from "@/lib/automation/models/resources";
 import { pickBeltTile, type PieceKind, type PiecePlacement } from "@/lib/automation/models/belts";
 import { WATER_LEVEL } from "@/lib/automation/render/config";
+import { createBeltItems } from "@/lib/automation/render/beltitems";
 import { scatterProps } from "@/lib/automation/models/props";
 import { BrassworkExtras, MOODS, type AwayReport, type Mood } from "./extras";
 import { FirstRunGuide } from "./first-run";
@@ -157,6 +158,10 @@ export function BrassworkHost() {
             [1.2, 2, 3].forEach((v, tier) => island.setBeltSpeed(tier, v));
             // Island life: leaves, birds, fireflies, smoke, shore glints, drizzle and reward bursts.
             const life = attachLife(island, heightAt);
+            // Items riding the belts, redrawn each frame from the sim's lanes.
+            const beltItems = createBeltItems();
+            island.scene.add(beltItems.object);
+            const beltPieces = new Map<number, PiecePlacement>();
             // Handle for the browser console and headless captures: __bwLife.burst("milestone", 0, 0), __bwLife.setRain(1).
             (window as unknown as { __bwLife?: typeof life }).__bwLife = life;
             // Natural scenery around the plateau; nothing grows on it, and trees keep clear of the machines.
@@ -183,9 +188,12 @@ export function BrassworkHost() {
                 }
                 // Belts pick their tile from their neighbours, so a placement or removal can change the cells around it.
                 const pieces: PiecePlacement[] = [];
+                beltPieces.clear();
                 for (const b of Object.values(world.buildings)) {
                     if (!(b.type in BELT_TIER)) continue;
-                    pieces.push({ kind: beltTile(world, b), tier: BELT_TIER[b.type], x: b.x - W / 2, z: b.z - D / 2, rot: b.rot as 0 | 1 | 2 | 3 });
+                    const piece: PiecePlacement = { kind: beltTile(world, b), tier: BELT_TIER[b.type], x: b.x - W / 2, z: b.z - D / 2, rot: b.rot as 0 | 1 | 2 | 3 };
+                    pieces.push(piece);
+                    beltPieces.set(b.id, piece);
                     drawn.add(b.id);
                 }
                 island.setBelts(pieces);
@@ -464,6 +472,7 @@ export function BrassworkHost() {
             if (devHook) {
                 (window as unknown as { __bwdev: unknown }).__bwdev = {
                     getWorld: () => world,
+                    beltItems,
                     CAT,
                     sim: simActions,
                     placeAt: (type: string, x: number, z: number, rot: Rot = 0) => {
@@ -497,6 +506,15 @@ export function BrassworkHost() {
                 pushStates();
                 if (!document.hidden) {
                     advance(world, dt, 0.1, CAT);
+                    beltItems.update(
+                        (function* () {
+                            for (const [id, piece] of beltPieces) {
+                                const b = world.buildings[id];
+                                if (b && b.lane.length) yield { piece, lane: b.lane };
+                            }
+                        })(),
+                        (p, t, out) => island.beltItemMatrix(p, t, out)
+                    );
                     island.setWind(world.wind ?? windAt(world.time));
                     const m = moodRef.current;
                     island.setTimeOfDay(m === "Auto" ? dayClock(world, CAT).phase : m === "Day" ? 0.05 : m === "Dusk" ? 0.5 : 0.75);
@@ -528,6 +546,7 @@ export function BrassworkHost() {
                 input.destroy();
                 window.removeEventListener("resize", onResize);
                 life.dispose();
+                beltItems.dispose();
                 island.dispose();
                 bwHum(null);
                 ctl.current = null;

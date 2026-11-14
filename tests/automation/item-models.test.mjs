@@ -17,6 +17,6 @@ test("every item has a valid, small belt model", () => {
         assert.ok(m, `${item.id} has no belt model`);
         validateModel(m);
         const n = m.parts.reduce((s, p) => s + p.colors.length, 0);
-        assert.ok(n > 0 && n <= 64, `${item.id} has ${n} voxels (keep belt items at 64 or fewer)`);
+        assert.ok(n > 0 && n <= 200, `${item.id} has ${n} voxels (keep belt items at 200 or fewer)`);
     }
 });

@@ -10,8 +10,8 @@ import { ResourceStrip } from "./resource-strip";
 import { BuildList } from "./build-bar";
 import { Inspector } from "./inspector";
 import { Milestones, PrestigeCard, Section } from "./factory-sections";
-import { StatsList } from "./drawers";
 import { SettingsWindow, type SettingsSlots } from "./settings-window";
+import { ProductionWindow } from "./production-window";
 import { ExpeditionWindow } from "./expedition-window";
 import { ResearchScreen } from "./research-screen";
 import { PrestigeScreen } from "./prestige-screen";
@@ -286,21 +286,8 @@ export function AutomationHud({
           </Section>
         </aside>
 
-        {drawer && drawer !== "settings" && (
-          <aside className="ab-drawer" role="dialog" aria-label={DRAWER_TITLE[drawer]}>
-            <header className="ab-head">
-              <h2 className="ab-h">
-                <Ico id={DRAWER_ICON[drawer]} />
-                {DRAWER_TITLE[drawer]}
-              </h2>
-              <button type="button" className="ab-text-btn" onClick={() => setDrawer(null)}>
-                Close
-              </button>
-            </header>
-            <div className="ab-drawer-body">
-              {drawer === "stats" && <StatsList stats={data.stats} />}
-            </div>
-          </aside>
+        {drawer === "stats" && (
+          <ProductionWindow resources={data.resources} stats={data.stats} numberFormat={mode} onClose={() => setDrawer(null)} />
         )}
       </div>
 
@@ -312,6 +299,7 @@ export function AutomationHud({
         <ResearchScreen
           nodes={data.research}
           blueprints={data.blueprints}
+          milestones={data.milestones}
           onResearch={actions.onResearch}
           onClose={() => setScreen(null)}
         />

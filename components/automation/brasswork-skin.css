@@ -359,3 +359,8 @@
   .ab-root.bw .ab-tabbar { order: 3; }
   .ab-root.bw .ab-more { order: 3; }
 }
+
+/* Machine detail: power block under the rate, with a clear state for fully or partly powered machines. */
+.ab-inspect-power { display: grid; gap: 4px; margin: 6px 0; }
+.ab-inspect-power[data-powered="short"] strong { color: #ffb347; }
+.ab-inspect-power[data-powered="full"] strong { color: #b8e0a0; }

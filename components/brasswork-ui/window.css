@@ -11,6 +11,7 @@
   box-shadow: 0 0 0 1px #1a1209, inset 0 1px 0 rgba(255, 220, 150, 0.35), 0 16px 40px rgba(0, 0, 0, 0.5);
   color: #efe2c4;
 }
+.bw-window[data-size="wide"] { width: min(960px, 100%); }
 .bw-window-head {
   display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 10px; align-items: center;
   padding: 10px 12px; border-bottom: 1px solid #4a3a22; background: linear-gradient(180deg, #3a2a14, #241a0c);
