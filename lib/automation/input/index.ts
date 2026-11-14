@@ -74,7 +74,7 @@ export function createInputController(opts: InputOptions): InputController {
     const apply = (a: KeyAction): boolean => {
         switch (a.type) {
             case "rotate":
-                build.rotateCw();
+                build.rotateHover();
                 return true;
             case "undo":
                 return build.undo();
@@ -233,9 +233,7 @@ export function mount(camera: ViewSink, domElement: HTMLElement, options: MountO
             isTopDown: () => controller.camera.isTopDown(),
             onTopDown: pick(() => controller.camera.toggleTopDown()),
             onRotate: pick(() => {
-                const h = b.getHover();
-                if (h && b.peek(h)) b.rotateAt(h);
-                else b.rotateCw();
+                b.rotateHover();
             }),
             onUndo: pick(() => b.undo()),
             onRedo: pick(() => b.redo()),

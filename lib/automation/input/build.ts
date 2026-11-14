@@ -77,7 +77,9 @@ export type BuildEvent =
     | { type: "rotate" }
     | { type: "invalid"; reason: string }
     | { type: "undo" }
-    | { type: "redo" };
+    | { type: "redo" }
+    // A press on a placed building with no tool active. The host decides what selecting means (inspector, highlight).
+    | { type: "select"; cell: Cell; anchor: Cell; kind: string };
 
 interface Edit {
     x: number;
@@ -210,6 +212,25 @@ export class BuildController {
     // What covers this cell, or null. Used by the touch long-press.
     peek(cell: Cell): ItemRef | null {
         return this.world.get(cell.x, cell.z);
+    }
+
+    // Selects the building under the cell (no tool needed). Returns false on empty cells.
+    select(cell: Cell): boolean {
+        const here = this.world.get(cell.x, cell.z);
+        if (!here) return false;
+        const anchor = here.anchor ?? { x: cell.x, z: cell.z };
+        this.onEvent?.({ type: "select", cell: { x: cell.x, z: cell.z }, anchor: { x: anchor.x, z: anchor.z }, kind: here.kind });
+        return true;
+    }
+
+    // The R key. Over a placed building (and not mid-drag) it turns that building, otherwise it turns the ghost.
+    rotateHover(): void {
+        const h = this.hover;
+        if (h && !this.stroke && this.world.get(h.x, h.z)) {
+            this.rotateAt(h);
+            return;
+        }
+        this.rotateCw();
     }
 
     // Quarter-turns the building that covers this cell, in one undo step. The building is lifted first so
