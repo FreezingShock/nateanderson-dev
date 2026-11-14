@@ -347,3 +347,15 @@
 .ab-root.bw .ab-next-text { grid-column: 1 / -1; font-size: 13px; color: #d9c79a; }
 .ab-root.bw .ab-next > .ab-text-btn { grid-column: 3; grid-row: 1; }
 
+
+/* Phone: the stage shrinks to make room, and the objective sits between it and the tab bar,
+   so it is always visible and never covers the tool buttons. */
+@media (max-width: 759px) {
+  .ab-root.bw .ab-center { display: flex; flex-direction: column; }
+  .ab-root.bw .ab-stage { position: relative; inset: auto; flex: 1 1 auto; min-height: 0; }
+  .ab-root.bw .ab-next { order: 2; width: auto; max-width: none; margin: 0; padding: 6px 10px; border-left: 0; border-right: 0; grid-template-columns: auto minmax(0, 1fr) auto; }
+  .ab-root.bw .ab-next-bar { grid-column: 1 / -1; }
+  .ab-root.bw .ab-next-text { font-size: 12px; }
+  .ab-root.bw .ab-tabbar { order: 3; }
+  .ab-root.bw .ab-more { order: 3; }
+}
