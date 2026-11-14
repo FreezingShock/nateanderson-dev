@@ -79,17 +79,24 @@ export function ExpeditionWindow({
     return (
         <MenuWindow size="wide" title="Expedition" art={<span style={uiIconStyle("expedition", 32)} aria-hidden="true" />} onClose={onClose}>
             <div className="ex-root">
-                <p className="ex-sub" data-ready={prestige.ready}>
-                    {prestige.ready ? "Every milestone is delivered. Pick a site for your next workshop." : prestige.requirement}
-                </p>
-                    <ul className="ex-grid" aria-label="Island sites">
-                        {prestige.sites.map((s) => {
+                <div className="ex-brief">
+                    <p className="ex-lede">An expedition moves your workshop to a new island site.</p>
+                    <p className="ex-trade">
+                        <span className="ex-keep">You keep</span> {prestige.keeps.slice(0, 3).join(", ")}.{" "}
+                        <span className="ex-leave">You leave</span> {prestige.leaves.join(", ").toLowerCase()}.
+                    </p>
+                    <p className="ex-sub" data-ready={prestige.ready}>
+                        {prestige.ready ? "Press Plan the move on the site you want." : prestige.requirement}
+                    </p>
+                </div>
+                <ul className="ex-grid" aria-label="Island sites">
+                        {prestige.sites.map((s, i) => {
                             const here = s.id === currentId;
                             const open = prestige.ready || areas.find((a) => a.id === s.id)?.state === "open";
                             const plan = s.plan;
                             const size = plan ? floorWord(plan.width * plan.depth, cells) : "";
                             return (
-                                <li key={s.id} className="ex-card" data-here={here}>
+                                <li key={s.id} className="ex-card" data-here={here} style={{ ["--ex-i" as string]: i }}>
                                     <div className="ex-view">
                                         <span className="ex-img" style={{ backgroundImage: `url(/brasswork/sites/${s.id}.webp)` }} aria-hidden="true" />
                                         {plan && (
