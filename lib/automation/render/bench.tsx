@@ -7,6 +7,7 @@
 //   model=1              places the example machine and a placement ghost
 //   belts=1              places a short belt run and starts it
 //   orbit=0|1            0 = orbit: false, so an input module owns the camera
+import { getMachineModel } from "../models/machines";
 import { useEffect, useRef } from "react";
 import { createVoxelIsland, type VoxelIsland } from "./index";
 import { heightAt } from "./terrain";
@@ -68,6 +69,21 @@ export default function VoxelIslandBench() {
                 rot: 1,
             });
             island.setGhost(EXAMPLE_BLOCK, { x: 2, z: 2 }, 0, false);
+        }
+
+        if (q.get("fx") === "1") {
+            // Working and idle machines for the effects check: furnace and press run, kiln sits idle.
+            const furnace = getMachineModel("furnace");
+            const press = getMachineModel("press");
+            const kiln = getMachineModel("kiln");
+            if (furnace && press && kiln) {
+                island.placeModel("fx-furnace", furnace, { cell: { x: -3, z: -5 }, rot: 0 });
+                island.placeModel("fx-press", press, { cell: { x: 0, z: -5 }, rot: 0 });
+                island.placeModel("fx-kiln", kiln, { cell: { x: 3, z: -5 }, rot: 0 });
+                island.setObjectState("fx-furnace", { working: true, t: 0 });
+                island.setObjectState("fx-press", { working: true, t: 0 });
+                island.setObjectState("fx-kiln", { working: false, t: 0 });
+            }
         }
 
         if (q.get("scenery") === "1") {
