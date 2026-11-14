@@ -9,7 +9,8 @@ import { ResourceStrip } from "./resource-strip";
 import { BuildList } from "./build-bar";
 import { Inspector } from "./inspector";
 import { Milestones, PrestigeCard, Section } from "./factory-sections";
-import { ExpeditionList, SettingsList, StatsList } from "./drawers";
+import { ExpeditionList, SettingsList } from "./drawers";
+import { ProductionWindow } from "./production-window";
 import { ResearchScreen } from "./research-screen";
 import { PrestigeScreen } from "./prestige-screen";
 import "./brasswork-skin.css";
@@ -262,7 +263,11 @@ export function AutomationHud({
           </Section>
         </aside>
 
-        {drawer && (
+        {drawer === "stats" && (
+          <ProductionWindow resources={data.resources} stats={data.stats} numberFormat={mode} onClose={() => setDrawer(null)} />
+        )}
+
+        {drawer && drawer !== "stats" && (
           <aside className="ab-drawer" role="dialog" aria-label={DRAWER_TITLE[drawer]}>
             <header className="ab-head">
               <h2 className="ab-h">
@@ -277,7 +282,6 @@ export function AutomationHud({
               {drawer === "expedition" && (
                 <ExpeditionList areas={data.areas} onSelectArea={actions.onSelectArea} />
               )}
-              {drawer === "stats" && <StatsList stats={data.stats} />}
               {drawer === "settings" && (
                 <SettingsList settings={data.settings} onChange={actions.onSettings} />
               )}
