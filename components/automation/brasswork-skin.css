@@ -270,3 +270,32 @@
   color: var(--ab-dim);
   font-weight: 600;
 }
+
+/* Machine inspector: portrait and title in one header, status line, icon flow, recipe rows. */
+.ab-inspect .ab-inspect-head { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 12px; }
+.ab-inspect .ab-inspect-title { display: grid; gap: 2px; min-width: 0; }
+.ab-inspect .ab-inspect-status { margin: 10px 0 6px; font-size: 14px; line-height: 1.4; }
+.ab-inspect .ab-inspect-status[data-status="blocked"],
+.ab-inspect .ab-inspect-status[data-status="unpowered"] { color: #ffb08a; }
+.ab-inspect .ab-inspect-flow { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; font-size: 14px; }
+.ab-inspect .ab-inspect-hint { margin: 8px 0; font-size: 14px; color: var(--ab-dim); }
+.ab-inspect .ab-inspect-recipes { display: grid; gap: 6px; }
+.ab-inspect .ab-recipe-row {
+  display: flex; justify-content: space-between; align-items: center; gap: 12px;
+  width: 100%; min-height: 44px; padding: 8px 10px; text-align: left;
+  background: transparent; border: 1px solid #6b4f26; color: inherit; font: inherit; cursor: pointer;
+}
+.ab-inspect .ab-recipe-row[data-selected="true"] { border-color: #ffd98a; background: #3a2a14; }
+.ab-inspect .ab-recipe-state { font-size: 12px; letter-spacing: .06em; text-transform: uppercase; color: var(--ab-dim); }
+.ab-inspect .ab-recipe-row[data-selected="true"] .ab-recipe-state { color: #ffd98a; }
+.ab-inspect .ab-inspect-rate { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; font-size: 14px; }
+.ab-inspect .ab-buffer { display: flex; align-items: center; gap: 10px; }
+.ab-inspect .ab-buffer-name { flex: 1; min-width: 0; font-size: 13px; }
+.ab-inspect .ab-action { width: 100%; min-height: 44px; margin-top: 12px; }
+
+/* Palette row: name, count, status and the Details button never collide. */
+.ab-root .ab-build-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: stretch; gap: 6px; }
+.ab-root .ab-build-main { min-width: 0; }
+.ab-root .ab-build-main .ab-build-name { overflow-wrap: anywhere; }
+.ab-root .ab-build-row .ab-info { flex: none; align-self: center; min-width: 76px; min-height: 40px; }
+.ab-root .ab-build-row[data-selected="true"] .ab-info { outline: 2px solid #ffd98a; }
