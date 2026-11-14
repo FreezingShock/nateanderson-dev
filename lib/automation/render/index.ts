@@ -40,6 +40,7 @@ import {
 import type { Matrix4 } from "three";
 import { FrameGovernor } from "./governor";
 import { MachineEffects } from "./effects";
+import { SelectionOutline, type HighlightCell } from "./highlight";
 
 export { heightAt, Stamper, VoxelGrid, TERRAIN_CELL, OBJECT_CELL };
 export { QUALITY_PRESETS } from "./config";
@@ -127,6 +128,8 @@ export interface VoxelIsland {
     setBelts(list: readonly PiecePlacement[]): void;
     /** Cells per second for a belt tier (0 stops it). Tiers are brass 0, copper 1, steel 2. */
     setBeltSpeed(tier: number, cellsPerSecond: number): void;
+    /** Outlines board cells in brass, for a selected belt run or building. Empty clears it. Same frame as setBelts. */
+    setHighlight(cells: readonly HighlightCell[]): void;
     /** Matrix for an item riding a belt piece. `t` is 0..1 over the cell. */
     beltItemMatrix(
         p: PiecePlacement,
@@ -211,6 +214,7 @@ export function createVoxelIsland(
     const models = new ModelRenderer(scene, heightAt);
     const scenery = new Scenery(scene);
     const effects = new MachineEffects(scene);
+    const selection = new SelectionOutline(scene);
     // Belt kit, created on first use. Its slats and gears run on the GPU from one phase per tier.
     let belts: BeltKit | null = null;
     const ensureBelts = (): BeltKit => {
@@ -364,6 +368,7 @@ export function createVoxelIsland(
         animUniforms.uTime.value = elapsed;
         effects.setWind(windStrength);
         effects.update(dt);
+        selection.update(dt);
         animUniforms.uWind.value = lowFx ? 0 : windStrength / 0.5;
         animUniforms.uWave.value = lowFx ? 0 : 1;
         // Belts keep moving under low fx: one uniform per tier, so it costs nothing.
@@ -480,6 +485,9 @@ export function createVoxelIsland(
         setBelts(list: readonly PiecePlacement[]) {
             ensureBelts().setPieces(list);
         },
+        setHighlight(cells) {
+            selection.setCells(cells, heightAt);
+        },
         setBeltSpeed(tier, cellsPerSecond) {
             ensureBelts().setSpeed(tier, cellsPerSecond);
         },
@@ -564,6 +572,7 @@ export function createVoxelIsland(
             models.dispose();
             scenery.dispose();
             effects.dispose();
+            selection.dispose();
             if (belts) {
                 scene.remove(belts.object);
                 belts.dispose();
