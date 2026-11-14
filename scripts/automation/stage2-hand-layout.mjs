@@ -13,6 +13,13 @@ const E = 1, SOUTH = 0, W = 3, N = 2; // rot: 0 = +z, 1 = +x, 2 = -z, 3 = -x
 
 export function runStage2Layout(minutes = 10) {
 const world = S.createWorld({ width: 18, depth: 12, hub: HUB }, CAT);
+// Recipes behind research only run once it is bought. The stage 2 layout buys the research it uses,
+// with the blueprints the first milestone pays (12), so the layout is the one a player can build.
+world.progress.blueprints = 12;
+for (const id of ["gears", "furnace_alloys", "sheet_rolling"]) {
+    const r = S.buyResearch(world, CAT, id);
+    if (!r.ok) throw new Error(`stage 2 research ${id}: ${r.reason}`);
+}
 const log = [];
 const ok = (label, r) => { if (!r.ok) log.push(`FAIL ${label}: ${r.reason}`); return r.ok; };
 const belt = (x, z, rot) => ok(`belt ${x},${z}`, S.place(world, "belt", x, z, rot, CAT));

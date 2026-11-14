@@ -3,7 +3,7 @@
 import type { ActionResult, Building, Catalog, Cell, Footprint, Deposit, PlaceResult, Rot, Stack, World, EngineDef, LogisticsKind } from "../types";
 import { DIR_DX, DIR_DZ} from "../types";
 import { DEFAULT_CATALOG } from "./data";
-import { checkMilestones } from "./progress";
+import { checkMilestones, unlockedRecipes } from "./progress";
 
 export const DRILL = "drill"; // the tree machine that sits on a resource node
 export const SPRING = "spring_winder"; // the battery generator
@@ -259,6 +259,8 @@ export function setRecipe(world: World, id: number, recipe: string | null, cat: 
     if (recipe !== null) {
         const rec = cat.tree.recipes.find((x) => x.id === recipe);
         if (!rec || rec.machine !== b.type) return { ok: false, reason: "that recipe does not run here" };
+        // Alternates and base recipes that sit behind research are refused until that research is bought.
+        if (!unlockedRecipes(world, cat).includes(recipe)) return { ok: false, reason: "research this recipe first" };
     }
     refund(world.buildings[world.hubId], b);
     b.recipe = recipe;
