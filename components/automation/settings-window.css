@@ -64,8 +64,3 @@
   .bws-hint { font-size: 12px; }
 }
 
-/* Option B (sample only): switches as large tiles. */
-.bws-window[data-layout="tiles"] .bws-group { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-.bws-window[data-layout="tiles"] .bws-group-h { grid-column: 1 / -1; }
-.bws-window[data-layout="tiles"] .bws-row { grid-template-columns: 1fr; justify-items: start; gap: 6px; padding: 12px; border: 1px solid var(--ab-line, #4a3a22); background: #120d07; }
-.bws-window[data-layout="tiles"] .bws-switch, .bws-window[data-layout="tiles"] .bws-pair { width: 100%; }
