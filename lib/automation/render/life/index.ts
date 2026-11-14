@@ -2,7 +2,9 @@
 // day, fireflies by night, chimney smoke and steam from working machines, shoreline glints and
 // jumping fish, passing drizzle, and celebration bursts for milestones, research, unlocks and hub
 // deliveries. Everything is a handful of instanced pools (one draw call each), so the whole layer
-// costs about nine draw calls. Low fx keeps the reward bursts (smaller) and the smoke, and drops
+// costs about nine draw calls. Machine smoke itself lives in render/index.ts (Visuals thread);
+// setEmitters here is for extra sources such as a future workshop chimney.
+// (Old note:) costs about nine draw calls.
 // the rest of the ambient motion.
 //
 // Hooks into the renderer: VoxelIsland.scene and VoxelIsland.onFrame (lib/automation/render/index.ts).

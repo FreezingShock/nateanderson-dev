@@ -29,7 +29,6 @@ import {
     type World,
 } from "@/lib/automation/sim";
 import type { VoxelIsland } from "@/lib/automation/render";
-import type { Emitter } from "@/lib/automation/render/life";
 import type { BuildWorld, MountedInput } from "@/lib/automation/input";
 import { getMachineModel } from "@/lib/automation/models/machines";
 import { pickBeltTile, type PieceKind, type PiecePlacement } from "@/lib/automation/models/belts";
@@ -305,6 +304,11 @@ export function BrassworkHost() {
                         setNote("");
                         syncScene();
                         refresh();
+                    } else if (e.type === "select") {
+                        // A short click or tap on a placed building (no tool active) opens its inspector.
+                        const b = buildingAt(world, e.cell.x, e.cell.z, CAT);
+                        selectedId = b ? b.id : null;
+                        refresh();
                     } else syncScene();
                 },
             });
@@ -323,9 +327,7 @@ export function BrassworkHost() {
             };
 
             // Push each machine's working flag, clock and charge to the renderer so parts move and lamps glow.
-            const emitters: Emitter[] = [];
             const pushStates = () => {
-                emitters.length = 0;
                 const charge = chargeOf(world, CAT);
                 const sat = world.power.satisfaction;
                 for (const id of drawn) {
@@ -334,15 +336,7 @@ export function BrassworkHost() {
                     const r = resolve(CAT, b.type);
                     const working = r ? (r.kind === "miner" ? sat > 0 : r.kind === "generator" ? true : b.crafting) : false;
                     island.setObjectState(`b${id}`, { working, t: world.time, charge: charge[id] ?? 1 });
-                    // Working crafters puff from the roof: coal smoke from kilns and furnaces, steam from the rest.
-                    if (working && r?.kind === "crafter" && emitters.length < 16) {
-                        const cells = footprintCells(b, r.footprint);
-                        const xs = cells.map((c) => c[0]), zs = cells.map((c) => c[1]);
-                        const [cx, cz] = center(Math.min(...xs), Math.min(...zs), Math.max(...xs) - Math.min(...xs) + 1, Math.max(...zs) - Math.min(...zs) + 1);
-                        emitters.push({ x: cx + 0.25, y: 1.35, z: cz - 0.2, kind: b.type === "kiln" || b.type === "furnace" ? "smoke" : "steam" });
-                    }
                 }
-                life.setEmitters(emitters);
             };
 
             ctl.current = {

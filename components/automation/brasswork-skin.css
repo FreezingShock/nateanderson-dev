@@ -47,6 +47,19 @@
   box-shadow: inset 0 1px 0 rgba(255, 220, 150, 0.45), 0 4px 0 var(--bw-brass-dk), 0 8px 12px rgba(0, 0, 0, 0.5);
 }
 .ab-root.bw .ab-brand-name { color: var(--bw-brass-hi); text-shadow: 0 1px 0 #000; }
+
+/* Screen-reader-only heading: keeps the landmark name without a visible duplicate title. */
+.ab-root .ab-sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+  padding: 0;
+}
 .ab-root.bw .ab-res-amt { color: var(--bw-amber); text-shadow: 0 0 6px rgba(255, 179, 71, 0.4); }
 
 /* section heads become engraved plates */

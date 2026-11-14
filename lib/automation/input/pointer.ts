@@ -93,6 +93,17 @@ export class PointerInput {
         return hit ? hit.cell : null;
     }
 
+    // World point under a client-space point (continuous, not snapped to a cell), or null off the board.
+    private groundAt(clientX: number, clientY: number): { x: number; z: number } | null {
+        const rect = this.opts.element.getBoundingClientRect();
+        if (rect.width === 0 || rect.height === 0) return null;
+        const ndcX = ((clientX - rect.left) / rect.width) * 2 - 1;
+        const ndcY = 1 - ((clientY - rect.top) / rect.height) * 2;
+        const view = this.opts.camera.view(rect.width / rect.height);
+        const hit = pickGround(screenRay(view, ndcX, ndcY), this.opts.board, this.opts.heightAt);
+        return hit ? { x: hit.point.x, z: hit.point.z } : null;
+    }
+
     private changed(): void {
         this.opts.onChange?.();
     }
@@ -284,7 +295,8 @@ export class PointerInput {
         if (e.deltaMode === 1) dy *= 16;
         // Trackpad pinch arrives as ctrl+wheel with small deltas. Wheel steps are larger, so keep both readable.
         const k = e.ctrlKey ? 0.01 : 0.0015;
-        this.opts.camera.zoom(Math.exp(dy * k));
+        // Zoom toward the cursor so the spot under the mouse stays put.
+        this.opts.camera.zoomAt(Math.exp(dy * k), this.groundAt(e.clientX, e.clientY));
         this.changed();
     };
 
@@ -304,7 +316,10 @@ export class PointerInput {
         if (this.pointers.size < 2 || !this.pinchPrev) return;
         const next = this.pinchState();
         // Fingers spread apart means zoom in, so the factor is previous over current.
-        this.opts.camera.zoom(this.pinchPrev.dist / next.dist);
+        // Zoom toward the midpoint between the fingers.
+        const [a, b] = [...this.pointers.values()];
+        const mid = this.groundAt((a.x + b.x) / 2, (a.y + b.y) / 2);
+        this.opts.camera.zoomAt(this.pinchPrev.dist / next.dist, mid);
         let dAngle = next.angle - this.pinchPrev.angle;
         if (dAngle > Math.PI) dAngle -= 2 * Math.PI;
         if (dAngle < -Math.PI) dAngle += 2 * Math.PI;
