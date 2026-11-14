@@ -221,7 +221,7 @@ export class BuildController {
             const k = cellKey(anchor);
             if (seen.has(k)) continue;
             seen.add(k);
-            edits.push({ x: anchor.x, z: anchor.z, before, after: null });
+            edits.push(...this.footprintEdits(anchor));
         }
         this.highlight = [];
         return this.commitEdits(edits, "remove");
@@ -323,7 +323,8 @@ export class BuildController {
         const before = this.world.get(cell.x, cell.z);
         if (!before) return 0;
         const anchor = before.anchor ?? cell;
-        this.commitEdits([{ x: anchor.x, z: anchor.z, before, after: null }], "remove");
+        const edits = this.footprintEdits(anchor);
+        this.commitEdits(edits, "remove");
         return 1;
     }
 
@@ -402,7 +403,7 @@ export class BuildController {
             const a = anchors[i];
             const r = rots ? rots[i] : rot;
             // Deletes and 1 by 1 tools look at one cell per anchor. Footprint tools look at every covered cell.
-            const offsets = isDelete ? [{ dx: 0, dz: 0 }] : footprintOffsets(tool.footprint, r);
+            const offsets = isDelete ? this.deleteOffsets(a) : footprintOffsets(tool.footprint, r);
             const anchorReason = isDelete || !this.world.check ? null : this.world.check(tool.id, a.x, a.z, r);
             const group: GhostCell[] = offsets.map((o) => this.evaluate(a.x + o.dx, a.z + o.dz, r, a, anchorReason));
             cells.push(...group);
@@ -413,6 +414,40 @@ export class BuildController {
         const reason = isDelete ? (validCount === 0 ? "nothing to remove" : null) : firstBad?.reason ?? null;
         const joins = this.stroke && tool.line ? this.joinsFor(anchors) : [];
         return { tool, cells, rot, stroking: this.stroke !== null, validCount, reason, joins };
+    }
+
+    // Clears every cell of the building that owns this anchor, so a multi-cell machine goes in one step.
+    private footprintEdits(anchor: Cell): Edit[] {
+        const out: Edit[] = [];
+        for (const o of this.deleteOffsets(anchor)) {
+            const x = anchor.x + o.dx;
+            const z = anchor.z + o.dz;
+            const before = this.world.get(x, z);
+            if (before) out.push({ x, z, before, after: null });
+        }
+        return out;
+    }
+
+    // Delete previews the whole building under a cell: every cell that shares its anchor, relative to the cell.
+    // A 1 by 1 item, or an empty cell, gives just the cell itself.
+    private deleteOffsets(cell: Cell): Offset[] {
+        const item = this.world.get(cell.x, cell.z);
+        if (!item) return [{ dx: 0, dz: 0 }];
+        const anchor = item.anchor ?? cell;
+        const key = cellKey(anchor);
+        const R = 4;
+        const out: Offset[] = [];
+        for (let dz = -R; dz <= R; dz++) {
+            for (let dx = -R; dx <= R; dx++) {
+                const x = cell.x + dx;
+                const z = cell.z + dz;
+                const it = (dx === 0 && dz === 0) ? item : this.world.get(x, z);
+                if (!it) continue;
+                const a = it.anchor ?? { x, z };
+                if (cellKey(a) === key) out.push({ dx, dz });
+            }
+        }
+        return out.length ? out : [{ dx: 0, dz: 0 }];
     }
 
     // Neighbours of the path's two ends that are not part of the path: belts of a line kind, and machine ports facing in.
