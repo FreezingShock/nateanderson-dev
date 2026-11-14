@@ -344,6 +344,15 @@ export type PrestigeSite = {
   blurb: string;
   /** Plain lines on the bonus, e.g. "Miners +15%". */
   modifiers: string[];
+  /** Layout for the site picture and plan: floor size and hub spot in cells, ore nodes, and the bonus multipliers. */
+  plan?: {
+    width: number;
+    depth: number;
+    hub: { x: number; z: number };
+    nodes: { x: number; z: number; item: string; purity: number }[];
+    miner: number;
+    power: number;
+  };
 };
 
 export type PrestigeView = {
