@@ -29,14 +29,16 @@ import {
     type World,
 } from "@/lib/automation/sim";
 import type { VoxelIsland } from "@/lib/automation/render";
-import type { BuildWorld, MountedInput } from "@/lib/automation/input";
+import type { BuildWorld, InputController, MountedInput } from "@/lib/automation/input";
 import { getMachineModel } from "@/lib/automation/models/machines";
 import { pickBeltTile, type PieceKind, type PiecePlacement } from "@/lib/automation/models/belts";
 import { WATER_LEVEL } from "@/lib/automation/render/config";
 import { scatterProps } from "@/lib/automation/models/props";
 import { BrassworkExtras, type AwayReport, type Mood } from "./extras";
 import { FirstRunGuide } from "./first-run";
+import { BuildPopover, TrashButton } from "./build-popover";
 import { bw, bwHum, bwSetEnabled } from "@/lib/brasswork/sound";
+import "@/components/brasswork-ui/type.css";
 
 const W = 18;
 const D = 12;
@@ -105,6 +107,9 @@ export function BrassworkHost() {
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const [data, setData] = useState<HudData>(() => hudData(freshWorld(), CAT, null, START_SETTINGS));
     const [note, setNote] = useState("");
+    // Placed-piece pop-up: the building's anchor, what it is, and where to pin it on screen.
+    const [pop, setPop] = useState<{ anchor: { x: number; z: number }; kind: string; kindLabel: string; x: number; y: number } | null>(null);
+    const [inputCtl, setInputCtl] = useState<InputController | null>(null);
     const [away, setAway] = useState<AwayReport | null>(null);
     const [mood, setMood] = useState<Mood>("Auto");
     const moodRef = useRef<Mood>("Auto");
@@ -121,13 +126,14 @@ export function BrassworkHost() {
         setRecipe: (id: string) => void;
         prestige: (id: string) => void;
         settings: (p: Partial<HudSettings>) => void;
+        details: (anchor: { x: number; z: number }) => void;
     } | null>(null);
 
     useEffect(() => {
         let dead = false;
         let cleanup = () => {};
         (async () => {
-            const [{ createVoxelIsland, heightAt }, { mount }] = await Promise.all([import("@/lib/automation/render"), import("@/lib/automation/input")]);
+            const [{ createVoxelIsland, heightAt }, { mount }, { attachLife }] = await Promise.all([import("@/lib/automation/render"), import("@/lib/automation/input"), import("@/lib/automation/render/life")]);
             const canvas = canvasRef.current;
             if (dead || !canvas) return;
             const { world, savedAt } = loadWorld();
@@ -137,6 +143,10 @@ export function BrassworkHost() {
 
             const island: VoxelIsland = createVoxelIsland(canvas, { quality: "auto", dither: true, timeOfDay: 0.4, cycle: false, orbit: false });
             [1.2, 2, 3].forEach((v, tier) => island.setBeltSpeed(tier, v));
+            // Island life: leaves, birds, fireflies, smoke, shore glints, drizzle and reward bursts.
+            const life = attachLife(island, heightAt);
+            // Handle for the browser console and headless captures: __bwLife.burst("milestone", 0, 0), __bwLife.setRain(1).
+            (window as unknown as { __bwLife?: typeof life }).__bwLife = life;
             // Natural scenery around the plateau; nothing grows on it, and trees keep clear of the machines.
             island.setScenery(
                 scatterProps({
@@ -219,15 +229,37 @@ export function BrassworkHost() {
             // Sound cues from what changed since the last refresh: a milestone finished, a blueprint bought.
             const doneMilestones = new Set<string>();
             let doneResearch = -1;
+            let unlockedCount = -1;
+            let hubStock = -1;
+            let lastDelivery = 0;
             let started = false;
+            // Where celebrations play: over the hub, or the board centre before one exists.
+            const hubAt = (): [number, number] => {
+                const hub = Object.values(world.buildings).find((b) => b.type === "hub");
+                return hub ? center(hub.x - 1, hub.z - 1, 3, 3) : [0, 0];
+            };
             const refresh = () => {
                 const d = hudData(world, CAT, selectedId, settings);
                 const ms = d.milestones.filter((m) => m.done);
                 const rs = d.research.filter((r) => r.state === "done").length;
+                const unlocked = d.research.filter((r) => r.state !== "locked").length;
+                const stockNow = d.resources.reduce((a, r) => a + r.amount, 0);
                 if (started) {
-                    if (ms.some((m) => !doneMilestones.has(m.id))) bw("milestone");
-                    else if (rs > doneResearch) bw("research");
+                    const [hx, hz] = hubAt();
+                    if (ms.some((m) => !doneMilestones.has(m.id))) {
+                        bw("milestone");
+                        life.burst("milestone", hx, hz);
+                    } else if (rs > doneResearch) {
+                        bw("research");
+                        life.burst("research", hx, hz);
+                    } else if (unlocked > unlockedCount && unlockedCount >= 0) life.burst("unlock", hx, hz);
+                    else if (stockNow > hubStock + 0.5 && performance.now() - lastDelivery > 2500) {
+                        lastDelivery = performance.now();
+                        life.burst("delivery", hx, hz);
+                    }
                 }
+                unlockedCount = unlocked;
+                hubStock = stockNow;
                 ms.forEach((m) => doneMilestones.add(m.id));
                 doneResearch = rs;
                 started = true;
@@ -250,7 +282,12 @@ export function BrassworkHost() {
             const ox = W / 2;
             const oz = D / 2;
             const buildWorld: BuildWorld = {
-                get: (x, z) => grid.get(x + ox, z + oz),
+                // The grid reports anchors in sim cells. Shift them back so every anchor the input layer sees is in its frame.
+                get: (x, z) => {
+                    const it = grid.get(x + ox, z + oz);
+                    if (!it || !it.anchor) return it;
+                    return { ...it, anchor: { x: it.anchor.x - ox, z: it.anchor.z - oz } };
+                },
                 set: (x, z, item) => {
                     const r = grid.set(x + ox, z + oz, item);
                     if (!r.ok) setNote(r.reason);
@@ -280,11 +317,24 @@ export function BrassworkHost() {
                         refresh();
                     } else if (e.type === "select") {
                         // A short click or tap on a placed building (no tool active) opens its inspector.
-                        const b = buildingAt(world, e.cell.x, e.cell.z, CAT);
-                        selectedId = b ? b.id : null;
-                        refresh();
+                        // e.cell is in the shared input frame; the sim is offset by half the board (see buildWorld below).
+                        const b = buildingAt(world, e.cell.x + W / 2, e.cell.z + D / 2, CAT);
+                        // Phone: the click opens only the pop-up; its Details button opens the inspector sheet.
+                        if (!window.matchMedia("(max-width: 767px)").matches) {
+                            selectedId = b ? b.id : null;
+                            refresh();
+                        }
+                        // Quick actions by the piece. Same click, so the inspector and the pop-up open together.
+                        const at = input.controller.screenPoint(e.anchor);
+                        if (b && at) setPop({ anchor: e.anchor, kind: e.kind, kindLabel: resolve(CAT, e.kind)?.name ?? e.kind, x: at.x, y: at.y });
                     } else syncScene();
                 },
+            });
+
+            setInputCtl(input.controller);
+            // The selected belt run (or building) glows in the 3D view. Same board frame as setBelts.
+            input.controller.build.subscribe(() => {
+                if (!dead) island.setHighlight(input.controller.build.getHighlight());
             });
 
             // Placement preview: the input module owns the ghost, the renderer draws it.
@@ -296,8 +346,10 @@ export function BrassworkHost() {
                 const key = g && c && model ? `${g.tool.id}:${c.x},${c.z},${g.rot},${c.valid}` : "";
                 if (key === ghostKey) return;
                 ghostKey = key;
-                if (g && c && model) island.setGhost(model, { x: c.x, z: c.z }, g.rot, c.valid);
-                else island.clearGhost();
+                if (g && c && model) {
+                    island.setGhost(model, { x: c.x, z: c.z }, g.rot, c.valid);
+                    island.setGhostValidity(c.valid);
+                } else island.clearGhost();
             };
 
             // Push each machine's working flag, clock and charge to the renderer so parts move and lamps glow.
@@ -314,6 +366,11 @@ export function BrassworkHost() {
             };
 
             ctl.current = {
+                details: (anchor) => {
+                    const b = buildingAt(world, anchor.x + W / 2, anchor.z + D / 2, CAT);
+                    selectedId = b ? b.id : null;
+                    refresh();
+                },
                 setTool: (id) => {
                     input.controller.setToolById(id);
                     setNote(id ? `Click the floor to place ${resolve(CAT, id)?.name ?? id}. R rotates, Esc cancels.` : "");
@@ -350,6 +407,7 @@ export function BrassworkHost() {
                     settings = { ...settings, ...p };
                     bwSetEnabled(settings.sound);
                     island.setLowFx(settings.lowFx || settings.reduceMotion);
+                    life.setLowFx(settings.lowFx || settings.reduceMotion);
                     island.setSceneryDensity(settings.lowFx || settings.reduceMotion ? 0.5 : 1);
                     [1.2, 2, 3].forEach((v, tier) => island.setBeltSpeed(tier, settings.reduceMotion ? 0 : v));
                     refresh();
@@ -417,9 +475,12 @@ export function BrassworkHost() {
                 save();
                 input.destroy();
                 window.removeEventListener("resize", onResize);
+                life.dispose();
                 island.dispose();
                 bwHum(null);
                 ctl.current = null;
+                setInputCtl(null);
+                setPop(null);
                 snap.current = null;
             };
         })();
@@ -445,6 +506,28 @@ export function BrassworkHost() {
                 </Link>
                 <BrassworkExtras snapshot={snapshot} away={away} mood={mood} onMood={onMood} />
                 <FirstRunGuide data={data} />
+                {inputCtl && (
+                    <div className="bt-dock">
+                        <TrashButton input={inputCtl} />
+                    </div>
+                )}
+                {inputCtl && pop && (
+                    <BuildPopover
+                        input={inputCtl}
+                        anchor={pop.anchor}
+                        kind={pop.kind}
+                        kindLabel={pop.kindLabel}
+                        x={pop.x}
+                        y={pop.y}
+                        lineKinds={["belt", "belt-copper", "belt-steel"]}
+                        showDetails={typeof window !== "undefined" && window.matchMedia("(max-width: 767px)").matches}
+                        onDetails={(a) => {
+                            ctl.current?.details(a);
+                            setPop(null);
+                        }}
+                        onClose={() => setPop(null)}
+                    />
+                )}
                 {note && <p className="bw-note">{note}</p>}
             </AutomationHud>
         </div>

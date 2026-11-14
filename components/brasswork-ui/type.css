@@ -1,0 +1,74 @@
+/* Brasswork type system. One display face for titles, one text face for everything else.
+   Swap the faces in lib/brasswork/fonts.ts (one line each); everything below reads the tokens.
+   Roles: brand, panel title, section heading, item name, label, value, hint, button, quest.
+   Floor is 11px everywhere. This sheet loads last, so it sets the hierarchy on top of the layout sheets. */
+
+.bw-root, .bw {
+  --bw-font-display: var(--font-bw-display, Georgia, "Times New Roman", serif);
+  --bw-font-text: var(--font-bw-text, system-ui, -apple-system, "Segoe UI", sans-serif);
+  --bw-font-num: var(--font-bw-text, system-ui, -apple-system, "Segoe UI", sans-serif);
+  --bw-font: var(--bw-font-text);
+
+  /* role: size / weight / tracking / colour */
+  --bw-t-brand: 22px;       --bw-t-brand-w: 700;  --bw-t-brand-ls: 0.1em;
+  --bw-t-panel: 16px;       --bw-t-panel-w: 700;  --bw-t-panel-ls: 0.1em;   --bw-c-panel: var(--bw-brass-hi, #f4cf7e);
+  --bw-t-section: 11.5px;   --bw-t-section-w: 700; --bw-t-section-ls: 0.16em; --bw-c-section: var(--bw-brass, #d29a3c);
+  --bw-t-item: 16px;        --bw-t-item-w: 600;   --bw-t-item-ls: 0.01em;   --bw-c-item: var(--bw-cream, #f0dfb8);
+  --bw-t-label: 13.5px;     --bw-t-label-w: 400;  --bw-t-label-ls: 0.01em;  --bw-c-label: var(--bw-dim, #b09a6c);
+  --bw-t-value: 16px;       --bw-t-value-w: 600;  --bw-t-value-ls: 0;       --bw-c-value: var(--bw-cream, #f0dfb8);
+  --bw-t-hint: 12px;        --bw-t-hint-w: 400;   --bw-t-hint-ls: 0.02em;   --bw-c-hint: var(--bw-dim, #b09a6c);
+  --bw-t-button: 12px;      --bw-t-button-w: 700; --bw-t-button-ls: 0.12em;
+}
+
+.bw-root.bw-root :is(.ab-brand-name) { font: var(--bw-t-brand-w) var(--bw-t-brand)/1.1 var(--bw-font-display); letter-spacing: var(--bw-t-brand-ls); text-transform: uppercase; }
+
+/* panel titles */
+.bw-root.bw-root .ab-root :is(.ab-h, .bw-quest-title),
+.bw-root.bw-root :is(.pw-title, .bx-card .bw-title) {
+  font-family: var(--bw-font-display); font-size: var(--bw-t-panel); font-weight: var(--bw-t-panel-w);
+  letter-spacing: var(--bw-t-panel-ls); text-transform: uppercase; color: var(--bw-c-panel);
+}
+.bw-root.bw-root .pw-title { font-size: 22px; }
+
+/* section headings */
+.bw-root.bw-root :is(.ab-sub-title, .pw-h, .bx-h, .ab-next-label, .bw-quest-label, .ab-col) {
+  font-family: var(--bw-font-text); font-size: var(--bw-t-section); font-weight: var(--bw-t-section-w);
+  letter-spacing: var(--bw-t-section-ls); text-transform: uppercase; color: var(--bw-c-section);
+}
+
+/* item names */
+.bw-root.bw-root :is(.ab-build-name, .ab-milestone-name, .ab-node-name, .ab-site-name, .pw-ore-name, .bw-quest-step, .bx-name) {
+  font-family: var(--bw-font-display); font-size: var(--bw-t-item); font-weight: var(--bw-t-item-w);
+  letter-spacing: var(--bw-t-item-ls); color: var(--bw-c-item); text-transform: none;
+}
+
+/* labels and body */
+.bw-root.bw-root :is(.ab-res-name, .ab-build-cost, .ab-milestone-goal, .ab-node-sub, .ab-next-text, .bw-quest-hint, .pw-sub, .pw-reason, .bx-note, .bx-lead, .bx-recipe) {
+  font-family: var(--bw-font-text); font-size: var(--bw-t-label); font-weight: var(--bw-t-label-w);
+  letter-spacing: var(--bw-t-label-ls); text-transform: none;
+}
+.bw-root.bw-root :is(.ab-build-cost, .ab-milestone-goal, .ab-node-sub, .pw-sub, .pw-reason) { color: var(--bw-c-label); }
+
+/* values: counts, rates, costs, keys */
+.bw-root.bw-root :is(.ab-res-amt, .ab-res-rate, .ab-node-cost, .bw-quest-count, .pw-gauge-val, .bx-key) {
+  font-family: var(--bw-font-num); font-variant-numeric: tabular-nums lining-nums; letter-spacing: var(--bw-t-value-ls);
+}
+.bw-root.bw-root .ab-res-amt, .bw-root .pw-gauge-val { font-size: var(--bw-t-value); font-weight: var(--bw-t-value-w); }
+.bw-root.bw-root :is(.ab-res-rate, .ab-node-cost) { font-size: var(--bw-t-hint); color: var(--bw-c-hint); }
+.bw-root.bw-root .ab-root .ab-dim { font-family: var(--bw-font-num); font-variant-numeric: tabular-nums lining-nums; letter-spacing: 0.02em; font-size: var(--bw-t-hint); color: var(--bw-c-hint); }
+
+/* buttons */
+.bw-root.bw-root :is(.ab-text-btn, .ab-info, .ab-action, .bw-quest-btn, .bw-back, .bx-lbl, .pw-pick-name) {
+  font-family: var(--bw-font-text); font-size: var(--bw-t-button); font-weight: var(--bw-t-button-w); letter-spacing: var(--bw-t-button-ls);
+}
+.bw-root.bw-root .ab-info { text-transform: none; letter-spacing: 0.04em; font-size: 12.5px; }
+
+/* phone: keep the 11px floor */
+@media (max-width: 759px) {
+  .bw-root .ab-root .ab-nav .ab-text-btn { font-size: 11px; letter-spacing: 0.04em; }
+  .bw-root .ab-root .ab-glyph { font-size: 11px; }
+  .bw-root .pw-pick-name { font-size: 11px; }
+}
+
+/* buttons and fields default to the browser's own face; make them follow the tokens */
+.bw-root.bw-root :is(button, input, select, textarea) { font-family: var(--bw-font-text); }

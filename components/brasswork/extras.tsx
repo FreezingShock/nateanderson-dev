@@ -3,7 +3,7 @@ import { uiIconStyle } from "@/lib/automation/icons/ui";
 
 // Small extras around the Brasswork stage: photo mode (P), the key sheet (?) and the welcome-back report. They sit on
 // top of the HUD and use the brass kit's bw-* classes. The host passes in a snapshot function and the away report.
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Codex } from "./codex";
 import "./extras.css";
 
@@ -63,6 +63,24 @@ const fmtN = (n: number) => (n >= 10000 ? `${(n / 1000).toFixed(1)}k` : String(M
 export function BrassworkExtras({ snapshot, away, mood, onMood }: { snapshot: () => string | null; away: AwayReport | null; mood: Mood; onMood: (m: Mood) => void }) {
     const [sheet, setSheet] = useState(false);
     const [codex, setCodex] = useState(false);
+    const [toolsOpen, setToolsOpen] = useState(false);
+    const toolsRef = useRef<HTMLDivElement>(null);
+    // The Tools panel closes on Escape and on any click or tap outside it.
+    useEffect(() => {
+        if (!toolsOpen) return;
+        const onDown = (e: PointerEvent) => {
+            if (toolsRef.current && !toolsRef.current.contains(e.target as Node)) setToolsOpen(false);
+        };
+        const onKey = (e: KeyboardEvent) => {
+            if (e.key === "Escape") setToolsOpen(false);
+        };
+        window.addEventListener("pointerdown", onDown);
+        window.addEventListener("keydown", onKey);
+        return () => {
+            window.removeEventListener("pointerdown", onDown);
+            window.removeEventListener("keydown", onKey);
+        };
+    }, [toolsOpen]);
     const [flash, setFlash] = useState(0);
     const [report, setReport] = useState<AwayReport | null>(away);
     useEffect(() => setReport(away), [away]);
@@ -97,23 +115,32 @@ export function BrassworkExtras({ snapshot, away, mood, onMood }: { snapshot: ()
 
     return (
         <>
-            <div className="bx-tools">
-                <button type="button" className="bw-btn bx-btn" onClick={photo} title="Photo (P)" aria-label="Take a photo of the island">
-                    <span className="ab-ico bx-ico" style={uiIconStyle("photo", 20)} aria-hidden="true" />
-                    <span className="bx-lbl">Photo</span>
+            {/* One Tools button replaces the four separate icon buttons. Each row says what it does in plain words. */}
+            <div className="bx-tools" ref={toolsRef}>
+                <button
+                    type="button"
+                    className="bw-btn bx-btn bx-tools-toggle"
+                    aria-expanded={toolsOpen}
+                    onClick={() => setToolsOpen((v) => !v)}
+                >
+                    <span className="bx-lbl">Tools</span>
                 </button>
-                <button type="button" className="bw-btn bx-btn" onClick={() => onMood(MOODS[(MOODS.indexOf(mood) + 1) % MOODS.length])} title="Light (L)" aria-label={`Light: ${mood}. Click to change`}>
-                    <span className="ab-ico bx-ico" style={uiIconStyle("light", 20)} aria-hidden="true" />
-                    <span className="bx-lbl">Light: {mood}</span>
-                </button>
-                <button type="button" className="bw-btn bx-btn" onClick={() => setCodex(true)} title="Codex (C)" aria-label="Open the machine codex">
-                    <span className="ab-ico bx-ico" style={uiIconStyle("codex", 20)} aria-hidden="true" />
-                    <span className="bx-lbl">Codex</span>
-                </button>
-                <button type="button" className="bw-btn bx-btn bx-keys-btn" onClick={() => setSheet(true)} title="Keys (H)" aria-label="Show keys">
-                    <span className="ab-ico bx-ico" style={uiIconStyle("keys", 20)} aria-hidden="true" />
-                    <span className="bx-lbl">Keys</span>
-                </button>
+                {toolsOpen && (
+                    <div className="bx-tools-menu" role="menu" aria-label="Tools">
+                        <button type="button" role="menuitem" className="bx-tools-item" onClick={() => { setToolsOpen(false); photo(); }}>
+                            Take a photo <kbd>P</kbd>
+                        </button>
+                        <button type="button" role="menuitem" className="bx-tools-item" onClick={() => onMood(MOODS[(MOODS.indexOf(mood) + 1) % MOODS.length])}>
+                            Lighting: {mood} <kbd>L</kbd>
+                        </button>
+                        <button type="button" role="menuitem" className="bx-tools-item" onClick={() => { setToolsOpen(false); setCodex(true); }}>
+                            Machine guide <kbd>C</kbd>
+                        </button>
+                        <button type="button" role="menuitem" className="bx-tools-item" onClick={() => { setToolsOpen(false); setSheet(true); }}>
+                            Keyboard shortcuts <kbd>H</kbd>
+                        </button>
+                    </div>
+                )}
             </div>
             {codex && <Codex onClose={() => setCodex(false)} />}
             {flash > 0 && <div key={flash} className="bx-flash" aria-hidden />}

@@ -345,6 +345,7 @@ export function hudData(world: World, cat: Catalog = DEFAULT_CATALOG, selectedId
                 name: s.name,
                 blurb: s.blurb,
                 modifiers: [`Miners ${pct(s.bonus.miner)}`, `Power ${pct(s.bonus.power)}`],
+                plan: { width: s.width, depth: s.depth, hub: s.hub, nodes: s.nodes, miner: s.bonus.miner, power: s.bonus.power },
             })),
         },
         stats,

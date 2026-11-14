@@ -40,6 +40,7 @@ import {
 import type { Matrix4 } from "three";
 import { FrameGovernor } from "./governor";
 import { MachineEffects } from "./effects";
+import { SelectionOutline, type HighlightCell } from "./highlight";
 
 export { heightAt, Stamper, VoxelGrid, TERRAIN_CELL, OBJECT_CELL };
 export { QUALITY_PRESETS } from "./config";
@@ -127,6 +128,10 @@ export interface VoxelIsland {
     setBelts(list: readonly PiecePlacement[]): void;
     /** Cells per second for a belt tier (0 stops it). Tiers are brass 0, copper 1, steel 2. */
     setBeltSpeed(tier: number, cellsPerSecond: number): void;
+    /** Outlines board cells in brass, for a selected belt run or building. Empty clears it. Same frame as setBelts. */
+    setHighlight(cells: readonly HighlightCell[]): void;
+    /** Sets the ghost's validity tint: brass when valid, red when refused. */
+    setGhostValidity(valid: boolean): void;
     /** Matrix for an item riding a belt piece. `t` is 0..1 over the cell. */
     beltItemMatrix(
         p: PiecePlacement,
@@ -152,14 +157,29 @@ export interface VoxelIsland {
     /** Stamp unlit glow voxels (furnace windows). Drawn as a separate flat mesh at 0xffd070. */
     stampGlow(build: (s: Stamper) => void): void;
     readonly camera: THREE.PerspectiveCamera;
+    /** The scene, for add-on layers such as island life (render/life). */
+    readonly scene: THREE.Scene;
+    /** Runs `fn` every rendered frame after the world animates. Returns an unsubscribe. */
+    onFrame(fn: FrameHook): () => void;
     /** The built-in orbit controls, or null when `orbit: false`. */
     readonly controls: OrbitControls | null;
     dispose(): void;
 }
 
+export type FrameHook = (
+    dt: number,
+    info: { time: number; timeOfDay: number; wind: number; lowFx: boolean }
+) => void;
+
 /** Machines that puff smoke while working, and the ones that also throw sparks. */
 const SMOKING_MODELS = /furnace|kiln|smelter|press|lathe|fabricator|assembler/;
 const SPARKING_MODELS = /furnace|smelter|press|fabricator/;
+/** Ghost and selection tints. Brass glows when valid; red flares when refused. */
+const GHOST_VALID_TINT = 0xffd27a;
+const GHOST_VALID_HOT = 0xfff2c0;
+const GHOST_REFUSED_TINT = 0xff4a3a;
+const GHOST_REFUSED_HOT = 0xff9a80;
+
 /** Smoke starts just above the model's top, in world units. */
 function chimneyHeight(model: VoxelModel): number {
     const h = model.size?.[1] ?? 10;
@@ -211,6 +231,13 @@ export function createVoxelIsland(
     const models = new ModelRenderer(scene, heightAt);
     const scenery = new Scenery(scene);
     const effects = new MachineEffects(scene);
+    const selection = new SelectionOutline(scene);
+    // Footprint frame under the placement ghost, tinted by validity.
+    const ghostFrame = new SelectionOutline(scene, {
+        color: GHOST_VALID_TINT,
+        hot: GHOST_VALID_HOT,
+        additive: true,
+    });
     // Belt kit, created on first use. Its slats and gears run on the GPU from one phase per tier.
     let belts: BeltKit | null = null;
     const ensureBelts = (): BeltKit => {
@@ -268,6 +295,7 @@ export function createVoxelIsland(
     let cycle = options.cycle ?? true;
     let cycleT = options.timeOfDay ?? 0.5;
     let elapsed = 0;
+    const frameHooks = new Set<FrameHook>();
 
     const orbit = options.orbit ?? true;
     const controls: OrbitControls | null = orbit
@@ -344,6 +372,13 @@ export function createVoxelIsland(
         post.resize(w, h, pixelOverride ?? QUALITY_PRESETS[level].pixelSize);
     }
 
+    function setGhostTint(valid: boolean): void {
+        ghostFrame.setColor(
+            valid ? GHOST_VALID_TINT : GHOST_REFUSED_TINT,
+            valid ? GHOST_VALID_HOT : GHOST_REFUSED_HOT
+        );
+    }
+
     applyLevel(level);
     resize();
 
@@ -364,6 +399,8 @@ export function createVoxelIsland(
         animUniforms.uTime.value = elapsed;
         effects.setWind(windStrength);
         effects.update(dt);
+        selection.update(dt);
+        ghostFrame.update(dt);
         animUniforms.uWind.value = lowFx ? 0 : windStrength / 0.5;
         animUniforms.uWave.value = lowFx ? 0 : 1;
         // Belts keep moving under low fx: one uniform per tier, so it costs nothing.
@@ -371,6 +408,10 @@ export function createVoxelIsland(
         if (cycle) lighting.setTime(cycleT, !lowFx);
         lighting.sky.follow(camera.position);
         clouds.update();
+        if (frameHooks.size) {
+            const info = { time: elapsed, timeOfDay: cycleT, wind: windStrength, lowFx };
+            for (const fn of frameHooks) fn(dt, info);
+        }
 
         if (controls) {
             if (tweening) {
@@ -392,7 +433,7 @@ export function createVoxelIsland(
         terrainMesher.update(preset.rebuildsPerFrame);
         objectMesher.update(preset.rebuildsPerFrame);
 
-        models.update();
+        models.update(dt);
         scenery.update(camera.position);
         // The post pass renders more than once per frame, so count across all of it, then reset.
         renderer.info.reset();
@@ -419,6 +460,11 @@ export function createVoxelIsland(
 
     return {
         camera,
+        scene,
+        onFrame(fn) {
+            frameHooks.add(fn);
+            return () => frameHooks.delete(fn);
+        },
         controls,
         stamp(build) {
             this.addObject(`anon-${anonCount++}`, build);
@@ -470,6 +516,19 @@ export function createVoxelIsland(
         },
         setGhost(model, cell, rot, valid) {
             models.setGhost(model, cell, rot, valid);
+            // Footprint cells, turned with the building's rotation (odd turns swap width and depth).
+            const w = model.footprint?.w ?? 1;
+            const d = model.footprint?.d ?? 1;
+            const [fw, fd] = rot % 2 ? [d, w] : [w, d];
+            const cells: HighlightCell[] = [];
+            for (let i = 0; i < fw; i++)
+                for (let j = 0; j < fd; j++)
+                    cells.push({ x: cell.x + i, z: cell.z + j });
+            ghostFrame.setCells(cells, heightAt);
+            setGhostTint(valid);
+        },
+        setGhostValidity(valid) {
+            setGhostTint(valid);
         },
         setScenery(placements: readonly Placement[]) {
             scenery.setPlacements(placements);
@@ -480,6 +539,9 @@ export function createVoxelIsland(
         setBelts(list: readonly PiecePlacement[]) {
             ensureBelts().setPieces(list);
         },
+        setHighlight(cells) {
+            selection.setCells(cells, heightAt);
+        },
         setBeltSpeed(tier, cellsPerSecond) {
             ensureBelts().setSpeed(tier, cellsPerSecond);
         },
@@ -488,6 +550,7 @@ export function createVoxelIsland(
         },
         clearGhost() {
             models.clearGhost();
+            ghostFrame.setCells([], heightAt);
         },
         setDither(on) {
             post.setDither(on);
@@ -505,6 +568,9 @@ export function createVoxelIsland(
         setLowFx(on) {
             lowFx = on;
             effects.setEnabled(!on);
+            models.setGlowPulse(!on);
+            selection.setPulsing(!on);
+            ghostFrame.setPulsing(!on);
             lighting.setShadows(!on && QUALITY_PRESETS[level].shadows);
         },
         setTimeOfDay(t) {
@@ -564,6 +630,8 @@ export function createVoxelIsland(
             models.dispose();
             scenery.dispose();
             effects.dispose();
+            selection.dispose();
+            ghostFrame.dispose();
             if (belts) {
                 scene.remove(belts.object);
                 belts.dispose();

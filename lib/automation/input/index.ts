@@ -14,6 +14,7 @@ import { type HeightFn } from "./picking";
 import { OrbitCamera, type CameraLimits, type OrbitPose, DEFAULT_LIMITS } from "./camera";
 import { BuildController, type BuildWorld, type ToolSpec, DELETE_TOOL, type BuildEvent } from "./build";
 import { PointerInput } from "./pointer";
+import { project } from "./picking";
 import { createTouchBar, type TouchBar } from "./touch-bar";
 import { mapKey, type KeyAction, type WalkDir } from "./keys";
 
@@ -36,6 +37,8 @@ export interface InputController {
     build: BuildController;
     pointer: PointerInput;
     setToolById(id: string | null): void;
+    // Client-pixel position of a cell's centre, for pinning a pop-up. Null when the cell is behind the camera.
+    screenPoint(cell: { x: number; z: number }): { x: number; y: number } | null;
     update(dt: number): void;
     destroy(): void;
 }
@@ -52,7 +55,9 @@ const WALK_SPEED_PER_DISTANCE = 0.7;
 
 export function createInputController(opts: InputOptions): InputController {
     const camera = new OrbitCamera(opts.limits ?? DEFAULT_LIMITS, opts.initialPose);
-    const build = new BuildController({ world: opts.world, board: opts.board, onEvent: opts.onEvent });
+    // Line tools (belts) define the runs that runAt and the belt pop-up follow.
+    const lineKinds = opts.tools.filter((t) => t.line).map((t) => t.id);
+    const build = new BuildController({ world: opts.world, board: opts.board, onEvent: opts.onEvent, lineKinds });
     const pointer = new PointerInput({
         element: opts.element,
         camera,
@@ -164,6 +169,16 @@ export function createInputController(opts: InputOptions): InputController {
         build,
         pointer,
         setToolById,
+        screenPoint(cell) {
+            const rect = opts.element.getBoundingClientRect();
+            if (rect.width === 0 || rect.height === 0) return null;
+            const aspect = rect.width / rect.height;
+            const view = camera.view(aspect);
+            const y = opts.heightAt ? opts.heightAt(cell.x + 0.5, cell.z + 0.5) : 0;
+            const p = project(view, { x: cell.x + 0.5, y, z: cell.z + 0.5 });
+            if (!p.visible) return null;
+            return { x: rect.left + ((p.ndcX + 1) / 2) * rect.width, y: rect.top + ((1 - p.ndcY) / 2) * rect.height };
+        },
         update(dt: number) {
             if (held.size > 0) {
                 const step = Math.min(Math.max(0, dt), 0.1);

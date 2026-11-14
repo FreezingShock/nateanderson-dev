@@ -6,7 +6,7 @@ export type { CatchUpResult, CreateOptions, Kind, Resolved } from "./world";
 export { unlockedRecipes, buyResearch, checkMilestones, dayClock, prestige, offerSites } from "./progress";
 export { SITES } from "./data";
 export type { SiteDef } from "./data";
-export { gridView, autoRoute } from "./grid";
+export { gridView, autoRoute, suggestSpot } from "./grid";
 export type { GridItem, GridView, RouteCell, RouteResult } from "./grid";
 export { serialize, deserialize, SAVE_FORMAT, SAVE_VERSION } from "./save";
 export { hudData, actions, unlockedMachine, previewMachine } from "./hud";
