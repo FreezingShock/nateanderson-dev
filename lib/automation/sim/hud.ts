@@ -23,7 +23,7 @@ import type {
 } from "../types";
 import { DEFAULT_CATALOG, SITES } from "./data";
 import { unlockedRecipes, dayClock, buyResearch as buyResearchRaw, prestige as prestigeRaw } from "./progress";
-import { place as placeRaw, setRecipe as setRecipeRaw, setFilter as setFilterRaw, resolve, BATTERIES } from "./world";
+import { place as placeRaw, setRecipe as setRecipeRaw, setFilter as setFilterRaw, resolve, BATTERIES, depositUnder, hasOutputNeighbour } from "./world";
 
 export const DEFAULT_SETTINGS: HudSettings = { sound: false, reduceMotion: false, lowFx: false, numberFormat: "short", showRates: true };
 
@@ -90,9 +90,11 @@ function flowOf(world: World, cat: Catalog, b: Building): Flow {
     // Each consumer runs at the share of power it received on the last step, so rates match what machines make.
     const sat = b.powerSat ?? world.power.satisfaction;
     if (r.kind === "miner") {
-        const dep = world.deposits[`${b.x},${b.z}`];
+        const dep = depositUnder(world, b, r.footprint)?.dep;
         const node = dep ? cat.tree.nodes.find((n) => n.item === dep.item) : undefined;
         if (!dep || !node) return { ...flow, status: "starved" };
+        // Nothing beside the drill takes ore, so none is made: the rate under the item must match what really arrives.
+        if (!hasOutputNeighbour(world, b, cat) && (b.output[dep.item] ?? 0) >= r.outputCap) return { ...flow, status: "blocked" };
         if (sat <= 0 || (b.output[dep.item] ?? 0) >= r.outputCap) return { ...flow, status: "blocked" };
         flow.makes[dep.item] = (node.baseRatePerMin / 60) * dep.purity * r.speed * sat * world.progress.bonus.miner;
         flow.status = "running";
@@ -131,7 +133,7 @@ function r0(cat: Catalog, type: string) {
 function minesOf(cat: Catalog, type: string, x: number, z: number, world: World): MachineDetail["mines"] {
     const r = resolve(cat, type);
     if (!r || r.kind !== "miner") return undefined;
-    const dep = world.deposits[`${x},${z}`];
+    const dep = depositUnder(world, { x, z, rot: 0 }, r.footprint)?.dep;
     const node = dep ? cat.tree.nodes.find((n) => n.item === dep.item) : undefined;
     if (!dep || !node) return [];
     return [{ resourceId: dep.item, name: nameOf(cat, dep.item), purity: dep.purity >= 2 ? "pure" : dep.purity < 1 ? "impure" : "normal", perMin: node.baseRatePerMin * dep.purity * r.speed * world.progress.bonus.miner }];
@@ -164,9 +166,10 @@ function reasonOf(world: World, cat: Catalog, b: Building, status: MachineStatus
         return produced > 0 ? undefined : "Calm air: no wind to turn it";
     }
     if (r.kind === "miner") {
-        if (!world.deposits[`${b.x},${b.z}`]) return "No resource node under it";
-        if (world.power.satisfaction < 1) return "No power";
-        return "Output full, take items off it";
+        if (!depositUnder(world, b, r.footprint)) return "No resource node under it";
+        if (world.power.satisfaction <= 0) return "No power. Put a windmill within its range";
+        if (!hasOutputNeighbour(world, b, cat)) return "Nothing beside it takes ore. Run a belt from a side of the drill to the hub";
+        return "Output backed up. Check the belt reaches the hub, or a machine that takes this ore";
     }
     if (r.kind === "crafter") {
         if (!b.recipe || !rec) return "No recipe chosen";
@@ -313,12 +316,12 @@ export function hudData(world: World, cat: Catalog = DEFAULT_CATALOG, selectedId
         }
     }
 
-    // Areas are the island sites: the current one, and the others once the first workshop is open.
+    // Areas are the island sites: the current one, and the others once the first workshop is open (locked before that).
     const areas: AreaView[] = SITES.map((s) => ({
         id: s.id,
         name: s.name,
         note: `${s.nodes.length} nodes, ${s.width} by ${s.depth} floor`,
-        state: world.progress.site === s.id ? "current" : world.progress.prestiges === 0 ? "open" : "locked",
+        state: world.progress.site === s.id ? "current" : world.progress.prestiges === 0 ? "locked" : "open",
     }));
 
     const milestones: MilestoneView[] = cat.tree.milestones.map((m) => {
@@ -417,7 +420,7 @@ function nextStepOf(world: World, cat: Catalog, machines: MachineView[], milesto
             return `${nameOf(cat, s.item)} ${have} of ${s.qty}`;
         });
         const detail = parts.length ? ` (${parts.join(", ")})` : "";
-        return { text: `Next delivery: ${next.goal}${detail} for ${next.blueprintReward} blueprints.` };
+        return { title: next.name, progress: next.progress, text: `${next.goal}${detail}. Reward: ${next.blueprintReward} blueprints.` };
     }
     return { text: "Keep the factory running and plan the next milestone." };
 }

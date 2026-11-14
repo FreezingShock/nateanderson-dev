@@ -177,6 +177,33 @@ function newBuilding(world: World, type: string, x: number, z: number, rot: Rot)
     return b;
 }
 
+// The node a miner works: the first deposit under any cell of its footprint. A 2 by 2 drill works a node under any of its four cells, not only its anchor.
+export function depositUnder(world: World, b: { x: number; z: number; rot: Rot }, fp: Footprint): { key: string; dep: Deposit } | null {
+    for (const [x, z] of footprintCells(b, fp)) {
+        const dep = world.deposits[keyOf(x, z)];
+        if (dep) return { key: keyOf(x, z), dep };
+    }
+    return null;
+}
+
+// Does anything next to this building take its output? True for a belt, hub, crate or machine beside it. Pure.
+export function hasOutputNeighbour(world: World, b: Building, cat: Catalog = DEFAULT_CATALOG): boolean {
+    const r = resolve(cat, b.type);
+    if (!r) return false;
+    const index = indexOf(world, cat);
+    return portsOf(b, r.footprint).some((p) => {
+        const id = index.get(keyOf(p.tx, p.tz));
+        if (id === undefined) return false;
+        const k = resolve(cat, world.buildings[id].type)?.kind;
+        if (k === "belt") {
+            const nb = world.buildings[id];
+            // A belt facing into the drill cannot take from it.
+            return !(p.fx === nb.x + DIR_DX[nb.rot] && p.fz === nb.z + DIR_DZ[nb.rot]);
+        }
+        return k !== "generator" && k !== "miner";
+    });
+}
+
 export function addDeposit(world: World, x: number, z: number, item: string, purity = 1): void {
     world.deposits[keyOf(x, z)] = { item, purity };
 }
@@ -205,7 +232,7 @@ export function placeError(world: World, type: string, x: number, z: number, rot
         if (cx < 0 || cz < 0 || cx >= world.width || cz >= world.depth) return "off the island";
         if (index.has(keyOf(cx, cz))) return "occupied";
     }
-    if (r.kind === "miner" && !world.deposits[keyOf(x, z)]) return "needs a resource node";
+    if (r.kind === "miner" && !depositUnder(world, { x, z, rot }, r.footprint)) return "needs a resource node";
     const hub = world.buildings[world.hubId];
     for (const c of r.cost) {
         const have = Math.floor(hub.input[c.item] ?? 0);
@@ -455,7 +482,7 @@ function pullIntoUnloader(world: World, cat: Catalog, index: Map<string, number>
 }
 
 function stepMiner(world: World, cat: Catalog, b: Building, r: Resolved, dt: number, sat: number): void {
-    const dep: Deposit | undefined = world.deposits[keyOf(b.x, b.z)];
+    const dep: Deposit | undefined = depositUnder(world, b, r.footprint)?.dep;
     if (!dep) return;
     const node = cat.tree.nodes.find((n) => n.item === dep.item);
     if (!node) return;
