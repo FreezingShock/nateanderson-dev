@@ -4,12 +4,14 @@
 // south. Copper wire has its own short belt into the hub's south-east cell.
 // Run: node scripts/automation/stage2-hand-layout.mjs
 import { registerHooks } from "node:module";
+import { fileURLToPath } from "node:url";
 registerHooks({ resolve(spec, ctx, next) { try { return next(spec, ctx); } catch (e) { if (spec.startsWith(".")) return next(spec + ".ts", ctx); throw e; } } });
 const S = await import("../../lib/automation/sim/index.ts");
 const CAT = S.DEFAULT_CATALOG;
 const HUB = { x: 8, z: 5 };
 const E = 1, SOUTH = 0, W = 3, N = 2; // rot: 0 = +z, 1 = +x, 2 = -z, 3 = -x
 
+export function runStage2Layout(minutes = 10) {
 const world = S.createWorld({ width: 18, depth: 12, hub: HUB }, CAT);
 const log = [];
 const ok = (label, r) => { if (!r.ok) log.push(`FAIL ${label}: ${r.reason}`); return r.ok; };
@@ -55,17 +57,20 @@ belt(10, 8, N);                                                  // wire goes st
 // Power: windmills set back from the lines.
 for (const [x, z] of [[0, 4], [12, 6], [14, 6], [5, 5], [8, 10], [12, 2], [14, 3], [16, 6], [16, 8]]) machine("windmill", x, z);
 
-const TEN_MIN = 600;
-for (let t = 0; t < TEN_MIN; t++) S.advance(world, 1, 0.1, CAT);
+for (let t = 0; t < minutes * 60; t++) S.advance(world, 1, 0.1, CAT);
 
 const hub = world.buildings[world.hubId].input;
 const targets = { iron_plate: 60, copper_wire: 60, steel_ingot: 30, aluminium_sheet: 20 };
-for (const [item, need] of Object.entries(targets)) {
-  const have = hub[item] ?? 0;
-  console.log(`${have >= need ? "ok  " : "NO  "} ${item} ${have} of ${need}`);
+const stock = Object.fromEntries(Object.keys(targets).map((item) => [item, hub[item] ?? 0]));
+return { stock, targets, log, world };
 }
+
+if (process.argv[1] === fileURLToPath(import.meta.url)) {
+const { stock, targets, log, world } = runStage2Layout();
+for (const [item, need] of Object.entries(targets)) console.log(`${stock[item] >= need ? "ok  " : "NO  "} ${item} ${stock[item]} of ${need}`);
 let free = 0;
 for (let z = 0; z < 12; z++) for (let x = 0; x < 18; x++) if (!S.buildingAt(world, x, z, CAT) && !world.deposits[`${x},${z}`]) free++;
 console.log(`free cells ${free} of ${18 * 12} (ore nodes excluded)`);
 for (const line of log) console.log(line);
 console.log(`power ${JSON.stringify(world.power)}`);
+}
