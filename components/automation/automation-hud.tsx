@@ -126,7 +126,12 @@ export function AutomationHud({
             selectedId={selectedId}
             armedId={data.armed ?? null}
             numberFormat={mode}
-            onBuild={actions.onBuild}
+            onBuild={(id) => {
+              // Arming a tool on phone closes the Machines sheet so the player can place straight away.
+              const arming = data.armed !== id;
+              actions.onBuild(id);
+              if (arming) setSheet(null);
+            }}
             onSelect={actions.onSelect}
           />
         </aside>

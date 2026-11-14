@@ -308,7 +308,12 @@
 .ab-inspect-mine strong { font-weight: 600; white-space: nowrap; }
 
 /* The armed build tool: the row whose machine the next click places. Stronger than the inspected row. */
-.ab-root.bw .ab-build-row[data-armed="true"] { outline: 2px solid #ffd98a; outline-offset: -2px; background: #3a2a14; }
-.ab-root.bw .ab-build-row[data-armed="true"] .ab-build-main { color: #ffd98a; }
+.ab-root.bw .ab-build-row[data-armed="true"] {
+  outline: 2px solid #ffd98a; outline-offset: -2px;
+  background: linear-gradient(90deg, #7a5420, #4d3414); box-shadow: inset 4px 0 0 #ffd98a;
+}
+.ab-root.bw .ab-build-row[data-armed="true"] .ab-build-name,
+.ab-root.bw .ab-build-row[data-armed="true"] .ab-build-cost { color: #fff3d6; }
+.ab-root.bw .ab-build-row[data-armed="true"] .ab-build-main::after { content: "ARMED"; margin-left: auto; font-size: 11px; letter-spacing: 0.08em; color: #ffd98a; }
 
 .ab-root.bw .ab-locked-note { list-style: none; padding: 6px 10px; font-size: 13px; color: var(--ab-dim); border: 1px dashed currentColor; opacity: 0.8; }
