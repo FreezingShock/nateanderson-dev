@@ -64,7 +64,16 @@ export function autoRoute(world: World, from: Cell, to: Cell, belt = "belt", cat
     if (!resolve(cat, belt) || resolve(cat, belt)!.kind !== "belt") return { ok: false, reason: "not a belt" };
     const fromB = buildingAt(world, from.x, from.z, cat);
     const toB = buildingAt(world, to.x, to.z, cat);
-    const free = (x: number, z: number) => x >= 0 && z >= 0 && x < world.width && z < world.depth && !buildingAt(world, x, z, cat);
+    // A drill pushes its ore into any belt beside it, so a route must not pass next to a drill it was not sent from.
+    const beside = (x: number, z: number, id: number | undefined) =>
+        DIR_DX.some((dx, d) => {
+            const b = buildingAt(world, x + dx, z + DIR_DZ[d], cat);
+            return !!b && b.id !== id && resolve(cat, b.type)?.kind === "miner";
+        });
+    // The drill a route starts from is the one next to its first cell, even when the start is an empty cell.
+    const ownMiner = fromB?.id ?? DIR_DX.map((dx, d) => buildingAt(world, from.x + dx, from.z + DIR_DZ[d], cat)).find((b) => b && resolve(cat, b.type)?.kind === "miner")?.id;
+    const free = (x: number, z: number) =>
+        x >= 0 && z >= 0 && x < world.width && z < world.depth && !buildingAt(world, x, z, cat) && !beside(x, z, ownMiner);
 
     const starts: Cell[] = fromB ? neighbours(world, cellsOf(world, fromB.id, cat)) : [from];
     const goals = new Set<string>();
@@ -99,7 +108,7 @@ export function autoRoute(world: World, from: Cell, to: Cell, belt = "belt", cat
             queue.push({ x: nx, z: nz });
         }
     }
-    if (found === null) return { ok: false, reason: "no free path" };
+    if (found === null) return { ok: false, reason: "no clear route: belts cannot cross machines, the hub or other belts. Leave a gap or use a tunnel." };
 
     // Walk back from the goal cell to the start.
     const path: Cell[] = [];
