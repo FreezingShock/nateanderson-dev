@@ -266,23 +266,35 @@ def structure(fn):
 
 @structure
 def hub(p=0):
-    """Hub: the workshop core, a brick-and-copper hall with a brass clock gable and a lit door."""
-    c, sc = new(cy=52, s=0.95, sh=(32, 57, 26, 3.4))
-    plinth(sc, 17, 15)
-    sc.box(-15, 15, 3, 20, -12, 12, "brick", 0.0)
-    roof_b = [(-16, 20, 13), (16, 20, 13), (16, 20, -13), (-16, 20, -13)]
-    roof_t = [(-16, 30, 0.5), (16, 30, 0.5), (16, 30, -0.5), (-16, 30, -0.5)]
-    sc.prism(roof_b, roof_t, "cu", 0.0)
-    sc.cylinder((0, 22, 13.2), (0, 22, 14.4), 4.5, "brass", 0.05, n=18)
+    """Hub: the workshop core at full growth. A round copper counting hall ringed with lit windows on a stepped
+    stone dais, a brass clock tower with a patina dome and beacon, and two brass smokestacks at the front."""
+    c, sc = new(cy=54, s=0.9, sh=(32, 57, 26, 3.4))
+    sc.box(-15, 15, 0, 2, -15, 15, "gun", 0.05)
+    sc.box(-14, 14, 2, 3, -14, 14, "steel", 0.05)
+    sc.cylinder((0, 3, 0), (0, 15, 0), 9.5, "cu", 0.0, n=20)
+    sc.cylinder((0, 14, 0), (0, 16, 0), 10.5, "brass", 0.05, n=24)
+    sc.box(-5, 5, 16, 33, -5, 5, "brass", -0.05)
+    sc.cylinder((0, 34, 0), (0, 40, 0), 6, "patina", 0.0, n=16, r2=1.2)
+    for x in (-10, 10):
+        sc.cylinder((x, 3, 10), (x, 24, 10), 2.2, "brass", -0.05, n=10)
     sc.paint(c)
-    window(c, sc, [(-4, 3, 12.1), (4, 3, 12.1), (4, 13, 12.1), (-4, 13, 12.1)])
+    for a in (-0.9, -0.3, 0.3, 0.9):
+        x, z = 9.6 * math.sin(a), 9.6 * math.cos(a)
+        window(c, sc, [(x - 1, 10, z), (x + 1, 10, z), (x + 1, 13, z), (x - 1, 13, z)])
     k = FIT["k"]
-    q = sc.pt((0, 22, 14.5))
+    q = sc.pt((0, 27, 5.2))
     c.fill(disc(*q, 3.2 * k * 0.95), 0.85, "cream")
     c.set(line(q[0], q[1], q[0], q[1] - 2.4 * k, 0.9), P["steel"][1])
     c.set(line(q[0], q[1], q[0] + 1.8 * k, q[1], 0.9), P["steel"][1])
-    for x in (-11, 11):
-        window(c, sc, [(x - 2, 9, 12.1), (x + 2, 9, 12.1), (x + 2, 14, 12.1), (x - 2, 14, 12.1)])
+    b = sc.pt((0, 43, 0))
+    bm = disc(*b, 1.8 * k)
+    c.glow(bm, P["glow"][3], 3, 120, 2)
+    c.fill(bm, 1.0, "glow")
+    for x in (-10, 10):
+        e = sc.pt((x, 24.5, 10))
+        em = disc(*e, 1.4 * k)
+        c.glow(em, P["glow"][3], 2, 90, 2)
+        c.fill(em, 0.9, "glow")
     return done(c)
 
 
