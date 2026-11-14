@@ -30,6 +30,7 @@ import {
 import type { VoxelIsland } from "@/lib/automation/render";
 import type { BuildWorld, InputController, MountedInput } from "@/lib/automation/input";
 import { getMachineModel, getHubModel, hubStageFor } from "@/lib/automation/models/machines";
+import { rotateCell, rotateSide } from "@/lib/automation/input/ports";
 import { nodeModel, variantForCell, type ResourceId } from "@/lib/automation/models/resources";
 import { pickBeltTile, type PieceKind, type PiecePlacement } from "@/lib/automation/models/belts";
 import { WATER_LEVEL } from "@/lib/automation/render/config";
@@ -333,6 +334,21 @@ export function BrassworkHost() {
                     if (!r.ok) setNote(r.reason);
                 },
                 check: (kind, x, z, rot) => grid.check(kind, x + ox, z + oz, rot),
+                // Ports that face out of a machine cell, for belt joins. Rotated with the machine (see lib/automation/input/ports.ts).
+                portsAt: (x, z) => {
+                    const it = buildWorld.get(x, z);
+                    if (!it || it.kind.startsWith("belt")) return [];
+                    const model = getMachineModel(it.kind);
+                    const fp = CAT.tree.machines.find((m) => m.id === it.kind)?.footprint;
+                    if (!model || !fp) return [];
+                    const anchor = it.anchor ?? { x, z };
+                    const out: Rot[] = [];
+                    for (const p of [...(model.ports?.out ?? []), ...(model.ports?.in ?? [])]) {
+                        const c = rotateCell(p.cell.x, p.cell.z, fp.w, fp.d, it.rot as Rot);
+                        if (anchor.x + c.x === x && anchor.z + c.z === z) out.push(rotateSide(p.side, it.rot as Rot));
+                    }
+                    return out;
+                },
             };
             const tools = [...CAT.tree.machines.map((m) => m.id), "belt", "belt-copper", "belt-steel"].map((id) => {
                 const r = resolve(CAT, id);

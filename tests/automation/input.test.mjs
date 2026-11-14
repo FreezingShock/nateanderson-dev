@@ -564,3 +564,28 @@ test("a line stroke joins an adjacent belt and a port that faces it", async () =
     const kinds = g.joins.map((j) => `${j.kind}:${j.cell.x},${j.cell.z}:${j.dir}`).sort();
     assert.deepEqual(kinds, ["belt:2,0:e"]);
 });
+
+// Rotated machine ports: one machine at each of the four rotations.
+test("a 1 by 1 machine's port turns with the machine, one quarter per rot", async () => {
+    const { rotateCell, rotateSide } = await import("../../lib/automation/input/ports.ts");
+    for (let r = 0; r < 4; r++) {
+        assert.equal(rotateSide(0, r), r, `side at rot ${r}`);
+        assert.deepEqual(rotateCell(0, 0, 1, 1, r), { x: 0, z: 0 }, `cell at rot ${r}`);
+    }
+});
+
+test("a 2 by 1 machine's far cell and its port side follow each rotation", async () => {
+    const { rotateCell, rotateSide } = await import("../../lib/automation/input/ports.ts");
+    // Authored along x (w 2, d 1), with the front (side 0, +z) on the +x end cell (1,0).
+    assert.deepEqual(rotateCell(1, 0, 2, 1, 0), { x: 1, z: 0 });
+    assert.equal(rotateSide(0, 0), 0);
+    // Rot 1 runs along z. The footprint is now 1 by 2, the +x end moves to z 0, and the front faces +x.
+    assert.deepEqual(rotateCell(1, 0, 2, 1, 1), { x: 0, z: 0 });
+    assert.equal(rotateSide(0, 1), 1);
+    // Rot 2 runs along x again, flipped, so the +x end becomes cell (0,0) and the front faces -z.
+    assert.deepEqual(rotateCell(1, 0, 2, 1, 2), { x: 0, z: 0 });
+    assert.equal(rotateSide(0, 2), 2);
+    // Rot 3 runs along z, flipped, so the +x end lands on the +z end, cell (0,1), and the front faces -x.
+    assert.deepEqual(rotateCell(1, 0, 2, 1, 3), { x: 0, z: 1 });
+    assert.equal(rotateSide(0, 3), 3);
+});
