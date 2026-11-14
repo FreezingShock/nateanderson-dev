@@ -3,7 +3,6 @@
 // Mounts Brasswork: the simulation (lib/automation/sim), the voxel island renderer (lib/automation/render, loaded
 // with a dynamic import so Three.js stays off every other route) and the 2D HUD (components/automation).
 // The world is 18 by 12 cells at one world unit per cell, which is the renderer's factory plateau.
-import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { AutomationHud } from "@/components/automation/automation-hud";
 import {
@@ -36,10 +35,12 @@ import { pickBeltTile, type PieceKind, type PiecePlacement } from "@/lib/automat
 import { WATER_LEVEL } from "@/lib/automation/render/config";
 import { createBeltItems } from "@/lib/automation/render/beltitems";
 import { scatterProps } from "@/lib/automation/models/props";
-import { BrassworkExtras, type AwayReport, type Mood } from "./extras";
+import { BrassworkExtras, MOODS, type AwayReport, type Mood } from "./extras";
 import { FirstRunGuide } from "./first-run";
 import { BuildPopover, TrashButton } from "./build-popover";
 import { bw, bwHum, bwSetEnabled } from "@/lib/brasswork/sound";
+import { LightingRow, SaveRows } from "./settings-extras";
+import { loadSettings, saveSettings } from "@/lib/brasswork/settings";
 import "@/components/brasswork-ui/type.css";
 
 const W = 18;
@@ -117,6 +118,13 @@ export function BrassworkHost() {
     const onMood = useCallback((m: Mood) => {
         moodRef.current = m;
         setMood(m);
+        try { localStorage.setItem("bw-mood-v1", m); } catch { /* private mode: lighting still changes for this visit */ }
+    }, []);
+    useEffect(() => {
+        try {
+            const m = localStorage.getItem("bw-mood-v1");
+            if (m && (MOODS as readonly string[]).includes(m)) { moodRef.current = m as Mood; setMood(m as Mood); }
+        } catch { /* no storage */ }
     }, []);
     const snap = useRef<(() => string) | null>(null);
     const snapshot = useCallback(() => snap.current?.() ?? null, []);
@@ -140,7 +148,7 @@ export function BrassworkHost() {
             const canvas = canvasRef.current;
             if (dead || !canvas) return;
             const { world, savedAt } = loadWorld();
-            let settings = { ...START_SETTINGS };
+            let settings = loadSettings(START_SETTINGS);
             let selectedId: number | null = null;
             const drawn = new Set<number>();
             let hubStage = -1;
@@ -449,6 +457,7 @@ export function BrassworkHost() {
                 },
                 settings: (p) => {
                     settings = { ...settings, ...p };
+                    if (Object.keys(p).length) saveSettings(settings);
                     bwSetEnabled(settings.sound);
                     island.setLowFx(settings.lowFx || settings.reduceMotion);
                     life.setLowFx(settings.lowFx || settings.reduceMotion);
@@ -525,11 +534,14 @@ export function BrassworkHost() {
             raf = requestAnimationFrame(frame);
 
             snap.current = () => island.snapshot();
+            window.addEventListener("bw:save", save); // the Settings window asks for a fresh save before exporting
+            ctl.current?.settings({}); // apply the saved settings to the sound, scenery and belts
             island.resize();
             island.start();
             refresh();
             cleanup = () => {
                 cancelAnimationFrame(raf);
+                window.removeEventListener("bw:save", save);
                 save();
                 input.destroy();
                 window.removeEventListener("resize", onResize);
@@ -562,11 +574,8 @@ export function BrassworkHost() {
 
     return (
         <div className="bw-root">
-            <AutomationHud data={data} actions={{ onBuild, onSelect, onResearch, onSetRecipe, onPrestige, onSettings }}>
+            <AutomationHud data={data} actions={{ onBuild, onSelect, onResearch, onSetRecipe, onPrestige, onSettings }} settingsSlots={{ display: <LightingRow mood={mood} onMood={onMood} />, save: <SaveRows /> }}>
                 <canvas ref={canvasRef} className="bw-canvas" />
-                <Link href="/creations/games" className="bw-back">
-                    Back to Games
-                </Link>
                 <BrassworkExtras snapshot={snapshot} away={away} mood={mood} onMood={onMood} />
                 <FirstRunGuide data={data} />
                 {inputCtl && (
