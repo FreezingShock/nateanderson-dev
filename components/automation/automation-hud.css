@@ -1016,3 +1016,12 @@
 .ab-screen-head .ab-text-btn {
   min-height: 44px;
 }
+
+/* Phone: an open drawer sits above the stage's touch bar, so its rows are never covered. */
+@media (max-width: 759px) {
+  .ab-drawer {
+    z-index: 8;
+    max-height: 60dvh;
+    overflow-y: auto;
+  }
+}
