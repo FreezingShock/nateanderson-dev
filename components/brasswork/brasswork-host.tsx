@@ -341,10 +341,20 @@ export function BrassworkHost() {
             let ghostKey = "";
             const updateGhost = () => {
                 const g = input.controller.build.ghost();
+                // A belt stroke glows as one path, cells in drag order, each facing the next.
+                if (g && g.tool.line && g.stroking && g.cells.length) {
+                    const pk = "path:" + g.cells.map((k) => `${k.x},${k.z},${k.rot},${k.valid ? 1 : 0}`).join(";");
+                    if (pk === ghostKey) return;
+                    if (!ghostKey.startsWith("path:")) island.clearGhost();
+                    ghostKey = pk;
+                    island.setGhostPath(g.cells.map((k) => ({ x: k.x, z: k.z, rot: k.rot, valid: k.valid })));
+                    return;
+                }
                 const c = g && g.cells.length ? { x: Math.min(...g.cells.map((k) => k.x)), z: Math.min(...g.cells.map((k) => k.z)), valid: g.cells.every((k) => k.valid) } : undefined;
                 const model = g ? getMachineModel(g.tool.id) : undefined;
                 const key = g && c && model ? `${g.tool.id}:${c.x},${c.z},${g.rot},${c.valid}` : "";
                 if (key === ghostKey) return;
+                if (ghostKey.startsWith("path:")) island.setGhostPath([]);
                 ghostKey = key;
                 if (g && c && model) {
                     island.setGhost(model, { x: c.x, z: c.z }, g.rot, c.valid);
