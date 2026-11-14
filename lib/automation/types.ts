@@ -384,6 +384,10 @@ export type PrestigeView = {
 export type StatLine = { label: string; value: string };
 
 export type NextStepView = {
+  /** Short name of the objective, for example the milestone name. */
+  title?: string;
+  /** How far the objective has got, 0 to 1. Omitted when there is no measurable progress. */
+  progress?: number;
   text: string;
   /** Optional button that acts on the hint, such as selecting the next machine. */
   actionLabel?: string;

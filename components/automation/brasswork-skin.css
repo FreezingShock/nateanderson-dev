@@ -332,3 +332,18 @@
 .ab-milestone-done, .ab-milestone-ahead ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
 .ab-milestone-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; font-size: 14px; }
 .ab-milestone-ahead summary { cursor: pointer; font-size: 13px; color: var(--ab-dim); padding: 4px 0; }
+
+/* Current objective: a compact tracked card at the bottom of the stage, not a full-width strip. */
+.ab-root.bw .ab-next {
+  display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 4px 10px; align-items: center;
+  width: fit-content; max-width: min(440px, calc(100% - 16px)); margin: 0 auto 8px; padding: 8px 12px;
+  border: 1px solid #b8862f; box-shadow: 0 0 0 1px #1a1209, inset 0 1px 0 rgba(255,220,150,.35);
+  background: rgba(20,15,9,.92);
+}
+.ab-root.bw .ab-next-label { font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: #ffd98a; }
+.ab-root.bw .ab-next-title { font-weight: 600; color: #f4e4b8; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ab-root.bw .ab-next-bar { grid-column: 1 / -1; height: 6px; background: #0d0905; border: 1px solid #4a3a22; }
+.ab-root.bw .ab-next-fill { display: block; height: 100%; background: linear-gradient(90deg, #b8862f, #ffd98a); }
+.ab-root.bw .ab-next-text { grid-column: 1 / -1; font-size: 13px; color: #d9c79a; }
+.ab-root.bw .ab-next > .ab-text-btn { grid-column: 3; grid-row: 1; }
+

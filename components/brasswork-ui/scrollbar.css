@@ -1,0 +1,16 @@
+/* Brasswork scrollbars: a thin brass thumb on a dark track, inside the game only.
+   scrollbar-color covers Firefox and Chrome 121+; the WebKit pseudo-elements cover older Chromium and Safari.
+   Chrome ignores the pseudo-elements once scrollbar-color is set, so the two never mix. */
+.bw-root,
+.bw-root * {
+  scrollbar-width: thin;
+  scrollbar-color: #b8862f #0d0905;
+}
+.bw-root::-webkit-scrollbar,
+.bw-root *::-webkit-scrollbar { width: 10px; height: 10px; background: #0d0905; }
+.bw-root::-webkit-scrollbar-track,
+.bw-root *::-webkit-scrollbar-track { background: #0d0905; border-left: 1px solid #3a2a14; }
+.bw-root::-webkit-scrollbar-thumb,
+.bw-root *::-webkit-scrollbar-thumb { background: #b8862f; border: 2px solid #0d0905; border-radius: 0; }
+.bw-root::-webkit-scrollbar-thumb:hover,
+.bw-root *::-webkit-scrollbar-thumb:hover { background: #ffd98a; }
