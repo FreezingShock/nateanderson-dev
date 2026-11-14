@@ -11,7 +11,7 @@ import { BuildList } from "./build-bar";
 import { Inspector } from "./inspector";
 import { Milestones, PrestigeCard, Section } from "./factory-sections";
 import { ExpeditionList, StatsList } from "./drawers";
-import { SettingsWindow } from "./settings-window";
+import { SettingsWindow, type SettingsSlots } from "./settings-window";
 import { ResearchScreen } from "./research-screen";
 import { PrestigeScreen } from "./prestige-screen";
 import "./brasswork-skin.css";
@@ -42,10 +42,13 @@ export function AutomationHud({
   data,
   actions,
   children,
+  settingsSlots,
 }: {
   data: HudData;
   actions: HudActions;
   children?: ReactNode;
+  /** Extra Settings rows supplied by the host (lighting, save and leave). */
+  settingsSlots?: SettingsSlots;
 }) {
   const [drawer, setDrawer] = useState<Drawer | null>(null);
   const [screen, setScreen] = useState<Screen | null>(null);
@@ -292,7 +295,7 @@ export function AutomationHud({
       </div>
 
       {drawer === "settings" && (
-        <SettingsWindow settings={data.settings} onChange={actions.onSettings} onClose={() => setDrawer(null)} />
+        <SettingsWindow settings={data.settings} onChange={actions.onSettings} onClose={() => setDrawer(null)} slots={settingsSlots} />
       )}
 
       {screen === "research" && (
