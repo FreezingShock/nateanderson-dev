@@ -11,8 +11,8 @@ export interface HighlightCell {
 const BAR = 0.07; // bar thickness in world units
 const LIFT = 0.05; // height above the ground under each cell
 const TOP = 0.16; // bar height
-const BRASS = new THREE.Color(0xd9a441);
-const BRASS_HOT = new THREE.Color(0xffe0a0);
+const BRASS = 0xd9a441;
+const BRASS_HOT = 0xffe0a0;
 const MAX_CELLS = 512;
 
 export class SelectionOutline {
@@ -24,14 +24,23 @@ export class SelectionOutline {
     private readonly s = new THREE.Vector3();
     private readonly c = new THREE.Color();
     private readonly mat: THREE.MeshBasicMaterial;
+    private readonly base: THREE.Color;
+    private readonly hot: THREE.Color;
     private time = 0;
+    private pulsing = true;
 
-    constructor(scene: THREE.Scene) {
+    constructor(
+        scene: THREE.Scene,
+        opts: { color?: number; hot?: number; additive?: boolean } = {}
+    ) {
+        this.base = new THREE.Color(opts.color ?? BRASS);
+        this.hot = new THREE.Color(opts.hot ?? BRASS_HOT);
         const geo = new THREE.BoxGeometry(1, 1, 1);
         this.mat = new THREE.MeshBasicMaterial({
             transparent: true,
             opacity: 0.95,
             depthWrite: false,
+            blending: opts.additive ? THREE.AdditiveBlending : THREE.NormalBlending,
         });
         this.mesh = new THREE.InstancedMesh(geo, this.mat, MAX_CELLS * 4);
         this.mesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
@@ -62,10 +71,25 @@ export class SelectionOutline {
     /** Pulses the outline. Call once per frame with the frame delta. */
     update(dt: number): void {
         if (this.count === 0) return;
+        if (!this.pulsing) {
+            this.mat.color.copy(this.base);
+            return;
+        }
         this.time += dt;
         const pulse = 0.5 + 0.5 * Math.sin(this.time * 3);
-        this.c.copy(BRASS).lerp(BRASS_HOT, pulse);
+        this.c.copy(this.base).lerp(this.hot, pulse);
         this.mat.color.copy(this.c);
+    }
+
+    /** Turns the pulse off for low fx. */
+    setPulsing(on: boolean): void {
+        this.pulsing = on;
+    }
+
+    /** Sets the colour pair, used by the ghost to switch between valid and refused. */
+    setColor(color: number, hot: number): void {
+        this.base.set(color);
+        this.hot.set(hot);
     }
 
     dispose(): void {
