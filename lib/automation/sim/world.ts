@@ -172,7 +172,7 @@ export function windAt(t: number): number {
 
 function newBuilding(world: World, type: string, x: number, z: number, rot: Rot): Building {
     const id = world.nextId++;
-    const b: Building = { id, type, x, z, rot, recipe: null, crafting: false, progress: 0, input: {}, output: {}, acc: 0, lane: [], rr: 0, charge: 0 };
+    const b: Building = { id, type, x, z, rot, recipe: null, filter: null, crafting: false, progress: 0, input: {}, output: {}, acc: 0, lane: [], rr: 0, charge: 0 };
     world.buildings[id] = b;
     return b;
 }
@@ -251,6 +251,21 @@ export function remove(world: World, id: number, cat: Catalog = DEFAULT_CATALOG)
 }
 
 // Set or clear the recipe on a crafter. Buffers go back to the hub, so a recipe change never destroys items.
+// Sets the item an unloader pulls. null clears it, which leaves the unloader idle.
+export function setFilter(world: World, id: number, item: string | null, cat: Catalog = DEFAULT_CATALOG): ActionResult {
+    const b = world.buildings[id];
+    if (!b) return { ok: false, reason: "no such building" };
+    if (resolve(cat, b.type)?.kind !== "unloader") return { ok: false, reason: "this building does not unload" };
+    if (item !== null && !cat.tree.items.some((i) => i.id === item)) return { ok: false, reason: "unknown item" };
+    b.filter = item;
+    return { ok: true };
+}
+
+// Why an unloader is not moving anything, for the detail panel. null when it is running.
+export function unloaderIdleReason(b: Building): string | null {
+    return b.filter ? null : "choose an item";
+}
+
 export function setRecipe(world: World, id: number, recipe: string | null, cat: Catalog = DEFAULT_CATALOG): ActionResult {
     const b = world.buildings[id];
     if (!b) return { ok: false, reason: "no such building" };
@@ -415,6 +430,9 @@ function pushTunnel(world: World, cat: Catalog, index: Map<string, number>, b: B
 
 // Unloader: pulls up to `budget` items out of the storage or hub cells beside it into its own buffer. Returns how many it took.
 function pullIntoUnloader(world: World, cat: Catalog, index: Map<string, number>, b: Building, r: Resolved, budget: number): number {
+    // No item chosen: stay idle rather than send whatever the hub holds first.
+    const want = b.filter;
+    if (!want) return 0;
     let took = 0;
     for (const p of portsOf(b, r.footprint)) {
         const id = index.get(keyOf(p.tx, p.tz));
@@ -422,7 +440,7 @@ function pullIntoUnloader(world: World, cat: Catalog, index: Map<string, number>
         const src = world.buildings[id];
         const sk = resolve(cat, src.type)?.kind;
         if (sk !== "storage" && sk !== "hub") continue;
-        for (const item of Object.keys(src.input)) {
+        for (const item of [want]) {
             while (took < budget && (src.input[item] ?? 0) > 0) {
                 const held = Object.values(b.output).reduce((a, n) => a + n, 0);
                 if (held >= r.capacity) return took;
