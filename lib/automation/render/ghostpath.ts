@@ -12,11 +12,12 @@ export interface PathCell {
 }
 
 const MAX_CELLS = 384;
-const PARTS_PER_CELL = 4; // plate, arrow, corner, end cap
+const PARTS_PER_CELL = 5; // plate, arrow shaft, arrow head, corner or cap
 const BRASS = new THREE.Color(0xffd27a);
 const BRASS_HOT = new THREE.Color(0xfff2c0);
 const RED = new THREE.Color(0xff4a3a);
 const RED_HOT = new THREE.Color(0xff9a80);
+const ARROW = new THREE.Color(0xffffff);
 const HALF_TURN = Math.PI / 2;
 
 export class GhostPath {
@@ -74,8 +75,9 @@ export class GhostPath {
             if (turns) {
                 this.put(k++, cx, y + 0.05, cz, 0.36, 0.05, 0.36, 0, hot, hot);
             } else {
-                // Arrow on straight runs: a shaft and a head, pointing where the belt faces.
-                this.put(k++, cx, y + 0.05, cz, 0.12, 0.05, 0.5, cell.rot, hot, hot, true);
+                // Arrow on straight runs: a bright shaft and a head, pointing where the belt faces.
+                this.put(k++, cx, y + 0.06, cz, 0.16, 0.06, 0.5, cell.rot, ARROW, ARROW, true);
+                this.put(k++, cx, y + 0.07, cz, 0.34, 0.07, 0.2, cell.rot, ARROW, ARROW, true, 0.24);
             }
 
             // End caps where the stroke starts and stops.
@@ -131,14 +133,15 @@ export class GhostPath {
         rot: number,
         tint: THREE.Color,
         hot: THREE.Color,
-        arrow = false
+        arrow = false,
+        forward = 0.12
     ): void {
         // Arrow shafts run along the belt's facing; plates and caps are square so the turn does not matter.
         this.q.setFromAxisAngle(this.up, -rot * HALF_TURN);
         if (arrow) {
             // Shift the shaft forward so the arrow sits on the cell's leading half.
-            const dx = Math.sin(-rot * HALF_TURN) * 0.12;
-            const dz = Math.cos(-rot * HALF_TURN) * 0.12;
+            const dx = Math.sin(-rot * HALF_TURN) * forward;
+            const dz = Math.cos(-rot * HALF_TURN) * forward;
             this.p.set(x + dx, y, z + dz);
         } else {
             this.p.set(x, y, z);
@@ -146,7 +149,7 @@ export class GhostPath {
         this.s.set(sx, sy, sz);
         this.m.compose(this.p, this.q, this.s);
         this.mesh.setMatrixAt(i, this.m);
-        this.c.copy(tint).lerp(hot, 0.5);
+        this.c.copy(tint).lerp(hot, tint === ARROW ? 0 : 0.5);
         this.mesh.setColorAt(i, this.c);
     }
 
