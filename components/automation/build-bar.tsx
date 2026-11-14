@@ -52,6 +52,23 @@ function collapseTiers(list: MachineView[]): MachineView[] {
   });
 }
 
+// Sub-headings inside the Logistics panel, in the order they appear.
+const SUB_TITLE: Record<string, string> = {
+  belts: "Belts",
+  routing: "Routing",
+  transfer: "Transfer",
+  storage: "Storage",
+  docks: "Docks",
+};
+function subOf(id: string): keyof typeof SUB_TITLE {
+  if (id === "belt") return "belts";
+  if (id.startsWith("belt-splitter") || id.startsWith("belt-merger") || id.startsWith("belt-underground")) return "routing";
+  if (id.startsWith("belt-loader") || id.startsWith("belt-unloader")) return "transfer";
+  if (id.startsWith("belt-crate") || id.startsWith("belt-strongbox")) return "storage";
+  if (id.startsWith("belt-dock")) return "docks";
+  return "belts";
+}
+
 function orderOf(id: string): number {
   const i = ORDER.indexOf(id);
   return i === -1 ? ORDER.length : i;
@@ -137,9 +154,23 @@ export function BuildList({
         const openCount = g.items.filter((m) => m.unlocked).length;
         return (
           <Section key={g.id} title={GROUP_TITLE[g.id]} icon={GROUP_ICON[g.id]} meta={`${openCount} open`}>
-            <ul className="ab-build" aria-label={`${GROUP_TITLE[g.id]} to build`}>
-              {g.items.map(renderRow)}
-            </ul>
+            {g.id === "logistics" ? (
+              (Object.keys(SUB_TITLE) as (keyof typeof SUB_TITLE)[])
+                .map((sub) => ({ sub, items: g.items.filter((m) => subOf(m.id) === sub) }))
+                .filter((x) => x.items.length > 0)
+                .map((x) => (
+                  <div key={x.sub} className="ab-sub">
+                    <h3 className="ab-sub-title">{SUB_TITLE[x.sub]}</h3>
+                    <ul className="ab-build" aria-label={`${SUB_TITLE[x.sub]} to build`}>
+                      {x.items.map(renderRow)}
+                    </ul>
+                  </div>
+                ))
+            ) : (
+              <ul className="ab-build" aria-label={`${GROUP_TITLE[g.id]} to build`}>
+                {g.items.map(renderRow)}
+              </ul>
+            )}
           </Section>
         );
       })}
