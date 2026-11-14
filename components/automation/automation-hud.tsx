@@ -183,6 +183,18 @@ export function AutomationHud({
           </nav>
           {more && (
             <div className="ab-more" role="menu" aria-label="More menus">
+              <button
+                type="button"
+                role="menuitem"
+                className="ab-more-item"
+                onClick={() => {
+                  setMore(false);
+                  setScreen("prestige");
+                }}
+              >
+                <Ico id="prestige" />
+                Prestige
+              </button>
               {(["expedition", "stats", "settings"] as const).map((d) => (
                 <button
                   key={d}

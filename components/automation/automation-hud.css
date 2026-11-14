@@ -1025,3 +1025,49 @@
     overflow-y: auto;
   }
 }
+
+/* Phone: the Keys button is hidden (no keyboard on phones), so Photo, Light and Codex share one row. */
+@media (max-width: 759px) {
+  .bx-keys-btn {
+    display: none;
+  }
+}
+
+/* Phone: menu screen headers wrap their subtitle onto its own line, so Close never sits over the text. */
+@media (max-width: 759px) {
+  .ab-screen > .ab-screen-head {
+    flex: none;
+  }
+
+  .ab-screen > .ab-screen-body {
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+
+  .ab-screen > .ab-screen-body > * {
+    flex-shrink: 0;
+  }
+
+  .ab-screen > .ab-screen-body > .ab-sites {
+    flex: none;
+  }
+
+  .ab-screen-head {
+    flex-wrap: wrap;
+    align-items: center;
+    row-gap: 6px;
+  }
+
+  .ab-screen-head > .ab-h {
+    order: 0;
+  }
+
+  .ab-screen-head > .ab-screen-close {
+    order: 1;
+  }
+
+  .ab-screen-head > .ab-dim {
+    order: 2;
+    flex: 1 1 100%;
+  }
+}

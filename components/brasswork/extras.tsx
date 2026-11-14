@@ -110,7 +110,7 @@ export function BrassworkExtras({ snapshot, away, mood, onMood }: { snapshot: ()
                     <span className="ab-ico bx-ico" style={uiIconStyle("codex", 20)} aria-hidden="true" />
                     <span className="bx-lbl">Codex</span>
                 </button>
-                <button type="button" className="bw-btn bx-btn" onClick={() => setSheet(true)} title="Keys (H)" aria-label="Show keys">
+                <button type="button" className="bw-btn bx-btn bx-keys-btn" onClick={() => setSheet(true)} title="Keys (H)" aria-label="Show keys">
                     <span className="ab-ico bx-ico" style={uiIconStyle("keys", 20)} aria-hidden="true" />
                     <span className="bx-lbl">Keys</span>
                 </button>
