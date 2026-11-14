@@ -64,8 +64,19 @@ export function Inspector({
       </header>
 
       <p className="ab-inspect-status" data-status={detail.status}>{status}</p>
+      {detail.reason && <p className="ab-inspect-hint">{detail.reason}</p>}
 
-      {hasRecipe ? (
+      {detail.mines && detail.mines.length > 0 ? (
+        <ul className="ab-inspect-mines" aria-label="Mines">
+          {detail.mines.map((m) => (
+            <li key={m.resourceId} className="ab-inspect-mine">
+              <span>{m.name}</span>
+              <span className="ab-dim">{m.purity}</span>
+              <strong>{fmtNum(m.perMin, numberFormat)} / min</strong>
+            </li>
+          ))}
+        </ul>
+      ) : hasRecipe ? (
         <div className="ab-inspect-flow" aria-label="Makes">
           <span className="ab-inspect-in">{lineText(detail.recipe.inputs) || "Nothing"}</span>
           <span className="ab-arrow" aria-hidden="true">→</span>
@@ -100,6 +111,13 @@ export function Inspector({
             ))}
           </div>
         </>
+      )}
+
+      {detail.powerKw !== undefined && detail.powerKw > 0 && (
+        <div className="ab-inspect-rate">
+          <span className="ab-dim">Power use</span>
+          <strong>{fmtNum(detail.powerKw, numberFormat)} kW</strong>
+        </div>
       )}
 
       {rate && (
