@@ -79,12 +79,12 @@ const STRUCTURES: StructureDef[] = [
 function logisticsPieces(): StructureDef[] {
     const junction = { w: 1, d: 1 };
     const brass: { id: string; name: string; cost: { item: string; qty: number }[]; note: string }[] = [
-        { id: "belt-splitter", name: "Splitter", cost: [{ item: "iron_rod", qty: 2 }, { item: "iron_plate", qty: 2 }], note: "Sends items front and both sides." },
-        { id: "belt-merger", name: "Merger", cost: [{ item: "iron_rod", qty: 2 }, { item: "iron_plate", qty: 2 }], note: "Joins belts; pushes forward only." },
-        { id: "belt-underground-in", name: "Tunnel entrance", cost: [{ item: "iron_plate", qty: 3 }, { item: "iron_rod", qty: 3 }], note: "Sends items up to 5 cells under other belts." },
-        { id: "belt-underground-out", name: "Tunnel exit", cost: [{ item: "iron_plate", qty: 3 }, { item: "iron_rod", qty: 3 }], note: "Where a tunnel comes back up." },
-        { id: "belt-loader", name: "Loader", cost: [{ item: "iron_plate", qty: 2 }, { item: "iron_rod", qty: 2 }], note: "Fills storage, the dock or the hub from belts." },
-        { id: "belt-unloader", name: "Unloader", cost: [{ item: "iron_plate", qty: 2 }, { item: "iron_rod", qty: 2 }], note: "Pulls from storage or the hub onto belts." },
+        { id: "belt-splitter", name: "Splitter", cost: [{ item: "iron_plate", qty: 4 }], note: "Sends items front and both sides." },
+        { id: "belt-merger", name: "Merger", cost: [{ item: "iron_plate", qty: 4 }], note: "Joins belts; pushes forward only." },
+        { id: "belt-underground-in", name: "Tunnel entrance", cost: [{ item: "iron_plate", qty: 6 }], note: "Sends items up to 5 cells under other belts." },
+        { id: "belt-underground-out", name: "Tunnel exit", cost: [{ item: "iron_plate", qty: 6 }], note: "Where a tunnel comes back up." },
+        { id: "belt-loader", name: "Loader", cost: [{ item: "iron_plate", qty: 4 }], note: "Fills storage, the dock or the hub from belts." },
+        { id: "belt-unloader", name: "Unloader", cost: [{ item: "iron_plate", qty: 4 }], note: "Pulls from storage or the hub onto belts." },
     ];
     const tierExtra: Record<"copper" | "steel", { item: string; qty: number }> = {
         copper: { item: "copper_wire", qty: 4 },
@@ -109,9 +109,9 @@ function logisticsPieces(): StructureDef[] {
         }
     }
     out.push(
-        { id: "belt-crate", name: "Crate", footprint: { w: 1, d: 1 }, unlockStage: 2, capacity: 200, buildCost: [{ item: "iron_plate", qty: 8 }, { item: "iron_screw", qty: 8 }], note: "Holds 200 of each item." },
+        { id: "belt-crate", name: "Crate", footprint: { w: 1, d: 1 }, unlockStage: 2, capacity: 200, buildCost: [{ item: "iron_plate", qty: 16 }], note: "Holds 200 of each item." },
         { id: "belt-strongbox", name: "Strongbox", footprint: { w: 2, d: 2 }, unlockStage: 3, capacity: 1000, buildCost: [{ item: "aluminium_casing", qty: 4 }, { item: "iron_plate", qty: 8 }], note: "Holds 1000 of each item." },
-        { id: "belt-dock", name: "Dock", footprint: { w: 3, d: 3 }, unlockStage: 2, buildCost: [{ item: "iron_plate", qty: 12 }, { item: "iron_screw", qty: 12 }, { item: "copper_wire", qty: 6 }], note: "A delivery sink, like the hub." },
+        { id: "belt-dock", name: "Dock", footprint: { w: 3, d: 3 }, unlockStage: 2, buildCost: [{ item: "iron_plate", qty: 24 }, { item: "copper_wire", qty: 6 }], note: "A delivery sink, like the hub." },
     );
     return out;
 }
@@ -170,7 +170,7 @@ const RECIPES = [
 
     // Forming
     { id: "r_iron_plate", machine: "press", inputs: [{ item: "iron_ingot", qty: 3 }], output: { item: "iron_plate", qty: 2 }, craftSeconds: 3 },
-    { id: "r_iron_rod", machine: "lathe", inputs: [{ item: "iron_ingot", qty: 1 }], output: { item: "iron_rod", qty: 1 }, craftSeconds: 4 },
+    { id: "r_iron_rod", machine: "lathe", inputs: [{ item: "iron_ingot", qty: 1 }], output: { item: "iron_rod", qty: 1 }, craftSeconds: 2 },
     { id: "r_iron_screw", machine: "lathe", inputs: [{ item: "iron_rod", qty: 1 }], output: { item: "iron_screw", qty: 4 }, craftSeconds: 2 },
     { id: "r_copper_wire", machine: "drawer", inputs: [{ item: "copper_ingot", qty: 1 }], output: { item: "copper_wire", qty: 2 }, craftSeconds: 2 },
     { id: "r_aluminium_sheet", machine: "press", inputs: [{ item: "aluminium_ingot", qty: 3 }], output: { item: "aluminium_sheet", qty: 2 }, craftSeconds: 3 },
@@ -248,12 +248,13 @@ const RESEARCH = [
     { id: "fast_frames", name: "Fast frames", cost: 5, requires: ["frames"], recipes: ["r_frame_fast"], note: "Frames from plates and screws, quicker." },
 ] as const;
 
-// Blueprints granted per stage: 10 + 20 + 30 + 35 + 40 = 135. The megaproject's path needs 109 of it.
+// Blueprints granted per stage: 12 + 30 + 30 + 44 + 40 = 156. Research needed before each stage's milestone:
+// stage 3 needs 39 (by milestone 2), stage 4 needs 67 (by milestone 3), the megaproject needs 109 (by milestone 4).
 const MILESTONES = [
-    { id: "ms_smelting", name: "First smelt run", stage: 1, deliver: [{ item: "iron_ingot", qty: 50 }, { item: "copper_ingot", qty: 30 }], blueprints: 10 },
-    { id: "ms_forming", name: "Plate line online", stage: 2, deliver: [{ item: "iron_plate", qty: 60 }, { item: "copper_wire", qty: 60 }, { item: "steel_ingot", qty: 30 }, { item: "aluminium_sheet", qty: 20 }], blueprints: 20 },
+    { id: "ms_smelting", name: "First smelt run", stage: 1, deliver: [{ item: "iron_ingot", qty: 50 }, { item: "copper_ingot", qty: 30 }], blueprints: 12 },
+    { id: "ms_forming", name: "Plate line online", stage: 2, deliver: [{ item: "iron_plate", qty: 60 }, { item: "copper_wire", qty: 60 }, { item: "steel_ingot", qty: 30 }, { item: "aluminium_sheet", qty: 20 }], blueprints: 30 },
     { id: "ms_components", name: "Components crate", stage: 3, deliver: [{ item: "iron_gear", qty: 30 }, { item: "circuit_board", qty: 20 }, { item: "aluminium_casing", qty: 20 }, { item: "frame", qty: 20 }, { item: "steel_beam", qty: 10 }], blueprints: 30 },
-    { id: "ms_clockworks", name: "Clockwork shipment", stage: 4, deliver: [{ item: "motor", qty: 10 }, { item: "servo", qty: 6 }, { item: "photocell", qty: 10 }, { item: "quartz_lens", qty: 4 }], blueprints: 35 },
+    { id: "ms_clockworks", name: "Clockwork shipment", stage: 4, deliver: [{ item: "motor", qty: 10 }, { item: "servo", qty: 6 }, { item: "photocell", qty: 10 }, { item: "quartz_lens", qty: 4 }], blueprints: 44 },
     { id: "ms_megaproject", name: "Sky orrery, first light", stage: 5, deliver: [{ item: "sail_panel", qty: 3 }, { item: "mirror_cell", qty: 3 }, { item: "relay_core", qty: 3 }, { item: "lattice_strut", qty: 3 }], blueprints: 40 },
 ] as const;
 
