@@ -16,6 +16,7 @@ function Switch({ label, hint, icon, on, onChange }: { label: string; hint: stri
                 <span className="bws-name" id={`bws-${icon}-${label}`}>{label}</span>
                 <span className="bws-hint">{hint}</span>
             </div>
+            <span className="bws-lamp" data-on={on ? "true" : "false"} aria-hidden="true" />
             <button
                 type="button"
                 role="switch"
@@ -72,8 +73,8 @@ export function SettingsWindow({ settings, onChange, onClose, slots }: {
     settings: HudSettings; onChange: (patch: Partial<HudSettings>) => void; onClose: () => void; slots?: SettingsSlots;
 }) {
     return (
-        <MenuWindow title="Settings" art={<Ico id="settings" />} onClose={onClose}>
-            <div className="bws-body">
+        <MenuWindow title="Workshop controls" label="Settings" art={<span className="bws-spin"><Ico id="settings" /></span>} onClose={onClose}>
+            <div className="bws-body" data-panel="controls">
                         <Group title="Sound">
                             <Switch icon="sound" label="Sound" hint="Machine clicks, chimes and the workshop hum." on={settings.sound} onChange={(v) => onChange({ sound: v })} />
                         </Group>
@@ -91,8 +92,8 @@ export function SettingsWindow({ settings, onChange, onClose, slots }: {
                                         <Group title="Save and leave">{slots.save}</Group>
                             </>
                         )}
-                    </div>
-            <p className="bws-note">Saved in this browser.</p>
+                        <p className="bws-note">Changes apply at once and are saved in this browser.</p>
+            </div>
         </MenuWindow>
     );
 }
