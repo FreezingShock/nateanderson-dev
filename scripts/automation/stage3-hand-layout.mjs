@@ -26,6 +26,9 @@ export function phaseA({ world, belt, machine, ok, remove }) {
     machine("lathe", 12, 0, "r_iron_rod");                       // rod lathe A, feeds the screw lathe
     machine("lathe", 12, 2, "r_iron_screw");                     // screw lathe, pushes screws straight into the frame assembler
     const frames = machine("assembler", 9, 2, null);             // frame assembler: plates from the press, screws from the lathe, frames into the hub
+    // Beam press: sits on the trunk's south side so beams side-load into the hub. Steel reaches it through a filtered
+    // unloader at (9, 8), which is not placed yet because an unloader costs iron rods the hub does not hold.
+    const beams = machine("press", 8, 9, null);
     let gears = null;
     // Stage 2's copper ingot belt and its windmill sit where the gear pieces go. Milestone 1 needs those copper ingots
     // in the hub first, so the pieces go in only once it is done.
@@ -38,10 +41,11 @@ export function phaseA({ world, belt, machine, ok, remove }) {
         gears = machine("lathe", 11, 5, null);                   // gear lathe: pushes gears straight into the hub
     };
     return {
-        research: ["gears", "frames"],
+        research: ["gears", "frames", "steel_beams"],
         deferred: [
             { research: "gears", id: () => gears, recipe: "r_iron_gear" },
             { research: "frames", id: frames, recipe: "r_frame" },
+            { research: "steel_beams", id: beams, recipe: "r_steel_beam" },
         ],
         tick,
     };
