@@ -83,8 +83,9 @@ export function BuildList({
                 className="ab-info"
                 aria-pressed={selected}
                 onClick={() => onSelect(selected ? null : m.id)}
+                aria-label={`${selected ? "Close" : "Show"} details for ${m.name}`}
               >
-                Info
+                {selected ? "Close" : "Details"}
               </button>
             </li>
         );
