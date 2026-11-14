@@ -13,6 +13,8 @@ export type MenuWindowProps = {
   onClose: () => void;
   /** Accessible name for the dialog. Defaults to the title. */
   label?: string;
+  /** "default" is 640px wide; "wide" is 960px, for menus with a lot of columns. Phones use the full width either way. */
+  size?: "default" | "wide";
   children: ReactNode;
 };
 
@@ -21,7 +23,7 @@ export type MenuWindowProps = {
  * around it. The close button sits in its own column, so it never overlaps the title.
  * Only one window should be open at a time: the caller holds the open state and renders one at a time.
  */
-export function MenuWindow({ title, art, onClose, label, children }: MenuWindowProps) {
+export function MenuWindow({ title, art, onClose, label, size = "default", children }: MenuWindowProps) {
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") onClose();
@@ -32,7 +34,7 @@ export function MenuWindow({ title, art, onClose, label, children }: MenuWindowP
 
   return (
     <div className="bw-window-scrim" onMouseDown={(e) => { if (e.target === e.currentTarget) onClose(); }}>
-      <section className="bw-window bw" role="dialog" aria-modal="true" aria-label={label ?? title}>
+      <section className="bw-window bw" data-size={size} role="dialog" aria-modal="true" aria-label={label ?? title}>
         <header className="bw-window-head">
           <span className="bw-window-art" aria-hidden={art ? undefined : true}>{art}</span>
           <h2 className="bw-window-title">{title}</h2>
