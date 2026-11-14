@@ -13,10 +13,10 @@ export interface PathCell {
 
 const MAX_CELLS = 384;
 const PARTS_PER_CELL = 5; // plate, arrow shaft, arrow head, corner or cap
-const BRASS = new THREE.Color(0xffd27a);
-const BRASS_HOT = new THREE.Color(0xfff2c0);
-const RED = new THREE.Color(0xff4a3a);
-const RED_HOT = new THREE.Color(0xff9a80);
+const BRASS = new THREE.Color(0xffc24a);
+const BRASS_HOT = new THREE.Color(0xfff6d0);
+const RED = new THREE.Color(0xff3a2a);
+const RED_HOT = new THREE.Color(0xffb8a0);
 const ARROW = new THREE.Color(0xffffff);
 const HALF_TURN = Math.PI / 2;
 
@@ -38,8 +38,10 @@ export class GhostPath {
         const geo = new THREE.BoxGeometry(1, 1, 1);
         this.mat = new THREE.MeshBasicMaterial({
             transparent: true,
-            opacity: 0.85,
+            opacity: 1,
             depthWrite: false,
+            // The ghost reads through machines and the hub, so a stroke behind a building still shows.
+            depthTest: false,
             blending: THREE.AdditiveBlending,
         });
         this.mesh = new THREE.InstancedMesh(geo, this.mat, MAX_CELLS * PARTS_PER_CELL);
@@ -68,7 +70,7 @@ export class GhostPath {
             const hot = cell.valid ? BRASS_HOT : RED_HOT;
 
             // Plate: a flat glowing square over the cell.
-            this.put(k++, cx, y, cz, 0.9, 0.03, 0.9, 0, tint, hot);
+            this.put(k++, cx, y, cz, 0.92, 0.06, 0.92, 0, tint, hot);
 
             // Corner: the path turns here when the belt in and the belt out face different ways.
             const turns = prev !== undefined && next !== undefined && prev.rot !== cell.rot;
@@ -76,8 +78,8 @@ export class GhostPath {
                 this.put(k++, cx, y + 0.05, cz, 0.36, 0.05, 0.36, 0, hot, hot);
             } else {
                 // Arrow on straight runs: a bright shaft and a head, pointing where the belt faces.
-                this.put(k++, cx, y + 0.06, cz, 0.16, 0.06, 0.5, cell.rot, ARROW, ARROW, true);
-                this.put(k++, cx, y + 0.07, cz, 0.34, 0.07, 0.2, cell.rot, ARROW, ARROW, true, 0.24);
+                this.put(k++, cx, y + 0.08, cz, 0.2, 0.08, 0.56, cell.rot, ARROW, ARROW, true);
+                this.put(k++, cx, y + 0.09, cz, 0.5, 0.09, 0.22, cell.rot, ARROW, ARROW, true, 0.26);
             }
 
             // End caps where the stroke starts and stops.
@@ -103,7 +105,7 @@ export class GhostPath {
             return;
         }
         this.time += dt;
-        this.mat.opacity = 0.6 + 0.3 * (0.5 + 0.5 * Math.sin(this.time * 4));
+        this.mat.opacity = 0.8 + 0.2 * (0.5 + 0.5 * Math.sin(this.time * 4));
     }
 
     setPulsing(on: boolean): void {
