@@ -444,6 +444,7 @@ export function BrassworkHost() {
                     // Arms a build tool by its id, the same call the palette makes. Lets the headless check skip the palette.
                     setTool: (id: string | null) => input.controller.setToolById(id),
                     armedTool: () => input.controller.build.getTool()?.id ?? null,
+                    ghostCells: () => (input.controller.build.ghost()?.cells ?? []).map((c) => [c.x, c.z, c.valid ? 1 : 0, c.reason ?? ""]),
                 };
             }
 
