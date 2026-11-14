@@ -38,6 +38,7 @@ import { BrassworkExtras, type AwayReport, type Mood } from "./extras";
 import { FirstRunGuide } from "./first-run";
 import { BuildPopover, TrashButton } from "./build-popover";
 import { bw, bwHum, bwSetEnabled } from "@/lib/brasswork/sound";
+import { loadSettings, saveSettings } from "@/lib/brasswork/settings";
 import "@/components/brasswork-ui/type.css";
 
 const W = 18;
@@ -139,7 +140,7 @@ export function BrassworkHost() {
             const canvas = canvasRef.current;
             if (dead || !canvas) return;
             const { world, savedAt } = loadWorld();
-            let settings = { ...START_SETTINGS };
+            let settings = loadSettings(START_SETTINGS);
             let selectedId: number | null = null;
             const drawn = new Set<number>();
 
@@ -421,6 +422,7 @@ export function BrassworkHost() {
                 },
                 settings: (p) => {
                     settings = { ...settings, ...p };
+                    if (Object.keys(p).length) saveSettings(settings);
                     bwSetEnabled(settings.sound);
                     island.setLowFx(settings.lowFx || settings.reduceMotion);
                     life.setLowFx(settings.lowFx || settings.reduceMotion);
@@ -487,6 +489,7 @@ export function BrassworkHost() {
             raf = requestAnimationFrame(frame);
 
             snap.current = () => island.snapshot();
+            ctl.current?.settings({}); // apply the saved settings to the sound, scenery and belts
             island.resize();
             island.start();
             refresh();
