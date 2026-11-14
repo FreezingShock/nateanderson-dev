@@ -2,6 +2,7 @@
 
 import { useEffect, useState, type ReactNode } from "react";
 import "@/components/brasswork-ui/brass-kit.css";
+import "@/components/brasswork-ui/scrollbar.css";
 import "./automation-hud.css";
 import type { HudData } from "@/lib/automation/types";
 import type { HudActions } from "./types";
@@ -9,7 +10,9 @@ import { ResourceStrip } from "./resource-strip";
 import { BuildList } from "./build-bar";
 import { Inspector } from "./inspector";
 import { Milestones, PrestigeCard, Section } from "./factory-sections";
-import { ExpeditionList, SettingsList, StatsList } from "./drawers";
+import { SettingsWindow, type SettingsSlots } from "./settings-window";
+import { ProductionWindow } from "./production-window";
+import { ExpeditionWindow } from "./expedition-window";
 import { ResearchScreen } from "./research-screen";
 import { PrestigeScreen } from "./prestige-screen";
 import "./brasswork-skin.css";
@@ -20,7 +23,7 @@ import { uiIconStyle } from "@/lib/automation/icons/ui";
 const Ico = ({ id }: { id: string }) => <span className="ab-ico" style={uiIconStyle(id, 24)} aria-hidden="true" />;
 
 type Drawer = "expedition" | "stats" | "settings";
-type Screen = "research" | "prestige";
+type Screen = "research" | "prestige" | "expedition";
 
 const DRAWER_ICON: Record<Drawer, string> = { expedition: "expedition", stats: "stats", settings: "settings" };
 const DRAWER_TITLE: Record<Drawer, string> = {
@@ -40,13 +43,18 @@ export function AutomationHud({
   data,
   actions,
   children,
+  settingsSlots,
 }: {
   data: HudData;
   actions: HudActions;
   children?: ReactNode;
+  /** Extra Settings rows supplied by the host (lighting, save and leave). */
+  settingsSlots?: SettingsSlots;
 }) {
   const [drawer, setDrawer] = useState<Drawer | null>(null);
   const [screen, setScreen] = useState<Screen | null>(null);
+  // Site chosen in Expedition, handed to the workshop selection screen.
+  const [planSite, setPlanSite] = useState<string | undefined>(undefined);
   // Phone only: which panel is open as a bottom sheet over the stage.
   const [sheet, setSheet] = useState<"pal" | "factory" | null>(null);
   // Phone only: the "More" sheet lists the drawers, so the bottom bar stays at four tabs.
@@ -64,7 +72,15 @@ export function AutomationHud({
     return () => window.removeEventListener("keydown", onKey);
   }, [drawer, screen]);
 
-  const toggle = (d: Drawer) => setDrawer((cur) => (cur === d ? null : d));
+  const toggle = (d: Drawer) => {
+    if (d === "expedition") {
+      setDrawer(null);
+      setScreen((s) => (s === "expedition" ? null : "expedition"));
+      return;
+    }
+    setScreen((s) => (s === "expedition" ? null : s));
+    setDrawer((cur) => (cur === d ? null : d));
+  };
   // Phone: the inspector lives in the Milestones sheet, so opening a machine's details brings that sheet up.
   const selectedKey = data.selected?.id ?? null;
   useEffect(() => {
@@ -106,7 +122,7 @@ export function AutomationHud({
               key={d}
               type="button"
               className="ab-text-btn"
-              aria-expanded={drawer === d}
+              aria-expanded={d === "expedition" ? screen === "expedition" : drawer === d}
               onClick={() => toggle(d)}
             >
               <Ico id={DRAWER_ICON[d]} />
@@ -196,6 +212,7 @@ export function AutomationHud({
                 className="ab-more-item"
                 onClick={() => {
                   setMore(false);
+                  setPlanSite(undefined);
                   setScreen("prestige");
                 }}
               >
@@ -210,7 +227,8 @@ export function AutomationHud({
                   className="ab-more-item"
                   onClick={() => {
                     setMore(false);
-                    setDrawer(d);
+                    if (d === "expedition") setScreen("expedition");
+                    else setDrawer(d);
                   }}
                 >
                   <Ico id={DRAWER_ICON[d]} />
@@ -219,8 +237,14 @@ export function AutomationHud({
               ))}
             </div>
           )}
-          <p className="ab-next">
-            <span className="ab-next-label">Next</span>
+          <p className="ab-next" aria-label="Current objective">
+            <span className="ab-next-label">{next.title ? "Objective" : "Next"}</span>
+            {next.title && <span className="ab-next-title">{next.title}</span>}
+            {next.progress !== undefined && (
+              <span className="ab-next-bar" role="progressbar" aria-label="Objective progress" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(next.progress * 100)}>
+                <span className="ab-next-fill" style={{ width: `${Math.round(next.progress * 100)}%` }} />
+              </span>
+            )}
             <span className="ab-next-text">{next.text}</span>
             {next.actionId && next.actionLabel && (
               <button
@@ -258,45 +282,45 @@ export function AutomationHud({
           </Section>
 
           <Section title="Prestige" icon="prestige" defaultOpen={false}>
-            <PrestigeCard prestige={data.prestige} onOpen={() => setScreen("prestige")} />
+            <PrestigeCard prestige={data.prestige} onOpen={() => { setPlanSite(undefined); setScreen("prestige"); }} />
           </Section>
         </aside>
 
-        {drawer && (
-          <aside className="ab-drawer" role="dialog" aria-label={DRAWER_TITLE[drawer]}>
-            <header className="ab-head">
-              <h2 className="ab-h">
-                <Ico id={DRAWER_ICON[drawer]} />
-                {DRAWER_TITLE[drawer]}
-              </h2>
-              <button type="button" className="ab-text-btn" onClick={() => setDrawer(null)}>
-                Close
-              </button>
-            </header>
-            <div className="ab-drawer-body">
-              {drawer === "expedition" && (
-                <ExpeditionList areas={data.areas} onSelectArea={actions.onSelectArea} />
-              )}
-              {drawer === "stats" && <StatsList stats={data.stats} />}
-              {drawer === "settings" && (
-                <SettingsList settings={data.settings} onChange={actions.onSettings} />
-              )}
-            </div>
-          </aside>
+        {drawer === "stats" && (
+          <ProductionWindow resources={data.resources} stats={data.stats} numberFormat={mode} onClose={() => setDrawer(null)} />
         )}
       </div>
+
+      {drawer === "settings" && (
+        <SettingsWindow settings={data.settings} onChange={actions.onSettings} onClose={() => setDrawer(null)} slots={settingsSlots} />
+      )}
 
       {screen === "research" && (
         <ResearchScreen
           nodes={data.research}
           blueprints={data.blueprints}
+          milestones={data.milestones}
           onResearch={actions.onResearch}
+          onClose={() => setScreen(null)}
+        />
+      )}
+
+      {screen === "expedition" && (
+        <ExpeditionWindow
+          areas={data.areas}
+          prestige={data.prestige}
+          onPlan={(id) => {
+            actions.onSelectArea?.(id);
+            setPlanSite(id);
+            setScreen("prestige");
+          }}
           onClose={() => setScreen(null)}
         />
       )}
 
       {screen === "prestige" && (
         <PrestigeScreen
+          initialSiteId={planSite}
           prestige={data.prestige}
           onConfirm={(siteId) => {
             actions.onPrestige?.(siteId);

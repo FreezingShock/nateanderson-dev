@@ -3,7 +3,6 @@
 // Mounts Brasswork: the simulation (lib/automation/sim), the voxel island renderer (lib/automation/render, loaded
 // with a dynamic import so Three.js stays off every other route) and the 2D HUD (components/automation).
 // The world is 18 by 12 cells at one world unit per cell, which is the renderer's factory plateau.
-import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { AutomationHud } from "@/components/automation/automation-hud";
 import {
@@ -30,14 +29,18 @@ import {
 } from "@/lib/automation/sim";
 import type { VoxelIsland } from "@/lib/automation/render";
 import type { BuildWorld, InputController, MountedInput } from "@/lib/automation/input";
-import { getMachineModel } from "@/lib/automation/models/machines";
+import { getMachineModel, getHubModel, hubStageFor } from "@/lib/automation/models/machines";
+import { nodeModel, variantForCell, type ResourceId } from "@/lib/automation/models/resources";
 import { pickBeltTile, type PieceKind, type PiecePlacement } from "@/lib/automation/models/belts";
 import { WATER_LEVEL } from "@/lib/automation/render/config";
+import { createBeltItems } from "@/lib/automation/render/beltitems";
 import { scatterProps } from "@/lib/automation/models/props";
-import { BrassworkExtras, type AwayReport, type Mood } from "./extras";
+import { BrassworkExtras, MOODS, type AwayReport, type Mood } from "./extras";
 import { FirstRunGuide } from "./first-run";
 import { BuildPopover, TrashButton } from "./build-popover";
 import { bw, bwHum, bwSetEnabled } from "@/lib/brasswork/sound";
+import { LightingRow, SaveRows } from "./settings-extras";
+import { loadSettings, saveSettings } from "@/lib/brasswork/settings";
 import "@/components/brasswork-ui/type.css";
 
 const W = 18;
@@ -79,7 +82,6 @@ function beltTile(world: World, b: { x: number; z: number; rot: number; type: st
 }
 
 const TYPE_COLORS: Record<string, number> = { hub: 0xc59a52, drill: 0x7f8ca3, power: 0xc4682f };
-const ORE_COLORS: Record<string, number> = { iron_ore: 0x8e3b28, copper_ore: 0x58b09a, coal: 0x25252b, quartz: 0xf2cfe0, aluminium_ore: 0x98b2d4 };
 
 function freshWorld(): World {
     const w = createWorld({ width: W, depth: D, hub: { x: 8, z: 5 } }, CAT);
@@ -116,6 +118,13 @@ export function BrassworkHost() {
     const onMood = useCallback((m: Mood) => {
         moodRef.current = m;
         setMood(m);
+        try { localStorage.setItem("bw-mood-v1", m); } catch { /* private mode: lighting still changes for this visit */ }
+    }, []);
+    useEffect(() => {
+        try {
+            const m = localStorage.getItem("bw-mood-v1");
+            if (m && (MOODS as readonly string[]).includes(m)) { moodRef.current = m as Mood; setMood(m as Mood); }
+        } catch { /* no storage */ }
     }, []);
     const snap = useRef<(() => string) | null>(null);
     const snapshot = useCallback(() => snap.current?.() ?? null, []);
@@ -139,14 +148,20 @@ export function BrassworkHost() {
             const canvas = canvasRef.current;
             if (dead || !canvas) return;
             const { world, savedAt } = loadWorld();
-            let settings = { ...START_SETTINGS };
+            let settings = loadSettings(START_SETTINGS);
             let selectedId: number | null = null;
             const drawn = new Set<number>();
+            let hubStage = -1;
+            const shownNodes = new Map<string, string>();
 
             const island: VoxelIsland = createVoxelIsland(canvas, { quality: "auto", dither: true, timeOfDay: 0.4, cycle: false, orbit: false });
             [1.2, 2, 3].forEach((v, tier) => island.setBeltSpeed(tier, v));
             // Island life: leaves, birds, fireflies, smoke, shore glints, drizzle and reward bursts.
             const life = attachLife(island, heightAt);
+            // Items riding the belts, redrawn each frame from the sim's lanes.
+            const beltItems = createBeltItems();
+            island.scene.add(beltItems.object);
+            const beltPieces = new Map<number, PiecePlacement>();
             // Handle for the browser console and headless captures: __bwLife.burst("milestone", 0, 0), __bwLife.setRain(1).
             (window as unknown as { __bwLife?: typeof life }).__bwLife = life;
             // Natural scenery around the plateau; nothing grows on it, and trees keep clear of the machines.
@@ -173,12 +188,40 @@ export function BrassworkHost() {
                 }
                 // Belts pick their tile from their neighbours, so a placement or removal can change the cells around it.
                 const pieces: PiecePlacement[] = [];
+                beltPieces.clear();
                 for (const b of Object.values(world.buildings)) {
                     if (!(b.type in BELT_TIER)) continue;
-                    pieces.push({ kind: beltTile(world, b), tier: BELT_TIER[b.type], x: b.x - W / 2, z: b.z - D / 2, rot: b.rot as 0 | 1 | 2 | 3 });
+                    const piece: PiecePlacement = { kind: beltTile(world, b), tier: BELT_TIER[b.type], x: b.x - W / 2, z: b.z - D / 2, rot: b.rot as 0 | 1 | 2 | 3 };
+                    pieces.push(piece);
+                    beltPieces.set(b.id, piece);
                     drawn.add(b.id);
                 }
                 island.setBelts(pieces);
+                // The hub grows with the milestones: redraw it when its stage changes.
+                const stageNow = hubStageFor(world.progress.milestonesDone.length);
+                if (stageNow !== hubStage) {
+                    hubStage = stageNow;
+                    for (const b of Object.values(world.buildings))
+                        if (b.type === "hub" && drawn.has(b.id)) {
+                            island.removeObject(`b${b.id}`);
+                            drawn.delete(b.id);
+                        }
+                }
+                // Resource nodes: shown while free, hidden under a drill (the drill model covers the same 2x2).
+                const occupied = new Set(Object.values(world.buildings).map((b) => `${b.x},${b.z}`));
+                for (const [key, sig] of [...shownNodes]) {
+                    const dep = world.deposits[key];
+                    if (!dep || occupied.has(key) || sig !== `${dep.item}:${dep.purity}`) {
+                        island.removeObject(`n${key}`);
+                        shownNodes.delete(key);
+                    }
+                }
+                for (const [key, dep] of Object.entries(world.deposits)) {
+                    if (occupied.has(key) || shownNodes.has(key)) continue;
+                    const [x, z] = key.split(",").map(Number);
+                    island.placeModel(`n${key}`, nodeModel(dep.item as ResourceId, dep.purity, variantForCell(x, z)), { cell: { x: x - W / 2 - 0.5, z: z - D / 2 - 0.5 }, rot: 0 });
+                    shownNodes.set(key, `${dep.item}:${dep.purity}`);
+                }
                 for (const b of Object.values(world.buildings)) {
                     if (drawn.has(b.id)) continue;
                     drawn.add(b.id);
@@ -189,7 +232,7 @@ export function BrassworkHost() {
                     const minZ = Math.min(...cells.map((c) => c[1]));
                     const bw = Math.max(...cells.map((c) => c[0])) - minX + 1;
                     const bd = Math.max(...cells.map((c) => c[1])) - minZ + 1;
-                    const model = getMachineModel(b.type);
+                    const model = b.type === "hub" ? getHubModel(hubStage) : getMachineModel(b.type);
                     if (model) {
                         const fp = model.footprint ?? { w: bw, d: bd };
                         const swap = b.rot === 1 || b.rot === 3;
@@ -206,13 +249,6 @@ export function BrassworkHost() {
                     }
                 }
             };
-            island.addObject("deposits", (s) => {
-                for (const [key, dep] of Object.entries(world.deposits)) {
-                    const [x, z] = key.split(",").map(Number);
-                    const [cx, cz] = center(x, z, 1, 1);
-                    s.box(cx, 0, cz, 0.8, 0.25, 0.8, ORE_COLORS[dep.item] ?? 0x888888);
-                }
-            });
             syncScene();
 
             // Away time: catch up the simulation for the time the tab was closed (capped by the catalog).
@@ -421,6 +457,7 @@ export function BrassworkHost() {
                 },
                 settings: (p) => {
                     settings = { ...settings, ...p };
+                    if (Object.keys(p).length) saveSettings(settings);
                     bwSetEnabled(settings.sound);
                     island.setLowFx(settings.lowFx || settings.reduceMotion);
                     life.setLowFx(settings.lowFx || settings.reduceMotion);
@@ -435,6 +472,7 @@ export function BrassworkHost() {
             if (devHook) {
                 (window as unknown as { __bwdev: unknown }).__bwdev = {
                     getWorld: () => world,
+                    beltItems,
                     CAT,
                     sim: simActions,
                     placeAt: (type: string, x: number, z: number, rot: Rot = 0) => {
@@ -468,6 +506,15 @@ export function BrassworkHost() {
                 pushStates();
                 if (!document.hidden) {
                     advance(world, dt, 0.1, CAT);
+                    beltItems.update(
+                        (function* () {
+                            for (const [id, piece] of beltPieces) {
+                                const b = world.buildings[id];
+                                if (b && b.lane.length) yield { piece, lane: b.lane };
+                            }
+                        })(),
+                        (p, t, out) => island.beltItemMatrix(p, t, out)
+                    );
                     island.setWind(world.wind ?? windAt(world.time));
                     const m = moodRef.current;
                     island.setTimeOfDay(m === "Auto" ? dayClock(world, CAT).phase : m === "Day" ? 0.05 : m === "Dusk" ? 0.5 : 0.75);
@@ -487,15 +534,19 @@ export function BrassworkHost() {
             raf = requestAnimationFrame(frame);
 
             snap.current = () => island.snapshot();
+            window.addEventListener("bw:save", save); // the Settings window asks for a fresh save before exporting
+            ctl.current?.settings({}); // apply the saved settings to the sound, scenery and belts
             island.resize();
             island.start();
             refresh();
             cleanup = () => {
                 cancelAnimationFrame(raf);
+                window.removeEventListener("bw:save", save);
                 save();
                 input.destroy();
                 window.removeEventListener("resize", onResize);
                 life.dispose();
+                beltItems.dispose();
                 island.dispose();
                 bwHum(null);
                 ctl.current = null;
@@ -523,11 +574,8 @@ export function BrassworkHost() {
 
     return (
         <div className="bw-root">
-            <AutomationHud data={data} actions={{ onBuild, onSelect, onResearch, onSetRecipe, onPrestige, onSettings }}>
+            <AutomationHud data={data} actions={{ onBuild, onSelect, onResearch, onSetRecipe, onPrestige, onSettings }} settingsSlots={{ display: <LightingRow mood={mood} onMood={onMood} />, save: <SaveRows /> }}>
                 <canvas ref={canvasRef} className="bw-canvas" />
-                <Link href="/creations/games" className="bw-back">
-                    Back to Games
-                </Link>
                 <BrassworkExtras snapshot={snapshot} away={away} mood={mood} onMood={onMood} />
                 <FirstRunGuide data={data} />
                 {inputCtl && (

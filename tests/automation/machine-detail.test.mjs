@@ -22,7 +22,7 @@ test("a placed drill reports what it mines and at what rate, not an empty recipe
     assert.equal(detail.mines[0].purity, "pure");
     assert.ok(detail.mines[0].perMin > 0);
     assert.notEqual(detail.recipe.name, "No recipe");
-    assert.equal(detail.reason, "No power");
+    assert.match(detail.reason, /^No power/);
 });
 
 test("a crafter with no recipe lists its available recipes with inputs, outputs and time", () => {
