@@ -28,7 +28,11 @@ export function fmtRate(n: number, mode: NumberFormat = "short"): string {
 }
 
 export function resourceName(resources: ResourceView[], id: string): string {
-  return resources.find((r) => r.id === id)?.name ?? id;
+  const found = resources.find((r) => r.id === id)?.name;
+  if (found) return found;
+  // Items not in stock yet have no ResourceView, so turn the raw id ("steel_ingot") into readable words.
+  const words = id.replace(/[_-]+/g, " ").trim();
+  return words.charAt(0).toUpperCase() + words.slice(1);
 }
 
 /** True when every line of the cost is covered by the current amounts. */
