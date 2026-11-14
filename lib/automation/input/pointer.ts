@@ -28,6 +28,8 @@ interface Tracked {
     button: number;
     mode: Mode;
     hold?: ReturnType<typeof setTimeout>;
+    // True for a left press with no tool and no space: a short release counts as a select click.
+    click?: boolean;
 }
 
 const ORBIT_YAW = 0.008;
@@ -142,6 +144,7 @@ export class PointerInput {
         } else if (e.button === 1 || (e.button === 0 && this.spaceDown)) {
             p.mode = "pan";
         } else if (e.button === 0) {
+            p.click = !this.opts.build.getTool();
             if (this.opts.build.getTool()) {
                 const cell = this.cellAt(e.clientX, e.clientY);
                 if (cell) {
@@ -250,9 +253,16 @@ export class PointerInput {
         if (p.mode === "stroke") {
             this.opts.build.endStroke();
         } else if (p.mode === "pending" && e.type === "pointerup") {
-            // Quick touch tap: place a single cell.
+            // Quick touch tap: place a single cell, or select a building when no tool is active.
             const cell = this.cellAt(e.clientX, e.clientY);
-            if (cell) this.opts.build.tap(cell);
+            if (cell) {
+                if (this.opts.build.getTool()) this.opts.build.tap(cell);
+                else this.opts.build.select(cell);
+            }
+        } else if (p.mode === "pan" && p.click && e.type === "pointerup" && Math.hypot(e.clientX - p.sx, e.clientY - p.sy) <= this.opts.slopPx) {
+            // Mouse click with no tool: a short release on a building selects it. A drag still pans.
+            const cell = this.cellAt(e.clientX, e.clientY);
+            if (cell) this.opts.build.select(cell);
         }
 
         if (this.pointers.size < 2) {

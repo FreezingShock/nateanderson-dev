@@ -409,3 +409,30 @@ test("WASD maps to held walk actions, not keydown pans", () => {
     assert.deepEqual(mapKey({ key: "a", type: "keyup" }), { type: "walk", dir: "a", down: false });
     assert.equal(mapKey({ key: "s", ctrlKey: true, type: "keydown" }), null);
 });
+
+test("select: a placed building reports its anchor and kind; empty cells report nothing", () => {
+    const w = memWorld();
+    const events = [];
+    const b = new A.BuildController({ world: w, board, onEvent: (e) => events.push(e) });
+    w.set(4, 4, { kind: "machine", rot: 0, anchor: { x: 3, z: 4 } });
+    assert.equal(b.select({ x: 4, z: 4 }), true);
+    assert.deepEqual(events.at(-1), { type: "select", cell: { x: 4, z: 4 }, anchor: { x: 3, z: 4 }, kind: "machine" });
+    assert.equal(b.select({ x: 9, z: 9 }), false);
+    assert.equal(events.length, 1);
+});
+
+test("rotateHover: R over a placed building turns it; R over empty ground turns the ghost", () => {
+    const w = memWorld();
+    const b = new A.BuildController({ world: w, board });
+    w.set(5, 5, { kind: "machine", rot: 0 });
+    b.setTool(machine);
+    b.setHover({ x: 5, z: 5 });
+    b.rotateHover();
+    assert.equal(w.get(5, 5).rot, 1, "placed building turned");
+    assert.equal(b.getRot(), 0, "ghost rotation untouched");
+    b.undo();
+    assert.equal(w.get(5, 5).rot, 0, "one undo step reverts the turn");
+    b.setHover({ x: 8, z: 8 });
+    b.rotateHover();
+    assert.equal(b.getRot(), 1, "empty cell turns the ghost");
+});
