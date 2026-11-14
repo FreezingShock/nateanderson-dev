@@ -15,7 +15,8 @@ import { fabricator } from "./fabricator";
 import { windmill } from "./windmill";
 import { winder } from "./winder";
 import { springStore } from "./springstore";
-import { hub } from "./hub";
+import { hub, hubModel, hubStageFor, HUB_MAX_STAGE } from "./hub";
+export { hubStageFor, HUB_MAX_STAGE };
 import { orrery, orreryModel, ORRERY_STAGES, ORRERY_MAX_STAGE } from "./orrery";
 
 const MAKERS: Record<string, () => VoxelModel> = {
@@ -61,6 +62,14 @@ export function getMachineModel(id: string): VoxelModel | undefined {
         m = MAKERS[id]();
         cache.set(id, m);
     }
+    return m;
+}
+
+/** The hub at a growth stage (0..HUB_MAX_STAGE). Cached per stage. */
+export function getHubModel(stage: number): VoxelModel {
+    const k = "hub@" + Math.max(0, Math.min(HUB_MAX_STAGE, Math.floor(stage)));
+    let m = cache.get(k);
+    if (!m) cache.set(k, (m = hubModel(stage)));
     return m;
 }
 
