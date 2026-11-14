@@ -10,7 +10,7 @@ import { ResourceStrip } from "./resource-strip";
 import { BuildList } from "./build-bar";
 import { Inspector } from "./inspector";
 import { Milestones, PrestigeCard, Section } from "./factory-sections";
-import { SettingsList } from "./drawers";
+import { SettingsWindow, type SettingsSlots } from "./settings-window";
 import { ProductionWindow } from "./production-window";
 import { ExpeditionWindow } from "./expedition-window";
 import { ResearchScreen } from "./research-screen";
@@ -43,10 +43,13 @@ export function AutomationHud({
   data,
   actions,
   children,
+  settingsSlots,
 }: {
   data: HudData;
   actions: HudActions;
   children?: ReactNode;
+  /** Extra Settings rows supplied by the host (lighting, save and leave). */
+  settingsSlots?: SettingsSlots;
 }) {
   const [drawer, setDrawer] = useState<Drawer | null>(null);
   const [screen, setScreen] = useState<Screen | null>(null);
@@ -286,26 +289,11 @@ export function AutomationHud({
         {drawer === "stats" && (
           <ProductionWindow resources={data.resources} stats={data.stats} numberFormat={mode} onClose={() => setDrawer(null)} />
         )}
-
-        {drawer && drawer !== "stats" && (
-          <aside className="ab-drawer" role="dialog" aria-label={DRAWER_TITLE[drawer]}>
-            <header className="ab-head">
-              <h2 className="ab-h">
-                <Ico id={DRAWER_ICON[drawer]} />
-                {DRAWER_TITLE[drawer]}
-              </h2>
-              <button type="button" className="ab-text-btn" onClick={() => setDrawer(null)}>
-                Close
-              </button>
-            </header>
-            <div className="ab-drawer-body">
-              {drawer === "settings" && (
-                <SettingsList settings={data.settings} onChange={actions.onSettings} />
-              )}
-            </div>
-          </aside>
-        )}
       </div>
+
+      {drawer === "settings" && (
+        <SettingsWindow settings={data.settings} onChange={actions.onSettings} onClose={() => setDrawer(null)} slots={settingsSlots} />
+      )}
 
       {screen === "research" && (
         <ResearchScreen

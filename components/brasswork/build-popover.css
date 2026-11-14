@@ -64,7 +64,17 @@
 .bt-dock { position: absolute; right: 12px; top: 42%; z-index: 20; }
 /* Phone: the bottom tab row and next-step panel take the lower stage, so the Trash button sits higher on the right edge. */
 @media (max-width: 767px) {
-    .bt-dock { top: 200px; right: 12px; }
+    /* On phones the touch tool bar already has Remove, so the floating button would only overlap it. */
+    .bt-dock { display: none; }
 }
 
 .bp-note { margin: 0; font-size: 14px; color: var(--bw-dim); }
+
+/* The Remove tool is a styled tool-bar control, matching the touch tool bar, not a loose text button. */
+.bt-dock .bt {
+    min-height: 44px; padding: 0 14px; border: 2px solid #b8862f; border-radius: 0;
+    background: #1d160b; color: #f4e4b8; font: 600 13px/1 ui-monospace, SFMono-Regular, Menlo, monospace;
+    letter-spacing: .06em; text-transform: uppercase; cursor: pointer; box-shadow: 0 2px 0 #0d0905;
+}
+.bt-dock .bt:hover { background: #2a2010; }
+.bt-dock .bt[aria-pressed="true"] { background: #f2c14e; color: #1d160b; border-color: #f2c14e; }

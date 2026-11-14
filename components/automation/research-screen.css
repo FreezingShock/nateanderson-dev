@@ -1,7 +1,7 @@
 /* Research window content, inside the shared MenuWindow: tree left, detail right. No strips, no pills. */
 
 /* Wider frame than the default MenuWindow: the tree needs room. Scoped by its label so the shared frame stays untouched. */
-.bw-window[aria-label="Research"] { width: min(1160px, 100%); max-height: min(92dvh, 860px); }
+.bw-window[aria-label="Research"] { max-height: min(92dvh, 860px); }
 .bw-window[aria-label="Research"] .bw-window-body { display: flex; flex-direction: column; padding: 12px 14px 14px; overflow: hidden; }
 .bw-window[aria-label="Research"] .bw-window-body { flex: 1 1 auto; }
 .rs-inner { display: flex; flex-direction: column; min-height: 0; flex: 1 1 auto; }
