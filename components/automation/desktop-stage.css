@@ -1,0 +1,46 @@
+/* Full-desktop stage. On desktop the 3D view fills the whole game area edge to edge, and the top bar,
+   palette, factory panel and objective card float over it. Nothing reserves layout space for them, so the
+   canvas size is the full area. The insets below say how much of the edge the overlays cover, so the
+   island can be framed clear of them. Phone keeps its own stacked layout (see brasswork-skin.css). */
+.ab-root {
+  --bw-inset-top: 64px;
+  --bw-inset-left: 324px;
+  --bw-inset-right: 364px;
+  --bw-inset-bottom: 84px;
+}
+
+@media (min-width: 760px) {
+  .ab-root.bw { position: relative; height: 100%; overflow: hidden; }
+  .ab-root.bw .ab-top {
+    position: absolute; top: 0; left: 0; right: 0; z-index: 6; padding: 8px 14px;
+    pointer-events: auto;
+  }
+  .ab-root.bw .ab-body {
+    position: absolute; inset: 0; display: block; pointer-events: none; z-index: 1;
+  }
+  .ab-root.bw .ab-center {
+    position: absolute; inset: 0; display: block; pointer-events: none;
+  }
+  .ab-root.bw .ab-stage {
+    position: absolute; inset: 0; pointer-events: auto;
+  }
+  .ab-root.bw .ab-pal {
+    position: absolute; left: 12px; top: var(--bw-inset-top); bottom: 12px; width: 300px; margin: 0;
+    z-index: 5; pointer-events: auto; overflow: auto;
+  }
+  .ab-root.bw .ab-factory {
+    position: absolute; right: 12px; top: var(--bw-inset-top); bottom: 12px; width: 340px; margin: 0;
+    z-index: 5; pointer-events: auto; overflow: auto;
+  }
+  .ab-root.bw .ab-next {
+    position: absolute; left: 50%; bottom: 16px; transform: translateX(-50%); z-index: 5;
+    pointer-events: auto; margin: 0; width: fit-content; max-width: min(440px, 40vw);
+  }
+  .ab-root.bw .ab-more { pointer-events: auto; }
+  .ab-root.bw .ab-drawer { pointer-events: auto; z-index: 6; }
+}
+
+/* Floating Remove sits just left of the factory panel, clear of it and of the island centre. */
+@media (min-width: 760px) {
+  .bt-dock { right: calc(var(--bw-inset-right) + 12px); top: auto; bottom: calc(var(--bw-inset-bottom) + 12px); }
+}

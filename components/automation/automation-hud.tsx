@@ -16,6 +16,7 @@ import { ExpeditionWindow } from "./expedition-window";
 import { ResearchScreen } from "./research-screen";
 import { PrestigeScreen } from "./prestige-screen";
 import "./brasswork-skin.css";
+import "./desktop-stage.css";
 import { canAfford } from "./format";
 import { uiIconStyle } from "@/lib/automation/icons/ui";
 
