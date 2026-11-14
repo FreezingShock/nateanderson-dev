@@ -400,6 +400,8 @@ export type HudSettings = {
 export type HudData = {
   resources: ResourceView[];
   machines: MachineView[];
+  /** The palette id of the build tool that is armed for placing, or null. */
+  armed?: string | null;
   selected: MachineDetail | null;
   areas: AreaView[];
   milestones: MilestoneView[];
