@@ -120,6 +120,14 @@ export default function VoxelIslandBench() {
             (window as unknown as { __burstTimer?: number }).__burstTimer = timer;
         }
 
+        if (q.get("marks") === "1") {
+            // Bright debug blocks at each chute point the effects layer reports, to see where they really are.
+            const pts: [number, number, number][] = [[-1.5, 0.35, -2.0], [-2.0, 4.15, -3.5], [0.5, 0.35, -2.0], [1.0, 3.55, -3.5]];
+            island.addGlow("dbg-marks", (s) => {
+                for (const [x, y, z] of pts) s.box(x - 0.1, y - 0.1, z - 0.1, 0.2, 0.2, 0.2, 0xff00ff);
+            });
+        }
+
         if (q.get("cam") === "close") {
             // Close-up on the fx furnace and press chutes, for the chute check.
             const tx = Number(q.get("tx") ?? -1.5), tz = Number(q.get("tz") ?? -4.5);
