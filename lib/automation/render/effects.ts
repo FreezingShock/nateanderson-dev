@@ -118,6 +118,19 @@ export class MachineEffects {
         }
     }
 
+    /** Live particle count and registered emitters, for the debug stats. */
+    stats(): { live: number; emitters: number; working: number; points: string[] } {
+        let live = 0;
+        for (const p of this.parts) if (p.alive) live++;
+        let working = 0;
+        const points: string[] = [];
+        for (const [key, e] of this.emitters) {
+            if (e.working) working++;
+            points.push(`${key}:${e.item ? "item" : e.sparks ? "spark" : "smoke"}@${e.x.toFixed(2)},${e.y.toFixed(2)},${e.z.toFixed(2)}`);
+        }
+        return { live, emitters: this.emitters.size, working, points };
+    }
+
     /** Whether an emitter is registered under this id (machines that smoke, not every placed model). */
     hasEmitter(id: string): boolean {
         return this.emitters.has(id);

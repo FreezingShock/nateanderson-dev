@@ -86,6 +86,8 @@ export interface IslandStats {
     pendingRebuilds: number;
     drawCalls: number;
     triangles: number;
+    /** Machine effects: live particles, registered emitters, and emitters that are working. */
+    effects: { live: number; emitters: number; working: number; points: string[] };
 }
 
 export interface VoxelIsland {
@@ -676,6 +678,7 @@ export function createVoxelIsland(
                 pendingRebuilds: terrainGrid.dirty.size + objectGrid.dirty.size,
                 drawCalls,
                 triangles,
+                effects: effects.stats(),
             };
         },
         dispose() {

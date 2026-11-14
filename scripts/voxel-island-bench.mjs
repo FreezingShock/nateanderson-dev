@@ -65,6 +65,7 @@ for (const run of runs) {
   results.push({
     run: run.name,
     quality: later.qualityName,
+    fx: JSON.stringify(later.effects),
     frameMsAvg: +later.frameMs.toFixed(1),
     frameMsP95: +later.p95Ms.toFixed(1),
     fps: +later.fps.toFixed(1),
