@@ -177,9 +177,9 @@ export const mockHud: HudData = {
     { id: "foundry", name: "Copper ridge", note: "Opens after the first milestone", state: "locked" },
   ],
   milestones: [
-    { id: "m1", name: "First shelf", goal: "Deliver 100 plates", progress: 0.96, blueprintReward: 1, done: false },
-    { id: "m2", name: "Wired up", goal: "Deliver 50 wire", progress: 0.88, blueprintReward: 1, done: false },
-    { id: "m3", name: "Steady hands", goal: "Run 3 presses for 10 min", progress: 1, blueprintReward: 2, done: true },
+    { id: "m1", name: "First shelf", goal: "Deliver 100 plates", progress: 0.96, blueprintReward: 1, done: false, items: [{ id: "plate", name: "Iron plate", have: 96, need: 100 }] },
+    { id: "m2", name: "Wired up", goal: "Deliver 50 wire", progress: 0.88, blueprintReward: 1, done: false, items: [{ id: "wire", name: "Copper wire", have: 44, need: 50 }] },
+    { id: "m3", name: "Steady hands", goal: "Run 3 presses for 10 min", progress: 1, blueprintReward: 2, done: true, items: [{ id: "press", name: "Press runs", have: 3, need: 3 }] },
   ],
   blueprints: 3,
   research: [

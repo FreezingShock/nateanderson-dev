@@ -119,6 +119,8 @@ export function BrassworkHost() {
     }, []);
     const snap = useRef<(() => string) | null>(null);
     const snapshot = useCallback(() => snap.current?.() ?? null, []);
+    // The palette tool the player armed (null when none). Mirrors the input module's tool so the palette can show it.
+    const armedRef = useRef<string | null>(null);
     const ctl = useRef<{
         setTool: (id: string | null) => void;
         select: (id: string | null) => void;
@@ -240,6 +242,7 @@ export function BrassworkHost() {
             };
             const refresh = () => {
                 const d = hudData(world, CAT, selectedId, settings);
+                d.armed = armedRef.current;
                 const ms = d.milestones.filter((m) => m.done);
                 const rs = d.research.filter((r) => r.state === "done").length;
                 const unlocked = d.research.filter((r) => r.state !== "locked").length;
@@ -249,6 +252,7 @@ export function BrassworkHost() {
                     if (ms.some((m) => !doneMilestones.has(m.id))) {
                         bw("milestone");
                         life.burst("milestone", hx, hz);
+                        island.burst({ x: hx - W / 2, z: hz - D / 2 }, "milestone");
                     } else if (rs > doneResearch) {
                         bw("research");
                         life.burst("research", hx, hz);
@@ -312,6 +316,8 @@ export function BrassworkHost() {
                         bw("invalid");
                     } else if (e.type === "place" || e.type === "remove") {
                         bw(e.type);
+                        // One burst per changed cell, capped so a long drag stays readable.
+                        for (const c of e.cells.slice(0, 40)) island.burst(c, e.type);
                         setNote("");
                         syncScene();
                         refresh();
@@ -341,10 +347,20 @@ export function BrassworkHost() {
             let ghostKey = "";
             const updateGhost = () => {
                 const g = input.controller.build.ghost();
+                // A belt stroke glows as one path, cells in drag order, each facing the next.
+                if (g && g.tool.line && g.stroking && g.cells.length) {
+                    const pk = "path:" + g.cells.map((k) => `${k.x},${k.z},${k.rot},${k.valid ? 1 : 0}`).join(";");
+                    if (pk === ghostKey) return;
+                    if (!ghostKey.startsWith("path:")) island.clearGhost();
+                    ghostKey = pk;
+                    island.setGhostPath(g.cells.map((k) => ({ x: k.x, z: k.z, rot: k.rot, valid: k.valid })));
+                    return;
+                }
                 const c = g && g.cells.length ? { x: Math.min(...g.cells.map((k) => k.x)), z: Math.min(...g.cells.map((k) => k.z)), valid: g.cells.every((k) => k.valid) } : undefined;
                 const model = g ? getMachineModel(g.tool.id) : undefined;
                 const key = g && c && model ? `${g.tool.id}:${c.x},${c.z},${g.rot},${c.valid}` : "";
                 if (key === ghostKey) return;
+                if (ghostKey.startsWith("path:")) island.setGhostPath([]);
                 ghostKey = key;
                 if (g && c && model) {
                     island.setGhost(model, { x: c.x, z: c.z }, g.rot, c.valid);
@@ -428,6 +444,10 @@ export function BrassworkHost() {
                         return r;
                     },
                     refresh,
+                    // Arms a build tool by its id, the same call the palette makes. Lets the headless check skip the palette.
+                    setTool: (id: string | null) => input.controller.setToolById(id),
+                    armedTool: () => input.controller.build.getTool()?.id ?? null,
+                    ghostCells: () => (input.controller.build.ghost()?.cells ?? []).map((c) => [c.x, c.z, c.valid ? 1 : 0, c.reason ?? ""]),
                 };
             }
 
@@ -490,7 +510,11 @@ export function BrassworkHost() {
         };
     }, []);
 
-    const onBuild = useCallback((id: string) => ctl.current?.setTool(id), []);
+    const onBuild = useCallback((id: string) => {
+        // Tapping the armed row again disarms it.
+        armedRef.current = armedRef.current === id ? null : id;
+        ctl.current?.setTool(armedRef.current);
+    }, []);
     const onSelect = useCallback((id: string | null) => ctl.current?.select(id), []);
     const onResearch = useCallback((id: string) => ctl.current?.research(id), []);
     const onSetRecipe = useCallback((id: string) => ctl.current?.setRecipe(id), []);

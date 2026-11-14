@@ -328,6 +328,8 @@ export type MilestoneView = {
   progress: number; // 0..1
   blueprintReward: number;
   done: boolean;
+  /** One line per delivered item: what the player has and what the milestone needs. */
+  items: { id: string; name: string; have: number; need: number }[];
 };
 
 /** A research node, unlocked by spending blueprints. */
@@ -400,6 +402,8 @@ export type HudSettings = {
 export type HudData = {
   resources: ResourceView[];
   machines: MachineView[];
+  /** The palette id of the build tool that is armed for placing, or null. */
+  armed?: string | null;
   selected: MachineDetail | null;
   areas: AreaView[];
   milestones: MilestoneView[];
