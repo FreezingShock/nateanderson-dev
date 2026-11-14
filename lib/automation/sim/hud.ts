@@ -289,6 +289,12 @@ export function hudData(world: World, cat: Catalog = DEFAULT_CATALOG, selectedId
             progress: Math.max(0, progress),
             blueprintReward: m.blueprints,
             done,
+            items: m.deliver.map((s) => ({
+                id: s.item,
+                name: nameOf(cat, s.item),
+                have: Math.min(s.qty, world.progress.delivered[s.item] ?? 0),
+                need: s.qty,
+            })),
         };
     });
 
