@@ -279,7 +279,8 @@ export class PointerInput {
         if (this.pointers.size < 2) {
             this.pinchPrev = null;
             // A finger left over from a pinch does nothing until it lifts.
-            for (const q of this.pointers.values()) if (q.mode === "pinch") q.mode = "ignored";
+            // The finger left over from a pinch carries on as a pan, so the map keeps following it.
+            for (const q of this.pointers.values()) if (q.mode === "pinch") q.mode = "pan";
         }
         this.changed();
     };
