@@ -213,6 +213,8 @@ export interface Building {
     lane: BeltItem[];
     rr: number;
     charge: number; // wound spring: stored energy in kJ (battery); 0 for other buildings
+    /** Consumers: share of their power demand met on the last step (0 to 1). Set by the power pass; not saved. */
+    powerSat?: number;
 }
 
 export interface Deposit {
@@ -309,6 +311,22 @@ export type MachineDetail = MachineView & {
   powerKw?: number;
   /** Plain reason for a blocked or idle status, for example "No power" or "Output full". */
   reason?: string;
+  /** Generators: power produced right now, in kW. */
+  producedKw?: number;
+  /** Generators: most they can produce (their full rating), in kW. */
+  maxKw?: number;
+  /** Windmills: wind right now, 0 to 1. */
+  windPct?: number;
+  /** Generators: machines inside their range. */
+  fedCount?: number;
+  /** Generators: reach in cells (centre to centre). */
+  rangeCells?: number;
+  /** Consumers: power this machine needs, in kW. */
+  usedKw?: number;
+  /** Consumers: share of demand met (0 to 1). */
+  satisfied?: number;
+  /** Consumers: true when it gets all the power it needs. */
+  fullyPowered?: boolean;
 };
 
 /** Expedition areas, shown in the expedition drawer. */
