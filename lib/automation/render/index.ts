@@ -516,22 +516,38 @@ export function createVoxelIsland(
             // Chimney point: top middle of the footprint. Smoke only for the smelting and forming machines.
             const fw = model.footprint?.w ?? 1;
             const fd = model.footprint?.d ?? 1;
-            // Output chute: front centre, along the facing. Items leave here while the machine works.
-            const theta = -opts.rot! * (Math.PI / 2);
-            const fwd = (opts.rot ?? 0) % 2 ? fw : fd;
-            const dx = Math.sin(theta);
-            const dz = Math.cos(theta);
-            const gx = opts.cell.x + fw / 2;
-            const gz = opts.cell.z + fd / 2;
+            // Output chutes: anchored to the model's declared out ports (cell plus side), turned with the
+            // placement rotation. Items leave these mouths while the machine works.
             if (ITEM_MODELS.test(model.id)) {
-                effects.setItemEmitter(
-                    id,
-                    gx + dx * (fwd / 2 + 0.05),
-                    heightAt(opts.cell.x + 0.5, opts.cell.z + 0.5) + 0.35,
-                    gz + dz * (fwd / 2 + 0.05),
-                    dx,
-                    dz
-                );
+                const rot = opts.rot ?? 0;
+                const cx = opts.cell.x + fw / 2;
+                const cz = opts.cell.z + fd / 2;
+                const ports = model.ports?.out ?? [];
+                ports.forEach((port, i) => {
+                    // Port cell centre, relative to the footprint centre, before the placement turn.
+                    const lx = port.cell.x + 0.5 - fw / 2;
+                    const lz = port.cell.z + 0.5 - fd / 2;
+                    // Facing of the port itself, before the placement turn.
+                    const sideTheta = -port.side * (Math.PI / 2);
+                    const sdx = Math.sin(sideTheta);
+                    const sdz = Math.cos(sideTheta);
+                    // Turn both by the placement rotation (same convention as the model root).
+                    const t = -rot * (Math.PI / 2);
+                    const c = Math.cos(t);
+                    const s = Math.sin(t);
+                    const wx = cx + lx * c + lz * s;
+                    const wz = cz - lx * s + lz * c;
+                    const dx = sdx * c + sdz * s;
+                    const dz = -sdx * s + sdz * c;
+                    effects.setItemEmitter(
+                        `${id}#${i}`,
+                        wx + dx * 0.5,
+                        heightAt(wx, wz) + 0.35,
+                        wz + dz * 0.5,
+                        dx,
+                        dz
+                    );
+                });
             }
             if (SMOKING_MODELS.test(model.id)) {
                 effects.setEmitter(

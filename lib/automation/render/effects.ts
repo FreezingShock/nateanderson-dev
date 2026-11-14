@@ -93,11 +93,15 @@ export class MachineEffects {
 
     /** Output chute: while working, brass pieces leave the front of the machine along (dx, dz). */
     setItemEmitter(id: string, x: number, y: number, z: number, dx: number, dz: number): void {
-        this.emitters.set(`${id}#out`, { x, y, z, sparks: false, working: false, acc: 0, dx, dz, item: true });
+        this.emitters.set(id, { x, y, z, sparks: false, working: false, acc: 0, dx, dz, item: true });
     }
 
     removeEmitter(id: string): void {
         this.emitters.delete(id);
+        // Drop the item chutes too, so a removed machine stops emitting.
+        for (const key of [...this.emitters.keys()]) {
+            if (key.startsWith(`${id}#`)) this.emitters.delete(key);
+        }
     }
 
     clearEmitters(): void {
@@ -108,8 +112,10 @@ export class MachineEffects {
     setWorking(id: string, working: boolean): void {
         const e = this.emitters.get(id);
         if (e) e.working = working;
-        const out = this.emitters.get(`${id}#out`);
-        if (out) out.working = working;
+        // Item chutes register as `${id}#<n>`, one per declared out port.
+        for (const [key, e2] of this.emitters) {
+            if (key.startsWith(`${id}#`)) e2.working = working;
+        }
     }
 
     /** Whether an emitter is registered under this id (machines that smoke, not every placed model). */
