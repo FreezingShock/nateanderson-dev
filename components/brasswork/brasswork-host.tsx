@@ -29,6 +29,7 @@ import {
     type World,
 } from "@/lib/automation/sim";
 import type { VoxelIsland } from "@/lib/automation/render";
+import type { Emitter } from "@/lib/automation/render/life";
 import type { BuildWorld, MountedInput } from "@/lib/automation/input";
 import { getMachineModel } from "@/lib/automation/models/machines";
 import { pickBeltTile, type PieceKind, type PiecePlacement } from "@/lib/automation/models/belts";
@@ -127,7 +128,7 @@ export function BrassworkHost() {
         let dead = false;
         let cleanup = () => {};
         (async () => {
-            const [{ createVoxelIsland, heightAt }, { mount }] = await Promise.all([import("@/lib/automation/render"), import("@/lib/automation/input")]);
+            const [{ createVoxelIsland, heightAt }, { mount }, { attachLife }] = await Promise.all([import("@/lib/automation/render"), import("@/lib/automation/input"), import("@/lib/automation/render/life")]);
             const canvas = canvasRef.current;
             if (dead || !canvas) return;
             const { world, savedAt } = loadWorld();
@@ -137,6 +138,10 @@ export function BrassworkHost() {
 
             const island: VoxelIsland = createVoxelIsland(canvas, { quality: "auto", dither: true, timeOfDay: 0.4, cycle: false, orbit: false });
             [1.2, 2, 3].forEach((v, tier) => island.setBeltSpeed(tier, v));
+            // Island life: leaves, birds, fireflies, smoke, shore glints, drizzle and reward bursts.
+            const life = attachLife(island, heightAt);
+            // Handle for the browser console and headless captures: __bwLife.burst("milestone", 0, 0), __bwLife.setRain(1).
+            (window as unknown as { __bwLife?: typeof life }).__bwLife = life;
             // Natural scenery around the plateau; nothing grows on it, and trees keep clear of the machines.
             island.setScenery(
                 scatterProps({
@@ -219,15 +224,37 @@ export function BrassworkHost() {
             // Sound cues from what changed since the last refresh: a milestone finished, a blueprint bought.
             const doneMilestones = new Set<string>();
             let doneResearch = -1;
+            let unlockedCount = -1;
+            let hubStock = -1;
+            let lastDelivery = 0;
             let started = false;
+            // Where celebrations play: over the hub, or the board centre before one exists.
+            const hubAt = (): [number, number] => {
+                const hub = Object.values(world.buildings).find((b) => b.type === "hub");
+                return hub ? center(hub.x - 1, hub.z - 1, 3, 3) : [0, 0];
+            };
             const refresh = () => {
                 const d = hudData(world, CAT, selectedId, settings);
                 const ms = d.milestones.filter((m) => m.done);
                 const rs = d.research.filter((r) => r.state === "done").length;
+                const unlocked = d.research.filter((r) => r.state !== "locked").length;
+                const stockNow = d.resources.reduce((a, r) => a + r.amount, 0);
                 if (started) {
-                    if (ms.some((m) => !doneMilestones.has(m.id))) bw("milestone");
-                    else if (rs > doneResearch) bw("research");
+                    const [hx, hz] = hubAt();
+                    if (ms.some((m) => !doneMilestones.has(m.id))) {
+                        bw("milestone");
+                        life.burst("milestone", hx, hz);
+                    } else if (rs > doneResearch) {
+                        bw("research");
+                        life.burst("research", hx, hz);
+                    } else if (unlocked > unlockedCount && unlockedCount >= 0) life.burst("unlock", hx, hz);
+                    else if (stockNow > hubStock + 0.5 && performance.now() - lastDelivery > 2500) {
+                        lastDelivery = performance.now();
+                        life.burst("delivery", hx, hz);
+                    }
                 }
+                unlockedCount = unlocked;
+                hubStock = stockNow;
                 ms.forEach((m) => doneMilestones.add(m.id));
                 doneResearch = rs;
                 started = true;
@@ -296,7 +323,9 @@ export function BrassworkHost() {
             };
 
             // Push each machine's working flag, clock and charge to the renderer so parts move and lamps glow.
+            const emitters: Emitter[] = [];
             const pushStates = () => {
+                emitters.length = 0;
                 const charge = chargeOf(world, CAT);
                 const sat = world.power.satisfaction;
                 for (const id of drawn) {
@@ -305,7 +334,15 @@ export function BrassworkHost() {
                     const r = resolve(CAT, b.type);
                     const working = r ? (r.kind === "miner" ? sat > 0 : r.kind === "generator" ? true : b.crafting) : false;
                     island.setObjectState(`b${id}`, { working, t: world.time, charge: charge[id] ?? 1 });
+                    // Working crafters puff from the roof: coal smoke from kilns and furnaces, steam from the rest.
+                    if (working && r?.kind === "crafter" && emitters.length < 16) {
+                        const cells = footprintCells(b, r.footprint);
+                        const xs = cells.map((c) => c[0]), zs = cells.map((c) => c[1]);
+                        const [cx, cz] = center(Math.min(...xs), Math.min(...zs), Math.max(...xs) - Math.min(...xs) + 1, Math.max(...zs) - Math.min(...zs) + 1);
+                        emitters.push({ x: cx + 0.25, y: 1.35, z: cz - 0.2, kind: b.type === "kiln" || b.type === "furnace" ? "smoke" : "steam" });
+                    }
                 }
+                life.setEmitters(emitters);
             };
 
             ctl.current = {
@@ -345,6 +382,7 @@ export function BrassworkHost() {
                     settings = { ...settings, ...p };
                     bwSetEnabled(settings.sound);
                     island.setLowFx(settings.lowFx || settings.reduceMotion);
+                    life.setLowFx(settings.lowFx || settings.reduceMotion);
                     island.setSceneryDensity(settings.lowFx || settings.reduceMotion ? 0.5 : 1);
                     [1.2, 2, 3].forEach((v, tier) => island.setBeltSpeed(tier, settings.reduceMotion ? 0 : v));
                     refresh();
@@ -412,6 +450,7 @@ export function BrassworkHost() {
                 save();
                 input.destroy();
                 window.removeEventListener("resize", onResize);
+                life.dispose();
                 island.dispose();
                 bwHum(null);
                 ctl.current = null;

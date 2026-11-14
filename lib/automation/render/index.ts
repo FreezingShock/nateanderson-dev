@@ -151,10 +151,19 @@ export interface VoxelIsland {
     /** Stamp unlit glow voxels (furnace windows). Drawn as a separate flat mesh at 0xffd070. */
     stampGlow(build: (s: Stamper) => void): void;
     readonly camera: THREE.PerspectiveCamera;
+    /** The scene, for add-on layers such as island life (render/life). */
+    readonly scene: THREE.Scene;
+    /** Runs `fn` every rendered frame after the world animates. Returns an unsubscribe. */
+    onFrame(fn: FrameHook): () => void;
     /** The built-in orbit controls, or null when `orbit: false`. */
     readonly controls: OrbitControls | null;
     dispose(): void;
 }
+
+export type FrameHook = (
+    dt: number,
+    info: { time: number; timeOfDay: number; wind: number; lowFx: boolean }
+) => void;
 
 const DEFAULT_CAMERA = new THREE.Vector3(-9.5, 10.5, 14.5);
 const DEFAULT_TARGET = new THREE.Vector3(0.6, 0.2, 0.2);
@@ -256,6 +265,7 @@ export function createVoxelIsland(
     let cycle = options.cycle ?? true;
     let cycleT = options.timeOfDay ?? 0.5;
     let elapsed = 0;
+    const frameHooks = new Set<FrameHook>();
 
     const orbit = options.orbit ?? true;
     const controls: OrbitControls | null = orbit
@@ -356,6 +366,10 @@ export function createVoxelIsland(
         if (cycle) lighting.setTime(cycleT, !lowFx);
         lighting.sky.follow(camera.position);
         clouds.update();
+        if (frameHooks.size) {
+            const info = { time: elapsed, timeOfDay: cycleT, wind: windStrength, lowFx };
+            for (const fn of frameHooks) fn(dt, info);
+        }
 
         if (controls) {
             if (tweening) {
@@ -402,6 +416,11 @@ export function createVoxelIsland(
 
     return {
         camera,
+        scene,
+        onFrame(fn) {
+            frameHooks.add(fn);
+            return () => frameHooks.delete(fn);
+        },
         controls,
         stamp(build) {
             this.addObject(`anon-${anonCount++}`, build);
