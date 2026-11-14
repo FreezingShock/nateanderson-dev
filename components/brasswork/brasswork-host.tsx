@@ -37,6 +37,7 @@ import { scatterProps } from "@/lib/automation/models/props";
 import { BrassworkExtras, type AwayReport, type Mood } from "./extras";
 import { FirstRunGuide } from "./first-run";
 import { bw, bwHum, bwSetEnabled } from "@/lib/brasswork/sound";
+import "@/components/brasswork-ui/type.css";
 
 const W = 18;
 const D = 12;
