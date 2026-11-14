@@ -203,6 +203,8 @@ export interface Building {
     z: number;
     rot: Rot;
     recipe: string | null;
+    /** Unloader: the one item it pulls from storage or the hub. Unset (old saves, new unloaders) means idle until a choice is made. */
+    filter?: string | null;
     crafting: boolean;
     progress: number;
     input: Record<string, number>; // crafter input buffer; the hub keeps its stock here
