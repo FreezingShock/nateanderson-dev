@@ -449,3 +449,22 @@ test("ghost reason: a refused preview names why; a valid one has none", () => {
     b.setHover({ x: 1, z: 1 });
     assert.equal(b.ghost().reason, "nothing to remove");
 });
+
+test("zoomAt keeps the anchor ground point near the same screen spot", () => {
+    const cam = new A.OrbitCamera(A.DEFAULT_LIMITS, { target: { x: 16, y: 0, z: 16 }, yaw: 0.6, pitch: 0.9, distance: 30 });
+    const anchor = { x: 22, z: 20 };
+    cam.zoomAt(0.5, anchor);
+    cam.settle();
+    const t = cam.pose().target;
+    // Target moved toward the anchor by the zoom fraction: 1 - 15/30 = half way.
+    assert.ok(Math.abs(t.x - 19) < 1e-6 && Math.abs(t.z - 18) < 1e-6, `target ${t.x},${t.z}`);
+    assert.equal(cam.pose().distance, 15);
+});
+
+test("zoomAt with no anchor behaves like zoom", () => {
+    const cam = new A.OrbitCamera(A.DEFAULT_LIMITS, { target: { x: 16, y: 0, z: 16 }, distance: 30 });
+    cam.zoomAt(2, null);
+    cam.settle();
+    assert.equal(cam.pose().distance, 60);
+    assert.equal(cam.pose().target.x, 16);
+});

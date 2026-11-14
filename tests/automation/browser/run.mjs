@@ -218,13 +218,21 @@ const state = (page) => page.evaluate(() => window.__auto.snapshot());
 
     // Long-press on an empty cell with a machine tool turns the ghost.
     await page.evaluate(() => window.__auto.ctl.setToolById("machine"));
-    const e = await px(page, 9, 9);
+    // Pick an empty cell on screen. Pinch zoom moves the target toward the fingers, so a fixed cell can end up off screen.
+    const e = await page.evaluate(() => {
+        const ctl = window.__auto.ctl;
+        const r = document.querySelector("canvas").getBoundingClientRect();
+        const pt = ctl.pointer.cellAt(r.left + r.width / 2, r.top + r.height / 2);
+        return { x: r.left + r.width / 2, y: r.top + r.height / 2, cell: pt };
+    });
+    const empty = await page.evaluate((cell) => !window.__auto.snapshot().items.some((i) => cell && i.x === cell.x && i.z === cell.z), e.cell);
+    check("phone: long-press target is an empty cell on screen", !!e.cell && empty, JSON.stringify(e.cell));
     await touch("touchStart", [{ x: e.x, y: e.y, id: 1 }]);
     await page.waitForTimeout(450);
     await touch("touchEnd", []);
     await page.waitForTimeout(100);
     s = await state(page);
-    check("phone: long-press on an empty cell turns the ghost", s.rot === 1 && !s.items.some((i) => i.x === 9 && i.z === 9), `rot ${s.rot}`);
+    check("phone: long-press on an empty cell turns the ghost", s.rot === 1 && !s.items.some((i) => i.x === e.cell?.x && i.z === e.cell?.z), `rot ${s.rot}`);
 
     // Long-press on a placed machine turns that machine, in place.
     await page.evaluate(() => window.__auto.focus(6, 6));
