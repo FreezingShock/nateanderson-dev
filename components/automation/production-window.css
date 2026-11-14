@@ -1,40 +1,47 @@
 /* Production content inside the shared MenuWindow (frame, scrollbar and close live in components/brasswork-ui). */
 .ps-wrap { color: var(--bw-cream, #f0dfb8); font-family: var(--bw-font-text, inherit); }
 .ps-inner { display: flex; flex-direction: column; gap: 4px; }
-.ps-facts { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; margin: 4px 0 0; text-align: center; }
-.ps-facts div { display: flex; flex-direction: column; gap: 2px; }
-.ps-facts dt, .ps-kicker { font-size: var(--bw-t-section, 11.5px); font-weight: 700; letter-spacing: 0.16em; text-transform: uppercase; color: var(--bw-brass, #d29a3c); margin: 0; }
-.ps-facts dd { margin: 0; font-family: var(--bw-font-display, inherit); font-size: 18px; font-weight: 600; font-variant-numeric: tabular-nums lining-nums; }
+/* Gauge room: three dials on the wood, then a ledger on cream paper. Own identity: paper and ink, not the dark panel. */
+.ps-body { display: flex; flex-direction: column; gap: 14px; }
+.ps-room { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.ps-dial { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 8px 6px 10px; text-align: center; background: rgba(0, 0, 0, 0.28); box-shadow: inset 0 0 0 1px #6a4a22; }
+.ps-kicker { font-size: var(--bw-t-section, 11.5px); font-weight: 700; letter-spacing: 0.16em; text-transform: uppercase; color: var(--bw-brass, #d29a3c); margin: 0; }
+.ps-big { font-family: var(--bw-font-display, inherit); font-size: 16px; font-weight: 600; font-variant-numeric: tabular-nums lining-nums; }
+.ps-dial[data-short="true"] .ps-big { color: #f08a5a; }
+.ps-hint { font-size: var(--bw-t-hint, 12px); color: var(--bw-dim, #b09a6c); }
 
-.ps-power { display: flex; align-items: center; justify-content: center; gap: 16px; }
-.ps-power-text { display: flex; flex-direction: column; gap: 2px; }
-.ps-power-num { font-family: var(--bw-font-num, inherit); font-size: 18px; font-weight: 600; font-variant-numeric: tabular-nums; }
-.ps-power-num i { font-style: normal; color: var(--bw-dim, #b09a6c); font-size: 13px; }
-.ps-power[data-short="true"] .ps-power-num { color: #f08a5a; }
-.ps-hint { font-size: var(--bw-t-hint, 12px); color: var(--bw-dim, #b09a6c); font-weight: 400; letter-spacing: 0.02em; text-transform: none; }
-
-.ps-groups { display: grid; gap: 14px; }
-.ps-wrap[data-layout="board"] .ps-groups { grid-template-columns: 1fr 1fr; gap: 20px; }
-.ps-group ul { list-style: none; margin: 6px 0 0; padding: 0; display: grid; gap: 4px; }
-.ps-row { display: grid; align-items: center; gap: 10px; grid-template-columns: 28px minmax(76px, 1fr) minmax(40px, 90px) 72px 78px 44px; padding: 2px 0; border-bottom: 1px solid rgba(106, 74, 34, 0.45); }
-.ps-wrap[data-layout="board"] .ps-row { grid-template-columns: 28px 1fr 64px 64px; }
-.ps-wrap[data-layout="board"] .ps-bar, .ps-wrap[data-layout="board"] .ps-spark { display: none; }
+.ps-ledger { color: #2a1606; padding: 10px 14px 12px; box-shadow: inset 0 0 0 2px #8a6128, inset 0 0 24px rgba(90, 55, 15, 0.35);
+  background: repeating-linear-gradient(180deg, transparent 0 33px, rgba(120, 80, 30, 0.22) 33px 34px), #e4d3a0; }
+.ps-ledger-head { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; flex-wrap: wrap; border-bottom: 2px solid #6a4a22; padding-bottom: 6px; margin-bottom: 4px; }
+.ps-ledger-head h3 { margin: 0; font-family: var(--bw-font-display, inherit); font-size: 17px; letter-spacing: 0.06em; text-transform: uppercase; }
+.ps-ledger-head span { font-size: 12px; color: #5a3d17; }
+.ps-groups { display: grid; gap: 10px; }
+.ps-wrap[data-layout="board"] .ps-groups { grid-template-columns: 1fr 1fr; gap: 18px; }
+.ps-group ul { list-style: none; margin: 0; padding: 0; }
+.ps-group .ps-kicker { color: #6a4a22; margin: 6px 0 0; }
+.ps-row { display: grid; align-items: center; gap: 10px; grid-template-columns: 28px minmax(70px, 1fr) minmax(40px, 70px) 64px 112px 104px; min-height: 34px; }
+.ps-wrap[data-layout="board"] .ps-row { grid-template-columns: 28px 1fr 88px; }
+.ps-wrap[data-layout="board"] .ps-bar, .ps-wrap[data-layout="board"] .ps-spark, .ps-wrap[data-layout="board"] .ps-stock { display: none; }
 .ps-name { font-family: var(--bw-font-display, inherit); font-size: 15px; font-weight: 600; }
-.ps-bar { height: 8px; background: #1c1108; box-shadow: inset 0 0 0 1px #6a4a22; }
-.ps-bar i { display: block; height: 100%; background: linear-gradient(180deg, #f4cf7e, #d29a3c); }
-.ps-row[data-neg="true"] .ps-bar i { background: linear-gradient(180deg, #f08a5a, #b8542a); }
-.ps-spark polyline { stroke: var(--bw-brass-hi, #f4cf7e); }
-.ps-row[data-neg="true"] .ps-spark polyline { stroke: #f08a5a; }
-.ps-rate { font-family: var(--bw-font-num, inherit); font-size: 14px; font-weight: 600; text-align: right; font-variant-numeric: tabular-nums; }
-.ps-stock { font-family: var(--bw-font-num, inherit); font-size: 12px; text-align: right; color: var(--bw-dim, #b09a6c); font-variant-numeric: tabular-nums; }
-.ps-idle { margin: 8px 0 0; text-align: center; }
-.ps-close { align-self: center; margin-top: 10px; }
+.ps-bar { height: 8px; background: rgba(60, 35, 10, 0.25); box-shadow: inset 0 0 0 1px #6a4a22; }
+.ps-bar i { display: block; height: 100%; background: #6a4a22; }
+.ps-row[data-neg="true"] .ps-bar i { background: #a8431f; }
+.ps-spark polyline { stroke: #6a4a22; }
+.ps-row[data-neg="true"] .ps-spark polyline { stroke: #a8431f; }
+.ps-rate { font-family: var(--bw-font-num, inherit); font-size: 14px; font-weight: 700; text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.ps-row[data-neg="true"] .ps-rate { color: #a8431f; }
+.ps-stock { font-family: var(--bw-font-num, inherit); font-size: 12px; text-align: right; color: #5a3d17; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.ps-idle { margin: 8px 0 0; font-size: 12px; color: #5a3d17; }
+.ps-ledger .bwa-empty { color: #2a1606; }
 
 @media (max-width: 560px) {
-  .ps-backdrop { padding: 12px; }
-  .ps-body { padding: 2px 8px 8px; }
-  .ps-row { grid-template-columns: 28px 1fr 84px 50px; gap: 8px; }
-  .ps-bar, .ps-spark { display: none; }
+  .ps-room { gap: 6px; }
+  .ps-dial { padding: 6px 2px 8px; }
+  .ps-dial .bwa-gauge { --bwa-size: 44px !important; }
+  .ps-dial .ps-hint { display: none; }
+  .ps-big { font-size: 12.5px; }
+  .ps-kicker { letter-spacing: 0.1em; }
+  .ps-row { grid-template-columns: 28px 1fr 92px; row-gap: 0; }
+  .ps-bar, .ps-spark, .ps-stock { display: none; }
   .ps-wrap[data-layout="board"] .ps-groups { grid-template-columns: 1fr; }
-  .ps-facts dd { font-size: 16px; }
 }
