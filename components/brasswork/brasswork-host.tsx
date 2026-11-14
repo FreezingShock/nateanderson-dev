@@ -35,6 +35,7 @@ import { pickBeltTile, type PieceKind, type PiecePlacement } from "@/lib/automat
 import { WATER_LEVEL } from "@/lib/automation/render/config";
 import { scatterProps } from "@/lib/automation/models/props";
 import { BrassworkExtras, type AwayReport, type Mood } from "./extras";
+import { FirstRunGuide } from "./first-run";
 import { bw, bwHum, bwSetEnabled } from "@/lib/brasswork/sound";
 
 const W = 18;
@@ -438,6 +439,7 @@ export function BrassworkHost() {
                     Back to Games
                 </Link>
                 <BrassworkExtras snapshot={snapshot} away={away} mood={mood} onMood={onMood} />
+                <FirstRunGuide data={data} />
                 {note && <p className="bw-note">{note}</p>}
             </AutomationHud>
         </div>
