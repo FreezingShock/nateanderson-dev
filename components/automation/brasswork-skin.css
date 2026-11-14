@@ -258,3 +258,15 @@
 }
 .ab-root.bw .ab-site .ab-plain { margin: 4px 0 0; }
 .ab-root.bw .ab-site .ab-plain li { color: var(--bw-amber); text-shadow: 0 0 6px rgba(255, 179, 71, 0.35); font-size: 14px; }
+
+/* Sub-headings inside a palette panel (Logistics: Belts, Routing, Transfer, Storage, Docks). */
+.ab-root .ab-sub + .ab-sub { margin-top: 10px; }
+.ab-root .ab-sub-title {
+  margin: 0 0 4px;
+  padding: 2px 4px;
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ab-dim);
+  font-weight: 600;
+}
