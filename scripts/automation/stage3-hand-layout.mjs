@@ -51,8 +51,8 @@ export function phaseA({ world, belt, machine, ok, remove }) {
     };
 }
 
-export function runStage3Layout(minutes = 30) {
-    const res = runStage2Layout(minutes, WINDMILLS, phaseA);
+export function runStage3Layout(minutes = 30, size = { width: 18, depth: 12 }) {
+    const res = runStage2Layout(minutes, WINDMILLS, phaseA, size);
     const hub = res.world.buildings[res.world.hubId].input;
     const delivered = res.world.progress.delivered;
     return { ...res, hub, delivered };
