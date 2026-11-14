@@ -90,6 +90,79 @@ function bufferCap(cat: Catalog, rec: { inputs: { item: string; qty: number }[] 
 
 // A stage-N machine opens once a milestone of stage N-1 or later is delivered. Stage 1 finishes the first milestone,
 // and each later stage opens on the one before it, so the chain never waits on itself.
+function r0(cat: Catalog, type: string) {
+    return cat.tree.machines.find((m) => m.id === type);
+}
+
+// Drills mine the node under them. Rate is per minute at the node's purity, with the drill's speed and the site bonus.
+function minesOf(cat: Catalog, type: string, x: number, z: number, world: World): MachineDetail["mines"] {
+    const r = resolve(cat, type);
+    if (!r || r.kind !== "miner") return undefined;
+    const dep = world.deposits[`${x},${z}`];
+    const node = dep ? cat.tree.nodes.find((n) => n.item === dep.item) : undefined;
+    if (!dep || !node) return [];
+    return [{ resourceId: dep.item, name: nameOf(cat, dep.item), purity: dep.purity >= 2 ? "pure" : dep.purity < 1 ? "impure" : "normal", perMin: node.baseRatePerMin * dep.purity * r.speed * world.progress.bonus.miner }];
+}
+
+// A drill with a node shows "Mines iron ore" in the recipe line, rate per minute as the craft time.
+function minedRecipe(world: World, cat: Catalog, type: string, x: number, z: number): MachineDetail["recipe"] | undefined {
+    const mines = minesOf(cat, type, x, z, world);
+    if (!mines || mines.length === 0) return undefined;
+    const m = mines[0];
+    return { name: `Mines ${m.name}`, inputs: [], outputs: [{ resourceId: m.resourceId, amount: 1 }], seconds: 60 / m.perMin };
+}
+
+// Every unlocked recipe a crafter of this type can run, with its inputs, outputs and time.
+function recipeChoicesOf(world: World, cat: Catalog, type: string): MachineDetail["recipeChoices"] {
+    return unlockedRecipes(world, cat)
+        .map((id) => cat.tree.recipes.find((x) => x.id === id)!)
+        .filter((r) => r.machine === type)
+        .map((r) => ({ id: r.id, name: nameOf(cat, r.output.item), alternate: !!r.alternate, inputs: lines(r.inputs), outputs: lines([r.output]), seconds: r.craftSeconds }));
+}
+
+// A plain reason for a blocked or idle machine. Null when it is running.
+function reasonOf(world: World, cat: Catalog, b: Building, status: MachineStatus, rec: { id: string } | undefined): string | undefined {
+    if (status === "running") return undefined;
+    const r = resolve(cat, b.type);
+    if (!r) return undefined;
+    if (r.kind === "miner") {
+        if (!world.deposits[`${b.x},${b.z}`]) return "No resource node under it";
+        if (world.power.satisfaction < 1) return "No power";
+        return "Output full, take items off it";
+    }
+    if (r.kind === "crafter") {
+        if (!b.recipe || !rec) return "No recipe chosen";
+        if (world.power.satisfaction < 1) return "No power";
+        if (status === "starved") return "Waiting for inputs";
+        return "Output full, take items off it";
+    }
+    if (world.power.satisfaction < 1 && (r0(cat, b.type)?.powerKw ?? 0) > 0) return "No power";
+    return status === "blocked" ? "Blocked" : "Idle";
+}
+
+// Detail for a machine type that is not placed yet, so the palette's Details can show it before the first build.
+export function previewMachine(world: World, cat: Catalog, type: string): MachineDetail | null {
+    const palette = machinesFor(world, cat);
+    const m = palette.find((x) => x.id === type);
+    if (!m) return null;
+    const def = r0(cat, type);
+    return {
+        ...m,
+        status: "idle",
+        recipe: { name: "No recipe chosen", inputs: [], outputs: [], seconds: 0 },
+        rates: [],
+        buffers: [],
+        powerKw: def?.powerKw,
+        reason: m.unlocked ? undefined : m.lockedReason,
+        recipeChoices: def && def.id !== "drill" && cat.tree.recipes.some((x) => x.machine === type) ? recipeChoicesOf(world, cat, type) : undefined,
+        mines: def?.id === "drill" ? cat.tree.nodes.map((n) => ({ resourceId: n.item, name: nameOf(cat, n.item), purity: "normal", perMin: n.baseRatePerMin * world.progress.bonus.miner })) : undefined,
+    };
+}
+
+function machinesFor(world: World, cat: Catalog): MachineView[] {
+    return hudData(world, cat).machines;
+}
+
 export function unlockedMachine(world: World, cat: Catalog, unlockStage: number): boolean {
     if (unlockStage === 0) return true;
     return cat.tree.milestones.some((m) => m.stage >= unlockStage - 1 && world.progress.milestonesDone.includes(m.id));
@@ -175,7 +248,7 @@ export function hudData(world: World, cat: Catalog = DEFAULT_CATALOG, selectedId
                 status: f.status,
                 recipe: rec
                     ? { name: rec.id, inputs: lines(rec.inputs), outputs: lines([rec.output]), seconds: rec.craftSeconds }
-                    : { name: "No recipe", inputs: [], outputs: [], seconds: 0 },
+                    : minedRecipe(world, cat, b.type, b.x, b.z) ?? { name: "No recipe chosen", inputs: [], outputs: [], seconds: 0 },
                 recipeId: b.recipe,
                 recipeOptions: unlockedRecipes(world, cat)
                     .map((id) => cat.tree.recipes.find((x) => x.id === id)!)
@@ -185,6 +258,10 @@ export function hudData(world: World, cat: Catalog = DEFAULT_CATALOG, selectedId
                     ...Object.keys(f.makes).map((k) => ({ label: `${nameOf(cat, k)} out`, value: `${f.makes[k].toFixed(2)} /s` })),
                     ...Object.keys(f.uses).map((k) => ({ label: `${nameOf(cat, k)} in`, value: `${f.uses[k].toFixed(2)} /s` })),
                 ],
+                powerKw: r0(cat, b.type)?.powerKw,
+                reason: reasonOf(world, cat, b, f.status, rec),
+                mines: minesOf(cat, b.type, b.x, b.z, world),
+                recipeChoices: rec ? undefined : recipeChoicesOf(world, cat, b.type),
                 buffers: [...bufferIds].map((k) => ({
                     resourceId: k,
                     have: Math.floor((b.input[k] ?? 0) + (b.output[k] ?? 0)),
