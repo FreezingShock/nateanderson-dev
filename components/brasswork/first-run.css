@@ -1,0 +1,90 @@
+/* First-run guide: a sharp brass card with corner brackets. Bottom-left over the stage on desktop, under the photo row on phones. */
+.bw-guide,
+.bw-guide-tab {
+    position: absolute;
+    bottom: 64px;
+    left: 12px;
+    z-index: 5;
+    color: #f3e2bf;
+    font-family: inherit;
+    background: linear-gradient(180deg, #4a3118, #2a1b0e);
+    border: 2px solid var(--bw-brass-lo, #8a6a3a);
+    box-shadow: inset 0 1px 0 rgba(255, 220, 150, 0.35);
+}
+.bw-guide {
+    width: min(300px, calc(100% - 24px));
+    padding: 14px 16px 16px;
+    display: grid;
+    gap: 10px;
+}
+.bw-guide::before,
+.bw-guide::after {
+    content: "";
+    position: absolute;
+    width: 10px;
+    height: 10px;
+    border: 2px solid #e9c77d;
+    pointer-events: none;
+}
+.bw-guide::before { top: -5px; right: -5px; border-left: 0; border-bottom: 0; }
+.bw-guide::after { bottom: -5px; left: -5px; border-right: 0; border-top: 0; }
+.bw-guide-head {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 12px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+}
+.bw-guide-count { flex: 1; color: #e9c77d; }
+.bw-guide-link,
+.bw-guide-tab {
+    cursor: pointer;
+    font: inherit;
+}
+.bw-guide-link {
+    background: none;
+    border: 0;
+    color: #f3e2bf;
+    text-decoration: underline;
+    padding: 6px 2px;
+    min-height: 32px;
+}
+.bw-guide-tab {
+    padding: 8px 12px;
+    min-height: 40px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    font-size: 12px;
+}
+.bw-guide-steps {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    gap: 6px;
+    font-size: 15px;
+}
+.bw-guide-steps li {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    opacity: 0.55;
+}
+.bw-guide-steps li[data-state="current"] { opacity: 1; color: #fff3d6; }
+.bw-guide-steps li[data-state="done"] { opacity: 0.75; text-decoration: line-through; }
+.bw-guide-mark {
+    display: inline-grid;
+    place-items: center;
+    width: 22px;
+    height: 22px;
+    flex: none;
+    border: 2px solid #c59a52;
+    font-size: 12px;
+}
+.bw-guide-steps li[data-state="done"] .bw-guide-mark { background: #c59a52; color: #2a1b0e; }
+.bw-guide-hint { margin: 0; font-size: 15px; line-height: 1.45; }
+@media (max-width: 600px) {
+    .bw-guide, .bw-guide-tab { top: 52px; bottom: auto; left: 8px; }
+    .bw-guide { width: calc(100% - 16px); }
+}
