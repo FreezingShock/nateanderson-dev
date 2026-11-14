@@ -79,12 +79,12 @@ const STRUCTURES: StructureDef[] = [
 function logisticsPieces(): StructureDef[] {
     const junction = { w: 1, d: 1 };
     const brass: { id: string; name: string; cost: { item: string; qty: number }[]; note: string }[] = [
-        { id: "belt-splitter", name: "Splitter", cost: [{ item: "iron_rod", qty: 2 }, { item: "iron_plate", qty: 2 }], note: "Sends items front and both sides." },
-        { id: "belt-merger", name: "Merger", cost: [{ item: "iron_rod", qty: 2 }, { item: "iron_plate", qty: 2 }], note: "Joins belts; pushes forward only." },
-        { id: "belt-underground-in", name: "Tunnel entrance", cost: [{ item: "iron_plate", qty: 3 }, { item: "iron_rod", qty: 3 }], note: "Sends items up to 5 cells under other belts." },
-        { id: "belt-underground-out", name: "Tunnel exit", cost: [{ item: "iron_plate", qty: 3 }, { item: "iron_rod", qty: 3 }], note: "Where a tunnel comes back up." },
-        { id: "belt-loader", name: "Loader", cost: [{ item: "iron_plate", qty: 2 }, { item: "iron_rod", qty: 2 }], note: "Fills storage, the dock or the hub from belts." },
-        { id: "belt-unloader", name: "Unloader", cost: [{ item: "iron_plate", qty: 2 }, { item: "iron_rod", qty: 2 }], note: "Pulls from storage or the hub onto belts." },
+        { id: "belt-splitter", name: "Splitter", cost: [{ item: "iron_plate", qty: 4 }], note: "Sends items front and both sides." },
+        { id: "belt-merger", name: "Merger", cost: [{ item: "iron_plate", qty: 4 }], note: "Joins belts; pushes forward only." },
+        { id: "belt-underground-in", name: "Tunnel entrance", cost: [{ item: "iron_plate", qty: 6 }], note: "Sends items up to 5 cells under other belts." },
+        { id: "belt-underground-out", name: "Tunnel exit", cost: [{ item: "iron_plate", qty: 6 }], note: "Where a tunnel comes back up." },
+        { id: "belt-loader", name: "Loader", cost: [{ item: "iron_plate", qty: 4 }], note: "Fills storage, the dock or the hub from belts." },
+        { id: "belt-unloader", name: "Unloader", cost: [{ item: "iron_plate", qty: 4 }], note: "Pulls from storage or the hub onto belts." },
     ];
     const tierExtra: Record<"copper" | "steel", { item: string; qty: number }> = {
         copper: { item: "copper_wire", qty: 4 },
@@ -109,9 +109,9 @@ function logisticsPieces(): StructureDef[] {
         }
     }
     out.push(
-        { id: "belt-crate", name: "Crate", footprint: { w: 1, d: 1 }, unlockStage: 2, capacity: 200, buildCost: [{ item: "iron_plate", qty: 8 }, { item: "iron_screw", qty: 8 }], note: "Holds 200 of each item." },
+        { id: "belt-crate", name: "Crate", footprint: { w: 1, d: 1 }, unlockStage: 2, capacity: 200, buildCost: [{ item: "iron_plate", qty: 16 }], note: "Holds 200 of each item." },
         { id: "belt-strongbox", name: "Strongbox", footprint: { w: 2, d: 2 }, unlockStage: 3, capacity: 1000, buildCost: [{ item: "aluminium_casing", qty: 4 }, { item: "iron_plate", qty: 8 }], note: "Holds 1000 of each item." },
-        { id: "belt-dock", name: "Dock", footprint: { w: 3, d: 3 }, unlockStage: 2, buildCost: [{ item: "iron_plate", qty: 12 }, { item: "iron_screw", qty: 12 }, { item: "copper_wire", qty: 6 }], note: "A delivery sink, like the hub." },
+        { id: "belt-dock", name: "Dock", footprint: { w: 3, d: 3 }, unlockStage: 2, buildCost: [{ item: "iron_plate", qty: 24 }, { item: "copper_wire", qty: 6 }], note: "A delivery sink, like the hub." },
     );
     return out;
 }
