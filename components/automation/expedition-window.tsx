@@ -77,7 +77,7 @@ export function ExpeditionWindow({
     const maxSide = Math.max(1, ...prestige.sites.map((s) => Math.max(s.plan?.width ?? 0, s.plan?.depth ?? 0)));
 
     return (
-        <MenuWindow title="Expedition" art={<span style={uiIconStyle("expedition", 32)} aria-hidden="true" />} onClose={onClose}>
+        <MenuWindow size="wide" title="Expedition" art={<span style={uiIconStyle("expedition", 32)} aria-hidden="true" />} onClose={onClose}>
             <div className="ex-root">
                 <p className="ex-sub" data-ready={prestige.ready}>
                     {prestige.ready ? "Every milestone is delivered. Pick a site for your next workshop." : prestige.requirement}
@@ -85,6 +85,7 @@ export function ExpeditionWindow({
                     <ul className="ex-grid" aria-label="Island sites">
                         {prestige.sites.map((s) => {
                             const here = s.id === currentId;
+                            const open = prestige.ready || areas.find((a) => a.id === s.id)?.state === "open";
                             const plan = s.plan;
                             const size = plan ? floorWord(plan.width * plan.depth, cells) : "";
                             return (
@@ -129,10 +130,10 @@ export function ExpeditionWindow({
                                             <button
                                                 type="button"
                                                 className="ex-go"
-                                                disabled={!prestige.ready}
+                                                disabled={!open}
                                                 onClick={() => onPlan(s.id)}
                                             >
-                                                {prestige.ready ? "Plan the move" : "Locked"}
+                                                {open ? "Plan the move" : "Locked"}
                                             </button>
                                         )}
                                     </div>

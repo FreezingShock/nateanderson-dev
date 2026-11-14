@@ -13,8 +13,8 @@ export type MenuWindowProps = {
   onClose: () => void;
   /** Accessible name for the dialog. Defaults to the title. */
   label?: string;
-  /** "default" is 640px wide; "wide" is 960px, for menus with a lot of columns. Phones use the full width either way. */
-  size?: "default" | "wide";
+  /** "default" is 640px wide; "wide" is 960px; "xwide" is 1160px, for menus with a tree and a detail panel. Each is capped to the viewport. Phones use the full width. */
+  size?: "default" | "wide" | "xwide";
   children: ReactNode;
 };
 
