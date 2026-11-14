@@ -176,6 +176,7 @@ export function createVoxelIsland(
         powerPreference: "high-performance",
     });
     renderer.setPixelRatio(1);
+    renderer.info.autoReset = false;
     renderer.shadowMap.enabled = true;
     renderer.shadowMap.type = THREE.PCFShadowMap;
 
@@ -379,6 +380,8 @@ export function createVoxelIsland(
 
         models.update();
         scenery.update(camera.position);
+        // The post pass renders more than once per frame, so count across all of it, then reset.
+        renderer.info.reset();
         post.render(scene, camera);
         const info = renderer.info.render;
         drawCalls = info.calls;
