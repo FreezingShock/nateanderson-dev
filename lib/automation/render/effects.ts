@@ -13,7 +13,7 @@ interface Particle {
     age: number;
     life: number;
     size: number;
-    kind: 0 | 1; // 0 smoke, 1 spark
+    kind: 0 | 1 | 2; // 0 smoke, 1 spark, 2 item (a brass piece leaving a machine's chute)
 }
 
 const POOL = 320;
@@ -25,6 +25,9 @@ const SMOKE_COLOR = new THREE.Color(0x8a8078);
 const SMOKE_COLOR_END = new THREE.Color(0x4a4440);
 const SPARK_COLOR = new THREE.Color(0xffc060);
 const SPARK_COLOR_END = new THREE.Color(0xff6a2a);
+const ITEM_RATE = 4; // brass pieces per second while a machine works
+const ITEM_COLOR = new THREE.Color(0xd9a441);
+const ITEM_COLOR_END = new THREE.Color(0x8a6428);
 
 export class MachineEffects {
     readonly mesh: THREE.InstancedMesh;
@@ -38,6 +41,9 @@ export class MachineEffects {
             sparks: boolean;
             working: boolean;
             acc: number;
+            dx?: number;
+            dz?: number;
+            item?: boolean;
         }
     >();
     private density = 1;
@@ -85,6 +91,11 @@ export class MachineEffects {
         this.emitters.set(id, { x, y, z, sparks, working: false, acc: 0 });
     }
 
+    /** Output chute: while working, brass pieces leave the front of the machine along (dx, dz). */
+    setItemEmitter(id: string, x: number, y: number, z: number, dx: number, dz: number): void {
+        this.emitters.set(`${id}#out`, { x, y, z, sparks: false, working: false, acc: 0, dx, dz, item: true });
+    }
+
     removeEmitter(id: string): void {
         this.emitters.delete(id);
     }
@@ -97,6 +108,8 @@ export class MachineEffects {
     setWorking(id: string, working: boolean): void {
         const e = this.emitters.get(id);
         if (e) e.working = working;
+        const out = this.emitters.get(`${id}#out`);
+        if (out) out.working = working;
     }
 
     /** Whether an emitter is registered under this id (machines that smoke, not every placed model). */
@@ -161,10 +174,11 @@ export class MachineEffects {
             for (const e of this.emitters.values()) {
                 if (!e.working) continue;
                 e.acc += dt * this.density;
-                const rate = e.sparks ? SPARK_RATE : SMOKE_RATE;
+                const rate = e.item ? ITEM_RATE : e.sparks ? SPARK_RATE : SMOKE_RATE;
                 while (e.acc >= 1 / rate) {
                     e.acc -= 1 / rate;
-                    this.spawn(e);
+                    if (e.item) this.spawnItem(e);
+                    else this.spawn(e);
                 }
             }
         }
@@ -179,6 +193,7 @@ export class MachineEffects {
                 continue;
             }
             if (p.kind === 1) p.vy -= 3.2 * dt; // sparks fall
+            else if (p.kind === 2) p.vy -= 1.2 * dt; // item pieces drop a little as they slide off
             else p.vx += drift * dt; // smoke drifts with the wind
             p.x += p.vx * dt;
             p.y += p.vy * dt;
@@ -197,6 +212,24 @@ export class MachineEffects {
         this.mesh.dispose();
         this.mesh.removeFromParent();
         this.emitters.clear();
+    }
+
+    private spawnItem(e: { x: number; y: number; z: number; dx?: number; dz?: number }): void {
+        const slot = this.parts.findIndex((p) => !p.alive);
+        if (slot < 0) return;
+        const p = this.parts[slot];
+        p.alive = true;
+        p.kind = 2;
+        p.age = 0;
+        p.x = e.x;
+        p.y = e.y;
+        p.z = e.z;
+        const speed = 0.7 + Math.random() * 0.2;
+        p.vx = (e.dx ?? 0) * speed;
+        p.vz = (e.dz ?? 0) * speed;
+        p.vy = 0.35;
+        p.life = 0.9 + Math.random() * 0.3;
+        p.size = 0.09;
     }
 
     private spawn(e: { x: number; y: number; z: number; sparks: boolean }): void {
@@ -232,6 +265,7 @@ export class MachineEffects {
         this.m.compose(this.p, this.q, this.s);
         this.mesh.setMatrixAt(i, this.m);
         if (p.kind === 1) this.c.copy(SPARK_COLOR).lerp(SPARK_COLOR_END, k);
+        else if (p.kind === 2) this.c.copy(ITEM_COLOR).lerp(ITEM_COLOR_END, k);
         else this.c.copy(SMOKE_COLOR).lerp(SMOKE_COLOR_END, k);
         this.mesh.setColorAt(i, this.c);
     }

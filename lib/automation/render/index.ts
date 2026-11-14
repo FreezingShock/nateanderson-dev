@@ -186,6 +186,8 @@ export type FrameHook = (
 /** Machines that puff smoke while working, and the ones that also throw sparks. */
 const SMOKING_MODELS = /furnace|kiln|smelter|press|lathe|fabricator|assembler/;
 const SPARKING_MODELS = /furnace|smelter|press|fabricator/;
+/** Machines that move items out of a chute while working. */
+const ITEM_MODELS = /furnace|kiln|smelter|press|lathe|fabricator|assembler|drill/;
 /** Ghost and selection tints. Brass glows when valid; red flares when refused. */
 const GHOST_VALID_TINT = 0xffd27a;
 const GHOST_VALID_HOT = 0xfff2c0;
@@ -514,6 +516,23 @@ export function createVoxelIsland(
             // Chimney point: top middle of the footprint. Smoke only for the smelting and forming machines.
             const fw = model.footprint?.w ?? 1;
             const fd = model.footprint?.d ?? 1;
+            // Output chute: front centre, along the facing. Items leave here while the machine works.
+            const theta = -opts.rot! * (Math.PI / 2);
+            const fwd = (opts.rot ?? 0) % 2 ? fw : fd;
+            const dx = Math.sin(theta);
+            const dz = Math.cos(theta);
+            const gx = opts.cell.x + fw / 2;
+            const gz = opts.cell.z + fd / 2;
+            if (ITEM_MODELS.test(model.id)) {
+                effects.setItemEmitter(
+                    id,
+                    gx + dx * (fwd / 2 + 0.05),
+                    heightAt(opts.cell.x + 0.5, opts.cell.z + 0.5) + 0.35,
+                    gz + dz * (fwd / 2 + 0.05),
+                    dx,
+                    dz
+                );
+            }
             if (SMOKING_MODELS.test(model.id)) {
                 effects.setEmitter(
                     id,
