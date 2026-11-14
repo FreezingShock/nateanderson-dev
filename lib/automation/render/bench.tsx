@@ -86,6 +86,24 @@ export default function VoxelIslandBench() {
             }
         }
 
+        if (q.get("ghost") === "1") {
+            // A furnace ghost on open ground, valid (brass glow) or refused (red) by ?ghost=refused.
+            const furnace = getMachineModel("furnace");
+            if (furnace) {
+                island.setGhost(furnace, { x: -2, z: 3 }, 0, q.get("ghost") !== "refused");
+                island.setGhostValidity(q.get("ghost") !== "refused");
+            }
+        }
+
+        if (q.get("select") === "1") {
+            // A selected belt run (five cells in a line) and one selected building (2x2) for the outline check.
+            const run = [0, 1, 2, 3, 4].map((i) => ({ x: -6 + i, z: -1 }));
+            const building = [
+                { x: 4, z: 2 }, { x: 5, z: 2 }, { x: 4, z: 3 }, { x: 5, z: 3 },
+            ];
+            island.setHighlight([...run, ...building]);
+        }
+
         if (q.get("scenery") === "1") {
             island.setScenery(
                 scatterProps({
