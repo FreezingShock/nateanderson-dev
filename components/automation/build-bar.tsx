@@ -44,8 +44,11 @@ function collapseTiers(list: MachineView[]): MachineView[] {
   return out.map((row) => {
     const tiers = byBase.get(row.id);
     if (!tiers) return row;
+    // Show the highest open tier the player has already built, otherwise the cheapest open tier (brass),
+    // so a fresh save always has the brass Belt row to start with.
     const open = tiers.filter((t) => t.unlocked).sort((a, b) => TIER_RANK(b.id) - TIER_RANK(a.id));
-    const best = open[0] ?? tiers.sort((a, b) => TIER_RANK(a.id) - TIER_RANK(b.id))[0];
+    const built = open.find((t) => t.count > 0);
+    const best = built ?? open[open.length - 1] ?? [...tiers].sort((a, b) => TIER_RANK(a.id) - TIER_RANK(b.id))[0];
     const count = tiers.reduce((n, t) => n + t.count, 0);
     // Add the tier word only when the name does not already carry it (for example "Steel belt").
     const tier = TIER_RANK(best.id) === 2 ? "steel" : TIER_RANK(best.id) === 1 ? "copper" : "";
@@ -115,7 +118,9 @@ export function BuildList({
               <button
                 type="button"
                 className="ab-build-main"
-                disabled={!ok}
+                disabled={!m.unlocked}
+                data-afford={ok}
+                aria-label={`Select ${m.name}${ok ? "" : " (not enough resources yet)"}`}
                 onClick={() => onBuild(m.id)}
               >
                 <Glyph code={m.glyph} size={32} icon={m.id} />
@@ -129,7 +134,7 @@ export function BuildList({
                   </span>
                   <span className="ab-build-cost">
                     {m.unlocked
-                      ? costText(m.cost, resources, numberFormat)
+                      ? costText(m.cost, resources, numberFormat) || "Free"
                       : m.lockedReason}
                   </span>
                 </span>
