@@ -45,7 +45,27 @@ export interface BuildWorld {
     // Null when the item can go in this cell. Otherwise a short reason, such as "blocked" or "needs power".
     // The sim's check covers the whole footprint, so the ghost applies it to every cell of that footprint.
     check?(kind: string, x: number, z: number, rot: Rot): string | null;
+    // Machine ports on a cell, as the side the port opens to (input frame). Used for belt joins only.
+    portsAt?(x: number, z: number): Rot[];
 }
+
+// A place where a stroke's end meets something already on the board: an adjacent belt, or a machine port that faces it.
+export interface Join {
+    cell: Cell;
+    dir: "n" | "e" | "s" | "w";
+    kind: "belt" | "port";
+}
+
+// Compass letters for a unit step: n is toward -z, e toward +x, s toward +z, w toward -x.
+export function joinDir(dx: number, dz: number): Join["dir"] {
+    if (dx === 1) return "e";
+    if (dx === -1) return "w";
+    return dz < 0 ? "n" : "s";
+}
+
+const STEPS: [number, number][] = [[1, 0], [0, 1], [-1, 0], [0, -1]];
+// Step for each quarter turn, matching rotFromDelta in grid.ts: 0 is +z, 1 is +x, 2 is -z, 3 is -x.
+const ROT_STEPS: [number, number][] = [[0, 1], [1, 0], [0, -1], [-1, 0]];
 
 export interface Footprint {
     w: number;
@@ -101,6 +121,8 @@ export interface Ghost {
     validCount: number;
     // Why the first refused cell is refused, or null when the whole preview is valid. Shown next to the ghost.
     reason: string | null;
+    // Only while a line stroke runs: where its first and last cell meet existing belts or machine ports.
+    joins: Join[];
 }
 
 export type BuildEvent =
@@ -389,7 +411,38 @@ export class BuildController {
         }
         const firstBad = cells.find((c) => !c.valid && c.reason && c.reason !== "same");
         const reason = isDelete ? (validCount === 0 ? "nothing to remove" : null) : firstBad?.reason ?? null;
-        return { tool, cells, rot, stroking: this.stroke !== null, validCount, reason };
+        const joins = this.stroke && tool.line ? this.joinsFor(anchors) : [];
+        return { tool, cells, rot, stroking: this.stroke !== null, validCount, reason, joins };
+    }
+
+    // Neighbours of the path's two ends that are not part of the path: belts of a line kind, and machine ports facing in.
+    private joinsFor(path: Cell[]): Join[] {
+        if (path.length === 0) return [];
+        const inPath = new Set(path.map((c) => cellKey(c)));
+        const ends = path.length > 1 ? [path[0], path[path.length - 1]] : [path[0]];
+        const out: Join[] = [];
+        const seen = new Set<string>();
+        for (const end of ends) {
+            for (const [dx, dz] of STEPS) {
+                const n = { x: end.x + dx, z: end.z + dz };
+                const k = cellKey(n);
+                if (inPath.has(k) || seen.has(k)) continue;
+                const item = this.world.get(n.x, n.z);
+                if (item && this.lineKinds.has(item.kind)) {
+                    seen.add(k);
+                    out.push({ cell: { x: end.x, z: end.z }, dir: joinDir(dx, dz), kind: "belt" });
+                    continue;
+                }
+                const sides = this.world.portsAt?.(n.x, n.z) ?? [];
+                // A port faces the stroke end when its side points back at it: the step from the neighbour is (-dx, -dz).
+                const side = ROT_STEPS.findIndex(([sx, sz]) => sx === -dx && sz === -dz) as Rot;
+                if (sides.includes(side)) {
+                    seen.add(k);
+                    out.push({ cell: { x: end.x, z: end.z }, dir: joinDir(dx, dz), kind: "port" });
+                }
+            }
+        }
+        return out;
     }
 
     canUndo(): boolean {

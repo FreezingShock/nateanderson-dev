@@ -543,3 +543,24 @@ test("pencil: a fast jump still draws a connected path", () => {
     }
     assert.equal(cells.length, 7);
 });
+
+// Stroke joins: a line stroke reports belts and facing ports next to its two ends.
+test("a line stroke joins an adjacent belt and a port that faces it", async () => {
+    const { BuildController } = await import("../../lib/automation/input/build.ts");
+    const belt = { kind: "belt", rot: 0 };
+    const board = new Map();
+    board.set("3,0", belt);
+    const world = {
+        get: (x, z) => board.get(`${x},${z}`) ?? null,
+        set: (x, z, item) => board.set(`${x},${z}`, item),
+        portsAt: (x, z) => (x === 0 && z === 2 ? [2] : []),
+    };
+    const tool = { id: "belt", name: "Brass belt", footprint: { w: 1, d: 1 }, line: true };
+    const b = new BuildController({ world, board: { width: 20, depth: 20 }, lineKinds: ["belt"] });
+    b.setTool(tool);
+    b.beginStroke({ x: 2, z: 0 });
+    b.updateStroke({ x: 1, z: 0 });
+    const g = b.ghost();
+    const kinds = g.joins.map((j) => `${j.kind}:${j.cell.x},${j.cell.z}:${j.dir}`).sort();
+    assert.deepEqual(kinds, ["belt:2,0:e"]);
+});
