@@ -170,7 +170,7 @@ const RECIPES = [
 
     // Forming
     { id: "r_iron_plate", machine: "press", inputs: [{ item: "iron_ingot", qty: 3 }], output: { item: "iron_plate", qty: 2 }, craftSeconds: 3 },
-    { id: "r_iron_rod", machine: "lathe", inputs: [{ item: "iron_ingot", qty: 1 }], output: { item: "iron_rod", qty: 1 }, craftSeconds: 4 },
+    { id: "r_iron_rod", machine: "lathe", inputs: [{ item: "iron_ingot", qty: 1 }], output: { item: "iron_rod", qty: 1 }, craftSeconds: 2 },
     { id: "r_iron_screw", machine: "lathe", inputs: [{ item: "iron_rod", qty: 1 }], output: { item: "iron_screw", qty: 4 }, craftSeconds: 2 },
     { id: "r_copper_wire", machine: "drawer", inputs: [{ item: "copper_ingot", qty: 1 }], output: { item: "copper_wire", qty: 2 }, craftSeconds: 2 },
     { id: "r_aluminium_sheet", machine: "press", inputs: [{ item: "aluminium_ingot", qty: 3 }], output: { item: "aluminium_sheet", qty: 2 }, craftSeconds: 3 },
