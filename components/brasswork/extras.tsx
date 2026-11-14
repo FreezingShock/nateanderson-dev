@@ -130,9 +130,6 @@ export function BrassworkExtras({ snapshot, away, mood, onMood }: { snapshot: ()
                         <button type="button" role="menuitem" className="bx-tools-item" onClick={() => { setToolsOpen(false); photo(); }}>
                             Take a photo <kbd>P</kbd>
                         </button>
-                        <button type="button" role="menuitem" className="bx-tools-item" onClick={() => onMood(MOODS[(MOODS.indexOf(mood) + 1) % MOODS.length])}>
-                            Lighting: {mood} <kbd>L</kbd>
-                        </button>
                         <button type="button" role="menuitem" className="bx-tools-item" onClick={() => { setToolsOpen(false); setCodex(true); }}>
                             Machine guide <kbd>C</kbd>
                         </button>

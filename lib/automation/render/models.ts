@@ -49,6 +49,8 @@ interface Placed {
 const HALF_TURN = Math.PI / 2;
 /** Ghost tints. Valid is warm brass glow, refused is a red flare. */
 const GHOST_VALID = 0xffd27a;
+/** Glow brightness of a machine that is not working. */
+const IDLE_GLOW = 0.3;
 const GHOST_REFUSED = 0xff4a3a;
 
 /** Pivot of a part in world units, where the baked geometry is at pivot + pos. */
@@ -261,7 +263,11 @@ export class ModelRenderer {
             // Offset runs along the animation axis, in voxels.
             rig.pivot.rotation[pose.axis] = pose.angle;
             rig.pivot.position[pose.axis] += pose.offset * 0.1;
-            if (rig.glow) rig.glow.color.setScalar(pose.glow * p.charge);
+            // Idle machines keep a dim glow, so a stopped machine reads as stopped, not as switched off.
+            if (rig.glow)
+                rig.glow.color.setScalar(
+                    pose.glow * p.charge * (p.working ? 1 : IDLE_GLOW)
+                );
         }
     }
 

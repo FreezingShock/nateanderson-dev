@@ -485,6 +485,15 @@ export function BrassworkHost() {
                     // Arms a build tool by its id, the same call the palette makes. Lets the headless check skip the palette.
                     setTool: (id: string | null) => input.controller.setToolById(id),
                     armedTool: () => input.controller.build.getTool()?.id ?? null,
+                    // Close-up for visual checks: moves the orbit camera to look at (tx, ty, tz) from `distance` away.
+                    setCamera: (tx: number, ty: number, tz: number, distance: number) => {
+                        const c = island.controls;
+                        if (!c) return false;
+                        c.target.set(tx, ty, tz);
+                        island.camera.position.set(tx - distance * 0.6, ty + distance * 0.7, tz + distance * 0.8);
+                        c.update();
+                        return true;
+                    },
                     ghostCells: () => (input.controller.build.ghost()?.cells ?? []).map((c) => [c.x, c.z, c.valid ? 1 : 0, c.reason ?? ""]),
                 };
             }
