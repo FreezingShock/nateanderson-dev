@@ -65,6 +65,11 @@ export function AutomationHud({
   }, [drawer, screen]);
 
   const toggle = (d: Drawer) => setDrawer((cur) => (cur === d ? null : d));
+  // Phone: the inspector lives in the Milestones sheet, so opening a machine's details brings that sheet up.
+  const selectedKey = data.selected?.id ?? null;
+  useEffect(() => {
+    if (selectedKey !== null) setSheet("factory");
+  }, [selectedKey]);
   const selectedId = data.selected?.id ?? null;
   const next = data.nextStep;
 

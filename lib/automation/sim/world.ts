@@ -562,21 +562,35 @@ function updatePower(world: World, cat: Catalog, defs: Map<number, Resolved>, dt
             demand += r.power;
         }
     }
-    // How many consumers each generator reaches, so its output can be shared.
+    // Each generator's output is shared among the consumers it reaches. A share a consumer does not need
+    // (it is already full) goes to the others that generator still reaches, so power is not stranded.
     const reach = gens.map((g) => consumers.filter((c) => Math.max(Math.abs(c.cx - g.cx), Math.abs(c.cz - g.cz)) <= g.range));
-    const received = new Map<number, number>();
-    gens.forEach((g, gi) => {
-        const share = g.out / Math.max(1, reach[gi].length);
-        for (const c of reach[gi]) received.set(c.id, (received.get(c.id) ?? 0) + share);
-    });
-    const sat = new Map<number, number>();
-    let got = 0;
-    for (const c of consumers) {
-        const v = Math.min(1, (received.get(c.id) ?? 0) / c.need);
-        sat.set(c.id, v);
-        got += Math.min(c.need, received.get(c.id) ?? 0);
+    const got = new Map<number, number>();
+    const left = gens.map((g) => g.out);
+    for (let round = 0; round < 8; round++) {
+        let moved = false;
+        gens.forEach((_, gi) => {
+            const open = reach[gi].filter((c) => (got.get(c.id) ?? 0) < c.need - 1e-9);
+            if (open.length === 0 || left[gi] <= 1e-9) return;
+            const offer = left[gi] / open.length;
+            for (const c of open) {
+                const take = Math.min(offer, c.need - (got.get(c.id) ?? 0));
+                if (take <= 1e-9) continue;
+                got.set(c.id, (got.get(c.id) ?? 0) + take);
+                left[gi] -= take;
+                moved = true;
+            }
+        });
+        if (!moved) break;
     }
-    world.power = { supply, demand, satisfaction: demand <= 0 ? 1 : Math.min(1, got / demand) };
+    const sat = new Map<number, number>();
+    let delivered = 0;
+    for (const c of consumers) {
+        const v = Math.min(1, (got.get(c.id) ?? 0) / c.need);
+        sat.set(c.id, v);
+        delivered += Math.min(c.need, got.get(c.id) ?? 0);
+    }
+    world.power = { supply, demand, satisfaction: demand <= 0 ? 1 : Math.min(1, delivered / demand) };
     return sat;
 }
 

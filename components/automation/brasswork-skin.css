@@ -299,3 +299,5 @@
 .ab-root .ab-build-main .ab-build-name { overflow-wrap: anywhere; }
 .ab-root .ab-build-row .ab-info { flex: none; align-self: center; min-width: 76px; min-height: 40px; }
 .ab-root .ab-build-row[data-selected="true"] .ab-info { outline: 2px solid #ffd98a; }
+.ab-inspect .ab-inspect-name { margin: 0; font-size: 18px; line-height: 1.2; position: relative; z-index: 1; }
+.ab-inspect .ab-inspect-head .ab-text-btn { position: relative; z-index: 2; }
