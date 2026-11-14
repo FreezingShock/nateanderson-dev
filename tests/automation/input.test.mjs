@@ -157,16 +157,18 @@ test("drag a belt line: ghost snaps, invalid cells skipped, one undo reverts the
     b.updateStroke({ x: 9, z: 4 });
     const g = b.ghost();
     assert.equal(g.stroking, true);
-    assert.equal(g.cells.length, 6, "dominant axis x, from 4 to 9");
-    assert.equal(g.rot, 1);
-    assert.equal(g.validCount, 5);
-    assert.equal(b.endStroke(), 5);
+    // Pencil: east from 4 to 9 along z=2, then turns south to z=4. Eight cells.
+    assert.equal(g.cells.length, 8, "east run then a turn south");
+    assert.equal(g.rot, 0, "the last cell faces the way the stroke was going (south)");
+    assert.equal(g.validCount, 7, "the blocked cell at 7,2 is skipped");
+    assert.equal(b.endStroke(), 7);
     assert.equal(world.get(7, 2), null);
-    assert.deepEqual(world.get(5, 2), { kind: "belt", rot: 1 });
+    assert.deepEqual(world.get(5, 2), { kind: "belt", rot: 1 }, "mid-run cells face east");
+    assert.deepEqual(world.get(9, 3), { kind: "belt", rot: 0 }, "the turn faces south");
     assert.ok(b.undo());
     assert.equal(world.cells.size, 0, "one undo reverts the whole stroke");
     assert.ok(b.redo());
-    assert.equal(world.cells.size, 5);
+    assert.equal(world.cells.size, 7);
 });
 
 test("rotate changes the ghost; placed items keep the rotation they had", () => {
@@ -508,4 +510,36 @@ test("runAt follows connected line pieces only; removeCells clears a whole run i
     b.undo();
     assert.equal(w.get(4, 3)?.kind, "belt", "one undo brings the whole run back");
     assert.equal(b.getHighlight().length, 0);
+});
+
+test("pencil: dragging back over the stroke erases its tail; a stroke is one undo step", () => {
+    const world = memWorld();
+    const b = new A.BuildController({ world, board });
+    b.setTool(belt);
+    b.beginStroke({ x: 2, z: 2 });
+    b.updateStroke({ x: 2, z: 6 });
+    assert.equal(b.ghost().cells.length, 5, "south from 2 to 6");
+    b.updateStroke({ x: 2, z: 4 });
+    assert.equal(b.ghost().cells.length, 3, "retracing to 4 erases the last two cells");
+    b.updateStroke({ x: 5, z: 4 });
+    assert.equal(b.ghost().cells.length, 6, "then east from 4 to 5 adds cells again");
+    assert.equal(b.endStroke(), 6);
+    assert.equal(world.cells.size, 6);
+    b.undo();
+    assert.equal(world.cells.size, 0, "undo removes the whole stroke at once");
+});
+
+test("pencil: a fast jump still draws a connected path", () => {
+    const world = memWorld();
+    const b = new A.BuildController({ world, board });
+    b.setTool(belt);
+    b.beginStroke({ x: 0, z: 0 });
+    b.updateStroke({ x: 3, z: 3 });
+    const cells = b.ghost().cells.map((c) => `${c.x},${c.z}`);
+    for (let i = 1; i < cells.length; i++) {
+        const [ax, az] = cells[i - 1].split(",").map(Number);
+        const [bx, bz] = cells[i].split(",").map(Number);
+        assert.equal(Math.abs(ax - bx) + Math.abs(az - bz), 1, "every step is one cell");
+    }
+    assert.equal(cells.length, 7);
 });
