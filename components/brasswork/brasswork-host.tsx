@@ -254,7 +254,12 @@ export function BrassworkHost() {
             const ox = W / 2;
             const oz = D / 2;
             const buildWorld: BuildWorld = {
-                get: (x, z) => grid.get(x + ox, z + oz),
+                // The grid reports anchors in sim cells. Shift them back so every anchor the input layer sees is in its frame.
+                get: (x, z) => {
+                    const it = grid.get(x + ox, z + oz);
+                    if (!it || !it.anchor) return it;
+                    return { ...it, anchor: { x: it.anchor.x - ox, z: it.anchor.z - oz } };
+                },
                 set: (x, z, item) => {
                     const r = grid.set(x + ox, z + oz, item);
                     if (!r.ok) setNote(r.reason);
@@ -284,7 +289,8 @@ export function BrassworkHost() {
                         refresh();
                     } else if (e.type === "select") {
                         // A short click or tap on a placed building (no tool active) opens its inspector.
-                        const b = buildingAt(world, e.cell.x, e.cell.z, CAT);
+                        // e.cell is in the shared input frame; the sim is offset by half the board (see buildWorld below).
+                        const b = buildingAt(world, e.cell.x + W / 2, e.cell.z + D / 2, CAT);
                         selectedId = b ? b.id : null;
                         refresh();
                         // Quick actions by the piece. Same click, so the inspector and the pop-up open together.

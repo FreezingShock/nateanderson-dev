@@ -66,3 +66,5 @@
 @media (max-width: 767px) {
     .bt-dock { top: 200px; right: 12px; }
 }
+
+.bp-note { margin: 0; font-size: 14px; color: var(--bw-dim); }

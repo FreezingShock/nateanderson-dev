@@ -5,6 +5,7 @@
 // The inspector (#379) still opens on the same click. This pop-up is the fast path: it sits next to the piece and closes
 // on Escape, on a press outside it, or when the piece goes away.
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
+import { createPortal } from "react-dom";
 import type { InputController } from "@/lib/automation/input";
 import "./build-popover.css";
 
@@ -69,27 +70,33 @@ export function BuildPopover({ input, anchor, kind, kindLabel, x, y, lineKinds, 
         onClose();
     };
 
-    return (
+    // Portalled to the body so an ancestor's transform or overflow can't move it off the piece.
+    const panel = (
         <div ref={ref} className="bp bw" role="dialog" aria-label={`${kindLabel} actions`} style={{ left, top }}>
             <p className="bp-title">{kindLabel}</p>
             <div className="bp-actions">
-                {isLine && lineCount === 0 && (
+                {kind === "hub" && <p className="bp-note">The hub is fixed in place.</p>}
+                {kind !== "hub" && isLine && lineCount === 0 && (
                     <button type="button" className="bp-btn" onClick={selectLine}>
                         Select whole line
                     </button>
                 )}
-                {isLine && lineCount > 0 && (
+                {kind !== "hub" && isLine && lineCount > 0 && (
                     <button type="button" className="bp-btn" data-tone="danger" onClick={removeLine}>
                         Remove {lineCount} belts
                     </button>
                 )}
-                <button type="button" className="bp-btn" onClick={rotate}>
-                    Rotate
-                </button>
-                <button type="button" className="bp-btn" data-tone="danger" onClick={remove}>
-                    Remove
-                </button>
-                {isLine && lineCount > 0 && (
+                {kind !== "hub" && (
+                    <>
+                        <button type="button" className="bp-btn" onClick={rotate}>
+                            Rotate
+                        </button>
+                        <button type="button" className="bp-btn" data-tone="danger" onClick={remove}>
+                            Remove
+                        </button>
+                    </>
+                )}
+                {kind !== "hub" && isLine && lineCount > 0 && (
                     <button type="button" className="bp-btn" data-tone="ghost" onClick={() => build.setHighlight([])}>
                         Clear selection
                     </button>
@@ -97,6 +104,7 @@ export function BuildPopover({ input, anchor, kind, kindLabel, x, y, lineKinds, 
             </div>
         </div>
     );
+    return typeof document === "undefined" ? panel : createPortal(panel, document.body);
 }
 
 // A visible trash can for the delete tool. Desktop had only the X key and Delete, which nobody found.
