@@ -301,6 +301,14 @@ export type MachineDetail = MachineView & {
   /** Crafters only: the building's current recipe id and every unlocked recipe it can run (base and alternates). */
   recipeId?: string | null;
   recipeOptions?: { id: string; name: string; alternate: boolean }[];
+  /** Crafters with no recipe chosen: every unlocked recipe with its inputs, outputs and craft time. */
+  recipeChoices?: { id: string; name: string; alternate: boolean; inputs: Line[]; outputs: Line[]; seconds: number }[];
+  /** Drills: each resource node this machine can mine, with the output per minute at the node's purity. */
+  mines?: { resourceId: string; name: string; purity: string; perMin: number }[];
+  /** Power use in kW, from the machine's power draw. */
+  powerKw?: number;
+  /** Plain reason for a blocked or idle status, for example "No power" or "Output full". */
+  reason?: string;
 };
 
 /** Expedition areas, shown in the expedition drawer. */
