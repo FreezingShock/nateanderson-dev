@@ -39,6 +39,7 @@ import {
 } from "../models/belts";
 import type { Matrix4 } from "three";
 import { FrameGovernor } from "./governor";
+import { MachineEffects } from "./effects";
 
 export { heightAt, Stamper, VoxelGrid, TERRAIN_CELL, OBJECT_CELL };
 export { QUALITY_PRESETS } from "./config";
@@ -151,9 +152,27 @@ export interface VoxelIsland {
     /** Stamp unlit glow voxels (furnace windows). Drawn as a separate flat mesh at 0xffd070. */
     stampGlow(build: (s: Stamper) => void): void;
     readonly camera: THREE.PerspectiveCamera;
+    /** The scene, for add-on layers such as island life (render/life). */
+    readonly scene: THREE.Scene;
+    /** Runs `fn` every rendered frame after the world animates. Returns an unsubscribe. */
+    onFrame(fn: FrameHook): () => void;
     /** The built-in orbit controls, or null when `orbit: false`. */
     readonly controls: OrbitControls | null;
     dispose(): void;
+}
+
+export type FrameHook = (
+    dt: number,
+    info: { time: number; timeOfDay: number; wind: number; lowFx: boolean }
+) => void;
+
+/** Machines that puff smoke while working, and the ones that also throw sparks. */
+const SMOKING_MODELS = /furnace|kiln|smelter|press|lathe|fabricator|assembler/;
+const SPARKING_MODELS = /furnace|smelter|press|fabricator/;
+/** Smoke starts just above the model's top, in world units. */
+function chimneyHeight(model: VoxelModel): number {
+    const h = model.size?.[1] ?? 10;
+    return h * model.voxel + 0.05;
 }
 
 const DEFAULT_CAMERA = new THREE.Vector3(-9.5, 10.5, 14.5);
@@ -176,6 +195,7 @@ export function createVoxelIsland(
         powerPreference: "high-performance",
     });
     renderer.setPixelRatio(1);
+    renderer.info.autoReset = false;
     renderer.shadowMap.enabled = true;
     renderer.shadowMap.type = THREE.PCFShadowMap;
 
@@ -199,6 +219,7 @@ export function createVoxelIsland(
     const objectMesher = new ChunkMesher(objectGrid, blocks, blockMaterial);
     const models = new ModelRenderer(scene, heightAt);
     const scenery = new Scenery(scene);
+    const effects = new MachineEffects(scene);
     // Belt kit, created on first use. Its slats and gears run on the GPU from one phase per tier.
     let belts: BeltKit | null = null;
     const ensureBelts = (): BeltKit => {
@@ -256,6 +277,7 @@ export function createVoxelIsland(
     let cycle = options.cycle ?? true;
     let cycleT = options.timeOfDay ?? 0.5;
     let elapsed = 0;
+    const frameHooks = new Set<FrameHook>();
 
     const orbit = options.orbit ?? true;
     const controls: OrbitControls | null = orbit
@@ -304,6 +326,7 @@ export function createVoxelIsland(
         level = clampLevel(next);
         const preset = QUALITY_PRESETS[level];
         grass.setDensity(preset.grassDensity);
+        effects.setDensity(preset.grassDensity);
         lighting.setShadows(preset.shadows);
         post.resize(
             canvas.width,
@@ -349,6 +372,8 @@ export function createVoxelIsland(
             if (cycle) cycleT += dt / DAY_LENGTH_SEC;
         }
         animUniforms.uTime.value = elapsed;
+        effects.setWind(windStrength);
+        effects.update(dt);
         animUniforms.uWind.value = lowFx ? 0 : windStrength / 0.5;
         animUniforms.uWave.value = lowFx ? 0 : 1;
         // Belts keep moving under low fx: one uniform per tier, so it costs nothing.
@@ -356,6 +381,10 @@ export function createVoxelIsland(
         if (cycle) lighting.setTime(cycleT, !lowFx);
         lighting.sky.follow(camera.position);
         clouds.update();
+        if (frameHooks.size) {
+            const info = { time: elapsed, timeOfDay: cycleT, wind: windStrength, lowFx };
+            for (const fn of frameHooks) fn(dt, info);
+        }
 
         if (controls) {
             if (tweening) {
@@ -379,6 +408,8 @@ export function createVoxelIsland(
 
         models.update();
         scenery.update(camera.position);
+        // The post pass renders more than once per frame, so count across all of it, then reset.
+        renderer.info.reset();
         post.render(scene, camera);
         const info = renderer.info.render;
         drawCalls = info.calls;
@@ -402,6 +433,11 @@ export function createVoxelIsland(
 
     return {
         camera,
+        scene,
+        onFrame(fn) {
+            frameHooks.add(fn);
+            return () => frameHooks.delete(fn);
+        },
         controls,
         stamp(build) {
             this.addObject(`anon-${anonCount++}`, build);
@@ -423,18 +459,33 @@ export function createVoxelIsland(
             for (const [i, j, k] of rec.glow) glowGrid.set(i, j, k, 0);
             objectCells.delete(id);
             models.remove(id);
+            effects.removeEmitter(id);
             objectMesher.update();
             glowMesher.update();
         },
         clearObjects() {
             for (const id of [...objectCells.keys()]) this.removeObject(id);
             models.clear();
+            effects.clearEmitters();
         },
         placeModel(id, model, opts) {
             models.place(id, model, opts);
+            // Chimney point: top middle of the footprint. Smoke only for the smelting and forming machines.
+            const fw = model.footprint?.w ?? 1;
+            const fd = model.footprint?.d ?? 1;
+            if (SMOKING_MODELS.test(model.id)) {
+                effects.setEmitter(
+                    id,
+                    opts.cell.x + fw / 2,
+                    heightAt(opts.cell.x + 0.5, opts.cell.z + 0.5) + chimneyHeight(model),
+                    opts.cell.z + fd / 2,
+                    SPARKING_MODELS.test(model.id)
+                );
+            }
         },
         setObjectState(id, state) {
             models.setState(id, state);
+            if (state.working !== undefined) effects.setWorking(id, state.working);
         },
         setGhost(model, cell, rot, valid) {
             models.setGhost(model, cell, rot, valid);
@@ -472,6 +523,7 @@ export function createVoxelIsland(
         },
         setLowFx(on) {
             lowFx = on;
+            effects.setEnabled(!on);
             lighting.setShadows(!on && QUALITY_PRESETS[level].shadows);
         },
         setTimeOfDay(t) {
@@ -530,6 +582,7 @@ export function createVoxelIsland(
             glowMaterial.dispose();
             models.dispose();
             scenery.dispose();
+            effects.dispose();
             if (belts) {
                 scene.remove(belts.object);
                 belts.dispose();

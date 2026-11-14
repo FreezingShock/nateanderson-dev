@@ -1,6 +1,6 @@
 // Grid view for the camera and placement thread: get, set, check over single cells, plus auto-routing for belts.
 // Multi-cell buildings are anchored at one cell. set() on any other cell that the same building covers is a no-op.
-import type { ActionResult, Catalog, Cell, Rot, World } from "../types";
+import type { ActionResult, Catalog, Cell, Footprint, Rot, World } from "../types";
 import { DIR_DX, DIR_DZ } from "../types";
 import { DEFAULT_CATALOG } from "./data";
 import { footprintCells, keyOf, placeError, place, remove, resolve, buildingAt } from "./world";
@@ -64,12 +64,35 @@ export function autoRoute(world: World, from: Cell, to: Cell, belt = "belt", cat
     if (!resolve(cat, belt) || resolve(cat, belt)!.kind !== "belt") return { ok: false, reason: "not a belt" };
     const fromB = buildingAt(world, from.x, from.z, cat);
     const toB = buildingAt(world, to.x, to.z, cat);
-    const free = (x: number, z: number) => x >= 0 && z >= 0 && x < world.width && z < world.depth && !buildingAt(world, x, z, cat);
+    // A drill pushes its ore into any belt beside it, so a route must not pass next to a drill it was not sent from.
+    const beside = (x: number, z: number, id: number | undefined) =>
+        DIR_DX.some((dx, d) => {
+            const b = buildingAt(world, x + dx, z + DIR_DZ[d], cat);
+            return !!b && b.id !== id && resolve(cat, b.type)?.kind === "miner";
+        });
+    // The drill a route starts from is the one next to its first cell, even when the start is an empty cell.
+    const ownMiner = fromB?.id ?? DIR_DX.map((dx, d) => buildingAt(world, from.x + dx, from.z + DIR_DZ[d], cat)).find((b) => b && resolve(cat, b.type)?.kind === "miner")?.id;
+    const free = (x: number, z: number) =>
+        x >= 0 && z >= 0 && x < world.width && z < world.depth && !buildingAt(world, x, z, cat) && !beside(x, z, ownMiner);
 
     const starts: Cell[] = fromB ? neighbours(world, cellsOf(world, fromB.id, cat)) : [from];
     const goals = new Set<string>();
     if (toB) for (const n of neighbours(world, cellsOf(world, toB.id, cat))) goals.add(keyOf(n.x, n.z));
     else goals.add(keyOf(to.x, to.z));
+    // A route may also side-load onto a belt that already feeds the target, so a busy hub edge is not a dead end.
+    const joins = new Map<string, Cell>();
+    if (toB) {
+        for (const b of Object.values(world.buildings)) {
+            if (resolve(cat, b.type)?.kind !== "belt") continue;
+            if (buildingAt(world, b.x + DIR_DX[b.rot], b.z + DIR_DZ[b.rot], cat)?.id !== toB.id) continue;
+            for (let d = 0; d < 4; d++) {
+                const n = { x: b.x + DIR_DX[d], z: b.z + DIR_DZ[d] };
+                if (!free(n.x, n.z)) continue;
+                goals.add(keyOf(n.x, n.z));
+                joins.set(keyOf(n.x, n.z), { x: b.x, z: b.z });
+            }
+        }
+    }
 
     const prev = new Map<string, string | null>();
     const queue: Cell[] = [];
@@ -99,7 +122,7 @@ export function autoRoute(world: World, from: Cell, to: Cell, belt = "belt", cat
             queue.push({ x: nx, z: nz });
         }
     }
-    if (found === null) return { ok: false, reason: "no free path" };
+    if (found === null) return { ok: false, reason: "no clear route: belts cannot cross machines, the hub or other belts. Leave a gap or use a tunnel." };
 
     // Walk back from the goal cell to the start.
     const path: Cell[] = [];
@@ -113,6 +136,7 @@ export function autoRoute(world: World, from: Cell, to: Cell, belt = "belt", cat
         const c = path[i];
         let rot: Rot;
         if (i + 1 < path.length) rot = dirTo(c, path[i + 1]);
+        else if (joins.has(keyOf(c.x, c.z))) rot = dirTo(c, joins.get(keyOf(c.x, c.z))!);
         else rot = toB ? intoBuildingRot(c, toB.id, cat, world) : dirOfGoalFallback(c, to);
         cells.push({ x: c.x, z: c.z, rot, kind: belt });
     }
@@ -165,4 +189,31 @@ function intoBuildingRot(c: Cell, buildingId: number, cat: Catalog, world: World
         if (buildingAt(world, adj.x, adj.z, cat)?.id === buildingId) return dirTo(c, adj);
     }
     return 0;
+}
+
+// A spot for a new machine. It must cover free ground that is not a resource node, and must have at least one free cell
+// beside it so a belt can reach it. Nearest to the hub first. Returns null when nothing fits. It only suggests; it places nothing.
+export function suggestSpot(world: World, footprint: Footprint, cat: Catalog = DEFAULT_CATALOG): { x: number; z: number } | null {
+    const hub = world.buildings[world.hubId];
+    const open = (x: number, z: number) => x >= 0 && z >= 0 && x < world.width && z < world.depth && !buildingAt(world, x, z, cat) && !world.deposits[keyOf(x, z)];
+    let best: { x: number; z: number; d: number } | null = null;
+    for (let z = 0; z + footprint.d <= world.depth; z++) {
+        for (let x = 0; x + footprint.w <= world.width; x++) {
+            let fits = true;
+            for (let dz = 0; dz < footprint.d && fits; dz++) for (let dx = 0; dx < footprint.w && fits; dx++) if (!open(x + dx, z + dz)) fits = false;
+            if (!fits) continue;
+            // One free cell beside the footprint, so a belt can reach it.
+            let port = false;
+            for (let dz = -1; dz <= footprint.d && !port; dz++) {
+                for (let dx = -1; dx <= footprint.w && !port; dx++) {
+                    const inside = dx >= 0 && dz >= 0 && dx < footprint.w && dz < footprint.d;
+                    if (!inside && open(x + dx, z + dz)) port = true;
+                }
+            }
+            if (!port) continue;
+            const d = Math.abs(x - hub.x) + Math.abs(z - hub.z);
+            if (!best || d < best.d) best = { x, z, d };
+        }
+    }
+    return best ? { x: best.x, z: best.z } : null;
 }
