@@ -55,6 +55,7 @@ export interface RouteCell {
 export type RouteResult = { ok: true; cells: RouteCell[] } | { ok: false; reason: string };
 
 const MAX_ROUTE = 400;
+const TUNNEL_REACH = 5; // cells a tunnel can hop, same as lib/automation/sim/world.ts
 
 // Shortest belt route from one cell to another over free cells.
 // `from` may be a building (the route starts at a free cell beside it) or a free cell (the route starts there).
@@ -72,8 +73,10 @@ export function autoRoute(world: World, from: Cell, to: Cell, belt = "belt", cat
         });
     // The drill a route starts from is the one next to its first cell, even when the start is an empty cell.
     const ownMiner = fromB?.id ?? DIR_DX.map((dx, d) => buildingAt(world, from.x + dx, from.z + DIR_DZ[d], cat)).find((b) => b && resolve(cat, b.type)?.kind === "miner")?.id;
+    // A drill is 2 by 2 from its node cell, so routes keep the node and the three cells that would hold the drill free.
+    const onNode = (x: number, z: number) => [[0, 0], [-1, 0], [0, -1], [-1, -1]].some(([dx, dz]) => world.deposits[keyOf(x + dx, z + dz)] !== undefined);
     const free = (x: number, z: number) =>
-        x >= 0 && z >= 0 && x < world.width && z < world.depth && !buildingAt(world, x, z, cat) && !beside(x, z, ownMiner);
+        x >= 0 && z >= 0 && x < world.width && z < world.depth && !buildingAt(world, x, z, cat) && !beside(x, z, ownMiner) && !onNode(x, z);
 
     const starts: Cell[] = fromB ? neighbours(world, cellsOf(world, fromB.id, cat)) : [from];
     const goals = new Set<string>();
@@ -82,62 +85,127 @@ export function autoRoute(world: World, from: Cell, to: Cell, belt = "belt", cat
     // A route may also side-load onto a belt that already feeds the target, so a busy hub edge is not a dead end.
     const joins = new Map<string, Cell>();
     if (toB) {
+        // Every belt whose line ends in the target, however far back: walk the belts upstream from the target.
+        const isBelt = (b: { type: string }) => resolve(cat, b.type)?.kind === "belt";
+        const feeding = new Set<number>();
+        const frontier: { x: number; z: number }[] = [];
         for (const b of Object.values(world.buildings)) {
-            if (resolve(cat, b.type)?.kind !== "belt") continue;
+            if (!isBelt(b)) continue;
             if (buildingAt(world, b.x + DIR_DX[b.rot], b.z + DIR_DZ[b.rot], cat)?.id !== toB.id) continue;
+            feeding.add(b.id);
+            frontier.push({ x: b.x, z: b.z });
+        }
+        for (let qi = 0; qi < frontier.length; qi++) {
+            const cur = frontier[qi];
+            for (let d = 0; d < 4; d++) {
+                const up = buildingAt(world, cur.x + DIR_DX[d], cur.z + DIR_DZ[d], cat);
+                if (!up || feeding.has(up.id) || !isBelt(up)) continue;
+                // Upstream belt must point into the current one.
+                if (up.x + DIR_DX[up.rot] !== cur.x || up.z + DIR_DZ[up.rot] !== cur.z) continue;
+                feeding.add(up.id);
+                frontier.push({ x: up.x, z: up.z });
+            }
+        }
+        for (const id of feeding) {
+            const b = world.buildings[id];
             for (let d = 0; d < 4; d++) {
                 const n = { x: b.x + DIR_DX[d], z: b.z + DIR_DZ[d] };
                 if (!free(n.x, n.z)) continue;
+                if (goals.has(keyOf(n.x, n.z))) continue;
                 goals.add(keyOf(n.x, n.z));
                 joins.set(keyOf(n.x, n.z), { x: b.x, z: b.z });
             }
         }
     }
 
-    const prev = new Map<string, string | null>();
-    const queue: Cell[] = [];
-    for (const s of starts) {
-        if (!free(s.x, s.z)) continue;
-        const k = keyOf(s.x, s.z);
-        if (!prev.has(k)) {
-            prev.set(k, null);
-            queue.push(s);
+    // Search without tunnels first, so a route only hops under other belts when no plain route exists.
+    const search = (allowTunnels: boolean): { found: string | null; prev: Map<string, { from: string | null; tunnel: boolean }> } => {
+        // A landing node is a tunnel exit: its key carries the direction it must keep going, and it cannot be a goal.
+        const prev = new Map<string, { from: string | null; tunnel: boolean }>();
+        const queue: { key: string; x: number; z: number; exitDir: number }[] = [];
+        for (const st of starts) {
+            if (!free(st.x, st.z)) continue;
+            const k = keyOf(st.x, st.z);
+            if (!prev.has(k)) {
+                prev.set(k, { from: null, tunnel: false });
+                queue.push({ key: k, x: st.x, z: st.z, exitDir: -1 });
+            }
         }
-    }
-    let found: string | null = null;
-    for (let qi = 0; qi < queue.length && found === null; qi++) {
-        const c = queue[qi];
-        const ck = keyOf(c.x, c.z);
-        if (goals.has(ck)) {
-            found = ck;
-            break;
+        for (let qi = 0; qi < queue.length; qi++) {
+            const c = queue[qi];
+            if (c.exitDir < 0 && goals.has(c.key)) return { found: c.key, prev };
+            if (prev.size > MAX_ROUTE) break;
+            if (c.exitDir >= 0) {
+                // Forced: the exit pushes straight on. If that is the target building, the exit feeds it directly.
+                const nx = c.x + DIR_DX[c.exitDir];
+                const nz = c.z + DIR_DZ[c.exitDir];
+                const nk = keyOf(nx, nz);
+                if (toB && buildingAt(world, nx, nz, cat)?.id === toB.id) return { found: c.key, prev };
+                if (!prev.has(nk) && free(nx, nz)) {
+                    prev.set(nk, { from: c.key, tunnel: false });
+                    queue.push({ key: nk, x: nx, z: nz, exitDir: -1 });
+                }
+                continue;
+            }
+            for (let d = 0; d < 4; d++) {
+                const nx = c.x + DIR_DX[d];
+                const nz = c.z + DIR_DZ[d];
+                const nk = keyOf(nx, nz);
+                if (!prev.has(nk) && free(nx, nz)) {
+                    prev.set(nk, { from: c.key, tunnel: false });
+                    queue.push({ key: nk, x: nx, z: nz, exitDir: -1 });
+                }
+                if (!allowTunnels) continue;
+                // Hop 2 to TUNNEL_REACH cells ahead, under whatever is between. The entrance sits on this cell.
+                for (let k = 2; k <= TUNNEL_REACH; k++) {
+                    const lx = c.x + DIR_DX[d] * k;
+                    const lz = c.z + DIR_DZ[d] * k;
+                    const lk = `${keyOf(lx, lz)}#${d}`;
+                    if (prev.has(lk) || !free(lx, lz)) continue;
+                    prev.set(lk, { from: c.key, tunnel: true });
+                    queue.push({ key: lk, x: lx, z: lz, exitDir: d });
+                }
+            }
         }
-        if (prev.size > MAX_ROUTE) break;
-        for (let d = 0; d < 4; d++) {
-            const nx = c.x + DIR_DX[d];
-            const nz = c.z + DIR_DZ[d];
-            const nk = keyOf(nx, nz);
-            if (prev.has(nk) || !free(nx, nz)) continue;
-            prev.set(nk, ck);
-            queue.push({ x: nx, z: nz });
-        }
-    }
+        return { found: null, prev };
+    };
+    let result = search(false);
+    if (result.found === null) result = search(true);
+    const { found, prev } = result;
     if (found === null) return { ok: false, reason: "no clear route: belts cannot cross machines, the hub or other belts. Leave a gap or use a tunnel." };
 
-    // Walk back from the goal cell to the start.
-    const path: Cell[] = [];
-    for (let k: string | null = found; k !== null; k = prev.get(k) ?? null) {
-        const [x, z] = k.split(",").map(Number);
-        path.push({ x, z });
+    // Walk back from the goal to the start. Landing nodes are tunnel exits; the cell before one is its entrance.
+    const path: { key: string; x: number; z: number; exitDir: number; tunnelIn: boolean }[] = [];
+    for (let k: string | null = found; k !== null; ) {
+        const entry = prev.get(k);
+        const [pos, dirPart] = k.split("#");
+        const [x, z] = pos.split(",").map(Number);
+        path.push({ key: k, x, z, exitDir: dirPart === undefined ? -1 : Number(dirPart), tunnelIn: false });
+        k = entry?.from ?? null;
     }
     path.reverse();
+    // A cell is a tunnel entrance when the next node is a tunnel landing.
+    for (let i = 0; i + 1 < path.length; i++) {
+        const nextEntry = prev.get(path[i + 1].key);
+        if (nextEntry?.tunnel && nextEntry.from === path[i].key) path[i].tunnelIn = true;
+    }
     const cells: RouteCell[] = [];
     for (let i = 0; i < path.length; i++) {
         const c = path[i];
+        const cell = { x: c.x, z: c.z };
+        if (c.exitDir >= 0) {
+            cells.push({ x: c.x, z: c.z, rot: c.exitDir as Rot, kind: `${belt}-underground-out` });
+            continue;
+        }
+        if (c.tunnelIn) {
+            const landing = path[i + 1];
+            cells.push({ x: c.x, z: c.z, rot: landing.exitDir as Rot, kind: `${belt}-underground-in` });
+            continue;
+        }
         let rot: Rot;
-        if (i + 1 < path.length) rot = dirTo(c, path[i + 1]);
-        else if (joins.has(keyOf(c.x, c.z))) rot = dirTo(c, joins.get(keyOf(c.x, c.z))!);
-        else rot = toB ? intoBuildingRot(c, toB.id, cat, world) : dirOfGoalFallback(c, to);
+        if (i + 1 < path.length) rot = dirTo(cell, path[i + 1]);
+        else if (joins.has(keyOf(c.x, c.z))) rot = dirTo(cell, joins.get(keyOf(c.x, c.z))!);
+        else rot = toB ? intoBuildingRot(cell, toB.id, cat, world) : dirOfGoalFallback(cell, to);
         cells.push({ x: c.x, z: c.z, rot, kind: belt });
     }
     return { ok: true, cells };
@@ -195,7 +263,9 @@ function intoBuildingRot(c: Cell, buildingId: number, cat: Catalog, world: World
 // beside it so a belt can reach it. Nearest to the hub first. Returns null when nothing fits. It only suggests; it places nothing.
 export function suggestSpot(world: World, footprint: Footprint, cat: Catalog = DEFAULT_CATALOG): { x: number; z: number } | null {
     const hub = world.buildings[world.hubId];
-    const open = (x: number, z: number) => x >= 0 && z >= 0 && x < world.width && z < world.depth && !buildingAt(world, x, z, cat) && !world.deposits[keyOf(x, z)];
+    // Keep each node and the cells its 2 by 2 drill would cover open, so a machine cannot take the node.
+    const nodeCover = (x: number, z: number) => [[0, 0], [-1, 0], [0, -1], [-1, -1]].some(([dx, dz]) => world.deposits[keyOf(x + dx, z + dz)] !== undefined);
+    const open = (x: number, z: number) => x >= 0 && z >= 0 && x < world.width && z < world.depth && !buildingAt(world, x, z, cat) && !nodeCover(x, z);
     let best: { x: number; z: number; d: number } | null = null;
     for (let z = 0; z + footprint.d <= world.depth; z++) {
         for (let x = 0; x + footprint.w <= world.width; x++) {
