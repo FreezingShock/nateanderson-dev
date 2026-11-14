@@ -192,6 +192,7 @@ export function ResearchScreen({
   return (
     <MenuWindow
       title="Research"
+      size="xwide"
       art={<span style={uiIconStyle("research", 28)} aria-hidden="true" />}
       onClose={onClose}
     >
