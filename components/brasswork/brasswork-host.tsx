@@ -119,6 +119,8 @@ export function BrassworkHost() {
     }, []);
     const snap = useRef<(() => string) | null>(null);
     const snapshot = useCallback(() => snap.current?.() ?? null, []);
+    // The palette tool the player armed (null when none). Mirrors the input module's tool so the palette can show it.
+    const armedRef = useRef<string | null>(null);
     const ctl = useRef<{
         setTool: (id: string | null) => void;
         select: (id: string | null) => void;
@@ -240,6 +242,7 @@ export function BrassworkHost() {
             };
             const refresh = () => {
                 const d = hudData(world, CAT, selectedId, settings);
+                d.armed = armedRef.current;
                 const ms = d.milestones.filter((m) => m.done);
                 const rs = d.research.filter((r) => r.state === "done").length;
                 const unlocked = d.research.filter((r) => r.state !== "locked").length;
@@ -490,7 +493,11 @@ export function BrassworkHost() {
         };
     }, []);
 
-    const onBuild = useCallback((id: string) => ctl.current?.setTool(id), []);
+    const onBuild = useCallback((id: string) => {
+        // Tapping the armed row again disarms it.
+        armedRef.current = armedRef.current === id ? null : id;
+        ctl.current?.setTool(armedRef.current);
+    }, []);
     const onSelect = useCallback((id: string | null) => ctl.current?.select(id), []);
     const onResearch = useCallback((id: string) => ctl.current?.research(id), []);
     const onSetRecipe = useCallback((id: string) => ctl.current?.setRecipe(id), []);

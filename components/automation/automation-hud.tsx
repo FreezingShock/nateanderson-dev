@@ -124,6 +124,7 @@ export function AutomationHud({
             machines={data.machines}
             resources={data.resources}
             selectedId={selectedId}
+            armedId={data.armed ?? null}
             numberFormat={mode}
             onBuild={actions.onBuild}
             onSelect={actions.onSelect}

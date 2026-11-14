@@ -85,6 +85,7 @@ export function BuildList({
   machines,
   resources,
   selectedId,
+  armedId = null,
   numberFormat,
   onBuild,
   onSelect,
@@ -92,6 +93,7 @@ export function BuildList({
   machines: MachineView[];
   resources: ResourceView[];
   selectedId: string | null;
+  armedId?: string | null;
   numberFormat: NumberFormat;
   onBuild: (id: string) => void;
   onSelect: (id: string | null) => void;
@@ -108,10 +110,12 @@ export function BuildList({
   const renderRow = (m: MachineView) => {
         const ok = m.unlocked && canAfford(m.cost, resources);
         const selected = m.id === selectedId;
+        const armed = m.id === armedId;
         return (
             <li
               className="ab-row ab-build-row"
               data-selected={selected}
+              data-armed={armed}
               data-locked={!m.unlocked}
               data-afford={ok}
             >
@@ -119,6 +123,7 @@ export function BuildList({
                 type="button"
                 className="ab-build-main"
                 disabled={!m.unlocked}
+                aria-pressed={armed}
                 data-afford={ok}
                 aria-label={`Select ${m.name}${ok ? "" : " (not enough resources yet)"}`}
                 onClick={() => onBuild(m.id)}
