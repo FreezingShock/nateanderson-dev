@@ -302,6 +302,11 @@
 .ab-inspect .ab-inspect-name { margin: 0; font-size: 18px; line-height: 1.2; position: relative; z-index: 1; }
 .ab-inspect .ab-inspect-head .ab-text-btn { position: relative; z-index: 2; }
 
+/* Drill output: one row per ore the machine mines, with purity and rate. */
+.ab-inspect-mines { list-style: none; margin: 8px 0; padding: 0; display: grid; gap: 4px; }
+.ab-inspect-mine { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; gap: 8px; align-items: baseline; font-size: 14px; }
+.ab-inspect-mine strong { font-weight: 600; white-space: nowrap; }
+
 /* The armed build tool: the row whose machine the next click places. Stronger than the inspected row. */
 .ab-root.bw .ab-build-row[data-armed="true"] { outline: 2px solid #ffd98a; outline-offset: -2px; background: #3a2a14; }
 .ab-root.bw .ab-build-row[data-armed="true"] .ab-build-main { color: #ffd98a; }
