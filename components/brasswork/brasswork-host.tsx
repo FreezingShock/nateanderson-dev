@@ -249,6 +249,7 @@ export function BrassworkHost() {
                     if (ms.some((m) => !doneMilestones.has(m.id))) {
                         bw("milestone");
                         life.burst("milestone", hx, hz);
+                        island.burst({ x: hx - W / 2, z: hz - D / 2 }, "milestone");
                     } else if (rs > doneResearch) {
                         bw("research");
                         life.burst("research", hx, hz);
@@ -312,6 +313,8 @@ export function BrassworkHost() {
                         bw("invalid");
                     } else if (e.type === "place" || e.type === "remove") {
                         bw(e.type);
+                        // One burst per changed cell, capped so a long drag stays readable.
+                        for (const c of e.cells.slice(0, 40)) island.burst(c, e.type);
                         setNote("");
                         syncScene();
                         refresh();
@@ -438,6 +441,9 @@ export function BrassworkHost() {
                         return r;
                     },
                     refresh,
+                    // Arms a build tool by its id, the same call the palette makes. Lets the headless check skip the palette.
+                    setTool: (id: string | null) => input.controller.setToolById(id),
+                    armedTool: () => input.controller.build.getTool()?.id ?? null,
                 };
             }
 

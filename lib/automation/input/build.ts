@@ -104,8 +104,8 @@ export interface Ghost {
 }
 
 export type BuildEvent =
-    | { type: "place"; count: number }
-    | { type: "remove"; count: number }
+    | { type: "place"; count: number; cells: Cell[] }
+    | { type: "remove"; count: number; cells: Cell[] }
     | { type: "rotate" }
     | { type: "invalid"; reason: string }
     | { type: "undo" }
@@ -490,7 +490,7 @@ export class BuildController {
         this.undoStack.push(edits);
         if (this.undoStack.length > this.historyLimit) this.undoStack.shift();
         this.redoStack = [];
-        this.onEvent?.(kind === "rotate" ? { type: "rotate" } : { type: kind, count: edits.length });
+        this.onEvent?.(kind === "rotate" ? { type: "rotate" } : { type: kind, count: edits.length, cells: edits.map((e) => ({ x: e.x, z: e.z })) });
         this.emit();
         return edits.length;
     }
