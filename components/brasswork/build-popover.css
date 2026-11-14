@@ -61,4 +61,8 @@
 .bt[aria-pressed="true"] { border-color: var(--bw-brass-hi); background: var(--bw-wood-hi); color: var(--bw-brass-hi); }
 .bt:focus-visible { outline: 1px solid var(--bw-brass-hi); outline-offset: 2px; }
 
-.bt-dock { position: absolute; left: 12px; bottom: 12px; z-index: 20; }
+.bt-dock { position: absolute; right: 12px; top: 42%; z-index: 20; }
+/* Phone: the bottom tab row and next-step panel take the lower stage, so the Trash button sits higher on the right edge. */
+@media (max-width: 767px) {
+    .bt-dock { top: 200px; right: 12px; }
+}
