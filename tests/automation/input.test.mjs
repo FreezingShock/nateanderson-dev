@@ -486,3 +486,26 @@ test("panPixels stays instant: the target moves on the same frame", () => {
     cam.update(1 / 60);
     assert.ok(Math.abs(cam.pose().target.x - before) > 0.5, "pan is not eased");
 });
+
+test("runAt follows connected line pieces only; removeCells clears a whole run in one undo step", () => {
+    const w = memWorld();
+    const b = new A.BuildController({ world: w, board, lineKinds: ["belt"] });
+    for (let x = 2; x <= 6; x++) w.set(x, 3, { kind: "belt", rot: 0 });
+    w.set(4, 4, { kind: "belt", rot: 1 }); // a branch off the run
+    w.set(4, 9, { kind: "machine", rot: 0 }); // not a belt, stays out
+    w.set(9, 3, { kind: "belt", rot: 0 }); // a separate run with a gap
+    const run = b.runAt({ x: 3, z: 3 });
+    assert.equal(run.length, 6, "five in the row plus the branch");
+    assert.equal(b.runAt({ x: 9, z: 3 }).length, 1);
+    assert.deepEqual(b.runAt({ x: 4, z: 9 }), [], "machines are not runs");
+    b.setHighlight(run);
+    assert.equal(b.getHighlight().length, 6);
+    const n = b.removeCells(run);
+    assert.equal(n, 6);
+    assert.equal(w.get(4, 3), null);
+    assert.ok(w.get(9, 3), "the separate run is untouched");
+    assert.equal(b.getHighlight().length, 0, "removing clears the highlight");
+    b.undo();
+    assert.equal(w.get(4, 3)?.kind, "belt", "one undo brings the whole run back");
+    assert.equal(b.getHighlight().length, 0);
+});

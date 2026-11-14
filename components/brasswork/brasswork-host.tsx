@@ -29,13 +29,14 @@ import {
     type World,
 } from "@/lib/automation/sim";
 import type { VoxelIsland } from "@/lib/automation/render";
-import type { BuildWorld, MountedInput } from "@/lib/automation/input";
+import type { BuildWorld, InputController, MountedInput } from "@/lib/automation/input";
 import { getMachineModel } from "@/lib/automation/models/machines";
 import { pickBeltTile, type PieceKind, type PiecePlacement } from "@/lib/automation/models/belts";
 import { WATER_LEVEL } from "@/lib/automation/render/config";
 import { scatterProps } from "@/lib/automation/models/props";
 import { BrassworkExtras, type AwayReport, type Mood } from "./extras";
 import { FirstRunGuide } from "./first-run";
+import { BuildPopover, TrashButton } from "./build-popover";
 import { bw, bwHum, bwSetEnabled } from "@/lib/brasswork/sound";
 
 const W = 18;
@@ -105,6 +106,9 @@ export function BrassworkHost() {
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const [data, setData] = useState<HudData>(() => hudData(freshWorld(), CAT, null, START_SETTINGS));
     const [note, setNote] = useState("");
+    // Placed-piece pop-up: the building's anchor, what it is, and where to pin it on screen.
+    const [pop, setPop] = useState<{ anchor: { x: number; z: number }; kind: string; kindLabel: string; x: number; y: number } | null>(null);
+    const [inputCtl, setInputCtl] = useState<InputController | null>(null);
     const [away, setAway] = useState<AwayReport | null>(null);
     const [mood, setMood] = useState<Mood>("Auto");
     const moodRef = useRef<Mood>("Auto");
@@ -283,9 +287,14 @@ export function BrassworkHost() {
                         const b = buildingAt(world, e.cell.x, e.cell.z, CAT);
                         selectedId = b ? b.id : null;
                         refresh();
+                        // Quick actions by the piece. Same click, so the inspector and the pop-up open together.
+                        const at = input.controller.screenPoint(e.anchor);
+                        if (b && at) setPop({ anchor: e.anchor, kind: e.kind, kindLabel: resolve(CAT, e.kind)?.name ?? e.kind, x: at.x, y: at.y });
                     } else syncScene();
                 },
             });
+
+            setInputCtl(input.controller);
 
             // Placement preview: the input module owns the ghost, the renderer draws it.
             let ghostKey = "";
@@ -420,6 +429,8 @@ export function BrassworkHost() {
                 island.dispose();
                 bwHum(null);
                 ctl.current = null;
+                setInputCtl(null);
+                setPop(null);
                 snap.current = null;
             };
         })();
@@ -445,6 +456,23 @@ export function BrassworkHost() {
                 </Link>
                 <BrassworkExtras snapshot={snapshot} away={away} mood={mood} onMood={onMood} />
                 <FirstRunGuide data={data} />
+                {inputCtl && (
+                    <div className="bt-dock">
+                        <TrashButton input={inputCtl} />
+                    </div>
+                )}
+                {inputCtl && pop && (
+                    <BuildPopover
+                        input={inputCtl}
+                        anchor={pop.anchor}
+                        kind={pop.kind}
+                        kindLabel={pop.kindLabel}
+                        x={pop.x}
+                        y={pop.y}
+                        lineKinds={["belt", "belt-copper", "belt-steel"]}
+                        onClose={() => setPop(null)}
+                    />
+                )}
                 {note && <p className="bw-note">{note}</p>}
             </AutomationHud>
         </div>

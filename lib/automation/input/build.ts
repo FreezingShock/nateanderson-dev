@@ -95,6 +95,8 @@ export interface BuildOptions {
     board: BoardSize;
     historyLimit?: number;
     onEvent?: (e: BuildEvent) => void;
+    // Kinds that form runs (belts). runAt follows neighbours of these kinds.
+    lineKinds?: string[];
 }
 
 const sameItem = (a: ItemRef | null, b: ItemRef | null) => (!a && !b) || (!!a && !!b && a.kind === b.kind && a.rot === b.rot);
@@ -114,12 +116,73 @@ export class BuildController {
     private undoStack: Edit[][] = [];
     private redoStack: Edit[][] = [];
     private listeners = new Set<() => void>();
+    private lineKinds: Set<string>;
+    private highlight: Cell[] = [];
 
     constructor(opts: BuildOptions) {
         this.world = opts.world;
         this.board = opts.board;
         this.historyLimit = opts.historyLimit ?? 200;
         this.onEvent = opts.onEvent;
+        this.lineKinds = new Set(opts.lineKinds ?? []);
+    }
+
+    // Every cell in the connected run of line pieces (belts) that holds this cell, found by walking
+    // neighbours of the same family. Empty when the cell holds no line piece.
+    runAt(cell: Cell): Cell[] {
+        const start = this.world.get(cell.x, cell.z);
+        if (!start || !this.lineKinds.has(start.kind)) return [];
+        const seen = new Set<string>([cellKey(cell)]);
+        const out: Cell[] = [{ x: cell.x, z: cell.z }];
+        const queue: Cell[] = [{ x: cell.x, z: cell.z }];
+        const steps = [
+            { x: 1, z: 0 },
+            { x: -1, z: 0 },
+            { x: 0, z: 1 },
+            { x: 0, z: -1 },
+        ];
+        while (queue.length) {
+            const c = queue.shift()!;
+            for (const d of steps) {
+                const n = { x: c.x + d.x, z: c.z + d.z };
+                const k = cellKey(n);
+                if (seen.has(k) || !cellInBoard(n, this.board)) continue;
+                seen.add(k);
+                const item = this.world.get(n.x, n.z);
+                if (item && this.lineKinds.has(item.kind)) {
+                    out.push(n);
+                    queue.push(n);
+                }
+            }
+        }
+        return out;
+    }
+
+    // Removes every building in the given cells as one undo step. Multi-cell buildings count once.
+    removeCells(cells: Cell[]): number {
+        const seen = new Set<string>();
+        const edits: Edit[] = [];
+        for (const c of cells) {
+            const before = this.world.get(c.x, c.z);
+            if (!before) continue;
+            const anchor = before.anchor ?? c;
+            const k = cellKey(anchor);
+            if (seen.has(k)) continue;
+            seen.add(k);
+            edits.push({ x: anchor.x, z: anchor.z, before, after: null });
+        }
+        this.highlight = [];
+        return this.commitEdits(edits, "remove");
+    }
+
+    // Cells to outline as a selection (for example a whole belt run). Cleared on any edit.
+    setHighlight(cells: Cell[]): void {
+        this.highlight = cells.map((c) => ({ x: c.x, z: c.z }));
+        this.emit();
+    }
+
+    getHighlight(): Cell[] {
+        return this.highlight.map((c) => ({ ...c }));
     }
 
     getTool(): ToolSpec | null {
@@ -387,6 +450,7 @@ export class BuildController {
 
     private commitEdits(edits: Edit[], kind: "place" | "remove" | "rotate"): number {
         if (edits.length === 0) return 0;
+        this.highlight = [];
         for (const e of edits) applyEdit(this.world, e, "redo");
         this.undoStack.push(edits);
         if (this.undoStack.length > this.historyLimit) this.undoStack.shift();
