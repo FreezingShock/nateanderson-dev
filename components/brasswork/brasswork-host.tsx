@@ -277,6 +277,11 @@ export function BrassworkHost() {
                         setNote("");
                         syncScene();
                         refresh();
+                    } else if (e.type === "select") {
+                        // A short click or tap on a placed building (no tool active) opens its inspector.
+                        const b = buildingAt(world, e.cell.x, e.cell.z, CAT);
+                        selectedId = b ? b.id : null;
+                        refresh();
                     } else syncScene();
                 },
             });
