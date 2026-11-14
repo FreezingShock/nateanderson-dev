@@ -161,6 +161,22 @@ export function BuildList({
             </li>
         );
   };
+  // Belts first: a new player needs them before anything else. Then machines, then power.
+  const GROUP_RANK: Record<GroupId, number> = { logistics: 0, machines: 1, power: 2 };
+  groups.sort((a, b) => GROUP_RANK[a.id] - GROUP_RANK[b.id]);
+  // Open rows show in full; locked rows fold into one line so the palette stays short.
+  const renderItems = (items: MachineView[]) => {
+    const open = items.filter((m) => m.unlocked);
+    const locked = items.length - open.length;
+    return (
+      <>
+        {open.map(renderRow)}
+        {locked > 0 && (
+          <li className="ab-locked-note">{locked} more unlock as you progress</li>
+        )}
+      </>
+    );
+  };
   return (
     <div className="ab-build-groups">
       {groups.map((g) => {
@@ -175,13 +191,13 @@ export function BuildList({
                   <div key={x.sub} className="ab-sub">
                     <h3 className="ab-sub-title">{SUB_TITLE[x.sub]}</h3>
                     <ul className="ab-build" aria-label={`${SUB_TITLE[x.sub]} to build`}>
-                      {x.items.map(renderRow)}
+                      {renderItems(x.items)}
                     </ul>
                   </div>
                 ))
             ) : (
               <ul className="ab-build" aria-label={`${GROUP_TITLE[g.id]} to build`}>
-                {g.items.map(renderRow)}
+                {renderItems(g.items)}
               </ul>
             )}
           </Section>
