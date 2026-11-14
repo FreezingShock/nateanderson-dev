@@ -95,6 +95,21 @@ export default function VoxelIslandBench() {
             }
         }
 
+        if (q.get("stroke") === "1") {
+            // A seeded belt stroke: runs south, turns east, runs east. Last two cells refused.
+            const cells = [
+                { x: -4, z: 0, rot: 3, valid: true },
+                { x: -3, z: 0, rot: 3, valid: true },
+                { x: -2, z: 0, rot: 3, valid: true },
+                { x: -1, z: 0, rot: 0, valid: true },
+                { x: -1, z: 1, rot: 0, valid: true },
+                { x: -1, z: 2, rot: 0, valid: true },
+                { x: -1, z: 3, rot: 0, valid: false },
+                { x: -1, z: 4, rot: 0, valid: false },
+            ];
+            island.setGhostPath(cells);
+        }
+
         if (q.get("select") === "1") {
             // A selected belt run (five cells in a line) and one selected building (2x2) for the outline check.
             const run = [0, 1, 2, 3, 4].map((i) => ({ x: -6 + i, z: -1 }));
