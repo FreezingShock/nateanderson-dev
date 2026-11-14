@@ -39,7 +39,7 @@ import {
 } from "../models/belts";
 import type { Matrix4 } from "three";
 import { FrameGovernor } from "./governor";
-import { MachineEffects } from "./effects";
+import { MachineEffects, type BurstKind } from "./effects";
 import { SelectionOutline, type HighlightCell } from "./highlight";
 import { GhostPath, type PathCell } from "./ghostpath";
 
@@ -139,6 +139,11 @@ export interface VoxelIsland {
      * ghost (clearGhost) while a stroke is shown.
      */
     setGhostPath(cells: readonly PathCell[]): void;
+    /**
+     * One-shot effect on a board cell: "place" for a placement pop, "remove" for a removal puff,
+     * "milestone" for the hub's gold fountain. Off for low fx. Board frame, like setBelts.
+     */
+    burst(cell: { x: number; z: number }, kind: BurstKind): void;
     /** Matrix for an item riding a belt piece. `t` is 0..1 over the cell. */
     beltItemMatrix(
         p: PiecePlacement,
@@ -541,6 +546,11 @@ export function createVoxelIsland(
         },
         setGhostPath(cells) {
             beltGhost.set(cells, heightAt);
+        },
+        burst(cell, kind) {
+            const x = cell.x + 0.5;
+            const z = cell.z + 0.5;
+            effects.burst(x, heightAt(x, z) + 0.15, z, kind);
         },
         setScenery(placements: readonly Placement[]) {
             scenery.setPlacements(placements);
