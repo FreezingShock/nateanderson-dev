@@ -248,12 +248,13 @@ const RESEARCH = [
     { id: "fast_frames", name: "Fast frames", cost: 5, requires: ["frames"], recipes: ["r_frame_fast"], note: "Frames from plates and screws, quicker." },
 ] as const;
 
-// Blueprints granted per stage: 10 + 20 + 30 + 35 + 40 = 135. The megaproject's path needs 109 of it.
+// Blueprints granted per stage: 12 + 30 + 30 + 44 + 40 = 156. Research needed before each stage's milestone:
+// stage 3 needs 39 (by milestone 2), stage 4 needs 67 (by milestone 3), the megaproject needs 109 (by milestone 4).
 const MILESTONES = [
-    { id: "ms_smelting", name: "First smelt run", stage: 1, deliver: [{ item: "iron_ingot", qty: 50 }, { item: "copper_ingot", qty: 30 }], blueprints: 10 },
-    { id: "ms_forming", name: "Plate line online", stage: 2, deliver: [{ item: "iron_plate", qty: 60 }, { item: "copper_wire", qty: 60 }, { item: "steel_ingot", qty: 30 }, { item: "aluminium_sheet", qty: 20 }], blueprints: 20 },
+    { id: "ms_smelting", name: "First smelt run", stage: 1, deliver: [{ item: "iron_ingot", qty: 50 }, { item: "copper_ingot", qty: 30 }], blueprints: 12 },
+    { id: "ms_forming", name: "Plate line online", stage: 2, deliver: [{ item: "iron_plate", qty: 60 }, { item: "copper_wire", qty: 60 }, { item: "steel_ingot", qty: 30 }, { item: "aluminium_sheet", qty: 20 }], blueprints: 30 },
     { id: "ms_components", name: "Components crate", stage: 3, deliver: [{ item: "iron_gear", qty: 30 }, { item: "circuit_board", qty: 20 }, { item: "aluminium_casing", qty: 20 }, { item: "frame", qty: 20 }, { item: "steel_beam", qty: 10 }], blueprints: 30 },
-    { id: "ms_clockworks", name: "Clockwork shipment", stage: 4, deliver: [{ item: "motor", qty: 10 }, { item: "servo", qty: 6 }, { item: "photocell", qty: 10 }, { item: "quartz_lens", qty: 4 }], blueprints: 35 },
+    { id: "ms_clockworks", name: "Clockwork shipment", stage: 4, deliver: [{ item: "motor", qty: 10 }, { item: "servo", qty: 6 }, { item: "photocell", qty: 10 }, { item: "quartz_lens", qty: 4 }], blueprints: 44 },
     { id: "ms_megaproject", name: "Sky orrery, first light", stage: 5, deliver: [{ item: "sail_panel", qty: 3 }, { item: "mirror_cell", qty: 3 }, { item: "relay_core", qty: 3 }, { item: "lattice_strut", qty: 3 }], blueprints: 40 },
 ] as const;
 
