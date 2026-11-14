@@ -2,8 +2,8 @@
 
 /** Machine portraits: 128 px art cells, 4 across, each machine on a lamplit workshop bench. */
 export const PORTRAIT_SHEET = {
-    url: "/brasswork/art/portraits.webp?v=4c7a83f5",
-    png: "/brasswork/art/portraits.png?v=4c7a83f5",
+    url: "/brasswork/art/portraits.webp?v=274ebcae",
+    png: "/brasswork/art/portraits.png?v=274ebcae",
     cell: 128,
     cols: 4,
     rows: 4,
@@ -141,8 +141,8 @@ export const DECOR_EXTRA = {
 
 /** Hash of each machine's model source when its portrait was drawn (checked by tests/automation/menu-art.test.mjs). */
 export const PORTRAIT_MODEL_HASH: Record<string, string> = {
-    drill: "8cb77d3c4c90",
-    kiln: "6002fb81e2f6",
+    drill: "1aee9e767006",
+    kiln: "6817bbe8729c",
     furnace: "4dda85701f67",
     press: "16e5498070a8",
     lathe: "373ea424d10f",
