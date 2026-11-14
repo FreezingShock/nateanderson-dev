@@ -1,10 +1,10 @@
 "use client";
 
-import { useEffect } from "react";
 import "./expedition-window.css";
 import type { AreaView, PrestigeSite, PrestigeView } from "@/lib/automation/types";
 import { iconStyle } from "@/lib/automation/icons";
-import { ArtDivider, ArtPanel, PanelTitle } from "@/components/brasswork-art";
+import { uiIconStyle } from "@/lib/automation/icons/ui";
+import { MenuWindow } from "@/components/brasswork-ui/window";
 
 const ORE_NAMES: Record<string, string> = {
     iron_ore: "Iron",
@@ -72,33 +72,16 @@ export function ExpeditionWindow({
     onPlan: (siteId: string) => void;
     onClose: () => void;
 }) {
-    useEffect(() => {
-        const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
-        window.addEventListener("keydown", onKey);
-        return () => window.removeEventListener("keydown", onKey);
-    }, [onClose]);
-
     const currentId = areas.find((a) => a.state === "current")?.id;
     const cells = prestige.sites.map((s) => (s.plan ? s.plan.width * s.plan.depth : 0));
     const maxSide = Math.max(1, ...prestige.sites.map((s) => Math.max(s.plan?.width ?? 0, s.plan?.depth ?? 0)));
 
     return (
-        <div className="ex-scrim" onPointerDown={(e) => e.target === e.currentTarget && onClose()}>
-            <ArtPanel className="ex">
-                <section className="ex-in" role="dialog" aria-modal="true" aria-label="Expedition">
-                    <header className="ex-head">
-                        <div className="ex-head-text">
-                            <PanelTitle>Expedition</PanelTitle>
-                            <p className="ex-sub" data-ready={prestige.ready}>
-                                {prestige.ready ? "Every milestone is delivered. Pick a site for your next workshop." : prestige.requirement}
-                            </p>
-                        </div>
-                        <button type="button" className="ex-close" onClick={onClose} aria-label="Close">
-                            Close
-                        </button>
-                    </header>
-                    <ArtDivider />
-
+        <MenuWindow title="Expedition" art={<span style={uiIconStyle("expedition", 32)} aria-hidden="true" />} onClose={onClose}>
+            <div className="ex-root">
+                <p className="ex-sub" data-ready={prestige.ready}>
+                    {prestige.ready ? "Every milestone is delivered. Pick a site for your next workshop." : prestige.requirement}
+                </p>
                     <ul className="ex-grid" aria-label="Island sites">
                         {prestige.sites.map((s) => {
                             const here = s.id === currentId;
@@ -157,8 +140,7 @@ export function ExpeditionWindow({
                             );
                         })}
                     </ul>
-                </section>
-            </ArtPanel>
-        </div>
+            </div>
+        </MenuWindow>
     );
 }
