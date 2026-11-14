@@ -588,6 +588,7 @@ function updatePower(world: World, cat: Catalog, defs: Map<number, Resolved>, dt
     for (const c of consumers) {
         const v = Math.min(1, (got.get(c.id) ?? 0) / c.need);
         sat.set(c.id, v);
+        world.buildings[c.id].powerSat = v;
         delivered += Math.min(c.need, got.get(c.id) ?? 0);
     }
     world.power = { supply, demand, satisfaction: demand <= 0 ? 1 : Math.min(1, delivered / demand) };

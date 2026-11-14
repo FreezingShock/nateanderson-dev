@@ -23,7 +23,7 @@ import type {
 } from "../types";
 import { DEFAULT_CATALOG, SITES } from "./data";
 import { unlockedRecipes, dayClock, buyResearch as buyResearchRaw, prestige as prestigeRaw } from "./progress";
-import { place as placeRaw, setRecipe as setRecipeRaw, setFilter as setFilterRaw, resolve } from "./world";
+import { place as placeRaw, setRecipe as setRecipeRaw, setFilter as setFilterRaw, resolve, BATTERIES } from "./world";
 
 export const DEFAULT_SETTINGS: HudSettings = { sound: false, reduceMotion: false, lowFx: false, numberFormat: "short", showRates: true };
 
@@ -43,6 +43,38 @@ function lines(stacks: { item: string; qty: number }[]): Line[] {
     return stacks.map((s) => ({ resourceId: s.item, amount: s.qty }));
 }
 
+// Generators: what they produce now, their rating, wind, reach and the machines they feed.
+function generatorDetail(world: World, cat: Catalog, b: Building): Partial<MachineDetail> | null {
+    const r = resolve(cat, b.type);
+    const def = r0(cat, b.type);
+    if (!r || r.kind !== "generator" || !def) return null;
+    const battery = BATTERIES.includes(r.id);
+    const isWind = !battery && def.generatesKw !== undefined;
+    const wind = world.wind;
+    const producedKw = battery ? 0 : r.supply * Math.min(1, 2 * wind);
+    const range = r.range;
+    const fedCount = Object.values(world.buildings).filter((o) => {
+        const orr = resolve(cat, o.type);
+        if (!orr || (orr.kind !== "miner" && orr.kind !== "crafter") || !(orr.power > 0)) return false;
+        return Math.max(Math.abs(o.x - b.x), Math.abs(o.z - b.z)) <= range + 1;
+    }).length;
+    return {
+        producedKw: Math.round(producedKw * 10) / 10,
+        maxKw: r.supply,
+        windPct: isWind ? Math.round(wind * 100) / 100 : undefined,
+        fedCount,
+        rangeCells: range,
+    };
+}
+
+// Consumers: what they need, how much of it they get, and whether they are fully powered.
+function consumerDetail(world: World, cat: Catalog, b: Building): Partial<MachineDetail> | null {
+    const r = resolve(cat, b.type);
+    if (!r || !(r.power > 0)) return null;
+    const satisfied = b.powerSat ?? 1;
+    return { usedKw: r.power, satisfied: Math.round(satisfied * 100) / 100, fullyPowered: satisfied >= 0.999 };
+}
+
 // Per-building flow: what it makes and uses per second, its status, and the batch progress.
 interface Flow {
     makes: Record<string, number>;
@@ -55,7 +87,8 @@ function flowOf(world: World, cat: Catalog, b: Building): Flow {
     const flow: Flow = { makes: {}, uses: {}, status: "idle", progress: 0 };
     const r = resolve(cat, b.type);
     if (!r) return flow;
-    const sat = world.power.satisfaction;
+    // Each consumer runs at the share of power it received on the last step, so rates match what machines make.
+    const sat = b.powerSat ?? world.power.satisfaction;
     if (r.kind === "miner") {
         const dep = world.deposits[`${b.x},${b.z}`];
         const node = dep ? cat.tree.nodes.find((n) => n.item === dep.item) : undefined;
@@ -125,6 +158,11 @@ function reasonOf(world: World, cat: Catalog, b: Building, status: MachineStatus
     if (status === "running") return undefined;
     const r = resolve(cat, b.type);
     if (!r) return undefined;
+    if (r.kind === "generator") {
+        if (BATTERIES.includes(r.id)) return "Storing or releasing wind power";
+        const produced = r.supply * Math.min(1, 2 * world.wind);
+        return produced > 0 ? undefined : "Calm air: no wind to turn it";
+    }
     if (r.kind === "miner") {
         if (!world.deposits[`${b.x},${b.z}`]) return "No resource node under it";
         if (world.power.satisfaction < 1) return "No power";
@@ -243,9 +281,11 @@ export function hudData(world: World, cat: Catalog = DEFAULT_CATALOG, selectedId
         const f = flows.get(selectedId) ?? flowOf(world, cat, b);
         if (m) {
             const bufferIds = new Set<string>([...Object.keys(b.input), ...Object.keys(b.output)]);
+            const gen = generatorDetail(world, cat, b);
             selected = {
                 ...m,
-                status: f.status,
+                // A generator running in wind is working, whatever the flow pass says about it.
+                status: gen && (gen.producedKw ?? 0) > 0 ? "running" : f.status,
                 recipe: rec
                     ? { name: rec.id, inputs: lines(rec.inputs), outputs: lines([rec.output]), seconds: rec.craftSeconds }
                     : minedRecipe(world, cat, b.type, b.x, b.z) ?? { name: "No recipe chosen", inputs: [], outputs: [], seconds: 0 },
@@ -259,6 +299,8 @@ export function hudData(world: World, cat: Catalog = DEFAULT_CATALOG, selectedId
                     ...Object.keys(f.uses).map((k) => ({ label: `${nameOf(cat, k)} in`, value: `${f.uses[k].toFixed(2)} /s` })),
                 ],
                 powerKw: r0(cat, b.type)?.powerKw,
+                ...(generatorDetail(world, cat, b) ?? {}),
+                ...(consumerDetail(world, cat, b) ?? {}),
                 reason: reasonOf(world, cat, b, f.status, rec),
                 mines: minesOf(cat, b.type, b.x, b.z, world),
                 recipeChoices: rec ? undefined : recipeChoicesOf(world, cat, b.type),
