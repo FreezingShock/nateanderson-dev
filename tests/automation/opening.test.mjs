@@ -72,3 +72,4 @@ test("each milestone can be delivered with machines open before it", () => {
         world.progress.milestonesDone.push(m.id);
     }
 });
+

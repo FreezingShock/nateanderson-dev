@@ -33,7 +33,7 @@ const MACHINES: MachineDef[] = [
         powerKw: 0,
         generatesKw: 30,
         supplyRange: 6,
-        buildCost: [{ item: "iron_plate", qty: 4 }, { item: "copper_wire", qty: 6 }],
+        buildCost: [{ item: "iron_plate", qty: 8 }],
         note: "Wind power. Strong in open ground, reaches 6 cells.",
     },
     {
