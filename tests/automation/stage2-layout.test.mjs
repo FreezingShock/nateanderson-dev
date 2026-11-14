@@ -1,5 +1,5 @@
 // Regression for the hand-built stage 2 layout (scripts/automation/stage2-hand-layout.mjs): every belt, machine and
-// recipe must place, and the four milestone 2 targets must complete in ten simulated minutes.
+// recipe must place, the research must be bought in order, and milestones 1 and 2 must complete in fifteen simulated minutes.
 import test from "node:test";
 import assert from "node:assert/strict";
 import { registerHooks } from "node:module";
@@ -15,9 +15,11 @@ test("the stage 2 layout places every piece", () => {
     assert.deepEqual(log, [], log.join("\n"));
 });
 
-test("the stage 2 layout completes all four milestone 2 targets in ten minutes", () => {
-    const { stock, targets, log } = runStage2Layout(10);
+test("the stage 2 layout buys its research, completes milestones 1 and 2 in fifteen minutes", () => {
+    const { stock, targets, log, world, researchLog } = runStage2Layout(15);
     assert.deepEqual(log, [], log.join("\n"));
+    assert.deepEqual(researchLog.map((r) => r.split(" ")[0]), ["furnace_alloys", "sheet_rolling"]);
+    assert.deepEqual(world.progress.milestonesDone, ["ms_smelting", "ms_forming"]);
     for (const [item, need] of Object.entries(targets)) {
         assert.ok(stock[item] >= need, `${item}: ${stock[item]} of ${need}`);
     }
