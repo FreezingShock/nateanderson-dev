@@ -41,7 +41,7 @@ import type { Matrix4 } from "three";
 import { FrameGovernor } from "./governor";
 import { MachineEffects, type BurstKind } from "./effects";
 import { SelectionOutline, type HighlightCell } from "./highlight";
-import { GhostPath, type PathCell } from "./ghostpath";
+import { GhostPath, type GhostJoin, type PathCell } from "./ghostpath";
 
 export { heightAt, Stamper, VoxelGrid, TERRAIN_CELL, OBJECT_CELL };
 export { QUALITY_PRESETS } from "./config";
@@ -139,6 +139,11 @@ export interface VoxelIsland {
      * ghost (clearGhost) while a stroke is shown.
      */
     setGhostPath(cells: readonly PathCell[]): void;
+    /**
+     * Shows where the stroke joins a belt (thin brass bar) or a machine port (thicker warm bar) on a
+     * cell edge. Board frame, like setGhostPath. Pass an empty list to clear.
+     */
+    setGhostJoins(joins: readonly GhostJoin[]): void;
     /**
      * One-shot effect on a board cell: "place" for a placement pop, "remove" for a removal puff,
      * "milestone" for the hub's gold fountain. Off for low fx. Board frame, like setBelts.
@@ -546,6 +551,9 @@ export function createVoxelIsland(
         },
         setGhostPath(cells) {
             beltGhost.set(cells, heightAt);
+        },
+        setGhostJoins(joins) {
+            beltGhost.setJoins(joins, heightAt);
         },
         burst(cell, kind) {
             const x = cell.x + 0.5;

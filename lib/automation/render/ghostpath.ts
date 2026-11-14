@@ -11,7 +11,18 @@ export interface PathCell {
     valid: boolean;
 }
 
+export type JoinDir = "n" | "e" | "s" | "w";
+
+/** A join where the stroke meets an existing belt or a machine port, on one edge of a board cell. */
+export interface GhostJoin {
+    cell: { x: number; z: number };
+    dir: JoinDir;
+    kind: "belt" | "port";
+}
+
 const MAX_CELLS = 384;
+const MAX_JOINS = 128;
+const PORT_JOIN = new THREE.Color(0xfff6d0); // warm white-hot, distinct from the brass belt bars
 const PARTS_PER_CELL = 5; // plate, arrow shaft, arrow head, corner or cap
 const BRASS = new THREE.Color(0xffc24a);
 const BRASS_HOT = new THREE.Color(0xfff6d0);
@@ -33,6 +44,9 @@ export class GhostPath {
     private readonly up = new THREE.Vector3(0, 1, 0);
     private readonly c = new THREE.Color();
     private readonly colors: Float32Array;
+    private readonly joinMesh: THREE.InstancedMesh;
+    private readonly joinMat: THREE.MeshBasicMaterial;
+    private joinCount = 0;
 
     constructor(scene: THREE.Scene) {
         const geo = new THREE.BoxGeometry(1, 1, 1);
@@ -53,6 +67,23 @@ export class GhostPath {
         this.mesh.count = 0;
         this.mesh.renderOrder = 11;
         scene.add(this.mesh);
+
+        // Join cues: a bar on the shared edge of a cell that meets a belt (thin brass) or a port (thick warm white).
+        this.joinMat = new THREE.MeshBasicMaterial({
+            transparent: true,
+            opacity: 1,
+            depthWrite: false,
+            depthTest: false,
+            blending: THREE.AdditiveBlending,
+        });
+        this.joinMesh = new THREE.InstancedMesh(new THREE.BoxGeometry(1, 1, 1), this.joinMat, MAX_JOINS);
+        this.joinMesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+        this.joinMesh.instanceColor = new THREE.InstancedBufferAttribute(new Float32Array(MAX_JOINS * 3), 3);
+        this.joinMesh.instanceColor.setUsage(THREE.DynamicDrawUsage);
+        this.joinMesh.frustumCulled = false;
+        this.joinMesh.count = 0;
+        this.joinMesh.renderOrder = 12;
+        scene.add(this.joinMesh);
     }
 
     /** Draws the stroke. `cells` is in path order. Empty clears it. */
@@ -97,6 +128,34 @@ export class GhostPath {
         if (n === 0) this.mesh.count = 0;
     }
 
+    /** Draws join cues on cell edges. Empty clears them. Same board frame as set(). */
+    setJoins(joins: readonly GhostJoin[], heightAt: (x: number, z: number) => number): void {
+        const n = Math.min(joins.length, MAX_JOINS);
+        for (let i = 0; i < n; i++) {
+            const j = joins[i];
+            const ex = j.dir === "e" ? 0.5 : j.dir === "w" ? -0.5 : 0;
+            const ez = j.dir === "s" ? 0.5 : j.dir === "n" ? -0.5 : 0;
+            const cx = j.cell.x + 0.5 + ex;
+            const cz = j.cell.z + 0.5 + ez;
+            const y = heightAt(cx, cz) + 0.1;
+            const horizontal = j.dir === "e" || j.dir === "w";
+            // Bar runs along the edge: across the x axis for n/s edges, across z for e/w edges.
+            this.p.set(cx, y, cz);
+            this.q.identity();
+            // Port joins are thicker and brighter so belt and port cues read apart by shape and brightness.
+            const thick = j.kind === "port" ? 0.18 : 0.1;
+            this.s.set(horizontal ? thick : 0.86, 0.1, horizontal ? 0.86 : thick);
+            this.m.compose(this.p, this.q, this.s);
+            this.joinMesh.setMatrixAt(i, this.m);
+            this.c.copy(j.kind === "port" ? PORT_JOIN : BRASS);
+            this.joinMesh.setColorAt(i, this.c);
+        }
+        this.joinCount = n;
+        this.joinMesh.count = n;
+        this.joinMesh.instanceMatrix.needsUpdate = true;
+        if (this.joinMesh.instanceColor) this.joinMesh.instanceColor.needsUpdate = true;
+    }
+
     /** Pulses the glow. Call once per frame. */
     update(dt: number): void {
         if (this.count === 0) return;
@@ -106,6 +165,8 @@ export class GhostPath {
         }
         this.time += dt;
         this.mat.opacity = 0.8 + 0.2 * (0.5 + 0.5 * Math.sin(this.time * 4));
+        // Join cues pulse faster so they read as live connections.
+        this.joinMat.opacity = this.joinCount === 0 ? 0 : 0.6 + 0.4 * (0.5 + 0.5 * Math.sin(this.time * 6));
     }
 
     setPulsing(on: boolean): void {
@@ -115,6 +176,8 @@ export class GhostPath {
     clear(): void {
         this.count = 0;
         this.mesh.count = 0;
+        this.joinCount = 0;
+        this.joinMesh.count = 0;
     }
 
     dispose(): void {
@@ -122,6 +185,10 @@ export class GhostPath {
         this.mat.dispose();
         this.mesh.dispose();
         this.mesh.removeFromParent();
+        this.joinMesh.geometry.dispose();
+        this.joinMat.dispose();
+        this.joinMesh.dispose();
+        this.joinMesh.removeFromParent();
     }
 
     private put(

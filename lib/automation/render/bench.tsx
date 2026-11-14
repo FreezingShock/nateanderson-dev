@@ -108,6 +108,13 @@ export default function VoxelIslandBench() {
                 { x: -1, z: 4, rot: 0, valid: false },
             ];
             island.setGhostPath(cells);
+            if (q.get("joins") === "1") {
+                // A belt join on the west edge of the first cell and a port join on the east edge of the turn cell.
+                island.setGhostJoins([
+                    { cell: { x: -4, z: 0 }, dir: "w", kind: "belt" },
+                    { cell: { x: -1, z: 2 }, dir: "e", kind: "port" },
+                ]);
+            }
         }
 
         if (q.get("burst") === "1") {
