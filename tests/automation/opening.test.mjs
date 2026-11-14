@@ -31,7 +31,7 @@ test("a fresh save reaches the first milestone with drill, kiln, windmill and be
     const must = (r) => assert.equal(r.ok, true, r.reason);
     const belt = (route) => {
         assert.equal(route.ok, true, route.reason);
-        route.cells.forEach((c) => must(S.place(world, "belt", c.x, c.z, c.rot, CAT)));
+        route.cells.forEach((c) => must(S.place(world, c.kind, c.x, c.z, c.rot, CAT)));
     };
     must(S.place(world, "drill", 2, 2, 0, CAT));
     must(S.place(world, "windmill", 4, 5, 0, CAT));
@@ -85,4 +85,40 @@ test("suggestSpot picks a free spot near the hub with room for a belt", () => {
         assert.equal(S.buildingAt(world, spot.x + dx, spot.z + dz, CAT), null, "free ground");
     }
     assert.equal(S.place(world, "kiln", spot.x, spot.z, 0, CAT).ok, true);
+});
+
+// Tunnel hop: a full column of belts blocks the plain route, so the route must hop under it and come out past it.
+test("a route hops under a belt wall with a tunnel pair when no plain route exists", () => {
+    const world = S.createWorld({ width: 8, depth: 3, hub: { x: 6, z: 0 }, startStock: [{ item: "iron_plate", qty: 50 }, { item: "iron_rod", qty: 20 }] }, CAT);
+    for (let z = 0; z < 3; z++) assert.equal(S.place(world, "belt", 2, z, 0, CAT).ok, true);
+    const route = S.autoRoute(world, { x: 1, z: 1 }, { x: 5, z: 1 }, "belt", CAT);
+    assert.equal(route.ok, true, route.reason);
+    const kinds = route.cells.map((c) => c.kind);
+    assert.ok(kinds.includes("belt-underground-in") && kinds.includes("belt-underground-out"), `expected a tunnel pair, got ${kinds}`);
+    for (const c of route.cells) assert.equal(S.place(world, c.kind, c.x, c.z, c.rot, CAT).ok, true, `placing ${c.kind} at ${c.x},${c.z}`);
+});
+
+// Side-loading: a belt already feeding a machine is a valid end for a new route, joined from the side.
+test("a route side-loads onto a belt that already feeds the target", () => {
+    const world = S.createWorld({ width: 10, depth: 8, hub: { x: 0, z: 0 } }, CAT);
+    assert.equal(S.place(world, "kiln", 4, 4, 0, CAT).ok, true);
+    assert.equal(S.place(world, "belt", 3, 4, 1, CAT).ok, true); // faces +x, into the kiln
+    const route = S.autoRoute(world, { x: 0, z: 4 }, { x: 4, z: 4 }, "belt", CAT);
+    assert.equal(route.ok, true, route.reason);
+    const last = route.cells.at(-1);
+    const dirs = [[0, 1], [1, 0], [0, -1], [-1, 0]];
+    const [dx, dz] = dirs[last.rot];
+    assert.equal(last.x + dx === 3 && last.z + dz === 4, true, "last belt feeds the existing belt at 3,4");
+});
+
+// Routes keep a resource node and the cells its drill would cover free, so a belt cannot block a drill.
+test("a route keeps a resource node and its drill cells free", () => {
+    const world = S.createWorld({ width: 10, depth: 6, hub: { x: 0, z: 0 } }, CAT);
+    S.addDeposit(world, 4, 2, "iron_ore", 1);
+    const route = S.autoRoute(world, { x: 0, z: 2 }, { x: 8, z: 2 }, "belt", CAT);
+    assert.equal(route.ok, true, route.reason);
+    for (const c of route.cells) {
+        const onNode = [[0, 0], [-1, 0], [0, -1], [-1, -1]].some(([dx, dz]) => world.deposits[`${c.x + dx},${c.z + dz}`]);
+        assert.equal(onNode, false, `belt at ${c.x},${c.z} covers the node or its drill cells`);
+    }
 });
