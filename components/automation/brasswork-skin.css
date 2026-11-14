@@ -238,6 +238,9 @@
   .ab-root.bw .ab-screen { padding: 12px 12px 16px; overflow-y: auto; }
   .ab-root.bw .ab-hold { width: 100%; min-height: 56px; }
   .ab-root.bw .ab-prestige-body { flex-direction: column; }
+  .ab-root.bw .ab-prestige-body { padding-bottom: 12px; }
+  .ab-root.bw .ab-sites { gap: 10px; }
+  .ab-root.bw .ab-site { padding: 14px; gap: 8px; }
   .ab-root.bw .ab-screen-body { overflow-y: auto; }
 }
 .ab-root.bw .ab-site .ab-plain { margin: 4px 0 0; }
