@@ -131,6 +131,20 @@ export class OrbitCamera {
         this.goal.distance = clamp(this.goal.distance * factor, this.limits.minDistance, this.limits.maxDistance);
     }
 
+    // Zoom that keeps the ground point under the cursor (or between the fingers) in place. anchor is in world
+    // units; null falls back to a plain zoom about the target. The target eases in with the distance.
+    zoomAt(factor: number, anchor: { x: number; z: number } | null): void {
+        const d0 = this.goal.distance;
+        const d1 = clamp(d0 * factor, this.limits.minDistance, this.limits.maxDistance);
+        if (anchor && d0 > 0) {
+            const t = 1 - d1 / d0;
+            const b = this.limits.bounds;
+            this.goal.target.x = clamp(this.goal.target.x + (anchor.x - this.goal.target.x) * t, b.minX, b.maxX);
+            this.goal.target.z = clamp(this.goal.target.z + (anchor.z - this.goal.target.z) * t, b.minZ, b.maxZ);
+        }
+        this.goal.distance = d1;
+    }
+
     // Moves the target to a ground point at once, clamped to the bounds. Used to frame a point, e.g. a
     // building picked from a list.
     setTarget(x: number, z: number): void {
