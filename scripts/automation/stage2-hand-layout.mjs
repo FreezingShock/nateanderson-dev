@@ -11,7 +11,9 @@ const CAT = S.DEFAULT_CATALOG;
 const HUB = { x: 8, z: 5 };
 const E = 1, SOUTH = 0, W = 3, N = 2; // rot: 0 = +z, 1 = +x, 2 = -z, 3 = -x
 
-export function runStage2Layout(minutes = 10) {
+export const WINDMILLS = [[0, 4], [5, 5], [12, 6], [16, 8]];
+
+export function runStage2Layout(minutes = 10, windmills = WINDMILLS) {
 const world = S.createWorld({ width: 18, depth: 12, hub: HUB }, CAT);
 const log = [];
 const ok = (label, r) => { if (!r.ok) log.push(`FAIL ${label}: ${r.reason}`); return r.ok; };
@@ -55,7 +57,7 @@ machine("drawer", 10, 9, "r_copper_wire");                       // wire drawer,
 belt(10, 8, N);                                                  // wire goes straight into the hub
 
 // Power: windmills set back from the lines.
-for (const [x, z] of [[0, 4], [12, 6], [14, 6], [5, 5], [8, 10], [12, 2], [14, 3], [16, 6], [16, 8]]) machine("windmill", x, z);
+for (const [x, z] of windmills) machine("windmill", x, z);
 
 for (let t = 0; t < minutes * 60; t++) S.advance(world, 1, 0.1, CAT);
 
