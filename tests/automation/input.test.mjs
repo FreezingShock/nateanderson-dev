@@ -436,3 +436,16 @@ test("rotateHover: R over a placed building turns it; R over empty ground turns 
     b.rotateHover();
     assert.equal(b.getRot(), 1, "empty cell turns the ghost");
 });
+
+test("ghost reason: a refused preview names why; a valid one has none", () => {
+    const w = memWorld({ check: (kind, x) => (x === 6 ? "needs power" : null) });
+    const b = new A.BuildController({ world: w, board });
+    b.setTool(machine);
+    b.setHover({ x: 2, z: 2 });
+    assert.equal(b.ghost().reason, null);
+    b.setHover({ x: 6, z: 2 });
+    assert.equal(b.ghost().reason, "needs power");
+    b.setTool(A.DELETE_TOOL);
+    b.setHover({ x: 1, z: 1 });
+    assert.equal(b.ghost().reason, "nothing to remove");
+});
