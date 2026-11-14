@@ -1,0 +1,47 @@
+/* Brasswork menu art: pixel frames, portraits and decor from public/brasswork/art (scripts/brasswork/build-menu-art.py).
+   Art is drawn at 1 art px and shown at 2x with pixelated scaling. No side strips, no pills. */
+.bwa-px { image-rendering: pixelated; }
+
+.bwa-panel {
+  position: relative;
+  border: 32px solid transparent;
+  border-image-source: var(--bwa-frame);
+  border-image-slice: 16 fill;
+  border-image-width: 32px;
+  border-image-repeat: stretch;
+  image-rendering: pixelated;
+  margin: -14px;
+  padding: 2px;
+}
+
+.bwa-title {
+  display: flex; align-items: center; justify-content: center;
+  min-height: 56px; padding: 0 64px;
+  border-style: solid; border-color: transparent;
+  border-width: 0 60px;
+  border-image-source: var(--bwa-header);
+  border-image-slice: 0 30 fill;
+  border-image-width: 0 60px;
+  border-image-repeat: stretch;
+  image-rendering: pixelated;
+  font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase;
+  color: #2a1606; text-shadow: 0 1px 0 rgba(255, 242, 200, 0.6);
+  font-size: 15px;
+}
+
+.bwa-divider { display: flex; align-items: center; height: 24px; margin: 12px 0; }
+.bwa-divider > i { flex: 1; height: 24px; background-size: 16px 24px; background-repeat: repeat-x; image-rendering: pixelated; }
+.bwa-divider > b { width: 40px; height: 24px; background-size: 40px 24px; image-rendering: pixelated; }
+
+.bwa-portrait {
+  display: block; width: var(--bwa-size, 128px); height: var(--bwa-size, 128px);
+  background-repeat: no-repeat; image-rendering: pixelated;
+}
+
+.bwa-gauge { position: relative; display: inline-block; width: var(--bwa-size, 64px); height: var(--bwa-size, 64px); }
+.bwa-gauge > img { position: absolute; inset: 0; width: 100%; height: 100%; image-rendering: pixelated; }
+.bwa-gauge > img + img { transition: transform 0.4s cubic-bezier(0.3, 0.7, 0.4, 1); }
+@media (prefers-reduced-motion: reduce) { .bwa-gauge > img + img { transition: none; } }
+
+.bwa-empty { display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 18px 12px; text-align: center; opacity: 0.92; }
+.bwa-empty > span:first-child { width: 192px; height: 144px; background-repeat: no-repeat; image-rendering: pixelated; }
