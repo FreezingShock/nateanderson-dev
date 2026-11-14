@@ -1,6 +1,5 @@
 /* Expedition: a centred brass window of site cards over the dimmed game. Tokens come from --bw-*. */
-/* Expedition content inside the shared MenuWindow, widened to fit four site cards. */
-.bw-window:has(.ex-root) { width: min(1120px, 100%); max-height: min(88vh, 860px); }
+/* Expedition content inside the shared MenuWindow, four site cards across at wide size. */
 .ex-root { display: flex; flex-direction: column; gap: 10px; }
 .ex-sub { margin: 0; font-size: 14px; color: var(--bw-dim, #b09a6c); }
 .ex-sub[data-ready="false"] { color: var(--bw-amber, #ffb347); }
@@ -23,7 +22,7 @@
 .ex-blurb { margin: 0; font-size: 14px; color: var(--bw-cream, #f0dfb8); }
 .ex-mid { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 .ex-ores { list-style: none; margin: 0; padding: 0; display: flex; gap: 6px; flex-wrap: wrap; }
-.ex-ore { display: block; padding: 3px; background: #140d08; box-shadow: inset 0 0 0 1px rgba(210, 154, 60, 0.25); }
+.ex-ore { zoom: 0.84; display: block; padding: 3px; background: #140d08; box-shadow: inset 0 0 0 1px rgba(210, 154, 60, 0.25); }
 .ex-ore[data-pure="true"] { box-shadow: inset 0 0 0 1px var(--bw-amber, #ffb347), 0 0 8px rgba(255, 179, 71, 0.45); }
 .ex-ore-ico { display: block; image-rendering: pixelated; }
 .ex-plan { display: block; flex: none; background: #140d08; box-shadow: 0 0 0 1px rgba(210, 154, 60, 0.4); }
