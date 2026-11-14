@@ -142,7 +142,7 @@ export const DECOR_EXTRA = {
 /** Hash of each machine's model source when its portrait was drawn (checked by tests/automation/menu-art.test.mjs). */
 export const PORTRAIT_MODEL_HASH: Record<string, string> = {
     drill: "1aee9e767006",
-    kiln: "b2c05a9e3bdc",
+    kiln: "6817bbe8729c",
     furnace: "4dda85701f67",
     press: "16e5498070a8",
     lathe: "373ea424d10f",

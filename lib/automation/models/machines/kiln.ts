@@ -44,8 +44,8 @@ export function kiln() {
     b.box(6, 2, 18, 14, 3, 19, C.steelD); // ash lip
     // The door, hinged on the left and swung open.
     b.box(3, 3, 18, 5, 10, 19, C.steelD);
-    b.box(2, 3, 19, 3, 10, 20, C.steel);
-    b.set(2, 6, 20, C.brassL);
+    b.box(2, 3, 17, 3, 10, 19, C.steel);
+    b.set(2, 6, 19, C.brassL);
     b.part("fire", [10, 6, 16], pulse(1.3, 0.6), true);
     b.box(6, 3, 16, 14, 4, 17, C.ember);
     b.box(6, 4, 15, 14, 9, 16, C.glow);
@@ -75,15 +75,15 @@ export function kiln() {
     // Crank gear that drives it.
     b.body();
     b.box(0, 2, 14, 4, 12, 16, C.steelD);
-    b.part("gear", [2, 13, 15], spin("z", 0.55));
-    b.gear("z", 2, 13, 2.2, 3.5, 7, 16, 17, C.brass, { hole: 0.8 });
+    b.part("gear", [4, 13, 15], spin("z", 0.55));
+    b.gear("z", 4, 13, 2.2, 3.5, 7, 16, 17, C.brass, { hole: 0.8 });
 
     // Temperature dial on the right with a rocking needle.
     b.body();
-    b.box(18, 7, 9, 20, 13, 13, C.steelD);
-    b.cyl("x", 10, 11, 2, 20, 21, C.cream);
-    b.part("needle", [21, 10, 11], swing("x", 0.6, 0.4));
-    b.box(21, 10, 11, 22, 12, 12, C.red);
+    b.box(16, 7, 9, 18, 13, 13, C.steelD);
+    b.cyl("x", 10, 11, 2, 18, 19, C.cream);
+    b.part("needle", [19, 10, 11], swing("x", 0.6, 0.4));
+    b.box(19, 10, 11, 20, 12, 12, C.red);
 
     b.body();
     hopperBack(b, 0);
