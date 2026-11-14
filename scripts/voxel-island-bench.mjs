@@ -21,6 +21,7 @@ const runs = [
   { name: "ghost-desktop", viewport: { width: 1440, height: 900 }, query: "quality=2&ghost=1&machines=0" },
   { name: "stroke-desktop", viewport: { width: 1440, height: 900 }, query: "quality=2&stroke=1&machines=0" },
   { name: "stroke-phone", viewport: { width: 390, height: 844 }, query: "quality=auto&stroke=1&machines=0", mobile: true },
+  { name: "burst-desktop", viewport: { width: 1440, height: 900 }, query: "quality=2&burst=1&machines=0" },
   { name: "desktop-low", viewport: { width: 1440, height: 900 }, query: "quality=0&machines=400" },
   { name: "desktop-auto", viewport: { width: 1440, height: 900 }, query: "quality=auto&machines=400" },
   { name: "phone-auto", viewport: { width: 390, height: 844 }, query: "quality=auto&machines=400", mobile: true },
