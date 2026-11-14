@@ -20,10 +20,13 @@ interface PopoverProps {
     x: number;
     y: number;
     lineKinds: string[];
+    // Phone: a Details button opens the inspector sheet, since a tap only opens this pop-up there.
+    showDetails?: boolean;
+    onDetails?: (anchor: Cell) => void;
     onClose: () => void;
 }
 
-export function BuildPopover({ input, anchor, kind, kindLabel, x, y, lineKinds, onClose }: PopoverProps) {
+export function BuildPopover({ input, anchor, kind, kindLabel, x, y, lineKinds, showDetails, onDetails, onClose }: PopoverProps) {
     const ref = useRef<HTMLDivElement>(null);
     const [, bump] = useState(0);
     const build = input.build;
@@ -76,6 +79,11 @@ export function BuildPopover({ input, anchor, kind, kindLabel, x, y, lineKinds, 
             <p className="bp-title">{kindLabel}</p>
             <div className="bp-actions">
                 {kind === "hub" && <p className="bp-note">The hub is fixed in place.</p>}
+                {showDetails && onDetails && (
+                    <button type="button" className="bp-btn" data-tone="ghost" onClick={() => onDetails(anchor)}>
+                        Details
+                    </button>
+                )}
                 {kind !== "hub" && isLine && lineCount === 0 && (
                     <button type="button" className="bp-btn" onClick={selectLine}>
                         Select whole line

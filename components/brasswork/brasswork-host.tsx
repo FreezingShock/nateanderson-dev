@@ -125,6 +125,7 @@ export function BrassworkHost() {
         setRecipe: (id: string) => void;
         prestige: (id: string) => void;
         settings: (p: Partial<HudSettings>) => void;
+        details: (anchor: { x: number; z: number }) => void;
     } | null>(null);
 
     useEffect(() => {
@@ -291,8 +292,11 @@ export function BrassworkHost() {
                         // A short click or tap on a placed building (no tool active) opens its inspector.
                         // e.cell is in the shared input frame; the sim is offset by half the board (see buildWorld below).
                         const b = buildingAt(world, e.cell.x + W / 2, e.cell.z + D / 2, CAT);
-                        selectedId = b ? b.id : null;
-                        refresh();
+                        // Phone: the click opens only the pop-up; its Details button opens the inspector sheet.
+                        if (!window.matchMedia("(max-width: 767px)").matches) {
+                            selectedId = b ? b.id : null;
+                            refresh();
+                        }
                         // Quick actions by the piece. Same click, so the inspector and the pop-up open together.
                         const at = input.controller.screenPoint(e.anchor);
                         if (b && at) setPop({ anchor: e.anchor, kind: e.kind, kindLabel: resolve(CAT, e.kind)?.name ?? e.kind, x: at.x, y: at.y });
@@ -329,6 +333,11 @@ export function BrassworkHost() {
             };
 
             ctl.current = {
+                details: (anchor) => {
+                    const b = buildingAt(world, anchor.x + W / 2, anchor.z + D / 2, CAT);
+                    selectedId = b ? b.id : null;
+                    refresh();
+                },
                 setTool: (id) => {
                     input.controller.setToolById(id);
                     setNote(id ? `Click the floor to place ${resolve(CAT, id)?.name ?? id}. R rotates, Esc cancels.` : "");
@@ -476,6 +485,11 @@ export function BrassworkHost() {
                         x={pop.x}
                         y={pop.y}
                         lineKinds={["belt", "belt-copper", "belt-steel"]}
+                        showDetails={typeof window !== "undefined" && window.matchMedia("(max-width: 767px)").matches}
+                        onDetails={(a) => {
+                            ctl.current?.details(a);
+                            setPop(null);
+                        }}
                         onClose={() => setPop(null)}
                     />
                 )}
