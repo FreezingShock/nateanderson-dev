@@ -1,34 +1,43 @@
 /* Starter quest tracker: a sharp brass panel with corner brackets, in the stage's bottom-left corner on desktop and
    under the photo row on phones. It hides while a drawer or sheet is open so the panels above it stay readable. */
-.bw-quest,
+/* Starter quest tracker: parchment QuestCard frame from brasswork-art (brass corners, dark ink). It sits in the stage
+   corner, bottom-left on desktop and under the photo row on phones, and hides while a drawer or sheet is open. */
+.bw-quest {
+    position: absolute;
+    left: 12px;
+    bottom: 64px;
+    z-index: 5;
+    width: min(340px, calc(100% - 40px));
+    font-family: var(--bw-font);
+}
 .bw-quest-tab {
     position: absolute;
     left: 12px;
     bottom: 64px;
     z-index: 5;
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    min-height: 44px;
+    padding: 0 14px;
     font-family: var(--bw-font);
+    font-size: 13px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
     color: #f3e2bf;
+    cursor: pointer;
     background: var(--bw-dither) padding-box, linear-gradient(180deg, #4a3118, #24170b) border-box;
     border: 3px solid var(--bw-brass-lo, #8a6a3a);
-    box-shadow: 0 3px 0 var(--bw-brass-dk, #2a1b0e), inset 0 1px 0 rgba(255, 220, 150, 0.35);
+    box-shadow: 0 3px 0 var(--bw-brass-dk, #2a1b0e);
 }
-.bw-quest {
-    width: min(320px, calc(100% - 24px));
-    padding: 16px 18px 14px;
+.bw-quest .bwa-quest {
+    padding: 12px 14px 10px;
     display: grid;
-    gap: 14px;
+    gap: 12px;
+    color: #2a1606;
+    font-family: var(--bw-font);
 }
-.bw-quest::before,
-.bw-quest::after {
-    content: "";
-    position: absolute;
-    width: 12px;
-    height: 12px;
-    border: 2px solid var(--bw-brass-hi, #f0d08a);
-    pointer-events: none;
-}
-.bw-quest::before { top: -7px; right: -7px; border-left: 0; border-bottom: 0; }
-.bw-quest::after { bottom: -7px; left: -7px; border-right: 0; border-top: 0; }
+.bw-quest .bwa-seal { display: none; }
 
 .bw-quest-head {
     display: flex;
@@ -156,18 +165,6 @@
 .bw-quest-btn:hover,
 .bw-quest-btn:focus-visible { color: var(--bw-brass-hi, #f0d08a); outline: none; border-color: var(--bw-brass-hi, #f0d08a); }
 
-.bw-quest-tab {
-    display: inline-flex;
-    align-items: center;
-    gap: 10px;
-    min-height: 44px;
-    padding: 0 14px;
-    font: inherit;
-    font-size: 13px;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    cursor: pointer;
-}
 .bw-quest-tab-count { color: var(--bw-brass-hi, #f0d08a); }
 
 /* Hide while a drawer or sheet is open, so it never sits over the panels. */
@@ -178,9 +175,27 @@
 
 @media (max-width: 600px) {
     .bw-quest,
-    .bw-quest-tab { top: 52px; bottom: auto; left: 8px; }
-    .bw-quest { width: calc(100% - 16px); padding: 14px 14px 12px; gap: 12px; }
+    .bw-quest-tab { top: 84px; bottom: auto; left: 8px; }
+    .bw-quest { width: calc(100% - 16px); }
     .bw-quest-now { grid-template-columns: 40px 1fr; gap: 10px; }
     .bw-quest-icon { width: 40px; height: 40px; }
     .bw-quest-icon > span { width: 32px; height: 32px; }
 }
+
+/* Ink on parchment */
+.bw-quest-title { color: #2a1606; }
+.bw-quest-count { color: #6b4a1e; }
+.bw-quest-bar span { background: rgba(42, 22, 6, 0.12); border-color: #6b4a1e; }
+.bw-quest-bar span[data-done="true"] { background: linear-gradient(180deg, #d9a54a, #9a6a24); border-color: #6b4a1e; }
+.bw-quest-icon { background: rgba(255, 244, 214, 0.5); border-color: #6b4a1e; }
+.bw-quest-label { color: #7a5420; }
+.bw-quest-step { color: #2a1606; }
+.bw-quest-hint { color: #3e2a10; }
+.bw-quest-list { border-top-color: rgba(107, 74, 30, 0.45); }
+.bw-quest-list li { color: #7a6443; }
+.bw-quest-list li[data-state="current"] { color: #2a1606; }
+.bw-quest-list li[data-state="done"] { color: #5a4220; }
+.bw-quest-mark { border-color: #8a6a3a; }
+.bw-quest-list li[data-state="current"] .bw-quest-mark { border-color: #6b4a1e; }
+.bw-quest-list li[data-state="done"] .bw-quest-mark { background: #9a6a24; border-color: #6b4a1e; color: #fff3d6; }
+.bw-quest-btn { color: #f3e2bf; }

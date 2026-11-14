@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 import type { CSSProperties } from "react";
 import type { HudData } from "@/lib/automation/types";
 import { iconStyle } from "@/lib/automation/icons";
+import { QuestCard } from "@/components/brasswork-art";
 import { firstRunSteps, readFirstRunDone, writeFirstRunDone } from "@/lib/brasswork/first-run";
 import "./first-run.css";
 
@@ -51,7 +52,8 @@ export function FirstRunGuide({ data }: { data: HudData }) {
     }
 
     return (
-        <section className="bw-quest" aria-label="Starter quest">
+        <div className="bw-quest" role="region" aria-label="Starter quest">
+            <QuestCard sealed={false}>
             <header className="bw-quest-head">
                 <span className="bw-quest-title">Starter quest</span>
                 <span className="bw-quest-count">{finished}/{steps.length}</span>
@@ -87,6 +89,7 @@ export function FirstRunGuide({ data }: { data: HudData }) {
                 <button type="button" className="bw-quest-btn" onClick={() => setFolded(true)}>Minimise</button>
                 <button type="button" className="bw-quest-btn" onClick={finish}>Skip</button>
             </footer>
-        </section>
+            </QuestCard>
+        </div>
     );
 }
