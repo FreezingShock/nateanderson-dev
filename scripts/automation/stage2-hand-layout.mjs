@@ -1,0 +1,76 @@
+// Hand-built stage 2 layout on the 18 by 12 test island, through the placement calls only (no autoRoute).
+// Four lines: iron plates and steel from the north-west, copper wire from the south-east, aluminium sheets
+// from the south-west. Plates, steel and sheets side-load onto one trunk belt that enters the hub from the
+// south. Copper wire has its own short belt into the hub's south-east cell.
+// Run: node scripts/automation/stage2-hand-layout.mjs
+import { registerHooks } from "node:module";
+import { fileURLToPath } from "node:url";
+registerHooks({ resolve(spec, ctx, next) { try { return next(spec, ctx); } catch (e) { if (spec.startsWith(".")) return next(spec + ".ts", ctx); throw e; } } });
+const S = await import("../../lib/automation/sim/index.ts");
+const CAT = S.DEFAULT_CATALOG;
+const HUB = { x: 8, z: 5 };
+const E = 1, SOUTH = 0, W = 3, N = 2; // rot: 0 = +z, 1 = +x, 2 = -z, 3 = -x
+
+export function runStage2Layout(minutes = 10) {
+const world = S.createWorld({ width: 18, depth: 12, hub: HUB }, CAT);
+const log = [];
+const ok = (label, r) => { if (!r.ok) log.push(`FAIL ${label}: ${r.reason}`); return r.ok; };
+const belt = (x, z, rot) => ok(`belt ${x},${z}`, S.place(world, "belt", x, z, rot, CAT));
+const machine = (id, x, z, recipe) => {
+  const r = S.place(world, id, x, z, 0, CAT);
+  if (!ok(`${id} ${x},${z}`, r)) return null;
+  if (recipe) ok(`recipe ${recipe}`, S.setRecipe(world, r.id, recipe, CAT));
+  return r.id;
+};
+
+// Ore nodes on the island (test deposits, not the generator's).
+for (const [item, x, z] of [["iron_ore", 1, 1], ["coal", 1, 6], ["aluminium_ore", 1, 10], ["coal", 1, 8], ["copper_ore", 14, 10]]) {
+  S.addDeposit(world, x, z, item, 1);
+}
+
+// North-west: iron plates and steel.
+machine("drill", 1, 1);
+belt(3, 1, E); machine("kiln", 4, 1, "r_iron_ingot");           // kiln A
+belt(6, 1, E); machine("press", 7, 1, "r_iron_plate");           // press Fe, fed by kiln A
+belt(1, 3, E); belt(2, 3, E); belt(3, 3, E);                     // drill's second output feeds kiln B
+machine("kiln", 4, 3, "r_iron_ingot");                           // kiln B, feeds the furnace below
+machine("furnace", 3, 5, "r_steel_ingot");                       // steel furnace, touches kiln B
+machine("drill", 1, 6);                                          // coal drill touches the steel furnace
+for (const z of [4, 5, 6, 7]) belt(7, z, SOUTH);                 // plates from press Fe down to the trunk
+
+// South-west: aluminium sheets.
+machine("drill", 1, 10);                                         // aluminium drill, touches the furnace
+machine("furnace", 3, 9, "r_aluminium_ingot");   // 2 by 3, sits on the bottom rows
+machine("drill", 1, 8);                                          // coal drill, touches the aluminium furnace
+machine("press", 5, 9, "r_aluminium_sheet");                     // press Al, touches the furnace and the trunk
+
+// Trunk: side-loads from the north and south, enters the hub from the south-west corner.
+for (let x = 4; x <= 7; x++) belt(x, 8, E);
+belt(8, 8, N);
+
+// South-east: copper wire.
+machine("drill", 14, 10);
+belt(13, 10, W); machine("kiln", 11, 9, "r_copper_ingot");       // copper kiln
+machine("drawer", 10, 9, "r_copper_wire");                       // wire drawer, touches the kiln
+belt(10, 8, N);                                                  // wire goes straight into the hub
+
+// Power: windmills set back from the lines.
+for (const [x, z] of [[0, 4], [12, 6], [14, 6], [5, 5], [8, 10], [12, 2], [14, 3], [16, 6], [16, 8]]) machine("windmill", x, z);
+
+for (let t = 0; t < minutes * 60; t++) S.advance(world, 1, 0.1, CAT);
+
+const hub = world.buildings[world.hubId].input;
+const targets = { iron_plate: 60, copper_wire: 60, steel_ingot: 30, aluminium_sheet: 20 };
+const stock = Object.fromEntries(Object.keys(targets).map((item) => [item, hub[item] ?? 0]));
+return { stock, targets, log, world };
+}
+
+if (process.argv[1] === fileURLToPath(import.meta.url)) {
+const { stock, targets, log, world } = runStage2Layout();
+for (const [item, need] of Object.entries(targets)) console.log(`${stock[item] >= need ? "ok  " : "NO  "} ${item} ${stock[item]} of ${need}`);
+let free = 0;
+for (let z = 0; z < 12; z++) for (let x = 0; x < 18; x++) if (!S.buildingAt(world, x, z, CAT) && !world.deposits[`${x},${z}`]) free++;
+console.log(`free cells ${free} of ${18 * 12} (ore nodes excluded)`);
+for (const line of log) console.log(line);
+console.log(`power ${JSON.stringify(world.power)}`);
+}
