@@ -333,6 +333,21 @@ export function BrassworkHost() {
                     if (!r.ok) setNote(r.reason);
                 },
                 check: (kind, x, z, rot) => grid.check(kind, x + ox, z + oz, rot),
+                // Ports that face out of a machine cell, for belt joins. Only unrotated machines report ports for now.
+                portsAt: (x, z) => {
+                    const it = buildWorld.get(x, z);
+                    if (!it || it.kind.startsWith("belt") || it.rot !== 0) return [];
+                    const model = getMachineModel(it.kind);
+                    const anchor = it.anchor ?? { x, z };
+                    const out: Rot[] = [];
+                    for (const p of model?.ports?.out ?? []) {
+                        if (anchor.x + p.cell.x === x && anchor.z + p.cell.z === z) out.push(p.side);
+                    }
+                    for (const p of model?.ports?.in ?? []) {
+                        if (anchor.x + p.cell.x === x && anchor.z + p.cell.z === z) out.push(p.side);
+                    }
+                    return out;
+                },
             };
             const tools = [...CAT.tree.machines.map((m) => m.id), "belt", "belt-copper", "belt-steel"].map((id) => {
                 const r = resolve(CAT, id);
