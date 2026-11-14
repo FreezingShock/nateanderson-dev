@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import "@/components/brasswork-ui/brass-kit.css";
-import { ArtDivider, ArtGauge, ArtPanel, EmptyState, MachinePortrait, PanelTitle, RARITY_FRAMES, rarityOf } from "@/components/brasswork-art";
-import { PORTRAITS } from "@/lib/automation/art";
+import { MilestoneArt, QuestCard, ResearchArt, SitePainting, ArtDivider, ArtGauge, ArtPanel, EmptyState, MachinePortrait, PanelTitle, RARITY_FRAMES, rarityOf } from "@/components/brasswork-art";
+import { MILESTONE_ART, PORTRAITS, RESEARCH_ART, SITE_ART } from "@/lib/automation/art";
 
 // Brasswork menu art reference. Hidden in production builds unless VOXEL_BENCH=1 is set.
 export const metadata = { robots: { index: false, follow: false } };
@@ -33,6 +33,16 @@ export default function Page() {
                 <EmptyState scene="crate">Nothing in storage yet</EmptyState>
                 <EmptyState scene="blueprint">No research ready</EmptyState>
                 <EmptyState scene="idle">This machine is idle</EmptyState>
+            </div>
+            <ArtDivider />
+            <PanelTitle>Milestones</PanelTitle>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 16 }}>{Object.keys(MILESTONE_ART).map((id) => <MilestoneArt key={id} id={id} label={id} />)}</div>
+            <PanelTitle>Research</PanelTitle>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 12 }}>{Object.keys(RESEARCH_ART).map((id) => <ResearchArt key={id} id={id} label={id} />)}</div>
+            <PanelTitle>New workshop</PanelTitle>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 24 }}>{Object.keys(SITE_ART).map((id) => <SitePainting key={id} id={id} width={200} label={id} />)}</div>
+            <div style={{ maxWidth: 320, marginTop: 40 }}>
+                <QuestCard><strong>Deliver 50 iron ingots</strong><p style={{ margin: "6px 0 0" }}>Fill the first smelt run crate at the hub.</p></QuestCard>
             </div>
         </main>
     );

@@ -85,3 +85,73 @@ export function rarityOf(id: string): Rarity {
 
 export const EMPTY_SCENES = { crate: 0, blueprint: 1, idle: 2 } as const;
 export type EmptyScene = keyof typeof EMPTY_SCENES;
+
+/** Milestone banners: 128 x 96 cells in one row, the milestone's delivery items piled on a shipping crate. */
+export const MILESTONE_SHEET = { url: "/brasswork/art/milestones.webp?v=97ba44d9", w: 128, h: 96, cols: 5, rows: 1 } as const;
+export const MILESTONE_ART: Record<string, number> = {
+    ms_smelting: 0, // First smelt run
+    ms_forming: 1, // Plate line online
+    ms_components: 2, // Components crate
+    ms_clockworks: 3, // Clockwork shipment
+    ms_megaproject: 4, // Sky orrery, first light
+};
+
+/** Research cards: 128 x 96 blueprint cells, 6 across; alternates carry a copper corner. */
+export const RESEARCH_SHEET = { url: "/brasswork/art/research.webp?v=5f3bfff4", w: 128, h: 96, cols: 6, rows: 4 } as const;
+export const RESEARCH_ART: Record<string, number> = {
+    gears: 0, // Gear cutting
+    furnace_alloys: 1, // Alloy furnaces
+    sheet_rolling: 2, // Sheet rolling
+    frames: 3, // Frames
+    silicon: 4, // Silicon wafers
+    steel_beams: 5, // Beam forming
+    casings: 6, // Aluminium casings
+    circuits: 7, // Circuit boards
+    motors: 8, // Motors
+    quartz_optics: 9, // Quartz optics
+    servos: 10, // Servos
+    photocells: 11, // Photocells
+    lens_arrays: 12, // Lens arrays
+    mirror_rings: 13, // Mirror rings
+    relay_cores: 14, // Relay cores
+    orrery_struts: 15, // Orrery struts
+    quartz_silicon: 16, // Quartz-only silicon
+    hammered_plates: 17, // Hammered plates
+    thin_wire: 18, // Thin wire
+    bulk_screws: 19, // Bulk screws
+    quick_steel: 20, // Quick steel
+    fast_frames: 21, // Fast frames
+};
+
+/** Prestige site paintings: 128 x 96 cells in one row; hang them in DECOR_EXTRA.gilt. */
+export const SITE_SHEET = { url: "/brasswork/art/sites.webp?v=32c9a444", w: 128, h: 96, cols: 4, rows: 1 } as const;
+export const SITE_ART: Record<string, number> = {
+    ridge: 0,
+    cove: 1,
+    "high-bank": 2,
+    quarry: 3,
+};
+
+/** Gilt picture frame (sites), quest card parchment and its wax seal. Frames: border-image slice 16 (quest: fill). */
+export const DECOR_EXTRA = {
+    gilt: { url: "/brasswork/art/frame-gilt.png?v=c4b74a99", w: 48, h: 48, slice: 16 },
+    quest: { url: "/brasswork/art/quest.png?v=44f1aa4c", w: 48, h: 48, slice: 16 },
+    seal: { url: "/brasswork/art/seal.png?v=40f84dc7", w: 24, h: 24 },
+} as const;
+
+/** Hash of each machine's model source when its portrait was drawn (checked by tests/automation/menu-art.test.mjs). */
+export const PORTRAIT_MODEL_HASH: Record<string, string> = {
+    drill: "8cb77d3c4c90",
+    kiln: "6002fb81e2f6",
+    furnace: "4dda85701f67",
+    press: "16e5498070a8",
+    lathe: "373ea424d10f",
+    drawer: "df0b61e07462",
+    assembler: "844b0129349b",
+    fabricator: "d99fc98170c6",
+    windmill: "319f08ebeded",
+    spring_winder: "76142f1b3892",
+    spring_store: "5ba39abd6e06",
+    hub: "131ddcc43c5f",
+    orrery: "b116c4b55a48",
+};

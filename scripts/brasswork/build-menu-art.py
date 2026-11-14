@@ -283,6 +283,258 @@ def empty_scene(kind):
     return c.img[:96, :128].copy()
 
 
+# ------------------------------------------------------------------ model sync guard
+# Portraits must change whenever a machine's 3D model changes (Nate's rule, 2026-11-14). Each portrait records a hash of
+# its model file plus the shared model files; tests/automation/menu-art.test.mjs fails when a model changes and the
+# portraits were not redrawn. Fix: update the machine's drawing in bw_machines.py to match, then re-run this script.
+MODEL_DIR = ROOT / "lib/automation/models/machines"
+MODEL_FILE = {"spring_store": "springstore.ts", "spring_winder": "winder.ts"}
+SHARED = ["common.ts", "palette.ts", "builder.ts"]
+
+
+def model_hash(mid):
+    h = hashlib.sha1()
+    for f in [MODEL_FILE.get(mid, f"{mid}.ts")] + SHARED:
+        h.update((MODEL_DIR / f).read_bytes())
+    return h.hexdigest()[:12]
+
+
+# ------------------------------------------------------------------ round 2: milestones, research, sites, quests
+def catalog():
+    import json
+    import subprocess
+    js = ("import('./lib/automation/data/tree.ts').then(m => { const t = m.RECIPE_TREE;"
+          "const out = Object.fromEntries(t.recipes.map(r => [r.id, r.output.item]));"
+          "console.log(JSON.stringify({ms: t.milestones.map(x => [x.id, x.name, x.deliver.map(d => d.item)]),"
+          "rs: t.research.map(n => [n.id, n.name, n.recipes.map(r => out[r]), !!n.note])})); })")
+    return json.loads(subprocess.run(["node", "--experimental-strip-types", "--no-warnings", "-e", js], cwd=ROOT,
+                                     check=True, capture_output=True, text=True).stdout)
+
+
+def draw_at(fn, cx, cy, target):
+    """Draw an icon function on the 128 canvas with its larger side `target` px, centred on (cx, cy)."""
+    FIT.update(k=2.0, dx=32.0, dy=32.0)
+    a = fn().img[..., 3] > 0
+    ys, xs = np.nonzero(a)
+    w, h = xs.max() - xs.min() + 1, ys.max() - ys.min() + 1
+    k = 2.0 * min(target / w, target / h)
+    ax = 32 + ((xs.max() + xs.min() + 1) / 2 - 64) / 2
+    ay = 32 + ((ys.max() + ys.min() + 1) / 2 - 64) / 2
+    FIT.update(k=k, dx=cx - (32 + (ax - 32) * k), dy=cy - (32 + (ay - 32) * k))
+    out = fn()
+    FIT.update(k=1.0, dx=0.0, dy=0.0)
+    return out
+
+
+def blueprint_bg(alt=False):
+    """Research card ground: blueprint paper with a fine grid, a gear watermark, darker toward the edges."""
+    c = Canvas()
+    m = rect(0, 0, 128, 96)
+    c.fill(m, 0.2 + 0.4 * np.clip(1 - np.hypot((X - 64) / 80, (Y - 46) / 60), 0, 1), "cell", bayer=BAYER8)
+    c.set(m & (((X.astype(int) % 8) == 0) | ((Y.astype(int) % 8) == 0)), P["cell"][2])
+    g = gear_outline(40, 33, 12)
+    c.set(path([(64 + x, 48 + y) for x, y in g + g[:1]], 1.0) & m, P["cell"][3])
+    c.set(ring(64, 48, 14, 13), P["cell"][3])
+    if alt:  # alternates get a copper corner stamp
+        c.fill(poly([(100, 0), (128, 0), (128, 28)]), 0.6, "cu")
+    return c
+
+
+def milestone_bg():
+    c = Canvas()
+    m = rect(0, 0, 128, 96)
+    c.fill(m & (Y < 64), 0.1 + 0.55 * np.clip(1 - np.hypot((X - 64) / 70, (Y - 30) / 50), 0, 1), "wood", bayer=BAYER8)
+    c.fill(m & (Y >= 64), 0.15 + 0.4 * np.clip(1 - np.hypot((X - 64) / 80, (Y - 70) / 30), 0, 1), "steel", bayer=BAYER8)
+    c.set(rect(0, 63, 128, 64), P["brass"][2])
+    for y0 in (68, 74, 82, 92):
+        c.set(rect(0, y0, 128, y0 + 1), P["steel"][0])
+    # a shipping crate the items sit on
+    sc = Scene(cx=64, cy=86, s=1.6)
+    sc.box(-24, 24, 0, 10, -8, 8, "wood", 0.0)
+    sc.box(-24, 24, 4, 6, 8, 8.6, "brass", 0.1)
+    sc.paint(c)
+    return c
+
+
+def milestone_card(items):
+    c = milestone_bg()
+    n = len(items)
+    xs = np.linspace(64 - 13 * (n - 1), 64 + 13 * (n - 1), n) if n > 1 else [64]
+    order = sorted(range(n), key=lambda i: abs(i - (n - 1) / 2), reverse=True)  # outer first, centre on top
+    for i in order:
+        size = 40 if n <= 2 else (34 if n <= 4 else 30)
+        y = 54 - (6 if abs(i - (n - 1) / 2) < 0.6 else 0)
+        c.over(draw_at(bw_items.DRAW[items[i]], xs[i], y, size))
+    vig = np.clip(np.hypot((X - 64) / 64, (Y - 48) / 52) - 0.85, 0, 1) * 2.0
+    c.img[(BAYER8 + 0.5 < vig) & rect(0, 0, 128, 96)] = (*P["ink"][0], 255)
+    return c.img[:96, :128].copy()
+
+
+def research_card(items, alt):
+    c = blueprint_bg(alt)
+    item = items[0]
+    fg = draw_at(bw_items.DRAW[item], 64, 48, 62)
+    halo = grow(fg.img[..., 3] > 0, 3) & ~(fg.img[..., 3] > 0)
+    c.img[halo & (BAYER8 < 0.2)] = (*P["cell"][5], 255)
+    c.over(fg)
+    return c.img[:96, :128].copy()
+
+
+SITES = ["ridge", "cove", "high-bank", "quarry"]
+
+
+def site_scene(sid):
+    """128 x 96 landscape of a prestige site: sky, sea, the island's shape and its ore."""
+    c = Canvas()
+    m = rect(0, 0, 128, 96)
+    c.fill(m & (Y < 50), 0.45 + 0.5 * (1 - Y / 50), "cream", bayer=BAYER8)
+    sun = disc(98, 20, 9)
+    c.fill(sun, 0.95, "glow")
+    c.fill(m & (Y >= 50), 0.2 + 0.35 * (1 - (Y - 50) / 46), "glass", bayer=BAYER8)
+    for y0 in (56, 63, 72, 84):
+        c.set(rect(0, y0, 128, y0 + 1) & (BAYER8 < 0.1), P["glass"][4])
+    rng = np.random.default_rng(len(sid))
+    if sid == "ridge":
+        hills = poly([(0, 66), (18, 44), (34, 52), (54, 30), (74, 46), (92, 36), (128, 60), (128, 74), (0, 74)])
+        c.fill(hills, 0.25 + 0.5 * np.clip(1 - (Y - 30) / 44, 0, 1), "ironore", bayer=BAYER8)
+        c.set(edge(hills, 0, -1), P["ironore"][-1])
+        for x, y in rng.uniform((20, 54), (100, 68), (9, 2)):
+            c.fill(disc(x, y, 2.2) & hills, 0.8, "rust")
+    elif sid == "cove":
+        land = poly([(0, 46), (30, 40), (52, 48), (46, 62), (60, 72), (128, 66), (128, 80), (0, 80)])
+        water = disc(44, 58, 14, 7)
+        c.fill(land & ~water, 0.3 + 0.4 * np.clip(1 - (Y - 40) / 40, 0, 1), "patina", bayer=BAYER8)
+        c.set(edge(land & ~water, 0, -1), P["patina"][-1])
+        c.fill(water & land, 0.5, "glass")
+        c.fill(rect(98, 42, 102, 66), 0.45, "wood")
+        for a in (0.3, 1.87, 3.44, 5.01):
+            c.set(line(100, 42, 100 + 13 * math.cos(a), 42 + 13 * math.sin(a), 2.2), P["cream"][4])
+        c.fill(disc(100, 42, 2), 0.7, "brass")
+    elif sid == "high-bank":
+        cliff = poly([(10, 74), (16, 24), (64, 18), (110, 26), (118, 74)])
+        c.fill(cliff, 0.25 + 0.45 * np.clip(1 - (X - 10) / 110, 0, 1), "rock", bayer=BAYER8)
+        c.fill(rect(10, 18, 118, 24) & grow(cliff, 1), 0.6, "patina")
+        for y0, pal in ((40, "cu"), (56, "coal")):
+            c.fill(cliff & (np.abs(Y - y0 - 3 * np.sin(X / 9)) < 2.6), 0.6, pal)
+    else:  # quarry: a stepped pit cut into pale stone
+        ground = rect(0, 44, 128, 76)
+        c.fill(ground, 0.55, "bauxite", bayer=BAYER8)
+        for k, (w, h) in enumerate(((50, 9), (38, 7), (26, 5), (14, 3))):
+            d = disc(64, 54 + 3 * k, w, h)
+            c.fill(d, 0.45 - 0.1 * k, "rock", bayer=BAYER8)
+            c.set(edge(d, 0, 1), P["rock"][-2])
+        for x, y in rng.uniform((44, 54), (84, 66), (6, 2)):
+            c.fill(disc(x, y, 1.6), 0.9, "qz")
+    # small dark hub roof on every site, so the workshop's place reads
+    c.fill(poly([(58, 40), (64, 35), (70, 40)]) if sid != "quarry" else poly([(60, 47), (64, 43), (68, 47)]), 0.4, "patina")
+    vig = np.clip(np.hypot((X - 64) / 64, (Y - 48) / 52) - 0.9, 0, 1) * 2.0
+    c.img[(BAYER8 + 0.5 < vig) & m] = (*P["ink"][0], 255)
+    return c.img[:96, :128].copy()
+
+
+def gilt_frame():
+    """48 x 48 picture frame for site paintings: thick gilt moulding, inner bead, corner rosettes. slice 16."""
+    c = Canvas()
+    S = 48
+    outer = rect(0, 0, S, S) & ~rect(12, 12, S - 12, S - 12)
+    c.fill(outer, 0.3 + 0.6 * np.clip(1 - np.minimum(np.minimum(X, Y), np.minimum(S - X, S - Y)) / 12, 0, 1) ** 0.8,
+           "brass")
+    c.set(rect(0, 0, S, 1) | rect(0, 0, 1, S), P["brass"][-1])
+    c.set(rect(0, S - 1, S, S) | rect(S - 1, 0, S, S), P["brass"][0])
+    bead = rect(9, 9, S - 9, S - 9) & ~rect(11, 11, S - 11, S - 11)
+    c.set(bead, P["brass"][1])
+    c.set(bead & ((X.astype(int) + Y.astype(int)) % 3 == 0), P["brass"][5])
+    for x, y in ((6, 6), (S - 6, 6), (6, S - 6), (S - 6, S - 6)):
+        r = disc(x, y, 4.5)
+        plate(c, r, "brass", 0.4, 1.0)
+        c.set(disc(x, y, 1.5), P["glow"][4])
+    c.finish(P["steel"][0])
+    return c.img[:S, :S].copy()
+
+
+def quest_frame():
+    """48 x 48 quest card: parchment fill with a torn-dither edge, brass corner caps and a wax seal at the top. slice 16
+    fill, so the parchment stretches under the text."""
+    c = Canvas()
+    S = 48
+    paper = rect(2, 2, S - 2, S - 2)
+    c.fill(paper, 0.55 + 0.35 * np.clip(1 - np.hypot((X - 20) / 40, (Y - 18) / 40), 0, 1), "cream", bayer=BAYER8)
+    torn = paper & ~rect(4, 4, S - 4, S - 4) & (BAYER8 > 0.15)
+    c.img[torn] = 0
+    c.set(rect(5, 5, S - 5, 6) | rect(5, S - 6, S - 5, S - 5), P["cream"][1])
+    for fx in (0, 1):
+        for fy in (0, 1):
+            x0 = S - 12 if fx else 0
+            y0 = S - 12 if fy else 0
+            tri = poly([(x0 + (12 if fx else 0), y0 + (12 if fy else 0)),
+                        (x0 + (0 if fx else 12), y0 + (12 if fy else 0)),
+                        (x0 + (12 if fx else 0), y0 + (0 if fy else 12))])
+            plate(c, tri, "brass")
+    c.finish(P["steel"][0])
+    return c.img[:S, :S].copy()
+
+
+def wax_seal():
+    """24 x 24 red wax seal with a gear stamp, to pin on a quest card."""
+    c = Canvas()
+    blob = disc(12, 12, 10) | disc(5, 15, 4) | disc(19, 6, 3.5)
+    c.fill(blob, 0.35 + 0.5 * np.clip(1 - np.hypot(X - 8, Y - 8) / 14, 0, 1), "brick", bayer=K.BAYER)
+    g = poly([(12 + x, 12 + y) for x, y in gear_outline(6, 4.6, 8)])
+    c.set(edge(g, 1, 0) | edge(g, 0, 1), P["brick"][0])
+    c.set(edge(g, -1, 0) | edge(g, 0, -1), P["brick"][-1])
+    c.finish(P["steel"][0])
+    return c.img[:24, :24].copy()
+
+
+def round2():
+    cat = catalog()
+    ms = cat["ms"]
+    rs = cat["rs"]
+    v = {}
+    v["milestones"] = save(np.concatenate([milestone_card(m[2]) for m in ms], axis=1), "milestones", pair=True)
+    cols = 6
+    rows = (len(rs) + cols - 1) // cols
+    sheet = np.zeros((rows * 96, cols * 128, 4), np.uint8)
+    for k, (rid, _, items, alt) in enumerate(rs):
+        r, cc = divmod(k, cols)
+        sheet[r * 96:(r + 1) * 96, cc * 128:(cc + 1) * 128] = research_card(items, alt)
+    v["research"] = save(sheet, "research", pair=True)
+    v["sites"] = save(np.concatenate([site_scene(s) for s in SITES], axis=1), "sites", pair=True)
+    v["gilt"] = save(gilt_frame(), "frame-gilt")
+    v["quest"] = save(quest_frame(), "quest")
+    v["seal"] = save(wax_seal(), "seal")
+    q = lambda k: k if k.isidentifier() else f'"{k}"'  # noqa: E731
+    ms_map = "\n".join(f"    {q(m[0])}: {k}, // {m[1]}" for k, m in enumerate(ms))
+    rs_map = "\n".join(f"    {q(r[0])}: {k}, // {r[1]}" for k, r in enumerate(rs))
+    st_map = "\n".join(f"    {q(sid)}: {k}," for k, sid in enumerate(SITES))
+    return f'''
+/** Milestone banners: 128 x 96 cells in one row, the milestone's delivery items piled on a shipping crate. */
+export const MILESTONE_SHEET = {{ url: "/brasswork/art/milestones.webp?v={v["milestones"]}", w: 128, h: 96, cols: {len(ms)}, rows: 1 }} as const;
+export const MILESTONE_ART: Record<string, number> = {{
+{ms_map}
+}};
+
+/** Research cards: 128 x 96 blueprint cells, {cols} across; alternates carry a copper corner. */
+export const RESEARCH_SHEET = {{ url: "/brasswork/art/research.webp?v={v["research"]}", w: 128, h: 96, cols: {cols}, rows: {rows} }} as const;
+export const RESEARCH_ART: Record<string, number> = {{
+{rs_map}
+}};
+
+/** Prestige site paintings: 128 x 96 cells in one row; hang them in DECOR_EXTRA.gilt. */
+export const SITE_SHEET = {{ url: "/brasswork/art/sites.webp?v={v["sites"]}", w: 128, h: 96, cols: {len(SITES)}, rows: 1 }} as const;
+export const SITE_ART: Record<string, number> = {{
+{st_map}
+}};
+
+/** Gilt picture frame (sites), quest card parchment and its wax seal. Frames: border-image slice 16 (quest: fill). */
+export const DECOR_EXTRA = {{
+    gilt: {{ url: "/brasswork/art/frame-gilt.png?v={v["gilt"]}", w: 48, h: 48, slice: 16 }},
+    quest: {{ url: "/brasswork/art/quest.png?v={v["quest"]}", w: 48, h: 48, slice: 16 }},
+    seal: {{ url: "/brasswork/art/seal.png?v={v["seal"]}", w: 24, h: 24 }},
+}} as const;
+'''
+
+
 # ------------------------------------------------------------------ build
 def save(arr, name, pair=False):
     img = to_image(arr)
@@ -291,6 +543,10 @@ def save(arr, name, pair=False):
         return hashlib.sha1((OUT / f"{name}.webp").read_bytes()).hexdigest()[:8]
     img.save(OUT / f"{name}.png", optimize=True)
     return hashlib.sha1((OUT / f"{name}.png").read_bytes()).hexdigest()[:8]
+
+
+def q2(k):
+    return k if k.isidentifier() else f'"{k}"'
 
 
 def main():
@@ -318,6 +574,14 @@ def main():
     rar = "\n".join(f'    {rid}: {{ label: "{lab}", url: "/brasswork/art/frame-{rid}.png?v={v_rar[rid]}" }},'
                     for rid, lab, _, _ in RARITY)
     mr = "\n".join(f'    {k}: "{v}",' for k, v in MACHINE_RARITY.items())
+    extra = round2()
+    hashes = ",\n".join(f'    {q2(i)}: "{model_hash(i)}"' for i, _, _ in PORTRAITS)
+    extra += f'''
+/** Hash of each machine's model source when its portrait was drawn (checked by tests/automation/menu-art.test.mjs). */
+export const PORTRAIT_MODEL_HASH: Record<string, string> = {{
+{hashes},
+}};
+'''
     q = lambda k: k if k.isidentifier() else f'"{k}"'  # noqa: E731
     cells = ",\n".join(f"    {q(i)}: {k}, // {name}" for k, (i, name, _) in enumerate(PORTRAITS))
     TS.parent.mkdir(parents=True, exist_ok=True)
@@ -380,7 +644,7 @@ export function rarityOf(id: string): Rarity {{
 
 export const EMPTY_SCENES = {{ crate: 0, blueprint: 1, idle: 2 }} as const;
 export type EmptyScene = keyof typeof EMPTY_SCENES;
-''')
+''' + extra)
     if "--preview" in sys.argv:
         dst = sys.argv[sys.argv.index("--preview") + 1]
         preview(dst)
@@ -391,11 +655,13 @@ def preview(dst):
     bg = (36, 22, 12, 255)
     por = Image.open(OUT / "portraits.png")
     emp = Image.open(OUT / "empty.png")
+    extra = [Image.open(OUT / f"{n}.png") for n in ("milestones", "research", "sites")]
     parts = [por.resize((por.width * 2, por.height * 2), Image.NEAREST),
              emp.resize((emp.width * 2, emp.height * 2), Image.NEAREST)]
-    row = Image.new("RGBA", (1400, 200), bg)
+    parts += [e.resize((e.width * 2, e.height * 2), Image.NEAREST) for e in extra]
+    row = Image.new("RGBA", (1900, 200), bg)
     x = 16
-    for name in ("frame-common", "frame-uncommon", "frame-rare", "frame-epic", "frame-legendary", "header", "gauge", "needle", "gear", "rule"):
+    for name in ("frame-common", "frame-uncommon", "frame-rare", "frame-epic", "frame-legendary", "frame-gilt", "quest", "seal", "header", "gauge", "needle", "gear", "rule"):
         im = Image.open(OUT / f"{name}.png")
         im = im.resize((im.width * 3, im.height * 3), Image.NEAREST)
         row.alpha_composite(im, (x, 8))

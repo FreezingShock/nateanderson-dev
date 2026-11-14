@@ -45,3 +45,16 @@
 
 .bwa-empty { display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 18px 12px; text-align: center; opacity: 0.92; }
 .bwa-empty > span:first-child { width: 192px; height: 144px; background-repeat: no-repeat; image-rendering: pixelated; }
+
+.bwa-cell { display: block; background-repeat: no-repeat; image-rendering: pixelated; }
+.bwa-gilt {
+  display: inline-block; border: 24px solid transparent;
+  border-image: var(--bwa-gilt) 16 / 24px stretch; image-rendering: pixelated;
+  background: #140d08;
+}
+.bwa-quest {
+  position: relative; border: 24px solid transparent;
+  border-image: var(--bwa-quest) 16 fill / 24px stretch; image-rendering: pixelated;
+  color: #2a1606; padding: 2px 4px; min-height: 72px;
+}
+.bwa-seal { position: absolute; top: -30px; right: -10px; width: 40px; height: 40px; image-rendering: pixelated; }
