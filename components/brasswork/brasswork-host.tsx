@@ -27,6 +27,7 @@ import {
     type HudSettings,
     type Rot,
     type World,
+    START_NODE_SPOTS,
 } from "@/lib/automation/sim";
 import type { VoxelIsland } from "@/lib/automation/render";
 import type { BuildWorld, InputController, MountedInput } from "@/lib/automation/input";
@@ -47,7 +48,7 @@ const CAT = DEFAULT_CATALOG;
 const START_SETTINGS: HudSettings = { sound: true, reduceMotion: false, lowFx: false, numberFormat: "short", showRates: true };
 
 // Resource node spots, one per ore in the recipe tree. Placeholder layout until the site design lands.
-const NODE_SPOTS: [number, number][] = [[2, 2], [2, 8], [15, 2], [15, 8], [8, 1]];
+const NODE_SPOTS = START_NODE_SPOTS;
 
 // Sim cells run 0..W-1, 0..D-1. The renderer and the input module share one frame where the plateau starts at (-9, -6).
 const BOARD = { width: W, depth: D, originX: -W / 2, originZ: -D / 2 };
