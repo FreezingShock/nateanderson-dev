@@ -132,7 +132,7 @@ export function TrashButton({ input }: { input: InputController }) {
             title="Remove (X)"
             onClick={() => input.setToolById(active ? null : "delete")}
         >
-            Trash
+            Remove
         </button>
     );
 }

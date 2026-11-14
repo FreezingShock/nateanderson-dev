@@ -40,6 +40,7 @@ export class SelectionOutline {
             transparent: true,
             opacity: 0.95,
             depthWrite: false,
+            depthTest: !opts.additive,
             blending: opts.additive ? THREE.AdditiveBlending : THREE.NormalBlending,
         });
         this.mesh = new THREE.InstancedMesh(geo, this.mat, MAX_CELLS * 4);

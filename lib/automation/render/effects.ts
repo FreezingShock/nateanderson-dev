@@ -17,6 +17,8 @@ interface Particle {
 }
 
 const POOL = 320;
+export type BurstKind = "place" | "remove" | "milestone";
+const BURST_COUNT: Record<BurstKind, number> = { place: 14, remove: 10, milestone: 60 };
 const SMOKE_RATE = 5; // puffs per second per working smoking machine, at full density
 const SPARK_RATE = 7;
 const SMOKE_COLOR = new THREE.Color(0x8a8078);
@@ -112,6 +114,45 @@ export class MachineEffects {
 
     setWind(strength: number): void {
         this.wind = strength;
+    }
+
+    /**
+     * One-shot burst at a point (world units). "place" throws brass sparks, "remove" lets out a grey
+     * puff, "milestone" throws a tall gold fountain. Uses the same pool, so bursts cost no extra draws.
+     */
+    burst(x: number, y: number, z: number, kind: BurstKind): void {
+        if (!this.enabled) return;
+        const n = BURST_COUNT[kind];
+        for (let i = 0; i < n; i++) {
+            const slot = this.parts.findIndex((p) => !p.alive);
+            if (slot < 0) return;
+            const p = this.parts[slot];
+            const a = Math.random() * Math.PI * 2;
+            const spread = kind === "milestone" ? 1.6 : 0.9;
+            p.alive = true;
+            p.x = x;
+            p.y = y;
+            p.z = z;
+            p.age = 0;
+            if (kind === "remove") {
+                // Grey puff: slow, wide, rising.
+                p.kind = 0;
+                p.vx = Math.cos(a) * 0.35;
+                p.vz = Math.sin(a) * 0.35;
+                p.vy = 0.3 + Math.random() * 0.2;
+                p.life = 1.4 + Math.random() * 0.6;
+                p.size = 0.12;
+            } else {
+                // Sparks: fast, fall under gravity, short life.
+                p.kind = 1;
+                const up = kind === "milestone" ? 2.6 : 1.5;
+                p.vx = Math.cos(a) * spread * (0.5 + Math.random() * 0.8);
+                p.vz = Math.sin(a) * spread * (0.5 + Math.random() * 0.8);
+                p.vy = up * (0.6 + Math.random() * 0.6);
+                p.life = (kind === "milestone" ? 1.1 : 0.45) + Math.random() * 0.3;
+                p.size = kind === "milestone" ? 0.05 : 0.035;
+            }
+        }
     }
 
     update(dt: number): void {

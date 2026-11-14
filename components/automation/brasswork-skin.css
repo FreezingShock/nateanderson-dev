@@ -301,3 +301,66 @@
 .ab-root .ab-build-row[data-selected="true"] .ab-info { outline: 2px solid #ffd98a; }
 .ab-inspect .ab-inspect-name { margin: 0; font-size: 18px; line-height: 1.2; position: relative; z-index: 1; }
 .ab-inspect .ab-inspect-head .ab-text-btn { position: relative; z-index: 2; }
+
+/* Drill output: one row per ore the machine mines, with purity and rate. */
+.ab-inspect-mines { list-style: none; margin: 8px 0; padding: 0; display: grid; gap: 4px; }
+.ab-inspect-mine { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; gap: 8px; align-items: baseline; font-size: 14px; }
+.ab-inspect-mine strong { font-weight: 600; white-space: nowrap; }
+
+/* The armed build tool: the row whose machine the next click places. Stronger than the inspected row. */
+.ab-root.bw .ab-build-row[data-armed="true"] {
+  outline: 2px solid #ffd98a; outline-offset: -2px;
+  background: linear-gradient(90deg, #7a5420, #4d3414); box-shadow: inset 4px 0 0 #ffd98a;
+}
+.ab-root.bw .ab-build-row[data-armed="true"] .ab-build-name,
+.ab-root.bw .ab-build-row[data-armed="true"] .ab-build-cost { color: #fff3d6; }
+.ab-root.bw .ab-build-row[data-armed="true"] .ab-build-main::after { content: "ARMED"; margin-left: auto; font-size: 11px; letter-spacing: 0.08em; color: #ffd98a; }
+
+.ab-root.bw .ab-locked-note { list-style: none; padding: 6px 10px; font-size: 13px; color: var(--ab-dim); border: 1px dashed currentColor; opacity: 0.8; }
+
+/* Milestones panel: current goal large, delivered and upcoming goals compact. */
+.ab-milestones { display: grid; gap: 10px; }
+.ab-milestone-now { border: 2px solid #b8862f; background: #20170c; padding: 10px 12px; display: grid; gap: 8px; }
+.ab-milestone-now-head { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 8px; align-items: baseline; white-space: nowrap; }
+.ab-milestone-now-tag { font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: #ffd98a; border: 1px solid #ffd98a; padding: 1px 6px; }
+.ab-milestones .ab-milestone-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ab-milestone-items { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.ab-milestone-item { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 4px 8px; font-size: 14px; }
+.ab-milestone-item-count { font-variant-numeric: tabular-nums; color: #ffd98a; }
+.ab-milestone-item .ab-bar { grid-column: 1 / -1; }
+.ab-milestone-item[data-done="true"] .ab-milestone-item-name { color: #b8e0a0; }
+.ab-milestone-done, .ab-milestone-ahead ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
+.ab-milestone-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; font-size: 14px; }
+.ab-milestone-ahead summary { cursor: pointer; font-size: 13px; color: var(--ab-dim); padding: 4px 0; }
+
+/* Current objective: a compact tracked card at the bottom of the stage, not a full-width strip. */
+.ab-root.bw .ab-next {
+  display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 4px 10px; align-items: center;
+  width: fit-content; max-width: min(440px, calc(100% - 16px)); margin: 0 auto 8px; padding: 8px 12px;
+  border: 1px solid #b8862f; box-shadow: 0 0 0 1px #1a1209, inset 0 1px 0 rgba(255,220,150,.35);
+  background: rgba(20,15,9,.92);
+}
+.ab-root.bw .ab-next-label { font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: #ffd98a; }
+.ab-root.bw .ab-next-title { font-weight: 600; color: #f4e4b8; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ab-root.bw .ab-next-bar { grid-column: 1 / -1; height: 6px; background: #0d0905; border: 1px solid #4a3a22; }
+.ab-root.bw .ab-next-fill { display: block; height: 100%; background: linear-gradient(90deg, #b8862f, #ffd98a); }
+.ab-root.bw .ab-next-text { grid-column: 1 / -1; font-size: 13px; color: #d9c79a; }
+.ab-root.bw .ab-next > .ab-text-btn { grid-column: 3; grid-row: 1; }
+
+
+/* Phone: the stage shrinks to make room, and the objective sits between it and the tab bar,
+   so it is always visible and never covers the tool buttons. */
+@media (max-width: 759px) {
+  .ab-root.bw .ab-center { display: flex; flex-direction: column; }
+  .ab-root.bw .ab-stage { position: relative; inset: auto; flex: 1 1 auto; min-height: 0; }
+  .ab-root.bw .ab-next { order: 2; width: auto; max-width: none; margin: 0; padding: 6px 10px; border-left: 0; border-right: 0; grid-template-columns: auto minmax(0, 1fr) auto; }
+  .ab-root.bw .ab-next-bar { grid-column: 1 / -1; }
+  .ab-root.bw .ab-next-text { font-size: 12px; }
+  .ab-root.bw .ab-tabbar { order: 3; }
+  .ab-root.bw .ab-more { order: 3; }
+}
+
+/* Machine detail: power block under the rate, with a clear state for fully or partly powered machines. */
+.ab-inspect-power { display: grid; gap: 4px; margin: 6px 0; }
+.ab-inspect-power[data-powered="short"] strong { color: #ffb347; }
+.ab-inspect-power[data-powered="full"] strong { color: #b8e0a0; }

@@ -64,8 +64,19 @@ export function Inspector({
       </header>
 
       <p className="ab-inspect-status" data-status={detail.status}>{status}</p>
+      {detail.reason && <p className="ab-inspect-hint">{detail.reason}</p>}
 
-      {hasRecipe ? (
+      {detail.mines && detail.mines.length > 0 ? (
+        <ul className="ab-inspect-mines" aria-label="Mines">
+          {detail.mines.map((m) => (
+            <li key={m.resourceId} className="ab-inspect-mine">
+              <span>{m.name}</span>
+              <span className="ab-dim">{m.purity}</span>
+              <strong>{fmtNum(m.perMin, numberFormat)} / min</strong>
+            </li>
+          ))}
+        </ul>
+      ) : hasRecipe ? (
         <div className="ab-inspect-flow" aria-label="Makes">
           <span className="ab-inspect-in">{lineText(detail.recipe.inputs) || "Nothing"}</span>
           <span className="ab-arrow" aria-hidden="true">→</span>
@@ -100,6 +111,38 @@ export function Inspector({
             ))}
           </div>
         </>
+      )}
+
+      {detail.maxKw !== undefined && (
+        <div className="ab-inspect-power" aria-label="Power produced">
+          <div className="ab-inspect-rate">
+            <span className="ab-dim">Producing</span>
+            <strong>{fmtNum(detail.producedKw ?? 0, numberFormat)} / {fmtNum(detail.maxKw, numberFormat)} kW</strong>
+          </div>
+          {detail.windPct !== undefined && (
+            <div className="ab-inspect-rate">
+              <span className="ab-dim">Wind</span>
+              <strong>{Math.round(detail.windPct * 100)}%</strong>
+            </div>
+          )}
+          <div className="ab-inspect-rate">
+            <span className="ab-dim">Feeds</span>
+            <strong>{detail.fedCount ?? 0} machines within {detail.rangeCells ?? 0} cells</strong>
+          </div>
+        </div>
+      )}
+
+      {detail.usedKw !== undefined && detail.usedKw > 0 && (
+        <div className="ab-inspect-power" aria-label="Power use" data-powered={detail.fullyPowered ? "full" : "short"}>
+          <div className="ab-inspect-rate">
+            <span className="ab-dim">Power use</span>
+            <strong>{fmtNum(detail.usedKw, numberFormat)} kW</strong>
+          </div>
+          <div className="ab-inspect-rate">
+            <span className="ab-dim">Supply</span>
+            <strong>{detail.fullyPowered ? "Fully powered" : `${Math.round((detail.satisfied ?? 0) * 100)}% of need`}</strong>
+          </div>
+        </div>
       )}
 
       {rate && (

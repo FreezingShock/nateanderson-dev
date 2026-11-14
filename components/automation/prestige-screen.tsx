@@ -112,15 +112,18 @@ function Gauge({ label, value }: { label: string; value: number }) {
  */
 export function PrestigeScreen({
     prestige,
+    initialSiteId,
     onConfirm,
     onClose,
 }: {
     prestige: PrestigeView;
+    /** Site to have selected on open, e.g. chosen in Expedition. */
+    initialSiteId?: string;
     onConfirm?: (siteId: string) => void;
     onClose: () => void;
 }) {
     const [siteId, setSiteId] = useState<string | null>(
-        prestige.sites[0]?.id ?? null
+        (prestige.sites.find((s) => s.id === initialSiteId) ?? prestige.sites[0])?.id ?? null
     );
     const [held, setHeld] = useState(0);
     const timer = useRef<ReturnType<typeof setInterval> | null>(null);

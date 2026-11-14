@@ -157,16 +157,18 @@ test("drag a belt line: ghost snaps, invalid cells skipped, one undo reverts the
     b.updateStroke({ x: 9, z: 4 });
     const g = b.ghost();
     assert.equal(g.stroking, true);
-    assert.equal(g.cells.length, 6, "dominant axis x, from 4 to 9");
-    assert.equal(g.rot, 1);
-    assert.equal(g.validCount, 5);
-    assert.equal(b.endStroke(), 5);
+    // Pencil: east from 4 to 9 along z=2, then turns south to z=4. Eight cells.
+    assert.equal(g.cells.length, 8, "east run then a turn south");
+    assert.equal(g.rot, 0, "the last cell faces the way the stroke was going (south)");
+    assert.equal(g.validCount, 7, "the blocked cell at 7,2 is skipped");
+    assert.equal(b.endStroke(), 7);
     assert.equal(world.get(7, 2), null);
-    assert.deepEqual(world.get(5, 2), { kind: "belt", rot: 1 });
+    assert.deepEqual(world.get(5, 2), { kind: "belt", rot: 1 }, "mid-run cells face east");
+    assert.deepEqual(world.get(9, 3), { kind: "belt", rot: 0 }, "the turn faces south");
     assert.ok(b.undo());
     assert.equal(world.cells.size, 0, "one undo reverts the whole stroke");
     assert.ok(b.redo());
-    assert.equal(world.cells.size, 5);
+    assert.equal(world.cells.size, 7);
 });
 
 test("rotate changes the ghost; placed items keep the rotation they had", () => {
@@ -508,4 +510,82 @@ test("runAt follows connected line pieces only; removeCells clears a whole run i
     b.undo();
     assert.equal(w.get(4, 3)?.kind, "belt", "one undo brings the whole run back");
     assert.equal(b.getHighlight().length, 0);
+});
+
+test("pencil: dragging back over the stroke erases its tail; a stroke is one undo step", () => {
+    const world = memWorld();
+    const b = new A.BuildController({ world, board });
+    b.setTool(belt);
+    b.beginStroke({ x: 2, z: 2 });
+    b.updateStroke({ x: 2, z: 6 });
+    assert.equal(b.ghost().cells.length, 5, "south from 2 to 6");
+    b.updateStroke({ x: 2, z: 4 });
+    assert.equal(b.ghost().cells.length, 3, "retracing to 4 erases the last two cells");
+    b.updateStroke({ x: 5, z: 4 });
+    assert.equal(b.ghost().cells.length, 6, "then east from 4 to 5 adds cells again");
+    assert.equal(b.endStroke(), 6);
+    assert.equal(world.cells.size, 6);
+    b.undo();
+    assert.equal(world.cells.size, 0, "undo removes the whole stroke at once");
+});
+
+test("pencil: a fast jump still draws a connected path", () => {
+    const world = memWorld();
+    const b = new A.BuildController({ world, board });
+    b.setTool(belt);
+    b.beginStroke({ x: 0, z: 0 });
+    b.updateStroke({ x: 3, z: 3 });
+    const cells = b.ghost().cells.map((c) => `${c.x},${c.z}`);
+    for (let i = 1; i < cells.length; i++) {
+        const [ax, az] = cells[i - 1].split(",").map(Number);
+        const [bx, bz] = cells[i].split(",").map(Number);
+        assert.equal(Math.abs(ax - bx) + Math.abs(az - bz), 1, "every step is one cell");
+    }
+    assert.equal(cells.length, 7);
+});
+
+// Stroke joins: a line stroke reports belts and facing ports next to its two ends.
+test("a line stroke joins an adjacent belt and a port that faces it", async () => {
+    const { BuildController } = await import("../../lib/automation/input/build.ts");
+    const belt = { kind: "belt", rot: 0 };
+    const board = new Map();
+    board.set("3,0", belt);
+    const world = {
+        get: (x, z) => board.get(`${x},${z}`) ?? null,
+        set: (x, z, item) => board.set(`${x},${z}`, item),
+        portsAt: (x, z) => (x === 0 && z === 2 ? [2] : []),
+    };
+    const tool = { id: "belt", name: "Brass belt", footprint: { w: 1, d: 1 }, line: true };
+    const b = new BuildController({ world, board: { width: 20, depth: 20 }, lineKinds: ["belt"] });
+    b.setTool(tool);
+    b.beginStroke({ x: 2, z: 0 });
+    b.updateStroke({ x: 1, z: 0 });
+    const g = b.ghost();
+    const kinds = g.joins.map((j) => `${j.kind}:${j.cell.x},${j.cell.z}:${j.dir}`).sort();
+    assert.deepEqual(kinds, ["belt:2,0:e"]);
+});
+
+// Rotated machine ports: one machine at each of the four rotations.
+test("a 1 by 1 machine's port turns with the machine, one quarter per rot", async () => {
+    const { rotateCell, rotateSide } = await import("../../lib/automation/input/ports.ts");
+    for (let r = 0; r < 4; r++) {
+        assert.equal(rotateSide(0, r), r, `side at rot ${r}`);
+        assert.deepEqual(rotateCell(0, 0, 1, 1, r), { x: 0, z: 0 }, `cell at rot ${r}`);
+    }
+});
+
+test("a 2 by 1 machine's far cell and its port side follow each rotation", async () => {
+    const { rotateCell, rotateSide } = await import("../../lib/automation/input/ports.ts");
+    // Authored along x (w 2, d 1), with the front (side 0, +z) on the +x end cell (1,0).
+    assert.deepEqual(rotateCell(1, 0, 2, 1, 0), { x: 1, z: 0 });
+    assert.equal(rotateSide(0, 0), 0);
+    // Rot 1 runs along z. The footprint is now 1 by 2, the +x end moves to z 0, and the front faces +x.
+    assert.deepEqual(rotateCell(1, 0, 2, 1, 1), { x: 0, z: 0 });
+    assert.equal(rotateSide(0, 1), 1);
+    // Rot 2 runs along x again, flipped, so the +x end becomes cell (0,0) and the front faces -z.
+    assert.deepEqual(rotateCell(1, 0, 2, 1, 2), { x: 0, z: 0 });
+    assert.equal(rotateSide(0, 2), 2);
+    // Rot 3 runs along z, flipped, so the +x end lands on the +z end, cell (0,1), and the front faces -x.
+    assert.deepEqual(rotateCell(1, 0, 2, 1, 3), { x: 0, z: 1 });
+    assert.equal(rotateSide(0, 3), 3);
 });

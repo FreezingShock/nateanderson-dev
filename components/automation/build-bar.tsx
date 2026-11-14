@@ -44,8 +44,11 @@ function collapseTiers(list: MachineView[]): MachineView[] {
   return out.map((row) => {
     const tiers = byBase.get(row.id);
     if (!tiers) return row;
+    // Show the highest open tier the player has already built, otherwise the cheapest open tier (brass),
+    // so a fresh save always has the brass Belt row to start with.
     const open = tiers.filter((t) => t.unlocked).sort((a, b) => TIER_RANK(b.id) - TIER_RANK(a.id));
-    const best = open[0] ?? tiers.sort((a, b) => TIER_RANK(a.id) - TIER_RANK(b.id))[0];
+    const built = open.find((t) => t.count > 0);
+    const best = built ?? open[open.length - 1] ?? [...tiers].sort((a, b) => TIER_RANK(a.id) - TIER_RANK(b.id))[0];
     const count = tiers.reduce((n, t) => n + t.count, 0);
     // Add the tier word only when the name does not already carry it (for example "Steel belt").
     const tier = TIER_RANK(best.id) === 2 ? "steel" : TIER_RANK(best.id) === 1 ? "copper" : "";
@@ -82,6 +85,7 @@ export function BuildList({
   machines,
   resources,
   selectedId,
+  armedId = null,
   numberFormat,
   onBuild,
   onSelect,
@@ -89,6 +93,7 @@ export function BuildList({
   machines: MachineView[];
   resources: ResourceView[];
   selectedId: string | null;
+  armedId?: string | null;
   numberFormat: NumberFormat;
   onBuild: (id: string) => void;
   onSelect: (id: string | null) => void;
@@ -105,17 +110,22 @@ export function BuildList({
   const renderRow = (m: MachineView) => {
         const ok = m.unlocked && canAfford(m.cost, resources);
         const selected = m.id === selectedId;
+        const armed = m.id === armedId;
         return (
             <li
               className="ab-row ab-build-row"
               data-selected={selected}
+              data-armed={armed}
               data-locked={!m.unlocked}
               data-afford={ok}
             >
               <button
                 type="button"
                 className="ab-build-main"
-                disabled={!ok}
+                disabled={!m.unlocked}
+                aria-pressed={armed}
+                data-afford={ok}
+                aria-label={`Select ${m.name}${ok ? "" : " (not enough resources yet)"}`}
                 onClick={() => onBuild(m.id)}
               >
                 <Glyph code={m.glyph} size={32} icon={m.id} />
@@ -129,7 +139,7 @@ export function BuildList({
                   </span>
                   <span className="ab-build-cost">
                     {m.unlocked
-                      ? costText(m.cost, resources, numberFormat)
+                      ? costText(m.cost, resources, numberFormat) || "Free"
                       : m.lockedReason}
                   </span>
                 </span>
@@ -151,6 +161,22 @@ export function BuildList({
             </li>
         );
   };
+  // Belts first: a new player needs them before anything else. Then machines, then power.
+  const GROUP_RANK: Record<GroupId, number> = { logistics: 0, machines: 1, power: 2 };
+  groups.sort((a, b) => GROUP_RANK[a.id] - GROUP_RANK[b.id]);
+  // Open rows show in full; locked rows fold into one line so the palette stays short.
+  const renderItems = (items: MachineView[]) => {
+    const open = items.filter((m) => m.unlocked);
+    const locked = items.length - open.length;
+    return (
+      <>
+        {open.map(renderRow)}
+        {locked > 0 && (
+          <li className="ab-locked-note">{locked} more unlock as you progress</li>
+        )}
+      </>
+    );
+  };
   return (
     <div className="ab-build-groups">
       {groups.map((g) => {
@@ -165,13 +191,13 @@ export function BuildList({
                   <div key={x.sub} className="ab-sub">
                     <h3 className="ab-sub-title">{SUB_TITLE[x.sub]}</h3>
                     <ul className="ab-build" aria-label={`${SUB_TITLE[x.sub]} to build`}>
-                      {x.items.map(renderRow)}
+                      {renderItems(x.items)}
                     </ul>
                   </div>
                 ))
             ) : (
               <ul className="ab-build" aria-label={`${GROUP_TITLE[g.id]} to build`}>
-                {g.items.map(renderRow)}
+                {renderItems(g.items)}
               </ul>
             )}
           </Section>

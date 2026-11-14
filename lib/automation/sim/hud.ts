@@ -23,7 +23,7 @@ import type {
 } from "../types";
 import { DEFAULT_CATALOG, SITES } from "./data";
 import { unlockedRecipes, dayClock, buyResearch as buyResearchRaw, prestige as prestigeRaw } from "./progress";
-import { place as placeRaw, setRecipe as setRecipeRaw, setFilter as setFilterRaw, resolve } from "./world";
+import { place as placeRaw, setRecipe as setRecipeRaw, setFilter as setFilterRaw, resolve, BATTERIES, depositUnder, hasOutputNeighbour } from "./world";
 
 export const DEFAULT_SETTINGS: HudSettings = { sound: false, reduceMotion: false, lowFx: false, numberFormat: "short", showRates: true };
 
@@ -43,6 +43,38 @@ function lines(stacks: { item: string; qty: number }[]): Line[] {
     return stacks.map((s) => ({ resourceId: s.item, amount: s.qty }));
 }
 
+// Generators: what they produce now, their rating, wind, reach and the machines they feed.
+function generatorDetail(world: World, cat: Catalog, b: Building): Partial<MachineDetail> | null {
+    const r = resolve(cat, b.type);
+    const def = r0(cat, b.type);
+    if (!r || r.kind !== "generator" || !def) return null;
+    const battery = BATTERIES.includes(r.id);
+    const isWind = !battery && def.generatesKw !== undefined;
+    const wind = world.wind;
+    const producedKw = battery ? 0 : r.supply * Math.min(1, 2 * wind);
+    const range = r.range;
+    const fedCount = Object.values(world.buildings).filter((o) => {
+        const orr = resolve(cat, o.type);
+        if (!orr || (orr.kind !== "miner" && orr.kind !== "crafter") || !(orr.power > 0)) return false;
+        return Math.max(Math.abs(o.x - b.x), Math.abs(o.z - b.z)) <= range + 1;
+    }).length;
+    return {
+        producedKw: Math.round(producedKw * 10) / 10,
+        maxKw: r.supply,
+        windPct: isWind ? Math.round(wind * 100) / 100 : undefined,
+        fedCount,
+        rangeCells: range,
+    };
+}
+
+// Consumers: what they need, how much of it they get, and whether they are fully powered.
+function consumerDetail(world: World, cat: Catalog, b: Building): Partial<MachineDetail> | null {
+    const r = resolve(cat, b.type);
+    if (!r || !(r.power > 0)) return null;
+    const satisfied = b.powerSat ?? 1;
+    return { usedKw: r.power, satisfied: Math.round(satisfied * 100) / 100, fullyPowered: satisfied >= 0.999 };
+}
+
 // Per-building flow: what it makes and uses per second, its status, and the batch progress.
 interface Flow {
     makes: Record<string, number>;
@@ -55,11 +87,14 @@ function flowOf(world: World, cat: Catalog, b: Building): Flow {
     const flow: Flow = { makes: {}, uses: {}, status: "idle", progress: 0 };
     const r = resolve(cat, b.type);
     if (!r) return flow;
-    const sat = world.power.satisfaction;
+    // Each consumer runs at the share of power it received on the last step, so rates match what machines make.
+    const sat = b.powerSat ?? world.power.satisfaction;
     if (r.kind === "miner") {
-        const dep = world.deposits[`${b.x},${b.z}`];
+        const dep = depositUnder(world, b, r.footprint)?.dep;
         const node = dep ? cat.tree.nodes.find((n) => n.item === dep.item) : undefined;
         if (!dep || !node) return { ...flow, status: "starved" };
+        // Nothing beside the drill takes ore, so none is made: the rate under the item must match what really arrives.
+        if (!hasOutputNeighbour(world, b, cat) && (b.output[dep.item] ?? 0) >= r.outputCap) return { ...flow, status: "blocked" };
         if (sat <= 0 || (b.output[dep.item] ?? 0) >= r.outputCap) return { ...flow, status: "blocked" };
         flow.makes[dep.item] = (node.baseRatePerMin / 60) * dep.purity * r.speed * sat * world.progress.bonus.miner;
         flow.status = "running";
@@ -98,7 +133,7 @@ function r0(cat: Catalog, type: string) {
 function minesOf(cat: Catalog, type: string, x: number, z: number, world: World): MachineDetail["mines"] {
     const r = resolve(cat, type);
     if (!r || r.kind !== "miner") return undefined;
-    const dep = world.deposits[`${x},${z}`];
+    const dep = depositUnder(world, { x, z, rot: 0 }, r.footprint)?.dep;
     const node = dep ? cat.tree.nodes.find((n) => n.item === dep.item) : undefined;
     if (!dep || !node) return [];
     return [{ resourceId: dep.item, name: nameOf(cat, dep.item), purity: dep.purity >= 2 ? "pure" : dep.purity < 1 ? "impure" : "normal", perMin: node.baseRatePerMin * dep.purity * r.speed * world.progress.bonus.miner }];
@@ -125,10 +160,16 @@ function reasonOf(world: World, cat: Catalog, b: Building, status: MachineStatus
     if (status === "running") return undefined;
     const r = resolve(cat, b.type);
     if (!r) return undefined;
+    if (r.kind === "generator") {
+        if (BATTERIES.includes(r.id)) return "Storing or releasing wind power";
+        const produced = r.supply * Math.min(1, 2 * world.wind);
+        return produced > 0 ? undefined : "Calm air: no wind to turn it";
+    }
     if (r.kind === "miner") {
-        if (!world.deposits[`${b.x},${b.z}`]) return "No resource node under it";
-        if (world.power.satisfaction < 1) return "No power";
-        return "Output full, take items off it";
+        if (!depositUnder(world, b, r.footprint)) return "No resource node under it";
+        if (world.power.satisfaction <= 0) return "No power. Put a windmill within its range";
+        if (!hasOutputNeighbour(world, b, cat)) return "Nothing beside it takes ore. Run a belt from a side of the drill to the hub";
+        return "Output backed up. Check the belt reaches the hub, or a machine that takes this ore";
     }
     if (r.kind === "crafter") {
         if (!b.recipe || !rec) return "No recipe chosen";
@@ -243,9 +284,11 @@ export function hudData(world: World, cat: Catalog = DEFAULT_CATALOG, selectedId
         const f = flows.get(selectedId) ?? flowOf(world, cat, b);
         if (m) {
             const bufferIds = new Set<string>([...Object.keys(b.input), ...Object.keys(b.output)]);
+            const gen = generatorDetail(world, cat, b);
             selected = {
                 ...m,
-                status: f.status,
+                // A generator running in wind is working, whatever the flow pass says about it.
+                status: gen && (gen.producedKw ?? 0) > 0 ? "running" : f.status,
                 recipe: rec
                     ? { name: rec.id, inputs: lines(rec.inputs), outputs: lines([rec.output]), seconds: rec.craftSeconds }
                     : minedRecipe(world, cat, b.type, b.x, b.z) ?? { name: "No recipe chosen", inputs: [], outputs: [], seconds: 0 },
@@ -259,6 +302,8 @@ export function hudData(world: World, cat: Catalog = DEFAULT_CATALOG, selectedId
                     ...Object.keys(f.uses).map((k) => ({ label: `${nameOf(cat, k)} in`, value: `${f.uses[k].toFixed(2)} /s` })),
                 ],
                 powerKw: r0(cat, b.type)?.powerKw,
+                ...(generatorDetail(world, cat, b) ?? {}),
+                ...(consumerDetail(world, cat, b) ?? {}),
                 reason: reasonOf(world, cat, b, f.status, rec),
                 mines: minesOf(cat, b.type, b.x, b.z, world),
                 recipeChoices: rec ? undefined : recipeChoicesOf(world, cat, b.type),
@@ -271,12 +316,12 @@ export function hudData(world: World, cat: Catalog = DEFAULT_CATALOG, selectedId
         }
     }
 
-    // Areas are the island sites: the current one, and the others once the first workshop is open.
+    // Areas are the island sites: the current one, and the others once the first workshop is open (locked before that).
     const areas: AreaView[] = SITES.map((s) => ({
         id: s.id,
         name: s.name,
         note: `${s.nodes.length} nodes, ${s.width} by ${s.depth} floor`,
-        state: world.progress.site === s.id ? "current" : world.progress.prestiges === 0 ? "open" : "locked",
+        state: world.progress.site === s.id ? "current" : world.progress.prestiges === 0 ? "locked" : "open",
     }));
 
     const milestones: MilestoneView[] = cat.tree.milestones.map((m) => {
@@ -289,6 +334,12 @@ export function hudData(world: World, cat: Catalog = DEFAULT_CATALOG, selectedId
             progress: Math.max(0, progress),
             blueprintReward: m.blueprints,
             done,
+            items: m.deliver.map((s) => ({
+                id: s.item,
+                name: nameOf(cat, s.item),
+                have: Math.min(s.qty, world.progress.delivered[s.item] ?? 0),
+                need: s.qty,
+            })),
         };
     });
 
@@ -360,7 +411,7 @@ function nextStepOf(world: World, cat: Catalog, machines: MachineView[], milesto
     const next = milestones.find((m) => !m.done);
     if (drills === 0) return { text: "Place a drill on a resource node to start the flow.", actionLabel: "Select drill", actionId: "drill" };
     if (crafters === 0) return { text: "Add a kiln and set its recipe to smelt ore into ingots.", actionLabel: "Select kiln", actionId: "kiln" };
-    if (world.power.satisfaction < 1) return { text: "Machines are short of power. Place a windmill within 6 cells of them.", actionLabel: "Select windmill", actionId: "windmill" };
+    if (world.power.satisfaction < 1) return { text: "Machines are short of power. A windmill feeds machines within 6 cells of its centre.", actionLabel: "Select windmill", actionId: "windmill" };
     if (next) {
         // Progress per item, capped at the target, so the bar says how far the delivery has got.
         const def = cat.tree.milestones.find((m) => m.id === next.id);
@@ -369,7 +420,7 @@ function nextStepOf(world: World, cat: Catalog, machines: MachineView[], milesto
             return `${nameOf(cat, s.item)} ${have} of ${s.qty}`;
         });
         const detail = parts.length ? ` (${parts.join(", ")})` : "";
-        return { text: `Next delivery: ${next.goal}${detail} for ${next.blueprintReward} blueprints.` };
+        return { title: next.name, progress: next.progress, text: `${next.goal}${detail}. Reward: ${next.blueprintReward} blueprints.` };
     }
     return { text: "Keep the factory running and plan the next milestone." };
 }
