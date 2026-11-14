@@ -6,7 +6,8 @@ import type { MilestoneView, ResearchNode } from "@/lib/automation/types";
 import { RECIPE_TREE } from "@/lib/automation/data/tree";
 import { iconCell, iconStyle } from "@/lib/automation/icons";
 import { uiIconStyle } from "@/lib/automation/icons/ui";
-import { ArtPanel, PanelTitle, ResearchArt } from "@/components/brasswork-art";
+import { ResearchArt } from "@/components/brasswork-art";
+import { MenuWindow } from "@/components/brasswork-ui/window";
 
 /** Tier headings, left to right. A node sits one column right of its deepest prerequisite. */
 const TIERS = ["Base", "Parts", "Components", "Clockworks", "Megaproject"];
@@ -189,21 +190,19 @@ export function ResearchScreen({
   };
 
   return (
-    <div className="rs-scrim" onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
-      <ArtPanel className="rs-win">
-        <section role="dialog" aria-label="Research" className="rs-inner">
-          <header className="rs-head">
+    <MenuWindow
+      title="Research"
+      art={<span style={uiIconStyle("research", 28)} aria-hidden="true" />}
+      onClose={onClose}
+    >
+      <div className="rs-inner">
+          <div className="rs-head">
             <div className="rs-bp" aria-label={`${blueprints} blueprints`}>
-              <span className="rs-bp-ico" style={uiIconStyle("research", 28)} aria-hidden="true" />
               <span className="rs-bp-num">{blueprints}</span>
               <span className="rs-bp-lab">blueprints</span>
             </div>
-            <PanelTitle>Research</PanelTitle>
-            <div className="rs-head-r">
-              <span className="rs-count">{doneCount} / {nodes.length} researched</span>
-              <button type="button" className="ab-text-btn" onClick={onClose}>Close</button>
-            </div>
-          </header>
+            <span className="rs-count">{doneCount} / {nodes.length} researched</span>
+          </div>
 
           <div className="rs-body">
             <div className="rs-tree-wrap">
@@ -342,8 +341,8 @@ export function ResearchScreen({
 
                     {leadsTo.length > 0 && (
                       <>
-                        <div className="rs-h">Leads to</div>
-                        <ul className="rs-list">
+                        <div className="rs-h rs-leads">Leads to</div>
+                        <ul className="rs-list rs-leads">
                           {leadsTo.map((q) => (
                             <li key={q.id}>
                               <button type="button" onClick={() => setPicked(q.id)}>
@@ -374,8 +373,7 @@ export function ResearchScreen({
               )}
             </aside>
           </div>
-        </section>
-      </ArtPanel>
-    </div>
+      </div>
+    </MenuWindow>
   );
 }
