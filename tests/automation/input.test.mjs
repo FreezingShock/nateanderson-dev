@@ -468,3 +468,21 @@ test("zoomAt with no anchor behaves like zoom", () => {
     assert.equal(cam.pose().distance, 60);
     assert.equal(cam.pose().target.x, 16);
 });
+
+test("zoomAt eases the target: one frame moves part of the way, not all of it", () => {
+    const cam = new A.OrbitCamera(A.DEFAULT_LIMITS, { target: { x: 16, y: 0, z: 16 }, distance: 30 });
+    cam.zoomAt(0.5, { x: 22, z: 16 });
+    cam.update(1 / 60);
+    const x = cam.pose().target.x;
+    assert.ok(x > 16 && x < 19, `eased target x ${x}`);
+    for (let i = 0; i < 240; i++) cam.update(1 / 60);
+    assert.ok(Math.abs(cam.pose().target.x - 19) < 1e-2, "settles at the zoom point");
+});
+
+test("panPixels stays instant: the target moves on the same frame", () => {
+    const cam = new A.OrbitCamera(A.DEFAULT_LIMITS, { target: { x: 16, y: 0, z: 16 }, distance: 30 });
+    const before = cam.pose().target.x;
+    cam.panPixels(-100, 0, 800);
+    cam.update(1 / 60);
+    assert.ok(Math.abs(cam.pose().target.x - before) > 0.5, "pan is not eased");
+});

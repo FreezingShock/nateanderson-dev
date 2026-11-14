@@ -166,7 +166,9 @@ export class OrbitCamera {
         this.cur.yaw += (this.goal.yaw - this.cur.yaw) * k;
         this.cur.pitch += (this.goal.pitch - this.cur.pitch) * k;
         this.cur.distance += (this.goal.distance - this.cur.distance) * k;
-        this.cur.target = { ...this.goal.target };
+        // Target eases too, so a zoom toward a point glides instead of sliding the map sideways. Pans set cur and goal together, so they stay instant.
+        this.cur.target.x += (this.goal.target.x - this.cur.target.x) * k;
+        this.cur.target.z += (this.goal.target.z - this.cur.target.z) * k;
         this.cur = this.clampPose(this.cur);
     }
 
@@ -175,7 +177,9 @@ export class OrbitCamera {
         return (
             Math.abs(this.cur.yaw - this.goal.yaw) < e &&
             Math.abs(this.cur.pitch - this.goal.pitch) < e &&
-            Math.abs(this.cur.distance - this.goal.distance) < e
+            Math.abs(this.cur.distance - this.goal.distance) < e &&
+            Math.abs(this.cur.target.x - this.goal.target.x) < e &&
+            Math.abs(this.cur.target.z - this.goal.target.z) < e
         );
     }
 
