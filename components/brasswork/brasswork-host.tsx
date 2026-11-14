@@ -331,6 +331,10 @@ export function BrassworkHost() {
             });
 
             setInputCtl(input.controller);
+            // The selected belt run (or building) glows in the 3D view. Same board frame as setBelts.
+            input.controller.build.subscribe(() => {
+                if (!dead) island.setHighlight(input.controller.build.getHighlight());
+            });
 
             // Placement preview: the input module owns the ghost, the renderer draws it.
             let ghostKey = "";
@@ -341,8 +345,10 @@ export function BrassworkHost() {
                 const key = g && c && model ? `${g.tool.id}:${c.x},${c.z},${g.rot},${c.valid}` : "";
                 if (key === ghostKey) return;
                 ghostKey = key;
-                if (g && c && model) island.setGhost(model, { x: c.x, z: c.z }, g.rot, c.valid);
-                else island.clearGhost();
+                if (g && c && model) {
+                    island.setGhost(model, { x: c.x, z: c.z }, g.rot, c.valid);
+                    island.setGhostValidity(c.valid);
+                } else island.clearGhost();
             };
 
             // Push each machine's working flag, clock and charge to the renderer so parts move and lamps glow.
