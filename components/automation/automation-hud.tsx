@@ -290,6 +290,7 @@ export function AutomationHud({
         <ResearchScreen
           nodes={data.research}
           blueprints={data.blueprints}
+          milestones={data.milestones}
           onResearch={actions.onResearch}
           onClose={() => setScreen(null)}
         />
