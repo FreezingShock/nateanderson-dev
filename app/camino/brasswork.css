@@ -20,3 +20,8 @@ html.bw-route .sf-foot { display: none !important; }
     .bw-root .ab-center { min-height: 42dvh; }
     .bw-root .ab-stage { bottom: 92px; }
 }
+
+/* Phone: the tool hint sits under the header, clear of the bottom-right tool buttons. */
+@media (max-width: 900px), (pointer: coarse) {
+  .bw-note { top: 96px; bottom: auto; left: 8px; right: 8px; transform: none; max-width: none; font-size: 13px; }
+}

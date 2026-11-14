@@ -317,3 +317,18 @@
 .ab-root.bw .ab-build-row[data-armed="true"] .ab-build-main::after { content: "ARMED"; margin-left: auto; font-size: 11px; letter-spacing: 0.08em; color: #ffd98a; }
 
 .ab-root.bw .ab-locked-note { list-style: none; padding: 6px 10px; font-size: 13px; color: var(--ab-dim); border: 1px dashed currentColor; opacity: 0.8; }
+
+/* Milestones panel: current goal large, delivered and upcoming goals compact. */
+.ab-milestones { display: grid; gap: 10px; }
+.ab-milestone-now { border: 2px solid #b8862f; background: #20170c; padding: 10px 12px; display: grid; gap: 8px; }
+.ab-milestone-now-head { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 8px; align-items: baseline; white-space: nowrap; }
+.ab-milestone-now-tag { font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: #ffd98a; border: 1px solid #ffd98a; padding: 1px 6px; }
+.ab-milestones .ab-milestone-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ab-milestone-items { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.ab-milestone-item { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 4px 8px; font-size: 14px; }
+.ab-milestone-item-count { font-variant-numeric: tabular-nums; color: #ffd98a; }
+.ab-milestone-item .ab-bar { grid-column: 1 / -1; }
+.ab-milestone-item[data-done="true"] .ab-milestone-item-name { color: #b8e0a0; }
+.ab-milestone-done, .ab-milestone-ahead ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
+.ab-milestone-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; font-size: 14px; }
+.ab-milestone-ahead summary { cursor: pointer; font-size: 13px; color: var(--ab-dim); padding: 4px 0; }
