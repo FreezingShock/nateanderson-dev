@@ -20,3 +20,44 @@
 .bx-note { margin: 6px 0; font-size: 14px; opacity: .85; }
 .bx-recipe { display: flex; justify-content: space-between; gap: 12px; padding: 4px 0; font-size: 14px; }
 .bx-arrow { opacity: .6; }
+
+/* Tools dropdown: a solid framed panel under the Tools button, one item per row. */
+.bx-tools-menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  z-index: 8;
+  min-width: 232px;
+  display: flex;
+  flex-direction: column;
+  padding: 6px;
+  background: #1a1209;
+  border: 2px solid #c59a52;
+  box-shadow: 0 3px 0 #6b4f26, 0 10px 28px rgba(0, 0, 0, .65);
+}
+.bx-tools-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  width: 100%;
+  min-height: 40px;
+  padding: 8px 10px;
+  background: transparent;
+  border: 0;
+  color: #efe2c4;
+  font: inherit;
+  font-size: 13px;
+  text-align: left;
+  cursor: pointer;
+}
+.bx-tools-item:hover,
+.bx-tools-item:focus-visible { background: #3a2a14; outline: none; color: #ffd98a; }
+.bx-tools-item kbd {
+  font: inherit;
+  font-size: 11px;
+  padding: 1px 6px;
+  border: 1px solid #6b4f26;
+  color: #c59a52;
+}
+.bx-tools-toggle[aria-expanded="true"] { outline: 2px solid #ffd98a; outline-offset: 2px; }
