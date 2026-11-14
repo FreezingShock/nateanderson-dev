@@ -38,6 +38,7 @@ import { BrassworkExtras, type AwayReport, type Mood } from "./extras";
 import { FirstRunGuide } from "./first-run";
 import { BuildPopover, TrashButton } from "./build-popover";
 import { bw, bwHum, bwSetEnabled } from "@/lib/brasswork/sound";
+import "@/components/brasswork-ui/type.css";
 
 const W = 18;
 const D = 12;
