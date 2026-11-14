@@ -40,6 +40,21 @@ export function lathe() {
     b.box(1, 24, 4, 9, 25, 6, C.steel);
     b.part("pulley", [5, 22, 5], spin("z", 1.1));
     b.wheel("z", 5, 22, 2.6, 4, 6, C.brass, 4, 1);
+    // Drive belt from the overhead pulley down to the headstock.
+    b.body();
+    b.box(4, 19, 4, 5, 22, 5, C.soot);
+    // Handwheel on the carriage apron, turning as it feeds.
+    b.part("handwheel", [1, 11, 12], spin("x", 0.7));
+    b.wheel("x", 11, 12, 2, 0, 1, C.brassL, 4, 1);
+    // Swarf curls caught in the tray under the cut.
+    b.body();
+    b.box(2, 8, 9, 8, 9, 14, C.soot);
+    for (const [x, z] of [[3, 10], [5, 12], [7, 11], [4, 13]]) b.set(x, 9, z, C.al);
+    // Coolant tank and drip pipe over the cutter.
+    b.box(8, 19, 10, 10, 22, 12, C.patina);
+    b.box(8, 15, 11, 9, 19, 12, C.steelD);
+    b.part("drip", [7, 14, 11], slide("y", 1, 1.5, { wave: "stamp" }), true);
+    b.set(7, 14, 11, C.glass);
     b.body();
     hopperBack(b, 0, 9);
     chuteFront(b, 0);
