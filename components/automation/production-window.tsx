@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import "./production-window.css";
 import type { NumberFormat, ResourceView, StatLine } from "@/lib/automation/types";
-import { ArtDivider, ArtGauge, EmptyState } from "@/components/brasswork-art";
+import { ArtGauge, EmptyState } from "@/components/brasswork-art";
 import { MenuWindow } from "@/components/brasswork-ui/window";
 import { fmtNum } from "./format";
 import { Glyph } from "./resource-strip";
@@ -21,7 +21,7 @@ function parsePower(stats: StatLine[]) {
   return { supply: m ? Number(m[1]) : 0, demand: m ? Number(m[2]) : 0 };
 }
 
-const perMin = (n: number) => `${n > 0 ? "+" : ""}${fmtNum(Math.round(n * 60 * 10) / 10)}/min`;
+const perMin = (n: number) => `${n > 0 ? "+" : ""}${fmtNum(Math.round(n * 60 * 10) / 10)} per min`;
 
 /** Brass pressure-gauge emblem with a gear, drawn on a 16 px grid so it stays crisp at 2x. */
 function Emblem() {
@@ -107,74 +107,71 @@ export function ProductionWindow({
       ? [["Raw", active.filter((r) => r.group === "raw")], ["Parts", active.filter((r) => r.group === "part")]]
       : [["Flowing", active]];
 
-  const facts: [string, string][] = [
-    ["Day", stat(stats, "Day")],
-    ["Time", stat(stats, "Time")],
-    ["Wind", stat(stats, "Wind")],
-    ["Workshops", stat(stats, "Workshops")],
-  ];
+  const wind = Math.min(1, Math.max(0, (parseFloat(stat(stats, "Wind")) || 0) / 100));
+  const isNight = stat(stats, "Time") === "Night";
 
   return (
     <MenuWindow title="Production" art={<Emblem />} label="Production stats" onClose={onClose}>
       <div className="ps-wrap ps-body" data-layout={layout}>
-          <div className="ps-inner">
-            <dl className="ps-facts">
-              {facts.map(([k, v]) => (
-                <div key={k}>
-                  <dt>{k}</dt>
-                  <dd>{v}</dd>
-                </div>
-              ))}
-            </dl>
-            <ArtDivider />
-
-            <section className="ps-power" aria-label="Power" data-short={short}>
-              <ArtGauge value={sat} size={64} label="Power supplied" />
-              <div className="ps-power-text">
-                <span className="ps-kicker">Power</span>
-                <span className="ps-power-num">
-                  {fmtNum(power.supply)} <i>of</i> {fmtNum(power.demand)} kW
-                </span>
-                <span className="ps-hint">
-                  {power.demand <= 0 ? "Nothing draws power yet." : short ? "Machines are short; add a windmill in range." : "Every machine is fully supplied."}
-                </span>
-              </div>
-            </section>
-            <ArtDivider />
-
-            {active.length === 0 ? (
-              <EmptyState scene="idle">Nothing is moving yet. Place a drill on a resource node.</EmptyState>
-            ) : (
-              <div className="ps-groups">
-                {groups.map(([label, rows]) =>
-                  rows.length === 0 ? null : (
-                    <section key={label} className="ps-group" aria-label={label}>
-                      <h3 className="ps-kicker">{label} <span className="ps-hint">net per minute</span></h3>
-                      <ul>
-                        {rows.map((r) => (
-                          <li key={r.id} className="ps-row" data-neg={r.perSecond < 0}>
-                            <Glyph code={r.glyph} size={26} icon={r.id} />
-                            <span className="ps-name">{r.name}</span>
-                            <span className="ps-bar" aria-hidden="true">
-                              <i style={{ width: `${Math.max(6, (Math.abs(r.perSecond) / maxRate) * 100)}%` }} />
-                            </span>
-                            <Spark values={history[r.id] ?? []} max={maxRate} />
-                            <span className="ps-rate">{perMin(r.perSecond)}</span>
-                            <span className="ps-stock">{fmtNum(r.amount, numberFormat)}</span>
-                          </li>
-                        ))}
-                      </ul>
-                    </section>
-                  ),
-                )}
-              </div>
-            )}
-
-            {idle.length > 0 && active.length > 0 && (
-              <p className="ps-hint ps-idle">Idle: {idle.map((r) => r.name).join(", ")}</p>
-            )}
-
+        <section className="ps-room" aria-label="Gauge room">
+          <div className="ps-dial" data-short={short}>
+            <ArtGauge value={sat} size={64} label="Power supplied" />
+            <span className="ps-kicker">Power</span>
+            <span className="ps-big">{fmtNum(power.supply)} of {fmtNum(power.demand)} kW</span>
+            <span className="ps-hint">
+              {power.demand <= 0 ? "Nothing needs power yet" : short ? "Short: add a windmill in range" : "Every machine is supplied"}
+            </span>
           </div>
+          <div className="ps-dial">
+            <ArtGauge value={wind} size={64} label="Wind strength" />
+            <span className="ps-kicker">Wind</span>
+            <span className="ps-big">{stat(stats, "Wind")} strength</span>
+            <span className="ps-hint">Windmills give this share of their rated kW</span>
+          </div>
+          <div className="ps-dial">
+            <ArtGauge value={isNight ? 0.12 : 0.88} size={64} label={isNight ? "Night" : "Daytime"} />
+            <span className="ps-kicker">Workshop {stat(stats, "Workshops")}</span>
+            <span className="ps-big">Day {stat(stats, "Day")}</span>
+            <span className="ps-hint">{isNight ? "Night" : "Daytime"}</span>
+          </div>
+        </section>
+
+        <section className="ps-ledger" aria-label="Factory ledger">
+          <header className="ps-ledger-head">
+            <h3>Factory ledger</h3>
+            <span>Net made per minute (made minus used)</span>
+          </header>
+          {active.length === 0 ? (
+            <EmptyState scene="idle">Nothing is being made yet. Place a drill on an ore node, then belt it to the hub.</EmptyState>
+          ) : (
+            <div className="ps-groups">
+              {groups.map(([label, rows]) =>
+                rows.length === 0 ? null : (
+                  <div key={label} className="ps-group" role="group" aria-label={label}>
+                    {layout === "board" && <h4 className="ps-kicker">{label}</h4>}
+                    <ul>
+                      {rows.map((r) => (
+                        <li key={r.id} className="ps-row" data-neg={r.perSecond < 0}>
+                          <Glyph code={r.glyph} size={26} icon={r.id} />
+                          <span className="ps-name">{r.name}</span>
+                          <span className="ps-bar" aria-hidden="true">
+                            <i style={{ width: `${Math.max(6, (Math.abs(r.perSecond) / maxRate) * 100)}%` }} />
+                          </span>
+                          <Spark values={history[r.id] ?? []} max={maxRate} />
+                          <span className="ps-rate">{perMin(r.perSecond)}</span>
+                          <span className="ps-stock">{fmtNum(r.amount, numberFormat)} in stock</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                ),
+              )}
+            </div>
+          )}
+          {idle.length > 0 && active.length > 0 && (
+            <p className="ps-idle">Not moving: {idle.map((r) => r.name).join(", ")}</p>
+          )}
+        </section>
       </div>
     </MenuWindow>
   );
