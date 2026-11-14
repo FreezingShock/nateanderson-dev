@@ -411,7 +411,7 @@ function nextStepOf(world: World, cat: Catalog, machines: MachineView[], milesto
     const next = milestones.find((m) => !m.done);
     if (drills === 0) return { text: "Place a drill on a resource node to start the flow.", actionLabel: "Select drill", actionId: "drill" };
     if (crafters === 0) return { text: "Add a kiln and set its recipe to smelt ore into ingots.", actionLabel: "Select kiln", actionId: "kiln" };
-    if (world.power.satisfaction < 1) return { text: "Machines are short of power. Place a windmill within 6 cells of them.", actionLabel: "Select windmill", actionId: "windmill" };
+    if (world.power.satisfaction < 1) return { text: "Machines are short of power. A windmill feeds machines within 6 cells of its centre.", actionLabel: "Select windmill", actionId: "windmill" };
     if (next) {
         // Progress per item, capped at the target, so the bar says how far the delivery has got.
         const def = cat.tree.milestones.find((m) => m.id === next.id);
