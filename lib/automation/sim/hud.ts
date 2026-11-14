@@ -313,12 +313,12 @@ export function hudData(world: World, cat: Catalog = DEFAULT_CATALOG, selectedId
         }
     }
 
-    // Areas are the island sites: the current one, and the others once the first workshop is open.
+    // Areas are the island sites: the current one, and the others once the first workshop is open (locked before that).
     const areas: AreaView[] = SITES.map((s) => ({
         id: s.id,
         name: s.name,
         note: `${s.nodes.length} nodes, ${s.width} by ${s.depth} floor`,
-        state: world.progress.site === s.id ? "current" : world.progress.prestiges === 0 ? "open" : "locked",
+        state: world.progress.site === s.id ? "current" : world.progress.prestiges === 0 ? "locked" : "open",
     }));
 
     const milestones: MilestoneView[] = cat.tree.milestones.map((m) => {
