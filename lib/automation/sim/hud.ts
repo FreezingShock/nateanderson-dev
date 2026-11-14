@@ -23,7 +23,7 @@ import type {
 } from "../types";
 import { DEFAULT_CATALOG, SITES } from "./data";
 import { unlockedRecipes, dayClock, buyResearch as buyResearchRaw, prestige as prestigeRaw } from "./progress";
-import { place as placeRaw, setRecipe as setRecipeRaw, resolve } from "./world";
+import { place as placeRaw, setRecipe as setRecipeRaw, setFilter as setFilterRaw, resolve } from "./world";
 
 export const DEFAULT_SETTINGS: HudSettings = { sound: false, reduceMotion: false, lowFx: false, numberFormat: "short", showRates: true };
 
@@ -381,6 +381,9 @@ export const actions = {
     },
     setRecipe(world: World, id: number, recipe: string | null, cat: Catalog = DEFAULT_CATALOG): ActionResult {
         return setRecipeRaw(world, id, recipe, cat);
+    },
+    setFilter(world: World, id: number, item: string | null, cat: Catalog = DEFAULT_CATALOG): ActionResult {
+        return setFilterRaw(world, id, item, cat);
     },
     buyResearch(world: World, nodeId: string, cat: Catalog = DEFAULT_CATALOG): ActionResult {
         return buyResearchRaw(world, cat, nodeId);

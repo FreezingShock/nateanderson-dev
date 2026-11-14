@@ -55,7 +55,7 @@ export function Inspector({
       <header className="ab-inspect-head">
         <MachinePortrait id={detail.id} size={96} label={detail.name} />
         <div className="ab-inspect-title">
-          <PanelTitle>{detail.name}</PanelTitle>
+          <h2 className="ab-h ab-inspect-name">{detail.name}</h2>
           <span className="ab-dim">Owned {detail.count}</span>
         </div>
         <button type="button" className="ab-text-btn" onClick={onClose} aria-label="Close details">

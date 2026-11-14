@@ -390,7 +390,8 @@ test("an unloader pulls from a crate at its rate onto a belt beside it", () => {
     const w = base(CAT, { startStock: [{ item: "iron_plate", qty: 200 }, { item: "iron_gear", qty: 50 }, { item: "copper_wire", qty: 50 }, { item: "steel_ingot", qty: 50 }, { item: "plate-a", qty: 50 }] }, { power: false });
     const crate = w.buildings[ok(S.place(w, "belt-crate", 40, 40, 0, CAT)).id];
     crate.input["ore-a"] = 5;
-    ok(S.place(w, "belt-unloader", 41, 40, 0, CAT));
+    const unloader = w.buildings[ok(S.place(w, "belt-unloader", 41, 40, 0, CAT)).id];
+    ok(S.setFilter(w, unloader.id, "ore-a", CAT)); // an unloader moves nothing until it is set to an item
     const belt = w.buildings[ok(S.place(w, "belt", 42, 40, 0, CAT)).id];
     S.advance(w, 3, 0.1, CAT);
     assert.ok(belt.lane.length >= 2 && belt.lane.length <= 3, `about 1 item a second, got ${belt.lane.length}`);
