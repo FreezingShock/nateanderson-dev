@@ -13,7 +13,9 @@ const E = 1, SOUTH = 0, W = 3, N = 2; // rot: 0 = +z, 1 = +x, 2 = -z, 3 = -x
 
 export const WINDMILLS = [[0, 4], [5, 5], [12, 6], [16, 8]];
 
-export function runStage2Layout(minutes = 10, windmills = WINDMILLS) {
+// extra(ctx) may add pieces (stage 3) and returns { research, deferred, tick } for the runner to buy and set.
+// deferred.id may be a function, for pieces placed later; tick(world) runs every tenth of a second.
+export function runStage2Layout(minutes = 10, windmills = WINDMILLS, extra = null) {
 const world = S.createWorld({ width: 18, depth: 12, hub: HUB }, CAT);
 const log = [];
 const ok = (label, r) => { if (!r.ok) log.push(`FAIL ${label}: ${r.reason}`); return r.ok; };
@@ -75,13 +77,20 @@ const buyWhenReady = (order) => {
         const r = S.buyResearch(world, CAT, node);
         if (!r.ok) return;
         researchLog.push(`${node} at ${world.time.toFixed(0)}s`);
-        for (const d of deferred) if (d.research === node) ok(`recipe ${d.recipe}`, S.setRecipe(world, d.id, d.recipe, CAT));
+        for (const d of deferred) {
+            const id = typeof d.id === "function" ? d.id() : d.id;
+            if (d.research === node && id != null) ok(`recipe ${d.recipe}`, S.setRecipe(world, id, d.recipe, CAT));
+        }
     }
 };
 const RESEARCH_ORDER = ["furnace_alloys", "sheet_rolling"];
+const extras = extra ? extra({ world, S, CAT, belt, machine, ok, remove: (x, z) => ok(`remove ${x},${z}`, S.remove(world, S.buildingAt(world, x, z, CAT)?.id ?? -1, CAT)) }) : {};
+deferred.push(...(extras.deferred ?? []));
+const order = [...RESEARCH_ORDER, ...(extras.research ?? [])];
 for (let t = 0; t < minutes * 600; t++) {
     S.advance(world, 0.1, 0.1, CAT);
-    buyWhenReady(RESEARCH_ORDER);
+    if (extras.tick) extras.tick(world);
+    buyWhenReady(order);
 }
 
 const hub = world.buildings[world.hubId].input;
