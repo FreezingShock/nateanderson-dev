@@ -26,8 +26,8 @@ const SMOKE_COLOR_END = new THREE.Color(0x4a4440);
 const SPARK_COLOR = new THREE.Color(0xffc060);
 const SPARK_COLOR_END = new THREE.Color(0xff6a2a);
 const ITEM_RATE = 4; // brass pieces per second while a machine works
-const ITEM_COLOR = new THREE.Color(0xd9a441);
-const ITEM_COLOR_END = new THREE.Color(0x8a6428);
+const ITEM_COLOR = new THREE.Color(0xffc84a);
+const ITEM_COLOR_END = new THREE.Color(0xffe39a);
 
 export class MachineEffects {
     readonly mesh: THREE.InstancedMesh;
@@ -230,12 +230,12 @@ export class MachineEffects {
         p.x = e.x;
         p.y = e.y;
         p.z = e.z;
-        const speed = 0.7 + Math.random() * 0.2;
+        const speed = 0.9 + Math.random() * 0.3;
         p.vx = (e.dx ?? 0) * speed;
         p.vz = (e.dz ?? 0) * speed;
         p.vy = 0.35;
         p.life = 0.9 + Math.random() * 0.3;
-        p.size = 0.09;
+        p.size = 0.16;
     }
 
     private spawn(e: { x: number; y: number; z: number; sparks: boolean }): void {

@@ -120,6 +120,15 @@ export default function VoxelIslandBench() {
             (window as unknown as { __burstTimer?: number }).__burstTimer = timer;
         }
 
+        if (q.get("cam") === "close") {
+            // Close-up on the fx furnace and press chutes, for the chute check.
+            const tx = Number(q.get("tx") ?? -1.5), tz = Number(q.get("tz") ?? -4.5);
+            const ty = heightAt(tx, tz) + 0.6;
+            if (island.controls) island.controls.target.set(tx, ty, tz);
+            island.camera.position.set(tx - 2.2, ty + 1.9, tz + 2.6);
+            island.controls?.update();
+        }
+
         if (q.get("select") === "1") {
             // A selected belt run (five cells in a line) and one selected building (2x2) for the outline check.
             const run = [0, 1, 2, 3, 4].map((i) => ({ x: -6 + i, z: -1 }));
