@@ -54,6 +54,7 @@ export function gbCommand(s: State, args: string[]): GbResult {
     if (sub === "change") {
         const pick = (args[1] ?? "").toLowerCase();
         if (!s.change) return out([l("no change order open.", "dim")]);
+        if (!pick) return out([l(`change order: +${Math.round(s.change.bonus * 100)}% pay for about ${s.change.secs} s more building and an inspection that asks ${s.change.score.toFixed(1)} more score. gb change yes to accept, gb change no to decline.`, "hi")]);
         if (pick === "no" || pick === "decline") { declineChange(s); return out([l("change order declined.")], true); }
         if (!acceptChange(s)) return out([l("cannot accept it now.", "err")]);
         return out([l("change order accepted: more materials, bigger payout.", "hi")], true);
