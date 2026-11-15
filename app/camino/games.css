@@ -272,59 +272,109 @@
 }
 .ctos .g-read .p-foot { margin-top: auto; }
 
-/* Hub cards: each game gets a preview screen above its title. The screen is dark on every card, so the
-   light and dark card rotation from ctos.css still reads, but the previews stay one system. */
-.ctos .g-card .g-screen {
+/* Hub cards: a real screenshot of each game sits above its title. Captured from the built game at 1440x900, shown 16:10. */
+.ctos .g-card .g-shot {
     position: relative;
-    isolation: isolate;
-    display: grid;
-    place-items: center;
-    height: 150px;
-    margin-bottom: 4px;
-    border: 1px solid #2a2a2a;
+    margin: 0 16px;
+    aspect-ratio: 16 / 10;
+    border: 1px solid var(--cm-hair-hi);
     background-color: #080808;
-    background-image: radial-gradient(circle, rgba(244, 244, 242, .16) 0 26%, transparent 30%);
-    background-size: 6px 6px;
     overflow: hidden;
 }
-.ctos .g-card .g-screen::before {
-    content: "";
-    position: absolute;
-    inset: 0;
-    z-index: 1;
-    background: repeating-linear-gradient(0deg, rgba(0, 0, 0, .34) 0 1px, transparent 1px 3px);
-    pointer-events: none;
+.ctos .g-card .g-shot img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform var(--cm-d-slow) var(--cm-ease);
 }
-.ctos .g-card .g-screen::after {
+.ctos .g-card .g-shot::after {
     content: "";
     position: absolute;
     left: 0;
     right: 0;
     bottom: 0;
     height: 3px;
-    z-index: 1;
     background: var(--cm-cyan);
 }
-.ctos .g-card .g-screen-cap {
+.ctos .g-card .g-shot-empty {
     position: absolute;
-    top: 8px;
-    left: 10px;
-    z-index: 2;
-    font: 700 var(--cm-ctos-t-micro)/1 var(--cm-mono);
-    letter-spacing: .14em;
-    text-transform: uppercase;
+    inset: 0;
+    display: grid;
+    place-items: center;
+    background-color: #080808;
+    background-image: radial-gradient(circle, rgba(244, 244, 242, .16) 0 26%, transparent 30%);
+    background-size: 6px 6px;
     color: var(--cm-cyan);
 }
-.ctos .g-card .g-screen svg {
-    position: relative;
-    z-index: 2;
-    width: 56px;
-    height: 56px;
-    color: var(--cm-cyan);
-    transition: transform var(--cm-d-base) var(--cm-ease);
-}
-.ctos .g-card:hover .g-screen svg { transform: translateY(-3px) scale(1.04); }
+.ctos .g-card .g-shot-empty svg { width: 56px; height: 56px; }
+.ctos .g-card:hover .g-shot img { transform: scale(1.03); }
 .ctos .g-grid { grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); }
+
+/* Layouts for the hub cards, chosen by data-glayout on the page wrapper. "poster" is the default. */
+.ctos.ng-page[data-glayout="poster"] .g-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+/* Odd counts: three games sit three across, a lone game keeps a poster-sized column instead of stretching. */
+.ctos.ng-page[data-glayout="poster"] .g-grid.g-count-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.ctos.ng-page[data-glayout="poster"] .g-grid.g-count-1 { grid-template-columns: minmax(0, 560px); }
+@media (max-width: 1000px) {
+    .ctos.ng-page[data-glayout="poster"] .g-grid.g-count-3 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+.ctos.ng-page[data-glayout="rows"] .g-grid { grid-template-columns: minmax(0, 1fr); }
+.ctos.ng-page[data-glayout="rows"] .g-card {
+    display: grid;
+    grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr);
+    grid-template-areas:
+        "head head"
+        "shot title"
+        "shot pitch"
+        "shot pills"
+        "shot status"
+        "play play";
+    align-items: start;
+    column-gap: 22px;
+    row-gap: 10px;
+}
+.ctos.ng-page[data-glayout="rows"] .g-card > .g-tile-head { grid-area: head; }
+.ctos.ng-page[data-glayout="rows"] .g-card > .g-shot { grid-area: shot; margin: 0 0 0 16px; }
+.ctos.ng-page[data-glayout="rows"] .g-card > b { grid-area: title; margin: 0 16px 0 0; }
+.ctos.ng-page[data-glayout="rows"] .g-card > p { grid-area: pitch; margin: 0 16px 0 0; min-height: 0; }
+.ctos.ng-page[data-glayout="rows"] .g-card > .g-pills { grid-area: pills; margin: 0 16px 0 0; }
+.ctos.ng-page[data-glayout="rows"] .g-card > .g-status { grid-area: status; margin: 0 16px 0 0; }
+.ctos.ng-page[data-glayout="rows"] .g-card > .g-play { grid-area: play; }
+.ctos.ng-page[data-glayout="rows"] .g-card .g-play { align-self: stretch; }
+.ctos.ng-page[data-glayout="index"] .g-grid { grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); }
+.ctos.ng-page[data-glayout="index"] .g-card .g-pills { display: none; }
+.ctos.ng-page[data-glayout="index"] .g-card > p {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    min-height: 0;
+}
+.ctos.ng-page[data-glayout="index"] .g-card > b { font-size: 18px; }
+@media (max-width: 760px) {
+    .ctos.ng-page[data-glayout="poster"] .g-grid,
+    .ctos.ng-page[data-glayout="index"] .g-grid,
+    .ctos.ng-page[data-glayout="poster"] .g-grid.g-count-1 { grid-template-columns: minmax(0, 1fr); }
+    .ctos.ng-page[data-glayout="rows"] .g-card { grid-template-columns: minmax(0, 1fr); grid-template-areas: "head" "shot" "title" "pitch" "pills" "status" "play"; }
+    .ctos.ng-page[data-glayout="rows"] .g-card > .g-shot { margin: 0 16px; }
+    .ctos.ng-page[data-glayout="rows"] .g-card > :is(b, p, .g-pills, .g-status) { margin: 0 16px; }
+}
+
+/* Status line: one square dot, the status word and the section. No pill, no coloured side strip. */
+.ctos .g-status {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+    font: 700 var(--cm-ctos-t-micro)/1.3 var(--cm-mono);
+    letter-spacing: .12em;
+    text-transform: uppercase;
+    color: var(--cm-mute);
+}
+.ctos .g-status > i { width: 7px; height: 7px; flex: none; background: var(--cm-cyan); }
+.ctos .g-status.warn > i { background: var(--cm-amber); }
+.ctos .g-status-sep { color: var(--cm-dim); }
 /* Every hub card uses the same dark ground and cyan top edge. This overrides the 3-up light/dark rotation from ctos.css. */
 .ctos .cm-grid.g-grid > .cm-card.g-card:nth-child(n),
 .ctos .cm-grid.g-grid > .cm-card.g-card:nth-child(n):hover {
@@ -347,7 +397,7 @@
     padding: 16px 0 0;
     gap: 10px;
 }
-.ctos .g-card > :is(.g-tile-head, b, p, .g-pills, .g-screen) { margin-left: 16px; margin-right: 16px; }
+.ctos .g-card > :is(.g-tile-head, b, p, .g-pills, .g-shot, .g-status) { margin-left: 16px; margin-right: 16px; }
 .ctos .g-card > .g-tile-head { margin-top: 0; }
 .ctos .g-card > b { font: 600 22px/1.05 var(--cm-display); letter-spacing: -.01em; }
 .ctos .cm-grid.g-grid > .cm-card.g-card > b { color: #f4f4f2; }
@@ -429,14 +479,11 @@
     .ctos .g-hub-nav a:last-child { border-bottom: 0; }
 }
 
-@media (max-width: 760px) {
-    .ctos .g-card .g-screen { height: 124px; }
-}
 @media (max-width: 480px) {
     .ctos .g-hub-nav a { padding: 14px 16px; }
 }
 @media (prefers-reduced-motion: reduce) {
-    .ctos .g-card:hover .g-screen svg { transition: none; transform: none; }
+    .ctos .g-card:hover .g-shot img { transform: none; transition: none; }
 }
 
 /* Flag tiles: the cover is dither on near-black, not a flat grey block. */

@@ -26,8 +26,10 @@ Format and rules: `docs/WORKFLOW.md`. Append new items at the end of a section; 
 - [ ] ASK SITE-branch-delete | S | threads cannot delete branches (403); Nate runs `branch-cleanup-delete.sh` from the audit folder, merged ones only | audit 9
 - [ ] ASK SITE-stale-prs | S | decide PRs #399 and #400 (merge or close) and the Brasswork drafts; owners decide their own | audit 9
 
+- [ ] ASK SITE-hub-layout | S | Nate picks the Games hub layout (poster, rows or index, see the decision card of 2026-11-15); remove the two losing layouts from `app/camino/games.css` and `data-glayout` from `app/creations/games/page.tsx`
+
 ## Next
-- [ ] SITE-game-thumbs | M | dithered screenshot per game on the hub and the Creations featured grid; Brasswork card still says OFFLINE and "In development" while playable; run after the card overhaul | audit 5 | light taste call on crop style
+- [x] SITE-game-thumbs | M | real screenshot per game on the hub cards (captured from the built game, 16:10); the Creations featured grid still uses its own cards | done in the Games hub redesign | 
 - [x] SITE-nexus-iframe | S | remove the "Allow attribute will take precedence over allowfullscreen" log; load the embed on click behind a poster | audit 2 | the log is gone (frame uses `allow` only, `components/creations/deferred-frame.tsx`); loading on click behind a poster is not done and not needed while the frame loads after page load
 - [x] SITE-bento-cards | M | finish the card overhaul if any remains (cards pinned footers, one title size landed in e016de91) | check state first | checked 2026-11-15: one dark treatment, pinned footers, one title size and grids that fill the row are live on the games hub; only the generic glyph previews remain (SITE-game-thumbs)
 - [x] SITE-check-feature-docs | S | verify every line of `docs/site/FEATURES.md` against the code and fix mismatches | fixed fonts, dev routes, dock labels, share images; page behaviour lines checked by file only, not in a browser

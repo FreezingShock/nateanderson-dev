@@ -7,7 +7,7 @@ Format: `- area | paths | owner (thread title or "free") | since YYYY-MM-DD | do
 ## Site
 - Shell, nav, console, search | components/cm, lib/nav.ts, lib/search, lib/motion, app/camino/{ctos,nav-naos,motion,entrances,transition}.css | free | | docs/site
 - Pages (home, about, studies, timeline, history, blog) | app/{page,about,studies,timeline,history,blog}, components/home, lib/*-data.ts | free | | docs/site
-- Creations and games hub | app/creations (not games/*), components/creations, lib/creations-data.ts | free | | docs/site
+- Creations and games hub | app/creations (not games/*), components/creations, components/games/naos.tsx, lib/creations-data.ts, public/games/shots | Games page redesign | 2026-11-15 | docs/site
 - Gate, SEO, CI, deploy | proxy.ts, lib/gate, lib/seo.ts, .github, scripts/ci, vercel.json | free | | docs/deploys.md, docs/ci.md
 
 ## Games

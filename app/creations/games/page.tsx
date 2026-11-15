@@ -7,7 +7,7 @@ import { pageMeta } from "@/lib/seo";
 
 export default function GamesPage() {
     return (
-        <div className="ctos ng-page" data-entrance="tile">
+        <div className="ctos ng-page" data-glayout="poster" data-entrance="tile">
             <NaosBackdrop src="/naos/bg-games.webp" />
             <CreationsShell
                 eyebrow="Creations / Games"
