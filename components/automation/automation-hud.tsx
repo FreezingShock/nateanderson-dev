@@ -7,9 +7,10 @@ import "./automation-hud.css";
 import type { HudData } from "@/lib/automation/types";
 import type { HudActions } from "./types";
 import { ResourceStrip } from "./resource-strip";
-import { BuildList } from "./build-bar";
+import { BuildList, GROUP_ICON, GROUP_TITLE, type GroupId } from "./build-bar";
 import { Inspector } from "./inspector";
 import { Milestones, PrestigeCard, Section } from "./factory-sections";
+import { MenuWindow } from "@/components/brasswork-ui/window";
 import { SettingsWindow, type SettingsSlots } from "./settings-window";
 import { ProductionWindow } from "./production-window";
 import { ExpeditionWindow } from "./expedition-window";
@@ -60,18 +61,22 @@ export function AutomationHud({
   const [sheet, setSheet] = useState<"pal" | "factory" | null>(null);
   // Phone only: the "More" sheet lists the drawers, so the bottom bar stays at four tabs.
   const [more, setMore] = useState(false);
+  // Desktop: one build group flyout from the left dock, and the Milestones window from the right dock.
+  const [palGroup, setPalGroup] = useState<GroupId | null>(null);
+  const [milestonesOpen, setMilestonesOpen] = useState(false);
   const mode = data.settings.numberFormat;
 
   useEffect(() => {
-    if (!drawer && !screen) return;
+    if (!drawer && !screen && !palGroup) return;
     const onKey = (e: KeyboardEvent) => {
       if (e.key !== "Escape") return;
       if (screen) setScreen(null);
-      else setDrawer(null);
+      else if (drawer) setDrawer(null);
+      else setPalGroup(null);
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [drawer, screen]);
+  }, [drawer, screen, palGroup]);
 
   const toggle = (d: Drawer) => {
     if (d === "expedition") {
@@ -98,6 +103,7 @@ export function AutomationHud({
       data-inspect={data.selected ? "on" : "off"}
       data-lowfx={data.settings.lowFx}
       data-reduce={data.settings.reduceMotion}
+      data-palgroup={palGroup ?? "none"}
     >
       <header className="ab-top">
         <div className="ab-brand">
@@ -134,6 +140,28 @@ export function AutomationHud({
       </header>
 
       <div className="ab-body">
+        {/* Desktop only: a slim left dock. One click opens that group as a flyout, so the resting screen stays mostly island. */}
+        <nav className="ab-dock ab-dock-left" aria-label="Build groups">
+          {(["logistics", "machines", "power"] as const).map((g) => {
+            const open = data.machines.filter((m) => (m.group ?? "machines") === g && m.unlocked).length;
+            const armedHere = data.armed != null && data.machines.some((m) => m.id === data.armed && (m.group ?? "machines") === g);
+            return (
+              <button
+                key={g}
+                type="button"
+                className="ab-dock-btn"
+                aria-pressed={palGroup === g}
+                aria-label={`${GROUP_TITLE[g]}, ${open} open`}
+                data-armed={armedHere}
+                onClick={() => setPalGroup((c) => (c === g ? null : g))}
+              >
+                <Ico id={GROUP_ICON[g]} />
+                <span className="ab-dock-label">{GROUP_TITLE[g]}</span>
+              </button>
+            );
+          })}
+        </nav>
+
         <aside className="ab-pal" aria-label="Machines">
           {/* The group panels below carry the visible titles and counts; this heading is for screen readers only. */}
           <h2 className="ab-sr-only">Machines</h2>
@@ -142,12 +170,13 @@ export function AutomationHud({
             resources={data.resources}
             selectedId={selectedId}
             armedId={data.armed ?? null}
+            group={palGroup}
             numberFormat={mode}
             onBuild={(id) => {
-              // Arming a tool on phone closes the Machines sheet so the player can place straight away.
+              // Arming a tool closes the palette so the player can place straight away (phone: the sheet; desktop: the flyout).
               const arming = data.armed !== id;
               actions.onBuild(id);
-              if (arming) setSheet(null);
+              if (arming) { setSheet(null); setPalGroup(null); }
             }}
             onSelect={actions.onSelect}
           />
@@ -263,6 +292,20 @@ export function AutomationHud({
           </p>
         </div>
 
+        {/* Desktop only: a slim right dock. Milestones opens as a window; the selected machine's inspector floats here. */}
+        <nav className="ab-dock ab-dock-right" aria-label="Workshop goals">
+          <button
+            type="button"
+            className="ab-dock-btn"
+            aria-pressed={milestonesOpen}
+            aria-label={`Milestones, ${data.blueprints} blueprints`}
+            onClick={() => setMilestonesOpen((o) => !o)}
+          >
+            <Ico id="milestones" />
+            <span className="ab-dock-label">Milestones</span>
+          </button>
+        </nav>
+
         <aside className="ab-factory" aria-label="Factory panel">
           {data.selected && (
             <section className="ab-panel ab-inspect-panel" aria-label="Selected machine">
@@ -278,13 +321,16 @@ export function AutomationHud({
             </section>
           )}
 
-          <Section title="Milestones" icon="milestones" meta={`${data.blueprints} blueprints`}>
-            <Milestones milestones={data.milestones} />
-          </Section>
+          {/* Phone shows these in the Milestones sheet. On desktop they live in the Goals window instead. */}
+          <div className="ab-factory-meta">
+            <Section title="Milestones" icon="milestones" meta={`${data.blueprints} blueprints`}>
+              <Milestones milestones={data.milestones} />
+            </Section>
 
-          <Section title="Prestige" icon="prestige" defaultOpen={false}>
-            <PrestigeCard prestige={data.prestige} onOpen={() => { setPlanSite(undefined); setScreen("prestige"); }} />
-          </Section>
+            <Section title="Prestige" icon="prestige" defaultOpen={false}>
+              <PrestigeCard prestige={data.prestige} onOpen={() => { setPlanSite(undefined); setScreen("prestige"); }} />
+            </Section>
+          </div>
         </aside>
 
         {drawer === "stats" && (
@@ -294,6 +340,22 @@ export function AutomationHud({
 
       {drawer === "settings" && (
         <SettingsWindow settings={data.settings} onChange={actions.onSettings} onClose={() => setDrawer(null)} slots={settingsSlots} />
+      )}
+
+      {milestonesOpen && (
+        <MenuWindow
+          title="Milestones"
+          label="Milestones and prestige"
+          size="wide"
+          art={<Ico id="milestones" />}
+          onClose={() => setMilestonesOpen(false)}
+        >
+          <p className="ab-dim">{data.blueprints} blueprints</p>
+          <Milestones milestones={data.milestones} />
+          <Section title="Prestige" icon="prestige" defaultOpen={false}>
+            <PrestigeCard prestige={data.prestige} onOpen={() => { setMilestonesOpen(false); setPlanSite(undefined); setScreen("prestige"); }} />
+          </Section>
+        </MenuWindow>
       )}
 
       {screen === "research" && (

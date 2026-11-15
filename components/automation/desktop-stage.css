@@ -1,12 +1,17 @@
-/* Full-desktop stage. On desktop the 3D view fills the whole game area edge to edge, and the top bar,
-   palette, factory panel and objective card float over it. Nothing reserves layout space for them, so the
-   canvas size is the full area. The insets below say how much of the edge the overlays cover, so the
-   island can be framed clear of them. Phone keeps its own stacked layout (see brasswork-skin.css). */
+/* Full-desktop stage. On desktop the 3D view fills the whole game area edge to edge. The top bar, the slim
+   left build dock, the right goals dock, the objective card and the tool bar float over it, and nothing
+   reserves layout space for them. The insets below are how far the resting overlays reach into the edge, so
+   the island can be framed clear of them. Phone keeps its own stacked layout (see brasswork-skin.css). */
 .ab-root {
-  --bw-inset-top: 64px;
-  --bw-inset-left: 324px;
-  --bw-inset-right: 364px;
+  --bw-inset-top: 76px;
+  --bw-inset-left: 84px;
+  --bw-inset-right: 84px;
   --bw-inset-bottom: 84px;
+}
+
+/* The docks are a desktop device. Phone uses the bottom tab bar. */
+@media (max-width: 759px) {
+  .ab-root .ab-dock { display: none; }
 }
 
 @media (min-width: 760px) {
@@ -24,14 +29,43 @@
   .ab-root.bw .ab-stage {
     position: absolute; inset: 0; pointer-events: auto;
   }
-  .ab-root.bw .ab-pal {
-    position: absolute; left: 12px; top: var(--bw-inset-top); bottom: 12px; width: 300px; margin: 0;
+
+  /* Left dock: one slim column of group buttons, always visible at rest. */
+  .ab-root.bw .ab-dock {
+    position: absolute; top: var(--bw-inset-top); z-index: 5; pointer-events: auto;
+    display: flex; flex-direction: column; gap: 6px; width: 64px; padding: 6px;
+    background: linear-gradient(180deg, var(--bw-wood-hi), var(--bw-wood) 40%, var(--bw-wood-lo));
+    border: 2px solid var(--ab-brass); border-radius: 0; box-sizing: border-box;
+  }
+  .ab-root.bw .ab-dock-left { left: 10px; }
+  .ab-root.bw .ab-dock-right { right: 10px; }
+  .ab-root.bw .ab-dock-btn {
+    display: flex; flex-direction: column; align-items: center; gap: 3px; width: 100%;
+    padding: 6px 0 5px; background: rgba(8, 6, 3, 0.35); border: 1px solid var(--ab-line-soft);
+    color: var(--ab-text); cursor: pointer; font: inherit;
+  }
+  .ab-root.bw .ab-dock-btn:hover,
+  .ab-root.bw .ab-dock-btn:focus-visible { border-color: var(--ab-brass); }
+  .ab-root.bw .ab-dock-btn[aria-pressed="true"] { border-color: var(--ab-brass-hi); background: rgba(184, 134, 47, 0.25); }
+  .ab-root.bw .ab-dock-btn[data-armed="true"] { box-shadow: inset 0 0 0 1px var(--ab-brass-hi); }
+  .ab-root.bw .ab-dock-label { font-size: 11px; line-height: 1.1; letter-spacing: 0.02em; }
+
+  /* The build palette is closed at rest. Choosing a dock group opens just that group as a flyout beside the dock. */
+  .ab-root.bw .ab-pal { display: none; }
+  .ab-root.bw:not([data-palgroup="none"]) .ab-pal {
+    display: block; position: absolute; left: 84px; top: var(--bw-inset-top); bottom: 12px; width: 300px; margin: 0;
     z-index: 5; pointer-events: auto; overflow: auto;
   }
-  .ab-root.bw .ab-factory {
-    position: absolute; right: 12px; top: var(--bw-inset-top); bottom: 12px; width: 340px; margin: 0;
-    z-index: 5; pointer-events: auto; overflow: auto;
+
+  /* The factory aside holds only the selected machine's inspector, floating on the right. */
+  .ab-root.bw .ab-factory { display: none; }
+  .ab-root.bw[data-inspect="on"] .ab-factory {
+    display: block; position: absolute; right: 84px; top: var(--bw-inset-top); width: 320px; margin: 0;
+    max-height: calc(100% - var(--bw-inset-top) - 84px); overflow: auto;
+    z-index: 5; pointer-events: auto;
   }
+  .ab-root.bw .ab-factory-meta { display: none; }
+
   .ab-root.bw .ab-next {
     position: absolute; left: 50%; bottom: 16px; transform: translateX(-50%); z-index: 5;
     pointer-events: auto; margin: 0; width: fit-content; max-width: min(440px, 40vw);
@@ -40,7 +74,7 @@
   .ab-root.bw .ab-drawer { pointer-events: auto; z-index: 6; }
 }
 
-/* Floating Remove sits just left of the factory panel, clear of it and of the island centre. */
+/* Floating Remove sits just left of the right dock, clear of it and of the island centre. */
 @media (min-width: 760px) {
   .bt-dock { right: calc(var(--bw-inset-right) + 12px); top: auto; bottom: calc(var(--bw-inset-bottom) + 12px); }
 }

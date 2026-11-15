@@ -7,11 +7,11 @@ import { canAfford, costText } from "./format";
 import { Glyph } from "./resource-strip";
 import { Section } from "./factory-sections";
 
-type GroupId = "machines" | "power" | "logistics";
+export type GroupId = "machines" | "power" | "logistics";
 
-const GROUP_ICON: Record<GroupId, string> = { machines: "machines", power: "power", logistics: "logistics" };
+export const GROUP_ICON: Record<GroupId, string> = { machines: "machines", power: "power", logistics: "logistics" };
 
-const GROUP_TITLE: Record<GroupId, string> = {
+export const GROUP_TITLE: Record<GroupId, string> = {
   machines: "Machines",
   power: "Power",
   logistics: "Logistics",
@@ -86,6 +86,7 @@ export function BuildList({
   resources,
   selectedId,
   armedId = null,
+  group = null,
   numberFormat,
   onBuild,
   onSelect,
@@ -94,6 +95,8 @@ export function BuildList({
   resources: ResourceView[];
   selectedId: string | null;
   armedId?: string | null;
+  /** Desktop dock: show only this group's panel. Null shows every group. */
+  group?: GroupId | null;
   numberFormat: NumberFormat;
   onBuild: (id: string) => void;
   onSelect: (id: string | null) => void;
@@ -103,6 +106,7 @@ export function BuildList({
   const shown = collapseTiers(machines).sort((a, b) => orderOf(a.id) - orderOf(b.id));
   for (const m of shown) {
     const id = (m.group ?? "machines") as GroupId;
+    if (group && id !== group) continue;
     let g = groups.find((x) => x.id === id);
     if (!g) groups.push((g = { id, items: [] }));
     g.items.push(m);
