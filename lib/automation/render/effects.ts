@@ -18,7 +18,7 @@ interface Particle {
 
 const POOL = 320;
 export type BurstKind = "place" | "remove" | "milestone";
-const BURST_COUNT: Record<BurstKind, number> = { place: 14, remove: 10, milestone: 60 };
+const BURST_COUNT: Record<BurstKind, number> = { place: 26, remove: 18, milestone: 60 };
 const SMOKE_RATE = 5; // puffs per second per working smoking machine, at full density
 const SPARK_RATE = 7;
 const STEAM_RATE = 1.6; // light white puffs from every other working machine, so a busy island reads at default zoom
@@ -145,7 +145,7 @@ export class MachineEffects {
                 p.vz = Math.sin(a) * 0.35;
                 p.vy = 0.3 + Math.random() * 0.2;
                 p.life = 1.4 + Math.random() * 0.6;
-                p.size = 0.12;
+                p.size = 0.2;
             } else {
                 // Sparks: fast, fall under gravity, short life.
                 p.kind = 1;
