@@ -3,7 +3,7 @@ import { uiIconStyle } from "@/lib/automation/icons/ui";
 
 // Small extras around the Brasswork stage: photo mode (P), the key sheet (?) and the welcome-back report. They sit on
 // top of the HUD and use the brass kit's bw-* classes. The host passes in a snapshot function and the away report.
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Codex } from "./codex";
 import "./extras.css";
 
@@ -64,6 +64,23 @@ export function BrassworkExtras({ snapshot, away, mood, onMood }: { snapshot: ()
     const [sheet, setSheet] = useState(false);
     const [codex, setCodex] = useState(false);
     const [toolsOpen, setToolsOpen] = useState(false);
+    const toolsRef = useRef<HTMLDivElement>(null);
+    // The Tools panel closes on Escape and on any click or tap outside it.
+    useEffect(() => {
+        if (!toolsOpen) return;
+        const onDown = (e: PointerEvent) => {
+            if (toolsRef.current && !toolsRef.current.contains(e.target as Node)) setToolsOpen(false);
+        };
+        const onKey = (e: KeyboardEvent) => {
+            if (e.key === "Escape") setToolsOpen(false);
+        };
+        window.addEventListener("pointerdown", onDown);
+        window.addEventListener("keydown", onKey);
+        return () => {
+            window.removeEventListener("pointerdown", onDown);
+            window.removeEventListener("keydown", onKey);
+        };
+    }, [toolsOpen]);
     const [flash, setFlash] = useState(0);
     const [report, setReport] = useState<AwayReport | null>(away);
     useEffect(() => setReport(away), [away]);
@@ -99,7 +116,7 @@ export function BrassworkExtras({ snapshot, away, mood, onMood }: { snapshot: ()
     return (
         <>
             {/* One Tools button replaces the four separate icon buttons. Each row says what it does in plain words. */}
-            <div className="bx-tools">
+            <div className="bx-tools" ref={toolsRef}>
                 <button
                     type="button"
                     className="bw-btn bx-btn bx-tools-toggle"
@@ -112,9 +129,6 @@ export function BrassworkExtras({ snapshot, away, mood, onMood }: { snapshot: ()
                     <div className="bx-tools-menu" role="menu" aria-label="Tools">
                         <button type="button" role="menuitem" className="bx-tools-item" onClick={() => { setToolsOpen(false); photo(); }}>
                             Take a photo <kbd>P</kbd>
-                        </button>
-                        <button type="button" role="menuitem" className="bx-tools-item" onClick={() => onMood(MOODS[(MOODS.indexOf(mood) + 1) % MOODS.length])}>
-                            Lighting: {mood} <kbd>L</kbd>
                         </button>
                         <button type="button" role="menuitem" className="bx-tools-item" onClick={() => { setToolsOpen(false); setCodex(true); }}>
                             Machine guide <kbd>C</kbd>

@@ -38,3 +38,15 @@ for (const site of S.SITES) {
         }
     });
 }
+
+// Expedition menu states: before the first prestige every other site is locked; after it, each one is open.
+test("other sites are locked before the first prestige and open after it", () => {
+    const world = S.createWorld({ width: 18, depth: 12, hub: { x: 8, z: 5 } }, CAT);
+    const before = S.hudData(world, CAT).areas;
+    assert.ok(before.every((a) => a.state === "locked"), JSON.stringify(before));
+    const r = S.prestige(world, CAT, S.SITES[0].id);
+    assert.equal(r.ok, true, r.reason);
+    const after = S.hudData(world, CAT).areas;
+    assert.equal(after.find((a) => a.id === S.SITES[0].id).state, "current");
+    for (const a of after.filter((a) => a.id !== S.SITES[0].id)) assert.equal(a.state, "open", a.id);
+});

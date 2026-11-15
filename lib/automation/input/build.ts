@@ -1,4 +1,34 @@
-import { type BoardSize, type Cell, type Rot, cellInBoard, cellKey, lineCells, rotate } from "./grid";
+import { type BoardSize, type Cell, type Rot, cellInBoard, cellKey, lineCells, rotate, rotFromDelta } from "./grid";
+
+// Pencil path: walks from the last cell toward the target one cell at a time (x first, then z), so a fast
+// drag still draws a connected line. Stepping back onto the previous cell erases the last one, so dragging
+// back over a stroke undoes it.
+export function extendPath(path: Cell[], target: Cell): Cell[] {
+    const p = path.map((c) => ({ x: c.x, z: c.z }));
+    for (let guard = 0; guard < 400; guard++) {
+        const last = p[p.length - 1];
+        const dx = target.x - last.x;
+        const dz = target.z - last.z;
+        if (dx === 0 && dz === 0) break;
+        const next = Math.abs(dx) >= Math.abs(dz) ? { x: last.x + Math.sign(dx), z: last.z } : { x: last.x, z: last.z + Math.sign(dz) };
+        const back = p.length >= 2 ? p[p.length - 2] : null;
+        if (back && back.x === next.x && back.z === next.z) {
+            p.pop();
+            continue;
+        }
+        p.push(next);
+    }
+    return p;
+}
+
+// Each cell faces the next cell of the path; the last cell faces the way the stroke was going.
+export function pathRots(path: Cell[], fallback: Rot): Rot[] {
+    return path.map((c, i) => {
+        if (i < path.length - 1) return rotFromDelta(path[i + 1].x - c.x, path[i + 1].z - c.z, fallback);
+        if (path.length > 1) return rotFromDelta(c.x - path[i - 1].x, c.z - path[i - 1].z, fallback);
+        return fallback;
+    });
+}
 
 // What the world stores in a cell. The renderer and the simulation own what "kind" means.
 // anchor is the building's anchor cell when the world knows it. Otherwise the cell is its own anchor.
@@ -15,7 +45,27 @@ export interface BuildWorld {
     // Null when the item can go in this cell. Otherwise a short reason, such as "blocked" or "needs power".
     // The sim's check covers the whole footprint, so the ghost applies it to every cell of that footprint.
     check?(kind: string, x: number, z: number, rot: Rot): string | null;
+    // Machine ports on a cell, as the side the port opens to (input frame). Used for belt joins only.
+    portsAt?(x: number, z: number): Rot[];
 }
+
+// A place where a stroke's end meets something already on the board: an adjacent belt, or a machine port that faces it.
+export interface Join {
+    cell: Cell;
+    dir: "n" | "e" | "s" | "w";
+    kind: "belt" | "port";
+}
+
+// Compass letters for a unit step: n is toward -z, e toward +x, s toward +z, w toward -x.
+export function joinDir(dx: number, dz: number): Join["dir"] {
+    if (dx === 1) return "e";
+    if (dx === -1) return "w";
+    return dz < 0 ? "n" : "s";
+}
+
+const STEPS: [number, number][] = [[1, 0], [0, 1], [-1, 0], [0, -1]];
+// Step for each quarter turn, matching rotFromDelta in grid.ts: 0 is +z, 1 is +x, 2 is -z, 3 is -x.
+const ROT_STEPS: [number, number][] = [[0, 1], [1, 0], [0, -1], [-1, 0]];
 
 export interface Footprint {
     w: number;
@@ -71,11 +121,13 @@ export interface Ghost {
     validCount: number;
     // Why the first refused cell is refused, or null when the whole preview is valid. Shown next to the ghost.
     reason: string | null;
+    // Only while a line stroke runs: where its first and last cell meet existing belts or machine ports.
+    joins: Join[];
 }
 
 export type BuildEvent =
-    | { type: "place"; count: number }
-    | { type: "remove"; count: number }
+    | { type: "place"; count: number; cells: Cell[] }
+    | { type: "remove"; count: number; cells: Cell[] }
     | { type: "rotate" }
     | { type: "invalid"; reason: string }
     | { type: "undo" }
@@ -95,6 +147,8 @@ export interface BuildOptions {
     board: BoardSize;
     historyLimit?: number;
     onEvent?: (e: BuildEvent) => void;
+    // Kinds that form runs (belts). runAt follows neighbours of these kinds.
+    lineKinds?: string[];
 }
 
 const sameItem = (a: ItemRef | null, b: ItemRef | null) => (!a && !b) || (!!a && !!b && a.kind === b.kind && a.rot === b.rot);
@@ -110,16 +164,77 @@ export class BuildController {
     private tool: ToolSpec | null = null;
     private rot: Rot = 0;
     private hover: Cell | null = null;
-    private stroke: { anchor: Cell; cur: Cell } | null = null;
+    private stroke: { anchor: Cell; cur: Cell; path: Cell[] } | null = null;
     private undoStack: Edit[][] = [];
     private redoStack: Edit[][] = [];
     private listeners = new Set<() => void>();
+    private lineKinds: Set<string>;
+    private highlight: Cell[] = [];
 
     constructor(opts: BuildOptions) {
         this.world = opts.world;
         this.board = opts.board;
         this.historyLimit = opts.historyLimit ?? 200;
         this.onEvent = opts.onEvent;
+        this.lineKinds = new Set(opts.lineKinds ?? []);
+    }
+
+    // Every cell in the connected run of line pieces (belts) that holds this cell, found by walking
+    // neighbours of the same family. Empty when the cell holds no line piece.
+    runAt(cell: Cell): Cell[] {
+        const start = this.world.get(cell.x, cell.z);
+        if (!start || !this.lineKinds.has(start.kind)) return [];
+        const seen = new Set<string>([cellKey(cell)]);
+        const out: Cell[] = [{ x: cell.x, z: cell.z }];
+        const queue: Cell[] = [{ x: cell.x, z: cell.z }];
+        const steps = [
+            { x: 1, z: 0 },
+            { x: -1, z: 0 },
+            { x: 0, z: 1 },
+            { x: 0, z: -1 },
+        ];
+        while (queue.length) {
+            const c = queue.shift()!;
+            for (const d of steps) {
+                const n = { x: c.x + d.x, z: c.z + d.z };
+                const k = cellKey(n);
+                if (seen.has(k) || !cellInBoard(n, this.board)) continue;
+                seen.add(k);
+                const item = this.world.get(n.x, n.z);
+                if (item && this.lineKinds.has(item.kind)) {
+                    out.push(n);
+                    queue.push(n);
+                }
+            }
+        }
+        return out;
+    }
+
+    // Removes every building in the given cells as one undo step. Multi-cell buildings count once.
+    removeCells(cells: Cell[]): number {
+        const seen = new Set<string>();
+        const edits: Edit[] = [];
+        for (const c of cells) {
+            const before = this.world.get(c.x, c.z);
+            if (!before) continue;
+            const anchor = before.anchor ?? c;
+            const k = cellKey(anchor);
+            if (seen.has(k)) continue;
+            seen.add(k);
+            edits.push(...this.footprintEdits(anchor));
+        }
+        this.highlight = [];
+        return this.commitEdits(edits, "remove");
+    }
+
+    // Cells to outline as a selection (for example a whole belt run). Cleared on any edit.
+    setHighlight(cells: Cell[]): void {
+        this.highlight = cells.map((c) => ({ x: c.x, z: c.z }));
+        this.emit();
+    }
+
+    getHighlight(): Cell[] {
+        return this.highlight.map((c) => ({ ...c }));
     }
 
     getTool(): ToolSpec | null {
@@ -164,7 +279,7 @@ export class BuildController {
 
     beginStroke(cell: Cell): void {
         if (!this.tool) return;
-        this.stroke = { anchor: { ...cell }, cur: { ...cell } };
+        this.stroke = { anchor: { ...cell }, cur: { ...cell }, path: [{ ...cell }] };
         this.hover = { ...cell };
         this.emit();
     }
@@ -173,6 +288,7 @@ export class BuildController {
         if (!this.stroke) return;
         this.hover = { ...cell };
         this.stroke.cur = { ...cell };
+        if (this.tool?.line) this.stroke.path = extendPath(this.stroke.path, cell);
         this.emit();
     }
 
@@ -207,7 +323,8 @@ export class BuildController {
         const before = this.world.get(cell.x, cell.z);
         if (!before) return 0;
         const anchor = before.anchor ?? cell;
-        this.commitEdits([{ x: anchor.x, z: anchor.z, before, after: null }], "remove");
+        const edits = this.footprintEdits(anchor);
+        this.commitEdits(edits, "remove");
         return 1;
     }
 
@@ -263,11 +380,13 @@ export class BuildController {
         const tool = this.tool;
         let anchors: Cell[];
         let rot = this.rot;
+        // Per-anchor rotation: pencil strokes turn at every cell, so each cell carries its own rot.
+        let rots: Rot[] | null = null;
         if (this.stroke) {
             if (tool.line) {
-                const run = lineCells(this.stroke.anchor, this.stroke.cur, this.rot);
-                anchors = run.cells;
-                rot = run.rot;
+                anchors = this.stroke.path;
+                rots = pathRots(anchors, this.rot);
+                rot = rots[rots.length - 1];
             } else {
                 anchors = [this.stroke.anchor];
             }
@@ -280,18 +399,85 @@ export class BuildController {
         const cells: GhostCell[] = [];
         let validCount = 0;
         const isDelete = tool.id === DELETE_TOOL.id;
-        for (const a of anchors) {
+        for (let i = 0; i < anchors.length; i++) {
+            const a = anchors[i];
+            const r = rots ? rots[i] : rot;
             // Deletes and 1 by 1 tools look at one cell per anchor. Footprint tools look at every covered cell.
-            const offsets = isDelete ? [{ dx: 0, dz: 0 }] : footprintOffsets(tool.footprint, rot);
-            const anchorReason = isDelete || !this.world.check ? null : this.world.check(tool.id, a.x, a.z, rot);
-            const group: GhostCell[] = offsets.map((o) => this.evaluate(a.x + o.dx, a.z + o.dz, rot, a, anchorReason));
+            const offsets = isDelete ? this.deleteOffsets(a) : footprintOffsets(tool.footprint, r);
+            const anchorReason = isDelete || !this.world.check ? null : this.world.check(tool.id, a.x, a.z, r);
+            const group: GhostCell[] = offsets.map((o) => this.evaluate(a.x + o.dx, a.z + o.dz, r, a, anchorReason));
             cells.push(...group);
             if (isDelete) validCount += group.filter((c) => c.valid).length;
             else if (group.every((c) => c.valid)) validCount += 1;
         }
         const firstBad = cells.find((c) => !c.valid && c.reason && c.reason !== "same");
         const reason = isDelete ? (validCount === 0 ? "nothing to remove" : null) : firstBad?.reason ?? null;
-        return { tool, cells, rot, stroking: this.stroke !== null, validCount, reason };
+        const joins = this.stroke && tool.line ? this.joinsFor(anchors) : [];
+        return { tool, cells, rot, stroking: this.stroke !== null, validCount, reason, joins };
+    }
+
+    // Clears every cell of the building that owns this anchor, so a multi-cell machine goes in one step.
+    private footprintEdits(anchor: Cell): Edit[] {
+        const out: Edit[] = [];
+        for (const o of this.deleteOffsets(anchor)) {
+            const x = anchor.x + o.dx;
+            const z = anchor.z + o.dz;
+            const before = this.world.get(x, z);
+            if (before) out.push({ x, z, before, after: null });
+        }
+        return out;
+    }
+
+    // Delete previews the whole building under a cell: every cell that shares its anchor, relative to the cell.
+    // A 1 by 1 item, or an empty cell, gives just the cell itself.
+    private deleteOffsets(cell: Cell): Offset[] {
+        const item = this.world.get(cell.x, cell.z);
+        if (!item) return [{ dx: 0, dz: 0 }];
+        const anchor = item.anchor ?? cell;
+        const key = cellKey(anchor);
+        const R = 4;
+        const out: Offset[] = [];
+        for (let dz = -R; dz <= R; dz++) {
+            for (let dx = -R; dx <= R; dx++) {
+                const x = cell.x + dx;
+                const z = cell.z + dz;
+                const it = (dx === 0 && dz === 0) ? item : this.world.get(x, z);
+                if (!it) continue;
+                const a = it.anchor ?? { x, z };
+                if (cellKey(a) === key) out.push({ dx, dz });
+            }
+        }
+        return out.length ? out : [{ dx: 0, dz: 0 }];
+    }
+
+    // Neighbours of the path's two ends that are not part of the path: belts of a line kind, and machine ports facing in.
+    private joinsFor(path: Cell[]): Join[] {
+        if (path.length === 0) return [];
+        const inPath = new Set(path.map((c) => cellKey(c)));
+        const ends = path.length > 1 ? [path[0], path[path.length - 1]] : [path[0]];
+        const out: Join[] = [];
+        const seen = new Set<string>();
+        for (const end of ends) {
+            for (const [dx, dz] of STEPS) {
+                const n = { x: end.x + dx, z: end.z + dz };
+                const k = cellKey(n);
+                if (inPath.has(k) || seen.has(k)) continue;
+                const item = this.world.get(n.x, n.z);
+                if (item && this.lineKinds.has(item.kind)) {
+                    seen.add(k);
+                    out.push({ cell: { x: end.x, z: end.z }, dir: joinDir(dx, dz), kind: "belt" });
+                    continue;
+                }
+                const sides = this.world.portsAt?.(n.x, n.z) ?? [];
+                // A port faces the stroke end when its side points back at it: the step from the neighbour is (-dx, -dz).
+                const side = ROT_STEPS.findIndex(([sx, sz]) => sx === -dx && sz === -dz) as Rot;
+                if (sides.includes(side)) {
+                    seen.add(k);
+                    out.push({ cell: { x: end.x, z: end.z }, dir: joinDir(dx, dz), kind: "port" });
+                }
+            }
+        }
+        return out;
     }
 
     canUndo(): boolean {
@@ -355,7 +541,8 @@ export class BuildController {
                 const k = cellKey(anchor);
                 if (seen.has(k)) continue;
                 seen.add(k);
-                edits.push({ x: anchor.x, z: anchor.z, before: c.existing, after: null });
+                // Clear the whole footprint, not only the anchor cell, so no orphan cells are left behind.
+                edits.push(...this.footprintEdits(anchor));
             }
             return this.commitEdits(edits, "remove");
         }
@@ -387,11 +574,12 @@ export class BuildController {
 
     private commitEdits(edits: Edit[], kind: "place" | "remove" | "rotate"): number {
         if (edits.length === 0) return 0;
+        this.highlight = [];
         for (const e of edits) applyEdit(this.world, e, "redo");
         this.undoStack.push(edits);
         if (this.undoStack.length > this.historyLimit) this.undoStack.shift();
         this.redoStack = [];
-        this.onEvent?.(kind === "rotate" ? { type: "rotate" } : { type: kind, count: edits.length });
+        this.onEvent?.(kind === "rotate" ? { type: "rotate" } : { type: kind, count: edits.length, cells: edits.map((e) => ({ x: e.x, z: e.z })) });
         this.emit();
         return edits.length;
     }

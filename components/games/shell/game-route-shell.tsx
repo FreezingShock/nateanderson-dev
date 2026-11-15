@@ -107,7 +107,7 @@ export function GameRouteShell({
             <div ref={boxRef} className="gs-shell" data-game={name} data-paused={paused ? "true" : undefined}>
                 {header && (
                     <div className="gs-bar" role="region" aria-label={`${name} controls`}>
-                        <Link className="gs-back" href={header.href}>
+                        <Link prefetch={false} className="gs-back" href={header.href}>
                             <span aria-hidden="true">{"<"}</span>&nbsp;{header.label}
                         </Link>
                         <span className="gs-name">{name}</span>

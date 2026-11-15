@@ -201,7 +201,6 @@
 /* stats and inspector: engraved data lines, glowing values */
 .ab-root.bw .ab-data dd { color: var(--bw-amber); text-shadow: 0 0 6px rgba(255, 179, 71, 0.35); }
 .ab-root.bw .ab-data dt { color: var(--bw-dim); }
-.ab-root.bw .ab-inspect { background: var(--bw-dither), linear-gradient(180deg, #1b1109, #26190d); box-shadow: inset 0 3px 8px #000, 0 0 0 2px var(--bw-brass-lo), 0 0 0 3px rgba(255, 235, 170, 0.35); }
 .ab-root.bw .ab-status { color: var(--bw-amber); }
 .ab-root.bw .ab-next { background: var(--bw-dither-lite), linear-gradient(180deg, #4a3118, #2a1b0e); border-top: 3px solid var(--bw-brass-lo); box-shadow: inset 0 1px 0 rgba(255, 220, 150, 0.4); }
 
@@ -239,6 +238,8 @@
   .ab-root.bw[data-sheet="pal"] .ab-pal { display: flex; }
   .ab-root.bw[data-sheet="factory"] .ab-factory { display: flex; }
   .ab-root.bw[data-inspect="on"][data-sheet="none"] .ab-factory { display: flex; max-height: 46dvh; }
+  /* The factory sheet sits above the touch strip, the objective bar and the tab bar (about 215 px), so they stay usable. */
+  .ab-root.bw .ab-factory { bottom: var(--ab-phone-below, 215px); }
 }
 
 /* ---- phone: thumb-sized tap targets (44px) ---- */
@@ -269,4 +270,153 @@
   text-transform: uppercase;
   color: var(--ab-dim);
   font-weight: 600;
+}
+
+/* Machine inspector: portrait and title in one header, status line, icon flow, recipe rows. */
+.ab-inspect .ab-inspect-head { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 12px; }
+.ab-inspect .ab-inspect-title { display: grid; gap: 2px; min-width: 0; }
+.ab-inspect .ab-inspect-status { margin: 10px 0 6px; font-size: 14px; line-height: 1.4; }
+.ab-inspect .ab-inspect-status[data-status="blocked"],
+.ab-inspect .ab-inspect-status[data-status="unpowered"] { color: #ffb08a; }
+.ab-inspect .ab-inspect-flow { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; font-size: 14px; }
+.ab-inspect .ab-inspect-hint { margin: 8px 0; font-size: 14px; color: var(--ab-dim); }
+.ab-inspect .ab-inspect-recipes { display: grid; gap: 6px; }
+.ab-inspect .ab-recipe-row {
+  display: flex; justify-content: space-between; align-items: center; gap: 12px;
+  width: 100%; min-height: 44px; padding: 8px 10px; text-align: left;
+  background: transparent; border: 1px solid #6b4f26; color: inherit; font: inherit; cursor: pointer;
+}
+.ab-inspect .ab-recipe-row[data-selected="true"] { border-color: #ffd98a; background: #3a2a14; }
+.ab-inspect .ab-recipe-state { font-size: 12px; letter-spacing: .06em; text-transform: uppercase; color: var(--ab-dim); }
+.ab-inspect .ab-recipe-row[data-selected="true"] .ab-recipe-state { color: #ffd98a; }
+.ab-inspect .ab-inspect-rate { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; font-size: 14px; }
+.ab-inspect .ab-buffer { display: flex; align-items: center; gap: 10px; }
+.ab-inspect .ab-buffer-name { flex: 1; min-width: 0; font-size: 13px; }
+.ab-inspect .ab-action { width: 100%; min-height: 44px; margin-top: 12px; }
+
+/* Palette row: name, count, status and the Details button never collide. */
+.ab-root .ab-build-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: stretch; gap: 6px; }
+.ab-root .ab-build-main { min-width: 0; }
+.ab-root .ab-build-main .ab-build-name { overflow-wrap: anywhere; }
+.ab-root .ab-build-row .ab-info { flex: none; align-self: center; min-width: 76px; min-height: 40px; }
+.ab-root .ab-build-row[data-selected="true"] .ab-info { outline: 2px solid #ffd98a; }
+.ab-inspect .ab-inspect-name { margin: 0; font-size: 18px; line-height: 1.2; position: relative; z-index: 1; }
+.ab-inspect .ab-inspect-head .ab-text-btn { position: relative; z-index: 2; }
+
+/* Drill output: one row per ore the machine mines, with purity and rate. */
+.ab-inspect-mines { list-style: none; margin: 8px 0; padding: 0; display: grid; gap: 4px; }
+.ab-inspect-mine { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; gap: 8px; align-items: baseline; font-size: 14px; }
+.ab-inspect-mine strong { font-weight: 600; white-space: nowrap; }
+
+/* The armed build tool: the row whose machine the next click places. Stronger than the inspected row. */
+.ab-root.bw .ab-build-row[data-armed="true"] {
+  outline: 2px solid #ffd98a; outline-offset: -2px;
+  background: linear-gradient(90deg, #7a5420, #4d3414); box-shadow: inset 4px 0 0 #ffd98a;
+}
+.ab-root.bw .ab-build-row[data-armed="true"] .ab-build-name,
+.ab-root.bw .ab-build-row[data-armed="true"] .ab-build-cost { color: #fff3d6; }
+.ab-root.bw .ab-build-row[data-armed="true"] .ab-build-main::after { content: "ARMED"; margin-left: auto; font-size: 11px; letter-spacing: 0.08em; color: #ffd98a; }
+
+.ab-root.bw .ab-locked-note { list-style: none; padding: 6px 10px; font-size: 13px; color: var(--ab-dim); border: 1px dashed currentColor; opacity: 0.8; }
+
+/* Milestones panel: current goal large, delivered and upcoming goals compact. */
+.ab-milestones { display: grid; gap: 10px; }
+.ab-milestone-now { border: 2px solid #b8862f; background: #20170c; padding: 10px 12px; display: grid; gap: 8px; }
+.ab-milestone-now-head { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 8px; align-items: baseline; white-space: nowrap; }
+.ab-milestone-now-tag { font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: #ffd98a; border: 1px solid #ffd98a; padding: 1px 6px; }
+.ab-milestones .ab-milestone-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ab-milestone-items { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.ab-milestone-item { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 4px 8px; font-size: 14px; }
+.ab-milestone-item-count { font-variant-numeric: tabular-nums; color: #ffd98a; }
+.ab-milestone-item .ab-bar { grid-column: 1 / -1; }
+.ab-milestone-item[data-done="true"] .ab-milestone-item-name { color: #b8e0a0; }
+.ab-milestone-done, .ab-milestone-ahead ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
+.ab-milestone-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; font-size: 14px; }
+.ab-milestone-ahead summary { cursor: pointer; font-size: 13px; color: var(--ab-dim); padding: 4px 0; }
+
+/* Current objective: a compact tracked card at the bottom of the stage, not a full-width strip. */
+.ab-root.bw .ab-next {
+  display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 4px 10px; align-items: center;
+  width: fit-content; max-width: min(440px, calc(100% - 16px)); margin: 0 auto 8px; padding: 8px 12px;
+  border: 1px solid #b8862f; box-shadow: 0 0 0 1px #1a1209, inset 0 1px 0 rgba(255,220,150,.35);
+  background: rgba(20,15,9,.92);
+}
+.ab-root.bw .ab-next-label { font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: #ffd98a; }
+.ab-root.bw .ab-next-title { font-weight: 600; color: #f4e4b8; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ab-root.bw .ab-next-bar { grid-column: 1 / -1; height: 6px; background: #0d0905; border: 1px solid #4a3a22; }
+.ab-root.bw .ab-next-fill { display: block; height: 100%; background: linear-gradient(90deg, #b8862f, #ffd98a); }
+.ab-root.bw .ab-next-text { grid-column: 1 / -1; font-size: 13px; color: #d9c79a; }
+.ab-root.bw .ab-next > .ab-text-btn { grid-column: 3; grid-row: 1; }
+
+
+/* Phone: the stage shrinks to make room, and the objective sits between it and the tab bar,
+   so it is always visible and never covers the tool buttons. */
+@media (max-width: 759px) {
+  .ab-root.bw .ab-center { display: flex; flex-direction: column; }
+  .ab-root.bw .ab-stage { position: relative; inset: auto; flex: 1 1 auto; min-height: 0; }
+  .ab-root.bw .ab-next { order: 2; width: auto; max-width: none; margin: 0; padding: 6px 10px; border-left: 0; border-right: 0; grid-template-columns: auto minmax(0, 1fr) auto; }
+  .ab-root.bw .ab-next-bar { grid-column: 1 / -1; }
+  .ab-root.bw .ab-next-text { font-size: 12px; }
+  .ab-root.bw .ab-tabbar { order: 3; }
+  .ab-root.bw .ab-more { order: 3; }
+}
+
+/* Machine detail: power block under the rate, with a clear state for fully or partly powered machines. */
+.ab-inspect-power { display: grid; gap: 4px; margin: 6px 0; }
+.ab-inspect-power[data-powered="short"] strong { color: #ffb347; }
+.ab-inspect-power[data-powered="full"] strong { color: #b8e0a0; }
+
+/* Top bar resources (desktop): bigger icons, the name moves into a tooltip that shows on hover and keyboard focus.
+   The tooltip reads the live resource data, so it updates as the factory runs. Opens in 180 ms, closes in 140 ms. */
+@media (min-width: 760px) {
+  .ab-root.bw .ab-res-list { gap: 6px 18px; }
+  .ab-root.bw .ab-res-item {
+    position: relative; display: flex; align-items: center; gap: 8px; padding: 2px 4px; outline: none;
+  }
+  .ab-root.bw .ab-res-item .ab-glyph { width: 40px; height: 40px; flex: none; }
+  .ab-root.bw .ab-res-item:focus-visible { box-shadow: 0 0 0 2px #ffd98a; }
+  .ab-root.bw .ab-res-name { display: none; }
+  .ab-root.bw .ab-res-amt { font-size: 18px; color: var(--bw-amber); }
+  .ab-root.bw .ab-res-rate { font-size: 11px; }
+
+  .ab-root.bw .ab-res-tip {
+    position: absolute; top: calc(100% + 10px); left: 0; z-index: 10; min-width: 200px; max-width: 260px;
+    display: grid; gap: 6px; padding: 10px 12px; box-sizing: border-box;
+    background: var(--bw-dither) padding-box, linear-gradient(180deg, #4a3118, #24170b) border-box;
+    border: 2px solid #b8862f; box-shadow: 0 6px 18px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 220, 150, 0.35);
+    color: #efe2c4; font-size: 13px; line-height: 1.3; text-align: left; white-space: normal;
+    opacity: 0; transform: translateY(-6px) scale(0.98); transform-origin: top left;
+    visibility: hidden; pointer-events: none;
+    transition: opacity 140ms ease-in, transform 140ms ease-in, visibility 0s linear 140ms;
+  }
+  .ab-root.bw .ab-res-item:hover .ab-res-tip,
+  .ab-root.bw .ab-res-item:focus-visible .ab-res-tip {
+    opacity: 1; transform: none; visibility: visible;
+    transition: opacity 180ms cubic-bezier(0.2, 0.7, 0.2, 1), transform 180ms cubic-bezier(0.2, 0.7, 0.2, 1), visibility 0s;
+  }
+  .ab-root.bw .ab-res-tip-name {
+    font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; color: #ffd98a; font-weight: 700;
+    border-bottom: 1px solid #4a3a22; padding-bottom: 4px;
+  }
+  .ab-root.bw .ab-res-tip-line { display: flex; justify-content: space-between; gap: 12px; color: #d9c79a; }
+  .ab-root.bw .ab-res-tip-line b { color: #f4e4b8; font-weight: 600; font-variant-numeric: tabular-nums; }
+  .ab-root.bw .ab-res-tip-line b[data-neg="true"] { color: var(--ab-bad); }
+  .ab-root.bw .ab-res-tip-note { font-size: 12px; color: #c99a4a; font-style: italic; }
+  /* The icon lifts and glows on hover or focus, and the bar drops in once when the game opens. */
+  .ab-root.bw .ab-res-item .ab-glyph { transition: transform 160ms cubic-bezier(0.2, 0.7, 0.2, 1), filter 160ms ease-out; }
+  .ab-root.bw .ab-res-item:hover .ab-glyph,
+  .ab-root.bw .ab-res-item:focus-visible .ab-glyph {
+    transform: translateY(-2px); filter: drop-shadow(0 0 6px rgba(255, 217, 138, 0.55));
+  }
+  .ab-root.bw .ab-top { animation: bw-top-in 240ms cubic-bezier(0.2, 0.7, 0.2, 1) both; }
+  @keyframes bw-top-in { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: none; } }
+  .ab-root[data-reduce="true"] .ab-res-tip,
+  .ab-root[data-lowfx="true"] .ab-res-tip,
+  .ab-root[data-reduce="true"] .ab-res-item .ab-glyph,
+  .ab-root[data-lowfx="true"] .ab-res-item .ab-glyph,
+  .ab-root[data-reduce="true"] .ab-top,
+  .ab-root[data-lowfx="true"] .ab-top { transition: none; animation: none; }
+}
+@media (max-width: 759px) {
+  .ab-root.bw .ab-res-tip { display: none; }
 }

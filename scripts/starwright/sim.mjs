@@ -19,6 +19,9 @@ while (s._t < hours * 3600) {
     s._t += 1;
     let f = E.effects(s);
     E.step(s, 1, f);
+    E.checkAch(s);
+    if (s.event) E.answer(s, s.visitors % 2);
+    if (s.offer.length) E.chooseCloud(s, s.offer[0]);
     // spend: higher rows first, biggest tier that costs under 45% of the stock
     for (let i = D.ROWS - 1; i >= 0; i--) {
         if (!E.rowOpen(s, i)) continue;

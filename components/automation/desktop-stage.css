@@ -1,0 +1,209 @@
+/* Full-desktop stage. On desktop the 3D view fills the whole game area edge to edge. The top bar, the slim
+   left build dock, the right goals dock, the objective card and the tool bar float over it, and nothing
+   reserves layout space for them. The insets below are how far the resting overlays reach into the edge, so
+   the island can be framed clear of them. Phone keeps its own stacked layout (see brasswork-skin.css). */
+.ab-root {
+  /* The top bar wraps on a desktop-width window, so the inset follows its measured height (--ab-top-h, set by the HUD). */
+  --bw-inset-top: calc(var(--ab-top-h, 76px) + 8px);
+  --bw-inset-left: 84px;
+  --bw-inset-right: 84px;
+  --bw-inset-bottom: 84px;
+  /* Left edge of the build flyout: the dock's left margin, its width and the gap after it. */
+  --ab-dock-edge: 110px;
+}
+
+/* The docks are a desktop device. Phone uses the bottom tab bar. */
+@media (max-width: 759px) {
+  .ab-root .ab-dock { display: none; }
+}
+
+@media (min-width: 760px) {
+  .ab-root.bw { position: relative; height: 100%; overflow: hidden; }
+  .ab-root.bw .ab-top {
+    position: absolute; top: 0; left: 0; right: 0; z-index: 6; padding: 8px 14px;
+    pointer-events: auto;
+  }
+  .ab-root.bw .ab-body {
+    position: absolute; inset: 0; display: block; pointer-events: none; z-index: 1;
+  }
+  .ab-root.bw .ab-center {
+    position: absolute; inset: 0; display: block; pointer-events: none;
+  }
+  .ab-root.bw .ab-stage {
+    position: absolute; inset: 0; pointer-events: auto;
+  }
+
+  /* Left dock: one slim column of group buttons, always visible at rest. */
+  .ab-root.bw .ab-dock {
+    position: absolute; top: var(--bw-inset-top); z-index: 5; pointer-events: auto;
+    display: flex; flex-direction: column; gap: 6px; width: 64px; padding: 6px;
+    background: linear-gradient(180deg, var(--bw-wood-hi), var(--bw-wood) 40%, var(--bw-wood-lo));
+    border: 2px solid var(--ab-brass); border-radius: 0; box-sizing: border-box;
+  }
+  .ab-root.bw .ab-dock-left { left: 10px; }
+  .ab-root.bw .ab-dock-right { right: 10px; }
+  .ab-root.bw .ab-dock-btn {
+    display: flex; flex-direction: column; align-items: center; gap: 3px; width: 100%;
+    padding: 6px 0 5px; background: rgba(8, 6, 3, 0.35); border: 1px solid var(--ab-line-soft);
+    color: var(--ab-text); cursor: pointer; font: inherit;
+  }
+  .ab-root.bw .ab-dock-btn:hover,
+  .ab-root.bw .ab-dock-btn:focus-visible { border-color: var(--ab-brass); }
+  .ab-root.bw .ab-dock-btn[aria-pressed="true"] { border-color: var(--ab-brass-hi); background: rgba(184, 134, 47, 0.25); }
+  .ab-root.bw .ab-dock-btn[data-armed="true"] { box-shadow: inset 0 0 0 1px var(--ab-brass-hi); }
+  .ab-root.bw .ab-dock-label { font-size: 11px; line-height: 1.1; letter-spacing: 0.02em; }
+  .ab-root.bw .ab-dock-rot {
+    align-self: center; margin-top: 2px; font-size: 11px; color: #ffd98a; pointer-events: none;
+    font-variant-numeric: tabular-nums; letter-spacing: 0.04em;
+  }
+
+  /* The build palette is closed at rest. Choosing a dock group opens just that group as a flyout beside the dock. */
+  .ab-root.bw .ab-pal { display: none; }
+  .ab-root.bw:not([data-palgroup="none"]) .ab-pal {
+    display: block; position: absolute; left: var(--ab-dock-edge); top: var(--bw-inset-top); bottom: auto; width: 380px; margin: 0;
+    max-height: min(560px, calc(100% - var(--bw-inset-top) - var(--bw-inset-bottom))); overflow: auto;
+    z-index: 5; pointer-events: auto;
+  }
+
+  /* The factory aside holds only the selected machine's inspector, floating on the right. */
+  .ab-root.bw .ab-factory { display: none; }
+  .ab-root.bw[data-inspect="on"] .ab-factory {
+    display: block; position: absolute; right: 100px; top: var(--bw-inset-top); bottom: auto; width: 300px; margin: 0;
+    max-height: min(560px, calc(100% - var(--bw-inset-top) - var(--bw-inset-bottom))); overflow: auto;
+    z-index: 5; pointer-events: auto;
+  }
+  .ab-root.bw .ab-factory-meta { display: none; }
+
+  .ab-root.bw .ab-next {
+    position: absolute; left: 50%; bottom: 16px; transform: translateX(-50%); z-index: 5;
+    pointer-events: none; margin: 0; width: fit-content; max-width: min(440px, 40vw);
+  }
+  .ab-root.bw .ab-more { pointer-events: auto; }
+  .ab-root.bw .ab-drawer { pointer-events: auto; z-index: 6; }
+}
+
+
+
+/* The objective bar is information, not a control. Only its button takes pointer input, so a drag across the
+   stage under the bar still reaches the island. */
+.ab-root.bw .ab-next { pointer-events: none; }
+.ab-root.bw .ab-next .ab-text-btn { pointer-events: auto; }
+
+/* Dock foot (desktop): Remove, the trash can, sits at the bottom of the left dock under the three sections. */
+@media (min-width: 760px) {
+  .ab-root.bw .ab-dock-foot {
+    margin-top: auto; padding-top: 6px; border-top: 1px solid var(--ab-line-soft);
+    display: flex; flex-direction: column; gap: 6px;
+  }
+  .ab-root.bw .ab-dock-trash .ab-dock-ico { display: block; width: 24px; height: 24px; }
+  .ab-root.bw .ab-dock-trash[aria-pressed="true"] { border-color: var(--ab-brass-hi); background: rgba(184, 134, 47, 0.35); }
+}
+
+/* Flyouts: a section unrolls from its header and its rows step in one after another. One section at a time:
+   the one that closes plays the exit while the next plays its entrance. ~200 ms in, ~160 ms out. */
+@media (min-width: 760px) {
+  .ab-root.bw:not([data-palgroup="none"]) .ab-pal {
+    animation: ab-pal-in 200ms cubic-bezier(0.2, 0.7, 0.2, 1) both;
+  }
+  .ab-root.bw .ab-pal-leaving {
+    display: block; position: absolute; left: var(--ab-dock-edge); top: var(--bw-inset-top); bottom: auto; width: 380px; margin: 0;
+    max-height: min(560px, calc(100% - var(--bw-inset-top) - var(--bw-inset-bottom)));
+    overflow: hidden; z-index: 5; pointer-events: none;
+    animation: ab-pal-out 160ms ease-in both;
+  }
+  .ab-root.bw:not([data-palgroup="none"]) .ab-pal .ab-build-row,
+  .ab-root.bw:not([data-palgroup="none"]) .ab-pal .ab-locked-note,
+  .ab-root.bw:not([data-palgroup="none"]) .ab-pal .ab-sub {
+    animation: ab-row-in 220ms cubic-bezier(0.2, 0.7, 0.2, 1) both;
+  }
+  .ab-root.bw .ab-pal .ab-build-row:nth-child(1), .ab-root.bw .ab-pal .ab-sub:nth-child(1) { animation-delay: 40ms; }
+  .ab-root.bw .ab-pal .ab-build-row:nth-child(2) { animation-delay: 75ms; }
+  .ab-root.bw .ab-pal .ab-build-row:nth-child(3) { animation-delay: 110ms; }
+  .ab-root.bw .ab-pal .ab-build-row:nth-child(4) { animation-delay: 145ms; }
+  .ab-root.bw .ab-pal .ab-build-row:nth-child(5) { animation-delay: 180ms; }
+  .ab-root.bw .ab-pal .ab-build-row:nth-child(n+6) { animation-delay: 215ms; }
+  .ab-root.bw .ab-pal .ab-locked-note { animation-delay: 240ms; }
+
+  .ab-root[data-reduce="true"] .ab-pal, .ab-root[data-lowfx="true"] .ab-pal,
+  .ab-root[data-reduce="true"] .ab-pal-leaving, .ab-root[data-lowfx="true"] .ab-pal-leaving,
+  .ab-root[data-reduce="true"] .ab-pal *, .ab-root[data-lowfx="true"] .ab-pal * { animation: none !important; }
+  .ab-root[data-reduce="true"] .ab-pal-leaving, .ab-root[data-lowfx="true"] .ab-pal-leaving { display: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ab-root.bw .ab-pal, .ab-root.bw .ab-pal *, .ab-root.bw .ab-pal-leaving { animation: none !important; }
+}
+@keyframes ab-pal-in {
+  from { opacity: 0; transform: translateX(-14px); clip-path: inset(0 0 100% 0); }
+  to { opacity: 1; transform: none; clip-path: inset(0 0 0 0); }
+}
+@keyframes ab-pal-out {
+  from { opacity: 1; transform: none; clip-path: inset(0 0 0 0); }
+  to { opacity: 0; transform: translateX(-10px); clip-path: inset(0 0 100% 0); }
+}
+@keyframes ab-row-in {
+  from { opacity: 0; transform: translateX(-8px); }
+  to { opacity: 1; transform: none; }
+}
+
+/* ---- Build dock and flyout (desktop): brass buttons, pixel group glyphs, readable names ---- */
+@media (min-width: 760px) {
+  .ab-root.bw .ab-dock { width: 90px; padding: 8px 7px; gap: 8px; box-shadow: inset 0 1px 0 rgba(255, 220, 150, 0.35), 0 6px 14px rgba(0, 0, 0, 0.45); }
+  .ab-root.bw .ab-dock-btn {
+    min-height: 66px; gap: 6px; padding: 8px 2px 7px;
+    background: linear-gradient(180deg, #3a2812, #1d1308);
+    border: 2px solid #7a5a2a; color: #f0dfb8;
+    box-shadow: inset 0 1px 0 rgba(255, 220, 150, 0.25), inset 0 -2px 0 rgba(0, 0, 0, 0.45);
+    font-family: var(--bw-font-text, system-ui, sans-serif); font-weight: 700; text-transform: uppercase;
+    transition: transform 140ms ease-out, background 140ms ease-out, border-color 140ms ease-out;
+  }
+  .ab-root.bw .ab-dock-btn:hover { transform: translateY(-1px); border-color: #d29a3c; background: linear-gradient(180deg, #4a3418, #26190b); }
+  .ab-root.bw .ab-dock-btn:focus-visible { outline: 2px solid #ffd98a; outline-offset: 2px; }
+  .ab-root.bw .ab-dock-btn[aria-pressed="true"] {
+    background: linear-gradient(180deg, #f4cf7e, #b8862f); border-color: #ffd98a; color: #1d1308;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.5), 0 0 0 1px #1d1308;
+  }
+  .ab-root.bw .ab-dock-label { font-size: 11px; line-height: 1; letter-spacing: 0.02em; white-space: nowrap; }
+  .ab-root.bw .ab-dock-glyph { width: 26px; height: 26px; display: block; color: #d29a3c; }
+  .ab-root.bw .ab-dock-btn[aria-pressed="true"] .ab-dock-glyph { color: #1d1308; }
+  .ab-root.bw .ab-dock-btn[aria-pressed="true"] .ab-dock-glyph rect[fill="#20170c"] { fill: #f4cf7e; }
+  .ab-root.bw .ab-dock-trash .ab-dock-ico { color: #d29a3c; }
+  .ab-root.bw .ab-dock-trash[aria-pressed="true"] .ab-dock-ico { color: #1d1308; }
+  .ab-root.bw .ab-dock-rot { display: grid; gap: 2px; justify-items: center; padding: 6px 2px 4px; margin-top: 2px; border-top: 1px solid #4a3a22; }
+  .ab-root.bw .ab-dock-rot-k { font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: #b09a6c; }
+  .ab-root.bw .ab-dock-rot-v { font-size: 16px; font-weight: 700; color: #ffd98a; font-variant-numeric: tabular-nums; }
+
+  /* Flyout: wider, with larger names and costs. */
+  .ab-root.bw .ab-pal { width: 380px; }
+  .ab-root.bw .ab-pal-leaving { width: 380px; }
+  .ab-root.bw .ab-build-row { display: flex; align-items: stretch; gap: 8px; }
+  .ab-root.bw .ab-build-main {
+    flex: 1 1 auto; min-width: 0; min-height: 64px; padding: 8px 10px;
+    display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; text-align: left;
+  }
+  .ab-root.bw .ab-build-text { flex: 1 1 170px; min-width: 0; }
+  .ab-root.bw .ab-build-name { font-size: 16px; font-weight: 600; white-space: normal; overflow-wrap: break-word; word-break: normal; }
+  .ab-root.bw .ab-build-cost { font-size: 13.5px; }
+  .ab-root.bw .ab-status { flex: none; font-size: 11px; }
+  .ab-root.bw .ab-info { flex: none; min-width: 84px; min-height: 48px; padding: 0 12px; font-size: 13px; white-space: nowrap; }
+  .ab-root.bw .ab-sub-title { font-size: 12px; letter-spacing: 0.14em; }
+  .ab-root.bw .ab-locked-note { font-size: 13.5px; padding: 8px 10px; }
+  .ab-root.bw .ab-key-hint { top: 6px; right: 6px; }
+}
+
+/* Build rows on every size: the name keeps its room, and status or Details wrap rather than crush it. */
+.ab-root.bw .ab-build-row { max-width: 100%; box-sizing: border-box; }
+.ab-root.bw .ab-build-main { flex-wrap: wrap; }
+.ab-root.bw .ab-build-text { min-width: 0; overflow-wrap: anywhere; }
+@media (max-width: 759px) {
+  .ab-root.bw .ab-build-main { min-width: 0; }
+  .ab-root.bw .ab-build-text { flex: 1 1 140px; }
+  .ab-root.bw .ab-info { min-width: 76px; padding: 0 8px; }
+}
+/* Number-key hint on a palette tile (its button is the positioning box). */
+.ab-root .ab-build-main { position: relative; }
+/* Number-key hint on a palette tile (keys 1 to 9 pick the open rows of the shown group). */
+.ab-root .ab-key-hint {
+  position: absolute; top: 4px; right: 4px; min-width: 16px; height: 16px; padding: 0 4px;
+  display: inline-grid; place-items: center; font-family: ui-monospace, monospace; font-weight: 600; font-size: 11px; line-height: 1;
+  color: #ffd98a; background: #0d0905; border: 1px solid #4a3a22; pointer-events: none;
+}

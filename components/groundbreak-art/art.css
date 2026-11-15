@@ -1,0 +1,27 @@
+/* Groundbreak art: crisp pixels at every zoom, frame cross-fades, ambient dust. */
+.gba-icon { display: inline-block; flex: none; image-rendering: pixelated; background-repeat: no-repeat; }
+.gba-scene { position: relative; overflow: hidden; width: 100%; height: 100%; background: #120c24; contain: strict; }
+.gba-layer, .gba-near { position: absolute; left: 0; top: 0; transform-origin: 0 0; image-rendering: pixelated;
+  user-select: none; pointer-events: none; }
+.gba-near { width: 0; height: 0; }
+.gba-job { position: relative; image-rendering: pixelated; }
+.gba-job-f { position: absolute; inset: 0; background-repeat: no-repeat; image-rendering: pixelated; }
+.gba-in { animation: gba-rise 520ms steps(6, end) both; }
+.gba-out { animation: gba-fade 520ms steps(6, end) both; }
+@keyframes gba-rise { from { opacity: 0; transform: translateY(3px); } to { opacity: 1; transform: none; } }
+@keyframes gba-fade { from { opacity: 1; } to { opacity: 0; } }
+.gba-dust { position: absolute; height: 40px; pointer-events: none;
+  background-image: radial-gradient(1px 1px at 20% 60%, #ffd070 50%, transparent 51%),
+    radial-gradient(1px 1px at 55% 30%, #f4d494 50%, transparent 51%),
+    radial-gradient(1px 1px at 80% 70%, #ffd070 50%, transparent 51%),
+    radial-gradient(1px 1px at 38% 85%, #e2b468 50%, transparent 51%);
+  background-size: 60px 40px; opacity: .7; animation: gba-dust 9s linear infinite; }
+@keyframes gba-dust { from { background-position: 0 0; } to { background-position: 60px -40px; } }
+@media (prefers-reduced-motion: reduce) { .gba-in, .gba-out, .gba-dust { animation: none; } }
+.gba-paused .gba-dust { animation-play-state: paused; }
+.gba-lowfx .gba-in, .gba-lowfx .gba-out { animation: none; }
+.gba-flag { position: absolute; width: 10px; height: 30px; image-rendering: pixelated;
+  background: linear-gradient(#86a852, #86a852) 1px 0 / 8px 6px no-repeat, linear-gradient(#d4d0d0, #d4d0d0) 0 0 / 1px 30px no-repeat;
+  animation: gba-wave 1.2s steps(2, end) infinite; }
+@keyframes gba-wave { 50% { background-size: 7px 5px, 1px 30px; } }
+.gba-under { position: absolute; background: #1f120f; }

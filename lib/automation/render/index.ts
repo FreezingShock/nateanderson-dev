@@ -39,8 +39,9 @@ import {
 } from "../models/belts";
 import type { Matrix4 } from "three";
 import { FrameGovernor } from "./governor";
-import { MachineEffects } from "./effects";
+import { MachineEffects, type BurstKind } from "./effects";
 import { SelectionOutline, type HighlightCell } from "./highlight";
+import { GhostPath, type PathCell } from "./ghostpath";
 
 export { heightAt, Stamper, VoxelGrid, TERRAIN_CELL, OBJECT_CELL };
 export { QUALITY_PRESETS } from "./config";
@@ -132,6 +133,17 @@ export interface VoxelIsland {
     setHighlight(cells: readonly HighlightCell[]): void;
     /** Sets the ghost's validity tint: brass when valid, red when refused. */
     setGhostValidity(valid: boolean): void;
+    /**
+     * Draws a belt stroke ghost in path order: plates, arrows, corners and end caps. Refused cells
+     * (valid: false) use the red treatment. Pass an empty list to clear. Hide the single-building
+     * ghost (clearGhost) while a stroke is shown.
+     */
+    setGhostPath(cells: readonly PathCell[]): void;
+    /**
+     * One-shot effect on a board cell: "place" for a placement pop, "remove" for a removal puff,
+     * "milestone" for the hub's gold fountain. Off for low fx. Board frame, like setBelts.
+     */
+    burst(cell: { x: number; z: number }, kind: BurstKind): void;
     /** Matrix for an item riding a belt piece. `t` is 0..1 over the cell. */
     beltItemMatrix(
         p: PiecePlacement,
@@ -233,6 +245,7 @@ export function createVoxelIsland(
     const effects = new MachineEffects(scene);
     const selection = new SelectionOutline(scene);
     // Footprint frame under the placement ghost, tinted by validity.
+    const beltGhost = new GhostPath(scene);
     const ghostFrame = new SelectionOutline(scene, {
         color: GHOST_VALID_TINT,
         hot: GHOST_VALID_HOT,
@@ -401,6 +414,7 @@ export function createVoxelIsland(
         effects.update(dt);
         selection.update(dt);
         ghostFrame.update(dt);
+        beltGhost.update(dt);
         animUniforms.uWind.value = lowFx ? 0 : windStrength / 0.5;
         animUniforms.uWave.value = lowFx ? 0 : 1;
         // Belts keep moving under low fx: one uniform per tier, so it costs nothing.
@@ -506,7 +520,18 @@ export function createVoxelIsland(
                     opts.cell.x + fw / 2,
                     heightAt(opts.cell.x + 0.5, opts.cell.z + 0.5) + chimneyHeight(model),
                     opts.cell.z + fd / 2,
-                    SPARKING_MODELS.test(model.id)
+                    SPARKING_MODELS.test(model.id),
+                    false
+                );
+            } else {
+                // Every other machine breathes a little white steam while it works, so the island reads busy at default zoom.
+                effects.setEmitter(
+                    id,
+                    opts.cell.x + fw / 2,
+                    heightAt(opts.cell.x + 0.5, opts.cell.z + 0.5) + chimneyHeight(model),
+                    opts.cell.z + fd / 2,
+                    false,
+                    true
                 );
             }
         },
@@ -529,6 +554,14 @@ export function createVoxelIsland(
         },
         setGhostValidity(valid) {
             setGhostTint(valid);
+        },
+        setGhostPath(cells) {
+            beltGhost.set(cells, heightAt);
+        },
+        burst(cell, kind) {
+            const x = cell.x + 0.5;
+            const z = cell.z + 0.5;
+            effects.burst(x, heightAt(x, z) + 0.15, z, kind);
         },
         setScenery(placements: readonly Placement[]) {
             scenery.setPlacements(placements);
@@ -571,6 +604,7 @@ export function createVoxelIsland(
             models.setGlowPulse(!on);
             selection.setPulsing(!on);
             ghostFrame.setPulsing(!on);
+            beltGhost.setPulsing(!on);
             lighting.setShadows(!on && QUALITY_PRESETS[level].shadows);
         },
         setTimeOfDay(t) {
@@ -632,6 +666,7 @@ export function createVoxelIsland(
             effects.dispose();
             selection.dispose();
             ghostFrame.dispose();
+            beltGhost.dispose();
             if (belts) {
                 scene.remove(belts.object);
                 belts.dispose();

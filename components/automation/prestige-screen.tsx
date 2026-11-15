@@ -5,6 +5,14 @@ import "./prestige-screen.css";
 import type { PrestigeSite, PrestigeView } from "@/lib/automation/types";
 import { iconStyle } from "@/lib/automation/icons";
 import { uiIconStyle } from "@/lib/automation/icons/ui";
+import {
+    ArtDivider,
+    ArtGauge,
+    ArtPanel,
+    PanelTitle,
+    SitePainting,
+} from "@/components/brasswork-art";
+import { DECOR_EXTRA } from "@/lib/automation/art";
 
 const HOLD_MS = 1200;
 const TICK_MS = 30;
@@ -80,24 +88,12 @@ function SitePlan({ plan }: { plan: NonNullable<PrestigeSite["plan"]> }) {
     );
 }
 
-/** A bonus as a labelled gauge: the needle sits where this site falls between 0.9x and 1.3x. */
-function Gauge({
-    label,
-    icon,
-    value,
-}: {
-    label: string;
-    icon: string;
-    value: number;
-}) {
+/** A bonus as a dial: the needle sits where this site falls between 0.9x and 1.3x. */
+function Gauge({ label, value }: { label: string; value: number }) {
     const at = Math.min(1, Math.max(0, (value - 0.9) / 0.4));
     return (
         <div className="pw-gauge">
-            <span
-                className="pw-ico"
-                style={uiIconStyle(icon, 24)}
-                aria-hidden="true"
-            />
+            <ArtGauge value={at} size={64} label={`${label} ${pct(value)}`} />
             <span className="pw-gauge-label">{label}</span>
             <span
                 className="pw-gauge-val"
@@ -105,13 +101,6 @@ function Gauge({
                 data-down={value < 1}
             >
                 {pct(value)}
-            </span>
-            <span className="pw-gauge-track" aria-hidden="true">
-                <span className="pw-gauge-mid" />
-                <span
-                    className="pw-gauge-needle"
-                    style={{ left: `${at * 100}%` }}
-                />
             </span>
         </div>
     );
@@ -123,21 +112,36 @@ function Gauge({
  */
 export function PrestigeScreen({
     prestige,
+    initialSiteId,
     onConfirm,
     onClose,
 }: {
     prestige: PrestigeView;
+    /** Site to have selected on open, e.g. chosen in Expedition. */
+    initialSiteId?: string;
     onConfirm?: (siteId: string) => void;
     onClose: () => void;
 }) {
     const [siteId, setSiteId] = useState<string | null>(
-        prestige.sites[0]?.id ?? null
+        (prestige.sites.find((s) => s.id === initialSiteId) ?? prestige.sites[0])?.id ?? null
     );
     const [held, setHeld] = useState(0);
     const timer = useRef<ReturnType<typeof setInterval> | null>(null);
     const [imgFailed, setImgFailed] = useState<Record<string, boolean>>({});
     const site = prestige.sites.find((s) => s.id === siteId) ?? null;
     const canHold = prestige.ready && !!site && !!onConfirm;
+
+    // Exit animation first, then hand control back. Skipped when motion is off.
+    const [closing, setClosing] = useState(false);
+    const panel = useRef<HTMLDivElement | null>(null);
+    const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const requestClose = () => {
+        if (closeTimer.current) return;
+        const still = !panel.current || getComputedStyle(panel.current).animationName === "none";
+        if (still) return onClose();
+        setClosing(true);
+        closeTimer.current = setTimeout(onClose, 170);
+    };
 
     const stop = () => {
         if (timer.current) clearInterval(timer.current);
@@ -148,10 +152,11 @@ export function PrestigeScreen({
 
     useEffect(() => {
         const onKey = (e: KeyboardEvent) => {
-            if (e.key === "Escape") onClose();
+            if (e.key === "Escape") requestClose();
         };
         window.addEventListener("keydown", onKey);
         return () => window.removeEventListener("keydown", onKey);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [onClose]);
 
     const start = () => {
@@ -187,224 +192,238 @@ export function PrestigeScreen({
     return (
         <div
             className="pw-scrim"
-            onPointerDown={(e) => e.target === e.currentTarget && onClose()}
+            onPointerDown={(e) => e.target === e.currentTarget && requestClose()}
         >
-            <section
-                className="pw"
-                role="dialog"
-                aria-modal="true"
-                aria-label="Open a new workshop"
-            >
-                <Brackets />
-                <header className="pw-head">
-                    <span
-                        className="pw-ico"
-                        style={uiIconStyle("prestige", 32)}
-                        aria-hidden="true"
-                    />
-                    <div className="pw-head-text">
-                        <h2 className="pw-title">Open a new workshop</h2>
-                        <p className="pw-sub">{prestige.requirement}</p>
-                    </div>
-                    <button
-                        type="button"
-                        className="pw-close"
-                        onClick={onClose}
-                        aria-label="Close"
-                    >
-                        Close
-                    </button>
-                </header>
+            <div className="pw-wrap" data-closing={closing || undefined} ref={panel}>
+            <ArtPanel className="pw">
+                <section
+                    className="pw-in"
+                    role="dialog"
+                    aria-modal="true"
+                    aria-label="Open a new workshop"
+                >
+                    <header className="pw-head">
+                        <div className="pw-head-text">
+                            <PanelTitle>Open a new workshop</PanelTitle>
+                            <p className="pw-sub">{prestige.requirement}</p>
+                        </div>
+                        <button
+                            type="button"
+                            className="pw-close"
+                            onClick={requestClose}
+                            aria-label="Close"
+                        >
+                            Close
+                        </button>
+                    </header>
+                    <ArtDivider />
 
-                <div className="pw-body">
-                    <div
-                        className="pw-picker"
-                        role="radiogroup"
-                        aria-label="Choose a site"
-                    >
-                        {prestige.sites.map((s) => (
-                            <button
-                                key={s.id}
-                                type="button"
-                                role="radio"
-                                aria-checked={s.id === siteId}
-                                className="pw-pick"
-                                data-selected={s.id === siteId}
-                                onClick={() => pick(s.id)}
-                            >
-                                <span
-                                    className="pw-pick-img"
-                                    style={{
-                                        backgroundImage: `url(/brasswork/sites/${s.id}.webp)`,
-                                    }}
-                                    aria-hidden="true"
-                                />
-                                <span className="pw-pick-name">{s.name}</span>
-                            </button>
-                        ))}
-                    </div>
+                    <div className="pw-body">
+                        <div
+                            className="pw-picker"
+                            role="radiogroup"
+                            aria-label="Choose a site"
+                        >
+                            {prestige.sites.map((s) => (
+                                <button
+                                    key={s.id}
+                                    type="button"
+                                    role="radio"
+                                    aria-checked={s.id === siteId}
+                                    className="pw-pick"
+                                    data-selected={s.id === siteId}
+                                    onClick={() => pick(s.id)}
+                                >
+                                    <span
+                                        className="pw-pick-img"
+                                        style={{
+                                            backgroundImage: `url(/brasswork/sites/${s.id}.webp)`,
+                                        }}
+                                        aria-hidden="true"
+                                    />
+                                    <span className="pw-pick-name">
+                                        {s.name}
+                                    </span>
+                                </button>
+                            ))}
+                        </div>
 
-                    {site && (
-                        <div className="pw-main">
-                            <div className="pw-left">
-                                <figure className="pw-view">
-                                    <Brackets />
-                                    {imgFailed[site.id] ? (
-                                        <div className="pw-view-fallback">
-                                            No picture for this site
+                        {site && (
+                            <div className="pw-main">
+                                <div className="pw-left">
+                                    <figure className="pw-view">
+                                        <span
+                                            className="bwa-gilt"
+                                            style={{
+                                                ["--bwa-gilt" as string]: `url("${DECOR_EXTRA.gilt.url}")`,
+                                            }}
+                                        >
+                                            {imgFailed[site.id] ? (
+                                                <SitePainting
+                                                    id={site.id}
+                                                    width={420}
+                                                    label={site.name}
+                                                />
+                                            ) : (
+                                                // eslint-disable-next-line @next/next/no-img-element
+                                                <img
+                                                    key={site.id}
+                                                    src={`/brasswork/sites/${site.id}.webp`}
+                                                    alt={`${site.name}: the hub and its ore nodes on bare ground`}
+                                                    className="pw-view-img"
+                                                    onError={() =>
+                                                        setImgFailed((m) => ({
+                                                            ...m,
+                                                            [site.id]: true,
+                                                        }))
+                                                    }
+                                                />
+                                            )}
+                                        </span>
+                                        <figcaption className="pw-view-cap">
+                                            <strong>{site.name}</strong>
+                                            <span>{site.blurb}</span>
+                                        </figcaption>
+                                    </figure>
+                                    <div className="pw-carry">
+                                        <div>
+                                            <h3 className="pw-h">You keep</h3>
+                                            <ul className="pw-list">
+                                                {prestige.keeps.map((k) => (
+                                                    <li
+                                                        key={k}
+                                                        className="pw-keep"
+                                                    >
+                                                        {k}
+                                                    </li>
+                                                ))}
+                                            </ul>
                                         </div>
-                                    ) : (
-                                        // eslint-disable-next-line @next/next/no-img-element
-                                        <img
-                                            key={site.id}
-                                            src={`/brasswork/sites/${site.id}.webp`}
-                                            alt={`${site.name}: the hub and its ore nodes on bare ground`}
-                                            className="pw-view-img"
-                                            onError={() =>
-                                                setImgFailed((m) => ({
-                                                    ...m,
-                                                    [site.id]: true,
-                                                }))
-                                            }
-                                        />
-                                    )}
-                                    <figcaption className="pw-view-cap">
-                                        <strong>{site.name}</strong>
-                                        <span>{site.blurb}</span>
-                                    </figcaption>
-                                </figure>
-                                <div className="pw-carry">
-                                    <div>
-                                        <h3 className="pw-h">You keep</h3>
-                                        <ul className="pw-list">
-                                            {prestige.keeps.map((k) => (
-                                                <li key={k} className="pw-keep">
-                                                    {k}
-                                                </li>
-                                            ))}
-                                        </ul>
-                                    </div>
-                                    <div>
-                                        <h3 className="pw-h">
-                                            You leave behind
-                                        </h3>
-                                        <ul className="pw-list">
-                                            {prestige.leaves.map((k) => (
-                                                <li
-                                                    key={k}
-                                                    className="pw-leave"
-                                                >
-                                                    {k}
-                                                </li>
-                                            ))}
-                                        </ul>
+                                        <div>
+                                            <h3 className="pw-h">
+                                                You leave behind
+                                            </h3>
+                                            <ul className="pw-list">
+                                                {prestige.leaves.map((k) => (
+                                                    <li
+                                                        key={k}
+                                                        className="pw-leave"
+                                                    >
+                                                        {k}
+                                                    </li>
+                                                ))}
+                                            </ul>
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
 
-                            <div className="pw-info">
-                                <div className="pw-block">
-                                    <h3 className="pw-h">Ore on site</h3>
-                                    <div className="pw-ores-row">
-                                        <ul className="pw-ores">
-                                            {(site.plan?.nodes ?? []).map(
-                                                (n, i) => (
-                                                    <li
-                                                        key={i}
-                                                        className="pw-ore"
-                                                        data-pure={
-                                                            n.purity >= 2
-                                                        }
-                                                    >
-                                                        <span
-                                                            className="pw-ore-ico"
-                                                            style={iconStyle(
-                                                                n.item,
-                                                                32
-                                                            )}
-                                                            aria-hidden="true"
-                                                        />
-                                                        <span className="pw-ore-name">
-                                                            {ORE_NAMES[
-                                                                n.item
-                                                            ] ?? n.item}
-                                                        </span>
-                                                        <span className="pw-ore-q">
-                                                            {PURITY[n.purity] ??
-                                                                "Normal"}
-                                                        </span>
-                                                    </li>
-                                                )
+                                <div className="pw-info">
+                                    <div className="pw-block">
+                                        <h3 className="pw-h">Ore on site</h3>
+                                        <div className="pw-ores-row">
+                                            <ul className="pw-ores">
+                                                {(site.plan?.nodes ?? []).map(
+                                                    (n, i) => (
+                                                        <li
+                                                            key={i}
+                                                            className="pw-ore"
+                                                            data-pure={
+                                                                n.purity >= 2
+                                                            }
+                                                        >
+                                                            <span
+                                                                className="pw-ore-ico"
+                                                                style={iconStyle(
+                                                                    n.item,
+                                                                    32
+                                                                )}
+                                                                aria-hidden="true"
+                                                            />
+                                                            <span className="pw-ore-name">
+                                                                {ORE_NAMES[
+                                                                    n.item
+                                                                ] ?? n.item}
+                                                            </span>
+                                                            <span className="pw-ore-q">
+                                                                {PURITY[
+                                                                    n.purity
+                                                                ] ?? "Normal"}
+                                                            </span>
+                                                        </li>
+                                                    )
+                                                )}
+                                            </ul>
+                                            {site.plan && (
+                                                <SitePlan plan={site.plan} />
                                             )}
-                                        </ul>
+                                        </div>
+                                    </div>
+
+                                    <div className="pw-block">
+                                        <h3 className="pw-h">Bonuses</h3>
                                         {site.plan && (
-                                            <SitePlan plan={site.plan} />
+                                            <>
+                                                <Gauge
+                                                    label="Miners"
+
+                                                    value={site.plan.miner}
+                                                />
+                                                <Gauge
+                                                    label="Power"
+
+                                                    value={site.plan.power}
+                                                />
+                                            </>
+                                        )}
+                                        {site.plan && (
+                                            <p className="pw-size">
+                                                Floor {site.plan.width} ×{" "}
+                                                {site.plan.depth}
+                                            </p>
                                         )}
                                     </div>
                                 </div>
-
-                                <div className="pw-block">
-                                    <h3 className="pw-h">Bonuses</h3>
-                                    {site.plan && (
-                                        <>
-                                            <Gauge
-                                                label="Miners"
-                                                icon="hammer"
-                                                value={site.plan.miner}
-                                            />
-                                            <Gauge
-                                                label="Power"
-                                                icon="power"
-                                                value={site.plan.power}
-                                            />
-                                        </>
-                                    )}
-                                    {site.plan && (
-                                        <p className="pw-size">
-                                            Floor {site.plan.width} ×{" "}
-                                            {site.plan.depth}
-                                        </p>
-                                    )}
-                                </div>
                             </div>
-                        </div>
-                    )}
-                </div>
+                        )}
+                    </div>
 
-                <footer className="pw-foot">
-                    <p className="pw-reason" data-ready={prestige.ready}>
-                        {reason}
-                    </p>
-                    <button
-                        type="button"
-                        className="pw-hold"
-                        disabled={!canHold}
-                        onPointerDown={start}
-                        onPointerUp={release}
-                        onPointerLeave={release}
-                        onPointerCancel={release}
-                        onKeyDown={(e) => {
-                            if (
-                                (e.key === " " || e.key === "Enter") &&
-                                !e.repeat
-                            )
-                                start();
-                        }}
-                        onKeyUp={release}
-                    >
-                        <span
-                            className="pw-hold-fill"
-                            style={{ width: `${held * 100}%` }}
-                            aria-hidden="true"
-                        />
-                        <span className="pw-hold-label">
-                            {prestige.ready
-                                ? `Hold to open ${site?.name ?? "a workshop"}`
-                                : "Not ready yet"}
-                        </span>
-                    </button>
-                </footer>
-            </section>
+                    <ArtDivider />
+                    <footer className="pw-foot">
+                        <p className="pw-reason" data-ready={prestige.ready}>
+                            {reason}
+                        </p>
+                        <button
+                            type="button"
+                            className="pw-hold"
+                            disabled={!canHold}
+                            onPointerDown={start}
+                            onPointerUp={release}
+                            onPointerLeave={release}
+                            onPointerCancel={release}
+                            onKeyDown={(e) => {
+                                if (
+                                    (e.key === " " || e.key === "Enter") &&
+                                    !e.repeat
+                                )
+                                    start();
+                            }}
+                            onKeyUp={release}
+                        >
+                            <span
+                                className="pw-hold-fill"
+                                style={{ width: `${held * 100}%` }}
+                                aria-hidden="true"
+                            />
+                            <span className="pw-hold-label">
+                                {prestige.ready
+                                    ? `Hold to open ${site?.name ?? "a workshop"}`
+                                    : "Not ready yet"}
+                            </span>
+                        </button>
+                    </footer>
+                </section>
+            </ArtPanel>
+            </div>
         </div>
     );
 }

@@ -7,12 +7,16 @@
 //   model=1              places the example machine and a placement ghost
 //   belts=1              places a short belt run and starts it
 //   orbit=0|1            0 = orbit: false, so an input module owns the camera
+//   cam=close&tx=&tz=    close-up camera on a board point (tx, tz)
+//   life=1               attach island life (ambient and reward bursts)
+//   delivery=1|unlock=1  fire that reward at the hub every 1.5 s (needs life)
 import { getMachineModel } from "../models/machines";
 import { useEffect, useRef } from "react";
 import { createVoxelIsland, type VoxelIsland } from "./index";
 import { heightAt } from "./terrain";
 import { EXAMPLE_BLOCK } from "../models/examples";
 import { scatterProps } from "../models/props";
+import { attachLife } from "./life";
 
 declare global {
     interface Window {
@@ -95,6 +99,31 @@ export default function VoxelIslandBench() {
             }
         }
 
+        if (q.get("stroke") === "1") {
+            // A seeded belt stroke: runs south, turns east, runs east. Last two cells refused.
+            const cells = [
+                { x: -4, z: 0, rot: 3, valid: true },
+                { x: -3, z: 0, rot: 3, valid: true },
+                { x: -2, z: 0, rot: 3, valid: true },
+                { x: -1, z: 0, rot: 0, valid: true },
+                { x: -1, z: 1, rot: 0, valid: true },
+                { x: -1, z: 2, rot: 0, valid: true },
+                { x: -1, z: 3, rot: 0, valid: false },
+                { x: -1, z: 4, rot: 0, valid: false },
+            ];
+            island.setGhostPath(cells);
+        }
+
+        if (q.get("burst") === "1") {
+            // Keeps a placement pop, a removal puff and a milestone fountain going for the effects check.
+            const timer = window.setInterval(() => {
+                island.burst({ x: -2, z: -3 }, "place");
+                island.burst({ x: 0, z: -3 }, "remove");
+                island.burst({ x: 2, z: -3 }, "milestone");
+            }, 500);
+            (window as unknown as { __burstTimer?: number }).__burstTimer = timer;
+        }
+
         if (q.get("select") === "1") {
             // A selected belt run (five cells in a line) and one selected building (2x2) for the outline check.
             const run = [0, 1, 2, 3, 4].map((i) => ({ x: -6 + i, z: -1 }));
@@ -134,6 +163,28 @@ export default function VoxelIslandBench() {
                 { kind: "cornerR", tier: 1, x: -3, z: 4, rot: 0 },
             ]);
             island.setBeltSpeed(0, 1);
+        }
+
+        // Island life: life=1 attaches the ambient and reward layer; delivery=1 or unlock=1 fires that
+        // reward at the hub every 1.5 s so a still can catch the ring.
+        const reward = q.get("delivery") === "1" || q.get("delivery") === "once" ? "delivery" : q.get("unlock") === "1" ? "unlock" : null;
+        if (q.get("life") === "1" || reward) {
+            const life = attachLife(island, heightAt);
+            (window as unknown as { __bwLife?: unknown }).__bwLife = life;
+            if (reward && q.get("delivery") === "once") {
+                // One delivery fired as the page becomes ready, so a short wait catches the ring mid-flight.
+                window.setTimeout(() => life.burst(reward, 0, 0), 50);
+            } else if (reward) {
+                const timer = window.setInterval(() => life.burst(reward, 0, 0), 1500);
+                (window as unknown as { __rewardTimer?: number }).__rewardTimer = timer;
+            }
+        }
+
+        if (q.get("cam") === "close") {
+            // Close-up on a target cell (tx, tz in board units, default the centre) for stills of chutes and machines.
+            const tx = Number(q.get("tx") ?? 0), tz = Number(q.get("tz") ?? 0);
+            island.camera.position.set(tx + 3.6, 3.6, tz + 4.6);
+            island.camera.lookAt(tx, 0.6, tz);
         }
 
         island.resize();

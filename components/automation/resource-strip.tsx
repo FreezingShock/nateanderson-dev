@@ -39,6 +39,23 @@ export function Glyph({
   );
 }
 
+/**
+ * Strip ids that are not catalogue item ids, mapped to the item whose icon they should show. The catalogue
+ * (lib/automation/data/tree.ts) uses the ids on the left of the arrow only where a preview or mock feed does, so
+ * every resource on the bar gets its real item icon. Clockworks has no drawn icon yet, so it keeps its text badge.
+ */
+const ICON_ALIAS: Record<string, string> = {
+  iron: "iron_ore",
+  copper: "copper_ore",
+  aluminium: "aluminium_ore",
+  plates: "iron_plate",
+  screws: "iron_screw",
+  wire: "copper_wire",
+  frames: "frame",
+  motors: "motor",
+  circuits: "circuit_board",
+};
+
 export function ResourceStrip({
   resources,
   showRates,
@@ -82,18 +99,56 @@ function ResourceList({
 }) {
   return (
     <ul className="ab-res-list" aria-label={label}>
-      {items.map((r) => (
-        <li key={r.id} className="ab-res-item" data-empty={r.amount <= 0}>
-          <Glyph code={r.glyph} size={28} icon={r.id} />
-          <span className="ab-res-name">{r.name}</span>
-          <span className="ab-res-amt">{fmtNum(r.amount, numberFormat)}</span>
-          {showRates && (
-            <span className="ab-res-rate" data-neg={r.perSecond < 0}>
-              {fmtRate(r.perSecond, numberFormat)}
+      {items.map((r) => {
+        const amount = fmtNum(r.amount, numberFormat);
+        const rate = fmtRate(r.perSecond, numberFormat);
+        // A negative rate means the factory uses this faster than it arrives. Say that in words, not only with a sign.
+        const trend =
+          r.perSecond > 0
+            ? "Rising, more arrives than is used"
+            : r.perSecond < 0
+              ? "Falling, used faster than it arrives"
+              : "Steady";
+        const emptyNote =
+          r.amount <= 0 && r.perSecond < 0
+            ? "None left and falling. Machines that use it are waiting. Mine or craft more."
+            : r.amount <= 0
+              ? "None left. Mine or craft more."
+              : null;
+        return (
+          <li
+            key={r.id}
+            className="ab-res-item"
+            data-empty={r.amount <= 0}
+            // Focusable so the tooltip also shows from the keyboard. The name lives in the tooltip, not on the bar.
+            tabIndex={0}
+            aria-label={`${r.name}, ${amount}${showRates ? `, ${rate}` : ""}`}
+          >
+            <Glyph code={r.glyph} size={40} icon={ICON_ALIAS[r.id] ?? r.id} />
+            <span className="ab-res-amt">{amount}</span>
+            {showRates && r.perSecond !== 0 && (
+              <span className="ab-res-rate" data-neg={r.perSecond < 0}>
+                {rate}
+              </span>
+            )}
+            {/* Live: the tooltip reads the same data as the bar, so it updates with the factory. */}
+            <span className="ab-res-tip" aria-hidden="true">
+              <strong className="ab-res-tip-name">{r.name}</strong>
+              <span className="ab-res-tip-line">
+                <span>In stock</span>
+                <b>{amount}</b>
+              </span>
+              {showRates && (
+                <span className="ab-res-tip-line">
+                  <span>{trend}</span>
+                  <b data-neg={r.perSecond < 0}>{rate}</b>
+                </span>
+              )}
+              {emptyNote && <span className="ab-res-tip-note">{emptyNote}</span>}
             </span>
-          )}
-        </li>
-      ))}
+          </li>
+        );
+      })}
     </ul>
   );
 }

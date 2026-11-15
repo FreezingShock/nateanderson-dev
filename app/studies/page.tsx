@@ -21,6 +21,7 @@ export default function StudiesPage() {
         <div className="ctos st-page" data-entrance="stack">
             <NaosBackdrop src="/naos/bg-studies.webp" />
             <PageHead
+                band="band-rail"
                 label="Learning"
                 title={["Studies"]}
                 lead="The complete educational pathway: this year's classes, Cal Poly SLO or Pomona as the goal with community college as the fallback, and the independent research running alongside all of it. Systems thinking across technical, creative and philosophical work."
@@ -105,7 +106,7 @@ export default function StudiesPage() {
                         { href: "/about", label: "About me" },
                         { href: "/creations", label: "See the work" },
                     ].map((l) => (
-                        <Link key={l.href} href={l.href} className="cm-chip">
+                        <Link prefetch={false} key={l.href} href={l.href} className="cm-chip">
                             {l.label} →
                         </Link>
                     ))}

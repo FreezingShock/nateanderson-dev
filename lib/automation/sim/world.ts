@@ -3,7 +3,7 @@
 import type { ActionResult, Building, Catalog, Cell, Footprint, Deposit, PlaceResult, Rot, Stack, World, EngineDef, LogisticsKind } from "../types";
 import { DIR_DX, DIR_DZ} from "../types";
 import { DEFAULT_CATALOG } from "./data";
-import { checkMilestones } from "./progress";
+import { checkMilestones, checkRequests, unlockedRecipes } from "./progress";
 
 export const DRILL = "drill"; // the tree machine that sits on a resource node
 export const SPRING = "spring_winder"; // the battery generator
@@ -153,7 +153,7 @@ export function createWorld(opts: CreateOptions = {}, cat: Catalog = DEFAULT_CAT
         deposits: {},
         buildings: {},
         power: { supply: 0, demand: 0, satisfaction: 1 },
-        progress: { blueprints: 0, researched: [], milestonesDone: [], delivered: {}, prestiges: 0, site: null, bonus: { miner: 1, power: 1 } },
+        progress: { blueprints: 0, researched: [], milestonesDone: [], requestsDone: [], delivered: {}, prestiges: 0, site: null, bonus: { miner: 1, power: 1 } },
         wind: 0.5,
         windPin: null,
     };
@@ -172,9 +172,36 @@ export function windAt(t: number): number {
 
 function newBuilding(world: World, type: string, x: number, z: number, rot: Rot): Building {
     const id = world.nextId++;
-    const b: Building = { id, type, x, z, rot, recipe: null, crafting: false, progress: 0, input: {}, output: {}, acc: 0, lane: [], rr: 0, charge: 0 };
+    const b: Building = { id, type, x, z, rot, recipe: null, filter: null, crafting: false, progress: 0, input: {}, output: {}, acc: 0, lane: [], rr: 0, charge: 0 };
     world.buildings[id] = b;
     return b;
+}
+
+// The node a miner works: the first deposit under any cell of its footprint. A 2 by 2 drill works a node under any of its four cells, not only its anchor.
+export function depositUnder(world: World, b: { x: number; z: number; rot: Rot }, fp: Footprint): { key: string; dep: Deposit } | null {
+    for (const [x, z] of footprintCells(b, fp)) {
+        const dep = world.deposits[keyOf(x, z)];
+        if (dep) return { key: keyOf(x, z), dep };
+    }
+    return null;
+}
+
+// Does anything next to this building take its output? True for a belt, hub, crate or machine beside it. Pure.
+export function hasOutputNeighbour(world: World, b: Building, cat: Catalog = DEFAULT_CATALOG): boolean {
+    const r = resolve(cat, b.type);
+    if (!r) return false;
+    const index = indexOf(world, cat);
+    return portsOf(b, r.footprint).some((p) => {
+        const id = index.get(keyOf(p.tx, p.tz));
+        if (id === undefined) return false;
+        const k = resolve(cat, world.buildings[id].type)?.kind;
+        if (k === "belt") {
+            const nb = world.buildings[id];
+            // A belt facing into the drill cannot take from it.
+            return !(p.fx === nb.x + DIR_DX[nb.rot] && p.fz === nb.z + DIR_DZ[nb.rot]);
+        }
+        return k !== "generator" && k !== "miner";
+    });
 }
 
 export function addDeposit(world: World, x: number, z: number, item: string, purity = 1): void {
@@ -205,7 +232,7 @@ export function placeError(world: World, type: string, x: number, z: number, rot
         if (cx < 0 || cz < 0 || cx >= world.width || cz >= world.depth) return "off the island";
         if (index.has(keyOf(cx, cz))) return "occupied";
     }
-    if (r.kind === "miner" && !world.deposits[keyOf(x, z)]) return "needs a resource node";
+    if (r.kind === "miner" && !depositUnder(world, { x, z, rot }, r.footprint)) return "needs a resource node";
     const hub = world.buildings[world.hubId];
     for (const c of r.cost) {
         const have = Math.floor(hub.input[c.item] ?? 0);
@@ -251,6 +278,21 @@ export function remove(world: World, id: number, cat: Catalog = DEFAULT_CATALOG)
 }
 
 // Set or clear the recipe on a crafter. Buffers go back to the hub, so a recipe change never destroys items.
+// Sets the item an unloader pulls. null clears it, which leaves the unloader idle.
+export function setFilter(world: World, id: number, item: string | null, cat: Catalog = DEFAULT_CATALOG): ActionResult {
+    const b = world.buildings[id];
+    if (!b) return { ok: false, reason: "no such building" };
+    if (resolve(cat, b.type)?.kind !== "unloader") return { ok: false, reason: "this building does not unload" };
+    if (item !== null && !cat.tree.items.some((i) => i.id === item)) return { ok: false, reason: "unknown item" };
+    b.filter = item;
+    return { ok: true };
+}
+
+// Why an unloader is not moving anything, for the detail panel. null when it is running.
+export function unloaderIdleReason(b: Building): string | null {
+    return b.filter ? null : "choose an item";
+}
+
 export function setRecipe(world: World, id: number, recipe: string | null, cat: Catalog = DEFAULT_CATALOG): ActionResult {
     const b = world.buildings[id];
     if (!b) return { ok: false, reason: "no such building" };
@@ -259,6 +301,8 @@ export function setRecipe(world: World, id: number, recipe: string | null, cat: 
     if (recipe !== null) {
         const rec = cat.tree.recipes.find((x) => x.id === recipe);
         if (!rec || rec.machine !== b.type) return { ok: false, reason: "that recipe does not run here" };
+        // Alternates and base recipes that sit behind research are refused until that research is bought.
+        if (!unlockedRecipes(world, cat).includes(recipe)) return { ok: false, reason: "research this recipe first" };
     }
     refund(world.buildings[world.hubId], b);
     b.recipe = recipe;
@@ -437,6 +481,9 @@ function pushTunnel(world: World, cat: Catalog, index: Map<string, number>, b: B
 
 // Unloader: pulls up to `budget` items out of the storage or hub cells beside it into its own buffer. Returns how many it took.
 function pullIntoUnloader(world: World, cat: Catalog, index: Map<string, number>, b: Building, r: Resolved, budget: number): number {
+    // No item chosen: stay idle rather than send whatever the hub holds first.
+    const want = b.filter;
+    if (!want) return 0;
     let took = 0;
     for (const p of portsOf(b, r.footprint)) {
         const id = index.get(keyOf(p.tx, p.tz));
@@ -444,7 +491,7 @@ function pullIntoUnloader(world: World, cat: Catalog, index: Map<string, number>
         const src = world.buildings[id];
         const sk = resolve(cat, src.type)?.kind;
         if (sk !== "storage" && sk !== "hub") continue;
-        for (const item of Object.keys(src.input)) {
+        for (const item of [want]) {
             while (took < budget && (src.input[item] ?? 0) > 0) {
                 const held = Object.values(b.output).reduce((a, n) => a + n, 0);
                 if (held >= r.capacity) return took;
@@ -459,7 +506,7 @@ function pullIntoUnloader(world: World, cat: Catalog, index: Map<string, number>
 }
 
 function stepMiner(world: World, cat: Catalog, b: Building, r: Resolved, dt: number, sat: number): void {
-    const dep: Deposit | undefined = world.deposits[keyOf(b.x, b.z)];
+    const dep: Deposit | undefined = depositUnder(world, b, r.footprint)?.dep;
     if (!dep) return;
     const node = cat.tree.nodes.find((n) => n.item === dep.item);
     if (!node) return;
@@ -566,21 +613,36 @@ function updatePower(world: World, cat: Catalog, defs: Map<number, Resolved>, dt
             demand += r.power;
         }
     }
-    // How many consumers each generator reaches, so its output can be shared.
+    // Each generator's output is shared among the consumers it reaches. A share a consumer does not need
+    // (it is already full) goes to the others that generator still reaches, so power is not stranded.
     const reach = gens.map((g) => consumers.filter((c) => Math.max(Math.abs(c.cx - g.cx), Math.abs(c.cz - g.cz)) <= g.range));
-    const received = new Map<number, number>();
-    gens.forEach((g, gi) => {
-        const share = g.out / Math.max(1, reach[gi].length);
-        for (const c of reach[gi]) received.set(c.id, (received.get(c.id) ?? 0) + share);
-    });
-    const sat = new Map<number, number>();
-    let got = 0;
-    for (const c of consumers) {
-        const v = Math.min(1, (received.get(c.id) ?? 0) / c.need);
-        sat.set(c.id, v);
-        got += Math.min(c.need, received.get(c.id) ?? 0);
+    const got = new Map<number, number>();
+    const left = gens.map((g) => g.out);
+    for (let round = 0; round < 8; round++) {
+        let moved = false;
+        gens.forEach((_, gi) => {
+            const open = reach[gi].filter((c) => (got.get(c.id) ?? 0) < c.need - 1e-9);
+            if (open.length === 0 || left[gi] <= 1e-9) return;
+            const offer = left[gi] / open.length;
+            for (const c of open) {
+                const take = Math.min(offer, c.need - (got.get(c.id) ?? 0));
+                if (take <= 1e-9) continue;
+                got.set(c.id, (got.get(c.id) ?? 0) + take);
+                left[gi] -= take;
+                moved = true;
+            }
+        });
+        if (!moved) break;
     }
-    world.power = { supply, demand, satisfaction: demand <= 0 ? 1 : Math.min(1, got / demand) };
+    const sat = new Map<number, number>();
+    let delivered = 0;
+    for (const c of consumers) {
+        const v = Math.min(1, (got.get(c.id) ?? 0) / c.need);
+        sat.set(c.id, v);
+        world.buildings[c.id].powerSat = v;
+        delivered += Math.min(c.need, got.get(c.id) ?? 0);
+    }
+    world.power = { supply, demand, satisfaction: demand <= 0 ? 1 : Math.min(1, delivered / demand) };
     return sat;
 }
 
@@ -632,6 +694,7 @@ export function step(world: World, dt: number, cat: Catalog = DEFAULT_CATALOG): 
         }
     }
     world.time += dt;
+    checkRequests(world, cat);
     checkMilestones(world, cat);
 }
 

@@ -122,3 +122,138 @@ test("console commands read and act on a star", () => {
     assert.equal(C.swCommand(s, ["name", "Vega"]).changed, true);
     assert.equal(s.name, "Vega");
 });
+
+test("a visitor arrives after the first wait, answers pay, and the star stays finite", () => {
+    const s = E.fresh(0);
+    for (let n = 0; n < D.EVENT_FIRST + 2; n++) E.step(s, 1);
+    assert.ok(s.event, "a visitor is waiting");
+    const before = E.levels(s, 0);
+    const ev = E.eventOf(s);
+    assert.equal(ev.opts.length, 2);
+    const o = E.answer(s, 1);
+    assert.ok(o);
+    assert.equal(s.event, null);
+    assert.equal(s.visitors, 1);
+    assert.equal(E.levels(s, 0), before);
+    assert.ok(s.evIn > 60);
+    assert.ok(ok(s));
+});
+
+test("every visitor option does something and none breaks the numbers", () => {
+    for (const ev of D.EVENTS) for (let i = 0; i < 2; i++) {
+        const s = E.fresh(0);
+        s.bought[0][0] = 10;
+        s.event = { id: ev.id, left: 100 };
+        const m0 = s.mass;
+        E.answer(s, i);
+        assert.ok(s.mass > m0 || s.buffs.length > 0, `${ev.id}/${i} had an effect`);
+        for (let t = 0; t < 200; t++) E.step(s, 1);
+        assert.ok(ok(s));
+        assert.ok(s.buffs.every((b) => b.left > 0), "buffs expire");
+    }
+});
+
+test("time away never spawns a visitor", () => {
+    const s = E.fresh(0);
+    E.catchUp(s, 3600);
+    assert.equal(s.event, null);
+});
+
+test("buffs raise the effects while they last", () => {
+    const s = E.fresh(0);
+    const base = E.effects(s).fuse;
+    s.event = { id: "comet", left: 100 };
+    E.answer(s, 1);
+    assert.equal(E.effects(s).fuse, base * 2);
+    for (let t = 0; t < 61; t++) E.step(s, 1);
+    assert.equal(E.effects(s).fuse, base);
+});
+
+test("birth clouds are offered after the second star, chosen once, and last one star", () => {
+    const s = E.fresh(0);
+    s.amt[7] = 1e6;
+    E.supernova(s);
+    assert.equal(s.offer.length, 3, "offered from the first supernova on");
+    const id = s.offer[0];
+    assert.ok(E.chooseCloud(s, id));
+    assert.equal(s.cloud, id);
+    assert.equal(s.cloudsPicked, 1);
+    assert.equal(E.chooseCloud(s, id), false);
+    s.amt[7] = 1e9;
+    E.supernova(s);
+    assert.equal(s.cloud, "");
+    assert.equal(s.offer.length, 3);
+});
+
+test("each cloud changes the effects in the way it says", () => {
+    for (const c of D.CLOUDS) {
+        const s = E.fresh(0);
+        const base = E.effects(s);
+        s.cloud = c.id;
+        const f = E.effects(s);
+        for (const k of Object.keys(c.fx)) assert.notEqual(f[k], base[k], `${c.id} moves ${k}`);
+        assert.ok(Object.values(f).every(Number.isFinite));
+    }
+});
+
+test("milestones award once, add 2% each, and survive a save", () => {
+    const s = E.fresh(0);
+    s.bought[0][0] = 30;
+    const got = E.checkAch(s);
+    assert.ok(got.includes("flame") && got.includes("l25"));
+    assert.deepEqual(E.checkAch(s), []);
+    const base = E.fresh(0);
+    assert.ok(Math.abs(E.effects(s).global / E.effects(base).global - (1 + D.ACH_BONUS * s.ach.length)) < 1e-9);
+    const back = E.parse(JSON.parse(E.serialize(s)));
+    assert.deepEqual(back.ach, s.ach);
+    assert.deepEqual(back.found, s.found);
+});
+
+test("the codex records an element once it exists", () => {
+    const s = E.fresh(0);
+    assert.deepEqual(s.found, ["H"]);
+    s.amt[1] = 5;
+    E.step(s, 1);
+    assert.ok(s.found.includes("He"));
+    assert.ok(D.ELEMENTS.every((e) => typeof D.CODEX[e.sym] === "string"));
+});
+
+test("saves keep a waiting visitor and drop damaged new fields", () => {
+    const s = E.fresh(0);
+    s.event = { id: "flare", left: 90 };
+    s.buffs = [{ k: "heat", v: 2, secs: 60, name: "A flare builds", left: 30 }];
+    const back = E.parse(JSON.parse(E.serialize(s)));
+    assert.equal(back.event.id, "flare");
+    assert.equal(back.buffs.length, 1);
+    const bad = E.parse({ ...JSON.parse(E.serialize(s)), event: { id: "nope" }, buffs: [{ k: "mass", v: 9, name: "x", left: 5 }], cloud: "zzz", ach: ["x"], offer: ["y"] });
+    assert.equal(bad.event, null);
+    assert.deepEqual(bad.buffs, []);
+    assert.equal(bad.cloud, "");
+    assert.deepEqual(bad.ach, []);
+});
+
+test("console: visitor, cloud and almanac", () => {
+    const s = E.fresh(0);
+    assert.match(C.swCommand(s, ["visitor"]).lines[0].t, /nothing/);
+    s.event = { id: "comet", left: 100 };
+    const r = C.swCommand(s, ["visitor", "1"]);
+    assert.ok(r.changed);
+    assert.ok(C.swCommand(s, ["almanac"]).lines.length > 5);
+});
+
+test("planets grow through four stages with time in orbit and pay more for it", () => {
+    const s = E.fresh(0);
+    s.amt[2] = 1e6;
+    assert.ok(E.buyPlanet(s, "ember"));
+    assert.equal(E.planetStage(s, "ember"), 0);
+    const f0 = E.effects(s).inflow;
+    for (let t = 0; t < D.PLANET_STAGE_AT[2] + 5; t++) E.step(s, 1);
+    assert.equal(E.planetStage(s, "ember"), 2);
+    assert.ok(E.effects(s).inflow > f0 * (1 + 0), "bonus grows");
+    const back = E.parse(JSON.parse(E.serialize(s)));
+    assert.equal(E.planetStage(back, "ember"), 2);
+    s.amt[7] = 1e9;
+    E.supernova(s);
+    assert.deepEqual(s.planetAge, {}, "a supernova strips planets and their age");
+    assert.ok(D.PLANETS.every((p) => p.stages.length === 4 && p.look));
+});

@@ -66,17 +66,17 @@ export default function Home() {
                             text="Headed to Cal Poly SLO for Construction Management. Currently shipping Nexus, a cozy offline city builder at playnexus.dev."
                         />
                         <nav className="hero-cta" aria-label="Start here">
-                            <Link className="hcta hcta-main" href="/creations/projects" data-scr-hover>
+                            <Link prefetch={false} className="hcta hcta-main" href="/creations/projects" data-scr-hover>
                                 <span className="hcta-no" aria-hidden="true">01</span>
                                 <span className="hcta-txt"><b data-scr-text>View projects</b><small>/creations/projects</small></span>
                                 <span className="hcta-arr" aria-hidden="true"><PixelIcon name="arrowR" /></span>
                             </Link>
-                            <Link className="hcta" href="/about" data-scr-hover>
+                            <Link prefetch={false} className="hcta" href="/about" data-scr-hover>
                                 <span className="hcta-no" aria-hidden="true">02</span>
                                 <span className="hcta-txt"><b data-scr-text>About me</b><small>/about</small></span>
                                 <span className="hcta-arr" aria-hidden="true"><PixelIcon name="arrowR" /></span>
                             </Link>
-                            <Link className="hcta" href="/creations/games" data-scr-hover>
+                            <Link prefetch={false} className="hcta" href="/creations/games" data-scr-hover>
                                 <span className="hcta-no" aria-hidden="true">03</span>
                                 <span className="hcta-txt"><b data-scr-text>Play the games</b><small>/creations/games</small></span>
                                 <span className="hcta-arr" aria-hidden="true"><PixelIcon name="arrowR" /></span>
@@ -98,7 +98,7 @@ export default function Home() {
                                 <dl className="id-rows">
                                     <div><dt>Based</dt><dd><Scramble replay text="Southern California" /></dd></div>
                                     <div><dt>Studying</dt><dd><Scramble replay text="Construction management" /></dd></div>
-                                    <div><dt>Shipping</dt><dd><Link href="/creations/projects"><Scramble replay text="Nexus at playnexus.dev" /></Link></dd></div>
+                                    <div><dt>Shipping</dt><dd><Link prefetch={false} href="/creations/projects"><Scramble replay text="Nexus at playnexus.dev" /></Link></dd></div>
                                     <div><dt>Built in</dt><dd><Scramble replay text="TypeScript, Three.js, JavaScript" /></dd></div>
                                     <div><dt>Graduation</dt><dd><Scramble replay text="2031" /></dd></div>
                                 </dl>
@@ -122,7 +122,7 @@ export default function Home() {
                     blurb="Solo-built games, renovation studies, and the systems thinking behind them."
                     more={{ href: "/creations/projects", label: "View all" }}
                 >
-                    <div className="cm-grid">
+                    <div className="cm-grid cm-fit">
                         <Suspense fallback={<FeaturedSkeleton />}>
                             <FeaturedCards />
                         </Suspense>
@@ -181,7 +181,7 @@ export default function Home() {
                     {navItems
                         .filter((n) => n.href !== "/")
                         .map((n) => (
-                            <Link key={n.href} className="cm-card link" href={n.href} data-tone={EXPLORE_TONE[n.href] ?? "panel"}>
+                            <Link prefetch={false} key={n.href} className="cm-card link" href={n.href} data-tone={EXPLORE_TONE[n.href] ?? "panel"}>
                                 <span className="cm-card-art" aria-hidden="true">
                                     {PIXEL_FOR[n.href] && <PixelIcon name={PIXEL_FOR[n.href]} size={210} />}
                                 </span>

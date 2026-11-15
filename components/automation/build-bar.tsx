@@ -7,11 +7,11 @@ import { canAfford, costText } from "./format";
 import { Glyph } from "./resource-strip";
 import { Section } from "./factory-sections";
 
-type GroupId = "machines" | "power" | "logistics";
+export type GroupId = "machines" | "power" | "logistics";
 
-const GROUP_ICON: Record<GroupId, string> = { machines: "machines", power: "power", logistics: "logistics" };
+export const GROUP_ICON: Record<GroupId, string> = { machines: "machines", power: "power", logistics: "logistics" };
 
-const GROUP_TITLE: Record<GroupId, string> = {
+export const GROUP_TITLE: Record<GroupId, string> = {
   machines: "Machines",
   power: "Power",
   logistics: "Logistics",
@@ -44,8 +44,11 @@ function collapseTiers(list: MachineView[]): MachineView[] {
   return out.map((row) => {
     const tiers = byBase.get(row.id);
     if (!tiers) return row;
+    // Show the highest open tier the player has already built, otherwise the cheapest open tier (brass),
+    // so a fresh save always has the brass Belt row to start with.
     const open = tiers.filter((t) => t.unlocked).sort((a, b) => TIER_RANK(b.id) - TIER_RANK(a.id));
-    const best = open[0] ?? tiers.sort((a, b) => TIER_RANK(a.id) - TIER_RANK(b.id))[0];
+    const built = open.find((t) => t.count > 0);
+    const best = built ?? open[open.length - 1] ?? [...tiers].sort((a, b) => TIER_RANK(a.id) - TIER_RANK(b.id))[0];
     const count = tiers.reduce((n, t) => n + t.count, 0);
     // Add the tier word only when the name does not already carry it (for example "Steel belt").
     const tier = TIER_RANK(best.id) === 2 ? "steel" : TIER_RANK(best.id) === 1 ? "copper" : "";
@@ -77,11 +80,28 @@ function orderOf(id: string): number {
   return i === -1 ? ORDER.length : i;
 }
 
+/**
+ * The open rows of one group, in the order the flyout shows them. Number keys 1 to 9 pick from this list, so the
+ * host's tool list and the on-screen hints must both follow it. Logistics lists its sub-groups in SUB_TITLE order.
+ */
+export function openRowsOf(machines: MachineView[], group: GroupId): MachineView[] {
+  const subIndex = (id: string) => Object.keys(SUB_TITLE).indexOf(subOf(id));
+  return collapseTiers(machines)
+    .filter((m) => m.unlocked && ((m.group ?? "machines") as GroupId) === group)
+    .sort((a, b) =>
+      group === "logistics"
+        ? subIndex(a.id) - subIndex(b.id) || orderOf(a.id) - orderOf(b.id)
+        : orderOf(a.id) - orderOf(b.id),
+    );
+}
+
 /** Build list for the factory panel. Each row builds on tap and opens its inspector with Info. */
 export function BuildList({
   machines,
   resources,
   selectedId,
+  armedId = null,
+  group = null,
   numberFormat,
   onBuild,
   onSelect,
@@ -89,6 +109,9 @@ export function BuildList({
   machines: MachineView[];
   resources: ResourceView[];
   selectedId: string | null;
+  armedId?: string | null;
+  /** Desktop dock: show only this group's panel. Null shows every group. */
+  group?: GroupId | null;
   numberFormat: NumberFormat;
   onBuild: (id: string) => void;
   onSelect: (id: string | null) => void;
@@ -98,24 +121,35 @@ export function BuildList({
   const shown = collapseTiers(machines).sort((a, b) => orderOf(a.id) - orderOf(b.id));
   for (const m of shown) {
     const id = (m.group ?? "machines") as GroupId;
+    if (group && id !== group) continue;
     let g = groups.find((x) => x.id === id);
     if (!g) groups.push((g = { id, items: [] }));
     g.items.push(m);
   }
+  // Number-key hint for each open row of the shown group: 1 to 9, in the order the rows are listed.
+  const hintOf = new Map<string, number>();
+  if (group) openRowsOf(machines, group).slice(0, 9).forEach((m, i) => hintOf.set(m.id, i + 1));
   const renderRow = (m: MachineView) => {
         const ok = m.unlocked && canAfford(m.cost, resources);
+        const hint = hintOf.get(m.id);
         const selected = m.id === selectedId;
+        const armed = m.id === armedId;
         return (
             <li
+              key={m.id}
               className="ab-row ab-build-row"
               data-selected={selected}
+              data-armed={armed}
               data-locked={!m.unlocked}
               data-afford={ok}
             >
               <button
                 type="button"
                 className="ab-build-main"
-                disabled={!ok}
+                disabled={!m.unlocked}
+                aria-pressed={armed}
+                data-afford={ok}
+                aria-label={`Select ${m.name}${ok ? "" : " (not enough resources yet)"}`}
                 onClick={() => onBuild(m.id)}
               >
                 <Glyph code={m.glyph} size={32} icon={m.id} />
@@ -129,10 +163,11 @@ export function BuildList({
                   </span>
                   <span className="ab-build-cost">
                     {m.unlocked
-                      ? costText(m.cost, resources, numberFormat)
+                      ? costText(m.cost, resources, numberFormat) || "Free"
                       : m.lockedReason}
                   </span>
                 </span>
+                {hint !== undefined && <kbd className="ab-key-hint" aria-hidden="true">{hint}</kbd>}
                 {m.unlocked && m.count > 0 && (
                   <span className="ab-status" data-status={m.status}>
                     {m.status}
@@ -151,6 +186,22 @@ export function BuildList({
             </li>
         );
   };
+  // Belts first: a new player needs them before anything else. Then machines, then power.
+  const GROUP_RANK: Record<GroupId, number> = { logistics: 0, machines: 1, power: 2 };
+  groups.sort((a, b) => GROUP_RANK[a.id] - GROUP_RANK[b.id]);
+  // Open rows show in full; locked rows fold into one line so the palette stays short.
+  const renderItems = (items: MachineView[]) => {
+    const open = items.filter((m) => m.unlocked);
+    const locked = items.length - open.length;
+    return (
+      <>
+        {open.map(renderRow)}
+        {locked > 0 && (
+          <li className="ab-locked-note">{locked} more unlock as you progress</li>
+        )}
+      </>
+    );
+  };
   return (
     <div className="ab-build-groups">
       {groups.map((g) => {
@@ -165,13 +216,13 @@ export function BuildList({
                   <div key={x.sub} className="ab-sub">
                     <h3 className="ab-sub-title">{SUB_TITLE[x.sub]}</h3>
                     <ul className="ab-build" aria-label={`${SUB_TITLE[x.sub]} to build`}>
-                      {x.items.map(renderRow)}
+                      {renderItems(x.items)}
                     </ul>
                   </div>
                 ))
             ) : (
               <ul className="ab-build" aria-label={`${GROUP_TITLE[g.id]} to build`}>
-                {g.items.map(renderRow)}
+                {renderItems(g.items)}
               </ul>
             )}
           </Section>

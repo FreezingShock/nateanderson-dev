@@ -56,7 +56,7 @@ export function PathwayRail({ nowMs }: { nowMs: number }) {
                                     </div>
                                     <span className="cm-coord">{pct}%</span>
                                 </div>
-                                <Link href={`/timeline#${stage.phaseId}`} className="cm-more">
+                                <Link prefetch={false} href={`/timeline#${stage.phaseId}`} className="cm-more">
                                     See it on the timeline →
                                 </Link>
                             </div>
@@ -69,7 +69,7 @@ export function PathwayRail({ nowMs }: { nowMs: number }) {
                                 ))}
                             </div>
                         ) : (
-                            <Link href="#classes" className="cm-more" style={{ marginTop: 12, display: "inline-block" }}>
+                            <Link prefetch={false} href="#classes" className="cm-more" style={{ marginTop: 12, display: "inline-block" }}>
                                 The six classes are above →
                             </Link>
                         )}

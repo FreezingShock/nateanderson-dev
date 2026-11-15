@@ -153,12 +153,12 @@ export function CategoryGrid({ counts }: { counts: Record<CreationCategory["id"]
             {CATEGORIES.map((c) => {
                 const Icon = c.icon;
                 return (
-                    <Link key={c.id} href={c.href} className="cm-card link" style={{ height: "100%" }}>
+                    <Link prefetch={false} key={c.id} href={c.href} className="cm-card link" style={{ height: "100%" }}>
                         <div className="cm-row" style={{ justifyContent: "space-between" }}>
                             <Icon className="cm-ico" style={{ width: 24, height: 24 }} aria-hidden="true" />
                             <span className="cm-state">{counts[c.id]} inside</span>
                         </div>
-                        <b style={{ fontSize: 20, marginTop: 6 }}>{c.title}</b>
+                        <b>{c.title}</b>
                         <p>{c.blurb}</p>
                         <div className="cm-row-gap" style={{ marginTop: 6 }}>
                             {c.tags.map((t) => (
@@ -207,7 +207,7 @@ function GameCard({ game }: { game: Game }) {
         </>
     );
     return game.href ? (
-        <Link href={game.href} className="cm-card link" style={{ height: "100%" }}>{inner}</Link>
+        <Link prefetch={false} href={game.href} className="cm-card link" style={{ height: "100%" }}>{inner}</Link>
     ) : (
         <div className="cm-card" style={{ height: "100%", opacity: 0.86 }}>{inner}</div>
     );
@@ -308,7 +308,7 @@ export function ProjectGrid({ projects }: { projects: Project[] }) {
     return (
         <div className="cm-grid">
             {projects.map((p, i) => (
-                <Link key={p.slug} href={`/creations/${p.slug}`} className="cm-card link" style={{ height: "100%" }}>
+                <Link prefetch={false} key={p.slug} href={`/creations/${p.slug}`} className="cm-card link" style={{ height: "100%" }}>
                     <div className="cm-viz">
                         <span className={`cm-tag flat ${projectTone[p.status]}`}>{statusLabel[p.status]}</span>
                         <span className="glyph" aria-hidden="true">{String(i + 1).padStart(2, "0")}</span>
@@ -342,7 +342,7 @@ export function ArtCollectionSection({ collection, no }: { collection: ArtCollec
                             </span>
                             <Icon aria-hidden="true" style={{ position: "absolute", right: 14, bottom: 12, width: 48, height: 48, color: "var(--cm-hair-hi)" }} />
                         </div>
-                        <b style={{ fontSize: 13.5 }}>{slot}</b>
+                        <b>{slot}</b>
                     </div>
                 ))}
             </div>

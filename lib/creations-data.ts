@@ -272,6 +272,15 @@ export const GAME_MODES: GameMode[] = [
                 features: ["10 element ladder", "Supernova, neutron star, black hole", "Planets and constellations"],
                 href: "/creations/games/starwright",
             },
+            {
+                slug: "groundbreak",
+                title: "Groundbreak",
+                status: "playable",
+                icon: Ic.Boxes,
+                blurb: "Run a construction company in the Bay Area. Twelve materials, each boosting the next, build a cutaway job floor by floor, and keep the skyline when you incorporate.",
+                features: ["12 chained materials", "Zoomable cutaway site", "Permanent skyline"],
+                href: "/creations/games/groundbreak",
+            },
         ],
     },
     {
@@ -281,12 +290,12 @@ export const GAME_MODES: GameMode[] = [
         icon: Ic.Settings,
         tagline: "Build the machine that does the work.",
         about: "Automation games are about setting up systems that run on their own, then improving them.",
-        coming: "Next up. No automation game is playable yet.",
+        coming: "Next up. More automation games are planned.",
         games: [
             {
                 slug: "brasswork",
                 title: "Brasswork",
-                status: "building",
+                status: "playable",
                 icon: Ic.Settings,
                 blurb: "A clockwork-workshop factory on a 3D voxel island. Place machines on a grid, refine ores into parts, and send expeditions out from the workshop.",
                 features: ["3D island", "Machines on a grid", "Expeditions"],

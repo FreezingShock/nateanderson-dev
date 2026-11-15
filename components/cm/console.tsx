@@ -15,6 +15,8 @@ import { getFxMode, getLowFx, setFxMode } from "@/lib/nodefarm/fx";
 import { getStagePreview, setStagePreview } from "@/lib/nodefarm/zones/zone-art";
 import { PART_WHY, SKIN_WHY, coreLook, coreMode, corePreview, setCoreMode, setCorePreview, skinOpen } from "@/lib/nodefarm/art/core-look";
 import { PART_ORDER, SKINS } from "@/lib/nodefarm/art/core-parts";
+import { GB_PATH, GB_SAVE_KEY, GB_SUBS, gbCommand } from "@/lib/groundbreak/commands";
+import { parse as gbParse, serialize as gbSerialize, type State as GbState } from "@/lib/groundbreak/engine";
 import { SW_PATH, SW_SAVE_KEY, SW_SUBS, swCommand } from "@/lib/starwright/commands";
 import { parse as swParse, serialize as swSerialize, type State as SwState } from "@/lib/starwright/engine";
 import { setPrefs } from "@/lib/sound/engine";
@@ -40,6 +42,18 @@ interface Entry {
 }
 
 const t = (text: string, k?: Line["k"]): Line => ({ t: text, k });
+/** Usage strings wider than the name column get their own line; long ones wrap at "|" instead of mid-word. */
+const rowLong = (l: Line) => {
+    const n = (l.a ?? "").length;
+    return n > 16 ? " cn-long" : n > 12 ? " cn-mid" : "";
+};
+const breakAtBars = (a: string) =>
+    a.split("|").map((part, i, all) => (
+        <span key={i}>
+            {part}
+            {i < all.length - 1 ? <>|<wbr /></> : null}
+        </span>
+    ));
 const row = (a: string, b: string, go?: string): Line => ({ a, b, go });
 
 const slug = (s: string) =>
@@ -298,6 +312,32 @@ function runNf(args: string[]): Line[] {
     return r.lines;
 }
 
+/** `gb`: Groundbreak from the console. Talks to the open game when there is one (it answers the `gb:live` event), otherwise reads and writes the saved game. */
+function runGb(args: string[]): Line[] {
+    const sub = (args[0] ?? "").toLowerCase();
+    if (sub === "open") return [{ t: GB_PATH, go: GB_PATH }];
+    const ref: { live?: { s: GbState | null; changed: () => void } } = {};
+    window.dispatchEvent(new CustomEvent("gb:live", { detail: ref }));
+    let state: GbState | null = ref.live?.s ?? null;
+    if (!state) {
+        try {
+            const raw = localStorage.getItem(GB_SAVE_KEY);
+            state = raw ? gbParse(JSON.parse(raw)) : null;
+        } catch {}
+    }
+    if (!state) return [t("no firm found. start one:", "dim"), { t: GB_PATH, go: GB_PATH }];
+    const r = gbCommand(state, args);
+    if (r.changed) {
+        if (ref.live) ref.live.changed();
+        else {
+            try {
+                localStorage.setItem(GB_SAVE_KEY, gbSerialize(state));
+            } catch {}
+        }
+    }
+    return r.lines;
+}
+
 /** `sw`: Starwright from the console. Talks to the open game when there is one (it answers the `sw:live` event), otherwise reads and writes the saved game. */
 function runSw(args: string[]): Line[] {
     const sub = (args[0] ?? "").toLowerCase();
@@ -455,6 +495,13 @@ const COMMANDS: Cmd[] = [
         desc: "Starwright readout and actions",
         long: ["sw · sw stats · sw fuse <element> [1-3] buys a burner tier · sw collapse (supernova) · sw perks [id] · sw pulsar [id] · sw planets [id] · sw neutron · sw hole · sw name <name> · sw open · sw fs. Works with the game open or from your saved game."],
         run: (args) => runSw(args),
+    },
+    {
+        name: "gb",
+        usage: `gb [${GB_SUBS.join("|")}]`,
+        desc: "Groundbreak readout and actions",
+        long: ["gb · gb stats · gb hire <material> [1-3] · gb unlock · gb jobs · gb change [no] · gb overtime · gb perks [id] · gb incorporate [yes] · gb skyline · gb open. Works with the game open or from your saved game."],
+        run: (args) => runGb(args),
     },
     {
         name: "admin",
@@ -839,7 +886,7 @@ export function NaosConsole({ onClose, prefill }: { onClose: () => void; prefill
                                     const body =
                                         l.a !== undefined ? (
                                             <>
-                                                <b className="cn-a">{l.a}</b>
+                                                <b className="cn-a">{breakAtBars(l.a)}</b>
                                                 <span className="cn-b">{l.b}</span>
                                             </>
                                         ) : (
@@ -849,7 +896,7 @@ export function NaosConsole({ onClose, prefill }: { onClose: () => void; prefill
                                         <a
                                             key={i}
                                             href={l.go}
-                                            className="cn-l cn-row cn-go"
+                                            className={`cn-l cn-row cn-go${rowLong(l)}`}
                                             style={style}
                                             onClick={(e) => {
                                                 e.preventDefault();
@@ -859,7 +906,7 @@ export function NaosConsole({ onClose, prefill }: { onClose: () => void; prefill
                                             {body}
                                         </a>
                                     ) : (
-                                        <div key={i} className={`cn-l${l.a !== undefined ? " cn-row" : ""}${l.k ? ` cn-${l.k}` : ""}`} style={style}>
+                                        <div key={i} className={`cn-l${l.a !== undefined ? ` cn-row${rowLong(l)}` : ""}${l.k ? ` cn-${l.k}` : ""}`} style={style}>
                                             {body}
                                         </div>
                                     );

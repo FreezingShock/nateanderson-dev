@@ -13,12 +13,17 @@ interface Particle {
     age: number;
     life: number;
     size: number;
-    kind: 0 | 1; // 0 smoke, 1 spark
+    kind: 0 | 1 | 2; // 0 smoke, 1 spark, 2 steam
 }
 
 const POOL = 320;
+export type BurstKind = "place" | "remove" | "milestone";
+const BURST_COUNT: Record<BurstKind, number> = { place: 26, remove: 18, milestone: 60 };
 const SMOKE_RATE = 5; // puffs per second per working smoking machine, at full density
 const SPARK_RATE = 7;
+const STEAM_RATE = 1.6; // light white puffs from every other working machine, so a busy island reads at default zoom
+const STEAM_COLOR = new THREE.Color(0xf4efe2);
+const STEAM_COLOR_END = new THREE.Color(0xb9b3a6);
 const SMOKE_COLOR = new THREE.Color(0x8a8078);
 const SMOKE_COLOR_END = new THREE.Color(0x4a4440);
 const SPARK_COLOR = new THREE.Color(0xffc060);
@@ -34,6 +39,7 @@ export class MachineEffects {
             y: number;
             z: number;
             sparks: boolean;
+            steam: boolean;
             working: boolean;
             acc: number;
         }
@@ -79,8 +85,8 @@ export class MachineEffects {
     }
 
     /** Register a working machine's chimney point (world units). Sparks come from furnace-type machines. */
-    setEmitter(id: string, x: number, y: number, z: number, sparks: boolean): void {
-        this.emitters.set(id, { x, y, z, sparks, working: false, acc: 0 });
+    setEmitter(id: string, x: number, y: number, z: number, sparks: boolean, steam = false): void {
+        this.emitters.set(id, { x, y, z, sparks, steam, working: false, acc: 0 });
     }
 
     removeEmitter(id: string): void {
@@ -114,13 +120,52 @@ export class MachineEffects {
         this.wind = strength;
     }
 
+    /**
+     * One-shot burst at a point (world units). "place" throws brass sparks, "remove" lets out a grey
+     * puff, "milestone" throws a tall gold fountain. Uses the same pool, so bursts cost no extra draws.
+     */
+    burst(x: number, y: number, z: number, kind: BurstKind): void {
+        if (!this.enabled) return;
+        const n = BURST_COUNT[kind];
+        for (let i = 0; i < n; i++) {
+            const slot = this.parts.findIndex((p) => !p.alive);
+            if (slot < 0) return;
+            const p = this.parts[slot];
+            const a = Math.random() * Math.PI * 2;
+            const spread = kind === "milestone" ? 1.6 : 0.9;
+            p.alive = true;
+            p.x = x;
+            p.y = y;
+            p.z = z;
+            p.age = 0;
+            if (kind === "remove") {
+                // Grey puff: slow, wide, rising.
+                p.kind = 0;
+                p.vx = Math.cos(a) * 0.35;
+                p.vz = Math.sin(a) * 0.35;
+                p.vy = 0.3 + Math.random() * 0.2;
+                p.life = 1.4 + Math.random() * 0.6;
+                p.size = 0.2;
+            } else {
+                // Sparks: fast, fall under gravity, short life.
+                p.kind = 1;
+                const up = kind === "milestone" ? 2.6 : 1.5;
+                p.vx = Math.cos(a) * spread * (0.5 + Math.random() * 0.8);
+                p.vz = Math.sin(a) * spread * (0.5 + Math.random() * 0.8);
+                p.vy = up * (0.6 + Math.random() * 0.6);
+                p.life = (kind === "milestone" ? 1.1 : 0.45) + Math.random() * 0.3;
+                p.size = kind === "milestone" ? 0.05 : 0.035;
+            }
+        }
+    }
+
     update(dt: number): void {
         const live = this.enabled && this.density > 0;
         if (live) {
             for (const e of this.emitters.values()) {
                 if (!e.working) continue;
                 e.acc += dt * this.density;
-                const rate = e.sparks ? SPARK_RATE : SMOKE_RATE;
+                const rate = e.steam ? STEAM_RATE : e.sparks ? SPARK_RATE : SMOKE_RATE;
                 while (e.acc >= 1 / rate) {
                     e.acc -= 1 / rate;
                     this.spawn(e);
@@ -143,7 +188,7 @@ export class MachineEffects {
             p.y += p.vy * dt;
             p.z += p.vz * dt;
             const k = p.age / p.life;
-            const grow = p.kind === 0 ? 1 + k * 1.6 : 1 - k * 0.7;
+            const grow = p.kind === 1 ? 1 - k * 0.7 : 1 + k * 1.6;
             this.writeInstance(i, p, k, grow);
         }
         this.mesh.instanceMatrix.needsUpdate = true;
@@ -158,11 +203,12 @@ export class MachineEffects {
         this.emitters.clear();
     }
 
-    private spawn(e: { x: number; y: number; z: number; sparks: boolean }): void {
+    private spawn(e: { x: number; y: number; z: number; sparks: boolean; steam: boolean }): void {
         const slot = this.parts.findIndex((p) => !p.alive);
         if (slot < 0) return;
         const p = this.parts[slot];
-        const kind: 0 | 1 = e.sparks && Math.random() < 0.6 ? 1 : 0;
+        // Kind 2 is steam: rises and grows like smoke, but white.
+        const kind: 0 | 1 | 2 = e.steam ? 2 : e.sparks && Math.random() < 0.6 ? 1 : 0;
         p.alive = true;
         p.kind = kind;
         p.age = 0;
@@ -191,6 +237,7 @@ export class MachineEffects {
         this.m.compose(this.p, this.q, this.s);
         this.mesh.setMatrixAt(i, this.m);
         if (p.kind === 1) this.c.copy(SPARK_COLOR).lerp(SPARK_COLOR_END, k);
+        else if (p.kind === 2) this.c.copy(STEAM_COLOR).lerp(STEAM_COLOR_END, k);
         else this.c.copy(SMOKE_COLOR).lerp(SMOKE_COLOR_END, k);
         this.mesh.setColorAt(i, this.c);
     }

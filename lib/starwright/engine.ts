@@ -3,8 +3,9 @@
 // it collapses: a supernova pays Stardust for the constellation map. Stardust piles into a neutron star (Neutrons, a
 // pulsar map, and the r-process rows: gold, uranium), and uranium piles into a black hole (a Singularity).
 import {
+    ACHIEVEMENTS, ACH_BONUS, CLOUDS, ELEMENTS as EL, EVENTS, EVENT_FIRST, EVENT_GAP, EVENT_STAY, type Buff, type StarEvent,
     BASE_COST, BASE_RATE, COST_GROWTH, ELEMENTS, GATE_MK, N, PERKS, PLANETS, PULSAR_PERKS, RECIPE, ROWS, STARNAMES, TIERS,
-    TIER_COST_X, TIER_LEVELS, TUNE, type FxKey, type Perk,
+    PLANET_STAGE_AT, PLANET_STAGE_BONUS, TIER_COST_X, TIER_LEVELS, TUNE, type FxKey, type Perk,
 } from "./data";
 
 export const SAVE_KEY = "sw-save-v1";
@@ -34,13 +35,31 @@ export interface State {
     neutronsAll: number;
     pulsar: string[];
     neutronStars: number;
+    neutronStarsAll: number;
     sing: number;
     planets: string[];
+    /** seconds each planet has been in orbit, by id */
+    planetAge: Record<string, number>;
     /** best collapse seen this star, and highest Fe this star */
     ending: boolean;
     savedAt: number;
     /** first-time moments already shown, as ids */
     seen: string[];
+    /** the visitor waiting at the star (id of the event and seconds left), and seconds until the next one */
+    event: { id: string; left: number } | null;
+    evIn: number;
+    /** timed boosts from visitors */
+    buffs: Array<Buff & { name: string; left: number }>;
+    /** birth cloud of this star, and the three on offer (empty once chosen) */
+    cloud: string;
+    offer: string[];
+    cloudsPicked: number;
+    visitors: number;
+    /** shortest star life that ended in a supernova, seconds (0 = none yet) */
+    fastest: number;
+    ach: string[];
+    /** elements that have ever existed in a star, by symbol (the codex) */
+    found: string[];
     /** net change per second of each element from the last tick (inflow and fusion, not purchases). Not saved. */
     flow?: number[];
 }
@@ -65,11 +84,23 @@ export function fresh(now = Date.now()): State {
         neutronsAll: 0,
         pulsar: [],
         neutronStars: 0,
+        neutronStarsAll: 0,
         sing: 0,
         planets: [],
+        planetAge: {},
         ending: false,
         savedAt: now,
         seen: [],
+        event: null,
+        evIn: EVENT_FIRST,
+        buffs: [],
+        cloud: "",
+        offer: [],
+        cloudsPicked: 0,
+        visitors: 0,
+        fastest: 0,
+        ach: [],
+        found: ["H"],
     };
     s.amt[0] = 30;
     return s;
@@ -80,11 +111,11 @@ const clamp = (x: number) => (Number.isFinite(x) ? Math.min(TUNE.cap, Math.max(0
 // ---- effects ------------------------------------------------------------------------------------------------------
 
 export type Fx = Record<FxKey, number>;
-const MUL: FxKey[] = ["inflow", "fuse", "heat", "stardust", "global", "heavy"];
+const MUL: FxKey[] = ["inflow", "fuse", "heat", "stardust", "global", "heavy", "events"];
 
 function blank(): Fx {
     const o = {} as Fx;
-    for (const k of ["inflow", "fuse", "heat", "stardust", "global", "heavy", "planet", "gate", "need", "auto", "offline", "keepPlanets", "startH", "keepStardust", "horizon"] as FxKey[]) o[k] = MUL.includes(k) ? 1 : 0;
+    for (const k of ["inflow", "fuse", "heat", "stardust", "global", "heavy", "events", "planet", "gate", "need", "auto", "offline", "keepPlanets", "startH", "keepStardust", "horizon"] as FxKey[]) o[k] = MUL.includes(k) ? 1 : 0;
     return o;
 }
 
@@ -98,23 +129,35 @@ function addPerks(f: Fx, list: Perk[], owned: string[]) {
     }
 }
 
+/** 0 to 3: how far a planet in orbit has come. Older planets pay more. */
+export function planetStage(s: State, id: string): number {
+    const age = s.planetAge[id] ?? 0;
+    let st = 0;
+    for (let i = 1; i < PLANET_STAGE_AT.length; i++) if (age >= PLANET_STAGE_AT[i]) st = i;
+    return st;
+}
+
 export function effects(s: State): Fx {
     const f = blank();
     addPerks(f, PERKS, s.perks);
     addPerks(f, PULSAR_PERKS, s.pulsar);
+    const cl = CLOUDS.find((c) => c.id === s.cloud);
+    if (cl) for (const [k, v] of Object.entries(cl.fx) as [FxKey, number][]) { if (MUL.includes(k)) f[k] *= v; else f[k] += v; }
+    for (const b of s.buffs) { if (MUL.includes(b.k)) f[b.k] *= b.v; else f[b.k] += b.v; }
     const pp = 1 + f.planet;
     let gateP = 0;
     for (const id of s.planets) {
         const pl = PLANETS.find((p) => p.id === id);
         if (!pl) continue;
+        const grow = 1 + PLANET_STAGE_BONUS * planetStage(s, id);
         for (const [k, v] of Object.entries(pl.fx) as [FxKey, number][]) {
-            if (MUL.includes(k)) f[k] *= 1 + (v - 1) * pp;
-            else if (k === "gate") gateP += v * pp;
+            if (MUL.includes(k)) f[k] *= 1 + (v - 1) * pp * grow;
+            else if (k === "gate") gateP += v * pp * grow;
         }
     }
     f.gate = Math.min(0.75, f.gate + gateP);
     f.need = Math.min(0.9, f.need);
-    f.global *= Math.pow(2, s.sing);
+    f.global *= Math.pow(2, s.sing) * (1 + ACH_BONUS * s.ach.length);
     if (f.horizon === 0) f.horizon = 0;
     return f;
 }
@@ -211,6 +254,97 @@ export function step(s: State, dt: number, f: Fx = effects(s)): void {
     s.age += dt;
     s.totalAge += dt;
     autoburn(s, f);
+    for (const id of s.planets) s.planetAge[id] = (s.planetAge[id] ?? 0) + dt;
+    for (let i = 0; i < N; i++) if (s.amt[i] >= 1 && !s.found.includes(EL[i].sym)) s.found.push(EL[i].sym);
+    if (s.buffs.length) s.buffs = s.buffs.map((b) => ({ ...b, left: b.left - dt })).filter((b) => b.left > 0);
+    // Visitors only come while the game is open (small steps); time away never spawns them.
+    if (dt <= 1.5) {
+        if (s.event) {
+            s.event.left -= dt;
+            if (s.event.left <= 0) leave(s, f);
+        } else {
+            s.evIn -= dt;
+            if (s.evIn <= 0) s.event = { id: EVENTS[Math.floor(Math.random() * EVENTS.length)].id, left: EVENT_STAY };
+        }
+    }
+}
+
+const nextVisitor = (f: Fx) => (EVENT_GAP[0] + Math.random() * EVENT_GAP[1]) / f.events;
+
+function leave(s: State, f: Fx) {
+    s.event = null;
+    s.evIn = nextVisitor(f);
+}
+
+export const eventOf = (s: State): StarEvent | null => (s.event ? EVENTS.find((e) => e.id === s.event!.id) ?? null : null);
+
+/** Answer the waiting visitor with option 0 or 1. Returns the option, or null if nobody waits. */
+export function answer(s: State, pick: number) {
+    const ev = eventOf(s);
+    const opt = ev?.opts[pick];
+    if (!ev || !opt) return null;
+    const f = effects(s);
+    if (opt.lump) for (let n = 0; n < 10; n++) step(s, opt.lump / 10, effects(s));
+    if (opt.gas) { const g = inflow(s, f) * opt.gas; s.amt[0] = clamp(s.amt[0] + g); s.mass = clamp(s.mass + g); }
+    for (const b of opt.buffs ?? []) s.buffs = [...s.buffs.filter((x) => !(x.k === b.k && x.name === opt.label)), { ...b, name: opt.label, left: b.secs }];
+    s.visitors++;
+    leave(s, effects(s));
+    return opt;
+}
+
+// ---- almanac ------------------------------------------------------------------------------------------------------
+
+const ACH_TEST: Record<string, (s: State) => boolean> = {
+    flame: (s) => s.bought.some((r) => r.some((n) => n > 0)),
+    l25: (s) => s.bought.some((_, i) => levels(s, i) >= 25),
+    l100: (s) => s.bought.some((_, i) => levels(s, i) >= 100),
+    l300: (s) => s.bought.some((_, i) => levels(s, i) >= 300),
+    iron: (s) => s.found.includes("Fe"),
+    nova1: (s) => s.novasAll >= 1,
+    nova10: (s) => s.novasAll >= 10,
+    nova40: (s) => s.novasAll >= 40,
+    fast: (s) => s.fastest > 0 && s.fastest < 600,
+    guest: (s) => s.visitors >= 1,
+    guest12: (s) => s.visitors >= 12,
+    cloud: (s) => s.cloudsPicked >= 1,
+    cloud8: (s) => s.cloudsPicked >= 8,
+    world4: (s) => s.planets.length >= 4,
+    world8: (s) => s.planets.length >= 8,
+    map8: (s) => s.perks.length >= 8,
+    pulsar: (s) => s.neutronStarsAll > 0,
+    gold: (s) => s.found.includes("Au"),
+    uranium: (s) => s.found.includes("U"),
+    sing: (s) => s.sing > 0,
+    night: (s) => s.totalAge >= 86400,
+};
+
+/** Award any achievement now true. Returns the new ones. */
+export function checkAch(s: State): string[] {
+    const got: string[] = [];
+    for (const a of ACHIEVEMENTS) {
+        if (s.ach.includes(a.id) || !ACH_TEST[a.id]?.(s)) continue;
+        s.ach.push(a.id);
+        got.push(a.id);
+    }
+    return got;
+}
+
+// ---- birth clouds -------------------------------------------------------------------------------------------------
+
+function offerClouds(s: State) {
+    s.cloud = "";
+    const pool = CLOUDS.map((c) => c.id);
+    const pick: string[] = [];
+    while (pick.length < 3) pick.push(pool.splice(Math.floor(Math.random() * pool.length), 1)[0]);
+    s.offer = s.novasAll >= 1 ? pick : [];
+}
+
+export function chooseCloud(s: State, id: string): boolean {
+    if (!s.offer.includes(id)) return false;
+    s.cloud = id;
+    s.offer = [];
+    s.cloudsPicked++;
+    return true;
 }
 
 /** Autoburn (Loom perks): buys tier I of the first rows, but only ever with a small share of the stock. */
@@ -250,7 +384,12 @@ function newStar(s: State, keepPlanets: boolean) {
     s.bought = Array.from({ length: ROWS }, () => Array(TIERS).fill(0));
     s.heat = 0;
     s.age = 0;
-    if (!keepPlanets) s.planets = [];
+    if (!keepPlanets) { s.planets = []; s.planetAge = {}; }
+    s.event = null;
+    s.evIn = EVENT_FIRST;
+    s.buffs = [];
+    s.cloud = "";
+    s.offer = [];
     s.name = STARNAMES[(s.novasAll + s.neutronStars * 3 + s.sing * 5) % STARNAMES.length];
 }
 
@@ -263,7 +402,9 @@ export function supernova(s: State): number {
     s.sdAll += gain;
     s.novas++;
     s.novasAll++;
+    if (s.fastest === 0 || s.age < s.fastest) s.fastest = s.age;
     newStar(s, f.keepPlanets > 0);
+    offerClouds(s);
     return gain;
 }
 
@@ -277,11 +418,13 @@ export function neutronStar(s: State): number {
     s.neutrons += gain;
     s.neutronsAll += gain;
     s.neutronStars++;
+    s.neutronStarsAll++;
     s.stardust = kept;
     s.sdLayer = 0;
     s.perks = s.pulsar.includes("p5") ? [...EMBER_ROOTS] : [];
     s.novas = 0;
     newStar(s, false);
+    offerClouds(s);
     return gain;
 }
 
@@ -331,6 +474,7 @@ export function buyPlanet(s: State, id: string): boolean {
     const pl = PLANETS.find((x) => x.id === id)!;
     for (const [e, q] of pl.cost) s.amt[e] -= q;
     s.planets.push(id);
+    s.planetAge[id] = 0;
     return true;
 }
 
@@ -365,10 +509,31 @@ export function parse(raw: unknown): State | null {
     s.neutronsAll = clamp(num(r.neutronsAll));
     s.pulsar = strs(r.pulsar, (x) => PULSAR_PERKS.some((p) => p.id === x));
     s.neutronStars = Math.max(0, Math.floor(num(r.neutronStars)));
+    s.neutronStarsAll = Math.max(s.neutronStars, Math.floor(num(r.neutronStarsAll)));
     s.sing = Math.max(0, Math.floor(num(r.sing)));
     s.planets = strs(r.planets, (x) => PLANETS.some((p) => p.id === x));
+    const pa = (r.planetAge ?? {}) as Record<string, unknown>;
+    for (const id of s.planets) s.planetAge[id] = Math.max(0, num(pa[id]));
     s.ending = r.ending === true;
     s.seen = strs(r.seen, () => true).slice(0, 64);
+    s.ach = strs(r.ach, (x) => ACHIEVEMENTS.some((a) => a.id === x));
+    s.found = strs(r.found, (x) => EL.some((e) => e.sym === x));
+    if (!s.found.includes("H")) s.found.unshift("H");
+    for (let i = 0; i < N; i++) if (s.amt[i] >= 1 && !s.found.includes(EL[i].sym)) s.found.push(EL[i].sym);
+    s.cloud = typeof r.cloud === "string" && CLOUDS.some((c) => c.id === r.cloud) ? r.cloud : "";
+    s.offer = strs(r.offer, (x) => CLOUDS.some((c) => c.id === x)).slice(0, 3);
+    s.cloudsPicked = Math.max(0, Math.floor(num(r.cloudsPicked)));
+    s.visitors = Math.max(0, Math.floor(num(r.visitors)));
+    s.fastest = Math.max(0, num(r.fastest));
+    s.evIn = Math.max(0, num(r.evIn, EVENT_FIRST));
+    const ev = r.event as { id?: unknown; left?: unknown } | null;
+    s.event = ev && typeof ev.id === "string" && EVENTS.some((e) => e.id === ev.id) ? { id: ev.id, left: Math.max(1, num(ev.left, EVENT_STAY)) } : null;
+    s.buffs = Array.isArray(r.buffs)
+        ? (r.buffs as Array<Record<string, unknown>>)
+              .filter((b) => b && typeof b.k === "string" && ["inflow", "fuse", "heat", "global"].includes(b.k) && typeof b.name === "string" && num(b.v) > 0 && num(b.left) > 0 && num(b.left) <= 600)
+              .slice(0, 8)
+              .map((b) => ({ k: b.k as FxKey, v: num(b.v), secs: num(b.secs), name: String(b.name), left: num(b.left) }))
+        : [];
     return s;
 }
 

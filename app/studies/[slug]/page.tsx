@@ -76,6 +76,7 @@ export default async function CourseDetailPage({
         <div className="ctos st-page">
             <NaosBackdrop src="/naos/bg-studies.webp" />
             <PageHead
+                band="band-rail"
                 label={course.ap ? "AP course" : "Course"}
                 title={[course.title]}
                 lead={course.fullDescription}
@@ -164,7 +165,7 @@ export default async function CourseDetailPage({
                 <Section id="related" label="On the timeline" title="Where it shows up." ctos>
                     <div className="cm-grid st-related" style={{ gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))" }}>
                         {related.map((e) => (
-                            <Link key={e.id} href={`/timeline#${e.id}`} className="cm-card link">
+                            <Link prefetch={false} key={e.id} href={`/timeline#${e.id}`} className="cm-card link">
                                 <span className={`cm-state ${e.special ? "live" : ""}`}>{e.when}</span>
                                 <b>{e.title}</b>
                                 <span className="st">{CATEGORIES[e.category].label} →</span>
@@ -181,7 +182,7 @@ export default async function CourseDetailPage({
                             { c: prev, dir: "Previous class", arrow: "←" },
                             { c: next, dir: "Next class", arrow: "→" },
                         ].map(({ c, dir, arrow }) => (
-                            <Link key={dir} href={`/studies/${c.slug}`} className={`cta-b ${arrow === "←" ? "b" : "c"}`}>
+                            <Link prefetch={false} key={dir} href={`/studies/${c.slug}`} className={`cta-b ${arrow === "←" ? "b" : "c"}`}>
                                 <i>{arrow === "←" ? "prev" : "next"}</i>
                                 <span>{c.title}</span>
                                 <em aria-hidden="true"><PixelIcon name={arrow === "←" ? "arrowL" : "arrowR"} /></em>

@@ -270,6 +270,10 @@ export class PointerInput {
                 if (this.opts.build.getTool()) this.opts.build.tap(cell);
                 else this.opts.build.select(cell);
             }
+        } else if (p.mode === "orbit" && e.type === "pointerup" && p.button === 2 && Math.hypot(e.clientX - p.sx, e.clientY - p.sy) <= this.opts.slopPx) {
+            // A short right click (no drag) with a tool armed cancels the tool. A drag still orbits the camera.
+            if (this.opts.build.isStroking()) this.opts.build.cancelStroke();
+            else if (this.opts.build.getTool()) this.opts.build.setTool(null);
         } else if (p.mode === "pan" && p.click && e.type === "pointerup" && Math.hypot(e.clientX - p.sx, e.clientY - p.sy) <= this.opts.slopPx) {
             // Mouse click with no tool: a short release on a building selects it. A drag still pans.
             const cell = this.cellAt(e.clientX, e.clientY);

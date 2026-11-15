@@ -115,6 +115,18 @@ export interface MilestoneDef {
     blueprints: number;
 }
 
+/**
+ * A hub request: a small early delivery that opens recipes and machines directly, before the blueprint
+ * milestones take over. Completes by itself once the hub has received the items.
+ */
+export interface HubRequestDef {
+    id: string;
+    name: string;
+    note?: string;
+    deliver: Stack[];
+    unlocks: { recipes: string[]; machines: string[] };
+}
+
 /** The one prestige. Keeps blueprints, research, routes and unlocked designs. Resets machines and stock. */
 export interface PrestigeDef {
     name: string;
@@ -129,6 +141,8 @@ export interface RecipeTree {
     nodes: ResourceNodeDef[];
     research: ResearchDef[];
     milestones: MilestoneDef[];
+    /** Early hub requests. Optional so placeholder catalogs typecheck. */
+    requests?: HubRequestDef[];
     prestige: PrestigeDef;
     /** Non-machine structures (hub, orrery stages). Optional so placeholder catalogs still typecheck. */
     structures?: StructureDef[];
@@ -203,6 +217,8 @@ export interface Building {
     z: number;
     rot: Rot;
     recipe: string | null;
+    /** Unloader: the one item it pulls from storage or the hub. Unset (old saves, new unloaders) means idle until a choice is made. */
+    filter?: string | null;
     crafting: boolean;
     progress: number;
     input: Record<string, number>; // crafter input buffer; the hub keeps its stock here
@@ -211,6 +227,8 @@ export interface Building {
     lane: BeltItem[];
     rr: number;
     charge: number; // wound spring: stored energy in kJ (battery); 0 for other buildings
+    /** Consumers: share of their power demand met on the last step (0 to 1). Set by the power pass; not saved. */
+    powerSat?: number;
 }
 
 export interface Deposit {
@@ -228,6 +246,8 @@ export interface Progress {
     blueprints: number;
     researched: string[]; // research node ids
     milestonesDone: string[];
+    /** Hub requests completed. Missing in older saves, which count every request as done. */
+    requestsDone?: string[];
     delivered: Record<string, number>; // cumulative items that reached the hub
     prestiges: number;
     site: string | null; // island site picked at the last prestige
@@ -299,6 +319,30 @@ export type MachineDetail = MachineView & {
   /** Crafters only: the building's current recipe id and every unlocked recipe it can run (base and alternates). */
   recipeId?: string | null;
   recipeOptions?: { id: string; name: string; alternate: boolean }[];
+  /** Crafters with no recipe chosen: every unlocked recipe with its inputs, outputs and craft time. */
+  recipeChoices?: { id: string; name: string; alternate: boolean; inputs: Line[]; outputs: Line[]; seconds: number }[];
+  /** Drills: each resource node this machine can mine, with the output per minute at the node's purity. */
+  mines?: { resourceId: string; name: string; purity: string; perMin: number }[];
+  /** Power use in kW, from the machine's power draw. */
+  powerKw?: number;
+  /** Plain reason for a blocked or idle status, for example "No power" or "Output full". */
+  reason?: string;
+  /** Generators: power produced right now, in kW. */
+  producedKw?: number;
+  /** Generators: most they can produce (their full rating), in kW. */
+  maxKw?: number;
+  /** Windmills: wind right now, 0 to 1. */
+  windPct?: number;
+  /** Generators: machines inside their range. */
+  fedCount?: number;
+  /** Generators: reach in cells (centre to centre). */
+  rangeCells?: number;
+  /** Consumers: power this machine needs, in kW. */
+  usedKw?: number;
+  /** Consumers: share of demand met (0 to 1). */
+  satisfied?: number;
+  /** Consumers: true when it gets all the power it needs. */
+  fullyPowered?: boolean;
 };
 
 /** Expedition areas, shown in the expedition drawer. */
@@ -318,6 +362,8 @@ export type MilestoneView = {
   progress: number; // 0..1
   blueprintReward: number;
   done: boolean;
+  /** One line per delivered item: what the player has and what the milestone needs. */
+  items: { id: string; name: string; have: number; need: number }[];
 };
 
 /** A research node, unlocked by spending blueprints. */
@@ -372,6 +418,10 @@ export type PrestigeView = {
 export type StatLine = { label: string; value: string };
 
 export type NextStepView = {
+  /** Short name of the objective, for example the milestone name. */
+  title?: string;
+  /** How far the objective has got, 0 to 1. Omitted when there is no measurable progress. */
+  progress?: number;
   text: string;
   /** Optional button that acts on the hint, such as selecting the next machine. */
   actionLabel?: string;
@@ -387,12 +437,46 @@ export type HudSettings = {
   showRates: boolean;
 };
 
+/** One thing a hub step opens: a recipe's output item, a machine or logistics piece, or blueprints. */
+export type HubUnlock = {
+  kind: "recipe" | "machine" | "blueprints";
+  id: string;
+  name: string;
+  /** Icon id for lib/automation/icons (item or machine id). Absent for blueprints. */
+  icon?: string;
+};
+
+/** One step of the hub ladder: an early request or a blueprint milestone. */
+export type HubStep = {
+  id: string;
+  kind: "request" | "milestone";
+  name: string;
+  note?: string;
+  state: "done" | "now" | "ahead";
+  progress: number; // 0..1
+  items: { id: string; name: string; have: number; need: number }[];
+  unlocks: HubUnlock[];
+};
+
+export type HubView = {
+  /** Hub growth stage 0..3, the same one that picks the hub model. */
+  stage: number;
+  steps: HubStep[];
+  doneCount: number;
+  blueprints: number;
+};
+
 export type HudData = {
   resources: ResourceView[];
   machines: MachineView[];
+  /** The palette id of the build tool that is armed for placing, or null. */
+  armed?: string | null;
+  /** Ghost rotation in degrees (0, 90, 180, 270), shown while a build tool is armed. */
+  rotation?: number;
   selected: MachineDetail | null;
   areas: AreaView[];
   milestones: MilestoneView[];
+  hub: HubView;
   blueprints: number;
   research: ResearchNode[];
   prestige: PrestigeView;
