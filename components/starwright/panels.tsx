@@ -52,21 +52,29 @@ export function Almanac({ s, onClose, leaving }: { s: State; onClose: () => void
                         return (
                             <li key={e.sym} style={{ "--c": e.color } as CSSProperties} data-own={own ? "" : undefined} data-sel={sel === i ? "" : undefined} data-tip={own ? `${e.name}|${CODEX[e.sym]}` : "Not yet made|Fuse your way up the ladder."}>
                                 <button type="button" className="sw-cx" onClick={() => setSel(sel === i ? null : i)} aria-label={own ? e.name : "Not yet made"}>
-                                    <ElTile i={i} locked={!own} />
+                                    <ElTile i={i} locked={!own} anim={own} />
                                     <b>{own ? e.name : "?"}</b>
                                 </button>
                             </li>
                         );
                     })}
                 </ul>
-                {sel !== null && <p className="sw-fact">{s.found.includes(ELEMENTS[sel].sym) ? CODEX[ELEMENTS[sel].sym] : "Fuse your way up the ladder to find out."}</p>}
+                {sel !== null && (
+                    <div className="sw-fact" key={sel} style={{ "--c": ELEMENTS[sel].color } as CSSProperties}>
+                        <ElTile i={sel} locked={!s.found.includes(ELEMENTS[sel].sym)} anim={s.found.includes(ELEMENTS[sel].sym)} size={3} />
+                        <div>
+                            <b>{s.found.includes(ELEMENTS[sel].sym) ? ELEMENTS[sel].name : "Not yet made"} <span>{ELEMENTS[sel].sym} · weight {ELEMENTS[sel].w}</span></b>
+                            <p>{s.found.includes(ELEMENTS[sel].sym) ? CODEX[ELEMENTS[sel].sym] : "Fuse your way up the ladder to find out."}</p>
+                        </div>
+                    </div>
+                )}
                 <h3 className="sw-h3">Milestones <small>+{Math.round(ACH_BONUS * 100)}% to everything each</small></h3>
                 <ul className="sw-ach">
                     {ACHIEVEMENTS.map((a) => {
                         const own = s.ach.includes(a.id);
                         return (
                             <li key={a.id} data-own={own ? "" : undefined} data-tip={`${a.name}|${a.desc}`}>
-                                <span className="sw-medal"><Pic sheet={own ? "icon/medal-lit" : "icon/lock"} glyph={own ? "medal" : "lock"} s={2} /></span>
+                                <span className="sw-medal" style={{ backgroundImage: `url("${ui(`medal-${a.id}-${own ? "own" : "lock"}`)}")` }} />
                                 <b>{a.name}</b>
                                 <span>{a.desc}</span>
                             </li>
@@ -124,22 +132,36 @@ export function Orbit({ s, onBuy, onClose, leaving }: { s: State; onBuy: (id: st
                 {PLANETS.map((p) => {
                     const own = s.planets.includes(p.id);
                     const ok = canPlanet(s, p.id);
+                    const st = own ? planetStage(s, p.id) : 0;
+                    const age = s.planetAge[p.id] ?? 0;
+                    const next = PLANET_STAGE_AT[Math.min(3, st + 1)];
                     return (
                         <li key={p.id} style={{ "--c": p.color } as CSSProperties} data-own={own ? "" : undefined} data-ok={ok ? "" : undefined}>
-                            <span className="sw-orb" data-tip={`${p.name}|${p.kind}`}><PlanetSprite id={p.id} stage={own ? planetStage(s, p.id) : 3} dim={!own} /></span>
-                            <div className="sw-pl-body">
-                                <b>{p.name}</b>
-                                {own && <p className="sw-stage-line">{p.stages[planetStage(s, p.id)]}{planetStage(s, p.id) < 3 ? ` · next in ${fmtAge(PLANET_STAGE_AT[planetStage(s, p.id) + 1] - (s.planetAge[p.id] ?? 0))}` : " · fully grown"} · +{Math.round(PLANET_STAGE_BONUS * 100 * planetStage(s, p.id))}%</p>}
-                                <p>{p.bonus}{f.planet ? ` (+${Math.round(f.planet * 100)}% Halo)` : ""}</p>
-                                <p className="sw-cost">
-                                    {own ? <em>in orbit</em> : p.cost.map(([e, q], n) => (
-                                        <span key={n} style={{ "--c": ELEMENTS[e].color } as CSSProperties} data-short={s.amt[e] < q ? "" : undefined} data-tip={`${ELEMENTS[e].name}|you hold ${fmt(s.amt[e])}`}>
-                                            <ElTile i={e} size={1} />{fmt(q)}
-                                        </span>
-                                    ))}
-                                </p>
+                            <div className="sw-pl-art" data-tip={`${p.name}|${p.kind}`}>
+                                <span className="sw-orb"><PlanetSprite id={p.id} stage={own ? st : 3} dim={!own} /></span>
+                                {own && <span className="sw-pips" aria-label={`stage ${st + 1} of 4`}>{[0, 1, 2, 3].map((n) => <i key={n} data-on={n <= st ? "" : undefined} />)}</span>}
                             </div>
-                            {!own && <button type="button" className="sw-go" disabled={!ok} onClick={() => onBuy(p.id)}>Form</button>}
+                            <div className="sw-pl-body">
+                                <b>{p.name} <small>{p.kind}</small></b>
+                                <p className="sw-pl-bonus">{p.bonus}{f.planet ? <em> +{Math.round(f.planet * 100)}% Halo</em> : null}</p>
+                                {own ? (
+                                    <>
+                                        <p className="sw-stage-line">{p.stages[st]}{st > 0 ? ` · +${Math.round(PLANET_STAGE_BONUS * 100 * st)}%` : ""}</p>
+                                        {st < 3 ? (
+                                            <span className="sw-pl-bar" data-tip={`Next: ${p.stages[st + 1]}|in ${fmtAge(Math.max(0, next - age))}`}><i style={{ width: `${Math.min(100, ((age - PLANET_STAGE_AT[st]) / (next - PLANET_STAGE_AT[st])) * 100)}%` }} /></span>
+                                        ) : <p className="sw-stage-line">fully grown</p>}
+                                    </>
+                                ) : (
+                                    <p className="sw-cost">
+                                        {p.cost.map(([e, q], n) => (
+                                            <span key={n} style={{ "--c": ELEMENTS[e].color } as CSSProperties} data-short={s.amt[e] < q ? "" : undefined} data-tip={`${ELEMENTS[e].name}|you hold ${fmt(s.amt[e])}`}>
+                                                <ElTile i={e} size={1} />{fmt(q)}
+                                            </span>
+                                        ))}
+                                    </p>
+                                )}
+                            </div>
+                            {!own && <button type="button" className="sw-sc-buy sw-pl-form" disabled={!ok} onClick={() => onBuy(p.id)}><span>{ok ? "Form it" : "Not enough"}</span></button>}
                         </li>
                     );
                 })}
