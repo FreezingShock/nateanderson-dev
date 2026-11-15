@@ -52,10 +52,6 @@
   .ab-root.bw .ab-dock-btn[aria-pressed="true"] { border-color: var(--ab-brass-hi); background: rgba(184, 134, 47, 0.25); }
   .ab-root.bw .ab-dock-btn[data-armed="true"] { box-shadow: inset 0 0 0 1px var(--ab-brass-hi); }
   .ab-root.bw .ab-dock-label { font-size: 11px; line-height: 1.1; letter-spacing: 0.02em; }
-  .ab-root.bw .ab-dock-rot {
-    align-self: center; margin-top: 2px; font-size: 11px; color: #ffd98a; pointer-events: none;
-    font-variant-numeric: tabular-nums; letter-spacing: 0.04em;
-  }
 
   /* The build palette is closed at rest. Choosing a dock group opens just that group as a flyout beside the dock. */
   .ab-root.bw .ab-pal { display: none; }
@@ -78,6 +74,8 @@
     position: absolute; left: 50%; bottom: 16px; transform: translateX(-50%); z-index: 5;
     pointer-events: none; margin: 0; width: fit-content; max-width: min(440px, 40vw);
   }
+  /* The tool hint and notes ride above the objective card, whatever height the card has grown to. */
+  .ab-root.bw .bw-note { bottom: calc(var(--ab-next-h, 84px) + 28px); }
   .ab-root.bw .ab-more { pointer-events: auto; }
   .ab-root.bw .ab-drawer { pointer-events: auto; z-index: 6; }
 }
@@ -168,9 +166,6 @@
   .ab-root.bw .ab-dock-btn[aria-pressed="true"] .ab-dock-glyph rect[fill="#20170c"] { fill: #f4cf7e; }
   .ab-root.bw .ab-dock-trash .ab-dock-ico { color: #d29a3c; }
   .ab-root.bw .ab-dock-trash[aria-pressed="true"] .ab-dock-ico { color: #1d1308; }
-  .ab-root.bw .ab-dock-rot { display: grid; gap: 2px; justify-items: center; padding: 6px 2px 4px; margin-top: 2px; border-top: 1px solid #4a3a22; }
-  .ab-root.bw .ab-dock-rot-k { font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: #b09a6c; }
-  .ab-root.bw .ab-dock-rot-v { font-size: 16px; font-weight: 700; color: #ffd98a; font-variant-numeric: tabular-nums; }
 
   /* Flyout: wider, with larger names and costs. */
   .ab-root.bw .ab-pal { width: 380px; }

@@ -2,7 +2,7 @@
 import { UiArtIcon } from "@/components/brasswork-art/icons";
 
 import Link from "next/link";
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import "@/components/brasswork-ui/brass-kit.css";
 import "@/components/brasswork-ui/scrollbar.css";
 import "./automation-hud.css";
@@ -23,6 +23,7 @@ import { HubMenu, HubToast, HUB_OPEN_EVENT, openHubMenu } from "./hub-menu";
 import "./brasswork-skin.css";
 import "./desktop-stage.css";
 import "./phone-menu-art.css";
+import "./top-bar.css";
 import { canAfford } from "./format";
 import { uiIconStyle } from "@/lib/automation/icons/ui";
 import { QuestScroll, type QuestState } from "@/components/brasswork/first-run";
@@ -44,6 +45,15 @@ const DRAWER_TITLE: Record<Drawer, string> = {
   stats: "Production stats",
   settings: "Settings",
 };
+
+/** A top-bar button's word. Hidden until the button is hovered or focused, then it types in (steps = letters). */
+function NavLabel({ text }: { text: string }) {
+  return (
+    <span className="ab-nav-label" style={{ "--n": text.length } as CSSProperties}>
+      <span className="ab-nav-txt">{text}</span>
+    </span>
+  );
+}
 
 /**
  * Brasswork's 2D interface, drawn over the 3D workshop.
@@ -78,6 +88,7 @@ export function AutomationHud({
 }) {
   const rootRef = useRef<HTMLDivElement>(null);
   const topRef = useRef<HTMLElement>(null);
+  const nextRef = useRef<HTMLParagraphElement>(null);
   // The top bar wraps to two rows on a desktop-width window, so its height is measured. The rails, the Milestones
   // dock and the panels read --ab-top-h, so nothing hides under the bar.
   useEffect(() => {
@@ -89,6 +100,19 @@ export function AutomationHud({
     if (typeof ResizeObserver === "undefined") return;
     const ro = new ResizeObserver(apply);
     ro.observe(top);
+    return () => ro.disconnect();
+  }, []);
+  // The objective card grows with its text and progress bar, and the tool hint sits above it. The card's height is
+  // measured so the hint always clears it, at any width.
+  useEffect(() => {
+    const next = nextRef.current;
+    const root = rootRef.current;
+    if (!next || !root) return;
+    const apply = () => root.style.setProperty("--ab-next-h", `${Math.ceil(next.getBoundingClientRect().height)}px`);
+    apply();
+    if (typeof ResizeObserver === "undefined") return;
+    const ro = new ResizeObserver(apply);
+    ro.observe(next);
     return () => ro.disconnect();
   }, []);
   const [drawer, setDrawer] = useState<Drawer | null>(null);
@@ -254,7 +278,7 @@ export function AutomationHud({
       <header className="ab-top" ref={topRef}>
         <div className="ab-brand">
           <Link prefetch={false} href="/creations/games#automation" className="ab-back" aria-label="Back to Games">
-            <span aria-hidden="true">{"<"}</span> Games
+            <span className="ab-back-chev" aria-hidden="true">{"<"}</span> <span className="ab-back-label">Games</span>
           </Link>
           <span className="ab-brand-name">Brasswork</span>
         </div>
@@ -264,30 +288,32 @@ export function AutomationHud({
           numberFormat={mode}
         />
         <nav className="ab-nav" aria-label="Workshop views">
-          <button
+          <span className="ab-nav-slot"><button
             type="button"
             className="ab-text-btn ab-primary"
+            data-label="Research"
             aria-expanded={screen === "research"}
             onClick={() => setScreen((s) => (s === "research" ? null : "research"))}
           >
             <Ico id="research" />
-            Research
-          </button>
-          <button type="button" className="ab-text-btn" aria-expanded={hubOpen} onClick={() => (hubOpen ? setHubOpen(false) : openHubMenu())}>
+            <NavLabel text="Research" />
+          </button></span>
+          <span className="ab-nav-slot"><button type="button" className="ab-text-btn" data-label="Hub" aria-expanded={hubOpen} onClick={() => (hubOpen ? setHubOpen(false) : openHubMenu())}>
             <Ico id="milestones" />
-            Hub
-          </button>
+            <NavLabel text="Hub" />
+          </button></span>
           {(["expedition", "stats", "settings"] as const).map((d) => (
-            <button
+            <span className="ab-nav-slot"><button
               key={d}
               type="button"
               className="ab-text-btn"
+              data-label={DRAWER_TITLE[d]}
               aria-expanded={d === "expedition" ? screen === "expedition" : drawer === d}
               onClick={() => toggle(d)}
             >
               <Ico id={DRAWER_ICON[d]} />
-              {DRAWER_TITLE[d]}
-            </button>
+              <NavLabel text={DRAWER_TITLE[d]} />
+            </button></span>
           ))}
         </nav>
       </header>
@@ -325,12 +351,6 @@ export function AutomationHud({
               <span className="ab-dock-label">Quest</span>
               <span className="ab-dock-count" aria-hidden="true">{quest.finished}/{quest.steps.length}</span>
             </button>
-          )}
-          {data.armed && (
-            <span className="ab-dock-rot" aria-label={`Turn ${data.rotation ?? 0} degrees, press R to turn`}>
-              <span className="ab-dock-rot-k">Turn · R</span>
-              <span className="ab-dock-rot-v">{data.rotation ?? 0}°</span>
-            </span>
           )}
           {removeSlot && <div className="ab-dock-foot">{removeSlot}</div>}
         </nav>
@@ -473,7 +493,7 @@ export function AutomationHud({
               ))}
             </div>
           )}
-          <p className="ab-next" aria-label="Current objective">
+          <p className="ab-next" ref={nextRef} aria-label="Current objective">
             <span className="ab-next-label">{next.title ? "Objective" : "Next"}</span>
             {next.title && <span className="ab-next-title">{next.title}</span>}
             {next.progress !== undefined && (

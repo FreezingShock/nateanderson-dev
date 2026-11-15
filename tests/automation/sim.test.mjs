@@ -89,8 +89,8 @@ test("a full output buffer stalls the miner instead of losing or banking items",
 
 test("a smelter fed by a drill, with its plates routed on to the hub, makes plates at the ore-limited rate", () => {
     const w = base(CAT, { hub: { x: 30, z: 10 } });
-    ok(S.place(w, "drill", 5, 10, 0, CAT));
-    ok(S.place(w, "smelter", 20, 10, 0, CAT));
+    ok(S.place(w, "drill", 5, 10, 1, CAT));
+    ok(S.place(w, "smelter", 20, 10, 1, CAT));
     ok(S.place(w, "windmill", 18, 7, 0, CAT)); // two windmills in range of the smelter: 60 kW for its 60 kW draw
     ok(S.place(w, "windmill", 18, 13, 0, CAT));
     ok(S.setRecipe(w, S.buildingAt(w, 20, 10).id, "smelt-a", CAT));
