@@ -22,7 +22,8 @@ An idle game about a star, at `/creations/games/starwright`. Original theme, art
 - Visitors (`EVENTS` in data.ts): first one 40 s into a star, then one every 80 to 190 s while the game is open (never from time away). Two answers each, both good: a lump of output, or a timed boost. A visitor leaves after 150 s. `answer(s, 0|1)`.
 - Birth clouds (`CLOUDS`): from the first supernova on, each new star offers three of six clouds; the pick lasts that one star. Not picking changes nothing.
 - Almanac: codex of elements made (`CODEX` facts) and 21 milestones, each +2% to everything for good (`ACHIEVEMENTS`, tests in `ACH_TEST`). Key `A`.
-- Sound: synthesized in `lib/starwright/sound.ts`, starts after the first click or key, off switch in the menu (`sw-sound-v1`).
+- Sound: synthesized in `lib/starwright/sound.ts` (Web Audio, no files), starts after the first click or key, off switch (`sw-sound-v1`) and Low/Medium/High volume (`sw-volume-v1`) in the Menu. `play(name, { row, tier, con, kind })`. To hear everything: `node scripts/starwright/audio-render.mjs <dir>` writes a WAV per sound.
+- Menus never scroll: `components/starwright/paged.tsx` measures and pages them. `scripts/starwright/ui-art/overflow-check.mjs` and `motion-check.mjs` check it against a production server.
 - Console: `sw visitor [1|2]`, `sw cloud [id]`, `sw almanac`.
 
 ## Scene art

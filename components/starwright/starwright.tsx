@@ -44,6 +44,15 @@ export function Starwright() {
     const shell = useGameShell();
     const tips = useTips();
     const { shown, leaving } = useLeaving(panel);
+    // one sound for opening a menu, another for closing it, a third for going from one menu to the next
+    const lastPanel = useRef<Panel>(null);
+    useEffect(() => {
+        const was = lastPanel.current;
+        lastPanel.current = panel;
+        if (was === panel) return;
+        play(panel === null ? "close" : was === null ? "open" : "tab");
+    }, [panel]);
+    const wasReady = useRef(false);
     const manualPause = useRef(false);
     const canvasRef = useRef<HTMLCanvasElement | null>(null);
     const novaRef = useRef<number>(-1);
@@ -139,7 +148,7 @@ export function Starwright() {
             if (h > lastHeavy.current) {
                 const e = ELEMENTS[h];
                 note(`${e.name} ignites in the core.`, "hot");
-                play("ignite");
+                play("ignite", { row: h });
                 lastHeavy.current = h;
             }
             if (Date.now() - lastAch.current > 1000) {
@@ -149,6 +158,9 @@ export function Starwright() {
                     play("badge");
                 }
             }
+            const isReady = collapse(s, effects(s)) >= 1;
+            if (isReady && !wasReady.current) play("ready");
+            wasReady.current = isReady;
             const ev = s.event?.id ?? null;
             if (ev && ev !== lastEvent.current) play("visitor");
             lastEvent.current = ev;
@@ -249,8 +261,8 @@ export function Starwright() {
                 const m = rowMult(s, i);
                 if (m > (lastMult.current[i] ?? 1)) {
                     note(`${ELEMENTS[i].name} burners double. Level ${levels(s, i)} makes it x${fmt(m)}.`, "hot");
-                    play("milestone");
-                } else play("buy");
+                    play("milestone", { row: i });
+                } else play("buy", { row: i, tier: k });
                 lastMult.current[i] = m;
             }),
         [act, note],
@@ -285,7 +297,7 @@ export function Starwright() {
                 novaKind.current = 0;
                 lastHeavy.current = 0;
                 lastMult.current = s.bought.map(() => 1);
-                play("nova");
+                play("nova", { kind: 0 });
                 note(`Supernova. ${fmt(g)} stardust seeds the next star.`, "hot");
                 save();
             }
@@ -304,7 +316,7 @@ export function Starwright() {
                 novaKind.current = 1;
                 lastHeavy.current = 0;
                 lastMult.current = s.bought.map(() => 1);
-                play("nova");
+                play("nova", { kind: 1 });
                 note(`A neutron star forms. ${g} neutrons. Gold and uranium can fuse now.`, "hot");
                 save();
             }
@@ -317,7 +329,7 @@ export function Starwright() {
             if (blackHole(s)) {
                 lastHeavy.current = 0;
                 lastMult.current = s.bought.map(() => 1);
-                play("nova");
+                play("nova", { kind: 2 });
                 setEnding(true);
                 save();
             }
@@ -332,9 +344,10 @@ export function Starwright() {
 
     const toggleSound = useCallback(() => {
         const v = !soundOn();
+        if (!v) play("toggleOff");
         setSound(v);
         setSoundState(v);
-        if (v) play("answer");
+        if (v) play("toggleOn");
     }, []);
 
     // One tab plays at a time: a newer tab tells older ones to stop saving, so two tabs never overwrite each other.
@@ -555,7 +568,7 @@ export function Starwright() {
 
             {shown === "stars" && <StarChart title="Constellations" list={PERKS} owned={s.perks} cur={s.stardust} curName="stardust" onBuy={(id) => act((x) => buyPerk(x, id))} onClose={() => setPanel(null)} constellations leaving={leaving} deep={{ n: s.deep, cost: deepCost(s), onBuy: () => act((x) => { buyDeep(x); }) }} />}
             {shown === "pulsar" && <StarChart title="Pulsar map" list={PULSAR_PERKS} owned={s.pulsar} cur={s.neutrons} curName="neutrons" onBuy={(id) => act((x) => buyPulsar(x, id))} onClose={() => setPanel(null)} leaving={leaving} />}
-            {shown === "orbit" && <Orbit s={s} onBuy={(id) => act((x) => { if (buyPlanet(x, id)) note(`${PLANETS.find((p) => p.id === id)?.name} forms in orbit.`); })} onClose={() => setPanel(null)} leaving={leaving} />}
+            {shown === "orbit" && <Orbit s={s} onBuy={(id) => act((x) => { if (buyPlanet(x, id)) { note(`${PLANETS.find((p) => p.id === id)?.name} forms in orbit.`); play("planet"); } })} onClose={() => setPanel(null)} leaving={leaving} />}
             {shown === "almanac" && <Almanac s={s} onClose={() => setPanel(null)} leaving={leaving} />}
             {shown === "menu" && (
                 <Menu
@@ -599,12 +612,13 @@ function Row({ s, f, i, onBuy }: { s: State; f: ReturnType<typeof effects>; i: n
     const tip = i === ROWS ? `${el.name}|the end of the ladder` : !open ? `${el.name}|needs a neutron star` : `${el.name}|${recipe} → ${ELEMENTS[i + 1].name} (${ELEMENTS[i + 1].sym})|needs core heat ${fmtHeat(gate)}${cold ? " · cold now" : ""}|key ${i + 1}`;
     return (
         <li className="sw-row" style={style} data-cold={cold ? "" : undefined}>
+            {i < ROWS && <BuyFlash n={levels(s, i)} />}
             <span className="sw-rt" data-tip={tip}>
                 <ElTile i={i} anim />
                 {i < 9 && <kbd>{i + 1}</kbd>}
             </span>
             <div className="sw-info">
-                <b>{el.name}{i < ROWS && levels(s, i) > 0 && <small>L{fmt(levels(s, i))}</small>}</b>
+                <b>{el.name}{i < ROWS && levels(s, i) > 0 && <small key={levels(s, i)}>L{fmt(levels(s, i))}</small>}</b>
                 <span className="sw-amt">
                     {fmt(s.amt[i])}
                     {Math.abs(flow) >= 0.01 && <em data-neg={flow < 0 ? "" : undefined}>{flow > 0 ? "+" : "−"}{fmt(Math.abs(flow))}/s</em>}
@@ -628,6 +642,12 @@ function Row({ s, f, i, onBuy }: { s: State; f: ReturnType<typeof effects>; i: n
             {i < ROWS && !open && <span className="sw-warn sw-closed">needs a neutron star</span>}
         </li>
     );
+}
+
+/** A light that sweeps across a row each time its level goes up (and not when the page first draws it). */
+function BuyFlash({ n }: { n: number }) {
+    const first = useRef(n);
+    return n === first.current ? null : <i key={n} className="sw-flash" aria-hidden="true" />;
 }
 
 const BUFF_LABEL: Record<string, string> = { inflow: "inflow", fuse: "fusion", heat: "heat", global: "all" };

@@ -181,8 +181,7 @@ html.sw-route .sf-foot { display: none !important; }
 .sw-cloud:hover .sw-cloud-art { animation: swBob .5s steps(3, end); }
 
 /* ---- overlays: every menu opens and closes in its own way ---- */
-.sw-over { position: fixed; inset: 0; z-index: 30; display: grid; place-items: center; padding: 16px; background-color: rgba(2, 2, 8, .5); background-image: var(--px-ck2); background-size: 8px 8px; animation: swFadeIn .22s steps(4, end); }
-.sw-over[data-leaving] { animation: swFadeOut .26s steps(4, end) forwards; pointer-events: none; }
+.sw-over { position: fixed; inset: 0; z-index: 30; display: grid; place-items: center; padding: 16px; background-color: rgba(2, 2, 8, .5); background-image: var(--px-ck2); background-size: 8px 8px; }
 @keyframes swFadeIn { from { opacity: 0; } }
 @keyframes swFadeOut { to { opacity: 0; } }
 .sw-card { width: min(520px, 100%); max-height: calc(100dvh - 32px); display: flex; flex-direction: column; padding: 14px 18px 18px; overflow: hidden; }
@@ -192,23 +191,9 @@ html.sw-route .sf-foot { display: none !important; }
 .sw-chart-top b { color: var(--sw-ink); font-weight: 500; }
 .sw-x { display: grid; place-items: center; margin-left: auto; width: 40px; height: 40px; padding: 0; background: transparent; border: 1px solid var(--sw-line); color: var(--sw-dim); }
 .sw-x:hover { border-color: var(--sw-cy); color: var(--sw-cy); }
-.sw-scroll { min-height: 0; overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin; }
-
-.sw-card[data-kind="settle"] { animation: swSettle .3s steps(5, end); }
-.sw-over[data-leaving] .sw-card[data-kind="settle"] { animation: swSettleOut .26s steps(4, end) forwards; }
-@keyframes swSettle { from { opacity: 0; transform: scale(.9) translateY(14px); } }
-@keyframes swSettleOut { to { opacity: 0; transform: scale(.94) translateY(8px); } }
-.sw-card[data-kind="shutter"] { animation: swShutter .42s steps(7, end); }
-.sw-over[data-leaving] .sw-card[data-kind="shutter"] { animation: swShutterOut .3s steps(5, end) forwards; }
-@keyframes swShutter { from { clip-path: inset(50% 0 50% 0); } to { clip-path: inset(-8px -8px -8px -8px); } }
-@keyframes swShutterOut { to { clip-path: inset(50% 0 50% 0); } }
-.sw-card[data-kind="wipe"] { animation: swWipe .42s steps(7, end); }
-.sw-over[data-leaving] .sw-card[data-kind="wipe"] { animation: swWipeOut .3s steps(5, end) forwards; }
-@keyframes swWipe { from { clip-path: inset(-8px -8px -8px 100%); } to { clip-path: inset(-8px -8px -8px -8px); } }
-@keyframes swWipeOut { to { clip-path: inset(-8px -8px -8px 100%); } }
 
 /* orbit */
-.sw-planets { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; overflow-y: auto; min-height: 0; padding: 2px 6px 6px 2px; scrollbar-width: thin; }
+.sw-planets { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; padding: 2px 6px 6px 2px; }
 .sw-planets li { display: grid; grid-template-columns: 56px minmax(0, 1fr) auto; gap: 12px; align-items: center; padding: 10px; border: 1px solid var(--sw-line); background: rgba(5, 4, 12, .5); }
 .sw-planets li[data-own] { border-color: color-mix(in srgb, var(--c) 70%, transparent); }
 .sw-planets li:hover .sw-orb { animation: swBob .5s steps(3, end); }
@@ -253,21 +238,19 @@ html.sw-route .sf-foot { display: none !important; }
 .sw-ibtn:hover { border-color: var(--sw-cy); color: var(--sw-cy); }
 .sw-ibtn:hover .sw-gl, .sw-ibtn:hover .sw-pic { animation: swBob .5s steps(3, end); }
 .sw-msg { font: 400 13px var(--cm-mono, monospace); color: var(--sw-cy); }
-.sw-keys { display: grid; grid-template-columns: auto 1fr; gap: 4px 14px; font-size: 13px; }
+.sw-keys { display: grid; gap: 4px; margin: 0; font-size: 13px; }
+.sw-keyrow { display: grid; grid-template-columns: minmax(96px, auto) minmax(0, 1fr); gap: 14px; }
 .sw-keys dt { font: 500 12px var(--cm-mono, monospace); color: var(--sw-cy); }
 .sw-keys dd { margin: 0; color: var(--sw-dim); }
 .sw-reset { justify-self: start; min-height: 40px; padding: 0 14px; background: transparent; border: 1px solid #6a3a3a; color: #ff8a7e; font-size: 12px; letter-spacing: .06em; text-transform: uppercase; }
 .sw-reset:hover { background: #ff8a7e; color: #05040c; }
 
 /* star chart */
-.sw-chart { position: fixed; inset: 0; z-index: 30; display: grid; grid-template-rows: auto minmax(0, 1fr) auto auto; background: #05040c; animation: swIris .5s steps(10, end); }
-.sw-chart[data-leaving] { animation: swIrisOut .34s steps(7, end) forwards; pointer-events: none; }
-@keyframes swIris { from { clip-path: circle(0 at 50% 50%); } to { clip-path: circle(150% at 50% 50%); } }
-@keyframes swIrisOut { from { clip-path: circle(150% at 50% 50%); } to { clip-path: circle(0 at 50% 50%); } }
+.sw-chart { position: fixed; inset: 0; z-index: 30; display: grid; grid-template-rows: auto minmax(0, 1fr); grid-auto-rows: auto; background: #05040c; }
 .sw-chart-bg { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; image-rendering: pixelated; opacity: .75; pointer-events: none; }
 .sw-chart-top { position: relative; margin: 16px 16px 0; padding: 8px 14px; background: rgba(5, 4, 12, .88); border: 1px solid var(--sw-line); box-shadow: 4px 4px 0 rgba(0, 0, 0, .55); }
-.sw-chart-scroll { position: relative; min-height: 0; overflow: auto; display: grid; place-items: center; }
-.sw-svg { width: 100%; height: 100%; min-width: 760px; max-height: 100%; }
+.sw-chart-scroll { position: relative; min-height: 0; overflow: hidden; display: grid; place-items: center; }
+.sw-svg { width: 100%; height: 100%; max-height: 100%; overflow: hidden; }
 .sw-edge { stroke-width: 1.2; opacity: .28; stroke-dasharray: 3 5; }
 .sw-edge[data-lit] { opacity: .9; stroke-dasharray: none; stroke-width: 1.6; }
 .sw-conname { font: 600 13px var(--cm-mono, monospace); letter-spacing: .3em; opacity: .85; }
@@ -287,7 +270,7 @@ html.sw-route .sf-foot { display: none !important; }
 .sw-pick { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin: 0 16px 8px; padding: 12px 16px; border-color: var(--c); }
 .sw-pick b { font: 600 14px var(--cm-mono, monospace); color: var(--c); letter-spacing: .06em; }
 .sw-pick p { font-size: 14px; }
-.sw-chart-foot { position: relative; padding: 4px 16px 12px; font: 400 12px var(--cm-mono, monospace); color: var(--sw-dim); }
+.sw-root .sw-chart-foot { position: relative; padding: 4px 16px 12px; font: 400 12px var(--cm-mono, monospace); color: var(--sw-dim); }
 
 /* ending */
 .sw-end { position: fixed; inset: 0; z-index: 40; background: #000; display: grid; animation: swFadeIn .6s steps(6, end); }
@@ -328,7 +311,6 @@ html.sw-route .sf-foot { display: none !important; }
     .sw-ladder { order: 2; }
     .sw-visitor, .sw-away, .sw-clouds { order: 0; }
     .sw-planets { grid-template-columns: 1fr; }
-    .sw-svg { min-width: 700px; }
     .sw-visitor { animation: none; }
 }
 @media (max-width: 560px) {
@@ -426,8 +408,8 @@ html.sw-route .sf-foot { display: none !important; }
 
 /* overlays: dithered scrim, and a scanline that sweeps each card as it opens */
 .sw-over { background-color: rgba(2, 2, 8, .45); background-image: url("/starwright/ui/scrim.png?v=8"); background-size: 8px 8px; }
-.sw-card::after { content: ""; position: absolute; left: 0; right: 0; top: 0; height: 3px; background: rgba(95, 227, 255, .55); box-shadow: 0 0 0 1px rgba(95, 227, 255, .15); pointer-events: none; animation: swScan .55s steps(9, end) forwards; }
-@keyframes swScan { from { top: 0; opacity: 1; } 90% { opacity: 1; } to { top: 100%; opacity: 0; } }
+.sw-card::after { content: ""; position: absolute; left: 0; right: 0; top: 0; height: 3px; background: rgba(95, 227, 255, .55); box-shadow: 0 0 0 1px rgba(95, 227, 255, .15); pointer-events: none; animation: swScan .6s cubic-bezier(.4, 0, .2, 1) .08s both; }
+@keyframes swScan { from { top: 0; opacity: 1; } 90% { opacity: 1; } to { top: calc(100% - 3px); opacity: 0; } }
 .sw-card-head h2 { display: inline-flex; align-items: center; gap: 8px; }
 .sw-x { border: 1px solid var(--sw-line); transition: transform .12s steps(2, end); }
 .sw-x:hover { transform: rotate(90deg); }
@@ -493,7 +475,7 @@ html.sw-route .sf-foot { display: none !important; }
 @media (prefers-reduced-motion: reduce) { .sw-el[data-anim] { animation: none !important; } }
 
 /* ==== star chart v2: per-star medallions, catalogue labels, zoom to a star with a card beside it ==== */
-.sw-zoom { transition: transform .5s steps(10, end); transform-origin: 0 0; }
+.sw-zoom { transition: transform .62s cubic-bezier(.65, 0, .2, 1); transform-origin: 0 0; }
 .sw-chart[data-zoomed] .sw-node:not([data-sel]) { opacity: .55; }
 .sw-chart[data-zoomed] .sw-node:not([data-sel]) .sw-nodebuff, .sw-chart[data-zoomed] .sw-node:not([data-sel]) .sw-nodedes { opacity: 0; }
 .sw-node { transition: opacity .2s steps(3, end); }
@@ -553,7 +535,6 @@ html.sw-route .sf-foot { display: none !important; }
     .sw-sc-buffs strong { font-size: 24px; }
 }
 @media (prefers-reduced-motion: reduce) { .sw-zoom { transition: none; } .sw-ring, .sw-burst, .sw-starcard, .sw-edge line { animation: none !important; } }
-@media (max-width: 900px) { .sw-chart[data-zoomed] .sw-svg { min-width: 0; } }
 .sw-nodedes { opacity: 0; transition: opacity .15s steps(2, end); }
 .sw-node:hover .sw-nodedes, .sw-node:focus-visible .sw-nodedes, .sw-node[data-sel] .sw-nodedes { opacity: 1; }
 
@@ -649,3 +630,122 @@ html.sw-route .sf-foot { display: none !important; }
 .sw-cloud { border: 8px solid transparent; border-image: url("/starwright/ui/frame.png?v=8") 8 fill / 8px / 0 stretch; background: none; }
 .sw-cloud:hover { border-image-source: url("/starwright/ui/frame-warm.png?v=8"); background: none; }
 @media (prefers-reduced-motion: reduce) { .sw-collapse .sw-go, .sw-collapse[data-ready] .sw-pic { animation: none !important; } }
+
+
+/* ======== motion language ========================================================================================================
+   One set of curves and times for every menu, so the game moves as one thing.
+   - out (things arriving): fast start, long soft landing. in (things leaving): slow start, quick finish, always shorter than opening.
+   - a menu opens in this order: scrim fades, card arrives in its own way (settle, shutter, wipe; the star map irises out of the
+     dock tile), the scan line passes, corner brackets snap in, the heading rule draws, then the contents deal in one by one.
+   - going from one menu to another plays the first one's exit, then the next one's entrance (useLeaving in sw-ui.tsx).
+   - flipping a page slides it 14px the way you flipped and deals its tiles in again.
+   Reduced motion: every animation below is switched off at the bottom of this block. */
+.sw-root { --sw-out: cubic-bezier(.16, 1, .3, 1); --sw-in: cubic-bezier(.55, 0, .8, .35); --sw-step: 32ms; }
+
+.sw-over { animation: swFadeIn .26s linear backwards; }
+.sw-over[data-leaving] { animation: swFadeOut .22s linear .04s forwards; pointer-events: none; }
+
+.sw-card { will-change: transform, opacity; }
+.sw-card[data-kind="settle"] { animation: swSettle .46s var(--sw-out) backwards; }
+.sw-over[data-leaving] .sw-card[data-kind="settle"] { animation: swSettleOut .22s var(--sw-in) forwards; }
+@keyframes swSettle { from { opacity: 0; transform: translate(calc(var(--fx, 0px) * .55), calc(var(--fy, 40px) * .55)) scale(.5); } 40% { opacity: 1; } }
+@keyframes swSettleOut { to { opacity: 0; transform: translate(calc(var(--fx, 0px) * .3), calc(var(--fy, 20px) * .3)) scale(.8); } }
+.sw-card[data-kind="shutter"] { animation: swShutter .52s var(--sw-out) backwards; }
+.sw-over[data-leaving] .sw-card[data-kind="shutter"] { animation: swShutterOut .26s var(--sw-in) forwards; }
+@keyframes swShutter { from { clip-path: inset(50% 0 50% 0); opacity: .4; } to { clip-path: inset(-12px -12px -12px -12px); opacity: 1; } }
+@keyframes swShutterOut { to { clip-path: inset(50% 0 50% 0); opacity: .2; } }
+.sw-card[data-kind="wipe"] { animation: swWipe .52s var(--sw-out) backwards; }
+.sw-over[data-leaving] .sw-card[data-kind="wipe"] { animation: swWipeOut .26s var(--sw-in) forwards; }
+@keyframes swWipe { from { clip-path: inset(-12px -12px -12px 100%); transform: translateX(28px); } to { clip-path: inset(-12px -12px -12px -12px); } }
+@keyframes swWipeOut { to { clip-path: inset(-12px -12px -12px 100%); transform: translateX(28px); } }
+
+/* the parts of a card arrive after the card itself */
+.sw-card > .sw-card-head { animation: swRise .4s var(--sw-out) .12s backwards; }
+.sw-card > .sw-rule { transform-origin: 0 50%; animation: swDraw .5s var(--sw-out) .16s backwards; }
+.sw-card > .sw-cn { animation: swSnap .42s var(--sw-out) .2s backwards; }
+.sw-card > .sw-cn[data-c="tl"] { --dx: -10px; --dy: -10px; } .sw-card > .sw-cn[data-c="tr"] { --dx: 10px; --dy: -10px; }
+.sw-card > .sw-cn[data-c="bl"] { --dx: -10px; --dy: 10px; } .sw-card > .sw-cn[data-c="br"] { --dx: 10px; --dy: 10px; }
+@keyframes swRise { from { opacity: 0; transform: translateY(8px); } }
+@keyframes swDraw { from { transform: scaleX(0); opacity: 0; } }
+@keyframes swSnap { from { opacity: 0; transform: translate(var(--dx, 0), var(--dy, 0)) scale(.4); } }
+.sw-over[data-leaving] .sw-card > * { animation: none; }
+
+/* pages: the room a menu has, the unseen measuring pass, the flip bar */
+.sw-pg { position: relative; flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; }
+.sw-pg-view { position: relative; flex: 1 1 auto; min-height: 0; overflow: hidden; }
+.sw-pg-page { display: grid; grid-template-columns: minmax(0, 1fr); gap: 14px; align-content: start; animation: swPageIn .34s var(--sw-out) backwards; }
+.sw-pg-page[data-dir="prev"] { animation-name: swPageInPrev; }
+@keyframes swPageIn { from { opacity: 0; transform: translateX(14px); } }
+@keyframes swPageInPrev { from { opacity: 0; transform: translateX(-14px); } }
+.sw-pg-grp > .sw-h3 { margin-top: 0; }
+.sw-pg-grp > :last-child > * { animation: swDealUp .4s var(--sw-out) backwards; }
+.sw-pg-grp > :last-child > :nth-child(1) { animation-delay: .22s; } .sw-pg-grp > :last-child > :nth-child(2) { animation-delay: .254s; }
+.sw-pg-grp > :last-child > :nth-child(3) { animation-delay: .286s; } .sw-pg-grp > :last-child > :nth-child(4) { animation-delay: .318s; }
+.sw-pg-grp > :last-child > :nth-child(5) { animation-delay: .35s; } .sw-pg-grp > :last-child > :nth-child(6) { animation-delay: .382s; }
+.sw-pg-grp > :last-child > :nth-child(7) { animation-delay: .414s; } .sw-pg-grp > :last-child > :nth-child(8) { animation-delay: .446s; }
+.sw-pg-grp > :last-child > :nth-child(9) { animation-delay: .478s; } .sw-pg-grp > :last-child > :nth-child(10) { animation-delay: .51s; }
+.sw-pg-grp > :last-child > :nth-child(n + 11) { animation-delay: .54s; }
+@keyframes swDealUp { from { opacity: 0; transform: translateY(8px) scale(.97); } }
+.sw-pg-nav { flex: none; height: 44px; margin-top: 8px; display: flex; align-items: center; justify-content: space-between; gap: 10px; animation: swRise .4s var(--sw-out) .3s backwards; }
+.sw-pg-btn { display: grid; place-items: center; width: 44px; height: 44px; padding: 0; background: rgba(5, 4, 12, .6); border: 1px solid var(--sw-line); color: var(--sw-ink); transition: border-color .15s, color .15s, transform .15s var(--sw-out); }
+.sw-pg-btn[data-next] .sw-gl { transform: scaleX(-1); }
+.sw-pg-btn:hover:not(:disabled) { border-color: var(--sw-cy); color: var(--sw-cy); transform: translateY(-1px); }
+.sw-pg-btn:active:not(:disabled) { transform: translateY(1px) scale(.96); }
+.sw-pg-btn:disabled { opacity: .3; }
+.sw-pg-dots { display: inline-flex; align-items: center; gap: 6px; --c: var(--sw-cy); }
+.sw-pg-dots i { width: 8px; height: 8px; background: var(--sw-line); transition: background .2s, transform .25s var(--sw-out); }
+.sw-pg-dots i[data-on] { background: var(--c); transform: scale(1.35); }
+.sw-pg-dots b { margin-left: 8px; font: 500 12px var(--cm-mono, monospace); letter-spacing: .08em; text-transform: uppercase; color: var(--sw-dim); }
+.sw-chart-nav { position: relative; justify-self: center; width: min(420px, calc(100% - 32px)); margin: 0 0 4px; }
+.sw-menu { display: grid; gap: 14px; }
+.sw-pg-page .sw-menu + .sw-menu { margin-top: 0; }
+
+/* an element's note: lies over the bottom of the page, so picking one never moves anything */
+.sw-pg-view > .sw-fact { position: absolute; left: 0; right: 0; bottom: 0; z-index: 3; grid-template-columns: 72px minmax(0, 1fr) auto; box-shadow: 0 -10px 18px #070616; background-color: #070616; background-image: linear-gradient(color-mix(in srgb, var(--c) 10%, transparent), color-mix(in srgb, var(--c) 10%, transparent)); animation: swRise .34s var(--sw-out) backwards; }
+.sw-fact-x { display: grid; place-items: center; width: 36px; height: 36px; padding: 0; background: transparent; border: 1px solid var(--sw-line); color: var(--sw-dim); align-self: start; }
+.sw-fact-x:hover { border-color: var(--sw-cy); color: var(--sw-cy); }
+
+/* the star map: an iris out of the pressed dock tile, then its bars and stars arrive */
+.sw-chart { animation: swIris .7s var(--sw-out) backwards; }
+.sw-chart[data-leaving] { animation: swIrisOut .34s var(--sw-in) forwards; pointer-events: none; }
+@keyframes swIris { from { clip-path: circle(0 at var(--ox, 50%) var(--oy, 50%)); } to { clip-path: circle(150% at var(--ox, 50%) var(--oy, 50%)); } }
+@keyframes swIrisOut { from { clip-path: circle(150% at var(--ox, 50%) var(--oy, 50%)); } to { clip-path: circle(0 at var(--ox, 50%) var(--oy, 50%)); } }
+.sw-chart-top { animation: swDropIn .5s var(--sw-out) .22s backwards; }
+.sw-chart-foot, .sw-chart-nav { animation: swRise .45s var(--sw-out) .4s backwards; }
+.sw-deep { animation: swRise .5s var(--sw-out) .5s backwards; }
+@keyframes swDropIn { from { opacity: 0; transform: translateY(-14px); } }
+.sw-chart .sw-node { animation: swNodeIn .5s var(--sw-out) calc(.2s + var(--i, 0) * 28ms) backwards; }
+.sw-chart .sw-edge { animation: swEdgeIn .6s linear .3s backwards; }
+@keyframes swNodeIn { from { opacity: 0; } }
+@keyframes swEdgeIn { from { opacity: 0; } }
+.sw-starcard { animation: swCardIn .36s var(--sw-out) backwards; }
+.sw-starcard[data-side="l"] { animation-name: swCardInL; }
+.sw-chart[data-region] .sw-chart-scroll { animation: swPageIn .34s var(--sw-out) backwards; }
+
+/* purchases: every buy button presses in, and the row it paid for flashes */
+.sw-btn { transition: transform .12s var(--sw-out), background-color .15s, color .15s; }
+.sw-btn:active:not(:disabled) { transform: translateY(2px) scale(.95); }
+.sw-row small { animation: swLevel .4s var(--sw-out); }
+@keyframes swLevel { from { transform: translateY(-5px) scale(1.5); color: #fff; } }
+.sw-flash { position: absolute; inset: 0; pointer-events: none; background: linear-gradient(90deg, color-mix(in srgb, var(--c) 45%, transparent), transparent 70%); animation: swFlash .5s ease-out forwards; }
+@keyframes swFlash { from { opacity: 1; } to { opacity: 0; } }
+.sw-dt { transition: transform .15s var(--sw-out); }
+.sw-dt:active { transform: translateY(1px) scale(.95); }
+.sw-go { transition: transform .12s var(--sw-out), background-color .15s, color .15s; }
+.sw-go:active:not(:disabled) { transform: translateY(2px) scale(.97); }
+
+@media (prefers-reduced-motion: reduce) {
+    .sw-over, .sw-card, .sw-card > *, .sw-pg-page, .sw-pg-nav, .sw-pg-grp > :last-child > *, .sw-pg-view > .sw-fact, .sw-chart, .sw-chart *, .sw-flash, .sw-row small, .sw-starcard { animation: none !important; transition: none !important; }
+    .sw-zoom { transition: none !important; }
+}
+
+.sw-cx .sw-el { width: min(calc(24px * var(--s, 2)), 100%); height: auto; aspect-ratio: 1 / 1; }
+@media (max-width: 560px) { .sw-cx b { font-size: 0; letter-spacing: 0; } .sw-cx b::before { content: attr(data-sym); font: 600 13px var(--cm-mono, monospace); letter-spacing: .04em; } }
+
+/* one constellation per page on a phone: the others stay faintly in the sky but cannot be touched; names are bigger, the rest waits for a tap */
+.sw-chart [data-off] { opacity: .14; pointer-events: none; }
+.sw-chart[data-region] .sw-nodename { font-size: 17px; }
+.sw-chart[data-region] .sw-node:not([data-sel]) .sw-nodebuff, .sw-chart[data-region] .sw-node:not([data-sel]) .sw-nodedes { display: none; }
+.sw-chart[data-region] .sw-conname { font-size: 20px; }
+.sw-chart[data-region] .sw-conlat { font-size: 14px; }
+.sw-pg-btn[data-next] .sw-pic, .sw-pg-btn[data-next] .sw-gl { transform: scaleX(-1); }

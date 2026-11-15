@@ -24,7 +24,7 @@ Before any change: `npm run test:nodefarm`. Visual changes also need PNG screens
 - ~~Offline pacing~~ decided 2026-11-15: cap a few (3) supernovas per absence with auto supernova on. Done in the away-cap PR.
 - ~~Rule changes l5 Corona, a5 Iron rain, deep stars~~ signed off by Nate 2026-11-15.
 - **Next art pass.** Planet break-up chunks done (his pick 2026-11-15). Still offered, not picked: visitor and cloud cards, supernova and ending screens.
-- **Audio.** Needs him to listen: sound start, mute, volume levels.
+- **Audio.** Rebuilt 2026-11-15 (see FEATURES). Needs him to listen: WAVs in `/mnt/project-files/portfolio/starwright/motion-audio-overhaul/audio/`, then volume levels and which sounds to change. Real Safari autoplay unchecked.
 
 ## Cannot be tested in the cloud (his devices)
 Safari/WebKit, real phones (touch, safe-area, performance), audio, the one-tab rule across two real tabs, and the live site (the password gate returns 401 to threads).
@@ -39,3 +39,10 @@ Play is fine: 60 fps, no long frames at 4x CPU, 5.5 MB heap flat over 98 s, engi
 - [x] PERF-ui-version-dupes | size S | The CSS refers to the same UI PNGs with different `?v=` (frame, frame-warm, fill, head, btn-2, btn-3 at v=3, 7 and 8), so the browser downloads each twice. Keep one version per file | app/camino/starwright.css DONE: every UI PNG now uses ?v=8.
 - [x] PERF-manifest-twice | size S | manifest.json (20 KB) is fetched by both sprites.ts and ui-sheets.ts. Share one promise | lib/starwright/sprites.ts, lib/starwright/ui-sheets.ts DONE: lib/starwright/manifest.ts shares one fetch.
 - [ ] PERF-ssr-skeleton | size M | The ladder and canvas only exist after hydration and the save load in useEffect; first contentful paint is the empty frame (~0.9 s) and the game shows at ~3.1 s on the throttled phone. Server-render a static skeleton (frame, title, "loading the star" line) so the first paint has the game's shape. Risk: hydration mismatch, so keep it markup-only | components/starwright/starwright.tsx
+
+## Motion, sound, overflow (2026-11-15, thread "Overhaul Starwright audio and animations")
+- [x] MOTION-language | one set of curves and an order of arrival for every menu, panel swaps, page flips, star map iris
+- [x] AUDIO-rebuild | new sound.ts, volume setting, cues on buy, perk, planet, ignition, menus
+- [x] OVERFLOW-none | measured paging for Orbit, Almanac, Menu; phone star map per constellation
+- [ ] MOTION-visitor-cloud-away | open/close for visitor, birth cloud and welcome cards once the backlog thread's shared panel style lands
+- [ ] MOTION-real-device | judge the motion and sound on a real phone and with speakers
