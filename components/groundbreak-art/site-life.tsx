@@ -40,13 +40,50 @@ const G = GB_LIFE.gutter;
 const C = GB_LIFE.crew;
 const V = GB_LIFE.vehicles;
 const F = GB_LIFE.fx;
+const M = GB_LIFE.mini;
+const X = GB_LIFE.machines;
+type MiniAction = keyof typeof GB_LIFE.mini.actions;
+
+const VEHICLE_LABEL: Record<VehicleKind, string> = {
+    dump: "Dump truck\nHauling dirt off the lot", mixer: "Concrete mixer\nFresh concrete for the pour",
+    "flat-steel": "Flatbed\nSteel beams for the frame", "flat-rebar": "Flatbed\nRebar for the decks",
+    "flat-glass": "Flatbed\nGlass panels for the skin", "flat-pallets": "Flatbed\nPallets of fit-out supplies",
+};
+const MACHINE_LABEL = {
+    excavator: "Excavator\nDigging out the pit", pump: "Concrete pump\nPlacing the slab",
+    craneSteel: "Mobile crane\nLifting steel into place", craneGlass: "Mobile crane\nSetting glass panels",
+    forklift: "Forklift\nMoving pallets to the door",
+};
+function crewLabel(action: string, cat: Cat, where: number | "roof" | null): string {
+    const job: Record<string, string> = {
+        shovel: "Digging", walk: "Walking the site", carry: cat === "skin" ? "Carrying a panel" : "Carrying lumber",
+        hammer: cat === "steel" ? "Bolting steel" : cat === "fit" ? "Fitting out" : cat === "skin" ? "Fixing the skin" : "Building forms",
+        weld: "Welding the frame", idle: cat === "wait" ? "Waiting on the next job" : "Checking the plans", cheer: "Stage done",
+    };
+    const place = where === "roof" ? "On the roof" : where ? `Floor ${where}` : "Crew";
+    return `${place}\n${job[action] ?? "Working"}`;
+}
 
 const hash = (i: number, k: number) => ((Math.sin(i * 127.1 + k * 311.7) * 43758.5453) % 1 + 1) % 1;
 const ease = (x: number) => 1 - Math.pow(1 - Math.min(1, Math.max(0, x)), 2);
 
-function Sprite({ src, w, h, col, row, x, y, flip, z }: { src: string; w: number; h: number; col: number; row: number; x: number; y: number; flip?: boolean; z?: number }) {
+type Pick = (label: string, x: number, y: number) => void;
+type Tag = { label: string; pick: Pick };
+
+function Sprite({ src, w, h, col, row, x, y, flip, z, tag }: { src: string; w: number; h: number; col: number; row: number; x: number; y: number; flip?: boolean; z?: number; tag?: Tag }) {
+    // a tap (no drag) on a sprite shows what it is doing; the page owns pointer capture, so the tap is read from pointerdown
+    // and confirmed on the window's pointerup when the pointer barely moved
+    const down = (e: React.PointerEvent) => {
+        if (!tag) return;
+        const sx = e.clientX, sy = e.clientY;
+        const up = (u: PointerEvent) => {
+            window.removeEventListener("pointerup", up);
+            if (Math.hypot(u.clientX - sx, u.clientY - sy) < 6) tag.pick(tag.label, x + w / 2, y);
+        };
+        window.addEventListener("pointerup", up);
+    };
     return (
-        <div className="gbl-sprite" style={{
+        <div className={`gbl-sprite${tag ? " gbl-pick" : ""}`} onPointerDown={tag ? down : undefined} title={tag?.label.split("\n")[0]} style={{
             left: Math.round(x), top: Math.round(y), width: w, height: h, zIndex: z,
             backgroundImage: `url("${src}")`, backgroundPosition: `${-col * (w + 2 * G) - G}px ${-row * (h + 2 * G) - G}px`,
             transform: flip ? "scaleX(-1)" : undefined,
@@ -60,7 +97,7 @@ export interface SiteLifeProps {
     ground: number;
     w: number;
     /** [roof offset from the ground (negative), building left, building right] for the frame on show. */
-    outline: readonly [number, number, number] | readonly number[];
+    outline: readonly (number | readonly number[])[];
     jobKey: string;
     phase: number;
     phaseName: string | null;
@@ -69,11 +106,15 @@ export interface SiteLifeProps {
     crews: number;
     reduce: boolean;
     paused: boolean;
+    /** Screen pixels per art pixel, so the tap label keeps one size at every zoom. */
+    scale: number;
 }
 
 type Moment = { kind: "stage" | "done" | "start"; at: number };
 
-export function GbSiteLife({ left, ground, w, outline, jobKey, phase, phaseName, inspecting, done, crews, reduce, paused }: SiteLifeProps) {
+export function GbSiteLife({ left, ground, w, outline, jobKey, phase, phaseName, inspecting, done, crews, reduce, paused, scale }: SiteLifeProps) {
+    const [sel, setSel] = useState<{ label: string; x: number; y: number; at: number } | null>(null);
+    const pick: Pick = (label, x, y) => setSel((s) => (s && s.label === label ? null : { label, x, y, at: clock.current }));
     const [t, setT] = useState(6);
     const clock = useRef(6);
     const origin = useRef(0);
@@ -109,7 +150,7 @@ export function GbSiteLife({ left, ground, w, outline, jobKey, phase, phaseName,
     }, [jobKey, phase, done]);
 
     const cat: Cat = inspecting || jobKey === "lot" ? "wait" : phaseCat(phaseName);
-    const [roof, bl, br] = outline as [number, number, number];
+    const [roof, bl, br] = outline as unknown as [number, number, number];
     const bL = left + bl, bR = left + br;
     const mid = (bL + bR) / 2;
     const m = moment.current;
@@ -125,7 +166,7 @@ export function GbSiteLife({ left, ground, w, outline, jobKey, phase, phaseName,
         const n = Math.floor(ct / CYCLE);
         const kind = kinds[((n % kinds.length) + kinds.length) % kinds.length];
         const c = ((ct % CYCLE) + CYCLE) % CYCLE;
-        parkX = bR - 6;
+        parkX = bR + (cat === "pour" ? 74 : -6); // the pump truck backs onto the slab, so the mixer queues behind it
         const enter = 300, exit = -(parkX - left) - V.w - 160;
         let dx = 0, moving = false;
         if (c < 4) { dx = enter * (1 - ease(c / 4)); moving = c < 3.8; }
@@ -146,7 +187,7 @@ export function GbSiteLife({ left, ground, w, outline, jobKey, phase, phaseName,
         if (!moving && kind !== "mixer" && kind !== "dump") col = c >= 10.5 ? 2 : 0;
         if (!moving && kind === "dump" && (c < 6)) col = 0;
         const vx = parkX + dx;
-        out.push(<Sprite key="veh" src={V.src} w={V.w} h={V.h} col={col} row={row} x={vx} y={ground - 43} z={3} />);
+        out.push(<Sprite key="veh" src={V.src} w={V.w} h={V.h} col={col} row={row} x={vx} y={ground - 43} z={3} tag={{ label: VEHICLE_LABEL[kind], pick }} />);
         if (!reduce) {
             // dust off the wheels when pulling in and pulling away, grit when the dump bed tips
             const dust = (key: string, x: number, at: number, row: readonly number[]) => {
@@ -164,7 +205,7 @@ export function GbSiteLife({ left, ground, w, outline, jobKey, phase, phaseName,
     const count = Math.min(12, 2 + Math.floor(crews / 2));
     const roles = ROLES[cat];
     const span = Math.max(40, bR - bL);
-    const hasFrame = roof < -18;
+    const floors = ((outline as readonly unknown[])[3] as readonly number[] | undefined) ?? [];
     for (let i = 0; i < count; i++) {
         let action: Action = roles[i % roles.length];
         const variant = i % C.variants;
@@ -172,10 +213,7 @@ export function GbSiteLife({ left, ground, w, outline, jobKey, phase, phaseName,
         let x = bL + ((i + 0.5) / count + (r1 - 0.5) * 0.5 / count) * span - C.w / 2;
         let y = ground - C.foot;
         let flip = r2 > 0.5;
-        if (action === "weld") {
-            if (hasFrame) { y = ground + roof - C.foot; x = bL + 6 + r1 * Math.max(10, span - 12) - C.w / 2; }
-            else action = "hammer";
-        }
+        if (action === "weld") action = "hammer"; // welders work up on the frame (floor crew below)
         if ((action === "carry" || action === "walk") && !reduce) {
             // carriers shuttle between the truck and the build; walkers pace their stretch of the lot
             const a = action === "carry" && cat !== "wait" ? parkX + 30 : x;
@@ -189,16 +227,74 @@ export function GbSiteLife({ left, ground, w, outline, jobKey, phase, phaseName,
         }
         if (inspecting || cheering) action = cheering || done ? "cheer" : "idle";
         const [c0, n] = C.actions[action];
-        const rate = action === "walk" || action === "carry" ? 10 : action === "weld" ? 8 : action === "cheer" ? 5 : action === "idle" ? 1.5 : 6;
+        const rate = action === "walk" || action === "carry" ? 10 : action === "cheer" ? 5 : action === "idle" ? 1.5 : 6;
         const f = reduce ? 0 : Math.floor(t * rate + r1 * 7) % n;
-        out.push(<Sprite key={`c${i}`} src={C.src} w={C.w} h={C.h} col={c0 + f} row={variant} x={x} y={y} flip={flip} z={y < ground - C.foot ? 1 : 5} />);
-        if (action === "weld" && !reduce) {
-            const sf = Math.floor(t * 10 + i * 3) % 4;
-            const tipX = flip ? x + C.w - 18 : x + 18;
-            out.push(<Sprite key={`s${i}`} src={F.src} w={F.w} h={F.h} col={sf} row={F.rows.sparks[0]} x={tipX - F.w / 2} y={y + 16 - 8} z={2} />);
-        }
+        out.push(<Sprite key={`c${i}`} src={C.src} w={C.w} h={C.h} col={c0 + f} row={variant} x={x} y={y} flip={flip} z={5} tag={{ label: crewLabel(action, cat, null), pick }} />);
         if (action === "shovel" && !reduce && f === 2 && (Math.floor(t * rate + r1 * 7) % (n * 3)) === 2) {
             out.push(<Sprite key={`g${i}`} src={F.src} w={F.w} h={F.h} col={1} row={F.rows.dust[0]} x={x + (flip ? -10 : 10)} y={ground - F.h + 2} z={4} />);
+        }
+    }
+
+    // ---- floor crew: small figures on every storey that is up (and the roof), working the stage
+    if (cat !== "wait" && cat !== "dig" && cat !== "pour" || (inspecting && floors.length)) {
+        const levels = [...floors].sort((a, b) => b - a); // lowest first
+        if (roof < -18 && !levels.includes(roof)) levels.push(roof);
+        const per = levels.length > 10 ? 1 : 2;
+        const MR: Record<string, MiniAction[]> = { steel: ["weld", "walk", "hammer"], skin: ["carry", "hammer", "walk"], fit: ["walk", "hammer", "carry", "idle"], wait: ["idle", "walk"] };
+        const roles2 = MR[inspecting ? "wait" : cat] ?? MR.wait;
+        // tall towers: crew on a spread of floors so the whole height reads as busy without hundreds of sprites
+        const pickLv = levels.length > 14 ? levels.filter((_, k) => k % Math.ceil(levels.length / 14) === 0 || k === levels.length - 1) : levels;
+        pickLv.forEach((lv, li) => {
+            const storey = levels.indexOf(lv) + 1;
+            const onRoof = lv === roof || li === pickLv.length - 1;
+            for (let k = 0; k < per; k++) {
+                const j = li * 3 + k;
+                let action: MiniAction = onRoof && cat === "steel" ? "weld" : roles2[j % roles2.length];
+                const r1 = hash(j, 5), r2 = hash(j, 6);
+                const lo = bL + 4, hi = bR - 4 - M.w;
+                let x = lo + ((k + 0.5) / per + (r1 - 0.5) * 0.4 / per) * (hi - lo);
+                let flip = r2 > 0.5;
+                if ((action === "walk" || action === "carry") && !reduce) {
+                    const a = x, b = Math.min(hi, Math.max(lo, x + (r2 > 0.5 ? 1 : -1) * (20 + r1 * 40)));
+                    const dur = Math.abs(b - a) / 9 + 0.01;
+                    const ph = ((t + r1 * 17) / dur) % 2;
+                    x = a + (b - a) * (ph < 1 ? ph : 2 - ph);
+                    flip = (b < a) !== (ph >= 1);
+                }
+                if (cheering) action = "idle";
+                const [c0, n] = M.actions[action];
+                const rate = action === "walk" || action === "carry" ? 7 : action === "weld" ? 6 : action === "idle" ? 1.2 : 4;
+                const f = reduce ? 0 : Math.floor(t * rate + r1 * 5) % n;
+                const y = ground + lv - M.foot - 1;
+                out.push(<Sprite key={`m${j}`} src={M.src} w={M.w} h={M.h} col={c0 + f} row={j % C.variants} x={x} y={y} flip={flip} z={2}
+                    tag={{ label: crewLabel(action, cat, onRoof && lv === roof ? "roof" : storey), pick }} />);
+                if (action === "weld" && !reduce && f === 0) {
+                    out.push(<Sprite key={`ms${j}`} src={F.src} w={F.w} h={F.h} col={Math.floor(t * 10 + j) % 4} row={F.rows.sparks[0]} x={x + (flip ? 2 : M.w - 2) - F.w / 2} y={y + 3} z={2} />);
+                }
+            }
+        });
+    }
+
+    // ---- machines: excavator in the pit, pump over the slab, mobile crane lifting steel or glass, forklift with pallets
+    if (cat !== "wait") {
+        const ct = reduce ? 6 : t - origin.current;
+        const at = (key: string, row: number, col: number, x: number, flip: boolean, label: string) =>
+            out.push(<Sprite key={key} src={X.src} w={X.w} h={X.h} col={col} row={row} x={x} y={ground - X.ground} flip={flip} z={3} tag={{ label, pick }} />);
+        if (cat === "dig") at("ex", X.rows.excavator, reduce ? 1 : Math.floor(t * 2.2) % 6, bL - 56, false, MACHINE_LABEL.excavator);
+        if (cat === "pour") {
+            const f = reduce ? 5 : ct < 2 ? Math.min(3, Math.floor(ct / 0.5)) : 4 + (Math.floor(t * 4) % 2);
+            at("pump", X.rows.pump, f, bR - 60, false, MACHINE_LABEL.pump);
+        }
+        if (cat === "steel" || cat === "skin") at("crane", cat === "steel" ? X.rows["crane-steel"] : X.rows["crane-glass"], reduce ? 0 : Math.floor(t * 1.5) % 4, bL - 66, false, cat === "steel" ? MACHINE_LABEL.craneSteel : MACHINE_LABEL.craneGlass);
+        if (cat === "fit" || cat === "skin") {
+            // forklift shuttles pallets from the delivery truck to the door
+            const a = parkX + 10, b = bL + span * 0.55;
+            const dur = Math.abs(a - b) / 16 + 0.01;
+            const ph = reduce ? 0.5 : ((t + 3) / dur) % 2;
+            const p = ph < 1 ? ph : 2 - ph;
+            const x = a + (b - a) * p - 64;
+            const lift = reduce ? 0 : Math.abs(p - 0.5) > 0.45 ? 2 : 0;
+            at("fork", X.rows.forklift, lift * 2 + (Math.floor(t * 6) % 2), x, ph >= 1 ? false : true, MACHINE_LABEL.forklift);
         }
     }
 
@@ -221,7 +317,18 @@ export function GbSiteLife({ left, ground, w, outline, jobKey, phase, phaseName,
         }
     }
 
-    return <div className="gbl-life">{out}</div>;
+    const showSel = sel && (reduce || t - sel.at < 5) ? sel : null;
+    return (
+        <div className="gbl-life">
+            {out}
+            {showSel && (
+                <div className="gbl-tag" style={{ left: Math.round(showSel.x), top: Math.round(showSel.y) - 2, transform: `translate(-50%, -100%) scale(${1 / scale})` }}>
+                    {showSel.label.split("\n").map((l, k) => (k ? <small key={k}>{l}</small> : <b key={k}>{l}</b>))}
+                    <small>{phaseName && !inspecting && jobKey !== "lot" ? `${phaseName} · ` : ""}{crews} crew{crews === 1 ? "" : "s"} hired</small>
+                </div>
+            )}
+        </div>
+    );
 }
 
 export default GbSiteLife;

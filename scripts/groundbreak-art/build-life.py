@@ -49,27 +49,41 @@ def job_outlines():
             near = a[max(0, gy - 6):gy].any(0)
             xs = np.where(a[top:gy].sum(0) >= max(2, (gy - top) * 0.5))[0] if top < gy else []
             l, r = (int(xs[0]), int(xs[-1])) if len(xs) else (int(w * 0.3), int(w * 0.7))
-            frames.append([top - gy, l, r])  # roof as a negative offset from the ground line
+            # floor lines: rows where a beam or slab spans most of the build, one per cluster (its top row)
+            floors = []
+            if r - l > 20:
+                span = a[:gy, l:r + 1].sum(1) >= (r - l) * 0.7
+                for y in range(top, gy - 6):
+                    if span[y] and not span[y - 1] and (not floors or y - floors[-1] >= 12):
+                        floors.append(y)
+            frames.append([top - gy, l, r, [f - gy for f in floors if f - gy < -10]])  # offsets from the ground line
         out[jid] = frames
     return out
 
 
 def main():
     OUT.mkdir(parents=True, exist_ok=True)
-    sheets = {"crew": L.crew_sheet(), "vehicles": L.vehicle_sheet(), "fx": L.fx_sheet()}
+    sheets = {"crew": L.crew_sheet(), "mini": L.mini_sheet(), "vehicles": L.vehicle_sheet(), "machines": L.machine_sheet(), "fx": L.fx_sheet()}
     stamps = {}
     for k, c in sheets.items():
         im = c.image()
         im.save(OUT / f"{k}.png", optimize=True)
         stamps[k] = stamp(im)
-    actions, col = {}, 0
-    for a, n in L.CREW_ACTIONS:
-        actions[a] = [col, n]
-        col += n
+    def cols(spec):
+        out, col = {}, 0
+        for a, n in spec:
+            out[a] = [col, n]
+            col += n
+        return out
+    actions = cols(L.CREW_ACTIONS)
     data = {
         "gutter": L.G,
         "crew": {"src": f"/groundbreak/life/crew.png?v={stamps['crew']}", "w": L.CW, "h": L.CH, "foot": L.FOOT,
                  "variants": len(L.CREW_VARIANTS), "actions": actions},
+        "mini": {"src": f"/groundbreak/life/mini.png?v={stamps['mini']}", "w": L.MW, "h": L.MH, "foot": L.MFOOT,
+                 "actions": cols(L.MINI_ACTIONS)},
+        "machines": {"src": f"/groundbreak/life/machines.png?v={stamps['machines']}", "w": L.XW, "h": L.XH, "ground": L.XG,
+                     "rows": {k: i for i, k in enumerate(L.MACHINE_ROWS)}},
         "vehicles": {"src": f"/groundbreak/life/vehicles.png?v={stamps['vehicles']}", "w": L.VW, "h": L.VH,
                      "rows": {"dump": 0, "mixer": 1, **{f"flat-{c}": 2 + i for i, c in enumerate(L.CARGO)}}},
         "fx": {"src": f"/groundbreak/life/fx.png?v={stamps['fx']}", "w": L.FW, "h": L.FH,

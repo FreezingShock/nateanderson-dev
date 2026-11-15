@@ -123,7 +123,7 @@ export function GbSiteScene({ camera, job, skyline, reduce, paused, idle, crews 
                     <GbSiteLife left={SITE_X - GB_JOBS[siteId].w / 2} ground={B.siteY} w={GB_JOBS[siteId].w}
                         outline={GB_LIFE.outline[siteId][id ? frameFor(id, job!) : 0]} jobKey={id ?? "lot"} phase={job?.phase ?? -1}
                         phaseName={job?.phaseName ?? null} inspecting={!!job?.inspecting} done={!!job?.inspecting && job.inspect >= 1}
-                        crews={crews} reduce={reduce} paused={paused} />
+                        crews={crews} reduce={reduce} paused={paused} scale={s} />
                 )}
             </div>
         </div>
