@@ -1,7 +1,7 @@
 // Starwright session care: loading a save without losing it, backups, time credit for stalls and time away, and the
 // welcome-back report. Pure TypeScript (storage and clocks are passed in), so the tests run it under node.
 import { ELEMENTS, PLANETS, STAGE_NAMES } from "./data";
-import { SAVE_KEY, catchUp, collapse, effects, fmt, fmtAge, heaviest, levels, offlineCapS, parse, planetStage, serialize, stageOf, step, type State } from "./engine";
+import { SAVE_KEY, answer, canSupernova, catchUp, collapse, effects, eventOf, fmt, fmtAge, heaviest, levels, offlineCapS, parse, planetStage, serialize, stageOf, step, supernova, type State } from "./engine";
 
 export const BACKUP_KEY = `${SAVE_KEY}-backup`;
 export const CORRUPT_KEY = `${SAVE_KEY}-corrupt`;
@@ -72,6 +72,34 @@ export function advance(s: State, gap: number): number {
     return catchUp(s, gap);
 }
 
+export interface AutoCfg { autoNova: number; autoVisitor: "off" | "lump" | "boost" }
+export interface AutoResult { secs: number; novas: number; dust: number; answered: boolean }
+
+/**
+ * Like `advance`, but with the opt-in automations on: a visitor already waiting is answered, and the star goes supernova by
+ * itself each time its core passes `autoNova` of the collapse. Visitors never arrive during time away, so only the waiting
+ * one can be answered. Only used for long gaps; short ones are ordinary steps and the game's own timer does the rest.
+ */
+export function advanceAuto(s: State, gap: number, cfg: AutoCfg): AutoResult {
+    const none = { novas: 0, dust: 0, answered: false };
+    if (!(gap > 0)) return { secs: 0, ...none };
+    if (gap <= STALL_MAX || (!cfg.autoNova && cfg.autoVisitor === "off")) return { secs: advance(s, gap), ...none };
+    let answered = false;
+    const ev = eventOf(s);
+    if (ev && cfg.autoVisitor !== "off") { answered = answer(s, autoAnswer(ev, cfg.autoVisitor)) !== null; }
+    const secs = Math.max(0, Math.min(gap, offlineCapS(effects(s))));
+    if (secs < 2) return { secs: 0, novas: 0, dust: 0, answered };
+    const steps = Math.min(7200, Math.max(1, Math.ceil(secs / 2)));
+    const dt = secs / steps;
+    let novas = 0, dust = 0;
+    for (let i = 0; i < steps; i++) {
+        const f = effects(s);
+        step(s, dt, f);
+        if (cfg.autoNova && canSupernova(s, f) && collapse(s, f) >= cfg.autoNova) { dust += supernova(s); novas++; }
+    }
+    return { secs, novas, dust, answered };
+}
+
 // ---- welcome back ---------------------------------------------------------------------------------------------------
 
 export interface Snap { amt: number[]; mass: number; heavy: number; stage: number; col: number; levels: number; ages: Record<string, number>; stages: Record<string, number> }
@@ -87,12 +115,20 @@ export function snap(s: State): Snap {
 export interface AwayReport { at: number; secs: number; gap: number; capped: boolean; capH: number; lines: string[] }
 
 /** What happened while the star ran on its own. `secs` counted, `gap` was the real time away. */
-export function awayReport(before: Snap, s: State, secs: number, gap: number, now = Date.now()): AwayReport {
+export function awayReport(before: Snap, s: State, secs: number, gap: number, now = Date.now(), auto?: AutoResult): AwayReport {
     const f = effects(s);
     const capH = Math.round(offlineCapS(f) / 3600);
     const capped = gap > offlineCapS(f);
     const lines: string[] = [];
     lines.push(`The star burned on for ${fmtAge(secs)}.${capped ? ` It only keeps ${capH} hours; a Long watch perk raises that.` : ""}`);
+    if (auto && (auto.novas > 0 || auto.answered)) {
+        if (auto.answered) lines.push("A visitor was waiting, and it was answered for you.");
+        if (auto.novas > 0) {
+            lines.push(`Auto supernova fired ${auto.novas} time${auto.novas === 1 ? "" : "s"}: +${fmt(auto.dust)} stardust.`);
+            lines.push(`A new star burns now: ${STAGE_NAMES[stageOf(s)].toLowerCase()}, core at ${Math.floor(Math.min(1, collapse(s, f)) * 100)}% of its collapse.`);
+            return { at: now, secs, gap, capped, capH, lines };
+        }
+    }
     const gains = ELEMENTS.map((e, i) => ({ e, d: s.amt[i] - before.amt[i], r: (s.amt[i] + 1) / (before.amt[i] + 1) }))
         .filter((g, i) => i > 0 && g.d >= 1)
         .sort((a, b) => b.r - a.r)
