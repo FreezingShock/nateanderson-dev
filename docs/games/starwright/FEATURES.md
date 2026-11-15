@@ -4,7 +4,7 @@ Route `/creations/games/starwright`. Audited 2026-11-15 against `integration` 51
 
 State key: **working** = code and tests exist, seen working headless. **partial** = works with a known gap (see the backlog). **untested** = no test and no check on a real device.
 
-Test commands: `npm run test:nodefarm` (a PR check; includes `tests/starwright/*.test.mjs`, 36 tests), `node --experimental-strip-types --no-warnings scripts/starwright/sim.mjs 30` (balance bot). No browser test exists for Starwright; UI is checked by hand with `scripts/starwright/ui-art/shots.mjs`.
+Test commands: `npm run test:nodefarm` (a PR check; includes `tests/starwright/*.test.mjs`, 38 tests), `node --experimental-strip-types --no-warnings scripts/starwright/sim.mjs 30` (balance bot). No browser test exists for Starwright; UI is checked by hand with `scripts/starwright/ui-art/shots.mjs`.
 
 ## Core loop (engine, no UI)
 | Feature | State | Code | Test |
@@ -35,7 +35,7 @@ Test commands: `npm run test:nodefarm` (a PR check; includes `tests/starwright/*
 | Feature | State | Code | Test |
 |---|---|---|---|
 | Save `sw-save-v1`, parse rebuilds from anything, export and import | working | `engine.ts` `parse`/`serialize`, `lib/games/save.ts` | engine.test: round-trip |
-| Damaged save kept, rolling backup, 10-minute backups | working | `lib/starwright/session.ts` | session.test |
+| Damaged save kept under `sw-save-v1-corrupt` (an older different one moves to `-corrupt-prev`), rolling backup, 10-minute backups | working | `lib/starwright/session.ts` | session.test |
 | Time away: 8 h cap (24 h with Long watch), credit for stalled frames, welcome-back card | working | `engine.ts` `catchUp`, `session.ts` `advance`, `awayReport`, `components/starwright/settings.tsx` | session.test |
 | Opt-in auto supernova and auto visitors (also during time away) | working | `session.ts` `advanceAuto`, `lib/starwright/settings.ts` | session.test |
 | One tab plays at a time (`BroadcastChannel sw-tab`) | untested | `starwright.tsx` | none |
