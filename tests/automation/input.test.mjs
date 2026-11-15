@@ -633,3 +633,8 @@ for (const [label, cells] of [
         }
     });
 }
+
+test("mapKey: Q is the pipette, and a repeat is ignored", () => {
+    assert.deepEqual(mapKey({ key: "q", type: "keydown", repeat: false }), { type: "pipette" });
+    assert.equal(mapKey({ key: "q", type: "keydown", repeat: true }), null);
+});

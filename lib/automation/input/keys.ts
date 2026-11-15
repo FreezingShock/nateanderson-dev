@@ -9,6 +9,7 @@ export type KeyAction =
     | { type: "topdown" }
     | { type: "delete-hover" }
     | { type: "toggle-delete" }
+    | { type: "pipette" }
     | { type: "tool"; index: number }
     | { type: "pan"; forward: number; right: number }
     | { type: "walk"; dir: WalkDir; down: boolean }
@@ -59,6 +60,8 @@ export function mapKey(e: KeyLike): KeyAction | null {
             return e.repeat ? null : { type: "topdown" };
         case "x":
             return e.repeat ? null : { type: "toggle-delete" };
+        case "q":
+            return e.repeat ? null : { type: "pipette" };
         case "Delete":
         case "Backspace":
             return { type: "delete-hover" };

@@ -105,6 +105,15 @@ export function createInputController(opts: InputOptions): InputController {
             case "toggle-delete":
                 build.setTool(build.getTool()?.id === DELETE_TOOL.id ? null : DELETE_TOOL);
                 return true;
+            case "pipette": {
+                // Copies the building under the hover cell onto the palette: its tool becomes armed, as if picked from the list.
+                const h = build.getHover();
+                const item = h ? build.peek(h) : null;
+                const t = item ? opts.tools.find((x) => x.id === item.kind) ?? null : null;
+                if (!t) return false;
+                build.setTool(t);
+                return true;
+            }
             case "tool": {
                 const t = opts.tools[a.index];
                 if (!t) return false;
