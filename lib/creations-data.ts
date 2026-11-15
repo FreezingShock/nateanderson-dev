@@ -13,6 +13,7 @@ const Ic = {
     Sun: px("sun"),
     Pencil: px("pen"),
     Boxes: px("boxes"),
+    Crane: px("crane"),
     Layers: px("layers"),
     Settings: px("settings"),
 };
@@ -251,7 +252,7 @@ export const GAME_MODES: GameMode[] = [
         color: "var(--cm-good)",
         icon: Ic.Layers,
         tagline: "Idle games that keep growing while you're away.",
-        about: "Buttons, multipliers and resets, with progress saved in your browser. Close the tab and your farm keeps earning, up to a limit.",
+        about: "Buttons, multipliers and resets, with progress saved in your browser. Close the tab and your progress keeps earning, up to a limit.",
         coming: "The next incremental game is in development. It goes live in this section when it is playable.",
         games: [
             {
@@ -276,7 +277,7 @@ export const GAME_MODES: GameMode[] = [
                 slug: "groundbreak",
                 title: "Groundbreak",
                 status: "playable",
-                icon: Ic.Boxes,
+                icon: Ic.Crane,
                 blurb: "Run a construction company in the Bay Area. Twelve materials, each boosting the next, build a cutaway job floor by floor, and keep the skyline when you incorporate.",
                 features: ["12 chained materials", "Zoomable cutaway site", "Permanent skyline"],
                 href: "/creations/games/groundbreak",

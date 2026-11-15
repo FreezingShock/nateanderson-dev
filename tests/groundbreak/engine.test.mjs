@@ -29,7 +29,8 @@ test("a fresh firm starts with one gravel crew and makes gravel", () => {
     const s = E.fresh(0);
     assert.equal(s.crews[0], 1);
     run(s, 10);
-    assert.ok(s.amt[0] > D.TUNE.startGravel);
+    // the first job is waiting on Sand, so the foreman opens it at once and spends its price
+    assert.ok(s.amt[0] + D.UNLOCK_COST[1] * (s.open - 1) > D.TUNE.startGravel);
     assert.ok(finite(s));
 });
 
@@ -55,6 +56,7 @@ test("buying tiers spends the right currency and adds levels", () => {
 
 test("materials unlock one after another and pay from the one before", () => {
     const s = E.fresh(0);
+    s.amt[0] = 0;
     assert.equal(E.canUnlock(s, 2), false, "cannot skip ahead");
     assert.equal(E.canUnlock(s, 1), false, "needs the gravel");
     s.amt[0] = D.UNLOCK_COST[1];

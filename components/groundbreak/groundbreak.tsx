@@ -198,6 +198,13 @@ export function Groundbreak() {
     useEffect(() => {
         const now = Date.now();
         const loaded = load(window.localStorage);
+        if (!loaded) {
+            // A save that exists but cannot be read is copied aside before the new game overwrites it.
+            try {
+                const raw = window.localStorage.getItem(SAVE_KEY);
+                if (raw) { writeStored(window.localStorage, SAVE_KEY + "-corrupt", raw); note("Your saved game could not be read. A copy is kept for recovery and a new firm starts."); }
+            } catch { /* storage blocked */ }
+        }
         const s = loaded ?? fresh(now);
         if (loaded) {
             const gone = (now - s.savedAt) / 1000;
@@ -458,8 +465,8 @@ export function Groundbreak() {
 
             <Window open={win === "menu"} title="Menu" variant="settle" size="sm" icon="menu" onClose={() => setWin(null)}>
                 <MenuBody s={s} paused={paused} onPause={togglePause} simple={simple} onSimple={toggleSimple} fs={shell.supportsFullscreen} onFs={shell.toggleFullscreen} fsOn={shell.fullscreen}
-                    onImport={(st) => { const p = parse(st); if (!p) { note("That save could not be read."); return; } sRef.current = p; seen.current = { built: p.built, open: p.open, change: !!p.change }; save(); bump(); note("Save imported.", "hot"); }}
-                    onWipe={() => { sRef.current = fresh(Date.now()); seen.current = { built: 0, open: 1, change: false }; save(); setWin(null); setSel(null); bump(); }} onNote={note} />
+                    onImport={(st) => { const p = parse(st); if (!p) { note("That save could not be read."); return; } if (sRef.current) writeStored(window.localStorage, SAVE_KEY + "-backup", serialize(sRef.current)); sRef.current = p; seen.current = { built: p.built, open: p.open, change: !!p.change }; save(); bump(); note("Save imported. The old one is kept as a backup.", "hot"); }}
+                    onWipe={() => { if (sRef.current) writeStored(window.localStorage, SAVE_KEY + "-backup", serialize(sRef.current)); sRef.current = fresh(Date.now()); seen.current = { built: 0, open: 1, change: false }; save(); setWin(null); setSel(null); bump(); }} onNote={note} />
             </Window>
         </div>
     );
@@ -590,6 +597,7 @@ function Console({ run }: { run: (line: string) => { t: string; k?: string }[] }
 
 function MenuBody({ s, paused, onPause, simple, onSimple, fs, onFs, fsOn, onImport, onWipe, onNote }: { s: State; paused: boolean; onPause: () => void; simple: boolean; onSimple: () => void; fs: boolean; onFs: () => void; fsOn: boolean; onImport: (s: State) => void; onWipe: () => void; onNote: (t: string) => void }) {
     const file = useRef<HTMLInputElement>(null);
+    const [pending, setPending] = useState<State | null>(null);
     return (
         <div className="gb-menu">
             <button type="button" className="gb-row" onClick={onPause}>{paused ? "Resume" : "Pause"}<kbd>P</kbd></button>
@@ -603,8 +611,14 @@ function MenuBody({ s, paused, onPause, simple, onSimple, fs, onFs, fsOn, onImpo
                 const picked = await readPickedFile(f);
                 if (!picked.ok) { onNote(picked.error); return; }
                 const r = tools.importText(picked.data);
-                if (r.ok) onImport(r.data); else onNote(r.error);
+                if (r.ok) setPending(r.data); else onNote(r.error);
             }} />
+            {pending && (
+                <div className="gb-confirm">
+                    <p>Replace this save with the imported one? The current save is kept as a backup.</p>
+                    <div><button type="button" className="gb-go" onClick={() => { onImport(pending); setPending(null); }}>Replace save</button><button type="button" className="gb-go" onClick={() => setPending(null)}>Keep current</button></div>
+                </div>
+            )}
             <ConfirmGo label="Start over" sure="Deletes this save, skyline included. Sure?" onGo={onWipe} />
             <p className="gb-keys">1-0 - = materials · Q W E tiers · J jobs · K skyline · F firm · ` site console · wheel zoom · drag pan · R reset</p>
         </div>
