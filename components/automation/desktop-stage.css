@@ -78,6 +78,8 @@
     position: absolute; left: 50%; bottom: 16px; transform: translateX(-50%); z-index: 5;
     pointer-events: none; margin: 0; width: fit-content; max-width: min(440px, 40vw);
   }
+  /* The tool hint and notes ride above the objective card, whatever height the card has grown to. */
+  .ab-root.bw .bw-note { bottom: calc(var(--ab-next-h, 84px) + 28px); }
   .ab-root.bw .ab-more { pointer-events: auto; }
   .ab-root.bw .ab-drawer { pointer-events: auto; z-index: 6; }
 }
