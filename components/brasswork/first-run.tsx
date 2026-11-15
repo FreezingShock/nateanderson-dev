@@ -8,6 +8,7 @@ import type { CSSProperties } from "react";
 import type { HudData } from "@/lib/automation/types";
 import { iconStyle } from "@/lib/automation/icons";
 import { firstRunSteps, readFirstRunDone, writeFirstRunDone, type FirstRunStep } from "@/lib/brasswork/first-run";
+import { openHubMenu } from "@/components/automation/hub-menu";
 import "./quest-scroll.css";
 
 export type QuestState = {
@@ -102,6 +103,15 @@ export function QuestScroll({ quest, closing, onClose }: { quest: QuestState; cl
 
                 <footer className="ab-quest-actions">
                     <button type="button" className="ab-quest-btn ab-quest-btn-quiet" onClick={onFinish}>Skip quest</button>
+                    {step.id === "delivery" && current >= 0 && (
+                        <button
+                            type="button"
+                            className="ab-quest-btn"
+                            onClick={() => { onClose(); openHubMenu(); }}
+                        >
+                            Open hub
+                        </button>
+                    )}
                     <button type="button" className="ab-quest-btn" onClick={onClose}>Roll up</button>
                 </footer>
             </div>

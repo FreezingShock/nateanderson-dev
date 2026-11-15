@@ -217,7 +217,7 @@ export function AutomationHud({
       data-lowfx={data.settings.lowFx}
       data-reduce={data.settings.reduceMotion}
       data-palgroup={palGroup ?? "none"}
-      data-modal={drawer || screen || sheet ? "on" : "off"}
+      data-modal={drawer || screen || sheet || hubOpen ? "on" : "off"}
     >
       <header className="ab-top">
         <div className="ab-brand">
