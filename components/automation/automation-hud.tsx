@@ -343,12 +343,6 @@ export function AutomationHud({
               <span className="ab-dock-count" aria-hidden="true">{quest.finished}/{quest.steps.length}</span>
             </button>
           )}
-          {data.armed && (
-            <span className="ab-dock-rot" aria-label={`Turn ${data.rotation ?? 0} degrees, press R to turn`}>
-              <span className="ab-dock-rot-k">Turn · R</span>
-              <span className="ab-dock-rot-v">{data.rotation ?? 0}°</span>
-            </span>
-          )}
           {removeSlot && <div className="ab-dock-foot">{removeSlot}</div>}
         </nav>
 
