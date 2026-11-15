@@ -741,3 +741,28 @@ test("a belt pressed on a machine and dragged to another places the route the fi
     b.beginStroke({ x: 9, z: 9 });
     assert.ok(!b.isRoutedStroke());
 });
+
+test("touch routing: tap a machine, then tap the target; Esc or Cancel drops the pick", async () => {
+    const { BuildController } = await import("../../lib/automation/input/build.ts");
+    const world = memWorld();
+    world.set(0, 0, { kind: "machine", rot: 0 });
+    world.set(6, 0, { kind: "machine", rot: 0 });
+    const events = [];
+    const route = () => ({ ok: true, cells: [1, 2, 3].map((x) => ({ x, z: 1, rot: 1 })) });
+    const b = new BuildController({ world, board, lineKinds: ["belt"], route, onEvent: (e) => events.push(e.type + (e.active === undefined ? "" : ":" + e.active)) });
+    b.setTool(belt);
+    assert.equal(b.tap({ x: 0, z: 0 }), 0);
+    assert.ok(b.hasRouteFrom());
+    assert.ok(b.getHighlight().length > 0, "source is outlined");
+    assert.ok(b.clearRouteFrom());
+    assert.ok(!b.hasRouteFrom());
+    b.tap({ x: 0, z: 0 });
+    assert.equal(b.tap({ x: 6, z: 0 }), 3, "second tap lays the route");
+    assert.ok(!b.hasRouteFrom());
+    assert.equal(world.get(2, 1).kind, "belt");
+    assert.ok(b.undo());
+    assert.equal(world.get(2, 1), null, "one undo removes the whole route");
+    assert.ok(events.includes("route-source:true") && events.includes("route-source:false"));
+    // A free cell with no source pick is an ordinary single belt.
+    assert.equal(b.tap({ x: 9, z: 9 }), 1);
+});

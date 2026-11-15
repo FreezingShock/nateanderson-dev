@@ -90,7 +90,7 @@ export class PointerInput {
         const tool = this.opts.build.getTool();
         // A dragged-out Remove area follows the ground too, so its far corner never lands on a tall machine in front of it.
         // A routed belt aims at machine bodies, so a drop on a machine's top lands on the machine.
-        if (this.opts.build.isRoutedStroke()) return this.opts.heightAt;
+        if (this.opts.build.isRoutedStroke() || this.opts.build.hasRouteFrom()) return this.opts.heightAt;
         if (tool && (tool.id !== "delete" || this.opts.build.isRectStroke()) && this.opts.groundHeightAt) return this.opts.groundHeightAt;
         return this.opts.heightAt;
     }
@@ -285,7 +285,13 @@ export class PointerInput {
             this.opts.build.endStroke();
         } else if (p.mode === "pending" && e.type === "pointerup") {
             // Quick touch tap: place a single cell, or select a building when no tool is active.
-            const cell = this.cellAt(e.clientX, e.clientY);
+            let cell = this.cellAt(e.clientX, e.clientY);
+            const tl = this.opts.build.getTool();
+            // A tap on a machine's body with a belt armed picks that machine as a route end.
+            if (tl?.line && tl.id !== "delete" && this.opts.build.canRoute()) {
+                const onBody = this.cellAt(e.clientX, e.clientY, true);
+                if (onBody && this.opts.build.peek(onBody)) cell = onBody;
+            }
             if (cell) {
                 if (this.opts.build.getTool()) this.opts.build.tap(cell);
                 else this.opts.build.select(cell);

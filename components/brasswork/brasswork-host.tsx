@@ -432,6 +432,9 @@ export function BrassworkHost() {
                         refresh();
                     } else if (e.type === "rotate" || e.type === "undo") {
                         playSound(e.type);
+                    } else if (e.type === "route-source") {
+                        playSound("select");
+                        setNote(e.active ? "Now tap the machine to feed, or an empty cell. Cancel drops it." : "");
                     } else if (e.type === "deselect") {
                         // Bare ground or Esc: put the inspector and the pop-up away.
                         if (selectedId !== null) {
@@ -685,7 +688,7 @@ export function BrassworkHost() {
                                   : "Click a building to remove it, drag along belts, Shift-drag clears an area. Esc stops."
                               : id.startsWith("belt")
                                 ? touch
-                                  ? `Press and drag to lay ${name.toLowerCase()}. Cancel stops.`
+                                  ? `Press and drag to lay ${name.toLowerCase()}, or tap one machine then another to route it. Cancel stops.`
                                   : `Drag to lay ${name.toLowerCase()}, or drag from one machine to another to route it for you. Esc stops.`
                                 : touch
                                   ? `Tap to place ${name}. Hold to turn it. Cancel stops.`
