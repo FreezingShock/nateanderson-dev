@@ -43,7 +43,18 @@ export function GbSiteScene({ camera, job, skyline, reduce, paused, idle, crews 
     }, []);
     const { w: cw, h: ch } = size;
     const fit = Math.max(cw / (WORLD_W * K), ch / (WORLD_H * K));
-    const s = fit * camera.z;
+    // once the zoom has rested, snap the art scale to whole device pixels (when that moves it by a quarter or less)
+    // so every art pixel is the same width on screen and walking workers stop flickering; never while zooming
+    const rawS = fit * camera.z;
+    const [rest, setRest] = useState(false);
+    useEffect(() => {
+        setRest(false);
+        const t = window.setTimeout(() => setRest(true), 350);
+        return () => window.clearTimeout(t);
+    }, [rawS]);
+    const dpr = typeof window === "undefined" ? 1 : window.devicePixelRatio || 1;
+    const snapped = Math.max(1, Math.round(rawS * dpr)) / dpr;
+    const s = rest && Math.abs(snapped / rawS - 1) <= 0.25 ? snapped : rawS;
     // camera centre in art px of the near plane
     const fx = SITE_X + (camera.x - WORLD_W / 2) * K;
     const fy = OY + camera.y * K;
