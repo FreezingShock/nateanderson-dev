@@ -198,3 +198,11 @@
   .ab-root.bw .ab-build-text { flex: 1 1 140px; }
   .ab-root.bw .ab-info { min-width: 76px; padding: 0 8px; }
 }
+/* Number-key hint on a palette tile (its button is the positioning box). */
+.ab-root .ab-build-main { position: relative; }
+/* Number-key hint on a palette tile (keys 1 to 9 pick the open rows of the shown group). */
+.ab-root .ab-key-hint {
+  position: absolute; top: 4px; right: 4px; min-width: 16px; height: 16px; padding: 0 4px;
+  display: inline-grid; place-items: center; font-family: ui-monospace, monospace; font-weight: 600; font-size: 11px; line-height: 1;
+  color: #ffd98a; background: #0d0905; border: 1px solid #4a3a22; pointer-events: none;
+}

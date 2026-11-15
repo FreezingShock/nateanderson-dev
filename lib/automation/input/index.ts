@@ -25,6 +25,8 @@ export interface InputOptions {
     tools: ToolSpec[];
     // Optional build groups in display order. Tab and Shift+Tab step through them; the number keys then pick from the open group.
     groups?: ToolSpec[][];
+    /** Called when Tab or Shift+Tab moves to another group, with its index in `groups`. */
+    onGroup?: (index: number) => void;
     heightAt?: HeightFn;
     limits?: CameraLimits;
     initialPose?: Partial<OrbitPose>;
@@ -39,6 +41,9 @@ export interface InputController {
     build: BuildController;
     pointer: PointerInput;
     setToolById(id: string | null): void;
+    /** Index of the group the number keys pick from. */
+    group(): number;
+    setGroup(i: number): void;
     // Client-pixel position of a cell's centre, for pinning a pop-up. Null when the cell is behind the camera.
     screenPoint(cell: { x: number; z: number }): { x: number; y: number } | null;
     update(dt: number): void;
@@ -116,6 +121,7 @@ export function createInputController(opts: InputOptions): InputController {
                 const n = opts.groups.length;
                 groupIndex = (groupIndex + a.dir + n) % n;
                 build.setTool(null);
+                opts.onGroup?.(groupIndex);
                 return true;
             }
             case "pipette": {
@@ -191,6 +197,13 @@ export function createInputController(opts: InputOptions): InputController {
         build,
         pointer,
         setToolById,
+        group: () => groupIndex,
+        // Moves the number keys to another group (a dock click). Does not fire onGroup: the caller already knows.
+        setGroup(i: number) {
+            if (!opts.groups || i < 0 || i >= opts.groups.length || i === groupIndex) return;
+            groupIndex = i;
+            build.setTool(null);
+        },
         screenPoint(cell) {
             const rect = opts.element.getBoundingClientRect();
             if (rect.width === 0 || rect.height === 0) return null;
