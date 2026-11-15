@@ -73,13 +73,13 @@ export function SettingsWindow({ settings, onChange, onClose, slots }: {
     settings: HudSettings; onChange: (patch: Partial<HudSettings>) => void; onClose: () => void; slots?: SettingsSlots;
 }) {
     return (
-        <MenuWindow title="Workshop controls" label="Settings" art={<span className="bws-spin"><Ico id="settings" /></span>} onClose={onClose}>
+        <MenuWindow title="Workshop controls" label="Settings" variant="settle" art={<span className="bws-spin"><Ico id="settings" /></span>} onClose={onClose}>
             <div className="bws-body" data-panel="controls">
                         <Group title="Sound">
                             <Switch icon="sound" label="Sound" hint="Machine clicks, chimes and the workshop hum." on={settings.sound} onChange={(v) => onChange({ sound: v })} />
                         </Group>
                         <Group title="Display">
-                            <Switch icon="light" label="Simple visuals" hint="No shimmer, scrambling text or sliding panels, and fewer plants. Helps slower devices." on={settings.lowFx} onChange={(v) => onChange({ lowFx: v })} />
+                            <Switch icon="light" label="Simple visuals" hint="No shimmer, scrambling text or slides, and fewer plants." on={settings.lowFx} onChange={(v) => onChange({ lowFx: v })} />
                             <Switch icon="pause" label="Reduce motion" hint="Stops the belts, wind and every animation." on={settings.reduceMotion} onChange={(v) => onChange({ reduceMotion: v })} />
                             {slots?.display}
                         </Group>
