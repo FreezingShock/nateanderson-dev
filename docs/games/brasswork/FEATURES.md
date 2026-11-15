@@ -45,7 +45,7 @@ Owners are per area, one thread per file set. The threads: "Streamline Brasswork
 | New-player opening (drill, kiln, windmill, belts, first milestone) | working | `sim/data.ts` (`STARTER_KIT`: 80 iron plates) | `opening.test.mjs` |
 | Save and load, versioned (`SAVE_VERSION` 1), offline catch-up up to 8 h, run in 10 ms slices on load (`catchUpAway` in the host) so the page stays responsive; `resolve()` and belt-to-store answers are cached | working | `sim/save.ts`, `sim/world.ts` (`catchUp`), `brasswork-host.tsx` | `sim.test.mjs`, `save-golden.test.mjs` (checked-in v1 save keeps playing 60 s) |
 | Day clock, 1200 s day | working | `sim/progress.ts` (`dayClock`) | none direct |
-| Full-run pacing | untested: no bot plays start to prestige (B-05) | none | none |
+| Full-run pacing | modelled, not played: no soft-lock in the recipe tree; ideal lower bound for a perfect factory with 1 drill per ore and 2 of each machine is about 3 min to the first milestone and 15 min to Sky orrery first light (no belts, power or build time, so real play is longer; see `pacing-model-2026-11-15.txt`). Nobody has played start to prestige (B-05 placing half, P-01) | `scripts/automation/pacing-model.mjs` | `pacing-model.test.mjs` |
 
 ## Input and camera
 
@@ -54,8 +54,8 @@ Owners are per area, one thread per file set. The threads: "Streamline Brasswork
 | Orbit camera, top-down toggle (T), WASD and arrow pan, zoom (+ and -) | working | `input/camera.ts`, `input/keys.ts` | `input.test.mjs` |
 | Click and drag belt strokes, auto-route between machines, placement ignores machine bodies | working | `input/build.ts`, `sim/grid.ts` (`autoRoute`) | `input.test.mjs` |
 | Multi-cell ghost, rotate (R), pipette (Q), undo and redo, Delete on hover, X Remove mode | working | `input/index.ts`, `input/build.ts` | `input.test.mjs` |
-| BUILDING badge (item icon, name, turn, Esc) while any tool is armed; hover ghost under the cursor for belts and model-less tools before any drag | working, headless only | `components/brasswork/building-badge.tsx`, `brasswork-host.tsx` `updateGhost` | none |
 | Machine ports: crafters take in at the back edge, crafters and drills push out at the front edge; green input and brass output arrows in the tiles beside the placement ghost and a selected machine, turning with R | working, headless only | `sim/world.ts` `edgeCells`, `render/portarrows.ts`, `brasswork-host.tsx` `updatePorts` | `sim.test.mjs`, `stage2-layout.test.mjs` |
+| BUILDING badge (item icon, name, "Turn R · angle", Esc; the only turn display, the old dock tile is gone) while any tool is armed; hover ghost under the cursor for belts and model-less tools before any drag | working, headless only | `components/brasswork/building-badge.tsx`, `brasswork-host.tsx` `updateGhost` | none |
 | Shift-drag area Remove | working | `input/pointer.ts`, `input/build.ts` | `input.test.mjs` |
 | Copy and paste of building areas: Shift-drag with no tool selects, Ctrl/Cmd+C copies (or the building under the cursor), Ctrl/Cmd+V arms a paste that stays armed to stamp again, R turns the whole layout, Esc or right-click puts it away; one undo per paste; parts that are blocked, locked or unaffordable are skipped and counted in the note; the hub is never copied. Desktop only (no touch path yet) | working in headless Chrome | `input/build.ts`, `input/keys.ts`, `input/pointer.ts` | `input.test.mjs`, `scripts/automation/copy-paste-check.mjs` |
 | Number keys 1 to 9 pick from the open build group, Tab cycles groups | working | `input/keys.ts`, `components/automation/build-bar.tsx` | `input.test.mjs` |
