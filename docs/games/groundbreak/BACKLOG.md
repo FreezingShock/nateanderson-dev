@@ -49,7 +49,7 @@ Last audited 2026-11-15, `integration` at 5138bb6f.
 - `/mnt/project-files/portfolio/groundbreak/SPEC.md` still describes a bid board and 105 Gravel unlock prices. Update it (or replace it with a short pointer to FEATURES.md) so a new thread is not misled.
 - The console `help` and `gb` subcommand list in `commands.ts` should name every command; check `gb open`, `gb jobs`.
 
-### 11. Phone landscape, fractional-pixel shimmer, corrupt-save handling (from earlier notes)
+### 11. Phone landscape (DONE 2026-11-15), fractional-pixel shimmer, corrupt-save handling (from earlier notes)
 - Phone landscape: the dock, rail, cue and a window at 844 x 390 all fit and nothing covers the dig.
 - Shimmer: sprites and strips at fractional zoom show no shimmer; snap the camera to the pixel grid or round positions in `site-scene.tsx`.
 - Corrupt save: when `parse` returns null for a present but broken save, the page keeps a copy under a backup key and tells the player, instead of silently starting fresh. Test it.
@@ -76,3 +76,5 @@ HUD stacking (item 1): the page publishes the dock's real height as `--gb-dock-t
 Fog check (item 5): screenshots of sidewalk, clinic, tower, stadium and the bridge at 30% and 95% at 1440 and 390 in `/mnt/project-files/portfolio/groundbreak/fog/` (`shoot.mjs`, needs `VOXEL_BENCH=1`). The haze sits behind the hills, never over a job, and the bridge stage is clear.
 
 Item 7 check (390 wide, touch emulation, production build): every button and link in the game has an accessible name and a tooltip (0 unnamed, 0 without data-tip). Tapping a dock tile opens its card with the name, rate and stock and buys nothing. Script was a throwaway; the claim is also covered by reading the markup in `groundbreak.tsx`.
+
+Phone landscape (item 11a): at 844x390, 932x430 and 667x375 windows and the material card end above the dock and below the header, the cue stays clear of the rail and job card, the feed hides while a window is open. Screenshots `/mnt/project-files/portfolio/groundbreak/landscape/`; overlap check `hud-overlap/check.mjs` now includes 667x375.

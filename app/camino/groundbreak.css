@@ -578,7 +578,7 @@ html.gb-route .sf-foot { display: none !important; }
 }
 /* phone held sideways: the cue sits in the free top corner, clear of the rail and the job card */
 @media (max-height: 520px) and (min-width: 561px) and (max-width: 860px) {
-    .gb-root .gb-cue { top: 46px; right: 8px; left: auto; width: min(330px, calc(100vw - 556px)); }
+    .gb-root .gb-cue { top: 46px; right: 8px; left: auto; width: min(330px, calc(50vw - 128px)); }
 }
 @media (max-height: 520px) and (min-width: 861px) {
     .gb-root .gb-cue { top: 46px; left: 64px; right: auto; width: min(330px, calc(100vw - 300px)); }
@@ -596,3 +596,16 @@ html.gb-route .sf-foot { display: none !important; }
     .gb-root[data-win] .gb-cue, .gb-root[data-win] .gb-zoom, .gb-root[data-win] .gb-feed, .gb-root[data-win] .gb-card { display: none; }
 }
 @media (min-width: 861px) and (min-height: 521px) { .gb-root[data-win] .gb-cue, .gb-root[data-win] .gb-feed { display: none; } }
+
+/* ---- phone landscape (2026-11-15): windows and the material card end above the dock and below the header, and the feed steps aside ---- */
+@media (max-height: 520px) {
+    .gb-root .gb-win { max-height: calc(100% - var(--gb-dock-top, 70px) - 58px); }
+    .gb-root .gb-card { bottom: calc(var(--gb-dock-top, 70px) + 6px); max-height: calc(100% - var(--gb-dock-top, 70px) - 56px); overflow: auto; }
+    .gb-root[data-win] .gb-feed { display: none; }
+}
+@media (max-height: 520px) and (min-width: 561px) {
+    .gb-root .gb-cue button { min-width: 0; max-width: 100%; }
+    .gb-root .gb-cue strong { min-width: 0; flex: 0 1 auto; }
+    .gb-root .gb-cue kbd { display: none; }
+}
+@media (max-height: 520px) and (max-width: 700px) { .gb-root .gb-job { width: 200px; } }
