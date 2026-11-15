@@ -10,6 +10,8 @@ export type KeyAction =
     | { type: "delete-hover" }
     | { type: "toggle-delete" }
     | { type: "pipette" }
+    | { type: "copy" }
+    | { type: "paste" }
     | { type: "group"; dir: 1 | -1 }
     | { type: "tool"; index: number }
     | { type: "pan"; forward: number; right: number }
@@ -50,6 +52,8 @@ export function mapKey(e: KeyLike): KeyAction | null {
     if (mod) {
         if (key === "z") return e.shiftKey ? { type: "redo" } : { type: "undo" };
         if (key === "y") return { type: "redo" };
+        if (key === "c") return e.repeat ? null : { type: "copy" };
+        if (key === "v") return e.repeat ? null : { type: "paste" };
         return null;
     }
     // Tab cycles the build groups, Shift+Tab goes back. Checked before the shift filter below.
