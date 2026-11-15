@@ -26,7 +26,7 @@ import type {
 import { DEFAULT_CATALOG, SITES } from "./data";
 import { unlockedRecipes, dayClock, requestDone, currentCommission, buyResearch as buyResearchRaw, prestige as prestigeRaw } from "./progress";
 import { hubStageFor } from "../models/machines/hub";
-import { place as placeRaw, setRecipe as setRecipeRaw, setFilter as setFilterRaw, resolve, BATTERIES, depositUnder, hasOutputNeighbour } from "./world";
+import { place as placeRaw, setRecipe as setRecipeRaw, setFilter as setFilterRaw, resolve, BATTERIES, SPRING, depositUnder, hasOutputNeighbour } from "./world";
 
 export const DEFAULT_SETTINGS: HudSettings = { sound: false, reduceMotion: false, lowFx: false, numberFormat: "short", showRates: true };
 
@@ -63,9 +63,10 @@ function generatorDetail(world: World, cat: Catalog, b: Building): Partial<Machi
     const def = r0(cat, b.type);
     if (!r || r.kind !== "generator" || !def) return null;
     const battery = BATTERIES.includes(r.id);
-    const isWind = !battery && def.generatesKw !== undefined;
+    const steady = r.id === SPRING;
+    const isWind = !battery && !steady && def.generatesKw !== undefined;
     const wind = world.wind;
-    const producedKw = battery ? 0 : r.supply * Math.min(1, 2 * wind);
+    const producedKw = battery ? 0 : r.supply * (steady ? 1 : Math.min(1, 2 * wind)) * world.progress.bonus.power;
     const range = r.range;
     const fedCount = Object.values(world.buildings).filter((o) => {
         const orr = resolve(cat, o.type);
@@ -176,7 +177,7 @@ function reasonOf(world: World, cat: Catalog, b: Building, status: MachineStatus
     if (!r) return undefined;
     if (r.kind === "generator") {
         if (BATTERIES.includes(r.id)) return "Storing or releasing wind power";
-        const produced = r.supply * Math.min(1, 2 * world.wind);
+        const produced = r.supply * (r.id === SPRING ? 1 : Math.min(1, 2 * world.wind));
         return produced > 0 ? undefined : "Calm air: no wind to turn it";
     }
     if (r.kind === "miner") {
@@ -536,7 +537,7 @@ function nextStepOf(world: World, cat: Catalog, machines: MachineView[], milesto
     const req = hubStepsOf(world, cat).find((x) => x.kind === "request" && x.state === "now");
     if (drills === 0) return { text: "Place a drill on a resource node to start the flow.", actionLabel: "Select drill", actionId: "drill" };
     if (crafters === 0) return { text: "Add a kiln and set its recipe to smelt ore into ingots.", actionLabel: "Select kiln", actionId: "kiln" };
-    if (world.power.satisfaction < 1) return { text: "Machines are short of power. A windmill feeds machines within 6 cells of its centre.", actionLabel: "Select windmill", actionId: "windmill" };
+    if (world.power.satisfaction < 1) return { text: "Machines are short of power. A windmill feeds machines within 8 cells of its centre.", actionLabel: "Select windmill", actionId: "windmill" };
     if (req) {
         const parts = req.items.map((i) => `${i.name} ${i.have} of ${i.need}`);
         const opens = req.unlocks.map((u) => u.name).join(", ");
