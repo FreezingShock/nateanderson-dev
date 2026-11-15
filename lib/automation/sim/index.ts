@@ -3,7 +3,7 @@ export * from "../types";
 export { DEFAULT_CATALOG, PLACEHOLDER_CATALOG, PLACEHOLDER_TREE, ENGINE_DATA } from "./data";
 export { windAt, chargeOf, createWorld, place, placeError, remove, setRecipe, setFilter, unloaderIdleReason, step, advance, catchUp, summary, stock, addDeposit, depositUnder, hasOutputNeighbour, buildingAt, footprintCells, keyOf, resolve, DRILL, HUB, STARTER_KIT } from "./world";
 export type { CatchUpResult, CreateOptions, Kind, Resolved } from "./world";
-export { unlockedRecipes, buyResearch, checkMilestones, dayClock, prestige, offerSites } from "./progress";
+export { unlockedRecipes, buyResearch, checkMilestones, checkRequests, requestDone, dayClock, prestige, offerSites } from "./progress";
 export { SITES, START_NODE_SPOTS } from "./data";
 export type { SiteDef } from "./data";
 export { gridView, autoRoute, suggestSpot } from "./grid";

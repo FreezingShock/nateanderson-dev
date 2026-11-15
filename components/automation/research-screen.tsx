@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import "./research-screen.css";
 import type { MilestoneView, ResearchNode } from "@/lib/automation/types";
 import { RECIPE_TREE } from "@/lib/automation/data/tree";
@@ -11,11 +11,11 @@ import { MenuWindow } from "@/components/brasswork-ui/window";
 
 /** Tier headings, left to right. A node sits one column right of its deepest prerequisite. */
 const TIERS = ["Base", "Parts", "Components", "Clockworks", "Megaproject"];
-const CW = 132; // card width
-const CH = 138; // card height
-const GX = 36; // gap between columns (links run here)
-const GY = 12; // gap between rows
-const TOP = 30; // room for the tier headings
+const CW = 100; // card width
+const CH = 120; // card height
+const GX = 24; // gap between columns (links run here)
+const GY = 10; // gap between rows
+const TOP = 26; // room for the tier headings
 
 type Status = "done" | "ready" | "short" | "locked";
 
@@ -65,6 +65,7 @@ function Card({
   need,
   selected,
   related,
+  fresh,
   style,
   onPick,
 }: {
@@ -73,6 +74,7 @@ function Card({
   need: number;
   selected: boolean;
   related: boolean;
+  fresh?: "done" | "open";
   style?: React.CSSProperties;
   onPick: () => void;
 }) {
@@ -82,7 +84,7 @@ function Card({
       : status === "ready"
         ? `${bp(n.blueprintCost)} · ready`
         : status === "short"
-          ? `${bp(n.blueprintCost)} · need ${need} more`
+          ? `need ${need} more`
           : "Locked";
   return (
     <button
@@ -90,12 +92,13 @@ function Card({
       className="rs-card"
       data-status={status}
       data-related={related}
+      data-fresh={fresh}
       aria-pressed={selected}
       style={style}
       onClick={onPick}
     >
       <span className="rs-card-art">
-        <ResearchArt id={n.id} width={96} />
+        <ResearchArt id={n.id} width={80} />
         {status === "done" && <i className="rs-badge rs-badge-done" aria-hidden="true" />}
         {status === "locked" && <i className="rs-badge rs-badge-lock" aria-hidden="true" />}
       </span>
@@ -125,6 +128,28 @@ export function ResearchScreen({
   const byId = useMemo(() => new Map(nodes.map((n) => [n.id, n])), [nodes]);
   const statusOf = (n: ResearchNode): Status =>
     n.state === "done" ? "done" : n.state === "locked" ? "locked" : blueprints >= n.blueprintCost ? "ready" : "short";
+
+  // Cards that just changed state play a short stamp (researched) or unlock flash; cleared after the animation.
+  const prev = useRef<Map<string, Status> | null>(null);
+  const [fresh, setFresh] = useState<Record<string, "done" | "open">>({});
+  useEffect(() => {
+    const now = new Map(nodes.map((n) => [n.id, statusOf(n)] as const));
+    const before = prev.current;
+    prev.current = now;
+    if (!before) return;
+    const add: Record<string, "done" | "open"> = {};
+    now.forEach((st, id) => {
+      const was = before.get(id);
+      if (!was || was === st) return;
+      if (st === "done") add[id] = "done";
+      else if (was === "locked") add[id] = "open";
+    });
+    if (!Object.keys(add).length) return;
+    setFresh((f) => ({ ...f, ...add }));
+    const t = setTimeout(() => setFresh((f) => { const g = { ...f }; Object.keys(add).forEach((k) => delete g[k]); return g; }), 1400);
+    return () => clearTimeout(t);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [nodes, blueprints]);
 
   const [picked, setPicked] = useState<string | null>(() => {
     const open = nodes.filter((n) => n.state === "available");
@@ -183,6 +208,7 @@ export function ResearchScreen({
         need={Math.max(0, n.blueprintCost - blueprints)}
         selected={picked === n.id}
         related={related.has(n.id)}
+        fresh={fresh[n.id]}
         style={style}
         onPick={() => setPicked(n.id)}
       />
@@ -192,7 +218,7 @@ export function ResearchScreen({
   return (
     <MenuWindow
       title="Research"
-      size="xwide"
+      size="wide"
       art={<span style={uiIconStyle("research", 28)} aria-hidden="true" />}
       onClose={onClose}
     >
@@ -202,7 +228,11 @@ export function ResearchScreen({
               <span className="rs-bp-num">{blueprints}</span>
               <span className="rs-bp-lab">blueprints</span>
             </div>
-            <span className="rs-count">{doneCount} / {nodes.length} researched</span>
+            <p className="rs-bp-note">
+              Blueprints come from finished milestone crates and are spent here.
+              {nextMs ? <> Next: <b>{nextMs.name}</b>, +{nextMs.blueprintReward}.</> : null}
+            </p>
+            <span className="rs-count">{doneCount}/{nodes.length}</span>
           </div>
 
           <div className="rs-body">
@@ -240,7 +270,7 @@ export function ResearchScreen({
                 </svg>
                 {main.map((n) => {
                   const p = pos(n);
-                  return cardFor(n, { left: p.x, top: p.y, width: CW, height: CH });
+                  return cardFor(n, { left: p.x, top: p.y, width: CW, height: CH, ['--col' as string]: n.column });
                 })}
               </div>
 
@@ -265,11 +295,15 @@ export function ResearchScreen({
               {sel ? (
                 <>
                   <div className="rs-detail-scroll">
+                    <div className="rs-detail-top">
                     <div className="rs-detail-art" data-status={selStatus}>
-                      <ResearchArt id={sel.id} width={224} label={sel.name} />
+                      <ResearchArt id={sel.id} width={96} label={sel.name} />
                     </div>
+                    <div className="rs-detail-id">
                     <div className="rs-detail-tier">{tier}</div>
                     <h3 className="rs-detail-name">{sel.name}</h3>
+                    </div>
+                    </div>
                     {sel.note ? <p className="rs-detail-note">{sel.note}</p> : null}
 
                     <div className="rs-cost" data-status={selStatus}>

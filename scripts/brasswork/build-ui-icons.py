@@ -32,6 +32,9 @@ ORDER = [
     ("hammer", "Build"), ("rotate", "Rotate"), ("time", "Time / day"), ("pause", "Pause"),
     ("play", "Play"), ("fast", "Fast forward"), ("help", "Help"), ("info", "Info"),
     ("close", "Close"), ("back", "Back"), ("lock", "Locked"), ("done", "Done"), ("warn", "Warning"),
+    ("keep_plans", "Keep: blueprints and research"), ("keep_designs", "Keep: unlocked designs"), ("keep_routes", "Keep: routes found"),
+    ("keep_free", "Keep: one free machine"), ("keep_records", "Keep: records"), ("leave_machines", "Leave: machines and belts"),
+    ("leave_stock", "Leave: stored stock"), ("leave_fleets", "Leave: fleets"),
 ]
 
 

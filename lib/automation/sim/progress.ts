@@ -7,10 +7,19 @@ function researchedIn(world: World, nodeId: string): boolean {
     return world.progress.researched.includes(nodeId);
 }
 
+export function requestDone(world: World, id: string): boolean {
+    return (world.progress.requestsDone ?? []).includes(id);
+}
+
 // Recipes the player may use right now, given what has been researched.
 export function unlockedRecipes(world: World, cat: Catalog): string[] {
     const open = new Set<string>();
     for (const r of cat.tree.recipes) open.add(r.id);
+    // Recipes a hub request opens stay shut until that request is done.
+    for (const q of cat.tree.requests ?? []) {
+        if (requestDone(world, q.id)) continue;
+        for (const rec of q.unlocks.recipes) open.delete(rec);
+    }
     for (const n of cat.tree.research) {
         if (researchedIn(world, n.id)) continue;
         for (const rec of n.recipes) open.delete(rec);
@@ -38,6 +47,15 @@ export function checkMilestones(world: World, cat: Catalog): void {
         if (!met) continue;
         world.progress.milestonesDone.push(m.id);
         world.progress.blueprints += m.blueprints;
+    }
+}
+
+// Complete every hub request whose delivery is now met. Runs at the end of each step, next to the milestones.
+export function checkRequests(world: World, cat: Catalog): void {
+    for (const q of cat.tree.requests ?? []) {
+        if (requestDone(world, q.id)) continue;
+        if (!q.deliver.every((s) => (world.progress.delivered[s.item] ?? 0) >= s.qty)) continue;
+        (world.progress.requestsDone ??= []).push(q.id);
     }
 }
 

@@ -17,6 +17,7 @@ export const WINDMILLS = [[0, 4], [5, 5], [12, 6], [16, 8]];
 // deferred.id may be a function, for pieces placed later; tick(world) runs every tenth of a second.
 export function runStage2Layout(minutes = 10, windmills = WINDMILLS, extra = null, size = { width: 18, depth: 12 }) {
 const world = S.createWorld({ width: size.width, depth: size.depth, hub: HUB }, CAT);
+world.progress.requestsDone = CAT.tree.requests.map((r) => r.id); // this layout starts past the hub orders
 const log = [];
 const ok = (label, r) => { if (!r.ok) log.push(`FAIL ${label}: ${r.reason}`); return r.ok; };
 const belt = (x, z, rot) => ok(`belt ${x},${z}`, S.place(world, "belt", x, z, rot, CAT));

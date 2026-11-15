@@ -5,6 +5,7 @@
 // The world is 18 by 12 cells at one world unit per cell, which is the renderer's factory plateau.
 import { useCallback, useEffect, useRef, useState } from "react";
 import { AutomationHud } from "@/components/automation/automation-hud";
+import { openHubMenu } from "@/components/automation/hub-menu";
 import {
     DEFAULT_CATALOG,
     actions as simActions,
@@ -29,7 +30,9 @@ import {
     START_NODE_SPOTS,
 } from "@/lib/automation/sim";
 import type { VoxelIsland } from "@/lib/automation/render";
-import type { BuildWorld, InputController, MountedInput } from "@/lib/automation/input";
+import type { BuildWorld, InputController, MountedInput, ToolSpec } from "@/lib/automation/input";
+import { openRowsOf, type GroupId } from "@/components/automation/build-bar";
+import { DELETE_TOOL } from "@/lib/automation/input/build";
 import { getMachineModel, getHubModel, hubStageFor } from "@/lib/automation/models/machines";
 import { rotateCell, rotateSide } from "@/lib/automation/input/ports";
 import { nodeModel, variantForCell, type ResourceId } from "@/lib/automation/models/resources";
@@ -38,7 +41,7 @@ import { WATER_LEVEL } from "@/lib/automation/render/config";
 import { createBeltItems } from "@/lib/automation/render/beltitems";
 import { scatterProps } from "@/lib/automation/models/props";
 import { BrassworkExtras, MOODS, type AwayReport, type Mood } from "./extras";
-import { FirstRunGuide } from "./first-run";
+import { useFirstRunQuest } from "./first-run";
 import { BuildPopover, TrashButton } from "./build-popover";
 import { bw, bwHum, bwSetEnabled } from "@/lib/brasswork/sound";
 import { LightingRow, SaveRows } from "./settings-extras";
@@ -58,6 +61,12 @@ const NODE_SPOTS = START_NODE_SPOTS;
 const BOARD = { width: W, depth: D, originX: -W / 2, originZ: -D / 2 };
 
 const BELT_TIER: Record<string, number> = { belt: 0, "belt-copper": 1, "belt-steel": 2 };
+// The build dock's sections in display order. Tab and Shift+Tab step through them, and the number keys pick from the open one.
+const DOCK_ORDER: GroupId[] = ["logistics", "machines", "power"];
+const toolSpecOf = (id: string): ToolSpec => {
+    const r = resolve(CAT, id);
+    return { id, label: r?.name ?? id, line: id in BELT_TIER, footprint: r ? { w: r.footprint.w, d: r.footprint.d } : undefined };
+};
 const FACE: readonly (readonly [number, number])[] = [[0, 1], [1, 0], [0, -1], [-1, 0]];
 
 /** Which belt tile a plain sim belt cell should show, from what feeds it and what it feeds. */
@@ -116,6 +125,7 @@ export function BrassworkHost() {
     const [inputCtl, setInputCtl] = useState<InputController | null>(null);
     const [away, setAway] = useState<AwayReport | null>(null);
     const [mood, setMood] = useState<Mood>("Auto");
+    const quest = useFirstRunQuest(data);
     const moodRef = useRef<Mood>("Auto");
     const onMood = useCallback((m: Mood) => {
         moodRef.current = m;
@@ -132,8 +142,15 @@ export function BrassworkHost() {
     const snapshot = useCallback(() => snap.current?.() ?? null, []);
     // The palette tool the player armed (null when none). Mirrors the input module's tool so the palette can show it.
     const armedRef = useRef<string | null>(null);
+    // The build dock section that is open, mirrored from the HUD and the Tab keys.
+    const [dockGroup, setDockGroup] = useState<GroupId | null>(null);
+    const onDockGroup = useCallback((g: GroupId | null) => {
+        setDockGroup(g);
+        if (g) ctl.current?.group(DOCK_ORDER.indexOf(g));
+    }, []);
     const ctl = useRef<{
         setTool: (id: string | null) => void;
+        group: (index: number) => void;
         select: (id: string | null) => void;
         research: (id: string) => void;
         setRecipe: (id: string) => void;
@@ -278,9 +295,15 @@ export function BrassworkHost() {
                 const hub = Object.values(world.buildings).find((b) => b.type === "hub");
                 return hub ? center(hub.x - 1, hub.z - 1, 3, 3) : [0, 0];
             };
+            // The number keys' tool lists, one per dock section, rebuilt on every refresh so they match the open rows.
+            const dockTools: ToolSpec[][] = DOCK_ORDER.map(() => []);
             const refresh = () => {
                 const d = hudData(world, CAT, selectedId, settings);
                 d.armed = armedRef.current;
+                d.rotation = input.controller.build.getRot() * 90;
+                DOCK_ORDER.forEach((g, i) => {
+                    dockTools[i].splice(0, dockTools[i].length, ...openRowsOf(d.machines, g).slice(0, 9).map((r) => toolSpecOf(r.id)));
+                });
                 const ms = d.milestones.filter((m) => m.done);
                 const rs = d.research.filter((r) => r.state === "done").length;
                 const unlocked = d.research.filter((r) => r.state !== "locked").length;
@@ -360,6 +383,8 @@ export function BrassworkHost() {
                 board: BOARD,
                 world: buildWorld,
                 tools,
+                groups: dockTools,
+                onGroup: (i) => setDockGroup(DOCK_ORDER[i] ?? null),
                 heightAt,
                 initialPose: { target: { x: 0, y: 0, z: 0 }, yaw: 0.6, pitch: 0.75, distance: 18 },
                 limits: { bounds: { minX: -14, maxX: 14, minZ: -10, maxZ: 10 }, minDistance: 5, maxDistance: 34, minPitch: 0.35, maxPitch: 1.2, topDownPitch: 1.5, fovY: 0.55, smoothing: 12 },
@@ -378,6 +403,11 @@ export function BrassworkHost() {
                         // A short click or tap on a placed building (no tool active) opens its inspector.
                         // e.cell is in the shared input frame; the sim is offset by half the board (see buildWorld below).
                         const b = buildingAt(world, e.cell.x + W / 2, e.cell.z + D / 2, CAT);
+                        // The hub opens its own menu in place of the inspector and quick actions.
+                        if (b?.type === "hub") {
+                            openHubMenu();
+                            return;
+                        }
                         // Phone: the click opens only the pop-up; its Details button opens the inspector sheet.
                         if (!window.matchMedia("(max-width: 767px)").matches) {
                             selectedId = b ? b.id : null;
@@ -400,6 +430,17 @@ export function BrassworkHost() {
             let ghostKey = "";
             const updateGhost = () => {
                 const g = input.controller.build.ghost();
+                // Remove preview: outline every building cell the delete tool would clear, so a multi-cell machine shows whole.
+                if (g && g.tool.id === DELETE_TOOL.id) {
+                    const cells = g.cells.filter((k) => k.existing).map((k) => ({ x: k.x, z: k.z }));
+                    const dk = "del:" + cells.map((k) => `${k.x},${k.z}`).join(";");
+                    if (dk === ghostKey) return;
+                    if (ghostKey.startsWith("path:")) island.setGhostPath([]);
+                    ghostKey = dk;
+                    island.clearGhost();
+                    island.setHighlight(cells);
+                    return;
+                }
                 // A belt stroke glows as one path, cells in drag order, each facing the next.
                 if (g && g.tool.line && g.stroking && g.cells.length) {
                     const pk = "path:" + g.cells.map((k) => `${k.x},${k.z},${k.rot},${k.valid ? 1 : 0}`).join(";");
@@ -440,6 +481,7 @@ export function BrassworkHost() {
                     selectedId = b ? b.id : null;
                     refresh();
                 },
+                group: (index) => input.controller.setGroup(index),
                 setTool: (id) => {
                     input.controller.setToolById(id);
                     setNote(id ? `Click the floor to place ${resolve(CAT, id)?.name ?? id}. R rotates, Esc cancels.` : "");
@@ -565,9 +607,22 @@ export function BrassworkHost() {
             island.resize();
             island.start();
             refresh();
+            // Keys can change the armed tool or its rotation without a palette click (Escape, Q, R, Tab groups).
+            // After each key, mirror the input layer's tool into the HUD so the palette and the dock stay true.
+            const syncFromInput = () => {
+                const id = input.controller.build.getTool()?.id ?? null;
+                if (armedRef.current !== id) armedRef.current = id;
+                refresh();
+            };
+            const onKeySync = () => window.setTimeout(syncFromInput, 0);
+            // Clicks on the dock's Remove button arm the tool too, so the pointer counts as well as the keys.
+            window.addEventListener("keydown", onKeySync);
+            window.addEventListener("pointerup", onKeySync);
             cleanup = () => {
                 cancelAnimationFrame(raf);
                 window.removeEventListener("bw:save", save);
+                window.removeEventListener("keydown", onKeySync);
+                window.removeEventListener("pointerup", onKeySync);
                 save();
                 input.destroy();
                 window.removeEventListener("resize", onResize);
@@ -600,15 +655,9 @@ export function BrassworkHost() {
 
     return (
         <div className="bw-root">
-            <AutomationHud data={data} actions={{ onBuild, onSelect, onResearch, onSetRecipe, onPrestige, onSettings }} settingsSlots={{ display: <LightingRow mood={mood} onMood={onMood} />, save: <SaveRows /> }}>
+            <AutomationHud data={data} actions={{ onBuild, onSelect, onResearch, onSetRecipe, onPrestige, onSettings }} settingsSlots={{ display: <LightingRow mood={mood} onMood={onMood} />, save: <SaveRows /> }} removeSlot={inputCtl ? <TrashButton input={inputCtl} variant="dock" /> : undefined} quest={quest ?? undefined} dockGroup={dockGroup} onDockGroup={onDockGroup}>
                 <canvas ref={canvasRef} className="bw-canvas" />
                 <BrassworkExtras snapshot={snapshot} away={away} mood={mood} onMood={onMood} />
-                <FirstRunGuide data={data} />
-                {inputCtl && (
-                    <div className="bt-dock">
-                        <TrashButton input={inputCtl} />
-                    </div>
-                )}
                 {inputCtl && pop && (
                     <BuildPopover
                         input={inputCtl}

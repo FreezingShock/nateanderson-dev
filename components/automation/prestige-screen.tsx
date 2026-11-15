@@ -131,6 +131,18 @@ export function PrestigeScreen({
     const site = prestige.sites.find((s) => s.id === siteId) ?? null;
     const canHold = prestige.ready && !!site && !!onConfirm;
 
+    // Exit animation first, then hand control back. Skipped when motion is off.
+    const [closing, setClosing] = useState(false);
+    const panel = useRef<HTMLDivElement | null>(null);
+    const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const requestClose = () => {
+        if (closeTimer.current) return;
+        const still = !panel.current || getComputedStyle(panel.current).animationName === "none";
+        if (still) return onClose();
+        setClosing(true);
+        closeTimer.current = setTimeout(onClose, 170);
+    };
+
     const stop = () => {
         if (timer.current) clearInterval(timer.current);
         timer.current = null;
@@ -140,10 +152,11 @@ export function PrestigeScreen({
 
     useEffect(() => {
         const onKey = (e: KeyboardEvent) => {
-            if (e.key === "Escape") onClose();
+            if (e.key === "Escape") requestClose();
         };
         window.addEventListener("keydown", onKey);
         return () => window.removeEventListener("keydown", onKey);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [onClose]);
 
     const start = () => {
@@ -179,8 +192,9 @@ export function PrestigeScreen({
     return (
         <div
             className="pw-scrim"
-            onPointerDown={(e) => e.target === e.currentTarget && onClose()}
+            onPointerDown={(e) => e.target === e.currentTarget && requestClose()}
         >
+            <div className="pw-wrap" data-closing={closing || undefined} ref={panel}>
             <ArtPanel className="pw">
                 <section
                     className="pw-in"
@@ -196,7 +210,7 @@ export function PrestigeScreen({
                         <button
                             type="button"
                             className="pw-close"
-                            onClick={onClose}
+                            onClick={requestClose}
                             aria-label="Close"
                         >
                             Close
@@ -409,6 +423,7 @@ export function PrestigeScreen({
                     </footer>
                 </section>
             </ArtPanel>
+            </div>
         </div>
     );
 }

@@ -3,6 +3,7 @@
 // they need the host's mood state and the game's save slot.
 import Link from "next/link";
 import { useRef, useState } from "react";
+import { ArtGauge } from "@/components/brasswork-art";
 import { Choice, Row } from "@/components/automation/settings-window";
 import { deserialize } from "@/lib/automation/sim/save";
 import { MOODS, type Mood } from "./extras";
@@ -10,10 +11,16 @@ import { MOODS, type Mood } from "./extras";
 const SAVE_KEY = "brasswork-save-v1";
 
 export function LightingRow({ mood, onMood }: { mood: Mood; onMood: (m: Mood) => void }) {
+    const i = Math.max(0, MOODS.indexOf(mood));
     return (
-        <Row icon="time" label="Lighting" hint="Auto follows the clock." stack>
+        <div className="bws-row bws-dialrow">
+            <ArtGauge value={i / (MOODS.length - 1)} size={56} label={`Lighting: ${mood}`} />
+            <div className="bws-text">
+                <span className="bws-name">Lighting</span>
+                <span className="bws-hint">Auto follows the clock. Shows live behind this panel.</span>
+            </div>
             <Choice label="Lighting" value={mood} options={MOODS.map((m) => ({ value: m, label: m }))} onChange={onMood} />
-        </Row>
+        </div>
     );
 }
 

@@ -88,6 +88,9 @@ def furnace(p=0):
     sc.frustum(5, 5, 7, 7, 5, "steel", 0.05, y=23)
     sc.cylinder((4, 23, -9), (4, 44, -9), 2.6, "steel", 0.0, n=10)
     sc.cylinder((4, 44, -9), (4, 46, -9), 3.6, "brass", 0.1, n=10)
+    sc.box(-12, 12, 20, 21.5, -10, 10, "steel", 0.2)
+    sc.box(-12, -11, 21.5, 25, 9, 10, "brass", 0.1)
+    sc.box(11, 12, 21.5, 25, 9, 10, "brass", 0.1)
     sc.paint(c)
     window(c, sc, [(-7, 6, 14.1), (7, 6, 14.1), (7, 13, 14.1), (-7, 13, 14.1)])
     for x in (-5, 0, 5):
@@ -108,6 +111,9 @@ def press(p=0):
     sc.box(-15, 15, 36, 42, -5, 5, "brass", 0.0)
     sc.box(-6, 6, 18, 36, -5, 5, "steel", 0.0)
     sc.box(-8, 8, 15, 18, -7, 7, "brass", -0.05)
+    sc.cylinder((14, 26, 0), (17, 26, 0), 9, "brass", 0.05, n=18)
+    sc.cylinder((-13, 30, 3.2), (-13, 30, 4.4), 2.2, "brass", 0.1, n=12)
+    sc.box(10, 18, 3, 7, 6, 11, "steel", 0.2)
     sc.paint(c)
     return done(c)
 
@@ -122,6 +128,8 @@ def lathe(p=0):
     sc.cylinder((-9, 15, 0), (-5, 15, 0), 5.5, "brass", 0.05, n=16)
     sc.cylinder((-5, 15, 0), (14, 15, 0), 1.8, "iron", 0.2, n=10)
     sc.box(12, 18, 8, 19, -4, 4, "cu", -0.05)
+    sc.box(-2, 3, 22, 26, -3, 2, "patina", 0.05)
+    sc.cylinder((-14, 23, 0), (-14, 30, 0), 3, "brass", 0.0, n=12)
     sc.paint(c)
     q = sc.pt((-3, 15, 2))
     c.spark(q[0] + 4, q[1] + 1, 1, P["glow"][5])
@@ -136,6 +144,8 @@ def drawer(p=0):
     sc.box(-18, -8, 5, 15, -6, 6, "cu", 0.0)
     sc.cylinder((8, 14, -8), (8, 14, 8), 9, "brass", 0.0, n=20)
     sc.cylinder((8, 14, -6), (8, 14, 6), 7.5, "cu", 0.05, n=20, caps=False)
+    sc.cylinder((-16, 8, 9), (-16, 8, 13), 3, "cu", 0.1, n=12)
+    sc.box(-6, -4, 15, 22, -1, 1, "steel", 0.1)
     sc.paint(c)
     a, b = sc.pt((-8, 11, 0)), sc.pt((2, 18, 0))
     c.fill(line(*a, *b, 1.4), 0.8, "cu")
@@ -160,6 +170,9 @@ def assembler(p=0):
         hand = (sx * 4, 22, 0)
         sc.cylinder(elbow, hand, 1.3, "brass", 0.05, n=8)
         sc.cylinder(hand, (sx * 4, 18.5, 0), 0.7, "iron", 0.1, n=6)
+    sc.box(-16, -14, 16, 34, -2, 2, "steel", 0.1)
+    sc.box(14, 16, 16, 34, -2, 2, "steel", 0.1)
+    sc.box(-16, 16, 32, 34, -2, 2, "brass", 0.05)
     sc.paint(c)
     g = sc.pt((-10, 8, 13.1))
     c.fill(disc(*g, 3, 2.6), 0.8, "cream", outline="brass")
@@ -182,6 +195,7 @@ def fabricator(p=0):
         sc.cylinder((0, y0, 0), (0, y1, 0), max(r0, 0.5), "brass", 0.0, n=26, r2=max(r1, 0.5), caps=False)
     sc.extrude(gear_outline(7, 5.4, 10), 2.4, "brass", 0.1, frame=((0, 32, 0), (1, 0, 0), (0, 0, -1), (0, 1, 0)))
     sc.cylinder((0, 34, 0), (0, 38, 0), 2.0, "steel", 0.1, n=10)
+    sc.box(-14, -6, 4, 14, 10, 15, "steel", 0.1)
     sc.paint(c)
     for k in range(5):
         a = math.pi * (0.15 + 0.7 * k / 4)
@@ -202,6 +216,7 @@ def windmill(p=0):
     sc.frustum(9, 9, 5.5, 5.5, 30, "wood", 0.0, y=3)
     sc.frustum(6.5, 6.5, 3, 3, 6, "cu", 0.0, y=33)
     sc.cylinder((0, 34, 4), (0, 34, 9), 1.6, "iron", 0.1, n=8)
+    sc.cylinder((9, 6, -2), (13, 6, -2), 2.4, "cu", 0.05, n=12)
     sc.paint(c)
     hx, hy = sc.pt((0, 34, 9))
     k = FIT["k"] * 0.95
@@ -232,6 +247,8 @@ def spring_winder(p=0):
     sc.cylinder((-10.5, 20, 0), (10.5, 20, 0), 1.6, "iron", 0.1, n=10)
     sc.cylinder((-6, 20, 0), (6, 20, 0), 11, "steel", -0.15, n=26)
     sc.extrude(gear_outline(6.5, 5, 10), 2.2, "cu", 0.05, frame=((13.5, 20, 0), (0, 0, 1), (0, 1, 0), (1, 0, 0)))
+    sc.box(-15, -12, 3, 28, -4, -2, "steel", 0.15)
+    sc.box(-16, -11, 10, 16, -3, 2, "iron", 0.05)
     sc.paint(c)
     # the spiral mainspring on the near face of the drum
     k = FIT["k"]
@@ -255,6 +272,8 @@ def spring_store(p=0):
         sc.cylinder((0, y, 0), (0, y + 2, 0), 12.6, "gun", 0.05, n=24)
     sc.cylinder((0, 22, 0), (0, 25, 0), 9, "gun", 0.1, n=20)
     sc.cylinder((0, 25, 0), (0, 29, 0), 2.2, "iron", 0.1, n=10)
+    sc.box(-13, -11, 3, 24, -13, -11, "steel", 0.1)
+    sc.cylinder((-12, 26, -12), (-12, 29, -12), 2.5, "brass", 0.05, n=10)
     sc.paint(c)
     k = FIT["k"]
     win = poly([sc.pt((x, y, 12.3)) for x, y in [(-5, 9), (5, 9), (5, 17), (-5, 17)]])

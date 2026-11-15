@@ -365,7 +365,8 @@ test("delete on a multi-cell building removes it once, even when several of its 
     b.setTool(A.DELETE_TOOL);
     b.beginStroke({ x: 8, z: 8 });
     b.updateStroke({ x: 9, z: 9 });
-    assert.equal(b.endStroke(), 1, "one building removed");
+    // The count is cells cleared: the whole 2 by 2 footprint, once, however many of its cells the stroke touched.
+    assert.equal(b.endStroke(), 4, "all four footprint cells cleared once");
     assert.equal(world.buildings.size, 0);
 });
 
@@ -588,4 +589,69 @@ test("a 2 by 1 machine's far cell and its port side follow each rotation", async
     // Rot 3 runs along z, flipped, so the +x end lands on the +z end, cell (0,1), and the front faces -x.
     assert.deepEqual(rotateCell(1, 0, 2, 1, 3), { x: 0, z: 1 });
     assert.equal(rotateSide(0, 3), 3);
+});
+
+// Delete on a multi-cell building previews and removes the whole footprint, from any of its cells.
+function buildingWorld(cells, anchor, kind) {
+    const board = new Map();
+    for (const [x, z] of cells) board.set(`${x},${z}`, { kind, rot: 0, anchor });
+    return {
+        board,
+        get: (x, z) => board.get(`${x},${z}`) ?? null,
+        set: (x, z, item) => (item ? board.set(`${x},${z}`, item) : board.delete(`${x},${z}`)),
+    };
+}
+
+for (const [label, cells] of [
+    ["2 by 2", [[0, 0], [1, 0], [0, 1], [1, 1]]],
+    ["2 by 1 along x", [[0, 0], [1, 0]]],
+    ["1 by 2 along z", [[0, 0], [0, 1]]],
+    ["3 by 3", [[0, 0], [1, 0], [2, 0], [0, 1], [1, 1], [2, 1], [0, 2], [1, 2], [2, 2]]],
+]) {
+    test(`delete previews the whole ${label} footprint from any cell`, async () => {
+        const { BuildController, DELETE_TOOL } = await import("../../lib/automation/input/build.ts");
+        for (const hover of cells) {
+            const world = buildingWorld(cells, { x: 0, z: 0 }, "drill");
+            const b = new BuildController({ world, board: { width: 20, depth: 20 }, lineKinds: [] });
+            b.setTool(DELETE_TOOL);
+            b.setHover({ x: hover[0], z: hover[1] });
+            const g = b.ghost();
+            const got = g.cells.map((c) => `${c.x},${c.z}`).sort();
+            assert.deepEqual(got, cells.map(([x, z]) => `${x},${z}`).sort(), `hover ${hover}`);
+            assert.ok(g.cells.every((c) => c.valid), "every cell of the building is removable");
+        }
+    });
+
+    test(`deleting from any cell removes the whole ${label} footprint`, async () => {
+        const { BuildController, DELETE_TOOL } = await import("../../lib/automation/input/build.ts");
+        for (const hover of cells) {
+            const world = buildingWorld(cells, { x: 0, z: 0 }, "drill");
+            const b = new BuildController({ world, board: { width: 20, depth: 20 }, lineKinds: [] });
+            b.setTool(DELETE_TOOL);
+            b.setHover({ x: hover[0], z: hover[1] });
+            b.deleteAt({ x: hover[0], z: hover[1] });
+            for (const [x, z] of cells) assert.equal(world.get(x, z), null, `cell ${x},${z} after deleting from ${hover}`);
+        }
+    });
+}
+
+test("mapKey: Q is the pipette, and a repeat is ignored", () => {
+    assert.deepEqual(mapKey({ key: "q", type: "keydown", repeat: false }), { type: "pipette" });
+    assert.equal(mapKey({ key: "q", type: "keydown", repeat: true }), null);
+});
+
+test("mapKey: Tab cycles build groups forward, Shift+Tab backward", () => {
+    assert.deepEqual(mapKey({ key: "Tab", type: "keydown", repeat: false, shiftKey: false }), { type: "group", dir: 1 });
+    assert.deepEqual(mapKey({ key: "Tab", type: "keydown", repeat: false, shiftKey: true }), { type: "group", dir: -1 });
+});
+
+test("a tap with the delete tool removes the whole building under the cell", async () => {
+    const { BuildController, DELETE_TOOL } = await import("../../lib/automation/input/build.ts");
+    const cells = [[0, 0], [1, 0], [0, 1], [1, 1]];
+    const world = buildingWorld(cells, { x: 0, z: 0 }, "kiln");
+    const b = new BuildController({ world, board: { width: 20, depth: 20 }, lineKinds: [] });
+    b.setTool(DELETE_TOOL);
+    const n = b.tap({ x: 1, z: 1 });
+    assert.equal(n, 4, "all four cells changed");
+    for (const [x, z] of cells) assert.equal(world.get(x, z), null, `cell ${x},${z}`);
 });

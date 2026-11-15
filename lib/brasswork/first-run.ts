@@ -5,6 +5,11 @@ export const FIRST_RUN_KEY = "brasswork-first-run-v1";
 
 export type FirstRunStep = { id: string; title: string; hint: string; done: boolean };
 
+/** The live text of the open hub order, when the goal strip is pointing at one. */
+function openHubOrder(data: HudData): string | null {
+    return data.nextStep.actionId === "hub-menu" && data.nextStep.text ? data.nextStep.text : null;
+}
+
 export function firstRunSteps(data: HudData): FirstRunStep[] {
     const count = (id: string) => data.machines.find((m) => m.id === id)?.count ?? 0;
     const belts = data.machines.filter((m) => m.id.startsWith("belt")).reduce((a, m) => a + m.count, 0);
@@ -28,10 +33,13 @@ export function firstRunSteps(data: HudData): FirstRunStep[] {
             done: belts > 0,
         },
         {
+            // The last step follows the hub ladder, so the scroll and the goal strip never disagree. Any filled hub
+            // order counts, including the early requests that come before the first milestone. While one is open,
+            // the step quotes its live order.
             id: "delivery",
             title: "Make your first delivery",
-            hint: "Deliveries to the hub finish milestones and earn blueprints.",
-            done: data.milestones.some((m) => m.done),
+            hint: openHubOrder(data) ?? "Deliveries to the hub finish milestones and earn blueprints.",
+            done: data.hub.doneCount > 0 || data.milestones.some((m) => m.done),
         },
     ];
 }

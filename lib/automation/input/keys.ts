@@ -9,6 +9,8 @@ export type KeyAction =
     | { type: "topdown" }
     | { type: "delete-hover" }
     | { type: "toggle-delete" }
+    | { type: "pipette" }
+    | { type: "group"; dir: 1 | -1 }
     | { type: "tool"; index: number }
     | { type: "pan"; forward: number; right: number }
     | { type: "walk"; dir: WalkDir; down: boolean }
@@ -50,6 +52,8 @@ export function mapKey(e: KeyLike): KeyAction | null {
         if (key === "y") return { type: "redo" };
         return null;
     }
+    // Tab cycles the build groups, Shift+Tab goes back. Checked before the shift filter below.
+    if (key === "Tab" && !e.ctrlKey && !e.metaKey && !e.altKey) return e.repeat ? null : { type: "group", dir: e.shiftKey ? -1 : 1 };
     if (e.shiftKey && key !== "ArrowUp" && key !== "ArrowDown" && key !== "ArrowLeft" && key !== "ArrowRight") return null;
 
     switch (key) {
@@ -59,6 +63,8 @@ export function mapKey(e: KeyLike): KeyAction | null {
             return e.repeat ? null : { type: "topdown" };
         case "x":
             return e.repeat ? null : { type: "toggle-delete" };
+        case "q":
+            return e.repeat ? null : { type: "pipette" };
         case "Delete":
         case "Backspace":
             return { type: "delete-hover" };

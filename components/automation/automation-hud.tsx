@@ -1,26 +1,78 @@
 "use client";
 
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import "@/components/brasswork-ui/brass-kit.css";
 import "@/components/brasswork-ui/scrollbar.css";
 import "./automation-hud.css";
 import type { HudData } from "@/lib/automation/types";
 import type { HudActions } from "./types";
 import { ResourceStrip } from "./resource-strip";
-import { BuildList } from "./build-bar";
+import { BuildList, GROUP_ICON, GROUP_TITLE, type GroupId } from "./build-bar";
 import { Inspector } from "./inspector";
 import { Milestones, PrestigeCard, Section } from "./factory-sections";
+import { MenuWindow } from "@/components/brasswork-ui/window";
 import { SettingsWindow, type SettingsSlots } from "./settings-window";
 import { ProductionWindow } from "./production-window";
 import { ExpeditionWindow } from "./expedition-window";
 import { ResearchScreen } from "./research-screen";
 import { PrestigeScreen } from "./prestige-screen";
+import { HubMenu, HubToast, HUB_OPEN_EVENT, openHubMenu } from "./hub-menu";
 import "./brasswork-skin.css";
+import "./desktop-stage.css";
 import { canAfford } from "./format";
 import { uiIconStyle } from "@/lib/automation/icons/ui";
+import { QuestScroll, type QuestState } from "@/components/brasswork/first-run";
 
 /** A 24px HUD glyph. Decorative: the text beside it carries the name. */
 const Ico = ({ id }: { id: string }) => <span className="ab-ico" style={uiIconStyle(id, 24)} aria-hidden="true" />;
+
+/** Pixel glyphs for the build dock, drawn in brass. Each group has its own shape; colour follows the button. */
+const DOCK_GLYPH: Record<GroupId, ReactNode> = {
+  machines: (
+    <>
+      <rect x="6.5" y="0.5" width="3" height="3" />
+      <rect x="6.5" y="12.5" width="3" height="3" />
+      <rect x="0.5" y="6.5" width="3" height="3" />
+      <rect x="12.5" y="6.5" width="3" height="3" />
+      <rect x="2.5" y="2.5" width="2" height="2" />
+      <rect x="11.5" y="2.5" width="2" height="2" />
+      <rect x="2.5" y="11.5" width="2" height="2" />
+      <rect x="11.5" y="11.5" width="2" height="2" />
+      <rect x="3.5" y="3.5" width="9" height="9" />
+      <rect x="6" y="6" width="4" height="4" fill="#20170c" />
+    </>
+  ),
+  logistics: (
+    <>
+      <rect x="1" y="5" width="14" height="6" fill="none" stroke="currentColor" strokeWidth="2" />
+      <rect x="2" y="4" width="2" height="2" />
+      <rect x="12" y="4" width="2" height="2" />
+      <rect x="2" y="10" width="2" height="2" />
+      <rect x="12" y="10" width="2" height="2" />
+      <path d="M6 6 L10 8 L6 10 Z" />
+    </>
+  ),
+  power: <path d="M9.5 0.5 L3 9 L7.5 9 L6 15.5 L13 6.5 L8.5 6.5 L10.5 0.5 Z" />,
+};
+const DockGlyph = ({ group }: { group: GroupId }) => (
+  <svg className="ab-dock-glyph" viewBox="0 0 16 16" width="26" height="26" aria-hidden="true" shapeRendering="crispEdges" fill="currentColor">
+    {DOCK_GLYPH[group]}
+  </svg>
+);
+/** A rolled parchment scroll, drawn in brass: two rolls with the paper between. */
+const QuestGlyph = () => (
+  <svg className="ab-dock-glyph" viewBox="0 0 16 16" width="26" height="26" aria-hidden="true" shapeRendering="crispEdges" fill="currentColor">
+    <rect x="1" y="2" width="14" height="3" />
+    <rect x="0" y="2" width="2" height="3" fill="#20170c" />
+    <rect x="14" y="2" width="2" height="3" fill="#20170c" />
+    <rect x="1" y="11" width="14" height="3" />
+    <rect x="0" y="11" width="2" height="3" fill="#20170c" />
+    <rect x="14" y="11" width="2" height="3" fill="#20170c" />
+    <rect x="3" y="5" width="10" height="6" fill="#20170c" />
+    <rect x="5" y="7" width="6" height="1" />
+    <rect x="5" y="9" width="4" height="1" />
+  </svg>
+);
 
 type Drawer = "expedition" | "stats" | "settings";
 type Screen = "research" | "prestige" | "expedition";
@@ -44,12 +96,24 @@ export function AutomationHud({
   actions,
   children,
   settingsSlots,
+  removeSlot,
+  quest,
+  dockGroup,
+  onDockGroup,
 }: {
   data: HudData;
   actions: HudActions;
   children?: ReactNode;
   /** Extra Settings rows supplied by the host (lighting, save and leave). */
   settingsSlots?: SettingsSlots;
+  /** Desktop dock foot: the Remove tool button, shown at the bottom of the left dock. */
+  removeSlot?: ReactNode;
+  /** The starter quest, when one is running. Its scroll opens from the dock's Quest button. */
+  quest?: QuestState;
+  /** The build dock section the host says is open (Tab moves it). Undefined leaves the HUD to manage it alone. */
+  dockGroup?: GroupId | null;
+  /** Called when the player opens or closes a dock section, so the host can keep the number keys in step. */
+  onDockGroup?: (g: GroupId | null) => void;
 }) {
   const [drawer, setDrawer] = useState<Drawer | null>(null);
   const [screen, setScreen] = useState<Screen | null>(null);
@@ -59,18 +123,95 @@ export function AutomationHud({
   const [sheet, setSheet] = useState<"pal" | "factory" | null>(null);
   // Phone only: the "More" sheet lists the drawers, so the bottom bar stays at four tabs.
   const [more, setMore] = useState(false);
+  // Desktop: one build group flyout from the left dock, and the Milestones window from the right dock.
+  const [palGroup, setPalGroup] = useState<GroupId | null>(null);
+  // The section that is closing. It plays its exit while the newly chosen section plays its entrance.
+  const [palLeaving, setPalLeaving] = useState<GroupId | null>(null);
+  const leaveTimer = useRef<number | null>(null);
+  useEffect(() => () => { if (leaveTimer.current !== null) window.clearTimeout(leaveTimer.current); }, []);
+  const leavePal = (from: GroupId) => {
+    setPalLeaving(from);
+    if (leaveTimer.current !== null) window.clearTimeout(leaveTimer.current);
+    leaveTimer.current = window.setTimeout(() => { setPalLeaving(null); leaveTimer.current = null; }, 170);
+  };
+  // One section at a time: choosing another section closes the open one with its exit animation.
+  // The quest scroll shares the one-section-at-a-time rule with the build flyouts.
+  const [questOpen, setQuestOpen] = useState(false);
+  // True while the scroll rolls back up, so it stays mounted for its exit animation.
+  const [questClosing, setQuestClosing] = useState(false);
+  const questTimer = useRef<number | null>(null);
+  useEffect(() => () => { if (questTimer.current !== null) window.clearTimeout(questTimer.current); }, []);
+  const closeQuest = () => {
+    if (!questOpen) return;
+    setQuestOpen(false);
+    setQuestClosing(true);
+    if (questTimer.current !== null) window.clearTimeout(questTimer.current);
+    questTimer.current = window.setTimeout(() => { setQuestClosing(false); questTimer.current = null; }, 170);
+  };
+  const openQuest = () => {
+    if (questTimer.current !== null) { window.clearTimeout(questTimer.current); questTimer.current = null; }
+    setQuestClosing(false);
+    if (palGroup) { leavePal(palGroup); setPalGroup(null); onDockGroup?.(null); }
+    setQuestOpen(true);
+  };
+  const toggleQuest = () => (questOpen ? closeQuest() : openQuest());
+  const choosePal = (g: GroupId) => {
+    if (questOpen) closeQuest();
+    if (palGroup === g) { leavePal(g); setPalGroup(null); onDockGroup?.(null); return; }
+    if (palGroup) leavePal(palGroup);
+    setPalGroup(g);
+    onDockGroup?.(g);
+  };
+  const closePal = () => {
+    if (!palGroup) return;
+    leavePal(palGroup);
+    setPalGroup(null);
+    onDockGroup?.(null);
+  };
+  // Tab and Shift+Tab move the open section from the host (the number keys follow it). Opening it here is a plain
+  // state change, so it does not call back.
+  useEffect(() => {
+    if (dockGroup === undefined || dockGroup === palGroup) return;
+    if (dockGroup === null) {
+      if (palGroup) { leavePal(palGroup); setPalGroup(null); }
+      return;
+    }
+    if (questOpen) closeQuest();
+    if (palGroup) leavePal(palGroup);
+    setPalGroup(dockGroup);
+    // leavePal and closeQuest read the current section; this runs only when the host's section changes.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [dockGroup]);
+  const [milestonesOpen, setMilestonesOpen] = useState(false);
+  // The hub menu opens from the top bar, the goal strip, the phone More sheet, or a click on the hub in the world.
+  const [hubOpen, setHubOpen] = useState(false);
+  useEffect(() => {
+    const open = () => {
+      setDrawer(null);
+      setScreen(null);
+      setMilestonesOpen(false);
+      setMore(false);
+      setHubOpen(true);
+    };
+    window.addEventListener(HUB_OPEN_EVENT, open);
+    return () => window.removeEventListener(HUB_OPEN_EVENT, open);
+  }, []);
   const mode = data.settings.numberFormat;
 
   useEffect(() => {
-    if (!drawer && !screen) return;
+    if (!drawer && !screen && !palGroup) return;
     const onKey = (e: KeyboardEvent) => {
       if (e.key !== "Escape") return;
-      if (screen) setScreen(null);
-      else setDrawer(null);
+      // Screens and windows (drawers included) handle Escape themselves, so their exit animation can play.
+      // Only the build flyout is closed here.
+      if (screen || drawer) return;
+      closePal();
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [drawer, screen]);
+    // closePal reads the current section; re-subscribe whenever it changes.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [drawer, screen, palGroup]);
 
   const toggle = (d: Drawer) => {
     if (d === "expedition") {
@@ -97,6 +238,8 @@ export function AutomationHud({
       data-inspect={data.selected ? "on" : "off"}
       data-lowfx={data.settings.lowFx}
       data-reduce={data.settings.reduceMotion}
+      data-palgroup={palGroup ?? "none"}
+      data-modal={drawer || screen || sheet || hubOpen ? "on" : "off"}
     >
       <header className="ab-top">
         <div className="ab-brand">
@@ -117,6 +260,10 @@ export function AutomationHud({
             <Ico id="research" />
             Research
           </button>
+          <button type="button" className="ab-text-btn" aria-expanded={hubOpen} onClick={() => (hubOpen ? setHubOpen(false) : openHubMenu())}>
+            <Ico id="milestones" />
+            Hub
+          </button>
           {(["expedition", "stats", "settings"] as const).map((d) => (
             <button
               key={d}
@@ -133,7 +280,49 @@ export function AutomationHud({
       </header>
 
       <div className="ab-body">
-        <aside className="ab-pal" aria-label="Machines">
+        {/* Desktop only: a slim left dock. One click opens that group as a flyout, so the resting screen stays mostly island. */}
+        <nav className="ab-dock ab-dock-left" aria-label="Build groups">
+          {(["logistics", "machines", "power"] as const).map((g) => {
+            const open = data.machines.filter((m) => (m.group ?? "machines") === g && m.unlocked).length;
+            const armedHere = data.armed != null && data.machines.some((m) => m.id === data.armed && (m.group ?? "machines") === g);
+            return (
+              <button
+                key={g}
+                type="button"
+                className="ab-dock-btn"
+                aria-pressed={palGroup === g}
+                aria-label={`${GROUP_TITLE[g]}, ${open} open`}
+                data-armed={armedHere}
+                onClick={() => choosePal(g)}
+              >
+                <DockGlyph group={g} />
+                <span className="ab-dock-label">{GROUP_TITLE[g]}</span>
+              </button>
+            );
+          })}
+          {quest && (
+            <button
+              type="button"
+              className="ab-dock-btn ab-dock-quest"
+              aria-pressed={questOpen}
+              aria-label={`Starter quest, ${quest.finished} of ${quest.steps.length} done. ${questOpen ? "Roll up the scroll" : "Open the scroll"}`}
+              onClick={toggleQuest}
+            >
+              <QuestGlyph />
+              <span className="ab-dock-label">Quest</span>
+              <span className="ab-dock-count" aria-hidden="true">{quest.finished}/{quest.steps.length}</span>
+            </button>
+          )}
+          {data.armed && (
+            <span className="ab-dock-rot" aria-label={`Turn ${data.rotation ?? 0} degrees, press R to turn`}>
+              <span className="ab-dock-rot-k">Turn · R</span>
+              <span className="ab-dock-rot-v">{data.rotation ?? 0}°</span>
+            </span>
+          )}
+          {removeSlot && <div className="ab-dock-foot">{removeSlot}</div>}
+        </nav>
+
+        <aside className="ab-pal" key={palGroup ?? "none"} aria-label="Machines">
           {/* The group panels below carry the visible titles and counts; this heading is for screen readers only. */}
           <h2 className="ab-sr-only">Machines</h2>
           <BuildList
@@ -141,16 +330,31 @@ export function AutomationHud({
             resources={data.resources}
             selectedId={selectedId}
             armedId={data.armed ?? null}
+            group={palGroup}
             numberFormat={mode}
             onBuild={(id) => {
-              // Arming a tool on phone closes the Machines sheet so the player can place straight away.
+              // Arming a tool closes the palette so the player can place straight away (phone: the sheet; desktop: the flyout).
               const arming = data.armed !== id;
               actions.onBuild(id);
-              if (arming) setSheet(null);
+              if (arming) { setSheet(null); closePal(); }
             }}
             onSelect={actions.onSelect}
           />
         </aside>
+        {/* Desktop only: the section that just closed plays its exit. It is inert, so it takes no input. */}
+        {palLeaving && (
+          <aside className="ab-pal ab-pal-leaving" aria-hidden="true" inert>
+            <BuildList
+              machines={data.machines}
+              resources={data.resources}
+              selectedId={null}
+              group={palLeaving}
+              numberFormat={mode}
+              onBuild={() => {}}
+              onSelect={() => {}}
+            />
+          </aside>
+        )}
 
         <div className="ab-center">
           <div className="ab-stage">{children}</div>
@@ -206,6 +410,10 @@ export function AutomationHud({
           </nav>
           {more && (
             <div className="ab-more" role="menu" aria-label="More menus">
+              <button type="button" role="menuitem" className="ab-more-item" onClick={openHubMenu}>
+                <Ico id="milestones" />
+                Hub
+              </button>
               <button
                 type="button"
                 role="menuitem"
@@ -219,6 +427,21 @@ export function AutomationHud({
                 <Ico id="prestige" />
                 Prestige
               </button>
+              {quest && (
+                <button
+                  type="button"
+                  role="menuitem"
+                  className="ab-more-item"
+                  onClick={() => {
+                    setMore(false);
+                    setSheet(null);
+                    toggleQuest();
+                  }}
+                >
+                  <QuestGlyph />
+                  Starter quest
+                </button>
+              )}
               {(["expedition", "stats", "settings"] as const).map((d) => (
                 <button
                   key={d}
@@ -252,7 +475,8 @@ export function AutomationHud({
                 className="ab-text-btn"
                 onClick={() => {
                   const id = next.actionId!;
-                  if (actions.onNextStep) actions.onNextStep(id);
+                  if (id === "hub-menu") openHubMenu();
+                  else if (actions.onNextStep) actions.onNextStep(id);
                   else actions.onSelect(id);
                 }}
               >
@@ -261,6 +485,20 @@ export function AutomationHud({
             )}
           </p>
         </div>
+
+        {/* Desktop only: a slim right dock. Milestones opens as a window; the selected machine's inspector floats here. */}
+        <nav className="ab-dock ab-dock-right" aria-label="Workshop goals">
+          <button
+            type="button"
+            className="ab-dock-btn"
+            aria-pressed={milestonesOpen}
+            aria-label={`Milestones, ${data.blueprints} blueprints`}
+            onClick={() => setMilestonesOpen((o) => !o)}
+          >
+            <Ico id="milestones" />
+            <span className="ab-dock-label">Milestones</span>
+          </button>
+        </nav>
 
         <aside className="ab-factory" aria-label="Factory panel">
           {data.selected && (
@@ -277,13 +515,16 @@ export function AutomationHud({
             </section>
           )}
 
-          <Section title="Milestones" icon="milestones" meta={`${data.blueprints} blueprints`}>
-            <Milestones milestones={data.milestones} />
-          </Section>
+          {/* Phone shows these in the Milestones sheet. On desktop they live in the Goals window instead. */}
+          <div className="ab-factory-meta">
+            <Section title="Milestones" icon="milestones" meta={`${data.blueprints} blueprints`}>
+              <Milestones milestones={data.milestones} />
+            </Section>
 
-          <Section title="Prestige" icon="prestige" defaultOpen={false}>
-            <PrestigeCard prestige={data.prestige} onOpen={() => { setPlanSite(undefined); setScreen("prestige"); }} />
-          </Section>
+            <Section title="Prestige" icon="prestige" defaultOpen={false}>
+              <PrestigeCard prestige={data.prestige} onOpen={() => { setPlanSite(undefined); setScreen("prestige"); }} />
+            </Section>
+          </div>
         </aside>
 
         {drawer === "stats" && (
@@ -291,8 +532,31 @@ export function AutomationHud({
         )}
       </div>
 
+      {quest && (questOpen || questClosing) && (
+        <QuestScroll quest={quest} closing={!questOpen} onClose={closeQuest} />
+      )}
+
       {drawer === "settings" && (
         <SettingsWindow settings={data.settings} onChange={actions.onSettings} onClose={() => setDrawer(null)} slots={settingsSlots} />
+      )}
+
+      {hubOpen && <HubMenu hub={data.hub} onClose={() => setHubOpen(false)} />}
+      {!hubOpen && <HubToast hub={data.hub} onOpen={openHubMenu} />}
+
+      {milestonesOpen && (
+        <MenuWindow
+          title="Milestones"
+          label="Milestones and prestige"
+          size="wide"
+          art={<Ico id="milestones" />}
+          onClose={() => setMilestonesOpen(false)}
+        >
+          <p className="ab-dim">{data.blueprints} blueprints</p>
+          <Milestones milestones={data.milestones} />
+          <Section title="Prestige" icon="prestige" defaultOpen={false}>
+            <PrestigeCard prestige={data.prestige} onOpen={() => { setMilestonesOpen(false); setPlanSite(undefined); setScreen("prestige"); }} />
+          </Section>
+        </MenuWindow>
       )}
 
       {screen === "research" && (

@@ -2,7 +2,7 @@
 // a banded tapering stack, a glowing tap hole that runs molten metal to the front chute, a blower
 // flywheel on the right and twin bellows pistons on the left that pump out of step.
 
-import { Builder, spin, slide, pulse } from "./builder";
+import { Builder, spin, slide, swing, pulse } from "./builder";
 import { C } from "./palette";
 import { plinth, hopperBack, chuteFront, statusLamp, speckle, band } from "./common";
 
@@ -67,6 +67,26 @@ export function furnace() {
         b.box(0, 16, z, 3, 17, z + 4, C.brassD);
         b.body();
     }
+    // Catwalk round the tower at mid height with a railing and a ladder up the front left post.
+    b.frame(2, 21, 6, 18, 22, 25, 2, C.steelD);
+    for (const [x, z] of [[2, 6], [17, 6], [2, 24], [17, 24]]) b.box(x, 22, z, x + 1, 25, z + 1, C.brass);
+    b.frame(2, 25, 6, 18, 26, 25, 1, C.brass);
+    for (let y = 12; y < 21; y += 2) b.box(3, y, 25, 5, y + 1, 26, C.brassD);
+    // Sight glasses on the tower that glow with the heat.
+    b.part("sight", [10, 17, 22], pulse(1.1, 0.5, { phase: 0.6 }), true);
+    b.box(9, 16, 21, 11, 18, 22, C.glow);
+    b.box(9, 24, 21, 11, 25, 22, C.glow);
+    // Turning damper cowl on the stack.
+    b.part("cowl", [10, 41, 15], spin("y", 0.4));
+    b.box(7, 41, 13, 13, 42, 18, C.brass);
+    b.box(7, 42, 13, 8, 44, 18, C.brassD);
+    b.box(8, 44, 13, 13, 45, 18, C.brass);
+    // Blast pressure gauge on the firebox with a rocking needle.
+    b.body();
+    b.cyl("z", 15, 6, 1.8, 24, 25, C.cream);
+    b.part("needle", [15, 6, 25], swing("z", 0.5, 0.6));
+    b.box(15, 6, 25, 16, 8, 26, C.red);
+    b.body();
     hopperBack(b, 0, 10);
     hopperBack(b, 1, 10);
     // Coal heaped in the right hopper so the fuel input reads.

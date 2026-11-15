@@ -3,7 +3,7 @@
 import type { ActionResult, Building, Catalog, Cell, Footprint, Deposit, PlaceResult, Rot, Stack, World, EngineDef, LogisticsKind } from "../types";
 import { DIR_DX, DIR_DZ} from "../types";
 import { DEFAULT_CATALOG } from "./data";
-import { checkMilestones, unlockedRecipes } from "./progress";
+import { checkMilestones, checkRequests, unlockedRecipes } from "./progress";
 
 export const DRILL = "drill"; // the tree machine that sits on a resource node
 export const SPRING = "spring_winder"; // the battery generator
@@ -153,7 +153,7 @@ export function createWorld(opts: CreateOptions = {}, cat: Catalog = DEFAULT_CAT
         deposits: {},
         buildings: {},
         power: { supply: 0, demand: 0, satisfaction: 1 },
-        progress: { blueprints: 0, researched: [], milestonesDone: [], delivered: {}, prestiges: 0, site: null, bonus: { miner: 1, power: 1 } },
+        progress: { blueprints: 0, researched: [], milestonesDone: [], requestsDone: [], delivered: {}, prestiges: 0, site: null, bonus: { miner: 1, power: 1 } },
         wind: 0.5,
         windPin: null,
     };
@@ -670,6 +670,7 @@ export function step(world: World, dt: number, cat: Catalog = DEFAULT_CATALOG): 
         }
     }
     world.time += dt;
+    checkRequests(world, cat);
     checkMilestones(world, cat);
 }
 

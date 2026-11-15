@@ -1,24 +1,36 @@
 "use client";
 
-// The starter quest tracker. It follows the factory's own state, so a finished quest ticks itself off. It sits in the
-// stage corner, folds to a tab, hides while a drawer or sheet is open, and never blocks play.
-import { useEffect, useState } from "react";
+// The starter quest. Its state lives in useFirstRunQuest (the host calls it and passes the result to the HUD). The
+// HUD owns where the scroll sits: it opens from a Quest button in the build dock, one section at a time. The scroll
+// unrolls on open and rolls back up on close. Finishing or skipping it writes the done flag, so it never returns.
+import { useCallback, useEffect, useState } from "react";
 import type { CSSProperties } from "react";
 import type { HudData } from "@/lib/automation/types";
 import { iconStyle } from "@/lib/automation/icons";
-import { firstRunSteps, readFirstRunDone, writeFirstRunDone } from "@/lib/brasswork/first-run";
-import "./first-run.css";
+import { firstRunSteps, readFirstRunDone, writeFirstRunDone, type FirstRunStep } from "@/lib/brasswork/first-run";
+import { openHubMenu } from "@/components/automation/hub-menu";
+import "./quest-scroll.css";
+
+export type QuestState = {
+    steps: FirstRunStep[];
+    /** Index of the first unfinished step. */
+    current: number;
+    finished: number;
+    /** Ends the quest for good (Skip). */
+    onFinish: () => void;
+};
 
 const STEP_ICON: Record<string, string> = { drill: "drill", kiln: "kiln", belt: "belt", delivery: "hub" };
 
-export function FirstRunGuide({ data }: { data: HudData }) {
+/**
+ * Tracks the starter quest against the factory's state. Returns null when there is no quest to show: it has not
+ * loaded yet, it was finished before, or every step is already done (in which case it is marked done).
+ */
+export function useFirstRunQuest(data: HudData): QuestState | null {
     const [done, setDone] = useState<boolean | null>(null);
-    const [folded, setFolded] = useState(false);
 
     useEffect(() => {
         setDone(readFirstRunDone());
-        // Phones start folded so the stage keeps most of the screen.
-        if (window.matchMedia("(max-width: 600px)").matches) setFolded(true);
     }, []);
 
     const steps = firstRunSteps(data);
@@ -32,61 +44,78 @@ export function FirstRunGuide({ data }: { data: HudData }) {
         }
     }, [allDone, done]);
 
-    if (done !== false || allDone) return null;
-
-    const step = steps[current];
-    const finished = steps.filter((s) => s.done).length;
-    const finish = () => {
+    const onFinish = useCallback(() => {
         writeFirstRunDone();
         setDone(true);
-    };
+    }, []);
 
-    if (folded) {
-        return (
-            <button type="button" className="bw-quest-tab" onClick={() => setFolded(false)} aria-expanded={false}>
-                <span className="bw-quest-tab-label">Starter quest</span>
-                <span className="bw-quest-tab-count">{finished}/{steps.length}</span>
-            </button>
-        );
-    }
+    if (done !== false || allDone) return null;
+    return { steps, current, finished: steps.filter((s) => s.done).length, onFinish };
+}
+
+/** The parchment scroll. `closing` plays the roll-up; `onClose` is called on Escape and the Roll up button. */
+export function QuestScroll({ quest, closing, onClose }: { quest: QuestState; closing: boolean; onClose: () => void }) {
+    useEffect(() => {
+        if (closing) return;
+        const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
+        window.addEventListener("keydown", onKey);
+        return () => window.removeEventListener("keydown", onKey);
+    }, [closing, onClose]);
+
+    const { steps, current, finished, onFinish } = quest;
+    const step = steps[Math.max(current, 0)];
+    const total = steps.length;
 
     return (
-        <section className="bw-quest" aria-label="Starter quest">
-            <header className="bw-quest-head">
-                <span className="bw-quest-title">Starter quest</span>
-                <span className="bw-quest-count">{finished}/{steps.length}</span>
-            </header>
+        <section className="ab-quest" data-closing={closing ? "true" : undefined} aria-label="Starter quest">
+            <div className="ab-quest-roll" aria-hidden="true" />
+            <div className="ab-quest-paper">
+                <header className="ab-quest-head">
+                    <span className="ab-quest-title">Starter quest</span>
+                    <span className="ab-quest-count">{finished} of {total} done</span>
+                </header>
 
-            <div className="bw-quest-bar" role="img" aria-label={`${finished} of ${steps.length} quests done`}>
-                {steps.map((s) => (
-                    <span key={s.id} data-done={s.done} />
-                ))}
-            </div>
-
-            <div className="bw-quest-now">
-                <span className="bw-quest-icon" aria-hidden="true">
-                    <span style={iconStyle(STEP_ICON[step.id] ?? step.id, 40) as CSSProperties} />
-                </span>
-                <div className="bw-quest-copy">
-                    <span className="bw-quest-label">Now</span>
-                    <strong className="bw-quest-step">{step.title}</strong>
-                    <span className="bw-quest-hint">{step.hint}</span>
+                <div className="ab-quest-bar" role="img" aria-label={`${finished} of ${total} quests done`}>
+                    {steps.map((s) => (
+                        <span key={s.id} data-done={s.done} />
+                    ))}
                 </div>
+
+                <div className="ab-quest-now">
+                    <span className="ab-quest-seal" aria-hidden="true">
+                        <span style={iconStyle(STEP_ICON[step.id] ?? step.id, 36) as CSSProperties} />
+                    </span>
+                    <div className="ab-quest-copy">
+                        <span className="ab-quest-label">Now</span>
+                        <strong className="ab-quest-step">{step.title}</strong>
+                        <span className="ab-quest-hint">{step.hint}</span>
+                    </div>
+                </div>
+
+                <ol className="ab-quest-list" aria-label="All quests">
+                    {steps.map((s, i) => (
+                        <li key={s.id} data-state={s.done ? "done" : i === current ? "current" : "todo"}>
+                            <span className="ab-quest-mark" aria-hidden="true">{s.done ? "✓" : i + 1}</span>
+                            <span>{s.title}</span>
+                        </li>
+                    ))}
+                </ol>
+
+                <footer className="ab-quest-actions">
+                    <button type="button" className="ab-quest-btn ab-quest-btn-quiet" onClick={onFinish}>Skip quest</button>
+                    {step.id === "delivery" && current >= 0 && (
+                        <button
+                            type="button"
+                            className="ab-quest-btn"
+                            onClick={() => { onClose(); openHubMenu(); }}
+                        >
+                            Open hub
+                        </button>
+                    )}
+                    <button type="button" className="ab-quest-btn" onClick={onClose}>Roll up</button>
+                </footer>
             </div>
-
-            <ol className="bw-quest-list" aria-label="All quests">
-                {steps.map((s, i) => (
-                    <li key={s.id} data-state={s.done ? "done" : i === current ? "current" : "todo"}>
-                        <span className="bw-quest-mark" aria-hidden="true">{s.done ? "✓" : i + 1}</span>
-                        <span>{s.title}</span>
-                    </li>
-                ))}
-            </ol>
-
-            <footer className="bw-quest-actions">
-                <button type="button" className="bw-quest-btn" onClick={() => setFolded(true)}>Minimise</button>
-                <button type="button" className="bw-quest-btn" onClick={finish}>Skip</button>
-            </footer>
+            <div className="ab-quest-roll" aria-hidden="true" />
         </section>
     );
 }

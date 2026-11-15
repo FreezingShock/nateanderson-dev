@@ -23,6 +23,10 @@ export interface InputOptions {
     board: BoardSize;
     world: BuildWorld;
     tools: ToolSpec[];
+    // Optional build groups in display order. Tab and Shift+Tab step through them; the number keys then pick from the open group.
+    groups?: ToolSpec[][];
+    /** Called when Tab or Shift+Tab moves to another group, with its index in `groups`. */
+    onGroup?: (index: number) => void;
     heightAt?: HeightFn;
     limits?: CameraLimits;
     initialPose?: Partial<OrbitPose>;
@@ -37,6 +41,9 @@ export interface InputController {
     build: BuildController;
     pointer: PointerInput;
     setToolById(id: string | null): void;
+    /** Index of the group the number keys pick from. */
+    group(): number;
+    setGroup(i: number): void;
     // Client-pixel position of a cell's centre, for pinning a pop-up. Null when the cell is behind the camera.
     screenPoint(cell: { x: number; z: number }): { x: number; y: number } | null;
     update(dt: number): void;
@@ -76,6 +83,10 @@ export function createInputController(opts: InputOptions): InputController {
 
     const setToolById = (id: string | null) => build.setTool(toolFor(id));
 
+    // The tools the number keys pick from: the open group when groups are given, otherwise the full list.
+    let groupIndex = 0;
+    const activeTools = (): ToolSpec[] => (opts.groups && opts.groups.length > 0 ? opts.groups[groupIndex] : opts.tools);
+
     const apply = (a: KeyAction): boolean => {
         switch (a.type) {
             case "rotate":
@@ -105,8 +116,25 @@ export function createInputController(opts: InputOptions): InputController {
             case "toggle-delete":
                 build.setTool(build.getTool()?.id === DELETE_TOOL.id ? null : DELETE_TOOL);
                 return true;
+            case "group": {
+                if (!opts.groups || opts.groups.length === 0) return false;
+                const n = opts.groups.length;
+                groupIndex = (groupIndex + a.dir + n) % n;
+                build.setTool(null);
+                opts.onGroup?.(groupIndex);
+                return true;
+            }
+            case "pipette": {
+                // Copies the building under the hover cell onto the palette: its tool becomes armed, as if picked from the list.
+                const h = build.getHover();
+                const item = h ? build.peek(h) : null;
+                const t = item ? opts.tools.find((x) => x.id === item.kind) ?? null : null;
+                if (!t) return false;
+                build.setTool(t);
+                return true;
+            }
             case "tool": {
-                const t = opts.tools[a.index];
+                const t = activeTools()[a.index];
                 if (!t) return false;
                 build.setTool(build.getTool()?.id === t.id ? null : t);
                 return true;
@@ -169,6 +197,13 @@ export function createInputController(opts: InputOptions): InputController {
         build,
         pointer,
         setToolById,
+        group: () => groupIndex,
+        // Moves the number keys to another group (a dock click). Does not fire onGroup: the caller already knows.
+        setGroup(i: number) {
+            if (!opts.groups || i < 0 || i >= opts.groups.length || i === groupIndex) return;
+            groupIndex = i;
+            build.setTool(null);
+        },
         screenPoint(cell) {
             const rect = opts.element.getBoundingClientRect();
             if (rect.width === 0 || rect.height === 0) return null;
