@@ -265,15 +265,19 @@ function CloudArt({ id }: { id: string }) {
     const sheet = sheetUrl(`card/cloud-${id}`);
     return <span className="sw-cloud-art" aria-hidden="true" data-anim={sheet ? "" : undefined} style={sheet ? ({ "--sheet": cssUrl(sheet) } as CSSProperties) : { backgroundImage: cssUrl(cloudArt(id, CLOUD_COLOR[id] ?? "#ffb24d")) }} />;
 }
-export function CloudPick({ s, onPick }: { s: State; onPick: (id: string) => void }) {
+export function CloudPick({ s, onPick, onPreview }: { s: State; onPick: (id: string) => void; onPreview?: (id: string) => void }) {
     return (
-        <div className="sw-clouds sw-panel" role="group" aria-label="Birth cloud">
-            <p className="sw-clouds-h">A new star. Pick its birth cloud.</p>
-            <div>
+        <div className="sw-clouds sw-ev sw-panel" role="group" aria-label="Birth cloud" data-kind="clouds" onPointerLeave={() => onPreview?.("")}>
+            <div className="sw-ev-head">
+                <span className="sw-ev-art" aria-hidden="true"><Gl n="star" s={3} /></span>
+                <div><b>A new star</b><em>Pick its birth cloud. Point at one to see the sky it makes.</em></div>
+            </div>
+            <div className="sw-cloud-list">
                 {s.offer.map((id) => {
                     const c = CLOUDS.find((x) => x.id === id)!;
                     return (
-                        <button key={id} type="button" className="sw-cloud" style={{ "--c": CLOUD_COLOR[id] ?? "#ffb24d" } as CSSProperties} onClick={() => onPick(id)}>
+                        <button key={id} type="button" className="sw-cloud" style={{ "--c": CLOUD_COLOR[id] ?? "#ffb24d" } as CSSProperties} onClick={() => onPick(id)}
+                            onPointerEnter={() => onPreview?.(id)} onFocus={() => onPreview?.(id)} onBlur={() => onPreview?.("")}>
                             <CloudArt id={id} />
                             <b>{c.name}</b>
                             <span>{c.desc}</span>
@@ -281,7 +285,6 @@ export function CloudPick({ s, onPick }: { s: State; onPick: (id: string) => voi
                     );
                 })}
             </div>
-            <Corners />
         </div>
     );
 }

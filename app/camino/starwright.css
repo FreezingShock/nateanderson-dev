@@ -19,7 +19,9 @@ html.sw-route .sf-foot { display: none !important; }
     font: 400 15px/1.45 var(--cm-display, system-ui, sans-serif);
     overflow: hidden;
 }
-.sw-boot { display: grid; place-items: center; font: 500 14px var(--cm-mono, monospace); letter-spacing: .08em; text-transform: uppercase; color: var(--sw-dim); }
+.sw-boot { font: 500 14px var(--cm-mono, monospace); letter-spacing: .08em; text-transform: uppercase; color: var(--sw-dim); }
+.sw-boot .sw-boot-msg { position: absolute; inset: 0; display: grid; place-items: center; margin: 0; animation: swPing 1.6s steps(2, end) infinite; }
+.sw-boot .sw-info, .sw-boot .sw-amt { text-transform: none; letter-spacing: 0; }
 .sw-root h1, .sw-root h2, .sw-root h3, .sw-root p, .sw-root ol, .sw-root ul, .sw-root dl { margin: 0; padding: 0; }
 .sw-root ol, .sw-root ul { list-style: none; }
 .sw-root button { font-family: var(--cm-mono, monospace); color: inherit; cursor: pointer; }

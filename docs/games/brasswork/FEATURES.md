@@ -45,7 +45,7 @@ Owners are per area, one thread per file set. The threads: "Streamline Brasswork
 | New-player opening (drill, kiln, windmill, belts, first milestone) | working | `sim/data.ts` (`STARTER_KIT`: 80 iron plates) | `opening.test.mjs` |
 | Save and load, versioned (`SAVE_VERSION` 1), offline catch-up up to 8 h, run in 10 ms slices on load (`catchUpAway` in the host) so the page stays responsive; `resolve()` and belt-to-store answers are cached | working | `sim/save.ts`, `sim/world.ts` (`catchUp`), `brasswork-host.tsx` | `sim.test.mjs`, `save-golden.test.mjs` (checked-in v1 save keeps playing 60 s) |
 | Day clock, 1200 s day | working | `sim/progress.ts` (`dayClock`) | none direct |
-| Full-run pacing | untested: no bot plays start to prestige (B-05) | none | none |
+| Full-run pacing | modelled, not played: no soft-lock in the recipe tree; ideal lower bound for a perfect factory with 1 drill per ore and 2 of each machine is about 3 min to the first milestone and 15 min to Sky orrery first light (no belts, power or build time, so real play is longer; see `pacing-model-2026-11-15.txt`). Nobody has played start to prestige (B-05 placing half, P-01) | `scripts/automation/pacing-model.mjs` | `pacing-model.test.mjs` |
 
 ## Input and camera
 
@@ -54,7 +54,8 @@ Owners are per area, one thread per file set. The threads: "Streamline Brasswork
 | Orbit camera, top-down toggle (T), WASD and arrow pan, zoom (+ and -) | working | `input/camera.ts`, `input/keys.ts` | `input.test.mjs` |
 | Click and drag belt strokes, auto-route between machines, placement ignores machine bodies | working | `input/build.ts`, `sim/grid.ts` (`autoRoute`) | `input.test.mjs` |
 | Multi-cell ghost, rotate (R), pipette (Q), undo and redo, Delete on hover, X Remove mode | working | `input/index.ts`, `input/build.ts` | `input.test.mjs` |
-| BUILDING badge (item icon, name, turn, Esc) while any tool is armed; hover ghost under the cursor for belts and model-less tools before any drag | working, headless only | `components/brasswork/building-badge.tsx`, `brasswork-host.tsx` `updateGhost` | none |
+| Machine ports: crafters take in at the back edge, crafters and drills push out at the front edge; green input and brass output arrows in the tiles beside the placement ghost and a selected machine, turning with R | working, headless only | `sim/world.ts` `edgeCells`, `render/portarrows.ts`, `brasswork-host.tsx` `updatePorts` | `sim.test.mjs`, `stage2-layout.test.mjs` |
+| BUILDING badge (item icon, name, "Turn R · angle", Esc; the only turn display, the old dock tile is gone) while any tool is armed; hover ghost under the cursor for belts and model-less tools before any drag | working, headless only | `components/brasswork/building-badge.tsx`, `brasswork-host.tsx` `updateGhost` | none |
 | Shift-drag area Remove | working | `input/pointer.ts`, `input/build.ts` | `input.test.mjs` |
 | Copy and paste of building areas: Shift-drag with no tool selects, Ctrl/Cmd+C copies (or the building under the cursor), Ctrl/Cmd+V arms a paste that stays armed to stamp again, R turns the whole layout, Esc or right-click puts it away; one undo per paste; parts that are blocked, locked or unaffordable are skipped and counted in the note; the hub is never copied. Desktop only (no touch path yet) | working in headless Chrome | `input/build.ts`, `input/keys.ts`, `input/pointer.ts` | `input.test.mjs`, `scripts/automation/copy-paste-check.mjs` |
 | Number keys 1 to 9 pick from the open build group, Tab cycles groups | working | `input/keys.ts`, `components/automation/build-bar.tsx` | `input.test.mjs` |
@@ -86,6 +87,9 @@ Owners are per area, one thread per file set. The threads: "Streamline Brasswork
 | One brass tooltip for everything (machines, belts, items, resources, research nodes, milestones, recipes, hub requests, HUD buttons, popovers, settings, expedition sites): hover on desktop and keyboard focus, tap on phone (stays up about 2.6 s), canvas tag follows the pointer over the island. Content comes from the recipe tree and engine table (`lib/automation/tips.ts`) | working; `scripts/automation/tooltip-check.mjs` (headless Chrome, 1440 and 390) and `tests/automation/tooltips.test.mjs` (content) | `components/brasswork-ui/tip.tsx`, `tip.css`, `components/brasswork/hover-name.tsx`, `lib/automation/tips.ts` | `tooltips.test.mjs` |
 | NEXT banner and on-island marker (drill, kiln, windmill, hub) | working: `scripts/automation/next-markers.mjs` walks the opening headless and checks each marker is on its cell (within 4 px) and disappears at the end; run on a production build at 1440 and 390 | `brasswork/next-marker.tsx`, `host` `syncTarget`, `sim/hud.ts` | `hud-next.test.mjs` (banner text only) |
 | Resource strip with drawn icons and counts, essential resources always shown | working | `resource-strip.tsx`, `sim/hud.ts` | none |
+| Desktop top bar: one row at every width (back button, engraved BRASSWORK nameplate, resource boxes with the per-second rate under each box, five icon-only view buttons: on hover or focus a button widens leftward over its neighbours (fixed slots, no reflow) while its name types in one letter per step; flat dark plates behind the resource icons, everything on one centre line); phone keeps its stacked layout; `--ab-top-h` follows the measured height | working in headless Chrome at 1920, 1440, 1280, 1024, 800, 390 (`topbar-check.mjs`) | `top-bar.css`, `automation-hud.tsx`, `resource-strip.tsx` | none |
+| Tool hint and notes sit above the objective card whatever height the card has (`--ab-next-h`, measured) | working at 1440, 1100, 800, 390 (`overlap-check.mjs`) | `desktop-stage.css`, `automation-hud.tsx` | none |
+| "Open a new workshop" window: frame ring filled with the panel colour, window sits below the top bar, the requirement shows once (header when ready, footer when not) | working in headless Chrome (`prestige-check.mjs`, ready and not-ready states): on short desktop screens (down to 1280 by 720) the picture, tiles and gauges shrink so the lists never cut off; long lists still scroll inside the window on phones | `prestige-screen.css`, `prestige-screen.tsx` | none |
 | Inspector: recipe, rates, buffers, power, unloader filter; Esc and ground click close it | working | `inspector.tsx` | `machine-detail.test.mjs` |
 | Hub menu (unlocks first, fill progress, requests) and toast | working | `hub-menu.tsx` | `hub-requests.test.mjs` |
 | Milestones window (summary numbers, hero, route, prestige header) | working | `milestones-window.tsx` | none |
@@ -103,7 +107,7 @@ Owners are per area, one thread per file set. The threads: "Streamline Brasswork
 
 | Feature | State | Code | Test |
 |---|---|---|---|
-| Synthesized effects, ambient bed (wind, night, machines), UI hover and press sounds, three volume sliders | untested: never heard on a real device (B-12) | `lib/automation/audio/` | none |
+| Synthesized effects for place, belt, remove, rotate, undo, select, deliveries, unlocks, research, milestones, prestige, reward chime, Tab tick, menu open and close, hover and press; refused research, recipe and prestige play the invalid cue; ambient bed (wind, night, machines); UI hover and press sounds; mute switch and three volume sliders; starts silent until the first click | wiring checked headless (`scripts/automation/sound-check.mjs`); untested by ear, never heard on a real device (P-02) | `lib/automation/audio/`, `components/brasswork/brasswork-host.tsx`, `audio-rows.tsx` | `sound-check.mjs` |
 
 ## Art pipeline
 
