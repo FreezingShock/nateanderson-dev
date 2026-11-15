@@ -102,6 +102,8 @@ export const TUNE = {
     /** repeat orders (the firm rebuilds its latest job while the next campaign job waits on a material): share of the cash and reputation, paid pro rata if the crew is pulled off early */
     /** share of a job's cash paid out as progress draws, a slice per finished phase; the handover pays the rest */
     draw: 0.5,
+    /** seconds of the new row's output stocked the moment a material opens */
+    unlockGiftSecs: 60,
     repeatCash: 0.5,
     repeatRep: 0.1,
 };
