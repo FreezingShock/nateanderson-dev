@@ -41,3 +41,22 @@
 .gbl-tag::after { right: -3px; bottom: -3px; border-left: 0; border-top: 0; }
 @keyframes gbl-tag-in { from { opacity: 0; translate: 0 4px; } to { opacity: 1; translate: 0 0; } }
 @media (prefers-reduced-motion: reduce) { .gbl-tag { animation: none; } }
+/* Workers pace the site; each is one pixel-art figure drawn with a box-shadow (components/groundbreak-art/site-scene.tsx). */
+.gba-worker { position: absolute; width: 6px; height: 12px; image-rendering: pixelated; pointer-events: none; transform: scale(2); transform-origin: 0 100%;
+  animation: gba-pace var(--dur, 7s) steps(24, end) var(--delay, 0s) infinite alternate; }
+.gba-worker i { display: block; width: 1px; height: 1px; animation: gba-bob .5s steps(2, end) infinite; }
+@keyframes gba-pace { from { translate: 0 0; } to { translate: calc(var(--span, 60px) / 2) 0; } }
+@keyframes gba-bob { 50% { translate: 0 -1px; } }
+.gba-paused .gba-worker, .gba-paused .gba-worker i { animation-play-state: paused; }
+.gba-lowfx .gba-worker, .gba-lowfx .gba-worker i { animation: none; }
+@media (prefers-reduced-motion: reduce) { .gba-worker, .gba-worker i { animation: none; } }
+
+/* Ambient backdrop motion: clouds drift, glints sparkle on the bay, boats cross. Stepped so the pixels stay crisp. */
+.gba-drift { animation: gba-drift 600s steps(1600, end) infinite; }
+@keyframes gba-drift { to { background-position-x: 1600px; } }
+.gba-sail { animation: gba-drift 420s steps(1600, end) infinite reverse; }
+.gba-twinkle { animation: gba-twinkle 2.4s steps(1, end) infinite; }
+@keyframes gba-twinkle { 0% { opacity: 1; } 33% { opacity: .45; } 66% { opacity: .8; } }
+.gba-paused .gba-drift, .gba-paused .gba-sail, .gba-paused .gba-twinkle { animation-play-state: paused; }
+.gba-lowfx .gba-drift, .gba-lowfx .gba-sail, .gba-lowfx .gba-twinkle { animation: none; }
+@media (prefers-reduced-motion: reduce) { .gba-drift, .gba-sail, .gba-twinkle { animation: none; } }
