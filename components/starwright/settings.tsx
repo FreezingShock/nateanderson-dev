@@ -100,11 +100,14 @@ export function ScrollHint() {
             setOn(false);
             try { window.localStorage.setItem(HINT_KEY, "1"); } catch { /* private mode */ }
             root.removeEventListener("scroll", done);
+            window.removeEventListener("scroll", done);
         };
         const show = window.setTimeout(() => setOn(true), 2500);
         const hide = window.setTimeout(done, 12000);
+        // on a phone the page itself scrolls (the root only does in some layouts), so listen to both
         root.addEventListener("scroll", done, { passive: true });
-        return () => { window.clearTimeout(show); window.clearTimeout(hide); root.removeEventListener("scroll", done); };
+        window.addEventListener("scroll", done, { passive: true });
+        return () => { window.clearTimeout(show); window.clearTimeout(hide); root.removeEventListener("scroll", done); window.removeEventListener("scroll", done); };
     }, []);
     if (!on) return null;
     return <div className="sw-hint2" aria-hidden="true">Scroll for the ladder<i /></div>;

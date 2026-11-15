@@ -57,11 +57,12 @@ Test commands: `npm run test:nodefarm` (a PR check; includes `tests/starwright/*
 ## GUI
 | Feature | State | Code | Test |
 |---|---|---|---|
-| Layout: dock, fusion ladder, collapse panel floating over the star; phones pin the star on top | partial: no real phone check | `starwright.tsx`, `app/camino/starwright.css` | none |
+| Layout: dock, fusion ladder, collapse panel floating over the star; phones pin the star on top; held sideways the star sits left and panels scroll right (checked headless at 844x390 and 667x375, no real phone) | partial: no real phone check | `starwright.tsx`, `app/camino/starwright.css` | none |
 | Menus with their own open/close animations (iris, shutter, wipe, settle), `useLeaving` | working | `panels.tsx`, `sw-ui.tsx` | none |
 | Star map: per-star medallions, designations, zoom card, deep-star panel | working | `star-chart.tsx` | none |
 | Orbit and Almanac cards with drawn art; Orbit tiles use the drawn sheets for all 8 planets at all 4 stages (the code drawing shows only while a sheet loads) | working | `panels.tsx` | `tests/starwright/art-manifest.test.mjs`; `scripts/starwright/ui-art/orbit-shots.mjs` |
 | Drawn UI art (element tiles with 8-frame loops, dock, menu, node, ring and pulsar icons) | working | `scripts/starwright/ui-art/build.py` -> `public/starwright/ui/*`; bump `UI_V` in `sw-ui.tsx` and `?v=` in `starwright.css` | none; `shots.mjs` screenshots |
+| Phone scroll cue "Scroll for the ladder": once, gone on the first page scroll, not shown held sideways (`ScrollHint` in `settings.tsx`) | working headless | `settings.tsx`, `starwright-qol.css`, `scripts/starwright/ui-art/hint-check.mjs` | hint-check script |
 | Tooltips (`data-tip="Title|line"`), touch recipe lines | working | `sw-ui.tsx` | none |
 | Game shell (full screen, pause on hidden tab, save export/import) | working | `lib/games/*`, `app/creations/games/starwright/*` | `scripts/games/shell-check.mjs` |
 

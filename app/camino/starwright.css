@@ -572,9 +572,11 @@ html.sw-route .sf-foot { display: none !important; }
     .sw-deep { position: relative; right: auto; bottom: auto; margin: 0 10px 6px; width: auto; grid-template-columns: 48px minmax(0, 1fr); }
     .sw-deep-art { width: 48px; height: 48px; }
     .sw-deep-buy { grid-column: 1 / -1; }
-    .sw-chart { grid-template-rows: auto minmax(0, 1fr) auto auto auto; }
 }
-.sw-chart { grid-template-rows: auto minmax(0, 1fr) auto auto; }
+/* the map takes the free height; the pick card, deep stars panel and footnote take what they need, however many show */
+.sw-chart { grid-template-rows: auto minmax(0, 1fr); grid-auto-rows: auto; }
+/* a phone held sideways has no height to spare: the footnote goes, the map keeps the room */
+@media (max-height: 520px) { .sw-chart-foot { display: none; } .sw-deep { margin-bottom: 8px; } }
 .sw-deep { position: relative; right: auto; bottom: auto; justify-self: end; margin: 0 16px 4px; }
 .sw-root .sw-sc-buy, .sw-chart .sw-sc-buy { color: #05040c; }
 .sw-chart .sw-sc-buy:disabled { color: var(--sw-dim); }
