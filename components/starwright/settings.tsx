@@ -2,7 +2,7 @@
 
 // Starwright settings and the welcome-back card. Settings live in lib/starwright/settings.ts (kept in this browser, apart from
 // the save). The block sits in the Menu; the card shows what the star did while you were away. Styles: app/camino/starwright-qol.css.
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { CODEX, ELEMENTS } from "@/lib/starwright/data";
 import { ElTile, Gl } from "./sw-ui";
 import "@/app/camino/starwright-qol.css";
@@ -10,6 +10,7 @@ import { AUTO_NOVA_STEPS, AUTO_VISITOR_STEPS, UNLOCKS, cycle, getSettings, onSet
 import type { State } from "@/lib/starwright/engine";
 import { readBackup, writeBackup, type AwayReport } from "@/lib/starwright/session";
 import { fmt, fmtAge } from "@/lib/starwright/engine";
+import { VOLUMES, getVolume, play, setVolume } from "@/lib/starwright/sound";
 
 /** The current settings, re-read when the console or the menu changes them. */
 export function useSettings(): Settings {
@@ -46,35 +47,46 @@ function BackupRow({ s }: { s: State }) {
     );
 }
 
-export function SettingsBlock({ s }: { s: State }) {
-    const v = useSettings();
+function VolumeRow() {
+    const [v, setV] = useState(1);
+    useEffect(() => { setV(getVolume()); }, []);
+    return (
+        <Row
+            label="Volume"
+            tip="How loud every sound is. The sound switch in the Menu turns them all off."
+            value={VOLUMES[v][0]}
+            onClick={() => { const n = (v + 1) % VOLUMES.length; setVolume(n); setV(n); play("buy", { tier: 1, row: 3 }); }}
+        />
+    );
+}
+
+/** The settings as one row each, for the Menu to lay out in pages (see paged.tsx). */
+export function settingUnits(s: State, v: Settings): ReactNode[] {
     const nova = unlocked(s, "autoNova");
     const vis = unlocked(s, "autoVisitor");
-    return (
-        <div className="sw-set">
-            <h3 className="sw-h3">Settings</h3>
-            <ul>
-                <Row label="Scene" tip="Full draws the whole art at 30 frames a second. Simple draws 15 and is lighter on slow machines." value={v.fx === "full" ? "Full" : "Simple"} onClick={() => setSettings({ fx: v.fx === "full" ? "simple" : "full" })} />
-                <Row label="Notices" tip="The little notes over the scene: ignitions, milestones, visitors." value={v.notices ? "On" : "Off"} onClick={() => setSettings({ notices: !v.notices })} />
-                <Row label="Welcome back" tip="A card with what the star did while you were away." value={v.welcome ? "On" : "Off"} onClick={() => setSettings({ welcome: !v.welcome })} />
-                <Row
-                    label="Auto supernova"
-                    tip="Goes supernova by itself once the core passes this share of its collapse. Waiting longer seeds more stardust."
-                    value={v.autoNova ? `At ${v.autoNova * 100}%` : "Off"}
-                    onClick={() => setSettings({ autoNova: cycle(AUTO_NOVA_STEPS, v.autoNova) })}
-                    locked={nova ? undefined : `${UNLOCKS.autoNova.need} (${Math.min(10, s.novasAll)}/10)`}
-                />
-                <Row
-                    label="Auto visitors"
-                    tip="Answers a waiting visitor for you: the lump of output, or the timed boost."
-                    value={v.autoVisitor === "off" ? "Off" : v.autoVisitor === "lump" ? "Lump" : "Boost"}
-                    onClick={() => setSettings({ autoVisitor: cycle(AUTO_VISITOR_STEPS, v.autoVisitor) })}
-                    locked={vis ? undefined : `${UNLOCKS.autoVisitor.need} (${Math.min(12, s.visitors)}/12)`}
-                />
-                <BackupRow s={s} />
-            </ul>
-        </div>
-    );
+    return [
+        <VolumeRow key="volume" />,
+        <Row key="fx" label="Scene" tip="Full draws the whole art at 30 frames a second. Simple draws 15 and is lighter on slow machines." value={v.fx === "full" ? "Full" : "Simple"} onClick={() => setSettings({ fx: v.fx === "full" ? "simple" : "full" })} />,
+        <Row key="notices" label="Notices" tip="The little notes over the scene: ignitions, milestones, visitors." value={v.notices ? "On" : "Off"} onClick={() => setSettings({ notices: !v.notices })} />,
+        <Row key="welcome" label="Welcome back" tip="A card with what the star did while you were away." value={v.welcome ? "On" : "Off"} onClick={() => setSettings({ welcome: !v.welcome })} />,
+        <Row
+            key="autoNova"
+            label="Auto supernova"
+            tip="Goes supernova by itself once the core passes this share of its collapse. Waiting longer seeds more stardust."
+            value={v.autoNova ? `At ${v.autoNova * 100}%` : "Off"}
+            onClick={() => setSettings({ autoNova: cycle(AUTO_NOVA_STEPS, v.autoNova) })}
+            locked={nova ? undefined : `${UNLOCKS.autoNova.need} (${Math.min(10, s.novasAll)}/10)`}
+        />,
+        <Row
+            key="autoVisitor"
+            label="Auto visitors"
+            tip="Answers a waiting visitor for you: the lump of output, or the timed boost."
+            value={v.autoVisitor === "off" ? "Off" : v.autoVisitor === "lump" ? "Lump" : "Boost"}
+            onClick={() => setSettings({ autoVisitor: cycle(AUTO_VISITOR_STEPS, v.autoVisitor) })}
+            locked={vis ? undefined : `${UNLOCKS.autoVisitor.need} (${Math.min(12, s.visitors)}/12)`}
+        />,
+        <BackupRow key="backup" s={s} />,
+    ];
 }
 
 export interface AwayData { title: string; lines: string[]; report?: AwayReport }

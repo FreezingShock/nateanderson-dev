@@ -180,6 +180,12 @@ export interface Game {
     format?: "Daily" | "Unlimited";
     /** Set only for games that actually have a route. */
     href?: string;
+    /** Card screenshot under /public. Real captures of the built game, 960 by 600. */
+    shot?: string;
+    /** The game's own colour, used on its hub card only. */
+    accent?: string;
+    /** Short labels for the card's tag panels. Shortened from `features`. */
+    tags?: string[];
 }
 
 export interface GameMode {
@@ -213,6 +219,9 @@ export const GAME_MODES: GameMode[] = [
                 blurb: "One country outline a day, the same for everyone. Six guesses with distance, direction and closeness.",
                 features: ["238 countries and territories", "Streaks and stats", "Shareable result"],
                 href: "/creations/games/outline-guesser?mode=daily",
+                shot: "/games/shots/outline-guesser.webp",
+                accent: "#2fd8e8",
+                tags: ["238 countries", "Streaks", "Share card"],
             },
             {
                 slug: "daily-flag",
@@ -223,6 +232,9 @@ export const GAME_MODES: GameMode[] = [
                 blurb: "One mystery flag a day, the same for everyone, revealed one tile at a time with distance and direction clues.",
                 features: ["Tile-flip reveal", "3 hints", "Streaks and stats"],
                 href: "/creations/games/flag-guesser?mode=daily",
+                shot: "/games/shots/flag-guesser.webp",
+                accent: "#2fd8e8",
+                tags: ["Tile flip", "3 hints", "Streaks"],
             },
             {
                 slug: "flag-guesser",
@@ -233,6 +245,9 @@ export const GAME_MODES: GameMode[] = [
                 blurb: "Endless mystery flags from all 239 countries and territories, with difficulty and region filters, tile-flip reveals and hints.",
                 features: ["All 239 flags", "Difficulty and region filters", "Hints and give up"],
                 href: "/creations/games/flag-guesser",
+                shot: "/games/shots/flag-guesser.webp",
+                accent: "#2fd8e8",
+                tags: ["239 flags", "Filters", "Hints"],
             },
             {
                 slug: "outline-guesser",
@@ -243,6 +258,9 @@ export const GAME_MODES: GameMode[] = [
                 blurb: "Endless country outlines: every country, island and territory, with arrows, distances, hints and a give-up button.",
                 features: ["Hints and give up", "km or miles", "Stats"],
                 href: "/creations/games/outline-guesser",
+                shot: "/games/shots/outline-guesser.webp",
+                accent: "#2fd8e8",
+                tags: ["Hints", "km or mi", "Stats"],
             },
         ],
     },
@@ -263,6 +281,9 @@ export const GAME_MODES: GameMode[] = [
                 blurb: "Hack a core, buy button tiers for Multipliers and Reboots, then farm Copper, Silicon, Quartz and Aether. Each stat boosts the one below it.",
                 features: ["7 chained stats", "Offline progress", "Ascend for perks"],
                 href: "/creations/games/node-farm",
+                shot: "/games/shots/node-farm.webp",
+                accent: "#9be564",
+                tags: ["7 stats", "Offline", "Ascend"],
             },
             {
                 slug: "starwright",
@@ -272,6 +293,9 @@ export const GAME_MODES: GameMode[] = [
                 blurb: "You are a star. Fuse hydrogen up the periodic table, collapse into a supernova, then chart constellations that make the next star burn brighter.",
                 features: ["10 element ladder", "Supernova, neutron star, black hole", "Planets and constellations"],
                 href: "/creations/games/starwright",
+                shot: "/games/shots/starwright.webp",
+                accent: "#ff8a4c",
+                tags: ["10 elements", "Supernova", "Constellations"],
             },
             {
                 slug: "groundbreak",
@@ -281,6 +305,9 @@ export const GAME_MODES: GameMode[] = [
                 blurb: "Run a construction company in the Bay Area. Twelve materials, each boosting the next, build a cutaway job floor by floor, and keep the skyline when you incorporate.",
                 features: ["12 chained materials", "Zoomable cutaway site", "Permanent skyline"],
                 href: "/creations/games/groundbreak",
+                shot: "/games/shots/groundbreak.webp",
+                accent: "#f2b84b",
+                tags: ["12 materials", "Cutaway", "Skyline"],
             },
         ],
     },
@@ -301,6 +328,9 @@ export const GAME_MODES: GameMode[] = [
                 blurb: "A clockwork-workshop factory on a 3D voxel island. Place machines on a grid, refine ores into parts, and send expeditions out from the workshop.",
                 features: ["3D island", "Machines on a grid", "Expeditions"],
                 href: "/creations/games/brasswork",
+                shot: "/games/shots/brasswork.webp",
+                accent: "#c99a4b",
+                tags: ["3D island", "Grid", "Expeditions"],
             },
         ],
     },

@@ -8,6 +8,8 @@ import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { createPortal } from "react-dom";
 import type { InputController } from "@/lib/automation/input";
 import "./build-popover.css";
+import { tipAttr } from "@/components/brasswork-ui/tip";
+import { CONTROL_TIPS } from "@/lib/automation/tips";
 
 type Cell = { x: number; z: number };
 
@@ -80,32 +82,32 @@ export function BuildPopover({ input, anchor, kind, kindLabel, x, y, lineKinds, 
             <div className="bp-actions">
                 {kind === "hub" && <p className="bp-note">The hub is fixed in place.</p>}
                 {showDetails && onDetails && (
-                    <button type="button" className="bp-btn" data-tone="ghost" onClick={() => onDetails(anchor)}>
+                    <button type="button" className="bp-btn" data-tone="ghost" {...tipAttr({ title: "Details", tag: "Building", text: "Open the card for this building: recipe, rates, power and what it holds." })} onClick={() => onDetails(anchor)}>
                         Details
                     </button>
                 )}
                 {kind !== "hub" && isLine && lineCount === 0 && (
-                    <button type="button" className="bp-btn" onClick={selectLine}>
+                    <button type="button" className="bp-btn" {...tipAttr({ title: "Select whole line", tag: "Belts", text: "Outline the connected run of belts, so you can remove it in one step." })} onClick={selectLine}>
                         Select whole line
                     </button>
                 )}
                 {kind !== "hub" && isLine && lineCount > 0 && (
-                    <button type="button" className="bp-btn" data-tone="danger" onClick={removeLine}>
+                    <button type="button" className="bp-btn" data-tone="danger" {...tipAttr({ title: `Remove ${lineCount} belts`, tag: "Belts", text: "Deletes the whole run in one undo step.", note: "Half the cost of each belt comes back." })} onClick={removeLine}>
                         Remove {lineCount} belts
                     </button>
                 )}
                 {kind !== "hub" && (
                     <>
-                        <button type="button" className="bp-btn" onClick={rotate}>
+                        <button type="button" className="bp-btn" {...tipAttr(CONTROL_TIPS.rotate)} onClick={rotate}>
                             Rotate
                         </button>
-                        <button type="button" className="bp-btn" data-tone="danger" onClick={remove}>
+                        <button type="button" className="bp-btn" data-tone="danger" {...tipAttr(CONTROL_TIPS.remove)} onClick={remove}>
                             Remove
                         </button>
                     </>
                 )}
                 {kind !== "hub" && isLine && lineCount > 0 && (
-                    <button type="button" className="bp-btn" data-tone="ghost" onClick={() => build.setHighlight([])}>
+                    <button type="button" className="bp-btn" data-tone="ghost" {...tipAttr({ title: "Clear selection", tag: "Selection", text: "Drop the outline on the selected buildings." })} onClick={() => build.setHighlight([])}>
                         Clear selection
                     </button>
                 )}
@@ -133,7 +135,7 @@ export function TrashButton({ input, variant = "float" }: { input: InputControll
                 aria-pressed={active}
                 data-armed={active}
                 aria-label="Remove tool: click buildings or belts to delete them (X)"
-                title="Remove (X)"
+                {...tipAttr(CONTROL_TIPS.remove)}
                 onClick={onClick}
             >
                 <svg className="ab-dock-ico" viewBox="0 0 16 16" width="24" height="24" aria-hidden="true" shapeRendering="crispEdges">
@@ -154,7 +156,7 @@ export function TrashButton({ input, variant = "float" }: { input: InputControll
             className="bt bw"
             aria-pressed={active}
             aria-label="Remove tool: click buildings or belts to delete them"
-            title="Remove (X)"
+            {...tipAttr(CONTROL_TIPS.remove)}
             onClick={onClick}
         >
             Remove

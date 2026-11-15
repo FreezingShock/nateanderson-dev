@@ -3,6 +3,8 @@
 // aria-label and a tooltip. The strip shows on coarse pointers and on narrow screens, and stays hidden on a wide
 // mouse-and-keyboard layout.
 
+import type { TipData } from "../tips";
+import { CONTROL_TIPS } from "../tips";
 import { uiIconStyle } from "../icons/ui";
 
 export interface TouchBarOptions {
@@ -62,11 +64,12 @@ export function createTouchBar(opts: TouchBarOptions): TouchBar {
     el.setAttribute("aria-label", "Build controls");
 
     // Each button shows one glyph from the brass HUD sheet. The name lives in aria-label and in the tooltip.
-    const make = (icon: string, name: string, onPress: () => void) => {
+    const make = (icon: string, name: string, onPress: () => void, tip: TipData) => {
         const b = doc.createElement("button");
         b.type = "button";
-        b.title = name;
         b.setAttribute("aria-label", name);
+        // The shared Brasswork tag; a tap shows it and the tap still does its job.
+        b.setAttribute("data-tip", JSON.stringify(tip));
         const span = doc.createElement("span");
         const st = uiIconStyle(icon, 28);
         for (const [k, v] of Object.entries(st)) {
@@ -81,15 +84,20 @@ export function createTouchBar(opts: TouchBarOptions): TouchBar {
         return b;
     };
 
-    const top = make("map", "Top-down view", () => {
+    const top = make(
+      "map",
+      "Top-down view",
+      () => {
         opts.onTopDown();
         sync();
-    });
-    make("rotate", "Rotate the ghost, or the building under the last touch", opts.onRotate);
-    make("undo", "Undo", opts.onUndo);
-    make("redo", "Redo", opts.onRedo);
-    make("remove", "Remove a building (Delete tool)", opts.onRemove);
-    make("back", "Cancel the current tool", opts.onCancel);
+      },
+      CONTROL_TIPS.topdown,
+    );
+    make("rotate", "Rotate the ghost, or the building under the last touch", opts.onRotate, CONTROL_TIPS.rotate);
+    make("undo", "Undo", opts.onUndo, CONTROL_TIPS.undo);
+    make("redo", "Redo", opts.onRedo, CONTROL_TIPS.redo);
+    make("remove", "Remove a building (Delete tool)", opts.onRemove, CONTROL_TIPS.remove);
+    make("back", "Cancel the current tool", opts.onCancel, CONTROL_TIPS.cancel);
 
     function sync() {
         top.setAttribute("aria-pressed", String(opts.isTopDown()));

@@ -3,6 +3,17 @@ import { fmtNum, resourceName } from "./format";
 import { ArtGauge, MachinePortrait } from "@/components/brasswork-art";
 import { ArtIcon } from "@/components/brasswork-art/icons";
 import "./inspector.css";
+import { tipAttr } from "@/components/brasswork-ui/tip";
+import { recipeTip, stackText, type TipData } from "@/lib/automation/tips";
+import { RECIPE_TREE } from "@/lib/automation/data/tree";
+
+// Tag for one recipe in the picker. A locked recipe also says why it is shut.
+function recipeOf(id: string, lockReason?: string): TipData | null {
+  const r = RECIPE_TREE.recipes.find((x) => x.id === id);
+  if (!r) return null;
+  const tip = recipeTip(RECIPE_TREE, r);
+  return lockReason ? { ...tip, rows: [...(tip.rows ?? []), { k: "Locked", v: lockReason, tone: "bad" as const }] } : tip;
+}
 
 // Plain reasons for each status, so the panel says what to do rather than only what is happening.
 const STATUS_TEXT: Record<string, string> = {
@@ -75,9 +86,10 @@ function RecipeRow({
       </span>
     </>
   );
+  const tip = tipAttr(recipeOf(entry.id, locked ? entry.lockReason : undefined));
   if (locked || !onPick) {
     return (
-      <div className="ab-rc" data-state={entry.state} aria-disabled="true" title={entry.lockReason}>
+      <div className="ab-rc" data-state={entry.state} aria-disabled="true" {...tip}>
         {body}
       </div>
     );
@@ -88,6 +100,7 @@ function RecipeRow({
       className="ab-rc"
       data-state={entry.state}
       aria-pressed={selected}
+      {...tip}
       aria-label={`${out ? resourceName(resources, out.resourceId) : entry.name}${entry.alternate ? ", alternate" : ""}${selected ? ", selected" : ""}`}
       onClick={() => onPick(entry.id)}
     >
@@ -157,7 +170,7 @@ export function Inspector({
           <h2 className="ab-inspect-name">{detail.name}</h2>
           <span className="ab-inspect-owned">Owned {detail.count}</span>
         </div>
-        <button type="button" className="ab-inspect-close" onClick={onClose} aria-label="Close details">
+        <button type="button" className="ab-inspect-close" onClick={onClose} aria-label="Close details" {...tipAttr({ title: "Close details", tag: "Inspector", text: "Put the card away. The building stays where it is." })}>
           ×
         </button>
       </header>
@@ -271,7 +284,7 @@ export function Inspector({
         </ul>
       )}
 
-      <button type="button" className="ab-inspect-build" disabled={!canBuild} onClick={() => onBuild(detail.id)}>
+      <button type="button" className="ab-inspect-build" disabled={!canBuild} {...tipAttr({ title: `Build one more ${detail.name}`, tag: "Build", rows: [{ k: "Cost", v: detail.cost.length ? stackText(RECIPE_TREE, detail.cost) : "Free" }, ...(canBuild ? [] : [{ k: "Status", v: "Not enough resources", tone: "bad" as const }])] })} onClick={() => onBuild(detail.id)}>
         Build another
       </button>
     </div>

@@ -20,13 +20,13 @@ function kilnWorld() {
     return { world, id: k.id };
 }
 
-test("a new kiln lists its recipes with none selected and a rate for each", () => {
+test("a new kiln lists its recipes, auto-picks iron ingot, and gives a rate for each", () => {
     const { world, id } = kilnWorld();
     const lib = S.hudData(world, CAT, id).selected.recipeLibrary;
     assert.ok(lib.length >= 2, "kiln lists at least its two base recipes");
-    assert.ok(lib.every((e) => e.state !== "selected"), "nothing is selected on a new kiln");
+    assert.equal(lib.filter((e) => e.state === "selected").length, 1, "exactly one recipe is selected");
     const iron = lib.find((e) => e.id === "r_iron_ingot");
-    assert.equal(iron.state, "open");
+    assert.equal(iron.state, "selected", "a new kiln starts on iron ingot");
     assert.equal(iron.outputs[0].resourceId, "iron_ingot");
     assert.equal(iron.inputs[0].resourceId, "iron_ore");
     assert.ok(iron.perMin > 0, "a rate per minute is given");
@@ -61,9 +61,12 @@ test("open recipes sort before locked ones, and every locked recipe says why", (
 test("the hover note names the recipe a crafter makes, and says so when none is set", () => {
     const { world, id } = kilnWorld();
     const b = world.buildings[id];
+    assert.equal(recipeTagAt(world, b.x, b.z, CAT), "Making Iron ingot, 2 s a craft", "a new kiln auto-picks iron ingot");
+    S.setRecipe(world, id, null, CAT);
     assert.equal(recipeTagAt(world, b.x, b.z, CAT), "No recipe set. Not running");
-    S.setRecipe(world, id, "r_iron_ingot", CAT);
-    assert.equal(recipeTagAt(world, b.x, b.z, CAT), "Making Iron ingot, 2 s a craft");
+    // Copper ingot is locked behind a hub request at the start, so the sim refuses it and the note stays unset.
+    assert.equal(S.setRecipe(world, id, "r_copper_ingot", CAT).ok, false);
+    assert.equal(recipeTagAt(world, b.x, b.z, CAT), "No recipe set. Not running");
 });
 
 test("the hover note is empty on bare ground and for belts", () => {

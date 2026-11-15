@@ -8,6 +8,8 @@ import { iconCell, iconStyle } from "@/lib/automation/icons";
 import { uiIconStyle } from "@/lib/automation/icons/ui";
 import { ResearchArt } from "@/components/brasswork-art";
 import { MenuWindow } from "@/components/brasswork-ui/window";
+import { tipAttr } from "@/components/brasswork-ui/tip";
+import { researchTip } from "@/lib/automation/tips";
 
 /** Tier headings, left to right. A node sits one column right of its deepest prerequisite. */
 const TIERS = ["Base", "Parts", "Components", "Clockworks", "Megaproject"];
@@ -99,6 +101,7 @@ function Card({
       data-fresh={fresh}
       aria-pressed={selected}
       style={style}
+      {...tipAttr(researchTip(RECIPE_TREE, n, need))}
       onClick={(e) => {
         e.stopPropagation();
         onPick();
