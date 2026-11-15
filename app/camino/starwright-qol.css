@@ -29,7 +29,6 @@
     .sw-root > * { grid-column: 2; }
     .sw-root > .sw-top { grid-column: 1 / -1; }
     .sw-root > .sw-scene { grid-column: 1; grid-row: 2 / span 12; position: sticky; top: 57px; height: calc(100dvh - 66px); }
-    .sw-hint2 { display: none; }
 }
 
 /* ---- first-visit cue on phones ---- */
@@ -37,3 +36,5 @@
 .sw-hint2 i { width: 8px; height: 8px; border-right: 2px solid currentColor; border-bottom: 2px solid currentColor; transform: rotate(45deg) translateY(-2px); }
 @keyframes swHintBob { 50% { transform: translateX(-50%) translateY(4px); } }
 @media (prefers-reduced-motion: reduce) { .sw-hint2 { animation: none; } }
+/* held sideways the ladder is already beside the star, so no cue (this sits after the base rule so it wins) */
+@media (max-width: 960px) and (max-height: 520px) and (orientation: landscape) { .sw-hint2 { display: none; } }
