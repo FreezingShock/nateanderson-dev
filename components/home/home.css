@@ -551,7 +551,9 @@
     }
 }
 
-/* Homepage "Play" showcase (components/home/games-showcase.tsx). One card per game: still capture, tag, blurb, features, play link. */
+/* Homepage "Play" showcase (components/home/games-showcase.tsx).
+   Each card is themed by data-game: --gs-ink is the card body, --gs-line the hairline, --gs-accent the labels and
+   the Play link. Screenshots sit inside a padded plate, so they never touch the card's top, left or right edge. */
 .gs-grid {
     list-style: none;
     margin: 0;
@@ -562,62 +564,104 @@
 }
 .gs-item { min-width: 0; display: flex; }
 .gs-card {
+    --gs-ink: #0f0d0b;
+    --gs-ink-2: #17130f;
+    --gs-line: rgba(226, 238, 240, .14);
+    --gs-accent: #e8b65a;
+    --gs-accent-hi: #f7d58d;
     flex: 1;
     display: flex;
     flex-direction: column;
     min-width: 0;
     color: inherit;
     text-decoration: none;
-    background-color: var(--cm-ctos-panel);
-    border: 1px solid var(--cm-hair);
+    background-color: var(--gs-ink);
+    border: 1px solid var(--gs-line);
+    box-shadow: inset 0 0 0 1px rgba(0, 0, 0, .4);
     transition: border-color var(--cm-d-base), transform var(--cm-d-base);
+}
+/* Brasswork: brass on warm dark, no cyan. */
+.gs-card[data-game="brasswork"] {
+    --gs-ink: #14100a;
+    --gs-ink-2: #1f180d;
+    --gs-line: rgba(201, 149, 58, .28);
+    --gs-accent: #d9a441;
+    --gs-accent-hi: #f3cf82;
+}
+/* Starwright: fusion-red and violet on a deep starfield. */
+.gs-card[data-game="starwright"] {
+    --gs-ink: #0b0814;
+    --gs-ink-2: #140f24;
+    --gs-line: rgba(143, 117, 230, .30);
+    --gs-accent: #ff8a5c;
+    --gs-accent-hi: #ffc2a1;
+}
+/* Groundbreak: golden-hour amber over a slate dusk. */
+.gs-card[data-game="groundbreak"] {
+    --gs-ink: #17131c;
+    --gs-ink-2: #211b28;
+    --gs-line: rgba(242, 163, 58, .26);
+    --gs-accent: #f2a33a;
+    --gs-accent-hi: #ffd08a;
 }
 .gs-card:hover,
 .gs-card:focus-visible {
-    border-color: var(--cm-cyan);
+    border-color: var(--gs-accent);
     transform: translateY(-2px);
 }
-.gs-card:focus-visible { outline: 2px solid var(--cm-cyan); outline-offset: 3px; }
-.gs-media {
+.gs-card:focus-visible { outline: 2px solid var(--gs-accent); outline-offset: 3px; }
+
+/* Padded plate around the capture: the card body shows as a frame on every side. */
+.gs-plate {
     position: relative;
     display: block;
+    padding: 12px;
+    background: var(--gs-ink-2);
+    border-bottom: 1px solid var(--gs-line);
+}
+.gs-shot {
+    display: block;
+    position: relative;
     aspect-ratio: 16 / 10;
     overflow: hidden;
-    background: #0d0d0d;
-    border-bottom: 1px solid var(--cm-hair);
+    background: #050505;
+    border: 1px solid var(--gs-line);
 }
-.gs-media picture,
-.gs-media img {
+.gs-shot picture,
+.gs-shot img {
     display: block;
     width: 100%;
     height: 100%;
 }
-.gs-media img {
+.gs-shot img {
     object-fit: cover;
     transition: transform 600ms cubic-bezier(.2, .7, .2, 1);
 }
-.gs-card:hover .gs-media img { transform: scale(1.03); }
-.gs-tag {
+.gs-card:hover .gs-shot img { transform: scale(1.03); }
+
+/* Genre as a small notched panel on the plate, not a pill. */
+.gs-genre {
     position: absolute;
-    top: 10px;
-    left: 10px;
-    padding: 4px 7px;
-    background: rgba(8, 9, 10, .82);
-    border: 1px solid var(--cm-hair-hi);
-    font: 500 var(--cm-ctos-t-micro)/1 var(--cm-mono);
-    letter-spacing: .12em;
+    top: 20px;
+    left: 20px;
+    padding: 5px 8px 4px;
+    background: var(--gs-ink);
+    border: 1px solid var(--gs-accent);
+    font: 600 var(--cm-ctos-t-micro)/1 var(--cm-mono);
+    letter-spacing: .14em;
     text-transform: uppercase;
-    color: var(--cm-fg);
+    color: var(--gs-accent-hi);
 }
+
 .gs-meta {
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: 10px;
     padding: 14px 14px 16px;
     flex: 1;
 }
 .gs-meta > b {
-    color: var(--cm-fg);
+    color: var(--cm-fg, #f4f4f2);
     font: 800 var(--cm-ctos-t-lead)/1.1 var(--cm-display);
     letter-spacing: -.03em;
     text-transform: lowercase;
@@ -628,27 +672,36 @@
     line-height: 1.45;
     color: var(--cm-mute);
 }
-.gs-feats {
+
+/* Short feature labels: small square panels in the game's accent. */
+.gs-labels {
     margin-top: auto;
     display: flex;
     flex-wrap: wrap;
-    gap: 6px 16px;
-    font: 500 var(--cm-ctos-t-micro)/1.3 var(--cm-mono);
+    gap: 6px;
+}
+.gs-label {
+    padding: 5px 7px 4px;
+    background: var(--gs-ink-2);
+    border: 1px solid var(--gs-line);
+    border-left: 2px solid var(--gs-accent);
+    font: 500 var(--cm-ctos-t-micro)/1.1 var(--cm-mono);
     letter-spacing: .08em;
     text-transform: uppercase;
-    color: var(--cm-dim);
+    color: var(--gs-accent-hi);
+    white-space: nowrap;
 }
-.gs-feats > span { white-space: nowrap; }
+
 .gs-play {
     display: flex;
     align-items: center;
     justify-content: space-between;
     padding-top: 10px;
-    border-top: 1px solid var(--cm-hair);
+    border-top: 1px solid var(--gs-line);
     font: 600 var(--cm-ctos-t-micro)/1 var(--cm-mono);
     letter-spacing: .14em;
     text-transform: uppercase;
-    color: var(--cm-cyan);
+    color: var(--gs-accent);
 }
 .gs-arr { display: inline-flex; width: 14px; height: 14px; }
 .gs-arr svg { width: 100%; height: 100%; }
@@ -660,7 +713,6 @@
     .gs-grid { grid-template-columns: minmax(0, 1fr); gap: var(--cm-s3); }
 }
 @media (prefers-reduced-motion: reduce) {
-    .gs-card, .gs-media img { transition: none; }
-    .gs-card:hover { transform: none; }
-    .gs-card:hover .gs-media img { transform: none; }
+    .gs-card, .gs-shot img { transition: none; }
+    .gs-card:hover, .gs-card:hover .gs-shot img { transform: none; }
 }
