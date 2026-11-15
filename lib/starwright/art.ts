@@ -727,7 +727,7 @@ export function renderLayered(L: Layers, f: SceneFrame, S: SpriteSet): void {
     if (to === 5 && col > 0.2) R *= 1 - 0.1 * Math.min(1, col) + (f.reduce ? 0 : Math.sin(t * 30) * 0.006 * col);
 
     // a new star's first seconds: the old star's remnant drifts off while the new one gathers out of a spiral of gas
-    const birth = born < 1 ? S.get("star/birth") : null;
+    const birth = born < 1 && !f.reduce ? S.get("star/birth") : null;
     if (birth) drawFrame(ctx, birth, frameAtProgress(birth, born), W / 2, H / 2, 1, born > 0.75 ? (1 - born) / 0.25 : 1);
 
     // 2. a gas cloud drifting behind the star
