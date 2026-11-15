@@ -97,7 +97,7 @@ export const MILESTONE_ART: Record<string, number> = {
 };
 
 /** Research cards: 128 x 96 blueprint cells, 6 across; alternates carry a copper corner. */
-export const RESEARCH_SHEET = { url: "/brasswork/art/research.webp?v=f4df9783", w: 128, h: 96, cols: 6, rows: 4 } as const;
+export const RESEARCH_SHEET = { url: "/brasswork/art/research.webp?v=5c88fd9f", w: 128, h: 96, cols: 6, rows: 5 } as const;
 export const RESEARCH_ART: Record<string, number> = {
     gears: 0, // Gear cutting
     furnace_alloys: 1, // Alloy furnaces
@@ -121,6 +121,12 @@ export const RESEARCH_ART: Record<string, number> = {
     bulk_screws: 19, // Bulk screws
     quick_steel: 20, // Quick steel
     fast_frames: 21, // Fast frames
+    deep_seams: 22, // Deep seams
+    deeper_seams: 23, // Deeper seams
+    tuned_sails: 24, // Tuned sails
+    tight_springs: 25, // Tight springs
+    quick_hands: 26, // Quick hands
+    steady_hands: 27, // Steady hands
 };
 
 /** Prestige site paintings: 128 x 96 cells in one row; hang them in DECOR_EXTRA.gilt. */
