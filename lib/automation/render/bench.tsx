@@ -7,6 +7,7 @@
 //   model=1              places the example machine and a placement ghost
 //   belts=1              places a short belt run and starts it
 //   orbit=0|1            0 = orbit: false, so an input module owns the camera
+//   cam=close&tx=&tz=    close-up camera on a board point (tx, tz)
 import { getMachineModel } from "../models/machines";
 import { useEffect, useRef } from "react";
 import { createVoxelIsland, type VoxelIsland } from "./index";
@@ -159,6 +160,13 @@ export default function VoxelIslandBench() {
                 { kind: "cornerR", tier: 1, x: -3, z: 4, rot: 0 },
             ]);
             island.setBeltSpeed(0, 1);
+        }
+
+        if (q.get("cam") === "close") {
+            // Close-up on a target cell (tx, tz in board units, default the centre) for stills of chutes and machines.
+            const tx = Number(q.get("tx") ?? 0), tz = Number(q.get("tz") ?? 0);
+            island.camera.position.set(tx + 3.6, 3.6, tz + 4.6);
+            island.camera.lookAt(tx, 0.6, tz);
         }
 
         island.resize();

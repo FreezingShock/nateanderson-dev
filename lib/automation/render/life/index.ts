@@ -342,13 +342,13 @@ export function attachLife(
                 const sp = kind === "delivery" ? rand(0.3, 0.9) : rand(0.8, big ? 3.2 : 2.2);
                 sparks.spawn(x, base, z, Math.cos(a) * sp, kind === "delivery" ? rand(1.2, 2.2) : rand(2.5, big ? 6.5 : 4.5), Math.sin(a) * sp, rand(0.8, big ? 2 : 1.4), rand(0.08, big ? 0.2 : 0.12), pick(hex));
             }
-            if (kind === "delivery") return;
-            // A flat ring that rolls out across the floor, then a rising column for milestones.
-            const rn = Math.round((big ? 64 : 40) * scale);
+            // A flat ring that rolls out across the floor. Deliveries get a small, quick ring at the hub.
+            const delivery = kind === "delivery";
+            const rn = Math.round((big ? 64 : delivery ? 18 : 40) * scale);
             for (let i = 0; i < rn; i++) {
                 const a = (i / rn) * 6.28;
-                const sp = big ? 5.5 : 3.6;
-                ring.spawn(x, 0.12, z, Math.cos(a) * sp, 0, Math.sin(a) * sp, big ? 1.3 : 0.9, 0.18, hex[0]);
+                const sp = big ? 5.5 : delivery ? 1.9 : 3.6;
+                ring.spawn(x, 0.12, z, Math.cos(a) * sp, 0, Math.sin(a) * sp, big ? 1.3 : delivery ? 0.5 : 0.9, delivery ? 0.12 : 0.18, hex[0]);
             }
             if (big)
                 for (let i = 0; i < 40 * scale; i++)
