@@ -12,7 +12,7 @@ Last audited 2026-11-15, `integration` at 5138bb6f.
 - Where: `app/camino/groundbreak.css`. At 860 px and under `.gb-cue` is `bottom: 232px` and full width; `.gb-zoom` is `bottom: 190px`, `right: 8px`, in a row.
 - Done when: at 390 and 360 wide the cue and zoom buttons do not overlap, the cue still points at its tile, and the dock and feed stay clear. Check the landscape phone rules too (`max-height: 500px`).
 
-### 2. Jobs and Firm windows cover the site
+### 2. Jobs and Firm windows cover the site (DONE)
 - Where: `Window` and the `gb-win` rules; Jobs is `unroll`, Firm is `stamp` and `size="lg"`.
 - Done when: at 1440 the site stays visible beside Jobs and Firm (narrower window or docked to a side, no scrim), and on a phone it is a bottom sheet that leaves the job site showing above. Clicking blank space still closes it, and the open and close animations keep their own styles.
 

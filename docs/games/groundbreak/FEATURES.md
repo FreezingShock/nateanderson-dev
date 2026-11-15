@@ -117,3 +117,4 @@ First run to the bridge is about 3 hours (Nate's pick). The bot test "finishes t
 ### HUD layout
 
 - Floating HUD stacks on the dock: `groundbreak.tsx` measures the dock and sets `--gb-dock-top`; the cue, view buttons, feed and card use it (`groundbreak.css`, last block). Phone landscape moves the cue to the top. No overlaps at 1440, 390, 360, 375x667, 844x390, 932x430 (headless Chrome only).
+- Windows (Jobs, Skyline, Firm, Console, Menu): desktop, a 320 to 520 px panel docked beside the rail that ends above the dock, cue and feed hidden while open; phone, a bottom sheet over the dock (up to 58% tall) with the top of the site showing, cue, view buttons and feed hidden. Blank click and Esc close. `groundbreak.css`, last block. Headless Chrome only.
