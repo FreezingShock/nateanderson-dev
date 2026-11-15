@@ -21,7 +21,7 @@ import {
 } from "@/lib/starwright/engine";
 import { uiVars } from "@/lib/starwright/ui-art";
 import { Almanac, CloudPick, Ending, Menu, Orbit, StarChart, Visitor, tools } from "./panels";
-import { AwayCard, ScrollHint } from "./settings";
+import { AwayCard, ScrollHint, type AwayData } from "./settings";
 import { ElTile, Gl, Pic, ui, useLeaving, useSheets, useTips } from "./sw-ui";
 
 type Panel = null | "stars" | "pulsar" | "orbit" | "almanac" | "menu";
@@ -59,7 +59,7 @@ export function Starwright() {
     const lastAch = useRef(0);
     const [sound, setSoundState] = useState(true);
     const [paused, setPaused] = useState(false);
-    const [card, setCard] = useState<{ title: string; lines: string[] } | null>(null);
+    const [card, setCard] = useState<AwayData | null>(null);
     const readOnly = useRef(false);
     const [other, setOther] = useState(false);
     const tabCh = useRef<{ ch: BroadcastChannel; id: string } | null>(null);
@@ -100,7 +100,7 @@ export function Starwright() {
             if (done >= REPORT_MIN) {
                 const r = awayReport(before, s, done, gone, now, auto);
                 saveAway(window.localStorage, r);
-                if (getSettings().welcome) setCard({ title: "Welcome back", lines: r.lines });
+                if (getSettings().welcome) setCard({ title: "Welcome back", lines: r.lines, report: r });
             }
         }
         s.savedAt = now;
@@ -133,7 +133,7 @@ export function Starwright() {
             if (before && done >= REPORT_MIN) {
                 const r = awayReport(before, s, done, gap, Date.now(), auto);
                 saveAway(window.localStorage, r);
-                if (getSettings().welcome) setCard({ title: "Welcome back", lines: r.lines });
+                if (getSettings().welcome) setCard({ title: "Welcome back", lines: r.lines, report: r });
             }
             const h = heaviest(s);
             if (h > lastHeavy.current) {
@@ -505,7 +505,7 @@ export function Starwright() {
             {s.event && <Visitor s={s} onAnswer={doAnswer} />}
             {s.offer.length > 0 && <CloudPick s={s} onPick={doCloud} />}
             <ScrollHint />
-            {card && <AwayCard title={card.title} lines={card.lines} onClose={() => setCard(null)} />}
+            {card && <AwayCard card={card} onClose={() => setCard(null)} />}
             {other && (
                 <div className="sw-lock sw-panel" role="alert">
                     <span>Starwright is open in another tab, so this one stopped saving.</span>
