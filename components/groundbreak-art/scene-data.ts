@@ -57,7 +57,7 @@ export const GB_JOBS = {
     "ground": 44,
     "src": "/groundbreak/jobs/house.webp?v=a86b3531"
   },
-  "firehouse": {
+  "firestation": {
     "name": "Fire station",
     "frames": [
       "lot",
@@ -72,7 +72,7 @@ export const GB_JOBS = {
     "w": 280,
     "h": 154,
     "ground": 44,
-    "src": "/groundbreak/jobs/firehouse.webp?v=f2efff7d"
+    "src": "/groundbreak/jobs/firestation.webp?v=f2efff7d"
   },
   "clinic": {
     "name": "Harbor clinic",
@@ -95,7 +95,7 @@ export const GB_JOBS = {
     "ground": 44,
     "src": "/groundbreak/jobs/clinic.webp?v=7fafa440"
   },
-  "deck": {
+  "parking": {
     "name": "Parking deck",
     "frames": [
       "lot",
@@ -113,7 +113,7 @@ export const GB_JOBS = {
     "w": 350,
     "h": 220,
     "ground": 44,
-    "src": "/groundbreak/jobs/deck.webp?v=9af077bd"
+    "src": "/groundbreak/jobs/parking.webp?v=9af077bd"
   },
   "school": {
     "name": "School",
@@ -133,7 +133,7 @@ export const GB_JOBS = {
     "ground": 44,
     "src": "/groundbreak/jobs/school.webp?v=178d6e1c"
   },
-  "office": {
+  "midrise": {
     "name": "Mid-rise office",
     "frames": [
       "lot",
@@ -154,9 +154,9 @@ export const GB_JOBS = {
     "w": 296,
     "h": 346,
     "ground": 44,
-    "src": "/groundbreak/jobs/office.webp?v=b61ab48a"
+    "src": "/groundbreak/jobs/midrise.webp?v=b61ab48a"
   },
-  "tower": {
+  "watertower": {
     "name": "Water tower",
     "frames": [
       "lot",
@@ -170,9 +170,9 @@ export const GB_JOBS = {
     "w": 260,
     "h": 300,
     "ground": 44,
-    "src": "/groundbreak/jobs/tower.webp?v=e480f313"
+    "src": "/groundbreak/jobs/watertower.webp?v=e480f313"
   },
-  "bridge": {
+  "footbridge": {
     "name": "Footbridge",
     "frames": [
       "lot",
@@ -186,9 +186,9 @@ export const GB_JOBS = {
     "w": 420,
     "h": 230,
     "ground": 44,
-    "src": "/groundbreak/jobs/bridge.webp?v=31e1f41d"
+    "src": "/groundbreak/jobs/footbridge.webp?v=31e1f41d"
   },
-  "highrise": {
+  "tower": {
     "name": "40-storey tower",
     "frames": [
       "lot",
@@ -210,7 +210,7 @@ export const GB_JOBS = {
     "w": 272,
     "h": 510,
     "ground": 44,
-    "src": "/groundbreak/jobs/highrise.webp?v=86d36e93"
+    "src": "/groundbreak/jobs/tower.webp?v=86d36e93"
   },
   "stadium": {
     "name": "Stadium",
@@ -229,7 +229,7 @@ export const GB_JOBS = {
     "ground": 44,
     "src": "/groundbreak/jobs/stadium.webp?v=16285d35"
   },
-  "suspension": {
+  "bridge": {
     "name": "Suspension bridge",
     "frames": [
       "lot",
@@ -243,7 +243,7 @@ export const GB_JOBS = {
     "w": 760,
     "h": 340,
     "ground": 44,
-    "src": "/groundbreak/jobs/suspension.webp?v=ce6e885a"
+    "src": "/groundbreak/jobs/bridge.webp?v=ce6e885a"
   }
 } as const;
 

@@ -634,7 +634,7 @@ SPECS = [
 ]
 
 
-KEYMAP = {"firestation": "firehouse", "parking": "deck"}
+KEYMAP = {}
 
 
 def build_all():
@@ -652,16 +652,16 @@ def build_all():
         jobs[KEYMAP.get(sp.key, sp.key)] = (sp.name, fr, [draw_framed(sp, x) for x in fr])
     sp = SPECS[5]
     fr = frames_for(sp)
-    jobs["office"] = (sp.name, fr, [draw_framed(sp, x) for x in fr])
+    jobs["midrise"] = (sp.name, fr, [draw_framed(sp, x) for x in fr])
     f, cs = water_tower()
-    jobs["tower"] = ("Water tower", f, cs)
+    jobs["watertower"] = ("Water tower", f, cs)
     f, cs = bridge("footbridge", 200, 90, 420, 230, 26, suspension=False)
-    jobs["bridge"] = ("Footbridge", f, cs)
+    jobs["footbridge"] = ("Footbridge", f, cs)
     sp = SPECS[6]
     fr = frames_for(sp)
-    jobs["highrise"] = (sp.name, fr, [draw_framed(sp, x) for x in fr])
+    jobs["tower"] = (sp.name, fr, [draw_framed(sp, x) for x in fr])
     f, cs = stadium()
     jobs["stadium"] = ("Stadium", f, cs)
     f, cs = bridge("bridge", 420, 190, 760, 340, 60, suspension=True)
-    jobs["suspension"] = ("Suspension bridge", f, cs)
+    jobs["bridge"] = ("Suspension bridge", f, cs)
     return jobs
