@@ -194,3 +194,35 @@
 html[data-boot="full"] .ctos.st-page .st-anim,
 html[data-boot="quick"] .ctos.st-page .st-anim,
 html[data-xition] .ctos.st-page .st-anim { animation-play-state: paused; }
+
+/* ---- Studies grid cards on the shared card system ----
+   Class, self-directed, reading and tool-roadmap items are cards, so they take the card treatment used on every other
+   page (dark panel with the dot field, 3px top edge, lowercase lead-size title) instead of the white header strip.
+   The header strip stays on the status panels and the pathway rail, where it reads as an instrument label. */
+.ctos.st-page .st-courses > .cm-panel, .ctos.st-page .cm-cols3 > .cm-panel {
+  background-color: var(--cm-ctos-panel);
+  background-image: radial-gradient(circle, rgba(244, 244, 242, .09) 0 28%, transparent 32%);
+  background-size: 6px 6px;
+  border: 1px solid var(--cm-hair-hi); border-top: 3px solid var(--cm-hair-hi);
+}
+.ctos.st-page .st-courses > .cm-panel:hover, .ctos.st-page .cm-cols3 > .cm-panel:hover,
+.ctos.st-page .cm-cols3 > .cm-panel.st-now { border-top-color: var(--cm-cyan); }
+.ctos.st-page .st-courses > .cm-panel > .cm-hbar, .ctos.st-page .cm-cols3 > .cm-panel > .cm-hbar {
+  background: transparent; color: var(--cm-ctos-meta, var(--cm-mute)); padding: 14px 14px 0;
+}
+.ctos.st-page .st-courses > .cm-panel > .cm-hbar > :last-child, .ctos.st-page .cm-cols3 > .cm-panel > .cm-hbar > :last-child { color: var(--cm-mute); }
+.ctos.st-page .st-courses > .cm-panel > .cm-hbar .live, .ctos.st-page .cm-cols3 > .cm-panel > .cm-hbar .live { color: var(--cm-cyan); }
+.ctos.st-page .st-courses .cm-hbar .live::before, .ctos.st-page .cm-cols3 .cm-hbar .live::before { background: var(--cm-cyan); }
+.ctos.st-page .st-courses > .cm-panel > .cm-body-pad, .ctos.st-page .cm-cols3 > .cm-panel > .cm-body-pad { padding: 8px 14px 14px; }
+.ctos.st-page .st-courses > .cm-panel .cm-h3, .ctos.st-page .cm-cols3 > .cm-panel .cm-h3 {
+  font: 800 var(--cm-ctos-t-lead)/1.1 var(--cm-display); letter-spacing: -.03em; text-transform: lowercase; color: var(--cm-fg);
+}
+.ctos.st-page .st-courses > .cm-panel .cm-body, .ctos.st-page .cm-cols3 > .cm-panel .cm-body { font-size: 14px; line-height: 1.5; color: var(--cm-mute); }
+.ctos.st-page .st-courses .st-ap { background: transparent; color: #ff6a55; border: 1px solid #ff6a55; padding: 2px 4px; }
+.ctos.st-page .st-courses > .cm-panel, .ctos.st-page .cm-cols3 > .cm-panel,
+.ctos.st-page .st-courses > .cm-panel:nth-of-type(even), .ctos.st-page .cm-cols3 > .cm-panel:nth-of-type(even) { border-left: 1px solid var(--cm-hair-hi); }
+.ctos.st-page .st-courses > .cm-panel::before, .ctos.st-page .st-courses > .cm-panel::after,
+.ctos.st-page .cm-cols3 > .cm-panel::before, .ctos.st-page .cm-cols3 > .cm-panel::after { display: none; }
+.ctos.st-page .st-courses .st-tt, .ctos.st-page .cm-cols3 > .cm-panel .st-tt { background: none; color: inherit; padding: 0; box-shadow: none; }
+.ctos.st-page .st-courses > .cm-panel > .cm-hbar, .ctos.st-page .cm-cols3 > .cm-panel > .cm-hbar { min-height: 32px; box-sizing: border-box; }
+.ctos.st-page .st-courses > .cm-panel > .cm-hbar .st-hbar-end > span:not(.st-ap) { color: var(--cm-ctos-meta, var(--cm-mute)); }
