@@ -15,6 +15,7 @@ import {
 import { gbCommand } from "@/lib/groundbreak/commands";
 import { MAT_ICONS, iconUrl } from "./icons";
 import { GB_JOBS, type GbJobId } from "@/components/groundbreak-art";
+import { GB_BANNERS, type GbBannerId } from "@/components/groundbreak-art/ui-art";
 import { GbSiteScene as GroundbreakScene } from "@/components/groundbreak-art/site-scene";
 import { CAMERA_HOME, GROUND_Y, WORLD_H, WORLD_W, ZOOM_MAX, ZOOM_MIN, type Camera, type SceneJob } from "./scene-types";
 
@@ -24,6 +25,20 @@ const fmtSecs = (sec: number) => { const s = Math.max(0, Math.ceil(sec)); return
 type Win = null | "jobs" | "skyline" | "firm" | "console" | "menu";
 interface Note { id: number; text: string; tone?: "hot" | "dim" }
 const TIER_ICON = ["crew", "equip", "method"] as const;
+/** The machine each material row buys at tier II, in material order. */
+const EQUIP_ICONS = ["loader", "excavator", "kiln", "mixer", "bender", "mill", "float", "drawer", "brake", "yard", "rig", "crane"];
+const BRANCH_ICON: Record<string, string> = { ops: "crew", money: "cash", logistics: "permit" };
+
+/** Finished-building thumbnail from the job's last cutaway frame. */
+function JobThumb({ id }: { id: string }) {
+    const j = GB_JOBS[id as GbJobId];
+    if (!j) return null;
+    const n = j.frames.length, k = Math.min(88 / j.w, 56 / j.h);
+    return <i className="gb-thumb" aria-hidden="true" style={{ width: j.w * k, height: j.h * k, backgroundImage: `url("${j.src}")`, backgroundSize: `${j.w * n * k}px ${j.h * k}px`, backgroundPosition: `${-(n - 1) * j.w * k}px 0` }} />;
+}
+function Banner({ id }: { id: GbBannerId }) {
+    return <i className="gb-banner" aria-hidden="true" style={{ backgroundImage: `url("${GB_BANNERS[id]}")` }} />;
+}
 const TIER_KEY = ["Q", "W", "E"] as const;
 const MAT_KEYS = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "0", "-", "="];
 const clamp = (v: number, a: number, b: number) => Math.max(a, Math.min(b, v));
@@ -45,13 +60,14 @@ function useExit(open: boolean, ms = 190): { mounted: boolean; state: "in" | "ou
     return { mounted: open || mounted, state: open ? "in" : "out" };
 }
 
-function Window({ open, title, hint, variant, size = "md", onClose, children, icon }: { open: boolean; title: string; hint?: string; variant: "iris" | "shutter" | "settle" | "drop"; size?: "sm" | "md" | "lg"; onClose: () => void; children: ReactNode; icon?: string }) {
+function Window({ open, title, hint, variant, size = "md", onClose, children, icon, banner }: { open: boolean; title: string; hint?: string; variant: "iris" | "shutter" | "settle" | "drop" | "unroll" | "stamp"; size?: "sm" | "md" | "lg"; onClose: () => void; children: ReactNode; icon?: string; banner?: GbBannerId }) {
     const { mounted, state } = useExit(open);
     if (!mounted) return null;
     return (
         <section className={`gb-win gb-${size}`} data-v={variant} data-s={state} role="dialog" aria-label={title} onPointerDown={(e) => e.stopPropagation()}>
+            {banner && <Banner id={banner} />}
             <header className="gb-win-head">
-                {icon && <Ico id={icon} size={20} />}
+                {icon && <Ico id={icon} size={32} />}
                 <h2>{title}</h2>
                 {hint && <span className="gb-win-hint">{hint}</span>}
                 <button type="button" className="gb-x" onClick={onClose} aria-label={`Close ${title}`} data-tip="Close · Esc">×</button>
@@ -351,20 +367,21 @@ export function Groundbreak() {
             <nav className="gb-rail" aria-label="Menus" onPointerDown={(e) => e.stopPropagation()}>
                 {([["jobs", "bid", "Jobs", "J"], ["skyline", "skyline", "Skyline", "K"], ["firm", "firm", "Firm", "F"], ["console", "console", "Console", "⌃J"], ["menu", "menu", "Menu", "M"]] as const).map(([id, ic, label, key]) => (
                     <button key={id} type="button" className="gb-rail-btn" aria-pressed={win === id} aria-label={label} data-tip={`${label} · ${key}`} data-ping={id === "firm" && (canIncorporate(s, f) || PERKS.some((p) => perkReady(s.perks, p) && s.charter >= p.cost)) ? "" : id === "jobs" && wait ? "" : undefined} onClick={() => { setSel(null); setWin(win === id ? null : id); }}>
-                        <Ico id={ic} size={34} /><kbd>{key}</kbd>
+                        <Ico id={ic} size={36} /><kbd>{key}</kbd>
                     </button>
                 ))}
             </nav>
 
             <div className="gb-zoom" onPointerDown={(e) => e.stopPropagation()}>
-                <button type="button" onClick={() => zoomAt(1.3)} aria-label="Zoom in" data-tip="Zoom in · +">+</button>
-                <button type="button" onClick={() => zoomAt(0.77)} aria-label="Zoom out" data-tip="Zoom out · Shift -">−</button>
-                <button type="button" onClick={reset} aria-label="Reset view" data-tip="Reset view · R"><Ico id="reset" size={22} /></button>
+                <button type="button" onClick={() => zoomAt(1.3)} aria-label="Zoom in" data-tip="Zoom in · +"><Ico id="zoomin" size={26} /></button>
+                <button type="button" onClick={() => zoomAt(0.77)} aria-label="Zoom out" data-tip="Zoom out · Shift -"><Ico id="zoomout" size={26} /></button>
+                <button type="button" onClick={reset} aria-label="Reset view" data-tip="Reset view · R"><Ico id="reset" size={26} /></button>
             </div>
 
             <aside className={`gb-job ${jobOpen ? "" : "is-min"}`} onPointerDown={(e) => e.stopPropagation()}>
+                {jobOpen && <Banner id="current" />}
                 <button type="button" className="gb-job-head" onClick={() => setJobOpen((v) => !v)} aria-expanded={jobOpen} data-tip={jobOpen ? "Collapse" : "Expand"}>
-                    <Ico id="bid" size={20} /><span>{def ? def.name : nextJob(s).name}</span>
+                    <Ico id="bid" size={28} /><span>{def ? def.name : nextJob(s).name}</span>
                     {aj && <em>{aj.step === "permit" ? `permit ${fmtSecs(aj.left)}` : aj.step === "inspect" ? `inspection ${fmtSecs(aj.left)}` : `${Math.floor(prog * 100)}%`}</em>}
                 </button>
                 {jobOpen && (def && aj && f ? (
@@ -379,7 +396,7 @@ export function Groundbreak() {
                                 const need = needs.map(([m, q]) => `${fmt(q)} ${MATS[m].name}`).join(", ");
                                 return (
                                     <li key={ph.id} data-state={done ? "done" : cur ? "cur" : "wait"} data-tip={`${ph.name}: ${need}`}>
-                                        <Ico id={MAT_ICONS[needs[0]?.[0] ?? 0]} size={20} /><i className="gb-bar"><b style={{ width: `${pct}%` }} /></i>
+                                        <Ico id={ph.id} size={24} /><i className="gb-bar"><b style={{ width: `${pct}%` }} /></i>
                                     </li>
                                 );
                             })}
@@ -420,7 +437,7 @@ export function Groundbreak() {
                             data-tip={open ? `${m.name} · ${fmt(r)}/s` : next ? `${m.name} · needs ${fmt(need)} ${MATS[i - 1].name}` : "Locked"}
                             onClick={() => { setWin(null); setSel(card === i ? null : i); }}>
                             <kbd>{MAT_KEYS[i]}</kbd>
-                            <Ico id={open || next ? MAT_ICONS[i] : "lock"} size={36} className={open ? "" : "is-dim"} />
+                            <Ico id={open || next ? MAT_ICONS[i] : "lock"} size={40} className={open ? "" : "is-dim"} />
                             <b>{open ? fmt(s.amt[i]) : next ? `${Math.min(99, Math.floor((s.amt[i - 1] / need) * 100))}%` : ""}</b>
                             {open && <i className="gb-lv">{s.crews[i]}</i>}
                         </button>
@@ -428,13 +445,13 @@ export function Groundbreak() {
                 })}
             </div>
 
-            <Window open={win === "jobs"} title="Next jobs" hint={`${s.builtThisFirm} of ${JOBS.length} built`} variant="shutter" icon="bid" onClose={() => setWin(null)}>
+            <Window open={win === "jobs"} title="Next jobs" hint={`${s.builtThisFirm} of ${JOBS.length} built`} variant="unroll" icon="bid" banner="jobs" onClose={() => setWin(null)}>
                 <p className="gb-line">{city.name}. {city.blurb}</p>
                 <ul className="gb-bids">
-                    {s.job && def && <li className="is-now"><div><strong>{def.name}</strong><span>{jobPhaseName(s.job, f)} · {city.sites[def.stage - 1]}</span></div><span className="gb-req">{Math.floor(prog * 100)}%</span></li>}
+                    {s.job && def && <li className="is-now"><JobThumb id={def.id} /><div><strong>{def.name}</strong><span>{jobPhaseName(s.job, f)} · {city.sites[def.stage - 1]}</span></div><span className="gb-req">{Math.floor(prog * 100)}%</span></li>}
                     {queue(s, 4).map((q, i) => (
-                        <li key={q.index} className={q.ready ? "is-next" : "is-locked"}>
-                            <div><strong>{i === 0 && !s.job ? "Up next: " : ""}{q.job.name}</strong><span>{q.job.notes.join(" · ")}</span></div>
+                        <li key={q.index} className={q.ready ? "is-next" : "is-locked"} style={{ ["--i" as string]: i } as CSSProperties}>
+                            <JobThumb id={q.job.id} /><div><strong>{i === 0 && !s.job ? "Up next: " : ""}{q.job.name}</strong><span>{q.job.notes.join(" · ")}</span></div>
                             <dl><dt>pays</dt><dd>{fmtCash(payout(s, q.job, f, chain(s), q.index))}</dd><dt>rep</dt><dd>+{repPay(s, q.job, f)}</dd><dt>stage</dt><dd>{q.job.stage}</dd></dl>
                             {!q.ready && <span className="gb-req">Open {MATS[[0, 2, 4, 7, 9, 11][q.job.stage - 1]].name}</span>}
                         </li>
@@ -443,11 +460,11 @@ export function Groundbreak() {
                 {wait && <p className="gb-line">{wait}.</p>}
             </Window>
 
-            <Window open={win === "skyline"} title="Skyline" hint={`${s.skyline.length} built`} variant="iris" size="lg" icon="skyline" onClose={() => setWin(null)}>
+            <Window open={win === "skyline"} title="Skyline" hint={`${s.skyline.length} built`} variant="iris" size="lg" icon="skyline" banner="skyline" onClose={() => setWin(null)}>
                 <SkylineView skyline={s.skyline} />
             </Window>
 
-            <Window open={win === "firm"} title="Firm" hint={`${city.name} · firm ${s.firm + 1}`} variant="settle" size="lg" icon="firm" onClose={() => setWin(null)}>
+            <Window open={win === "firm"} title="Firm" hint={`${city.name} · firm ${s.firm + 1}`} variant="stamp" size="lg" icon="firm" banner="firm" onClose={() => setWin(null)}>
                 <dl className="gb-stats">
                     <dt>Reputation this firm</dt><dd>{fmt(s.repFirm)}</dd>
                     <dt>Charter to spend</dt><dd>{s.charter}</dd>
@@ -459,11 +476,11 @@ export function Groundbreak() {
                 <ConfirmGo label="Incorporate" sure="Cash, crews and materials reset. Charter and the skyline stay. Sure?" onGo={doIncorporate} disabled={!canIncorporate(s, f)} />
             </Window>
 
-            <Window open={win === "console"} title="Console" hint="gb help" variant="drop" icon="console" size="md" onClose={() => setWin(null)}>
+            <Window open={win === "console"} title="Console" hint="gb help" variant="drop" icon="console" banner="console" size="md" onClose={() => setWin(null)}>
                 <Console run={doCommand} />
             </Window>
 
-            <Window open={win === "menu"} title="Menu" variant="settle" size="sm" icon="menu" onClose={() => setWin(null)}>
+            <Window open={win === "menu"} title="Menu" variant="settle" size="sm" icon="menu" banner="menu" onClose={() => setWin(null)}>
                 <MenuBody s={s} paused={paused} onPause={togglePause} simple={simple} onSimple={toggleSimple} fs={shell.supportsFullscreen} onFs={shell.toggleFullscreen} fsOn={shell.fullscreen}
                     onImport={(st) => { const p = parse(st); if (!p) { note("That save could not be read."); return; } if (sRef.current) writeStored(window.localStorage, SAVE_KEY + "-backup", serialize(sRef.current)); sRef.current = p; seen.current = { built: p.built, open: p.open, change: !!p.change }; save(); bump(); note("Save imported. The old one is kept as a backup.", "hot"); }}
                     onWipe={() => { if (sRef.current) writeStored(window.localStorage, SAVE_KEY + "-backup", serialize(sRef.current)); sRef.current = fresh(Date.now()); seen.current = { built: 0, open: 1, change: false }; save(); setWin(null); setSel(null); bump(); }} onNote={note} />
@@ -491,7 +508,7 @@ function MatCard({ s, i, onBuy, onUnlock, onClose }: { s: State; i: number; onBu
     return (
         <section className="gb-card" key={i} role="dialog" aria-label={m.name} onPointerDown={(e) => e.stopPropagation()}>
             <header>
-                <Ico id={open || next ? MAT_ICONS[i] : "lock"} size={40} />
+                <Ico id={open || next ? MAT_ICONS[i] : "lock"} size={56} />
                 <div><h3>{m.name}</h3><p>{open ? `${fmt(rawRate(s, i, f, chain(s)))} /s · ${fmt(s.amt[i])} held` : next ? `needs ${fmt(UNLOCK[i])} ${MATS[i - 1].name}` : "Locked"}</p></div>
                 <button type="button" className="gb-x" onClick={onClose} aria-label="Close" data-tip="Close · Esc">×</button>
             </header>
@@ -507,7 +524,7 @@ function MatCard({ s, i, onBuy, onUnlock, onClose }: { s: State; i: number; onBu
                             return (
                                 <button key={t} type="button" className="gb-tier" disabled={!ok} onClick={() => onBuy(i, t)} data-tip={tip} data-done={done ? "" : undefined}>
                                     <kbd>{TIER_KEY[t]}</kbd>
-                                    <Ico id={TIER_ICON[t]} size={30} />
+                                    <Ico id={t === 1 ? EQUIP_ICONS[i] : TIER_ICON[t]} size={40} />
                                     <span className="gb-tier-name">{["I", "II", "III"][t]} {TIER_LABELS[t]}</span>
                                     <span className="gb-tier-lv">{lvl}</span>
                                     {done ? <b className="gb-cost"> </b> : <CostLine s={s} i={i} t={t} />}
@@ -531,7 +548,7 @@ function PerkGrid({ s, onBuy, onAuto }: { s: State; onBuy: (id: string) => void;
         <div className="gb-perks">
             {branches.map(([b, label]) => (
                 <div key={b}>
-                    <h3>{label}</h3>
+                    <h3><Ico id={BRANCH_ICON[b]} size={24} />{label}</h3>
                     <ul>
                         {PERKS.filter((p) => p.branch === b).map((p) => {
                             const own = s.perks.includes(p.id), ready = perkReady(s.perks, p);

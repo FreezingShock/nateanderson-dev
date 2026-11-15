@@ -64,6 +64,9 @@ def rebar(s):
         s.cylinder((-22, y + i * 0.6, z), (20, y + 4 + i * 0.6, z), 1.9, "rebar", 0.02 * (i % 2), n=6)
     s.cylinder((-4, 7, 0), (-3.4, 7.1, 0), 8.6, "steel", 0.2, n=12)  # tie wire band
     s.cylinder((10, 9.5, 0), (10.6, 9.6, 0), 8.6, "steel", 0.2, n=12)
+    for i, (y, z) in enumerate([(2, -5), (2, 5), (11, 0)]):
+        y1 = y + 4 + [0, 1, 5][i] * 0.6
+        s.cylinder((20, y1, z), (21, y1 + 7, z), 1.9, "rebar", 0.08, n=6)  # bent hooks
 
 
 @icon
@@ -90,25 +93,28 @@ def glass(s):
 
 @icon
 def wire(s):
-    s.cylinder((0, 0, -10), (0, 0, -8), 15, "wood", -0.05, n=20)
-    s.cylinder((0, 0, -8), (0, 0, 8), 11, "copper", n=20)
-    s.cylinder((0, 0, 8), (0, 0, 10), 15, "wood", n=20)
+    s.cylinder((0, 13, -9), (0, 13, -7), 14, "wood", -0.05, n=22)
+    s.cylinder((0, 13, -7), (0, 13, 7), 10.5, "copper", n=22)
+    s.cylinder((0, 13, 7), (0, 13, 9), 14, "wood", n=22)
+    s.cylinder((0, 13, 9), (0, 13, 9.6), 4, "steel", 0.1, n=12)  # hub
+    s.beam((10, 6, 0), (20, 0.8, 4), 2.2, "copper", 0.1)  # loose tail
 
     def post(c, sc):
-        for k in range(-3, 4):
-            a, b = sc.pt((-11, k * 2.6, 9.6)), sc.pt((11, k * 2.6 + 1, 9.6))
-        hub = sc.pt((0, 0, 10))
-        c.set(c.disc(*hub, 3), P["ink"][1])
+        hub = sc.pt((0, 13, 9.8))
+        c.set(c.disc(*hub, 1.6), P["ink"][1])
     return post
 
 
 @icon
 def duct(s):
-    s.box(-20, 2, 0, 12, -7, 7, "duct")
-    s.box(-6, -4.5, -0.8, 12.8, -7.8, 7.8, "duct", 0.12)  # flange
-    s.box(2, 14, 0, 12, -7, 7, "duct", -0.03)
-    s.box(2, 14, 12, 26, -7, 7, "duct")
-    s.box(1, 15, 24, 26, -8, 8, "duct", 0.15)
+    s.cylinder((-20, 7, 0), (2, 7, 0), 7, "duct", n=18)
+    for x in (-15, -8, -1):
+        s.cylinder((x, 7, 0), (x + 0.8, 7, 0), 7.6, "duct", 0.14, n=18)
+    s.cylinder((2, 7, 0), (8, 9, 0), 7, "duct", -0.03, n=18, r2=7)
+    s.cylinder((8, 9, 0), (11, 15, 0), 7, "duct", 0.02, n=18)
+    s.cylinder((11, 15, 0), (11, 30, 0), 7, "duct", n=18)
+    s.cylinder((11, 22, 0), (11, 22.8, 0), 7.6, "duct", 0.14, n=18)
+    s.cylinder((11, 30, 0), (11, 31.2, 0), 7.8, "hiviz", 0.05, n=18)  # tagged end
 
 
 @icon
@@ -203,7 +209,8 @@ def crew(s):
 # ------------------------------------------------------------------ equipment
 def wheels(s, xs, z, r=5, w=3):
     for x in xs:
-        s.cylinder((x, r, z - w), (x, r, z + w), r, "ink", 0.35, n=12)
+        s.cylinder((x, r, z - w), (x, r, z + w), r, "roof", 0.05, n=14)
+        s.cylinder((x, r, z + w), (x, r, z + w + 0.4), r * 0.55, "hiviz", -0.05, n=10)  # painted rim
 
 
 @icon
@@ -481,8 +488,13 @@ def console(s):
 
 @icon
 def menu(s):
-    for k in range(3):
-        s.box(-15, 15, k * 9, k * 9 + 4, -8, 8, "hiviz" if k == 2 else "concrete", 0.05 * k)
+    s.box(-16, 16, 0, 13, -8, 8, "safety")
+    s.box(-16.4, 16.4, 11, 13.6, -8.4, 8.4, "safety", 0.12)  # lid
+    s.box(-3, 3, 7, 10, 8, 8.8, "steel", 0.2)  # latch
+    s.box(-9, -7, 13.6, 20, -1, 1, "steel", 0.1)
+    s.box(7, 9, 13.6, 20, -1, 1, "steel", 0.1)
+    s.box(-9, 9, 19, 21, -1, 1, "steel", 0.2)  # handle
+    s.box(-15, 15, 4, 5, 8, 8.4, "safety", -0.15)
 
 
 @icon
@@ -500,10 +512,12 @@ def zoomin(s):
 
 @icon
 def reset(s):
-    s.cylinder((0, 0, 0), (0, 3, 0), 16, "concrete", n=24)
-    s.cylinder((0, 3, 0), (0, 4, 0), 11, "hiviz", n=24)
-    s.cylinder((0, 4, 0), (0, 5, 0), 6, "concrete", 0.1, n=24)
-    s.cylinder((0, 5, 0), (0, 6, 0), 2.4, "safety", 0.1, n=12)
+    for a in (0, 2.1, 4.2):
+        s.beam((0, 20, 0), (11 * math.cos(a), 0, 11 * math.sin(a)), 2, "wood", 0.05)
+    s.box(-5, 5, 20, 22, -5, 5, "steel", 0.1)
+    s.box(-5, 5, 22, 31, -3.5, 3.5, "hiviz")
+    s.cylinder((-4, 27, 0), (-9, 27, 0), 2.6, "steel", 0.15, n=10)  # scope
+    s.cylinder((-9, 27, 0), (-9.6, 27, 0), 2.2, "glass", 0.3, n=10)
 
 
 @icon
@@ -513,6 +527,85 @@ def lock(s):
     s.cylinder((7, 18, 0), (7, 26, 0), 2, "steel", 0.2, n=8)
     s.box(-7, 7, 25, 29, -2, 2, "steel", 0.2)
     s.box(-2, 2, 6, 12, 5, 5.6, "ink", 0.3)
+
+
+@icon
+def zoomout(s):
+    s.beam((6, 4, 0), (16, -6, 0), 4, "wood")
+    s.cylinder((-4, 14, -2), (-4, 14, 2), 12, "steel", n=20)
+    s.cylinder((-4, 14, 2), (-4, 14, 2.3), 9.5, "glass", 0.25, n=20)
+
+    def post(c, sc):
+        o = sc.pt((-4, 14, 2.4))
+        c.set(c.line(o[0] - 5 * sc.s, o[1], o[0] + 5 * sc.s, o[1], 2), P["white"][3])
+    return post
+
+
+# ------------------------------------------------------------------ build phases (job panel)
+@icon
+def prep(s):
+    s.box(-18, 18, 0, 4, -10, 10, "dirt")
+    rock(s, (8, 6, -2), 6, "dirt", 3, squash=0.6)
+    s.beam((-10, 4, 0), (-2, 30, 0), 2, "wood", 0.05)  # shovel handle
+    s.box(-4.5, -0.5, 29, 31, -1, 1, "wood", 0.1)
+    s.box(-13, -7, 1, 9, -3.5, 3.5, "steel", 0.15)  # blade
+    s.box(12, 13, 0, 18, -0.5, 0.5, "wood", 0.1)  # survey stake
+    s.box(12.2, 18, 14, 17, -0.3, 0.3, "safety", 0.1)
+
+
+@icon
+def foundation(s):
+    s.box(-18, 18, 0, 5, -11, 11, "concrete")
+    s.box(-8, 8, 5, 12, -6, 6, "concrete", 0.05)
+    for x in (-5, 0, 5):
+        s.box(x - 0.8, x + 0.8, 12, 26, -0.8, 0.8, "rebar", 0.1)
+    s.box(-6, 6, 22, 23.2, -0.9, 0.9, "rebar", 0.15)
+
+
+@icon
+def structure(s):
+    for x in (-13, 13):
+        for z in (-9, 9):
+            s.box(x - 1.4, x + 1.4, 0, 30, z - 1.4, z + 1.4, "steel")
+    for y in (14, 28):
+        s.box(-14, 14, y, y + 2.4, -9.6, -8.4, "steel", 0.05)
+        s.box(-14, 14, y, y + 2.4, 8.4, 9.6, "steel", 0.05)
+        s.box(12.4, 13.6, y, y + 2.4, -9, 9, "steel", 0.05)
+    s.beam((-13, 2, 9), (13, 14, 9), 1.4, "hiviz", 0.05)  # brace
+
+
+@icon
+def envelope(s):
+    s.box(-15, 15, 0, 30, -2, 2, "precast")
+    for x in (-8, 6):
+        for y in (5, 18):
+            s.box(x - 4, x + 4, y, y + 8, 1.8, 2.4, "glass", 0.1)
+    s.box(-16, 16, 30, 32, -3, 3, "steel", 0.15)
+
+    def post(c, sc):
+        a, b = sc.pt((-11, 12, 2.5)), sc.pt((-6, 6, 2.5))
+        c.set(c.line(*a, *b, 1) & (c.img[..., 3] > 0), P["sunglass"][5])
+    return post
+
+
+@icon
+def mep(s):
+    s.cylinder((-18, 6, -4), (18, 6, -4), 3.4, "copper", n=12)
+    s.cylinder((-6, 6, -4), (-6, 26, -4), 3.4, "copper", 0.05, n=12)
+    s.cylinder((-6, 18, -4), (-6, 19, -4), 4.2, "steel", 0.2, n=12)
+    s.box(4, 16, 0, 22, 2, 7, "steel", -0.05)  # panel box
+    s.box(5, 15, 2, 21, 7, 7.6, "concrete", 0.1)
+    s.box(8, 12, 12, 16, 7.6, 8.2, "hiviz", 0.1)
+
+
+@icon
+def fitout(s):
+    s.box(-18, 4, 0, 4, -10, 10, "steel", -0.05)  # paint tray
+    s.box(-17, 3, 4, 4.6, -9, 9, "hiviz", 0.05)  # paint
+    s.cylinder((-6, 9, -9), (-6, 9, 9), 5, "hiviz", 0.1, n=14)  # loaded roller
+    s.beam((-6, 9, 9), (-6, 9, 12), 1.6, "steel", 0.1)
+    s.beam((-6, 9, 12), (8, 18, 12), 1.6, "steel", 0.1)
+    s.beam((8, 18, 12), (20, 26, 12), 3.2, "safety")
 
 
 # ------------------------------------------------------------------ render
@@ -541,5 +634,26 @@ def render(k):
     sc.paint(c)
     if post:
         post(c, sc)
-    c.outline()
+    finish(c)
+    c.outline(col=(20, 11, 22))
     return c
+
+
+SUN = np.array([255, 196, 108], float)
+BOUNCE = np.array([98, 52, 112], float)
+
+
+def finish(c):
+    """Same light on every icon: a warm rim where the low sun from the left catches an edge, a violet bounce on the
+    shadow side. This is what makes the set read as one family at small sizes."""
+    a = c.img[..., 3] >= 200
+    left = np.roll(a, 1, 1) & np.roll(a, 1, 0)
+    rim = a & ~(np.roll(a, 1, 1) & np.roll(a, 1, 0) & np.roll(np.roll(a, 1, 1), 1, 0))
+    shade = a & ~np.roll(a, -1, 1) & ~rim
+    rgb = c.img[..., :3].astype(float)
+    lum = rgb.mean(-1, keepdims=True) / 255
+    k_rim = (0.55 * (0.4 + lum))[..., 0]
+    rgb[rim] = rgb[rim] * (1 - k_rim[rim, None]) + SUN * k_rim[rim, None]
+    rgb[shade] = rgb[shade] * 0.6 + BOUNCE * 0.4
+    c.img[..., :3] = np.clip(rgb, 0, 255).astype(np.uint8)
+    del left

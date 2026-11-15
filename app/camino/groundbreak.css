@@ -255,3 +255,96 @@ html.gb-route .sf-foot { display: none !important; }
 .gb-auto { min-width: 40px; border: 1px solid var(--gb-line-2); font-size: 11px; text-transform: uppercase; }
 .gb-auto[aria-pressed="true"] { border-color: var(--gb-ok); color: var(--gb-ok); }
 @media (max-width: 860px) { .gb-perks { grid-template-columns: 1fr; } }
+
+/* ---- menu art pass (2026-11-15): banners, larger icons, per-window motion, docked windows, phone landscape ---- */
+.gb-root { --gb-panel: rgba(20, 14, 18, 0.95); --gb-dusk: #2a1a2e; }
+.gb-banner { display: block; flex: none; height: 88px; background-size: 100% 100%; image-rendering: pixelated; border-bottom: 1px solid var(--gb-line); }
+.gb-job .gb-banner { height: 56px; background-size: cover; background-position: center; animation: gbIn .25s ease-out; }
+.gb-win .gb-banner { margin: 0; }
+.gb-win-head { position: relative; margin-top: -26px; border-bottom: 0; padding-top: 0; background: linear-gradient(rgba(20, 14, 18, 0), var(--gb-panel) 55%); }
+.gb-win-head .gb-ico { filter: drop-shadow(0 2px 0 rgba(0, 0, 0, .6)); }
+.gb-win-head h2 { text-shadow: 0 2px 0 #0b0806; }
+.gb-win-hint { align-self: flex-end; padding-bottom: 6px; }
+
+/* windows sit beside the rail so the building in the middle stays in view */
+@media (min-width: 861px) {
+    .gb-win { left: 76px; right: auto; margin: 0; top: 64px; max-height: calc(100% - 196px); }
+}
+
+/* each window opens in its own way and closes the same way back */
+.gb-win[data-v="unroll"] { transform-origin: 50% 0; animation: gbUnroll .3s steps(6, end) both; }
+.gb-win[data-v="stamp"] { animation: gbStamp .26s cubic-bezier(.2, .9, .3, 1) both; }
+@keyframes gbUnroll { from { clip-path: inset(0 0 100% 0); } to { clip-path: inset(0 0 0 0); } }
+@keyframes gbStamp { 0% { opacity: 0; transform: scale(1.08); } 60% { opacity: 1; transform: scale(.985); } 100% { transform: none; } }
+.gb-win[data-s="out"][data-v="unroll"] { animation: gbRollUp .16s steps(4, end) both; }
+.gb-win[data-s="out"][data-v="stamp"] { animation: gbLift .15s ease-in both; }
+@keyframes gbRollUp { to { clip-path: inset(0 0 100% 0); } }
+@keyframes gbLift { to { opacity: 0; transform: translateY(-10px) scale(.97); } }
+
+/* next jobs: art first, the finished building beside each bid, rows deal in one after another */
+.gb-bids li { grid-template-columns: 88px 1fr auto; animation: gbDeal .28s ease-out both; animation-delay: calc(var(--i, 0) * 45ms + 80ms); }
+.gb-bids dl { grid-column: 2 / -1; }
+.gb-bids li .gb-req:last-child:not(:only-child) { grid-column: 2 / -1; }
+.gb-thumb { grid-row: span 2; align-self: end; justify-self: center; display: block; background-repeat: no-repeat; image-rendering: pixelated; filter: drop-shadow(0 2px 0 #0b0806); transition: transform .18s steps(3, end); }
+.gb-bids li:hover .gb-thumb { transform: translateY(-3px); }
+.gb-bids li.is-locked .gb-thumb { filter: grayscale(.7) brightness(.7); }
+@keyframes gbDeal { from { opacity: 0; transform: translateX(-10px); } }
+
+/* firm perks: branch icons */
+.gb-perks h3 { display: flex; align-items: center; gap: 6px; }
+
+/* job panel */
+.gb-job { overflow: hidden; }
+.gb-job .gb-cn { z-index: 1; }
+.gb-phases li .gb-ico { transition: transform .18s steps(3, end); }
+.gb-phases li[data-state="cur"] .gb-ico { animation: gbBob .8s steps(2, end) infinite; }
+.gb-phases li[data-state="done"] .gb-ico { filter: sepia(.3) saturate(1.3); }
+
+/* zoom buttons use drawn icons */
+.gb-zoom button .gb-ico { transition: transform .15s steps(2, end); }
+.gb-zoom button:hover .gb-ico { transform: scale(1.12); }
+
+/* material dock: chain marks between tiles show each one feeds the next */
+.gb-dock { padding: 10px; gap: 10px; }
+.gb-root .gb-tile { width: 60px; height: 72px; background: linear-gradient(#241a20, #1a1310); }
+.gb-tile + .gb-tile::before { content: ""; position: absolute; left: -9px; top: 50%; width: 8px; height: 2px; background: var(--gb-line); }
+.gb-tile[data-state="open"] + .gb-tile[data-state="open"]::before, .gb-tile[data-state="open"] + .gb-tile[data-state="next"]::before { background: var(--gb-amber); }
+.gb-tile .gb-ico { position: relative; z-index: 1; }
+.gb-tile:hover .gb-ico { transform: translateY(-4px) scale(1.08); }
+.gb-tile:active .gb-ico { transform: translateY(1px); }
+.gb-card header .gb-ico { animation: gbPop .3s steps(4, end); }
+@keyframes gbPop { from { transform: scale(.6) translateY(6px); } }
+.gb-tier .gb-ico { transition: transform .15s steps(2, end); }
+.gb-rail-btn:hover .gb-ico { transform: translateY(-2px) rotate(-4deg); }
+
+@media (max-width: 860px) { .gb-tile + .gb-tile::before { display: none; } .gb-root .gb-tile { width: auto; height: 64px; } }
+/* panel fills beat the button reset */
+.gb-root .gb-rail-btn { background: var(--gb-panel); }
+.gb-root .gb-rail-btn[aria-pressed="true"] { background: #2e1f16; }
+.gb-root .gb-tile[data-on] { background: #2e2012; }
+.gb-root .gb-tile[data-ready] { background: #2a1d12; }
+.gb-root .gb-tier { background: #1c150f; }
+.gb-root .gb-tier:hover:not(:disabled) { background: #2e2012; }
+.gb-root .gb-row, .gb-root .gb-perk { background: #1c150f; }
+
+/* phones held sideways: one compact dock row, small job card, short windows */
+@media (max-height: 500px) and (orientation: landscape) {
+    .gb-top { height: 40px; }
+    .gb-title { font-size: 18px; }
+    .gb-sub { display: none; }
+    .gb-rail { top: 44px; gap: 4px; }
+    .gb-rail-btn { width: 40px; height: 40px; }
+    .gb-rail-btn .gb-ico { width: 28px !important; height: 28px !important; }
+    .gb-dock { grid-template-columns: none; grid-auto-flow: column; width: auto; gap: 4px; padding: 4px; bottom: 4px; }
+    .gb-root .gb-tile { width: 44px; height: 50px; }
+    .gb-tile .gb-ico { width: 28px !important; height: 28px !important; }
+    .gb-tile + .gb-tile::before { display: block; left: -5px; width: 4px; }
+    .gb-tile b { font-size: 10px; min-height: 12px; }
+    .gb-job { top: 44px; width: 220px; }
+    .gb-job .gb-banner { display: none; }
+    .gb-win { top: 44px; left: 56px; right: auto; width: min(420px, calc(100vw - 300px)) !important; max-height: calc(100% - 104px); }
+    .gb-win .gb-banner { height: 44px; }
+    .gb-zoom { bottom: 64px; flex-direction: row; }
+    .gb-card { bottom: 62px; max-height: calc(100% - 110px); overflow: auto; }
+    .gb-feed { bottom: 64px; left: 56px; }
+}
