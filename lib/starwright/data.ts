@@ -80,7 +80,8 @@ export type FxKey =
     | "keepPlanets"
     | "startH"
     | "keepStardust"
-    | "horizon";
+    | "horizon"
+    | "events";
 
 export interface Perk {
     id: string;
@@ -160,3 +161,98 @@ export const PLANETS: Planet[] = [
 export const STARNAMES = ["Sol-7", "Vesper", "Calder", "Orrin", "Tamsin", "Halcyon", "Ember Gate", "Lyra-9", "Corvid", "Marrow"];
 
 export const STAGE_NAMES = ["Protostar", "Yellow dwarf", "Red giant", "Blue giant", "Blue supergiant", "Iron core"] as const;
+
+// ---- visitors, birth clouds, the almanac -----------------------------------------------------------------------------
+
+export interface Buff { k: FxKey; v: number; secs: number }
+export interface EventOpt { id: string; label: string; desc: string; /** seconds of the whole star's output paid at once */ lump?: number; /** seconds of hydrogen inflow paid at once */ gas?: number; buffs?: Buff[] }
+export interface StarEvent { id: string; name: string; text: string; opts: [EventOpt, EventOpt] }
+
+/** Something drifts into the star's reach every couple of minutes. Both answers are good; they pay in different ways. */
+export const EVENTS: StarEvent[] = [
+    {
+        id: "comet", name: "A comet falls in", text: "Ice and dust, a few kilometres wide, on a path through the corona.",
+        opts: [
+            { id: "eat", label: "Swallow it", desc: "A lump: 90 seconds of everything the star makes, at once.", lump: 90 },
+            { id: "burn", label: "Let it burn", desc: "Every fusion x2 for 60 seconds.", buffs: [{ k: "fuse", v: 2, secs: 60 }] },
+        ],
+    },
+    {
+        id: "flare", name: "A flare builds", text: "The surface twists. Something is about to let go.",
+        opts: [
+            { id: "ride", label: "Ride it", desc: "Core heat x2 for 60 seconds, so deep rows can run.", buffs: [{ k: "heat", v: 2, secs: 60 }] },
+            { id: "vent", label: "Vent it", desc: "Hydrogen inflow x4 for 45 seconds.", buffs: [{ k: "inflow", v: 4, secs: 45 }] },
+        ],
+    },
+    {
+        id: "nebula", name: "A gas cloud drifts close", text: "Thin and cold, and in no hurry.",
+        opts: [
+            { id: "drink", label: "Drink deep", desc: "Hydrogen inflow x8 for 30 seconds.", buffs: [{ k: "inflow", v: 8, secs: 30 }] },
+            { id: "stir", label: "Stir the core", desc: "Every fusion x1.5 for 150 seconds.", buffs: [{ k: "fuse", v: 1.5, secs: 150 }] },
+        ],
+    },
+    {
+        id: "pair", name: "A companion star passes", text: "Close enough to pull on the corona and let the core breathe.",
+        opts: [
+            { id: "lean", label: "Lean in", desc: "Everything x1.5 for 90 seconds.", buffs: [{ k: "global", v: 1.5, secs: 90 }] },
+            { id: "steal", label: "Take its gas", desc: "A lump: 150 seconds of hydrogen inflow.", gas: 150 },
+        ],
+    },
+];
+/** First visitor after this many seconds of a star's life, then one every EVENT_GAP seconds (a little random). */
+export const EVENT_FIRST = 75;
+export const EVENT_GAP = [110, 80] as const; // base, random extra
+export const EVENT_STAY = 150; // seconds a visitor waits before it moves on
+
+export interface Cloud { id: string; name: string; desc: string; fx: Partial<Record<FxKey, number>> }
+
+/** After the first supernova, each new star is born from one of three clouds. The choice lasts that one star. */
+export const CLOUDS: Cloud[] = [
+    { id: "dense", name: "Dense cloud", desc: "Hydrogen inflow x2.5, core heat x0.8.", fx: { inflow: 2.5, heat: 0.8 } },
+    { id: "hot", name: "Hot cloud", desc: "Core heat x1.6, hydrogen inflow x0.6.", fx: { heat: 1.6, inflow: 0.6 } },
+    { id: "rich", name: "Metal-rich cloud", desc: "Every fusion x1.6, but the core needs 30% more iron.", fx: { fuse: 1.6, need: -0.3 } },
+    { id: "thin", name: "Thin cloud", desc: "The core needs 25% less iron, stardust x0.75.", fx: { need: 0.25, stardust: 0.75 } },
+    { id: "dusty", name: "Dusty cloud", desc: "Stardust x1.6, every fusion x0.7.", fx: { stardust: 1.6, fuse: 0.7 } },
+    { id: "quiet", name: "Restless cloud", desc: "Visitors come twice as often.", fx: { events: 2 } },
+];
+
+export interface Achievement { id: string; name: string; desc: string }
+/** Each one is worth +2% to everything, for good. */
+export const ACH_BONUS = 0.02;
+export const ACHIEVEMENTS: Achievement[] = [
+    { id: "flame", name: "First flame", desc: "Buy a burner." },
+    { id: "l25", name: "Doubling", desc: "Take any row to level 25." },
+    { id: "l100", name: "Hundredfold", desc: "Take any row to level 100." },
+    { id: "l300", name: "Furnace", desc: "Take any row to level 300." },
+    { id: "iron", name: "Iron heart", desc: "Make iron." },
+    { id: "nova1", name: "First collapse", desc: "Go supernova." },
+    { id: "nova10", name: "Ten stars", desc: "Go supernova ten times." },
+    { id: "nova40", name: "Forty stars", desc: "Go supernova forty times." },
+    { id: "fast", name: "Short fuse", desc: "Collapse a star in under ten minutes." },
+    { id: "guest", name: "Company", desc: "Answer a visitor." },
+    { id: "guest12", name: "Open house", desc: "Answer twelve visitors." },
+    { id: "cloud", name: "Born again", desc: "Choose a birth cloud." },
+    { id: "cloud8", name: "Nursery", desc: "Choose eight birth clouds." },
+    { id: "world4", name: "Four worlds", desc: "Have four planets in orbit at once." },
+    { id: "world8", name: "Full orrery", desc: "Have all eight planets in orbit at once." },
+    { id: "map8", name: "Star chart", desc: "Light eight stars on the constellation map." },
+    { id: "pulsar", name: "Pulsar", desc: "Form a neutron star." },
+    { id: "gold", name: "Gold", desc: "Make gold." },
+    { id: "uranium", name: "Uranium", desc: "Make uranium." },
+    { id: "sing", name: "Singularity", desc: "Fall into a black hole." },
+    { id: "night", name: "Long night", desc: "Burn for 24 hours in total." },
+];
+
+/** What each element's first appearance adds to the codex. Plain facts. */
+export const CODEX: Record<string, string> = {
+    H: "About three atoms in every four in the universe. Your star is mostly this, and it never runs out of it for long.",
+    He: "Seen in the Sun's light in 1868, before anyone had found it on Earth. Stars make it from hydrogen all their lives.",
+    C: "Three helium nuclei have to meet almost at once. It only works because carbon has an energy level in just the right place.",
+    O: "The most common element in Earth's crust by mass, and the third most common in the universe.",
+    Ne: "Rare on Earth and glows red-orange when a current runs through it. Most of it was cooked in stars like this one.",
+    Mg: "Burns with a white flame hot enough to keep going under water. Also the metal at the heart of chlorophyll.",
+    Si: "A massive star spends only about a day burning silicon. After that, the core has almost nothing left to burn.",
+    Fe: "Fusing iron costs energy instead of paying it. That is why the core gives out and the star collapses.",
+    Au: "Neutron star collisions are a leading source of the universe's gold. A supernova alone makes very little.",
+    U: "The heaviest element found in nature in any quantity. Slowly, over billions of years, it falls apart again.",
+};
