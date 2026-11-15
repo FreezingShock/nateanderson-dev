@@ -563,3 +563,23 @@ html.gb-route .sf-foot { display: none !important; }
 .gb-root .gb-sky b { margin-top: 2px; padding: 1px 6px; background: #0b0806; border: 1px solid var(--gb-line); font: 700 12px var(--gb-text); color: var(--gb-hi); }
 @keyframes gbRise { from { opacity: 0; transform: translateY(24px); } }
 @media (max-width: 860px) { .gb-root .gb-sky { height: 180px; } .gb-sky .gb-thumb { max-width: 110px; } }
+
+/* ---- HUD stacking (2026-11-15): everything that floats above the dock sits on the dock's real height, which the page publishes as --gb-dock-top ---- */
+@media (min-height: 521px) {
+    .gb-root .gb-cue { bottom: calc(var(--gb-dock-top, 112px) + 8px); }
+    .gb-root .gb-zoom { bottom: calc(var(--gb-dock-top, 132px) + 8px); }
+    .gb-root .gb-feed { bottom: calc(var(--gb-dock-top, 132px) + 8px); }
+    .gb-root .gb-card { bottom: calc(var(--gb-dock-top, 132px) + 8px); }
+}
+@media (max-width: 860px) and (min-height: 521px) {
+    .gb-root .gb-zoom { right: 8px; }
+    .gb-root .gb-cue { bottom: calc(var(--gb-dock-top, 232px) + 70px); }
+    .gb-root .gb-feed { bottom: calc(var(--gb-dock-top, 232px) + 122px); }
+}
+/* phone held sideways: the cue sits in the free top corner, clear of the rail and the job card */
+@media (max-height: 520px) and (min-width: 561px) and (max-width: 860px) {
+    .gb-root .gb-cue { top: 46px; right: 8px; left: auto; width: min(330px, calc(100vw - 556px)); }
+}
+@media (max-height: 520px) and (min-width: 861px) {
+    .gb-root .gb-cue { top: 46px; left: 64px; right: auto; width: min(330px, calc(100vw - 300px)); }
+}

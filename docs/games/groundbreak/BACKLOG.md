@@ -8,7 +8,7 @@ Last audited 2026-11-15, `integration` at 5138bb6f.
 
 ## A thread can do these
 
-### 1. NEXT cue overlaps the zoom buttons at 390 wide
+### 1. NEXT cue overlaps the zoom buttons at 390 wide (DONE, shipped with the dock-height fix)
 - Where: `app/camino/groundbreak.css`. At 860 px and under `.gb-cue` is `bottom: 232px` and full width; `.gb-zoom` is `bottom: 190px`, `right: 8px`, in a row.
 - Done when: at 390 and 360 wide the cue and zoom buttons do not overlap, the cue still points at its tile, and the dock and feed stay clear. Check the landscape phone rules too (`max-height: 500px`).
 
@@ -70,3 +70,5 @@ Last audited 2026-11-15, `integration` at 5138bb6f.
 ## Done recently (do not redo)
 
 First minute plays itself (#491), zoom to 5x (#487), staged jobs and Bay backdrop (#478, #482), engine pacing and repeat orders (#506), site life (#502), icons and menu art (#498), QOL cue, welcome-back, backups, console (#515), change-order cost card (e303c356), material arrives stocked (#534), skyline window art, shore traffic, fog bank (#539 to #543).
+
+HUD stacking (item 1): the page publishes the dock's real height as `--gb-dock-top` on `.gb-root`; cue, view buttons, feed and material card sit on it. Check script with overlap measurements at six sizes: `/mnt/project-files/portfolio/groundbreak/hud-overlap/check.mjs`.

@@ -103,6 +103,8 @@ export function Groundbreak() {
     const userCam = useRef(false);
     const lastJob = useRef<string | null>(null);
     const viewRef = useRef<HTMLDivElement>(null);
+    const rootRef = useRef<HTMLDivElement>(null);
+    const dockRef = useRef<HTMLDivElement>(null);
     const manualPause = useRef(false);
     const [paused, setPaused] = useState(false);
     const [reduce, setReduce] = useState(false);
@@ -388,6 +390,17 @@ export function Groundbreak() {
     const skyKey = s ? s.skyline.length : 0;
     const skyline = useMemo(() => (sRef.current ? sRef.current.skyline.map((b, index) => ({ id: b.id, firm: b.firm, index })) : []), [skyKey]); // eslint-disable-line react-hooks/exhaustive-deps
 
+    // the dock wraps to two or three rows on phones; publish how much room it takes so the cue, view buttons and feed sit above it
+    useEffect(() => {
+        const root = rootRef.current, dock = dockRef.current;
+        if (!root || !dock) return;
+        const measure = () => root.style.setProperty("--gb-dock-top", `${Math.ceil(root.getBoundingClientRect().bottom - dock.getBoundingClientRect().top)}px`);
+        measure();
+        const ro = new ResizeObserver(measure);
+        ro.observe(dock); ro.observe(root);
+        return () => ro.disconnect();
+    }, [ready]);
+
     if (!ready || !s || !f) return <div className="gb-root gb-boot" aria-busy="true"><p>Staking out the site…</p></div>;
 
     const stage = stageOf(s);
@@ -406,7 +419,7 @@ export function Groundbreak() {
     const cue = nextCue(s);
 
     return (
-        <div className="gb-root" data-paused={paused || shell.paused ? "true" : undefined} data-simple={simple ? "true" : undefined} data-reduce={reduce ? "true" : undefined} data-win={win ?? undefined}>
+        <div ref={rootRef} className="gb-root" data-paused={paused || shell.paused ? "true" : undefined} data-simple={simple ? "true" : undefined} data-reduce={reduce ? "true" : undefined} data-win={win ?? undefined}>
             <div ref={viewRef} className="gb-view" onPointerDown={onDown} onPointerMove={onMove} onPointerUp={onUp} onPointerCancel={onUp} aria-label="Building site. Scroll to zoom, drag to pan.">
                 <GroundbreakScene camera={cam} job={sceneJob} skyline={skyline} craneLevel={s.equip[11] ?? 0} idle={aj ? null : nextJob(s).id} crews={crewTotal} reduce={reduce || simple} paused={paused || shell.paused} />
             </div>
@@ -511,7 +524,7 @@ export function Groundbreak() {
 
             {card !== null && <MatCard s={s} i={card} onBuy={doBuy} onUnlock={doUnlock} onClose={() => setSel(null)} cue={cue} />}
 
-            <div className="gb-dock" onPointerDown={(e) => e.stopPropagation()} role="toolbar" aria-label="Materials">
+            <div ref={dockRef} className="gb-dock" onPointerDown={(e) => e.stopPropagation()} role="toolbar" aria-label="Materials">
                 {DOCK_GROUPS.map(([label, from, to]) => (
                     <section key={label} className="gb-dgroup" data-open={from < s.open ? "" : undefined} aria-label={label}>
                         <h4>{label}</h4>

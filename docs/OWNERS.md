@@ -13,7 +13,7 @@ Format: `- area | paths | owner (thread title or "free") | since YYYY-MM-DD | do
 ## Games
 - Brasswork | components/{brasswork,brasswork-ui,brasswork-art,automation}, lib/{brasswork,automation}, tests/automation, scripts/{brasswork,automation} | per `docs/games/brasswork/` | | docs/games/brasswork
 - Starwright | components/starwright, lib/starwright, app/camino/starwright*.css, tests/starwright, scripts/starwright | per `docs/games/starwright/` | | docs/games/starwright
-- Groundbreak | components/{groundbreak,groundbreak-art}, lib/{groundbreak,groundbreak-fonts}, app/camino/groundbreak.css, tests/groundbreak, scripts/{groundbreak,groundbreak-art} | per `docs/games/groundbreak/` | | docs/games/groundbreak
+- Groundbreak | components/{groundbreak,groundbreak-art}, lib/{groundbreak,groundbreak-fonts}, app/camino/groundbreak.css, tests/groundbreak, scripts/{groundbreak,groundbreak-art} | Ship the Groundbreak backlog (all Groundbreak files) | 2026-11-15 | docs/games/groundbreak
 - Node Farm | components/nodefarm, lib/nodefarm, app/camino/nodefarm, tests/nodefarm, scripts/nodefarm | free | | docs/node-farm.md, docs/site
 - Outline and Flag Guesser | components/games/*.tsx, lib/outline-game.ts, lib/data | free | | docs/site
 - Shared game shell | components/games/shell, lib/games, app/camino/game-shell.css | free | | docs/site
