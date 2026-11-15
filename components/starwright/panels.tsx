@@ -12,6 +12,8 @@ import { SAVE_VERSION, canPlanet, effects, eventOf, fmt, fmtAge, isSave, parse, 
 import { cloudArt, cssUrl } from "@/lib/starwright/ui-art";
 import { sheetUrl } from "@/lib/starwright/ui-sheets";
 import { ElTile, Gl, Pic } from "./sw-ui";
+import { SettingsBlock } from "./settings";
+import { SW_KEYS } from "@/lib/starwright/commands";
 
 export const tools = createSaveTools<State>({ app: "starwright", version: SAVE_VERSION, validate: isSave });
 
@@ -240,11 +242,9 @@ export function Menu({ sound, onSound, s, paused, onPause, onClose, onName, onIm
                     <input ref={file} type="file" accept="application/json,.json" hidden onChange={(e) => { void pick(e.target.files?.[0]); e.target.value = ""; }} />
                 </div>
                 {msg && <p className="sw-msg" role="status">{msg}</p>}
+                <SettingsBlock s={s} />
                 <dl className="sw-keys">
-                    <dt>1 to 9</dt><dd>buy tier I (Shift II, Alt III)</dd>
-                    <dt>C · O · A · M</dt><dd>stars, orbit, almanac, menu</dd>
-                    <dt>Esc</dt><dd>close a panel</dd>
-                    <dt>` · Ctrl+J</dt><dd>console: sw stats, sw fuse he 2</dd>
+                    {SW_KEYS.map(([k, d]) => <div key={k} className="sw-keyrow"><dt>{k}</dt><dd>{d}</dd></div>)}
                 </dl>
                 <p className="sw-dim sw-small">Saves in this browser. Away time counts up to {TUNE.offlineH} hours. Played for {fmtAge(s.totalAge)}.</p>
                 <button type="button" className="sw-reset" onClick={() => (sure ? onReset() : setSure(true))}>{sure ? "This erases the save. Press again." : "Reset the game"}</button>

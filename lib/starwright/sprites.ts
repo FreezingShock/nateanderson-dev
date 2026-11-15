@@ -25,6 +25,8 @@ let entries: Record<string, Entry> | null = null;
 let started = false;
 let version = "";
 const PREFIXES = ["star/", "planet/", "visitor/", "bg/"];
+/** background load order: skies, stars and their transitions, then planets, then visitors */
+const ORDER = ["bg/", "star/", "planet/", "visitor/"];
 
 function measure(img: HTMLImageElement, w: number, h: number): number {
     try {
@@ -43,7 +45,36 @@ function measure(img: HTMLImageElement, w: number, h: number): number {
     }
 }
 
-/** Start loading the manifest and every sheet the scene uses. Safe to call more than once. */
+const requested = new Set<string>();
+
+function loadSheet(id: string) {
+    const e = entries?.[id];
+    if (!e || requested.has(id)) return;
+    requested.add(id);
+    const img = new Image();
+    img.decoding = "async";
+    img.onload = () => {
+        sheets.set(id, { id, img, w: e.w, h: e.h, frames: Math.max(1, e.frames), fps: e.fps, loop: e.loop, body: e.body ?? measure(img, e.w, e.h) });
+        pump();
+    };
+    img.onerror = () => pump();
+    inflight++;
+    img.src = `${e.src}${version ? `?v=${version}` : ""}`;
+}
+
+// Sheets the scene asks for load at once. Everything else (other stages, transitions, planets not yet owned) trickles in
+// two at a time once the game is running, so opening the page does not fire ~100 requests and decodes in one burst.
+let inflight = 0;
+let queue: string[] = [];
+function pump() {
+    if (inflight > 0) inflight--;
+    while (inflight < 2 && queue.length) {
+        const id = queue.shift()!;
+        if (!requested.has(id)) loadSheet(id);
+    }
+}
+
+/** Start loading the manifest. Sheets load when the scene first asks for them, and the rest follow in the background. Safe to call more than once. */
 export function initSprites(): void {
     if (started || typeof window === "undefined") return;
     started = true;
@@ -52,19 +83,24 @@ export function initSprites(): void {
         .then((m: { v?: number | string; sheets?: Record<string, Entry> }) => {
             entries = m.sheets ?? {};
             version = String(m.v ?? "");
-            for (const [id, e] of Object.entries(entries)) {
-                if (!PREFIXES.some((p) => id.startsWith(p))) continue;
-                const img = new Image();
-                img.onload = () => {
-                    sheets.set(id, { id, img, w: e.w, h: e.h, frames: Math.max(1, e.frames), fps: e.fps, loop: e.loop, body: e.body ?? measure(img, e.w, e.h) });
-                };
-                img.src = `${e.src}${version ? `?v=${version}` : ""}`;
-            }
+            queue = Object.keys(entries)
+                .filter((id) => PREFIXES.some((p) => id.startsWith(p)))
+                .sort((a, b) => ORDER.findIndex((p) => a.startsWith(p)) - ORDER.findIndex((p) => b.startsWith(p)));
+            const idle = (window as unknown as { requestIdleCallback?: (f: () => void, o?: { timeout: number }) => void }).requestIdleCallback;
+            const go = () => { inflight++; pump(); };
+            window.setTimeout(() => (idle ? idle(go, { timeout: 3000 }) : go()), 1500);
         })
         .catch(() => { /* no sheets: the scene draws everything in code */ });
 }
 
-export const sprites: SpriteSet = { get: (id) => sheets.get(id) ?? null };
+export const sprites: SpriteSet = {
+    get: (id) => {
+        const hit = sheets.get(id);
+        if (hit) return hit;
+        if (entries && !requested.has(id)) loadSheet(id);
+        return null;
+    },
+};
 
 /** Frame index for a sheet at time t (seconds), or at progress p (0..1) for a one-shot sheet. */
 export const frameAt = (s: Sheet, t: number) => (s.loop ? Math.floor(t * s.fps) % s.frames : Math.min(s.frames - 1, Math.floor(t * s.fps)));

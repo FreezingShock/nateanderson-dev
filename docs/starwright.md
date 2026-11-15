@@ -31,6 +31,15 @@ An idle game about a star, at `/creations/games/starwright`. Original theme, art
 ## Balance
 `node --experimental-strip-types --no-warnings scripts/starwright/sim.mjs 30` plays a greedy bot at 1 s steps and prints each landmark. The bot answers every visitor at once and takes the first cloud. Current numbers: first supernova about 25 min, first neutron star about 55 min, black hole about 3.2 h for the bot (people are slower). Change numbers in `TUNE` and the data tables, not the engine.
 
+## Saves, time away, settings (quality of life)
+- `lib/starwright/session.ts`: `loadSession` never drops a save that will not parse (the text is kept under `sw-save-v1-corrupt`, the rolling `sw-save-v1-backup` is tried, the player is told). Backups are written before a neutron star or black hole, before an import or reset, and every 10 minutes (never over a backup with more play). `advance(s, gap)` credits every gap: up to 2 s is one step, longer is caught up like time away (before, gaps of 1 to 3 s were lost). `awayReport` builds the welcome-back lines (kept under `sw-away-v1` for `sw away`).
+- `lib/starwright/settings.ts`: `sw-settings-v1` (scene full/simple, notices, welcome card, auto supernova, auto visitors). The two automations are opt-in and unlock with existing milestones: Ten stars (auto supernova at 100/150/200/300% of the collapse) and twelve visitors (take the lump or the boost). They only act while the game is open and the tab is visible.
+- One tab plays at a time (`BroadcastChannel` `sw-tab`): a newer tab tells older ones to stop saving; "Play here" swaps back.
+- Keys: 1 to 9 buy, N supernova, Q/W answer a visitor, Space pause, F full screen, U sound, C P O A M panels, Esc.
+- Console: `sw save`, `sw backup`, `sw restore [now]`, `sw corrupt`, `sw away`, `sw settings`, `sw set <name> <value>`, `sw keys`, `sw admin give|dust|neutrons|time` (a testing tool).
+- Sprites (`sprites.ts`) load a sheet when the scene first asks for it; the rest trickle in two at a time after 1.5 s instead of ~100 requests at boot.
+- UI: `components/starwright/settings.tsx` (Settings block in the Menu, welcome/problem card), `app/camino/starwright-qol.css`. Tests: `tests/starwright/session.test.mjs`.
+
 ## Tests
 `tests/starwright/engine.test.mjs` runs in `npm run test:nodefarm` (saves, prestige resets, perk rules, no NaN over 24 h, console).
 
