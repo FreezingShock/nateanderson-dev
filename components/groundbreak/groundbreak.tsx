@@ -270,7 +270,13 @@ export function Groundbreak() {
             const gap = (now - lastTick.current) / 1000;
             lastTick.current = now;
             if (manualPause.current) return;
-            if (gap > 3) catchUp(s, gap); else step(s, Math.min(gap, 1));
+            if (gap > 60) {
+                // a long background spell (sleeping laptop, throttled tab): show what the crews did, same as after closing the page
+                const snap = awaySnap(s);
+                const did = catchUp(s, gap);
+                const sum = awaySummary(snap, s, gap, did, offlineCapS(effects(s)));
+                if (sum) setAway(sum);
+            } else if (gap > 3) catchUp(s, gap); else step(s, Math.min(gap, 1));
             const sn = seen.current;
             if (s.built > sn.built) {
                 const last = s.skyline[s.skyline.length - 1];
