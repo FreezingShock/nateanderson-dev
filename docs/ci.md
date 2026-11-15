@@ -20,3 +20,5 @@ SITE_PASSWORD=ci-password node scripts/ci/crawl.mjs http://localhost:3123
 ```
 
 Screenshots need `cd scripts/ci && npm install && npx playwright install chromium` first. They freeze CSS animations and use reduced motion, so pages with random content (the guessers) can show small false diffs.
+
+Known noise: the Groundbreak pages show live game state (stock counts, workers, the first-minute run), so a PR that changes the engine or the start state, such as #534, shows a 1 to 5% diff with no art change. `phone__creations-games-brasswork` shows about 1% on most PRs (animated scene) even when the PR does not touch it. Read the diff image before assuming a PR broke a page.
