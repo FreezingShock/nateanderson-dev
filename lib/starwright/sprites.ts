@@ -24,7 +24,7 @@ const sheets = new Map<string, Sheet>();
 let entries: Record<string, Entry> | null = null;
 let started = false;
 let version = "";
-const PREFIXES = ["star/", "planet/", "visitor/", "bg/"];
+const PREFIXES = ["star/", "planet/", "visitor/", "bg/", "fx/"];
 
 function measure(img: HTMLImageElement, w: number, h: number): number {
     try {
