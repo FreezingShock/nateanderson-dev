@@ -73,8 +73,10 @@ export const TUNE = {
     extra: 0.05,
     /** change order: seconds it waits, the extra materials as a share of the phase, and the bonus on the payout */
     changeWait: 75,
-    changeExtra: 0.35,
-    changeBonus: 0.3,
+    changeExtra: 0.6,
+    changeBonus: 0.35,
+    /** an accepted change order makes the inspection ask for this much more score */
+    changeScore: 0.6,
     /** reputation lifts all production by 1 + rep x this */
     repBoost: 0.004,
     startCash: 250,

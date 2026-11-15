@@ -13,12 +13,22 @@ interface Particle {
     age: number;
     life: number;
     size: number;
-    kind: 0 | 1 | 2; // 0 smoke, 1 spark, 2 steam
+    kind: 0 | 1 | 2 | 3 | 4; // 0 smoke, 1 spark, 2 steam, 3 dust, 4 rubble
+    /** Ground height for rubble bounces. */
+    gy: number;
+    /** Per-particle colour start (dust and rubble vary). */
+    tint: number;
 }
 
-const POOL = 320;
+const POOL = 480;
 export type BurstKind = "place" | "remove" | "milestone";
-const BURST_COUNT: Record<BurstKind, number> = { place: 26, remove: 18, milestone: 60 };
+const BURST_COUNT: Record<BurstKind, number> = { place: 30, remove: 20, milestone: 60 };
+/** Dust ring voxels per burst, and rubble chunks thrown by a removal. */
+const RING_COUNT = 22;
+const RUBBLE_COUNT = 16;
+const DUST_HEX = [0xc9a878, 0xb08a5c, 0xd8bc8c];
+const RUBBLE_HEX = [0x6b5238, 0x8a6a44, 0xb5793a, 0x5e5650, 0xd4a24c];
+const DUST_END = new THREE.Color(0x8a7458);
 const SMOKE_RATE = 5; // puffs per second per working smoking machine, at full density
 const SPARK_RATE = 7;
 const STEAM_RATE = 1.6; // light white puffs from every other working machine, so a busy island reads at default zoom
@@ -67,6 +77,8 @@ export class MachineEffects {
                 life: 1,
                 size: 0.1,
                 kind: 0,
+                gy: 0,
+                tint: 0,
             });
         }
         const geo = new THREE.BoxGeometry(1, 1, 1);
@@ -126,6 +138,45 @@ export class MachineEffects {
      */
     burst(x: number, y: number, z: number, kind: BurstKind): void {
         if (!this.enabled) return;
+        // A dust ring rolls out across the ground under every place and remove.
+        if (kind !== "milestone") {
+            for (let i = 0; i < RING_COUNT; i++) {
+                const a = (i / RING_COUNT) * Math.PI * 2 + Math.random() * 0.2;
+                const sp = kind === "remove" ? 1.5 : 1.9;
+                const p = this.take();
+                if (!p) break;
+                p.kind = 3;
+                p.x = x + Math.cos(a) * 0.35;
+                p.z = z + Math.sin(a) * 0.35;
+                p.y = y - 0.08;
+                p.vx = Math.cos(a) * sp * (0.8 + Math.random() * 0.4);
+                p.vz = Math.sin(a) * sp * (0.8 + Math.random() * 0.4);
+                p.vy = 0.12 + Math.random() * 0.1;
+                p.life = 0.75 + Math.random() * 0.3;
+                p.size = 0.07 + Math.random() * 0.04;
+                p.tint = DUST_HEX[i % DUST_HEX.length];
+            }
+        }
+        // Removal throws chunks of the building that bounce once and settle.
+        if (kind === "remove") {
+            for (let i = 0; i < RUBBLE_COUNT; i++) {
+                const a = Math.random() * Math.PI * 2;
+                const sp = 0.6 + Math.random() * 1.1;
+                const p = this.take();
+                if (!p) break;
+                p.kind = 4;
+                p.x = x + (Math.random() - 0.5) * 0.5;
+                p.z = z + (Math.random() - 0.5) * 0.5;
+                p.y = y + 0.2 + Math.random() * 0.4;
+                p.gy = y - 0.1;
+                p.vx = Math.cos(a) * sp;
+                p.vz = Math.sin(a) * sp;
+                p.vy = 1.6 + Math.random() * 1.4;
+                p.life = 1.2 + Math.random() * 0.4;
+                p.size = 0.05 + Math.random() * 0.05;
+                p.tint = RUBBLE_HEX[Math.floor(Math.random() * RUBBLE_HEX.length)];
+            }
+        }
         const n = BURST_COUNT[kind];
         for (let i = 0; i < n; i++) {
             const slot = this.parts.findIndex((p) => !p.alive);
@@ -183,12 +234,34 @@ export class MachineEffects {
                 continue;
             }
             if (p.kind === 1) p.vy -= 3.2 * dt; // sparks fall
-            else p.vx += drift * dt; // smoke drifts with the wind
+            else if (p.kind === 3) {
+                // Dust slows as it rolls out.
+                const drag = Math.exp(-dt * 3.2);
+                p.vx *= drag;
+                p.vz *= drag;
+                p.vy *= drag;
+            } else if (p.kind === 4) {
+                p.vy -= 7.5 * dt;
+                if (p.y < p.gy && p.vy < 0) {
+                    // One bounce, then it skids to rest.
+                    p.y = p.gy;
+                    p.vy = Math.abs(p.vy) > 1.2 ? -p.vy * 0.35 : 0;
+                    p.vx *= 0.5;
+                    p.vz *= 0.5;
+                }
+            } else p.vx += drift * dt; // smoke drifts with the wind
             p.x += p.vx * dt;
             p.y += p.vy * dt;
             p.z += p.vz * dt;
             const k = p.age / p.life;
-            const grow = p.kind === 1 ? 1 - k * 0.7 : 1 + k * 1.6;
+            const grow =
+                p.kind === 1
+                    ? 1 - k * 0.7
+                    : p.kind === 4
+                      ? k > 0.75 ? (1 - k) * 4 : 1 // rubble shrinks away at the end
+                      : p.kind === 3
+                        ? 1 + k * 1.2 - k * k
+                        : 1 + k * 1.6;
             this.writeInstance(i, p, k, grow);
         }
         this.mesh.instanceMatrix.needsUpdate = true;
@@ -201,6 +274,16 @@ export class MachineEffects {
         this.mesh.dispose();
         this.mesh.removeFromParent();
         this.emitters.clear();
+    }
+
+    /** Claims a free particle and resets its clock, or null when the pool is full. */
+    private take(): Particle | null {
+        const slot = this.parts.findIndex((p) => !p.alive);
+        if (slot < 0) return null;
+        const p = this.parts[slot];
+        p.alive = true;
+        p.age = 0;
+        return p;
     }
 
     private spawn(e: { x: number; y: number; z: number; sparks: boolean; steam: boolean }): void {
@@ -236,7 +319,9 @@ export class MachineEffects {
         this.p.set(p.x, p.y, p.z);
         this.m.compose(this.p, this.q, this.s);
         this.mesh.setMatrixAt(i, this.m);
-        if (p.kind === 1) this.c.copy(SPARK_COLOR).lerp(SPARK_COLOR_END, k);
+        if (p.kind === 3) this.c.setHex(p.tint).lerp(DUST_END, k);
+        else if (p.kind === 4) this.c.setHex(p.tint);
+        else if (p.kind === 1) this.c.copy(SPARK_COLOR).lerp(SPARK_COLOR_END, k);
         else if (p.kind === 2) this.c.copy(STEAM_COLOR).lerp(STEAM_COLOR_END, k);
         else this.c.copy(SMOKE_COLOR).lerp(SMOKE_COLOR_END, k);
         this.mesh.setColorAt(i, this.c);

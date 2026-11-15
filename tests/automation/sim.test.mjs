@@ -65,7 +65,7 @@ test("a miner on a 30 per minute node, routed into the hub, delivers about 0.5 o
     assert.ok(got >= 56 && got <= 60, `expected about 60 ore in 120 s, got ${got}`);
 });
 
-test("a belt carries at most speed divided by spacing, so 4 items per second at the placeholder belt", () => {
+test("a belt carries at most speed divided by spacing, so 2 items per second at the brass belt", () => {
     const fast = clone(CAT);
     fast.tree.nodes = [{ item: "ore-a", baseRatePerMin: 1200 }, { item: "ore-b", baseRatePerMin: 30 }];
     const w = base(fast);
@@ -74,8 +74,8 @@ test("a belt carries at most speed divided by spacing, so 4 items per second at 
     const start = stockOf(w, "ore-a");
     S.advance(w, 60, 0.1, fast);
     const got = stockOf(w, "ore-a") - start;
-    // Cap is 4 items per second. The first items take about four seconds to cross four belts.
-    assert.ok(got >= 215 && got <= 240, `expected close to the 4 per second cap, got ${got}`);
+    // Cap is 2 items per second. The first items take about four seconds to cross four belts.
+    assert.ok(got >= 110 && got <= 124, `expected close to the 2 per second cap, got ${got}`);
 });
 
 test("a full output buffer stalls the miner instead of losing or banking items", () => {
@@ -309,19 +309,20 @@ test("prestige offers three sites, moves the hub and nodes to the chosen site, a
     assert.equal(S.prestige(w, CAT, "nowhere").ok, false);
 });
 
-test("a wound spring stores energy in strong wind, and a windmill's output follows the wind", () => {
-    const w = base(CAT, {}, { power: false });
-    w.windPin = 0.8; // strong wind: the spring charges
-    const sp = ok(S.place(w, "spring_winder", 30, 30, 0, CAT));
-    S.step(w, 0.5, CAT);
-    const stored = w.buildings[sp.id].charge;
-    assert.ok(stored > 0, "a spring charges while the wind is above 0.5");
-    assert.ok(stored <= 60 * CAT.tune.springSeconds, "and never above its capacity");
-    w.windPin = 0.25; // calm: the spring releases and the windmill is weak
-    ok(S.place(w, "windmill", 40, 40, 0, CAT));
-    S.step(w, 0.1, CAT);
-    assert.ok(w.buildings[sp.id].charge < stored, "calm air drains the spring");
-    assert.ok(w.power.supply > 0 && w.power.supply <= 60 + 30 * 0.5 + 1, "output stays within the peaks");
+test("the spring winder gives steady power in any wind, and a windmill's output follows the wind", () => {
+    const real = S.DEFAULT_CATALOG;
+    const stock = { startStock: [{ item: "iron_gear", qty: 50 }, { item: "steel_ingot", qty: 50 }, { item: "copper_wire", qty: 50 }, { item: "iron_plate", qty: 50 }] };
+    const out = (type, wind) => {
+        const w = base(real, stock, { power: false });
+        w.windPin = wind;
+        ok(S.place(w, type, 30, 30, 0, real));
+        S.step(w, 0.5, real);
+        return w.power.supply;
+    };
+    assert.equal(out("spring_winder", 0.05), 60, "calm air does not slow it");
+    assert.equal(out("spring_winder", 0.9), 60);
+    assert.equal(out("windmill", 0.05), 5);
+    assert.equal(out("windmill", 0.9), 50);
 });
 
 test("the default catalog is the Recipe thread's tree, with its generators and costs", () => {
@@ -338,9 +339,13 @@ test("the spring store is a battery with a 0 to 1 charge per building, and the h
     const st = ok(S.place(w, "spring_store", 30, 30, 0, real));
     S.step(w, 0.5, real);
     const c = S.chargeOf(w, real);
-    assert.equal(S.resolve(real, "spring_store").storageKj, 600);
+    assert.equal(S.resolve(real, "spring_store").storageKj, 3000);
     assert.ok(c[st.id] > 0 && c[st.id] <= 1, "the store charges in strong wind");
     assert.equal(S.resolve(real, "hub").footprint.w, 3);
+    // Calm air: the store gives its charge back, up to 120 kW.
+    w.windPin = 0.1;
+    S.step(w, 0.5, real);
+    assert.ok(w.power.supply > 0 && w.power.supply <= 120, "the store releases in calm air");
 });
 
 test("HUD research nodes carry glyph, unlocks and a board layout; prestige lists keeps, leaves and sites", () => {
@@ -372,8 +377,8 @@ test("a new world starts with the starter kit unless the caller gives stock", ()
 test("logistics ids match the belt model ids, with brass, copper and steel tiers", () => {
     const E = CAT.engine;
     assert.equal(E["belt-splitter"].kind, "splitter");
-    assert.equal(E["belt-splitter-copper"].rate, 2);
-    assert.equal(E["belt-splitter-steel"].rate, 4);
+    assert.equal(E["belt-splitter-copper"].rate, 4);
+    assert.equal(E["belt-splitter-steel"].rate, 8);
     assert.equal(E["belt-underground-in-steel"].kind, "tunnel-in");
     assert.equal(E["belt-underground-out"].kind, "tunnel-out");
     assert.equal(E["belt-loader"].kind, "loader");
@@ -394,8 +399,9 @@ test("an unloader pulls from a crate at its rate onto a belt beside it", () => {
     ok(S.setFilter(w, unloader.id, "ore-a", CAT)); // an unloader moves nothing until it is set to an item
     const belt = w.buildings[ok(S.place(w, "belt", 42, 40, 0, CAT)).id];
     S.advance(w, 3, 0.1, CAT);
-    assert.ok(belt.lane.length >= 2 && belt.lane.length <= 3, `about 1 item a second, got ${belt.lane.length}`);
-    assert.equal(crate.input["ore-a"], 5 - belt.lane.length, "the crate gives up what the belt took");
+    assert.equal(belt.lane.length, 3, "the belt cell fills with items half a cell apart and the unloader stops");
+    const held = (crate.input["ore-a"] ?? 0) + belt.lane.length + (unloader.output["ore-a"] ?? 0);
+    assert.equal(held, 5, "nothing is lost between the crate, the unloader and the belt");
 });
 
 test("a splitter sends its items out the front and both sides, never back", () => {

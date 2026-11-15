@@ -17,6 +17,7 @@ import {
     dayClock,
     deserialize,
     gridView,
+    autoRoute,
     footprintCells,
     hudData,
     resolve,
@@ -406,6 +407,11 @@ export function BrassworkHost() {
                 world: buildWorld,
                 tools,
                 groups: dockTools,
+                // Press a belt on a machine and drag to another: the sim finds the shortest clear route (input frame in, input frame out).
+                route: (from, to, toolId) => {
+                    const r = autoRoute(world, { x: from.x + ox, z: from.z + oz }, { x: to.x + ox, z: to.z + oz }, toolId, CAT);
+                    return r.ok ? { ok: true, cells: r.cells.map((c) => ({ x: c.x - ox, z: c.z - oz, rot: c.rot })) } : r;
+                },
                 onGroup: (i) => setDockGroup(DOCK_ORDER[i] ?? null),
                 heightAt: pickHeightAt,
                 groundHeightAt: heightAt,
@@ -680,7 +686,7 @@ export function BrassworkHost() {
                               : id.startsWith("belt")
                                 ? touch
                                   ? `Press and drag to lay ${name.toLowerCase()}. Cancel stops.`
-                                  : `Drag to lay ${name.toLowerCase()}, it bends as you go. R turns it, Esc stops.`
+                                  : `Drag to lay ${name.toLowerCase()}, or drag from one machine to another to route it for you. Esc stops.`
                                 : touch
                                   ? `Tap to place ${name}. Hold to turn it. Cancel stops.`
                                   : `Click to place ${name}. R turns it, Esc stops.`

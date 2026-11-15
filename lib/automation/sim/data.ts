@@ -16,7 +16,7 @@ export const PLACEHOLDER_TREE: RecipeTree = {
         { id: "smelter", name: "Smelter", unlockStage: 1, speed: 1, footprint: { w: 2, d: 2 }, powerKw: 60, buildCost: [{ item: "plate-a", qty: 6 }] },
         { id: "press", name: "Press", unlockStage: 2, speed: 1, footprint: { w: 2, d: 2 }, powerKw: 90, buildCost: [{ item: "plate-a", qty: 8 }, { item: "plate-b", qty: 4 }] },
         { id: "windmill", name: "Windmill", unlockStage: 0, speed: 1, footprint: { w: 2, d: 2 }, powerKw: 0, generatesKw: 30, supplyRange: 6, buildCost: [{ item: "plate-a", qty: 10 }] },
-        { id: "spring_winder", name: "Spring winder", unlockStage: 0, speed: 1, footprint: { w: 2, d: 2 }, powerKw: 0, generatesKw: 60, supplyRange: 4, buildCost: [{ item: "plate-a", qty: 10 }, { item: "plate-b", qty: 5 }] },
+        { id: "spring_winder", name: "Spring winder", unlockStage: 0, speed: 1, footprint: { w: 2, d: 2 }, powerKw: 0, generatesKw: 60, supplyRange: 6, buildCost: [{ item: "plate-a", qty: 10 }, { item: "plate-b", qty: 5 }] },
     ],
     recipes: [
         { id: "smelt-a", machine: "smelter", inputs: [{ item: "ore-a", qty: 2 }], output: { item: "plate-a", qty: 1 }, craftSeconds: 3 },
@@ -35,7 +35,7 @@ export const PLACEHOLDER_TREE: RecipeTree = {
 // Logistics pieces. Ids match the belt model ids in #325: belt-<kind> for brass, belt-<kind>-copper and belt-<kind>-steel for the other tiers.
 const TIER_NAMES = ["Brass", "Copper", "Steel"];
 const TIER_SUFFIX = ["", "-copper", "-steel"];
-const TIER_RATE = [1, 2, 4]; // items per second, the same ladder as the belts
+const TIER_RATE = [2, 4, 8]; // items per second: what a belt of the same tier carries (speed divided by item spacing)
 const TIER_EXTRA: Stack[][] = [[], [{ item: "copper_wire", qty: 2 }], [{ item: "steel_ingot", qty: 2 }]];
 
 const LOGISTICS_TIERED: { kind: LogisticsKind; slug: string; label: string; cost: Stack[] }[] = [
@@ -72,9 +72,9 @@ export const ENGINE_DATA: { engine: Record<string, EngineDef>; tune: Tune } = {
     engine: {
         ...logisticsEngine(),
         hub: { kind: "hub", name: "Core hub", footprint: { w: 3, d: 3 }, cost: [], placeable: false },
-        belt: { kind: "belt", name: "Brass belt", footprint: { w: 1, d: 1 }, cost: [{ item: "plate-a", qty: 1 }], belt: { speed: 1, spacing: 0.25 } },
-        "belt-copper": { kind: "belt", name: "Copper belt", footprint: { w: 1, d: 1 }, cost: [{ item: "plate-a", qty: 2 }, { item: "plate-b", qty: 1 }], belt: { speed: 2, spacing: 0.25 } },
-        "belt-steel": { kind: "belt", name: "Steel belt", footprint: { w: 1, d: 1 }, cost: [{ item: "plate-a", qty: 3 }, { item: "plate-b", qty: 2 }], belt: { speed: 4, spacing: 0.25 } },
+        belt: { kind: "belt", name: "Brass belt", footprint: { w: 1, d: 1 }, cost: [{ item: "plate-a", qty: 1 }], belt: { speed: 1, spacing: 0.5 } },
+        "belt-copper": { kind: "belt", name: "Copper belt", footprint: { w: 1, d: 1 }, cost: [{ item: "plate-a", qty: 2 }, { item: "plate-b", qty: 1 }], belt: { speed: 2, spacing: 0.5 } },
+        "belt-steel": { kind: "belt", name: "Steel belt", footprint: { w: 1, d: 1 }, cost: [{ item: "plate-a", qty: 3 }, { item: "plate-b", qty: 2 }], belt: { speed: 4, spacing: 0.5 } },
     },
     tune: {
         maxAwaySeconds: 8 * 3600,

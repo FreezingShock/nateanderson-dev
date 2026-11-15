@@ -7,7 +7,7 @@ import { useGameShell } from "@/components/games/shell/game-route-shell";
 import { createSaveTools, readPickedFile } from "@/lib/games/save";
 import { ACHIEVEMENTS, ACH_BONUS, CLOUDS, CODEX, CONSTELLATIONS, ELEMENTS, EVENT_STAY, PLANETS, PLANET_STAGE_AT, PLANET_STAGE_BONUS, TUNE, type Perk } from "@/lib/starwright/data";
 import { H, W, makeLayers, render, renderLayered, renderPlanetSprite, type SceneFrame } from "@/lib/starwright/art";
-import { initSprites, sprites } from "@/lib/starwright/sprites";
+import { frameAt, initSprites, sprites } from "@/lib/starwright/sprites";
 import { SAVE_VERSION, canPlanet, effects, eventOf, fmt, fmtAge, isSave, parse, planetStage, type State } from "@/lib/starwright/engine";
 import { cloudArt, cssUrl } from "@/lib/starwright/ui-art";
 import { sheetUrl } from "@/lib/starwright/ui-sheets";
@@ -94,9 +94,21 @@ function PlanetSprite({ id, stage, dim }: { id: string; stage: number; dim?: boo
             raf = requestAnimationFrame(loop);
             if (now - last < 90) return;
             last = now;
-            renderPlanetSprite(img, id, stage, reduce ? 3 : (now - t0) / 1000);
-            ctx.putImageData(img, 0, 0);
-            if (reduce) cancelAnimationFrame(raf);
+            const t = reduce ? 3 : (now - t0) / 1000;
+            // the drawn sheet when it has loaded (cropped to the planet so it fills the tile), else the code drawing
+            const sh = sprites.get(`planet/${id}-s${stage}`);
+            if (sh) {
+                const near = sh.body <= 16;
+                const crop = near ? sh.w / 2 + 4 : sh.w;
+                const k = near ? 2 : 1;
+                ctx.imageSmoothingEnabled = false;
+                ctx.clearRect(0, 0, 56, 56);
+                ctx.drawImage(sh.img, frameAt(sh, t) * sh.w + (sh.w - crop) / 2, (sh.h - crop) / 2, crop, crop, (56 - crop * k) / 2, (56 - crop * k) / 2, crop * k, crop * k);
+            } else {
+                renderPlanetSprite(img, id, stage, t);
+                ctx.putImageData(img, 0, 0);
+            }
+            if (reduce && sh) cancelAnimationFrame(raf);
         };
         raf = requestAnimationFrame(loop);
         return () => cancelAnimationFrame(raf);
