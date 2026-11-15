@@ -7,6 +7,7 @@ import { canAfford, costText } from "./format";
 import { Section } from "./factory-sections";
 import { ArtIcon, UiArtIcon } from "@/components/brasswork-art/icons";
 import "./build-tile.css";
+import "./empty-states.css";
 
 export type GroupId = "machines" | "power" | "logistics";
 
@@ -195,7 +196,14 @@ export function BuildList({
       <>
         {open.map(renderRow)}
         {locked > 0 && (
-          <li className="ab-locked-note">{locked} more unlock as you progress</li>
+          <li className="ab-locked-note">
+            <span className="ab-locked-slots" aria-hidden="true">
+              {Array.from({ length: Math.min(locked, 4) }, (_, i) => (
+                <span key={i} className="ab-locked-slot" style={{ ["--i" as string]: i }}><UiArtIcon id="lock" size={20} /></span>
+              ))}
+            </span>
+            <span>{locked} more to open. Fill hub orders and they appear here.</span>
+          </li>
         )}
       </>
     );

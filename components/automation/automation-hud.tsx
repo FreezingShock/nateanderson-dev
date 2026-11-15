@@ -19,7 +19,8 @@ import { ProductionWindow } from "./production-window";
 import { ExpeditionWindow } from "./expedition-window";
 import { ResearchScreen } from "./research-screen";
 import { PrestigeScreen } from "./prestige-screen";
-import { HubMenu, HubToast, HUB_OPEN_EVENT, openHubMenu } from "./hub-menu";
+import { HubMenu, HUB_OPEN_EVENT, openHubMenu } from "./hub-menu";
+import { RewardMoment } from "./reward-moment";
 import "./brasswork-skin.css";
 import "./desktop-stage.css";
 import "./phone-menu-art.css";
@@ -489,6 +490,7 @@ export function AutomationHud({
                 onClick={() => {
                   const id = next.actionId!;
                   if (id === "hub-menu") openHubMenu();
+                  else if (next.selectId !== undefined) actions.onSelect(String(next.selectId));
                   else if (actions.onNextStep) actions.onNextStep(id);
                   else {
                     // A machine step arms that machine in its palette section, so the next click on the stage places it.
@@ -568,7 +570,7 @@ export function AutomationHud({
       )}
 
       {hubOpen && <HubMenu hub={data.hub} onClose={() => setHubOpen(false)} />}
-      {!hubOpen && <HubToast hub={data.hub} onOpen={openHubMenu} />}
+      {!hubOpen && <RewardMoment hub={data.hub} onOpenHub={openHubMenu} onOpenResearch={() => setScreen("research")} />}
 
       {milestonesOpen && (
         <MenuWindow

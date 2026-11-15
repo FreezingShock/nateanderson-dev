@@ -4,6 +4,7 @@ import { uiIconStyle } from "@/lib/automation/icons/ui";
 // Small extras around the Brasswork stage: photo mode (P), the key sheet (?) and the welcome-back report. They sit on
 // top of the HUD and use the brass kit's bw-* classes. The host passes in a snapshot function and the away report.
 import { useCallback, useEffect, useRef, useState } from "react";
+import { EmptyState } from "@/components/brasswork-art";
 import { Codex } from "./codex";
 import "./extras.css";
 
@@ -175,7 +176,7 @@ export function BrassworkExtras({ snapshot, away, mood, onMood }: { snapshot: ()
                                 </div>
                             ))
                         ) : (
-                            <p className="bx-lead">Nothing came off the belts. Check that your drills have power and a belt to the hub.</p>
+                            <EmptyState scene="idle">Nothing came off the belts. Check that your drills have power and a belt to the hub.</EmptyState>
                         )}
                         <button type="button" className="bw-btn" onClick={() => setReport(null)}>
                             Back to work
