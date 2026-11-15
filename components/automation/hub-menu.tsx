@@ -94,7 +94,7 @@ export function HubMenu({ hub, onClose }: { hub: HubView; onClose: () => void })
   );
 
   return (
-    <MenuWindow title="Hub" label="Hub" size="wide" variant="settle" art={<MachinePortrait id="hub" size={32} />} onClose={onClose}>
+    <MenuWindow theme="hub" title="Hub" label="Hub" size="wide" variant="settle" art={<MachinePortrait id="hub" size={32} />} onClose={onClose}>
       <div className="hm-wrap">
         <aside className="hm-side" aria-label="Hub ladder">
           <div className="hm-hall">

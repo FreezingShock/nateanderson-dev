@@ -593,6 +593,7 @@ export function AutomationHud({
       {milestonesOpen && (
         <MenuWindow
           title="Milestones"
+          theme="milestones"
           label="Milestones and prestige"
           size="wide"
           art={<Ico id="milestones" />}
