@@ -25,15 +25,15 @@ Last audited 2026-11-15, `integration` at 5138bb6f.
 - Where: `groundbreak.tsx`. The only label today is the small "Repeat order" tag in the job card header. The Jobs window and the toasts do not say a job is a repeat and that it pays a share (50% cash, 10% rep, no new building).
 - Done when: a repeat is named in the job card, the Jobs window (what it pays), and the handover toast.
 
-### 5. Fog bank seen in the running game
+### 5. Fog bank seen in the running game (DONE 2026-11-15: checked, nothing to fix; the fog is baked into the hills layer, so Simple visuals cannot toggle it)
 - Where: `components/groundbreak-art/site-scene.tsx` (2696bbd9).
 - Done when: screenshots at 1440 and 390 on a production build show the fog over the bridge saddle during the stage-5 bridge and at the other stages, it does not cover the job, and Simple visuals turns it off. Fix whatever looks wrong.
 
-### 6. Screenshot diff on PR #534 (5.2% and 2.9%)
+### 6. Screenshot diff on PR #534 (5.2% and 2.9%) (DONE: explained from the diff and later runs; artifact itself not downloadable from a thread)
 - #534 changed the engine only (opening a material stocks 60 s of output), so the diff is most likely animation timing or the new starting stock, not a rendering bug.
 - Done when: download the `screenshot-diff` artifact for that run, say what changed on each route, and confirm no Groundbreak art shifted. If it is a false positive, write one line in `docs/ci.md` about it.
 
-### 7. Hover names on touch and unlabeled controls
+### 7. Hover names on touch and unlabeled controls (DONE 2026-11-15: already true, verified; no code change)
 - The dock tiles already have `data-tip` names. Touch has no hover.
 - Done when: a tap on a tile on a phone shows the name and rate without buying anything, and every HUD button (rail, zoom, cue, job card) has a name in a tooltip on desktop and an `aria-label`.
 
@@ -41,7 +41,7 @@ Last audited 2026-11-15, `integration` at 5138bb6f.
 - `components/groundbreak/engine.ts`, `commands.ts`, `scene.tsx` are not imported anywhere (see FEATURES.md "Dead code"). `scene-types.ts` stays.
 - Done when: the three files are gone, typecheck and the build pass, and `rg "groundbreak/engine"` finds nothing.
 
-### 9. Tests for the untested rules
+### 9. Tests for the untested rules (DONE 2026-11-15 except the other-tab save guard, which lives in the component and is not a pure function)
 - Add to `tests/groundbreak/engine.test.mjs`: crew milestone doubling, reputation boost, city material bonuses, the other-tab save guard if it can be pulled into a pure function, and `catchUp` with the Night watch perk.
 - Done when: each has a failing-then-passing assertion on a real state change, not only "did not throw".
 
@@ -72,3 +72,7 @@ Last audited 2026-11-15, `integration` at 5138bb6f.
 First minute plays itself (#491), zoom to 5x (#487), staged jobs and Bay backdrop (#478, #482), engine pacing and repeat orders (#506), site life (#502), icons and menu art (#498), QOL cue, welcome-back, backups, console (#515), change-order cost card (e303c356), material arrives stocked (#534), skyline window art, shore traffic, fog bank (#539 to #543).
 
 HUD stacking (item 1): the page publishes the dock's real height as `--gb-dock-top` on `.gb-root`; cue, view buttons, feed and material card sit on it. Check script with overlap measurements at six sizes: `/mnt/project-files/portfolio/groundbreak/hud-overlap/check.mjs`.
+
+Fog check (item 5): screenshots of sidewalk, clinic, tower, stadium and the bridge at 30% and 95% at 1440 and 390 in `/mnt/project-files/portfolio/groundbreak/fog/` (`shoot.mjs`, needs `VOXEL_BENCH=1`). The haze sits behind the hills, never over a job, and the bridge stage is clear.
+
+Item 7 check (390 wide, touch emulation, production build): every button and link in the game has an accessible name and a tooltip (0 unnamed, 0 without data-tip). Tapping a dock tile opens its card with the name, rate and stock and buys nothing. Script was a throwaway; the claim is also covered by reading the markup in `groundbreak.tsx`.
