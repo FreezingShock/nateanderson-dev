@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { createPortal } from "react-dom";
 import { HAND_TUNE, protoDef, ROMAN, type ProtoId } from "@/lib/nodefarm/engine";
+import "@/app/camino/nodefarm/lazy/handovercut.css";
 
 /** What the Handover moment shows: who left, what they were paid, who comes in, and the note left on the desk. */
 export interface HandCutInfo {
