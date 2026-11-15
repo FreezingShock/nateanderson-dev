@@ -5,7 +5,7 @@
 import {
     ACHIEVEMENTS, ACH_BONUS, CLOUDS, ELEMENTS as EL, EVENTS, EVENT_FIRST, EVENT_GAP, EVENT_STAY, type Buff, type StarEvent,
     BASE_COST, BASE_RATE, COST_GROWTH, ELEMENTS, GATE_MK, N, PERKS, PLANETS, PULSAR_PERKS, RECIPE, ROWS, STARNAMES, TIERS,
-    PLANET_STAGE_AT, PLANET_STAGE_BONUS, TIER_COST_X, TIER_LEVELS, TUNE, type FxKey, type Perk,
+    PLANET_STAGE_AT, PLANET_STAGE_BONUS, TIER_COST_X, TIER_NAMES, TIER_LEVELS, TUNE, type FxKey, type Perk,
 } from "./data";
 
 export const SAVE_KEY = "sw-save-v1";
@@ -29,6 +29,8 @@ export interface State {
     sdLayer: number;
     sdAll: number;
     perks: string[];
+    /** deep stars bought with stardust once the map is lit: endless, each adds to everything. Cleared by a neutron star. */
+    deep: number;
     novas: number;
     novasAll: number;
     neutrons: number;
@@ -78,6 +80,7 @@ export function fresh(now = Date.now()): State {
         sdLayer: 0,
         sdAll: 0,
         perks: [],
+        deep: 0,
         novas: 0,
         novasAll: 0,
         neutrons: 0,
@@ -157,6 +160,7 @@ export function effects(s: State): Fx {
     }
     f.gate = Math.min(0.75, f.gate + gateP);
     f.need = Math.min(0.9, f.need);
+    f.global *= 1 + TUNE.deepBonus * s.deep;
     f.global *= Math.pow(2, s.sing) * (1 + ACH_BONUS * s.ach.length);
     if (f.horizon === 0) f.horizon = 0;
     return f;
@@ -216,6 +220,39 @@ export const canNeutron = (s: State) => s.sdLayer >= TUNE.neutronAt;
 
 export const horizonNeed = (f: Fx) => TUNE.horizonU * (1 - f.horizon);
 export const canBlackHole = (s: State, f: Fx) => s.neutronStars > 0 && s.amt[9] >= horizonNeed(f);
+
+/** Seconds until the core reaches the collapse line at the iron flow of the last tick, 0 if it is there, null while iron is not growing. */
+export function collapseEta(s: State, f: Fx): number | null {
+    const left = feNeed(s, f) - s.amt[7];
+    if (left <= 0) return 0;
+    const flow = s.flow?.[7] ?? 0;
+    return flow > 0.001 ? left / flow : null;
+}
+
+/** The one line that tells a player what to do next. Never empty, and never the same line for twenty minutes: it names the
+ *  next unopened row, then the row nearest iron that can be bought now, then how long the iron has left. */
+export function guide(s: State, f: Fx): string {
+    for (let r = 0; r < ROWS; r++) {
+        if (!rowOpen(s, r)) break; // gold and uranium wait for a neutron star; the lines below carry the player meanwhile
+        if (levels(s, r) === 0) {
+            const gate = gateMK(r, f);
+            const heat = s.heat >= gate ? "" : ` and core heat ${fmtHeat(gate)}`;
+            return `Next: burn ${ELEMENTS[r].name.toLowerCase()} into ${ELEMENTS[r + 1].name.toLowerCase()}. Needs ${fmt(cost(s, r, 0))} ${ELEMENTS[r].sym}${heat}.`;
+        }
+    }
+    if (canSupernova(s, f)) return `The core is ready. A supernova now seeds ${fmt(seeds(s, f))} stardust, and more iron seeds more.`;
+    if (s.neutronStars > 0 && s.amt[7] >= feNeed(s, f) * 0.5 && s.amt[9] > 0) return `A black hole needs ${fmt(horizonNeed(f))} uranium. You hold ${fmt(s.amt[9])}.`;
+    // the highest affordable burner below iron: that is the buy that moves the collapse
+    for (let i = 6; i >= 0; i--) {
+        for (let k = TIERS - 1; k >= 0; k--) {
+            if (canBuy(s, i, k) && cost(s, i, k) >= BASE_COST[i] * 2) return `${ELEMENTS[i].name} burner ${TIER_NAMES[k]} is ready. It pushes the chain toward iron.`;
+        }
+    }
+    const eta = collapseEta(s, f);
+    const have = `Iron ${fmt(s.amt[7])} of ${fmt(feNeed(s, f))}.`;
+    if (eta === null) return `${have} Silicon is not reaching iron yet. Feed it: more magnesium and silicon burners.`;
+    return `${have} About ${fmtAge(Math.ceil(eta))} to the collapse at this rate.`;
+}
 
 /** Index of the heaviest element the star holds, for its look. */
 export const heaviest = (s: State) => {
@@ -376,7 +413,10 @@ export function catchUp(s: State, away: number): number {
 
 // ---- prestige -----------------------------------------------------------------------------------------------------
 
-function newStar(s: State, keepPlanets: boolean) {
+/** How the planets come through a collapse: "age" keeps them as they are, "young" keeps them but they grow again from stage 0, "clear" loses them. */
+type PlanetFate = "age" | "young" | "clear";
+
+function newStar(s: State, planets: PlanetFate) {
     const f = effects(s);
     s.amt = Array(N).fill(0);
     s.amt[0] = 30 + f.startH;
@@ -384,7 +424,8 @@ function newStar(s: State, keepPlanets: boolean) {
     s.bought = Array.from({ length: ROWS }, () => Array(TIERS).fill(0));
     s.heat = 0;
     s.age = 0;
-    if (!keepPlanets) { s.planets = []; s.planetAge = {}; }
+    if (planets === "clear") { s.planets = []; s.planetAge = {}; }
+    else if (planets === "young") for (const id of s.planets) s.planetAge[id] = 0;
     s.event = null;
     s.evIn = EVENT_FIRST;
     s.buffs = [];
@@ -403,7 +444,7 @@ export function supernova(s: State): number {
     s.novas++;
     s.novasAll++;
     if (s.fastest === 0 || s.age < s.fastest) s.fastest = s.age;
-    newStar(s, f.keepPlanets > 0);
+    newStar(s, f.keepPlanets > 0 ? "age" : "young");
     offerClouds(s);
     return gain;
 }
@@ -421,9 +462,10 @@ export function neutronStar(s: State): number {
     s.neutronStarsAll++;
     s.stardust = kept;
     s.sdLayer = 0;
+    s.deep = 0;
     s.perks = s.pulsar.includes("p5") ? [...EMBER_ROOTS] : [];
     s.novas = 0;
-    newStar(s, false);
+    newStar(s, "clear");
     offerClouds(s);
     return gain;
 }
@@ -438,9 +480,10 @@ export function blackHole(s: State): boolean {
     s.neutronStars = 0;
     s.stardust = 0;
     s.sdLayer = 0;
+    s.deep = 0;
     s.perks = [];
     s.novas = 0;
-    newStar(s, false);
+    newStar(s, "clear");
     return true;
 }
 
@@ -453,6 +496,16 @@ export function buyPerk(s: State, id: string): boolean {
     if (!p || !perkReady(PERKS, s.perks, p) || s.stardust < p.cost) return false;
     s.stardust -= p.cost;
     s.perks.push(p.id);
+    return true;
+}
+
+/** Deep stars: the endless last row of the star map. Every collapse after the map is lit still buys something. */
+export const deepCost = (s: State) => Math.ceil(TUNE.deepCost * Math.pow(TUNE.deepGrow, s.deep));
+export const canDeep = (s: State) => s.stardust >= deepCost(s);
+export function buyDeep(s: State): boolean {
+    if (!canDeep(s)) return false;
+    s.stardust -= deepCost(s);
+    s.deep++;
     return true;
 }
 
@@ -503,6 +556,7 @@ export function parse(raw: unknown): State | null {
     s.sdLayer = clamp(num(r.sdLayer));
     s.sdAll = clamp(num(r.sdAll));
     s.perks = strs(r.perks, (x) => PERKS.some((p) => p.id === x));
+    s.deep = Math.max(0, Math.floor(num(r.deep)));
     s.novas = Math.max(0, Math.floor(num(r.novas)));
     s.novasAll = Math.max(0, Math.floor(num(r.novasAll)));
     s.neutrons = clamp(num(r.neutrons));

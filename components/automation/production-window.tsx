@@ -122,7 +122,7 @@ export function ProductionWindow({
   const sweepDay = useSweep(isNight ? 0.12 : 0.88, roomRef);
 
   return (
-    <MenuWindow title="Production" variant="settle" art={<Emblem />} label="Production stats" onClose={onClose}>
+    <MenuWindow theme="production" title="Production" variant="settle" art={<Emblem />} label="Production stats" onClose={onClose}>
       <div className="ps-wrap ps-body" data-layout={layout}>
         <section className="ps-room" aria-label="Gauge room" ref={roomRef}>
           <div className="ps-dial" data-short={short}>
@@ -163,7 +163,7 @@ export function ProductionWindow({
                     <ul>
                       {rows.map((r, i) => (
                         <li key={r.id} className="ps-row" data-neg={r.perSecond < 0} style={{ ["--ps-i" as string]: i }}>
-                          <Glyph code={r.glyph} size={26} icon={r.id} />
+                          <Glyph code={r.glyph} size={32} icon={r.id} />
                           <span className="ps-name">{r.name}</span>
                           <span className="ps-bar" aria-hidden="true">
                             <i style={{ width: `${Math.max(6, (Math.abs(r.perSecond) / maxRate) * 100)}%` }} />

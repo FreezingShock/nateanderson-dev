@@ -234,6 +234,7 @@ export function ResearchScreen({
   return (
     <MenuWindow
       title="Research"
+      theme="research"
       art={<span style={uiIconStyle("research", 28)} aria-hidden="true" />}
       onClose={onClose}
     >
