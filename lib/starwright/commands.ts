@@ -1,8 +1,8 @@
 // The `sw` console commands. Pure: they act on a State and return printed lines. The console (components/cm/console.tsx)
 // runs them against the open game's live state, or against the saved game when the game is not open.
-import { CONSTELLATIONS, ELEMENTS, TUNE, PERKS, PLANETS, PULSAR_PERKS, ROWS, TIERS, TIER_NAMES } from "./data";
+import { ACHIEVEMENTS, ACH_BONUS, CLOUDS, CONSTELLATIONS, ELEMENTS, TUNE, PERKS, PLANETS, PULSAR_PERKS, ROWS, TIERS, TIER_NAMES } from "./data";
 import {
-    blackHole, buy, buyPerk, buyPlanet, buyPulsar, canBlackHole, canNeutron, canSupernova, collapse, cost, effects, fmt, fmtAge, fmtHeat,
+    answer, blackHole, buy, checkAch, chooseCloud, eventOf, buyPerk, buyPlanet, buyPulsar, canBlackHole, canNeutron, canSupernova, collapse, cost, effects, fmt, fmtAge, fmtHeat,
     heaviest, horizonNeed, neutronGain, neutronStar, rowOpen, seeds, supernova, type State,
 } from "./engine";
 
@@ -11,7 +11,7 @@ export interface SwResult { lines: SwLine[]; changed: boolean }
 
 export const SW_SAVE_KEY = "sw-save-v1";
 export const SW_PATH = "/creations/games/starwright";
-export const SW_SUBS = ["stats", "fuse", "collapse", "neutron", "hole", "perks", "pulsar", "planets", "name", "open"];
+export const SW_SUBS = ["stats", "fuse", "collapse", "neutron", "hole", "perks", "pulsar", "planets", "visitor", "cloud", "almanac", "name", "open"];
 
 const l = (t: string, k?: SwLine["k"]): SwLine => ({ t, k });
 const elIndex = (q: string) => ELEMENTS.findIndex((e) => e.sym.toLowerCase() === q || e.name.toLowerCase() === q);
@@ -82,6 +82,27 @@ export function swCommand(s: State, args: string[]): SwResult {
         if (!n) return out([l(`your star is ${s.name}. sw name <new name> renames it.`)]);
         s.name = n;
         return out([l(`the star is ${n}.`)], true);
+    }
+    if (sub === "visitor" || sub === "visit") {
+        const ev = eventOf(s);
+        if (!ev) return out([l("nothing is near the star right now.", "dim")]);
+        const n = parseInt(args[1] ?? "", 10);
+        if (n !== 1 && n !== 2) return out([l(`${ev.name}. ${ev.text}`, "hi"), ...ev.opts.map((o, i) => l(`sw visitor ${i + 1}  ${o.label}: ${o.desc}`))]);
+        const o = answer(s, n - 1);
+        return out([l(`${ev.name}: ${o?.label.toLowerCase()}.`)], true);
+    }
+    if (sub === "cloud") {
+        if (!s.offer.length) return out([l(s.cloud ? `this star was born from a ${CLOUDS.find((c) => c.id === s.cloud)?.name.toLowerCase()}.` : "no birth cloud on offer. they come after a supernova.", "dim")]);
+        const id = (args[1] ?? "").toLowerCase();
+        if (id && chooseCloud(s, id)) return out([l(`${CLOUDS.find((c) => c.id === id)?.name} chosen.`)], true);
+        return out([l("sw cloud <id> picks one", "hi"), ...s.offer.map((x) => l(`${x}  ${CLOUDS.find((c) => c.id === x)?.name}: ${CLOUDS.find((c) => c.id === x)?.desc}`))]);
+    }
+    if (sub === "almanac") {
+        const got = checkAch(s);
+        return out([
+            l(`${s.ach.length} of ${ACHIEVEMENTS.length} milestones · everything +${Math.round(ACH_BONUS * 100 * s.ach.length)}% · elements made ${s.found.join(" ")}`, "hi"),
+            ...ACHIEVEMENTS.map((a) => l(`${s.ach.includes(a.id) ? "done " : "     "} ${a.name}: ${a.desc}`, s.ach.includes(a.id) ? "dim" : undefined)),
+        ], got.length > 0);
     }
     if (sub === "constellations") return out(CONSTELLATIONS.map((c) => l(`${c.name}: ${c.blurb}`)));
     return out([l(`sw ${SW_SUBS.join(" · ")}`, "dim")]);
