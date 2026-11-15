@@ -281,6 +281,7 @@ export function BrassworkHost() {
             const refresh = () => {
                 const d = hudData(world, CAT, selectedId, settings);
                 d.armed = armedRef.current;
+                d.rotation = input.controller.build.getRot() * 90;
                 const ms = d.milestones.filter((m) => m.done);
                 const rs = d.research.filter((r) => r.state === "done").length;
                 const unlocked = d.research.filter((r) => r.state !== "locked").length;

@@ -23,9 +23,9 @@ export interface TouchBar {
 
 const STYLE_ID = "bw-touch-bar-style";
 const CSS = `
-.bw-touch-bar{position:absolute;right:max(12px,env(safe-area-inset-right));bottom:max(12px,env(safe-area-inset-bottom));display:none;flex-wrap:wrap;justify-content:flex-end;gap:8px;max-width:calc(100% - 24px);z-index:5;touch-action:manipulation;-webkit-user-select:none;user-select:none}
+.bw-touch-bar{position:absolute;right:max(12px,env(safe-area-inset-right));bottom:max(12px,env(safe-area-inset-bottom));display:none;flex-wrap:wrap;justify-content:flex-end;gap:8px;max-width:calc(100% - 24px);z-index:5;touch-action:manipulation;-webkit-user-select:none;user-select:none;pointer-events:none}
 @media (pointer:coarse),(max-width:900px){.bw-touch-bar{display:flex}}
-.bw-touch-bar button{min-width:48px;min-height:48px;padding:0 12px;border:2px solid #b8862f;border-radius:0;background:#1d160b;color:#f4e4b8;font:600 13px/1 ui-monospace,SFMono-Regular,Menlo,monospace;letter-spacing:.04em;text-transform:uppercase;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.bw-touch-bar button{pointer-events:auto;min-width:48px;min-height:48px;padding:0 12px;border:2px solid #b8862f;border-radius:0;background:#1d160b;color:#f4e4b8;font:600 13px/1 ui-monospace,SFMono-Regular,Menlo,monospace;letter-spacing:.04em;text-transform:uppercase;cursor:pointer;-webkit-tap-highlight-color:transparent}
 .bw-touch-bar button:active{background:#3a2c14}
 .bw-touch-bar button[aria-pressed="true"]{background:#f2c14e;color:#1d160b;border-color:#f2c14e}
 .bw-touch-bar button:disabled{opacity:.4}
