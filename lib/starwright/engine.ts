@@ -29,6 +29,8 @@ export interface State {
     sdLayer: number;
     sdAll: number;
     perks: string[];
+    /** deep stars bought with stardust once the map is lit: endless, each adds to everything. Cleared by a neutron star. */
+    deep: number;
     novas: number;
     novasAll: number;
     neutrons: number;
@@ -78,6 +80,7 @@ export function fresh(now = Date.now()): State {
         sdLayer: 0,
         sdAll: 0,
         perks: [],
+        deep: 0,
         novas: 0,
         novasAll: 0,
         neutrons: 0,
@@ -157,6 +160,7 @@ export function effects(s: State): Fx {
     }
     f.gate = Math.min(0.75, f.gate + gateP);
     f.need = Math.min(0.9, f.need);
+    f.global *= 1 + TUNE.deepBonus * s.deep;
     f.global *= Math.pow(2, s.sing) * (1 + ACH_BONUS * s.ach.length);
     if (f.horizon === 0) f.horizon = 0;
     return f;
@@ -458,6 +462,7 @@ export function neutronStar(s: State): number {
     s.neutronStarsAll++;
     s.stardust = kept;
     s.sdLayer = 0;
+    s.deep = 0;
     s.perks = s.pulsar.includes("p5") ? [...EMBER_ROOTS] : [];
     s.novas = 0;
     newStar(s, "clear");
@@ -475,6 +480,7 @@ export function blackHole(s: State): boolean {
     s.neutronStars = 0;
     s.stardust = 0;
     s.sdLayer = 0;
+    s.deep = 0;
     s.perks = [];
     s.novas = 0;
     newStar(s, "clear");
@@ -490,6 +496,16 @@ export function buyPerk(s: State, id: string): boolean {
     if (!p || !perkReady(PERKS, s.perks, p) || s.stardust < p.cost) return false;
     s.stardust -= p.cost;
     s.perks.push(p.id);
+    return true;
+}
+
+/** Deep stars: the endless last row of the star map. Every collapse after the map is lit still buys something. */
+export const deepCost = (s: State) => Math.ceil(TUNE.deepCost * Math.pow(TUNE.deepGrow, s.deep));
+export const canDeep = (s: State) => s.stardust >= deepCost(s);
+export function buyDeep(s: State): boolean {
+    if (!canDeep(s)) return false;
+    s.stardust -= deepCost(s);
+    s.deep++;
     return true;
 }
 
@@ -540,6 +556,7 @@ export function parse(raw: unknown): State | null {
     s.sdLayer = clamp(num(r.sdLayer));
     s.sdAll = clamp(num(r.sdAll));
     s.perks = strs(r.perks, (x) => PERKS.some((p) => p.id === x));
+    s.deep = Math.max(0, Math.floor(num(r.deep)));
     s.novas = Math.max(0, Math.floor(num(r.novas)));
     s.novasAll = Math.max(0, Math.floor(num(r.novasAll)));
     s.neutrons = clamp(num(r.neutrons));

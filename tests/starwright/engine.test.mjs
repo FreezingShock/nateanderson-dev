@@ -297,3 +297,22 @@ test("the first visitor comes early and the deep rows are within reach of a firs
     assert.ok(E.canSupernova(s, E.effects(s)), "first collapse within 25 minutes");
     assert.ok(t > 480, "and not in the first eight");
 });
+
+test("deep stars: endless stardust sink, each adds to everything, cleared by a neutron star, old saves load", () => {
+    const s = E.fresh(0);
+    const g0 = E.effects(s).global;
+    s.stardust = 1e6;
+    const c1 = E.deepCost(s);
+    assert.ok(E.buyDeep(s));
+    assert.equal(s.stardust, 1e6 - c1);
+    assert.ok(E.deepCost(s) > c1);
+    assert.ok(Math.abs(E.effects(s).global - g0 * (1 + D.TUNE.deepBonus)) < 1e-9);
+    assert.equal(E.buyDeep(E.fresh(0)), false);
+    const back = E.parse(JSON.parse(E.serialize(s)));
+    assert.equal(back.deep, 1);
+    const old = JSON.parse(E.serialize(E.fresh(0))); delete old.deep;
+    assert.equal(E.parse(old).deep, 0);
+    s.sdLayer = D.TUNE.neutronAt;
+    E.neutronStar(s);
+    assert.equal(s.deep, 0);
+});

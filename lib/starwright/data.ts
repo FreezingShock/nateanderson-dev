@@ -62,6 +62,9 @@ export const TUNE = {
     offlineStepCap: 7200,
     milestone: 25,
     cap: 1e300,
+    deepCost: 600, // stardust for the first deep star
+    deepGrow: 1.4, // each one costs this much more
+    deepBonus: 0.04, // each adds this to everything
     autoCost: 0.2, // autoburn only spends this share of the stock
 };
 
