@@ -60,6 +60,8 @@ export interface SceneFrame {
     /** what the collapse animation was: 0 supernova, 1 neutron star; and the stage of the star that collapsed */
     novaKind?: number;
     novaFrom?: number;
+    /** the birth cloud of this star: the one now, the one fading out (a collapse or a new pick), and the 0..1 crossfade between them */
+    cloud?: { cur: string; prev: string; mix: number };
 }
 
 // ---- static layers (built once) -----------------------------------------------------------------------------------
@@ -309,6 +311,46 @@ function drawPulsar(cx: number, cy: number, R: number, t: number) {
         px(px0 + Math.cos(a * 3) * i, py0 + Math.sin(a * 3) * i, RAMPS.blue[3], 1 - Math.abs(k) * 0.8);
     }
     px(px0, py0, [255, 255, 255]); px(px0 + 1, py0, RAMPS.blue[4]); px(px0, py0 + 1, RAMPS.blue[4]);
+}
+
+
+// ---- birth clouds: each one tints the whole sky in its own way, dithered and drifting ----------------------------------
+
+interface CloudLook { c: RGB[]; /** noise scale x, y */ sx: number; sy: number; /** drift per second x, y */ dx: number; dy: number; /** strength 0..1 and where it sits: 0 even, 1 low in the frame, -1 high, 2 a band across the middle */ k: number; where: number; sparkle?: RGB }
+const CLOUD_LOOK: Record<string, CloudLook> = {
+    dense: { c: ramp("#06102a", "#0c2a5a", "#1d5fa8", "#5fb4ff"), sx: 38, sy: 26, dx: 1.2, dy: 0.1, k: 1.25, where: 1 },
+    hot: { c: ramp("#2a0a04", "#7a2008", "#e0501a", "#ffb050"), sx: 30, sy: 22, dx: 0.5, dy: -2.2, k: 1.3, where: 1, sparkle: [255, 200, 120] },
+    rich: { c: ramp("#2a1e04", "#6a4c0a", "#d9a31a", "#ffe98a"), sx: 16, sy: 14, dx: 0.8, dy: 0.3, k: 1.0, where: 0, sparkle: [255, 240, 170] },
+    thin: { c: ramp("#0a1620", "#1a3448", "#4a7f9c", "#d8f0ff"), sx: 60, sy: 14, dx: 2.4, dy: 0, k: 1.35, where: -1 },
+    dusty: { c: ramp("#1a0e24", "#3e1e4a", "#7a3e82", "#d9a0e8"), sx: 12, sy: 40, dx: 1.6, dy: 0.4, k: 1.1, where: 0 },
+    quiet: { c: ramp("#04180f", "#0a3a26", "#1a8a5a", "#6affc0"), sx: 70, sy: 9, dx: 3.2, dy: 0, k: 1.1, where: 2, sparkle: [190, 255, 220] },
+};
+
+/** One cloud's wash over the sky at `alpha`. A shape term decides where it gathers; noise through the Bayer matrix keeps it dithered. */
+function drawCloudSky(id: string, t: number, alpha: number) {
+    const L = CLOUD_LOOK[id];
+    if (!L || alpha <= 0.01) return;
+    for (let y = 0; y < H; y++) {
+        const ny = y / H;
+        const shape = L.where === 1 ? 0.15 + ny * 1.1 : L.where === -1 ? 1.15 - ny * 1.1 : L.where === 2 ? Math.max(0, 1 - Math.abs(ny - 0.4 + Math.sin(t * 0.3) * 0.04) * 3.2) : 0.8;
+        if (shape <= 0.05) continue;
+        for (let x = (y & 1); x < W; x += 2) { // every other pixel in a checker, so the wash reads as dither and costs half
+            const n = vnoise(x / L.sx + t * L.dx / L.sx * 4, y / L.sy + t * L.dy / L.sy * 4) * 0.65 + vnoise(x / (L.sx / 3) + 11, y / (L.sy / 3) - t * 0.3) * 0.35;
+            const v = n * shape * L.k;
+            if (v < 0.28 + bayer(x, y) * 0.5) continue;
+            const c = pick(L.c, Math.min(1, v), x, y);
+            px(x, y, c, alpha * 0.55);
+            px(x + 1, y, c, alpha * 0.55);
+        }
+    }
+    if (L.sparkle) {
+        for (let i = 0; i < 26; i++) {
+            const ph = (t * 0.25 + hash(i, 91)) % 1;
+            const sx = hash(i, 17) * W, sy = L.where === 1 ? H - ph * H * 0.8 : hash(i, 29) * H;
+            const tw = Math.sin(ph * Math.PI);
+            if (tw > 0.2) px(sx, sy, L.sparkle, alpha * tw);
+        }
+    }
 }
 
 // ---- visitors drawn in the sky ----------------------------------------------------------------------------------------
@@ -687,6 +729,14 @@ export function renderLayered(L: Layers, f: SceneFrame, S: SpriteSet): void {
             px(s.x, s.y, [v, v, Math.min(255, v + 20)]);
         }
         flush(L, L.sky);
+    }
+
+    // the birth cloud's wash over the sky, crossfading from the last one when a star is born or a collapse clears it
+    if (f.hole < 0 && f.cloud && (f.cloud.cur || f.cloud.prev)) {
+        begin(L.front);
+        if (f.cloud.prev && f.cloud.mix < 1) drawCloudSky(f.cloud.prev, t, 1 - f.cloud.mix);
+        if (f.cloud.cur) drawCloudSky(f.cloud.cur, t, f.cloud.mix);
+        flush(L, L.front);
     }
 
     // the ending: the hole sheet over the sky, or the code-drawn hole
