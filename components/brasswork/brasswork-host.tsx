@@ -18,6 +18,7 @@ import {
     deserialize,
     gridView,
     autoRoute,
+    suggestSpot,
     footprintCells,
     hudData,
     resolve,
@@ -43,6 +44,7 @@ import { scatterProps } from "@/lib/automation/models/props";
 import { BrassworkExtras, MOODS, type AwayReport, type Mood } from "./extras";
 import { useFirstRunQuest } from "./first-run";
 import { BuildPopover, TrashButton } from "./build-popover";
+import { NextMarker, type NextTarget } from "./next-marker";
 import { attachUiSounds, playSound, setAmbient, setEnabled as setSoundOn, startAudio } from "@/lib/automation/audio";
 import { LightingRow, SaveRows } from "./settings-extras";
 import { VolumeRows } from "./audio-rows";
@@ -126,6 +128,7 @@ export function BrassworkHost() {
     // Placed-piece pop-up: the building's anchor, what it is, and where to pin it on screen.
     const [pop, setPop] = useState<{ anchor: { x: number; z: number }; kind: string; kindLabel: string; x: number; y: number } | null>(null);
     const [inputCtl, setInputCtl] = useState<InputController | null>(null);
+    const [nextTarget, setNextTarget] = useState<NextTarget | null>(null);
     const [away, setAway] = useState<AwayReport | null>(null);
     const [mood, setMood] = useState<Mood>("Auto");
     const quest = useFirstRunQuest(data);
@@ -314,8 +317,33 @@ export function BrassworkHost() {
             };
             // The number keys' tool lists, one per dock section, rebuilt on every refresh so they match the open rows.
             const dockTools: ToolSpec[][] = DOCK_ORDER.map(() => []);
+            // Where the NEXT banner wants you to build, in the input frame. Only the state changes when the spot does.
+            let targetKey = "";
+            const syncTarget = (actionId: string | undefined) => {
+                let t: NextTarget | null = null;
+                const fpOf = (id: string) => CAT.tree.machines.find((m) => m.id === id)?.footprint ?? { w: 1, d: 1 };
+                if (actionId === "drill") {
+                    const free = Object.entries(world.deposits)
+                        .map(([k, v]) => ({ k, item: v.item, c: k.split(",").map(Number) }))
+                        .filter((e) => !buildingAt(world, e.c[0], e.c[1], CAT))
+                        .sort((a, b) => (a.item === "iron_ore" ? 0 : 1) - (b.item === "iron_ore" ? 0 : 1))[0];
+                    if (free) t = { x: free.c[0] - W / 2, z: free.c[1] - D / 2, w: 1, d: 1, label: "Place the drill here" };
+                } else if (actionId === "kiln" || actionId === "windmill") {
+                    const fp = fpOf(actionId);
+                    const spot = suggestSpot(world, fp, CAT);
+                    if (spot) t = { x: spot.x - W / 2, z: spot.z - D / 2, w: fp.w, d: fp.d, label: `${actionId === "kiln" ? "Kiln" : "Windmill"} fits here` };
+                } else if (actionId === "hub-menu") {
+                    const hub = world.buildings[world.hubId];
+                    if (hub) t = { x: hub.x - W / 2, z: hub.z - D / 2, w: 3, d: 3, label: "Deliver to the hub" };
+                }
+                const key = t ? `${t.x},${t.z},${t.w},${t.d},${t.label}` : "";
+                if (key === targetKey) return;
+                targetKey = key;
+                setNextTarget(t);
+            };
             const refresh = () => {
                 const d = hudData(world, CAT, selectedId, settings);
+                syncTarget(d.nextStep.actionId);
                 d.armed = armedRef.current;
                 d.rotation = input.controller.build.getRot() * 90;
                 DOCK_ORDER.forEach((g, i) => {
@@ -717,6 +745,7 @@ export function BrassworkHost() {
                 ctl.current = null;
                 setInputCtl(null);
                 setPop(null);
+                setNextTarget(null);
                 snap.current = null;
             };
         })();
@@ -742,6 +771,7 @@ export function BrassworkHost() {
             <AutomationHud data={data} actions={{ onBuild, onSelect, onResearch, onSetRecipe, onPrestige, onSettings }} settingsSlots={{ sound: <VolumeRows />, display: <LightingRow mood={mood} onMood={onMood} />, save: <SaveRows /> }} removeSlot={inputCtl ? <TrashButton input={inputCtl} variant="dock" /> : undefined} quest={quest ?? undefined} dockGroup={dockGroup} onDockGroup={onDockGroup}>
                 <canvas ref={canvasRef} className="bw-canvas" />
                 <BrassworkExtras snapshot={snapshot} away={away} mood={mood} onMood={onMood} />
+                {inputCtl && nextTarget && <NextMarker input={inputCtl} target={nextTarget} canvas={canvasRef} />}
                 {inputCtl && pop && (
                     <BuildPopover
                         input={inputCtl}
