@@ -97,14 +97,14 @@ Corrupt save (item 11c): the game already kept a copy under `gb-save-v1-corrupt`
 ### 12. Phone portrait: the dock takes about 40% of the screen
 - At 390 and 360 wide the dock wraps to 3 rows (about 330 px) and the site gets the top half. Done when: groups collapse to one open row (the group of the selected or newest material) with the others one tap away, and the dig is at least 55% of the screen; number keys and the NEXT cue still work.
 
-### 13. Window panels look see-through
+### 13. Window panels look see-through (DONE 2026-11-15: panels .985 opaque)
 - Jobs, Firm and the material card show the scene faintly behind their text (`--gb-panel` is translucent). Done when: body text sits on an opaque or near opaque panel at 1440 and 390 and still reads as part of the scene (check contrast of the dim text).
 
-### 14. Firm window needs scrolling to reach everything on small heights
+### 14. Firm window needs scrolling to reach everything on small heights (DONE 2026-11-15: `.gb-win-foot` pinned)
 - At 900 tall the perk grid plus the Incorporate line fills the window; on shorter screens the button scrolls out of sight. Done when: the Incorporate button and its line stay pinned at the bottom of the Firm window while the perks scroll.
 
 ### 15. Tests for the pure part of the HUD
 - `--gb-dock-top` and the window sizes have only a headless script (`hud-overlap/check.mjs`). Done when: the script runs in `scripts/ci` against the built site as an advisory check, or its sizes are listed in `docs/ci.md` for threads to run before merging HUD changes.
 
-### 16. Repeat order payout and the cue
+### 16. Repeat order payout and the cue (DONE 2026-11-15: the waiting cue names the next job's wait and the repeat)
 - The NEXT cue says nothing about a running repeat order. Done when: while the crew is on a repeat order the cue (or the job card) says why the next campaign job has not started and what it waits on.
