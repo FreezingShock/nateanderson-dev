@@ -45,6 +45,7 @@ import { BrassworkExtras, MOODS, type AwayReport, type Mood } from "./extras";
 import { useFirstRunQuest } from "./first-run";
 import { BuildPopover, TrashButton } from "./build-popover";
 import { NextMarker, type NextTarget } from "./next-marker";
+import { HoverName } from "./hover-name";
 import { attachUiSounds, playSound, setAmbient, setEnabled as setSoundOn, startAudio } from "@/lib/automation/audio";
 import { LightingRow, SaveRows } from "./settings-extras";
 import { VolumeRows } from "./audio-rows";
@@ -128,6 +129,7 @@ export function BrassworkHost() {
     // Placed-piece pop-up: the building's anchor, what it is, and where to pin it on screen.
     const [pop, setPop] = useState<{ anchor: { x: number; z: number }; kind: string; kindLabel: string; x: number; y: number } | null>(null);
     const [inputCtl, setInputCtl] = useState<InputController | null>(null);
+    const nameOfKind = useCallback((kind: string) => resolve(CAT, kind)?.name ?? kind, []);
     const [nextTarget, setNextTarget] = useState<NextTarget | null>(null);
     const [away, setAway] = useState<AwayReport | null>(null);
     const [mood, setMood] = useState<Mood>("Auto");
@@ -443,7 +445,7 @@ export function BrassworkHost() {
                 onGroup: (i) => setDockGroup(DOCK_ORDER[i] ?? null),
                 heightAt: pickHeightAt,
                 groundHeightAt: heightAt,
-                initialPose: { target: { x: -1.5, y: 0, z: -1 }, yaw: 0.6, pitch: 0.75, distance: 21 },
+                initialPose: { target: { x: -2.4, y: 0, z: -2.2 }, yaw: 0.6, pitch: 0.75, distance: 21 },
                 limits: { bounds: { minX: -14, maxX: 14, minZ: -10, maxZ: 10 }, minDistance: 5, maxDistance: 34, minPitch: 0.35, maxPitch: 1.2, topDownPitch: 1.5, fovY: 0.55, smoothing: 12 },
                 onEvent: (e) => {
                     if (e.type === "invalid") {
@@ -771,6 +773,7 @@ export function BrassworkHost() {
             <AutomationHud data={data} actions={{ onBuild, onSelect, onResearch, onSetRecipe, onPrestige, onSettings }} settingsSlots={{ sound: <VolumeRows />, display: <LightingRow mood={mood} onMood={onMood} />, save: <SaveRows /> }} removeSlot={inputCtl ? <TrashButton input={inputCtl} variant="dock" /> : undefined} quest={quest ?? undefined} dockGroup={dockGroup} onDockGroup={onDockGroup}>
                 <canvas ref={canvasRef} className="bw-canvas" />
                 <BrassworkExtras snapshot={snapshot} away={away} mood={mood} onMood={onMood} />
+                {inputCtl && <HoverName input={inputCtl} nameOf={nameOfKind} canvas={canvasRef} />}
                 {inputCtl && nextTarget && <NextMarker input={inputCtl} target={nextTarget} canvas={canvasRef} />}
                 {inputCtl && pop && (
                     <BuildPopover
