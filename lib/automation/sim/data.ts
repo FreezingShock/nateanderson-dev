@@ -112,6 +112,10 @@ export const DEFAULT_CATALOG: Catalog = {
     tune: ENGINE_DATA.tune,
 };
 
+// Where the first workshop's resource nodes sit on the 18 x 12 board, one per ore in tree order. The host, the
+// opening tests and the pacing bot all import this; never copy the array.
+export const START_NODE_SPOTS: readonly (readonly [number, number])[] = [[2, 2], [2, 8], [15, 2], [15, 8], [8, 1]];
+
 // Island sites offered at "Open a new workshop". Each has its own nodes, floor size, hub spot and one bonus.
 export interface SiteDef {
     id: string;

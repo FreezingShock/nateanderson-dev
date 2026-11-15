@@ -46,10 +46,6 @@ Ordered by value. Each is one PR.
 - Same standard as B-07 for `expedition-window.tsx` and `prestige-screen.tsx`: art first, one line of text, ore dots with names in tooltips, hold to confirm. Wait for T-01 if Nate wants the big view instead.
 - Done when: all four sites render with their art, hold to confirm works with keyboard and touch, screenshots. **Needs screenshots.**
 
-**B-15 One source for the starting node spots**
-- The host keeps a local `NODE_SPOTS` array (`brasswork-host.tsx:62`) while `sim/data.ts` has `SITES` with its own node positions. Project memory says a shared `START_NODE_SPOTS` should exist in `sim/data.ts`; it does not.
-- Done when: the first workshop's nodes come from one exported constant in `sim/data.ts`, the host imports it, and `opening.test.mjs` uses the same one.
-
 **B-16 Test the HUD data and the save format against a golden file**
 - No test covers `hudData` output shape or a save round trip across versions. Add a golden `serialize` fixture so a future change to `World` that breaks old saves fails a test.
 - Done when: `npm run test:automation` loads a checked-in v1 save and keeps playing it for 60 simulated seconds.
