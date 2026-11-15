@@ -57,6 +57,7 @@ export function Milestones({ milestones }: { milestones: MilestoneView[] }) {
             <span className="ab-milestone-name">{current.name}</span>
             <span className="ab-dim">+{current.blueprintReward} blueprint</span>
           </header>
+          {current.rewardLine && <p className="ab-dim ab-milestone-reward">{current.rewardLine}</p>}
           <ul className="ab-milestone-items">
             {current.items.map((it) => {
               const pct = it.need > 0 ? Math.round((it.have / it.need) * 100) : 100;

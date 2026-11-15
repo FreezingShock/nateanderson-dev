@@ -172,3 +172,65 @@ export const SITES: SiteDef[] = [
         bonus: { miner: 1.25, power: 0.9 },
     },
 ];
+
+// Stock a new world starts with when the caller gives none: enough for two drills, a kiln and a run of belts.
+// Drill and kiln have no build cost in the Recipe tree yet, so this covers them and the belts; see STATUS.md.
+export const STARTER_KIT: Stack[] = [
+    { item: "iron_plate", qty: 80 }, // windmills cost 8 plates each and the press is not open until milestone 1
+    { item: "copper_wire", qty: 20 },
+    { item: "iron_gear", qty: 6 },
+];
+
+// What the hub holds when a new workshop opens. Prestige empties the hub, and every power source costs items, so without a
+// kit the new floor could never run a machine. Each workshop already opened adds a little more, so a later floor starts faster.
+export function workshopKit(opened: number): Stack[] {
+    const extra = Math.min(opened, 5);
+    return [
+        { item: "iron_plate", qty: 80 + 20 * extra },
+        { item: "copper_wire", qty: 20 + 10 * extra },
+        { item: "iron_gear", qty: 6 + 2 * extra },
+        { item: "steel_ingot", qty: 10 + 5 * extra },
+    ];
+}
+
+// Workshop commissions: after the Sky orrery's first light the hub keeps asking for work, one order at a time.
+// Each pays blueprints (for mastery research) and a supply crate. Orders past the list repeat the last one with more parts.
+export interface CommissionDef {
+    name: string;
+    deliver: Stack[];
+    blueprints: number;
+    reward: Stack[];
+}
+
+const COMMISSIONS: CommissionDef[] = [
+    {
+        name: "Spare circuits",
+        deliver: [{ item: "circuit_board", qty: 20 }, { item: "frame", qty: 15 }, { item: "steel_beam", qty: 8 }],
+        blueprints: 8,
+        reward: [{ item: "iron_plate", qty: 30 }, { item: "copper_wire", qty: 30 }],
+    },
+    {
+        name: "Clockwork order",
+        deliver: [{ item: "motor", qty: 12 }, { item: "servo", qty: 6 }, { item: "photocell", qty: 10 }, { item: "quartz_lens", qty: 4 }],
+        blueprints: 10,
+        reward: [{ item: "steel_ingot", qty: 30 }, { item: "iron_gear", qty: 12 }],
+    },
+    {
+        name: "Orrery spares",
+        deliver: [{ item: "sail_panel", qty: 2 }, { item: "mirror_cell", qty: 2 }, { item: "relay_core", qty: 2 }, { item: "lattice_strut", qty: 2 }],
+        blueprints: 12,
+        reward: [{ item: "steel_ingot", qty: 30 }, { item: "copper_wire", qty: 30 }],
+    },
+];
+
+export function commissionDef(n: number): CommissionDef {
+    if (n < COMMISSIONS.length) return COMMISSIONS[n];
+    const more = n - COMMISSIONS.length + 1;
+    const last = COMMISSIONS[COMMISSIONS.length - 1];
+    return {
+        name: `Grand commission ${more}`,
+        deliver: last.deliver.map((s) => ({ item: s.item, qty: s.qty + more })),
+        blueprints: last.blueprints + 2 * more,
+        reward: last.reward.map((s) => ({ item: s.item, qty: s.qty + 10 * more })),
+    };
+}
