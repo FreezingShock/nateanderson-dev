@@ -15,6 +15,7 @@ export const WINDMILLS = [[0, 4], [5, 5], [12, 6], [16, 8]];
 
 export function runStage2Layout(minutes = 10, windmills = WINDMILLS) {
 const world = S.createWorld({ width: 18, depth: 12, hub: HUB }, CAT);
+world.progress.requestsDone = CAT.tree.requests.map((r) => r.id); // this layout starts past the hub orders
 const log = [];
 const ok = (label, r) => { if (!r.ok) log.push(`FAIL ${label}: ${r.reason}`); return r.ok; };
 const belt = (x, z, rot) => ok(`belt ${x},${z}`, S.place(world, "belt", x, z, rot, CAT));

@@ -5,6 +5,7 @@
 // The world is 18 by 12 cells at one world unit per cell, which is the renderer's factory plateau.
 import { useCallback, useEffect, useRef, useState } from "react";
 import { AutomationHud } from "@/components/automation/automation-hud";
+import { openHubMenu } from "@/components/automation/hub-menu";
 import {
     DEFAULT_CATALOG,
     actions as simActions,
@@ -379,6 +380,11 @@ export function BrassworkHost() {
                         // A short click or tap on a placed building (no tool active) opens its inspector.
                         // e.cell is in the shared input frame; the sim is offset by half the board (see buildWorld below).
                         const b = buildingAt(world, e.cell.x + W / 2, e.cell.z + D / 2, CAT);
+                        // The hub opens its own menu in place of the inspector and quick actions.
+                        if (b?.type === "hub") {
+                            openHubMenu();
+                            return;
+                        }
                         // Phone: the click opens only the pop-up; its Details button opens the inspector sheet.
                         if (!window.matchMedia("(max-width: 767px)").matches) {
                             selectedId = b ? b.id : null;

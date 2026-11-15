@@ -7,6 +7,8 @@ import type {
     Building,
     Catalog,
     HudData,
+    HubStep,
+    HubUnlock,
     HudSettings,
     Line,
     MachineDetail,
@@ -22,7 +24,8 @@ import type {
     World,
 } from "../types";
 import { DEFAULT_CATALOG, SITES } from "./data";
-import { unlockedRecipes, dayClock, buyResearch as buyResearchRaw, prestige as prestigeRaw } from "./progress";
+import { unlockedRecipes, dayClock, requestDone, buyResearch as buyResearchRaw, prestige as prestigeRaw } from "./progress";
+import { hubStageFor } from "../models/machines/hub";
 import { place as placeRaw, setRecipe as setRecipeRaw, setFilter as setFilterRaw, resolve, BATTERIES, depositUnder, hasOutputNeighbour } from "./world";
 
 export const DEFAULT_SETTINGS: HudSettings = { sound: false, reduceMotion: false, lowFx: false, numberFormat: "short", showRates: true };
@@ -200,11 +203,23 @@ export function previewMachine(world: World, cat: Catalog, type: string): Machin
     };
 }
 
+function lockReason(cat: Catalog, id: string, stage: number | undefined): string {
+    const req = requestFor(cat, id);
+    return req ? `Hub request: ${req.name}` : `Unlocks at stage ${stage}`;
+}
+
 function machinesFor(world: World, cat: Catalog): MachineView[] {
     return hudData(world, cat).machines;
 }
 
-export function unlockedMachine(world: World, cat: Catalog, unlockStage: number): boolean {
+// A hub request that names this machine or piece controls it, in place of the stage rule.
+function requestFor(cat: Catalog, id: string | undefined) {
+    return id === undefined ? undefined : (cat.tree.requests ?? []).find((q) => q.unlocks.machines.includes(id));
+}
+
+export function unlockedMachine(world: World, cat: Catalog, unlockStage: number, id?: string): boolean {
+    const req = requestFor(cat, id);
+    if (req) return requestDone(world, req.id);
     if (unlockStage === 0) return true;
     return cat.tree.milestones.some((m) => m.stage >= unlockStage - 1 && world.progress.milestonesDone.includes(m.id));
 }
@@ -245,13 +260,13 @@ export function hudData(world: World, cat: Catalog = DEFAULT_CATALOG, selectedId
     // Palette: crafting machines, then power generators from the tree, then logistics (belts and the
     // engine-only pieces). The hub is never listed.
     const machines: MachineView[] = cat.tree.machines.map((m) => {
-        const unlocked = unlockedMachine(world, cat, m.unlockStage);
+        const unlocked = unlockedMachine(world, cat, m.unlockStage, m.id);
         return {
             id: m.id,
             name: m.name,
             glyph: glyphOf(m.name),
             unlocked,
-            lockedReason: unlocked ? undefined : `Unlocks at stage ${m.unlockStage}`,
+            lockedReason: unlocked ? undefined : lockReason(cat, m.id, m.unlockStage),
             count: count[m.id] ?? 0,
             cost: lines(m.buildCost ?? []),
             status: statusOf[m.id] ?? "idle",
@@ -261,14 +276,14 @@ export function hudData(world: World, cat: Catalog = DEFAULT_CATALOG, selectedId
     for (const [id, e] of Object.entries(cat.engine)) {
         if (e.kind === "hub" || e.placeable === false) continue;
         const st = cat.tree.structures?.find((x) => x.id === id);
-        const unlocked = st?.unlockStage === undefined || unlockedMachine(world, cat, st.unlockStage);
+        const unlocked = (st?.unlockStage === undefined && !requestFor(cat, id)) || unlockedMachine(world, cat, st?.unlockStage ?? 0, id);
         const name = st?.name ?? e.name;
         machines.push({
             id,
             name,
             glyph: glyphOf(name),
             unlocked,
-            lockedReason: unlocked ? undefined : `Unlocks at stage ${st?.unlockStage}`,
+            lockedReason: unlocked ? undefined : lockReason(cat, id, st?.unlockStage),
             count: count[id] ?? 0,
             cost: lines(st?.buildCost ?? e.cost),
             status: statusOf[id] ?? "idle",
@@ -368,6 +383,7 @@ export function hudData(world: World, cat: Catalog = DEFAULT_CATALOG, selectedId
         return { id: n.id, name: n.name, glyph: glyphOf(n.name), note: n.note ?? "", blueprintCost: n.cost, requires: n.requires, unlocks, column, row, state: done ? "done" : ready ? "available" : "locked" };
     });
 
+    const hubSteps = hubStepsOf(world, cat);
     const allDone = milestones.length > 0 && milestones.every((m) => m.done);
     const stats: StatLine[] = [
         { label: "Day", value: String(clock.day + 1) },
@@ -383,6 +399,7 @@ export function hudData(world: World, cat: Catalog = DEFAULT_CATALOG, selectedId
         selected,
         areas,
         milestones,
+        hub: { stage: hubStageFor(world.progress.milestonesDone.length), steps: hubSteps, doneCount: hubSteps.filter((x) => x.state === "done").length, blueprints: world.progress.blueprints },
         blueprints: world.progress.blueprints,
         research,
         prestige: {
@@ -405,13 +422,79 @@ export function hudData(world: World, cat: Catalog = DEFAULT_CATALOG, selectedId
     };
 }
 
+// What each milestone opens: the machines and pieces whose stage rule first becomes true with it, plus its blueprints.
+// Pieces a hub request controls are left out (the request lists them), and tier variants fold into one line per tier.
+function milestoneUnlocks(cat: Catalog, index: number): HubUnlock[] {
+    const ms = cat.tree.milestones;
+    const first = (stage: number) => ms.findIndex((m) => m.stage >= stage - 1);
+    const out: HubUnlock[] = [];
+    const seenTier = new Set<string>();
+    for (const m of cat.tree.machines) {
+        if (m.unlockStage > 0 && !requestFor(cat, m.id) && first(m.unlockStage) === index) out.push({ kind: "machine", id: m.id, name: m.name, icon: m.id });
+    }
+    for (const st of cat.tree.structures ?? []) {
+        if (st.unlockStage === undefined || st.unlockStage === 0 || requestFor(cat, st.id) || first(st.unlockStage) !== index) continue;
+        if (st.tier && st.tier !== "brass") {
+            if (seenTier.has(st.tier)) continue;
+            seenTier.add(st.tier);
+            out.push({ kind: "machine", id: st.id, name: `${st.tier[0].toUpperCase()}${st.tier.slice(1)} logistics`, icon: st.id });
+            continue;
+        }
+        out.push({ kind: "machine", id: st.id, name: st.name, icon: st.id });
+    }
+    return out;
+}
+
+// The hub ladder: early requests first (they open recipes and machines directly), then the blueprint milestones.
+function hubStepsOf(world: World, cat: Catalog): HubStep[] {
+    const delivered = world.progress.delivered;
+    const itemsOf = (deliver: { item: string; qty: number }[]) =>
+        deliver.map((s) => ({ id: s.item, name: nameOf(cat, s.item), have: Math.min(s.qty, Math.floor(delivered[s.item] ?? 0)), need: s.qty }));
+    const frac = (items: { have: number; need: number }[]) => (items.length ? Math.min(...items.map((i) => i.have / i.need)) : 1);
+    const steps: HubStep[] = [];
+    for (const q of cat.tree.requests ?? []) {
+        const items = itemsOf(q.deliver);
+        const done = requestDone(world, q.id);
+        const unlocks: HubUnlock[] = [
+            ...q.unlocks.recipes.map((rid): HubUnlock => {
+                const out = cat.tree.recipes.find((r) => r.id === rid)?.output.item ?? rid;
+                return { kind: "recipe", id: rid, name: nameOf(cat, out), icon: out };
+            }),
+            ...q.unlocks.machines.map((mid): HubUnlock => ({ kind: "machine", id: mid, name: cat.tree.machines.find((m) => m.id === mid)?.name ?? cat.tree.structures?.find((x) => x.id === mid)?.name ?? mid, icon: mid })),
+        ];
+        steps.push({ id: q.id, kind: "request", name: q.name, note: q.note, state: done ? "done" : "ahead", progress: done ? 1 : frac(items), items, unlocks });
+    }
+    cat.tree.milestones.forEach((m, i) => {
+        const items = itemsOf(m.deliver);
+        const done = world.progress.milestonesDone.includes(m.id);
+        steps.push({
+            id: m.id,
+            kind: "milestone",
+            name: m.name,
+            state: done ? "done" : "ahead",
+            progress: done ? 1 : frac(items),
+            items,
+            unlocks: [{ kind: "blueprints", id: "blueprints", name: `${m.blueprints} blueprints` }, ...milestoneUnlocks(cat, i)],
+        });
+    });
+    const now = steps.find((x) => x.state !== "done");
+    if (now) now.state = "now";
+    return steps;
+}
+
 function nextStepOf(world: World, cat: Catalog, machines: MachineView[], milestones: MilestoneView[]): NextStepView {
     const drills = machines.find((m) => m.id === "drill")?.count ?? 0;
     const crafters = machines.filter((m) => m.id !== "drill").reduce((a, m) => a + m.count, 0);
     const next = milestones.find((m) => !m.done);
+    const req = hubStepsOf(world, cat).find((x) => x.kind === "request" && x.state === "now");
     if (drills === 0) return { text: "Place a drill on a resource node to start the flow.", actionLabel: "Select drill", actionId: "drill" };
     if (crafters === 0) return { text: "Add a kiln and set its recipe to smelt ore into ingots.", actionLabel: "Select kiln", actionId: "kiln" };
     if (world.power.satisfaction < 1) return { text: "Machines are short of power. A windmill feeds machines within 6 cells of its centre.", actionLabel: "Select windmill", actionId: "windmill" };
+    if (req) {
+        const parts = req.items.map((i) => `${i.name} ${i.have} of ${i.need}`);
+        const opens = req.unlocks.map((u) => u.name).join(", ");
+        return { title: req.name, progress: req.progress, text: `Deliver ${parts.join(", ")}. Opens ${opens}.`, actionLabel: "Open hub", actionId: "hub-menu" };
+    }
     if (next) {
         // Progress per item, capped at the target, so the bar says how far the delivery has got.
         const def = cat.tree.milestones.find((m) => m.id === next.id);
