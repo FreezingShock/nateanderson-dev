@@ -396,7 +396,7 @@ export function Launcher() {
                             <li key={e.key} className="nv-item" role="presentation">
                                 {head && <div className="nv-group" aria-hidden="true">{e.group}</div>}
                                 {e.kind === "link" ? (
-                                    <Link href={e.href} {...common} onClick={() => commit(e)}>
+                                    <Link prefetch={false} href={e.href} {...common} onClick={() => commit(e)}>
                                         {icon}
                                         {body}
                                         {term && <span className="nv-grp">{e.group}</span>}

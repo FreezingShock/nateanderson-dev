@@ -162,7 +162,7 @@ export function SiteMap() {
                                     style={{ "--i": i } as CSSProperties}
                                 >
                                     <div className="nv-sec-line">
-                                        <Link href={n.href} className="nv-sec" aria-current={on ? "page" : undefined}>
+                                        <Link prefetch={false} href={n.href} className="nv-sec" aria-current={on ? "page" : undefined}>
                                             <span className="nv-no" aria-hidden="true">{n.no}</span>
                                             <span className="nv-ix" style={{ "--d": `${120 + i * 70}ms` } as CSSProperties}>
                                                 <PixelIcon name={PIXEL_FOR[n.href] ?? "home"} size={24} />
@@ -196,7 +196,7 @@ export function SiteMap() {
                                                 const here = path === c.href;
                                                 return (
                                                     <li key={c.href}>
-                                                        <Link
+                                                        <Link prefetch={false}
                                                             href={c.href}
                                                             aria-current={here ? "page" : undefined}
                                                             style={{ "--d": `${60 + j * 35}ms` } as CSSProperties}

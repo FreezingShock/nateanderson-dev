@@ -128,7 +128,7 @@ export default function BlogPage() {
                                                         <tr key={s.title}>
                                                             <td>{no}</td>
                                                             <td>
-                                                                <Link
+                                                                <Link prefetch={false}
                                                                     href={`#${id}`}
                                                                 >
                                                                     {s.title}
@@ -264,12 +264,12 @@ export default function BlogPage() {
                             <span>{planned} planned</span>
                         </div>
                         <div className="cm-row cta blog-note-links">
-                            <Link className="cta-b a" href="/">
+                            <Link prefetch={false} className="cta-b a" href="/">
                                 <i><PixelIcon name="arrowL" /></i>
                                 <span>Back to home</span>
                                 <em aria-hidden="true"><PixelIcon name="arrowR" /></em>
                             </Link>
-                            <Link className="cta-b" href="/about">
+                            <Link prefetch={false} className="cta-b" href="/about">
                                 <i>02</i>
                                 <span>About me</span>
                                 <em aria-hidden="true"><PixelIcon name="arrowR" /></em>

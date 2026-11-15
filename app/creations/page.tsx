@@ -75,7 +75,7 @@ export default async function CreationsPage() {
                         const Icon = m.icon;
                         const live = m.games.filter((g) => g.status === "playable").length;
                         return (
-                            <Link key={m.id} href={`/creations/games#${m.id}`} className="cm-card link" style={{ height: "100%" }}>
+                            <Link prefetch={false} key={m.id} href={`/creations/games#${m.id}`} className="cm-card link" style={{ height: "100%" }}>
                                 <div className="cm-row" style={{ justifyContent: "space-between" }}>
                                     <Icon className="cm-ico" aria-hidden="true" />
                                     <span className={`cm-state ${live ? "live" : ""}`}>{live ? `${live} ${GAME_STATUS.playable.label.toLowerCase()}` : "Planned"}</span>

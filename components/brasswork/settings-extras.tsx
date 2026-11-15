@@ -70,7 +70,7 @@ export function SaveRows() {
                 {msg && <span className="bws-msg" data-bad={msg.bad ? "true" : undefined} role="status" style={{ gridColumn: "1 / -1" }}>{msg.text}</span>}
             </Row>
             <Row icon="back" label="Back to games" hint="Leave the workshop. It saves as you go.">
-                <Link href="/creations/games" className="bws-action">Leave workshop</Link>
+                <Link prefetch={false} href="/creations/games" className="bws-action">Leave workshop</Link>
             </Row>
         </>
     );

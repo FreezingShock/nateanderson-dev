@@ -63,6 +63,9 @@ export function NaosArt({
  * viewport and painted under the page content, so it reads as the ground the page sits on, not a header piece.
  * Place it as the first child of the page's `.ctos` root. Decorative: aria-hidden, no pointer events.
  */
+/** Backdrops already warmed, kept referenced so the loads are not dropped. */
+const warmed = new Map<string, HTMLImageElement>();
+
 export function NaosBackdrop({ src }: { src: string }) {
     // Asked for during render, so the browser fetches it before the stylesheet reaches the background. The backdrop
     // fades in only once the image is decoded, over a cheap dot field, so it never blinks in as a finished picture.
@@ -90,7 +93,15 @@ export function NaosBackdrop({ src }: { src: string }) {
         let idle: number | undefined;
         if (!small && !conn?.saveData) {
             idle = window.setTimeout(() => {
-                for (const other of BACKDROPS) if (other !== src) preload(other, { as: "image", fetchPriority: "low" });
+                // Plain image loads, not preload hints: a hint the page never paints is logged as unused after a few seconds.
+                for (const other of BACKDROPS) {
+                    if (other === src || warmed.has(other)) continue;
+                    const img = new Image();
+                    img.fetchPriority = "low";
+                    img.decoding = "async";
+                    img.src = other;
+                    warmed.set(other, img);
+                }
             }, 1500);
         }
         return () => {

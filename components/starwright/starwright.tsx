@@ -298,7 +298,7 @@ export function Starwright() {
     return (
         <div className="sw-root" data-paused={paused ? "true" : undefined}>
             <header className="sw-top">
-                <Link href="/creations/games" className="sw-back">
+                <Link prefetch={false} href="/creations/games" className="sw-back">
                     <span aria-hidden="true">&lt;</span> Games
                 </Link>
                 <h1 className="sw-title">Starwright</h1>

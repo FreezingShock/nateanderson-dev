@@ -15,14 +15,14 @@ export async function FeaturedCards() {
                 <span className="cm-state warn">Feed offline</span>
                 <b>Featured work did not load.</b>
                 <p>The project library is not responding right now. It retries on its own, and the full list is one click away.</p>
-                <Link className="st" href="/creations/projects">/creations/projects</Link>
+                <Link prefetch={false} className="st" href="/creations/projects">/creations/projects</Link>
             </div>
         ) : (
             <div className="cm-card" style={{ gridColumn: "1 / -1" }}>
                 <span className="cm-state">Standby</span>
                 <b>Nothing featured yet.</b>
                 <p>Projects land here once they are added. The full list is one click away.</p>
-                <Link className="st" href="/creations/projects">/creations/projects</Link>
+                <Link prefetch={false} className="st" href="/creations/projects">/creations/projects</Link>
             </div>
         );
     }
@@ -31,7 +31,7 @@ export async function FeaturedCards() {
         <>
             {featured.map((p, i) => (
                 // data-rx="" matches what the naOS section tags on its grid children, so streamed cards still reveal.
-                <Link key={p.slug} className="cm-card link" href={`/creations/${p.slug}`} data-rx="">
+                <Link prefetch={false} key={p.slug} className="cm-card link" href={`/creations/${p.slug}`} data-rx="">
                     <div className="cm-viz">
                         <span className="cm-tag flat">{p.category}</span>
                         <span className="glyph" aria-hidden="true">{String(i + 1).padStart(2, "0")}</span>
