@@ -33,10 +33,10 @@ const DOCK_GROUPS: [string, number, number][] = [["Earthwork", 0, 2], ["Concrete
 const BRANCH_ICON: Record<string, string> = { ops: "crew", money: "cash", logistics: "permit" };
 
 /** Finished-building thumbnail from the job's last cutaway frame. */
-function JobThumb({ id }: { id: string }) {
+function JobThumb({ id, w = 88, h = 56 }: { id: string; w?: number; h?: number }) {
     const j = GB_JOBS[id as GbJobId];
     if (!j) return null;
-    const n = j.frames.length, k = Math.min(88 / j.w, 56 / j.h);
+    const n = j.frames.length, k = Math.min(w / j.w, h / j.h);
     return <i className="gb-thumb" aria-hidden="true" style={{ width: j.w * k, height: j.h * k, backgroundImage: `url("${j.src}")`, backgroundSize: `${j.w * n * k}px ${j.h * k}px`, backgroundPosition: `${-(n - 1) * j.w * k}px 0` }} />;
 }
 function Banner({ id }: { id: GbBannerId }) {
@@ -703,9 +703,9 @@ function SkylineView({ skyline }: { skyline: State["skyline"] }) {
     skyline.forEach((b) => counts.set(b.id, (counts.get(b.id) ?? 0) + 1));
     return (
         <ul className="gb-sky">
-            {JOBS.filter((j) => counts.has(j.id)).map((j) => (
-                <li key={j.id} style={{ "--h": `${Math.min(190, 60 + Math.max(1, j.floors) * 8)}px` } as CSSProperties}>
-                    <span className="gb-sky-b" aria-hidden="true" /><b>{counts.get(j.id)}</b><em>{j.name}</em>
+            {JOBS.filter((j) => counts.has(j.id)).map((j, n) => (
+                <li key={j.id} data-tip={`${j.name} · built ${counts.get(j.id)}`} aria-label={`${j.name}, built ${counts.get(j.id)}`} style={{ "--i": n } as CSSProperties}>
+                    <JobThumb id={j.id} w={150} h={170} /><b>×{counts.get(j.id)}</b>
                 </li>
             ))}
         </ul>
