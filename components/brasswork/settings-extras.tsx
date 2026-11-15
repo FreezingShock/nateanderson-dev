@@ -17,7 +17,7 @@ export function LightingRow({ mood, onMood }: { mood: Mood; onMood: (m: Mood) =>
             <ArtGauge value={i / (MOODS.length - 1)} size={56} label={`Lighting: ${mood}`} />
             <div className="bws-text">
                 <span className="bws-name">Lighting</span>
-                <span className="bws-hint">Auto follows the clock. The workshop changes live behind this panel.</span>
+                <span className="bws-hint">Auto follows the clock. Shows live behind this panel.</span>
             </div>
             <Choice label="Lighting" value={mood} options={MOODS.map((m) => ({ value: m, label: m }))} onChange={onMood} />
         </div>

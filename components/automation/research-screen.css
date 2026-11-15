@@ -1,7 +1,7 @@
 /* Research window content, inside the shared MenuWindow: tree left, detail right. No strips, no pills. */
 
 /* Wider frame than the default MenuWindow: the tree needs room. Scoped by its label so the shared frame stays untouched. */
-.bw-window[aria-label="Research"] { width: min(910px, 100%); max-height: min(78dvh, 660px); }
+.bw-window[aria-label="Research"] { width: min(910px, 100%); max-height: min(86dvh, 720px); }
 .bw-window[aria-label="Research"] .bw-window-body { display: flex; flex-direction: column; padding: 12px 14px 14px; overflow: hidden; }
 .bw-window[aria-label="Research"] .bw-window-body { flex: 1 1 auto; }
 .rs-inner { display: flex; flex-direction: column; min-height: 0; flex: 1 1 auto; }
@@ -169,6 +169,16 @@
 .rs-detail-name { font-size: 18px; }
 .rs-detail { padding: 10px 12px; }
 
+/* open flourish: the drafting lines draw across, then cards settle in column by column */
+@keyframes rs-draw { from { clip-path: inset(0 100% 0 0); } to { clip-path: inset(0 0 0 0); } }
+@keyframes rs-card-in { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+.rs-links { animation: rs-draw 0.55s 0.12s cubic-bezier(0.3, 0.6, 0.2, 1) backwards; }
+.rs-tree > .rs-card { animation: rs-card-in 0.28s calc(var(--col, 0) * 70ms + 0.1s) ease-out backwards; }
+.ab-root[data-reduce="true"] :is(.rs-links, .rs-tree > .rs-card),
+.bw-root[data-reduce="true"] :is(.rs-links, .rs-tree > .rs-card),
+.ab-root[data-lowfx="true"] :is(.rs-links, .rs-tree > .rs-card),
+.bw-root[data-lowfx="true"] :is(.rs-links, .rs-tree > .rs-card) { animation: none; }
+
 /* state animations: researched stamps down, a newly open card flashes once, lit links flow */
 @keyframes rs-stamp { 0% { transform: scale(1.18); filter: brightness(1.8); } 55% { transform: scale(0.97); } 100% { transform: none; filter: none; } }
 @keyframes rs-open { 0% { box-shadow: 0 0 0 0 rgba(255, 179, 71, 0.9); } 100% { box-shadow: 0 0 0 14px rgba(255, 179, 71, 0); } }
@@ -176,7 +186,8 @@
 .rs-card[data-fresh="done"] { animation: rs-stamp 0.5s cubic-bezier(0.2, 0.8, 0.3, 1); z-index: 2; }
 .rs-card[data-fresh="open"] { animation: rs-open 0.9s ease-out; }
 .rs-link[data-lit="true"] { stroke-dasharray: 6 4; animation: rs-flow 0.9s linear infinite; }
-@media (prefers-reduced-motion: reduce) { .rs-card[data-fresh], .rs-link[data-lit="true"] { animation: none; } }
+@media (prefers-reduced-motion: reduce) { .rs-card[data-fresh], .rs-link[data-lit="true"], .rs-links, .rs-tree > .rs-card { animation: none; } }
+.ab-root[data-reduce="true"] :is(.rs-card[data-fresh], .rs-link[data-lit="true"]), .ab-root[data-lowfx="true"] :is(.rs-card[data-fresh], .rs-link[data-lit="true"]) { animation: none; }
 
 .rs-tier { letter-spacing: 0.06em; }
 .rs-detail-art .bwa-cell { image-rendering: auto; }
