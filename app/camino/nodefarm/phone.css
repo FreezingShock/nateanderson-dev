@@ -13,7 +13,6 @@
 
     /* Lab stock line ("50 in stock · 0/4 on") and zone titles wrap instead of clipping. */
     .ctos .nf-lab [class*="stock"], .ctos .nf-lab [class*="-v"] { white-space: normal; overflow-wrap: anywhere; text-overflow: clip; overflow: visible; }
-    .ctos .nf-zone-title, .ctos .nf-zone-name { white-space: normal; overflow-wrap: anywhere; }
 
     /* Redundancy cuts on phone (listed in the thread summary):
        1. The BYTES/S, TO REBOOT and GLOBAL strip repeats the core box's rate and the Reboot gauge. */

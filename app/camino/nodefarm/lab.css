@@ -138,9 +138,6 @@
 .ctos .nf-lab-hud { display: inline-flex; flex-wrap: wrap; gap: 6px; }
 .ctos .nf-lab-hud span { display: inline-flex; align-items: center; padding: 7px 10px; background: #012456; border: 1px solid var(--c, #5aa8ff); border-left-width: 3px; color: var(--lab-ink); font: 700 var(--cm-ctos-t-micro)/1 var(--cm-mono); letter-spacing: .1em; font-variant-numeric: tabular-nums; }
 .ctos .nf-lab-hud span[data-armed] { --c: var(--lab-warn); color: var(--lab-warn); }
-.ctos .nf-dock-lab { border-color: #2c5a92; color: #9fd0ff; }
-.ctos .nf-dock-lab[data-ready] { border-color: var(--lab-warn); color: var(--lab-warn); }
-.ctos .nf-dock-lab:hover { background: var(--lab-ps) !important; color: var(--lab-ink) !important; border-color: var(--lab-line) !important; }
 
 /* ---- lab panel hero: staged workbench scene (zone-lab sheet, scripts/naos-art/nodefarm-lab-scene.py) behind the Intel
    readout, then the four-step flow strip and the "next" line. --st = stage row 0..7, --sc = art px size. */

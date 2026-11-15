@@ -334,8 +334,6 @@ body.nf-fs .ctos .nf-mh { top: 46px; }
 @media (prefers-reduced-motion: reduce) { .ctos .nf-mh, .ctos .nf-mh[data-show] { transition: none; } }
 
 /* key hints on desktop only: a touch screen has no keyboard to press them with */
-.ctos .nf-kbd { display: none; margin-left: 8px; padding: 2px 5px; border: 1px solid currentColor; font: 600 10px/1 var(--cm-mono); opacity: .6; }
-@media (hover: hover) and (pointer: fine) { .ctos .nf-kbd { display: inline-block; } }
 
 /* ==== Settings hover preview: one card above the list. It explains the line under the pointer or focus, and shows its live value.
    Sharp corners with bracket frames, no pills, no side strip. */

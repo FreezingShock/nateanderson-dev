@@ -21,7 +21,6 @@
 .nf-bdw i { position: absolute; display: block; translate: -50% -50%; }
 .nf-bdw-p { background: center / 100% 100% no-repeat; opacity: var(--a); transition: opacity .5s ease; }
 .nf-bdw-p[data-art] { image-rendering: pixelated; }
-.nf-bdx[data-soft] .nf-bdw-p[data-art] { image-rendering: auto; }
 .nf-bdw-p[data-round], .nf-bdw-r, .nf-bdw-s { border-radius: 50%; }
 /* hovering or selecting a node brings its section forward and lets the rest recede */
 .nf-bdx[data-focus] .nf-bdw-p[data-sec] { opacity: var(--dim); }

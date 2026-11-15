@@ -85,7 +85,7 @@ body > .nf-ad-host { position: fixed; inset: 0; z-index: 1001; pointer-events: n
 .ctos .nf-ad-b:disabled { opacity: .4; cursor: default; }
 .ctos .nf-ad-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; }
 @container (max-width: 400px) { .ctos .nf-ad-grid { grid-template-columns: minmax(0, 1fr); } }
-.ctos .nf-ad-acts, .ctos .nf-ad-opts { display: flex; flex-wrap: wrap; gap: 6px; }
+.ctos .nf-ad-opts { display: flex; flex-wrap: wrap; gap: 6px; }
 
 /* the big button: the white plate of the Ascend window, in root colour */
 .ctos .nf-ad-go { position: relative; overflow: hidden; display: grid; gap: 6px; width: 100%; padding: 16px 16px; text-align: left; background: var(--cm-ctos-block); border: 0; border-radius: 0; color: var(--cm-ctos-ink); cursor: pointer; font-family: var(--cm-mono); }
