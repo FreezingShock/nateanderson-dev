@@ -63,3 +63,4 @@ A repo-wide pass writes its report to `/mnt/project-files/portfolio/<topic>-<dat
 
 ## Keeping this working
 When a thread hits a process problem (a check that lies, a doc that was wrong, a step that cost time), it fixes the doc in the same PR. `CLAUDE.md` stays under about 80 lines; detail goes here.
+A timing check polls until its condition holds or a deadline passes; it never samples once after a fixed wait (`scripts/ci/motion-stuck.mjs`).
