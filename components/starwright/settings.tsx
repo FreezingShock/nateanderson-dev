@@ -6,6 +6,8 @@ import { useEffect, useState } from "react";
 import "@/app/camino/starwright-qol.css";
 import { AUTO_NOVA_STEPS, AUTO_VISITOR_STEPS, UNLOCKS, cycle, getSettings, onSettings, setSettings, unlocked, type Settings } from "@/lib/starwright/settings";
 import type { State } from "@/lib/starwright/engine";
+import { readBackup, writeBackup } from "@/lib/starwright/session";
+import { fmtAge } from "@/lib/starwright/engine";
 
 /** The current settings, re-read when the console or the menu changes them. */
 export function useSettings(): Settings {
@@ -24,6 +26,21 @@ function Row({ label, tip, value, onClick, locked, children }: { label: string; 
                 <button type="button" className="sw-tog" onClick={onClick} aria-label={`${label}: ${value}. Press to change.`}>{value}</button>
             )}
         </li>
+    );
+}
+
+function BackupRow({ s }: { s: State }) {
+    const [msg, setMsg] = useState("");
+    const [at, setAt] = useState<number | null>(null);
+    useEffect(() => { setAt(readBackup(window.localStorage)?.savedAt ?? null); }, []);
+    const label = msg || "Back up now";
+    return (
+        <Row
+            label="Backup"
+            tip="Keeps a copy of this star in this browser, for sw restore. One is also kept before a neutron star, a black hole, an import or a reset, and every 10 minutes."
+            value={at && !msg ? `${label} · last ${fmtAge((Date.now() - at) / 1000)} ago` : label}
+            onClick={() => { const ok = writeBackup(window.localStorage, s, true); setMsg(ok ? "Saved" : "Browser refused"); if (ok) setAt(Date.now()); window.setTimeout(() => setMsg(""), 2500); }}
+        />
     );
 }
 
@@ -52,6 +69,7 @@ export function SettingsBlock({ s }: { s: State }) {
                     onClick={() => setSettings({ autoVisitor: cycle(AUTO_VISITOR_STEPS, v.autoVisitor) })}
                     locked={vis ? undefined : `${UNLOCKS.autoVisitor.need} (${Math.min(12, s.visitors)}/12)`}
                 />
+                <BackupRow s={s} />
             </ul>
         </div>
     );
