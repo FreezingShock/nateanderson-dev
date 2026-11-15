@@ -28,11 +28,30 @@ for (const [tag, vp] of [["1440", { width: 1440, height: 900 }], ["390", { width
     await page.screenshot({ path: `${OUT}/0-before-${tag}.png` });
     const go = page.locator(".sw-go2");
     await go.scrollIntoViewIfNeeded();
+    // screenshots are too slow to catch a 2 s effect, so record the scene canvas from inside the page every 100 ms and keep the frames we want
+    await page.evaluate(() => {
+        const c = document.querySelector("canvas.sw-canvas");
+        window.__frames = [];
+        const t0 = performance.now();
+        const grab = () => {
+            const t = performance.now() - t0;
+            const o = document.createElement("canvas"); o.width = c.width * 4; o.height = c.height * 4;
+            const g = o.getContext("2d"); g.imageSmoothingEnabled = false; g.drawImage(c, 0, 0, o.width, o.height);
+            window.__frames.push([Math.round(t), o.toDataURL("image/png")]);
+            if (t < 3200) setTimeout(grab, 100);
+        };
+        window.__grab = grab;
+    });
     await go.click();
+    await page.evaluate(() => window.__grab());
     await go.click();
-    for (const [name, ms] of [["1-blast", 0], ["2-chunks-cooling", 250], ["3-chunks-gone", 1800]]) {
-        await page.waitForTimeout(ms);
-        await page.screenshot({ path: `${OUT}/${name}-${tag}.png` });
+    await page.waitForTimeout(3600);
+    const frames = await page.evaluate(() => window.__frames);
+    const { writeFileSync } = await import("node:fs");
+    const want = [["1-blast", 150], ["2-chunks-flying", 700], ["3-chunks-cooling", 1300], ["4-chunks-gone", 2800]];
+    for (const [name, ms] of want) {
+        const f = frames.reduce((a, b) => (Math.abs(b[0] - ms) < Math.abs(a[0] - ms) ? b : a));
+        writeFileSync(`${OUT}/${name}-${tag}.png`, Buffer.from(f[1].split(",")[1], "base64"));
     }
     await ctx.close();
 }

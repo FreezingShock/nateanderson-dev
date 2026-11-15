@@ -49,7 +49,7 @@ Test commands: `npm run test:nodefarm` (a PR check; includes `tests/starwright/*
 | 320x180 dither scene: six star stages with transitions, skies by prestige layer, planets by stage, visitors, supernova/neutron/black hole blasts | working | `lib/starwright/art.ts` (`render`, `renderLayered`), `sprites.ts`, sheets `public/starwright/**`, `manifest.json` | none; screenshots only |
 | Code-drawn fallback for any missing or loading sheet | working | `art.ts` | none |
 | Star sprite scale clamp (8x cap; keep it) | working | `art.ts` | none |
-| Planets stripped by a neutron star play `fx/planet-gone` (#538): today a faint expanding ring under the blast, not chunks (see BACKLOG 1b) | partial: screenshots by `scripts/starwright/ui-art/planet-break.mjs` | `art.ts` (~line 821) | none |
+| Planets stripped by a neutron star break into eight tumbling rock chunks that glow gold to ash over 1.7 s, drawn above the blast (`fx/planet-gone`, 96 px x 24 frames; `art.ts` after the blast) | working headless | `scripts/starwright/art/scenery.py` `fx_planet_gone`, `art.ts` | `scripts/starwright/ui-art/planet-break.mjs` (records the canvas) |
 | Sheet generators | working | `scripts/starwright/art/*` (`build.py`; bump `VERSION`) | none |
 | Lazy sprite loading (first needed, then two at a time) | working | `sprites.ts` | none |
 | Synthesized sound, off switch `sw-sound-v1` | untested (never heard) | `lib/starwright/sound.ts` | none |
