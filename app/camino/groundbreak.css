@@ -71,7 +71,7 @@ html.gb-route .sf-foot { display: none !important; }
 .gb-rail-btn:hover .gb-ico { transform: translateY(-2px); }
 .gb-rail-btn[aria-pressed="true"] { border-color: var(--gb-hi); background: #2a1e12; }
 .gb-rail-btn kbd { position: absolute; right: 3px; bottom: 1px; }
-.gb-rail-btn[data-ping]::after { content: ""; position: absolute; top: -3px; right: -3px; width: 8px; height: 8px; background: var(--gb-amber); animation: gbPing 1.4s steps(2, end) infinite; }
+.gb-rail-btn[data-ping]::before { content: ""; position: absolute; top: -3px; right: -3px; width: 10px; height: 10px; background: var(--gb-hi); box-shadow: 0 0 0 2px var(--gb-bg); animation: gbPing 1.4s steps(2, end) infinite; }
 @keyframes gbPing { 50% { opacity: .25; } }
 
 /* zoom controls */
@@ -232,7 +232,7 @@ html.gb-route .sf-foot { display: none !important; }
     .gb-res li { padding: 0 6px 0 4px; }
     .gb-title { font-size: 20px; }
 }
-@media (prefers-reduced-motion: reduce), (max-height: 0px) { .gb-win, .gb-card, .gb-job-body, .gb-feed li { animation-duration: .01s !important; } .gb-rail-btn[data-ping]::after, .gb-tile[data-ready] { animation: none; } }
+@media (prefers-reduced-motion: reduce), (max-height: 0px) { .gb-win, .gb-card, .gb-job-body, .gb-feed li { animation-duration: .01s !important; } .gb-rail-btn[data-ping]::before, .gb-tile[data-ready] { animation: none; } }
 .gb-root[data-reduce="true"] .gb-win, .gb-root[data-simple="true"] .gb-win { animation-duration: .01s !important; }
 
 @media (max-width: 520px) { .gb-res li:nth-child(3) { display: none; } }
