@@ -9,6 +9,7 @@ import { NaosArt, NaosBackdrop } from "@/components/cm/naos-art";
 import { SiteStats, SiteStatsSkeleton } from "@/components/home/site-stats";
 import { TimelinePreview } from "@/components/home/timeline-preview";
 import { FeaturedCards, FeaturedSkeleton } from "@/components/home/featured-work";
+import { GamesShowcase } from "@/components/home/games-showcase";
 import { HeroStats, HeroStatsFallback } from "@/components/home/hero-stats";
 import { RecentPosts } from "@/components/home/recent-posts";
 import "@/components/home/home.css";
@@ -112,6 +113,17 @@ export default function Home() {
                     </div>
                 </div>
             </header>
+
+            <Section
+                    ctos
+                    id="play"
+                    label="Play"
+                    title="Three games to play in your browser."
+                    blurb="Each one opens full screen. Pick one and start."
+                    more={{ href: "/creations/games", label: "All games" }}
+                >
+                    <GamesShowcase />
+                </Section>
 
             <Section
                     ctos
