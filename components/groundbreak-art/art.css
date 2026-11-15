@@ -41,3 +41,4 @@
 .gbl-tag::after { right: -3px; bottom: -3px; border-left: 0; border-top: 0; }
 @keyframes gbl-tag-in { from { opacity: 0; translate: 0 4px; } to { opacity: 1; translate: 0 0; } }
 @media (prefers-reduced-motion: reduce) { .gbl-tag { animation: none; } }
+.gbl-tile { position: absolute; background-repeat: repeat-y; background-position: 0 0; image-rendering: pixelated; pointer-events: none; z-index: 2; }
