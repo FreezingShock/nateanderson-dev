@@ -26,10 +26,6 @@ Ordered by value. Each is one PR.
 - Code: `input/build.ts` (stroke and ghost), `input/keys.ts`, `input/pointer.ts`, `sim/grid.ts` (`gridView`).
 - Done when: unit tests in `tests/automation/input.test.mjs` cover copy, rotate-then-paste, blocked cells, unaffordable parts and undo; a screenshot shows the paste ghost. **Needs screenshots.**
 
-**B-07 Research menu pass**
-- Nate's brief: pop-up beside the clicked card, alternates mixed into the tree in different colours, art edge to edge with a panel colour per state (`research-screen.tsx`, `research-screen.css`). Today the pop-up and alternate colouring still need a clean pass, and the six Mastery cards need checking next to the core tree.
-- Done when: one section open at a time, every card has art and a name tooltip, keyboard focus works, no React warnings in the console, 1440 and 390 screenshots. **Needs screenshots.**
-
 **B-08 Expedition menu pass**
 - Same standard as B-07 for `expedition-window.tsx` and `prestige-screen.tsx`: art first, one line of text, ore dots with names in tooltips, hold to confirm. Wait for T-01 if Nate wants the big view instead.
 - Done when: all four sites render with their art, hold to confirm works with keyboard and touch, screenshots. **Needs screenshots.**

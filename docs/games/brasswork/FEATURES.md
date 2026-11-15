@@ -87,7 +87,7 @@ Owners are per area, one thread per file set. The threads: "Streamline Brasswork
 | Inspector: recipe, rates, buffers, power, unloader filter; Esc and ground click close it | working | `inspector.tsx` | `machine-detail.test.mjs` |
 | Hub menu (unlocks first, fill progress, requests) and toast | working | `hub-menu.tsx` | `hub-requests.test.mjs` |
 | Milestones window (summary numbers, hero, route, prestige header) | working | `milestones-window.tsx` | none |
-| Research screen: tree, pop-up beside card, alternates mixed in, per-state art | partial: Nate asked for another pass (B-07) | `research-screen.tsx`, `research-screen.css` | `research-gate.test.mjs` (rules only) |
+| Research screen: tree, pop-up beside card, alternates mixed in, per-state art; window 940 px wide so all seven columns show without sideways scroll; `research-check.mjs` checks cards, art, names, focus and console | working | `research-screen.tsx`, `research-screen.css` | `research-gate.test.mjs` (rules only) |
 | Expedition window: site cards, hold to confirm | partial: cards vs big view is Nate's call (T-01); needs a pass (B-08) | `expedition-window.tsx`, `prestige-screen.tsx` | `sites.test.mjs` (rules only) |
 | Production stats: headline numbers, running-down callout, ledger by output | partial: ledger vs two columns is Nate's call (T-02) | `production-window.tsx` | none |
 | Settings: sound, reduce motion, low fx, number format, lighting mood, volumes, save export and import | partial: grouped list vs tiles is Nate's call (T-03) | `settings-window.tsx`, `brasswork/settings-extras.tsx`, `audio-rows.tsx`, `lib/brasswork/settings.ts` | none |
@@ -95,7 +95,7 @@ Owners are per area, one thread per file set. The threads: "Streamline Brasswork
 | Codex of every machine | working | `brasswork/codex.tsx` | none |
 | Away report after 2 minutes or more offline | working | `brasswork/extras.tsx`, host | none |
 | Phone layout: bottom sheets, 4-across resource boxes, machine preview before placing, Milestones sheet, More menu; every tap target 44 px or more (`tap-targets.mjs` checks main view, four sheets and five More windows) | partial: sheet groups and animation (B-10); untested on a real phone | `phone-menu-art.css`, `automation-hud.tsx` | none |
-| `MenuWindow` (sizes 640, 960, 1160; variants iris, shutter, settle; bottom sheet under 768 px) | working | `brasswork-ui/window.tsx` | none |
+| `MenuWindow` (sizes 640, 960, 1160; variants iris, shutter, settle; bottom sheet under 768 px); focus moves into it on open, Tab stays inside, focus returns to the opener on close | working | `brasswork-ui/window.tsx` | none |
 
 ## Audio
 
