@@ -95,3 +95,10 @@ a.bws-action, a.bws-action:visited { color: var(--ab-brass-hi, #f0c97a); }
   .bws-dialrow { grid-template-columns: 56px 1fr; }
   .bws-dialrow > .bws-pair { grid-column: 1 / -1; width: 100%; }
 }
+
+/* Touch: every switch, choice button and action is at least 44 px tall. */
+@media (pointer: coarse) {
+  .bws-switch { height: 44px; }
+  .bws-pair { height: 46px; }
+  .bws-action { min-height: 44px; }
+}

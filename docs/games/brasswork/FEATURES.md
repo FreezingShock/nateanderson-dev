@@ -57,7 +57,7 @@ Owners are per area, one thread per file set. The threads: "Streamline Brasswork
 | Shift-drag area Remove | working | `input/pointer.ts`, `input/build.ts` | `input.test.mjs` |
 | Number keys 1 to 9 pick from the open build group, Tab cycles groups | working | `input/keys.ts`, `components/automation/build-bar.tsx` | `input.test.mjs` |
 | Copy and paste of building areas | not built (B-06) | none | none |
-| Touch: long-press, line stroke, two-tap belt routing, touch bar (Top, Rotate, Undo, Redo, Remove, Cancel) | partial: other tap targets not measured (B-10); untested on a real phone | `input/touch-bar.ts` | `input.test.mjs` (logic only) |
+| Touch: long-press, line stroke, two-tap belt routing, touch bar (Top, Rotate, Undo, Redo, Remove, Cancel), all 44 px | working in the browser harness; untested on a real phone | `input/touch-bar.ts` | `input.test.mjs` (logic only) |
 | Browser check of the input layer (desktop mouse and keys, phone touch through CDP, touch bar at 44 px) | working | `tests/automation/browser/` | itself |
 
 ## Renderer
@@ -94,7 +94,7 @@ Owners are per area, one thread per file set. The threads: "Streamline Brasswork
 | Starter quest scroll (drill, kiln, belt, delivery), skippable, never returns | working | `brasswork/first-run.tsx`, `lib/brasswork/first-run.ts` | `opening.test.mjs` (the steps) |
 | Codex of every machine | working | `brasswork/codex.tsx` | none |
 | Away report after 2 minutes or more offline | working | `brasswork/extras.tsx`, host | none |
-| Phone layout: bottom sheets, 4-across resource boxes, machine preview before placing, Milestones sheet, More menu | partial: sheet groups and animation (B-10); untested on a real phone | `phone-menu-art.css`, `automation-hud.tsx` | none |
+| Phone layout: bottom sheets, 4-across resource boxes, machine preview before placing, Milestones sheet, More menu; every tap target 44 px or more (`tap-targets.mjs` checks main view, four sheets and five More windows) | partial: sheet groups and animation (B-10); untested on a real phone | `phone-menu-art.css`, `automation-hud.tsx` | none |
 | `MenuWindow` (sizes 640, 960, 1160; variants iris, shutter, settle; bottom sheet under 768 px) | working | `brasswork-ui/window.tsx` | none |
 
 ## Audio
