@@ -100,3 +100,8 @@
 }
 .ab-root[data-reduce="true"] .ex-card, .ab-root[data-lowfx="true"] .ex-card, .ab-root[data-reduce="true"] .ex-img, .ab-root[data-lowfx="true"] .ex-img { transition: none; }
 .ab-root[data-reduce="true"] .ex-card:hover .ex-ore, .ab-root[data-lowfx="true"] .ex-card:hover .ex-ore { animation: none; }
+
+/* Touch: the carried-over tiles are focusable and show a tooltip, so give them a 44 px target. */
+@media (pointer: coarse) {
+  .ex-carry-tile { width: 44px; height: 44px; }
+}
