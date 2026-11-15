@@ -1,5 +1,5 @@
 import Link from "next/link";
-import type { ReactNode } from "react";
+import type { CSSProperties, ReactNode } from "react";
 import { Section } from "@/components/cm/ui";
 import { Scramble } from "@/components/cm/motion";
 import { GAME_STATUS, type Game, type GameMode } from "@/lib/creations-data";
@@ -85,6 +85,8 @@ function GameCard({ game, index, section }: { game: Game; index: number; section
     const st = GAME_STATUS[game.status];
     const Icon = game.icon;
     const tone = game.status === "playable" ? "live" : game.status === "building" ? "warn" : "";
+    const accent = { ["--g-accent" as string]: game.accent ?? "var(--cm-cyan)" } as CSSProperties;
+    const tags = game.tags ?? game.features;
     const inner = (
         <>
             <div className="cm-row g-tile-head" style={{ justifyContent: "space-between" }}>
@@ -102,10 +104,10 @@ function GameCard({ game, index, section }: { game: Game; index: number; section
             </div>
             <b>{game.title}</b>
             <p>{game.blurb}</p>
-            <ul className="cm-row-gap g-pills">
-                {game.features.map((f) => (
-                    <li key={f} className="cm-pill">
-                        {f}
+            <ul className="g-tags-list">
+                {tags.map((t) => (
+                    <li key={t} className="g-tagp">
+                        {t}
                     </li>
                 ))}
             </ul>
@@ -122,11 +124,11 @@ function GameCard({ game, index, section }: { game: Game; index: number; section
         </>
     );
     return game.href ? (
-        <Link prefetch={false} href={game.href} className="cm-card link g-card">
+        <Link prefetch={false} href={game.href} className="cm-card link g-card" style={accent}>
             {inner}
         </Link>
     ) : (
-        <div className="cm-card g-card" style={{ opacity: 0.86 }}>
+        <div className="cm-card g-card" style={{ ...accent, opacity: 0.86 }}>
             {inner}
         </div>
     );

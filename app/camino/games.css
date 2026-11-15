@@ -275,10 +275,11 @@
 /* Hub cards: a real screenshot of each game sits above its title. Captured from the built game at 1440x900, shown 16:10. */
 .ctos .g-card .g-shot {
     position: relative;
-    margin: 0 16px;
+    margin: 4px 20px 0;
+    padding: 10px;
     aspect-ratio: 16 / 10;
     border: 1px solid var(--cm-hair-hi);
-    background-color: #080808;
+    background-color: #050505;
     overflow: hidden;
 }
 .ctos .g-card .g-shot img {
@@ -286,6 +287,7 @@
     width: 100%;
     height: 100%;
     object-fit: cover;
+    outline: 1px solid rgba(255, 255, 255, .08);
     transition: transform var(--cm-d-slow) var(--cm-ease);
 }
 .ctos .g-card .g-shot::after {
@@ -295,7 +297,7 @@
     right: 0;
     bottom: 0;
     height: 3px;
-    background: var(--cm-cyan);
+    background: var(--g-accent, var(--cm-cyan));
 }
 .ctos .g-card .g-shot-empty {
     position: absolute;
@@ -311,54 +313,16 @@
 .ctos .g-card:hover .g-shot img { transform: scale(1.03); }
 .ctos .g-grid { grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); }
 
-/* Layouts for the hub cards, chosen by data-glayout on the page wrapper. "poster" is the default. */
-.ctos.ng-page[data-glayout="poster"] .g-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-/* Odd counts: three games sit three across, a lone game keeps a poster-sized column instead of stretching. */
-.ctos.ng-page[data-glayout="poster"] .g-grid.g-count-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-.ctos.ng-page[data-glayout="poster"] .g-grid.g-count-1 { grid-template-columns: minmax(0, 560px); }
+/* Hub grid: two cards across, three across for a three-game section, a lone game keeps a poster-sized column. */
+.ctos .g-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.ctos .g-grid.g-count-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.ctos .g-grid.g-count-1 { grid-template-columns: minmax(0, 560px); }
 @media (max-width: 1000px) {
-    .ctos.ng-page[data-glayout="poster"] .g-grid.g-count-3 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .ctos .g-grid.g-count-3 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
-.ctos.ng-page[data-glayout="rows"] .g-grid { grid-template-columns: minmax(0, 1fr); }
-.ctos.ng-page[data-glayout="rows"] .g-card {
-    display: grid;
-    grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr);
-    grid-template-areas:
-        "head head"
-        "shot title"
-        "shot pitch"
-        "shot pills"
-        "shot status"
-        "play play";
-    align-items: start;
-    column-gap: 22px;
-    row-gap: 10px;
-}
-.ctos.ng-page[data-glayout="rows"] .g-card > .g-tile-head { grid-area: head; }
-.ctos.ng-page[data-glayout="rows"] .g-card > .g-shot { grid-area: shot; margin: 0 0 0 16px; }
-.ctos.ng-page[data-glayout="rows"] .g-card > b { grid-area: title; margin: 0 16px 0 0; }
-.ctos.ng-page[data-glayout="rows"] .g-card > p { grid-area: pitch; margin: 0 16px 0 0; min-height: 0; }
-.ctos.ng-page[data-glayout="rows"] .g-card > .g-pills { grid-area: pills; margin: 0 16px 0 0; }
-.ctos.ng-page[data-glayout="rows"] .g-card > .g-status { grid-area: status; margin: 0 16px 0 0; }
-.ctos.ng-page[data-glayout="rows"] .g-card > .g-play { grid-area: play; }
-.ctos.ng-page[data-glayout="rows"] .g-card .g-play { align-self: stretch; }
-.ctos.ng-page[data-glayout="index"] .g-grid { grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); }
-.ctos.ng-page[data-glayout="index"] .g-card .g-pills { display: none; }
-.ctos.ng-page[data-glayout="index"] .g-card > p {
-    display: -webkit-box;
-    -webkit-line-clamp: 2;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
-    min-height: 0;
-}
-.ctos.ng-page[data-glayout="index"] .g-card > b { font-size: 18px; }
 @media (max-width: 760px) {
-    .ctos.ng-page[data-glayout="poster"] .g-grid,
-    .ctos.ng-page[data-glayout="index"] .g-grid,
-    .ctos.ng-page[data-glayout="poster"] .g-grid.g-count-1 { grid-template-columns: minmax(0, 1fr); }
-    .ctos.ng-page[data-glayout="rows"] .g-card { grid-template-columns: minmax(0, 1fr); grid-template-areas: "head" "shot" "title" "pitch" "pills" "status" "play"; }
-    .ctos.ng-page[data-glayout="rows"] .g-card > .g-shot { margin: 0 16px; }
-    .ctos.ng-page[data-glayout="rows"] .g-card > :is(b, p, .g-pills, .g-status) { margin: 0 16px; }
+    .ctos .g-grid,
+    .ctos .g-grid.g-count-1 { grid-template-columns: minmax(0, 1fr); }
 }
 
 /* Status line: one square dot, the status word and the section. No pill, no coloured side strip. */
@@ -372,23 +336,43 @@
     text-transform: uppercase;
     color: var(--cm-mute);
 }
-.ctos .g-status > i { width: 7px; height: 7px; flex: none; background: var(--cm-cyan); }
-.ctos .g-status.warn > i { background: var(--cm-amber); }
+.ctos .g-card .g-tile-head .cm-state { color: var(--g-accent, var(--cm-cyan)); }
+.ctos .g-status > i { width: 7px; height: 7px; flex: none; background: var(--g-accent, var(--cm-cyan)); }
 .ctos .g-status-sep { color: var(--cm-dim); }
 /* Every hub card uses the same dark ground and cyan top edge. This overrides the 3-up light/dark rotation from ctos.css. */
 .ctos .cm-grid.g-grid > .cm-card.g-card:nth-child(n),
 .ctos .cm-grid.g-grid > .cm-card.g-card:nth-child(n):hover {
     background: linear-gradient(180deg, rgba(47, 216, 232, .1), rgba(47, 216, 232, 0) 55%), var(--cm-ctos-panel);
     border: 1px solid var(--cm-hair-hi);
-    border-top: 3px solid var(--cm-cyan);
+    border-top: 3px solid var(--g-accent, var(--cm-cyan));
     color: #f4f4f2;
 }
 .ctos .cm-grid.g-grid > .cm-card.g-card:nth-child(n) b { color: #f4f4f2; }
 .ctos .cm-grid.g-grid > .cm-card.g-card:nth-child(n) p { color: var(--cm-mute); }
-.ctos .cm-grid.g-grid > .cm-card.g-card:nth-child(n) .g-play { color: var(--cm-cyan); }
-.ctos .cm-grid.g-grid > .cm-card.g-card .cm-pill { color: #d6d6d2; border-color: var(--cm-hair-hi); background: #161616; }
+.ctos .cm-grid.g-grid > .cm-card.g-card:nth-child(n) .g-play { color: var(--g-accent, var(--cm-cyan)); }
 .ctos .cm-grid.g-grid > .cm-card.g-card p { background: none; }
-.ctos .g-pills { list-style: none; margin: 2px 0 0; padding: 0; }
+/* Tag panels: short square labels in the game's own colour. Not pills: no radius, no fill from the page. */
+.ctos .g-tags-list { display: flex; flex-wrap: wrap; gap: 6px; list-style: none; margin: 2px 0 0; padding: 0; }
+.ctos .g-tagp {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    padding: 6px 9px 5px;
+    border: 1px solid color-mix(in srgb, var(--g-accent, #2fd8e8) 42%, transparent);
+    background: #0b0b0b;
+    font: 700 var(--cm-ctos-t-micro)/1 var(--cm-mono);
+    letter-spacing: .12em;
+    text-transform: uppercase;
+    color: #e4e4e0;
+}
+.ctos .g-tagp::before {
+    content: "";
+    width: 5px;
+    height: 5px;
+    flex: none;
+    background: var(--g-accent, #2fd8e8);
+}
 
 /* Launcher tile: the whole card is the button. Title and blurb sit on top, and a full-width play bar (48px tall,
    the touch target) anchors the bottom edge. The bar fills cyan on hover and focus. Unbuilt cards keep the same
@@ -397,12 +381,12 @@
     padding: 16px 0 0;
     gap: 10px;
 }
-.ctos .g-card > :is(.g-tile-head, b, p, .g-pills, .g-shot, .g-status) { margin-left: 16px; margin-right: 16px; }
+.ctos .g-card > :is(.g-tile-head, b, p, .g-tags-list, .g-shot, .g-status) { margin-left: 20px; margin-right: 20px; }
 .ctos .g-card > .g-tile-head { margin-top: 0; }
 .ctos .g-card > b { font: 600 22px/1.05 var(--cm-display); letter-spacing: -.01em; }
 .ctos .cm-grid.g-grid > .cm-card.g-card > b { color: #f4f4f2; }
 .ctos .g-card > p { min-height: 2.8em; }
-.ctos .g-card .g-pills { margin-bottom: 14px; }
+.ctos .g-card .g-tags-list { margin-bottom: 14px; }
 .ctos .g-play {
     margin-top: auto;
     display: flex;
@@ -421,11 +405,11 @@
 .ctos .g-play-arrow { font-size: 16px; letter-spacing: 0; transition: transform var(--cm-d-base) var(--cm-ease); }
 .ctos .cm-grid.g-grid > .cm-card.g-card:hover .g-play,
 .ctos .cm-grid.g-grid > .cm-card.g-card:focus-visible .g-play {
-    background: var(--cm-cyan);
+    background: var(--g-accent, var(--cm-cyan));
     color: #050607;
 }
 .ctos .g-card:hover .g-play-arrow { transform: translateX(4px); }
-.ctos .g-card:focus-visible { outline: 2px solid var(--cm-cyan); outline-offset: 3px; }
+.ctos .g-card:focus-visible { outline: 2px solid var(--g-accent, var(--cm-cyan)); outline-offset: 3px; }
 @media (prefers-reduced-motion: reduce) {
     .ctos .g-card:hover .g-play-arrow { transform: none; }
 }

@@ -182,6 +182,10 @@ export interface Game {
     href?: string;
     /** Card screenshot under /public. Real captures of the built game, 960 by 600. */
     shot?: string;
+    /** The game's own colour, used on its hub card only. */
+    accent?: string;
+    /** Short labels for the card's tag panels. Shortened from `features`. */
+    tags?: string[];
 }
 
 export interface GameMode {
@@ -216,6 +220,8 @@ export const GAME_MODES: GameMode[] = [
                 features: ["238 countries and territories", "Streaks and stats", "Shareable result"],
                 href: "/creations/games/outline-guesser?mode=daily",
                 shot: "/games/shots/outline-guesser.webp",
+                accent: "#2fd8e8",
+                tags: ["238 countries", "Streaks", "Share card"],
             },
             {
                 slug: "daily-flag",
@@ -227,6 +233,8 @@ export const GAME_MODES: GameMode[] = [
                 features: ["Tile-flip reveal", "3 hints", "Streaks and stats"],
                 href: "/creations/games/flag-guesser?mode=daily",
                 shot: "/games/shots/flag-guesser.webp",
+                accent: "#2fd8e8",
+                tags: ["Tile flip", "3 hints", "Streaks"],
             },
             {
                 slug: "flag-guesser",
@@ -238,6 +246,8 @@ export const GAME_MODES: GameMode[] = [
                 features: ["All 239 flags", "Difficulty and region filters", "Hints and give up"],
                 href: "/creations/games/flag-guesser",
                 shot: "/games/shots/flag-guesser.webp",
+                accent: "#2fd8e8",
+                tags: ["239 flags", "Filters", "Hints"],
             },
             {
                 slug: "outline-guesser",
@@ -249,6 +259,8 @@ export const GAME_MODES: GameMode[] = [
                 features: ["Hints and give up", "km or miles", "Stats"],
                 href: "/creations/games/outline-guesser",
                 shot: "/games/shots/outline-guesser.webp",
+                accent: "#2fd8e8",
+                tags: ["Hints", "km or mi", "Stats"],
             },
         ],
     },
@@ -270,6 +282,8 @@ export const GAME_MODES: GameMode[] = [
                 features: ["7 chained stats", "Offline progress", "Ascend for perks"],
                 href: "/creations/games/node-farm",
                 shot: "/games/shots/node-farm.webp",
+                accent: "#9be564",
+                tags: ["7 stats", "Offline", "Ascend"],
             },
             {
                 slug: "starwright",
@@ -280,6 +294,8 @@ export const GAME_MODES: GameMode[] = [
                 features: ["10 element ladder", "Supernova, neutron star, black hole", "Planets and constellations"],
                 href: "/creations/games/starwright",
                 shot: "/games/shots/starwright.webp",
+                accent: "#ff8a4c",
+                tags: ["10 elements", "Supernova", "Constellations"],
             },
             {
                 slug: "groundbreak",
@@ -290,6 +306,8 @@ export const GAME_MODES: GameMode[] = [
                 features: ["12 chained materials", "Zoomable cutaway site", "Permanent skyline"],
                 href: "/creations/games/groundbreak",
                 shot: "/games/shots/groundbreak.webp",
+                accent: "#f2b84b",
+                tags: ["12 materials", "Cutaway", "Skyline"],
             },
         ],
     },
@@ -311,6 +329,8 @@ export const GAME_MODES: GameMode[] = [
                 features: ["3D island", "Machines on a grid", "Expeditions"],
                 href: "/creations/games/brasswork",
                 shot: "/games/shots/brasswork.webp",
+                accent: "#c99a4b",
+                tags: ["3D island", "Grid", "Expeditions"],
             },
         ],
     },
