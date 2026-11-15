@@ -3,6 +3,8 @@
   public/brasswork/window/banner-<menu>.png   240 x 22 lamplit scene behind each menu's title row (shown at 3x)
   public/brasswork/window/frame.png           24 x 24 riveted brass frame with corner brackets, border-image slice 8
   public/brasswork/window/grain.png           32 x 32 tiling dark workbench grain for the window body
+  public/brasswork/window/rule.png            8 x 6 tiling riveted section rule
+  public/brasswork/window/glyphs.png          12 px section glyphs, 8 across, in GLYPHS order
 
 Menus: research (drafting table), expedition (coast chart), production (gear train and dials), settings
 (escapement), hub (workshop front), milestones (crates and the delivery flag).
@@ -350,12 +352,83 @@ def grain():
     return p.render(fade=False)
 
 
+def rule():
+    """8 x 6 tiling section rule: a bright brass line over a dark groove with a rivet every tile."""
+    p = Paint(8, 6)
+    p.fill(p.rect(0, 0, 8, 6), "night", 0.0)
+    p.fill(p.rect(0, 2, 8, 3), "brass", 0.85)
+    p.fill(p.rect(0, 3, 8, 4), "brass", 0.2)
+    p.fill(p.disc(4, 2.5, 1.3), "brass", 1.0)
+    img = np.array(p.render(fade=False))
+    a = np.zeros(img.shape[:2], np.uint8)
+    a[2:4, :] = 255
+    a[1:5, 3:5] = 255
+    return Image.fromarray(np.dstack([img, a]), "RGBA")
+
+
+G = 12
+GLYPHS = ["sound", "display", "numbers", "save", "orders", "milestones", "ledger", "power"]
+
+
+def glyph(name):
+    p = Paint(G, G)
+    p.fill(p.rect(0, 0, G, G), "night", 0.0)
+    keep = np.zeros((G, G), bool)
+
+    def put(m, ramp, sh):
+        nonlocal keep
+        p.fill(m, ramp, sh)
+        keep |= m
+
+    lit = p.lit(np.full((G, G), 0.95), 3, 2, 0.15)
+    if name == "sound":  # brass bell
+        put(p.poly([(3, 9), (4, 3), (6, 1.5), (8, 3), (9, 9)]), "brass", lit)
+        put(p.rect(2, 9, 10, 10.5), "brass", 0.5)
+        put(p.disc(6, 11, 1.1), "brass", 0.8)
+    elif name == "display":  # oil lamp with flame
+        put(p.disc(6, 3.5, 2.2), "glow", 0.85)
+        put(p.rect(4, 6, 8, 10), "brass", lit)
+        put(p.rect(3, 10, 9, 11.5), "brass", 0.45)
+    elif name == "numbers":  # counter wheels
+        for x in (1, 4.5, 8):
+            put(p.rect(x, 2, x + 3, 10), "cream", 0.85)
+            put(p.rect(x, 5.5, x + 3, 6.5), "ink", 0.5)
+        put(p.rect(0, 1, 12, 2) | p.rect(0, 10, 12, 11), "brass", 0.6)
+    elif name == "save":  # sealed crate
+        put(p.rect(1, 3, 11, 11), "wood", lit)
+        put(p.rect(1, 3, 11, 11) & (p.line(1, 3, 11, 11, 1) | p.line(1, 11, 11, 3, 1)), "wood", 0.3)
+        put(p.disc(6, 7, 1.6), "red", 0.75)
+    elif name == "orders":  # work slip on a nail
+        put(p.poly([(2, 2), (10, 1.5), (10.5, 11), (2.5, 11)]), "paper", 0.85)
+        for y in (5, 7, 9):
+            put(p.rect(4, y, 9, y + 1), "ink", 0.6)
+        put(p.disc(6, 2.5, 1), "brass", 0.9)
+    elif name == "milestones":  # pennant
+        put(p.rect(2, 1, 3, 12), "brass", 0.6)
+        put(p.poly([(3, 1.5), (11, 3.5), (3, 7)]), "red", lit)
+    elif name == "ledger":  # open book
+        put(p.poly([(0.5, 3), (6, 4), (6, 11), (0.5, 10)]), "paper", 0.9)
+        put(p.poly([(6, 4), (11.5, 3), (11.5, 10), (6, 11)]), "paper", 0.7)
+        put(p.rect(5.5, 4, 6.5, 11), "wood", 0.4)
+    elif name == "power":  # windmill sails
+        for a in (0.4, 0.4 + math.pi / 2, 0.4 + math.pi, 0.4 + 1.5 * math.pi):
+            put(p.line(6, 6, 6 + 5 * math.cos(a), 6 + 5 * math.sin(a), 1.6), "cream", 0.8)
+        put(p.disc(6, 6, 1.4), "brass", 0.9)
+    img = np.array(p.render(fade=False))
+    return Image.fromarray(np.dstack([img, np.where(keep, 255, 0).astype(np.uint8)]), "RGBA")
+
+
 def main():
     OUT.mkdir(parents=True, exist_ok=True)
     for name, fn in SCENES.items():
         fn().render().save(OUT / f"banner-{name}.png", optimize=True)
     frame().save(OUT / "frame.png", optimize=True)
     grain().save(OUT / "grain.png", optimize=True)
+    rule().save(OUT / "rule.png", optimize=True)
+    sheet = Image.new("RGBA", (G * len(GLYPHS), G))
+    for i, g in enumerate(GLYPHS):
+        sheet.paste(glyph(g), (i * G, 0))
+    sheet.save(OUT / "glyphs.png", optimize=True)
     if "--preview" in sys.argv:
         out = sys.argv[sys.argv.index("--preview") + 1]
         sheet = Image.new("RGB", (W * 3, (H * 3 + 6) * len(SCENES)), (0, 0, 0))

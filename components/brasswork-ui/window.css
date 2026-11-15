@@ -166,3 +166,22 @@
   justify-self: start; max-width: 100%; padding: 2px 28px 2px 2px;
   background: linear-gradient(90deg, #160f08 calc(100% - 24px), rgba(22, 15, 8, 0));
 }
+
+/* ------------------------------------------------------------------ section art
+   Drawn 12 px glyphs (glyphs.png, shown at 2x) before section headings, and a riveted brass rule after them. */
+.bw-window[data-theme] :is(.bws-group-h, .hm-side .hm-kick) { display: flex; align-items: center; gap: 10px; }
+.bw-window[data-theme] :is(.bws-group-h, .hm-side .hm-kick)::before {
+  content: ""; flex: none; width: 24px; height: 24px; image-rendering: pixelated;
+  background: url("/brasswork/window/glyphs.png") 0 0 / 192px 24px no-repeat;
+}
+.bw-window[data-theme] :is(.bws-group-h, .hm-side .hm-kick)::after {
+  content: ""; flex: 1; min-width: 24px; height: 12px; image-rendering: pixelated;
+  background: url("/brasswork/window/rule.png") 0 50% / 16px 12px repeat-x;
+  -webkit-mask: linear-gradient(90deg, #000 60%, transparent); mask: linear-gradient(90deg, #000 60%, transparent);
+}
+.bws-group[aria-label="Sound"] .bws-group-h::before { background-position-x: 0 !important; }
+.bws-group[aria-label="Display"] .bws-group-h::before { background-position-x: -24px !important; }
+.bws-group[aria-label="Numbers"] .bws-group-h::before { background-position-x: -48px !important; }
+.bws-group[aria-label="Save and leave"] .bws-group-h::before { background-position-x: -72px !important; }
+.hm-kick[data-glyph="orders"]::before { background-position-x: -96px !important; }
+.hm-kick[data-glyph="milestones"]::before { background-position-x: -120px !important; }
