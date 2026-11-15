@@ -1,8 +1,10 @@
 /* Shared centred menu window. Sized to its content, capped at the stage height, one title row with an art slot.
    On phones it becomes a bottom sheet. Used by every full menu (research, production stats, expedition, settings). */
+/* No dark scrim: the game stays visible and keeps running behind the window. The layer only catches a
+   blank-area click, which closes the window. */
 .bw-window-scrim {
   position: fixed; inset: 0; z-index: 20; display: grid; place-items: center; padding: 16px;
-  background: rgba(8, 6, 3, 0.2);
+  background: transparent;
 }
 .bw-window {
   position: relative; display: flex; flex-direction: column; min-width: 0;
@@ -11,6 +13,51 @@
   box-shadow: 0 0 0 1px #1a1209, inset 0 1px 0 rgba(255, 220, 150, 0.35), 0 16px 40px rgba(0, 0, 0, 0.5);
   color: #efe2c4;
 }
+/* Open and close motion, per variant (see the notes at the top of window.tsx). Exit runs 170 ms, matching EXIT_MS. */
+.bw-window { --bw-win-in: 200ms; --bw-win-out: 170ms; }
+.bw-window[data-variant="iris"]:not([data-closing]) { animation: bw-win-iris-in var(--bw-win-in) cubic-bezier(.2,.7,.2,1) both; }
+.bw-window[data-variant="iris"][data-closing] { animation: bw-win-iris-out var(--bw-win-out) cubic-bezier(.5,0,.8,.4) both; }
+.bw-window[data-variant="shutter"]:not([data-closing]) { animation: bw-win-shutter-in var(--bw-win-in) cubic-bezier(.2,.7,.2,1) both; }
+.bw-window[data-variant="shutter"][data-closing] { animation: bw-win-shutter-out var(--bw-win-out) cubic-bezier(.5,0,.8,.4) both; }
+.bw-window[data-variant="settle"]:not([data-closing]) { animation: bw-win-settle-in var(--bw-win-in) cubic-bezier(.2,.8,.25,1.02) both; }
+.bw-window[data-variant="settle"][data-closing] { animation: bw-win-settle-out var(--bw-win-out) ease-in both; }
+
+@keyframes bw-win-iris-in {
+  from { opacity: 0; clip-path: circle(0% at 50% 45%); }
+  to { opacity: 1; clip-path: circle(75% at 50% 45%); }
+}
+@keyframes bw-win-iris-out {
+  from { opacity: 1; clip-path: circle(75% at 50% 45%); }
+  to { opacity: 0; clip-path: circle(0% at 50% 45%); }
+}
+@keyframes bw-win-shutter-in {
+  from { opacity: 0.4; clip-path: inset(0 0 100% 0); }
+  to { opacity: 1; clip-path: inset(0 0 0 0); }
+}
+@keyframes bw-win-shutter-out {
+  from { opacity: 1; clip-path: inset(0 0 0 0); }
+  to { opacity: 0.4; clip-path: inset(0 0 100% 0); }
+}
+@keyframes bw-win-settle-in {
+  from { opacity: 0; transform: translateY(-12px) scale(0.98); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes bw-win-settle-out {
+  from { opacity: 1; transform: none; }
+  to { opacity: 0; transform: translateY(-8px) scale(0.98); }
+}
+@keyframes bw-win-sheet-in { from { transform: translateY(100%); } to { transform: none; } }
+@keyframes bw-win-sheet-out { from { transform: none; } to { transform: translateY(100%); } }
+
+/* Reduce motion (app setting or OS) and Simple visuals: no motion, the window appears and leaves at once. */
+.ab-root[data-reduce="true"] .bw-window,
+.bw-root[data-reduce="true"] .bw-window,
+.ab-root[data-lowfx="true"] .bw-window,
+.bw-root[data-lowfx="true"] .bw-window { animation: none !important; }
+@media (prefers-reduced-motion: reduce) {
+  .bw-window { animation: none !important; }
+}
+
 .bw-window[data-size="wide"] { width: min(960px, 100%); }
 .bw-window[data-size="xwide"] { width: min(1160px, 100%); }
 .bw-window-head {
@@ -29,4 +76,7 @@
 @media (max-width: 767px) {
   .bw-window-scrim { place-items: end center; padding: 0; }
   .bw-window { width: 100%; max-height: 82vh; border-left: 0; border-right: 0; border-bottom: 0; }
+  /* Phones: every variant slides up as a sheet. */
+  .bw-window[data-variant]:not([data-closing]) { animation: bw-win-sheet-in var(--bw-win-in) cubic-bezier(.2,.7,.2,1) both; }
+  .bw-window[data-variant][data-closing] { animation: bw-win-sheet-out var(--bw-win-out) ease-in both; }
 }
