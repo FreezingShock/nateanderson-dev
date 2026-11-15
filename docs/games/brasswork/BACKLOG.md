@@ -8,11 +8,6 @@ Do not start anything in sections 2 or 3 without Nate's words in the thread.
 
 Ordered by value. Each is one PR.
 
-**B-01 Fix `npm run test:automation:browser`**
-- Cause (read from the code, not yet re-run after a fix): `lib/automation/input/touch-bar.ts` imports `../icons/ui`, but `tests/automation/browser/run.mjs` only transpiles `lib/automation/input/*.ts` into the temp folder, so the module 404s and the scene never loads (`page.waitForFunction` times out at `run.mjs:54`).
-- Fix: also transpile `lib/automation/icons/ui.ts` into `<tmp>/icons/ui.js`, or have `touch-bar.ts` take the icon style as a parameter.
-- Done when: the command passes locally on `integration` in the cloud Chromium. Add it to `docs/ci.md` only if it runs in under a minute.
-
 **B-02 Verify the NEXT markers on screen**
 - The windmill and hub markers (`brasswork-host.tsx` `syncTarget`, `components/brasswork/next-marker.tsx`) were never looked at. Play the opening with `?bwdev=1`, screenshot the drill, kiln, windmill and hub steps at 1440 and 390.
 - Done when: each marker sits on the cell it names (kiln and windmill on `suggestSpot`, hub on its 3x3), does not cover the menu, and disappears when the step is done. Fix what is wrong. **Needs screenshots.**

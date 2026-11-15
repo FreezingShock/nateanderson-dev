@@ -11,7 +11,7 @@ Format: `- area | paths | owner (thread title or "free") | since YYYY-MM-DD | do
 - Gate, SEO, CI, deploy | proxy.ts, lib/gate, lib/seo.ts, .github, scripts/ci, vercel.json | free | | docs/deploys.md, docs/ci.md
 
 ## Games
-- Brasswork | components/{brasswork,brasswork-ui,brasswork-art,automation}, lib/{brasswork,automation}, tests/automation, scripts/{brasswork,automation} | per `docs/games/brasswork/` | | docs/games/brasswork
+- Brasswork | components/{brasswork,brasswork-ui,brasswork-art,automation}, lib/{brasswork,automation}, tests/automation, scripts/{brasswork,automation} | Ship the Brasswork backlog | 2026-11-15 | docs/games/brasswork
 - Starwright | components/starwright, lib/starwright, app/camino/starwright*.css, tests/starwright, scripts/starwright | per `docs/games/starwright/` | | docs/games/starwright
 - Groundbreak | components/{groundbreak,groundbreak-art}, lib/{groundbreak,groundbreak-fonts}, app/camino/groundbreak.css, tests/groundbreak, scripts/{groundbreak,groundbreak-art} | per `docs/games/groundbreak/` | | docs/games/groundbreak
 - Node Farm | components/nodefarm, lib/nodefarm, app/camino/nodefarm, tests/nodefarm, scripts/nodefarm | free | | docs/node-farm.md, docs/site

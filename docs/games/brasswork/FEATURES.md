@@ -4,7 +4,7 @@ Audited 2026-11-15 against `integration` at 5138bb6. Route `/creations/games/bra
 
 **States:** `working` = built, merged, covered by a test or checked headless. `partial` = exists with a known gap (see the backlog id). `untested` = built, nobody has verified it on a real device or on screen. Nate has not played most of it on the live site, so nothing here is "approved" beyond the picks recorded in project memory.
 
-**Test commands:** `npm run test:automation` (183 pass, headless Node, no browser). `test:nodefarm` runs it too and is a PR check. `npm run test:automation:browser` is broken (B-01). There is no test for anything drawn on screen: the renderer, the HUD, audio and the phone layout are checked by hand with screenshots.
+**Test commands:** `npm run test:automation` (183 pass, headless Node, no browser). `test:nodefarm` runs it too and is a PR check. `npm run test:automation:browser` (29 checks, about 11 s, needs the cloud Chromium) drives the input layer on a plain canvas with mouse and touch; it is not a PR check. There is no test for anything drawn on screen: the renderer, the HUD, audio and the phone layout are checked by hand with screenshots.
 
 ## Map of the code
 
@@ -55,8 +55,8 @@ Owners are per area, one thread per file set. The threads: "Streamline Brasswork
 | Shift-drag area Remove | working | `input/pointer.ts`, `input/build.ts` | `input.test.mjs` |
 | Number keys 1 to 9 pick from the open build group, Tab cycles groups | working | `input/keys.ts`, `components/automation/build-bar.tsx` | `input.test.mjs` |
 | Copy and paste of building areas | not built (B-06) | none | none |
-| Touch: long-press, line stroke, two-tap belt routing, touch bar (Top, Rotate, Undo, Redo, Remove, Cancel) | partial: buttons are not 44 px (B-10); untested on a real phone | `input/touch-bar.ts` | `input.test.mjs` (logic only) |
-| Browser check of the input layer | broken (B-01) | `tests/automation/browser/` | itself |
+| Touch: long-press, line stroke, two-tap belt routing, touch bar (Top, Rotate, Undo, Redo, Remove, Cancel) | partial: other tap targets not measured (B-10); untested on a real phone | `input/touch-bar.ts` | `input.test.mjs` (logic only) |
+| Browser check of the input layer (desktop mouse and keys, phone touch through CDP, touch bar at 44 px) | working | `tests/automation/browser/` | itself |
 
 ## Renderer
 
