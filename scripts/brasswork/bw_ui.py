@@ -470,3 +470,101 @@ def warn():
     flat(c, poly([(32, 14), (52, 52), (12, 52)]), "cream", 0.8)
     c.set(rect(29, 24, 35, 40) | disc(32, 46, 3.2), P["steel"][0])
     return done(c)
+
+
+# ------------------------------------------------------------------ keep and leave rows (Expedition)
+# One family: a pressed brass plate with the idea cut into it in dark gunmetal. Everything sits inside the 8 to 56 box,
+# so the glyphs share scale and margin. Drawn for these rows rather than cropped from the larger menu glyphs.
+def cut(c, m):
+    """Cut a mark into the plate: dark gunmetal with a light lower lip."""
+    c.fill(m, 0.12, "gun", dither=0.0)
+    c.set(edge(m, 0, 1) & ~m, P["brass"][-2])
+    return c
+
+
+@ui
+def keep_plans():
+    """Rolled plan sheet with a gear cut into it."""
+    c = Canvas()
+    plate(c, rect(12, 14, 52, 54))
+    plate(c, rect(8, 10, 56, 20))
+    cut(c, gear_mask(32, 38, 12, 9, 6, 3))
+    return done(c)
+
+
+@ui
+def keep_designs():
+    """Open book: two plates and a dark spine, ruled lines on each page."""
+    c = Canvas()
+    plate(c, rect(8, 14, 31, 52))
+    plate(c, rect(33, 14, 56, 52))
+    c.fill(rect(30, 12, 34, 54), 0.15, "gun", dither=0.0)
+    for y in (22, 30, 38):
+        cut(c, rect(12, y, 27, y + 2))
+        cut(c, rect(37, y, 52, y + 2))
+    return done(c)
+
+
+@ui
+def keep_routes():
+    """Chart with a dotted route ending in a cross."""
+    c = Canvas()
+    plate(c, rect(8, 12, 56, 52))
+    for k in range(4):
+        cut(c, disc(16 + k * 7, 42 - k * 6, 2.4))
+    cut(c, line(40, 14, 52, 26, 4) | line(40, 26, 52, 14, 4))
+    return done(c)
+
+
+@ui
+def keep_free():
+    """Gear with a one cut into the middle: one free machine."""
+    c = Canvas()
+    plate(c, gear_mask(32, 32, 26, 19, 8, 0))
+    cut(c, text_mask("1", 30, 32, 33))
+    return done(c)
+
+
+@ui
+def keep_records():
+    """Five-point star plate: records."""
+    c = Canvas()
+    pts = []
+    for i in range(10):
+        r = 26 if i % 2 == 0 else 11
+        a = -math.pi / 2 + i * math.pi / 5
+        pts.append((32 + r * math.cos(a), 33 + r * math.sin(a)))
+    plate(c, poly(pts))
+    cut(c, disc(32, 34, 3.5))
+    return done(c)
+
+
+@ui
+def leave_machines():
+    """Gear sitting on a belt: machines and belts."""
+    c = Canvas()
+    plate(c, gear_mask(32, 27, 20, 14, 8, 5))
+    plate(c, rect(8, 46, 56, 56))
+    for x in range(12, 54, 8):
+        cut(c, rect(x, 49, x + 4, 53))
+    return done(c)
+
+
+@ui
+def leave_stock():
+    """Crate with a cross brace: stored stock."""
+    c = Canvas()
+    plate(c, rect(9, 11, 55, 55))
+    cut(c, rect(15, 17, 49, 49) & ~(line(15, 49, 49, 17, 7) | line(15, 17, 49, 49, 7)))
+    return done(c)
+
+
+@ui
+def leave_fleets():
+    """Little ship: hull, mast and sail. Fleets on expedition."""
+    c = Canvas()
+    plate(c, poly([(8, 40), (56, 40), (48, 54), (16, 54)]))
+    plate(c, rect(30, 8, 34, 42))
+    plate(c, poly([(36, 12), (54, 36), (36, 36)]))
+    cut(c, poly([(12, 44), (52, 44), (50, 46), (14, 46)]))
+    return done(c)
