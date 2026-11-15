@@ -138,7 +138,7 @@ export function snap(s: State): Snap {
     };
 }
 
-export interface AwayReport { at: number; secs: number; gap: number; capped: boolean; capH: number; lines: string[] }
+export interface AwayReport { at: number; secs: number; gap: number; capped: boolean; capH: number; lines: string[]; /** Elements that grew most, for the card's chips (`lines[gainAt]` is the same thing as text). */ gains?: { i: number; d: number }[]; gainAt?: number; /** Core collapse share at the end, 0 to 1 */ col?: number }
 
 /** What happened while the star ran on its own. `secs` counted, `gap` was the real time away. */
 export function awayReport(before: Snap, s: State, secs: number, gap: number, now = Date.now(), auto?: AutoResult): AwayReport {
@@ -155,10 +155,11 @@ export function awayReport(before: Snap, s: State, secs: number, gap: number, no
             return { at: now, secs, gap, capped, capH, lines };
         }
     }
-    const gains = ELEMENTS.map((e, i) => ({ e, d: s.amt[i] - before.amt[i], r: (s.amt[i] + 1) / (before.amt[i] + 1) }))
+    const gains = ELEMENTS.map((e, i) => ({ e, i, d: s.amt[i] - before.amt[i], r: (s.amt[i] + 1) / (before.amt[i] + 1) }))
         .filter((g, i) => i > 0 && g.d >= 1)
         .sort((a, b) => b.r - a.r)
         .slice(0, 3);
+    const gainAt = gains.length ? lines.length : undefined;
     if (gains.length) lines.push(gains.map((g) => `${g.e.name} +${fmt(g.d, 1)}`).join(" · "));
     const h = heaviest(s);
     if (h > before.heavy) lines.push(`${ELEMENTS[h].name} ignited in the core.`);
@@ -173,7 +174,7 @@ export function awayReport(before: Snap, s: State, secs: number, gap: number, no
     }
     const col = collapse(s, f);
     lines.push(col >= 1 ? "The core is ready to collapse." : `The core is at ${Math.floor(col * 100)}% of its collapse.`);
-    return { at: now, secs, gap, capped, capH, lines };
+    return { at: now, secs, gap, capped, capH, lines, gains: gains.map((g) => ({ i: g.i, d: g.d })), gainAt, col: Math.min(1, col) };
 }
 
 export function saveAway(st: Store, r: AwayReport) {

@@ -5,12 +5,12 @@
 import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { useGameShell } from "@/components/games/shell/game-route-shell";
 import { createSaveTools, readPickedFile } from "@/lib/games/save";
-import { ACHIEVEMENTS, ACH_BONUS, CLOUDS, CODEX, CONSTELLATIONS, ELEMENTS, EVENT_STAY, PLANETS, PLANET_STAGE_AT, PLANET_STAGE_BONUS, TUNE, type Perk } from "@/lib/starwright/data";
+import { ACHIEVEMENTS, ACH_BONUS, CLOUDS, CODEX, CONSTELLATIONS, ELEMENTS, EVENT_STAY, type EventOpt, PLANETS, PLANET_STAGE_AT, PLANET_STAGE_BONUS, TUNE, type Perk } from "@/lib/starwright/data";
 import { H, W, makeLayers, render, renderLayered, renderPlanetSprite, type SceneFrame } from "@/lib/starwright/art";
 import { frameAt, initSprites, sprites } from "@/lib/starwright/sprites";
 import { SAVE_VERSION, canPlanet, effects, eventOf, fmt, fmtAge, isSave, parse, planetStage, type State } from "@/lib/starwright/engine";
 import { cloudArt, cssUrl } from "@/lib/starwright/ui-art";
-import { sheetUrl } from "@/lib/starwright/ui-sheets";
+import { sheetInfo, sheetUrl } from "@/lib/starwright/ui-sheets";
 import { ElTile, Gl, Pic, ui } from "./sw-ui";
 import { SettingsBlock } from "./settings";
 import { SW_KEYS } from "@/lib/starwright/commands";
@@ -221,26 +221,39 @@ export function Menu({ sound, onSound, s, paused, onPause, onClose, onName, onIm
 
 // ---- visitor card ----------------------------------------------------------------------------------------------------------
 
+/** The icon that says what an answer pays: output now, a burst of fusion, heat, inflow or everything. */
+const optGlyph = (o: EventOpt): string => {
+    if (o.lump) return "dust";
+    if (o.gas) return "mass";
+    const k = o.buffs?.[0]?.k;
+    return k === "fuse" ? "burst" : k === "heat" ? "heat" : k === "global" ? "star" : "mass";
+};
+
 export function Visitor({ s, onAnswer }: { s: State; onAnswer: (pick: number) => void }) {
     const ev = eventOf(s);
     if (!ev || !s.event) return null;
+    const sheet = sheetInfo(`visitor/${ev.id}`);
+    const left = Math.ceil(s.event.left);
     return (
-        <div className="sw-visitor sw-panel" role="group" aria-label={ev.name}>
-            <div className="sw-visitor-top">
-                <b>{ev.name}</b>
-                <span>{Math.ceil(s.event.left)}s</span>
+        <div className="sw-visitor sw-ev sw-panel" role="group" aria-label={ev.name} data-kind="visitor" data-late={left <= 20 ? "" : undefined}>
+            <div className="sw-ev-head">
+                <span className="sw-ev-art" aria-hidden="true" style={sheet ? ({ "--sheet": cssUrl(sheet.src), "--n": sheet.frames, "--ms": `${Math.round((sheet.frames / sheet.fps) * 1000)}ms` } as CSSProperties) : undefined}>
+                    {!sheet && <Gl n="star" s={3} />}
+                </span>
+                <div><b>{ev.name}</b><em>{ev.text}</em></div>
+                <span className="sw-ev-time" aria-label={`${left} seconds left`}>{left}s</span>
             </div>
-            <p>{ev.text}</p>
             <div className="sw-visitor-opts">
                 {ev.opts.map((o, i) => (
-                    <button key={o.id} type="button" className="sw-opt" onClick={() => onAnswer(i)}>
+                    <button key={o.id} type="button" className="sw-opt" onClick={() => onAnswer(i)} data-tip={`${o.label}|${o.desc}|Key ${i === 0 ? "Q" : "W"}`}>
+                        <span className="sw-opt-ic" aria-hidden="true"><Gl n={optGlyph(o)} s={2} /></span>
                         <b>{o.label}</b>
-                        <span>{o.desc}</span>
+                        <span className="sw-opt-d">{o.desc}</span>
+                        <kbd aria-hidden="true">{i === 0 ? "Q" : "W"}</kbd>
                     </button>
                 ))}
             </div>
             <i className="sw-visitor-bar" style={{ width: `${Math.max(0, (s.event.left / EVENT_STAY) * 100)}%` }} />
-            <Corners />
         </div>
     );
 }
