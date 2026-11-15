@@ -28,6 +28,9 @@ import { unlockedRecipes, dayClock, requestDone, currentCommission, buyResearch 
 import { hubStageFor } from "../models/machines/hub";
 import { place as placeRaw, setRecipe as setRecipeRaw, setFilter as setFilterRaw, resolve, BATTERIES, SPRING, depositUnder, hasOutputNeighbour } from "./world";
 
+/** Items the resource bar always shows, even before the first one arrives: the early chain a new player builds. */
+export const ESSENTIAL_RESOURCES = ["iron_ore", "copper_ore", "coal", "iron_ingot", "copper_ingot", "iron_plate", "copper_wire", "iron_gear"];
+
 export const DEFAULT_SETTINGS: HudSettings = { sound: false, reduceMotion: false, lowFx: false, numberFormat: "short", showRates: true };
 
 // Bonus as a signed percent line, e.g. 1.15 becomes "+15%".
@@ -263,7 +266,13 @@ export function hudData(world: World, cat: Catalog = DEFAULT_CATALOG, selectedId
         if (f.status === "running" || !statusOf[b.type]) statusOf[b.type] = f.status;
     }
 
-    const resources: ResourceView[] = [...new Set<string>([...Object.keys(hub.input), ...Object.keys(net)])].sort().map((item) => {
+    // Essentials always sit on the bar (at zero until the first one arrives), so a new player sees what the early chain
+    // makes; anything else joins once it is in stock or flowing. Raw first, then by stage, then name.
+    const essentials = ESSENTIAL_RESOURCES.filter((id) => cat.tree.items.some((i) => i.id === id));
+    const stageOf = (id: string) => cat.tree.items.find((i) => i.id === id)?.stage ?? 0;
+    const resourceIds = [...new Set<string>([...essentials, ...Object.keys(hub.input), ...Object.keys(net)])]
+        .sort((a, b) => stageOf(a) - stageOf(b) || a.localeCompare(b));
+    const resources: ResourceView[] = resourceIds.map((item) => {
         const name = nameOf(cat, item);
         const stage = cat.tree.items.find((i) => i.id === item)?.stage ?? 0;
         return { id: item, name, group: stage === 0 ? "raw" : "part", glyph: glyphOf(name), amount: Math.floor(hub.input[item] ?? 0), perSecond: net[item] ?? 0 };
