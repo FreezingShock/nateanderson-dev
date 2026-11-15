@@ -1,7 +1,7 @@
 // Brasswork: the resource and recipe tree. Every number here is a first-pass
 // balance value for the design thread to tune. Rates are per minute.
 // Balance notes and open taste calls live in /mnt/project-files/portfolio/automation-game/recipes.md.
-import type { MachineDef, RecipeTree, Stage, StructureDef, Stack } from "../types";
+import type { HubRequestDef, MachineDef, RecipeTree, Stage, StructureDef, Stack } from "../types";
 
 export const STAGE_NAMES: Record<Stage, string> = {
     0: "Raw",
@@ -17,7 +17,7 @@ export const PURITY = { impure: 0.5, normal: 1, pure: 2 } as const;
 
 const MACHINES: MachineDef[] = [
     { id: "drill", name: "Drill", unlockStage: 0, speed: 1, footprint: { w: 2, d: 2 }, powerKw: 6, note: "Sits on a resource node." },
-    { id: "kiln", name: "Kiln", unlockStage: 1, speed: 1, footprint: { w: 2, d: 2 }, powerKw: 12, note: "Smelts ore into ingots." },
+    { id: "kiln", name: "Kiln", unlockStage: 0, speed: 1, footprint: { w: 2, d: 2 }, powerKw: 12, note: "Smelts ore into ingots." },
     { id: "furnace", name: "Furnace", unlockStage: 1, speed: 1, footprint: { w: 2, d: 3 }, powerKw: 36, note: "Alloys and high-heat work. Coal is an input." },
     { id: "press", name: "Stamp press", unlockStage: 2, speed: 1, footprint: { w: 2, d: 3 }, powerKw: 18, note: "Stamps plates, sheets and beams." },
     { id: "lathe", name: "Lathe", unlockStage: 2, speed: 1, footprint: { w: 1, d: 2 }, powerKw: 10, note: "Cuts rods, screws and gears." },
@@ -27,13 +27,13 @@ const MACHINES: MachineDef[] = [
     {
         id: "windmill",
         name: "Windmill",
-        unlockStage: 2,
+        unlockStage: 0,
         speed: 1,
         footprint: { w: 2, d: 2 },
         powerKw: 0,
-        generatesKw: 30,
-        supplyRange: 6,
-        buildCost: [{ item: "iron_plate", qty: 4 }, { item: "copper_wire", qty: 6 }],
+        generatesKw: 50,
+        supplyRange: 8,
+        buildCost: [{ item: "iron_plate", qty: 8 }],
         note: "Wind power. Strong in open ground, reaches 6 cells.",
     },
     {
@@ -79,12 +79,12 @@ const STRUCTURES: StructureDef[] = [
 function logisticsPieces(): StructureDef[] {
     const junction = { w: 1, d: 1 };
     const brass: { id: string; name: string; cost: { item: string; qty: number }[]; note: string }[] = [
-        { id: "belt-splitter", name: "Splitter", cost: [{ item: "iron_rod", qty: 2 }, { item: "iron_plate", qty: 2 }], note: "Sends items front and both sides." },
-        { id: "belt-merger", name: "Merger", cost: [{ item: "iron_rod", qty: 2 }, { item: "iron_plate", qty: 2 }], note: "Joins belts; pushes forward only." },
-        { id: "belt-underground-in", name: "Tunnel entrance", cost: [{ item: "iron_plate", qty: 3 }, { item: "iron_rod", qty: 3 }], note: "Sends items up to 5 cells under other belts." },
-        { id: "belt-underground-out", name: "Tunnel exit", cost: [{ item: "iron_plate", qty: 3 }, { item: "iron_rod", qty: 3 }], note: "Where a tunnel comes back up." },
-        { id: "belt-loader", name: "Loader", cost: [{ item: "iron_plate", qty: 2 }, { item: "iron_rod", qty: 2 }], note: "Fills storage, the dock or the hub from belts." },
-        { id: "belt-unloader", name: "Unloader", cost: [{ item: "iron_plate", qty: 2 }, { item: "iron_rod", qty: 2 }], note: "Pulls from storage or the hub onto belts." },
+        { id: "belt-splitter", name: "Splitter", cost: [{ item: "iron_plate", qty: 4 }], note: "Sends items front and both sides." },
+        { id: "belt-merger", name: "Merger", cost: [{ item: "iron_plate", qty: 4 }], note: "Joins belts; pushes forward only." },
+        { id: "belt-underground-in", name: "Tunnel entrance", cost: [{ item: "iron_plate", qty: 6 }], note: "Sends items up to 5 cells under other belts." },
+        { id: "belt-underground-out", name: "Tunnel exit", cost: [{ item: "iron_plate", qty: 6 }], note: "Where a tunnel comes back up." },
+        { id: "belt-loader", name: "Loader", cost: [{ item: "iron_plate", qty: 4 }], note: "Fills storage, the dock or the hub from belts." },
+        { id: "belt-unloader", name: "Unloader", cost: [{ item: "iron_plate", qty: 4 }], note: "Pulls from storage or the hub onto belts." },
     ];
     const tierExtra: Record<"copper" | "steel", { item: string; qty: number }> = {
         copper: { item: "copper_wire", qty: 4 },
@@ -109,9 +109,9 @@ function logisticsPieces(): StructureDef[] {
         }
     }
     out.push(
-        { id: "belt-crate", name: "Crate", footprint: { w: 1, d: 1 }, unlockStage: 2, capacity: 200, buildCost: [{ item: "iron_plate", qty: 8 }, { item: "iron_screw", qty: 8 }], note: "Holds 200 of each item." },
+        { id: "belt-crate", name: "Crate", footprint: { w: 1, d: 1 }, unlockStage: 2, capacity: 200, buildCost: [{ item: "iron_plate", qty: 16 }], note: "Holds 200 of each item." },
         { id: "belt-strongbox", name: "Strongbox", footprint: { w: 2, d: 2 }, unlockStage: 3, capacity: 1000, buildCost: [{ item: "aluminium_casing", qty: 4 }, { item: "iron_plate", qty: 8 }], note: "Holds 1000 of each item." },
-        { id: "belt-dock", name: "Dock", footprint: { w: 3, d: 3 }, unlockStage: 2, buildCost: [{ item: "iron_plate", qty: 12 }, { item: "iron_screw", qty: 12 }, { item: "copper_wire", qty: 6 }], note: "A delivery sink, like the hub." },
+        { id: "belt-dock", name: "Dock", footprint: { w: 3, d: 3 }, unlockStage: 2, buildCost: [{ item: "iron_plate", qty: 24 }, { item: "copper_wire", qty: 6 }], note: "A delivery sink, like the hub." },
     );
     return out;
 }
@@ -170,7 +170,7 @@ const RECIPES = [
 
     // Forming
     { id: "r_iron_plate", machine: "press", inputs: [{ item: "iron_ingot", qty: 3 }], output: { item: "iron_plate", qty: 2 }, craftSeconds: 3 },
-    { id: "r_iron_rod", machine: "lathe", inputs: [{ item: "iron_ingot", qty: 1 }], output: { item: "iron_rod", qty: 1 }, craftSeconds: 4 },
+    { id: "r_iron_rod", machine: "lathe", inputs: [{ item: "iron_ingot", qty: 1 }], output: { item: "iron_rod", qty: 1 }, craftSeconds: 2 },
     { id: "r_iron_screw", machine: "lathe", inputs: [{ item: "iron_rod", qty: 1 }], output: { item: "iron_screw", qty: 4 }, craftSeconds: 2 },
     { id: "r_copper_wire", machine: "drawer", inputs: [{ item: "copper_ingot", qty: 1 }], output: { item: "copper_wire", qty: 2 }, craftSeconds: 2 },
     { id: "r_aluminium_sheet", machine: "press", inputs: [{ item: "aluminium_ingot", qty: 3 }], output: { item: "aluminium_sheet", qty: 2 }, craftSeconds: 3 },
@@ -248,14 +248,52 @@ const RESEARCH = [
     { id: "fast_frames", name: "Fast frames", cost: 5, requires: ["frames"], recipes: ["r_frame_fast"], note: "Frames from plates and screws, quicker." },
 ] as const;
 
-// Blueprints granted per stage: 10 + 20 + 30 + 35 + 40 = 135. The megaproject's path needs 109 of it.
+// Blueprints granted per stage: 12 + 30 + 30 + 44 + 40 = 156. Research needed before each stage's milestone:
+// stage 3 needs 39 (by milestone 2), stage 4 needs 67 (by milestone 3), the megaproject needs 109 (by milestone 4).
 const MILESTONES = [
-    { id: "ms_smelting", name: "First smelt run", stage: 1, deliver: [{ item: "iron_ingot", qty: 50 }, { item: "copper_ingot", qty: 30 }, { item: "silicon", qty: 10 }], blueprints: 10 },
-    { id: "ms_forming", name: "Plate line online", stage: 2, deliver: [{ item: "iron_plate", qty: 60 }, { item: "copper_wire", qty: 60 }, { item: "steel_ingot", qty: 30 }, { item: "aluminium_sheet", qty: 20 }], blueprints: 20 },
+    { id: "ms_smelting", name: "First smelt run", stage: 1, deliver: [{ item: "iron_ingot", qty: 50 }, { item: "copper_ingot", qty: 30 }], blueprints: 12 },
+    { id: "ms_forming", name: "Plate line online", stage: 2, deliver: [{ item: "iron_plate", qty: 60 }, { item: "copper_wire", qty: 60 }, { item: "steel_ingot", qty: 30 }, { item: "aluminium_sheet", qty: 20 }], blueprints: 30 },
     { id: "ms_components", name: "Components crate", stage: 3, deliver: [{ item: "iron_gear", qty: 30 }, { item: "circuit_board", qty: 20 }, { item: "aluminium_casing", qty: 20 }, { item: "frame", qty: 20 }, { item: "steel_beam", qty: 10 }], blueprints: 30 },
-    { id: "ms_clockworks", name: "Clockwork shipment", stage: 4, deliver: [{ item: "motor", qty: 10 }, { item: "servo", qty: 6 }, { item: "photocell", qty: 10 }, { item: "quartz_lens", qty: 4 }], blueprints: 35 },
+    { id: "ms_clockworks", name: "Clockwork shipment", stage: 4, deliver: [{ item: "motor", qty: 10 }, { item: "servo", qty: 6 }, { item: "photocell", qty: 10 }, { item: "quartz_lens", qty: 4 }], blueprints: 44 },
     { id: "ms_megaproject", name: "Sky orrery, first light", stage: 5, deliver: [{ item: "sail_panel", qty: 3 }, { item: "mirror_cell", qty: 3 }, { item: "relay_core", qty: 3 }, { item: "lattice_strut", qty: 3 }], blueprints: 40 },
 ] as const;
+
+// Hub requests: small early deliveries that open recipes and machines directly, before the blueprint milestones
+// (and their research) take over. Quantities are small on purpose: the first unlock lands within a minute or two of
+// the first ingots reaching the hub. A machine or piece named here is opened by its request, in place of its stage rule.
+const HUB_REQUESTS: HubRequestDef[] = [
+    {
+        id: "rq_copper",
+        name: "Copper at the kiln",
+        note: "The workshop wants proof the kiln works before it trusts you with more ore.",
+        deliver: [{ item: "iron_ingot", qty: 10 }],
+        unlocks: { recipes: ["r_copper_ingot"], machines: [] },
+    },
+    {
+        id: "rq_press",
+        name: "A stamp press",
+        note: "Plates need a press. Ship some ingots and the workshop pulls one out of storage.",
+        deliver: [{ item: "iron_ingot", qty: 20 }, { item: "copper_ingot", qty: 10 }],
+        unlocks: { recipes: ["r_iron_plate"], machines: ["press"] },
+    },
+    {
+        id: "rq_lathe",
+        name: "Lathe and wire drawer",
+        note: "Rods, screws and wire come from the small machines.",
+        deliver: [{ item: "iron_plate", qty: 12 }, { item: "copper_ingot", qty: 15 }],
+        unlocks: { recipes: ["r_iron_rod", "r_iron_screw", "r_copper_wire"], machines: ["lathe", "drawer"] },
+    },
+    {
+        id: "rq_routing",
+        name: "Routing yard",
+        note: "Splitters, mergers, tunnels and loaders for a tidier floor.",
+        deliver: [{ item: "iron_plate", qty: 20 }, { item: "copper_wire", qty: 10 }],
+        unlocks: {
+            recipes: [],
+            machines: ["belt-splitter", "belt-merger", "belt-underground-in", "belt-underground-out", "belt-loader", "belt-unloader"],
+        },
+    },
+];
 
 export const RECIPE_TREE: RecipeTree = {
     items: ITEMS.map((i) => ({ ...i })),
@@ -275,6 +313,7 @@ export const RECIPE_TREE: RecipeTree = {
     nodes: RAW_NODES.map((n) => ({ ...n })),
     research: RESEARCH.map((n) => ({ ...n, requires: [...n.requires], recipes: [...n.recipes] })),
     milestones: MILESTONES.map((m) => ({ ...m, deliver: m.deliver.map((s) => ({ ...s })) })),
+    requests: HUB_REQUESTS.map((r) => ({ ...r, deliver: r.deliver.map((s) => ({ ...s })), unlocks: { recipes: [...r.unlocks.recipes], machines: [...r.unlocks.machines] } })),
     prestige: {
         name: "Open a new workshop",
         keeps: ["blueprints", "research", "routes", "unlocked designs"],

@@ -1,7 +1,26 @@
 import type { MachineDetail, NumberFormat, ResourceView } from "@/lib/automation/types";
 import { fmtNum, resourceName } from "./format";
+import { ArtGauge, MachinePortrait } from "@/components/brasswork-art";
+import "./inspector.css";
 
-/** Machine inspector: recipe, rates and buffers for the selected machine. */
+// Plain reasons for each status, so the panel says what to do rather than only what is happening.
+const STATUS_TEXT: Record<string, string> = {
+  working: "Working. Output is flowing.",
+  idle: "Idle. Nothing to work on right now.",
+  blocked: "Blocked. Its output is full or its input has stopped.",
+  starved: "Waiting. A required input has not arrived yet.",
+  unpowered: "No power. Add a windmill or spring winder.",
+};
+
+// Drills and other extractors have no recipe in the data, so the panel says what they do.
+const EXTRACTOR_TEXT: Record<string, string> = {
+  drill: "Mines the ore under it. Place it on a resource node.",
+};
+
+/**
+ * Machine inspector, drawn as one compact card: portrait and name, status, energy at a glance, what it makes,
+ * then recipe choices, buffers and the build button. The floating frame is the caller's (the HUD's factory panel).
+ */
 export function Inspector({
   detail,
   resources,
@@ -11,7 +30,7 @@ export function Inspector({
   onSetRecipe,
   onClose,
 }: {
-  detail: MachineDetail | null;
+  detail: MachineDetail;
   resources: ResourceView[];
   numberFormat: NumberFormat;
   canBuild: boolean;
@@ -19,116 +38,149 @@ export function Inspector({
   onSetRecipe?: (recipeId: string) => void;
   onClose: () => void;
 }) {
-  if (!detail) {
-    return (
-      <section className="ab-panel ab-inspect" aria-label="Machine inspector">
-        <h2 className="ab-h">Inspector</h2>
-        <p className="ab-dim">Press Info on a machine to see its recipe, rates and buffers.</p>
-      </section>
-    );
-  }
+  // The simulation names an unset crafter "No recipe chosen"; older mocks say "No recipe". Both mean nothing is set.
+  const noRecipe = detail.recipe.name === "No recipe" || detail.recipe.name === "No recipe chosen";
+  const hasRecipe = !noRecipe;
+  const lineText = (lines: MachineDetail["recipe"]["inputs"]) =>
+    lines.map((l) => `${fmtNum(l.amount, numberFormat)} ${resourceName(resources, l.resourceId)}`).join(", ");
+  const options = detail.recipeOptions ?? [];
+  const choices = detail.recipeChoices ?? [];
+  // A crafter with no recipe set is the case the player most often misses: say so plainly and list what it can make.
+  const needsRecipe = noRecipe && !detail.mines?.length && (choices.length > 0 || options.length > 0);
+  const status = needsRecipe ? "No recipe set. This machine is not running." : (STATUS_TEXT[detail.status] ?? detail.status);
+  const pick: { id: string; name: string; alternate: boolean; flow?: string }[] = needsRecipe
+    ? choices.map((c) => ({
+        id: c.id,
+        name: c.name,
+        alternate: c.alternate,
+        flow: `${lineText(c.inputs) || "Nothing"} → ${lineText(c.outputs) || "Nothing"}, ${c.seconds} s`,
+      }))
+    : options;
+  const rate = detail.rates[0];
 
-  const flow = (lines: MachineDetail["recipe"]["inputs"]) =>
-    lines.length === 0
-      ? "nothing"
-      : lines
-          .map((l) => `${fmtNum(l.amount, numberFormat)} ${resourceName(resources, l.resourceId)}`)
-          .join(" + ");
+  // Energy: a generator shows what it makes against its best; a consumer shows what it draws and how well it is fed.
+  const generating = detail.maxKw !== undefined;
+  const drawing = !generating && detail.usedKw !== undefined && detail.usedKw > 0;
+  const energyFill = generating
+    ? (detail.maxKw ? Math.min(1, (detail.producedKw ?? 0) / detail.maxKw) : 0)
+    : Math.min(1, detail.satisfied ?? 0);
+  const energyState = generating ? "source" : detail.fullyPowered ? "full" : "short";
 
   return (
-    <section className="ab-panel ab-inspect" aria-label="Machine inspector">
-      <header className="ab-head">
-        <h2 className="ab-h">{detail.name}</h2>
-        <button type="button" className="ab-text-btn" onClick={onClose}>
-          Close
+    <div className="ab-inspect" data-status={detail.status} data-norecipe={needsRecipe ? "true" : undefined}>
+      <header className="ab-inspect-head">
+        <span className="ab-inspect-art">
+          <MachinePortrait id={detail.id} size={64} label={detail.name} />
+        </span>
+        <div className="ab-inspect-title">
+          <h2 className="ab-inspect-name">{detail.name}</h2>
+          <span className="ab-inspect-owned">Owned {detail.count}</span>
+        </div>
+        <button type="button" className="ab-inspect-close" onClick={onClose} aria-label="Close details">
+          ×
         </button>
       </header>
 
-      <dl className="ab-data">
-        <div>
-          <dt>Status</dt>
-          <dd data-status={detail.status}>{detail.status}</dd>
-        </div>
-        <div>
-          <dt>Owned</dt>
-          <dd>{detail.count}</dd>
-        </div>
-        <div>
-          <dt>Recipe</dt>
-          <dd>{detail.recipe.name}</dd>
-        </div>
-        <div>
-          <dt>Takes</dt>
-          <dd>{detail.recipe.seconds} s</dd>
-        </div>
-      </dl>
+      <p className="ab-inspect-status" data-status={needsRecipe ? "norecipe" : detail.status}>{status}</p>
+      {detail.reason && !needsRecipe && <p className="ab-inspect-hint">{detail.reason}</p>}
 
-      {onSetRecipe && detail.recipeOptions && detail.recipeOptions.length > 1 && (
-        <div role="group" aria-label="Recipe">
-          {detail.recipeOptions.map((o) => (
+      {(generating || drawing) && (
+        <div className="ab-inspect-energy" data-state={energyState} aria-label={generating ? "Power output" : "Power use"}>
+          <div className="ab-inspect-energy-row">
+            <span className="ab-inspect-energy-k">{generating ? "Output" : "Power"}</span>
+            <strong className="ab-inspect-energy-v">
+              {generating
+                ? `${fmtNum(detail.producedKw ?? 0, numberFormat)} / ${fmtNum(detail.maxKw ?? 0, numberFormat)} kW`
+                : `${fmtNum(detail.usedKw ?? 0, numberFormat)} kW`}
+            </strong>
+          </div>
+          <span className="ab-inspect-bar" role="img" aria-label={`${Math.round(energyFill * 100)} percent`}>
+            <i style={{ width: `${Math.round(energyFill * 100)}%` }} />
+          </span>
+          <span className="ab-inspect-energy-note">
+            {generating
+              ? `${detail.windPct !== undefined ? `Wind ${Math.round(detail.windPct * 100)}% · ` : ""}feeds ${detail.fedCount ?? 0} within ${detail.rangeCells ?? 0} cells`
+              : detail.fullyPowered
+                ? "Fully powered"
+                : `${Math.round((detail.satisfied ?? 0) * 100)}% of what it needs`}
+          </span>
+        </div>
+      )}
+
+      {detail.mines && detail.mines.length > 0 ? (
+        <ul className="ab-inspect-mines" aria-label="Mines">
+          {detail.mines.map((m) => (
+            <li key={m.resourceId} className="ab-inspect-mine">
+              <span>{m.name}</span>
+              <span className="ab-dim">{m.purity}</span>
+              <strong>{fmtNum(m.perMin, numberFormat)} / min</strong>
+            </li>
+          ))}
+        </ul>
+      ) : hasRecipe ? (
+        <div className="ab-inspect-flow" aria-label="Makes">
+          <span className="ab-inspect-in">{lineText(detail.recipe.inputs) || "Nothing"}</span>
+          <span className="ab-arrow" aria-hidden="true">→</span>
+          <span className="ab-inspect-out">{lineText(detail.recipe.outputs) || "Nothing"}</span>
+          {detail.recipe.seconds > 0 && <span className="ab-dim">{detail.recipe.seconds} s per batch</span>}
+        </div>
+      ) : needsRecipe ? (
+        <p className="ab-inspect-callout" role="status">
+          <strong>No recipe set.</strong> Pick one below and this machine starts working.
+        </p>
+      ) : (
+        <p className="ab-inspect-hint">{EXTRACTOR_TEXT[detail.id] ?? "Pick a recipe below to start it."}</p>
+      )}
+
+      {rate && (
+        <div className="ab-inspect-rate">
+          <span className="ab-dim">{rate.label}</span>
+          <strong>{rate.value}</strong>
+        </div>
+      )}
+
+      {onSetRecipe && pick.length > (needsRecipe ? 0 : 1) && (
+        <div role="group" aria-label="Recipe" className="ab-inspect-recipes">
+          {pick.map((o) => (
             <button
               key={o.id}
               type="button"
-              className="ab-list-btn"
+              className="ab-recipe-row"
               aria-pressed={o.id === detail.recipeId}
+              data-selected={o.id === detail.recipeId}
               onClick={() => onSetRecipe(o.id)}
             >
-              {o.name}
-              {o.alternate ? " (alternate)" : ""}
+              <span className="ab-recipe-name">
+                {o.name}
+                {o.alternate ? <span className="ab-dim"> · alternate</span> : null}
+                {o.flow && <span className="ab-recipe-flow">{o.flow}</span>}
+              </span>
+              <span className="ab-recipe-state">{o.id === detail.recipeId ? "Selected" : "Use"}</span>
             </button>
           ))}
         </div>
       )}
 
-      <p className="ab-flow">
-        <span>{flow(detail.recipe.inputs)}</span>
-        <span className="ab-arrow" aria-hidden="true">
-          →
-        </span>
-        <span>{flow(detail.recipe.outputs)}</span>
-      </p>
+      {detail.buffers.length > 0 && (
+        <ul className="ab-buffers" aria-label="Buffers">
+          {detail.buffers.map((b) => {
+            const pct = b.max > 0 ? Math.min(1, b.have / b.max) : 0;
+            return (
+              <li key={b.resourceId} className="ab-buffer">
+                <ArtGauge value={pct} size={32} label={`${resourceName(resources, b.resourceId)} buffer`} />
+                <span className="ab-buffer-name">{resourceName(resources, b.resourceId)}</span>
+                <span className="ab-buffer-val">
+                  {fmtNum(b.have, numberFormat)} / {fmtNum(b.max, numberFormat)}
+                </span>
+              </li>
+            );
+          })}
+        </ul>
+      )}
 
-      <dl className="ab-data">
-        {detail.rates.map((r) => (
-          <div key={r.label}>
-            <dt>{r.label}</dt>
-            <dd>{r.value}</dd>
-          </div>
-        ))}
-      </dl>
-
-      <ul className="ab-buffers" aria-label="Buffers">
-        {detail.buffers.map((b) => {
-          const pct = b.max > 0 ? Math.min(100, (b.have / b.max) * 100) : 0;
-          return (
-            <li key={b.resourceId} className="ab-buffer">
-              <span className="ab-buffer-name">{resourceName(resources, b.resourceId)}</span>
-              <span
-                className="ab-bar"
-                role="meter"
-                aria-label={`${resourceName(resources, b.resourceId)} buffer`}
-                aria-valuemin={0}
-                aria-valuemax={b.max}
-                aria-valuenow={b.have}
-              >
-                <span className="ab-bar-fill" style={{ width: `${pct}%` }} />
-              </span>
-              <span className="ab-buffer-val">
-                {fmtNum(b.have, numberFormat)} / {fmtNum(b.max, numberFormat)}
-              </span>
-            </li>
-          );
-        })}
-      </ul>
-
-      <button
-        type="button"
-        className="ab-action"
-        disabled={!canBuild}
-        onClick={() => onBuild(detail.id)}
-      >
-        Build one more
+      <button type="button" className="ab-inspect-build" disabled={!canBuild} onClick={() => onBuild(detail.id)}>
+        Build another
       </button>
-    </section>
+    </div>
   );
 }

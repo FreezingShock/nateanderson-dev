@@ -3,8 +3,8 @@ import type { CSSProperties } from "react";
 
 /** One sheet holds every item and machine icon: 64 px art cells, 8 across, row by row. */
 export const ICON_SHEET = {
-    url: "/brasswork/icons/items.webp?v=0ff7d54d",
-    png: "/brasswork/icons/items.png?v=0ff7d54d",
+    url: "/brasswork/icons/items.webp?v=ff2f156d",
+    png: "/brasswork/icons/items.png?v=ff2f156d",
     cell: 64,
     cols: 8,
     rows: 9,
@@ -95,13 +95,19 @@ export const BELT_ICONS = {
     "belt-steel": 64,
 } as const;
 
+/** Group icons that are not catalog items, such as the Clockworks stage on the resource strip. */
+export const GROUP_ICONS = {
+    clockworks: 65,
+} as const;
+
 export type ItemIconId = keyof typeof ITEM_ICONS;
 export type MachineIconId = keyof typeof MACHINE_ICONS;
 export type StructureIconId = keyof typeof STRUCTURE_ICONS;
 export type BeltIconId = keyof typeof BELT_ICONS;
-export type IconId = ItemIconId | MachineIconId | StructureIconId | BeltIconId;
+export type GroupIconId = keyof typeof GROUP_ICONS;
+export type IconId = ItemIconId | MachineIconId | StructureIconId | BeltIconId | GroupIconId;
 
-const CELLS: Record<string, number> = { ...ITEM_ICONS, ...MACHINE_ICONS, ...STRUCTURE_ICONS, ...BELT_ICONS };
+const CELLS: Record<string, number> = { ...ITEM_ICONS, ...MACHINE_ICONS, ...STRUCTURE_ICONS, ...BELT_ICONS, ...GROUP_ICONS };
 
 /** Sheet cell for an item or machine id, or undefined if the id has no icon. */
 export function iconCell(id: string): number | undefined {

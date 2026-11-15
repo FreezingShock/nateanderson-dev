@@ -23,7 +23,18 @@ export const LEAF = {
     willow: [0x6f9a48, 0x7fa852, 0x5e8a3e, 0x8cb45e],
     willowLit: 0xa8c870,
     bush: [0x4a7c34, 0x568a3a, 0x3f6c2e, 0x62953f],
+    // Autumn (Nate's pick 2026-11-13: full autumn for broadleaf trees; pines stay green).
+    oakFall: [0xb8602a, 0xa04a24, 0xc8803a, 0x8a5a28],
+    oakFallLit: 0xe0a050,
+    birchFall: [0xe0b040, 0xd09a30, 0xf0c850, 0xc8a038],
+    birchFallLit: 0xf8e078,
+    willowFall: [0xc8a840, 0xb89838, 0xd8b850, 0xa89040],
+    willowFallLit: 0xe8d070,
+    bushFall: [0xa85a2a, 0x8a6a30, 0xb8782e, 0x6a7a34],
 } as const;
+
+/** Oak variant seeds that keep summer leaves, so the forest isn't one flat orange. */
+export const EVERGREEN_OAK_SEEDS = [6];
 
 export const FLOWER = {
     cream: 0xf0dfb8, gold: 0xe0a030, ember: 0xc4562f, lavender: 0xb88adf, sky: 0x7b9be0, rose: 0xe07a8a, white: 0xf6f0e2,

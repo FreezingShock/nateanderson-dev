@@ -1,0 +1,97 @@
+/* Settings window. Sharp panel in the menu-art frame, generous margins, no side strips, no pills. */
+.bws-body { padding: 0 6px; }
+.bws-group { display: flex; flex-direction: column; }
+.bws-group-h {
+  margin: 4px 0 4px; font-size: 11px; font-weight: 700; letter-spacing: 0.18em; text-transform: uppercase;
+  color: var(--ab-brass, #c59a52); font-family: var(--bw-t-ui, inherit);
+}
+.bws-row { display: grid; grid-template-columns: 32px 1fr auto; align-items: center; gap: 14px; padding: 4px 0; }
+.bws-ico { display: block; width: 32px; height: 32px; image-rendering: pixelated; }
+.bws-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.bws-name { font-size: 15px; font-weight: 600; color: var(--ab-text, #efe2c4); }
+.bws-hint { font-size: 12.5px; line-height: 1.35; color: var(--ab-dim, #9c8a66); }
+
+.bws-switch, .bws-pair { flex: none; width: 104px; height: 34px; }
+.bws-switch {
+  position: relative; display: flex; align-items: center; border: 1px solid var(--ab-line, #4a3a22); background: #120d07;
+  border-radius: 0; cursor: pointer; color: var(--ab-dim, #9c8a66); padding: 0;
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.6);
+}
+.bws-knob {
+  position: absolute; top: 3px; left: 3px; width: 40px; height: 26px; background: linear-gradient(#8a6b36, #5e4722);
+  border: 1px solid #c59a52; transition: transform 0.16s var(--ab-ease, ease-out);
+}
+.bws-state { position: relative; width: 100%; font-size: 12px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; text-align: right; padding: 0 9px; }
+.bws-switch[aria-checked="true"] { border-color: var(--ab-brass, #c59a52); color: #2a1606; background: linear-gradient(#d9ae62, #b28438); }
+.bws-switch[aria-checked="true"] .bws-knob { transform: translateX(56px); background: linear-gradient(#3a2a12, #1d1409); border-color: #3a2a12; }
+.bws-switch[aria-checked="true"] .bws-state { text-align: left; }
+.bws-switch:hover { border-color: var(--ab-brass-hi, #f0c97a); }
+
+.bws-pair { display: grid; grid-template-columns: 1fr 1fr; border: 1px solid var(--ab-line, #4a3a22); background: #120d07; }
+.bws-pair button {
+  border: 0; background: transparent; color: var(--ab-dim, #9c8a66); font-size: 12px; font-weight: 700;
+  letter-spacing: 0.08em; text-transform: uppercase; cursor: pointer; white-space: nowrap; padding: 0;
+}
+.bws-pair button[aria-checked="true"] { background: linear-gradient(#d9ae62, #b28438); color: #2a1606; }
+.bws-pair button:not([aria-checked="true"]):hover { color: var(--ab-brass-hi, #f0c97a); }
+
+.bws-note { margin: 6px 0 0; font-size: 12px; color: var(--ab-dim, #9c8a66); }
+
+
+@media (max-width: 480px) {
+  .bws-row { gap: 10px; }
+  .bws-hint { font-size: 12px; }
+}
+
+
+.bws-pair[data-n="4"] { grid-template-columns: repeat(4, 1fr); width: 232px; }
+.bws-group + .bws-group { margin-top: 10px; }
+@media (max-width: 560px) {
+  .bws-row[data-stack="true"] { grid-template-columns: 32px 1fr; }
+  .bws-row[data-stack="true"] > .bws-pair { grid-column: 1 / -1; width: 100%; }
+}
+.bws-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.bws-action {
+  min-height: 34px; padding: 0 16px; border: 1px solid var(--ab-line, #4a3a22); background: #120d07; border-radius: 0; cursor: pointer;
+  color: var(--ab-brass-hi, #f0c97a); font-size: 12px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; white-space: nowrap;
+  text-decoration: none; display: inline-flex; align-items: center; justify-content: center;
+}
+a.bws-action, a.bws-action:visited { color: var(--ab-brass-hi, #f0c97a); }
+.bws-action:hover { border-color: var(--ab-brass-hi, #f0c97a); }
+.bws-msg { font-size: 12px; color: var(--ab-dim, #9c8a66); }
+.bws-msg[data-bad="true"] { color: var(--ab-bad, #d4614a); }
+
+/* Control-panel identity: riveted brass plate behind the rows, a lamp beside each switch, springy levers, a dial for lighting. */
+.bws-body[data-panel="controls"] {
+  position: relative; margin: 2px; padding: 10px 14px 12px;
+  background:
+    radial-gradient(circle at 10px 10px, #c59a52 0 2px, transparent 3px) 0 0 / 100% 100% no-repeat,
+    radial-gradient(circle at calc(100% - 10px) 10px, #c59a52 0 2px, transparent 3px) 0 0 / 100% 100% no-repeat,
+    radial-gradient(circle at 10px calc(100% - 10px), #c59a52 0 2px, transparent 3px) 0 0 / 100% 100% no-repeat,
+    radial-gradient(circle at calc(100% - 10px) calc(100% - 10px), #c59a52 0 2px, transparent 3px) 0 0 / 100% 100% no-repeat,
+    repeating-linear-gradient(0deg, rgba(255, 220, 150, 0.025) 0 1px, transparent 1px 3px), #17100a;
+  border: 1px solid #4a3a22; box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.55);
+}
+.bws-group-h { display: flex; align-items: center; gap: 10px; }
+.bws-group-h::after { content: ""; flex: 1; height: 1px; background: linear-gradient(90deg, #6b5230, transparent); }
+.bws-row:has(.bws-lamp) { grid-template-columns: 32px 1fr 12px auto; }
+.bws-lamp {
+  width: 10px; height: 10px; border-radius: 50%; background: #2a1d0e; border: 1px solid #4a3a22;
+  transition: background 0.18s, box-shadow 0.18s, border-color 0.18s;
+}
+.bws-lamp[data-on="true"] { background: #ffc857; border-color: #ffe29a; box-shadow: 0 0 8px 2px rgba(255, 190, 70, 0.75); }
+.bws-knob { transition: transform 0.28s cubic-bezier(0.34, 1.7, 0.5, 1); }
+.bws-switch:active .bws-knob { width: 46px; }
+.bws-dialrow { grid-template-columns: 56px 1fr auto; }
+.bws-dialrow .bwa-gauge { filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.6)); }
+.bws-pair button { transition: background 0.16s, color 0.16s; }
+.bws-spin { display: grid; place-items: center; animation: bws-turn 0.7s cubic-bezier(0.3, 0.7, 0.3, 1) both; }
+@keyframes bws-turn { from { transform: rotate(-200deg); } to { transform: none; } }
+.ab-root[data-reduce="true"] .bws-spin, .ab-root[data-lowfx="true"] .bws-spin,
+.ab-root[data-reduce="true"] .bws-knob, .ab-root[data-lowfx="true"] .bws-knob { animation: none; transition: none; }
+@media (prefers-reduced-motion: reduce) { .bws-spin { animation: none; } .bws-knob { transition: none; } }
+@media (max-width: 560px) {
+  .bws-row:has(.bws-lamp) { grid-template-columns: 32px 1fr 10px auto; gap: 8px; }
+  .bws-dialrow { grid-template-columns: 56px 1fr; }
+  .bws-dialrow > .bws-pair { grid-column: 1 / -1; width: 100%; }
+}

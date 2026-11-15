@@ -47,6 +47,11 @@ interface Placed {
 }
 
 const HALF_TURN = Math.PI / 2;
+/** Ghost tints. Valid is warm brass glow, refused is a red flare. */
+const GHOST_VALID = 0xffd27a;
+/** Glow brightness of a machine that is not working. */
+const IDLE_GLOW = 0.3;
+const GHOST_REFUSED = 0xff4a3a;
 
 /** Pivot of a part in world units, where the baked geometry is at pivot + pos. */
 function pivotOf(model: VoxelModel, part: ModelPart): THREE.Vector3 {
@@ -89,6 +94,9 @@ export class ModelRenderer {
     private readonly ghostRoot: THREE.Group;
     private ghostBody: THREE.Group;
     private ghostKey = "";
+    private ghostValid = true;
+    private glowPulse = true;
+    private ghostTime = 0;
 
     constructor(
         private readonly scene: THREE.Scene,
@@ -99,11 +107,13 @@ export class ModelRenderer {
             roughness: 0.85,
             metalness: 0.05,
         });
+        // Additive so the ghost glows over the ground and over belts.
         this.ghostMat = new THREE.MeshBasicMaterial({
             vertexColors: true,
             transparent: true,
-            opacity: 0.45,
+            opacity: 0.6,
             depthWrite: false,
+            blending: THREE.AdditiveBlending,
         });
         this.ghostRoot = new THREE.Group();
         this.ghostRoot.visible = false;
@@ -203,8 +213,14 @@ export class ModelRenderer {
         this.ghostRoot.position.copy(root.position);
         this.ghostRoot.rotation.copy(root.rotation);
         this.ghostBody.position.copy(body.position);
-        this.ghostMat.color.set(valid ? 0x7fe89a : 0xff6b6b);
+        this.ghostValid = valid;
+        this.ghostMat.color.set(valid ? GHOST_VALID : GHOST_REFUSED);
         this.ghostRoot.visible = true;
+    }
+
+    /** Pulses the ghost's glow. Off for low fx. */
+    setGlowPulse(on: boolean): void {
+        this.glowPulse = on;
     }
 
     clearGhost(): void {
@@ -212,9 +228,19 @@ export class ModelRenderer {
     }
 
     /** Advances every animated model to its current state. Call once per frame. */
-    update(): void {
+    update(dt = 0): void {
         for (const p of this.placed.values()) {
             if (p.rigs.some((r) => r.part.anim)) this.applyPose(p);
+        }
+        if (this.ghostRoot.visible) {
+            this.ghostTime += dt;
+            const pulse = this.glowPulse
+                ? 0.5 + 0.5 * Math.sin(this.ghostTime * 4)
+                : 0.5;
+            // Refused ghosts pulse harder so a refusal reads as a refusal, not a faint ghost.
+            this.ghostMat.opacity = this.ghostValid
+                ? 0.45 + 0.3 * pulse
+                : 0.35 + 0.5 * pulse;
         }
     }
 
@@ -237,7 +263,11 @@ export class ModelRenderer {
             // Offset runs along the animation axis, in voxels.
             rig.pivot.rotation[pose.axis] = pose.angle;
             rig.pivot.position[pose.axis] += pose.offset * 0.1;
-            if (rig.glow) rig.glow.color.setScalar(pose.glow * p.charge);
+            // Idle machines keep a dim glow, so a stopped machine reads as stopped, not as switched off.
+            if (rig.glow)
+                rig.glow.color.setScalar(
+                    pose.glow * p.charge * (p.working ? 1 : IDLE_GLOW)
+                );
         }
     }
 

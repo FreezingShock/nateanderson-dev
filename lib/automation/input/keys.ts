@@ -9,8 +9,11 @@ export type KeyAction =
     | { type: "topdown" }
     | { type: "delete-hover" }
     | { type: "toggle-delete" }
+    | { type: "pipette" }
+    | { type: "group"; dir: 1 | -1 }
     | { type: "tool"; index: number }
     | { type: "pan"; forward: number; right: number }
+    | { type: "walk"; dir: WalkDir; down: boolean }
     | { type: "zoom"; factor: number }
     | { type: "space"; down: boolean };
 
@@ -26,6 +29,10 @@ export interface KeyLike {
 
 const PAN_STEP = 1.5;
 
+// WASD pans the camera while held. The index keeps a set of held keys and moves the target each frame.
+export type WalkDir = "w" | "a" | "s" | "d";
+const WALK_KEYS: readonly string[] = ["w", "a", "s", "d"];
+
 export function mapKey(e: KeyLike): KeyAction | null {
     const mod = !!(e.ctrlKey || e.metaKey);
     if (e.altKey) return null;
@@ -33,6 +40,11 @@ export function mapKey(e: KeyLike): KeyAction | null {
     const down = e.type !== "keyup";
 
     if (key === " " || key === "Spacebar") return { type: "space", down };
+    // WASD is held-state, so it is handled before the keydown-only checks below. Ctrl/Cmd combos fall
+    // through so Ctrl+D and friends keep their browser meaning.
+    if (WALK_KEYS.includes(key) && !e.altKey && !mod) {
+        return { type: "walk", dir: key as WalkDir, down };
+    }
     if (!down) return null;
 
     if (mod) {
@@ -40,6 +52,8 @@ export function mapKey(e: KeyLike): KeyAction | null {
         if (key === "y") return { type: "redo" };
         return null;
     }
+    // Tab cycles the build groups, Shift+Tab goes back. Checked before the shift filter below.
+    if (key === "Tab" && !e.ctrlKey && !e.metaKey && !e.altKey) return e.repeat ? null : { type: "group", dir: e.shiftKey ? -1 : 1 };
     if (e.shiftKey && key !== "ArrowUp" && key !== "ArrowDown" && key !== "ArrowLeft" && key !== "ArrowRight") return null;
 
     switch (key) {
@@ -49,6 +63,8 @@ export function mapKey(e: KeyLike): KeyAction | null {
             return e.repeat ? null : { type: "topdown" };
         case "x":
             return e.repeat ? null : { type: "toggle-delete" };
+        case "q":
+            return e.repeat ? null : { type: "pipette" };
         case "Delete":
         case "Backspace":
             return { type: "delete-hover" };

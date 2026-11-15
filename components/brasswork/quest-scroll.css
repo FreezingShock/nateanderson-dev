@@ -1,0 +1,254 @@
+/* Starter quest: a parchment scroll opened from the Quest button in the build dock.
+   Desktop: it drops from the top of the stage, just past the dock's flyout edge. Phone: it spans the top under the
+   resource strip. It unrolls on open and rolls back up on close (170 ms, to match MenuWindow). Reduce motion and
+   Simple visuals switch the motion off; the HUD hides the scroll while a drawer, screen or sheet is open. */
+
+.ab-root .ab-quest {
+    position: absolute;
+    left: var(--ab-dock-edge, 110px);
+    top: var(--bw-inset-top, 76px);
+    width: 360px;
+    z-index: 30;
+    display: grid;
+    font-family: var(--bw-font-text, inherit);
+    color: #2a1b0e;
+    filter: drop-shadow(0 8px 14px rgba(0, 0, 0, 0.45));
+}
+.ab-root[data-modal="on"] .ab-quest { display: none; }
+
+/* The rolls are the scroll's two wooden-brass cylinders, one above and one below the paper. */
+.ab-quest-roll {
+    position: relative;
+    z-index: 1;
+    height: 18px;
+    margin: 0 -2px;
+    border-radius: 9px;
+    background: linear-gradient(180deg, #f6dea0 0%, #c59a52 42%, #7a5626 100%);
+    box-shadow: inset 0 -2px 0 rgba(42, 27, 14, 0.45), 0 2px 0 rgba(42, 27, 14, 0.6);
+    animation: ab-quest-cap 200ms cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+.ab-quest-roll::before,
+.ab-quest-roll::after {
+    content: "";
+    position: absolute;
+    top: -4px;
+    bottom: -4px;
+    width: 14px;
+    border-radius: 7px;
+    background: #5a3b1a;
+    border: 2px solid #2a1b0e;
+}
+.ab-quest-roll::before { left: -8px; }
+.ab-quest-roll::after { right: -8px; }
+
+/* The paper. Its clip-path is what unrolls it: the bottom edge moves down on open and back up on close. */
+.ab-quest-paper {
+    position: relative;
+    display: grid;
+    gap: 14px;
+    padding: 18px 20px 16px;
+    margin: -2px 10px 0;
+    background:
+        radial-gradient(120% 80% at 50% 0%, rgba(255, 250, 235, 0.6), transparent 60%),
+        radial-gradient(140% 120% at 50% 100%, rgba(120, 80, 30, 0.28), transparent 62%),
+        linear-gradient(180deg, #f1e0b8, #dcbf8a);
+    box-shadow: inset 0 0 0 1px rgba(90, 59, 26, 0.4), inset 0 0 30px rgba(110, 70, 20, 0.25);
+    animation: ab-quest-unroll 220ms cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+.ab-quest[data-closing="true"] .ab-quest-paper {
+    animation: ab-quest-roll-up 170ms cubic-bezier(0.5, 0, 0.8, 0.4) both;
+}
+.ab-quest[data-closing="true"] .ab-quest-roll {
+    animation: ab-quest-cap-out 170ms ease-in both;
+}
+
+@keyframes ab-quest-unroll {
+    from { clip-path: inset(0 0 100% 0); }
+    to { clip-path: inset(0 0 0 0); }
+}
+@keyframes ab-quest-roll-up {
+    from { clip-path: inset(0 0 0 0); }
+    to { clip-path: inset(0 0 100% 0); }
+}
+@keyframes ab-quest-cap {
+    from { transform: scaleX(0.6); opacity: 0; }
+    to { transform: scaleX(1); opacity: 1; }
+}
+@keyframes ab-quest-cap-out {
+    from { transform: scaleX(1); opacity: 1; }
+    to { transform: scaleX(0.6); opacity: 0; }
+}
+
+.ab-quest-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 12px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid rgba(90, 59, 26, 0.35);
+}
+.ab-quest-title {
+    font-size: 14px;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: #4a2e12;
+}
+.ab-quest-count {
+    font-size: 13px;
+    color: #7a4b1c;
+    white-space: nowrap;
+}
+
+.ab-quest-bar {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 6px;
+}
+.ab-quest-bar span {
+    height: 10px;
+    border: 2px solid #6b4a22;
+    background: rgba(90, 59, 26, 0.14);
+}
+.ab-quest-bar span[data-done="true"] {
+    background: linear-gradient(180deg, #8a5a2a, #5a3a18);
+    border-color: #4a2e12;
+}
+
+.ab-quest-now {
+    display: grid;
+    grid-template-columns: 52px 1fr;
+    gap: 14px;
+    align-items: start;
+}
+.ab-quest-seal {
+    display: grid;
+    place-items: center;
+    width: 52px;
+    height: 52px;
+    border: 2px solid #6b4a22;
+    border-radius: 50%;
+    background: radial-gradient(circle at 50% 40%, #f7e7c0, #d6b77c);
+    box-shadow: inset 0 0 0 3px rgba(107, 74, 34, 0.18);
+}
+.ab-quest-seal > span {
+    display: block;
+    width: 36px;
+    height: 36px;
+}
+.ab-quest-copy {
+    display: grid;
+    gap: 4px;
+}
+.ab-quest-label {
+    font-size: 11px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: #7a4b1c;
+}
+.ab-quest-step {
+    font-size: 17px;
+    font-weight: 700;
+    color: #2a1b0e;
+}
+.ab-quest-hint {
+    font-size: 15px;
+    line-height: 1.45;
+    color: #4a3218;
+}
+
+.ab-quest-list {
+    list-style: none;
+    margin: 0;
+    padding: 12px 0 0;
+    border-top: 1px dotted rgba(90, 59, 26, 0.45);
+    display: grid;
+    gap: 7px;
+    font-size: 15px;
+}
+.ab-quest-list li {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: #6b5030;
+}
+.ab-quest-list li[data-state="current"] { color: #2a1b0e; font-weight: 700; }
+.ab-quest-list li[data-state="done"] { color: #8a6a40; }
+.ab-quest-mark {
+    display: inline-grid;
+    place-items: center;
+    width: 24px;
+    height: 24px;
+    flex: none;
+    border: 2px solid #8a6a40;
+    font-size: 13px;
+}
+.ab-quest-list li[data-state="current"] .ab-quest-mark {
+    border-color: #9a4a1e;
+    box-shadow: 0 0 0 2px rgba(154, 74, 30, 0.22);
+}
+.ab-quest-list li[data-state="done"] .ab-quest-mark {
+    background: #6b4a22;
+    border-color: #4a2e12;
+    color: #f3dfae;
+}
+
+.ab-quest-actions {
+    display: flex;
+    gap: 10px;
+    justify-content: flex-end;
+    padding-top: 2px;
+}
+.ab-quest-btn {
+    min-height: 40px;
+    padding: 0 14px;
+    font: inherit;
+    font-size: 13px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: #4a2e12;
+    background: rgba(255, 246, 220, 0.5);
+    border: 2px solid #6b4a22;
+    cursor: pointer;
+}
+.ab-quest-btn-quiet { background: transparent; color: #7a4b1c; border-color: rgba(107, 74, 34, 0.6); }
+.ab-quest-btn:hover,
+.ab-quest-btn:focus-visible {
+    outline: none;
+    background: #6b4a22;
+    color: #f7e7c0;
+}
+
+/* The dock's Quest button shows the count under its label. */
+.ab-root .ab-dock-count {
+    font-size: 11px;
+    line-height: 1;
+    color: var(--ab-brass-hi, #f0c97a);
+    letter-spacing: 0.04em;
+}
+
+/* Phone: the scroll spans the top, under the resource strip, and uses the full width. */
+@media (max-width: 759px) {
+    .ab-root .ab-quest {
+        left: 8px;
+        right: 8px;
+        top: calc(var(--ab-top-h, 52px) + 8px);
+        width: auto;
+    }
+}
+
+/* Reduce motion and Simple visuals: no unroll, and a closing scroll leaves at once. */
+.ab-root[data-reduce="true"] .ab-quest-paper,
+.ab-root[data-lowfx="true"] .ab-quest-paper,
+.ab-root[data-reduce="true"] .ab-quest-roll,
+.ab-root[data-lowfx="true"] .ab-quest-roll {
+    animation: none !important;
+}
+.ab-root[data-reduce="true"] .ab-quest[data-closing="true"],
+.ab-root[data-lowfx="true"] .ab-quest[data-closing="true"] {
+    display: none;
+}
+@media (prefers-reduced-motion: reduce) {
+    .ab-root .ab-quest-paper,
+    .ab-root .ab-quest-roll { animation: none !important; }
+}

@@ -10,8 +10,10 @@ const Ic = {
     InfinityIcon: px("infinity"),
     Map: px("map"),
     Palette: px("palette"),
+    Sun: px("sun"),
     Pencil: px("pen"),
     Boxes: px("boxes"),
+    Crane: px("crane"),
     Layers: px("layers"),
     Settings: px("settings"),
 };
@@ -250,7 +252,7 @@ export const GAME_MODES: GameMode[] = [
         color: "var(--cm-good)",
         icon: Ic.Layers,
         tagline: "Idle games that keep growing while you're away.",
-        about: "Buttons, multipliers and resets, with progress saved in your browser. Close the tab and your farm keeps earning, up to a limit.",
+        about: "Buttons, multipliers and resets, with progress saved in your browser. Close the tab and your progress keeps earning, up to a limit.",
         coming: "The next incremental game is in development. It goes live in this section when it is playable.",
         games: [
             {
@@ -262,6 +264,24 @@ export const GAME_MODES: GameMode[] = [
                 features: ["7 chained stats", "Offline progress", "Ascend for perks"],
                 href: "/creations/games/node-farm",
             },
+            {
+                slug: "starwright",
+                title: "Starwright",
+                status: "playable",
+                icon: Ic.Sun,
+                blurb: "You are a star. Fuse hydrogen up the periodic table, collapse into a supernova, then chart constellations that make the next star burn brighter.",
+                features: ["10 element ladder", "Supernova, neutron star, black hole", "Planets and constellations"],
+                href: "/creations/games/starwright",
+            },
+            {
+                slug: "groundbreak",
+                title: "Groundbreak",
+                status: "playable",
+                icon: Ic.Crane,
+                blurb: "Run a construction company in the Bay Area. Twelve materials, each boosting the next, build a cutaway job floor by floor, and keep the skyline when you incorporate.",
+                features: ["12 chained materials", "Zoomable cutaway site", "Permanent skyline"],
+                href: "/creations/games/groundbreak",
+            },
         ],
     },
     {
@@ -271,12 +291,12 @@ export const GAME_MODES: GameMode[] = [
         icon: Ic.Settings,
         tagline: "Build the machine that does the work.",
         about: "Automation games are about setting up systems that run on their own, then improving them.",
-        coming: "Next up. No automation game is playable yet.",
+        coming: "Next up. More automation games are planned.",
         games: [
             {
                 slug: "brasswork",
                 title: "Brasswork",
-                status: "building",
+                status: "playable",
                 icon: Ic.Settings,
                 blurb: "A clockwork-workshop factory on a 3D voxel island. Place machines on a grid, refine ores into parts, and send expeditions out from the workshop.",
                 features: ["3D island", "Machines on a grid", "Expeditions"],

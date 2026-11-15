@@ -28,6 +28,8 @@ interface Tracked {
     button: number;
     mode: Mode;
     hold?: ReturnType<typeof setTimeout>;
+    // True for a left press with no tool and no space: a short release counts as a select click.
+    click?: boolean;
 }
 
 const ORBIT_YAW = 0.008;
@@ -91,6 +93,17 @@ export class PointerInput {
         return hit ? hit.cell : null;
     }
 
+    // World point under a client-space point (continuous, not snapped to a cell), or null off the board.
+    private groundAt(clientX: number, clientY: number): { x: number; z: number } | null {
+        const rect = this.opts.element.getBoundingClientRect();
+        if (rect.width === 0 || rect.height === 0) return null;
+        const ndcX = ((clientX - rect.left) / rect.width) * 2 - 1;
+        const ndcY = 1 - ((clientY - rect.top) / rect.height) * 2;
+        const view = this.opts.camera.view(rect.width / rect.height);
+        const hit = pickGround(screenRay(view, ndcX, ndcY), this.opts.board, this.opts.heightAt);
+        return hit ? { x: hit.point.x, z: hit.point.z } : null;
+    }
+
     private changed(): void {
         this.opts.onChange?.();
     }
@@ -142,6 +155,7 @@ export class PointerInput {
         } else if (e.button === 1 || (e.button === 0 && this.spaceDown)) {
             p.mode = "pan";
         } else if (e.button === 0) {
+            p.click = !this.opts.build.getTool();
             if (this.opts.build.getTool()) {
                 const cell = this.cellAt(e.clientX, e.clientY);
                 if (cell) {
@@ -250,15 +264,27 @@ export class PointerInput {
         if (p.mode === "stroke") {
             this.opts.build.endStroke();
         } else if (p.mode === "pending" && e.type === "pointerup") {
-            // Quick touch tap: place a single cell.
+            // Quick touch tap: place a single cell, or select a building when no tool is active.
             const cell = this.cellAt(e.clientX, e.clientY);
-            if (cell) this.opts.build.tap(cell);
+            if (cell) {
+                if (this.opts.build.getTool()) this.opts.build.tap(cell);
+                else this.opts.build.select(cell);
+            }
+        } else if (p.mode === "orbit" && e.type === "pointerup" && p.button === 2 && Math.hypot(e.clientX - p.sx, e.clientY - p.sy) <= this.opts.slopPx) {
+            // A short right click (no drag) with a tool armed cancels the tool. A drag still orbits the camera.
+            if (this.opts.build.isStroking()) this.opts.build.cancelStroke();
+            else if (this.opts.build.getTool()) this.opts.build.setTool(null);
+        } else if (p.mode === "pan" && p.click && e.type === "pointerup" && Math.hypot(e.clientX - p.sx, e.clientY - p.sy) <= this.opts.slopPx) {
+            // Mouse click with no tool: a short release on a building selects it. A drag still pans.
+            const cell = this.cellAt(e.clientX, e.clientY);
+            if (cell) this.opts.build.select(cell);
         }
 
         if (this.pointers.size < 2) {
             this.pinchPrev = null;
             // A finger left over from a pinch does nothing until it lifts.
-            for (const q of this.pointers.values()) if (q.mode === "pinch") q.mode = "ignored";
+            // The finger left over from a pinch carries on as a pan, so the map keeps following it.
+            for (const q of this.pointers.values()) if (q.mode === "pinch") q.mode = "pan";
         }
         this.changed();
     };
@@ -274,7 +300,8 @@ export class PointerInput {
         if (e.deltaMode === 1) dy *= 16;
         // Trackpad pinch arrives as ctrl+wheel with small deltas. Wheel steps are larger, so keep both readable.
         const k = e.ctrlKey ? 0.01 : 0.0015;
-        this.opts.camera.zoom(Math.exp(dy * k));
+        // Zoom toward the cursor so the spot under the mouse stays put.
+        this.opts.camera.zoomAt(Math.exp(dy * k), this.groundAt(e.clientX, e.clientY));
         this.changed();
     };
 
@@ -294,7 +321,10 @@ export class PointerInput {
         if (this.pointers.size < 2 || !this.pinchPrev) return;
         const next = this.pinchState();
         // Fingers spread apart means zoom in, so the factor is previous over current.
-        this.opts.camera.zoom(this.pinchPrev.dist / next.dist);
+        // Zoom toward the midpoint between the fingers.
+        const [a, b] = [...this.pointers.values()];
+        const mid = this.groundAt((a.x + b.x) / 2, (a.y + b.y) / 2);
+        this.opts.camera.zoomAt(this.pinchPrev.dist / next.dist, mid);
         let dAngle = next.angle - this.pinchPrev.angle;
         if (dAngle > Math.PI) dAngle -= 2 * Math.PI;
         if (dAngle < -Math.PI) dAngle += 2 * Math.PI;

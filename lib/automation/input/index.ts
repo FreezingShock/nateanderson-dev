@@ -14,14 +14,19 @@ import { type HeightFn } from "./picking";
 import { OrbitCamera, type CameraLimits, type OrbitPose, DEFAULT_LIMITS } from "./camera";
 import { BuildController, type BuildWorld, type ToolSpec, DELETE_TOOL, type BuildEvent } from "./build";
 import { PointerInput } from "./pointer";
+import { project } from "./picking";
 import { createTouchBar, type TouchBar } from "./touch-bar";
-import { mapKey, type KeyAction } from "./keys";
+import { mapKey, type KeyAction, type WalkDir } from "./keys";
 
 export interface InputOptions {
     element: HTMLElement;
     board: BoardSize;
     world: BuildWorld;
     tools: ToolSpec[];
+    // Optional build groups in display order. Tab and Shift+Tab step through them; the number keys then pick from the open group.
+    groups?: ToolSpec[][];
+    /** Called when Tab or Shift+Tab moves to another group, with its index in `groups`. */
+    onGroup?: (index: number) => void;
     heightAt?: HeightFn;
     limits?: CameraLimits;
     initialPose?: Partial<OrbitPose>;
@@ -36,6 +41,11 @@ export interface InputController {
     build: BuildController;
     pointer: PointerInput;
     setToolById(id: string | null): void;
+    /** Index of the group the number keys pick from. */
+    group(): number;
+    setGroup(i: number): void;
+    // Client-pixel position of a cell's centre, for pinning a pop-up. Null when the cell is behind the camera.
+    screenPoint(cell: { x: number; z: number }): { x: number; y: number } | null;
     update(dt: number): void;
     destroy(): void;
 }
@@ -47,9 +57,14 @@ const isTyping = (t: EventTarget | null): boolean => {
     return tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT" || el.isContentEditable === true;
 };
 
+// Units per second of ground travel, per unit of camera distance. At the default zoom this crosses the island in about 2 s.
+const WALK_SPEED_PER_DISTANCE = 0.7;
+
 export function createInputController(opts: InputOptions): InputController {
     const camera = new OrbitCamera(opts.limits ?? DEFAULT_LIMITS, opts.initialPose);
-    const build = new BuildController({ world: opts.world, board: opts.board, onEvent: opts.onEvent });
+    // Line tools (belts) define the runs that runAt and the belt pop-up follow.
+    const lineKinds = opts.tools.filter((t) => t.line).map((t) => t.id);
+    const build = new BuildController({ world: opts.world, board: opts.board, onEvent: opts.onEvent, lineKinds });
     const pointer = new PointerInput({
         element: opts.element,
         camera,
@@ -68,10 +83,14 @@ export function createInputController(opts: InputOptions): InputController {
 
     const setToolById = (id: string | null) => build.setTool(toolFor(id));
 
+    // The tools the number keys pick from: the open group when groups are given, otherwise the full list.
+    let groupIndex = 0;
+    const activeTools = (): ToolSpec[] => (opts.groups && opts.groups.length > 0 ? opts.groups[groupIndex] : opts.tools);
+
     const apply = (a: KeyAction): boolean => {
         switch (a.type) {
             case "rotate":
-                build.rotateCw();
+                build.rotateHover();
                 return true;
             case "undo":
                 return build.undo();
@@ -97,8 +116,25 @@ export function createInputController(opts: InputOptions): InputController {
             case "toggle-delete":
                 build.setTool(build.getTool()?.id === DELETE_TOOL.id ? null : DELETE_TOOL);
                 return true;
+            case "group": {
+                if (!opts.groups || opts.groups.length === 0) return false;
+                const n = opts.groups.length;
+                groupIndex = (groupIndex + a.dir + n) % n;
+                build.setTool(null);
+                opts.onGroup?.(groupIndex);
+                return true;
+            }
+            case "pipette": {
+                // Copies the building under the hover cell onto the palette: its tool becomes armed, as if picked from the list.
+                const h = build.getHover();
+                const item = h ? build.peek(h) : null;
+                const t = item ? opts.tools.find((x) => x.id === item.kind) ?? null : null;
+                if (!t) return false;
+                build.setTool(t);
+                return true;
+            }
             case "tool": {
-                const t = opts.tools[a.index];
+                const t = activeTools()[a.index];
                 if (!t) return false;
                 build.setTool(build.getTool()?.id === t.id ? null : t);
                 return true;
@@ -112,8 +148,14 @@ export function createInputController(opts: InputOptions): InputController {
             case "space":
                 pointer.setSpace(a.down);
                 return true;
+            case "walk":
+                return false;
         }
     };
+
+    // Held WASD keys. update(dt) turns them into camera movement every frame.
+    const held = new Set<WalkDir>();
+    const onBlur = () => held.clear();
 
     const onKey = (e: KeyboardEvent) => {
         if (isTyping(e.target) || e.defaultPrevented) return;
@@ -127,6 +169,15 @@ export function createInputController(opts: InputOptions): InputController {
             type: e.type,
         });
         if (!action) return;
+        if (action.type === "walk") {
+            if (action.down) {
+                held.add(action.dir);
+                e.preventDefault();
+            } else {
+                held.delete(action.dir);
+            }
+            return;
+        }
         if (apply(action)) {
             e.preventDefault();
             opts.onChange?.();
@@ -136,6 +187,7 @@ export function createInputController(opts: InputOptions): InputController {
     if (kt) {
         kt.addEventListener("keydown", onKey);
         kt.addEventListener("keyup", onKey);
+        kt.addEventListener("blur", onBlur);
     }
 
     const unsub = build.subscribe(() => opts.onChange?.());
@@ -145,7 +197,35 @@ export function createInputController(opts: InputOptions): InputController {
         build,
         pointer,
         setToolById,
+        group: () => groupIndex,
+        // Moves the number keys to another group (a dock click). Does not fire onGroup: the caller already knows.
+        setGroup(i: number) {
+            if (!opts.groups || i < 0 || i >= opts.groups.length || i === groupIndex) return;
+            groupIndex = i;
+            build.setTool(null);
+        },
+        screenPoint(cell) {
+            const rect = opts.element.getBoundingClientRect();
+            if (rect.width === 0 || rect.height === 0) return null;
+            const aspect = rect.width / rect.height;
+            const view = camera.view(aspect);
+            const y = opts.heightAt ? opts.heightAt(cell.x + 0.5, cell.z + 0.5) : 0;
+            const p = project(view, { x: cell.x + 0.5, y, z: cell.z + 0.5 });
+            if (!p.visible) return null;
+            return { x: rect.left + ((p.ndcX + 1) / 2) * rect.width, y: rect.top + ((1 - p.ndcY) / 2) * rect.height };
+        },
         update(dt: number) {
+            if (held.size > 0) {
+                const step = Math.min(Math.max(0, dt), 0.1);
+                const fwd = (held.has("w") ? 1 : 0) - (held.has("s") ? 1 : 0);
+                const side = (held.has("d") ? 1 : 0) - (held.has("a") ? 1 : 0);
+                if (fwd !== 0 || side !== 0) {
+                    // Speed scales with zoom so a close view and a far view both feel right.
+                    const speed = WALK_SPEED_PER_DISTANCE * camera.pose().distance * step;
+                    const len = Math.hypot(fwd, side);
+                    camera.panWorld((fwd / len) * speed, (side / len) * speed);
+                }
+            }
             camera.update(dt);
         },
         destroy() {
@@ -154,7 +234,9 @@ export function createInputController(opts: InputOptions): InputController {
             if (kt) {
                 kt.removeEventListener("keydown", onKey);
                 kt.removeEventListener("keyup", onKey);
+                kt.removeEventListener("blur", onBlur);
             }
+            held.clear();
         },
     };
 }
@@ -201,9 +283,7 @@ export function mount(camera: ViewSink, domElement: HTMLElement, options: MountO
             isTopDown: () => controller.camera.isTopDown(),
             onTopDown: pick(() => controller.camera.toggleTopDown()),
             onRotate: pick(() => {
-                const h = b.getHover();
-                if (h && b.peek(h)) b.rotateAt(h);
-                else b.rotateCw();
+                b.rotateHover();
             }),
             onUndo: pick(() => b.undo()),
             onRedo: pick(() => b.redo()),

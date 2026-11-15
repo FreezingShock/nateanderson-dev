@@ -232,8 +232,12 @@
   column-gap: 8px;
 }
 
-.ab-res-item[data-empty="true"] {
+/* Empty: the icon dims and the count turns warning red. The row itself stays readable, so its rate can be read too. */
+.ab-res-item[data-empty="true"] .ab-glyph {
   opacity: 0.5;
+}
+.ab-res-item[data-empty="true"] .ab-res-amt {
+  color: var(--ab-bad);
 }
 
 .ab-res-name {
@@ -336,6 +340,35 @@
 .ab-section {
   border-top: 1px solid var(--ab-line-soft);
   padding-top: 8px;
+}
+
+/* Each factory block is its own bounded panel: a hairline frame inside the corner brackets,
+   a full-width header that toggles it (blank space in the header counts), and a body that
+   only shows when open. Sharp corners, no side strip, no pills. */
+.ab-section.ab-panel,
+.ab-inspect-panel {
+  border: 1px solid var(--ab-line-soft);
+  padding: 0;
+  margin: 0;
+}
+
+.ab-section.ab-panel > .ab-section-head {
+  min-height: 44px;
+  margin: 0;
+  padding: 10px 14px;
+  align-items: center;
+}
+
+.ab-section.ab-panel > .ab-section-body {
+  padding: 4px 14px 14px;
+}
+
+.ab-section.ab-panel[data-open="false"] > .ab-section-head {
+  padding-bottom: 10px;
+}
+
+.ab-inspect-panel {
+  padding: 12px 14px 14px;
 }
 
 .ab-section-head {
@@ -789,4 +822,256 @@
   background-color: #17120b;
   background-repeat: no-repeat;
   image-rendering: pixelated;
+}
+
+/* ---- palette groups: each group is its own framed, collapsible panel ---- */
+.ab-build-groups {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.ab-build-groups > .ab-section.ab-panel > .ab-section-body > .ab-build {
+  margin: 0;
+}
+
+/* ---- stage toggles: desktop keeps the tools on the stage; phone puts the sheet toggles on the bottom edge ---- */
+
+@media (max-width: 759px) {
+
+}
+
+/* Groups carry their own titles, so the palette's top heading would repeat the first group. */
+.ab-pal > .ab-factory-head {
+  display: none;
+}
+
+.ab-build-groups > .ab-section.ab-panel > .ab-section-head {
+  padding: 8px 10px;
+}
+
+.ab-build-groups > .ab-section.ab-panel > .ab-section-body {
+  padding: 2px 6px 6px;
+}
+
+/* ---- phone bottom bar: four tabs replace the top menu row and the old sheet toggles ---- */
+.ab-tabbar {
+  display: none;
+}
+
+@media (max-width: 759px) {
+  .ab-top .ab-nav {
+    display: none;
+  }
+
+
+  .ab-tabbar {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 6px;
+    padding: 8px 10px 10px;
+    margin-top: auto;
+    position: relative;
+    z-index: 4;
+    background: var(--ab-panel);
+    border-top: 1px solid var(--ab-line);
+  }
+
+  .ab-tab {
+    min-height: 44px;
+    padding: 6px 4px;
+    background: transparent;
+    border: 1px solid var(--ab-line-soft);
+    color: var(--ab-dim);
+    font-size: 12px;
+    letter-spacing: 0.02em;
+    cursor: pointer;
+  }
+
+  .ab-tab[aria-pressed="true"] {
+    border-color: var(--ab-brass-hi);
+    color: var(--ab-brass-hi);
+  }
+
+  .ab-more {
+    position: absolute;
+    right: 10px;
+    bottom: 62px;
+    z-index: 5;
+    display: grid;
+    gap: 6px;
+    min-width: 200px;
+    padding: 10px;
+    background: var(--ab-panel);
+    border: 1px solid var(--ab-brass);
+  }
+
+  .ab-more-item {
+    min-height: 44px;
+    padding: 8px 12px;
+    background: transparent;
+    border: 1px solid var(--ab-line-soft);
+    color: var(--ab-text, inherit);
+    text-align: left;
+    font-size: 13px;
+    cursor: pointer;
+  }
+}
+
+/* Layout fixes: a status word stays on the same line as its name, and a milestone reward never hangs off the edge. */
+.ab-build-name .ab-dim {
+  white-space: nowrap;
+}
+
+.ab-milestone-top {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 2px 10px;
+}
+
+.ab-milestone-top .ab-dim {
+  white-space: nowrap;
+}
+
+/* Wider palette on desktop so locked rows keep the name and status on one line. */
+@media (min-width: 760px) {
+  .ab-pal {
+    width: 356px;
+  }
+}
+
+/* HUD glyphs: sized by uiIconStyle, set beside a text label. */
+.ab-ico {
+  display: inline-block;
+  flex: none;
+  vertical-align: middle;
+  margin-right: 6px;
+}
+
+.ab-tab {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+}
+
+.ab-tab .ab-ico {
+  margin: 0;
+}
+
+/* Desktop hierarchy: Research is the main progression step, so it is the one filled button in the top bar. */
+.ab-text-btn.ab-primary {
+  background: var(--ab-brass);
+  border-color: var(--ab-brass-hi);
+  color: #1a1209;
+  font-weight: 600;
+}
+
+.ab-text-btn.ab-primary:hover:not(:disabled),
+.ab-text-btn.ab-primary[aria-expanded="true"] {
+  background: var(--ab-brass-hi);
+  color: #1a1209;
+}
+
+/* Desktop hierarchy: each framed panel header is a brass band, the title is the bright level, and meta text stays dim. */
+@media (min-width: 760px) {
+  .ab-section.ab-panel > .ab-section-head {
+    background: linear-gradient(rgba(197, 154, 82, 0.14), rgba(197, 154, 82, 0.02));
+    border-bottom: 1px solid var(--ab-line-soft);
+  }
+
+  .ab-section.ab-panel > .ab-section-head .ab-h {
+    color: var(--ab-brass-hi);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    font-size: 13px;
+  }
+
+  .ab-section.ab-panel > .ab-section-head .ab-dim {
+    font-size: 12px;
+  }
+}
+
+/* Menu screens and drawers use the same framed-panel system as the factory panels: a brass header band with a bright title. */
+.ab-screen-head,
+.ab-drawer > .ab-head {
+  background: linear-gradient(rgba(197, 154, 82, 0.16), rgba(197, 154, 82, 0.03));
+  border-bottom: 1px solid var(--ab-line-soft);
+  padding: 12px 16px;
+  min-height: 52px;
+  align-items: center;
+}
+
+.ab-screen-head .ab-h,
+.ab-drawer > .ab-head .ab-h {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--ab-brass-hi);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  font-size: 13px;
+}
+
+.ab-drawer > .ab-head .ab-text-btn,
+.ab-screen-head .ab-text-btn {
+  min-height: 44px;
+}
+
+/* Phone: an open drawer sits above the stage's touch bar, so its rows are never covered. */
+@media (max-width: 759px) {
+  .ab-drawer {
+    z-index: 8;
+    max-height: 60dvh;
+    overflow-y: auto;
+  }
+}
+
+/* Phone: the Keys button is hidden (no keyboard on phones), so Photo, Light and Codex share one row. */
+@media (max-width: 759px) {
+  .bx-keys-btn {
+    display: none;
+  }
+}
+
+/* Phone: menu screen headers wrap their subtitle onto its own line, so Close never sits over the text. */
+@media (max-width: 759px) {
+  .ab-screen > .ab-screen-head {
+    flex: none;
+  }
+
+  .ab-screen > .ab-screen-body {
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+
+  .ab-screen > .ab-screen-body > * {
+    flex-shrink: 0;
+  }
+
+  .ab-screen > .ab-screen-body > .ab-sites {
+    flex: none;
+  }
+
+  .ab-screen-head {
+    flex-wrap: wrap;
+    align-items: center;
+    row-gap: 6px;
+  }
+
+  .ab-screen-head > .ab-h {
+    order: 0;
+  }
+
+  .ab-screen-head > .ab-screen-close {
+    order: 1;
+  }
+
+  .ab-screen-head > .ab-dim {
+    order: 2;
+    flex: 1 1 100%;
+  }
 }

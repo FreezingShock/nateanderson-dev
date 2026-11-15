@@ -1,6 +1,6 @@
 // Tree species for the island. Each generator takes a seed and returns a
 // unique variant, so a forest never repeats the same silhouette.
-import { BARK, LEAF } from "./palette";
+import { BARK, EVERGREEN_OAK_SEEDS, LEAF } from "./palette";
 import { Vox, clamp, hash3, mix, noise3, rng, smooth, type PropModel, type Vec3 } from "./vox";
 
 type Leaves = readonly number[];
@@ -88,7 +88,8 @@ export function oak(seed: number, autumn = false): PropModel {
         v.line([0, y0, 0], e, 1.3, 0.6, bark);
         ends.push(e);
     }
-    const pal = autumn ? LEAF.maple : LEAF.oak;
+    const green = !autumn && EVERGREEN_OAK_SEEDS.includes(seed);
+    const pal = autumn ? LEAF.maple : green ? LEAF.oak : LEAF.oakFall;
     const before = new Set<number>([BARK.oak, BARK.oakD, BARK.moss]);
     const paint = leafPaint(pal, seed);
     const reach = 6.5 + R() * 2.5;
@@ -103,7 +104,7 @@ export function oak(seed: number, autumn = false): PropModel {
         const a = R() * Math.PI * 2, d = reach + 2 + R() * 2;
         v.ellipsoid(Math.cos(a) * d, H + 2 + R() * 7, Math.sin(a) * d, 3.2, 2.6, 3.2, paint, 0.3, seed + 40 + n, { keep: true });
     }
-    finishLeaves(v, leafKeys(v, before), autumn ? LEAF.mapleLit : LEAF.oakLit, seed);
+    finishLeaves(v, leafKeys(v, before), autumn ? LEAF.mapleLit : green ? LEAF.oakLit : LEAF.oakFallLit, seed);
     return v.build({ sway: treeSway(H + reach * 2, reach * 2 + 4) });
 }
 
@@ -149,7 +150,7 @@ export function birch(seed: number): PropModel {
     const R = rng(seed * 13 + 9);
     const v = new Vox(`tree.birch.${seed}`);
     const stems = 1 + Math.floor(R() * 3);
-    const leaves = leafPaint(LEAF.birch, seed);
+    const leaves = leafPaint(LEAF.birchFall, seed);
     const bark = (i: number, j: number, k: number) => (hash3(0, j, 0, seed + i * 3 + k) < 0.16 || (j % 5 === 0 && hash3(i, j, k, seed) < 0.5) ? BARK.birchMark : BARK.birch);
     let top = 0;
     for (let s = 0; s < stems; s++) {
@@ -169,7 +170,7 @@ export function birch(seed: number): PropModel {
         }
         v.ellipsoid(ox + lx, H + 1, oz + lz, 5.5, 4.5, 5.5, leaves, 0.35, seed + 70 + s, { keep: true });
     }
-    finishLeaves(v, new Set(LEAF.birch), LEAF.birchLit, seed, 0.45);
+    finishLeaves(v, new Set(LEAF.birchFall), LEAF.birchFallLit, seed, 0.45);
     return v.build({ sway: treeSway(top + 5, 11) });
 }
 
@@ -183,14 +184,14 @@ export function willow(seed: number): PropModel {
     const lean: [number, number] = [Math.cos(la) * 3.5, Math.sin(la) * 3.5];
     trunk(v, H, 2.8, 1.9, bark, lean, 5, seed);
     const cx = lean[0], cz = lean[1];
-    const leaves = leafPaint(LEAF.willow, seed);
+    const leaves = leafPaint(LEAF.willowFall, seed);
     const rx = 10 + R() * 2.5, ry = 7 + R() * 1.5, rz = 10 + R() * 2.5;
     v.ellipsoid(cx, H + 3, cz, rx, ry, rz, leaves, 0.25, seed, { keep: true });
     for (let n = 0; n < 4; n++) {
         const a = (n / 4) * Math.PI * 2 + R();
         v.line([cx, H - 1, cz], [cx + Math.cos(a) * rx * 0.7, H + 2, cz + Math.sin(a) * rz * 0.7], 0.9, 0.5, bark);
     }
-    finishLeaves(v, new Set(LEAF.willow), LEAF.willowLit, seed, 0.2);
+    finishLeaves(v, new Set(LEAF.willowFall), LEAF.willowFallLit, seed, 0.2);
     // Hanging strands from the underside of the dome; they swing the most.
     const strands = 110 + Math.floor(R() * 40);
     const drapes = 9 + Math.floor(R() * 4);
@@ -199,10 +200,10 @@ export function willow(seed: number): PropModel {
         const x = cx + Math.cos(a) * (rx + 0.5) * d, z = cz + Math.sin(a) * (rz + 0.5) * d;
         const top = Math.floor(H + 3 + ry * (0.2 - d * 0.5) );
         const len = Math.min(Math.floor(H * 0.75), 5 + Math.floor(R() * (6 + d * 10)));
-        const col = LEAF.willow[Math.floor(R() * 4)];
+        const col = LEAF.willowFall[Math.floor(R() * 4)];
         for (let j = 0; j < len; j++) {
             const drift = j * 0.08;
-            v.set(x + Math.cos(a) * drift, top - j, z + Math.sin(a) * drift, j === len - 1 ? mix(col, LEAF.willowLit, 0.4) : col, { sway: clamp(0.55 + j / len * 0.45, 0, 1), keep: true });
+            v.set(x + Math.cos(a) * drift, top - j, z + Math.sin(a) * drift, j === len - 1 ? mix(col, LEAF.willowFallLit, 0.4) : col, { sway: clamp(0.55 + j / len * 0.45, 0, 1), keep: true });
         }
     }
     return v.build({ sway: treeSway(H + ry * 2, rx + 2) });

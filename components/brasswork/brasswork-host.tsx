@@ -3,9 +3,9 @@
 // Mounts Brasswork: the simulation (lib/automation/sim), the voxel island renderer (lib/automation/render, loaded
 // with a dynamic import so Three.js stays off every other route) and the 2D HUD (components/automation).
 // The world is 18 by 12 cells at one world unit per cell, which is the renderer's factory plateau.
-import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { AutomationHud } from "@/components/automation/automation-hud";
+import { openHubMenu } from "@/components/automation/hub-menu";
 import {
     DEFAULT_CATALOG,
     actions as simActions,
@@ -29,13 +29,24 @@ import {
     type World,
 } from "@/lib/automation/sim";
 import type { VoxelIsland } from "@/lib/automation/render";
-import type { BuildWorld, MountedInput } from "@/lib/automation/input";
-import { getMachineModel } from "@/lib/automation/models/machines";
+import type { BuildWorld, InputController, MountedInput, ToolSpec } from "@/lib/automation/input";
+import { openRowsOf, type GroupId } from "@/components/automation/build-bar";
+import { DELETE_TOOL } from "@/lib/automation/input/build";
+import { getMachineModel, getHubModel, hubStageFor } from "@/lib/automation/models/machines";
+import { rotateCell, rotateSide } from "@/lib/automation/input/ports";
+import { nodeModel, variantForCell, type ResourceId } from "@/lib/automation/models/resources";
 import { pickBeltTile, type PieceKind, type PiecePlacement } from "@/lib/automation/models/belts";
 import { WATER_LEVEL } from "@/lib/automation/render/config";
+import { createBeltItems } from "@/lib/automation/render/beltitems";
 import { scatterProps } from "@/lib/automation/models/props";
-import { BrassworkExtras, type AwayReport, type Mood } from "./extras";
-import { bw, bwHum, bwSetEnabled } from "@/lib/brasswork/sound";
+import { BrassworkExtras, MOODS, type AwayReport, type Mood } from "./extras";
+import { useFirstRunQuest } from "./first-run";
+import { BuildPopover, TrashButton } from "./build-popover";
+import { attachUiSounds, playSound, setAmbient, setEnabled as setSoundOn, startAudio } from "@/lib/automation/audio";
+import { LightingRow, SaveRows } from "./settings-extras";
+import { VolumeRows } from "./audio-rows";
+import { loadSettings, saveSettings } from "@/lib/brasswork/settings";
+import "@/components/brasswork-ui/type.css";
 
 const W = 18;
 const D = 12;
@@ -50,6 +61,12 @@ const NODE_SPOTS: [number, number][] = [[2, 2], [2, 8], [15, 2], [15, 8], [8, 1]
 const BOARD = { width: W, depth: D, originX: -W / 2, originZ: -D / 2 };
 
 const BELT_TIER: Record<string, number> = { belt: 0, "belt-copper": 1, "belt-steel": 2 };
+// The build dock's sections in display order. Tab and Shift+Tab step through them, and the number keys pick from the open one.
+const DOCK_ORDER: GroupId[] = ["logistics", "machines", "power"];
+const toolSpecOf = (id: string): ToolSpec => {
+    const r = resolve(CAT, id);
+    return { id, label: r?.name ?? id, line: id in BELT_TIER, footprint: r ? { w: r.footprint.w, d: r.footprint.d } : undefined };
+};
 const FACE: readonly (readonly [number, number])[] = [[0, 1], [1, 0], [0, -1], [-1, 0]];
 
 /** Which belt tile a plain sim belt cell should show, from what feeds it and what it feeds. */
@@ -76,7 +93,6 @@ function beltTile(world: World, b: { x: number; z: number; rot: number; type: st
 }
 
 const TYPE_COLORS: Record<string, number> = { hub: 0xc59a52, drill: 0x7f8ca3, power: 0xc4682f };
-const ORE_COLORS: Record<string, number> = { iron_ore: 0x8e3b28, copper_ore: 0x58b09a, coal: 0x25252b, quartz: 0xf2cfe0, aluminium_ore: 0x98b2d4 };
 
 function freshWorld(): World {
     const w = createWorld({ width: W, depth: D, hub: { x: 8, z: 5 } }, CAT);
@@ -104,38 +120,73 @@ export function BrassworkHost() {
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const [data, setData] = useState<HudData>(() => hudData(freshWorld(), CAT, null, START_SETTINGS));
     const [note, setNote] = useState("");
+    // Placed-piece pop-up: the building's anchor, what it is, and where to pin it on screen.
+    const [pop, setPop] = useState<{ anchor: { x: number; z: number }; kind: string; kindLabel: string; x: number; y: number } | null>(null);
+    const [inputCtl, setInputCtl] = useState<InputController | null>(null);
     const [away, setAway] = useState<AwayReport | null>(null);
     const [mood, setMood] = useState<Mood>("Auto");
+    const quest = useFirstRunQuest(data);
     const moodRef = useRef<Mood>("Auto");
     const onMood = useCallback((m: Mood) => {
         moodRef.current = m;
         setMood(m);
+        try { localStorage.setItem("bw-mood-v1", m); } catch { /* private mode: lighting still changes for this visit */ }
+    }, []);
+    useEffect(() => {
+        try {
+            const m = localStorage.getItem("bw-mood-v1");
+            if (m && (MOODS as readonly string[]).includes(m)) { moodRef.current = m as Mood; setMood(m as Mood); }
+        } catch { /* no storage */ }
     }, []);
     const snap = useRef<(() => string) | null>(null);
     const snapshot = useCallback(() => snap.current?.() ?? null, []);
+    // The palette tool the player armed (null when none). Mirrors the input module's tool so the palette can show it.
+    const armedRef = useRef<string | null>(null);
+    // The build dock section that is open, mirrored from the HUD and the Tab keys.
+    const [dockGroup, setDockGroup] = useState<GroupId | null>(null);
+    const onDockGroup = useCallback((g: GroupId | null) => {
+        setDockGroup(g);
+        if (g) ctl.current?.group(DOCK_ORDER.indexOf(g));
+    }, []);
     const ctl = useRef<{
         setTool: (id: string | null) => void;
+        group: (index: number) => void;
         select: (id: string | null) => void;
         research: (id: string) => void;
         setRecipe: (id: string) => void;
         prestige: (id: string) => void;
         settings: (p: Partial<HudSettings>) => void;
+        details: (anchor: { x: number; z: number }) => void;
     } | null>(null);
 
     useEffect(() => {
         let dead = false;
         let cleanup = () => {};
         (async () => {
-            const [{ createVoxelIsland, heightAt }, { mount }] = await Promise.all([import("@/lib/automation/render"), import("@/lib/automation/input")]);
+            const [{ createVoxelIsland, heightAt }, { mount }, { attachLife }] = await Promise.all([import("@/lib/automation/render"), import("@/lib/automation/input"), import("@/lib/automation/render/life")]);
             const canvas = canvasRef.current;
             if (dead || !canvas) return;
             const { world, savedAt } = loadWorld();
-            let settings = { ...START_SETTINGS };
+            let settings = loadSettings(START_SETTINGS);
             let selectedId: number | null = null;
             const drawn = new Set<number>();
+            let hubStage = -1;
+            const shownNodes = new Map<string, string>();
+            // How tall each machine stands above its cells (input frame), so a click on a machine's body picks the machine
+            // and not the ground behind it. Belts stay flat. Rebuilt by syncScene.
+            const bodyTop = new Map<string, number>();
+            const pickHeightAt = (x: number, z: number) => heightAt(x, z) + (bodyTop.get(`${Math.floor(x)},${Math.floor(z)}`) ?? 0);
 
             const island: VoxelIsland = createVoxelIsland(canvas, { quality: "auto", dither: true, timeOfDay: 0.4, cycle: false, orbit: false });
             [1.2, 2, 3].forEach((v, tier) => island.setBeltSpeed(tier, v));
+            // Island life: leaves, birds, fireflies, smoke, shore glints, drizzle and reward bursts.
+            const life = attachLife(island, heightAt);
+            // Items riding the belts, redrawn each frame from the sim's lanes.
+            const beltItems = createBeltItems();
+            island.scene.add(beltItems.object);
+            const beltPieces = new Map<number, PiecePlacement>();
+            // Handle for the browser console and headless captures: __bwLife.burst("milestone", 0, 0), __bwLife.setRain(1).
+            (window as unknown as { __bwLife?: typeof life }).__bwLife = life;
             // Natural scenery around the plateau; nothing grows on it, and trees keep clear of the machines.
             island.setScenery(
                 scatterProps({
@@ -152,6 +203,16 @@ export function BrassworkHost() {
 
             // Keep the scene in step with the world: draw new buildings, remove the ones that are gone.
             const syncScene = () => {
+                bodyTop.clear();
+                for (const b of Object.values(world.buildings)) {
+                    if (b.type in BELT_TIER) continue;
+                    const r = resolve(CAT, b.type);
+                    const model = b.type === "hub" ? getHubModel(hubStage < 0 ? 0 : hubStage) : getMachineModel(b.type);
+                    if (!r || !model) continue;
+                    // Most of the model's height, so a click near the very top edge still counts as the machine.
+                    const top = (model.size?.[1] ?? 8) * model.voxel * 0.75;
+                    for (const [cx, cz] of footprintCells(b, r.footprint)) bodyTop.set(`${cx - W / 2},${cz - D / 2}`, top);
+                }
                 for (const id of [...drawn]) {
                     if (!world.buildings[id]) {
                         island.removeObject(`b${id}`);
@@ -160,12 +221,40 @@ export function BrassworkHost() {
                 }
                 // Belts pick their tile from their neighbours, so a placement or removal can change the cells around it.
                 const pieces: PiecePlacement[] = [];
+                beltPieces.clear();
                 for (const b of Object.values(world.buildings)) {
                     if (!(b.type in BELT_TIER)) continue;
-                    pieces.push({ kind: beltTile(world, b), tier: BELT_TIER[b.type], x: b.x - W / 2, z: b.z - D / 2, rot: b.rot as 0 | 1 | 2 | 3 });
+                    const piece: PiecePlacement = { kind: beltTile(world, b), tier: BELT_TIER[b.type], x: b.x - W / 2, z: b.z - D / 2, rot: b.rot as 0 | 1 | 2 | 3 };
+                    pieces.push(piece);
+                    beltPieces.set(b.id, piece);
                     drawn.add(b.id);
                 }
                 island.setBelts(pieces);
+                // The hub grows with the milestones: redraw it when its stage changes.
+                const stageNow = hubStageFor(world.progress.milestonesDone.length);
+                if (stageNow !== hubStage) {
+                    hubStage = stageNow;
+                    for (const b of Object.values(world.buildings))
+                        if (b.type === "hub" && drawn.has(b.id)) {
+                            island.removeObject(`b${b.id}`);
+                            drawn.delete(b.id);
+                        }
+                }
+                // Resource nodes: shown while free, hidden under a drill (the drill model covers the same 2x2).
+                const occupied = new Set(Object.values(world.buildings).map((b) => `${b.x},${b.z}`));
+                for (const [key, sig] of [...shownNodes]) {
+                    const dep = world.deposits[key];
+                    if (!dep || occupied.has(key) || sig !== `${dep.item}:${dep.purity}`) {
+                        island.removeObject(`n${key}`);
+                        shownNodes.delete(key);
+                    }
+                }
+                for (const [key, dep] of Object.entries(world.deposits)) {
+                    if (occupied.has(key) || shownNodes.has(key)) continue;
+                    const [x, z] = key.split(",").map(Number);
+                    island.placeModel(`n${key}`, nodeModel(dep.item as ResourceId, dep.purity, variantForCell(x, z)), { cell: { x: x - W / 2 - 0.5, z: z - D / 2 - 0.5 }, rot: 0 });
+                    shownNodes.set(key, `${dep.item}:${dep.purity}`);
+                }
                 for (const b of Object.values(world.buildings)) {
                     if (drawn.has(b.id)) continue;
                     drawn.add(b.id);
@@ -176,7 +265,7 @@ export function BrassworkHost() {
                     const minZ = Math.min(...cells.map((c) => c[1]));
                     const bw = Math.max(...cells.map((c) => c[0])) - minX + 1;
                     const bd = Math.max(...cells.map((c) => c[1])) - minZ + 1;
-                    const model = getMachineModel(b.type);
+                    const model = b.type === "hub" ? getHubModel(hubStage) : getMachineModel(b.type);
                     if (model) {
                         const fp = model.footprint ?? { w: bw, d: bd };
                         const swap = b.rot === 1 || b.rot === 3;
@@ -193,13 +282,6 @@ export function BrassworkHost() {
                     }
                 }
             };
-            island.addObject("deposits", (s) => {
-                for (const [key, dep] of Object.entries(world.deposits)) {
-                    const [x, z] = key.split(",").map(Number);
-                    const [cx, cz] = center(x, z, 1, 1);
-                    s.box(cx, 0, cz, 0.8, 0.25, 0.8, ORE_COLORS[dep.item] ?? 0x888888);
-                }
-            });
             syncScene();
 
             // Away time: catch up the simulation for the time the tab was closed (capped by the catalog).
@@ -218,21 +300,57 @@ export function BrassworkHost() {
             // Sound cues from what changed since the last refresh: a milestone finished, a blueprint bought.
             const doneMilestones = new Set<string>();
             let doneResearch = -1;
+            let unlockedCount = -1;
+            let hubStock = -1;
+            let lastDelivery = 0;
             let started = false;
+            // Where celebrations play: over the hub, or the board centre before one exists.
+            const hubAt = (): [number, number] => {
+                const hub = Object.values(world.buildings).find((b) => b.type === "hub");
+                return hub ? center(hub.x - 1, hub.z - 1, 3, 3) : [0, 0];
+            };
+            // The number keys' tool lists, one per dock section, rebuilt on every refresh so they match the open rows.
+            const dockTools: ToolSpec[][] = DOCK_ORDER.map(() => []);
             const refresh = () => {
                 const d = hudData(world, CAT, selectedId, settings);
+                d.armed = armedRef.current;
+                d.rotation = input.controller.build.getRot() * 90;
+                DOCK_ORDER.forEach((g, i) => {
+                    dockTools[i].splice(0, dockTools[i].length, ...openRowsOf(d.machines, g).slice(0, 9).map((r) => toolSpecOf(r.id)));
+                });
                 const ms = d.milestones.filter((m) => m.done);
                 const rs = d.research.filter((r) => r.state === "done").length;
+                const unlocked = d.research.filter((r) => r.state !== "locked").length;
+                const stockNow = d.resources.reduce((a, r) => a + r.amount, 0);
                 if (started) {
-                    if (ms.some((m) => !doneMilestones.has(m.id))) bw("milestone");
-                    else if (rs > doneResearch) bw("research");
+                    const [hx, hz] = hubAt();
+                    if (ms.some((m) => !doneMilestones.has(m.id))) {
+                        playSound("milestone");
+                        life.burst("milestone", hx, hz);
+                        island.burst({ x: hx - W / 2, z: hz - D / 2 }, "milestone");
+                    } else if (rs > doneResearch) {
+                        playSound("research");
+                        life.burst("research", hx, hz);
+                    } else if (unlocked > unlockedCount && unlockedCount >= 0) {
+                        playSound("unlock");
+                        life.burst("unlock", hx, hz);
+                    }
+                    else if (stockNow > hubStock + 0.5 && performance.now() - lastDelivery > 2500) {
+                        lastDelivery = performance.now();
+                        playSound("delivery");
+                        life.burst("delivery", hx, hz);
+                    }
                 }
+                unlockedCount = unlocked;
+                hubStock = stockNow;
                 ms.forEach((m) => doneMilestones.add(m.id));
                 doneResearch = rs;
                 started = true;
                 const running = Object.values(world.buildings).filter((b) => b.crafting).length;
                 const total = Object.keys(world.buildings).length;
-                bwHum(settings.sound && total > 1 ? Math.min(1, 0.25 + running / Math.max(1, total - 1)) : null);
+                const kinds: Record<string, number> = {};
+                for (const b of Object.values(world.buildings)) if (b.crafting) kinds[b.type] = (kinds[b.type] ?? 0) + 1;
+                setAmbient({ wind: world.wind ?? windAt(world.time), night: 1 - dayClock(world, CAT).solar, working: total > 1 ? Math.min(1, 0.25 + running / Math.max(1, total - 1)) : 0, kinds });
                 setData(d);
             };
             const save = () => {
@@ -249,14 +367,34 @@ export function BrassworkHost() {
             const ox = W / 2;
             const oz = D / 2;
             const buildWorld: BuildWorld = {
-                get: (x, z) => grid.get(x + ox, z + oz),
+                // The grid reports anchors in sim cells. Shift them back so every anchor the input layer sees is in its frame.
+                get: (x, z) => {
+                    const it = grid.get(x + ox, z + oz);
+                    if (!it || !it.anchor) return it;
+                    return { ...it, anchor: { x: it.anchor.x - ox, z: it.anchor.z - oz } };
+                },
                 set: (x, z, item) => {
                     const r = grid.set(x + ox, z + oz, item);
                     if (!r.ok) setNote(r.reason);
                 },
                 check: (kind, x, z, rot) => grid.check(kind, x + ox, z + oz, rot),
+                // Ports that face out of a machine cell, for belt joins. Rotated with the machine (see lib/automation/input/ports.ts).
+                portsAt: (x, z) => {
+                    const it = buildWorld.get(x, z);
+                    if (!it || it.kind.startsWith("belt")) return [];
+                    const model = getMachineModel(it.kind);
+                    const fp = CAT.tree.machines.find((m) => m.id === it.kind)?.footprint;
+                    if (!model || !fp) return [];
+                    const anchor = it.anchor ?? { x, z };
+                    const out: Rot[] = [];
+                    for (const p of [...(model.ports?.out ?? []), ...(model.ports?.in ?? [])]) {
+                        const c = rotateCell(p.cell.x, p.cell.z, fp.w, fp.d, it.rot as Rot);
+                        if (anchor.x + c.x === x && anchor.z + c.z === z) out.push(rotateSide(p.side, it.rot as Rot));
+                    }
+                    return out;
+                },
             };
-            const tools = [...CAT.tree.machines.map((m) => m.id), "power-plant", "belt", "belt-copper", "belt-steel"].map((id) => {
+            const tools = [...CAT.tree.machines.map((m) => m.id), "belt", "belt-copper", "belt-steel"].map((id) => {
                 const r = resolve(CAT, id);
                 return { id, label: r?.name ?? id, line: id in BELT_TIER, footprint: r ? { w: r.footprint.w, d: r.footprint.d } : undefined };
             });
@@ -265,33 +403,88 @@ export function BrassworkHost() {
                 board: BOARD,
                 world: buildWorld,
                 tools,
-                heightAt,
+                groups: dockTools,
+                onGroup: (i) => setDockGroup(DOCK_ORDER[i] ?? null),
+                heightAt: pickHeightAt,
                 initialPose: { target: { x: 0, y: 0, z: 0 }, yaw: 0.6, pitch: 0.75, distance: 18 },
                 limits: { bounds: { minX: -14, maxX: 14, minZ: -10, maxZ: 10 }, minDistance: 5, maxDistance: 34, minPitch: 0.35, maxPitch: 1.2, topDownPitch: 1.5, fovY: 0.55, smoothing: 12 },
                 onEvent: (e) => {
                     if (e.type === "invalid") {
                         setNote(e.reason);
-                        bw("invalid");
+                        playSound("invalid");
                     } else if (e.type === "place" || e.type === "remove") {
-                        bw(e.type);
+                        const toolId = input.controller.build.getTool()?.id ?? "";
+                        if (e.type === "place" && toolId.startsWith("belt") && e.cells.length > 1) playSound("belt", { n: e.cells.length });
+                        else playSound(e.type, { size: e.cells.length });
+                        // One burst per changed cell, capped so a long drag stays readable.
+                        for (const c of e.cells.slice(0, 40)) island.burst(c, e.type);
                         setNote("");
                         syncScene();
                         refresh();
+                    } else if (e.type === "rotate" || e.type === "undo") {
+                        playSound(e.type);
+                    } else if (e.type === "select") {
+                        playSound("select");
+                        // A short click or tap on a placed building (no tool active) opens its inspector.
+                        // e.cell is in the shared input frame; the sim is offset by half the board (see buildWorld below).
+                        const b = buildingAt(world, e.cell.x + W / 2, e.cell.z + D / 2, CAT);
+                        // The hub opens its own menu in place of the inspector and quick actions.
+                        if (b?.type === "hub") {
+                            openHubMenu();
+                            return;
+                        }
+                        // Phone: the click opens only the pop-up; its Details button opens the inspector sheet.
+                        if (!window.matchMedia("(max-width: 767px)").matches) {
+                            selectedId = b ? b.id : null;
+                            refresh();
+                        }
+                        // Quick actions by the piece. Same click, so the inspector and the pop-up open together.
+                        const at = input.controller.screenPoint(e.anchor);
+                        if (b && at) setPop({ anchor: e.anchor, kind: e.kind, kindLabel: resolve(CAT, e.kind)?.name ?? e.kind, x: at.x, y: at.y });
                     } else syncScene();
                 },
+            });
+
+            setInputCtl(input.controller);
+            // The selected belt run (or building) glows in the 3D view. Same board frame as setBelts.
+            input.controller.build.subscribe(() => {
+                if (!dead) island.setHighlight(input.controller.build.getHighlight());
             });
 
             // Placement preview: the input module owns the ghost, the renderer draws it.
             let ghostKey = "";
             const updateGhost = () => {
                 const g = input.controller.build.ghost();
+                // Remove preview: outline every building cell the delete tool would clear, so a multi-cell machine shows whole.
+                if (g && g.tool.id === DELETE_TOOL.id) {
+                    const cells = g.cells.filter((k) => k.existing).map((k) => ({ x: k.x, z: k.z }));
+                    const dk = "del:" + cells.map((k) => `${k.x},${k.z}`).join(";");
+                    if (dk === ghostKey) return;
+                    if (ghostKey.startsWith("path:")) island.setGhostPath([]);
+                    ghostKey = dk;
+                    island.clearGhost();
+                    island.setHighlight(cells);
+                    return;
+                }
+                // A belt stroke glows as one path, cells in drag order, each facing the next.
+                if (g && g.tool.line && g.stroking && g.cells.length) {
+                    const pk = "path:" + g.cells.map((k) => `${k.x},${k.z},${k.rot},${k.valid ? 1 : 0}`).join(";");
+                    if (pk === ghostKey) return;
+                    if (!ghostKey.startsWith("path:")) island.clearGhost();
+                    ghostKey = pk;
+                    island.setGhostPath(g.cells.map((k) => ({ x: k.x, z: k.z, rot: k.rot, valid: k.valid })));
+                    return;
+                }
                 const c = g && g.cells.length ? { x: Math.min(...g.cells.map((k) => k.x)), z: Math.min(...g.cells.map((k) => k.z)), valid: g.cells.every((k) => k.valid) } : undefined;
                 const model = g ? getMachineModel(g.tool.id) : undefined;
                 const key = g && c && model ? `${g.tool.id}:${c.x},${c.z},${g.rot},${c.valid}` : "";
                 if (key === ghostKey) return;
+                if (ghostKey.startsWith("path:")) island.setGhostPath([]);
                 ghostKey = key;
-                if (g && c && model) island.setGhost(model, { x: c.x, z: c.z }, g.rot, c.valid);
-                else island.clearGhost();
+                if (g && c && model) {
+                    island.setGhost(model, { x: c.x, z: c.z }, g.rot, c.valid);
+                    island.setGhostValidity(c.valid);
+                } else island.clearGhost();
             };
 
             // Push each machine's working flag, clock and charge to the renderer so parts move and lamps glow.
@@ -308,6 +501,12 @@ export function BrassworkHost() {
             };
 
             ctl.current = {
+                details: (anchor) => {
+                    const b = buildingAt(world, anchor.x + W / 2, anchor.z + D / 2, CAT);
+                    selectedId = b ? b.id : null;
+                    refresh();
+                },
+                group: (index) => input.controller.setGroup(index),
                 setTool: (id) => {
                     input.controller.setToolById(id);
                     setNote(id ? `Click the floor to place ${resolve(CAT, id)?.name ?? id}. R rotates, Esc cancels.` : "");
@@ -335,20 +534,53 @@ export function BrassworkHost() {
                 prestige: (id) => {
                     const r = simActions.prestige(world, id, CAT);
                     if (!r.ok) return setNote(r.reason);
-                    bw("prestige");
+                    playSound("prestige");
                     save();
                     syncScene();
                     refresh();
                 },
                 settings: (p) => {
                     settings = { ...settings, ...p };
-                    bwSetEnabled(settings.sound);
+                    if (Object.keys(p).length) saveSettings(settings);
+                    setSoundOn(settings.sound);
                     island.setLowFx(settings.lowFx || settings.reduceMotion);
+                    life.setLowFx(settings.lowFx || settings.reduceMotion);
                     island.setSceneryDensity(settings.lowFx || settings.reduceMotion ? 0.5 : 1);
                     [1.2, 2, 3].forEach((v, tier) => island.setBeltSpeed(tier, settings.reduceMotion ? 0 : v));
                     refresh();
                 },
             };
+
+            // Dev-only test hook for the headless playthrough. Off unless the URL has ?bwdev=1; it changes nothing for players.
+            const devHook = new URLSearchParams(window.location.search).has("bwdev");
+            if (devHook) {
+                (window as unknown as { __bwdev: unknown }).__bwdev = {
+                    getWorld: () => world,
+                    beltItems,
+                    CAT,
+                    sim: simActions,
+                    placeAt: (type: string, x: number, z: number, rot: Rot = 0) => {
+                        const r = simActions.place(world, type, x, z, rot, CAT);
+                        syncScene();
+                        refresh();
+                        return r;
+                    },
+                    refresh,
+                    // Arms a build tool by its id, the same call the palette makes. Lets the headless check skip the palette.
+                    setTool: (id: string | null) => input.controller.setToolById(id),
+                    armedTool: () => input.controller.build.getTool()?.id ?? null,
+                    // Close-up for visual checks: moves the orbit camera to look at (tx, ty, tz) from `distance` away.
+                    setCamera: (tx: number, ty: number, tz: number, distance: number) => {
+                        const c = island.controls;
+                        if (!c) return false;
+                        c.target.set(tx, ty, tz);
+                        island.camera.position.set(tx - distance * 0.6, ty + distance * 0.7, tz + distance * 0.8);
+                        c.update();
+                        return true;
+                    },
+                    ghostCells: () => (input.controller.build.ghost()?.cells ?? []).map((c) => [c.x, c.z, c.valid ? 1 : 0, c.reason ?? ""]),
+                };
+            }
 
             const onResize = () => island.resize();
             window.addEventListener("resize", onResize);
@@ -367,6 +599,15 @@ export function BrassworkHost() {
                 pushStates();
                 if (!document.hidden) {
                     advance(world, dt, 0.1, CAT);
+                    beltItems.update(
+                        (function* () {
+                            for (const [id, piece] of beltPieces) {
+                                const b = world.buildings[id];
+                                if (b && b.lane.length) yield { piece, lane: b.lane };
+                            }
+                        })(),
+                        (p, t, out) => island.beltItemMatrix(p, t, out)
+                    );
                     island.setWind(world.wind ?? windAt(world.time));
                     const m = moodRef.current;
                     island.setTimeOfDay(m === "Auto" ? dayClock(world, CAT).phase : m === "Day" ? 0.05 : m === "Dusk" ? 0.5 : 0.75);
@@ -386,17 +627,41 @@ export function BrassworkHost() {
             raf = requestAnimationFrame(frame);
 
             snap.current = () => island.snapshot();
+            window.addEventListener("bw:save", save); // the Settings window asks for a fresh save before exporting
+            // Sound: wait for the first gesture, then ambient beds, machine sounds and menu / button sounds.
+            const stopAudio = startAudio();
+            const stopUiSounds = attachUiSounds((canvas.closest(".bw-root") as HTMLElement | null) ?? document.body);
+            ctl.current?.settings({}); // apply the saved settings to the sound, scenery and belts
             island.resize();
             island.start();
             refresh();
+            // Keys can change the armed tool or its rotation without a palette click (Escape, Q, R, Tab groups).
+            // After each key, mirror the input layer's tool into the HUD so the palette and the dock stay true.
+            const syncFromInput = () => {
+                const id = input.controller.build.getTool()?.id ?? null;
+                if (armedRef.current !== id) armedRef.current = id;
+                refresh();
+            };
+            const onKeySync = () => window.setTimeout(syncFromInput, 0);
+            // Clicks on the dock's Remove button arm the tool too, so the pointer counts as well as the keys.
+            window.addEventListener("keydown", onKeySync);
+            window.addEventListener("pointerup", onKeySync);
             cleanup = () => {
                 cancelAnimationFrame(raf);
+                window.removeEventListener("bw:save", save);
+                window.removeEventListener("keydown", onKeySync);
+                window.removeEventListener("pointerup", onKeySync);
                 save();
                 input.destroy();
                 window.removeEventListener("resize", onResize);
+                life.dispose();
+                beltItems.dispose();
                 island.dispose();
-                bwHum(null);
+                stopUiSounds();
+                stopAudio();
                 ctl.current = null;
+                setInputCtl(null);
+                setPop(null);
                 snap.current = null;
             };
         })();
@@ -406,7 +671,11 @@ export function BrassworkHost() {
         };
     }, []);
 
-    const onBuild = useCallback((id: string) => ctl.current?.setTool(id), []);
+    const onBuild = useCallback((id: string) => {
+        // Tapping the armed row again disarms it.
+        armedRef.current = armedRef.current === id ? null : id;
+        ctl.current?.setTool(armedRef.current);
+    }, []);
     const onSelect = useCallback((id: string | null) => ctl.current?.select(id), []);
     const onResearch = useCallback((id: string) => ctl.current?.research(id), []);
     const onSetRecipe = useCallback((id: string) => ctl.current?.setRecipe(id), []);
@@ -415,12 +684,26 @@ export function BrassworkHost() {
 
     return (
         <div className="bw-root">
-            <AutomationHud data={data} actions={{ onBuild, onSelect, onResearch, onSetRecipe, onPrestige, onSettings }}>
+            <AutomationHud data={data} actions={{ onBuild, onSelect, onResearch, onSetRecipe, onPrestige, onSettings }} settingsSlots={{ sound: <VolumeRows />, display: <LightingRow mood={mood} onMood={onMood} />, save: <SaveRows /> }} removeSlot={inputCtl ? <TrashButton input={inputCtl} variant="dock" /> : undefined} quest={quest ?? undefined} dockGroup={dockGroup} onDockGroup={onDockGroup}>
                 <canvas ref={canvasRef} className="bw-canvas" />
-                <Link href="/creations/games" className="bw-back">
-                    Back to Games
-                </Link>
                 <BrassworkExtras snapshot={snapshot} away={away} mood={mood} onMood={onMood} />
+                {inputCtl && pop && (
+                    <BuildPopover
+                        input={inputCtl}
+                        anchor={pop.anchor}
+                        kind={pop.kind}
+                        kindLabel={pop.kindLabel}
+                        x={pop.x}
+                        y={pop.y}
+                        lineKinds={["belt", "belt-copper", "belt-steel"]}
+                        showDetails={typeof window !== "undefined" && window.matchMedia("(max-width: 767px)").matches}
+                        onDetails={(a) => {
+                            ctl.current?.details(a);
+                            setPop(null);
+                        }}
+                        onClose={() => setPop(null)}
+                    />
+                )}
                 {note && <p className="bw-note">{note}</p>}
             </AutomationHud>
         </div>

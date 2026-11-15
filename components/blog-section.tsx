@@ -101,7 +101,7 @@ export function BlogSection({
                         const hasPage = !!post.slug && !!post.body;
                         if (hasPage) {
                             return (
-                                <Link
+                                <Link prefetch={false}
                                     key={post.id}
                                     href={`/blog/${post.slug}`}
                                     className="cm-card blog-post is-link"

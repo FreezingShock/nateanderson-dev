@@ -17,6 +17,7 @@ export default function ErrorPage({
         <div className="ctos">
             <div className="sys-head">
                 <PageHead
+                    preloadBand={false}
                     label="Fault / naOS"
                     title={["system", "fault."]}
                     lead={
@@ -47,7 +48,7 @@ export default function ErrorPage({
                             >
                                 Retry
                             </button>
-                            <Link className="cm-btn" href="/">
+                            <Link prefetch={false} className="cm-btn" href="/">
                                 Home
                             </Link>
                         </>

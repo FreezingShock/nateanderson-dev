@@ -1,0 +1,80 @@
+/* Build pop-up and trash button. Sharp panel, corner brackets, no pills. Uses the shared --bw-* tokens. */
+.bp {
+    position: fixed;
+    z-index: 60;
+    min-width: 176px;
+    padding: 10px;
+    background: var(--bw-wood);
+    border: 1px solid var(--bw-brass-lo);
+    box-shadow: 0 10px 28px rgba(0, 0, 0, 0.45);
+    color: var(--bw-cream);
+    font-family: inherit;
+    font-size: 15px;
+    line-height: 1.3;
+}
+.bp::before,
+.bp::after {
+    content: "";
+    position: absolute;
+    width: 10px;
+    height: 10px;
+    border: 2px solid var(--bw-brass-hi);
+    pointer-events: none;
+}
+.bp::before { top: -2px; left: -2px; border-right: 0; border-bottom: 0; }
+.bp::after { bottom: -2px; right: -2px; border-left: 0; border-top: 0; }
+.bp-title {
+    margin: 0 0 8px;
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--bw-dim);
+}
+.bp-actions { display: grid; gap: 6px; }
+.bp-btn {
+    min-height: 44px;
+    padding: 0 12px;
+    border: 1px solid var(--bw-brass-lo);
+    background: var(--bw-wood-hi);
+    color: var(--bw-cream);
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+    touch-action: manipulation;
+}
+.bp-btn:hover,
+.bp-btn:focus-visible { border-color: var(--bw-brass-hi); outline: none; }
+.bp-btn[data-tone="danger"] { color: var(--bw-copper); }
+.bp-btn[data-tone="danger"]:hover { border-color: var(--bw-copper); }
+.bp-btn[data-tone="ghost"] { background: transparent; color: var(--bw-dim); }
+
+.bt {
+    min-height: 44px;
+    padding: 0 14px;
+    border: 1px solid var(--bw-brass-lo);
+    background: var(--bw-wood);
+    color: var(--bw-cream);
+    font: inherit;
+    cursor: pointer;
+    touch-action: manipulation;
+}
+.bt[aria-pressed="true"] { border-color: var(--bw-brass-hi); background: var(--bw-wood-hi); color: var(--bw-brass-hi); }
+.bt:focus-visible { outline: 1px solid var(--bw-brass-hi); outline-offset: 2px; }
+
+.bt-dock { position: absolute; right: 12px; top: 42%; z-index: 20; }
+/* Phone: the bottom tab row and next-step panel take the lower stage, so the Trash button sits higher on the right edge. */
+@media (max-width: 767px) {
+    /* On phones the touch tool bar already has Remove, so the floating button would only overlap it. */
+    .bt-dock { display: none; }
+}
+
+.bp-note { margin: 0; font-size: 14px; color: var(--bw-dim); }
+
+/* The Remove tool is a styled tool-bar control, matching the touch tool bar, not a loose text button. */
+.bt-dock .bt {
+    min-height: 44px; padding: 0 14px; border: 2px solid #b8862f; border-radius: 0;
+    background: #1d160b; color: #f4e4b8; font: 600 13px/1 ui-monospace, SFMono-Regular, Menlo, monospace;
+    letter-spacing: .06em; text-transform: uppercase; cursor: pointer; box-shadow: 0 2px 0 #0d0905;
+}
+.bt-dock .bt:hover { background: #2a2010; }
+.bt-dock .bt[aria-pressed="true"] { background: #f2c14e; color: #1d160b; border-color: #f2c14e; }

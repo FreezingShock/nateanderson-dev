@@ -8,6 +8,10 @@ export interface Issue {
 }
 
 /** Recipes flagged alternate. Everything else is a base recipe. */
+// Items the new player starts with (STARTER_KIT in lib/automation/sim/world.ts). A stage-0 machine may cost these,
+// so the first windmill and drill can be paid for from the starting stock.
+const STARTER_ITEMS = new Set(["iron_plate", "copper_wire", "iron_gear"]);
+
 export function alternateIds(tree: RecipeTree): Set<string> {
     const out = new Set<string>();
     for (const r of tree.recipes) if (r.alternate) out.add(r.id);
@@ -45,7 +49,7 @@ export function checkTree(tree: RecipeTree): Issue[] {
         for (const s of m.buildCost ?? []) {
             const it = items.get(s.item);
             if (!it) err(`machine ${m.id} costs unknown item ${s.item}`);
-            else if (it.stage > m.unlockStage) err(`machine ${m.id} (stage ${m.unlockStage}) costs ${s.item} from stage ${it.stage}`);
+            else if (it.stage > m.unlockStage && !STARTER_ITEMS.has(s.item)) err(`machine ${m.id} (stage ${m.unlockStage}) costs ${s.item} from stage ${it.stage}`);
             if (!(Number.isInteger(s.qty) && s.qty > 0)) err(`machine ${m.id} build cost for ${s.item} must be a positive integer`);
         }
     }

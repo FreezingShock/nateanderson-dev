@@ -63,7 +63,7 @@ export function Bar() {
                     <PixelIcon name="menu" size={24} />
                     <span>menu</span>
                 </button>
-                <Link className="nv-brand" href="/" aria-label="Nate Anderson, home">
+                <Link prefetch={false} className="nv-brand" href="/" aria-label="Nate Anderson, home">
                     <NateGlyph size={20} />
                     <b>nate anderson</b>
                 </Link>
@@ -169,7 +169,7 @@ export function Dock() {
             )}
             <i className="ind" aria-hidden="true" data-off={idx < 0 ? "" : undefined} />
             {navItems.map((n) => (
-                <Link
+                <Link prefetch={false}
                     key={n.href}
                     href={n.href}
                     aria-current={isActive(path, n.href) ? "page" : undefined}

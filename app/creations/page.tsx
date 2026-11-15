@@ -70,12 +70,12 @@ export default async function CreationsPage() {
                 title="Game sections."
                 blurb="Geography is live. Incremental and automation are next. Each links to its section."
             >
-                <div className="cm-grid cr-modes">
+                <div className="cm-grid cm-fit cr-modes">
                     {GAME_MODES.map((m) => {
                         const Icon = m.icon;
                         const live = m.games.filter((g) => g.status === "playable").length;
                         return (
-                            <Link key={m.id} href={`/creations/games#${m.id}`} className="cm-card link" style={{ height: "100%" }}>
+                            <Link prefetch={false} key={m.id} href={`/creations/games#${m.id}`} className="cm-card link" style={{ height: "100%" }}>
                                 <div className="cm-row" style={{ justifyContent: "space-between" }}>
                                     <Icon className="cm-ico" aria-hidden="true" />
                                     <span className={`cm-state ${live ? "live" : ""}`}>{live ? `${live} ${GAME_STATUS.playable.label.toLowerCase()}` : "Planned"}</span>

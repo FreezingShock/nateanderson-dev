@@ -26,7 +26,7 @@ export function RecentPosts() {
             <div className="cm-cols3">
                 {recent.length > 0
                     ? recent.map((p) => (
-                          <Link key={p.id} href={`/blog#${p.sectionId}`} className="cm-card link">
+                          <Link prefetch={false} key={p.id} href={`/blog#${p.sectionId}`} className="cm-card link">
                               <span className="cm-state">{p.category}</span>
                               <b>{p.title}</b>
                               <p>{p.excerpt}</p>
@@ -34,7 +34,7 @@ export function RecentPosts() {
                           </Link>
                       ))
                     : teasers.map((s) => (
-                          <Link key={s.title} href="/blog" className="cm-card link">
+                          <Link prefetch={false} key={s.title} href="/blog" className="cm-card link">
                               <span className="cm-tag flat" style={{ alignSelf: "flex-start" }}>Coming soon</span>
                               <b>{s.title}</b>
                               <p>{s.description}</p>

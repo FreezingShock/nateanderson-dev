@@ -12,6 +12,7 @@ import {
 import { SkillsExplorer } from "@/components/skills-explorer";
 import { KEY_DATES, daysUntil } from "@/lib/timeline-data";
 import "./about.css";
+import { ArtPreload } from "@/components/cm/art-preload";
 import { pageMeta } from "@/lib/seo";
 import { PROFILE_LEAD } from "@/lib/identity";
 
@@ -29,6 +30,7 @@ export default function AboutPage() {
     return (
         <div className="ctos about" data-entrance="lean">
             <NaosBackdrop src="/naos/bg-about.webp" />
+            <ArtPreload name="band-seam" />
             <header className="cm-head about-head" id="top">
                 <div className="cm-grid-bg" aria-hidden="true" />
                 <div className="cm-persp" aria-hidden="true" />
@@ -60,7 +62,7 @@ export default function AboutPage() {
                                 <div><dt>Based</dt><dd><Scramble replay text="Southern California" /></dd></div>
                                 <div><dt>Studying</dt><dd><Scramble replay text="Construction management" /></dd></div>
                                 <div><dt>Running</dt><dd><Scramble replay text="4 years, captain" /></dd></div>
-                                <div><dt>Shipping</dt><dd><Link href="/creations/nexus"><Scramble replay text="Nexus" /></Link></dd></div>
+                                <div><dt>Shipping</dt><dd><Link prefetch={false} href="/creations/nexus"><Scramble replay text="Nexus" /></Link></dd></div>
                                 <div>
                                     <dt>Days to graduation</dt>
                                     <dd>{daysToGrad > 0 ? <CountUp value={daysToGrad} /> : "Done"}</dd>
@@ -119,9 +121,9 @@ export default function AboutPage() {
                             </p>
                         </div>
                         <div className="cm-row cta" style={{ padding: "0 var(--cm-s5) var(--cm-s5)" }}>
-                            <Link className="cta-b a" href="/creations/projects"><i>01</i><span>View projects</span><em aria-hidden="true"><PixelIcon name="arrowR" /></em></Link>
-                            <Link className="cta-b b" href="/blog"><i>02</i><span>Read essays</span><em aria-hidden="true"><PixelIcon name="arrowR" /></em></Link>
-                            <Link className="cta-b c" href="/timeline"><i>03</i><span>Full timeline</span><em aria-hidden="true"><PixelIcon name="arrowR" /></em></Link>
+                            <Link prefetch={false} className="cta-b a" href="/creations/projects"><i>01</i><span>View projects</span><em aria-hidden="true"><PixelIcon name="arrowR" /></em></Link>
+                            <Link prefetch={false} className="cta-b b" href="/blog"><i>02</i><span>Read essays</span><em aria-hidden="true"><PixelIcon name="arrowR" /></em></Link>
+                            <Link prefetch={false} className="cta-b c" href="/timeline"><i>03</i><span>Full timeline</span><em aria-hidden="true"><PixelIcon name="arrowR" /></em></Link>
                         </div>
                     </div>
                 </div>

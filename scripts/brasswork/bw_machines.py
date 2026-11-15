@@ -32,35 +32,49 @@ def window(c, sc, pts3, lit=True):
 
 @machine
 def drill(p=0):
-    """Node drill: a brass derrick over a copper gearbox, the bit biting into an ore rock."""
-    c, sc = new(cy=50, s=1.15, sh=(32, 56, 24, 3.2))
+    """Node drill: an iron derrick on a skid over the ore, a brass crosshead on rams, crown gear on top, a finned
+    twin-cylinder engine at the back left and a flywheel on the right."""
+    c, sc = new(cy=50, s=1.1, sh=(32, 56, 24, 3.2))
     sc.rock((0, 1, 0), 13, "rock", 61, squash=0.3)
     plinth(sc, 11, 11, 4)
-    sc.box(-6, 6, 4, 12, -6, 6, "cu", 0.0)
-    sc.cylinder((0, 12, 0), (0, 2, 0), 2.4, "iron", 0.1, n=10, r2=0.6)
-    for x, z in [(-9, -9), (9, -9), (-9, 9), (9, 9)]:
-        sc.cylinder((x, 4, z), (0, 34, 0), 1.0, "brass", 0.0, n=6)
-    sc.extrude(gear_outline(6, 4.6, 9), 2, "brass", 0.05, frame=((0, 20, 0), (1, 0, 0), (0, 0, -1), (0, 1, 0)))
-    sc.cylinder((0, 30, 0), (0, 35, 0), 2.5, "brass", 0.1, n=10)
+    sc.box(-11, -8, 4, 7, -11, 5, "steel", 0.15)
+    sc.box(8, 11, 4, 7, -11, 2, "steel", 0.15)
+    sc.cylinder((0, 4, 0), (0, 8, 0), 5, "steel", 0.0, n=14)
+    sc.cylinder((0, 2, 0), (0, 30, 0), 1.6, "iron", 0.1, n=8)
+    for x, z in [(-6, -6), (6, -6), (-6, 6), (6, 6)]:
+        sc.box(x - 1, x + 1, 6, 30, z - 1, z + 1, "iron", 0.0)
+    sc.box(-7, 7, 15, 17, -7, 7, "brass", 0.1)
+    sc.box(-10, 10, 22, 25, -2, 2, "brass", 0.0)
+    sc.box(-7, 7, 30, 33, -7, 7, "brass", 0.05)
+    sc.extrude(gear_outline(6, 4.6, 10), 2, "brass", 0.0, frame=((0, 33, 0), (1, 0, 0), (0, 0, -1), (0, 1, 0)))
+    sc.box(-11, -5, 4, 13, -11, -5, "steel", 0.0)
+    sc.box(-10, -8, 13, 18, -10, -6, "iron", 0.1)
+    sc.box(-7, -5, 13, 16, -10, -6, "iron", 0.1)
+    sc.cylinder((-9, 4, -4), (-9, 26, -4), 1.0, "steel", 0.2, n=6)
+    sc.cylinder((11, 11, -3), (13, 11, -3), 5.5, "brass", 0.05, n=16)
     sc.paint(c)
     return done(c)
 
 
 @machine
 def kiln(p=0):
-    """Kiln: a brick dome with a glowing mouth and a short flue."""
-    c, sc = new(cy=50, s=1.15, sh=(32, 56, 24, 3.2))
+    """Kiln: a copper dome on a brick firebox, a glowing grated mouth, banded chimney with a cowl, a dial on the side."""
+    c, sc = new(cy=50, s=1.1, sh=(32, 56, 24, 3.2))
     plinth(sc, 13, 13)
-    sc.cylinder((0, 3, 0), (0, 10, 0), 12, "brick", 0.0, n=20)
-    rings = [(12 * math.cos(math.pi / 2 * k / 5), 10 + 12 * math.sin(math.pi / 2 * k / 5)) for k in range(6)]
+    sc.cylinder((0, 3, 0), (0, 7, 0), 12.5, "brick", 0.0, n=20)
+    sc.cylinder((0, 7, 0), (0, 13, 0), 11.5, "cu", 0.0, n=20)
+    rings = [(11.5 * math.cos(math.pi / 2 * k / 5), 13 + 11.5 * math.sin(math.pi / 2 * k / 5)) for k in range(6)]
     for (r0, y0), (r1, y1) in zip(rings, rings[1:]):
-        sc.cylinder((0, y0, 0), (0, y1, 0), max(r0, 0.5), "brick", 0.0, n=20, r2=max(r1, 0.5), caps=False)
-    sc.cylinder((5, 16, -5), (5, 26, -5), 2.4, "steel", 0.1, n=10)
-    sc.cylinder((5, 26, -5), (5, 27.5, -5), 3.2, "brass", 0.1, n=10)
+        sc.cylinder((0, y0, 0), (0, y1, 0), max(r0, 0.5), "cu", 0.0, n=20, r2=max(r1, 0.5), caps=False)
+    sc.cylinder((0, 12, 0), (0, 13.2, 0), 11.8, "brass", 0.1, n=20)
+    sc.cylinder((0, 23, 0), (0, 25, 0), 3, "brass", 0.1, n=10)
+    sc.cylinder((7, 8, -7), (7, 30, -7), 2.6, "steel", 0.1, n=10)
+    sc.box(4, 10, 30, 31, -10, -4, "brass", 0.05)
+    sc.box(4, 10, 32, 33, -10, -4, "brass", 0.15)
+    sc.cylinder((12, 11, 2), (13.5, 11, 2), 2.6, "cream" if "cream" in P else "brass", 0.0, n=12)
     sc.paint(c)
-    body = c.img[..., 3] == 255
-    c.fill(body & ((Y.astype(int) % 4) == 0) & (Y > 18) & (Y < 46), 0.25, "brick")
-    window(c, sc, [(-6, 4, 11.5), (2, 4, 11.5), (2, 10, 11.5), (-2, 12, 11.5), (-6, 10, 11.5)])
+    m = window(c, sc, [(-6, 4, 12.5), (6, 4, 12.5), (6, 11, 12.5), (-6, 11, 12.5)])
+    c.fill(m & ((X.astype(int) % 4) == 0), 0.2, "coal")
     return done(c)
 
 
@@ -74,6 +88,9 @@ def furnace(p=0):
     sc.frustum(5, 5, 7, 7, 5, "steel", 0.05, y=23)
     sc.cylinder((4, 23, -9), (4, 44, -9), 2.6, "steel", 0.0, n=10)
     sc.cylinder((4, 44, -9), (4, 46, -9), 3.6, "brass", 0.1, n=10)
+    sc.box(-12, 12, 20, 21.5, -10, 10, "steel", 0.2)
+    sc.box(-12, -11, 21.5, 25, 9, 10, "brass", 0.1)
+    sc.box(11, 12, 21.5, 25, 9, 10, "brass", 0.1)
     sc.paint(c)
     window(c, sc, [(-7, 6, 14.1), (7, 6, 14.1), (7, 13, 14.1), (-7, 13, 14.1)])
     for x in (-5, 0, 5):
@@ -94,6 +111,9 @@ def press(p=0):
     sc.box(-15, 15, 36, 42, -5, 5, "brass", 0.0)
     sc.box(-6, 6, 18, 36, -5, 5, "steel", 0.0)
     sc.box(-8, 8, 15, 18, -7, 7, "brass", -0.05)
+    sc.cylinder((14, 26, 0), (17, 26, 0), 9, "brass", 0.05, n=18)
+    sc.cylinder((-13, 30, 3.2), (-13, 30, 4.4), 2.2, "brass", 0.1, n=12)
+    sc.box(10, 18, 3, 7, 6, 11, "steel", 0.2)
     sc.paint(c)
     return done(c)
 
@@ -108,6 +128,8 @@ def lathe(p=0):
     sc.cylinder((-9, 15, 0), (-5, 15, 0), 5.5, "brass", 0.05, n=16)
     sc.cylinder((-5, 15, 0), (14, 15, 0), 1.8, "iron", 0.2, n=10)
     sc.box(12, 18, 8, 19, -4, 4, "cu", -0.05)
+    sc.box(-2, 3, 22, 26, -3, 2, "patina", 0.05)
+    sc.cylinder((-14, 23, 0), (-14, 30, 0), 3, "brass", 0.0, n=12)
     sc.paint(c)
     q = sc.pt((-3, 15, 2))
     c.spark(q[0] + 4, q[1] + 1, 1, P["glow"][5])
@@ -122,6 +144,8 @@ def drawer(p=0):
     sc.box(-18, -8, 5, 15, -6, 6, "cu", 0.0)
     sc.cylinder((8, 14, -8), (8, 14, 8), 9, "brass", 0.0, n=20)
     sc.cylinder((8, 14, -6), (8, 14, 6), 7.5, "cu", 0.05, n=20, caps=False)
+    sc.cylinder((-16, 8, 9), (-16, 8, 13), 3, "cu", 0.1, n=12)
+    sc.box(-6, -4, 15, 22, -1, 1, "steel", 0.1)
     sc.paint(c)
     a, b = sc.pt((-8, 11, 0)), sc.pt((2, 18, 0))
     c.fill(line(*a, *b, 1.4), 0.8, "cu")
@@ -146,6 +170,9 @@ def assembler(p=0):
         hand = (sx * 4, 22, 0)
         sc.cylinder(elbow, hand, 1.3, "brass", 0.05, n=8)
         sc.cylinder(hand, (sx * 4, 18.5, 0), 0.7, "iron", 0.1, n=6)
+    sc.box(-16, -14, 16, 34, -2, 2, "steel", 0.1)
+    sc.box(14, 16, 16, 34, -2, 2, "steel", 0.1)
+    sc.box(-16, 16, 32, 34, -2, 2, "brass", 0.05)
     sc.paint(c)
     g = sc.pt((-10, 8, 13.1))
     c.fill(disc(*g, 3, 2.6), 0.8, "cream", outline="brass")
@@ -168,6 +195,7 @@ def fabricator(p=0):
         sc.cylinder((0, y0, 0), (0, y1, 0), max(r0, 0.5), "brass", 0.0, n=26, r2=max(r1, 0.5), caps=False)
     sc.extrude(gear_outline(7, 5.4, 10), 2.4, "brass", 0.1, frame=((0, 32, 0), (1, 0, 0), (0, 0, -1), (0, 1, 0)))
     sc.cylinder((0, 34, 0), (0, 38, 0), 2.0, "steel", 0.1, n=10)
+    sc.box(-14, -6, 4, 14, 10, 15, "steel", 0.1)
     sc.paint(c)
     for k in range(5):
         a = math.pi * (0.15 + 0.7 * k / 4)
@@ -188,6 +216,7 @@ def windmill(p=0):
     sc.frustum(9, 9, 5.5, 5.5, 30, "wood", 0.0, y=3)
     sc.frustum(6.5, 6.5, 3, 3, 6, "cu", 0.0, y=33)
     sc.cylinder((0, 34, 4), (0, 34, 9), 1.6, "iron", 0.1, n=8)
+    sc.cylinder((9, 6, -2), (13, 6, -2), 2.4, "cu", 0.05, n=12)
     sc.paint(c)
     hx, hy = sc.pt((0, 34, 9))
     k = FIT["k"] * 0.95
@@ -218,6 +247,8 @@ def spring_winder(p=0):
     sc.cylinder((-10.5, 20, 0), (10.5, 20, 0), 1.6, "iron", 0.1, n=10)
     sc.cylinder((-6, 20, 0), (6, 20, 0), 11, "steel", -0.15, n=26)
     sc.extrude(gear_outline(6.5, 5, 10), 2.2, "cu", 0.05, frame=((13.5, 20, 0), (0, 0, 1), (0, 1, 0), (1, 0, 0)))
+    sc.box(-15, -12, 3, 28, -4, -2, "steel", 0.15)
+    sc.box(-16, -11, 10, 16, -3, 2, "iron", 0.05)
     sc.paint(c)
     # the spiral mainspring on the near face of the drum
     k = FIT["k"]
@@ -241,6 +272,8 @@ def spring_store(p=0):
         sc.cylinder((0, y, 0), (0, y + 2, 0), 12.6, "gun", 0.05, n=24)
     sc.cylinder((0, 22, 0), (0, 25, 0), 9, "gun", 0.1, n=20)
     sc.cylinder((0, 25, 0), (0, 29, 0), 2.2, "iron", 0.1, n=10)
+    sc.box(-13, -11, 3, 24, -13, -11, "steel", 0.1)
+    sc.cylinder((-12, 26, -12), (-12, 29, -12), 2.5, "brass", 0.05, n=10)
     sc.paint(c)
     k = FIT["k"]
     win = poly([sc.pt((x, y, 12.3)) for x, y in [(-5, 9), (5, 9), (5, 17), (-5, 17)]])
@@ -266,23 +299,35 @@ def structure(fn):
 
 @structure
 def hub(p=0):
-    """Hub: the workshop core, a brick-and-copper hall with a brass clock gable and a lit door."""
-    c, sc = new(cy=52, s=0.95, sh=(32, 57, 26, 3.4))
-    plinth(sc, 17, 15)
-    sc.box(-15, 15, 3, 20, -12, 12, "brick", 0.0)
-    roof_b = [(-16, 20, 13), (16, 20, 13), (16, 20, -13), (-16, 20, -13)]
-    roof_t = [(-16, 30, 0.5), (16, 30, 0.5), (16, 30, -0.5), (-16, 30, -0.5)]
-    sc.prism(roof_b, roof_t, "cu", 0.0)
-    sc.cylinder((0, 22, 13.2), (0, 22, 14.4), 4.5, "brass", 0.05, n=18)
+    """Hub: the workshop core at full growth. A round copper counting hall ringed with lit windows on a stepped
+    stone dais, a brass clock tower with a patina dome and beacon, and two brass smokestacks at the front."""
+    c, sc = new(cy=54, s=0.9, sh=(32, 57, 26, 3.4))
+    sc.box(-15, 15, 0, 2, -15, 15, "gun", 0.05)
+    sc.box(-14, 14, 2, 3, -14, 14, "steel", 0.05)
+    sc.cylinder((0, 3, 0), (0, 15, 0), 9.5, "cu", 0.0, n=20)
+    sc.cylinder((0, 14, 0), (0, 16, 0), 10.5, "brass", 0.05, n=24)
+    sc.box(-5, 5, 16, 33, -5, 5, "brass", -0.05)
+    sc.cylinder((0, 34, 0), (0, 40, 0), 6, "patina", 0.0, n=16, r2=1.2)
+    for x in (-10, 10):
+        sc.cylinder((x, 3, 10), (x, 24, 10), 2.2, "brass", -0.05, n=10)
     sc.paint(c)
-    window(c, sc, [(-4, 3, 12.1), (4, 3, 12.1), (4, 13, 12.1), (-4, 13, 12.1)])
+    for a in (-0.9, -0.3, 0.3, 0.9):
+        x, z = 9.6 * math.sin(a), 9.6 * math.cos(a)
+        window(c, sc, [(x - 1, 10, z), (x + 1, 10, z), (x + 1, 13, z), (x - 1, 13, z)])
     k = FIT["k"]
-    q = sc.pt((0, 22, 14.5))
+    q = sc.pt((0, 27, 5.2))
     c.fill(disc(*q, 3.2 * k * 0.95), 0.85, "cream")
     c.set(line(q[0], q[1], q[0], q[1] - 2.4 * k, 0.9), P["steel"][1])
     c.set(line(q[0], q[1], q[0] + 1.8 * k, q[1], 0.9), P["steel"][1])
-    for x in (-11, 11):
-        window(c, sc, [(x - 2, 9, 12.1), (x + 2, 9, 12.1), (x + 2, 14, 12.1), (x - 2, 14, 12.1)])
+    b = sc.pt((0, 43, 0))
+    bm = disc(*b, 1.8 * k)
+    c.glow(bm, P["glow"][3], 3, 120, 2)
+    c.fill(bm, 1.0, "glow")
+    for x in (-10, 10):
+        e = sc.pt((x, 24.5, 10))
+        em = disc(*e, 1.4 * k)
+        c.glow(em, P["glow"][3], 2, 90, 2)
+        c.fill(em, 0.9, "glow")
     return done(c)
 
 

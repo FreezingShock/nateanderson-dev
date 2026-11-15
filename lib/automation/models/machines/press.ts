@@ -1,7 +1,7 @@
 // Stamp press, 2x3. A brass portal frame with a heavy ram that slams onto an iron die, driven by a big
 // six-spoke flywheel on the right side. Feed from the back left, plates out the front left.
 
-import { Builder, spin, slide } from "./builder";
+import { Builder, spin, slide, swing } from "./builder";
 import { C } from "./palette";
 import { plinth, hopperBack, chuteFront, statusLamp, speckle } from "./common";
 
@@ -43,10 +43,31 @@ export function press() {
     b.part("flywheel", [19, 21, 15], spin("x", 0.45));
     b.wheel("x", 21, 15, 8.5, 18, 20, C.brass, 6, 2);
     b.cyl("x", 21, 15, 1.5, 17, 20, C.brassD);
+    // Drive belt from the flywheel hub down to a motor on the plinth, and the motor's pulley.
+    b.body();
+    b.box(14, 2, 22, 19, 7, 27, C.steelD);
+    for (let y = 3; y < 7; y += 2) b.box(14, y, 22, 19, y + 1, 27, C.soot); // cooling fins
+    b.box(19, 7, 23, 20, 21, 24, C.soot); // belt
+    b.part("motorPulley", [19, 6, 24], spin("x", 1.8));
+    b.wheel("x", 6, 24, 2, 18, 20, C.brass, 4, 1);
+    // Feed rollers on the tray, turning as blanks go in.
+    b.part("rollerA", [6, 5, 5], spin("x", 1.2));
+    b.cyl("x", 5, 5, 1.2, 3, 9, C.iron);
+    b.part("rollerB", [6, 5, 8], spin("x", 1.2, { phase: 0.3 }));
+    b.cyl("x", 5, 8, 1.2, 3, 9, C.iron);
+    // Pressure gauge on the left column with a needle that kicks on each stroke.
+    b.body();
+    b.cyl("z", 3, 26, 2.2, 20, 21, C.brass);
+    b.cyl("z", 3, 26, 1.6, 21, 22, C.cream);
+    b.part("needle", [3, 26, 22], swing("z", 0.7, 0.45));
+    b.box(3, 26, 22, 4, 28, 23, C.red);
+    // Hazard plate on the die bed.
+    b.body();
+    for (let x = 4; x < 16; x++) b.set(x, 7, 22, x % 2 ? C.brassL : C.soot);
     b.body();
     hopperBack(b, 0);
     chuteFront(b, 0);
-    statusLamp(b, 16, 4, 25);
+    statusLamp(b, 16, 9, 25);
     // Forming family: iron and steel bodies, brass kept for trim and moving parts.
     b.retone({ [C.brassD]: C.ironD, [C.brassM]: C.iron });
     return b.build();

@@ -200,8 +200,8 @@ html[data-boot="full"] .ctos.cr-hub .cr-head::before, html[data-boot="quick"] .c
 /* Second pass: the two game modes fill the row as two wide cards (auto-fill left half the row empty), the dashed
    cards keep their count readable over the dot field, and on phones the side offset is short so a card never
    overhangs the 16px gutter mid-reveal. */
-.ctos.cr-hub .cr-modes { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-@media (max-width: 760px) {
+.ctos.cr-hub .cr-modes { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+@media (max-width: 900px) {
   .ctos.cr-hub .cr-modes { grid-template-columns: minmax(0, 1fr); }
   .ctos.cr-hub .cm-grid > [data-rx]:nth-child(odd) { --rx-x: -12px; }
   .ctos.cr-hub .cm-grid > [data-rx]:nth-child(even) { --rx-x: 12px; }

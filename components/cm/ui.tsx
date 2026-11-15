@@ -1,12 +1,13 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
+import { ArtPreload, type NaosArtName } from "@/components/cm/art-preload";
 import { ScrollType, Scramble, Slab } from "@/components/cm/motion";
 import { PixelIcon } from "@/components/cm/pixel-icons";
 
 /** Themed "back" button shown above an inner-page title: arrow key block, mono label, hairline frame. */
 export function BackLink({ href, label }: { href: string; label: string }) {
     return (
-        <Link href={href} className="cm-back">
+        <Link prefetch={false} href={href} className="cm-back">
             <i aria-hidden="true"><PixelIcon name="arrowL" /></i>
             <span>{label}</span>
         </Link>
@@ -19,6 +20,8 @@ export function PageHead({
     title,
     lead,
     back,
+    band = "band-track",
+    preloadBand = true,
     children,
 }: {
     label: string;
@@ -26,10 +29,15 @@ export function PageHead({
     title: string[];
     lead?: ReactNode;
     back?: { href: string; label: string };
+    /** Which dithered band sits behind the title (see components/cm/naos-art.css). */
+    band?: Extract<NaosArtName, "band-track" | "band-rail" | "band-seam">;
+    /** Off for the 404 and error pages: Next embeds the not-found page in every route's payload, so a hint here would reach every page. */
+    preloadBand?: boolean;
     children?: ReactNode;
 }) {
     return (
         <header className="cm-head">
+            {preloadBand && <ArtPreload name={band} />}
             <div className="cm-grid-bg" aria-hidden="true" />
             <div className="cm-wrap cm-stage">
                 {back && (
@@ -104,7 +112,7 @@ export function Section({
                             ))}
                     </div>
                     {more && (
-                        <Link className="cm-more" href={more.href}>
+                        <Link prefetch={false} className="cm-more" href={more.href}>
                             {more.label} →
                         </Link>
                     )}

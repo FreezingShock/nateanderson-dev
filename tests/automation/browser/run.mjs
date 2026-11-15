@@ -83,17 +83,18 @@ const state = (page) => page.evaluate(() => window.__auto.snapshot());
     await page.mouse.down();
     await page.mouse.move(b.x, b.y, { steps: 12 });
     s = await state(page);
-    check("desktop: drag shows a ghost line snapped to the dominant axis", s.ghost && s.ghost.cells.length === 7 && s.ghost.cells.every((c) => c.z === 10), JSON.stringify(s.ghost?.cells?.map((c) => [c.x, c.z])));
+    // Pencil: the stroke follows the drag, so the ghost is one connected path from 2,10 to 8,11 (8 cells, one turn).
+    check("desktop: drag shows a ghost path that follows the drag", s.ghost && s.ghost.cells.length === 8 && s.ghost.cells.some((c) => c.z === 11), JSON.stringify(s.ghost?.cells?.map((c) => [c.x, c.z])));
     await page.mouse.up();
     s = await state(page);
-    check("desktop: release commits the belt line", s.items.filter((i) => i.kind === "belt").length === 7);
+    check("desktop: release commits the belt path", s.items.filter((i) => i.kind === "belt").length === 8);
 
     await page.keyboard.press("Control+z");
     s = await state(page);
     check("desktop: Ctrl+Z undoes the whole stroke", s.items.filter((i) => i.kind === "belt").length === 0);
     await page.keyboard.press("Control+Shift+z");
     s = await state(page);
-    check("desktop: Ctrl+Shift+Z redoes it", s.items.filter((i) => i.kind === "belt").length === 7);
+    check("desktop: Ctrl+Shift+Z redoes it", s.items.filter((i) => i.kind === "belt").length === 8);
 
     p = await px(page, 5, 5);
     await page.mouse.move(p.x, p.y);
@@ -218,13 +219,21 @@ const state = (page) => page.evaluate(() => window.__auto.snapshot());
 
     // Long-press on an empty cell with a machine tool turns the ghost.
     await page.evaluate(() => window.__auto.ctl.setToolById("machine"));
-    const e = await px(page, 9, 9);
+    // Pick an empty cell on screen. Pinch zoom moves the target toward the fingers, so a fixed cell can end up off screen.
+    const e = await page.evaluate(() => {
+        const ctl = window.__auto.ctl;
+        const r = document.querySelector("canvas").getBoundingClientRect();
+        const pt = ctl.pointer.cellAt(r.left + r.width / 2, r.top + r.height / 2);
+        return { x: r.left + r.width / 2, y: r.top + r.height / 2, cell: pt };
+    });
+    const empty = await page.evaluate((cell) => !window.__auto.snapshot().items.some((i) => cell && i.x === cell.x && i.z === cell.z), e.cell);
+    check("phone: long-press target is an empty cell on screen", !!e.cell && empty, JSON.stringify(e.cell));
     await touch("touchStart", [{ x: e.x, y: e.y, id: 1 }]);
     await page.waitForTimeout(450);
     await touch("touchEnd", []);
     await page.waitForTimeout(100);
     s = await state(page);
-    check("phone: long-press on an empty cell turns the ghost", s.rot === 1 && !s.items.some((i) => i.x === 9 && i.z === 9), `rot ${s.rot}`);
+    check("phone: long-press on an empty cell turns the ghost", s.rot === 1 && !s.items.some((i) => i.x === e.cell?.x && i.z === e.cell?.z), `rot ${s.rot}`);
 
     // Long-press on a placed machine turns that machine, in place.
     await page.evaluate(() => window.__auto.focus(6, 6));
