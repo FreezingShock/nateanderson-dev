@@ -32,11 +32,12 @@ An idle game about a star, at `/creations/games/starwright`. Original theme, art
 `node --experimental-strip-types --no-warnings scripts/starwright/sim.mjs 30` plays a greedy bot at 1 s steps and prints each landmark. The bot answers every visitor at once and takes the first cloud. Current numbers (2026-11-15 pass): first supernova about 13 min, then 5, 7, 4, 4, 2, 1, 3 min as the map lights, first neutron star about 0.6 to 0.8 h, black hole about 2.2 h for the bot (about 1.7 h after the neutron star for a player who stays and chases uranium; it used to be over 6 h because the gold row cost 2e7 iron and sat idle for 20 minutes) (people are slower). A bot that acts every 10 s and buys the biggest tier under 90% of the stock collapses the first star in about 14 min (a test holds it under 25). Change numbers in `TUNE` and the data tables, not the engine.
 
 ## Rules changed 2026-11-15
-Live in the code, listed for Nate's sign-off (one file each in `docs/rule-changes/`):
+Signed off by Nate ("Keep all three"); one file each in `docs/rule-changes/`:
 - l5 Corona (Lantern): hydrogen inflow x2 and core heat x1.2, 900 stardust, needs l4.
 - a5 Iron rain (Anvil): stardust from a supernova x2, 1800 stardust, needs a3 and a4.
 - Deep stars: an endless stardust sink once the map is lit, +4% to everything each, first costs 600 and each costs x1.4 more.
 - The map is now 20 stars (five per constellation).
+- Away time with auto supernova on pays up to 3 supernovas per absence (his pick), see `2026-11-15-starwright-away-supernova-cap.md`.
 
 ## Deep stars
 Where: the "Deep stars" panel at the bottom of the constellation map (key C), once every star is lit. Cost: `ceil(600 x 1.4^bought)` stardust (`TUNE.deepCost`, `deepGrow`). Each adds +4% to everything (`TUNE.deepBonus`, multiplied into `f.global`). Console: `sw deep` shows the count and next cost, `sw deep buy` lights one. A neutron star clears them (`s.deep = 0` in `neutronStar`), and so does a black hole. Code: `buyDeep`, `deepCost` in `engine.ts`; button in `components/starwright/star-chart.tsx`.
