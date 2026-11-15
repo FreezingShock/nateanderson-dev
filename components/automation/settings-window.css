@@ -70,7 +70,7 @@ a.bws-action, a.bws-action:visited { color: var(--ab-brass-hi, #f0c97a); }
     radial-gradient(circle at 10px calc(100% - 10px), #c59a52 0 2px, transparent 3px) 0 0 / 100% 100% no-repeat,
     radial-gradient(circle at calc(100% - 10px) calc(100% - 10px), #c59a52 0 2px, transparent 3px) 0 0 / 100% 100% no-repeat,
     repeating-linear-gradient(0deg, rgba(255, 220, 150, 0.025) 0 1px, transparent 1px 3px), #17100a;
-  border: 1px solid #4a3a22; box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.55);
+  border: 0; box-shadow: none;
 }
 .bws-group-h { display: flex; align-items: center; gap: 10px; }
 .bws-group-h::after { content: ""; flex: 1; height: 1px; background: linear-gradient(90deg, #6b5230, transparent); }

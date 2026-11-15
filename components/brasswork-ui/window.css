@@ -13,8 +13,8 @@
   box-shadow: 0 0 0 1px #1a1209, inset 0 1px 0 rgba(255, 220, 150, 0.35), 0 16px 40px rgba(0, 0, 0, 0.5);
   color: #efe2c4;
 }
-/* Open and close motion, per variant (see the notes at the top of window.tsx). Exit runs 170 ms, matching EXIT_MS. */
-.bw-window { --bw-win-in: 200ms; --bw-win-out: 170ms; }
+/* Open and close motion, per variant (see the notes at the top of window.tsx). Exit runs 200 ms, matching EXIT_MS. */
+.bw-window { --bw-win-in: 200ms; --bw-win-out: 200ms; }
 .bw-window[data-variant="iris"]:not([data-closing]) { animation: bw-win-iris-in var(--bw-win-in) cubic-bezier(.2,.7,.2,1) both; }
 .bw-window[data-variant="iris"][data-closing] { animation: bw-win-iris-out var(--bw-win-out) cubic-bezier(.5,0,.8,.4) both; }
 .bw-window[data-variant="shutter"]:not([data-closing]) { animation: bw-win-shutter-in var(--bw-win-in) cubic-bezier(.2,.7,.2,1) both; }
@@ -80,3 +80,108 @@
   .bw-window[data-variant]:not([data-closing]) { animation: bw-win-sheet-in var(--bw-win-in) cubic-bezier(.2,.7,.2,1) both; }
   .bw-window[data-variant][data-closing] { animation: bw-win-sheet-out var(--bw-win-out) ease-in both; }
 }
+
+/* ------------------------------------------------------------------ menu art (theme)
+   Art from scripts/brasswork/build-window-art.py, drawn at 1 px and shown at 3x (banner) or 2x (frame, grain). */
+.bw-window[data-theme] {
+  border: 12px solid #b07a28;
+  border-image: url("/brasswork/window/frame.png") 8 / 12px stretch;
+  image-rendering: pixelated;
+  background: url("/brasswork/window/grain.png") 0 0 / 64px 64px, #1f160c;
+  box-shadow: 0 18px 44px rgba(0, 0, 0, 0.55), 0 2px 0 rgba(0, 0, 0, 0.6);
+}
+.bw-window[data-theme] .bw-window-head {
+  position: relative; isolation: isolate; min-height: 66px; padding: 10px 14px 10px 16px;
+  background: #160f08; border-bottom: 2px solid #8a5a1e; box-shadow: 0 1px 0 #46290a;
+}
+.bw-window[data-theme] .bw-window-banner {
+  position: absolute; inset: 0; z-index: -1; pointer-events: none;
+  background: no-repeat right bottom / auto 66px; image-rendering: pixelated;
+}
+.bw-window[data-theme="research"] .bw-window-banner { background-image: url("/brasswork/window/banner-research.png"); }
+.bw-window[data-theme="expedition"] .bw-window-banner { background-image: url("/brasswork/window/banner-expedition.png"); }
+.bw-window[data-theme="production"] .bw-window-banner { background-image: url("/brasswork/window/banner-production.png"); }
+.bw-window[data-theme="settings"] .bw-window-banner { background-image: url("/brasswork/window/banner-settings.png"); }
+.bw-window[data-theme="hub"] .bw-window-banner { background-image: url("/brasswork/window/banner-hub.png"); }
+.bw-window[data-theme="milestones"] .bw-window-banner { background-image: url("/brasswork/window/banner-milestones.png"); }
+.bw-window[data-theme] .bw-window-title {
+  font-family: var(--bw-font-display, inherit); font-size: 22px; letter-spacing: .08em; color: #ffd98a;
+  text-shadow: 0 2px 0 #1a1209, 0 0 12px rgba(0, 0, 0, 0.8);
+}
+.bw-window[data-theme] .bw-window-art { width: 40px; height: 40px; background: #1d160b; border: 2px solid #8a5a1e; box-shadow: inset 0 0 0 1px #46290a; }
+.bw-window[data-theme] .bw-window-close { background: rgba(22, 15, 8, 0.92); }
+.bw-window[data-theme] .bw-window-close:hover { background: #46290a; color: #fff2c8; }
+
+/* Banner slides in a step behind the window, so the art arrives after the frame. */
+.bw-window[data-theme]:not([data-closing]) .bw-window-banner { animation: bw-banner-in 420ms 60ms cubic-bezier(.2,.7,.2,1) both; }
+@keyframes bw-banner-in { from { opacity: 0; background-position: calc(100% + 36px) bottom; } to { opacity: 1; background-position: right bottom; } }
+
+/* One open and close motion per menu. These replace the variant motion. */
+.bw-window[data-theme] { --bw-win-in: 260ms; }
+.bw-window[data-theme="research"]:not([data-closing]) { animation: bw-unroll-in var(--bw-win-in) cubic-bezier(.2,.7,.2,1) both; }
+.bw-window[data-theme="research"][data-closing] { animation: bw-unroll-out var(--bw-win-out) cubic-bezier(.5,0,.8,.4) both; }
+@keyframes bw-unroll-in { from { opacity: .3; clip-path: inset(0 0 calc(100% - 66px) 0); } to { opacity: 1; clip-path: inset(0); } }
+@keyframes bw-unroll-out { from { opacity: 1; clip-path: inset(0); } to { opacity: 0; clip-path: inset(0 0 calc(100% - 66px) 0); } }
+
+.bw-window[data-theme="expedition"]:not([data-closing]) { transform-origin: 50% 0; animation: bw-unfold-in var(--bw-win-in) cubic-bezier(.2,.75,.25,1) both; }
+.bw-window[data-theme="expedition"][data-closing] { transform-origin: 50% 0; animation: bw-unfold-out var(--bw-win-out) ease-in both; }
+@keyframes bw-unfold-in { from { opacity: 0; transform: perspective(900px) rotateX(-62deg); } to { opacity: 1; transform: none; } }
+@keyframes bw-unfold-out { from { opacity: 1; transform: none; } to { opacity: 0; transform: perspective(900px) rotateX(-62deg); } }
+
+.bw-window[data-theme="production"]:not([data-closing]) { animation: bw-win-shutter-in var(--bw-win-in) cubic-bezier(.2,.7,.2,1) both; }
+.bw-window[data-theme="production"][data-closing] { animation: bw-win-shutter-out var(--bw-win-out) cubic-bezier(.5,0,.8,.4) both; }
+
+.bw-window[data-theme="settings"]:not([data-closing]) { animation: bw-win-settle-in var(--bw-win-in) cubic-bezier(.2,.8,.25,1.02) both; }
+.bw-window[data-theme="settings"][data-closing] { animation: bw-win-settle-out var(--bw-win-out) ease-in both; }
+.bw-window[data-theme="settings"]:not([data-closing]) .bw-window-art > * { animation: bw-art-wind 520ms cubic-bezier(.2,.7,.2,1) both; }
+.bw-window[data-theme="settings"][data-closing] .bw-window-art > * { animation: bw-art-unwind var(--bw-win-out) ease-in both; }
+@keyframes bw-art-wind { from { transform: rotate(-180deg); } to { transform: none; } }
+@keyframes bw-art-unwind { to { transform: rotate(120deg); } }
+
+.bw-window[data-theme="hub"]:not([data-closing]) { animation: bw-doors-in var(--bw-win-in) cubic-bezier(.2,.7,.2,1) both; }
+.bw-window[data-theme="hub"][data-closing] { animation: bw-doors-out var(--bw-win-out) cubic-bezier(.5,0,.8,.4) both; }
+@keyframes bw-doors-in { from { opacity: .2; clip-path: inset(0 50% 0 50%); } to { opacity: 1; clip-path: inset(0); } }
+@keyframes bw-doors-out { from { opacity: 1; clip-path: inset(0); } to { opacity: .2; clip-path: inset(0 50% 0 50%); } }
+
+.bw-window[data-theme="milestones"]:not([data-closing]) { animation: bw-stamp-in 300ms cubic-bezier(.3,.6,.3,1) both; }
+.bw-window[data-theme="milestones"][data-closing] { animation: bw-stamp-out var(--bw-win-out) ease-in both; }
+@keyframes bw-stamp-in { 0% { opacity: 0; transform: scale(1.09); } 65% { opacity: 1; transform: scale(.985); } 100% { transform: none; } }
+@keyframes bw-stamp-out { to { opacity: 0; transform: scale(1.05); } }
+
+.ab-root[data-reduce="true"] .bw-window[data-theme] *, .ab-root[data-lowfx="true"] .bw-window[data-theme] *,
+.bw-root[data-reduce="true"] .bw-window[data-theme] *, .bw-root[data-lowfx="true"] .bw-window[data-theme] * { animation: none !important; }
+@media (prefers-reduced-motion: reduce) { .bw-window[data-theme] * { animation: none !important; } }
+
+@media (max-width: 767px) {
+  .bw-window[data-theme] { border-width: 12px 0 0 0; border-image-width: 12px 0 0 0; }
+  .bw-window[data-theme] .bw-window-head { min-height: 56px; }
+  .bw-window[data-theme] .bw-window-banner { background-size: auto 56px; }
+  .bw-window[data-theme] .bw-window-title { font-size: 17px; letter-spacing: .03em; }
+  /* Phones keep the sheet slide for every menu; the per-menu motion is a desktop touch. */
+  .bw-window[data-theme]:not([data-closing]) { animation: bw-win-sheet-in var(--bw-win-in) cubic-bezier(.2,.7,.2,1) both; transform-origin: initial; }
+  .bw-window[data-theme][data-closing] { animation: bw-win-sheet-out var(--bw-win-out) ease-in both; }
+}
+/* The title sits on its own dark plate, so long titles never run over the banner art. */
+.bw-window[data-theme] .bw-window-title {
+  justify-self: start; max-width: 100%; padding: 2px 28px 2px 2px;
+  background: linear-gradient(90deg, #160f08 calc(100% - 24px), rgba(22, 15, 8, 0));
+}
+
+/* ------------------------------------------------------------------ section art
+   Drawn 12 px glyphs (glyphs.png, shown at 2x) before section headings, and a riveted brass rule after them. */
+.bw-window[data-theme] :is(.bws-group-h, .hm-side .hm-kick) { display: flex; align-items: center; gap: 10px; }
+.bw-window[data-theme] :is(.bws-group-h, .hm-side .hm-kick)::before {
+  content: ""; flex: none; width: 24px; height: 24px; image-rendering: pixelated;
+  background: url("/brasswork/window/glyphs.png") 0 0 / 192px 24px no-repeat;
+}
+.bw-window[data-theme] :is(.bws-group-h, .hm-side .hm-kick)::after {
+  content: ""; flex: 1; min-width: 24px; height: 12px; image-rendering: pixelated;
+  background: url("/brasswork/window/rule.png") 0 50% / 16px 12px repeat-x;
+  -webkit-mask: linear-gradient(90deg, #000 60%, transparent); mask: linear-gradient(90deg, #000 60%, transparent);
+}
+.bws-group[aria-label="Sound"] .bws-group-h::before { background-position-x: 0 !important; }
+.bws-group[aria-label="Display"] .bws-group-h::before { background-position-x: -24px !important; }
+.bws-group[aria-label="Numbers"] .bws-group-h::before { background-position-x: -48px !important; }
+.bws-group[aria-label="Save and leave"] .bws-group-h::before { background-position-x: -72px !important; }
+.hm-kick[data-glyph="orders"]::before { background-position-x: -96px !important; }
+.hm-kick[data-glyph="milestones"]::before { background-position-x: -120px !important; }

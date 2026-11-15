@@ -101,6 +101,8 @@ export interface ResearchDef {
     /** Recipe ids this node unlocks. */
     recipes: string[];
     note?: string;
+    /** Permanent multipliers this node adds (mastery research). They stack with the site bonus. */
+    bonus?: { miner?: number; power?: number; craft?: number };
 }
 
 /**
@@ -113,6 +115,8 @@ export interface MilestoneDef {
     stage: Stage;
     deliver: Stack[];
     blueprints: number;
+    /** Items that land in the hub stock when the milestone is delivered (a supply crate). They do not count as deliveries. */
+    reward?: Stack[];
 }
 
 /**
@@ -125,6 +129,8 @@ export interface HubRequestDef {
     note?: string;
     deliver: Stack[];
     unlocks: { recipes: string[]; machines: string[] };
+    /** Items paid into the hub stock when the request is done. */
+    reward?: Stack[];
 }
 
 /** The one prestige. Keeps blueprints, research, routes and unlocked designs. Resets machines and stock. */
@@ -251,7 +257,11 @@ export interface Progress {
     delivered: Record<string, number>; // cumulative items that reached the hub
     prestiges: number;
     site: string | null; // island site picked at the last prestige
-    bonus: { miner: number; power: number }; // multipliers from the site
+    bonus: { miner: number; power: number; craft?: number }; // multipliers: site bonus times mastery research
+  /** Workshop commissions finished across every workshop. Missing in older saves. */
+  commissions?: number;
+  /** Delivered counts when the open commission began, so it needs fresh deliveries. */
+  commissionBase?: Record<string, number>;
 }
 
 export interface World {
@@ -361,6 +371,10 @@ export type MilestoneView = {
   goal: string;
   progress: number; // 0..1
   blueprintReward: number;
+  /** Replaces the plain "+N blueprint" line when set, e.g. "+8 blueprints and a supply crate". */
+  rewardLine?: string;
+  /** True for the repeating post-game commission, which is not part of the first run's milestones. */
+  commission?: boolean;
   done: boolean;
   /** One line per delivered item: what the player has and what the milestone needs. */
   items: { id: string; name: string; have: number; need: number }[];
@@ -437,9 +451,9 @@ export type HudSettings = {
   showRates: boolean;
 };
 
-/** One thing a hub step opens: a recipe's output item, a machine or logistics piece, or blueprints. */
+/** One thing a hub step opens: a recipe's output item, a machine or logistics piece, blueprints, or an item in the supply crate it pays. */
 export type HubUnlock = {
-  kind: "recipe" | "machine" | "blueprints";
+  kind: "recipe" | "machine" | "blueprints" | "crate";
   id: string;
   name: string;
   /** Icon id for lib/automation/icons (item or machine id). Absent for blueprints. */

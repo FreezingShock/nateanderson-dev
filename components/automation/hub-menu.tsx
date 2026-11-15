@@ -26,17 +26,17 @@ function UnlockTile({ u }: { u: HubUnlock }) {
         <ArtIcon id={u.icon ?? u.id} size={48} name={u.name} className="hm-open-ico" />
       )}
       <span className="hm-open-name">{u.name}</span>
-      <span className="hm-open-kind">{u.kind === "recipe" ? "recipe" : u.kind === "machine" ? "build" : "research"}</span>
+      <span className="hm-open-kind">{u.kind === "recipe" ? "recipe" : u.kind === "machine" ? "build" : u.kind === "crate" ? "crate" : "research"}</span>
     </li>
   );
 }
 
 function Slip({ step, index, total }: { step: HubStep; index: number; total: number }) {
-  const label = step.kind === "request" ? "Order" : "Milestone";
+  const label = step.kind === "request" ? "Order" : step.id === "commission" ? "Commission" : "Milestone";
   return (
     <article className="hm-slip" data-state={step.state} aria-label={`${label}: ${step.name}`}>
       <header className="hm-slip-head">
-        <span className="hm-slip-no">{label} {index} of {total}</span>
+        <span className="hm-slip-no">{step.id === "commission" ? label : `${label} ${index} of ${total}`}</span>
         {step.state === "done" && <span className="hm-stamp" aria-label="Filled">Filled</span>}
         {step.state === "now" && <span className="hm-slip-state">Open now</span>}
         {step.state === "ahead" && <span className="hm-slip-state" data-wait="true">Waiting</span>}
@@ -95,7 +95,7 @@ export function HubMenu({ hub, onClose }: { hub: HubView; onClose: () => void })
   );
 
   return (
-    <MenuWindow title="Hub" label="Hub" size="wide" variant="settle" art={<MachinePortrait id="hub" size={32} />} onClose={onClose}>
+    <MenuWindow theme="hub" title="Hub" label="Hub" size="wide" variant="settle" art={<MachinePortrait id="hub" size={32} />} onClose={onClose}>
       <div className="hm-wrap">
         <aside className="hm-side" aria-label="Hub ladder">
           <div className="hm-hall">
@@ -106,9 +106,9 @@ export function HubMenu({ hub, onClose }: { hub: HubView; onClose: () => void })
               <span className="hm-hall-bp"><span style={uiIconStyle("blueprints", 20)} aria-hidden="true" />{hub.blueprints} blueprints</span>
             </div>
           </div>
-          <h4 className="hm-kick">Orders · open recipes and machines</h4>
+          <h4 className="hm-kick" data-glyph="orders">Orders · open recipes and machines</h4>
           <ol className="hm-ladder">{listed("request").map(row)}</ol>
-          <h4 className="hm-kick">Milestones · pay blueprints</h4>
+          <h4 className="hm-kick" data-glyph="milestones">Milestones · pay blueprints</h4>
           <ol className="hm-ladder">{listed("milestone").map(row)}</ol>
         </aside>
         <Slip step={step} index={indexOf(step)} total={step.kind === "request" ? orders.length : hub.steps.length - orders.length} />

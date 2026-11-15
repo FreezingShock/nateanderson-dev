@@ -650,6 +650,8 @@ function flush(L: Layers, l: Layer) {
 }
 
 const NAMES = STAGE_RAMP as readonly string[];
+/** last stage seen per planet, and when it changed (scene time), to play the stage-up burst once */
+const planetSeen = new Map<string, { st: number; at: number }>();
 /** How much bigger than the code-drawn body a drawn star sprite is drawn (its corona and rays sit outside the body). */
 const STAR_FIT = 1.3;
 
@@ -724,6 +726,10 @@ export function renderLayered(L: Layers, f: SceneFrame, S: SpriteSet): void {
     const col = Math.max(0, Math.min(1, f.collapse ?? 0));
     if (to === 5 && col > 0.2) R *= 1 - 0.1 * Math.min(1, col) + (f.reduce ? 0 : Math.sin(t * 30) * 0.006 * col);
 
+    // a new star's first seconds: the old star's remnant drifts off while the new one gathers out of a spiral of gas
+    const birth = born < 1 && !f.reduce ? S.get("star/birth") : null;
+    if (birth) drawFrame(ctx, birth, frameAtProgress(birth, born), W / 2, H / 2, 1, born > 0.75 ? (1 - born) / 0.25 : 1);
+
     // 2. a gas cloud drifting behind the star
     const v = f.visitor;
     const neb = v?.id === "nebula" ? S.get("visitor/nebula") : null;
@@ -795,6 +801,28 @@ export function renderLayered(L: Layers, f: SceneFrame, S: SpriteSet): void {
     if (f.nova >= 0 && !blast) drawNova(f.novaFrom !== undefined ? (f.nova - 0.2) / 0.8 : f.nova, cx, cy, f.novaKind ?? 0);
     flush(L, L.front);
     drawSheetPlanets(true);
+
+    // a planet that just grew a stage gets a burst of light over it; a visitor that just arrived opens out of a ripple
+    if (!f.reduce) {
+        const up = S.get("fx/planet-up");
+        for (const id of f.planets) {
+            const st = f.planetStages?.[id] ?? 2;
+            const seen = planetSeen.get(id);
+            if (!seen || st < seen.st) planetSeen.set(id, { st, at: -1e9 });
+            else if (st > seen.st) planetSeen.set(id, { st, at: f.t });
+            const at = planetSeen.get(id)!.at;
+            const p = PLANETS.find((x) => x.id === id);
+            if (!up || !p || f.t - at > 1.7) continue;
+            const a = angleOf(p);
+            drawFrame(ctx, up, frameAtProgress(up, (f.t - at) / 1.7), cx + Math.cos(a) * orbitOf(p), cy + Math.sin(a) * orbitOf(p) * 0.27);
+        }
+        const arrive = v && v.age < 2 ? S.get("fx/arrive") : null;
+        if (v && arrive) {
+            const ax = v.id === "comet" ? W - 14 : v.id === "nebula" ? 24 : v.id === "pair" ? cx + Math.cos(Math.PI * 1.15) * R * 2.7 : cx + Math.cos(-0.9) * R;
+            const ay = v.id === "comet" ? 16 : v.id === "nebula" ? cy - 30 : v.id === "pair" ? cy + Math.sin(Math.PI * 1.15) * R * 1.1 - 6 : cy + Math.sin(-0.9) * R;
+            drawFrame(ctx, arrive, frameAtProgress(arrive, v.age / 2), Math.max(24, Math.min(W - 24, ax)), Math.max(20, ay));
+        }
+    }
 
     // visitors drawn as sprites
     if (v && comet) {

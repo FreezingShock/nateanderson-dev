@@ -58,6 +58,19 @@ export const GRASS_HEX = [0x5f9440, 0x6da345, 0x4f8236, 0x7bb04c];
 export const WATER_HEX = 0x2d7f9a;
 export const WATER_OPACITY = 0.9;
 
+/**
+ * Water palettes for the shaded sea: deep colour, shallow colour over the sand shelf, and foam.
+ * "verdigris" is the default (sea green that sits with the brass, no cyan). "spec" keeps the
+ * original reference blue for comparison. Bench and dev pages can switch with ?water=.
+ */
+export const WATER_PALETTES = {
+    verdigris: { deep: 0x1d4048, shallow: 0x4e8a78, foam: 0xf3e4c4 },
+    lagoon: { deep: 0x2a3b33, shallow: 0x7d8c58, foam: 0xf0dfb8 },
+    spec: { deep: 0x22627a, shallow: 0x3f9ab0, foam: 0xeef0e6 },
+} as const;
+export type WaterPaletteName = keyof typeof WATER_PALETTES;
+export const DEFAULT_WATER: WaterPaletteName = "verdigris";
+
 /** Per-chunk quality knobs. The governor steps through these when frames run long. */
 export interface QualityPreset {
     name: string;
@@ -109,6 +122,10 @@ export interface TimeKey {
     skyMid: number;
     skyTop: number;
     lampIntensity: number;
+    /** Height of the sun disc in the sky, as the y of its direction (dusk is the spec 0.075). */
+    sunElev: number;
+    /** 0 by day, 1 at full night: stars, moon, shooting stars and the lighthouse lamp. */
+    night: number;
 }
 
 /** Dusk is the approved look (spec). Day and night are placeholders for the cycle. */
@@ -124,6 +141,8 @@ export const TIME_KEYS: TimeKey[] = [
         fogDensity: 0.009,
         skyMid: 0x7fa0b8,
         skyTop: 0x2d5a8a,
+        sunElev: 0.42,
+        night: 0,
         lampIntensity: 6,
     },
     {
@@ -137,6 +156,8 @@ export const TIME_KEYS: TimeKey[] = [
         fogDensity: 0.0115,
         skyMid: 0xa9505a,
         skyTop: 0x241a4a,
+        sunElev: 0.075,
+        night: 0,
         lampIntensity: 30,
     },
     {
@@ -150,6 +171,8 @@ export const TIME_KEYS: TimeKey[] = [
         fogDensity: 0.02,
         skyMid: 0x2a2c4a,
         skyTop: 0x0a0a1e,
+        sunElev: -0.3,
+        night: 1,
         lampIntensity: 40,
     },
     {
@@ -163,6 +186,8 @@ export const TIME_KEYS: TimeKey[] = [
         fogDensity: 0.009,
         skyMid: 0x7fa0b8,
         skyTop: 0x2d5a8a,
+        sunElev: 0.42,
+        night: 0,
         lampIntensity: 6,
     },
 ];

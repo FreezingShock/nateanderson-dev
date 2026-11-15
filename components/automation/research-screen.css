@@ -6,8 +6,6 @@
   --rs-acc: #58b09a; --rs-acc-dim: rgba(88, 176, 154, 0.3);
   border-color: #3f8a76;
 }
-.bw-window[aria-label="Research"] .bw-window-head { background: linear-gradient(180deg, #1f3a36, #14241f); border-bottom-color: var(--rs-acc-dim); }
-.bw-window[aria-label="Research"] .bw-window-title { color: #bff0de; }
 .bw-window[aria-label="Research"] .bw-window-body {
   display: flex; flex-direction: column; flex: 1 1 auto; overflow: hidden; padding: 10px 14px 12px;
   background:
