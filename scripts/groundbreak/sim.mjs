@@ -44,7 +44,7 @@ while (t < hours * 3600 && !(s.ending && !INC)) {
         while (E.canUnlock(s, s.open)) { E.unlock(s, s.open); mark(`open ${D.MATS[s.open - 1].name}`, t); }
         if (E.overtimeCost(s) && E.overtimeCost(s) < s.cash * 0.05) E.overtime(s);
         if (s.change) E.acceptChange(s);
-        if (INC && s.ending && E.charterGain(s, f) >= INC) { mark(`firm ${s.firm + 1} done`, t); E.incorporate(s); for (const p of D.PERKS.slice().sort((a, b) => a.cost - b.cost)) E.buyPerk(s, p.id); }
+        if (INC && s.ending && E.charterGain(s, f) >= INC) { if (process.env.GB_SHOWCH) console.log("gain", E.charterGain(s,f), "rep", Math.round(s.repFirm), "perks", s.perks.join(",")); mark(`firm ${s.firm + 1} done`, t); E.incorporate(s); for (const p of D.PERKS.slice().sort((a, b) => a.cost - b.cost)) E.buyPerk(s, p.id); }
         if (s.built >= 1) mark("first job", t);
         mark(`stage ${E.stageOf(s)}`, t);
         if (s.built !== lastBuilt) { lastBuilt = s.built; mark(`job ${s.built} ${D.jobAt(s.built - 1).name}`, t); }

@@ -583,3 +583,16 @@ html.gb-route .sf-foot { display: none !important; }
 @media (max-height: 520px) and (min-width: 861px) {
     .gb-root .gb-cue { top: 46px; left: 64px; right: auto; width: min(330px, calc(100vw - 300px)); }
 }
+
+/* ---- windows leave the site showing (2026-11-15): desktop, a narrower panel docked beside the rail that ends above the dock; phone, a bottom sheet that covers the dock and leaves the top of the site visible ---- */
+@media (min-width: 861px) and (min-height: 521px) {
+    .gb-root .gb-win { width: min(400px, calc(100vw - 100px)); max-height: calc(100% - var(--gb-dock-top, 140px) - 92px); }
+    .gb-root .gb-win.gb-sm { width: min(320px, calc(100vw - 100px)); }
+    .gb-root .gb-win.gb-lg { width: min(520px, calc(100vw - 100px)); }
+}
+@media (max-width: 860px) and (min-height: 521px) {
+    .gb-root .gb-win { top: auto; bottom: 0; left: 0; right: 0; max-height: min(58%, calc(100% - 220px)); border-bottom: 0; }
+    .gb-root .gb-win[data-v] { transform-origin: 50% 100%; }
+    .gb-root[data-win] .gb-cue, .gb-root[data-win] .gb-zoom, .gb-root[data-win] .gb-feed, .gb-root[data-win] .gb-card { display: none; }
+}
+@media (min-width: 861px) and (min-height: 521px) { .gb-root[data-win] .gb-cue, .gb-root[data-win] .gb-feed { display: none; } }

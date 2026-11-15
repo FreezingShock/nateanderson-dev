@@ -445,3 +445,12 @@ test("opening a material stocks a minute of its output so the new row is alive a
     assert.ok(s.amt[1] > 0, "Sand arrived stocked");
     assert.ok(s.amt[1] < 1000, "but only a minute's worth");
 });
+
+test("the first charter buys a real head start: a firm-1 run pays 25+ charter and Standing crews doubles every crew", () => {
+    const s = E.fresh(0);
+    s.repFirm = 3600; s.rep = 3600;
+    assert.ok(E.charterGain(s) >= 25, "a firm that reached the bridge earns about 30 charter");
+    const base = E.effects(s).crew;
+    s.perks = ["o1"];
+    assert.equal(E.effects(s).crew, base * 2);
+});

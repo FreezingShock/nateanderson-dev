@@ -93,7 +93,7 @@ export const TUNE = {
     offlineH: 8,
     offlineStepCap: 7200,
     /** Charter points = floor(sqrt(rep earned this firm / charterDiv)) */
-    charterDiv: 10,
+    charterDiv: 4,
     charterMinRep: 60,
     /** skyline entries kept (oldest dropped past this) */
     skylineCap: 600,
@@ -248,7 +248,7 @@ export const cityLoop = (firm: number) => Math.floor(firm / CITIES.length);
 export interface Perk { id: string; name: string; desc: string; cost: number; req: string[]; fx: Partial<Record<FxKey, number>>; branch: "ops" | "money" | "logistics" }
 export const PERKS: Perk[] = [
     // Operations: crews and equipment
-    { id: "o1", name: "Standing crews", desc: "All crews work 1.5x.", cost: 1, req: [], fx: { crew: 1.5 }, branch: "ops" },
+    { id: "o1", name: "Standing crews", desc: "All crews work 2x.", cost: 1, req: [], fx: { crew: 2 }, branch: "ops" },
     { id: "o2", name: "Foreman", desc: "Hires tier I crews for you, a little at a time.", cost: 3, req: ["o1"], fx: { auto: 1 }, branch: "ops" },
     { id: "o3", name: "Cheaper hiring", desc: "Crews cost 15% less.", cost: 4, req: ["o1"], fx: { crewCost: 0.15 }, branch: "ops" },
     { id: "o4", name: "Fleet manager", desc: "Buys equipment for you when it is cheap.", cost: 8, req: ["o2"], fx: { auto: 1 }, branch: "ops" },
