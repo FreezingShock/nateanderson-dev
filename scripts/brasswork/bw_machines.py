@@ -88,6 +88,9 @@ def furnace(p=0):
     sc.frustum(5, 5, 7, 7, 5, "steel", 0.05, y=23)
     sc.cylinder((4, 23, -9), (4, 44, -9), 2.6, "steel", 0.0, n=10)
     sc.cylinder((4, 44, -9), (4, 46, -9), 3.6, "brass", 0.1, n=10)
+    sc.box(-12, 12, 20, 21.5, -10, 10, "steel", 0.2)
+    sc.box(-12, -11, 21.5, 25, 9, 10, "brass", 0.1)
+    sc.box(11, 12, 21.5, 25, 9, 10, "brass", 0.1)
     sc.paint(c)
     window(c, sc, [(-7, 6, 14.1), (7, 6, 14.1), (7, 13, 14.1), (-7, 13, 14.1)])
     for x in (-5, 0, 5):
@@ -209,6 +212,7 @@ def windmill(p=0):
     sc.frustum(9, 9, 5.5, 5.5, 30, "wood", 0.0, y=3)
     sc.frustum(6.5, 6.5, 3, 3, 6, "cu", 0.0, y=33)
     sc.cylinder((0, 34, 4), (0, 34, 9), 1.6, "iron", 0.1, n=8)
+    sc.cylinder((9, 6, -2), (13, 6, -2), 2.4, "cu", 0.05, n=12)
     sc.paint(c)
     hx, hy = sc.pt((0, 34, 9))
     k = FIT["k"] * 0.95
