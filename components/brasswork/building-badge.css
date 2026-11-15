@@ -1,0 +1,50 @@
+/* BUILDING badge. Sharp brass-edged plate with corner ticks, no pill, no side strip. Centered under the top bar. */
+.bw-building {
+    position: absolute;
+    left: 50%;
+    top: calc(var(--ab-top-h, 0px) + 10px);
+    transform: translateX(-50%);
+    z-index: 3;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 6px 12px 6px 8px;
+    color: #efe2c4;
+    background: rgba(20, 15, 9, 0.92);
+    border: 1px solid #b8862f;
+    box-shadow: 0 0 0 1px rgba(8, 6, 3, 0.8), 0 4px 14px rgba(0, 0, 0, 0.45);
+    pointer-events: none;
+    white-space: nowrap;
+    animation: bw-building-in 0.18s ease-out both;
+}
+/* Corner brackets in brass. */
+.bw-building::before,
+.bw-building::after {
+    content: "";
+    position: absolute;
+    width: 7px;
+    height: 7px;
+    border: 2px solid #ffd98a;
+}
+.bw-building::before { left: -4px; top: -4px; border-right: 0; border-bottom: 0; }
+.bw-building::after { right: -4px; bottom: -4px; border-left: 0; border-top: 0; }
+.bw-building-art { display: block; flex: none; line-height: 0; }
+.bw-building-text { display: flex; flex-direction: column; gap: 1px; }
+.bw-building-k { font-size: 11px; letter-spacing: 0.22em; color: #ffd98a; font-weight: 600; }
+.bw-building-v { font-size: 15px; line-height: 1.15; }
+.bw-building-rot,
+.bw-building-esc { font-size: 11px; letter-spacing: 0.06em; color: #c9b588; font-variant-numeric: tabular-nums; }
+.bw-building-esc { padding: 1px 5px; border: 1px solid #6b5430; }
+.bw-building[data-mode="remove"] { border-color: #c95a2a; }
+.bw-building[data-mode="remove"] .bw-building-k { color: #ffb08a; }
+@keyframes bw-building-in {
+    from { opacity: 0; transform: translateX(-50%) translateY(-6px); }
+    to { opacity: 1; transform: translateX(-50%) translateY(0); }
+}
+@media (max-width: 759px) {
+    .bw-building { top: 8px; gap: 8px; padding: 4px 10px 4px 6px; }
+    .bw-building-esc, .bw-building-rot { display: none; }
+}
+@media (prefers-reduced-motion: reduce) { .bw-building { animation: none; } }
+.ab-root[data-reduce="true"] .bw-building,
+.ab-root[data-lowfx="true"] .bw-building { animation: none; }

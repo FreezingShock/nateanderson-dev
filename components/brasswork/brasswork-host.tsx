@@ -47,6 +47,7 @@ import { useFirstRunQuest } from "./first-run";
 import { BuildPopover, TrashButton } from "./build-popover";
 import { NextMarker, type NextTarget } from "./next-marker";
 import { HoverName } from "./hover-name";
+import { BuildingBadge } from "./building-badge";
 import { attachUiSounds, playSound, setAmbient, setEnabled as setSoundOn, startAudio } from "@/lib/automation/audio";
 import { LightingRow, SaveRows } from "./settings-extras";
 import { VolumeRows } from "./audio-rows";
@@ -461,6 +462,7 @@ export function BrassworkHost() {
                 touchBar: true,
                 board: BOARD,
                 world: buildWorld,
+                copyable: (kind) => resolve(CAT, kind)?.placeable !== false,
                 tools,
                 groups: dockTools,
                 // Press a belt on a machine and drag to another: the sim finds the shortest clear route (input frame in, input frame out).
@@ -487,6 +489,9 @@ export function BrassworkHost() {
                         setNote("");
                         syncScene();
                         refresh();
+                    } else if (e.type === "copy") {
+                        playSound("select");
+                        setNote(`Copied ${e.count} ${e.count === 1 ? "building" : "buildings"}. Ctrl+V to paste, R turns it.`);
                     } else if (e.type === "rotate" || e.type === "undo") {
                         playSound(e.type);
                     } else if (e.type === "route-source") {
@@ -555,6 +560,16 @@ export function BrassworkHost() {
                     if (pk === ghostKey) return;
                     if (!ghostKey.startsWith("path:")) island.clearGhost();
                     ghostKey = pk;
+                    island.setGhostPath(g.cells.map((k) => ({ x: k.x, z: k.z, rot: k.rot, valid: k.valid })));
+                    return;
+                }
+                // A line tool that is only hovering (belts, no drag yet) previews the single belt under the cursor.
+                // Tools with no 3D model fall back to the same plates, so nothing placeable hovers without a ghost.
+                if (g && g.cells.length && (g.tool.line || !getMachineModel(g.tool.id))) {
+                    const hk = "path:" + g.cells.map((k) => `${k.x},${k.z},${k.rot},${k.valid ? 1 : 0}`).join(";");
+                    if (hk === ghostKey) return;
+                    if (!ghostKey.startsWith("path:")) island.clearGhost();
+                    ghostKey = hk;
                     island.setGhostPath(g.cells.map((k) => ({ x: k.x, z: k.z, rot: k.rot, valid: k.valid })));
                     return;
                 }
@@ -802,6 +817,7 @@ export function BrassworkHost() {
             <AutomationHud data={data} actions={{ onBuild, onSelect, onResearch, onSetRecipe, onPrestige, onSettings }} settingsSlots={{ sound: <VolumeRows />, display: <LightingRow mood={mood} onMood={onMood} />, save: <SaveRows /> }} removeSlot={inputCtl ? <TrashButton input={inputCtl} variant="dock" /> : undefined} quest={quest ?? undefined} dockGroup={dockGroup} onDockGroup={onDockGroup}>
                 <canvas ref={canvasRef} className="bw-canvas" />
                 <BrassworkExtras snapshot={snapshot} away={away} mood={mood} onMood={onMood} />
+                {inputCtl && <BuildingBadge input={inputCtl} nameOf={nameOfKind} />}
                 {inputCtl && <HoverName input={inputCtl} nameOf={nameOfKind} canvas={canvasRef} />}
                 {inputCtl && nextTarget && <NextMarker input={inputCtl} target={nextTarget} canvas={canvasRef} />}
                 {inputCtl && pop && (

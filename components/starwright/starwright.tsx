@@ -21,7 +21,7 @@ import {
 } from "@/lib/starwright/engine";
 import { uiVars } from "@/lib/starwright/ui-art";
 import { Almanac, CloudPick, Ending, Menu, Orbit, StarChart, Visitor, tools } from "./panels";
-import { AwayCard, ScrollHint } from "./settings";
+import { AwayCard, ScrollHint, type AwayData } from "./settings";
 import { ElTile, Gl, Pic, ui, useLeaving, useSheets, useTips } from "./sw-ui";
 
 type Panel = null | "stars" | "pulsar" | "orbit" | "almanac" | "menu";
@@ -68,7 +68,7 @@ export function Starwright() {
     const lastAch = useRef(0);
     const [sound, setSoundState] = useState(true);
     const [paused, setPaused] = useState(false);
-    const [card, setCard] = useState<{ title: string; lines: string[] } | null>(null);
+    const [card, setCard] = useState<AwayData | null>(null);
     const readOnly = useRef(false);
     const [other, setOther] = useState(false);
     const tabCh = useRef<{ ch: BroadcastChannel; id: string } | null>(null);
@@ -109,7 +109,7 @@ export function Starwright() {
             if (done >= REPORT_MIN) {
                 const r = awayReport(before, s, done, gone, now, auto);
                 saveAway(window.localStorage, r);
-                if (getSettings().welcome) setCard({ title: "Welcome back", lines: r.lines });
+                if (getSettings().welcome) setCard({ title: "Welcome back", lines: r.lines, report: r });
             }
         }
         s.savedAt = now;
@@ -142,7 +142,7 @@ export function Starwright() {
             if (before && done >= REPORT_MIN) {
                 const r = awayReport(before, s, done, gap, Date.now(), auto);
                 saveAway(window.localStorage, r);
-                if (getSettings().welcome) setCard({ title: "Welcome back", lines: r.lines });
+                if (getSettings().welcome) setCard({ title: "Welcome back", lines: r.lines, report: r });
             }
             const h = heaviest(s);
             if (h > lastHeavy.current) {
@@ -453,8 +453,25 @@ export function Starwright() {
     const s = sRef.current;
     if (!ready || !s) {
         return (
+            // Rendered on the server too, so the first paint already has the game's shape: the scene, the collapse panel and the first rows.
             <div className="sw-root sw-boot" aria-busy="true">
-                <p>Lighting the star…</p>
+                <section className="sw-scene" aria-label="Your star"><i className="sw-fade" data-edge="bottom" aria-hidden="true" /><p className="sw-boot-msg">Lighting the star…</p></section>
+                <section className="sw-collapse sw-panel" aria-label="Collapse">
+                    <div className="sw-col-head"><h2><Gl n="burst" s={1} /> Collapse</h2><span>0%</span></div>
+                    <div className="sw-bar" aria-hidden="true"><i style={{ width: 0 }} /></div>
+                </section>
+                <section className="sw-ladder sw-panel" aria-label="Fusion ladder">
+                    <div className="sw-lad-head"><h2><Gl n="star" s={1} /> Fusion ladder</h2><span>1-9</span></div>
+                    <i className="sw-rule" aria-hidden="true" />
+                    <ol>
+                        {[0, 1, 2].map((i) => (
+                            <li key={i} className="sw-row">
+                                <span className="sw-rt"><ElTile i={i} /></span>
+                                <div className="sw-info"><b>{ELEMENTS[i].name}</b><span className="sw-amt">…</span></div>
+                            </li>
+                        ))}
+                    </ol>
+                </section>
             </div>
         );
     }
@@ -518,7 +535,7 @@ export function Starwright() {
             {s.event && <Visitor s={s} onAnswer={doAnswer} />}
             {s.offer.length > 0 && <CloudPick s={s} onPick={doCloud} />}
             <ScrollHint />
-            {card && <AwayCard title={card.title} lines={card.lines} onClose={() => setCard(null)} />}
+            {card && <AwayCard card={card} onClose={() => setCard(null)} />}
             {other && (
                 <div className="sw-lock sw-panel" role="alert">
                     <span>Starwright is open in another tab, so this one stopped saving.</span>

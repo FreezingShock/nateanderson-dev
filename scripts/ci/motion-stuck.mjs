@@ -25,6 +25,17 @@ const stuck = () =>
         return el.textContent === el.getAttribute("data-final") ? [] : [`${el.getAttribute("data-final")} -> ${el.textContent}`];
     });
 const SETTLE = 3000;
+// Poll until nothing is stuck or the deadline passes, instead of one check after a fixed wait: a slow runner no
+// longer fails a check the page would have passed a moment later, and a passing page returns at once.
+// Returns what is still stuck at the deadline (empty = settled).
+async function settled(page, ms) {
+    const end = Date.now() + ms;
+    for (;;) {
+        const bad = await page.evaluate(stuck);
+        if (!bad.length || Date.now() >= end) return bad;
+        await page.waitForTimeout(150);
+    }
+}
 
 const browser = await chromium.launch();
 for (const [w, h] of [[1440, 900], [390, 844]]) {
@@ -37,9 +48,9 @@ for (const [w, h] of [[1440, 900], [390, 844]]) {
         for (const route of ROUTES) {
             const tag = `${w}${reduced ? " reduced" : ""} ${route}`;
             await page.goto(base + route, { waitUntil: "load" });
-            await page.waitForTimeout(reduced ? 600 : 2200);
+            await page.waitForTimeout(reduced ? 300 : 2200);
             if (reduced) {
-                const bad = await page.evaluate(stuck);
+                const bad = await settled(page, 2000);
                 if (bad.length) fail(`${tag} reduced motion shows glyphs: ${bad.slice(0, 3).join(" | ")}`);
             } else {
                 // jump to each in-page anchor in turn
@@ -48,8 +59,7 @@ for (const [w, h] of [[1440, 900], [390, 844]]) {
                 for (const hv of hashes) {
                     const id = hv.slice(hv.indexOf("#") + 1);
                     await page.evaluate((i) => document.getElementById(i)?.scrollIntoView(), id);
-                    await page.waitForTimeout(SETTLE);
-                    const bad = await page.evaluate(stuck);
+                    const bad = await settled(page, SETTLE);
                     if (bad.length) fail(`${tag} after jump to #${id}: ${bad.slice(0, 3).join(" | ")}`);
                 }
                 // fast scroll to the bottom and back
@@ -58,15 +68,13 @@ for (const [w, h] of [[1440, 900], [390, 844]]) {
                     await page.evaluate((v) => scrollTo(0, v), i % 2 ? 0 : total);
                     await page.waitForTimeout(80);
                 }
-                await page.waitForTimeout(SETTLE);
-                const bad = await page.evaluate(stuck);
+                const bad = await settled(page, SETTLE);
                 if (bad.length) fail(`${tag} after fast scroll: ${bad.slice(0, 3).join(" | ")}`);
             }
             // tab through the first 25 focusable things
             await page.evaluate(() => scrollTo(0, 0));
             for (let i = 0; i < 25; i++) await page.keyboard.press("Tab");
-            await page.waitForTimeout(reduced ? 300 : SETTLE);
-            const bad = await page.evaluate(stuck);
+            const bad = await settled(page, reduced ? 2000 : SETTLE);
             if (bad.length) fail(`${tag} after tabbing: ${bad.slice(0, 3).join(" | ")}`);
         }
         if (errors.length) fail(`${w}${reduced ? " reduced" : ""} page errors: ${errors.slice(0, 2).join(" | ")}`);

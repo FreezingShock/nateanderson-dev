@@ -6,11 +6,6 @@
 .sw-tog:hover { border-color: var(--sw-cy); }
 .sw-setlock { font: 400 12px/1.35 var(--cm-mono, monospace); color: var(--sw-dim); text-align: right; }
 .sw-setrow[data-locked] .sw-setname { color: var(--sw-dim); }
-.sw-away2 { display: grid; gap: 4px; }
-.sw-away2 b { font: 600 12px var(--cm-mono, monospace); letter-spacing: .12em; text-transform: uppercase; color: var(--sw-cy); }
-.sw-away2 .sw-away-line { margin: 0; font: 400 13px/1.4 var(--cm-display, sans-serif); letter-spacing: 0; text-transform: none; color: var(--sw-ink); }
-@media (min-width: 901px) { .sw-away2 { top: 150px; } }
-.sw-away2 .sw-away-x { justify-self: start; margin: 4px 0 0; }
 .sw-lock { position: absolute; z-index: 7; inset: auto 0 18px; margin: 0 auto; width: min(520px, calc(100% - 32px)); padding: 12px 14px; display: grid; gap: 8px; border-color: #ffb03a; font-size: 13px; }
 .sw-lock button { justify-self: start; min-height: 40px; padding: 0 14px; background: transparent; border: 1px solid #ffb03a; color: #ffb03a; font: 500 12px var(--cm-mono, monospace); letter-spacing: .06em; text-transform: uppercase; }
 .sw-lock button:hover { background: #ffb03a; color: #05040c; }

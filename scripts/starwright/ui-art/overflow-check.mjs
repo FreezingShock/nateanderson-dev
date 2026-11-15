@@ -37,6 +37,7 @@ const measure = () => {
     for (const e of all) {
         const cs = getComputedStyle(e);
         if (cs.display === "none" || cs.visibility === "hidden") continue;
+        if (e.matches("[data-anim]")) continue; // a sprite strip clipped to one frame on purpose
         const ox = cs.overflowX, oy = cs.overflowY;
         const scrollsY = (oy === "auto" || oy === "scroll") && e.scrollHeight > e.clientHeight + 1;
         const scrollsX = (ox === "auto" || ox === "scroll") && e.scrollWidth > e.clientWidth + 1;

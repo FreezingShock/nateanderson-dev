@@ -19,7 +19,9 @@ html.sw-route .sf-foot { display: none !important; }
     font: 400 15px/1.45 var(--cm-display, system-ui, sans-serif);
     overflow: hidden;
 }
-.sw-boot { display: grid; place-items: center; font: 500 14px var(--cm-mono, monospace); letter-spacing: .08em; text-transform: uppercase; color: var(--sw-dim); }
+.sw-boot { font: 500 14px var(--cm-mono, monospace); letter-spacing: .08em; text-transform: uppercase; color: var(--sw-dim); }
+.sw-boot .sw-boot-msg { position: absolute; inset: 0; display: grid; place-items: center; margin: 0; animation: swPing 1.6s steps(2, end) infinite; }
+.sw-boot .sw-info, .sw-boot .sw-amt { text-transform: none; letter-spacing: 0; }
 .sw-root h1, .sw-root h2, .sw-root h3, .sw-root p, .sw-root ol, .sw-root ul, .sw-root dl { margin: 0; padding: 0; }
 .sw-root ol, .sw-root ul { list-style: none; }
 .sw-root button { font-family: var(--cm-mono, monospace); color: inherit; cursor: pointer; }
@@ -631,8 +633,7 @@ html.sw-route .sf-foot { display: none !important; }
 .sw-cloud:hover { border-image-source: url("/starwright/ui/frame-warm.png?v=8"); background: none; }
 @media (prefers-reduced-motion: reduce) { .sw-collapse .sw-go, .sw-collapse[data-ready] .sw-pic { animation: none !important; } }
 
-
-/* ======== motion language ========================================================================================================
+/* ======== motion language =================================================================================================
    One set of curves and times for every menu, so the game moves as one thing.
    - out (things arriving): fast start, long soft landing. in (things leaving): slow start, quick finish, always shorter than opening.
    - a menu opens in this order: scrim fades, card arrives in its own way (settle, shutter, wipe; the star map irises out of the
@@ -749,3 +750,23 @@ html.sw-route .sf-foot { display: none !important; }
 .sw-chart[data-region] .sw-conname { font-size: 20px; }
 .sw-chart[data-region] .sw-conlat { font-size: 14px; }
 .sw-pg-btn[data-next] .sw-pic, .sw-pg-btn[data-next] .sw-gl { transform: scaleX(-1); }
+/* Compositor-only loops (perf): the strips and the bar flow slide a pseudo element with transform, and the ready glow fades one with opacity,
+   so nothing here restyles or repaints the page while it idles. Same frames, same pace as the old background-position and box-shadow loops. */
+.sw-el[data-anim], .sw-cloud-art[data-anim] { position: relative; overflow: hidden; background-image: none; animation: none; }
+.sw-el[data-anim]::before, .sw-cloud-art[data-anim]::before { content: ""; position: absolute; top: 0; left: 0; width: 800%; height: 100%; background: var(--sheet) 0 0 / 100% 100%; image-rendering: pixelated; animation: swStrip 1.6s steps(8, jump-none) infinite; will-change: transform; }
+.sw-cloud-art[data-anim]::before { animation-duration: 1.3s; }
+.sw-row:nth-child(2n) .sw-el[data-anim]::before { animation-duration: 1.9s; }
+.sw-row:nth-child(3n) .sw-el[data-anim]::before { animation-duration: 1.3s; }
+.sw-row:hover .sw-el[data-anim]::before { animation-duration: .7s; }
+@keyframes swStrip { to { transform: translateX(-87.5%); } }
+
+.sw-bar i, .sw-bar i[data-full] { position: relative; overflow: hidden; background-image: none; animation: none; }
+.sw-bar i::before { content: ""; position: absolute; top: 0; bottom: 0; left: -8px; right: 0; background: url("/starwright/ui/bar.png?v=8") 0 0 / 16px 16px; image-rendering: pixelated; animation: swBarSlide 1.2s steps(2, end) infinite; }
+.sw-bar i[data-full]::before { background-image: url("/starwright/ui/bar-full.png?v=8"); animation-duration: .6s; }
+@keyframes swBarSlide { to { transform: translateX(8px); } }
+
+.sw-collapse .sw-go:not(.sw-go2):not(:disabled) { position: relative; animation: none; }
+.sw-collapse .sw-go:not(.sw-go2):not(:disabled)::after { content: ""; position: absolute; inset: 0; box-shadow: 0 0 18px rgba(255, 178, 77, .7); opacity: 0; pointer-events: none; animation: swGlowFade 1.4s steps(4, end) infinite; }
+@keyframes swGlowFade { 50% { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .sw-el::before, .sw-cloud-art::before, .sw-bar i::before, .sw-collapse .sw-go::after { animation: none !important; } }
+
