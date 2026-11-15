@@ -5,3 +5,4 @@ Old -> new: none -> first costs 600 stardust, each costs x1.4 more, each adds +4
 Why: Stardust had nothing to buy once the 20-star map was lit.
 Effect on pacing: not re-measured here; `scripts/starwright/sim.mjs` covers the first runs.
 Nate has not signed off on these numbers; he can ask to revert any of them.
+Signed off by Nate on 2026-11-15 (decision card "Keep all three").

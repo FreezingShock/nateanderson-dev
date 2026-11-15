@@ -21,9 +21,9 @@ Before any change: `npm run test:nodefarm`. Visual changes also need PNG screens
 ## Needs Nate (taste call or his own playtest)
 
 - **His own playthrough of the first star.** The first supernova is about 13 minutes for the bot; people are slower. Needs his notes on the first minute, the first visitor, and whether the guide line is clear. Blocks any further pacing change.
-- **Offline pacing.** Should a long absence give one supernova and stop (the star waits at the line), or a chain? Measured 2026-11-15 (session.test): with auto supernova on, a 24 h absence gives ONE supernova, then the restarted star idles, because away time buys nothing; with it off the star waits at the line. So today it is not a chain. Recommend: chain only up to the auto-nova limit, cap at a few per absence so he does not return to a reset game. Needs his answer, then it is a small `advanceAuto` change plus a test.
-- **Rule changes l5 Corona and a5 Iron rain.** Already live in the code; he has not signed off on the numbers.
-- **Next art pass.** Offered, not picked: visitor and cloud cards, supernova and ending screens (Orbit and Almanac cards are done).
+- ~~Offline pacing~~ decided 2026-11-15: cap a few (3) supernovas per absence with auto supernova on. Done in the away-cap PR.
+- ~~Rule changes l5 Corona, a5 Iron rain, deep stars~~ signed off by Nate 2026-11-15.
+- **Next art pass.** Planet break-up chunks done (his pick 2026-11-15). Still offered, not picked: visitor and cloud cards, supernova and ending screens.
 - **Audio.** Needs him to listen: sound start, mute, volume levels.
 
 ## Cannot be tested in the cloud (his devices)

@@ -5,3 +5,4 @@ Old -> new: none -> hydrogen inflow x2, core heat x1.2, cost 900 stardust, needs
 Why: Gives the Lantern a fifth star so every constellation has five.
 Effect on pacing: not re-measured here; `scripts/starwright/sim.mjs` covers the first runs.
 Nate has not signed off on these numbers; he can ask to revert any of them.
+Signed off by Nate on 2026-11-15 (decision card "Keep all three").
