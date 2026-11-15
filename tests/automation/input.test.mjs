@@ -365,7 +365,8 @@ test("delete on a multi-cell building removes it once, even when several of its 
     b.setTool(A.DELETE_TOOL);
     b.beginStroke({ x: 8, z: 8 });
     b.updateStroke({ x: 9, z: 9 });
-    assert.equal(b.endStroke(), 1, "one building removed");
+    // The count is cells cleared: the whole 2 by 2 footprint, once, however many of its cells the stroke touched.
+    assert.equal(b.endStroke(), 4, "all four footprint cells cleared once");
     assert.equal(world.buildings.size, 0);
 });
 
@@ -642,4 +643,15 @@ test("mapKey: Q is the pipette, and a repeat is ignored", () => {
 test("mapKey: Tab cycles build groups forward, Shift+Tab backward", () => {
     assert.deepEqual(mapKey({ key: "Tab", type: "keydown", repeat: false, shiftKey: false }), { type: "group", dir: 1 });
     assert.deepEqual(mapKey({ key: "Tab", type: "keydown", repeat: false, shiftKey: true }), { type: "group", dir: -1 });
+});
+
+test("a tap with the delete tool removes the whole building under the cell", async () => {
+    const { BuildController, DELETE_TOOL } = await import("../../lib/automation/input/build.ts");
+    const cells = [[0, 0], [1, 0], [0, 1], [1, 1]];
+    const world = buildingWorld(cells, { x: 0, z: 0 }, "kiln");
+    const b = new BuildController({ world, board: { width: 20, depth: 20 }, lineKinds: [] });
+    b.setTool(DELETE_TOOL);
+    const n = b.tap({ x: 1, z: 1 });
+    assert.equal(n, 4, "all four cells changed");
+    for (const [x, z] of cells) assert.equal(world.get(x, z), null, `cell ${x},${z}`);
 });
