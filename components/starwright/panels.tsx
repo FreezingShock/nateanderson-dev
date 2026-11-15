@@ -107,7 +107,7 @@ function PlanetSprite({ id, stage, dim }: { id: string; stage: number; dim?: boo
 export function Orbit({ s, onBuy, onClose, leaving }: { s: State; onBuy: (id: string) => void; onClose: () => void; leaving?: boolean }) {
     const f = effects(s);
     return (
-        <Overlay title="Orbit" sub={`${s.planets.length} of ${PLANETS.length} formed${f.keepPlanets ? " · they survive supernovas" : " · a supernova strips them"}`} onClose={onClose} wide kind="shutter" leaving={leaving}>
+        <Overlay title="Orbit" sub={`${s.planets.length} of ${PLANETS.length} formed${f.keepPlanets ? " · they keep their age through a supernova" : " · a supernova sets them back to young"}`} onClose={onClose} wide kind="shutter" leaving={leaving}>
             <ul className="sw-planets">
                 {PLANETS.map((p) => {
                     const own = s.planets.includes(p.id);

@@ -15,7 +15,7 @@ import { getSettings, unlocked } from "@/lib/starwright/settings";
 import { H, W, makeLayers, render, renderLayered, type SceneFrame } from "@/lib/starwright/art";
 import { initSprites, sprites } from "@/lib/starwright/sprites";
 import {
-    SAVE_KEY, answer, blackHole, buy, checkAch, chooseCloud, eventOf, rowMult, buyPerk, buyPlanet, buyPulsar, canBlackHole, canBuy, canNeutron, canPlanet, canSupernova,
+    SAVE_KEY, answer, guide, blackHole, buy, checkAch, chooseCloud, eventOf, rowMult, buyPerk, buyPlanet, buyPulsar, canBlackHole, canBuy, canNeutron, canPlanet, canSupernova,
     collapse, cost, effects, fmt, fmtAge, fmtHeat, fresh, gateMK, heaviest, horizonNeed, levels, mass, neutronGain, neutronStar,
     perkReady, planetStage, rowOpen, seeds, serialize, stageOf, supernova, type State,
 } from "@/lib/starwright/engine";
@@ -574,16 +574,7 @@ const Corners = () => <><i className="sw-cn" data-c="tl" /><i className="sw-cn" 
 const seen = (s: State, i: number) => s.amt[i] >= 1 || levels(s, i) > 0 || (i > 0 && levels(s, i - 1) > 0) || i === 0;
 
 function hint(s: State, f: ReturnType<typeof effects>): string {
-    for (let r = 0; r < ROWS; r++) {
-        if (!rowOpen(s, r)) return "Gold and uranium wait for a neutron star.";
-        if (levels(s, r) === 0) {
-            const el = ELEMENTS[r];
-            const gate = gateMK(r, f);
-            const heat = s.heat >= gate ? "" : ` and core heat ${fmtHeat(gate)}`;
-            return `Next: burn ${el.name.toLowerCase()} into ${ELEMENTS[r + 1].name.toLowerCase()}. Needs ${fmt(cost(s, r, 0))} ${el.sym}${heat}.`;
-        }
-    }
-    return s.neutronStars ? `A black hole needs ${fmt(horizonNeed(f))} uranium.` : "Every row burns. Let the iron build.";
+    return guide(s, f);
 }
 
 function Row({ s, f, i, onBuy }: { s: State; f: ReturnType<typeof effects>; i: number; onBuy: (i: number, k: number) => void }) {

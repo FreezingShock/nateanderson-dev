@@ -2,7 +2,7 @@
 // Deterministic: buildings update in id order, so the same world and the same steps always give the same result.
 import type { ActionResult, Building, Catalog, Cell, Footprint, Deposit, PlaceResult, Rot, Stack, World, EngineDef, LogisticsKind } from "../types";
 import { DIR_DX, DIR_DZ} from "../types";
-import { DEFAULT_CATALOG } from "./data";
+import { DEFAULT_CATALOG, STARTER_KIT } from "./data";
 import { checkMilestones, checkRequests, unlockedRecipes } from "./progress";
 
 export const DRILL = "drill"; // the tree machine that sits on a resource node
@@ -129,13 +129,7 @@ export function footprintCells(b: { x: number; z: number; rot: Rot }, fp: Footpr
     return out;
 }
 
-// Stock a new world starts with when the caller gives none: enough for two drills, a kiln and a run of belts.
-// Drill and kiln have no build cost in the Recipe tree yet, so this covers them and the belts; see STATUS.md.
-export const STARTER_KIT: Stack[] = [
-    { item: "iron_plate", qty: 80 }, // windmills cost 8 plates each and the press is not open until milestone 1
-    { item: "copper_wire", qty: 20 },
-    { item: "iron_gear", qty: 6 },
-];
+export { STARTER_KIT };
 
 export function createWorld(opts: CreateOptions = {}, cat: Catalog = DEFAULT_CATALOG): World {
     const width = opts.width ?? 64;
@@ -415,21 +409,22 @@ function pushOutput(world: World, cat: Catalog, index: Map<string, number>, b: B
     if (items.length === 0) return 0;
     const all = portsOf(b, r.footprint).filter((p) => allowedPort(world, cat, index, b, r, p));
     if (all.length === 0) return 0;
-    // Hub-bound ports take only what the other ports refuse, so a kiln feeds its presses and furnaces before the hub.
-    // A port counts as hub-bound when it is the hub itself or a belt line that runs into it.
-    const leadsToHub = (p: Port) => {
+    // Machines come first: a kiln feeds its presses and furnaces before anything else. Whatever they refuse goes on to the
+    // second tier, which shares it round-robin: the hub, a dock, a crate, or a belt line that ends at one of them.
+    // A crate next to a kiln therefore cannot starve the hub while it fills.
+    const leadsToStore = (p: Port) => {
         let id = index.get(keyOf(p.tx, p.tz));
         for (let step = 0; step < 400 && id !== undefined; step++) {
             const t = world.buildings[id];
             const kind = resolve(cat, t.type)?.kind;
-            if (kind === "hub") return true;
+            if (kind === "hub" || kind === "dock" || kind === "storage") return true;
             if (kind !== "belt") return false;
             id = index.get(keyOf(t.x + DIR_DX[t.rot], t.z + DIR_DZ[t.rot]));
         }
         return false;
     };
-    const first = all.filter((p) => !leadsToHub(p));
-    const hubPorts = all.filter(leadsToHub);
+    const first = all.filter((p) => !leadsToStore(p));
+    const hubPorts = all.filter(leadsToStore);
     let moved = 0;
     for (const item of items) {
         let n = b.output[item];
@@ -442,13 +437,25 @@ function pushOutput(world: World, cat: Catalog, index: Map<string, number>, b: B
                 b.rr = (b.rr + i + 1) % first.length;
             }
         }
-        // Then the hub ports, only if every machine port refused the rest.
-        for (let i = 0; i < hubPorts.length && n > 0 && moved < budget; i++) {
-            const p = hubPorts[i];
-            if (accept(world, cat, index, p.tx, p.tz, item, p.fx, p.fz)) {
-                n--;
-                moved++;
+        // Then the second tier, one unit at a time round-robin, only if every machine port refused the rest.
+        if (hubPorts.length > 0) {
+            let at = b.rr % hubPorts.length;
+            while (n > 0 && moved < budget) {
+                let sent = false;
+                for (let k = 0; k < hubPorts.length; k++) {
+                    const idx = (at + k) % hubPorts.length;
+                    const p = hubPorts[idx];
+                    if (accept(world, cat, index, p.tx, p.tz, item, p.fx, p.fz)) {
+                        n--;
+                        moved++;
+                        at = (idx + 1) % hubPorts.length;
+                        sent = true;
+                        break;
+                    }
+                }
+                if (!sent) break;
             }
+            b.rr = at;
         }
         if (n > 0) b.output[item] = n;
         else delete b.output[item];
@@ -599,11 +606,11 @@ function updatePower(world: World, cat: Catalog, defs: Map<number, Resolved>, dt
                     b.charge = Math.min(cap, b.charge + r.supply * (world.wind - 0.5) * 2 * dt);
                     out = 0;
                 } else {
-                    out = Math.min(r.supply, b.charge / dt);
+                    out = Math.min(r.supply * world.progress.bonus.power, b.charge / dt);
                     b.charge = Math.max(0, b.charge - out * dt);
                 }
             } else {
-                out = r.supply * Math.min(1, 2 * world.wind);
+                out = r.supply * Math.min(1, 2 * world.wind) * world.progress.bonus.power;
             }
             gens.push({ id, cx, cz, range: r.range, out });
             supply += out;
@@ -665,7 +672,7 @@ export function step(world: World, dt: number, cat: Catalog = DEFAULT_CATALOG): 
         const b = world.buildings[id];
         const s = sat.get(id) ?? 1;
         if (r.kind === "miner") stepMiner(world, cat, b, r, dt, s);
-        else if (r.kind === "crafter") stepCrafter(cat, b, r, dt, s);
+        else if (r.kind === "crafter") stepCrafter(cat, b, r, dt, s * (world.progress.bonus.craft ?? 1));
     }
     for (const id of ids) {
         const r = defs.get(id);

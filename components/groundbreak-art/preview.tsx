@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { GbSiteScene } from "./site-scene";
 import { GB_JOBS } from "./scene-data";
 
-/** Dev preview of the site scene driven by query params (job, frac, inspect, z, x, y, built). */
+/** Dev preview of the site scene driven by query params (job, frac, phase, pi, crews, inspect, z, x, y, built). */
 export default function Preview() {
     const [q, setQ] = useState<URLSearchParams | null>(null);
     useEffect(() => setQ(new URLSearchParams(window.location.search)), []);
@@ -17,8 +17,8 @@ export default function Preview() {
         <div style={{ position: "fixed", inset: 0 }}>
             <GbSiteScene
                 camera={{ x: Number(q.get("x") ?? 240), y: Number(q.get("y") ?? 140), z: Number(q.get("z") ?? 1) }}
-                job={{ id, floors: 1, frac, phase: 0, phaseName: "", phaseCount: 1, inspecting: inspect !== null, inspect: Number(inspect ?? 0) }}
-                skyline={built} craneLevel={0} reduce={q.has("reduce")} paused={false} />
+                job={{ id, floors: 1, frac, phase: Number(q.get("pi") ?? 0), phaseName: q.get("phase") ?? "Structure", phaseCount: 1, inspecting: inspect !== null, inspect: Number(inspect ?? 0) }}
+                skyline={built} craneLevel={0} crews={Number(q.get("crews") ?? 12)} reduce={q.has("reduce")} paused={false} />
         </div>
     );
 }
