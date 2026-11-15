@@ -167,11 +167,14 @@ export default function VoxelIslandBench() {
 
         // Island life: life=1 attaches the ambient and reward layer; delivery=1 or unlock=1 fires that
         // reward at the hub every 1.5 s so a still can catch the ring.
-        const reward = q.get("delivery") === "1" ? "delivery" : q.get("unlock") === "1" ? "unlock" : null;
+        const reward = q.get("delivery") === "1" || q.get("delivery") === "once" ? "delivery" : q.get("unlock") === "1" ? "unlock" : null;
         if (q.get("life") === "1" || reward) {
             const life = attachLife(island, heightAt);
             (window as unknown as { __bwLife?: unknown }).__bwLife = life;
-            if (reward) {
+            if (reward && q.get("delivery") === "once") {
+                // One delivery fired as the page becomes ready, so a short wait catches the ring mid-flight.
+                window.setTimeout(() => life.burst(reward, 0, 0), 50);
+            } else if (reward) {
                 const timer = window.setInterval(() => life.burst(reward, 0, 0), 1500);
                 (window as unknown as { __rewardTimer?: number }).__rewardTimer = timer;
             }

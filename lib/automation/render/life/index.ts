@@ -344,11 +344,11 @@ export function attachLife(
             }
             // A flat ring that rolls out across the floor. Deliveries get a small, quick ring at the hub.
             const delivery = kind === "delivery";
-            const rn = Math.round((big ? 64 : delivery ? 18 : 40) * scale);
+            const rn = Math.round((big ? 64 : delivery ? 26 : 40) * scale);
             for (let i = 0; i < rn; i++) {
                 const a = (i / rn) * 6.28;
-                const sp = big ? 5.5 : delivery ? 1.9 : 3.6;
-                ring.spawn(x, 0.12, z, Math.cos(a) * sp, 0, Math.sin(a) * sp, big ? 1.3 : delivery ? 0.5 : 0.9, delivery ? 0.12 : 0.18, hex[0]);
+                const sp = big ? 5.5 : delivery ? 3.4 : 3.6;
+                ring.spawn(x, 0.12, z, Math.cos(a) * sp, 0, Math.sin(a) * sp, big ? 1.3 : delivery ? 0.9 : 0.9, delivery ? 0.2 : 0.18, hex[0]);
             }
             if (big)
                 for (let i = 0; i < 40 * scale; i++)
