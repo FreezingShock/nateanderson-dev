@@ -1,7 +1,7 @@
 // Brasswork: the resource and recipe tree. Every number here is a first-pass
 // balance value for the design thread to tune. Rates are per minute.
 // Balance notes and open taste calls live in /mnt/project-files/portfolio/automation-game/recipes.md.
-import type { MachineDef, RecipeTree, Stage, StructureDef, Stack } from "../types";
+import type { HubRequestDef, MachineDef, RecipeTree, Stage, StructureDef, Stack } from "../types";
 
 export const STAGE_NAMES: Record<Stage, string> = {
     0: "Raw",
@@ -258,6 +258,43 @@ const MILESTONES = [
     { id: "ms_megaproject", name: "Sky orrery, first light", stage: 5, deliver: [{ item: "sail_panel", qty: 3 }, { item: "mirror_cell", qty: 3 }, { item: "relay_core", qty: 3 }, { item: "lattice_strut", qty: 3 }], blueprints: 40 },
 ] as const;
 
+// Hub requests: small early deliveries that open recipes and machines directly, before the blueprint milestones
+// (and their research) take over. Quantities are small on purpose: the first unlock lands within a minute or two of
+// the first ingots reaching the hub. A machine or piece named here is opened by its request, in place of its stage rule.
+const HUB_REQUESTS: HubRequestDef[] = [
+    {
+        id: "rq_copper",
+        name: "Copper at the kiln",
+        note: "The workshop wants proof the kiln works before it trusts you with more ore.",
+        deliver: [{ item: "iron_ingot", qty: 10 }],
+        unlocks: { recipes: ["r_copper_ingot"], machines: [] },
+    },
+    {
+        id: "rq_press",
+        name: "A stamp press",
+        note: "Plates need a press. Ship some ingots and the workshop pulls one out of storage.",
+        deliver: [{ item: "iron_ingot", qty: 20 }, { item: "copper_ingot", qty: 10 }],
+        unlocks: { recipes: ["r_iron_plate"], machines: ["press"] },
+    },
+    {
+        id: "rq_lathe",
+        name: "Lathe and wire drawer",
+        note: "Rods, screws and wire come from the small machines.",
+        deliver: [{ item: "iron_plate", qty: 12 }, { item: "copper_ingot", qty: 15 }],
+        unlocks: { recipes: ["r_iron_rod", "r_iron_screw", "r_copper_wire"], machines: ["lathe", "drawer"] },
+    },
+    {
+        id: "rq_routing",
+        name: "Routing yard",
+        note: "Splitters, mergers, tunnels and loaders for a tidier floor.",
+        deliver: [{ item: "iron_plate", qty: 20 }, { item: "copper_wire", qty: 10 }],
+        unlocks: {
+            recipes: [],
+            machines: ["belt-splitter", "belt-merger", "belt-underground-in", "belt-underground-out", "belt-loader", "belt-unloader"],
+        },
+    },
+];
+
 export const RECIPE_TREE: RecipeTree = {
     items: ITEMS.map((i) => ({ ...i })),
     machines: MACHINES.map((m) => ({
@@ -276,6 +313,7 @@ export const RECIPE_TREE: RecipeTree = {
     nodes: RAW_NODES.map((n) => ({ ...n })),
     research: RESEARCH.map((n) => ({ ...n, requires: [...n.requires], recipes: [...n.recipes] })),
     milestones: MILESTONES.map((m) => ({ ...m, deliver: m.deliver.map((s) => ({ ...s })) })),
+    requests: HUB_REQUESTS.map((r) => ({ ...r, deliver: r.deliver.map((s) => ({ ...s })), unlocks: { recipes: [...r.unlocks.recipes], machines: [...r.unlocks.machines] } })),
     prestige: {
         name: "Open a new workshop",
         keeps: ["blueprints", "research", "routes", "unlocked designs"],

@@ -20,6 +20,7 @@ test("the next delivery line shows done and target per item", () => {
     must(kiln);
     must(S.setRecipe(w, kiln.id, "r_iron_ingot", CAT));
     must(S.place(w, "windmill", 4, 6, 0, CAT));
+    w.progress.requestsDone = CAT.tree.requests.map((r) => r.id); // past the early hub orders
     w.progress.delivered = { iron_ingot: 12 };
     const hud = S.hudData(w, CAT);
     const text = hud.nextStep.text;

@@ -115,6 +115,18 @@ export interface MilestoneDef {
     blueprints: number;
 }
 
+/**
+ * A hub request: a small early delivery that opens recipes and machines directly, before the blueprint
+ * milestones take over. Completes by itself once the hub has received the items.
+ */
+export interface HubRequestDef {
+    id: string;
+    name: string;
+    note?: string;
+    deliver: Stack[];
+    unlocks: { recipes: string[]; machines: string[] };
+}
+
 /** The one prestige. Keeps blueprints, research, routes and unlocked designs. Resets machines and stock. */
 export interface PrestigeDef {
     name: string;
@@ -129,6 +141,8 @@ export interface RecipeTree {
     nodes: ResourceNodeDef[];
     research: ResearchDef[];
     milestones: MilestoneDef[];
+    /** Early hub requests. Optional so placeholder catalogs typecheck. */
+    requests?: HubRequestDef[];
     prestige: PrestigeDef;
     /** Non-machine structures (hub, orrery stages). Optional so placeholder catalogs still typecheck. */
     structures?: StructureDef[];
@@ -232,6 +246,8 @@ export interface Progress {
     blueprints: number;
     researched: string[]; // research node ids
     milestonesDone: string[];
+    /** Hub requests completed. Missing in older saves, which count every request as done. */
+    requestsDone?: string[];
     delivered: Record<string, number>; // cumulative items that reached the hub
     prestiges: number;
     site: string | null; // island site picked at the last prestige
@@ -421,6 +437,35 @@ export type HudSettings = {
   showRates: boolean;
 };
 
+/** One thing a hub step opens: a recipe's output item, a machine or logistics piece, or blueprints. */
+export type HubUnlock = {
+  kind: "recipe" | "machine" | "blueprints";
+  id: string;
+  name: string;
+  /** Icon id for lib/automation/icons (item or machine id). Absent for blueprints. */
+  icon?: string;
+};
+
+/** One step of the hub ladder: an early request or a blueprint milestone. */
+export type HubStep = {
+  id: string;
+  kind: "request" | "milestone";
+  name: string;
+  note?: string;
+  state: "done" | "now" | "ahead";
+  progress: number; // 0..1
+  items: { id: string; name: string; have: number; need: number }[];
+  unlocks: HubUnlock[];
+};
+
+export type HubView = {
+  /** Hub growth stage 0..3, the same one that picks the hub model. */
+  stage: number;
+  steps: HubStep[];
+  doneCount: number;
+  blueprints: number;
+};
+
 export type HudData = {
   resources: ResourceView[];
   machines: MachineView[];
@@ -431,6 +476,7 @@ export type HudData = {
   selected: MachineDetail | null;
   areas: AreaView[];
   milestones: MilestoneView[];
+  hub: HubView;
   blueprints: number;
   research: ResearchNode[];
   prestige: PrestigeView;

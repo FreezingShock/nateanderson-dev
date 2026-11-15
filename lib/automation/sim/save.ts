@@ -1,5 +1,6 @@
 // Save and load. A save is plain JSON: { format, version, world }. The cell index is never saved; it is rebuilt on load.
 import type { World } from "../types";
+import { RECIPE_TREE } from "../data/tree";
 
 export const SAVE_FORMAT = "brasswork-sim";
 export const SAVE_VERSION = 1;
@@ -40,6 +41,8 @@ export function deserialize(text: string): World {
     }
     w.deposits ??= {};
     w.progress ??= { blueprints: 0, researched: [], milestonesDone: [], delivered: {}, prestiges: 0, site: null, bonus: { miner: 1, power: 1 } };
+    // Saves from before hub requests existed: the player already has those machines and recipes, so keep them open.
+    w.progress.requestsDone ??= (RECIPE_TREE.requests ?? []).map((r) => r.id);
     w.power ??= { supply: 0, demand: 0, satisfaction: 1 };
     w.wind ??= 0.5;
     w.windPin ??= null;

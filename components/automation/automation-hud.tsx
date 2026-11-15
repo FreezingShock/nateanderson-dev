@@ -16,6 +16,7 @@ import { ProductionWindow } from "./production-window";
 import { ExpeditionWindow } from "./expedition-window";
 import { ResearchScreen } from "./research-screen";
 import { PrestigeScreen } from "./prestige-screen";
+import { HubMenu, HubToast, HUB_OPEN_EVENT, openHubMenu } from "./hub-menu";
 import "./brasswork-skin.css";
 import "./desktop-stage.css";
 import { canAfford } from "./format";
@@ -121,6 +122,19 @@ export function AutomationHud({
     setPalGroup(null);
   };
   const [milestonesOpen, setMilestonesOpen] = useState(false);
+  // The hub menu opens from the top bar, the goal strip, the phone More sheet, or a click on the hub in the world.
+  const [hubOpen, setHubOpen] = useState(false);
+  useEffect(() => {
+    const open = () => {
+      setDrawer(null);
+      setScreen(null);
+      setMilestonesOpen(false);
+      setMore(false);
+      setHubOpen(true);
+    };
+    window.addEventListener(HUB_OPEN_EVENT, open);
+    return () => window.removeEventListener(HUB_OPEN_EVENT, open);
+  }, []);
   const mode = data.settings.numberFormat;
 
   useEffect(() => {
@@ -183,6 +197,10 @@ export function AutomationHud({
           >
             <Ico id="research" />
             Research
+          </button>
+          <button type="button" className="ab-text-btn" aria-expanded={hubOpen} onClick={() => (hubOpen ? setHubOpen(false) : openHubMenu())}>
+            <Ico id="milestones" />
+            Hub
           </button>
           {(["expedition", "stats", "settings"] as const).map((d) => (
             <button
@@ -317,6 +335,10 @@ export function AutomationHud({
           </nav>
           {more && (
             <div className="ab-more" role="menu" aria-label="More menus">
+              <button type="button" role="menuitem" className="ab-more-item" onClick={openHubMenu}>
+                <Ico id="milestones" />
+                Hub
+              </button>
               <button
                 type="button"
                 role="menuitem"
@@ -363,7 +385,8 @@ export function AutomationHud({
                 className="ab-text-btn"
                 onClick={() => {
                   const id = next.actionId!;
-                  if (actions.onNextStep) actions.onNextStep(id);
+                  if (id === "hub-menu") openHubMenu();
+                  else if (actions.onNextStep) actions.onNextStep(id);
                   else actions.onSelect(id);
                 }}
               >
@@ -422,6 +445,9 @@ export function AutomationHud({
       {drawer === "settings" && (
         <SettingsWindow settings={data.settings} onChange={actions.onSettings} onClose={() => setDrawer(null)} slots={settingsSlots} />
       )}
+
+      {hubOpen && <HubMenu hub={data.hub} onClose={() => setHubOpen(false)} />}
+      {!hubOpen && <HubToast hub={data.hub} onOpen={openHubMenu} />}
 
       {milestonesOpen && (
         <MenuWindow
