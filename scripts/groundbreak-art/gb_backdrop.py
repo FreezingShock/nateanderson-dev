@@ -32,6 +32,8 @@ def sky():
     c.fill(c.disc(*SUN, 26), 0.9, "lamp", 0.4)
     c.thin(c.disc(*SUN, 40) & ~c.disc(*SUN, 26), P["lamp"][5], 0.35)
     c.thin(c.disc(*SUN, 110, 70), P["lamp"][3], 0.18, 200)  # wide halo
+    base = c
+    c = Canvas(W, H)  # clouds and birds go on their own layer so they can drift
     r = rng(3)
     # high cirrus: short tapered wisps, lit pink-gold from below
     for _ in range(26):
@@ -57,11 +59,11 @@ def sky():
     for _ in range(9):
         x, y = r.uniform(900, 1450), r.uniform(200, 300)
         c.set(c.line(x - 3, y - 1.5, x, y, 0.8) | c.line(x, y, x + 3, y - 1.5, 0.8), P["ink"][1])
+    cl, c = c, base
     for _ in range(70):  # first stars in the dark top
         x, y = r.uniform(0, W), r.uniform(0, 90)
         c.set(c.rect(x, y, x + 1, y + 1), P["white"][3], 180)
-    return c
-
+    return c, cl
 
 def ridge(c, base, amp, seed, pal, lo, hi, x_from=0, x_to=W, peak=None):
     r = rng(seed)
@@ -133,12 +135,16 @@ def bay():
     # sun glitter column
     g = m & (np.abs(c.X - SUN[0]) < 40 + 140 * d) & (np.sin(c.Y * 2.3 + np.sin(c.X * 0.09) * 3) > 0.6) & \
         (c.B < 0.25 - 0.6 * np.abs(c.X - SUN[0]) / (40 + 140 * d))
-    c.set(g, P["lamp"][5])
+    c.set(g & (c.B < -0.3), P["lamp"][5])
+    glit = g
     rows = m & (np.sin(c.Y * 1.7 + np.sin(c.X * 0.05) * 2) > 0.92 - 0.1 * d)  # wave crests
     c.set(rows & (c.B < 0.1), P["water"][5])
     refl = m & (c.Y < HORIZON + 60) & (c.X > 640) & (c.X < 1460) & (np.sin(c.X * 0.37 + np.sin(c.Y * 1.9) * 2.5) > 0.75) & \
         (c.B < 0.05 - (c.Y - HORIZON) / 70) & (np.sin(c.Y * 2.2) > 0.1)
-    c.set(refl, P["lamp"][3], 200)  # city lights trembling on the water
+    gl = Canvas(W, H)
+    gl.set(glit & (gl.B >= -0.3), P["lamp"][5])
+    gl.set(refl, P["lamp"][3], 200)  # city lights trembling on the water
+    bay_c, c = c, Canvas(W, H)
     r = rng(5)
     for k in range(5):  # sailboats
         x, y = r.uniform(420, 1400), HORIZON + r.uniform(8, 50)
@@ -151,6 +157,7 @@ def bay():
     c.fill(c.rect(fx + 6, fy - 5, fx + 38, fy), 0.55, "white", 0.4)
     c.set(c.rect(fx + 8, fy - 4, fx + 36, fy - 2) & ((c.X % 3) < 2), P["lamp"][4])
     c.thin(c.rect(fx + 46, fy + 3, fx + 160, fy + 6) & (c.Y < fy + 4 + (c.X - fx - 46) / 40), P["white"][2], 0.35)
+    boats, c = c, bay_c
     for k in range(6):  # small boats and a container ship
         x, y = r.uniform(600, 1500), HORIZON + r.uniform(6, 40)
         c.set(c.rect(x, y, x + 8, y + 2), P["white"][2])
@@ -161,8 +168,7 @@ def bay():
         c.fill(c.rect(x + 12 + k * 9, y - 5 - (k % 3) * 2, x + 20 + k * 9, y), 0.5,
                ["safety", "glass", "hiviz", "cash"][k % 4], 0.6)
     c.fill(c.rect(x + 96, y - 14, x + 104, y), 0.5, "white", 0.5)
-    return c
-
+    return c, boats, gl
 
 def city(level):
     """Skyline on the city hills across the water. level 0..4 adds towers; seeds are stable so a higher level keeps
@@ -293,7 +299,9 @@ def shore():
 
 
 def all_layers():
-    out = {"sky": sky(), "hills": hills(), "bay": bay(), "shore": shore()}
+    sk, clouds = sky()
+    b, boats, glint = bay()
+    out = {"sky": sk, "clouds": clouds, "hills": hills(), "bay": b, "glint": glint, "boats": boats, "shore": shore()}
     for lvl in range(5):
         out[f"city-{lvl}"] = city(lvl)
     return out

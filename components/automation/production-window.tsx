@@ -106,7 +106,13 @@ export function ProductionWindow({
   const power = parsePower(stats);
   const sat = power.demand <= 0 ? 1 : Math.min(1, power.supply / power.demand);
   const short = power.demand > 0 && power.supply < power.demand;
-  const active = resources.filter((r) => Math.abs(r.perSecond) > 0.0001);
+  const active = resources.filter((r) => Math.abs(r.perSecond) > 0.0001).sort((a, b) => b.perSecond - a.perSecond);
+  const draining = active.filter((r) => r.perSecond < 0).sort((a, b) => a.amount / -a.perSecond - b.amount / -b.perSecond);
+  const top = active.find((r) => r.perSecond > 0);
+  const lasts = (r: ResourceView) => {
+    const s = r.amount / -r.perSecond;
+    return s < 60 ? "under a minute" : s < 3600 ? `about ${Math.round(s / 60)} min` : `about ${Math.round(s / 3600)} h`;
+  };
   const idle = resources.filter((r) => Math.abs(r.perSecond) <= 0.0001);
   const maxRate = Math.max(0.01, ...resources.map((r) => Math.abs(r.perSecond)));
   const groups: [string, ResourceView[]][] =
@@ -124,6 +130,27 @@ export function ProductionWindow({
   return (
     <MenuWindow theme="production" title="Production" variant="settle" art={<Emblem />} label="Production stats" onClose={onClose}>
       <div className="ps-wrap ps-body" data-layout={layout}>
+        <dl className="ps-head">
+          <div><dt>Items moving</dt><dd>{active.length}<small> of {resources.length}</small></dd></div>
+          <div><dt>Top output</dt><dd>{top ? <>{perMin(top.perSecond).replace(" per min", "")}<small> {top.name} / min</small></> : <small>Nothing yet</small>}</dd></div>
+          <div data-warn={draining.length > 0}><dt>Running down</dt><dd>{draining.length}<small> {draining.length === 1 ? "item" : "items"}</small></dd></div>
+          <div data-warn={short}><dt>Power</dt><dd>{power.demand <= 0 ? <small>Idle</small> : <>{Math.round(sat * 100)}%<small> supplied</small></>}</dd></div>
+        </dl>
+
+        {draining.length > 0 && (
+          <section className="ps-watch" aria-label="Running down">
+            <h3 className="ps-kicker">Watch</h3>
+            <ul>
+              {draining.slice(0, 3).map((r) => (
+                <li key={r.id}>
+                  <Glyph code={r.glyph} size={24} icon={r.id} />
+                  <span><b>{r.name}</b> is used faster than it is made ({perMin(r.perSecond)}). Stock lasts {lasts(r)}.</span>
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
+
         <section className="ps-room" aria-label="Gauge room" ref={roomRef}>
           <div className="ps-dial" data-short={short}>
             <ArtGauge value={sweepPower} size={64} label="Power supplied" />

@@ -44,9 +44,9 @@ const MACHINES: MachineDef[] = [
         footprint: { w: 2, d: 2 },
         powerKw: 0,
         generatesKw: 60,
-        supplyRange: 4,
+        supplyRange: 6,
         buildCost: [{ item: "iron_gear", qty: 4 }, { item: "copper_wire", qty: 6 }, { item: "steel_ingot", qty: 4 }],
-        note: "Stored spring power. More output, reaches 4 cells.",
+        note: "Steady 60 kW, wind or calm. Reaches 6 cells.",
     },
     {
         id: "spring_store",
@@ -55,11 +55,11 @@ const MACHINES: MachineDef[] = [
         speed: 1,
         footprint: { w: 2, d: 2 },
         powerKw: 0,
-        storageKj: 600,
+        storageKj: 3000,
         generatesKw: 120,
         supplyRange: 4,
         buildCost: [{ item: "iron_gear", qty: 2 }, { item: "steel_ingot", qty: 2 }, { item: "copper_wire", qty: 4 }],
-        note: "The battery. Stores spare power in a wound spring and gives it back when demand outruns supply.",
+        note: "The battery. Winds up in gusts and gives the power back in calm air, up to 120 kW.",
     },
 ];
 
@@ -91,10 +91,10 @@ function logisticsPieces(): StructureDef[] {
         steel: { item: "steel_ingot", qty: 4 },
     };
     const tierStage: Record<"copper" | "steel", Stage> = { copper: 3, steel: 4 };
-    const tierRate: Record<"brass" | "copper" | "steel", number> = { brass: 1, copper: 2, steel: 4 };
+    const tierRate: Record<"brass" | "copper" | "steel", number> = { brass: 2, copper: 4, steel: 8 };
     const out: StructureDef[] = [];
     for (const p of brass) {
-        out.push({ id: p.id, name: p.name, footprint: junction, unlockStage: 2, tier: "brass", rate: tierRate.brass, buildCost: p.cost, note: p.note });
+        out.push({ id: p.id, name: p.name, footprint: junction, unlockStage: 2, tier: "brass", rate: tierRate.brass, buildCost: p.cost, note: `${p.note} Moves ${tierRate.brass} items a second.` });
         for (const t of ["copper", "steel"] as const) {
             out.push({
                 id: `${p.id}-${t}`,
@@ -104,7 +104,7 @@ function logisticsPieces(): StructureDef[] {
                 tier: t,
                 rate: tierRate[t],
                 buildCost: [...p.cost.map((s) => ({ ...s })), { ...tierExtra[t] }],
-                note: p.note,
+                note: `${p.note} Moves ${tierRate[t]} items a second.`,
             });
         }
     }

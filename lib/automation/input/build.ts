@@ -21,6 +21,13 @@ export function extendPath(path: Cell[], target: Cell): Cell[] {
     return p;
 }
 
+// Every cell of the rectangle between two corners, row by row. Used by area Remove.
+export function rectCells(a: Cell, b: Cell): Cell[] {
+    const out: Cell[] = [];
+    for (let z = Math.min(a.z, b.z); z <= Math.max(a.z, b.z); z++) for (let x = Math.min(a.x, b.x); x <= Math.max(a.x, b.x); x++) out.push({ x, z });
+    return out;
+}
+
 // Each cell faces the next cell of the path; the last cell faces the way the stroke was going.
 export function pathRots(path: Cell[], fallback: Rot): Rot[] {
     return path.map((c, i) => {
@@ -133,7 +140,9 @@ export type BuildEvent =
     | { type: "undo" }
     | { type: "redo" }
     // A press on a placed building with no tool active. The host decides what selecting means (inspector, highlight).
-    | { type: "select"; cell: Cell; anchor: Cell; kind: string };
+    | { type: "select"; cell: Cell; anchor: Cell; kind: string }
+    // A click on bare ground with no tool, or Esc with nothing armed: the host closes its inspector and pop-up.
+    | { type: "deselect" };
 
 interface Edit {
     x: number;
@@ -149,6 +158,8 @@ export interface BuildOptions {
     onEvent?: (e: BuildEvent) => void;
     // Kinds that form runs (belts). runAt follows neighbours of these kinds.
     lineKinds?: string[];
+    // Finds a belt route between two cells (either may sit on a building). Missing means belts only draw by hand.
+    route?: (from: Cell, to: Cell, toolId: string) => { ok: true; cells: { x: number; z: number; rot: Rot }[] } | { ok: false; reason: string };
 }
 
 const sameItem = (a: ItemRef | null, b: ItemRef | null) => (!a && !b) || (!!a && !!b && a.kind === b.kind && a.rot === b.rot);
@@ -164,7 +175,8 @@ export class BuildController {
     private tool: ToolSpec | null = null;
     private rot: Rot = 0;
     private hover: Cell | null = null;
-    private stroke: { anchor: Cell; cur: Cell; path: Cell[] } | null = null;
+    private stroke: { anchor: Cell; cur: Cell; path: Cell[]; rect: boolean; routed: boolean; routeRots: Rot[] | null; routeError: string | null } | null = null;
+    private route?: BuildOptions["route"];
     private undoStack: Edit[][] = [];
     private redoStack: Edit[][] = [];
     private listeners = new Set<() => void>();
@@ -177,6 +189,7 @@ export class BuildController {
         this.historyLimit = opts.historyLimit ?? 200;
         this.onEvent = opts.onEvent;
         this.lineKinds = new Set(opts.lineKinds ?? []);
+        this.route = opts.route;
     }
 
     // Every cell in the connected run of line pieces (belts) that holds this cell, found by walking
@@ -277,9 +290,27 @@ export class BuildController {
         return this.stroke !== null;
     }
 
-    beginStroke(cell: Cell): void {
+    // True while a belt is being routed from one building to another.
+    isRoutedStroke(): boolean {
+        return this.stroke?.routed === true;
+    }
+
+    // True when belts can be routed here, so a press on a machine's body can start one.
+    canRoute(): boolean {
+        return !!this.route;
+    }
+
+    // True while an area Remove is being dragged out.
+    isRectStroke(): boolean {
+        return this.stroke?.rect === true;
+    }
+
+    // rect: the stroke covers the whole rectangle between the press and the cursor (Remove with Shift held) instead of a path.
+    beginStroke(cell: Cell, rect = false): void {
         if (!this.tool) return;
-        this.stroke = { anchor: { ...cell }, cur: { ...cell }, path: [{ ...cell }] };
+        // A belt pressed on a building is a routed belt: drag to another building (or a free cell) and the path is found for you.
+        const routed = !!this.route && this.tool.line && this.tool.id !== DELETE_TOOL.id && !rect && !!this.world.get(cell.x, cell.z);
+        this.stroke = { anchor: { ...cell }, cur: { ...cell }, path: [{ ...cell }], rect: rect && this.tool.id === DELETE_TOOL.id, routed, routeRots: null, routeError: null };
         this.hover = { ...cell };
         this.emit();
     }
@@ -288,8 +319,29 @@ export class BuildController {
         if (!this.stroke) return;
         this.hover = { ...cell };
         this.stroke.cur = { ...cell };
-        if (this.tool?.line) this.stroke.path = extendPath(this.stroke.path, cell);
+        if (this.stroke.routed) this.updateRoute(cell);
+        else if (this.stroke.rect) this.stroke.path = rectCells(this.stroke.anchor, cell);
+        else if (this.tool?.line) this.stroke.path = extendPath(this.stroke.path, cell);
         this.emit();
+    }
+
+    // Re-plans the routed belt toward the cursor. A cursor still on the source building shows nothing yet.
+    private updateRoute(cell: Cell): void {
+        const st = this.stroke!;
+        st.path = [];
+        st.routeRots = null;
+        st.routeError = null;
+        const here = this.world.get(cell.x, cell.z);
+        const from = this.world.get(st.anchor.x, st.anchor.z);
+        const sameBuilding = !!here && !!from && cellKey(here.anchor ?? cell) === cellKey(from.anchor ?? st.anchor);
+        if (sameBuilding || !this.route || !this.tool) return;
+        const r = this.route(st.anchor, cell, this.tool.id);
+        if (!r.ok) {
+            st.routeError = r.reason;
+            return;
+        }
+        st.path = r.cells.map((c) => ({ x: c.x, z: c.z }));
+        st.routeRots = r.cells.map((c) => c.rot);
     }
 
     // Commits the stroke. Returns how many cells changed.
@@ -299,8 +351,10 @@ export class BuildController {
             return 0;
         }
         const ghost = this.ghost();
+        const routeError = this.stroke.routeError;
         this.stroke = null;
         const count = ghost ? this.commit(ghost) : 0;
+        if (routeError) this.onEvent?.({ type: "invalid", reason: routeError });
         this.emit();
         return count;
     }
@@ -336,7 +390,10 @@ export class BuildController {
     // Selects the building under the cell (no tool needed). Returns false on empty cells.
     select(cell: Cell): boolean {
         const here = this.world.get(cell.x, cell.z);
-        if (!here) return false;
+        if (!here) {
+            this.onEvent?.({ type: "deselect" });
+            return false;
+        }
         const anchor = here.anchor ?? { x: cell.x, z: cell.z };
         this.onEvent?.({ type: "select", cell: { x: cell.x, z: cell.z }, anchor: { x: anchor.x, z: anchor.z }, kind: here.kind });
         return true;
@@ -386,8 +443,8 @@ export class BuildController {
         if (this.stroke) {
             if (tool.line) {
                 anchors = this.stroke.path;
-                rots = pathRots(anchors, this.rot);
-                rot = rots[rots.length - 1];
+                rots = this.stroke.routeRots ?? pathRots(anchors, this.rot);
+                rot = rots.length ? rots[rots.length - 1] : rot;
             } else {
                 anchors = [this.stroke.anchor];
             }

@@ -10,9 +10,10 @@ import { JOB_BY, JOBS, MATS, PERKS, TIER_LABELS, TUNE, UNLOCK_COST as UNLOCK, ci
 import {
     SAVE_KEY, SAVE_VERSION, acceptChange, buy, jobMat, buyPerk, canBuy, canIncorporate, canUnlock, catchUp, charterGain, chain, declineChange, effects, fmt, fmtAge,
     fmtCash, fresh, incorporate, isSave, jobFloors, jobPhaseName, jobProgress, load, methodReady, overtime, overtimeCost, parse, payout, perkReady, phaseNeeds,
-    plan, queue, nextJob, rawRate, repPay, serialize, stageOf, step, tierCost, unlock, waitingFor, type State,
+    plan, queue, nextJob, offlineCapS, rawRate, repPay, serialize, stageOf, step, tierCost, unlock, waitingFor, type State,
 } from "@/lib/groundbreak/engine";
 import { gbCommand } from "@/lib/groundbreak/commands";
+import { awaySnap, awaySummary, doCue, nextCue, type AwaySummary, type Cue } from "@/lib/groundbreak/guide";
 import { MAT_ICONS, iconUrl } from "./icons";
 import { GB_JOBS, type GbJobId } from "@/components/groundbreak-art";
 import { GB_BANNERS, type GbBannerId } from "@/components/groundbreak-art/ui-art";
@@ -43,6 +44,8 @@ function Banner({ id }: { id: GbBannerId }) {
 }
 const TIER_KEY = ["Q", "W", "E"] as const;
 const MAT_KEYS = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "0", "-", "="];
+/** Space the dock and cue take at the bottom: a tall two-row dock on portrait phones, one slim row on a phone held sideways. */
+const dockHeight = (r: { width: number; height: number }) => (r.height <= 520 ? 96 : r.width <= 860 ? 230 : 150);
 const clamp = (v: number, a: number, b: number) => Math.max(a, Math.min(b, v));
 
 function Ico({ id, size = 20, className }: { id: string; size?: number; className?: string }) {
@@ -88,7 +91,12 @@ export function Groundbreak() {
     const [win, setWin] = useState<Win>(null);
     const [sel, setSel] = useState<number | null>(null);
     const [notes, setNotes] = useState<Note[]>([]);
-    const [away, setAway] = useState<string | null>(null);
+    const [away, setAway] = useState<AwaySummary | null>(null);
+    const [conflict, setConflict] = useState(false);
+    const conflictRef = useRef(false);
+    const lastInput = useRef(0);
+    const lastBackup = useRef(0);
+    const warnedWrite = useRef(false);
     const [cam, setCam] = useState<Camera>(CAMERA_HOME);
     const camRef = useRef<Camera>(CAMERA_HOME);
     /** True once the player zoomed or panned; until then the camera follows the current job. */
@@ -113,9 +121,23 @@ export function Groundbreak() {
     const save = useCallback(() => {
         const s = sRef.current;
         if (!s) return;
+        if (conflictRef.current) return;
         s.savedAt = Date.now();
-        writeStored(window.localStorage, SAVE_KEY, serialize(s));
-    }, []);
+        const raw = serialize(s);
+        if (!writeStored(window.localStorage, SAVE_KEY, raw)) {
+            if (!warnedWrite.current) { warnedWrite.current = true; note("The browser would not save the game (storage full or blocked). Export a save from the Menu so nothing is lost.", "hot"); }
+            return;
+        }
+        // two rolling copies, five minutes apart, so a bad import or a bug never costs more than a few minutes
+        if (s.savedAt - lastBackup.current > 300_000) {
+            lastBackup.current = s.savedAt;
+            try {
+                const old = window.localStorage.getItem(SAVE_KEY + "-auto1");
+                if (old) writeStored(window.localStorage, SAVE_KEY + "-auto2", old);
+                writeStored(window.localStorage, SAVE_KEY + "-auto1", raw);
+            } catch { /* storage blocked */ }
+        }
+    }, [note]);
 
     // ---- camera ------------------------------------------------------------------------------------------------------------
     const setCamera = useCallback((c: Camera) => {
@@ -125,7 +147,7 @@ export function Groundbreak() {
         if (r) {
             // keep the ground line above the dock (and below the header) so the building is never buried behind it
             const sc = Math.max(r.width / WORLD_W, r.height / WORLD_H) * z;
-            const dockH = r.width <= 860 ? 230 : 150;
+            const dockH = dockHeight(r);
             y = Math.max(y, GROUND_Y - (r.height / 2 - dockH) / sc);
         }
         const n = { x: clamp(c.x, -40, WORLD_W + 40), y, z };
@@ -141,7 +163,7 @@ export function Groundbreak() {
         const art = jobId ? GB_JOBS[jobId as GbJobId] : undefined;
         if (!art) return { x: portrait ? 240 : 236, y: portrait ? 160 : 166, z: clamp(r.width / (cover * 250), ZOOM_MIN, 1) };
         const hw = art.h / 2 + 14, ww = art.w / 2 + 24;
-        const dockH = r.width <= 860 ? 230 : 150, topH = 60;
+        const dockH = dockHeight(r), topH = 60;
         const free = Math.max(120, r.height - dockH - topH);
         const z = clamp(Math.min(free / (cover * hw), (r.width * 0.86) / (cover * ww)), 0.6, 3.2);
         // centre the building in the free band between the header and the dock
@@ -149,7 +171,7 @@ export function Groundbreak() {
         return { x: 240, y: GROUND_Y - hw / 2 + 8 + midShift, z };
     }, []);
     const zoomAt = useCallback((factor: number, px?: number, py?: number) => {
-        userCam.current = true;
+        userCam.current = true; lastInput.current = Date.now();
         const r = viewRef.current?.getBoundingClientRect();
         const c = camRef.current;
         if (!r) return;
@@ -160,7 +182,7 @@ export function Groundbreak() {
         setCamera({ z: nz, x: wx - (ax - r.width / 2) / (cover * nz), y: wy - (ay - r.height / 2) / (cover * nz) });
     }, [setCamera]);
     const panBy = useCallback((dx: number, dy: number) => {
-        userCam.current = true;
+        userCam.current = true; lastInput.current = Date.now();
         const r = viewRef.current?.getBoundingClientRect();
         const c = camRef.current;
         if (!r) return;
@@ -226,9 +248,9 @@ export function Groundbreak() {
         const s = loaded ?? fresh(now);
         if (loaded) {
             const gone = (now - s.savedAt) / 1000;
-            const before = s.built;
+            const snap = awaySnap(s);
             const did = catchUp(s, gone);
-            if (did > 30) setAway(`The crews kept working for ${fmtAge(did)} while you were away${s.built > before ? `, and ${s.built - before} job${s.built - before > 1 ? "s" : ""} got handed over` : ""}.`);
+            setAway(awaySummary(snap, s, gone, did, offlineCapS(effects(s))));
         }
         s.savedAt = now;
         sRef.current = s;
@@ -256,6 +278,7 @@ export function Groundbreak() {
             }
             const jid = s.job?.id ?? "";
             if (lastJob.current !== null && jid && jid !== lastJob.current) {
+                userCam.current = false; // a new job always brings the camera back to the site
                 const jd = JOB_BY.get(jid);
                 if (jd) note(`${jd.name} started at ${cityOf(s.firm).sites[jd.stage - 1]}.`, "hot");
             }
@@ -270,14 +293,32 @@ export function Groundbreak() {
         document.addEventListener("visibilitychange", onHide);
         window.addEventListener("pagehide", onHide);
         // `gb` in the site console talks to the open game through this event
+        const onStore = (e: StorageEvent) => {
+            if (e.key !== SAVE_KEY || !e.newValue || !sRef.current) return;
+            try { if ((JSON.parse(e.newValue) as { savedAt?: number }).savedAt! > sRef.current.savedAt) { conflictRef.current = true; setConflict(true); } } catch { /* ignore */ }
+        };
+        window.addEventListener("storage", onStore);
+        // after 40 s without touching the view, the camera finds the site again
+        const follow = window.setInterval(() => {
+            if (userCam.current && lastInput.current && Date.now() - lastInput.current > 40_000) { userCam.current = false; const s = sRef.current; if (s) setCamera(homeCam(s.job?.id ?? nextJob(s).id)); }
+        }, 2000);
         const onLive = (e: Event) => { (e as CustomEvent).detail.live = { s: sRef.current, changed: () => { bump(); save(); } }; };
         window.addEventListener("gb:live", onLive);
-        return () => { clearInterval(tick); clearInterval(ui); clearInterval(sv); document.removeEventListener("visibilitychange", onHide); window.removeEventListener("pagehide", onHide); window.removeEventListener("gb:live", onLive); save(); };
-    }, [ready, bump, save, note]);
+        return () => { clearInterval(tick); clearInterval(ui); clearInterval(sv); clearInterval(follow); window.removeEventListener("storage", onStore); document.removeEventListener("visibilitychange", onHide); window.removeEventListener("pagehide", onHide); window.removeEventListener("gb:live", onLive); save(); };
+    }, [ready, bump, save, note, setCamera, homeCam]);
 
     // ---- actions -----------------------------------------------------------------------------------------------------------
     const act = useCallback((fn: (s: State) => unknown) => { const s = sRef.current; if (s) { fn(s); bump(); } }, [bump]);
     const doBuy = useCallback((i: number, t: Tier) => act((s) => { if (buy(s, i, t)) save(); }), [act, save]);
+    const doCueNow = useCallback(() => {
+        const s = sRef.current;
+        if (!s) return;
+        const c = nextCue(s);
+        if (!c.doable) { if (c.mat !== undefined && c.mat < s.open) { setWin(null); setSel(c.mat); } else if (c.kind === "wait") note(c.why); return; }
+        if (c.kind === "perk" || c.kind === "incorporate") { setSel(null); setWin("firm"); if (c.kind === "perk") { const d = doCue(s, c); if (d) { save(); note(d, "hot"); bump(); } } return; }
+        const d = doCue(s, c);
+        if (d) { save(); note(d, "hot"); if (c.mat !== undefined && c.kind === "buy") setSel(c.mat); bump(); }
+    }, [bump, note, save]);
     const doUnlock = useCallback(() => act((s) => { if (unlock(s, s.open)) save(); }), [act, save]);
     const doIncorporate = useCallback(() => act((s) => { const g = incorporate(s); if (g > 0) { setWin(null); setSel(null); note(`A new firm opens in ${cityOf(s.firm).name}. +${g} charter.`, "hot"); save(); } }), [act, note, save]);
     const togglePause = useCallback(() => { manualPause.current = !manualPause.current; setPaused(manualPause.current); shell.setPaused(manualPause.current); }, [shell]);
@@ -292,6 +333,14 @@ export function Groundbreak() {
             if (e.ctrlKey || e.metaKey || e.altKey) return;
             const k = e.key.toLowerCase();
             if (e.key === "Escape") { if (win) setWin(null); else setSel(null); return; }
+            if ((e.key === " " || k === "g") && !(el && (el.tagName === "BUTTON" || el.tagName === "A"))) { e.preventDefault(); doCueNow(); return; }
+            if (e.key === "[" || e.key === "]") {
+                const open = sRef.current?.open ?? 1;
+                setWin(null);
+                setSel((c) => (c === null ? (e.key === "]" ? 0 : open - 1) : (c + (e.key === "]" ? 1 : -1) + open) % open));
+                return;
+            }
+            if (e.key === "?" || e.key === "/") { setSel(null); setWin((w) => (w === "menu" ? null : "menu")); return; }
             const mi = MAT_KEYS.indexOf(e.key);
             if (mi >= 0 && !e.shiftKey) { setWin(null); setSel((c) => (c === mi ? null : mi)); return; }
             if (sel !== null && (k === "q" || k === "w" || k === "e")) { doBuy(sel, (k === "q" ? 0 : k === "w" ? 1 : 2) as Tier); return; }
@@ -313,7 +362,7 @@ export function Groundbreak() {
         };
         window.addEventListener("keydown", onKey);
         return () => window.removeEventListener("keydown", onKey);
-    }, [ready, win, sel, doBuy, doUnlock, act, togglePause, reset, zoomAt, panBy]);
+    }, [ready, win, sel, doBuy, doUnlock, doCueNow, act, togglePause, reset, zoomAt, panBy]);
 
     useEffect(() => {
         const root = document.documentElement;
@@ -348,6 +397,7 @@ export function Groundbreak() {
         return r.lines;
     };
     const ovt = overtimeCost(s);
+    const cue = nextCue(s);
 
     return (
         <div className="gb-root" data-paused={paused || shell.paused ? "true" : undefined} data-simple={simple ? "true" : undefined} data-reduce={reduce ? "true" : undefined} data-win={win ?? undefined}>
@@ -429,18 +479,31 @@ export function Groundbreak() {
                     </div>
                 ))}
                 {s.change && (
-                    <div className="gb-change" data-tip="The client wants more. Extra materials, bigger payout.">
-                        <p>Change order <em>+{Math.round(s.change.bonus * 100)}% pay · {fmtSecs(s.change.left)}</em></p>
-                        <div><button type="button" className="gb-go" onClick={() => act((x) => acceptChange(x))}>Accept <kbd>Y</kbd></button><button type="button" className="gb-go" onClick={() => act((x) => declineChange(x))}>Decline <kbd>N</kbd></button></div>
+                    <div className="gb-change" role="group" aria-label="Change order">
+                        <header><Ico id="permit" size={32} /><p><strong>Change order</strong><span>The client wants more. Decide in {fmtSecs(s.change.left)}.</span></p></header>
+                        <dl className="gb-terms">
+                            <div data-k="up"><dt>Pay</dt><dd>+{Math.round(s.change.bonus * 100)}%</dd></div>
+                            <div data-k="down"><dt>Build time</dt><dd>+{fmtSecs(s.change.secs)}</dd></div>
+                            <div data-k="down"><dt>Inspection</dt><dd>+{s.change.score.toFixed(1)} score</dd></div>
+                        </dl>
+                        <i className="gb-bar gb-change-clock"><b style={{ width: `${Math.max(0, Math.min(100, (s.change.left / Math.max(1, TUNE.changeWait)) * 100))}%` }} /></i>
+                        <div className="gb-change-act"><button type="button" className="gb-go" onClick={() => act((x) => acceptChange(x))}>Accept <kbd>Y</kbd></button><button type="button" className="gb-go" onClick={() => act((x) => declineChange(x))}>Decline <kbd>N</kbd></button></div>
                     </div>
                 )}
             </aside>
 
             <ul className="gb-feed" aria-live="polite">{notes.map((n) => <li key={n.id} data-tone={n.tone}><Ico id={n.tone === "hot" ? "rep" : "bid"} size={28} /><span>{n.text}</span><i className="gb-cn" data-c="tl" /><i className="gb-cn" data-c="br" /></li>)}</ul>
-            {away && <button type="button" className="gb-away" onClick={() => setAway(null)}>{away} <span>dismiss</span></button>}
+            <CueChip cue={cue} onGo={doCueNow} />
+            {conflict && (
+                <div className="gb-conflict" role="alert" onPointerDown={(e) => e.stopPropagation()}>
+                    <p>Groundbreak is open in another tab, and that tab saved newer progress. Saving is paused here so it cannot overwrite it.</p>
+                    <button type="button" className="gb-go" onClick={() => { conflictRef.current = false; setConflict(false); save(); }}>Use this tab</button>
+                </div>
+            )}
+            {away && <AwayCard a={away} onClose={() => setAway(null)} />}
             {(paused || shell.paused) && <div className="gb-paused" role="status">Paused · P to resume</div>}
 
-            {card !== null && <MatCard s={s} i={card} onBuy={doBuy} onUnlock={doUnlock} onClose={() => setSel(null)} />}
+            {card !== null && <MatCard s={s} i={card} onBuy={doBuy} onUnlock={doUnlock} onClose={() => setSel(null)} cue={cue} />}
 
             <div className="gb-dock" onPointerDown={(e) => e.stopPropagation()} role="toolbar" aria-label="Materials">
                 {DOCK_GROUPS.map(([label, from, to]) => (
@@ -454,7 +517,7 @@ export function Groundbreak() {
                                 const need = next ? UNLOCK[i] : 0;
                                 const pct = next ? Math.min(100, Math.floor((s.amt[i - 1] / need) * 100)) : 0;
                                 return (
-                                    <button key={m.id} type="button" className="gb-tile" data-state={open ? "open" : next ? "next" : "locked"} data-on={card === i ? "" : undefined} data-ready={next && canUnlock(s, i) ? "" : undefined}
+                                    <button key={m.id} type="button" className="gb-tile" data-hint={cue.mat === i && cue.kind !== "perk" ? "" : undefined} data-state={open ? "open" : next ? "next" : "locked"} data-on={card === i ? "" : undefined} data-ready={next && canUnlock(s, i) ? "" : undefined}
                                         aria-pressed={card === i} aria-label={`${m.name}${open ? `, ${fmt(s.amt[i])}` : ", locked"}`}
                                         data-tip={open ? `${m.name} · ${fmt(r)}/s` : next ? `${m.name} · needs ${fmt(need)} ${MATS[i - 1].name}` : `${m.name} · locked`}
                                         style={next ? ({ ["--pct" as string]: `${pct}%` } as CSSProperties) : undefined}
@@ -510,12 +573,44 @@ export function Groundbreak() {
             <Window open={win === "menu"} title="Menu" variant="settle" size="sm" icon="menu" banner="menu" onClose={() => setWin(null)}>
                 <MenuBody s={s} paused={paused} onPause={togglePause} simple={simple} onSimple={toggleSimple} fs={shell.supportsFullscreen} onFs={shell.toggleFullscreen} fsOn={shell.fullscreen}
                     onImport={(st) => { const p = parse(st); if (!p) { note("That save could not be read."); return; } if (sRef.current) writeStored(window.localStorage, SAVE_KEY + "-backup", serialize(sRef.current)); sRef.current = p; seen.current = { built: p.built, open: p.open, change: !!p.change }; save(); bump(); note("Save imported. The old one is kept as a backup.", "hot"); }}
-                    onWipe={() => { if (sRef.current) writeStored(window.localStorage, SAVE_KEY + "-backup", serialize(sRef.current)); sRef.current = fresh(Date.now()); seen.current = { built: 0, open: 1, change: false }; save(); setWin(null); setSel(null); bump(); }} onNote={note} />
+                    onWipe={() => { if (sRef.current) writeStored(window.localStorage, SAVE_KEY + "-backup", serialize(sRef.current)); sRef.current = fresh(Date.now()); seen.current = { built: 0, open: 1, change: false }; save(); setWin(null); setSel(null); bump(); }} onNote={note}
+                    onRestore={(raw) => { const p = parse(JSON.parse(raw)); if (!p) { note("That backup could not be read."); return; } if (sRef.current) writeStored(window.localStorage, SAVE_KEY + "-backup", serialize(sRef.current)); sRef.current = p; seen.current = { built: p.built, open: p.open, change: !!p.change }; save(); setWin(null); bump(); note("Backup restored. The save you replaced is kept as the manual backup.", "hot"); }} />
             </Window>
         </div>
     );
 }
 
+
+function CueChip({ cue, onGo }: { cue: Cue; onGo: () => void }) {
+    return (
+        <div className="gb-cue" data-kind={cue.kind} data-doable={cue.doable ? "" : undefined} onPointerDown={(e) => e.stopPropagation()}>
+            <button type="button" onClick={onGo} data-tip={cue.doable ? "Do it · Space" : "Look at it · Space"}>
+                <span className="gb-cue-k">{cue.doable ? "Next" : "Wait"}</span>
+                <strong>{cue.text}</strong>
+                <kbd>Space</kbd>
+            </button>
+            <p>{cue.why}</p>
+        </div>
+    );
+}
+
+function AwayCard({ a, onClose }: { a: AwaySummary; onClose: () => void }) {
+    const rows: [string, string][] = [];
+    for (const j of a.jobs) rows.push([j.count > 1 ? `${j.name} x${j.count}` : j.name, "handed over"]);
+    if (a.cash > 0) rows.push(["Cash earned", fmtCash(a.cash)]);
+    if (a.rep > 0) rows.push(["Reputation", `+${fmt(a.rep)}`]);
+    if (a.opened.length) rows.push(["Now on site", a.opened.join(", ")]);
+    if (a.crews > 0) rows.push(["Crews hired", `+${a.crews}`]);
+    for (const m of a.mats) rows.push([m.name, `+${fmt(m.gain)}`]);
+    return (
+        <section className="gb-away" role="dialog" aria-label="Welcome back" onPointerDown={(e) => e.stopPropagation()}>
+            <h2>Welcome back</h2>
+            <p>The crews kept working for {fmtAge(a.secs)}{a.capped ? `. That is the offline limit of ${a.hours} hours; the rest of your time away did not count` : ""}.</p>
+            {rows.length > 0 && <dl>{rows.slice(0, 7).map(([k, v]) => <div key={k}><dt>{k}</dt><dd>{v}</dd></div>)}</dl>}
+            <button type="button" className="gb-go" onClick={onClose} autoFocus>Back to work</button>
+        </section>
+    );
+}
 
 function CostLine({ s, i, t }: { s: State; i: number; t: Tier }) {
     const c = tierCost(s, i, t);
@@ -527,7 +622,8 @@ function CostLine({ s, i, t }: { s: State; i: number; t: Tier }) {
     );
 }
 
-function MatCard({ s, i, onBuy, onUnlock, onClose }: { s: State; i: number; onBuy: (i: number, t: Tier) => void; onUnlock: () => void; onClose: () => void }) {
+function MatCard({ s, i, onBuy, onUnlock, onClose, cue }: { s: State; i: number; onBuy: (i: number, t: Tier) => void; onUnlock: () => void; onClose: () => void; cue: Cue }) {
+    const hint = cue.kind === "buy" && cue.mat === i ? cue.tier : undefined;
     const m = MATS[i];
     const f = effects(s);
     const open = i < s.open;
@@ -549,7 +645,7 @@ function MatCard({ s, i, onBuy, onUnlock, onClose }: { s: State; i: number; onBu
                             const lvl = t === 0 ? `${s.crews[i]} hired` : t === 1 ? `lv ${s.equip[i]}` : done ? "done" : "once";
                             const tip = t === 0 ? `Hire a crew. Paid in ${MATS[Math.max(0, i - 1)].name}.` : t === 1 ? `${m.equip}: output x2. Paid in ${MATS[Math.max(0, i - 1)].name}.` : done ? m.methodNote : methodReady(s, i) ? `${m.method}: output x3, ${m.methodNote}` : "Needs 2 equipment levels first";
                             return (
-                                <button key={t} type="button" className="gb-tier" disabled={!ok} onClick={() => onBuy(i, t)} data-tip={tip} data-done={done ? "" : undefined}>
+                                <button key={t} type="button" className="gb-tier" disabled={!ok} onClick={() => onBuy(i, t)} data-tip={tip} data-done={done ? "" : undefined} data-hint={hint === t ? "" : undefined}>
                                     <kbd>{TIER_KEY[t]}</kbd>
                                     <Ico id={t === 1 ? EQUIP_ICONS[i] : TIER_ICON[t]} size={40} />
                                     <span className="gb-tier-name">{["I", "II", "III"][t]} {TIER_LABELS[t]}</span>
@@ -639,7 +735,9 @@ function Console({ run }: { run: (line: string) => { t: string; k?: string }[] }
     );
 }
 
-function MenuBody({ s, paused, onPause, simple, onSimple, fs, onFs, fsOn, onImport, onWipe, onNote }: { s: State; paused: boolean; onPause: () => void; simple: boolean; onSimple: () => void; fs: boolean; onFs: () => void; fsOn: boolean; onImport: (s: State) => void; onWipe: () => void; onNote: (t: string) => void }) {
+function MenuBody({ s, paused, onPause, simple, onSimple, fs, onFs, fsOn, onImport, onWipe, onNote, onRestore }: { s: State; paused: boolean; onPause: () => void; simple: boolean; onSimple: () => void; fs: boolean; onFs: () => void; fsOn: boolean; onImport: (s: State) => void; onWipe: () => void; onNote: (t: string) => void; onRestore: (raw: string) => void }) {
+    const [backups] = useState(() => { try { return [["Automatic backup", SAVE_KEY + "-auto1"], ["Older automatic backup", SAVE_KEY + "-auto2"], ["Before last import or reset", SAVE_KEY + "-backup"]].flatMap(([label, key]) => { const raw = window.localStorage.getItem(key); if (!raw) return []; const p = parse(JSON.parse(raw)); return p ? [{ label, raw, built: p.built, at: p.savedAt }] : []; }); } catch { return []; } });
+    const [pickedBackup, setPickedBackup] = useState<number | null>(null);
     const file = useRef<HTMLInputElement>(null);
     const [pending, setPending] = useState<State | null>(null);
     return (
@@ -663,8 +761,18 @@ function MenuBody({ s, paused, onPause, simple, onSimple, fs, onFs, fsOn, onImpo
                     <div><button type="button" className="gb-go" onClick={() => { onImport(pending); setPending(null); }}>Replace save</button><button type="button" className="gb-go" onClick={() => setPending(null)}>Keep current</button></div>
                 </div>
             )}
+            {backups.length > 0 && (
+                <div className="gb-backups">
+                    <p>Restore a backup</p>
+                    {backups.map((b, i) => (
+                        <button key={b.label} type="button" className="gb-row" onClick={() => (pickedBackup === i ? (setPickedBackup(null), onRestore(b.raw)) : setPickedBackup(i))}>
+                            {pickedBackup === i ? "Replace this game with it?" : b.label}<em>{pickedBackup === i ? "yes" : `${b.built} built · ${new Date(b.at).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}`}</em>
+                        </button>
+                    ))}
+                </div>
+            )}
             <ConfirmGo label="Start over" sure="Deletes this save, skyline included. Sure?" onGo={onWipe} />
-            <p className="gb-keys">1-0 - = materials · Q W E tiers · J jobs · K skyline · F firm · ` site console · wheel zoom · drag pan · R reset</p>
+            <p className="gb-keys">Space do the next step · [ ] cycle materials · 1-0 - = materials · Q W E tiers · ? this menu · J jobs · K skyline · F firm · ` site console · wheel zoom · drag pan · R reset</p>
         </div>
     );
 }

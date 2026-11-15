@@ -32,10 +32,13 @@ export interface ActiveJob {
     rerun?: boolean;
     /** cash already paid out as progress draws (one per finished phase); the handover pays the rest */
     drawn?: number;
+    /** inspection score the accepted change orders add to what the job asks for */
+    harder?: number;
 }
 
 /** A change order: the client asks for more mid-build. Accept it for extra materials and a bigger payout, or let it lapse. */
-export interface ChangeOrder { job: number; left: number; extra: [number, number][]; bonus: number }
+/** `secs`: build time the extra work adds to the phase at full supply; `score`: how much harder the inspection gets if accepted. */
+export interface ChangeOrder { job: number; left: number; extra: [number, number][]; bonus: number; secs: number; score: number }
 
 export interface Building { id: string; city: number; firm: number; at: number }
 
@@ -258,8 +261,8 @@ export const permitSecs = (j: JobDef, f: Fx) => j.permit * (1 - f.permit);
 
 /** Inspection: the score the firm brings against what the job asks. A shortfall stretches the inspection, never fails it. */
 export const inspectScore = (s: State, f: Fx) => TUNE.scoreBase + s.rep * TUNE.scoreRep + f.score;
-export const inspectSecs = (s: State, j: JobDef, f: Fx) => {
-    const delay = Math.min(TUNE.delayCap, Math.max(1, j.need / Math.max(0.1, inspectScore(s, f))));
+export const inspectSecs = (s: State, j: JobDef, f: Fx, harder = 0) => {
+    const delay = Math.min(TUNE.delayCap, Math.max(1, (j.need + harder) / Math.max(0.1, inspectScore(s, f))));
     return Math.max(1, j.inspect * delay * (1 - f.inspect));
 };
 
@@ -381,7 +384,7 @@ function maybeChange(s: State, aj: ActiveJob, def: JobDef, f: Fx) {
     const ph = plan(def, f);
     if (aj.phase !== changePhase(ph)) return;
     const extra = ph[aj.phase].needs.map(([m, q]) => [m, Math.ceil(q * TUNE.changeExtra)] as [number, number]);
-    s.change = { job: aj.index, left: TUNE.changeWait, extra, bonus: TUNE.changeBonus * f.change };
+    s.change = { job: aj.index, left: TUNE.changeWait, extra, bonus: TUNE.changeBonus * f.change, secs: Math.round(ph[aj.phase].secs * TUNE.changeExtra), score: TUNE.changeScore };
     if (!s.autoOff.includes(3) && f.auto >= 2) acceptChange(s);
 }
 export function acceptChange(s: State): boolean {
@@ -389,6 +392,7 @@ export function acceptChange(s: State): boolean {
     if (!c || !aj || aj.index !== c.job || aj.step !== "build") return false;
     for (const [m, q] of c.extra) aj.extra[m] += q;
     aj.bonus += c.bonus;
+    aj.harder = (aj.harder ?? 0) + c.score;
     s.change = null;
     return true;
 }
@@ -431,12 +435,14 @@ function stepJob(s: State, dt: number, f: Fx, c: Chain) {
     if (aj.step === "build") {
         const ph = plan(def, f);
         const p = ph[aj.phase];
-        if (!p) { aj.step = "inspect"; aj.left = aj.inspectTotal = inspectSecs(s, def, f); return; }
+        if (!p) { aj.step = "inspect"; aj.left = aj.inspectTotal = inspectSecs(s, def, f, aj.harder); return; }
         maybeChange(s, aj, def, f);
         let allDone = true;
+        const base = new Map(p.needs);
         for (const [m, q] of phaseNeeds(aj, p)) {
             if (aj.got[m] >= q - 1e-9) continue;
-            const pull = Math.min((q / p.secs) * dt, q - aj.got[m], s.amt[m]);
+            // The pace is set by the planned quantity, so change-order extras add build time, not just materials.
+            const pull = Math.min(((base.get(m) ?? q) / p.secs) * dt, q - aj.got[m], s.amt[m]);
             if (pull > 0) { s.amt[m] -= pull; aj.got[m] += pull; }
             if (aj.got[m] < q - 1e-9) allDone = false;
         }
@@ -454,7 +460,7 @@ function stepJob(s: State, dt: number, f: Fx, c: Chain) {
             aj.got = Array(N).fill(0);
             aj.extra = Array(N).fill(0);
             if (aj.phase - 1 === changePhase(ph)) s.change = null;
-            if (aj.phase >= ph.length) { aj.step = "inspect"; aj.left = aj.inspectTotal = inspectSecs(s, def, f); }
+            if (aj.phase >= ph.length) { aj.step = "inspect"; aj.left = aj.inspectTotal = inspectSecs(s, def, f, aj.harder); }
         }
         return;
     }
@@ -619,11 +625,11 @@ export function parse(raw: unknown): State | null {
             index: int(o.index, s.builtThisFirm), id: o.id, step: o.step === "build" || o.step === "inspect" ? o.step : "permit",
             left: Math.max(0, num(o.left)), inspectTotal: Math.max(0, num(o.inspectTotal)), phase: int(o.phase),
             got: Array.from({ length: N }, (_, i) => Math.max(0, num(arr(o.got)[i]))), extra: Array.from({ length: N }, (_, i) => Math.max(0, num(arr(o.extra)[i]))),
-            bonus: Math.max(0, num(o.bonus)), drawn: Math.max(0, num(o.drawn)), ...(o.rerun === true ? { rerun: true } : {}),
+            bonus: Math.max(0, num(o.bonus)), drawn: Math.max(0, num(o.drawn)), harder: Math.max(0, num(o.harder)), ...(o.rerun === true ? { rerun: true } : {}),
         };
     }
     const ch = (r.change ?? null) as Record<string, unknown> | null;
-    if (ch && s.job) s.change = { job: int(ch.job), left: Math.max(0, num(ch.left)), bonus: Math.max(0, num(ch.bonus)), extra: arr(ch.extra).flatMap((e) => (Array.isArray(e) && e.length === 2 ? [[int(e[0]), Math.max(0, num(e[1]))] as [number, number]] : [])).filter(([m]) => m < N) };
+    if (ch && s.job) s.change = { job: int(ch.job), left: Math.max(0, num(ch.left)), bonus: Math.max(0, num(ch.bonus)), secs: Math.max(0, num(ch.secs)), score: Math.max(0, num(ch.score)), extra: arr(ch.extra).flatMap((e) => (Array.isArray(e) && e.length === 2 ? [[int(e[0]), Math.max(0, num(e[1]))] as [number, number]] : [])).filter(([m]) => m < N) };
     return s;
 }
 
