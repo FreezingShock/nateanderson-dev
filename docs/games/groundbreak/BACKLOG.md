@@ -21,7 +21,7 @@ Last audited 2026-11-15, `integration` at 5138bb6f.
 - Now: the second firm is only about 25% faster than the first. SPEC aims for later runs reaching the bridge in about 1 h 30.
 - Done when: a test run by the bot shows firm 2 reaching the bridge at least 35% faster than firm 1 (target about 1 h 30 by firm 3), the first firm is still about 3 h, and a first-time player can see in the Firm window what Incorporate gives before they press it. Run the sim and put the before and after numbers in the PR.
 
-### 4. Label repeat orders everywhere
+### 4. Label repeat orders everywhere (DONE: job card, Jobs window row, finish toast)
 - Where: `groundbreak.tsx`. The only label today is the small "Repeat order" tag in the job card header. The Jobs window and the toasts do not say a job is a repeat and that it pays a share (50% cash, 10% rep, no new building).
 - Done when: a repeat is named in the job card, the Jobs window (what it pays), and the handover toast.
 
