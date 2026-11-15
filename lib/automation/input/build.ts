@@ -541,7 +541,8 @@ export class BuildController {
                 const k = cellKey(anchor);
                 if (seen.has(k)) continue;
                 seen.add(k);
-                edits.push({ x: anchor.x, z: anchor.z, before: c.existing, after: null });
+                // Clear the whole footprint, not only the anchor cell, so no orphan cells are left behind.
+                edits.push(...this.footprintEdits(anchor));
             }
             return this.commitEdits(edits, "remove");
         }
