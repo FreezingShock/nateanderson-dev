@@ -491,3 +491,10 @@ test("Night watch raises the offline cap, and catchUp stops at the cap", () => {
     assert.equal(E.catchUp(night, away), capNight);
     assert.ok(E.catchUp(E.fresh(0), 1) === 0, "under two seconds is ignored");
 });
+
+test("gb help names every console subcommand", () => {
+    for (const n of C.GB_SUBS) assert.ok(C.GB_HELP[n], `gb ${n} has a help line`);
+    const r = C.gbCommand(E.fresh(0), ["help"]);
+    assert.equal(r.lines.length, C.GB_SUBS.length);
+    assert.equal(r.changed, false);
+});

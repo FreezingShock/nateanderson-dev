@@ -45,7 +45,7 @@ Last audited 2026-11-15, `integration` at 5138bb6f.
 - Add to `tests/groundbreak/engine.test.mjs`: crew milestone doubling, reputation boost, city material bonuses, the other-tab save guard if it can be pulled into a pure function, and `catchUp` with the Night watch perk.
 - Done when: each has a failing-then-passing assertion on a real state change, not only "did not throw".
 
-### 10. Stale spec and docs
+### 10. Stale spec and docs (DONE 2026-11-15: SPEC.md updated, `gb help` added and tested)
 - `/mnt/project-files/portfolio/groundbreak/SPEC.md` still describes a bid board and 105 Gravel unlock prices. Update it (or replace it with a short pointer to FEATURES.md) so a new thread is not misled.
 - The console `help` and `gb` subcommand list in `commands.ts` should name every command; check `gb open`, `gb jobs`.
 
