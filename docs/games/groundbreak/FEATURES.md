@@ -60,7 +60,7 @@ Thread names change each wave; the file split is what matters. Before editing a 
 | Overtime: pay cash to end an inspection early | working | `engine.ts` `overtime` | "overtime ends an inspection early" |
 | Change order: offered at the structure phase (middle phase on small jobs), 75 s to decide, +35% pay, costs build time and a tougher inspection | working | `engine.ts` `acceptChange`, `declineChange`; card in `groundbreak.tsx` shows pay, time, inspection | "change order is offered ...", "costs build time and a tougher inspection" |
 | Progress draws: half the cash paid through the job, handover pays the rest | working | TUNE.draw | "progress draws pay through a long job" |
-| Repeat order: while the next job waits on a material the crew rebuilds the last job for a share of pay and rep, no new building | working (UI label partial) | `engine.ts` `repeatJob`, `repeatPay`; "Repeat order" tag on the job card only | four repeat-order tests |
+| Repeat order: while the next job waits on a material the crew rebuilds the last job for a share of pay and rep, no new building | working; named in the job card (pays and "no new building"), the Jobs window row and a finish toast| `engine.ts` `repeatJob`, `repeatPay`; "Repeat order" tag on the job card only | four repeat-order tests |
 | Jobs window: next 4 jobs with pay, rep, stage and what they need | working | `groundbreak.tsx` Window "jobs" | none (UI) |
 
 ### Prestige and perks
