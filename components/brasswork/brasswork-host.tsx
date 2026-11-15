@@ -120,6 +120,8 @@ export function BrassworkHost() {
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const [data, setData] = useState<HudData>(() => hudData(freshWorld(), CAT, null, START_SETTINGS));
     const [note, setNote] = useState("");
+    // What the armed tool does, shown until something else needs the line. Follows the input layer's tool, however it was armed.
+    const [hint, setHint] = useState("");
     // Placed-piece pop-up: the building's anchor, what it is, and where to pin it on screen.
     const [pop, setPop] = useState<{ anchor: { x: number; z: number }; kind: string; kindLabel: string; x: number; y: number } | null>(null);
     const [inputCtl, setInputCtl] = useState<InputController | null>(null);
@@ -406,7 +408,8 @@ export function BrassworkHost() {
                 groups: dockTools,
                 onGroup: (i) => setDockGroup(DOCK_ORDER[i] ?? null),
                 heightAt: pickHeightAt,
-                initialPose: { target: { x: 0, y: 0, z: 0 }, yaw: 0.6, pitch: 0.75, distance: 18 },
+                groundHeightAt: heightAt,
+                initialPose: { target: { x: -1.5, y: 0, z: -1 }, yaw: 0.6, pitch: 0.75, distance: 21 },
                 limits: { bounds: { minX: -14, maxX: 14, minZ: -10, maxZ: 10 }, minDistance: 5, maxDistance: 34, minPitch: 0.35, maxPitch: 1.2, topDownPitch: 1.5, fovY: 0.55, smoothing: 12 },
                 onEvent: (e) => {
                     if (e.type === "invalid") {
@@ -423,6 +426,13 @@ export function BrassworkHost() {
                         refresh();
                     } else if (e.type === "rotate" || e.type === "undo") {
                         playSound(e.type);
+                    } else if (e.type === "deselect") {
+                        // Bare ground or Esc: put the inspector and the pop-up away.
+                        if (selectedId !== null) {
+                            selectedId = null;
+                            refresh();
+                        }
+                        setPop(null);
                     } else if (e.type === "select") {
                         playSound("select");
                         // A short click or tap on a placed building (no tool active) opens its inspector.
@@ -447,12 +457,19 @@ export function BrassworkHost() {
 
             setInputCtl(input.controller);
             // The selected belt run (or building) glows in the 3D view. Same board frame as setBelts.
-            input.controller.build.subscribe(() => {
-                if (!dead) island.setHighlight(input.controller.build.getHighlight());
-            });
-
             // Placement preview: the input module owns the ghost, the renderer draws it.
             let ghostKey = "";
+            // Only touch the highlight when a selection is or was showing. Every pointer move emits, and writing an empty
+            // selection each time wiped the Remove preview, which the ghost below only redraws when its cells change.
+            let hadSelection = false;
+            input.controller.build.subscribe(() => {
+                if (dead) return;
+                const sel = input.controller.build.getHighlight();
+                if (sel.length === 0 && !hadSelection) return;
+                hadSelection = sel.length > 0;
+                island.setHighlight(sel);
+                ghostKey = "";
+            });
             const updateGhost = () => {
                 const g = input.controller.build.ghost();
                 // Remove preview: outline every building cell the delete tool would clear, so a multi-cell machine shows whole.
@@ -509,7 +526,7 @@ export function BrassworkHost() {
                 group: (index) => input.controller.setGroup(index),
                 setTool: (id) => {
                     input.controller.setToolById(id);
-                    setNote(id ? `Click the floor to place ${resolve(CAT, id)?.name ?? id}. R rotates, Esc cancels.` : "");
+                    setNote("");
                 },
                 select: (id) => {
                     if (id === null) selectedId = null;
@@ -578,6 +595,14 @@ export function BrassworkHost() {
                         c.update();
                         return true;
                     },
+                    // Client pixel of a sim cell's centre, so a headless run can click the real floor.
+                    cellPx: (sx: number, sz: number) => input.controller.screenPoint({ x: sx - W / 2, z: sz - D / 2 }),
+                    // The sim cell the pointer would pick at a client pixel, or null off the board.
+                    pickAt: (px: number, py: number) => {
+                        const c = input.controller.pointer.cellAt(px, py);
+                        return c ? { x: c.x + W / 2, z: c.z + D / 2 } : null;
+                    },
+                    selectedId: () => selectedId,
                     ghostCells: () => (input.controller.build.ghost()?.cells ?? []).map((c) => [c.x, c.z, c.valid ? 1 : 0, c.reason ?? ""]),
                 };
             }
@@ -637,9 +662,30 @@ export function BrassworkHost() {
             refresh();
             // Keys can change the armed tool or its rotation without a palette click (Escape, Q, R, Tab groups).
             // After each key, mirror the input layer's tool into the HUD so the palette and the dock stay true.
+            let hintedId: string | null = null;
             const syncFromInput = () => {
                 const id = input.controller.build.getTool()?.id ?? null;
                 if (armedRef.current !== id) armedRef.current = id;
+                if (id !== hintedId) {
+                    hintedId = id;
+                    const touch = window.matchMedia("(pointer: coarse)").matches;
+                    const name = id ? resolve(CAT, id)?.name ?? id : "";
+                    setHint(
+                        !id
+                            ? ""
+                            : id === DELETE_TOOL.id
+                              ? touch
+                                  ? "Tap a building to remove it, or drag along belts. Cancel stops."
+                                  : "Click a building to remove it, drag along belts, Shift-drag clears an area. Esc stops."
+                              : id.startsWith("belt")
+                                ? touch
+                                  ? `Press and drag to lay ${name.toLowerCase()}. Cancel stops.`
+                                  : `Drag to lay ${name.toLowerCase()}, it bends as you go. R turns it, Esc stops.`
+                                : touch
+                                  ? `Tap to place ${name}. Hold to turn it. Cancel stops.`
+                                  : `Click to place ${name}. R turns it, Esc stops.`
+                    );
+                }
                 refresh();
             };
             const onKeySync = () => window.setTimeout(syncFromInput, 0);
@@ -704,7 +750,7 @@ export function BrassworkHost() {
                         onClose={() => setPop(null)}
                     />
                 )}
-                {note && <p className="bw-note">{note}</p>}
+                {(note || hint) && <p className="bw-note">{note || hint}</p>}
             </AutomationHud>
         </div>
     );

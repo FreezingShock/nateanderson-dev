@@ -21,6 +21,13 @@ export function extendPath(path: Cell[], target: Cell): Cell[] {
     return p;
 }
 
+// Every cell of the rectangle between two corners, row by row. Used by area Remove.
+export function rectCells(a: Cell, b: Cell): Cell[] {
+    const out: Cell[] = [];
+    for (let z = Math.min(a.z, b.z); z <= Math.max(a.z, b.z); z++) for (let x = Math.min(a.x, b.x); x <= Math.max(a.x, b.x); x++) out.push({ x, z });
+    return out;
+}
+
 // Each cell faces the next cell of the path; the last cell faces the way the stroke was going.
 export function pathRots(path: Cell[], fallback: Rot): Rot[] {
     return path.map((c, i) => {
@@ -133,7 +140,9 @@ export type BuildEvent =
     | { type: "undo" }
     | { type: "redo" }
     // A press on a placed building with no tool active. The host decides what selecting means (inspector, highlight).
-    | { type: "select"; cell: Cell; anchor: Cell; kind: string };
+    | { type: "select"; cell: Cell; anchor: Cell; kind: string }
+    // A click on bare ground with no tool, or Esc with nothing armed: the host closes its inspector and pop-up.
+    | { type: "deselect" };
 
 interface Edit {
     x: number;
@@ -164,7 +173,7 @@ export class BuildController {
     private tool: ToolSpec | null = null;
     private rot: Rot = 0;
     private hover: Cell | null = null;
-    private stroke: { anchor: Cell; cur: Cell; path: Cell[] } | null = null;
+    private stroke: { anchor: Cell; cur: Cell; path: Cell[]; rect: boolean } | null = null;
     private undoStack: Edit[][] = [];
     private redoStack: Edit[][] = [];
     private listeners = new Set<() => void>();
@@ -277,9 +286,15 @@ export class BuildController {
         return this.stroke !== null;
     }
 
-    beginStroke(cell: Cell): void {
+    // True while an area Remove is being dragged out.
+    isRectStroke(): boolean {
+        return this.stroke?.rect === true;
+    }
+
+    // rect: the stroke covers the whole rectangle between the press and the cursor (Remove with Shift held) instead of a path.
+    beginStroke(cell: Cell, rect = false): void {
         if (!this.tool) return;
-        this.stroke = { anchor: { ...cell }, cur: { ...cell }, path: [{ ...cell }] };
+        this.stroke = { anchor: { ...cell }, cur: { ...cell }, path: [{ ...cell }], rect: rect && this.tool.id === DELETE_TOOL.id };
         this.hover = { ...cell };
         this.emit();
     }
@@ -288,7 +303,8 @@ export class BuildController {
         if (!this.stroke) return;
         this.hover = { ...cell };
         this.stroke.cur = { ...cell };
-        if (this.tool?.line) this.stroke.path = extendPath(this.stroke.path, cell);
+        if (this.stroke.rect) this.stroke.path = rectCells(this.stroke.anchor, cell);
+        else if (this.tool?.line) this.stroke.path = extendPath(this.stroke.path, cell);
         this.emit();
     }
 
@@ -336,7 +352,10 @@ export class BuildController {
     // Selects the building under the cell (no tool needed). Returns false on empty cells.
     select(cell: Cell): boolean {
         const here = this.world.get(cell.x, cell.z);
-        if (!here) return false;
+        if (!here) {
+            this.onEvent?.({ type: "deselect" });
+            return false;
+        }
         const anchor = here.anchor ?? { x: cell.x, z: cell.z };
         this.onEvent?.({ type: "select", cell: { x: cell.x, z: cell.z }, anchor: { x: anchor.x, z: anchor.z }, kind: here.kind });
         return true;

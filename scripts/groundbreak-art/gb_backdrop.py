@@ -195,11 +195,54 @@ def city(level):
         if q > 0.75:
             c.set(c.rect(x + w / 2, top - 10, x + w / 2 + 1, top), P["steel"][4])
             c.set(c.rect(x + w / 2 - 1, top - 11, x + w / 2 + 2, top - 10), P["safety"][5])
+    landmarks(c, base, level)
     # a radio mast on the high hill
     c.set(c.rect(1210, base - 70, 1212, base - 6), P["safety"][3])
     for y in range(int(base - 70), int(base - 6), 12):
         c.set(c.rect(1206, y, 1216, y + 1), P["safety"][3])
     return c
+
+
+def _glass_body(c, m, x0, w, top, pal="glass"):
+    shade = np.clip(0.5 - (c.X - x0) / (w * 2.5) + 0.25 * (1 - np.clip(abs(x0 - SUN[0]) / 700, 0, 1)), 0, 1)
+    c.fill(m, shade, pal, 0.9)
+    c.set(m & (c.X < x0 + 1.2), P["sunglass"][5], 230)  # sunset rim
+    c.set(m & ((c.Y - top) % 4 < 1) & ((c.X - x0) % 3 < 1) & (c.B < 0.1), P["lamp"][4])
+
+
+def _crane(c, x, top):
+    c.set(c.rect(x, top - 22, x + 1, top + 2), P["hiviz"][4])
+    c.set(c.rect(x - 8, top - 22, x + 22, top - 21), P["hiviz"][5])
+    c.set(c.rect(x - 8, top - 22, x - 5, top - 19), P["concrete"][4])
+    c.set(c.rect(x + 15, top - 21, x + 16, top - 12), P["ink"][2])
+    c.set(c.disc(x + 0.5, top - 24, 1), P["safety"][5])
+
+
+def landmarks(c, base, level):
+    """One signature tower per Incorporate, each in its own style; the newest still has cranes on its crown."""
+    builds = [
+        # level 1: stepped setback pair
+        lambda: [(_glass_body(c, c.rect(x, base - h + k * 22, x + w - 2 * k * 3, base + 6), x + 3 * k, w, base - h, "precast"))
+                 for x, w, h in ((860, 26, 150), (895, 20, 118)) for k in range(4)] and (895 + 10, base - 118),
+        # level 2: tapered pyramid tower
+        lambda: (_glass_body(c, c.poly([(1060, base + 6), (1092, base + 6), (1084, base - 190), (1068, base - 190)]), 1060, 32, base - 190),
+                 c.fill(c.poly([(1068, base - 190), (1084, base - 190), (1076, base - 228)]), 0.75, "sunglass", 0.6),
+                 (1076, base - 228))[-1],
+        # level 3: twin slabs joined by a sky bridge
+        lambda: ([_glass_body(c, c.rect(x, base - 205, x + 16, base + 6), x, 16, base - 205) for x in (780, 806)],
+                 c.fill(c.rect(796, base - 130, 806, base - 122), 0.6, "steel", 0.5),
+                 (788, base - 205))[-1],
+        # level 4: the supertall, curved shoulders and a spire
+        lambda: (_glass_body(c, c.rect(990, base - 250, 1022, base + 6) | (c.disc(1006, base - 250, 16, 22) & (c.Y < base - 250)),
+                             990, 32, base - 272),
+                 c.set(c.rect(1005, base - 320, 1007, base - 270), P["steel"][6]),
+                 c.set(c.rect(1004, base - 322, 1008, base - 320), P["safety"][5]),
+                 (1006, base - 272))[-1],
+    ]
+    for lvl in range(1, level + 1):
+        top = builds[lvl - 1]()
+        if lvl == level:
+            _crane(c, top[0] - 4, top[1])
 
 
 def shore():

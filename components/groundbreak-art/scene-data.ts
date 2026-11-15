@@ -5,10 +5,10 @@ export const GB_BACKDROP = { w: 1600, h: 600, horizon: 372, siteY: 492, layers: 
   "bay": "/groundbreak/backdrop/bay.webp?v=0195a61d",
   "shore": "/groundbreak/backdrop/shore.webp?v=fc279f7e",
   "city-0": "/groundbreak/backdrop/city-0.webp?v=1c4c1c27",
-  "city-1": "/groundbreak/backdrop/city-1.webp?v=fe2df8a4",
-  "city-2": "/groundbreak/backdrop/city-2.webp?v=abc67dc5",
-  "city-3": "/groundbreak/backdrop/city-3.webp?v=55ba067c",
-  "city-4": "/groundbreak/backdrop/city-4.webp?v=4cc5e6af"
+  "city-1": "/groundbreak/backdrop/city-1.webp?v=b1039863",
+  "city-2": "/groundbreak/backdrop/city-2.webp?v=056c5629",
+  "city-3": "/groundbreak/backdrop/city-3.webp?v=b385eb18",
+  "city-4": "/groundbreak/backdrop/city-4.webp?v=a82e3812"
 } } as const;
 
 export const GB_JOBS = {

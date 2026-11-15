@@ -1,0 +1,47 @@
+/* Phone menu art: the Milestones sheet and the More menu wear the same drawn art as the desktop menu windows
+   (public/brasswork/window, from scripts/brasswork/build-window-art.py): riveted brass frame, workbench grain,
+   and a banner strip across the top. Each has its own open motion; Reduce motion and Simple visuals turn it off. */
+@media (max-width: 759px) {
+  .ab-root.bw[data-sheet="factory"] .ab-factory,
+  .ab-root.bw .ab-more {
+    border: 12px solid #b07a28; border-image: url("/brasswork/window/frame.png") 8 / 12px stretch;
+    background: url("/brasswork/window/grain.png") 0 0 / 64px 64px, #1f160c; image-rendering: pixelated;
+  }
+  .ab-root.bw[data-sheet="factory"] .ab-factory { border-bottom-width: 0; border-image-width: 12px 12px 0 12px; }
+  .ab-root.bw .ab-more::before {
+    content: ""; display: block; flex: none; height: 48px; margin: 0 0 6px;
+    background: #160f08 no-repeat right bottom / auto 48px; image-rendering: pixelated;
+    border-bottom: 2px solid #8a5a1e;
+  }
+  .ab-root.bw[data-sheet="factory"] .ab-factory { flex-direction: column; overflow-y: auto; }
+  .ab-root.bw[data-sheet="factory"] .ab-factory > * { flex-shrink: 0; }
+  /* The Milestones sheet's heading is sticky, so its banner is painted into the sheet's top padding instead. */
+  .ab-root.bw[data-sheet="factory"] .ab-factory {
+    padding-top: 54px;
+    background:
+      url("/brasswork/window/banner-milestones.png") no-repeat right 0 top 0 / auto 48px,
+      linear-gradient(#8a5a1e, #8a5a1e) no-repeat 0 48px / 100% 2px,
+      linear-gradient(#160f08, #160f08) no-repeat 0 0 / 100% 48px,
+      url("/brasswork/window/grain.png") 0 0 / 64px 64px, #1f160c;
+  }
+  .ab-root.bw .ab-more::before { background-image: url("/brasswork/window/banner-hub.png"); background-position: 70% bottom; }
+  .ab-root.bw .ab-more { min-width: 240px; padding: 0 8px 8px; }
+  .ab-root.bw .ab-more-item { background: rgba(22, 15, 8, 0.85); border-color: #6a4a22; display: flex; align-items: center; gap: 10px; }
+  .ab-root.bw .ab-more-item:active { background: #46290a; }
+
+  /* Milestones sheet lands like a stamp; More menu opens like a hinged lid from the bottom right. */
+  .ab-root.bw[data-sheet="factory"] .ab-factory { animation: bw-phone-stamp 280ms cubic-bezier(.3,.6,.3,1) both; }
+  .ab-root.bw .ab-more { transform-origin: 100% 100%; animation: bw-phone-lid 240ms cubic-bezier(.2,.75,.25,1) both; }
+  .ab-root.bw .ab-more-item { animation: bw-phone-item 260ms cubic-bezier(.2,.7,.2,1) both; }
+  .ab-root.bw .ab-more-item:nth-child(2) { animation-delay: 30ms; }
+  .ab-root.bw .ab-more-item:nth-child(3) { animation-delay: 60ms; }
+  .ab-root.bw .ab-more-item:nth-child(4) { animation-delay: 90ms; }
+  .ab-root.bw .ab-more-item:nth-child(5) { animation-delay: 120ms; }
+  .ab-root.bw .ab-more-item:nth-child(6) { animation-delay: 150ms; }
+  .ab-root.bw[data-reduce="true"] :is(.ab-factory, .ab-more, .ab-more-item),
+  .ab-root.bw[data-lowfx="true"] :is(.ab-factory, .ab-more, .ab-more-item) { animation: none !important; }
+}
+@keyframes bw-phone-stamp { 0% { opacity: 0; transform: translateY(24px) scale(1.04); } 70% { opacity: 1; transform: scale(.99); } 100% { transform: none; } }
+@keyframes bw-phone-lid { from { opacity: 0; transform: perspective(700px) rotateX(70deg); } to { opacity: 1; transform: none; } }
+@keyframes bw-phone-item { from { opacity: 0; transform: translateX(14px); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { .ab-root.bw :is(.ab-factory, .ab-more, .ab-more-item) { animation: none !important; } }

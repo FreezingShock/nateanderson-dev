@@ -23,6 +23,8 @@ import { buildWater } from "./water";
 import { PixelDitherPass } from "./postfx";
 import { Lighting } from "./lighting";
 import { buildClouds } from "./clouds";
+import { buildHorizon } from "./horizon";
+import type { WaterPaletteName } from "./config";
 import type { Placement } from "../models/props";
 import { Scenery } from "./scenery";
 import {
@@ -155,6 +157,8 @@ export interface VoxelIsland {
     setPixelSize(px: number): void;
     setQuality(level: number | "auto"): void;
     setLowFx(on: boolean): void;
+    /** Sea colours: "verdigris" (default), "lagoon", or "spec" (the original reference blue). */
+    setWaterPalette(name: WaterPaletteName): void;
     /** Wind strength 0..1 from the simulation. 0.5 is the approved baseline sway; grass reads it. */
     setWind(strength: number): void;
     setTimeOfDay(t: number): void;
@@ -268,7 +272,7 @@ export function createVoxelIsland(
     const grass = new GrassLayer(grassSites, bladesPerSite, seed);
     scene.add(grass.mesh);
     const water = buildWater();
-    scene.add(water);
+    scene.add(water.mesh);
 
     const glowGrid = new VoxelGrid(OBJECT_CELL);
     const glowMaterial = new THREE.MeshBasicMaterial({ color: 0xffd070 });
@@ -277,6 +281,12 @@ export function createVoxelIsland(
 
     const clouds = buildClouds(blocks, seed);
     scene.add(clouds.group);
+    const horizon = buildHorizon(blocks, seed);
+    scene.add(horizon.group);
+    const glintDir = new THREE.Vector3();
+    const glintCol = new THREE.Color();
+    const GLINT_SUN = new THREE.Color(0xffd08a);
+    const GLINT_MOON = new THREE.Color(0x9a937e);
 
     const lighting = new Lighting(scene, 2048);
     lighting.setTime(options.timeOfDay ?? 0.5);
@@ -421,6 +431,14 @@ export function createVoxelIsland(
         belts?.update(dt);
         if (cycle) lighting.setTime(cycleT, !lowFx);
         lighting.sky.follow(camera.position);
+        lighting.sky.tick(elapsed, !lowFx);
+        horizon.update(elapsed, lighting.night, !lowFx);
+        // Water glints follow the sun by day and the moon at night.
+        const night = lighting.night;
+        glintDir.copy(night > 0.5 ? lighting.moonDir : lighting.sunDir);
+        glintCol.copy(GLINT_SUN).lerp(GLINT_MOON, Math.min(1, night * 1.4));
+        water.update(1 - night * 0.62, glintDir, glintCol);
+        clouds.setNight(night);
         clouds.update();
         if (frameHooks.size) {
             const info = { time: elapsed, timeOfDay: cycleT, wind: windStrength, lowFx };
@@ -609,6 +627,9 @@ export function createVoxelIsland(
             beltGhost.setPulsing(!on);
             lighting.setShadows(!on && QUALITY_PRESETS[level].shadows);
         },
+        setWaterPalette(name) {
+            water.setPalette(name);
+        },
         setTimeOfDay(t) {
             cycleT = t;
             lighting.setTime(t, !lowFx);
@@ -674,9 +695,9 @@ export function createVoxelIsland(
                 belts.dispose();
             }
             clouds.dispose();
+            horizon.dispose();
+            water.dispose();
             grass.dispose();
-            water.geometry.dispose();
-            (water.material as THREE.Material).dispose();
             blockMaterial.dispose();
             lighting.dispose();
             post.dispose();

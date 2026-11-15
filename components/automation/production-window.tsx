@@ -122,7 +122,7 @@ export function ProductionWindow({
   const sweepDay = useSweep(isNight ? 0.12 : 0.88, roomRef);
 
   return (
-    <MenuWindow title="Production" variant="settle" art={<Emblem />} label="Production stats" onClose={onClose}>
+    <MenuWindow theme="production" title="Production" variant="settle" art={<Emblem />} label="Production stats" onClose={onClose}>
       <div className="ps-wrap ps-body" data-layout={layout}>
         <section className="ps-room" aria-label="Gauge room" ref={roomRef}>
           <div className="ps-dial" data-short={short}>
