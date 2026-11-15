@@ -6,8 +6,8 @@ Current state of the site outside the three games with their own docs (Brasswork
 - Password gate: `proxy.ts` blocks every route behind a signed cookie (`lib/gate`). The whole site is private. Do not change without Nate.
 - Deploys: only `release` builds; see `docs/deploys.md`. PR checks: `docs/ci.md`.
 - Data: Supabase for Creations projects (`public.projects`, slugs match `lib/creations-data.ts`); GitHub API for History (`app/api/commits`). Accounts were dropped; Google env vars and account tables are still to be removed by Nate.
-- `/dev/*` and `/automation-preview` return 404 in production.
-- Fonts self-hosted (Helvetica Neue/Arimo display, IBM Plex Mono labels; Brasswork uses Fraunces and IBM Plex Sans via `next/font/local`).
+- `/dev/*` return 404 in production unless `VOXEL_BENCH=1` is set at build time; `/automation-preview` unless `AUTOMATION_PREVIEW=1`. All are preview or bench routes for the games.
+- Fonts: Helvetica Neue first with Arimo as fallback, IBM Plex Mono for labels, both through `next/font/google` in `app/layout.tsx` (Next downloads and self-hosts them at build). Brasswork uses Fraunces and IBM Plex Sans via `next/font/local`; never `next/font/google` there.
 
 ## naOS shell (docs/naos.md is the source for the look)
 - Page wrapper `<div className="ctos">`, `Section ctos`, `PageHead`; scoped CSS in `app/camino/ctos.css`; `body.ctos-on` set by `components/cm/ctos-body.tsx`.
@@ -15,7 +15,7 @@ Current state of the site outside the three games with their own docs (Brasswork
 - Motion: scroll reveals and `Scramble`/`Slab`/`ScrollType` (`components/cm/motion.tsx`, `lib/motion/engine.ts`). Titles scramble once per hover; reduced motion shows plain text.
 - Page transition: fast shutter (`app/camino/transition.css`).
 - Dithered art: `NaosBackdrop` per page, header bands and washes (`components/cm/naos-art.tsx`, `scripts/naos-art/`).
-- Navigation: top bar, floating dock (7 items, labels 8 to 8.5px on phones only), site map, `/` launcher; all read `lib/nav.ts`, which also pulls games from `lib/creations-data.ts`.
+- Navigation: top bar, floating dock (7 items, labels 11px on phones), site map, `/` launcher; all read `lib/nav.ts`, which also pulls games from `lib/creations-data.ts`.
 - Console (backtick or Ctrl/Cmd+J): commands including `nf` for Node Farm and per-game commands. Help lists two-line entries that wrap at `|`.
 - Search: `/` opens fuzzy search (`lib/search`).
 - Sound: provider and engine in `components/sound-provider.tsx`, `lib/sound`; default state shown in the top bar. Audio is untested by any thread.
@@ -33,7 +33,8 @@ Current state of the site outside the three games with their own docs (Brasswork
 - Creations detail `/creations/[slug]`: one paragraph, meta card, tags, GitHub link (thin; see backlog). Nexus embeds playnexus.dev (public parts only), loaded behind a deferred frame.
 - Renovations `/creations/renovations`, Artwork `/creations/artwork`, Projects `/creations/projects`: Renovations is empty and visible by decision; Artwork waits on Nate's pieces.
 - 404 and error pages: branded.
-- Share images: per-route `opengraph-image.tsx`, plus `robots.ts` and `sitemap.ts`; all sit behind the gate.
+- Share images: `opengraph-image.tsx` on `/`, about, blog, creations, creations detail, history, studies and timeline. `robots.ts` allows everything and lists the sitemap; `sitemap.ts` has only the home page. All of it sits behind the gate (decision pending, see backlog `SITE-gate-seo`).
+- Also in `app`: `manifest.ts`, `loading.tsx`, `global-error.tsx`.
 
 ## Games hub and shared game code
 - Hub `/creations/games`: sections Geography, Incremental, Automation; acts as a launcher. Cards use a generic glyph (see backlog).
