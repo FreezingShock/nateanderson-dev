@@ -270,7 +270,7 @@ export function ResearchScreen({
                 </svg>
                 {main.map((n) => {
                   const p = pos(n);
-                  return cardFor(n, { left: p.x, top: p.y, width: CW, height: CH });
+                  return cardFor(n, { left: p.x, top: p.y, width: CW, height: CH, ['--col' as string]: n.column });
                 })}
               </div>
 
