@@ -60,7 +60,15 @@ export function bottleneck(s: State): number {
 
 const ago = (sec: number) => (sec < 1 ? "now" : `in ${fmtAge(Math.ceil(sec))}`);
 
+/** While the crew repeats a job, a waiting cue also says what the next campaign job is waiting on. */
 export function nextCue(s: State): Cue {
+    const c = cueInner(s);
+    const w = c.kind === "wait" && s.job?.rerun ? waitingFor(s) : null;
+    const rep = w && s.job ? JOB_BY.get(s.job.id) : null;
+    return w && rep ? { ...c, why: `${w} The crew repeats ${rep.name} meanwhile. ${c.why}` } : c;
+}
+
+function cueInner(s: State): Cue {
     const f = effects(s);
     if (s.change) {
         return { kind: "accept", text: "Accept the change order", why: `The client pays ${Math.round(s.change.bonus * 100)}% more for extra materials. Decline it if the crews are behind.`, doable: true };
