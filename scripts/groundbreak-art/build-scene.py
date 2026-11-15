@@ -29,14 +29,12 @@ def stamp(img):
     return hashlib.sha1(img.tobytes()).hexdigest()[:8]
 
 
-def feather(c, ug, edge=18):
-    """Dissolve the underground cross-section into the shore at its left, right and bottom edges (dithered), so a job
-    never shows a hard rectangle of soil against the backdrop."""
-    gy = c.h - ug
-    d = np.minimum(np.minimum(c.X, c.w - c.X), (c.h - c.Y) * 1.6)
-    keep = np.clip(d / edge, 0, 1) - 0.5 > c.B
-    below = c.Y > gy + 2
-    c.img[below & ~keep, 3] = 0
+def clear_soil(c, lot, ug):
+    """Leave only what the job did to the ground: underground pixels that still match the untouched lot are cleared, so
+    the shore's own soil runs straight through the site with no seam, and only the pit, piles and footings show."""
+    gy = c.h - ug + 2
+    same = (c.img[gy:] == lot[gy:]).all(-1)
+    c.img[gy:][same, 3] = 0
 
 
 def main():
@@ -46,8 +44,9 @@ def main():
     for key, (name, frames, cs) in gb_buildings.build_all().items():
         w, h = cs[0].w, cs[0].h
         strip = Image.new("RGBA", (w * len(cs), h))
+        lot = cs[0].img.copy()
         for i, c in enumerate(cs):
-            feather(c, gb_buildings.UG)
+            clear_soil(c, lot, gb_buildings.UG)
             strip.alpha_composite(c.image(), (i * w, 0))
         strip.save(PUB / "jobs" / f"{key}.webp", lossless=True, quality=100, method=6)
         jobs[key] = {"name": name, "frames": frames, "w": w, "h": h, "ground": gb_buildings.UG,
