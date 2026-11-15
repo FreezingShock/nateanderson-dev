@@ -33,7 +33,7 @@ Last audited 2026-11-15, `integration` at 5138bb6f.
 - #534 changed the engine only (opening a material stocks 60 s of output), so the diff is most likely animation timing or the new starting stock, not a rendering bug.
 - Done when: download the `screenshot-diff` artifact for that run, say what changed on each route, and confirm no Groundbreak art shifted. If it is a false positive, write one line in `docs/ci.md` about it.
 
-### 7. Hover names on touch and unlabeled controls
+### 7. Hover names on touch and unlabeled controls (DONE 2026-11-15: already true, verified; no code change)
 - The dock tiles already have `data-tip` names. Touch has no hover.
 - Done when: a tap on a tile on a phone shows the name and rate without buying anything, and every HUD button (rail, zoom, cue, job card) has a name in a tooltip on desktop and an `aria-label`.
 
@@ -74,3 +74,5 @@ First minute plays itself (#491), zoom to 5x (#487), staged jobs and Bay backdro
 HUD stacking (item 1): the page publishes the dock's real height as `--gb-dock-top` on `.gb-root`; cue, view buttons, feed and material card sit on it. Check script with overlap measurements at six sizes: `/mnt/project-files/portfolio/groundbreak/hud-overlap/check.mjs`.
 
 Fog check (item 5): screenshots of sidewalk, clinic, tower, stadium and the bridge at 30% and 95% at 1440 and 390 in `/mnt/project-files/portfolio/groundbreak/fog/` (`shoot.mjs`, needs `VOXEL_BENCH=1`). The haze sits behind the hills, never over a job, and the bridge stage is clear.
+
+Item 7 check (390 wide, touch emulation, production build): every button and link in the game has an accessible name and a tooltip (0 unnamed, 0 without data-tip). Tapping a dock tile opens its card with the name, rate and stock and buys nothing. Script was a throwaway; the claim is also covered by reading the markup in `groundbreak.tsx`.
