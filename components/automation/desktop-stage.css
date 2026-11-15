@@ -7,6 +7,8 @@
   --bw-inset-left: 84px;
   --bw-inset-right: 84px;
   --bw-inset-bottom: 84px;
+  /* Left edge of the build flyout: the dock's left margin, its width and the gap after it. */
+  --ab-dock-edge: 110px;
 }
 
 /* The docks are a desktop device. Phone uses the bottom tab bar. */
@@ -57,7 +59,7 @@
   /* The build palette is closed at rest. Choosing a dock group opens just that group as a flyout beside the dock. */
   .ab-root.bw .ab-pal { display: none; }
   .ab-root.bw:not([data-palgroup="none"]) .ab-pal {
-    display: block; position: absolute; left: 84px; top: var(--bw-inset-top); bottom: auto; width: 300px; margin: 0;
+    display: block; position: absolute; left: var(--ab-dock-edge); top: var(--bw-inset-top); bottom: auto; width: 380px; margin: 0;
     max-height: min(560px, calc(100% - var(--bw-inset-top) - var(--bw-inset-bottom))); overflow: auto;
     z-index: 5; pointer-events: auto;
   }
@@ -79,12 +81,120 @@
   .ab-root.bw .ab-drawer { pointer-events: auto; z-index: 6; }
 }
 
-/* Floating Remove sits just left of the right dock, clear of it and of the island centre. */
-@media (min-width: 760px) {
-  .bt-dock { right: calc(var(--bw-inset-right) + 12px); top: auto; bottom: calc(var(--bw-inset-bottom) + 12px); }
-}
+
 
 /* The objective bar is information, not a control. Only its button takes pointer input, so a drag across the
    stage under the bar still reaches the island. */
 .ab-root.bw .ab-next { pointer-events: none; }
 .ab-root.bw .ab-next .ab-text-btn { pointer-events: auto; }
+
+/* Dock foot (desktop): Remove, the trash can, sits at the bottom of the left dock under the three sections. */
+@media (min-width: 760px) {
+  .ab-root.bw .ab-dock-foot {
+    margin-top: auto; padding-top: 6px; border-top: 1px solid var(--ab-line-soft);
+    display: flex; flex-direction: column; gap: 6px;
+  }
+  .ab-root.bw .ab-dock-trash .ab-dock-ico { display: block; width: 24px; height: 24px; }
+  .ab-root.bw .ab-dock-trash[aria-pressed="true"] { border-color: var(--ab-brass-hi); background: rgba(184, 134, 47, 0.35); }
+}
+
+/* Flyouts: a section unrolls from its header and its rows step in one after another. One section at a time:
+   the one that closes plays the exit while the next plays its entrance. ~200 ms in, ~160 ms out. */
+@media (min-width: 760px) {
+  .ab-root.bw:not([data-palgroup="none"]) .ab-pal {
+    animation: ab-pal-in 200ms cubic-bezier(0.2, 0.7, 0.2, 1) both;
+  }
+  .ab-root.bw .ab-pal-leaving {
+    display: block; position: absolute; left: var(--ab-dock-edge); top: var(--bw-inset-top); bottom: auto; width: 380px; margin: 0;
+    max-height: min(560px, calc(100% - var(--bw-inset-top) - var(--bw-inset-bottom)));
+    overflow: hidden; z-index: 5; pointer-events: none;
+    animation: ab-pal-out 160ms ease-in both;
+  }
+  .ab-root.bw:not([data-palgroup="none"]) .ab-pal .ab-build-row,
+  .ab-root.bw:not([data-palgroup="none"]) .ab-pal .ab-locked-note,
+  .ab-root.bw:not([data-palgroup="none"]) .ab-pal .ab-sub {
+    animation: ab-row-in 220ms cubic-bezier(0.2, 0.7, 0.2, 1) both;
+  }
+  .ab-root.bw .ab-pal .ab-build-row:nth-child(1), .ab-root.bw .ab-pal .ab-sub:nth-child(1) { animation-delay: 40ms; }
+  .ab-root.bw .ab-pal .ab-build-row:nth-child(2) { animation-delay: 75ms; }
+  .ab-root.bw .ab-pal .ab-build-row:nth-child(3) { animation-delay: 110ms; }
+  .ab-root.bw .ab-pal .ab-build-row:nth-child(4) { animation-delay: 145ms; }
+  .ab-root.bw .ab-pal .ab-build-row:nth-child(5) { animation-delay: 180ms; }
+  .ab-root.bw .ab-pal .ab-build-row:nth-child(n+6) { animation-delay: 215ms; }
+  .ab-root.bw .ab-pal .ab-locked-note { animation-delay: 240ms; }
+
+  .ab-root[data-reduce="true"] .ab-pal, .ab-root[data-lowfx="true"] .ab-pal,
+  .ab-root[data-reduce="true"] .ab-pal-leaving, .ab-root[data-lowfx="true"] .ab-pal-leaving,
+  .ab-root[data-reduce="true"] .ab-pal *, .ab-root[data-lowfx="true"] .ab-pal * { animation: none !important; }
+  .ab-root[data-reduce="true"] .ab-pal-leaving, .ab-root[data-lowfx="true"] .ab-pal-leaving { display: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ab-root.bw .ab-pal, .ab-root.bw .ab-pal *, .ab-root.bw .ab-pal-leaving { animation: none !important; }
+}
+@keyframes ab-pal-in {
+  from { opacity: 0; transform: translateX(-14px); clip-path: inset(0 0 100% 0); }
+  to { opacity: 1; transform: none; clip-path: inset(0 0 0 0); }
+}
+@keyframes ab-pal-out {
+  from { opacity: 1; transform: none; clip-path: inset(0 0 0 0); }
+  to { opacity: 0; transform: translateX(-10px); clip-path: inset(0 0 100% 0); }
+}
+@keyframes ab-row-in {
+  from { opacity: 0; transform: translateX(-8px); }
+  to { opacity: 1; transform: none; }
+}
+
+/* ---- Build dock and flyout (desktop): brass buttons, pixel group glyphs, readable names ---- */
+@media (min-width: 760px) {
+  .ab-root.bw .ab-dock { width: 90px; padding: 8px 7px; gap: 8px; box-shadow: inset 0 1px 0 rgba(255, 220, 150, 0.35), 0 6px 14px rgba(0, 0, 0, 0.45); }
+  .ab-root.bw .ab-dock-btn {
+    min-height: 66px; gap: 6px; padding: 8px 2px 7px;
+    background: linear-gradient(180deg, #3a2812, #1d1308);
+    border: 2px solid #7a5a2a; color: #f0dfb8;
+    box-shadow: inset 0 1px 0 rgba(255, 220, 150, 0.25), inset 0 -2px 0 rgba(0, 0, 0, 0.45);
+    font-family: var(--bw-font-text, system-ui, sans-serif); font-weight: 700; text-transform: uppercase;
+    transition: transform 140ms ease-out, background 140ms ease-out, border-color 140ms ease-out;
+  }
+  .ab-root.bw .ab-dock-btn:hover { transform: translateY(-1px); border-color: #d29a3c; background: linear-gradient(180deg, #4a3418, #26190b); }
+  .ab-root.bw .ab-dock-btn:focus-visible { outline: 2px solid #ffd98a; outline-offset: 2px; }
+  .ab-root.bw .ab-dock-btn[aria-pressed="true"] {
+    background: linear-gradient(180deg, #f4cf7e, #b8862f); border-color: #ffd98a; color: #1d1308;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.5), 0 0 0 1px #1d1308;
+  }
+  .ab-root.bw .ab-dock-label { font-size: 11px; line-height: 1; letter-spacing: 0.02em; white-space: nowrap; }
+  .ab-root.bw .ab-dock-glyph { width: 26px; height: 26px; display: block; color: #d29a3c; }
+  .ab-root.bw .ab-dock-btn[aria-pressed="true"] .ab-dock-glyph { color: #1d1308; }
+  .ab-root.bw .ab-dock-btn[aria-pressed="true"] .ab-dock-glyph rect[fill="#20170c"] { fill: #f4cf7e; }
+  .ab-root.bw .ab-dock-trash .ab-dock-ico { color: #d29a3c; }
+  .ab-root.bw .ab-dock-trash[aria-pressed="true"] .ab-dock-ico { color: #1d1308; }
+  .ab-root.bw .ab-dock-rot { display: grid; gap: 2px; justify-items: center; padding: 6px 2px 4px; margin-top: 2px; border-top: 1px solid #4a3a22; }
+  .ab-root.bw .ab-dock-rot-k { font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: #b09a6c; }
+  .ab-root.bw .ab-dock-rot-v { font-size: 16px; font-weight: 700; color: #ffd98a; font-variant-numeric: tabular-nums; }
+
+  /* Flyout: wider, with larger names and costs. */
+  .ab-root.bw .ab-pal { width: 380px; }
+  .ab-root.bw .ab-pal-leaving { width: 380px; }
+  .ab-root.bw .ab-build-row { display: flex; align-items: stretch; gap: 8px; }
+  .ab-root.bw .ab-build-main {
+    flex: 1 1 auto; min-width: 0; min-height: 64px; padding: 8px 10px;
+    display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; text-align: left;
+  }
+  .ab-root.bw .ab-build-text { flex: 1 1 170px; min-width: 0; }
+  .ab-root.bw .ab-build-name { font-size: 16px; font-weight: 600; white-space: normal; overflow-wrap: break-word; word-break: normal; }
+  .ab-root.bw .ab-build-cost { font-size: 13.5px; }
+  .ab-root.bw .ab-status { flex: none; font-size: 11px; }
+  .ab-root.bw .ab-info { flex: none; min-width: 84px; min-height: 48px; padding: 0 12px; font-size: 13px; white-space: nowrap; }
+  .ab-root.bw .ab-sub-title { font-size: 12px; letter-spacing: 0.14em; }
+  .ab-root.bw .ab-locked-note { font-size: 13.5px; padding: 8px 10px; }
+  .ab-root.bw .ab-key-hint { top: 6px; right: 6px; }
+}
+
+/* Build rows on every size: the name keeps its room, and status or Details wrap rather than crush it. */
+.ab-root.bw .ab-build-row { max-width: 100%; box-sizing: border-box; }
+.ab-root.bw .ab-build-main { flex-wrap: wrap; }
+.ab-root.bw .ab-build-text { min-width: 0; overflow-wrap: anywhere; }
+@media (max-width: 759px) {
+  .ab-root.bw .ab-build-main { min-width: 0; }
+  .ab-root.bw .ab-build-text { flex: 1 1 140px; }
+  .ab-root.bw .ab-info { min-width: 76px; padding: 0 8px; }
+}

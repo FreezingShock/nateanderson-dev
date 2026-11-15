@@ -20,6 +20,14 @@ export function FirstRunGuide({ data }: { data: HudData }) {
         setDone(readFirstRunDone());
     }, []);
 
+    // Escape folds the expanded list back to its strip, so the stage is never left covered by accident.
+    useEffect(() => {
+        if (folded) return;
+        const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") setFolded(true); };
+        window.addEventListener("keydown", onKey);
+        return () => window.removeEventListener("keydown", onKey);
+    }, [folded]);
+
     const steps = firstRunSteps(data);
     const current = steps.findIndex((s) => !s.done);
     const allDone = current === -1;
