@@ -612,7 +612,7 @@ def flat_job(key, kind):
 
 def water_tower():
     W, H = 260, 300
-    frames = ["lot", "foundation", "legs1", "legs2", "tank", "paint", "done"]
+    frames = ["lot", "foundation", "legs1", "legs2", "bowl", "tank", "riser", "paint", "done"]
     out = []
     for f in frames:
         c = Canvas(W, H)
@@ -639,25 +639,43 @@ def water_tower():
                 xl, xr = cx - 50 + 20 * t, cx + 50 - 20 * t
                 c.set(c.rect(xl, y, xr, y + 2), P["steel"][4])
                 c.set(c.line(xl, y, xr, y - 30, 0.8) & (c.Y > lt), P["steel"][3])
-        if i >= 4:
+        if f == "bowl":
+            ty = gy - 150
+            c.fill(c.disc(cx, ty - 10, 48, 14) & (c.Y > ty - 12), np.clip(0.6 - (c.X - cx + 40) / 160, 0, 1), "steel", 0.8)
+            c.set(c.rect(cx - 50, ty - 10, cx + 51, ty - 8), P["steel"][4])
+            for x in range(cx - 44, cx + 44, 8):  # weld sparks on the first ring
+                c.set(c.disc(x, ty - 11, 1.2), P["lamp"][5])
+        if i >= 6:  # riser pipe and caged ladder
+            ty = gy - 150
+            c.fill(c.rect(cx - 4, ty - 2, cx + 5, gy - 3), 0.55, "steel", 0.5)
+            c.set(c.rect(cx + 30, ty - 60, cx + 31, gy - 3) | c.rect(cx + 35, ty - 60, cx + 36, gy - 3), P["steel"][5])
+            c.set(c.rect(cx + 30, ty - 60, cx + 36, gy - 3) & ((c.Y % 4) < 1), P["steel"][4])
+        if i >= 5:
             ty = gy - 150
             tank = c.disc(cx, ty - 26, 48, 30) & (c.Y < ty - 10) | c.rect(cx - 48, ty - 30, cx + 49, ty - 10)
             tank |= c.disc(cx, ty - 10, 48, 14)
-            pal = "steel" if f == "tank" else "white"
+            pal = "steel" if f in ("tank", "riser") else "white"
             c.fill(tank, np.clip(0.75 - (c.X - cx + 40) / 160, 0, 1), pal, 0.8)
             c.fill(c.disc(cx, ty - 56, 26, 8) | c.rect(cx - 2, ty - 66, cx + 3, ty - 56), 0.4, "roof", 0.6)
             c.set(c.rect(cx - 50, ty - 10, cx + 51, ty - 8), P["steel"][4])  # catwalk
+            if f == "paint":  # painters on a swing stage, the left half still bare steel
+                c.fill(tank & (c.X < cx - 6), np.clip(0.6 - (c.X - cx + 40) / 160, 0, 1), "steel", 0.8)
+                c.fill(c.rect(cx - 10, ty - 44, cx + 6, ty - 41), 0.6, "wood", 0.4)
+                c.set(c.rect(cx - 9, ty - 80, cx - 8, ty - 44) | c.rect(cx + 4, ty - 80, cx + 5, ty - 44), P["ink"][2])
+                person(c, cx - 6, ty - 44, seed=3)
             if f == "tank":
                 for k in range(3):
-                    c.spark = None
                     c.set(c.disc(cx - 30 + k * 26, ty - 20, 1.5), P["lamp"][5])
             if f in ("paint", "done"):
                 c.fill(c.rect(cx - 34, ty - 36, cx + 35, ty - 22), 0.6, "glass", 0.5)  # fictional town band
-        if f in ("legs1", "legs2", "tank", "paint"):
+        if f in ("legs1", "legs2", "bowl", "tank", "riser"):
             tower_crane(c, 28, gy, 40 if i >= 3 else 120, 20, 90, hook_x=cx + 10, hook_y=60 if i >= 3 else 140,
                         load="steel")
             person(c, cx + 70, gy, seed=i)
         if f == "done":
+            c.fill(c.rect(cx - 70, gy - 3, cx + 71, gy), 0.6, "concrete", 0.3)
+            fence(c, cx - 70, cx - 30, gy, 10)
+            c.set(c.disc(cx, gy - 205, 1.5), P["safety"][5])
             tree(c, 20, gy, 26, 1)
             tree(c, W - 30, gy, 22, 2)
         out.append(c)
@@ -665,7 +683,7 @@ def water_tower():
 
 
 def bridge(key, span, tower_h, W, H, deck_h, suspension):
-    frames = ["lot", "piers", "towers", "cables", "deck1", "deck2", "done"]
+    frames = ["lot", "piers", "towers1", "towers2", "cables", "deck1", "deck2", "deck3", "lights", "done"]
     out = []
     for f in frames:
         c = Canvas(W, H)
@@ -689,12 +707,15 @@ def bridge(key, span, tower_h, W, H, deck_h, suspension):
                 c.fill(c.rect(x - 10, gy + 2, x + 11, gy + 30), 0.55, "concrete", 0.5)  # caisson
         if i >= 2:
             th = tower_h if i >= 3 else tower_h * 0.55
+            if i == 2:  # climbing formwork at the top of each half-height tower
+                for x in towers:
+                    c.fill(c.rect(x - 10, gy + 2 - th - 8, x + 12, gy + 2 - th), 0.6, "hiviz", 0.5)
             for x in towers:
                 for dx in (-7, 5):
                     c.fill(c.rect(x + dx, gy + 2 - th, x + dx + 4, gy + 2), 0.65 - 0.2 * (dx > 0), "safety", 0.5)
                 for y in range(int(gy - th + 6), int(dy), 34):
                     c.fill(c.rect(x - 7, y, x + 9, y + 4), 0.5, "safety", 0.5)
-        if i >= 3:
+        if i >= 4:
             top = gy + 2 - tower_h
             l, r = towers
             if suspension:
@@ -704,7 +725,7 @@ def bridge(key, span, tower_h, W, H, deck_h, suspension):
                     c.set(c.line(a, ya, b, yb, 1.4), P["safety"][2])
                 for a, b in ((l, 0), (r, W)):
                     c.set(c.line(a, top + 2, b, gy - 4, 1.4), P["safety"][2])
-                if i >= 4:
+                if i >= 5:
                     for x, ys in zip(xs[::3], sag[::3]):
                         if f == "deck1" and abs(x - (l + r) / 2) > (r - l) * 0.3:
                             continue
@@ -714,8 +735,10 @@ def bridge(key, span, tower_h, W, H, deck_h, suspension):
                     for k in range(1, 6):
                         c.set(c.line(x, top + 4 + k * 2, x - k * 15, dy, 0.8), P["white"][2])
                         c.set(c.line(x, top + 4 + k * 2, x + k * 15, dy, 0.8), P["white"][2])
-        if i >= 4:
-            if f == "deck1":
+        if i >= 5:
+            if f == "deck2":
+                spans = [(W // 2 - span * 0.62, W // 2 + span * 0.62)]
+            elif f == "deck1":
                 spans = [(W // 2 - span * 0.3, W // 2 + span * 0.3)]
                 c.set(c.rect(W // 2 - 10, dy + 6, W // 2 + 10, wl - 3), P["ink"][1], 120)
                 c.fill(c.rect(W // 2 - 26, wl - 4, W // 2 + 26, wl + 1), 0.45, "steel", 0.5)  # lift barge
@@ -726,6 +749,15 @@ def bridge(key, span, tower_h, W, H, deck_h, suspension):
                 c.fill(c.rect(a, dy - 2, b, dy), 0.6, "concrete", 0.4)
                 for x in range(int(a), int(b), 8):
                     c.set(c.line(x, dy + 6, x + 4, dy, 0.6), P["steel"][2])
+        if i >= 7:
+            c.fill(c.rect(0, dy - 4, W, dy - 2), 0.45, "roof", 0.5)  # asphalt
+            for x in range(0, W, 10):
+                c.set(c.rect(x, dy - 3, x + 5, dy - 2.5), P["hiviz"][5])
+        if i >= 8:
+            for x in range(0, W, 30):
+                c.set(c.rect(x, dy - 12, x + 1, dy - 2), P["steel"][5])
+                c.set(c.rect(x - 1, dy - 13, x + 2, dy - 12), P["lamp"][5])
+                c.thin(c.disc(x + 0.5, dy - 8, 6, 5), P["lamp"][4], 0.25, 180)
         if f == "done":
             r = rng(4)
             for k in range(14):
@@ -735,7 +767,7 @@ def bridge(key, span, tower_h, W, H, deck_h, suspension):
             for x in range(0, W, 30):
                 c.set(c.rect(x, dy - 12, x + 1, dy - 2), P["steel"][5])
                 c.set(c.rect(x - 1, dy - 13, x + 2, dy - 12), P["lamp"][5])
-        if 1 <= i <= 5:
+        if 1 <= i <= 7:
             c.fill(c.rect(W // 2 + span // 2 - 70, wl - 6, W // 2 + span // 2 - 30, wl + 1), 0.4, "steel", 0.5)
             tower_crane(c, W // 2 + span // 2 - 50, wl - 5, wl - 5 - tower_h - 30, 14, 40,
                         hook_x=W // 2 + span // 2 - 20, hook_y=wl - tower_h, load=None)
@@ -745,7 +777,7 @@ def bridge(key, span, tower_h, W, H, deck_h, suspension):
 
 def stadium():
     W, H = 560, 260
-    frames = ["lot", "dig", "foundation", "rakers", "seats", "truss", "roof", "done"]
+    frames = ["lot", "dig", "foundation", "rakers", "seats", "truss", "roof", "pitch", "lights", "done"]
     out = []
     for f in frames:
         c = Canvas(W, H)
@@ -762,9 +794,15 @@ def stadium():
             c.fill(c.rect(L + 60, gy - 1, R - 60, gy + 16), 0.2, "dirt", 0.8)
             excavator(c, mid, gy + 16, arm=0.6)
         if i >= 2:
-            c.fill(c.rect(L + 60, gy - 2, R - 60, gy + 3), 0.55, "green", 0.6)  # pitch
-            for x in range(int(L + 60), int(R - 60), 20):
-                c.set(c.rect(x, gy - 2, x + 10, gy), P["green"][6])
+            if i >= 7:
+                c.fill(c.rect(L + 60, gy - 2, R - 60, gy + 3), 0.55, "green", 0.6)  # pitch
+                for x in range(int(L + 60), int(R - 60), 20):
+                    c.set(c.rect(x, gy - 2, x + 10, gy), P["green"][6])
+                if f == "pitch":  # turf rolls still going down at the right end
+                    c.fill(c.rect(mid + 40, gy - 2, R - 60, gy + 3), 0.35, "dirt", 0.8)
+                    c.fill(c.disc(mid + 40, gy - 4, 4), 0.6, "green", 0.5)
+            else:
+                c.fill(c.rect(L + 60, gy - 2, R - 60, gy + 3), 0.4, "gravel", 0.8)
             for x in (L, L + 60, R - 60, R):
                 c.fill(c.rect(x - 4, gy, x + 5, gy + 16), 0.5, "concrete", 0.5)
         if i >= 3:
@@ -808,10 +846,13 @@ def stadium():
             c.fill(c.rect(L - 8, ty - 3, R + 9, ty), 0.45, "roof", 0.5)
             c.fill(c.rect(L - 8, ty - 3, L + 70, ty), 0.5, "white", 0.5)
             c.fill(c.rect(R - 70, ty - 3, R + 9, ty), 0.5, "white", 0.5)
-        if f == "done":
+        if i >= 8:
             for x in (L + 20, R - 20):
                 c.set(c.rect(x, gy - 160, x + 1, gy - 128), P["steel"][5])
-                c.fill(c.rect(x - 6, gy - 168, x + 7, gy - 160), 0.9, "lamp", 0.5)
+                c.fill(c.rect(x - 6, gy - 168, x + 7, gy - 160), 0.9 if f == "done" else 0.3, "lamp", 0.5)
+                if f == "done":
+                    c.thin(c.poly([(x - 6, gy - 160), (x + 7, gy - 160), (mid, gy - 2), (mid - 40, gy - 2)]), P["lamp"][5], 0.12, 150)
+        if f == "done":
             for k in range(10):
                 person(c, L + 80 + k * 38, gy - 2, vest=["safety", "glass"][k % 2], seed=k)
         out.append(c)

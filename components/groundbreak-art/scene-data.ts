@@ -183,30 +183,35 @@ export const GB_JOBS = {
       "foundation",
       "legs1",
       "legs2",
+      "bowl",
       "tank",
+      "riser",
       "paint",
       "done"
     ],
     "w": 260,
     "h": 300,
     "ground": 44,
-    "src": "/groundbreak/jobs/watertower.webp?v=1dc10a1d"
+    "src": "/groundbreak/jobs/watertower.webp?v=087733e6"
   },
   "footbridge": {
     "name": "Footbridge",
     "frames": [
       "lot",
       "piers",
-      "towers",
+      "towers1",
+      "towers2",
       "cables",
       "deck1",
       "deck2",
+      "deck3",
+      "lights",
       "done"
     ],
     "w": 420,
     "h": 230,
     "ground": 44,
-    "src": "/groundbreak/jobs/footbridge.webp?v=e22ae435"
+    "src": "/groundbreak/jobs/footbridge.webp?v=95b99994"
   },
   "tower": {
     "name": "40-storey tower",
@@ -245,28 +250,33 @@ export const GB_JOBS = {
       "seats",
       "truss",
       "roof",
+      "pitch",
+      "lights",
       "done"
     ],
     "w": 560,
     "h": 260,
     "ground": 44,
-    "src": "/groundbreak/jobs/stadium.webp?v=e4a58b3a"
+    "src": "/groundbreak/jobs/stadium.webp?v=84b2f09d"
   },
   "bridge": {
     "name": "Suspension bridge",
     "frames": [
       "lot",
       "piers",
-      "towers",
+      "towers1",
+      "towers2",
       "cables",
       "deck1",
       "deck2",
+      "deck3",
+      "lights",
       "done"
     ],
     "w": 760,
     "h": 340,
     "ground": 44,
-    "src": "/groundbreak/jobs/bridge.webp?v=13f938ca"
+    "src": "/groundbreak/jobs/bridge.webp?v=6a0e7f5a"
   }
 } as const;
 
