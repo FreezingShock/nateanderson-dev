@@ -6,14 +6,14 @@ from common import R, P, pick, dmask, fbm3, vnoise3, grid, rgba, save_sheet, sav
 
 FR = 24
 LOOK = {
-    "ember": ("rock", 9, R("ember0", "rust", "flame", "amber"), R("moss0", "sand0", "sand", "dune", "pale")),
-    "cinder": ("ash", 9, R("ember0", "ember1", "rust", "flame"), R("soot", "ash", "stone", "bone")),
-    "glass": ("glass", 10, R("ember0", "rust", "flame", "gold"), R("teal0", "teal", "aqua", "mint", "white")),
-    "thule": ("ice", 9, R("navy", "cobalt", "azure", "sky"), R("navy", "cobalt", "sky", "frost", "white")),
-    "ironclad": ("metal", 8, R("ember0", "rust", "flame", "amber", "gold"), R("soot", "ash", "stone", "bone", "frost")),
-    "orrery": ("moons", 6, R("dusk", "plum", "orchid"), R("dusk", "plum", "orchid", "mauve", "lilac")),
-    "haze": ("gas", 13, R("sand0", "sand", "dune"), R("ember1", "sand0", "sand", "dune", "pale", "cream")),
-    "seer": ("ringed", 13, R("sand0", "sand", "dune"), R("sand0", "sand", "dune", "pale", "cream")),
+    "ember": ("rock", 14, R("ember0", "rust", "flame", "amber"), R("moss0", "sand0", "sand", "dune", "pale")),
+    "cinder": ("ash", 14, R("ember0", "ember1", "rust", "flame"), R("soot", "ash", "stone", "bone")),
+    "glass": ("glass", 15, R("ember0", "rust", "flame", "gold"), R("teal0", "teal", "aqua", "mint", "white")),
+    "thule": ("ice", 14, R("navy", "cobalt", "azure", "sky"), R("navy", "cobalt", "sky", "frost", "white")),
+    "ironclad": ("metal", 12, R("ember0", "rust", "flame", "amber", "gold"), R("soot", "ash", "stone", "bone", "frost")),
+    "orrery": ("moons", 9, R("dusk", "plum", "orchid"), R("dusk", "plum", "orchid", "mauve", "lilac")),
+    "haze": ("gas", 20, R("sand0", "sand", "dune"), R("ember1", "sand0", "sand", "dune", "pale", "cream")),
+    "seer": ("ringed", 18, R("sand0", "sand", "dune"), R("sand0", "sand", "dune", "pale", "cream")),
 }
 
 
@@ -79,11 +79,11 @@ def world(pid, stage, f, cell=32):
         out[ins] = pick(cool, v)[ins]; m |= ins
         for i in range(stage + (1 if stage == 3 else 0)):
             a = rot * (1 + i * 0.5) + i * 2.1
-            orb = r + 4 + i * 3.2
+            orb = r + 6 + i * 4.8
             mx, my = cell / 2 - 0.5 + math.cos(a) * orb, cell / 2 - 0.5 + math.sin(a) * orb * 0.45
             if math.sin(a) < 0 and abs(math.cos(a) * orb) < r:  # behind the body
                 continue
-            mr = 2.2 - i * 0.3
+            mr = 3.3 - i * 0.45
             ddx, ddy, mnz, mins, ml = sphere(cell, mr, mx, my)
             mc = pick(R("dusk", "orchid", "lilac", "white"), ml * 0.9 + 0.1)
             out[mins] = mc[mins]; m |= mins
@@ -116,7 +116,7 @@ def world(pid, stage, f, cell=32):
             col[storm & ins] = hexc(P["rust"] if look == "gas" else P["flame"])
         out[ins] = col[ins]; m |= ins
     else:
-        n = lon_noise(dx, dy, nz, rot, 3, 101 + len(pid))
+        n = lon_noise(dx, dy, nz, rot, 3.6, 101 + len(pid), 5)
         if look == "rock":
             land = n > 0.5
             sea = R("navy", "cobalt", "azure", "sky") if stage == 3 else R("soot", "ash", "stone")
@@ -220,14 +220,14 @@ def ring_draw(cell, r, stage, rot, out, m, front):
 
 def run():
     for pid in LOOK:
-        cell = 48 if pid == "seer" else 32
+        cell = 72 if pid == "seer" else 48
         for st in range(4):
-            save_sheet(f"planet/{pid}-s{st}", [world(pid, st, f, cell) for f in range(FR)], fps=8, body=LOOK[pid][1])
+            save_sheet(f"planet/{pid}-s{st}", [world(pid, st, f, cell) for f in range(FR)], fps=10, body=LOOK[pid][1])
         icon = world(pid, 3, 2, 48 if pid == "seer" else 32)
         if pid == "seer":
             icon = icon[8:40, 8:40]
             # re-render the ringed giant smaller so it fits a 32 tile
-            LOOK["seer"] = ("ringed", 8, LOOK["seer"][2], LOOK["seer"][3])
+            LOOK["seer"] = ("ringed", 12, LOOK["seer"][2], LOOK["seer"][3])
             icon = world("seer", 3, 2, 32)
-            LOOK["seer"] = ("ringed", 13, LOOK["seer"][2], LOOK["seer"][3])
+            LOOK["seer"] = ("ringed", 20, LOOK["seer"][2], LOOK["seer"][3])
         save_still(f"icon/planet-{pid}", icon)

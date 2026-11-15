@@ -743,7 +743,7 @@ export function renderLayered(L: Layers, f: SceneFrame, S: SpriteSet): void {
             const sh = planetSheet(p);
             const a = angleOf(p), s = Math.sin(a);
             if (!sh || (s > 0) !== front) continue;
-            drawFrame(ctx, sh, frameAt(sh, t), cx + Math.cos(a) * orbitOf(p), cy + s * orbitOf(p) * 0.27, 1.2);
+            drawFrame(ctx, sh, frameAt(sh, t), cx + Math.cos(a) * orbitOf(p), cy + s * orbitOf(p) * 0.27, 1);
         }
     };
     const codePlanets = (front: boolean) => {
