@@ -2,7 +2,7 @@
 // swinging arms. The front face shows its clockwork: a large gear meshing with a small one, beside a lit
 // inspection window. Three hoppers at the back, one chute at the front centre.
 
-import { Builder, spin, swing, pulse } from "./builder";
+import { Builder, spin, swing, slide, pulse } from "./builder";
 import { C } from "./palette";
 import { plinth, hopperBack, chuteFront, statusLamp, speckle } from "./common";
 
@@ -56,6 +56,30 @@ export function assembler() {
     b.body();
     b.cyl("y", 26, 6, 1.6, 18, 31, C.steelD);
     b.cyl("y", 26, 6, 2.2, 30, 32, C.steel);
+    // Welding spark at the jig, flickering while it works.
+    b.part("spark", [15, 23, 15], pulse(3.1, 0.8), true);
+    b.box(14, 23, 14, 16, 24, 16, C.glow);
+    // Parts tray on the left with a feed conveyor of turning rollers.
+    b.body();
+    b.box(1, 2, 8, 2, 14, 22, C.steelD);
+    for (let i = 0; i < 4; i++) {
+        b.part("roller" + i, [1, 15, 9 + i * 4], spin("x", 1.1, { phase: i * 0.2 }));
+        b.cyl("x", 15, 9 + i * 4, 1, 0, 2, C.iron);
+    }
+    // Overhead gantry with a hook trolley sliding across the deck.
+    b.body();
+    b.box(2, 18, 13, 3, 30, 16, C.steelD);
+    b.box(27, 18, 13, 28, 30, 16, C.steelD);
+    b.box(2, 30, 13, 28, 31, 16, C.brass);
+    b.part("hook", [15, 29, 14], slide("x", 6, 0.2));
+    b.box(13, 28, 13, 17, 30, 16, C.steelD);
+    b.box(14, 25, 14, 16, 28, 15, C.iron);
+    // Pressure gauge beside the window.
+    b.body();
+    b.cyl("z", 14, 4, 1.8, 25, 26, C.cream);
+    b.part("needle", [14, 4, 26], swing("z", 0.6, 0.5));
+    b.box(14, 4, 26, 15, 6, 27, C.red);
+    b.body();
     hopperBack(b, 0);
     hopperBack(b, 1);
     hopperBack(b, 2);

@@ -2,7 +2,7 @@
 // and an armillary of three rings turning on different axes round a glowing core. A trolley runs on the
 // front beam. Four hoppers at the back, a wide chute out the front.
 
-import { Builder, spin, slide, pulse } from "./builder";
+import { Builder, spin, slide, swing, pulse } from "./builder";
 import { C } from "./palette";
 import { plinth, hopperBack, chuteFront, statusLamp, speckle } from "./common";
 
@@ -62,6 +62,25 @@ export function fabricator() {
     b.box(17, 34, 33, 23, 36, 38, C.steelD);
     b.box(19, 28, 34, 21, 34, 36, C.iron);
     b.box(18, 27, 34, 22, 28, 36, C.ironD);
+    // Weld glow under the trolley tool.
+    b.part("weld", [20, 26, 35], pulse(2.8, 0.8), true);
+    b.box(19, 26, 34, 21, 27, 36, C.glow);
+    // Side feed arms on the dais that reach in and back.
+    b.part("feedL", [9, 9, 20], swing("y", 0.4, 0.3));
+    b.box(8, 8, 19, 14, 10, 22, C.brass);
+    b.box(13, 8, 19, 14, 12, 22, C.iron);
+    b.part("feedR", [31, 9, 20], swing("y", 0.4, 0.3, { phase: 0.5 }));
+    b.box(26, 8, 19, 32, 10, 22, C.brass);
+    b.box(26, 8, 19, 27, 12, 22, C.iron);
+    // Control lectern at the front left with a gauge and a lit valve.
+    b.body();
+    b.box(6, 3, 30, 12, 12, 34, C.steelD);
+    b.box(5, 12, 29, 13, 13, 35, C.brass);
+    b.cyl("z", 9, 9, 2, 34, 35, C.cream);
+    b.part("needle", [9, 9, 35], swing("z", 0.7, 0.35));
+    b.box(9, 9, 35, 10, 11, 36, C.red);
+    b.part("valve", [7, 14, 32], spin("y", 0.6));
+    b.cyl("y", 7, 32, 1.5, 13, 14, C.brassL);
     b.body();
     for (let c = 0; c < 4; c++) hopperBack(b, c, 10);
     chuteFront(b, 1, 2);
