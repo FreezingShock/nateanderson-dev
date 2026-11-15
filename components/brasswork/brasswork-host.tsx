@@ -39,7 +39,7 @@ import { WATER_LEVEL } from "@/lib/automation/render/config";
 import { createBeltItems } from "@/lib/automation/render/beltitems";
 import { scatterProps } from "@/lib/automation/models/props";
 import { BrassworkExtras, MOODS, type AwayReport, type Mood } from "./extras";
-import { FirstRunGuide } from "./first-run";
+import { useFirstRunQuest } from "./first-run";
 import { BuildPopover, TrashButton } from "./build-popover";
 import { bw, bwHum, bwSetEnabled } from "@/lib/brasswork/sound";
 import { LightingRow, SaveRows } from "./settings-extras";
@@ -117,6 +117,7 @@ export function BrassworkHost() {
     const [inputCtl, setInputCtl] = useState<InputController | null>(null);
     const [away, setAway] = useState<AwayReport | null>(null);
     const [mood, setMood] = useState<Mood>("Auto");
+    const quest = useFirstRunQuest(data);
     const moodRef = useRef<Mood>("Auto");
     const onMood = useCallback((m: Mood) => {
         moodRef.current = m;
@@ -631,10 +632,9 @@ export function BrassworkHost() {
 
     return (
         <div className="bw-root">
-            <AutomationHud data={data} actions={{ onBuild, onSelect, onResearch, onSetRecipe, onPrestige, onSettings }} settingsSlots={{ display: <LightingRow mood={mood} onMood={onMood} />, save: <SaveRows /> }} removeSlot={inputCtl ? <TrashButton input={inputCtl} variant="dock" /> : undefined}>
+            <AutomationHud data={data} actions={{ onBuild, onSelect, onResearch, onSetRecipe, onPrestige, onSettings }} settingsSlots={{ display: <LightingRow mood={mood} onMood={onMood} />, save: <SaveRows /> }} removeSlot={inputCtl ? <TrashButton input={inputCtl} variant="dock" /> : undefined} quest={quest ?? undefined}>
                 <canvas ref={canvasRef} className="bw-canvas" />
                 <BrassworkExtras snapshot={snapshot} away={away} mood={mood} onMood={onMood} />
-                <FirstRunGuide data={data} />
                 {inputCtl && pop && (
                     <BuildPopover
                         input={inputCtl}
