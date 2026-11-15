@@ -41,7 +41,7 @@ Owners are per area, one thread per file set. The threads: "Streamline Brasswork
 | Supply crates on orders and milestones | working | `sim/progress.ts` | `progression.test.mjs` |
 | Prestige "Open a new workshop": 4 sites, workshop kit, site bonuses | working | `sim/progress.ts`, `sim/data.ts` | `sites.test.mjs` |
 | New-player opening (drill, kiln, windmill, belts, first milestone) | working | `sim/data.ts` (`STARTER_KIT`: 80 iron plates) | `opening.test.mjs` |
-| Save and load, versioned (`SAVE_VERSION` 1), offline catch-up up to 8 h | working | `sim/save.ts`, `sim/world.ts` (`catchUp`) | `sim.test.mjs` |
+| Save and load, versioned (`SAVE_VERSION` 1), offline catch-up up to 8 h, run in 10 ms slices on load (`catchUpAway` in the host) so the page stays responsive; `resolve()` and belt-to-store answers are cached | working | `sim/save.ts`, `sim/world.ts` (`catchUp`), `brasswork-host.tsx` | `sim.test.mjs` |
 | Day clock, 1200 s day | working | `sim/progress.ts` (`dayClock`) | none direct |
 | Full-run pacing | untested: no bot plays start to prestige (B-05) | none | none |
 

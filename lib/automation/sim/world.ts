@@ -41,7 +41,25 @@ export function capacityOf(r: Resolved, cat: Catalog): number {
     return r.storageKj > 0 ? r.storageKj : r.supply * cat.tune.springSeconds;
 }
 
+// resolve() runs several times per building per step, so its result is kept per catalog and type. The catalog is
+// fixed data; a test that edits one in place must call clearResolveCache(cat).
+const resolveCache = new WeakMap<Catalog, Map<string, Resolved | null>>();
+
+export function clearResolveCache(cat: Catalog): void {
+    resolveCache.delete(cat);
+}
+
 export function resolve(cat: Catalog, type: string): Resolved | null {
+    let byType = resolveCache.get(cat);
+    if (!byType) resolveCache.set(cat, (byType = new Map()));
+    const hit = byType.get(type);
+    if (hit !== undefined) return hit;
+    const r = resolveUncached(cat, type);
+    byType.set(type, r);
+    return r;
+}
+
+function resolveUncached(cat: Catalog, type: string): Resolved | null {
     const e: EngineDef | undefined = cat.engine[type];
     if (e) {
         // The Recipe tree owns the logistics numbers (cost, rate, capacity, footprint) when it lists the id; the engine's own values are the fallback.
@@ -403,6 +421,9 @@ function allowedPort(world: World, cat: Catalog, index: Map<string, number>, b: 
     }
 }
 
+// Which cells lead to the hub, a dock or a crate along belts, per cell index (see pushOutput).
+const leadsCache = new WeakMap<Map<string, number>, Map<string, boolean>>();
+
 // Push buffered items out. `budget` caps how many items go this tick (junctions move `rate` a second; miners and crafters are unlimited).
 function pushOutput(world: World, cat: Catalog, index: Map<string, number>, b: Building, r: Resolved, budget = Infinity): number {
     const items = Object.keys(b.output);
@@ -412,7 +433,18 @@ function pushOutput(world: World, cat: Catalog, index: Map<string, number>, b: B
     // Machines come first: a kiln feeds its presses and furnaces before anything else. Whatever they refuse goes on to the
     // second tier, which shares it round-robin: the hub, a dock, a crate, or a belt line that ends at one of them.
     // A crate next to a kiln therefore cannot starve the hub while it fills.
+    // The answer depends only on where buildings stand and face, which is what `index` is built from, so it is kept per index.
+    let seen = leadsCache.get(index);
+    if (!seen) leadsCache.set(index, (seen = new Map()));
     const leadsToStore = (p: Port) => {
+        const ck = keyOf(p.tx, p.tz);
+        const known = seen.get(ck);
+        if (known !== undefined) return known;
+        const found = walkToStore(p);
+        seen.set(ck, found);
+        return found;
+    };
+    const walkToStore = (p: Port) => {
         let id = index.get(keyOf(p.tx, p.tz));
         for (let step = 0; step < 400 && id !== undefined; step++) {
             const t = world.buildings[id];
