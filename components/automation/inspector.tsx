@@ -38,11 +38,24 @@ export function Inspector({
   onSetRecipe?: (recipeId: string) => void;
   onClose: () => void;
 }) {
-  const hasRecipe = detail.recipe.name !== "No recipe";
+  // The simulation names an unset crafter "No recipe chosen"; older mocks say "No recipe". Both mean nothing is set.
+  const noRecipe = detail.recipe.name === "No recipe" || detail.recipe.name === "No recipe chosen";
+  const hasRecipe = !noRecipe;
   const lineText = (lines: MachineDetail["recipe"]["inputs"]) =>
     lines.map((l) => `${fmtNum(l.amount, numberFormat)} ${resourceName(resources, l.resourceId)}`).join(", ");
-  const status = STATUS_TEXT[detail.status] ?? detail.status;
   const options = detail.recipeOptions ?? [];
+  const choices = detail.recipeChoices ?? [];
+  // A crafter with no recipe set is the case the player most often misses: say so plainly and list what it can make.
+  const needsRecipe = noRecipe && !detail.mines?.length && (choices.length > 0 || options.length > 0);
+  const status = needsRecipe ? "No recipe set. This machine is not running." : (STATUS_TEXT[detail.status] ?? detail.status);
+  const pick: { id: string; name: string; alternate: boolean; flow?: string }[] = needsRecipe
+    ? choices.map((c) => ({
+        id: c.id,
+        name: c.name,
+        alternate: c.alternate,
+        flow: `${lineText(c.inputs) || "Nothing"} → ${lineText(c.outputs) || "Nothing"}, ${c.seconds} s`,
+      }))
+    : options;
   const rate = detail.rates[0];
 
   // Energy: a generator shows what it makes against its best; a consumer shows what it draws and how well it is fed.
@@ -54,7 +67,7 @@ export function Inspector({
   const energyState = generating ? "source" : detail.fullyPowered ? "full" : "short";
 
   return (
-    <div className="ab-inspect" data-status={detail.status}>
+    <div className="ab-inspect" data-status={detail.status} data-norecipe={needsRecipe ? "true" : undefined}>
       <header className="ab-inspect-head">
         <span className="ab-inspect-art">
           <MachinePortrait id={detail.id} size={64} label={detail.name} />
@@ -68,8 +81,8 @@ export function Inspector({
         </button>
       </header>
 
-      <p className="ab-inspect-status" data-status={detail.status}>{status}</p>
-      {detail.reason && <p className="ab-inspect-hint">{detail.reason}</p>}
+      <p className="ab-inspect-status" data-status={needsRecipe ? "norecipe" : detail.status}>{status}</p>
+      {detail.reason && !needsRecipe && <p className="ab-inspect-hint">{detail.reason}</p>}
 
       {(generating || drawing) && (
         <div className="ab-inspect-energy" data-state={energyState} aria-label={generating ? "Power output" : "Power use"}>
@@ -111,6 +124,10 @@ export function Inspector({
           <span className="ab-inspect-out">{lineText(detail.recipe.outputs) || "Nothing"}</span>
           {detail.recipe.seconds > 0 && <span className="ab-dim">{detail.recipe.seconds} s per batch</span>}
         </div>
+      ) : needsRecipe ? (
+        <p className="ab-inspect-callout" role="status">
+          <strong>No recipe set.</strong> Pick one below and this machine starts working.
+        </p>
       ) : (
         <p className="ab-inspect-hint">{EXTRACTOR_TEXT[detail.id] ?? "Pick a recipe below to start it."}</p>
       )}
@@ -122,9 +139,9 @@ export function Inspector({
         </div>
       )}
 
-      {onSetRecipe && options.length > 1 && (
+      {onSetRecipe && pick.length > (needsRecipe ? 0 : 1) && (
         <div role="group" aria-label="Recipe" className="ab-inspect-recipes">
-          {options.map((o) => (
+          {pick.map((o) => (
             <button
               key={o.id}
               type="button"
@@ -136,6 +153,7 @@ export function Inspector({
               <span className="ab-recipe-name">
                 {o.name}
                 {o.alternate ? <span className="ab-dim"> · alternate</span> : null}
+                {o.flow && <span className="ab-recipe-flow">{o.flow}</span>}
               </span>
               <span className="ab-recipe-state">{o.id === detail.recipeId ? "Selected" : "Use"}</span>
             </button>

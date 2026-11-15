@@ -232,8 +232,12 @@
   column-gap: 8px;
 }
 
-.ab-res-item[data-empty="true"] {
+/* Empty: the icon dims and the count turns warning red. The row itself stays readable, so its rate can be read too. */
+.ab-res-item[data-empty="true"] .ab-glyph {
   opacity: 0.5;
+}
+.ab-res-item[data-empty="true"] .ab-res-amt {
+  color: var(--ab-bad);
 }
 
 .ab-res-name {

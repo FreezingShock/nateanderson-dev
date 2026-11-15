@@ -232,7 +232,7 @@
     .ab-root .ab-quest {
         left: 8px;
         right: 8px;
-        top: 52px;
+        top: calc(var(--ab-top-h, 52px) + 8px);
         width: auto;
     }
 }

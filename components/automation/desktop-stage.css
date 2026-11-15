@@ -3,7 +3,8 @@
    reserves layout space for them. The insets below are how far the resting overlays reach into the edge, so
    the island can be framed clear of them. Phone keeps its own stacked layout (see brasswork-skin.css). */
 .ab-root {
-  --bw-inset-top: 76px;
+  /* The top bar wraps on a desktop-width window, so the inset follows its measured height (--ab-top-h, set by the HUD). */
+  --bw-inset-top: calc(var(--ab-top-h, 76px) + 8px);
   --bw-inset-left: 84px;
   --bw-inset-right: 84px;
   --bw-inset-bottom: 84px;
@@ -67,7 +68,7 @@
   /* The factory aside holds only the selected machine's inspector, floating on the right. */
   .ab-root.bw .ab-factory { display: none; }
   .ab-root.bw[data-inspect="on"] .ab-factory {
-    display: block; position: absolute; right: 84px; top: var(--bw-inset-top); bottom: auto; width: 300px; margin: 0;
+    display: block; position: absolute; right: 100px; top: var(--bw-inset-top); bottom: auto; width: 300px; margin: 0;
     max-height: min(560px, calc(100% - var(--bw-inset-top) - var(--bw-inset-bottom))); overflow: auto;
     z-index: 5; pointer-events: auto;
   }
