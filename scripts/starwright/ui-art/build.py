@@ -621,6 +621,17 @@ for con, col in CONS.items():
     c.put((np.abs(d - 25) < 2.6) & (np.cos(ang * 4) > .92), 1.0, k)
     save(c.image(), f"ring-{con}")
 
+# pulsar core for the pulsar map: a hot neutron ball with a magnetic collar
+c = Canvas(48); k = c.use("#9fd0ff"); kw = c.use("#e8f6ff")
+c.glow(24, 24, 22, k, .6)
+c.ring(24, 24, 15, 5, 1.4, k, .6, front=False)
+c.ball(24, 24, 7, kw, .45, 1.0)
+c.ring(24, 24, 15, 5, 1.4, k, .9, front=True)
+c.poly([(24, 24), (20, 0), (28, 0)], kw, .6, .95); c.poly([(24, 24), (20, 48), (28, 48)], kw, .6, .95)
+c.ball(24, 24, 7, kw, .45, 1.0)
+c.outline(c.use("#05040c"), 0)
+save(c.image(), "pulsar-core")
+
 # ---- contact sheet (not shipped to the page; used for reviews) --------------------------------------------------------
 cell = 26 * 6
 cols = 10

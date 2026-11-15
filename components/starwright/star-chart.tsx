@@ -76,12 +76,21 @@ export function StarChart({ title, list, owned, cur, curName, onBuy, onClose, co
         setCard(null);
         if (!sel) return;
         const place = () => {
-            const node = svgRef.current?.querySelector(`[data-id="${sel}"] .sw-nodeart`);
-            if (!node) return;
-            const r = node.getBoundingClientRect();
+            const svg = svgRef.current;
+            const node = svg?.querySelector(`[data-id="${sel}"]`) as SVGGElement | null;
+            const m = svg?.getScreenCTM();
+            if (!svg || !node || !m) return;
+            // The zoom puts the star at (500, cy) in map units; its labels extend by the box of its group, scaled by the zoom.
+            const narrow = window.innerWidth <= 900;
+            const k = narrow ? 2.6 : ZOOM;
+            const cy = narrow ? 200 : 300;
+            const bb = node.getBBox();
+            const toScreen = (x: number, y: number) => ({ x: m.a * x + m.c * y + m.e, y: m.b * x + m.d * y + m.f });
+            const right = toScreen(500 + (bb.x + bb.width) * k, cy);
+            const left = toScreen(500 + bb.x * k, cy);
             const vw = window.innerWidth;
-            const side = r.right + 380 < vw ? "r" : "l";
-            setCard({ x: side === "r" ? r.right + 44 : r.left - 44, y: r.top + r.height / 2, side });
+            const side = right.x + 330 < vw ? "r" : "l";
+            setCard({ x: side === "r" ? right.x + 12 : left.x - 12, y: right.y, side });
         };
         const t = window.setTimeout(place, 540);
         window.addEventListener("resize", place);
@@ -111,7 +120,7 @@ export function StarChart({ title, list, owned, cur, curName, onBuy, onClose, co
     const pst = picked ? stateOf(picked) : null;
 
     return (
-        <div className="sw-chart" role="dialog" aria-modal="true" aria-label={title} data-kind="iris" data-leaving={leaving ? "" : undefined} data-zoomed={picked ? "" : undefined}>
+        <div className="sw-chart" data-map={constellations ? "stars" : "pulsar"} role="dialog" aria-modal="true" aria-label={title} data-kind="iris" data-leaving={leaving ? "" : undefined} data-zoomed={picked ? "" : undefined}>
             <canvas ref={bg} width={W} height={H} className="sw-chart-bg" aria-hidden="true" />
             <div className="sw-chart-top">
                 <h2><Gl n={constellations ? "star" : "pulse"} s={1} /> {title}</h2>
@@ -122,6 +131,16 @@ export function StarChart({ title, list, owned, cur, curName, onBuy, onClose, co
             <div className="sw-chart-scroll" onClick={(e) => { if (e.target === e.currentTarget) clickSky(); }}>
                 <svg ref={svgRef} viewBox="0 0 1000 600" className="sw-svg" role="group" aria-label={title} onClick={(e) => { if ((e.target as Element).tagName === "svg") clickSky(); }}>
                     <g className="sw-zoom" style={{ transform: zoom }}>
+                        {!constellations && (
+                            <g className="sw-psr" transform="translate(620 380)">
+                                <g className="sw-beam"><path d="M0 0 L-60 -700 L60 -700 Z" /><path d="M0 0 L-60 700 L60 700 Z" /></g>
+                                <circle r="70" className="sw-psr-ring" />
+                                <circle r="120" className="sw-psr-ring" data-far="" />
+                                <image href={ui("pulsar-core")} x={-36} y={-36} width={72} height={72} className="sw-nodeart" />
+                                <text y="56" className="sw-conname" textAnchor="middle">PSR SOL</text>
+                                <text y="72" className="sw-conlat" textAnchor="middle">Pulsaris · {owned.length}/{list.length}</text>
+                            </g>
+                        )}
                         {list.map((p) => p.req.map((r) => {
                             const a = list.find((x) => x.id === r);
                             if (!a) return null;

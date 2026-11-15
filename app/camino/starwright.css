@@ -580,3 +580,16 @@ html.sw-route .sf-foot { display: none !important; }
 .sw-chart .sw-sc-buy:disabled { color: var(--sw-dim); }
 .sw-ready { white-space: nowrap; }
 @media (max-width: 560px) { .sw-chart-top { flex-wrap: wrap; gap: 4px 12px; margin: 8px 8px 0; } .sw-chart-top .sw-x { position: absolute; top: 4px; right: 4px; } .sw-chart-top h2 { padding-right: 44px; } }
+
+/* pulsar map: cold sky, a turning beam and pulse rings from the pulsar at its heart */
+.sw-chart[data-map="pulsar"] .sw-chart-bg { filter: hue-rotate(-55deg) saturate(.9) brightness(.9); }
+.sw-chart[data-map="pulsar"] .sw-chart-top { border-image-source: url("/starwright/ui/frame.png?v=7"); }
+.sw-psr { fill: #9fd0ff; pointer-events: none; }
+.sw-beam { fill: #bfe6ff; opacity: .1; animation: swBeam 8s steps(48, end) infinite; transform-origin: 0 0; }
+@keyframes swBeam { to { transform: rotate(360deg); } }
+.sw-psr-ring { fill: none; stroke: #9fd0ff; stroke-width: 2; stroke-dasharray: 3 7; opacity: 0; animation: swPulseRing 2.4s steps(8, end) infinite; transform-origin: 0 0; }
+.sw-psr-ring[data-far] { animation-delay: 1.2s; }
+@keyframes swPulseRing { 0% { transform: scale(.4); opacity: .8; } 100% { transform: scale(1.4); opacity: 0; } }
+.sw-chart[data-map="pulsar"] .sw-edge line { stroke: #9fd0ff !important; }
+.sw-chart[data-map="pulsar"] .sw-nodebuff { fill: #bfe6ff; }
+@media (prefers-reduced-motion: reduce) { .sw-beam, .sw-psr-ring { animation: none !important; } }

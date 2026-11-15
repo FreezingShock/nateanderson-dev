@@ -63,6 +63,17 @@ for (const [tag, vp] of [["1440", { width: 1440, height: 900 }], ["390", { width
     await page.screenshot({ path: `${OUT}/chart-deep-${tag}.png` });
     await page.locator(".sw-deep-buy").click(); await page.waitForTimeout(400);
     await page.screenshot({ path: `${OUT}/chart-deep-bought-${tag}.png` });
+    await page.addInitScript(() => {
+        const s = JSON.parse(localStorage.getItem("sw-save-v1"));
+        s.neutronStars = 1; s.neutronStarsAll = 1; s.neutrons = 6; s.neutronsAll = 7; s.pulsar = ["p1"];
+        localStorage.setItem("sw-save-v1", JSON.stringify(s));
+    });
+    await page.reload(); await page.waitForSelector(".sw-ladder"); await page.waitForTimeout(1200);
+    await page.getByRole("button", { name: "Pulsar map", exact: true }).click();
+    await page.waitForTimeout(1000);
+    await page.screenshot({ path: `${OUT}/pulsar-${tag}.png` });
+    await page.locator('[data-id="p2"]').click(); await page.waitForTimeout(1300);
+    await page.screenshot({ path: `${OUT}/pulsar-zoom-${tag}.png` });
     await ctx.close();
 }
 await browser.close();
