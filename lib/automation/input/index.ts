@@ -28,6 +28,8 @@ export interface InputOptions {
     /** Called when Tab or Shift+Tab moves to another group, with its index in `groups`. */
     onGroup?: (index: number) => void;
     heightAt?: HeightFn;
+    // Bare ground, without machine bodies. Placement picks use it so a tall machine never hides the cells behind it.
+    groundHeightAt?: HeightFn;
     limits?: CameraLimits;
     initialPose?: Partial<OrbitPose>;
     // Keyboard listener target. Defaults to window. Set to null to skip keyboard handling.
@@ -71,6 +73,7 @@ export function createInputController(opts: InputOptions): InputController {
         build,
         board: opts.board,
         heightAt: opts.heightAt,
+        groundHeightAt: opts.groundHeightAt,
         onChange: opts.onChange,
     });
     pointer.attach();
@@ -105,6 +108,8 @@ export function createInputController(opts: InputOptions): InputController {
                     build.setTool(null);
                     return true;
                 }
+                // Nothing armed: Esc lets go of the selected building.
+                opts.onEvent?.({ type: "deselect" });
                 return false;
             case "topdown":
                 camera.toggleTopDown();
@@ -131,6 +136,8 @@ export function createInputController(opts: InputOptions): InputController {
                 const t = item ? opts.tools.find((x) => x.id === item.kind) ?? null : null;
                 if (!t) return false;
                 build.setTool(t);
+                // The copy keeps the turn of the original, so a row of the same machine lines up.
+                if (item) build.setRot(item.rot);
                 return true;
             }
             case "tool": {

@@ -8,7 +8,10 @@ export interface PointerOptions {
     camera: OrbitCamera;
     build: BuildController;
     board: BoardSize;
+    // Ground plus machine bodies. Picks a machine by its body when nothing is armed or Remove is armed.
     heightAt?: HeightFn;
+    // Bare ground only. Placing and drawing use it, so tall machines never block the cells behind them.
+    groundHeightAt?: HeightFn;
     // Touch: how long a finger has to rest on a cell before it starts a line stroke.
     holdMs?: number;
     // Touch: how far a finger may wander before it counts as a pan.
@@ -39,7 +42,7 @@ const ORBIT_PITCH = 0.005;
 // Desktop: left drag places (or pans when no tool is active), middle or space+drag pans, right drag orbits, wheel zooms.
 // Touch: one finger pans, a quick tap places one cell, a rest-then-drag draws a line, two fingers pinch zoom and rotate.
 export class PointerInput {
-    private opts: Required<Omit<PointerOptions, "heightAt" | "onChange">> & Pick<PointerOptions, "heightAt" | "onChange">;
+    private opts: Required<Omit<PointerOptions, "heightAt" | "groundHeightAt" | "onChange">> & Pick<PointerOptions, "heightAt" | "groundHeightAt" | "onChange">;
     private pointers = new Map<number, Tracked>();
     private spaceDown = false;
     private pinchPrev: { dist: number; angle: number } | null = null;
@@ -82,6 +85,14 @@ export class PointerInput {
         this.spaceDown = down;
     }
 
+    // Which height field a pick uses: armed build tools see bare ground, everything else sees machine bodies.
+    private heights(): HeightFn | undefined {
+        const tool = this.opts.build.getTool();
+        // A dragged-out Remove area follows the ground too, so its far corner never lands on a tall machine in front of it.
+        if (tool && (tool.id !== "delete" || this.opts.build.isRectStroke()) && this.opts.groundHeightAt) return this.opts.groundHeightAt;
+        return this.opts.heightAt;
+    }
+
     // Cell under a client-space point, or null off the board.
     cellAt(clientX: number, clientY: number): Cell | null {
         const rect = this.opts.element.getBoundingClientRect();
@@ -89,7 +100,7 @@ export class PointerInput {
         const ndcX = ((clientX - rect.left) / rect.width) * 2 - 1;
         const ndcY = 1 - ((clientY - rect.top) / rect.height) * 2;
         const view = this.opts.camera.view(rect.width / rect.height);
-        const hit = pickGround(screenRay(view, ndcX, ndcY), this.opts.board, this.opts.heightAt);
+        const hit = pickGround(screenRay(view, ndcX, ndcY), this.opts.board, this.heights());
         return hit ? hit.cell : null;
     }
 
@@ -100,7 +111,7 @@ export class PointerInput {
         const ndcX = ((clientX - rect.left) / rect.width) * 2 - 1;
         const ndcY = 1 - ((clientY - rect.top) / rect.height) * 2;
         const view = this.opts.camera.view(rect.width / rect.height);
-        const hit = pickGround(screenRay(view, ndcX, ndcY), this.opts.board, this.opts.heightAt);
+        const hit = pickGround(screenRay(view, ndcX, ndcY), this.opts.board, this.heights());
         return hit ? { x: hit.point.x, z: hit.point.z } : null;
     }
 
@@ -160,7 +171,8 @@ export class PointerInput {
                 const cell = this.cellAt(e.clientX, e.clientY);
                 if (cell) {
                     p.mode = "stroke";
-                    this.opts.build.beginStroke(cell);
+                    // Remove with Shift held clears the rectangle you drag out.
+                    this.opts.build.beginStroke(cell, e.shiftKey);
                 } else {
                     p.mode = "ignored";
                 }

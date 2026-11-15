@@ -421,7 +421,7 @@ test("select: a placed building reports its anchor and kind; empty cells report 
     assert.equal(b.select({ x: 4, z: 4 }), true);
     assert.deepEqual(events.at(-1), { type: "select", cell: { x: 4, z: 4 }, anchor: { x: 3, z: 4 }, kind: "machine" });
     assert.equal(b.select({ x: 9, z: 9 }), false);
-    assert.equal(events.length, 1);
+    assert.deepEqual(events.slice(1).map((e) => e.type), ["deselect"], "bare ground only asks the host to let go");
 });
 
 test("rotateHover: with no tool R turns the building under the cursor; with a tool armed it turns the ghost", () => {
@@ -658,4 +658,50 @@ test("a tap with the delete tool removes the whole building under the cell", asy
     const n = b.tap({ x: 1, z: 1 });
     assert.equal(n, 4, "all four cells changed");
     for (const [x, z] of cells) assert.equal(world.get(x, z), null, `cell ${x},${z}`);
+});
+
+test("an area Remove clears every building in the dragged rectangle in one undo step", async () => {
+    const { BuildController, DELETE_TOOL, rectCells } = await import("../../lib/automation/input/build.ts");
+    assert.equal(rectCells({ x: 3, z: 2 }, { x: 1, z: 1 }).length, 6, "corners in any order");
+    const world = memWorld();
+    for (let x = 0; x < 6; x++) world.set(x, 1, { kind: "belt", rot: 1 });
+    world.set(9, 9, { kind: "belt", rot: 1 });
+    const b = new BuildController({ world, board: { width: 20, depth: 20 }, lineKinds: ["belt"] });
+    b.setTool(DELETE_TOOL);
+    b.beginStroke({ x: 0, z: 0 }, true);
+    assert.ok(b.isRectStroke());
+    b.updateStroke({ x: 5, z: 2 });
+    assert.equal(b.endStroke(), 6, "six belts cleared");
+    assert.ok(world.get(9, 9), "belt outside the rectangle stays");
+    assert.ok(b.undo());
+    for (let x = 0; x < 6; x++) assert.ok(world.get(x, 1), `belt ${x} back after one undo`);
+    // Without the rectangle flag the same drag is a path, not an area.
+    b.beginStroke({ x: 0, z: 0 }, false);
+    assert.ok(!b.isRectStroke());
+});
+
+test("selecting bare ground and Esc with nothing armed both report a deselect", () => {
+    const events = [];
+    const world = memWorld();
+    world.set(3, 3, { kind: "machine", rot: 0 });
+    const el = { addEventListener() {}, removeEventListener() {}, style: {}, getBoundingClientRect: () => ({ left: 0, top: 0, width: 100, height: 100 }) };
+    const ctl = A.createInputController({ element: el, board, world, tools: [belt, machine], keyTarget: null, onEvent: (e) => events.push(e.type) });
+    assert.equal(ctl.build.select({ x: 1, z: 1 }), false);
+    assert.equal(events.at(-1), "deselect");
+    assert.equal(ctl.build.select({ x: 3, z: 3 }), true);
+    assert.equal(events.at(-1), "select");
+});
+
+test("the pipette copies the turn of the building it picks", () => {
+    const world = memWorld();
+    world.set(4, 4, { kind: "machine", rot: 2 });
+    const el = { addEventListener() {}, removeEventListener() {}, style: {}, getBoundingClientRect: () => ({ left: 0, top: 0, width: 100, height: 100 }) };
+    const kt = new EventTarget();
+    const ctl = A.createInputController({ element: el, board, world, tools: [belt, machine], keyTarget: kt });
+    ctl.build.setHover({ x: 4, z: 4 });
+    const ev = new Event("keydown");
+    Object.defineProperties(ev, { key: { value: "q" }, target: { value: null } });
+    kt.dispatchEvent(ev);
+    assert.equal(ctl.build.getTool()?.id, "machine");
+    assert.equal(ctl.build.getRot(), 2);
 });

@@ -10,15 +10,18 @@ import { useGameShell } from "@/components/games/shell/game-route-shell";
 import { downloadText, writeStored } from "@/lib/games/save";
 import { ACHIEVEMENTS, ACH_BONUS, CLOUDS, ELEMENTS, EVENT_STAY, PERKS, PLANETS, PULSAR_PERKS, RECIPE, ROWS, STAGE_NAMES, TIERS, TIER_LEVELS, TIER_NAMES, TUNE } from "@/lib/starwright/data";
 import { play, setSound, soundOn } from "@/lib/starwright/sound";
+import { REPORT_MIN, advance, autoAnswer, awayReport, loadSession, saveAway, snap, writeBackup, type Snap } from "@/lib/starwright/session";
+import { getSettings, unlocked } from "@/lib/starwright/settings";
 import { H, W, makeLayers, render, renderLayered, type SceneFrame } from "@/lib/starwright/art";
 import { initSprites, sprites } from "@/lib/starwright/sprites";
 import {
-    SAVE_KEY, answer, guide, blackHole, buy, checkAch, chooseCloud, eventOf, rowMult, buyPerk, buyDeep, deepCost, buyPlanet, buyPulsar, canBlackHole, canBuy, canNeutron, canPlanet, canSupernova, catchUp,
-    collapse, cost, effects, fmt, fmtAge, fmtHeat, fresh, gateMK, heaviest, horizonNeed, levels, load, mass, neutronGain, neutronStar,
-    offlineCapS, perkReady, planetStage, rowOpen, seeds, serialize, stageOf, step, supernova, type State,
+    SAVE_KEY, answer, guide, blackHole, buy, checkAch, chooseCloud, eventOf, rowMult, buyPerk, buyDeep, deepCost, buyPlanet, buyPulsar, canBlackHole, canBuy, canNeutron, canPlanet, canSupernova,
+    collapse, cost, effects, fmt, fmtAge, fmtHeat, fresh, gateMK, heaviest, horizonNeed, levels, mass, neutronGain, neutronStar,
+    perkReady, planetStage, rowOpen, seeds, serialize, stageOf, supernova, type State,
 } from "@/lib/starwright/engine";
 import { uiVars } from "@/lib/starwright/ui-art";
 import { Almanac, CloudPick, Ending, Menu, Orbit, StarChart, Visitor, tools } from "./panels";
+import { AwayCard } from "./settings";
 import { ElTile, Gl, Pic, ui, useLeaving, useSheets, useTips } from "./sw-ui";
 
 type Panel = null | "stars" | "pulsar" | "orbit" | "almanac" | "menu";
@@ -50,9 +53,15 @@ export function Starwright() {
     const lastAch = useRef(0);
     const [sound, setSoundState] = useState(true);
     const [paused, setPaused] = useState(false);
-    const [away, setAway] = useState<string | null>(null);
+    const [card, setCard] = useState<{ title: string; lines: string[] } | null>(null);
+    const readOnly = useRef(false);
+    const [other, setOther] = useState(false);
+    const tabCh = useRef<{ ch: BroadcastChannel; id: string } | null>(null);
+    const saveFailAt = useRef(0);
+    const lastBackup = useRef(Date.now());
 
-    const note = useCallback((text: string, tone?: Note["tone"]) => {
+    const note = useCallback((text: string, tone?: Note["tone"], force = false) => {
+        if (!force && !getSettings().notices) return;
         const id = ++noteId.current;
         setNotes((n) => [...n.slice(-3), { id, text, tone }]);
         window.setTimeout(() => setNotes((n) => n.filter((x) => x.id !== id)), 9000);
@@ -60,21 +69,31 @@ export function Starwright() {
 
     const save = useCallback(() => {
         const s = sRef.current;
-        if (!s) return;
+        if (!s || readOnly.current) return;
         s.savedAt = Date.now();
-        writeStored(window.localStorage, SAVE_KEY, serialize(s));
-    }, []);
+        if (!writeStored(window.localStorage, SAVE_KEY, serialize(s)) && Date.now() - saveFailAt.current > 300000) {
+            saveFailAt.current = Date.now();
+            note("Could not save: this browser's storage is full or blocked. Export a save from the menu to keep your star.", "hot", true);
+        }
+    }, [note]);
 
     // ---- boot: load, catch up on time away ------------------------------------------------------------------------
     useEffect(() => {
         const now = Date.now();
-        const loaded = load(window.localStorage);
+        const ld = loadSession(window.localStorage, now);
+        const loaded = ld.state;
         const s = loaded ?? fresh(now);
-        if (loaded) {
+        if (ld.status === "restored") s.savedAt = now;
+        if (ld.note) setCard({ title: "Save problem", lines: [ld.note] });
+        else if (loaded) {
             const gone = (now - s.savedAt) / 1000;
-            const f = effects(s);
-            const done = catchUp(s, gone);
-            if (done > 30) setAway(`The star burned on for ${fmtAge(done)} while you were away${gone > offlineCapS(f) ? ` (it only keeps ${Math.round(offlineCapS(f) / 3600)} hours)` : ""}.`);
+            const before: Snap = snap(s);
+            const done = advance(s, gone);
+            if (done >= REPORT_MIN) {
+                const r = awayReport(before, s, done, gone, now);
+                saveAway(window.localStorage, r);
+                if (getSettings().welcome) setCard({ title: "Welcome back", lines: r.lines });
+            }
         }
         s.savedAt = now;
         sRef.current = s;
@@ -98,8 +117,14 @@ export function Starwright() {
             const gap = (now - lastTickAt.current) / 1000;
             lastTickAt.current = now;
             if (manualPause.current) return;
-            if (gap > 3) catchUp(s, gap);
-            else step(s, Math.min(gap, 1));
+            // every gap counts: short ones are one step, long ones (a stalled frame, a hidden tab) are caught up like time away
+            const before = gap > 2 ? snap(s) : null;
+            const done = advance(s, gap);
+            if (before && done >= REPORT_MIN) {
+                const r = awayReport(before, s, done, gap);
+                saveAway(window.localStorage, r);
+                if (getSettings().welcome) setCard({ title: "Welcome back", lines: r.lines });
+            }
             const h = heaviest(s);
             if (h > lastHeavy.current) {
                 const e = ELEMENTS[h];
@@ -119,7 +144,11 @@ export function Starwright() {
             lastEvent.current = ev;
         }, 100);
         const ui = window.setInterval(bump, 250);
-        const sv = window.setInterval(save, 8000);
+        const sv = window.setInterval(() => {
+            save();
+            const s = sRef.current;
+            if (s && Date.now() - lastBackup.current > 600000) { lastBackup.current = Date.now(); writeBackup(window.localStorage, s); }
+        }, 8000);
         const onHide = () => save();
         document.addEventListener("visibilitychange", onHide);
         window.addEventListener("pagehide", onHide);
@@ -148,7 +177,7 @@ export function Starwright() {
         const t0 = performance.now();
         const loop = (now: number) => {
             raf = requestAnimationFrame(loop);
-            if (document.hidden || now - last < 33) return;
+            if (document.hidden || now - last < (getSettings().fx === "simple" ? 66 : 33)) return;
             last = now;
             const s = sRef.current;
             if (!s) return;
@@ -256,6 +285,7 @@ export function Starwright() {
     const doNeutron = useCallback(() => {
         act((s) => {
             const from = stageOf(s);
+            if (canNeutron(s)) writeBackup(window.localStorage, s, true);
             const g = neutronStar(s);
             if (g > 0) {
                 novaRef.current = performance.now();
@@ -273,6 +303,7 @@ export function Starwright() {
 
     const doHole = useCallback(() => {
         act((s) => {
+            if (canBlackHole(s, effects(s))) writeBackup(window.localStorage, s, true);
             if (blackHole(s)) {
                 lastHeavy.current = 0;
                 lastMult.current = s.bought.map(() => 1);
@@ -282,6 +313,70 @@ export function Starwright() {
             }
         });
     }, [act, save]);
+
+    const togglePause = useCallback(() => {
+        manualPause.current = !manualPause.current;
+        setPaused(manualPause.current);
+        lastTickAt.current = Date.now();
+    }, []);
+
+    const toggleSound = useCallback(() => {
+        const v = !soundOn();
+        setSound(v);
+        setSoundState(v);
+        if (v) play("answer");
+    }, []);
+
+    // One tab plays at a time: a newer tab tells older ones to stop saving, so two tabs never overwrite each other.
+    const playHere = useCallback(() => {
+        const ld = loadSession(window.localStorage);
+        if (ld.state) {
+            ld.state.savedAt = Date.now();
+            sRef.current = ld.state;
+            lastHeavy.current = heaviest(ld.state);
+        }
+        readOnly.current = false;
+        manualPause.current = false;
+        setPaused(false);
+        lastTickAt.current = Date.now();
+        setOther(false);
+        tabCh.current?.ch.postMessage({ t: "hello", id: tabCh.current.id });
+        bump();
+    }, [bump]);
+
+    useEffect(() => {
+        if (!ready || typeof BroadcastChannel === "undefined") return;
+        const id = Math.random().toString(36).slice(2);
+        const ch = new BroadcastChannel("sw-tab");
+        tabCh.current = { ch, id };
+        ch.onmessage = (e: MessageEvent) => {
+            if (e.data?.t !== "hello" || e.data.id === id || readOnly.current) return;
+            save();
+            readOnly.current = true;
+            manualPause.current = true;
+            setPaused(true);
+            setOther(true);
+        };
+        ch.postMessage({ t: "hello", id });
+        return () => { ch.close(); tabCh.current = null; };
+    }, [ready, save]);
+
+    // Automation unlocks (opt-in, see Settings): supernova by itself at a chosen core share, and visitors answered for you.
+    useEffect(() => {
+        if (!ready) return;
+        const id = window.setInterval(() => {
+            const s = sRef.current;
+            if (!s || manualPause.current || readOnly.current || document.hidden) return;
+            const v = getSettings();
+            if (v.autoNova && unlocked(s, "autoNova") && novaRef.current < 0) {
+                const f = effects(s);
+                if (canSupernova(s, f) && collapse(s, f) >= v.autoNova) doNova();
+            }
+            const ev = eventOf(s);
+            if (ev && s.event && v.autoVisitor !== "off" && unlocked(s, "autoVisitor") && EVENT_STAY - s.event.left >= 6) doAnswer(autoAnswer(ev, v.autoVisitor));
+        }, 400);
+        return () => window.clearInterval(id);
+    }, [ready, doNova, doAnswer]);
 
     // console bridge: `sw` talks to the open game
     useEffect(() => {
@@ -306,9 +401,16 @@ export function Starwright() {
             if (el && (el.tagName === "INPUT" || el.tagName === "TEXTAREA" || el.isContentEditable)) return;
             if (e.ctrlKey || e.metaKey) return;
             if (document.querySelector(".sw-end")) return;
-            if (e.key === "Escape") { setPanel(null); return; }
+            if (e.key === "Escape") { setPanel(null); setCard(null); return; }
             const k = e.key.toLowerCase();
-            if (k === "c") setPanel((p) => (p === "stars" ? null : "stars"));
+            const onBtn = !!el && (el.tagName === "BUTTON" || el.tagName === "A");
+            if (e.repeat && !/^[1-9]$/.test(e.key)) return;
+            if (k === " " && !onBtn) { e.preventDefault(); togglePause(); }
+            else if (k === "n") { const s = sRef.current; if (s && canSupernova(s, effects(s))) doNova(); }
+            else if (k === "q" || k === "w") { if (sRef.current?.event) doAnswer(k === "q" ? 0 : 1); }
+            else if (k === "f") { if (shell.supportsFullscreen) shell.toggleFullscreen(); }
+            else if (k === "u") toggleSound();
+            else if (k === "c") setPanel((p) => (p === "stars" ? null : "stars"));
             else if (k === "o") setPanel((p) => (p === "orbit" ? null : "orbit"));
             else if (k === "p" && sRef.current && sRef.current.neutronStars > 0) setPanel((p) => (p === "pulsar" ? null : "pulsar"));
             else if (k === "a") setPanel((p) => (p === "almanac" ? null : "almanac"));
@@ -320,7 +422,7 @@ export function Starwright() {
         };
         window.addEventListener("keydown", onKey);
         return () => window.removeEventListener("keydown", onKey);
-    }, [doBuy]);
+    }, [doBuy, doNova, doAnswer, togglePause, toggleSound, shell]);
     const sheetsN = useSheets();
     // eslint-disable-next-line react-hooks/exhaustive-deps
     const vars = useMemo(() => (ready ? uiVars() : {}), [ready, sheetsN]);
@@ -392,10 +494,12 @@ export function Starwright() {
 
             {s.event && <Visitor s={s} onAnswer={doAnswer} />}
             {s.offer.length > 0 && <CloudPick s={s} onPick={doCloud} />}
-            {away && (
-                <button type="button" className="sw-away sw-panel" onClick={() => setAway(null)}>
-                    {away} <span>dismiss</span>
-                </button>
+            {card && <AwayCard title={card.title} lines={card.lines} onClose={() => setCard(null)} />}
+            {other && (
+                <div className="sw-lock sw-panel" role="alert">
+                    <span>Starwright is open in another tab, so this one stopped saving.</span>
+                    <button type="button" onClick={playHere}>Play here</button>
+                </div>
             )}
 
             <section className="sw-collapse sw-panel" aria-label="Collapse">
@@ -447,14 +551,14 @@ export function Starwright() {
                     s={s}
                     paused={paused}
                     leaving={leaving}
-                    onPause={() => { manualPause.current = !manualPause.current; setPaused(manualPause.current); lastTickAt.current = Date.now(); }}
+                    onPause={togglePause}
                     onClose={() => setPanel(null)}
                     onName={(n) => act((x) => { x.name = n.slice(0, 24) || x.name; })}
-                    onImport={(next) => { sRef.current = next; lastHeavy.current = heaviest(next); save(); bump(); note("Save imported."); }}
-                    onReset={() => { const n = fresh(); sRef.current = n; lastHeavy.current = 0; writeStored(window.localStorage, SAVE_KEY, serialize(n)); setPanel(null); bump(); }}
+                    onImport={(next) => { writeBackup(window.localStorage, s, true); next.savedAt = Date.now(); sRef.current = next; lastHeavy.current = heaviest(next); save(); bump(); note("Save imported. The old one is kept as a backup.", "hot", true); }}
+                    onReset={() => { writeBackup(window.localStorage, s, true); const n = fresh(); sRef.current = n; lastHeavy.current = 0; writeStored(window.localStorage, SAVE_KEY, serialize(n)); setPanel(null); bump(); }}
                     onExport={() => downloadText(tools.fileName(), tools.exportText(s))}
                     sound={sound}
-                    onSound={() => { const v = !sound; setSound(v); setSoundState(v); if (v) play("answer"); }}
+                    onSound={toggleSound}
                 />
             )}
             {ending && <Ending count={s.sing} onClose={() => setEnding(false)} />}
