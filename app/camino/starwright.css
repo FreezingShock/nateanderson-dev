@@ -462,3 +462,22 @@ html.sw-route .sf-foot { display: none !important; }
     .sw-ladder, .sw-collapse, .sw-row, .sw-card::after, .sw-dt::before, .sw-rt::after, .sw-go .sw-pic { animation: none !important; }
     .sw-card::after { display: none; }
 }
+
+/* star chart: drawn node sprites per constellation and state, pixel-dotted links */
+.sw-nodeart { image-rendering: pixelated; transform-box: fill-box; transform-origin: center; transition: transform .12s steps(2, end); }
+.sw-node:hover .sw-nodeart, .sw-node:focus-visible .sw-nodeart, .sw-node[data-sel] .sw-nodeart { transform: scale(1.25); }
+.sw-node[data-st="buy"] .sw-nodeart { animation: swNodeSpin 2.4s steps(8, end) infinite; }
+.sw-node[data-st="buy"] .sw-halo { display: none; }
+.sw-node[data-st="own"] .sw-nodeart { animation: swNodeTwinkle 3s steps(3, end) infinite; }
+.sw-node[data-st="lock"] { opacity: 1; }
+.sw-node[data-sel] .sw-halo { opacity: 1; stroke-width: 2; stroke-dasharray: 4 4; }
+@keyframes swNodeSpin { to { transform: rotate(90deg); } }
+@keyframes swNodeTwinkle { 0%, 70%, 100% { opacity: 1; } 80% { opacity: .7; } 90% { opacity: 1; transform: scale(1.1); } }
+.sw-edge line { stroke-width: 2; stroke-dasharray: 2 6; opacity: .45; stroke-linecap: square; }
+.sw-edge[data-lit] line { stroke-dasharray: 4 2; opacity: .95; }
+.sw-edge[data-lit] .sw-edge-glow { stroke-width: 8; stroke-dasharray: 2 2; opacity: .22; animation: swEdgeFlow 1.2s steps(4, end) infinite; }
+@keyframes swEdgeFlow { to { stroke-dashoffset: -16; } }
+.sw-edge { opacity: 1; stroke-dasharray: none; }
+.sw-conname { letter-spacing: .4em; paint-order: stroke; stroke: #05040c; stroke-width: 4px; }
+.sw-nodename { paint-order: stroke; stroke: #05040c; stroke-width: 3px; }
+@media (prefers-reduced-motion: reduce) { .sw-nodeart, .sw-edge-glow { animation: none !important; } }

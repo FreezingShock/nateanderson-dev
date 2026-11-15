@@ -505,6 +505,53 @@ c = Canvas(8); k = c.use("#000000")
 c.put(bayer(8, 8) < .5, .0, k)
 save(c.image(), "scrim")
 
+
+# ---- star chart nodes: 32 x 32, one per constellation colour and state ----------------------------------------------------
+CONS = [("lantern", "#5fb4ff"), ("kiln", "#ff9a4d"), ("anvil", "#e8e2d6"), ("loom", "#a98bff"), ("pulsar", "#9fd0ff")]
+
+
+def star4(c, k, R, r, lo, hi, cx=16, cy=16):
+    pts = []
+    for i in range(8):
+        a = i * math.pi / 4 - math.pi / 2
+        L = R if i % 2 == 0 else r
+        pts.append((cx + L * math.cos(a), cy + L * math.sin(a)))
+    return c.poly(pts, k, lo, hi)
+
+
+for cid, col in CONS:
+    # own: lit star, soft dithered glow, diagonal glints
+    c = Canvas(32); k = c.use(col)
+    c.glow(16, 16, 15, k, .55)
+    for a in (1, 3, 5, 7):
+        ang = a * math.pi / 4
+        c.line(16 + 5 * math.cos(ang), 16 + 5 * math.sin(ang), 16 + 8 * math.cos(ang), 16 + 8 * math.sin(ang), .9, k, .7)
+    star4(c, k, 12, 3.2, .7, 1.0)
+    c.ball(16, 16, 3, k, 1.0, 1.0, light=False)
+    c.outline(c.use("#05040c"), 0)
+    save(c.image(), f"node-{cid}-own")
+    # buy: a ready star, ringed by a dotted bracket ring
+    c = Canvas(32); k = c.use(col)
+    ring = np.abs(np.hypot(c.x - 16, c.y - 16) - 13) < .8
+    ang = np.arctan2(c.y - 16, c.x - 16)
+    c.put(ring & (np.cos(ang * 4) > -.2), .75, k)
+    star4(c, k, 9, 2.6, .35, .85)
+    c.outline(c.use("#05040c"), 0)
+    save(c.image(), f"node-{cid}-buy")
+    # near: hollow outline star, the cost is in reach later
+    c = Canvas(32); k = c.use(col)
+    m = star4(c, k, 9, 2.6, .3, .3)
+    p = np.pad(m, 1)
+    inner = p[:-2, 1:-1] & p[2:, 1:-1] & p[1:-1, :-2] & p[1:-1, 2:] & m
+    c.v = np.where(inner, -1, c.v)
+    c.ball(16, 16, 1.2, k, .5, .5, light=False)
+    save(c.image(), f"node-{cid}-near")
+    # lock: a dim cross-shaped speck
+    c = Canvas(32); k = c.use("#6b6f8a")
+    c.line(16, 12, 16, 20, 1, k, .35); c.line(12, 16, 20, 16, 1, k, .35)
+    c.ball(16, 16, 1.6, k, .45, .45, light=False)
+    save(c.image(), f"node-{cid}-lock")
+
 # ---- contact sheet (not shipped to the page; used for reviews) --------------------------------------------------------
 cell = 26 * 6
 cols = 10

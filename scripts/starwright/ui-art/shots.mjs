@@ -24,7 +24,7 @@ for (const [tag, vp] of [["1440", { width: 1440, height: 900 }], ["390", { width
         const s = JSON.parse(raw);
         s.amt = [9.2e6, 4.1e6, 820000, 310000, 92000, 26000, 7400, 1900, 0, 0];
         s.bought = s.bought.map((r, i) => (i < 7 ? [12 - i, 3, i < 3 ? 1 : 0] : r.map(() => 0)));
-        s.mass = 3.2e7; s.heat = 9.5e9; s.age = 5400; s.stardust = 340; s.novas = 2; s.novasAll = 2; s.sdAll = 900;
+        s.mass = 3.2e7; s.heat = 9.5e9; s.age = 5400; s.stardust = 340; s.novas = 2; s.novasAll = 2; s.sdAll = 900; s.perks = ["l1", "l2", "k1"];
         localStorage.setItem(k, JSON.stringify(s));
     }, base);
     await page.reload();

@@ -11,7 +11,7 @@ import { initSprites, sprites } from "@/lib/starwright/sprites";
 import { SAVE_VERSION, canPlanet, effects, eventOf, fmt, fmtAge, isSave, parse, perkReady, planetStage, type State } from "@/lib/starwright/engine";
 import { cloudArt, cssUrl } from "@/lib/starwright/ui-art";
 import { sheetUrl } from "@/lib/starwright/ui-sheets";
-import { ElTile, Gl, Pic } from "./sw-ui";
+import { ElTile, Gl, Pic, ui } from "./sw-ui";
 
 export const tools = createSaveTools<State>({ app: "starwright", version: SAVE_VERSION, validate: isSave });
 
@@ -165,7 +165,12 @@ export function StarChart({ title, list, owned, cur, curName, onBuy, onClose, co
                         if (!a) return null;
                         const [x1, y1] = P(a), [x2, y2] = P(p);
                         const lit = owned.includes(a.id) && owned.includes(p.id);
-                        return <line key={`${r}-${p.id}`} x1={x1} y1={y1} x2={x2} y2={y2} className="sw-edge" data-lit={lit ? "" : undefined} style={{ stroke: color(p) }} />;
+                        return (
+                            <g key={`${r}-${p.id}`} className="sw-edge" data-lit={lit ? "" : undefined} style={{ stroke: color(p) }}>
+                                {lit && <line x1={x1} y1={y1} x2={x2} y2={y2} className="sw-edge-glow" />}
+                                <line x1={x1} y1={y1} x2={x2} y2={y2} />
+                            </g>
+                        );
                     }))}
                     {constellations && CONSTELLATIONS.map((c) => {
                         const ps = list.filter((p) => p.con === c.id);
@@ -179,8 +184,8 @@ export function StarChart({ title, list, owned, cur, curName, onBuy, onClose, co
                             <g key={p.id} className="sw-node" data-st={st} data-sel={sel === p.id ? "" : undefined} transform={`translate(${x} ${y})`} style={{ "--c": color(p) } as CSSProperties} role="button" tabIndex={0} aria-label={`${p.name}, ${st === "own" ? "owned" : `costs ${p.cost}`}`} onClick={(e) => { e.stopPropagation(); setSel(p.id); }} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setSel(p.id); } }}>
                                 <circle r="30" className="sw-hit" />
                                 <circle r="17" className="sw-halo" />
-                                <path className="sw-star" d="M0 -13 L3.4 -3.4 L13 0 L3.4 3.4 L0 13 L-3.4 3.4 L-13 0 L-3.4 -3.4 Z" />
-                                <text y="32" className="sw-nodename" textAnchor="middle">{p.name}</text>
+                                <image className="sw-nodeart" href={ui(`node-${p.con}-${st}`)} x={-32} y={-32} width={64} height={64} />
+                                <text y="44" className="sw-nodename" textAnchor="middle">{p.name}</text>
                             </g>
                         );
                     })}
