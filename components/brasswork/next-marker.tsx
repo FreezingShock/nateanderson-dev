@@ -41,7 +41,8 @@ export function NextMarker({ input, target, canvas }: { input: InputController; 
                     const size = Math.max(52, Math.max(target.w, target.d) * cell * 1.15 + 14);
                     el.style.opacity = "1";
                     el.style.width = el.style.height = `${size}px`;
-                    el.style.transform = `translate(${cx - origin.left - size / 2}px, ${cy - origin.top - size / 2}px)`;
+                    // The `translate` property, not `transform`: the breathing `scale` would otherwise scale the position too and slide the marker off its cell.
+                    el.style.translate = `${cx - origin.left - size / 2}px ${cy - origin.top - size / 2}px`;
                 }
             }
             raf = requestAnimationFrame(place);
