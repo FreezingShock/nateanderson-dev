@@ -63,6 +63,9 @@ belt(8, 8, N);
 machine("drill", 14, 10);
 belt(13, 10, W); machine("kiln", 11, 9, "r_copper_ingot");       // copper kiln
 belt(11, 8, N); belt(11, 7, N); belt(11, 6, W);  // spare copper ingots run north, then into the hub's east side
+// A second copper kiln on the same ore drill gives the hub its own ingots: machines-first sends a kiln's
+// spare output to the hub only after its machines refuse it, so the first kiln's spare runs too thin for milestone 1.
+machine("kiln", 14, 8, "r_copper_ingot"); belt(13, 8, W); belt(12, 8, W);
 machine("drawer", 10, 9, "r_copper_wire");                       // wire drawer, touches the kiln
 belt(10, 8, N);                                                  // wire goes straight into the hub
 
