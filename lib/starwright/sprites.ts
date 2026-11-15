@@ -24,9 +24,9 @@ const sheets = new Map<string, Sheet>();
 let entries: Record<string, Entry> | null = null;
 let started = false;
 let version = "";
-const PREFIXES = ["star/", "planet/", "visitor/", "bg/"];
-/** background load order: skies, stars and their transitions, then planets, then visitors */
-const ORDER = ["bg/", "star/", "planet/", "visitor/"];
+const PREFIXES = ["star/", "planet/", "visitor/", "bg/", "fx/"];
+/** background load order: skies, stars and their transitions, then planets, then visitors, then effects */
+const ORDER = ["bg/", "star/", "planet/", "visitor/", "fx/"];
 
 function measure(img: HTMLImageElement, w: number, h: number): number {
     try {

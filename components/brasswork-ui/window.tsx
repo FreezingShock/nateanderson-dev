@@ -7,7 +7,7 @@
  * - No dark scrim. The game stays visible and keeps running behind the window. The layer behind the window is
  *   transparent and only catches a click on the blank area, which closes the window.
  * - Closes on Escape, the Close button, or a blank-area click. Closing plays the exit animation first (about
- *   170 ms), then calls onClose, so the caller's open state changes after the window has gone.
+ *   200 ms), then calls onClose, so the caller's open state changes after the window has gone.
  * - Only one window should be open at a time. The caller holds the open state and renders one at a time.
  *
  * Variant (the `variant` prop, also written to data-variant on the window)
@@ -27,6 +27,14 @@ import "./scrollbar.css";
 
 export type MenuWindowVariant = "iris" | "shutter" | "settle";
 
+/**
+ * Which menu this window is. Each theme has its own header banner (public/brasswork/window/banner-<theme>.png, drawn by
+ * scripts/brasswork/build-window-art.py) and its own open and close motion, which replaces the variant's:
+ * research unrolls like a plan, expedition unfolds like a chart, production drops a shutter, settings settles with a
+ * turning gear, hub opens like workshop doors, milestones lands like a stamp.
+ */
+export type MenuWindowTheme = "research" | "expedition" | "production" | "settings" | "hub" | "milestones";
+
 export type MenuWindowProps = {
   /** Title text, shown in capitals in the header. */
   title: string;
@@ -40,11 +48,13 @@ export type MenuWindowProps = {
   size?: "default" | "wide" | "xwide";
   /** Open and close motion. See the variant notes at the top of this file. */
   variant?: MenuWindowVariant;
+  /** Header banner art and open/close motion for this menu. See MenuWindowTheme. */
+  theme?: MenuWindowTheme;
   children: ReactNode;
 };
 
 /** How long the exit animation runs before onClose fires. Keep in step with --bw-win-out in window.css. */
-const EXIT_MS = 170;
+const EXIT_MS = 200;
 
 /**
  * Centred menu window for Brasswork. Closes on Escape, the Close button, or a click on the blank area
@@ -58,6 +68,7 @@ export function MenuWindow({
   label,
   size = "default",
   variant = "iris",
+  theme,
   children,
 }: MenuWindowProps) {
   const [closing, setClosing] = useState(false);
@@ -95,12 +106,14 @@ export function MenuWindow({
         className="bw-window bw"
         data-size={size}
         data-variant={variant}
+        data-theme={theme}
         data-closing={closing ? "true" : undefined}
         role="dialog"
         aria-modal="true"
         aria-label={label ?? title}
       >
         <header className="bw-window-head">
+          {theme ? <span className="bw-window-banner" aria-hidden="true" /> : null}
           <span className="bw-window-art" aria-hidden={art ? undefined : true}>{art}</span>
           <h2 className="bw-window-title">{title}</h2>
           <button type="button" className="bw-window-close" onClick={requestClose}>Close</button>
