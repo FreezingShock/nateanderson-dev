@@ -11,11 +11,12 @@ import { MenuWindow } from "@/components/brasswork-ui/window";
 
 /** Tier headings, left to right. A node sits one column right of its deepest prerequisite. */
 const TIERS = ["Base", "Parts", "Components", "Clockworks", "Megaproject"];
-const CW = 100; // card width
-const CH = 120; // card height
-const GX = 24; // gap between columns (links run here)
-const GY = 10; // gap between rows
-const TOP = 26; // room for the tier headings
+const CW = 104; // card width
+const CH = 114; // card height
+const GX = 22; // gap between columns (links run here)
+const GY = 8; // gap between rows
+const TOP = 26;
+const POPW = 252; // detail pop-up width // room for the tier headings
 
 type Status = "done" | "ready" | "short" | "locked";
 
@@ -66,6 +67,7 @@ function Card({
   selected,
   related,
   fresh,
+  alt,
   style,
   onPick,
 }: {
@@ -75,6 +77,7 @@ function Card({
   selected: boolean;
   related: boolean;
   fresh?: "done" | "open";
+  alt: boolean;
   style?: React.CSSProperties;
   onPick: () => void;
 }) {
@@ -82,35 +85,62 @@ function Card({
     status === "done"
       ? "Researched"
       : status === "ready"
-        ? `${bp(n.blueprintCost)} · ready`
+        ? `Ready · ${bp(n.blueprintCost)}`
         : status === "short"
-          ? `need ${need} more`
+          ? `Needs ${need} more`
           : "Locked";
   return (
     <button
       type="button"
       className="rs-card"
       data-status={status}
+      data-alt={alt}
       data-related={related}
       data-fresh={fresh}
       aria-pressed={selected}
       style={style}
-      onClick={onPick}
+      onClick={(e) => {
+        e.stopPropagation();
+        onPick();
+      }}
     >
       <span className="rs-card-art">
-        <ResearchArt id={n.id} width={80} />
-        {status === "done" && <i className="rs-badge rs-badge-done" aria-hidden="true" />}
-        {status === "locked" && <i className="rs-badge rs-badge-lock" aria-hidden="true" />}
+        <ResearchArt id={n.id} width={CW} />
+        <span className="rs-rib">{line}</span>
       </span>
       <span className="rs-card-name">{n.name}</span>
-      <span className="rs-card-state">{line}</span>
     </button>
   );
 }
 
+/** Main nodes by depth; alternates drop into the free cells at the right of the tree, never left of their prerequisites. */
+function layoutAll(nodes: ResearchNode[]) {
+  const main = nodes.filter((n) => !isAlternate(n.id));
+  const alts = nodes.filter((n) => isAlternate(n.id));
+  const { row, nCols, rows } = layout(main);
+  const cell = new Map<string, { col: number; row: number }>();
+  const used = new Set<string>();
+  main.forEach((n) => {
+    const c = { col: n.column, row: row.get(n.id) ?? 0 };
+    cell.set(n.id, c);
+    used.add(`${c.col}:${c.row}`);
+  });
+  let maxRow = rows - 1;
+  const order: { col: number; row: number }[] = [];
+  for (let c = nCols - 1; c >= 0; c--) for (let r = 0; r <= rows; r++) order.push({ col: c, row: r });
+  alts.forEach((n) => {
+    const free = order.find((o) => o.col >= Math.min(n.column, nCols - 1) && !used.has(`${o.col}:${o.row}`));
+    const c = free ?? { col: nCols - 1, row: ++maxRow };
+    used.add(`${c.col}:${c.row}`);
+    cell.set(n.id, c);
+    maxRow = Math.max(maxRow, c.row);
+  });
+  return { cell, nCols, rows: maxRow + 1 };
+}
+
 /**
- * Research window: a centred window with the five-tier tree on the left and the picked
- * research on the right, in the same frame. Click the dark margin or press Esc to close.
+ * Research window: the five-tier tree (alternate recipes mixed in, in copper). Clicking a card opens a
+ * pop-up beside it with cost, needs, unlocks and the Research button. Click blank paper to close the pop-up.
  */
 export function ResearchScreen({
   nodes,
@@ -151,25 +181,19 @@ export function ResearchScreen({
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [nodes, blueprints]);
 
-  const [picked, setPicked] = useState<string | null>(() => {
-    const open = nodes.filter((n) => n.state === "available");
-    return (open.find((n) => blueprints >= n.blueprintCost) ?? open[0] ?? nodes[0])?.id ?? null;
-  });
-
+  const [picked, setPicked] = useState<string | null>(null);
+  const popRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
-    const k = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
-    };
-    window.addEventListener("keydown", k);
-    return () => window.removeEventListener("keydown", k);
-  }, [onClose]);
+    popRef.current?.scrollIntoView({ block: "nearest", inline: "nearest" });
+  }, [picked]);
 
-  const main = nodes.filter((n) => !isAlternate(n.id));
-  const alts = nodes.filter((n) => isAlternate(n.id));
-  const { row, nCols, rows } = useMemo(() => layout(main), [main.length]); // eslint-disable-line react-hooks/exhaustive-deps
+  const { cell, nCols, rows } = useMemo(() => layoutAll(nodes), [nodes]);
   const width = nCols * CW + (nCols - 1) * GX;
   const height = TOP + rows * CH + (rows - 1) * GY;
-  const pos = (n: ResearchNode) => ({ x: n.column * (CW + GX), y: TOP + (row.get(n.id) ?? 0) * (CH + GY) });
+  const pos = (id: string) => {
+    const c = cell.get(id) ?? { col: 0, row: 0 };
+    return { x: c.col * (CW + GX), y: TOP + c.row * (CH + GY) };
+  };
 
   const sel = picked ? (byId.get(picked) ?? null) : null;
   const selStatus = sel ? statusOf(sel) : null;
@@ -199,215 +223,198 @@ export function ResearchScreen({
         ? `Research ${missing.map((m) => m.name).join(" and ")} first.`
         : `You need ${short} more blueprint${short === 1 ? "" : "s"}.`;
 
-  const cardFor = (n: ResearchNode, style?: React.CSSProperties) => {
-    return (
-      <Card
-        key={n.id}
-        n={n}
-        status={statusOf(n)}
-        need={Math.max(0, n.blueprintCost - blueprints)}
-        selected={picked === n.id}
-        related={related.has(n.id)}
-        fresh={fresh[n.id]}
-        style={style}
-        onPick={() => setPicked(n.id)}
-      />
-    );
-  };
+  // Pop-up sits to the right of its card, or to the left when there is no room; it overlays neighbours on purpose.
+  const popPos = (() => {
+    if (!sel) return null;
+    const p = pos(sel.id);
+    const right = p.x + CW + 10 + POPW <= width + 12;
+    return { left: right ? p.x + CW + 10 : Math.max(0, p.x - POPW - 10), top: Math.max(0, p.y - 4), side: right ? "right" : "left" };
+  })();
 
   return (
     <MenuWindow
       title="Research"
-      size="wide"
       art={<span style={uiIconStyle("research", 28)} aria-hidden="true" />}
       onClose={onClose}
     >
       <div className="rs-inner">
-          <div className="rs-head">
-            <div className="rs-bp" aria-label={`${blueprints} blueprints`}>
-              <span className="rs-bp-num">{blueprints}</span>
-              <span className="rs-bp-lab">blueprints</span>
-            </div>
-            <p className="rs-bp-note">
-              Blueprints come from finished milestone crates and are spent here.
-              {nextMs ? <> Next: <b>{nextMs.name}</b>, +{nextMs.blueprintReward}.</> : null}
-            </p>
-            <span className="rs-count">{doneCount}/{nodes.length}</span>
+        <div className="rs-head">
+          <div className="rs-bp" aria-label={`${blueprints} blueprints`}>
+            <span className="rs-bp-num">{blueprints}</span>
+            <span className="rs-bp-lab">blueprints</span>
           </div>
+          <p className="rs-bp-note">
+            Blueprints come from finished milestone crates and are spent here.
+            {nextMs ? <> Next: <b>{nextMs.name}</b>, +{nextMs.blueprintReward}.</> : null}
+          </p>
+          <span className="rs-count">{doneCount}/{nodes.length}</span>
+        </div>
 
-          <div className="rs-body">
-            <div className="rs-tree-wrap">
-              <div className="rs-tree" style={{ width, height }}>
-                {TIERS.slice(0, nCols).map((t, i) => (
-                  <div key={t} className="rs-tier" style={{ left: i * (CW + GX), width: CW }}>
-                    <b>{["I", "II", "III", "IV", "V"][i]}</b> {t}
-                  </div>
-                ))}
-                <svg className="rs-links" width={width} height={height} aria-hidden="true">
-                  {main.flatMap((n) =>
-                    n.requires.map((rid) => {
-                      const r = byId.get(rid);
-                      if (!r || isAlternate(rid)) return null;
-                      const a = pos(r);
-                      const b = pos(n);
-                      const x1 = a.x + CW;
-                      const y1 = a.y + CH / 2;
-                      const x2 = b.x;
-                      const y2 = b.y + CH / 2;
-                      const mx = (x1 + x2) / 2;
-                      const lit = related.has(rid) && related.has(n.id) && !!sel && (sel.id === n.id || sel.id === rid);
-                      return (
-                        <path
-                          key={`${rid}-${n.id}`}
-                          d={`M${x1} ${y1} C${mx} ${y1} ${mx} ${y2} ${x2} ${y2}`}
-                          className="rs-link"
-                          data-done={r.state === "done"}
-                          data-lit={lit}
-                        />
-                      );
-                    }),
-                  )}
-                </svg>
-                {main.map((n) => {
-                  const p = pos(n);
-                  return cardFor(n, { left: p.x, top: p.y, width: CW, height: CH, ['--col' as string]: n.column });
-                })}
+        <div className="rs-tree-wrap" onClick={() => setPicked(null)}>
+          <div className="rs-tree" style={{ width, height }}>
+            {TIERS.slice(0, nCols).map((t, i) => (
+              <div key={t} className="rs-tier" style={{ left: i * (CW + GX), width: CW }}>
+                <b>{["I", "II", "III", "IV", "V"][i]}</b> {t}
               </div>
-
-              {alts.length > 0 && (
-                <>
-                  <div className="rs-sub">
-                    Alternate recipes <span>optional · trade speed, yield or ore</span>
-                  </div>
-                  <div className="rs-alts">{alts.map((n) => cardFor(n, { width: CW, height: CH }))}</div>
-                </>
+            ))}
+            <svg className="rs-links" width={width} height={height} aria-hidden="true">
+              {nodes.flatMap((n) =>
+                n.requires.map((rid) => {
+                  const r = byId.get(rid);
+                  if (!r) return null;
+                  const alt = isAlternate(n.id);
+                  const lit = !!sel && related.has(rid) && related.has(n.id) && (sel.id === n.id || sel.id === rid);
+                  if (alt && !lit) return null; // copper links to alternates only show for the picked card
+                  const a = pos(rid);
+                  const b = pos(n.id);
+                  const x1 = a.x + CW;
+                  const y1 = a.y + CH / 2;
+                  const x2 = b.x;
+                  const y2 = b.y + CH / 2;
+                  const mx = (x1 + x2) / 2;
+                  return (
+                    <path
+                      key={`${rid}-${n.id}`}
+                      d={`M${x1} ${y1} C${mx} ${y1} ${mx} ${y2} ${x2} ${y2}`}
+                      className="rs-link"
+                      data-done={r.state === "done"}
+                      data-lit={lit}
+                      data-alt={alt}
+                    />
+                  );
+                }),
               )}
+            </svg>
+            {nodes.map((n) => {
+              const p = pos(n.id);
+              return (
+                <Card
+                  key={n.id}
+                  n={n}
+                  status={statusOf(n)}
+                  need={Math.max(0, n.blueprintCost - blueprints)}
+                  selected={picked === n.id}
+                  related={related.has(n.id)}
+                  fresh={fresh[n.id]}
+                  alt={isAlternate(n.id)}
+                  style={{ left: p.x, top: p.y, width: CW, height: CH, ["--col" as string]: n.column }}
+                  onPick={() => setPicked(picked === n.id ? null : n.id)}
+                />
+              );
+            })}
 
-              <ul className="rs-legend" aria-label="Key">
-                <li data-status="done">Researched</li>
-                <li data-status="ready">Ready</li>
-                <li data-status="short">Need more blueprints</li>
-                <li data-status="locked">Locked</li>
-              </ul>
-            </div>
+            {sel && popPos && (
+              <div
+                ref={popRef}
+                className="rs-pop"
+                role="dialog"
+                aria-label={sel.name}
+                data-status={selStatus}
+                data-alt={isAlternate(sel.id)}
+                data-side={popPos.side}
+                style={{ left: popPos.left, top: popPos.top, width: POPW }}
+                onClick={(e) => e.stopPropagation()}
+              >
+                <div className="rs-pop-top">
+                  <div className="rs-pop-art">
+                    <ResearchArt id={sel.id} width={80} label={sel.name} />
+                  </div>
+                  <div className="rs-pop-id">
+                    <div className="rs-pop-tier">{tier}</div>
+                    <h3 className="rs-pop-name">{sel.name}</h3>
+                    <div className="rs-pop-state">
+                      {selStatus === "done" ? "Researched" : selStatus === "ready" ? "Ready to research" : selStatus === "short" ? `Needs ${short} more` : "Locked"}
+                    </div>
+                  </div>
+                  <button type="button" className="rs-pop-x" aria-label="Close details" onClick={() => setPicked(null)}>×</button>
+                </div>
+                {sel.note ? <p className="rs-pop-note">{sel.note}</p> : null}
 
-            <aside className="rs-detail" aria-label="Selected research">
-              {sel ? (
-                <>
-                  <div className="rs-detail-scroll">
-                    <div className="rs-detail-top">
-                    <div className="rs-detail-art" data-status={selStatus}>
-                      <ResearchArt id={sel.id} width={96} label={sel.name} />
-                    </div>
-                    <div className="rs-detail-id">
-                    <div className="rs-detail-tier">{tier}</div>
-                    <h3 className="rs-detail-name">{sel.name}</h3>
-                    </div>
-                    </div>
-                    {sel.note ? <p className="rs-detail-note">{sel.note}</p> : null}
-
-                    <div className="rs-cost" data-status={selStatus}>
-                      <div>
-                        <span>Cost</span>
-                        <b>{bp(sel.blueprintCost)}</b>
-                      </div>
-                      <div>
-                        <span>You have</span>
-                        <b>{bp(blueprints)}</b>
-                      </div>
-                      <div className="rs-meter" aria-hidden="true">
-                        <i style={{ width: `${Math.min(100, (blueprints / Math.max(1, sel.blueprintCost)) * 100)}%` }} />
-                      </div>
-                    </div>
-
-                    {short > 0 && (
-                      <p className="rs-source">
-                        {nextMs ? (
-                          <>
-                            Next blueprints: <b>{nextMs.name}</b> pays {nextMs.blueprintReward}
-                            {nextMs.progress > 0 ? `, ${Math.round(nextMs.progress * 100)}% delivered` : ""}.
-                          </>
-                        ) : (
-                          "Every milestone has paid out. Blueprints come from a new workshop."
-                        )}
-                      </p>
+                <div className="rs-cost" data-status={selStatus}>
+                  <div><span>Cost</span><b>{bp(sel.blueprintCost)}</b></div>
+                  <div><span>You have</span><b>{bp(blueprints)}</b></div>
+                  <div className="rs-meter" aria-hidden="true">
+                    <i style={{ width: `${Math.min(100, (blueprints / Math.max(1, sel.blueprintCost)) * 100)}%` }} />
+                  </div>
+                </div>
+                {short > 0 && (
+                  <p className="rs-source">
+                    {nextMs ? (
+                      <>Next: <b>{nextMs.name}</b> pays {nextMs.blueprintReward}{nextMs.progress > 0 ? `, ${Math.round(nextMs.progress * 100)}% in` : ""}.</>
+                    ) : (
+                      "Every milestone has paid out. Blueprints come from a new workshop."
                     )}
+                  </p>
+                )}
 
-                    {sel.requires.length > 0 && (
-                      <>
-                        <div className="rs-h">Needs</div>
-                        <ul className="rs-list">
-                          {sel.requires.map((r) => {
-                            const q = byId.get(r);
-                            return (
-                              <li key={r} data-done={q?.state === "done"}>
-                                <button type="button" onClick={() => q && setPicked(q.id)}>
-                                  <span className="rs-tick" aria-hidden="true" />
-                                  {q?.name ?? r}
-                                  <em>{q?.state === "done" ? "researched" : "not yet"}</em>
-                                </button>
-                              </li>
-                            );
-                          })}
-                        </ul>
-                      </>
-                    )}
+                {sel.requires.length > 0 && (
+                  <>
+                    <div className="rs-h">Needs</div>
+                    <ul className="rs-list">
+                      {sel.requires.map((r) => {
+                        const q = byId.get(r);
+                        return (
+                          <li key={r} data-done={q?.state === "done"}>
+                            <button type="button" onClick={() => q && setPicked(q.id)}>
+                              <span className="rs-tick" aria-hidden="true" />
+                              {q?.name ?? r}
+                              <em>{q?.state === "done" ? "researched" : "not yet"}</em>
+                            </button>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  </>
+                )}
 
-                    <div className="rs-h">Unlocks</div>
-                    <ul className="rs-unlocks">
-                      {unlocks.map((r) => (
-                        <li key={r.id}>
-                          <span className="rs-u-ico" style={iconStyle(r.output.item, 36)} aria-hidden="true" data-has={iconCell(r.output.item) !== undefined} />
-                          <span className="rs-u-text">
-                            <b>
-                              {itemName.get(r.output.item) ?? r.output.item}
-                              {r.output.qty > 1 ? ` ×${r.output.qty}` : ""}
-                            </b>
-                            <span>
-                              {r.inputs.map((s) => `${s.qty} ${itemName.get(s.item) ?? s.item}`).join(" + ")}
-                            </span>
-                            <em>
-                              {machineName.get(r.machine) ?? r.machine} · {r.craftSeconds}s
-                            </em>
-                          </span>
+                <div className="rs-h">Unlocks</div>
+                <ul className="rs-unlocks">
+                  {unlocks.map((r) => (
+                    <li key={r.id}>
+                      <span className="rs-u-ico" style={iconStyle(r.output.item, 32)} aria-hidden="true" data-has={iconCell(r.output.item) !== undefined} />
+                      <span className="rs-u-text">
+                        <b>{itemName.get(r.output.item) ?? r.output.item}{r.output.qty > 1 ? ` ×${r.output.qty}` : ""}</b>
+                        <span>{r.inputs.map((x) => `${x.qty} ${itemName.get(x.item) ?? x.item}`).join(" + ")}</span>
+                        <em>{machineName.get(r.machine) ?? r.machine} · {r.craftSeconds}s</em>
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+
+                {leadsTo.length > 0 && (
+                  <>
+                    <div className="rs-h rs-leads">Leads to</div>
+                    <ul className="rs-list rs-leads">
+                      {leadsTo.map((q) => (
+                        <li key={q.id}>
+                          <button type="button" onClick={() => setPicked(q.id)}>{q.name}<em>{bp(q.blueprintCost)}</em></button>
                         </li>
                       ))}
                     </ul>
+                  </>
+                )}
 
-                    {leadsTo.length > 0 && (
-                      <>
-                        <div className="rs-h rs-leads">Leads to</div>
-                        <ul className="rs-list rs-leads">
-                          {leadsTo.map((q) => (
-                            <li key={q.id}>
-                              <button type="button" onClick={() => setPicked(q.id)}>
-                                {q.name}
-                                <em>{bp(q.blueprintCost)}</em>
-                              </button>
-                            </li>
-                          ))}
-                        </ul>
-                      </>
-                    )}
-                  </div>
-
-                  <div className="rs-detail-foot">
-                    <button
-                      type="button"
-                      className="ab-action rs-go"
-                      disabled={selStatus !== "ready" || !onResearch}
-                      onClick={() => onResearch?.(sel.id)}
-                    >
-                      {cta}
-                    </button>
-                    {why ? <p className="rs-why">{why}</p> : null}
-                  </div>
-                </>
-              ) : (
-                <p className="ab-dim">Pick a research to see what it needs and unlocks.</p>
-              )}
-            </aside>
+                <button
+                  type="button"
+                  className="ab-action rs-go"
+                  disabled={selStatus !== "ready" || !onResearch}
+                  onClick={() => onResearch?.(sel.id)}
+                >
+                  {cta}
+                </button>
+                {why ? <p className="rs-why">{why}</p> : null}
+              </div>
+            )}
           </div>
+        </div>
+
+        <ul className="rs-legend" aria-label="Key">
+          <li data-status="done">Researched</li>
+          <li data-status="ready">Ready</li>
+          <li data-status="short">Needs more blueprints</li>
+          <li data-status="locked">Locked</li>
+          <li data-status="alt">Alternate recipe</li>
+        </ul>
       </div>
     </MenuWindow>
   );
