@@ -182,9 +182,22 @@ export default function VoxelIslandBench() {
 
         if (q.get("cam") === "close") {
             // Close-up on a target cell (tx, tz in board units, default the centre) for stills of chutes and machines.
-            const tx = Number(q.get("tx") ?? 0), tz = Number(q.get("tz") ?? 0);
-            island.camera.position.set(tx + 3.6, 3.6, tz + 4.6);
-            island.camera.lookAt(tx, 0.6, tz);
+            // Default target: the centre of the furnace and press footprints from the fx case, on the same cells
+            // the sim places them on. Aimed at mid-height, since the bodies stand about 2 units tall.
+            const fxCells = [
+                { m: getMachineModel("furnace"), cell: { x: -3, z: -5 } },
+                { m: getMachineModel("press"), cell: { x: 0, z: -5 } },
+            ].filter((c) => c.m);
+            const centre = fxCells.reduce(
+                (acc, c) => ({
+                    x: acc.x + (c.cell.x + (c.m!.footprint?.w ?? 1) / 2) / fxCells.length,
+                    z: acc.z + (c.cell.z + (c.m!.footprint?.d ?? 1) / 2) / fxCells.length,
+                }),
+                { x: 0, z: 0 }
+            );
+            const tx = Number(q.get("tx") ?? centre.x), tz = Number(q.get("tz") ?? centre.z);
+            island.camera.position.set(tx + 3.2, 3.0, tz + 4.0);
+            island.camera.lookAt(tx, 1.4, tz);
         }
 
         island.resize();
