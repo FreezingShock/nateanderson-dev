@@ -1,0 +1,909 @@
+{
+ "sheets": {
+  "bg/nebula-blue": {
+   "fps": 0,
+   "frames": 1,
+   "h": 180,
+   "loop": false,
+   "src": "/starwright/bg/nebula-blue.png",
+   "w": 320
+  },
+  "bg/nebula-dwarf": {
+   "fps": 0,
+   "frames": 1,
+   "h": 180,
+   "loop": false,
+   "src": "/starwright/bg/nebula-dwarf.png",
+   "w": 320
+  },
+  "bg/nebula-giant": {
+   "fps": 0,
+   "frames": 1,
+   "h": 180,
+   "loop": false,
+   "src": "/starwright/bg/nebula-giant.png",
+   "w": 320
+  },
+  "bg/nebula-iron": {
+   "fps": 0,
+   "frames": 1,
+   "h": 180,
+   "loop": false,
+   "src": "/starwright/bg/nebula-iron.png",
+   "w": 320
+  },
+  "bg/nebula-n1": {
+   "fps": 0,
+   "frames": 1,
+   "h": 180,
+   "loop": false,
+   "src": "/starwright/bg/nebula-n1.png",
+   "w": 320
+  },
+  "bg/nebula-n2": {
+   "fps": 0,
+   "frames": 1,
+   "h": 180,
+   "loop": false,
+   "src": "/starwright/bg/nebula-n2.png",
+   "w": 320
+  },
+  "bg/nebula-proto": {
+   "fps": 0,
+   "frames": 1,
+   "h": 180,
+   "loop": false,
+   "src": "/starwright/bg/nebula-proto.png",
+   "w": 320
+  },
+  "bg/nebula-super": {
+   "fps": 0,
+   "frames": 1,
+   "h": 180,
+   "loop": false,
+   "src": "/starwright/bg/nebula-super.png",
+   "w": 320
+  },
+  "card/cloud-dense": {
+   "fps": 6,
+   "frames": 8,
+   "h": 64,
+   "loop": true,
+   "src": "/starwright/card/cloud-dense.png",
+   "w": 160
+  },
+  "card/cloud-dusty": {
+   "fps": 6,
+   "frames": 8,
+   "h": 64,
+   "loop": true,
+   "src": "/starwright/card/cloud-dusty.png",
+   "w": 160
+  },
+  "card/cloud-hot": {
+   "fps": 6,
+   "frames": 8,
+   "h": 64,
+   "loop": true,
+   "src": "/starwright/card/cloud-hot.png",
+   "w": 160
+  },
+  "card/cloud-quiet": {
+   "fps": 6,
+   "frames": 8,
+   "h": 64,
+   "loop": true,
+   "src": "/starwright/card/cloud-quiet.png",
+   "w": 160
+  },
+  "card/cloud-rich": {
+   "fps": 6,
+   "frames": 8,
+   "h": 64,
+   "loop": true,
+   "src": "/starwright/card/cloud-rich.png",
+   "w": 160
+  },
+  "card/cloud-thin": {
+   "fps": 6,
+   "frames": 8,
+   "h": 64,
+   "loop": true,
+   "src": "/starwright/card/cloud-thin.png",
+   "w": 160
+  },
+  "icon/dock-almanac": {
+   "fps": 0,
+   "frames": 1,
+   "h": 16,
+   "loop": false,
+   "src": "/starwright/icon/dock-almanac.png",
+   "w": 16
+  },
+  "icon/dock-menu": {
+   "fps": 0,
+   "frames": 1,
+   "h": 16,
+   "loop": false,
+   "src": "/starwright/icon/dock-menu.png",
+   "w": 16
+  },
+  "icon/dock-orbit": {
+   "fps": 0,
+   "frames": 1,
+   "h": 16,
+   "loop": false,
+   "src": "/starwright/icon/dock-orbit.png",
+   "w": 16
+  },
+  "icon/dock-pulsar": {
+   "fps": 0,
+   "frames": 1,
+   "h": 16,
+   "loop": false,
+   "src": "/starwright/icon/dock-pulsar.png",
+   "w": 16
+  },
+  "icon/dock-stars": {
+   "fps": 0,
+   "frames": 1,
+   "h": 16,
+   "loop": false,
+   "src": "/starwright/icon/dock-stars.png",
+   "w": 16
+  },
+  "icon/el-au": {
+   "fps": 0,
+   "frames": 1,
+   "h": 24,
+   "loop": false,
+   "src": "/starwright/icon/el-au.png",
+   "w": 24
+  },
+  "icon/el-c": {
+   "fps": 0,
+   "frames": 1,
+   "h": 24,
+   "loop": false,
+   "src": "/starwright/icon/el-c.png",
+   "w": 24
+  },
+  "icon/el-fe": {
+   "fps": 0,
+   "frames": 1,
+   "h": 24,
+   "loop": false,
+   "src": "/starwright/icon/el-fe.png",
+   "w": 24
+  },
+  "icon/el-h": {
+   "fps": 0,
+   "frames": 1,
+   "h": 24,
+   "loop": false,
+   "src": "/starwright/icon/el-h.png",
+   "w": 24
+  },
+  "icon/el-he": {
+   "fps": 0,
+   "frames": 1,
+   "h": 24,
+   "loop": false,
+   "src": "/starwright/icon/el-he.png",
+   "w": 24
+  },
+  "icon/el-mg": {
+   "fps": 0,
+   "frames": 1,
+   "h": 24,
+   "loop": false,
+   "src": "/starwright/icon/el-mg.png",
+   "w": 24
+  },
+  "icon/el-ne": {
+   "fps": 0,
+   "frames": 1,
+   "h": 24,
+   "loop": false,
+   "src": "/starwright/icon/el-ne.png",
+   "w": 24
+  },
+  "icon/el-o": {
+   "fps": 0,
+   "frames": 1,
+   "h": 24,
+   "loop": false,
+   "src": "/starwright/icon/el-o.png",
+   "w": 24
+  },
+  "icon/el-si": {
+   "fps": 0,
+   "frames": 1,
+   "h": 24,
+   "loop": false,
+   "src": "/starwright/icon/el-si.png",
+   "w": 24
+  },
+  "icon/el-u": {
+   "fps": 0,
+   "frames": 1,
+   "h": 24,
+   "loop": false,
+   "src": "/starwright/icon/el-u.png",
+   "w": 24
+  },
+  "icon/lock": {
+   "fps": 0,
+   "frames": 1,
+   "h": 16,
+   "loop": false,
+   "src": "/starwright/icon/lock.png",
+   "w": 16
+  },
+  "icon/medal": {
+   "fps": 0,
+   "frames": 1,
+   "h": 16,
+   "loop": false,
+   "src": "/starwright/icon/medal.png",
+   "w": 16
+  },
+  "icon/medal-lit": {
+   "fps": 0,
+   "frames": 1,
+   "h": 16,
+   "loop": false,
+   "src": "/starwright/icon/medal-lit.png",
+   "w": 16
+  },
+  "icon/menu-export": {
+   "fps": 0,
+   "frames": 1,
+   "h": 16,
+   "loop": false,
+   "src": "/starwright/icon/menu-export.png",
+   "w": 16
+  },
+  "icon/menu-full": {
+   "fps": 0,
+   "frames": 1,
+   "h": 16,
+   "loop": false,
+   "src": "/starwright/icon/menu-full.png",
+   "w": 16
+  },
+  "icon/menu-import": {
+   "fps": 0,
+   "frames": 1,
+   "h": 16,
+   "loop": false,
+   "src": "/starwright/icon/menu-import.png",
+   "w": 16
+  },
+  "icon/menu-mute": {
+   "fps": 0,
+   "frames": 1,
+   "h": 16,
+   "loop": false,
+   "src": "/starwright/icon/menu-mute.png",
+   "w": 16
+  },
+  "icon/menu-pause": {
+   "fps": 0,
+   "frames": 1,
+   "h": 16,
+   "loop": false,
+   "src": "/starwright/icon/menu-pause.png",
+   "w": 16
+  },
+  "icon/menu-play": {
+   "fps": 0,
+   "frames": 1,
+   "h": 16,
+   "loop": false,
+   "src": "/starwright/icon/menu-play.png",
+   "w": 16
+  },
+  "icon/menu-sound": {
+   "fps": 0,
+   "frames": 1,
+   "h": 16,
+   "loop": false,
+   "src": "/starwright/icon/menu-sound.png",
+   "w": 16
+  },
+  "icon/planet-cinder": {
+   "fps": 0,
+   "frames": 1,
+   "h": 32,
+   "loop": false,
+   "src": "/starwright/icon/planet-cinder.png",
+   "w": 32
+  },
+  "icon/planet-ember": {
+   "fps": 0,
+   "frames": 1,
+   "h": 32,
+   "loop": false,
+   "src": "/starwright/icon/planet-ember.png",
+   "w": 32
+  },
+  "icon/planet-glass": {
+   "fps": 0,
+   "frames": 1,
+   "h": 32,
+   "loop": false,
+   "src": "/starwright/icon/planet-glass.png",
+   "w": 32
+  },
+  "icon/planet-haze": {
+   "fps": 0,
+   "frames": 1,
+   "h": 32,
+   "loop": false,
+   "src": "/starwright/icon/planet-haze.png",
+   "w": 32
+  },
+  "icon/planet-ironclad": {
+   "fps": 0,
+   "frames": 1,
+   "h": 32,
+   "loop": false,
+   "src": "/starwright/icon/planet-ironclad.png",
+   "w": 32
+  },
+  "icon/planet-orrery": {
+   "fps": 0,
+   "frames": 1,
+   "h": 32,
+   "loop": false,
+   "src": "/starwright/icon/planet-orrery.png",
+   "w": 32
+  },
+  "icon/planet-seer": {
+   "fps": 0,
+   "frames": 1,
+   "h": 32,
+   "loop": false,
+   "src": "/starwright/icon/planet-seer.png",
+   "w": 32
+  },
+  "icon/planet-thule": {
+   "fps": 0,
+   "frames": 1,
+   "h": 32,
+   "loop": false,
+   "src": "/starwright/icon/planet-thule.png",
+   "w": 32
+  },
+  "panel/bar": {
+   "fps": 0,
+   "frames": 1,
+   "h": 4,
+   "loop": false,
+   "src": "/starwright/panel/bar.png",
+   "w": 8
+  },
+  "panel/corner": {
+   "fps": 0,
+   "frames": 1,
+   "h": 8,
+   "loop": false,
+   "src": "/starwright/panel/corner.png",
+   "w": 8
+  },
+  "panel/rule": {
+   "fps": 0,
+   "frames": 1,
+   "h": 4,
+   "loop": false,
+   "src": "/starwright/panel/rule.png",
+   "w": 8
+  },
+  "panel/vignette-bottom": {
+   "fps": 0,
+   "frames": 1,
+   "h": 64,
+   "loop": false,
+   "src": "/starwright/panel/vignette-bottom.png",
+   "w": 4
+  },
+  "panel/vignette-top": {
+   "fps": 0,
+   "frames": 1,
+   "h": 64,
+   "loop": false,
+   "src": "/starwright/panel/vignette-top.png",
+   "w": 4
+  },
+  "planet/cinder-s0": {
+   "body": 9,
+   "fps": 8,
+   "frames": 16,
+   "h": 32,
+   "loop": true,
+   "src": "/starwright/planet/cinder-s0.png",
+   "w": 32
+  },
+  "planet/cinder-s1": {
+   "body": 9,
+   "fps": 8,
+   "frames": 16,
+   "h": 32,
+   "loop": true,
+   "src": "/starwright/planet/cinder-s1.png",
+   "w": 32
+  },
+  "planet/cinder-s2": {
+   "body": 9,
+   "fps": 8,
+   "frames": 16,
+   "h": 32,
+   "loop": true,
+   "src": "/starwright/planet/cinder-s2.png",
+   "w": 32
+  },
+  "planet/cinder-s3": {
+   "body": 9,
+   "fps": 8,
+   "frames": 16,
+   "h": 32,
+   "loop": true,
+   "src": "/starwright/planet/cinder-s3.png",
+   "w": 32
+  },
+  "planet/ember-s0": {
+   "body": 9,
+   "fps": 8,
+   "frames": 16,
+   "h": 32,
+   "loop": true,
+   "src": "/starwright/planet/ember-s0.png",
+   "w": 32
+  },
+  "planet/ember-s1": {
+   "body": 9,
+   "fps": 8,
+   "frames": 16,
+   "h": 32,
+   "loop": true,
+   "src": "/starwright/planet/ember-s1.png",
+   "w": 32
+  },
+  "planet/ember-s2": {
+   "body": 9,
+   "fps": 8,
+   "frames": 16,
+   "h": 32,
+   "loop": true,
+   "src": "/starwright/planet/ember-s2.png",
+   "w": 32
+  },
+  "planet/ember-s3": {
+   "body": 9,
+   "fps": 8,
+   "frames": 16,
+   "h": 32,
+   "loop": true,
+   "src": "/starwright/planet/ember-s3.png",
+   "w": 32
+  },
+  "planet/glass-s0": {
+   "body": 10,
+   "fps": 8,
+   "frames": 16,
+   "h": 32,
+   "loop": true,
+   "src": "/starwright/planet/glass-s0.png",
+   "w": 32
+  },
+  "planet/glass-s1": {
+   "body": 10,
+   "fps": 8,
+   "frames": 16,
+   "h": 32,
+   "loop": true,
+   "src": "/starwright/planet/glass-s1.png",
+   "w": 32
+  },
+  "planet/glass-s2": {
+   "body": 10,
+   "fps": 8,
+   "frames": 16,
+   "h": 32,
+   "loop": true,
+   "src": "/starwright/planet/glass-s2.png",
+   "w": 32
+  },
+  "planet/glass-s3": {
+   "body": 10,
+   "fps": 8,
+   "frames": 16,
+   "h": 32,
+   "loop": true,
+   "src": "/starwright/planet/glass-s3.png",
+   "w": 32
+  },
+  "planet/haze-s0": {
+   "body": 13,
+   "fps": 8,
+   "frames": 16,
+   "h": 32,
+   "loop": true,
+   "src": "/starwright/planet/haze-s0.png",
+   "w": 32
+  },
+  "planet/haze-s1": {
+   "body": 13,
+   "fps": 8,
+   "frames": 16,
+   "h": 32,
+   "loop": true,
+   "src": "/starwright/planet/haze-s1.png",
+   "w": 32
+  },
+  "planet/haze-s2": {
+   "body": 13,
+   "fps": 8,
+   "frames": 16,
+   "h": 32,
+   "loop": true,
+   "src": "/starwright/planet/haze-s2.png",
+   "w": 32
+  },
+  "planet/haze-s3": {
+   "body": 13,
+   "fps": 8,
+   "frames": 16,
+   "h": 32,
+   "loop": true,
+   "src": "/starwright/planet/haze-s3.png",
+   "w": 32
+  },
+  "planet/ironclad-s0": {
+   "body": 8,
+   "fps": 8,
+   "frames": 16,
+   "h": 32,
+   "loop": true,
+   "src": "/starwright/planet/ironclad-s0.png",
+   "w": 32
+  },
+  "planet/ironclad-s1": {
+   "body": 8,
+   "fps": 8,
+   "frames": 16,
+   "h": 32,
+   "loop": true,
+   "src": "/starwright/planet/ironclad-s1.png",
+   "w": 32
+  },
+  "planet/ironclad-s2": {
+   "body": 8,
+   "fps": 8,
+   "frames": 16,
+   "h": 32,
+   "loop": true,
+   "src": "/starwright/planet/ironclad-s2.png",
+   "w": 32
+  },
+  "planet/ironclad-s3": {
+   "body": 8,
+   "fps": 8,
+   "frames": 16,
+   "h": 32,
+   "loop": true,
+   "src": "/starwright/planet/ironclad-s3.png",
+   "w": 32
+  },
+  "planet/orrery-s0": {
+   "body": 6,
+   "fps": 8,
+   "frames": 16,
+   "h": 32,
+   "loop": true,
+   "src": "/starwright/planet/orrery-s0.png",
+   "w": 32
+  },
+  "planet/orrery-s1": {
+   "body": 6,
+   "fps": 8,
+   "frames": 16,
+   "h": 32,
+   "loop": true,
+   "src": "/starwright/planet/orrery-s1.png",
+   "w": 32
+  },
+  "planet/orrery-s2": {
+   "body": 6,
+   "fps": 8,
+   "frames": 16,
+   "h": 32,
+   "loop": true,
+   "src": "/starwright/planet/orrery-s2.png",
+   "w": 32
+  },
+  "planet/orrery-s3": {
+   "body": 6,
+   "fps": 8,
+   "frames": 16,
+   "h": 32,
+   "loop": true,
+   "src": "/starwright/planet/orrery-s3.png",
+   "w": 32
+  },
+  "planet/seer-s0": {
+   "body": 13,
+   "fps": 8,
+   "frames": 16,
+   "h": 48,
+   "loop": true,
+   "src": "/starwright/planet/seer-s0.png",
+   "w": 48
+  },
+  "planet/seer-s1": {
+   "body": 13,
+   "fps": 8,
+   "frames": 16,
+   "h": 48,
+   "loop": true,
+   "src": "/starwright/planet/seer-s1.png",
+   "w": 48
+  },
+  "planet/seer-s2": {
+   "body": 13,
+   "fps": 8,
+   "frames": 16,
+   "h": 48,
+   "loop": true,
+   "src": "/starwright/planet/seer-s2.png",
+   "w": 48
+  },
+  "planet/seer-s3": {
+   "body": 13,
+   "fps": 8,
+   "frames": 16,
+   "h": 48,
+   "loop": true,
+   "src": "/starwright/planet/seer-s3.png",
+   "w": 48
+  },
+  "planet/thule-s0": {
+   "body": 9,
+   "fps": 8,
+   "frames": 16,
+   "h": 32,
+   "loop": true,
+   "src": "/starwright/planet/thule-s0.png",
+   "w": 32
+  },
+  "planet/thule-s1": {
+   "body": 9,
+   "fps": 8,
+   "frames": 16,
+   "h": 32,
+   "loop": true,
+   "src": "/starwright/planet/thule-s1.png",
+   "w": 32
+  },
+  "planet/thule-s2": {
+   "body": 9,
+   "fps": 8,
+   "frames": 16,
+   "h": 32,
+   "loop": true,
+   "src": "/starwright/planet/thule-s2.png",
+   "w": 32
+  },
+  "planet/thule-s3": {
+   "body": 9,
+   "fps": 8,
+   "frames": 16,
+   "h": 32,
+   "loop": true,
+   "src": "/starwright/planet/thule-s3.png",
+   "w": 32
+  },
+  "star/blue": {
+   "fps": 8,
+   "frames": 16,
+   "h": 128,
+   "loop": true,
+   "src": "/starwright/star/blue.png",
+   "w": 128
+  },
+  "star/dwarf": {
+   "fps": 8,
+   "frames": 16,
+   "h": 128,
+   "loop": true,
+   "src": "/starwright/star/dwarf.png",
+   "w": 128
+  },
+  "star/giant": {
+   "fps": 8,
+   "frames": 16,
+   "h": 128,
+   "loop": true,
+   "src": "/starwright/star/giant.png",
+   "w": 128
+  },
+  "star/hole": {
+   "fps": 8,
+   "frames": 16,
+   "h": 180,
+   "loop": true,
+   "src": "/starwright/star/hole.png",
+   "w": 320
+  },
+  "star/implode-blue": {
+   "fps": 12,
+   "frames": 8,
+   "h": 96,
+   "loop": false,
+   "src": "/starwright/star/implode-blue.png",
+   "w": 96
+  },
+  "star/implode-dwarf": {
+   "fps": 12,
+   "frames": 8,
+   "h": 96,
+   "loop": false,
+   "src": "/starwright/star/implode-dwarf.png",
+   "w": 96
+  },
+  "star/implode-giant": {
+   "fps": 12,
+   "frames": 8,
+   "h": 96,
+   "loop": false,
+   "src": "/starwright/star/implode-giant.png",
+   "w": 96
+  },
+  "star/implode-iron": {
+   "fps": 12,
+   "frames": 8,
+   "h": 96,
+   "loop": false,
+   "src": "/starwright/star/implode-iron.png",
+   "w": 96
+  },
+  "star/implode-proto": {
+   "fps": 12,
+   "frames": 8,
+   "h": 96,
+   "loop": false,
+   "src": "/starwright/star/implode-proto.png",
+   "w": 96
+  },
+  "star/implode-super": {
+   "fps": 12,
+   "frames": 8,
+   "h": 96,
+   "loop": false,
+   "src": "/starwright/star/implode-super.png",
+   "w": 96
+  },
+  "star/iron": {
+   "fps": 8,
+   "frames": 16,
+   "h": 128,
+   "loop": true,
+   "src": "/starwright/star/iron.png",
+   "w": 128
+  },
+  "star/iron-ready": {
+   "fps": 10,
+   "frames": 16,
+   "h": 128,
+   "loop": true,
+   "src": "/starwright/star/iron-ready.png",
+   "w": 128
+  },
+  "star/nova-neutron": {
+   "fps": 10,
+   "frames": 16,
+   "h": 180,
+   "loop": false,
+   "src": "/starwright/star/nova-neutron.png",
+   "w": 320
+  },
+  "star/nova-supernova": {
+   "fps": 10,
+   "frames": 16,
+   "h": 180,
+   "loop": false,
+   "src": "/starwright/star/nova-supernova.png",
+   "w": 320
+  },
+  "star/proto": {
+   "fps": 8,
+   "frames": 16,
+   "h": 128,
+   "loop": true,
+   "src": "/starwright/star/proto.png",
+   "w": 128
+  },
+  "star/super": {
+   "fps": 8,
+   "frames": 16,
+   "h": 128,
+   "loop": true,
+   "src": "/starwright/star/super.png",
+   "w": 128
+  },
+  "star/trans-blue-super": {
+   "fps": 12,
+   "frames": 14,
+   "h": 128,
+   "loop": false,
+   "src": "/starwright/star/trans-blue-super.png",
+   "w": 128
+  },
+  "star/trans-dwarf-giant": {
+   "fps": 12,
+   "frames": 14,
+   "h": 128,
+   "loop": false,
+   "src": "/starwright/star/trans-dwarf-giant.png",
+   "w": 128
+  },
+  "star/trans-giant-blue": {
+   "fps": 12,
+   "frames": 14,
+   "h": 128,
+   "loop": false,
+   "src": "/starwright/star/trans-giant-blue.png",
+   "w": 128
+  },
+  "star/trans-proto-dwarf": {
+   "fps": 12,
+   "frames": 14,
+   "h": 128,
+   "loop": false,
+   "src": "/starwright/star/trans-proto-dwarf.png",
+   "w": 128
+  },
+  "star/trans-super-iron": {
+   "fps": 12,
+   "frames": 14,
+   "h": 128,
+   "loop": false,
+   "src": "/starwright/star/trans-super-iron.png",
+   "w": 128
+  },
+  "visitor/comet": {
+   "fps": 8,
+   "frames": 12,
+   "h": 48,
+   "loop": true,
+   "src": "/starwright/visitor/comet.png",
+   "w": 48
+  },
+  "visitor/flare": {
+   "fps": 8,
+   "frames": 12,
+   "h": 48,
+   "loop": true,
+   "src": "/starwright/visitor/flare.png",
+   "w": 48
+  },
+  "visitor/nebula": {
+   "fps": 8,
+   "frames": 12,
+   "h": 96,
+   "loop": true,
+   "src": "/starwright/visitor/nebula.png",
+   "w": 96
+  },
+  "visitor/pair": {
+   "fps": 8,
+   "frames": 12,
+   "h": 48,
+   "loop": true,
+   "src": "/starwright/visitor/pair.png",
+   "w": 48
+  }
+ },
+ "v": 1
+}
