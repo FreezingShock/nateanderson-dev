@@ -39,17 +39,6 @@ export function Glyph({
  * (lib/automation/data/tree.ts) uses the ids on the left of the arrow only where a preview or mock feed does, so
  * every resource on the bar gets its real item icon. Clockworks has no drawn icon yet, so it keeps its text badge.
  */
-const ICON_ALIAS: Record<string, string> = {
-  iron: "iron_ore",
-  copper: "copper_ore",
-  aluminium: "aluminium_ore",
-  plates: "iron_plate",
-  screws: "iron_screw",
-  wire: "copper_wire",
-  frames: "frame",
-  motors: "motor",
-  circuits: "circuit_board",
-};
 
 export function ResourceStrip({
   resources,
@@ -119,7 +108,7 @@ function ResourceList({
             tabIndex={0}
             aria-label={`${r.name}, ${amount}${showRates ? `, ${rate}` : ""}`}
           >
-            <Glyph code={r.glyph} size={48} icon={ICON_ALIAS[r.id] ?? r.id} />
+            <Glyph code={r.glyph} size={48} icon={r.id} />
             <span className="ab-res-amt">{amount}</span>
             {showRates && r.perSecond !== 0 && (
               <span className="ab-res-rate" data-neg={r.perSecond < 0}>
