@@ -1,5 +1,6 @@
 "use client";
 
+import { ArtIcon, UiArtIcon } from "@/components/brasswork-art/icons";
 import { useEffect, useRef, useState } from "react";
 import { MenuWindow } from "@/components/brasswork-ui/window";
 import { MachinePortrait } from "@/components/brasswork-art";
@@ -20,9 +21,9 @@ function UnlockTile({ u }: { u: HubUnlock }) {
   return (
     <li className="hm-open" data-kind={u.kind}>
       {u.kind === "blueprints" ? (
-        <span className="hm-open-ico" style={uiIconStyle("blueprints", 32)} aria-hidden="true" />
+        <UiArtIcon id="blueprints" size={48} name="Blueprints" className="hm-open-ico" />
       ) : (
-        <span className="hm-open-ico" style={iconStyle(u.icon ?? u.id, 32)} aria-hidden="true" />
+        <ArtIcon id={u.icon ?? u.id} size={48} name={u.name} className="hm-open-ico" />
       )}
       <span className="hm-open-name">{u.name}</span>
       <span className="hm-open-kind">{u.kind === "recipe" ? "recipe" : u.kind === "machine" ? "build" : "research"}</span>
@@ -49,7 +50,7 @@ function Slip({ step, index, total }: { step: HubStep; index: number; total: num
           const pct = Math.round((it.have / it.need) * 100);
           return (
             <li key={it.id} className="hm-item" data-full={it.have >= it.need}>
-              <span className="hm-item-ico" style={iconStyle(it.id, 32)} aria-hidden="true" />
+              <ArtIcon id={it.id} size={48} name={it.name} className="hm-item-ico" />
               <span className="hm-item-name">{it.name}</span>
               <span className="hm-item-count">{it.have} / {it.need}</span>
               <span className="hm-bar" role="progressbar" aria-label={`${it.name} delivered`} aria-valuemin={0} aria-valuemax={it.need} aria-valuenow={it.have}>

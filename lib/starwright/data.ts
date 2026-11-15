@@ -38,11 +38,11 @@ export const RECIPE: ReadonlyArray<ReadonlyArray<readonly [number, number]>> = [
 export const GATE_MK = [10, 40, 150, 300, 500, 800, 1200, 4000, 10000];
 
 /** Price of the first level of each row, paid in the element being burned. */
-export const BASE_COST = [18, 45, 160, 700, 3000, 14000, 70000, 2e7, 1e9];
+export const BASE_COST = [18, 45, 120, 400, 1400, 5000, 20000, 2e6, 1e7];
 export const TIER_COST_X = 9;
 export const COST_GROWTH = 1.12;
 /** Output of one level, in units of the next element per second. */
-export const BASE_RATE = [0.9, 0.5, 0.32, 0.22, 0.16, 0.12, 0.09, 0.03, 0.012];
+export const BASE_RATE = [0.9, 0.5, 0.32, 0.22, 0.16, 0.12, 0.09, 0.06, 0.03];
 
 export const TUNE = {
     inflowBase: 2,
@@ -51,17 +51,20 @@ export const TUNE = {
     heatK: 3,
     heatExp: 0.4,
     heatEase: 5, // seconds for heat to close most of the gap to its target
-    needGrow: 1.5,
+    needGrow: 2,
     feNeed: 1500, // Iron for a 100% collapse
     seedK: 60, // stardust at 100% collapse
     seedExp: 0.5,
-    neutronAt: 3000, // stardust earned in one neutron layer before a neutron star can form
+    neutronAt: 6000, // stardust earned in one neutron layer before a neutron star can form
     neutronDiv: 300,
-    horizonU: 250000, // Uranium for a black hole
+    horizonU: 600000, // Uranium for a black hole
     offlineH: 8,
     offlineStepCap: 7200,
     milestone: 25,
     cap: 1e300,
+    deepCost: 600, // stardust for the first deep star
+    deepGrow: 1.4, // each one costs this much more
+    deepBonus: 0.04, // each adds this to everything
     autoCost: 0.2, // autoburn only spends this share of the stock
 };
 
@@ -102,26 +105,26 @@ export const CONSTELLATIONS = [
 ] as const;
 
 export const PERKS: Perk[] = [
-    { id: "l1", con: "lantern", name: "Open aperture", desc: "Hydrogen inflow x2.", cost: 3, req: [], at: [10, 24], fx: { inflow: 2 } },
-    { id: "l2", con: "lantern", name: "Gas stream", desc: "Hydrogen inflow x2.", cost: 12, req: ["l1"], at: [22, 13], fx: { inflow: 2 } },
-    { id: "l3", con: "lantern", name: "Halo", desc: "Planets are 25% stronger.", cost: 30, req: ["l2"], at: [36, 21], fx: { planet: 0.25 } },
-    { id: "l4", con: "lantern", name: "Veil", desc: "Hydrogen inflow x3.", cost: 120, req: ["l3"], at: [47, 11], fx: { inflow: 3 } },
-    { id: "l5", con: "lantern", name: "Corona", desc: "Hydrogen inflow x2 and core heat x1.2.", cost: 450, req: ["l4"], at: [60, 22], fx: { inflow: 2, heat: 1.2 } },
-    { id: "k1", con: "kiln", name: "Ignition", desc: "Every fusion x2.", cost: 6, req: [], at: [9, 50], fx: { fuse: 2 } },
-    { id: "k2", con: "kiln", name: "Deep core", desc: "Core heat x1.3.", cost: 18, req: ["k1"], at: [22, 60], fx: { heat: 1.3 } },
-    { id: "k3", con: "kiln", name: "Pressure well", desc: "Every fusion needs 15% less heat.", cost: 54, req: ["k2"], at: [35, 51], fx: { gate: 0.15 } },
-    { id: "k4", con: "kiln", name: "Fusion bloom", desc: "Every fusion x2.", cost: 180, req: ["k3"], at: [47, 61], fx: { fuse: 2 } },
-    { id: "k5", con: "kiln", name: "Cold ignition", desc: "Every fusion needs another 20% less heat.", cost: 600, req: ["k4"], at: [58, 51], fx: { gate: 0.2 } },
-    { id: "a1", con: "anvil", name: "Heavy seeds", desc: "Stardust from a supernova x1.5.", cost: 9, req: [], at: [74, 22], fx: { stardust: 1.5 } },
-    { id: "a2", con: "anvil", name: "Dense core", desc: "The core collapses with 25% less iron.", cost: 36, req: ["a1"], at: [86, 33], fx: { need: 0.25 } },
-    { id: "a3", con: "anvil", name: "Remnant", desc: "Each star begins with 100,000 hydrogen.", cost: 75, req: ["a2"], at: [73, 44], fx: { startH: 1e5 } },
-    { id: "a4", con: "anvil", name: "Supershell", desc: "Stardust from a supernova x1.5.", cost: 270, req: ["a2"], at: [88, 55], fx: { stardust: 1.5 } },
-    { id: "a5", con: "anvil", name: "Iron rain", desc: "Stardust from a supernova x2.", cost: 900, req: ["a3", "a4"], at: [80, 73], fx: { stardust: 2 } },
-    { id: "w1", con: "loom", name: "Spindle", desc: "Autoburn: Hydrogen and Helium buy their own tier I.", cost: 24, req: [], at: [20, 80], fx: { auto: 2 } },
-    { id: "w2", con: "loom", name: "Shuttle", desc: "Autoburn reaches up to Oxygen.", cost: 90, req: ["w1"], at: [34, 89], fx: { auto: 2 } },
-    { id: "w3", con: "loom", name: "Survivors", desc: "Planets survive a supernova.", cost: 150, req: ["w2"], at: [49, 80], fx: { keepPlanets: 1 } },
-    { id: "w4", con: "loom", name: "Long watch", desc: "Away time counts for 24 hours, not 8.", cost: 240, req: ["w2"], at: [62, 90], fx: { offline: 16 } },
-    { id: "w5", con: "loom", name: "Full loom", desc: "Autoburn runs every row.", cost: 750, req: ["w3"], at: [76, 80], fx: { auto: 5 } },
+    { id: "l1", con: "lantern", name: "Open aperture", desc: "Hydrogen inflow x2.", cost: 6, req: [], at: [10, 24], fx: { inflow: 2 } },
+    { id: "l2", con: "lantern", name: "Gas stream", desc: "Hydrogen inflow x2.", cost: 24, req: ["l1"], at: [22, 13], fx: { inflow: 2 } },
+    { id: "l3", con: "lantern", name: "Halo", desc: "Planets are 25% stronger.", cost: 60, req: ["l2"], at: [36, 21], fx: { planet: 0.25 } },
+    { id: "l4", con: "lantern", name: "Veil", desc: "Hydrogen inflow x3.", cost: 240, req: ["l3"], at: [47, 11], fx: { inflow: 3 } },
+    { id: "l5", con: "lantern", name: "Corona", desc: "Hydrogen inflow x2 and core heat x1.2.", cost: 900, req: ["l4"], at: [60, 22], fx: { inflow: 2, heat: 1.2 } },
+    { id: "k1", con: "kiln", name: "Ignition", desc: "Every fusion x2.", cost: 12, req: [], at: [9, 50], fx: { fuse: 2 } },
+    { id: "k2", con: "kiln", name: "Deep core", desc: "Core heat x1.3.", cost: 36, req: ["k1"], at: [22, 60], fx: { heat: 1.3 } },
+    { id: "k3", con: "kiln", name: "Pressure well", desc: "Every fusion needs 15% less heat.", cost: 108, req: ["k2"], at: [35, 51], fx: { gate: 0.15 } },
+    { id: "k4", con: "kiln", name: "Fusion bloom", desc: "Every fusion x2.", cost: 360, req: ["k3"], at: [47, 61], fx: { fuse: 2 } },
+    { id: "k5", con: "kiln", name: "Cold ignition", desc: "Every fusion needs another 20% less heat.", cost: 1200, req: ["k4"], at: [58, 51], fx: { gate: 0.2 } },
+    { id: "a1", con: "anvil", name: "Heavy seeds", desc: "Stardust from a supernova x1.5.", cost: 18, req: [], at: [74, 22], fx: { stardust: 1.5 } },
+    { id: "a2", con: "anvil", name: "Dense core", desc: "The core collapses with 25% less iron.", cost: 72, req: ["a1"], at: [86, 33], fx: { need: 0.25 } },
+    { id: "a3", con: "anvil", name: "Remnant", desc: "Each star begins with 100,000 hydrogen.", cost: 150, req: ["a2"], at: [73, 44], fx: { startH: 1e5 } },
+    { id: "a4", con: "anvil", name: "Supershell", desc: "Stardust from a supernova x1.5.", cost: 540, req: ["a2"], at: [88, 55], fx: { stardust: 1.5 } },
+    { id: "a5", con: "anvil", name: "Iron rain", desc: "Stardust from a supernova x2.", cost: 1800, req: ["a3", "a4"], at: [80, 73], fx: { stardust: 2 } },
+    { id: "w1", con: "loom", name: "Spindle", desc: "Autoburn: Hydrogen and Helium buy their own tier I.", cost: 48, req: [], at: [20, 80], fx: { auto: 2 } },
+    { id: "w2", con: "loom", name: "Shuttle", desc: "Autoburn reaches up to Oxygen.", cost: 180, req: ["w1"], at: [34, 89], fx: { auto: 2 } },
+    { id: "w3", con: "loom", name: "Survivors", desc: "Planets keep their age through a supernova.", cost: 300, req: ["w2"], at: [49, 80], fx: { keepPlanets: 1 } },
+    { id: "w4", con: "loom", name: "Long watch", desc: "Away time counts for 24 hours, not 8.", cost: 480, req: ["w2"], at: [62, 90], fx: { offline: 16 } },
+    { id: "w5", con: "loom", name: "Full loom", desc: "Autoburn runs every row.", cost: 1500, req: ["w3"], at: [76, 80], fx: { auto: 5 } },
 ];
 
 export const PULSAR_PERKS: Perk[] = [
@@ -210,7 +213,7 @@ export const EVENTS: StarEvent[] = [
     },
 ];
 /** First visitor after this many seconds of a star's life, then one every EVENT_GAP seconds (a little random). */
-export const EVENT_FIRST = 75;
+export const EVENT_FIRST = 40;
 export const EVENT_GAP = [110, 80] as const; // base, random extra
 export const EVENT_STAY = 150; // seconds a visitor waits before it moves on
 

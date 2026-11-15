@@ -3,8 +3,8 @@ import type { CSSProperties } from "react";
 
 /** HUD glyph sheet (menus, panel headers, stage buttons): 64 px art cells, 8 across, row by row. */
 export const UI_ICON_SHEET = {
-    url: "/brasswork/icons/ui.webp?v=6159635b",
-    png: "/brasswork/icons/ui.png?v=6159635b",
+    url: "/brasswork/icons/ui.webp?v=8d037bb1",
+    png: "/brasswork/icons/ui.png?v=8d037bb1",
     cell: 64,
     cols: 8,
     rows: 6,
@@ -52,7 +52,8 @@ export const UI_ICONS = {
     keep_records: 37, // Keep: records,
     leave_machines: 38, // Leave: machines and belts,
     leave_stock: 39, // Leave: stored stock,
-    leave_fleets: 40, // Leave: fleets
+    leave_fleets: 40, // Leave: fleets,
+    quest: 41, // Starter quest
 } as const;
 
 export type UiIconId = keyof typeof UI_ICONS;
