@@ -21,7 +21,7 @@ html.bw-route .sf-foot { display: none !important; }
     .bw-root .ab-stage { bottom: 92px; }
 }
 
-/* Phone: the tool hint sits under the header, clear of the bottom-right tool buttons. */
+/* Phone: the tool hint sits at the foot of the stage, clear of the touch bar below it and of the machines being placed. */
 @media (max-width: 900px), (pointer: coarse) {
-  .bw-note { top: 96px; bottom: auto; left: 8px; right: 8px; transform: none; max-width: none; font-size: 13px; }
+  .bw-note { top: auto; bottom: 8px; left: 8px; right: 8px; transform: none; max-width: none; font-size: 13px; }
 }

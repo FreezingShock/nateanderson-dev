@@ -691,7 +691,7 @@ export function BrassworkHost() {
                                   ? `Press and drag to lay ${name.toLowerCase()}, or tap one machine then another to route it. Cancel stops.`
                                   : `Drag to lay ${name.toLowerCase()}, or drag from one machine to another to route it for you. Esc stops.`
                                 : touch
-                                  ? `Tap to place ${name}. Hold to turn it. Cancel stops.`
+                                  ? `Tap a spot to preview ${name}, tap it again to place. Hold to turn it. Cancel stops.`
                                   : `Click to place ${name}. R turns it, Esc stops.`
                     );
                 }
