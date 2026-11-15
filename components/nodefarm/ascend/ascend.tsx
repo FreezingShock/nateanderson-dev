@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { BRANCHES, MATS, PERKS, TREE, TREE_FULL, TUNE, apEach, apGlobal, apOnAscend, canAscend, chOff, derive, fmt, hasNode, mountSlots, statDef, type MatId, type State, ascendNeed } from "@/lib/nodefarm/engine";
 import { NfIcon } from "../board/icon";
+import "@/app/camino/nodefarm/lazy/ascend.css";
 
 // The Ascend window (2026-11-12 rework): the art is the stage, the Aether charge climbs beside the tower, a three-step
 // ledger shows the flow (Aether -> Ascend -> AP), and the tree gets a gateway banner on the tree's own starfield (Nate's picks, 2026-11-12). Styles: app/camino/nodefarm/ascend.css (classes nf-ax*; nf-asc* belonged to the old panel).

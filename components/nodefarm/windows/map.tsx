@@ -8,6 +8,7 @@ import { LORE } from "@/lib/nodefarm/content/lore";
 import { NfIcon, type NfIconName } from "../board/icon";
 import { DataLines, Frame, WinBanner } from "./win-kit";
 import { LAB_BLUE, labReady } from "../workshop/lab";
+import "@/app/camino/nodefarm/lazy/map.css";
 
 type D = ReturnType<typeof derive>;
 type Stand = "done" | "ready" | "next" | "locked";

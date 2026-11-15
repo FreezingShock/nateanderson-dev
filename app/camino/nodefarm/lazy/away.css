@@ -1,0 +1,25 @@
+/* Node Farm lazy split (2026-11-15): rules moved out of base.css, used only by components/nodefarm/windows/away.tsx. Loaded when those modules load. */
+
+body .nf-aw-time { margin: 0; font: 700 clamp(40px, 11vw, 96px)/1 var(--cm-mono); color: var(--cm-cyan); font-variant-numeric: tabular-nums; letter-spacing: -.02em; }
+body .nf-aw-sum { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+body .nf-aw-meter-h { display: flex; justify-content: space-between; gap: 12px; margin-bottom: 6px; font: 600 var(--cm-ctos-t-micro)/1 var(--cm-mono); letter-spacing: .1em; text-transform: uppercase; color: var(--cm-mute); }
+body .nf-aw-track { height: 14px; background: #050505; border: 1px solid var(--nf-line); padding: 2px; }
+body .nf-aw-track i { display: block; height: 100%; background: repeating-linear-gradient(90deg, var(--cm-cyan) 0 6px, #0f6b74 6px 8px); }
+body .nf-aw-gain { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 10px; }
+body .nf-aw-gain li { display: grid; grid-template-columns: auto 1fr; grid-template-rows: auto auto; column-gap: 14px; align-items: center; padding: 12px 14px; background: var(--nf-ground); border: 1px solid color-mix(in srgb, var(--c) 35%, #1c1c1c); animation: nf-aw-row 320ms steps(4) both; animation-delay: var(--d); }
+body .nf-aw-name { font: 600 var(--cm-ctos-t-micro)/1.2 var(--cm-mono); letter-spacing: .12em; text-transform: uppercase; color: var(--cm-mute); align-self: end; }
+body .nf-aw-gain b { font: 700 clamp(22px, 4vw, 30px)/1.15 var(--cm-mono); color: var(--c); font-variant-numeric: tabular-nums; align-self: start; overflow-wrap: anywhere; }
+body .nf-aw-facts { margin: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 1px; background: var(--nf-line); border: 1px solid var(--nf-line); }
+body .nf-aw-facts div { padding: 10px 12px; background: #0a0a0a; }
+body .nf-aw-facts dt { font: 500 var(--cm-ctos-t-micro)/1.2 var(--cm-mono); letter-spacing: .12em; text-transform: uppercase; color: var(--cm-mute); }
+body .nf-aw-facts dd { margin: 4px 0 0; font: 600 var(--cm-ctos-t-ui)/1.2 var(--cm-mono); color: var(--cm-fg); font-variant-numeric: tabular-nums; }
+body .nf-aw-sys { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 10px; }
+body .nf-aw-sys section { padding: 12px 14px; background: #0a0a0a; border: 1px solid var(--nf-line); }
+body .nf-aw-sys h3 { margin: 0 0 8px; font: 500 var(--cm-ctos-t-micro)/1.2 var(--cm-mono); letter-spacing: .12em; text-transform: uppercase; color: var(--cm-cyan); }
+body .nf-aw-sys dl { margin: 0; display: grid; gap: 6px; }
+body .nf-aw-sys dl div { display: flex; justify-content: space-between; gap: 14px; align-items: baseline; padding-bottom: 6px; border-bottom: 1px dotted #26262a; }
+body .nf-aw-sys dl div:last-child { border-bottom: 0; padding-bottom: 0; }
+body .nf-aw-sys dt { font: 400 var(--cm-ctos-t-ui)/1.35 var(--cm-mono); color: var(--cm-mute); }
+body .nf-aw-sys dd { margin: 0; font: 600 var(--cm-ctos-t-ui)/1.35 var(--cm-mono); color: var(--cm-fg); text-align: right; font-variant-numeric: tabular-nums; }
+@media (max-width: 519px) { body .nf-aw-sys { grid-template-columns: 1fr; } body .nf-aw-sys dl div { flex-direction: column; gap: 2px; } body .nf-aw-sys dd { text-align: left; } body .nf-aw-facts { grid-template-columns: 1fr; } }
+body .nf-aw-note { margin: 0; padding: 10px 12px; border: 1px solid #5a4a14; border-left: 3px solid #f0c23c; background: #14110a; font: 400 var(--cm-ctos-t-ui)/1.5 var(--cm-mono); color: var(--cm-mute); }

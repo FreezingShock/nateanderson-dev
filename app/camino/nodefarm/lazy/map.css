@@ -1,0 +1,48 @@
+/* Node Farm lazy split (2026-11-15): rules moved out of windows.css, phone.css, used only by components/nodefarm/windows/map.tsx. Loaded when those modules load. */
+
+.ctos .nf-wk-here { position: relative; display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; padding: 12px 16px; background: #0a0c0d; border: 1px solid color-mix(in srgb, var(--cm-cyan) 35%, #1c1c1c); --c: var(--cm-cyan); }
+.ctos .nf-wk-here-k { padding: 4px 8px; background: var(--cm-cyan); color: #0a0a0a; font: 700 var(--cm-ctos-t-micro)/1 var(--cm-mono); letter-spacing: .14em; }
+.ctos .nf-wk-here b { font: 700 18px/1.15 var(--cm-display); color: var(--cm-fg); text-transform: lowercase; }
+.ctos .nf-wk-here em { font: 700 var(--cm-ctos-t-micro)/1 var(--cm-mono); font-style: normal; color: var(--cm-cyan); }
+.ctos .nf-wk-tower { display: grid; gap: 18px; }
+@media (min-width: 820px) { .ctos .nf-wk-tower { grid-template-columns: minmax(0, 1fr) minmax(0, 1.05fr); align-items: start; } .ctos .nf-wk-zone { position: sticky; top: 50px; } }
+.ctos .nf-wk-chain { position: relative; list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.ctos .nf-wk-chain::before { content: ""; position: absolute; left: 25px; top: 20px; bottom: 20px; width: 2px; background: repeating-linear-gradient(0deg, #ffffff2a 0 4px, transparent 4px 7px); }
+.ctos .nf-wk-chain li { position: relative; }
+.ctos .nf-wk-chain li[data-state="done"]::after { content: ""; position: absolute; left: 25px; top: 50%; bottom: -10px; width: 2px; background: var(--c); box-shadow: 0 0 8px color-mix(in srgb, var(--c) 55%, transparent); }
+.ctos .nf-wk-chain li:last-child::after { content: none; }
+.ctos .nf-wk-chain button { position: relative; z-index: 1; width: 100%; display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 12px; padding: 4px 10px 4px 4px; min-height: 52px; background: transparent; border: 1px solid transparent; color: var(--cm-fg); text-align: left; cursor: pointer; }
+.ctos .nf-wk-chain button[aria-pressed="true"] { background: color-mix(in srgb, var(--c) 9%, #0a0a0a); border-color: color-mix(in srgb, var(--c) 45%, transparent); }
+.ctos .nf-wk-cn { display: grid; place-items: center; width: 44px; height: 44px; background: #0d0d0d; border: 1px solid #ffffff1c; box-shadow: 0 0 0 4px #0b0b0b; }
+.ctos .nf-wk-chain li[data-state="done"] .nf-wk-cn { border-color: var(--c); background: color-mix(in srgb, var(--c) 14%, #0a0a0a); }
+.ctos .nf-wk-cl { display: grid; gap: 2px; min-width: 0; }
+.ctos .nf-wk-cl b { font: 700 15px/1.15 var(--cm-display); text-transform: lowercase; }
+.ctos .nf-wk-cl small { font: 400 var(--cm-ctos-t-micro)/1.2 var(--cm-mono); color: var(--cm-ctos-meta); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ctos .nf-wk-chain li[data-state="locked"] .nf-wk-cl b { color: var(--cm-ctos-meta); }
+.ctos .nf-wk-ct { font: 700 var(--cm-ctos-t-micro)/1 var(--cm-mono); letter-spacing: .1em; text-transform: uppercase; color: var(--cm-ctos-meta); }
+.ctos .nf-wk-chain li[data-state="done"] .nf-wk-ct { color: var(--c); }
+.ctos .nf-wk-chain li[data-here] .nf-wk-ct { padding: 4px 6px; background: var(--cm-cyan); color: #0a0a0a; animation: nfWkHere 1.6s step-end infinite; }
+.ctos .nf-wk-chain li[data-here] .nf-wk-cn { border-color: var(--cm-cyan); animation: nfWkNext 1.8s steps(6) infinite; --c: var(--cm-cyan); }
+@media (hover: hover) { .ctos .nf-wk-chain button:hover { border-color: #ffffff22; } }
+.ctos .nf-wk-zone { position: relative; display: grid; gap: 14px; padding: 16px 18px 18px; background: #0a0a0a; border: 1px solid color-mix(in srgb, var(--c) 30%, #1c1c1c); }
+.ctos .nf-wk-zh { display: flex; align-items: center; gap: 14px; }
+.ctos .nf-wk-zh h3 { margin: 0; font: 700 clamp(20px, 3vw, 26px)/1.05 var(--cm-display); text-transform: lowercase; letter-spacing: -.02em; color: var(--cm-fg); }
+.ctos .nf-wk-zh small { display: block; margin-top: 4px; font: 500 var(--cm-ctos-t-micro)/1.2 var(--cm-mono); letter-spacing: .08em; color: var(--c); }
+.ctos .nf-wk-zf { margin: 0; font: 400 var(--cm-ctos-t-ui)/1.5 var(--cm-display); color: var(--cm-mute); }
+.ctos .nf-wk-beyond { grid-template-columns: minmax(0, 1fr); }
+@media (min-width: 900px) { .ctos .nf-wk-beyond { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+.ctos .nf-wk-branches { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+@media (min-width: 720px) { .ctos .nf-wk-branches { grid-template-columns: repeat(5, minmax(0, 1fr)); } }
+.ctos .nf-wk-branches li { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 6px 8px; padding: 10px; background: #0d0d0d; border-top: 2px solid var(--c); }
+.ctos .nf-wk-branches b { font: 700 var(--cm-ctos-t-ui)/1 var(--cm-mono); text-transform: uppercase; letter-spacing: .06em; color: var(--c); }
+.ctos .nf-wk-branches em { font: 700 var(--cm-ctos-t-micro)/1 var(--cm-mono); font-style: normal; color: var(--cm-fg); }
+.ctos .nf-wk-branches small { grid-column: 1 / -1; font: 400 var(--cm-ctos-t-micro)/1.35 var(--cm-mono); color: var(--cm-ctos-meta); }
+@media (max-width: 719px) {
+    .ctos .nf-wk-branches b { white-space: normal; overflow-wrap: anywhere; min-width: 0; } }
+@media (max-width: 819px) {
+    .ctos .nf-wk-chain { gap: 3px; }
+    .ctos .nf-wk-chain::before { left: 19px; top: 16px; bottom: 16px; }
+    .ctos .nf-wk-chain li[data-state="done"]::after { left: 19px; }
+    .ctos .nf-wk-chain button { min-height: 40px; gap: 10px; padding: 2px 8px 2px 2px; }
+    .ctos .nf-wk-cn { width: 36px; height: 36px; box-shadow: 0 0 0 3px #0b0b0b; }
+    .ctos .nf-wk-cl b { font-size: 14px; } }

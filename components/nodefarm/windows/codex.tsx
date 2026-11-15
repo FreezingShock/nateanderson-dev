@@ -10,6 +10,7 @@ import { ENTRIES, ENTRY_BY, GROUPS, codexNew, codexSeen, markCodexSeen, unlocked
 import type { State } from "@/lib/nodefarm/engine";
 import { DataLines, Frame, WinBanner } from "./win-kit";
 import "@/app/camino/nodefarm/codex.css";
+import "@/app/camino/nodefarm/lazy/codex.css";
 
 const COLOR = "#ff6b57";
 

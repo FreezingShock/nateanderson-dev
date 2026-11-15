@@ -10,6 +10,7 @@ import { LabBackdrop } from "../workshop/lab-backdrop";
 import { FwBackdrop } from "../ascend/fw-backdrop";
 import { HangarBackdrop } from "../workshop/hangar-backdrop";
 import { BRANCHES, TREE, fmt, nodeCost, nodeLevel, nodeOpen, nodeVis, treeNode, treeSpent, treeTotals, type Branch, type State, type TreeKind } from "@/lib/nodefarm/engine";
+import "@/app/camino/nodefarm/lazy/tree.css";
 
 /**
  * The prestige tree menu: a full-screen web of nodes with a camera you pan, pinch and zoom.

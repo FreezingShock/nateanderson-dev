@@ -10,6 +10,7 @@ import { LOGS, logNo } from "@/lib/nodefarm/content/story";
 import { NfIcon } from "../board/icon";
 import { SettingsFrame } from "./settings";
 import { DataLines, Frame, HoldButton, WinBanner } from "./win-kit";
+import "@/app/camino/nodefarm/lazy/systems.css";
 
 // Goals, Records and Menu windows (rebuilt 2026-11-12): art banner, bracket frames, data lines. Shared parts in ./win-kit.
 // Styles: app/camino/nodefarm/windows.css. Rows carry data-cx-i so the window's code reveal prints them in order.
