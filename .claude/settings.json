@@ -4,7 +4,6 @@
             "Bash(npm install)",
             "Bash(npm ci)",
             "Bash(npm run build)",
-            "Bash(npm run lint)",
             "Bash(npx tsc --noEmit)",
             "Bash(git status)",
             "Bash(git diff:*)",

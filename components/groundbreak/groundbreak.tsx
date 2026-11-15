@@ -1,7 +1,7 @@
 "use client";
 
 // Groundbreak: run a construction company. A full site view you can zoom and pan fills the screen; every menu floats over it as a
-// small window and closes by clicking blank ground. The engine is components/groundbreak/engine.ts (stand-in, swappable).
+// small window and closes by clicking blank ground. The engine is lib/groundbreak/engine.ts.
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type PointerEvent as RPointerEvent, type ReactNode } from "react";
 import { useGameShell } from "@/components/games/shell/game-route-shell";

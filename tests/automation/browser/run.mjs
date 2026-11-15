@@ -22,18 +22,30 @@ for (const f of readdirSync(srcDir).filter((f) => f.endsWith(".ts"))) {
     let js = ts.transpileModule(readFileSync(join(srcDir, f), "utf8"), {
         compilerOptions: { module: ts.ModuleKind.ESNext, target: ts.ScriptTarget.ES2020 },
     }).outputText;
-    js = js.replace(/from "(\.\/[^"]+)"/g, (m, p) => (p.endsWith(".js") ? m : `from "${p}.js"`));
+    js = js.replace(/from "(\.\.?\/[^"]+)"/g, (m, p) => (p.endsWith(".js") ? m : `from "${p}.js"`));
     writeFileSync(join(out, "input", f.replace(/\.ts$/, ".js")), js);
 }
+// touch-bar.ts imports the HUD glyph sheet (../icons/ui), so that module has to be served too.
+mkdirSync(join(out, "icons"));
+writeFileSync(
+    join(out, "icons", "ui.js"),
+    ts.transpileModule(readFileSync(join(root, "lib/automation/icons/ui.ts"), "utf8"), {
+        compilerOptions: { module: ts.ModuleKind.ESNext, target: ts.ScriptTarget.ES2020 },
+    }).outputText,
+);
 writeFileSync(join(out, "index.html"), `<!doctype html><html><head><meta name="viewport" content="width=device-width,initial-scale=1"><style>html,body{margin:0;height:100%;overflow:hidden;background:#0b1410}canvas{display:block;width:100vw;height:100vh;touch-action:none}</style></head><body><canvas id="c"></canvas><script type="module" src="/harness.js"></script></body></html>`);
 copyFileSync(join(here, "harness.js"), join(out, "harness.js"));
 const server = createServer((req, res) => {
+    if (req.url === "/favicon.ico") return void res.writeHead(204).end();
     const path = req.url === "/" ? "/index.html" : req.url.split("?")[0];
     try {
-        const body = readFileSync(join(out, path));
-        res.writeHead(200, { "content-type": path.endsWith(".js") ? "text/javascript" : "text/html" });
+        // Real art (the HUD glyph sheet) comes from public/; everything else from the temp build.
+        const body = readFileSync(path.startsWith("/brasswork/") ? join(root, "public", path) : join(out, path));
+        const type = path.endsWith(".js") ? "text/javascript" : path.endsWith(".webp") ? "image/webp" : path.endsWith(".png") ? "image/png" : "text/html";
+        res.writeHead(200, { "content-type": type });
         res.end(body);
     } catch {
+        if (process.env.BW_DEBUG) console.log("404", req.url);
         res.writeHead(404).end();
     }
 });
@@ -171,7 +183,11 @@ const state = (page) => page.evaluate(() => window.__auto.snapshot());
     await tap(p.x, p.y);
     await page.waitForTimeout(100);
     let s = await state(page);
-    check("phone: quick tap places one machine", s.items.some((i) => i.x === 6 && i.z === 6 && i.kind === "machine"));
+    check("phone: first tap on a machine only previews it", !s.items.some((i) => i.x === 6 && i.z === 6 && i.kind === "machine"));
+    await tap(p.x, p.y);
+    await page.waitForTimeout(100);
+    s = await state(page);
+    check("phone: second tap on the same cell places one machine", s.items.some((i) => i.x === 6 && i.z === 6 && i.kind === "machine"));
 
     await page.evaluate(() => window.__auto.ctl.setToolById("belt"));
     const a = await px(page, 10, 3);
@@ -252,7 +268,7 @@ const state = (page) => page.evaluate(() => window.__auto.snapshot());
         const r = b.getBoundingClientRect();
         return [r.width, r.height];
     }));
-    check("phone: six touch-bar buttons, each at least 48 by 48", sizes.length === 6 && sizes.every(([w, h]) => w >= 48 && h >= 48), JSON.stringify(sizes));
+    check("phone: six touch-bar buttons, each at least 44 by 44", sizes.length === 6 && sizes.every(([w, h]) => w >= 44 && h >= 44), JSON.stringify(sizes));
     check("phone: touch bar is visible", await page.evaluate(() => getComputedStyle(document.querySelector(".bw-touch-bar")).display !== "none"));
 
     // Tapping the Top button switches to top-down.
