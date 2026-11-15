@@ -554,3 +554,12 @@ html.gb-route .sf-foot { display: none !important; }
 .gb-root .gb-change-act { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
 .gb-root .gb-change-act .gb-go { border-color: var(--gb-line); color: var(--gb-ink); }
 .gb-root .gb-change-act .gb-go:hover { border-color: var(--gb-hi); color: var(--gb-hi); }
+
+/* skyline window: the buildings you finished, standing on one shoreline */
+.gb-root .gb-sky { align-items: flex-end; gap: 4px; height: 220px; padding: 0 8px; background: linear-gradient(transparent 82%, #2a1d14 82%, #1a1310); border-bottom: 2px solid var(--gb-amber); }
+.gb-root .gb-sky li { width: auto; height: auto; display: grid; justify-items: center; align-content: end; padding: 0 0 6px; animation: gbRise .4s steps(6, end) both; animation-delay: calc(var(--i, 0) * 60ms + 120ms); }
+.gb-sky .gb-thumb { grid-row: auto; transition: transform .18s steps(3, end); }
+.gb-sky li:hover .gb-thumb { transform: translateY(-4px); }
+.gb-root .gb-sky b { margin-top: 2px; padding: 1px 6px; background: #0b0806; border: 1px solid var(--gb-line); font: 700 12px var(--gb-text); color: var(--gb-hi); }
+@keyframes gbRise { from { opacity: 0; transform: translateY(24px); } }
+@media (max-width: 860px) { .gb-root .gb-sky { height: 180px; } .gb-sky .gb-thumb { max-width: 110px; } }
