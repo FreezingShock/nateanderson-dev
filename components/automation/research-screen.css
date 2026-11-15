@@ -1,7 +1,7 @@
 /* Research window content, inside the shared MenuWindow: tree left, detail right. No strips, no pills. */
 
 /* Wider frame than the default MenuWindow: the tree needs room. Scoped by its label so the shared frame stays untouched. */
-.bw-window[aria-label="Research"] { max-height: min(92dvh, 860px); }
+.bw-window[aria-label="Research"] { width: min(910px, 100%); max-height: min(78dvh, 660px); }
 .bw-window[aria-label="Research"] .bw-window-body { display: flex; flex-direction: column; padding: 12px 14px 14px; overflow: hidden; }
 .bw-window[aria-label="Research"] .bw-window-body { flex: 1 1 auto; }
 .rs-inner { display: flex; flex-direction: column; min-height: 0; flex: 1 1 auto; }
@@ -15,7 +15,7 @@
 .rs-head-r { display: flex; align-items: center; justify-content: flex-end; gap: 14px; }
 .rs-count { font: var(--bw-t-hint-w, 400) var(--bw-t-hint, 12px)/1 var(--bw-font-num, inherit); color: var(--bw-dim, #b09a6c); white-space: nowrap; }
 
-.rs-body { display: flex; gap: 18px; min-height: 0; flex: 1 1 auto; }
+.rs-body { display: flex; gap: 12px; min-height: 0; flex: 1 1 auto; }
 
 /* tree */
 .rs-tree-wrap { flex: 1 1 auto; min-width: 0; overflow: auto; overscroll-behavior: contain; padding: 4px 6px 10px 2px; }
@@ -36,7 +36,7 @@
 .rs-card {
   position: relative;
   display: flex; flex-direction: column; align-items: center; gap: 4px;
-  padding: 8px 6px 6px;
+  padding: 6px 4px 5px;
   border: 0; border-radius: 0; cursor: pointer; text-align: center;
   color: var(--bw-cream, #f0dfb8);
   background: var(--bw-dither, none), var(--bw-grain, none), linear-gradient(180deg, #46301c, #2f2013);
@@ -49,8 +49,8 @@
 .rs-card[data-related="false"]:not([aria-pressed="true"]) { }
 .rs-card-art { position: relative; display: block; line-height: 0; background: #140d08; box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.7); }
 .rs-card-art .bwa-cell { image-rendering: auto; }
-.rs-card-name { font: var(--bw-t-item-w, 600) 14px/1.15 var(--bw-font-display, inherit); color: var(--bw-cream, #f0dfb8); min-height: 2.3em; display: flex; align-items: center; justify-content: center; overflow-wrap: anywhere; }
-.rs-card-state { font: 700 11px/1.1 var(--bw-font-text, inherit); letter-spacing: 0.06em; text-transform: uppercase; color: var(--bw-dim, #b09a6c); }
+.rs-card-name { font: var(--bw-t-item-w, 600) 12.5px/1.15 var(--bw-font-display, inherit); color: var(--bw-cream, #f0dfb8); min-height: 2.3em; padding: 0 1px; display: flex; align-items: center; justify-content: center; overflow-wrap: anywhere; }
+.rs-card-state { font: 700 11px/1.1 var(--bw-font-text, inherit); letter-spacing: 0.03em; text-transform: uppercase; color: var(--bw-dim, #b09a6c); }
 .rs-card-need { font: 400 11px/1.1 var(--bw-font-text, inherit); color: var(--bw-dim, #b09a6c); }
 
 .rs-card[data-status="done"] { background: var(--bw-dither, none), linear-gradient(180deg, #6a4a1e, #4b3114); }
@@ -76,7 +76,7 @@
 .rs-legend li[data-status="short"]::before { color: #e8836a; }
 
 /* detail */
-.rs-detail { flex: none; width: 300px; display: flex; flex-direction: column; min-height: 0; padding: 12px 14px; background: var(--bw-dither, none), linear-gradient(180deg, #2a1c10, #1b1109); box-shadow: inset 0 0 0 1px rgba(210, 154, 60, 0.35), inset 0 2px 8px #000; }
+.rs-detail { flex: none; width: 240px; display: flex; flex-direction: column; min-height: 0; padding: 12px 14px; background: var(--bw-dither, none), linear-gradient(180deg, #2a1c10, #1b1109); box-shadow: inset 0 0 0 1px rgba(210, 154, 60, 0.35), inset 0 2px 8px #000; }
 .rs-detail-scroll { flex: 1 1 auto; min-height: 0; overflow: auto; overscroll-behavior: contain; padding-right: 4px; }
 .rs-detail-art { display: flex; justify-content: center; padding: 6px; background: #140d08; box-shadow: inset 0 0 0 1px #000, inset 0 0 0 3px rgba(210, 154, 60, 0.35); line-height: 0; }
 .rs-detail-art .bwa-cell { image-rendering: pixelated; }
@@ -120,11 +120,10 @@
 .rs-go { width: 100%; padding: 12px 10px; font-size: 13px; }
 .rs-why { margin: 8px 0 0; font: 400 13px/1.35 var(--bw-font-text, inherit); color: #e8836a; text-align: center; }
 
-@media (max-width: 1099px) { .rs-detail { width: 280px; } }
 
 /* phone: bottom sheet; tree pans on top, the picked research sits compact below */
 @media (max-width: 767px) {
-  .bw-window[aria-label="Research"] { max-height: 94dvh; height: 94dvh; }
+  .bw-window[aria-label="Research"] { max-height: 94dvh; height: 94dvh; width: 100%; }
   .bw-window[aria-label="Research"] .bw-window-body { padding: 8px 10px 10px; }
   .rs-body { flex-direction: column; gap: 10px; }
   .rs-tree-wrap { flex: 1 1 0; min-height: 150px; }
@@ -140,3 +139,44 @@
 }
 @media (prefers-reduced-motion: reduce) { .rs-card, .rs-meter i { transition: none; } }
 .rs-tree > .rs-card { position: absolute; }
+
+/* identity: a drafting table. Patina (the workshop's blue-green) is Research's accent; amber stays for ready. */
+.bw-window[aria-label="Research"] { --rs-acc: #58b09a; --rs-acc-dim: rgba(88, 176, 154, 0.3); }
+.bw-window[aria-label="Research"] .bw-window-head { background: linear-gradient(180deg, #1f3a36, #14241f); border-bottom-color: var(--rs-acc-dim); }
+.bw-window[aria-label="Research"] .bw-window-title { color: #bff0de; }
+.bw-window[aria-label="Research"] { border-color: #3f8a76; }
+.bw-window[aria-label="Research"] .bw-window-body {
+  background:
+    linear-gradient(rgba(88, 176, 154, 0.07) 1px, transparent 1px) 0 0 / 20px 20px,
+    linear-gradient(90deg, rgba(88, 176, 154, 0.07) 1px, transparent 1px) 0 0 / 20px 20px,
+    linear-gradient(rgba(88, 176, 154, 0.12) 1px, transparent 1px) 0 0 / 100px 100px,
+    linear-gradient(90deg, rgba(88, 176, 154, 0.12) 1px, transparent 1px) 0 0 / 100px 100px,
+    #101b19;
+}
+.rs-bp-num { color: #bff0de; text-shadow: 0 0 10px rgba(88, 176, 154, 0.5); }
+.rs-bp-note { flex: 1 1 auto; margin: 0; font: 400 12.5px/1.35 var(--bw-font-text, inherit); color: var(--bw-dim, #b09a6c); }
+.rs-bp-note b { color: #bff0de; font-weight: 600; }
+.rs-head { align-items: center; padding-bottom: 8px; border-bottom: 1px solid var(--rs-acc-dim); margin-bottom: 8px; }
+.rs-tier, .rs-sub, .rs-h, .rs-detail-tier { color: #7ccfb6; }
+.rs-tier, .rs-sub { border-bottom-color: var(--rs-acc-dim); }
+.rs-detail { background: rgba(10, 22, 20, 0.85); box-shadow: inset 0 0 0 1px var(--rs-acc-dim); }
+.rs-detail-foot { border-top-color: var(--rs-acc-dim); }
+
+.rs-detail-top { display: flex; gap: 10px; align-items: flex-start; }
+.rs-detail-art { flex: none; padding: 3px; }
+.rs-detail-id { min-width: 0; }
+.rs-detail-tier { margin-top: 0; }
+.rs-detail-name { font-size: 18px; }
+.rs-detail { padding: 10px 12px; }
+
+/* state animations: researched stamps down, a newly open card flashes once, lit links flow */
+@keyframes rs-stamp { 0% { transform: scale(1.18); filter: brightness(1.8); } 55% { transform: scale(0.97); } 100% { transform: none; filter: none; } }
+@keyframes rs-open { 0% { box-shadow: 0 0 0 0 rgba(255, 179, 71, 0.9); } 100% { box-shadow: 0 0 0 14px rgba(255, 179, 71, 0); } }
+@keyframes rs-flow { to { stroke-dashoffset: -16; } }
+.rs-card[data-fresh="done"] { animation: rs-stamp 0.5s cubic-bezier(0.2, 0.8, 0.3, 1); z-index: 2; }
+.rs-card[data-fresh="open"] { animation: rs-open 0.9s ease-out; }
+.rs-link[data-lit="true"] { stroke-dasharray: 6 4; animation: rs-flow 0.9s linear infinite; }
+@media (prefers-reduced-motion: reduce) { .rs-card[data-fresh], .rs-link[data-lit="true"] { animation: none; } }
+
+.rs-tier { letter-spacing: 0.06em; }
+.rs-detail-art .bwa-cell { image-rendering: auto; }
