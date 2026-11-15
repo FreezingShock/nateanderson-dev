@@ -212,11 +212,13 @@ html[data-xition] .cm-dock { z-index: calc(var(--cm-z-curtain) + 1); }
     .cm-dock { transition: none; }
 }
 
+/* Labels are never under 11px. A tab is (screen - 32px) / 7 wide and "CREATIONS" needs about 59px at 11px, so below
+   445px the labels leave the screen but stay in the accessibility tree; the pixel icon and the cyan plate carry it. */
 @media (max-width: 899px) {
-    .cm-dock a { font-size: 8.5px; letter-spacing: .01em; }
+    .cm-dock a { font-size: 11px; letter-spacing: 0; }
 }
-@media (max-width: 420px) {
-    .cm-dock a { font-size: 8px; letter-spacing: 0; }
+@media (max-width: 444px) {
+    .cm-dock a span { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
 }
 @media (prefers-reduced-motion: reduce) {
     .cm-dock .ind { transition: none; }

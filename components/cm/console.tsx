@@ -40,6 +40,18 @@ interface Entry {
 }
 
 const t = (text: string, k?: Line["k"]): Line => ({ t: text, k });
+/** Usage strings wider than the name column get their own line; long ones wrap at "|" instead of mid-word. */
+const rowLong = (l: Line) => {
+    const n = (l.a ?? "").length;
+    return n > 16 ? " cn-long" : n > 12 ? " cn-mid" : "";
+};
+const breakAtBars = (a: string) =>
+    a.split("|").map((part, i, all) => (
+        <span key={i}>
+            {part}
+            {i < all.length - 1 ? <>|<wbr /></> : null}
+        </span>
+    ));
 const row = (a: string, b: string, go?: string): Line => ({ a, b, go });
 
 const slug = (s: string) =>
@@ -839,7 +851,7 @@ export function NaosConsole({ onClose, prefill }: { onClose: () => void; prefill
                                     const body =
                                         l.a !== undefined ? (
                                             <>
-                                                <b className="cn-a">{l.a}</b>
+                                                <b className="cn-a">{breakAtBars(l.a)}</b>
                                                 <span className="cn-b">{l.b}</span>
                                             </>
                                         ) : (
@@ -849,7 +861,7 @@ export function NaosConsole({ onClose, prefill }: { onClose: () => void; prefill
                                         <a
                                             key={i}
                                             href={l.go}
-                                            className="cn-l cn-row cn-go"
+                                            className={`cn-l cn-row cn-go${rowLong(l)}`}
                                             style={style}
                                             onClick={(e) => {
                                                 e.preventDefault();
@@ -859,7 +871,7 @@ export function NaosConsole({ onClose, prefill }: { onClose: () => void; prefill
                                             {body}
                                         </a>
                                     ) : (
-                                        <div key={i} className={`cn-l${l.a !== undefined ? " cn-row" : ""}${l.k ? ` cn-${l.k}` : ""}`} style={style}>
+                                        <div key={i} className={`cn-l${l.a !== undefined ? ` cn-row${rowLong(l)}` : ""}${l.k ? ` cn-${l.k}` : ""}`} style={style}>
                                             {body}
                                         </div>
                                     );
