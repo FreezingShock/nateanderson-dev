@@ -149,6 +149,24 @@ export function footprintCells(b: { x: number; z: number; rot: Rot }, fp: Footpr
 
 export { STARTER_KIT };
 
+/**
+ * Machine ports. Miners and crafters take items in through the back edge (the side opposite their facing) and push
+ * items out through the front edge (the side they face), matching their models. Returns the cells just outside the
+ * footprint on that edge. Other buildings are not directional here.
+ */
+export function edgeCells(b: { x: number; z: number; rot: Rot }, fp: Footprint, side: "front" | "back"): [number, number][] {
+    const d = side === "front" ? b.rot : (((b.rot + 2) % 4) as Rot);
+    const inside = new Set(footprintCells(b, fp).map(([x, z]) => keyOf(x, z)));
+    const out: [number, number][] = [];
+    for (const [x, z] of footprintCells(b, fp)) {
+        const tx = x + DIR_DX[d];
+        const tz = z + DIR_DZ[d];
+        if (!inside.has(keyOf(tx, tz))) out.push([tx, tz]);
+    }
+    return out;
+}
+
+
 export function createWorld(opts: CreateOptions = {}, cat: Catalog = DEFAULT_CATALOG): World {
     const width = opts.width ?? 64;
     const depth = opts.depth ?? 64;
@@ -204,6 +222,7 @@ export function hasOutputNeighbour(world: World, b: Building, cat: Catalog = DEF
     if (!r) return false;
     const index = indexOf(world, cat);
     return portsOf(b, r.footprint).some((p) => {
+        if ((r.kind === "miner" || r.kind === "crafter") && !(p.tx === p.fx + DIR_DX[b.rot] && p.tz === p.fz + DIR_DZ[b.rot])) return false;
         const id = index.get(keyOf(p.tx, p.tz));
         if (id === undefined) return false;
         const k = resolve(cat, world.buildings[id].type)?.kind;
@@ -261,6 +280,8 @@ export function place(world: World, type: string, x: number, z: number, rot: Rot
     const hub = world.buildings[world.hubId];
     for (const c of r.cost) hub.input[c.item] -= c.qty;
     const b = newBuilding(world, type, x, z, rot);
+    // A new kiln starts on Iron ingot, the recipe every opening needs, so it smelts the moment ore reaches it.
+    if (type === "kiln") b.recipe = "r_iron_ingot";
     rebuildIndex(world, cat);
     return { ok: true, id: b.id };
 }
@@ -359,6 +380,9 @@ function accept(world: World, cat: Catalog, index: Map<string, number>, tx: numb
             const rec = recipeById(cat, b.recipe);
             const need = rec?.inputs.find((s) => s.item === item);
             if (!need) return false;
+            // Crafters take items through the back edge only.
+            const bd = (b.rot + 2) % 4;
+            if (fromX !== tx + DIR_DX[bd] || fromZ !== tz + DIR_DZ[bd]) return false;
             if ((b.input[item] ?? 0) >= need.qty * cat.tune.inputBufferMult) return false;
             b.input[item] = (b.input[item] ?? 0) + 1;
             return true;
@@ -417,6 +441,9 @@ function allowedPort(world: World, cat: Catalog, index: Map<string, number>, b: 
         case "tunnel-out": return p.tx === fwdX && p.tz === fwdZ;
         case "loader": return tk === "storage" || tk === "dock" || tk === "hub";
         case "unloader": return tk === "belt";
+        // Miners and crafters push through the front edge only.
+        case "miner":
+        case "crafter": return p.tx === p.fx + DIR_DX[b.rot] && p.tz === p.fz + DIR_DZ[b.rot];
         default: return true;
     }
 }

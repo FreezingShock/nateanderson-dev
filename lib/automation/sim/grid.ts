@@ -3,7 +3,7 @@
 import type { ActionResult, Catalog, Cell, Footprint, Rot, World } from "../types";
 import { DIR_DX, DIR_DZ } from "../types";
 import { DEFAULT_CATALOG } from "./data";
-import { footprintCells, keyOf, placeError, place, remove, resolve, buildingAt } from "./world";
+import { edgeCells, footprintCells, keyOf, placeError, place, remove, resolve, buildingAt } from "./world";
 
 export interface GridItem {
     kind: string;
@@ -64,20 +64,28 @@ export function autoRoute(world: World, from: Cell, to: Cell, belt = "belt", cat
     if (!resolve(cat, belt) || resolve(cat, belt)!.kind !== "belt") return { ok: false, reason: "not a belt" };
     const fromB = buildingAt(world, from.x, from.z, cat);
     const toB = buildingAt(world, to.x, to.z, cat);
-    // A drill pushes its ore into any belt beside it, so a route must not pass next to a drill it was not sent from.
+    const dirOf = (kind: string | undefined) => kind === "miner" || kind === "crafter";
+    // A drill pushes its ore into a belt on its front edge, so a route must not pass over the front of a drill it was not sent from.
+    const frontOf = (b: { id: number; x: number; z: number; rot: Rot; type: string }) => {
+        const r = resolve(cat, b.type);
+        return r ? edgeCells(b, r.footprint, "front") : [];
+    };
     const beside = (x: number, z: number, id: number | undefined) =>
-        DIR_DX.some((dx, d) => {
-            const b = buildingAt(world, x + dx, z + DIR_DZ[d], cat);
-            return !!b && b.id !== id && resolve(cat, b.type)?.kind === "miner";
-        });
-    // The drill a route starts from is the one next to its first cell, even when the start is an empty cell.
-    const ownMiner = fromB?.id ?? DIR_DX.map((dx, d) => buildingAt(world, from.x + dx, from.z + DIR_DZ[d], cat)).find((b) => b && resolve(cat, b.type)?.kind === "miner")?.id;
+        Object.values(world.buildings).some((b) => b.id !== id && resolve(cat, b.type)?.kind === "miner" && frontOf(b).some(([fx, fz]) => fx === x && fz === z));
+    // The drill a route starts from is the one whose front edge holds its first cell, even when the start is an empty cell.
+    const ownMiner = fromB?.id ?? Object.values(world.buildings).find((b) => resolve(cat, b.type)?.kind === "miner" && frontOf(b).some(([fx, fz]) => fx === from.x && fz === from.z))?.id;
     const free = (x: number, z: number) =>
         x >= 0 && z >= 0 && x < world.width && z < world.depth && !buildingAt(world, x, z, cat) && !beside(x, z, ownMiner);
 
-    const starts: Cell[] = fromB ? neighbours(world, cellsOf(world, fromB.id, cat)) : [from];
+    // Machines with ports start a route on their front edge and end it on the back edge of the machine it feeds.
+    const edge = (b: { id: number; x: number; z: number; rot: Rot; type: string }, side: "front" | "back"): Cell[] => {
+        const r = resolve(cat, b.type);
+        if (!r || !dirOf(r.kind)) return neighbours(world, cellsOf(world, b.id, cat));
+        return edgeCells(b, r.footprint, side).filter(([x, z]) => x >= 0 && z >= 0 && x < world.width && z < world.depth).map(([x, z]) => ({ x, z }));
+    };
+    const starts: Cell[] = fromB ? edge(fromB, "front") : [from];
     const goals = new Set<string>();
-    if (toB) for (const n of neighbours(world, cellsOf(world, toB.id, cat))) goals.add(keyOf(n.x, n.z));
+    if (toB) for (const n of edge(toB, "back")) goals.add(keyOf(n.x, n.z));
     else goals.add(keyOf(to.x, to.z));
     // A route may also side-load onto a belt that already feeds the target, so a busy hub edge is not a dead end.
     const joins = new Map<string, Cell>();

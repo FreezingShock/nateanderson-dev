@@ -6,7 +6,11 @@ import type {
 import { canAfford, costText } from "./format";
 import { Section } from "./factory-sections";
 import { ArtIcon, UiArtIcon } from "@/components/brasswork-art/icons";
+import { tipAttr } from "@/components/brasswork-ui/tip";
+import { machineTip } from "@/lib/automation/tips";
+import { DEFAULT_CATALOG } from "@/lib/automation/sim/data";
 import "./build-tile.css";
+import "./empty-states.css";
 
 export type GroupId = "machines" | "power" | "logistics";
 
@@ -151,10 +155,11 @@ export function BuildList({
                 aria-pressed={armed}
                 data-afford={ok}
                 aria-label={`${armed ? "Holding" : "Select"} ${m.name}${ok ? "" : " (not enough resources yet)"}`}
+                {...tipAttr(machineTip(DEFAULT_CATALOG, m, hint))}
                 onClick={() => onBuild(m.id)}
               >
                 <span className="bwt-plate">
-                  <ArtIcon id={m.id} size={80} name={m.name} />
+                  <ArtIcon id={m.id} size={80} />
                 </span>
                 <span className="bwt-text">
                   <span className="bwt-name">{m.name}</span>
@@ -177,7 +182,11 @@ export function BuildList({
                 aria-pressed={selected}
                 onClick={() => onSelect(selected ? null : m.id)}
                 aria-label={`${selected ? "Close" : "Show"} details for ${m.name}`}
-                title={`${selected ? "Close" : "Show"} details`}
+                {...tipAttr({
+                  title: selected ? "Close details" : "Show details",
+                  tag: "Inspector",
+                  text: `${selected ? "Close" : "Open"} the card for ${m.name}: recipe, rates, power and what it holds.`,
+                })}
               >
                 <UiArtIcon id={selected ? "close" : "info"} size={24} />
               </button>
@@ -195,7 +204,14 @@ export function BuildList({
       <>
         {open.map(renderRow)}
         {locked > 0 && (
-          <li className="ab-locked-note">{locked} more unlock as you progress</li>
+          <li className="ab-locked-note">
+            <span className="ab-locked-slots" aria-hidden="true">
+              {Array.from({ length: Math.min(locked, 4) }, (_, i) => (
+                <span key={i} className="ab-locked-slot" style={{ ["--i" as string]: i }}><UiArtIcon id="lock" size={20} /></span>
+              ))}
+            </span>
+            <span>{locked} more to open. Fill hub orders and they appear here.</span>
+          </li>
         )}
       </>
     );

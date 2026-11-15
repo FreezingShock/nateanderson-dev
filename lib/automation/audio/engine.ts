@@ -174,6 +174,7 @@ export function disposeAudio() {
     if (g) void g.ctx.close();
     g = null;
     active = 0;
+    epoch++;
     lastPlay.clear();
 }
 
@@ -190,6 +191,8 @@ export const rawGraph = () => g;
 // ---------------------------------------------------------------- voices
 
 let active = 0;
+// Bumped on dispose: a voice that ends after the graph was closed must not push the count below zero.
+let epoch = 0;
 const MAX_VOICES = 22;
 const lastPlay = new Map<string, number>();
 
@@ -237,8 +240,9 @@ export function tone(o: Tone) {
         osc.start(t0);
         osc.stop(t0 + dur + 0.05);
         active++;
+        const e = epoch;
         osc.onended = () => {
-            active--;
+            if (e === epoch) active--;
             vg.disconnect();
             osc.disconnect();
             if (gm === 1) end.disconnect();
@@ -272,8 +276,9 @@ export function click(o: Click) {
     src.start(t0, Math.random() * 3);
     src.stop(t0 + dur + 0.02);
     active++;
+    const e = epoch;
     src.onended = () => {
-        active--;
+        if (e === epoch) active--;
         out.disconnect();
         bp.disconnect();
     };
@@ -305,8 +310,9 @@ export function sweep(o: Sweep) {
     src.start(t0, Math.random() * 3);
     src.stop(t0 + dur + 0.05);
     active++;
+    const e = epoch;
     src.onended = () => {
-        active--;
+        if (e === epoch) active--;
         out.disconnect();
         bp.disconnect();
     };

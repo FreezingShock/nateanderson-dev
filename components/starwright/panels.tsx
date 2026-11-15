@@ -2,7 +2,7 @@
 
 // The menus that open over the star: Almanac, Orbit, Constellations and Pulsar map, Menu, the birth-cloud picker, the visitor
 // card and the ending. Each opens and closes with its own animation (data-kind in app/camino/starwright.css).
-import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
+import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { useGameShell } from "@/components/games/shell/game-route-shell";
 import { createSaveTools, readPickedFile } from "@/lib/games/save";
 import { ACHIEVEMENTS, ACH_BONUS, CLOUDS, CODEX, CONSTELLATIONS, ELEMENTS, EVENT_STAY, type EventOpt, PLANETS, PLANET_STAGE_AT, PLANET_STAGE_BONUS, TUNE, type Perk } from "@/lib/starwright/data";
@@ -11,8 +11,9 @@ import { frameAt, initSprites, sprites } from "@/lib/starwright/sprites";
 import { SAVE_VERSION, canPlanet, effects, eventOf, fmt, fmtAge, isSave, parse, planetStage, type State } from "@/lib/starwright/engine";
 import { cloudArt, cssUrl } from "@/lib/starwright/ui-art";
 import { sheetInfo, sheetUrl } from "@/lib/starwright/ui-sheets";
-import { ElTile, Gl, Pic, ui } from "./sw-ui";
-import { SettingsBlock } from "./settings";
+import { ElTile, Gl, Pic, dockOrigin, ui } from "./sw-ui";
+import { settingUnits, useSettings } from "./settings";
+import { Paged, useProbe } from "./paged";
 import { SW_KEYS } from "@/lib/starwright/commands";
 
 export const tools = createSaveTools<State>({ app: "starwright", version: SAVE_VERSION, validate: isSave });
@@ -21,10 +22,19 @@ export type Kind = "iris" | "shutter" | "wipe" | "settle";
 const Corners = () => <><i className="sw-cn" data-c="tl" /><i className="sw-cn" data-c="tr" /><i className="sw-cn" data-c="bl" /><i className="sw-cn" data-c="br" /></>;
 
 export function Overlay({ title, sub, onClose, children, wide, kind, leaving }: { title: string; sub?: ReactNode; onClose: () => void; children: ReactNode; wide?: boolean; kind: Kind; leaving?: boolean }) {
+    const card = useRef<HTMLDivElement | null>(null);
+    // The card grows out of the dock tile that opened it: --fx and --fy are the way from the card's middle back to that tile.
+    useLayoutEffect(() => {
+        const c = card.current;
+        const o = dockOrigin();
+        if (!c || !o) return;
+        c.style.setProperty("--fx", `${o.x - Math.round(window.innerWidth / 2)}px`);
+        c.style.setProperty("--fy", `${o.y - Math.round(window.innerHeight / 2)}px`);
+    }, []);
     // Clicking blank space (the backdrop) closes it, like every menu on the site.
     return (
         <div className="sw-over" role="dialog" aria-modal="true" aria-label={title} data-leaving={leaving ? "" : undefined} onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
-            <div className="sw-card sw-panel" data-wide={wide ? "" : undefined} data-kind={kind}>
+            <div ref={card} className="sw-card sw-panel" data-wide={wide ? "" : undefined} data-kind={kind}>
                 <div className="sw-card-head">
                     <h2>{title}</h2>
                     {sub && <span>{sub}</span>}
@@ -42,46 +52,48 @@ export function Overlay({ title, sub, onClose, children, wide, kind, leaving }: 
 
 export function Almanac({ s, onClose, leaving }: { s: State; onClose: () => void; leaving?: boolean }) {
     const [sel, setSel] = useState<number | null>(null);
+    const made = (i: number) => s.found.includes(ELEMENTS[i].sym);
+    const codex = ELEMENTS.map((e, i) => {
+        const own = s.found.includes(e.sym);
+        return (
+            <li key={e.sym} style={{ "--c": e.color } as CSSProperties} data-own={own ? "" : undefined} data-sel={sel === i ? "" : undefined} data-tip={own ? `${e.name}|${CODEX[e.sym]}` : "Not yet made|Fuse your way up the ladder."}>
+                <button type="button" className="sw-cx" onClick={() => setSel(sel === i ? null : i)} aria-label={own ? e.name : "Not yet made"}>
+                    <ElTile i={i} locked={!own} anim={own} />
+                    <b data-sym={own ? e.sym : "?"}>{own ? e.name : "?"}</b>
+                </button>
+            </li>
+        );
+    });
+    const medals = ACHIEVEMENTS.map((a) => {
+        const own = s.ach.includes(a.id);
+        return (
+            <li key={a.id} data-own={own ? "" : undefined} data-tip={`${a.name}|${a.desc}`}>
+                <span className="sw-medal" style={{ backgroundImage: `url("${ui(`medal-${a.id}-${own ? "own" : "lock"}`)}")` }} />
+                <b>{a.name}</b>
+                <span>{a.desc}</span>
+            </li>
+        );
+    });
     return (
         <Overlay title="Almanac" sub={`${s.ach.length} of ${ACHIEVEMENTS.length} · everything +${Math.round(ACH_BONUS * 100 * s.ach.length)}%`} onClose={onClose} wide kind="wipe" leaving={leaving}>
-            <div className="sw-scroll">
-                <h3 className="sw-h3">Elements made</h3>
-                <ul className="sw-codex">
-                    {ELEMENTS.map((e, i) => {
-                        const own = s.found.includes(e.sym);
-                        return (
-                            <li key={e.sym} style={{ "--c": e.color } as CSSProperties} data-own={own ? "" : undefined} data-sel={sel === i ? "" : undefined} data-tip={own ? `${e.name}|${CODEX[e.sym]}` : "Not yet made|Fuse your way up the ladder."}>
-                                <button type="button" className="sw-cx" onClick={() => setSel(sel === i ? null : i)} aria-label={own ? e.name : "Not yet made"}>
-                                    <ElTile i={i} locked={!own} anim={own} />
-                                    <b>{own ? e.name : "?"}</b>
-                                </button>
-                            </li>
-                        );
-                    })}
-                </ul>
-                {sel !== null && (
-                    <div className="sw-fact" key={sel} style={{ "--c": ELEMENTS[sel].color } as CSSProperties}>
-                        <ElTile i={sel} locked={!s.found.includes(ELEMENTS[sel].sym)} anim={s.found.includes(ELEMENTS[sel].sym)} size={3} />
+            <Paged
+                label="Almanac"
+                deps={`${s.found.length}.${s.ach.length}`}
+                groups={[
+                    { key: "elements", title: "Elements made", className: "sw-codex", tag: "ul", units: codex },
+                    { key: "milestones", title: <>Milestones <small>+{Math.round(ACH_BONUS * 100)}% to everything each</small></>, className: "sw-ach", tag: "ul", units: medals },
+                ]}
+                overlay={sel !== null && (
+                    <div className="sw-fact" key={sel} style={{ "--c": ELEMENTS[sel].color } as CSSProperties} role="status">
+                        <ElTile i={sel} locked={!made(sel)} anim={made(sel)} size={3} />
                         <div>
-                            <b>{s.found.includes(ELEMENTS[sel].sym) ? ELEMENTS[sel].name : "Not yet made"} <span>{ELEMENTS[sel].sym} · weight {ELEMENTS[sel].w}</span></b>
-                            <p>{s.found.includes(ELEMENTS[sel].sym) ? CODEX[ELEMENTS[sel].sym] : "Fuse your way up the ladder to find out."}</p>
+                            <b>{made(sel) ? ELEMENTS[sel].name : "Not yet made"} <span>{ELEMENTS[sel].sym} · weight {ELEMENTS[sel].w}</span></b>
+                            <p>{made(sel) ? CODEX[ELEMENTS[sel].sym] : "Fuse your way up the ladder to find out."}</p>
                         </div>
+                        <button type="button" className="sw-fact-x" onClick={() => setSel(null)} aria-label="Close this note"><Gl n="cross" s={1} /></button>
                     </div>
                 )}
-                <h3 className="sw-h3">Milestones <small>+{Math.round(ACH_BONUS * 100)}% to everything each</small></h3>
-                <ul className="sw-ach">
-                    {ACHIEVEMENTS.map((a) => {
-                        const own = s.ach.includes(a.id);
-                        return (
-                            <li key={a.id} data-own={own ? "" : undefined} data-tip={`${a.name}|${a.desc}`}>
-                                <span className="sw-medal" style={{ backgroundImage: `url("${ui(`medal-${a.id}-${own ? "own" : "lock"}`)}")` }} />
-                                <b>{a.name}</b>
-                                <span>{a.desc}</span>
-                            </li>
-                        );
-                    })}
-                </ul>
-            </div>
+            />
         </Overlay>
     );
 }
@@ -90,9 +102,10 @@ export function Almanac({ s, onClose, leaving }: { s: State; onClose: () => void
 
 function PlanetSprite({ id, stage, dim }: { id: string; stage: number; dim?: boolean }) {
     const ref = useRef<HTMLCanvasElement | null>(null);
+    const probe = useProbe();
     useEffect(() => {
         const ctx = ref.current?.getContext("2d");
-        if (!ctx) return;
+        if (!ctx || probe) return;
         const img = ctx.createImageData(56, 56);
         const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
         const t0 = performance.now();
@@ -120,7 +133,7 @@ function PlanetSprite({ id, stage, dim }: { id: string; stage: number; dim?: boo
         };
         raf = requestAnimationFrame(loop);
         return () => cancelAnimationFrame(raf);
-    }, [id, stage]);
+    }, [id, stage, probe]);
     return <canvas ref={ref} width={56} height={56} className="sw-sprite" data-dim={dim ? "" : undefined} aria-hidden="true" />;
 }
 
@@ -128,8 +141,7 @@ export function Orbit({ s, onBuy, onClose, leaving }: { s: State; onBuy: (id: st
     const f = effects(s);
     return (
         <Overlay title="Orbit" sub={`${s.planets.length} of ${PLANETS.length} formed${f.keepPlanets ? " · they keep their age through a supernova" : " · a supernova sets them back to young"}`} onClose={onClose} wide kind="shutter" leaving={leaving}>
-            <ul className="sw-planets">
-                {PLANETS.map((p) => {
+            <Paged label="Orbit" deps={`${s.planets.length}`} groups={[{ key: "planets", className: "sw-planets", tag: "ul", units: PLANETS.map((p) => {
                     const own = s.planets.includes(p.id);
                     const ok = canPlanet(s, p.id);
                     const st = own ? planetStage(s, p.id) : 0;
@@ -164,8 +176,7 @@ export function Orbit({ s, onBuy, onClose, leaving }: { s: State; onBuy: (id: st
                             {!own && <button type="button" className="sw-sc-buy sw-pl-form" disabled={!ok} onClick={() => onBuy(p.id)}><span>{ok ? "Form it" : "Not enough"}</span></button>}
                         </li>
                     );
-                })}
-            </ul>
+                }) }]} />
         </Overlay>
     );
 }
@@ -192,29 +203,39 @@ export function Menu({ sound, onSound, s, paused, onPause, onClose, onName, onIm
         onImport(next);
         setMsg("Save imported.");
     };
+    const v = useSettings();
+    const coarse = typeof window !== "undefined" && window.matchMedia("(pointer: coarse)").matches;
+    const top = [
+        <label key="name" className="sw-field">
+            <span>Star name</span>
+            <input defaultValue={s.name} maxLength={24} onChange={(e) => onName(e.target.value)} spellCheck={false} autoComplete="off" />
+        </label>,
+        <div key="btns" className="sw-ibtns">
+            <button type="button" className="sw-ibtn" onClick={onPause} data-tip={paused ? "Resume|The star burns again." : "Pause|Stops the clock until you resume."}><Pic sheet={paused ? "icon/menu-play" : "icon/menu-pause"} glyph={paused ? "play" : "pause"} s={3} /><span>{paused ? "Resume" : "Pause"}</span></button>
+            {shell.supportsFullscreen && <button type="button" className="sw-ibtn" onClick={shell.toggleFullscreen} data-tip="Full screen|Hides the browser frame."><Pic sheet="icon/menu-full" glyph="full" s={3} /><span>{shell.fullscreen ? "Exit" : "Full"}</span></button>}
+            <button type="button" className="sw-ibtn" onClick={onSound} aria-pressed={sound} data-tip={sound ? "Sound on|Click to mute." : "Sound off|Click to turn it on."}><Pic sheet={sound ? "icon/menu-sound" : "icon/menu-mute"} glyph={sound ? "sound" : "mute"} s={3} /><span>{sound ? "On" : "Off"}</span></button>
+            <button type="button" className="sw-ibtn" onClick={onExport} data-tip="Export save|Downloads a file you can keep."><Pic sheet="icon/menu-export" glyph="export" s={3} /><span>Export</span></button>
+            <button type="button" className="sw-ibtn" onClick={() => file.current?.click()} data-tip="Import save|Replaces this game with a file."><Pic sheet="icon/menu-import" glyph="import" s={3} /><span>Import</span></button>
+            <input ref={file} type="file" accept="application/json,.json" hidden onChange={(e) => { void pick(e.target.files?.[0]); e.target.value = ""; }} />
+        </div>,
+        ...(msg ? [<p key="msg" className="sw-msg" role="status">{msg}</p>] : []),
+    ];
+    const foot = [
+        <p key="note" className="sw-dim sw-small">Saves in this browser. Away time counts up to {TUNE.offlineH} hours. Played for {fmtAge(s.totalAge)}.</p>,
+        <button key="reset" type="button" className="sw-reset" onClick={() => (sure ? onReset() : setSure(true))}>{sure ? "This erases the save. Press again." : "Reset the game"}</button>,
+    ];
     return (
         <Overlay title="Menu" onClose={onClose} kind="settle" leaving={leaving}>
-            <div className="sw-menu">
-                <label className="sw-field">
-                    <span>Star name</span>
-                    <input defaultValue={s.name} maxLength={24} onChange={(e) => onName(e.target.value)} spellCheck={false} autoComplete="off" />
-                </label>
-                <div className="sw-ibtns">
-                    <button type="button" className="sw-ibtn" onClick={onPause} data-tip={paused ? "Resume|The star burns again." : "Pause|Stops the clock until you resume."}><Pic sheet={paused ? "icon/menu-play" : "icon/menu-pause"} glyph={paused ? "play" : "pause"} s={3} /><span>{paused ? "Resume" : "Pause"}</span></button>
-                    {shell.supportsFullscreen && <button type="button" className="sw-ibtn" onClick={shell.toggleFullscreen} data-tip="Full screen|Hides the browser frame."><Pic sheet="icon/menu-full" glyph="full" s={3} /><span>{shell.fullscreen ? "Exit" : "Full"}</span></button>}
-                    <button type="button" className="sw-ibtn" onClick={onSound} aria-pressed={sound} data-tip={sound ? "Sound on|Click to mute." : "Sound off|Click to turn it on."}><Pic sheet={sound ? "icon/menu-sound" : "icon/menu-mute"} glyph={sound ? "sound" : "mute"} s={3} /><span>{sound ? "On" : "Off"}</span></button>
-                    <button type="button" className="sw-ibtn" onClick={onExport} data-tip="Export save|Downloads a file you can keep."><Pic sheet="icon/menu-export" glyph="export" s={3} /><span>Export</span></button>
-                    <button type="button" className="sw-ibtn" onClick={() => file.current?.click()} data-tip="Import save|Replaces this game with a file."><Pic sheet="icon/menu-import" glyph="import" s={3} /><span>Import</span></button>
-                    <input ref={file} type="file" accept="application/json,.json" hidden onChange={(e) => { void pick(e.target.files?.[0]); e.target.value = ""; }} />
-                </div>
-                {msg && <p className="sw-msg" role="status">{msg}</p>}
-                <SettingsBlock s={s} />
-                <dl className="sw-keys">
-                    {SW_KEYS.map(([k, d]) => <div key={k} className="sw-keyrow"><dt>{k}</dt><dd>{d}</dd></div>)}
-                </dl>
-                <p className="sw-dim sw-small">Saves in this browser. Away time counts up to {TUNE.offlineH} hours. Played for {fmtAge(s.totalAge)}.</p>
-                <button type="button" className="sw-reset" onClick={() => (sure ? onReset() : setSure(true))}>{sure ? "This erases the save. Press again." : "Reset the game"}</button>
-            </div>
+            <Paged
+                label="Menu"
+                deps={`${msg}.${sure}.${v.autoNova}.${v.autoVisitor}`}
+                groups={[
+                    { key: "top", className: "sw-menu", units: top },
+                    { key: "settings", title: "Settings", className: "sw-setlist", tag: "ul", units: settingUnits(s, v) },
+                    ...(coarse ? [] : [{ key: "keys", title: "Keys", className: "sw-keys", tag: "dl" as const, units: SW_KEYS.map(([k, d]) => <div key={k} className="sw-keyrow"><dt>{k}</dt><dd>{d}</dd></div>) }]),
+                    { key: "foot", className: "sw-menu", units: foot },
+                ]}
+            />
         </Overlay>
     );
 }
@@ -265,15 +286,19 @@ function CloudArt({ id }: { id: string }) {
     const sheet = sheetUrl(`card/cloud-${id}`);
     return <span className="sw-cloud-art" aria-hidden="true" data-anim={sheet ? "" : undefined} style={sheet ? ({ "--sheet": cssUrl(sheet) } as CSSProperties) : { backgroundImage: cssUrl(cloudArt(id, CLOUD_COLOR[id] ?? "#ffb24d")) }} />;
 }
-export function CloudPick({ s, onPick }: { s: State; onPick: (id: string) => void }) {
+export function CloudPick({ s, onPick, onPreview }: { s: State; onPick: (id: string) => void; onPreview?: (id: string) => void }) {
     return (
-        <div className="sw-clouds sw-panel" role="group" aria-label="Birth cloud">
-            <p className="sw-clouds-h">A new star. Pick its birth cloud.</p>
-            <div>
+        <div className="sw-clouds sw-ev sw-panel" role="group" aria-label="Birth cloud" data-kind="clouds" onPointerLeave={() => onPreview?.("")}>
+            <div className="sw-ev-head">
+                <span className="sw-ev-art" aria-hidden="true"><Gl n="star" s={3} /></span>
+                <div><b>A new star</b><em>Pick its birth cloud. Point at one to see the sky it makes.</em></div>
+            </div>
+            <div className="sw-cloud-list">
                 {s.offer.map((id) => {
                     const c = CLOUDS.find((x) => x.id === id)!;
                     return (
-                        <button key={id} type="button" className="sw-cloud" style={{ "--c": CLOUD_COLOR[id] ?? "#ffb24d" } as CSSProperties} onClick={() => onPick(id)}>
+                        <button key={id} type="button" className="sw-cloud" style={{ "--c": CLOUD_COLOR[id] ?? "#ffb24d" } as CSSProperties} onClick={() => onPick(id)}
+                            onPointerEnter={() => onPreview?.(id)} onFocus={() => onPreview?.(id)} onBlur={() => onPreview?.("")}>
                             <CloudArt id={id} />
                             <b>{c.name}</b>
                             <span>{c.desc}</span>
@@ -281,7 +306,6 @@ export function CloudPick({ s, onPick }: { s: State; onPick: (id: string) => voi
                     );
                 })}
             </div>
-            <Corners />
         </div>
     );
 }

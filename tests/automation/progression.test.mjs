@@ -141,7 +141,7 @@ test("a kiln between a crate and a belt to the hub fills neither alone", () => {
     const w = fresh();
     w.windPin = 1;
     // Kiln at (2,5) 2x2; crate on its east at (4,5); belt from (4,6) to the hub at x=8.
-    const kiln = S.place(w, "kiln", 2, 5, 0, CAT);
+    const kiln = S.place(w, "kiln", 2, 5, 1, CAT);
     S.setRecipe(w, kiln.id, "r_iron_ingot", CAT);
     S.place(w, "windmill", 2, 8, 0, CAT);
     S.place(w, "belt-crate", 4, 5, 0, CAT);
@@ -157,7 +157,7 @@ test("a full crate never slows the hub: every ingot a kiln makes reaches the hub
     const run = (crateFull) => {
         const w = fresh();
         w.windPin = 1;
-        const kiln = S.place(w, "kiln", 2, 5, 0, CAT);
+        const kiln = S.place(w, "kiln", 2, 5, 1, CAT);
         S.setRecipe(w, kiln.id, "r_iron_ingot", CAT);
         S.place(w, "windmill", 2, 8, 0, CAT);
         S.place(w, "belt-crate", 4, 5, 0, CAT);

@@ -44,6 +44,7 @@ import { FrameGovernor } from "./governor";
 import { MachineEffects, type BurstKind } from "./effects";
 import { SelectionOutline, type HighlightCell } from "./highlight";
 import { GhostPath, type PathCell } from "./ghostpath";
+import { PortArrows, type PortArrow } from "./portarrows";
 
 export { heightAt, Stamper, VoxelGrid, TERRAIN_CELL, OBJECT_CELL };
 export { QUALITY_PRESETS } from "./config";
@@ -141,6 +142,8 @@ export interface VoxelIsland {
      * ghost (clearGhost) while a stroke is shown.
      */
     setGhostPath(cells: readonly PathCell[]): void;
+    /** Input (green) and output (brass) arrows in the tiles beside a machine. Empty clears them. */
+    setPortArrows(arrows: readonly PortArrow[]): void;
     /**
      * One-shot effect on a board cell: "place" for a placement pop, "remove" for a removal puff,
      * "milestone" for the hub's gold fountain. Off for low fx. Board frame, like setBelts.
@@ -250,6 +253,7 @@ export function createVoxelIsland(
     const selection = new SelectionOutline(scene);
     // Footprint frame under the placement ghost, tinted by validity.
     const beltGhost = new GhostPath(scene);
+    const portArrows = new PortArrows(scene);
     const ghostFrame = new SelectionOutline(scene, {
         color: GHOST_VALID_TINT,
         hot: GHOST_VALID_HOT,
@@ -425,6 +429,7 @@ export function createVoxelIsland(
         selection.update(dt);
         ghostFrame.update(dt);
         beltGhost.update(dt);
+        portArrows.update(dt);
         animUniforms.uWind.value = lowFx ? 0 : windStrength / 0.5;
         animUniforms.uWave.value = lowFx ? 0 : 1;
         // Belts keep moving under low fx: one uniform per tier, so it costs nothing.
@@ -575,6 +580,9 @@ export function createVoxelIsland(
         setGhostValidity(valid) {
             setGhostTint(valid);
         },
+        setPortArrows(arrows) {
+            portArrows.set(arrows, heightAt);
+        },
         setGhostPath(cells) {
             beltGhost.set(cells, heightAt);
         },
@@ -625,6 +633,7 @@ export function createVoxelIsland(
             selection.setPulsing(!on);
             ghostFrame.setPulsing(!on);
             beltGhost.setPulsing(!on);
+            portArrows.setPulsing(!on);
             lighting.setShadows(!on && QUALITY_PRESETS[level].shadows);
         },
         setWaterPalette(name) {
@@ -690,6 +699,7 @@ export function createVoxelIsland(
             selection.dispose();
             ghostFrame.dispose();
             beltGhost.dispose();
+            portArrows.dispose();
             if (belts) {
                 scene.remove(belts.object);
                 belts.dispose();

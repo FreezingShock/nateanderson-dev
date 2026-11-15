@@ -1,5 +1,5 @@
 import Link from "next/link";
-import type { ReactNode } from "react";
+import type { CSSProperties, ReactNode } from "react";
 import { Section } from "@/components/cm/ui";
 import { Scramble } from "@/components/cm/motion";
 import { GAME_STATUS, type Game, type GameMode } from "@/lib/creations-data";
@@ -81,32 +81,42 @@ export function GameReadout({
     );
 }
 
-function GameCard({ game, index }: { game: Game; index: number }) {
+function GameCard({ game, index, section }: { game: Game; index: number; section: string }) {
     const st = GAME_STATUS[game.status];
     const Icon = game.icon;
     const tone = game.status === "playable" ? "live" : game.status === "building" ? "warn" : "";
+    const accent = { ["--g-accent" as string]: game.accent ?? "var(--cm-cyan)" } as CSSProperties;
+    const tags = game.tags ?? game.features;
     const inner = (
         <>
             <div className="cm-row g-tile-head" style={{ justifyContent: "space-between" }}>
                 <span className="cm-state">{String(index + 1).padStart(2, "0")} / {game.slug}</span>
-                <span className="g-tags">
-                    {game.format && <span className="cm-tag flat">{game.format}</span>}
-                    <span className={`cm-tag flat ${tone}`}>{st.label}</span>
-                </span>
+                {game.format && <span className="cm-tag flat">{game.format}</span>}
             </div>
-            <div className="g-screen" aria-hidden="true">
-                <span className="g-screen-cap">{game.status === "playable" ? "preview" : "offline"}</span>
-                <Icon />
+            <div className="g-shot">
+                {game.shot ? (
+                    <img src={game.shot} alt="" width={960} height={600} loading="lazy" decoding="async" />
+                ) : (
+                    <span className="g-shot-empty" aria-hidden="true">
+                        <Icon />
+                    </span>
+                )}
             </div>
             <b>{game.title}</b>
             <p>{game.blurb}</p>
-            <ul className="cm-row-gap g-pills">
-                {game.features.map((f) => (
-                    <li key={f} className="cm-pill">
-                        {f}
+            <ul className="g-tags-list">
+                {tags.map((t) => (
+                    <li key={t} className="g-tagp">
+                        {t}
                     </li>
                 ))}
             </ul>
+            <span className={`g-status ${tone}`}>
+                <i aria-hidden="true" />
+                {st.label}
+                <span className="g-status-sep" aria-hidden="true">/</span>
+                {section}
+            </span>
             <span className="g-play">
                 <span>{game.href ? "Play" : "Not built yet"}</span>
                 {game.href && <span aria-hidden="true" className="g-play-arrow">→</span>}
@@ -114,11 +124,11 @@ function GameCard({ game, index }: { game: Game; index: number }) {
         </>
     );
     return game.href ? (
-        <Link prefetch={false} href={game.href} className="cm-card link g-card">
+        <Link prefetch={false} href={game.href} className="cm-card link g-card" style={accent}>
             {inner}
         </Link>
     ) : (
-        <div className="cm-card g-card" style={{ opacity: 0.86 }}>
+        <div className="cm-card g-card" style={{ ...accent, opacity: 0.86 }}>
             {inner}
         </div>
     );
@@ -130,9 +140,9 @@ export function NaosGameMode({ mode, no }: { mode: GameMode; no: string }) {
     return (
         <Section id={mode.id} no={no} label={mode.title} title={mode.tagline} blurb={mode.about} ctos>
             {mode.games.length > 0 ? (
-                <div className="cm-grid g-grid">
+                <div className={`cm-grid g-grid g-count-${mode.games.length}`}>
                     {mode.games.map((g, i) => (
-                        <GameCard key={g.slug} game={g} index={i} />
+                        <GameCard key={g.slug} game={g} index={i} section={mode.title} />
                     ))}
                 </div>
             ) : (

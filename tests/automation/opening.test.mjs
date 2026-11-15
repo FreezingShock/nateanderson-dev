@@ -33,9 +33,9 @@ test("a fresh save reaches the first milestone with drill, kiln, windmill and be
         assert.equal(route.ok, true, route.reason);
         route.cells.forEach((c) => must(S.place(world, "belt", c.x, c.z, c.rot, CAT)));
     };
-    must(S.place(world, "drill", 2, 2, 0, CAT));
+    must(S.place(world, "drill", 2, 2, 1, CAT));
     must(S.place(world, "windmill", 4, 5, 0, CAT));
-    const kiln = S.place(world, "kiln", 5, 2, 0, CAT);
+    const kiln = S.place(world, "kiln", 5, 2, 1, CAT);
     must(kiln);
     must(S.setRecipe(world, kiln.id, "r_iron_ingot", CAT));
     belt(S.autoRoute(world, { x: 4, z: 2 }, { x: 5, z: 2 }, "belt", CAT));
@@ -92,7 +92,7 @@ test("a kiln feeds the press beside it before the hub, and the hub gets only the
     const world = board();
     world.progress.requestsDone = CAT.tree.requests.map((r) => r.id); // the press and the iron plate recipe open from hub requests
     const must = (r) => assert.equal(r.ok, true, r.reason);
-    const kiln = S.place(world, "kiln", 5, 2, 0, CAT);
+    const kiln = S.place(world, "kiln", 5, 2, 1, CAT);
     must(kiln);
     must(S.setRecipe(world, kiln.id, "r_iron_ingot", CAT));
     const press = S.place(world, "press", 11, 1, 0, CAT);
@@ -109,4 +109,26 @@ test("a kiln feeds the press beside it before the hub, and the hub gets only the
     }
     assert.equal(world.buildings[world.hubId].input.iron_ingot ?? 0, 0, "the hub gets nothing while the press accepts");
     assert.ok((world.buildings[press.id].input.iron_ingot ?? 0) > 0, "the press received ingots");
+});
+
+test("the banner walks a newcomer through the recipe and the belts before it asks for ingots", () => {
+    const world = board();
+    const must = (r) => assert.equal(r.ok, true, r.reason);
+    const next = () => S.hudData(world, CAT).nextStep;
+    assert.equal(next().actionId, "drill");
+    must(S.place(world, "drill", 2, 2, 0, CAT));
+    assert.equal(next().actionId, "kiln");
+    const kiln = S.place(world, "kiln", 5, 2, 0, CAT);
+    must(kiln);
+    must(S.place(world, "windmill", 4, 5, 0, CAT));
+    assert.equal(world.buildings[kiln.id].recipe, "r_iron_ingot", "a new kiln starts on Iron ingot");
+    must(S.setRecipe(world, kiln.id, null, CAT));
+    assert.equal(next().actionId, "inspect", "a kiln whose recipe was cleared is named before anything else");
+    assert.equal(next().selectId, kiln.id, "and the button selects that kiln");
+    must(S.setRecipe(world, kiln.id, "r_iron_ingot", CAT));
+    assert.equal(next().actionId, "belt", "then the belts");
+    assert.match(next().text, /Belt the drill to the kiln/);
+    S.autoRoute(world, { x: 4, z: 2 }, { x: 5, z: 2 }, "belt", CAT).cells.forEach((c) => must(S.place(world, "belt", c.x, c.z, c.rot, CAT)));
+    S.autoRoute(world, { x: 7, z: 2 }, HUB, "belt", CAT).cells.forEach((c) => must(S.place(world, "belt", c.x, c.z, c.rot, CAT)));
+    assert.equal(next().actionId, "hub-menu", "with belts down, the first order takes over");
 });

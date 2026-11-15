@@ -2,6 +2,16 @@ import type { MachineDetail, NumberFormat, ResourceView } from "@/lib/automation
 import { fmtNum, resourceName } from "./format";
 import { ArtGauge, MachinePortrait } from "@/components/brasswork-art";
 import "./inspector.css";
+import { tipAttr } from "@/components/brasswork-ui/tip";
+import { recipeTip, stackText } from "@/lib/automation/tips";
+import { RECIPE_TREE } from "@/lib/automation/data/tree";
+import type { TipData } from "@/lib/automation/tips";
+
+// Tag for one recipe option in the recipe list.
+function recipeOf(id: string): TipData | null {
+  const r = RECIPE_TREE.recipes.find((x) => x.id === id);
+  return r ? recipeTip(RECIPE_TREE, r) : null;
+}
 
 // Plain reasons for each status, so the panel says what to do rather than only what is happening.
 const STATUS_TEXT: Record<string, string> = {
@@ -76,7 +86,7 @@ export function Inspector({
           <h2 className="ab-inspect-name">{detail.name}</h2>
           <span className="ab-inspect-owned">Owned {detail.count}</span>
         </div>
-        <button type="button" className="ab-inspect-close" onClick={onClose} aria-label="Close details">
+        <button type="button" className="ab-inspect-close" onClick={onClose} aria-label="Close details" {...tipAttr({ title: "Close details", tag: "Inspector", text: "Put the card away. The building stays where it is." })}>
           ×
         </button>
       </header>
@@ -147,6 +157,7 @@ export function Inspector({
               type="button"
               className="ab-recipe-row"
               aria-pressed={o.id === detail.recipeId}
+              {...tipAttr(recipeOf(o.id))}
               data-selected={o.id === detail.recipeId}
               onClick={() => onSetRecipe(o.id)}
             >
@@ -178,7 +189,7 @@ export function Inspector({
         </ul>
       )}
 
-      <button type="button" className="ab-inspect-build" disabled={!canBuild} onClick={() => onBuild(detail.id)}>
+      <button type="button" className="ab-inspect-build" disabled={!canBuild} {...tipAttr({ title: `Build one more ${detail.name}`, tag: "Build", rows: [{ k: "Cost", v: detail.cost.length ? stackText(RECIPE_TREE, detail.cost) : "Free" }, ...(canBuild ? [] : [{ k: "Status", v: "Not enough resources", tone: "bad" as const }])] })} onClick={() => onBuild(detail.id)}>
         Build another
       </button>
     </div>

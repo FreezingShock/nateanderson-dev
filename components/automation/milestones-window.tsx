@@ -14,6 +14,9 @@ import { iconStyle } from "@/lib/automation/icons";
 import { uiIconStyle } from "@/lib/automation/icons/ui";
 import { MilestoneArt } from "@/components/brasswork-art";
 import "./milestones-window.css";
+import { tipAttr } from "@/components/brasswork-ui/tip";
+import { itemTip, milestoneTip } from "@/lib/automation/tips";
+import { DEFAULT_CATALOG } from "@/lib/automation/sim/data";
 
 export function MilestonesPanel({ milestones, blueprints, prestige, onPrestige }: {
   milestones: MilestoneView[];
@@ -50,7 +53,7 @@ export function MilestonesPanel({ milestones, blueprints, prestige, onPrestige }
               {current.items.map((it) => {
                 const pct = it.need > 0 ? Math.min(100, Math.round((it.have / it.need) * 100)) : 100;
                 return (
-                  <li key={it.id} data-done={it.have >= it.need}>
+                  <li key={it.id} data-done={it.have >= it.need} {...tipAttr(itemTip(DEFAULT_CATALOG.tree, it.id))}>
                     <span className="ms-item-ico" style={iconStyle(it.id, 28)} aria-hidden="true" />
                     <span className="ms-item-name">{it.name}</span>
                     <span className="ms-item-count"><b>{it.have}</b> / {it.need}</span>
@@ -73,7 +76,7 @@ export function MilestonesPanel({ milestones, blueprints, prestige, onPrestige }
           {milestones.map((m, i) => {
             const state = m.done ? "done" : i === curIndex ? "now" : "ahead";
             return (
-              <li key={m.id} data-state={state}>
+              <li key={m.id} data-state={state} {...tipAttr(milestoneTip(m))}>
                 <span className="ms-step">{m.done ? "✓" : i + 1}</span>
                 <span className="ms-route-name">{m.name}</span>
                 <span className="ms-route-meta">{m.done ? "Delivered" : `+${m.blueprintReward}`}</span>

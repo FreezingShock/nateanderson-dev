@@ -1,7 +1,7 @@
 // Hand-built stage 2 layout on the 18 by 12 test island, through the placement calls only (no autoRoute).
 // Four lines: iron plates and steel from the north-west, copper wire from the south-east, aluminium sheets
-// from the south-west. Plates, steel and sheets side-load onto one trunk belt that enters the hub from the
-// south. Copper wire has its own short belt into the hub's south-east cell.
+// from the south-west. Machines take items in at their back edge and push out at their front edge, so every
+// belt below starts at a front edge and ends at a back edge (or at the hub, which is open on every side).
 // Run: node scripts/automation/stage2-hand-layout.mjs
 import { registerHooks } from "node:module";
 import { fileURLToPath } from "node:url";
@@ -11,7 +11,7 @@ const CAT = S.DEFAULT_CATALOG;
 const HUB = { x: 8, z: 5 };
 const E = 1, SOUTH = 0, W = 3, N = 2; // rot: 0 = +z, 1 = +x, 2 = -z, 3 = -x
 
-export const WINDMILLS = [[0, 4], [5, 5], [12, 6], [16, 8]];
+export const WINDMILLS = [[0, 4], [14, 0], [12, 6], [16, 3], [12, 2]];
 
 export function runStage2Layout(minutes = 10, windmills = WINDMILLS) {
 const world = S.createWorld({ width: 18, depth: 12, hub: HUB }, CAT);
@@ -19,8 +19,8 @@ world.progress.requestsDone = CAT.tree.requests.map((r) => r.id); // this layout
 const log = [];
 const ok = (label, r) => { if (!r.ok) log.push(`FAIL ${label}: ${r.reason}`); return r.ok; };
 const belt = (x, z, rot) => ok(`belt ${x},${z}`, S.place(world, "belt", x, z, rot, CAT));
-const machine = (id, x, z, recipe) => {
-  const r = S.place(world, id, x, z, 0, CAT);
+const machine = (id, x, z, recipe, rot = 1) => {
+  const r = S.place(world, id, x, z, rot, CAT);
   if (!ok(`${id} ${x},${z}`, r)) return null;
   if (recipe) ok(`recipe ${recipe}`, S.setRecipe(world, r.id, recipe, CAT));
   return r.id;
@@ -31,22 +31,40 @@ for (const [item, x, z] of [["iron_ore", 1, 1], ["coal", 1, 6], ["aluminium_ore"
   S.addDeposit(world, x, z, item, 1);
 }
 
-// North-west: iron plates and steel.
+// Machines have real ports: items go in through the back edge and out through the front edge (the side they face).
+// Rotations: 0 faces +z, 1 faces +x (east), 2 faces -z (north), 3 faces -x. Most machines face east (their back is west);
+// the copper line faces north and the hub is open on every side.
+const copperDrill = machine("drill", 14, 10, null, N);
+// North-west: iron plates, and the iron ingots a steel furnace and the hub both need.
 machine("drill", 1, 1);
-belt(3, 1, E); machine("kiln", 4, 1, "r_iron_ingot");           // kiln A
-belt(6, 1, E); machine("press", 7, 1, "r_iron_plate");           // press Fe, fed by kiln A
-belt(1, 3, E); belt(2, 3, E); belt(3, 3, E);                     // drill's second output feeds kiln B
-machine("kiln", 4, 3, "r_iron_ingot");                           // kiln B, feeds the furnace below
-const steelFurnace = machine("furnace", 3, 5, null);            // steel furnace, touches kiln B
-machine("drill", 1, 6);                                          // coal drill touches the steel furnace
-for (const z of [4, 5, 6, 7]) belt(7, z, SOUTH);                 // plates from press Fe down to the trunk
-belt(6, 4, E);                                                   // kiln B's spare ingots side-load onto the plate line, so the hub gets iron ingots
-
-// South-west: aluminium sheets.
-machine("drill", 1, 10);                                         // aluminium drill, touches the furnace
-const alFurnace = machine("furnace", 3, 9, null);   // 2 by 3, sits on the bottom rows
-machine("drill", 1, 8);                                          // coal drill, touches the aluminium furnace
-const alPress = machine("press", 5, 9, null);                     // press Al, touches the furnace and the trunk
+machine("kiln", 5, 1, "r_iron_ingot");                           // kiln A, feeds the press and the hub
+const kilnB = machine("kiln", 5, 3, "r_iron_ingot");              // kiln B, feeds the steel furnace
+machine("press", 10, 1, "r_iron_plate", SOUTH);                   // press Fe: back edge north, front edge south onto the hub
+const steelFurnace = machine("furnace", 5, 6, null);             // steel furnace: ingots on its back edge from the north, coal below; front edge touches the hub
+machine("drill", 1, 6);                                          // coal drill for the steel furnace
+// South-west: aluminium sheets. The furnace's front edge touches the press, so no belt joins them.
+machine("drill", 1, 10);                                         // aluminium drill
+machine("drill", 1, 8);                                          // coal drill
+const alFurnace = machine("furnace", 5, 9, null);
+const alPress = machine("press", 8, 9, null);
+// South-east: copper. One drill feeds two kilns; kiln 1 feeds the drawer directly, kiln 2 sends ingots to the hub.
+machine("kiln", 13, 8, "r_copper_ingot", N);
+machine("kiln", 15, 8, "r_copper_ingot", N);
+machine("drawer", 14, 6, "r_copper_wire", N);                    // wire drawer: back edge touches kiln 1, front edge drops onto the wire belt
+// Belts. Each machine keeps its own back-edge cell, so a coal belt can never block an ingot belt.
+const BELTS = [
+  [3, 1, E], [4, 1, E], [3, 2, SOUTH], [3, 3, E], [4, 3, E],                 // drill to kiln A and kiln B
+  [7, 1, E], [8, 1, E], [9, 1, N], [9, 0, E], [10, 0, SOUTH],                // kiln A to the press back edge
+  [7, 2, SOUTH], [7, 3, E], [8, 3, SOUTH], [8, 4, SOUTH],                    // kiln A spare ingots to the hub
+  [10, 4, SOUTH],                                                            // press Fe to the hub
+  [7, 4, SOUTH], [7, 5, W], [6, 5, W], [5, 5, W], [4, 5, SOUTH], [4, 6, E],  // kiln B to the steel furnace
+  [3, 7, E], [4, 7, E],                                                      // coal to the steel furnace
+  [3, 9, E], [4, 9, E], [3, 10, E], [4, 10, E],                              // coal and aluminium ore to the aluminium furnace
+  [11, 9, N], [11, 8, N], [11, 7, W],                                        // sheets to the hub
+  [15, 7, N], [15, 6, N], [15, 5, W], [14, 5, W], [13, 5, W], [12, 5, W], [11, 5, W], // copper ingots and wire to the hub
+];
+for (const [x, z, r] of BELTS) belt(x, z, r);
+void copperDrill; void kilnB;
 // Recipes wait for their research, which the player buys with blueprints as they arrive.
 const deferred = [
     { research: "furnace_alloys", id: steelFurnace, recipe: "r_steel_ingot" },
@@ -54,20 +72,6 @@ const deferred = [
     { research: "sheet_rolling", id: alPress, recipe: "r_aluminium_sheet" },
 ];
 const researchLog = [];
-
-// Trunk: side-loads from the north and south, enters the hub from the south-west corner.
-for (let x = 4; x <= 7; x++) belt(x, 8, E);
-belt(8, 8, N);
-
-// South-east: copper wire.
-machine("drill", 14, 10);
-belt(13, 10, W); machine("kiln", 11, 9, "r_copper_ingot");       // copper kiln
-belt(11, 8, N); belt(11, 7, N); belt(11, 6, W);  // spare copper ingots run north, then into the hub's east side
-// A second copper kiln on the same ore drill gives the hub its own ingots: machines-first sends a kiln's
-// spare output to the hub only after its machines refuse it, so the first kiln's spare runs too thin for milestone 1.
-machine("kiln", 14, 8, "r_copper_ingot"); belt(13, 8, W); belt(12, 8, W);
-machine("drawer", 10, 9, "r_copper_wire");                       // wire drawer, touches the kiln
-belt(10, 8, N);                                                  // wire goes straight into the hub
 
 // Power: windmills set back from the lines.
 for (const [x, z] of windmills) machine("windmill", x, z);
