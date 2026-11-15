@@ -3,6 +3,9 @@
 import { useState, type ReactNode } from "react";
 import type { MilestoneView, PrestigeView } from "@/lib/automation/types";
 import { uiIconStyle } from "@/lib/automation/icons/ui";
+import { tipAttr } from "@/components/brasswork-ui/tip";
+import { itemTip, milestoneTip } from "@/lib/automation/tips";
+import { DEFAULT_CATALOG } from "@/lib/automation/sim/data";
 
 /** A collapsible block. The whole header row is the toggle, so a tap on blank space opens it. */
 export function Section({
@@ -62,7 +65,7 @@ export function Milestones({ milestones }: { milestones: MilestoneView[] }) {
             {current.items.map((it) => {
               const pct = it.need > 0 ? Math.round((it.have / it.need) * 100) : 100;
               return (
-                <li key={it.id} className="ab-milestone-item" data-done={it.have >= it.need}>
+                <li key={it.id} className="ab-milestone-item" data-done={it.have >= it.need} {...tipAttr(itemTip(DEFAULT_CATALOG.tree, it.id))}>
                   <span className="ab-milestone-item-name">{it.name}</span>
                   <span className="ab-milestone-item-count">{it.have} / {it.need}</span>
                   <span className="ab-bar" role="progressbar" aria-label={`${it.name} delivered`} aria-valuemin={0} aria-valuemax={it.need} aria-valuenow={it.have}>
@@ -77,7 +80,7 @@ export function Milestones({ milestones }: { milestones: MilestoneView[] }) {
       {done.length > 0 && (
         <ul className="ab-milestone-done" aria-label="Delivered milestones">
           {done.map((m) => (
-            <li key={m.id} className="ab-milestone-row" data-done="true">
+            <li key={m.id} className="ab-milestone-row" data-done="true" {...tipAttr(milestoneTip(m))}>
               <span className="ab-milestone-name">{m.name}</span>
               <span className="ab-dim">delivered</span>
             </li>
@@ -89,7 +92,7 @@ export function Milestones({ milestones }: { milestones: MilestoneView[] }) {
           <summary>{ahead.length} more to come</summary>
           <ul>
             {ahead.map((m) => (
-              <li key={m.id} className="ab-milestone-row">
+              <li key={m.id} className="ab-milestone-row" {...tipAttr(milestoneTip(m))}>
                 <span className="ab-milestone-name">{m.name}</span>
                 <span className="ab-dim">+{m.blueprintReward} blueprint</span>
               </li>
@@ -116,6 +119,7 @@ export function PrestigeCard({
         type="button"
         className="ab-action"
         disabled={!onOpen}
+        {...tipAttr({ title: "Open a new workshop", tag: "Prestige", text: prestige.requirement, note: "Keeps blueprints, research and records. Leaves machines, belts and stock." })}
         onClick={onOpen}
       >
         Open a new workshop

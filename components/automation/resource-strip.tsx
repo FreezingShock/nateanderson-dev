@@ -3,6 +3,9 @@ import { ArtIcon } from "@/components/brasswork-art/icons";
 import { fmtNum, fmtRate } from "./format";
 import "./resource-box.css";
 import { iconCell, iconStyle } from "@/lib/automation/icons";
+import { tipAttr, type TipData } from "@/components/brasswork-ui/tip";
+import { itemTip } from "@/lib/automation/tips";
+import { DEFAULT_CATALOG } from "@/lib/automation/sim/data";
 
 /**
  * A square badge for an item or machine. Shows the sprite-sheet icon when the id has one
@@ -40,6 +43,30 @@ export function Glyph({
  * (lib/automation/data/tree.ts) uses the ids on the left of the arrow only where a preview or mock feed does, so
  * every resource on the bar gets its real item icon. Clockworks has no drawn icon yet, so it keeps its text badge.
  */
+
+/** The top-bar tag for one resource: live stock and trend, plus what it is and how it is made (from the recipe tree). */
+function resourceTip(
+  r: ResourceView,
+  amount: string,
+  rate: string,
+  showRates: boolean,
+  emptyNote: string | null,
+): TipData {
+  const base = itemTip(DEFAULT_CATALOG.tree, r.id);
+  const rows: NonNullable<TipData["rows"]> = [{ k: "In stock", v: amount }];
+  if (showRates) {
+    const word = r.perSecond > 0 ? "Rising" : r.perSecond < 0 ? "Falling" : "Steady";
+    rows.push({ k: "Per second", v: rate, tone: r.perSecond < 0 ? "bad" : r.perSecond > 0 ? "good" : undefined });
+    rows.push({ k: "Trend", v: word });
+  }
+  return {
+    title: r.name,
+    tag: base.tag,
+    text: base.text,
+    rows: [...rows, ...(base.rows ?? [])],
+    note: emptyNote ?? undefined,
+  };
+}
 
 export function ResourceStrip({
   resources,
@@ -108,6 +135,7 @@ function ResourceList({
             // Focusable so the tooltip also shows from the keyboard. The name lives in the tooltip, not on the bar.
             tabIndex={0}
             aria-label={`${r.name}, ${amount}${showRates ? `, ${rate}` : ""}`}
+            {...tipAttr(resourceTip(r, amount, rate, showRates, emptyNote))}
           >
             <span className="ab-res-box">
               <Glyph code={r.glyph} size={48} icon={r.id} />
@@ -119,21 +147,6 @@ function ResourceList({
                 {r.perSecond !== 0 ? rate : ""}
               </span>
             )}
-            {/* Live: the tooltip reads the same data as the bar, so it updates with the factory. */}
-            <span className="ab-res-tip" aria-hidden="true">
-              <strong className="ab-res-tip-name">{r.name}</strong>
-              <span className="ab-res-tip-line">
-                <span>In stock</span>
-                <b>{amount}</b>
-              </span>
-              {showRates && (
-                <span className="ab-res-tip-line">
-                  <span>{trend}</span>
-                  <b data-neg={r.perSecond < 0}>{rate}</b>
-                </span>
-              )}
-              {emptyNote && <span className="ab-res-tip-note">{emptyNote}</span>}
-            </span>
           </li>
         );
       })}

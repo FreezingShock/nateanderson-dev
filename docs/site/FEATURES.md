@@ -24,6 +24,7 @@ Current state of the site outside the three games with their own docs (Brasswork
 
 ## Pages
 - Home `/`: hero, "Built in" (TypeScript, Three.js, JavaScript), featured work, live site stats, timeline preview, recent posts (teasers while the blog is empty).
+- Home "Play" section: under the hero, three cards for Brasswork, Starwright and Groundbreak. Each is themed by `data-game` (brass, fusion red and violet, golden-hour amber), with a padded plate around a UI-free capture of a built-up save, a genre panel, the game's blurb and three short feature panels. Stacks to two columns under 1024px and one under 768px. Images are static webp in `public/home/games`, lazy-loaded; no looping captures. Code: `components/home/games-showcase.tsx`, styles at the end of `components/home/home.css`.
 - About `/about`: dark cards, cyan top edge on live items, "Student", "Heading toward 2031", running stats, philosophy, education timeline, skills.
 - Studies `/studies` and `/studies/[slug]`: coursework explorer, education pathway, reading queue, per-course pages.
 - Timeline `/timeline`: milestones, live countdowns, journey to 2031. On phones (560px and under) milestone cards show title and date and open on tap (`.tl-hd-phone`, `.tl-ev[data-open]` in `app/timeline/timeline.css`).

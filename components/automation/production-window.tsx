@@ -7,6 +7,9 @@ import { ArtGauge, EmptyState } from "@/components/brasswork-art";
 import { MenuWindow } from "@/components/brasswork-ui/window";
 import { fmtNum } from "./format";
 import { Glyph } from "./resource-strip";
+import { tipAttr } from "@/components/brasswork-ui/tip";
+import { itemTip } from "@/lib/automation/tips";
+import { DEFAULT_CATALOG } from "@/lib/automation/sim/data";
 
 export type ProductionLayout = "ledger" | "board";
 
@@ -189,7 +192,7 @@ export function ProductionWindow({
                     {layout === "board" && <h4 className="ps-kicker">{label}</h4>}
                     <ul>
                       {rows.map((r, i) => (
-                        <li key={r.id} className="ps-row" data-neg={r.perSecond < 0} style={{ ["--ps-i" as string]: i }}>
+                        <li key={r.id} className="ps-row" data-neg={r.perSecond < 0} style={{ ["--ps-i" as string]: i }} {...tipAttr(itemTip(DEFAULT_CATALOG.tree, r.id))}>
                           <Glyph code={r.glyph} size={32} icon={r.id} />
                           <span className="ps-name">{r.name}</span>
                           <span className="ps-bar" aria-hidden="true">

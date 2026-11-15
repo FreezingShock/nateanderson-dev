@@ -440,6 +440,8 @@ export type NextStepView = {
   /** Optional button that acts on the hint, such as selecting the next machine. */
   actionLabel?: string;
   actionId?: string;
+  /** A placed building the action selects (opens its inspector), instead of arming a tool. */
+  selectId?: number;
 };
 
 export type HudSettings = {
@@ -458,6 +460,10 @@ export type HubUnlock = {
   name: string;
   /** Icon id for lib/automation/icons (item or machine id). Absent for blueprints. */
   icon?: string;
+  /** How many: blueprints paid, or items in a supply crate. */
+  qty?: number;
+  /** The bare item name for a crate tile, without the count. */
+  label?: string;
 };
 
 /** One step of the hub ladder: an early request or a blueprint milestone. */

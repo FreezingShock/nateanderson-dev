@@ -62,6 +62,8 @@ test("the objective line follows the open order, then the milestone", () => {
     const kiln = S.place(w, "kiln", 5, 2, 0, CAT);
     S.setRecipe(w, kiln.id, "r_iron_ingot", CAT);
     S.place(w, "windmill", 4, 6, 0, CAT);
+    S.place(w, "belt", 4, 2, 0, CAT);
+    S.place(w, "belt", 7, 2, 0, CAT);
     assert.equal(S.hudData(w, CAT).nextStep.title, "Copper at the kiln");
     assert.equal(S.hudData(w, CAT).nextStep.actionId, "hub-menu");
     w.progress.requestsDone = CAT.tree.requests.map((r) => r.id);

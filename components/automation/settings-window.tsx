@@ -5,6 +5,7 @@ import type { HudSettings } from "@/lib/automation/types";
 import { uiIconStyle } from "@/lib/automation/icons/ui";
 import { MenuWindow } from "@/components/brasswork-ui/window";
 import "./settings-window.css";
+import { tipAttr } from "@/components/brasswork-ui/tip";
 
 export const Ico = ({ id }: { id: string }) => <span className="bws-ico" style={uiIconStyle(id, 32)} aria-hidden="true" />;
 
@@ -23,6 +24,7 @@ function Switch({ label, hint, icon, on, onChange }: { label: string; hint: stri
                 aria-checked={on}
                 aria-labelledby={`bws-${icon}-${label}`}
                 className="bws-switch"
+                {...tipAttr({ title: label, tag: "Setting", text: hint, rows: [{ k: "Now", v: on ? "On" : "Off" }] })}
                 onClick={() => onChange(!on)}
             >
                 <span className="bws-knob" />
