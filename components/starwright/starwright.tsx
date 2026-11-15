@@ -10,7 +10,7 @@ import { useGameShell } from "@/components/games/shell/game-route-shell";
 import { downloadText, writeStored } from "@/lib/games/save";
 import { ACHIEVEMENTS, ACH_BONUS, CLOUDS, ELEMENTS, EVENT_STAY, PERKS, PLANETS, PULSAR_PERKS, RECIPE, ROWS, STAGE_NAMES, TIERS, TIER_LEVELS, TIER_NAMES, TUNE } from "@/lib/starwright/data";
 import { play, setSound, soundOn } from "@/lib/starwright/sound";
-import { REPORT_MIN, advance, autoAnswer, awayReport, loadSession, saveAway, snap, writeBackup, type Snap } from "@/lib/starwright/session";
+import { REPORT_MIN, advanceAuto, autoAnswer, awayReport, loadSession, saveAway, snap, writeBackup, type Snap } from "@/lib/starwright/session";
 import { getSettings, unlocked } from "@/lib/starwright/settings";
 import { H, W, makeLayers, render, renderLayered, type SceneFrame } from "@/lib/starwright/art";
 import { initSprites, sprites } from "@/lib/starwright/sprites";
@@ -26,6 +26,12 @@ import { ElTile, Gl, Pic, ui, useLeaving, useSheets, useTips } from "./sw-ui";
 
 type Panel = null | "stars" | "pulsar" | "orbit" | "almanac" | "menu";
 interface Note { id: number; text: string; tone?: "hot" | "dim" }
+
+/** The automations the player has unlocked and switched on, for time away. */
+const autoCfg = (s: State) => {
+    const v = getSettings();
+    return { autoNova: unlocked(s, "autoNova") ? v.autoNova : 0, autoVisitor: unlocked(s, "autoVisitor") ? v.autoVisitor : ("off" as const) };
+};
 
 export function Starwright() {
     const sRef = useRef<State | null>(null);
@@ -88,9 +94,11 @@ export function Starwright() {
         else if (loaded) {
             const gone = (now - s.savedAt) / 1000;
             const before: Snap = snap(s);
-            const done = advance(s, gone);
+            const auto = advanceAuto(s, gone, autoCfg(s));
+            const done = auto.secs;
+            if (auto.novas > 0) lastMult.current = s.bought.map(() => 1);
             if (done >= REPORT_MIN) {
-                const r = awayReport(before, s, done, gone, now);
+                const r = awayReport(before, s, done, gone, now, auto);
                 saveAway(window.localStorage, r);
                 if (getSettings().welcome) setCard({ title: "Welcome back", lines: r.lines });
             }
@@ -119,9 +127,11 @@ export function Starwright() {
             if (manualPause.current) return;
             // every gap counts: short ones are one step, long ones (a stalled frame, a hidden tab) are caught up like time away
             const before = gap > 2 ? snap(s) : null;
-            const done = advance(s, gap);
+            const auto = advanceAuto(s, gap, autoCfg(s));
+            const done = auto.secs;
+            if (auto.novas > 0) { lastHeavy.current = heaviest(s); lastMult.current = s.bought.map(() => 1); }
             if (before && done >= REPORT_MIN) {
-                const r = awayReport(before, s, done, gap);
+                const r = awayReport(before, s, done, gap, Date.now(), auto);
                 saveAway(window.localStorage, r);
                 if (getSettings().welcome) setCard({ title: "Welcome back", lines: r.lines });
             }
