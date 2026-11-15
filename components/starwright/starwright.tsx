@@ -8,17 +8,18 @@ import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { useGameShell } from "@/components/games/shell/game-route-shell";
 import { createSaveTools, downloadText, readPickedFile, readStored, writeStored } from "@/lib/games/save";
-import { CONSTELLATIONS, ELEMENTS, PERKS, PLANETS, PULSAR_PERKS, RECIPE, ROWS, STAGE_NAMES, TIERS, TIER_LEVELS, TIER_NAMES, TUNE, type Perk } from "@/lib/starwright/data";
+import { ACHIEVEMENTS, ACH_BONUS, CLOUDS, CODEX, CONSTELLATIONS, ELEMENTS, EVENT_STAY, PERKS, PLANETS, PULSAR_PERKS, RECIPE, ROWS, STAGE_NAMES, TIERS, TIER_LEVELS, TIER_NAMES, TUNE, type Perk } from "@/lib/starwright/data";
+import { play, setSound, soundOn } from "@/lib/starwright/sound";
 import { H, W, render, renderBackdrop, type SceneFrame } from "@/lib/starwright/art";
 import {
-    SAVE_KEY, SAVE_VERSION, blackHole, buy, buyPerk, buyPlanet, buyPulsar, canBlackHole, canBuy, canNeutron, canPlanet, canSupernova, catchUp,
+    SAVE_KEY, SAVE_VERSION, answer, blackHole, buy, checkAch, chooseCloud, eventOf, rowMult, buyPerk, buyPlanet, buyPulsar, canBlackHole, canBuy, canNeutron, canPlanet, canSupernova, catchUp,
     collapse, cost, effects, fmt, fmtAge, fmtHeat, fresh, gateMK, heaviest, horizonNeed, isSave, levels, load, mass, neutronGain, neutronStar,
     offlineCapS, parse, perkReady, rowOpen, seeds, serialize, stageOf, step, supernova, type State,
 } from "@/lib/starwright/engine";
 
 const tools = createSaveTools<State>({ app: "starwright", version: SAVE_VERSION, validate: isSave });
 
-type Panel = null | "stars" | "pulsar" | "orbit" | "menu";
+type Panel = null | "stars" | "pulsar" | "orbit" | "almanac" | "menu";
 interface Note { id: number; text: string; tone?: "hot" | "dim" }
 
 export function Starwright() {
@@ -36,6 +37,10 @@ export function Starwright() {
     const noteId = useRef(0);
     const lastHeavy = useRef(0);
     const lastTickAt = useRef(0);
+    const lastMult = useRef<number[]>([]);
+    const lastEvent = useRef<string | null>(null);
+    const lastAch = useRef(0);
+    const [sound, setSoundState] = useState(true);
     const [paused, setPaused] = useState(false);
     const [away, setAway] = useState<string | null>(null);
 
@@ -67,6 +72,10 @@ export function Starwright() {
         sRef.current = s;
         lastHeavy.current = heaviest(s);
         lastTickAt.current = now;
+        lastMult.current = s.bought.map((_, i) => rowMult(s, i));
+        lastEvent.current = s.event?.id ?? null;
+        checkAch(s);
+        setSoundState(soundOn());
         setReady(true);
     }, []);
 
@@ -86,8 +95,19 @@ export function Starwright() {
             if (h > lastHeavy.current) {
                 const e = ELEMENTS[h];
                 note(`${e.name} ignites in the core.`, "hot");
+                play("ignite");
                 lastHeavy.current = h;
             }
+            if (Date.now() - lastAch.current > 1000) {
+                lastAch.current = Date.now();
+                for (const id of checkAch(s)) {
+                    note(`Almanac: ${ACHIEVEMENTS.find((a) => a.id === id)?.name}. Everything +${Math.round(ACH_BONUS * 100)}%.`, "hot");
+                    play("badge");
+                }
+            }
+            const ev = s.event?.id ?? null;
+            if (ev && ev !== lastEvent.current) play("visitor");
+            lastEvent.current = ev;
         }, 100);
         const ui = window.setInterval(bump, 250);
         const sv = window.setInterval(save, 8000);
@@ -153,7 +173,37 @@ export function Starwright() {
         [bump],
     );
 
-    const doBuy = useCallback((i: number, k: number) => act((s) => buy(s, i, k)), [act]);
+    const doBuy = useCallback(
+        (i: number, k: number) =>
+            act((s) => {
+                if (!buy(s, i, k)) return;
+                const m = rowMult(s, i);
+                if (m > (lastMult.current[i] ?? 1)) {
+                    note(`${ELEMENTS[i].name} burners double. Level ${levels(s, i)} makes it x${fmt(m)}.`, "hot");
+                    play("milestone");
+                } else play("buy");
+                lastMult.current[i] = m;
+            }),
+        [act, note],
+    );
+
+    const doAnswer = useCallback(
+        (pick: number) =>
+            act((s) => {
+                const ev = eventOf(s);
+                const o = answer(s, pick);
+                if (o && ev) { note(`${ev.name}: ${o.label.toLowerCase()}.`, "hot"); play("answer"); }
+            }),
+        [act, note],
+    );
+
+    const doCloud = useCallback(
+        (id: string) =>
+            act((s) => {
+                if (chooseCloud(s, id)) { note(`${CLOUDS.find((c) => c.id === id)?.name} chosen for ${s.name}.`, "hot"); play("cloud"); }
+            }),
+        [act, note],
+    );
 
     const doNova = useCallback(() => {
         act((s) => {
@@ -161,6 +211,8 @@ export function Starwright() {
             if (g > 0) {
                 novaRef.current = performance.now();
                 lastHeavy.current = 0;
+                lastMult.current = s.bought.map(() => 1);
+                play("nova");
                 note(`Supernova. ${fmt(g)} stardust seeds the next star.`, "hot");
                 save();
             }
@@ -173,6 +225,8 @@ export function Starwright() {
             if (g > 0) {
                 novaRef.current = performance.now();
                 lastHeavy.current = 0;
+                lastMult.current = s.bought.map(() => 1);
+                play("nova");
                 note(`A neutron star forms. ${g} neutrons. Gold and uranium can fuse now.`, "hot");
                 save();
             }
@@ -183,6 +237,8 @@ export function Starwright() {
         act((s) => {
             if (blackHole(s)) {
                 lastHeavy.current = 0;
+                lastMult.current = s.bought.map(() => 1);
+                play("nova");
                 setEnding(true);
                 save();
             }
@@ -215,6 +271,7 @@ export function Starwright() {
             const k = e.key.toLowerCase();
             if (k === "c") setPanel((p) => (p === "stars" ? null : "stars"));
             else if (k === "o") setPanel((p) => (p === "orbit" ? null : "orbit"));
+            else if (k === "a") setPanel((p) => (p === "almanac" ? null : "almanac"));
             else if (k === "m") setPanel((p) => (p === "menu" ? null : "menu"));
             else if (/^[1-9]$/.test(e.key) || (e.shiftKey && /^Digit[1-9]$/.test(e.code)) || (e.altKey && /^Digit[1-9]$/.test(e.code))) {
                 const row = Number(e.code.replace("Digit", "")) - 1;
@@ -260,6 +317,10 @@ export function Starwright() {
                         <span className="sw-ico" data-i="orbit" aria-hidden="true" />
                         <span className="sw-lbl">Orbit</span><em>{s.planets.length}/{PLANETS.length}</em>
                     </button>
+                    <button type="button" className="sw-tool" aria-label="Almanac" onClick={() => setPanel(panel === "almanac" ? null : "almanac")} aria-pressed={panel === "almanac"}>
+                        <span className="sw-ico" data-i="book" aria-hidden="true" />
+                        <span className="sw-lbl">Almanac</span><em>{s.ach.length}/{ACHIEVEMENTS.length}</em>
+                    </button>
                     <button type="button" className="sw-tool" onClick={() => setPanel(panel === "menu" ? null : "menu")} aria-pressed={panel === "menu"} aria-label="Menu">
                         <span className="sw-ico" data-i="menu" aria-hidden="true" />
                         <span className="sw-lbl">Menu</span>
@@ -279,6 +340,13 @@ export function Starwright() {
                         </p>
                         <p className="sw-stage">{STAGE_NAMES[stage]}{s.novasAll ? ` · supernova ${s.novas + 1}` : ""}</p>
                     </div>
+                    {s.buffs.length > 0 && (
+                        <ul className="sw-buffs" aria-label="Active boosts">
+                            {s.buffs.map((b) => (
+                                <li key={b.name + b.k}><span>{b.name}</span> {BUFF_LABEL[b.k]} x{b.v} <b>{Math.ceil(b.left)}s</b></li>
+                            ))}
+                        </ul>
+                    )}
                     <ul className="sw-feed" aria-live="polite">
                         {notes.map((n) => (
                             <li key={n.id} data-tone={n.tone}>{n.text}</li>
@@ -287,6 +355,8 @@ export function Starwright() {
                     {paused && <div className="sw-paused" role="status">Paused</div>}
                     <i className="sw-cn" data-c="tl" /><i className="sw-cn" data-c="tr" /><i className="sw-cn" data-c="bl" /><i className="sw-cn" data-c="br" />
                 </section>
+
+                {s.event && <Visitor s={s} onAnswer={doAnswer} />}
 
                 <section className="sw-collapse" aria-label="Collapse">
                     {away && (
@@ -313,7 +383,24 @@ export function Starwright() {
                         )}
                         {canBlackHole(s, f) && <ConfirmGo label="Fall into a black hole" sure="Everything restarts for one singularity. Sure?" onGo={doHole} tone="void" />}
                     </div>
-                    <p className="sw-hint">{hint(s, f)}</p>
+                    {s.offer.length > 0 ? (
+                        <div className="sw-clouds" role="group" aria-label="Birth cloud">
+                            <p className="sw-clouds-h">Pick a birth cloud for {s.name}. It lasts this one star.</p>
+                            <div>
+                                {s.offer.map((id) => {
+                                    const c = CLOUDS.find((x) => x.id === id)!;
+                                    return (
+                                        <button key={id} type="button" className="sw-cloud" onClick={() => doCloud(id)}>
+                                            <b>{c.name}</b>
+                                            <span>{c.desc}</span>
+                                        </button>
+                                    );
+                                })}
+                            </div>
+                        </div>
+                    ) : (
+                        <p className="sw-hint">{s.cloud ? `${CLOUDS.find((c) => c.id === s.cloud)?.name}: ${CLOUDS.find((c) => c.id === s.cloud)?.desc} ` : ""}{hint(s, f)}</p>
+                    )}
                 </section>
 
                 <section className="sw-ladder" aria-label="Fusion ladder">
@@ -333,6 +420,7 @@ export function Starwright() {
             {panel === "stars" && <StarChart title="Constellations" s={s} list={PERKS} owned={s.perks} cur={s.stardust} curName="stardust" onBuy={(id) => act((x) => buyPerk(x, id))} onClose={() => setPanel(null)} constellations />}
             {panel === "pulsar" && <StarChart title="Pulsar map" s={s} list={PULSAR_PERKS} owned={s.pulsar} cur={s.neutrons} curName="neutrons" onBuy={(id) => act((x) => buyPulsar(x, id))} onClose={() => setPanel(null)} />}
             {panel === "orbit" && <Orbit s={s} onBuy={(id) => act((x) => { if (buyPlanet(x, id)) note(`${PLANETS.find((p) => p.id === id)?.name} forms in orbit.`); })} onClose={() => setPanel(null)} />}
+            {panel === "almanac" && <Almanac s={s} onClose={() => setPanel(null)} />}
             {panel === "menu" && (
                 <Menu
                     s={s}
@@ -344,6 +432,8 @@ export function Starwright() {
                     onReset={() => { const n = fresh(); sRef.current = n; lastHeavy.current = 0; writeStored(window.localStorage, SAVE_KEY, serialize(n)); setPanel(null); bump(); }}
                     onExport={() => downloadText(tools.fileName(), tools.exportText(s))}
                     shell={shell}
+                    sound={sound}
+                    onSound={() => { const v = !sound; setSound(v); setSoundState(v); if (v) play("answer"); }}
                 />
             )}
             {ending && <Ending count={s.sing} onClose={() => setEnding(false)} />}
@@ -381,6 +471,14 @@ function Row({ s, f, i, onBuy }: { s: State; f: ReturnType<typeof effects>; i: n
     else if (!open) sub = <span className="sw-warn">needs a neutron star</span>;
     else if (cold) sub = <span className="sw-warn">cold: needs {fmtHeat(gate)}</span>;
     else sub = <span className="sw-dim">{recipe} → {ELEMENTS[i + 1].sym} · {fmtHeat(gate)}</span>;
+    if (!seen) {
+        return (
+            <li className="sw-row sw-row-lock" style={style}>
+                <span className="sw-tile" aria-hidden="true">{el.sym}</span>
+                <span className="sw-dim">{el.name} <small>locked</small></span>
+            </li>
+        );
+    }
     return (
         <li className="sw-row" style={style} data-seen={seen ? "" : undefined} data-open={open ? "" : undefined}>
             <span className="sw-tile" aria-hidden="true">{el.sym}</span>
@@ -408,6 +506,65 @@ function Row({ s, f, i, onBuy }: { s: State; f: ReturnType<typeof effects>; i: n
                 </div>
             )}
         </li>
+    );
+}
+
+const BUFF_LABEL: Record<string, string> = { inflow: "inflow", fuse: "fusion", heat: "heat", global: "all" };
+
+function Visitor({ s, onAnswer }: { s: State; onAnswer: (pick: number) => void }) {
+    const ev = eventOf(s);
+    if (!ev || !s.event) return null;
+    return (
+        <div className="sw-visitor" role="group" aria-label={ev.name}>
+            <div className="sw-visitor-top">
+                <b>{ev.name}</b>
+                <span>{Math.ceil(s.event.left)}s</span>
+            </div>
+            <p>{ev.text}</p>
+            <div className="sw-visitor-opts">
+                {ev.opts.map((o, i) => (
+                    <button key={o.id} type="button" className="sw-opt" onClick={() => onAnswer(i)}>
+                        <b>{o.label}</b>
+                        <span>{o.desc}</span>
+                    </button>
+                ))}
+            </div>
+            <i className="sw-visitor-bar" style={{ width: `${Math.max(0, (s.event.left / EVENT_STAY) * 100)}%` }} />
+        </div>
+    );
+}
+
+function Almanac({ s, onClose }: { s: State; onClose: () => void }) {
+    return (
+        <Overlay title="Almanac" sub={`${s.ach.length} of ${ACHIEVEMENTS.length} · everything +${Math.round(ACH_BONUS * 100 * s.ach.length)}%`} onClose={onClose} wide>
+            <h3 className="sw-h3">Elements made</h3>
+            <ul className="sw-codex">
+                {ELEMENTS.map((e) => {
+                    const own = s.found.includes(e.sym);
+                    return (
+                        <li key={e.sym} style={{ "--c": e.color } as CSSProperties} data-own={own ? "" : undefined}>
+                            <span className="sw-tile" aria-hidden="true">{own ? e.sym : "?"}</span>
+                            <div>
+                                <b>{own ? e.name : "Not yet made"}</b>
+                                <p>{own ? CODEX[e.sym] : "Fuse your way up the ladder to find out."}</p>
+                            </div>
+                        </li>
+                    );
+                })}
+            </ul>
+            <h3 className="sw-h3">Milestones <small>+{Math.round(ACH_BONUS * 100)}% to everything each</small></h3>
+            <ul className="sw-ach">
+                {ACHIEVEMENTS.map((a) => {
+                    const own = s.ach.includes(a.id);
+                    return (
+                        <li key={a.id} data-own={own ? "" : undefined}>
+                            <b>{a.name}</b>
+                            <span>{a.desc}</span>
+                        </li>
+                    );
+                })}
+            </ul>
+        </Overlay>
     );
 }
 
@@ -538,7 +695,7 @@ function StarChart({ title, s, list, owned, cur, curName, onBuy, onClose, conste
     );
 }
 
-function Menu({ s, paused, onPause, onClose, onName, onImport, onReset, onExport, shell }: { s: State; paused: boolean; onPause: () => void; onClose: () => void; onName: (n: string) => void; onImport: (s: State) => void; onReset: () => void; onExport: () => void; shell: ReturnType<typeof useGameShell> }) {
+function Menu({ sound, onSound, s, paused, onPause, onClose, onName, onImport, onReset, onExport, shell }: { sound: boolean; onSound: () => void; s: State; paused: boolean; onPause: () => void; onClose: () => void; onName: (n: string) => void; onImport: (s: State) => void; onReset: () => void; onExport: () => void; shell: ReturnType<typeof useGameShell> }) {
     const [msg, setMsg] = useState("");
     const [sure, setSure] = useState(false);
     const file = useRef<HTMLInputElement | null>(null);
@@ -563,6 +720,7 @@ function Menu({ s, paused, onPause, onClose, onName, onImport, onReset, onExport
                 <div className="sw-menu-row">
                     <button type="button" className="sw-go" onClick={onPause}>{paused ? "Resume" : "Pause"}</button>
                     {shell.supportsFullscreen && <button type="button" className="sw-go" onClick={shell.toggleFullscreen}>{shell.fullscreen ? "Exit full screen" : "Full screen"}</button>}
+                    <button type="button" className="sw-go" onClick={onSound} aria-pressed={sound}>{sound ? "Sound on" : "Sound off"}</button>
                     <button type="button" className="sw-go" onClick={onExport}>Export save</button>
                     <button type="button" className="sw-go" onClick={() => file.current?.click()}>Import save</button>
                     <input ref={file} type="file" accept="application/json,.json" hidden onChange={(e) => { void pick(e.target.files?.[0]); e.target.value = ""; }} />
@@ -570,7 +728,7 @@ function Menu({ s, paused, onPause, onClose, onName, onImport, onReset, onExport
                 {msg && <p className="sw-msg" role="status">{msg}</p>}
                 <dl className="sw-keys">
                     <dt>1 to 9</dt><dd>buy tier I of that row (Shift: II, Alt: III)</dd>
-                    <dt>C · O · M</dt><dd>constellations, orbit, menu</dd>
+                    <dt>C · O · A · M</dt><dd>constellations, orbit, almanac, menu</dd>
                     <dt>Esc</dt><dd>close a panel</dd>
                     <dt>` or Ctrl+J</dt><dd>the console: sw stats, sw fuse he 2, sw collapse</dd>
                 </dl>
