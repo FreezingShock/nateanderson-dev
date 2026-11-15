@@ -7,7 +7,7 @@
     repeating-linear-gradient(0deg, rgba(124, 196, 172, 0.07) 0 1px, transparent 1px 28px),
     repeating-linear-gradient(90deg, rgba(124, 196, 172, 0.07) 0 1px, transparent 1px 28px);
 }
-.ex-brief { display: flex; flex-direction: column; gap: 4px; padding: 8px 12px; border: 1px dashed rgba(124, 196, 172, 0.5); background: rgba(14, 22, 18, 0.45); }
+.ex-brief { position: relative; overflow: hidden; display: flex; flex-direction: column; gap: 4px; padding: 8px 12px; border: 1px dashed rgba(124, 196, 172, 0.5); background: rgba(14, 22, 18, 0.45); }
 .ex-lede { margin: 0; font-size: 16px; font-weight: 700; color: var(--ex-ink); letter-spacing: 0.02em; }
 .ex-trade { margin: 0; font-size: 13px; color: var(--bw-cream, #f0dfb8); }
 .ex-keep { color: var(--bw-ok, #9bc27a); font-weight: 700; text-transform: uppercase; font-size: 11px; letter-spacing: 0.1em; }
@@ -72,3 +72,16 @@
   .ex-go { min-height: 44px; font-size: 13px; }
 }
 @media (prefers-reduced-motion: reduce) { .ex-card { animation: none; } }
+
+/* Chart-table flourishes: the compass swings to north, a survey line sweeps the brief once, and the chosen site flashes on hand-off. */
+@keyframes ex-swing { 0% { transform: rotate(-70deg); } 55% { transform: rotate(16deg); } 78% { transform: rotate(-6deg); } 100% { transform: none; } }
+@keyframes ex-sweep { from { transform: translateX(-12%); opacity: 0.9; } to { transform: translateX(110%); opacity: 0; } }
+@keyframes ex-pick { 0% { filter: none; } 45% { filter: brightness(1.45); transform: translateY(-3px); } 100% { filter: brightness(1.2); transform: translateY(-3px); } }
+.ex-compass { display: block; transform-origin: 50% 50%; animation: ex-swing 0.7s cubic-bezier(0.3, 0.7, 0.3, 1) 0.12s both; }
+.ex-scan { position: absolute; top: 0; bottom: 0; left: 0; width: 28%; pointer-events: none; background: linear-gradient(90deg, transparent, rgba(124, 196, 172, 0.28), transparent); animation: ex-sweep 0.9s ease-out 0.15s both; }
+.ex-card[data-picked="yes"] { animation: ex-pick 0.24s ease-out both; box-shadow: inset 0 0 0 2px var(--bw-amber, #ffb347), 0 0 18px rgba(255, 179, 71, 0.5), 0 3px 0 #0b0703; }
+.ex-card[data-picked="no"] { opacity: 0.45; transition: opacity 0.2s; }
+.ab-root[data-reduce="true"] .ex-compass, .ab-root[data-lowfx="true"] .ex-compass,
+.ab-root[data-reduce="true"] .ex-scan, .ab-root[data-lowfx="true"] .ex-scan,
+.ab-root[data-reduce="true"] .ex-card, .ab-root[data-lowfx="true"] .ex-card { animation: none; }
+@media (prefers-reduced-motion: reduce) { .ex-compass, .ex-scan { animation: none; } }

@@ -2,6 +2,7 @@
 
 import "./expedition-window.css";
 import type { AreaView, PrestigeSite, PrestigeView } from "@/lib/automation/types";
+import { useRef, useState } from "react";
 import { iconStyle } from "@/lib/automation/icons";
 import { uiIconStyle } from "@/lib/automation/icons/ui";
 import { MenuWindow } from "@/components/brasswork-ui/window";
@@ -72,14 +73,23 @@ export function ExpeditionWindow({
     onPlan: (siteId: string) => void;
     onClose: () => void;
 }) {
+    // Hand-off: the chosen card flashes and the others dim, then the workshop screen opens.
+    const [picked, setPicked] = useState<string | null>(null);
+    const timer = useRef<number | null>(null);
+    const choose = (id: string) => {
+        if (timer.current !== null) return;
+        setPicked(id);
+        timer.current = window.setTimeout(() => onPlan(id), 240);
+    };
     const currentId = areas.find((a) => a.state === "current")?.id;
     const cells = prestige.sites.map((s) => (s.plan ? s.plan.width * s.plan.depth : 0));
     const maxSide = Math.max(1, ...prestige.sites.map((s) => Math.max(s.plan?.width ?? 0, s.plan?.depth ?? 0)));
 
     return (
-        <MenuWindow size="wide" title="Expedition" art={<span style={uiIconStyle("expedition", 32)} aria-hidden="true" />} onClose={onClose}>
+        <MenuWindow size="wide" variant="shutter" title="Expedition" art={<span className="ex-compass" style={uiIconStyle("expedition", 32)} aria-hidden="true" />} onClose={onClose}>
             <div className="ex-root">
                 <div className="ex-brief">
+                    <i className="ex-scan" aria-hidden="true" />
                     <p className="ex-lede">An expedition moves your workshop to a new island site.</p>
                     <p className="ex-trade">
                         <span className="ex-keep">You keep</span> {prestige.keeps.slice(0, 3).join(", ")}.{" "}
@@ -96,7 +106,7 @@ export function ExpeditionWindow({
                             const plan = s.plan;
                             const size = plan ? floorWord(plan.width * plan.depth, cells) : "";
                             return (
-                                <li key={s.id} className="ex-card" data-here={here} style={{ ["--ex-i" as string]: i }}>
+                                <li key={s.id} className="ex-card" data-here={here} data-picked={picked ? (picked === s.id ? "yes" : "no") : undefined} style={{ ["--ex-i" as string]: i }}>
                                     <div className="ex-view">
                                         <span className="ex-img" style={{ backgroundImage: `url(/brasswork/sites/${s.id}.webp)` }} aria-hidden="true" />
                                         {plan && (
@@ -138,7 +148,7 @@ export function ExpeditionWindow({
                                                 type="button"
                                                 className="ex-go"
                                                 disabled={!open}
-                                                onClick={() => onPlan(s.id)}
+                                                onClick={() => choose(s.id)}
                                             >
                                                 {open ? "Plan the move" : "Locked"}
                                             </button>
