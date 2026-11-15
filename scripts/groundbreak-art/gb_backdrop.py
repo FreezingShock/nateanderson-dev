@@ -260,7 +260,7 @@ def shore():
     c.set(rock & (np.abs(np.sin(c.X / 13 + c.Y / 7) ) < 0.04), P["ink"][1])
     c.set(m & (np.abs(c.Y - (top + 38)) < 0.6) & (c.B < 0), P["water"][3], 160)  # water table seep
     pipe = c.rect(0, top + 32, W, top + 36)  # utility main under the street
-    c.fill(pipe & ~c.rect(880, 0, 1080, H), 0.5, "duct", 0.5)
+    c.fill(pipe, 0.5, "duct", 0.5)  # runs straight under the site; a dug pit is drawn over it
     c.fill(c.rect(0, top, W, top + 4), 0.5, "concrete", 0.6)  # seawall cap
     for x in range(0, W, 9):  # pilings
         c.fill(c.rect(x, top - 10, x + 3, top), 0.4, "wood", 0.5)
