@@ -9,7 +9,8 @@ import { ACHIEVEMENTS, ACH_BONUS, CLOUDS, CODEX, CONSTELLATIONS, ELEMENTS, EVENT
 import { H, W, render, renderBackdrop, renderPlanetSprite } from "@/lib/starwright/art";
 import { SAVE_VERSION, canPlanet, effects, eventOf, fmt, fmtAge, isSave, parse, perkReady, planetStage, type State } from "@/lib/starwright/engine";
 import { cloudArt, cssUrl } from "@/lib/starwright/ui-art";
-import { ElTile, Gl } from "./sw-ui";
+import { sheetUrl } from "@/lib/starwright/ui-sheets";
+import { ElTile, Gl, Pic } from "./sw-ui";
 
 export const tools = createSaveTools<State>({ app: "starwright", version: SAVE_VERSION, validate: isSave });
 
@@ -62,7 +63,7 @@ export function Almanac({ s, onClose, leaving }: { s: State; onClose: () => void
                         const own = s.ach.includes(a.id);
                         return (
                             <li key={a.id} data-own={own ? "" : undefined} data-tip={`${a.name}|${a.desc}`}>
-                                <span className="sw-medal"><Gl n={own ? "medal" : "lock"} s={2} /></span>
+                                <span className="sw-medal"><Pic sheet={own ? "icon/medal-lit" : "icon/lock"} glyph={own ? "medal" : "lock"} s={2} /></span>
                                 <b>{a.name}</b>
                                 <span>{a.desc}</span>
                             </li>
@@ -230,11 +231,11 @@ export function Menu({ sound, onSound, s, paused, onPause, onClose, onName, onIm
                     <input defaultValue={s.name} maxLength={24} onChange={(e) => onName(e.target.value)} spellCheck={false} autoComplete="off" />
                 </label>
                 <div className="sw-ibtns">
-                    <button type="button" className="sw-ibtn" onClick={onPause} data-tip={paused ? "Resume|The star burns again." : "Pause|Stops the clock until you resume."}><Gl n={paused ? "play" : "pause"} s={3} /><span>{paused ? "Resume" : "Pause"}</span></button>
-                    {shell.supportsFullscreen && <button type="button" className="sw-ibtn" onClick={shell.toggleFullscreen} data-tip="Full screen|Hides the browser frame."><Gl n="full" s={3} /><span>{shell.fullscreen ? "Exit" : "Full"}</span></button>}
-                    <button type="button" className="sw-ibtn" onClick={onSound} aria-pressed={sound} data-tip={sound ? "Sound on|Click to mute." : "Sound off|Click to turn it on."}><Gl n={sound ? "sound" : "mute"} s={3} /><span>{sound ? "On" : "Off"}</span></button>
-                    <button type="button" className="sw-ibtn" onClick={onExport} data-tip="Export save|Downloads a file you can keep."><Gl n="export" s={3} /><span>Export</span></button>
-                    <button type="button" className="sw-ibtn" onClick={() => file.current?.click()} data-tip="Import save|Replaces this game with a file."><Gl n="import" s={3} /><span>Import</span></button>
+                    <button type="button" className="sw-ibtn" onClick={onPause} data-tip={paused ? "Resume|The star burns again." : "Pause|Stops the clock until you resume."}><Pic sheet={paused ? "icon/menu-play" : "icon/menu-pause"} glyph={paused ? "play" : "pause"} s={3} /><span>{paused ? "Resume" : "Pause"}</span></button>
+                    {shell.supportsFullscreen && <button type="button" className="sw-ibtn" onClick={shell.toggleFullscreen} data-tip="Full screen|Hides the browser frame."><Pic sheet="icon/menu-full" glyph="full" s={3} /><span>{shell.fullscreen ? "Exit" : "Full"}</span></button>}
+                    <button type="button" className="sw-ibtn" onClick={onSound} aria-pressed={sound} data-tip={sound ? "Sound on|Click to mute." : "Sound off|Click to turn it on."}><Pic sheet={sound ? "icon/menu-sound" : "icon/menu-mute"} glyph={sound ? "sound" : "mute"} s={3} /><span>{sound ? "On" : "Off"}</span></button>
+                    <button type="button" className="sw-ibtn" onClick={onExport} data-tip="Export save|Downloads a file you can keep."><Pic sheet="icon/menu-export" glyph="export" s={3} /><span>Export</span></button>
+                    <button type="button" className="sw-ibtn" onClick={() => file.current?.click()} data-tip="Import save|Replaces this game with a file."><Pic sheet="icon/menu-import" glyph="import" s={3} /><span>Import</span></button>
                     <input ref={file} type="file" accept="application/json,.json" hidden onChange={(e) => { void pick(e.target.files?.[0]); e.target.value = ""; }} />
                 </div>
                 {msg && <p className="sw-msg" role="status">{msg}</p>}
@@ -280,6 +281,10 @@ export function Visitor({ s, onAnswer }: { s: State; onAnswer: (pick: number) =>
 // ---- birth clouds ----------------------------------------------------------------------------------------------------------
 
 const CLOUD_COLOR: Record<string, string> = { dense: "#5fb4ff", hot: "#ff7a4d", rich: "#ffd75e", thin: "#c9e6ff", dusty: "#c8a0ff", quiet: "#3fe0a0" };
+function CloudArt({ id }: { id: string }) {
+    const sheet = sheetUrl(`card/cloud-${id}`);
+    return <span className="sw-cloud-art" aria-hidden="true" data-anim={sheet ? "" : undefined} style={{ backgroundImage: cssUrl(sheet ?? cloudArt(id, CLOUD_COLOR[id] ?? "#ffb24d")) }} />;
+}
 export function CloudPick({ s, onPick }: { s: State; onPick: (id: string) => void }) {
     return (
         <div className="sw-clouds sw-panel" role="group" aria-label="Birth cloud">
@@ -289,7 +294,7 @@ export function CloudPick({ s, onPick }: { s: State; onPick: (id: string) => voi
                     const c = CLOUDS.find((x) => x.id === id)!;
                     return (
                         <button key={id} type="button" className="sw-cloud" style={{ "--c": CLOUD_COLOR[id] ?? "#ffb24d" } as CSSProperties} onClick={() => onPick(id)}>
-                            <span className="sw-cloud-art" aria-hidden="true" style={{ backgroundImage: cssUrl(cloudArt(id, CLOUD_COLOR[id] ?? "#ffb24d")) }} />
+                            <CloudArt id={id} />
                             <b>{c.name}</b>
                             <span>{c.desc}</span>
                         </button>

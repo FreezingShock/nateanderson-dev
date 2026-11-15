@@ -4,6 +4,8 @@
 // keeps a panel mounted while its closing animation plays.
 import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { cssUrl, elementIcon, glyphMask, lockedIcon } from "@/lib/starwright/ui-art";
+import { loadSheets, onSheets, sheetUrl } from "@/lib/starwright/ui-sheets";
+import { ELEMENTS } from "@/lib/starwright/data";
 
 /** A 14px dither glyph, coloured by currentColor, drawn at `s` times its size. */
 export function Gl({ n, s = 2 }: { n: string; s?: number }) {
@@ -12,7 +14,7 @@ export function Gl({ n, s = 2 }: { n: string; s?: number }) {
 
 /** The framed dither tile for an element (or the empty frame when locked). */
 export function ElTile({ i, locked, size = 2 }: { i: number; locked?: boolean; size?: number }) {
-    const src = locked ? lockedIcon() : elementIcon(i);
+    const src = locked ? lockedIcon() : (sheetUrl(`icon/el-${ELEMENTS[i].sym.toLowerCase()}`) ?? elementIcon(i));
     return <span className="sw-el" aria-hidden="true" data-locked={locked ? "" : undefined} style={{ backgroundImage: cssUrl(src), "--s": size } as CSSProperties} />;
 }
 
@@ -57,4 +59,22 @@ export function useLeaving<T>(value: T | null, ms = 260): { shown: T | null; lea
         return () => { window.clearTimeout(a); window.clearTimeout(b); };
     }, [value, ms]);
     return { shown: value ?? shown, leaving: value === null && leaving };
+}
+
+/** Loads the art sheets once and re-renders the caller when they arrive. */
+export function useSheets(): number {
+    const [n, setN] = useState(0);
+    useEffect(() => {
+        const off = onSheets(() => setN((v) => v + 1));
+        void loadSheets();
+        return off;
+    }, []);
+    return n;
+}
+
+/** A 16px picture from the art sheets (coloured), or the stand-in glyph. */
+export function Pic({ sheet, glyph, s = 2 }: { sheet: string; glyph: string; s?: number }) {
+    const url = sheetUrl(sheet);
+    if (!url) return <Gl n={glyph} s={s} />;
+    return <span className="sw-pic" aria-hidden="true" style={{ backgroundImage: cssUrl(url), "--s": s } as CSSProperties} />;
 }

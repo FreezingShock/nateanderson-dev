@@ -18,7 +18,7 @@ import {
 } from "@/lib/starwright/engine";
 import { uiVars } from "@/lib/starwright/ui-art";
 import { Almanac, CloudPick, Ending, Menu, Orbit, StarChart, Visitor, tools } from "./panels";
-import { ElTile, Gl, useLeaving, useTips } from "./sw-ui";
+import { ElTile, Gl, Pic, useLeaving, useSheets, useTips } from "./sw-ui";
 
 type Panel = null | "stars" | "pulsar" | "orbit" | "almanac" | "menu";
 interface Note { id: number; text: string; tone?: "hot" | "dim" }
@@ -317,7 +317,9 @@ export function Starwright() {
         window.addEventListener("keydown", onKey);
         return () => window.removeEventListener("keydown", onKey);
     }, [doBuy]);
-    const vars = useMemo(() => (ready ? uiVars() : {}), [ready]);
+    const sheetsN = useSheets();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    const vars = useMemo(() => (ready ? uiVars() : {}), [ready, sheetsN]);
 
     const s = sRef.current;
     if (!ready || !s) {
@@ -376,7 +378,7 @@ export function Starwright() {
                 <nav className="sw-dock" aria-label="Starwright panels">
                     {dock.filter((d) => d.show !== false).map((d) => (
                         <button key={d.id} type="button" className="sw-dt" aria-label={d.name} aria-pressed={panel === d.id} data-ping={d.ping ? "" : undefined} data-tip={`${d.name}|${d.tip}|key ${d.key}`} onClick={() => toggle(d.id)}>
-                            <Gl n={d.g} s={2} />
+                            <Pic sheet={`icon/dock-${d.id}`} glyph={d.g} s={2} />
                             <kbd>{d.key}</kbd>
                             {d.val && <em>{d.val}</em>}
                         </button>

@@ -2,6 +2,7 @@
 // once and cached as a data URL. These are stand-ins that look finished; the art thread's PNGs (public/starwright) can replace
 // a slot later without the components changing. Client only: callers render after the game has booted.
 import { ELEMENTS } from "./data";
+import { sheetUrl } from "./ui-sheets";
 
 const BAYER = [0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5];
 const bay = (x: number, y: number) => (BAYER[(y & 3) * 4 + (x & 3)] + 0.5) / 16;
@@ -67,7 +68,7 @@ const BODIES: Body[] = [
     { shape: "nugget", r: 5.8 }, // Au
     { shape: "orb", r: 4.2, halo: 4.6, rays: 3 }, // U: hot glow
 ];
-const TILE = 22;
+const TILE = 24;
 const sector = (a: number, n: number) => Math.floor(((a + Math.PI) / (Math.PI * 2)) * n + 0.0001) % n;
 
 export function elementIcon(i: number): string {
@@ -253,9 +254,9 @@ export function barTile(): string {
 export function uiVars(): Record<string, string> {
     return {
         "--px-dots": cssUrl(panelDots()),
-        "--px-rule": cssUrl(ruleTile()),
-        "--px-fade": cssUrl(fadeTile()),
-        "--px-bar": cssUrl(barTile()),
+        "--px-rule": cssUrl(sheetUrl("panel/rule") ?? ruleTile()),
+        "--px-fade": cssUrl(sheetUrl("panel/vignette-top") ?? fadeTile()),
+        "--px-bar": cssUrl(sheetUrl("panel/bar") ?? barTile()),
         "--px-ck1": cssUrl(checker(0.18)),
         "--px-ck2": cssUrl(checker(0.34)),
         "--px-ck3": cssUrl(checker(0.5)),
