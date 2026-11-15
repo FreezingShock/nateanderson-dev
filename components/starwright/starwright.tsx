@@ -494,7 +494,7 @@ function Row({ s, f, i, onBuy }: { s: State; f: ReturnType<typeof effects>; i: n
     return (
         <li className="sw-row" style={style} data-cold={cold ? "" : undefined}>
             <span className="sw-rt" data-tip={tip}>
-                <ElTile i={i} />
+                <ElTile i={i} anim />
                 {i < 9 && <kbd>{i + 1}</kbd>}
             </span>
             <div className="sw-info">

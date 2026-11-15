@@ -152,13 +152,17 @@ def frame(c, k, lit=True):
         c.put(((c.x > n - 1) | (c.y > n - 1)) & (c.x > n - 6) & (c.y > n - 6), .55, k)
 
 
+T = 0.0  # animation phase 0..1, read by the element drawings
+
+
 def el_h(c, k):
-    c.glow(12, 12, 11, k, .5)
-    c.ball(12, 12, 4.6, k, .45, 1.0)
+    pulse = .5 + .5 * math.sin(T * 2 * math.pi)
+    c.glow(12, 12, 9 + 3 * pulse, k, .4 + .2 * pulse)
+    c.ball(12, 12, 4.4 + .5 * pulse, k, .45, 1.0)
     c.dot(10, 10, k, 1.0)
-    for a in range(4):  # a faint four-point glint
-        ang = a * math.pi / 2 + .4
-        c.line(12 + 6 * math.cos(ang), 12 + 6 * math.sin(ang), 12 + 9 * math.cos(ang), 12 + 9 * math.sin(ang), .9, k, .6)
+    for a in range(4):  # a slowly turning four-point glint
+        ang = a * math.pi / 2 + .4 + T * math.pi / 2
+        c.line(12 + 6 * math.cos(ang), 12 + 6 * math.sin(ang), 12 + (8 + pulse) * math.cos(ang), 12 + (8 + pulse) * math.sin(ang), .9, k, .6)
 
 
 def el_he(c, k):
@@ -166,7 +170,12 @@ def el_he(c, k):
     c.ball(9.8, 12.6, 3.6, k, .35, .95)
     c.ball(14.2, 11.4, 3.6, k, .4, 1.0)
     c.ring(12, 12, 9.2, 4, 1.1, k, .75, front=True)
-    c.ball(20.6, 12.6, 1.4, k, .9, 1.0, light=False)
+    a = T * 2 * math.pi
+    ex, ey = 12 + 9.2 * math.cos(a), 12 + 4 * math.sin(a)
+    if math.sin(a) < 0 and abs(ex - 12) < 6:
+        pass  # behind the nucleus
+    else:
+        c.ball(ex, ey, 1.4, k, .9, 1.0, light=False)
 
 
 def el_c(c, k):
@@ -177,8 +186,9 @@ def el_c(c, k):
         x, y = pts[i]
         c.line(cx, cy, x, y, 1, k, .55)
         c.line(x, y, *pts[(i + 1) % 6], 1, k, .8)
-    for x, y in pts:
-        c.ball(x, y, 1.6, k, .7, 1.0)
+    for i, (x, y) in enumerate(pts):
+        lit = (i - T * 6) % 6 < 1
+        c.ball(x, y, 1.6 + .4 * lit, k, .7 if not lit else .95, 1.0)
     c.ball(cx, cy, 2.2, k, .6, 1.0)
 
 
@@ -186,8 +196,8 @@ def el_o(c, k):
     c.ball(12, 13, 7.2, k, .2, .95)
     c.put(np.hypot(c.x - 12, c.y - 13) < 4.2, .12, k)  # hollow bubble
     c.ball(12, 13, 2.2, k, .5, .95)
-    c.ball(18.5, 6.5, 2.2, k, .3, 1.0)
-    c.ball(5.5, 6, 1.4, k, .3, 1.0)
+    c.ball(18.5, 6.5 - 3 * T, 2.2, k, .3, 1.0)
+    c.ball(5.5, 6 - 3 * ((T + .5) % 1), 1.4, k, .3, 1.0)
     c.dot(8, 9, k, 1.0); c.dot(9, 8, k, 1.0)
 
 
@@ -195,17 +205,20 @@ def el_ne(c, k):
     pts = [(5, 7), (10, 7), (10, 17), (14, 17), (14, 7), (19, 7), (19, 17)]
     for a, b in zip(pts, pts[1:]):
         c.line(*a, *b, 4.2, k, .25)
+    f = int(T * 8)
+    bright = .45 if f in (5,) else (.75 if f == 6 else 1.0)  # a neon flicker
     for a, b in zip(pts, pts[1:]):
-        c.line(*a, *b, 1.6, k, 1.0)
+        c.line(*a, *b, 1.6, k, bright)
     c.rect(3, 5, 7, 9, k, .55); c.rect(17, 15, 21, 19, k, .55)
 
 
 def el_mg(c, k):
     c.glow(12, 12, 11, k, .55)
+    swap = int(T * 4) % 2
     for i in range(8):
         a = i * math.pi / 4
-        L = 9.5 if i % 2 == 0 else 6
-        c.line(12, 12, 12 + L * math.cos(a), 12 + L * math.sin(a), 1.6 if i % 2 == 0 else 1.1, k, .9)
+        L = 9.5 if (i + swap) % 2 == 0 else 6
+        c.line(12, 12, 12 + L * math.cos(a), 12 + L * math.sin(a), 1.6 if (i + swap) % 2 == 0 else 1.1, k, .9)
     c.ball(12, 12, 3.4, k, .8, 1.0, light=False)
 
 
@@ -215,6 +228,8 @@ def el_si(c, k):
     c.poly([(4, 20), (3, 15), (6, 13), (7, 20)], k, .15, .6)
     c.line(10, 4, 10, 18, .9, k, 1.0)
     c.rect(3, 20, 21, 21, k, .35)
+    y = 22 - T * 22  # a light band climbing the crystals
+    c.v = np.where((c.v > .28) & (np.abs(c.y - y + (c.x - 12) * .3) < 1.2) & (c.x > 2) & (c.x < 22) & (c.y > 1) & (c.y < 20), 1.0, c.v)
 
 
 def el_fe(c, k):
@@ -223,20 +238,23 @@ def el_fe(c, k):
     c.poly([(4, 10), (12, 14), (12, 20), (4, 16)], k, .35, .55)
     c.poly([(12, 14), (20, 10), (20, 16), (12, 20)], k, .12, .3)
     c.line(6, 10, 12, 7.5, .8, k, 1.0)
+    gx = 4 + T * 22
+    c.v = np.where((c.v > .26) & (np.abs(c.x - gx - (c.y - 10) * .5) < 1) & (c.y > 5) & (c.y < 21) & (c.x > 3) & (c.x < 21), 1.0, c.v)
 
 
 def el_au(c, k):
     c.poly([(5, 15), (7, 9), (12, 6), (17, 8), (20, 13), (17, 18), (10, 19)], k, .3, 1.0)
     c.ball(10, 11, 1.6, k, .85, 1.0, light=False)
     c.ball(15, 14, 1.2, k, .5, .7, light=False)
-    for (x, y, L) in [(19, 5, 3), (5, 19, 2)]:  # sparkles
+    f = int(T * 8)
+    for (x, y, L) in [(19, 5, 3 if f < 4 else 1), (5, 19, 2 if f >= 4 else 1)]:  # sparkles take turns
         c.line(x - L, y, x + L, y, .9, k, 1.0); c.line(x, y - L, x, y + L, .9, k, 1.0)
 
 
 def el_u(c, k):
     c.glow(12, 12, 11.5, k, .6)
     d = np.hypot(c.x - 12, c.y - 12)
-    ang = (np.arctan2(c.y - 12, c.x - 12) + math.pi / 2 + math.pi / 6) % (2 * math.pi / 3)
+    ang = (np.arctan2(c.y - 12, c.x - 12) + math.pi / 2 + math.pi / 6 - T * 2 * math.pi / 3) % (2 * math.pi / 3)
     blade = (d > 3.4) & (d < 9) & (ang < math.pi / 3)
     c.put(blade, .95 - (d - 3.4) / 12, k)
     c.ball(12, 12, 2, k, .9, 1.0, light=False)
@@ -249,6 +267,15 @@ for (sym, col), fn in zip(ELEMENTS, DRAW_EL):
     frame(c, k)
     fn(c, k)
     save(c.image(), f"el-{sym}")
+    frames = []
+    for f in range(8):
+        T = f / 8
+        c = Canvas(24); k = c.use(col); frame(c, k); fn(c, k); frames.append(c.image())
+    T = 0.0
+    strip = Image.new("RGBA", (24 * 8, 24))
+    for f, im in enumerate(frames):
+        strip.paste(im, (24 * f, 0))
+    strip.save(os.path.join(OUT, f"el-{sym}-anim.png"), optimize=True)
 
 # locked tile: frame only, with a dim keyhole
 c = Canvas(24); k = c.use("#6b6f8a"); frame(c, k, lit=False)

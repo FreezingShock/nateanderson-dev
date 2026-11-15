@@ -8,7 +8,7 @@ import { loadSheets, onSheets, sheetUrl } from "@/lib/starwright/ui-sheets";
 import { ELEMENTS } from "@/lib/starwright/data";
 
 /** This thread's drawn GUI art (scripts/starwright/ui-art/build.py writes public/starwright/ui). Bump UI_V when it changes. */
-export const UI_V = 4;
+export const UI_V = 5;
 export const ui = (name: string) => `/starwright/ui/${name}.png?v=${UI_V}`;
 /** Glyph names that have a drawn 16px icon in the ui set. */
 const UI_GLYPH: Record<string, string> = {
@@ -28,9 +28,11 @@ export function Gl({ n, s = 2 }: { n: string; s?: number }) {
 }
 
 /** The framed dither tile for an element (or the empty frame when locked). */
-export function ElTile({ i, locked, size = 2 }: { i: number; locked?: boolean; size?: number }) {
-    const src = locked ? ui("el-locked") : ui(`el-${ELEMENTS[i].sym.toLowerCase()}`);
-    return <span className="sw-el" aria-hidden="true" data-locked={locked ? "" : undefined} style={{ backgroundImage: cssUrl(src), "--s": size } as CSSProperties} />;
+export function ElTile({ i, locked, size = 2, anim }: { i: number; locked?: boolean; size?: number; anim?: boolean }) {
+    const sym = ELEMENTS[i].sym.toLowerCase();
+    const moving = anim && !locked;
+    const src = locked ? ui("el-locked") : ui(moving ? `el-${sym}-anim` : `el-${sym}`);
+    return <span className="sw-el" aria-hidden="true" data-locked={locked ? "" : undefined} data-anim={moving ? "" : undefined} style={{ backgroundImage: cssUrl(src), "--s": size } as CSSProperties} />;
 }
 
 /** `data-tip="Title|line|line"` on any element shows a floating box. One layer for the whole game, so panels never clip it. */

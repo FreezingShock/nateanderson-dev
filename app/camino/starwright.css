@@ -481,3 +481,13 @@ html.sw-route .sf-foot { display: none !important; }
 .sw-conname { letter-spacing: .4em; paint-order: stroke; stroke: #05040c; stroke-width: 4px; }
 .sw-nodename { paint-order: stroke; stroke: #05040c; stroke-width: 3px; }
 @media (prefers-reduced-motion: reduce) { .sw-nodeart, .sw-edge-glow { animation: none !important; } }
+
+/* animated element tiles: an 8-frame dither loop per element, each at its own pace so the ladder never pulses in sync */
+.sw-el[data-anim] { background-size: 800% 100%; animation: swElLoop 1.6s steps(8, jump-none) infinite; }
+@keyframes swElLoop { to { background-position: 100% 0; } }
+.sw-row:nth-child(2n) .sw-el[data-anim] { animation-duration: 1.9s; }
+.sw-row:nth-child(3n) .sw-el[data-anim] { animation-duration: 1.3s; }
+.sw-row:hover .sw-el[data-anim] { animation-duration: .7s; }
+.sw-row[data-cold] .sw-el[data-anim] { animation-play-state: paused; }
+.sw-root[data-paused] .sw-el[data-anim] { animation-play-state: paused; }
+@media (prefers-reduced-motion: reduce) { .sw-el[data-anim] { animation: none !important; } }
