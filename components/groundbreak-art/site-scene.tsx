@@ -61,7 +61,7 @@ export function GbSiteScene({ camera, job, skyline, reduce, paused, idle, crews 
         // three copies side by side so zooming far out never shows an edge
         return (
             <div key={name} className="gba-layer" style={{
-                width: B.w * 3, height: B.h, transform: `translate(${tx - B.w * sc}px, ${ty}px) scale(${sc})`,
+                width: B.w * 3, height: B.h, transform: `translate(${Math.round(tx - B.w * sc)}px, ${Math.round(ty)}px) scale(${sc})`,
                 backgroundImage: `url("${src}")`, backgroundSize: `${B.w}px ${B.h}px`, backgroundRepeat: "repeat-x",
             }} />
         );
@@ -70,7 +70,8 @@ export function GbSiteScene({ camera, job, skyline, reduce, paused, idle, crews 
     const id = job && job.id in GB_JOBS ? (job.id as GbJobId) : null;
     const lotId = !id && idle && idle in GB_JOBS ? (idle as GbJobId) : null;
     const siteId = id ?? lotId;
-    const near = `translate(${cw / 2 - fx * s}px, ${ch / 2 - fy * s}px) scale(${s})`;
+    // whole-pixel offsets stop the art shimmering between screen pixels as the camera eases
+    const near = `translate(${Math.round(cw / 2 - fx * s)}px, ${Math.round(ch / 2 - fy * s)}px) scale(${s})`;
     // finished buildings line the shore to the right of the site, newest nearest; one of each kind per firm
     const seen = new Set<string>();
     const done = [...skyline].reverse().filter((b) => b.id in GB_JOBS && !seen.has(`${b.id}`) && seen.add(`${b.id}`)).slice(0, 12);
