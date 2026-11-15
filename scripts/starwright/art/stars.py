@@ -341,4 +341,53 @@ def iron_ready():
 
 
 def run():
-    star_sheets(); transitions(); nova("supernova"); nova("neutron"); hole(); implode(); iron_ready()
+    star_sheets(); transitions(); nova("supernova"); nova("neutron"); hole(); implode(); iron_ready(); birth()
+
+
+def birth():
+    """A new star from the wreck of the old one, 320x180, 24 frames, played once over the star's first seconds: the glowing
+    remnant shell of the last star drifts outward and thins, while a knot of gas spirals in, flattens into a disc and lights
+    at the centre in a white point."""
+    w, h, n = 320, 180, 24
+    x, y = gridwh(w, h)
+    cx, cy = w / 2 - 0.5, h / 2 - 2.5
+    dx, dy = x - cx, y - cy
+    d = np.sqrt(dx * dx + dy * dy)
+    ang = np.arctan2(dy, dx)
+    rem = R("deep", "rose0", "rose", "flame", "amber", "gold")
+    gas = R("ink", "dusk", "plum", "orchid", "mauve", "lilac")
+    frames = []
+    for f in range(n):
+        t = f / (n - 1)
+        out = np.zeros((h, w, 3), np.uint8)
+        m = np.zeros((h, w), bool)
+        # remnant: torn filaments on a wide shell, cooling from gold to rose as it spreads
+        rr = 95 + 55 * t
+        fil = fbm3(np.cos(ang) * 7, np.sin(ang) * 7, d / 18 + t * 0.8, 4, seed=61)
+        shell = np.clip(1 - np.abs(d - rr) / (10 + 14 * t), 0, 1) * np.clip(fil * 1.7 - 0.45, 0, 1) * (1 - 0.75 * t)
+        sm = dmask(np.clip(shell * 1.5, 0, 1))
+        out[sm] = pick(rem, np.clip(shell * (1.2 - 0.6 * t), 0, 1))[sm]; m |= sm
+        # infall: a spiral of gas winding inward and flattening into a disc
+        k = t ** 0.8
+        flat = 1 - 0.72 * k
+        ddy = dy / max(flat, 0.2)
+        dd = np.sqrt(dx * dx + ddy * ddy)
+        a2 = np.arctan2(ddy, dx)
+        spiral = np.sin(a2 * 2 + np.log(dd + 1) * 3.2 - t * 9)
+        reach = 80 - 46 * k
+        cloud = np.clip(1 - dd / reach, 0, 1) * (0.5 + 0.5 * spiral) * (0.5 + 0.8 * fbm3(dx / 14, ddy / 14, t * 2, 3, seed=63))
+        gm = dmask(np.clip(cloud * 1.4, 0, 1)) & ~sm
+        out[gm] = pick(gas, np.clip(cloud * 1.3, 0, 1))[gm]; m |= gm
+        # ignition: a core that brightens, then a white point with a short cross flare
+        if t > 0.35:
+            q = (t - 0.35) / 0.65
+            core = np.clip(1 - d / (3 + 9 * q), 0, 1) * q
+            cm = dmask(np.clip(core * 1.8, 0, 1))
+            out[cm] = pick(R("white", "cream", "gold", "amber"), 1 - core)[cm]; m |= cm
+            arm = int(4 + 22 * q * (1 - max(0, q - 0.8) * 3))
+            for s_ in range(-arm, arm + 1):
+                for (px_, py_) in ((int(cx) + s_, int(cy)), (int(cx), int(cy) + s_ // 2)):
+                    if dmask(np.array([[1 - abs(s_) / (arm + 1)]]))[0, 0]:
+                        out[py_, px_] = hexc(P["frost"]); m[py_, px_] = True
+        frames.append(rgba(out, m))
+    save_sheet("star/birth", frames, fps=10, loop=False)

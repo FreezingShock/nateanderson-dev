@@ -112,6 +112,22 @@
    "src": "/starwright/card/cloud-thin.png",
    "w": 160
   },
+  "fx/arrive": {
+   "fps": 10,
+   "frames": 20,
+   "h": 96,
+   "loop": false,
+   "src": "/starwright/fx/arrive.png",
+   "w": 96
+  },
+  "fx/planet-up": {
+   "fps": 12,
+   "frames": 20,
+   "h": 64,
+   "loop": false,
+   "src": "/starwright/fx/planet-up.png",
+   "w": 64
+  },
   "icon/dock-almanac": {
    "fps": 0,
    "frames": 1,
@@ -704,6 +720,14 @@
    "src": "/starwright/planet/thule-s3.png",
    "w": 48
   },
+  "star/birth": {
+   "fps": 10,
+   "frames": 24,
+   "h": 180,
+   "loop": false,
+   "src": "/starwright/star/birth.png",
+   "w": 320
+  },
   "star/blue": {
    "fps": 8,
    "frames": 24,
@@ -905,5 +929,5 @@
    "w": 48
   }
  },
- "v": 3
+ "v": 5
 }
