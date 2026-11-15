@@ -73,7 +73,7 @@ Owners are per area, one thread per file set. The threads: "Streamline Brasswork
 | Belts with moving slats, items riding the belt | working | `models/belts/`, `render/beltitems.ts` | `belts.test.mjs` |
 | Scenery props and life (gulls, butterflies, fish) | working | `models/props/`, `render/scenery.ts`, `render/life/` | none |
 | Bursts for place, remove, milestone, research, unlock, delivery | working: island bursts and life bursts skip under Simple visuals, Low fx and reduce motion (`setLowFx`) | `render/effects.ts`, `render/life/` | `effects-lowfx.test.mjs` (island bursts) |
-| Hub delivery light column (shimmer, PR #541) | untested: never seen on screen (B-03) | `render/life/` | none |
+| Hub delivery light column (shimmer, PR #541) | untested: not visible in software WebGL, needs a real GPU (B-03) | `render/life/` | none |
 | Low-fx and reduce-motion modes | untested on a real GPU | `render/index.ts` (`setLowFx`), `.ab-root[data-reduce]`, `[data-lowfx]` | none |
 
 ## HUD and menus
@@ -81,7 +81,7 @@ Owners are per area, one thread per file set. The threads: "Streamline Brasswork
 | Feature | State | Code | Test |
 |---|---|---|---|
 | Build dock: Logistics, Machines, Power sections, big tiles with in-hand state | working | `build-bar.tsx`, `build-tile.css`, `brasswork/build-popover.tsx` | `icon-coverage.test.mjs` |
-| Hover names on tiles and machines (PR #545) | untested: not looked at on screen (B-04) | `brasswork/hover-name.tsx` | none |
+| Hover names on tiles, resource boxes and machines (PR #545) | working: `scripts/automation/hover-names.mjs` checks all three show a name and clear on leave, and that touch leaves no stuck tag (headless Chrome) | `brasswork/hover-name.tsx` | none |
 | NEXT banner and on-island marker (drill, kiln, windmill, hub) | working: `scripts/automation/next-markers.mjs` walks the opening headless and checks each marker is on its cell (within 4 px) and disappears at the end; run on a production build at 1440 and 390 | `brasswork/next-marker.tsx`, `host` `syncTarget`, `sim/hud.ts` | `hud-next.test.mjs` (banner text only) |
 | Resource strip with drawn icons and counts, essential resources always shown | working | `resource-strip.tsx`, `sim/hud.ts` | none |
 | Inspector: recipe, rates, buffers, power, unloader filter; Esc and ground click close it | working | `inspector.tsx` | `machine-detail.test.mjs` |

@@ -49,13 +49,24 @@ Last audited 2026-11-15, `integration` at 5138bb6f.
 - `/mnt/project-files/portfolio/groundbreak/SPEC.md` still describes a bid board and 105 Gravel unlock prices. Update it (or replace it with a short pointer to FEATURES.md) so a new thread is not misled.
 - The console `help` and `gb` subcommand list in `commands.ts` should name every command; check `gb open`, `gb jobs`.
 
-### 11. Phone landscape (DONE 2026-11-15), fractional-pixel shimmer, corrupt-save handling (from earlier notes)
+### 11. Phone landscape (DONE 2026-11-15), fractional-pixel shimmer (ASK, see Needs Nate), corrupt-save handling (DONE 2026-11-15)
 - Phone landscape: the dock, rail, cue and a window at 844 x 390 all fit and nothing covers the dig.
 - Shimmer: sprites and strips at fractional zoom show no shimmer; snap the camera to the pixel grid or round positions in `site-scene.tsx`.
 - Corrupt save: when `parse` returns null for a present but broken save, the page keeps a copy under a backup key and tells the player, instead of silently starting fresh. Test it.
 - Split into three PRs if one grows.
 
+### PERF-gb-icons-sheet | size S
+- First paint requests about 30 single-icon PNGs (1 to 2 KB each, `components/groundbreak/icons.ts`) although `public/groundbreak/icons/icons.webp` holds them as a sheet. Done when: first paint needs one icon request, 1440 and 390 PNGs match before and after, and the transfer count drops by about 30.
+
+### PERF-gb-font-preloads | size S
+- The site root preloads Plex Mono 400 and Arimo, and Groundbreak preloads Barlow 600, none used on first paint (about 56 KB, roughly 0.3 s on a throttled phone). Root fonts are outside this area; check `docs/OWNERS.md`. Done when: unused preloads are gone and no text changes face.
+
+### PERF-gb-real-device | size S
+- All numbers in `/mnt/project-files/portfolio/perf-audit-2026-11-15/groundbreak.md` are headless Chromium. Needs Nate or a real phone: playable time, frame feel with the tower at 40 storeys, and a multi-hour soak. Preloading the scene art was tried and gave no gain in time to playable (bandwidth bound), so do not redo it without new evidence.
+
 ## Needs Nate
+
+- [ ] ASK GB-pixel-snap | size M | Fractional-pixel shimmer: camera offsets and sprite positions are already whole pixels, but the art scale (fit x zoom) is fractional, so each art pixel is 2 or 3 screen pixels wide and a walking worker's shape can flicker. Fix is to snap the scale to whole device-pixel steps once the camera settles (a small pop of up to about 20% at rest) or leave it. Recommend: snap at rest, never mid-zoom. | `site-scene.tsx` `s`, `layer()`
 
 | Item | What is needed |
 |---|---|
@@ -78,3 +89,22 @@ Fog check (item 5): screenshots of sidewalk, clinic, tower, stadium and the brid
 Item 7 check (390 wide, touch emulation, production build): every button and link in the game has an accessible name and a tooltip (0 unnamed, 0 without data-tip). Tapping a dock tile opens its card with the name, rate and stock and buys nothing. Script was a throwaway; the claim is also covered by reading the markup in `groundbreak.tsx`.
 
 Phone landscape (item 11a): at 844x390, 932x430 and 667x375 windows and the material card end above the dock and below the header, the cue stays clear of the rail and job card, the feed hides while a window is open. Screenshots `/mnt/project-files/portfolio/groundbreak/landscape/`; overlap check `hud-overlap/check.mjs` now includes 667x375.
+
+Corrupt save (item 11c): the game already kept a copy under `gb-save-v1-corrupt` and started a fresh firm, but the warning toast was pushed out by the first-minute toasts within a second, so nobody could read it. Warnings are now sticky (20 s, later toasts do not evict them), also for the storage-blocked warning. Headless check `/mnt/project-files/portfolio/groundbreak/corrupt/check.mjs` (copy kept, player told, fresh start, no errors at 1440 and 390).
+
+## Found during the 2026-11-15 pass (do these next, top first; polish pass recommended to Nate)
+
+### 12. Phone portrait: the dock takes about 40% of the screen
+- At 390 and 360 wide the dock wraps to 3 rows (about 330 px) and the site gets the top half. Done when: groups collapse to one open row (the group of the selected or newest material) with the others one tap away, and the dig is at least 55% of the screen; number keys and the NEXT cue still work.
+
+### 13. Window panels look see-through
+- Jobs, Firm and the material card show the scene faintly behind their text (`--gb-panel` is translucent). Done when: body text sits on an opaque or near opaque panel at 1440 and 390 and still reads as part of the scene (check contrast of the dim text).
+
+### 14. Firm window needs scrolling to reach everything on small heights
+- At 900 tall the perk grid plus the Incorporate line fills the window; on shorter screens the button scrolls out of sight. Done when: the Incorporate button and its line stay pinned at the bottom of the Firm window while the perks scroll.
+
+### 15. Tests for the pure part of the HUD
+- `--gb-dock-top` and the window sizes have only a headless script (`hud-overlap/check.mjs`). Done when: the script runs in `scripts/ci` against the built site as an advisory check, or its sizes are listed in `docs/ci.md` for threads to run before merging HUD changes.
+
+### 16. Repeat order payout and the cue
+- The NEXT cue says nothing about a running repeat order. Done when: while the crew is on a repeat order the cue (or the job card) says why the next campaign job has not started and what it waits on.

@@ -11,10 +11,7 @@ Ordered by value. Each is one PR.
 **B-03 Verify the hub delivery light column**
 - PR #541 added a delivery shimmer from the life glow pool (`render/life/`). Never seen on screen. Use bench flag `delivery=1|once` on `/dev/voxel-island` under `next dev`.
 - Done when: a screenshot shows the column on a delivery at day and at night, it respects Low fx and reduce motion, and the frame time does not rise. **Needs screenshots.**
-
-**B-04 Verify hover names on tiles and machines**
-- PR #545 added `components/brasswork/hover-name.tsx`. Check it on build tiles, resource boxes and machines on the island, at 1440 and on touch (no stuck labels).
-- Done when: the name shows within about 150 ms, never covers the cursor target, and clears on leave. **Needs screenshots.**
+- 2026-11-15 attempt (`scripts/automation/delivery-light.mjs`): in headless Chrome with software WebGL (about 5 frames a second) the column and glints were not visible at day or night, and Low fx correctly shows none. This does not prove the effect is missing; software rendering outruns the 1 s particle life. Needs a real GPU: Nate's P-05 playtest, or a thread with one. Frame time was not measurable for the same reason.
 
 **B-10 Phone: 44 px touch buttons and sheet groups**
 - The touch bar (`input/touch-bar.ts`) uses 48 px buttons per STATUS; other taps (build tiles, sheet rows, close buttons) were never measured. Measure them, raise every tap target on coarse pointers to at least 44 px, keep touch buttons off the play field (the 56 px strip under the stage).
