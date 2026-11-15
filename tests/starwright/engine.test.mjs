@@ -316,3 +316,18 @@ test("deep stars: endless stardust sink, each adds to everything, cleared by a n
     E.neutronStar(s);
     assert.equal(s.deep, 0);
 });
+
+test("after a neutron star, a player who stays and chases uranium reaches the black hole in about two hours", () => {
+    const s = E.fresh(0);
+    s.neutronStars = 1; s.neutronStarsAll = 1; s.neutrons = 6; s.pulsar = ["p1"]; s.perks = D.PERKS.map((p) => p.id);
+    let t = 0;
+    while (t < 4 * 3600 && !E.canBlackHole(s, E.effects(s))) {
+        t++;
+        E.step(s, 1);
+        if (s.event && t % 8 === 0) E.answer(s, 0);
+        if (t % 10) continue;
+        for (let i = D.ROWS - 1; i >= 0; i--) for (let k = D.TIERS - 1; k >= 0; k--) { let n = 0; while (n++ < 30 && E.cost(s, i, k) <= s.amt[i] * 0.9) E.buy(s, i, k); }
+    }
+    assert.ok(E.canBlackHole(s, E.effects(s)), "black hole within four hours of the neutron star");
+    assert.ok(t > 1800, "and not within the first half hour, even with every star lit");
+});

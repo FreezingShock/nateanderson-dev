@@ -38,11 +38,11 @@ export const RECIPE: ReadonlyArray<ReadonlyArray<readonly [number, number]>> = [
 export const GATE_MK = [10, 40, 150, 300, 500, 800, 1200, 4000, 10000];
 
 /** Price of the first level of each row, paid in the element being burned. */
-export const BASE_COST = [18, 45, 120, 400, 1400, 5000, 20000, 2e7, 1e9];
+export const BASE_COST = [18, 45, 120, 400, 1400, 5000, 20000, 2e6, 1e7];
 export const TIER_COST_X = 9;
 export const COST_GROWTH = 1.12;
 /** Output of one level, in units of the next element per second. */
-export const BASE_RATE = [0.9, 0.5, 0.32, 0.22, 0.16, 0.12, 0.09, 0.03, 0.012];
+export const BASE_RATE = [0.9, 0.5, 0.32, 0.22, 0.16, 0.12, 0.09, 0.06, 0.03];
 
 export const TUNE = {
     inflowBase: 2,
@@ -57,7 +57,7 @@ export const TUNE = {
     seedExp: 0.5,
     neutronAt: 6000, // stardust earned in one neutron layer before a neutron star can form
     neutronDiv: 300,
-    horizonU: 250000, // Uranium for a black hole
+    horizonU: 600000, // Uranium for a black hole
     offlineH: 8,
     offlineStepCap: 7200,
     milestone: 25,
