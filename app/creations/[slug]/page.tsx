@@ -1,3 +1,4 @@
+import { DeferredFrame } from "@/components/creations/deferred-frame";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getProjectBySlug, getAllProjectSlugs, getProjects, getRecentRenovations, lookupProject, statusLabel } from "@/lib/content";
@@ -97,14 +98,7 @@ export default async function ProjectPage({ params }: { params: Promise<{ slug: 
                     {preview ? (
                         <figure className="cr-preview">
                             <div className="cr-preview-frame">
-                                <iframe
-                                    src={preview.src}
-                                    title={preview.title}
-                                    loading="lazy"
-                                    allow="fullscreen; gamepad; autoplay"
-                                    allowFullScreen
-                                    referrerPolicy="strict-origin-when-cross-origin"
-                                />
+                                <DeferredFrame src={preview.src} title={preview.title} />
                             </div>
                             {outbound && (
                                 <figcaption className="cr-preview-bar">
