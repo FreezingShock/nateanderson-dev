@@ -45,5 +45,6 @@ Current state of the site outside the three games with their own docs (Brasswork
 - Starwright, Groundbreak, Brasswork: per-game docs in `docs/games/`; older notes in `docs/starwright.md`.
 
 ## Checks and tooling
+- Stuck-text check in PR checks (`scripts/ci/motion-stuck.mjs`): no scramble text rests as glyphs after anchor jumps, fast scrolls, tabbing or reduced motion.
 - PR checks, link crawl and screenshot diff: `docs/ci.md`; scripts in `scripts/ci`.
 - Engine tests for every game run in one command (`npm run test:nodefarm`).

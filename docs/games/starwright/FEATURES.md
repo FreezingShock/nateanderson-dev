@@ -4,7 +4,7 @@ Route `/creations/games/starwright`. Audited 2026-11-15 against `integration` 51
 
 State key: **working** = code and tests exist, seen working headless. **partial** = works with a known gap (see the backlog). **untested** = no test and no check on a real device.
 
-Test commands: `npm run test:nodefarm` (a PR check; includes `tests/starwright/*.test.mjs`, 38 tests), `node --experimental-strip-types --no-warnings scripts/starwright/sim.mjs 30` (balance bot). No browser test exists for Starwright; UI is checked by hand with `scripts/starwright/ui-art/shots.mjs`.
+Test commands: `npm run test:nodefarm` (a PR check; includes `tests/starwright/*.test.mjs`, 40 tests), `node --experimental-strip-types --no-warnings scripts/starwright/sim.mjs 30` (balance bot). No browser test exists for Starwright; UI is checked by hand with `scripts/starwright/ui-art/shots.mjs`.
 
 ## Core loop (engine, no UI)
 | Feature | State | Code | Test |
@@ -40,7 +40,7 @@ Test commands: `npm run test:nodefarm` (a PR check; includes `tests/starwright/*
 | Opt-in auto supernova and auto visitors (also during time away) | working | `session.ts` `advanceAuto`, `lib/starwright/settings.ts` | session.test |
 | One tab plays at a time (`BroadcastChannel sw-tab`) | untested | `starwright.tsx` | none |
 | Settings (`sw-settings-v1`): scene full/simple, notices, welcome card | working | `settings.ts`, `settings.tsx`, `app/camino/starwright-qol.css` | session.test (parse only) |
-| Hotkeys: 1-9 buy, N, Q/W, Space, F, U, C P O A M, Esc | untested | `starwright.tsx`, `commands.ts` `SW_KEYS` | none |
+| Hotkeys: 1-9 buy, N, Q/W, Space, F, U, C P O A M, Esc | working headless: 1, C, Esc, N, Q, Space checked; the rest not | `starwright.tsx`, `commands.ts` `SW_KEYS` | `tests/starwright/browser/hotkeys.mjs` (by hand against a production server, not a PR check) |
 | Console `sw ...` (stats, fuse, collapse, neutron, hole, perks, pulsar, planets, visitor, cloud, almanac, deep, save, backup, restore, corrupt, away, settings, set, keys, admin) | working | `lib/starwright/commands.ts` | engine.test: console, visitor/cloud/almanac, `sw deep`; save/away commands only through session.test |
 
 ## Scene and art
@@ -57,16 +57,17 @@ Test commands: `npm run test:nodefarm` (a PR check; includes `tests/starwright/*
 ## GUI
 | Feature | State | Code | Test |
 |---|---|---|---|
-| Layout: dock, fusion ladder, collapse panel floating over the star; phones pin the star on top | partial: no real phone check | `starwright.tsx`, `app/camino/starwright.css` | none |
+| Layout: dock, fusion ladder, collapse panel floating over the star; phones pin the star on top; held sideways the star sits left and panels scroll right (checked headless at 844x390 and 667x375, no real phone) | partial: no real phone check | `starwright.tsx`, `app/camino/starwright.css` | none |
 | Menus with their own open/close animations (iris, shutter, wipe, settle), `useLeaving` | working | `panels.tsx`, `sw-ui.tsx` | none |
 | Star map: per-star medallions, designations, zoom card, deep-star panel | working | `star-chart.tsx` | none |
 | Orbit and Almanac cards with drawn art; Orbit tiles use the drawn sheets for all 8 planets at all 4 stages (the code drawing shows only while a sheet loads) | working | `panels.tsx` | `tests/starwright/art-manifest.test.mjs`; `scripts/starwright/ui-art/orbit-shots.mjs` |
 | Drawn UI art (element tiles with 8-frame loops, dock, menu, node, ring and pulsar icons) | working | `scripts/starwright/ui-art/build.py` -> `public/starwright/ui/*`; bump `UI_V` in `sw-ui.tsx` and `?v=` in `starwright.css` | none; `shots.mjs` screenshots |
+| Phone scroll cue "Scroll for the ladder": once, gone on the first page scroll, not shown held sideways (`ScrollHint` in `settings.tsx`) | working headless | `settings.tsx`, `starwright-qol.css`, `scripts/starwright/ui-art/hint-check.mjs` | hint-check script |
 | Tooltips (`data-tip="Title|line"`), touch recipe lines | working | `sw-ui.tsx` | none |
 | Game shell (full screen, pause on hidden tab, save export/import) | working | `lib/games/*`, `app/creations/games/starwright/*` | `scripts/games/shell-check.mjs` |
 
 ## Not tested anywhere
-Safari/WebKit, real phones, audio, auto actions while the tab is hidden, the one-tab rule, hotkeys.
+Safari/WebKit, real phones, audio, auto actions while the tab is hidden, the one-tab rule, hotkeys F U P A M W.
 
 ## Who owns which files
 One owner per file; merge `integration` before every push. Historic split is in `/mnt/project-files/portfolio/starwright/OWNERS.md`; the owner threads below are the 2026-11-15 wave and are named by thread title.

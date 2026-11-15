@@ -44,11 +44,11 @@ Thread names change each wave; the file split is what matters. Before editing a 
 | 12 materials, unlocked in order, each paid in the one before; first job unlocks on its own material | working | `data.ts` MATS, UNLOCK_COST; `engine.ts` `unlock`, `openForWaitingJob` | engine.test: unlock, "next material opens by itself", "each job starts as soon as its own last material is open" |
 | Forward boost (material n lifts n+1) and back boost from the last three, plus global extras | working | `engine.ts` `chain`, TUNE.fwd/back/extra | "forward boost ... last three feed back" |
 | Three tiers per row: I crew (x1.15 cost), II equipment (x2 output, x8 cost), III method (once, needs 2 equipment) | working | `engine.ts` `buy`, `tierCost`; no bulk x1/x10/max by design | "buying tiers spends the right currency" |
-| Crew milestone: every 25 crews doubles a row | untested | `engine.ts` `rowMult` | none directly |
+| Crew milestone: every 25 crews doubles a row | working | `engine.ts` `rowMult` | engine.test "every 25 crews ... doubles" |
 | Floors recipe (3 Concrete, 1 Steel, 1 Glass each) | working | `data.ts` RECIPE | "data tables are the right shape" and the bot run |
 | Opening a material stocks 60 s of output | working | `engine.ts` unlock, TUNE.unlockGiftSecs | "opening a material stocks a minute" |
-| Reputation lifts all production (+0.4% per point) | untested | `engine.ts` `repMult` | none |
-| City bonuses per region (material and effect multipliers) | untested | `data.ts` CITIES | none |
+| Reputation lifts all production (+0.4% per point) | working | `engine.ts` `repMult` | engine.test "reputation lifts production" |
+| City bonuses per region (material and effect multipliers) | working (material bonuses tested) | `data.ts` CITIES | engine.test "a region multiplies only the materials it lists" |
 
 ### Jobs
 
@@ -118,3 +118,4 @@ First run to the bridge is about 3 hours (Nate's pick). The bot test "finishes t
 
 - Floating HUD stacks on the dock: `groundbreak.tsx` measures the dock and sets `--gb-dock-top`; the cue, view buttons, feed and card use it (`groundbreak.css`, last block). Phone landscape moves the cue to the top. No overlaps at 1440, 390, 360, 375x667, 844x390, 932x430 (headless Chrome only).
 - Windows (Jobs, Skyline, Firm, Console, Menu): desktop, a 320 to 520 px panel docked beside the rail that ends above the dock, cue and feed hidden while open; phone, a bottom sheet over the dock (up to 58% tall) with the top of the site showing, cue, view buttons and feed hidden. Blank click and Esc close. `groundbreak.css`, last block. Headless Chrome only.
+- Phone landscape (max-height 520): header 46 px, rail across the top (or down the side from 861 px), windows and material card sized by `--gb-dock-top`, cue top right and narrowed (no key hint), job card 200 px under 700 px wide. Checked 844x390, 932x430, 667x375 in headless Chrome only.

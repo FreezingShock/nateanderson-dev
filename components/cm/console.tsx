@@ -15,7 +15,7 @@ import { getFxMode, getLowFx, setFxMode } from "@/lib/nodefarm/fx";
 import { getStagePreview, setStagePreview } from "@/lib/nodefarm/zones/zone-art";
 import { PART_WHY, SKIN_WHY, coreLook, coreMode, corePreview, setCoreMode, setCorePreview, skinOpen } from "@/lib/nodefarm/art/core-look";
 import { PART_ORDER, SKINS } from "@/lib/nodefarm/art/core-parts";
-import { GB_PATH, GB_SAVE_KEY, GB_SUBS, gbCommand } from "@/lib/groundbreak/commands";
+import { GB_HELP, GB_PATH, GB_SAVE_KEY, GB_SUBS, gbCommand } from "@/lib/groundbreak/commands";
 import { parse as gbParse, serialize as gbSerialize, type State as GbState } from "@/lib/groundbreak/engine";
 import { SW_PATH, SW_SAVE_KEY, SW_SUBS, swCommand } from "@/lib/starwright/commands";
 import { parse as swParse, serialize as swSerialize, type State as SwState } from "@/lib/starwright/engine";
@@ -500,7 +500,7 @@ const COMMANDS: Cmd[] = [
         name: "gb",
         usage: `gb [${GB_SUBS.join("|")}]`,
         desc: "Groundbreak readout and actions",
-        long: ["gb · gb stats · gb hire <material> [1-3] · gb unlock · gb jobs · gb change [no] · gb overtime · gb perks [id] · gb incorporate [yes] · gb skyline · gb open. Works with the game open or from your saved game."],
+        long: [...GB_SUBS.map((n) => GB_HELP[n] ?? `gb ${n}`), "Works with the game open or from your saved game."],
         run: (args) => runGb(args),
     },
     {
