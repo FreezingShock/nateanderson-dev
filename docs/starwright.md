@@ -18,11 +18,18 @@ An idle game about a star, at `/creations/games/starwright`. Original theme, art
 - Neutron star (3000 stardust in a layer): resets stardust and the map, pays Neutrons for the pulsar map, opens Gold and Uranium. Black hole (250,000 Uranium): the ending, then one Singularity (x2 everything) and a restart.
 - Planets (8) are bought with leftover elements for passive bonuses. A supernova strips them unless Survivors is lit.
 
+## Visitors, birth clouds, almanac, sound
+- Visitors (`EVENTS` in data.ts): first one 75 s into a star, then one every 80 to 190 s while the game is open (never from time away). Two answers each, both good: a lump of output, or a timed boost. A visitor leaves after 150 s. `answer(s, 0|1)`.
+- Birth clouds (`CLOUDS`): from the first supernova on, each new star offers three of six clouds; the pick lasts that one star. Not picking changes nothing.
+- Almanac: codex of elements made (`CODEX` facts) and 21 milestones, each +2% to everything for good (`ACHIEVEMENTS`, tests in `ACH_TEST`). Key `A`.
+- Sound: synthesized in `lib/starwright/sound.ts`, starts after the first click or key, off switch in the menu (`sw-sound-v1`).
+- Console: `sw visitor [1|2]`, `sw cloud [id]`, `sw almanac`.
+
 ## Balance
-`node --experimental-strip-types --no-warnings scripts/starwright/sim.mjs 30` plays a greedy bot at 1 s steps and prints each landmark. Current numbers: first supernova about 39 min, first neutron star about 1.7 h, black hole about 4.6 h for the bot (people are slower). Change numbers in `TUNE` and the data tables, not the engine.
+`node --experimental-strip-types --no-warnings scripts/starwright/sim.mjs 30` plays a greedy bot at 1 s steps and prints each landmark. The bot answers every visitor at once and takes the first cloud. Current numbers: first supernova about 25 min, first neutron star about 55 min, black hole about 3.2 h for the bot (people are slower). Change numbers in `TUNE` and the data tables, not the engine.
 
 ## Tests
 `tests/starwright/engine.test.mjs` runs in `npm run test:nodefarm` (saves, prestige resets, perk rules, no NaN over 24 h, console).
 
 ## Not tested
-Safari/WebKit, audio (the game has none yet), real phones.
+Safari/WebKit, real phones, and audio (synthesized, never heard in the cloud).

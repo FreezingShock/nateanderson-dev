@@ -201,7 +201,6 @@
 /* stats and inspector: engraved data lines, glowing values */
 .ab-root.bw .ab-data dd { color: var(--bw-amber); text-shadow: 0 0 6px rgba(255, 179, 71, 0.35); }
 .ab-root.bw .ab-data dt { color: var(--bw-dim); }
-.ab-root.bw .ab-inspect { background: var(--bw-dither), linear-gradient(180deg, #1b1109, #26190d); box-shadow: inset 0 3px 8px #000, 0 0 0 2px var(--bw-brass-lo), 0 0 0 3px rgba(255, 235, 170, 0.35); }
 .ab-root.bw .ab-status { color: var(--bw-amber); }
 .ab-root.bw .ab-next { background: var(--bw-dither-lite), linear-gradient(180deg, #4a3118, #2a1b0e); border-top: 3px solid var(--bw-brass-lo); box-shadow: inset 0 1px 0 rgba(255, 220, 150, 0.4); }
 
@@ -239,6 +238,8 @@
   .ab-root.bw[data-sheet="pal"] .ab-pal { display: flex; }
   .ab-root.bw[data-sheet="factory"] .ab-factory { display: flex; }
   .ab-root.bw[data-inspect="on"][data-sheet="none"] .ab-factory { display: flex; max-height: 46dvh; }
+  /* The factory sheet sits above the touch strip, the objective bar and the tab bar (about 215 px), so they stay usable. */
+  .ab-root.bw .ab-factory { bottom: var(--ab-phone-below, 215px); }
 }
 
 /* ---- phone: thumb-sized tap targets (44px) ---- */
