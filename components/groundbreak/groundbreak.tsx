@@ -15,7 +15,7 @@ import {
 import { gbCommand } from "@/lib/groundbreak/commands";
 import { MAT_ICONS, iconUrl } from "./icons";
 import { GbSiteScene as GroundbreakScene } from "@/components/groundbreak-art/site-scene";
-import { CAMERA_HOME, WORLD_H, WORLD_W, ZOOM_MAX, ZOOM_MIN, type Camera, type SceneJob } from "./scene-types";
+import { CAMERA_HOME, GROUND_Y, WORLD_H, WORLD_W, ZOOM_MAX, ZOOM_MIN, type Camera, type SceneJob } from "./scene-types";
 
 const tools = createSaveTools<State>({ app: "groundbreak", version: SAVE_VERSION, validate: isSave });
 type Tier = 0 | 1 | 2;
@@ -85,8 +85,8 @@ export function Groundbreak() {
 
     const note = useCallback((text: string, tone?: Note["tone"]) => {
         const id = ++noteId.current;
-        setNotes((n) => [...n.slice(-3), { id, text, tone }]);
-        window.setTimeout(() => setNotes((n) => n.filter((x) => x.id !== id)), 7000);
+        setNotes((n) => [...n.filter((x) => x.text !== text).slice(-1), { id, text, tone }]);
+        window.setTimeout(() => setNotes((n) => n.filter((x) => x.id !== id)), 6000);
     }, []);
     const save = useCallback(() => {
         const s = sRef.current;
@@ -97,7 +97,16 @@ export function Groundbreak() {
 
     // ---- camera ------------------------------------------------------------------------------------------------------------
     const setCamera = useCallback((c: Camera) => {
-        const n = { x: clamp(c.x, -40, WORLD_W + 40), y: clamp(c.y, 20, WORLD_H + 20), z: clamp(c.z, ZOOM_MIN, ZOOM_MAX) };
+        const z = clamp(c.z, ZOOM_MIN, ZOOM_MAX);
+        let y = clamp(c.y, 20, WORLD_H + 20);
+        const r = viewRef.current?.getBoundingClientRect();
+        if (r) {
+            // keep the ground line above the dock (and below the header) so the building is never buried behind it
+            const sc = Math.max(r.width / WORLD_W, r.height / WORLD_H) * z;
+            const dockH = r.width <= 860 ? 230 : 120;
+            y = Math.max(y, GROUND_Y - (r.height / 2 - dockH) / sc);
+        }
+        const n = { x: clamp(c.x, -40, WORLD_W + 40), y, z };
         camRef.current = n;
         setCam(n);
     }, []);
