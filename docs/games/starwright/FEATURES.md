@@ -60,7 +60,7 @@ Test commands: `npm run test:nodefarm` (a PR check; includes `tests/starwright/*
 | Layout: dock, fusion ladder, collapse panel floating over the star; phones pin the star on top | partial: no real phone check | `starwright.tsx`, `app/camino/starwright.css` | none |
 | Menus with their own open/close animations (iris, shutter, wipe, settle), `useLeaving` | working | `panels.tsx`, `sw-ui.tsx` | none |
 | Star map: per-star medallions, designations, zoom card, deep-star panel | working | `star-chart.tsx` | none |
-| Orbit and Almanac cards with drawn art | working | `panels.tsx` | none |
+| Orbit and Almanac cards with drawn art; Orbit tiles use the drawn sheets for all 8 planets at all 4 stages (the code drawing shows only while a sheet loads) | working | `panels.tsx` | `tests/starwright/art-manifest.test.mjs`; `scripts/starwright/ui-art/orbit-shots.mjs` |
 | Drawn UI art (element tiles with 8-frame loops, dock, menu, node, ring and pulsar icons) | working | `scripts/starwright/ui-art/build.py` -> `public/starwright/ui/*`; bump `UI_V` in `sw-ui.tsx` and `?v=` in `starwright.css` | none; `shots.mjs` screenshots |
 | Tooltips (`data-tip="Title|line"`), touch recipe lines | working | `sw-ui.tsx` | none |
 | Game shell (full screen, pause on hidden tab, save export/import) | working | `lib/games/*`, `app/creations/games/starwright/*` | `scripts/games/shell-check.mjs` |
