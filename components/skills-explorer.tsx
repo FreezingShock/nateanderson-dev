@@ -27,7 +27,7 @@ const SkillCard = memo(function SkillCard({ skill }: { skill: Skill }) {
         <div className="cm-card" style={{ height: "100%", gap: 8 }}>
             <div className="cm-row" style={{ justifyContent: "space-between", flexWrap: "nowrap", alignItems: "flex-start" }}>
                 <div style={{ minWidth: 0 }}>
-                    <b style={{ fontSize: 15 }}>{skill.name}</b>
+                    <b>{skill.name}</b>
                     <div className="cm-state" style={{ marginTop: 4 }}>{catLabel} / {level.label}</div>
                 </div>
                 <Icon className="cm-ico" style={{ width: 24, height: 24 }} aria-hidden="true" />

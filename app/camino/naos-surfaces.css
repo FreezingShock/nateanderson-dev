@@ -84,3 +84,20 @@
 @media (prefers-reduced-motion: reduce) {
   .ctos .cm-panel, .ctos .cm-card { transition: none; }
 }
+
+/* ---- Card system pass ----
+   One card reads the same on every page: the title is the lead size whatever the card holds (page code no longer sets
+   its own px), the description is 14px, a footer line (Open, Play now, a path, a count) sits on the card's bottom edge so
+   a row of cards ends level, and a linked card shows a cyan edge when keyboard focus lands on it. Grids with a few
+   cards (.cm-fit) stretch to the row instead of leaving empty cells at the right. */
+.ctos .cm-card > b, .ctos .cm-card > .cm-row + b, .ctos .cm-card b.cm-card-t { font-size: var(--cm-ctos-t-lead); line-height: 1.1; }
+.ctos .cm-card p { font-size: 14px; line-height: 1.5; }
+.ctos .cm-grid > .cm-card.link p, .ctos .cm-cols3 > .cm-card.link p { font-size: 13.5px; }
+.ctos .cm-card > .st, .ctos .cm-card > .cm-state:last-child { margin-top: auto; padding-top: 6px; line-height: 1.45; }
+.ctos .cm-card > .st { letter-spacing: .1em; overflow-wrap: anywhere; }
+.ctos .cm-grid.cm-fit { grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); }
+.ctos a.cm-card:focus-visible, .ctos button.cm-card:focus-visible { border-color: var(--cm-cyan); box-shadow: var(--cm-ctos-lift-hi); }
+@media (max-width: 520px) {
+  .ctos .cm-grid, .ctos .cm-cols3 { gap: 10px; }
+}
+.ctos .cm-grid.cm-fit > .cm-card .cm-viz { aspect-ratio: 21 / 9; }
