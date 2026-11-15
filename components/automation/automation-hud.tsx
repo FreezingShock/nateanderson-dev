@@ -98,6 +98,8 @@ export function AutomationHud({
   settingsSlots,
   removeSlot,
   quest,
+  dockGroup,
+  onDockGroup,
 }: {
   data: HudData;
   actions: HudActions;
@@ -108,6 +110,10 @@ export function AutomationHud({
   removeSlot?: ReactNode;
   /** The starter quest, when one is running. Its scroll opens from the dock's Quest button. */
   quest?: QuestState;
+  /** The build dock section the host says is open (Tab moves it). Undefined leaves the HUD to manage it alone. */
+  dockGroup?: GroupId | null;
+  /** Called when the player opens or closes a dock section, so the host can keep the number keys in step. */
+  onDockGroup?: (g: GroupId | null) => void;
 }) {
   const [drawer, setDrawer] = useState<Drawer | null>(null);
   const [screen, setScreen] = useState<Screen | null>(null);
@@ -145,21 +151,37 @@ export function AutomationHud({
   const openQuest = () => {
     if (questTimer.current !== null) { window.clearTimeout(questTimer.current); questTimer.current = null; }
     setQuestClosing(false);
-    if (palGroup) { leavePal(palGroup); setPalGroup(null); }
+    if (palGroup) { leavePal(palGroup); setPalGroup(null); onDockGroup?.(null); }
     setQuestOpen(true);
   };
   const toggleQuest = () => (questOpen ? closeQuest() : openQuest());
   const choosePal = (g: GroupId) => {
     if (questOpen) closeQuest();
-    if (palGroup === g) { leavePal(g); setPalGroup(null); return; }
+    if (palGroup === g) { leavePal(g); setPalGroup(null); onDockGroup?.(null); return; }
     if (palGroup) leavePal(palGroup);
     setPalGroup(g);
+    onDockGroup?.(g);
   };
   const closePal = () => {
     if (!palGroup) return;
     leavePal(palGroup);
     setPalGroup(null);
+    onDockGroup?.(null);
   };
+  // Tab and Shift+Tab move the open section from the host (the number keys follow it). Opening it here is a plain
+  // state change, so it does not call back.
+  useEffect(() => {
+    if (dockGroup === undefined || dockGroup === palGroup) return;
+    if (dockGroup === null) {
+      if (palGroup) { leavePal(palGroup); setPalGroup(null); }
+      return;
+    }
+    if (questOpen) closeQuest();
+    if (palGroup) leavePal(palGroup);
+    setPalGroup(dockGroup);
+    // leavePal and closeQuest read the current section; this runs only when the host's section changes.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [dockGroup]);
   const [milestonesOpen, setMilestonesOpen] = useState(false);
   // The hub menu opens from the top bar, the goal strip, the phone More sheet, or a click on the hub in the world.
   const [hubOpen, setHubOpen] = useState(false);

@@ -29,7 +29,8 @@ import {
     type World,
 } from "@/lib/automation/sim";
 import type { VoxelIsland } from "@/lib/automation/render";
-import type { BuildWorld, InputController, MountedInput } from "@/lib/automation/input";
+import type { BuildWorld, InputController, MountedInput, ToolSpec } from "@/lib/automation/input";
+import { openRowsOf, type GroupId } from "@/components/automation/build-bar";
 import { DELETE_TOOL } from "@/lib/automation/input/build";
 import { getMachineModel, getHubModel, hubStageFor } from "@/lib/automation/models/machines";
 import { rotateCell, rotateSide } from "@/lib/automation/input/ports";
@@ -59,6 +60,12 @@ const NODE_SPOTS: [number, number][] = [[2, 2], [2, 8], [15, 2], [15, 8], [8, 1]
 const BOARD = { width: W, depth: D, originX: -W / 2, originZ: -D / 2 };
 
 const BELT_TIER: Record<string, number> = { belt: 0, "belt-copper": 1, "belt-steel": 2 };
+// The build dock's sections in display order. Tab and Shift+Tab step through them, and the number keys pick from the open one.
+const DOCK_ORDER: GroupId[] = ["logistics", "machines", "power"];
+const toolSpecOf = (id: string): ToolSpec => {
+    const r = resolve(CAT, id);
+    return { id, label: r?.name ?? id, line: id in BELT_TIER, footprint: r ? { w: r.footprint.w, d: r.footprint.d } : undefined };
+};
 const FACE: readonly (readonly [number, number])[] = [[0, 1], [1, 0], [0, -1], [-1, 0]];
 
 /** Which belt tile a plain sim belt cell should show, from what feeds it and what it feeds. */
@@ -134,8 +141,15 @@ export function BrassworkHost() {
     const snapshot = useCallback(() => snap.current?.() ?? null, []);
     // The palette tool the player armed (null when none). Mirrors the input module's tool so the palette can show it.
     const armedRef = useRef<string | null>(null);
+    // The build dock section that is open, mirrored from the HUD and the Tab keys.
+    const [dockGroup, setDockGroup] = useState<GroupId | null>(null);
+    const onDockGroup = useCallback((g: GroupId | null) => {
+        setDockGroup(g);
+        if (g) ctl.current?.group(DOCK_ORDER.indexOf(g));
+    }, []);
     const ctl = useRef<{
         setTool: (id: string | null) => void;
+        group: (index: number) => void;
         select: (id: string | null) => void;
         research: (id: string) => void;
         setRecipe: (id: string) => void;
@@ -280,10 +294,15 @@ export function BrassworkHost() {
                 const hub = Object.values(world.buildings).find((b) => b.type === "hub");
                 return hub ? center(hub.x - 1, hub.z - 1, 3, 3) : [0, 0];
             };
+            // The number keys' tool lists, one per dock section, rebuilt on every refresh so they match the open rows.
+            const dockTools: ToolSpec[][] = DOCK_ORDER.map(() => []);
             const refresh = () => {
                 const d = hudData(world, CAT, selectedId, settings);
                 d.armed = armedRef.current;
                 d.rotation = input.controller.build.getRot() * 90;
+                DOCK_ORDER.forEach((g, i) => {
+                    dockTools[i].splice(0, dockTools[i].length, ...openRowsOf(d.machines, g).slice(0, 9).map((r) => toolSpecOf(r.id)));
+                });
                 const ms = d.milestones.filter((m) => m.done);
                 const rs = d.research.filter((r) => r.state === "done").length;
                 const unlocked = d.research.filter((r) => r.state !== "locked").length;
@@ -363,6 +382,8 @@ export function BrassworkHost() {
                 board: BOARD,
                 world: buildWorld,
                 tools,
+                groups: dockTools,
+                onGroup: (i) => setDockGroup(DOCK_ORDER[i] ?? null),
                 heightAt,
                 initialPose: { target: { x: 0, y: 0, z: 0 }, yaw: 0.6, pitch: 0.75, distance: 18 },
                 limits: { bounds: { minX: -14, maxX: 14, minZ: -10, maxZ: 10 }, minDistance: 5, maxDistance: 34, minPitch: 0.35, maxPitch: 1.2, topDownPitch: 1.5, fovY: 0.55, smoothing: 12 },
@@ -459,6 +480,7 @@ export function BrassworkHost() {
                     selectedId = b ? b.id : null;
                     refresh();
                 },
+                group: (index) => input.controller.setGroup(index),
                 setTool: (id) => {
                     input.controller.setToolById(id);
                     setNote(id ? `Click the floor to place ${resolve(CAT, id)?.name ?? id}. R rotates, Esc cancels.` : "");
@@ -632,7 +654,7 @@ export function BrassworkHost() {
 
     return (
         <div className="bw-root">
-            <AutomationHud data={data} actions={{ onBuild, onSelect, onResearch, onSetRecipe, onPrestige, onSettings }} settingsSlots={{ display: <LightingRow mood={mood} onMood={onMood} />, save: <SaveRows /> }} removeSlot={inputCtl ? <TrashButton input={inputCtl} variant="dock" /> : undefined} quest={quest ?? undefined}>
+            <AutomationHud data={data} actions={{ onBuild, onSelect, onResearch, onSetRecipe, onPrestige, onSettings }} settingsSlots={{ display: <LightingRow mood={mood} onMood={onMood} />, save: <SaveRows /> }} removeSlot={inputCtl ? <TrashButton input={inputCtl} variant="dock" /> : undefined} quest={quest ?? undefined} dockGroup={dockGroup} onDockGroup={onDockGroup}>
                 <canvas ref={canvasRef} className="bw-canvas" />
                 <BrassworkExtras snapshot={snapshot} away={away} mood={mood} onMood={onMood} />
                 {inputCtl && pop && (
