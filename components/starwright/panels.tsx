@@ -250,7 +250,7 @@ export function Visitor({ s, onAnswer }: { s: State; onAnswer: (pick: number) =>
 const CLOUD_COLOR: Record<string, string> = { dense: "#5fb4ff", hot: "#ff7a4d", rich: "#ffd75e", thin: "#c9e6ff", dusty: "#c8a0ff", quiet: "#3fe0a0" };
 function CloudArt({ id }: { id: string }) {
     const sheet = sheetUrl(`card/cloud-${id}`);
-    return <span className="sw-cloud-art" aria-hidden="true" data-anim={sheet ? "" : undefined} style={{ backgroundImage: cssUrl(sheet ?? cloudArt(id, CLOUD_COLOR[id] ?? "#ffb24d")) }} />;
+    return <span className="sw-cloud-art" aria-hidden="true" data-anim={sheet ? "" : undefined} style={sheet ? ({ "--sheet": cssUrl(sheet) } as CSSProperties) : { backgroundImage: cssUrl(cloudArt(id, CLOUD_COLOR[id] ?? "#ffb24d")) }} />;
 }
 export function CloudPick({ s, onPick }: { s: State; onPick: (id: string) => void }) {
     return (

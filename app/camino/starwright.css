@@ -649,3 +649,23 @@ html.sw-route .sf-foot { display: none !important; }
 .sw-cloud { border: 8px solid transparent; border-image: url("/starwright/ui/frame.png?v=8") 8 fill / 8px / 0 stretch; background: none; }
 .sw-cloud:hover { border-image-source: url("/starwright/ui/frame-warm.png?v=8"); background: none; }
 @media (prefers-reduced-motion: reduce) { .sw-collapse .sw-go, .sw-collapse[data-ready] .sw-pic { animation: none !important; } }
+
+/* Compositor-only loops (perf): the strips and the bar flow slide a pseudo element with transform, and the ready glow fades one with opacity,
+   so nothing here restyles or repaints the page while it idles. Same frames, same pace as the old background-position and box-shadow loops. */
+.sw-el[data-anim], .sw-cloud-art[data-anim] { position: relative; overflow: hidden; background-image: none; animation: none; }
+.sw-el[data-anim]::before, .sw-cloud-art[data-anim]::before { content: ""; position: absolute; top: 0; left: 0; width: 800%; height: 100%; background: var(--sheet) 0 0 / 100% 100%; image-rendering: pixelated; animation: swStrip 1.6s steps(8, jump-none) infinite; will-change: transform; }
+.sw-cloud-art[data-anim]::before { animation-duration: 1.3s; }
+.sw-row:nth-child(2n) .sw-el[data-anim]::before { animation-duration: 1.9s; }
+.sw-row:nth-child(3n) .sw-el[data-anim]::before { animation-duration: 1.3s; }
+.sw-row:hover .sw-el[data-anim]::before { animation-duration: .7s; }
+@keyframes swStrip { to { transform: translateX(-87.5%); } }
+
+.sw-bar i, .sw-bar i[data-full] { position: relative; overflow: hidden; background-image: none; animation: none; }
+.sw-bar i::before { content: ""; position: absolute; top: 0; bottom: 0; left: -8px; right: 0; background: url("/starwright/ui/bar.png?v=8") 0 0 / 16px 16px; image-rendering: pixelated; animation: swBarSlide 1.2s steps(2, end) infinite; }
+.sw-bar i[data-full]::before { background-image: url("/starwright/ui/bar-full.png?v=8"); animation-duration: .6s; }
+@keyframes swBarSlide { to { transform: translateX(8px); } }
+
+.sw-collapse .sw-go:not(.sw-go2):not(:disabled) { position: relative; animation: none; }
+.sw-collapse .sw-go:not(.sw-go2):not(:disabled)::after { content: ""; position: absolute; inset: 0; box-shadow: 0 0 18px rgba(255, 178, 77, .7); opacity: 0; pointer-events: none; animation: swGlowFade 1.4s steps(4, end) infinite; }
+@keyframes swGlowFade { 50% { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .sw-el::before, .sw-cloud-art::before, .sw-bar i::before, .sw-collapse .sw-go::after { animation: none !important; } }

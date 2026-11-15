@@ -114,6 +114,22 @@ export function AutomationHud({
   const [sheet, setSheet] = useState<"pal" | "factory" | null>(null);
   // Phone only: the "More" sheet lists the drawers, so the bottom bar stays at four tabs.
   const [more, setMore] = useState(false);
+  // Phone only: the sheet that just closed. It stays mounted for its short exit animation, then goes.
+  const [leaving, setLeaving] = useState<"pal" | "factory" | "more" | null>(null);
+  const wasOpen = useRef<"pal" | "factory" | "more" | null>(null);
+  const quiet = data.settings.reduceMotion || data.settings.lowFx;
+  useEffect(() => {
+    const now = more ? "more" : sheet;
+    const was = wasOpen.current;
+    wasOpen.current = now;
+    if (!was || now || quiet) {
+      setLeaving(null);
+      return;
+    }
+    setLeaving(was);
+    const t = setTimeout(() => setLeaving(null), 190);
+    return () => clearTimeout(t);
+  }, [sheet, more, quiet]);
   // Desktop: one build group flyout from the left dock, and the Milestones window from the right dock.
   const [palGroup, setPalGroup] = useState<GroupId | null>(null);
   // The section that is closing. It plays its exit while the newly chosen section plays its entrance.
@@ -242,7 +258,8 @@ export function AutomationHud({
       ref={rootRef}
       className="ab-root bw"
       data-drawer={drawer ?? "none"}
-      data-sheet={sheet ?? "none"}
+      data-sheet={sheet ?? (leaving === "pal" || leaving === "factory" ? leaving : "none")}
+      data-leaving={leaving ? "on" : "off"}
       data-inspect={held ? "on" : "off"}
       data-lowfx={data.settings.lowFx}
       data-reduce={data.settings.reduceMotion}
@@ -421,8 +438,8 @@ export function AutomationHud({
               <span className="ab-tab-label">More</span>
             </button>
           </nav>
-          {more && (
-            <div className="ab-more" role="menu" aria-label="More menus">
+          {(more || leaving === "more") && (
+            <div className="ab-more" role="menu" aria-label="More menus" inert={!more || undefined}>
               <button type="button" role="menuitem" className="ab-more-item" onClick={openHubMenu}>
                 <Ico id="milestones" />
                 Hub
