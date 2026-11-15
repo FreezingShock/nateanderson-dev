@@ -54,6 +54,13 @@ jobs:
               run: |
                   npx next start -p 3123 > server.log 2>&1 &
                   node scripts/ci/crawl.mjs http://localhost:3123 || { echo "--- server log ---"; tail -40 server.log; exit 1; }
+            - name: Install browser for the stuck-text check
+              working-directory: scripts/ci
+              run: |
+                  npm install --no-audit --no-fund
+                  npx playwright install --with-deps chromium
+            - name: Stuck-text check
+              run: node scripts/ci/motion-stuck.mjs http://localhost:3123 || { echo "--- server log ---"; tail -40 server.log; exit 1; }
 
     # Advisory: builds the PR and its base, screenshots both, reports what changed visually.
     # It never fails the PR; judge the diffs by eye.
