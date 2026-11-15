@@ -152,3 +152,27 @@ test("a kiln between a crate and a belt to the hub fills neither alone", () => {
     assert.ok((crate.input.iron_ingot ?? 0) > 0, "crate received ingots");
     assert.ok((hubOf(w).iron_ingot ?? 0) > 0, "hub received ingots");
 });
+
+test("a full crate never slows the hub: every ingot a kiln makes reaches the hub or the crate", () => {
+    const run = (crateFull) => {
+        const w = fresh();
+        w.windPin = 1;
+        const kiln = S.place(w, "kiln", 2, 5, 0, CAT);
+        S.setRecipe(w, kiln.id, "r_iron_ingot", CAT);
+        S.place(w, "windmill", 2, 8, 0, CAT);
+        S.place(w, "belt-crate", 4, 5, 0, CAT);
+        if (crateFull) S.buildingAt(w, 4, 5, CAT).input.iron_ingot = 200;
+        for (let x = 4; x <= 7; x++) S.place(w, "belt", x, 6, 1, CAT);
+        w.buildings[kiln.id].input.iron_ore = 40;
+        S.advance(w, 60, 0.2, CAT);
+        const crate = S.buildingAt(w, 4, 5, CAT).input.iron_ingot ?? 0;
+        const onBelts = Object.values(w.buildings).reduce((n, b) => n + (b.lane?.length ?? 0), 0);
+        return { hub: hubOf(w).iron_ingot ?? 0, crate: crate - (crateFull ? 200 : 0), onBelts, left: w.buildings[kiln.id].input.iron_ore };
+    };
+    const open = run(false);
+    const full = run(true);
+    assert.equal(full.crate, 0, "a full crate takes nothing");
+    assert.ok(open.hub > 0 && open.crate > 0, "with room, the crate and the hub share the kiln's output");
+    // Same ore used in both runs, so the same ingots were made: a full crate sends all of them on.
+    assert.equal(full.hub + full.onBelts, open.hub + open.crate + open.onBelts, "no ingot is lost or held back");
+});
