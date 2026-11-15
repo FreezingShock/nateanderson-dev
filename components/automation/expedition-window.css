@@ -1,25 +1,28 @@
 /* Expedition: a centred brass window of site cards over the dimmed game. Tokens come from --bw-*. */
 /* Expedition content inside the shared MenuWindow, four site cards across at wide size. */
-/* Chart-table identity: verdigris ink on a gridded chart, so it reads apart from the brass-only menus. */
+/* Chart-table identity: a gridded chart, so it reads apart from the brass-only menus. */
 .ex-root {
-  --ex-ink: #7cc4ac; display: flex; flex-direction: column; gap: 12px; padding: 12px; margin: -12px;
+  display: flex; flex-direction: column; gap: 12px; padding: 12px; margin: -12px;
   background:
-    repeating-linear-gradient(0deg, rgba(124, 196, 172, 0.07) 0 1px, transparent 1px 28px),
-    repeating-linear-gradient(90deg, rgba(124, 196, 172, 0.07) 0 1px, transparent 1px 28px);
+    repeating-linear-gradient(0deg, rgba(210, 154, 60, 0.06) 0 1px, transparent 1px 28px),
+    repeating-linear-gradient(90deg, rgba(210, 154, 60, 0.06) 0 1px, transparent 1px 28px);
 }
-.ex-brief { position: relative; overflow: hidden; display: flex; flex-direction: column; gap: 4px; padding: 8px 12px; border: 1px dashed rgba(124, 196, 172, 0.5); background: rgba(14, 22, 18, 0.45); }
-.ex-lede { margin: 0; font-size: 16px; font-weight: 700; color: var(--ex-ink); letter-spacing: 0.02em; }
-.ex-trade { margin: 0; font-size: 13px; color: var(--bw-cream, #f0dfb8); }
-.ex-keep { color: var(--bw-ok, #9bc27a); font-weight: 700; text-transform: uppercase; font-size: 11px; letter-spacing: 0.1em; }
-.ex-leave { color: var(--bw-bad, #d4614a); font-weight: 700; text-transform: uppercase; font-size: 11px; letter-spacing: 0.1em; }
-.ex-sub { margin: 0; font-size: 13px; color: var(--bw-dim, #b09a6c); }
-.ex-sub[data-ready="false"] { color: var(--bw-amber, #ffb347); }
+.ex-brief { position: relative; overflow: hidden; display: flex; flex-wrap: wrap; align-items: center; gap: 8px 22px; padding: 8px 12px; background: rgba(0, 0, 0, 0.28); box-shadow: inset 0 0 0 1px rgba(210, 154, 60, 0.3); }
+.ex-lede { margin: 0; flex: 1 1 220px; font-size: 15px; font-weight: 700; color: var(--bw-brass-hi, #f4cf7e); letter-spacing: 0.02em; }
+.ex-sub { margin: 0; flex: 1 0 100%; font-size: 13px; color: var(--bw-amber, #ffb347); }
+.ex-carry { display: flex; align-items: center; gap: 6px; }
+.ex-carry-label { font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--bw-dim, #b09a6c); margin-right: 2px; }
+.ex-carry[data-kind="keep"] b { color: var(--bw-ok, #9bc27a); }
+.ex-carry[data-kind="leave"] b { color: var(--bw-bad, #d4614a); }
+.ex-carry-ico { display: block; flex: none; padding: 4px; box-sizing: content-box; background: #140d08; box-shadow: inset 0 0 0 1px rgba(210, 154, 60, 0.3); image-rendering: pixelated; cursor: help; }
+.ex-carry[data-kind="leave"] .ex-carry-ico { opacity: 0.65; }
+.ex-carry-ico:hover, .ex-carry-ico:focus-visible { box-shadow: inset 0 0 0 1px var(--bw-amber, #ffb347); opacity: 1; outline: none; }
 
 .ex-grid { list-style: none; margin: 0; padding: 2px; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; }
 @keyframes ex-lay { from { opacity: 0; transform: translateY(14px) rotate(-0.6deg); } to { opacity: 1; transform: none; } }
-.ex-card { animation: ex-lay 0.34s cubic-bezier(0.2, 0.8, 0.3, 1) both; animation-delay: calc(var(--ex-i, 0) * 70ms + 80ms);
+.ex-card { animation: ex-lay 0.34s cubic-bezier(0.2, 0.8, 0.3, 1) backwards; animation-delay: calc(var(--ex-i, 0) * 70ms + 80ms);
   display: flex; flex-direction: column; min-width: 0; background: var(--bw-dither, none), linear-gradient(180deg, #2f2013, #1d130a);
-  box-shadow: inset 0 0 0 1px rgba(124, 196, 172, 0.45), 0 3px 0 #0b0703;
+  box-shadow: inset 0 0 0 1px rgba(210, 154, 60, 0.35), 0 3px 0 #0b0703;
 }
 .ex-card[data-here="true"] { box-shadow: inset 0 0 0 2px var(--bw-amber, #ffb347), 0 0 16px rgba(255, 179, 71, 0.25), 0 3px 0 #0b0703; }
 .ex-view { position: relative; aspect-ratio: 4 / 3; overflow: hidden; background: #140d08; }
@@ -31,7 +34,6 @@
 .ex-here { position: absolute; left: 8px; top: 8px; z-index: 1; font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: #2a1606; background: var(--bw-amber, #ffb347); padding: 3px 8px; }
 
 .ex-body { display: flex; flex-direction: column; gap: 8px; padding: 10px 12px 12px; flex: 1; }
-.ex-blurb { margin: 0; font-size: 14px; color: var(--bw-cream, #f0dfb8); }
 .ex-mid { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 .ex-ores { list-style: none; margin: 0; padding: 0; display: flex; gap: 6px; flex-wrap: wrap; }
 .ex-ore { zoom: 0.84; display: block; padding: 3px; background: #140d08; box-shadow: inset 0 0 0 1px rgba(210, 154, 60, 0.25); }
@@ -65,7 +67,6 @@
   .ex-plan-wrap { display: none; }
   .ex-here { font-size: 9px; padding: 2px 5px; left: 4px; top: 4px; letter-spacing: 0.08em; }
   .ex-body { gap: 6px; padding: 8px 10px; }
-  .ex-blurb { display: none; }
   .ex-ores { gap: 3px; }
   .ex-ore { zoom: 0.78; }
   .ex-facts { font-size: 12px; }
@@ -78,10 +79,22 @@
 @keyframes ex-sweep { from { transform: translateX(-12%); opacity: 0.9; } to { transform: translateX(110%); opacity: 0; } }
 @keyframes ex-pick { 0% { filter: none; } 45% { filter: brightness(1.45); transform: translateY(-3px); } 100% { filter: brightness(1.2); transform: translateY(-3px); } }
 .ex-compass { display: block; transform-origin: 50% 50%; animation: ex-swing 0.7s cubic-bezier(0.3, 0.7, 0.3, 1) 0.12s both; }
-.ex-scan { position: absolute; top: 0; bottom: 0; left: 0; width: 28%; pointer-events: none; background: linear-gradient(90deg, transparent, rgba(124, 196, 172, 0.28), transparent); animation: ex-sweep 0.9s ease-out 0.15s both; }
+.ex-scan { position: absolute; top: 0; bottom: 0; left: 0; width: 28%; pointer-events: none; background: linear-gradient(90deg, transparent, rgba(255, 200, 120, 0.2), transparent); animation: ex-sweep 0.9s ease-out 0.15s both; }
 .ex-card[data-picked="yes"] { animation: ex-pick 0.24s ease-out both; box-shadow: inset 0 0 0 2px var(--bw-amber, #ffb347), 0 0 18px rgba(255, 179, 71, 0.5), 0 3px 0 #0b0703; }
 .ex-card[data-picked="no"] { opacity: 0.45; transition: opacity 0.2s; }
 .ab-root[data-reduce="true"] .ex-compass, .ab-root[data-lowfx="true"] .ex-compass,
 .ab-root[data-reduce="true"] .ex-scan, .ab-root[data-lowfx="true"] .ex-scan,
 .ab-root[data-reduce="true"] .ex-card, .ab-root[data-lowfx="true"] .ex-card { animation: none; }
 @media (prefers-reduced-motion: reduce) { .ex-compass, .ex-scan { animation: none; } }
+
+/* Hover: the card lifts, the painting leans in, and the ore tiles hop one after another. */
+@keyframes ex-hop { 0%, 100% { transform: none; } 40% { transform: translateY(-4px); } }
+.ex-card { transition: transform 0.16s ease-out, box-shadow 0.16s, filter 0.16s; }
+.ex-img { transition: transform 0.4s cubic-bezier(0.2, 0.7, 0.2, 1); }
+@media (hover: hover) {
+  .ex-card:hover { transform: translateY(-4px); box-shadow: inset 0 0 0 2px var(--bw-brass, #d29a3c), 0 8px 0 #0b0703, 0 0 18px rgba(210, 154, 60, 0.3); }
+  .ex-card:hover .ex-img { transform: scale(1.08); }
+  .ex-card:hover .ex-ore { animation: ex-hop 0.45s ease-out both; animation-delay: calc(var(--ex-o, 0) * 55ms); }
+}
+.ab-root[data-reduce="true"] .ex-card, .ab-root[data-lowfx="true"] .ex-card, .ab-root[data-reduce="true"] .ex-img, .ab-root[data-lowfx="true"] .ex-img { transition: none; }
+.ab-root[data-reduce="true"] .ex-card:hover .ex-ore, .ab-root[data-lowfx="true"] .ex-card:hover .ex-ore { animation: none; }
