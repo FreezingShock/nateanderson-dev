@@ -102,12 +102,11 @@ export function BrassworkExtras({ snapshot, away, mood, onMood }: { snapshot: ()
             if (typing(e) || e.ctrlKey || e.metaKey || e.altKey) return;
             if (e.key === "p" || e.key === "P") {
                 if (!e.repeat) photo();
-            } else if (e.key === "c" || e.key === "C") setCodex((c) => !c);
+            } else if (e.key === "c" || e.key === "C") setCodex(true); // the codex closes itself on C or Escape, so its exit plays
             else if (e.key === "l" || e.key === "L") onMood(MOODS[(MOODS.indexOf(mood) + 1) % MOODS.length]);
             else if (e.key === "h" || e.key === "H") setSheet((s) => !s);
             else if (e.key === "Escape") {
                 setSheet(false);
-                setCodex(false);
                 setReport(null);
             }
         };

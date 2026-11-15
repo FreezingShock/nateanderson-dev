@@ -157,7 +157,7 @@ export function AutomationHud({
   const leavePal = (from: GroupId) => {
     setPalLeaving(from);
     if (leaveTimer.current !== null) window.clearTimeout(leaveTimer.current);
-    leaveTimer.current = window.setTimeout(() => { setPalLeaving(null); leaveTimer.current = null; }, 170);
+    leaveTimer.current = window.setTimeout(() => { setPalLeaving(null); leaveTimer.current = null; }, 160);
   };
   // One section at a time: choosing another section closes the open one with its exit animation.
   // The quest scroll shares the one-section-at-a-time rule with the build flyouts.

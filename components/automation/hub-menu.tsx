@@ -123,7 +123,8 @@ export function HubMenu({ hub, onClose }: { hub: HubView; onClose: () => void })
           <h4 className="hm-kick" data-glyph="milestones">Milestones · pay blueprints</h4>
           <ol className="hm-ladder">{listed("milestone").map(row)}</ol>
         </aside>
-        <Slip step={step} index={indexOf(step)} total={step.kind === "request" ? orders.length : hub.steps.length - orders.length} />
+        {/* Keyed by step, so choosing another row swaps the slip with its own short entrance. */}
+        <Slip key={step.id} step={step} index={indexOf(step)} total={step.kind === "request" ? orders.length : hub.steps.length - orders.length} />
       </div>
     </MenuWindow>
   );
