@@ -632,6 +632,47 @@ c.ball(24, 24, 7, kw, .45, 1.0)
 c.outline(c.use("#05040c"), 0)
 save(c.image(), "pulsar-core")
 
+# ---- almanac medals: 32 x 32, a round medal with its own art per milestone, plus a locked version ----------------------
+MEDALS = {"flame": "spark", "l25": "stream", "l100": "weave", "l300": "flame", "iron": "press", "nova1": "corona", "nova10": "bloom",
+          "nova40": "echo", "fast": "spin", "guest": "kilonova", "guest12": "embersky", "cloud": "afterglow", "cloud8": "seeds", "world4": "halo",
+          "world8": "shell", "map8": "aperture", "pulsar": "beam", "gold": "remnant", "uranium": "frost", "sing": "horizon", "night": "moon"}
+RIB = ["#5fb4ff", "#ff9a4d", "#a98bff", "#3fe0a0", "#ff5fc8"]
+for i, (aid, gname) in enumerate(MEDALS.items()):
+    for lit in (True, False):
+        c = Canvas(40)
+        kr = c.use(RIB[i % len(RIB)] if lit else "#4a4e66")
+        c.poly([(11, 0), (18, 0), (20, 12), (15, 12)], kr, .55, .9); c.poly([(22, 0), (29, 0), (25, 12), (20, 12)], kr, .4, .75)
+        kg = c.use("#ffd27a" if lit else "#6b6f8a")
+        d = np.hypot(c.x - 20, c.y - 24)
+        c.put(d <= 14, np.clip(.75 - (c.x + c.y - 44) / 50, .2, 1) if lit else .25, kg)
+        c.put((d <= 14) & (d > 12.6), .95 if lit else .4, kg)
+        kk = c.use("#2a1a08" if lit else "#3a3d52")
+        old = C0
+        globals()["C0"] = 20
+        sub = Canvas(40); sk = sub.use("#000000")
+        GLYPH[gname](sub, sk, .9)
+        # glyph is drawn centred at 20,20: shift down 4px into the medal face and scale nothing
+        m = np.roll(sub.v >= 0, 4, axis=0) & (d <= 11.5)
+        c.put(m, .1, kk)
+        c.outline(c.use("#05040c"), 0)
+        save(c.image(), f"medal-{aid}-{'own' if lit else 'lock'}")
+
+# orbit card pieces: stage pips 8 x 8 (empty, full) and a 96 x 96 orbit backdrop drawn behind each planet
+for nm, full in (("pip", True), ("pip-empty", False)):
+    c = Canvas(8); k = c.use("#e9ecf6")
+    c.poly([(4, 0), (8, 4), (4, 8), (0, 4)], k, .9 if full else .3, 1.0 if full else .3)
+    if not full:
+        c.put((np.abs(c.x - 4) + np.abs(c.y - 4)) < 2.6, -1, k)
+    save(c.image(), nm)
+c = Canvas(96); k = c.use("#6a5cf0")
+c.glow(48, 48, 46, k, .25)
+c.ring(48, 48, 44, 16, 1, k, .35)
+c.ring(48, 48, 34, 34, 1, k, .2)
+for a in range(0, 360, 30):
+    x, y = 48 + 44 * math.cos(math.radians(a)), 48 + 16 * math.sin(math.radians(a))
+    c.dot(x, y, k, .7)
+save(c.image(), "orbit-bg")
+
 # ---- contact sheet (not shipped to the page; used for reviews) --------------------------------------------------------
 cell = 26 * 6
 cols = 10

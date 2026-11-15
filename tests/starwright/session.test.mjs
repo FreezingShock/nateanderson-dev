@@ -114,3 +114,29 @@ test("auto visitor answers take the lump or the boost", () => {
     const flare = D.EVENTS.find((e) => e.id === "flare");
     assert.equal(S.autoAnswer(flare, "lump"), 0);
 });
+
+test("time away with auto supernova fires supernovas and reports them", () => {
+    const s = played();
+    for (let i = 0; i < 8; i++) s.bought[i][0] = 60;
+    s.amt[7] = 1400;
+    const before = S.snap(s);
+    const r = S.advanceAuto(s, 6 * 3600, { autoNova: 1, autoVisitor: "off" });
+    assert.ok(r.novas >= 1, `novas ${r.novas}`);
+    assert.equal(s.novasAll, r.novas);
+    assert.ok(r.dust > 0);
+    const rep = S.awayReport(before, s, r.secs, 6 * 3600, 1, r);
+    assert.ok(rep.lines.some((l) => /Auto supernova fired/.test(l)));
+    assert.ok(E.fresh().novasAll === 0);
+});
+
+test("time away answers a waiting visitor, and does nothing when automation is off", () => {
+    const s = played();
+    s.event = { id: "comet", left: 100 };
+    const r = S.advanceAuto(s, 3600, { autoNova: 0, autoVisitor: "boost" });
+    assert.equal(r.answered, true);
+    assert.equal(s.event, null);
+    const a = played(), b = played();
+    S.advanceAuto(a, 3600, { autoNova: 0, autoVisitor: "off" });
+    S.advance(b, 3600);
+    assert.deepEqual(a.amt, b.amt);
+});

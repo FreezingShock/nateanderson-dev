@@ -6,7 +6,7 @@ export const GB_BACKDROP = { w: 1600, h: 600, horizon: 372, siteY: 492, layers: 
   "bay": "/groundbreak/backdrop/bay.webp?v=635a1383",
   "glint": "/groundbreak/backdrop/glint.webp?v=21bd9f7d",
   "boats": "/groundbreak/backdrop/boats.webp?v=b61c68a0",
-  "shore": "/groundbreak/backdrop/shore.webp?v=fc279f7e",
+  "shore": "/groundbreak/backdrop/shore.webp?v=06341120",
   "city-0": "/groundbreak/backdrop/city-0.webp?v=1c4c1c27",
   "city-1": "/groundbreak/backdrop/city-1.webp?v=b1039863",
   "city-2": "/groundbreak/backdrop/city-2.webp?v=056c5629",
@@ -28,7 +28,7 @@ export const GB_JOBS = {
     "w": 320,
     "h": 130,
     "ground": 44,
-    "src": "/groundbreak/jobs/sidewalk.webp?v=7f3b7911"
+    "src": "/groundbreak/jobs/sidewalk.webp?v=c62f2f0c"
   },
   "driveway": {
     "name": "Driveway",
@@ -43,7 +43,7 @@ export const GB_JOBS = {
     "w": 320,
     "h": 130,
     "ground": 44,
-    "src": "/groundbreak/jobs/driveway.webp?v=4c1337ce"
+    "src": "/groundbreak/jobs/driveway.webp?v=861defd1"
   },
   "house": {
     "name": "Two-storey house",
@@ -63,7 +63,7 @@ export const GB_JOBS = {
     "w": 240,
     "h": 160,
     "ground": 44,
-    "src": "/groundbreak/jobs/house.webp?v=79e85f59"
+    "src": "/groundbreak/jobs/house.webp?v=47a1a1a4"
   },
   "firestation": {
     "name": "Fire station",
@@ -83,7 +83,7 @@ export const GB_JOBS = {
     "w": 280,
     "h": 154,
     "ground": 44,
-    "src": "/groundbreak/jobs/firestation.webp?v=77dfde6c"
+    "src": "/groundbreak/jobs/firestation.webp?v=a288589d"
   },
   "clinic": {
     "name": "Harbor clinic",
@@ -107,7 +107,7 @@ export const GB_JOBS = {
     "w": 296,
     "h": 246,
     "ground": 44,
-    "src": "/groundbreak/jobs/clinic.webp?v=4206b9ee"
+    "src": "/groundbreak/jobs/clinic.webp?v=2f70bee4"
   },
   "parking": {
     "name": "Parking deck",
@@ -130,7 +130,7 @@ export const GB_JOBS = {
     "w": 350,
     "h": 220,
     "ground": 44,
-    "src": "/groundbreak/jobs/parking.webp?v=51d3b575"
+    "src": "/groundbreak/jobs/parking.webp?v=ed878b4b"
   },
   "school": {
     "name": "School",
@@ -151,7 +151,7 @@ export const GB_JOBS = {
     "w": 392,
     "h": 220,
     "ground": 44,
-    "src": "/groundbreak/jobs/school.webp?v=6e5d891e"
+    "src": "/groundbreak/jobs/school.webp?v=4d366ef4"
   },
   "midrise": {
     "name": "Mid-rise office",
@@ -177,7 +177,7 @@ export const GB_JOBS = {
     "w": 296,
     "h": 346,
     "ground": 44,
-    "src": "/groundbreak/jobs/midrise.webp?v=43d2cb6a"
+    "src": "/groundbreak/jobs/midrise.webp?v=8d6ef886"
   },
   "watertower": {
     "name": "Water tower",
@@ -195,7 +195,7 @@ export const GB_JOBS = {
     "w": 260,
     "h": 300,
     "ground": 44,
-    "src": "/groundbreak/jobs/watertower.webp?v=087733e6"
+    "src": "/groundbreak/jobs/watertower.webp?v=156ab1da"
   },
   "footbridge": {
     "name": "Footbridge",
@@ -214,7 +214,7 @@ export const GB_JOBS = {
     "w": 420,
     "h": 230,
     "ground": 44,
-    "src": "/groundbreak/jobs/footbridge.webp?v=95b99994"
+    "src": "/groundbreak/jobs/footbridge.webp?v=1acdc982"
   },
   "tower": {
     "name": "40-storey tower",
@@ -241,7 +241,7 @@ export const GB_JOBS = {
     "w": 272,
     "h": 510,
     "ground": 44,
-    "src": "/groundbreak/jobs/tower.webp?v=233a9d60"
+    "src": "/groundbreak/jobs/tower.webp?v=6c795fc2"
   },
   "stadium": {
     "name": "Stadium",
@@ -260,7 +260,7 @@ export const GB_JOBS = {
     "w": 560,
     "h": 260,
     "ground": 44,
-    "src": "/groundbreak/jobs/stadium.webp?v=84b2f09d"
+    "src": "/groundbreak/jobs/stadium.webp?v=684d3b4c"
   },
   "bridge": {
     "name": "Suspension bridge",
@@ -279,7 +279,7 @@ export const GB_JOBS = {
     "w": 760,
     "h": 340,
     "ground": 44,
-    "src": "/groundbreak/jobs/bridge.webp?v=6a0e7f5a"
+    "src": "/groundbreak/jobs/bridge.webp?v=9d9f04bb"
   }
 } as const;
 
