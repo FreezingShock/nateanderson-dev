@@ -44,11 +44,11 @@ Thread names change each wave; the file split is what matters. Before editing a 
 | 12 materials, unlocked in order, each paid in the one before; first job unlocks on its own material | working | `data.ts` MATS, UNLOCK_COST; `engine.ts` `unlock`, `openForWaitingJob` | engine.test: unlock, "next material opens by itself", "each job starts as soon as its own last material is open" |
 | Forward boost (material n lifts n+1) and back boost from the last three, plus global extras | working | `engine.ts` `chain`, TUNE.fwd/back/extra | "forward boost ... last three feed back" |
 | Three tiers per row: I crew (x1.15 cost), II equipment (x2 output, x8 cost), III method (once, needs 2 equipment) | working | `engine.ts` `buy`, `tierCost`; no bulk x1/x10/max by design | "buying tiers spends the right currency" |
-| Crew milestone: every 25 crews doubles a row | untested | `engine.ts` `rowMult` | none directly |
+| Crew milestone: every 25 crews doubles a row | working | `engine.ts` `rowMult` | engine.test "every 25 crews ... doubles" |
 | Floors recipe (3 Concrete, 1 Steel, 1 Glass each) | working | `data.ts` RECIPE | "data tables are the right shape" and the bot run |
 | Opening a material stocks 60 s of output | working | `engine.ts` unlock, TUNE.unlockGiftSecs | "opening a material stocks a minute" |
-| Reputation lifts all production (+0.4% per point) | untested | `engine.ts` `repMult` | none |
-| City bonuses per region (material and effect multipliers) | untested | `data.ts` CITIES | none |
+| Reputation lifts all production (+0.4% per point) | working | `engine.ts` `repMult` | engine.test "reputation lifts production" |
+| City bonuses per region (material and effect multipliers) | working (material bonuses tested) | `data.ts` CITIES | engine.test "a region multiplies only the materials it lists" |
 
 ### Jobs
 

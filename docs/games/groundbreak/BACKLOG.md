@@ -41,7 +41,7 @@ Last audited 2026-11-15, `integration` at 5138bb6f.
 - `components/groundbreak/engine.ts`, `commands.ts`, `scene.tsx` are not imported anywhere (see FEATURES.md "Dead code"). `scene-types.ts` stays.
 - Done when: the three files are gone, typecheck and the build pass, and `rg "groundbreak/engine"` finds nothing.
 
-### 9. Tests for the untested rules
+### 9. Tests for the untested rules (DONE 2026-11-15 except the other-tab save guard, which lives in the component and is not a pure function)
 - Add to `tests/groundbreak/engine.test.mjs`: crew milestone doubling, reputation boost, city material bonuses, the other-tab save guard if it can be pulled into a pure function, and `catchUp` with the Night watch perk.
 - Done when: each has a failing-then-passing assertion on a real state change, not only "did not throw".
 

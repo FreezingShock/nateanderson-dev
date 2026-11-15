@@ -454,3 +454,40 @@ test("the first charter buys a real head start: a firm-1 run pays 25+ charter an
     s.perks = ["o1"];
     assert.equal(E.effects(s).crew, base * 2);
 });
+
+test("every 25 crews in a row doubles its output (the rate per crew jumps, not just the count)", () => {
+    const s = E.fresh(0); s.open = 4;
+    const per = (crews) => { s.crews[0] = crews; return E.rawRate(s, 0, E.effects(s), E.chain(s)) / crews; };
+    assert.equal(E.rowMult(s, 0), 1 * (s.crews[0] = 24, E.rowMult(s, 0)));
+    assert.ok(Math.abs(per(25) / per(24) - 2) < 1e-9, "crew 25 doubles the per-crew rate");
+    assert.ok(Math.abs(per(50) / per(49) - 2) < 1e-9, "crew 50 doubles it again");
+});
+
+test("reputation lifts production by repBoost per point", () => {
+    const s = E.fresh(0); s.open = 4; s.crews[0] = 10;
+    const at = (rep) => { s.rep = rep; return E.rawRate(s, 0, E.effects(s), E.chain(s)); };
+    const r0 = at(0), r100 = at(100);
+    assert.ok(Math.abs(r100 / r0 - (1 + 100 * D.TUNE.repBoost)) < 1e-9);
+});
+
+test("a region multiplies only the materials it lists", () => {
+    const rate = (firm, n) => { const s = E.fresh(0); s.firm = firm; s.open = 12; s.crews[n] = 10; return E.rawRate(s, n, E.effects(s), E.chain(s)); };
+    const eb = D.CITIES[0].mat, pen = D.CITIES[1].mat;
+    assert.ok(eb[0] > 1 && pen[5] > 1);
+    // same material, a region with and without the bonus (firm 2 is South Bay: no material bonus; fx are not crew speed)
+    assert.ok(Math.abs(rate(0, 0) / rate(2, 0) - eb[0]) < 1e-9, "East Bay lifts Gravel");
+    assert.ok(Math.abs(rate(1, 5) / rate(2, 5) - pen[5]) < 1e-9, "Peninsula lifts material 6");
+    assert.equal(rate(1, 0), rate(2, 0), "Peninsula does not lift Gravel");
+});
+
+test("Night watch raises the offline cap, and catchUp stops at the cap", () => {
+    const away = 40 * 3600;
+    const base = E.fresh(0);
+    const capBase = E.offlineCapS(E.effects(base));
+    assert.equal(E.catchUp(base, away), capBase);
+    const night = E.fresh(0); night.perks = ["l1", "l3"];
+    const capNight = E.offlineCapS(E.effects(night));
+    assert.ok(capNight > capBase, "Night watch adds hours");
+    assert.equal(E.catchUp(night, away), capNight);
+    assert.ok(E.catchUp(E.fresh(0), 1) === 0, "under two seconds is ignored");
+});
