@@ -47,7 +47,7 @@ def job_outlines():
             filled = np.where(rows >= w * 0.22)[0]
             top = int(filled[0]) if len(filled) else gy
             near = a[max(0, gy - 6):gy].any(0)
-            xs = np.where(a[top:gy].sum(0) >= max(2, (gy - top) * 0.5))[0] if top < gy else []
+            xs = np.where(a[top:gy].mean(0) >= 0.3)[0] if top < gy - 2 else []
             l, r = (int(xs[0]), int(xs[-1])) if len(xs) else (int(w * 0.3), int(w * 0.7))
             # floor lines: rows where a beam or slab spans most of the build, one per cluster (its top row)
             floors = []

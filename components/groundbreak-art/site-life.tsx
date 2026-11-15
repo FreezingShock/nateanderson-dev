@@ -252,7 +252,7 @@ export function GbSiteLife({ left, ground, w, outline, jobKey, phase, phaseName,
                 let action: MiniAction = onRoof && cat === "steel" ? "weld" : roles2[j % roles2.length];
                 const r1 = hash(j, 5), r2 = hash(j, 6);
                 const lo = bL + 4, hi = bR - 4 - M.w;
-                let x = lo + ((k + 0.5) / per + (r1 - 0.5) * 0.4 / per) * (hi - lo);
+                let x = lo + (per === 1 ? 0.08 + 0.84 * r1 : (k + 0.5) / per + (r1 - 0.5) * 0.4 / per) * (hi - lo);
                 let flip = r2 > 0.5;
                 if ((action === "walk" || action === "carry") && !reduce) {
                     const a = x, b = Math.min(hi, Math.max(lo, x + (r2 > 0.5 ? 1 : -1) * (20 + r1 * 40)));
