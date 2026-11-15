@@ -471,7 +471,8 @@ export function BrassworkHost() {
                 onGroup: (i) => setDockGroup(DOCK_ORDER[i] ?? null),
                 heightAt: pickHeightAt,
                 groundHeightAt: heightAt,
-                initialPose: { target: { x: -2.4, y: 0, z: -2.2 }, yaw: 0.6, pitch: 0.75, distance: 21 },
+                // Wide screens open with the Machines dock beside the island, so the view sits a little right of the hub to keep the first drill node clear of it.
+                initialPose: { target: window.innerWidth >= 768 ? { x: -3.7, y: 0, z: -1 } : { x: -2.4, y: 0, z: -2.2 }, yaw: 0.6, pitch: 0.75, distance: 21 },
                 limits: { bounds: { minX: -14, maxX: 14, minZ: -10, maxZ: 10 }, minDistance: 5, maxDistance: 34, minPitch: 0.35, maxPitch: 1.2, topDownPitch: 1.5, fovY: 0.55, smoothing: 12 },
                 onEvent: (e) => {
                     if (e.type === "invalid") {
@@ -648,6 +649,8 @@ export function BrassworkHost() {
                         return r;
                     },
                     refresh,
+                    // The spot the NEXT marker names for a w x d machine (sim cell of its minimum corner), for the marker check.
+                    suggestSpot: (fw: number, fd: number) => suggestSpot(world, { w: fw, d: fd }, CAT),
                     // Arms a build tool by its id, the same call the palette makes. Lets the headless check skip the palette.
                     setTool: (id: string | null) => input.controller.setToolById(id),
                     armedTool: () => input.controller.build.getTool()?.id ?? null,

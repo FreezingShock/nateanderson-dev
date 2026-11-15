@@ -290,32 +290,45 @@ def fx_run():
     save_sheet("fx/arrive", [fx_arrive(f) for f in range(20)], fps=10, loop=False)
 
 
-def fx_planet_gone(f, n=18, c=64):
-    """A planet stripped away by a blast: it cracks, breaks into glowing chunks that tumble outward and cool from gold to
-    ash, leaving a thin dust ring that fades."""
+def fx_planet_gone(f, n=24, c=96):
+    """A planet stripped away by a blast: a flash, then eight lumps of rock fly apart, tumbling, lit from the top left, glowing
+    gold to rust and cooling to ash as they go. A thin dust ring trails behind. Cell 96, so the lumps have room to travel."""
     t = f / (n - 1)
     out = np.zeros((c, c, 3), np.uint8); m = np.zeros((c, c), bool)
     x, y = grid(c, c)
-    d = np.sqrt((x - c / 2 + 0.5) ** 2 + (y - c / 2 + 0.5) ** 2)
-    rng = np.random.default_rng(5)
-    e = 1 - (1 - t) ** 2.2
-    cool = ("cream", "gold", "amber", "flame", "rust", "ash")
-    for i in range(16):
-        a = rng.random() * 2 * math.pi
-        sp = 0.5 + rng.random() * 0.7
-        size = 1 + int(rng.random() * 2.2 * (1 - t))
-        r0 = 3 + 26 * e * sp
-        px_, py_ = int(round(c / 2 + math.cos(a) * r0)), int(round(c / 2 + math.sin(a) * r0))
-        col = hexc(P[cool[min(5, int(t * 5 + rng.random()))]])
-        for ox in range(size):
-            for oy in range(size):
-                if 0 <= px_ + ox < c and 0 <= py_ + oy < c and t < 0.95:
-                    out[py_ + oy, px_ + ox] = col; m[py_ + oy, px_ + ox] = True
-    dust = np.clip(1 - np.abs(d - (6 + 22 * e)) / 2.5, 0, 1) * (1 - t) * 0.7
+    cx = cy = c / 2 - 0.5
+    rng = np.random.default_rng(11)
+    ease = 1 - (1 - t) ** 2.0
+    heat = max(0.0, 1 - t * 1.7) ** 1.3  # 1 = white hot, 0 = cold rock
+    lumps = []
+    for i in range(8):
+        a = (i + rng.random() * 0.7) / 8 * 2 * math.pi
+        sp = 0.55 + rng.random() * 0.45
+        r0 = 4 + 36 * ease * sp
+        lumps.append((cx + math.cos(a) * r0, cy + math.sin(a) * r0 * 0.8, 3.6 + rng.random() * 2.6, rng.random() * 6.3, 0.5 + rng.random()))
+    for (lx, ly, rad, ph, spin) in lumps:
+        rad = rad * (1 - 0.35 * t)
+        dx, dy = x - lx, y - ly
+        # an irregular blob: the radius wobbles with angle, and the wobble turns as the lump tumbles
+        ang = np.arctan2(dy, dx) + ph + t * 5 * spin
+        edge = rad * (1 + 0.16 * np.sin(ang * 3 + ph) + 0.08 * np.sin(ang * 5 - ph))
+        d = np.sqrt(dx * dx + dy * dy)
+        inside = d < edge
+        if not inside.any():
+            continue
+        lit = np.clip(0.55 - (dx + dy) / (2.4 * rad + 1e-3) * 0.5, 0, 1)  # light from the top left
+        v = lit * (0.42 + 0.35 * heat) + heat * 0.45 * np.clip(1 - d / (edge + 1e-3), 0, 1) + heat * 0.2
+        cm = inside & (t < 0.97)
+        col = pick(R("soot", "ash", "ember1", "rust", "flame", "amber", "gold", "cream"), np.clip(v, 0, 1))
+        out[cm] = col[cm]; m |= cm
+    # dust ring that thins out
+    d = np.sqrt((x - cx) ** 2 + ((y - cy) / 0.8) ** 2)
+    dust = np.clip(1 - np.abs(d - (8 + 34 * ease)) / 2.2, 0, 1) * (1 - t) ** 1.4 * 0.6
     dm = dmask(dust) & ~m
-    out[dm] = pick(R("ember1", "rust", "stone"), dust)[dm]; m |= dm
-    if t < 0.2:
-        core = np.clip(1 - d / (8 * (1 - t * 4)), 0, 1)
-        cm = dmask(core)
-        out[cm] = pick(R("white", "gold", "flame"), 1 - core)[cm]; m |= cm
+    out[dm] = pick(R("ember1", "rust", "stone"), dust * 1.4)[dm]; m |= dm
+    # the first frames are a flash where the planet stood
+    if t < 0.22:
+        core = np.clip(1 - d / (14 * (1 - t * 4.2)), 0, 1)
+        fm = dmask(core) & ~m
+        out[fm] = pick(R("flame", "gold", "cream", "white"), core)[fm]; m |= fm
     return rgba(out, m)

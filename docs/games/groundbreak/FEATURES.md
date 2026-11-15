@@ -44,11 +44,11 @@ Thread names change each wave; the file split is what matters. Before editing a 
 | 12 materials, unlocked in order, each paid in the one before; first job unlocks on its own material | working | `data.ts` MATS, UNLOCK_COST; `engine.ts` `unlock`, `openForWaitingJob` | engine.test: unlock, "next material opens by itself", "each job starts as soon as its own last material is open" |
 | Forward boost (material n lifts n+1) and back boost from the last three, plus global extras | working | `engine.ts` `chain`, TUNE.fwd/back/extra | "forward boost ... last three feed back" |
 | Three tiers per row: I crew (x1.15 cost), II equipment (x2 output, x8 cost), III method (once, needs 2 equipment) | working | `engine.ts` `buy`, `tierCost`; no bulk x1/x10/max by design | "buying tiers spends the right currency" |
-| Crew milestone: every 25 crews doubles a row | untested | `engine.ts` `rowMult` | none directly |
+| Crew milestone: every 25 crews doubles a row | working | `engine.ts` `rowMult` | engine.test "every 25 crews ... doubles" |
 | Floors recipe (3 Concrete, 1 Steel, 1 Glass each) | working | `data.ts` RECIPE | "data tables are the right shape" and the bot run |
 | Opening a material stocks 60 s of output | working | `engine.ts` unlock, TUNE.unlockGiftSecs | "opening a material stocks a minute" |
-| Reputation lifts all production (+0.4% per point) | untested | `engine.ts` `repMult` | none |
-| City bonuses per region (material and effect multipliers) | untested | `data.ts` CITIES | none |
+| Reputation lifts all production (+0.4% per point) | working | `engine.ts` `repMult` | engine.test "reputation lifts production" |
+| City bonuses per region (material and effect multipliers) | working (material bonuses tested) | `data.ts` CITIES | engine.test "a region multiplies only the materials it lists" |
 
 ### Jobs
 
@@ -60,14 +60,14 @@ Thread names change each wave; the file split is what matters. Before editing a 
 | Overtime: pay cash to end an inspection early | working | `engine.ts` `overtime` | "overtime ends an inspection early" |
 | Change order: offered at the structure phase (middle phase on small jobs), 75 s to decide, +35% pay, costs build time and a tougher inspection | working | `engine.ts` `acceptChange`, `declineChange`; card in `groundbreak.tsx` shows pay, time, inspection | "change order is offered ...", "costs build time and a tougher inspection" |
 | Progress draws: half the cash paid through the job, handover pays the rest | working | TUNE.draw | "progress draws pay through a long job" |
-| Repeat order: while the next job waits on a material the crew rebuilds the last job for a share of pay and rep, no new building | working (UI label partial) | `engine.ts` `repeatJob`, `repeatPay`; "Repeat order" tag on the job card only | four repeat-order tests |
+| Repeat order: while the next job waits on a material the crew rebuilds the last job for a share of pay and rep, no new building | working; named in the job card (pays and "no new building"), the Jobs window row and a finish toast| `engine.ts` `repeatJob`, `repeatPay`; "Repeat order" tag on the job card only | four repeat-order tests |
 | Jobs window: next 4 jobs with pay, rep, stage and what they need | working | `groundbreak.tsx` Window "jobs" | none (UI) |
 
 ### Prestige and perks
 
 | Feature | State | Code | Test |
 |---|---|---|---|
-| Incorporate: new firm in the next Bay Area region, keeps skyline and Charter points (sqrt of rep earned / 10), needs 60 rep | working, weak payoff | `engine.ts` `incorporate`, `charterGain` | "incorporate resets ...", "second firm beats the first" |
+| Incorporate: new firm in the next Bay Area region, keeps skyline and Charter points (sqrt of rep earned / 4), needs 60 rep | working; firm 2 about 40% and firm 3 about 45% faster than firm 1 in the bot run; the Firm window says what it gives | `engine.ts` `incorporate`, `charterGain` | "incorporate resets ...", "second firm beats the first" |
 | 20 Charter perks in 3 branches (ops, money, logistics), with prerequisites | working | `data.ts` PERKS; `engine.ts` `buyPerk` | "perks need their requirements and charter" |
 | Foreman and Fleet manager autobuy (spends at most 25% of what it holds) | working | `engine.ts` `auto` | "Foreman hires crews on its own" |
 | Six regions, repeating with a growing scale | working | `data.ts` CITIES | covered by incorporate tests |
@@ -118,3 +118,5 @@ First run to the bridge is about 3 hours (Nate's pick). The bot test "finishes t
 
 - Floating HUD stacks on the dock: `groundbreak.tsx` measures the dock and sets `--gb-dock-top`; the cue, view buttons, feed and card use it (`groundbreak.css`, last block). Phone landscape moves the cue to the top. No overlaps at 1440, 390, 360, 375x667, 844x390, 932x430 (headless Chrome only).
 - Windows (Jobs, Skyline, Firm, Console, Menu): desktop, a 320 to 520 px panel docked beside the rail that ends above the dock, cue and feed hidden while open; phone, a bottom sheet over the dock (up to 58% tall) with the top of the site showing, cue, view buttons and feed hidden. Blank click and Esc close. `groundbreak.css`, last block. Headless Chrome only.
+- Phone landscape (max-height 520): header 46 px, rail across the top (or down the side from 861 px), windows and material card sized by `--gb-dock-top`, cue top right and narrowed (no key hint), job card 200 px under 700 px wide. Checked 844x390, 932x430, 667x375 in headless Chrome only.
+- Corrupt or unreadable save: a copy is kept in `gb-save-v1-corrupt`, a fresh firm starts, and a sticky 20 s warning tells the player (the storage-blocked warning is sticky too). `groundbreak.tsx` `note(text, tone, sticky)`. Headless Chrome only.

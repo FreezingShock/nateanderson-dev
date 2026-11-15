@@ -260,15 +260,17 @@ html.gb-route .sf-foot { display: none !important; }
 .gb-cue { position: absolute; left: 50%; bottom: 112px; z-index: 9; transform: translateX(-50%); width: min(460px, calc(100vw - 180px)); display: grid; gap: 2px; justify-items: center; text-align: center; pointer-events: none; }
 .gb-cue button { pointer-events: auto; display: inline-flex; align-items: center; gap: 10px; min-height: 40px; max-width: 100%; padding: 0 12px; background: var(--gb-panel); border: 1px solid var(--gb-amber); font: 600 15px var(--gb-text); }
 .gb-cue button:hover { background: #2e2012; border-color: var(--gb-hi); }
-.gb-cue[data-doable] button { animation: gbCue 1.8s ease-in-out infinite; }
+.gb-cue[data-doable] button { position: relative; }
+.gb-cue[data-doable] button::after, .gb-tile[data-hint]::after, .gb-root .gb-tier[data-hint]::after { content: ""; position: absolute; inset: -5px; border: 4px solid rgba(240, 160, 48, .28); pointer-events: none; opacity: 0; animation: gbCue 1.8s ease-in-out infinite; }
 .gb-cue strong { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .gb-cue-k { font: 700 11px var(--gb-text); letter-spacing: .12em; text-transform: uppercase; color: var(--gb-amber); }
 .gb-cue:not([data-doable]) button { border-color: var(--gb-line-2); }
 .gb-cue:not([data-doable]) .gb-cue-k { color: var(--gb-dim); }
 .gb-cue p { max-width: 100%; padding: 2px 8px; font-size: 12px; line-height: 1.35; color: var(--gb-dim); background: rgba(18, 14, 11, .72); }
-@keyframes gbCue { 0%, 100% { box-shadow: 0 0 0 0 rgba(240, 160, 48, 0); } 50% { box-shadow: 0 0 0 4px rgba(240, 160, 48, .28); } }
-.gb-tile[data-hint], .gb-root .gb-tier[data-hint] { outline: 2px solid var(--gb-hi); outline-offset: -2px; animation: gbCue 1.8s ease-in-out infinite; }
-.gb-root[data-reduce="true"] .gb-cue button, .gb-root[data-reduce="true"] [data-hint], .gb-root[data-simple="true"] .gb-cue button, .gb-root[data-simple="true"] [data-hint] { animation: none; }
+/* the pulse animates opacity of a ring (compositor only); animating box-shadow repainted the button every frame */
+@keyframes gbCue { 50% { opacity: 1; } }
+.gb-tile[data-hint], .gb-root .gb-tier[data-hint] { outline: 2px solid var(--gb-hi); outline-offset: -2px; }
+.gb-root[data-reduce="true"] .gb-cue button::after, .gb-root[data-reduce="true"] [data-hint]::after, .gb-root[data-simple="true"] .gb-cue button::after, .gb-root[data-simple="true"] [data-hint]::after { animation: none; }
 .gb-away { top: 50%; transform: translate(-50%, -50%); width: min(420px, calc(100vw - 24px)); display: grid; gap: 10px; padding: 14px; }
 .gb-away h2 { font: 700 22px var(--gb-display); letter-spacing: .06em; text-transform: uppercase; color: var(--gb-hi); }
 .gb-away p { font-size: 13px; color: var(--gb-ink); }
@@ -578,7 +580,7 @@ html.gb-route .sf-foot { display: none !important; }
 }
 /* phone held sideways: the cue sits in the free top corner, clear of the rail and the job card */
 @media (max-height: 520px) and (min-width: 561px) and (max-width: 860px) {
-    .gb-root .gb-cue { top: 46px; right: 8px; left: auto; width: min(330px, calc(100vw - 556px)); }
+    .gb-root .gb-cue { top: 46px; right: 8px; left: auto; width: min(330px, calc(50vw - 128px)); }
 }
 @media (max-height: 520px) and (min-width: 861px) {
     .gb-root .gb-cue { top: 46px; left: 64px; right: auto; width: min(330px, calc(100vw - 300px)); }
@@ -596,3 +598,16 @@ html.gb-route .sf-foot { display: none !important; }
     .gb-root[data-win] .gb-cue, .gb-root[data-win] .gb-zoom, .gb-root[data-win] .gb-feed, .gb-root[data-win] .gb-card { display: none; }
 }
 @media (min-width: 861px) and (min-height: 521px) { .gb-root[data-win] .gb-cue, .gb-root[data-win] .gb-feed { display: none; } }
+
+/* ---- phone landscape (2026-11-15): windows and the material card end above the dock and below the header, and the feed steps aside ---- */
+@media (max-height: 520px) {
+    .gb-root .gb-win { max-height: calc(100% - var(--gb-dock-top, 70px) - 58px); }
+    .gb-root .gb-card { bottom: calc(var(--gb-dock-top, 70px) + 6px); max-height: calc(100% - var(--gb-dock-top, 70px) - 56px); overflow: auto; }
+    .gb-root[data-win] .gb-feed { display: none; }
+}
+@media (max-height: 520px) and (min-width: 561px) {
+    .gb-root .gb-cue button { min-width: 0; max-width: 100%; }
+    .gb-root .gb-cue strong { min-width: 0; flex: 0 1 auto; }
+    .gb-root .gb-cue kbd { display: none; }
+}
+@media (max-height: 520px) and (max-width: 700px) { .gb-root .gb-job { width: 200px; } }

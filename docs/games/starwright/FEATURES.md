@@ -4,7 +4,7 @@ Route `/creations/games/starwright`. Audited 2026-11-15 against `integration` 51
 
 State key: **working** = code and tests exist, seen working headless. **partial** = works with a known gap (see the backlog). **untested** = no test and no check on a real device.
 
-Test commands: `npm run test:nodefarm` (a PR check; includes `tests/starwright/*.test.mjs`, 36 tests), `node --experimental-strip-types --no-warnings scripts/starwright/sim.mjs 30` (balance bot). No browser test exists for Starwright; UI is checked by hand with `scripts/starwright/ui-art/shots.mjs`.
+Test commands: `npm run test:nodefarm` (a PR check; includes `tests/starwright/*.test.mjs`, 40 tests), `node --experimental-strip-types --no-warnings scripts/starwright/sim.mjs 30` (balance bot). No browser test exists for Starwright; UI is checked by hand with `scripts/starwright/ui-art/shots.mjs`.
 
 ## Core loop (engine, no UI)
 | Feature | State | Code | Test |
@@ -23,7 +23,7 @@ Test commands: `npm run test:nodefarm` (a PR check; includes `tests/starwright/*
 | Feature | State | Code | Test |
 |---|---|---|---|
 | Constellation map: 20 stars in 4 constellations (Lantern, Kiln, Anvil, Loom) | working | `data.ts` `PERKS`, `engine.ts` `buyPerk` | engine.test: perks |
-| New perks l5 Corona (inflow x2, heat x1.2, 900) and a5 Iron rain (stardust x2, 1800, needs a3 + a4) | working, rule change not yet listed for Nate | `data.ts`, node art in `scripts/starwright/ui-art/build.py` `NODES` | none specific |
+| New perks l5 Corona (inflow x2, heat x1.2, 900) and a5 Iron rain (stardust x2, 1800, needs a3 + a4) | working, rule change listed in docs/rule-changes (awaiting Nate) | `data.ts`, node art in `scripts/starwright/ui-art/build.py` `NODES` | none specific |
 | Pulsar map: 8 perks bought with Neutrons | working | `data.ts` `PULSAR_PERKS`, `engine.ts` `buyPulsar` | engine.test: neutron |
 | Deep stars: endless stardust sink, +4% everything each, cost x1.4 each, cleared by a neutron star | working (button in the star map, `sw deep`) | `engine.ts` `buyDeep`; button `components/starwright/star-chart.tsx` `Deep`, wired in `starwright.tsx` | engine.test: deep stars, `sw deep` |
 | Planets (8) with four stages by time in orbit, +20% per stage; Survivors keeps age | working | `data.ts` `PLANETS`, `engine.ts` `planetStage`, `buyPlanet` | engine.test: planets |
@@ -35,12 +35,12 @@ Test commands: `npm run test:nodefarm` (a PR check; includes `tests/starwright/*
 | Feature | State | Code | Test |
 |---|---|---|---|
 | Save `sw-save-v1`, parse rebuilds from anything, export and import | working | `engine.ts` `parse`/`serialize`, `lib/games/save.ts` | engine.test: round-trip |
-| Damaged save kept, rolling backup, 10-minute backups | working | `lib/starwright/session.ts` | session.test |
+| Damaged save kept under `sw-save-v1-corrupt` (an older different one moves to `-corrupt-prev`), rolling backup, 10-minute backups | working | `lib/starwright/session.ts` | session.test |
 | Time away: 8 h cap (24 h with Long watch), credit for stalled frames, welcome-back card | working | `engine.ts` `catchUp`, `session.ts` `advance`, `awayReport`, `components/starwright/settings.tsx` | session.test |
 | Opt-in auto supernova and auto visitors (also during time away) | working | `session.ts` `advanceAuto`, `lib/starwright/settings.ts` | session.test |
 | One tab plays at a time (`BroadcastChannel sw-tab`) | untested | `starwright.tsx` | none |
 | Settings (`sw-settings-v1`): scene full/simple, notices, welcome card | working | `settings.ts`, `settings.tsx`, `app/camino/starwright-qol.css` | session.test (parse only) |
-| Hotkeys: 1-9 buy, N, Q/W, Space, F, U, C P O A M, Esc | untested | `starwright.tsx`, `commands.ts` `SW_KEYS` | none |
+| Hotkeys: 1-9 buy, N, Q/W, Space, F, U, C P O A M, Esc | working headless: 1, C, Esc, N, Q, Space checked; the rest not | `starwright.tsx`, `commands.ts` `SW_KEYS` | `tests/starwright/browser/hotkeys.mjs` (by hand against a production server, not a PR check) |
 | Console `sw ...` (stats, fuse, collapse, neutron, hole, perks, pulsar, planets, visitor, cloud, almanac, deep, save, backup, restore, corrupt, away, settings, set, keys, admin) | working | `lib/starwright/commands.ts` | engine.test: console, visitor/cloud/almanac, `sw deep`; save/away commands only through session.test |
 
 ## Scene and art
@@ -49,7 +49,7 @@ Test commands: `npm run test:nodefarm` (a PR check; includes `tests/starwright/*
 | 320x180 dither scene: six star stages with transitions, skies by prestige layer, planets by stage, visitors, supernova/neutron/black hole blasts | working | `lib/starwright/art.ts` (`render`, `renderLayered`), `sprites.ts`, sheets `public/starwright/**`, `manifest.json` | none; screenshots only |
 | Code-drawn fallback for any missing or loading sheet | working | `art.ts` | none |
 | Star sprite scale clamp (8x cap; keep it) | working | `art.ts` | none |
-| Planets stripped by a neutron star play `fx/planet-gone` (#538): today a faint expanding ring under the blast, not chunks (see BACKLOG 1b) | partial: screenshots by `scripts/starwright/ui-art/planet-break.mjs` | `art.ts` (~line 821) | none |
+| Planets stripped by a neutron star break into eight tumbling rock chunks that glow gold to ash over 1.7 s, drawn above the blast (`fx/planet-gone`, 96 px x 24 frames; `art.ts` after the blast) | working headless | `scripts/starwright/art/scenery.py` `fx_planet_gone`, `art.ts` | `scripts/starwright/ui-art/planet-break.mjs` (records the canvas) |
 | Sheet generators | working | `scripts/starwright/art/*` (`build.py`; bump `VERSION`) | none |
 | Lazy sprite loading (first needed, then two at a time) | working | `sprites.ts` | none |
 | Synthesized sound, off switch `sw-sound-v1` | untested (never heard) | `lib/starwright/sound.ts` | none |
@@ -57,16 +57,17 @@ Test commands: `npm run test:nodefarm` (a PR check; includes `tests/starwright/*
 ## GUI
 | Feature | State | Code | Test |
 |---|---|---|---|
-| Layout: dock, fusion ladder, collapse panel floating over the star; phones pin the star on top | partial: no real phone check | `starwright.tsx`, `app/camino/starwright.css` | none |
+| Layout: dock, fusion ladder, collapse panel floating over the star; phones pin the star on top; held sideways the star sits left and panels scroll right (checked headless at 844x390 and 667x375, no real phone) | partial: no real phone check | `starwright.tsx`, `app/camino/starwright.css` | none |
 | Menus with their own open/close animations (iris, shutter, wipe, settle), `useLeaving` | working | `panels.tsx`, `sw-ui.tsx` | none |
 | Star map: per-star medallions, designations, zoom card, deep-star panel | working | `star-chart.tsx` | none |
-| Orbit and Almanac cards with drawn art | working | `panels.tsx` | none |
+| Orbit and Almanac cards with drawn art; Orbit tiles use the drawn sheets for all 8 planets at all 4 stages (the code drawing shows only while a sheet loads) | working | `panels.tsx` | `tests/starwright/art-manifest.test.mjs`; `scripts/starwright/ui-art/orbit-shots.mjs` |
 | Drawn UI art (element tiles with 8-frame loops, dock, menu, node, ring and pulsar icons) | working | `scripts/starwright/ui-art/build.py` -> `public/starwright/ui/*`; bump `UI_V` in `sw-ui.tsx` and `?v=` in `starwright.css` | none; `shots.mjs` screenshots |
+| Phone scroll cue "Scroll for the ladder": once, gone on the first page scroll, not shown held sideways (`ScrollHint` in `settings.tsx`) | working headless | `settings.tsx`, `starwright-qol.css`, `scripts/starwright/ui-art/hint-check.mjs` | hint-check script |
 | Tooltips (`data-tip="Title|line"`), touch recipe lines | working | `sw-ui.tsx` | none |
 | Game shell (full screen, pause on hidden tab, save export/import) | working | `lib/games/*`, `app/creations/games/starwright/*` | `scripts/games/shell-check.mjs` |
 
 ## Not tested anywhere
-Safari/WebKit, real phones, audio, auto actions while the tab is hidden, the one-tab rule, hotkeys.
+Safari/WebKit, real phones, audio, auto actions while the tab is hidden, the one-tab rule, hotkeys F U P A M W.
 
 ## Who owns which files
 One owner per file; merge `integration` before every push. Historic split is in `/mnt/project-files/portfolio/starwright/OWNERS.md`; the owner threads below are the 2026-11-15 wave and are named by thread title.

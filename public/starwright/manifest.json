@@ -121,12 +121,12 @@
    "w": 96
   },
   "fx/planet-gone": {
-   "fps": 12,
-   "frames": 18,
-   "h": 64,
+   "fps": 14,
+   "frames": 24,
+   "h": 96,
    "loop": false,
    "src": "/starwright/fx/planet-gone.png",
-   "w": 64
+   "w": 96
   },
   "fx/planet-up": {
    "fps": 12,
@@ -937,5 +937,5 @@
    "w": 48
   }
  },
- "v": 6
+ "v": 7
 }

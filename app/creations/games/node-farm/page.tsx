@@ -37,7 +37,7 @@ export default function NodeFarmPage() {
                 eyebrow="Incremental"
                 title={["Node Farm"]}
                 description="An idle game about growing one hacked node into a farm. Buy buttons, Reboot for power, and chain materials that each boost the one below. It keeps running while you're away."
-                back={{ href: "/creations/games", label: "Back to Games" }}
+                back={{ href: "/creations/games#incremental", label: "Back to Games" }}
                 variant="sub"
             >
                 <Section id="play" no="01" label="Play" title="Hack the node." ctos>

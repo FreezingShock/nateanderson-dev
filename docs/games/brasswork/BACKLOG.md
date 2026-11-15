@@ -8,26 +8,14 @@ Do not start anything in sections 2 or 3 without Nate's words in the thread.
 
 Ordered by value. Each is one PR.
 
-**B-02 Verify the NEXT markers on screen**
-- The windmill and hub markers (`brasswork-host.tsx` `syncTarget`, `components/brasswork/next-marker.tsx`) were never looked at. Play the opening with `?bwdev=1`, screenshot the drill, kiln, windmill and hub steps at 1440 and 390.
-- Done when: each marker sits on the cell it names (kiln and windmill on `suggestSpot`, hub on its 3x3), does not cover the menu, and disappears when the step is done. Fix what is wrong. **Needs screenshots.**
-
 **B-03 Verify the hub delivery light column**
 - PR #541 added a delivery shimmer from the life glow pool (`render/life/`). Never seen on screen. Use bench flag `delivery=1|once` on `/dev/voxel-island` under `next dev`.
 - Done when: a screenshot shows the column on a delivery at day and at night, it respects Low fx and reduce motion, and the frame time does not rise. **Needs screenshots.**
+- 2026-11-15 attempt (`scripts/automation/delivery-light.mjs`): in headless Chrome with software WebGL (about 5 frames a second) the column and glints were not visible at day or night, and Low fx correctly shows none. This does not prove the effect is missing; software rendering outruns the 1 s particle life. Needs a real GPU: Nate's P-05 playtest, or a thread with one. Frame time was not measurable for the same reason.
 
-**B-04 Verify hover names on tiles and machines**
-- PR #545 added `components/brasswork/hover-name.tsx`. Check it on build tiles, resource boxes and machines on the island, at 1440 and on touch (no stuck labels).
-- Done when: the name shows within about 150 ms, never covers the cursor target, and clears on leave. **Needs screenshots.**
-
-**B-14 Machines panel covers the iron node on desktop**
-- At the opening view the Machines panel sits over the iron node, so the first drill spot is hidden. Look at the opening camera in `brasswork-host.tsx` and the insets in `.ab-root` (`desktop-stage.css`).
-- Done when: at 1440x900 and 1280x720 the first drill target and its NEXT marker are visible with the build dock open. **Needs screenshots.**
-
-**B-10 Phone: 44 px touch buttons and sheet groups**
-- The touch bar (`input/touch-bar.ts`) uses 48 px buttons per STATUS; other taps (build tiles, sheet rows, close buttons) were never measured. Measure them, raise every tap target on coarse pointers to at least 44 px, keep touch buttons off the play field (the 56 px strip under the stage).
-- Also: the phone sheet groups and open and close animation (`phone-menu-art.css`, `automation-hud.tsx`) should match the desktop `MenuWindow` variants.
-- Done when: a Playwright pass at 390x844 with touch emulation finds no interactive element under 44 px and the sheets animate. **Needs screenshots.**
+**B-10 Phone sheets: groups and open/close animation**
+- Tap targets are done (every interactive element at 390 wide is 44 px or more, `scripts/automation/tap-targets.mjs`). What is left: the phone sheet groups and open and close animation (`phone-menu-art.css`, `automation-hud.tsx`) should match the desktop `MenuWindow` variants (iris, shutter, settle).
+- Done when: Machines, Milestones, Research and More sheets open and close with a drawn animation like the desktop windows, with 390 screenshots of the open and closing frames. **Needs screenshots.**
 
 **B-05 Full-run pacing bot**
 - Add `scripts/automation/pacing-bot.mjs`: a headless player on `DEFAULT_CATALOG` that places drills, kilns and windmills from `suggestSpot`/`autoRoute`, buys research, delivers milestones, and prestiges once. Print simulated time to each milestone, first Sky orrery light, and prestige.
@@ -46,9 +34,6 @@ Ordered by value. Each is one PR.
 - Same standard as B-07 for `expedition-window.tsx` and `prestige-screen.tsx`: art first, one line of text, ore dots with names in tooltips, hold to confirm. Wait for T-01 if Nate wants the big view instead.
 - Done when: all four sites render with their art, hold to confirm works with keyboard and touch, screenshots. **Needs screenshots.**
 
-**B-16 Test the HUD data and the save format against a golden file**
-- No test covers `hudData` output shape or a save round trip across versions. Add a golden `serialize` fixture so a future change to `World` that breaks old saves fails a test.
-- Done when: `npm run test:automation` loads a checked-in v1 save and keeps playing it for 60 simulated seconds.
 
 **Performance audit 2026-11-15** (report: `/mnt/project-files/portfolio/perf-audit-2026-11-15/brasswork.md`, bench: `scripts/automation/perf-sim.mjs`)
 - [ ] PERF-drawcalls | size L | A 141-building factory draws about 450 calls a frame (about 350 at the phone's quality level), 605 vertex arrays live. Merge each machine's static voxel parts into one mesh per model and instance repeats, or batch belts. Done when a dense factory is under 150 calls and the look is pixel-identical in the screenshot diff | `render/models.ts`, `render/index.ts`
