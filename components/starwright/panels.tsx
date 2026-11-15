@@ -6,7 +6,8 @@ import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from 
 import { useGameShell } from "@/components/games/shell/game-route-shell";
 import { createSaveTools, readPickedFile } from "@/lib/games/save";
 import { ACHIEVEMENTS, ACH_BONUS, CLOUDS, CODEX, CONSTELLATIONS, ELEMENTS, EVENT_STAY, PLANETS, PLANET_STAGE_AT, PLANET_STAGE_BONUS, TUNE, type Perk } from "@/lib/starwright/data";
-import { H, W, render, renderBackdrop, renderPlanetSprite } from "@/lib/starwright/art";
+import { H, W, makeLayers, render, renderBackdrop, renderLayered, renderPlanetSprite, type SceneFrame } from "@/lib/starwright/art";
+import { initSprites, sprites } from "@/lib/starwright/sprites";
 import { SAVE_VERSION, canPlanet, effects, eventOf, fmt, fmtAge, isSave, parse, perkReady, planetStage, type State } from "@/lib/starwright/engine";
 import { cloudArt, cssUrl } from "@/lib/starwright/ui-art";
 import { sheetUrl } from "@/lib/starwright/ui-sheets";
@@ -314,6 +315,8 @@ export function Ending({ count, onClose }: { count: number; onClose: () => void 
         const ctx = ref.current?.getContext("2d");
         if (!ctx) return;
         const img = ctx.createImageData(W, H);
+        const layers = makeLayers(ctx);
+        initSprites();
         const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
         const t0 = performance.now();
         let raf = 0;
@@ -323,8 +326,9 @@ export function Ending({ count, onClose }: { count: number; onClose: () => void 
             if (now - last < 40) return;
             last = now;
             const t = (now - t0) / 1000;
-            render(img, { t, mass: 1, stage: 0, planets: [], ring: 0, nova: -1, hole: reduce ? 1 : Math.min(1, t / 4), pulsars: 0, reduce });
-            ctx.putImageData(img, 0, 0);
+            const fr: SceneFrame = { t, mass: 1, stage: 0, planets: [], ring: 0, nova: -1, hole: reduce ? 1 : Math.min(1, t / 4), pulsars: 0, reduce, sky: 2 };
+            if (layers) renderLayered(layers, fr, sprites);
+            else { render(img, fr); ctx.putImageData(img, 0, 0); }
         };
         raf = requestAnimationFrame(loop);
         return () => cancelAnimationFrame(raf);

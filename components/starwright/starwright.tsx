@@ -10,7 +10,8 @@ import { useGameShell } from "@/components/games/shell/game-route-shell";
 import { downloadText, writeStored } from "@/lib/games/save";
 import { ACHIEVEMENTS, ACH_BONUS, CLOUDS, ELEMENTS, EVENT_STAY, PERKS, PLANETS, PULSAR_PERKS, RECIPE, ROWS, STAGE_NAMES, TIERS, TIER_LEVELS, TIER_NAMES, TUNE } from "@/lib/starwright/data";
 import { play, setSound, soundOn } from "@/lib/starwright/sound";
-import { H, W, render, type SceneFrame } from "@/lib/starwright/art";
+import { H, W, makeLayers, render, renderLayered, type SceneFrame } from "@/lib/starwright/art";
+import { initSprites, sprites } from "@/lib/starwright/sprites";
 import {
     SAVE_KEY, answer, blackHole, buy, checkAch, chooseCloud, eventOf, rowMult, buyPerk, buyPlanet, buyPulsar, canBlackHole, canBuy, canNeutron, canPlanet, canSupernova, catchUp,
     collapse, cost, effects, fmt, fmtAge, fmtHeat, fresh, gateMK, heaviest, horizonNeed, levels, load, mass, neutronGain, neutronStar,
@@ -139,6 +140,8 @@ export function Starwright() {
         const ctx = c?.getContext("2d");
         if (!c || !ctx) return;
         const img = ctx.createImageData(W, H);
+        const layers = makeLayers(ctx);
+        initSprites();
         const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
         let raf = 0;
         let last = 0;
@@ -182,8 +185,8 @@ export function Starwright() {
                 novaKind: novaKind.current,
                 novaFrom: novaFrom.current,
             };
-            render(img, f);
-            ctx.putImageData(img, 0, 0);
+            if (layers) renderLayered(layers, f, sprites);
+            else { render(img, f); ctx.putImageData(img, 0, 0); }
         };
         raf = requestAnimationFrame(loop);
         return () => cancelAnimationFrame(raf);
