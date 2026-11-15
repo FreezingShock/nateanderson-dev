@@ -45,7 +45,7 @@ Owners are per area, one thread per file set. The threads: "Streamline Brasswork
 | New-player opening (drill, kiln, windmill, belts, first milestone) | working | `sim/data.ts` (`STARTER_KIT`: 80 iron plates) | `opening.test.mjs` |
 | Save and load, versioned (`SAVE_VERSION` 1), offline catch-up up to 8 h, run in 10 ms slices on load (`catchUpAway` in the host) so the page stays responsive; `resolve()` and belt-to-store answers are cached | working | `sim/save.ts`, `sim/world.ts` (`catchUp`), `brasswork-host.tsx` | `sim.test.mjs`, `save-golden.test.mjs` (checked-in v1 save keeps playing 60 s) |
 | Day clock, 1200 s day | working | `sim/progress.ts` (`dayClock`) | none direct |
-| Full-run pacing | untested: no bot plays start to prestige (B-05) | none | none |
+| Full-run pacing | modelled, not played: no soft-lock in the recipe tree; ideal lower bound for a perfect factory with 1 drill per ore and 2 of each machine is about 3 min to the first milestone and 15 min to Sky orrery first light (no belts, power or build time, so real play is longer; see `pacing-model-2026-11-15.txt`). Nobody has played start to prestige (B-05 placing half, P-01) | `scripts/automation/pacing-model.mjs` | `pacing-model.test.mjs` |
 
 ## Input and camera
 
