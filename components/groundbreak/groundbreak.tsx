@@ -431,7 +431,7 @@ export function Groundbreak() {
             </div>
 
             <header className="gb-top">
-                <Link prefetch={false} href="/creations/games" className="gb-back" aria-label="Back to Games" data-tip="Back to Games"><svg viewBox="0 0 10 10" width="14" height="14" aria-hidden="true"><path d="M6.5 1.5 3 5l3.5 3.5" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="square" /></svg><span>Games</span></Link>
+                <Link prefetch={false} href="/creations/games#incremental" className="gb-back" aria-label="Back to Games" data-tip="Back to Games"><svg viewBox="0 0 10 10" width="14" height="14" aria-hidden="true"><path d="M6.5 1.5 3 5l3.5 3.5" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="square" /></svg><span>Games</span></Link>
                 <div className="gb-brand">
                     <h1 className="gb-title">Groundbreak</h1>
                     <span className="gb-site" data-tip={city.blurb}><i aria-hidden="true" />{city.name}<em>{city.sites[stage - 1]}</em></span>

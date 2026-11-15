@@ -1,6 +1,7 @@
 "use client";
 import { UiArtIcon } from "@/components/brasswork-art/icons";
 
+import Link from "next/link";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import "@/components/brasswork-ui/brass-kit.css";
 import "@/components/brasswork-ui/scrollbar.css";
@@ -235,6 +236,9 @@ export function AutomationHud({
     >
       <header className="ab-top" ref={topRef}>
         <div className="ab-brand">
+          <Link prefetch={false} href="/creations/games#automation" className="ab-back" aria-label="Back to Games">
+            <span aria-hidden="true">{"<"}</span> Games
+          </Link>
           <span className="ab-brand-name">Brasswork</span>
         </div>
         <ResourceStrip
