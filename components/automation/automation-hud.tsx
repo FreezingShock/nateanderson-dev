@@ -573,10 +573,11 @@ export function AutomationHud({
           </div>
         </aside>
 
-        {drawer === "stats" && (
-          <ProductionWindow resources={data.resources} stats={data.stats} numberFormat={mode} onClose={() => setDrawer(null)} />
-        )}
       </div>
+
+      {drawer === "stats" && (
+        <ProductionWindow resources={data.resources} stats={data.stats} numberFormat={mode} onClose={() => setDrawer(null)} />
+      )}
 
       {quest && (questOpen || questClosing) && (
         <QuestScroll quest={quest} closing={!questOpen} onClose={closeQuest} />
