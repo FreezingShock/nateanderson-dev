@@ -7,7 +7,7 @@ An idle game about a star, at `/creations/games/starwright`. Original theme, art
 - `lib/starwright/engine.ts`: pure state, `step`, `catchUp` (offline, 8 h, 24 h with Long watch), prestige (`supernova`, `neutronStar`, `blackHole`), saves (`parse` rebuilds from anything, `serialize`).
 - `lib/starwright/art.ts`: the 320x180 Bayer-dither scene renderer (star, corona, dust ring, planets, supernova, black hole) and the chart backdrop.
 - `lib/starwright/commands.ts`: the `sw` console command. The console runs it against the open game (`sw:live` event) or the saved game.
-- `components/starwright/starwright.tsx`: the whole UI. `app/camino/starwright.css`: styles. Route + layout in `app/creations/games/starwright` (uses `GameRouteShell`; the site chrome is hidden with `html.sw-route`).
+- `components/starwright/starwright.tsx`: the game component (scene, dock, collapse panel, fusion ladder, keys, tick). `panels.tsx`: Almanac, Orbit, star charts, Menu, visitor, birth clouds, ending. `sw-ui.tsx`: glyphs, element tiles, the floating tooltip (`data-tip="Title|line|line"`), `useLeaving` (keeps a menu mounted while it closes). `lib/starwright/ui-art.ts`: stand-in dither icons and textures drawn in code; `ui-sheets.ts` loads the art thread's PNGs from `public/starwright/manifest.json` and wins when a sheet exists. `app/camino/starwright.css`: styles. Route + layout in `app/creations/games/starwright` (uses `GameRouteShell`; the site chrome is hidden with `html.sw-route`).
 - Save key `sw-save-v1`. Export/import use `lib/games/save.ts` (app id `starwright`).
 
 ## How it plays
@@ -36,3 +36,6 @@ An idle game about a star, at `/creations/games/starwright`. Original theme, art
 
 ## Not tested
 Safari/WebKit, real phones, and audio (synthesized, never heard in the cloud).
+
+## GUI
+The star fills the screen; the dock (top right), fusion ladder (right) and collapse panel (bottom left) float over it. Menus animate in their own way: constellations and pulsar map iris, orbit shutter, almanac wipe, menu settle. Names live in tooltips (hover); on touch the ladder shows a recipe line. Phones pin the star on top and scroll the panels under it.

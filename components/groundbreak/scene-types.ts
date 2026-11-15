@@ -11,12 +11,12 @@ export interface Camera {
     /** World point shown at the centre of the screen. */
     x: number;
     y: number;
-    /** 1 fits the whole site to the screen (cover). 0.4 to 5 is the allowed range. */
+    /** 1 fits the whole site to the screen (cover). 0.5 to 3.2 is the allowed range. */
     z: number;
 }
 export const CAMERA_HOME: Camera = { x: WORLD_W / 2, y: 140, z: 1 };
-export const ZOOM_MIN = 0.4;
-export const ZOOM_MAX = 5;
+export const ZOOM_MIN = 0.5;
+export const ZOOM_MAX = 3.2;
 
 export interface SceneJob {
     id: string;
