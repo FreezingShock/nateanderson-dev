@@ -169,12 +169,18 @@
     cursor: pointer;
 }
 .bw-quest-tab-count { color: var(--bw-brass-hi, #f0d08a); }
+.bw-quest-tab { max-width: min(360px, calc(100% - 24px)); }
+.bw-quest-tab-step {
+    min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    color: #fff3d6; letter-spacing: 0.02em; text-transform: none; font-size: 14px;
+}
 
 /* Hide while a drawer or sheet is open, so it never sits over the panels. */
 .bw-root:has(.ab-root[data-drawer]:not([data-drawer="none"])) .bw-quest,
 .bw-root:has(.ab-root[data-sheet]:not([data-sheet="none"])) .bw-quest,
 .bw-root:has(.ab-root[data-drawer]:not([data-drawer="none"])) .bw-quest-tab,
-.bw-root:has(.ab-root[data-sheet]:not([data-sheet="none"])) .bw-quest-tab { display: none; }
+.bw-root:has(.ab-root[data-sheet]:not([data-sheet="none"])) .bw-quest-tab,
+.bw-root:has(.ab-root[data-palgroup]:not([data-palgroup="none"])) .bw-quest-tab { display: none; }
 
 @media (max-width: 600px) {
     .bw-quest,
