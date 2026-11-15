@@ -700,3 +700,81 @@ def machine_sheet():
             [mobile_crane(f) for f in range(4)], [mobile_crane(f, "glass") for f in range(4)],
             [forklift(f % 2, f // 2) for f in range(6)]]
     return grid(rows, XW, XH)
+
+
+# ------------------------------------------------------------------------- ladders and the hoist (vertical travel)
+def climber(v, f):
+    """Mini crew member seen from behind on a ladder: arms and legs alternate over 2 frames."""
+    c = Canvas(MW, MH)
+    px = Px(c, 2, 0)
+    hat, vest, pants = P[v["hat"]], P[v["vest"]], P[v["pants"]]
+    sk = P["skin"][max(0, v["skin"] - 1)]
+    o = 2
+    px.rect(2, o, 5, o + 2, hat[v["hatv"]])
+    px.rect(1, o + 1, 6, o + 2, hat[max(0, v["hatv"] - 1)])
+    px.rect(2, o + 2, 5, o + 3, sk)                        # neck
+    px.rect(1, o + 3, 6, o + 7, vest[4])
+    px.rect(1, o + 5, 6, o + 6, P["white"][3])
+    up, dn = (0, 1) if f == 0 else (1, 0)
+    px.put(0, o + 1 + up * 2, sk)                          # hands on the rails
+    px.put(6, o + 1 + dn * 2, sk)
+    px.put(0, o + 2 + up * 2, vest[3])
+    px.put(6, o + 2 + dn * 2, vest[3])
+    px.rect(1, o + 7, 3, o + 9 + up, pants[3])
+    px.rect(4, o + 7, 6, o + 9 + dn, pants[3])
+    px.put(1, o + 9 + up, P["ink"][1])
+    px.put(5, o + 9 + dn, P["ink"][1])
+    c.outline(INK)
+    return c
+
+
+LW, LH = 10, 16  # ladder tile (repeats vertically)
+
+
+def ladder_tile():
+    c = Canvas(LW, LH)
+    px = Px(c, 0, 0)
+    for y in range(LH):
+        px.put(1, y, P["wood"][4]); px.put(2, y, P["wood"][3])
+        px.put(7, y, P["wood"][4]); px.put(8, y, P["wood"][3])
+    for y in (3, 7, 11, 15):
+        px.rect(3, y, 7, y + 1, P["wood"][5])
+    return c
+
+
+HW, HH = 12, 12  # hoist mast tile (lattice, repeats vertically)
+
+
+def mast_tile():
+    c = Canvas(HW, HH)
+    px = Px(c, 0, 0)
+    for y in range(HH):
+        px.put(1, y, P["hiviz"][4]); px.put(10, y, P["hiviz"][3])
+    px.line(2, 0, 9, 11, P["hiviz"][2])
+    px.rect(2, 0, 10, 1, P["hiviz"][5])
+    return c
+
+
+CW2, CH2 = 22, 20  # hoist cage
+
+
+def cage(v):
+    c = Canvas(CW2, CH2)
+    px = Px(c, 0, 0)
+    px.rect(1, 1, 21, 19, P["steel"][2])
+    px.rect(2, 2, 20, 18, P["ink"][2])
+    fig = mini(v, "idle", 0)
+    c.over(fig, 6, 3)
+    for x in range(2, 20, 3):
+        px.rect(x, 2, x + 1, 18, P["steel"][5])         # mesh in front of the rider
+    px.rect(1, 1, 21, 3, P["hiviz"][5])
+    px.rect(1, 17, 21, 19, P["hiviz"][3])
+    px.rect(9, 0, 13, 1, P["safety"][5])                # beacon
+    c.outline(INK)
+    return c
+
+
+def vertical_sheet():
+    """Row 0: climbers (variant x 2 frames). Row 1: ladder tile, mast tile, cages for 2 riders."""
+    row0 = [climber(v, f) for v in CREW_VARIANTS for f in range(2)]
+    return grid([row0], MW, MH), ladder_tile(), mast_tile(), grid([[cage(CREW_VARIANTS[0]), cage(CREW_VARIANTS[2])]], CW2, CH2)

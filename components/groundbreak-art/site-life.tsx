@@ -42,6 +42,7 @@ const V = GB_LIFE.vehicles;
 const F = GB_LIFE.fx;
 const M = GB_LIFE.mini;
 const X = GB_LIFE.machines;
+const LM = { ladder: GB_LIFE.ladder, mast: GB_LIFE.mast, cage: GB_LIFE.cage, climb: GB_LIFE.climb };
 type MiniAction = keyof typeof GB_LIFE.mini.actions;
 
 const VEHICLE_LABEL: Record<VehicleKind, string> = {
@@ -273,6 +274,44 @@ export function GbSiteLife({ left, ground, w, outline, jobKey, phase, phaseName,
                 }
             }
         });
+    }
+
+    // ---- ladders and the hoist: crews climb between floors on the right; the hoist cage rides the mast on the left
+    const levels2 = [...floors].sort((a, b) => b - a);
+    if (roof < -18 && !levels2.includes(roof)) levels2.push(roof);
+    if (levels2.length && (cat === "steel" || cat === "skin" || cat === "fit" || inspecting)) {
+        const topY = ground + Math.min(...levels2);
+        const h = ground - topY;
+        const lx = bR + 2, mx = bL + 3; // mast rides the left column, clear of the mobile crane parked outside
+        out.push(<div key="ladder" className="gbl-tile" style={{ left: lx, top: topY - 6, width: LM.ladder.w, height: h + 6, backgroundImage: `url("${LM.ladder.src}")` }} />);
+        out.push(<div key="mast" className="gbl-tile" style={{ left: mx, top: topY - 10, width: LM.mast.w, height: h + 10, backgroundImage: `url("${LM.mast.src}")` }} />);
+        // hoist: rides floor to floor, stopping 2 s at each landing, then back down
+        const stops = [0, ...levels2.map((l) => -l)]; // heights above ground
+        const legT = (d: number) => Math.abs(d) / 14 + 2;
+        const route = [...stops, ...stops.slice(1, -1).reverse()];
+        const total = route.reduce((s, _, k) => s + legT(route[(k + 1) % route.length] - route[k]), 0);
+        let tt = reduce ? 0 : (t * 1) % total, k = 0, hy = 0;
+        for (; k < route.length; k++) {
+            const nxt = route[(k + 1) % route.length];
+            const lt = legT(nxt - route[k]);
+            if (tt < lt) { const mv = Math.max(0, tt - 2) / (lt - 2); hy = route[k] + (nxt - route[k]) * Math.min(1, mv); break; }
+            tt -= lt;
+        }
+        const cy = ground - hy - LM.cage.h + 1;
+        const ci = Math.floor(t / total) % 2;
+        out.push(<Sprite key="cage" src={LM.cage.src} w={LM.cage.w} h={LM.cage.h} col={ci} row={0} x={mx + LM.mast.w / 2 - LM.cage.w / 2 + 1} y={cy} z={4}
+            tag={{ label: `Hoist\nRiding to ${hy < 4 ? "the ground" : `floor ${Math.max(1, levels2.findIndex((l) => -l >= hy - 2) + 1)}`}`, pick }} />);
+        // climbers: one or two crew going up and down the ladder
+        const nClimb = Math.min(2, 1 + Math.floor(levels2.length / 6));
+        for (let c = 0; c < nClimb; c++) {
+            const dur = h / 8 + 1.5;
+            const ph = reduce ? 0.3 : ((t + c * dur * 0.9) / dur) % 2;
+            const p = ph < 1 ? ph : 2 - ph;
+            const y = ground - M.foot - 1 - p * (h - 2);
+            const f = reduce ? 0 : Math.floor(t * 5 + c) % 2;
+            out.push(<Sprite key={`cl${c}`} src={LM.climb.src} w={LM.climb.w} h={LM.climb.h} col={((c * 2 + 1) % C.variants) * 2 + f} row={0} x={lx - 1} y={y} z={4}
+                tag={{ label: `Crew\nClimbing ${ph < 1 ? "up" : "down"} the ladder`, pick }} />);
+        }
     }
 
     // ---- machines: excavator in the pit, pump over the slab, mobile crane lifting steel or glass, forklift with pallets
