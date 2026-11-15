@@ -82,3 +82,20 @@ Item 7 check (390 wide, touch emulation, production build): every button and lin
 Phone landscape (item 11a): at 844x390, 932x430 and 667x375 windows and the material card end above the dock and below the header, the cue stays clear of the rail and job card, the feed hides while a window is open. Screenshots `/mnt/project-files/portfolio/groundbreak/landscape/`; overlap check `hud-overlap/check.mjs` now includes 667x375.
 
 Corrupt save (item 11c): the game already kept a copy under `gb-save-v1-corrupt` and started a fresh firm, but the warning toast was pushed out by the first-minute toasts within a second, so nobody could read it. Warnings are now sticky (20 s, later toasts do not evict them), also for the storage-blocked warning. Headless check `/mnt/project-files/portfolio/groundbreak/corrupt/check.mjs` (copy kept, player told, fresh start, no errors at 1440 and 390).
+
+## Found during the 2026-11-15 pass (do these next, top first; polish pass recommended to Nate)
+
+### 12. Phone portrait: the dock takes about 40% of the screen
+- At 390 and 360 wide the dock wraps to 3 rows (about 330 px) and the site gets the top half. Done when: groups collapse to one open row (the group of the selected or newest material) with the others one tap away, and the dig is at least 55% of the screen; number keys and the NEXT cue still work.
+
+### 13. Window panels look see-through
+- Jobs, Firm and the material card show the scene faintly behind their text (`--gb-panel` is translucent). Done when: body text sits on an opaque or near opaque panel at 1440 and 390 and still reads as part of the scene (check contrast of the dim text).
+
+### 14. Firm window needs scrolling to reach everything on small heights
+- At 900 tall the perk grid plus the Incorporate line fills the window; on shorter screens the button scrolls out of sight. Done when: the Incorporate button and its line stay pinned at the bottom of the Firm window while the perks scroll.
+
+### 15. Tests for the pure part of the HUD
+- `--gb-dock-top` and the window sizes have only a headless script (`hud-overlap/check.mjs`). Done when: the script runs in `scripts/ci` against the built site as an advisory check, or its sizes are listed in `docs/ci.md` for threads to run before merging HUD changes.
+
+### 16. Repeat order payout and the cue
+- The NEXT cue says nothing about a running repeat order. Done when: while the crew is on a repeat order the cue (or the job card) says why the next campaign job has not started and what it waits on.
