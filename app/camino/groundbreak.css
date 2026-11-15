@@ -448,3 +448,61 @@ html.gb-route .sf-foot { display: none !important; }
 .gb-tile[data-state="locked"] b { display: none; }
 @media (max-width: 860px) { .gb-root .gb-tile .gb-tile-lock { width: 14px !important; height: 14px !important; right: 3px; bottom: 3px; } }
 .gb-root .gb-lv { display: flex; align-items: center; justify-content: center; }
+
+/* ---- header rework: site board with brand, location plate, drawn stage and job progress ---- */
+.gb-root .gb-top { height: 64px; gap: 14px; padding-top: 6px; padding-bottom: 6px; align-items: stretch; background: linear-gradient(#0b0806 55%, rgba(11, 8, 6, .85) 80%, rgba(11, 8, 6, 0)); }
+.gb-root .gb-top > * { align-self: center; }
+.gb-root .gb-back { min-height: 44px; padding: 0 12px 0 8px; gap: 6px; background: var(--gb-panel); border: 1px solid var(--gb-line-2); color: var(--gb-ink); font: 600 12px var(--gb-text); }
+.gb-root .gb-back:hover { border-color: var(--gb-amber); color: var(--gb-hi); }
+.gb-back svg { color: var(--gb-amber); }
+.gb-brand { display: grid; gap: 3px; padding-right: 14px; border-right: 1px solid var(--gb-line-2); }
+.gb-root .gb-title { font: 700 28px/0.9 var(--gb-display); letter-spacing: .14em; color: var(--gb-hi); text-shadow: 0 2px 0 #3a2008, 0 0 18px rgba(255, 180, 60, .25); }
+.gb-site { display: flex; align-items: center; gap: 6px; font: 700 12px/1 var(--gb-display); letter-spacing: .12em; text-transform: uppercase; color: var(--gb-ink); }
+.gb-site i { width: 8px; height: 8px; background: var(--gb-amber); box-shadow: 0 0 0 2px #2a1a08; }
+.gb-site em { font: 500 12px var(--gb-text); font-style: normal; letter-spacing: 0; text-transform: none; color: var(--gb-dim); }
+.gb-prog { display: grid; gap: 5px; }
+.gb-prog-row { display: grid; grid-template-columns: 44px auto auto; align-items: center; gap: 8px; }
+.gb-prog-row > span { font: 700 11px/1 var(--gb-display); letter-spacing: .14em; text-transform: uppercase; color: var(--gb-dim); }
+.gb-prog-row b { font: 700 14px/1 var(--gb-text); color: var(--gb-ink); }
+.gb-prog-row b small { font-size: 11px; color: var(--gb-dim); }
+.gb-pips, .gb-ticks { display: flex; gap: 3px; }
+.gb-pips li { width: 22px; height: 9px; background: #2a2118; border: 1px solid var(--gb-line-2); }
+.gb-ticks li { width: 8px; height: 9px; background: #2a2118; border: 1px solid var(--gb-line-2); }
+.gb-pips li[data-s="done"], .gb-ticks li[data-s="done"] { background: var(--gb-amber); border-color: var(--gb-amber); }
+.gb-pips li[data-s="now"], .gb-ticks li[data-s="now"] { background: repeating-linear-gradient(-45deg, var(--gb-hi) 0 3px, #2a1a08 3px 6px); border-color: var(--gb-hi); animation: gbNow 1.6s steps(2, end) infinite; }
+@keyframes gbNow { 50% { filter: brightness(1.3); } }
+.gb-root .gb-res { gap: 8px; }
+.gb-root .gb-res li { position: relative; min-height: 44px; padding: 0 12px 0 8px; gap: 8px; border-color: var(--gb-line); }
+.gb-root .gb-res li::before { content: ""; position: absolute; left: -1px; top: -1px; width: 8px; height: 8px; border: 0 solid var(--gb-amber); border-width: 2px 0 0 2px; }
+.gb-root .gb-res b { font: 700 17px var(--gb-text); }
+.gb-rerun { display: block; font: 600 11px var(--gb-text); letter-spacing: .06em; color: var(--gb-hi); }
+/* everything below the header moves down to clear it */
+.gb-root .gb-rail { top: 76px; }
+.gb-root .gb-job { top: 72px; }
+@media (min-width: 861px) { .gb-root .gb-win { top: 76px; } }
+@media (max-width: 1180px) { .gb-ticks li { width: 6px; } .gb-site em { display: none; } }
+@media (max-width: 860px) {
+    .gb-root .gb-top { height: 56px; gap: 8px; padding-left: 8px; padding-right: 8px; }
+    .gb-root .gb-back { padding: 0 10px; min-width: 44px; justify-content: center; }
+    .gb-back span { display: none; }
+    .gb-brand { border-right: 0; padding-right: 0; }
+    .gb-root .gb-title { font-size: 20px; }
+    .gb-prog { display: none; }
+    .gb-root .gb-res li { min-height: 40px; padding: 0 8px 0 6px; }
+    .gb-root .gb-res b { font-size: 15px; }
+    .gb-root .gb-rail { top: 60px; }
+    .gb-root .gb-job { top: 110px; }
+    .gb-root .gb-win { top: 118px; }
+}
+@media (max-height: 500px) and (orientation: landscape) {
+    .gb-root .gb-top { height: 46px; padding-top: 2px; padding-bottom: 2px; }
+    .gb-root .gb-title { font-size: 18px; }
+    .gb-site { font-size: 10px; }
+    .gb-prog { display: grid; gap: 3px; }
+    .gb-prog-row { grid-template-columns: 36px auto auto; gap: 5px; }
+    .gb-pips li { width: 14px; height: 7px; }
+    .gb-ticks li { width: 5px; height: 7px; }
+    .gb-root .gb-res li { min-height: 36px; }
+    .gb-root .gb-rail { top: 50px; }
+    .gb-root .gb-job, .gb-root .gb-win { top: 50px; }
+}

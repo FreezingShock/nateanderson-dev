@@ -8,7 +8,7 @@ import { useGameShell } from "@/components/games/shell/game-route-shell";
 import { createSaveTools, downloadText, readPickedFile, writeStored } from "@/lib/games/save";
 import { JOB_BY, JOBS, MATS, PERKS, TIER_LABELS, TUNE, UNLOCK_COST as UNLOCK, cityOf, N as NMAT } from "@/lib/groundbreak/data";
 import {
-    SAVE_KEY, SAVE_VERSION, acceptChange, buy, buyPerk, canBuy, canIncorporate, canUnlock, catchUp, charterGain, chain, declineChange, effects, fmt, fmtAge,
+    SAVE_KEY, SAVE_VERSION, acceptChange, buy, jobMat, buyPerk, canBuy, canIncorporate, canUnlock, catchUp, charterGain, chain, declineChange, effects, fmt, fmtAge,
     fmtCash, fresh, incorporate, isSave, jobFloors, jobPhaseName, jobProgress, load, methodReady, overtime, overtimeCost, parse, payout, perkReady, phaseNeeds,
     plan, queue, nextJob, rawRate, repPay, serialize, stageOf, step, tierCost, unlock, waitingFor, type State,
 } from "@/lib/groundbreak/engine";
@@ -356,9 +356,23 @@ export function Groundbreak() {
             </div>
 
             <header className="gb-top">
-                <Link prefetch={false} href="/creations/games" className="gb-back" data-tip="Back to Games"><span aria-hidden="true">&lt;</span> Games</Link>
-                <h1 className="gb-title">Groundbreak</h1>
-                <span className="gb-sub">{city.name} · stage {stage} of 5 · job {Math.min(JOBS.length, s.builtThisFirm + 1)} of {JOBS.length}</span>
+                <Link prefetch={false} href="/creations/games" className="gb-back" aria-label="Back to Games" data-tip="Back to Games"><svg viewBox="0 0 10 10" width="14" height="14" aria-hidden="true"><path d="M6.5 1.5 3 5l3.5 3.5" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="square" /></svg><span>Games</span></Link>
+                <div className="gb-brand">
+                    <h1 className="gb-title">Groundbreak</h1>
+                    <span className="gb-site" data-tip={city.blurb}><i aria-hidden="true" />{city.name}<em>{city.sites[stage - 1]}</em></span>
+                </div>
+                <div className="gb-prog" aria-label={`Stage ${stage} of 5, job ${Math.min(JOBS.length, s.builtThisFirm + 1)} of ${JOBS.length}`}>
+                    <div className="gb-prog-row" data-tip={`Stage ${stage} of 5`}>
+                        <span>Stage</span>
+                        <ol className="gb-pips">{[1, 2, 3, 4, 5].map((n) => <li key={n} data-s={n < stage ? "done" : n === stage ? "now" : "wait"} />)}</ol>
+                        <b>{stage}<small>/5</small></b>
+                    </div>
+                    <div className="gb-prog-row" data-tip={`Job ${Math.min(JOBS.length, s.builtThisFirm + 1)} of ${JOBS.length}`}>
+                        <span>Jobs</span>
+                        <ol className="gb-ticks">{JOBS.map((j, n) => <li key={j.id} data-s={n < s.builtThisFirm ? "done" : n === s.builtThisFirm ? "now" : "wait"} />)}</ol>
+                        <b>{Math.min(JOBS.length, s.builtThisFirm + 1)}<small>/{JOBS.length}</small></b>
+                    </div>
+                </div>
                 <ul className="gb-res" aria-label="Resources">
                     <li data-tip="Cash. Jobs pay it; methods cost it."><Ico id="cash" size={22} /><b>{fmtCash(s.cash)}</b></li>
                     <li data-tip="Reputation. It lifts all output and inspections."><Ico id="rep" size={22} /><b>{fmt(s.rep)}</b></li>
@@ -383,7 +397,7 @@ export function Groundbreak() {
             <aside className={`gb-job ${jobOpen ? "" : "is-min"}`} onPointerDown={(e) => e.stopPropagation()}>
                 {jobOpen && <Banner id="current" />}
                 <button type="button" className="gb-job-head" onClick={() => setJobOpen((v) => !v)} aria-expanded={jobOpen} data-tip={jobOpen ? "Collapse" : "Expand"}>
-                    <Ico id="bid" size={28} /><span>{def ? def.name : nextJob(s).name}</span>
+                    <Ico id="bid" size={28} /><span>{def ? def.name : nextJob(s).name}{s.job?.rerun && <small className="gb-rerun">Repeat order</small>}</span>
                     {aj && <em>{aj.step === "permit" ? `permit ${fmtSecs(aj.left)}` : aj.step === "inspect" ? `inspection ${fmtSecs(aj.left)}` : `${Math.floor(prog * 100)}%`}</em>}
                 </button>
                 {jobOpen && (def && aj && f ? (
@@ -466,7 +480,7 @@ export function Groundbreak() {
                         <li key={q.index} className={q.ready ? "is-next" : "is-locked"} style={{ ["--i" as string]: i } as CSSProperties}>
                             <JobThumb id={q.job.id} /><div><strong>{i === 0 && !s.job ? "Up next: " : ""}{q.job.name}</strong><span>{q.job.notes.join(" · ")}</span></div>
                             <dl><dt>pays</dt><dd>{fmtCash(payout(s, q.job, f, chain(s), q.index))}</dd><dt>rep</dt><dd>+{repPay(s, q.job, f)}</dd><dt>stage</dt><dd>{q.job.stage}</dd></dl>
-                            {!q.ready && <span className="gb-req">Open {MATS[[0, 2, 4, 7, 9, 11][q.job.stage - 1]].name}</span>}
+                            {!q.ready && <span className="gb-req">Open {MATS[jobMat(q.job)].name}</span>}
                         </li>
                     ))}
                 </ul>
