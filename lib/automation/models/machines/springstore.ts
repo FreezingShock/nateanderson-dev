@@ -42,6 +42,19 @@ export function springStore() {
         b.set(x, y, 19, c);
     b.part("needle", [10, 21, 19], swing("z", 1.1, 0.05, { when: "always" }));
     b.box(10, 21, 19, 11, 24, 20, C.sootD);
+    // Flyball governor on a post at the back, spinning to hold the release steady.
+    b.body();
+    b.box(2, 2, 2, 4, 20, 4, C.steelD);
+    b.part("governor", [3, 21, 3], spin("y", 0.9, { when: "always" }));
+    b.box(2, 20, 2, 4, 26, 4, C.brass);
+    b.box(0, 22, 2, 1, 24, 4, C.brassL);
+    b.box(5, 22, 2, 6, 24, 4, C.brassL);
+    b.box(1, 24, 2, 5, 25, 4, C.brassD);
+    // Output shaft and coupling to the power line on the right.
+    b.body();
+    b.box(16, 3, 9, 20, 5, 11, C.iron);
+    b.part("coupling", [18, 4, 10], spin("x", 1.3, { when: "always" }));
+    b.cyl("x", 4, 10, 1.8, 17, 19, C.brass);
     b.body();
     statusLamp(b, 16, 2, 16);
     // Power family: timber-staved barrels with brass hoops.
