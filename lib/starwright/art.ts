@@ -652,6 +652,8 @@ function flush(L: Layers, l: Layer) {
 const NAMES = STAGE_RAMP as readonly string[];
 /** last stage seen per planet, and when it changed (scene time), to play the stage-up burst once */
 const planetSeen = new Map<string, { st: number; at: number }>();
+/** where each planet was last drawn, so one that vanishes can break apart in place */
+const planetPos = new Map<string, { x: number; y: number; goneAt: number }>();
 /** How much bigger than the code-drawn body a drawn star sprite is drawn (its corona and rays sit outside the body). */
 const STAR_FIT = 1.3;
 
@@ -815,6 +817,21 @@ export function renderLayered(L: Layers, f: SceneFrame, S: SpriteSet): void {
             if (!up || !p || f.t - at > 1.7) continue;
             const a = angleOf(p);
             drawFrame(ctx, up, frameAtProgress(up, (f.t - at) / 1.7), cx + Math.cos(a) * orbitOf(p), cy + Math.sin(a) * orbitOf(p) * 0.27);
+        }
+        // a planet stripped away (by a blast) breaks into cooling chunks where it last stood
+        const gone = S.get("fx/planet-gone");
+        for (const [id, at] of planetPos) {
+            if (f.planets.includes(id)) continue;
+            if (at.goneAt < 0) at.goneAt = f.t;
+            const k = (f.t - at.goneAt) / 1.5;
+            if (k > 1 || !gone) { planetPos.delete(id); continue; }
+            drawFrame(ctx, gone, frameAtProgress(gone, k), at.x, at.y);
+        }
+        for (const id of f.planets) {
+            const p = PLANETS.find((x) => x.id === id);
+            if (!p) continue;
+            const a = angleOf(p);
+            planetPos.set(id, { x: cx + Math.cos(a) * orbitOf(p), y: cy + Math.sin(a) * orbitOf(p) * 0.27, goneAt: -1 });
         }
         const arrive = v && v.age < 2 ? S.get("fx/arrive") : null;
         if (v && arrive) {

@@ -285,5 +285,37 @@ def fx_arrive(f, n=20, c=96):
 
 
 def fx_run():
+    save_sheet("fx/planet-gone", [fx_planet_gone(f) for f in range(18)], fps=12, loop=False)
     save_sheet("fx/planet-up", [fx_planet_up(f) for f in range(20)], fps=12, loop=False)
     save_sheet("fx/arrive", [fx_arrive(f) for f in range(20)], fps=10, loop=False)
+
+
+def fx_planet_gone(f, n=18, c=64):
+    """A planet stripped away by a blast: it cracks, breaks into glowing chunks that tumble outward and cool from gold to
+    ash, leaving a thin dust ring that fades."""
+    t = f / (n - 1)
+    out = np.zeros((c, c, 3), np.uint8); m = np.zeros((c, c), bool)
+    x, y = grid(c, c)
+    d = np.sqrt((x - c / 2 + 0.5) ** 2 + (y - c / 2 + 0.5) ** 2)
+    rng = np.random.default_rng(5)
+    e = 1 - (1 - t) ** 2.2
+    cool = ("cream", "gold", "amber", "flame", "rust", "ash")
+    for i in range(16):
+        a = rng.random() * 2 * math.pi
+        sp = 0.5 + rng.random() * 0.7
+        size = 1 + int(rng.random() * 2.2 * (1 - t))
+        r0 = 3 + 26 * e * sp
+        px_, py_ = int(round(c / 2 + math.cos(a) * r0)), int(round(c / 2 + math.sin(a) * r0))
+        col = hexc(P[cool[min(5, int(t * 5 + rng.random()))]])
+        for ox in range(size):
+            for oy in range(size):
+                if 0 <= px_ + ox < c and 0 <= py_ + oy < c and t < 0.95:
+                    out[py_ + oy, px_ + ox] = col; m[py_ + oy, px_ + ox] = True
+    dust = np.clip(1 - np.abs(d - (6 + 22 * e)) / 2.5, 0, 1) * (1 - t) * 0.7
+    dm = dmask(dust) & ~m
+    out[dm] = pick(R("ember1", "rust", "stone"), dust)[dm]; m |= dm
+    if t < 0.2:
+        core = np.clip(1 - d / (8 * (1 - t * 4)), 0, 1)
+        cm = dmask(core)
+        out[cm] = pick(R("white", "gold", "flame"), 1 - core)[cm]; m |= cm
+    return rgba(out, m)
