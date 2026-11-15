@@ -12,7 +12,30 @@ export interface GbResult { lines: GbLine[]; changed: boolean }
 
 export const GB_SAVE_KEY = "gb-save-v1";
 export const GB_PATH = "/creations/games/groundbreak";
-export const GB_SUBS = ["stats", "hire", "unlock", "jobs", "change", "overtime", "perks", "incorporate", "skyline", "open", ...GB_QOL_SUBS];
+export const GB_SUBS = ["stats", "hire", "unlock", "jobs", "change", "overtime", "perks", "incorporate", "skyline", "floors", "open", "help", ...GB_QOL_SUBS];
+
+/** One line per command: the usage and what it does. `gb help` prints these, and a test checks every name in GB_SUBS has one. */
+export const GB_HELP: Record<string, string> = {
+    stats: "gb stats: the firm, cash, reputation, materials and what is running",
+    hire: "gb hire <material> [1-3]: buy crew (1), equipment (2) or a method (3) for a material",
+    unlock: "gb unlock: open the next material",
+    jobs: "gb jobs: the job running and the next two",
+    change: "gb change [no]: show, accept or decline an open change order",
+    overtime: "gb overtime: pay to finish the inspection now",
+    perks: "gb perks [id]: list charter perks, or buy one by id",
+    incorporate: "gb incorporate [yes]: start a new firm for charter (asks first)",
+    skyline: "gb skyline: every building you have finished, by job",
+    floors: "gb floors: how many floors the current job has up",
+    open: "gb open: go to the game",
+    help: "gb help: this list",
+    next: "gb next: what to do next, and why",
+    go: "gb go: do it (same as Space in the game)",
+    auto: "gb auto <crews|equipment|change> [on|off]: switch a Foreman automation",
+    rate: "gb rate: output per second for every open material",
+    admin: "gb admin on|off: allow give and warp until you reload",
+    give: "gb give <cash|rep|charter|material> <amount>: admin only",
+    warp: "gb warp: admin only, skip time forward",
+};
 
 const l = (t: string, k?: GbLine["k"]): GbLine => ({ t, k });
 const matIndex = (q: string) => !q ? -1 : MATS.findIndex((m) => m.id === q || m.sym.toLowerCase() === q || m.name.toLowerCase() === q || m.name.toLowerCase().startsWith(q));
@@ -89,7 +112,8 @@ export function gbCommand(s: State, args: string[]): GbResult {
     if (sub === "floors") {
         return out([l(s.job ? `${jobFloors(s.job, f)} floors up` : "no job running", "dim")]);
     }
+    if (sub === "help") return out(GB_SUBS.map((n) => l(GB_HELP[n] ?? `gb ${n}`, "dim")));
     const extra = qolCommand(s, args);
     if (extra) return extra;
-    return out([l(`gb ${GB_SUBS.join(" | ")}`, "dim")]);
+    return out([l(`gb ${GB_SUBS.join(" | ")} · gb help lists what each does`, "dim")]);
 }
