@@ -54,6 +54,7 @@ Owners are per area, one thread per file set. The threads: "Streamline Brasswork
 | Orbit camera, top-down toggle (T), WASD and arrow pan, zoom (+ and -) | working | `input/camera.ts`, `input/keys.ts` | `input.test.mjs` |
 | Click and drag belt strokes, auto-route between machines, placement ignores machine bodies | working | `input/build.ts`, `sim/grid.ts` (`autoRoute`) | `input.test.mjs` |
 | Multi-cell ghost, rotate (R), pipette (Q), undo and redo, Delete on hover, X Remove mode | working | `input/index.ts`, `input/build.ts` | `input.test.mjs` |
+| BUILDING badge (item icon, name, turn, Esc) while any tool is armed; hover ghost under the cursor for belts and model-less tools before any drag | working, headless only | `components/brasswork/building-badge.tsx`, `brasswork-host.tsx` `updateGhost` | none |
 | Shift-drag area Remove | working | `input/pointer.ts`, `input/build.ts` | `input.test.mjs` |
 | Number keys 1 to 9 pick from the open build group, Tab cycles groups | working | `input/keys.ts`, `components/automation/build-bar.tsx` | `input.test.mjs` |
 | Copy and paste of building areas | not built (B-06) | none | none |
