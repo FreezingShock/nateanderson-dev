@@ -14,7 +14,7 @@ import {
 } from "@/lib/groundbreak/engine";
 import { gbCommand } from "@/lib/groundbreak/commands";
 import { MAT_ICONS, iconUrl } from "./icons";
-import { GroundbreakScene } from "./scene";
+import { GbSiteScene as GroundbreakScene } from "@/components/groundbreak-art/site-scene";
 import { CAMERA_HOME, WORLD_H, WORLD_W, ZOOM_MAX, ZOOM_MIN, type Camera, type SceneJob } from "./scene-types";
 
 const tools = createSaveTools<State>({ app: "groundbreak", version: SAVE_VERSION, validate: isSave });
@@ -185,6 +185,7 @@ export function Groundbreak() {
         seen.current = { built: s.built, open: s.open, change: !!s.change };
         lastTick.current = now;
         setReduce(window.matchMedia("(prefers-reduced-motion: reduce)").matches);
+        if (window.innerWidth <= 860) setJobOpen(false);
         try { setSimple(window.localStorage.getItem("gb-simple") === "1"); } catch { /* storage blocked */ }
         setReady(true);
     }, []);
@@ -313,7 +314,7 @@ export function Groundbreak() {
             <nav className="gb-rail" aria-label="Menus" onPointerDown={(e) => e.stopPropagation()}>
                 {([["jobs", "bid", "Jobs", "J"], ["skyline", "skyline", "Skyline", "K"], ["firm", "firm", "Firm", "F"], ["console", "console", "Console", "`"], ["menu", "menu", "Menu", "M"]] as const).map(([id, ic, label, key]) => (
                     <button key={id} type="button" className="gb-rail-btn" aria-pressed={win === id} aria-label={label} data-tip={`${label} · ${key}`} data-ping={id === "firm" && (canIncorporate(s, f) || PERKS.some((p) => perkReady(s.perks, p) && s.charter >= p.cost)) ? "" : id === "jobs" && wait ? "" : undefined} onClick={() => { setSel(null); setWin(win === id ? null : id); }}>
-                        <Ico id={ic} size={28} /><kbd>{key}</kbd>
+                        <Ico id={ic} size={34} /><kbd>{key}</kbd>
                     </button>
                 ))}
             </nav>

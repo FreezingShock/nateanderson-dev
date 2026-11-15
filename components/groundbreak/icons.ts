@@ -1,5 +1,7 @@
 "use client";
 
+import { gbIconUrl } from "@/components/groundbreak-art/icons";
+
 // Pixel icons for Groundbreak, drawn as small character grids and rendered once to crisp data URLs (nearest-neighbour when shown).
 // One shared size (10 x 10), one outline colour and one light direction so the set reads as one family. The art thread can replace
 // this file's exports (iconUrl) with drawn sprites; the screen only calls iconUrl(id).
@@ -40,6 +42,8 @@ const cache = new Map<string, string>();
 const KEY: Record<string, string> = { k: "#1b1410", w: "#ffffff", o: "#e07a2a", y: "#ffd36a", g: "#7fd06a" };
 
 export function iconUrl(id: string): string {
+    const art = gbIconUrl(id);
+    if (art) return art;
     const hit = cache.get(id);
     if (hit) return hit;
     const d = DEFS[id];
