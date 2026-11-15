@@ -2,7 +2,7 @@
    Cards are art first (the blueprint fills the card edge to edge); each state tints its own panel. */
 
 .bw-window[aria-label="Research"] {
-  width: min(720px, 100%); max-height: min(88dvh, 780px);
+  width: min(940px, 100%); max-height: min(88dvh, 780px); /* seven columns of 104 px cards plus the gaps need about 890 px */
   --rs-acc: #58b09a; --rs-acc-dim: rgba(88, 176, 154, 0.3);
   border-color: #3f8a76;
 }

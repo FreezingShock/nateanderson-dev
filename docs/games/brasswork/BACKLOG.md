@@ -21,14 +21,6 @@ Ordered by value. Each is one PR.
 - Add `scripts/automation/pacing-bot.mjs`: a headless player on `DEFAULT_CATALOG` that places drills, kilns and windmills from `suggestSpot`/`autoRoute`, buys research, delivers milestones, and prestiges once. Print simulated time to each milestone, first Sky orrery light, and prestige.
 - Done when: it finishes without a soft-lock, prints the times, and a short test asserts every milestone is reachable. Write the times in `FEATURES.md`. This does not judge the pacing; Nate's playtest does (P-01).
 
-**B-07 Research menu pass**
-- Nate's brief: pop-up beside the clicked card, alternates mixed into the tree in different colours, art edge to edge with a panel colour per state (`research-screen.tsx`, `research-screen.css`). Today the pop-up and alternate colouring still need a clean pass, and the six Mastery cards need checking next to the core tree.
-- Done when: one section open at a time, every card has art and a name tooltip, keyboard focus works, no React warnings in the console, 1440 and 390 screenshots. **Needs screenshots.**
-
-**B-08 Expedition menu pass**
-- Same standard as B-07 for `expedition-window.tsx` and `prestige-screen.tsx`: art first, one line of text, ore dots with names in tooltips, hold to confirm. Wait for T-01 if Nate wants the big view instead.
-- Done when: all four sites render with their art, hold to confirm works with keyboard and touch, screenshots. **Needs screenshots.**
-
 
 **Performance audit 2026-11-15** (report: `/mnt/project-files/portfolio/perf-audit-2026-11-15/brasswork.md`, bench: `scripts/automation/perf-sim.mjs`)
 - [ ] PERF-drawcalls | size L | A 141-building factory draws about 450 calls a frame (about 350 at the phone's quality level), 605 vertex arrays live. Merge each machine's static voxel parts into one mesh per model and instance repeats, or batch belts. Done when a dense factory is under 150 calls and the look is pixel-identical in the screenshot diff | `render/models.ts`, `render/index.ts`
