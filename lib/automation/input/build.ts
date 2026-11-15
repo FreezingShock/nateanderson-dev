@@ -342,10 +342,11 @@ export class BuildController {
         return true;
     }
 
-    // The R key. Over a placed building (and not mid-drag) it turns that building, otherwise it turns the ghost.
+    // The R key. With no tool armed, over a placed building (and not mid-drag) it turns that building, otherwise it turns the ghost.
     rotateHover(): void {
         const h = this.hover;
-        if (h && !this.stroke && this.world.get(h.x, h.z)) {
+        // With a tool armed R always turns the ghost, even when the cursor rests on a placed building.
+        if (h && !this.stroke && !this.tool && this.world.get(h.x, h.z)) {
             this.rotateAt(h);
             return;
         }
