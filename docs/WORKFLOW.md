@@ -21,6 +21,7 @@ Many threads merge into `integration` daily, and docs are the likeliest collisio
 - **Do not edit other threads' lines.** If a line is wrong, append a new line saying so.
 - One section per concern in a doc, so edits land in different hunks. No tables for lists that grow (a table row edit conflicts with its neighbours); tables are fine for fixed reference.
 - Keep generated or long text out of docs. Link to the code or a file in `/mnt/project-files/`.
+- Deleting a finished BACKLOG item removes a whole hunk, and two threads deleting neighbouring items conflict. On a conflict in a BACKLOG, drop every item that was deleted on either side.
 - If a doc conflicts anyway, keep both sides' lines and drop only exact duplicates.
 
 ## BACKLOG.md format
