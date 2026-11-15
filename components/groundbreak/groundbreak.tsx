@@ -27,6 +27,8 @@ interface Note { id: number; text: string; tone?: "hot" | "dim" }
 const TIER_ICON = ["crew", "equip", "method"] as const;
 /** The machine each material row buys at tier II, in material order. */
 const EQUIP_ICONS = ["loader", "excavator", "kiln", "mixer", "bender", "mill", "float", "drawer", "brake", "yard", "rig", "crane"];
+/** Dock sections: the chain split by what each group builds. */
+const DOCK_GROUPS: [string, number, number][] = [["Earthwork", 0, 2], ["Concrete", 2, 4], ["Frame", 4, 6], ["Skin & services", 6, 9], ["Tower", 9, 12]];
 const BRANCH_ICON: Record<string, string> = { ops: "crew", money: "cash", logistics: "permit" };
 
 /** Finished-building thumbnail from the job's last cutaway frame. */
@@ -123,7 +125,7 @@ export function Groundbreak() {
         if (r) {
             // keep the ground line above the dock (and below the header) so the building is never buried behind it
             const sc = Math.max(r.width / WORLD_W, r.height / WORLD_H) * z;
-            const dockH = r.width <= 860 ? 230 : 120;
+            const dockH = r.width <= 860 ? 230 : 150;
             y = Math.max(y, GROUND_Y - (r.height / 2 - dockH) / sc);
         }
         const n = { x: clamp(c.x, -40, WORLD_W + 40), y, z };
@@ -139,7 +141,7 @@ export function Groundbreak() {
         const art = jobId ? GB_JOBS[jobId as GbJobId] : undefined;
         if (!art) return { x: portrait ? 240 : 236, y: portrait ? 160 : 166, z: clamp(r.width / (cover * 250), ZOOM_MIN, 1) };
         const hw = art.h / 2 + 14, ww = art.w / 2 + 24;
-        const dockH = r.width <= 860 ? 230 : 120, topH = 60;
+        const dockH = r.width <= 860 ? 230 : 150, topH = 60;
         const free = Math.max(120, r.height - dockH - topH);
         const z = clamp(Math.min(free / (cover * hw), (r.width * 0.86) / (cover * ww)), 0.6, 3.2);
         // centre the building in the free band between the header and the dock
@@ -372,7 +374,7 @@ export function Groundbreak() {
                 ))}
             </nav>
 
-            <div className="gb-zoom" onPointerDown={(e) => e.stopPropagation()}>
+            <div className="gb-zoom" role="group" aria-label="View" onPointerDown={(e) => e.stopPropagation()}>
                 <button type="button" onClick={() => zoomAt(1.3)} aria-label="Zoom in" data-tip="Zoom in · +"><Ico id="zoomin" size={26} /></button>
                 <button type="button" onClick={() => zoomAt(0.77)} aria-label="Zoom out" data-tip="Zoom out · Shift -"><Ico id="zoomout" size={26} /></button>
                 <button type="button" onClick={reset} aria-label="Reset view" data-tip="Reset view · R"><Ico id="reset" size={26} /></button>
@@ -420,29 +422,40 @@ export function Groundbreak() {
                 )}
             </aside>
 
-            <ul className="gb-feed" aria-live="polite">{notes.map((n) => <li key={n.id} data-tone={n.tone}>{n.text}</li>)}</ul>
+            <ul className="gb-feed" aria-live="polite">{notes.map((n) => <li key={n.id} data-tone={n.tone}><Ico id={n.tone === "hot" ? "rep" : "bid"} size={28} /><span>{n.text}</span><i className="gb-cn" data-c="tl" /><i className="gb-cn" data-c="br" /></li>)}</ul>
             {away && <button type="button" className="gb-away" onClick={() => setAway(null)}>{away} <span>dismiss</span></button>}
             {(paused || shell.paused) && <div className="gb-paused" role="status">Paused · P to resume</div>}
 
             {card !== null && <MatCard s={s} i={card} onBuy={doBuy} onUnlock={doUnlock} onClose={() => setSel(null)} />}
 
             <div className="gb-dock" onPointerDown={(e) => e.stopPropagation()} role="toolbar" aria-label="Materials">
-                {MATS.map((m, i) => {
-                    const open = i < s.open, next = i === s.open;
-                    const r = open ? rawRate(s, i, f, chain(s)) : 0;
-                    const need = next ? UNLOCK[i] : 0;
-                    return (
-                        <button key={m.id} type="button" className="gb-tile" data-state={open ? "open" : next ? "next" : "locked"} data-on={card === i ? "" : undefined} data-ready={next && canUnlock(s, i) ? "" : undefined}
-                            aria-pressed={card === i} aria-label={`${m.name}${open ? `, ${fmt(s.amt[i])}` : ", locked"}`}
-                            data-tip={open ? `${m.name} · ${fmt(r)}/s` : next ? `${m.name} · needs ${fmt(need)} ${MATS[i - 1].name}` : "Locked"}
-                            onClick={() => { setWin(null); setSel(card === i ? null : i); }}>
-                            <kbd>{MAT_KEYS[i]}</kbd>
-                            <Ico id={open || next ? MAT_ICONS[i] : "lock"} size={40} className={open ? "" : "is-dim"} />
-                            <b>{open ? fmt(s.amt[i]) : next ? `${Math.min(99, Math.floor((s.amt[i - 1] / need) * 100))}%` : ""}</b>
-                            {open && <i className="gb-lv">{s.crews[i]}</i>}
-                        </button>
-                    );
-                })}
+                {DOCK_GROUPS.map(([label, from, to]) => (
+                    <section key={label} className="gb-dgroup" data-open={from < s.open ? "" : undefined} aria-label={label}>
+                        <h4>{label}</h4>
+                        <div className="gb-dgroup-row">
+                            {MATS.slice(from, to).map((m, k) => {
+                                const i = from + k;
+                                const open = i < s.open, next = i === s.open;
+                                const r = open ? rawRate(s, i, f, chain(s)) : 0;
+                                const need = next ? UNLOCK[i] : 0;
+                                const pct = next ? Math.min(100, Math.floor((s.amt[i - 1] / need) * 100)) : 0;
+                                return (
+                                    <button key={m.id} type="button" className="gb-tile" data-state={open ? "open" : next ? "next" : "locked"} data-on={card === i ? "" : undefined} data-ready={next && canUnlock(s, i) ? "" : undefined}
+                                        aria-pressed={card === i} aria-label={`${m.name}${open ? `, ${fmt(s.amt[i])}` : ", locked"}`}
+                                        data-tip={open ? `${m.name} · ${fmt(r)}/s` : next ? `${m.name} · needs ${fmt(need)} ${MATS[i - 1].name}` : `${m.name} · locked`}
+                                        style={next ? ({ ["--pct" as string]: `${pct}%` } as CSSProperties) : undefined}
+                                        onClick={() => { setWin(null); setSel(card === i ? null : i); }}>
+                                        <kbd>{MAT_KEYS[i]}</kbd>
+                                        <Ico id={MAT_ICONS[i]} size={48} className={open ? "" : next ? "is-next" : "is-shadow"} />
+                                        <b>{open ? fmt(s.amt[i]) : next ? `${pct}%` : ""}</b>
+                                        {open && <i className="gb-lv">{s.crews[i]}</i>}
+                                        {!open && !next && <Ico id="lock" size={18} className="gb-tile-lock" />}
+                                    </button>
+                                );
+                            })}
+                        </div>
+                    </section>
+                ))}
             </div>
 
             <Window open={win === "jobs"} title="Next jobs" hint={`${s.builtThisFirm} of ${JOBS.length} built`} variant="unroll" icon="bid" banner="jobs" onClose={() => setWin(null)}>
