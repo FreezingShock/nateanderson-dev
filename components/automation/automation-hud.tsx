@@ -19,6 +19,7 @@ import { PrestigeScreen } from "./prestige-screen";
 import { HubMenu, HubToast, HUB_OPEN_EVENT, openHubMenu } from "./hub-menu";
 import "./brasswork-skin.css";
 import "./desktop-stage.css";
+import "./phone-menu-art.css";
 import { canAfford } from "./format";
 import { uiIconStyle } from "@/lib/automation/icons/ui";
 import { QuestScroll, type QuestState } from "@/components/brasswork/first-run";

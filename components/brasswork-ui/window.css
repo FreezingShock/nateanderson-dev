@@ -156,7 +156,7 @@
   .bw-window[data-theme] { border-width: 12px 0 0 0; border-image-width: 12px 0 0 0; }
   .bw-window[data-theme] .bw-window-head { min-height: 56px; }
   .bw-window[data-theme] .bw-window-banner { background-size: auto 56px; }
-  .bw-window[data-theme] .bw-window-title { font-size: 18px; }
+  .bw-window[data-theme] .bw-window-title { font-size: 17px; letter-spacing: .03em; }
   /* Phones keep the sheet slide for every menu; the per-menu motion is a desktop touch. */
   .bw-window[data-theme]:not([data-closing]) { animation: bw-win-sheet-in var(--bw-win-in) cubic-bezier(.2,.7,.2,1) both; transform-origin: initial; }
   .bw-window[data-theme][data-closing] { animation: bw-win-sheet-out var(--bw-win-out) ease-in both; }
