@@ -4,7 +4,9 @@ Audited 2026-11-15 against `integration` at 5138bb6. Route `/creations/games/bra
 
 **States:** `working` = built, merged, covered by a test or checked headless. `partial` = exists with a known gap (see the backlog id). `untested` = built, nobody has verified it on a real device or on screen. Nate has not played most of it on the live site, so nothing here is "approved" beyond the picks recorded in project memory.
 
-**Test commands:** `npm run test:automation` (183 pass, headless Node, no browser). `test:nodefarm` runs it too and is a PR check. `npm run test:automation:browser` (29 checks, about 11 s, needs the cloud Chromium) drives the input layer on a plain canvas with mouse and touch; it is not a PR check. There is no test for anything drawn on screen: the renderer, the HUD, audio and the phone layout are checked by hand with screenshots.
+**Screenshot and check scripts** (run against `next start` on a production build, headless Chrome with software WebGL; headers explain usage): `scripts/automation/shoot.mjs` (screenshot), `next-markers.mjs` (opening NEXT markers), `measure-open.mjs` (first node clear of the dock).
+
+**Test commands:** `npm run test:automation` (184 pass, headless Node, no browser). `test:nodefarm` runs it too and is a PR check. `npm run test:automation:browser` (29 checks, about 11 s, needs the cloud Chromium) drives the input layer on a plain canvas with mouse and touch; it is not a PR check. There is no test for anything drawn on screen: the renderer, the HUD, audio and the phone layout are checked by hand with screenshots.
 
 ## Map of the code
 
@@ -41,7 +43,7 @@ Owners are per area, one thread per file set. The threads: "Streamline Brasswork
 | Supply crates on orders and milestones | working | `sim/progress.ts` | `progression.test.mjs` |
 | Prestige "Open a new workshop": 4 sites, workshop kit, site bonuses | working | `sim/progress.ts`, `sim/data.ts` | `sites.test.mjs` |
 | New-player opening (drill, kiln, windmill, belts, first milestone) | working | `sim/data.ts` (`STARTER_KIT`: 80 iron plates) | `opening.test.mjs` |
-| Save and load, versioned (`SAVE_VERSION` 1), offline catch-up up to 8 h | working | `sim/save.ts`, `sim/world.ts` (`catchUp`) | `sim.test.mjs` |
+| Save and load, versioned (`SAVE_VERSION` 1), offline catch-up up to 8 h | working | `sim/save.ts`, `sim/world.ts` (`catchUp`) | `sim.test.mjs`, `save-golden.test.mjs` (checked-in v1 save keeps playing 60 s) |
 | Day clock, 1200 s day | working | `sim/progress.ts` (`dayClock`) | none direct |
 | Full-run pacing | untested: no bot plays start to prestige (B-05) | none | none |
 
@@ -71,7 +73,7 @@ Owners are per area, one thread per file set. The threads: "Streamline Brasswork
 | Belts with moving slats, items riding the belt | working | `models/belts/`, `render/beltitems.ts` | `belts.test.mjs` |
 | Scenery props and life (gulls, butterflies, fish) | working | `models/props/`, `render/scenery.ts`, `render/life/` | none |
 | Bursts for place, remove, milestone, research, unlock, delivery | working: island bursts and life bursts skip under Simple visuals, Low fx and reduce motion (`setLowFx`) | `render/effects.ts`, `render/life/` | `effects-lowfx.test.mjs` (island bursts) |
-| Hub delivery light column (shimmer, PR #541) | untested: never seen on screen (B-03) | `render/life/` | none |
+| Hub delivery light column (shimmer, PR #541) | untested: not visible in software WebGL, needs a real GPU (B-03) | `render/life/` | none |
 | Low-fx and reduce-motion modes | untested on a real GPU | `render/index.ts` (`setLowFx`), `.ab-root[data-reduce]`, `[data-lowfx]` | none |
 
 ## HUD and menus
@@ -79,8 +81,8 @@ Owners are per area, one thread per file set. The threads: "Streamline Brasswork
 | Feature | State | Code | Test |
 |---|---|---|---|
 | Build dock: Logistics, Machines, Power sections, big tiles with in-hand state | working | `build-bar.tsx`, `build-tile.css`, `brasswork/build-popover.tsx` | `icon-coverage.test.mjs` |
-| Hover names on tiles and machines (PR #545) | untested: not looked at on screen (B-04) | `brasswork/hover-name.tsx` | none |
-| NEXT banner and on-island marker (drill, kiln, windmill, hub) | untested: windmill and hub markers unverified (B-02) | `brasswork/next-marker.tsx`, `host` `syncTarget`, `sim/hud.ts` | `hud-next.test.mjs` (banner text only) |
+| Hover names on tiles, resource boxes and machines (PR #545) | working: `scripts/automation/hover-names.mjs` checks all three show a name and clear on leave, and that touch leaves no stuck tag (headless Chrome) | `brasswork/hover-name.tsx` | none |
+| NEXT banner and on-island marker (drill, kiln, windmill, hub) | working: `scripts/automation/next-markers.mjs` walks the opening headless and checks each marker is on its cell (within 4 px) and disappears at the end; run on a production build at 1440 and 390 | `brasswork/next-marker.tsx`, `host` `syncTarget`, `sim/hud.ts` | `hud-next.test.mjs` (banner text only) |
 | Resource strip with drawn icons and counts, essential resources always shown | working | `resource-strip.tsx`, `sim/hud.ts` | none |
 | Inspector: recipe, rates, buffers, power, unloader filter; Esc and ground click close it | working | `inspector.tsx` | `machine-detail.test.mjs` |
 | Hub menu (unlocks first, fill progress, requests) and toast | working | `hub-menu.tsx` | `hub-requests.test.mjs` |

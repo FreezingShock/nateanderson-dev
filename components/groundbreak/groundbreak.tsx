@@ -10,7 +10,7 @@ import { JOB_BY, JOBS, MATS, PERKS, TIER_LABELS, TUNE, UNLOCK_COST as UNLOCK, ci
 import {
     SAVE_KEY, SAVE_VERSION, acceptChange, buy, jobMat, buyPerk, canBuy, canIncorporate, canUnlock, catchUp, charterGain, chain, declineChange, effects, fmt, fmtAge,
     fmtCash, fresh, incorporate, isSave, jobFloors, jobPhaseName, jobProgress, load, methodReady, overtime, overtimeCost, parse, payout, perkReady, phaseNeeds,
-    plan, queue, nextJob, offlineCapS, rawRate, repPay, serialize, stageOf, step, tierCost, unlock, waitingFor, type State,
+    plan, queue, nextJob, offlineCapS, rawRate, repPay, repeatPay, repeatRep, serialize, stageOf, step, tierCost, unlock, waitingFor, type State,
 } from "@/lib/groundbreak/engine";
 import { gbCommand } from "@/lib/groundbreak/commands";
 import { awaySnap, awaySummary, doCue, nextCue, type AwaySummary, type Cue } from "@/lib/groundbreak/guide";
@@ -102,6 +102,7 @@ export function Groundbreak() {
     /** True once the player zoomed or panned; until then the camera follows the current job. */
     const userCam = useRef(false);
     const lastJob = useRef<string | null>(null);
+    const seenRe = useRef(-1);
     const viewRef = useRef<HTMLDivElement>(null);
     const rootRef = useRef<HTMLDivElement>(null);
     const dockRef = useRef<HTMLDivElement>(null);
@@ -112,7 +113,7 @@ export function Groundbreak() {
     const [jobOpen, setJobOpen] = useState(true);
     const noteId = useRef(0);
     const lastTick = useRef(0);
-    const seen = useRef({ built: 0, open: 1, change: false });
+    const seen = useRef({ built: 0, open: 1, change: false, cashAll: 0 });
     const shell = useGameShell();
 
     const note = useCallback((text: string, tone?: Note["tone"]) => {
@@ -256,7 +257,7 @@ export function Groundbreak() {
         }
         s.savedAt = now;
         sRef.current = s;
-        seen.current = { built: s.built, open: s.open, change: !!s.change };
+        seen.current = { built: s.built, open: s.open, change: !!s.change, cashAll: s.cashAll };
         lastTick.current = now;
         setReduce(window.matchMedia("(prefers-reduced-motion: reduce)").matches);
         if (window.innerWidth <= 860) setJobOpen(false);
@@ -284,6 +285,11 @@ export function Groundbreak() {
                 const last = s.skyline[s.skyline.length - 1];
                 note(`${JOB_BY.get(last?.id ?? "")?.name ?? "Job"} handed over.`, "hot");
             }
+            if (seenRe.current < 0 || s.reruns < seenRe.current) seenRe.current = s.reruns;
+            if (s.reruns > seenRe.current) {
+                seenRe.current = s.reruns;
+                if (s.built === sn.built) note(`Repeat order finished: +${fmtCash(s.cashAll - sn.cashAll)}. It pays half and adds no building.`);
+            }
             const jid = s.job?.id ?? "";
             if (lastJob.current !== null && jid && jid !== lastJob.current) {
                 userCam.current = false; // a new job always brings the camera back to the site
@@ -293,7 +299,7 @@ export function Groundbreak() {
             lastJob.current = jid;
             if (s.open > sn.open) note(`${MATS[s.open - 1].name} is on site.`, "hot");
             if (s.change && !sn.change) note("Change order: the client wants more.", "hot");
-            seen.current = { built: s.built, open: s.open, change: !!s.change };
+            seen.current = { built: s.built, open: s.open, change: !!s.change, cashAll: s.cashAll };
         }, 100);
         const ui = window.setInterval(bump, 250);
         const sv = window.setInterval(save, 8000);
@@ -425,7 +431,7 @@ export function Groundbreak() {
             </div>
 
             <header className="gb-top">
-                <Link prefetch={false} href="/creations/games" className="gb-back" aria-label="Back to Games" data-tip="Back to Games"><svg viewBox="0 0 10 10" width="14" height="14" aria-hidden="true"><path d="M6.5 1.5 3 5l3.5 3.5" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="square" /></svg><span>Games</span></Link>
+                <Link prefetch={false} href="/creations/games#incremental" className="gb-back" aria-label="Back to Games" data-tip="Back to Games"><svg viewBox="0 0 10 10" width="14" height="14" aria-hidden="true"><path d="M6.5 1.5 3 5l3.5 3.5" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="square" /></svg><span>Games</span></Link>
                 <div className="gb-brand">
                     <h1 className="gb-title">Groundbreak</h1>
                     <span className="gb-site" data-tip={city.blurb}><i aria-hidden="true" />{city.name}<em>{city.sites[stage - 1]}</em></span>
@@ -486,7 +492,7 @@ export function Groundbreak() {
                                 );
                             })}
                         </ol>
-                        <p className="gb-job-pay">pays {fmtCash(payout(s, def, f, chain(s), aj.index) * (1 + aj.bonus))} + {repPay(s, def, f)} rep</p>
+                        <p className="gb-job-pay">{aj.rerun ? `repeat order: pays ${fmtCash(repeatPay(s, def, f))} + ${repeatRep(s, def, f)} rep, no new building` : `pays ${fmtCash(payout(s, def, f, chain(s), aj.index) * (1 + aj.bonus))} + ${repPay(s, def, f)} rep`}</p>
                         {aj.step === "inspect" && ovt > 0 && <button type="button" className="gb-go" disabled={s.cash < ovt} onClick={() => act((x) => overtime(x))} data-tip="Pay to finish the inspection now">Overtime {fmtCash(ovt)}</button>}
                     </div>
                 ) : (
@@ -557,7 +563,7 @@ export function Groundbreak() {
             <Window open={win === "jobs"} title="Next jobs" hint={`${s.builtThisFirm} of ${JOBS.length} built`} variant="unroll" icon="bid" banner="jobs" onClose={() => setWin(null)}>
                 <p className="gb-line">{city.name}. {city.blurb}</p>
                 <ul className="gb-bids">
-                    {s.job && def && <li className="is-now"><JobThumb id={def.id} /><div><strong>{def.name}</strong><span>{jobPhaseName(s.job, f)} · {city.sites[def.stage - 1]}</span></div><span className="gb-req">{Math.floor(prog * 100)}%</span></li>}
+                    {s.job && def && <li className="is-now"><JobThumb id={def.id} /><div><strong>{def.name}</strong><span>{jobPhaseName(s.job, f)} · {s.job.rerun ? "Repeat order, no new building" : city.sites[def.stage - 1]}</span></div>{s.job.rerun && <dl><dt>pays</dt><dd>{fmtCash(repeatPay(s, def, f))}</dd><dt>rep</dt><dd>+{repeatRep(s, def, f)}</dd></dl>}<span className="gb-req">{Math.floor(prog * 100)}%</span></li>}
                     {queue(s, 4).map((q, i) => (
                         <li key={q.index} className={q.ready ? "is-next" : "is-locked"} style={{ ["--i" as string]: i } as CSSProperties}>
                             <JobThumb id={q.job.id} /><div><strong>{i === 0 && !s.job ? "Up next: " : ""}{q.job.name}</strong><span>{q.job.notes.join(" · ")}</span></div>
@@ -581,7 +587,7 @@ export function Groundbreak() {
                     <dt>Offline limit</dt><dd>{Math.round((TUNE.offlineH + f.offlineH))} hours</dd>
                 </dl>
                 <PerkGrid s={s} onBuy={(id) => act((x) => { if (buyPerk(x, id)) save(); })} onAuto={(n) => act((x) => { x.autoOff = x.autoOff.includes(n) ? x.autoOff.filter((v) => v !== n) : [...x.autoOff, n]; save(); })} />
-                <p className="gb-line">{canIncorporate(s, f) ? `Incorporate a new firm in ${cityOf(s.firm + 1).name}. +${charterGain(s, f)} charter. The skyline stays.` : `Incorporate opens at ${TUNE.charterMinRep} reputation earned this firm (you have ${fmt(s.repFirm)}).`}</p>
+                <p className="gb-line">{canIncorporate(s, f) ? `Incorporate: +${charterGain(s, f)} charter for perks that stay, a new firm in ${cityOf(s.firm + 1).name}. The skyline stays.` : `Opens at ${TUNE.charterMinRep} rep (you have ${fmt(s.repFirm)}). Pays about +${Math.max(1, Math.floor(Math.sqrt(TUNE.charterMinRep / TUNE.charterDiv) * f.charter))} charter for perks that stay, then a new firm in ${cityOf(s.firm + 1).name}. The skyline stays.`}</p>
                 <ConfirmGo label="Incorporate" sure="Cash, crews and materials reset. Charter and the skyline stay. Sure?" onGo={doIncorporate} disabled={!canIncorporate(s, f)} />
             </Window>
 
@@ -591,9 +597,9 @@ export function Groundbreak() {
 
             <Window open={win === "menu"} title="Menu" variant="settle" size="sm" icon="menu" banner="menu" onClose={() => setWin(null)}>
                 <MenuBody s={s} paused={paused} onPause={togglePause} simple={simple} onSimple={toggleSimple} fs={shell.supportsFullscreen} onFs={shell.toggleFullscreen} fsOn={shell.fullscreen}
-                    onImport={(st) => { const p = parse(st); if (!p) { note("That save could not be read."); return; } if (sRef.current) writeStored(window.localStorage, SAVE_KEY + "-backup", serialize(sRef.current)); sRef.current = p; seen.current = { built: p.built, open: p.open, change: !!p.change }; save(); bump(); note("Save imported. The old one is kept as a backup.", "hot"); }}
-                    onWipe={() => { if (sRef.current) writeStored(window.localStorage, SAVE_KEY + "-backup", serialize(sRef.current)); sRef.current = fresh(Date.now()); seen.current = { built: 0, open: 1, change: false }; save(); setWin(null); setSel(null); bump(); }} onNote={note}
-                    onRestore={(raw) => { const p = parse(JSON.parse(raw)); if (!p) { note("That backup could not be read."); return; } if (sRef.current) writeStored(window.localStorage, SAVE_KEY + "-backup", serialize(sRef.current)); sRef.current = p; seen.current = { built: p.built, open: p.open, change: !!p.change }; save(); setWin(null); bump(); note("Backup restored. The save you replaced is kept as the manual backup.", "hot"); }} />
+                    onImport={(st) => { const p = parse(st); if (!p) { note("That save could not be read."); return; } if (sRef.current) writeStored(window.localStorage, SAVE_KEY + "-backup", serialize(sRef.current)); sRef.current = p; seen.current = { built: p.built, open: p.open, change: !!p.change, cashAll: p.cashAll }; seenRe.current = p.reruns; save(); bump(); note("Save imported. The old one is kept as a backup.", "hot"); }}
+                    onWipe={() => { if (sRef.current) writeStored(window.localStorage, SAVE_KEY + "-backup", serialize(sRef.current)); sRef.current = fresh(Date.now()); seen.current = { built: 0, open: 1, change: false, cashAll: 0 }; seenRe.current = -1; save(); setWin(null); setSel(null); bump(); }} onNote={note}
+                    onRestore={(raw) => { const p = parse(JSON.parse(raw)); if (!p) { note("That backup could not be read."); return; } if (sRef.current) writeStored(window.localStorage, SAVE_KEY + "-backup", serialize(sRef.current)); sRef.current = p; seen.current = { built: p.built, open: p.open, change: !!p.change, cashAll: p.cashAll }; seenRe.current = p.reruns; save(); setWin(null); bump(); note("Backup restored. The save you replaced is kept as the manual backup.", "hot"); }} />
             </Window>
         </div>
     );
