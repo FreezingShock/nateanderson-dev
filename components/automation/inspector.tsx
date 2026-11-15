@@ -1,16 +1,18 @@
-import type { MachineDetail, NumberFormat, ResourceView } from "@/lib/automation/types";
+import type { Line, MachineDetail, NumberFormat, RecipeEntry, ResourceView } from "@/lib/automation/types";
 import { fmtNum, resourceName } from "./format";
 import { ArtGauge, MachinePortrait } from "@/components/brasswork-art";
+import { ArtIcon } from "@/components/brasswork-art/icons";
 import "./inspector.css";
 import { tipAttr } from "@/components/brasswork-ui/tip";
-import { recipeTip, stackText } from "@/lib/automation/tips";
+import { recipeTip, stackText, type TipData } from "@/lib/automation/tips";
 import { RECIPE_TREE } from "@/lib/automation/data/tree";
-import type { TipData } from "@/lib/automation/tips";
 
-// Tag for one recipe option in the recipe list.
-function recipeOf(id: string): TipData | null {
+// Tag for one recipe in the picker. A locked recipe also says why it is shut.
+function recipeOf(id: string, lockReason?: string): TipData | null {
   const r = RECIPE_TREE.recipes.find((x) => x.id === id);
-  return r ? recipeTip(RECIPE_TREE, r) : null;
+  if (!r) return null;
+  const tip = recipeTip(RECIPE_TREE, r);
+  return lockReason ? { ...tip, rows: [...(tip.rows ?? []), { k: "Locked", v: lockReason, tone: "bad" as const }] } : tip;
 }
 
 // Plain reasons for each status, so the panel says what to do rather than only what is happening.
@@ -27,9 +29,89 @@ const EXTRACTOR_TEXT: Record<string, string> = {
   drill: "Mines the ore under it. Place it on a resource node.",
 };
 
+/** Item icons with their amounts: "2 Iron ore + 1 Coal". Each icon names itself on hover. */
+function Chips({ lines, resources, numberFormat, size }: { lines: Line[]; resources: ResourceView[]; numberFormat: NumberFormat; size: number }) {
+  if (lines.length === 0) return <span className="ab-dim">Nothing</span>;
+  return (
+    <span className="ab-rc-chips">
+      {lines.map((l, i) => (
+        <span key={`${l.resourceId}-${i}`} className="ab-rc-chip">
+          <ArtIcon id={l.resourceId} size={size} name={resourceName(resources, l.resourceId)} />
+          <span className="ab-rc-amt">{fmtNum(l.amount, numberFormat)}</span>
+        </span>
+      ))}
+    </span>
+  );
+}
+
+/** One recipe in the picker: the real output icon, inputs and output with amounts, the rate, and the current pick. */
+function RecipeRow({
+  entry,
+  resources,
+  numberFormat,
+  onPick,
+}: {
+  entry: RecipeEntry;
+  resources: ResourceView[];
+  numberFormat: NumberFormat;
+  onPick?: (id: string) => void;
+}) {
+  const out = entry.outputs[0];
+  const locked = entry.state === "locked";
+  const selected = entry.state === "selected";
+  const body = (
+    <>
+      <span className="ab-rc-out">
+        {out && <ArtIcon id={out.resourceId} size={40} name={resourceName(resources, out.resourceId)} />}
+      </span>
+      <span className="ab-rc-body">
+        <span className="ab-rc-name">
+          {out ? resourceName(resources, out.resourceId) : entry.name}
+          {entry.alternate && <span className="ab-rc-alt">Alternate</span>}
+        </span>
+        {locked ? (
+          <span className="ab-rc-lock">{entry.lockReason ?? "Locked"}</span>
+        ) : (
+          <span className="ab-rc-flow" aria-label="Recipe">
+            <Chips lines={entry.inputs} resources={resources} numberFormat={numberFormat} size={18} />
+            <span className="ab-rc-arrow" aria-hidden="true">→</span>
+            <Chips lines={entry.outputs} resources={resources} numberFormat={numberFormat} size={18} />
+          </span>
+        )}
+      </span>
+      <span className="ab-rc-meta">
+        {!locked && entry.perMin > 0 && <strong className="ab-rc-rate">{fmtNum(entry.perMin, numberFormat)} /min</strong>}
+        {!locked && entry.seconds > 0 && <span className="ab-dim">{entry.seconds} s a craft</span>}
+        <span className="ab-rc-state">{selected ? "Selected" : locked ? "Locked" : "Use"}</span>
+      </span>
+    </>
+  );
+  const tip = tipAttr(recipeOf(entry.id, locked ? entry.lockReason : undefined));
+  if (locked || !onPick) {
+    return (
+      <div className="ab-rc" data-state={entry.state} aria-disabled="true" {...tip}>
+        {body}
+      </div>
+    );
+  }
+  return (
+    <button
+      type="button"
+      className="ab-rc"
+      data-state={entry.state}
+      aria-pressed={selected}
+      {...tip}
+      aria-label={`${out ? resourceName(resources, out.resourceId) : entry.name}${entry.alternate ? ", alternate" : ""}${selected ? ", selected" : ""}`}
+      onClick={() => onPick(entry.id)}
+    >
+      {body}
+    </button>
+  );
+}
+
 /**
  * Machine inspector, drawn as one compact card: portrait and name, status, energy at a glance, what it makes,
- * then recipe choices, buffers and the build button. The floating frame is the caller's (the HUD's factory panel).
+ * the recipe picker, buffers and the build button. The floating frame is the caller's (the HUD's factory panel).
  */
 export function Inspector({
   detail,
@@ -51,22 +133,23 @@ export function Inspector({
   // The simulation names an unset crafter "No recipe chosen"; older mocks say "No recipe". Both mean nothing is set.
   const noRecipe = detail.recipe.name === "No recipe" || detail.recipe.name === "No recipe chosen";
   const hasRecipe = !noRecipe;
-  const lineText = (lines: MachineDetail["recipe"]["inputs"]) =>
-    lines.map((l) => `${fmtNum(l.amount, numberFormat)} ${resourceName(resources, l.resourceId)}`).join(", ");
-  const options = detail.recipeOptions ?? [];
-  const choices = detail.recipeChoices ?? [];
-  // A crafter with no recipe set is the case the player most often misses: say so plainly and list what it can make.
-  const needsRecipe = noRecipe && !detail.mines?.length && (choices.length > 0 || options.length > 0);
+  // Every recipe this building type runs, open and locked. Previews of an unplaced machine only have the open choices.
+  const library: RecipeEntry[] = detail.recipeLibrary
+    ?? (detail.recipeChoices ?? []).map((c) => ({
+      id: c.id, name: c.name, alternate: c.alternate, inputs: c.inputs, outputs: c.outputs, seconds: c.seconds,
+      perMin: c.seconds > 0 ? (c.outputs[0]?.amount ?? 0) * 60 / c.seconds : 0, state: "open" as const,
+    }));
+  const crafter = library.length > 0;
+  const openCount = library.filter((e) => e.state !== "locked").length;
+  const lockedCount = library.length - openCount;
+  // A crafter with no recipe set is the case the player most often misses: say so plainly, then offer the picker.
+  const needsRecipe = noRecipe && !detail.mines?.length && openCount > 0;
   const status = needsRecipe ? "No recipe set. This machine is not running." : (STATUS_TEXT[detail.status] ?? detail.status);
-  const pick: { id: string; name: string; alternate: boolean; flow?: string }[] = needsRecipe
-    ? choices.map((c) => ({
-        id: c.id,
-        name: c.name,
-        alternate: c.alternate,
-        flow: `${lineText(c.inputs) || "Nothing"} → ${lineText(c.outputs) || "Nothing"}, ${c.seconds} s`,
-      }))
-    : options;
   const rate = detail.rates[0];
+  const pickable = !!onSetRecipe && crafter && library.length > 1;
+  // Selected first, then open, then locked (the sim orders open ones first; the selected one is marked in place).
+  const ordered = library.filter((e) => e.state !== "locked");
+  const shut = library.filter((e) => e.state === "locked");
 
   // Energy: a generator shows what it makes against its best; a consumer shows what it draws and how well it is fed.
   const generating = detail.maxKw !== undefined;
@@ -75,6 +158,7 @@ export function Inspector({
     ? (detail.maxKw ? Math.min(1, (detail.producedKw ?? 0) / detail.maxKw) : 0)
     : Math.min(1, detail.satisfied ?? 0);
   const energyState = generating ? "source" : detail.fullyPowered ? "full" : "short";
+  const current = detail.recipeId ? library.find((e) => e.id === detail.recipeId) : undefined;
 
   return (
     <div className="ab-inspect" data-status={detail.status} data-norecipe={needsRecipe ? "true" : undefined}>
@@ -121,18 +205,28 @@ export function Inspector({
         <ul className="ab-inspect-mines" aria-label="Mines">
           {detail.mines.map((m) => (
             <li key={m.resourceId} className="ab-inspect-mine">
+              <ArtIcon id={m.resourceId} size={28} name={m.name} />
               <span>{m.name}</span>
               <span className="ab-dim">{m.purity}</span>
               <strong>{fmtNum(m.perMin, numberFormat)} / min</strong>
             </li>
           ))}
         </ul>
+      ) : hasRecipe && current ? (
+        <div className="ab-inspect-making" aria-label="Makes">
+          <span className="ab-dim">Making</span>
+          <Chips lines={current.inputs} resources={resources} numberFormat={numberFormat} size={20} />
+          <span className="ab-rc-arrow" aria-hidden="true">→</span>
+          <Chips lines={current.outputs} resources={resources} numberFormat={numberFormat} size={20} />
+          {current.seconds > 0 && <span className="ab-dim">{current.seconds} s a craft</span>}
+        </div>
       ) : hasRecipe ? (
-        <div className="ab-inspect-flow" aria-label="Makes">
-          <span className="ab-inspect-in">{lineText(detail.recipe.inputs) || "Nothing"}</span>
-          <span className="ab-arrow" aria-hidden="true">→</span>
-          <span className="ab-inspect-out">{lineText(detail.recipe.outputs) || "Nothing"}</span>
-          {detail.recipe.seconds > 0 && <span className="ab-dim">{detail.recipe.seconds} s per batch</span>}
+        <div className="ab-inspect-making" aria-label="Makes">
+          <span className="ab-dim">Making</span>
+          <Chips lines={detail.recipe.inputs} resources={resources} numberFormat={numberFormat} size={20} />
+          <span className="ab-rc-arrow" aria-hidden="true">→</span>
+          <Chips lines={detail.recipe.outputs} resources={resources} numberFormat={numberFormat} size={20} />
+          {detail.recipe.seconds > 0 && <span className="ab-dim">{detail.recipe.seconds} s a craft</span>}
         </div>
       ) : needsRecipe ? (
         <p className="ab-inspect-callout" role="status">
@@ -149,27 +243,28 @@ export function Inspector({
         </div>
       )}
 
-      {onSetRecipe && pick.length > (needsRecipe ? 0 : 1) && (
-        <div role="group" aria-label="Recipe" className="ab-inspect-recipes">
-          {pick.map((o) => (
-            <button
-              key={o.id}
-              type="button"
-              className="ab-recipe-row"
-              aria-pressed={o.id === detail.recipeId}
-              {...tipAttr(recipeOf(o.id))}
-              data-selected={o.id === detail.recipeId}
-              onClick={() => onSetRecipe(o.id)}
-            >
-              <span className="ab-recipe-name">
-                {o.name}
-                {o.alternate ? <span className="ab-dim"> · alternate</span> : null}
-                {o.flow && <span className="ab-recipe-flow">{o.flow}</span>}
-              </span>
-              <span className="ab-recipe-state">{o.id === detail.recipeId ? "Selected" : "Use"}</span>
-            </button>
-          ))}
-        </div>
+      {crafter && (
+        <section className="ab-picker" aria-label="Recipes">
+          <div className="ab-picker-head">
+            <span>Recipes</span>
+            <span className="ab-dim">
+              {openCount} open{lockedCount > 0 ? `, ${lockedCount} locked` : ""}
+            </span>
+          </div>
+          {pickable ? (
+            <div role="group" aria-label="Choose a recipe" className="ab-picker-list">
+              {ordered.map((e) => (
+                <RecipeRow key={e.id} entry={e} resources={resources} numberFormat={numberFormat} onPick={onSetRecipe} />
+              ))}
+              {shut.length > 0 && <p className="ab-picker-sub">Locked</p>}
+              {shut.map((e) => (
+                <RecipeRow key={e.id} entry={e} resources={resources} numberFormat={numberFormat} />
+              ))}
+            </div>
+          ) : (
+            <p className="ab-dim ab-picker-only">Only one recipe runs here.</p>
+          )}
+        </section>
       )}
 
       {detail.buffers.length > 0 && (

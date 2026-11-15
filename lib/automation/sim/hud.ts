@@ -12,6 +12,7 @@ import type {
     HudSettings,
     Line,
     MachineDetail,
+    RecipeEntry,
     MachineStatus,
     MachineView,
     MilestoneView,
@@ -171,6 +172,43 @@ function recipeChoicesOf(world: World, cat: Catalog, type: string): MachineDetai
         .map((id) => cat.tree.recipes.find((x) => x.id === id)!)
         .filter((r) => r.machine === type)
         .map((r) => ({ id: r.id, name: nameOf(cat, r.output.item), alternate: !!r.alternate, inputs: lines(r.inputs), outputs: lines([r.output]), seconds: r.craftSeconds }));
+}
+
+// Why a recipe is shut, in one line for the picker. Hub requests come first (they open recipes directly), then research.
+function lockReasonOf(world: World, cat: Catalog, recipeId: string): string | undefined {
+    const req = (cat.tree.requests ?? []).find((q) => !requestDone(world, q.id) && q.unlocks.recipes.includes(recipeId));
+    if (req) return `Hub request: ${req.name}`;
+    const node = cat.tree.research.find((n) => n.recipes.includes(recipeId) && !world.progress.researched.includes(n.id));
+    if (!node) return "Not yet available";
+    const missing = node.requires.map((id) => cat.tree.research.find((n) => n.id === id)).find((n) => n && !world.progress.researched.includes(n.id));
+    if (missing) return `Needs ${missing.name} first`;
+    return `Research: ${node.name}, ${node.cost} blueprints`;
+}
+
+// Every recipe a crafter of this type can run, open ones first, with its rate at this building's speed and the research bonus.
+function recipeLibraryOf(world: World, cat: Catalog, b: Building): RecipeEntry[] {
+    const r = resolve(cat, b.type);
+    const speed = r?.speed ?? 1;
+    const craftBonus = world.progress.bonus.craft ?? 1;
+    const open = new Set(unlockedRecipes(world, cat));
+    return cat.tree.recipes
+        .filter((x) => x.machine === b.type)
+        .map((x) => {
+            const isOpen = open.has(x.id);
+            const state: RecipeEntry["state"] = b.recipe === x.id ? "selected" : isOpen ? "open" : "locked";
+            return {
+                id: x.id,
+                name: nameOf(cat, x.output.item),
+                alternate: !!x.alternate,
+                inputs: lines(x.inputs),
+                outputs: lines([x.output]),
+                seconds: x.craftSeconds,
+                perMin: (x.output.qty * 60 * speed * craftBonus) / x.craftSeconds,
+                state,
+                lockReason: isOpen ? undefined : lockReasonOf(world, cat, x.id),
+            };
+        })
+        .sort((a, b2) => (a.state === "locked" ? 1 : 0) - (b2.state === "locked" ? 1 : 0) || Number(a.alternate) - Number(b2.alternate));
 }
 
 // A plain reason for a blocked or idle machine. Null when it is running.
@@ -343,6 +381,7 @@ export function hudData(world: World, cat: Catalog = DEFAULT_CATALOG, selectedId
                 reason: reasonOf(world, cat, b, f.status, rec),
                 mines: minesOf(cat, b.type, b.x, b.z, world),
                 recipeChoices: rec ? undefined : recipeChoicesOf(world, cat, b.type),
+                recipeLibrary: resolve(cat, b.type)?.kind === "crafter" ? recipeLibraryOf(world, cat, b) : undefined,
                 buffers: [...bufferIds].map((k) => ({
                     resourceId: k,
                     have: Math.floor((b.input[k] ?? 0) + (b.output[k] ?? 0)),

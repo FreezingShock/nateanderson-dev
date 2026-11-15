@@ -49,7 +49,8 @@ import { BuildPopover, TrashButton } from "./build-popover";
 import { NextMarker, type NextTarget } from "./next-marker";
 import { HoverName } from "./hover-name";
 import { TipLayer } from "@/components/brasswork-ui/tip";
-import { kindTip } from "@/lib/automation/tips";
+import { kindTip, withRecipe } from "@/lib/automation/tips";
+import { recipeTagAt } from "@/lib/automation/sim/recipe-tag";
 import { BuildingBadge } from "./building-badge";
 import { attachUiSounds, playSound, setAmbient, setEnabled as setSoundOn, startAudio } from "@/lib/automation/audio";
 import { LightingRow, SaveRows } from "./settings-extras";
@@ -170,7 +171,8 @@ export function BrassworkHost() {
     const [pop, setPop] = useState<{ anchor: { x: number; z: number }; kind: string; kindLabel: string; x: number; y: number } | null>(null);
     const [inputCtl, setInputCtl] = useState<InputController | null>(null);
     const nameOfKind = useCallback((kind: string) => resolve(CAT, kind)?.name ?? kind, []);
-    const tipOfKind = useCallback((kind: string) => kindTip(CAT, kind), []);
+    // The hover tag for a placed building: its kind tag, plus the recipe it is set to (read from the cell under the pointer).
+    const tipOfKind = useCallback((kind: string) => withRecipe(kindTip(CAT, kind), ctl.current?.recipeAtHover() ?? null), []);
     const [nextTarget, setNextTarget] = useState<NextTarget | null>(null);
     const [away, setAway] = useState<AwayReport | null>(null);
     const [mood, setMood] = useState<Mood>("Auto");
@@ -198,6 +200,7 @@ export function BrassworkHost() {
         if (g) ctl.current?.group(DOCK_ORDER.indexOf(g));
     }, []);
     const ctl = useRef<{
+        recipeAtHover: () => string | null;
         setTool: (id: string | null) => void;
         group: (index: number) => void;
         select: (id: string | null) => void;
@@ -637,6 +640,10 @@ export function BrassworkHost() {
                     refresh();
                 },
                 group: (index) => input.controller.setGroup(index),
+                recipeAtHover: () => {
+                    const h = input.controller.build.getHover();
+                    return h ? recipeTagAt(world, h.x + W / 2, h.z + D / 2, CAT) : null;
+                },
                 setTool: (id) => {
                     input.controller.setToolById(id);
                     setNote("");

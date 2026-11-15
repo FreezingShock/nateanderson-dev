@@ -219,3 +219,9 @@ export const CONTROL_TIPS: Record<string, TipData> = {
   cancel: { title: "Cancel", tag: "Tool", text: "Put down whatever you are holding.", key: "Esc" },
   next: { title: "Next step", tag: "Objective", text: "Do the step shown here to move the workshop on." },
 };
+
+/** Adds one "Recipe" row to a placed building's tag, at the top. A null line leaves the tag as it is. */
+export function withRecipe(tip: TipData | null, line: string | null): TipData | null {
+  if (!tip || !line) return tip;
+  return { ...tip, rows: [{ k: "Recipe", v: line }, ...(tip.rows ?? [])] };
+}
