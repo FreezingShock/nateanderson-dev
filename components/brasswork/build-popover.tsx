@@ -116,13 +116,38 @@ export function BuildPopover({ input, anchor, kind, kindLabel, x, y, lineKinds, 
 }
 
 // A visible trash can for the delete tool. Desktop had only the X key and Delete, which nobody found.
-export function TrashButton({ input }: { input: InputController }) {
+export function TrashButton({ input, variant = "float" }: { input: InputController; variant?: "float" | "dock" }) {
     const build = input.build;
     const active = useSyncExternalStore(
         (cb) => build.subscribe(cb),
         () => build.getTool()?.id === "delete",
         () => false,
     );
+    const onClick = () => input.setToolById(active ? null : "delete");
+    if (variant === "dock") {
+        // The left dock's foot: the same tool, drawn as a trash can with its label and the X key hint.
+        return (
+            <button
+                type="button"
+                className="ab-dock-btn ab-dock-trash"
+                aria-pressed={active}
+                data-armed={active}
+                aria-label="Remove tool: click buildings or belts to delete them (X)"
+                title="Remove (X)"
+                onClick={onClick}
+            >
+                <svg className="ab-dock-ico" viewBox="0 0 16 16" width="24" height="24" aria-hidden="true" shapeRendering="crispEdges">
+                    {/* Pixel trash can: lid, handle, body with two slots. Brass on dark, so it reads on the dock. */}
+                    <rect x="2" y="3" width="12" height="1.5" fill="#ffd98a" />
+                    <rect x="6" y="1" width="4" height="2" fill="#ffd98a" />
+                    <rect x="3.5" y="5" width="9" height="10" fill="#b8862f" />
+                    <rect x="6" y="7" width="1" height="6" fill="#20170c" />
+                    <rect x="9" y="7" width="1" height="6" fill="#20170c" />
+                </svg>
+                <span className="ab-dock-label">Remove</span>
+            </button>
+        );
+    }
     return (
         <button
             type="button"
@@ -130,7 +155,7 @@ export function TrashButton({ input }: { input: InputController }) {
             aria-pressed={active}
             aria-label="Remove tool: click buildings or belts to delete them"
             title="Remove (X)"
-            onClick={() => input.setToolById(active ? null : "delete")}
+            onClick={onClick}
         >
             Remove
         </button>

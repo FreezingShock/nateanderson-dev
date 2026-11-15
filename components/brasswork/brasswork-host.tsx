@@ -573,11 +573,14 @@ export function BrassworkHost() {
                 refresh();
             };
             const onKeySync = () => window.setTimeout(syncFromInput, 0);
+            // Clicks on the dock's Remove button arm the tool too, so the pointer counts as well as the keys.
             window.addEventListener("keydown", onKeySync);
+            window.addEventListener("pointerup", onKeySync);
             cleanup = () => {
                 cancelAnimationFrame(raf);
                 window.removeEventListener("bw:save", save);
                 window.removeEventListener("keydown", onKeySync);
+                window.removeEventListener("pointerup", onKeySync);
                 save();
                 input.destroy();
                 window.removeEventListener("resize", onResize);
@@ -610,15 +613,10 @@ export function BrassworkHost() {
 
     return (
         <div className="bw-root">
-            <AutomationHud data={data} actions={{ onBuild, onSelect, onResearch, onSetRecipe, onPrestige, onSettings }} settingsSlots={{ display: <LightingRow mood={mood} onMood={onMood} />, save: <SaveRows /> }}>
+            <AutomationHud data={data} actions={{ onBuild, onSelect, onResearch, onSetRecipe, onPrestige, onSettings }} settingsSlots={{ display: <LightingRow mood={mood} onMood={onMood} />, save: <SaveRows /> }} removeSlot={inputCtl ? <TrashButton input={inputCtl} variant="dock" /> : undefined}>
                 <canvas ref={canvasRef} className="bw-canvas" />
                 <BrassworkExtras snapshot={snapshot} away={away} mood={mood} onMood={onMood} />
                 <FirstRunGuide data={data} />
-                {inputCtl && (
-                    <div className="bt-dock">
-                        <TrashButton input={inputCtl} />
-                    </div>
-                )}
                 {inputCtl && pop && (
                     <BuildPopover
                         input={inputCtl}

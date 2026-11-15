@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import "@/components/brasswork-ui/brass-kit.css";
 import "@/components/brasswork-ui/scrollbar.css";
 import "./automation-hud.css";
@@ -24,6 +24,40 @@ import { uiIconStyle } from "@/lib/automation/icons/ui";
 /** A 24px HUD glyph. Decorative: the text beside it carries the name. */
 const Ico = ({ id }: { id: string }) => <span className="ab-ico" style={uiIconStyle(id, 24)} aria-hidden="true" />;
 
+/** Pixel glyphs for the build dock, drawn in brass. Each group has its own shape; colour follows the button. */
+const DOCK_GLYPH: Record<GroupId, ReactNode> = {
+  machines: (
+    <>
+      <rect x="6.5" y="0.5" width="3" height="3" />
+      <rect x="6.5" y="12.5" width="3" height="3" />
+      <rect x="0.5" y="6.5" width="3" height="3" />
+      <rect x="12.5" y="6.5" width="3" height="3" />
+      <rect x="2.5" y="2.5" width="2" height="2" />
+      <rect x="11.5" y="2.5" width="2" height="2" />
+      <rect x="2.5" y="11.5" width="2" height="2" />
+      <rect x="11.5" y="11.5" width="2" height="2" />
+      <rect x="3.5" y="3.5" width="9" height="9" />
+      <rect x="6" y="6" width="4" height="4" fill="#20170c" />
+    </>
+  ),
+  logistics: (
+    <>
+      <rect x="1" y="5" width="14" height="6" fill="none" stroke="currentColor" strokeWidth="2" />
+      <rect x="2" y="4" width="2" height="2" />
+      <rect x="12" y="4" width="2" height="2" />
+      <rect x="2" y="10" width="2" height="2" />
+      <rect x="12" y="10" width="2" height="2" />
+      <path d="M6 6 L10 8 L6 10 Z" />
+    </>
+  ),
+  power: <path d="M9.5 0.5 L3 9 L7.5 9 L6 15.5 L13 6.5 L8.5 6.5 L10.5 0.5 Z" />,
+};
+const DockGlyph = ({ group }: { group: GroupId }) => (
+  <svg className="ab-dock-glyph" viewBox="0 0 16 16" width="26" height="26" aria-hidden="true" shapeRendering="crispEdges" fill="currentColor">
+    {DOCK_GLYPH[group]}
+  </svg>
+);
+
 type Drawer = "expedition" | "stats" | "settings";
 type Screen = "research" | "prestige" | "expedition";
 
@@ -46,12 +80,15 @@ export function AutomationHud({
   actions,
   children,
   settingsSlots,
+  removeSlot,
 }: {
   data: HudData;
   actions: HudActions;
   children?: ReactNode;
   /** Extra Settings rows supplied by the host (lighting, save and leave). */
   settingsSlots?: SettingsSlots;
+  /** Desktop dock foot: the Remove tool button, shown at the bottom of the left dock. */
+  removeSlot?: ReactNode;
 }) {
   const [drawer, setDrawer] = useState<Drawer | null>(null);
   const [screen, setScreen] = useState<Screen | null>(null);
@@ -63,6 +100,26 @@ export function AutomationHud({
   const [more, setMore] = useState(false);
   // Desktop: one build group flyout from the left dock, and the Milestones window from the right dock.
   const [palGroup, setPalGroup] = useState<GroupId | null>(null);
+  // The section that is closing. It plays its exit while the newly chosen section plays its entrance.
+  const [palLeaving, setPalLeaving] = useState<GroupId | null>(null);
+  const leaveTimer = useRef<number | null>(null);
+  useEffect(() => () => { if (leaveTimer.current !== null) window.clearTimeout(leaveTimer.current); }, []);
+  const leavePal = (from: GroupId) => {
+    setPalLeaving(from);
+    if (leaveTimer.current !== null) window.clearTimeout(leaveTimer.current);
+    leaveTimer.current = window.setTimeout(() => { setPalLeaving(null); leaveTimer.current = null; }, 170);
+  };
+  // One section at a time: choosing another section closes the open one with its exit animation.
+  const choosePal = (g: GroupId) => {
+    if (palGroup === g) { leavePal(g); setPalGroup(null); return; }
+    if (palGroup) leavePal(palGroup);
+    setPalGroup(g);
+  };
+  const closePal = () => {
+    if (!palGroup) return;
+    leavePal(palGroup);
+    setPalGroup(null);
+  };
   const [milestonesOpen, setMilestonesOpen] = useState(false);
   const mode = data.settings.numberFormat;
 
@@ -73,10 +130,12 @@ export function AutomationHud({
       // Screens and windows (drawers included) handle Escape themselves, so their exit animation can play.
       // Only the build flyout is closed here.
       if (screen || drawer) return;
-      setPalGroup(null);
+      closePal();
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
+    // closePal reads the current section; re-subscribe whenever it changes.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [drawer, screen, palGroup]);
 
   const toggle = (d: Drawer) => {
@@ -154,17 +213,23 @@ export function AutomationHud({
                 aria-pressed={palGroup === g}
                 aria-label={`${GROUP_TITLE[g]}, ${open} open`}
                 data-armed={armedHere}
-                onClick={() => setPalGroup((c) => (c === g ? null : g))}
+                onClick={() => choosePal(g)}
               >
-                <Ico id={GROUP_ICON[g]} />
+                <DockGlyph group={g} />
                 <span className="ab-dock-label">{GROUP_TITLE[g]}</span>
               </button>
             );
           })}
-          {data.armed && <span className="ab-dock-rot" aria-label={`Rotation ${data.rotation ?? 0} degrees`}>Rot {data.rotation ?? 0}°</span>}
+          {data.armed && (
+            <span className="ab-dock-rot" aria-label={`Turn ${data.rotation ?? 0} degrees, press R to turn`}>
+              <span className="ab-dock-rot-k">Turn · R</span>
+              <span className="ab-dock-rot-v">{data.rotation ?? 0}°</span>
+            </span>
+          )}
+          {removeSlot && <div className="ab-dock-foot">{removeSlot}</div>}
         </nav>
 
-        <aside className="ab-pal" aria-label="Machines">
+        <aside className="ab-pal" key={palGroup ?? "none"} aria-label="Machines">
           {/* The group panels below carry the visible titles and counts; this heading is for screen readers only. */}
           <h2 className="ab-sr-only">Machines</h2>
           <BuildList
@@ -178,11 +243,25 @@ export function AutomationHud({
               // Arming a tool closes the palette so the player can place straight away (phone: the sheet; desktop: the flyout).
               const arming = data.armed !== id;
               actions.onBuild(id);
-              if (arming) { setSheet(null); setPalGroup(null); }
+              if (arming) { setSheet(null); closePal(); }
             }}
             onSelect={actions.onSelect}
           />
         </aside>
+        {/* Desktop only: the section that just closed plays its exit. It is inert, so it takes no input. */}
+        {palLeaving && (
+          <aside className="ab-pal ab-pal-leaving" aria-hidden="true" inert>
+            <BuildList
+              machines={data.machines}
+              resources={data.resources}
+              selectedId={null}
+              group={palLeaving}
+              numberFormat={mode}
+              onBuild={() => {}}
+              onSelect={() => {}}
+            />
+          </aside>
+        )}
 
         <div className="ab-center">
           <div className="ab-stage">{children}</div>
