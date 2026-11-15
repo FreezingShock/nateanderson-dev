@@ -5,9 +5,6 @@ const nextConfig: NextConfig = {
     // info-disclosure hardening, doesn't change behavior.
     poweredByHeader: false,
 
-    // Smaller client bundles: only the icons actually used get shipped.
-    experimental: { optimizePackageImports: ["lucide-react"] },
-
     async headers() {
         return [
             {

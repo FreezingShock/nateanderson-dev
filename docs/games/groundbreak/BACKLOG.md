@@ -37,7 +37,7 @@ Last audited 2026-11-15, `integration` at 5138bb6f.
 - The dock tiles already have `data-tip` names. Touch has no hover.
 - Done when: a tap on a tile on a phone shows the name and rate without buying anything, and every HUD button (rail, zoom, cue, job card) has a name in a tooltip on desktop and an `aria-label`.
 
-### 8. Delete the first prototype
+### 8. Delete the first prototype (done, code audit PR)
 - `components/groundbreak/engine.ts`, `commands.ts`, `scene.tsx` are not imported anywhere (see FEATURES.md "Dead code"). `scene-types.ts` stays.
 - Done when: the three files are gone, typecheck and the build pass, and `rg "groundbreak/engine"` finds nothing.
 

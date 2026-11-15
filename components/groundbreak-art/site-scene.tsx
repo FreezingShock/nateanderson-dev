@@ -1,5 +1,5 @@
 // Groundbreak site scene built from the drawn art, for the page's scene slot (UI-SCENE-SLOT.md). Same props as
-// components/groundbreak/scene.tsx: the page owns input and camera; this only draws.
+// the built-in scene in components/groundbreak: the page owns input and camera; this only draws.
 "use client";
 
 import { useEffect, useRef, useState } from "react";
