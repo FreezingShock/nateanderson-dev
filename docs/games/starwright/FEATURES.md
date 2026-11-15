@@ -52,13 +52,14 @@ Test commands: `npm run test:nodefarm` (a PR check; includes `tests/starwright/*
 | Planets stripped by a neutron star break into eight tumbling rock chunks that glow gold to ash over 1.7 s, drawn above the blast (`fx/planet-gone`, 96 px x 24 frames; `art.ts` after the blast) | working headless | `scripts/starwright/art/scenery.py` `fx_planet_gone`, `art.ts` | `scripts/starwright/ui-art/planet-break.mjs` (records the canvas) |
 | Sheet generators | working | `scripts/starwright/art/*` (`build.py`; bump `VERSION`) | none |
 | Lazy sprite loading (first needed, then two at a time) | working | `sprites.ts` | none |
-| Synthesized sound, off switch `sw-sound-v1` | untested (never heard) | `lib/starwright/sound.ts` | none |
+| Synthesized sound (33 sounds, no files): buy tiers I/II/III climb a pentatonic scale by row, ignitions are chords that rise with the element, each constellation lights in its own voice, menus open/close/switch/flip with their own cues, supernova/neutron/black hole differ. Off switch `sw-sound-v1`, volume Low/Medium/High `sw-volume-v1` (Menu > Settings) | working headless (rendered offline, none silent or clipping); **never heard by a person** | `lib/starwright/sound.ts` | `scripts/starwright/audio-render.mjs <dir>` writes a WAV per sound; `ui-art/motion-check.mjs` checks sounds are requested and muted ones are not |
 
 ## GUI
 | Feature | State | Code | Test |
 |---|---|---|---|
 | Layout: dock, fusion ladder, collapse panel floating over the star; phones pin the star on top; held sideways the star sits left and panels scroll right (checked headless at 844x390 and 667x375, no real phone) | partial: no real phone check | `starwright.tsx`, `app/camino/starwright.css` | none |
-| Menus with their own open/close animations (iris, shutter, wipe, settle), `useLeaving` | working | `panels.tsx`, `sw-ui.tsx` | none |
+| Motion language (curves `--sw-out`/`--sw-in`, block at the end of `starwright.css`): menus grow out of the pressed dock tile, then scan line, heading rule and tiles deal in; going from one menu to another plays the old exit first (`useLeaving`); page flips slide the way you flip; star map irises out of the dock tile, zoom is eased; buys press in and the row flashes | working headless | `panels.tsx`, `sw-ui.tsx`, `star-chart.tsx`, `starwright.css` | `scripts/starwright/ui-art/motion-check.mjs` |
+| No scrollbars, no overflow in any menu: Orbit, Almanac and Menu are measured and cut into pages (flip bar, arrow keys, swipe) when they do not fit; the star map shows one constellation per page on a phone | working headless at 1440, 1024, 768, 390, 360, 844x390, 667x375 | `components/starwright/paged.tsx` | `scripts/starwright/ui-art/overflow-check.mjs` (exits 1 on any scroll, clip or poke-out) |
 | Star map: per-star medallions, designations, zoom card, deep-star panel | working | `star-chart.tsx` | none |
 | Event card (comet, flare, gas cloud, companion) and Welcome back card share one framed style: animated visitor art, icon per answer with key badge (Q/W), countdown that turns amber under 20 s; Welcome back lists gained elements as icon chips (hover or tap shows the Almanac line), a collapse bar and a Dismiss button | working | `panels.tsx` (`Visitor`), `settings.tsx` (`AwayCard`), `app/camino/starwright-ev.css`, `AwayReport.gains` in `session.ts` | `scripts/starwright/ui-art/cards-shots.mjs`; shots in `/mnt/project-files/portfolio/starwright/cards-*` |
 | Birth clouds change the sky: each of the six washes the scene in its own dithered colour and motion (dense blue low haze, hot embers, metal-rich gold dust, thin pale wisps, dusty purple lanes, restless green bands); the pick crossfades over 2.6 s, a collapse fades it out, and pointing at a card in the picker previews its sky | working | `lib/starwright/art.ts` (`CLOUD_LOOK`, `drawCloudSky`), `SceneFrame.cloud`, `starwright.tsx` (`cloudRef`, `previewRef`), `CloudPick` in `panels.tsx` | `scripts/starwright/ui-art/cloud-sky-shots.mjs`; shots `cloud-*.png`, `picker-*.png` |
@@ -69,7 +70,7 @@ Test commands: `npm run test:nodefarm` (a PR check; includes `tests/starwright/*
 | Game shell (full screen, pause on hidden tab, save export/import) | working | `lib/games/*`, `app/creations/games/starwright/*` | `scripts/games/shell-check.mjs` |
 
 ## Not tested anywhere
-Safari/WebKit, real phones, audio, auto actions while the tab is hidden, the one-tab rule, hotkeys F U P A M W.
+Safari/WebKit, real phones, audio (heard by nobody yet), auto actions while the tab is hidden, the one-tab rule, hotkeys F U P A M W.
 
 ## Who owns which files
 One owner per file; merge `integration` before every push. Historic split is in `/mnt/project-files/portfolio/starwright/OWNERS.md`; the owner threads below are the 2026-11-15 wave and are named by thread title.

@@ -10,6 +10,7 @@ import { iconStyle } from "@/lib/automation/icons";
 import { firstRunSteps, readFirstRunDone, writeFirstRunDone, type FirstRunStep } from "@/lib/brasswork/first-run";
 import { openHubMenu } from "@/components/automation/hub-menu";
 import "./quest-scroll.css";
+import { tipAttr } from "@/components/brasswork-ui/tip";
 
 export type QuestState = {
     steps: FirstRunStep[];
@@ -102,11 +103,12 @@ export function QuestScroll({ quest, closing, onClose }: { quest: QuestState; cl
                 </ol>
 
                 <footer className="ab-quest-actions">
-                    <button type="button" className="ab-quest-btn ab-quest-btn-quiet" onClick={onFinish}>Skip quest</button>
+                    <button type="button" className="ab-quest-btn ab-quest-btn-quiet" {...tipAttr({ title: "Skip quest", tag: "Scroll", text: "Put the starter steps away for good. Everything else still works the same." })} onClick={onFinish}>Skip quest</button>
                     {step.id === "delivery" && current >= 0 && (
                         <button
                             type="button"
                             className="ab-quest-btn"
+                            {...tipAttr({ title: "Open hub", tag: "Scroll", text: "The hub is where delivered items go. Its requests unlock the next machines." })}
                             onClick={() => { onClose(); openHubMenu(); }}
                         >
                             Open hub

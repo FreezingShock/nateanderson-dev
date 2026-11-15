@@ -83,31 +83,7 @@
   100% { transform: translateY(-1px) rotate(0) scale(1.06); }
 }
 
-/* Hover name: a small brass-edged tag above the icon. Only icons that carry a name get one. */
-.bwi[data-name]::before {
-  content: attr(data-name);
-  position: absolute;
-  left: 50%;
-  bottom: calc(100% + 6px);
-  z-index: 40;
-  padding: 4px 8px;
-  white-space: nowrap;
-  pointer-events: none;
-  font: 600 12px/1.2 var(--font-sans, system-ui), sans-serif;
-  letter-spacing: 0.02em;
-  color: #fff2c8;
-  background: #1e1206;
-  border: 1px solid #b07a28;
-  box-shadow: 0 2px 0 #0a0603, inset 0 1px 0 rgba(246, 214, 136, 0.18);
-  opacity: 0;
-  transform: translate(-50%, 4px);
-  transition: opacity 0.14s ease, transform 0.14s ease;
-}
-.bwi[data-name]:hover::before,
-:is(button, a, [role="button"], li, label):is(:hover, :focus-visible) .bwi[data-name]::before {
-  opacity: 1;
-  transform: translate(-50%, 0);
-}
+/* Name tags are drawn by the shared Brasswork tooltip layer (components/brasswork-ui/tip.tsx). */
 
 @media (prefers-reduced-motion: reduce) {
   .bwi, .bwi::after, .bwi::before { animation: none !important; transition: none !important; }

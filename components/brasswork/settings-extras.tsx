@@ -7,6 +7,7 @@ import { ArtGauge } from "@/components/brasswork-art";
 import { Choice, Row } from "@/components/automation/settings-window";
 import { deserialize } from "@/lib/automation/sim/save";
 import { MOODS, type Mood } from "./extras";
+import { tipAttr } from "@/components/brasswork-ui/tip";
 
 const SAVE_KEY = "brasswork-save-v1";
 
@@ -63,8 +64,8 @@ export function SaveRows() {
         <>
             <Row icon="blueprints" label="Save file" hint="Back up to a file, or load one (replaces this workshop).">
                 <span className="bws-actions">
-                    <button type="button" className="bws-action" onClick={exportSave}>Export</button>
-                    <button type="button" className="bws-action" onClick={() => file.current?.click()}>Import</button>
+                    <button type="button" className="bws-action" {...tipAttr({ title: "Export save", tag: "Save file", text: "Download this workshop as a file you can keep or move to another browser." })} onClick={exportSave}>Export</button>
+                    <button type="button" className="bws-action" {...tipAttr({ title: "Import save", tag: "Save file", text: "Load a save file. It replaces the workshop in this browser." })} onClick={() => file.current?.click()}>Import</button>
                     <input ref={file} type="file" accept="application/json,.json" hidden onChange={(e) => { void importSave(e.target.files?.[0]); e.target.value = ""; }} />
                 </span>
                 {msg && <span className="bws-msg" data-bad={msg.bad ? "true" : undefined} role="status" style={{ gridColumn: "1 / -1" }}>{msg.text}</span>}
