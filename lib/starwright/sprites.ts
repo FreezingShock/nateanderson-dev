@@ -74,13 +74,14 @@ function pump() {
     }
 }
 
+import { fetchManifest } from "./manifest";
+
 /** Start loading the manifest. Sheets load when the scene first asks for them, and the rest follow in the background. Safe to call more than once. */
 export function initSprites(): void {
     if (started || typeof window === "undefined") return;
     started = true;
-    fetch("/starwright/manifest.json", { cache: "force-cache" })
-        .then((r) => (r.ok ? r.json() : Promise.reject(new Error("no manifest"))))
-        .then((m: { v?: number | string; sheets?: Record<string, Entry> }) => {
+    fetchManifest()
+        .then((m0) => { const m = m0 as { v?: number | string; sheets?: Record<string, Entry> };
             entries = m.sheets ?? {};
             version = String(m.v ?? "");
             queue = Object.keys(entries)
