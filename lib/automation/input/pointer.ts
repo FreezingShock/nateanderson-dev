@@ -47,6 +47,8 @@ export class PointerInput {
     private spaceDown = false;
     private pinchPrev: { dist: number; angle: number } | null = null;
     private attached = false;
+    // Touch: the cell a machine's first tap previewed, waiting for a second tap to place it.
+    private preview: { tool: string; x: number; z: number } | null = null;
 
     constructor(options: PointerOptions) {
         this.opts = { holdMs: 350, slopPx: 10, ...options };
@@ -214,6 +216,9 @@ export class PointerInput {
         }
         if (!tool) return;
         if (!tool.line) {
+            // Turning also moves the preview to the held cell, so the turned ghost is where the finger is.
+            this.preview = { tool: tool.id, x: cell.x, z: cell.z };
+            build.setHover(cell);
             build.rotateCw();
             p.mode = "ignored";
             this.changed();
@@ -293,7 +298,19 @@ export class PointerInput {
                 if (onBody && this.opts.build.peek(onBody)) cell = onBody;
             }
             if (cell) {
-                if (this.opts.build.getTool()) this.opts.build.tap(cell);
+                if (tl && !tl.line) {
+                    // A machine on touch: the first tap shows where it would go, tapping the same cell again places it.
+                    // Tapping elsewhere moves the preview. Hold still turns it.
+                    const pv = this.preview;
+                    if (pv && pv.tool === tl.id && pv.x === cell.x && pv.z === cell.z) {
+                        this.preview = null;
+                        this.opts.build.tap(cell);
+                        this.opts.build.setHover(null);
+                    } else {
+                        this.preview = { tool: tl.id, x: cell.x, z: cell.z };
+                        this.opts.build.setHover(cell);
+                    }
+                } else if (tl) this.opts.build.tap(cell);
                 else this.opts.build.select(cell);
             }
         } else if (p.mode === "orbit" && e.type === "pointerup" && p.button === 2 && Math.hypot(e.clientX - p.sx, e.clientY - p.sy) <= this.opts.slopPx) {
