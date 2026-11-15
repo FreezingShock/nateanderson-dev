@@ -67,3 +67,27 @@ export function AwayCard({ title, lines, onClose }: { title: string; lines: stri
         </button>
     );
 }
+
+const HINT_KEY = "sw-hint-v1";
+
+/** On a phone the star is pinned on top and the ladder sits below the fold. Shows a small cue once, until the player scrolls. */
+export function ScrollHint() {
+    const [on, setOn] = useState(false);
+    useEffect(() => {
+        const root = document.querySelector<HTMLElement>(".sw-root");
+        let seen = false;
+        try { seen = !!window.localStorage.getItem(HINT_KEY); } catch { /* private mode */ }
+        if (!root || seen || !window.matchMedia("(max-width: 900px) and (pointer: coarse)").matches) return;
+        const done = () => {
+            setOn(false);
+            try { window.localStorage.setItem(HINT_KEY, "1"); } catch { /* private mode */ }
+            root.removeEventListener("scroll", done);
+        };
+        const show = window.setTimeout(() => setOn(true), 2500);
+        const hide = window.setTimeout(done, 12000);
+        root.addEventListener("scroll", done, { passive: true });
+        return () => { window.clearTimeout(show); window.clearTimeout(hide); root.removeEventListener("scroll", done); };
+    }, []);
+    if (!on) return null;
+    return <div className="sw-hint2" aria-hidden="true">Scroll for the ladder<i /></div>;
+}

@@ -21,7 +21,7 @@ import {
 } from "@/lib/starwright/engine";
 import { uiVars } from "@/lib/starwright/ui-art";
 import { Almanac, CloudPick, Ending, Menu, Orbit, StarChart, Visitor, tools } from "./panels";
-import { AwayCard } from "./settings";
+import { AwayCard, ScrollHint } from "./settings";
 import { ElTile, Gl, Pic, useLeaving, useSheets, useTips } from "./sw-ui";
 
 type Panel = null | "stars" | "pulsar" | "orbit" | "almanac" | "menu";
@@ -494,6 +494,7 @@ export function Starwright() {
 
             {s.event && <Visitor s={s} onAnswer={doAnswer} />}
             {s.offer.length > 0 && <CloudPick s={s} onPick={doCloud} />}
+            <ScrollHint />
             {card && <AwayCard title={card.title} lines={card.lines} onClose={() => setCard(null)} />}
             {other && (
                 <div className="sw-lock sw-panel" role="alert">
