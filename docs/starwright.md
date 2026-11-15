@@ -34,6 +34,15 @@ An idle game about a star, at `/creations/games/starwright`. Original theme, art
 ## The next-step line
 `guide(s, f)` in the engine is the one line under the star: next unopened row, then the burner nearest iron that can be bought, then "Iron X of Y, about N min to the collapse" from the real iron flow (`collapseEta`). Before this it said "Gold and uranium wait for a neutron star" for the whole middle of a star.
 
+## Saves, time away, settings (quality of life)
+- `lib/starwright/session.ts`: `loadSession` never drops a save that will not parse (the text is kept under `sw-save-v1-corrupt`, the rolling `sw-save-v1-backup` is tried, the player is told). Backups are written before a neutron star or black hole, before an import or reset, and every 10 minutes (never over a backup with more play). `advance(s, gap)` credits every gap: up to 2 s is one step, longer is caught up like time away (before, gaps of 1 to 3 s were lost). `awayReport` builds the welcome-back lines (kept under `sw-away-v1` for `sw away`).
+- `lib/starwright/settings.ts`: `sw-settings-v1` (scene full/simple, notices, welcome card, auto supernova, auto visitors). The two automations are opt-in and unlock with existing milestones: Ten stars (auto supernova at 100/150/200/300% of the collapse) and twelve visitors (take the lump or the boost). They only act while the game is open and the tab is visible.
+- One tab plays at a time (`BroadcastChannel` `sw-tab`): a newer tab tells older ones to stop saving; "Play here" swaps back.
+- Keys: 1 to 9 buy, N supernova, Q/W answer a visitor, Space pause, F full screen, U sound, C P O A M panels, Esc.
+- Console: `sw save`, `sw backup`, `sw restore [now]`, `sw corrupt`, `sw away`, `sw settings`, `sw set <name> <value>`, `sw keys`, `sw admin give|dust|neutrons|time` (a testing tool).
+- Sprites (`sprites.ts`) load a sheet when the scene first asks for it; the rest trickle in two at a time after 1.5 s instead of ~100 requests at boot.
+- UI: `components/starwright/settings.tsx` (Settings block in the Menu, welcome/problem card), `app/camino/starwright-qol.css`. Tests: `tests/starwright/session.test.mjs`.
+
 ## Tests
 `tests/starwright/engine.test.mjs` runs in `npm run test:nodefarm` (saves, prestige resets, perk rules, no NaN over 24 h, console).
 

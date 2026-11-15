@@ -6,8 +6,8 @@ import { DEFAULT_CATALOG, STARTER_KIT } from "./data";
 import { checkMilestones, checkRequests, unlockedRecipes } from "./progress";
 
 export const DRILL = "drill"; // the tree machine that sits on a resource node
-export const SPRING = "spring_winder"; // the battery generator
-export const BATTERIES = ["spring_winder", "spring_store"]; // wound springs: store wind surplus, release it in calm air
+export const SPRING = "spring_winder"; // the steady generator: its output ignores the wind
+export const BATTERIES = ["spring_store"]; // a wound spring: charges in gusts, releases in calm air
 export const HUB = "hub";
 
 export type Kind = "hub" | "dock" | "belt" | "generator" | "miner" | "crafter" | "storage" | LogisticsKind;
@@ -603,14 +603,14 @@ function updatePower(world: World, cat: Catalog, defs: Map<number, Resolved>, dt
             if (BATTERIES.includes(r.id)) {
                 const cap = capacityOf(r, cat);
                 if (world.wind > 0.5) {
-                    b.charge = Math.min(cap, b.charge + r.supply * (world.wind - 0.5) * 2 * dt);
+                    b.charge = Math.min(cap, b.charge + r.supply * (world.wind - 0.5) * 4 * dt);
                     out = 0;
                 } else {
                     out = Math.min(r.supply * world.progress.bonus.power, b.charge / dt);
                     b.charge = Math.max(0, b.charge - out * dt);
                 }
             } else {
-                out = r.supply * Math.min(1, 2 * world.wind) * world.progress.bonus.power;
+                out = r.supply * (r.id === SPRING ? 1 : Math.min(1, 2 * world.wind)) * world.progress.bonus.power;
             }
             gens.push({ id, cx, cz, range: r.range, out });
             supply += out;

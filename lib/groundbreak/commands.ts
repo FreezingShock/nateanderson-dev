@@ -1,6 +1,7 @@
 // The `gb` console commands. Pure: they act on a State and return printed lines. The console (components/cm/console.tsx) runs
 // them against the open game's live state, or against the saved game when the game is not open (same pattern as `sw`).
 import { CITIES, JOB_BY, cityOf, MATS, PERKS, TIERS, TIER_LABELS, TUNE } from "./data";
+import { GB_QOL_SUBS, qolCommand } from "./commands-qol";
 import {
     acceptChange, buy, buyPerk, canIncorporate, charterGain, declineChange, effects, fmt, fmtAge, fmtCash, incorporate, inspectScore, jobFloors,
     jobMat, jobPhaseName, jobProgress, matName, overtime, overtimeCost, perkReady, queue, stageOf, tierCost, unlock, canUnlock, waitingFor, type State,
@@ -11,7 +12,7 @@ export interface GbResult { lines: GbLine[]; changed: boolean }
 
 export const GB_SAVE_KEY = "gb-save-v1";
 export const GB_PATH = "/creations/games/groundbreak";
-export const GB_SUBS = ["stats", "hire", "unlock", "jobs", "change", "overtime", "perks", "incorporate", "skyline", "open"];
+export const GB_SUBS = ["stats", "hire", "unlock", "jobs", "change", "overtime", "perks", "incorporate", "skyline", "open", ...GB_QOL_SUBS];
 
 const l = (t: string, k?: GbLine["k"]): GbLine => ({ t, k });
 const matIndex = (q: string) => !q ? -1 : MATS.findIndex((m) => m.id === q || m.sym.toLowerCase() === q || m.name.toLowerCase() === q || m.name.toLowerCase().startsWith(q));
@@ -54,6 +55,7 @@ export function gbCommand(s: State, args: string[]): GbResult {
     if (sub === "change") {
         const pick = (args[1] ?? "").toLowerCase();
         if (!s.change) return out([l("no change order open.", "dim")]);
+        if (!pick) return out([l(`change order: +${Math.round(s.change.bonus * 100)}% pay for about ${s.change.secs} s more building and an inspection that asks ${s.change.score.toFixed(1)} more score. gb change yes to accept, gb change no to decline.`, "hi")]);
         if (pick === "no" || pick === "decline") { declineChange(s); return out([l("change order declined.")], true); }
         if (!acceptChange(s)) return out([l("cannot accept it now.", "err")]);
         return out([l("change order accepted: more materials, bigger payout.", "hi")], true);
@@ -87,5 +89,7 @@ export function gbCommand(s: State, args: string[]): GbResult {
     if (sub === "floors") {
         return out([l(s.job ? `${jobFloors(s.job, f)} floors up` : "no job running", "dim")]);
     }
+    const extra = qolCommand(s, args);
+    if (extra) return extra;
     return out([l(`gb ${GB_SUBS.join(" | ")}`, "dim")]);
 }

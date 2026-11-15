@@ -3,19 +3,36 @@
 // Small shared pieces of the Starwright GUI: glyph icons, element tiles, the floating tooltip, and the open/close hook that
 // keeps a panel mounted while its closing animation plays.
 import { useEffect, useRef, useState, type CSSProperties } from "react";
-import { cssUrl, elementIcon, glyphMask, lockedIcon } from "@/lib/starwright/ui-art";
+import { cssUrl, glyphMask } from "@/lib/starwright/ui-art";
 import { loadSheets, onSheets, sheetUrl } from "@/lib/starwright/ui-sheets";
 import { ELEMENTS } from "@/lib/starwright/data";
 
+/** This thread's drawn GUI art (scripts/starwright/ui-art/build.py writes public/starwright/ui). Bump UI_V when it changes. */
+export const UI_V = 7;
+export const ui = (name: string) => `/starwright/ui/${name}.png?v=${UI_V}`;
+/** Glyph names that have a drawn 16px icon in the ui set. */
+const UI_GLYPH: Record<string, string> = {
+    back: "ui-back", cross: "ui-cross", burst: "stat-burst", star: "dock-stars", pulse: "dock-pulsar", orbit: "dock-orbit", book: "dock-almanac",
+    menu: "dock-menu", pause: "menu-pause", play: "menu-play", full: "menu-full", sound: "menu-sound", mute: "menu-mute", export: "menu-export",
+    import: "menu-import", lock: "lock", medal: "medal", mass: "stat-mass", heat: "stat-heat", age: "stat-age", dust: "stat-dust", neutron: "stat-neutron",
+};
+/** A drawn 16px icon at `s` times size. */
+export function Ic({ n, s = 2 }: { n: string; s?: number }) {
+    return <span className="sw-pic" aria-hidden="true" style={{ backgroundImage: cssUrl(ui(n)), "--s": s } as CSSProperties} />;
+}
+
 /** A 14px dither glyph, coloured by currentColor, drawn at `s` times its size. */
 export function Gl({ n, s = 2 }: { n: string; s?: number }) {
+    if (UI_GLYPH[n]) return <Ic n={UI_GLYPH[n]} s={s} />;
     return <span className="sw-gl" aria-hidden="true" style={{ "--m": cssUrl(glyphMask(n)), "--s": s } as CSSProperties} />;
 }
 
 /** The framed dither tile for an element (or the empty frame when locked). */
-export function ElTile({ i, locked, size = 2 }: { i: number; locked?: boolean; size?: number }) {
-    const src = locked ? lockedIcon() : (sheetUrl(`icon/el-${ELEMENTS[i].sym.toLowerCase()}`) ?? elementIcon(i));
-    return <span className="sw-el" aria-hidden="true" data-locked={locked ? "" : undefined} style={{ backgroundImage: cssUrl(src), "--s": size } as CSSProperties} />;
+export function ElTile({ i, locked, size = 2, anim }: { i: number; locked?: boolean; size?: number; anim?: boolean }) {
+    const sym = ELEMENTS[i].sym.toLowerCase();
+    const moving = anim && !locked;
+    const src = locked ? ui("el-locked") : ui(moving ? `el-${sym}-anim` : `el-${sym}`);
+    return <span className="sw-el" aria-hidden="true" data-locked={locked ? "" : undefined} data-anim={moving ? "" : undefined} style={{ backgroundImage: cssUrl(src), "--s": size } as CSSProperties} />;
 }
 
 /** `data-tip="Title|line|line"` on any element shows a floating box. One layer for the whole game, so panels never clip it. */
@@ -74,6 +91,8 @@ export function useSheets(): number {
 
 /** A 16px picture from the art sheets (coloured), or the stand-in glyph. */
 export function Pic({ sheet, glyph, s = 2 }: { sheet: string; glyph: string; s?: number }) {
+    const own = sheet.replace(/^icon\//, "");
+    if (/^(dock|menu)-/.test(own) || own === "lock" || own.startsWith("medal")) return <Ic n={own} s={s} />;
     const url = sheetUrl(sheet);
     if (!url) return <Gl n={glyph} s={s} />;
     return <span className="sw-pic" aria-hidden="true" style={{ backgroundImage: cssUrl(url), "--s": s } as CSSProperties} />;

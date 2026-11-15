@@ -417,3 +417,23 @@ test("progress draws pay through a long job and the handover pays the rest, neve
     assert.ok(Math.abs(s.cash - cash0 - total) <= 6, `total ${s.cash - cash0} vs ${total}`);
     assert.ok(steps.at(-1) < total, "the handover is not the whole job");
 });
+
+test("a change order costs build time and a tougher inspection, pays more, and is worth it only for a firm with the reputation to back it", () => {
+    const run1 = (id, rep, accept) => {
+        const s = E.fresh(0);
+        s.open = 12; s.builtThisFirm = D.JOBS.findIndex((j) => j.id === id); s.crews = s.crews.map(() => 60); s.amt = s.amt.map(() => 1e15); s.rep = rep;
+        const idx = s.builtThisFirm, c0 = s.cash;
+        let t = 0, offered = null;
+        while (s.builtThisFirm === idx && t < 20000) {
+            E.step(s, 1); t++;
+            if (s.change) { offered = offered ?? { ...s.change }; if (accept) E.acceptChange(s); else E.declineChange(s); }
+        }
+        return { t, cash: s.cash - c0, offered };
+    };
+    const weakNo = run1("house", 5, false), weakYes = run1("house", 5, true);
+    assert.ok(weakYes.offered.secs > 0 && weakYes.offered.score > 0, "the offer says what it costs");
+    assert.ok(weakYes.t > weakNo.t && weakYes.cash > weakNo.cash, "slower and bigger");
+    assert.ok(weakYes.cash / weakYes.t < weakNo.cash / weakNo.t, "a brand-new firm does better saying no");
+    const strongNo = run1("tower", 3500, false), strongYes = run1("tower", 3500, true);
+    assert.ok(strongYes.cash / strongYes.t > strongNo.cash / strongNo.t * 1.08, "an established firm does better saying yes");
+});

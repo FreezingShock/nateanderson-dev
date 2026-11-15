@@ -380,6 +380,43 @@ def research_card(items, alt):
     return c.img[:96, :128].copy()
 
 
+# Mastery research has no recipe to show: the card shows the machine it speeds up, a brass rank pip per level and
+# rising chevrons, on blueprint paper with brass corner stamps so the six read as their own late-game set.
+MASTERY = {
+    "deep_seams": ("drill", 1, "ironore"), "deeper_seams": ("drill", 2, "ironore"),
+    "tuned_sails": ("windmill", 1, "patina"), "tight_springs": ("spring_winder", 2, "patina"),
+    "quick_hands": ("assembler", 1, "glow"), "steady_hands": ("assembler", 2, "glow"),
+}
+
+
+def mastery_card(rid):
+    mid, rank, pal = MASTERY[rid]
+    c = blueprint_bg(False)
+    for tri in (poly([(0, 0), (26, 0), (0, 26)]), poly([(128, 96), (102, 96), (128, 70)])):
+        c.fill(tri, 0.55 + 0.35 * np.clip(1 - (X + Y) / 200, 0, 1), "brass")
+        c.set(edge(tri, 1, 0) | edge(tri, 0, 1) | edge(tri, -1, 0) | edge(tri, 0, -1), P["brass"][1])
+    fg = draw_at(bw_machines.DRAW[mid], 58, 52, 66)
+    halo = grow(fg.img[..., 3] > 0, 3) & ~(fg.img[..., 3] > 0)
+    c.img[halo & (BAYER8 < 0.2)] = (*P[pal][4], 255)
+    c.over(fg)
+    # rising chevrons on the right: the speed-up, one stack per rank
+    for k in range(3):
+        y = 66 - 14 * k
+        for j in range(rank):
+            x = 104 + 10 * j - 5 * (rank - 1)
+            chev = path([(x - 6, y + 5), (x, y - 1), (x + 6, y + 5)], 3.2)
+            c.fill(chev, 0.5 + 0.18 * k, pal)
+            c.set(edge(chev, 0, -1), P[pal][-1])
+    # rank pips: small brass stars in the top-left stamp
+    for j in range(rank):
+        cx = 8 + 10 * j
+        star = poly([(cx + 4.5 * math.cos(-math.pi / 2 + i * math.pi / 5) * (1 if i % 2 == 0 else 0.45),
+                      8 + 4.5 * math.sin(-math.pi / 2 + i * math.pi / 5) * (1 if i % 2 == 0 else 0.45)) for i in range(10)])
+        c.set(grow(star, 1), P["brass"][0])
+        c.fill(star, 0.9, "cream")
+    return c.img[:96, :128].copy()
+
+
 SITES = ["ridge", "cove", "high-bank", "quarry"]
 
 
@@ -497,7 +534,7 @@ def round2():
     sheet = np.zeros((rows * 96, cols * 128, 4), np.uint8)
     for k, (rid, _, items, alt) in enumerate(rs):
         r, cc = divmod(k, cols)
-        sheet[r * 96:(r + 1) * 96, cc * 128:(cc + 1) * 128] = research_card(items, alt)
+        sheet[r * 96:(r + 1) * 96, cc * 128:(cc + 1) * 128] = mastery_card(rid) if rid in MASTERY else research_card(items, alt)
     v["research"] = save(sheet, "research", pair=True)
     v["sites"] = save(np.concatenate([site_scene(s) for s in SITES], axis=1), "sites", pair=True)
     v["gilt"] = save(gilt_frame(), "frame-gilt")

@@ -256,6 +256,37 @@ html.gb-route .sf-foot { display: none !important; }
 .gb-auto[aria-pressed="true"] { border-color: var(--gb-ok); color: var(--gb-ok); }
 @media (max-width: 860px) { .gb-perks { grid-template-columns: 1fr; } }
 
+/* next-step cue, welcome-back card, other-tab notice */
+.gb-cue { position: absolute; left: 50%; bottom: 112px; z-index: 9; transform: translateX(-50%); width: min(460px, calc(100vw - 180px)); display: grid; gap: 2px; justify-items: center; text-align: center; pointer-events: none; }
+.gb-cue button { pointer-events: auto; display: inline-flex; align-items: center; gap: 10px; min-height: 40px; max-width: 100%; padding: 0 12px; background: var(--gb-panel); border: 1px solid var(--gb-amber); font: 600 15px var(--gb-text); }
+.gb-cue button:hover { background: #2e2012; border-color: var(--gb-hi); }
+.gb-cue[data-doable] button { animation: gbCue 1.8s ease-in-out infinite; }
+.gb-cue strong { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.gb-cue-k { font: 700 11px var(--gb-text); letter-spacing: .12em; text-transform: uppercase; color: var(--gb-amber); }
+.gb-cue:not([data-doable]) button { border-color: var(--gb-line-2); }
+.gb-cue:not([data-doable]) .gb-cue-k { color: var(--gb-dim); }
+.gb-cue p { max-width: 100%; padding: 2px 8px; font-size: 12px; line-height: 1.35; color: var(--gb-dim); background: rgba(18, 14, 11, .72); }
+@keyframes gbCue { 0%, 100% { box-shadow: 0 0 0 0 rgba(240, 160, 48, 0); } 50% { box-shadow: 0 0 0 4px rgba(240, 160, 48, .28); } }
+.gb-tile[data-hint], .gb-root .gb-tier[data-hint] { outline: 2px solid var(--gb-hi); outline-offset: -2px; animation: gbCue 1.8s ease-in-out infinite; }
+.gb-root[data-reduce="true"] .gb-cue button, .gb-root[data-reduce="true"] [data-hint], .gb-root[data-simple="true"] .gb-cue button, .gb-root[data-simple="true"] [data-hint] { animation: none; }
+.gb-away { top: 50%; transform: translate(-50%, -50%); width: min(420px, calc(100vw - 24px)); display: grid; gap: 10px; padding: 14px; }
+.gb-away h2 { font: 700 22px var(--gb-display); letter-spacing: .06em; text-transform: uppercase; color: var(--gb-hi); }
+.gb-away p { font-size: 13px; color: var(--gb-ink); }
+.gb-away dl { display: grid; gap: 2px; }
+.gb-away dl div { display: flex; justify-content: space-between; gap: 12px; padding: 4px 0; border-bottom: 1px solid var(--gb-line-2); font-size: 13px; }
+.gb-away dd { color: var(--gb-hi); text-align: right; margin: 0; }
+.gb-away .gb-go { min-height: 40px; }
+.gb-conflict { position: absolute; left: 50%; top: 56px; z-index: 12; transform: translateX(-50%); width: min(460px, calc(100vw - 24px)); display: grid; gap: 8px; padding: 10px 12px; background: var(--gb-panel); border: 1px solid var(--gb-amber); font-size: 13px; }
+.gb-backups { display: grid; gap: 2px; margin-top: 6px; }
+.gb-backups > p { font-size: 11px; letter-spacing: .1em; text-transform: uppercase; color: var(--gb-dim); }
+@media (max-width: 860px) { .gb-cue { bottom: 232px; width: calc(100vw - 16px); } .gb-cue p { display: none; } .gb-feed { bottom: 280px; } }
+
+/* a phone held sideways: the cue goes to the top right so it never covers the dig (dock, rail and menus are handled above) */
+@media (max-height: 520px) and (min-width: 561px) {
+    .gb-cue { top: 46px; bottom: auto; left: auto; right: 56px; transform: none; width: min(330px, calc(100vw - 560px)); }
+    .gb-cue p { display: none; }
+    .gb-away { max-height: calc(100% - 20px); overflow: auto; }
+}
 /* ---- menu art pass (2026-11-15): banners, larger icons, per-window motion, docked windows, phone landscape ---- */
 .gb-root { --gb-panel: rgba(20, 14, 18, 0.95); --gb-dusk: #2a1a2e; }
 .gb-banner { display: block; flex: none; height: 88px; background-size: 100% 100%; image-rendering: pixelated; border-bottom: 1px solid var(--gb-line); }
@@ -506,3 +537,20 @@ html.gb-route .sf-foot { display: none !important; }
     .gb-root .gb-rail { top: 50px; }
     .gb-root .gb-job, .gb-root .gb-win { top: 50px; }
 }
+
+/* change order: a real choice, terms laid out, accept and decline equal */
+.gb-root .gb-change { gap: 8px; padding: 10px; background: linear-gradient(#2a1d14, #1c1410); }
+.gb-change header { display: flex; align-items: center; gap: 8px; }
+.gb-change header p { display: grid; gap: 2px; font-size: 12px; }
+.gb-change header strong { font: 700 16px/1 var(--gb-display); letter-spacing: .08em; text-transform: uppercase; color: var(--gb-hi); }
+.gb-change header span { color: var(--gb-dim); }
+.gb-terms { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; }
+.gb-terms div { display: grid; gap: 2px; padding: 6px; background: #120d0b; border: 1px solid var(--gb-line-2); }
+.gb-terms dt { font: 700 10px var(--gb-display); letter-spacing: .12em; text-transform: uppercase; color: var(--gb-dim); }
+.gb-terms dd { margin: 0; font: 700 14px var(--gb-text); }
+.gb-terms [data-k="up"] dd { color: var(--gb-ok); }
+.gb-terms [data-k="down"] dd { color: #ff9a6a; }
+.gb-change-clock { flex: none; height: 4px; }
+.gb-root .gb-change-act { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.gb-root .gb-change-act .gb-go { border-color: var(--gb-line); color: var(--gb-ink); }
+.gb-root .gb-change-act .gb-go:hover { border-color: var(--gb-hi); color: var(--gb-hi); }
