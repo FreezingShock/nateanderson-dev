@@ -351,3 +351,245 @@ html.sw-route .sf-foot { display: none !important; }
     .sw-dt[data-ping]::after, .sw-bar i, .sw-node[data-st="buy"] .sw-halo, .sw-over, .sw-chart, .sw-end, .sw-card, .sw-tipbox, .sw-visitor, .sw-clouds { animation: none !important; }
     .sw-feed li { animation-duration: 9s; }
 }
+
+/* ==== GUI art pass (2026-11-15): drawn frames, fills and icons from public/starwright/ui (scripts/starwright/ui-art) ==== */
+.sw-root {
+    --ui-frame: url("/starwright/ui/frame.png?v=3");
+    --ui-fill: url("/starwright/ui/fill.png?v=3");
+    --ui-head: url("/starwright/ui/head.png?v=3");
+    --ui-rule: url("/starwright/ui/rule.png?v=3");
+}
+.sw-panel, .sw-dt, .sw-back, .sw-chart-top {
+    border: 8px solid transparent; border-image: var(--ui-frame) 8 fill / 8px / 0 stretch;
+    background-color: transparent; background-image: var(--ui-head), var(--ui-fill); background-repeat: repeat-x, repeat;
+    background-size: 8px 20px, 32px 32px; background-origin: padding-box; image-rendering: pixelated;
+}
+.sw-panel { background-color: #070616; background-clip: padding-box; }
+.sw-panel > .sw-cn { display: none; }
+.sw-collapse { padding: 6px 10px 8px; }
+.sw-ladder { padding: 6px 8px 4px; }
+.sw-card { padding: 8px 12px 12px; }
+.sw-rule { height: 4px; margin: 6px 0 6px; background: var(--ui-rule) repeat-x; background-size: 32px 8px; }
+.sw-collapse h2, .sw-lad-head h2 { display: inline-flex; align-items: center; gap: 8px; }
+
+/* dock: framed tiles, the icon hops and a light sweeps across on hover */
+.sw-dt { width: 64px; height: 64px; background-color: #070616; background-clip: padding-box; overflow: hidden; box-shadow: 4px 4px 0 rgba(0, 0, 0, .55); transition: transform .12s steps(2, end); }
+.sw-dt kbd { top: -2px; left: -1px; }
+.sw-dt em { margin-top: -1px; }
+.sw-dt::before { content: ""; position: absolute; inset: -8px; background: linear-gradient(100deg, transparent 35%, rgba(95, 227, 255, .22) 50%, transparent 65%); transform: translateX(-120%); pointer-events: none; }
+.sw-dt:hover::before { animation: swSweep .45s steps(6, end); }
+.sw-dt:hover { transform: translateY(-2px); }
+.sw-dt[aria-pressed="true"] { border-image-source: url("/starwright/ui/frame-warm.png?v=3"); color: #ffd27a; }
+.sw-dt:hover .sw-pic { animation: swHop .42s steps(4, end); }
+.sw-back { padding: 0 12px 0 6px; min-height: 44px; background-color: #070616; background-clip: padding-box; }
+@keyframes swSweep { to { transform: translateX(120%); } }
+@keyframes swHop { 0%, 100% { transform: none; } 30% { transform: translateY(-4px) scale(1.06); } 60% { transform: translateY(-1px); } }
+
+/* readout stat icons */
+.sw-readout p span { display: inline-flex; align-items: center; gap: 5px; }
+.sw-readout .sw-pic { vertical-align: 0; }
+.sw-tag { box-shadow: 3px 3px 0 rgba(0, 0, 0, .55), inset 0 -3px 0 #c9b98f; }
+
+/* ladder: rows deal in one by one, the element tile glints on hover */
+.sw-ladder { animation: swSlideR .5s steps(6, end) both; }
+.sw-collapse { animation: swSlideU .5s steps(6, end) .08s both; }
+@keyframes swSlideR { from { transform: translateX(calc(100% + 24px)); } }
+@keyframes swSlideU { from { transform: translateY(calc(100% + 24px)); } }
+.sw-row { border-bottom: 0; background: linear-gradient(90deg, transparent, transparent); }
+.sw-row + .sw-row { background: linear-gradient(90deg, rgba(138, 144, 168, .22), rgba(138, 144, 168, .05)) no-repeat 0 0 / 100% 1px; }
+.sw-row { animation: swDeal .32s steps(4, end) both; }
+.sw-row:nth-child(2) { animation-delay: .04s; } .sw-row:nth-child(3) { animation-delay: .08s; } .sw-row:nth-child(4) { animation-delay: .12s; }
+.sw-row:nth-child(5) { animation-delay: .16s; } .sw-row:nth-child(6) { animation-delay: .2s; } .sw-row:nth-child(7) { animation-delay: .24s; }
+.sw-row:nth-child(8) { animation-delay: .28s; } .sw-row:nth-child(9) { animation-delay: .32s; } .sw-row:nth-child(10) { animation-delay: .36s; }
+@keyframes swDeal { from { opacity: 0; transform: translateX(12px); } }
+.sw-rt { overflow: hidden; }
+.sw-rt::after { content: ""; position: absolute; inset: 0; background: linear-gradient(120deg, transparent 40%, rgba(255, 255, 255, .5) 50%, transparent 60%); transform: translateX(-110%); pointer-events: none; }
+.sw-row:hover .sw-rt::after { animation: swSweep .5s steps(5, end); }
+.sw-row:hover .sw-rt .sw-el { animation: none; }
+.sw-rt kbd { right: 0; bottom: 0; z-index: 1; }
+
+/* burner buttons: a chevron per tier instead of the numeral, each tier denser */
+.sw-btn { gap: 1px; }
+.sw-tier { display: block; width: 16px; height: 16px; background-size: 100% 100%; image-rendering: pixelated; opacity: .9; }
+.sw-btn:hover:not(:disabled) .sw-tier { filter: brightness(0); animation: swHop .38s steps(4, end); }
+.sw-btn:disabled .sw-tier { opacity: .3; }
+.sw-btn[data-tier="0"] { background-image: url("/starwright/ui/btn-1.png?v=3"); background-size: 8px 8px; }
+.sw-btn[data-tier="1"] { background-image: url("/starwright/ui/btn-2.png?v=3"); background-size: 8px 8px; }
+.sw-btn[data-tier="2"] { background-image: url("/starwright/ui/btn-3.png?v=3"); background-size: 8px 8px; }
+.sw-btn:disabled { background-image: none; }
+
+/* collapse bar */
+.sw-bar i { background-image: url("/starwright/ui/bar.png?v=3"); background-size: 16px 16px; }
+.sw-bar i[data-full] { background-image: url("/starwright/ui/bar-full.png?v=3"); animation: swBarFlow .6s steps(2, end) infinite; }
+.sw-go:not(:disabled) .sw-pic { animation: swPulse 1.4s steps(3, end) infinite; }
+@keyframes swPulse { 50% { transform: scale(1.15) rotate(22deg); } }
+
+/* overlays: dithered scrim, and a scanline that sweeps each card as it opens */
+.sw-over { background-color: rgba(2, 2, 8, .45); background-image: url("/starwright/ui/scrim.png?v=3"); background-size: 8px 8px; }
+.sw-card::after { content: ""; position: absolute; left: 0; right: 0; top: 0; height: 3px; background: rgba(95, 227, 255, .55); box-shadow: 0 0 0 1px rgba(95, 227, 255, .15); pointer-events: none; animation: swScan .55s steps(9, end) forwards; }
+@keyframes swScan { from { top: 0; opacity: 1; } 90% { opacity: 1; } to { top: 100%; opacity: 0; } }
+.sw-card-head h2 { display: inline-flex; align-items: center; gap: 8px; }
+.sw-x { border: 1px solid var(--sw-line); transition: transform .12s steps(2, end); }
+.sw-x:hover { transform: rotate(90deg); }
+.sw-ibtn { border: 8px solid transparent; border-image: var(--ui-frame) 8 fill / 8px / 0 stretch; background: none; padding: 4px 2px 2px; }
+.sw-ibtn:hover { transform: translateY(-2px); }
+.sw-ibtn:hover .sw-pic { animation: swHop .42s steps(4, end); }
+.sw-cx, .sw-planets li, .sw-ach li { transition: transform .12s steps(2, end); }
+.sw-codex li:hover .sw-cx, .sw-planets li:hover, .sw-ach li:hover { transform: translateY(-2px); }
+.sw-medal { border: 0; }
+.sw-ach li[data-own] .sw-medal { background: none; }
+.sw-ach li[data-own] .sw-medal .sw-pic { animation: swHop .5s steps(4, end) 1; }
+.sw-tipbox { border-color: var(--sw-cy); box-shadow: 3px 3px 0 rgba(0, 0, 0, .6), inset 0 2px 0 rgba(95, 227, 255, .25); }
+
+/* phones: safe areas, landscape and a swipe-free hint */
+@supports (padding: env(safe-area-inset-top)) {
+    .sw-top { padding-top: max(16px, env(safe-area-inset-top)); padding-right: max(16px, env(safe-area-inset-right)); padding-left: max(16px, env(safe-area-inset-left)); }
+    .sw-collapse { bottom: max(16px, env(safe-area-inset-bottom)); left: max(16px, env(safe-area-inset-left)); }
+    .sw-ladder { right: max(16px, env(safe-area-inset-right)); }
+}
+@media (max-width: 900px) {
+    .sw-dt { width: 48px; height: 48px; box-shadow: none; }
+    .sw-ladder, .sw-collapse { animation: none; left: auto; right: auto; bottom: auto; }
+    .sw-top { padding: max(8px, env(safe-area-inset-top)) max(10px, env(safe-area-inset-right)) 8px max(10px, env(safe-area-inset-left)); background-image: var(--ui-head); background-size: 8px 20px; }
+    .sw-root { padding-bottom: max(20px, env(safe-area-inset-bottom)); }
+}
+@media (max-width: 900px) and (orientation: landscape) and (max-height: 520px) {
+    .sw-scene { height: 56dvh; }
+    .sw-top { padding-top: 4px; padding-bottom: 4px; }
+    .sw-dt { width: 40px; height: 40px; }
+}
+@media (prefers-reduced-motion: reduce) {
+    .sw-ladder, .sw-collapse, .sw-row, .sw-card::after, .sw-dt::before, .sw-rt::after, .sw-go .sw-pic { animation: none !important; }
+    .sw-card::after { display: none; }
+}
+
+/* star chart: drawn node sprites per constellation and state, pixel-dotted links */
+.sw-nodeart { image-rendering: pixelated; transform-box: fill-box; transform-origin: center; transition: transform .12s steps(2, end); }
+.sw-node:hover .sw-nodeart, .sw-node:focus-visible .sw-nodeart, .sw-node[data-sel] .sw-nodeart { transform: scale(1.25); }
+.sw-node[data-st="buy"] .sw-nodeart { animation: swNodeSpin 2.4s steps(8, end) infinite; }
+.sw-node[data-st="buy"] .sw-halo { display: none; }
+.sw-node[data-st="own"] .sw-nodeart { animation: swNodeTwinkle 3s steps(3, end) infinite; }
+.sw-node[data-st="lock"] { opacity: 1; }
+.sw-node[data-sel] .sw-halo { opacity: 1; stroke-width: 2; stroke-dasharray: 4 4; }
+@keyframes swNodeSpin { to { transform: rotate(90deg); } }
+@keyframes swNodeTwinkle { 0%, 70%, 100% { opacity: 1; } 80% { opacity: .7; } 90% { opacity: 1; transform: scale(1.1); } }
+.sw-edge line { stroke-width: 2; stroke-dasharray: 2 6; opacity: .45; stroke-linecap: square; }
+.sw-edge[data-lit] line { stroke-dasharray: 4 2; opacity: .95; }
+.sw-edge[data-lit] .sw-edge-glow { stroke-width: 8; stroke-dasharray: 2 2; opacity: .22; animation: swEdgeFlow 1.2s steps(4, end) infinite; }
+@keyframes swEdgeFlow { to { stroke-dashoffset: -16; } }
+.sw-edge { opacity: 1; stroke-dasharray: none; }
+.sw-conname { letter-spacing: .4em; paint-order: stroke; stroke: #05040c; stroke-width: 4px; }
+.sw-nodename { paint-order: stroke; stroke: #05040c; stroke-width: 3px; }
+@media (prefers-reduced-motion: reduce) { .sw-nodeart, .sw-edge-glow { animation: none !important; } }
+
+/* animated element tiles: an 8-frame dither loop per element, each at its own pace so the ladder never pulses in sync */
+.sw-el[data-anim] { background-size: 800% 100%; animation: swElLoop 1.6s steps(8, jump-none) infinite; }
+@keyframes swElLoop { to { background-position: 100% 0; } }
+.sw-row:nth-child(2n) .sw-el[data-anim] { animation-duration: 1.9s; }
+.sw-row:nth-child(3n) .sw-el[data-anim] { animation-duration: 1.3s; }
+.sw-row:hover .sw-el[data-anim] { animation-duration: .7s; }
+.sw-row[data-cold] .sw-el[data-anim] { animation-play-state: paused; }
+.sw-root[data-paused] .sw-el[data-anim] { animation-play-state: paused; }
+@media (prefers-reduced-motion: reduce) { .sw-el[data-anim] { animation: none !important; } }
+
+/* ==== star chart v2: per-star medallions, catalogue labels, zoom to a star with a card beside it ==== */
+.sw-zoom { transition: transform .5s steps(10, end); transform-origin: 0 0; }
+.sw-chart[data-zoomed] .sw-node:not([data-sel]) { opacity: .55; }
+.sw-chart[data-zoomed] .sw-node:not([data-sel]) .sw-nodebuff, .sw-chart[data-zoomed] .sw-node:not([data-sel]) .sw-nodedes { opacity: 0; }
+.sw-node { transition: opacity .2s steps(3, end); }
+.sw-nodeart { image-rendering: pixelated; }
+.sw-node[data-st="own"] .sw-nodeart, .sw-node[data-st="buy"] .sw-nodeart { animation: none; }
+.sw-node[data-st="own"] .sw-nodeart { filter: drop-shadow(0 0 6px var(--c)); }
+.sw-node[data-st="near"] .sw-nodeart { opacity: .85; }
+.sw-ring { image-rendering: pixelated; transform-box: fill-box; transform-origin: center; animation: swNodeSpin 2.4s steps(8, end) infinite; }
+.sw-node:hover .sw-nodeart, .sw-node:focus-visible .sw-nodeart { transform: scale(1.15); }
+.sw-node[data-sel] .sw-nodeart { transform: scale(1.1); }
+.sw-node[data-sel] .sw-halo { opacity: 0; }
+.sw-burst { fill: none; stroke: var(--c); stroke-width: 3; animation: swLight .8s steps(8, end) forwards; }
+@keyframes swLight { from { r: 16; opacity: 1; stroke-width: 6; } to { r: 60; opacity: 0; stroke-width: 1; } }
+.sw-node[data-lit] .sw-nodeart { animation: swLitPop .6s steps(6, end); }
+@keyframes swLitPop { 0% { transform: scale(.6); } 50% { transform: scale(1.4); } 100% { transform: scale(1); } }
+.sw-nodename { fill: #e9ecf6; font: 600 12px var(--cm-mono, monospace); letter-spacing: .06em; }
+.sw-node[data-st="lock"] .sw-nodename { fill: #6b6f8a; }
+.sw-nodedes { fill: #8a90a8; font: italic 400 10px var(--cm-display, serif); letter-spacing: .04em; paint-order: stroke; stroke: #05040c; stroke-width: 3px; }
+.sw-nodebuff { fill: var(--c); font: 600 11px var(--cm-mono, monospace); letter-spacing: .04em; paint-order: stroke; stroke: #05040c; stroke-width: 3px; }
+.sw-node[data-st="lock"] .sw-nodebuff { fill: #6b6f8a; }
+.sw-conname { font: 600 15px var(--cm-mono, monospace); letter-spacing: .45em; }
+.sw-conlat { font: italic 400 11px var(--cm-display, serif); letter-spacing: .1em; opacity: .75; paint-order: stroke; stroke: #05040c; stroke-width: 3px; }
+.sw-edge[data-next] line { opacity: .8; stroke-dasharray: 3 5; animation: swEdgeFlow 1s steps(4, end) infinite; }
+.sw-chart-top h2 { display: inline-flex; align-items: center; gap: 8px; }
+.sw-chart-top > span { display: inline-flex; align-items: center; gap: 6px; }
+.sw-ready { color: var(--sw-cy) !important; font-weight: 500; animation: swPing 1.6s steps(2, end) infinite; }
+
+.sw-starcard { position: fixed; z-index: 35; width: 300px; padding: 12px 14px 14px; transform: translateY(-50%);
+    border: 8px solid transparent; border-image: url("/starwright/ui/frame.png?v=7") 8 fill / 8px / 0 stretch;
+    background: url("/starwright/ui/head.png?v=7") repeat-x, url("/starwright/ui/fill.png?v=7") repeat; background-size: 8px 20px, 32px 32px; background-color: #070616; background-clip: padding-box;
+    box-shadow: 6px 6px 0 rgba(0, 0, 0, .55); animation: swCardIn .3s steps(5, end) both; }
+.sw-starcard[data-side="l"] { transform: translate(-100%, -50%); }
+.sw-starcard > .sw-cn { border-color: var(--c); }
+@keyframes swCardIn { from { opacity: 0; clip-path: inset(0 100% 0 0); } to { opacity: 1; clip-path: inset(-12px -12px -12px -12px); } }
+.sw-starcard[data-side="l"] { animation-name: swCardInL; }
+@keyframes swCardInL { from { opacity: 0; clip-path: inset(0 0 0 100%); } to { opacity: 1; clip-path: inset(-12px -12px -12px -12px); } }
+.sw-sc-head { display: grid; grid-template-columns: 64px minmax(0, 1fr); gap: 12px; align-items: center; }
+.sw-sc-art { width: 64px; height: 64px; background-size: 100% 100%; image-rendering: pixelated; filter: drop-shadow(0 0 8px var(--c)); }
+.sw-sc-head b { display: block; font: 600 16px var(--cm-mono, monospace); letter-spacing: .04em; color: var(--c); }
+.sw-sc-head span { font: italic 400 12px var(--cm-display, serif); color: var(--sw-dim); }
+.sw-sc-buffs { display: grid; gap: 4px; margin-top: 10px; padding: 8px 10px; background: color-mix(in srgb, var(--c) 14%, #05040c); border: 1px solid color-mix(in srgb, var(--c) 50%, transparent); }
+.sw-sc-buffs p { display: flex; align-items: baseline; gap: 10px; }
+.sw-sc-buffs strong { font: 700 28px/1 var(--cm-mono, monospace); color: var(--c); text-shadow: 2px 2px 0 #05040c; }
+.sw-sc-buffs span { font: 500 13px var(--cm-mono, monospace); text-transform: uppercase; letter-spacing: .08em; color: var(--sw-ink); }
+.sw-sc-desc { margin-top: 8px; font-size: 13px; color: var(--sw-dim); }
+.sw-sc-own { margin-top: 10px; font: 500 12px var(--cm-mono, monospace); color: var(--c); }
+.sw-sc-need { margin-top: 8px; font: 400 12px var(--cm-mono, monospace); color: #ffb24d; }
+.sw-sc-buy { display: flex; align-items: center; justify-content: space-between; gap: 10px; width: 100%; min-height: 48px; margin-top: 10px; padding: 0 14px; background: var(--c); border: 0; color: #05040c; font: 700 14px var(--cm-mono, monospace); letter-spacing: .1em; text-transform: uppercase; box-shadow: inset 0 -4px 0 rgba(0, 0, 0, .3), 3px 3px 0 #000; }
+.sw-sc-buy em { display: inline-flex; align-items: center; gap: 6px; font-style: normal; }
+.sw-sc-buy:hover:not(:disabled) { filter: brightness(1.15); transform: translateY(-1px); }
+.sw-sc-buy:active:not(:disabled) { transform: translateY(2px); box-shadow: inset 0 -1px 0 rgba(0, 0, 0, .3), 1px 1px 0 #000; }
+.sw-sc-buy:disabled { background: transparent; color: var(--sw-dim); box-shadow: inset 0 0 0 1px var(--sw-line); }
+.sw-sc-hint { margin-top: 6px; font: 400 11px var(--cm-mono, monospace); color: var(--sw-dim); text-align: center; }
+@media (max-width: 900px) {
+    .sw-starcard, .sw-starcard[data-side="l"] { left: 10px !important; right: 10px; top: auto !important; bottom: max(10px, env(safe-area-inset-bottom)); width: auto; transform: none; animation-name: swSheetUp; }
+    @keyframes swSheetUp { from { opacity: 0; transform: translateY(40px); } }
+    .sw-sc-buffs strong { font-size: 24px; }
+}
+@media (prefers-reduced-motion: reduce) { .sw-zoom { transition: none; } .sw-ring, .sw-burst, .sw-starcard, .sw-edge line { animation: none !important; } }
+@media (max-width: 900px) { .sw-chart[data-zoomed] .sw-svg { min-width: 0; } }
+.sw-nodedes { opacity: 0; transition: opacity .15s steps(2, end); }
+.sw-node:hover .sw-nodedes, .sw-node:focus-visible .sw-nodedes, .sw-node[data-sel] .sw-nodedes { opacity: 1; }
+
+/* deep stars: the endless last row, docked bottom right of the map */
+.sw-deep { position: absolute; right: 16px; bottom: 36px; z-index: 2; display: grid; grid-template-columns: 56px minmax(0, 1fr) auto; align-items: center; gap: 12px; width: min(480px, calc(100% - 32px)); padding: 8px 10px;
+    border: 8px solid transparent; border-image: url("/starwright/ui/frame-warm.png?v=7") 8 fill / 8px / 0 stretch; background: url("/starwright/ui/fill.png?v=7"); background-size: 32px 32px; background-color: #0c0814; background-clip: padding-box; box-shadow: 4px 4px 0 rgba(0, 0, 0, .55); }
+.sw-deep:not([data-open]) { border-image-source: url("/starwright/ui/frame.png?v=7"); opacity: .8; }
+.sw-deep-art { width: 56px; height: 56px; background-size: 100% 100%; image-rendering: pixelated; animation: swLitPop .6s steps(6, end); }
+.sw-deep[data-can] .sw-deep-art { filter: drop-shadow(0 0 8px #ffd27a); }
+.sw-deep-copy b { display: flex; align-items: baseline; gap: 10px; font: 600 13px var(--cm-mono, monospace); letter-spacing: .12em; text-transform: uppercase; color: #ffd27a; }
+.sw-deep-copy b em { font: 700 22px/1 var(--cm-mono, monospace); font-style: normal; color: var(--sw-ink); }
+.sw-deep-copy span { font-size: 12.5px; color: var(--sw-dim); }
+.sw-deep-copy strong { color: #ffd27a; font-weight: 600; }
+.sw-deep-buy { width: auto; margin: 0; min-width: 150px; }
+@media (max-width: 900px) {
+    .sw-deep { position: relative; right: auto; bottom: auto; margin: 0 10px 6px; width: auto; grid-template-columns: 48px minmax(0, 1fr); }
+    .sw-deep-art { width: 48px; height: 48px; }
+    .sw-deep-buy { grid-column: 1 / -1; }
+    .sw-chart { grid-template-rows: auto minmax(0, 1fr) auto auto auto; }
+}
+.sw-chart { grid-template-rows: auto minmax(0, 1fr) auto auto; }
+.sw-deep { position: relative; right: auto; bottom: auto; justify-self: end; margin: 0 16px 4px; }
+.sw-root .sw-sc-buy, .sw-chart .sw-sc-buy { color: #05040c; }
+.sw-chart .sw-sc-buy:disabled { color: var(--sw-dim); }
+.sw-ready { white-space: nowrap; }
+@media (max-width: 560px) { .sw-chart-top { flex-wrap: wrap; gap: 4px 12px; margin: 8px 8px 0; } .sw-chart-top .sw-x { position: absolute; top: 4px; right: 4px; } .sw-chart-top h2 { padding-right: 44px; } }
+
+/* pulsar map: cold sky, a turning beam and pulse rings from the pulsar at its heart */
+.sw-chart[data-map="pulsar"] .sw-chart-bg { filter: hue-rotate(-55deg) saturate(.9) brightness(.9); }
+.sw-chart[data-map="pulsar"] .sw-chart-top { border-image-source: url("/starwright/ui/frame.png?v=7"); }
+.sw-psr { fill: #9fd0ff; pointer-events: none; }
+.sw-beam { fill: #bfe6ff; opacity: .1; animation: swBeam 8s steps(48, end) infinite; transform-origin: 0 0; }
+@keyframes swBeam { to { transform: rotate(360deg); } }
+.sw-psr-ring { fill: none; stroke: #9fd0ff; stroke-width: 2; stroke-dasharray: 3 7; opacity: 0; animation: swPulseRing 2.4s steps(8, end) infinite; transform-origin: 0 0; }
+.sw-psr-ring[data-far] { animation-delay: 1.2s; }
+@keyframes swPulseRing { 0% { transform: scale(.4); opacity: .8; } 100% { transform: scale(1.4); opacity: 0; } }
+.sw-chart[data-map="pulsar"] .sw-edge line { stroke: #9fd0ff !important; }
+.sw-chart[data-map="pulsar"] .sw-nodebuff { fill: #bfe6ff; }
+@media (prefers-reduced-motion: reduce) { .sw-beam, .sw-psr-ring { animation: none !important; } }
