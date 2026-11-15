@@ -217,7 +217,9 @@ export const jobReady = (s: State, j: JobDef) => s.open >= STAGES[j.stage - 1].m
 export const waitingFor = (s: State): string | null => {
     if (s.job) return null;
     const j = nextJob(s);
-    return jobReady(s, j) ? null : `Open ${MATS[STAGES[j.stage - 1].mats - 1].name} to start ${j.name}`;
+    if (jobReady(s, j)) return null;
+    const m = s.open;
+    return `${j.name} needs ${MATS[STAGES[j.stage - 1].mats - 1].name}. Gathering ${fmt(UNLOCK_COST[m])} ${MATS[m - 1].name} to open ${MATS[m].name}.`;
 };
 /** The next few jobs, read-only, for the NEXT JOBS panel. */
 export const queue = (s: State, n = 3): { job: JobDef; index: number; ready: boolean }[] =>
@@ -239,6 +241,13 @@ export const inspectSecs = (s: State, j: JobDef, f: Fx) => {
     const delay = Math.min(TUNE.delayCap, Math.max(1, j.need / Math.max(0.1, inspectScore(s, f))));
     return Math.max(1, j.inspect * delay * (1 - f.inspect));
 };
+
+/** When the next job is waiting on a material, the foreman opens it as soon as the stock to pay for it is in. No click, so a new player (or time away) never stalls on it. */
+export function openForWaitingJob(s: State): boolean {
+    if (s.job) return false;
+    const j = nextJob(s);
+    return !jobReady(s, j) && unlock(s, s.open);
+}
 
 /** Start the next job if its stage is open. Called every tick. */
 export function startNext(s: State, f: Fx): boolean {
@@ -402,6 +411,7 @@ export function step(s: State, dt: number, f: Fx = effects(s)): void {
         s.amt[n] = clamp(s.amt[n] + want);
     }
     s.flow = s.amt.map((v, i) => (v - before[i]) / dt);
+    openForWaitingJob(s);
     startNext(s, f);
     if (s.job) stepJob(s, dt, f, c);
     if (s.change) { s.change.left -= dt; if (s.change.left <= 0) s.change = null; }

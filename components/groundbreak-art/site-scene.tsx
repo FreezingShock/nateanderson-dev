@@ -10,7 +10,7 @@ import { GB_BACKDROP, GB_JOBS, type GbJobId } from "./scene-data";
 type Camera = { x: number; y: number; z: number };
 type SceneJob = { id: string; floors: number; frac: number; phase: number; phaseName: string; phaseCount: number; inspecting: boolean; inspect: number };
 type SceneBuilding = { id: string; firm: number; index: number };
-export type GbSiteSceneProps = { camera: Camera; job: SceneJob | null; skyline: SceneBuilding[]; craneLevel: number; reduce: boolean; paused: boolean };
+export type GbSiteSceneProps = { camera: Camera; job: SceneJob | null; skyline: SceneBuilding[]; craneLevel: number; reduce: boolean; paused: boolean; idle?: string | null; crews?: number };
 
 /** World (480 x 270, ground 214) to art pixels: one world unit is K art pixels. */
 const WORLD_W = 480;
@@ -29,7 +29,33 @@ function frameFor(id: GbJobId, job: SceneJob): number {
     return Math.min(n - 2, Math.floor(job.frac * (n - 2)));
 }
 
-export function GbSiteScene({ camera, job, skyline, reduce, paused }: GbSiteSceneProps) {
+/** A site worker drawn in art pixels: hard hat, hi-vis vest with a stripe, work trousers, boots. Rows of 6 cells. */
+const WORKER = ["..yy..", ".yyyy.", ".ffff.", "oooooo", "owwwwo", "oowwoo", ".oooo.", ".kkkk.", ".kkkk.", ".kkkk.", ".bb.bb", ".bb.bb"];
+const WORKER_COL: Record<string, string> = { y: "#ffd23c", f: "#e0a878", o: "#ff9a1f", w: "#fff1c4", k: "#4a4458", b: "#241c2c" };
+const WORKER_SHADOW = WORKER.flatMap((row, y) => [...row].map((c, x) => (WORKER_COL[c] ? `${x}px ${y}px 0 ${WORKER_COL[c]}` : ""))).filter(Boolean).join(",");
+
+/** Crews on the site: more hired crews, more workers, pacing back and forth along the lot. */
+function Workers({ left, width, ground, count, reduce }: { left: number; width: number; ground: number; count: number; reduce: boolean }) {
+    return (
+        <>
+            {Array.from({ length: count }, (_, i) => {
+                const slot = width / count;
+                const span = Math.round(slot * (0.7 + ((i * 37) % 5) * 0.1));
+                const x = left + slot * i + 4;
+                return (
+                    <div key={i} className="gba-worker" style={{
+                        left: x, top: ground - 12, ["--span" as string]: `${span}px`, ["--dur" as string]: `${5 + ((i * 7) % 6)}s`, ["--delay" as string]: `${-((i * 13) % 9)}s`,
+                        animationPlayState: reduce ? "paused" : undefined,
+                    }}>
+                        <i style={{ boxShadow: WORKER_SHADOW }} />
+                    </div>
+                );
+            })}
+        </>
+    );
+}
+
+export function GbSiteScene({ camera, job, skyline, reduce, paused, idle, crews = 1 }: GbSiteSceneProps) {
     const box = useRef<HTMLDivElement>(null);
     const [size, setSize] = useState({ w: 1440, h: 810 });
     useEffect(() => {
@@ -66,11 +92,14 @@ export function GbSiteScene({ camera, job, skyline, reduce, paused }: GbSiteScen
     };
 
     const id = job && job.id in GB_JOBS ? (job.id as GbJobId) : null;
+    const lotId = !id && idle && idle in GB_JOBS ? (idle as GbJobId) : null;
+    const siteId = id ?? lotId;
+    const workerCount = Math.min(14, 2 + Math.floor(crews / 2));
     const near = `translate(${cw / 2 - fx * s}px, ${ch / 2 - fy * s}px) scale(${s})`;
     // finished buildings line the shore to the right of the site, newest nearest; one of each kind per firm
     const seen = new Set<string>();
     const done = [...skyline].reverse().filter((b) => b.id in GB_JOBS && !seen.has(`${b.id}`) && seen.add(`${b.id}`)).slice(0, 12);
-    let x = SITE_X + (id ? GB_JOBS[id].w / 2 : 120) + 30;
+    let x = SITE_X + (siteId ? GB_JOBS[siteId].w / 2 : 120) + 30;
     const left: { id: GbJobId; x: number }[] = [];
     for (const b of done) {
         const j = GB_JOBS[b.id as GbJobId];
@@ -92,6 +121,16 @@ export function GbSiteScene({ camera, job, skyline, reduce, paused }: GbSiteScen
                     return <GbJob key={b.id} job={b.id} frame={j.frames.length - 1}
                         style={{ position: "absolute", left: b.x, top: B.siteY + j.ground - j.h }} />;
                 })}
+                {lotId && (() => {
+                    const j = GB_JOBS[lotId];
+                    const left0 = SITE_X - j.w / 2;
+                    return (
+                        <>
+                            <GbJob job={lotId} frame={0} style={{ position: "absolute", left: left0, top: B.siteY + j.ground - j.h }} />
+                            <Workers left={left0 + 8} width={j.w - 16} ground={B.siteY} count={workerCount} reduce={reduce} />
+                        </>
+                    );
+                })()}
                 {id && (() => {
                     const j = GB_JOBS[id];
                     const left0 = SITE_X - j.w / 2;
@@ -102,6 +141,7 @@ export function GbSiteScene({ camera, job, skyline, reduce, paused }: GbSiteScen
                             {job!.inspecting && job!.inspect < 1 && (
                                 <div className="gba-flag" style={{ left: SITE_X + j.w / 2 - 34, top: B.siteY - 30 }} />
                             )}
+                            {!job!.inspecting && <Workers left={left0 + 8} width={j.w - 16} ground={B.siteY} count={workerCount} reduce={reduce} />}
                             {!reduce && <div className="gba-dust" style={{ left: left0, top: B.siteY - 40, width: j.w }} />}
                         </>
                     );

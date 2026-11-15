@@ -10,10 +10,11 @@ import { JOB_BY, JOBS, MATS, PERKS, TIER_LABELS, TUNE, UNLOCK_COST as UNLOCK, ci
 import {
     SAVE_KEY, SAVE_VERSION, acceptChange, buy, buyPerk, canBuy, canIncorporate, canUnlock, catchUp, charterGain, chain, declineChange, effects, fmt, fmtAge,
     fmtCash, fresh, incorporate, isSave, jobFloors, jobPhaseName, jobProgress, load, methodReady, overtime, overtimeCost, parse, payout, perkReady, phaseNeeds,
-    plan, queue, rawRate, repPay, serialize, stageOf, step, tierCost, unlock, waitingFor, type State,
+    plan, queue, nextJob, rawRate, repPay, serialize, stageOf, step, tierCost, unlock, waitingFor, type State,
 } from "@/lib/groundbreak/engine";
 import { gbCommand } from "@/lib/groundbreak/commands";
 import { MAT_ICONS, iconUrl } from "./icons";
+import { GB_JOBS, type GbJobId } from "@/components/groundbreak-art";
 import { GbSiteScene as GroundbreakScene } from "@/components/groundbreak-art/site-scene";
 import { CAMERA_HOME, GROUND_Y, WORLD_H, WORLD_W, ZOOM_MAX, ZOOM_MIN, type Camera, type SceneJob } from "./scene-types";
 
@@ -72,6 +73,9 @@ export function Groundbreak() {
     const [away, setAway] = useState<string | null>(null);
     const [cam, setCam] = useState<Camera>(CAMERA_HOME);
     const camRef = useRef<Camera>(CAMERA_HOME);
+    /** True once the player zoomed or panned; until then the camera follows the current job. */
+    const userCam = useRef(false);
+    const lastJob = useRef<string | null>(null);
     const viewRef = useRef<HTMLDivElement>(null);
     const manualPause = useRef(false);
     const [paused, setPaused] = useState(false);
@@ -110,14 +114,24 @@ export function Groundbreak() {
         camRef.current = n;
         setCam(n);
     }, []);
-    const homeCam = useCallback((): Camera => {
+    /** Frame the site: the job (or the lot for the next job) fills about half the free view, so the crew and the staged building are the first thing seen. */
+    const homeCam = useCallback((jobId?: string): Camera => {
         const r = viewRef.current?.getBoundingClientRect();
         if (!r) return CAMERA_HOME;
         const cover = Math.max(r.width / WORLD_W, r.height / WORLD_H);
         const portrait = r.height > r.width;
-        return { x: portrait ? 240 : 236, y: portrait ? 160 : 166, z: clamp(r.width / (cover * 250), ZOOM_MIN, 1) };
+        const art = jobId ? GB_JOBS[jobId as GbJobId] : undefined;
+        if (!art) return { x: portrait ? 240 : 236, y: portrait ? 160 : 166, z: clamp(r.width / (cover * 250), ZOOM_MIN, 1) };
+        const hw = art.h / 2 + 14, ww = art.w / 2 + 24;
+        const dockH = r.width <= 860 ? 230 : 120, topH = 60;
+        const free = Math.max(120, r.height - dockH - topH);
+        const z = clamp(Math.min(free / (cover * hw), (r.width * 0.86) / (cover * ww)), 0.6, 3.2);
+        // centre the building in the free band between the header and the dock
+        const midShift = (dockH - topH) / 2 / (cover * z);
+        return { x: 240, y: GROUND_Y - hw / 2 + 8 + midShift, z };
     }, []);
     const zoomAt = useCallback((factor: number, px?: number, py?: number) => {
+        userCam.current = true;
         const r = viewRef.current?.getBoundingClientRect();
         const c = camRef.current;
         if (!r) return;
@@ -128,6 +142,7 @@ export function Groundbreak() {
         setCamera({ z: nz, x: wx - (ax - r.width / 2) / (cover * nz), y: wy - (ay - r.height / 2) / (cover * nz) });
     }, [setCamera]);
     const panBy = useCallback((dx: number, dy: number) => {
+        userCam.current = true;
         const r = viewRef.current?.getBoundingClientRect();
         const c = camRef.current;
         if (!r) return;
@@ -176,7 +191,8 @@ export function Groundbreak() {
         el.addEventListener("wheel", onWheel, { passive: false });
         return () => el.removeEventListener("wheel", onWheel);
     }, [zoomAt, ready]);
-    useEffect(() => { if (ready) setCamera(homeCam()); }, [ready, homeCam, setCamera]);
+    const siteKey = sRef.current ? (sRef.current.job?.id ?? nextJob(sRef.current).id) : "";
+    useEffect(() => { if (ready && !userCam.current) setCamera(homeCam(siteKey)); }, [ready, siteKey, homeCam, setCamera]);
 
     // ---- boot and tick -------------------------------------------------------------------------------------------------------
     useEffect(() => {
@@ -213,6 +229,12 @@ export function Groundbreak() {
                 const last = s.skyline[s.skyline.length - 1];
                 note(`${JOB_BY.get(last?.id ?? "")?.name ?? "Job"} handed over.`, "hot");
             }
+            const jid = s.job?.id ?? "";
+            if (lastJob.current !== null && jid && jid !== lastJob.current) {
+                const jd = JOB_BY.get(jid);
+                if (jd) note(`${jd.name} started at ${cityOf(s.firm).sites[jd.stage - 1]}.`, "hot");
+            }
+            lastJob.current = jid;
             if (s.open > sn.open) note(`${MATS[s.open - 1].name} is on site.`, "hot");
             if (s.change && !sn.change) note("Change order: the client wants more.", "hot");
             seen.current = { built: s.built, open: s.open, change: !!s.change };
@@ -234,7 +256,7 @@ export function Groundbreak() {
     const doUnlock = useCallback(() => act((s) => { if (unlock(s, s.open)) save(); }), [act, save]);
     const doIncorporate = useCallback(() => act((s) => { const g = incorporate(s); if (g > 0) { setWin(null); setSel(null); note(`A new firm opens in ${cityOf(s.firm).name}. +${g} charter.`, "hot"); save(); } }), [act, note, save]);
     const togglePause = useCallback(() => { manualPause.current = !manualPause.current; setPaused(manualPause.current); shell.setPaused(manualPause.current); }, [shell]);
-    const reset = useCallback(() => setCamera(homeCam()), [homeCam, setCamera]);
+    const reset = useCallback(() => { userCam.current = false; const s = sRef.current; setCamera(homeCam(s ? (s.job?.id ?? nextJob(s).id) : undefined)); }, [homeCam, setCamera]);
     const toggleSimple = useCallback(() => { setSimple((v) => { try { window.localStorage.setItem("gb-simple", v ? "0" : "1"); } catch { /* ignore */ } return !v; }); }, []);
 
     useEffect(() => {
@@ -245,7 +267,6 @@ export function Groundbreak() {
             if (e.ctrlKey || e.metaKey || e.altKey) return;
             const k = e.key.toLowerCase();
             if (e.key === "Escape") { if (win) setWin(null); else setSel(null); return; }
-            if (e.key === "`") { e.preventDefault(); setWin((w) => (w === "console" ? null : "console")); return; }
             const mi = MAT_KEYS.indexOf(e.key);
             if (mi >= 0 && !e.shiftKey) { setWin(null); setSel((c) => (c === mi ? null : mi)); return; }
             if (sel !== null && (k === "q" || k === "w" || k === "e")) { doBuy(sel, (k === "q" ? 0 : k === "w" ? 1 : 2) as Tier); return; }
@@ -306,7 +327,7 @@ export function Groundbreak() {
     return (
         <div className="gb-root" data-paused={paused || shell.paused ? "true" : undefined} data-simple={simple ? "true" : undefined} data-reduce={reduce ? "true" : undefined} data-win={win ?? undefined}>
             <div ref={viewRef} className="gb-view" onPointerDown={onDown} onPointerMove={onMove} onPointerUp={onUp} onPointerCancel={onUp} aria-label="Building site. Scroll to zoom, drag to pan.">
-                <GroundbreakScene camera={cam} job={sceneJob} skyline={skyline} craneLevel={s.equip[11] ?? 0} reduce={reduce || simple} paused={paused || shell.paused} />
+                <GroundbreakScene camera={cam} job={sceneJob} skyline={skyline} craneLevel={s.equip[11] ?? 0} idle={aj ? null : nextJob(s).id} crews={crewTotal} reduce={reduce || simple} paused={paused || shell.paused} />
             </div>
 
             <header className="gb-top">
@@ -321,7 +342,7 @@ export function Groundbreak() {
             </header>
 
             <nav className="gb-rail" aria-label="Menus" onPointerDown={(e) => e.stopPropagation()}>
-                {([["jobs", "bid", "Jobs", "J"], ["skyline", "skyline", "Skyline", "K"], ["firm", "firm", "Firm", "F"], ["console", "console", "Console", "`"], ["menu", "menu", "Menu", "M"]] as const).map(([id, ic, label, key]) => (
+                {([["jobs", "bid", "Jobs", "J"], ["skyline", "skyline", "Skyline", "K"], ["firm", "firm", "Firm", "F"], ["console", "console", "Console", "⌃J"], ["menu", "menu", "Menu", "M"]] as const).map(([id, ic, label, key]) => (
                     <button key={id} type="button" className="gb-rail-btn" aria-pressed={win === id} aria-label={label} data-tip={`${label} · ${key}`} data-ping={id === "firm" && (canIncorporate(s, f) || PERKS.some((p) => perkReady(s.perks, p) && s.charter >= p.cost)) ? "" : id === "jobs" && wait ? "" : undefined} onClick={() => { setSel(null); setWin(win === id ? null : id); }}>
                         <Ico id={ic} size={34} /><kbd>{key}</kbd>
                     </button>
@@ -336,7 +357,7 @@ export function Groundbreak() {
 
             <aside className={`gb-job ${jobOpen ? "" : "is-min"}`} onPointerDown={(e) => e.stopPropagation()}>
                 <button type="button" className="gb-job-head" onClick={() => setJobOpen((v) => !v)} aria-expanded={jobOpen} data-tip={jobOpen ? "Collapse" : "Expand"}>
-                    <Ico id="bid" size={20} /><span>{def ? def.name : "Between jobs"}</span>
+                    <Ico id="bid" size={20} /><span>{def ? def.name : nextJob(s).name}</span>
                     {aj && <em>{aj.step === "permit" ? `permit ${fmtSecs(aj.left)}` : aj.step === "inspect" ? `inspection ${fmtSecs(aj.left)}` : `${Math.floor(prog * 100)}%`}</em>}
                 </button>
                 {jobOpen && (def && aj && f ? (
@@ -360,7 +381,12 @@ export function Groundbreak() {
                         {aj.step === "inspect" && ovt > 0 && <button type="button" className="gb-go" disabled={s.cash < ovt} onClick={() => act((x) => overtime(x))} data-tip="Pay to finish the inspection now">Overtime {fmtCash(ovt)}</button>}
                     </div>
                 ) : (
-                    <div className="gb-job-body"><p className="gb-job-pay">{wait ?? "Starting the next job…"}</p><button type="button" className="gb-go" onClick={() => setWin("jobs")}>See next jobs</button></div>
+                    <div className="gb-job-body">
+                        <p className="gb-job-pay">{wait ?? "Permit filed. The crew is moving in."}</p>
+                        {wait && <i className="gb-bar" data-tip={`${MATS[s.open - 1].name} toward opening ${MATS[s.open].name}`}><b style={{ width: `${Math.min(100, Math.floor((s.amt[s.open - 1] / UNLOCK[s.open]) * 100))}%` }} /></i>}
+                        <p className="gb-job-pay">Hire crews and buy equipment to make material faster. Jobs start on their own.</p>
+                        <button type="button" className="gb-go" onClick={() => setWin("jobs")}>See next jobs</button>
+                    </div>
                 ))}
                 {s.change && (
                     <div className="gb-change" data-tip="The client wants more. Extra materials, bigger payout.">
@@ -580,7 +606,7 @@ function MenuBody({ s, paused, onPause, simple, onSimple, fs, onFs, fsOn, onImpo
                 if (r.ok) onImport(r.data); else onNote(r.error);
             }} />
             <ConfirmGo label="Start over" sure="Deletes this save, skyline included. Sure?" onGo={onWipe} />
-            <p className="gb-keys">1-0 - = materials · Q W E tiers · B bids · K skyline · F firm · ` console · wheel zoom · drag pan · R reset</p>
+            <p className="gb-keys">1-0 - = materials · Q W E tiers · J jobs · K skyline · F firm · ` site console · wheel zoom · drag pan · R reset</p>
         </div>
     );
 }
