@@ -3,11 +3,13 @@
 // Starwright settings and the welcome-back card. Settings live in lib/starwright/settings.ts (kept in this browser, apart from
 // the save). The block sits in the Menu; the card shows what the star did while you were away. Styles: app/camino/starwright-qol.css.
 import { useEffect, useState } from "react";
+import { CODEX, ELEMENTS } from "@/lib/starwright/data";
+import { ElTile, Gl } from "./sw-ui";
 import "@/app/camino/starwright-qol.css";
 import { AUTO_NOVA_STEPS, AUTO_VISITOR_STEPS, UNLOCKS, cycle, getSettings, onSettings, setSettings, unlocked, type Settings } from "@/lib/starwright/settings";
 import type { State } from "@/lib/starwright/engine";
-import { readBackup, writeBackup } from "@/lib/starwright/session";
-import { fmtAge } from "@/lib/starwright/engine";
+import { readBackup, writeBackup, type AwayReport } from "@/lib/starwright/session";
+import { fmt, fmtAge } from "@/lib/starwright/engine";
 
 /** The current settings, re-read when the console or the menu changes them. */
 export function useSettings(): Settings {
@@ -75,14 +77,41 @@ export function SettingsBlock({ s }: { s: State }) {
     );
 }
 
-/** A card over the scene: what the star did while you were away, or a problem with the save. Clicking it, or Esc, dismisses it. */
-export function AwayCard({ title, lines, onClose }: { title: string; lines: string[]; onClose: () => void }) {
+export interface AwayData { title: string; lines: string[]; report?: AwayReport }
+
+/** A card over the scene: what the star did while you were away, or a problem with the save. Dismiss button, or Esc. The elements it
+ *  gained show as chips with their drawn icon; hover shows the Almanac line and a tap does the same (touch has no hover). Styles: starwright-ev.css. */
+export function AwayCard({ card, onClose }: { card: AwayData; onClose: () => void }) {
+    const { title, lines, report: r } = card;
+    const [pick, setPick] = useState<number | null>(null);
+    const welcome = !!r;
+    const rows = lines.map((x, i) => ({ x, i })).filter(({ i }) => !(welcome && (i === 0 || i === r.gainAt)));
     return (
-        <button type="button" className="sw-away sw-away2 sw-panel" onClick={onClose} aria-label={`${title}. Dismiss.`}>
-            <b>{title}</b>
-            {lines.map((x, i) => <span key={i} className="sw-away-line">{x}</span>)}
-            <span className="sw-away-x">dismiss</span>
-        </button>
+        <div className="sw-away sw-ev sw-away2 sw-panel" role="dialog" aria-label={title} data-kind="away">
+            <div className="sw-ev-head">
+                <span className="sw-ev-art" aria-hidden="true"><Gl n="age" s={3} /></span>
+                <div><b>{title}</b>{welcome && <em>{lines[0]}</em>}</div>
+            </div>
+            {r?.gains && r.gains.length > 0 && (
+                <div className="sw-ev-gains" role="list" aria-label="Elements gained">
+                    {r.gains.map((g) => {
+                        const e = ELEMENTS[g.i];
+                        return (
+                            <button key={e.sym} type="button" role="listitem" className="sw-gain" style={{ "--c": e.color } as React.CSSProperties} aria-pressed={pick === g.i}
+                                data-tip={`${e.name}|${CODEX[e.sym]}`} onClick={() => setPick(pick === g.i ? null : g.i)}>
+                                <ElTile i={g.i} size={2} anim />
+                                <b>+{fmt(g.d, 1)}</b>
+                                <span>{e.name}</span>
+                            </button>
+                        );
+                    })}
+                </div>
+            )}
+            {pick !== null && <p className="sw-ev-note" key={pick}><b style={{ color: ELEMENTS[pick].color }}>{ELEMENTS[pick].name}</b> {CODEX[ELEMENTS[pick].sym]}</p>}
+            {rows.map(({ x, i }) => <p key={i} className="sw-away-line">{x}</p>)}
+            {welcome && r.col !== undefined && <i className="sw-ev-core" aria-hidden="true"><i style={{ width: `${Math.round(r.col * 100)}%` }} /></i>}
+            <button type="button" className="sw-ev-x" onClick={onClose}>Dismiss</button>
+        </div>
     );
 }
 
