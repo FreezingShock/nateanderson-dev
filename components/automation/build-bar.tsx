@@ -152,7 +152,7 @@ export function BuildList({
                 aria-label={`Select ${m.name}${ok ? "" : " (not enough resources yet)"}`}
                 onClick={() => onBuild(m.id)}
               >
-                <Glyph code={m.glyph} size={32} icon={m.id} />
+                <Glyph code={m.glyph} size={48} icon={m.id} />
                 <span className="ab-build-text">
                   <span className="ab-build-name">
                     {m.name}

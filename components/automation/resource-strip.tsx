@@ -119,7 +119,7 @@ function ResourceList({
             tabIndex={0}
             aria-label={`${r.name}, ${amount}${showRates ? `, ${rate}` : ""}`}
           >
-            <Glyph code={r.glyph} size={40} icon={ICON_ALIAS[r.id] ?? r.id} />
+            <Glyph code={r.glyph} size={48} icon={ICON_ALIAS[r.id] ?? r.id} />
             <span className="ab-res-amt">{amount}</span>
             {showRates && r.perSecond !== 0 && (
               <span className="ab-res-rate" data-neg={r.perSecond < 0}>
