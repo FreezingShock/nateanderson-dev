@@ -1,0 +1,48 @@
+/* Brasswork motion language. One set of timings and easings for every menu, sheet, tab and button in the workshop.
+
+   Rules (see docs/games/brasswork/FEATURES.md, "Motion"):
+   - Enter 200 ms, exit 160 ms. Exits are always shorter than entrances, so a closed menu never lingers.
+   - Only transform and opacity move. A menu may choose its own shape (unroll, iris, stamp, lid), but it does so with
+     transform and opacity, so the compositor carries it and the frame rate holds on a phone.
+   - Press feedback is 70 ms down, 140 ms for hover colour. Every brass button in the game uses these tokens.
+   - A tab or a selected row swaps its content with a 180 ms slide and fade (`bwm-swap`).
+   - Reduce motion (OS or app setting) and Simple visuals (`data-lowfx`) turn all of it off. Nothing is hidden by
+     the switch: the end state is always reached at once. */
+
+:root {
+  --bwm-press: 70ms;
+  --bwm-hover: 140ms;
+  --bwm-enter: 200ms;
+  --bwm-exit: 160ms;
+  --bwm-swap: 180ms;
+  --bwm-ease-out: cubic-bezier(.2, .7, .2, 1);
+  --bwm-ease-in: cubic-bezier(.5, 0, .8, .4);
+}
+
+/* Shared keyframes. Menus that need their own shape define it beside the menu (window.css, phone-menu-art.css). */
+@keyframes bwm-fade-in { from { opacity: 0; } to { opacity: 1; } }
+@keyframes bwm-fade-out { to { opacity: 0; } }
+@keyframes bwm-pop-in { from { opacity: 0; transform: translateY(6px) scale(.97); } to { opacity: 1; transform: none; } }
+@keyframes bwm-pop-out { to { opacity: 0; transform: translateY(6px) scale(.97); } }
+@keyframes bwm-swap-in { from { opacity: 0; transform: translateX(8px); } to { opacity: 1; transform: none; } }
+
+/* Pop: small panels (codex, toasts, tooltips that are not in the shared kit) grow in from a little below. */
+.bwm-pop { animation: bwm-pop-in var(--bwm-enter) var(--bwm-ease-out) both; }
+[data-closing] > .bwm-pop, [data-closing] .bwm-pop { animation: bwm-pop-out var(--bwm-exit) var(--bwm-ease-in) both; }
+
+/* A section or row that changes its content: give the new content this class and a new key. */
+.bwm-swap { animation: bwm-swap-in var(--bwm-swap) var(--bwm-ease-out) both; }
+
+/* Press and hover for every brass control. The timings are the tokens; the look stays in each family's own file. */
+.bw-window-close {
+  transition: transform var(--bwm-press) ease-out, box-shadow var(--bwm-press) ease-out, background var(--bwm-hover) ease-out, color var(--bwm-hover) ease-out;
+}
+.bw-window-close:active { transform: translateY(2px); box-shadow: inset 0 1px 0 rgba(0, 0, 0, .5); }
+
+/* Reduce motion (app setting or OS) and Simple visuals: the end state appears at once, nothing slides or fades. */
+[data-reduce="true"] .bwm-swap, [data-lowfx="true"] .bwm-swap,
+[data-reduce="true"] .bwm-pop, [data-lowfx="true"] .bwm-pop,
+[data-reduce="true"] .bwm-pop-enter, [data-lowfx="true"] .bwm-pop-enter { animation: none !important; }
+@media (prefers-reduced-motion: reduce) {
+  .bwm-swap, .bwm-pop { animation: none !important; }
+}

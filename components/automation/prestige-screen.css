@@ -47,7 +47,7 @@
   border: 0; cursor: pointer; text-align: left; font: inherit; color: var(--bw-dim, #b09a6c);
   background: var(--bw-dither, none), linear-gradient(180deg, #2f2013, #1d130a);
   box-shadow: inset 0 0 0 1px rgba(210, 154, 60, 0.3), 0 3px 0 #0b0703;
-  transition: filter 0.12s, transform 0.08s;
+  transition: filter var(--bwm-hover) ease-out, transform var(--bwm-press) ease-out;
 }
 .pw-pick:hover { filter: brightness(1.2); }
 .pw-pick-img { display: block; aspect-ratio: 16 / 9; background-size: cover; background-position: center; image-rendering: pixelated; filter: saturate(0.75) brightness(0.8); }

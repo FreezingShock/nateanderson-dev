@@ -6,8 +6,7 @@
  * Behaviour
  * - No dark scrim. The game stays visible and keeps running behind the window. The layer behind the window is
  *   transparent and only catches a click on the blank area, which closes the window.
- * - Closes on Escape, the Close button, or a blank-area click. Closing plays the exit animation first (about
- *   200 ms), then calls onClose, so the caller's open state changes after the window has gone.
+ * - Closes on Escape, the Close button, or a blank-area click. Closing plays the exit animation first (160 ms), then calls onClose, so the caller's open state changes after the window has gone.
  * - Only one window should be open at a time. The caller holds the open state and renders one at a time.
  *
  * Variant (the `variant` prop, also written to data-variant on the window)
@@ -16,12 +15,13 @@
  * - "settle": the window drops in from just above and settles. Use for small confirmations and Settings.
  *
  * Motion rules
- * - Animations run 150 to 220 ms. Reduce motion (`data-reduce="true"` or the OS setting) and Simple visuals
+ * - Enter 200 ms, exit 160 ms (motion.css tokens). Every shape uses transform and opacity only. Reduce motion (`data-reduce="true"` or the OS setting) and Simple visuals
  *   (`data-lowfx="true"`) both switch the animation off. Those attributes are read from the enclosing
  *   .ab-root or .bw-root, so the window needs no extra prop for them.
  */
 
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
+import "./motion.css";
 import "./window.css";
 import "./scrollbar.css";
 
@@ -53,8 +53,8 @@ export type MenuWindowProps = {
   children: ReactNode;
 };
 
-/** How long the exit animation runs before onClose fires. Keep in step with --bw-win-out in window.css. */
-const EXIT_MS = 200;
+/** How long the exit animation runs before onClose fires. Keep in step with --bwm-exit in motion.css. */
+const EXIT_MS = 160;
 
 /**
  * Centred menu window for Brasswork. Closes on Escape, the Close button, or a click on the blank area

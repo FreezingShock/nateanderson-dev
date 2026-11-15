@@ -119,7 +119,8 @@ export function HubMenu({ hub, onClose }: { hub: HubView; onClose: () => void })
           <h4 className="hm-kick" data-glyph="milestones">Milestones · pay blueprints</h4>
           <ol className="hm-ladder">{listed("milestone").map(row)}</ol>
         </aside>
-        <Slip step={step} index={indexOf(step)} total={step.kind === "request" ? orders.length : hub.steps.length - orders.length} />
+        {/* Keyed by step, so choosing another row swaps the slip with its own short entrance. */}
+        <Slip key={step.id} step={step} index={indexOf(step)} total={step.kind === "request" ? orders.length : hub.steps.length - orders.length} />
       </div>
     </MenuWindow>
   );
@@ -129,21 +130,30 @@ export function HubMenu({ hub, onClose }: { hub: HubView; onClose: () => void })
 export function HubToast({ hub, onOpen }: { hub: HubView; onOpen: () => void }) {
   const seen = useRef<Set<string> | null>(null);
   const [toast, setToast] = useState<HubStep | null>(null);
+  // Leaving: the toast drops out for its exit (--bwm-exit), then unmounts.
+  const [leaving, setLeaving] = useState(false);
+  const leaveTimer = useRef<number | null>(null);
   useEffect(() => {
     const done = new Set(hub.steps.filter((s) => s.state === "done" && s.kind === "request").map((s) => s.id));
     if (seen.current === null) { seen.current = done; return; } // the first read is the saved state, not news
     const fresh = hub.steps.find((s) => done.has(s.id) && !seen.current!.has(s.id));
     seen.current = done;
-    if (fresh) setToast(fresh);
+    if (fresh) { setLeaving(false); setToast(fresh); }
   }, [hub]);
   useEffect(() => {
     if (!toast) return;
-    const t = window.setTimeout(() => setToast(null), 7000);
-    return () => window.clearTimeout(t);
+    const t = window.setTimeout(() => {
+      setLeaving(true);
+      leaveTimer.current = window.setTimeout(() => { setToast(null); setLeaving(false); leaveTimer.current = null; }, 160);
+    }, 7000);
+    return () => {
+      window.clearTimeout(t);
+      if (leaveTimer.current !== null) { window.clearTimeout(leaveTimer.current); leaveTimer.current = null; }
+    };
   }, [toast]);
   if (!toast) return null;
   return (
-    <div className="hm-toast" role="status">
+    <div className="hm-toast" data-closing={leaving ? "true" : undefined} role="status">
       <span className="hm-toast-kick">Order filled</span>
       <span className="hm-toast-name">{toast.name}</span>
       <span className="hm-toast-opens">Opened: {toast.unlocks.map((u) => u.name).join(", ")}</span>

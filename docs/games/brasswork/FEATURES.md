@@ -94,10 +94,12 @@ Owners are per area, one thread per file set. The threads: "Streamline Brasswork
 | Production stats: headline numbers, running-down callout, ledger by output | partial: ledger vs two columns is Nate's call (T-02) | `production-window.tsx` | none |
 | Settings: sound, reduce motion, low fx, number format, lighting mood, volumes, save export and import | partial: grouped list vs tiles is Nate's call (T-03) | `settings-window.tsx`, `brasswork/settings-extras.tsx`, `audio-rows.tsx`, `lib/brasswork/settings.ts` | none |
 | Starter quest scroll (drill, kiln, belt, delivery), skippable, never returns | working | `brasswork/first-run.tsx`, `lib/brasswork/first-run.ts` | `opening.test.mjs` (the steps) |
-| Codex of every machine | working | `brasswork/codex.tsx` | none |
+| Codex of every machine | working: pops in and out (160 ms exit), Escape closes, open and close sounds | `brasswork/codex.tsx`, `brasswork/extras.css` | none |
 | Away report after 2 minutes or more offline | working | `brasswork/extras.tsx`, host | none |
 | Phone layout: bottom sheets, 4-across resource boxes, machine preview before placing, Milestones sheet, More menu; every tap target 44 px or more (`tap-targets.mjs` checks main view, four sheets and five More windows) | working in headless Chrome: Machines, Milestones and More each open with their own drawn entrance and play a short matching exit (slide, stamp, lid), skipped under reduce motion and low fx (`phone-sheets.mjs`); untested on a real phone | `phone-menu-art.css`, `automation-hud.tsx` | none |
-| `MenuWindow` (sizes 640, 960, 1160; variants iris, shutter, settle; bottom sheet under 768 px); focus moves into it on open, Tab stays inside, focus returns to the opener on close | working | `brasswork-ui/window.tsx` | none |
+| `MenuWindow` (sizes 640, 960, 1160; variants iris, shutter, settle; bottom sheet under 768 px); focus moves into it on open, Tab stays inside, focus returns to the opener on close; exit 160 ms | working | `brasswork-ui/window.tsx` | none |
+| Hub toast: drops out after 7 s (160 ms exit), Open hub still immediate | working, headless only | `hub-menu.tsx`, `hub-menu.css` | none |
+| Hub detail: choosing another order or milestone swaps the slip with a short entrance | working, headless only | `hub-menu.tsx` (`key` on the slip) | none |
 
 ## Audio
 
@@ -116,3 +118,15 @@ Owners are per area, one thread per file set. The threads: "Streamline Brasswork
 | Item belt models, machine models (13), resource and prop models | working | `lib/automation/models/` | `item-models.test.mjs`, `machine-models.test.mjs` |
 
 **Rules the tests enforce:** a change to a machine model in `models/machines/` must also redraw its menu art and icon (`bw_machines.py`, then `build-menu-art.py` and `build-icons.py`). Every catalog id needs an icon. `models/registry.ts` conflicts on almost every merge: keep all lists.
+
+## Menu motion
+
+One motion language for every menu, sheet and button. Tokens and shared keyframes live in `brasswork-ui/motion.css`. Enter 200 ms, exit 160 ms, press 70 ms, hover 140 ms, tab or row swap 180 ms. Every shape animates only transform and opacity. Each menu keeps its own shape (iris, shutter, unroll, unfold, doors, settle, stamp, lid, stamp-out sheet). Reduce motion and Simple visuals (`data-lowfx`) switch all of it off.
+
+| Feature | State | Code | Test |
+|---|---|---|---|
+| Desktop menus: Research (unroll), Expedition (unfold), Production (shutter), Settings (settle, gear turns), Hub (doors), Milestones (stamp), each with its own exit | working in headless Chrome: `scripts/automation/menu-motion.mjs` freezes entrance and exit mid-way and checks the menu leaves; untested on a real GPU | `brasswork-ui/window.css`, `brasswork-ui/window.tsx` | none |
+| Phone sheets: Milestones (stamp), More menu (lid, items slide in one by one), palette sheet (slide), all with exits | working in headless Chrome at 390 px; untested on a real phone | `automation/phone-menu-art.css` | `scripts/automation/menu-motion.mjs --phone` |
+| Desktop build flyout: exit on group change (160 ms) and the drawer entrance | working | `automation/automation-hud.tsx`, `automation-hud.css` | none |
+| Press feedback on brass buttons (action, hold, text, tile, window close, research card, prestige, expedition, settings pair): 2 to 3 px down on press, same token timings | working | `brasswork-skin.css`, `build-tile.css`, `brass-kit.css`, `research-screen.css`, `prestige-screen.css`, `expedition-window.css`, `settings-window.css` | none |
+| Reduce motion and Simple visuals: every menu, sheet, toast and codex shows its end state at once | working in headless Chrome (`--reduce` run) | every file above | `menu-motion.mjs --reduce` |

@@ -44,7 +44,7 @@
   background: #15110b; color: var(--bw-cream, #f0dfb8);
   --edge: #6b5638; --rib: #4a4338; --ribfg: #d8cdb0; --tint: grayscale(1) brightness(0.72);
   box-shadow: 0 0 0 2px var(--edge), 0 5px 0 #0a0704, 0 8px 10px rgba(0, 0, 0, 0.45);
-  transition: transform 0.08s, filter 0.12s;
+  transition: transform var(--bwm-press) ease-out, filter var(--bwm-hover) ease-out;
 }
 .rs-card:hover { transform: translateY(-2px); filter: brightness(1.12); }
 .rs-card:focus-visible { outline: 2px solid #fff3c8; outline-offset: 3px; }

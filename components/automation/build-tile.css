@@ -22,7 +22,7 @@
   border: 0;
   box-shadow: inset 0 0 0 1px #5a3a16, 0 3px 0 #0b0703;
   cursor: pointer;
-  transition: transform 0.14s ease, box-shadow 0.14s ease, background 0.14s ease;
+  transition: transform var(--bwm-press) ease-out, box-shadow var(--bwm-hover) ease-out, background var(--bwm-hover) ease-out;
 }
 .ab-root .bwt-main:hover:not(:disabled) {
   background: linear-gradient(180deg, #36240f, #241709);

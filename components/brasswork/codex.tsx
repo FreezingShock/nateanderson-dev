@@ -2,7 +2,9 @@
 
 // The machine codex: every machine in the recipe tree with its size, power, build cost and what it makes.
 // Reads the same catalog the sim uses, so it never drifts from the numbers in play.
+import { useEffect, useRef, useState } from "react";
 import { DEFAULT_CATALOG } from "@/lib/automation/sim";
+import { playSound } from "@/lib/automation/audio";
 import type { Stack } from "@/lib/automation/types";
 
 const tree = DEFAULT_CATALOG.tree;
@@ -10,10 +12,32 @@ const itemName = new Map(tree.items.map((i) => [i.id, i.name]));
 const nm = (id: string) => itemName.get(id) ?? id.replace(/_/g, " ");
 const stacks = (s: Stack[]) => s.map((x) => `${x.qty} ${nm(x.item)}`).join(", ");
 
+/** Exit time before the caller unmounts the codex. Matches --bwm-exit in brasswork-ui/motion.css. */
+const EXIT_MS = 160;
+
 export function Codex({ onClose }: { onClose: () => void }) {
+    // Opens with a short pop; closing plays the same shape in reverse, then the caller unmounts it.
+    const [closing, setClosing] = useState(false);
+    const timer = useRef<number | null>(null);
+    const close = () => {
+        if (timer.current !== null) return;
+        setClosing(true);
+        playSound("close");
+        timer.current = window.setTimeout(() => { timer.current = null; onClose(); }, EXIT_MS);
+    };
+    useEffect(() => {
+        playSound("open");
+        const onKey = (e: KeyboardEvent) => { if (e.key === "Escape" || e.key === "c" || e.key === "C") close(); };
+        window.addEventListener("keydown", onKey);
+        return () => {
+            window.removeEventListener("keydown", onKey);
+            if (timer.current !== null) window.clearTimeout(timer.current);
+        };
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
     return (
-        <div className="bx-scrim" onClick={onClose}>
-            <div className="bx-card bx-wide" role="dialog" aria-label="Machine codex" onClick={(e) => e.stopPropagation()}>
+        <div className="bx-scrim" data-closing={closing ? "true" : undefined} onClick={close}>
+            <div className="bx-card bx-wide bwm-pop" role="dialog" aria-label="Machine codex" onClick={(e) => e.stopPropagation()}>
                 <h2 className="bw-title">Codex</h2>
                 {tree.machines.map((m) => {
                     const made = tree.recipes.filter((r) => r.machine === m.id && !r.alternate);
@@ -63,7 +87,7 @@ export function Codex({ onClose }: { onClose: () => void }) {
                         </section>
                     );
                 })}
-                <button type="button" className="bw-btn" onClick={onClose}>
+                <button type="button" className="bw-btn" onClick={close}>
                     Close
                 </button>
             </div>
