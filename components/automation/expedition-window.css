@@ -1,20 +1,32 @@
 /* Expedition: a centred brass window of site cards over the dimmed game. Tokens come from --bw-*. */
 /* Expedition content inside the shared MenuWindow, four site cards across at wide size. */
-.ex-root { display: flex; flex-direction: column; gap: 10px; }
-.ex-sub { margin: 0; font-size: 14px; color: var(--bw-dim, #b09a6c); }
+/* Chart-table identity: verdigris ink on a gridded chart, so it reads apart from the brass-only menus. */
+.ex-root {
+  --ex-ink: #7cc4ac; display: flex; flex-direction: column; gap: 12px; padding: 12px; margin: -12px;
+  background:
+    repeating-linear-gradient(0deg, rgba(124, 196, 172, 0.07) 0 1px, transparent 1px 28px),
+    repeating-linear-gradient(90deg, rgba(124, 196, 172, 0.07) 0 1px, transparent 1px 28px);
+}
+.ex-brief { display: flex; flex-direction: column; gap: 4px; padding: 8px 12px; border: 1px dashed rgba(124, 196, 172, 0.5); background: rgba(14, 22, 18, 0.45); }
+.ex-lede { margin: 0; font-size: 16px; font-weight: 700; color: var(--ex-ink); letter-spacing: 0.02em; }
+.ex-trade { margin: 0; font-size: 13px; color: var(--bw-cream, #f0dfb8); }
+.ex-keep { color: var(--bw-ok, #9bc27a); font-weight: 700; text-transform: uppercase; font-size: 11px; letter-spacing: 0.1em; }
+.ex-leave { color: var(--bw-bad, #d4614a); font-weight: 700; text-transform: uppercase; font-size: 11px; letter-spacing: 0.1em; }
+.ex-sub { margin: 0; font-size: 13px; color: var(--bw-dim, #b09a6c); }
 .ex-sub[data-ready="false"] { color: var(--bw-amber, #ffb347); }
 
 .ex-grid { list-style: none; margin: 0; padding: 2px; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; }
-.ex-card {
+@keyframes ex-lay { from { opacity: 0; transform: translateY(14px) rotate(-0.6deg); } to { opacity: 1; transform: none; } }
+.ex-card { animation: ex-lay 0.34s cubic-bezier(0.2, 0.8, 0.3, 1) both; animation-delay: calc(var(--ex-i, 0) * 70ms + 80ms);
   display: flex; flex-direction: column; min-width: 0; background: var(--bw-dither, none), linear-gradient(180deg, #2f2013, #1d130a);
-  box-shadow: inset 0 0 0 1px rgba(210, 154, 60, 0.3), 0 3px 0 #0b0703;
+  box-shadow: inset 0 0 0 1px rgba(124, 196, 172, 0.45), 0 3px 0 #0b0703;
 }
 .ex-card[data-here="true"] { box-shadow: inset 0 0 0 2px var(--bw-amber, #ffb347), 0 0 16px rgba(255, 179, 71, 0.25), 0 3px 0 #0b0703; }
 .ex-view { position: relative; aspect-ratio: 4 / 3; overflow: hidden; background: #140d08; }
 .ex-img { position: absolute; inset: 0; }
 .ex-img { background-size: cover; background-position: center; image-rendering: pixelated; }
 .ex-view::after { content: ""; position: absolute; inset: 0; background: linear-gradient(0deg, rgba(14, 8, 4, 0.92), transparent 55%); }
-.ex-name { position: absolute; left: 12px; bottom: 8px; z-index: 1; margin: 0; font-size: 16px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--bw-brass-hi, #f4cf7e); text-shadow: 0 1px 0 #000; }
+.ex-name { font-style: italic; position: absolute; left: 12px; bottom: 8px; z-index: 1; margin: 0; font-size: 16px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--bw-brass-hi, #f4cf7e); text-shadow: 0 1px 0 #000; }
 .ex-plan-wrap { position: absolute; right: 8px; top: 8px; z-index: 1; display: block; }
 .ex-here { position: absolute; left: 8px; top: 8px; z-index: 1; font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: #2a1606; background: var(--bw-amber, #ffb347); padding: 3px 8px; }
 
@@ -59,4 +71,4 @@
   .ex-facts { font-size: 12px; }
   .ex-go { min-height: 44px; font-size: 13px; }
 }
-@media (prefers-reduced-motion: reduce) { .ex-card { transition: none; } }
+@media (prefers-reduced-motion: reduce) { .ex-card { animation: none; } }

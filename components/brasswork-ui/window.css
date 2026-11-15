@@ -2,7 +2,7 @@
    On phones it becomes a bottom sheet. Used by every full menu (research, production stats, expedition, settings). */
 .bw-window-scrim {
   position: fixed; inset: 0; z-index: 20; display: grid; place-items: center; padding: 16px;
-  background: rgba(8, 6, 3, 0.55);
+  background: rgba(8, 6, 3, 0.2);
 }
 .bw-window {
   position: relative; display: flex; flex-direction: column; min-width: 0;

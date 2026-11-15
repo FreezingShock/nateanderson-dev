@@ -2,7 +2,7 @@
 // four canvas sails on wooden stocks facing front, and a tail vane at the back. A drive shaft runs down
 // the tower to a ground gearbox whose gear turns with the sails.
 
-import { Builder, spin } from "./builder";
+import { Builder, spin, swing, pulse } from "./builder";
 import { C } from "./palette";
 import { plinth, statusLamp } from "./common";
 
@@ -69,6 +69,24 @@ export function windmill() {
                 b.set(x, y, 19, edge ? C.wood : C.cream);
             }
         }
+    // Weathercock on the roof ridge, nosing into the wind.
+    b.body();
+    b.box(10, 63, 10, 11, 67, 11, C.brassD);
+    b.part("vane", [10, 67, 10], swing("y", 0.35, 0.15, { when: "always" }));
+    b.box(7, 67, 10, 14, 68, 11, C.brassL);
+    b.box(7, 68, 10, 9, 70, 11, C.brassL);
+    // Dynamo beside the gearbox: a copper-wound drum turning with the shaft, and a cable to the lamp.
+    b.body();
+    b.box(13, 2, 8, 18, 4, 13, C.steelD);
+    b.part("dynamo", [15, 6, 10], spin("x", 1.6, { when: "always" }));
+    b.cyl("x", 6, 10, 2, 14, 18, C.cu);
+    for (let x = 14; x < 18; x += 2) b.cyl("x", 6, 10, 2, x, x + 1, C.cuD);
+    b.body();
+    b.box(14, 4, 13, 15, 5, 16, C.soot);
+    // Ladder up the front left leg to the cap, and a lantern by the door that glows at work.
+    for (let y = 6; y < 50; y += 3) b.box(4, y, 16, 7, y + 1, 17, C.wood);
+    b.part("lantern", [8, 50, 16], pulse(0.7, 0.3, { when: "always" }), true);
+    b.box(7, 48, 17, 9, 50, 18, C.glow);
     b.body();
     statusLamp(b, 15, 8, 15);
     return b.build();

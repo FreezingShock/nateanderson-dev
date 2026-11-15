@@ -1,7 +1,7 @@
 // Wire drawer, 1x2. Copper is pulled from the back through a brass die block and wound onto a big
 // flanged drum at the front. A capstan turns on the die and a gear pair turns on the side.
 
-import { Builder, spin } from "./builder";
+import { Builder, spin, swing } from "./builder";
 import { C } from "./palette";
 import { plinth, hopperBack, chuteFront, statusLamp } from "./common";
 
@@ -41,6 +41,19 @@ export function drawer() {
     b.gear("x", 5, 7, 2, 3, 8, 9, 10, C.brassD, { hole: 0.6 });
     b.part("gearB", [9.5, 5, 12], spin("x", -0.9));
     b.gear("x", 5, 12, 2, 3, 8, 9, 10, C.brass, { hole: 0.6, phase: 0.5 });
+    // Tension arm riding on the wire between die and drum, with a guide roller at its tip.
+    b.body();
+    b.box(8, 9, 11, 9, 16, 12, C.steelD);
+    b.part("tension", [8, 15, 11], swing("x", 0.25, 0.9));
+    b.box(5, 15, 11, 8, 16, 12, C.steel);
+    b.cyl("x", 14, 11, 1, 4, 7, C.brassL);
+    // Spool rack with a spare full reel beside the drum.
+    b.body();
+    b.box(1, 2, 18, 5, 5, 20, C.steelD);
+    b.cyl("z", 3, 7, 1.6, 17, 20, C.cu);
+    b.cyl("z", 3, 7, 2.2, 17, 18, C.brass);
+    // Lubricant pot on the die with a drip.
+    b.box(6, 14, 7, 8, 16, 9, C.patina);
     b.body();
     hopperBack(b, 0, 8);
     chuteFront(b, 0);
