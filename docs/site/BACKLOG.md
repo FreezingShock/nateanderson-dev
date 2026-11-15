@@ -26,6 +26,9 @@ Format and rules: `docs/WORKFLOW.md`. Append new items at the end of a section; 
 - [ ] SITE-nexus-iframe | S | remove the "Allow attribute will take precedence over allowfullscreen" log; load the embed on click behind a poster | audit 2
 - [ ] SITE-bento-cards | M | finish the card overhaul if any remains (cards pinned footers, one title size landed in e016de91) | check state first
 - [x] SITE-check-feature-docs | S | verify every line of `docs/site/FEATURES.md` against the code and fix mismatches | fixed fonts, dev routes, dock labels, share images; page behaviour lines checked by file only, not in a browser
+- [ ] ASK SITE-games-chrome | S | the games disagree on site chrome (Node Farm keeps header, dock and footer; the other three hide them); pick one rule, or leave | audit site-integration-audit-2026-11-15
+- [ ] SITE-games-sound-idle | S | suspend the Starwright and shared site sound contexts when a game is left, so nothing idles after leaving | same audit
+- [ ] SITE-games-leave-key | S | optional: a documented key (for example Esc twice) to leave a game; today Esc only closes menus | same audit | taste, low priority
 
 ## Ideas (offered to Nate, not picked)
 - [ ] ASK SITE-resume | M | resume page
@@ -38,6 +41,7 @@ Format and rules: `docs/WORKFLOW.md`. Append new items at the end of a section; 
 Slot for findings from the thread "Audit website code for simplification". That thread appends one line per finding here, with prefix `SITE-dead-`. Known leads from the site audit (audit 11, sequence after the Brasswork work): both `components/automation` and `components/brasswork` exist; `PLACEHOLDER_CATALOG`; `components/automation/mock.ts`; `/automation-preview` and `/dev/*` routes may be test or preview only.
 
 ## Done
+- [x] SITE-games-exit | S | Brasswork top bar gets a Games link; every game's back link lands on its own section of the Games page | this PR
 - [x] SITE-claude-md | S | root `CLAUDE.md` and `AGENTS.md` were referenced everywhere but missing; added short guides
 - [x] SITE-console-help | S | console help entries stack and wrap at `|` | e03b1748
 - [x] SITE-preload-warnings | S | no unused-preload warnings, Nexus page loads in 0.3 s | #483
