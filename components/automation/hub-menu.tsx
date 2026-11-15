@@ -21,9 +21,9 @@ function UnlockTile({ u }: { u: HubUnlock }) {
   return (
     <li className="hm-open" data-kind={u.kind}>
       {u.kind === "blueprints" ? (
-        <UiArtIcon id="blueprints" size={48} name="Blueprints" className="hm-open-ico" />
+        <UiArtIcon id="blueprints" size={64} name="Blueprints" className="hm-open-ico" />
       ) : (
-        <ArtIcon id={u.icon ?? u.id} size={48} name={u.name} className="hm-open-ico" />
+        <ArtIcon id={u.icon ?? u.id} size={64} name={u.name} className="hm-open-ico" />
       )}
       <span className="hm-open-name">{u.name}</span>
       <span className="hm-open-kind">{u.kind === "recipe" ? "recipe" : u.kind === "machine" ? "build" : u.kind === "crate" ? "crate" : "research"}</span>
@@ -44,7 +44,15 @@ function Slip({ step, index, total }: { step: HubStep; index: number; total: num
       <h3 className="hm-slip-title">{step.name}</h3>
       {step.note && <p className="hm-slip-note">{step.note}</p>}
 
-      <h4 className="hm-kick">Deliver to the hub</h4>
+      <div className="hm-reward" data-state={step.state}>
+        <h4 className="hm-kick">{step.state === "done" ? "Opened" : "Unlocks"}</h4>
+        <ul className="hm-opens">{step.unlocks.map((u) => <UnlockTile key={`${u.kind}-${u.id}`} u={u} />)}</ul>
+      </div>
+
+      <div className="hm-deliver-head">
+        <h4 className="hm-kick">Deliver to the hub</h4>
+        <span className="hm-pct"><b>{Math.round(step.progress * 100)}%</b> delivered</span>
+      </div>
       <ul className="hm-items">
         {step.items.map((it) => {
           const pct = Math.round((it.have / it.need) * 100);
@@ -60,9 +68,6 @@ function Slip({ step, index, total }: { step: HubStep; index: number; total: num
           );
         })}
       </ul>
-
-      <h4 className="hm-kick">{step.state === "done" ? "Opened" : "Opens"}</h4>
-      <ul className="hm-opens">{step.unlocks.map((u) => <UnlockTile key={`${u.kind}-${u.id}`} u={u} />)}</ul>
 
       {step.state === "now" && <p className="hm-hint">Belt these into the hub, or drop them in with a loader. Everything the hub receives counts.</p>}
     </article>
@@ -90,6 +95,7 @@ export function HubMenu({ hub, onClose }: { hub: HubView; onClose: () => void })
         </span>
         <span className="hm-row-name">{s.name}</span>
         {s.state === "now" && <span className="hm-row-pct">{Math.round(s.progress * 100)}%</span>}
+        {s.state === "now" && <span className="hm-row-bar" aria-hidden="true"><i style={{ width: `${Math.round(s.progress * 100)}%` }} /></span>}
       </button>
     </li>
   );
@@ -102,8 +108,10 @@ export function HubMenu({ hub, onClose }: { hub: HubView; onClose: () => void })
             <MachinePortrait id="hub" size={96} label="The hub" />
             <div className="hm-hall-txt">
               <span className="hm-hall-stage">{STAGE_NAMES[hub.stage] ?? "Counting hall"}</span>
-              <span className="hm-hall-count">{hub.doneCount} of {hub.steps.length} filled</span>
+              <span className="hm-hall-count"><b>{hub.doneCount}</b> of {hub.steps.length} filled</span>
+              <span className="hm-hall-track" aria-hidden="true"><i style={{ width: `${(hub.doneCount / Math.max(1, hub.steps.length)) * 100}%` }} /></span>
               <span className="hm-hall-bp"><span style={uiIconStyle("blueprints", 20)} aria-hidden="true" />{hub.blueprints} blueprints</span>
+              {hub.stage < STAGE_NAMES.length - 1 && <span className="hm-hall-next">Grows into {STAGE_NAMES[hub.stage + 1]} as you fill more</span>}
             </div>
           </div>
           <h4 className="hm-kick" data-glyph="orders">Orders · open recipes and machines</h4>
