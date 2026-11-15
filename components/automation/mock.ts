@@ -181,6 +181,16 @@ export const mockHud: HudData = {
     { id: "m2", name: "Wired up", goal: "Deliver 50 wire", progress: 0.88, blueprintReward: 1, done: false, items: [{ id: "wire", name: "Copper wire", have: 44, need: 50 }] },
     { id: "m3", name: "Steady hands", goal: "Run 3 presses for 10 min", progress: 1, blueprintReward: 2, done: true, items: [{ id: "press", name: "Press runs", have: 3, need: 3 }] },
   ],
+  hub: {
+    stage: 1,
+    doneCount: 2,
+    blueprints: 3,
+    steps: [
+      { id: "rq_copper", kind: "request", name: "Copper at the kiln", state: "done", progress: 1, items: [{ id: "iron_ingot", name: "Iron ingot", have: 10, need: 10 }], unlocks: [{ kind: "recipe", id: "r_copper_ingot", name: "Copper ingot", icon: "copper_ingot" }] },
+      { id: "rq_press", kind: "request", name: "A stamp press", state: "done", progress: 1, items: [{ id: "iron_ingot", name: "Iron ingot", have: 20, need: 20 }, { id: "copper_ingot", name: "Copper ingot", have: 10, need: 10 }], unlocks: [{ kind: "machine", id: "press", name: "Stamp press", icon: "press" }, { kind: "recipe", id: "r_iron_plate", name: "Iron plate", icon: "iron_plate" }] },
+      { id: "rq_lathe", kind: "request", name: "Lathe and wire drawer", state: "now", progress: 0.4, items: [{ id: "iron_plate", name: "Iron plate", have: 5, need: 12 }, { id: "copper_ingot", name: "Copper ingot", have: 6, need: 15 }], unlocks: [{ kind: "machine", id: "lathe", name: "Lathe", icon: "lathe" }, { kind: "machine", id: "drawer", name: "Wire drawer", icon: "drawer" }] },
+    ],
+  },
   blueprints: 3,
   research: [
     { id: "gear", name: "Gear cutting", glyph: "GC", note: "Iron gear", unlocks: ["Iron gear"], blueprintCost: 3, column: 0, row: 0, requires: [], state: "done" },
