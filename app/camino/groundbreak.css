@@ -537,3 +537,20 @@ html.gb-route .sf-foot { display: none !important; }
     .gb-root .gb-rail { top: 50px; }
     .gb-root .gb-job, .gb-root .gb-win { top: 50px; }
 }
+
+/* change order: a real choice, terms laid out, accept and decline equal */
+.gb-root .gb-change { gap: 8px; padding: 10px; background: linear-gradient(#2a1d14, #1c1410); }
+.gb-change header { display: flex; align-items: center; gap: 8px; }
+.gb-change header p { display: grid; gap: 2px; font-size: 12px; }
+.gb-change header strong { font: 700 16px/1 var(--gb-display); letter-spacing: .08em; text-transform: uppercase; color: var(--gb-hi); }
+.gb-change header span { color: var(--gb-dim); }
+.gb-terms { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; }
+.gb-terms div { display: grid; gap: 2px; padding: 6px; background: #120d0b; border: 1px solid var(--gb-line-2); }
+.gb-terms dt { font: 700 10px var(--gb-display); letter-spacing: .12em; text-transform: uppercase; color: var(--gb-dim); }
+.gb-terms dd { margin: 0; font: 700 14px var(--gb-text); }
+.gb-terms [data-k="up"] dd { color: var(--gb-ok); }
+.gb-terms [data-k="down"] dd { color: #ff9a6a; }
+.gb-change-clock { flex: none; height: 4px; }
+.gb-root .gb-change-act { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.gb-root .gb-change-act .gb-go { border-color: var(--gb-line); color: var(--gb-ink); }
+.gb-root .gb-change-act .gb-go:hover { border-color: var(--gb-hi); color: var(--gb-hi); }
