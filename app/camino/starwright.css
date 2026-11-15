@@ -522,8 +522,8 @@ html.sw-route .sf-foot { display: none !important; }
 .sw-ready { color: var(--sw-cy) !important; font-weight: 500; animation: swPing 1.6s steps(2, end) infinite; }
 
 .sw-starcard { position: fixed; z-index: 35; width: 300px; padding: 12px 14px 14px; transform: translateY(-50%);
-    border: 8px solid transparent; border-image: url("/starwright/ui/frame.png?v=6") 8 fill / 8px / 0 stretch;
-    background: url("/starwright/ui/head.png?v=6") repeat-x, url("/starwright/ui/fill.png?v=6") repeat; background-size: 8px 20px, 32px 32px; background-color: #070616; background-clip: padding-box;
+    border: 8px solid transparent; border-image: url("/starwright/ui/frame.png?v=7") 8 fill / 8px / 0 stretch;
+    background: url("/starwright/ui/head.png?v=7") repeat-x, url("/starwright/ui/fill.png?v=7") repeat; background-size: 8px 20px, 32px 32px; background-color: #070616; background-clip: padding-box;
     box-shadow: 6px 6px 0 rgba(0, 0, 0, .55); animation: swCardIn .3s steps(5, end) both; }
 .sw-starcard[data-side="l"] { transform: translate(-100%, -50%); }
 .sw-starcard > .sw-cn { border-color: var(--c); }
@@ -556,3 +556,27 @@ html.sw-route .sf-foot { display: none !important; }
 @media (max-width: 900px) { .sw-chart[data-zoomed] .sw-svg { min-width: 0; } }
 .sw-nodedes { opacity: 0; transition: opacity .15s steps(2, end); }
 .sw-node:hover .sw-nodedes, .sw-node:focus-visible .sw-nodedes, .sw-node[data-sel] .sw-nodedes { opacity: 1; }
+
+/* deep stars: the endless last row, docked bottom right of the map */
+.sw-deep { position: absolute; right: 16px; bottom: 36px; z-index: 2; display: grid; grid-template-columns: 56px minmax(0, 1fr) auto; align-items: center; gap: 12px; width: min(480px, calc(100% - 32px)); padding: 8px 10px;
+    border: 8px solid transparent; border-image: url("/starwright/ui/frame-warm.png?v=7") 8 fill / 8px / 0 stretch; background: url("/starwright/ui/fill.png?v=7"); background-size: 32px 32px; background-color: #0c0814; background-clip: padding-box; box-shadow: 4px 4px 0 rgba(0, 0, 0, .55); }
+.sw-deep:not([data-open]) { border-image-source: url("/starwright/ui/frame.png?v=7"); opacity: .8; }
+.sw-deep-art { width: 56px; height: 56px; background-size: 100% 100%; image-rendering: pixelated; animation: swLitPop .6s steps(6, end); }
+.sw-deep[data-can] .sw-deep-art { filter: drop-shadow(0 0 8px #ffd27a); }
+.sw-deep-copy b { display: flex; align-items: baseline; gap: 10px; font: 600 13px var(--cm-mono, monospace); letter-spacing: .12em; text-transform: uppercase; color: #ffd27a; }
+.sw-deep-copy b em { font: 700 22px/1 var(--cm-mono, monospace); font-style: normal; color: var(--sw-ink); }
+.sw-deep-copy span { font-size: 12.5px; color: var(--sw-dim); }
+.sw-deep-copy strong { color: #ffd27a; font-weight: 600; }
+.sw-deep-buy { width: auto; margin: 0; min-width: 150px; }
+@media (max-width: 900px) {
+    .sw-deep { position: relative; right: auto; bottom: auto; margin: 0 10px 6px; width: auto; grid-template-columns: 48px minmax(0, 1fr); }
+    .sw-deep-art { width: 48px; height: 48px; }
+    .sw-deep-buy { grid-column: 1 / -1; }
+    .sw-chart { grid-template-rows: auto minmax(0, 1fr) auto auto auto; }
+}
+.sw-chart { grid-template-rows: auto minmax(0, 1fr) auto auto; }
+.sw-deep { position: relative; right: auto; bottom: auto; justify-self: end; margin: 0 16px 4px; }
+.sw-root .sw-sc-buy, .sw-chart .sw-sc-buy { color: #05040c; }
+.sw-chart .sw-sc-buy:disabled { color: var(--sw-dim); }
+.sw-ready { white-space: nowrap; }
+@media (max-width: 560px) { .sw-chart-top { flex-wrap: wrap; gap: 4px 12px; margin: 8px 8px 0; } .sw-chart-top .sw-x { position: absolute; top: 4px; right: 4px; } .sw-chart-top h2 { padding-right: 44px; } }

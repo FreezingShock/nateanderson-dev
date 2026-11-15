@@ -119,7 +119,7 @@ export const PERKS: Perk[] = [
     { id: "a2", con: "anvil", name: "Dense core", desc: "The core collapses with 25% less iron.", cost: 72, req: ["a1"], at: [86, 33], fx: { need: 0.25 } },
     { id: "a3", con: "anvil", name: "Remnant", desc: "Each star begins with 100,000 hydrogen.", cost: 150, req: ["a2"], at: [73, 44], fx: { startH: 1e5 } },
     { id: "a4", con: "anvil", name: "Supershell", desc: "Stardust from a supernova x1.5.", cost: 540, req: ["a2"], at: [88, 55], fx: { stardust: 1.5 } },
-    { id: "a5", con: "anvil", name: "Iron rain", desc: "Stardust from a supernova x2.", cost: 1800, req: ["a3", "a4"], at: [80, 73], fx: { stardust: 2 } },
+    { id: "a5", con: "anvil", name: "Iron rain", desc: "Stardust from a supernova x2.", cost: 1800, req: ["a3", "a4"], at: [93, 70], fx: { stardust: 2 } },
     { id: "w1", con: "loom", name: "Spindle", desc: "Autoburn: Hydrogen and Helium buy their own tier I.", cost: 48, req: [], at: [20, 80], fx: { auto: 2 } },
     { id: "w2", con: "loom", name: "Shuttle", desc: "Autoburn reaches up to Oxygen.", cost: 180, req: ["w1"], at: [34, 89], fx: { auto: 2 } },
     { id: "w3", con: "loom", name: "Survivors", desc: "Planets keep their age through a supernova.", cost: 300, req: ["w2"], at: [49, 80], fx: { keepPlanets: 1 } },

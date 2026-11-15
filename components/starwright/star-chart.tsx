@@ -5,7 +5,7 @@
 // map onto it and opens a card beside it with the buff written large; clicking a ready star again, Enter, or the card's button
 // lights it. Clicking empty sky zooms back out, and a second click closes the map.
 import { useCallback, useEffect, useLayoutEffect, useRef, useState, type CSSProperties } from "react";
-import { CONSTELLATIONS, type Perk } from "@/lib/starwright/data";
+import { CONSTELLATIONS, TUNE, type Perk } from "@/lib/starwright/data";
 import { H, W, renderBackdrop } from "@/lib/starwright/art";
 import { fmt, perkReady } from "@/lib/starwright/engine";
 import { Gl, Ic, ui } from "./sw-ui";
@@ -44,7 +44,7 @@ function buffs(p: Perk): Buff[] {
 
 type St = "own" | "buy" | "near" | "lock";
 
-export function StarChart({ title, list, owned, cur, curName, onBuy, onClose, constellations, leaving }: { title: string; list: Perk[]; owned: string[]; cur: number; curName: string; onBuy: (id: string) => void; onClose: () => void; constellations?: boolean; leaving?: boolean }) {
+export function StarChart({ title, list, owned, cur, curName, onBuy, onClose, constellations, leaving, deep }: { title: string; list: Perk[]; owned: string[]; cur: number; curName: string; onBuy: (id: string) => void; onClose: () => void; constellations?: boolean; leaving?: boolean; deep?: { n: number; cost: number; onBuy: () => void } }) {
     const [sel, setSel] = useState<string | null>(null);
     const [lit, setLit] = useState<string | null>(null);
     const [card, setCard] = useState<{ x: number; y: number; side: "r" | "l" } | null>(null);
@@ -80,8 +80,8 @@ export function StarChart({ title, list, owned, cur, curName, onBuy, onClose, co
             if (!node) return;
             const r = node.getBoundingClientRect();
             const vw = window.innerWidth;
-            const side = r.right + 340 < vw ? "r" : "l";
-            setCard({ x: side === "r" ? r.right + 12 : r.left - 12, y: r.top + r.height / 2, side });
+            const side = r.right + 380 < vw ? "r" : "l";
+            setCard({ x: side === "r" ? r.right + 44 : r.left - 44, y: r.top + r.height / 2, side });
         };
         const t = window.setTimeout(place, 540);
         window.addEventListener("resize", place);
@@ -196,7 +196,30 @@ export function StarChart({ title, list, owned, cur, curName, onBuy, onClose, co
                     <i className="sw-cn" data-c="tl" /><i className="sw-cn" data-c="tr" /><i className="sw-cn" data-c="bl" /><i className="sw-cn" data-c="br" />
                 </div>
             )}
+            {deep && <Deep deep={deep} cur={cur} open={list.every((p) => owned.includes(p.id)) || deep.n > 0} left={list.filter((p) => !owned.includes(p.id)).length} />}
             <p className="sw-chart-foot">{constellations ? "Stardust lights stars. They stay through every supernova and reset on a neutron star." : "Neutrons light the pulsar map. It stays until a black hole."} Click a star to look closer.</p>
+        </div>
+    );
+}
+
+/** Deep stars: the endless last row once every star is lit. One clear button, the count, and what the next one adds. */
+function Deep({ deep, cur, open, left }: { deep: { n: number; cost: number; onBuy: () => void }; cur: number; open: boolean; left: number }) {
+    const [pop, setPop] = useState(0);
+    const can = open && cur >= deep.cost;
+    const pct = Math.round(TUNE.deepBonus * 100);
+    return (
+        <div className="sw-deep" data-open={open ? "" : undefined} data-can={can ? "" : undefined} style={{ "--c": "#ffd27a" } as CSSProperties}>
+            <span className="sw-deep-art" key={pop} style={{ backgroundImage: `url("${ui(`node-deep-${open ? (deep.n > 0 ? "own" : "open") : "lock"}`)}")` }} />
+            <div className="sw-deep-copy">
+                <b>Deep stars <em>{deep.n}</em></b>
+                <span>{open ? <>Each adds <strong>+{pct}%</strong> to everything. Now <strong>+{Math.round(TUNE.deepBonus * deep.n * 100)}%</strong>.</> : `Light every star to reach them. ${left} left.`}</span>
+            </div>
+            {open && (
+                <button type="button" className="sw-sc-buy sw-deep-buy" disabled={!can} onClick={() => { deep.onBuy(); setPop((v) => v + 1); }} data-tip={`Deep star|+${pct}% everything|${fmt(deep.cost)} stardust`}>
+                    <span>{can ? "Light one" : `Need ${fmt(deep.cost - cur)}`}</span>
+                    <em><Ic n="stat-dust" s={1} /> {fmt(deep.cost)}</em>
+                </button>
+            )}
         </div>
     );
 }

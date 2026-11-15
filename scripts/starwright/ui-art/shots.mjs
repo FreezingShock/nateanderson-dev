@@ -24,7 +24,7 @@ for (const [tag, vp] of [["1440", { width: 1440, height: 900 }], ["390", { width
         const s = JSON.parse(raw);
         s.amt = [9.2e6, 4.1e6, 820000, 310000, 92000, 26000, 7400, 1900, 0, 0];
         s.bought = s.bought.map((r, i) => (i < 7 ? [12 - i, 3, i < 3 ? 1 : 0] : r.map(() => 0)));
-        s.mass = 3.2e7; s.heat = 9.5e9; s.age = 5400; s.stardust = 340; s.novas = 2; s.novasAll = 2; s.sdAll = 900; s.perks = ["l1", "l2", "k1"];
+        s.mass = 3.2e7; s.heat = 9.5e9; s.age = 5400; s.stardust = 340; s.novas = 2; s.novasAll = 2; s.sdAll = 900; s.perks = ["l1", "l2", "k1"]; s.deep = 0;
         localStorage.setItem(k, JSON.stringify(s));
     }, base);
     await page.reload();
@@ -51,6 +51,18 @@ for (const [tag, vp] of [["1440", { width: 1440, height: 900 }], ["390", { width
         await page.keyboard.press("Escape");
         await page.waitForTimeout(500);
     }
+    // every star lit, to show the deep stars row
+    await page.addInitScript(() => {
+        const s = JSON.parse(localStorage.getItem("sw-save-v1"));
+        s.perks = ["l1","l2","l3","l4","l5","k1","k2","k3","k4","k5","a1","a2","a3","a4","a5","w1","w2","w3","w4","w5"]; s.stardust = 4200; s.deep = 3;
+        localStorage.setItem("sw-save-v1", JSON.stringify(s));
+    });
+    await page.reload(); await page.waitForSelector(".sw-ladder"); await page.waitForTimeout(1200);
+    await page.getByRole("button", { name: "Constellations", exact: true }).click();
+    await page.waitForTimeout(900);
+    await page.screenshot({ path: `${OUT}/chart-deep-${tag}.png` });
+    await page.locator(".sw-deep-buy").click(); await page.waitForTimeout(400);
+    await page.screenshot({ path: `${OUT}/chart-deep-bought-${tag}.png` });
     await ctx.close();
 }
 await browser.close();

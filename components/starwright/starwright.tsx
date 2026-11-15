@@ -13,7 +13,7 @@ import { play, setSound, soundOn } from "@/lib/starwright/sound";
 import { H, W, makeLayers, render, renderLayered, type SceneFrame } from "@/lib/starwright/art";
 import { initSprites, sprites } from "@/lib/starwright/sprites";
 import {
-    SAVE_KEY, answer, guide, blackHole, buy, checkAch, chooseCloud, eventOf, rowMult, buyPerk, buyPlanet, buyPulsar, canBlackHole, canBuy, canNeutron, canPlanet, canSupernova, catchUp,
+    SAVE_KEY, answer, guide, blackHole, buy, checkAch, chooseCloud, eventOf, rowMult, buyPerk, buyDeep, deepCost, buyPlanet, buyPulsar, canBlackHole, canBuy, canNeutron, canPlanet, canSupernova, catchUp,
     collapse, cost, effects, fmt, fmtAge, fmtHeat, fresh, gateMK, heaviest, horizonNeed, levels, load, mass, neutronGain, neutronStar,
     offlineCapS, perkReady, planetStage, rowOpen, seeds, serialize, stageOf, step, supernova, type State,
 } from "@/lib/starwright/engine";
@@ -438,7 +438,7 @@ export function Starwright() {
                 <Corners />
             </section>
 
-            {shown === "stars" && <StarChart title="Constellations" list={PERKS} owned={s.perks} cur={s.stardust} curName="stardust" onBuy={(id) => act((x) => buyPerk(x, id))} onClose={() => setPanel(null)} constellations leaving={leaving} />}
+            {shown === "stars" && <StarChart title="Constellations" list={PERKS} owned={s.perks} cur={s.stardust} curName="stardust" onBuy={(id) => act((x) => buyPerk(x, id))} onClose={() => setPanel(null)} constellations leaving={leaving} deep={{ n: s.deep, cost: deepCost(s), onBuy: () => act((x) => { buyDeep(x); }) }} />}
             {shown === "pulsar" && <StarChart title="Pulsar map" list={PULSAR_PERKS} owned={s.pulsar} cur={s.neutrons} curName="neutrons" onBuy={(id) => act((x) => buyPulsar(x, id))} onClose={() => setPanel(null)} leaving={leaving} />}
             {shown === "orbit" && <Orbit s={s} onBuy={(id) => act((x) => { if (buyPlanet(x, id)) note(`${PLANETS.find((p) => p.id === id)?.name} forms in orbit.`); })} onClose={() => setPanel(null)} leaving={leaving} />}
             {shown === "almanac" && <Almanac s={s} onClose={() => setPanel(null)} leaving={leaving} />}

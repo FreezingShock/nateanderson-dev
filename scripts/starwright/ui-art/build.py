@@ -534,7 +534,7 @@ save(c.image(), "scrim")
 
 
 # ---- star chart nodes: 40 x 40 medallions, one per perk, with art for what the perk does ----------------------------------
-CONS = {"lantern": "#5fb4ff", "kiln": "#ff9a4d", "anvil": "#e8e2d6", "loom": "#a98bff", "pulsar": "#9fd0ff"}
+CONS = {"deep": "#ffd27a", "lantern": "#5fb4ff", "kiln": "#ff9a4d", "anvil": "#e8e2d6", "loom": "#a98bff", "pulsar": "#9fd0ff"}
 # perk id -> (constellation, glyph). Keep in step with PERKS / PULSAR_PERKS in lib/starwright/data.ts.
 NODES = {
     "l1": ("lantern", "aperture"), "l2": ("lantern", "stream"), "l3": ("lantern", "halo"), "l4": ("lantern", "veil"), "l5": ("lantern", "corona"),
@@ -542,7 +542,7 @@ NODES = {
     "a1": ("anvil", "seeds"), "a2": ("anvil", "press"), "a3": ("anvil", "remnant"), "a4": ("anvil", "shell"), "a5": ("anvil", "rain"),
     "w1": ("loom", "spindle"), "w2": ("loom", "shuttle"), "w3": ("loom", "shield"), "w4": ("loom", "moon"), "w5": ("loom", "weave"),
     "p1": ("pulsar", "spin"), "p2": ("pulsar", "magnet"), "p3": ("pulsar", "kilonova"), "p4": ("pulsar", "afterglow"), "p5": ("pulsar", "embersky"),
-    "p6": ("pulsar", "beam"), "p7": ("pulsar", "horizon"), "p8": ("pulsar", "echo"),
+    "deep": ("deep", "deep"), "p6": ("pulsar", "beam"), "p7": ("pulsar", "horizon"), "p8": ("pulsar", "echo"),
 }
 C0 = 20  # medallion centre
 
@@ -583,6 +583,7 @@ GLYPH = {
     "embersky": lambda c, k, v: [c.line(*a, *b, 1, k, v * .6) for a, b in [((C0 - 7, C0 + 5), (C0 - 2, C0 - 4)), ((C0 - 2, C0 - 4), (C0 + 6, C0 - 1)), ((C0 + 6, C0 - 1), (C0 + 3, C0 + 7))]] + [c.ball(x, y, 1.8, k, v, v, light=False) for x, y in [(C0 - 7, C0 + 5), (C0 - 2, C0 - 4), (C0 + 6, C0 - 1), (C0 + 3, C0 + 7)]],
     "beam": lambda c, k, v: (c.poly([(C0, C0), (C0 - 3, C0 - 10), (C0 + 3, C0 - 10)], k, v * .6, v), c.poly([(C0, C0), (C0 - 3, C0 + 10), (C0 + 3, C0 + 10)], k, v * .6, v), c.ball(C0, C0, 3, k, v, v, light=False)),
     "horizon": lambda c, k, v: (c.ring(C0, C0, 8, 3, 1.4, k, v), c.ball(C0, C0, 4.5, k, 0, .05, light=False), c.ring(C0, C0, 4.8, 4.8, 1, k, v)),
+    "deep": lambda c, k, v: (c.ring(C0, C0, 9, 9, 1, k, v * .5), c.poly([(C0 + 7 * math.cos(a) * (1 if i % 2 == 0 else .35), C0 + 7 * math.sin(a) * (1 if i % 2 == 0 else .35)) for i, a in enumerate([j * math.pi / 4 - math.pi / 2 for j in range(8)])], k, v * .7, v), c.ball(C0, C0, 1.6, k, v, v, light=False)),
     "echo": lambda c, k, v: [c.ring(C0, C0, r, r, 1.2, k, v * (1 - i * .22)) for i, r in enumerate((3, 5.5, 8))],
 }
 
