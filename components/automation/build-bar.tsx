@@ -4,8 +4,9 @@ import type {
   ResourceView,
 } from "@/lib/automation/types";
 import { canAfford, costText } from "./format";
-import { Glyph } from "./resource-strip";
 import { Section } from "./factory-sections";
+import { ArtIcon, UiArtIcon } from "@/components/brasswork-art/icons";
+import "./build-tile.css";
 
 export type GroupId = "machines" | "power" | "logistics";
 
@@ -137,7 +138,7 @@ export function BuildList({
         return (
             <li
               key={m.id}
-              className="ab-row ab-build-row"
+              className="bwt"
               data-selected={selected}
               data-armed={armed}
               data-locked={!m.unlocked}
@@ -145,43 +146,40 @@ export function BuildList({
             >
               <button
                 type="button"
-                className="ab-build-main"
+                className="bwt-main"
                 disabled={!m.unlocked}
                 aria-pressed={armed}
                 data-afford={ok}
-                aria-label={`Select ${m.name}${ok ? "" : " (not enough resources yet)"}`}
+                aria-label={`${armed ? "Holding" : "Select"} ${m.name}${ok ? "" : " (not enough resources yet)"}`}
                 onClick={() => onBuild(m.id)}
               >
-                <Glyph code={m.glyph} size={32} icon={m.id} />
-                <span className="ab-build-text">
-                  <span className="ab-build-name">
-                    {m.name}
-                    <span className="ab-dim">
-                      {" "}
-                      {m.unlocked ? `x${m.count}` : "locked"}
-                    </span>
+                <span className="bwt-plate">
+                  <ArtIcon id={m.id} size={80} name={m.name} />
+                </span>
+                <span className="bwt-text">
+                  <span className="bwt-name">{m.name}</span>
+                  <span className="bwt-cost">
+                    {m.unlocked ? costText(m.cost, resources, numberFormat) || "Free" : m.lockedReason}
                   </span>
-                  <span className="ab-build-cost">
-                    {m.unlocked
-                      ? costText(m.cost, resources, numberFormat) || "Free"
-                      : m.lockedReason}
+                  <span className="bwt-meta">
+                    {m.unlocked && <span className="bwt-count">{m.count} built</span>}
+                    {m.unlocked && m.count > 0 && (
+                      <span className="ab-status" data-status={m.status}>{m.status}</span>
+                    )}
                   </span>
                 </span>
-                {hint !== undefined && <kbd className="ab-key-hint" aria-hidden="true">{hint}</kbd>}
-                {m.unlocked && m.count > 0 && (
-                  <span className="ab-status" data-status={m.status}>
-                    {m.status}
-                  </span>
-                )}
+                {hint !== undefined && <kbd className="bwt-key" aria-hidden="true">{hint}</kbd>}
+                <span className="bwt-held" aria-hidden="true">In hand</span>
               </button>
               <button
                 type="button"
-                className="ab-info"
+                className="bwt-info"
                 aria-pressed={selected}
                 onClick={() => onSelect(selected ? null : m.id)}
                 aria-label={`${selected ? "Close" : "Show"} details for ${m.name}`}
+                title={`${selected ? "Close" : "Show"} details`}
               >
-                {selected ? "Close" : "Details"}
+                <UiArtIcon id={selected ? "close" : "info"} size={24} />
               </button>
             </li>
         );

@@ -568,3 +568,20 @@ def leave_fleets():
     plate(c, poly([(36, 12), (54, 36), (36, 36)]))
     cut(c, poly([(12, 44), (52, 44), (50, 46), (14, 46)]))
     return done(c)
+
+
+@ui
+def quest():
+    """Starter quest: a parchment scroll half unrolled, brass roll ends, a red wax seal and two inked lines."""
+    c = Canvas()
+    sheet_ = poly([(12, 16), (52, 16), (52, 48), (12, 48)])
+    flat(c, sheet_, "cream", 0.82)
+    for k, w in enumerate((30, 24, 28)):
+        c.set(rect(18, 23 + 7 * k, 18 + w, 25 + 7 * k), P["cream"][1])
+    for y0 in (8, 44):
+        plate(c, rect(8, y0, 56, y0 + 12), "wood", 0.2, 0.85)
+        plate(c, rect(4, y0 + 1, 10, y0 + 11), "brass")
+        plate(c, rect(54, y0 + 1, 60, y0 + 11), "brass")
+    plate(c, disc(46, 40, 6.5), "brick", 0.25, 0.9)
+    c.set(disc(46, 40, 2.2), P["brick"][1])
+    return done(c)
