@@ -1,4 +1,5 @@
 "use client";
+import { UiArtIcon } from "@/components/brasswork-art/icons";
 
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import "@/components/brasswork-ui/brass-kit.css";
@@ -29,52 +30,9 @@ import { QuestScroll, type QuestState } from "@/components/brasswork/first-run";
 const Ico = ({ id }: { id: string }) => <span className="ab-ico" style={uiIconStyle(id, 24)} aria-hidden="true" />;
 
 /** Pixel glyphs for the build dock, drawn in brass. Each group has its own shape; colour follows the button. */
-const DOCK_GLYPH: Record<GroupId, ReactNode> = {
-  machines: (
-    <>
-      <rect x="6.5" y="0.5" width="3" height="3" />
-      <rect x="6.5" y="12.5" width="3" height="3" />
-      <rect x="0.5" y="6.5" width="3" height="3" />
-      <rect x="12.5" y="6.5" width="3" height="3" />
-      <rect x="2.5" y="2.5" width="2" height="2" />
-      <rect x="11.5" y="2.5" width="2" height="2" />
-      <rect x="2.5" y="11.5" width="2" height="2" />
-      <rect x="11.5" y="11.5" width="2" height="2" />
-      <rect x="3.5" y="3.5" width="9" height="9" />
-      <rect x="6" y="6" width="4" height="4" fill="#20170c" />
-    </>
-  ),
-  logistics: (
-    <>
-      <rect x="1" y="5" width="14" height="6" fill="none" stroke="currentColor" strokeWidth="2" />
-      <rect x="2" y="4" width="2" height="2" />
-      <rect x="12" y="4" width="2" height="2" />
-      <rect x="2" y="10" width="2" height="2" />
-      <rect x="12" y="10" width="2" height="2" />
-      <path d="M6 6 L10 8 L6 10 Z" />
-    </>
-  ),
-  power: <path d="M9.5 0.5 L3 9 L7.5 9 L6 15.5 L13 6.5 L8.5 6.5 L10.5 0.5 Z" />,
-};
-const DockGlyph = ({ group }: { group: GroupId }) => (
-  <svg className="ab-dock-glyph" viewBox="0 0 16 16" width="26" height="26" aria-hidden="true" shapeRendering="crispEdges" fill="currentColor">
-    {DOCK_GLYPH[group]}
-  </svg>
-);
-/** A rolled parchment scroll, drawn in brass: two rolls with the paper between. */
-const QuestGlyph = () => (
-  <svg className="ab-dock-glyph" viewBox="0 0 16 16" width="26" height="26" aria-hidden="true" shapeRendering="crispEdges" fill="currentColor">
-    <rect x="1" y="2" width="14" height="3" />
-    <rect x="0" y="2" width="2" height="3" fill="#20170c" />
-    <rect x="14" y="2" width="2" height="3" fill="#20170c" />
-    <rect x="1" y="11" width="14" height="3" />
-    <rect x="0" y="11" width="2" height="3" fill="#20170c" />
-    <rect x="14" y="11" width="2" height="3" fill="#20170c" />
-    <rect x="3" y="5" width="10" height="6" fill="#20170c" />
-    <rect x="5" y="7" width="6" height="1" />
-    <rect x="5" y="9" width="4" height="1" />
-  </svg>
-);
+const DockGlyph = ({ group }: { group: GroupId }) => <UiArtIcon id={group} size={28} className="ab-dock-glyph" />;
+/** A parchment scroll with a wax seal. */
+const QuestGlyph = () => <UiArtIcon id="quest" size={28} className="ab-dock-glyph" />;
 
 type Drawer = "expedition" | "stats" | "settings";
 type Screen = "research" | "prestige" | "expedition";
