@@ -115,9 +115,28 @@ export type IconId = ItemIconId | MachineIconId | StructureIconId | BeltIconId |
 
 const CELLS: Record<string, number> = { ...ITEM_ICONS, ...MACHINE_ICONS, ...STRUCTURE_ICONS, ...BELT_ICONS, ...GROUP_ICONS };
 
-/** Sheet cell for an item or machine id, or undefined if the id has no icon. */
+/**
+ * Short resource ids from the early HUD and the preview page (iron, plates, wire...) mapped to their item. Every lookup
+ * goes through this, so no list can fall back to letter stand-ins for an item that has art.
+ */
+export const ICON_ALIASES: Record<string, string> = {
+    iron: "iron_ore",
+    copper: "copper_ore",
+    aluminium: "aluminium_ore",
+    plates: "iron_plate",
+    screws: "iron_screw",
+    wire: "copper_wire",
+    frames: "frame",
+    motors: "motor",
+    circuits: "circuit_board",
+    gears: "iron_gear",
+    ingots: "iron_ingot",
+    steel: "steel_ingot",
+};
+
+/** Sheet cell for an item or machine id (or a short alias), or undefined if the id has no icon. */
 export function iconCell(id: string): number | undefined {
-    return CELLS[id];
+    return CELLS[id] ?? CELLS[ICON_ALIASES[id] ?? ""];
 }
 
 /** Sheet url that suits an icon shown at `px` CSS pixels: the 128 px art for large icons, the 64 px average below. */
@@ -131,7 +150,7 @@ export function iconSheetUrl(px: number): string {
  * pre-averaged 64 px sheet with smooth sampling, so shrinking never drops pixels.
  */
 export function iconStyle(id: string, px = 48): CSSProperties {
-    const k = CELLS[id] ?? 0;
+    const k = iconCell(id) ?? 0;
     const col = k % ICON_SHEET.cols;
     const row = Math.floor(k / ICON_SHEET.cols);
     return {
