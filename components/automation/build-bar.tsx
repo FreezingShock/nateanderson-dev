@@ -6,6 +6,9 @@ import type {
 import { canAfford, costText } from "./format";
 import { Section } from "./factory-sections";
 import { ArtIcon, UiArtIcon } from "@/components/brasswork-art/icons";
+import { tipAttr } from "@/components/brasswork-ui/tip";
+import { machineTip } from "@/lib/automation/tips";
+import { DEFAULT_CATALOG } from "@/lib/automation/sim/data";
 import "./build-tile.css";
 
 export type GroupId = "machines" | "power" | "logistics";
@@ -151,10 +154,11 @@ export function BuildList({
                 aria-pressed={armed}
                 data-afford={ok}
                 aria-label={`${armed ? "Holding" : "Select"} ${m.name}${ok ? "" : " (not enough resources yet)"}`}
+                {...tipAttr(machineTip(DEFAULT_CATALOG, m, hint))}
                 onClick={() => onBuild(m.id)}
               >
                 <span className="bwt-plate">
-                  <ArtIcon id={m.id} size={80} name={m.name} />
+                  <ArtIcon id={m.id} size={80} />
                 </span>
                 <span className="bwt-text">
                   <span className="bwt-name">{m.name}</span>
@@ -177,7 +181,11 @@ export function BuildList({
                 aria-pressed={selected}
                 onClick={() => onSelect(selected ? null : m.id)}
                 aria-label={`${selected ? "Close" : "Show"} details for ${m.name}`}
-                title={`${selected ? "Close" : "Show"} details`}
+                {...tipAttr({
+                  title: selected ? "Close details" : "Show details",
+                  tag: "Inspector",
+                  text: `${selected ? "Close" : "Open"} the card for ${m.name}: recipe, rates, power and what it holds.`,
+                })}
               >
                 <UiArtIcon id={selected ? "close" : "info"} size={24} />
               </button>

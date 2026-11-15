@@ -47,6 +47,8 @@ import { useFirstRunQuest } from "./first-run";
 import { BuildPopover, TrashButton } from "./build-popover";
 import { NextMarker, type NextTarget } from "./next-marker";
 import { HoverName } from "./hover-name";
+import { TipLayer } from "@/components/brasswork-ui/tip";
+import { kindTip } from "@/lib/automation/tips";
 import { BuildingBadge } from "./building-badge";
 import { attachUiSounds, playSound, setAmbient, setEnabled as setSoundOn, startAudio } from "@/lib/automation/audio";
 import { LightingRow, SaveRows } from "./settings-extras";
@@ -167,6 +169,7 @@ export function BrassworkHost() {
     const [pop, setPop] = useState<{ anchor: { x: number; z: number }; kind: string; kindLabel: string; x: number; y: number } | null>(null);
     const [inputCtl, setInputCtl] = useState<InputController | null>(null);
     const nameOfKind = useCallback((kind: string) => resolve(CAT, kind)?.name ?? kind, []);
+    const tipOfKind = useCallback((kind: string) => kindTip(CAT, kind), []);
     const [nextTarget, setNextTarget] = useState<NextTarget | null>(null);
     const [away, setAway] = useState<AwayReport | null>(null);
     const [mood, setMood] = useState<Mood>("Auto");
@@ -818,7 +821,8 @@ export function BrassworkHost() {
                 <canvas ref={canvasRef} className="bw-canvas" />
                 <BrassworkExtras snapshot={snapshot} away={away} mood={mood} onMood={onMood} />
                 {inputCtl && <BuildingBadge input={inputCtl} nameOf={nameOfKind} />}
-                {inputCtl && <HoverName input={inputCtl} nameOf={nameOfKind} canvas={canvasRef} />}
+                {inputCtl && <HoverName input={inputCtl} tipOf={tipOfKind} canvas={canvasRef} />}
+                <TipLayer />
                 {inputCtl && nextTarget && <NextMarker input={inputCtl} target={nextTarget} canvas={canvasRef} />}
                 {inputCtl && pop && (
                     <BuildPopover

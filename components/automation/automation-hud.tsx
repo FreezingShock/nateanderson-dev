@@ -1,4 +1,6 @@
 "use client";
+import { tipAttr } from "@/components/brasswork-ui/tip";
+import { CONTROL_TIPS } from "@/lib/automation/tips";
 import { UiArtIcon } from "@/components/brasswork-art/icons";
 
 import Link from "next/link";
@@ -52,6 +54,12 @@ const DRAWER_TITLE: Record<Drawer, string> = {
  * milestones on the right. Research and prestige open as full-screen views.
  * `children` is the 3D view slot.
  */
+const GROUP_TIP_TEXT: Record<"logistics" | "machines" | "power", string> = {
+  logistics: "Belts, splitters, mergers, underground belts, loaders, unloaders, crates, strongboxes and docks.",
+  machines: "Drills, kilns, furnaces, presses, lathes, assemblers and fabricators.",
+  power: "Windmills and spring winders, with the spring stores that keep their energy.",
+};
+
 export function AutomationHud({
   data,
   actions,
@@ -268,12 +276,13 @@ export function AutomationHud({
             type="button"
             className="ab-text-btn ab-primary"
             aria-expanded={screen === "research"}
+            {...tipAttr(CONTROL_TIPS.research)}
             onClick={() => setScreen((s) => (s === "research" ? null : "research"))}
           >
             <Ico id="research" />
             Research
           </button>
-          <button type="button" className="ab-text-btn" aria-expanded={hubOpen} onClick={() => (hubOpen ? setHubOpen(false) : openHubMenu())}>
+          <button type="button" className="ab-text-btn" aria-expanded={hubOpen} {...tipAttr(CONTROL_TIPS.hub)} onClick={() => (hubOpen ? setHubOpen(false) : openHubMenu())}>
             <Ico id="milestones" />
             Hub
           </button>
@@ -283,6 +292,7 @@ export function AutomationHud({
               type="button"
               className="ab-text-btn"
               aria-expanded={d === "expedition" ? screen === "expedition" : drawer === d}
+              {...tipAttr(CONTROL_TIPS[d])}
               onClick={() => toggle(d)}
             >
               <Ico id={DRAWER_ICON[d]} />
@@ -306,6 +316,7 @@ export function AutomationHud({
                 aria-pressed={palGroup === g}
                 aria-label={`${GROUP_TITLE[g]}, ${open} open`}
                 data-armed={armedHere}
+                {...tipAttr({ title: GROUP_TITLE[g], tag: "Build group", text: GROUP_TIP_TEXT[g], rows: [{ k: "Open", v: String(open) }] })}
                 onClick={() => choosePal(g)}
               >
                 <DockGlyph group={g} />
@@ -319,6 +330,7 @@ export function AutomationHud({
               className="ab-dock-btn ab-dock-quest"
               aria-pressed={questOpen}
               aria-label={`Starter quest, ${quest.finished} of ${quest.steps.length} done. ${questOpen ? "Roll up the scroll" : "Open the scroll"}`}
+              {...tipAttr({ ...CONTROL_TIPS.quest, rows: [{ k: "Done", v: `${quest.finished} of ${quest.steps.length}` }] })}
               onClick={toggleQuest}
             >
               <QuestGlyph />
@@ -327,7 +339,7 @@ export function AutomationHud({
             </button>
           )}
           {data.armed && (
-            <span className="ab-dock-rot" aria-label={`Turn ${data.rotation ?? 0} degrees, press R to turn`}>
+            <span className="ab-dock-rot" aria-label={`Turn ${data.rotation ?? 0} degrees, press R to turn`} {...tipAttr({ ...CONTROL_TIPS.rotate, rows: [{ k: "Turn", v: `${data.rotation ?? 0}°` }] })}>
               <span className="ab-dock-rot-k">Turn · R</span>
               <span className="ab-dock-rot-v">{data.rotation ?? 0}°</span>
             </span>
@@ -376,6 +388,7 @@ export function AutomationHud({
               type="button"
               className="ab-tab"
               aria-pressed={sheet === "pal"}
+              {...tipAttr({ title: "Machines", tag: "Sheet", text: "The build palette: belts and logistics, machines and power. Tap a row to hold it." })}
               onClick={() => {
                 setMore(false);
                 setSheet((c) => (c === "pal" ? null : "pal"));
@@ -388,6 +401,7 @@ export function AutomationHud({
               type="button"
               className="ab-tab"
               aria-pressed={sheet === "factory"}
+              {...tipAttr({ title: "Milestones", tag: "Sheet", text: "Deliveries, blueprints, and the card for the machine you picked." })}
               onClick={() => {
                 setMore(false);
                 setSheet((c) => (c === "factory" ? null : "factory"));
@@ -400,6 +414,7 @@ export function AutomationHud({
               type="button"
               className="ab-tab"
               aria-pressed={screen === "research"}
+              {...tipAttr(CONTROL_TIPS.research)}
               onClick={() => {
                 setMore(false);
                 setScreen((s) => (s === "research" ? null : "research"));
@@ -412,6 +427,7 @@ export function AutomationHud({
               type="button"
               className="ab-tab"
               aria-pressed={more}
+              {...tipAttr({ title: "More", tag: "Menu", text: "Hub, prestige, the starter quest, expedition, production and settings." })}
               onClick={() => {
                 setSheet(null);
                 setMore((m) => !m);
@@ -423,7 +439,7 @@ export function AutomationHud({
           </nav>
           {(more || leaving === "more") && (
             <div className="ab-more" role="menu" aria-label="More menus" inert={!more || undefined}>
-              <button type="button" role="menuitem" className="ab-more-item" onClick={openHubMenu}>
+              <button type="button" role="menuitem" className="ab-more-item" {...tipAttr(CONTROL_TIPS.hub)} onClick={openHubMenu}>
                 <Ico id="milestones" />
                 Hub
               </button>
@@ -431,6 +447,7 @@ export function AutomationHud({
                 type="button"
                 role="menuitem"
                 className="ab-more-item"
+                {...tipAttr({ title: "Prestige", tag: "Menu", text: "Open a new workshop on another island site. Keeps blueprints and research, resets machines and stock." })}
                 onClick={() => {
                   setMore(false);
                   setPlanSite(undefined);
@@ -445,6 +462,7 @@ export function AutomationHud({
                   type="button"
                   role="menuitem"
                   className="ab-more-item"
+                  {...tipAttr(CONTROL_TIPS.quest)}
                   onClick={() => {
                     setMore(false);
                     setSheet(null);
@@ -461,6 +479,7 @@ export function AutomationHud({
                   type="button"
                   role="menuitem"
                   className="ab-more-item"
+                  {...tipAttr(CONTROL_TIPS[d])}
                   onClick={() => {
                     setMore(false);
                     if (d === "expedition") setScreen("expedition");
@@ -486,6 +505,7 @@ export function AutomationHud({
               <button
                 type="button"
                 className="ab-text-btn"
+                {...tipAttr({ ...CONTROL_TIPS.next, text: `${next.actionLabel}. Click to do it now.` })}
                 onClick={() => {
                   const id = next.actionId!;
                   if (id === "hub-menu") openHubMenu();
@@ -515,6 +535,7 @@ export function AutomationHud({
             className="ab-dock-btn"
             aria-pressed={milestonesOpen}
             aria-label={`Milestones, ${data.blueprints} blueprints`}
+            {...tipAttr({ ...CONTROL_TIPS.milestones, rows: [{ k: "Blueprints", v: String(data.blueprints) }] })}
             onClick={() => setMilestonesOpen((o) => !o)}
           >
             <Ico id="milestones" />

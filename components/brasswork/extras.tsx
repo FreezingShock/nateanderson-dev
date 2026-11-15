@@ -6,6 +6,7 @@ import { uiIconStyle } from "@/lib/automation/icons/ui";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Codex } from "./codex";
 import "./extras.css";
+import { tipAttr } from "@/components/brasswork-ui/tip";
 
 export const MOODS = ["Auto", "Day", "Dusk", "Night"] as const;
 export type Mood = (typeof MOODS)[number];
@@ -121,19 +122,20 @@ export function BrassworkExtras({ snapshot, away, mood, onMood }: { snapshot: ()
                     type="button"
                     className="bw-btn bx-btn bx-tools-toggle"
                     aria-expanded={toolsOpen}
+                    {...tipAttr({ title: "Tools", tag: "Menu", text: "Take a photo, open the machine guide, or read the keyboard shortcuts." })}
                     onClick={() => setToolsOpen((v) => !v)}
                 >
                     <span className="bx-lbl">Tools</span>
                 </button>
                 {toolsOpen && (
                     <div className="bx-tools-menu" role="menu" aria-label="Tools">
-                        <button type="button" role="menuitem" className="bx-tools-item" onClick={() => { setToolsOpen(false); photo(); }}>
+                        <button type="button" role="menuitem" className="bx-tools-item" {...tipAttr({ title: "Take a photo", tag: "Tools", text: "Save a picture of the island as it looks now." })} onClick={() => { setToolsOpen(false); photo(); }}>
                             Take a photo <kbd>P</kbd>
                         </button>
-                        <button type="button" role="menuitem" className="bx-tools-item" onClick={() => { setToolsOpen(false); setCodex(true); }}>
+                        <button type="button" role="menuitem" className="bx-tools-item" {...tipAttr({ title: "Machine guide", tag: "Tools", text: "Every machine and belt, what it makes and what it takes." })} onClick={() => { setToolsOpen(false); setCodex(true); }}>
                             Machine guide <kbd>C</kbd>
                         </button>
-                        <button type="button" role="menuitem" className="bx-tools-item" onClick={() => { setToolsOpen(false); setSheet(true); }}>
+                        <button type="button" role="menuitem" className="bx-tools-item" {...tipAttr({ title: "Keyboard shortcuts", tag: "Tools", text: "The keys for tools, camera and undo." })} onClick={() => { setToolsOpen(false); setSheet(true); }}>
                             Keyboard shortcuts <kbd>H</kbd>
                         </button>
                     </div>

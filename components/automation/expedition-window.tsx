@@ -6,6 +6,7 @@ import { useRef, useState } from "react";
 import { iconStyle } from "@/lib/automation/icons";
 import { uiIconStyle, type UiIconId } from "@/lib/automation/icons/ui";
 import { MenuWindow } from "@/components/brasswork-ui/window";
+import { tipAttr } from "@/components/brasswork-ui/tip";
 
 const ORE_NAMES: Record<string, string> = {
     iron_ore: "Iron",
@@ -131,7 +132,18 @@ export function ExpeditionWindow({
                             const size = plan ? floorWord(plan.width * plan.depth, cells) : "";
                             return (
                                 <li key={s.id} className="ex-card" data-here={here} data-picked={picked ? (picked === s.id ? "yes" : "no") : undefined} style={{ ["--ex-i" as string]: i }}>
-                                    <div className="ex-view" title={s.blurb}>
+                                    <div
+                                        className="ex-view"
+                                        {...tipAttr({
+                                            title: s.name,
+                                            tag: "Island site",
+                                            text: s.blurb,
+                                            rows: [
+                                                ...(plan ? [{ k: "Floor", v: `${plan.width} × ${plan.depth} cells` }, { k: "Miners", v: pct(plan.miner) }, { k: "Power", v: pct(plan.power) }] : []),
+                                                { k: "Status", v: here ? "You are here" : open ? "Open" : "Locked", tone: here || open ? ("good" as const) : undefined },
+                                            ],
+                                        })}
+                                    >
                                         <span className="ex-img" style={{ backgroundImage: `url(/brasswork/sites/${s.id}.webp)` }} aria-hidden="true" />
                                         {plan && (
                                             <span className="ex-plan-wrap">
@@ -145,7 +157,7 @@ export function ExpeditionWindow({
                                         <div className="ex-mid">
                                             <ul className="ex-ores" aria-label="Ore on site">
                                                 {(plan?.nodes ?? []).map((n, i) => (
-                                                    <li key={i} className="ex-ore" style={{ ["--ex-o" as string]: i }} data-pure={n.purity >= 2} title={`${ORE_NAMES[n.item] ?? n.item}, ${n.purity >= 2 ? "pure" : "normal"}`}>
+                                                    <li key={i} className="ex-ore" style={{ ["--ex-o" as string]: i }} data-pure={n.purity >= 2} {...tipAttr({ title: ORE_NAMES[n.item] ?? n.item, tag: "Ore node", text: "Drills on this node mine it. Pure nodes give twice the normal rate.", rows: [{ k: "Purity", v: n.purity >= 2 ? "Pure" : "Normal" }] })}>
                                                         <span className="ex-ore-ico" style={iconStyle(n.item, 32)} aria-hidden="true" />
                                                         <span className="ex-sr">
                                                             {ORE_NAMES[n.item] ?? n.item}, {n.purity >= 2 ? "pure" : "normal"}
@@ -171,6 +183,7 @@ export function ExpeditionWindow({
                                                 type="button"
                                                 className="ex-go"
                                                 disabled={!open}
+                                                {...tipAttr({ title: s.name, tag: "Expedition", text: "Pick this site to plan the move. You confirm it on the next step." })}
                                                 onClick={() => choose(s.id)}
                                             >
                                                 {open ? "Plan the move" : "Locked"}

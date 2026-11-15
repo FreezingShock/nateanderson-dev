@@ -23,6 +23,7 @@ Ordered by value. Each is one PR.
 - [ ] PERF-catchup-cost | size M | The 8 h catch-up still costs about 3.4 s of CPU on a dense factory (about 24 s until playable on a 4x-throttled phone). It no longer freezes the page, but it delays play. Options: coarser steps after the first 5 min (`catchUp()` exists but uses the same 1 s step; a coarser step changes results, so ASK Nate), or run it in a Worker | `components/brasswork/brasswork-host.tsx`, `sim/world.ts`
 - [ ] PERF-gl-resources | size S | After 150 place and remove cycles the GL buffers rose by 16 and vertex arrays by 4. Check that `removeObject` disposes geometry; done when the counts return to baseline (harness: `play.cjs` in the audit folder) | `render/models.ts`
 - [ ] PERF-device | size S | ASK P-05: frame time on a real GPU and phone. Headless numbers only count calls and JS time, they cannot show fps
+- [x] TIP-shared | size M | One brass tooltip for every machine, belt, item, resource, research node, milestone, recipe and control; hover on desktop, tap on phone | `components/brasswork-ui/tip.tsx`, `lib/automation/tips.ts`
 
 ## 2. Needs Nate's taste call
 

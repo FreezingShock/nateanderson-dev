@@ -4,6 +4,7 @@
 import type { CSSProperties } from "react";
 import { iconCell, iconStyle, MACHINE_ICONS, STRUCTURE_ICONS } from "@/lib/automation/icons";
 import { uiIconCell, uiIconStyle } from "@/lib/automation/icons/ui";
+import { tipAttr, type TipData } from "@/components/brasswork-ui/tip";
 import "./icons.css";
 
 const BIG = new Set<string>([...Object.keys(MACHINE_ICONS), ...Object.keys(STRUCTURE_ICONS)]);
@@ -22,16 +23,16 @@ function spriteVars(s: CSSProperties, px: number): CSSProperties {
 }
 
 /**
- * Item, machine, structure or belt icon. `name` adds a hover tooltip and makes the icon an image for screen readers;
+ * Item, machine, structure or belt icon. `name` adds a hover tooltip (the shared Brasswork tag) and makes the icon an image for screen readers; `tip` gives a richer tag;
  * leave it out where the name is already written next to the icon.
  */
-export function ArtIcon({ id, size = 48, name, className }: { id: string; size?: number; name?: string; className?: string }) {
+export function ArtIcon({ id, size = 48, name, tip, className }: { id: string; size?: number; name?: string; tip?: TipData; className?: string }) {
     if (iconCell(id) === undefined) return null;
     return (
         <span
             className={`bwi ${className ?? ""}`}
             data-kind={BIG.has(id) ? "machine" : "item"}
-            data-name={name}
+            {...tipAttr(tip ?? (name ? { title: name } : null))}
             role={name ? "img" : undefined}
             aria-label={name}
             aria-hidden={name ? undefined : true}
@@ -41,13 +42,13 @@ export function ArtIcon({ id, size = 48, name, className }: { id: string; size?:
 }
 
 /** HUD glyph (menus, dock, stage buttons) with the same hover life as the item icons. */
-export function UiArtIcon({ id, size = 32, name, className }: { id: string; size?: number; name?: string; className?: string }) {
+export function UiArtIcon({ id, size = 32, name, tip, className }: { id: string; size?: number; name?: string; tip?: TipData; className?: string }) {
     if (uiIconCell(id) === undefined) return null;
     return (
         <span
             className={`bwi ${className ?? ""}`}
             data-kind="ui"
-            data-name={name}
+            {...tipAttr(tip ?? (name ? { title: name } : null))}
             role={name ? "img" : undefined}
             aria-label={name}
             aria-hidden={name ? undefined : true}

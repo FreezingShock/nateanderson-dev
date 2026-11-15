@@ -1,38 +1,44 @@
 "use client";
 
-// A small name tag that follows the mouse over a placed building when no tool is armed, so you can tell what a
-// machine is without clicking it. Mouse only; touch has no hover. Under the menus, ignores clicks.
-import { useEffect, useRef, useState } from "react";
+// The tag that follows the mouse over a placed building when no tool is armed, so you can tell what a machine is
+// (and what it does) without clicking it. Mouse only; touch has no hover. It draws through the shared Brasswork
+// tooltip layer, so it matches every other tag.
+import { useEffect } from "react";
 import type { InputController } from "@/lib/automation/input";
-import "./hover-name.css";
+import type { TipData } from "@/lib/automation/tips";
+import { showPointerTip } from "@/components/brasswork-ui/tip";
 
-export function HoverName({ input, nameOf, canvas }: { input: InputController; nameOf: (kind: string) => string; canvas: React.RefObject<HTMLCanvasElement | null> }) {
-    const ref = useRef<HTMLDivElement>(null);
-    const [label, setLabel] = useState("");
+export function HoverName({ input, tipOf, canvas }: { input: InputController; tipOf: (kind: string) => TipData | null; canvas: React.RefObject<HTMLCanvasElement | null> }) {
     useEffect(() => {
         const build = input.build;
+        let current: TipData | null = null;
+        let at = { x: 0, y: 0 };
+        const draw = () => showPointerTip(at.x, at.y, current, canvas.current?.closest(".ab-root") ?? null);
         const move = (e: PointerEvent) => {
-            const el = ref.current;
-            const cv = canvas.current;
-            if (!el || !cv || e.pointerType === "touch") return;
-            const r = cv.getBoundingClientRect();
-            el.style.transform = `translate(${e.clientX - r.left + 14}px, ${e.clientY - r.top + 16}px)`;
+            if (e.pointerType === "touch" || !current) return;
+            at = { x: e.clientX, y: e.clientY };
+            draw();
         };
         const sync = () => {
             const h = build.getHover();
             const item = h && !build.getTool() ? build.peek(h) : null;
-            setLabel(item ? nameOf(item.kind) : "");
+            const next = item ? tipOf(item.kind) : null;
+            if (!next) {
+                current = null;
+                showPointerTip(0, 0, null);
+                return;
+            }
+            const changed = JSON.stringify(next) !== JSON.stringify(current);
+            current = next;
+            if (changed) draw();
         };
         window.addEventListener("pointermove", move);
         const off = build.subscribe(sync);
         return () => {
             window.removeEventListener("pointermove", move);
             off();
+            showPointerTip(0, 0, null);
         };
-    }, [input, nameOf, canvas]);
-    return (
-        <div ref={ref} className="bw-hovername" aria-hidden="true" data-on={label ? "1" : "0"}>
-            {label}
-        </div>
-    );
+    }, [input, tipOf, canvas]);
+    return null;
 }

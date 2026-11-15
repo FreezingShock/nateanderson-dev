@@ -8,6 +8,9 @@ import { iconStyle } from "@/lib/automation/icons";
 import { uiIconStyle } from "@/lib/automation/icons/ui";
 import type { HubStep, HubUnlock, HubView } from "@/lib/automation/types";
 import "./hub-menu.css";
+import { tipAttr } from "@/components/brasswork-ui/tip";
+import { itemTip } from "@/lib/automation/tips";
+import { DEFAULT_CATALOG } from "@/lib/automation/sim/data";
 
 /** Anything can open the hub menu: the host on a click on the hub building, a button, the goal strip. */
 export const HUB_OPEN_EVENT = "bw:open-hub";
@@ -58,7 +61,7 @@ function Slip({ step, index, total }: { step: HubStep; index: number; total: num
           const pct = Math.round((it.have / it.need) * 100);
           return (
             <li key={it.id} className="hm-item" data-full={it.have >= it.need}>
-              <ArtIcon id={it.id} size={48} name={it.name} className="hm-item-ico" />
+              <ArtIcon id={it.id} size={48} name={it.name} tip={itemTip(DEFAULT_CATALOG.tree, it.id)} className="hm-item-ico" />
               <span className="hm-item-name">{it.name}</span>
               <span className="hm-item-count">{it.have} / {it.need}</span>
               <span className="hm-bar" role="progressbar" aria-label={`${it.name} delivered`} aria-valuemin={0} aria-valuemax={it.need} aria-valuenow={it.have}>
@@ -89,7 +92,7 @@ export function HubMenu({ hub, onClose }: { hub: HubView; onClose: () => void })
 
   const row = ({ s, i }: { s: HubStep; i: number }) => (
     <li key={s.id}>
-      <button type="button" className="hm-row" data-state={s.state} aria-current={i === sel} onClick={() => setSel(i)}>
+      <button type="button" className="hm-row" data-state={s.state} aria-current={i === sel} {...tipAttr({ title: s.name, tag: s.kind === "request" ? "Hub request" : "Hub step", text: s.note, rows: [{ k: "Status", v: s.state === "done" ? "Done" : s.state === "now" ? `${Math.round(s.progress * 100)}% delivered` : s.state === "ahead" ? "Not yet" : "Ready" }] })} onClick={() => setSel(i)}>
         <span className="hm-dot" data-state={s.state} aria-hidden="true">
           {s.state === "done" ? <span style={uiIconStyle("done", 20)} /> : s.state === "ahead" ? <span style={uiIconStyle("lock", 20)} /> : <b />}
         </span>
