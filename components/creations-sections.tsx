@@ -158,7 +158,7 @@ export function CategoryGrid({ counts }: { counts: Record<CreationCategory["id"]
                             <Icon className="cm-ico" style={{ width: 24, height: 24 }} aria-hidden="true" />
                             <span className="cm-state">{counts[c.id]} inside</span>
                         </div>
-                        <b style={{ fontSize: 20, marginTop: 6 }}>{c.title}</b>
+                        <b>{c.title}</b>
                         <p>{c.blurb}</p>
                         <div className="cm-row-gap" style={{ marginTop: 6 }}>
                             {c.tags.map((t) => (
@@ -342,7 +342,7 @@ export function ArtCollectionSection({ collection, no }: { collection: ArtCollec
                             </span>
                             <Icon aria-hidden="true" style={{ position: "absolute", right: 14, bottom: 12, width: 48, height: 48, color: "var(--cm-hair-hi)" }} />
                         </div>
-                        <b style={{ fontSize: 13.5 }}>{slot}</b>
+                        <b>{slot}</b>
                     </div>
                 ))}
             </div>

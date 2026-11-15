@@ -8,13 +8,13 @@ import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { useGameShell } from "@/components/games/shell/game-route-shell";
 import { createSaveTools, downloadText, readPickedFile, readStored, writeStored } from "@/lib/games/save";
-import { ACHIEVEMENTS, ACH_BONUS, CLOUDS, CODEX, CONSTELLATIONS, ELEMENTS, EVENT_STAY, PERKS, PLANETS, PULSAR_PERKS, RECIPE, ROWS, STAGE_NAMES, TIERS, TIER_LEVELS, TIER_NAMES, TUNE, type Perk } from "@/lib/starwright/data";
+import { ACHIEVEMENTS, ACH_BONUS, CLOUDS, CODEX, CONSTELLATIONS, ELEMENTS, EVENT_STAY, PLANET_STAGE_AT, PLANET_STAGE_BONUS, PERKS, PLANETS, PULSAR_PERKS, RECIPE, ROWS, STAGE_NAMES, TIERS, TIER_LEVELS, TIER_NAMES, TUNE, type Perk } from "@/lib/starwright/data";
 import { play, setSound, soundOn } from "@/lib/starwright/sound";
-import { H, W, render, renderBackdrop, type SceneFrame } from "@/lib/starwright/art";
+import { H, W, render, renderBackdrop, renderPlanetSprite, type SceneFrame } from "@/lib/starwright/art";
 import {
     SAVE_KEY, SAVE_VERSION, answer, blackHole, buy, checkAch, chooseCloud, eventOf, rowMult, buyPerk, buyPlanet, buyPulsar, canBlackHole, canBuy, canNeutron, canPlanet, canSupernova, catchUp,
     collapse, cost, effects, fmt, fmtAge, fmtHeat, fresh, gateMK, heaviest, horizonNeed, isSave, levels, load, mass, neutronGain, neutronStar,
-    offlineCapS, parse, perkReady, rowOpen, seeds, serialize, stageOf, step, supernova, type State,
+    offlineCapS, parse, perkReady, planetStage, rowOpen, seeds, serialize, stageOf, step, supernova, type State,
 } from "@/lib/starwright/engine";
 
 const tools = createSaveTools<State>({ app: "starwright", version: SAVE_VERSION, validate: isSave });
@@ -34,8 +34,12 @@ export function Starwright() {
     const manualPause = useRef(false);
     const canvasRef = useRef<HTMLCanvasElement | null>(null);
     const novaRef = useRef<number>(-1);
+    const novaFrom = useRef(0);
+    const novaKind = useRef(0);
+    const stageRef = useRef({ now: 0, from: 0, at: -1e9 });
     const noteId = useRef(0);
     const lastHeavy = useRef(0);
+    const lastNovaAt = useRef(0);
     const lastTickAt = useRef(0);
     const lastMult = useRef<number[]>([]);
     const lastEvent = useRef<string | null>(null);
@@ -73,6 +77,7 @@ export function Starwright() {
         lastHeavy.current = heaviest(s);
         lastTickAt.current = now;
         lastMult.current = s.bought.map((_, i) => rowMult(s, i));
+        stageRef.current = { now: stageOf(s), from: stageOf(s), at: -1e9 };
         lastEvent.current = s.event?.id ?? null;
         checkAch(s);
         setSoundState(soundOn());
@@ -141,19 +146,38 @@ export function Starwright() {
             last = now;
             const s = sRef.current;
             if (!s) return;
-            const nova = novaRef.current >= 0 ? (now - novaRef.current) / 2600 : -1;
+            const nova = novaRef.current >= 0 ? (now - novaRef.current) / 3400 : -1;
             if (nova >= 1) novaRef.current = -1;
             const h = heaviest(s);
+            const st = stageOf(s);
+            const sr = stageRef.current;
+            if (st !== sr.now) {
+                // a stage change on its own (not a collapse) runs a shift from the old look to the new one
+                if (novaRef.current < 0 && now - sr.at > 200) { sr.from = sr.now; sr.at = now; }
+                sr.now = st;
+            }
+            const sinceNova = novaRef.current >= 0 ? now - novaRef.current : 1e9;
+            const bornAt = novaRef.current >= 0 ? novaRef.current + 1900 : lastNovaAt.current + 1900;
+            const ev = s.event;
             const f: SceneFrame = {
                 t: (now - t0) / 1000,
                 mass: mass(s),
-                stage: stageOf(s),
+                stage: st,
                 planets: s.planets,
                 ring: h >= 2 ? Math.min(1, (h - 1) / 6) : 0,
                 nova: nova >= 1 ? -1 : nova,
                 hole: -1,
                 pulsars: s.neutronStars,
                 reduce,
+                fromStage: sr.from,
+                shift: Math.min(1, (now - sr.at) / 2800),
+                born: sinceNova < 1e9 || lastNovaAt.current > 0 ? Math.min(1, Math.max(0, (now - bornAt) / 2600)) : 1,
+                collapse: collapse(s, effects(s)),
+                sky: s.sing > 0 ? 2 : s.neutronStars > 0 ? 1 : 0,
+                planetStages: Object.fromEntries(s.planets.map((id) => [id, planetStage(s, id)])),
+                visitor: ev ? { id: ev.id, age: EVENT_STAY - ev.left } : null,
+                novaKind: novaKind.current,
+                novaFrom: novaFrom.current,
             };
             render(img, f);
             ctx.putImageData(img, 0, 0);
@@ -207,9 +231,13 @@ export function Starwright() {
 
     const doNova = useCallback(() => {
         act((s) => {
+            const from = stageOf(s);
             const g = supernova(s);
             if (g > 0) {
                 novaRef.current = performance.now();
+                lastNovaAt.current = novaRef.current;
+                novaFrom.current = from;
+                novaKind.current = 0;
                 lastHeavy.current = 0;
                 lastMult.current = s.bought.map(() => 1);
                 play("nova");
@@ -221,9 +249,13 @@ export function Starwright() {
 
     const doNeutron = useCallback(() => {
         act((s) => {
+            const from = stageOf(s);
             const g = neutronStar(s);
             if (g > 0) {
                 novaRef.current = performance.now();
+                lastNovaAt.current = novaRef.current;
+                novaFrom.current = from;
+                novaKind.current = 1;
                 lastHeavy.current = 0;
                 lastMult.current = s.bought.map(() => 1);
                 play("nova");
@@ -599,6 +631,30 @@ function Overlay({ title, sub, onClose, children, wide }: { title: string; sub?:
     );
 }
 
+function PlanetSprite({ id, stage, dim }: { id: string; stage: number; dim?: boolean }) {
+    const ref = useRef<HTMLCanvasElement | null>(null);
+    useEffect(() => {
+        const ctx = ref.current?.getContext("2d");
+        if (!ctx) return;
+        const img = ctx.createImageData(56, 56);
+        const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+        const t0 = performance.now();
+        let raf = 0;
+        let last = 0;
+        const loop = (now: number) => {
+            raf = requestAnimationFrame(loop);
+            if (now - last < 90) return;
+            last = now;
+            renderPlanetSprite(img, id, stage, reduce ? 3 : (now - t0) / 1000);
+            ctx.putImageData(img, 0, 0);
+            if (reduce) cancelAnimationFrame(raf);
+        };
+        raf = requestAnimationFrame(loop);
+        return () => cancelAnimationFrame(raf);
+    }, [id, stage]);
+    return <canvas ref={ref} width={56} height={56} className="sw-sprite" data-dim={dim ? "" : undefined} aria-hidden="true" />;
+}
+
 function Orbit({ s, onBuy, onClose }: { s: State; onBuy: (id: string) => void; onClose: () => void }) {
     const f = effects(s);
     return (
@@ -609,9 +665,10 @@ function Orbit({ s, onBuy, onClose }: { s: State; onBuy: (id: string) => void; o
                     const ok = canPlanet(s, p.id);
                     return (
                         <li key={p.id} style={{ "--c": p.color } as CSSProperties} data-own={own ? "" : undefined}>
-                            <span className="sw-orb" aria-hidden="true" data-big={p.size > 4 ? "" : undefined} data-ring={p.id === "seer" ? "" : undefined} />
+                            <PlanetSprite id={p.id} stage={own ? planetStage(s, p.id) : 3} dim={!own} />
                             <div>
                                 <b>{p.name}</b> <span className="sw-dim">{p.kind}</span>
+                                {own && <p className="sw-stage-line">{p.stages[planetStage(s, p.id)]}{planetStage(s, p.id) < 3 ? ` · next in ${fmtAge(PLANET_STAGE_AT[planetStage(s, p.id) + 1] - (s.planetAge[p.id] ?? 0))}` : " · fully grown"} · +{Math.round(PLANET_STAGE_BONUS * 100 * planetStage(s, p.id))}%</p>}
                                 <p>{p.bonus}{f.planet ? ` (+${Math.round(f.planet * 100)}% from Halo)` : ""}</p>
                                 <p className="sw-cost">
                                     {own ? "in orbit" : p.cost.map(([e, q], n) => <span key={n} style={{ "--c": ELEMENTS[e].color } as CSSProperties} data-short={s.amt[e] < q ? "" : undefined}>{fmt(q)} {ELEMENTS[e].sym}</span>)}

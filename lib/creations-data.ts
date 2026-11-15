@@ -272,6 +272,15 @@ export const GAME_MODES: GameMode[] = [
                 features: ["10 element ladder", "Supernova, neutron star, black hole", "Planets and constellations"],
                 href: "/creations/games/starwright",
             },
+            {
+                slug: "groundbreak",
+                title: "Groundbreak",
+                status: "playable",
+                icon: Ic.Boxes,
+                blurb: "Run a construction company in the Bay Area. Twelve materials, each boosting the next, build a cutaway job floor by floor, and keep the skyline when you incorporate.",
+                features: ["12 chained materials", "Zoomable cutaway site", "Permanent skyline"],
+                href: "/creations/games/groundbreak",
+            },
         ],
     },
     {

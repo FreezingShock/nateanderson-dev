@@ -145,17 +145,25 @@ export interface Planet {
     period: number;
     size: number;
     color: string;
+    /** how the surface is drawn */
+    look: "rock" | "ash" | "glass" | "ice" | "metal" | "moons" | "gas" | "ringed";
+    /** names of its four stages, young to mature */
+    stages: readonly [string, string, string, string];
 }
 
+/** Seconds a planet has been in orbit before it reaches stage 1, 2 and 3. Each stage past the first adds 20% to its bonus. */
+export const PLANET_STAGE_AT = [0, 60, 240, 900] as const;
+export const PLANET_STAGE_BONUS = 0.2;
+
 export const PLANETS: Planet[] = [
-    { id: "ember", name: "Ember", kind: "rocky world", cost: [[2, 4000]], bonus: "Hydrogen inflow x1.3", fx: { inflow: 1.3 }, orbit: 0.52, period: 38, size: 3, color: "#c8643c" },
-    { id: "cinder", name: "Cinder", kind: "ash world", cost: [[3, 20000]], bonus: "Every fusion x1.25", fx: { fuse: 1.25 }, orbit: 0.6, period: 51, size: 3, color: "#8a8478" },
-    { id: "glass", name: "Glass", kind: "silicate world", cost: [[6, 12000]], bonus: "Core heat x1.15", fx: { heat: 1.15 }, orbit: 0.68, period: 66, size: 4, color: "#7fd0e8" },
-    { id: "thule", name: "Thule", kind: "ice world", cost: [[4, 15000], [1, 20000]], bonus: "Fusions need 5% less heat", fx: { gate: 0.05 }, orbit: 0.77, period: 88, size: 3, color: "#c9e6ff" },
-    { id: "ironclad", name: "Ironclad", kind: "metal world", cost: [[7, 120]], bonus: "Stardust x1.2", fx: { stardust: 1.2 }, orbit: 0.45, period: 29, size: 2, color: "#b9b2a4" },
-    { id: "orrery", name: "Orrery", kind: "moon cluster", cost: [[5, 40000], [6, 4000]], bonus: "Every fusion x1.35", fx: { fuse: 1.35 }, orbit: 0.84, period: 104, size: 2, color: "#d9a8ff" },
-    { id: "haze", name: "Haze", kind: "gas giant", cost: [[1, 6e6]], bonus: "Hydrogen inflow x1.5", fx: { inflow: 1.5 }, orbit: 0.92, period: 140, size: 6, color: "#e2b86a" },
-    { id: "seer", name: "Seer", kind: "ringed giant", cost: [[0, 5e12], [7, 4000]], bonus: "Everything x1.5", fx: { global: 1.5 }, orbit: 1.0, period: 190, size: 7, color: "#f4d29a" },
+    { id: "ember", name: "Ember", kind: "rocky world", cost: [[2, 4000]], bonus: "Hydrogen inflow x1.3", fx: { inflow: 1.3 }, orbit: 0.52, period: 38, size: 3, color: "#c8643c", look: "rock", stages: ["Debris cloud", "Molten", "Cooled", "Living"] },
+    { id: "cinder", name: "Cinder", kind: "ash world", cost: [[3, 20000]], bonus: "Every fusion x1.25", fx: { fuse: 1.25 }, orbit: 0.6, period: 51, size: 3, color: "#8a8478", look: "ash", stages: ["Debris cloud", "Glowing crust", "Ash plains", "Quiet"] },
+    { id: "glass", name: "Glass", kind: "silicate world", cost: [[6, 12000]], bonus: "Core heat x1.15", fx: { heat: 1.15 }, orbit: 0.68, period: 66, size: 4, color: "#7fd0e8", look: "glass", stages: ["Debris cloud", "Molten", "Crystal crust", "Mirror sea"] },
+    { id: "thule", name: "Thule", kind: "ice world", cost: [[4, 15000], [1, 20000]], bonus: "Fusions need 5% less heat", fx: { gate: 0.05 }, orbit: 0.77, period: 88, size: 3, color: "#c9e6ff", look: "ice", stages: ["Debris cloud", "Frozen slush", "Ice shell", "Deep ocean"] },
+    { id: "ironclad", name: "Ironclad", kind: "metal world", cost: [[7, 120]], bonus: "Stardust x1.2", fx: { stardust: 1.2 }, orbit: 0.45, period: 29, size: 2, color: "#b9b2a4", look: "metal", stages: ["Debris cloud", "Molten core", "Hard crust", "Mined out"] },
+    { id: "orrery", name: "Orrery", kind: "moon cluster", cost: [[5, 40000], [6, 4000]], bonus: "Every fusion x1.35", fx: { fuse: 1.35 }, orbit: 0.84, period: 104, size: 2, color: "#d9a8ff", look: "moons", stages: ["Loose dust", "One moon", "Two moons", "Full cluster"] },
+    { id: "haze", name: "Haze", kind: "gas giant", cost: [[1, 6e6]], bonus: "Hydrogen inflow x1.5", fx: { inflow: 1.5 }, orbit: 0.92, period: 140, size: 6, color: "#e2b86a", look: "gas", stages: ["Cloud of gas", "Pale bands", "Banded", "Storm belts"] },
+    { id: "seer", name: "Seer", kind: "ringed giant", cost: [[0, 5e12], [7, 4000]], bonus: "Everything x1.5", fx: { global: 1.5 }, orbit: 1.0, period: 190, size: 7, color: "#f4d29a", look: "ringed", stages: ["Cloud of gas", "Faint bands", "Ringed", "Storm and rings"] },
 ];
 
 export const STARNAMES = ["Sol-7", "Vesper", "Calder", "Orrin", "Tamsin", "Halcyon", "Ember Gate", "Lyra-9", "Corvid", "Marrow"];

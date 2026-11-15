@@ -70,7 +70,7 @@ export default async function CreationsPage() {
                 title="Game sections."
                 blurb="Geography is live. Incremental and automation are next. Each links to its section."
             >
-                <div className="cm-grid cr-modes">
+                <div className="cm-grid cm-fit cr-modes">
                     {GAME_MODES.map((m) => {
                         const Icon = m.icon;
                         const live = m.games.filter((g) => g.status === "playable").length;

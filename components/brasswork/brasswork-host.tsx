@@ -42,8 +42,9 @@ import { scatterProps } from "@/lib/automation/models/props";
 import { BrassworkExtras, MOODS, type AwayReport, type Mood } from "./extras";
 import { useFirstRunQuest } from "./first-run";
 import { BuildPopover, TrashButton } from "./build-popover";
-import { bw, bwHum, bwSetEnabled } from "@/lib/brasswork/sound";
+import { attachUiSounds, playSound, setAmbient, setEnabled as setSoundOn, startAudio } from "@/lib/automation/audio";
 import { LightingRow, SaveRows } from "./settings-extras";
+import { VolumeRows } from "./audio-rows";
 import { loadSettings, saveSettings } from "@/lib/brasswork/settings";
 import "@/components/brasswork-ui/type.css";
 
@@ -310,15 +311,19 @@ export function BrassworkHost() {
                 if (started) {
                     const [hx, hz] = hubAt();
                     if (ms.some((m) => !doneMilestones.has(m.id))) {
-                        bw("milestone");
+                        playSound("milestone");
                         life.burst("milestone", hx, hz);
                         island.burst({ x: hx - W / 2, z: hz - D / 2 }, "milestone");
                     } else if (rs > doneResearch) {
-                        bw("research");
+                        playSound("research");
                         life.burst("research", hx, hz);
-                    } else if (unlocked > unlockedCount && unlockedCount >= 0) life.burst("unlock", hx, hz);
+                    } else if (unlocked > unlockedCount && unlockedCount >= 0) {
+                        playSound("unlock");
+                        life.burst("unlock", hx, hz);
+                    }
                     else if (stockNow > hubStock + 0.5 && performance.now() - lastDelivery > 2500) {
                         lastDelivery = performance.now();
+                        playSound("delivery");
                         life.burst("delivery", hx, hz);
                     }
                 }
@@ -329,7 +334,9 @@ export function BrassworkHost() {
                 started = true;
                 const running = Object.values(world.buildings).filter((b) => b.crafting).length;
                 const total = Object.keys(world.buildings).length;
-                bwHum(settings.sound && total > 1 ? Math.min(1, 0.25 + running / Math.max(1, total - 1)) : null);
+                const kinds: Record<string, number> = {};
+                for (const b of Object.values(world.buildings)) if (b.crafting) kinds[b.type] = (kinds[b.type] ?? 0) + 1;
+                setAmbient({ wind: world.wind ?? windAt(world.time), night: 1 - dayClock(world, CAT).solar, working: total > 1 ? Math.min(1, 0.25 + running / Math.max(1, total - 1)) : 0, kinds });
                 setData(d);
             };
             const save = () => {
@@ -390,15 +397,20 @@ export function BrassworkHost() {
                 onEvent: (e) => {
                     if (e.type === "invalid") {
                         setNote(e.reason);
-                        bw("invalid");
+                        playSound("invalid");
                     } else if (e.type === "place" || e.type === "remove") {
-                        bw(e.type);
+                        const toolId = input.controller.build.getTool()?.id ?? "";
+                        if (e.type === "place" && toolId.startsWith("belt") && e.cells.length > 1) playSound("belt", { n: e.cells.length });
+                        else playSound(e.type, { size: e.cells.length });
                         // One burst per changed cell, capped so a long drag stays readable.
                         for (const c of e.cells.slice(0, 40)) island.burst(c, e.type);
                         setNote("");
                         syncScene();
                         refresh();
+                    } else if (e.type === "rotate" || e.type === "undo") {
+                        playSound(e.type);
                     } else if (e.type === "select") {
+                        playSound("select");
                         // A short click or tap on a placed building (no tool active) opens its inspector.
                         // e.cell is in the shared input frame; the sim is offset by half the board (see buildWorld below).
                         const b = buildingAt(world, e.cell.x + W / 2, e.cell.z + D / 2, CAT);
@@ -508,7 +520,7 @@ export function BrassworkHost() {
                 prestige: (id) => {
                     const r = simActions.prestige(world, id, CAT);
                     if (!r.ok) return setNote(r.reason);
-                    bw("prestige");
+                    playSound("prestige");
                     save();
                     syncScene();
                     refresh();
@@ -516,7 +528,7 @@ export function BrassworkHost() {
                 settings: (p) => {
                     settings = { ...settings, ...p };
                     if (Object.keys(p).length) saveSettings(settings);
-                    bwSetEnabled(settings.sound);
+                    setSoundOn(settings.sound);
                     island.setLowFx(settings.lowFx || settings.reduceMotion);
                     life.setLowFx(settings.lowFx || settings.reduceMotion);
                     island.setSceneryDensity(settings.lowFx || settings.reduceMotion ? 0.5 : 1);
@@ -602,6 +614,9 @@ export function BrassworkHost() {
 
             snap.current = () => island.snapshot();
             window.addEventListener("bw:save", save); // the Settings window asks for a fresh save before exporting
+            // Sound: wait for the first gesture, then ambient beds, machine sounds and menu / button sounds.
+            const stopAudio = startAudio();
+            const stopUiSounds = attachUiSounds((canvas.closest(".bw-root") as HTMLElement | null) ?? document.body);
             ctl.current?.settings({}); // apply the saved settings to the sound, scenery and belts
             island.resize();
             island.start();
@@ -628,7 +643,8 @@ export function BrassworkHost() {
                 life.dispose();
                 beltItems.dispose();
                 island.dispose();
-                bwHum(null);
+                stopUiSounds();
+                stopAudio();
                 ctl.current = null;
                 setInputCtl(null);
                 setPop(null);
@@ -654,7 +670,7 @@ export function BrassworkHost() {
 
     return (
         <div className="bw-root">
-            <AutomationHud data={data} actions={{ onBuild, onSelect, onResearch, onSetRecipe, onPrestige, onSettings }} settingsSlots={{ display: <LightingRow mood={mood} onMood={onMood} />, save: <SaveRows /> }} removeSlot={inputCtl ? <TrashButton input={inputCtl} variant="dock" /> : undefined} quest={quest ?? undefined} dockGroup={dockGroup} onDockGroup={onDockGroup}>
+            <AutomationHud data={data} actions={{ onBuild, onSelect, onResearch, onSetRecipe, onPrestige, onSettings }} settingsSlots={{ sound: <VolumeRows />, display: <LightingRow mood={mood} onMood={onMood} />, save: <SaveRows /> }} removeSlot={inputCtl ? <TrashButton input={inputCtl} variant="dock" /> : undefined} quest={quest ?? undefined} dockGroup={dockGroup} onDockGroup={onDockGroup}>
                 <canvas ref={canvasRef} className="bw-canvas" />
                 <BrassworkExtras snapshot={snapshot} away={away} mood={mood} onMood={onMood} />
                 {inputCtl && pop && (
