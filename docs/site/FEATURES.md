@@ -26,7 +26,7 @@ Current state of the site outside the three games with their own docs (Brasswork
 - Home `/`: hero, "Built in" (TypeScript, Three.js, JavaScript), featured work, live site stats, timeline preview, recent posts (teasers while the blog is empty).
 - About `/about`: dark cards, cyan top edge on live items, "Student", "Heading toward 2031", running stats, philosophy, education timeline, skills.
 - Studies `/studies` and `/studies/[slug]`: coursework explorer, education pathway, reading queue, per-course pages.
-- Timeline `/timeline`: milestones, live countdowns, journey to 2031.
+- Timeline `/timeline`: milestones, live countdowns, journey to 2031. On phones (560px and under) milestone cards show title and date and open on tap (`.tl-hd-phone`, `.tl-ev[data-open]` in `app/timeline/timeline.css`).
 - History `/history`: commit history from GitHub, live.
 - Blog `/blog`, `/blog/[slug]`: category sections and post pages, driven by `lib/blog.ts`. Currently no posts; the empty page stays visible by Nate's decision. Philosophy and Politics writing will go here.
 - Creations `/creations`: hub with Games, Projects, Renovations, Artwork. Featured order Nexus, Deepstack, sfvOS; grid 4 across at 1080px and up, then 2x2, then 1.
