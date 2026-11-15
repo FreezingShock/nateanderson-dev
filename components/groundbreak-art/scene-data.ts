@@ -2,7 +2,7 @@
 export const GB_BACKDROP = { w: 1600, h: 600, horizon: 372, siteY: 492, layers: {
   "sky": "/groundbreak/backdrop/sky.webp?v=79a1308b",
   "clouds": "/groundbreak/backdrop/clouds.webp?v=b3b5f8c0",
-  "hills": "/groundbreak/backdrop/hills.webp?v=a32b84f4",
+  "hills": "/groundbreak/backdrop/hills.webp?v=1b2648dc",
   "bay": "/groundbreak/backdrop/bay.webp?v=635a1383",
   "glint": "/groundbreak/backdrop/glint.webp?v=21bd9f7d",
   "boats": "/groundbreak/backdrop/boats.webp?v=b61c68a0",

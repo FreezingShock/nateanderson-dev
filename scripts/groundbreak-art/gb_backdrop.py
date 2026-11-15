@@ -86,12 +86,12 @@ def ridge(c, base, amp, seed, pal, lo, hi, x_from=0, x_to=W, peak=None):
 def hills():
     c = Canvas(W, H)
     ridge(c, HORIZON - 40, 70, 7, "haze", 0.2, 0.6, peak=(300, 70, 160))   # far headlands
-    # fog pouring over the saddle
-    r = rng(9)
-    for k in range(40):
-        x = 120 + k * 14 + r.uniform(-6, 6)
-        y = HORIZON - 70 + 0.8 * abs(k - 18) + r.uniform(-3, 3)
-        c.thin(c.disc(x, y, r.uniform(16, 30), r.uniform(5, 9)), P["white"][2], 0.16, 150)
+    # a soft fog bank rolling over the saddle: one continuous body, densest at its base, lit warm on its sun side
+    top = HORIZON - 78 + 6 * np.sin(c.X / 37) + 4 * np.sin(c.X / 13) + 0.0012 * (c.X - 380) ** 2
+    fog = (c.Y > top) & (c.Y < HORIZON - 30) & (c.X > 60) & (c.X < 760)
+    dens = np.clip((c.Y - top) / 22, 0, 1) * np.clip(np.minimum(c.X - 60, 760 - c.X) / 120, 0, 1)
+    c.set(fog & (c.B < dens * 0.55 - 0.5), P["haze"][4], 210)
+    c.set(fog & (c.Y < top + 2) & (c.B < 0.0), P["haze"][5], 200)
     ytop = ridge(c, HORIZON - 8, 34, 21, "roof", 0.25, 0.55, x_from=0, x_to=W)  # nearer ridge, East Bay style
     near = (c.Y > ytop[np.clip(c.X.astype(int), 0, W - 1)] + 1) & (c.Y < HORIZON)
     c.set(near & (c.B > 0.38) & (np.sin(c.X * 0.7) * np.sin(c.Y * 1.3) > 0.2), P["green"][1])  # oak scrub
