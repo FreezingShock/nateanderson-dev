@@ -73,6 +73,9 @@ export const frameAtProgress = (s: Sheet, p: number) => Math.max(0, Math.min(s.f
 /** Draw one frame centred on (cx, cy) at a scale, optionally rotated, with nearest-neighbour scaling. */
 export function drawFrame(ctx: CanvasRenderingContext2D, s: Sheet, frame: number, cx: number, cy: number, scale = 1, alpha = 1, rot = 0): void {
     if (alpha <= 0) return;
+    // never let a bad scale (NaN, negative, huge) stall the canvas: sprites are at most 8x their cell
+    if (!Number.isFinite(scale) || scale <= 0) return;
+    scale = Math.min(scale, 8);
     const dw = s.w * scale, dh = s.h * scale;
     ctx.save();
     ctx.globalAlpha = Math.min(1, alpha);

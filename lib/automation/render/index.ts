@@ -494,13 +494,15 @@ export function createVoxelIsland(
             glowMesher.update();
         },
         removeObject(id) {
+            // Placed models (placeModel) never write voxels, so they have no record here. Drop the model and its
+            // emitter first, whether or not voxels were recorded, or a removed building's model stays on the island.
+            models.remove(id);
+            effects.removeEmitter(id);
             const rec = objectCells.get(id);
             if (!rec) return;
             for (const [i, j, k] of rec.solid) objectGrid.set(i, j, k, 0);
             for (const [i, j, k] of rec.glow) glowGrid.set(i, j, k, 0);
             objectCells.delete(id);
-            models.remove(id);
-            effects.removeEmitter(id);
             objectMesher.update();
             glowMesher.update();
         },

@@ -239,7 +239,9 @@
   .ab-root.bw[data-sheet="factory"] .ab-factory { display: flex; }
   .ab-root.bw[data-inspect="on"][data-sheet="none"] .ab-factory { display: flex; max-height: 46dvh; }
   /* The factory sheet sits above the touch strip, the objective bar and the tab bar (about 215 px), so they stay usable. */
-  .ab-root.bw .ab-factory { bottom: var(--ab-phone-below, 215px); }
+  .ab-root.bw .ab-factory, .ab-root.bw .ab-pal { bottom: var(--ab-phone-below, 215px); }
+  /* The palette sheet used to cover the tab bar, so it could not be closed; keep it clear of the bar and the header. */
+  .ab-root.bw .ab-pal { max-height: min(58dvh, calc(100dvh - var(--ab-phone-below, 215px) - 150px)); }
 }
 
 /* ---- phone: thumb-sized tap targets (44px) ---- */

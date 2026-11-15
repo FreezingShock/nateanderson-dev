@@ -181,7 +181,7 @@ export function render(img: ImageData, f: SceneFrame): void {
         if (f.stage === 2) R *= 1 + 0.035 * Math.sin(t * 1.1);
         else if (f.stage === 4) R *= 1 + 0.02 * Math.sin(t * 2.3);
     }
-    const col = f.collapse ?? 0;
+    const col = Math.max(0, Math.min(1, f.collapse ?? 0));
     if (f.stage === 5 && col > 0.2) R *= 1 - 0.1 * Math.min(1, col) + (f.reduce ? 0 : Math.sin(t * 30) * 0.006 * col);
 
     drawVisitorBack(f, cx, cy, R, t);
@@ -720,7 +720,7 @@ export function renderLayered(L: Layers, f: SceneFrame, S: SpriteSet): void {
         if (to === 2) R *= 1 + 0.035 * Math.sin(t * 1.1);
         else if (to === 4) R *= 1 + 0.02 * Math.sin(t * 2.3);
     }
-    const col = f.collapse ?? 0;
+    const col = Math.max(0, Math.min(1, f.collapse ?? 0));
     if (to === 5 && col > 0.2) R *= 1 - 0.1 * Math.min(1, col) + (f.reduce ? 0 : Math.sin(t * 30) * 0.006 * col);
 
     // 2. a gas cloud drifting behind the star
