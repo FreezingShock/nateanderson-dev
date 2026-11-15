@@ -24,6 +24,14 @@ export interface Loaded { state: State | null; status: LoadStatus; note: string 
 
 const ago = (ms: number) => fmtAge(Math.max(0, ms) / 1000);
 
+/** Keep a damaged save under `sw-save-v1-corrupt`. A different, older damaged save moves to `...-corrupt-prev` instead of being overwritten. */
+function keepCorrupt(st: Store, raw: string) {
+    const old = read(st, CORRUPT_KEY);
+    if (old === raw) return;
+    if (old) write(st, CORRUPT_KEY + "-prev", old);
+    write(st, CORRUPT_KEY, raw);
+}
+
 /**
  * Read the save. A save that will not parse is never dropped silently: its text is kept under CORRUPT_KEY, the rolling
  * backup is tried next, and the caller gets a note to show the player.
@@ -35,7 +43,7 @@ export function loadSession(st: Store, now = Date.now()): Loaded {
         const s = parse(JSON.parse(raw));
         if (s) return { state: s, status: "ok", note: "" };
     } catch { /* fall through to recovery */ }
-    write(st, CORRUPT_KEY, raw);
+    keepCorrupt(st, raw);
     const back = readBackup(st);
     if (back) return { state: back, status: "restored", note: `Your save was damaged, so Starwright loaded its backup from ${ago(now - back.savedAt)} ago. The damaged file is kept.` };
     return { state: null, status: "lost", note: "Your save could not be read, so a new star was lit. The damaged file is kept: type sw corrupt in the console to see it." };

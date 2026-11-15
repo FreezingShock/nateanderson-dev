@@ -581,7 +581,7 @@ export function Groundbreak() {
                     <dt>Offline limit</dt><dd>{Math.round((TUNE.offlineH + f.offlineH))} hours</dd>
                 </dl>
                 <PerkGrid s={s} onBuy={(id) => act((x) => { if (buyPerk(x, id)) save(); })} onAuto={(n) => act((x) => { x.autoOff = x.autoOff.includes(n) ? x.autoOff.filter((v) => v !== n) : [...x.autoOff, n]; save(); })} />
-                <p className="gb-line">{canIncorporate(s, f) ? `Incorporate a new firm in ${cityOf(s.firm + 1).name}. +${charterGain(s, f)} charter. The skyline stays.` : `Incorporate opens at ${TUNE.charterMinRep} reputation earned this firm (you have ${fmt(s.repFirm)}).`}</p>
+                <p className="gb-line">{canIncorporate(s, f) ? `Incorporate: +${charterGain(s, f)} charter for perks that stay, a new firm in ${cityOf(s.firm + 1).name}. The skyline stays.` : `Opens at ${TUNE.charterMinRep} rep (you have ${fmt(s.repFirm)}). Pays about +${Math.max(1, Math.floor(Math.sqrt(TUNE.charterMinRep / TUNE.charterDiv) * f.charter))} charter for perks that stay, then a new firm in ${cityOf(s.firm + 1).name}. The skyline stays.`}</p>
                 <ConfirmGo label="Incorporate" sure="Cash, crews and materials reset. Charter and the skyline stay. Sure?" onGo={doIncorporate} disabled={!canIncorporate(s, f)} />
             </Window>
 

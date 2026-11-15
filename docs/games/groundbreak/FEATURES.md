@@ -67,7 +67,7 @@ Thread names change each wave; the file split is what matters. Before editing a 
 
 | Feature | State | Code | Test |
 |---|---|---|---|
-| Incorporate: new firm in the next Bay Area region, keeps skyline and Charter points (sqrt of rep earned / 10), needs 60 rep | working, weak payoff | `engine.ts` `incorporate`, `charterGain` | "incorporate resets ...", "second firm beats the first" |
+| Incorporate: new firm in the next Bay Area region, keeps skyline and Charter points (sqrt of rep earned / 4), needs 60 rep | working; firm 2 about 40% and firm 3 about 45% faster than firm 1 in the bot run; the Firm window says what it gives | `engine.ts` `incorporate`, `charterGain` | "incorporate resets ...", "second firm beats the first" |
 | 20 Charter perks in 3 branches (ops, money, logistics), with prerequisites | working | `data.ts` PERKS; `engine.ts` `buyPerk` | "perks need their requirements and charter" |
 | Foreman and Fleet manager autobuy (spends at most 25% of what it holds) | working | `engine.ts` `auto` | "Foreman hires crews on its own" |
 | Six regions, repeating with a growing scale | working | `data.ts` CITIES | covered by incorporate tests |
