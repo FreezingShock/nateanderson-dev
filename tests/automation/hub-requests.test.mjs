@@ -77,7 +77,7 @@ test("saves from before hub requests keep every recipe and machine open", () => 
 });
 
 test("a played opening fills the first order within three minutes", () => {
-    const SPOTS = [[2, 2], [2, 8], [15, 2], [15, 8], [8, 1]];
+    const SPOTS = S.START_NODE_SPOTS;
     const world = S.createWorld({ width: 18, depth: 12, hub: HUB }, CAT);
     CAT.tree.nodes.forEach((n, i) => SPOTS[i] && S.addDeposit(world, SPOTS[i][0], SPOTS[i][1], n.item, 1));
     const must = (r) => assert.equal(r.ok, true, r.reason);

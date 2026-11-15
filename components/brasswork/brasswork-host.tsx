@@ -23,6 +23,7 @@ import {
     hudData,
     resolve,
     SITES,
+    START_NODE_SPOTS,
     serialize,
     windAt,
     type HudData,
@@ -57,9 +58,6 @@ const D = 12;
 const SAVE_KEY = "brasswork-save-v1";
 const CAT = DEFAULT_CATALOG;
 const START_SETTINGS: HudSettings = { sound: true, reduceMotion: false, lowFx: false, numberFormat: "short", showRates: true };
-
-// Resource node spots, one per ore in the recipe tree. Placeholder layout until the site design lands.
-const NODE_SPOTS: [number, number][] = [[2, 2], [2, 8], [15, 2], [15, 8], [8, 1]];
 
 // Sim cells run 0..W-1, 0..D-1. The renderer and the input module share one frame where the plateau starts at (-9, -6).
 const BOARD = { width: W, depth: D, originX: -W / 2, originZ: -D / 2 };
@@ -101,7 +99,7 @@ const TYPE_COLORS: Record<string, number> = { hub: 0xc59a52, drill: 0x7f8ca3, po
 function freshWorld(): World {
     const w = createWorld({ width: W, depth: D, hub: { x: 8, z: 5 } }, CAT);
     CAT.tree.nodes.forEach((n, i) => {
-        const s = NODE_SPOTS[i];
+        const s = START_NODE_SPOTS[i];
         if (s) addDeposit(w, s[0], s[1], n.item, 1);
     });
     return w;
