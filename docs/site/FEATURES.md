@@ -19,7 +19,7 @@ Current state of the site outside the three games with their own docs (Brasswork
 - Console (backtick or Ctrl/Cmd+J): commands including `nf` for Node Farm and per-game commands. Help lists two-line entries that wrap at `|`.
 - Search: `/` opens fuzzy search (`lib/search`).
 - Sound: provider and engine in `components/sound-provider.tsx`, `lib/sound`; default state shown in the top bar. Audio is untested by any thread.
-- Footer: shared `components/site-footer.tsx`; ID card with six contact tiles, page directory, About directory.
+- Footer: shared `components/site-footer.tsx`; ID card with six contact tiles, page directory, About directory. On phones (560px and under) both directories run two across and the tiles three across (`app/camino/site-footer.css`).
 - Sidebar: typed-from-code tree. Cards: one dark treatment, lowercase titles, cyan for live and hover.
 
 ## Pages
