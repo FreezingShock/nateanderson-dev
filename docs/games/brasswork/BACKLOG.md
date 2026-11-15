@@ -20,10 +20,6 @@ Ordered by value. Each is one PR.
 - PR #545 added `components/brasswork/hover-name.tsx`. Check it on build tiles, resource boxes and machines on the island, at 1440 and on touch (no stuck labels).
 - Done when: the name shows within about 150 ms, never covers the cursor target, and clears on leave. **Needs screenshots.**
 
-**B-11 Bursts respect Simple visuals**
-- Place, remove, milestone, research and unlock bursts (`render/effects.ts`, `render/life/index.ts`) still spawn under the Simple visuals setting. Life bursts already skip under `lowFx`.
-- Done when: with Simple visuals or `data-lowfx="true"` no particle pool is touched, and the effects still show with it off.
-
 **B-14 Machines panel covers the iron node on desktop**
 - At the opening view the Machines panel sits over the iron node, so the first drill spot is hidden. Look at the opening camera in `brasswork-host.tsx` and the insets in `.ab-root` (`desktop-stage.css`).
 - Done when: at 1440x900 and 1280x720 the first drill target and its NEXT marker are visible with the build dock open. **Needs screenshots.**

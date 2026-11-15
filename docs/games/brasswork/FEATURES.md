@@ -70,7 +70,7 @@ Owners are per area, one thread per file set. The threads: "Streamline Brasswork
 | Machines with working, clock and charge states, hub growth stages 0 to 3, ore node boards | working | `render/models.ts`, `models/machines/`, `models/resources/node.ts` | `machine-models.test.mjs`, `resources.test.mjs` |
 | Belts with moving slats, items riding the belt | working | `models/belts/`, `render/beltitems.ts` | `belts.test.mjs` |
 | Scenery props and life (gulls, butterflies, fish) | working | `models/props/`, `render/scenery.ts`, `render/life/` | none |
-| Bursts for place, remove, milestone, research, unlock, delivery | partial: ignore Simple visuals (B-11) | `render/effects.ts`, `render/life/` | none |
+| Bursts for place, remove, milestone, research, unlock, delivery | working: island bursts and life bursts skip under Simple visuals, Low fx and reduce motion (`setLowFx`) | `render/effects.ts`, `render/life/` | `effects-lowfx.test.mjs` (island bursts) |
 | Hub delivery light column (shimmer, PR #541) | untested: never seen on screen (B-03) | `render/life/` | none |
 | Low-fx and reduce-motion modes | untested on a real GPU | `render/index.ts` (`setLowFx`), `.ab-root[data-reduce]`, `[data-lowfx]` | none |
 
