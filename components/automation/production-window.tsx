@@ -103,12 +103,6 @@ export function ProductionWindow({
     return () => window.clearInterval(t);
   }, []);
 
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [onClose]);
-
   const power = parsePower(stats);
   const sat = power.demand <= 0 ? 1 : Math.min(1, power.supply / power.demand);
   const short = power.demand > 0 && power.supply < power.demand;
