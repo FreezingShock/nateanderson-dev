@@ -26,11 +26,6 @@ Ordered by value. Each is one PR.
 - Code: `input/build.ts` (stroke and ghost), `input/keys.ts`, `input/pointer.ts`, `sim/grid.ts` (`gridView`).
 - Done when: unit tests in `tests/automation/input.test.mjs` cover copy, rotate-then-paste, blocked cells, unaffordable parts and undo; a screenshot shows the paste ghost. **Needs screenshots.**
 
-**B-07 Research menu pass**
-- Nate's brief: pop-up beside the clicked card, alternates mixed into the tree in different colours, art edge to edge with a panel colour per state (`research-screen.tsx`, `research-screen.css`). Today the pop-up and alternate colouring still need a clean pass, and the six Mastery cards need checking next to the core tree.
-- Done when: one section open at a time, every card has art and a name tooltip, keyboard focus works, no React warnings in the console, 1440 and 390 screenshots. **Needs screenshots.**
-
-
 **Performance audit 2026-11-15** (report: `/mnt/project-files/portfolio/perf-audit-2026-11-15/brasswork.md`, bench: `scripts/automation/perf-sim.mjs`)
 - [ ] PERF-drawcalls | size L | A 141-building factory draws about 450 calls a frame (about 350 at the phone's quality level), 605 vertex arrays live. Merge each machine's static voxel parts into one mesh per model and instance repeats, or batch belts. Done when a dense factory is under 150 calls and the look is pixel-identical in the screenshot diff | `render/models.ts`, `render/index.ts`
 - [ ] PERF-catchup-cost | size M | The 8 h catch-up still costs about 3.4 s of CPU on a dense factory (about 24 s until playable on a 4x-throttled phone). It no longer freezes the page, but it delays play. Options: coarser steps after the first 5 min (`catchUp()` exists but uses the same 1 s step; a coarser step changes results, so ASK Nate), or run it in a Worker | `components/brasswork/brasswork-host.tsx`, `sim/world.ts`

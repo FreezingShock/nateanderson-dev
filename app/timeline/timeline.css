@@ -132,3 +132,14 @@
    min-content width of about 900px on phones, and the phase panels ran past the right edge of the screen. */
 .tl-page .tl-phases { grid-template-columns: minmax(0, 1fr); min-width: 0; }
 @media (max-width: 760px) { .tl-page .tl-status > span { white-space: normal; overflow-wrap: anywhere; } }
+
+/* Short milestone cards on phones: title and date, the description opens on tap (components/timeline-explorer.tsx).
+   Desktop never uses the phone button, and phones never use the plain header. */
+.tl-page .tl-hd-btn { display: flex; }
+.tl-page .tl-hd-phone { display: none; }
+@media (max-width: 560px) {
+    .tl-page .tl-hd-desk { display: none; }
+    .tl-page .tl-hd-phone { display: flex; }
+    .tl-page .tl-ev:not([data-open]) .tl-ev-body { display: none !important; }
+    .tl-page .tl-ev .tl-ev-body { padding-top: 0; }
+}

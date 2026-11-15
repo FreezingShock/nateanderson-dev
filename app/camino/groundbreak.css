@@ -615,3 +615,6 @@ html.gb-route .sf-foot { display: none !important; }
 /* ---- polish (2026-11-15): near opaque window panels; the Incorporate line and button stay pinned at the foot of the Firm window ---- */
 .gb-root .gb-win, .gb-root .gb-card { background: rgba(20, 14, 18, .985); }
 .gb-win-foot { position: sticky; bottom: -12px; display: grid; gap: 8px; margin: 0 -12px -12px; padding: 10px 12px 12px; background: rgba(20, 14, 18, .985); border-top: 1px solid var(--gb-line-2); }
+
+/* ---- phone portrait (2026-11-15): locked groups past the next one stay hidden until they are in reach ---- */
+@media (max-width: 860px) and (min-height: 521px) { .gb-root .gb-dgroup[data-far] { display: none; } }
