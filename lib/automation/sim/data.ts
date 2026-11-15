@@ -172,3 +172,7 @@ export const SITES: SiteDef[] = [
         bonus: { miner: 1.25, power: 0.9 },
     },
 ];
+
+// Where the starting island's five raw nodes sit, in tree order (iron, copper, coal, quartz, aluminium).
+// The Brasswork host and the layout scripts both read this, so the test layouts use the real positions.
+export const START_NODE_SPOTS: [number, number][] = [[2, 2], [2, 8], [15, 2], [15, 8], [8, 1]];

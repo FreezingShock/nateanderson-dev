@@ -4,7 +4,7 @@ export { DEFAULT_CATALOG, PLACEHOLDER_CATALOG, PLACEHOLDER_TREE, ENGINE_DATA } f
 export { windAt, chargeOf, createWorld, place, placeError, remove, setRecipe, setFilter, unloaderIdleReason, step, advance, catchUp, summary, stock, addDeposit, depositUnder, hasOutputNeighbour, buildingAt, footprintCells, keyOf, resolve, DRILL, HUB, STARTER_KIT } from "./world";
 export type { CatchUpResult, CreateOptions, Kind, Resolved } from "./world";
 export { unlockedRecipes, buyResearch, checkMilestones, checkRequests, requestDone, dayClock, prestige, offerSites } from "./progress";
-export { SITES } from "./data";
+export { SITES, START_NODE_SPOTS } from "./data";
 export type { SiteDef } from "./data";
 export { gridView, autoRoute, suggestSpot } from "./grid";
 export type { GridItem, GridView, RouteCell, RouteResult } from "./grid";
