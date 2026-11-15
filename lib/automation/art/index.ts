@@ -2,8 +2,8 @@
 
 /** Machine portraits: 128 px art cells, 4 across, each machine on a lamplit workshop bench. */
 export const PORTRAIT_SHEET = {
-    url: "/brasswork/art/portraits.webp?v=a552c921",
-    png: "/brasswork/art/portraits.png?v=a552c921",
+    url: "/brasswork/art/portraits.webp?v=35deebe9",
+    png: "/brasswork/art/portraits.png?v=35deebe9",
     cell: 128,
     cols: 4,
     rows: 4,
@@ -57,7 +57,7 @@ export const RARITY_FRAMES = {
     common: { label: "Common", url: "/brasswork/art/frame-common.png?v=6d909e27" },
     uncommon: { label: "Uncommon", url: "/brasswork/art/frame-uncommon.png?v=ed7c79b2" },
     rare: { label: "Rare", url: "/brasswork/art/frame-rare.png?v=8fdedda5" },
-    epic: { label: "Epic", url: "/brasswork/art/frame-epic.png?v=21573f7c" },
+    epic: { label: "Epic", url: "/brasswork/art/frame-epic.png?v=63e3f5a4" },
     legendary: { label: "Legendary", url: "/brasswork/art/frame-legendary.png?v=23edec84" },
 } as const;
 export type Rarity = keyof typeof RARITY_FRAMES;
@@ -87,7 +87,7 @@ export const EMPTY_SCENES = { crate: 0, blueprint: 1, idle: 2 } as const;
 export type EmptyScene = keyof typeof EMPTY_SCENES;
 
 /** Milestone banners: 128 x 96 cells in one row, the milestone's delivery items piled on a shipping crate. */
-export const MILESTONE_SHEET = { url: "/brasswork/art/milestones.webp?v=97ba44d9", w: 128, h: 96, cols: 5, rows: 1 } as const;
+export const MILESTONE_SHEET = { url: "/brasswork/art/milestones.webp?v=65c45136", w: 128, h: 96, cols: 5, rows: 1 } as const;
 export const MILESTONE_ART: Record<string, number> = {
     ms_smelting: 0, // First smelt run
     ms_forming: 1, // Plate line online
@@ -97,7 +97,7 @@ export const MILESTONE_ART: Record<string, number> = {
 };
 
 /** Research cards: 128 x 96 blueprint cells, 6 across; alternates carry a copper corner. */
-export const RESEARCH_SHEET = { url: "/brasswork/art/research.webp?v=5f3bfff4", w: 128, h: 96, cols: 6, rows: 4 } as const;
+export const RESEARCH_SHEET = { url: "/brasswork/art/research.webp?v=5c88fd9f", w: 128, h: 96, cols: 6, rows: 5 } as const;
 export const RESEARCH_ART: Record<string, number> = {
     gears: 0, // Gear cutting
     furnace_alloys: 1, // Alloy furnaces
@@ -121,10 +121,16 @@ export const RESEARCH_ART: Record<string, number> = {
     bulk_screws: 19, // Bulk screws
     quick_steel: 20, // Quick steel
     fast_frames: 21, // Fast frames
+    deep_seams: 22, // Deep seams
+    deeper_seams: 23, // Deeper seams
+    tuned_sails: 24, // Tuned sails
+    tight_springs: 25, // Tight springs
+    quick_hands: 26, // Quick hands
+    steady_hands: 27, // Steady hands
 };
 
 /** Prestige site paintings: 128 x 96 cells in one row; hang them in DECOR_EXTRA.gilt. */
-export const SITE_SHEET = { url: "/brasswork/art/sites.webp?v=32c9a444", w: 128, h: 96, cols: 4, rows: 1 } as const;
+export const SITE_SHEET = { url: "/brasswork/art/sites.webp?v=67ec1e2d", w: 128, h: 96, cols: 4, rows: 1 } as const;
 export const SITE_ART: Record<string, number> = {
     ridge: 0,
     cove: 1,

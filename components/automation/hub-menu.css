@@ -4,7 +4,7 @@
 .hm-kick { margin: 14px 0 6px; font: 700 var(--bw-t-section, 11.5px)/1.2 var(--bw-font-text, inherit); letter-spacing: 0.16em; text-transform: uppercase; color: var(--bw-brass, #d29a3c); }
 .hm-side .hm-kick:first-of-type { margin-top: 12px; }
 
-.hm-hall { display: grid; grid-template-columns: 96px minmax(0, 1fr); gap: 10px; align-items: center; padding: 8px; background: rgba(0, 0, 0, 0.28); box-shadow: inset 0 0 0 1px #6a4a22; }
+.hm-hall { display: grid; grid-template-columns: 96px minmax(0, 1fr); gap: 10px; align-items: center; padding: 8px; background: rgba(0, 0, 0, 0.22); }
 .hm-hall-txt { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
 .hm-hall-stage { font: 700 15px/1.15 var(--bw-font-display, inherit); letter-spacing: 0.04em; color: var(--bw-brass-hi, #f4cf7e); text-transform: uppercase; }
 .hm-hall-count { font-size: 13px; color: var(--bw-cream, #f0dfb8); font-variant-numeric: tabular-nums; }
@@ -41,7 +41,7 @@
 .hm-slip[data-state="ahead"] .hm-slip-title { color: #4f3414; }
 
 .hm-items { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
-.hm-item { display: grid; grid-template-columns: 32px minmax(0, 1fr) auto; grid-template-areas: "i n c" "i b b"; column-gap: 10px; row-gap: 4px; align-items: center; }
+.hm-item { display: grid; grid-template-columns: 48px minmax(0, 1fr) auto; grid-template-areas: "i n c" "i b b"; column-gap: 10px; row-gap: 4px; align-items: center; }
 .hm-item-ico { grid-area: i; image-rendering: pixelated; }
 .hm-item-name { grid-area: n; font: 700 16px/1.1 var(--bw-font-display, inherit); }
 .hm-item-count { grid-area: c; font: 700 15px/1 var(--bw-font-num, inherit); font-variant-numeric: tabular-nums; }
@@ -50,8 +50,8 @@
 .hm-bar i { display: block; height: 100%; background: #8a3f12; transition: width 0.4s ease-out; }
 .hm-item[data-full="true"] .hm-bar i { background: #3d6a1f; }
 
-.hm-opens { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 8px; }
-.hm-open { display: grid; grid-template-columns: 32px minmax(0, 1fr) auto; align-items: center; gap: 8px; padding: 6px 8px; background: #2f2012; color: var(--bw-cream, #f0dfb8); box-shadow: inset 0 0 0 1px #8a5a1e, 0 1px 0 rgba(255, 255, 255, 0.25); }
+.hm-opens { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 8px; }
+.hm-open { display: grid; grid-template-columns: 64px minmax(0, 1fr) auto; align-items: center; gap: 8px; padding: 6px 8px; background: #2f2012; color: var(--bw-cream, #f0dfb8); box-shadow: inset 0 0 0 1px #8a5a1e, 0 1px 0 rgba(255, 255, 255, 0.25); }
 .hm-open-ico { image-rendering: pixelated; }
 .hm-open-name { font: 600 14px/1.15 var(--bw-font-text, inherit); }
 .hm-open-kind { font: 700 11px/1 var(--bw-font-text, inherit); letter-spacing: 0.1em; text-transform: uppercase; color: var(--bw-brass, #d29a3c); }
@@ -80,3 +80,24 @@
   .hm-opens { grid-template-columns: 1fr; }
   .hm-toast { top: 64px; }
 }
+
+/* Hierarchy pass: progress numbers first, the unlock reads big, fewer outlines. */
+.hm-hall { background: none; padding: 0 0 4px; }
+.hm-hall-count { font-size: 14px; color: #c9b48a; }
+.hm-hall-count b { font: 600 24px/1 var(--bw-font-display, inherit); color: #ffd98a; margin-right: 2px; }
+.hm-hall-track { display: block; height: 4px; background: rgba(0, 0, 0, 0.45); margin: 2px 0 4px; }
+.hm-hall-track i { display: block; height: 100%; background: linear-gradient(90deg, #b07a28, #f6d688); }
+.hm-hall-next { font-size: 12px; color: #a8946c; }
+
+.hm-row-bar { grid-column: 2 / 4; height: 3px; margin: -4px 0 6px; background: rgba(0, 0, 0, 0.4); }
+.hm-row-bar i { display: block; height: 100%; background: #f6d688; }
+.hm-row[aria-current="true"] { box-shadow: none; background: rgba(210, 154, 60, 0.2); }
+.hm-reward { margin: 12px 0 4px; padding: 10px 12px 12px; background: rgba(106, 74, 34, 0.14); }
+.hm-reward .hm-kick { margin-top: 0; }
+.hm-reward .hm-opens { grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); }
+.hm-reward .hm-open { grid-template-columns: 64px minmax(0, 1fr) auto; padding: 8px 12px; box-shadow: 0 2px 0 rgba(0, 0, 0, 0.25); }
+.hm-reward .hm-open-name { font: 600 17px/1.15 var(--bw-font-display, inherit); }
+.hm-deliver-head { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
+.hm-pct { font-size: 13px; color: #5a3d17; }
+.hm-pct b { font: 700 18px/1 var(--bw-font-display, inherit); color: #2a1606; }
+.hm-bar { box-shadow: none; background: rgba(60, 35, 10, 0.18); }

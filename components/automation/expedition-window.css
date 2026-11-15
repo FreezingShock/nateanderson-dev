@@ -7,7 +7,7 @@
     repeating-linear-gradient(0deg, rgba(210, 154, 60, 0.06) 0 1px, transparent 1px 28px),
     repeating-linear-gradient(90deg, rgba(210, 154, 60, 0.06) 0 1px, transparent 1px 28px);
 }
-.ex-brief { position: relative; overflow: hidden; display: flex; flex-wrap: wrap; align-items: center; gap: 8px 22px; padding: 8px 12px; background: rgba(0, 0, 0, 0.28); box-shadow: inset 0 0 0 1px rgba(210, 154, 60, 0.3); }
+.ex-brief { position: relative; overflow: hidden; display: flex; flex-wrap: wrap; align-items: center; gap: 8px 22px; padding: 8px 12px; background: rgba(0, 0, 0, 0.22); }
 .ex-lede { margin: 0; flex: 1 1 220px; font-size: 15px; font-weight: 700; color: var(--bw-brass-hi, #f4cf7e); letter-spacing: 0.02em; }
 .ex-sub { margin: 0; flex: 1 0 100%; font-size: 13px; color: var(--bw-amber, #ffb347); }
 .ex-carry { display: flex; align-items: center; gap: 6px; }
@@ -100,3 +100,8 @@
 }
 .ab-root[data-reduce="true"] .ex-card, .ab-root[data-lowfx="true"] .ex-card, .ab-root[data-reduce="true"] .ex-img, .ab-root[data-lowfx="true"] .ex-img { transition: none; }
 .ab-root[data-reduce="true"] .ex-card:hover .ex-ore, .ab-root[data-lowfx="true"] .ex-card:hover .ex-ore { animation: none; }
+
+/* Touch: the carried-over tiles are focusable and show a tooltip, so give them a 44 px target. */
+@media (pointer: coarse) {
+  .ex-carry-tile { width: 44px; height: 44px; }
+}

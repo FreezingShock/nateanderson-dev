@@ -1,0 +1,814 @@
+"""Groundbreak site life: crew sprites, site vehicles and effect sheets, drawn at one art pixel per pixel.
+
+Everything uses the golden-hour palette from gb_kit (violet shadows, amber light from the low sun on the left), so the
+sprites sit in the same light as the job strips. Each sheet is a grid of equal frames; site-life.tsx steps through them.
+"""
+import math
+
+import numpy as np
+
+from gb_kit import P, Canvas
+
+INK = P["ink"][0]
+
+# ------------------------------------------------------------------------------------------------------------- crew
+CW, CH = 24, 30  # crew frame; feet on y = 27 (rows below stay clear so the outline never wraps), body centred on x = 10
+FOOT = 27
+
+# Variants: hat ramp, vest ramp, skin index, trousers ramp
+CREW_VARIANTS = [
+    {"hat": "hiviz", "vest": "safety", "skin": 4, "pants": "steel", "hatv": 5},
+    {"hat": "white", "vest": "hiviz", "skin": 2, "pants": "roof", "hatv": 3},
+    {"hat": "safety", "vest": "hiviz", "skin": 5, "pants": "dirt", "hatv": 4},
+    {"hat": "hiviz", "vest": "safety", "skin": 3, "pants": "duct", "hatv": 6},
+]
+
+# action -> number of frames, in sheet order
+CREW_ACTIONS = [("walk", 6), ("carry", 6), ("hammer", 4), ("shovel", 4), ("weld", 4), ("cheer", 2), ("idle", 2)]
+
+
+class Px:
+    """Tiny pixel painter over a Canvas frame, with an offset."""
+
+    def __init__(self, c, ox, oy):
+        self.c, self.ox, self.oy = c, ox, oy
+
+    def put(self, x, y, col):
+        x, y = int(round(x)) + self.ox, int(round(y)) + self.oy
+        if 0 <= x < self.c.w and 0 <= y < self.c.h:
+            self.c.img[y, x] = (*col, 255)
+
+    def rect(self, x0, y0, x1, y1, col):
+        for y in range(int(y0), int(y1)):
+            for x in range(int(x0), int(x1)):
+                self.put(x, y, col)
+
+    def line(self, x0, y0, x1, y1, col, w=1):
+        n = int(max(abs(x1 - x0), abs(y1 - y0)) * 2) + 1
+        for i in range(n + 1):
+            t = i / n
+            x, y = x0 + (x1 - x0) * t, y0 + (y1 - y0) * t
+            for d in range(w):
+                self.put(x + (d if abs(y1 - y0) > abs(x1 - x0) else 0), y + (d if abs(y1 - y0) <= abs(x1 - x0) else 0), col)
+
+
+def person(px, v, pose):
+    """One crew member facing right. pose keys: lf, rf (foot x offsets, back/front leg), lift (front foot lift),
+    bob (body drop), crouch, back_hand, front_hand (x, y relative to shoulder), tool."""
+    hat, vest, pants = P[v["hat"]], P[v["vest"]], P[v["pants"]]
+    skin = P["skin"]
+    sk, skd = skin[v["skin"]], skin[max(0, v["skin"] - 2)]
+    bob = pose.get("bob", 0)
+    cr = pose.get("crouch", 0)
+    hip_y = 17 + bob + cr
+    sh_x, sh_y = 10, 10 + bob + cr
+    boot, bootl = P["ink"][1], P["dirt"][3]
+
+    def leg(fx, lift, col, cold):
+        # hip -> knee -> ankle; the knee pushes forward when crouched
+        hx, ax, ay = 10, 10 + fx, FOOT - 1 - lift
+        kx, ky = (hx + ax) / 2 + (2 if cr else 0.6), (hip_y + ay) / 2 + (0 if cr else 0)
+        px.line(hx, hip_y, kx, ky, col, 2)
+        px.line(kx, ky, ax, ay - 1, col, 2)
+        px.put(kx + 1, ky, cold)
+        px.rect(ax - 1, ay, ax + 3, ay + 2, boot)
+        px.put(ax + 2, ay, bootl)
+
+    # back leg darker, front leg lit
+    leg(pose.get("lf", -2), pose.get("llift", 0), pants[2], pants[1])
+    # back arm (behind body)
+    bh = pose.get("back_hand", (-2, 6))
+    px.line(sh_x - 1, sh_y + 1, sh_x - 1 + bh[0], sh_y + bh[1], vest[2], 2)
+    px.rect(sh_x - 1 + bh[0], sh_y + bh[1], sh_x + 1 + bh[0], sh_y + bh[1] + 1, skd)
+    leg(pose.get("rf", 2), pose.get("lift", 0), pants[3], pants[2])
+
+    # torso: vest over a dark shirt, belt, reflective stripe
+    ty0, ty1 = sh_y, hip_y + 1
+    px.rect(8, ty0, 13, ty1, vest[4])
+    px.rect(8, ty0, 9, ty1, vest[3])          # back edge in shade
+    px.rect(12, ty0 + 1, 13, ty1, vest[5])    # sunlit front edge
+    px.rect(8, ty0 + 4, 13, ty0 + 5, P["white"][3])
+    px.put(8, ty0 + 4, P["white"][2])
+    px.rect(8, ty1 - 1, 13, ty1, P["ink"][2])   # belt
+    px.put(12, ty1 - 1, P["hiviz"][5])          # buckle
+    px.rect(9, ty0 - 1, 12, ty0, P["roof"][3])  # collar
+
+    # head and hard hat
+    hy = ty0 - 5
+    px.rect(9, hy, 13, hy + 4, sk)
+    px.put(9, hy + 1, skd)
+    px.put(9, hy + 2, skd)
+    px.put(12, hy + 1, P["ink"][1])            # eye
+    px.put(13, hy + 2, sk)                     # nose
+    px.put(11, hy + 3, skd)                    # jaw shade
+    px.rect(8, hy - 2, 13, hy, hat[v["hatv"]])
+    px.rect(9, hy - 3, 12, hy - 2, hat[v["hatv"]])
+    px.put(11, hy - 3, hat[min(len(hat) - 1, v["hatv"] + 1)])
+    px.rect(8, hy, 15, hy + 1, hat[max(0, v["hatv"] - 1)])  # brim
+    if pose.get("visor"):
+        px.rect(11, hy, 14, hy + 3, P["ink"][2])
+        px.put(13, hy + 1, P["lamp"][5])
+
+    # front arm and tool
+    fh = pose.get("front_hand", (2, 6))
+    hx, hy2 = sh_x + 1 + fh[0], sh_y + fh[1]
+    tool = pose.get("tool")
+    if tool == "plank":
+        # plank on the shoulder, front hand steadying it
+        py = sh_y - 2
+        px.rect(0, py, 22, py + 2, P["wood"][4])
+        px.rect(0, py, 22, py + 1, P["wood"][5])
+        px.put(0, py + 1, P["wood"][2])
+        px.put(21, py + 1, P["wood"][2])
+        hx, hy2 = 12, py + 2
+    px.line(sh_x + 1, sh_y + 1, hx, hy2, vest[3], 2)
+    px.rect(hx, hy2, hx + 2, hy2 + 2, sk)
+    if tool == "hammer":
+        a = pose["ang"]
+        ex, ey = hx + 1 + math.cos(a) * 6, hy2 + 1 + math.sin(a) * 6
+        px.line(hx + 1, hy2 + 1, ex, ey, P["wood"][5])
+        nx, ny = -math.sin(a), math.cos(a)
+        px.line(ex - nx * 2, ey - ny * 2, ex + nx * 2, ey + ny * 2, P["steel"][6], 2)
+    elif tool == "shovel":
+        a = pose["ang"]
+        ex, ey = hx + 1 + math.cos(a) * 9, hy2 + 1 + math.sin(a) * 9
+        px.line(hx + 1 - math.cos(a) * 3, hy2 + 1 - math.sin(a) * 3, ex, ey, P["wood"][4])
+        px.rect(ex - 1, ey - 1, ex + 2, ey + 2, P["steel"][5])
+        px.put(ex + 1, ey - 1, P["steel"][7])
+        if pose.get("load"):
+            px.rect(ex - 1, ey - 2, ex + 2, ey - 1, P["dirt"][5])
+    elif tool == "torch":
+        px.line(hx + 1, hy2 + 1, hx + 5, hy2 + 3, P["steel"][6])
+        px.put(hx + 5, hy2 + 3, P["copper"][6])
+        if pose.get("arc"):
+            for dx, dy, c in [(6, 3, 6), (7, 2, 5), (7, 4, 5), (6, 5, 4), (8, 3, 4)]:
+                px.put(hx + dx, hy2 + dy, P["lamp"][c])
+    elif tool == "bucket":
+        px.rect(hx - 1, hy2 + 2, hx + 3, hy2 + 6, P["duct"][4])
+        px.rect(hx - 1, hy2 + 2, hx + 3, hy2 + 3, P["cement"][5])
+
+
+def crew_pose(action, f):
+    if action in ("walk", "carry"):
+        ph = f / 6 * 2 * math.pi
+        s = math.sin(ph)
+        pose = {"lf": round(-3 * s), "rf": round(3 * s), "lift": 1 if s < -0.5 else 0, "llift": 1 if s > 0.5 else 0,
+                "bob": 0 if abs(s) > 0.5 else -1,
+                "back_hand": (round(-2 * s) - 1, 6), "front_hand": (round(2 * s), 6)}
+        if action == "carry":
+            pose["tool"] = "plank"
+            pose["back_hand"] = (-1, 5)
+        return pose
+    if action == "hammer":
+        ang = [-1.9, -1.2, 0.3, 0.9][f]
+        return {"lf": -3, "rf": 3, "crouch": 2, "tool": "hammer", "ang": ang,
+                "front_hand": (round(3 + math.cos(ang + 0.6) * 2), round(4 + math.sin(ang + 0.6) * 3)), "back_hand": (1, 7)}
+    if action == "shovel":
+        ang = [1.0, 0.7, -0.4, 0.5][f]
+        return {"lf": -3, "rf": 2, "crouch": 1 if f < 2 else 0, "tool": "shovel", "ang": ang, "load": f in (2, 3),
+                "front_hand": (2, 5 if f < 2 else 3), "back_hand": (0, 6)}
+    if action == "weld":
+        return {"lf": -2, "rf": 3, "crouch": 3, "tool": "torch", "visor": True, "arc": f % 2 == 0,
+                "front_hand": (3, 4), "back_hand": (1, 6)}
+    if action == "cheer":
+        return {"lf": -2, "rf": 2, "bob": -1 if f else 0, "lift": f, "llift": f,
+                "front_hand": (2, -5 - f), "back_hand": (-3, -4 - f)}
+    # idle: hand on hip, small breath
+    return {"lf": -2, "rf": 2, "bob": f, "front_hand": (2, 5), "back_hand": (-1, 6)}
+
+
+G = 2  # transparent gutter around every frame, so scaled sampling never bleeds a neighbour in
+
+
+def grid(rows, fw, fh):
+    cols = max(len(r) for r in rows)
+    c = Canvas(cols * (fw + 2 * G), len(rows) * (fh + 2 * G))
+    for y, r in enumerate(rows):
+        for x, fr in enumerate(r):
+            c.over(fr, x * (fw + 2 * G) + G, y * (fh + 2 * G) + G)
+    return c
+
+
+def crew_sheet():
+    rows = []
+    for v in CREW_VARIANTS:
+        row = []
+        for action, n in CREW_ACTIONS:
+            for f in range(n):
+                fr = Canvas(CW, CH)
+                person(Px(fr, 0, 0), v, crew_pose(action, f))
+                fr.outline(INK)
+                row.append(fr)
+        rows.append(row)
+    c = grid(rows, CW, CH)
+    return c
+
+
+# ---------------------------------------------------------------------------------------------------------- vehicles
+VW, VH = 96, 46  # vehicle frame; wheels touch y = 43, clear rows below; vehicles face LEFT (they drive in from the right)
+VGROUND = 43
+
+
+def wheel(px, cx, f, r=5):
+    tyre, rim, hub = P["ink"][1], P["steel"][4], P["steel"][6]
+    for y in range(-r, r + 1):
+        for x in range(-r, r + 1):
+            d = math.hypot(x, y)
+            if d <= r + 0.2:
+                px.put(cx + x, VGROUND - r + y, tyre)
+            if d <= r - 2.2:
+                px.put(cx + x, VGROUND - r + y, rim)
+    a = f * math.pi / 4
+    for k in range(2):
+        ang = a + k * math.pi / 2
+        px.put(cx + round(math.cos(ang) * 2), VGROUND - r + round(math.sin(ang) * 2), hub)
+        px.put(cx - round(math.cos(ang) * 2), VGROUND - r - round(math.sin(ang) * 2), hub)
+    px.put(cx, VGROUND - r, P["ink"][2])
+    px.put(cx - 2, VGROUND - r - 3, P["steel"][3])  # tyre shine
+
+
+def cab(px, x0, body):
+    """Cab at the front (left), x0 = its left edge. 22 wide, 20 tall above the chassis."""
+    b = P[body] + [P[body][-1]] * 4
+    top = VGROUND - 30
+    px.rect(x0 + 4, top, x0 + 22, VGROUND - 8, b[4])
+    px.rect(x0, top + 8, x0 + 4, VGROUND - 8, b[4])            # bonnet slope
+    px.rect(x0 + 1, top + 7, x0 + 4, top + 8, b[5])
+    px.rect(x0 + 4, top, x0 + 22, top + 1, b[6])                # sunlit roof
+    px.rect(x0 + 21, top, x0 + 22, VGROUND - 8, b[2])           # back edge in shade
+    px.rect(x0 + 6, top + 2, x0 + 13, top + 8, P["glass"][3])   # windscreen
+    px.rect(x0 + 6, top + 2, x0 + 8, top + 4, P["sunglass"][5])
+    px.rect(x0 + 14, top + 2, x0 + 20, top + 8, P["glass"][2])  # side window
+    px.put(x0 + 15, top + 3, P["sunglass"][4])
+    px.rect(x0 + 15, top + 10, x0 + 19, top + 11, b[2])         # door handle line
+    px.rect(x0, VGROUND - 11, x0 + 3, VGROUND - 9, P["lamp"][5])  # headlight
+    px.rect(x0, VGROUND - 9, x0 + 6, VGROUND - 7, P["steel"][5])  # bumper
+    px.rect(x0 + 10, top - 2, x0 + 14, top, P["safety"][4])      # beacon
+    px.put(x0 + 11, top - 2, P["safety"][5])
+
+
+def chassis(px, x0, x1):
+    px.rect(x0, VGROUND - 9, x1, VGROUND - 6, P["steel"][2])
+    px.rect(x0, VGROUND - 9, x1, VGROUND - 8, P["steel"][3])
+
+
+def dump_truck(f, tip=0.0, load=True):
+    c = Canvas(VW, VH)
+    px = Px(c, 0, 0)
+    chassis(px, 6, 86)
+    cab(px, 6, "hiviz")
+    # bed: hinged at the back (x = 86), front lifts by tip
+    lift = tip * 14
+    bed = [(30, VGROUND - 10 - lift), (86, VGROUND - 10), (86, VGROUND - 26), (32, VGROUND - 26 - lift * 1.1)]
+    m = c.poly(bed)
+    c.fill(m, np.clip(0.35 + (c.Y - (VGROUND - 26)) / -60, 0, 1), "safety", 0.6)
+    edge = c.grow(m, 0) & ~np.roll(m, 1, 0)
+    c.set(edge, P["safety"][5])
+    for i in range(4):
+        x = 38 + i * 12
+        rib = c.line(x, VGROUND - 25 - lift * (86 - x) / 56, x, VGROUND - 11 - lift * (86 - x) / 56, 1)
+        c.set(rib & m, P["safety"][2])
+    if load:
+        heap = c.poly([(34, VGROUND - 26 - lift), (50, VGROUND - 33 - lift * 0.9), (66, VGROUND - 32 - lift * 0.6),
+                       (84, VGROUND - 26), (84, VGROUND - 25), (34, VGROUND - 25 - lift)])
+        c.fill(heap & ~m, np.clip(0.75 - (c.X - 34) / 120, 0, 1), "dirt", 0.9)
+    if tip > 0.4:
+        # dirt pouring off the back
+        for i in range(int(tip * 10)):
+            y = VGROUND - 22 + i * 2
+            px.rect(86 + (i % 3), y, 89 + (i % 2), y + 2, P["dirt"][4 - i % 3])
+    wheel(px, 20, f)
+    wheel(px, 62, f)
+    wheel(px, 76, f)
+    c.outline(INK)
+    return c
+
+
+def mixer(f):
+    c = Canvas(VW, VH)
+    px = Px(c, 0, 0)
+    chassis(px, 6, 88)
+    cab(px, 6, "cement")
+    # drum: an egg tilted up toward the back, with spiral fins that turn with f
+    cx, cy, rx, ry = 56, VGROUND - 22, 28, 11
+    m = ((c.X - cx) / rx) ** 2 + ((c.Y - cy) / ry) ** 2 <= 1
+    m &= c.Y < VGROUND - 9
+    shade = np.clip(0.85 - (c.Y - (cy - ry)) / (2.4 * ry) - (c.X - cx) / 160, 0, 1)
+    c.fill(m, shade, "cement", 0.7)
+    for k in range(4):
+        x = cx - rx + ((k * 14 + f * 3.5) % 56)
+        stripe = c.line(x, cy - ry, x + 8, cy + ry, 2) & m
+        c.fill(stripe, np.clip(shade + 0.15, 0, 1), "safety", 0.5)
+    chute = c.line(84, VGROUND - 22, 92, VGROUND - 14, 2)
+    c.set(chute, P["steel"][4])
+    px.rect(80, VGROUND - 36, 86, VGROUND - 31, P["steel"][3])   # hopper
+    px.rect(80, VGROUND - 36, 86, VGROUND - 35, P["steel"][5])
+    px.rect(34, VGROUND - 14, 82, VGROUND - 9, P["steel"][3])    # drum cradle
+    wheel(px, 20, f)
+    wheel(px, 64, f)
+    wheel(px, 78, f)
+    c.outline(INK)
+    return c
+
+
+CARGO = ["steel", "glass", "pallets", "rebar"]
+
+
+def flatbed(f, cargo):
+    c = Canvas(VW, VH)
+    px = Px(c, 0, 0)
+    chassis(px, 6, 92)
+    cab(px, 6, "safety")
+    px.rect(30, VGROUND - 12, 92, VGROUND - 9, P["wood"][3])
+    px.rect(30, VGROUND - 12, 92, VGROUND - 11, P["wood"][5])
+    top = VGROUND - 12
+    if cargo == "steel":
+        for k in range(3):
+            y = top - 4 * (k + 1)
+            px.rect(32, y, 90, y + 4, P["steel"][3 + k])
+            px.rect(32, y, 90, y + 1, P["steel"][5 + (k > 0)])
+            px.rect(32, y + 3, 90, y + 4, P["steel"][2])
+            px.put(32, y + 1, P["ink"][2])
+            px.put(32, y + 2, P["ink"][2])
+    elif cargo == "glass":
+        for k in range(4):
+            x = 36 + k * 13
+            px.rect(x, top - 18, x + 11, top, P["glass"][3 + k % 2])
+            px.line(x + 2, top - 16, x + 6, top - 4, P["sunglass"][5])
+            px.rect(x, top - 18, x + 11, top - 17, P["steel"][6])
+        px.rect(34, top - 19, 36, top, P["wood"][2])            # A-frame rack
+    elif cargo == "pallets":
+        for k in range(3):
+            x = 34 + k * 19
+            px.rect(x, top - 2, x + 16, top, P["wood"][3])
+            px.rect(x + 1, top - 13, x + 15, top - 2, P["precast"][4 + k % 2])
+            px.rect(x + 1, top - 13, x + 15, top - 12, P["precast"][6])
+            px.rect(x + 7, top - 13, x + 9, top - 2, P["hiviz"][5])   # strap
+    elif cargo == "rebar":
+        for k in range(3):
+            y = top - 3 * (k + 1)
+            px.rect(32, y, 91, y + 2, P["rebar"][3 + k])
+            for x in range(34, 90, 3):
+                px.put(x, y, P["rebar"][5])
+            px.rect(48, y - 1, 50, y + 3, P["hiviz"][4])
+            px.rect(74, y - 1, 76, y + 3, P["hiviz"][4])
+    wheel(px, 20, f)
+    wheel(px, 70, f)
+    wheel(px, 82, f)
+    c.outline(INK)
+    return c
+
+
+def vehicle_sheet():
+    """Rows: dump (drive 2, tip 4, empty drive 2), mixer (4 drum frames), flatbed x 4 cargo (2 frames each, + empty)."""
+    rows = []
+    rows.append([dump_truck(0), dump_truck(1)] + [dump_truck(0, t) for t in (0.3, 0.6, 0.85, 1.0)] +
+                [dump_truck(0, 0, False), dump_truck(1, 0, False)])
+    rows.append([mixer(f) for f in range(8)])
+    for cg in CARGO:
+        rows.append([flatbed(0, cg), flatbed(1, cg)] + [flatbed(f % 2, None) for f in range(2)])
+    c = grid(rows, VW, VH)
+    return c
+
+
+# ------------------------------------------------------------------------------------------------------------ effects
+FW, FH = 48, 40
+
+
+def puff(f, n=6, col="sand"):
+    """Dust cloud that blooms and thins out over n frames, sitting on the frame bottom."""
+    c = Canvas(FW, FH)
+    t = (f + 1) / n
+    rng = np.random.default_rng(7)
+    for k in range(9):
+        a = -0.15 + k * (math.pi + 0.3) / 8 + rng.uniform(-0.15, 0.15)
+        d = (4 + 14 * t * rng.uniform(0.6, 1.0)) * (0.35 if k % 3 == 1 else 1)
+        cx, cy = FW / 2 + math.cos(a) * d * 1.3, FH - 6 - math.sin(a) * d * 0.7 - t * 6
+        r = 3 + 6 * t * rng.uniform(0.6, 1.0)
+        m = ((c.X - cx) / r) ** 2 + ((c.Y - cy) / (r * 0.8)) ** 2 <= 1
+        cover = max(0.0, 1.0 - t * 0.9)
+        lit = np.clip(0.75 - (c.Y - cy) / (3 * r) - (c.X - cx) / (5 * r), 0, 1)
+        sel = m & (c.B < cover - 0.5)
+        c.fill(sel, lit, col, 0.6)
+    return c
+
+
+def sparks(f):
+    c = Canvas(FW, FH)
+    px = Px(c, 0, 0)
+    rng = np.random.default_rng(11 + f)
+    ox, oy = FW // 2, 8
+    for k in range(14):
+        a = rng.uniform(0.15, math.pi - 0.15)
+        v = rng.uniform(4, 11)
+        t = (f + rng.uniform(0.4, 1.0)) / 4
+        x = ox + math.cos(a) * v * t * 2
+        y = oy - math.sin(a) * v * t + 22 * t * t
+        px.put(x, y, P["lamp"][6 - int(t * 3)])
+        px.put(x - math.cos(a), y + math.sin(a) * 0.5, P["lamp"][3])
+    if f % 2 == 0:
+        for dx, dy, cc in [(0, 0, 6), (1, 0, 5), (-1, 0, 5), (0, 1, 5), (0, -1, 5)]:
+            px.put(ox + dx, oy + dy, P["lamp"][cc])
+    return c
+
+
+def burst(f, n=8):
+    """Golden stage-done burst: a ring of rays and a few rising sparkles."""
+    c = Canvas(FW, FH)
+    px = Px(c, 0, 0)
+    t = (f + 1) / n
+    cx, cy = FW / 2, FH / 2
+    for k in range(12):
+        a = k * math.pi / 6 + (0.26 if k % 2 else 0)
+        r0, r1 = 3 + 14 * t, 6 + 16 * t
+        if t > 0.85 and k % 2:
+            continue
+        for s in np.linspace(r0, r1, 6):
+            px.put(cx + math.cos(a) * s, cy + math.sin(a) * s * 0.85, P["lamp"][6 if s < (r0 + r1) / 2 else 4])
+    if t < 0.4:
+        for dx in range(-2, 3):
+            for dy in range(-2, 3):
+                if abs(dx) + abs(dy) <= 2:
+                    px.put(cx + dx, cy + dy, P["lamp"][6 - abs(dx) - abs(dy)])
+    rng = np.random.default_rng(3)
+    for k in range(6):
+        x = cx + rng.uniform(-16, 16)
+        y = cy + 6 - t * rng.uniform(14, 22)
+        if (k + f) % 3:
+            px.put(x, y, P["rep"][6])
+            px.put(x + 1, y, P["rep"][4])
+            px.put(x - 1, y, P["rep"][4])
+            px.put(x, y - 1, P["rep"][4])
+            px.put(x, y + 1, P["rep"][4])
+    return c
+
+
+def fx_sheet():
+    rows = [[puff(f) for f in range(6)], [puff(f, col="cement") for f in range(6)], [sparks(f) for f in range(4)],
+            [burst(f) for f in range(8)]]
+    c = grid(rows, FW, FH)
+    return c
+
+
+# ------------------------------------------------------------------------------------------- mini crew (inside floors)
+# Small figures that fit a storey of the cutaway (floors are ~16 art px apart), seen further back than the yard crew.
+MW, MH = 11, 15
+MFOOT = 12
+MINI_ACTIONS = [("walk", 4), ("carry", 4), ("hammer", 2), ("weld", 2), ("idle", 2)]
+_MTOP = ["..hhh..", ".hhhhhh", "..sse..", "..sss..", ".Vvvv..", ".Vrrr..", ".Vvvv..", "..ppp.."]
+_MLEGS = [["..p.p..", ".p...p.", ".b...bb"], ["..pp...", "..pp...", "..bbb.."], ["..p.p..", ".p...p.", "bb...b."],
+          ["...pp..", "...pp..", "...bbb."]]
+
+
+def mini(v, action, f):
+    c = Canvas(MW, MH)
+    px = Px(c, 2, 0)
+    hat, vest, pants = P[v["hat"]], P[v["vest"]], P[v["pants"]]
+    sk = P["skin"][v["skin"]]
+    col = {"h": hat[v["hatv"]], "s": sk, "e": P["ink"][1], "V": vest[2], "v": vest[4], "r": P["white"][3],
+           "p": pants[3], "b": P["ink"][1]}
+    crouch = 2 if action == "weld" else 0
+    bob = 1 if action == "idle" and f else 0
+    legs = _MLEGS[f % 4] if action in ("walk", "carry") else (["..pp...", ".pp.p..", ".bbbbb."] if crouch else _MLEGS[1 if action == "idle" else 0])
+    rows = _MTOP + legs
+    for y, row in enumerate(rows):
+        dy = crouch + bob if y < len(_MTOP) else (crouch if y == len(_MTOP) and crouch else 0)
+        if crouch and y >= len(_MTOP):
+            dy = crouch - 1 if y > len(_MTOP) else crouch
+        for x, ch in enumerate(row):
+            if ch in col:
+                px.put(x, y + dy + (MFOOT - 10 - 0), col[ch])
+    o = MFOOT - 10 + crouch + bob
+    if action in ("walk", "idle"):
+        px.put(5, 4 + o + (f % 2 if action == "walk" else 1), sk)
+    elif action == "carry":
+        for x in range(-2, 9):
+            px.put(x, 3 + o, P["wood"][5 if x % 3 else 4])
+        px.put(5, 4 + o, sk)
+    elif action == "hammer":
+        if f == 0:
+            px.put(5, 3 + o, sk); px.put(6, 2 + o, P["wood"][5]); px.put(6, 1 + o, P["steel"][6]); px.put(7, 1 + o, P["steel"][6])
+        else:
+            px.put(5, 4 + o, sk); px.put(6, 5 + o, P["wood"][5]); px.put(7, 5 + o, P["steel"][6]); px.put(7, 6 + o, P["steel"][6])
+    elif action == "weld":
+        px.put(2, 2 + o, P["ink"][2]); px.put(3, 2 + o, P["ink"][2]); px.put(4, 2 + o, P["lamp"][5])  # visor
+        px.put(5, 5 + o, sk); px.put(6, 6 + o, P["steel"][6])
+        if f == 0:
+            px.put(7, 7 + o, P["lamp"][6]); px.put(7, 6 + o, P["lamp"][4]); px.put(6, 8 + o, P["lamp"][4])
+    c.outline(INK)
+    return c
+
+
+def mini_sheet():
+    rows = [[mini(v, a, f) for a, n in MINI_ACTIONS for f in range(n)] for v in CREW_VARIANTS]
+    return grid(rows, MW, MH)
+
+
+# ----------------------------------------------------------------------------------------- machines (face RIGHT)
+XW, XH = 128, 96
+XG = 92  # ground row (rows below stay clear)
+
+
+def tracks(px, x0, x1):
+    px.rect(x0 + 2, XG - 8, x1 - 2, XG, P["ink"][1])
+    px.rect(x0, XG - 6, x1, XG - 2, P["ink"][1])
+    for x in range(x0 + 3, x1 - 2, 3):
+        px.put(x, XG - 8, P["steel"][3])
+        px.put(x, XG - 1, P["steel"][3])
+    for cx in range(x0 + 4, x1 - 2, 6):
+        px.rect(cx - 1, XG - 5, cx + 2, XG - 3, P["steel"][4])
+
+
+def arm(c, pts, w, ramp, v=0.6):
+    for (x0, y0), (x1, y1) in zip(pts, pts[1:]):
+        m = c.line(x0, y0, x1, y1, w)
+        c.fill(m, np.clip(v + (c.X - x0) * 0 - (c.Y - y0) / 80, 0, 1), ramp, 0.5)
+
+
+def excavator(f):
+    """Digging cycle over 6 frames: reach, dig, curl, lift, swing out, dump."""
+    c = Canvas(XW, XH)
+    px = Px(c, 0, 0)
+    tracks(px, 14, 62)
+    px.rect(18, XG - 12, 58, XG - 8, P["steel"][2])
+    # house and cab
+    body = c.rect(16, XG - 26, 60, XG - 12)
+    c.fill(body, np.clip(0.75 - (c.Y - (XG - 26)) / 40, 0, 1), "hiviz", 0.5)
+    px.rect(16, XG - 26, 60, XG - 25, P["hiviz"][6])
+    px.rect(14, XG - 22, 20, XG - 12, P["hiviz"][2])  # counterweight
+    px.rect(40, XG - 38, 58, XG - 26, P["hiviz"][4])
+    px.rect(42, XG - 36, 56, XG - 28, P["glass"][3])
+    px.rect(42, XG - 36, 45, XG - 33, P["sunglass"][5])
+    px.rect(28, XG - 30, 31, XG - 26, P["ink"][2])     # exhaust
+    # boom / stick / bucket angles per frame
+    poses = [(-0.9, 0.9, 1.6), (-0.5, 1.4, 2.2), (-0.6, 1.2, 0.6), (-1.1, 0.5, 0.2), (-1.3, 0.2, 0.0), (-1.2, 0.4, 2.4)]
+    a1, a2, a3 = poses[f]
+    sx, sy = 58, XG - 22
+    ex, ey = sx + math.cos(a1) * 34, sy + math.sin(a1) * 34
+    wx, wy = ex + math.cos(a2) * 28, ey + math.sin(a2) * 28
+    arm(c, [(sx, sy), (ex, ey)], 5, "hiviz", 0.7)
+    arm(c, [(ex, ey), (wx, wy)], 4, "hiviz", 0.55)
+    c.set(c.line(sx + 2, sy - 4, ex - 2, ey + 2, 1), P["steel"][5])   # ram
+    bx, by = wx + math.cos(a3) * 7, wy + math.sin(a3) * 7
+    bucket = c.poly([(wx - 3, wy - 2), (wx + 3, wy + 2), (bx + 3, by + 2), (bx - 2, by + 3)])
+    c.fill(bucket, 0.4, "steel", 0.5)
+    for k in range(3):
+        px.put(bx - 2 + k * 2, by + 3, P["steel"][7])
+    if f in (2, 3, 4):
+        px.rect(wx - 2, wy - 4, wx + 4, wy - 1, P["dirt"][5])
+    if f == 5:
+        for k in range(5):
+            px.rect(bx - 1 + (k % 2), by + 4 + k * 3, bx + 2, by + 6 + k * 3, P["dirt"][4 + k % 2])
+    c.outline(INK)
+    return c
+
+
+def pump_truck(f):
+    """Concrete pump backed up to the build (cab away from it, on the right). Its three-part boom lies folded on the
+    body, unfolds up and over to the left (frames 0-3), then the hose pours (4-5)."""
+    c = Canvas(XW, XH)
+    px = Px(c, 0, 0)
+    X = 40
+    px.rect(X + 8, XG - 9, X + 80, XG - 6, P["steel"][2])
+    b = P["hiviz"]
+    top = XG - 30
+    px.rect(X + 62, top, X + 80, XG - 8, b[4])
+    px.rect(X + 80, top + 8, X + 84, XG - 8, b[4])
+    px.rect(X + 62, top, X + 80, top + 1, b[6])
+    px.rect(X + 70, top + 2, X + 78, top + 8, P["glass"][3])
+    px.rect(X + 64, top + 2, X + 69, top + 8, P["glass"][2])
+    px.rect(X + 82, XG - 11, X + 84, XG - 9, P["lamp"][5])
+    px.rect(X + 10, XG - 22, X + 60, XG - 9, P["cement"][4])
+    px.rect(X + 10, XG - 22, X + 60, XG - 21, P["cement"][6])
+    px.rect(X + 14, XG - 18, X + 56, XG - 17, P["safety"][4])
+    px.rect(X + 4, XG - 10, X + 10, XG - 2, P["steel"][4])
+    px.rect(X + 2, XG - 2, X + 12, XG, P["steel"][5])
+    px.rect(X + 18, XG - 27, X + 26, XG - 22, P["steel"][3])  # turret
+    u = min(1.0, f / 3)
+    pv = (X + 22, XG - 26)
+    a1 = -2.0 * u
+    a2 = math.pi + 0.15 * u
+    a3 = 1.87 * u
+    p1 = (pv[0] + math.cos(a1) * 34, pv[1] + math.sin(a1) * 34)
+    p2 = (p1[0] + math.cos(a2) * 30, p1[1] + math.sin(a2) * 30 - (1 - u) * 2)
+    p3 = (p2[0] + math.cos(a3) * 20, p2[1] + math.sin(a3) * 20 - (1 - u) * 4)
+    arm(c, [pv, p1], 4, "safety", 0.6)
+    arm(c, [p1, p2], 3, "safety", 0.55)
+    arm(c, [p2, p3], 2, "safety", 0.5)
+    hx, hy = p3
+    if u >= 1:
+        c.set(c.line(hx, hy, hx, hy + 16, 2), P["ink"][2])
+        if f >= 4:
+            for k in range(5):
+                y = hy + 17 + k * 3 + (f - 4) * 2
+                if y < XG - 1:
+                    px.rect(hx - 1, y, hx + 2, y + 2, P["cement"][5 - k % 2])
+    for x in (20, 46, 56, 72):
+        wheel_x(px, X + x, f)
+    c.outline(INK)
+    return c
+
+
+def wheel_x(px, cx, f, r=5):
+    for y in range(-r, r + 1):
+        for x in range(-r, r + 1):
+            d = math.hypot(x, y)
+            if d <= r + 0.2:
+                px.put(cx + x, XG - r + y, P["ink"][1])
+            if d <= r - 2.2:
+                px.put(cx + x, XG - r + y, P["steel"][4])
+    a = f * math.pi / 4
+    px.put(cx + round(math.cos(a) * 2), XG - r + round(math.sin(a) * 2), P["steel"][6])
+    px.put(cx - round(math.cos(a) * 2), XG - r - round(math.sin(a) * 2), P["steel"][6])
+
+
+def mobile_crane(f, load="steel"):
+    """All-terrain crane with its boom up to the right; the hook and its load sway over 4 frames."""
+    c = Canvas(XW, XH)
+    px = Px(c, 0, 0)
+    px.rect(6, XG - 9, 62, XG - 6, P["steel"][2])
+    px.rect(8, XG - 20, 52, XG - 9, P["safety"][4])
+    px.rect(8, XG - 20, 52, XG - 19, P["safety"][5])
+    px.rect(48, XG - 30, 62, XG - 9, P["safety"][4])   # cab
+    px.rect(50, XG - 28, 60, XG - 22, P["glass"][3])
+    px.rect(18, XG - 28, 34, XG - 20, P["safety"][3])  # turret
+    px.rect(2, XG - 10, 8, XG - 2, P["steel"][4])
+    px.rect(0, XG - 2, 10, XG, P["steel"][5])
+    pv = (26, XG - 26)
+    ang = -0.95
+    tip = (pv[0] + math.cos(ang) * 72, pv[1] + math.sin(ang) * 72)
+    m = c.line(pv[0], pv[1], tip[0], tip[1], 5)
+    c.fill(m, 0.75, "hiviz", 0.5)
+    c.set(c.line(pv[0], pv[1] - 2, tip[0], tip[1] - 2, 1), P["hiviz"][6])
+    for k in range(1, 6):
+        t = k / 6
+        px.put(pv[0] + (tip[0] - pv[0]) * t, pv[1] + (tip[1] - pv[1]) * t, P["hiviz"][2])
+    sway = [0, 2, 0, -2][f]
+    hx, hy = tip[0] + sway, tip[1] + 34
+    c.set(c.line(tip[0], tip[1], hx, hy, 1), P["ink"][2])
+    px.rect(hx - 1, hy, hx + 2, hy + 3, P["hiviz"][5])
+    c.set(c.line(hx, hy + 3, hx - 10, hy + 8, 1), P["ink"][2])
+    c.set(c.line(hx, hy + 3, hx + 10, hy + 8, 1), P["ink"][2])
+    if load == "steel":
+        px.rect(hx - 14, hy + 8, hx + 15, hy + 12, P["steel"][4])
+        px.rect(hx - 14, hy + 8, hx + 15, hy + 9, P["steel"][6])
+    else:
+        px.rect(hx - 10, hy + 8, hx + 11, hy + 22, P["glass"][3])
+        px.line(hx - 6, hy + 10, hx - 1, hy + 20, P["sunglass"][5])
+        px.rect(hx - 10, hy + 8, hx + 11, hy + 9, P["steel"][6])
+    for x in (16, 28, 54):
+        wheel_x(px, x, 0)
+    c.outline(INK)
+    return c
+
+
+def forklift(f, lift):
+    c = Canvas(XW, XH)
+    px = Px(c, 0, 0)
+    x0 = 40
+    px.rect(x0, XG - 18, x0 + 26, XG - 6, P["hiviz"][4])
+    px.rect(x0, XG - 18, x0 + 26, XG - 17, P["hiviz"][6])
+    px.rect(x0 - 4, XG - 16, x0, XG - 6, P["ink"][2])            # counterweight
+    px.rect(x0 + 6, XG - 32, x0 + 7, XG - 18, P["ink"][2])      # cage
+    px.rect(x0 + 20, XG - 32, x0 + 21, XG - 18, P["ink"][2])
+    px.rect(x0 + 6, XG - 33, x0 + 21, XG - 32, P["ink"][2])
+    # driver
+    px.rect(x0 + 11, XG - 26, x0 + 15, XG - 20, P["safety"][4])
+    px.rect(x0 + 11, XG - 30, x0 + 15, XG - 26, P["skin"][4])
+    px.rect(x0 + 10, XG - 32, x0 + 16, XG - 30, P["hiviz"][5])
+    # mast and forks
+    px.rect(x0 + 27, XG - 34, x0 + 29, XG - 2, P["steel"][3])
+    fy = XG - 3 - lift * 4
+    px.rect(x0 + 29, fy, x0 + 40, fy + 1, P["steel"][6])
+    px.rect(x0 + 29, fy - 12, x0 + 30, fy + 1, P["steel"][5])
+    if lift >= 0:
+        px.rect(x0 + 30, fy - 1, x0 + 41, fy, P["wood"][3])
+        px.rect(x0 + 31, fy - 11, x0 + 40, fy - 1, P["precast"][5])
+        px.rect(x0 + 31, fy - 11, x0 + 40, fy - 10, P["precast"][6])
+        px.rect(x0 + 35, fy - 11, x0 + 36, fy - 1, P["hiviz"][5])
+    wheel_x(px, x0 + 4, f, 4)
+    wheel_x(px, x0 + 22, f, 5)
+    c.outline(INK)
+    return c
+
+
+MACHINE_ROWS = ["excavator", "pump", "crane-steel", "crane-glass", "forklift"]
+
+
+def machine_sheet():
+    rows = [[excavator(f) for f in range(6)], [pump_truck(f) for f in range(6)],
+            [mobile_crane(f) for f in range(4)], [mobile_crane(f, "glass") for f in range(4)],
+            [forklift(f % 2, f // 2) for f in range(6)]]
+    return grid(rows, XW, XH)
+
+
+# ------------------------------------------------------------------------- ladders and the hoist (vertical travel)
+def climber(v, f):
+    """Mini crew member seen from behind on a ladder: arms and legs alternate over 2 frames."""
+    c = Canvas(MW, MH)
+    px = Px(c, 2, 0)
+    hat, vest, pants = P[v["hat"]], P[v["vest"]], P[v["pants"]]
+    sk = P["skin"][max(0, v["skin"] - 1)]
+    o = 2
+    px.rect(2, o, 5, o + 2, hat[v["hatv"]])
+    px.rect(1, o + 1, 6, o + 2, hat[max(0, v["hatv"] - 1)])
+    px.rect(2, o + 2, 5, o + 3, sk)                        # neck
+    px.rect(1, o + 3, 6, o + 7, vest[4])
+    px.rect(1, o + 5, 6, o + 6, P["white"][3])
+    up, dn = (0, 1) if f == 0 else (1, 0)
+    px.put(0, o + 1 + up * 2, sk)                          # hands on the rails
+    px.put(6, o + 1 + dn * 2, sk)
+    px.put(0, o + 2 + up * 2, vest[3])
+    px.put(6, o + 2 + dn * 2, vest[3])
+    px.rect(1, o + 7, 3, o + 9 + up, pants[3])
+    px.rect(4, o + 7, 6, o + 9 + dn, pants[3])
+    px.put(1, o + 9 + up, P["ink"][1])
+    px.put(5, o + 9 + dn, P["ink"][1])
+    c.outline(INK)
+    return c
+
+
+LW, LH = 10, 16  # ladder tile (repeats vertically)
+
+
+def ladder_tile():
+    c = Canvas(LW, LH)
+    px = Px(c, 0, 0)
+    for y in range(LH):
+        px.put(1, y, P["wood"][4]); px.put(2, y, P["wood"][3])
+        px.put(7, y, P["wood"][4]); px.put(8, y, P["wood"][3])
+    for y in (3, 7, 11, 15):
+        px.rect(3, y, 7, y + 1, P["wood"][5])
+    return c
+
+
+HW, HH = 12, 12  # hoist mast tile (lattice, repeats vertically)
+
+
+def mast_tile():
+    c = Canvas(HW, HH)
+    px = Px(c, 0, 0)
+    for y in range(HH):
+        px.put(1, y, P["hiviz"][4]); px.put(10, y, P["hiviz"][3])
+    px.line(2, 0, 9, 11, P["hiviz"][2])
+    px.rect(2, 0, 10, 1, P["hiviz"][5])
+    return c
+
+
+CW2, CH2 = 22, 20  # hoist cage
+
+
+def cage(v):
+    c = Canvas(CW2, CH2)
+    px = Px(c, 0, 0)
+    px.rect(1, 1, 21, 19, P["steel"][2])
+    px.rect(2, 2, 20, 18, P["ink"][2])
+    fig = mini(v, "idle", 0)
+    c.over(fig, 6, 3)
+    for x in range(2, 20, 3):
+        px.rect(x, 2, x + 1, 18, P["steel"][5])         # mesh in front of the rider
+    px.rect(1, 1, 21, 3, P["hiviz"][5])
+    px.rect(1, 17, 21, 19, P["hiviz"][3])
+    px.rect(9, 0, 13, 1, P["safety"][5])                # beacon
+    c.outline(INK)
+    return c
+
+
+def vertical_sheet():
+    """Row 0: climbers (variant x 2 frames). Row 1: ladder tile, mast tile, cages for 2 riders."""
+    row0 = [climber(v, f) for v in CREW_VARIANTS for f in range(2)]
+    return grid([row0], MW, MH), ladder_tile(), mast_tile(), grid([[cage(CREW_VARIANTS[0]), cage(CREW_VARIANTS[2])]], CW2, CH2)
+
+
+# ----------------------------------------------------------------------------------- shore road traffic (face LEFT)
+RW, RH = 34, 16
+RG = 14
+
+
+def car(body, kind, f):
+    c = Canvas(RW, RH)
+    px = Px(c, 0, 0)
+    b = P[body] + [P[body][-1]] * 4
+    if kind == "van":
+        px.rect(2, 2, 32, RG - 3, b[4]); px.rect(2, 2, 32, 3, b[6])
+        px.rect(4, 4, 10, 8, P["glass"][3]); px.put(4, 4, P["sunglass"][5])
+        px.rect(12, 4, 17, 8, P["glass"][2])
+    else:
+        px.rect(2, 7, 32, RG - 3, b[4]); px.rect(2, 7, 32, 8, b[6])
+        px.rect(9, 2, 25, 7, b[4]); px.rect(9, 2, 25, 3, b[6])
+        px.rect(10, 3, 16, 7, P["glass"][3]); px.put(10, 3, P["sunglass"][5])
+        px.rect(18, 3, 24, 7, P["glass"][2])
+    px.rect(2, RG - 6, 4, RG - 4, P["lamp"][6])      # headlight
+    px.rect(30, RG - 6, 32, RG - 4, P["safety"][4])  # tail light
+    for cx in (8, 26):
+        px.rect(cx - 2, RG - 4, cx + 3, RG + 1, P["ink"][1])
+        px.put(cx + (f % 2), RG - 2, P["steel"][5])
+    c.outline(INK)
+    return c
+
+
+CARS = [("safety", "sedan"), ("glass", "sedan"), ("cement", "van"), ("green", "sedan"), ("hiviz", "van")]
+
+
+def car_sheet():
+    return grid([[car(b, k, f) for f in range(2)] for b, k in CARS], RW, RH)

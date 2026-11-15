@@ -44,9 +44,9 @@ const MACHINES: MachineDef[] = [
         footprint: { w: 2, d: 2 },
         powerKw: 0,
         generatesKw: 60,
-        supplyRange: 4,
+        supplyRange: 6,
         buildCost: [{ item: "iron_gear", qty: 4 }, { item: "copper_wire", qty: 6 }, { item: "steel_ingot", qty: 4 }],
-        note: "Stored spring power. More output, reaches 4 cells.",
+        note: "Steady 60 kW, wind or calm. Reaches 6 cells.",
     },
     {
         id: "spring_store",
@@ -55,11 +55,11 @@ const MACHINES: MachineDef[] = [
         speed: 1,
         footprint: { w: 2, d: 2 },
         powerKw: 0,
-        storageKj: 600,
+        storageKj: 3000,
         generatesKw: 120,
         supplyRange: 4,
         buildCost: [{ item: "iron_gear", qty: 2 }, { item: "steel_ingot", qty: 2 }, { item: "copper_wire", qty: 4 }],
-        note: "The battery. Stores spare power in a wound spring and gives it back when demand outruns supply.",
+        note: "The battery. Winds up in gusts and gives the power back in calm air, up to 120 kW.",
     },
 ];
 
@@ -91,10 +91,10 @@ function logisticsPieces(): StructureDef[] {
         steel: { item: "steel_ingot", qty: 4 },
     };
     const tierStage: Record<"copper" | "steel", Stage> = { copper: 3, steel: 4 };
-    const tierRate: Record<"brass" | "copper" | "steel", number> = { brass: 1, copper: 2, steel: 4 };
+    const tierRate: Record<"brass" | "copper" | "steel", number> = { brass: 2, copper: 4, steel: 8 };
     const out: StructureDef[] = [];
     for (const p of brass) {
-        out.push({ id: p.id, name: p.name, footprint: junction, unlockStage: 2, tier: "brass", rate: tierRate.brass, buildCost: p.cost, note: p.note });
+        out.push({ id: p.id, name: p.name, footprint: junction, unlockStage: 2, tier: "brass", rate: tierRate.brass, buildCost: p.cost, note: `${p.note} Moves ${tierRate.brass} items a second.` });
         for (const t of ["copper", "steel"] as const) {
             out.push({
                 id: `${p.id}-${t}`,
@@ -104,7 +104,7 @@ function logisticsPieces(): StructureDef[] {
                 tier: t,
                 rate: tierRate[t],
                 buildCost: [...p.cost.map((s) => ({ ...s })), { ...tierExtra[t] }],
-                note: p.note,
+                note: `${p.note} Moves ${tierRate[t]} items a second.`,
             });
         }
     }
@@ -221,6 +221,8 @@ const RAW_NODES = [
     { item: "aluminium_ore", baseRatePerMin: 60 },
 ] as const;
 
+const ORRERY_RESEARCH = ["lens_arrays", "mirror_rings", "relay_cores", "orrery_struts"];
+
 // Recipes not listed here are base recipes, free from the start.
 const RESEARCH = [
     { id: "gears", name: "Gear cutting", cost: 3, requires: [], recipes: ["r_iron_gear"] },
@@ -246,15 +248,23 @@ const RESEARCH = [
     { id: "bulk_screws", name: "Bulk screws", cost: 3, requires: [], recipes: ["r_iron_screw_bulk"], note: "Six screws per rod, slower cut." },
     { id: "quick_steel", name: "Quick steel", cost: 4, requires: ["furnace_alloys"], recipes: ["r_steel_quick"], note: "Fast steel, no coal bonus." },
     { id: "fast_frames", name: "Fast frames", cost: 5, requires: ["frames"], recipes: ["r_frame_fast"], note: "Frames from plates and screws, quicker." },
+    // Mastery: permanent bonuses, open once the whole orrery line is researched, so they never take blueprints
+    // the megaproject still needs. Commissions and later workshops keep paying blueprints for them.
+    { id: "deep_seams", name: "Deep seams", cost: 8, requires: ORRERY_RESEARCH, recipes: [], note: "Drills mine 15% faster.", bonus: { miner: 1.15 } },
+    { id: "deeper_seams", name: "Deeper seams", cost: 14, requires: ["deep_seams"], recipes: [], note: "Drills mine another 15% faster.", bonus: { miner: 1.15 } },
+    { id: "tuned_sails", name: "Tuned sails", cost: 8, requires: ORRERY_RESEARCH, recipes: [], note: "Windmills and spring winders give 15% more power.", bonus: { power: 1.15 } },
+    { id: "tight_springs", name: "Tight springs", cost: 14, requires: ["tuned_sails"], recipes: [], note: "Another 15% more power.", bonus: { power: 1.15 } },
+    { id: "quick_hands", name: "Quick hands", cost: 10, requires: ORRERY_RESEARCH, recipes: [], note: "Every crafting machine works 10% faster.", bonus: { craft: 1.1 } },
+    { id: "steady_hands", name: "Steady hands", cost: 16, requires: ["quick_hands"], recipes: [], note: "Another 10% faster crafting.", bonus: { craft: 1.1 } },
 ] as const;
 
 // Blueprints granted per stage: 12 + 30 + 30 + 44 + 40 = 156. Research needed before each stage's milestone:
 // stage 3 needs 39 (by milestone 2), stage 4 needs 67 (by milestone 3), the megaproject needs 109 (by milestone 4).
 const MILESTONES = [
-    { id: "ms_smelting", name: "First smelt run", stage: 1, deliver: [{ item: "iron_ingot", qty: 50 }, { item: "copper_ingot", qty: 30 }], blueprints: 12 },
-    { id: "ms_forming", name: "Plate line online", stage: 2, deliver: [{ item: "iron_plate", qty: 60 }, { item: "copper_wire", qty: 60 }, { item: "steel_ingot", qty: 30 }, { item: "aluminium_sheet", qty: 20 }], blueprints: 30 },
-    { id: "ms_components", name: "Components crate", stage: 3, deliver: [{ item: "iron_gear", qty: 30 }, { item: "circuit_board", qty: 20 }, { item: "aluminium_casing", qty: 20 }, { item: "frame", qty: 20 }, { item: "steel_beam", qty: 10 }], blueprints: 30 },
-    { id: "ms_clockworks", name: "Clockwork shipment", stage: 4, deliver: [{ item: "motor", qty: 10 }, { item: "servo", qty: 6 }, { item: "photocell", qty: 10 }, { item: "quartz_lens", qty: 4 }], blueprints: 44 },
+    { id: "ms_smelting", name: "First smelt run", stage: 1, deliver: [{ item: "iron_ingot", qty: 50 }, { item: "copper_ingot", qty: 30 }], blueprints: 12, reward: [{ item: "iron_plate", qty: 20 }, { item: "copper_wire", qty: 20 }] },
+    { id: "ms_forming", name: "Plate line online", stage: 2, deliver: [{ item: "iron_plate", qty: 60 }, { item: "copper_wire", qty: 60 }, { item: "steel_ingot", qty: 30 }, { item: "aluminium_sheet", qty: 20 }], blueprints: 30, reward: [{ item: "iron_gear", qty: 8 }, { item: "copper_wire", qty: 20 }, { item: "steel_ingot", qty: 10 }] },
+    { id: "ms_components", name: "Components crate", stage: 3, deliver: [{ item: "iron_gear", qty: 30 }, { item: "circuit_board", qty: 20 }, { item: "aluminium_casing", qty: 20 }, { item: "frame", qty: 20 }, { item: "steel_beam", qty: 10 }], blueprints: 30, reward: [{ item: "steel_ingot", qty: 20 }, { item: "iron_plate", qty: 20 }] },
+    { id: "ms_clockworks", name: "Clockwork shipment", stage: 4, deliver: [{ item: "motor", qty: 10 }, { item: "servo", qty: 6 }, { item: "photocell", qty: 10 }, { item: "quartz_lens", qty: 4 }], blueprints: 44, reward: [{ item: "steel_ingot", qty: 20 }, { item: "copper_wire", qty: 20 }] },
     { id: "ms_megaproject", name: "Sky orrery, first light", stage: 5, deliver: [{ item: "sail_panel", qty: 3 }, { item: "mirror_cell", qty: 3 }, { item: "relay_core", qty: 3 }, { item: "lattice_strut", qty: 3 }], blueprints: 40 },
 ] as const;
 
@@ -268,6 +278,7 @@ const HUB_REQUESTS: HubRequestDef[] = [
         note: "The workshop wants proof the kiln works before it trusts you with more ore.",
         deliver: [{ item: "iron_ingot", qty: 10 }],
         unlocks: { recipes: ["r_copper_ingot"], machines: [] },
+        reward: [{ item: "copper_wire", qty: 10 }],
     },
     {
         id: "rq_press",
@@ -275,6 +286,7 @@ const HUB_REQUESTS: HubRequestDef[] = [
         note: "Plates need a press. Ship some ingots and the workshop pulls one out of storage.",
         deliver: [{ item: "iron_ingot", qty: 20 }, { item: "copper_ingot", qty: 10 }],
         unlocks: { recipes: ["r_iron_plate"], machines: ["press"] },
+        reward: [{ item: "iron_plate", qty: 8 }],
     },
     {
         id: "rq_lathe",
@@ -282,6 +294,7 @@ const HUB_REQUESTS: HubRequestDef[] = [
         note: "Rods, screws and wire come from the small machines.",
         deliver: [{ item: "iron_plate", qty: 12 }, { item: "copper_ingot", qty: 15 }],
         unlocks: { recipes: ["r_iron_rod", "r_iron_screw", "r_copper_wire"], machines: ["lathe", "drawer"] },
+        reward: [{ item: "iron_gear", qty: 6 }, { item: "copper_wire", qty: 10 }],
     },
     {
         id: "rq_routing",
@@ -292,6 +305,7 @@ const HUB_REQUESTS: HubRequestDef[] = [
             recipes: [],
             machines: ["belt-splitter", "belt-merger", "belt-underground-in", "belt-underground-out", "belt-loader", "belt-unloader"],
         },
+        reward: [{ item: "iron_plate", qty: 12 }, { item: "iron_gear", qty: 4 }],
     },
 ];
 
@@ -311,9 +325,9 @@ export const RECIPE_TREE: RecipeTree = {
         alternate: ALTERNATE_RECIPES.includes(r.id),
     })),
     nodes: RAW_NODES.map((n) => ({ ...n })),
-    research: RESEARCH.map((n) => ({ ...n, requires: [...n.requires], recipes: [...n.recipes] })),
-    milestones: MILESTONES.map((m) => ({ ...m, deliver: m.deliver.map((s) => ({ ...s })) })),
-    requests: HUB_REQUESTS.map((r) => ({ ...r, deliver: r.deliver.map((s) => ({ ...s })), unlocks: { recipes: [...r.unlocks.recipes], machines: [...r.unlocks.machines] } })),
+    research: RESEARCH.map((n) => ({ ...n, requires: [...n.requires], recipes: [...n.recipes], bonus: "bonus" in n ? { ...n.bonus } : undefined })),
+    milestones: MILESTONES.map((m) => ({ ...m, deliver: m.deliver.map((s) => ({ ...s })), reward: "reward" in m ? m.reward.map((s) => ({ ...s })) : undefined })),
+    requests: HUB_REQUESTS.map((r) => ({ ...r, deliver: r.deliver.map((s) => ({ ...s })), reward: r.reward?.map((s) => ({ ...s })), unlocks: { recipes: [...r.unlocks.recipes], machines: [...r.unlocks.machines] } })),
     prestige: {
         name: "Open a new workshop",
         keeps: ["blueprints", "research", "routes", "unlocked designs"],

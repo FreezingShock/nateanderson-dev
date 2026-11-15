@@ -8,7 +8,7 @@ import {
 } from "./data";
 
 export const SAVE_KEY = "gb-save-v1";
-export const SAVE_VERSION = 1;
+export const SAVE_VERSION = 2;
 
 export interface ActiveJob {
     /** position in the campaign (JOBS order, then the last three looping) */
@@ -28,10 +28,17 @@ export interface ActiveJob {
     extra: number[];
     /** payout bonus from accepted change orders, as a fraction of the cash */
     bonus: number;
+    /** a repeat order: the firm rebuilds a job it already handed over, while the next campaign job waits for a material. Pays a share, adds no building. */
+    rerun?: boolean;
+    /** cash already paid out as progress draws (one per finished phase); the handover pays the rest */
+    drawn?: number;
+    /** inspection score the accepted change orders add to what the job asks for */
+    harder?: number;
 }
 
 /** A change order: the client asks for more mid-build. Accept it for extra materials and a bigger payout, or let it lapse. */
-export interface ChangeOrder { job: number; left: number; extra: [number, number][]; bonus: number }
+/** `secs`: build time the extra work adds to the phase at full supply; `score`: how much harder the inspection gets if accepted. */
+export interface ChangeOrder { job: number; left: number; extra: [number, number][]; bonus: number; secs: number; score: number }
 
 export interface Building { id: string; city: number; firm: number; at: number }
 
@@ -53,6 +60,8 @@ export interface State {
     job: ActiveJob | null;
     change: ChangeOrder | null;
     built: number;
+    /** repeat orders finished (all firms) */
+    reruns: number;
     /** jobs handed over this firm = the campaign position of the next job */
     builtThisFirm: number;
     skyline: Building[];
@@ -75,7 +84,7 @@ export interface State {
 export function fresh(now = Date.now()): State {
     const s: State = {
         v: SAVE_VERSION, amt: Array(N).fill(0), open: 1, crews: Array(N).fill(0), equip: Array(N).fill(0), method: Array(N).fill(false),
-        cash: TUNE.startCash, rep: 0, repFirm: 0, cashFirm: 0, cashAll: 0, job: null, change: null, built: 0, builtThisFirm: 0, skyline: [],
+        cash: TUNE.startCash, rep: 0, repFirm: 0, cashFirm: 0, cashAll: 0, job: null, change: null, built: 0, reruns: 0, builtThisFirm: 0, skyline: [],
         firm: 0, charter: 0, charterAll: 0, perks: [], autoOff: [], ending: false, age: 0, totalAge: 0, savedAt: now, seen: [],
     };
     s.amt[0] = TUNE.startGravel;
@@ -143,6 +152,8 @@ export function unlock(s: State, n: number): boolean {
     s.amt[n - 1] -= UNLOCK_COST[n];
     s.open = n + 1;
     s.crews[n] = Math.max(s.crews[n], 1);
+    // Opening a material is a moment: the first crew arrives with a minute of output already stocked, so the new row is alive at once.
+    s.amt[n] = clamp(s.amt[n] + rawRate(s, n, effects(s), chain(s)) * TUNE.unlockGiftSecs);
     return true;
 }
 
@@ -200,31 +211,46 @@ export const stageOf = (s: State) => {
 
 // ---- jobs ---------------------------------------------------------------------------------------------------------
 
+/** How fast jobs build: the speed perks, and a share of the crew perks (better crews also frame faster, with diminishing returns). */
+export const jobSpeed = (f: Fx) => f.speed * Math.sqrt(f.crew);
+
 export interface PhasePlan { id: PhaseId; name: string; needs: [number, number][]; secs: number }
 /** The phases a job runs, with the units each asks for and how long it takes at full supply. */
 export function plan(job: JobDef, f: Fx): PhasePlan[] {
     const used = PHASES.map((p) => ({ p, needs: job.needs.filter(([m]) => p.mats.includes(m)) })).filter((x) => x.needs.length);
     const tot = used.reduce((a, x) => a + x.p.share, 0) || 1;
-    return used.map(({ p, needs }) => ({ id: p.id, name: p.name, needs, secs: (job.secs * p.share) / tot / f.speed }));
+    return used.map(({ p, needs }) => ({ id: p.id, name: p.name, needs, secs: (job.secs * p.share) / tot / jobSpeed(f) }));
 }
 
 /** Lap bonus once the firm is past the bridge: each extra lap of the last three jobs pays 15% more. */
 export const lap = (index: number) => Math.max(0, Math.floor((index - JOBS.length + 3) / 3));
 /** The job the firm builds next (campaign order). */
 export const nextJob = (s: State): JobDef => jobAt(s.builtThisFirm);
-export const jobReady = (s: State, j: JobDef) => s.open >= STAGES[j.stage - 1].mats;
-/** Why the next job is not running yet, or null. */
+/** How many materials a job needs open: its last material, counted from 1. A job starts as soon as these are open, not when its whole stage is. */
+export const jobNeed = (j: JobDef) => j.needs.reduce((a, [m]) => Math.max(a, m + 1), 1);
+/** The material that has to be open before the job can start. */
+export const jobMat = (j: JobDef) => jobNeed(j) - 1;
+export const jobReady = (s: State, j: JobDef) => s.open >= jobNeed(j);
+/** True while a campaign job (not a repeat order) is being built. */
+export const onCampaign = (s: State) => !!s.job && !s.job.rerun;
+/** Why the next campaign job is not running yet, or null. Also says what the crews do meanwhile. */
 export const waitingFor = (s: State): string | null => {
-    if (s.job) return null;
+    if (onCampaign(s)) return null;
     const j = nextJob(s);
     if (jobReady(s, j)) return null;
     const m = s.open;
-    return `${j.name} needs ${MATS[STAGES[j.stage - 1].mats - 1].name}. Gathering ${fmt(UNLOCK_COST[m])} ${MATS[m - 1].name} to open ${MATS[m].name}.`;
+    return `${j.name} needs ${MATS[jobMat(j)].name}. Gathering ${fmt(UNLOCK_COST[m])} ${MATS[m - 1].name} to open ${MATS[m].name}.`;
 };
+/** The job the firm repeats while the next one waits: the last one it handed over, as a repeat order. Null on a fresh firm. */
+export function repeatJob(s: State): JobDef | null {
+    if (s.builtThisFirm < 1) return null;
+    const j = jobAt(s.builtThisFirm - 1);
+    return jobReady(s, j) ? j : null;
+}
 /** The next few jobs, read-only, for the NEXT JOBS panel. */
 export const queue = (s: State, n = 3): { job: JobDef; index: number; ready: boolean }[] =>
     Array.from({ length: n }, (_, i) => {
-        const index = s.builtThisFirm + (s.job ? 1 : 0) + i;
+        const index = s.builtThisFirm + (onCampaign(s) ? 1 : 0) + i;
         const job = jobAt(index);
         return { job, index, ready: jobReady(s, job) };
     });
@@ -237,25 +263,56 @@ export const permitSecs = (j: JobDef, f: Fx) => j.permit * (1 - f.permit);
 
 /** Inspection: the score the firm brings against what the job asks. A shortfall stretches the inspection, never fails it. */
 export const inspectScore = (s: State, f: Fx) => TUNE.scoreBase + s.rep * TUNE.scoreRep + f.score;
-export const inspectSecs = (s: State, j: JobDef, f: Fx) => {
-    const delay = Math.min(TUNE.delayCap, Math.max(1, j.need / Math.max(0.1, inspectScore(s, f))));
+export const inspectSecs = (s: State, j: JobDef, f: Fx, harder = 0) => {
+    const delay = Math.min(TUNE.delayCap, Math.max(1, (j.need + harder) / Math.max(0.1, inspectScore(s, f))));
     return Math.max(1, j.inspect * delay * (1 - f.inspect));
 };
 
-/** When the next job is waiting on a material, the foreman opens it as soon as the stock to pay for it is in. No click, so a new player (or time away) never stalls on it. */
+/** When the job after the one being built is waiting on a material, the foreman opens it as soon as the stock to pay for it is in. No click, so a new player (or time away) never stalls on it. */
 export function openForWaitingJob(s: State): boolean {
-    if (s.job) return false;
-    const j = nextJob(s);
+    const j = jobAt(s.builtThisFirm + (onCampaign(s) ? 1 : 0));
     return !jobReady(s, j) && unlock(s, s.open);
 }
 
-/** Start the next job if its stage is open. Called every tick. */
-export function startNext(s: State, f: Fx): boolean {
-    if (s.job) return false;
-    const j = nextJob(s);
-    if (!jobReady(s, j)) return false;
-    s.job = { index: s.builtThisFirm, id: j.id, step: "permit", left: permitSecs(j, f), inspectTotal: 0, phase: 0, got: Array(N).fill(0), extra: Array(N).fill(0), bonus: 0 };
+/** Repeat orders pay a share of the job and give a trickle of reputation. `frac` is how much of it the crew finished. */
+export const repeatPay = (s: State, j: JobDef, f: Fx, c: Chain = chain(s), frac = 1) => Math.round(j.cash * f.pay * c.pay * TUNE.repeatCash * frac);
+export const repeatRep = (s: State, j: JobDef, f: Fx, c: Chain = chain(s), frac = 1) => Math.round(j.repGain * f.repGain * c.rep * TUNE.repeatRep * frac * 100) / 100;
+
+const blankJob = (index: number, id: string, left: number, rerun?: boolean): ActiveJob =>
+    ({ index, id, step: left > 0 ? "permit" : "build", left, inspectTotal: 0, phase: 0, got: Array(N).fill(0), extra: Array(N).fill(0), bonus: 0, ...(rerun ? { rerun } : {}) });
+
+/** Pay a repeat order, in full or pro rata, and clear it. */
+function settleRerun(s: State, f: Fx, c: Chain, frac: number) {
+    const aj = s.job;
+    const def = aj && JOB_BY.get(aj.id);
+    s.job = null;
     s.change = null;
+    if (!def || frac <= 0) return;
+    const cash = repeatPay(s, def, f, c, frac), r = repeatRep(s, def, f, c, frac);
+    s.cash = clamp(s.cash + cash);
+    s.cashFirm = clamp(s.cashFirm + cash);
+    s.cashAll = clamp(s.cashAll + cash);
+    s.rep = clamp(s.rep + r);
+    s.repFirm = clamp(s.repFirm + r);
+    s.reruns++;
+}
+
+/** Start the next campaign job as soon as the materials it needs are open (pulling the crew off a repeat order, paid for the work done); otherwise keep the crew busy on a repeat order. Called every tick. */
+export function startNext(s: State, f: Fx, c: Chain = chain(s)): boolean {
+    const j = nextJob(s);
+    if (s.job && !(s.job.rerun && jobReady(s, j))) return false;
+    if (s.job) {
+        const aj = s.job;
+        settleRerun(s, f, c, aj.step === "inspect" ? 1 : jobProgress(aj, f));
+    }
+    if (jobReady(s, j)) {
+        s.job = blankJob(s.builtThisFirm, j.id, permitSecs(j, f));
+        s.change = null;
+        return true;
+    }
+    const r = repeatJob(s);
+    if (!r) return false;
+    s.job = blankJob(s.builtThisFirm - 1, r.id, 0, true);
     return true;
 }
 
@@ -305,7 +362,7 @@ export function jobPhaseName(aj: ActiveJob, f: Fx): string {
 export function overtimeCost(s: State): number {
     const aj = s.job;
     const def = aj && JOB_BY.get(aj.id);
-    if (!aj || !def || aj.step !== "inspect" || aj.left <= 0) return 0;
+    if (!aj || !def || aj.rerun || aj.step !== "inspect" || aj.left <= 0) return 0;
     return Math.ceil(aj.left * TUNE.overtime * (def.cash / Math.max(1, aj.inspectTotal || def.inspect)));
 }
 export function overtime(s: State): boolean {
@@ -318,13 +375,18 @@ export function overtime(s: State): boolean {
 
 // ---- change orders -------------------------------------------------------------------------------------------------
 
+/** The phase a change order lands in: Structure, or the middle one for a job without it (the early houses). */
+const changePhase = (ph: PhasePlan[]) => {
+    const i = ph.findIndex((p) => p.id === "structure");
+    return i >= 0 ? i : Math.floor(ph.length / 2);
+};
 /** One change order per job after the stage 1 jobs, offered as the structure phase begins. */
 function maybeChange(s: State, aj: ActiveJob, def: JobDef, f: Fx) {
-    if (s.change || def.stage < 2 || aj.bonus > 0) return;
+    if (s.change || aj.rerun || def.stage < 2 || aj.bonus > 0) return;
     const ph = plan(def, f);
-    if (ph[aj.phase]?.id !== "structure") return;
+    if (aj.phase !== changePhase(ph)) return;
     const extra = ph[aj.phase].needs.map(([m, q]) => [m, Math.ceil(q * TUNE.changeExtra)] as [number, number]);
-    s.change = { job: aj.index, left: TUNE.changeWait, extra, bonus: TUNE.changeBonus * f.change };
+    s.change = { job: aj.index, left: TUNE.changeWait, extra, bonus: TUNE.changeBonus * f.change, secs: Math.round(ph[aj.phase].secs * TUNE.changeExtra), score: TUNE.changeScore };
     if (!s.autoOff.includes(3) && f.auto >= 2) acceptChange(s);
 }
 export function acceptChange(s: State): boolean {
@@ -332,6 +394,7 @@ export function acceptChange(s: State): boolean {
     if (!c || !aj || aj.index !== c.job || aj.step !== "build") return false;
     for (const [m, q] of c.extra) aj.extra[m] += q;
     aj.bonus += c.bonus;
+    aj.harder = (aj.harder ?? 0) + c.score;
     s.change = null;
     return true;
 }
@@ -344,10 +407,11 @@ export function declineChange(s: State): boolean {
 function finish(s: State, f: Fx, c: Chain) {
     const aj = s.job!;
     const def = JOB_BY.get(aj.id);
+    if (aj.rerun) { settleRerun(s, f, c, 1); return; }
     s.job = null;
     s.change = null;
     if (!def) return;
-    const cash = Math.round(payout(s, def, f, c, aj.index) * (1 + aj.bonus));
+    const cash = Math.max(0, Math.round(payout(s, def, f, c, aj.index) * (1 + aj.bonus)) - (aj.drawn ?? 0));
     s.cash = clamp(s.cash + cash);
     s.cashFirm = clamp(s.cashFirm + cash);
     s.cashAll = clamp(s.cashAll + cash);
@@ -373,21 +437,32 @@ function stepJob(s: State, dt: number, f: Fx, c: Chain) {
     if (aj.step === "build") {
         const ph = plan(def, f);
         const p = ph[aj.phase];
-        if (!p) { aj.step = "inspect"; aj.left = aj.inspectTotal = inspectSecs(s, def, f); return; }
+        if (!p) { aj.step = "inspect"; aj.left = aj.inspectTotal = inspectSecs(s, def, f, aj.harder); return; }
         maybeChange(s, aj, def, f);
         let allDone = true;
+        const base = new Map(p.needs);
         for (const [m, q] of phaseNeeds(aj, p)) {
             if (aj.got[m] >= q - 1e-9) continue;
-            const pull = Math.min((q / p.secs) * dt, q - aj.got[m], s.amt[m]);
+            // The pace is set by the planned quantity, so change-order extras add build time, not just materials.
+            const pull = Math.min(((base.get(m) ?? q) / p.secs) * dt, q - aj.got[m], s.amt[m]);
             if (pull > 0) { s.amt[m] -= pull; aj.got[m] += pull; }
             if (aj.got[m] < q - 1e-9) allDone = false;
         }
         if (allDone) {
+            if (!aj.rerun) {
+                // A progress draw: the client pays part of the job as each phase is handed over, so long jobs pay all the way through.
+                const tot = ph.reduce((a, x) => a + x.secs, 0) || 1;
+                const draw = Math.round(payout(s, def, f, c, aj.index) * TUNE.draw * (p.secs / tot));
+                aj.drawn = (aj.drawn ?? 0) + draw;
+                s.cash = clamp(s.cash + draw);
+                s.cashFirm = clamp(s.cashFirm + draw);
+                s.cashAll = clamp(s.cashAll + draw);
+            }
             aj.phase++;
             aj.got = Array(N).fill(0);
             aj.extra = Array(N).fill(0);
-            if (ph[aj.phase - 1].id === "structure") s.change = null;
-            if (aj.phase >= ph.length) { aj.step = "inspect"; aj.left = aj.inspectTotal = inspectSecs(s, def, f); }
+            if (aj.phase - 1 === changePhase(ph)) s.change = null;
+            if (aj.phase >= ph.length) { aj.step = "inspect"; aj.left = aj.inspectTotal = inspectSecs(s, def, f, aj.harder); }
         }
         return;
     }
@@ -412,7 +487,7 @@ export function step(s: State, dt: number, f: Fx = effects(s)): void {
     }
     s.flow = s.amt.map((v, i) => (v - before[i]) / dt);
     openForWaitingJob(s);
-    startNext(s, f);
+    startNext(s, f, c);
     if (s.job) stepJob(s, dt, f, c);
     if (s.change) { s.change.left -= dt; if (s.change.left <= 0) s.change = null; }
     s.age += dt;
@@ -526,6 +601,7 @@ export function parse(raw: unknown): State | null {
     s.cashAll = clamp(num(r.cashAll));
     s.firm = int(r.firm);
     s.built = int(r.built);
+    s.reruns = int(r.reruns);
     s.builtThisFirm = int(r.builtThisFirm);
     s.charter = clamp(num(r.charter));
     s.charterAll = clamp(num(r.charterAll));
@@ -539,17 +615,23 @@ export function parse(raw: unknown): State | null {
         const o = b as Record<string, unknown>;
         return o && typeof o.id === "string" && JOB_BY.has(o.id) ? [{ id: o.id, city: int(o.city), firm: int(o.firm), at: num(o.at) }] : [];
     }).slice(-TUNE.skylineCap);
+    // Saves from before the jobs were reordered (v1): the next job is the first one in the new order this firm has not built yet.
+    if (num(r.v, 1) < 2 && s.builtThisFirm < JOBS.length) {
+        const done = new Set(s.skyline.filter((b) => b.firm === s.firm).map((b) => b.id));
+        const k = JOBS.findIndex((j) => !done.has(j.id));
+        if (k >= 0) s.builtThisFirm = k;
+    }
     const o = (r.job ?? null) as Record<string, unknown> | null;
     if (o && typeof o.id === "string" && JOB_BY.has(o.id)) {
         s.job = {
             index: int(o.index, s.builtThisFirm), id: o.id, step: o.step === "build" || o.step === "inspect" ? o.step : "permit",
             left: Math.max(0, num(o.left)), inspectTotal: Math.max(0, num(o.inspectTotal)), phase: int(o.phase),
             got: Array.from({ length: N }, (_, i) => Math.max(0, num(arr(o.got)[i]))), extra: Array.from({ length: N }, (_, i) => Math.max(0, num(arr(o.extra)[i]))),
-            bonus: Math.max(0, num(o.bonus)),
+            bonus: Math.max(0, num(o.bonus)), drawn: Math.max(0, num(o.drawn)), harder: Math.max(0, num(o.harder)), ...(o.rerun === true ? { rerun: true } : {}),
         };
     }
     const ch = (r.change ?? null) as Record<string, unknown> | null;
-    if (ch && s.job) s.change = { job: int(ch.job), left: Math.max(0, num(ch.left)), bonus: Math.max(0, num(ch.bonus)), extra: arr(ch.extra).flatMap((e) => (Array.isArray(e) && e.length === 2 ? [[int(e[0]), Math.max(0, num(e[1]))] as [number, number]] : [])).filter(([m]) => m < N) };
+    if (ch && s.job) s.change = { job: int(ch.job), left: Math.max(0, num(ch.left)), bonus: Math.max(0, num(ch.bonus)), secs: Math.max(0, num(ch.secs)), score: Math.max(0, num(ch.score)), extra: arr(ch.extra).flatMap((e) => (Array.isArray(e) && e.length === 2 ? [[int(e[0]), Math.max(0, num(e[1]))] as [number, number]] : [])).filter(([m]) => m < N) };
     return s;
 }
 

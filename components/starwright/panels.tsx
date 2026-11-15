@@ -6,12 +6,14 @@ import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from 
 import { useGameShell } from "@/components/games/shell/game-route-shell";
 import { createSaveTools, readPickedFile } from "@/lib/games/save";
 import { ACHIEVEMENTS, ACH_BONUS, CLOUDS, CODEX, CONSTELLATIONS, ELEMENTS, EVENT_STAY, PLANETS, PLANET_STAGE_AT, PLANET_STAGE_BONUS, TUNE, type Perk } from "@/lib/starwright/data";
-import { H, W, makeLayers, render, renderBackdrop, renderLayered, renderPlanetSprite, type SceneFrame } from "@/lib/starwright/art";
-import { initSprites, sprites } from "@/lib/starwright/sprites";
-import { SAVE_VERSION, canPlanet, effects, eventOf, fmt, fmtAge, isSave, parse, perkReady, planetStage, type State } from "@/lib/starwright/engine";
+import { H, W, makeLayers, render, renderLayered, renderPlanetSprite, type SceneFrame } from "@/lib/starwright/art";
+import { frameAt, initSprites, sprites } from "@/lib/starwright/sprites";
+import { SAVE_VERSION, canPlanet, effects, eventOf, fmt, fmtAge, isSave, parse, planetStage, type State } from "@/lib/starwright/engine";
 import { cloudArt, cssUrl } from "@/lib/starwright/ui-art";
 import { sheetUrl } from "@/lib/starwright/ui-sheets";
-import { ElTile, Gl, Pic } from "./sw-ui";
+import { ElTile, Gl, Pic, ui } from "./sw-ui";
+import { SettingsBlock } from "./settings";
+import { SW_KEYS } from "@/lib/starwright/commands";
 
 export const tools = createSaveTools<State>({ app: "starwright", version: SAVE_VERSION, validate: isSave });
 
@@ -50,21 +52,29 @@ export function Almanac({ s, onClose, leaving }: { s: State; onClose: () => void
                         return (
                             <li key={e.sym} style={{ "--c": e.color } as CSSProperties} data-own={own ? "" : undefined} data-sel={sel === i ? "" : undefined} data-tip={own ? `${e.name}|${CODEX[e.sym]}` : "Not yet made|Fuse your way up the ladder."}>
                                 <button type="button" className="sw-cx" onClick={() => setSel(sel === i ? null : i)} aria-label={own ? e.name : "Not yet made"}>
-                                    <ElTile i={i} locked={!own} />
+                                    <ElTile i={i} locked={!own} anim={own} />
                                     <b>{own ? e.name : "?"}</b>
                                 </button>
                             </li>
                         );
                     })}
                 </ul>
-                {sel !== null && <p className="sw-fact">{s.found.includes(ELEMENTS[sel].sym) ? CODEX[ELEMENTS[sel].sym] : "Fuse your way up the ladder to find out."}</p>}
+                {sel !== null && (
+                    <div className="sw-fact" key={sel} style={{ "--c": ELEMENTS[sel].color } as CSSProperties}>
+                        <ElTile i={sel} locked={!s.found.includes(ELEMENTS[sel].sym)} anim={s.found.includes(ELEMENTS[sel].sym)} size={3} />
+                        <div>
+                            <b>{s.found.includes(ELEMENTS[sel].sym) ? ELEMENTS[sel].name : "Not yet made"} <span>{ELEMENTS[sel].sym} · weight {ELEMENTS[sel].w}</span></b>
+                            <p>{s.found.includes(ELEMENTS[sel].sym) ? CODEX[ELEMENTS[sel].sym] : "Fuse your way up the ladder to find out."}</p>
+                        </div>
+                    </div>
+                )}
                 <h3 className="sw-h3">Milestones <small>+{Math.round(ACH_BONUS * 100)}% to everything each</small></h3>
                 <ul className="sw-ach">
                     {ACHIEVEMENTS.map((a) => {
                         const own = s.ach.includes(a.id);
                         return (
                             <li key={a.id} data-own={own ? "" : undefined} data-tip={`${a.name}|${a.desc}`}>
-                                <span className="sw-medal"><Pic sheet={own ? "icon/medal-lit" : "icon/lock"} glyph={own ? "medal" : "lock"} s={2} /></span>
+                                <span className="sw-medal" style={{ backgroundImage: `url("${ui(`medal-${a.id}-${own ? "own" : "lock"}`)}")` }} />
                                 <b>{a.name}</b>
                                 <span>{a.desc}</span>
                             </li>
@@ -92,9 +102,21 @@ function PlanetSprite({ id, stage, dim }: { id: string; stage: number; dim?: boo
             raf = requestAnimationFrame(loop);
             if (now - last < 90) return;
             last = now;
-            renderPlanetSprite(img, id, stage, reduce ? 3 : (now - t0) / 1000);
-            ctx.putImageData(img, 0, 0);
-            if (reduce) cancelAnimationFrame(raf);
+            const t = reduce ? 3 : (now - t0) / 1000;
+            // the drawn sheet when it has loaded (cropped to the planet so it fills the tile), else the code drawing
+            const sh = sprites.get(`planet/${id}-s${stage}`);
+            if (sh) {
+                const near = sh.body <= 16;
+                const crop = near ? sh.w / 2 + 4 : sh.w;
+                const k = near ? 2 : 1;
+                ctx.imageSmoothingEnabled = false;
+                ctx.clearRect(0, 0, 56, 56);
+                ctx.drawImage(sh.img, frameAt(sh, t) * sh.w + (sh.w - crop) / 2, (sh.h - crop) / 2, crop, crop, (56 - crop * k) / 2, (56 - crop * k) / 2, crop * k, crop * k);
+            } else {
+                renderPlanetSprite(img, id, stage, t);
+                ctx.putImageData(img, 0, 0);
+            }
+            if (reduce && sh) cancelAnimationFrame(raf);
         };
         raf = requestAnimationFrame(loop);
         return () => cancelAnimationFrame(raf);
@@ -105,27 +127,41 @@ function PlanetSprite({ id, stage, dim }: { id: string; stage: number; dim?: boo
 export function Orbit({ s, onBuy, onClose, leaving }: { s: State; onBuy: (id: string) => void; onClose: () => void; leaving?: boolean }) {
     const f = effects(s);
     return (
-        <Overlay title="Orbit" sub={`${s.planets.length} of ${PLANETS.length} formed${f.keepPlanets ? " · they survive supernovas" : " · a supernova strips them"}`} onClose={onClose} wide kind="shutter" leaving={leaving}>
+        <Overlay title="Orbit" sub={`${s.planets.length} of ${PLANETS.length} formed${f.keepPlanets ? " · they keep their age through a supernova" : " · a supernova sets them back to young"}`} onClose={onClose} wide kind="shutter" leaving={leaving}>
             <ul className="sw-planets">
                 {PLANETS.map((p) => {
                     const own = s.planets.includes(p.id);
                     const ok = canPlanet(s, p.id);
+                    const st = own ? planetStage(s, p.id) : 0;
+                    const age = s.planetAge[p.id] ?? 0;
+                    const next = PLANET_STAGE_AT[Math.min(3, st + 1)];
                     return (
                         <li key={p.id} style={{ "--c": p.color } as CSSProperties} data-own={own ? "" : undefined} data-ok={ok ? "" : undefined}>
-                            <span className="sw-orb" data-tip={`${p.name}|${p.kind}`}><PlanetSprite id={p.id} stage={own ? planetStage(s, p.id) : 3} dim={!own} /></span>
-                            <div className="sw-pl-body">
-                                <b>{p.name}</b>
-                                {own && <p className="sw-stage-line">{p.stages[planetStage(s, p.id)]}{planetStage(s, p.id) < 3 ? ` · next in ${fmtAge(PLANET_STAGE_AT[planetStage(s, p.id) + 1] - (s.planetAge[p.id] ?? 0))}` : " · fully grown"} · +{Math.round(PLANET_STAGE_BONUS * 100 * planetStage(s, p.id))}%</p>}
-                                <p>{p.bonus}{f.planet ? ` (+${Math.round(f.planet * 100)}% Halo)` : ""}</p>
-                                <p className="sw-cost">
-                                    {own ? <em>in orbit</em> : p.cost.map(([e, q], n) => (
-                                        <span key={n} style={{ "--c": ELEMENTS[e].color } as CSSProperties} data-short={s.amt[e] < q ? "" : undefined} data-tip={`${ELEMENTS[e].name}|you hold ${fmt(s.amt[e])}`}>
-                                            <ElTile i={e} size={1} />{fmt(q)}
-                                        </span>
-                                    ))}
-                                </p>
+                            <div className="sw-pl-art" data-tip={`${p.name}|${p.kind}`}>
+                                <span className="sw-orb"><PlanetSprite id={p.id} stage={own ? st : 3} dim={!own} /></span>
+                                {own && <span className="sw-pips" aria-label={`stage ${st + 1} of 4`}>{[0, 1, 2, 3].map((n) => <i key={n} data-on={n <= st ? "" : undefined} />)}</span>}
                             </div>
-                            {!own && <button type="button" className="sw-go" disabled={!ok} onClick={() => onBuy(p.id)}>Form</button>}
+                            <div className="sw-pl-body">
+                                <b>{p.name} <small>{p.kind}</small></b>
+                                <p className="sw-pl-bonus">{p.bonus}{f.planet ? <em> +{Math.round(f.planet * 100)}% Halo</em> : null}</p>
+                                {own ? (
+                                    <>
+                                        <p className="sw-stage-line">{p.stages[st]}{st > 0 ? ` · +${Math.round(PLANET_STAGE_BONUS * 100 * st)}%` : ""}</p>
+                                        {st < 3 ? (
+                                            <span className="sw-pl-bar" data-tip={`Next: ${p.stages[st + 1]}|in ${fmtAge(Math.max(0, next - age))}`}><i style={{ width: `${Math.min(100, ((age - PLANET_STAGE_AT[st]) / (next - PLANET_STAGE_AT[st])) * 100)}%` }} /></span>
+                                        ) : <p className="sw-stage-line">fully grown</p>}
+                                    </>
+                                ) : (
+                                    <p className="sw-cost">
+                                        {p.cost.map(([e, q], n) => (
+                                            <span key={n} style={{ "--c": ELEMENTS[e].color } as CSSProperties} data-short={s.amt[e] < q ? "" : undefined} data-tip={`${ELEMENTS[e].name}|you hold ${fmt(s.amt[e])}`}>
+                                                <ElTile i={e} size={1} />{fmt(q)}
+                                            </span>
+                                        ))}
+                                    </p>
+                                )}
+                            </div>
+                            {!own && <button type="button" className="sw-sc-buy sw-pl-form" disabled={!ok} onClick={() => onBuy(p.id)}><span>{ok ? "Form it" : "Not enough"}</span></button>}
                         </li>
                     );
                 })}
@@ -136,75 +172,7 @@ export function Orbit({ s, onBuy, onClose, leaving }: { s: State; onBuy: (id: st
 
 // ---- Constellations / Pulsar map --------------------------------------------------------------------------------------------
 
-export function StarChart({ title, list, owned, cur, curName, onBuy, onClose, constellations, leaving }: { title: string; list: Perk[]; owned: string[]; cur: number; curName: string; onBuy: (id: string) => void; onClose: () => void; constellations?: boolean; leaving?: boolean }) {
-    const [sel, setSel] = useState<string | null>(null);
-    const bg = useRef<HTMLCanvasElement | null>(null);
-    useEffect(() => {
-        const ctx = bg.current?.getContext("2d");
-        if (!ctx) return;
-        const img = ctx.createImageData(W, H);
-        renderBackdrop(img, 0);
-        ctx.putImageData(img, 0, 0);
-    }, []);
-    const picked = list.find((p) => p.id === sel) ?? null;
-    const color = (p: Perk) => CONSTELLATIONS.find((c) => c.id === p.con)?.color ?? "#9fd0ff";
-    const P = (p: Perk) => [p.at[0] * 10, p.at[1] * 5.6 + 20];
-    const stateOf = (p: Perk) => (owned.includes(p.id) ? "own" : perkReady(list, owned, p) ? (cur >= p.cost ? "buy" : "near") : "lock");
-    return (
-        <div className="sw-chart" role="dialog" aria-modal="true" aria-label={title} data-kind="iris" data-leaving={leaving ? "" : undefined}>
-            <canvas ref={bg} width={W} height={H} className="sw-chart-bg" aria-hidden="true" />
-            <div className="sw-chart-top">
-                <h2>{title}</h2>
-                <span>{curName} <b>{fmt(cur)}</b></span>
-                <button type="button" className="sw-x" onClick={onClose} aria-label="Close" data-tip="Close|Esc or click empty sky"><Gl n="cross" s={1} /></button>
-            </div>
-            <div className="sw-chart-scroll" onClick={(e) => { if (e.target === e.currentTarget) { if (sel) setSel(null); else onClose(); } }}>
-                <svg viewBox="0 0 1000 600" className="sw-svg" role="group" aria-label={title} shapeRendering="crispEdges" onClick={(e) => { if ((e.target as Element).tagName === "svg") { if (sel) setSel(null); else onClose(); } }}>
-                    {list.map((p) => p.req.map((r) => {
-                        const a = list.find((x) => x.id === r);
-                        if (!a) return null;
-                        const [x1, y1] = P(a), [x2, y2] = P(p);
-                        const lit = owned.includes(a.id) && owned.includes(p.id);
-                        return <line key={`${r}-${p.id}`} x1={x1} y1={y1} x2={x2} y2={y2} className="sw-edge" data-lit={lit ? "" : undefined} style={{ stroke: color(p) }} />;
-                    }))}
-                    {constellations && CONSTELLATIONS.map((c) => {
-                        const ps = list.filter((p) => p.con === c.id);
-                        const x = ps.reduce((a, p) => a + P(p)[0], 0) / ps.length, y = Math.min(...ps.map((p) => P(p)[1])) - 44;
-                        return <text key={c.id} x={x} y={y} className="sw-conname" textAnchor="middle" style={{ fill: c.color }}>{c.name.toUpperCase()}</text>;
-                    })}
-                    {list.map((p) => {
-                        const [x, y] = P(p);
-                        const st = stateOf(p);
-                        return (
-                            <g key={p.id} className="sw-node" data-st={st} data-sel={sel === p.id ? "" : undefined} transform={`translate(${x} ${y})`} style={{ "--c": color(p) } as CSSProperties} role="button" tabIndex={0} aria-label={`${p.name}, ${st === "own" ? "owned" : `costs ${p.cost}`}`} onClick={(e) => { e.stopPropagation(); setSel(p.id); }} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setSel(p.id); } }}>
-                                <circle r="30" className="sw-hit" />
-                                <circle r="17" className="sw-halo" />
-                                <path className="sw-star" d="M0 -13 L3.4 -3.4 L13 0 L3.4 3.4 L0 13 L-3.4 3.4 L-13 0 L-3.4 -3.4 Z" />
-                                <text y="32" className="sw-nodename" textAnchor="middle">{p.name}</text>
-                            </g>
-                        );
-                    })}
-                </svg>
-            </div>
-            {picked && (
-                <div className="sw-pick sw-panel" style={{ "--c": color(picked) } as CSSProperties}>
-                    <div>
-                        <b>{picked.name}</b>
-                        <p>{picked.desc}</p>
-                        <p className="sw-dim">{picked.req.length ? `needs ${picked.req.map((r) => list.find((x) => x.id === r)?.name).join(", ")} · ` : ""}{stateOf(picked) === "own" ? "owned" : `costs ${fmt(picked.cost)} ${curName}`}</p>
-                    </div>
-                    {stateOf(picked) !== "own" && (
-                        <button type="button" className="sw-go" disabled={stateOf(picked) !== "buy"} onClick={() => onBuy(picked.id)}>
-                            {stateOf(picked) === "lock" ? "Locked" : stateOf(picked) === "near" ? "Not enough" : "Light it"}
-                        </button>
-                    )}
-                    <Corners />
-                </div>
-            )}
-            <p className="sw-chart-foot">{constellations ? "Stardust lights stars. They stay through every supernova and reset on a neutron star." : "Neutrons light the pulsar map. It stays until a black hole."}</p>
-        </div>
-    );
-}
+export { StarChart } from "./star-chart";
 
 // ---- Menu -----------------------------------------------------------------------------------------------------------------
 
@@ -240,11 +208,9 @@ export function Menu({ sound, onSound, s, paused, onPause, onClose, onName, onIm
                     <input ref={file} type="file" accept="application/json,.json" hidden onChange={(e) => { void pick(e.target.files?.[0]); e.target.value = ""; }} />
                 </div>
                 {msg && <p className="sw-msg" role="status">{msg}</p>}
+                <SettingsBlock s={s} />
                 <dl className="sw-keys">
-                    <dt>1 to 9</dt><dd>buy tier I (Shift II, Alt III)</dd>
-                    <dt>C · O · A · M</dt><dd>stars, orbit, almanac, menu</dd>
-                    <dt>Esc</dt><dd>close a panel</dd>
-                    <dt>` · Ctrl+J</dt><dd>console: sw stats, sw fuse he 2</dd>
+                    {SW_KEYS.map(([k, d]) => <div key={k} className="sw-keyrow"><dt>{k}</dt><dd>{d}</dd></div>)}
                 </dl>
                 <p className="sw-dim sw-small">Saves in this browser. Away time counts up to {TUNE.offlineH} hours. Played for {fmtAge(s.totalAge)}.</p>
                 <button type="button" className="sw-reset" onClick={() => (sure ? onReset() : setSure(true))}>{sure ? "This erases the save. Press again." : "Reset the game"}</button>

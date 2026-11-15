@@ -8,7 +8,10 @@ export interface PointerOptions {
     camera: OrbitCamera;
     build: BuildController;
     board: BoardSize;
+    // Ground plus machine bodies. Picks a machine by its body when nothing is armed or Remove is armed.
     heightAt?: HeightFn;
+    // Bare ground only. Placing and drawing use it, so tall machines never block the cells behind them.
+    groundHeightAt?: HeightFn;
     // Touch: how long a finger has to rest on a cell before it starts a line stroke.
     holdMs?: number;
     // Touch: how far a finger may wander before it counts as a pan.
@@ -39,11 +42,13 @@ const ORBIT_PITCH = 0.005;
 // Desktop: left drag places (or pans when no tool is active), middle or space+drag pans, right drag orbits, wheel zooms.
 // Touch: one finger pans, a quick tap places one cell, a rest-then-drag draws a line, two fingers pinch zoom and rotate.
 export class PointerInput {
-    private opts: Required<Omit<PointerOptions, "heightAt" | "onChange">> & Pick<PointerOptions, "heightAt" | "onChange">;
+    private opts: Required<Omit<PointerOptions, "heightAt" | "groundHeightAt" | "onChange">> & Pick<PointerOptions, "heightAt" | "groundHeightAt" | "onChange">;
     private pointers = new Map<number, Tracked>();
     private spaceDown = false;
     private pinchPrev: { dist: number; angle: number } | null = null;
     private attached = false;
+    // Touch: the cell a machine's first tap previewed, waiting for a second tap to place it.
+    private preview: { tool: string; x: number; z: number } | null = null;
 
     constructor(options: PointerOptions) {
         this.opts = { holdMs: 350, slopPx: 10, ...options };
@@ -82,14 +87,24 @@ export class PointerInput {
         this.spaceDown = down;
     }
 
-    // Cell under a client-space point, or null off the board.
-    cellAt(clientX: number, clientY: number): Cell | null {
+    // Which height field a pick uses: armed build tools see bare ground, everything else sees machine bodies.
+    private heights(): HeightFn | undefined {
+        const tool = this.opts.build.getTool();
+        // A dragged-out Remove area follows the ground too, so its far corner never lands on a tall machine in front of it.
+        // A routed belt aims at machine bodies, so a drop on a machine's top lands on the machine.
+        if (this.opts.build.isRoutedStroke() || this.opts.build.hasRouteFrom()) return this.opts.heightAt;
+        if (tool && (tool.id !== "delete" || this.opts.build.isRectStroke()) && this.opts.groundHeightAt) return this.opts.groundHeightAt;
+        return this.opts.heightAt;
+    }
+
+    // Cell under a client-space point, or null off the board. bodies forces the machine-body pick.
+    cellAt(clientX: number, clientY: number, bodies = false): Cell | null {
         const rect = this.opts.element.getBoundingClientRect();
         if (rect.width === 0 || rect.height === 0) return null;
         const ndcX = ((clientX - rect.left) / rect.width) * 2 - 1;
         const ndcY = 1 - ((clientY - rect.top) / rect.height) * 2;
         const view = this.opts.camera.view(rect.width / rect.height);
-        const hit = pickGround(screenRay(view, ndcX, ndcY), this.opts.board, this.opts.heightAt);
+        const hit = pickGround(screenRay(view, ndcX, ndcY), this.opts.board, bodies ? this.opts.heightAt : this.heights());
         return hit ? hit.cell : null;
     }
 
@@ -100,7 +115,7 @@ export class PointerInput {
         const ndcX = ((clientX - rect.left) / rect.width) * 2 - 1;
         const ndcY = 1 - ((clientY - rect.top) / rect.height) * 2;
         const view = this.opts.camera.view(rect.width / rect.height);
-        const hit = pickGround(screenRay(view, ndcX, ndcY), this.opts.board, this.opts.heightAt);
+        const hit = pickGround(screenRay(view, ndcX, ndcY), this.opts.board, this.heights());
         return hit ? { x: hit.point.x, z: hit.point.z } : null;
     }
 
@@ -157,10 +172,17 @@ export class PointerInput {
         } else if (e.button === 0) {
             p.click = !this.opts.build.getTool();
             if (this.opts.build.getTool()) {
-                const cell = this.cellAt(e.clientX, e.clientY);
+                let cell = this.cellAt(e.clientX, e.clientY);
+                const tl = this.opts.build.getTool();
+                // A belt pressed on a machine's body starts a routed belt from that machine.
+                if (tl?.line && tl.id !== "delete" && this.opts.build.canRoute()) {
+                    const onBody = this.cellAt(e.clientX, e.clientY, true);
+                    if (onBody && this.opts.build.peek(onBody)) cell = onBody;
+                }
                 if (cell) {
                     p.mode = "stroke";
-                    this.opts.build.beginStroke(cell);
+                    // Remove with Shift held clears the rectangle you drag out.
+                    this.opts.build.beginStroke(cell, e.shiftKey);
                 } else {
                     p.mode = "ignored";
                 }
@@ -194,6 +216,9 @@ export class PointerInput {
         }
         if (!tool) return;
         if (!tool.line) {
+            // Turning also moves the preview to the held cell, so the turned ghost is where the finger is.
+            this.preview = { tool: tool.id, x: cell.x, z: cell.z };
+            build.setHover(cell);
             build.rotateCw();
             p.mode = "ignored";
             this.changed();
@@ -265,9 +290,27 @@ export class PointerInput {
             this.opts.build.endStroke();
         } else if (p.mode === "pending" && e.type === "pointerup") {
             // Quick touch tap: place a single cell, or select a building when no tool is active.
-            const cell = this.cellAt(e.clientX, e.clientY);
+            let cell = this.cellAt(e.clientX, e.clientY);
+            const tl = this.opts.build.getTool();
+            // A tap on a machine's body with a belt armed picks that machine as a route end.
+            if (tl?.line && tl.id !== "delete" && this.opts.build.canRoute()) {
+                const onBody = this.cellAt(e.clientX, e.clientY, true);
+                if (onBody && this.opts.build.peek(onBody)) cell = onBody;
+            }
             if (cell) {
-                if (this.opts.build.getTool()) this.opts.build.tap(cell);
+                if (tl && !tl.line) {
+                    // A machine on touch: the first tap shows where it would go, tapping the same cell again places it.
+                    // Tapping elsewhere moves the preview. Hold still turns it.
+                    const pv = this.preview;
+                    if (pv && pv.tool === tl.id && pv.x === cell.x && pv.z === cell.z) {
+                        this.preview = null;
+                        this.opts.build.tap(cell);
+                        this.opts.build.setHover(null);
+                    } else {
+                        this.preview = { tool: tl.id, x: cell.x, z: cell.z };
+                        this.opts.build.setHover(cell);
+                    }
+                } else if (tl) this.opts.build.tap(cell);
                 else this.opts.build.select(cell);
             }
         } else if (p.mode === "orbit" && e.type === "pointerup" && p.button === 2 && Math.hypot(e.clientX - p.sx, e.clientY - p.sy) <= this.opts.slopPx) {

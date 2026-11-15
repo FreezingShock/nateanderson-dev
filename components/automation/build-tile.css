@@ -1,0 +1,161 @@
+/* Build palette tiles (Machines, Logistics, Power). A big drawn icon on a brass plate, name and cost beside it, the
+   number key in the corner and a small details button. Selected ("in hand") tiles light up with brass corner brackets,
+   a lamplit plate and a pick-up animation. No coloured side strip, no pills. */
+.ab-root .bwt {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  margin: 0 0 10px;
+  list-style: none;
+}
+.ab-root .bwt-main {
+  position: relative;
+  display: grid;
+  grid-template-columns: 96px minmax(0, 1fr);
+  align-items: center;
+  gap: 14px;
+  min-width: 0;
+  padding: 10px 36px 10px 10px;
+  text-align: left;
+  color: #f0dfb8;
+  background: linear-gradient(180deg, #2a1c10, #1d130a);
+  border: 0;
+  box-shadow: inset 0 0 0 1px #5a3a16, 0 3px 0 #0b0703;
+  cursor: pointer;
+  transition: transform 0.14s ease, box-shadow 0.14s ease, background 0.14s ease;
+}
+.ab-root .bwt-main:hover:not(:disabled) {
+  background: linear-gradient(180deg, #36240f, #241709);
+  box-shadow: inset 0 0 0 2px #b07a28, 0 3px 0 #0b0703;
+}
+.ab-root .bwt-main:active:not(:disabled) { transform: translateY(2px); box-shadow: inset 0 0 0 2px #b07a28, 0 1px 0 #0b0703; }
+.ab-root .bwt-main:focus-visible { outline: 2px solid #f6d688; outline-offset: 2px; }
+.ab-root .bwt-main:disabled { cursor: default; }
+
+/* The icon's plate: a recessed dark well that lights from behind when the tile is held. */
+.ab-root .bwt-plate {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 96px;
+  height: 96px;
+  background: radial-gradient(circle at 50% 62%, #3a2612 0 38%, #1a1009 72%);
+  box-shadow: inset 0 3px 8px #000, 0 0 0 2px #46290a, 0 0 0 3px rgba(246, 214, 136, 0.28);
+}
+.ab-root .bwt-text { display: grid; gap: 3px; min-width: 0; }
+.ab-root .bwt-name { font-size: 17px; font-weight: 700; line-height: 1.15; color: #fff2c8; overflow-wrap: anywhere; }
+.ab-root .bwt-cost { font-size: 14px; color: #d2b884; }
+.ab-root .bwt-meta { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; font-size: 12px; color: #a8946c; }
+.ab-root .bwt-count { letter-spacing: 0.02em; }
+
+/* Number key, top right, as an engraved brass key cap. */
+.ab-root .bwt-key {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  font: 700 12px/1 var(--font-mono, ui-monospace), monospace;
+  color: #2a1606;
+  background: linear-gradient(180deg, #f6d688, #b07a28);
+  box-shadow: inset 0 -2px 0 #8a5a1e, 0 2px 0 #0b0703;
+}
+.ab-root .bwt-held {
+  position: absolute;
+  right: 10px;
+  bottom: 8px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #2a1606;
+  opacity: 0;
+}
+
+/* Details: a small square brass button to the right of the tile. */
+.ab-root .bwt-info {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  margin-left: 6px;
+  padding: 0;
+  border: 0;
+  background: linear-gradient(180deg, #2a1c10, #1d130a);
+  box-shadow: inset 0 0 0 1px #5a3a16, 0 3px 0 #0b0703;
+  cursor: pointer;
+}
+.ab-root .bwt-info:hover, .ab-root .bwt-info[aria-pressed="true"] { box-shadow: inset 0 0 0 2px #e8b85a, 0 3px 0 #0b0703; }
+
+/* Can't afford yet / locked. */
+.ab-root .bwt[data-afford="false"] .bwt-cost { color: #c4704e; }
+.ab-root .bwt[data-locked="true"] .bwt-plate .bwi { filter: grayscale(0.85) brightness(0.55); }
+.ab-root .bwt[data-locked="true"] .bwt-main { opacity: 0.75; }
+
+/* ---------- Selected: the machine is in hand ---------- */
+.ab-root .bwt[data-armed="true"] .bwt-main {
+  color: #2a1606;
+  background: linear-gradient(180deg, #f6d688 0%, #d29a3c 55%, #b07a28 100%);
+  box-shadow: inset 0 0 0 2px #fff2c8, inset 0 0 0 4px #8a5a1e, 0 0 18px rgba(255, 166, 58, 0.45), 0 3px 0 #0b0703;
+  animation: bwt-pick 0.42s cubic-bezier(0.3, 0.7, 0.4, 1) both;
+}
+.ab-root .bwt[data-armed="true"] .bwt-name { color: #1e1206; }
+.ab-root .bwt[data-armed="true"] .bwt-cost,
+.ab-root .bwt[data-armed="true"] .bwt-meta { color: #46290a; }
+.ab-root .bwt[data-armed="true"] .bwt-held { opacity: 1; animation: bwt-held-in 0.4s 0.12s ease both; }
+.ab-root .bwt[data-armed="true"] .bwt-key { background: #1e1206; color: #f6d688; box-shadow: inset 0 0 0 1px #f6d688; }
+.ab-root .bwt[data-armed="true"] .bwt-plate {
+  background: radial-gradient(circle at 50% 60%, #ffd070 0 18%, #e8741c 40%, #5a1c06 78%);
+  box-shadow: inset 0 3px 8px rgba(0, 0, 0, 0.7), 0 0 0 2px #46290a, 0 0 0 4px #fff2c8;
+}
+.ab-root .bwt[data-armed="true"] .bwt-plate .bwi { animation: bwt-lift 0.5s cubic-bezier(0.3, 0.7, 0.4, 1) both; }
+/* Pixel corner brackets that snap in from outside the tile. */
+.ab-root .bwt[data-armed="true"] .bwt-main::before,
+.ab-root .bwt[data-armed="true"] .bwt-main::after {
+  content: "";
+  position: absolute;
+  width: 16px;
+  height: 16px;
+  pointer-events: none;
+  border: 4px solid #fff2c8;
+  filter: drop-shadow(0 2px 0 #0b0703);
+  animation: bwt-bracket 0.36s cubic-bezier(0.3, 0.7, 0.4, 1) both;
+}
+.ab-root .bwt[data-armed="true"] .bwt-main::before { top: -6px; left: -6px; border-right: 0; border-bottom: 0; --bwt-from: -8px; }
+.ab-root .bwt[data-armed="true"] .bwt-main::after { bottom: -6px; right: -6px; border-left: 0; border-top: 0; --bwt-from: 8px; }
+
+@keyframes bwt-pick {
+  0% { transform: scale(0.96); filter: brightness(1.5); }
+  55% { transform: scale(1.02); }
+  100% { transform: none; filter: none; }
+}
+@keyframes bwt-lift {
+  0% { transform: none; }
+  45% { transform: translateY(-8px) scale(1.12); }
+  100% { transform: translateY(-3px) scale(1.06); }
+}
+@keyframes bwt-bracket {
+  0% { opacity: 0; transform: translate(var(--bwt-from), var(--bwt-from)); }
+  100% { opacity: 1; transform: none; }
+}
+@keyframes bwt-held-in {
+  0% { opacity: 0; transform: translateY(4px); }
+  100% { opacity: 1; transform: none; }
+}
+
+/* Phone: a little smaller plate so name and cost keep room. */
+@media (max-width: 520px) {
+  .ab-root .bwt-main { grid-template-columns: 80px minmax(0, 1fr); gap: 12px; }
+  .ab-root .bwt-plate { width: 80px; height: 80px; }
+  .ab-root .bwt-plate .bwi { transform: scale(0.85); }
+}
+
+/* Reduce motion and Simple visuals: same look, no movement. */
+.ab-root[data-reduce="true"] :is(.bwt-main, .bwt-held, .bwt-plate .bwi),
+.ab-root[data-reduce="true"] .bwt-main::before, .ab-root[data-reduce="true"] .bwt-main::after,
+.ab-root[data-lowfx="true"] :is(.bwt-main, .bwt-held, .bwt-plate .bwi),
+.ab-root[data-lowfx="true"] .bwt-main::before, .ab-root[data-lowfx="true"] .bwt-main::after { animation: none !important; transition: none !important; }
+@media (prefers-reduced-motion: reduce) {
+  .ab-root :is(.bwt-main, .bwt-held, .bwt-plate .bwi), .ab-root .bwt-main::before, .ab-root .bwt-main::after { animation: none !important; transition: none !important; }
+}

@@ -47,7 +47,8 @@ test("the hub view lists orders then milestones, one open step, with what each o
     assert.deepEqual(hub.steps.slice(0, 4).map((s) => s.kind), ["request", "request", "request", "request"]);
     assert.equal(hub.steps.filter((s) => s.state === "now").length, 1);
     assert.equal(hub.steps[0].state, "now");
-    assert.deepEqual(hub.steps[0].unlocks.map((u) => u.name), ["Copper ingot"]);
+    assert.deepEqual(hub.steps[0].unlocks.filter((u) => u.kind !== "crate").map((u) => u.name), ["Copper ingot"]);
+    assert.deepEqual(hub.steps[0].unlocks.filter((u) => u.kind === "crate").map((u) => u.name), ["10 Copper wire"], "the order lists its supply crate");
     const ms = hub.steps.find((s) => s.id === "ms_smelting");
     assert.ok(ms.unlocks.some((u) => u.kind === "blueprints"));
     assert.ok(ms.unlocks.some((u) => u.name === "Furnace"), "the first milestone lists the furnace it opens");
@@ -76,7 +77,7 @@ test("saves from before hub requests keep every recipe and machine open", () => 
 });
 
 test("a played opening fills the first order within three minutes", () => {
-    const SPOTS = [[2, 2], [2, 8], [15, 2], [15, 8], [8, 1]];
+    const SPOTS = S.START_NODE_SPOTS;
     const world = S.createWorld({ width: 18, depth: 12, hub: HUB }, CAT);
     CAT.tree.nodes.forEach((n, i) => SPOTS[i] && S.addDeposit(world, SPOTS[i][0], SPOTS[i][1], n.item, 1));
     const must = (r) => assert.equal(r.ok, true, r.reason);

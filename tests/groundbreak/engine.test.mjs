@@ -108,7 +108,7 @@ test("jobs run in the fixed campaign order", () => {
     for (let t = 0; t < 20000 && done.length < 13; t++) { const b = s.built; E.step(s, 1); if (s.built > b) done.push(s.skyline.at(-1).id); }
     assert.deepEqual(done, D.JOBS.map((j) => j.id));
     assert.equal(s.ending, true);
-    assert.equal(E.nextJob(s).id, "tower", "after the bridge the last three jobs loop");
+    assert.equal(E.nextJob(s).id, "stadium", "after the bridge the last three jobs loop");
 });
 
 test("inspection score stretches but never fails an inspection", () => {
@@ -137,7 +137,7 @@ test("overtime ends an inspection early for cash", () => {
     assert.ok(s.built >= 1);
 });
 
-test("a change order is offered at the structure phase, can be accepted, and raises the payout", () => {
+test("a change order is offered at the structure phase (the middle one for a small job), can be accepted, and raises the payout", () => {
     const run1 = (accept) => {
         const s = E.fresh(0);
         s.open = 5; s.crews = s.crews.map((c, i) => (i < 5 ? 30 : 0)); s.amt = s.amt.map((_, i) => (i < 5 ? 1e8 : 0));
@@ -279,4 +279,238 @@ test("the next material opens by itself when the next job is waiting on it, so a
     for (let i = 0; i < 90; i++) { E.step(away, 1); hire(away); }
     E.catchUp(away, 3 * 3600);
     assert.ok(away.built >= 1, "time away builds jobs, not only stockpiles");
+});
+
+// ---- overhaul (jobs start on their own material, repeat orders, no dead stretches) ----------------------------------
+
+test("each job starts as soon as its own last material is open, not when its whole stage is", () => {
+    assert.deepEqual(D.JOBS.map((j) => E.jobNeed(j)), [3, 3, 4, 5, 6, 7, 8, 9, 10, 10, 11, 12, 12]);
+    const s = E.fresh(0);
+    s.open = 4; s.builtThisFirm = 2; // the house needs Concrete (4th)
+    assert.ok(E.jobReady(s, E.nextJob(s)));
+    s.open = 3;
+    assert.ok(!E.jobReady(s, E.nextJob(s)));
+    assert.match(E.waitingFor(s), /Two-storey house needs Concrete/);
+    assert.equal(E.jobMat(E.nextJob(s)), 3);
+});
+
+test("while the next job waits on a material the crew rebuilds the last job as a repeat order that pays a share and adds no building", () => {
+    const s = E.fresh(0);
+    s.open = 3; s.builtThisFirm = 2; s.crews = s.crews.map((c, i) => (i < 3 ? 30 : 0)); s.amt = s.amt.map((_, i) => (i < 3 ? 1e6 : 0)); // house waits on Concrete
+    s.amt[2] = 0; // keep the Concrete unlock out of reach
+    E.step(s, 1);
+    assert.ok(s.job && s.job.rerun, "a repeat order started");
+    assert.equal(s.job.id, "driveway");
+    const cash0 = s.cash, built0 = s.built, sky0 = s.skyline.length, rep0 = s.rep;
+    run(s, 400);
+    assert.ok(s.reruns >= 1 && s.cash > cash0 && s.rep > rep0);
+    assert.equal(s.built, built0, "repeat orders are not campaign jobs");
+    assert.equal(s.builtThisFirm, 2);
+    assert.equal(s.skyline.length, sky0);
+    const drive = D.JOB_BY.get("driveway");
+    assert.ok(E.repeatPay(s, drive, E.effects(s)) < E.payout(s, drive, E.effects(s)), "less than the real job");
+    assert.equal(E.overtimeCost(s), 0, "no overtime on repeats");
+});
+
+test("a repeat order is paid pro rata and dropped the moment the next job can start", () => {
+    const s = E.fresh(0);
+    s.open = 3; s.builtThisFirm = 2; s.crews = s.crews.map((c, i) => (i < 3 ? 40 : 0)); s.amt = s.amt.map((_, i) => (i < 3 ? 1e7 : 0));
+    s.amt[2] = 0; s.crews[2] = 0; s.crews[1] = 0; s.crews[0] = 0;
+    E.step(s, 1);
+    run(s, 25);
+    assert.ok(s.job.rerun);
+    const cash0 = s.cash;
+    s.amt[2] = 1e7; // Sand pays Concrete's unlock
+    s.amt[1] = 1e7;
+    E.step(s, 1);
+    assert.ok(!s.job?.rerun || s.job.id === "house");
+    assert.equal(s.job.id, "house", "the house started");
+    assert.ok(!s.job.rerun);
+    assert.ok(s.cash >= cash0, "the crew was paid for the part it finished");
+    assert.equal(s.open, 4, "Concrete opened by itself for the waiting house");
+});
+
+test("a fresh firm has no repeat order, and the next material still opens by itself", () => {
+    const s = E.fresh(0);
+    assert.equal(E.repeatJob(s), null);
+    E.step(s, 1);
+    assert.ok(!s.job, "nothing to build yet, nothing invented");
+});
+
+test("a v1 save is moved onto the new job order without repeating a finished job", () => {
+    const s = E.fresh(0);
+    s.open = 12;
+    s.builtThisFirm = 5; // old order: sidewalk, driveway, house, fire station, clinic built
+    for (const id of ["sidewalk", "driveway", "house", "firestation", "clinic"]) s.skyline.push({ id, city: 0, firm: 0, at: 1 });
+    const raw = JSON.parse(E.serialize(s));
+    raw.v = 1;
+    const t = E.parse(raw);
+    assert.equal(E.nextJob(t).id, "parking");
+    assert.equal(t.reruns, 0);
+    const u = E.parse(JSON.parse(E.serialize(t)));
+    assert.equal(u.v, 2);
+    assert.equal(E.nextJob(u).id, "parking");
+    const old = JSON.parse(E.serialize(s)); delete old.reruns; delete old.v;
+    assert.ok(E.parse(old), "a save with no repeat counter loads");
+});
+
+test("repeat orders survive a save", () => {
+    const s = E.fresh(0);
+    s.open = 3; s.builtThisFirm = 2; s.crews = s.crews.map((c, i) => (i < 3 ? 30 : 0)); s.amt = s.amt.map((_, i) => (i < 3 ? 1e6 : 0)); s.amt[2] = 0;
+    E.step(s, 1);
+    const t = E.parse(JSON.parse(E.serialize(s)));
+    assert.equal(t.job.rerun, true);
+});
+
+test("a normal firm never sits idle: money, unlocks and a payout keep coming", () => {
+    const s = E.fresh(0);
+    let t = 0, lastPay = 0, lastOpenAt = 0, lastOpen = s.open, worstPay = 0, worstOpen = 0, idle = 0;
+    let paid = 0;
+    while (t < 5 * 3600 && !s.ending) {
+        if (t % 3 === 0) {
+            const f = E.effects(s);
+            for (let n = s.open - 1; n >= 0; n--) {
+                if (E.methodReady(s, n)) E.buy(s, n, 2, f);
+                const src = E.crewSrc(n), keep = src === s.open - 1 && s.open < D.N ? D.UNLOCK_COST[s.open] : 0;
+                for (let k = 0; k < 60 && E.canBuy(s, n, 0, f) && E.crewCost(s, n, f) < s.amt[src] - keep; k++) E.buy(s, n, 0, f);
+                for (let k = 0; k < 40 && E.canBuy(s, n, 1, f) && E.equipCost(s, n) < (s.amt[src] - keep) * 0.6; k++) E.buy(s, n, 1, f);
+            }
+            if (s.change) E.acceptChange(s);
+        }
+        const before = s.cash;
+        E.step(s, 1);
+        t++;
+        if (s.cash > before) { worstPay = Math.max(worstPay, t - lastPay); lastPay = t; paid++; }
+        if (s.open !== lastOpen) { worstOpen = Math.max(worstOpen, t - lastOpenAt); lastOpenAt = t; lastOpen = s.open; }
+        if (t > 120 && !s.job) idle++;
+    }
+    assert.ok(s.ending);
+    assert.ok(worstPay <= 14 * 60, `longest stretch without being paid: ${(worstPay / 60).toFixed(1)} min`);
+    assert.ok(worstOpen <= 20 * 60, `longest stretch without a new material: ${(worstOpen / 60).toFixed(1)} min`);
+    assert.ok(idle < 60, `no job running for ${idle} s after the opening`);
+    assert.ok(s.reruns >= 5, "repeat orders filled the waiting");
+});
+
+test("jobs speed up with crew perks, and the second firm beats the first", () => {
+    const f1 = E.effects(E.fresh(0));
+    const s = E.fresh(0); s.perks = ["o1", "o3", "o5"];
+    const f2 = E.effects(s);
+    assert.ok(E.jobSpeed(f2) > E.jobSpeed(f1));
+    const j = D.JOB_BY.get("tower");
+    const t = (f) => E.plan(j, f).reduce((a, p) => a + p.secs, 0);
+    assert.ok(t(f2) < t(f1));
+});
+
+test("progress draws pay through a long job and the handover pays the rest, never more in all", () => {
+    const s = E.fresh(0);
+    s.open = 8; s.builtThisFirm = 6; s.crews = s.crews.map((c, i) => (i < 8 ? 60 : 0)); s.amt = s.amt.map((_, i) => (i < 8 ? 1e12 : 0)); // the clinic, six phases
+    const f = E.effects(s), def = D.JOB_BY.get("clinic");
+    const total = E.payout(s, def, f);
+    const cash0 = s.cash, steps = [];
+    let last = s.cash;
+    for (let t = 0; t < 4000 && s.builtThisFirm < 7; t++) {
+        E.step(s, 1);
+        if (s.cash > last) steps.push(s.cash - last);
+        last = s.cash;
+    }
+    assert.ok(steps.length >= 4, `paid in ${steps.length} pieces`);
+    assert.ok(Math.abs(s.cash - cash0 - total) <= 6, `total ${s.cash - cash0} vs ${total}`);
+    assert.ok(steps.at(-1) < total, "the handover is not the whole job");
+});
+
+test("a change order costs build time and a tougher inspection, pays more, and is worth it only for a firm with the reputation to back it", () => {
+    const run1 = (id, rep, accept) => {
+        const s = E.fresh(0);
+        s.open = 12; s.builtThisFirm = D.JOBS.findIndex((j) => j.id === id); s.crews = s.crews.map(() => 60); s.amt = s.amt.map(() => 1e15); s.rep = rep;
+        const idx = s.builtThisFirm, c0 = s.cash;
+        let t = 0, offered = null;
+        while (s.builtThisFirm === idx && t < 20000) {
+            E.step(s, 1); t++;
+            if (s.change) { offered = offered ?? { ...s.change }; if (accept) E.acceptChange(s); else E.declineChange(s); }
+        }
+        return { t, cash: s.cash - c0, offered };
+    };
+    const weakNo = run1("house", 5, false), weakYes = run1("house", 5, true);
+    assert.ok(weakYes.offered.secs > 0 && weakYes.offered.score > 0, "the offer says what it costs");
+    assert.ok(weakYes.t > weakNo.t && weakYes.cash > weakNo.cash, "slower and bigger");
+    assert.ok(weakYes.cash / weakYes.t < weakNo.cash / weakNo.t, "a brand-new firm does better saying no");
+    const strongNo = run1("tower", 3500, false), strongYes = run1("tower", 3500, true);
+    assert.ok(strongYes.cash / strongYes.t > strongNo.cash / strongNo.t * 1.08, "an established firm does better saying yes");
+});
+
+test("opening a material stocks a minute of its output so the new row is alive at once", () => {
+    const s = E.fresh(0);
+    s.amt[0] = 1e4;
+    assert.ok(E.unlock(s, 1));
+    assert.ok(s.amt[1] > 0, "Sand arrived stocked");
+    assert.ok(s.amt[1] < 1000, "but only a minute's worth");
+});
+
+test("the first charter buys a real head start: a firm-1 run pays 25+ charter and Standing crews doubles every crew", () => {
+    const s = E.fresh(0);
+    s.repFirm = 3600; s.rep = 3600;
+    assert.ok(E.charterGain(s) >= 25, "a firm that reached the bridge earns about 30 charter");
+    const base = E.effects(s).crew;
+    s.perks = ["o1"];
+    assert.equal(E.effects(s).crew, base * 2);
+});
+
+test("every 25 crews in a row doubles its output (the rate per crew jumps, not just the count)", () => {
+    const s = E.fresh(0); s.open = 4;
+    const per = (crews) => { s.crews[0] = crews; return E.rawRate(s, 0, E.effects(s), E.chain(s)) / crews; };
+    assert.equal(E.rowMult(s, 0), 1 * (s.crews[0] = 24, E.rowMult(s, 0)));
+    assert.ok(Math.abs(per(25) / per(24) - 2) < 1e-9, "crew 25 doubles the per-crew rate");
+    assert.ok(Math.abs(per(50) / per(49) - 2) < 1e-9, "crew 50 doubles it again");
+});
+
+test("reputation lifts production by repBoost per point", () => {
+    const s = E.fresh(0); s.open = 4; s.crews[0] = 10;
+    const at = (rep) => { s.rep = rep; return E.rawRate(s, 0, E.effects(s), E.chain(s)); };
+    const r0 = at(0), r100 = at(100);
+    assert.ok(Math.abs(r100 / r0 - (1 + 100 * D.TUNE.repBoost)) < 1e-9);
+});
+
+test("a region multiplies only the materials it lists", () => {
+    const rate = (firm, n) => { const s = E.fresh(0); s.firm = firm; s.open = 12; s.crews[n] = 10; return E.rawRate(s, n, E.effects(s), E.chain(s)); };
+    const eb = D.CITIES[0].mat, pen = D.CITIES[1].mat;
+    assert.ok(eb[0] > 1 && pen[5] > 1);
+    // same material, a region with and without the bonus (firm 2 is South Bay: no material bonus; fx are not crew speed)
+    assert.ok(Math.abs(rate(0, 0) / rate(2, 0) - eb[0]) < 1e-9, "East Bay lifts Gravel");
+    assert.ok(Math.abs(rate(1, 5) / rate(2, 5) - pen[5]) < 1e-9, "Peninsula lifts material 6");
+    assert.equal(rate(1, 0), rate(2, 0), "Peninsula does not lift Gravel");
+});
+
+test("Night watch raises the offline cap, and catchUp stops at the cap", () => {
+    const away = 40 * 3600;
+    const base = E.fresh(0);
+    const capBase = E.offlineCapS(E.effects(base));
+    assert.equal(E.catchUp(base, away), capBase);
+    const night = E.fresh(0); night.perks = ["l1", "l3"];
+    const capNight = E.offlineCapS(E.effects(night));
+    assert.ok(capNight > capBase, "Night watch adds hours");
+    assert.equal(E.catchUp(night, away), capNight);
+    assert.ok(E.catchUp(E.fresh(0), 1) === 0, "under two seconds is ignored");
+});
+
+test("gb help names every console subcommand", () => {
+    for (const n of C.GB_SUBS) assert.ok(C.GB_HELP[n], `gb ${n} has a help line`);
+    const r = C.gbCommand(E.fresh(0), ["help"]);
+    assert.equal(r.lines.length, C.GB_SUBS.length);
+    assert.equal(r.changed, false);
+});
+
+test("while the crew repeats a job, the waiting cue says what the next job waits on", async () => {
+    const G = await import(resolve(root, "lib/groundbreak/guide.ts"));
+    const s = E.fresh(0);
+    for (let t = 0; t < 3600 && !(s.job && s.job.rerun); t++) {
+        const f = E.effects(s);
+        if (t % 3 === 0) { for (let n = s.open - 1; n >= 0; n--) for (let k = 0; k < 40 && E.canBuy(s, n, 0, f); k++) E.buy(s, n, 0, f); while (E.canUnlock(s, s.open)) E.unlock(s, s.open); }
+        E.step(s, 1, f);
+    }
+    assert.ok(s.job && s.job.rerun, "reached a repeat order");
+    s.amt = s.amt.map(() => 0); s.cash = 0; // nothing affordable, so the cue can only wait
+    const c = G.nextCue(s);
+    assert.equal(c.kind, "wait");
+    assert.match(c.why, /repeats/);
+    assert.match(c.why, /needs/);
 });

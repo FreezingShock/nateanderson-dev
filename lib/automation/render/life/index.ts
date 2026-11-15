@@ -83,8 +83,9 @@ export function attachLife(
     const drops = new ParticlePool({ capacity: 120, gravity: -9, curve: "shrink" });
     const rain = new ParticlePool({ capacity: 320, curve: "const", stretchY: 7, opacity: 0.55, renderOrder: 3 });
     const sparks = new ParticlePool({ capacity: 420, gravity: -3.2, drag: 0.35, curve: "shrink", renderOrder: 5 });
+    const glow = new ParticlePool({ capacity: 140, drag: 0.4, curve: "shrink", additive: true, renderOrder: 5 });
     const ring = new ParticlePool({ capacity: 160, drag: 0.15, curve: "shrink", additive: true, renderOrder: 5 });
-    const pools = { leaves, smoke, flies, glints, drops, rain, sparks, ring };
+    const pools = { leaves, smoke, flies, glints, drops, rain, sparks, ring, glow };
     for (const p of Object.values(pools)) group.add(p.mesh);
 
     // Birds: body plus two wings per bird, flapping as they circle the island.
@@ -331,6 +332,8 @@ export function attachLife(
             emitters = list.slice(0, 16);
         },
         burst(kind, x, z, y) {
+            // Simple visuals and reduce motion skip reward bursts; the menus already confirm the reward.
+            if (lowFx) return;
             const base = y ?? Math.max(0, heightAt(x, z)) + 2.2;
             const scale = lowFx ? 0.5 : 1;
             const hex = BURST_HEX[kind];
@@ -349,6 +352,16 @@ export function attachLife(
                 const a = (i / rn) * 6.28;
                 const sp = big ? 5.5 : delivery ? 3.4 : 3.6;
                 ring.spawn(x, 0.12, z, Math.cos(a) * sp, 0, Math.sin(a) * sp, big ? 1.3 : delivery ? 0.9 : 0.9, delivery ? 0.2 : 0.18, hex[0]);
+            }
+            // Deliveries: a brass shimmer column rises out of the hub and a few glints hang in the air.
+            if (delivery) {
+                for (let i = 0; i < 22; i++) {
+                    const a = rand(0, 6.28);
+                    const r = rand(0.15, 0.7);
+                    glow.spawn(x + Math.cos(a) * r, base - 1.4 + rand(0, 0.6), z + Math.sin(a) * r, 0, rand(1.6, 3.2), 0, rand(0.7, 1.2), rand(0.06, 0.11), pick(hex));
+                }
+                for (let i = 0; i < 6; i++)
+                    glints.spawn(x + rand(-0.9, 0.9), base + rand(-0.6, 0.8), z + rand(-0.9, 0.9), 0, rand(0.1, 0.3), 0, rand(0.6, 1), rand(0.1, 0.16), 0xfff0c0);
             }
             if (big)
                 for (let i = 0; i < 40 * scale; i++)

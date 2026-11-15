@@ -1,0 +1,41 @@
+# Starwright: backlog
+
+Audited 2026-11-15. Pick the top item under "Do now", ship it as one PR into `integration`, then tick it here and update [FEATURES.md](FEATURES.md) in the same PR. Items under "Needs Nate" wait for his taste call or his own playthrough; do not start them.
+
+Before any change: `npm run test:nodefarm`. Visual changes also need PNG screenshots at 1440 and 390 in `/mnt/project-files/portfolio/starwright/<topic>/`.
+
+## Do now (a thread can just do these, in order)
+
+1. ~~**Screenshots of the planet break-apart.**~~ Done: `scripts/starwright/ui-art/planet-break.mjs`, PNGs in `portfolio/starwright/planet-break/`. Finding: the sheet `fx/planet-gone` is a faint expanding ring (18 frames, 64 px cells), not chunks, and it plays under the full-screen neutron blast, so the planets just vanish with the blast. Follow-up is item 1b.
+1b. [x] **Redraw planet-gone as real cooling chunks.** Draw 5 to 7 dithered rock fragments that fly apart and glow from orange to dark, ~1.5 s, in `scripts/starwright/art/` (bump `VERSION`), and draw them above the blast in `art.ts`. Done when a shot shows chunks at the planets' positions 0.3 s into a neutron star at 1440 and 390.
+2. [x] **List the rule changes for Nate.** Write one short block in the PR body and in `docs/starwright.md` ("Rules changed 2026-11-15"): l5 Corona (inflow x2, heat x1.2, 900 stardust, needs l4), a5 Iron rain (stardust x2, 1800, needs a3 and a4), deep stars (+4% each, 600 x1.4), the 20-star map. Done when the doc section and the project chat line both exist.
+3. [x] **Document deep stars in `docs/starwright.md`.** The button exists in the star map but the doc never mentions it. Add what it costs, where it is, `sw deep`, and that a neutron star clears it. No code.
+4. [x] **Stall credit tests in the browser path.** `advance` is tested, the game's timer wiring is not. Add a test that drives the tick function through a 1 to 3 s gap and a long gap and checks no time is lost. Files: `tests/starwright/session.test.mjs`, small export from `starwright.tsx` only if unavoidable.
+5. [x] **Corrupt save visible to the player.** `loadSession` keeps damaged saves, but check that the card shows once and the old text survives a second reload; add a test for the second reload in `session.test.mjs`. Acceptance: no path replaces `sw-save-v1-corrupt` with a newer damaged save without keeping the older one.
+6. [x] **Orbit thumbnails.** Planet previews in Orbit use the canvas `PlanetSprite`; confirm they use the drawn sheets for all 8 planets at all 4 stages (not the code fallback) and fix any that fall back. Done when a shot of Orbit at 1440 with every planet owned shows only drawn art.
+7. [x] **Landscape phone pass.** Run the page at 844x390 and 667x375; no panel clipped, dock and ladder reachable, nothing under the notch. Fix in `starwright.css` only. Done when 3 screenshots at those sizes are in the folder.
+8. [x] **Swipe hint on phones.** The scroll cue under the star exists; verify it disappears after the first scroll and returns after reload only once per session. Small CSS/state fix.
+9. [x] **Hotkey test.** Add a headless Playwright check (run through `npm run build` + start) that presses 1, N, Q, Space, Esc and checks the state through the `sw:live` event. Put it under `tests/starwright/browser/` and wire it into docs/ci.md only if Nate asks for it as a PR check.
+10. [x] **Offline pacing report.** Add a test that documents what a 24 h absence does with auto supernova on (it chains: each supernova restarts the star and autoburn only), and that with it off the star waits at the collapse line. No rule change; this pins the behaviour so the call under "Needs Nate" can be made on facts.
+
+## Needs Nate (taste call or his own playtest)
+
+- **His own playthrough of the first star.** The first supernova is about 13 minutes for the bot; people are slower. Needs his notes on the first minute, the first visitor, and whether the guide line is clear. Blocks any further pacing change.
+- ~~Offline pacing~~ decided 2026-11-15: cap a few (3) supernovas per absence with auto supernova on. Done in the away-cap PR.
+- ~~Rule changes l5 Corona, a5 Iron rain, deep stars~~ signed off by Nate 2026-11-15.
+- **Next art pass.** Planet break-up chunks done (his pick 2026-11-15). Still offered, not picked: visitor and cloud cards, supernova and ending screens.
+- **Audio.** Needs him to listen: sound start, mute, volume levels.
+
+## Cannot be tested in the cloud (his devices)
+Safari/WebKit, real phones (touch, safe-area, performance), audio, the one-tab rule across two real tabs, and the live site (the password gate returns 401 to threads).
+
+## Left alone on purpose
+Do not add x10 or max buy buttons, tap clickers, third-party art or sound, a coloured strip on a panel's left edge, or pill chips and tabs. Scramble text never sticks.
+
+## Performance (audit 2026-11-15, report in /mnt/project-files/portfolio/perf-audit-2026-11-15/starwright.md)
+Play is fine: 60 fps, no long frames at 4x CPU, 5.5 MB heap flat over 98 s, engine step 7 microseconds. What is left is load on a slow phone and idle main-thread animation cost.
+- [ ] PERF-ui-preload | size S | Preload the above-the-fold UI art (stat and dock icons, the 10 el-*-anim strips, tier, frame, btn) and manifest.json from the route layout so they download during hydration, not after it (they start at ~3.3 s on a throttled phone and pop in ~0.7 s after the ladder). Done when the ladder and its art paint together in the 390 / 4x CPU / 1.6 Mbps trace | scripts: /mnt/project-files/portfolio/perf-audit-2026-11-15/
+- [ ] PERF-main-thread-anims | size M | With every CSS animation off the page's main-thread time drops from ~40% to ~26% at 4x CPU (style recalc 8.7% to 0.4%). Culprits are the animations that cannot run on the compositor: tile strips and cloud art (background-position), the bar flow (background-position) and the ready glow (box-shadow). Tile strips as a transform on a ::before are pixel-identical (checked against the PNG strip) but alone only saved ~2 points; convert all four together and re-measure, or pause them when the tab is idle | app/camino/starwright.css
+- [ ] PERF-ui-version-dupes | size S | The CSS refers to the same UI PNGs with different `?v=` (frame, frame-warm, fill, head, btn-2, btn-3 at v=3, 7 and 8), so the browser downloads each twice. Keep one version per file | app/camino/starwright.css
+- [ ] PERF-manifest-twice | size S | manifest.json (20 KB) is fetched by both sprites.ts and ui-sheets.ts. Share one promise | lib/starwright/sprites.ts, lib/starwright/ui-sheets.ts
+- [ ] PERF-ssr-skeleton | size M | The ladder and canvas only exist after hydration and the save load in useEffect; first contentful paint is the empty frame (~0.9 s) and the game shows at ~3.1 s on the throttled phone. Server-render a static skeleton (frame, title, "loading the star" line) so the first paint has the game's shape. Risk: hydration mismatch, so keep it markup-only | components/starwright/starwright.tsx

@@ -80,9 +80,10 @@
     .sf-card-main { grid-template-columns: 76px minmax(0, 1fr); gap: 14px; }
     .sf-badge { width: 76px; height: 96px; }
     .sf-badge b { font-size: 42px; }
-    .sf-about { grid-template-columns: minmax(0, 1fr); }
-    .sf-about li a { border-right: 0; }
-    .sf-dir li a { min-height: 46px; }
-    .sf-chan { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-    .sf-chan li a { height: 112px; padding: 12px 6px; }
+    /* Both directories run two across and the contact tiles three across, so the footer is about a fifth shorter. */
+    .sf-dir ul { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .sf-dir li a { min-height: 44px; gap: 10px; padding: 0 10px; letter-spacing: .1em; border-right: 1px solid rgba(244, 244, 242, .12); }
+    .sf-dir li:nth-child(even) a { border-right: 0; }
+    .sf-chan { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .sf-chan li a { height: 100px; gap: 8px; padding: 10px 4px; letter-spacing: .08em; }
 }

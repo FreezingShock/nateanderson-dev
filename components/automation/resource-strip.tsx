@@ -1,5 +1,7 @@
 import type { ResourceView, NumberFormat } from "@/lib/automation/types";
+import { ArtIcon } from "@/components/brasswork-art/icons";
 import { fmtNum, fmtRate } from "./format";
+import "./resource-box.css";
 import { iconCell, iconStyle } from "@/lib/automation/icons";
 
 /**
@@ -16,13 +18,7 @@ export function Glyph({
   icon?: string;
 }) {
   if (icon && iconCell(icon) !== undefined) {
-    return (
-      <span
-        className="ab-glyph ab-glyph-art"
-        style={iconStyle(icon, size)}
-        aria-hidden="true"
-      />
-    );
+    return <ArtIcon id={icon} size={size} className="ab-glyph ab-glyph-art" />;
   }
   return (
     <span
@@ -44,17 +40,6 @@ export function Glyph({
  * (lib/automation/data/tree.ts) uses the ids on the left of the arrow only where a preview or mock feed does, so
  * every resource on the bar gets its real item icon. Clockworks has no drawn icon yet, so it keeps its text badge.
  */
-const ICON_ALIAS: Record<string, string> = {
-  iron: "iron_ore",
-  copper: "copper_ore",
-  aluminium: "aluminium_ore",
-  plates: "iron_plate",
-  screws: "iron_screw",
-  wire: "copper_wire",
-  frames: "frame",
-  motors: "motor",
-  circuits: "circuit_board",
-};
 
 export function ResourceStrip({
   resources,
@@ -124,8 +109,10 @@ function ResourceList({
             tabIndex={0}
             aria-label={`${r.name}, ${amount}${showRates ? `, ${rate}` : ""}`}
           >
-            <Glyph code={r.glyph} size={40} icon={ICON_ALIAS[r.id] ?? r.id} />
-            <span className="ab-res-amt">{amount}</span>
+            <span className="ab-res-box">
+              <Glyph code={r.glyph} size={48} icon={r.id} />
+              <span className="ab-res-amt">{amount}</span>
+            </span>
             {showRates && r.perSecond !== 0 && (
               <span className="ab-res-rate" data-neg={r.perSecond < 0}>
                 {rate}

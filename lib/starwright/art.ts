@@ -650,6 +650,10 @@ function flush(L: Layers, l: Layer) {
 }
 
 const NAMES = STAGE_RAMP as readonly string[];
+/** last stage seen per planet, and when it changed (scene time), to play the stage-up burst once */
+const planetSeen = new Map<string, { st: number; at: number }>();
+/** where each planet was last drawn, so one that vanishes can break apart in place */
+const planetPos = new Map<string, { x: number; y: number; goneAt: number }>();
 /** How much bigger than the code-drawn body a drawn star sprite is drawn (its corona and rays sit outside the body). */
 const STAR_FIT = 1.3;
 
@@ -673,7 +677,8 @@ export function renderLayered(L: Layers, f: SceneFrame, S: SpriteSet): void {
     const bg = S.get(bgId(to));
     if (bg) {
         const old = shift < 1 && f.sky === 0 && from !== to ? S.get(bgId(from)) : null;
-        if (old) { drawFrame(ctx, old, 0, W / 2, H / 2); drawFrame(ctx, bg, 0, W / 2, H / 2, 1, ease(shift)); } else drawFrame(ctx, bg, 0, W / 2, H / 2);
+        // skies are short loops (twinkling stars, glowing gas); a still sky has one frame and frameAt returns 0
+        if (old) { drawFrame(ctx, old, frameAt(old, t), W / 2, H / 2); drawFrame(ctx, bg, frameAt(bg, t), W / 2, H / 2, 1, ease(shift)); } else drawFrame(ctx, bg, frameAt(bg, t), W / 2, H / 2);
     } else {
         begin(L.sky, skyBuffer(f.sky ?? 0));
         for (const s of STARS) {
@@ -723,6 +728,10 @@ export function renderLayered(L: Layers, f: SceneFrame, S: SpriteSet): void {
     const col = Math.max(0, Math.min(1, f.collapse ?? 0));
     if (to === 5 && col > 0.2) R *= 1 - 0.1 * Math.min(1, col) + (f.reduce ? 0 : Math.sin(t * 30) * 0.006 * col);
 
+    // a new star's first seconds: the old star's remnant drifts off while the new one gathers out of a spiral of gas
+    const birth = born < 1 && !f.reduce ? S.get("star/birth") : null;
+    if (birth) drawFrame(ctx, birth, frameAtProgress(birth, born), W / 2, H / 2, 1, born > 0.75 ? (1 - born) / 0.25 : 1);
+
     // 2. a gas cloud drifting behind the star
     const v = f.visitor;
     const neb = v?.id === "nebula" ? S.get("visitor/nebula") : null;
@@ -742,7 +751,7 @@ export function renderLayered(L: Layers, f: SceneFrame, S: SpriteSet): void {
             const sh = planetSheet(p);
             const a = angleOf(p), s = Math.sin(a);
             if (!sh || (s > 0) !== front) continue;
-            drawFrame(ctx, sh, frameAt(sh, t), cx + Math.cos(a) * orbitOf(p), cy + s * orbitOf(p) * 0.27, 1.2);
+            drawFrame(ctx, sh, frameAt(sh, t), cx + Math.cos(a) * orbitOf(p), cy + s * orbitOf(p) * 0.27, 1);
         }
     };
     const codePlanets = (front: boolean) => {
@@ -795,6 +804,39 @@ export function renderLayered(L: Layers, f: SceneFrame, S: SpriteSet): void {
     flush(L, L.front);
     drawSheetPlanets(true);
 
+    // a planet that just grew a stage gets a burst of light over it; a visitor that just arrived opens out of a ripple
+    if (!f.reduce) {
+        const up = S.get("fx/planet-up");
+        for (const id of f.planets) {
+            const st = f.planetStages?.[id] ?? 2;
+            const seen = planetSeen.get(id);
+            if (!seen || st < seen.st) planetSeen.set(id, { st, at: -1e9 });
+            else if (st > seen.st) planetSeen.set(id, { st, at: f.t });
+            const at = planetSeen.get(id)!.at;
+            const p = PLANETS.find((x) => x.id === id);
+            if (!up || !p || f.t - at > 1.7) continue;
+            const a = angleOf(p);
+            drawFrame(ctx, up, frameAtProgress(up, (f.t - at) / 1.7), cx + Math.cos(a) * orbitOf(p), cy + Math.sin(a) * orbitOf(p) * 0.27);
+        }
+        // note where each planet stands, so a planet stripped away by a blast can break up there (drawn above the blast, below)
+        for (const [id, at] of planetPos) {
+            if (f.planets.includes(id)) continue;
+            if (at.goneAt < 0) at.goneAt = f.t;
+        }
+        for (const id of f.planets) {
+            const p = PLANETS.find((x) => x.id === id);
+            if (!p) continue;
+            const a = angleOf(p);
+            planetPos.set(id, { x: cx + Math.cos(a) * orbitOf(p), y: cy + Math.sin(a) * orbitOf(p) * 0.27, goneAt: -1 });
+        }
+        const arrive = v && v.age < 2 ? S.get("fx/arrive") : null;
+        if (v && arrive) {
+            const ax = v.id === "comet" ? W - 14 : v.id === "nebula" ? 24 : v.id === "pair" ? cx + Math.cos(Math.PI * 1.15) * R * 2.7 : cx + Math.cos(-0.9) * R;
+            const ay = v.id === "comet" ? 16 : v.id === "nebula" ? cy - 30 : v.id === "pair" ? cy + Math.sin(Math.PI * 1.15) * R * 1.1 - 6 : cy + Math.sin(-0.9) * R;
+            drawFrame(ctx, arrive, frameAtProgress(arrive, v.age / 2), Math.max(24, Math.min(W - 24, ax)), Math.max(20, ay));
+        }
+    }
+
     // visitors drawn as sprites
     if (v && comet) {
         const p = clamp01(v.age / 150);
@@ -814,5 +856,16 @@ export function renderLayered(L: Layers, f: SceneFrame, S: SpriteSet): void {
     if (blast && f.nova >= 0) {
         const n = f.novaFrom !== undefined ? (f.nova - 0.2) / 0.8 : f.nova;
         drawFrame(ctx, blast, frameAtProgress(blast, n), W / 2, H / 2);
+    }
+
+    // a planet stripped away by a blast breaks into glowing chunks that cool as they fly; drawn over the blast so they show
+    const gone = f.reduce ? null : S.get("fx/planet-gone");
+    if (gone) {
+        for (const [id, at] of planetPos) {
+            if (f.planets.includes(id) || at.goneAt < 0) continue;
+            const k = (f.t - at.goneAt) / (gone.frames / gone.fps);
+            if (k > 1) { planetPos.delete(id); continue; }
+            drawFrame(ctx, gone, frameAtProgress(gone, k), at.x, at.y, 1.3);
+        }
     }
 }

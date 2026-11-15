@@ -1,9 +1,10 @@
 // The `gb` console commands. Pure: they act on a State and return printed lines. The console (components/cm/console.tsx) runs
 // them against the open game's live state, or against the saved game when the game is not open (same pattern as `sw`).
 import { CITIES, JOB_BY, cityOf, MATS, PERKS, TIERS, TIER_LABELS, TUNE } from "./data";
+import { GB_QOL_SUBS, qolCommand } from "./commands-qol";
 import {
     acceptChange, buy, buyPerk, canIncorporate, charterGain, declineChange, effects, fmt, fmtAge, fmtCash, incorporate, inspectScore, jobFloors,
-    jobPhaseName, jobProgress, matName, overtime, overtimeCost, perkReady, queue, stageOf, tierCost, unlock, canUnlock, waitingFor, type State,
+    jobMat, jobPhaseName, jobProgress, matName, overtime, overtimeCost, perkReady, queue, stageOf, tierCost, unlock, canUnlock, waitingFor, type State,
 } from "./engine";
 
 export interface GbLine { t: string; k?: "dim" | "hi" | "err" }
@@ -11,7 +12,30 @@ export interface GbResult { lines: GbLine[]; changed: boolean }
 
 export const GB_SAVE_KEY = "gb-save-v1";
 export const GB_PATH = "/creations/games/groundbreak";
-export const GB_SUBS = ["stats", "hire", "unlock", "jobs", "change", "overtime", "perks", "incorporate", "skyline", "open"];
+export const GB_SUBS = ["stats", "hire", "unlock", "jobs", "change", "overtime", "perks", "incorporate", "skyline", "floors", "open", "help", ...GB_QOL_SUBS];
+
+/** One line per command: the usage and what it does. `gb help` prints these, and a test checks every name in GB_SUBS has one. */
+export const GB_HELP: Record<string, string> = {
+    stats: "gb stats: the firm, cash, reputation, materials and what is running",
+    hire: "gb hire <material> [1-3]: buy crew (1), equipment (2) or a method (3) for a material",
+    unlock: "gb unlock: open the next material",
+    jobs: "gb jobs: the job running and the next two",
+    change: "gb change [no]: show, accept or decline an open change order",
+    overtime: "gb overtime: pay to finish the inspection now",
+    perks: "gb perks [id]: list charter perks, or buy one by id",
+    incorporate: "gb incorporate [yes]: start a new firm for charter (asks first)",
+    skyline: "gb skyline: every building you have finished, by job",
+    floors: "gb floors: how many floors the current job has up",
+    open: "gb open: go to the game",
+    help: "gb help: this list",
+    next: "gb next: what to do next, and why",
+    go: "gb go: do it (same as Space in the game)",
+    auto: "gb auto <crews|equipment|change> [on|off]: switch a Foreman automation",
+    rate: "gb rate: output per second for every open material",
+    admin: "gb admin on|off: allow give and warp until you reload",
+    give: "gb give <cash|rep|charter|material> <amount>: admin only",
+    warp: "gb warp: admin only, skip time forward",
+};
 
 const l = (t: string, k?: GbLine["k"]): GbLine => ({ t, k });
 const matIndex = (q: string) => !q ? -1 : MATS.findIndex((m) => m.id === q || m.sym.toLowerCase() === q || m.name.toLowerCase() === q || m.name.toLowerCase().startsWith(q));
@@ -27,7 +51,7 @@ export function gbCommand(s: State, args: string[]): GbResult {
             l(`firm ${s.firm + 1} · ${c.name} · stage ${stageOf(s)} · ${fmtAge(s.age)} this firm`, "hi"),
             l(`${fmtCash(s.cash)} · ${fmt(s.rep)} rep · ${s.charter} charter · ${s.built} buildings · inspection score ${inspectScore(s, f).toFixed(2)}`),
             l(MATS.slice(0, s.open).map((m, i) => `${m.sym} ${fmt(s.amt[i], 1)}`).join("  ")),
-            l(waitingFor(s) ?? (s.job ? `${JOB_BY.get(s.job.id)?.name}: ${jobPhaseName(s.job, f)} ${Math.floor(jobProgress(s.job, f) * 100)}%` : "starting the next job"), "dim"),
+            l(waitingFor(s) ? `${waitingFor(s)} Meanwhile: ${s.job?.rerun ? `repeat order, ${JOB_BY.get(s.job.id)?.name} ${Math.floor(jobProgress(s.job, f) * 100)}%` : "no repeat order yet"}.` : s.job ? `${JOB_BY.get(s.job.id)?.name}: ${jobPhaseName(s.job, f)} ${Math.floor(jobProgress(s.job, f) * 100)}%` : "starting the next job", "dim"),
         ]);
     }
     if (sub === "hire" || sub === "buy") {
@@ -49,11 +73,12 @@ export function gbCommand(s: State, args: string[]): GbResult {
         return out([l(`${name} opened.`, "hi")], true);
     }
     if (sub === "jobs") {
-        return out(queue(s, 3).map((q, i) => l(`${i === 0 && s.job ? "now " : "next"} ${q.job.name} · stage ${q.job.stage}${q.ready ? "" : " · needs more materials open"}`, i === 0 ? undefined : "dim")));
+        return out(queue(s, 3).map((q, i) => l(`${i === 0 && s.job ? "now " : "next"} ${q.job.name} · stage ${q.job.stage}${q.ready ? "" : ` · needs ${matName(jobMat(q.job))} open`}`, i === 0 ? undefined : "dim")));
     }
     if (sub === "change") {
         const pick = (args[1] ?? "").toLowerCase();
         if (!s.change) return out([l("no change order open.", "dim")]);
+        if (!pick) return out([l(`change order: +${Math.round(s.change.bonus * 100)}% pay for about ${s.change.secs} s more building and an inspection that asks ${s.change.score.toFixed(1)} more score. gb change yes to accept, gb change no to decline.`, "hi")]);
         if (pick === "no" || pick === "decline") { declineChange(s); return out([l("change order declined.")], true); }
         if (!acceptChange(s)) return out([l("cannot accept it now.", "err")]);
         return out([l("change order accepted: more materials, bigger payout.", "hi")], true);
@@ -87,5 +112,8 @@ export function gbCommand(s: State, args: string[]): GbResult {
     if (sub === "floors") {
         return out([l(s.job ? `${jobFloors(s.job, f)} floors up` : "no job running", "dim")]);
     }
-    return out([l(`gb ${GB_SUBS.join(" | ")}`, "dim")]);
+    if (sub === "help") return out(GB_SUBS.map((n) => l(GB_HELP[n] ?? `gb ${n}`, "dim")));
+    const extra = qolCommand(s, args);
+    if (extra) return extra;
+    return out([l(`gb ${GB_SUBS.join(" | ")} · gb help lists what each does`, "dim")]);
 }

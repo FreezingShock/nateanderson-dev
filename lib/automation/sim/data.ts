@@ -16,7 +16,7 @@ export const PLACEHOLDER_TREE: RecipeTree = {
         { id: "smelter", name: "Smelter", unlockStage: 1, speed: 1, footprint: { w: 2, d: 2 }, powerKw: 60, buildCost: [{ item: "plate-a", qty: 6 }] },
         { id: "press", name: "Press", unlockStage: 2, speed: 1, footprint: { w: 2, d: 2 }, powerKw: 90, buildCost: [{ item: "plate-a", qty: 8 }, { item: "plate-b", qty: 4 }] },
         { id: "windmill", name: "Windmill", unlockStage: 0, speed: 1, footprint: { w: 2, d: 2 }, powerKw: 0, generatesKw: 30, supplyRange: 6, buildCost: [{ item: "plate-a", qty: 10 }] },
-        { id: "spring_winder", name: "Spring winder", unlockStage: 0, speed: 1, footprint: { w: 2, d: 2 }, powerKw: 0, generatesKw: 60, supplyRange: 4, buildCost: [{ item: "plate-a", qty: 10 }, { item: "plate-b", qty: 5 }] },
+        { id: "spring_winder", name: "Spring winder", unlockStage: 0, speed: 1, footprint: { w: 2, d: 2 }, powerKw: 0, generatesKw: 60, supplyRange: 6, buildCost: [{ item: "plate-a", qty: 10 }, { item: "plate-b", qty: 5 }] },
     ],
     recipes: [
         { id: "smelt-a", machine: "smelter", inputs: [{ item: "ore-a", qty: 2 }], output: { item: "plate-a", qty: 1 }, craftSeconds: 3 },
@@ -35,7 +35,7 @@ export const PLACEHOLDER_TREE: RecipeTree = {
 // Logistics pieces. Ids match the belt model ids in #325: belt-<kind> for brass, belt-<kind>-copper and belt-<kind>-steel for the other tiers.
 const TIER_NAMES = ["Brass", "Copper", "Steel"];
 const TIER_SUFFIX = ["", "-copper", "-steel"];
-const TIER_RATE = [1, 2, 4]; // items per second, the same ladder as the belts
+const TIER_RATE = [2, 4, 8]; // items per second: what a belt of the same tier carries (speed divided by item spacing)
 const TIER_EXTRA: Stack[][] = [[], [{ item: "copper_wire", qty: 2 }], [{ item: "steel_ingot", qty: 2 }]];
 
 const LOGISTICS_TIERED: { kind: LogisticsKind; slug: string; label: string; cost: Stack[] }[] = [
@@ -72,9 +72,9 @@ export const ENGINE_DATA: { engine: Record<string, EngineDef>; tune: Tune } = {
     engine: {
         ...logisticsEngine(),
         hub: { kind: "hub", name: "Core hub", footprint: { w: 3, d: 3 }, cost: [], placeable: false },
-        belt: { kind: "belt", name: "Brass belt", footprint: { w: 1, d: 1 }, cost: [{ item: "plate-a", qty: 1 }], belt: { speed: 1, spacing: 0.25 } },
-        "belt-copper": { kind: "belt", name: "Copper belt", footprint: { w: 1, d: 1 }, cost: [{ item: "plate-a", qty: 2 }, { item: "plate-b", qty: 1 }], belt: { speed: 2, spacing: 0.25 } },
-        "belt-steel": { kind: "belt", name: "Steel belt", footprint: { w: 1, d: 1 }, cost: [{ item: "plate-a", qty: 3 }, { item: "plate-b", qty: 2 }], belt: { speed: 4, spacing: 0.25 } },
+        belt: { kind: "belt", name: "Brass belt", footprint: { w: 1, d: 1 }, cost: [{ item: "plate-a", qty: 1 }], belt: { speed: 1, spacing: 0.5 } },
+        "belt-copper": { kind: "belt", name: "Copper belt", footprint: { w: 1, d: 1 }, cost: [{ item: "plate-a", qty: 2 }, { item: "plate-b", qty: 1 }], belt: { speed: 2, spacing: 0.5 } },
+        "belt-steel": { kind: "belt", name: "Steel belt", footprint: { w: 1, d: 1 }, cost: [{ item: "plate-a", qty: 3 }, { item: "plate-b", qty: 2 }], belt: { speed: 4, spacing: 0.5 } },
     },
     tune: {
         maxAwaySeconds: 8 * 3600,
@@ -111,6 +111,10 @@ export const DEFAULT_CATALOG: Catalog = {
     },
     tune: ENGINE_DATA.tune,
 };
+
+// Where the first workshop's resource nodes sit on the 18 x 12 board, one per ore in tree order. The host, the
+// opening tests and the pacing bot all import this; never copy the array.
+export const START_NODE_SPOTS: readonly (readonly [number, number])[] = [[2, 2], [2, 8], [15, 2], [15, 8], [8, 1]];
 
 // Island sites offered at "Open a new workshop". Each has its own nodes, floor size, hub spot and one bonus.
 export interface SiteDef {
@@ -172,3 +176,65 @@ export const SITES: SiteDef[] = [
         bonus: { miner: 1.25, power: 0.9 },
     },
 ];
+
+// Stock a new world starts with when the caller gives none: enough for two drills, a kiln and a run of belts.
+// Drill and kiln have no build cost in the Recipe tree yet, so this covers them and the belts; see STATUS.md.
+export const STARTER_KIT: Stack[] = [
+    { item: "iron_plate", qty: 80 }, // windmills cost 8 plates each and the press is not open until milestone 1
+    { item: "copper_wire", qty: 20 },
+    { item: "iron_gear", qty: 6 },
+];
+
+// What the hub holds when a new workshop opens. Prestige empties the hub, and every power source costs items, so without a
+// kit the new floor could never run a machine. Each workshop already opened adds a little more, so a later floor starts faster.
+export function workshopKit(opened: number): Stack[] {
+    const extra = Math.min(opened, 5);
+    return [
+        { item: "iron_plate", qty: 80 + 20 * extra },
+        { item: "copper_wire", qty: 20 + 10 * extra },
+        { item: "iron_gear", qty: 6 + 2 * extra },
+        { item: "steel_ingot", qty: 10 + 5 * extra },
+    ];
+}
+
+// Workshop commissions: after the Sky orrery's first light the hub keeps asking for work, one order at a time.
+// Each pays blueprints (for mastery research) and a supply crate. Orders past the list repeat the last one with more parts.
+export interface CommissionDef {
+    name: string;
+    deliver: Stack[];
+    blueprints: number;
+    reward: Stack[];
+}
+
+const COMMISSIONS: CommissionDef[] = [
+    {
+        name: "Spare circuits",
+        deliver: [{ item: "circuit_board", qty: 20 }, { item: "frame", qty: 15 }, { item: "steel_beam", qty: 8 }],
+        blueprints: 8,
+        reward: [{ item: "iron_plate", qty: 30 }, { item: "copper_wire", qty: 30 }],
+    },
+    {
+        name: "Clockwork order",
+        deliver: [{ item: "motor", qty: 12 }, { item: "servo", qty: 6 }, { item: "photocell", qty: 10 }, { item: "quartz_lens", qty: 4 }],
+        blueprints: 10,
+        reward: [{ item: "steel_ingot", qty: 30 }, { item: "iron_gear", qty: 12 }],
+    },
+    {
+        name: "Orrery spares",
+        deliver: [{ item: "sail_panel", qty: 2 }, { item: "mirror_cell", qty: 2 }, { item: "relay_core", qty: 2 }, { item: "lattice_strut", qty: 2 }],
+        blueprints: 12,
+        reward: [{ item: "steel_ingot", qty: 30 }, { item: "copper_wire", qty: 30 }],
+    },
+];
+
+export function commissionDef(n: number): CommissionDef {
+    if (n < COMMISSIONS.length) return COMMISSIONS[n];
+    const more = n - COMMISSIONS.length + 1;
+    const last = COMMISSIONS[COMMISSIONS.length - 1];
+    return {
+        name: `Grand commission ${more}`,
+        deliver: last.deliver.map((s) => ({ item: s.item, qty: s.qty + more })),
+        blueprints: last.blueprints + 2 * more,
+        reward: last.reward.map((s) => ({ item: s.item, qty: s.qty + 10 * more })),
+    };
+}

@@ -30,6 +30,8 @@ export function applyHeightFog(
     cacheKey: string,
     hooks?: {
         vertex?: (sh: Shader) => void;
+        /** Runs before the fog patch, so code inserted ahead of <fog_fragment> is fogged too. */
+        fragment?: (sh: Shader) => void;
         uniforms?: Record<string, { value: unknown }>;
     }
 ): void {
@@ -53,6 +55,7 @@ export function applyHeightFog(
         #endif`
             );
         if (hooks?.vertex) hooks.vertex(sh);
+        if (hooks?.fragment) hooks.fragment(sh);
         sh.fragmentShader = sh.fragmentShader
             .replace(
                 "#include <common>",

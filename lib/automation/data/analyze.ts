@@ -204,7 +204,11 @@ export function checkTree(tree: RecipeTree): Issue[] {
     const researchCost = [...neededNodes].reduce((sum, id) => sum + (researchById.get(id)?.cost ?? 0), 0);
     const income = tree.milestones.reduce((sum, m) => sum + m.blueprints, 0);
     if (income < researchCost) err(`milestones pay ${income} blueprints but the megaproject needs ${researchCost} in research`);
-    else if (income > researchCost) warn(`milestones pay ${income} blueprints, ${income - researchCost} more than the megaproject research needs`);
+    else {
+        // Blueprints past the megaproject path buy the alternates and the mastery nodes; warn only when even those are covered.
+        const allResearch = tree.research.reduce((sum, n) => sum + n.cost, 0);
+        if (income > allResearch) warn(`milestones pay ${income} blueprints, ${income - allResearch} more than every research node costs`);
+    }
 
     return issues;
 }

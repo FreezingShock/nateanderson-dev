@@ -17,10 +17,13 @@ import {
     dayClock,
     deserialize,
     gridView,
+    autoRoute,
+    suggestSpot,
     footprintCells,
     hudData,
     resolve,
     SITES,
+    START_NODE_SPOTS,
     serialize,
     windAt,
     type HudData,
@@ -42,6 +45,8 @@ import { scatterProps } from "@/lib/automation/models/props";
 import { BrassworkExtras, MOODS, type AwayReport, type Mood } from "./extras";
 import { useFirstRunQuest } from "./first-run";
 import { BuildPopover, TrashButton } from "./build-popover";
+import { NextMarker, type NextTarget } from "./next-marker";
+import { HoverName } from "./hover-name";
 import { attachUiSounds, playSound, setAmbient, setEnabled as setSoundOn, startAudio } from "@/lib/automation/audio";
 import { LightingRow, SaveRows } from "./settings-extras";
 import { VolumeRows } from "./audio-rows";
@@ -53,9 +58,6 @@ const D = 12;
 const SAVE_KEY = "brasswork-save-v1";
 const CAT = DEFAULT_CATALOG;
 const START_SETTINGS: HudSettings = { sound: true, reduceMotion: false, lowFx: false, numberFormat: "short", showRates: true };
-
-// Resource node spots, one per ore in the recipe tree. Placeholder layout until the site design lands.
-const NODE_SPOTS: [number, number][] = [[2, 2], [2, 8], [15, 2], [15, 8], [8, 1]];
 
 // Sim cells run 0..W-1, 0..D-1. The renderer and the input module share one frame where the plateau starts at (-9, -6).
 const BOARD = { width: W, depth: D, originX: -W / 2, originZ: -D / 2 };
@@ -97,7 +99,7 @@ const TYPE_COLORS: Record<string, number> = { hub: 0xc59a52, drill: 0x7f8ca3, po
 function freshWorld(): World {
     const w = createWorld({ width: W, depth: D, hub: { x: 8, z: 5 } }, CAT);
     CAT.tree.nodes.forEach((n, i) => {
-        const s = NODE_SPOTS[i];
+        const s = START_NODE_SPOTS[i];
         if (s) addDeposit(w, s[0], s[1], n.item, 1);
     });
     return w;
@@ -116,13 +118,55 @@ function loadWorld(): { world: World; savedAt: number } {
     return { world: freshWorld(), savedAt: Date.now() };
 }
 
+// Yields to the browser between slices of work. A MessageChannel is not clamped in a background tab the way setTimeout is.
+const yieldToBrowser = () =>
+    new Promise<void>((done) => {
+        const c = new MessageChannel();
+        c.port1.onmessage = () => done();
+        c.port2.postMessage(0);
+    });
+
+/**
+ * Away time: catches the simulation up for the time the tab was closed (capped by the catalog). Same one-second steps as a
+ * single advance(), run in slices of about 10 ms so a long gap never freezes the page.
+ */
+async function catchUpAway(world: World, savedAt: number, settings: HudSettings, setAway: (a: AwayReport) => void, isDead: () => boolean): Promise<void> {
+    const away = Math.max(0, (Date.now() - savedAt) / 1000);
+    if (away <= 5) return;
+    const total = Math.min(away, CAT.tune.maxAwaySeconds);
+    const before = new Map(hudData(world, CAT, null, settings).resources.map((r) => [r.id, r.amount]));
+    let left = total;
+    while (left > 1e-9) {
+        const sliceEnds = performance.now() + 10;
+        while (left > 1e-9 && performance.now() < sliceEnds) {
+            const h = Math.min(1, left);
+            advance(world, h, 1, CAT);
+            left -= h;
+        }
+        if (left > 1e-9) {
+            await yieldToBrowser();
+            if (isDead()) return;
+        }
+    }
+    const gains = hudData(world, CAT, null, settings)
+        .resources.map((r) => ({ name: r.name, amount: r.amount - (before.get(r.id) ?? 0) }))
+        .filter((g) => g.amount >= 1)
+        .sort((a, b) => b.amount - a.amount)
+        .slice(0, 8);
+    if (away >= 120) setAway({ seconds: total, gains });
+}
+
 export function BrassworkHost() {
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const [data, setData] = useState<HudData>(() => hudData(freshWorld(), CAT, null, START_SETTINGS));
     const [note, setNote] = useState("");
+    // What the armed tool does, shown until something else needs the line. Follows the input layer's tool, however it was armed.
+    const [hint, setHint] = useState("");
     // Placed-piece pop-up: the building's anchor, what it is, and where to pin it on screen.
     const [pop, setPop] = useState<{ anchor: { x: number; z: number }; kind: string; kindLabel: string; x: number; y: number } | null>(null);
     const [inputCtl, setInputCtl] = useState<InputController | null>(null);
+    const nameOfKind = useCallback((kind: string) => resolve(CAT, kind)?.name ?? kind, []);
+    const [nextTarget, setNextTarget] = useState<NextTarget | null>(null);
     const [away, setAway] = useState<AwayReport | null>(null);
     const [mood, setMood] = useState<Mood>("Auto");
     const quest = useFirstRunQuest(data);
@@ -163,11 +207,14 @@ export function BrassworkHost() {
         let dead = false;
         let cleanup = () => {};
         (async () => {
-            const [{ createVoxelIsland, heightAt }, { mount }, { attachLife }] = await Promise.all([import("@/lib/automation/render"), import("@/lib/automation/input"), import("@/lib/automation/render/life")]);
-            const canvas = canvasRef.current;
-            if (dead || !canvas) return;
+            // The save loads at once. The away-time catch-up runs in slices beside the chunk downloads, so the page stays
+            // responsive (an 8 hour gap is 28,800 one-second steps) and costs no wall time the download was not already taking.
             const { world, savedAt } = loadWorld();
             let settings = loadSettings(START_SETTINGS);
+            const caughtUp = catchUpAway(world, savedAt, settings, setAway, () => dead);
+            const [{ createVoxelIsland, heightAt }, { mount }, { attachLife }] = await Promise.all([import("@/lib/automation/render"), import("@/lib/automation/input"), import("@/lib/automation/render/life"), caughtUp]);
+            const canvas = canvasRef.current;
+            if (dead || !canvas) return;
             let selectedId: number | null = null;
             const drawn = new Set<number>();
             let hubStage = -1;
@@ -284,19 +331,6 @@ export function BrassworkHost() {
             };
             syncScene();
 
-            // Away time: catch up the simulation for the time the tab was closed (capped by the catalog).
-            const away = Math.max(0, (Date.now() - savedAt) / 1000);
-            if (away > 5) {
-                const before = new Map(hudData(world, CAT, null, settings).resources.map((r) => [r.id, r.amount]));
-                advance(world, Math.min(away, CAT.tune.maxAwaySeconds), 1, CAT);
-                const gains = hudData(world, CAT, null, settings)
-                    .resources.map((r) => ({ name: r.name, amount: r.amount - (before.get(r.id) ?? 0) }))
-                    .filter((g) => g.amount >= 1)
-                    .sort((a, b) => b.amount - a.amount)
-                    .slice(0, 8);
-                if (away >= 120) setAway({ seconds: Math.min(away, CAT.tune.maxAwaySeconds), gains });
-            }
-
             // Sound cues from what changed since the last refresh: a milestone finished, a blueprint bought.
             const doneMilestones = new Set<string>();
             let doneResearch = -1;
@@ -311,8 +345,33 @@ export function BrassworkHost() {
             };
             // The number keys' tool lists, one per dock section, rebuilt on every refresh so they match the open rows.
             const dockTools: ToolSpec[][] = DOCK_ORDER.map(() => []);
+            // Where the NEXT banner wants you to build, in the input frame. Only the state changes when the spot does.
+            let targetKey = "";
+            const syncTarget = (actionId: string | undefined) => {
+                let t: NextTarget | null = null;
+                const fpOf = (id: string) => CAT.tree.machines.find((m) => m.id === id)?.footprint ?? { w: 1, d: 1 };
+                if (actionId === "drill") {
+                    const free = Object.entries(world.deposits)
+                        .map(([k, v]) => ({ k, item: v.item, c: k.split(",").map(Number) }))
+                        .filter((e) => !buildingAt(world, e.c[0], e.c[1], CAT))
+                        .sort((a, b) => (a.item === "iron_ore" ? 0 : 1) - (b.item === "iron_ore" ? 0 : 1))[0];
+                    if (free) t = { x: free.c[0] - W / 2, z: free.c[1] - D / 2, w: 1, d: 1, label: "Place the drill here" };
+                } else if (actionId === "kiln" || actionId === "windmill") {
+                    const fp = fpOf(actionId);
+                    const spot = suggestSpot(world, fp, CAT);
+                    if (spot) t = { x: spot.x - W / 2, z: spot.z - D / 2, w: fp.w, d: fp.d, label: `${actionId === "kiln" ? "Kiln" : "Windmill"} fits here` };
+                } else if (actionId === "hub-menu") {
+                    const hub = world.buildings[world.hubId];
+                    if (hub) t = { x: hub.x - W / 2, z: hub.z - D / 2, w: 3, d: 3, label: "Deliver to the hub" };
+                }
+                const key = t ? `${t.x},${t.z},${t.w},${t.d},${t.label}` : "";
+                if (key === targetKey) return;
+                targetKey = key;
+                setNextTarget(t);
+            };
             const refresh = () => {
                 const d = hudData(world, CAT, selectedId, settings);
+                syncTarget(d.nextStep.actionId);
                 d.armed = armedRef.current;
                 d.rotation = input.controller.build.getRot() * 90;
                 DOCK_ORDER.forEach((g, i) => {
@@ -404,9 +463,16 @@ export function BrassworkHost() {
                 world: buildWorld,
                 tools,
                 groups: dockTools,
+                // Press a belt on a machine and drag to another: the sim finds the shortest clear route (input frame in, input frame out).
+                route: (from, to, toolId) => {
+                    const r = autoRoute(world, { x: from.x + ox, z: from.z + oz }, { x: to.x + ox, z: to.z + oz }, toolId, CAT);
+                    return r.ok ? { ok: true, cells: r.cells.map((c) => ({ x: c.x - ox, z: c.z - oz, rot: c.rot })) } : r;
+                },
                 onGroup: (i) => setDockGroup(DOCK_ORDER[i] ?? null),
                 heightAt: pickHeightAt,
-                initialPose: { target: { x: 0, y: 0, z: 0 }, yaw: 0.6, pitch: 0.75, distance: 18 },
+                groundHeightAt: heightAt,
+                // Wide screens open with the Machines dock beside the island, so the view sits a little right of the hub to keep the first drill node clear of it.
+                initialPose: { target: window.innerWidth >= 768 ? { x: -3.7, y: 0, z: -1 } : { x: -2.4, y: 0, z: -2.2 }, yaw: 0.6, pitch: 0.75, distance: 21 },
                 limits: { bounds: { minX: -14, maxX: 14, minZ: -10, maxZ: 10 }, minDistance: 5, maxDistance: 34, minPitch: 0.35, maxPitch: 1.2, topDownPitch: 1.5, fovY: 0.55, smoothing: 12 },
                 onEvent: (e) => {
                     if (e.type === "invalid") {
@@ -423,6 +489,16 @@ export function BrassworkHost() {
                         refresh();
                     } else if (e.type === "rotate" || e.type === "undo") {
                         playSound(e.type);
+                    } else if (e.type === "route-source") {
+                        playSound("select");
+                        setNote(e.active ? "Now tap the machine to feed, or an empty cell. Cancel drops it." : "");
+                    } else if (e.type === "deselect") {
+                        // Bare ground or Esc: put the inspector and the pop-up away.
+                        if (selectedId !== null) {
+                            selectedId = null;
+                            refresh();
+                        }
+                        setPop(null);
                     } else if (e.type === "select") {
                         playSound("select");
                         // A short click or tap on a placed building (no tool active) opens its inspector.
@@ -447,12 +523,19 @@ export function BrassworkHost() {
 
             setInputCtl(input.controller);
             // The selected belt run (or building) glows in the 3D view. Same board frame as setBelts.
-            input.controller.build.subscribe(() => {
-                if (!dead) island.setHighlight(input.controller.build.getHighlight());
-            });
-
             // Placement preview: the input module owns the ghost, the renderer draws it.
             let ghostKey = "";
+            // Only touch the highlight when a selection is or was showing. Every pointer move emits, and writing an empty
+            // selection each time wiped the Remove preview, which the ghost below only redraws when its cells change.
+            let hadSelection = false;
+            input.controller.build.subscribe(() => {
+                if (dead) return;
+                const sel = input.controller.build.getHighlight();
+                if (sel.length === 0 && !hadSelection) return;
+                hadSelection = sel.length > 0;
+                island.setHighlight(sel);
+                ghostKey = "";
+            });
             const updateGhost = () => {
                 const g = input.controller.build.ghost();
                 // Remove preview: outline every building cell the delete tool would clear, so a multi-cell machine shows whole.
@@ -509,7 +592,7 @@ export function BrassworkHost() {
                 group: (index) => input.controller.setGroup(index),
                 setTool: (id) => {
                     input.controller.setToolById(id);
-                    setNote(id ? `Click the floor to place ${resolve(CAT, id)?.name ?? id}. R rotates, Esc cancels.` : "");
+                    setNote("");
                 },
                 select: (id) => {
                     if (id === null) selectedId = null;
@@ -566,6 +649,8 @@ export function BrassworkHost() {
                         return r;
                     },
                     refresh,
+                    // The spot the NEXT marker names for a w x d machine (sim cell of its minimum corner), for the marker check.
+                    suggestSpot: (fw: number, fd: number) => suggestSpot(world, { w: fw, d: fd }, CAT),
                     // Arms a build tool by its id, the same call the palette makes. Lets the headless check skip the palette.
                     setTool: (id: string | null) => input.controller.setToolById(id),
                     armedTool: () => input.controller.build.getTool()?.id ?? null,
@@ -578,6 +663,14 @@ export function BrassworkHost() {
                         c.update();
                         return true;
                     },
+                    // Client pixel of a sim cell's centre, so a headless run can click the real floor.
+                    cellPx: (sx: number, sz: number) => input.controller.screenPoint({ x: sx - W / 2, z: sz - D / 2 }),
+                    // The sim cell the pointer would pick at a client pixel, or null off the board.
+                    pickAt: (px: number, py: number) => {
+                        const c = input.controller.pointer.cellAt(px, py);
+                        return c ? { x: c.x + W / 2, z: c.z + D / 2 } : null;
+                    },
+                    selectedId: () => selectedId,
                     ghostCells: () => (input.controller.build.ghost()?.cells ?? []).map((c) => [c.x, c.z, c.valid ? 1 : 0, c.reason ?? ""]),
                 };
             }
@@ -637,9 +730,30 @@ export function BrassworkHost() {
             refresh();
             // Keys can change the armed tool or its rotation without a palette click (Escape, Q, R, Tab groups).
             // After each key, mirror the input layer's tool into the HUD so the palette and the dock stay true.
+            let hintedId: string | null = null;
             const syncFromInput = () => {
                 const id = input.controller.build.getTool()?.id ?? null;
                 if (armedRef.current !== id) armedRef.current = id;
+                if (id !== hintedId) {
+                    hintedId = id;
+                    const touch = window.matchMedia("(pointer: coarse)").matches;
+                    const name = id ? resolve(CAT, id)?.name ?? id : "";
+                    setHint(
+                        !id
+                            ? ""
+                            : id === DELETE_TOOL.id
+                              ? touch
+                                  ? "Tap a building to remove it, or drag along belts. Cancel stops."
+                                  : "Click a building to remove it, drag along belts, Shift-drag clears an area. Esc stops."
+                              : id.startsWith("belt")
+                                ? touch
+                                  ? `Press and drag to lay ${name.toLowerCase()}, or tap one machine then another to route it. Cancel stops.`
+                                  : `Drag to lay ${name.toLowerCase()}, or drag from one machine to another to route it for you. Esc stops.`
+                                : touch
+                                  ? `Tap a spot to preview ${name}, tap it again to place. Hold to turn it. Cancel stops.`
+                                  : `Click to place ${name}. R turns it, Esc stops.`
+                    );
+                }
                 refresh();
             };
             const onKeySync = () => window.setTimeout(syncFromInput, 0);
@@ -662,6 +776,7 @@ export function BrassworkHost() {
                 ctl.current = null;
                 setInputCtl(null);
                 setPop(null);
+                setNextTarget(null);
                 snap.current = null;
             };
         })();
@@ -687,6 +802,8 @@ export function BrassworkHost() {
             <AutomationHud data={data} actions={{ onBuild, onSelect, onResearch, onSetRecipe, onPrestige, onSettings }} settingsSlots={{ sound: <VolumeRows />, display: <LightingRow mood={mood} onMood={onMood} />, save: <SaveRows /> }} removeSlot={inputCtl ? <TrashButton input={inputCtl} variant="dock" /> : undefined} quest={quest ?? undefined} dockGroup={dockGroup} onDockGroup={onDockGroup}>
                 <canvas ref={canvasRef} className="bw-canvas" />
                 <BrassworkExtras snapshot={snapshot} away={away} mood={mood} onMood={onMood} />
+                {inputCtl && <HoverName input={inputCtl} nameOf={nameOfKind} canvas={canvasRef} />}
+                {inputCtl && nextTarget && <NextMarker input={inputCtl} target={nextTarget} canvas={canvasRef} />}
                 {inputCtl && pop && (
                     <BuildPopover
                         input={inputCtl}
@@ -704,7 +821,7 @@ export function BrassworkHost() {
                         onClose={() => setPop(null)}
                     />
                 )}
-                {note && <p className="bw-note">{note}</p>}
+                {(note || hint) && <p className="bw-note">{note || hint}</p>}
             </AutomationHud>
         </div>
     );

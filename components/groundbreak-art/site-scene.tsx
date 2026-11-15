@@ -1,10 +1,12 @@
 // Groundbreak site scene built from the drawn art, for the page's scene slot (UI-SCENE-SLOT.md). Same props as
-// components/groundbreak/scene.tsx: the page owns input and camera; this only draws.
+// the built-in scene in components/groundbreak: the page owns input and camera; this only draws.
 "use client";
 
 import { useEffect, useRef, useState } from "react";
 import { GbJob } from "./index";
 import { GB_BACKDROP, GB_JOBS, type GbJobId } from "./scene-data";
+import { GB_LIFE } from "./life-data";
+import { GbSiteLife } from "./site-life";
 
 // Structural copy of components/groundbreak/scene-types.ts (kept local so the art folder has no import into the UI).
 type Camera = { x: number; y: number; z: number };
@@ -20,39 +22,13 @@ const K = 2;
 /** The job stands with its centre at world x 240 on the near shore; the backdrop's site line meets world ground. */
 const OY = GB_BACKDROP.siteY - GROUND_Y * K;
 const SITE_X = 980; // backdrop x (art px) under the job's centre: right of the port cranes, the city behind it
-const PARALLAX = { sky: 0.06, hills: 0.22, city: 0.42, bay: 0.62, shore: 1 } as const;
+const PARALLAX = { sky: 0.06, clouds: 0.1, hills: 0.22, city: 0.42, bay: 0.62, glint: 0.62, boats: 0.62, shore: 1 } as const;
 
 function frameFor(id: GbJobId, job: SceneJob): number {
     const n = GB_JOBS[id].frames.length;
     if (job.inspecting) return job.inspect >= 1 ? n - 1 : n - 2;
     // lot .. second-to-last spread over the build; "done" only once inspection passes
     return Math.min(n - 2, Math.floor(job.frac * (n - 2)));
-}
-
-/** A site worker drawn in art pixels: hard hat, hi-vis vest with a stripe, work trousers, boots. Rows of 6 cells. */
-const WORKER = ["..yy..", ".yyyy.", ".ffff.", "oooooo", "owwwwo", "oowwoo", ".oooo.", ".kkkk.", ".kkkk.", ".kkkk.", ".bb.bb", ".bb.bb"];
-const WORKER_COL: Record<string, string> = { y: "#ffd23c", f: "#e0a878", o: "#ff9a1f", w: "#fff1c4", k: "#4a4458", b: "#241c2c" };
-const WORKER_SHADOW = WORKER.flatMap((row, y) => [...row].map((c, x) => (WORKER_COL[c] ? `${x}px ${y}px 0 ${WORKER_COL[c]}` : ""))).filter(Boolean).join(",");
-
-/** Crews on the site: more hired crews, more workers, pacing back and forth along the lot. */
-function Workers({ left, width, ground, count, reduce }: { left: number; width: number; ground: number; count: number; reduce: boolean }) {
-    return (
-        <>
-            {Array.from({ length: count }, (_, i) => {
-                const slot = width / count;
-                const span = Math.round(slot * (0.7 + ((i * 37) % 5) * 0.1));
-                const x = left + slot * i + 4;
-                return (
-                    <div key={i} className="gba-worker" style={{
-                        left: x, top: ground - 12, ["--span" as string]: `${span}px`, ["--dur" as string]: `${5 + ((i * 7) % 6)}s`, ["--delay" as string]: `${-((i * 13) % 9)}s`,
-                        animationPlayState: reduce ? "paused" : undefined,
-                    }}>
-                        <i style={{ boxShadow: WORKER_SHADOW }} />
-                    </div>
-                );
-            })}
-        </>
-    );
 }
 
 export function GbSiteScene({ camera, job, skyline, reduce, paused, idle, crews = 1 }: GbSiteSceneProps) {
@@ -74,7 +50,7 @@ export function GbSiteScene({ camera, job, skyline, reduce, paused, idle, crews 
     const B = GB_BACKDROP;
     const city = Math.min(4, Math.floor(skyline.length / 3)) as 0 | 1 | 2 | 3 | 4;
 
-    const layer = (name: keyof typeof PARALLAX, src: string) => {
+    const layer = (name: keyof typeof PARALLAX, src: string, motion?: string) => {
         const p = PARALLAX[name];
         const sc = fit * (1 + (camera.z - 1) * p);
         const cx = SITE_X + (fx - SITE_X) * p;
@@ -84,8 +60,8 @@ export function GbSiteScene({ camera, job, skyline, reduce, paused, idle, crews 
         const ty = horizonScreen - B.horizon * sc;
         // three copies side by side so zooming far out never shows an edge
         return (
-            <div key={name} className="gba-layer" style={{
-                width: B.w * 3, height: B.h, transform: `translate(${tx - B.w * sc}px, ${ty}px) scale(${sc})`,
+            <div key={name} className={`gba-layer ${motion ?? ""}`} style={{
+                width: B.w * 3, height: B.h, transform: `translate(${Math.round(tx - B.w * sc)}px, ${Math.round(ty)}px) scale(${sc})`,
                 backgroundImage: `url("${src}")`, backgroundSize: `${B.w}px ${B.h}px`, backgroundRepeat: "repeat-x",
             }} />
         );
@@ -94,8 +70,8 @@ export function GbSiteScene({ camera, job, skyline, reduce, paused, idle, crews 
     const id = job && job.id in GB_JOBS ? (job.id as GbJobId) : null;
     const lotId = !id && idle && idle in GB_JOBS ? (idle as GbJobId) : null;
     const siteId = id ?? lotId;
-    const workerCount = Math.min(14, 2 + Math.floor(crews / 2));
-    const near = `translate(${cw / 2 - fx * s}px, ${ch / 2 - fy * s}px) scale(${s})`;
+    // whole-pixel offsets stop the art shimmering between screen pixels as the camera eases
+    const near = `translate(${Math.round(cw / 2 - fx * s)}px, ${Math.round(ch / 2 - fy * s)}px) scale(${s})`;
     // finished buildings line the shore to the right of the site, newest nearest; one of each kind per firm
     const seen = new Set<string>();
     const done = [...skyline].reverse().filter((b) => b.id in GB_JOBS && !seen.has(`${b.id}`) && seen.add(`${b.id}`)).slice(0, 12);
@@ -110,9 +86,12 @@ export function GbSiteScene({ camera, job, skyline, reduce, paused, idle, crews 
     return (
         <div ref={box} className={`gba-scene ${reduce ? "gba-lowfx" : ""} ${paused ? "gba-paused" : ""}`} aria-hidden="true">
             {layer("sky", B.layers.sky)}
+            {layer("clouds", B.layers.clouds, "gba-drift")}
             {layer("hills", B.layers.hills)}
             {layer("city", B.layers[`city-${city}`])}
             {layer("bay", B.layers.bay)}
+            {layer("glint", B.layers.glint, "gba-twinkle")}
+            {layer("boats", B.layers.boats, "gba-sail")}
             {layer("shore", B.layers.shore)}
             <div className="gba-near" style={{ transform: near }}>
                 <div className="gba-under" style={{ left: -4000, top: B.h - 2, width: B.w + 8000, height: 3000 }} />
@@ -127,7 +106,6 @@ export function GbSiteScene({ camera, job, skyline, reduce, paused, idle, crews 
                     return (
                         <>
                             <GbJob job={lotId} frame={0} style={{ position: "absolute", left: left0, top: B.siteY + j.ground - j.h }} />
-                            <Workers left={left0 + 8} width={j.w - 16} ground={B.siteY} count={workerCount} reduce={reduce} />
                         </>
                     );
                 })()}
@@ -141,11 +119,16 @@ export function GbSiteScene({ camera, job, skyline, reduce, paused, idle, crews 
                             {job!.inspecting && job!.inspect < 1 && (
                                 <div className="gba-flag" style={{ left: SITE_X + j.w / 2 - 34, top: B.siteY - 30 }} />
                             )}
-                            {!job!.inspecting && <Workers left={left0 + 8} width={j.w - 16} ground={B.siteY} count={workerCount} reduce={reduce} />}
                             {!reduce && <div className="gba-dust" style={{ left: left0, top: B.siteY - 40, width: j.w }} />}
                         </>
                     );
                 })()}
+                {siteId && (
+                    <GbSiteLife left={SITE_X - GB_JOBS[siteId].w / 2} ground={B.siteY} w={GB_JOBS[siteId].w}
+                        outline={GB_LIFE.outline[siteId][id ? frameFor(id, job!) : 0]} jobKey={id ?? "lot"} phase={job?.phase ?? -1}
+                        phaseName={job?.phaseName ?? null} inspecting={!!job?.inspecting} done={!!job?.inspecting && job.inspect >= 1}
+                        crews={crews} reduce={reduce} paused={paused} scale={s} />
+                )}
             </div>
         </div>
     );

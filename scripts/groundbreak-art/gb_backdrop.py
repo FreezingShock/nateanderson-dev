@@ -31,20 +31,39 @@ def sky():
     c.fill(c.rect(0, 0, W, H), v, "sky", 0.95)
     c.fill(c.disc(*SUN, 26), 0.9, "lamp", 0.4)
     c.thin(c.disc(*SUN, 40) & ~c.disc(*SUN, 26), P["lamp"][5], 0.35)
+    c.thin(c.disc(*SUN, 110, 70), P["lamp"][3], 0.18, 200)  # wide halo
+    base = c
+    c = Canvas(W, H)  # clouds and birds go on their own layer so they can drift
     r = rng(3)
-    for k in range(9):  # long flat cloud bands, lit underneath
-        cy = r.uniform(60, 280)
-        cx = r.uniform(0, W)
-        L = r.uniform(140, 380)
-        band = c.disc(cx, cy, L, r.uniform(7, 15)) & (c.Y < cy + 4)
-        lit = np.clip(0.3 + (c.Y - cy) / 14 + 0.35 * (1 - np.clip(np.abs(c.X - SUN[0]) / 700, 0, 1)), 0, 1)
-        c.fill(band, lit, "haze", 0.9)
-        c.set(band & (c.Y > cy + 1) & (c.Y < cy + 3), P["sky"][10])
+    # high cirrus: short tapered wisps, lit pink-gold from below
+    for _ in range(26):
+        cx, cy, L = r.uniform(0, W), r.uniform(40, 170), r.uniform(30, 110)
+        wisp = c.disc(cx, cy, L, r.uniform(1.2, 2.6)) & (c.B < 0.35 - np.abs(c.X - cx) / (2 * L))
+        c.set(wisp, P["sky"][r.integers(6, 9)], 230)
+    # cumulus banks: clusters of puffs, dark violet tops, glowing amber undersides toward the sun
+    for _ in range(14):
+        cx, cy = r.uniform(-60, W + 60), r.uniform(150, 300)
+        n = r.integers(5, 11)
+        sz = r.uniform(10, 22) * (0.6 + cy / 300)
+        mask = np.zeros_like(c.B, bool)
+        for k in range(n):
+            ox = (k - n / 2) * sz * 0.9 + r.uniform(-4, 4)
+            rr = sz * r.uniform(0.6, 1.1) * (1 - abs(k - n / 2) / (n * 0.9))
+            mask |= c.disc(cx + ox, cy - rr * 0.4, rr * 1.2, rr) & (c.Y < cy + 2)
+        warm = 1 - np.clip(np.abs(c.X - SUN[0]) / 900, 0, 1)
+        v = np.clip(0.15 + (c.Y - cy + sz) / (sz * 2.2) * (0.5 + 0.5 * warm), 0, 1)
+        c.fill(mask, v, "haze", 0.9)
+        rim = mask & ~np.roll(mask, -2, 0)
+        c.set(rim & (c.B < 0.3), P["sky"][10 if warm.mean() > 0 else 9])
+    # birds heading home
+    for _ in range(9):
+        x, y = r.uniform(900, 1450), r.uniform(200, 300)
+        c.set(c.line(x - 3, y - 1.5, x, y, 0.8) | c.line(x, y, x + 3, y - 1.5, 0.8), P["ink"][1])
+    cl, c = c, base
     for _ in range(70):  # first stars in the dark top
         x, y = r.uniform(0, W), r.uniform(0, 90)
         c.set(c.rect(x, y, x + 1, y + 1), P["white"][3], 180)
-    return c
-
+    return c, cl
 
 def ridge(c, base, amp, seed, pal, lo, hi, x_from=0, x_to=W, peak=None):
     r = rng(seed)
@@ -67,13 +86,22 @@ def ridge(c, base, amp, seed, pal, lo, hi, x_from=0, x_to=W, peak=None):
 def hills():
     c = Canvas(W, H)
     ridge(c, HORIZON - 40, 70, 7, "haze", 0.2, 0.6, peak=(300, 70, 160))   # far headlands
-    # fog pouring over the saddle
-    r = rng(9)
-    for k in range(40):
-        x = 120 + k * 14 + r.uniform(-6, 6)
-        y = HORIZON - 70 + 0.8 * abs(k - 18) + r.uniform(-3, 3)
-        c.thin(c.disc(x, y, r.uniform(16, 30), r.uniform(5, 9)), P["white"][2], 0.3, 190)
-    ridge(c, HORIZON - 8, 34, 21, "roof", 0.25, 0.55, x_from=0, x_to=W)  # nearer ridge, East Bay style
+    # a soft fog bank rolling over the saddle: one continuous body, densest at its base, lit warm on its sun side
+    top = HORIZON - 78 + 6 * np.sin(c.X / 37) + 4 * np.sin(c.X / 13) + 0.0012 * (c.X - 380) ** 2
+    fog = (c.Y > top) & (c.Y < HORIZON - 30) & (c.X > 60) & (c.X < 760)
+    dens = np.clip((c.Y - top) / 22, 0, 1) * np.clip(np.minimum(c.X - 60, 760 - c.X) / 120, 0, 1)
+    c.set(fog & (c.B < dens * 0.55 - 0.5), P["haze"][4], 210)
+    c.set(fog & (c.Y < top + 2) & (c.B < 0.0), P["haze"][5], 200)
+    ytop = ridge(c, HORIZON - 8, 34, 21, "roof", 0.25, 0.55, x_from=0, x_to=W)  # nearer ridge, East Bay style
+    near = (c.Y > ytop[np.clip(c.X.astype(int), 0, W - 1)] + 1) & (c.Y < HORIZON)
+    c.set(near & (c.B > 0.38) & (np.sin(c.X * 0.7) * np.sin(c.Y * 1.3) > 0.2), P["green"][1])  # oak scrub
+    r2 = rng(31)
+    for _ in range(140):  # hillside houses, some windows lit
+        x = r2.uniform(560, W)
+        y = ytop[int(x)] + r2.uniform(3, max(4, HORIZON - ytop[int(x)] - 4))
+        c.set(c.rect(x, y, x + 3, y + 2), P["roof"][4])
+        if r2.random() < 0.55:
+            c.set(c.rect(x + 1, y + 1, x + 2, y + 2), P["lamp"][r2.integers(3, 6)])
     # long suspension bridge across the left of the bay
     l, r_ = 70, 560
     deck = HORIZON - 14
@@ -107,8 +135,29 @@ def bay():
     # sun glitter column
     g = m & (np.abs(c.X - SUN[0]) < 40 + 140 * d) & (np.sin(c.Y * 2.3 + np.sin(c.X * 0.09) * 3) > 0.6) & \
         (c.B < 0.25 - 0.6 * np.abs(c.X - SUN[0]) / (40 + 140 * d))
-    c.set(g, P["lamp"][5])
+    c.set(g & (c.B < -0.3), P["lamp"][5])
+    glit = g
+    rows = m & (np.sin(c.Y * 1.7 + np.sin(c.X * 0.05) * 2) > 0.92 - 0.1 * d)  # wave crests
+    c.set(rows & (c.B < 0.1), P["water"][5])
+    refl = m & (c.Y < HORIZON + 60) & (c.X > 640) & (c.X < 1460) & (np.sin(c.X * 0.37 + np.sin(c.Y * 1.9) * 2.5) > 0.75) & \
+        (c.B < 0.05 - (c.Y - HORIZON) / 70) & (np.sin(c.Y * 2.2) > 0.1)
+    gl = Canvas(W, H)
+    gl.set(glit & (gl.B >= -0.3), P["lamp"][5])
+    gl.set(refl, P["lamp"][3], 200)  # city lights trembling on the water
+    bay_c, c = c, Canvas(W, H)
     r = rng(5)
+    for k in range(5):  # sailboats
+        x, y = r.uniform(420, 1400), HORIZON + r.uniform(8, 50)
+        c.fill(c.poly([(x, y), (x + 14, y), (x + 12, y + 3), (x + 2, y + 3)]), 0.6, "white", 0.4)
+        c.fill(c.poly([(x + 7, y - 1), (x + 7, y - 18), (x + 14, y - 1)]), 0.75, "white", 0.5)
+        c.fill(c.poly([(x + 6, y - 1), (x + 6, y - 14), (x + 1, y - 1)]), 0.5, "sunglass", 0.5)
+    # a ferry with its wake
+    fx, fy = 1180, HORIZON + 30
+    c.fill(c.rect(fx, fy, fx + 46, fy + 5), 0.7, "white", 0.4)
+    c.fill(c.rect(fx + 6, fy - 5, fx + 38, fy), 0.55, "white", 0.4)
+    c.set(c.rect(fx + 8, fy - 4, fx + 36, fy - 2) & ((c.X % 3) < 2), P["lamp"][4])
+    c.thin(c.rect(fx + 46, fy + 3, fx + 160, fy + 6) & (c.Y < fy + 4 + (c.X - fx - 46) / 40), P["white"][2], 0.35)
+    boats, c = c, bay_c
     for k in range(6):  # small boats and a container ship
         x, y = r.uniform(600, 1500), HORIZON + r.uniform(6, 40)
         c.set(c.rect(x, y, x + 8, y + 2), P["white"][2])
@@ -119,8 +168,7 @@ def bay():
         c.fill(c.rect(x + 12 + k * 9, y - 5 - (k % 3) * 2, x + 20 + k * 9, y), 0.5,
                ["safety", "glass", "hiviz", "cash"][k % 4], 0.6)
     c.fill(c.rect(x + 96, y - 14, x + 104, y), 0.5, "white", 0.5)
-    return c
-
+    return c, boats, gl
 
 def city(level):
     """Skyline on the city hills across the water. level 0..4 adds towers; seeds are stable so a higher level keeps
@@ -153,6 +201,7 @@ def city(level):
         if q > 0.75:
             c.set(c.rect(x + w / 2, top - 10, x + w / 2 + 1, top), P["steel"][4])
             c.set(c.rect(x + w / 2 - 1, top - 11, x + w / 2 + 2, top - 10), P["safety"][5])
+    landmarks(c, base, level)
     # a radio mast on the high hill
     c.set(c.rect(1210, base - 70, 1212, base - 6), P["safety"][3])
     for y in range(int(base - 70), int(base - 6), 12):
@@ -160,11 +209,64 @@ def city(level):
     return c
 
 
+def _glass_body(c, m, x0, w, top, pal="glass"):
+    shade = np.clip(0.5 - (c.X - x0) / (w * 2.5) + 0.25 * (1 - np.clip(abs(x0 - SUN[0]) / 700, 0, 1)), 0, 1)
+    c.fill(m, shade, pal, 0.9)
+    c.set(m & (c.X < x0 + 1.2), P["sunglass"][5], 230)  # sunset rim
+    c.set(m & ((c.Y - top) % 4 < 1) & ((c.X - x0) % 3 < 1) & (c.B < 0.1), P["lamp"][4])
+
+
+def _crane(c, x, top):
+    c.set(c.rect(x, top - 22, x + 1, top + 2), P["hiviz"][4])
+    c.set(c.rect(x - 8, top - 22, x + 22, top - 21), P["hiviz"][5])
+    c.set(c.rect(x - 8, top - 22, x - 5, top - 19), P["concrete"][4])
+    c.set(c.rect(x + 15, top - 21, x + 16, top - 12), P["ink"][2])
+    c.set(c.disc(x + 0.5, top - 24, 1), P["safety"][5])
+
+
+def landmarks(c, base, level):
+    """One signature tower per Incorporate, each in its own style; the newest still has cranes on its crown."""
+    builds = [
+        # level 1: stepped setback pair
+        lambda: [(_glass_body(c, c.rect(x, base - h + k * 22, x + w - 2 * k * 3, base + 6), x + 3 * k, w, base - h, "precast"))
+                 for x, w, h in ((860, 26, 150), (895, 20, 118)) for k in range(4)] and (895 + 10, base - 118),
+        # level 2: tapered pyramid tower
+        lambda: (_glass_body(c, c.poly([(1060, base + 6), (1092, base + 6), (1084, base - 190), (1068, base - 190)]), 1060, 32, base - 190),
+                 c.fill(c.poly([(1068, base - 190), (1084, base - 190), (1076, base - 228)]), 0.75, "sunglass", 0.6),
+                 (1076, base - 228))[-1],
+        # level 3: twin slabs joined by a sky bridge
+        lambda: ([_glass_body(c, c.rect(x, base - 205, x + 16, base + 6), x, 16, base - 205) for x in (780, 806)],
+                 c.fill(c.rect(796, base - 130, 806, base - 122), 0.6, "steel", 0.5),
+                 (788, base - 205))[-1],
+        # level 4: the supertall, curved shoulders and a spire
+        lambda: (_glass_body(c, c.rect(990, base - 250, 1022, base + 6) | (c.disc(1006, base - 250, 16, 22) & (c.Y < base - 250)),
+                             990, 32, base - 272),
+                 c.set(c.rect(1005, base - 320, 1007, base - 270), P["steel"][6]),
+                 c.set(c.rect(1004, base - 322, 1008, base - 320), P["safety"][5]),
+                 (1006, base - 272))[-1],
+    ]
+    for lvl in range(1, level + 1):
+        top = builds[lvl - 1]()
+        if lvl == level:
+            _crane(c, top[0] - 4, top[1])
+
+
 def shore():
     c = Canvas(W, H)
     top = HORIZON + 120
     m = c.rect(0, top, W, H)
     c.fill(m, np.clip(0.55 - (c.Y - top) / 200, 0, 1), "dirt", 0.8)
+    # soil profile: topsoil, a clay band, a sand lens, gravel, then fractured bedrock fading into the dark
+    wav = 2.5 * np.sin(c.X / 37) + 1.5 * np.sin(c.X / 11)
+    c.fill(m & (np.abs(c.Y - (top + 26) - wav) < 5), 0.3, "brick", 0.8)
+    c.fill(m & (np.abs(c.Y - (top + 44) + wav) < 2 + 2.5 * np.sin(c.X / 90)), 0.3, "sand", 0.8)
+    c.fill(m & (np.abs(c.Y - (top + 58) - wav * 0.6) < 4), 0.4, "gravel", 1.0)
+    rock = m & (c.Y > top + 66 + wav)
+    c.fill(rock, np.clip(0.45 - (c.Y - top - 66) / 60, 0, 1), "dirt", 0.9)
+    c.set(rock & (np.abs(np.sin(c.X / 13 + c.Y / 7) ) < 0.04), P["ink"][1])
+    c.set(m & (np.abs(c.Y - (top + 38)) < 0.6) & (c.B < 0), P["water"][3], 160)  # water table seep
+    pipe = c.rect(0, top + 32, W, top + 36)  # utility main under the street
+    c.fill(pipe, 0.5, "duct", 0.5)  # runs straight under the site; a dug pit is drawn over it
     c.fill(c.rect(0, top, W, top + 4), 0.5, "concrete", 0.6)  # seawall cap
     for x in range(0, W, 9):  # pilings
         c.fill(c.rect(x, top - 10, x + 3, top), 0.4, "wood", 0.5)
@@ -197,7 +299,9 @@ def shore():
 
 
 def all_layers():
-    out = {"sky": sky(), "hills": hills(), "bay": bay(), "shore": shore()}
+    sk, clouds = sky()
+    b, boats, glint = bay()
+    out = {"sky": sk, "clouds": clouds, "hills": hills(), "bay": b, "glint": glint, "boats": boats, "shore": shore()}
     for lvl in range(5):
         out[f"city-{lvl}"] = city(lvl)
     return out

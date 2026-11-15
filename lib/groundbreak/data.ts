@@ -40,7 +40,7 @@ export const MATS: Material[] = [
 const geo = (first: number, ratio: number, n = N) => Array.from({ length: n }, (_, i) => Number((first * Math.pow(ratio, i)).toPrecision(3)));
 
 /** Spend to unlock material n (paid in material n-1). The first is free (gravel). */
-export const UNLOCK_COST = [0, 20, 90, 6e3, 6.2e4, 3.3e5, 5.2e5, 5.2e5, 5.6e5, 7.3e5, 3.7e6, 9.2e6];
+export const UNLOCK_COST = [0, 20, 90, 6e3, 6.2e4, 3.3e5, 5.2e5, 5.2e5, 5.6e5, 7.3e5, 3.7e6, 5e6];
 /**
  * What a material eats while it is made, per unit: [material, units]. Only Floors run as a true pipeline (SPEC section 1);
  * the other eleven are made from nothing and paid for by the hires, so ratios do not multiply down the chain.
@@ -53,7 +53,7 @@ export const CREW_COST = geo(35, 0.9);
 /** Tier II equipment: first price, in the material before it; each level costs equipGrowth x more and doubles the row. */
 export const EQUIP_COST = geo(77, 3.7);
 /** Tier III method: one-time cash price; needs equipNeed equipment levels in the row first. */
-export const METHOD_COST = geo(300, 5);
+export const METHOD_COST = geo(300, 3);
 
 export const TUNE = {
     cap: 1e300,
@@ -73,8 +73,10 @@ export const TUNE = {
     extra: 0.05,
     /** change order: seconds it waits, the extra materials as a share of the phase, and the bonus on the payout */
     changeWait: 75,
-    changeExtra: 0.35,
-    changeBonus: 0.3,
+    changeExtra: 0.6,
+    changeBonus: 0.35,
+    /** an accepted change order makes the inspection ask for this much more score */
+    changeScore: 0.6,
     /** reputation lifts all production by 1 + rep x this */
     repBoost: 0.004,
     startCash: 250,
@@ -91,12 +93,19 @@ export const TUNE = {
     offlineH: 8,
     offlineStepCap: 7200,
     /** Charter points = floor(sqrt(rep earned this firm / charterDiv)) */
-    charterDiv: 40,
+    charterDiv: 4,
     charterMinRep: 60,
     /** skyline entries kept (oldest dropped past this) */
     skylineCap: 600,
     /** autobuy only spends this share of what it holds */
     autoShare: 0.25,
+    /** repeat orders (the firm rebuilds its latest job while the next campaign job waits on a material): share of the cash and reputation, paid pro rata if the crew is pulled off early */
+    /** share of a job's cash paid out as progress draws, a slice per finished phase; the handover pays the rest */
+    draw: 0.5,
+    /** seconds of the new row's output stocked the moment a material opens */
+    unlockGiftSecs: 60,
+    repeatCash: 0.5,
+    repeatRep: 0.1,
 };
 
 // ---- effects ------------------------------------------------------------------------------------------------------
@@ -134,7 +143,7 @@ export const SCALE = [30, 300, 3e3, 3e4, 3e4];
 /** Cash per stage; a job multiplies it. */
 export const PAY = [60, 700, 1.4e4, 4e5, 1.4e7];
 /** Build seconds per stage at full supply. */
-export const SECS = [45, 80, 140, 240, 540];
+export const SECS = [45, 80, 150, 300, 840];
 export const REP = [2, 8, 30, 100, 350];
 /** Inspection score a stage asks for. */
 export const NEED = [0.8, 1, 1.3, 1.8, 2.6];
@@ -182,16 +191,16 @@ function mkJob(d: Draft): JobDef {
 const DRAFTS: Draft[] = [
     { id: "sidewalk", name: "Sidewalk run", stage: 1, floors: 0, kind: "paving", notes: ["Formwork", "Pour", "Cure"], mix: w(3, 2, 1) },
     { id: "driveway", name: "Driveway", stage: 1, floors: 0, kind: "paving", notes: ["Base gravel", "Pour"], mix: w(4, 1, 2), payX: 1.3 },
-    { id: "house", name: "Two-storey house", stage: 2, floors: 2, kind: "housing", notes: ["Slab", "Wood frame", "Roof", "Windows"], mix: w(2, 1, 2, 3, 1), payX: 1.2, repX: 1.2 },
+    { id: "house", name: "Two-storey house", stage: 2, floors: 2, kind: "housing", notes: ["Slab", "Wood frame", "Roof", "Windows"], mix: w(2, 1, 2, 3), payX: 1.2, repX: 1.2 },
     { id: "firestation", name: "Fire station", stage: 2, floors: 2, kind: "civic", notes: ["Slab", "CMU walls", "Bay doors"], mix: w(1, 1, 2, 3, 2), payX: 0.8, repX: 2 },
-    { id: "clinic", name: "Harbor Clinic", stage: 3, floors: 6, kind: "healthcare", notes: ["Spread footings", "Steel frame", "Skin", "MEP"], mix: w(1, 1, 2, 3, 2, 4, 3, 1), payX: 1.3, repX: 1.2 },
     { id: "parking", name: "Parking deck", stage: 3, floors: 4, kind: "civic", notes: ["Precast columns", "Post-tensioned decks"], mix: w(1, 1, 3, 4, 3, 2), payX: 1.5, repX: 0.7 },
-    { id: "school", name: "School", stage: 3, floors: 3, kind: "civic", notes: ["Steel frame", "Gym roof trusses"], mix: w(1, 1, 2, 2, 2, 3, 3, 2), payX: 0.8, repX: 2 },
-    { id: "midrise", name: "Mid-rise office", stage: 4, floors: 12, kind: "office", notes: ["Core first", "Floor cycle", "Curtain wall"], mix: w(1, 1, 2, 3, 3, 4, 2, 2, 2, 3), payX: 1.2, repX: 1.2 },
+    { id: "school", name: "School", stage: 3, floors: 3, kind: "civic", notes: ["Steel frame", "Gym roof trusses"], mix: w(1, 1, 2, 2, 2, 3, 3), payX: 0.8, repX: 2 },
+    { id: "clinic", name: "Harbor Clinic", stage: 3, floors: 6, kind: "healthcare", notes: ["Spread footings", "Steel frame", "Skin", "MEP"], mix: w(1, 1, 2, 3, 2, 4, 3, 1), payX: 1.3, repX: 1.2 },
+    { id: "midrise", name: "Mid-rise office", stage: 4, floors: 12, kind: "office", notes: ["Core first", "Floor cycle", "Curtain wall"], mix: w(1, 1, 2, 3, 3, 4, 2, 2, 2), payX: 1.2, repX: 1.2 },
     { id: "watertower", name: "Water tower", stage: 4, floors: 0, kind: "utility", notes: ["Pile cap", "Steel legs", "Tank welds"], mix: w(2, 1, 3, 3, 2, 6, 1, 0, 1, 2), payX: 0.8, repX: 2 },
     { id: "footbridge", name: "Cable footbridge", stage: 4, floors: 0, kind: "civil", notes: ["Piers", "Cable stays", "Deck"], mix: w(2, 1, 3, 3, 4, 5, 1, 1, 1, 4), payX: 1, repX: 1.6 },
+    { id: "stadium", name: "Stadium", stage: 5, floors: 4, kind: "arena", notes: ["Bowl rakers", "Roof truss lift"], mix: w(2, 2, 4, 6, 4, 6, 2, 3, 2, 8, 3), payX: 1.8, repX: 1.6 },
     { id: "tower", name: "40-storey tower", stage: 5, floors: 40, kind: "tower", notes: ["Piles", "Slipform core", "Floor cycle x40", "Crown"], mix: w(1, 1, 2, 4, 4, 5, 3, 3, 3, 5, 6, 8), payX: 1.6, repX: 1.2 },
-    { id: "stadium", name: "Stadium", stage: 5, floors: 4, kind: "arena", notes: ["Bowl rakers", "Roof truss lift"], mix: w(2, 2, 4, 6, 4, 6, 2, 3, 2, 8, 3, 4), payX: 1.8, repX: 1.6 },
     { id: "bridge", name: "Suspension bridge", stage: 5, floors: 0, kind: "landmark", notes: ["Caissons", "Towers", "Cables spun", "Deck lifted"], mix: w(2, 2, 4, 6, 6, 8, 2, 4, 2, 8, 3, 3), payX: 3, repX: 3, secsX: 1.5, ending: true },
 ];
 
@@ -239,7 +248,7 @@ export const cityLoop = (firm: number) => Math.floor(firm / CITIES.length);
 export interface Perk { id: string; name: string; desc: string; cost: number; req: string[]; fx: Partial<Record<FxKey, number>>; branch: "ops" | "money" | "logistics" }
 export const PERKS: Perk[] = [
     // Operations: crews and equipment
-    { id: "o1", name: "Standing crews", desc: "All crews work 1.5x.", cost: 1, req: [], fx: { crew: 1.5 }, branch: "ops" },
+    { id: "o1", name: "Standing crews", desc: "All crews work 2x.", cost: 1, req: [], fx: { crew: 2 }, branch: "ops" },
     { id: "o2", name: "Foreman", desc: "Hires tier I crews for you, a little at a time.", cost: 3, req: ["o1"], fx: { auto: 1 }, branch: "ops" },
     { id: "o3", name: "Cheaper hiring", desc: "Crews cost 15% less.", cost: 4, req: ["o1"], fx: { crewCost: 0.15 }, branch: "ops" },
     { id: "o4", name: "Fleet manager", desc: "Buys equipment for you when it is cheap.", cost: 8, req: ["o2"], fx: { auto: 1 }, branch: "ops" },

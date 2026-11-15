@@ -16,6 +16,8 @@ const SUN_STEPS = 4;
 export interface Clouds {
     readonly group: THREE.Group;
     update(): void;
+    /** 0 day .. 1 night: clouds fall into blue shadow after dark. */
+    setNight(night: number): void;
     dispose(): void;
 }
 
@@ -92,6 +94,9 @@ export function buildClouds(blocks: BlockRegistry, seed: number): Clouds {
         group: mesher.group,
         update() {
             mesher.update(4);
+        },
+        setNight(night) {
+            material.color.setRGB(1 - night * 0.7, 1 - night * 0.68, 1 - night * 0.55);
         },
         dispose() {
             mesher.dispose();

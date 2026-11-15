@@ -73,7 +73,7 @@ export function SettingsWindow({ settings, onChange, onClose, slots }: {
     settings: HudSettings; onChange: (patch: Partial<HudSettings>) => void; onClose: () => void; slots?: SettingsSlots;
 }) {
     return (
-        <MenuWindow title="Workshop controls" label="Settings" variant="settle" art={<span className="bws-spin"><Ico id="settings" /></span>} onClose={onClose}>
+        <MenuWindow theme="settings" title="Workshop controls" label="Settings" variant="settle" art={<span className="bws-spin"><Ico id="settings" /></span>} onClose={onClose}>
             <div className="bws-body" data-panel="controls">
                         <Group title="Sound">
                             <Switch icon="sound" label="Sound" hint="Mutes everything. Starts after your first click." on={settings.sound} onChange={(v) => onChange({ sound: v })} />

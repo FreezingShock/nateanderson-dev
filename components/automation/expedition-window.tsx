@@ -114,7 +114,7 @@ export function ExpeditionWindow({
     const maxSide = Math.max(1, ...prestige.sites.map((s) => Math.max(s.plan?.width ?? 0, s.plan?.depth ?? 0)));
 
     return (
-        <MenuWindow size="wide" variant="shutter" title="Expedition" art={<span className="ex-compass" style={uiIconStyle("expedition", 32)} aria-hidden="true" />} onClose={onClose}>
+        <MenuWindow size="wide" variant="shutter" theme="expedition" title="Expedition" art={<span className="ex-compass" style={uiIconStyle("expedition", 32)} aria-hidden="true" />} onClose={onClose}>
             <div className="ex-root">
                 <div className="ex-brief">
                     <i className="ex-scan" aria-hidden="true" />
