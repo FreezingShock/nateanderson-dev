@@ -49,7 +49,7 @@ Test commands: `npm run test:nodefarm` (a PR check; includes `tests/starwright/*
 | 320x180 dither scene: six star stages with transitions, skies by prestige layer, planets by stage, visitors, supernova/neutron/black hole blasts | working | `lib/starwright/art.ts` (`render`, `renderLayered`), `sprites.ts`, sheets `public/starwright/**`, `manifest.json` | none; screenshots only |
 | Code-drawn fallback for any missing or loading sheet | working | `art.ts` | none |
 | Star sprite scale clamp (8x cap; keep it) | working | `art.ts` | none |
-| Planets stripped by a blast break into cooling chunks (#538) | partial: no in-game screenshots yet | `art.ts` (~line 821) | none |
+| Planets stripped by a neutron star play `fx/planet-gone` (#538): today a faint expanding ring under the blast, not chunks (see BACKLOG 1b) | partial: screenshots by `scripts/starwright/ui-art/planet-break.mjs` | `art.ts` (~line 821) | none |
 | Sheet generators | working | `scripts/starwright/art/*` (`build.py`; bump `VERSION`) | none |
 | Lazy sprite loading (first needed, then two at a time) | working | `sprites.ts` | none |
 | Synthesized sound, off switch `sw-sound-v1` | untested (never heard) | `lib/starwright/sound.ts` | none |
