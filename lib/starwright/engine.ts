@@ -5,7 +5,7 @@
 import {
     ACHIEVEMENTS, ACH_BONUS, CLOUDS, ELEMENTS as EL, EVENTS, EVENT_FIRST, EVENT_GAP, EVENT_STAY, type Buff, type StarEvent,
     BASE_COST, BASE_RATE, COST_GROWTH, ELEMENTS, GATE_MK, N, PERKS, PLANETS, PULSAR_PERKS, RECIPE, ROWS, STARNAMES, TIERS,
-    TIER_COST_X, TIER_LEVELS, TUNE, type FxKey, type Perk,
+    PLANET_STAGE_AT, PLANET_STAGE_BONUS, TIER_COST_X, TIER_LEVELS, TUNE, type FxKey, type Perk,
 } from "./data";
 
 export const SAVE_KEY = "sw-save-v1";
@@ -38,6 +38,8 @@ export interface State {
     neutronStarsAll: number;
     sing: number;
     planets: string[];
+    /** seconds each planet has been in orbit, by id */
+    planetAge: Record<string, number>;
     /** best collapse seen this star, and highest Fe this star */
     ending: boolean;
     savedAt: number;
@@ -85,6 +87,7 @@ export function fresh(now = Date.now()): State {
         neutronStarsAll: 0,
         sing: 0,
         planets: [],
+        planetAge: {},
         ending: false,
         savedAt: now,
         seen: [],
@@ -126,6 +129,14 @@ function addPerks(f: Fx, list: Perk[], owned: string[]) {
     }
 }
 
+/** 0 to 3: how far a planet in orbit has come. Older planets pay more. */
+export function planetStage(s: State, id: string): number {
+    const age = s.planetAge[id] ?? 0;
+    let st = 0;
+    for (let i = 1; i < PLANET_STAGE_AT.length; i++) if (age >= PLANET_STAGE_AT[i]) st = i;
+    return st;
+}
+
 export function effects(s: State): Fx {
     const f = blank();
     addPerks(f, PERKS, s.perks);
@@ -138,9 +149,10 @@ export function effects(s: State): Fx {
     for (const id of s.planets) {
         const pl = PLANETS.find((p) => p.id === id);
         if (!pl) continue;
+        const grow = 1 + PLANET_STAGE_BONUS * planetStage(s, id);
         for (const [k, v] of Object.entries(pl.fx) as [FxKey, number][]) {
-            if (MUL.includes(k)) f[k] *= 1 + (v - 1) * pp;
-            else if (k === "gate") gateP += v * pp;
+            if (MUL.includes(k)) f[k] *= 1 + (v - 1) * pp * grow;
+            else if (k === "gate") gateP += v * pp * grow;
         }
     }
     f.gate = Math.min(0.75, f.gate + gateP);
@@ -242,6 +254,7 @@ export function step(s: State, dt: number, f: Fx = effects(s)): void {
     s.age += dt;
     s.totalAge += dt;
     autoburn(s, f);
+    for (const id of s.planets) s.planetAge[id] = (s.planetAge[id] ?? 0) + dt;
     for (let i = 0; i < N; i++) if (s.amt[i] >= 1 && !s.found.includes(EL[i].sym)) s.found.push(EL[i].sym);
     if (s.buffs.length) s.buffs = s.buffs.map((b) => ({ ...b, left: b.left - dt })).filter((b) => b.left > 0);
     // Visitors only come while the game is open (small steps); time away never spawns them.
@@ -371,7 +384,7 @@ function newStar(s: State, keepPlanets: boolean) {
     s.bought = Array.from({ length: ROWS }, () => Array(TIERS).fill(0));
     s.heat = 0;
     s.age = 0;
-    if (!keepPlanets) s.planets = [];
+    if (!keepPlanets) { s.planets = []; s.planetAge = {}; }
     s.event = null;
     s.evIn = EVENT_FIRST;
     s.buffs = [];
@@ -461,6 +474,7 @@ export function buyPlanet(s: State, id: string): boolean {
     const pl = PLANETS.find((x) => x.id === id)!;
     for (const [e, q] of pl.cost) s.amt[e] -= q;
     s.planets.push(id);
+    s.planetAge[id] = 0;
     return true;
 }
 
@@ -498,6 +512,8 @@ export function parse(raw: unknown): State | null {
     s.neutronStarsAll = Math.max(s.neutronStars, Math.floor(num(r.neutronStarsAll)));
     s.sing = Math.max(0, Math.floor(num(r.sing)));
     s.planets = strs(r.planets, (x) => PLANETS.some((p) => p.id === x));
+    const pa = (r.planetAge ?? {}) as Record<string, unknown>;
+    for (const id of s.planets) s.planetAge[id] = Math.max(0, num(pa[id]));
     s.ending = r.ending === true;
     s.seen = strs(r.seen, () => true).slice(0, 64);
     s.ach = strs(r.ach, (x) => ACHIEVEMENTS.some((a) => a.id === x));

@@ -102,7 +102,19 @@ function ResourceList({
       {items.map((r) => {
         const amount = fmtNum(r.amount, numberFormat);
         const rate = fmtRate(r.perSecond, numberFormat);
-        const trend = r.perSecond > 0 ? "Rising" : r.perSecond < 0 ? "Falling" : "Steady";
+        // A negative rate means the factory uses this faster than it arrives. Say that in words, not only with a sign.
+        const trend =
+          r.perSecond > 0
+            ? "Rising, more arrives than is used"
+            : r.perSecond < 0
+              ? "Falling, used faster than it arrives"
+              : "Steady";
+        const emptyNote =
+          r.amount <= 0 && r.perSecond < 0
+            ? "None left and falling. Machines that use it are waiting. Mine or craft more."
+            : r.amount <= 0
+              ? "None left. Mine or craft more."
+              : null;
         return (
           <li
             key={r.id}
@@ -132,7 +144,7 @@ function ResourceList({
                   <b data-neg={r.perSecond < 0}>{rate}</b>
                 </span>
               )}
-              {r.amount <= 0 && <span className="ab-res-tip-note">None left. Mine or craft more.</span>}
+              {emptyNote && <span className="ab-res-tip-note">{emptyNote}</span>}
             </span>
           </li>
         );

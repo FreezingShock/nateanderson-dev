@@ -122,7 +122,7 @@ export default function Home() {
                     blurb="Solo-built games, renovation studies, and the systems thinking behind them."
                     more={{ href: "/creations/projects", label: "View all" }}
                 >
-                    <div className="cm-grid">
+                    <div className="cm-grid cm-fit">
                         <Suspense fallback={<FeaturedSkeleton />}>
                             <FeaturedCards />
                         </Suspense>

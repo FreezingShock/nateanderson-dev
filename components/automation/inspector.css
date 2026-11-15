@@ -63,7 +63,22 @@
 .ab-root.bw .ab-inspect-status { margin: 0; font-size: 14px; line-height: 1.35; color: var(--ab-text); }
 .ab-root.bw .ab-inspect-status[data-status="blocked"],
 .ab-root.bw .ab-inspect-status[data-status="unpowered"] { color: #ffb08a; }
+.ab-root.bw .ab-inspect-status[data-status="norecipe"] { color: #ffb347; }
 .ab-root.bw .ab-inspect-hint { margin: 0; font-size: 13px; line-height: 1.4; color: var(--ab-dim); }
+
+/* No recipe set: an amber callout, and the recipe choices below it read as the next step. */
+.ab-root.bw .ab-inspect-callout {
+  margin: 0;
+  padding: 8px 10px;
+  font-size: 13px;
+  line-height: 1.4;
+  color: #ffd98a;
+  background: rgba(255, 179, 71, 0.08);
+  border: 1px solid #8a5a2a;
+  border-left: 3px solid #ffb347;
+}
+.ab-root.bw .ab-inspect-callout strong { color: #ffb347; font-weight: 600; }
+.ab-root.bw .ab-recipe-flow { display: block; margin-top: 2px; font-size: 12px; line-height: 1.35; color: var(--ab-dim); }
 
 /* Energy: one row and one bar. Amber while short, warm gold when fully fed, gold for a generator's output. */
 .ab-root.bw .ab-inspect-energy {
