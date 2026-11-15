@@ -122,4 +122,4 @@ Owners are per area, one thread per file set. The threads: "Streamline Brasswork
 **Rules the tests enforce:** a change to a machine model in `models/machines/` must also redraw its menu art and icon (`bw_machines.py`, then `build-menu-art.py` and `build-icons.py`). Every catalog id needs an icon. `models/registry.ts` conflicts on almost every merge: keep all lists.
 
 **Empty and locked states:** locked machine rows show padlock slots and "Fill hub orders and they appear here" (`build-bar.tsx`); an untouched hub order shows the crate scene; the away report with nothing gained and the production ledger show the idle scene. `components/automation/empty-states.css`.
-**First minutes (checked headless with `scripts/automation/first-minutes.mjs`):** the banner walks drill, kiln, windmill, kiln recipe, belts, then the first order. The quest scroll and banner agree.
+**First minutes (checked headless with `scripts/automation/first-minutes.mjs`):** the banner walks drill, kiln (starts on Iron ingot), windmill, belts, then the first order. The quest scroll and banner agree.

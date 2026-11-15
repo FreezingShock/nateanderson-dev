@@ -121,7 +121,9 @@ test("the banner walks a newcomer through the recipe and the belts before it ask
     const kiln = S.place(world, "kiln", 5, 2, 0, CAT);
     must(kiln);
     must(S.place(world, "windmill", 4, 5, 0, CAT));
-    assert.equal(next().actionId, "inspect", "a kiln with no recipe is named before anything else");
+    assert.equal(world.buildings[kiln.id].recipe, "r_iron_ingot", "a new kiln starts on Iron ingot");
+    must(S.setRecipe(world, kiln.id, null, CAT));
+    assert.equal(next().actionId, "inspect", "a kiln whose recipe was cleared is named before anything else");
     assert.equal(next().selectId, kiln.id, "and the button selects that kiln");
     must(S.setRecipe(world, kiln.id, "r_iron_ingot", CAT));
     assert.equal(next().actionId, "belt", "then the belts");

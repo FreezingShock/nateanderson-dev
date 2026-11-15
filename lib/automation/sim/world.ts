@@ -261,6 +261,8 @@ export function place(world: World, type: string, x: number, z: number, rot: Rot
     const hub = world.buildings[world.hubId];
     for (const c of r.cost) hub.input[c.item] -= c.qty;
     const b = newBuilding(world, type, x, z, rot);
+    // A new kiln starts on Iron ingot, the recipe every opening needs, so it smelts the moment ore reaches it.
+    if (type === "kiln") b.recipe = "r_iron_ingot";
     rebuildIndex(world, cat);
     return { ok: true, id: b.id };
 }
