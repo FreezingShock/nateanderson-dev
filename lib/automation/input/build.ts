@@ -142,7 +142,9 @@ export type BuildEvent =
     // A press on a placed building with no tool active. The host decides what selecting means (inspector, highlight).
     | { type: "select"; cell: Cell; anchor: Cell; kind: string }
     // A click on bare ground with no tool, or Esc with nothing armed: the host closes its inspector and pop-up.
-    | { type: "deselect" };
+    | { type: "deselect" }
+    // Touch routing: the first tap picked a source machine (active) or the pick was cleared (not active).
+    | { type: "route-source"; active: boolean };
 
 interface Edit {
     x: number;
@@ -177,6 +179,8 @@ export class BuildController {
     private hover: Cell | null = null;
     private stroke: { anchor: Cell; cur: Cell; path: Cell[]; rect: boolean; routed: boolean; routeRots: Rot[] | null; routeError: string | null } | null = null;
     private route?: BuildOptions["route"];
+    // Touch routing: the machine the first tap picked, waiting for a second tap on the target.
+    private routeFrom: Cell | null = null;
     private undoStack: Edit[][] = [];
     private redoStack: Edit[][] = [];
     private listeners = new Set<() => void>();
@@ -255,6 +259,7 @@ export class BuildController {
     }
 
     setTool(tool: ToolSpec | null): void {
+        this.clearRouteFrom();
         this.stroke = null;
         this.tool = tool;
         this.emit();
@@ -365,9 +370,53 @@ export class BuildController {
         this.emit();
     }
 
+    // Drops a touch route's picked source. Returns true when there was one.
+    clearRouteFrom(): boolean {
+        if (!this.routeFrom) return false;
+        this.routeFrom = null;
+        this.highlight = [];
+        this.onEvent?.({ type: "route-source", active: false });
+        this.emit();
+        return true;
+    }
+
+    hasRouteFrom(): boolean {
+        return this.routeFrom !== null;
+    }
+
+    // Touch routing with a belt armed: tap a machine, then tap the machine to feed (or a free cell) and the route is laid.
+    private tapRoute(cell: Cell): number | null {
+        const tool = this.tool;
+        if (!this.route || !tool || !tool.line || tool.id === DELETE_TOOL.id) return null;
+        const here = this.world.get(cell.x, cell.z);
+        if (!this.routeFrom) {
+            if (!here) return null;
+            this.routeFrom = { ...(here.anchor ?? cell) };
+            this.highlight = this.deleteOffsets(cell).map((o) => ({ x: cell.x + o.dx, z: cell.z + o.dz }));
+            this.onEvent?.({ type: "route-source", active: true });
+            this.emit();
+            return 0;
+        }
+        if (here && cellKey(here.anchor ?? cell) === cellKey(this.routeFrom)) {
+            this.clearRouteFrom();
+            return 0;
+        }
+        const r = this.route(this.routeFrom, cell, tool.id);
+        if (!r.ok) {
+            this.onEvent?.({ type: "invalid", reason: r.reason });
+            return 0;
+        }
+        const edits: Edit[] = r.cells.map((c) => ({ x: c.x, z: c.z, before: null, after: { kind: tool.id, rot: c.rot } }));
+        this.routeFrom = null;
+        this.onEvent?.({ type: "route-source", active: false });
+        return this.commitEdits(edits, "place");
+    }
+
     // One press on a cell. Same as begin and end with a single cell.
     tap(cell: Cell): number {
         if (!this.tool) return 0;
+        const routed = this.tapRoute(cell);
+        if (routed !== null) return routed;
         this.beginStroke(cell);
         return this.endStroke();
     }

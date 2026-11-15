@@ -106,6 +106,7 @@ export function createInputController(opts: InputOptions): InputController {
                     build.cancelStroke();
                     return true;
                 }
+                if (build.clearRouteFrom()) return true;
                 if (build.getTool()) {
                     build.setTool(null);
                     return true;
@@ -301,7 +302,7 @@ export function mount(camera: ViewSink, domElement: HTMLElement, options: MountO
             }),
             onCancel: pick(() => {
                 if (b.isStroking()) b.cancelStroke();
-                else b.setTool(null);
+                else if (!b.clearRouteFrom()) b.setTool(null);
             }),
         });
     }
