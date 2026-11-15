@@ -19,7 +19,7 @@ import {
 } from "@/lib/starwright/engine";
 import { uiVars } from "@/lib/starwright/ui-art";
 import { Almanac, CloudPick, Ending, Menu, Orbit, StarChart, Visitor, tools } from "./panels";
-import { ElTile, Gl, Pic, useLeaving, useSheets, useTips } from "./sw-ui";
+import { ElTile, Gl, Pic, ui, useLeaving, useSheets, useTips } from "./sw-ui";
 
 type Panel = null | "stars" | "pulsar" | "orbit" | "almanac" | "menu";
 interface Note { id: number; text: string; tone?: "hot" | "dim" }
@@ -356,9 +356,9 @@ export function Starwright() {
                 <div className="sw-readout">
                     <span className="sw-tag">{s.name.toUpperCase()}</span>
                     <p>
-                        <span data-tip="Mass|Grows as the star fuses. Raises hydrogen inflow.">mass <b>{fmt(mass(s))}</b></span>
-                        <span data-tip="Core heat|Gates every fusion. Mass sets it.">heat <b>{fmtHeat(s.heat)}</b></span>
-                        <span data-tip="Age of this star">age <b>{fmtAge(s.age)}</b></span>
+                        <span data-tip="Mass|Grows as the star fuses. Raises hydrogen inflow."><Gl n="mass" s={1} />mass <b>{fmt(mass(s))}</b></span>
+                        <span data-tip="Core heat|Gates every fusion. Mass sets it."><Gl n="heat" s={1} />heat <b>{fmtHeat(s.heat)}</b></span>
+                        <span data-tip="Age of this star"><Gl n="age" s={1} />age <b>{fmtAge(s.age)}</b></span>
                     </p>
                     <p className="sw-stage">{STAGE_NAMES[stage]}{s.novasAll ? ` · supernova ${s.novas + 1}` : ""}</p>
                 </div>
@@ -420,7 +420,7 @@ export function Starwright() {
 
             <section className="sw-ladder sw-panel" aria-label="Fusion ladder">
                 <div className="sw-lad-head" data-tip="Keys 1 to 9|Tier I. Shift for II, Alt for III.">
-                    <h2>Fusion ladder</h2>
+                    <h2><Gl n="star" s={1} /> Fusion ladder</h2>
                     <span>1-9</span>
                 </div>
                 <i className="sw-rule" aria-hidden="true" />
@@ -512,7 +512,7 @@ function Row({ s, f, i, onBuy }: { s: State; f: ReturnType<typeof effects>; i: n
                         const c = cost(s, i, k);
                         return (
                             <button key={k} type="button" className="sw-btn" data-tier={k} disabled={!canBuy(s, i, k)} onClick={() => onBuy(i, k)} data-tip={`${el.name} burner ${TIER_NAMES[k]}|+${TIER_LEVELS[k]} level${TIER_LEVELS[k] > 1 ? "s" : ""}|costs ${fmt(c)} ${el.sym}`} aria-label={`${el.name} burner ${TIER_NAMES[k]}, +${TIER_LEVELS[k]}, costs ${fmt(c)} ${el.sym}`}>
-                                <b>{TIER_NAMES[k]}</b>
+                                <i className="sw-tier" aria-hidden="true" style={{ backgroundImage: `url("${ui(`tier-${k + 1}`)}")` }} />
                                 <em>{fmt(c)}</em>
                             </button>
                         );
