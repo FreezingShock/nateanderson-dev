@@ -633,3 +633,17 @@ html.sw-route .sf-foot { display: none !important; }
 @media (max-width: 560px) { .sw-planets li { grid-template-columns: 72px minmax(0, 1fr); } .sw-pl-art { width: 72px; height: 72px; background-size: 72px 72px; } .sw-pl-art .sw-orb, .sw-pl-art .sw-sprite { width: 56px; height: 56px; } .sw-pl-form { grid-column: 1 / -1; } }
 @media (prefers-reduced-motion: reduce) { .sw-fact, .sw-ach li:hover .sw-medal { animation: none !important; } }
 @media (min-width: 1100px) { .sw-ach { grid-template-columns: repeat(4, minmax(0, 1fr)); } .sw-ach li { padding: 2px 4px; } }
+
+/* collapse ready: warm frame, heat shimmer and a big glowing supernova button */
+.sw-collapse[data-ready] { border-image-source: url("/starwright/ui/frame-warm.png?v=8"); box-shadow: 0 0 0 1px rgba(255, 178, 77, .35), 0 0 24px rgba(240, 138, 74, .25), 4px 4px 0 rgba(0, 0, 0, .55); }
+.sw-collapse[data-ready] .sw-col-head h2 { color: #ffd27a; }
+.sw-collapse[data-ready] .sw-col-head h2 .sw-pic { animation: swPulse 1s steps(3, end) infinite; }
+.sw-collapse .sw-go:not(.sw-go2):not(:disabled) { min-height: 52px; padding: 0 20px; background: #ffb24d url("/starwright/ui/btn-3.png?v=8"); background-size: 8px 8px; border: 0; color: #1a0c04; font-weight: 700; font-size: 14px; box-shadow: inset 0 -4px 0 rgba(0, 0, 0, .3), 3px 3px 0 #000; animation: swReadyGlow 1.4s steps(4, end) infinite; }
+.sw-collapse .sw-go:not(.sw-go2):not(:disabled):hover { background-color: #ffd27a; color: #1a0c04; }
+@keyframes swReadyGlow { 50% { box-shadow: inset 0 -4px 0 rgba(0, 0, 0, .3), 3px 3px 0 #000, 0 0 18px rgba(255, 178, 77, .7); } }
+.sw-visitor, .sw-clouds { border: 8px solid transparent; border-image: url("/starwright/ui/frame-warm.png?v=8") 8 fill / 8px / 0 stretch; background-clip: padding-box; }
+.sw-opt { border: 8px solid transparent; border-image: url("/starwright/ui/frame.png?v=8") 8 fill / 8px / 0 stretch; background: none; }
+.sw-opt:hover { border-image-source: url("/starwright/ui/frame-warm.png?v=8"); background: none; transform: translateY(-2px); }
+.sw-cloud { border: 8px solid transparent; border-image: url("/starwright/ui/frame.png?v=8") 8 fill / 8px / 0 stretch; background: none; }
+.sw-cloud:hover { border-image-source: url("/starwright/ui/frame-warm.png?v=8"); background: none; }
+@media (prefers-reduced-motion: reduce) { .sw-collapse .sw-go, .sw-collapse[data-ready] .sw-pic { animation: none !important; } }

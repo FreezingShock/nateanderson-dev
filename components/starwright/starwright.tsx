@@ -513,7 +513,7 @@ export function Starwright() {
                 </div>
             )}
 
-            <section className="sw-collapse sw-panel" aria-label="Collapse">
+            <section className="sw-collapse sw-panel" aria-label="Collapse" data-ready={col >= 1 ? "" : undefined}>
                 <div className="sw-col-head">
                     <h2><Gl n="burst" s={1} /> Collapse</h2>
                     <span>{Math.floor(Math.min(col, 1) * 100)}%</span>

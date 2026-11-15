@@ -22,7 +22,7 @@ for (const [tag, vp] of [["1440", { width: 1440, height: 900 }], ["390", { width
     await page.addInitScript((raw) => {
         const k = "sw-save-v1";
         const s = JSON.parse(raw);
-        s.amt = [9.2e6, 4.1e6, 820000, 310000, 92000, 26000, 7400, 1900, 0, 0];
+        s.amt = [9.2e6, 4.1e6, 820000, 310000, 92000, 26000, 7400, 9000, 0, 0];
         s.bought = s.bought.map((r, i) => (i < 7 ? [12 - i, 3, i < 3 ? 1 : 0] : r.map(() => 0)));
         s.mass = 3.2e7; s.heat = 9.5e9; s.age = 5400; s.stardust = 340; s.novas = 2; s.novasAll = 2; s.sdAll = 900; s.perks = ["l1", "l2", "k1"]; s.deep = 0; s.planets = ["ember", "glass"]; s.planetAge = { ember: 300, glass: 90 }; s.ach = ["flame", "l25", "l100", "iron", "nova1", "guest", "world4"]; s.found = ["H", "He", "C", "O", "Ne", "Mg", "Si", "Fe"];
         localStorage.setItem(k, JSON.stringify(s));
