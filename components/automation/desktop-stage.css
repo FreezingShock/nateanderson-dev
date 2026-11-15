@@ -67,7 +67,7 @@
   /* The factory aside holds only the selected machine's inspector, floating on the right. */
   .ab-root.bw .ab-factory { display: none; }
   .ab-root.bw[data-inspect="on"] .ab-factory {
-    display: block; position: absolute; right: 84px; top: var(--bw-inset-top); bottom: auto; width: 320px; margin: 0;
+    display: block; position: absolute; right: 84px; top: var(--bw-inset-top); bottom: auto; width: 300px; margin: 0;
     max-height: min(560px, calc(100% - var(--bw-inset-top) - var(--bw-inset-bottom))); overflow: auto;
     z-index: 5; pointer-events: auto;
   }

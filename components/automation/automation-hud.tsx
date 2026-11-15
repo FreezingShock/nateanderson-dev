@@ -4,7 +4,7 @@ import { useEffect, useRef, useState, type ReactNode } from "react";
 import "@/components/brasswork-ui/brass-kit.css";
 import "@/components/brasswork-ui/scrollbar.css";
 import "./automation-hud.css";
-import type { HudData } from "@/lib/automation/types";
+import type { HudData, MachineDetail } from "@/lib/automation/types";
 import type { HudActions } from "./types";
 import { ResourceStrip } from "./resource-strip";
 import { BuildList, GROUP_ICON, GROUP_TITLE, type GroupId } from "./build-bar";
@@ -197,6 +197,22 @@ export function AutomationHud({
     return () => window.removeEventListener(HUB_OPEN_EVENT, open);
   }, []);
   const mode = data.settings.numberFormat;
+  // The inspector keeps the last machine it showed while it folds away, so closing can animate.
+  const [held, setHeld] = useState<MachineDetail | null>(data.selected);
+  const [inspectClosing, setInspectClosing] = useState(false);
+  useEffect(() => {
+    if (data.selected) {
+      setHeld(data.selected);
+      setInspectClosing(false);
+      return;
+    }
+    if (!held) return;
+    setInspectClosing(true);
+    const t = window.setTimeout(() => { setHeld(null); setInspectClosing(false); }, 170);
+    return () => window.clearTimeout(t);
+    // Runs when the selection changes; `held` is read as the machine that is closing.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [data.selected]);
 
   useEffect(() => {
     if (!drawer && !screen && !palGroup) return;
@@ -235,7 +251,7 @@ export function AutomationHud({
       className="ab-root bw"
       data-drawer={drawer ?? "none"}
       data-sheet={sheet ?? "none"}
-      data-inspect={data.selected ? "on" : "off"}
+      data-inspect={held ? "on" : "off"}
       data-lowfx={data.settings.lowFx}
       data-reduce={data.settings.reduceMotion}
       data-palgroup={palGroup ?? "none"}
@@ -501,13 +517,18 @@ export function AutomationHud({
         </nav>
 
         <aside className="ab-factory" aria-label="Factory panel">
-          {data.selected && (
-            <section className="ab-panel ab-inspect-panel" aria-label="Selected machine">
+          {held && (
+            <section
+              key={held.id}
+              className="ab-panel ab-inspect-panel"
+              aria-label="Selected machine"
+              data-closing={inspectClosing ? "true" : undefined}
+            >
               <Inspector
-                detail={data.selected}
+                detail={held}
                 resources={data.resources}
                 numberFormat={mode}
-                canBuild={canAfford(data.selected.cost, data.resources)}
+                canBuild={canAfford(held.cost, data.resources)}
                 onBuild={actions.onBuild}
                 onSetRecipe={actions.onSetRecipe}
                 onClose={() => actions.onSelect(null)}
