@@ -31,7 +31,7 @@ test("a pure-ore drill with mastery overruns a brass belt, and copper carries it
     const run = (beltId) => {
         const w = S.createWorld({ width: 20, depth: 8, hub: { x: 12, z: 2 }, startStock: [{ item: "iron_plate", qty: 100 }, { item: "copper_wire", qty: 50 }] }, CAT);
         S.addDeposit(w, 1, 3, "iron_ore", 2);
-        S.place(w, "drill", 1, 3, 0, CAT);
+        S.place(w, "drill", 1, 3, 1, CAT);
         S.place(w, "windmill", 1, 6, 0, CAT);
         w.progress.bonus = { miner: 1.3, power: 1.3, craft: 1 };
         w.windPin = 1;
