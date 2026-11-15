@@ -160,6 +160,7 @@ export function AutomationHud({
               </button>
             );
           })}
+          {data.armed && <span className="ab-dock-rot" aria-label={`Rotation ${data.rotation ?? 0} degrees`}>Rot {data.rotation ?? 0}°</span>}
         </nav>
 
         <aside className="ab-pal" aria-label="Machines">

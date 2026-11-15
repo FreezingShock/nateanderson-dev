@@ -426,6 +426,8 @@ export type HudData = {
   machines: MachineView[];
   /** The palette id of the build tool that is armed for placing, or null. */
   armed?: string | null;
+  /** Ghost rotation in degrees (0, 90, 180, 270), shown while a build tool is armed. */
+  rotation?: number;
   selected: MachineDetail | null;
   areas: AreaView[];
   milestones: MilestoneView[];
