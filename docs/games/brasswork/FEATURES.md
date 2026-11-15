@@ -103,7 +103,7 @@ Owners are per area, one thread per file set. The threads: "Streamline Brasswork
 
 | Feature | State | Code | Test |
 |---|---|---|---|
-| Synthesized effects, ambient bed (wind, night, machines), UI hover and press sounds, three volume sliders | untested: never heard on a real device (B-12) | `lib/automation/audio/` | none |
+| Synthesized effects for place, belt, remove, rotate, undo, select, deliveries, unlocks, research, milestones, prestige, reward chime, Tab tick, menu open and close, hover and press; refused research, recipe and prestige play the invalid cue; ambient bed (wind, night, machines); UI hover and press sounds; mute switch and three volume sliders; starts silent until the first click | wiring checked headless (`scripts/automation/sound-check.mjs`); untested by ear, never heard on a real device (P-02) | `lib/automation/audio/`, `components/brasswork/brasswork-host.tsx`, `audio-rows.tsx` | `sound-check.mjs` |
 
 ## Art pipeline
 

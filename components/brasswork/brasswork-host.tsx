@@ -470,7 +470,11 @@ export function BrassworkHost() {
                     const r = autoRoute(world, { x: from.x + ox, z: from.z + oz }, { x: to.x + ox, z: to.z + oz }, toolId, CAT);
                     return r.ok ? { ok: true, cells: r.cells.map((c) => ({ x: c.x - ox, z: c.z - oz, rot: c.rot })) } : r;
                 },
-                onGroup: (i) => setDockGroup(DOCK_ORDER[i] ?? null),
+                // Fires only for the keyboard (Tab cycles groups); a dock click is already a press sound.
+                onGroup: (i) => {
+                    setDockGroup(DOCK_ORDER[i] ?? null);
+                    playSound("tab");
+                },
                 heightAt: pickHeightAt,
                 groundHeightAt: heightAt,
                 // Wide screens open with the Machines dock beside the island, so the view sits a little right of the hub to keep the first drill node clear of it.
@@ -620,18 +624,23 @@ export function BrassworkHost() {
                 },
                 research: (id) => {
                     const r = simActions.buyResearch(world, id, CAT);
+                    if (!r.ok) playSound("invalid");
                     setNote(r.ok ? "" : r.reason);
                     refresh();
                 },
                 setRecipe: (recipeId) => {
                     if (selectedId === null) return;
                     const r = simActions.setRecipe(world, selectedId, recipeId, CAT);
+                    if (!r.ok) playSound("invalid");
                     setNote(r.ok ? "" : r.reason);
                     refresh();
                 },
                 prestige: (id) => {
                     const r = simActions.prestige(world, id, CAT);
-                    if (!r.ok) return setNote(r.reason);
+                    if (!r.ok) {
+                        playSound("invalid");
+                        return setNote(r.reason);
+                    }
                     playSound("prestige");
                     save();
                     syncScene();
