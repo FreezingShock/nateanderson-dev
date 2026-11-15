@@ -10,7 +10,8 @@ import { useGameShell } from "@/components/games/shell/game-route-shell";
 import { createSaveTools, downloadText, readPickedFile, readStored, writeStored } from "@/lib/games/save";
 import { ACHIEVEMENTS, ACH_BONUS, CLOUDS, CODEX, CONSTELLATIONS, ELEMENTS, EVENT_STAY, PLANET_STAGE_AT, PLANET_STAGE_BONUS, PERKS, PLANETS, PULSAR_PERKS, RECIPE, ROWS, STAGE_NAMES, TIERS, TIER_LEVELS, TIER_NAMES, TUNE, type Perk } from "@/lib/starwright/data";
 import { play, setSound, soundOn } from "@/lib/starwright/sound";
-import { H, W, render, renderBackdrop, renderPlanetSprite, type SceneFrame } from "@/lib/starwright/art";
+import { H, W, makeLayers, render, renderBackdrop, renderLayered, renderPlanetSprite, type SceneFrame } from "@/lib/starwright/art";
+import { initSprites, sprites } from "@/lib/starwright/sprites";
 import {
     SAVE_KEY, SAVE_VERSION, answer, blackHole, buy, checkAch, chooseCloud, eventOf, rowMult, buyPerk, buyPlanet, buyPulsar, canBlackHole, canBuy, canNeutron, canPlanet, canSupernova, catchUp,
     collapse, cost, effects, fmt, fmtAge, fmtHeat, fresh, gateMK, heaviest, horizonNeed, isSave, levels, load, mass, neutronGain, neutronStar,
@@ -136,6 +137,8 @@ export function Starwright() {
         const ctx = c?.getContext("2d");
         if (!c || !ctx) return;
         const img = ctx.createImageData(W, H);
+        const layers = makeLayers(ctx);
+        initSprites();
         const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
         let raf = 0;
         let last = 0;
@@ -179,8 +182,8 @@ export function Starwright() {
                 novaKind: novaKind.current,
                 novaFrom: novaFrom.current,
             };
-            render(img, f);
-            ctx.putImageData(img, 0, 0);
+            if (layers) renderLayered(layers, f, sprites);
+            else { render(img, f); ctx.putImageData(img, 0, 0); }
         };
         raf = requestAnimationFrame(loop);
         return () => cancelAnimationFrame(raf);
@@ -802,6 +805,8 @@ function Ending({ count, onClose }: { count: number; onClose: () => void }) {
         const ctx = ref.current?.getContext("2d");
         if (!ctx) return;
         const img = ctx.createImageData(W, H);
+        const layers = makeLayers(ctx);
+        initSprites();
         const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
         const t0 = performance.now();
         let raf = 0;
@@ -811,8 +816,9 @@ function Ending({ count, onClose }: { count: number; onClose: () => void }) {
             if (now - last < 40) return;
             last = now;
             const t = (now - t0) / 1000;
-            render(img, { t, mass: 1, stage: 0, planets: [], ring: 0, nova: -1, hole: reduce ? 1 : Math.min(1, t / 4), pulsars: 0, reduce });
-            ctx.putImageData(img, 0, 0);
+            const fr: SceneFrame = { t, mass: 1, stage: 0, planets: [], ring: 0, nova: -1, hole: reduce ? 1 : Math.min(1, t / 4), pulsars: 0, reduce, sky: 2 };
+            if (layers) renderLayered(layers, fr, sprites);
+            else { render(img, fr); ctx.putImageData(img, 0, 0); }
         };
         raf = requestAnimationFrame(loop);
         return () => cancelAnimationFrame(raf);

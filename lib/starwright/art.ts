@@ -2,6 +2,7 @@
 // (4x4 Bayer) through a small colour ramp, so the star, corona, dust ring, planets and the supernova share one look.
 // No React and no game imports beyond data, so the component and the screenshot scripts draw the same frames.
 import { PLANETS, type Planet } from "./data";
+import { drawFrame, frameAt, frameAtProgress, type SpriteSet } from "./sprites";
 
 export const W = 320;
 export const H = 180;
@@ -115,10 +116,16 @@ function px(x: number, y: number, c: RGB, a = 1) {
     x |= 0; y |= 0;
     if (x < 0 || y < 0 || x >= BW || y >= BH) return;
     const o = (y * BW + x) * 4;
-    if (a >= 1) { buf[o] = c[0]; buf[o + 1] = c[1]; buf[o + 2] = c[2]; return; }
+    const ea = buf[o + 3];
+    if (ea === 0) { // a transparent layer: the pixel starts from this colour
+        buf[o] = c[0]; buf[o + 1] = c[1]; buf[o + 2] = c[2]; buf[o + 3] = a >= 1 ? 255 : Math.round(a * 255);
+        return;
+    }
+    if (a >= 1) { buf[o] = c[0]; buf[o + 1] = c[1]; buf[o + 2] = c[2]; buf[o + 3] = 255; return; }
     buf[o] = buf[o] + (c[0] - buf[o]) * a;
     buf[o + 1] = buf[o + 1] + (c[1] - buf[o + 1]) * a;
     buf[o + 2] = buf[o + 2] + (c[2] - buf[o + 2]) * a;
+    buf[o + 3] = Math.max(ea, Math.round(a * 255));
 }
 
 const pick = (r: RGB[], v: number, x: number, y: number) => r[Math.max(0, Math.min(r.length - 1, Math.floor(v * (r.length - 1) + bayer(x, y))))];
@@ -611,5 +618,201 @@ export function renderBackdrop(img: ImageData, t = 0): void {
     for (const s of STARS) {
         const v = Math.floor(120 + 135 * s.b * (0.55 + 0.45 * Math.sin(t * 1.3 + s.ph)));
         px(s.x, s.y, [v, v, Math.min(255, v + 20)]);
+    }
+}
+
+// ---- layered scene: drawn sprite sheets over code-drawn fallbacks ----------------------------------------------------
+
+interface Layer { canvas: HTMLCanvasElement; ctx: CanvasRenderingContext2D; img: ImageData }
+export interface Layers { ctx: CanvasRenderingContext2D; sky: Layer; back: Layer; front: Layer }
+
+function layer(): Layer | null {
+    const canvas = document.createElement("canvas");
+    canvas.width = W; canvas.height = H;
+    const ctx = canvas.getContext("2d");
+    return ctx ? { canvas, ctx, img: ctx.createImageData(W, H) } : null;
+}
+
+/** Make the three working layers for a visible scene canvas. */
+export function makeLayers(ctx: CanvasRenderingContext2D): Layers | null {
+    const sky = layer(), back = layer(), front = layer();
+    return sky && back && front ? { ctx, sky, back, front } : null;
+}
+
+function begin(l: Layer, opaque?: Uint8ClampedArray) {
+    BW = W; BH = H;
+    buf = l.img.data;
+    if (opaque) buf.set(opaque); else buf.fill(0);
+}
+function flush(L: Layers, l: Layer) {
+    l.ctx.putImageData(l.img, 0, 0);
+    L.ctx.drawImage(l.canvas, 0, 0);
+}
+
+const NAMES = STAGE_RAMP as readonly string[];
+/** How much bigger than the code-drawn body a drawn star sprite is drawn (its corona and rays sit outside the body). */
+const STAR_FIT = 1.3;
+
+/**
+ * Draws the scene with sprite sheets where they exist and the code-drawn version where they do not, so a missing or still-loading
+ * sheet never leaves a hole. Order: sky, drifting cloud, back planets, back layer (ring, code-drawn star), star sprite, front
+ * layer (ring, pulsar, code-drawn planets), front planets, visitors, then the blast on top.
+ */
+export function renderLayered(L: Layers, f: SceneFrame, S: SpriteSet): void {
+    const ctx = L.ctx;
+    ctx.imageSmoothingEnabled = false;
+    ctx.globalAlpha = 1;
+    const t = f.reduce ? 0 : f.t;
+    const cx = W / 2, cy = H / 2 - 2;
+    const to = f.stage;
+    const shift = f.shift === undefined ? 1 : clamp01(f.shift);
+    const from = f.fromStage ?? to;
+
+    // 1. sky: a drawn backdrop (crossfaded when the stage changes), or the code-drawn sky and stars
+    const bgId = (st: number) => (f.sky === 1 ? "bg/nebula-n1" : f.sky === 2 ? "bg/nebula-n2" : `bg/nebula-${NAMES[st]}`);
+    const bg = S.get(bgId(to));
+    if (bg) {
+        const old = shift < 1 && f.sky === 0 && from !== to ? S.get(bgId(from)) : null;
+        if (old) { drawFrame(ctx, old, 0, W / 2, H / 2); drawFrame(ctx, bg, 0, W / 2, H / 2, 1, ease(shift)); } else drawFrame(ctx, bg, 0, W / 2, H / 2);
+    } else {
+        begin(L.sky, skyBuffer(f.sky ?? 0));
+        for (const s of STARS) {
+            const tw = f.reduce ? 1 : 0.55 + 0.45 * Math.sin(t * 1.3 + s.ph);
+            const v = Math.floor(120 + 135 * s.b * tw);
+            px(s.x, s.y, [v, v, Math.min(255, v + 20)]);
+        }
+        flush(L, L.sky);
+    }
+
+    // the ending: the hole sheet over the sky, or the code-drawn hole
+    if (f.hole >= 0) {
+        const hs = S.get("star/hole");
+        if (hs) { drawFrame(ctx, hs, frameAt(hs, t), W / 2, H / 2); return; }
+        begin(L.front);
+        drawHole(f, cx, cy, t);
+        flush(L, L.front);
+        return;
+    }
+
+    // the old star shrinking before the blast
+    const imp = f.nova >= 0 && f.novaFrom !== undefined && f.nova < 0.2 ? f.nova / 0.2 : -1;
+    if (imp >= 0) {
+        const from0 = f.novaFrom as number;
+        const is = S.get(`star/implode-${NAMES[from0]}`);
+        if (is) {
+            const k = (2 * starRadius(f.mass, from0) * STAR_FIT) / is.body;
+            drawFrame(ctx, is, frameAtProgress(is, imp), cx, cy, k);
+        } else {
+            const R0 = starRadius(f.mass, from0) * (1 - ease(imp) * 0.7);
+            begin(L.front);
+            drawStar(f, cx, cy, R0, mixRamp(RAMPS[STAGE_RAMP[from0]], RAMPS.iron, imp), from0, t, 1);
+            flush(L, L.front);
+        }
+        if (imp > 0.85) { ctx.globalAlpha = (imp - 0.85) / 0.15; ctx.fillStyle = "#fff"; ctx.fillRect(0, 0, W, H); ctx.globalAlpha = 1; }
+        return;
+    }
+
+    const born = f.born === undefined ? 1 : clamp01(f.born);
+    const rampc = shift < 1 ? mixRamp(RAMPS[STAGE_RAMP[from]], RAMPS[STAGE_RAMP[to]], ease(shift)) : RAMPS[STAGE_RAMP[to]];
+    let R = starRadius(f.mass, to) * (shift < 1 ? (starRadius(f.mass, from) / starRadius(f.mass, to)) * (1 - ease(shift)) + ease(shift) : 1);
+    R *= born < 1 ? 0.15 + 0.85 * ease(born) : 1;
+    if (!f.reduce) {
+        if (to === 2) R *= 1 + 0.035 * Math.sin(t * 1.1);
+        else if (to === 4) R *= 1 + 0.02 * Math.sin(t * 2.3);
+    }
+    const col = f.collapse ?? 0;
+    if (to === 5 && col > 0.2) R *= 1 - 0.1 * Math.min(1, col) + (f.reduce ? 0 : Math.sin(t * 30) * 0.006 * col);
+
+    // 2. a gas cloud drifting behind the star
+    const v = f.visitor;
+    const neb = v?.id === "nebula" ? S.get("visitor/nebula") : null;
+    if (v && neb) {
+        const p = clamp01(v.age / 150);
+        drawFrame(ctx, neb, frameAt(neb, t), -40 + p * (W + 80), cy - 30 + Math.sin(p * 5) * 14, 2, 0.85);
+    }
+
+    // planets: stage sheets at their own size; ones without a sheet are drawn in code
+    const orbitOf = (p: Planet) => R * 1.5 + (W / 2 - R * 1.5 - 26) * p.orbit;
+    const angleOf = (p: Planet) => (t / p.period) * Math.PI * 2 + hash(p.orbit * 100, 3) * 6.28;
+    const planetSheet = (p: Planet) => S.get(`planet/${p.id}-s${f.planetStages?.[p.id] ?? 2}`);
+    const drawSheetPlanets = (front: boolean) => {
+        for (const id of f.planets) {
+            const p = PLANETS.find((x) => x.id === id);
+            if (!p) continue;
+            const sh = planetSheet(p);
+            const a = angleOf(p), s = Math.sin(a);
+            if (!sh || (s > 0) !== front) continue;
+            drawFrame(ctx, sh, frameAt(sh, t), cx + Math.cos(a) * orbitOf(p), cy + s * orbitOf(p) * 0.27, 1.2);
+        }
+    };
+    const codePlanets = (front: boolean) => {
+        for (const id of f.planets) {
+            const p = PLANETS.find((x) => x.id === id);
+            if (!p || planetSheet(p)) continue;
+            const a = angleOf(p), s = Math.sin(a);
+            if ((s > 0) !== front) continue;
+            const stage = f.planetStages?.[id] ?? 2;
+            drawPlanetBody(cx + Math.cos(a) * orbitOf(p), cy + s * orbitOf(p) * 0.27, planetRadius(p, stage), -Math.cos(a), -s * 0.6, p, stage, t);
+        }
+    };
+
+    // star sprite, if there is one for this stage
+    const sheetOf = (st: number) => S.get(st === 5 && col >= 1 ? "star/iron-ready" : `star/${NAMES[st]}`) ?? S.get(`star/${NAMES[st]}`);
+    const cur = sheetOf(to);
+    const trans = cur && shift < 1 && from !== to ? S.get(`star/trans-${NAMES[from]}-${NAMES[to]}`) : null;
+    const prev = cur && shift < 1 && from !== to && !trans ? sheetOf(from) : null;
+
+    drawSheetPlanets(false);
+    begin(L.back);
+    drawRing(f, cx, cy, R, rampc, t, false);
+    codePlanets(false);
+    if (!cur) {
+        drawStar(f, cx, cy, R, rampc, to, t, born, col);
+        if (shift < 1) drawIgnition(cx, cy, R, rampc, shift);
+    }
+    flush(L, L.back);
+    if (cur) {
+        const k = (2 * R * STAR_FIT) / cur.body;
+        const a = born < 1 ? Math.min(1, born * 1.6) : 1;
+        if (trans) drawFrame(ctx, trans, frameAtProgress(trans, shift), cx, cy, (2 * starRadius(f.mass, to) * STAR_FIT) / cur.body, a);
+        else if (prev) {
+            drawFrame(ctx, prev, frameAt(prev, t), cx, cy, (2 * R * STAR_FIT) / prev.body, a * (1 - ease(shift)));
+            drawFrame(ctx, cur, frameAt(cur, t), cx, cy, k, a * ease(shift));
+        } else drawFrame(ctx, cur, frameAt(cur, t), cx, cy, k, a);
+    }
+
+    // front layer
+    begin(L.front);
+    if (f.pulsars > 0) drawPulsar(cx, cy, R, t);
+    drawRing(f, cx, cy, R, rampc, t, true);
+    codePlanets(true);
+    const comet = v?.id === "comet" ? S.get("visitor/comet") : null;
+    const flare = v?.id === "flare" ? S.get("visitor/flare") : null;
+    const pair = v?.id === "pair" ? S.get("visitor/pair") : null;
+    if (v && !neb && !comet && !flare && !pair) { drawVisitorBack(f, cx, cy, R, t); drawVisitorFront(f, cx, cy, R, t); }
+    const blast = f.nova >= 0 ? S.get(f.novaKind === 1 ? "star/nova-neutron" : "star/nova-supernova") : null;
+    if (f.nova >= 0 && !blast) drawNova(f.novaFrom !== undefined ? (f.nova - 0.2) / 0.8 : f.nova, cx, cy, f.novaKind ?? 0);
+    flush(L, L.front);
+    drawSheetPlanets(true);
+
+    // visitors drawn as sprites
+    if (v && comet) {
+        const p = clamp01(v.age / 150);
+        const x0 = W - 14, y0 = 16, x1 = cx + R * 1.25, y1 = cy - R * 0.5;
+        drawFrame(ctx, comet, frameAt(comet, t), x0 + (x1 - x0) * p, y0 + (y1 - y0) * p, 2);
+    } else if (v && flare) {
+        const p = clamp01(v.age / 150);
+        const ang = -0.9, k = (R / 24) * (0.5 + 0.7 * Math.min(1, p * 1.6));
+        drawFrame(ctx, flare, frameAt(flare, t), cx + Math.cos(ang) * (R + 4 * k), cy + Math.sin(ang) * (R + 4 * k), k, 0.95, ang + Math.PI / 2);
+    } else if (v && pair) {
+        const p = clamp01(v.age / 150);
+        const a = Math.PI * (1.15 + 0.9 * p);
+        drawFrame(ctx, pair, frameAt(pair, t), cx + Math.cos(a) * (R * 2.7), cy + Math.sin(a) * (R * 1.1) - 6, 1.2);
+    }
+
+    // the blast on top
+    if (blast && f.nova >= 0) {
+        const n = f.novaFrom !== undefined ? (f.nova - 0.2) / 0.8 : f.nova;
+        drawFrame(ctx, blast, frameAtProgress(blast, n), W / 2, H / 2);
     }
 }
