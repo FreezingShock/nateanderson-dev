@@ -13,10 +13,6 @@ Ordered by value. Each is one PR.
 - Done when: a screenshot shows the column on a delivery at day and at night, it respects Low fx and reduce motion, and the frame time does not rise. **Needs screenshots.**
 - 2026-11-15 attempt (`scripts/automation/delivery-light.mjs`): in headless Chrome with software WebGL (about 5 frames a second) the column and glints were not visible at day or night, and Low fx correctly shows none. This does not prove the effect is missing; software rendering outruns the 1 s particle life. Needs a real GPU: Nate's P-05 playtest, or a thread with one. Frame time was not measurable for the same reason.
 
-**B-10 Phone sheets: groups and open/close animation**
-- Tap targets are done (every interactive element at 390 wide is 44 px or more, `scripts/automation/tap-targets.mjs`). What is left: the phone sheet groups and open and close animation (`phone-menu-art.css`, `automation-hud.tsx`) should match the desktop `MenuWindow` variants (iris, shutter, settle).
-- Done when: Machines, Milestones, Research and More sheets open and close with a drawn animation like the desktop windows, with 390 screenshots of the open and closing frames. **Needs screenshots.**
-
 **B-05 Full-run pacing bot**
 - Add `scripts/automation/pacing-bot.mjs`: a headless player on `DEFAULT_CATALOG` that places drills, kilns and windmills from `suggestSpot`/`autoRoute`, buys research, delivers milestones, and prestiges once. Print simulated time to each milestone, first Sky orrery light, and prestige.
 - Done when: it finishes without a soft-lock, prints the times, and a short test asserts every milestone is reachable. Write the times in `FEATURES.md`. This does not judge the pacing; Nate's playtest does (P-01).
