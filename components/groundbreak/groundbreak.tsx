@@ -479,9 +479,15 @@ export function Groundbreak() {
                     </div>
                 ))}
                 {s.change && (
-                    <div className="gb-change" data-tip="The client wants more. Extra materials, bigger payout.">
-                        <p>Change order <em>+{Math.round(s.change.bonus * 100)}% pay · {fmtSecs(s.change.left)}</em></p>
-                        <div><button type="button" className="gb-go" onClick={() => act((x) => acceptChange(x))}>Accept <kbd>Y</kbd></button><button type="button" className="gb-go" onClick={() => act((x) => declineChange(x))}>Decline <kbd>N</kbd></button></div>
+                    <div className="gb-change" role="group" aria-label="Change order">
+                        <header><Ico id="permit" size={32} /><p><strong>Change order</strong><span>The client wants more. Decide in {fmtSecs(s.change.left)}.</span></p></header>
+                        <dl className="gb-terms">
+                            <div data-k="up"><dt>Pay</dt><dd>+{Math.round(s.change.bonus * 100)}%</dd></div>
+                            <div data-k="down"><dt>Build time</dt><dd>+{fmtSecs(s.change.secs)}</dd></div>
+                            <div data-k="down"><dt>Inspection</dt><dd>+{s.change.score.toFixed(1)} score</dd></div>
+                        </dl>
+                        <i className="gb-bar gb-change-clock"><b style={{ width: `${Math.max(0, Math.min(100, (s.change.left / Math.max(1, TUNE.changeWait)) * 100))}%` }} /></i>
+                        <div className="gb-change-act"><button type="button" className="gb-go" onClick={() => act((x) => acceptChange(x))}>Accept <kbd>Y</kbd></button><button type="button" className="gb-go" onClick={() => act((x) => declineChange(x))}>Decline <kbd>N</kbd></button></div>
                     </div>
                 )}
             </aside>
