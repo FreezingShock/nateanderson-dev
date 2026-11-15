@@ -52,7 +52,7 @@ html.gb-route .sf-foot { display: none !important; }
 .gb-cn[data-c="br"] { bottom: -1px; right: -1px; border-width: 0 2px 2px 0; }
 
 /* top strip */
-.gb-top { position: absolute; left: 0; right: 0; top: 0; z-index: 10; display: flex; align-items: center; gap: 12px; padding: 0 14px; height: 48px; pointer-events: none;
+.gb-top { position: absolute; left: 0; right: 0; top: 0; z-index: 10; display: flex; align-items: center; gap: 12px; padding: 0 max(14px, env(safe-area-inset-right)) 0 max(14px, env(safe-area-inset-left)); height: 48px; pointer-events: none;
     background: linear-gradient(#0b0806 40%, rgba(11, 8, 6, 0)); }
 .gb-top > * { pointer-events: auto; }
 .gb-back { display: inline-flex; align-items: center; gap: 6px; min-height: 44px; font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--gb-dim); text-decoration: none; }
@@ -103,7 +103,7 @@ html.gb-route .sf-foot { display: none !important; }
 .gb-x:hover { color: var(--gb-ink); }
 
 /* material dock */
-.gb-dock { position: absolute; left: 50%; bottom: 12px; z-index: 10; transform: translateX(-50%); display: grid; grid-auto-flow: column; gap: 6px; padding: 8px; background: var(--gb-panel); border: 1px solid var(--gb-line); }
+.gb-dock { position: absolute; left: 50%; bottom: max(12px, env(safe-area-inset-bottom)); z-index: 10; transform: translateX(-50%); display: grid; grid-auto-flow: column; gap: 6px; padding: 8px; background: var(--gb-panel); border: 1px solid var(--gb-line); }
 .gb-tile { position: relative; width: 58px; height: 68px; display: grid; justify-items: center; align-content: center; gap: 2px; background: #1c150f; border: 1px solid var(--gb-line-2); transition: border-color .15s, background .15s; }
 .gb-tile .gb-ico { transition: transform .18s steps(3, end); }
 .gb-tile:hover .gb-ico { transform: translateY(-3px) scale(1.06); }

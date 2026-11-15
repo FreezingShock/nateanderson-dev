@@ -40,7 +40,7 @@ export const MATS: Material[] = [
 const geo = (first: number, ratio: number, n = N) => Array.from({ length: n }, (_, i) => Number((first * Math.pow(ratio, i)).toPrecision(3)));
 
 /** Spend to unlock material n (paid in material n-1). The first is free (gravel). */
-export const UNLOCK_COST = [0, 105, 920, 6e3, 6.2e4, 3.3e5, 5.2e5, 5.2e5, 5.6e5, 7.3e5, 3.7e6, 9.2e6];
+export const UNLOCK_COST = [0, 20, 90, 6e3, 6.2e4, 3.3e5, 5.2e5, 5.2e5, 5.6e5, 7.3e5, 3.7e6, 9.2e6];
 /**
  * What a material eats while it is made, per unit: [material, units]. Only Floors run as a true pipeline (SPEC section 1);
  * the other eleven are made from nothing and paid for by the hires, so ratios do not multiply down the chain.
@@ -78,7 +78,7 @@ export const TUNE = {
     /** reputation lifts all production by 1 + rep x this */
     repBoost: 0.004,
     startCash: 250,
-    startGravel: 10,
+    startGravel: 40,
     /** seconds a permit takes before a job starts */
     permitSecs: 10,
     /** inspection score: base plus reputation share plus perks; a job asks for `need`; a shortfall stretches the inspection */
