@@ -49,11 +49,26 @@ const cue = async (name, act) => {
 // The first gesture arms the audio graph: nothing should sound before it, and the first click should wake it.
 const beforeArm = await voices();
 check("silent before the first gesture", beforeArm === 0, `${beforeArm} voices`);
-await page.mouse.click(60, 60);
+await page.mouse.click(720, 450); // centre of the screen, clear of the top bar and dock
 await page.waitForTimeout(300);
 
 await cue("Tab cycles the build group with a tick", () => page.keyboard.press("Tab"));
-await cue("Settings window opens with a sweep", () => page.locator('button:has-text("Settings")').first().click());
+// Settings sits in the top bar on wide screens and in the More menu otherwise; open whichever is visible.
+const openSettings = async () => {
+    // The top bar re-renders while the game runs, so Playwright's click keeps finding a detached node. A DOM click
+    // still fires the same React handler.
+    const topOk = await page.evaluate(() => {
+        const b = [...document.querySelectorAll('button[data-label="Settings"]')].find((e) => e.offsetParent);
+        if (!b) return false;
+        b.click();
+        return true;
+    });
+    if (topOk) return;
+    await page.locator('button:visible:has-text("Menu"), button:visible:has-text("More")').first().click();
+    await page.waitForTimeout(250);
+    await page.locator('[role=menuitem]:visible:has-text("Settings"), button:visible:has-text("Settings")').first().click();
+};
+await cue("Settings window opens with a sweep", openSettings);
 await page.screenshot({ path: `${out}/settings-open.png` });
 await cue("Escape closes the window with a sweep", () => page.keyboard.press("Escape"));
 await page.waitForTimeout(400);
