@@ -66,7 +66,7 @@ Last audited 2026-11-15, `integration` at 5138bb6f.
 
 ## Needs Nate
 
-- [ ] ASK GB-pixel-snap | size M | Fractional-pixel shimmer: camera offsets and sprite positions are already whole pixels, but the art scale (fit x zoom) is fractional, so each art pixel is 2 or 3 screen pixels wide and a walking worker's shape can flicker. Fix is to snap the scale to whole device-pixel steps once the camera settles (a small pop of up to about 20% at rest) or leave it. Recommend: snap at rest, never mid-zoom. | `site-scene.tsx` `s`, `layer()`
+- [x] DONE 2026-11-15 (Nate chose snap at rest) GB-pixel-snap | size M | Fractional-pixel shimmer: camera offsets and sprite positions are already whole pixels, but the art scale (fit x zoom) is fractional, so each art pixel is 2 or 3 screen pixels wide and a walking worker's shape can flicker. Fix is to snap the scale to whole device-pixel steps once the camera settles (a small pop of up to about 20% at rest) or leave it. Recommend: snap at rest, never mid-zoom. | `site-scene.tsx` `s`, `layer()`
 
 | Item | What is needed |
 |---|---|
