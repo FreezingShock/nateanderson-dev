@@ -565,9 +565,19 @@ export function BrassworkHost() {
             island.resize();
             island.start();
             refresh();
+            // Keys can change the armed tool or its rotation without a palette click (Escape, Q, R, Tab groups).
+            // After each key, mirror the input layer's tool into the HUD so the palette and the dock stay true.
+            const syncFromInput = () => {
+                const id = input.controller.build.getTool()?.id ?? null;
+                if (armedRef.current !== id) armedRef.current = id;
+                refresh();
+            };
+            const onKeySync = () => window.setTimeout(syncFromInput, 0);
+            window.addEventListener("keydown", onKeySync);
             cleanup = () => {
                 cancelAnimationFrame(raf);
                 window.removeEventListener("bw:save", save);
+                window.removeEventListener("keydown", onKeySync);
                 save();
                 input.destroy();
                 window.removeEventListener("resize", onResize);

@@ -70,10 +70,10 @@ export function AutomationHud({
     if (!drawer && !screen && !palGroup) return;
     const onKey = (e: KeyboardEvent) => {
       if (e.key !== "Escape") return;
-      // Screens and windows handle Escape themselves, so their exit animation can play.
-      if (screen) return;
-      if (drawer) setDrawer(null);
-      else setPalGroup(null);
+      // Screens and windows (drawers included) handle Escape themselves, so their exit animation can play.
+      // Only the build flyout is closed here.
+      if (screen || drawer) return;
+      setPalGroup(null);
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
