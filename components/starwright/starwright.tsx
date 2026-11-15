@@ -440,8 +440,25 @@ export function Starwright() {
     const s = sRef.current;
     if (!ready || !s) {
         return (
+            // Rendered on the server too, so the first paint already has the game's shape: the scene, the collapse panel and the first rows.
             <div className="sw-root sw-boot" aria-busy="true">
-                <p>Lighting the star…</p>
+                <section className="sw-scene" aria-label="Your star"><i className="sw-fade" data-edge="bottom" aria-hidden="true" /><p className="sw-boot-msg">Lighting the star…</p></section>
+                <section className="sw-collapse sw-panel" aria-label="Collapse">
+                    <div className="sw-col-head"><h2><Gl n="burst" s={1} /> Collapse</h2><span>0%</span></div>
+                    <div className="sw-bar" aria-hidden="true"><i style={{ width: 0 }} /></div>
+                </section>
+                <section className="sw-ladder sw-panel" aria-label="Fusion ladder">
+                    <div className="sw-lad-head"><h2><Gl n="star" s={1} /> Fusion ladder</h2><span>1-9</span></div>
+                    <i className="sw-rule" aria-hidden="true" />
+                    <ol>
+                        {[0, 1, 2].map((i) => (
+                            <li key={i} className="sw-row">
+                                <span className="sw-rt"><ElTile i={i} /></span>
+                                <div className="sw-info"><b>{ELEMENTS[i].name}</b><span className="sw-amt">…</span></div>
+                            </li>
+                        ))}
+                    </ol>
+                </section>
             </div>
         );
     }
