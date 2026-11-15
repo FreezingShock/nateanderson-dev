@@ -30,7 +30,32 @@ for (const [w, h, phone] of [[1920, 1000, false], [1440, 900, false], [1280, 800
         const over = kids.some((e) => e.getBoundingClientRect().right > innerWidth + 1 || e.getBoundingClientRect().left < -1);
         return { topH: Math.round(top.height), over, sideScroll: document.documentElement.scrollWidth > innerWidth, rowCount: rows.size, navRows: btnTops ? btnTops.size : "hidden", inset: getComputedStyle(document.querySelector(".ab-root")).getPropertyValue("--ab-top-h") };
     });
-    const ok = !m.over && !m.sideScroll && (m.navRows === "hidden" || m.navRows === 1);
+    // Vertical centring: back button, nameplate, resource boxes and nav buttons share one centre line (desktop).
+    if (!phone) {
+        const c = await page.evaluate(() => {
+            const mid = (e) => { const r = e.getBoundingClientRect(); return r.top + r.height / 2; };
+            const pick = (sel) => [...document.querySelectorAll(sel)].filter((e) => e.getBoundingClientRect().width > 0).map(mid);
+            const all = [...pick(".ab-top .ab-back"), ...pick(".ab-top .ab-brand-name"), ...pick(".ab-top .ab-res-box"), ...pick(".ab-top .ab-nav .ab-text-btn")];
+            const labelsHidden = [...document.querySelectorAll(".ab-top .ab-nav-label")].every((e) => e.getBoundingClientRect().width < 2);
+            return { spread: Math.max(...all) - Math.min(...all), labelsHidden };
+        });
+        m.spread = Math.round(c.spread * 10) / 10; m.labelsHidden = c.labelsHidden;
+        if (c.spread > 2 || !c.labelsHidden) m.bad = true;
+        const btn = page.locator(".ab-top .ab-nav .ab-text-btn").nth(3);
+        await page.mouse.move(w / 2, 600);
+        await page.waitForTimeout(800);
+        const bb0 = await btn.boundingBox();
+        const before = bb0.width;
+        await page.mouse.move(bb0.x + 10, bb0.y + 20);
+        await page.waitForTimeout(90);
+        m.midType = Math.round((await btn.boundingBox()).width - before);
+        await page.waitForTimeout(700);
+        m.hoverGrow = Math.round((await btn.boundingBox()).width - before);
+        await page.screenshot({ path: `${out}/topbar-${tag}-hover-${w}.png`, clip: { x: 0, y: 0, width: w, height: 130 } });
+        await page.mouse.move(w / 2, 600);
+        if (m.hoverGrow < 40 || m.midType >= m.hoverGrow) m.bad = true;
+    }
+    const ok = !m.bad && !m.over && !m.sideScroll && (m.navRows === "hidden" || m.navRows === 1);
     console.log(ok ? "PASS" : "FAIL", `${w}px`, JSON.stringify(m));
     if (!ok) fails++;
     await page.screenshot({ path: `${out}/topbar-${tag}-${w}.png`, clip: { x: 0, y: 0, width: w, height: w > 760 ? 130 : 300 } });

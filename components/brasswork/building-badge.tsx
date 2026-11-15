@@ -35,7 +35,7 @@ export function BuildingBadge({ input, nameOf }: { input: InputController; nameO
             </span>
             {!removing && (
                 <span className="bw-building-rot" aria-label={`Turned ${state.rot} degrees, press R to turn`}>
-                    {state.rot}° · R
+                    Turn R · {state.rot}°
                 </span>
             )}
             <span className="bw-building-esc">Esc</span>
