@@ -2,7 +2,7 @@
 
 // Marks on the island where the NEXT banner wants you to build. Four brass corner brackets that breathe, pinned to the
 // spot every frame. It lives inside the stage, under the menus, and ignores clicks.
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, type RefObject } from "react";
 import type { InputController } from "@/lib/automation/input";
 import "./next-marker.css";
 
@@ -15,14 +15,15 @@ export interface NextTarget {
     label: string;
 }
 
-export function NextMarker({ input, target, canvas }: { input: InputController; target: NextTarget; canvas: HTMLCanvasElement | null }) {
+export function NextMarker({ input, target, canvas }: { input: InputController; target: NextTarget; canvas: RefObject<HTMLCanvasElement | null> }) {
     const ref = useRef<HTMLDivElement>(null);
     useEffect(() => {
         let raf = 0;
         const place = () => {
             const el = ref.current;
-            if (el && canvas) {
-                const origin = canvas.getBoundingClientRect();
+            const cv = canvas.current;
+            if (el && cv) {
+                const origin = cv.getBoundingClientRect();
                 const pts = [
                     input.screenPoint({ x: target.x, z: target.z }),
                     input.screenPoint({ x: target.x + target.w - 1, z: target.z }),
