@@ -6,6 +6,7 @@ import {
     LAMP_DISTANCE,
     LAMP_POSITIONS,
     RIM_LIGHT,
+    SKY_SUN_DIR,
     SUN_POSITION,
     TIME_KEYS,
     type TimeKey,
@@ -21,6 +22,11 @@ export class Lighting {
     private readonly colA = new THREE.Color();
     private readonly colB = new THREE.Color();
     private lastT = -1;
+    /** Current sun and moon directions in the sky (unit vectors). */
+    readonly sunDir = new THREE.Vector3();
+    readonly moonDir = new THREE.Vector3();
+    /** 0 by day, 1 at full night, from the current time key. Read by the horizon lamp. */
+    night = 0;
 
     constructor(scene: THREE.Scene, shadowMapSize: number) {
         this.hemi = new THREE.HemisphereLight(0xffffff, 0x000000, 2);
@@ -99,6 +105,16 @@ export class Lighting {
             : 1;
         const lampLevel = lerp(a.lampIntensity, b.lampIntensity, k) * shimmer;
         for (const lamp of this.lamps) lamp.intensity = lampLevel;
+        // Sun keeps the spec azimuth and climbs or sinks with the clock; the moon rises opposite.
+        const elev = lerp(a.sunElev, b.sunElev, k);
+        const az = Math.atan2(SKY_SUN_DIR[2], SKY_SUN_DIR[0]);
+        const flat = Math.sqrt(Math.max(0, 1 - elev * elev));
+        this.sunDir.set(Math.cos(az) * flat, elev, Math.sin(az) * flat);
+        this.night = lerp(a.night, b.night, k);
+        const mElev = 0.12 + 0.36 * this.night;
+        const mFlat = Math.sqrt(1 - mElev * mElev);
+        this.moonDir.set(Math.cos(az + 2.6) * mFlat, mElev, Math.sin(az + 2.6) * mFlat);
+        this.sky.setCelestial(this.sunDir, this.moonDir, this.night);
         this.sky.setColors(
             a.fogColor === b.fogColor
                 ? a.fogColor
