@@ -67,7 +67,7 @@ export function Group({ title, children }: { title: string; children: React.Reac
     );
 }
 
-export type SettingsSlots = { display?: React.ReactNode; save?: React.ReactNode };
+export type SettingsSlots = { sound?: React.ReactNode; display?: React.ReactNode; save?: React.ReactNode };
 
 export function SettingsWindow({ settings, onChange, onClose, slots }: {
     settings: HudSettings; onChange: (patch: Partial<HudSettings>) => void; onClose: () => void; slots?: SettingsSlots;
@@ -76,7 +76,8 @@ export function SettingsWindow({ settings, onChange, onClose, slots }: {
         <MenuWindow title="Workshop controls" label="Settings" variant="settle" art={<span className="bws-spin"><Ico id="settings" /></span>} onClose={onClose}>
             <div className="bws-body" data-panel="controls">
                         <Group title="Sound">
-                            <Switch icon="sound" label="Sound" hint="Machine clicks, chimes and the workshop hum." on={settings.sound} onChange={(v) => onChange({ sound: v })} />
+                            <Switch icon="sound" label="Sound" hint="Mutes everything. Starts after your first click." on={settings.sound} onChange={(v) => onChange({ sound: v })} />
+                            {slots?.sound}
                         </Group>
                         <Group title="Display">
                             <Switch icon="light" label="Simple visuals" hint="No shimmer, scrambling text or slides, and fewer plants." on={settings.lowFx} onChange={(v) => onChange({ lowFx: v })} />
