@@ -33,9 +33,9 @@ test("a fresh save reaches the first milestone with drill, kiln, windmill and be
         assert.equal(route.ok, true, route.reason);
         route.cells.forEach((c) => must(S.place(world, "belt", c.x, c.z, c.rot, CAT)));
     };
-    must(S.place(world, "drill", 2, 2, 0, CAT));
+    must(S.place(world, "drill", 2, 2, 1, CAT));
     must(S.place(world, "windmill", 4, 5, 0, CAT));
-    const kiln = S.place(world, "kiln", 5, 2, 0, CAT);
+    const kiln = S.place(world, "kiln", 5, 2, 1, CAT);
     must(kiln);
     must(S.setRecipe(world, kiln.id, "r_iron_ingot", CAT));
     belt(S.autoRoute(world, { x: 4, z: 2 }, { x: 5, z: 2 }, "belt", CAT));
@@ -92,7 +92,7 @@ test("a kiln feeds the press beside it before the hub, and the hub gets only the
     const world = board();
     world.progress.requestsDone = CAT.tree.requests.map((r) => r.id); // the press and the iron plate recipe open from hub requests
     const must = (r) => assert.equal(r.ok, true, r.reason);
-    const kiln = S.place(world, "kiln", 5, 2, 0, CAT);
+    const kiln = S.place(world, "kiln", 5, 2, 1, CAT);
     must(kiln);
     must(S.setRecipe(world, kiln.id, "r_iron_ingot", CAT));
     const press = S.place(world, "press", 11, 1, 0, CAT);
