@@ -30,6 +30,9 @@ export interface SceneJob {
     /** True once every phase is done and the inspection timer runs. 0 to 1 while inspecting. */
     inspecting: boolean;
     inspect: number;
+    /** Floors topped out so far (floor-by-floor rise), and whether the job is still in its permit wait. */
+    floorsUp?: number;
+    permit?: boolean;
 }
 export interface SceneBuilding { id: string; firm: number; index: number }
 

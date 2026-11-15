@@ -173,7 +173,7 @@ function drawSite(ctx: CanvasRenderingContext2D, p: SceneProps, t: number, parts
             ctx.fillStyle = "#d9742f"; for (let x = g.x; x < g.x + g.w * sp; x += 4) ctx.fillRect(x, GROUND_Y - 1, 1, 2);
         } else { ctx.fillStyle = "#a9adb3"; ctx.fillRect(g.x - 2, GROUND_Y, g.w + 4, 3); }
         const fl = floors;
-        const frameFloors = stage === 0 ? 0 : stage === 1 ? Math.max(1, Math.round(fl * sp)) : fl;
+        const frameFloors = stage === 0 ? 0 : stage === 1 ? Math.max(1, Math.min(fl, job.floorsUp ?? Math.round(fl * sp))) : fl;
         const skinFloors = stage < 2 ? 0 : stage === 2 ? Math.round(fl * sp) : fl;
         const litFloors = stage < 3 ? 0 : stage === 3 ? Math.round(fl * sp) : fl;
         const cols = Math.max(3, Math.round(g.w / 14));
