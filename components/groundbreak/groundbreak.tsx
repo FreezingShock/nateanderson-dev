@@ -532,8 +532,9 @@ export function Groundbreak() {
             {card !== null && <MatCard s={s} i={card} onBuy={doBuy} onUnlock={doUnlock} onClose={() => setSel(null)} cue={cue} />}
 
             <div ref={dockRef} className="gb-dock" onPointerDown={(e) => e.stopPropagation()} role="toolbar" aria-label="Materials">
-                {DOCK_GROUPS.map(([label, from, to]) => (
-                    <section key={label} className="gb-dgroup" data-open={from < s.open ? "" : undefined} aria-label={label}>
+                {DOCK_GROUPS.map(([label, from, to], gi) => (
+                    // on a phone only the open groups and the next teaser group show, so the dock stays one or two rows and the site keeps the screen
+                    <section key={label} className="gb-dgroup" data-open={from < s.open ? "" : undefined} data-far={from >= s.open && gi > DOCK_GROUPS.findIndex(([, f0]) => f0 >= s.open) ? "" : undefined} aria-label={label}>
                         <h4>{label}</h4>
                         <div className="gb-dgroup-row">
                             {MATS.slice(from, to).map((m, k) => {
