@@ -2,7 +2,7 @@
 import { UiArtIcon } from "@/components/brasswork-art/icons";
 
 import Link from "next/link";
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import "@/components/brasswork-ui/brass-kit.css";
 import "@/components/brasswork-ui/scrollbar.css";
 import "./automation-hud.css";
@@ -45,6 +45,15 @@ const DRAWER_TITLE: Record<Drawer, string> = {
   stats: "Production stats",
   settings: "Settings",
 };
+
+/** A top-bar button's word. Hidden until the button is hovered or focused, then it types in (steps = letters). */
+function NavLabel({ text }: { text: string }) {
+  return (
+    <span className="ab-nav-label" style={{ "--n": text.length } as CSSProperties}>
+      <span className="ab-nav-txt">{text}</span>
+    </span>
+  );
+}
 
 /**
  * Brasswork's 2D interface, drawn over the 3D workshop.
@@ -279,7 +288,7 @@ export function AutomationHud({
           numberFormat={mode}
         />
         <nav className="ab-nav" aria-label="Workshop views">
-          <button
+          <span className="ab-nav-slot"><button
             type="button"
             className="ab-text-btn ab-primary"
             data-label="Research"
@@ -287,14 +296,14 @@ export function AutomationHud({
             onClick={() => setScreen((s) => (s === "research" ? null : "research"))}
           >
             <Ico id="research" />
-            <span className="ab-nav-label">Research</span>
-          </button>
-          <button type="button" className="ab-text-btn" data-label="Hub" aria-expanded={hubOpen} onClick={() => (hubOpen ? setHubOpen(false) : openHubMenu())}>
+            <NavLabel text="Research" />
+          </button></span>
+          <span className="ab-nav-slot"><button type="button" className="ab-text-btn" data-label="Hub" aria-expanded={hubOpen} onClick={() => (hubOpen ? setHubOpen(false) : openHubMenu())}>
             <Ico id="milestones" />
-            <span className="ab-nav-label">Hub</span>
-          </button>
+            <NavLabel text="Hub" />
+          </button></span>
           {(["expedition", "stats", "settings"] as const).map((d) => (
-            <button
+            <span className="ab-nav-slot"><button
               key={d}
               type="button"
               className="ab-text-btn"
@@ -303,8 +312,8 @@ export function AutomationHud({
               onClick={() => toggle(d)}
             >
               <Ico id={DRAWER_ICON[d]} />
-              <span className="ab-nav-label">{DRAWER_TITLE[d]}</span>
-            </button>
+              <NavLabel text={DRAWER_TITLE[d]} />
+            </button></span>
           ))}
         </nav>
       </header>
