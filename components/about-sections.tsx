@@ -58,7 +58,7 @@ export function BuildingCards() {
             {building.map((item) => (
                 <Link key={item.title} href={item.href} className="cm-card link" style={{ height: "100%" }}>
                     <span className={`cm-tag flat ${buildTone(item.status)}`} style={{ alignSelf: "flex-start" }}>{item.status}</span>
-                    <b style={{ fontSize: 17, marginTop: 6 }}>{item.title}</b>
+                    <b>{item.title}</b>
                     <p>{item.description}</p>
                     <span className="st">{item.cta} →</span>
                 </Link>
@@ -186,7 +186,7 @@ export function PathGlance({ nowMs }: { nowMs: number }) {
                 return (
                     <Link key={p.id} href={`/timeline#${p.id}`} className="cm-card link" style={{ gap: 8 }}>
                         <span className="cm-state live">{p.range}</span>
-                        <b style={{ fontSize: 17 }}>{p.title}</b>
+                        <b>{p.title}</b>
                         <p>{p.description}</p>
                         <div style={{ display: "grid", gap: 6, marginTop: 6 }}>
                             <div className="cm-row" style={{ justifyContent: "space-between" }}>
