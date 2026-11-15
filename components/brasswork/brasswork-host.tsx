@@ -20,6 +20,7 @@ import {
     autoRoute,
     suggestSpot,
     footprintCells,
+    edgeCells,
     hudData,
     resolve,
     SITES,
@@ -541,8 +542,32 @@ export function BrassworkHost() {
                 island.setHighlight(sel);
                 ghostKey = "";
             });
+            // Input (back edge) and output (front edge) arrows for a machine at a render-frame anchor, or none for pieces without ports.
+            let portsKey = "";
+            const portArrowsFor = (type: string, ax: number, az: number, rot: number) => {
+                const r = resolve(CAT, type);
+                if (!r || (r.kind !== "miner" && r.kind !== "crafter")) return [];
+                const b = { x: ax, z: az, rot: rot as Rot };
+                const out = edgeCells(b, r.footprint, "front").map(([x, z]) => ({ x, z, rot, kind: "out" as const }));
+                const inn = r.kind === "crafter" ? edgeCells(b, r.footprint, "back").map(([x, z]) => ({ x, z, rot, kind: "in" as const })) : [];
+                return [...inn, ...out];
+            };
+            const updatePorts = (g: ReturnType<typeof input.controller.build.ghost>) => {
+                let list: ReturnType<typeof portArrowsFor> = [];
+                if (g && g.tool.id !== DELETE_TOOL.id && g.cells.length && !g.tool.line) {
+                    list = portArrowsFor(g.tool.id, Math.min(...g.cells.map((k) => k.x)), Math.min(...g.cells.map((k) => k.z)), g.rot);
+                } else if (!g && selectedId !== null && world.buildings[selectedId]) {
+                    const sb = world.buildings[selectedId];
+                    list = portArrowsFor(sb.type, sb.x - W / 2, sb.z - D / 2, sb.rot);
+                }
+                const key = list.map((a) => `${a.kind}${a.x},${a.z},${a.rot}`).join(";");
+                if (key === portsKey) return;
+                portsKey = key;
+                island.setPortArrows(list);
+            };
             const updateGhost = () => {
                 const g = input.controller.build.ghost();
+                updatePorts(g);
                 // Remove preview: outline every building cell the delete tool would clear, so a multi-cell machine shows whole.
                 if (g && g.tool.id === DELETE_TOOL.id) {
                     const cells = g.cells.filter((k) => k.existing).map((k) => ({ x: k.x, z: k.z }));
@@ -766,7 +791,7 @@ export function BrassworkHost() {
                                   : `Drag to lay ${name.toLowerCase()}, or drag from one machine to another to route it for you. Esc stops.`
                                 : touch
                                   ? `Tap a spot to preview ${name}, tap it again to place. Hold to turn it. Cancel stops.`
-                                  : `Click to place ${name}. R turns it, Esc stops.`
+                                  : `Click to place ${name}. Green tiles take items in, brass tiles send them out. R turns it, Esc stops.`
                     );
                 }
                 refresh();
