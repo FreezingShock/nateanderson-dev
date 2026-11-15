@@ -818,14 +818,10 @@ export function renderLayered(L: Layers, f: SceneFrame, S: SpriteSet): void {
             const a = angleOf(p);
             drawFrame(ctx, up, frameAtProgress(up, (f.t - at) / 1.7), cx + Math.cos(a) * orbitOf(p), cy + Math.sin(a) * orbitOf(p) * 0.27);
         }
-        // a planet stripped away (by a blast) breaks into cooling chunks where it last stood
-        const gone = S.get("fx/planet-gone");
+        // note where each planet stands, so a planet stripped away by a blast can break up there (drawn above the blast, below)
         for (const [id, at] of planetPos) {
             if (f.planets.includes(id)) continue;
             if (at.goneAt < 0) at.goneAt = f.t;
-            const k = (f.t - at.goneAt) / 1.5;
-            if (k > 1 || !gone) { planetPos.delete(id); continue; }
-            drawFrame(ctx, gone, frameAtProgress(gone, k), at.x, at.y);
         }
         for (const id of f.planets) {
             const p = PLANETS.find((x) => x.id === id);
@@ -860,5 +856,16 @@ export function renderLayered(L: Layers, f: SceneFrame, S: SpriteSet): void {
     if (blast && f.nova >= 0) {
         const n = f.novaFrom !== undefined ? (f.nova - 0.2) / 0.8 : f.nova;
         drawFrame(ctx, blast, frameAtProgress(blast, n), W / 2, H / 2);
+    }
+
+    // a planet stripped away by a blast breaks into glowing chunks that cool as they fly; drawn over the blast so they show
+    const gone = f.reduce ? null : S.get("fx/planet-gone");
+    if (gone) {
+        for (const [id, at] of planetPos) {
+            if (f.planets.includes(id) || at.goneAt < 0) continue;
+            const k = (f.t - at.goneAt) / (gone.frames / gone.fps);
+            if (k > 1) { planetPos.delete(id); continue; }
+            drawFrame(ctx, gone, frameAtProgress(gone, k), at.x, at.y, 1.3);
+        }
     }
 }
