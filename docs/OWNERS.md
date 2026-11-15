@@ -13,6 +13,7 @@ Format: `- area | paths | owner (thread title or "free") | since YYYY-MM-DD | do
 ## Games
 - Brasswork | components/{brasswork,brasswork-ui,brasswork-art,automation}, lib/{brasswork,automation}, tests/automation, scripts/{brasswork,automation} | Ship the Brasswork backlog | 2026-11-15 | docs/games/brasswork
 - Brasswork sound pass | lib/automation/audio, components/brasswork/audio-rows.tsx, scripts/automation/sound-check.mjs | Add sound to Brasswork | 2026-11-15 | docs/games/brasswork
+- Brasswork recipe picker | components/automation/inspector.{tsx,css}, lib/automation/sim/recipe-tag.ts, tests/automation/recipe-picker.test.mjs, scripts/automation/recipe-picker-shots.mjs | Rework Brasswork recipe selection | 2026-11-15 | docs/games/brasswork
 - Starwright | components/starwright, lib/starwright, app/camino/starwright*.css, tests/starwright, scripts/starwright | Ship the Starwright backlog (all Starwright files) | 2026-11-15 | docs/games/starwright
 - Groundbreak | components/{groundbreak,groundbreak-art}, lib/{groundbreak,groundbreak-fonts}, app/camino/groundbreak.css, tests/groundbreak, scripts/{groundbreak,groundbreak-art} | Ship the Groundbreak backlog (all Groundbreak files) | 2026-11-15 | docs/games/groundbreak
 - Node Farm | components/nodefarm, lib/nodefarm, app/camino/nodefarm, tests/nodefarm, scripts/nodefarm | free | | docs/node-farm.md, docs/site
