@@ -520,7 +520,18 @@ export function createVoxelIsland(
                     opts.cell.x + fw / 2,
                     heightAt(opts.cell.x + 0.5, opts.cell.z + 0.5) + chimneyHeight(model),
                     opts.cell.z + fd / 2,
-                    SPARKING_MODELS.test(model.id)
+                    SPARKING_MODELS.test(model.id),
+                    false
+                );
+            } else {
+                // Every other machine breathes a little white steam while it works, so the island reads busy at default zoom.
+                effects.setEmitter(
+                    id,
+                    opts.cell.x + fw / 2,
+                    heightAt(opts.cell.x + 0.5, opts.cell.z + 0.5) + chimneyHeight(model),
+                    opts.cell.z + fd / 2,
+                    false,
+                    true
                 );
             }
         },
