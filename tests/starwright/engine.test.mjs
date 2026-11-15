@@ -240,3 +240,20 @@ test("console: visitor, cloud and almanac", () => {
     assert.ok(r.changed);
     assert.ok(C.swCommand(s, ["almanac"]).lines.length > 5);
 });
+
+test("planets grow through four stages with time in orbit and pay more for it", () => {
+    const s = E.fresh(0);
+    s.amt[2] = 1e6;
+    assert.ok(E.buyPlanet(s, "ember"));
+    assert.equal(E.planetStage(s, "ember"), 0);
+    const f0 = E.effects(s).inflow;
+    for (let t = 0; t < D.PLANET_STAGE_AT[2] + 5; t++) E.step(s, 1);
+    assert.equal(E.planetStage(s, "ember"), 2);
+    assert.ok(E.effects(s).inflow > f0 * (1 + 0), "bonus grows");
+    const back = E.parse(JSON.parse(E.serialize(s)));
+    assert.equal(E.planetStage(back, "ember"), 2);
+    s.amt[7] = 1e9;
+    E.supernova(s);
+    assert.deepEqual(s.planetAge, {}, "a supernova strips planets and their age");
+    assert.ok(D.PLANETS.every((p) => p.stages.length === 4 && p.look));
+});

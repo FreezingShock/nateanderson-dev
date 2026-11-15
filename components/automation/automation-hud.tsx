@@ -115,6 +115,21 @@ export function AutomationHud({
   /** Called when the player opens or closes a dock section, so the host can keep the number keys in step. */
   onDockGroup?: (g: GroupId | null) => void;
 }) {
+  const rootRef = useRef<HTMLDivElement>(null);
+  const topRef = useRef<HTMLElement>(null);
+  // The top bar wraps to two rows on a desktop-width window, so its height is measured. The rails, the Milestones
+  // dock and the panels read --ab-top-h, so nothing hides under the bar.
+  useEffect(() => {
+    const top = topRef.current;
+    const root = rootRef.current;
+    if (!top || !root) return;
+    const apply = () => root.style.setProperty("--ab-top-h", `${Math.ceil(top.getBoundingClientRect().height)}px`);
+    apply();
+    if (typeof ResizeObserver === "undefined") return;
+    const ro = new ResizeObserver(apply);
+    ro.observe(top);
+    return () => ro.disconnect();
+  }, []);
   const [drawer, setDrawer] = useState<Drawer | null>(null);
   const [screen, setScreen] = useState<Screen | null>(null);
   // Site chosen in Expedition, handed to the workshop selection screen.
@@ -248,6 +263,7 @@ export function AutomationHud({
 
   return (
     <div
+      ref={rootRef}
       className="ab-root bw"
       data-drawer={drawer ?? "none"}
       data-sheet={sheet ?? "none"}
@@ -257,7 +273,7 @@ export function AutomationHud({
       data-palgroup={palGroup ?? "none"}
       data-modal={drawer || screen || sheet || hubOpen ? "on" : "off"}
     >
-      <header className="ab-top">
+      <header className="ab-top" ref={topRef}>
         <div className="ab-brand">
           <span className="ab-brand-name">Brasswork</span>
         </div>
@@ -493,7 +509,16 @@ export function AutomationHud({
                   const id = next.actionId!;
                   if (id === "hub-menu") openHubMenu();
                   else if (actions.onNextStep) actions.onNextStep(id);
-                  else actions.onSelect(id);
+                  else {
+                    // A machine step arms that machine in its palette section, so the next click on the stage places it.
+                    // Selecting a placed building would be the wrong action here: the step is about building a new one.
+                    const m = data.machines.find((x) => x.id === id);
+                    if (m && m.unlocked) {
+                      const g = m.group ?? "machines";
+                      if (palGroup !== g) choosePal(g);
+                      if (data.armed !== id) actions.onBuild(id);
+                    } else actions.onSelect(id);
+                  }
                 }}
               >
                 {next.actionLabel}

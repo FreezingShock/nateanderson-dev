@@ -206,11 +206,13 @@ html.sw-route .sf-foot { display: none !important; }
 
 /* orbit */
 .sw-planets { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; overflow-y: auto; min-height: 0; padding: 2px 6px 6px 2px; scrollbar-width: thin; }
-.sw-planets li { display: grid; grid-template-columns: 64px minmax(0, 1fr) auto; gap: 12px; align-items: center; padding: 10px; border: 1px solid var(--sw-line); background: rgba(5, 4, 12, .5); }
+.sw-planets li { display: grid; grid-template-columns: 56px minmax(0, 1fr) auto; gap: 12px; align-items: center; padding: 10px; border: 1px solid var(--sw-line); background: rgba(5, 4, 12, .5); }
 .sw-planets li[data-own] { border-color: color-mix(in srgb, var(--c) 70%, transparent); }
-.sw-planets li:not([data-own]):not([data-ok]) .sw-orb { opacity: .55; filter: saturate(.5); }
 .sw-planets li:hover .sw-orb { animation: swBob .5s steps(3, end); }
-.sw-orb { display: block; width: 64px; height: 64px; background-size: 100% 100%; image-rendering: pixelated; }
+.sw-orb { display: block; width: 56px; height: 56px; }
+.sw-sprite { display: block; width: 56px; height: 56px; image-rendering: pixelated; }
+.sw-sprite[data-dim] { opacity: .45; filter: grayscale(.4); }
+.sw-stage-line { color: var(--c) !important; font: 500 11px var(--cm-mono, monospace); letter-spacing: .04em; }
 .sw-pl-body b { font: 600 13px var(--cm-mono, monospace); letter-spacing: .06em; text-transform: uppercase; color: var(--c); }
 .sw-planets p { font-size: 13px; color: var(--sw-dim); }
 .sw-cost { display: flex; flex-wrap: wrap; gap: 6px 10px; margin-top: 4px; font: 500 12px var(--cm-mono, monospace); color: var(--sw-ink) !important; }

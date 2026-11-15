@@ -1,5 +1,5 @@
 .bx-tools { position: absolute; top: 10px; right: 10px; z-index: 6; display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 6px; max-width: calc(100% - 150px); }
-@media (max-width: 759px) { .bx-tools { top: 48px; left: auto; right: 8px; max-width: 60%; justify-content: flex-end; } .bx-tools .bx-btn { min-height: 44px; padding: 8px 12px; } }
+@media (max-width: 759px) { .bx-tools { position: fixed; top: 8px; left: auto; right: 8px; max-width: 60%; justify-content: flex-end; } .bx-tools .bx-btn { min-height: 44px; padding: 8px 12px; } }
 .bx-btn { padding: 6px 12px; font-size: 12px; letter-spacing: .06em; text-transform: uppercase; }
 .bx-flash { position: fixed; inset: 0; z-index: 20; background: #fff4d8; pointer-events: none; animation: bx-flash .5s ease-out forwards; }
 @keyframes bx-flash { from { opacity: .85; } to { opacity: 0; } }

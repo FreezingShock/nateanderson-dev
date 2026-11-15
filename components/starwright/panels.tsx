@@ -5,10 +5,10 @@
 import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { useGameShell } from "@/components/games/shell/game-route-shell";
 import { createSaveTools, readPickedFile } from "@/lib/games/save";
-import { ACHIEVEMENTS, ACH_BONUS, CLOUDS, CODEX, CONSTELLATIONS, ELEMENTS, EVENT_STAY, PLANETS, TUNE, type Perk } from "@/lib/starwright/data";
-import { H, W, render, renderBackdrop } from "@/lib/starwright/art";
-import { SAVE_VERSION, canPlanet, effects, eventOf, fmt, fmtAge, isSave, parse, perkReady, type State } from "@/lib/starwright/engine";
-import { cloudArt, cssUrl, planetIcon } from "@/lib/starwright/ui-art";
+import { ACHIEVEMENTS, ACH_BONUS, CLOUDS, CODEX, CONSTELLATIONS, ELEMENTS, EVENT_STAY, PLANETS, PLANET_STAGE_AT, PLANET_STAGE_BONUS, TUNE, type Perk } from "@/lib/starwright/data";
+import { H, W, render, renderBackdrop, renderPlanetSprite } from "@/lib/starwright/art";
+import { SAVE_VERSION, canPlanet, effects, eventOf, fmt, fmtAge, isSave, parse, perkReady, planetStage, type State } from "@/lib/starwright/engine";
+import { cloudArt, cssUrl } from "@/lib/starwright/ui-art";
 import { ElTile, Gl } from "./sw-ui";
 
 export const tools = createSaveTools<State>({ app: "starwright", version: SAVE_VERSION, validate: isSave });
@@ -76,6 +76,30 @@ export function Almanac({ s, onClose, leaving }: { s: State; onClose: () => void
 
 // ---- Orbit ----------------------------------------------------------------------------------------------------------------
 
+function PlanetSprite({ id, stage, dim }: { id: string; stage: number; dim?: boolean }) {
+    const ref = useRef<HTMLCanvasElement | null>(null);
+    useEffect(() => {
+        const ctx = ref.current?.getContext("2d");
+        if (!ctx) return;
+        const img = ctx.createImageData(56, 56);
+        const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+        const t0 = performance.now();
+        let raf = 0;
+        let last = 0;
+        const loop = (now: number) => {
+            raf = requestAnimationFrame(loop);
+            if (now - last < 90) return;
+            last = now;
+            renderPlanetSprite(img, id, stage, reduce ? 3 : (now - t0) / 1000);
+            ctx.putImageData(img, 0, 0);
+            if (reduce) cancelAnimationFrame(raf);
+        };
+        raf = requestAnimationFrame(loop);
+        return () => cancelAnimationFrame(raf);
+    }, [id, stage]);
+    return <canvas ref={ref} width={56} height={56} className="sw-sprite" data-dim={dim ? "" : undefined} aria-hidden="true" />;
+}
+
 export function Orbit({ s, onBuy, onClose, leaving }: { s: State; onBuy: (id: string) => void; onClose: () => void; leaving?: boolean }) {
     const f = effects(s);
     return (
@@ -86,9 +110,10 @@ export function Orbit({ s, onBuy, onClose, leaving }: { s: State; onBuy: (id: st
                     const ok = canPlanet(s, p.id);
                     return (
                         <li key={p.id} style={{ "--c": p.color } as CSSProperties} data-own={own ? "" : undefined} data-ok={ok ? "" : undefined}>
-                            <span className="sw-orb" style={{ backgroundImage: cssUrl(planetIcon(p.id, p.color, p.size)) }} data-tip={`${p.name}|${p.kind}`} />
+                            <span className="sw-orb" data-tip={`${p.name}|${p.kind}`}><PlanetSprite id={p.id} stage={own ? planetStage(s, p.id) : 3} dim={!own} /></span>
                             <div className="sw-pl-body">
                                 <b>{p.name}</b>
+                                {own && <p className="sw-stage-line">{p.stages[planetStage(s, p.id)]}{planetStage(s, p.id) < 3 ? ` · next in ${fmtAge(PLANET_STAGE_AT[planetStage(s, p.id) + 1] - (s.planetAge[p.id] ?? 0))}` : " · fully grown"} · +{Math.round(PLANET_STAGE_BONUS * 100 * planetStage(s, p.id))}%</p>}
                                 <p>{p.bonus}{f.planet ? ` (+${Math.round(f.planet * 100)}% Halo)` : ""}</p>
                                 <p className="sw-cost">
                                     {own ? <em>in orbit</em> : p.cost.map(([e, q], n) => (
