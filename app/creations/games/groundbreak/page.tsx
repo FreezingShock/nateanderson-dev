@@ -1,4 +1,5 @@
 import { Groundbreak } from "@/components/groundbreak/groundbreak";
+import { gbFontClass } from "@/lib/groundbreak-fonts/fonts";
 import { pageMeta } from "@/lib/seo";
 
 export const metadata = pageMeta({
@@ -9,5 +10,9 @@ export const metadata = pageMeta({
 });
 
 export default function GroundbreakPage() {
-    return <Groundbreak />;
+    return (
+        <div className={gbFontClass}>
+            <Groundbreak />
+        </div>
+    );
 }

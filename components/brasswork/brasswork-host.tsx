@@ -118,6 +118,44 @@ function loadWorld(): { world: World; savedAt: number } {
     return { world: freshWorld(), savedAt: Date.now() };
 }
 
+// Yields to the browser between slices of work. A MessageChannel is not clamped in a background tab the way setTimeout is.
+const yieldToBrowser = () =>
+    new Promise<void>((done) => {
+        const c = new MessageChannel();
+        c.port1.onmessage = () => done();
+        c.port2.postMessage(0);
+    });
+
+/**
+ * Away time: catches the simulation up for the time the tab was closed (capped by the catalog). Same one-second steps as a
+ * single advance(), run in slices of about 10 ms so a long gap never freezes the page.
+ */
+async function catchUpAway(world: World, savedAt: number, settings: HudSettings, setAway: (a: AwayReport) => void, isDead: () => boolean): Promise<void> {
+    const away = Math.max(0, (Date.now() - savedAt) / 1000);
+    if (away <= 5) return;
+    const total = Math.min(away, CAT.tune.maxAwaySeconds);
+    const before = new Map(hudData(world, CAT, null, settings).resources.map((r) => [r.id, r.amount]));
+    let left = total;
+    while (left > 1e-9) {
+        const sliceEnds = performance.now() + 10;
+        while (left > 1e-9 && performance.now() < sliceEnds) {
+            const h = Math.min(1, left);
+            advance(world, h, 1, CAT);
+            left -= h;
+        }
+        if (left > 1e-9) {
+            await yieldToBrowser();
+            if (isDead()) return;
+        }
+    }
+    const gains = hudData(world, CAT, null, settings)
+        .resources.map((r) => ({ name: r.name, amount: r.amount - (before.get(r.id) ?? 0) }))
+        .filter((g) => g.amount >= 1)
+        .sort((a, b) => b.amount - a.amount)
+        .slice(0, 8);
+    if (away >= 120) setAway({ seconds: total, gains });
+}
+
 export function BrassworkHost() {
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const [data, setData] = useState<HudData>(() => hudData(freshWorld(), CAT, null, START_SETTINGS));
@@ -169,11 +207,14 @@ export function BrassworkHost() {
         let dead = false;
         let cleanup = () => {};
         (async () => {
-            const [{ createVoxelIsland, heightAt }, { mount }, { attachLife }] = await Promise.all([import("@/lib/automation/render"), import("@/lib/automation/input"), import("@/lib/automation/render/life")]);
-            const canvas = canvasRef.current;
-            if (dead || !canvas) return;
+            // The save loads at once. The away-time catch-up runs in slices beside the chunk downloads, so the page stays
+            // responsive (an 8 hour gap is 28,800 one-second steps) and costs no wall time the download was not already taking.
             const { world, savedAt } = loadWorld();
             let settings = loadSettings(START_SETTINGS);
+            const caughtUp = catchUpAway(world, savedAt, settings, setAway, () => dead);
+            const [{ createVoxelIsland, heightAt }, { mount }, { attachLife }] = await Promise.all([import("@/lib/automation/render"), import("@/lib/automation/input"), import("@/lib/automation/render/life"), caughtUp]);
+            const canvas = canvasRef.current;
+            if (dead || !canvas) return;
             let selectedId: number | null = null;
             const drawn = new Set<number>();
             let hubStage = -1;
@@ -289,19 +330,6 @@ export function BrassworkHost() {
                 }
             };
             syncScene();
-
-            // Away time: catch up the simulation for the time the tab was closed (capped by the catalog).
-            const away = Math.max(0, (Date.now() - savedAt) / 1000);
-            if (away > 5) {
-                const before = new Map(hudData(world, CAT, null, settings).resources.map((r) => [r.id, r.amount]));
-                advance(world, Math.min(away, CAT.tune.maxAwaySeconds), 1, CAT);
-                const gains = hudData(world, CAT, null, settings)
-                    .resources.map((r) => ({ name: r.name, amount: r.amount - (before.get(r.id) ?? 0) }))
-                    .filter((g) => g.amount >= 1)
-                    .sort((a, b) => b.amount - a.amount)
-                    .slice(0, 8);
-                if (away >= 120) setAway({ seconds: Math.min(away, CAT.tune.maxAwaySeconds), gains });
-            }
 
             // Sound cues from what changed since the last refresh: a milestone finished, a blueprint bought.
             const doneMilestones = new Set<string>();

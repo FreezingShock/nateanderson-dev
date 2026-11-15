@@ -71,6 +71,7 @@
   font-family: inherit; font-weight: 600; font-size: 12px; line-height: 1; text-transform: uppercase; letter-spacing: .06em; cursor: pointer; white-space: nowrap;
 }
 .bw-window:focus { outline: none; }
+@media (pointer: coarse) { .bw-window-close { min-height: 44px; min-width: 44px; } }
 .bw-window-close:focus-visible { outline: 2px solid #f4e4b8; outline-offset: 2px; }
 .bw-window-body { overflow: auto; padding: 12px; min-height: 0; }
 

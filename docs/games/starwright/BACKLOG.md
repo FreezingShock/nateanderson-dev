@@ -21,9 +21,9 @@ Before any change: `npm run test:nodefarm`. Visual changes also need PNG screens
 ## Needs Nate (taste call or his own playtest)
 
 - **His own playthrough of the first star.** The first supernova is about 13 minutes for the bot; people are slower. Needs his notes on the first minute, the first visitor, and whether the guide line is clear. Blocks any further pacing change.
-- **Offline pacing.** Should a long absence give one supernova and stop (the star waits at the line), or a chain? Measured 2026-11-15 (session.test): with auto supernova on, a 24 h absence gives ONE supernova, then the restarted star idles, because away time buys nothing; with it off the star waits at the line. So today it is not a chain. Recommend: chain only up to the auto-nova limit, cap at a few per absence so he does not return to a reset game. Needs his answer, then it is a small `advanceAuto` change plus a test.
-- **Rule changes l5 Corona and a5 Iron rain.** Already live in the code; he has not signed off on the numbers.
-- **Next art pass.** Offered, not picked: visitor and cloud cards, supernova and ending screens (Orbit and Almanac cards are done).
+- ~~Offline pacing~~ decided 2026-11-15: cap a few (3) supernovas per absence with auto supernova on. Done in the away-cap PR.
+- ~~Rule changes l5 Corona, a5 Iron rain, deep stars~~ signed off by Nate 2026-11-15.
+- **Next art pass.** Planet break-up chunks done (his pick 2026-11-15). Still offered, not picked: visitor and cloud cards, supernova and ending screens.
 - **Audio.** Needs him to listen: sound start, mute, volume levels.
 
 ## Cannot be tested in the cloud (his devices)
@@ -31,3 +31,11 @@ Safari/WebKit, real phones (touch, safe-area, performance), audio, the one-tab r
 
 ## Left alone on purpose
 Do not add x10 or max buy buttons, tap clickers, third-party art or sound, a coloured strip on a panel's left edge, or pill chips and tabs. Scramble text never sticks.
+
+## Performance (audit 2026-11-15, report in /mnt/project-files/portfolio/perf-audit-2026-11-15/starwright.md)
+Play is fine: 60 fps, no long frames at 4x CPU, 5.5 MB heap flat over 98 s, engine step 7 microseconds. What is left is load on a slow phone and idle main-thread animation cost.
+- [ ] PERF-ui-preload | size S | Preload the above-the-fold UI art (stat and dock icons, the 10 el-*-anim strips, tier, frame, btn) and manifest.json from the route layout so they download during hydration, not after it (they start at ~3.3 s on a throttled phone and pop in ~0.7 s after the ladder). Done when the ladder and its art paint together in the 390 / 4x CPU / 1.6 Mbps trace | scripts: /mnt/project-files/portfolio/perf-audit-2026-11-15/
+- [ ] PERF-main-thread-anims | size M | With every CSS animation off the page's main-thread time drops from ~40% to ~26% at 4x CPU (style recalc 8.7% to 0.4%). Culprits are the animations that cannot run on the compositor: tile strips and cloud art (background-position), the bar flow (background-position) and the ready glow (box-shadow). Tile strips as a transform on a ::before are pixel-identical (checked against the PNG strip) but alone only saved ~2 points; convert all four together and re-measure, or pause them when the tab is idle | app/camino/starwright.css
+- [ ] PERF-ui-version-dupes | size S | The CSS refers to the same UI PNGs with different `?v=` (frame, frame-warm, fill, head, btn-2, btn-3 at v=3, 7 and 8), so the browser downloads each twice. Keep one version per file | app/camino/starwright.css
+- [ ] PERF-manifest-twice | size S | manifest.json (20 KB) is fetched by both sprites.ts and ui-sheets.ts. Share one promise | lib/starwright/sprites.ts, lib/starwright/ui-sheets.ts
+- [ ] PERF-ssr-skeleton | size M | The ladder and canvas only exist after hydration and the save load in useEffect; first contentful paint is the empty frame (~0.9 s) and the game shows at ~3.1 s on the throttled phone. Server-render a static skeleton (frame, title, "loading the star" line) so the first paint has the game's shape. Risk: hydration mismatch, so keep it markup-only | components/starwright/starwright.tsx
