@@ -4,7 +4,8 @@ Format and rules: `docs/WORKFLOW.md`. Append new items at the end of a section; 
 
 ## Now
 - [ ] SITE-motion-stuck-test | S | test that jumps to hash anchors, fast-scrolls and tabs through each route, and fails if any `data-rx` text is unresolved after 3 s; reduced motion shows plain text at once | audit 7
-- [ ] SITE-a11y-sweep | S | alt on the one image missing it (home, Creations), name the unnamed Node Farm button, contrast on dim mono labels, before and after counts | audit 8
+- [x] SITE-a11y-sweep | S | scanned 12 routes at 390 on a production build: 0 images without alt, 0 unnamed buttons or links, 0 visible text under 11px (the audit's 7 to 9 per page, the one missing alt and the Node Farm button are already fixed) | headless Chromium only
+- [ ] SITE-contrast | S | measure contrast of dim mono labels against the dithered backgrounds (needs a sampled-pixel check, not a CSS colour check) and lift any under 4.5:1
 - [ ] SITE-css-per-route | M | load page CSS per route instead of everything through `globals.css`; record before and after bytes; `games.css` still carries homepage rules | audit 4
 - [ ] SITE-footer-mobile | M | collapse footer directories on phones, compact mobile mode for Timeline (12,200 px at 390) and Studies (10,100 px); target Timeline under 7,000 px | audit 6
 - [ ] SITE-creations-detail | M | hero image, short build story, stack and role block, screenshots on each detail page | audit 2 | needs Nate's facts, see below
