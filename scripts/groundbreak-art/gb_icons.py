@@ -608,6 +608,155 @@ def fitout(s):
     s.beam((8, 18, 12), (20, 26, 12), 3.2, "safety")
 
 
+# ------------------------------------------------------------------ firm perks (one per perk id, Firm window grid)
+def hat(s, x=0, z=0, y=0, pal="hiviz", k=1.0):
+    s.cylinder((x, y, z), (x, y + 1.4 * k, z), 11 * k, pal, -0.08, n=20)
+    s.cylinder((x, y + 1.4 * k, z), (x, y + 8 * k, z), 8 * k, pal, n=20, r2=5 * k)
+
+
+@icon
+def perk_o1(s):  # standing crews
+    for x, z in ((-9, -4), (0, 4), (9, -4)):
+        s.cylinder((x, 0, z), (x, 12, z), 4, "safety", n=10)
+        hat(s, x, z, 12, k=0.55)
+
+
+@icon
+def perk_o2(s):  # foreman
+    s.cylinder((0, 0, 0), (0, 16, 0), 6, "safety", n=12)
+    hat(s, 0, 0, 16, "white", 0.75)
+    s.box(5, 7, 6, 18, -1, 1, "wood", 0.1)
+    s.box(4, 12, 16, 22, 0, 0.6, "white", 0.2)  # clipboard
+
+
+@icon
+def perk_o3(s):  # cheaper hiring
+    hat(s, -4, 0, 0, k=1.0)
+    s.box(4, 16, 0, 2, -6, 6, "cash", 0.05)
+    s.box(5, 17, 2, 4, -6, 6, "cash", 0.1)
+
+
+@icon
+def perk_o4(s):  # fleet manager
+    for i, x in enumerate((-12, 0, 12)):
+        s.box(x - 5, x + 5, 2, 9, -3, 3, "hiviz", 0.04 * i)
+        s.box(x - 4, x, 9, 15, -2.6, 2.6, "hiviz", 0.08)
+        s.box(x - 5, x + 5, 0, 2.4, -3.4, 3.4, "roof", 0.1)
+
+
+@icon
+def perk_o5(s):  # second shift
+    s.cylinder((0, 0, 0), (0, 1.5, 0), 15, "steel", -0.05, n=20)
+    s.cylinder((-6, 1.5, 0), (-6, 14, 0), 4, "hiviz", n=10)
+    s.cylinder((6, 1.5, 0), (6, 14, 0), 4, "safety", n=10)
+    s.cylinder((0, 22, -2), (0, 22, 2), 6, "lamp", n=16)
+
+
+@icon
+def perk_o6(s):  # method library
+    for i, pal in enumerate(("glass", "hiviz", "safety", "precast")):
+        s.box(-14 + i * 7, -8.5 + i * 7, 0, 20 + (i % 2) * 4, -5, 5, pal, 0.03 * i)
+    s.box(-16, 16, -1.5, 0, -7, 7, "wood")
+
+
+@icon
+def perk_o7(s):  # round the clock
+    s.cylinder((0, 14, -2), (0, 14, 2), 14, "hiviz", n=24)
+    s.cylinder((0, 14, 2), (0, 14, 2.4), 11, "white", 0.2, n=24)
+
+    def post(c, sc):
+        o = sc.pt((0, 14, 2.5))
+        c.set(c.line(o[0], o[1], o[0], o[1] - 8 * sc.s, 2) | c.line(o[0], o[1], o[0] + 6 * sc.s, o[1] + 3 * sc.s, 2), P["ink"][1])
+        c.set(c.disc(o[0], o[1], 1.5), P["safety"][4])
+    return post
+
+
+@icon
+def perk_m1(s):  # better bids
+    s.box(6, 14, 1.6, 4, 6, 14, "cash", 0.1)
+    return bid(s)
+
+
+@icon
+def perk_m2(s):  # start-up capital
+    s.box(-14, 14, 0, 16, -6, 6, "wood")
+    s.box(-15, 15, 14, 17, -6.5, 6.5, "wood", 0.1)
+    s.box(-4, 4, 17, 21, -1, 1, "steel", 0.2)
+    s.box(-14.5, 14.5, 7, 9, -6.4, 6.4, "steel", 0.2)
+
+
+@icon
+def perk_m3(s):  # good name
+    return rep(s)
+
+
+@icon
+def perk_m4(s):  # repeat clients
+    for k in range(3):
+        s.box(-13 + k * 3, 13 + k * 3, k * 4, k * 4 + 3, -7 + k * 2, 7 + k * 2, "cash", 0.05 * k)
+    s.box(-2, 4, 0, 14, -8, 12, "hiviz", 0.05)
+
+
+@icon
+def perk_m5(s):  # holding company
+    firm(s)
+
+
+@icon
+def perk_m6(s):  # landmark portfolio
+    s.box(-13, -7, 0, 30, -3, 3, "steel")
+    s.box(7, 13, 0, 30, -3, 3, "steel")
+    s.box(-22, 22, 8, 11, -2.5, 2.5, "safety")
+    s.box(-12, 12, 30, 33, -3.5, 3.5, "hiviz", 0.1)
+
+
+@icon
+def perk_l1(s):  # quick permits
+    s.beam((10, 6, 10), (18, 16, 10), 3, "hiviz", 0.1)
+    return permit(s)
+
+
+@icon
+def perk_l2(s):  # night shift
+    s.box(-10, 10, 0, 6, -6, 6, "steel")
+    s.box(-1, 1, 6, 28, -1, 1, "steel", 0.1)
+    s.box(-9, 9, 26, 32, -2, 2, "lamp", 0.2)
+
+
+@icon
+def perk_l3(s):  # night watch
+    s.box(-12, 12, 0, 18, -8, 8, "wood")
+    s.box(-13, 13, 18, 21, -9, 9, "roof", 0.1)
+    s.box(-6, 6, 8, 14, 8, 8.6, "lamp", 0.2)
+
+
+@icon
+def perk_l5(s):  # trusted inspector
+    return inspection(s)
+
+
+@icon
+def perk_l6(s):  # tower cranes everywhere
+    for x, h in ((-12, 24), (8, 34)):
+        s.box(x - 1.5, x + 1.5, 0, h, -1.5, 1.5, "hiviz")
+        s.box(x - 8, x + 12, h, h + 2, -1, 1, "hiviz", 0.1)
+
+
+@icon
+def perk_l8(s):  # head start
+    sand(s)
+    s.beam((10, 4, 6), (20, 10, 6), 3, "hiviz", 0.1)
+
+
+@icon
+def perk_l9(s):  # change-order desk
+    s.box(-15, 15, 10, 13, -8, 8, "wood", 0.1)
+    s.box(-13, -10, 0, 10, -6, 6, "wood")
+    s.box(10, 13, 0, 10, -6, 6, "wood")
+    s.box(-6, 6, 13, 13.6, -5, 5, "white", 0.2)
+    s.box(-4, 3, 13.6, 14, -1, 1, "safety", 0.1)
+
+
 # ------------------------------------------------------------------ render
 CAM = dict(yaw=-35, pitch=26)
 TARGET = 50

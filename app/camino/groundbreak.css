@@ -348,3 +348,19 @@ html.gb-route .sf-foot { display: none !important; }
     .gb-card { bottom: 62px; max-height: calc(100% - 110px); overflow: auto; }
     .gb-feed { bottom: 64px; left: 56px; }
 }
+
+/* firm perks: an icon grid, names live in the tooltips */
+.gb-perks ul { grid-template-columns: repeat(auto-fill, minmax(64px, 1fr)); gap: 6px; }
+.gb-perks li { position: relative; display: grid; }
+.gb-root .gb-perk { display: grid; place-items: center; justify-content: center; gap: 0; min-height: 76px; padding: 6px 4px 4px; flex: none; }
+.gb-perk .gb-ico { transition: transform .18s steps(3, end), filter .18s; }
+.gb-perk:hover:not(:disabled) .gb-ico { transform: translateY(-4px) scale(1.08); }
+.gb-perk:active:not(:disabled) .gb-ico { transform: translateY(1px); }
+.gb-perk[data-lock] .gb-ico { filter: grayscale(.6) brightness(.7); }
+.gb-root .gb-perk:disabled:not([data-lock]) { opacity: 1; }
+
+.gb-perk[data-own] .gb-ico { animation: gbPop .3s steps(4, end); }
+.gb-perk em { font: 600 12px var(--gb-text); }
+.gb-perk[data-own] em { color: var(--gb-ok); }
+.gb-auto { position: absolute; right: 2px; top: 2px; min-width: 0; padding: 1px 4px; background: #0b0806; font-size: 10px; }
+@media (max-width: 860px) { .gb-perks ul { grid-template-columns: repeat(auto-fill, minmax(60px, 1fr)); } }

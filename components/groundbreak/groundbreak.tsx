@@ -554,8 +554,8 @@ function PerkGrid({ s, onBuy, onAuto }: { s: State; onBuy: (id: string) => void;
                             const own = s.perks.includes(p.id), ready = perkReady(s.perks, p);
                             return (
                                 <li key={p.id}>
-                                    <button type="button" className="gb-perk" disabled={own || !ready || s.charter < p.cost} data-own={own ? "" : undefined} data-tip={`${p.desc}${own ? " Owned." : !ready ? " Needs an earlier perk." : ""}`} onClick={() => onBuy(p.id)}>
-                                        <span>{p.name}</span><em>{own ? "owned" : p.cost}</em>
+                                    <button type="button" className="gb-perk" disabled={own || !ready || s.charter < p.cost} data-own={own ? "" : undefined} data-lock={!ready && !own ? "" : undefined} aria-label={p.name} data-tip={`${p.name}: ${p.desc}${own ? " Owned." : !ready ? " Needs an earlier perk." : ""}`} onClick={() => onBuy(p.id)}>
+                                        <Ico id={`perk_${p.id}`} size={48} /><em>{own ? "✓" : p.cost}</em>
                                     </button>
                                     {own && autoOf[p.id] && <button type="button" className="gb-auto" aria-pressed={!s.autoOff.includes(autoOf[p.id])} onClick={() => onAuto(autoOf[p.id])} data-tip="Switch this automation on or off">{s.autoOff.includes(autoOf[p.id]) ? "off" : "on"}</button>}
                                 </li>
