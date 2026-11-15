@@ -389,7 +389,7 @@ export function BrassworkHost() {
                 if (started) {
                     const [hx, hz] = hubAt();
                     if (ms.some((m) => !doneMilestones.has(m.id))) {
-                        playSound("milestone");
+                        // The reward card plays its own "reward" sound when it opens, so the milestone cue stays quiet here.
                         life.burst("milestone", hx, hz);
                         island.burst({ x: hx - W / 2, z: hz - D / 2 }, "milestone");
                     } else if (rs > doneResearch) {

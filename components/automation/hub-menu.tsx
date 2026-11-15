@@ -1,9 +1,9 @@
 "use client";
 
 import { ArtIcon, UiArtIcon } from "@/components/brasswork-art/icons";
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
 import { MenuWindow } from "@/components/brasswork-ui/window";
-import { MachinePortrait } from "@/components/brasswork-art";
+import { EmptyState, MachinePortrait } from "@/components/brasswork-art";
 import { iconStyle } from "@/lib/automation/icons";
 import { uiIconStyle } from "@/lib/automation/icons/ui";
 import type { HubStep, HubUnlock, HubView } from "@/lib/automation/types";
@@ -72,6 +72,7 @@ function Slip({ step, index, total }: { step: HubStep; index: number; total: num
         })}
       </ul>
 
+      {step.state === "now" && step.progress === 0 && <div className="hm-empty"><EmptyState scene="crate">Nothing delivered yet. The crate for this one is waiting.</EmptyState></div>}
       {step.state === "now" && <p className="hm-hint">Belt these into the hub, or drop them in with a loader. Everything the hub receives counts.</p>}
     </article>
   );
@@ -125,32 +126,5 @@ export function HubMenu({ hub, onClose }: { hub: HubView; onClose: () => void })
         <Slip step={step} index={indexOf(step)} total={step.kind === "request" ? orders.length : hub.steps.length - orders.length} />
       </div>
     </MenuWindow>
-  );
-}
-
-/** A short toast when the hub fills an order: the recipes and machines it just opened. Non-blocking. */
-export function HubToast({ hub, onOpen }: { hub: HubView; onOpen: () => void }) {
-  const seen = useRef<Set<string> | null>(null);
-  const [toast, setToast] = useState<HubStep | null>(null);
-  useEffect(() => {
-    const done = new Set(hub.steps.filter((s) => s.state === "done" && s.kind === "request").map((s) => s.id));
-    if (seen.current === null) { seen.current = done; return; } // the first read is the saved state, not news
-    const fresh = hub.steps.find((s) => done.has(s.id) && !seen.current!.has(s.id));
-    seen.current = done;
-    if (fresh) setToast(fresh);
-  }, [hub]);
-  useEffect(() => {
-    if (!toast) return;
-    const t = window.setTimeout(() => setToast(null), 7000);
-    return () => window.clearTimeout(t);
-  }, [toast]);
-  if (!toast) return null;
-  return (
-    <div className="hm-toast" role="status">
-      <span className="hm-toast-kick">Order filled</span>
-      <span className="hm-toast-name">{toast.name}</span>
-      <span className="hm-toast-opens">Opened: {toast.unlocks.map((u) => u.name).join(", ")}</span>
-      <button type="button" className="hm-toast-btn" onClick={() => { setToast(null); onOpen(); }}>Open hub</button>
-    </div>
   );
 }

@@ -57,3 +57,11 @@ Read these and say which to keep: higher logistics tiers cost only their extra i
 ## Parked
 
 Floors above ground level, photo mode, panel folding, a second island as a site. Nate said "later" or did not pick.
+
+## Rewards and first minutes (thread "Polish Brasswork rewards and first minutes", 2026-11-15)
+- [x] REWARD-moment | size M | Reward card for orders, milestones and commissions with crate icons, count-up, sound hook and tests | this PR
+- [x] FIRST-banner | size S | NEXT banner named no kiln recipe and no belts, so a newcomer reached "Deliver 10 ingots" with an idle kiln and nothing connected; it now says both first | this PR
+- [x] EMPTY-states | size S | Padlock slots for locked machines, crate scene on an untouched hub order, idle scene in the away report | this PR
+- [x] FIRST-kiln-recipe | size S | Nate chose auto-pick: a new kiln starts on Iron ingot (docs/rule-changes/2026-11-15-brasswork-kiln-default-recipe.md) | this PR
+- [ ] FIRST-pacing-note | size S | For B-05: in a real click-through the opening has four hand steps after the windmill (recipe, two belt runs, hub). Time the human steps, not only the sim, when the pacing bot lands
+- [ ] EMPTY-expedition-lock | size S | Expedition cards show a text "Locked" button; a padlock glyph and the missing milestone would match the new locked slots

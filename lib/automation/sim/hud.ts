@@ -41,7 +41,7 @@ const pct = (x: number): string => {
 
 // The supply crate as hub tiles: one per item, with its icon.
 const crateTiles = (cat: Catalog, reward: { item: string; qty: number }[] | undefined): HubUnlock[] =>
-    (reward ?? []).map((x): HubUnlock => ({ kind: "crate", id: `crate-${x.item}`, name: `${x.qty} ${nameOf(cat, x.item)}`, icon: x.item }));
+    (reward ?? []).map((x): HubUnlock => ({ kind: "crate", id: `crate-${x.item}`, name: `${x.qty} ${nameOf(cat, x.item)}`, icon: x.item, qty: x.qty, label: nameOf(cat, x.item) }));
 
 // "+12 blueprints and 20 Iron plate, 20 Copper wire" for a milestone or commission payout.
 function rewardLineOf(cat: Catalog, blueprints: number, reward: { item: string; qty: number }[] | undefined): string {
@@ -514,7 +514,7 @@ function hubStepsOf(world: World, cat: Catalog): HubStep[] {
             state: done ? "done" : "ahead",
             progress: done ? 1 : frac(items),
             items,
-            unlocks: [{ kind: "blueprints", id: "blueprints", name: `${m.blueprints} blueprints` }, ...milestoneUnlocks(cat, i), ...crateTiles(cat, m.reward)],
+            unlocks: [{ kind: "blueprints", id: "blueprints", name: `${m.blueprints} blueprints`, qty: m.blueprints }, ...milestoneUnlocks(cat, i), ...crateTiles(cat, m.reward)],
         });
     });
     const commission = currentCommission(world, cat);
@@ -531,7 +531,7 @@ function hubStepsOf(world: World, cat: Catalog): HubStep[] {
             state: "ahead",
             progress: frac(items),
             items,
-            unlocks: [{ kind: "blueprints", id: "blueprints", name: `${commission.blueprints} blueprints` }, ...crateTiles(cat, commission.reward)],
+            unlocks: [{ kind: "blueprints", id: "blueprints", name: `${commission.blueprints} blueprints`, qty: commission.blueprints }, ...crateTiles(cat, commission.reward)],
         });
     }
     const now = steps.find((x) => x.state !== "done");
@@ -547,6 +547,15 @@ function nextStepOf(world: World, cat: Catalog, machines: MachineView[], milesto
     if (drills === 0) return { text: "Place a drill on a resource node to start the flow.", actionLabel: "Select drill", actionId: "drill" };
     if (crafters === 0) return { text: "Add a kiln and set its recipe to smelt ore into ingots.", actionLabel: "Select kiln", actionId: "kiln" };
     if (world.power.satisfaction < 1) return { text: "Machines are short of power. A windmill feeds machines within 8 cells of its centre.", actionLabel: "Select windmill", actionId: "windmill" };
+    // The first order needs ingots on the hub, which takes a recipe on the kiln and belts. Say so before the order does,
+    // so a newcomer is never left with a banner asking for ingots from a kiln that has nothing to smelt.
+    const untouched = !(world.progress.requestsDone ?? []).length && !(world.progress.delivered.iron_ingot ?? 0);
+    if (untouched) {
+        const idle = Object.values(world.buildings).find((b) => b.type === "kiln" && !b.recipe);
+        if (idle) return { text: "Select the kiln and pick Iron ingot as its recipe, so it smelts the drill's ore.", actionLabel: "Select kiln", actionId: "inspect", selectId: idle.id };
+        const belts = Object.values(world.buildings).filter((b) => b.type.startsWith("belt")).length;
+        if (belts < 2) return { text: "Belt the drill to the kiln, then the kiln to the hub. Drag with the belt tool and it routes around machines.", actionLabel: "Select belt", actionId: "belt" };
+    }
     if (req) {
         const parts = req.items.map((i) => `${i.name} ${i.have} of ${i.need}`);
         const opens = req.unlocks.map((u) => u.name).join(", ");
