@@ -103,7 +103,7 @@ Corrupt save (item 11c): the game already kept a copy under `gb-save-v1-corrupt`
 ### 14. Firm window needs scrolling to reach everything on small heights (DONE 2026-11-15: `.gb-win-foot` pinned)
 - At 900 tall the perk grid plus the Incorporate line fills the window; on shorter screens the button scrolls out of sight. Done when: the Incorporate button and its line stay pinned at the bottom of the Firm window while the perks scroll.
 
-### 15. Tests for the pure part of the HUD
+### 15. Tests for the pure part of the HUD (DONE 2026-11-15: `scripts/ci/gb-hud.mjs`, documented in docs/ci.md)
 - `--gb-dock-top` and the window sizes have only a headless script (`hud-overlap/check.mjs`). Done when: the script runs in `scripts/ci` against the built site as an advisory check, or its sizes are listed in `docs/ci.md` for threads to run before merging HUD changes.
 
 ### 16. Repeat order payout and the cue (DONE 2026-11-15: the waiting cue names the next job's wait and the repeat)
