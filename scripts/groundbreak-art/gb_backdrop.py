@@ -31,15 +31,32 @@ def sky():
     c.fill(c.rect(0, 0, W, H), v, "sky", 0.95)
     c.fill(c.disc(*SUN, 26), 0.9, "lamp", 0.4)
     c.thin(c.disc(*SUN, 40) & ~c.disc(*SUN, 26), P["lamp"][5], 0.35)
+    c.thin(c.disc(*SUN, 110, 70), P["lamp"][3], 0.18, 200)  # wide halo
     r = rng(3)
-    for k in range(9):  # long flat cloud bands, lit underneath
-        cy = r.uniform(60, 280)
-        cx = r.uniform(0, W)
-        L = r.uniform(140, 380)
-        band = c.disc(cx, cy, L, r.uniform(7, 15)) & (c.Y < cy + 4)
-        lit = np.clip(0.3 + (c.Y - cy) / 14 + 0.35 * (1 - np.clip(np.abs(c.X - SUN[0]) / 700, 0, 1)), 0, 1)
-        c.fill(band, lit, "haze", 0.9)
-        c.set(band & (c.Y > cy + 1) & (c.Y < cy + 3), P["sky"][10])
+    # high cirrus: short tapered wisps, lit pink-gold from below
+    for _ in range(26):
+        cx, cy, L = r.uniform(0, W), r.uniform(40, 170), r.uniform(30, 110)
+        wisp = c.disc(cx, cy, L, r.uniform(1.2, 2.6)) & (c.B < 0.35 - np.abs(c.X - cx) / (2 * L))
+        c.set(wisp, P["sky"][r.integers(6, 9)], 230)
+    # cumulus banks: clusters of puffs, dark violet tops, glowing amber undersides toward the sun
+    for _ in range(14):
+        cx, cy = r.uniform(-60, W + 60), r.uniform(150, 300)
+        n = r.integers(5, 11)
+        sz = r.uniform(10, 22) * (0.6 + cy / 300)
+        mask = np.zeros_like(c.B, bool)
+        for k in range(n):
+            ox = (k - n / 2) * sz * 0.9 + r.uniform(-4, 4)
+            rr = sz * r.uniform(0.6, 1.1) * (1 - abs(k - n / 2) / (n * 0.9))
+            mask |= c.disc(cx + ox, cy - rr * 0.4, rr * 1.2, rr) & (c.Y < cy + 2)
+        warm = 1 - np.clip(np.abs(c.X - SUN[0]) / 900, 0, 1)
+        v = np.clip(0.15 + (c.Y - cy + sz) / (sz * 2.2) * (0.5 + 0.5 * warm), 0, 1)
+        c.fill(mask, v, "haze", 0.9)
+        rim = mask & ~np.roll(mask, -2, 0)
+        c.set(rim & (c.B < 0.3), P["sky"][10 if warm.mean() > 0 else 9])
+    # birds heading home
+    for _ in range(9):
+        x, y = r.uniform(900, 1450), r.uniform(200, 300)
+        c.set(c.line(x - 3, y - 1.5, x, y, 0.8) | c.line(x, y, x + 3, y - 1.5, 0.8), P["ink"][1])
     for _ in range(70):  # first stars in the dark top
         x, y = r.uniform(0, W), r.uniform(0, 90)
         c.set(c.rect(x, y, x + 1, y + 1), P["white"][3], 180)
@@ -72,8 +89,17 @@ def hills():
     for k in range(40):
         x = 120 + k * 14 + r.uniform(-6, 6)
         y = HORIZON - 70 + 0.8 * abs(k - 18) + r.uniform(-3, 3)
-        c.thin(c.disc(x, y, r.uniform(16, 30), r.uniform(5, 9)), P["white"][2], 0.3, 190)
-    ridge(c, HORIZON - 8, 34, 21, "roof", 0.25, 0.55, x_from=0, x_to=W)  # nearer ridge, East Bay style
+        c.thin(c.disc(x, y, r.uniform(16, 30), r.uniform(5, 9)), P["white"][2], 0.16, 150)
+    ytop = ridge(c, HORIZON - 8, 34, 21, "roof", 0.25, 0.55, x_from=0, x_to=W)  # nearer ridge, East Bay style
+    near = (c.Y > ytop[np.clip(c.X.astype(int), 0, W - 1)] + 1) & (c.Y < HORIZON)
+    c.set(near & (c.B > 0.38) & (np.sin(c.X * 0.7) * np.sin(c.Y * 1.3) > 0.2), P["green"][1])  # oak scrub
+    r2 = rng(31)
+    for _ in range(140):  # hillside houses, some windows lit
+        x = r2.uniform(560, W)
+        y = ytop[int(x)] + r2.uniform(3, max(4, HORIZON - ytop[int(x)] - 4))
+        c.set(c.rect(x, y, x + 3, y + 2), P["roof"][4])
+        if r2.random() < 0.55:
+            c.set(c.rect(x + 1, y + 1, x + 2, y + 2), P["lamp"][r2.integers(3, 6)])
     # long suspension bridge across the left of the bay
     l, r_ = 70, 560
     deck = HORIZON - 14
@@ -108,7 +134,23 @@ def bay():
     g = m & (np.abs(c.X - SUN[0]) < 40 + 140 * d) & (np.sin(c.Y * 2.3 + np.sin(c.X * 0.09) * 3) > 0.6) & \
         (c.B < 0.25 - 0.6 * np.abs(c.X - SUN[0]) / (40 + 140 * d))
     c.set(g, P["lamp"][5])
+    rows = m & (np.sin(c.Y * 1.7 + np.sin(c.X * 0.05) * 2) > 0.92 - 0.1 * d)  # wave crests
+    c.set(rows & (c.B < 0.1), P["water"][5])
+    refl = m & (c.Y < HORIZON + 60) & (c.X > 640) & (c.X < 1460) & (np.sin(c.X * 0.37 + np.sin(c.Y * 1.9) * 2.5) > 0.75) & \
+        (c.B < 0.05 - (c.Y - HORIZON) / 70) & (np.sin(c.Y * 2.2) > 0.1)
+    c.set(refl, P["lamp"][3], 200)  # city lights trembling on the water
     r = rng(5)
+    for k in range(5):  # sailboats
+        x, y = r.uniform(420, 1400), HORIZON + r.uniform(8, 50)
+        c.fill(c.poly([(x, y), (x + 14, y), (x + 12, y + 3), (x + 2, y + 3)]), 0.6, "white", 0.4)
+        c.fill(c.poly([(x + 7, y - 1), (x + 7, y - 18), (x + 14, y - 1)]), 0.75, "white", 0.5)
+        c.fill(c.poly([(x + 6, y - 1), (x + 6, y - 14), (x + 1, y - 1)]), 0.5, "sunglass", 0.5)
+    # a ferry with its wake
+    fx, fy = 1180, HORIZON + 30
+    c.fill(c.rect(fx, fy, fx + 46, fy + 5), 0.7, "white", 0.4)
+    c.fill(c.rect(fx + 6, fy - 5, fx + 38, fy), 0.55, "white", 0.4)
+    c.set(c.rect(fx + 8, fy - 4, fx + 36, fy - 2) & ((c.X % 3) < 2), P["lamp"][4])
+    c.thin(c.rect(fx + 46, fy + 3, fx + 160, fy + 6) & (c.Y < fy + 4 + (c.X - fx - 46) / 40), P["white"][2], 0.35)
     for k in range(6):  # small boats and a container ship
         x, y = r.uniform(600, 1500), HORIZON + r.uniform(6, 40)
         c.set(c.rect(x, y, x + 8, y + 2), P["white"][2])
@@ -165,6 +207,17 @@ def shore():
     top = HORIZON + 120
     m = c.rect(0, top, W, H)
     c.fill(m, np.clip(0.55 - (c.Y - top) / 200, 0, 1), "dirt", 0.8)
+    # soil profile: topsoil, a clay band, a sand lens, gravel, then fractured bedrock fading into the dark
+    wav = 2.5 * np.sin(c.X / 37) + 1.5 * np.sin(c.X / 11)
+    c.fill(m & (np.abs(c.Y - (top + 26) - wav) < 5), 0.3, "brick", 0.8)
+    c.fill(m & (np.abs(c.Y - (top + 44) + wav) < 2 + 2.5 * np.sin(c.X / 90)), 0.3, "sand", 0.8)
+    c.fill(m & (np.abs(c.Y - (top + 58) - wav * 0.6) < 4), 0.4, "gravel", 1.0)
+    rock = m & (c.Y > top + 66 + wav)
+    c.fill(rock, np.clip(0.45 - (c.Y - top - 66) / 60, 0, 1), "dirt", 0.9)
+    c.set(rock & (np.abs(np.sin(c.X / 13 + c.Y / 7) ) < 0.04), P["ink"][1])
+    c.set(m & (np.abs(c.Y - (top + 38)) < 0.6) & (c.B < 0), P["water"][3], 160)  # water table seep
+    pipe = c.rect(0, top + 32, W, top + 36)  # utility main under the street
+    c.fill(pipe & ~c.rect(880, 0, 1080, H), 0.5, "duct", 0.5)
     c.fill(c.rect(0, top, W, top + 4), 0.5, "concrete", 0.6)  # seawall cap
     for x in range(0, W, 9):  # pilings
         c.fill(c.rect(x, top - 10, x + 3, top), 0.4, "wood", 0.5)
