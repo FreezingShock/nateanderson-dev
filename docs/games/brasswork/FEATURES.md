@@ -31,7 +31,7 @@ Owners are per area, one thread per file set. The threads: "Streamline Brasswork
 | World, grid, deposits, place and remove with footprints and rotation | working | `sim/world.ts`, `sim/grid.ts` | `sim.test.mjs`, `drills.test.mjs` |
 | Belts in three tiers carrying items in lanes | working | `sim/world.ts`, `sim/data.ts` | `belts.test.mjs`, `belt-tiers.test.mjs` |
 | Logistics: splitter, merger, tunnels (5 cells), loader, unloader with item filter, crate (200), strongbox (1000), dock (3x3) | working | `sim/world.ts`, `sim/data.ts` | `logistics-tiers.test.mjs`, `unloader.test.mjs` |
-| Machines-first item priority on belts (`leadsToHub`) | partial: crates and docks are still filled before the hub (B-09) | `sim/world.ts` | `belts.test.mjs` |
+| Machines-first item priority on belts (`leadsToHub`) | working: machines take output first, then the hub, docks and crates share what is left round-robin; a full crate sends everything on (belts only feed the cell ahead, so a belt passing a crate never fills it) | `sim/world.ts` (`pushOutput`) | `progression.test.mjs` |
 | Drills on nodes: purity multiplier, work from any of their four cells | working | `sim/world.ts`, `data/tree.ts` | `drills.test.mjs`, `resources.test.mjs` |
 | Crafting machines (kiln, furnace, press, lathe, drawer, assembler, fabricator), recipes, buffers | working | `data/tree.ts`, `sim/world.ts` | `recipes.test.mjs`, `sim.test.mjs` |
 | Power: windmills 50 kW over 8 cells with gusts, spring winder steady 60 kW, spring store battery, unused power shared | working | `sim/world.ts` (`windAt`, `chargeOf`) | `power-detail.test.mjs`, `power-share.test.mjs` |

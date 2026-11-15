@@ -20,10 +20,6 @@ Ordered by value. Each is one PR.
 - PR #545 added `components/brasswork/hover-name.tsx`. Check it on build tiles, resource boxes and machines on the island, at 1440 and on touch (no stuck labels).
 - Done when: the name shows within about 150 ms, never covers the cursor target, and clears on leave. **Needs screenshots.**
 
-**B-09 Machines-first priority should not fill crates and docks before the hub**
-- Today `leadsToHub` (`sim/world.ts`) puts machines first, but a belt passing a crate or dock fills it before the hub gets anything.
-- Done when: a unit test in `tests/automation/belts.test.mjs` shows a belt with a crate beside it still delivers to the hub at full rate once the crate is full and at the same rate before it is, and `npm run test:automation` passes.
-
 **B-11 Bursts respect Simple visuals**
 - Place, remove, milestone, research and unlock bursts (`render/effects.ts`, `render/life/index.ts`) still spawn under the Simple visuals setting. Life bursts already skip under `lowFx`.
 - Done when: with Simple visuals or `data-lowfx="true"` no particle pool is touched, and the effects still show with it off.
