@@ -20,6 +20,7 @@ import "./brasswork-skin.css";
 import "./desktop-stage.css";
 import { canAfford } from "./format";
 import { uiIconStyle } from "@/lib/automation/icons/ui";
+import { QuestScroll, type QuestState } from "@/components/brasswork/first-run";
 
 /** A 24px HUD glyph. Decorative: the text beside it carries the name. */
 const Ico = ({ id }: { id: string }) => <span className="ab-ico" style={uiIconStyle(id, 24)} aria-hidden="true" />;
@@ -57,6 +58,20 @@ const DockGlyph = ({ group }: { group: GroupId }) => (
     {DOCK_GLYPH[group]}
   </svg>
 );
+/** A rolled parchment scroll, drawn in brass: two rolls with the paper between. */
+const QuestGlyph = () => (
+  <svg className="ab-dock-glyph" viewBox="0 0 16 16" width="26" height="26" aria-hidden="true" shapeRendering="crispEdges" fill="currentColor">
+    <rect x="1" y="2" width="14" height="3" />
+    <rect x="0" y="2" width="2" height="3" fill="#20170c" />
+    <rect x="14" y="2" width="2" height="3" fill="#20170c" />
+    <rect x="1" y="11" width="14" height="3" />
+    <rect x="0" y="11" width="2" height="3" fill="#20170c" />
+    <rect x="14" y="11" width="2" height="3" fill="#20170c" />
+    <rect x="3" y="5" width="10" height="6" fill="#20170c" />
+    <rect x="5" y="7" width="6" height="1" />
+    <rect x="5" y="9" width="4" height="1" />
+  </svg>
+);
 
 type Drawer = "expedition" | "stats" | "settings";
 type Screen = "research" | "prestige" | "expedition";
@@ -81,6 +96,7 @@ export function AutomationHud({
   children,
   settingsSlots,
   removeSlot,
+  quest,
 }: {
   data: HudData;
   actions: HudActions;
@@ -89,6 +105,8 @@ export function AutomationHud({
   settingsSlots?: SettingsSlots;
   /** Desktop dock foot: the Remove tool button, shown at the bottom of the left dock. */
   removeSlot?: ReactNode;
+  /** The starter quest, when one is running. Its scroll opens from the dock's Quest button. */
+  quest?: QuestState;
 }) {
   const [drawer, setDrawer] = useState<Drawer | null>(null);
   const [screen, setScreen] = useState<Screen | null>(null);
@@ -110,7 +128,28 @@ export function AutomationHud({
     leaveTimer.current = window.setTimeout(() => { setPalLeaving(null); leaveTimer.current = null; }, 170);
   };
   // One section at a time: choosing another section closes the open one with its exit animation.
+  // The quest scroll shares the one-section-at-a-time rule with the build flyouts.
+  const [questOpen, setQuestOpen] = useState(false);
+  // True while the scroll rolls back up, so it stays mounted for its exit animation.
+  const [questClosing, setQuestClosing] = useState(false);
+  const questTimer = useRef<number | null>(null);
+  useEffect(() => () => { if (questTimer.current !== null) window.clearTimeout(questTimer.current); }, []);
+  const closeQuest = () => {
+    if (!questOpen) return;
+    setQuestOpen(false);
+    setQuestClosing(true);
+    if (questTimer.current !== null) window.clearTimeout(questTimer.current);
+    questTimer.current = window.setTimeout(() => { setQuestClosing(false); questTimer.current = null; }, 170);
+  };
+  const openQuest = () => {
+    if (questTimer.current !== null) { window.clearTimeout(questTimer.current); questTimer.current = null; }
+    setQuestClosing(false);
+    if (palGroup) { leavePal(palGroup); setPalGroup(null); }
+    setQuestOpen(true);
+  };
+  const toggleQuest = () => (questOpen ? closeQuest() : openQuest());
   const choosePal = (g: GroupId) => {
+    if (questOpen) closeQuest();
     if (palGroup === g) { leavePal(g); setPalGroup(null); return; }
     if (palGroup) leavePal(palGroup);
     setPalGroup(g);
@@ -164,6 +203,7 @@ export function AutomationHud({
       data-lowfx={data.settings.lowFx}
       data-reduce={data.settings.reduceMotion}
       data-palgroup={palGroup ?? "none"}
+      data-modal={drawer || screen || sheet ? "on" : "off"}
     >
       <header className="ab-top">
         <div className="ab-brand">
@@ -220,6 +260,19 @@ export function AutomationHud({
               </button>
             );
           })}
+          {quest && (
+            <button
+              type="button"
+              className="ab-dock-btn ab-dock-quest"
+              aria-pressed={questOpen}
+              aria-label={`Starter quest, ${quest.finished} of ${quest.steps.length} done. ${questOpen ? "Roll up the scroll" : "Open the scroll"}`}
+              onClick={toggleQuest}
+            >
+              <QuestGlyph />
+              <span className="ab-dock-label">Quest</span>
+              <span className="ab-dock-count" aria-hidden="true">{quest.finished}/{quest.steps.length}</span>
+            </button>
+          )}
           {data.armed && (
             <span className="ab-dock-rot" aria-label={`Turn ${data.rotation ?? 0} degrees, press R to turn`}>
               <span className="ab-dock-rot-k">Turn · R</span>
@@ -330,6 +383,21 @@ export function AutomationHud({
                 <Ico id="prestige" />
                 Prestige
               </button>
+              {quest && (
+                <button
+                  type="button"
+                  role="menuitem"
+                  className="ab-more-item"
+                  onClick={() => {
+                    setMore(false);
+                    setSheet(null);
+                    toggleQuest();
+                  }}
+                >
+                  <QuestGlyph />
+                  Starter quest
+                </button>
+              )}
               {(["expedition", "stats", "settings"] as const).map((d) => (
                 <button
                   key={d}
@@ -418,6 +486,10 @@ export function AutomationHud({
           <ProductionWindow resources={data.resources} stats={data.stats} numberFormat={mode} onClose={() => setDrawer(null)} />
         )}
       </div>
+
+      {quest && (questOpen || questClosing) && (
+        <QuestScroll quest={quest} closing={!questOpen} onClose={closeQuest} />
+      )}
 
       {drawer === "settings" && (
         <SettingsWindow settings={data.settings} onChange={actions.onSettings} onClose={() => setDrawer(null)} slots={settingsSlots} />
