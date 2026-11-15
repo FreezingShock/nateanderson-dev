@@ -151,7 +151,8 @@ def frames_for(sp):
     ks = list(range(1, sp.floors + 1, sp.step))
     if ks[-1] != sp.floors:
         ks.append(sp.floors)
-    return ["lot", "dig", "foundation"] + [f"frame{k}" for k in ks] + ["envelope", "fitout", "done"]
+    return ["lot", "dig", "piles", "foundation"] + [f"frame{k}" for k in ks] + ["topout", "skin1", "skin2", "fitout",
+                                                                                  "done"]
 
 
 STRUCT_PAL = {"wood": "wood", "cmu": "precast", "steel": "steel", "concrete": "concrete", "precast": "precast"}
@@ -171,7 +172,9 @@ def draw_framed(sp, frame):
     i = order.index(frame)
     fi = order.index("foundation")
     built = sp.floors if i > order.index(f"frame{sp.floors}") else (int(frame[5:]) if frame.startswith("frame") else 0)
-    envelope, fitout, done = i >= order.index("envelope"), i >= order.index("fitout"), frame == "done"
+    topped = i >= order.index("topout")
+    envelope, full = i >= order.index("skin1"), i >= order.index("skin2")
+    fitout, done = i >= order.index("fitout"), frame == "done"
     sp_pal = STRUCT_PAL[sp.struct]
     pit = 10 + 8 * sp.deep
 
@@ -189,11 +192,14 @@ def draw_framed(sp, frame):
 
     # excavation pit (open in dig, filled by foundation)
     pitm = c.rect(x0 - 4, gy - 1, x1 + 4, gy + pit)
-    if i == order.index("dig"):
+    if frame in ("dig", "piles"):
         c.fill(pitm, 0.18 + 0.15 * (c.Y - gy) / pit, "dirt", 0.8)
         c.fill(c.rect(x0 - 6, gy - 1, x0 - 4, gy + pit) | c.rect(x1 + 4, gy - 1, x1 + 6, gy + pit), 0.5, "wood", 0.6)
         c.fill(c.poly([(x1 + 12, gy), (x1 + 50, gy), (x1 + 36, gy - 13), (x1 + 24, gy - 14)]), 0.45, "dirt", 0.9)
-        excavator(c, x0 + 14, gy + pit, flip=False, arm=0.6)
+        if frame == "dig":
+            excavator(c, x0 + 14, gy + pit, flip=False, arm=0.6)
+        else:
+            piles(c, sp, gy, x0, x1, pit)
         for k in range(3):
             stake(c, x0 - 18 - k * 9, gy)
         person(c, x1 - 20, gy + pit, seed=5)
@@ -305,9 +311,11 @@ def draw_framed(sp, frame):
                 else:
                     if r.random() < 0.7:
                         person(c, x0 + r.integers(4, sp.bw - 8), yb - 2, seed=k * 13)
+    top = floor_y(sp, gy, sp.floors)
+    if topped:
+        roof(c, sp, x0, x1, top, envelope, done)
     # end walls (cladding) after envelope
     if envelope:
-        top = floor_y(sp, gy, sp.floors)
         pal = {"brick": "brick", "precast": "precast", "curtain": "glass", "glass": "glass", "siding": "wood",
                "cmu": "precast", "open": "concrete"}[sp.skin]
         for xa, xb in ((x0 - 5, x0), (x1, x1 + 6)):
@@ -316,30 +324,21 @@ def draw_framed(sp, frame):
             if sp.skin in ("curtain", "glass"):
                 for k in range(sp.floors):
                     c.set(c.rect(xa, floor_y(sp, gy, k) - 2, xb, floor_y(sp, gy, k) - 1), P["steel"][3])
-        # roof
-        if sp.roof == "gable":
-            mid = (x0 + x1) / 2
-            c.fill(c.poly([(x0 - 9, top), (x1 + 10, top), (mid + 0.5, top - 22)]), 0.35 + 0.15 * (c.X < mid), "roof")
-            c.fill(c.poly([(x0 - 9, top), (x1 + 10, top), (x1 + 8, top + 2), (x0 - 7, top + 2)]), 0.2, "roof")
-        elif sp.roof == "truss":
-            c.fill(c.rect(x0 - 4, top - 14, x1 + 5, top - 11), 0.5, "roof", 0.5)
-            for x in range(int(x0), int(x1), 8):
-                c.set(c.line(x, top, x + 4, top - 11, 0.9) | c.line(x + 4, top - 11, x + 8, top, 0.9), P["steel"][4])
-        else:
-            c.fill(c.rect(x0 - 5, top - 5, x1 + 6, top - 2), 0.45, "roof", 0.5)
-            if done:
-                c.fill(c.rect(x0 + 10, top - 11, x0 + 26, top - 5), 0.5, "duct", 0.5)  # rooftop unit
+    if envelope:
+        facade(c, sp, gy, x0, x1, sp.floors if full else max(1, (sp.floors + 1) // 2), fitout, done)
+    if full:
+        extras(c, sp, gy, x0, x1, top, done)
     # site dressing
     if not done:
         fence(c, x0 - 70, x0 - 30, gy)
-        if sp.crane and built:
+        if sp.crane and built and not fitout:
             cx = x0 - 18
             ctop = min(floor_y(sp, gy, built) - 26, gy - 70)
             hook_y = floor_y(sp, gy, built) - 26
             tower_crane(c, cx, gy, ctop, 34, min(sp.bw + 20, 150), hook_x=x0 + sp.bw * 0.6,
                         hook_y=max(ctop + 6, hook_y) if not envelope else ctop + 20,
                         load=("steel" if sp.struct == "steel" else "precast") if not envelope else "glass")
-        if not envelope and built:
+        if not full and built:
             # scaffold up the right side
             st = floor_y(sp, gy, built)
             for x in (x1 + 7, x1 + 14):
@@ -356,11 +355,197 @@ def draw_framed(sp, frame):
     return c
 
 
+def piles(c, sp, gy, x0, x1, pit):
+    """Open pit with shoring and piles: some driven to depth, the next one still in the rig's leader."""
+    cols = [x0 + b * sp.bay_w for b in range(sp.bays + 1)]
+    deep = gy + pit + (UG - pit - 4) * min(1, 0.45 + 0.3 * sp.deep)
+    for n, x in enumerate(cols):
+        if n == len(cols) - 1:
+            continue
+        c.fill(c.rect(x - 2, gy + pit - 3, x + 3, deep), 0.55, "concrete", 0.5)
+        c.set(c.rect(x - 2, gy + pit - 3, x + 3, gy + pit - 2), P["concrete"][6])
+    # sheet-pile shoring along both pit walls
+    for xa in (x0 - 6, x1 + 4):
+        m = c.rect(xa, gy - 3, xa + 2, gy + pit + 2)
+        c.fill(m, 0.4 + 0.25 * ((c.Y // 2) % 2), "steel", 0.3)
+    # pile rig: crawler, tall leader mast, hammer and a pile half in
+    px = cols[-1]
+    rx = px + 10
+    c.fill(c.rect(rx - 8, gy + pit - 6, rx + 14, gy + pit), 0.3, "steel", 0.6)
+    for k in range(-6, 14, 5):
+        c.set(c.disc(rx + k, gy + pit - 3, 2), P["ink"][2])
+    c.fill(c.rect(rx - 4, gy + pit - 15, rx + 12, gy + pit - 6), 0.72, "hiviz", 0.6)
+    c.fill(c.rect(rx + 6, gy + pit - 14, rx + 11, gy + pit - 9), 0.45, "glass", 0.5)
+    mtop = gy - 70
+    c.fill(c.rect(px - 3, mtop, px + 1, gy + pit - 4), 0.55, "hiviz", 0.4)
+    for y in range(int(mtop), int(gy + pit - 4), 5):
+        c.set(c.rect(px - 3, y, px + 1, y + 1), P["hiviz"][2])
+    c.set(c.line(px + 1, mtop + 30, rx + 6, gy + pit - 15, 1.2), P["hiviz"][3])
+    c.fill(c.rect(px - 3, mtop + 8, px + 5, mtop + 22), 0.35, "steel", 0.5)  # hammer
+    c.fill(c.rect(px - 1, mtop + 22, px + 3, deep - 10), 0.6, "concrete", 0.5)
+    c.thin(c.disc(px + 1, gy + pit - 2, 9, 3), P["sand"][5], 0.4)  # dust puff
+
+
+def roof(c, sp, x0, x1, top, envelope, done):
+    """Roof structure appears at top-out; finished covering and parapet arrive with the skin."""
+    if sp.roof == "gable":
+        mid = (x0 + x1) / 2
+        if not envelope:
+            for x in range(int(x0 - 6), int(x1 + 8), 6):
+                h = 22 * (1 - abs(x - mid) / ((x1 - x0) / 2 + 9))
+                c.set(c.rect(x, top - h, x + 1, top), P["wood"][4])
+            c.set(c.line(x0 - 9, top, mid, top - 22, 1.4) | c.line(x1 + 10, top, mid, top - 22, 1.4), P["wood"][5])
+            return
+        c.fill(c.poly([(x0 - 9, top), (x1 + 10, top), (mid + 0.5, top - 22)]), 0.35 + 0.15 * (c.X < mid), "roof")
+        for y in range(int(top - 20), int(top), 3):
+            c.set(c.rect(x0 - 9, y, x1 + 10, y + 1) & c.poly([(x0 - 9, top), (x1 + 10, top), (mid + 0.5, top - 22)]),
+                  P["roof"][1])
+        c.fill(c.poly([(x0 - 9, top), (x1 + 10, top), (x1 + 8, top + 2), (x0 - 7, top + 2)]), 0.2, "roof")
+        c.set(c.line(x0 - 9, top, mid, top - 22, 1.0), P["sunglass"][4])  # sunlit rake
+    elif sp.roof == "truss":
+        for x in range(int(x0), int(x1), 8):
+            c.set(c.line(x, top, x + 4, top - 11, 0.9) | c.line(x + 4, top - 11, x + 8, top, 0.9), P["steel"][4])
+        c.set(c.rect(x0 - 4, top - 1, x1 + 5, top), P["steel"][5])
+        if envelope:
+            c.fill(c.rect(x0 - 4, top - 14, x1 + 5, top - 11), 0.5, "roof", 0.5)
+            c.set(c.rect(x0 - 4, top - 14, x1 + 5, top - 13), P["sunglass"][3])
+    else:
+        c.fill(c.rect(x0 - 2, top - 3, x1 + 3, top), 0.6, "concrete", 0.4)
+        if envelope:
+            c.fill(c.rect(x0 - 5, top - 6, x1 + 6, top - 2), 0.45, "roof", 0.5)
+            c.set(c.rect(x0 - 5, top - 6, x1 + 6, top - 5), P["sunglass"][3])
+        if done:
+            c.fill(c.rect(x0 + 10, top - 12, x0 + 26, top - 6), 0.5, "duct", 0.5)  # rooftop unit
+            c.set(c.rect(x0 + 12, top - 11, x0 + 24, top - 10) & ((c.X // 2) % 2 == 0), P["duct"][1])
+
+
+SKIN_PAL = {"brick": "brick", "precast": "precast", "curtain": "glass", "glass": "glass", "siding": "wood",
+            "cmu": "precast", "open": "precast"}
+
+
+def facade(c, sp, gy, x0, x1, nfl, lit, done):
+    """Front skin over the left part of each finished floor, broken off along a stepped cut so the rooms stay in view.
+    Each skin type has its own pattern: lap siding, brick coursing, sunset-mirroring curtain wall, parking spandrels."""
+    for k in range(nfl):
+        ya, yb = floor_y(sp, gy, k + 1), floor_y(sp, gy, k)
+        r = rng(k * 5 + len(sp.key) * 3)
+        frac = 0.34 + 0.12 * r.random() + (0.06 if k == 0 else 0)
+        cut = x0 + sp.bw * frac
+        band = c.rect(x0 - 5, ya - 2, cut, yb)
+        edge = band & (c.X > cut - 5) & (c.B > (cut - c.X) / 5 - 0.5)
+        reg = band & ~edge
+        fh = yb - ya
+        t = np.clip((c.Y - ya) / max(1, fh), 0, 1)
+        sk = sp.skin
+        if sk == "siding":
+            c.fill(reg, 0.62 - 0.12 * ((c.Y - ya) % 3 < 1) - 0.04 * t, "wood", 0.4)
+        elif sk in ("brick", "cmu"):
+            course = ((c.Y // 2) % 2 == 0) & (((c.X + 3 * ((c.Y // 2) % 2)) % 6) < 1)
+            c.fill(reg, 0.55 - 0.1 * ((c.Y % 2) < 1) - 0.2 * course, "brick", 0.5)
+        elif sk in ("curtain", "glass"):
+            # the glass mirrors the sunset: amber low on each panel, violet high, with a sky streak
+            v = 0.25 + 0.55 * t + 0.15 * np.sin((c.X - c.Y * 0.7) / 9)
+            c.fill(reg, np.clip(v, 0, 1), "sunglass", 0.9)
+            c.set(reg & ((c.X - x0) % 7 < 1), P["steel"][2])
+            c.fill(reg & (c.Y > yb - 3), 0.35, "steel", 0.4)  # spandrel
+        elif sk == "open":
+            spand = reg & (c.Y > yb - fh * 0.45)
+            c.fill(spand, 0.55 - 0.1 * ((c.X - x0) % 30 < 1), "precast", 0.4)
+            c.set(spand & (c.Y < yb - fh * 0.45 + 1), P["precast"][6])
+            reg = spand
+        # punched windows for opaque skins
+        if sk in ("siding", "brick", "cmu"):
+            for b in range(sp.bays):
+                cx = x0 + b * sp.bay_w + sp.bay_w / 2
+                if cx + 5 > cut - 4:
+                    break
+                ground_door = k == 0 and b == 0
+                if sp.key == "firestation" and k == 0:
+                    # apparatus bay doors: tall, red, paneled
+                    d = c.rect(x0 + b * sp.bay_w + 3, ya + 3, x0 + (b + 1) * sp.bay_w - 3, yb)
+                    c.fill(d, 0.5 + 0.15 * ((c.Y - ya) % 4 < 1), "safety", 0.4)
+                    c.fill(d & (c.Y > ya + 6) & (c.Y < ya + 9) & ((c.X % 5) > 0), 0.7, "glass", 0.4)
+                    c.set(c.rect(x0 + b * sp.bay_w + 2, ya + 2, x0 + (b + 1) * sp.bay_w - 2, ya + 3), P["concrete"][6])
+                    continue
+                if ground_door:
+                    d = c.rect(cx - 3, yb - fh * 0.75, cx + 3, yb)
+                    c.fill(d, 0.45, "safety" if sp.key == "house" else "steel", 0.4)
+                    c.set(c.rect(cx + 1, yb - fh * 0.4, cx + 2, yb - fh * 0.4 + 1), P["lamp"][5])
+                    continue
+                w = c.rect(cx - 4, ya + fh * 0.22, cx + 4, ya + fh * 0.72)
+                if lit and r.random() < (0.8 if done else 0.4):
+                    lamp_glow(c, cx - 4, ya + fh * 0.22, cx + 4, ya + fh * 0.72, 0.85)
+                else:
+                    c.fill(w, 0.35 + 0.4 * t, "glass", 0.8)
+                c.set(c.rect(cx - 0.5, ya + fh * 0.22, cx + 0.5, ya + fh * 0.72), P["white"][2])
+                trim = c.grow(w, 1) & ~w & reg
+                c.set(trim & (c.Y >= ya + fh * 0.72), P["concrete"][6])
+                c.set(trim & (c.Y < ya + fh * 0.72), P["white"][2] if sk == "siding" else P["precast"][5])
+        elif sk in ("curtain", "glass") and lit:
+            for b in range(int((cut - x0) // 7)):
+                if r.random() < (0.5 if done else 0.2):
+                    wx = x0 + b * 7 + 1
+                    lamp_glow(c, wx, ya + 2, wx + 6, yb - 3, 0.75)
+        # broken edge: a dark ragged lip where the skin is cut away
+        lip = c.grow(edge, 1) & reg & ~c.grow(~band, 0)
+        c.set(lip & (c.X > cut - 7), P["ink"][2])
+        # floor line
+        c.set(c.rect(x0 - 5, yb - 1, cut - 3, yb) & reg, P[SKIN_PAL[sk]][1])
+
+
+def extras(c, sp, gy, x0, x1, top, done):
+    """Per-building details once the skin is complete."""
+    k = sp.key
+    if k == "house":
+        c.fill(c.rect(x1 - 18, top - 26, x1 - 11, top - 6), 0.5, "brick", 0.5)  # chimney
+        c.set(c.rect(x1 - 19, top - 27, x1 - 10, top - 25), P["concrete"][5])
+        c.fill(c.rect(x0 - 14, gy - 3, x0 + 2, gy), 0.6, "concrete", 0.4)  # porch step
+        c.set(c.rect(x0 - 12, gy - 18, x0 - 11, gy - 3), P["white"][2])
+        c.fill(c.rect(x0 - 14, gy - 20, x0 + 2, gy - 18), 0.4, "roof", 0.4)
+        if done:
+            c.thin(c.disc(x1 - 13, top - 34, 4, 6), P["white"][1], 0.3, 160)
+    elif k == "firestation":
+        hx = x1 + 6
+        c.fill(c.rect(hx, top - 34, hx + 12, gy), 0.5 + 0.1 * ((c.Y // 2) % 2), "brick", 0.4)  # hose tower
+        c.fill(c.rect(hx - 1, top - 37, hx + 13, top - 34), 0.4, "roof", 0.4)
+        c.fill(c.rect(hx + 4, top - 28, hx + 8, top - 20), 0.6, "glass", 0.6)
+        c.fill(c.disc(hx + 6, top - 10, 3), 0.8, "safety", 0.4)  # emblem
+        c.set(c.rect(hx + 5, top - 12, hx + 7, top - 8), P["hiviz"][6])
+    elif k == "clinic":
+        c.fill(c.rect(x0 - 24, gy - 16, x0 + 10, gy - 13), 0.5, "white", 0.4)  # entrance canopy
+        for x in (x0 - 22, x0 - 4):
+            c.set(c.rect(x, gy - 13, x + 1, gy), P["steel"][5])
+        c.fill(c.rect(x0 + 2, top - 18, x0 + 16, top - 6), 0.85, "white", 0.3)  # rooftop sign: a green plus
+        c.set(c.rect(x0 + 8, top - 16, x0 + 10, top - 8) | c.rect(x0 + 5, top - 13, x0 + 13, top - 11), P["green"][6])
+    elif k == "school":
+        c.set(c.rect(x0 - 30, gy - 60, x0 - 29, gy), P["white"][2])  # flagpole
+        c.fill(c.rect(x0 - 29, gy - 60, x0 - 17, gy - 52), 0.6, "glass", 0.4)
+        c.set(c.rect(x0 - 29, gy - 56, x0 - 17, gy - 55), P["safety"][4])
+        cx, cy = x0 + 40, top - 4
+        c.fill(c.poly([(cx - 16, top - 12), (cx + 16, top - 12), (cx, top - 26)]), 0.45, "brick", 0.5)  # gable + clock
+        c.fill(c.disc(cx, top - 16, 4), 0.85, "white", 0.3)
+        c.set(c.line(cx, top - 16, cx, top - 19, 0.8) | c.line(cx, top - 16, cx + 2, top - 16, 0.8), P["ink"][1])
+    elif k == "office":
+        c.fill(c.rect(x0 + 30, top - 16, x1 - 30, top - 6), 0.4, "steel", 0.4)  # mechanical screen
+        c.set(c.rect(x0 + 30, top - 16, x1 - 30, top - 6) & ((c.X % 3) < 1), P["steel"][1])
+        c.set(c.rect(x0 + 30, top - 17, x1 - 30, top - 16), P["sunglass"][4])
+    elif k == "tower":
+        mid = (x0 + x1) / 2
+        for n in range(4):  # stepped crown
+            w = (x1 - x0) / 2 - 10 - n * 12
+            c.fill(c.rect(mid - w, top - 8 - n * 7, mid + w, top - 2 - n * 7), 0.3 + 0.12 * n, "glass", 0.6)
+            c.set(c.rect(mid - w, top - 8 - n * 7, mid + w, top - 7 - n * 7), P["lamp"][4] if done else P["steel"][4])
+        c.set(c.rect(mid, top - 62, mid + 1, top - 30), P["steel"][5])  # mast
+        c.set(c.rect(mid - 1, top - 64, mid + 2, top - 62), P["safety"][5])
+        if done:
+            c.thin(c.disc(mid + 0.5, top - 63, 5), P["safety"][5], 0.3, 200)
+
+
 # ------------------------------------------------------------------ specials
 def flat_job(key, kind):
     """Sidewalk / driveway: forms, base, pour, cure, done (wide and low)."""
     W, H = 320, 130
-    frames = ["lot", "forms", "base", "pour", "done"]
+    frames = ["lot", "forms", "base", "pour", "finish", "done"]
     out = []
     for f in frames:
         c = Canvas(W, H)
@@ -377,12 +562,23 @@ def flat_job(key, kind):
         dug = f != "lot"
         if dug:
             c.fill(c.rect(x0, gy - 2, x1, gy + 8), 0.25, "dirt", 0.8)
-        if f in ("forms", "base", "pour"):
+        if f == "finish":
+            c.fill(c.rect(x0, gy - 2, x1, gy + 2), 0.5, "cement", 0.5)
+            c.fill(c.rect(x0, gy - 3, (x0 + x1) // 2 - 10, gy - 1), 0.55, "hiviz", 0.3)  # curing blanket
+            c.set(c.rect(x0, gy - 3, (x0 + x1) // 2 - 10, gy - 2) & ((c.X // 6) % 2 == 0), P["hiviz"][3])
+            for k in range(2):  # finishers with trowels
+                px = (x0 + x1) // 2 + 20 + k * 40
+                person(c, px, gy - 2, seed=20 + k)
+                c.set(c.line(px + 3, gy - 5, px + 10, gy - 2, 0.8), P["steel"][5])
+                c.fill(c.rect(px + 8, gy - 3, px + 14, gy - 2), 0.7, "steel", 0.3)
+            for x in range((x0 + x1) // 2, x1, 3):
+                c.set(c.rect(x, gy - 2, x + 2, gy - 1) & (c.B > 0.1), P["cement"][5])
+        if f in ("forms", "base", "pour", "finish"):
             for x in (x0 - 2, x1):
                 c.fill(c.rect(x, gy - 4, x + 2, gy + 8), 0.6, "wood", 0.4)
             for x in range(x0 + 20, x1, 40):
                 stake(c, x, gy - 1)
-        if f in ("base", "pour", "done"):
+        if f in ("base", "pour", "finish", "done"):
             c.fill(c.rect(x0, gy + 2, x1, gy + 8), 0.5, "gravel", 1.0)
             if kind == "drive":
                 for x in range(x0 + 4, x1, 6):
