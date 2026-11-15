@@ -14,7 +14,7 @@ export const GB_PATH = "/creations/games/groundbreak";
 export const GB_SUBS = ["stats", "hire", "unlock", "jobs", "change", "overtime", "perks", "incorporate", "skyline", "open"];
 
 const l = (t: string, k?: GbLine["k"]): GbLine => ({ t, k });
-const matIndex = (q: string) => MATS.findIndex((m) => m.id === q || m.sym.toLowerCase() === q || m.name.toLowerCase() === q || m.name.toLowerCase().startsWith(q));
+const matIndex = (q: string) => !q ? -1 : MATS.findIndex((m) => m.id === q || m.sym.toLowerCase() === q || m.name.toLowerCase() === q || m.name.toLowerCase().startsWith(q));
 
 export function gbCommand(s: State, args: string[]): GbResult {
     const f = effects(s);

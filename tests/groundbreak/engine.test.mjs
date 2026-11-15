@@ -262,3 +262,19 @@ test("the bot finishes the campaign in about three hours", () => {
     assert.ok(s.ending, "the bridge was built");
     assert.ok(t > 2.4 * 3600 && t < 3.6 * 3600, `finished in ${(t / 3600).toFixed(2)} h`);
 });
+
+test("the next material opens by itself when the next job is waiting on it, so a new firm never stalls", () => {
+    const hire = (s) => { for (let n = 0; n < s.open; n++) E.buy(s, n, 0); };
+    const s = E.fresh(0);
+    for (let i = 0; i < 20 * 60; i++) {
+        E.step(s, 1);
+        hire(s);
+        if (s.open < 3) assert.ok(!s.job, "no job before cement is open");
+    }
+    assert.ok(s.open >= 3, "sand and cement opened without a click");
+    assert.ok(s.job || s.built > 0, "the first job started");
+    const away = E.fresh(0);
+    for (let i = 0; i < 90; i++) { E.step(away, 1); hire(away); }
+    E.catchUp(away, 3 * 3600);
+    assert.ok(away.built >= 1, "time away builds jobs, not only stockpiles");
+});

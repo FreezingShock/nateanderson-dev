@@ -25,3 +25,13 @@
   animation: gba-wave 1.2s steps(2, end) infinite; }
 @keyframes gba-wave { 50% { background-size: 7px 5px, 1px 30px; } }
 .gba-under { position: absolute; background: #1f120f; }
+
+/* Workers pace the site; each is one pixel-art figure drawn with a box-shadow (components/groundbreak-art/site-scene.tsx). */
+.gba-worker { position: absolute; width: 6px; height: 12px; image-rendering: pixelated; pointer-events: none; transform: scale(2); transform-origin: 0 100%;
+  animation: gba-pace var(--dur, 7s) steps(24, end) var(--delay, 0s) infinite alternate; }
+.gba-worker i { display: block; width: 1px; height: 1px; animation: gba-bob .5s steps(2, end) infinite; }
+@keyframes gba-pace { from { translate: 0 0; } to { translate: calc(var(--span, 60px) / 2) 0; } }
+@keyframes gba-bob { 50% { translate: 0 -1px; } }
+.gba-paused .gba-worker, .gba-paused .gba-worker i { animation-play-state: paused; }
+.gba-lowfx .gba-worker, .gba-lowfx .gba-worker i { animation: none; }
+@media (prefers-reduced-motion: reduce) { .gba-worker, .gba-worker i { animation: none; } }

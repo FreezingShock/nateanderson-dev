@@ -46,4 +46,8 @@ export interface SceneProps {
     /** Honour reduced motion and the low effects setting: draw still, no particles. */
     reduce: boolean;
     paused: boolean;
+    /** Job id the firm builds next while none is running, so the lot is staked out and the crew waits on it. */
+    idle?: string | null;
+    /** Crews hired across all materials; sets how many workers stand on the site. */
+    crews?: number;
 }
