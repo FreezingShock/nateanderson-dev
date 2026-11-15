@@ -1,0 +1,63 @@
+// Headless check of B-06: Shift-drag selects, Ctrl+C copies, Ctrl+V arms a paste, a click stamps it, R turns it, Ctrl+Z undoes it.
+// Usage: SITE_PASSWORD=ci-password node scripts/automation/copy-paste-check.mjs <base> <outDir>
+import { createRequire } from "node:module";
+import { mkdirSync } from "node:fs";
+const require = createRequire(import.meta.url);
+const { chromium } = require("playwright");
+const [base, out] = process.argv.slice(2);
+mkdirSync(out, { recursive: true });
+const r = await fetch(`${base}/api/gate`, { method: "POST", headers: { "content-type": "application/json", origin: base }, body: JSON.stringify({ password: process.env.SITE_PASSWORD || "ci-password" }) });
+const cookie = r.headers.getSetCookie().find((s) => s.startsWith("site_unlock=")).split(";")[0].split("=")[1];
+const browser = await chromium.launch({ args: ["--use-gl=angle", "--use-angle=swiftshader", "--enable-unsafe-swiftshader", "--ignore-gpu-blocklist"] });
+let fails = 0;
+const ok = (c, m) => { console.log(c ? "PASS" : "FAIL", m); if (!c) fails++; };
+for (const [w, h, name] of [[1440, 900, "1440"]]) {
+    const ctx = await browser.newContext({ viewport: { width: w, height: h } });
+    await ctx.addCookies([{ name: "site_unlock", value: cookie, url: base }]);
+    await ctx.addInitScript(() => localStorage.setItem("brasswork-first-run-v1", "done"));
+    const page = await ctx.newPage();
+    const errs = [];
+    page.on("console", (m) => { if (m.type() === "error") errs.push(m.text()); });
+    await page.goto(`${base}/creations/games/brasswork?bwdev=1`);
+    await page.waitForSelector("canvas", { timeout: 120000 });
+    await page.waitForTimeout(4000);
+    // Free up the economy and lay a small row of belts to copy.
+    await page.evaluate(() => { const wd = window.__bwdev.getWorld(); wd.buildings[wd.hubId].input.plank = 200; wd.buildings[wd.hubId].input.iron_ingot = 200; window.__bwdev.refresh(); });
+    const placed = await page.evaluate(() => [5, 6, 7, 8].map((x) => window.__bwdev.placeAt("belt", x, 4)));
+    console.log("placed", JSON.stringify(placed));
+    const count = () => page.evaluate(() => Object.values(window.__bwdev.getWorld().buildings).filter((b) => b.type === "belt").length);
+    const before = await count();
+    ok(before >= 4, `belts to copy (${before})`);
+    const a = await page.evaluate(() => window.__bwdev.cellPx(5, 4));
+    const b = await page.evaluate(() => window.__bwdev.cellPx(8, 4));
+    await page.keyboard.down("Shift");
+    await page.mouse.move(a.x - 8, a.y - 8);
+    await page.mouse.down();
+    await page.mouse.move(b.x + 8, b.y + 8, { steps: 6 });
+    await page.mouse.up();
+    await page.keyboard.up("Shift");
+    await page.waitForTimeout(500);
+    await page.screenshot({ path: `${out}/copy-select-${name}.png` });
+    await page.keyboard.press("Control+c");
+    await page.waitForTimeout(400);
+    const note = await page.locator("body").innerText();
+    ok(/Copied \d+ building/.test(note), "copy note shows");
+    await page.keyboard.press("Control+v");
+    const t = await page.evaluate(() => window.__bwdev.cellPx(1, 8));
+    await page.mouse.move(t.x, t.y, { steps: 4 });
+    await page.waitForTimeout(500);
+    await page.screenshot({ path: `${out}/paste-preview-${name}.png` });
+    await page.mouse.click(t.x, t.y);
+    await page.waitForTimeout(600);
+    const after = await count();
+    ok(after === before + 4, `paste added the row (${before} -> ${after})`);
+    await page.screenshot({ path: `${out}/paste-done-${name}.png` });
+    await page.keyboard.press("Escape");
+    await page.keyboard.press("Control+z");
+    await page.waitForTimeout(400);
+    ok((await count()) === before, "one undo takes the whole paste back");
+    ok(errs.length === 0, `no console errors ${errs.slice(0, 2).join(" | ")}`);
+    await ctx.close();
+}
+await browser.close();
+process.exit(fails ? 1 : 0);

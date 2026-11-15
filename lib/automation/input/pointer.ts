@@ -19,7 +19,7 @@ export interface PointerOptions {
     onChange?: () => void;
 }
 
-type Mode = "pending" | "pan" | "orbit" | "stroke" | "pinch" | "ignored";
+type Mode = "pending" | "pan" | "orbit" | "stroke" | "select" | "pinch" | "ignored";
 
 interface Tracked {
     id: number;
@@ -169,6 +169,18 @@ export class PointerInput {
             p.mode = "orbit";
         } else if (e.button === 1 || (e.button === 0 && this.spaceDown)) {
             p.mode = "pan";
+        } else if (e.button === 0 && this.opts.build.isPasting()) {
+            // A paste stays armed so one copy can be stamped several times. Esc or a right click puts it away.
+            const cell = this.cellAt(e.clientX, e.clientY);
+            if (cell) this.opts.build.paste(cell);
+            p.mode = "ignored";
+        } else if (e.button === 0 && e.shiftKey && !this.opts.build.getTool()) {
+            // Shift-drag with no tool selects a rectangle of buildings to copy.
+            const cell = this.cellAt(e.clientX, e.clientY);
+            if (cell) {
+                p.mode = "select";
+                this.opts.build.beginSelect(cell);
+            } else p.mode = "ignored";
         } else if (e.button === 0) {
             p.click = !this.opts.build.getTool();
             if (this.opts.build.getTool()) {
@@ -269,6 +281,11 @@ export class PointerInput {
                 if (cell) this.opts.build.updateStroke(cell);
                 break;
             }
+            case "select": {
+                const cell = this.cellAt(e.clientX, e.clientY);
+                if (cell) this.opts.build.updateSelect(cell);
+                break;
+            }
             default:
                 if (e.pointerType !== "touch") this.opts.build.setHover(this.cellAt(e.clientX, e.clientY));
         }
@@ -286,7 +303,9 @@ export class PointerInput {
             /* ignore */
         }
 
-        if (p.mode === "stroke") {
+        if (p.mode === "select") {
+            this.opts.build.endSelect();
+        } else if (p.mode === "stroke") {
             this.opts.build.endStroke();
         } else if (p.mode === "pending" && e.type === "pointerup") {
             // Quick touch tap: place a single cell, or select a building when no tool is active.
@@ -316,6 +335,7 @@ export class PointerInput {
         } else if (p.mode === "orbit" && e.type === "pointerup" && p.button === 2 && Math.hypot(e.clientX - p.sx, e.clientY - p.sy) <= this.opts.slopPx) {
             // A short right click (no drag) with a tool armed cancels the tool. A drag still orbits the camera.
             if (this.opts.build.isStroking()) this.opts.build.cancelStroke();
+            else if (this.opts.build.cancelPaste()) { /* paste put away */ }
             else if (this.opts.build.getTool()) this.opts.build.setTool(null);
         } else if (p.mode === "pan" && p.click && e.type === "pointerup" && Math.hypot(e.clientX - p.sx, e.clientY - p.sy) <= this.opts.slopPx) {
             // Mouse click with no tool: a short release on a building selects it. A drag still pans.

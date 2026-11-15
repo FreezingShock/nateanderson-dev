@@ -461,6 +461,7 @@ export function BrassworkHost() {
                 touchBar: true,
                 board: BOARD,
                 world: buildWorld,
+                copyable: (kind) => resolve(CAT, kind)?.placeable !== false,
                 tools,
                 groups: dockTools,
                 // Press a belt on a machine and drag to another: the sim finds the shortest clear route (input frame in, input frame out).
@@ -487,6 +488,9 @@ export function BrassworkHost() {
                         setNote("");
                         syncScene();
                         refresh();
+                    } else if (e.type === "copy") {
+                        playSound("select");
+                        setNote(`Copied ${e.count} ${e.count === 1 ? "building" : "buildings"}. Ctrl+V to paste, R turns it.`);
                     } else if (e.type === "rotate" || e.type === "undo") {
                         playSound(e.type);
                     } else if (e.type === "route-source") {

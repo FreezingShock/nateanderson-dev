@@ -766,3 +766,101 @@ test("touch routing: tap a machine, then tap the target; Esc or Cancel drops the
     // A free cell with no source pick is an ordinary single belt.
     assert.equal(b.tap({ x: 9, z: 9 }), 1);
 });
+
+// A world where a kind can cover several cells, so copied buildings keep their whole footprint.
+function bigWorld(fps) {
+    const cells = new Map();
+    const fp = (k, rot) => {
+        const f = fps[k] ?? { w: 1, d: 1 };
+        return rot % 2 ? { w: f.d, d: f.w } : f;
+    };
+    return {
+        cells,
+        get: (x, z) => cells.get(`${x},${z}`) ?? null,
+        set(x, z, item) {
+            if (!item) {
+                const it = cells.get(`${x},${z}`);
+                if (!it) return;
+                const f = fp(it.kind, it.rot);
+                for (let dz = 0; dz < f.d; dz++) for (let dx = 0; dx < f.w; dx++) cells.delete(`${it.anchor.x + dx},${it.anchor.z + dz}`);
+                return;
+            }
+            const f = fp(item.kind, item.rot);
+            for (let dz = 0; dz < f.d; dz++) for (let dx = 0; dx < f.w; dx++) cells.set(`${x + dx},${z + dz}`, { ...item, anchor: { x, z } });
+        },
+    };
+}
+
+test("copy and paste: the layout lands at the cursor as one undo step, and R turns the whole layout", () => {
+    const fps = { forge: { w: 2, d: 1 } };
+    const world = bigWorld(fps);
+    const events = [];
+    const b = new A.BuildController({ world, board, footprintOf: (k) => fps[k], onEvent: (e) => events.push(e.type) });
+    world.set(2, 2, { kind: "forge", rot: 0 });
+    world.set(4, 2, { kind: "belt", rot: 1 });
+    world.set(9, 9, { kind: "belt", rot: 0 });
+    b.beginSelect({ x: 1, z: 1 });
+    b.updateSelect({ x: 5, z: 3 });
+    assert.equal(b.endSelect(), 2, "the far belt is outside the rectangle");
+    assert.ok(b.getHighlight().length === 3, "forge covers two cells, belt one");
+    assert.equal(b.copy(), 2);
+    assert.ok(b.startPaste());
+    b.setHover({ x: 10, z: 4 });
+    assert.equal(b.getHighlight().length, 3, "the preview shows every placeable cell");
+    assert.equal(b.paste({ x: 10, z: 4 }), 2);
+    assert.equal(world.get(10, 4).kind, "forge");
+    assert.equal(world.get(11, 4).anchor.x, 10, "second forge cell belongs to the forge");
+    assert.equal(world.get(12, 4).kind, "belt");
+    assert.ok(b.undo());
+    assert.equal(world.get(10, 4), null);
+    assert.equal(world.get(12, 4), null, "one undo clears the whole paste");
+    // Turn the layout: the forge becomes 1 wide and 2 deep and the belt sits beside it.
+    b.rotateHover();
+    const clip = b.getClipboard();
+    assert.equal(clip.find((p) => p.kind === "forge").rot, 1);
+    assert.equal(Math.min(...clip.map((p) => p.dx)), 0);
+    assert.equal(Math.min(...clip.map((p) => p.dz)), 0);
+    assert.equal(b.paste({ x: 14, z: 4 }), 2);
+    assert.equal(world.get(14, 4).kind, "belt", "the belt that sat east of the forge now sits north of it");
+    assert.equal(world.get(14, 5).kind, "forge");
+    assert.equal(world.get(14, 6).anchor.z, 5, "the turned forge is two deep");
+    assert.ok(events.includes("place"));
+});
+
+test("paste skips parts that do not fit and says how many", () => {
+    const world = bigWorld({});
+    const events = [];
+    const b = new A.BuildController({ world, board, onEvent: (e) => events.push(e) });
+    world.set(1, 1, { kind: "belt", rot: 0 });
+    world.set(2, 1, { kind: "belt", rot: 0 });
+    b.setHover({ x: 1, z: 1 });
+    b.beginSelect({ x: 1, z: 1 });
+    b.updateSelect({ x: 2, z: 1 });
+    b.endSelect();
+    assert.equal(b.copy(), 2);
+    world.set(6, 6, { kind: "rock", rot: 0 });
+    assert.equal(b.paste({ x: 6, z: 6 }), 1, "the belt under the rock is skipped");
+    const bad = events.find((e) => e.type === "invalid");
+    assert.match(bad.reason, /1 of 2 skipped/);
+    assert.equal(b.paste({ x: 30, z: 30 }), 0, "off the board nothing lands");
+    assert.ok(b.cancelPaste() === false, "paste was never armed in this test");
+});
+
+test("mapKey: Ctrl/Cmd+C and V copy and paste", () => {
+    assert.deepEqual(A.mapKey({ key: "c", ctrlKey: true }), { type: "copy" });
+    assert.deepEqual(A.mapKey({ key: "v", metaKey: true }), { type: "paste" });
+    assert.deepEqual(A.mapKey({ key: "c" }), null);
+});
+
+test("copy leaves out kinds that cannot be placed, such as the hub", () => {
+    const world = bigWorld({ hub: { w: 3, d: 3 } });
+    const b = new A.BuildController({ world, board, copyable: (k) => k !== "hub", footprintOf: (k) => (k === "hub" ? { w: 3, d: 3 } : undefined) });
+    world.set(2, 2, { kind: "hub", rot: 0 });
+    world.set(6, 2, { kind: "belt", rot: 0 });
+    b.beginSelect({ x: 0, z: 0 });
+    b.updateSelect({ x: 8, z: 4 });
+    assert.equal(b.endSelect(), 1, "only the belt is selected");
+    assert.equal(b.copy(), 0 + 1);
+    b.setHover({ x: 2, z: 2 });
+    assert.equal(b.getClipboard().some((p) => p.kind === "hub"), false);
+});
