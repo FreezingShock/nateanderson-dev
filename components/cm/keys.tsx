@@ -8,6 +8,9 @@ import { NF_KEY_GROUPS, NF_KEYS_NOTE } from "@/lib/nodefarm/keys";
 import "./keys.css";
 
 const NF_PATH = "/creations/games/node-farm";
+const GB_PATH = "/creations/games/groundbreak";
+/** Groundbreak uses G, [ ], ? and Space itself (next step, cycle materials, menu), so the site shortcuts stay out of its way. */
+const onGroundbreak = (path: string) => path === GB_PATH || path.startsWith(GB_PATH + "/");
 const onFarm = (path: string) => path === NF_PATH || path.startsWith(NF_PATH + "/");
 
 /** How long a `g` press waits for its section number. */
@@ -103,6 +106,7 @@ export function KeyboardShortcuts() {
 
             const key = e.key;
             const now = Date.now();
+            if (onGroundbreak(window.location.pathname) && (key.toLowerCase() === "g" || key === "[" || key === "]" || key === "?")) return;
 
             if (chord.current && now - chord.current < CHORD_MS && /^[0-6]$/.test(key)) {
                 chord.current = 0;
