@@ -1,0 +1,118 @@
+/* Brasswork icon hover life. The sprite comes in through CSS variables (icons.tsx) so the glint ::after can use the same
+   cell as a mask and only ever lights the icon's own pixels. Reduce motion and Simple visuals turn it all off. */
+.bwi {
+  position: relative;
+  display: inline-block;
+  flex: none;
+  background-image: var(--bwi-img);
+  background-size: var(--bwi-size);
+  background-position: var(--bwi-pos);
+  background-repeat: no-repeat;
+  image-rendering: var(--bwi-render, pixelated);
+  transform-origin: 50% 88%;
+  transition: transform 0.18s cubic-bezier(0.3, 0.7, 0.4, 1), filter 0.18s ease;
+}
+.bwi::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(115deg, transparent 0 38%, rgba(255, 238, 190, 0.85) 46%, rgba(255, 250, 230, 0.95) 50%, transparent 58% 100%)
+    no-repeat;
+  background-size: 260% 100%;
+  background-position: 130% 0;
+  -webkit-mask-image: var(--bwi-img);
+  mask-image: var(--bwi-img);
+  -webkit-mask-size: var(--bwi-size);
+  mask-size: var(--bwi-size);
+  -webkit-mask-position: var(--bwi-pos);
+  mask-position: var(--bwi-pos);
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  mix-blend-mode: screen;
+  opacity: 0;
+}
+
+/* What counts as hovering the icon: the icon itself, or the control or row it sits in. */
+.bwi:hover,
+:is(button, a, [role="button"], li, label):is(:hover, :focus-visible) .bwi {
+  filter: brightness(1.12) drop-shadow(0 2px 0 rgba(20, 10, 2, 0.55));
+}
+.bwi:hover::after,
+:is(button, a, [role="button"], li, label):is(:hover, :focus-visible) .bwi::after {
+  animation: bwi-glint 0.7s cubic-bezier(0.4, 0, 0.3, 1) both;
+}
+
+/* Items tilt toward the lamp and settle. */
+.bwi[data-kind="item"]:hover,
+:is(button, a, [role="button"], li, label):is(:hover, :focus-visible) .bwi[data-kind="item"] {
+  animation: bwi-tilt 0.55s cubic-bezier(0.3, 0.7, 0.4, 1) both;
+}
+/* Machines hop on their base: a quick squash, a lift, a landing. */
+.bwi[data-kind="machine"]:hover,
+:is(button, a, [role="button"], li, label):is(:hover, :focus-visible) .bwi[data-kind="machine"] {
+  animation: bwi-hop 0.6s cubic-bezier(0.3, 0.7, 0.4, 1) both;
+}
+/* HUD glyphs nudge up and give a small wind of the key. */
+.bwi[data-kind="ui"]:hover,
+:is(button, a, [role="button"], li, label):is(:hover, :focus-visible) .bwi[data-kind="ui"] {
+  animation: bwi-wind 0.5s cubic-bezier(0.3, 0.7, 0.4, 1) both;
+}
+
+@keyframes bwi-glint {
+  0% { opacity: 0; background-position: 130% 0; }
+  15% { opacity: 1; }
+  100% { opacity: 0; background-position: -30% 0; }
+}
+@keyframes bwi-tilt {
+  0% { transform: none; }
+  40% { transform: translateY(-3px) rotate(-6deg) scale(1.08); }
+  70% { transform: translateY(-2px) rotate(2deg) scale(1.06); }
+  100% { transform: translateY(-2px) scale(1.06); }
+}
+@keyframes bwi-hop {
+  0% { transform: none; }
+  18% { transform: scale(1.08, 0.9); }
+  48% { transform: translateY(-5px) scale(0.97, 1.06); }
+  76% { transform: translateY(0) scale(1.05, 0.96); }
+  100% { transform: translateY(-1px) scale(1.04); }
+}
+@keyframes bwi-wind {
+  0% { transform: none; }
+  45% { transform: translateY(-2px) rotate(-8deg) scale(1.1); }
+  100% { transform: translateY(-1px) rotate(0) scale(1.06); }
+}
+
+/* Hover name: a small brass-edged tag above the icon. Only icons that carry a name get one. */
+.bwi[data-name]::before {
+  content: attr(data-name);
+  position: absolute;
+  left: 50%;
+  bottom: calc(100% + 6px);
+  z-index: 40;
+  padding: 4px 8px;
+  white-space: nowrap;
+  pointer-events: none;
+  font: 600 12px/1.2 var(--font-sans, system-ui), sans-serif;
+  letter-spacing: 0.02em;
+  color: #fff2c8;
+  background: #1e1206;
+  border: 1px solid #b07a28;
+  box-shadow: 0 2px 0 #0a0603, inset 0 1px 0 rgba(246, 214, 136, 0.18);
+  opacity: 0;
+  transform: translate(-50%, 4px);
+  transition: opacity 0.14s ease, transform 0.14s ease;
+}
+.bwi[data-name]:hover::before,
+:is(button, a, [role="button"], li, label):is(:hover, :focus-visible) .bwi[data-name]::before {
+  opacity: 1;
+  transform: translate(-50%, 0);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bwi, .bwi::after, .bwi::before { animation: none !important; transition: none !important; }
+  .bwi::after { opacity: 0 !important; }
+}
+[data-reduce="true"] .bwi, [data-reduce="true"] .bwi::after,
+[data-lowfx="true"] .bwi, [data-lowfx="true"] .bwi::after { animation: none !important; transition: none !important; }
+[data-reduce="true"] .bwi::after, [data-lowfx="true"] .bwi::after { opacity: 0 !important; }

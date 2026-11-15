@@ -64,17 +64,21 @@ test("supernova needs a full collapse, pays stardust, keeps perks and resets the
     assert.ok(E.feNeed(s, E.effects(s)) > D.TUNE.feNeed * 0.9); // the next collapse asks for more
 });
 
-test("planets survive a supernova only with Survivors", () => {
-    const a = E.fresh(0); a.planets = ["ember"]; a.amt[7] = 5000; E.supernova(a);
-    assert.deepEqual(a.planets, []);
-    const b = E.fresh(0); b.planets = ["ember"]; b.perks = ["w3"]; b.amt[7] = 5000; E.supernova(b);
+test("planets come through a supernova young, or at their age with Survivors, and a neutron star clears them", () => {
+    const a = E.fresh(0); a.planets = ["ember"]; a.planetAge = { ember: 500 }; a.amt[7] = 5000; E.supernova(a);
+    assert.deepEqual(a.planets, ["ember"]);
+    assert.equal(a.planetAge.ember, 0);
+    const b = E.fresh(0); b.planets = ["ember"]; b.planetAge = { ember: 500 }; b.perks = ["w3"]; b.amt[7] = 5000; E.supernova(b);
     assert.deepEqual(b.planets, ["ember"]);
+    assert.equal(b.planetAge.ember, 500);
+    const c = E.fresh(0); c.planets = ["ember"]; c.sdLayer = D.TUNE.neutronAt; E.neutronStar(c);
+    assert.deepEqual(c.planets, []);
 });
 
 test("neutron star resets stardust and perks, opens the heavy rows; black hole resets all but singularities", () => {
     const s = E.fresh(0);
     assert.equal(E.rowOpen(s, 7), false);
-    s.sdLayer = 5000; s.stardust = 100; s.perks = ["l1", "k1"];
+    s.sdLayer = D.TUNE.neutronAt; s.stardust = 100; s.perks = ["l1", "k1"];
     const n = E.neutronStar(s);
     assert.ok(n >= 2);
     assert.equal(s.stardust, 0);
@@ -254,6 +258,74 @@ test("planets grow through four stages with time in orbit and pay more for it", 
     assert.equal(E.planetStage(back, "ember"), 2);
     s.amt[7] = 1e9;
     E.supernova(s);
-    assert.deepEqual(s.planetAge, {}, "a supernova strips planets and their age");
+    assert.equal(s.planetAge.ember, 0, "a supernova sets planets back to young");
     assert.ok(D.PLANETS.every((p) => p.stages.length === 4 && p.look));
+});
+
+test("the guide always says something useful and the collapse estimate follows the iron flow", () => {
+    const s = E.fresh(0);
+    let f = E.effects(s);
+    assert.match(E.guide(s, f), /^Next: burn hydrogen/);
+    for (let i = 0; i < D.ROWS; i++) s.bought[i][0] = 1;
+    s.amt = s.amt.map(() => 0);
+    f = E.effects(s);
+    s.flow = Array(D.N).fill(0);
+    assert.equal(E.collapseEta(s, f), null);
+    assert.match(E.guide(s, f), /not reaching iron/);
+    s.flow[7] = 10;
+    s.amt[7] = 100;
+    const eta = E.collapseEta(s, f);
+    assert.ok(Math.abs(eta - (E.feNeed(s, f) - 100) / 10) < 1e-9);
+    assert.match(E.guide(s, f), /Iron 100 of .*to the collapse/);
+    s.amt[7] = 1e9;
+    assert.equal(E.collapseEta(s, f), 0);
+    assert.match(E.guide(s, f), /The core is ready/);
+});
+
+test("the first visitor comes early and the deep rows are within reach of a first star", () => {
+    assert.ok(D.EVENT_FIRST <= 45);
+    // a plain player (acts every 10 s, buys the biggest tier affordable) collapses the first star in well under 25 minutes
+    const s = E.fresh(0);
+    let t = 0;
+    while (t < 1500 && !E.canSupernova(s, E.effects(s))) {
+        t++;
+        E.step(s, 1);
+        if (s.event && t % 8 === 0) E.answer(s, 0);
+        if (t % 10) continue;
+        for (let i = D.ROWS - 1; i >= 0; i--) for (let k = D.TIERS - 1; k >= 0; k--) { let n = 0; while (n++ < 30 && E.cost(s, i, k) <= s.amt[i] * 0.9) E.buy(s, i, k); }
+    }
+    assert.ok(E.canSupernova(s, E.effects(s)), "first collapse within 25 minutes");
+});
+
+test("deep stars: endless stardust sink, each adds to everything, cleared by a neutron star, old saves load", () => {
+    const s = E.fresh(0);
+    const g0 = E.effects(s).global;
+    s.stardust = 1e6;
+    const c1 = E.deepCost(s);
+    assert.ok(E.buyDeep(s));
+    assert.equal(s.stardust, 1e6 - c1);
+    assert.ok(E.deepCost(s) > c1);
+    assert.ok(Math.abs(E.effects(s).global - g0 * (1 + D.TUNE.deepBonus)) < 1e-9);
+    assert.equal(E.buyDeep(E.fresh(0)), false);
+    const back = E.parse(JSON.parse(E.serialize(s)));
+    assert.equal(back.deep, 1);
+    const old = JSON.parse(E.serialize(E.fresh(0))); delete old.deep;
+    assert.equal(E.parse(old).deep, 0);
+    s.sdLayer = D.TUNE.neutronAt;
+    E.neutronStar(s);
+    assert.equal(s.deep, 0);
+});
+
+test("after a neutron star, a player who stays and chases uranium reaches the black hole in about two hours", () => {
+    const s = E.fresh(0);
+    s.neutronStars = 1; s.neutronStarsAll = 1; s.neutrons = 6; s.pulsar = ["p1"]; s.perks = D.PERKS.map((p) => p.id);
+    let t = 0;
+    while (t < 4 * 3600 && !E.canBlackHole(s, E.effects(s))) {
+        t++;
+        E.step(s, 1);
+        if (s.event && t % 8 === 0) E.answer(s, 0);
+        if (t % 10) continue;
+        for (let i = D.ROWS - 1; i >= 0; i--) for (let k = D.TIERS - 1; k >= 0; k--) { let n = 0; while (n++ < 30 && E.cost(s, i, k) <= s.amt[i] * 0.9) E.buy(s, i, k); }
+    }
+    assert.ok(E.canBlackHole(s, E.effects(s)), "black hole within four hours of the neutron star");
 });

@@ -673,7 +673,8 @@ export function renderLayered(L: Layers, f: SceneFrame, S: SpriteSet): void {
     const bg = S.get(bgId(to));
     if (bg) {
         const old = shift < 1 && f.sky === 0 && from !== to ? S.get(bgId(from)) : null;
-        if (old) { drawFrame(ctx, old, 0, W / 2, H / 2); drawFrame(ctx, bg, 0, W / 2, H / 2, 1, ease(shift)); } else drawFrame(ctx, bg, 0, W / 2, H / 2);
+        // skies are short loops (twinkling stars, glowing gas); a still sky has one frame and frameAt returns 0
+        if (old) { drawFrame(ctx, old, frameAt(old, t), W / 2, H / 2); drawFrame(ctx, bg, frameAt(bg, t), W / 2, H / 2, 1, ease(shift)); } else drawFrame(ctx, bg, frameAt(bg, t), W / 2, H / 2);
     } else {
         begin(L.sky, skyBuffer(f.sky ?? 0));
         for (const s of STARS) {
@@ -742,7 +743,7 @@ export function renderLayered(L: Layers, f: SceneFrame, S: SpriteSet): void {
             const sh = planetSheet(p);
             const a = angleOf(p), s = Math.sin(a);
             if (!sh || (s > 0) !== front) continue;
-            drawFrame(ctx, sh, frameAt(sh, t), cx + Math.cos(a) * orbitOf(p), cy + s * orbitOf(p) * 0.27, 1.2);
+            drawFrame(ctx, sh, frameAt(sh, t), cx + Math.cos(a) * orbitOf(p), cy + s * orbitOf(p) * 0.27, 1);
         }
     };
     const codePlanets = (front: boolean) => {

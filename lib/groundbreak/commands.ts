@@ -3,7 +3,7 @@
 import { CITIES, JOB_BY, cityOf, MATS, PERKS, TIERS, TIER_LABELS, TUNE } from "./data";
 import {
     acceptChange, buy, buyPerk, canIncorporate, charterGain, declineChange, effects, fmt, fmtAge, fmtCash, incorporate, inspectScore, jobFloors,
-    jobPhaseName, jobProgress, matName, overtime, overtimeCost, perkReady, queue, stageOf, tierCost, unlock, canUnlock, waitingFor, type State,
+    jobMat, jobPhaseName, jobProgress, matName, overtime, overtimeCost, perkReady, queue, stageOf, tierCost, unlock, canUnlock, waitingFor, type State,
 } from "./engine";
 
 export interface GbLine { t: string; k?: "dim" | "hi" | "err" }
@@ -27,7 +27,7 @@ export function gbCommand(s: State, args: string[]): GbResult {
             l(`firm ${s.firm + 1} · ${c.name} · stage ${stageOf(s)} · ${fmtAge(s.age)} this firm`, "hi"),
             l(`${fmtCash(s.cash)} · ${fmt(s.rep)} rep · ${s.charter} charter · ${s.built} buildings · inspection score ${inspectScore(s, f).toFixed(2)}`),
             l(MATS.slice(0, s.open).map((m, i) => `${m.sym} ${fmt(s.amt[i], 1)}`).join("  ")),
-            l(waitingFor(s) ?? (s.job ? `${JOB_BY.get(s.job.id)?.name}: ${jobPhaseName(s.job, f)} ${Math.floor(jobProgress(s.job, f) * 100)}%` : "starting the next job"), "dim"),
+            l(waitingFor(s) ? `${waitingFor(s)} Meanwhile: ${s.job?.rerun ? `repeat order, ${JOB_BY.get(s.job.id)?.name} ${Math.floor(jobProgress(s.job, f) * 100)}%` : "no repeat order yet"}.` : s.job ? `${JOB_BY.get(s.job.id)?.name}: ${jobPhaseName(s.job, f)} ${Math.floor(jobProgress(s.job, f) * 100)}%` : "starting the next job", "dim"),
         ]);
     }
     if (sub === "hire" || sub === "buy") {
@@ -49,7 +49,7 @@ export function gbCommand(s: State, args: string[]): GbResult {
         return out([l(`${name} opened.`, "hi")], true);
     }
     if (sub === "jobs") {
-        return out(queue(s, 3).map((q, i) => l(`${i === 0 && s.job ? "now " : "next"} ${q.job.name} · stage ${q.job.stage}${q.ready ? "" : " · needs more materials open"}`, i === 0 ? undefined : "dim")));
+        return out(queue(s, 3).map((q, i) => l(`${i === 0 && s.job ? "now " : "next"} ${q.job.name} · stage ${q.job.stage}${q.ready ? "" : ` · needs ${matName(jobMat(q.job))} open`}`, i === 0 ? undefined : "dim")));
     }
     if (sub === "change") {
         const pick = (args[1] ?? "").toLowerCase();

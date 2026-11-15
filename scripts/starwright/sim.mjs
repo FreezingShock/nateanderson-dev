@@ -41,7 +41,7 @@ while (s._t < hours * 3600) {
         while (again) {
             again = false;
             const opts = D.PERKS.filter((p) => E.perkReady(D.PERKS, s.perks, p) && p.cost <= s.stardust).sort((a, b) => a.cost - b.cost);
-            if (opts[0]) { E.buyPerk(s, opts[0].id); again = true; }
+            if (opts[0]) { E.buyPerk(s, opts[0].id); again = true; } else if (E.buyDeep(s)) again = true;
         }
     }
     if (s.neutronStars === 0 && E.canNeutron(s) && s.perks.length >= 18 && E.collapse(s, f) >= 1) { const g = E.neutronStar(s); mark(`NEUTRON STAR #${s.neutronStars}: +${g} neutrons`); }
