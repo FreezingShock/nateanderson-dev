@@ -94,7 +94,7 @@ Corrupt save (item 11c): the game already kept a copy under `gb-save-v1-corrupt`
 
 ## Found during the 2026-11-15 pass (do these next, top first; polish pass recommended to Nate)
 
-### 12. Phone portrait: the dock takes about 40% of the screen
+### 12. Phone portrait: the dock takes about 40% of the screen (DONE 2026-11-15: later groups hide until reached)
 - At 390 and 360 wide the dock wraps to 3 rows (about 330 px) and the site gets the top half. Done when: groups collapse to one open row (the group of the selected or newest material) with the others one tap away, and the dig is at least 55% of the screen; number keys and the NEXT cue still work.
 
 ### 13. Window panels look see-through (DONE 2026-11-15: panels .985 opaque)
