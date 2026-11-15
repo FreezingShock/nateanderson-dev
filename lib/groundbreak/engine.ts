@@ -152,6 +152,8 @@ export function unlock(s: State, n: number): boolean {
     s.amt[n - 1] -= UNLOCK_COST[n];
     s.open = n + 1;
     s.crews[n] = Math.max(s.crews[n], 1);
+    // Opening a material is a moment: the first crew arrives with a minute of output already stocked, so the new row is alive at once.
+    s.amt[n] = clamp(s.amt[n] + rawRate(s, n, effects(s), chain(s)) * TUNE.unlockGiftSecs);
     return true;
 }
 
