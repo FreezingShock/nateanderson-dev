@@ -22,7 +22,7 @@ const K = 2;
 /** The job stands with its centre at world x 240 on the near shore; the backdrop's site line meets world ground. */
 const OY = GB_BACKDROP.siteY - GROUND_Y * K;
 const SITE_X = 980; // backdrop x (art px) under the job's centre: right of the port cranes, the city behind it
-const PARALLAX = { sky: 0.06, hills: 0.22, city: 0.42, bay: 0.62, shore: 1 } as const;
+const PARALLAX = { sky: 0.06, clouds: 0.1, hills: 0.22, city: 0.42, bay: 0.62, glint: 0.62, boats: 0.62, shore: 1 } as const;
 
 function frameFor(id: GbJobId, job: SceneJob): number {
     const n = GB_JOBS[id].frames.length;
@@ -50,7 +50,7 @@ export function GbSiteScene({ camera, job, skyline, reduce, paused, idle, crews 
     const B = GB_BACKDROP;
     const city = Math.min(4, Math.floor(skyline.length / 3)) as 0 | 1 | 2 | 3 | 4;
 
-    const layer = (name: keyof typeof PARALLAX, src: string) => {
+    const layer = (name: keyof typeof PARALLAX, src: string, motion?: string) => {
         const p = PARALLAX[name];
         const sc = fit * (1 + (camera.z - 1) * p);
         const cx = SITE_X + (fx - SITE_X) * p;
@@ -60,7 +60,7 @@ export function GbSiteScene({ camera, job, skyline, reduce, paused, idle, crews 
         const ty = horizonScreen - B.horizon * sc;
         // three copies side by side so zooming far out never shows an edge
         return (
-            <div key={name} className="gba-layer" style={{
+            <div key={name} className={`gba-layer ${motion ?? ""}`} style={{
                 width: B.w * 3, height: B.h, transform: `translate(${Math.round(tx - B.w * sc)}px, ${Math.round(ty)}px) scale(${sc})`,
                 backgroundImage: `url("${src}")`, backgroundSize: `${B.w}px ${B.h}px`, backgroundRepeat: "repeat-x",
             }} />
@@ -86,9 +86,12 @@ export function GbSiteScene({ camera, job, skyline, reduce, paused, idle, crews 
     return (
         <div ref={box} className={`gba-scene ${reduce ? "gba-lowfx" : ""} ${paused ? "gba-paused" : ""}`} aria-hidden="true">
             {layer("sky", B.layers.sky)}
+            {layer("clouds", B.layers.clouds, "gba-drift")}
             {layer("hills", B.layers.hills)}
             {layer("city", B.layers[`city-${city}`])}
             {layer("bay", B.layers.bay)}
+            {layer("glint", B.layers.glint, "gba-twinkle")}
+            {layer("boats", B.layers.boats, "gba-sail")}
             {layer("shore", B.layers.shore)}
             <div className="gba-near" style={{ transform: near }}>
                 <div className="gba-under" style={{ left: -4000, top: B.h - 2, width: B.w + 8000, height: 3000 }} />
