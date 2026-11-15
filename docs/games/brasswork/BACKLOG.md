@@ -46,9 +46,6 @@ Ordered by value. Each is one PR.
 - Same standard as B-07 for `expedition-window.tsx` and `prestige-screen.tsx`: art first, one line of text, ore dots with names in tooltips, hold to confirm. Wait for T-01 if Nate wants the big view instead.
 - Done when: all four sites render with their art, hold to confirm works with keyboard and touch, screenshots. **Needs screenshots.**
 
-**B-16 Test the HUD data and the save format against a golden file**
-- No test covers `hudData` output shape or a save round trip across versions. Add a golden `serialize` fixture so a future change to `World` that breaks old saves fails a test.
-- Done when: `npm run test:automation` loads a checked-in v1 save and keeps playing it for 60 simulated seconds.
 
 ## 2. Needs Nate's taste call
 
