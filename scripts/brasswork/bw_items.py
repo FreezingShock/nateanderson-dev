@@ -600,3 +600,26 @@ def lattice_strut(p=0):
         m = disc(x, y, 4.2 * FIT["k"])
         c.fill(m, 1.0 - np.hypot(X - x + 1.5, Y - y + 1.5) / (6 * FIT["k"]), "cu", outline="cu")
     return done(c)
+
+
+@item
+def clockworks(p=0):
+    """Clockworks (the stage-4 group, also used by the resource strip): a brass mechanism plate with a big gear
+    meshing a small one and a steel mainspring spiral on top."""
+    c, sc = new(cy=44)
+    sc.box(-16, 16, 0, 3, -13, 13, "iron", 0.05)
+    sc.extrude(gear_outline(12, 9.5, 12), 3, "brass", 0.05, frame=((-4, 3, 2), (1, 0, 0), (0, 0, -1), (0, 1, 0)))
+    sc.extrude(gear_outline(7, 5.2, 8), 3, "brass", 0.2, frame=((12, 3, -7), (1, 0, 0), (0, 0, -1), (0, 1, 0)))
+    sc.cylinder((-4, 6, 2), (-4, 8, 2), 3, "steel", 0.1, n=14)
+    sc.paint(c)
+    # Mainspring spiral on the big gear.
+    pts = []
+    for k in range(90):
+        t = k * 0.16
+        r = 1.2 + t * 0.55
+        pts.append(sc.pt((-4 + math.cos(t) * r, 6.2, 2 + math.sin(t) * r)))
+    for a, b in zip(pts, pts[1:]):
+        c.fill(line(*a, *b, 0.9), 0.9, "steel")
+    hx, hy = sc.pt((12, 6.1, -7))
+    c.set(disc(hx, hy, 1.6, 1.0), P["brass"][5])
+    return done(c)

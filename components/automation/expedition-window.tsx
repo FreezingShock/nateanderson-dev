@@ -57,29 +57,29 @@ function Plan({ plan, scale }: { plan: NonNullable<PrestigeSite["plan"]>; scale:
     );
 }
 
-/** Glyph for a keep or leave line, picked from its wording. */
-function carryIcon(text: string): UiIconId {
+/** Glyph for a keep or leave line, picked from its wording. Each has its own drawing in the brass keep/leave set. */
+function carryIcon(text: string, leave: boolean): UiIconId {
     const t = text.toLowerCase();
-    if (t.includes("blueprint") || t.includes("research")) return "blueprints";
-    if (t.includes("design")) return "codex";
-    if (t.includes("route")) return "map";
-    if (t.includes("free machine")) return "prestige";
-    if (t.includes("record")) return "milestones";
-    if (t.includes("machine") || t.includes("belt")) return "machines";
-    if (t.includes("stock")) return "logistics";
-    if (t.includes("fleet") || t.includes("expedition")) return "expedition";
-    return "info";
+    if (leave) return t.includes("stock") ? "leave_stock" : t.includes("fleet") || t.includes("expedition") ? "leave_fleets" : "leave_machines";
+    if (t.includes("blueprint") || t.includes("research")) return "keep_plans";
+    if (t.includes("design")) return "keep_designs";
+    if (t.includes("route")) return "keep_routes";
+    if (t.includes("free machine")) return "keep_free";
+    return "keep_records";
 }
 
-/** A row of small glyphs; the full wording sits in the tooltip and the accessible name. */
+/** A row of identical tiles, one glyph each; the full wording sits in the tooltip and the accessible name. */
 function Carry({ label, sign, items }: { label: string; sign: string; items: string[] }) {
+    const leave = label === "Leave";
     return (
         <div className="ex-carry" data-kind={label.toLowerCase()} role="group" aria-label={`${label}: ${items.join(", ")}`}>
             <span className="ex-carry-label">
                 <b aria-hidden="true">{sign}</b> {label}
             </span>
             {items.map((t) => (
-                <span key={t} className="ex-carry-ico" title={t} tabIndex={0} aria-label={t} style={uiIconStyle(carryIcon(t), 24)} />
+                <span key={t} className="ex-carry-tile" title={t} tabIndex={0} aria-label={t}>
+                    <span className="ex-carry-ico" style={uiIconStyle(carryIcon(t, leave), 24)} aria-hidden="true" />
+                </span>
             ))}
         </div>
     );

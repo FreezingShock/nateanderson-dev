@@ -3,11 +3,11 @@ import type { CSSProperties } from "react";
 
 /** HUD glyph sheet (menus, panel headers, stage buttons): 64 px art cells, 8 across, row by row. */
 export const UI_ICON_SHEET = {
-    url: "/brasswork/icons/ui.webp?v=5bb62158",
-    png: "/brasswork/icons/ui.png?v=5bb62158",
+    url: "/brasswork/icons/ui.webp?v=6159635b",
+    png: "/brasswork/icons/ui.png?v=6159635b",
     cell: 64,
     cols: 8,
-    rows: 5,
+    rows: 6,
 } as const;
 
 /** Sheet cell of each HUD glyph. Cell order is stable: new glyphs are appended. */
@@ -44,7 +44,15 @@ export const UI_ICONS = {
     back: 29, // Back,
     lock: 30, // Locked,
     done: 31, // Done,
-    warn: 32, // Warning
+    warn: 32, // Warning,
+    keep_plans: 33, // Keep: blueprints and research,
+    keep_designs: 34, // Keep: unlocked designs,
+    keep_routes: 35, // Keep: routes found,
+    keep_free: 36, // Keep: one free machine,
+    keep_records: 37, // Keep: records,
+    leave_machines: 38, // Leave: machines and belts,
+    leave_stock: 39, // Leave: stored stock,
+    leave_fleets: 40, // Leave: fleets
 } as const;
 
 export type UiIconId = keyof typeof UI_ICONS;
