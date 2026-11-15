@@ -523,13 +523,12 @@ export function AutomationHud({
 
           {/* Phone shows these in the Milestones sheet. On desktop they live in the Goals window instead. */}
           <div className="ab-factory-meta">
-            <Section title="Milestones" icon="milestones" meta={`${data.blueprints} blueprints`}>
-              <Milestones milestones={data.milestones} />
-            </Section>
-
-            <Section title="Prestige" icon="prestige" defaultOpen={false}>
-              <PrestigeCard prestige={data.prestige} onOpen={() => { setPlanSite(undefined); setScreen("prestige"); }} />
-            </Section>
+            <MilestonesPanel
+              milestones={data.milestones}
+              blueprints={data.blueprints}
+              prestige={data.prestige}
+              onPrestige={() => { setPlanSite(undefined); setScreen("prestige"); }}
+            />
           </div>
         </aside>
 
