@@ -11,6 +11,7 @@ import { BuildList, GROUP_ICON, GROUP_TITLE, type GroupId } from "./build-bar";
 import { Inspector } from "./inspector";
 import { Milestones, PrestigeCard, Section } from "./factory-sections";
 import { MenuWindow } from "@/components/brasswork-ui/window";
+import { MilestonesPanel } from "./milestones-window";
 import { SettingsWindow, type SettingsSlots } from "./settings-window";
 import { ProductionWindow } from "./production-window";
 import { ExpeditionWindow } from "./expedition-window";
@@ -600,11 +601,12 @@ export function AutomationHud({
           art={<Ico id="milestones" />}
           onClose={() => setMilestonesOpen(false)}
         >
-          <p className="ab-dim">{data.blueprints} blueprints</p>
-          <Milestones milestones={data.milestones} />
-          <Section title="Prestige" icon="prestige" defaultOpen={false}>
-            <PrestigeCard prestige={data.prestige} onOpen={() => { setMilestonesOpen(false); setPlanSite(undefined); setScreen("prestige"); }} />
-          </Section>
+          <MilestonesPanel
+            milestones={data.milestones}
+            blueprints={data.blueprints}
+            prestige={data.prestige}
+            onPrestige={() => { setMilestonesOpen(false); setPlanSite(undefined); setScreen("prestige"); }}
+          />
         </MenuWindow>
       )}
 
