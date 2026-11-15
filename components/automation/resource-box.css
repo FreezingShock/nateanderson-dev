@@ -25,3 +25,11 @@
   pointer-events: none;
 }
 .ab-root .ab-res-item[data-empty="true"] .ab-res-box .ab-res-amt { color: #a8946c; }
+
+/* Phone: one even grid of boxes across both lists, so every resource shows without a sideways scroll strip. */
+@media (max-width: 759px) {
+  .ab-root.bw .ab-res { display: grid; grid-template-columns: repeat(4, 64px); gap: 6px; width: auto; }
+  .ab-root.bw .ab-res .ab-res-list { display: contents; }
+  .ab-root.bw .ab-res .ab-res-item { min-width: 0; justify-content: center; }
+  .ab-root.bw .ab-res .ab-res-rate { display: none; }
+}

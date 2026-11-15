@@ -2,7 +2,7 @@
 // runs them against the open game's live state, or against the saved game when the game is not open.
 import { ACHIEVEMENTS, ACH_BONUS, CLOUDS, CONSTELLATIONS, ELEMENTS, TUNE, PERKS, PLANETS, PULSAR_PERKS, ROWS, TIERS, TIER_NAMES } from "./data";
 import {
-    answer, blackHole, buy, checkAch, chooseCloud, eventOf, buyPerk, buyPlanet, buyPulsar, canBlackHole, canNeutron, canSupernova, collapse, cost, effects, fmt, fmtAge, fmtHeat,
+    answer, blackHole, buy, checkAch, chooseCloud, eventOf, buyDeep, deepCost, buyPerk, buyPlanet, buyPulsar, canBlackHole, canNeutron, canSupernova, collapse, cost, effects, fmt, fmtAge, fmtHeat,
     heaviest, horizonNeed, neutronGain, neutronStar, rowOpen, seeds, step, supernova, type State,
 } from "./engine";
 import { BACKUP_KEY, CORRUPT_KEY, lastAway, readBackup, writeBackup } from "./session";
@@ -147,6 +147,14 @@ export function swCommand(s: State, args: string[]): SwResult {
         }
         const rows = list.map((p) => l(`${p.id}  ${owned.includes(p.id) ? "owned" : fmt(p.cost).padStart(5)}  ${p.name}: ${p.desc}`, owned.includes(p.id) ? "dim" : undefined));
         return out([l(`${sub === "perks" ? "stardust" : "neutrons"} ${fmt(cur)} · sw ${sub} <id> buys`, "hi"), ...rows]);
+    }
+    if (sub === "deep") {
+        const ok = args[1] === "buy" ? buyDeep(s) : false;
+        const msg = args[1] === "buy" ? (ok ? "deep star lit." : `a deep star costs ${fmt(deepCost(s))} stardust.`) : "";
+        return out([
+            ...(msg ? [l(msg, ok ? undefined : "err")] : []),
+            l(`deep stars ${s.deep} · each adds ${Math.round(TUNE.deepBonus * 100)}% to everything · next costs ${fmt(deepCost(s))} stardust (you have ${fmt(s.stardust)}) · sw deep buy`, "hi"),
+        ], ok);
     }
     if (sub === "planets") {
         const id = (args[1] ?? "").toLowerCase();

@@ -66,3 +66,18 @@
   .ms-hero-art { justify-self: center; }
   .ms-carry { grid-template-columns: 1fr; }
 }
+/* Phone Milestones sheet: the same panel, tighter. */
+@media (max-width: 759px) {
+  .ab-factory-meta .ms { gap: 14px; padding: 8px 10px 12px; }
+  .ab-factory-meta .ms-stats dd { font-size: 20px; }
+  .ab-factory-meta .ms-hero { padding: 10px; gap: 10px; }
+  .ab-factory-meta .ms-hero-name { font-size: 22px; }
+  .ab-factory-meta .ms-route { grid-template-columns: 1fr; gap: 6px; }
+  .ab-factory-meta .ms-route li { flex-direction: row; align-items: center; gap: 10px; }
+  .ab-factory-meta .ms-route li::before { display: none; }
+  .ab-factory-meta .ms-route-meta { margin-left: auto; }
+  .ab-factory-meta .ms-hero { grid-template-columns: 96px minmax(0, 1fr); }
+  .ab-factory-meta .ms-hero-art { width: 96px; overflow: hidden; }
+  .ab-factory-meta .ms-hero-art > * { zoom: 0.6; }
+  .ab-factory-meta .ms-items { grid-column: 1 / -1; }
+}

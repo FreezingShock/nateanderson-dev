@@ -437,3 +437,11 @@ test("a change order costs build time and a tougher inspection, pays more, and i
     const strongNo = run1("tower", 3500, false), strongYes = run1("tower", 3500, true);
     assert.ok(strongYes.cash / strongYes.t > strongNo.cash / strongNo.t * 1.08, "an established firm does better saying yes");
 });
+
+test("opening a material stocks a minute of its output so the new row is alive at once", () => {
+    const s = E.fresh(0);
+    s.amt[0] = 1e4;
+    assert.ok(E.unlock(s, 1));
+    assert.ok(s.amt[1] > 0, "Sand arrived stocked");
+    assert.ok(s.amt[1] < 1000, "but only a minute's worth");
+});

@@ -329,3 +329,13 @@ test("after a neutron star, a player who stays and chases uranium reaches the bl
     }
     assert.ok(E.canBlackHole(s, E.effects(s)), "black hole within four hours of the neutron star");
 });
+
+test("sw deep lists and buys deep stars", () => {
+    const s = E.fresh(0);
+    assert.equal(C.swCommand(s, ["deep", "buy"]).changed, false);
+    s.stardust = 1e5;
+    const r = C.swCommand(s, ["deep", "buy"]);
+    assert.ok(r.changed);
+    assert.equal(s.deep, 1);
+    assert.match(C.swCommand(s, ["deep"]).lines.at(-1).t, /deep stars 1/);
+});
