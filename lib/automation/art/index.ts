@@ -2,8 +2,8 @@
 
 /** Machine portraits: 128 px art cells, 4 across, each machine on a lamplit workshop bench. */
 export const PORTRAIT_SHEET = {
-    url: "/brasswork/art/portraits.webp?v=fd15b557",
-    png: "/brasswork/art/portraits.png?v=fd15b557",
+    url: "/brasswork/art/portraits.webp?v=a552c921",
+    png: "/brasswork/art/portraits.png?v=a552c921",
     cell: 128,
     cols: 4,
     rows: 4,
@@ -147,11 +147,11 @@ export const PORTRAIT_MODEL_HASH: Record<string, string> = {
     press: "f0c0747a4b21",
     lathe: "465405b405c2",
     drawer: "26711ffe126e",
-    assembler: "844b0129349b",
-    fabricator: "d99fc98170c6",
+    assembler: "ab3536c61ea6",
+    fabricator: "7ecd729e9577",
     windmill: "14a8f531e479",
-    spring_winder: "76142f1b3892",
-    spring_store: "5ba39abd6e06",
+    spring_winder: "77b91cfaafa5",
+    spring_store: "4f6d3be5d0b2",
     hub: "171a34c7d435",
     orrery: "b116c4b55a48",
 };

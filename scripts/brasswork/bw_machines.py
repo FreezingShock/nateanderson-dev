@@ -170,6 +170,9 @@ def assembler(p=0):
         hand = (sx * 4, 22, 0)
         sc.cylinder(elbow, hand, 1.3, "brass", 0.05, n=8)
         sc.cylinder(hand, (sx * 4, 18.5, 0), 0.7, "iron", 0.1, n=6)
+    sc.box(-16, -14, 16, 34, -2, 2, "steel", 0.1)
+    sc.box(14, 16, 16, 34, -2, 2, "steel", 0.1)
+    sc.box(-16, 16, 32, 34, -2, 2, "brass", 0.05)
     sc.paint(c)
     g = sc.pt((-10, 8, 13.1))
     c.fill(disc(*g, 3, 2.6), 0.8, "cream", outline="brass")
@@ -192,6 +195,7 @@ def fabricator(p=0):
         sc.cylinder((0, y0, 0), (0, y1, 0), max(r0, 0.5), "brass", 0.0, n=26, r2=max(r1, 0.5), caps=False)
     sc.extrude(gear_outline(7, 5.4, 10), 2.4, "brass", 0.1, frame=((0, 32, 0), (1, 0, 0), (0, 0, -1), (0, 1, 0)))
     sc.cylinder((0, 34, 0), (0, 38, 0), 2.0, "steel", 0.1, n=10)
+    sc.box(-14, -6, 4, 14, 10, 15, "steel", 0.1)
     sc.paint(c)
     for k in range(5):
         a = math.pi * (0.15 + 0.7 * k / 4)
@@ -243,6 +247,8 @@ def spring_winder(p=0):
     sc.cylinder((-10.5, 20, 0), (10.5, 20, 0), 1.6, "iron", 0.1, n=10)
     sc.cylinder((-6, 20, 0), (6, 20, 0), 11, "steel", -0.15, n=26)
     sc.extrude(gear_outline(6.5, 5, 10), 2.2, "cu", 0.05, frame=((13.5, 20, 0), (0, 0, 1), (0, 1, 0), (1, 0, 0)))
+    sc.box(-15, -12, 3, 28, -4, -2, "steel", 0.15)
+    sc.box(-16, -11, 10, 16, -3, 2, "iron", 0.05)
     sc.paint(c)
     # the spiral mainspring on the near face of the drum
     k = FIT["k"]
@@ -266,6 +272,8 @@ def spring_store(p=0):
         sc.cylinder((0, y, 0), (0, y + 2, 0), 12.6, "gun", 0.05, n=24)
     sc.cylinder((0, 22, 0), (0, 25, 0), 9, "gun", 0.1, n=20)
     sc.cylinder((0, 25, 0), (0, 29, 0), 2.2, "iron", 0.1, n=10)
+    sc.box(-13, -11, 3, 24, -13, -11, "steel", 0.1)
+    sc.cylinder((-12, 26, -12), (-12, 29, -12), 2.5, "brass", 0.05, n=10)
     sc.paint(c)
     k = FIT["k"]
     win = poly([sc.pt((x, y, 12.3)) for x, y in [(-5, 9), (5, 9), (5, 17), (-5, 17)]])
