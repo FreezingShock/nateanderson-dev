@@ -5,3 +5,4 @@ Old -> new: none -> stardust from a supernova x2, cost 1800 stardust, needs a3 a
 Why: Gives the Anvil a fifth star and a late stardust payoff.
 Effect on pacing: not re-measured here; `scripts/starwright/sim.mjs` covers the first runs.
 Nate has not signed off on these numbers; he can ask to revert any of them.
+Signed off by Nate on 2026-11-15 (decision card "Keep all three").

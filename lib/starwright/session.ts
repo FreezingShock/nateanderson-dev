@@ -80,6 +80,10 @@ export function advance(s: State, gap: number): number {
     return catchUp(s, gap);
 }
 
+/** Most supernovas one absence can pay with auto supernova on, and the shortest star it assumes (seconds). Nate's pick 2026-11-15: "cap a few per absence". */
+export const AWAY_NOVA_CAP = 3;
+export const AWAY_NOVA_MIN_S = 300;
+
 export interface AutoCfg { autoNova: number; autoVisitor: "off" | "lump" | "boost" }
 export interface AutoResult { secs: number; novas: number; dust: number; answered: boolean }
 
@@ -99,11 +103,25 @@ export function advanceAuto(s: State, gap: number, cfg: AutoCfg): AutoResult {
     if (secs < 2) return { secs: 0, novas: 0, dust: 0, answered };
     const steps = Math.min(7200, Math.max(1, Math.ceil(secs / 2)));
     const dt = secs / steps;
-    let novas = 0, dust = 0;
+    let novas = 0, dust = 0, lastGain = 0, left = 0;
     for (let i = 0; i < steps; i++) {
         const f = effects(s);
         step(s, dt, f);
-        if (cfg.autoNova && canSupernova(s, f) && collapse(s, f) >= cfg.autoNova) { dust += supernova(s); novas++; }
+        if (cfg.autoNova && canSupernova(s, f) && collapse(s, f) >= cfg.autoNova) {
+            lastGain = supernova(s); dust += lastGain; novas++;
+            left = secs - (i + 1) * dt;
+        }
+    }
+    // Away time buys nothing, so a restarted star would idle. Instead, each further star the absence had room for pays what the last one
+    // paid, one per `awayNovaSecs` (the fastest star you have ever had, never under 5 minutes), up to AWAY_NOVA_CAP supernovas in all.
+    if (novas > 0 && lastGain > 0) {
+        const each = Math.max(AWAY_NOVA_MIN_S, s.fastest || 0);
+        const extra = Math.min(AWAY_NOVA_CAP - novas, Math.floor(left / each));
+        for (let k = 0; k < extra; k++) {
+            s.stardust += lastGain; s.sdLayer += lastGain; s.sdAll += lastGain;
+            s.novas++; s.novasAll++;
+            dust += lastGain; novas++;
+        }
     }
     return { secs, novas, dust, answered };
 }

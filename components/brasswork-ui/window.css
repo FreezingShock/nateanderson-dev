@@ -70,6 +70,7 @@
   min-height: 36px; padding: 0 12px; border: 2px solid #b8862f; background: #1d160b; color: #f4e4b8;
   font-family: inherit; font-weight: 600; font-size: 12px; line-height: 1; text-transform: uppercase; letter-spacing: .06em; cursor: pointer; white-space: nowrap;
 }
+@media (pointer: coarse) { .bw-window-close { min-height: 44px; min-width: 44px; } }
 .bw-window-close:focus-visible { outline: 2px solid #f4e4b8; outline-offset: 2px; }
 .bw-window-body { overflow: auto; padding: 12px; min-height: 0; }
 

@@ -498,3 +498,19 @@ test("gb help names every console subcommand", () => {
     assert.equal(r.lines.length, C.GB_SUBS.length);
     assert.equal(r.changed, false);
 });
+
+test("while the crew repeats a job, the waiting cue says what the next job waits on", async () => {
+    const G = await import(resolve(root, "lib/groundbreak/guide.ts"));
+    const s = E.fresh(0);
+    for (let t = 0; t < 3600 && !(s.job && s.job.rerun); t++) {
+        const f = E.effects(s);
+        if (t % 3 === 0) { for (let n = s.open - 1; n >= 0; n--) for (let k = 0; k < 40 && E.canBuy(s, n, 0, f); k++) E.buy(s, n, 0, f); while (E.canUnlock(s, s.open)) E.unlock(s, s.open); }
+        E.step(s, 1, f);
+    }
+    assert.ok(s.job && s.job.rerun, "reached a repeat order");
+    s.amt = s.amt.map(() => 0); s.cash = 0; // nothing affordable, so the cue can only wait
+    const c = G.nextCue(s);
+    assert.equal(c.kind, "wait");
+    assert.match(c.why, /repeats/);
+    assert.match(c.why, /needs/);
+});

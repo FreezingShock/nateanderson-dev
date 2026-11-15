@@ -43,7 +43,7 @@ Owners are per area, one thread per file set. The threads: "Streamline Brasswork
 | Supply crates on orders and milestones | working | `sim/progress.ts` | `progression.test.mjs` |
 | Prestige "Open a new workshop": 4 sites, workshop kit, site bonuses | working | `sim/progress.ts`, `sim/data.ts` | `sites.test.mjs` |
 | New-player opening (drill, kiln, windmill, belts, first milestone) | working | `sim/data.ts` (`STARTER_KIT`: 80 iron plates) | `opening.test.mjs` |
-| Save and load, versioned (`SAVE_VERSION` 1), offline catch-up up to 8 h | working | `sim/save.ts`, `sim/world.ts` (`catchUp`) | `sim.test.mjs`, `save-golden.test.mjs` (checked-in v1 save keeps playing 60 s) |
+| Save and load, versioned (`SAVE_VERSION` 1), offline catch-up up to 8 h, run in 10 ms slices on load (`catchUpAway` in the host) so the page stays responsive; `resolve()` and belt-to-store answers are cached | working | `sim/save.ts`, `sim/world.ts` (`catchUp`), `brasswork-host.tsx` | `sim.test.mjs`, `save-golden.test.mjs` (checked-in v1 save keeps playing 60 s) |
 | Day clock, 1200 s day | working | `sim/progress.ts` (`dayClock`) | none direct |
 | Full-run pacing | untested: no bot plays start to prestige (B-05) | none | none |
 
@@ -57,7 +57,7 @@ Owners are per area, one thread per file set. The threads: "Streamline Brasswork
 | Shift-drag area Remove | working | `input/pointer.ts`, `input/build.ts` | `input.test.mjs` |
 | Number keys 1 to 9 pick from the open build group, Tab cycles groups | working | `input/keys.ts`, `components/automation/build-bar.tsx` | `input.test.mjs` |
 | Copy and paste of building areas | not built (B-06) | none | none |
-| Touch: long-press, line stroke, two-tap belt routing, touch bar (Top, Rotate, Undo, Redo, Remove, Cancel) | partial: other tap targets not measured (B-10); untested on a real phone | `input/touch-bar.ts` | `input.test.mjs` (logic only) |
+| Touch: long-press, line stroke, two-tap belt routing, touch bar (Top, Rotate, Undo, Redo, Remove, Cancel), all 44 px | working in the browser harness; untested on a real phone | `input/touch-bar.ts` | `input.test.mjs` (logic only) |
 | Browser check of the input layer (desktop mouse and keys, phone touch through CDP, touch bar at 44 px) | working | `tests/automation/browser/` | itself |
 
 ## Renderer
@@ -94,7 +94,7 @@ Owners are per area, one thread per file set. The threads: "Streamline Brasswork
 | Starter quest scroll (drill, kiln, belt, delivery), skippable, never returns | working | `brasswork/first-run.tsx`, `lib/brasswork/first-run.ts` | `opening.test.mjs` (the steps) |
 | Codex of every machine | working | `brasswork/codex.tsx` | none |
 | Away report after 2 minutes or more offline | working | `brasswork/extras.tsx`, host | none |
-| Phone layout: bottom sheets, 4-across resource boxes, machine preview before placing, Milestones sheet, More menu | partial: sheet groups and animation (B-10); untested on a real phone | `phone-menu-art.css`, `automation-hud.tsx` | none |
+| Phone layout: bottom sheets, 4-across resource boxes, machine preview before placing, Milestones sheet, More menu; every tap target 44 px or more (`tap-targets.mjs` checks main view, four sheets and five More windows) | partial: sheet groups and animation (B-10); untested on a real phone | `phone-menu-art.css`, `automation-hud.tsx` | none |
 | `MenuWindow` (sizes 640, 960, 1160; variants iris, shutter, settle; bottom sheet under 768 px) | working | `brasswork-ui/window.tsx` | none |
 
 ## Audio
