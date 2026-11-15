@@ -11,7 +11,7 @@ const root = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
 const S = await import(resolve(root, "lib/automation/sim/index.ts"));
 const CAT = S.DEFAULT_CATALOG;
 const HUB = { x: 8, z: 5 };
-const SPOTS = [[2, 2], [2, 8], [15, 2], [15, 8], [8, 1]];
+const SPOTS = S.START_NODE_SPOTS;
 
 function board() {
     const world = S.createWorld({ width: 18, depth: 12, hub: HUB }, CAT);

@@ -113,3 +113,7 @@ Thread names change each wave; the file split is what matters. Before editing a 
 ## Pacing
 
 First run to the bridge is about 3 hours (Nate's pick). The bot test "finishes the campaign in about three hours" guards it. Nobody has played it by hand yet; see BACKLOG item 11.
+
+### HUD layout
+
+- Floating HUD stacks on the dock: `groundbreak.tsx` measures the dock and sets `--gb-dock-top`; the cue, view buttons, feed and card use it (`groundbreak.css`, last block). Phone landscape moves the cue to the top. No overlaps at 1440, 390, 360, 375x667, 844x390, 932x430 (headless Chrome only).
