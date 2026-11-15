@@ -13,8 +13,6 @@
 @import "./camino/entrances.css";
 @import "./camino/micro.css";
 
-@plugin "tailwindcss-animate";
-
 /* Dark is the default Camino ground; "paper" is the light counterpart. */
 @custom-variant dark (&:where(:root:not([data-theme="paper"]) *));
 

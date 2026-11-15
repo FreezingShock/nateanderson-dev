@@ -115,7 +115,6 @@ Then open [http://localhost:3000](http://localhost:3000).
 | `npm run dev` | Dev server with Turbopack |
 | `npm run build` | Production build |
 | `npm run start` | Serve the production build |
-| `npm run lint` | Lint the code |
 | `npm run format` | Format with Prettier |
 
 ---

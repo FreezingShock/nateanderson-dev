@@ -1,6 +1,6 @@
 // The contract between the game screen and the site scene. The screen owns input and the camera (wheel, pinch, drag, keys,
 // reset) and passes the result down. A scene component draws one site view and nothing else: no panels, no buttons.
-// components/groundbreak/scene.tsx is the built-in scene. components/groundbreak-art can supply a richer one with the same props.
+// components/groundbreak-art can supply a richer one with the same props.
 
 /** World units are art pixels. The site is WORLD_W by WORLD_H; the ground line sits at GROUND_Y. */
 export const WORLD_W = 480;

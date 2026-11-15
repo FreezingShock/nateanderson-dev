@@ -20,7 +20,6 @@ Idle construction-company game. Route `/creations/games/groundbreak`. Audited 20
 | Fonts | `lib/groundbreak-fonts/` |
 | Console hook | `components/cm/console.tsx` imports `gbCommand` |
 
-**Dead code**: `components/groundbreak/engine.ts`, `commands.ts` and `scene.tsx` are the first prototype (#470). Nothing imports them. See backlog item 8.
 
 Design notes live outside the repo in `/mnt/project-files/portfolio/groundbreak/` (SPEC.md, ENGINE-API.md, UI-SCENE-SLOT.md). SPEC.md still mentions a bid board; that was dropped for a fixed campaign order.
 
