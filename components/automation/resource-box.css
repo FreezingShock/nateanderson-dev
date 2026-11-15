@@ -1,0 +1,27 @@
+/* Resource bar: the stock count sits inside each item box, bottom middle, on a dark engraved plate so it reads over
+   any icon. The rate (when shown) stays beside the box. */
+.ab-root .ab-res-item { align-items: center; }
+.ab-root .ab-res-box { position: relative; display: inline-block; flex: none; line-height: 0; }
+.ab-root .ab-res-box .ab-glyph { margin: 3px; }
+.ab-root.bw .ab-res-box .ab-res-amt,
+.ab-root .ab-res-box .ab-res-amt {
+  position: absolute;
+  left: 50%;
+  bottom: 0;
+  transform: translateX(-50%);
+  z-index: 2;
+  min-width: 26px;
+  padding: 2px 5px 1px;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.1;
+  text-align: center;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+  color: #ffd98a;
+  text-shadow: 0 1px 0 #000;
+  background: rgba(20, 12, 5, 0.88);
+  box-shadow: inset 0 0 0 1px #8a5a1e, 0 1px 0 #000;
+  pointer-events: none;
+}
+.ab-root .ab-res-item[data-empty="true"] .ab-res-box .ab-res-amt { color: #a8946c; }
