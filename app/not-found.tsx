@@ -11,6 +11,7 @@ export default function NotFound() {
         <div className="ctos">
             <div className="sys-head">
                 <PageHead
+                    preloadBand={false}
                     label="Error 404 / naOS"
                     title={["signal", "lost."]}
                     lead={
@@ -38,7 +39,7 @@ export default function NotFound() {
                     aria-label="Go somewhere else"
                 >
                     {SYSTEM_JUMP.map((item, i) => (
-                        <Link
+                        <Link prefetch={false}
                             key={item.href}
                             className="cta-b"
                             href={item.href}

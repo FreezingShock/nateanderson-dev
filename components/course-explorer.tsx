@@ -70,7 +70,7 @@ const CourseCard = memo(function CourseCard({
                                 ))}
                             </ul>
                         </div>
-                        <Link href={`/studies/${course.slug}`} className="cm-more">
+                        <Link prefetch={false} href={`/studies/${course.slug}`} className="cm-more">
                             Open the class page →
                         </Link>
                     </div>

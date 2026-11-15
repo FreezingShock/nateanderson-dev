@@ -1,3 +1,4 @@
+import { DeferredFrame } from "@/components/creations/deferred-frame";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getProjectBySlug, getAllProjectSlugs, getProjects, getRecentRenovations, lookupProject, statusLabel } from "@/lib/content";
@@ -97,14 +98,7 @@ export default async function ProjectPage({ params }: { params: Promise<{ slug: 
                     {preview ? (
                         <figure className="cr-preview">
                             <div className="cr-preview-frame">
-                                <iframe
-                                    src={preview.src}
-                                    title={preview.title}
-                                    loading="lazy"
-                                    allow="fullscreen; gamepad; autoplay"
-                                    allowFullScreen
-                                    referrerPolicy="strict-origin-when-cross-origin"
-                                />
+                                <DeferredFrame src={preview.src} title={preview.title} />
                             </div>
                             {outbound && (
                                 <figcaption className="cr-preview-bar">
@@ -172,7 +166,7 @@ export default async function ProjectPage({ params }: { params: Promise<{ slug: 
 
                     <nav className="cr-pn" aria-label="More creations">
                         {prev ? (
-                            <Link href={`/creations/${prev.slug}`} className="cr-pn-link prev">
+                            <Link prefetch={false} href={`/creations/${prev.slug}`} className="cr-pn-link prev">
                                 <span className="cm-lbl">← Previous</span>
                                 <b>{prev.title}</b>
                             </Link>
@@ -180,7 +174,7 @@ export default async function ProjectPage({ params }: { params: Promise<{ slug: 
                             <span className="cr-pn-empty" aria-hidden="true" />
                         )}
                         {next ? (
-                            <Link href={`/creations/${next.slug}`} className="cr-pn-link next">
+                            <Link prefetch={false} href={`/creations/${next.slug}`} className="cr-pn-link next">
                                 <span className="cm-lbl">Next →</span>
                                 <b>{next.title}</b>
                             </Link>

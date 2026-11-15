@@ -135,26 +135,26 @@ export default async function BlogPostPage({
                 <div className="cm-wrap" data-rx-auto="">
                     <div className="cm-row cta post-pn">
                         {prev ? (
-                            <Link className="cta-b" href={`/blog/${prev.slug}`}>
+                            <Link prefetch={false} className="cta-b" href={`/blog/${prev.slug}`}>
                                 <i><PixelIcon name="arrowL" /></i>
                                 <span>{prev.post.title}</span>
                                 <em aria-hidden="true"><PixelIcon name="arrowR" /></em>
                             </Link>
                         ) : (
-                            <Link className="cta-b" href="/blog">
+                            <Link prefetch={false} className="cta-b" href="/blog">
                                 <i><PixelIcon name="arrowL" /></i>
                                 <span>Back to blog</span>
                                 <em aria-hidden="true"><PixelIcon name="arrowR" /></em>
                             </Link>
                         )}
                         {next ? (
-                            <Link className="cta-b a" href={`/blog/${next.slug}`}>
+                            <Link prefetch={false} className="cta-b a" href={`/blog/${next.slug}`}>
                                 <i><PixelIcon name="arrowR" /></i>
                                 <span>{next.post.title}</span>
                                 <em aria-hidden="true"><PixelIcon name="arrowR" /></em>
                             </Link>
                         ) : (
-                            <Link className="cta-b a" href="/blog">
+                            <Link prefetch={false} className="cta-b a" href="/blog">
                                 <i>↺</i>
                                 <span>All posts</span>
                                 <em aria-hidden="true"><PixelIcon name="arrowR" /></em>

@@ -114,7 +114,7 @@ function GameCard({ game, index }: { game: Game; index: number }) {
         </>
     );
     return game.href ? (
-        <Link href={game.href} className="cm-card link g-card">
+        <Link prefetch={false} href={game.href} className="cm-card link g-card">
             {inner}
         </Link>
     ) : (

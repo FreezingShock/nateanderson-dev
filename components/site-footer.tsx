@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { ArtPreload } from "@/components/cm/art-preload";
 import { identity } from "@/lib/content";
 import { PATH } from "@/lib/identity";
 import { navItems } from "@/lib/nav";
@@ -46,6 +47,7 @@ export function SiteFooter() {
     const year = new Date().getFullYear();
     return (
         <footer className="sf-foot" id="footer">
+            <ArtPreload name="wash-c" />
             <div className="sf-wrap">
                 <div className="sf-grid">
                     <div className="sf-card">
@@ -80,7 +82,7 @@ export function SiteFooter() {
                             <ul>
                                 {PAGE_LINKS.map((p) => (
                                     <li key={p.href}>
-                                        <Link href={p.href}>
+                                        <Link prefetch={false} href={p.href}>
                                             <PixelIcon name={p.icon} className="sf-ico" />
                                             <span>{p.label}</span>
                                             <b>{p.no}</b>
@@ -94,7 +96,7 @@ export function SiteFooter() {
                             <ul className="sf-about">
                                 {ABOUT_LINKS.map((l) => (
                                     <li key={l.href}>
-                                        <Link href={l.href}>
+                                        <Link prefetch={false} href={l.href}>
                                             <PixelIcon name={l.icon} className="sf-ico" />
                                             <span>{l.label}</span>
                                         </Link>

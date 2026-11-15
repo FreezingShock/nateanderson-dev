@@ -56,7 +56,7 @@ export function BuildingCards() {
     return (
         <div className="cm-grid">
             {building.map((item) => (
-                <Link key={item.title} href={item.href} className="cm-card link" style={{ height: "100%" }}>
+                <Link prefetch={false} key={item.title} href={item.href} className="cm-card link" style={{ height: "100%" }}>
                     <span className={`cm-tag flat ${buildTone(item.status)}`} style={{ alignSelf: "flex-start" }}>{item.status}</span>
                     <b>{item.title}</b>
                     <p>{item.description}</p>
@@ -91,7 +91,7 @@ export function RunningSection() {
                     <ol className="cm-rail" style={{ margin: "14px 0 0", padding: "0 0 0 22px" }}>
                         {runningPlan.map((step, i) => (
                             <li key={step.title} className={i === 0 ? "now" : ""}>
-                                <Link href={step.href} className="cm-card link" style={{ textDecoration: "none" }}>
+                                <Link prefetch={false} href={step.href} className="cm-card link" style={{ textDecoration: "none" }}>
                                     <span className="cm-state live">{step.when}</span>
                                     <b>{step.title}</b>
                                     <p>{step.detail}</p>
@@ -154,7 +154,7 @@ export function PhilosophySection() {
             <div style={{ display: "grid", gap: 14 }}>
                 <div className="cm-row" style={{ justifyContent: "space-between" }}>
                     <span className="cm-lbl">On the shelf</span>
-                    <Link className="cm-more" href="/studies#reading">The full reading queue →</Link>
+                    <Link prefetch={false} className="cm-more" href="/studies#reading">The full reading queue →</Link>
                 </div>
                 <div className="cm-cols3" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))" }}>
                     {books.map((b) => {
@@ -184,7 +184,7 @@ export function PathGlance({ nowMs }: { nowMs: number }) {
             {stages.map((p) => {
                 const progress = Math.round(progressBetween(p.start, p.end, nowMs) * 100);
                 return (
-                    <Link key={p.id} href={`/timeline#${p.id}`} className="cm-card link" style={{ gap: 8 }}>
+                    <Link prefetch={false} key={p.id} href={`/timeline#${p.id}`} className="cm-card link" style={{ gap: 8 }}>
                         <span className="cm-state live">{p.range}</span>
                         <b>{p.title}</b>
                         <p>{p.description}</p>

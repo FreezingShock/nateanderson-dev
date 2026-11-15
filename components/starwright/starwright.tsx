@@ -377,7 +377,7 @@ export function Starwright() {
             </section>
 
             <header className="sw-top">
-                <Link href="/creations/games" className="sw-back" data-tip="Back to Games"><Gl n="back" s={1} /> Games</Link>
+                <Link prefetch={false} href="/creations/games" className="sw-back" data-tip="Back to Games"><Gl n="back" s={1} /> Games</Link>
                 <nav className="sw-dock" aria-label="Starwright panels">
                     {dock.filter((d) => d.show !== false).map((d) => (
                         <button key={d.id} type="button" className="sw-dt" aria-label={d.name} aria-pressed={panel === d.id} data-ping={d.ping ? "" : undefined} data-tip={`${d.name}|${d.tip}|key ${d.key}`} onClick={() => toggle(d.id)}>

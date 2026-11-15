@@ -104,7 +104,7 @@ export function TimelineOverview({ nowMs }: { nowMs: number }) {
                 <span className="cm-lbl">Up next</span>
                 <div className="tl-next">
                     {upNext.map((e) => (
-                        <Link key={e.id} href={`#${e.id}`} className="cm-card link">
+                        <Link prefetch={false} key={e.id} href={`#${e.id}`} className="cm-card link">
                             <span className={`cm-state ${e.special ? "live" : ""}`}>{e.when}</span>
                             <b>{e.title}</b>
                             <span className="st">{CATEGORIES[e.category].label}{e.special ? " / Milestone" : ""} →</span>

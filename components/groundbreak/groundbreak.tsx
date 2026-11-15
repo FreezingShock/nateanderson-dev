@@ -301,7 +301,7 @@ export function Groundbreak() {
             </div>
 
             <header className="gb-top">
-                <Link href="/creations/games" className="gb-back" data-tip="Back to Games"><span aria-hidden="true">&lt;</span> Games</Link>
+                <Link prefetch={false} href="/creations/games" className="gb-back" data-tip="Back to Games"><span aria-hidden="true">&lt;</span> Games</Link>
                 <h1 className="gb-title">Groundbreak</h1>
                 <span className="gb-sub">{city.name} · stage {stage} of 5 · job {Math.min(JOBS.length, s.builtThisFirm + 1)} of {JOBS.length}</span>
                 <ul className="gb-res" aria-label="Resources">
