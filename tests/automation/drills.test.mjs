@@ -11,7 +11,7 @@ const S = await import(resolve(root, "lib/automation/sim/index.ts"));
 const G = await import(resolve(root, "lib/automation/sim/grid.ts"));
 const H = await import(resolve(root, "lib/automation/sim/hud.ts"));
 const CAT = S.DEFAULT_CATALOG;
-const SPOTS = [[2, 2], [2, 8], [15, 2], [15, 8], [8, 1]];
+const SPOTS = S.START_NODE_SPOTS;
 const board = () => {
     const w = S.createWorld({ width: 18, depth: 12, hub: { x: 8, z: 5 } }, CAT);
     CAT.tree.nodes.forEach((n, i) => S.addDeposit(w, SPOTS[i][0], SPOTS[i][1], n.item, 1));

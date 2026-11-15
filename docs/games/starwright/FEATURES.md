@@ -4,7 +4,7 @@ Route `/creations/games/starwright`. Audited 2026-11-15 against `integration` 51
 
 State key: **working** = code and tests exist, seen working headless. **partial** = works with a known gap (see the backlog). **untested** = no test and no check on a real device.
 
-Test commands: `npm run test:nodefarm` (a PR check; includes `tests/starwright/*.test.mjs`, 36 tests), `node --experimental-strip-types --no-warnings scripts/starwright/sim.mjs 30` (balance bot). No browser test exists for Starwright; UI is checked by hand with `scripts/starwright/ui-art/shots.mjs`.
+Test commands: `npm run test:nodefarm` (a PR check; includes `tests/starwright/*.test.mjs`, 38 tests), `node --experimental-strip-types --no-warnings scripts/starwright/sim.mjs 30` (balance bot). No browser test exists for Starwright; UI is checked by hand with `scripts/starwright/ui-art/shots.mjs`.
 
 ## Core loop (engine, no UI)
 | Feature | State | Code | Test |
@@ -23,7 +23,7 @@ Test commands: `npm run test:nodefarm` (a PR check; includes `tests/starwright/*
 | Feature | State | Code | Test |
 |---|---|---|---|
 | Constellation map: 20 stars in 4 constellations (Lantern, Kiln, Anvil, Loom) | working | `data.ts` `PERKS`, `engine.ts` `buyPerk` | engine.test: perks |
-| New perks l5 Corona (inflow x2, heat x1.2, 900) and a5 Iron rain (stardust x2, 1800, needs a3 + a4) | working, rule change not yet listed for Nate | `data.ts`, node art in `scripts/starwright/ui-art/build.py` `NODES` | none specific |
+| New perks l5 Corona (inflow x2, heat x1.2, 900) and a5 Iron rain (stardust x2, 1800, needs a3 + a4) | working, rule change listed in docs/rule-changes (awaiting Nate) | `data.ts`, node art in `scripts/starwright/ui-art/build.py` `NODES` | none specific |
 | Pulsar map: 8 perks bought with Neutrons | working | `data.ts` `PULSAR_PERKS`, `engine.ts` `buyPulsar` | engine.test: neutron |
 | Deep stars: endless stardust sink, +4% everything each, cost x1.4 each, cleared by a neutron star | working (button in the star map, `sw deep`) | `engine.ts` `buyDeep`; button `components/starwright/star-chart.tsx` `Deep`, wired in `starwright.tsx` | engine.test: deep stars, `sw deep` |
 | Planets (8) with four stages by time in orbit, +20% per stage; Survivors keeps age | working | `data.ts` `PLANETS`, `engine.ts` `planetStage`, `buyPlanet` | engine.test: planets |
@@ -35,7 +35,7 @@ Test commands: `npm run test:nodefarm` (a PR check; includes `tests/starwright/*
 | Feature | State | Code | Test |
 |---|---|---|---|
 | Save `sw-save-v1`, parse rebuilds from anything, export and import | working | `engine.ts` `parse`/`serialize`, `lib/games/save.ts` | engine.test: round-trip |
-| Damaged save kept, rolling backup, 10-minute backups | working | `lib/starwright/session.ts` | session.test |
+| Damaged save kept under `sw-save-v1-corrupt` (an older different one moves to `-corrupt-prev`), rolling backup, 10-minute backups | working | `lib/starwright/session.ts` | session.test |
 | Time away: 8 h cap (24 h with Long watch), credit for stalled frames, welcome-back card | working | `engine.ts` `catchUp`, `session.ts` `advance`, `awayReport`, `components/starwright/settings.tsx` | session.test |
 | Opt-in auto supernova and auto visitors (also during time away) | working | `session.ts` `advanceAuto`, `lib/starwright/settings.ts` | session.test |
 | One tab plays at a time (`BroadcastChannel sw-tab`) | untested | `starwright.tsx` | none |
@@ -49,7 +49,7 @@ Test commands: `npm run test:nodefarm` (a PR check; includes `tests/starwright/*
 | 320x180 dither scene: six star stages with transitions, skies by prestige layer, planets by stage, visitors, supernova/neutron/black hole blasts | working | `lib/starwright/art.ts` (`render`, `renderLayered`), `sprites.ts`, sheets `public/starwright/**`, `manifest.json` | none; screenshots only |
 | Code-drawn fallback for any missing or loading sheet | working | `art.ts` | none |
 | Star sprite scale clamp (8x cap; keep it) | working | `art.ts` | none |
-| Planets stripped by a blast break into cooling chunks (#538) | partial: no in-game screenshots yet | `art.ts` (~line 821) | none |
+| Planets stripped by a neutron star play `fx/planet-gone` (#538): today a faint expanding ring under the blast, not chunks (see BACKLOG 1b) | partial: screenshots by `scripts/starwright/ui-art/planet-break.mjs` | `art.ts` (~line 821) | none |
 | Sheet generators | working | `scripts/starwright/art/*` (`build.py`; bump `VERSION`) | none |
 | Lazy sprite loading (first needed, then two at a time) | working | `sprites.ts` | none |
 | Synthesized sound, off switch `sw-sound-v1` | untested (never heard) | `lib/starwright/sound.ts` | none |

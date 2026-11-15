@@ -28,7 +28,7 @@ Owners are per area, one thread per file set. The threads: "Streamline Brasswork
 
 | Feature | State | Code | Test |
 |---|---|---|---|
-| World, grid, deposits, place and remove with footprints and rotation | working | `sim/world.ts`, `sim/grid.ts` | `sim.test.mjs`, `drills.test.mjs` |
+| World, grid, deposits (first workshop nodes: `START_NODE_SPOTS` in `sim/data.ts`), place and remove with footprints and rotation | working | `sim/world.ts`, `sim/grid.ts` | `sim.test.mjs`, `drills.test.mjs` |
 | Belts in three tiers carrying items in lanes | working | `sim/world.ts`, `sim/data.ts` | `belts.test.mjs`, `belt-tiers.test.mjs` |
 | Logistics: splitter, merger, tunnels (5 cells), loader, unloader with item filter, crate (200), strongbox (1000), dock (3x3) | working | `sim/world.ts`, `sim/data.ts` | `logistics-tiers.test.mjs`, `unloader.test.mjs` |
 | Machines-first item priority on belts (`leadsToHub`) | working: machines take output first, then the hub, docks and crates share what is left round-robin; a full crate sends everything on (belts only feed the cell ahead, so a belt passing a crate never fills it) | `sim/world.ts` (`pushOutput`) | `progression.test.mjs` |
@@ -70,7 +70,7 @@ Owners are per area, one thread per file set. The threads: "Streamline Brasswork
 | Machines with working, clock and charge states, hub growth stages 0 to 3, ore node boards | working | `render/models.ts`, `models/machines/`, `models/resources/node.ts` | `machine-models.test.mjs`, `resources.test.mjs` |
 | Belts with moving slats, items riding the belt | working | `models/belts/`, `render/beltitems.ts` | `belts.test.mjs` |
 | Scenery props and life (gulls, butterflies, fish) | working | `models/props/`, `render/scenery.ts`, `render/life/` | none |
-| Bursts for place, remove, milestone, research, unlock, delivery | partial: ignore Simple visuals (B-11) | `render/effects.ts`, `render/life/` | none |
+| Bursts for place, remove, milestone, research, unlock, delivery | working: island bursts and life bursts skip under Simple visuals, Low fx and reduce motion (`setLowFx`) | `render/effects.ts`, `render/life/` | `effects-lowfx.test.mjs` (island bursts) |
 | Hub delivery light column (shimmer, PR #541) | untested: never seen on screen (B-03) | `render/life/` | none |
 | Low-fx and reduce-motion modes | untested on a real GPU | `render/index.ts` (`setLowFx`), `.ab-root[data-reduce]`, `[data-lowfx]` | none |
 

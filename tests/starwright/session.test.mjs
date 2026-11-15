@@ -140,3 +140,41 @@ test("time away answers a waiting visitor, and does nothing when automation is o
     S.advance(b, 3600);
     assert.deepEqual(a.amt, b.amt);
 });
+
+test("the game's tick loses no time over short stalls and long gaps", () => {
+    // mirrors the interval in starwright.tsx: gap since the last tick goes straight into advanceAuto
+    const off = { autoNova: 0, autoVisitor: "off" };
+    const s = played();
+    const start = s.age;
+    let wall = 0, counted = 0;
+    const tick = (gap) => { wall += gap; counted += S.advanceAuto(s, gap, off).secs; };
+    for (let i = 0; i < 40; i++) tick(0.25); // a normal 10 s
+    for (const stall of [1.5, 2, 3, 12, 90, 600]) { tick(stall); for (let i = 0; i < 4; i++) tick(0.25); }
+    assert.ok(Math.abs(counted - wall) < 1e-6, `counted ${counted} of ${wall} s`);
+    assert.ok(Math.abs(s.age - start - wall) < 1, `age moved ${s.age - start} of ${wall} s`);
+    // a gap past the offline cap counts only the cap, never more than the wall time
+    const before = s.age;
+    const huge = 40 * 3600;
+    assert.equal(S.advanceAuto(s, huge, off).secs, D.TUNE.offlineH * 3600);
+    assert.ok(s.age - before <= huge);
+});
+
+test("a second damaged save never replaces the first one, and the card shows once", () => {
+    const st = mem();
+    st.setItem(E.SAVE_KEY, "first {damaged");
+    const a = S.loadSession(st);
+    assert.equal(a.status, "lost");
+    assert.equal(st.getItem(S.CORRUPT_KEY), "first {damaged");
+    // the game then plays and saves a fresh star over the main key; a reload is clean, with no card
+    st.setItem(E.SAVE_KEY, E.serialize(played()));
+    assert.equal(S.loadSession(st).status, "ok");
+    assert.equal(st.getItem(S.CORRUPT_KEY), "first {damaged");
+    // a later, different damaged save keeps the older text under -prev
+    st.setItem(E.SAVE_KEY, "second {damaged");
+    assert.equal(S.loadSession(st).status, "lost");
+    assert.equal(st.getItem(S.CORRUPT_KEY), "second {damaged");
+    assert.equal(st.getItem(S.CORRUPT_KEY + "-prev"), "first {damaged");
+    // the same damaged text read again changes nothing
+    S.loadSession(st);
+    assert.equal(st.getItem(S.CORRUPT_KEY + "-prev"), "first {damaged");
+});

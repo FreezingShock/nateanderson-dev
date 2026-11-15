@@ -20,10 +20,6 @@ Ordered by value. Each is one PR.
 - PR #545 added `components/brasswork/hover-name.tsx`. Check it on build tiles, resource boxes and machines on the island, at 1440 and on touch (no stuck labels).
 - Done when: the name shows within about 150 ms, never covers the cursor target, and clears on leave. **Needs screenshots.**
 
-**B-11 Bursts respect Simple visuals**
-- Place, remove, milestone, research and unlock bursts (`render/effects.ts`, `render/life/index.ts`) still spawn under the Simple visuals setting. Life bursts already skip under `lowFx`.
-- Done when: with Simple visuals or `data-lowfx="true"` no particle pool is touched, and the effects still show with it off.
-
 **B-14 Machines panel covers the iron node on desktop**
 - At the opening view the Machines panel sits over the iron node, so the first drill spot is hidden. Look at the opening camera in `brasswork-host.tsx` and the insets in `.ab-root` (`desktop-stage.css`).
 - Done when: at 1440x900 and 1280x720 the first drill target and its NEXT marker are visible with the build dock open. **Needs screenshots.**
@@ -50,9 +46,6 @@ Ordered by value. Each is one PR.
 - Same standard as B-07 for `expedition-window.tsx` and `prestige-screen.tsx`: art first, one line of text, ore dots with names in tooltips, hold to confirm. Wait for T-01 if Nate wants the big view instead.
 - Done when: all four sites render with their art, hold to confirm works with keyboard and touch, screenshots. **Needs screenshots.**
 
-**B-15 One source for the starting node spots**
-- The host keeps a local `NODE_SPOTS` array (`brasswork-host.tsx:62`) while `sim/data.ts` has `SITES` with its own node positions. Project memory says a shared `START_NODE_SPOTS` should exist in `sim/data.ts`; it does not.
-- Done when: the first workshop's nodes come from one exported constant in `sim/data.ts`, the host imports it, and `opening.test.mjs` uses the same one.
 
 ## 2. Needs Nate's taste call
 

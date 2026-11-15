@@ -12,11 +12,11 @@ Last audited 2026-11-15, `integration` at 5138bb6f.
 - Where: `app/camino/groundbreak.css`. At 860 px and under `.gb-cue` is `bottom: 232px` and full width; `.gb-zoom` is `bottom: 190px`, `right: 8px`, in a row.
 - Done when: at 390 and 360 wide the cue and zoom buttons do not overlap, the cue still points at its tile, and the dock and feed stay clear. Check the landscape phone rules too (`max-height: 500px`).
 
-### 2. Jobs and Firm windows cover the site
+### 2. Jobs and Firm windows cover the site (DONE)
 - Where: `Window` and the `gb-win` rules; Jobs is `unroll`, Firm is `stamp` and `size="lg"`.
 - Done when: at 1440 the site stays visible beside Jobs and Firm (narrower window or docked to a side, no scrim), and on a phone it is a bottom sheet that leaves the job site showing above. Clicking blank space still closes it, and the open and close animations keep their own styles.
 
-### 3. Stronger Incorporate
+### 3. Stronger Incorporate (DONE: firm 2 about 102 min, firm 3 about 95 min in the bot run; see docs/rule-changes/2026-11-15-groundbreak-stronger-incorporate.md)
 - Where: `data.ts` TUNE (`charterDiv`, `charterMinRep`), PERKS costs, CITIES `mat`/`fx`; test "the second firm beats the first" in `tests/groundbreak/engine.test.mjs`.
 - Now: the second firm is only about 25% faster than the first. SPEC aims for later runs reaching the bridge in about 1 h 30.
 - Done when: a test run by the bot shows firm 2 reaching the bridge at least 35% faster than firm 1 (target about 1 h 30 by firm 3), the first firm is still about 3 h, and a first-time player can see in the Firm window what Incorporate gives before they press it. Run the sim and put the before and after numbers in the PR.
