@@ -15,6 +15,8 @@ import { getFxMode, getLowFx, setFxMode } from "@/lib/nodefarm/fx";
 import { getStagePreview, setStagePreview } from "@/lib/nodefarm/zones/zone-art";
 import { PART_WHY, SKIN_WHY, coreLook, coreMode, corePreview, setCoreMode, setCorePreview, skinOpen } from "@/lib/nodefarm/art/core-look";
 import { PART_ORDER, SKINS } from "@/lib/nodefarm/art/core-parts";
+import { GB_PATH, GB_SAVE_KEY, GB_SUBS, gbCommand } from "@/lib/groundbreak/commands";
+import { parse as gbParse, serialize as gbSerialize, type State as GbState } from "@/lib/groundbreak/engine";
 import { SW_PATH, SW_SAVE_KEY, SW_SUBS, swCommand } from "@/lib/starwright/commands";
 import { parse as swParse, serialize as swSerialize, type State as SwState } from "@/lib/starwright/engine";
 import { setPrefs } from "@/lib/sound/engine";
@@ -298,6 +300,32 @@ function runNf(args: string[]): Line[] {
     return r.lines;
 }
 
+/** `gb`: Groundbreak from the console. Talks to the open game when there is one (it answers the `gb:live` event), otherwise reads and writes the saved game. */
+function runGb(args: string[]): Line[] {
+    const sub = (args[0] ?? "").toLowerCase();
+    if (sub === "open") return [{ t: GB_PATH, go: GB_PATH }];
+    const ref: { live?: { s: GbState | null; changed: () => void } } = {};
+    window.dispatchEvent(new CustomEvent("gb:live", { detail: ref }));
+    let state: GbState | null = ref.live?.s ?? null;
+    if (!state) {
+        try {
+            const raw = localStorage.getItem(GB_SAVE_KEY);
+            state = raw ? gbParse(JSON.parse(raw)) : null;
+        } catch {}
+    }
+    if (!state) return [t("no firm found. start one:", "dim"), { t: GB_PATH, go: GB_PATH }];
+    const r = gbCommand(state, args);
+    if (r.changed) {
+        if (ref.live) ref.live.changed();
+        else {
+            try {
+                localStorage.setItem(GB_SAVE_KEY, gbSerialize(state));
+            } catch {}
+        }
+    }
+    return r.lines;
+}
+
 /** `sw`: Starwright from the console. Talks to the open game when there is one (it answers the `sw:live` event), otherwise reads and writes the saved game. */
 function runSw(args: string[]): Line[] {
     const sub = (args[0] ?? "").toLowerCase();
@@ -455,6 +483,13 @@ const COMMANDS: Cmd[] = [
         desc: "Starwright readout and actions",
         long: ["sw · sw stats · sw fuse <element> [1-3] buys a burner tier · sw collapse (supernova) · sw perks [id] · sw pulsar [id] · sw planets [id] · sw neutron · sw hole · sw name <name> · sw open · sw fs. Works with the game open or from your saved game."],
         run: (args) => runSw(args),
+    },
+    {
+        name: "gb",
+        usage: `gb [${GB_SUBS.join("|")}]`,
+        desc: "Groundbreak readout and actions",
+        long: ["gb · gb stats · gb hire <material> [1-3] · gb unlock · gb jobs · gb change [no] · gb overtime · gb perks [id] · gb incorporate [yes] · gb skyline · gb open. Works with the game open or from your saved game."],
+        run: (args) => runGb(args),
     },
     {
         name: "admin",
