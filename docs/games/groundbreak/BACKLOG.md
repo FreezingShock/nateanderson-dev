@@ -55,6 +55,15 @@ Last audited 2026-11-15, `integration` at 5138bb6f.
 - Corrupt save: when `parse` returns null for a present but broken save, the page keeps a copy under a backup key and tells the player, instead of silently starting fresh. Test it.
 - Split into three PRs if one grows.
 
+### PERF-gb-icons-sheet | size S
+- First paint requests about 30 single-icon PNGs (1 to 2 KB each, `components/groundbreak/icons.ts`) although `public/groundbreak/icons/icons.webp` holds them as a sheet. Done when: first paint needs one icon request, 1440 and 390 PNGs match before and after, and the transfer count drops by about 30.
+
+### PERF-gb-font-preloads | size S
+- The site root preloads Plex Mono 400 and Arimo, and Groundbreak preloads Barlow 600, none used on first paint (about 56 KB, roughly 0.3 s on a throttled phone). Root fonts are outside this area; check `docs/OWNERS.md`. Done when: unused preloads are gone and no text changes face.
+
+### PERF-gb-real-device | size S
+- All numbers in `/mnt/project-files/portfolio/perf-audit-2026-11-15/groundbreak.md` are headless Chromium. Needs Nate or a real phone: playable time, frame feel with the tower at 40 storeys, and a multi-hour soak. Preloading the scene art was tried and gave no gain in time to playable (bandwidth bound), so do not redo it without new evidence.
+
 ## Needs Nate
 
 | Item | What is needed |
