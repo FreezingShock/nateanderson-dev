@@ -501,12 +501,13 @@ def menu(s):
 def zoomin(s):
     s.beam((6, 4, 0), (16, -6, 0), 4, "wood")
     s.cylinder((-4, 14, -2), (-4, 14, 2), 12, "steel", n=20)
-    s.cylinder((-4, 14, 2), (-4, 14, 2.3), 9.5, "glass", 0.25, n=20)
+    s.cylinder((-4, 14, 2), (-4, 14, 2.3), 9.5, "glass", -0.1, n=20)
 
     def post(c, sc):
         o = sc.pt((-4, 14, 2.4))
-        c.set(c.line(o[0] - 5 * sc.s, o[1], o[0] + 5 * sc.s, o[1], 2) | c.line(o[0], o[1] - 5 * sc.s, o[0], o[1] + 5 * sc.s, 2),
-              P["white"][3])
+        bar = c.line(o[0] - 7 * sc.s, o[1], o[0] + 7 * sc.s, o[1], 6) | c.line(o[0], o[1] - 7 * sc.s, o[0], o[1] + 7 * sc.s, 6)
+        c.set(c.grow(bar, 1) & (c.img[..., 3] > 0), P["ink"][0])
+        c.set(bar, P["hiviz"][5])
     return post
 
 
@@ -533,11 +534,13 @@ def lock(s):
 def zoomout(s):
     s.beam((6, 4, 0), (16, -6, 0), 4, "wood")
     s.cylinder((-4, 14, -2), (-4, 14, 2), 12, "steel", n=20)
-    s.cylinder((-4, 14, 2), (-4, 14, 2.3), 9.5, "glass", 0.25, n=20)
+    s.cylinder((-4, 14, 2), (-4, 14, 2.3), 9.5, "glass", -0.1, n=20)
 
     def post(c, sc):
         o = sc.pt((-4, 14, 2.4))
-        c.set(c.line(o[0] - 5 * sc.s, o[1], o[0] + 5 * sc.s, o[1], 2), P["white"][3])
+        bar = c.line(o[0] - 7 * sc.s, o[1], o[0] + 7 * sc.s, o[1], 6)
+        c.set(c.grow(bar, 1) & (c.img[..., 3] > 0), P["ink"][0])
+        c.set(bar, P["safety"][4])
     return post
 
 
