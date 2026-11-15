@@ -11,6 +11,7 @@ import json
 import sys
 from pathlib import Path
 
+import numpy as np
 from PIL import Image
 
 HERE = Path(__file__).resolve().parent
@@ -28,6 +29,16 @@ def stamp(img):
     return hashlib.sha1(img.tobytes()).hexdigest()[:8]
 
 
+def feather(c, ug, edge=18):
+    """Dissolve the underground cross-section into the shore at its left, right and bottom edges (dithered), so a job
+    never shows a hard rectangle of soil against the backdrop."""
+    gy = c.h - ug
+    d = np.minimum(np.minimum(c.X, c.w - c.X), (c.h - c.Y) * 1.6)
+    keep = np.clip(d / edge, 0, 1) - 0.5 > c.B
+    below = c.Y > gy + 2
+    c.img[below & ~keep, 3] = 0
+
+
 def main():
     (PUB / "jobs").mkdir(parents=True, exist_ok=True)
     (PUB / "backdrop").mkdir(parents=True, exist_ok=True)
@@ -36,6 +47,7 @@ def main():
         w, h = cs[0].w, cs[0].h
         strip = Image.new("RGBA", (w * len(cs), h))
         for i, c in enumerate(cs):
+            feather(c, gb_buildings.UG)
             strip.alpha_composite(c.image(), (i * w, 0))
         strip.save(PUB / "jobs" / f"{key}.webp", lossless=True, quality=100, method=6)
         jobs[key] = {"name": name, "frames": frames, "w": w, "h": h, "ground": gb_buildings.UG,
