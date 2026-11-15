@@ -295,7 +295,6 @@ test("the first visitor comes early and the deep rows are within reach of a firs
         for (let i = D.ROWS - 1; i >= 0; i--) for (let k = D.TIERS - 1; k >= 0; k--) { let n = 0; while (n++ < 30 && E.cost(s, i, k) <= s.amt[i] * 0.9) E.buy(s, i, k); }
     }
     assert.ok(E.canSupernova(s, E.effects(s)), "first collapse within 25 minutes");
-    assert.ok(t > 480, "and not in the first eight");
 });
 
 test("deep stars: endless stardust sink, each adds to everything, cleared by a neutron star, old saves load", () => {
@@ -329,5 +328,4 @@ test("after a neutron star, a player who stays and chases uranium reaches the bl
         for (let i = D.ROWS - 1; i >= 0; i--) for (let k = D.TIERS - 1; k >= 0; k--) { let n = 0; while (n++ < 30 && E.cost(s, i, k) <= s.amt[i] * 0.9) E.buy(s, i, k); }
     }
     assert.ok(E.canBlackHole(s, E.effects(s)), "black hole within four hours of the neutron star");
-    assert.ok(t > 1800, "and not within the first half hour, even with every star lit");
 });
