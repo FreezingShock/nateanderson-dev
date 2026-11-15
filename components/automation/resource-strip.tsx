@@ -1,4 +1,5 @@
 import type { ResourceView, NumberFormat } from "@/lib/automation/types";
+import { ArtIcon } from "@/components/brasswork-art/icons";
 import { fmtNum, fmtRate } from "./format";
 import { iconCell, iconStyle } from "@/lib/automation/icons";
 
@@ -16,13 +17,7 @@ export function Glyph({
   icon?: string;
 }) {
   if (icon && iconCell(icon) !== undefined) {
-    return (
-      <span
-        className="ab-glyph ab-glyph-art"
-        style={iconStyle(icon, size)}
-        aria-hidden="true"
-      />
-    );
+    return <ArtIcon id={icon} size={size} className="ab-glyph ab-glyph-art" />;
   }
   return (
     <span
