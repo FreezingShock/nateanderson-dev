@@ -66,6 +66,7 @@ def main():
     sheets = {"crew": L.crew_sheet(), "mini": L.mini_sheet(), "vehicles": L.vehicle_sheet(), "machines": L.machine_sheet(), "fx": L.fx_sheet()}
     climb, lad, mast, cages = L.vertical_sheet()
     sheets.update({"climb": climb, "ladder": lad, "mast": mast, "cage": cages})
+    sheets["cars"] = L.car_sheet()
     stamps = {}
     for k, c in sheets.items():
         im = c.image()
@@ -90,6 +91,7 @@ def main():
         "ladder": {"src": f"/groundbreak/life/ladder.png?v={stamps['ladder']}", "w": L.LW, "h": L.LH},
         "mast": {"src": f"/groundbreak/life/mast.png?v={stamps['mast']}", "w": L.HW, "h": L.HH},
         "cage": {"src": f"/groundbreak/life/cage.png?v={stamps['cage']}", "w": L.CW2, "h": L.CH2},
+        "cars": {"src": f"/groundbreak/life/cars.png?v={stamps['cars']}", "w": L.RW, "h": L.RH, "ground": L.RG, "n": len(L.CARS)},
         "vehicles": {"src": f"/groundbreak/life/vehicles.png?v={stamps['vehicles']}", "w": L.VW, "h": L.VH,
                      "rows": {"dump": 0, "mixer": 1, **{f"flat-{c}": 2 + i for i, c in enumerate(L.CARGO)}}},
         "fx": {"src": f"/groundbreak/life/fx.png?v={stamps['fx']}", "w": L.FW, "h": L.FH,

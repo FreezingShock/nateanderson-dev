@@ -778,3 +778,37 @@ def vertical_sheet():
     """Row 0: climbers (variant x 2 frames). Row 1: ladder tile, mast tile, cages for 2 riders."""
     row0 = [climber(v, f) for v in CREW_VARIANTS for f in range(2)]
     return grid([row0], MW, MH), ladder_tile(), mast_tile(), grid([[cage(CREW_VARIANTS[0]), cage(CREW_VARIANTS[2])]], CW2, CH2)
+
+
+# ----------------------------------------------------------------------------------- shore road traffic (face LEFT)
+RW, RH = 34, 16
+RG = 14
+
+
+def car(body, kind, f):
+    c = Canvas(RW, RH)
+    px = Px(c, 0, 0)
+    b = P[body] + [P[body][-1]] * 4
+    if kind == "van":
+        px.rect(2, 2, 32, RG - 3, b[4]); px.rect(2, 2, 32, 3, b[6])
+        px.rect(4, 4, 10, 8, P["glass"][3]); px.put(4, 4, P["sunglass"][5])
+        px.rect(12, 4, 17, 8, P["glass"][2])
+    else:
+        px.rect(2, 7, 32, RG - 3, b[4]); px.rect(2, 7, 32, 8, b[6])
+        px.rect(9, 2, 25, 7, b[4]); px.rect(9, 2, 25, 3, b[6])
+        px.rect(10, 3, 16, 7, P["glass"][3]); px.put(10, 3, P["sunglass"][5])
+        px.rect(18, 3, 24, 7, P["glass"][2])
+    px.rect(2, RG - 6, 4, RG - 4, P["lamp"][6])      # headlight
+    px.rect(30, RG - 6, 32, RG - 4, P["safety"][4])  # tail light
+    for cx in (8, 26):
+        px.rect(cx - 2, RG - 4, cx + 3, RG + 1, P["ink"][1])
+        px.put(cx + (f % 2), RG - 2, P["steel"][5])
+    c.outline(INK)
+    return c
+
+
+CARS = [("safety", "sedan"), ("glass", "sedan"), ("cement", "van"), ("green", "sedan"), ("hiviz", "van")]
+
+
+def car_sheet():
+    return grid([[car(b, k, f) for f in range(2)] for b, k in CARS], RW, RH)

@@ -99,6 +99,13 @@ export const GB_LIFE = {
     "w": 22,
     "h": 20
   },
+  "cars": {
+    "src": "/groundbreak/life/cars.png?v=0d9a6e90",
+    "w": 34,
+    "h": 16,
+    "ground": 14,
+    "n": 5
+  },
   "vehicles": {
     "src": "/groundbreak/life/vehicles.png?v=0b2c8d72",
     "w": 96,

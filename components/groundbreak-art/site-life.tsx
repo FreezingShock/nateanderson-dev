@@ -314,6 +314,30 @@ export function GbSiteLife({ left, ground, w, outline, jobKey, phase, phaseName,
         }
     }
 
+    // ---- shore road: traffic and passers-by along the finished skyline either side of the lot
+    if (!reduce) {
+        const R = GB_LIFE.cars;
+        const x0 = left - 700, x1 = left + w + 1100, span2 = x1 - x0;
+        for (let k = 0; k < 4; k++) {
+            const sp = 34 + hash(k, 9) * 26;
+            const x = x1 - ((t * sp + hash(k, 8) * span2) % span2);
+            if (x > left - 20 && x < left + w + 20) continue; // the lot is fenced off; cars pass behind the site
+            out.push(<Sprite key={`car${k}`} src={R.src} w={R.w} h={R.h} col={Math.floor(t * 8) % 2} row={k % R.n} x={x} y={ground - R.ground} z={1}
+                tag={{ label: "Traffic\nHeading along the shore road", pick }} />);
+        }
+        for (let k = 0; k < 4; k++) {
+            const sp = 9 + hash(k, 11) * 5;
+            const right = k % 2 === 0;
+            const a = right ? left + w + 30 : left - 380, b = a + 340;
+            const dur = (b - a) / sp;
+            const ph = ((t + hash(k, 12) * 60) / dur) % 2;
+            const x = a + (b - a) * (ph < 1 ? ph : 2 - ph);
+            const [c0, n] = M.actions.walk;
+            out.push(<Sprite key={`ped${k}`} src={M.src} w={M.w} h={M.h} col={c0 + (Math.floor(t * 7 + k) % n)} row={(k + 1) % C.variants} x={x} y={ground - M.foot - 1} flip={ph >= 1} z={1}
+                tag={{ label: "Off-shift crew\nHeading home along the shore", pick }} />);
+        }
+    }
+
     // ---- machines: excavator in the pit, pump over the slab, mobile crane lifting steel or glass, forklift with pallets
     if (cat !== "wait") {
         const ct = reduce ? 6 : t - origin.current;
