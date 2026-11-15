@@ -5,9 +5,8 @@ description: "Verify-and-ship sequence for nateanderson-dev (Next.js/Tailwind v4
 
 # Portfolio ship loop
 
-Branches: `main` is production (Vercel auto-deploys). `integration` is where all work lands first.
-Each task branches off `integration` (`feat/...`, `fix/...`) and opens a PR into `integration`.
-Only merge `integration` into `main` when Nate approves.
+Branches: PRs go into `integration`; `release` is the only branch Vercel builds; `main` is stale. Deploy only when Nate asks. Full rules: `CLAUDE.md` and `docs/WORKFLOW.md`.
+Each task branches off `integration` and opens a PR into `integration`.
 
 1. **Edit the code.** Match surrounding style (Prettier, 4 spaces).
 2. **`npm install` if needed, then `npm run build`.** This is the type and lint gate. A clean build
