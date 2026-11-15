@@ -136,7 +136,10 @@ html.sw-route .sf-foot { display: none !important; }
 .sw-x:hover { border-color: var(--sw-cy); color: var(--sw-cy); }
 
 .sw-planets { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
-.sw-planets li { display: grid; grid-template-columns: 44px minmax(0, 1fr) auto; gap: 12px; align-items: center; padding: 10px; border: 1px solid var(--sw-line); }
+.sw-sprite { width: 56px; height: 56px; image-rendering: pixelated; border: 1px solid var(--sw-line); }
+.sw-sprite[data-dim] { opacity: .45; filter: grayscale(.4); }
+.sw-stage-line { color: var(--c) !important; font: 500 11px var(--cm-mono, monospace); letter-spacing: .04em; }
+.sw-planets li { display: grid; grid-template-columns: 56px minmax(0, 1fr) auto; gap: 12px; align-items: center; padding: 10px; border: 1px solid var(--sw-line); }
 .sw-planets li[data-own] { border-color: color-mix(in srgb, var(--c) 60%, transparent); }
 .sw-planets p { font-size: 13px; color: var(--sw-dim); }
 .sw-cost { display: flex; flex-wrap: wrap; gap: 4px 10px; margin-top: 2px; font: 400 12px var(--cm-mono, monospace); }

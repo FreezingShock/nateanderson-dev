@@ -25,6 +25,9 @@ An idle game about a star, at `/creations/games/starwright`. Original theme, art
 - Sound: synthesized in `lib/starwright/sound.ts`, starts after the first click or key, off switch in the menu (`sw-sound-v1`).
 - Console: `sw visitor [1|2]`, `sw cloud [id]`, `sw almanac`.
 
+## Scene art
+`lib/starwright/art.ts` draws the scene procedurally in dither. Star stages run a shift (ramp and size crossfade plus an ignition ring) when the star changes stage, and each stage has its own animation (proto jets and infall, dwarf prominences, giant breathing and shell, blue rays, supergiant wind and glint, iron shells and cracks). A collapse shows the old star imploding, then a warm (supernova) or cold (neutron star) blast, then the new star is born. Planets have four stages by time in orbit (`PLANET_STAGE_AT`), each with its own look per `Planet.look`. Visitors are drawn in the sky. Three skies by prestige layer. File ownership and the sprite-sheet format for drawn art: `/mnt/project-files/portfolio/starwright/OWNERS.md`.
+
 ## Balance
 `node --experimental-strip-types --no-warnings scripts/starwright/sim.mjs 30` plays a greedy bot at 1 s steps and prints each landmark. The bot answers every visitor at once and takes the first cloud. Current numbers: first supernova about 25 min, first neutron star about 55 min, black hole about 3.2 h for the bot (people are slower). Change numbers in `TUNE` and the data tables, not the engine.
 
