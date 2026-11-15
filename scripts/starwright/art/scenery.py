@@ -3,7 +3,7 @@ import math
 import numpy as np
 from common import R, P, pick, dmask, fbm3, vnoise3, grid, rgba, save_sheet, save_still, hexc, thresh
 
-VF = 12
+VF = 24
 
 
 def comet(f):
@@ -15,7 +15,7 @@ def comet(f):
     along = (ax * 0.83 - ay * 0.56)
     across = (ax * 0.56 + ay * 0.83)
     ion = np.clip(1 - np.abs(across) / (1.2 + along * 0.12), 0, 1) * np.clip(1 - along / 34, 0, 1) * (along > 0)
-    sh = vnoise3(along * 0.35 - f * 2 * math.pi / VF * 1.9, across * 0.6, math.sin(2 * math.pi * f / VF))
+    sh = vnoise3(along * 0.35 - f * 2 * math.pi / VF * 2, across * 0.6, math.sin(2 * math.pi * f / VF))
     ion = ion * (0.5 + 0.7 * sh)
     bend = across - (along ** 2) * 0.018  # curved dust tail
     dust = np.clip(1 - np.abs(bend - 3) / (1.5 + along * 0.18), 0, 1) * np.clip(1 - along / 26, 0, 1) * (along > 0) * 0.85
@@ -159,38 +159,70 @@ SKY = {
 }
 
 
+ACCENT = {"proto": "rose", "dwarf": "orchid", "giant": "flame", "blue": "azure", "super": "mauve", "iron": "plum", "n1": "mint", "n2": "amber"}
+BF = 8
+
+
 def backdrop(key):
+    """A sky: a bright nebula band with dark dust lanes and a second gas colour, far galaxies, three depths of stars and a
+    few big four-point stars. 8 frames: the bright stars twinkle and the gas glows a little, so the sky never sits dead still."""
     w, h = 320, 180
     x, y = grid(w, h)
     seed = sum(map(ord, key))
     n = fbm3(x / 70 + 3.1, y / 46, seed * 0.13, 5, seed=seed)
     n2 = fbm3(x / 26, y / 18 + 9, 1.7, 3, seed=seed + 3)
     band = np.clip(1 - np.abs((x / w) * 0.9 + (y / h) * 0.7 - 1.0 - 0.15 * math.sin(seed)) * 2.0, 0, 1)
-    v = np.clip((n * 0.65 + n2 * 0.35) * band * 1.55 - 0.05, 0, 1)
-    # dark dust lanes cut through the bright band
+    v0 = np.clip((n * 0.65 + n2 * 0.35) * band * 1.55 - 0.05, 0, 1)
     lane = fbm3(x / 40, y / 30, 5.5, 4, seed=seed + 9)
-    v = np.where(np.abs(lane - 0.5) < 0.045, v * 0.35, v)
-    img = pick(R(*SKY[key]), v)
+    lanes = np.clip(1 - np.abs(lane - 0.5) / 0.06, 0, 1)
+    # a second, smaller cloud of another gas colour off to one side
+    rng0 = np.random.default_rng(seed + 1)
+    gx, gy = rng0.integers(40, w - 40), rng0.integers(30, h - 30)
+    blob = np.clip(1 - np.sqrt(((x - gx) / 70) ** 2 + ((y - gy) / 40) ** 2), 0, 1) * fbm3(x / 22, y / 22, 8.0, 4, seed=seed + 5)
     rng = np.random.default_rng(seed)
-    for _ in range(70):
-        sx, sy = rng.integers(0, w), rng.integers(0, h)
-        img[sy, sx] = hexc(P["stone"] if rng.random() < 0.7 else P["bone"])
-    for _ in range(2):  # two far galaxies, tilted dithered smudges
-        gx, gy = rng.integers(30, w - 30), rng.integers(20, h - 20)
-        a = rng.random() * 3.14
-        dx, dy = x - gx, y - gy
-        ex = dx * math.cos(a) + dy * math.sin(a)
-        ey = -dx * math.sin(a) + dy * math.cos(a)
-        g = np.clip(1 - np.sqrt((ex / 7) ** 2 + (ey / 2.2) ** 2), 0, 1)
-        gm = dmask(g * 0.9)
-        img[gm] = pick(R(SKY[key][3], "bone", "frost"), g)[gm]
-    return rgba(img, np.ones((h, w), bool))
+    stars = [(rng.integers(0, w), rng.integers(0, h), rng.random()) for _ in range(150)]
+    big = [(rng.integers(12, w - 12), rng.integers(10, h - 10), rng.random() * 6.28) for _ in range(6)]
+    gal = [(rng.integers(30, w - 30), rng.integers(20, h - 20), rng.random() * 3.14) for _ in range(3)]
+    frames = []
+    for f in range(BF):
+        tau = 2 * math.pi * f / BF
+        v = v0 * (0.94 + 0.06 * np.sin(tau + x / 50))
+        v = v * (1 - 0.7 * lanes)
+        img = pick(R(*SKY[key]), v, ox=0, oy=0)
+        bm = dmask(np.clip(blob * 1.6 - 0.35, 0, 1) * 0.75)
+        img[bm] = pick(R(SKY[key][2], SKY[key][3], ACCENT[key]), np.clip(blob * 1.8, 0, 1))[bm]
+        for gx_, gy_, a in gal:  # far galaxies: tilted smudges with a bright core
+            dx, dy = x - gx_, y - gy_
+            ex = dx * math.cos(a) + dy * math.sin(a)
+            ey = -dx * math.sin(a) + dy * math.cos(a)
+            g = np.clip(1 - np.sqrt((ex / 7) ** 2 + (ey / 2.2) ** 2), 0, 1)
+            gm = dmask(g * 0.9)
+            img[gm] = pick(R(SKY[key][3], "bone", "frost"), g)[gm]
+        for i, (sx, sy, b) in enumerate(stars):  # dim far stars, some brighter, a few that blink
+            if b < 0.55:
+                c = "ash" if v0[sy, sx] < 0.3 else "stone"
+            elif b < 0.9:
+                c = "stone" if (i + f) % 5 else "bone"
+            else:
+                c = "bone" if (i + f) % 3 else "frost"
+            img[sy, sx] = hexc(P[c])
+        for i, (sx, sy, ph) in enumerate(big):  # four-point stars that breathe
+            k = 0.5 + 0.5 * math.sin(tau + ph)
+            arm = 1 + int(round(k * 3))
+            img[sy, sx] = hexc(P["white"])
+            for dd in range(1, arm + 1):
+                c = hexc(P["frost" if dd == 1 else ("sky" if dd == 2 else ACCENT[key])])
+                for ddx, ddy in ((dd, 0), (-dd, 0), (0, dd), (0, -dd)):
+                    if 0 <= sx + ddx < w and 0 <= sy + ddy < h:
+                        img[sy + ddy, sx + ddx] = c
+        frames.append(rgba(img, np.ones((h, w), bool)))
+    return frames
 
 
 def run():
     for name, fn, cell in (("comet", comet, 48), ("flare", flare, 48), ("nebula", nebula, 96), ("pair", pair, 48)):
-        save_sheet(f"visitor/{name}", [fn(f) for f in range(VF)], fps=8)
+        save_sheet(f"visitor/{name}", [fn(f) for f in range(VF)], fps=12)
     for cid in CLOUD:
         save_sheet(f"card/cloud-{cid}", [cloud(cid, f) for f in range(8)], fps=6)
     for k in SKY:
-        save_still(f"bg/nebula-{k}", backdrop(k))
+        save_sheet(f"bg/nebula-{k}", backdrop(k), fps=3)
