@@ -30,6 +30,7 @@ import {
 } from "@/lib/automation/sim";
 import type { VoxelIsland } from "@/lib/automation/render";
 import type { BuildWorld, InputController, MountedInput } from "@/lib/automation/input";
+import { DELETE_TOOL } from "@/lib/automation/input/build";
 import { getMachineModel, getHubModel, hubStageFor } from "@/lib/automation/models/machines";
 import { rotateCell, rotateSide } from "@/lib/automation/input/ports";
 import { nodeModel, variantForCell, type ResourceId } from "@/lib/automation/models/resources";
@@ -406,6 +407,17 @@ export function BrassworkHost() {
             let ghostKey = "";
             const updateGhost = () => {
                 const g = input.controller.build.ghost();
+                // Remove preview: outline every building cell the delete tool would clear, so a multi-cell machine shows whole.
+                if (g && g.tool.id === DELETE_TOOL.id) {
+                    const cells = g.cells.filter((k) => k.existing).map((k) => ({ x: k.x, z: k.z }));
+                    const dk = "del:" + cells.map((k) => `${k.x},${k.z}`).join(";");
+                    if (dk === ghostKey) return;
+                    if (ghostKey.startsWith("path:")) island.setGhostPath([]);
+                    ghostKey = dk;
+                    island.clearGhost();
+                    island.setHighlight(cells);
+                    return;
+                }
                 // A belt stroke glows as one path, cells in drag order, each facing the next.
                 if (g && g.tool.line && g.stroking && g.cells.length) {
                     const pk = "path:" + g.cells.map((k) => `${k.x},${k.z},${k.rot},${k.valid ? 1 : 0}`).join(";");
