@@ -13,12 +13,11 @@ const STEP_ICON: Record<string, string> = { drill: "drill", kiln: "kiln", belt: 
 
 export function FirstRunGuide({ data }: { data: HudData }) {
     const [done, setDone] = useState<boolean | null>(null);
-    const [folded, setFolded] = useState(false);
+    // Starts folded to a one-line strip on every screen, so the island stays in view. Opening it shows the full list.
+    const [folded, setFolded] = useState(true);
 
     useEffect(() => {
         setDone(readFirstRunDone());
-        // Phones start folded so the stage keeps most of the screen.
-        if (window.matchMedia("(max-width: 600px)").matches) setFolded(true);
     }, []);
 
     const steps = firstRunSteps(data);
@@ -43,9 +42,10 @@ export function FirstRunGuide({ data }: { data: HudData }) {
 
     if (folded) {
         return (
-            <button type="button" className="bw-quest-tab" onClick={() => setFolded(false)} aria-expanded={false}>
+            <button type="button" className="bw-quest-tab" onClick={() => setFolded(false)} aria-expanded={false} aria-label={`Starter quest, ${finished} of ${steps.length} done. Now: ${step.title}. Open list`}>
                 <span className="bw-quest-tab-label">Starter quest</span>
                 <span className="bw-quest-tab-count">{finished}/{steps.length}</span>
+                <span className="bw-quest-tab-step">{step.title}</span>
             </button>
         );
     }
