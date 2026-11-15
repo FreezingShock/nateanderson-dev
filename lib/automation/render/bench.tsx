@@ -8,12 +8,15 @@
 //   belts=1              places a short belt run and starts it
 //   orbit=0|1            0 = orbit: false, so an input module owns the camera
 //   cam=close&tx=&tz=    close-up camera on a board point (tx, tz)
+//   life=1               attach island life (ambient and reward bursts)
+//   delivery=1|unlock=1  fire that reward at the hub every 1.5 s (needs life)
 import { getMachineModel } from "../models/machines";
 import { useEffect, useRef } from "react";
 import { createVoxelIsland, type VoxelIsland } from "./index";
 import { heightAt } from "./terrain";
 import { EXAMPLE_BLOCK } from "../models/examples";
 import { scatterProps } from "../models/props";
+import { attachLife } from "./life";
 
 declare global {
     interface Window {
@@ -160,6 +163,18 @@ export default function VoxelIslandBench() {
                 { kind: "cornerR", tier: 1, x: -3, z: 4, rot: 0 },
             ]);
             island.setBeltSpeed(0, 1);
+        }
+
+        // Island life: life=1 attaches the ambient and reward layer; delivery=1 or unlock=1 fires that
+        // reward at the hub every 1.5 s so a still can catch the ring.
+        const reward = q.get("delivery") === "1" ? "delivery" : q.get("unlock") === "1" ? "unlock" : null;
+        if (q.get("life") === "1" || reward) {
+            const life = attachLife(island, heightAt);
+            (window as unknown as { __bwLife?: unknown }).__bwLife = life;
+            if (reward) {
+                const timer = window.setInterval(() => life.burst(reward, 0, 0), 1500);
+                (window as unknown as { __rewardTimer?: number }).__rewardTimer = timer;
+            }
         }
 
         if (q.get("cam") === "close") {
