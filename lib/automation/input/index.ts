@@ -23,6 +23,8 @@ export interface InputOptions {
     board: BoardSize;
     world: BuildWorld;
     tools: ToolSpec[];
+    // Optional build groups in display order. Tab and Shift+Tab step through them; the number keys then pick from the open group.
+    groups?: ToolSpec[][];
     heightAt?: HeightFn;
     limits?: CameraLimits;
     initialPose?: Partial<OrbitPose>;
@@ -76,6 +78,10 @@ export function createInputController(opts: InputOptions): InputController {
 
     const setToolById = (id: string | null) => build.setTool(toolFor(id));
 
+    // The tools the number keys pick from: the open group when groups are given, otherwise the full list.
+    let groupIndex = 0;
+    const activeTools = (): ToolSpec[] => (opts.groups && opts.groups.length > 0 ? opts.groups[groupIndex] : opts.tools);
+
     const apply = (a: KeyAction): boolean => {
         switch (a.type) {
             case "rotate":
@@ -105,6 +111,13 @@ export function createInputController(opts: InputOptions): InputController {
             case "toggle-delete":
                 build.setTool(build.getTool()?.id === DELETE_TOOL.id ? null : DELETE_TOOL);
                 return true;
+            case "group": {
+                if (!opts.groups || opts.groups.length === 0) return false;
+                const n = opts.groups.length;
+                groupIndex = (groupIndex + a.dir + n) % n;
+                build.setTool(null);
+                return true;
+            }
             case "pipette": {
                 // Copies the building under the hover cell onto the palette: its tool becomes armed, as if picked from the list.
                 const h = build.getHover();
@@ -115,7 +128,7 @@ export function createInputController(opts: InputOptions): InputController {
                 return true;
             }
             case "tool": {
-                const t = opts.tools[a.index];
+                const t = activeTools()[a.index];
                 if (!t) return false;
                 build.setTool(build.getTool()?.id === t.id ? null : t);
                 return true;

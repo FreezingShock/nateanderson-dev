@@ -638,3 +638,8 @@ test("mapKey: Q is the pipette, and a repeat is ignored", () => {
     assert.deepEqual(mapKey({ key: "q", type: "keydown", repeat: false }), { type: "pipette" });
     assert.equal(mapKey({ key: "q", type: "keydown", repeat: true }), null);
 });
+
+test("mapKey: Tab cycles build groups forward, Shift+Tab backward", () => {
+    assert.deepEqual(mapKey({ key: "Tab", type: "keydown", repeat: false, shiftKey: false }), { type: "group", dir: 1 });
+    assert.deepEqual(mapKey({ key: "Tab", type: "keydown", repeat: false, shiftKey: true }), { type: "group", dir: -1 });
+});
