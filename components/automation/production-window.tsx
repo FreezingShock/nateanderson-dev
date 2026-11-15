@@ -13,6 +13,19 @@ export type ProductionLayout = "ledger" | "board";
 const SAMPLES = 30; // one sample every 2 s: the last minute
 const SAMPLE_MS = 2000;
 
+/** Gauge value that starts at 0 and settles on `value` once the window is up, so the needle sweeps. Skipped when motion is off. */
+function useSweep(value: number, ref: React.RefObject<HTMLElement | null>) {
+  const [shown, setShown] = useState(0);
+  useEffect(() => {
+    const root = ref.current?.closest(".ab-root, .bw-root") as HTMLElement | null;
+    const off = root?.dataset.reduce === "true" || root?.dataset.lowfx === "true" || window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (off) { setShown(value); return; }
+    const t = window.setTimeout(() => setShown(value), 220);
+    return () => window.clearTimeout(t);
+  }, [value, ref]);
+  return shown;
+}
+
 const stat = (stats: StatLine[], label: string) => stats.find((s) => s.label === label)?.value ?? "–";
 
 /** "120 / 200 kW" from the sim's Power stat line. */
@@ -107,15 +120,19 @@ export function ProductionWindow({
       ? [["Raw", active.filter((r) => r.group === "raw")], ["Parts", active.filter((r) => r.group === "part")]]
       : [["Flowing", active]];
 
+  const roomRef = useRef<HTMLElement>(null);
+  const sweepPower = useSweep(sat, roomRef);
   const wind = Math.min(1, Math.max(0, (parseFloat(stat(stats, "Wind")) || 0) / 100));
   const isNight = stat(stats, "Time") === "Night";
+  const sweepWind = useSweep(wind, roomRef);
+  const sweepDay = useSweep(isNight ? 0.12 : 0.88, roomRef);
 
   return (
-    <MenuWindow title="Production" art={<Emblem />} label="Production stats" onClose={onClose}>
+    <MenuWindow title="Production" variant="settle" art={<Emblem />} label="Production stats" onClose={onClose}>
       <div className="ps-wrap ps-body" data-layout={layout}>
-        <section className="ps-room" aria-label="Gauge room">
+        <section className="ps-room" aria-label="Gauge room" ref={roomRef}>
           <div className="ps-dial" data-short={short}>
-            <ArtGauge value={sat} size={64} label="Power supplied" />
+            <ArtGauge value={sweepPower} size={64} label="Power supplied" />
             <span className="ps-kicker">Power</span>
             <span className="ps-big">{fmtNum(power.supply)} of {fmtNum(power.demand)} kW</span>
             <span className="ps-hint">
@@ -123,13 +140,13 @@ export function ProductionWindow({
             </span>
           </div>
           <div className="ps-dial">
-            <ArtGauge value={wind} size={64} label="Wind strength" />
+            <ArtGauge value={sweepWind} size={64} label="Wind strength" />
             <span className="ps-kicker">Wind</span>
             <span className="ps-big">{stat(stats, "Wind")} strength</span>
             <span className="ps-hint">Windmills give this share of their rated kW</span>
           </div>
           <div className="ps-dial">
-            <ArtGauge value={isNight ? 0.12 : 0.88} size={64} label={isNight ? "Night" : "Daytime"} />
+            <ArtGauge value={sweepDay} size={64} label={isNight ? "Night" : "Daytime"} />
             <span className="ps-kicker">Workshop {stat(stats, "Workshops")}</span>
             <span className="ps-big">Day {stat(stats, "Day")}</span>
             <span className="ps-hint">{isNight ? "Night" : "Daytime"}</span>
@@ -150,8 +167,8 @@ export function ProductionWindow({
                   <div key={label} className="ps-group" role="group" aria-label={label}>
                     {layout === "board" && <h4 className="ps-kicker">{label}</h4>}
                     <ul>
-                      {rows.map((r) => (
-                        <li key={r.id} className="ps-row" data-neg={r.perSecond < 0}>
+                      {rows.map((r, i) => (
+                        <li key={r.id} className="ps-row" data-neg={r.perSecond < 0} style={{ ["--ps-i" as string]: i }}>
                           <Glyph code={r.glyph} size={26} icon={r.id} />
                           <span className="ps-name">{r.name}</span>
                           <span className="ps-bar" aria-hidden="true">

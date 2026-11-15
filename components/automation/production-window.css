@@ -45,3 +45,12 @@
   .ps-bar, .ps-spark, .ps-stock { display: none; }
   .ps-wrap[data-layout="board"] .ps-groups { grid-template-columns: 1fr; }
 }
+
+/* Ledger rows write themselves in, one after another; bars grow from the left. */
+.ps-row { animation: ps-row-in 0.22s ease-out both; animation-delay: calc(0.12s + var(--ps-i, 0) * 28ms); }
+.ps-bar i { transform-origin: left center; animation: ps-bar-grow 0.45s cubic-bezier(0.3, 0.7, 0.4, 1) both; animation-delay: calc(0.2s + var(--ps-i, 0) * 28ms); }
+@keyframes ps-row-in { from { opacity: 0; transform: translateX(-6px); } to { opacity: 1; transform: none; } }
+@keyframes ps-bar-grow { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+.ab-root[data-reduce="true"] :is(.ps-row, .ps-bar i), .bw-root[data-reduce="true"] :is(.ps-row, .ps-bar i),
+.ab-root[data-lowfx="true"] :is(.ps-row, .ps-bar i), .bw-root[data-lowfx="true"] :is(.ps-row, .ps-bar i) { animation: none; }
+@media (prefers-reduced-motion: reduce) { .ps-row, .ps-bar i { animation: none; } }
