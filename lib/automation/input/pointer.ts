@@ -89,18 +89,20 @@ export class PointerInput {
     private heights(): HeightFn | undefined {
         const tool = this.opts.build.getTool();
         // A dragged-out Remove area follows the ground too, so its far corner never lands on a tall machine in front of it.
+        // A routed belt aims at machine bodies, so a drop on a machine's top lands on the machine.
+        if (this.opts.build.isRoutedStroke()) return this.opts.heightAt;
         if (tool && (tool.id !== "delete" || this.opts.build.isRectStroke()) && this.opts.groundHeightAt) return this.opts.groundHeightAt;
         return this.opts.heightAt;
     }
 
-    // Cell under a client-space point, or null off the board.
-    cellAt(clientX: number, clientY: number): Cell | null {
+    // Cell under a client-space point, or null off the board. bodies forces the machine-body pick.
+    cellAt(clientX: number, clientY: number, bodies = false): Cell | null {
         const rect = this.opts.element.getBoundingClientRect();
         if (rect.width === 0 || rect.height === 0) return null;
         const ndcX = ((clientX - rect.left) / rect.width) * 2 - 1;
         const ndcY = 1 - ((clientY - rect.top) / rect.height) * 2;
         const view = this.opts.camera.view(rect.width / rect.height);
-        const hit = pickGround(screenRay(view, ndcX, ndcY), this.opts.board, this.heights());
+        const hit = pickGround(screenRay(view, ndcX, ndcY), this.opts.board, bodies ? this.opts.heightAt : this.heights());
         return hit ? hit.cell : null;
     }
 
@@ -168,7 +170,13 @@ export class PointerInput {
         } else if (e.button === 0) {
             p.click = !this.opts.build.getTool();
             if (this.opts.build.getTool()) {
-                const cell = this.cellAt(e.clientX, e.clientY);
+                let cell = this.cellAt(e.clientX, e.clientY);
+                const tl = this.opts.build.getTool();
+                // A belt pressed on a machine's body starts a routed belt from that machine.
+                if (tl?.line && tl.id !== "delete" && this.opts.build.canRoute()) {
+                    const onBody = this.cellAt(e.clientX, e.clientY, true);
+                    if (onBody && this.opts.build.peek(onBody)) cell = onBody;
+                }
                 if (cell) {
                     p.mode = "stroke";
                     // Remove with Shift held clears the rectangle you drag out.

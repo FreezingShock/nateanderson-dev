@@ -12,7 +12,7 @@ export { vec, type Vec3 } from "./math";
 import { type BoardSize } from "./grid";
 import { type HeightFn } from "./picking";
 import { OrbitCamera, type CameraLimits, type OrbitPose, DEFAULT_LIMITS } from "./camera";
-import { BuildController, type BuildWorld, type ToolSpec, DELETE_TOOL, type BuildEvent } from "./build";
+import { BuildController, type BuildWorld, type BuildOptions, type ToolSpec, DELETE_TOOL, type BuildEvent } from "./build";
 import { PointerInput } from "./pointer";
 import { project } from "./picking";
 import { createTouchBar, type TouchBar } from "./touch-bar";
@@ -27,6 +27,8 @@ export interface InputOptions {
     groups?: ToolSpec[][];
     /** Called when Tab or Shift+Tab moves to another group, with its index in `groups`. */
     onGroup?: (index: number) => void;
+    // Belt route finder for press-on-a-building drags. See BuildOptions.route.
+    route?: BuildOptions["route"];
     heightAt?: HeightFn;
     // Bare ground, without machine bodies. Placement picks use it so a tall machine never hides the cells behind it.
     groundHeightAt?: HeightFn;
@@ -66,7 +68,7 @@ export function createInputController(opts: InputOptions): InputController {
     const camera = new OrbitCamera(opts.limits ?? DEFAULT_LIMITS, opts.initialPose);
     // Line tools (belts) define the runs that runAt and the belt pop-up follow.
     const lineKinds = opts.tools.filter((t) => t.line).map((t) => t.id);
-    const build = new BuildController({ world: opts.world, board: opts.board, onEvent: opts.onEvent, lineKinds });
+    const build = new BuildController({ world: opts.world, board: opts.board, onEvent: opts.onEvent, lineKinds, route: opts.route });
     const pointer = new PointerInput({
         element: opts.element,
         camera,

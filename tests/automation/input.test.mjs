@@ -705,3 +705,39 @@ test("the pipette copies the turn of the building it picks", () => {
     assert.equal(ctl.build.getTool()?.id, "machine");
     assert.equal(ctl.build.getRot(), 2);
 });
+
+test("a belt pressed on a machine and dragged to another places the route the finder returns", async () => {
+    const { BuildController } = await import("../../lib/automation/input/build.ts");
+    const world = memWorld();
+    world.set(0, 0, { kind: "machine", rot: 0 });
+    world.set(6, 0, { kind: "machine", rot: 0 });
+    const calls = [];
+    const route = (from, to, id) => {
+        calls.push([from, to, id]);
+        return { ok: true, cells: [1, 2, 3, 4, 5].map((x) => ({ x, z: 1, rot: 1 })) };
+    };
+    const b = new BuildController({ world, board, lineKinds: ["belt"], route });
+    b.setTool(belt);
+    b.beginStroke({ x: 0, z: 0 });
+    assert.ok(b.isRoutedStroke());
+    b.updateStroke({ x: 0, z: 0 });
+    assert.equal(b.ghost().cells.length, 0, "no route while still on the source machine");
+    b.updateStroke({ x: 6, z: 0 });
+    assert.equal(b.ghost().cells.length, 5);
+    assert.equal(b.endStroke(), 5);
+    assert.equal(world.get(3, 1).kind, "belt");
+    assert.deepEqual(calls.at(-1)[2], "belt");
+    // A failed route reports why and places nothing.
+    const events = [];
+    const w2 = memWorld();
+    w2.set(0, 0, { kind: "machine", rot: 0 });
+    const b2 = new BuildController({ world: w2, board, lineKinds: ["belt"], onEvent: (e) => events.push(e), route: () => ({ ok: false, reason: "no clear route" }) });
+    b2.setTool(belt);
+    b2.beginStroke({ x: 0, z: 0 });
+    b2.updateStroke({ x: 5, z: 5 });
+    assert.equal(b2.endStroke(), 0);
+    assert.deepEqual(events.at(-1), { type: "invalid", reason: "no clear route" });
+    // A press on bare ground is still a hand-drawn path.
+    b.beginStroke({ x: 9, z: 9 });
+    assert.ok(!b.isRoutedStroke());
+});
