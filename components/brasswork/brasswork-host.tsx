@@ -172,6 +172,10 @@ export function BrassworkHost() {
             const drawn = new Set<number>();
             let hubStage = -1;
             const shownNodes = new Map<string, string>();
+            // How tall each machine stands above its cells (input frame), so a click on a machine's body picks the machine
+            // and not the ground behind it. Belts stay flat. Rebuilt by syncScene.
+            const bodyTop = new Map<string, number>();
+            const pickHeightAt = (x: number, z: number) => heightAt(x, z) + (bodyTop.get(`${Math.floor(x)},${Math.floor(z)}`) ?? 0);
 
             const island: VoxelIsland = createVoxelIsland(canvas, { quality: "auto", dither: true, timeOfDay: 0.4, cycle: false, orbit: false });
             [1.2, 2, 3].forEach((v, tier) => island.setBeltSpeed(tier, v));
@@ -199,6 +203,16 @@ export function BrassworkHost() {
 
             // Keep the scene in step with the world: draw new buildings, remove the ones that are gone.
             const syncScene = () => {
+                bodyTop.clear();
+                for (const b of Object.values(world.buildings)) {
+                    if (b.type in BELT_TIER) continue;
+                    const r = resolve(CAT, b.type);
+                    const model = b.type === "hub" ? getHubModel(hubStage < 0 ? 0 : hubStage) : getMachineModel(b.type);
+                    if (!r || !model) continue;
+                    // Most of the model's height, so a click near the very top edge still counts as the machine.
+                    const top = (model.size?.[1] ?? 8) * model.voxel * 0.75;
+                    for (const [cx, cz] of footprintCells(b, r.footprint)) bodyTop.set(`${cx - W / 2},${cz - D / 2}`, top);
+                }
                 for (const id of [...drawn]) {
                     if (!world.buildings[id]) {
                         island.removeObject(`b${id}`);
@@ -391,7 +405,7 @@ export function BrassworkHost() {
                 tools,
                 groups: dockTools,
                 onGroup: (i) => setDockGroup(DOCK_ORDER[i] ?? null),
-                heightAt,
+                heightAt: pickHeightAt,
                 initialPose: { target: { x: 0, y: 0, z: 0 }, yaw: 0.6, pitch: 0.75, distance: 18 },
                 limits: { bounds: { minX: -14, maxX: 14, minZ: -10, maxZ: 10 }, minDistance: 5, maxDistance: 34, minPitch: 0.35, maxPitch: 1.2, topDownPitch: 1.5, fovY: 0.55, smoothing: 12 },
                 onEvent: (e) => {
