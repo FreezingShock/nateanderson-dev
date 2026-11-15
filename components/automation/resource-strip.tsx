@@ -113,9 +113,10 @@ function ResourceList({
               <Glyph code={r.glyph} size={48} icon={r.id} />
               <span className="ab-res-amt">{amount}</span>
             </span>
-            {showRates && r.perSecond !== 0 && (
-              <span className="ab-res-rate" data-neg={r.perSecond < 0}>
-                {rate}
+            {/* The rate sits under its box. A steady item keeps an empty slot, so every box has the same height. */}
+            {showRates && (
+              <span className="ab-res-rate" data-neg={r.perSecond < 0} aria-hidden="true">
+                {r.perSecond !== 0 ? rate : ""}
               </span>
             )}
             {/* Live: the tooltip reads the same data as the bar, so it updates with the factory. */}
