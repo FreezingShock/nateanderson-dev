@@ -28,7 +28,7 @@ const s = E.fresh(0);
 const marks = {};
 const mark = (k, t) => { if (!(k in marks)) marks[k] = t; };
 const INC = Number(process.env.GB_INC || 0); // incorporate when gain >= this (0 = never; firm 1 runs to the end)
-let t = 0, lastBuilt = 0;
+let t = 0, lastBuilt = 0, lastOpen = 1;
 // keep the next unlock's price in the bank, as a player would
 const reserve = (n) => (n === s.open - 1 && s.open < D.N ? D.UNLOCK_COST[s.open] : 0) + (s.job && s.job.step === 'build' ? 0 : 0);
 const f0 = () => E.effects(s);
@@ -54,10 +54,11 @@ while (t < hours * 3600 && !(s.ending && !INC)) {
     for (let n = 1; n < PROBE.length; n++) if (t === PROBE[n] * 60) probed[n] = s.amt[n - 1];
     E.step(s, 1, f);
     t += 1;
+    while (lastOpen < s.open) { lastOpen++; if (lastOpen > 1) mark(`open ${D.MATS[lastOpen - 1].name}`, t); }
 }
 if (process.env.GB_PROBE) console.log('PROBE ' + JSON.stringify(probed));
 if (process.env.GB_BRIEF) console.log(Object.entries(marks).filter(([k]) => /^(open|ENDING|job 13|method)/.test(k)).map(([k, v]) => `${k.replace('open ', '')} ${Math.round(v / 60)}`).join(' | '));
 else for (const [k, v] of Object.entries(marks)) console.log(T(v).padStart(8), k);
 if (process.env.GB_JOB && s.job) console.log(JSON.stringify(s.job), E.rawRate(s, 11, E.effects(s), E.chain(s)), s.flow?.map((v)=>v.toExponential(1)).join(' '));
 if (process.env.GB_DUMP) console.log(s.amt.map(E.fmt).join(' '), s.crews.join(','), s.equip.join(','));
-console.log(`t=${T(t)} firm=${s.firm + 1} open=${s.open} built=${s.built} rep=${E.fmt(s.rep)} cash=${E.fmt(s.cash)} charter=${s.charter}/${s.charterAll} ending=${s.ending}`);
+console.log(`t=${T(t)} firm=${s.firm + 1} reruns=${s.reruns} open=${s.open} built=${s.built} rep=${E.fmt(s.rep)} cash=${E.fmt(s.cash)} charter=${s.charter}/${s.charterAll} ending=${s.ending}`);
