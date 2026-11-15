@@ -305,6 +305,7 @@ export function Starwright() {
             const el = e.target as HTMLElement | null;
             if (el && (el.tagName === "INPUT" || el.tagName === "TEXTAREA" || el.isContentEditable)) return;
             if (e.ctrlKey || e.metaKey) return;
+            if (document.querySelector(".sw-end")) return;
             if (e.key === "Escape") { setPanel(null); return; }
             const k = e.key.toLowerCase();
             if (k === "c") setPanel((p) => (p === "stars" ? null : "stars"));
