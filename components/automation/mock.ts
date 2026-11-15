@@ -164,7 +164,14 @@ const RECIPES: Record<string, Pick<MachineDetail, "recipe" | "rates" | "buffers"
 /** Builds the inspector view for one machine from the recipe table above. */
 export function detailFor(machine: MachineView): MachineDetail {
   const r = RECIPES[machine.id];
-  return { ...machine, ...r };
+  // Preview energy: a consumer short on power, and a windmill feeding three machines.
+  const power: Partial<MachineDetail> =
+    machine.id === "windmill"
+      ? { maxKw: 50, producedKw: 42, windPct: 0.84, fedCount: 3, rangeCells: 6 }
+      : machine.id === "kiln"
+        ? { usedKw: 45, satisfied: 0.6, fullyPowered: false }
+        : {};
+  return { ...machine, ...r, ...power };
 }
 
 export const mockHud: HudData = {
