@@ -36,6 +36,18 @@ for (const [tag, vp] of [["1440", { width: 1440, height: 900 }], ["390", { width
         await page.getByRole("button", { name: id, exact: true }).click();
         await page.waitForTimeout(900);
         await page.screenshot({ path: `${OUT}/menu-${id.toLowerCase()}-${tag}.png` });
+        if (id === "Constellations") {
+            await page.locator('[data-id="l3"]').click();
+            await page.waitForTimeout(1300);
+            await page.screenshot({ path: `${OUT}/chart-zoom-${tag}.png` });
+            await page.locator(".sw-sc-buy").click();
+            await page.waitForTimeout(300);
+            await page.screenshot({ path: `${OUT}/chart-buy-${tag}.png` });
+            await page.waitForTimeout(900);
+            await page.screenshot({ path: `${OUT}/chart-lit-${tag}.png` });
+            await page.keyboard.press("Escape");
+            await page.waitForTimeout(700);
+        }
         await page.keyboard.press("Escape");
         await page.waitForTimeout(500);
     }

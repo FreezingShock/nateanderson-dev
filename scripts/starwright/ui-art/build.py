@@ -533,51 +533,92 @@ c.put(bayer(8, 8) < .5, .0, k)
 save(c.image(), "scrim")
 
 
-# ---- star chart nodes: 32 x 32, one per constellation colour and state ----------------------------------------------------
-CONS = [("lantern", "#5fb4ff"), ("kiln", "#ff9a4d"), ("anvil", "#e8e2d6"), ("loom", "#a98bff"), ("pulsar", "#9fd0ff")]
+# ---- star chart nodes: 40 x 40 medallions, one per perk, with art for what the perk does ----------------------------------
+CONS = {"lantern": "#5fb4ff", "kiln": "#ff9a4d", "anvil": "#e8e2d6", "loom": "#a98bff", "pulsar": "#9fd0ff"}
+# perk id -> (constellation, glyph). Keep in step with PERKS / PULSAR_PERKS in lib/starwright/data.ts.
+NODES = {
+    "l1": ("lantern", "aperture"), "l2": ("lantern", "stream"), "l3": ("lantern", "halo"), "l4": ("lantern", "veil"), "l5": ("lantern", "corona"),
+    "k1": ("kiln", "spark"), "k2": ("kiln", "flame"), "k3": ("kiln", "well"), "k4": ("kiln", "bloom"), "k5": ("kiln", "frost"),
+    "a1": ("anvil", "seeds"), "a2": ("anvil", "press"), "a3": ("anvil", "remnant"), "a4": ("anvil", "shell"), "a5": ("anvil", "rain"),
+    "w1": ("loom", "spindle"), "w2": ("loom", "shuttle"), "w3": ("loom", "shield"), "w4": ("loom", "moon"), "w5": ("loom", "weave"),
+    "p1": ("pulsar", "spin"), "p2": ("pulsar", "magnet"), "p3": ("pulsar", "kilonova"), "p4": ("pulsar", "afterglow"), "p5": ("pulsar", "embersky"),
+    "p6": ("pulsar", "beam"), "p7": ("pulsar", "horizon"), "p8": ("pulsar", "echo"),
+}
+C0 = 20  # medallion centre
 
 
-def star4(c, k, R, r, lo, hi, cx=16, cy=16):
-    pts = []
-    for i in range(8):
-        a = i * math.pi / 4 - math.pi / 2
-        L = R if i % 2 == 0 else r
-        pts.append((cx + L * math.cos(a), cy + L * math.sin(a)))
-    return c.poly(pts, k, lo, hi)
+def g_arrows_in(c, k, v):
+    for a in range(4):
+        ang = a * math.pi / 2 + math.pi / 4
+        x0, y0 = C0 + 8 * math.cos(ang), C0 + 8 * math.sin(ang)
+        c.line(x0, y0, C0 + 3.5 * math.cos(ang), C0 + 3.5 * math.sin(ang), 1.6, k, v)
+    c.ball(C0, C0, 2.4, k, v, v, light=False)
 
 
-for cid, col in CONS:
-    # own: lit star, soft dithered glow, diagonal glints
-    c = Canvas(32); k = c.use(col)
-    c.glow(16, 16, 15, k, .55)
-    for a in (1, 3, 5, 7):
-        ang = a * math.pi / 4
-        c.line(16 + 5 * math.cos(ang), 16 + 5 * math.sin(ang), 16 + 8 * math.cos(ang), 16 + 8 * math.sin(ang), .9, k, .7)
-    star4(c, k, 12, 3.2, .7, 1.0)
-    c.ball(16, 16, 3, k, 1.0, 1.0, light=False)
-    c.outline(c.use("#05040c"), 0)
-    save(c.image(), f"node-{cid}-own")
-    # buy: a ready star, ringed by a dotted bracket ring
-    c = Canvas(32); k = c.use(col)
-    ring = np.abs(np.hypot(c.x - 16, c.y - 16) - 13) < .8
-    ang = np.arctan2(c.y - 16, c.x - 16)
-    c.put(ring & (np.cos(ang * 4) > -.2), .75, k)
-    star4(c, k, 9, 2.6, .35, .85)
-    c.outline(c.use("#05040c"), 0)
-    save(c.image(), f"node-{cid}-buy")
-    # near: hollow outline star, the cost is in reach later
-    c = Canvas(32); k = c.use(col)
-    m = star4(c, k, 9, 2.6, .3, .3)
-    p = np.pad(m, 1)
-    inner = p[:-2, 1:-1] & p[2:, 1:-1] & p[1:-1, :-2] & p[1:-1, 2:] & m
-    c.v = np.where(inner, -1, c.v)
-    c.ball(16, 16, 1.2, k, .5, .5, light=False)
-    save(c.image(), f"node-{cid}-near")
-    # lock: a dim cross-shaped speck
-    c = Canvas(32); k = c.use("#6b6f8a")
-    c.line(16, 12, 16, 20, 1, k, .35); c.line(12, 16, 20, 16, 1, k, .35)
-    c.ball(16, 16, 1.6, k, .45, .45, light=False)
-    save(c.image(), f"node-{cid}-lock")
+GLYPH = {
+    "aperture": lambda c, k, v: (c.ring(C0, C0, 7, 7, 1.6, k, v), [c.line(C0 + 7 * math.cos(a), C0 + 7 * math.sin(a), C0 + 2 * math.cos(a + 1.2), C0 + 2 * math.sin(a + 1.2), 1.2, k, v * .8) for a in [i * math.pi / 3 for i in range(6)]]),
+    "stream": lambda c, k, v: [c.line(C0 - 8, C0 - 5 + i * 5, C0 + 6, C0 - 5 + i * 5 - 2, 1.4, k, v * (1 - i * .15)) for i in range(3)] + [c.ball(C0 + 7, C0 - 2, 2.4, k, v, v, light=False)],
+    "halo": lambda c, k, v: (c.ring(C0, C0 + 1, 8, 3, 1.3, k, v), c.ball(C0, C0, 4, k, v * .5, v)),
+    "veil": lambda c, k, v: [c.line(C0 - 8 + i * 4, C0 - 8, C0 - 6 + i * 4, C0 + 8, 1.6, k, v * (.6 + .1 * i)) for i in range(5)],
+    "corona": lambda c, k, v: (c.ball(C0, C0, 4.2, k, v * .6, v), [c.line(C0 + 5.5 * math.cos(a), C0 + 5.5 * math.sin(a), C0 + 8.5 * math.cos(a), C0 + 8.5 * math.sin(a), 1.4, k, v) for a in [i * math.pi / 6 for i in range(12)]]),
+    "spark": lambda c, k, v: c.poly([(C0 + 1, C0 - 9), (C0 - 5, C0 + 1), (C0, C0 + 1), (C0 - 2, C0 + 9), (C0 + 6, C0 - 2), (C0 + 1, C0 - 2)], k, v * .7, v),
+    "flame": lambda c, k, v: (c.poly([(C0, C0 - 9), (C0 + 6, C0), (C0 + 5, C0 + 6), (C0, C0 + 9), (C0 - 5, C0 + 6), (C0 - 6, C0)], k, v * .5, v), c.poly([(C0, C0 - 1), (C0 + 3, C0 + 4), (C0, C0 + 7), (C0 - 3, C0 + 4)], k, v, v)),
+    "well": lambda c, k, v: [c.ring(C0, C0 - 3 + i * 3, 8 - i * 2.4, 2.4 - i * .5, 1.1, k, v * (.6 + .15 * i)) for i in range(3)] + [c.ball(C0, C0 + 6, 1.6, k, v, v, light=False)],
+    "bloom": lambda c, k, v: [c.ball(C0 + 5 * math.cos(a), C0 + 5 * math.sin(a), 3, k, v * .5, v) for a in [i * math.pi * 2 / 5 - math.pi / 2 for i in range(5)]] + [c.ball(C0, C0, 2.4, k, v, v, light=False)],
+    "frost": lambda c, k, v: [c.line(C0 - 8 * math.cos(a), C0 - 8 * math.sin(a), C0 + 8 * math.cos(a), C0 + 8 * math.sin(a), 1.4, k, v) for a in [i * math.pi / 3 for i in range(3)]] + [c.ring(C0, C0, 3, 3, 1, k, v)],
+    "seeds": lambda c, k, v: [c.ball(C0 + dx, C0 + dy, r, k, v * .5, v) for dx, dy, r in [(-4, 2, 3), (3, -3, 2.6), (4, 5, 2.2), (-3, -6, 1.6)]],
+    "press": lambda c, k, v: (c.rect(C0 - 7, C0 + 2, C0 + 7, C0 + 8, k, v * .7), c.rect(C0 - 5, C0 - 9, C0 + 5, C0 - 5, k, v), c.line(C0, C0 - 5, C0, C0 + 1, 1.8, k, v)),
+    "remnant": lambda c, k, v: (c.ball(C0, C0, 6, k, v * .35, v * .9), c.line(C0 - 2.5, C0 - 3, C0 - 2.5, C0 + 3, 1.3, k, v), c.line(C0 + 2.5, C0 - 3, C0 + 2.5, C0 + 3, 1.3, k, v), c.line(C0 - 2.5, C0, C0 + 2.5, C0, 1.3, k, v)),
+    "shell": lambda c, k, v: (c.ring(C0, C0, 8, 8, 1.4, k, v), c.ring(C0, C0, 5, 5, 1.2, k, v * .7), c.ball(C0, C0, 2, k, v, v, light=False)),
+    "rain": lambda c, k, v: [c.line(C0 + dx, C0 + dy, C0 + dx - 2, C0 + dy + 5, 1.6, k, v) for dx, dy in [(-5, -8), (1, -6), (6, -9), (-2, 1), (4, 2)]],
+    "spindle": lambda c, k, v: (c.poly([(C0, C0 - 9), (C0 + 3, C0), (C0, C0 + 9), (C0 - 3, C0)], k, v * .6, v), [c.line(C0 - 4, C0 - 3 + i * 2, C0 + 4, C0 - 2 + i * 2, .9, k, v * .5) for i in range(4)]),
+    "shuttle": lambda c, k, v: (c.poly([(C0 - 9, C0), (C0 - 3, C0 - 4), (C0 + 3, C0 - 4), (C0 + 9, C0), (C0 + 3, C0 + 4), (C0 - 3, C0 + 4)], k, v * .5, v), c.rect(C0 - 2, C0 - 1, C0 + 2, C0 + 1, k, v * .2)),
+    "shield": lambda c, k, v: (c.poly([(C0 - 7, C0 - 7), (C0 + 7, C0 - 7), (C0 + 6, C0 + 3), (C0, C0 + 9), (C0 - 6, C0 + 3)], k, v * .4, v * .8), c.ball(C0, C0, 2.6, k, v, v, light=False)),
+    "moon": lambda c, k, v: (c.ball(C0, C0, 7, k, v * .5, v), c.put(np.hypot(c.x - C0 - 3.5, c.y - C0 + 2.5) < 6, -1, k)),
+    "weave": lambda c, k, v: [c.line(C0 - 8, C0 - 6 + i * 4, C0 + 8, C0 - 6 + i * 4, 1.2, k, v * .55) for i in range(4)] + [c.line(C0 - 6 + i * 4, C0 - 8, C0 - 6 + i * 4, C0 + 8, 1.6, k, v) for i in range(4)],
+    "spin": lambda c, k, v: (c.ring(C0, C0, 7.5, 7.5, 1.4, k, v), c.poly([(C0 + 7.5, C0 - 4), (C0 + 11, C0 + 1), (C0 + 4, C0 + 1)], k, v, v), c.ball(C0, C0, 2.4, k, v, v, light=False)),
+    "magnet": lambda c, k, v: (c.ring(C0, C0 - 1, 6, 6, 3, k, v, front=False), c.rect(C0 - 7.5, C0 - 1, C0 - 4.5, C0 + 7, k, v), c.rect(C0 + 4.5, C0 - 1, C0 + 7.5, C0 + 7, k, v), c.rect(C0 - 7.5, C0 + 5, C0 - 4.5, C0 + 8, k, v * .4), c.rect(C0 + 4.5, C0 + 5, C0 + 7.5, C0 + 8, k, v * .4)),
+    "kilonova": lambda c, k, v: (c.ball(C0 - 4, C0, 3, k, v * .6, v), c.ball(C0 + 4, C0, 3, k, v * .6, v), [c.line(C0, C0, C0 + 9 * math.cos(a), C0 + 9 * math.sin(a), 1, k, v) for a in (math.pi / 2, -math.pi / 2, math.pi / 4, -math.pi * 3 / 4)]),
+    "afterglow": lambda c, k, v: (c.glow(C0, C0, 9, k, .6 * v), c.ball(C0, C0, 3, k, v, v, light=False)),
+    "embersky": lambda c, k, v: [c.line(*a, *b, 1, k, v * .6) for a, b in [((C0 - 7, C0 + 5), (C0 - 2, C0 - 4)), ((C0 - 2, C0 - 4), (C0 + 6, C0 - 1)), ((C0 + 6, C0 - 1), (C0 + 3, C0 + 7))]] + [c.ball(x, y, 1.8, k, v, v, light=False) for x, y in [(C0 - 7, C0 + 5), (C0 - 2, C0 - 4), (C0 + 6, C0 - 1), (C0 + 3, C0 + 7)]],
+    "beam": lambda c, k, v: (c.poly([(C0, C0), (C0 - 3, C0 - 10), (C0 + 3, C0 - 10)], k, v * .6, v), c.poly([(C0, C0), (C0 - 3, C0 + 10), (C0 + 3, C0 + 10)], k, v * .6, v), c.ball(C0, C0, 3, k, v, v, light=False)),
+    "horizon": lambda c, k, v: (c.ring(C0, C0, 8, 3, 1.4, k, v), c.ball(C0, C0, 4.5, k, 0, .05, light=False), c.ring(C0, C0, 4.8, 4.8, 1, k, v)),
+    "echo": lambda c, k, v: [c.ring(C0, C0, r, r, 1.2, k, v * (1 - i * .22)) for i, r in enumerate((3, 5.5, 8))],
+}
+
+
+def medallion(c, k, state):
+    """An eight-point star plate. own: filled and glowing; open: outlined in colour; lock: dim grey."""
+    d = np.hypot(c.x - C0, c.y - C0)
+    a = np.arctan2(c.y - C0, c.x - C0)
+    rim = 13.5 + 2.5 * np.abs(np.cos(a * 4)) ** 6
+    plate = d <= rim
+    if state == "own":
+        c.glow(C0, C0, 20, k, .55)
+        c.put(plate, .55 - .3 * d / rim + .25 * ((c.x + c.y) < 2 * C0), k)
+        c.put(plate & (d > rim - 1.5), .95, k)
+    else:
+        c.put(plate, .1, k)
+        c.put(plate & (d > rim - 1.5), .7 if state == "open" else .3, k)
+
+
+for pid, (con, gname) in NODES.items():
+    for state in ("own", "open", "lock"):
+        c = Canvas(40)
+        k = c.use(CONS[con] if state != "lock" else "#6b6f8a")
+        medallion(c, k, state)
+        gk = c.use(("#2a2440" if con == "anvil" else "#ffffff") if state == "own" else (CONS[con] if state == "open" else "#6b6f8a"))
+        GLYPH[gname](c, gk, .95 if state == "own" else (.85 if state == "open" else .45))
+        c.outline(c.use("#05040c"), 0)
+        save(c.image(), f"node-{pid}-{state}")
+
+# ready ring: drawn once per constellation, turned by CSS
+for con, col in CONS.items():
+    c = Canvas(56); k = c.use(col)
+    d = np.hypot(c.x - 28, c.y - 28); ang = np.arctan2(c.y - 28, c.x - 28)
+    c.put((np.abs(d - 25) < 1.2) & (np.cos(ang * 4) > .1), .9, k)
+    c.put((np.abs(d - 25) < 2.6) & (np.cos(ang * 4) > .92), 1.0, k)
+    save(c.image(), f"ring-{con}")
 
 # ---- contact sheet (not shipped to the page; used for reviews) --------------------------------------------------------
 cell = 26 * 6
