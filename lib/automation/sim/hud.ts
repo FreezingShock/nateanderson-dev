@@ -24,7 +24,7 @@ import type {
     World,
 } from "../types";
 import { DEFAULT_CATALOG, SITES } from "./data";
-import { unlockedRecipes, dayClock, requestDone, buyResearch as buyResearchRaw, prestige as prestigeRaw } from "./progress";
+import { unlockedRecipes, dayClock, requestDone, currentCommission, buyResearch as buyResearchRaw, prestige as prestigeRaw } from "./progress";
 import { hubStageFor } from "../models/machines/hub";
 import { place as placeRaw, setRecipe as setRecipeRaw, setFilter as setFilterRaw, resolve, BATTERIES, depositUnder, hasOutputNeighbour } from "./world";
 
@@ -35,6 +35,17 @@ const pct = (x: number): string => {
     const v = Math.round((x - 1) * 100);
     return `${v >= 0 ? "+" : ""}${v}%`;
 };
+
+// The supply crate as hub tiles: one per item, with its icon.
+const crateTiles = (cat: Catalog, reward: { item: string; qty: number }[] | undefined): HubUnlock[] =>
+    (reward ?? []).map((x): HubUnlock => ({ kind: "crate", id: `crate-${x.item}`, name: `${x.qty} ${nameOf(cat, x.item)}`, icon: x.item }));
+
+// "+12 blueprints and 20 Iron plate, 20 Copper wire" for a milestone or commission payout.
+function rewardLineOf(cat: Catalog, blueprints: number, reward: { item: string; qty: number }[] | undefined): string {
+    const crate = (reward ?? []).map((x) => `${x.qty} ${nameOf(cat, x.item)}`).join(", ");
+    const bp = `+${blueprints} blueprint${blueprints === 1 ? "" : "s"}`;
+    return crate ? `${bp} and a crate: ${crate}` : bp;
+}
 
 const glyphOf = (name: string): string => name.replace(/[^A-Za-z0-9]/g, "").slice(0, 2).toUpperCase() || "?";
 
@@ -112,7 +123,7 @@ function flowOf(world: World, cat: Catalog, b: Building): Flow {
         if (!room) return { ...flow, status: "blocked" };
         if (!fed) return { ...flow, status: "starved" };
         if (sat <= 0) return { ...flow, status: "blocked" };
-        const perCraft = (r.speed * sat) / rec.craftSeconds;
+        const perCraft = (r.speed * sat * (world.progress.bonus.craft ?? 1)) / rec.craftSeconds;
         flow.makes[rec.output.item] = rec.output.qty * perCraft;
         for (const s of rec.inputs) flow.uses[s.item] = s.qty * perCraft;
         flow.status = "running";
@@ -348,6 +359,7 @@ export function hudData(world: World, cat: Catalog = DEFAULT_CATALOG, selectedId
             goal: m.deliver.map((s) => `Deliver ${s.qty} ${nameOf(cat, s.item)}`).join(", "),
             progress: Math.max(0, progress),
             blueprintReward: m.blueprints,
+            rewardLine: rewardLineOf(cat, m.blueprints, m.reward),
             done,
             items: m.deliver.map((s) => ({
                 id: s.item,
@@ -357,6 +369,24 @@ export function hudData(world: World, cat: Catalog = DEFAULT_CATALOG, selectedId
             })),
         };
     });
+    // Prestige waits on the first run's milestones only; commissions come after and repeat.
+    const firstRunDone = milestones.length > 0 && milestones.every((m) => m.done);
+    const commission = currentCommission(world, cat);
+    if (commission) {
+        const base = world.progress.commissionBase ?? {};
+        const items = commission.deliver.map((s) => ({ id: s.item, name: nameOf(cat, s.item), have: Math.min(s.qty - (base[s.item] ?? 0), Math.max(0, (world.progress.delivered[s.item] ?? 0) - (base[s.item] ?? 0))), need: s.qty - (base[s.item] ?? 0) }));
+        milestones.push({
+            id: "commission",
+            name: `Commission ${commission.n + 1}: ${commission.name}`,
+            goal: items.map((i) => `Deliver ${i.need} ${i.name}`).join(", "),
+            progress: Math.min(1, ...items.map((i) => i.have / i.need)),
+            blueprintReward: commission.blueprints,
+            rewardLine: rewardLineOf(cat, commission.blueprints, commission.reward),
+            commission: true,
+            done: false,
+            items,
+        });
+    }
 
     // Board layout: a node sits one column right of its deepest prerequisite; rows are slots in tree order.
     const depth = new Map<string, number>();
@@ -384,7 +414,7 @@ export function hudData(world: World, cat: Catalog = DEFAULT_CATALOG, selectedId
     });
 
     const hubSteps = hubStepsOf(world, cat);
-    const allDone = milestones.length > 0 && milestones.every((m) => m.done);
+    const allDone = firstRunDone;
     const stats: StatLine[] = [
         { label: "Day", value: String(clock.day + 1) },
         { label: "Time", value: clock.isNight ? "Night" : "Day" },
@@ -462,7 +492,7 @@ function hubStepsOf(world: World, cat: Catalog): HubStep[] {
             }),
             ...q.unlocks.machines.map((mid): HubUnlock => ({ kind: "machine", id: mid, name: cat.tree.machines.find((m) => m.id === mid)?.name ?? cat.tree.structures?.find((x) => x.id === mid)?.name ?? mid, icon: mid })),
         ];
-        steps.push({ id: q.id, kind: "request", name: q.name, note: q.note, state: done ? "done" : "ahead", progress: done ? 1 : frac(items), items, unlocks });
+        steps.push({ id: q.id, kind: "request", name: q.name, note: q.note, state: done ? "done" : "ahead", progress: done ? 1 : frac(items), items, unlocks: [...unlocks, ...crateTiles(cat, q.reward)] });
     }
     cat.tree.milestones.forEach((m, i) => {
         const items = itemsOf(m.deliver);
@@ -474,9 +504,26 @@ function hubStepsOf(world: World, cat: Catalog): HubStep[] {
             state: done ? "done" : "ahead",
             progress: done ? 1 : frac(items),
             items,
-            unlocks: [{ kind: "blueprints", id: "blueprints", name: `${m.blueprints} blueprints` }, ...milestoneUnlocks(cat, i)],
+            unlocks: [{ kind: "blueprints", id: "blueprints", name: `${m.blueprints} blueprints` }, ...milestoneUnlocks(cat, i), ...crateTiles(cat, m.reward)],
         });
     });
+    const commission = currentCommission(world, cat);
+    if (commission) {
+        const base = world.progress.commissionBase ?? {};
+        const items = commission.deliver.map((s) => {
+            const need = s.qty - (base[s.item] ?? 0);
+            return { id: s.item, name: nameOf(cat, s.item), have: Math.min(need, Math.max(0, Math.floor((delivered[s.item] ?? 0) - (base[s.item] ?? 0)))), need };
+        });
+        steps.push({
+            id: "commission",
+            kind: "milestone",
+            name: `Commission ${commission.n + 1}: ${commission.name}`,
+            state: "ahead",
+            progress: frac(items),
+            items,
+            unlocks: [{ kind: "blueprints", id: "blueprints", name: `${commission.blueprints} blueprints` }, ...crateTiles(cat, commission.reward)],
+        });
+    }
     const now = steps.find((x) => x.state !== "done");
     if (now) now.state = "now";
     return steps;
@@ -503,7 +550,7 @@ function nextStepOf(world: World, cat: Catalog, machines: MachineView[], milesto
             return `${nameOf(cat, s.item)} ${have} of ${s.qty}`;
         });
         const detail = parts.length ? ` (${parts.join(", ")})` : "";
-        return { title: next.name, progress: next.progress, text: `${next.goal}${detail}. Reward: ${next.blueprintReward} blueprints.` };
+        return { title: next.name, progress: next.progress, text: `${next.goal}${detail}. Reward: ${next.rewardLine ?? `${next.blueprintReward} blueprints`}.` };
     }
     return { text: "Keep the factory running and plan the next milestone." };
 }
