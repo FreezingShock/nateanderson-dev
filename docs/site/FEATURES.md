@@ -38,6 +38,7 @@ Current state of the site outside the three games with their own docs (Brasswork
 
 ## Games hub and shared game code
 - Hub `/creations/games`: sections Geography, Incremental, Automation; acts as a launcher. Cards use a generic glyph (see backlog).
+- Leaving a game: every game has a visible "Games" link (Starwright, Groundbreak, Brasswork top bar; Node Farm page header) that lands on its own hub section (`#incremental`, `#automation`); browser back also works; Esc only closes menus.
 - Shared shell `components/games/shell` (`GameRouteShell`): full-screen game routes, pause on hidden tab, hides site chrome. Save export and import: `lib/games/save.ts` (`tests/games/save.test.mjs`).
 - Outline Guesser and Flag Guesser (`/creations/games/outline-guesser`, `flag-guesser`; also daily modes): daily schedule (`lib/data/daily-*.json`, built by `scripts/build-daily-schedule.mjs`), unlimited practice, neighbours round, flag round, end-of-run summary, tile-flip reveal, keyboard controls. Components in `components/games/*.tsx`.
 - Node Farm `/creations/games/node-farm`: feature-complete and deployed; idle chain from Bytes to Origin with prestige tree, Ascend, Handover, zones 1 to 25, offline report, `nf` console, achievements. Full detail in `docs/node-farm.md`. Engine tests: `npm run test:nodefarm`. Sprite sheets: bump the `?v=` query when art changes. Nate's own playtest remains.
