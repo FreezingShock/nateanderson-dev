@@ -7,6 +7,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { ArtIcon, UiArtIcon } from "@/components/brasswork-art/icons";
 import { MilestoneArt } from "@/components/brasswork-art";
 import { MILESTONE_ART } from "@/lib/automation/art";
+import { playSound } from "@/lib/automation/audio";
 import type { HubView } from "@/lib/automation/types";
 import { diffRewards, type RewardEvent, type RewardMemory } from "@/lib/brasswork/rewards";
 import "./reward-moment.css";
@@ -44,6 +45,8 @@ function Card({ ev, queued, onOpenHub, onOpenResearch, onDone }: {
     const still = typeof document !== "undefined" && !!document.querySelector('.ab-root[data-reduce="true"], .ab-root[data-lowfx="true"]');
     const bp = useCount(ev.blueprints, still);
     const dismiss = useCallback(() => setLeaving(true), []);
+    // One sound per card as it opens (the sound layer rate-limits bursts and honours the Sound setting).
+    useEffect(() => { playSound("reward"); }, []);
     useEffect(() => {
         if (leaving) { const t = window.setTimeout(onDone, still ? 0 : LEAVE_MS); return () => window.clearTimeout(t); }
         if (held) return;
