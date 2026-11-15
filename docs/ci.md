@@ -23,3 +23,8 @@ SITE_PASSWORD=ci-password node scripts/ci/crawl.mjs http://localhost:3123
 Screenshots need `cd scripts/ci && npm install && npx playwright install chromium` first. They freeze CSS animations and use reduced motion, so pages with random content (the guessers) can show small false diffs.
 
 Known noise: the Groundbreak pages show live game state (stock counts, workers, the first-minute run), so a PR that changes the engine or the start state, such as #534, shows a 1 to 5% diff with no art change. `phone__creations-games-brasswork` shows about 1% on most PRs (animated scene) even when the PR does not touch it. Read the diff image before assuming a PR broke a page.
+
+
+## Groundbreak HUD check
+
+Before merging a change to the Groundbreak HUD, dock, cue or windows, run `node scripts/ci/gb-hud.mjs http://localhost:3123 out-dir` against a production build (`SITE_PASSWORD=ci-password npx next start -p 3123`). It opens the game at 1440x900, 390x844, 360x740, 375x667, 844x390, 932x430 and 667x375, exits 1 if the cue, zoom buttons, dock, feed, job card or rail overlap, and saves a PNG per size. Not a PR check yet.
