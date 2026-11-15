@@ -90,6 +90,7 @@ test("suggestSpot picks a free spot near the hub with room for a belt", () => {
 // A crafter's output goes to its machine-bound outputs first; the hub only takes what they refuse.
 test("a kiln feeds the press beside it before the hub, and the hub gets only the overflow", () => {
     const world = board();
+    world.progress.requestsDone = CAT.tree.requests.map((r) => r.id); // the press and the iron plate recipe open from hub requests
     const must = (r) => assert.equal(r.ok, true, r.reason);
     const kiln = S.place(world, "kiln", 5, 2, 0, CAT);
     must(kiln);
