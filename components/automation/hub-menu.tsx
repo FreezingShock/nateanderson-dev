@@ -95,7 +95,7 @@ export function HubMenu({ hub, onClose }: { hub: HubView; onClose: () => void })
   );
 
   return (
-    <MenuWindow title="Hub" label="Hub" size="wide" variant="settle" art={<MachinePortrait id="hub" size={32} />} onClose={onClose}>
+    <MenuWindow theme="hub" title="Hub" label="Hub" size="wide" variant="settle" art={<MachinePortrait id="hub" size={32} />} onClose={onClose}>
       <div className="hm-wrap">
         <aside className="hm-side" aria-label="Hub ladder">
           <div className="hm-hall">
@@ -106,9 +106,9 @@ export function HubMenu({ hub, onClose }: { hub: HubView; onClose: () => void })
               <span className="hm-hall-bp"><span style={uiIconStyle("blueprints", 20)} aria-hidden="true" />{hub.blueprints} blueprints</span>
             </div>
           </div>
-          <h4 className="hm-kick">Orders · open recipes and machines</h4>
+          <h4 className="hm-kick" data-glyph="orders">Orders · open recipes and machines</h4>
           <ol className="hm-ladder">{listed("request").map(row)}</ol>
-          <h4 className="hm-kick">Milestones · pay blueprints</h4>
+          <h4 className="hm-kick" data-glyph="milestones">Milestones · pay blueprints</h4>
           <ol className="hm-ladder">{listed("milestone").map(row)}</ol>
         </aside>
         <Slip step={step} index={indexOf(step)} total={step.kind === "request" ? orders.length : hub.steps.length - orders.length} />

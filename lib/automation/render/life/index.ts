@@ -331,6 +331,8 @@ export function attachLife(
             emitters = list.slice(0, 16);
         },
         burst(kind, x, z, y) {
+            // Simple visuals and reduce motion skip reward bursts; the menus already confirm the reward.
+            if (lowFx) return;
             const base = y ?? Math.max(0, heightAt(x, z)) + 2.2;
             const scale = lowFx ? 0.5 : 1;
             const hex = BURST_HEX[kind];

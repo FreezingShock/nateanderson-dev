@@ -64,6 +64,8 @@ def job_outlines():
 def main():
     OUT.mkdir(parents=True, exist_ok=True)
     sheets = {"crew": L.crew_sheet(), "mini": L.mini_sheet(), "vehicles": L.vehicle_sheet(), "machines": L.machine_sheet(), "fx": L.fx_sheet()}
+    climb, lad, mast, cages = L.vertical_sheet()
+    sheets.update({"climb": climb, "ladder": lad, "mast": mast, "cage": cages})
     stamps = {}
     for k, c in sheets.items():
         im = c.image()
@@ -84,6 +86,10 @@ def main():
                  "actions": cols(L.MINI_ACTIONS)},
         "machines": {"src": f"/groundbreak/life/machines.png?v={stamps['machines']}", "w": L.XW, "h": L.XH, "ground": L.XG,
                      "rows": {k: i for i, k in enumerate(L.MACHINE_ROWS)}},
+        "climb": {"src": f"/groundbreak/life/climb.png?v={stamps['climb']}", "w": L.MW, "h": L.MH},
+        "ladder": {"src": f"/groundbreak/life/ladder.png?v={stamps['ladder']}", "w": L.LW, "h": L.LH},
+        "mast": {"src": f"/groundbreak/life/mast.png?v={stamps['mast']}", "w": L.HW, "h": L.HH},
+        "cage": {"src": f"/groundbreak/life/cage.png?v={stamps['cage']}", "w": L.CW2, "h": L.CH2},
         "vehicles": {"src": f"/groundbreak/life/vehicles.png?v={stamps['vehicles']}", "w": L.VW, "h": L.VH,
                      "rows": {"dump": 0, "mixer": 1, **{f"flat-{c}": 2 + i for i, c in enumerate(L.CARGO)}}},
         "fx": {"src": f"/groundbreak/life/fx.png?v={stamps['fx']}", "w": L.FW, "h": L.FH,

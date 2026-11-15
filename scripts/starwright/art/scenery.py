@@ -220,9 +220,70 @@ def backdrop(key):
 
 
 def run():
+    fx_run()
     for name, fn, cell in (("comet", comet, 48), ("flare", flare, 48), ("nebula", nebula, 96), ("pair", pair, 48)):
         save_sheet(f"visitor/{name}", [fn(f) for f in range(VF)], fps=12)
     for cid in CLOUD:
         save_sheet(f"card/cloud-{cid}", [cloud(cid, f) for f in range(8)], fps=6)
     for k in SKY:
         save_sheet(f"bg/nebula-{k}", backdrop(k), fps=3)
+
+
+def fx_planet_up(f, n=20, c=64):
+    """A planet grows a stage: a soft shell of light gathers onto the world, flashes, then a dithered ring and sparks
+    blow outward and fade. Centred on the planet, drawn over it."""
+    x, y = grid(c, c)
+    d = np.sqrt((x - c / 2 + 0.5) ** 2 + (y - c / 2 + 0.5) ** 2)
+    ang = np.arctan2(y - c / 2, x - c / 2)
+    t = f / (n - 1)
+    out = np.zeros((c, c, 3), np.uint8); m = np.zeros((c, c), bool)
+    if t < 0.4:  # gather: a ring closing in
+        q = t / 0.4
+        rr = 30 - 18 * (q * q * (3 - 2 * q))
+        ring = np.clip(1 - np.abs(d - rr) / 1.6, 0, 1) * (0.4 + 0.6 * q)
+        rm = dmask(ring)
+        out[rm] = pick(R("plum", "orchid", "lilac", "frost"), ring)[rm]; m |= rm
+    else:  # release: a bright ring out, sparks along rays
+        q = (t - 0.4) / 0.6
+        e = 1 - (1 - q) ** 3
+        rr = 12 + 19 * e
+        ring = np.clip(1 - np.abs(d - rr) / (1.2 + 2 * q), 0, 1) * (1 - q)
+        rm = dmask(np.clip(ring * 1.4, 0, 1))
+        out[rm] = pick(R("orchid", "lilac", "frost", "white"), ring)[rm]; m |= rm
+        for i in range(10):
+            a = i * 2 * math.pi / 10 + 0.3
+            r0 = 10 + 22 * e * (0.8 + 0.3 * ((i * 7) % 3) / 2)
+            px_, py_ = int(round(c / 2 + math.cos(a) * r0)), int(round(c / 2 + math.sin(a) * r0))
+            if 0 <= px_ < c and 0 <= py_ < c and q < 0.85:
+                out[py_, px_] = hexc(P["white" if q < 0.4 else "lilac"]); m[py_, px_] = True
+    fl = max(0.0, 1 - abs(t - 0.42) / 0.1)
+    if fl > 0:
+        core = np.clip(1 - d / 12, 0, 1) * fl
+        cm = dmask(core)
+        out[cm] = pick(R("white", "frost", "lilac"), 1 - core)[cm]; m |= cm
+    return rgba(out, m)
+
+
+def fx_arrive(f, n=20, c=96):
+    """A visitor arrives: space ripples open in a lens-shaped tear, a ring of light spins up and lets the visitor through."""
+    x, y = grid(c, c)
+    dx, dy = x - c / 2 + 0.5, (y - c / 2 + 0.5) / 0.6
+    d = np.sqrt(dx * dx + dy * dy)
+    ang = np.arctan2(dy, dx)
+    t = f / (n - 1)
+    out = np.zeros((c, c, 3), np.uint8); m = np.zeros((c, c), bool)
+    open_ = math.sin(math.pi * min(1.0, t * 1.15))
+    for k in range(3):  # three ripples running outward
+        rr = (t * 60 + k * 14) % 44
+        rip = np.clip(1 - np.abs(d - rr) / 1.8, 0, 1) * open_ * (1 - rr / 44)
+        rm = dmask(np.clip(rip * 1.6, 0, 1))
+        out[rm] = pick(R("teal0", "teal", "aqua", "mint"), rip)[rm]; m |= rm
+    spin = np.clip(1 - np.abs(d - 20 * open_) / 2.2, 0, 1) * (0.5 + 0.5 * np.sin(ang * 6 - t * 18)) * open_
+    sm = dmask(np.clip(spin * 1.3, 0, 1))
+    out[sm] = pick(R("aqua", "mint", "frost", "white"), spin)[sm]; m |= sm
+    return rgba(out, m)
+
+
+def fx_run():
+    save_sheet("fx/planet-up", [fx_planet_up(f) for f in range(20)], fps=12, loop=False)
+    save_sheet("fx/arrive", [fx_arrive(f) for f in range(20)], fps=10, loop=False)
