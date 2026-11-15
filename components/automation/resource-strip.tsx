@@ -1,6 +1,7 @@
 import type { ResourceView, NumberFormat } from "@/lib/automation/types";
 import { ArtIcon } from "@/components/brasswork-art/icons";
 import { fmtNum, fmtRate } from "./format";
+import "./resource-box.css";
 import { iconCell, iconStyle } from "@/lib/automation/icons";
 
 /**
@@ -108,8 +109,10 @@ function ResourceList({
             tabIndex={0}
             aria-label={`${r.name}, ${amount}${showRates ? `, ${rate}` : ""}`}
           >
-            <Glyph code={r.glyph} size={48} icon={r.id} />
-            <span className="ab-res-amt">{amount}</span>
+            <span className="ab-res-box">
+              <Glyph code={r.glyph} size={48} icon={r.id} />
+              <span className="ab-res-amt">{amount}</span>
+            </span>
             {showRates && r.perSecond !== 0 && (
               <span className="ab-res-rate" data-neg={r.perSecond < 0}>
                 {rate}
