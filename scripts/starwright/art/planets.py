@@ -4,7 +4,7 @@ import math
 import numpy as np
 from common import R, P, pick, dmask, fbm3, vnoise3, grid, rgba, save_sheet, save_still, hexc
 
-FR = 16
+FR = 24
 LOOK = {
     "ember": ("rock", 9, R("ember0", "rust", "flame", "amber"), R("moss0", "sand0", "sand", "dune", "pale")),
     "cinder": ("ash", 9, R("ember0", "ember1", "rust", "flame"), R("soot", "ash", "stone", "bone")),
@@ -48,8 +48,19 @@ def debris(cell, f, tint, gas=False):
         v = np.clip(1 - d * 1.1, 0, 1) * (0.5 + 0.8 * n)
     else:
         v = np.clip(1 - np.abs(d - 0.55) * 2.6, 0, 1) * (0.3 + 1.0 * n) + np.clip(1 - d * 4, 0, 1) * 0.9
+    # a clump gathering at the centre, brightening as it pulls the dust in
+    core = np.clip(1 - np.sqrt((x - cx) ** 2 + (y - cy) ** 2) / (2.6 if not gas else 4.0), 0, 1)
+    v = np.maximum(v, core * (0.85 + 0.15 * math.sin(2 * math.pi * f / FR * 2)))
     m = dmask(np.clip(v * 1.2, 0, 1))
-    return rgba(pick(tint, v), m)
+    img = pick(tint, v)
+    # three moonlets sweeping the ring, each leaving a short gap behind it
+    for i in range(3):
+        a = 2 * math.pi * (f / FR) * (1 + i * 0.5) + i * 2.1
+        rr = cell * 0.42 * (0.5 + 0.12 * i)
+        px_, py_ = int(round(cx + math.cos(a) * rr)), int(round(cy + math.sin(a) * rr * 0.55))
+        if 0 <= px_ < cell and 0 <= py_ < cell:
+            img[py_, px_] = hexc(P["white"] if i == 0 else P["bone"]); m[py_, px_] = True
+    return rgba(img, m)
 
 
 def world(pid, stage, f, cell=32):
@@ -82,16 +93,22 @@ def world(pid, stage, f, cell=32):
         ring_draw(cell, r, stage, rot, out, m, front=False)
     if stage == 1 and look not in ("gas", "ringed"):
         n = lon_noise(dx, dy, nz, rot, 3.5, 81)
-        crack = np.abs(n - 0.5) < 0.06
-        base = pick(R("soot", "ember0", "ember1", "rust"), light * 0.9 + 0.1)
-        lava = pick(hot, 0.5 + 0.5 * light)
-        col = np.where(crack[..., None], lava, base)
+        # dark crust plates floating on lava: the seams glow, widest and brightest at their middle
+        seam = np.clip(1 - np.abs(n - 0.5) / 0.09, 0, 1)
+        pulse = 0.85 + 0.15 * math.sin(rot * 2)
+        base = pick(R("void", "soot", "ember0", "ember1"), light * 0.85 + 0.1)
+        lava = pick(hot, np.clip(seam * pulse * (0.6 + 0.4 * light) + 0.2, 0, 1))
+        col = np.where((seam > 0.25)[..., None], lava, base)
         out[ins] = col[ins]; m |= ins
     elif look in ("gas", "ringed"):
         bands = np.sin(dy * (3 + stage * 2.2) * math.pi / 2 + 1.3 * (lon_noise(dx, dy, nz, rot, 2, 91, 3) - 0.5)) * 0.5 + 0.5
         strength = [0, 0.25, 0.6, 0.8][stage]
         v = light * (0.7 + 0.3 * (1 - strength) + strength * 0.45 * (bands - 0.5)) + 0.1
-        col = pick(cool, np.clip(v, 0, 1))
+        col = pick(cool if stage > 1 else R("ember0", "ember1", "rust", "flame", "amber"), np.clip(v, 0, 1))
+        if stage == 1:  # still hot and contracting: churning glowing bands
+            churn = lon_noise(dx, dy, nz, rot * 2, 4, 93, 3)
+            hotb = (np.abs(np.sin(dy * 7 + churn * 3)) < 0.25) & (light > 0.25)
+            col[hotb] = hexc(P["gold"])
         if stage == 3:  # a storm eye turning into view
             c, s = math.cos(rot), math.sin(rot)
             X, Z = dx * c + nz * s, -dx * s + nz * c
@@ -138,9 +155,51 @@ def world(pid, stage, f, cell=32):
                 col[ter] = pick(R("rust", "flame", "amber"), light)[ter]
         # hard rim on the night side so the world reads against space
         out[ins] = col[ins]; m |= ins
+    finish(pid, look, stage, f, cell, r, rot, out, m)
     if look == "ringed":
         ring_draw(cell, r, stage, rot, out, m, front=True)
     return rgba(out, m)
+
+
+AIR = {"ember": "sky", "thule": "frost", "glass": "mint", "haze": "pale", "seer": "cream"}
+
+
+def finish(pid, look, stage, f, cell, r, rot, out, m):
+    """Per-stage finishing touches: a glow around molten worlds, craters on settled rock, air on finished worlds, lights."""
+    x, y = grid(cell, cell)
+    cx = cy = cell / 2 - 0.5
+    dx, dy = (x - cx) / r, (y - cy) / r
+    d = np.sqrt(dx * dx + dy * dy)
+    tau = 2 * math.pi * f / FR
+    if stage == 1 and look not in ("gas", "ringed"):
+        hal = (d >= 1) & (d < 1 + 1.6 / r) & dmask(np.full(d.shape, 0.55 + 0.25 * math.sin(tau * 2)))
+        out[hal] = hexc(P["flame"]); m |= hal
+        # bright spurts of lava on the limb
+        for i in range(2):
+            a = tau + i * math.pi
+            px_, py_ = int(round(cx + math.cos(a) * (r + 1))), int(round(cy + math.sin(a) * (r + 1)))
+            if 0 <= px_ < cell and 0 <= py_ < cell:
+                out[py_, px_] = hexc(P["gold"]); m[py_, px_] = True
+    nz = np.sqrt(np.clip(1 - d * d, 0, 1))
+    c, s_ = math.cos(rot), math.sin(rot)
+    X, Z = dx * c + nz * s_, -dx * s_ + nz * c
+    if stage >= 2 and look in ("rock", "ash", "metal", "glass"):
+        cr = fbm3(X * 5 + 3, dy * 5, Z * 5, 2, seed=171 + len(pid))
+        crater = (d < 0.92) & (Z > 0) & (cr > 0.72)
+        rim = (d < 0.92) & (Z > 0) & (cr > 0.66) & ~crater
+        light = np.clip(-0.62 * dx - 0.5 * dy + 0.6 * nz, 0, 1)
+        out[crater] = (out[crater] * 0.55).astype(np.uint8)
+        lit = rim & (light > 0.5)
+        out[lit] = np.minimum(255, out[lit].astype(np.int32) + 28).astype(np.uint8)
+    if stage == 3 and pid in AIR:
+        light = -0.62 * dx - 0.5 * dy
+        air = (d >= 0.93) & (d < 1 + 1.2 / r) & (light > -0.1) & dmask(np.clip(0.5 + light, 0, 1))
+        out[air] = hexc(P[AIR[pid]]); m |= air
+    if stage == 3 and pid in ("ironclad", "ember", "glass"):
+        light = -0.62 * dx - 0.5 * dy + 0.6 * nz
+        city = fbm3(X * 8, dy * 8, Z * 8, 2, seed=181 + len(pid))
+        lights = (d < 0.95) & (light < 0.12) & (Z > -0.3) & (city > 0.64) & ((x.astype(int) + y.astype(int) + f) % 2 == 0)
+        out[lights] = hexc(P["gold"] if pid != "glass" else P["aqua"]); m |= lights
 
 
 def ring_draw(cell, r, stage, rot, out, m, front):

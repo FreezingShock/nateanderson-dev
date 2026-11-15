@@ -1,7 +1,7 @@
 """Build every Starwright art sheet into public/starwright/ and write manifest.json. Run: python3 scripts/starwright/art/build.py"""
 import time
 import common, stars, planets, scenery, icons
-VERSION = 1
+VERSION = 2
 
 if __name__ == "__main__":
     t = time.time()
