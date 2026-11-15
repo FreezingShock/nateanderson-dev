@@ -36,6 +36,9 @@ const autoCfg = (s: State) => {
 export function Starwright() {
     const sRef = useRef<State | null>(null);
     const [ready, setReady] = useState(false);
+    const cloudRef = useRef({ cur: "", prev: "", at: -1e9 });
+    /** a birth cloud being pointed at in the picker: the sky previews it before it is chosen */
+    const previewRef = useRef("");
     const [, setTick] = useState(0);
     const bump = useCallback(() => setTick((n) => n + 1), []);
     const [panel, setPanel] = useState<Panel>(null);
@@ -204,6 +207,11 @@ export function Starwright() {
             const sinceNova = novaRef.current >= 0 ? now - novaRef.current : 1e9;
             const bornAt = novaRef.current >= 0 ? novaRef.current + 1900 : lastNovaAt.current + 1900;
             const ev = s.event;
+            // the birth cloud's sky crossfades over 2.6 s whenever the pick changes (a new star, or a collapse clearing it)
+            const cl = cloudRef.current;
+            const want = s.offer.length > 0 && previewRef.current ? previewRef.current : s.cloud;
+            if (cl.cur !== want) { cl.prev = cl.cur; cl.cur = want; cl.at = now; }
+            const cloudMix = Math.min(1, (now - cl.at) / 2600);
             const f: SceneFrame = {
                 t: (now - t0) / 1000,
                 mass: mass(s),
@@ -223,6 +231,7 @@ export function Starwright() {
                 visitor: ev ? { id: ev.id, age: EVENT_STAY - ev.left } : null,
                 novaKind: novaKind.current,
                 novaFrom: novaFrom.current,
+                cloud: { cur: cl.cur, prev: cloudMix < 1 ? cl.prev : "", mix: cloudMix },
             };
             if (layers) renderLayered(layers, f, sprites);
             else { render(img, f); ctx.putImageData(img, 0, 0); }
@@ -520,7 +529,7 @@ export function Starwright() {
             </header>
 
             {s.event && <Visitor s={s} onAnswer={doAnswer} />}
-            {s.offer.length > 0 && <CloudPick s={s} onPick={doCloud} />}
+            {s.offer.length > 0 && <CloudPick s={s} onPick={doCloud} onPreview={(id) => { previewRef.current = id; }} />}
             <ScrollHint />
             {card && <AwayCard card={card} onClose={() => setCard(null)} />}
             {other && (

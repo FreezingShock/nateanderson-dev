@@ -28,7 +28,7 @@ Format and rules: `docs/WORKFLOW.md`. Append new items at the end of a section; 
 - [ ] ASK SITE-stale-prs | S | decide PRs #399 and #400 (merge or close) and the Brasswork drafts; owners decide their own | audit 9
 
 ## Next
-- [ ] SITE-game-thumbs | M | dithered screenshot per game on the hub and the Creations featured grid; Brasswork card still says OFFLINE and "In development" while playable; run after the card overhaul | audit 5 | light taste call on crop style
+- [ ] SITE-game-thumbs | M | dithered screenshot per game on the hub and the Creations featured grid; Brasswork card still says OFFLINE and "In development" while playable; run after the card overhaul | audit 5 | light taste call on crop style | handed to the threads redesigning the Games page and featuring games on the homepage (2026-11-15), not this thread
 - [x] SITE-nexus-iframe | S | remove the "Allow attribute will take precedence over allowfullscreen" log; load the embed on click behind a poster | audit 2 | the log is gone (frame uses `allow` only, `components/creations/deferred-frame.tsx`); loading on click behind a poster is not done and not needed while the frame loads after page load
 - [x] SITE-bento-cards | M | finish the card overhaul if any remains (cards pinned footers, one title size landed in e016de91) | check state first | checked 2026-11-15: one dark treatment, pinned footers, one title size and grids that fill the row are live on the games hub; only the generic glyph previews remain (SITE-game-thumbs)
 - [x] SITE-check-feature-docs | S | verify every line of `docs/site/FEATURES.md` against the code and fix mismatches | fixed fonts, dev routes, dock labels, share images; page behaviour lines checked by file only, not in a browser

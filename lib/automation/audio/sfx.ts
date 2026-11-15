@@ -4,8 +4,8 @@ import { click, gate, note, pick, sweep, tone } from "./engine";
 
 export type BwSound =
     | "place" | "remove" | "invalid" | "select" | "rotate" | "undo"
-    | "belt" | "delivery" | "unlock" | "research" | "milestone" | "prestige"
-    | "open" | "close" | "hover" | "press" | "toggle";
+    | "belt" | "delivery" | "unlock" | "research" | "milestone" | "prestige" | "reward"
+    | "open" | "close" | "hover" | "press" | "toggle" | "tab";
 
 export type SoundArg = { n?: number; size?: number };
 
@@ -76,6 +76,18 @@ const DEFS: Record<BwSound, { gap: number; play: (a: SoundArg) => void }> = {
         gap: 400,
         play: () => [5, 7, 9, 12].forEach((d, i) => tone({ f: note(d), at: i * 0.1, dur: 0.5, gain: 0.11, type: "triangle", harm: 0.3, cutoff: 3000, attack: 0.012 })),
     },
+    // a supply crate or reward opened: a wooden lid thunk, a brass latch, then a small bright chime. About 0.9 s.
+    reward: {
+        gap: 600,
+        play: () => {
+            tone({ f: 96, dur: 0.18, gain: 0.14, glide: 0.6, type: "triangle", cutoff: 700, attack: 0.003 });
+            click({ f: 2600, gain: 0.05, q: 3, dur: 0.03 });
+            click({ f: 1400, at: 0.12, gain: 0.04, q: 4, dur: 0.025 });
+            [7, 11, 14].forEach((d, i) => tone({ f: note(d), at: 0.22 + i * 0.09, dur: 0.6, gain: 0.08, type: "triangle", harm: 0.25, cutoff: 3400, attack: 0.008 }));
+        },
+    },
+    // a dock group or build section changed from the keyboard (Tab): one light ratchet tick
+    tab: { gap: 60, play: () => click({ f: 1900, gain: 0.03, q: 6, dur: 0.014 }) },
     // opening a new workshop: a slow swell and a wide chord
     prestige: {
         gap: 1500,
