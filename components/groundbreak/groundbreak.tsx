@@ -24,7 +24,7 @@ const tools = createSaveTools<State>({ app: "groundbreak", version: SAVE_VERSION
 type Tier = 0 | 1 | 2;
 const fmtSecs = (sec: number) => { const s = Math.max(0, Math.ceil(sec)); return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`; };
 type Win = null | "jobs" | "skyline" | "firm" | "console" | "menu";
-interface Note { id: number; text: string; tone?: "hot" | "dim" }
+interface Note { id: number; text: string; tone?: "hot" | "dim"; sticky?: boolean }
 const TIER_ICON = ["crew", "equip", "method"] as const;
 /** The machine each material row buys at tier II, in material order. */
 const EQUIP_ICONS = ["loader", "excavator", "kiln", "mixer", "bender", "mill", "float", "drawer", "brake", "yard", "rig", "crane"];
@@ -116,10 +116,11 @@ export function Groundbreak() {
     const seen = useRef({ built: 0, open: 1, change: false, cashAll: 0 });
     const shell = useGameShell();
 
-    const note = useCallback((text: string, tone?: Note["tone"]) => {
+    // a sticky note is a warning the player must be able to read (a broken save, storage blocked): later toasts do not push it out, and it stays 20 s
+    const note = useCallback((text: string, tone?: Note["tone"], sticky = false) => {
         const id = ++noteId.current;
-        setNotes((n) => [...n.filter((x) => x.text !== text).slice(-1), { id, text, tone }]);
-        window.setTimeout(() => setNotes((n) => n.filter((x) => x.id !== id)), 6000);
+        setNotes((n) => { const rest = n.filter((x) => x.text !== text); return [...rest.filter((x) => x.sticky), ...rest.filter((x) => !x.sticky).slice(-1), { id, text, tone, sticky }]; });
+        window.setTimeout(() => setNotes((n) => n.filter((x) => x.id !== id)), sticky ? 20000 : 6000);
     }, []);
     const save = useCallback(() => {
         const s = sRef.current;
@@ -128,7 +129,7 @@ export function Groundbreak() {
         s.savedAt = Date.now();
         const raw = serialize(s);
         if (!writeStored(window.localStorage, SAVE_KEY, raw)) {
-            if (!warnedWrite.current) { warnedWrite.current = true; note("The browser would not save the game (storage full or blocked). Export a save from the Menu so nothing is lost.", "hot"); }
+            if (!warnedWrite.current) { warnedWrite.current = true; note("The browser would not save the game (storage full or blocked). Export a save from the Menu so nothing is lost.", "hot", true); }
             return;
         }
         // two rolling copies, five minutes apart, so a bad import or a bug never costs more than a few minutes
@@ -245,7 +246,7 @@ export function Groundbreak() {
             // A save that exists but cannot be read is copied aside before the new game overwrites it.
             try {
                 const raw = window.localStorage.getItem(SAVE_KEY);
-                if (raw) { writeStored(window.localStorage, SAVE_KEY + "-corrupt", raw); note("Your saved game could not be read. A copy is kept for recovery and a new firm starts."); }
+                if (raw) { writeStored(window.localStorage, SAVE_KEY + "-corrupt", raw); note("Your saved game could not be read. A copy is kept for recovery and a new firm starts.", "hot", true); }
             } catch { /* storage blocked */ }
         }
         const s = loaded ?? fresh(now);
