@@ -178,3 +178,26 @@ test("a second damaged save never replaces the first one, and the card shows onc
     S.loadSession(st);
     assert.equal(st.getItem(S.CORRUPT_KEY + "-prev"), "first {damaged");
 });
+
+// Pins today's behaviour for a long absence so the "one supernova or a chain" call can be made on facts (BACKLOG, Needs Nate).
+const strong = () => { const s = played(); for (let i = 0; i < 8; i++) s.bought[i][0] = 60; s.amt[7] = 1400; s.perks = ["w1", "w2", "w4"]; return s; };
+
+test("24 h away with auto supernova on pays one supernova, then the restarted star idles (autoburn only, no purchases)", () => {
+    const s = strong();
+    const r = S.advanceAuto(s, 24 * 3600, { autoNova: 1, autoVisitor: "off" });
+    assert.equal(r.secs, 24 * 3600, "Long watch counts the full day");
+    assert.ok(r.novas >= 1, `supernovas ${r.novas}`);
+    assert.equal(s.novasAll, r.novas);
+    assert.ok(r.dust > 0);
+    // away time buys nothing, so a restarted star has no levels to chain with: it does not sit at the line again
+    assert.equal(E.canSupernova(s, E.effects(s)), false);
+    console.log("# 24 h away, auto supernova on: supernovas =", r.novas);
+});
+
+test("24 h away with auto supernova off waits at the collapse line and does not reset", () => {
+    const s = strong();
+    const r = S.advanceAuto(s, 24 * 3600, { autoNova: 0, autoVisitor: "off" });
+    assert.equal(r.novas, 0);
+    assert.equal(s.novasAll, 0);
+    assert.ok(E.canSupernova(s, E.effects(s)), "the star is still ready for the player to collapse it");
+});
