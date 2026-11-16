@@ -723,7 +723,10 @@ def _dither_face(im, poly, ramp, tex):
 
 
 def stack_art():
-    """Layered slabs, one per part of the stack, bottom (base) to top (deploy)."""
+    """Layered slabs, one per part of the stack, bottom (base) to top (deploy).
+
+    Labels are sized for a phone: at 390px wide the piece is about 0.3x its
+    pixel size, so the text is drawn large."""
     W, H = 600, 160
     yy, xx = grid(H, W)
     field = 0.04 + 0.1 * fbm(H, W, 91, 30, 3) + 0.08 * (xx / W)
@@ -740,7 +743,7 @@ def stack_art():
         ("three.js + supabase", "#8a8a88", "#666664", "#4a4a48"),
         ("vercel + github actions", CYAN, "#0a6f7c", "#064a52"),
     ]
-    cx, w, h, t, step, base = 180, 100, 26, 10, 20, 124
+    cx, w, h, t, step, base = 166, 96, 26, 10, 24, 124
     labels = []
     for k, (label, top_c, left_c, right_c) in enumerate(layers):
         top_y = base - k * step
@@ -757,7 +760,7 @@ def stack_art():
         labels.append((label, UR[0], UR[1]))
     im = upscale(im)
     d = ImageDraw.Draw(im)
-    f = font(26, mono=True)
+    f = font(44, mono=True)
     for label, x, y in labels:
         d.line([x * 2 + 4, y * 2, x * 2 + 16, y * 2], fill=hx("#6a6a6a"), width=2)
         d.text((x * 2 + 22, y * 2), label, font=f, fill=hx(PAPER), anchor="lm")
@@ -765,8 +768,9 @@ def stack_art():
 
 
 def workflow_art():
-    """pull request -> integration (solid), integration -> release (gated, dashed)."""
-    W, H = 600, 140
+    """Vertical flow: pull request into integration (solid), then integration to
+    release (gated, dashed). Stacked vertically so the text can be large on phones."""
+    W, H = 600, 284
     yy, xx = grid(H, W)
     field = 0.03 + 0.09 * fbm(H, W, 57, 28, 3) + 0.05 * (yy / H)
     im = to_image(dither(np.clip(field, 0, 1), ["#141414", "#181818", "#202020", "#2a2a2a"]))
@@ -774,35 +778,41 @@ def workflow_art():
     for gy in range(8, H, 12):
         for gx in range(8, W, 12):
             d.point((gx, gy), fill=hx("#262626"))
-    top, bot, mid = 36, 116, 76
+    bx0, bx1, bh = 90, 510, 64
+    tops = [16, 104, 192]
     boxes = [
-        ("pull request", "small and reviewed", 24, 176),
-        ("integration", "merging deploys nothing", 222, 378),
-        ("release", "vercel builds only this", 424, 576),
+        ("pull request", "small and reviewed"),
+        ("integration", "merging deploys nothing"),
+        ("release", "vercel builds only this"),
     ]
     c = hx(CYAN)
-    for _, _, x0, x1 in boxes:
-        d.rectangle([x0, top, x1, bot], fill=hx("#141414"), outline=hx("#2a2a2a"))
-        for x, y, dx, dy in [(x0, top, 1, 1), (x1, top, -1, 1), (x0, bot, 1, -1), (x1, bot, -1, -1)]:
-            d.line([x, y, x + dx * 10, y], fill=c)
-            d.line([x, y, x, y + dy * 10], fill=c)
+    for ty in tops:
+        d.rectangle([bx0, ty, bx1, ty + bh], fill=hx("#141414"), outline=hx("#2a2a2a"))
+        for x, y, dx, dy in [(bx0, ty, 1, 1), (bx1, ty, -1, 1),
+                             (bx0, ty + bh, 1, -1), (bx1, ty + bh, -1, -1)]:
+            d.line([x, y, x + dx * 12, y], fill=c, width=1)
+            d.line([x, y, x, y + dy * 12], fill=c, width=1)
+    cxm = 300
     # Solid arrow: pull request into integration.
-    d.line([176, mid, 212, mid], fill=c, width=1)
-    d.polygon([(222, mid), (212, mid - 4), (212, mid + 4)], fill=c)
+    d.line([cxm, tops[0] + bh, cxm, tops[1] - 6], fill=c, width=2)
+    d.polygon([(cxm, tops[1]), (cxm - 5, tops[1] - 9), (cxm + 5, tops[1] - 9)], fill=c)
     # Gated, dashed arrow: integration to release.
-    for x in range(380, 414, 7):
-        d.line([x, mid, x + 4, mid], fill=c)
-    d.line([401, 60, 401, 92], fill=c, width=2)
-    d.polygon([(424, mid), (414, mid - 4), (414, mid + 4)], fill=c)
+    y0, y1 = tops[1] + bh, tops[2]
+    for y in range(y0 + 2, y1 - 5, 7):
+        d.line([cxm, y, cxm, y + 4], fill=c, width=2)
+    gate = (y0 + y1) // 2
+    d.line([cxm - 10, gate, cxm + 10, gate], fill=c, width=2)
+    d.polygon([(cxm, y1), (cxm - 5, y1 - 9), (cxm + 5, y1 - 9)], fill=c)
     im = upscale(im)
     d = ImageDraw.Draw(im)
-    tf, sf = font(34), font(18, mono=True)
-    for title, sub, x0, _ in boxes:
-        d.text((2 * (x0 + 16), 2 * (top + 12)), title, font=tf, fill=hx(PAPER))
-        d.text((2 * (x0 + 16), 2 * (top + 56)), sub, font=sf, fill=hx("#9aa7af"))
-    d.text((2 * 401, 2 * 24), "deploy only when asked", font=sf, fill=c, anchor="mm")
-    d.text((2 * 300, 2 * 130), "release moves forward only on a deploy", font=sf,
-           fill=hx("#6a6a6a"), anchor="mm")
+    tf, sf = font(48), font(40, mono=True)
+    for (title, sub), ty in zip(boxes, tops):
+        d.text((2 * (bx0 + 20), 2 * (ty + 8)), title, font=tf, fill=hx(PAPER))
+        d.text((2 * (bx0 + 20), 2 * (ty + 36)), sub, font=sf, fill=hx("#9aa7af"))
+    d.text((2 * (cxm + 22), 2 * gate), "deploy only when asked", font=font(34, mono=True),
+           fill=c, anchor="lm")
+    d.text((2 * cxm, 2 * 274), "release moves forward only on a deploy", font=font(34, mono=True),
+           fill=hx("#7a7a78"), anchor="mm")
     return im
 
 
