@@ -713,3 +713,10 @@ html.gb-route .sf-foot { display: none !important; }
     .gb-root .gb-tile[data-state="locked"] { height: 78px; }
     .gb-root .gb-lv { min-width: 22px; height: 18px; font-size: 12px; }
 }
+
+/* ---- short desktop screens (2026-11-16): about 720 px tall or less, the panel is at its minimum and the dock sits high.
+   The job card drops its banner (56 px) so it ends above the dock, and the toast feed shows only the newest toast so it does not reach the cue line. ---- */
+@media (min-width: 861px) and (min-height: 521px) and (max-height: 720px) {
+    .gb-root .gb-job .gb-banner { display: none; }
+    .gb-root .gb-feed li:nth-last-child(n+2) { display: none; }
+}
