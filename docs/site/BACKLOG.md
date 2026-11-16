@@ -61,3 +61,4 @@ Slot for findings from the thread "Audit website code for simplification". That 
 - [x] SITE-home-games | S | homepage "Play" section: one card per playable game with a real capture, linking straight in; layout chosen from a decision card (three cards in a row, built as recommended) | this PR
 - [x] SITE-pages-audit-2026-11-16 | S | non-game pages audited at 1440 and 390 (build, gate, search, console, transitions, stuck text, overlaps, LCP); no code change needed; report and before shots in /mnt/project-files/portfolio/site-audit-2026-11-16/REPORT.md | this PR
 - [x] SITE-game-launch | S | themed cover into and out of each game, "Continue your save" line on each hub card, hub remembers the last game played | this PR
+- [x] GUESS-merge-modes | size M | Daily and Unlimited merged into one page per guesser; Unlimited unlocks after a finished daily; old daily routes redirect | #PENDING

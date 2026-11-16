@@ -397,9 +397,10 @@ export function FilterPanel({
                                             onClick={() =>
                                                 onChange(toggle(difficulties, d.id), regions)
                                             }
-                                            className="cm-chip"
+                                            className="gk-chip"
+                                            data-on={on}
                                         >
-                                            <span className="dot" style={{ background: on ? "currentColor" : d.color }} />
+                                            <span className="gk-swatch" style={{ background: d.color }} />
                                             {d.label}
                                         </button>
                                     );
@@ -421,9 +422,10 @@ export function FilterPanel({
                                             onClick={() =>
                                                 onChange(difficulties, toggle(regions, r.id))
                                             }
-                                            className="cm-chip"
+                                            className="gk-chip"
+                                            data-on={on}
                                         >
-                                            <span className="dot" style={{ background: on ? "currentColor" : r.color }} />
+                                            <span className="gk-swatch" style={{ background: r.color }} />
                                             {r.label}
                                         </button>
                                     );

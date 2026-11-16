@@ -17,9 +17,9 @@ export default function OutlineGuesserPage() {
         <div className="ctos ng-page">
             <NaosBackdrop src="/naos/bg-games.webp" />
             <CreationsShell
-                eyebrow="Daily and unlimited"
+                eyebrow="Daily, then unlimited"
                 title={["Outline Guesser"]}
-                description="Name the country or territory from its outline. Six guesses; every miss shows the distance, the direction to the target and how close you are."
+                description="Name the country or territory from its outline. Six guesses; every miss shows the distance, the direction to the target and how close you are. Finish the daily once and unlimited outlines open."
                 back={{ href: "/creations/games", label: "Back to Games" }}
                 variant="sub"
             >
@@ -30,13 +30,14 @@ export default function OutlineGuesserPage() {
                         </GameFrame>
                         <GameReadout
                             rows={[
-                                ["Modes", "Daily and unlimited"],
+                                ["Modes", "Daily, then unlimited"],
                                 ["Guesses", "6 per country"],
                                 ["Hints", "3 per round"],
                                 ["Rounds", "Country, neighbours, flag, summary"],
                                 ["Units", "km or miles"],
                             ]}
                             notes={[
+                                "Finish today's daily once to open Unlimited. It stays open on this device.",
                                 "Every miss shows the distance and the direction to the target.",
                                 "Neighbours round: drag and zoom the map, then name the countries that border the mystery one.",
                                 "Flag round: press 1 to 6 to pick a flag, and the arrow keys move between them.",

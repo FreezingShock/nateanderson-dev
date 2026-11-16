@@ -19,7 +19,7 @@ Format: `- area | paths | owner (thread title or "free") | since YYYY-MM-DD | do
 - Starwright | components/starwright, lib/starwright, app/camino/starwright*.css, tests/starwright, scripts/starwright | Ship the Starwright backlog (all Starwright files) | 2026-11-15 | docs/games/starwright
 - Groundbreak | components/{groundbreak,groundbreak-art}, lib/{groundbreak,groundbreak-fonts}, app/camino/groundbreak.css, tests/groundbreak, scripts/{groundbreak,groundbreak-art} | Ship the Groundbreak backlog (all Groundbreak files) | 2026-11-15 | docs/games/groundbreak
 - Node Farm | components/nodefarm, lib/nodefarm, app/camino/nodefarm, tests/nodefarm, scripts/nodefarm | Build the Node Farm page | 2026-11-16 | docs/node-farm.md, docs/site
-- Outline and Flag Guesser | components/games/*.tsx, lib/outline-game.ts, lib/data | free | | docs/site
+- Outline and Flag Guesser | components/games/*.tsx, lib/outline-game.ts, lib/data, scripts/games/guessers-check.mjs | Merge daily and unlimited guesser modes | 2026-11-16 | docs/site
 - Shared game shell and windowed panel | components/games/shell, lib/games, app/camino/game-shell.css, app/creations/games/{brasswork,starwright,groundbreak}/layout.tsx and page.tsx (metadata only), route-chrome removed from both games | Build the shared game shell and windowed panel | 2026-11-16 | docs/site
 
 Inside a game, finer ownership (art, menus, sim, QOL) is recorded in that game's `docs/games/<game>/BACKLOG.md` header, if it has one.

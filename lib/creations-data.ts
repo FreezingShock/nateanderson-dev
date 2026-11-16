@@ -177,7 +177,7 @@ export interface Game {
     blurb: string;
     features: string[];
     /** How the game is played, shown as a tag on its card. */
-    format?: "Daily" | "Unlimited";
+    format?: "Daily" | "Unlimited" | "Daily + Unlimited";
     /** Set only for games that actually have a route. */
     href?: string;
     /** Card screenshot under /public. Real captures of the built game, 960 by 600. */
@@ -208,59 +208,33 @@ export const GAME_MODES: GameMode[] = [
         color: "var(--cm-cyan)",
         icon: Ic.Map,
         tagline: "Geography games, right here in your browser.",
-        about: "A new daily puzzle every day at midnight Pacific, plus unlimited practice for learning and high scores. Streaks and stats stay in your browser.",
+        about: "Each guesser opens with a new daily puzzle at midnight Pacific. Finish a daily once and its unlimited practice opens too. Streaks and stats stay in your browser.",
         games: [
-            {
-                slug: "daily-outline",
-                title: "Daily Outline",
-                status: "playable",
-                icon: Ic.Map,
-                format: "Daily",
-                blurb: "One country outline a day, the same for everyone. Six guesses with distance, direction and closeness.",
-                features: ["238 countries and territories", "Streaks and stats", "Shareable result"],
-                href: "/creations/games/outline-guesser?mode=daily",
-                shot: "/games/shots/outline-guesser.webp",
-                accent: "#2fd8e8",
-                tags: ["238 countries", "Streaks", "Share card"],
-            },
-            {
-                slug: "daily-flag",
-                title: "Daily Flag",
-                status: "playable",
-                icon: Ic.Flag,
-                format: "Daily",
-                blurb: "One mystery flag a day, the same for everyone, revealed one tile at a time with distance and direction clues.",
-                features: ["Tile-flip reveal", "3 hints", "Streaks and stats"],
-                href: "/creations/games/flag-guesser?mode=daily",
-                shot: "/games/shots/flag-guesser.webp",
-                accent: "#2fd8e8",
-                tags: ["Tile flip", "3 hints", "Streaks"],
-            },
             {
                 slug: "flag-guesser",
                 title: "Flag Guesser",
                 status: "playable",
                 icon: Ic.Flag,
-                format: "Unlimited",
-                blurb: "Endless mystery flags from all 239 countries and territories, with difficulty and region filters, tile-flip reveals and hints.",
-                features: ["All 239 flags", "Difficulty and region filters", "Hints and give up"],
+                format: "Daily + Unlimited",
+                blurb: "A mystery flag a day, the same for everyone, then endless flags from all 239 countries and territories once you finish a daily.",
+                features: ["Tile-flip reveal", "Daily puzzle, then unlimited", "Difficulty and region filters"],
                 href: "/creations/games/flag-guesser",
                 shot: "/games/shots/flag-guesser.webp",
                 accent: "#2fd8e8",
-                tags: ["239 flags", "Filters", "Hints"],
+                tags: ["Tile flip", "3 hints", "Daily + unlimited"],
             },
             {
                 slug: "outline-guesser",
                 title: "Outline Guesser",
                 status: "playable",
                 icon: Ic.Map,
-                format: "Unlimited",
-                blurb: "Endless country outlines: every country, island and territory, with arrows, distances, hints and a give-up button.",
-                features: ["Hints and give up", "km or miles", "Stats"],
+                format: "Daily + Unlimited",
+                blurb: "A country outline a day, the same for everyone, then endless outlines of every country, island and territory once you finish a daily.",
+                features: ["Daily puzzle, then unlimited", "Neighbours and flag rounds", "km or miles"],
                 href: "/creations/games/outline-guesser",
                 shot: "/games/shots/outline-guesser.webp",
                 accent: "#2fd8e8",
-                tags: ["Hints", "km or mi", "Stats"],
+                tags: ["238 countries", "Daily + unlimited", "km or mi"],
             },
         ],
     },
