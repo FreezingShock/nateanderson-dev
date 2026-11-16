@@ -29,7 +29,7 @@ Environment variables read by the gate:
 - `SITE_PASSWORD` (plain text), or `SITE_PASSWORD_SHA256` (its hex digest, so the plain text is not stored)
 - `SITE_GATE_SECRET` (signs the cookie)
 
-Warning: `lib/gate/config.ts` has a built-in fallback password for when `SITE_PASSWORD` is unset. The repository is public, so that fallback is visible to anyone who reads the source. Production must set `SITE_PASSWORD` or `SITE_PASSWORD_SHA256` in Vercel. Changing the gate is a decision for Nate (`docs/WORKFLOW.md`, "What needs Nate").
+The gate fails closed. With neither `SITE_PASSWORD` nor `SITE_PASSWORD_SHA256` set it refuses every password, and it logs one error line. Production sets `SITE_PASSWORD` in Vercel (Production and Preview). Local dev puts it in `.env.local`, which git ignores. `SITE_GATE_SECRET` still has a built-in fallback in `lib/gate/config.ts`; set it in production.
 
 CI uses a throwaway `SITE_PASSWORD=ci-password` and never touches the real one (`docs/ci.md`).
 
