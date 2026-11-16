@@ -7,6 +7,8 @@ How to verify a UI item: production build, 1440 and 390 wide, PNGs saved to `/mn
 ## Now (open, ordered: top is next)
 - [ ] GB-change-order-check | size S | Change order is not yet seen in the headless walk, because it needs the structure phase of a live job. Run a longer warp and check the card and both buttons at 390 wide, then fix anything that overlaps | `components/groundbreak/groundbreak.tsx`, `app/camino/groundbreak.css`
 
+- [ ] SWEEP-hud-late-zoom-job | size S | On the late seed (`seeds/late180.json`) at 1440 the zoom buttons overlap the job card. Seen before the detail sweep; not caused by the dock change. Move the zoom column under the job card's bottom edge on desktop, then rerun `scripts/ci/gb-hud.mjs` with the late seed | `app/camino/groundbreak.css` (`.gb-zoom`, `.gb-job`)
+
 ## Needs Nate (taste call, playtest or his own device)
 - [ ] ASK GB-pacing-playthrough | size S | Pacing: about 3 h to the bridge, a material every 12 to 15 min. The bot passes; nobody has felt it yet. After he plays, the numbers in `data.ts` (TUNE) get retuned | playtest
 - [ ] ASK GB-incorporate-feel | size S | How strong should the second firm feel? Recommend firm 2 at about 1 h 45 and firm 3 at about 1 h 30 (SPEC). Needed before any more Incorporate numbers ship | taste
@@ -56,4 +58,5 @@ How to verify a UI item: production build, 1440 and 390 wide, PNGs saved to `/mn
 - [x] ITEM-7-touch-names | Touch check at 390: 0 unnamed buttons, tapping a dock tile opens its card and buys nothing
 - [x] LANDSCAPE-check | Overlap check now includes 667x375; shots in `/mnt/project-files/portfolio/groundbreak/landscape/`
 - [x] CORRUPT-save-check | Headless check `/mnt/project-files/portfolio/groundbreak/corrupt/check.mjs` at 1440 and 390
+- [x] SWEEP-dock-locked-names | Locked dock tiles wrap the material name to two lines instead of cutting it ("PRECAST PAN...", "STEEL BE..." at 1440 and 390); 88 px tall on desktop, 90 px on phones; landscape phones keep 50 px | `app/camino/groundbreak.css` (`gb-tile-name`, `data-state="locked"`)
 - [x] RECENT-batch | Earlier PRs, do not redo: reward moments (material ring, hot feed glow), first minute plays itself (#491), zoom to 5x (#487), staged jobs and Bay backdrop (#478, #482), engine pacing and repeat orders (#506), site life (#502), icons and menu art (#498), QOL cue, welcome-back, backups, console (#515), change-order cost card (e303c356), material arrives stocked (#534), skyline window art, shore traffic, fog bank (#539 to #543)
