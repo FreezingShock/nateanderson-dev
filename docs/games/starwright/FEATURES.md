@@ -15,7 +15,7 @@ Test commands: `npm run test:nodefarm` (a PR check; includes `tests/starwright/*
 | Supernova (iron at the collapse line), Stardust payout, next star needs 2x iron | working | `engine.ts` (`supernova`, `feNeed`, `seeds`) | engine.test: supernova |
 | Neutron star (6000 stardust in a layer): resets map, pays Neutrons, opens Gold and Uranium | working | `engine.ts` (`neutronStar`) | engine.test: neutron/black hole |
 | Black hole (600,000 Uranium), ending, Singularity (x2) and restart | working | `engine.ts` (`blackHole`) | engine.test; ending screen has a screenshot only |
-| Next-step line `guide()` and collapse ETA | working | `engine.ts` (`guide`, `collapseEta`) | engine.test: guide |
+| Next-step line `guide()` and collapse ETA: a new star starts on "Start here: buy a hydrogen burner (key 1, cost)", then the next unopened row, the burner nearest iron, and the iron ETA | working | `engine.ts` (`guide`, `collapseEta`) | engine.test: guide |
 | Autoburn (Loom perks) | working | `engine.ts` (`autoburn`) | partly: engine.test perks |
 | Pacing of the first runs | working | `data.ts` `TUNE`, `scripts/starwright/sim.mjs` | engine.test: first visitor, deep rows, black hole in ~2 h |
 
