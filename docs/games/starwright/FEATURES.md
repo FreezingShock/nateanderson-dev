@@ -22,14 +22,14 @@ Test commands: `npm run test:nodefarm` (a PR check; includes `tests/starwright/*
 ## Perks and progression
 | Feature | State | Code | Test |
 |---|---|---|---|
-| Constellation map: 20 stars in 4 constellations (Lantern, Kiln, Anvil, Loom); on a phone one constellation at a time, the others hidden, and a locked constellation's title sits over its node labels with a dark halo | working | `data.ts` `PERKS`, `engine.ts` `buyPerk` | engine.test: perks |
+| Constellation map: 20 stars in 4 constellations (Lantern, Kiln, Anvil, Loom); on a phone one constellation at a time, the others hidden, centred in the map area (within 10 px at 360 and 390), the Deep stars row one compact line and the explanation under the map hidden to leave the map room; a locked constellation's title sits over its node labels with a dark halo | working | `data.ts` `PERKS`, `engine.ts` `buyPerk` | engine.test: perks |
 | New perks l5 Corona (inflow x2, heat x1.2, 900) and a5 Iron rain (stardust x2, 1800, needs a3 + a4) | working, rule change signed off by Nate | `data.ts`, node art in `scripts/starwright/ui-art/build.py` `NODES` | none specific |
 | Pulsar map: 8 perks bought with Neutrons | working | `data.ts` `PULSAR_PERKS`, `engine.ts` `buyPulsar` | engine.test: neutron |
 | Deep stars: endless stardust sink, +4% everything each, cost x1.4 each, cleared by a neutron star | working (button in the star map, `sw deep`) | `engine.ts` `buyDeep`; button `components/starwright/star-chart.tsx` `Deep`, wired in `starwright.tsx` | engine.test: deep stars, `sw deep` |
 | Planets (8) with four stages by time in orbit, +20% per stage; Survivors keeps age | working | `data.ts` `PLANETS`, `engine.ts` `planetStage`, `buyPlanet` | engine.test: planets |
 | Visitors (4) with two answers each; first at 40 s; never from time away | working | `data.ts` `EVENTS`, `engine.ts` `answer` | engine.test: visitors |
 | Birth clouds (6), three offered per new star after the first supernova | working | `data.ts` `CLOUDS`, `engine.ts` `chooseCloud` | engine.test: clouds |
-| Almanac: codex of elements and 21 milestones (+2% each). Phones (520 px and under) show element symbols only; the name opens in the tap sheet | working | `data.ts` `ACHIEVEMENTS`, `engine.ts` `checkAch`, `starwright-ev.css` | engine.test: milestones, codex; 360/390 checked headless |
+| Almanac: codex of elements and 21 milestones (+2% each). Phones (520 px and under) show element symbols only; the name opens in the tap sheet. On a phone the card fits the game panel, milestones are one tight row each and the tap sheet keeps its art full width | working | `data.ts` `ACHIEVEMENTS`, `engine.ts` `checkAch`, `panels.tsx` `Almanac`, `starwright.css` (`.sw-over > .sw-card`, phone block), `starwright-ev.css` | engine.test: milestones, codex; 360/390 checked headless (`scripts/starwright/ui-art/map-almanac-shots.mjs`) |
 
 ## Saves, time away, settings
 | Feature | State | Code | Test |
