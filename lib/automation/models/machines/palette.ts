@@ -15,7 +15,7 @@ export const PALETTE = [
     0xeed9e4, // 11 quartz
     0x3f5576, // 12 silicon
     0xcdd6e0, // 13 aluminium
-    0x58b09a, // 14 patina (input marks)
+    0x8f9650, // 14 patina (input marks)
     0x1c140c, // 15 belt / soot
     0xffb347, // 16 glow (rendered unlit)
     0x6b4a2a, // 17 wood

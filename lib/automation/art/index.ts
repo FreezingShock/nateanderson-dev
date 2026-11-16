@@ -2,8 +2,8 @@
 
 /** Machine portraits: 128 px art cells, 4 across, each machine on a lamplit workshop bench. */
 export const PORTRAIT_SHEET = {
-    url: "/brasswork/art/portraits.webp?v=35deebe9",
-    png: "/brasswork/art/portraits.png?v=35deebe9",
+    url: "/brasswork/art/portraits.webp?v=9ee6b1f1",
+    png: "/brasswork/art/portraits.png?v=9ee6b1f1",
     cell: 128,
     cols: 4,
     rows: 4,
@@ -57,7 +57,7 @@ export const RARITY_FRAMES = {
     common: { label: "Common", url: "/brasswork/art/frame-common.png?v=6d909e27" },
     uncommon: { label: "Uncommon", url: "/brasswork/art/frame-uncommon.png?v=ed7c79b2" },
     rare: { label: "Rare", url: "/brasswork/art/frame-rare.png?v=8fdedda5" },
-    epic: { label: "Epic", url: "/brasswork/art/frame-epic.png?v=63e3f5a4" },
+    epic: { label: "Epic", url: "/brasswork/art/frame-epic.png?v=39f2c34d" },
     legendary: { label: "Legendary", url: "/brasswork/art/frame-legendary.png?v=23edec84" },
 } as const;
 export type Rarity = keyof typeof RARITY_FRAMES;
@@ -97,7 +97,7 @@ export const MILESTONE_ART: Record<string, number> = {
 };
 
 /** Research cards: 128 x 96 blueprint cells, 6 across; alternates carry a copper corner. */
-export const RESEARCH_SHEET = { url: "/brasswork/art/research.webp?v=5c88fd9f", w: 128, h: 96, cols: 6, rows: 5 } as const;
+export const RESEARCH_SHEET = { url: "/brasswork/art/research.webp?v=2c920fc2", w: 128, h: 96, cols: 6, rows: 5 } as const;
 export const RESEARCH_ART: Record<string, number> = {
     gears: 0, // Gear cutting
     furnace_alloys: 1, // Alloy furnaces
@@ -130,7 +130,7 @@ export const RESEARCH_ART: Record<string, number> = {
 };
 
 /** Prestige site paintings: 128 x 96 cells in one row; hang them in DECOR_EXTRA.gilt. */
-export const SITE_SHEET = { url: "/brasswork/art/sites.webp?v=67ec1e2d", w: 128, h: 96, cols: 4, rows: 1 } as const;
+export const SITE_SHEET = { url: "/brasswork/art/sites.webp?v=91d14fea", w: 128, h: 96, cols: 4, rows: 1 } as const;
 export const SITE_ART: Record<string, number> = {
     ridge: 0,
     cove: 1,
@@ -147,17 +147,17 @@ export const DECOR_EXTRA = {
 
 /** Hash of each machine's model source when its portrait was drawn (checked by tests/automation/menu-art.test.mjs). */
 export const PORTRAIT_MODEL_HASH: Record<string, string> = {
-    drill: "1aee9e767006",
-    kiln: "6817bbe8729c",
-    furnace: "7af471320654",
-    press: "f0c0747a4b21",
-    lathe: "465405b405c2",
-    drawer: "26711ffe126e",
-    assembler: "ab3536c61ea6",
-    fabricator: "7ecd729e9577",
-    windmill: "14a8f531e479",
-    spring_winder: "77b91cfaafa5",
-    spring_store: "4f6d3be5d0b2",
-    hub: "171a34c7d435",
-    orrery: "b116c4b55a48",
+    drill: "233f6225d67d",
+    kiln: "d723b914591d",
+    furnace: "74bcfbad2407",
+    press: "c90356317a05",
+    lathe: "f0843399a1cf",
+    drawer: "52439811098a",
+    assembler: "12ad77241687",
+    fabricator: "360cc19614fd",
+    windmill: "9e88ebbd60be",
+    spring_winder: "c6fe820b824b",
+    spring_store: "7709e8c73888",
+    hub: "eca14cfe3aa2",
+    orrery: "f95f2e4a799f",
 };

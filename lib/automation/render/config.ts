@@ -62,11 +62,11 @@ export const WATER_OPACITY = 0.9;
 
 /**
  * Water palettes for the shaded sea: deep colour, shallow colour over the sand shelf, and foam.
- * "verdigris" is the default (sea green that sits with the brass, no cyan). "spec" keeps the
+ * "verdigris" is the default (a dark olive-bronze sea that sits with the brass; the key name is kept for ?water= links). "spec" keeps the
  * original reference blue for comparison. Bench and dev pages can switch with ?water=.
  */
 export const WATER_PALETTES = {
-    verdigris: { deep: 0x1d4048, shallow: 0x4e8a78, foam: 0xf3e4c4 },
+    verdigris: { deep: 0x2a2e1c, shallow: 0x6f7248, foam: 0xf3e4c4 },
     lagoon: { deep: 0x2a3b33, shallow: 0x7d8c58, foam: 0xf0dfb8 },
     spec: { deep: 0x22627a, shallow: 0x3f9ab0, foam: 0xeef0e6 },
 } as const;

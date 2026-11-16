@@ -12,7 +12,7 @@ BW = {
     "cu": ramp("#1e0c06", "#3f160a", "#7a3a18", "#a34a22", "#c4682f", "#e08a48", "#f4b070", "#ffdca8"),
     "al": ramp("#22262c", "#3e454e", "#5f6873", "#87919c", "#aab4bf", "#cdd6e0", "#eaf0f5", "#ffffff"),
     "brass": ramp("#1e1206", "#46290a", "#8a5a1e", "#b07a28", "#d29a3c", "#e8b85a", "#f6d688", "#fff2c8"),
-    "patina": ramp("#101c10", "#1e3420", "#2e5232", "#44734a", "#619464", "#8cb682", "#c6dcae"),  # verdigris, leans green not cyan
+    "patina": ramp("#14120a", "#262010", "#3a3418", "#554c24", "#76693a", "#8f9650", "#c9c27a"),  # olive-bronze patina (no teal)
     # minerals
     "rock": ramp("#16110e", "#2a221d", "#3e342d", "#544840", "#6b625a", "#7a7068", "#988e84", "#bcb2a6"),
     "ironore": ramp("#1e0a06", "#3a160e", "#55231a", "#723022", "#8e3b28", "#a85238", "#c4704e", "#dc9a74"),
