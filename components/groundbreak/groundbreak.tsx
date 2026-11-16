@@ -594,9 +594,9 @@ export function Groundbreak() {
                     <dt>Buildings</dt><dd>{s.built}</dd>
                     <dt>Offline limit</dt><dd>{Math.round((TUNE.offlineH + f.offlineH))} hours</dd>
                 </dl>
+                <p className="gb-line gb-firm-line">{canIncorporate(s, f) ? `Incorporate: +${charterGain(s, f)} charter for perks that stay, a new firm in ${cityOf(s.firm + 1).name}. The skyline stays.` : `Opens at ${TUNE.charterMinRep} rep (you have ${fmt(s.repFirm)}). Pays about +${Math.max(1, Math.floor(Math.sqrt(TUNE.charterMinRep / TUNE.charterDiv) * f.charter))} charter for perks that stay, then a new firm in ${cityOf(s.firm + 1).name}. The skyline stays.`}</p>
                 <PerkGrid s={s} onBuy={(id) => act((x) => { if (buyPerk(x, id)) save(); })} onAuto={(n) => act((x) => { x.autoOff = x.autoOff.includes(n) ? x.autoOff.filter((v) => v !== n) : [...x.autoOff, n]; save(); })} />
 <div className="gb-win-foot">
-                                <p className="gb-line">{canIncorporate(s, f) ? `Incorporate: +${charterGain(s, f)} charter for perks that stay, a new firm in ${cityOf(s.firm + 1).name}. The skyline stays.` : `Opens at ${TUNE.charterMinRep} rep (you have ${fmt(s.repFirm)}). Pays about +${Math.max(1, Math.floor(Math.sqrt(TUNE.charterMinRep / TUNE.charterDiv) * f.charter))} charter for perks that stay, then a new firm in ${cityOf(s.firm + 1).name}. The skyline stays.`}</p>
                 <ConfirmGo label="Incorporate" sure="Cash, crews and materials reset. Charter and the skyline stay. Sure?" onGo={doIncorporate} disabled={!canIncorporate(s, f)} />
                 </div>
             </Window>
@@ -726,18 +726,26 @@ function PerkGrid({ s, onBuy, onAuto }: { s: State; onBuy: (id: string) => void;
     );
 }
 
+/** The skyline body: every job in the game, named. Built ones stand in colour with a count; the rest are dark silhouettes, so the window always fills and shows what is left. */
 function SkylineView({ skyline }: { skyline: State["skyline"] }) {
-    if (skyline.length === 0) return <p className="gb-none">Nothing built yet. Every finished job stays here for good, even after you incorporate.</p>;
     const counts = new Map<string, number>();
     skyline.forEach((b) => counts.set(b.id, (counts.get(b.id) ?? 0) + 1));
     return (
-        <ul className="gb-sky">
-            {JOBS.filter((j) => counts.has(j.id)).map((j, n) => (
-                <li key={j.id} data-tip={`${j.name} · built ${counts.get(j.id)}`} aria-label={`${j.name}, built ${counts.get(j.id)}`} style={{ "--i": n } as CSSProperties}>
-                    <JobThumb id={j.id} w={150} h={170} /><b>×{counts.get(j.id)}</b>
-                </li>
-            ))}
-        </ul>
+        <>
+            {skyline.length === 0 && <p className="gb-none">Nothing built yet. Every finished job stays here for good, even after you incorporate.</p>}
+            <ul className="gb-sky">
+                {JOBS.map((j, n) => {
+                    const c = counts.get(j.id) ?? 0;
+                    return (
+                        <li key={j.id} data-built={c ? "" : undefined} data-tip={c ? `${j.name} · built ${c}` : `${j.name} · not built yet`} aria-label={c ? `${j.name}, built ${c}` : `${j.name}, not built yet`} style={{ "--i": n } as CSSProperties}>
+                            <JobThumb id={j.id} w={130} h={104} />
+                            <b>{j.name}</b>
+                            <em>{c ? `×${c} built` : "Not built yet"}</em>
+                        </li>
+                    );
+                })}
+            </ul>
+        </>
     );
 }
 

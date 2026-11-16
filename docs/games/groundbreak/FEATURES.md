@@ -105,7 +105,7 @@ Thread names change each wave; the file split is what matters. Before editing a 
 | Site life: crew on every floor, hoist cage, excavator, pump, mobile crane, forklift, delivery trucks, shore traffic, tap any worker or machine for a label | working | `site-life.tsx`, `life-data.ts`, `gb_life.py` | none |
 | Ambient: clouds, bay glints, boats, signature tower per Incorporate | working | `site-scene.tsx` | none |
 | Fog bank over the bridge saddle (2696bbd9) | untested in the running game | `site-scene.tsx` | none |
-| Skyline window: finished buildings on a shoreline | working | `SkylineView`, `groundbreak.tsx` | none |
+| Skyline window: every job in the game, named; built ones in colour with a count, unbuilt ones as dark silhouettes; 4 columns on desktop, 3 on phones | working | `SkylineView`, `groundbreak.tsx`; `.gb-sky` in `groundbreak.css` | none |
 | Windows: Jobs, Skyline, Firm (perks), Console, Menu; each opens with its own animation and banner art | partial: Jobs and Firm open over the site | `Window` in `groundbreak.tsx`, `ui-art.ts` | none |
 | 42 dither icons (64 px): materials, currencies, equipment, phases, perks, drawn from the one shared sheet | working | `components/groundbreak-art/icons.ts` (`GB_ICONS`), `build-icons.py`, `Ico` in `groundbreak.tsx` | none |
 | Header: site board, location plate, stage and job progress; job card with phases and pay | working | `groundbreak.tsx` `gb-top`, `gb-job` | none |
@@ -126,4 +126,4 @@ First run to the bridge is about 3 hours (Nate's pick). The bot test "finishes t
 - Corrupt or unreadable save: a copy is kept in `gb-save-v1-corrupt`, a fresh firm starts, and a sticky 20 s warning tells the player (the storage-blocked warning is sticky too). `groundbreak.tsx` `note(text, tone, sticky)`. Headless Chrome only.
 - Hint ring (amber frame on the next dock tile, tier, or cue): shares `::after` with the tooltip, so it must reset the tooltip's box, background and hover shift (`groundbreak.css`, block after `.gb-tier[data-hint]`). Headless Chrome only.
 - Console submit: the command runs in the submit handler, not inside the output's state updater (a `gb` command that changes the game would otherwise run during render). Headless Chrome dev build only.
-- Firm window foot: the Incorporate line and button are pinned at the bottom while the perks scroll (`.gb-win-foot`). Windows and the material card are near opaque. While the crew repeats a job the waiting cue also names what the next campaign job waits on (`guide.ts` `nextCue`). Headless Chrome only.
+- Firm window foot: the Incorporate button is pinned at the bottom while the perks and copy scroll (`.gb-win-foot`); on phones the perk rows come first, above the fade. Windows and the material card are near opaque. While the crew repeats a job the waiting cue also names what the next campaign job waits on (`guide.ts` `nextCue`). Headless Chrome only.
