@@ -5,7 +5,8 @@
 // the one whose tier matches the level gain draws. It is keyed on the row's level, so a fast run of buys restarts one
 // burst instead of stacking them. A tier II or III buy makes a bigger burst. Styles: app/camino/starwright-burst.css.
 // Motion is off under reduced motion.
-import { useState, type CSSProperties } from "react";
+import type { CSSProperties } from "react";
+import { useGain } from "@/components/game-kit/hooks";
 import "@/app/camino/starwright-burst.css";
 
 const SPARKS = 8;
@@ -14,12 +15,7 @@ const tierOf = (gained: number) => (gained >= 100 ? 2 : gained >= 10 ? 1 : 0);
 const SIZE = ["s", "m", "l"] as const;
 
 export function BuyBurst({ n, tier }: { n: number; tier: number }) {
-    const [prev, setPrev] = useState(n);
-    const [hit, setHit] = useState<{ key: number; gained: number } | null>(null);
-    if (n !== prev) {
-        setPrev(n);
-        setHit({ key: n, gained: n - prev });
-    }
+    const hit = useGain(n);
     if (!hit || tierOf(hit.gained) !== tier) return null;
     return (
         <i key={hit.key} className="sw-burst" data-size={SIZE[tier] ?? "s"} aria-hidden="true">

@@ -38,10 +38,11 @@ Test commands: `npm run test:nodefarm` (a PR check; includes `tests/starwright/*
 | Damaged save kept under `sw-save-v1-corrupt` (an older different one moves to `-corrupt-prev`), rolling backup, 10-minute backups | working | `lib/starwright/session.ts` | session.test |
 | Time away: 8 h cap (24 h with Long watch), credit for stalled frames, welcome-back card | working | `engine.ts` `catchUp`, `session.ts` `advance`, `awayReport`, `components/starwright/settings.tsx` | session.test |
 | Opt-in auto supernova and auto visitors (also during time away; a long absence pays up to 3 supernovas) | working | `session.ts` `advanceAuto`, `lib/starwright/settings.ts` | session.test |
-| One tab plays at a time (`BroadcastChannel sw-tab`) | untested | `starwright.tsx` | none |
+| One tab plays at a time (`BroadcastChannel sw-tab`) | untested | `starwright.tsx`, kit `claimTab` (`lib/game-kit/tabs.ts`) | none |
 | Settings (`sw-settings-v1`): scene full/simple, notices, welcome card | working | `settings.ts`, `settings.tsx`, `app/camino/starwright-qol.css` | session.test (parse only) |
 | Hotkeys: 1-9 buy, N, Q/W, Space, F, U, C P O A M, Esc | working headless: 1, C, Esc, N, Q, Space checked; the rest not | `starwright.tsx`, `commands.ts` `SW_KEYS` | `tests/starwright/browser/hotkeys.mjs` (by hand against a production server, not a PR check) |
 | Console `sw ...` (stats, fuse, collapse, neutron, hole, perks, pulsar, planets, visitor, cloud, almanac, deep, save, backup, restore, corrupt, away, settings, set, keys, admin) | working | `lib/starwright/commands.ts` | engine.test: console, visitor/cloud/almanac, `sw deep`; save/away commands only through session.test |
+| Built on the shared game kit (`docs/game-kit.md`): number format, catch-up, settings store, notes queue, autosave loop, presence hooks | working | `lib/game-kit`, `components/game-kit` | tests/games/game-kit.test.mjs |
 
 ## Scene and art
 | Feature | State | Code | Test |

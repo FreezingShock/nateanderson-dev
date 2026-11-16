@@ -80,7 +80,7 @@ Put class `gk` on the game root and set the palette there (CSS in `app/camino/ga
 - `<Burst trigger size="s|m|l">` and `<Corners />`.
 
 ## Which game uses what
-- Starwright: being moved onto the kit (formatting, catch-up, settings store, toasts, presence, autosave, tab lock).
+- Starwright: on the kit. `fmt` is the grouped style, `fmtAge` and `catchUp` come from the kit, settings use createSettingsStore, notes use useToasts (keep 3, 9 s), usePresence/useLeaving/useGain, useAutosave (with the 10 min backup in afterSave) and claimTab ("sw-tab").
 - Groundbreak: next (formatting, catch-up, toasts, presence, autosave, newer-save watch).
 - Brasswork: after that (number formatting, settings, MenuWindow on useWindowClose and useFocusTrap, count-up).
 - Node Farm: not moved; it is finished and deployed.
