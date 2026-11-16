@@ -13,7 +13,7 @@
 //   node scripts/games/window-check.mjs http://localhost:3123 [out-dir]
 // Exits 1 if any check fails. Screenshots go to out-dir when given. Safari and iPhone full screen are not run here.
 import { createRequire } from "node:module";
-import { mkdirSync } from "node:fs";
+import { mkdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { unlock } from "../ci/lib.mjs";
 
@@ -27,11 +27,8 @@ const results = [];
 const check = (ok, msg) => { results.push(ok); console.log(ok ? "PASS" : "FAIL", msg); };
 const browser = await chromium.launch();
 
-const GAMES = [
-    { id: "brasswork", name: "Brasswork", root: ".bw-root" },
-    { id: "starwright", name: "Starwright", root: ".sw-root" },
-    { id: "groundbreak", name: "Groundbreak", root: ".gb-root" },
-];
+// The games come from games-under-check.json. npm run new-game adds its games there.
+const GAMES = JSON.parse(readFileSync(new URL("./games-under-check.json", import.meta.url), "utf8"));
 const VIEWS = [
     { label: "1440", viewport: { width: 1440, height: 900 }, hasTouch: false },
     { label: "390", viewport: { width: 390, height: 844 }, hasTouch: true },

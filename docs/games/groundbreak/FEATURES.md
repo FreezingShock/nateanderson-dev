@@ -93,7 +93,7 @@ Thread names change each wave; the file split is what matters. Before editing a 
 | Site-wide shortcuts (`g` chord, `[` `]`, `?`) must exclude Groundbreak or the game keys do nothing | working, gotcha | `components/cm/keys.tsx` | none |
 | Console `gb`: stats, hire, unlock, jobs, change, overtime, perks, incorporate, skyline, open, next, go, auto, rate; `give` and `warp` are admin-gated | working | `commands.ts`, `commands-qol.ts` | engine.test "console commands", guide.test console |
 | Simple visuals toggle (`gb-simple`) | untested | `groundbreak.tsx` `toggleSimple` | none |
-| Material dock: grouped tiles with number keys, level, progress to unlock, hover names | working on mouse; touch has no hover | `groundbreak.tsx` dock | none |
+| Material dock: grouped tiles with number keys, level, progress to unlock, hover names; a locked tile names its material in full (two lines) | working on mouse; touch has no hover | `groundbreak.tsx` dock | none |
 
 ### Screen and art
 

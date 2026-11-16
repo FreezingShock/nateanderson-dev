@@ -194,7 +194,7 @@ export function note(i: number) {
     return 261.63 * semi(SCALE[deg] + oct * 12);
 }
 
-export type Tone = {
+type Tone = {
     f: number; // start frequency (Hz)
     at?: number; // start offset (s)
     dur?: number; // total length (s)
@@ -252,7 +252,7 @@ export function tone(bus: Bus, o: Tone) {
     window.setTimeout(() => out.disconnect(), (o.at ?? 0) * 1000 + dur * 1000 + 200);
 }
 
-export type Whoosh = { at?: number; dur?: number; gain?: number; from: number; to: number; q?: number };
+type Whoosh = { at?: number; dur?: number; gain?: number; from: number; to: number; q?: number };
 /** A soft filtered-noise sweep (menus opening, charge swells). */
 export function whoosh(bus: Bus, o: Whoosh) {
     if (!g) return;
@@ -284,7 +284,7 @@ export function whoosh(bus: Bus, o: Whoosh) {
     };
 }
 
-export type KeyClick = { at?: number; gain?: number; f: number; q?: number };
+type KeyClick = { at?: number; gain?: number; f: number; q?: number };
 /** A very short band-passed noise burst: the keypad and relay clicks of the security set. */
 export function keyClick(bus: Bus, o: KeyClick) {
     if (!g) return;
