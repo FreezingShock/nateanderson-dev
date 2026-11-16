@@ -1,0 +1,12 @@
+import { createRequire } from "node:module"; import { readFileSync } from "node:fs";
+const { chromium } = createRequire("/home/user/nateanderson-dev/package.json")("playwright"); const BASE="http://localhost:3100";
+const late = JSON.parse(readFileSync(process.argv[2],"utf8")); const fresh = process.argv[4]==="fresh";
+const b = await chromium.launch();
+const ctx = await b.newContext({ viewport:{width:390,height:844}, hasTouch:true,isMobile:true,deviceScaleFactor:2 });
+await ctx.request.post(BASE+"/api/gate",{data:{password:"ci-password"},headers:{origin:BASE}});
+const p = await ctx.newPage();
+if(!fresh) await p.addInitScript((s)=>{ if(localStorage.getItem("sw-save-v1")) return; s.savedAt=Date.now(); localStorage.setItem("sw-save-v1",JSON.stringify(s)); }, late);
+await p.goto(BASE+"/creations/games/starwright"); await p.waitForSelector(".sw-ladder"); await p.waitForTimeout(2500);
+console.log(await p.evaluate(()=>{const r=s=>{const e=document.querySelector(s); if(!e) return null; const q=e.getBoundingClientRect(); return [Math.round(q.top),Math.round(q.bottom)]}; return JSON.stringify({scene:r(".sw-scene"),collapse:r(".sw-collapse"),ladder:r(".sw-ladder"),row1:r(".sw-row"),vh:innerHeight})}));
+await p.screenshot({path:process.argv[3]});
+await b.close();
