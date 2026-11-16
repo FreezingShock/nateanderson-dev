@@ -9,9 +9,9 @@
 
 <a href="https://nateanderson.dev"><img alt="Visit the site" src="https://img.shields.io/badge/VISIT_THE_SITE-nateanderson.dev-2fd8e8?style=for-the-badge&labelColor=1a1a1a&logo=googlechrome&logoColor=ffffff"></a>
 <a href="https://nateanderson.dev/creations/games"><img alt="Play the games" src="https://img.shields.io/badge/PLAY_THE_GAMES-6-f0a030?style=for-the-badge&labelColor=1a1a1a"></a>
-<a href="https://nateanderson.dev/about"><img alt="About" src="https://img.shields.io/badge/ABOUT-me-f4f4f2?style=for-the-badge&labelColor=1a1a1a"></a>
+<a href="https://nateanderson.dev/about"><img alt="About" src="https://img.shields.io/badge/ABOUT-nate-f4f4f2?style=for-the-badge&labelColor=1a1a1a"></a>
 <a href="docs/README.md"><img alt="Docs" src="https://img.shields.io/badge/DOCS-index-f4f4f2?style=for-the-badge&labelColor=1a1a1a"></a>
-<a href="docs/WORKFLOW.md"><img alt="Workflow" src="https://img.shields.io/badge/WORKFLOW-how-it-ships-2fd8e8?style=for-the-badge&labelColor=1a1a1a"></a>
+<a href="docs/WORKFLOW.md"><img alt="Workflow" src="https://img.shields.io/badge/WORKFLOW-how_it_ships-2fd8e8?style=for-the-badge&labelColor=1a1a1a"></a>
 
 <br />
 <br />
