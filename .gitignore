@@ -46,3 +46,16 @@ yarn-error.log*
 # CI tooling
 scripts/ci/node_modules
 __pycache__/
+
+# Personal Claude Code settings and local tool output
+.claude/settings.local.json
+.env*
+!.env.example
+/test-results/
+/playwright-report/
+/playwright/.cache/
+.eslintcache
+*.log
+.idea/
+.vscode/
+Thumbs.db
