@@ -49,7 +49,19 @@ while (queue.length) {
     }
 }
 
-const bad = [...seen].filter(([, v]) => v.status === 0 || v.status >= 400);
+// Dev-only pages call notFound() in production unless a build flag is set, so 404 is their correct answer.
+// Pin that here: each must return exactly 404. A 200 means a dev page went public, and any other status is broken.
+const HIDDEN_IN_PRODUCTION = new Set([
+    "/automation-preview",
+    "/dev/brass-art",
+    "/dev/brass-kit",
+    "/dev/brasswork-site",
+    "/dev/voxel-island",
+    "/dev/voxel-model",
+]);
+const bad = [...seen].filter(([p, v]) =>
+    HIDDEN_IN_PRODUCTION.has(p) ? v.status !== 404 : v.status === 0 || v.status >= 400,
+);
 console.log(`Crawled ${seen.size} URLs (${seeds.size} seeded routes).`);
 if (bad.length) {
     console.log(`\n${bad.length} broken:`);
