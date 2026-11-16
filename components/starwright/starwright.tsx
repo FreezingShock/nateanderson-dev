@@ -23,6 +23,7 @@ import { uiVars } from "@/lib/starwright/ui-art";
 import { Almanac, CloudPick, Ending, Menu, Orbit, StarChart, Visitor, tools } from "./panels";
 import { AwayCard, ScrollHint, type AwayData } from "./settings";
 import { ElTile, Gl, Pic, ui, useLeaving, useSheets, useTips } from "./sw-ui";
+import { BuyBurst } from "./buy-burst";
 
 type Panel = null | "stars" | "pulsar" | "orbit" | "almanac" | "menu";
 interface Note { id: number; text: string; tone?: "hot" | "dim" }
@@ -660,12 +661,13 @@ function Row({ s, f, i, onBuy }: { s: State; f: ReturnType<typeof effects>; i: n
                             <button key={k} type="button" className="sw-btn" data-tier={k} disabled={!canBuy(s, i, k)} onClick={() => onBuy(i, k)} data-tip={`${el.name} burner ${TIER_NAMES[k]}|+${TIER_LEVELS[k]} level${TIER_LEVELS[k] > 1 ? "s" : ""}|costs ${fmt(c)} ${el.sym}`} aria-label={`${el.name} burner ${TIER_NAMES[k]}, +${TIER_LEVELS[k]}, costs ${fmt(c)} ${el.sym}`}>
                                 <i className="sw-tier" aria-hidden="true" style={{ backgroundImage: `url("${ui(`tier-${k + 1}`)}")` }} />
                                 <em>{fmt(c)}</em>
+                                <BuyBurst n={levels(s, i)} tier={k} />
                             </button>
                         );
                     })}
                 </div>
             )}
-            {i < ROWS && !open && <span className="sw-warn sw-closed">needs a neutron star</span>}
+            {i < ROWS && !open &&<span className="sw-warn sw-closed">needs a neutron star</span>}
         </li>
     );
 }
