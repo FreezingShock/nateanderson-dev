@@ -26,8 +26,8 @@ Format and rules: `docs/WORKFLOW.md`. Append new items at the end of a section; 
 - [ ] ASK SITE-env-cleanup | S | Nate deletes GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET in Vercel and drops the account tables in Supabase
 - [ ] ASK SITE-branch-delete | S | threads cannot delete branches (403); Nate runs `branch-cleanup-delete.sh` from the audit folder, merged ones only | audit 9
 - [ ] ASK SITE-stale-prs | S | decide PRs #399 and #400 (merge or close) and the Brasswork drafts; owners decide their own | audit 9
-- [ ] ASK SITE-short-screen | S | on screens about 770 px tall or shorter the footer runs under the site dock (5 px at 1024 by 768, where the footer hint wraps; 19 px at 1280 by 720, where the panel hits its 360 px minimum); fits at 1440 by 900 and 1280 by 800; untested on a 1366 by 768 laptop | pick: keep the minimum, or anchor short screens on the panel instead (the heading then sits under the bar)
-- [ ] ASK SITE-phone-heading | S | on phones the Play heading ("Light your star.") still sits under the site bar when the panel is in place; anchoring phones on the heading would leave the panel below the fold | Nate's taste; phones kept the panel anchor in this pass
+- [ ] ASK SITE-short-screen | S | on screens under about 700 px tall the windowed panel sits at its 260 px floor and is small (1366 by 657 laptops); the footer now clears the dock everywhere | pick: keep the floor, or anchor those screens on the panel and let the heading sit under the bar
+- [x] SITE-phone-heading | S | decided by the coordinator on 2026-11-16: phones keep the panel as the anchor, so the Play heading can sit under the bar there | decided
 
 - [x] SITE-hub-layout | S | Nate picked Poster on 2026-11-15 (decision card); rows and index layouts removed | #610 follow-up
 - [x] SITE-motion-toggle | S | the motion setting now applies live both ways: off tears the engine down, on rebuilds it with no refresh, and on-screen content settles without replaying; the page curtain, typed lines and counters follow too | this PR
@@ -69,4 +69,5 @@ Slot for findings from the thread "Audit website code for simplification". That 
 - [x] GUESS-merge-modes | size M | Daily and Unlimited merged into one page per guesser; Unlimited unlocks after a finished daily; old daily routes redirect | #634
 - [x] SITE-phone-pass-2026-11-16 | S | non-game pages walked at 1440, 390 and 375 (14 routes, before and after PNGs in /mnt/project-files/site-pages-phone-2026-11-16/): no sideways scroll, no console errors; About profile footer stops wrapping "2027" on phones; chips and "more" links already have a 44px touch area (`app/camino/site.css`) | this PR
 - [x] SHELL-play-under-bar | S | desktop windowed games: the Play heading and panel start below the site bar, and the panel and footer clear the site dock; Brasswork's left dock compacts under 1000 px tall | #654
+- [x] SITE-short-screen-dock | S | footer clears the site dock down to 657 px tall (panel floor 260 px, height 100dvh minus 400 px), and Brasswork's left dock scrolls inside a short panel instead of clipping | #659
 - [x] SITE-home-band-art | M | animated sprite art for each game across the whole homepage Play band, lazy and paused off screen | this PR
