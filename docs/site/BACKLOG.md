@@ -42,7 +42,7 @@ Format and rules: `docs/WORKFLOW.md`. Append new items at the end of a section; 
 - [ ] SITE-games-leave-key | S | optional: a documented key (for example Esc twice) to leave a game; today Esc only closes menus | same audit | taste, low priority
 - [ ] SHELL-saves-one-path | M | point the in-game Export and Import rows (Starwright menu in `components/starwright/panels.tsx`, Groundbreak menu) at `lib/games/save-slot.ts` so there is one save path; each game's owner does its own file | window shell
 - [ ] SHELL-phone-touch | S | on a real phone check the windowed panel: page scroll over the game by touch, Brasswork's touch bar and Starwright's hold gestures, and that the footer clears the site tab bar | untested: no real phone
-- [ ] SHELL-webkit | S | run `scripts/games/window-check.mjs` in WebKit; check `contain: layout` on the games' fixed roots and iPhone Safari (no full screen there) | untested
+- [ ] SHELL-webkit | S | run `scripts/ci/checks/run.mjs window` in WebKit; check `contain: layout` on the games' fixed roots and iPhone Safari (no full screen there) | untested
 - [ ] ASK SHELL-node-farm-window | M | move Node Farm from its framed page into the windowed panel too, or keep it framed (current) | Nate's taste; the Node Farm thread owns the page
 
 - [ ] SITE-keys-tap | S | the "?keyboard shortcuts" button is 34px tall on phones; lift it to 44px on touch screens (`components/cm/keys.css`, Shell owner) | phone pass 2026-11-16
