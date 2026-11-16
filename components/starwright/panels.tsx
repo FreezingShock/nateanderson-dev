@@ -232,7 +232,7 @@ export function Menu({ sound, onSound, s, paused, onPause, onClose, onName, onIm
                 groups={[
                     { key: "top", className: "sw-menu", units: top },
                     { key: "settings", title: "Settings", className: "sw-setlist", tag: "ul", units: settingUnits(s, v) },
-                    ...(coarse ? [] : [{ key: "keys", title: "Keys", className: "sw-keys", tag: "dl" as const, units: SW_KEYS.map(([k, d]) => <div key={k} className="sw-keyrow"><dt>{k}</dt><dd>{d}</dd></div>) }]),
+                    ...(coarse ? [] : [{ key: "keys", title: "Keys", className: "sw-keys", tag: "dl" as const, newPage: true, units: SW_KEYS.map(([k, d]) => <div key={k} className="sw-keyrow"><dt>{k}</dt><dd>{d}</dd></div>) }]),
                     { key: "foot", className: "sw-menu", units: foot },
                 ]}
             />

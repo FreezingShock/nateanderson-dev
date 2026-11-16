@@ -10,7 +10,7 @@ import {
 } from "./config";
 import { VoxelGrid } from "./grid";
 import type { BlockRegistry } from "./mesher";
-import { cellHash, rollingNoise } from "./noise";
+import { rollingNoise } from "./noise";
 
 /** Surface height in world units at (x, z). Flat (0) on the factory plateau. */
 export function heightAt(x: number, z: number): number {
@@ -74,11 +74,7 @@ export function buildTerrain(
                 const isTop = j === topCell - 1;
                 let id: number;
                 if (onPlateau) {
-                    id = isTop
-                        ? (i + k) & 1
-                            ? BLOCK.FLOOR_A
-                            : BLOCK.FLOOR_B
-                        : BLOCK.SKIRT;
+                    id = isTop ? BLOCK.FLOOR_A : BLOCK.SKIRT;
                 } else if (underwater) {
                     id = isTop
                         ? h < WATER_LEVEL + 0.25
@@ -88,16 +84,11 @@ export function buildTerrain(
                 } else if (steep) {
                     id = j % 2 ? BLOCK.STONE : BLOCK.STONE_DARK;
                 } else if (isTop) {
-                    const pick = Math.floor(cellHash(i, j, k) * 4);
+                    // One grass tone for the ground; the blades carry the variety.
                     id =
                         h < WATER_LEVEL + 0.55
                             ? BLOCK.SAND_SHORE
-                            : [
-                                  BLOCK.GRASS_A,
-                                  BLOCK.GRASS_B,
-                                  BLOCK.GRASS_C,
-                                  BLOCK.GRASS_D,
-                              ][pick];
+                            : BLOCK.GRASS_A;
                 } else {
                     id = rocky ? BLOCK.STONE : BLOCK.DIRT;
                 }

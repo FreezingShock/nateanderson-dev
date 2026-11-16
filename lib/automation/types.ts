@@ -435,6 +435,8 @@ export type PrestigeView = {
   ready: boolean;
   /** Plain line on what is needed, e.g. "Reach 1 M brass made". */
   requirement: string;
+  /** Names of the milestones still to finish, in tree order. Empty once the workshop is ready. */
+  missing: string[];
   /** What the player keeps or gains, e.g. "+5% speed per workshop". */
   gain: string;
   /** Things that carry over a workshop, from the tree. */

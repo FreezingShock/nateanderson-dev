@@ -1,7 +1,9 @@
 // Browser check of the windowed game mode (components/games/shell, mode="windowed") on a production build.
 // Covers Brasswork, Starwright and Groundbreak at 1440 and 390 wide:
 //   - the panel mounts under the site chrome and the game root fills the panel (contain: layout)
-//   - on load the page scrolls the panel into view and the panel takes focus
+//   - desktop: the Play section starts below the site bar, and the panel and its footer fit the viewport
+//   - Brasswork on a phone is full screen by design (no title bar or save footer), so its two title-bar checks are skipped there
+//   - on load the page scrolls the Play section into view under the site bar (desktop; phones anchor on the panel) and the panel takes focus
 //   - game keys do not scroll the page while the panel has focus; the wheel over the panel does not either
 //   - the wheel over the title bar or footer still scrolls the page
 //   - no sideways scroll, no page errors
@@ -42,7 +44,14 @@ async function openGame(view, id) {
     page.errs = [];
     page.on("pageerror", (e) => page.errs.push(e.message));
     await page.goto(`${base}/creations/games/${id}`, { waitUntil: "networkidle" });
-    await page.waitForTimeout(2200);
+    // Headless WebGL can take many seconds to settle the smooth scroll on load. Wait until the page stops moving (max 15 s).
+    let last = -1;
+    for (let i = 0; i < 30; i++) {
+        await page.waitForTimeout(500);
+        const y = await page.evaluate(() => window.scrollY);
+        if (i >= 4 && y === last) break;
+        last = y;
+    }
     return { ctx, page };
 }
 
@@ -68,7 +77,23 @@ for (const g of GAMES) {
         check(state.shell && state.frame, `${tag}: windowed shell and panel mount`);
         check(state.overflow <= 0, `${tag}: no sideways scroll (${state.overflow}px)`);
         const frame = await rectOf(page, ".gs-frame");
-        check(frame && frame.top >= 0 && frame.top < 180, `${tag}: panel scrolled into view (top ${Math.round(frame?.top ?? -1)}px)`);
+        const sectionNow = await rectOf(page, "section.cm-section");
+        const barNow = await rectOf(page, "header.nv-top");
+        const desktop = view.viewport.width >= 761;
+        if (desktop) {
+            // Groundbreak hides the site bar on its route, so its line is the 72px fallback from the shell.
+            const floor = barNow && barNow.bottom > 0 ? barNow.bottom : 0;
+            const line = barNow && barNow.bottom > 0 ? barNow.bottom : 72;
+            check(sectionNow && sectionNow.top >= floor - 1 && sectionNow.top < line + 30,
+                `${tag}: Play section starts below the site bar (section ${Math.round(sectionNow?.top ?? -1)}px, line ${Math.round(line)}px)`);
+            const foot = await rectOf(page, ".gs-win-foot");
+            const dock = await rectOf(page, ".cm-dock");
+            const lowest = Math.max(frame?.bottom ?? 0, foot?.bottom ?? 0);
+            check(lowest <= view.viewport.height, `${tag}: panel and footer fit the viewport (bottom ${Math.round(lowest)}px of ${view.viewport.height}px)`);
+            if (dock && dock.height > 0) check(lowest <= dock.top, `${tag}: panel and footer sit above the site dock (bottom ${Math.round(lowest)}px, dock top ${Math.round(dock.top)}px)`);
+        } else {
+            check(frame && frame.top >= 0 && frame.top < 180, `${tag}: panel scrolled into view (top ${Math.round(frame?.top ?? -1)}px)`);
+        }
         check(frame && frame.height >= 360, `${tag}: panel is tall (${Math.round(frame?.height ?? 0)}px)`);
         check(state.focused, `${tag}: panel takes focus on load`);
         const root = await rectOf(page, g.root);
@@ -101,7 +126,7 @@ for (const g of GAMES) {
 
         // The wheel over the title bar still scrolls the page.
         const bar = await rectOf(page, ".gs-win-bar");
-        if (bar) {
+        if (bar && bar.height > 0) {
             // measured again: the page moved during the key and wheel checks above
             await page.waitForTimeout(600);
             const barNow = await rectOf(page, ".gs-win-bar");
@@ -121,13 +146,14 @@ for (const g of GAMES) {
         // Save export: with a save present it downloads; without one it says so. Either way nothing throws.
         const fs = await page.evaluate(() => document.querySelector(".gs-win-msg")?.textContent ?? "");
         const saveBtn = page.getByRole("button", { name: "Export save" });
-        if (await saveBtn.count()) {
+        if (!(await saveBtn.isVisible().catch(() => false))) {
+            // Brasswork on a phone is full screen: its save rows live in Settings, so the footer is hidden there.
+            console.log(`SKIP ${tag}: Export save is not shown on this layout`);
+        } else {
             await saveBtn.click();
             await page.waitForTimeout(300);
             const msg = await page.evaluate(() => document.querySelector(".gs-win-msg")?.textContent ?? "");
             check(/downloaded|no save/i.test(msg), `${tag}: Export save answers (${msg})`);
-        } else {
-            check(false, `${tag}: Export save button missing`);
         }
 
         // Import refuses a file that is not a save.

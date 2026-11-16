@@ -1,0 +1,78 @@
+/* Starwright buy burst (components/starwright/buy-burst.tsx). An element-coloured square ring and eight pixel sparks that
+   fly out of the tier button that was bought. Stepped timing keeps it crisp, like the rest of the dither art. One burst
+   per row at a time: a new buy restarts it. Reduced motion keeps only a short fade of the ring, with no movement. */
+
+.sw-burst {
+    --r: 18px;
+    --ring: 2.2;
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: 0;
+    height: 0;
+    z-index: 2;
+    pointer-events: none;
+    font-style: normal;
+}
+.sw-burst[data-size="m"] { --r: 24px; --ring: 2.6; }
+.sw-burst[data-size="l"] { --r: 30px; --ring: 3; }
+
+.sw-burst::before,
+.sw-burst::after {
+    content: "";
+    position: absolute;
+    border-radius: 0;
+}
+/* the ring: a square outline that grows and fades */
+.sw-burst::before {
+    left: -11px;
+    top: -11px;
+    width: 22px;
+    height: 22px;
+    border: 2px solid var(--c);
+    box-shadow: 0 0 0 1px #05040c, inset 0 0 0 1px #05040c;
+    animation: swBurstRing .36s steps(3, end) forwards;
+}
+/* the core: a hard flash in the middle that is gone in a few frames */
+.sw-burst::after {
+    left: -6px;
+    top: -6px;
+    width: 12px;
+    height: 12px;
+    background: var(--c);
+    animation: swBurstCore .22s steps(2, end) forwards;
+}
+
+.sw-burst b {
+    position: absolute;
+    left: -3px;
+    top: -3px;
+    width: 6px;
+    height: 6px;
+    background: var(--c);
+    box-shadow: 0 0 0 1px #05040c;
+    animation: swBurstSpark .42s steps(4, end) forwards;
+}
+.sw-burst[data-size="l"] b { width: 8px; height: 8px; left: -4px; top: -4px; }
+/* alternate sparks are dimmer, so the burst reads as dithered rather than a flat ring */
+.sw-burst b:nth-child(2n) { background: color-mix(in srgb, var(--c) 60%, #05040c); }
+
+@keyframes swBurstRing {
+    from { transform: scale(.4); opacity: 1; }
+    to { transform: scale(var(--ring)); opacity: 0; }
+}
+@keyframes swBurstCore {
+    from { transform: scale(1); opacity: 1; }
+    to { transform: scale(.2); opacity: 0; }
+}
+@keyframes swBurstSpark {
+    from { transform: rotate(var(--a)) translateX(4px) scale(1); opacity: 1; }
+    to { transform: rotate(var(--a)) translateX(var(--r)) scale(.3); opacity: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .sw-burst b { display: none; }
+    .sw-burst::before { animation: swBurstFade .3s steps(2, end) forwards; }
+    .sw-burst::after { display: none; }
+}
+@keyframes swBurstFade { from { opacity: .9; } to { opacity: 0; } }

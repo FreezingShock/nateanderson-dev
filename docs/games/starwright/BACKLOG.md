@@ -19,15 +19,18 @@ Before any change: `npm run test:nodefarm`. Visual changes also need PNG screens
 10. [x] **Offline pacing report.** Add a test that documents what a 24 h absence does with auto supernova on (it chains: each supernova restarts the star and autoburn only), and that with it off the star waits at the collapse line. No rule change; this pins the behaviour so the call under "Needs Nate" can be made on facts.
 11. [x] **Phone star map framing.** At 390 wide the Constellations map opens cropped at the right (names cut off at the edge), "Fusion bloom" collides with "THE LOOM", and the help text under Deep stars sits flush on the screen edge with no margin or panel. Frame the map to fit (or start zoomed out), give the caption its own padded strip. Shot: `portfolio/starwright/walk-c-390.png`. Files: `panels.tsx` star map, `starwright.css`. Coordinate with the audio/animations thread, which is fixing overflow in menus. PARTLY DONE: the caption now has its padding and sits inside the screen. The map still pans sideways on a phone (min-width 700 px by design); names at the right edge need a swipe. Open: start the pan centred, owned by the audio/animations thread (star-chart.tsx).
 12. [x] **Almanac element names on phone.** At 390 the element tiles clip long names ("Hydrogen" runs into its tile edge; "Magnesium" and "Silicon" touch). Shrink the name or let it wrap under 400 px. Shot: `walk-a-390.png`. DONE: 9px names, no wrap, under 520 px (`starwright-ev.css`).
+12b. [x] **Ladder rows and phone fold (Nate, 2026-11-16).** Buy buttons no longer cover level, rate or recipe at 1440 and 390; phone star shortened so the first ladder row shows above the fold. Shots in `portfolio/starwright/ladder-fit/`. The "Scroll for the ladder" cue still needs placing for the shorter shell panel once that PR lands.
 13. [ ] **Welcome back and event cards: real-phone tap check.** Chips toggle the Almanac line on tap; confirm on a device (cloud tests are headless only). Also add a leaving animation once the audio/animations thread exposes its hook on `.sw-ev`.
 14. [ ] **Menu card fits at 1440x900.** The Menu is 3 px taller than its box (scrollHeight 845 vs 842) so it can show a scrollbar; trim spacing. Overflow thread may fix it first; check before starting.
+- [x] ART-ending-blast | size S | Neutron star blast: two tapered pulsar beams (wide at the core, thin at reach, dithered in the blue ramp) replace the single thin line that read as a glitch. Supernova and black hole sheets unchanged. Done when the before and after frames sit in `portfolio/starwright/ending-screens-2026-11-16/`. | `scripts/starwright/art/stars.py` (VERSION 8)
+15. [x] **First step for new players.** On a new star the guide line reads "Start here: buy a hydrogen burner (key 1, 18 H)" and moves on to helium once it is bought. Done when 1440 and 390 shots show it on a fresh save. Files: `lib/starwright/engine.ts` `guide()`, test in `tests/starwright/engine.test.mjs`. Shots: `/mnt/project-files/starwright-guide-line-2026-11-16/`.
 
 ## Needs Nate (taste call or his own playtest)
 
 - **His own playthrough of the first star.** The first supernova is about 13 minutes for the bot; people are slower. Needs his notes on the first minute, the first visitor, and whether the guide line is clear. Blocks any further pacing change.
 - ~~Offline pacing~~ decided 2026-11-15: cap a few (3) supernovas per absence with auto supernova on. Done in the away-cap PR.
 - ~~Rule changes l5 Corona, a5 Iron rain, deep stars~~ signed off by Nate 2026-11-15.
-- **Next art pass.** Planet break-up chunks done (his pick 2026-11-15). Still offered, not picked: visitor and cloud cards, supernova and ending screens.
+- **Next art pass.** Planet break-up chunks done (his pick 2026-11-15). Ending screens: neutron beams done (ART-ending-blast). Still offered, not picked: visitor and cloud cards, supernova and black hole ending screens.
 - **Audio.** Rebuilt 2026-11-15 (see FEATURES). Needs him to listen: WAVs in `/mnt/project-files/portfolio/starwright/motion-audio-overhaul/audio/`, then volume levels and which sounds to change. Real Safari autoplay unchecked.
 
 ## Cannot be tested in the cloud (his devices)
@@ -50,6 +53,7 @@ Play is fine: 60 fps, no long frames at 4x CPU, 5.5 MB heap flat over 98 s, engi
 - [x] OVERFLOW-none | measured paging for Orbit, Almanac, Menu; phone star map per constellation
 - [ ] MOTION-visitor-cloud-away | open/close for visitor, birth cloud and welcome cards once the backlog thread's shared panel style lands
 - [ ] MOTION-real-device | judge the motion and sound on a real phone and with speakers
+- [x] FEEL-buy-burst | size S | Element-coloured burst on every burner buy: ring and sparks in the row's colour, bigger for tier II and III, one per row on fast taps, a fade only under reduced motion | `components/starwright/buy-burst.tsx`, `app/camino/starwright-burst.css`
 
 ## Pre-deploy audit 2026-11-16 (report: /mnt/project-files/portfolio/starwright/predeploy-2026-11-16/REPORT.md)
 - [x] AUDIT-almanac-phone-names | size S | Almanac element names overlapped their neighbours at 360 to 390 wide (the 9px names added under "Do now" item 12 collided with the symbol, so that item is superseded). Phones now show the symbol only, and the name opens in the tap sheet | `app/camino/starwright-ev.css`
@@ -68,4 +72,4 @@ Play is fine: 60 fps, no long frames at 4x CPU, 5.5 MB heap flat over 98 s, engi
 - [x] PHONE-map-centred | size S | Measured headless: the constellation's visible span is within 10 px of the map's centre at 360 and 390, both constellations. No change beyond the room above | `scripts/starwright/ui-art/map-almanac-shots.mjs`
 - [x] PHONE-tap-tip | size S | A hover tip for the element under the finger opened on top of the tap sheet on touch. Tiles show no tip while the sheet is open | `components/starwright/panels.tsx`
 - [x] PHONE-name-field | size S | The star name field was wider than its box at 360 (default input width). It fills its box | `app/camino/starwright.css`
-
+- [x] AUDIT-keys-fit | size S | Settings keys list cut off under the window at 1440 (the Menu was measured against the whole screen, not the game window). DONE: the Menu sits inside the game window on desktop and cards fit it; the Keys list starts its own page (`newPage`) | `components/starwright/paged.tsx`, `components/starwright/panels.tsx`, `app/camino/starwright-qol.css`
