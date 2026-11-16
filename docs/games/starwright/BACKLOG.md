@@ -21,6 +21,7 @@ Before any change: `npm run test:nodefarm`. Visual changes also need PNG screens
 12. [x] **Almanac element names on phone.** At 390 the element tiles clip long names ("Hydrogen" runs into its tile edge; "Magnesium" and "Silicon" touch). Shrink the name or let it wrap under 400 px. Shot: `walk-a-390.png`. DONE: 9px names, no wrap, under 520 px (`starwright-ev.css`).
 13. [ ] **Welcome back and event cards: real-phone tap check.** Chips toggle the Almanac line on tap; confirm on a device (cloud tests are headless only). Also add a leaving animation once the audio/animations thread exposes its hook on `.sw-ev`.
 14. [ ] **Menu card fits at 1440x900.** The Menu is 3 px taller than its box (scrollHeight 845 vs 842) so it can show a scrollbar; trim spacing. Overflow thread may fix it first; check before starting.
+15. [x] **First step for new players.** On a new star the guide line reads "Start here: buy a hydrogen burner (key 1, 18 H)" and moves on to helium once it is bought. Done when 1440 and 390 shots show it on a fresh save. Files: `lib/starwright/engine.ts` `guide()`, test in `tests/starwright/engine.test.mjs`. Shots: `/mnt/project-files/starwright-guide-line-2026-11-16/`.
 
 ## Needs Nate (taste call or his own playtest)
 
