@@ -229,7 +229,7 @@ html.gb-route .sf-foot { display: none !important; }
     .gb-res li { padding: 0 6px 0 4px; }
     .gb-title { font-size: 20px; }
 }
-@media (prefers-reduced-motion: reduce), (max-height: 0px) { .gb-win, .gb-card, .gb-job-body, .gb-feed li { animation-duration: .01s !important; } .gb-rail-btn[data-ping]::before, .gb-tile[data-ready] { animation: none; } }
+@media (prefers-reduced-motion: reduce), (max-height: 0px) { .gb-win, .gb-card, .gb-away, .gb-job-body, .gb-feed li { animation-duration: .01s !important; } .gb-rail-btn[data-ping]::before, .gb-tile[data-ready] { animation: none; } }
 .gb-root[data-reduce="true"] .gb-win, .gb-root[data-simple="true"] .gb-win { animation-duration: .01s !important; }
 
 @media (max-width: 520px) { .gb-res li:nth-child(3) { display: none; } }
@@ -724,3 +724,9 @@ html.gb-route .sf-foot { display: none !important; }
 .gb-ticks li[data-fresh] { animation: gbTickStamp var(--cm-d-reveal) steps(4, end) both; }
 @keyframes gbTickStamp { 0% { background: var(--gb-hi); box-shadow: 0 0 0 2px var(--gb-amber); } 100% { box-shadow: 0 0 0 0 transparent; } }
 @media (prefers-reduced-motion: reduce) { .gb-ticks li[data-fresh] { animation: none; } }
+
+/* Exits: the material card and the welcome-back card fade and slide out on the site fast timing, then unmount. */
+.gb-card[data-s="out"] { animation: gbCardOut var(--cm-d-fast) ease-in both; pointer-events: none; }
+.gb-away[data-s="out"] { animation: gbAwayOut var(--cm-d-fast) ease-in both; pointer-events: none; }
+@keyframes gbCardOut { to { opacity: 0; transform: translate(-50%, 12px); } }
+@keyframes gbAwayOut { to { opacity: 0; transform: translateY(-4px); } }
