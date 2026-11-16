@@ -268,6 +268,12 @@ html.gs-game-route {
     text-transform: none;
 }
 
+/* Groundbreak hides the site bar and the dock on its route, so nothing covers the panel's bottom. Its windows (the Skyline
+   row, the bids) need the extra height, so on desktop its panel takes the room the dock would have used. Phones keep the rule above. */
+@media (min-width: 761px) {
+    .gs-windowed[data-game="Groundbreak"] .gs-frame { height: clamp(360px, calc(100dvh - 330px), 940px); }
+}
+
 /* Phones: the site's bottom tab bar sits over the bottom of the screen, so the panel leaves room for it and for the footer. */
 @media (max-width: 760px) {
     .gs-frame { height: clamp(360px, calc(100dvh - 340px), 940px); }
