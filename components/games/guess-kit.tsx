@@ -11,6 +11,8 @@ import {
     type RefObject,
 } from "react";
 import { cn } from "@/lib/utils";
+import { loadSave, writeSave } from "@/lib/saves/core";
+import { statsSave } from "@/lib/games/guess-stats";
 import {
     DIFFICULTIES,
     DIRECTION_NAME,
@@ -206,6 +208,26 @@ export function save(key: string, value: unknown) {
     try {
         localStorage.setItem(key, JSON.stringify(value));
     } catch {}
+}
+
+// Streak stats go through lib/saves/core: the shared envelope, a migration for the bare object the games wrote before it, and a
+// copy kept if a stored value cannot be read. The keys are unchanged, so an existing player's streak loads as it was.
+function localOrNull(): Storage | null {
+    try {
+        return typeof window === "undefined" ? null : window.localStorage;
+    } catch {
+        return null;
+    }
+}
+
+/** Reads a game's streak stats. Missing or unreadable gives {} (a damaged copy is kept by lib/saves/core). */
+export function loadStats(app: string, key: string): Partial<AllStats> {
+    return loadSave(localOrNull(), statsSave(app, key, MAX_GUESSES)).state ?? {};
+}
+
+/** Writes a game's streak stats. Never throws. */
+export function saveStats(app: string, key: string, value: Partial<AllStats>) {
+    writeSave(localOrNull(), statsSave(app, key, MAX_GUESSES), value);
 }
 
 export function makeGuess(guess: Country, answer: Country): Guess {

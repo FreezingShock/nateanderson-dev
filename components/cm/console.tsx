@@ -16,9 +16,11 @@ import { getStagePreview, setStagePreview } from "@/lib/nodefarm/zones/zone-art"
 import { PART_WHY, SKIN_WHY, coreLook, coreMode, corePreview, setCoreMode, setCorePreview, skinOpen } from "@/lib/nodefarm/art/core-look";
 import { PART_ORDER, SKINS } from "@/lib/nodefarm/art/core-parts";
 import { GB_HELP, GB_PATH, GB_SAVE_KEY, GB_SUBS, gbCommand } from "@/lib/groundbreak/commands";
-import { parse as gbParse, serialize as gbSerialize, type State as GbState } from "@/lib/groundbreak/engine";
+import { GROUNDBREAK_SAVE, type State as GbState } from "@/lib/groundbreak/engine";
+import { reviveText, writeSave } from "@/lib/saves/core";
+import { nfSaveText } from "@/lib/nodefarm/save";
 import { SW_PATH, SW_SAVE_KEY, SW_SUBS, swCommand } from "@/lib/starwright/commands";
-import { parse as swParse, serialize as swSerialize, type State as SwState } from "@/lib/starwright/engine";
+import { STARWRIGHT_SAVE, type State as SwState } from "@/lib/starwright/engine";
 import { setPrefs } from "@/lib/sound/engine";
 import { sfx } from "@/lib/sound/sounds";
 import { useSoundPrefs } from "@/lib/sound/use-sound";
@@ -157,7 +159,7 @@ function nfAdmin(args: string[], state: NfState, live?: NfLive): Line[] {
     const sub = (args[0] ?? "").toLowerCase();
     const done = () => {
         if (live) live.changed?.();
-        else try { localStorage.setItem(NF_SAVE_KEY, JSON.stringify(state)); } catch {}
+        else try { localStorage.setItem(NF_SAVE_KEY, nfSaveText(state)); } catch {}
     };
     const open = () => window.dispatchEvent(new CustomEvent("nf:admin", { detail: { on: true, open: true } }));
     const arm = (): Line[] => {
@@ -305,7 +307,7 @@ function runNf(args: string[]): Line[] {
         if (ref.live) ref.live.notify(r.unlocked);
         else {
             try {
-                localStorage.setItem(NF_SAVE_KEY, JSON.stringify(state));
+                localStorage.setItem(NF_SAVE_KEY, nfSaveText(state));
             } catch {}
         }
     }
@@ -322,7 +324,7 @@ function runGb(args: string[]): Line[] {
     if (!state) {
         try {
             const raw = localStorage.getItem(GB_SAVE_KEY);
-            state = raw ? gbParse(JSON.parse(raw)) : null;
+            state = reviveText(GROUNDBREAK_SAVE, raw);
         } catch {}
     }
     if (!state) return [t("no firm found. start one:", "dim"), { t: GB_PATH, go: GB_PATH }];
@@ -331,7 +333,7 @@ function runGb(args: string[]): Line[] {
         if (ref.live) ref.live.changed();
         else {
             try {
-                localStorage.setItem(GB_SAVE_KEY, gbSerialize(state));
+                writeSave(localStorage, GROUNDBREAK_SAVE, state);
             } catch {}
         }
     }
@@ -355,7 +357,7 @@ function runSw(args: string[]): Line[] {
     if (!state) {
         try {
             const raw = localStorage.getItem(SW_SAVE_KEY);
-            state = raw ? swParse(JSON.parse(raw)) : null;
+            state = reviveText(STARWRIGHT_SAVE, raw);
         } catch {}
     }
     if (!state) return [t("no star found. light one first:", "dim"), { t: SW_PATH, go: SW_PATH }];
@@ -364,7 +366,7 @@ function runSw(args: string[]): Line[] {
         if (ref.live) ref.live.changed();
         else {
             try {
-                localStorage.setItem(SW_SAVE_KEY, swSerialize(state));
+                writeSave(localStorage, STARWRIGHT_SAVE, state);
             } catch {}
         }
     }

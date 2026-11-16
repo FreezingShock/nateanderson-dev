@@ -5,11 +5,11 @@ import Link from "next/link";
 import { useRef, useState } from "react";
 import { ArtGauge } from "@/components/brasswork-art";
 import { Row } from "@/components/automation/settings-window";
-import { deserialize } from "@/lib/automation/sim/save";
+import { BRASSWORK_SAVE, deserialize, serialize } from "@/lib/automation/sim/save";
+import { loadSave, writeSave } from "@/lib/saves/core";
 import { MOODS, type Mood } from "./extras";
 import { tipAttr } from "@/components/brasswork-ui/tip";
 
-const SAVE_KEY = "brasswork-save-v1";
 
 export function LightingRow({ mood, onMood }: { mood: Mood; onMood: (m: Mood) => void }) {
     const i = Math.max(0, MOODS.indexOf(mood));
@@ -45,9 +45,9 @@ export function SaveRows() {
     const exportSave = () => {
         window.dispatchEvent(new Event("bw:save")); // the host writes the live world first
         try {
-            const raw = localStorage.getItem(SAVE_KEY);
-            if (!raw) return setMsg({ text: "Nothing to export yet.", bad: true });
-            const { text } = JSON.parse(raw) as { text: string };
+            const r = loadSave(localStorage, BRASSWORK_SAVE);
+            if (!r.state) return setMsg({ text: "Nothing to export yet.", bad: true });
+            const text = serialize(r.state);
             const url = URL.createObjectURL(new Blob([text], { type: "application/json" }));
             const a = document.createElement("a");
             a.href = url;
@@ -65,7 +65,7 @@ export function SaveRows() {
         try {
             const text = await f.text();
             deserialize(text); // throws on anything that is not a good Brasswork save
-            localStorage.setItem(SAVE_KEY, JSON.stringify({ text, savedAt: Date.now() }));
+            if (writeSave(localStorage, BRASSWORK_SAVE, deserialize(text)) === null) throw new Error("the browser would not hold the save");
             setMsg({ text: "Save loaded. Reloading..." });
             setTimeout(() => window.location.reload(), 400);
         } catch (e) {

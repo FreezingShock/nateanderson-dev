@@ -2,13 +2,18 @@
 // A construction firm: twelve materials unlock one after another, each boosting the next, and the last three feed back
 // down the chain. Jobs pull materials phase by phase, wait out a timed inspection, then pay cash and reputation and add a
 // building to the skyline. Incorporate starts a new firm in a new city and keeps Charter points and the skyline.
+import { catchUp as kitCatchUp } from "../game-kit/time";
+import { formatAge, numberFormatter } from "../game-kit/format";
 import {
     BASE_RATE, CITIES, CREW_COST, EQUIP_COST, FX_KEYS, JOBS, JOB_BY, MATS, METHOD_COST, MUL_FX, N, PERKS, PHASES, RECIPE, STAGES, TUNE,
     UNLOCK_COST, cityLoop, cityOf, jobAt, type FxKey, type JobDef, type PhaseId,
 } from "./data";
 
-export const SAVE_KEY = "gb-save-v1";
-export const SAVE_VERSION = 2;
+import { SAVE_SLOTS } from "../saves/keys";
+import { readSaveKey, type SaveDef } from "../saves/core";
+
+export const SAVE_KEY = SAVE_SLOTS.groundbreak.key;
+export const SAVE_VERSION = SAVE_SLOTS.groundbreak.version;
 
 export interface ActiveJob {
     /** position in the campaign (JOBS order, then the last three looping) */
@@ -520,12 +525,7 @@ export function auto(s: State, f: Fx) {
 /** Catch up after time away. Returns the seconds simulated. */
 export function catchUp(s: State, away: number): number {
     const f = effects(s);
-    const secs = Math.max(0, Math.min(away, offlineCapS(f)));
-    if (secs < 2) return 0;
-    const steps = Math.min(TUNE.offlineStepCap, Math.max(1, Math.ceil(secs / 2)));
-    const dt = secs / steps;
-    for (let i = 0; i < steps; i++) step(s, dt, f);
-    return secs;
+    return kitCatchUp(away, { capS: offlineCapS(f), stepCap: TUNE.offlineStepCap }, (dt) => step(s, dt, f));
 }
 
 // ---- prestige -----------------------------------------------------------------------------------------------------
@@ -637,32 +637,30 @@ export function parse(raw: unknown): State | null {
 
 export const serialize = (s: State) => JSON.stringify({ ...s, flow: undefined });
 
+/** Groundbreak's save definition: envelope, migrations and rolling copies. See lib/saves/core.ts. */
+export const GROUNDBREAK_SAVE: SaveDef<State> = {
+    app: SAVE_SLOTS.groundbreak.app,
+    key: SAVE_KEY,
+    version: SAVE_VERSION,
+    bareVersion: (d) => (typeof d?.v === "number" ? d.v : 1),
+    migrations: {
+        // v1 to v2 retuned rates and the job order. Numbers stored at v1 stay as they are; the retune applies from the next tick.
+        1: (d) => ({ ...d, v: 2 }),
+    },
+    revive: (d) => parse(d),
+    dump: (s) => ({ ...s, flow: undefined }),
+    fallbacks: [SAVE_KEY + "-auto1", SAVE_KEY + "-auto2", SAVE_KEY + "-backup"],
+};
+
+/** Reads the live save (migrating an older one). Null when it is missing or unusable; use loadSave for the reason. */
 export function load(storage: Pick<Storage, "getItem"> | null | undefined): State | null {
-    try {
-        const t = storage?.getItem(SAVE_KEY);
-        return t ? parse(JSON.parse(t)) : null;
-    } catch {
-        return null;
-    }
+    return readSaveKey(storage, GROUNDBREAK_SAVE, SAVE_KEY);
 }
 
 // ---- number format ------------------------------------------------------------------------------------------------
 
-export function fmt(n: number, digits = 2): string {
-    if (!Number.isFinite(n)) return "0";
-    if (n < 0) return "-" + fmt(-n, digits);
-    if (n < 1000) return n < 10 && n % 1 !== 0 ? n.toFixed(digits) : Math.floor(n).toString();
-    if (n < 1e6) return (n / 1e3).toFixed(n < 1e4 ? 2 : n < 1e5 ? 1 : 0) + "K";
-    const sfx = ["M", "B", "T", "Qa", "Qi"];
-    const e = Math.floor(Math.log10(n) / 3);
-    if (e - 2 < sfx.length) return (n / Math.pow(10, e * 3)).toFixed(digits) + sfx[e - 2];
-    const x = Math.floor(Math.log10(n));
-    return `${(n / Math.pow(10, x)).toFixed(digits)}e${x}`;
-}
+/** Numbers in Groundbreak: 1.23K, 15.00M, up to Qi, then scientific. The kit's "kilo" style. */
+export const fmt = numberFormatter("kilo");
 export const fmtCash = (n: number) => "$" + fmt(n);
-export function fmtAge(sec: number): string {
-    if (sec < 90) return `${Math.floor(sec)} s`;
-    if (sec < 5400) return `${Math.floor(sec / 60)} min`;
-    return `${(sec / 3600).toFixed(1)} h`;
-}
+export const fmtAge = formatAge;
 export const matName = (n: number) => MATS[n].name;

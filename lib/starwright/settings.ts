@@ -1,6 +1,7 @@
 // Starwright settings: small preferences kept in this browser (sw-settings-v1), apart from the save so an import or a
 // reset never changes them. Pure data plus a tiny store; the game and the console both read it.
 import { ACHIEVEMENTS } from "./data";
+import { createSettingsStore, cycle as kitCycle } from "../game-kit/settings";
 import type { State } from "./engine";
 
 export const SETTINGS_KEY = "sw-settings-v1";
@@ -43,25 +44,12 @@ export function parseSettings(raw: unknown): Settings {
     };
 }
 
-let cache: Settings | null = null;
-const listeners = new Set<() => void>();
+// The store itself is the game kit's (lib/game-kit/settings.ts): cached, written on every change, listeners notified.
+const store = createSettingsStore<Settings>({ key: SETTINGS_KEY, parse: parseSettings });
 
-export function getSettings(): Settings {
-    if (cache) return cache;
-    let raw: unknown = null;
-    try { raw = JSON.parse(window.localStorage.getItem(SETTINGS_KEY) ?? "null"); } catch { /* none yet */ }
-    cache = parseSettings(raw);
-    return cache;
-}
-
-export function setSettings(patch: Partial<Settings>): Settings {
-    cache = parseSettings({ ...getSettings(), ...patch });
-    try { window.localStorage.setItem(SETTINGS_KEY, JSON.stringify(cache)); } catch { /* private mode: lasts until the tab closes */ }
-    listeners.forEach((f) => f());
-    return cache;
-}
-
-export const onSettings = (f: () => void) => { listeners.add(f); return () => { listeners.delete(f); }; };
+export const getSettings = (): Settings => store.get();
+export const setSettings = (patch: Partial<Settings>): Settings => store.set(patch);
+export const onSettings = (f: () => void) => store.subscribe(f);
 
 /** Step to the next value of a list, wrapping. */
-export const cycle = <T,>(list: readonly T[], cur: T): T => list[(list.indexOf(cur) + 1) % list.length];
+export const cycle = kitCycle;

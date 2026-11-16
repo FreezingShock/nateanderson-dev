@@ -1,30 +1,13 @@
 import type { Line, NumberFormat, ResourceView } from "@/lib/automation/types";
+import { formatNumber, formatRate } from "@/lib/game-kit/format";
 
-const UNITS = [
-  [1e9, "B"],
-  [1e6, "M"],
-  [1e3, "K"],
-] as const;
-
-/** Compact numbers for the HUD: 1.2K, 14.5M. Full mode keeps every digit. */
+/** Compact numbers for the HUD: 1.2K, 14.5M. Full mode keeps every digit. The game kit's "compact" and "full" styles. */
 export function fmtNum(n: number, mode: NumberFormat = "short"): string {
-  if (!Number.isFinite(n)) return "–";
-  if (mode === "full") return Math.round(n).toLocaleString("en-US");
-  const abs = Math.abs(n);
-  for (const [value, suffix] of UNITS) {
-    if (abs >= value) {
-      const x = n / value;
-      const text = Math.abs(x) < 10 ? x.toFixed(2) : x.toFixed(1);
-      return text.replace(/\.?0+$/, "") + suffix;
-    }
-  }
-  if (abs < 10 && !Number.isInteger(n)) return n.toFixed(1);
-  return String(Math.round(n));
+  return formatNumber(n, mode === "full" ? "full" : "compact");
 }
 
 export function fmtRate(n: number, mode: NumberFormat = "short"): string {
-  const sign = n > 0 ? "+" : "";
-  return `${sign}${fmtNum(n, mode)}/s`;
+  return formatRate(n, mode === "full" ? "full" : "compact");
 }
 
 export function resourceName(resources: ResourceView[], id: string): string {

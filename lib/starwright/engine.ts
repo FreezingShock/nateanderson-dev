@@ -2,14 +2,19 @@
 // A star fuses hydrogen up the periodic table. Core heat (set by the star's mass) gates each fusion. Iron cannot fuse, so
 // it collapses: a supernova pays Stardust for the constellation map. Stardust piles into a neutron star (Neutrons, a
 // pulsar map, and the r-process rows: gold, uranium), and uranium piles into a black hole (a Singularity).
+import { catchUp as kitCatchUp } from "../game-kit/time";
+import { formatAge, numberFormatter } from "../game-kit/format";
 import {
     ACHIEVEMENTS, ACH_BONUS, CLOUDS, ELEMENTS as EL, EVENTS, EVENT_FIRST, EVENT_GAP, EVENT_STAY, type Buff, type StarEvent,
     BASE_COST, BASE_RATE, COST_GROWTH, ELEMENTS, GATE_MK, N, PERKS, PLANETS, PULSAR_PERKS, RECIPE, ROWS, STARNAMES, TIERS,
     PLANET_STAGE_AT, PLANET_STAGE_BONUS, TIER_COST_X, TIER_NAMES, TIER_LEVELS, TUNE, type FxKey, type Perk,
 } from "./data";
 
-export const SAVE_KEY = "sw-save-v1";
-export const SAVE_VERSION = 1;
+import { SAVE_SLOTS } from "../saves/keys";
+import { readSaveKey, type SaveDef } from "../saves/core";
+
+export const SAVE_KEY = SAVE_SLOTS.starwright.key;
+export const SAVE_VERSION = SAVE_SLOTS.starwright.version;
 
 export interface State {
     v: number;
@@ -405,12 +410,7 @@ export const offlineCapS = (f: Fx) => (TUNE.offlineH + f.offline) * 3600;
 /** Catch up after time away. Returns the seconds simulated. Capped by the Long watch perk. */
 export function catchUp(s: State, away: number): number {
     const f = effects(s);
-    const secs = Math.max(0, Math.min(away, offlineCapS(f)));
-    if (secs < 2) return 0;
-    const steps = Math.min(TUNE.offlineStepCap, Math.max(1, Math.ceil(secs / 2)));
-    const dt = secs / steps;
-    for (let i = 0; i < steps; i++) step(s, dt, f);
-    return secs;
+    return kitCatchUp(away, { capS: offlineCapS(f), stepCap: TUNE.offlineStepCap }, (dt) => step(s, dt, f));
 }
 
 // ---- prestige -----------------------------------------------------------------------------------------------------
@@ -595,33 +595,31 @@ export function parse(raw: unknown): State | null {
 
 export const serialize = (s: State) => JSON.stringify({ ...s, flow: undefined });
 
+/** Starwright's save definition: envelope, migrations and the rolling backup. See lib/saves/core.ts. */
+export const STARWRIGHT_SAVE: SaveDef<State> = {
+    app: SAVE_SLOTS.starwright.app,
+    key: SAVE_KEY,
+    version: SAVE_VERSION,
+    bareVersion: (d) => (typeof d?.v === "number" ? d.v : 1),
+    migrations: {},
+    revive: (d) => parse(d),
+    dump: (s) => ({ ...s, flow: undefined }),
+    fallbacks: [SAVE_KEY + "-backup"],
+};
+
+/** Reads the live save (migrating an older one). Null when it is missing or unusable; use loadSave for the reason. */
 export function load(storage: Pick<Storage, "getItem"> | null | undefined): State | null {
-    try {
-        const t = storage?.getItem(SAVE_KEY);
-        return t ? parse(JSON.parse(t)) : null;
-    } catch {
-        return null;
-    }
+    return readSaveKey(storage, STARWRIGHT_SAVE, SAVE_KEY);
 }
 
 // ---- number format ------------------------------------------------------------------------------------------------
 
-export function fmt(n: number, digits = 2): string {
-    if (!Number.isFinite(n)) return "0";
-    if (n < 0) return "-" + fmt(-n, digits);
-    if (n < 1000) return n < 10 && n % 1 !== 0 ? n.toFixed(digits) : Math.floor(n).toString();
-    if (n < 1e6) return Math.floor(n).toLocaleString("en-US");
-    const e = Math.floor(Math.log10(n));
-    return `${(n / Math.pow(10, e)).toFixed(digits)}e${e}`;
-}
+/** Numbers in Starwright: whole up to 999,999 with commas, then scientific (1.50e7). The kit's "grouped" style. */
+export const fmt = numberFormatter("grouped");
 
 export function fmtHeat(mk: number): string {
     if (mk < 1000) return `${mk >= 100 ? Math.round(mk) : mk.toFixed(1)} MK`;
     return `${(mk / 1000).toFixed(mk < 10000 ? 2 : 1)} GK`;
 }
 
-export function fmtAge(sec: number): string {
-    if (sec < 90) return `${Math.floor(sec)} s`;
-    if (sec < 5400) return `${Math.floor(sec / 60)} min`;
-    return `${(sec / 3600).toFixed(1)} h`;
-}
+export const fmtAge = formatAge;

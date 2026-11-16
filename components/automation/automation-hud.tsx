@@ -498,7 +498,7 @@ export function AutomationHud({
                     toggleQuest();
                   }}
                 >
-                  <QuestGlyph />
+                  <Ico id="quest" />
                   Starter quest
                 </button>
               )}

@@ -37,7 +37,8 @@
 @media (prefers-reduced-motion: reduce) { .sw-hint2 { animation: none; } }
 /* held sideways the ladder is already beside the star, so no cue (this sits after the base rule so it wins) */
 @media (max-width: 960px) and (max-height: 520px) and (orientation: landscape) { .sw-hint2 { display: none; } }
-/* portrait phones: the cue sits on the star's lower edge, not on the collapse panel or a visitor or cloud card under it (found in the 390 card walk) */
-@media (max-width: 900px) and (orientation: portrait) { .sw-hint2 { top: 34vh; bottom: auto; } }
+/* portrait phones: the page scrolls the game panel under the site bar, so a cue pinned to a fixed height landed on the collapse header.
+   It sits above the bottom site dock instead, clear of the panel headers (checked at 390 x 844). */
+@media (max-width: 900px) and (orientation: portrait) { .sw-hint2 { top: auto; bottom: calc(84px + env(safe-area-inset-bottom)); } }
 /* while a visitor, welcome-back or birth-cloud card is up (all carry sw-ev), the cue waits: the card is what the player must read */
 .sw-root:has(.sw-ev) .sw-hint2 { display: none; }

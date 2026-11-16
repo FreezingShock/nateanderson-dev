@@ -38,10 +38,11 @@ Test commands: `npm run test:nodefarm` (a PR check; includes `tests/starwright/*
 | Damaged save kept under `sw-save-v1-corrupt` (an older different one moves to `-corrupt-prev`), rolling backup, 10-minute backups | working | `lib/starwright/session.ts` | session.test |
 | Time away: 8 h cap (24 h with Long watch), credit for stalled frames, welcome-back card | working | `engine.ts` `catchUp`, `session.ts` `advance`, `awayReport`, `components/starwright/settings.tsx` | session.test |
 | Opt-in auto supernova and auto visitors (also during time away; a long absence pays up to 3 supernovas) | working | `session.ts` `advanceAuto`, `lib/starwright/settings.ts` | session.test |
-| One tab plays at a time (`BroadcastChannel sw-tab`) | untested | `starwright.tsx` | none |
+| One tab plays at a time (`BroadcastChannel sw-tab`) | untested | `starwright.tsx`, kit `claimTab` (`lib/game-kit/tabs.ts`) | none |
 | Settings (`sw-settings-v1`): scene full/simple, notices, welcome card | working | `settings.ts`, `settings.tsx`, `app/camino/starwright-qol.css` | session.test (parse only) |
 | Hotkeys: 1-9 buy, N, Q/W, Space, F, U, C P O A M, Esc | working headless: 1, C, Esc, N, Q, Space checked; the rest not | `starwright.tsx`, `commands.ts` `SW_KEYS` | `tests/starwright/browser/hotkeys.mjs` (by hand against a production server, not a PR check) |
 | Console `sw ...` (stats, fuse, collapse, neutron, hole, perks, pulsar, planets, visitor, cloud, almanac, deep, save, backup, restore, corrupt, away, settings, set, keys, admin) | working | `lib/starwright/commands.ts` | engine.test: console, visitor/cloud/almanac, `sw deep`; save/away commands only through session.test |
+| Built on the shared game kit (`docs/game-kit.md`): number format, catch-up, settings store, notes queue, autosave loop, presence hooks | working | `lib/game-kit`, `components/game-kit` | tests/games/game-kit.test.mjs |
 
 ## Scene and art
 | Feature | State | Code | Test |
@@ -71,7 +72,7 @@ Test commands: `npm run test:nodefarm` (a PR check; includes `tests/starwright/*
 | Phone scroll cue "Scroll for the ladder": once, gone on the first page scroll, not shown held sideways, sits on the star's lower edge in portrait and waits while an event, welcome or cloud card is up (`ScrollHint` in `settings.tsx`) | working headless, checked at 390 with cards | `settings.tsx`, `starwright-qol.css`, `scripts/starwright/ui-art/hint-check.mjs` | hint-check script |
 | Buy burst: each burner buy throws a square ring and eight pixel sparks in that element's colour; a tier II or III buy throws a bigger one; one burst per row, restarted by fast taps; a short fade only under reduced motion | working headless at 1440 and 390 (frozen frames); not felt on a real phone | `buy-burst.tsx` (mounted in the row's button group, `starwright.tsx`), `app/camino/starwright-burst.css` | `scripts/starwright/ui-art/burst-check.mjs` |
 | Tooltips (`data-tip="Title|line"`), touch recipe lines | working | `sw-ui.tsx` | none |
-| Game shell: runs in a windowed panel under the site chrome with a title bar, scrolls into view and takes focus on load, keys and wheel stay with the game, full screen, pause on hidden tab, save export/import in the panel footer | working headless at 1440 and 390 (production build); not on a real phone or in Safari | `components/games/shell/game-route-shell.tsx`, `lib/games/save-slot.ts`, `app/camino/game-shell.css`, `app/creations/games/starwright/layout.tsx` | `npm run test:window` (`scripts/games/window-check.mjs`) |
+| Game shell: runs in a windowed panel under the site chrome with a title bar, scrolls into view and takes focus on load, keys and wheel stay with the game, full screen, pause on hidden tab, save export/import in the panel footer | working headless at 1440 and 390 (production build); not on a real phone or in Safari | `components/games/shell/game-route-shell.tsx`, `lib/games/save-slot.ts`, `app/camino/game-shell.css`, `app/creations/games/starwright/layout.tsx` | `npm run test:window` (`scripts/ci/checks/run.mjs window`) |
 
 ## Not tested anywhere
 Safari/WebKit, real phones, audio (heard by nobody yet), auto actions while the tab is hidden, the one-tab rule, hotkeys F U P A M W.

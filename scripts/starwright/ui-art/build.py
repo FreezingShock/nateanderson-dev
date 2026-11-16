@@ -455,7 +455,7 @@ ICONS = [
     ("dock-stars", CY, stars), ("dock-pulsar", "#b4b6ff", pulsar), ("dock-orbit", "#7fd0e8", orbit),
     ("dock-almanac", GOLD, almanac), ("dock-menu", "#c9cee0", menu),
     ("menu-pause", CY, m_pause), ("menu-play", CY, m_play), ("menu-full", CY, m_full), ("menu-sound", CY, m_sound),
-    ("menu-mute", "#ff8a7e", m_mute), ("menu-export", GOLD, m_export), ("menu-import", GOLD, m_import),
+    ("menu-mute", "#ff8a7e", m_mute), ("menu-export", CY, m_export), ("menu-import", CY, m_import),
     ("stat-mass", "#c9b8ff", s_mass), ("stat-heat", "#f08a4a", s_heat), ("stat-age", "#8cc8ff", s_age),
     ("stat-dust", GOLD, s_dust), ("stat-neutron", "#b4b6ff", s_neutron), ("stat-burst", WARM, s_burst),
     ("ui-back", "#e9ecf6", s_back), ("ui-cross", "#e9ecf6", s_cross), ("ui-swipe", "#e9ecf6", swipe),

@@ -236,6 +236,7 @@ export const GAME_MODES: GameMode[] = [
                 accent: "#2fd8e8",
                 tags: ["238 countries", "Daily + unlimited", "km or mi"],
             },
+            // gen-anchor: games:geography
         ],
     },
     {
@@ -283,6 +284,7 @@ export const GAME_MODES: GameMode[] = [
                 accent: "#f2b84b",
                 tags: ["12 materials", "Cutaway", "Skyline"],
             },
+            // gen-anchor: games:incremental
         ],
     },
     {
@@ -306,6 +308,7 @@ export const GAME_MODES: GameMode[] = [
                 accent: "#c99a4b",
                 tags: ["3D island", "Grid", "Expeditions"],
             },
+            // gen-anchor: games:automation
         ],
     },
 ];
