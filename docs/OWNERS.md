@@ -5,7 +5,7 @@ One owner per path area at a time, so threads do not edit the same files. Owners
 Format: `- area | paths | owner (thread title or "free") | since YYYY-MM-DD | docs`
 
 ## Site
-- Shell, nav, console, search | components/cm, lib/nav.ts, lib/search, lib/motion, app/camino/{ctos,nav-naos,motion,entrances,transition}.css | free | | docs/site
+- Shell, nav, console, search | components/cm, lib/nav.ts, lib/search, lib/motion, app/camino/{ctos,nav-naos,motion,entrances,transition}.css | Fix the animations toggle without refresh | 2026-11-16 | docs/site
 - Pages (home, about, studies, timeline, history, blog) | app/{page,about,studies,timeline,history,blog}, components/home, lib/*-data.ts | free | | docs/site
 - Homepage games showcase | components/home/games-showcase.tsx, public/home/games, the Play section in app/page.tsx and components/home/home.css (the `gs-` rules) | Feature games on the homepage | 2026-11-15 | docs/site
 - Creations and games hub | app/creations (not games/*), components/creations, components/games/naos.tsx, lib/creations-data.ts, public/games/shots | Games page redesign | 2026-11-15 | docs/site

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useMotionOn } from "@/lib/motion/engine";
 
 const reduced = () => typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
@@ -11,8 +12,9 @@ const reduced = () => typeof window !== "undefined" && window.matchMedia("(prefe
 export function useTyped(text: string, delay = 0, duration?: number): number {
     const len = text.length;
     const [n, setN] = useState(() => (reduced() ? len : 0));
+    const on = useMotionOn();
     useEffect(() => {
-        if (reduced()) {
+        if (!on || reduced()) {
             setN(len);
             return;
         }
@@ -35,7 +37,7 @@ export function useTyped(text: string, delay = 0, duration?: number): number {
             window.clearTimeout(guard);
             window.cancelAnimationFrame(raf);
         };
-    }, [text, len, delay, duration]);
+    }, [text, len, delay, duration, on]);
     return n;
 }
 

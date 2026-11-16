@@ -1,3 +1,5 @@
+import { useSyncExternalStore } from "react";
+
 // Camino motion engine. One tiny runtime shared by the whole site.
 //
 //  - Reveals:      [data-mx] elements and the children of [data-mx-stagger] containers fade/slide in once, when they
@@ -75,8 +77,10 @@ export function markNavigation() {
 }
 
 // ---------------------------------------------------------------------------------------------------------------
-let started = false;
-const seen = new WeakSet<Element>();
+let started = false; // start() has run (MotionRoot is mounted)
+let live = false; // observers and listeners are attached: started, and the OS asks for motion
+let seen = new WeakSet<Element>();
+let snapping = false; // true only while arm() registers what is already on screen
 const queue = new Set<Element>(); // found while gated, registered once the cover lifts
 const types = new Map<Element, TypeItem>();
 const pars = new Map<Element, ParItem>();
@@ -144,9 +148,20 @@ function register(el: Element) {
     if (el.hasAttribute("data-mx-type")) return registerType(el);
     if (el.hasAttribute("data-mx-par")) return registerPar(el);
     if (el.hasAttribute("data-rx") || el.hasAttribute("data-rx-scr")) return registerRx(el);
+    // Already on screen when motion comes back: show the final state, no replay.
+    if (snapping && onScreen(el)) {
+        el.setAttribute("data-in", "");
+        el.setAttribute("data-mxd", "");
+        return;
+    }
     if (el.hasAttribute("data-mx-scr")) return void scrIO?.observe(el);
     revealIO?.observe(el);
 }
+
+const onScreen = (el: Element) => {
+    const r = el.getBoundingClientRect();
+    return r.bottom > 0 && r.top < innerHeight;
+};
 
 function registerType(el: HTMLElement) {
     const chars = Array.from(el.querySelectorAll<HTMLElement>(".c"));
@@ -162,7 +177,7 @@ function registerType(el: HTMLElement) {
         auto,
         t0: performance.now(),
         dur: Math.min(1800, Math.max(650, total * 16)),
-        timeP: 0,
+        timeP: snapping && onScreen(el) ? 1 : 0,
         last: -1,
         cur: null,
         active: true,
@@ -194,7 +209,7 @@ function onReveal(entries: IntersectionObserverEntry[]) {
 
 /** Find motion targets under `root`. Safe to call repeatedly. */
 export function scan(root: ParentNode = document) {
-    if (!started) return;
+    if (!live) return;
     autoRx(root);
     const found = new Set<Element>();
     root.querySelectorAll(SEL).forEach((e) => found.add(e));
@@ -440,7 +455,7 @@ function registerRx(el: HTMLElement) {
         intro: false,
         t0: 0,
         w: 0,
-        done: false,
+        done: snapping, // on-screen items settle on their first frame instead of playing their intro
         ref: NaN,
     });
     activeIO?.observe(el);
@@ -495,7 +510,7 @@ function onHoverScr(ev: PointerEvent) {
 
 // ---------------------------------------------------------------------------------------------------------------
 function schedule() {
-    if (!raf && started) raf = requestAnimationFrame(frame);
+    if (!raf && live) raf = requestAnimationFrame(frame);
 }
 
 let lastT = 0;
@@ -619,96 +634,202 @@ function frame(now: number) {
 }
 
 // ---------------------------------------------------------------------------------------------------------------
+// Motion on and off. The engine follows the OS "reduce motion" setting (Windows: Animation effects) live.
+//  - Off: every observer, listener and loop is torn down. Scrambles and typed lines are left on their real text and
+//    inline progress that the reduced-motion CSS cannot override is cleared. Only a scroll listener stays, to keep the
+//    page gauge honest. The CSS already shows the page in its final state.
+//  - On: the engine is rebuilt. Content already on screen settles into place at once (no replay, no stagger). Content
+//    further down reveals as it scrolls in, exactly as on a fresh load.
+
+const REDUCE_Q = "(prefers-reduced-motion: reduce)";
+let reduceMq: MediaQueryList | null = null;
+const motionSubs = new Set<() => void>();
+
+/** Whether the page should move right now. Read live, never cached. */
+export const motionOn = (): boolean => !prefersReducedMotion();
+
+function ensureReduceMq() {
+    if (reduceMq || typeof matchMedia !== "function") return;
+    reduceMq = matchMedia(REDUCE_Q);
+    if (reduceMq.addEventListener) reduceMq.addEventListener("change", onMotionMedia);
+    else reduceMq.addListener(onMotionMedia); // older Safari
+}
+
+function onMotionMedia() {
+    syncEngine();
+    motionSubs.forEach((cb) => cb());
+}
+
+/** Calls `cb` whenever the motion setting flips. Returns an unsubscribe function. */
+export function subscribeMotion(cb: () => void): () => void {
+    ensureReduceMq();
+    motionSubs.add(cb);
+    return () => {
+        motionSubs.delete(cb);
+    };
+}
+
+/** React hook: true while motion is on. Re-renders the moment the setting changes. */
+export function useMotionOn(): boolean {
+    return useSyncExternalStore(subscribeMotion, motionOn, () => true);
+}
+
+let ro: ResizeObserver | null = null;
+let attrs: MutationObserver | null = null;
+let dom: MutationObserver | null = null;
+let gaugeOn = false;
+let gaugeRaf = 0;
+
+/** The page gauge alone (used while motion is off). */
+function gaugeNow() {
+    const g = pageGauge();
+    if (!g) return;
+    const max = Math.max(0, html().scrollHeight - innerHeight);
+    g.style.setProperty("--cm-page-p", (max ? clamp01(scrollY / max) : 0).toFixed(4));
+}
+function onGaugeEvent() {
+    if (!gaugeRaf) {
+        gaugeRaf = requestAnimationFrame(() => {
+            gaugeRaf = 0;
+            gaugeNow();
+        });
+    }
+}
+function setGaugeOnly(on: boolean) {
+    if (on === gaugeOn) return;
+    gaugeOn = on;
+    if (on) {
+        addEventListener("scroll", onGaugeEvent, { passive: true });
+        addEventListener("resize", onGaugeEvent, { passive: true });
+        gaugeNow();
+    } else {
+        removeEventListener("scroll", onGaugeEvent);
+        removeEventListener("resize", onGaugeEvent);
+        if (gaugeRaf) cancelAnimationFrame(gaugeRaf);
+        gaugeRaf = 0;
+    }
+}
+
+const onResize = () => schedule();
+function onUserScroll() {
+    lastScrollAt = performance.now();
+    window.clearTimeout(idleTimer);
+    idleTimer = window.setTimeout(schedule, 400);
+    schedule();
+}
+// A hidden or restored page has stalled timers and frames: land every scramble on its real text and re-measure.
+function onVisible() {
+    settleScrambles();
+    schedule();
+}
+function onActive(es: IntersectionObserverEntry[]) {
+    es.forEach((e) => {
+        const t = types.get(e.target);
+        if (t) t.active = e.isIntersecting || t.last < 0;
+        const p = pars.get(e.target);
+        if (p) p.active = e.isIntersecting;
+        const r = rxs.get(e.target);
+        if (r) {
+            r.active = e.isIntersecting;
+            if (!e.isIntersecting) r.side = e.boundingClientRect.top < 0 ? 1 : 0;
+        }
+    });
+    schedule();
+}
+
+/** Build the whole engine. Safe to call when it is already running. */
+function arm() {
+    if (live || !started) return;
+    live = true;
+    seen = new WeakSet<Element>();
+    setGaugeOnly(false);
+    revealIO = new IntersectionObserver(onReveal, { rootMargin: "0px 0px -8% 0px", threshold: 0.01 });
+    scrIO = new IntersectionObserver(onScrIO, { rootMargin: "0px 0px -6% 0px", threshold: 0.4 });
+    activeIO = new IntersectionObserver(onActive, { rootMargin: "20% 0px 20% 0px" });
+    addEventListener("scroll", onUserScroll, { passive: true });
+    document.addEventListener("visibilitychange", onVisible);
+    addEventListener("pageshow", onVisible);
+    addEventListener("resize", onResize, { passive: true });
+    addEventListener("popstate", markNavigation);
+    document.addEventListener("pointerover", onHoverScr, { passive: true });
+    // Streaming content and image/font loads move things after the first frame: re-measure when the page resizes.
+    ro = new ResizeObserver(onResize);
+    ro.observe(document.body);
+    attrs = new MutationObserver(flushGate);
+    attrs.observe(html(), { attributes: true, attributeFilter: ["data-boot", "data-xition"] });
+    dom = new MutationObserver(onMutations);
+    dom.observe(document.body, { childList: true, subtree: true });
+    // Whatever is already on screen when motion comes back settles into its final state; the rest is registered
+    // as on a fresh load and reveals as it scrolls in.
+    snapping = true;
+    try {
+        scan(document);
+        flushGate();
+    } finally {
+        snapping = false;
+    }
+    schedule();
+}
+
+/** Tear the engine down: nothing observes, listens or loops, and every line rests on its real text. */
+function disarm() {
+    if (!live) return;
+    live = false;
+    removeEventListener("scroll", onUserScroll);
+    document.removeEventListener("visibilitychange", onVisible);
+    removeEventListener("pageshow", onVisible);
+    removeEventListener("resize", onResize);
+    removeEventListener("popstate", markNavigation);
+    document.removeEventListener("pointerover", onHoverScr);
+    window.clearTimeout(idleTimer);
+    ro?.disconnect();
+    attrs?.disconnect();
+    dom?.disconnect();
+    revealIO?.disconnect();
+    scrIO?.disconnect();
+    activeIO?.disconnect();
+    ro = attrs = dom = revealIO = scrIO = activeIO = null;
+    // A line left half-decoded (scrubbed text, or a run in progress) must not stay as glyphs once motion stops.
+    settleScrambles();
+    rxs.forEach((it) => {
+        if (it.scr && it.el.textContent !== it.final) setText(it.el, it.final);
+    });
+    types.forEach((t) => {
+        t.el.style.removeProperty("--n"); // the reduced-motion CSS sets --n, but an inline value wins over it
+        t.cur?.removeAttribute("data-cur");
+        t.cur = null;
+    });
+    rxs.clear();
+    types.clear();
+    pars.clear();
+    queue.clear();
+    waiting.clear();
+    if (waitTimer) window.clearInterval(waitTimer);
+    waitTimer = 0;
+    if (raf) cancelAnimationFrame(raf);
+    raf = 0;
+}
+
+/** Bring the engine in line with the current setting. */
+function syncEngine() {
+    if (!started) return;
+    if (motionOn()) {
+        arm();
+    } else {
+        disarm();
+        setGaugeOnly(true);
+    }
+}
+
 /** Start the engine. Returns a cleanup. Call once from the root client component. */
 export function start(): () => void {
     if (started) return () => {};
     started = true;
-    const reduce = prefersReducedMotion();
-
-    revealIO = new IntersectionObserver(onReveal, { rootMargin: "0px 0px -8% 0px", threshold: 0.01 });
-    scrIO = new IntersectionObserver(onScrIO, { rootMargin: "0px 0px -6% 0px", threshold: 0.4 });
-    activeIO = new IntersectionObserver(
-        (es) => {
-            es.forEach((e) => {
-                const t = types.get(e.target);
-                if (t) t.active = e.isIntersecting || t.last < 0;
-                const p = pars.get(e.target);
-                if (p) p.active = e.isIntersecting;
-                const r = rxs.get(e.target);
-                if (r) {
-                    r.active = e.isIntersecting;
-                    if (!e.isIntersecting) r.side = e.boundingClientRect.top < 0 ? 1 : 0;
-                }
-            });
-            schedule();
-        },
-        { rootMargin: "20% 0px 20% 0px" },
-    );
-
-    const onScroll = () => schedule();
-    const onUserScroll = () => {
-        lastScrollAt = performance.now();
-        window.clearTimeout(idleTimer);
-        idleTimer = window.setTimeout(schedule, 400);
-        schedule();
-    };
-    // A hidden or restored page has stalled timers and frames: land every scramble on its real text and re-measure.
-    const onVisible = () => {
-        settleScrambles();
-        schedule();
-    };
-    addEventListener("scroll", onUserScroll, { passive: true });
-    document.addEventListener("visibilitychange", onVisible);
-    addEventListener("pageshow", onVisible);
-    addEventListener("resize", onScroll, { passive: true });
-    addEventListener("popstate", markNavigation);
-    document.addEventListener("pointerover", onHoverScr, { passive: true });
-
-    // Streaming content and image/font loads move things after the first frame: re-measure when the page resizes.
-    const ro = new ResizeObserver(onScroll);
-    ro.observe(document.body);
-
-    const attrs = new MutationObserver(flushGate);
-    attrs.observe(html(), { attributes: true, attributeFilter: ["data-boot", "data-xition"] });
-
-    const dom = new MutationObserver(onMutations);
-    dom.observe(document.body, { childList: true, subtree: true });
-
-    if (reduce) {
-        // CSS already shows everything; just keep the page gauge honest.
-        schedule();
-    } else {
-        scan(document);
-        flushGate();
-        schedule();
-    }
-
+    ensureReduceMq();
+    syncEngine();
     return () => {
         started = false;
-        removeEventListener("scroll", onUserScroll);
-        document.removeEventListener("visibilitychange", onVisible);
-        removeEventListener("pageshow", onVisible);
-        window.clearTimeout(idleTimer);
-        settleScrambles();
-        removeEventListener("resize", onScroll);
-        removeEventListener("popstate", markNavigation);
-        document.removeEventListener("pointerover", onHoverScr);
-        attrs.disconnect();
-        ro.disconnect();
-        dom.disconnect();
-        revealIO?.disconnect();
-        scrIO?.disconnect();
-        rxs.clear();
-        activeIO?.disconnect();
-        revealIO = activeIO = scrIO = null;
-        types.clear();
-        pars.clear();
-        queue.clear();
-        readyCbs.clear();
-        waiting.clear();
-        if (waitTimer) window.clearInterval(waitTimer);
-        waitTimer = 0;
-        if (raf) cancelAnimationFrame(raf);
-        raf = 0;
+        disarm();
+        setGaugeOnly(false);
     };
 }
