@@ -186,18 +186,44 @@ export function GameRouteShell({ name, children, header, mode = "framed", game }
     // Waits past the launch cover's reveal (about 0.4 s after the route changes) so the scroll is not seen behind it.
     useEffect(() => {
         if (!windowed) return;
+        // The line the title bar should sit below: the site bar's real bottom (taller on phones) plus a small gap.
+        const clearance = () => {
+            const bar = document.querySelector<HTMLElement>("header.nv-top");
+            return (bar ? bar.getBoundingClientRect().bottom : 56) + 12;
+        };
+        let settle = 0;
+        let moved = false;
+        const stop = () => { moved = true; };
+        // For a few seconds the page keeps the title bar under the site bar while the page above it settles (the game boots, the cover lifts).
+        // Any wheel, touch or key from the reader ends it.
+        const hold = (until: number) => {
+            const p = panelRef.current;
+            if (!p || moved || performance.now() > until) return;
+            const off = p.getBoundingClientRect().top - clearance();
+            if (off < -2) window.scrollBy({ top: off, behavior: "auto" });
+            settle = window.setTimeout(() => hold(until), 120);
+        };
         const id = window.setTimeout(() => {
             const panel = panelRef.current;
             if (panel) {
-                // The title bar lands just under the site bar, so the panel fills the view below it.
-                const target = Math.max(0, panel.getBoundingClientRect().top + window.scrollY - 72);
+                const target = Math.max(0, panel.getBoundingClientRect().top + window.scrollY - clearance());
                 if (Math.abs(window.scrollY - target) > 8) {
                     window.scrollTo({ top: target, behavior: reducedMotion() ? "auto" : "smooth" });
                 }
             }
             frameRef.current?.focus({ preventScroll: true });
+            window.addEventListener("wheel", stop, { passive: true });
+            window.addEventListener("touchstart", stop, { passive: true });
+            window.addEventListener("keydown", stop);
+            hold(performance.now() + 4000);
         }, 450);
-        return () => window.clearTimeout(id);
+        return () => {
+            window.clearTimeout(id);
+            window.clearTimeout(settle);
+            window.removeEventListener("wheel", stop);
+            window.removeEventListener("touchstart", stop);
+            window.removeEventListener("keydown", stop);
+        };
     }, [windowed]);
 
     const value = useMemo<GameShellState>(
