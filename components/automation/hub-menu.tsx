@@ -109,11 +109,11 @@ export function HubMenu({ hub, onClose }: { hub: HubView; onClose: () => void })
   return (
     <MenuWindow theme="hub" title="Hub" label="Hub" size="wide" variant="settle" art={<MachinePortrait id="hub" size={32} />} onClose={onClose}>
       <div className="hm-tabs" role="group" aria-label="Hub pages">
-        <button type="button" className="hm-tab" aria-pressed={view === "slip"} onClick={() => setView("slip")}>Order</button>
-        <button type="button" className="hm-tab" aria-pressed={view === "ladder"} onClick={() => setView("ladder")}>Orders and milestones</button>
+        <button type="button" className="hm-tab bwm-tab" aria-pressed={view === "slip"} onClick={() => setView("slip")}>Order</button>
+        <button type="button" className="hm-tab bwm-tab" aria-pressed={view === "ladder"} onClick={() => setView("ladder")}>Orders and milestones</button>
       </div>
       <div className="hm-wrap" data-view={view}>
-        <aside className="hm-side" aria-label="Hub ladder">
+        <aside className="hm-side bwm-pane-in" aria-label="Hub ladder">
           <div className="hm-hall">
             <MachinePortrait id="hub" size={96} label="The hub" />
             <div className="hm-hall-txt">

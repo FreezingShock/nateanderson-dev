@@ -7,7 +7,9 @@
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import { useGameShell } from "@/components/games/shell/game-route-shell";
-import { downloadText, writeStored } from "@/lib/games/save";
+import { downloadText } from "@/lib/games/save";
+import { STARWRIGHT_SAVE } from "@/lib/starwright/engine";
+import { writeSave } from "@/lib/saves/core";
 import { ACHIEVEMENTS, ACH_BONUS, CLOUDS, ELEMENTS, EVENT_STAY, PERKS, PLANETS, PULSAR_PERKS, RECIPE, ROWS, STAGE_NAMES, TIERS, TIER_LEVELS, TIER_NAMES, TUNE } from "@/lib/starwright/data";
 import { play, setSound, soundOn } from "@/lib/starwright/sound";
 import { REPORT_MIN, advanceAuto, autoAnswer, awayReport, loadSession, saveAway, snap, writeBackup, type Snap } from "@/lib/starwright/session";
@@ -22,8 +24,13 @@ import {
 import { uiVars } from "@/lib/starwright/ui-art";
 import { Almanac, CloudPick, Ending, Menu, Orbit, StarChart, Visitor, tools } from "./panels";
 import { AwayCard, ScrollHint, type AwayData } from "./settings";
-import { ElTile, Gl, Pic, ui, useLeaving, useSheets, useTips } from "./sw-ui";
+import { ElTile, Gl, Pic, ui, useLeaving, usePresence, useSheets, useTips } from "./sw-ui";
 import { BuyBurst } from "./buy-burst";
+import { useAutosave } from "@/components/game-kit/hooks";
+import { useToasts } from "@/components/game-kit/use-toasts";
+import { claimTab, type TabClaim } from "@/lib/game-kit/tabs";
+import "@/app/camino/starwright-juice.css";
+import { Ticked } from "@/components/games/juice/ticked";
 
 type Panel = null | "stars" | "pulsar" | "orbit" | "almanac" | "menu";
 interface Note { id: number; text: string; tone?: "hot" | "dim" }
@@ -43,7 +50,8 @@ export function Starwright() {
     const [, setTick] = useState(0);
     const bump = useCallback(() => setTick((n) => n + 1), []);
     const [panel, setPanel] = useState<Panel>(null);
-    const [notes, setNotes] = useState<Note[]>([]);
+    // Notes over the scene: the newest four stay, each for 9 s (the game kit's toast queue).
+    const { toasts: notes, push: pushNote } = useToasts<NonNullable<Note["tone"]>>({ keep: 3, ttlMs: 9000 });
     const [ending, setEnding] = useState(false);
     const shell = useGameShell();
     const tips = useTips();
@@ -64,7 +72,6 @@ export function Starwright() {
     const novaKind = useRef(0);
     const stageRef = useRef({ now: 0, from: 0, at: -1e9 });
     const lastNovaAt = useRef(0);
-    const noteId = useRef(0);
     const lastHeavy = useRef(0);
     const lastTickAt = useRef(0);
     const lastMult = useRef<number[]>([]);
@@ -73,24 +80,31 @@ export function Starwright() {
     const [sound, setSoundState] = useState(true);
     const [paused, setPaused] = useState(false);
     const [card, setCard] = useState<AwayData | null>(null);
+    // The away card keeps its last content while it plays its exit.
+    const awayKeep = useRef<AwayData | null>(null);
+    if (card) awayKeep.current = card;
+    const awayP = usePresence(card !== null);
     const readOnly = useRef(false);
     const [other, setOther] = useState(false);
-    const tabCh = useRef<{ ch: BroadcastChannel; id: string } | null>(null);
+    const tabLock = useRef<TabClaim | null>(null);
     const saveFailAt = useRef(0);
     const lastBackup = useRef(Date.now());
 
     const note = useCallback((text: string, tone?: Note["tone"], force = false) => {
         if (!force && !getSettings().notices) return;
-        const id = ++noteId.current;
-        setNotes((n) => [...n.slice(-3), { id, text, tone }]);
-        window.setTimeout(() => setNotes((n) => n.filter((x) => x.id !== id)), 9000);
-    }, []);
+        pushNote(text, tone);
+    }, [pushNote]);
+
+    // A reward flash over the whole star, in the element's colour: ignitions and doubled burners. Keyed, so a new one restarts it.
+    const [flash, setFlash] = useState<{ key: number; c: string } | null>(null);
+    const flashId = useRef(0);
+    const flashTo = useCallback((c: string) => setFlash({ key: ++flashId.current, c }), []);
 
     const save = useCallback(() => {
         const s = sRef.current;
         if (!s || readOnly.current) return;
         s.savedAt = Date.now();
-        if (!writeStored(window.localStorage, SAVE_KEY, serialize(s)) && Date.now() - saveFailAt.current > 300000) {
+        if (!writeSave(window.localStorage, STARWRIGHT_SAVE, s) && Date.now() - saveFailAt.current > 300000) {
             saveFailAt.current = Date.now();
             note("Could not save: this browser's storage is full or blocked. Export a save from the menu to keep your star.", "hot", true);
         }
@@ -153,6 +167,7 @@ export function Starwright() {
                 const e = ELEMENTS[h];
                 note(`${e.name} ignites in the core.`, "hot");
                 play("ignite", { row: h });
+                flashTo(e.color);
                 lastHeavy.current = h;
             }
             if (Date.now() - lastAch.current > 1000) {
@@ -160,6 +175,7 @@ export function Starwright() {
                 for (const id of checkAch(s)) {
                     note(`Almanac: ${ACHIEVEMENTS.find((a) => a.id === id)?.name}. Everything +${Math.round(ACH_BONUS * 100)}%.`, "hot");
                     play("badge");
+                    flashTo("#ffc94d");
                 }
             }
             const isReady = collapse(s, effects(s)) >= 1;
@@ -170,23 +186,20 @@ export function Starwright() {
             lastEvent.current = ev;
         }, 100);
         const ui = window.setInterval(bump, 250);
-        const sv = window.setInterval(() => {
-            save();
-            const s = sRef.current;
-            if (s && Date.now() - lastBackup.current > 600000) { lastBackup.current = Date.now(); writeBackup(window.localStorage, s); }
-        }, 8000);
-        const onHide = () => save();
-        document.addEventListener("visibilitychange", onHide);
-        window.addEventListener("pagehide", onHide);
         return () => {
             window.clearInterval(id);
             window.clearInterval(ui);
-            window.clearInterval(sv);
-            document.removeEventListener("visibilitychange", onHide);
-            window.removeEventListener("pagehide", onHide);
-            save();
         };
-    }, [ready, bump, save, note]);
+    }, [ready, bump, save, note, flashTo]);
+
+    // Saves every 8 s, on tab hide, on leaving and on unmount (the game kit's loop); a rolling backup every 10 min.
+    useAutosave(save, {
+        enabled: ready,
+        afterSave: () => {
+            const s = sRef.current;
+            if (s && Date.now() - lastBackup.current > 600000) { lastBackup.current = Date.now(); writeBackup(window.localStorage, s); }
+        },
+    });
 
     // ---- the scene -----------------------------------------------------------------------------------------------
     useEffect(() => {
@@ -272,10 +285,11 @@ export function Starwright() {
                 if (m > (lastMult.current[i] ?? 1)) {
                     note(`${ELEMENTS[i].name} burners double. Level ${levels(s, i)} makes it x${fmt(m)}.`, "hot");
                     play("milestone", { row: i });
+                    flashTo(ELEMENTS[i].color);
                 } else play("buy", { row: i, tier: k });
                 lastMult.current[i] = m;
             }),
-        [act, note],
+        [act, note, flashTo],
     );
 
     const doAnswer = useCallback(
@@ -373,25 +387,22 @@ export function Starwright() {
         setPaused(false);
         lastTickAt.current = Date.now();
         setOther(false);
-        tabCh.current?.ch.postMessage({ t: "hello", id: tabCh.current.id });
+        tabLock.current?.claim();
         bump();
     }, [bump]);
 
     useEffect(() => {
-        if (!ready || typeof BroadcastChannel === "undefined") return;
-        const id = Math.random().toString(36).slice(2);
-        const ch = new BroadcastChannel("sw-tab");
-        tabCh.current = { ch, id };
-        ch.onmessage = (e: MessageEvent) => {
-            if (e.data?.t !== "hello" || e.data.id === id || readOnly.current) return;
+        if (!ready) return;
+        const lock = claimTab("sw-tab", () => {
+            if (readOnly.current) return;
             save();
             readOnly.current = true;
             manualPause.current = true;
             setPaused(true);
             setOther(true);
-        };
-        ch.postMessage({ t: "hello", id });
-        return () => { ch.close(); tabCh.current = null; };
+        });
+        tabLock.current = lock;
+        return () => { lock.close(); tabLock.current = null; };
     }, [ready, save]);
 
     // Automation unlocks (opt-in, see Settings): supernova by itself at a chosen core share, and visitors answered for you.
@@ -503,13 +514,14 @@ export function Starwright() {
         <div className="sw-root" data-paused={paused ? "true" : undefined} style={vars as CSSProperties} {...tips.handlers}>
             <section className="sw-scene" aria-label="Your star">
                 <canvas ref={canvasRef} width={W} height={H} className="sw-canvas" role="img" aria-label={`${s.name}, a ${STAGE_NAMES[stage].toLowerCase()}`} />
+                {flash && <i key={flash.key} className="sw-reward" style={{ "--c": flash.c } as CSSProperties} aria-hidden="true" />}
                 <i className="sw-fade" data-edge="top" aria-hidden="true" />
                 <i className="sw-fade" data-edge="bottom" aria-hidden="true" />
                 <div className="sw-readout">
                     <span className="sw-tag">{s.name.toUpperCase()}</span>
                     <p>
-                        <span data-tip="Mass|Grows as the star fuses. Raises hydrogen inflow."><Gl n="mass" s={1} />mass <b>{fmt(mass(s))}</b></span>
-                        <span data-tip="Core heat|Gates every fusion. Mass sets it."><Gl n="heat" s={1} />heat <b>{fmtHeat(s.heat)}</b></span>
+                        <span data-tip="Mass|Grows as the star fuses. Raises hydrogen inflow."><Gl n="mass" s={1} />mass <b><Ticked value={mass(s)} format={fmt} /></b></span>
+                        <span data-tip="Core heat|Gates every fusion. Mass sets it."><Gl n="heat" s={1} />heat <b><Ticked value={s.heat} format={fmtHeat} /></b></span>
                         <span data-tip="Age of this star"><Gl n="age" s={1} />age <b>{fmtAge(s.age)}</b></span>
                     </p>
                     <p className="sw-stage">{STAGE_NAMES[stage]}{s.novasAll ? ` · supernova ${s.novas + 1}` : ""}</p>
@@ -545,7 +557,7 @@ export function Starwright() {
             {s.event && <Visitor s={s} onAnswer={doAnswer} />}
             {s.offer.length > 0 && <CloudPick s={s} onPick={doCloud} onPreview={(id) => { previewRef.current = id; }} />}
             <ScrollHint />
-            {card && <AwayCard card={card} onClose={() => setCard(null)} />}
+            {awayP.mounted && awayKeep.current && <AwayCard card={awayKeep.current} onClose={() => setCard(null)} leaving={awayP.leaving} />}
             {other && (
                 <div className="sw-lock sw-panel" role="alert">
                     <span>Starwright is open in another tab, so this one stopped saving.</span>
@@ -593,9 +605,9 @@ export function Starwright() {
                 <Corners />
             </section>
 
-            {shown === "stars" && <StarChart title="Constellations" list={PERKS} owned={s.perks} cur={s.stardust} curName="stardust" onBuy={(id) => act((x) => buyPerk(x, id))} onClose={() => setPanel(null)} constellations leaving={leaving} deep={{ n: s.deep, cost: deepCost(s), onBuy: () => act((x) => { buyDeep(x); }) }} />}
-            {shown === "pulsar" && <StarChart title="Pulsar map" list={PULSAR_PERKS} owned={s.pulsar} cur={s.neutrons} curName="neutrons" onBuy={(id) => act((x) => buyPulsar(x, id))} onClose={() => setPanel(null)} leaving={leaving} />}
-            {shown === "orbit" && <Orbit s={s} onBuy={(id) => act((x) => { if (buyPlanet(x, id)) { note(`${PLANETS.find((p) => p.id === id)?.name} forms in orbit.`); play("planet"); } })} onClose={() => setPanel(null)} leaving={leaving} />}
+            {shown === "stars" && <StarChart title="Constellations" list={PERKS} owned={s.perks} cur={s.stardust} curName="stardust" onBuy={(id) => act((x) => { if (buyPerk(x, id)) flashTo("#5fe0ff"); })} onClose={() => setPanel(null)} constellations leaving={leaving} deep={{ n: s.deep, cost: deepCost(s), onBuy: () => act((x) => { if (buyDeep(x)) flashTo("#5fe0ff"); }) }} />}
+            {shown === "pulsar" && <StarChart title="Pulsar map" list={PULSAR_PERKS} owned={s.pulsar} cur={s.neutrons} curName="neutrons" onBuy={(id) => act((x) => { if (buyPulsar(x, id)) flashTo("#ff5fc8"); })} onClose={() => setPanel(null)} leaving={leaving} />}
+            {shown === "orbit" && <Orbit s={s} onBuy={(id) => act((x) => { if (buyPlanet(x, id)) { const pl = PLANETS.find((p) => p.id === id); note(`${pl?.name} forms in orbit.`); play("planet"); flashTo(pl?.color ?? "#ffc94d"); } })} onClose={() => setPanel(null)} leaving={leaving} />}
             {shown === "almanac" && <Almanac s={s} onClose={() => setPanel(null)} leaving={leaving} />}
             {shown === "menu" && (
                 <Menu
@@ -606,7 +618,7 @@ export function Starwright() {
                     onClose={() => setPanel(null)}
                     onName={(n) => act((x) => { x.name = n.slice(0, 24) || x.name; })}
                     onImport={(next) => { writeBackup(window.localStorage, s, true); next.savedAt = Date.now(); sRef.current = next; lastHeavy.current = heaviest(next); save(); bump(); note("Save imported. The old one is kept as a backup.", "hot", true); }}
-                    onReset={() => { writeBackup(window.localStorage, s, true); const n = fresh(); sRef.current = n; lastHeavy.current = 0; writeStored(window.localStorage, SAVE_KEY, serialize(n)); setPanel(null); bump(); }}
+                    onReset={() => { writeBackup(window.localStorage, s, true); const n = fresh(); sRef.current = n; lastHeavy.current = 0; writeSave(window.localStorage, STARWRIGHT_SAVE, n); setPanel(null); bump(); }}
                     onExport={() => downloadText(tools.fileName(), tools.exportText(s))}
                     sound={sound}
                     onSound={toggleSound}

@@ -1,3 +1,4 @@
+import { useEffect, useRef, useState } from "react";
 import type { ResourceView, NumberFormat } from "@/lib/automation/types";
 import { ArtIcon } from "@/components/brasswork-art/icons";
 import { fmtNum, fmtRate } from "./format";
@@ -6,6 +7,7 @@ import { iconCell, iconStyle } from "@/lib/automation/icons";
 import { tipAttr, type TipData } from "@/components/brasswork-ui/tip";
 import { itemTip } from "@/lib/automation/tips";
 import { DEFAULT_CATALOG } from "@/lib/automation/sim/data";
+import { Ticked } from "@/components/games/juice/ticked";
 
 /**
  * A square badge for an item or machine. Shows the sprite-sheet icon when the id has one
@@ -98,6 +100,31 @@ export function ResourceStrip({
   );
 }
 
+/**
+ * A "+N" that floats up off a resource box when its stock rises. It fires at most about once a second per resource, so a
+ * busy belt reads as a steady tick, not a flicker. Gains only; a fall shows nothing. Hidden under reduced motion or Low fx.
+ */
+function GainFloat({ amount, numberFormat }: { amount: number; numberFormat: NumberFormat }) {
+  const prev = useRef(amount);
+  const last = useRef(0);
+  const [pop, setPop] = useState<{ key: number; text: string } | null>(null);
+  useEffect(() => {
+    const d = amount - prev.current;
+    prev.current = amount;
+    if (d <= 0) return;
+    const now = performance.now();
+    if (now - last.current < 900) return;
+    last.current = now;
+    setPop({ key: now, text: `+${fmtNum(d, numberFormat)}` });
+  }, [amount, numberFormat]);
+  if (!pop) return null;
+  return (
+    <span key={pop.key} className="ab-res-gain" aria-hidden="true">
+      {pop.text}
+    </span>
+  );
+}
+
 function ResourceList({
   label,
   items,
@@ -139,7 +166,8 @@ function ResourceList({
           >
             <span className="ab-res-box">
               <Glyph code={r.glyph} size={48} icon={r.id} />
-              <span className="ab-res-amt">{amount}</span>
+              <Ticked className="ab-res-amt" value={r.amount} format={(n) => fmtNum(n, numberFormat)} />
+              <GainFloat amount={r.amount} numberFormat={numberFormat} />
             </span>
             {/* The rate sits under its box. A steady item keeps an empty slot, so every box has the same height. */}
             {showRates && (

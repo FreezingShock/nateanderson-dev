@@ -84,7 +84,7 @@ const C = {
     ironore: 0x8e3b28,
     ironore_d: 0x55231a,
     nodule: 0x8d9bb3,
-    patina: 0x58b09a,
+    patina: 0x8f9650,
     coal: 0x25252b,
     coal_l: 0x4a4a58,
     qz: 0xf2cfe0,

@@ -1,5 +1,5 @@
 // Port arrows: one arrow in each tile just outside a machine where items go in or come out.
-// Input tiles (the back edge) are verdigris green with a bar across the tail and the arrow pointing into the machine.
+// Input tiles (the back edge) are olive-bronze patina with a bar across the tail and the arrow pointing into the machine.
 // Output tiles (the front edge) are brass with a solid, wider arrow pointing away from it. Both lie flat on the ground.
 // One instanced mesh, one draw call. `rot` is the machine's facing (0 +z, 1 +x, 2 -z, 3 -x); every arrow points that way.
 import * as THREE from "three";

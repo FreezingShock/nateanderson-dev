@@ -38,8 +38,8 @@ export const RESOURCE_COLORS: Record<StockId, ResourceColors> = {
     },
     // "Green-streaked stone from the cove": patina streaks with bright copper nuggets.
     copper_ore: {
-        main: 0x58b09a,
-        dark: 0x2f6f60,
+        main: 0x8f9650,
+        dark: 0x4e5226,
         accent: 0xc4682f,
         host: 0x7a7068,
         hostDark: 0x6b625a,

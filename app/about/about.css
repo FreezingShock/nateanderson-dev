@@ -135,7 +135,7 @@ html[data-xition="hold"] .about .about-id { animation: none; opacity: 0; }
     text-transform: uppercase;
     color: var(--cm-cyan);
 }
-.about .about-verbs dd { margin: 0; font: 700 19px/1.15 var(--cm-display); letter-spacing: -.03em; text-transform: lowercase; }
+.about .about-verbs dd { margin: 0; font: 700 var(--cm-ctos-t-lead)/1.15 var(--cm-display); letter-spacing: -.03em; text-transform: lowercase; }
 .about .about-verbs small { display: block; margin-top: 5px; font: 400 var(--cm-ctos-t-body)/1.45 var(--cm-display); letter-spacing: 0; text-transform: none; color: var(--cm-mute); }
 @media (min-width: 900px) {
     .about .about-story { grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); }

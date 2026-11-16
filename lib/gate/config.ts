@@ -4,12 +4,12 @@
 //   SITE_PASSWORD         the password in plain text (simplest)
 //   SITE_PASSWORD_SHA256  or, instead, the hex SHA-256 of it, so the plain text is never stored anywhere
 //   SITE_GATE_SECRET      a long random string that signs the unlock cookie (set this in production)
+// With neither SITE_PASSWORD nor SITE_PASSWORD_SHA256 set, the gate refuses every password (it fails closed).
+// Local dev: put SITE_PASSWORD in .env.local, which git ignores. CI sets its own password in the workflow.
 // Changing the password (or the secret) signs every visitor out, because the cookie is derived from both.
 // Nothing here is ever sent to the browser: this file is only imported by the proxy and API routes.
 
 export const GATE = {
-    /** Fallback used only when no env var is set. */
-    defaultPassword: "dean",
     cookie: "site_unlock",
     /** Browsers cap cookie lifetime at about 400 days, so this is "once and never again". */
     maxAgeSeconds: 60 * 60 * 24 * 400,
@@ -22,5 +22,6 @@ export const GATE = {
     hint: "Enter the password to continue.",
 };
 
-export const gatePassword = () => process.env.SITE_PASSWORD || GATE.defaultPassword;
+/** The plain-text password, or "" when none is set. Empty means the gate refuses every password. */
+export const gatePassword = () => process.env.SITE_PASSWORD || "";
 export const gateSecret = () => process.env.SITE_GATE_SECRET || "fractured-gate-dev-secret-set-SITE_GATE_SECRET";

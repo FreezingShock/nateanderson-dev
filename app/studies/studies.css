@@ -217,7 +217,7 @@ html[data-xition] .ctos.st-page .st-anim { animation-play-state: paused; }
 .ctos.st-page .st-courses > .cm-panel .cm-h3, .ctos.st-page .cm-cols3 > .cm-panel .cm-h3 {
   font: 800 var(--cm-ctos-t-lead)/1.1 var(--cm-display); letter-spacing: -.03em; text-transform: lowercase; color: var(--cm-fg);
 }
-.ctos.st-page .st-courses > .cm-panel .cm-body, .ctos.st-page .cm-cols3 > .cm-panel .cm-body { font-size: 14px; line-height: 1.5; color: var(--cm-mute); }
+.ctos.st-page .st-courses > .cm-panel .cm-body, .ctos.st-page .cm-cols3 > .cm-panel .cm-body { font-size: var(--cm-ctos-t-ui); line-height: 1.5; color: var(--cm-mute); }
 .ctos.st-page .st-courses .st-ap { background: transparent; color: #ff6a55; border: 1px solid #ff6a55; padding: 2px 4px; }
 .ctos.st-page .st-courses > .cm-panel, .ctos.st-page .cm-cols3 > .cm-panel,
 .ctos.st-page .st-courses > .cm-panel:nth-of-type(even), .ctos.st-page .cm-cols3 > .cm-panel:nth-of-type(even) { border-left: 1px solid var(--cm-hair-hi); }

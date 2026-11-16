@@ -6,14 +6,19 @@ import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type PointerEvent as RPointerEvent, type ReactNode } from "react";
 import { useGameShell } from "@/components/games/shell/game-route-shell";
 import { createSaveTools, downloadText, readPickedFile, writeStored } from "@/lib/games/save";
-import { JOB_BY, JOBS, MATS, PERKS, TIER_LABELS, TUNE, UNLOCK_COST as UNLOCK, cityOf, N as NMAT } from "@/lib/groundbreak/data";
+import { loadSave, reviveAuto, reviveText, rollCopies, writeSave, encodeSave } from "@/lib/saves/core";
+import { JOB_BY, JOBS, MATS, PERKS, STAGES, TIER_LABELS, TUNE, UNLOCK_COST as UNLOCK, cityOf, N as NMAT } from "@/lib/groundbreak/data";
+import { Ticked } from "@/components/games/juice/ticked";
 import {
-    SAVE_KEY, SAVE_VERSION, acceptChange, buy, jobMat, buyPerk, canBuy, canIncorporate, canUnlock, catchUp, charterGain, chain, declineChange, effects, fmt, fmtAge,
-    fmtCash, fresh, incorporate, isSave, jobFloors, jobPhaseName, jobProgress, load, methodReady, overtime, overtimeCost, parse, payout, perkReady, phaseNeeds,
-    plan, queue, nextJob, offlineCapS, rawRate, repPay, repeatPay, repeatRep, serialize, stageOf, step, tierCost, unlock, waitingFor, type State,
+    GROUNDBREAK_SAVE, SAVE_KEY, SAVE_VERSION, acceptChange, buy, jobMat, buyPerk, canBuy, canIncorporate, canUnlock, catchUp, charterGain, chain, declineChange, effects, fmt, fmtAge,
+    fmtCash, fresh, incorporate, isSave, jobFloors, jobPhaseName, jobProgress, methodReady, overtime, overtimeCost, parse, payout, perkReady, phaseNeeds,
+    plan, queue, nextJob, offlineCapS, rawRate, repPay, repeatPay, repeatRep, stageOf, step, tierCost, unlock, waitingFor, type State,
 } from "@/lib/groundbreak/engine";
 import { gbCommand } from "@/lib/groundbreak/commands";
 import { awaySnap, awaySummary, doCue, nextCue, type AwaySummary, type Cue } from "@/lib/groundbreak/guide";
+import { usePresence, useAutosave } from "@/components/game-kit/hooks";
+import { useToasts } from "@/components/game-kit/use-toasts";
+import { watchNewerSave } from "@/lib/game-kit/tabs";
 import { MAT_ICONS, iconUrl } from "./icons";
 import { GB_JOBS, type GbJobId } from "@/components/groundbreak-art";
 import { GB_BANNERS, type GbBannerId } from "@/components/groundbreak-art/ui-art";
@@ -60,15 +65,21 @@ function Ico({ id, size = 20, className }: { id: string; size?: number; classNam
     return <i className={`gb-ico ${className ?? ""}`} style={{ width: size, height: size, backgroundImage: url ? `url(${url})` : undefined }} aria-hidden="true" />;
 }
 
-/** Keeps a window mounted for its exit animation. */
+/** Keeps a window mounted for its exit animation (the game kit's usePresence). */
 function useExit(open: boolean, ms = 190): { mounted: boolean; state: "in" | "out" } {
-    const [mounted, setMounted] = useState(open);
+    const { mounted } = usePresence(open, ms);
+    return { mounted, state: open ? "in" : "out" };
+}
+
+/** Holds the last non-null value for `ms` after it clears, so a card can play its exit. `state` is "out" while it leaves. */
+function useHeld<T>(value: T | null, ms = 120): { shown: T | null; state: "in" | "out" } {
+    const [held, setHeld] = useState<T | null>(value);
     useEffect(() => {
-        if (open) { setMounted(true); return; }
-        const id = window.setTimeout(() => setMounted(false), ms);
+        if (value !== null) { setHeld(value); return; }
+        const id = window.setTimeout(() => setHeld(null), ms);
         return () => window.clearTimeout(id);
-    }, [open, ms]);
-    return { mounted: open || mounted, state: open ? "in" : "out" };
+    }, [value, ms]);
+    return { shown: value ?? held, state: value !== null ? "in" : "out" };
 }
 
 function Window({ open, title, hint, variant, size = "md", onClose, children, icon, banner }: { open: boolean; title: string; hint?: string; variant: "iris" | "shutter" | "settle" | "drop" | "unroll" | "stamp"; size?: "sm" | "md" | "lg"; onClose: () => void; children: ReactNode; icon?: string; banner?: GbBannerId }) {
@@ -96,7 +107,17 @@ export function Groundbreak() {
     const bump = useCallback(() => setN((n) => n + 1), []);
     const [win, setWin] = useState<Win>(null);
     const [sel, setSel] = useState<number | null>(null);
-    const [notes, setNotes] = useState<Note[]>([]);
+    // Toasts (the game kit's queue): warnings stay 20 s and are never pushed out; of the rest only the newest stays beside a new one.
+    const { toasts: notes, push: pushNote } = useToasts<NonNullable<Note["tone"]>>({ keep: 1, dedupe: true, ttlMs: 6000, stickyTtlMs: 20000 });
+    // the material that just came on site: its dock tile plays one ring (keyed, so a new one restarts it)
+    const [pulse, setPulse] = useState<{ key: number; mat: number } | null>(null);
+    const pulseId = useRef(0);
+    // the crew-tick of the job that was just handed over: it plays one stamp (`data-fresh`, see app/camino/groundbreak.css)
+    const [freshTick, setFreshTick] = useState(-1);
+    // the stage that just opened (its pip stamps once), and the perk that was just bought (its tile stamps once)
+    const [freshStage, setFreshStage] = useState(-1);
+    const [freshPerk, setFreshPerk] = useState<string | null>(null);
+    const lastStage = useRef(-1);
     const [away, setAway] = useState<AwaySummary | null>(null);
     const [conflict, setConflict] = useState(false);
     const conflictRef = useRef(false);
@@ -117,35 +138,28 @@ export function Groundbreak() {
     const [reduce, setReduce] = useState(false);
     const [simple, setSimple] = useState(false);
     const [jobOpen, setJobOpen] = useState(true);
-    const noteId = useRef(0);
     const lastTick = useRef(0);
     const seen = useRef({ built: 0, open: 1, change: false, cashAll: 0 });
     const shell = useGameShell();
 
     // a sticky note is a warning the player must be able to read (a broken save, storage blocked): later toasts do not push it out, and it stays 20 s
     const note = useCallback((text: string, tone?: Note["tone"], sticky = false) => {
-        const id = ++noteId.current;
-        setNotes((n) => { const rest = n.filter((x) => x.text !== text); return [...rest.filter((x) => x.sticky), ...rest.filter((x) => !x.sticky).slice(-1), { id, text, tone, sticky }]; });
-        window.setTimeout(() => setNotes((n) => n.filter((x) => x.id !== id)), sticky ? 20000 : 6000);
-    }, []);
+        pushNote(text, tone, sticky);
+    }, [pushNote]);
     const save = useCallback(() => {
         const s = sRef.current;
         if (!s) return;
         if (conflictRef.current) return;
         s.savedAt = Date.now();
-        const raw = serialize(s);
-        if (!writeStored(window.localStorage, SAVE_KEY, raw)) {
+        const raw = writeSave(window.localStorage, GROUNDBREAK_SAVE, s, s.savedAt);
+        if (raw === null) {
             if (!warnedWrite.current) { warnedWrite.current = true; note("The browser would not save the game (storage full or blocked). Export a save from the Menu so nothing is lost.", "hot", true); }
             return;
         }
         // two rolling copies, five minutes apart, so a bad import or a bug never costs more than a few minutes
         if (s.savedAt - lastBackup.current > 300_000) {
             lastBackup.current = s.savedAt;
-            try {
-                const old = window.localStorage.getItem(SAVE_KEY + "-auto1");
-                if (old) writeStored(window.localStorage, SAVE_KEY + "-auto2", old);
-                writeStored(window.localStorage, SAVE_KEY + "-auto1", raw);
-            } catch { /* storage blocked */ }
+            try { rollCopies(window.localStorage, SAVE_KEY + "-auto1", SAVE_KEY + "-auto2", raw); } catch { /* storage blocked */ }
         }
     }, [note]);
 
@@ -247,14 +261,10 @@ export function Groundbreak() {
     // ---- boot and tick -------------------------------------------------------------------------------------------------------
     useEffect(() => {
         const now = Date.now();
-        const loaded = load(window.localStorage);
-        if (!loaded) {
-            // A save that exists but cannot be read is copied aside before the new game overwrites it.
-            try {
-                const raw = window.localStorage.getItem(SAVE_KEY);
-                if (raw) { writeStored(window.localStorage, SAVE_KEY + "-corrupt", raw); note("Your saved game could not be read. A copy is kept for recovery and a new firm starts.", "hot", true); }
-            } catch { /* storage blocked */ }
-        }
+        // lib/saves/core copies a save that cannot be read to SAVE_KEY-corrupt, then tries the rolling copies before it gives up
+        const got = loadSave(window.localStorage, GROUNDBREAK_SAVE, now);
+        const loaded = got.state;
+        if (got.note) note(got.note, "hot", true);
         const s = loaded ?? fresh(now);
         if (loaded) {
             const gone = (now - s.savedAt) / 1000;
@@ -291,6 +301,7 @@ export function Groundbreak() {
             if (s.built > sn.built) {
                 const last = s.skyline[s.skyline.length - 1];
                 note(`${JOB_BY.get(last?.id ?? "")?.name ?? "Job"} handed over.`, "hot");
+                setFreshTick(s.builtThisFirm - 1);
             }
             if (seenRe.current < 0 || s.reruns < seenRe.current) seenRe.current = s.reruns;
             if (s.reruns > seenRe.current) {
@@ -304,29 +315,28 @@ export function Groundbreak() {
                 if (jd) note(`${jd.name} started at ${cityOf(s.firm).sites[jd.stage - 1]}.`, "hot");
             }
             lastJob.current = jid;
-            if (s.open > sn.open) note(`${MATS[s.open - 1].name} is on site.`, "hot");
+            if (s.open > sn.open) { note(`${MATS[s.open - 1].name} is on site.`, "hot"); setPulse({ key: ++pulseId.current, mat: s.open - 1 }); }
+            // a new stage: the pip stamps and the feed names it (the first read only records the stage, it does not announce it)
+            const stNow = stageOf(s);
+            if (lastStage.current > 0 && stNow > lastStage.current) { note(`Stage ${stNow}: ${STAGES[stNow - 1]?.name ?? "new crew"} on the job.`, "hot"); setFreshStage(stNow); }
+            lastStage.current = stNow;
             if (s.change && !sn.change) note("Change order: the client wants more.", "hot");
             seen.current = { built: s.built, open: s.open, change: !!s.change, cashAll: s.cashAll };
         }, 100);
         const ui = window.setInterval(bump, 250);
-        const sv = window.setInterval(save, 8000);
-        const onHide = () => save();
-        document.addEventListener("visibilitychange", onHide);
-        window.addEventListener("pagehide", onHide);
-        // `gb` in the site console talks to the open game through this event
-        const onStore = (e: StorageEvent) => {
-            if (e.key !== SAVE_KEY || !e.newValue || !sRef.current) return;
-            try { if ((JSON.parse(e.newValue) as { savedAt?: number }).savedAt! > sRef.current.savedAt) { conflictRef.current = true; setConflict(true); } } catch { /* ignore */ }
-        };
-        window.addEventListener("storage", onStore);
+        // another tab saved newer progress: stop saving here so it cannot be overwritten (the game kit's watcher)
+        const offNewer = watchNewerSave(SAVE_KEY, () => sRef.current?.savedAt, () => { conflictRef.current = true; setConflict(true); });
         // after 40 s without touching the view, the camera finds the site again
         const follow = window.setInterval(() => {
             if (userCam.current && lastInput.current && Date.now() - lastInput.current > 40_000) { userCam.current = false; const s = sRef.current; if (s) setCamera(homeCam(s.job?.id ?? nextJob(s).id)); }
         }, 2000);
+        // `gb` in the site console talks to the open game through this event
         const onLive = (e: Event) => { (e as CustomEvent).detail.live = { s: sRef.current, changed: () => { bump(); save(); } }; };
         window.addEventListener("gb:live", onLive);
-        return () => { clearInterval(tick); clearInterval(ui); clearInterval(sv); clearInterval(follow); window.removeEventListener("storage", onStore); document.removeEventListener("visibilitychange", onHide); window.removeEventListener("pagehide", onHide); window.removeEventListener("gb:live", onLive); save(); };
+        return () => { clearInterval(tick); clearInterval(ui); clearInterval(follow); offNewer(); window.removeEventListener("gb:live", onLive); };
     }, [ready, bump, save, note, setCamera, homeCam]);
+    // Saves every 8 s, on tab hide, on leaving and on unmount (the game kit's loop; save() writes through lib/saves).
+    useAutosave(save, { enabled: ready });
 
     // ---- actions -----------------------------------------------------------------------------------------------------------
     const act = useCallback((fn: (s: State) => unknown) => { const s = sRef.current; if (s) { fn(s); bump(); } }, [bump]);
@@ -414,6 +424,9 @@ export function Groundbreak() {
         return () => ro.disconnect();
     }, [ready]);
 
+    // Held for the exit animations. These sit above the boot return so the hook order never changes.
+    const cardH = useHeld(sel, 120);
+    const awayH = useHeld(away, 120);
     if (!ready || !s || !f) return <div className="gb-root gb-boot" aria-busy="true"><p>Staking out the site…</p></div>;
 
     const stage = stageOf(s);
@@ -446,17 +459,17 @@ export function Groundbreak() {
                 <div className="gb-prog" aria-label={`Stage ${stage} of 5, job ${Math.min(JOBS.length, s.builtThisFirm + 1)} of ${JOBS.length}`}>
                     <div className="gb-prog-row" data-tip={`Stage ${stage} of 5`}>
                         <span>Stage</span>
-                        <ol className="gb-pips">{[1, 2, 3, 4, 5].map((n) => <li key={n} data-s={n < stage ? "done" : n === stage ? "now" : "wait"} />)}</ol>
+                        <ol className="gb-pips">{[1, 2, 3, 4, 5].map((n) => <li key={n} data-s={n < stage ? "done" : n === stage ? "now" : "wait"} data-fresh={n === freshStage ? "" : undefined} />)}</ol>
                         <b>{stage}<small>/5</small></b>
                     </div>
                     <div className="gb-prog-row" data-tip={`Job ${Math.min(JOBS.length, s.builtThisFirm + 1)} of ${JOBS.length}`}>
                         <span>Jobs</span>
-                        <ol className="gb-ticks">{JOBS.map((j, n) => <li key={j.id} data-s={n < s.builtThisFirm ? "done" : n === s.builtThisFirm ? "now" : "wait"} />)}</ol>
+                        <ol className="gb-ticks">{JOBS.map((j, n) => <li key={j.id} data-s={n < s.builtThisFirm ? "done" : n === s.builtThisFirm ? "now" : "wait"} data-fresh={n === freshTick ? "" : undefined} />)}</ol>
                         <b>{Math.min(JOBS.length, s.builtThisFirm + 1)}<small>/{JOBS.length}</small></b>
                     </div>
                 </div>
                 <ul className="gb-res" aria-label="Resources">
-                    <li data-tip="Cash. Jobs pay it; methods cost it."><Ico id="cash" size={22} /><b>{fmtCash(s.cash)}</b></li>
+                    <li data-tip="Cash. Jobs pay it; methods cost it."><Ico id="cash" size={22} /><b><Ticked value={s.cash} format={fmtCash} /></b></li>
                     <li data-tip="Reputation. It lifts all output and inspections."><Ico id="rep" size={22} /><b>{fmt(s.rep)}</b></li>
                     <li data-tip="Crews hired"><Ico id="crew" size={22} /><b>{crewTotal}</b></li>
                 </ul>
@@ -532,10 +545,10 @@ export function Groundbreak() {
                     <button type="button" className="gb-go" onClick={() => { conflictRef.current = false; setConflict(false); save(); }}>Use this tab</button>
                 </div>
             )}
-            {away && <AwayCard a={away} onClose={() => setAway(null)} />}
+            {awayH.shown && <AwayCard a={awayH.shown} onClose={() => setAway(null)} leaving={awayH.state === "out"} />}
             {(paused || shell.paused) && <div className="gb-paused" role="status">Paused · P to resume</div>}
 
-            {card !== null && <MatCard s={s} i={card} onBuy={doBuy} onUnlock={doUnlock} onClose={() => setSel(null)} cue={cue} />}
+            {cardH.shown !== null && <MatCard s={s} i={cardH.shown} onBuy={doBuy} onUnlock={doUnlock} onClose={() => setSel(null)} cue={cue} leaving={cardH.state === "out"} />}
 
             <div ref={dockRef} className="gb-dock" onPointerDown={(e) => e.stopPropagation()} role="toolbar" aria-label="Materials">
                 {DOCK_GROUPS.map(([label, from, to], gi) => (
@@ -561,6 +574,7 @@ export function Groundbreak() {
                                         {open && <i className="gb-lv">{s.crews[i]}</i>}
                                         {!open && !next && <em className="gb-tile-name">{m.name}</em>}
                                         {!open && !next && <Ico id="lock" size={16} className="gb-tile-lock" />}
+                                        {pulse?.mat === i && <i key={pulse.key} className="gb-unlock" aria-hidden="true" />}
                                     </button>
                                 );
                             })}
@@ -596,7 +610,7 @@ export function Groundbreak() {
                     <dt>Offline limit</dt><dd>{Math.round((TUNE.offlineH + f.offlineH))} hours</dd>
                 </dl>
                 <p className="gb-line gb-firm-line">{canIncorporate(s, f) ? `Incorporate: +${charterGain(s, f)} charter for perks that stay, a new firm in ${cityOf(s.firm + 1).name}. The skyline stays.` : `Opens at ${TUNE.charterMinRep} rep (you have ${fmt(s.repFirm)}). Pays about +${Math.max(1, Math.floor(Math.sqrt(TUNE.charterMinRep / TUNE.charterDiv) * f.charter))} charter for perks that stay, then a new firm in ${cityOf(s.firm + 1).name}. The skyline stays.`}</p>
-                <PerkGrid s={s} onBuy={(id) => act((x) => { if (buyPerk(x, id)) save(); })} onAuto={(n) => act((x) => { x.autoOff = x.autoOff.includes(n) ? x.autoOff.filter((v) => v !== n) : [...x.autoOff, n]; save(); })} />
+                <PerkGrid s={s} justBought={freshPerk} onBuy={(id) => act((x) => { if (buyPerk(x, id)) { save(); setFreshPerk(id); note(`${PERKS.find((p) => p.id === id)?.name ?? "Perk"} bought.`, "hot"); } })} onAuto={(n) => act((x) => { x.autoOff = x.autoOff.includes(n) ? x.autoOff.filter((v) => v !== n) : [...x.autoOff, n]; save(); })} />
 <div className="gb-win-foot">
                 <ConfirmGo label="Incorporate" sure="Cash, crews and materials reset. Charter and the skyline stay. Sure?" onGo={doIncorporate} disabled={!canIncorporate(s, f)} />
                 </div>
@@ -608,9 +622,9 @@ export function Groundbreak() {
 
             <Window open={win === "menu"} title="Menu" variant="settle" size="sm" icon="menu" banner="menu" onClose={() => setWin(null)}>
                 <MenuBody s={s} paused={paused} onPause={togglePause} simple={simple} onSimple={toggleSimple} fs={shell.supportsFullscreen} onFs={shell.toggleFullscreen} fsOn={shell.fullscreen}
-                    onImport={(st) => { const p = parse(st); if (!p) { note("That save could not be read."); return; } if (sRef.current) writeStored(window.localStorage, SAVE_KEY + "-backup", serialize(sRef.current)); sRef.current = p; seen.current = { built: p.built, open: p.open, change: !!p.change, cashAll: p.cashAll }; seenRe.current = p.reruns; save(); bump(); note("Save imported. The old one is kept as a backup.", "hot"); }}
-                    onWipe={() => { if (sRef.current) writeStored(window.localStorage, SAVE_KEY + "-backup", serialize(sRef.current)); sRef.current = fresh(Date.now()); seen.current = { built: 0, open: 1, change: false, cashAll: 0 }; seenRe.current = -1; save(); setWin(null); setSel(null); bump(); }} onNote={note}
-                    onRestore={(raw) => { const p = parse(JSON.parse(raw)); if (!p) { note("That backup could not be read."); return; } if (sRef.current) writeStored(window.localStorage, SAVE_KEY + "-backup", serialize(sRef.current)); sRef.current = p; seen.current = { built: p.built, open: p.open, change: !!p.change, cashAll: p.cashAll }; seenRe.current = p.reruns; save(); setWin(null); bump(); note("Backup restored. The save you replaced is kept as the manual backup.", "hot"); }} />
+                    onImport={(st) => { const p = reviveAuto(GROUNDBREAK_SAVE, st); if (!p) { note("That save could not be read."); return; } if (sRef.current) writeStored(window.localStorage, SAVE_KEY + "-backup", encodeSave(GROUNDBREAK_SAVE, sRef.current)); sRef.current = p; seen.current = { built: p.built, open: p.open, change: !!p.change, cashAll: p.cashAll }; seenRe.current = p.reruns; save(); bump(); note("Save imported. The old one is kept as a backup.", "hot"); }}
+                    onWipe={() => { if (sRef.current) writeStored(window.localStorage, SAVE_KEY + "-backup", encodeSave(GROUNDBREAK_SAVE, sRef.current)); sRef.current = fresh(Date.now()); seen.current = { built: 0, open: 1, change: false, cashAll: 0 }; seenRe.current = -1; save(); setWin(null); setSel(null); bump(); }} onNote={note}
+                    onRestore={(raw) => { const p = reviveText(GROUNDBREAK_SAVE, raw); if (!p) { note("That backup could not be read."); return; } if (sRef.current) writeStored(window.localStorage, SAVE_KEY + "-backup", encodeSave(GROUNDBREAK_SAVE, sRef.current)); sRef.current = p; seen.current = { built: p.built, open: p.open, change: !!p.change, cashAll: p.cashAll }; seenRe.current = p.reruns; save(); setWin(null); bump(); note("Backup restored. The save you replaced is kept as the manual backup.", "hot"); }} />
             </Window>
         </div>
     );
@@ -630,7 +644,7 @@ function CueChip({ cue, onGo }: { cue: Cue; onGo: () => void }) {
     );
 }
 
-function AwayCard({ a, onClose }: { a: AwaySummary; onClose: () => void }) {
+function AwayCard({ a, onClose, leaving }: { a: AwaySummary; onClose: () => void; leaving?: boolean }) {
     const rows: [string, string][] = [];
     for (const j of a.jobs) rows.push([j.count > 1 ? `${j.name} x${j.count}` : j.name, "handed over"]);
     if (a.cash > 0) rows.push(["Cash earned", fmtCash(a.cash)]);
@@ -639,7 +653,7 @@ function AwayCard({ a, onClose }: { a: AwaySummary; onClose: () => void }) {
     if (a.crews > 0) rows.push(["Crews hired", `+${a.crews}`]);
     for (const m of a.mats) rows.push([m.name, `+${fmt(m.gain)}`]);
     return (
-        <section className="gb-away" role="dialog" aria-label="Welcome back" onPointerDown={(e) => e.stopPropagation()}>
+        <section className="gb-away" role="dialog" aria-label="Welcome back" data-s={leaving ? "out" : undefined} onPointerDown={(e) => e.stopPropagation()}>
             <h2>Welcome back</h2>
             <p>The crews kept working for {fmtAge(a.secs)}{a.capped ? `. That is the offline limit of ${a.hours} hours; the rest of your time away did not count` : ""}.</p>
             {rows.length > 0 && <dl>{rows.slice(0, 7).map(([k, v]) => <div key={k}><dt>{k}</dt><dd>{v}</dd></div>)}</dl>}
@@ -658,14 +672,14 @@ function CostLine({ s, i, t }: { s: State; i: number; t: Tier }) {
     );
 }
 
-function MatCard({ s, i, onBuy, onUnlock, onClose, cue }: { s: State; i: number; onBuy: (i: number, t: Tier) => void; onUnlock: () => void; onClose: () => void; cue: Cue }) {
+function MatCard({ s, i, onBuy, onUnlock, onClose, cue, leaving }: { s: State; i: number; onBuy: (i: number, t: Tier) => void; onUnlock: () => void; onClose: () => void; cue: Cue; leaving?: boolean }) {
     const hint = cue.kind === "buy" && cue.mat === i ? cue.tier : undefined;
     const m = MATS[i];
     const f = effects(s);
     const open = i < s.open;
     const next = i === s.open;
     return (
-        <section className="gb-card" key={i} role="dialog" aria-label={m.name} onPointerDown={(e) => e.stopPropagation()}>
+        <section className="gb-card" key={i} role="dialog" aria-label={m.name} data-s={leaving ? "out" : undefined} onPointerDown={(e) => e.stopPropagation()}>
             <header>
                 <Ico id={open || next ? MAT_ICONS[i] : "lock"} size={56} />
                 <div><h3>{m.name}</h3><p>{open ? `${fmt(rawRate(s, i, f, chain(s)))} /s · ${fmt(s.amt[i])} held` : next ? `needs ${fmt(UNLOCK[i])} ${MATS[i - 1].name}` : "Locked"}</p></div>
@@ -700,7 +714,7 @@ function MatCard({ s, i, onBuy, onUnlock, onClose, cue }: { s: State; i: number;
     );
 }
 
-function PerkGrid({ s, onBuy, onAuto }: { s: State; onBuy: (id: string) => void; onAuto: (n: number) => void }) {
+function PerkGrid({ s, justBought, onBuy, onAuto }: { s: State; justBought: string | null; onBuy: (id: string) => void; onAuto: (n: number) => void }) {
     const autoOf: Record<string, number> = { o2: 1, o4: 2, l9: 3 };
     const branches = [["ops", "Operations"], ["money", "Money"], ["logistics", "Logistics"]] as const;
     return (
@@ -712,7 +726,7 @@ function PerkGrid({ s, onBuy, onAuto }: { s: State; onBuy: (id: string) => void;
                         {PERKS.filter((p) => p.branch === b).map((p) => {
                             const own = s.perks.includes(p.id), ready = perkReady(s.perks, p);
                             return (
-                                <li key={p.id}>
+                                <li key={p.id} data-fresh={justBought === p.id ? "" : undefined}>
                                     <button type="button" className="gb-perk" disabled={own || !ready || s.charter < p.cost} data-own={own ? "" : undefined} data-lock={!ready && !own ? "" : undefined} aria-label={p.name} data-tip={`${p.name}: ${p.desc}${own ? " Owned." : !ready ? " Needs an earlier perk." : ""}`} onClick={() => onBuy(p.id)}>
                                         <Ico id={`perk_${p.id}`} size={48} /><em>{own ? "✓" : p.cost}</em>
                                     </button>
@@ -780,7 +794,7 @@ function Console({ run }: { run: (line: string) => { t: string; k?: string }[] }
 }
 
 function MenuBody({ s, paused, onPause, simple, onSimple, fs, onFs, fsOn, onImport, onWipe, onNote, onRestore }: { s: State; paused: boolean; onPause: () => void; simple: boolean; onSimple: () => void; fs: boolean; onFs: () => void; fsOn: boolean; onImport: (s: State) => void; onWipe: () => void; onNote: (t: string) => void; onRestore: (raw: string) => void }) {
-    const [backups] = useState(() => { try { return [["Automatic backup", SAVE_KEY + "-auto1"], ["Older automatic backup", SAVE_KEY + "-auto2"], ["Before last import or reset", SAVE_KEY + "-backup"]].flatMap(([label, key]) => { const raw = window.localStorage.getItem(key); if (!raw) return []; const p = parse(JSON.parse(raw)); return p ? [{ label, raw, built: p.built, at: p.savedAt }] : []; }); } catch { return []; } });
+    const [backups] = useState(() => { try { return [["Automatic backup", SAVE_KEY + "-auto1"], ["Older automatic backup", SAVE_KEY + "-auto2"], ["Before last import or reset", SAVE_KEY + "-backup"]].flatMap(([label, key]) => { const raw = window.localStorage.getItem(key); if (!raw) return []; const p = reviveText(GROUNDBREAK_SAVE, raw); return p ? [{ label, raw, built: p.built, at: p.savedAt }] : []; }); } catch { return []; } });
     const [pickedBackup, setPickedBackup] = useState<number | null>(null);
     const file = useRef<HTMLInputElement>(null);
     const [pending, setPending] = useState<State | null>(null);

@@ -22,7 +22,7 @@ Audited 2026-11-15 against `integration` at 5138bb6. Route `/creations/games/bra
 | HUD and menus | `components/automation/`, `components/brasswork-ui/`, `components/brasswork/`, `app/camino/brasswork.css` | `MenuWindow` in `brasswork-ui/window.tsx` |
 | Audio | `lib/automation/audio/` | Web Audio synthesis, no sample files |
 | Settings and first run | `lib/brasswork/` | Settings in localStorage, quest flag |
-| Dev pages | `/dev/voxel-island`, `/dev/voxel-model`, `/dev/brass-kit`, `/dev/brass-art`, `/dev/brasswork-site`, `/automation-preview` | Bench pages 404 on a production build unless `VOXEL_BENCH=1`; use `next dev` |
+| Dev pages | `/dev/voxel-island`, `/dev/voxel-model`, `/dev/brass-kit`, `/dev/brass-art`, `/dev/brasswork-site`, `/automation-preview` | Bench pages 404 on a production build unless `VOXEL_BENCH=1`; `/automation-preview` 404s on every production build; use `next dev` |
 
 Owners are per area, one thread per file set. The threads: "Streamline Brasswork building and controls" (`input/`, build bar), "Make Brasswork progression more satisfying" (`sim/`, `data/`), and the three art threads for island and sky (`render/`), menu art (`components/brasswork-ui`, `components/automation`) and item and machine icons (`components/brasswork-art`, `scripts/brasswork/`). If a thread for an area is finished, a fresh thread may take its files; say so in the PR.
 
@@ -37,7 +37,7 @@ Owners are per area, one thread per file set. The threads: "Streamline Brasswork
 | Drills on nodes: purity multiplier, work from any of their four cells | working | `sim/world.ts`, `data/tree.ts` | `drills.test.mjs`, `resources.test.mjs` |
 | Crafting machines (kiln, furnace, press, lathe, drawer, assembler, fabricator), recipes, buffers | working | `data/tree.ts`, `sim/world.ts` | `recipes.test.mjs`, `sim.test.mjs` |
 | Power: windmills 50 kW over 8 cells with gusts, spring winder steady 60 kW, spring store battery, unused power shared | working | `sim/world.ts` (`windAt`, `chargeOf`) | `power-detail.test.mjs`, `power-share.test.mjs` |
-| Research tree: 16 core nodes, 5 alternate recipes, 6 mastery nodes; research enforced | working | `data/tree.ts`, `sim/progress.ts` | `research-gate.test.mjs`, `progression.test.mjs` |
+| Research tree: 16 core nodes, 5 alternate recipes, 6 mastery nodes; research enforced; the window uses brass and a warm olive-bronze patina, no teal | working | `data/tree.ts`, `sim/progress.ts` | `research-gate.test.mjs`, `progression.test.mjs` |
 | Hub requests (4 early deliveries) and 5 milestones paying blueprints | working | `data/tree.ts`, `sim/progress.ts` | `hub-requests.test.mjs`, `hub-costs.test.mjs` |
 | Commissions after Sky orrery first light, repeating and scaling | working | `sim/data.ts`, `sim/progress.ts` | `progression.test.mjs` |
 | Supply crates on orders and milestones | working | `sim/progress.ts` | `progression.test.mjs` |
@@ -70,7 +70,7 @@ Owners are per area, one thread per file set. The threads: "Streamline Brasswork
 |---|---|---|---|
 | Voxel island, terrain (one base tone for the plateau and the grass top, no per-voxel jitter on ground), mesher with AO, fog, grass in wind | working | `render/index.ts`, `mesher.ts`, `terrain.ts`, `grass.ts`, `fog.ts` | none |
 | Sky with sun elevation by clock, stars, moon, shooting stars, cirrus; clouds | working | `render/sky.ts`, `clouds.ts`, `lighting.ts`, `config.ts` | none |
-| Sea: baked shore height map, foam, glints, three palettes (verdigris default) | working | `render/water.ts` | none |
+| Sea: baked shore height map, foam, glints, three palettes (verdigris default, now dark olive-bronze, no teal) | working | `render/water.ts` | none |
 | Horizon islands and night lighthouse beam | working | `render/horizon.ts` | none |
 | Dither post pass (6 levels, pixel 3, toggle; the Bayer dither applies only where the picture has an edge, so flat ground snaps to one tone), quality governor | working | `render/postfx.ts`, `governor.ts` | none |
 | Machines with working, clock and charge states, hub growth stages 0 to 3, ore node boards | working | `render/models.ts`, `models/machines/`, `models/resources/node.ts` | `machine-models.test.mjs`, `resources.test.mjs` |
@@ -140,3 +140,12 @@ One motion language for every menu, sheet and button. Tokens and shared keyframe
 
 **Empty and locked states:** locked machine rows show padlock slots and "Fill hub orders and they appear here" (`build-bar.tsx`); an untouched hub order shows the crate scene; the away report with nothing gained and the production ledger show the idle scene. `components/automation/empty-states.css`.
 **First minutes (checked headless with `scripts/automation/first-minutes.mjs`):** the banner walks drill, kiln (starts on Iron ingot), windmill, belts, then the first order. The quest scroll and banner agree.
+
+## Reward moments
+- Resource gain float: a `+N` rises once off a resource box in the top strip when its stock rises (about once a second per resource). Shows over the reward card's count-up and does not replace it. `GainFloat` in `components/automation/resource-strip.tsx`, styles at the end of `components/automation/resource-box.css`. Hidden in reduced motion and Low fx. Checked headless with the `?bwdev=1` hook (`/mnt/project-files/game-juice-2026-11-16/brasswork-gain.mjs`), not on a real GPU.
+- Newly unlocked machine: its row in the build list gets one brass stamp and a gold frame for about 1.5 s (`useNewlyUnlocked` in `components/automation/build-bar.tsx`, `[data-fresh]` rules at the end of `components/automation/build-tile.css`). Not yet captured in a frame.
+- Counters: resource stock in the top strip eases to its new value (`Ticked`, `components/games/juice/ticked.tsx`), instead of jumping.
+
+## Shared game kit
+- Built on the kit (`docs/game-kit.md`): HUD numbers use the kit's compact and full styles (`components/automation/format.ts`); `MenuWindow` closes through `useWindowClose` and traps focus with `useFocusTrap`; the reward card counts up with `useCountUp`. No change on screen.
+- Save warning: when a save cannot be read (it is kept under `brasswork-save-v1-corrupt` and a new workshop starts) or a backup is loaded instead, a brass toast under the top bar says so for 20 s; click to dismiss (`brasswork-host.tsx`, `components/brasswork/save-notes.css`, kit `ToastStack`). Checked headless at 1440 and 390 with a broken save.

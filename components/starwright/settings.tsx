@@ -93,13 +93,13 @@ export interface AwayData { title: string; lines: string[]; report?: AwayReport 
 
 /** A card over the scene: what the star did while you were away, or a problem with the save. Dismiss button, or Esc. The elements it
  *  gained show as chips with their drawn icon; hover shows the Almanac line and a tap does the same (touch has no hover). Styles: starwright-ev.css. */
-export function AwayCard({ card, onClose }: { card: AwayData; onClose: () => void }) {
+export function AwayCard({ card, onClose, leaving }: { card: AwayData; onClose: () => void; leaving?: boolean }) {
     const { title, lines, report: r } = card;
     const [pick, setPick] = useState<number | null>(null);
     const welcome = !!r;
     const rows = lines.map((x, i) => ({ x, i })).filter(({ i }) => !(welcome && (i === 0 || i === r.gainAt)));
     return (
-        <div className="sw-away sw-ev sw-away2 sw-panel" role="dialog" aria-label={title} data-kind="away">
+        <div className="sw-away sw-ev sw-away2 sw-panel" role="dialog" aria-label={title} data-kind="away" data-leaving={leaving ? "" : undefined}>
             <div className="sw-ev-head">
                 <span className="sw-ev-art" aria-hidden="true"><Gl n="age" s={3} /></span>
                 <div><b>{title}</b>{welcome && <em>{lines[0]}</em>}</div>

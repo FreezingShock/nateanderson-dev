@@ -3,8 +3,8 @@ import type { CSSProperties } from "react";
 
 /** One sheet holds every item and machine icon: 128 px art cells, 8 across, row by row. */
 export const ICON_SHEET = {
-    url: "/brasswork/icons/items.webp?v=ff0cc9e3",
-    png: "/brasswork/icons/items.png?v=ff0cc9e3",
+    url: "/brasswork/icons/items.webp?v=57b2449c",
+    png: "/brasswork/icons/items.png?v=57b2449c",
     cell: 128,
     cols: 8,
     rows: 9,
@@ -12,7 +12,7 @@ export const ICON_SHEET = {
 
 /** The same sheet averaged down to 64 px cells, used for icons shown at 64 CSS px or smaller. */
 export const ICON_SHEET_SMALL = {
-    url: "/brasswork/icons/items-64.webp?v=ff0cc9e3",
+    url: "/brasswork/icons/items-64.webp?v=57b2449c",
     cell: 64,
 } as const;
 

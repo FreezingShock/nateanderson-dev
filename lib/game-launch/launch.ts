@@ -53,6 +53,7 @@ export const GAME_SAVES: Record<string, { key: string; kind: SaveInfo["kind"]; r
     },
     "outline-guesser": { key: "outline-stats-v1", kind: "stats", read: statsReader },
     "flag-guesser": { key: "flag-stats-v1", kind: "stats", read: statsReader },
+    // gen-anchor: saves
 };
 
 /** The route segment of a game URL, e.g. "/creations/games/node-farm?x=1" -> "node-farm". Null for the hub. */

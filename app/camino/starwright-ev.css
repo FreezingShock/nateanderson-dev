@@ -1,7 +1,7 @@
 /* Shared event card: the visitor choices (comet, flare, gas cloud, companion) and the Welcome back card. One framed panel with a header
    (animated art, title, line), then its own body. Both set data-kind so motion and sound can hook per card: [data-kind="visitor"],
    [data-kind="away"]; the countdown sets data-late under 20 s. Loaded after starwright.css so it wins ties. */
-.sw-ev { --ev: var(--sw-cy); display: grid; gap: 10px; padding: 12px 14px 14px; border: 8px solid transparent; border-image: url("/starwright/ui/frame-warm.png?v=8") 8 fill / 8px / 0 stretch; background-clip: padding-box; overflow: hidden; }
+.sw-ev { --ev: var(--sw-cy); display: grid; gap: 10px; padding: 12px 14px 14px; border: 8px solid transparent; border-image: url("/starwright/ui/frame-warm.webp?v=8") 8 fill / 8px / 0 stretch; background-clip: padding-box; overflow: hidden; }
 .sw-ev-head { display: grid; grid-template-columns: 64px minmax(0, 1fr) auto; align-items: center; gap: 12px; }
 .sw-ev[data-kind="away"] .sw-ev-head { grid-template-columns: 64px minmax(0, 1fr); }
 .sw-ev-head b { display: block; font: 600 13px var(--cm-mono, monospace); letter-spacing: .1em; text-transform: uppercase; color: var(--sw-cy); }
@@ -59,3 +59,8 @@
     .sw-codex .sw-cx { padding-left: 2px; padding-right: 2px; min-width: 0; }
 }
 .sw-chart .sw-chart-foot { box-sizing: border-box; width: 100%; padding: 6px 16px 16px; text-align: left; }
+
+/* The away card's exit: it fades up and out, quicker than it arrived. Reduce motion removes the animation, so it just goes. */
+.sw-away[data-leaving] { animation: swAwayOut var(--cm-d-fast) steps(3, end) forwards; pointer-events: none; }
+@keyframes swAwayOut { to { opacity: 0; margin-top: -10px; } }
+@media (prefers-reduced-motion: reduce) { .sw-away[data-leaving] { animation: none; opacity: 0; } }

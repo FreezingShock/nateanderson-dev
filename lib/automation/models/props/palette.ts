@@ -3,7 +3,7 @@
 
 export const LOOK = {
     brass: 0xd29a3c, brassD: 0x8a5a1e, copper: 0xb5552b, cream: 0xf0dfb8,
-    steel: 0x5e5348, steelD: 0x3a3128, iron: 0x7f8ca3, ironD: 0x4e5a6e, patina: 0x58b09a,
+    steel: 0x5e5348, steelD: 0x3a3128, iron: 0x7f8ca3, ironD: 0x4e5a6e, patina: 0x8f9650,
     grass: [0x5f9440, 0x6da345, 0x4f8236, 0x7bb04c],
     sand: 0xd9b97a, sandD: 0xbf9f62, dirt: 0x6b4a2a, rock: 0x7a7068, rockD: 0x6b625a,
     glow: 0xffb347,
@@ -50,5 +50,5 @@ export const WOOD = { plank: 0x8a5a32, plankD: 0x6b4426, plankL: 0xa06c3c, beam:
 
 export const BUILD = {
     plaster: 0xe8d4a8, plasterD: 0xd4bc8e, timber: 0x4a2e1c, stone: 0x7a7068, stoneD: 0x625850, brick: 0x9a4a30, brickD: 0x7c3a26,
-    roof: 0x58b09a, roofD: 0x3f8a76, roofL: 0x6cc2aa, window: 0xffc060, door: 0x6b3a20, doorD: 0x52301a,
+    roof: 0x8f9650, roofD: 0x6e6a36, roofL: 0xb3b26a, window: 0xffc060, door: 0x6b3a20, doorD: 0x52301a,
 } as const;

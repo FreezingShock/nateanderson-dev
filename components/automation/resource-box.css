@@ -33,3 +33,9 @@
   .ab-root.bw .ab-res .ab-res-item { min-width: 0; justify-content: center; }
   .ab-root.bw .ab-res .ab-res-rate { display: none; }
 }
+
+/* Gain float (components/automation/resource-strip.tsx GainFloat): a "+N" rises off the box once, then fades. */
+.ab-root .ab-res-gain { position: absolute; left: 50%; top: -4px; z-index: 2; pointer-events: none; transform: translateX(-50%); font: 700 12px/1 var(--bw-font-num, inherit); font-variant-numeric: tabular-nums; color: var(--bw-amber, #ffb347); text-shadow: 0 0 0 1px #1d130a, 1px 1px 0 #1d130a; white-space: nowrap; animation: ab-res-gain var(--cm-d-reveal) steps(4, end) both; }
+@keyframes ab-res-gain { 0% { opacity: 1; transform: translate(-50%, 0); } 100% { opacity: 0; transform: translate(-50%, -18px); } }
+.ab-root[data-reduce="true"] .ab-res-gain, .ab-root[data-lowfx="true"] .ab-res-gain { display: none; }
+@media (prefers-reduced-motion: reduce) { .ab-root .ab-res-gain { display: none; } }

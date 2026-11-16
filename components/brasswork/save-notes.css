@@ -1,0 +1,18 @@
+/* Brasswork save warnings (brasswork-host.tsx): the game kit's ToastStack in brass. Shown when an unreadable save was
+   kept and a new workshop started, or when a backup was loaded instead. Sits under the top bar, where the reward card
+   also lands; a save warning only shows at load, before any reward. Click to dismiss. No cyan or teal. */
+.bw-save-notes {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    z-index: 17;
+    --gk-bg: #2a1b0e;
+    --gk-ink: var(--bw-cream, #f0dfb8);
+    --gk-dim: var(--bw-dim, #b09a6c);
+    --gk-line: #6a4a22;
+    --gk-accent: var(--bw-brass, #d29a3c);
+    --gk-shade: var(--bw-ink, #140d08);
+    --gk-font: var(--bw-font-text, inherit);
+}
+.bw-save-notes .gk-toasts { position: fixed; top: calc(var(--ab-top-h, 76px) + 12px); width: min(460px, calc(100vw - 24px)); max-width: none; }
+.bw-save-notes .gk-toast { width: 100%; padding: 10px 14px; border: 2px solid #b8862f; box-shadow: inset 0 0 0 2px #1d130a, 0 12px 30px rgba(0, 0, 0, 0.55); cursor: pointer; }
