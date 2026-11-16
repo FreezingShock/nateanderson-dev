@@ -44,7 +44,7 @@ PORTRAITS = [
     ("fabricator", "Fabricator", "patina"), ("windmill", "Windmill", "patina"), ("spring_winder", "Spring winder", "patina"),
     ("spring_store", "Spring store", "patina"), ("hub", "Hub", "glow"), ("orrery", "Sky orrery", "glow"),
 ]
-ACCENT = {"glow": "#ffa63a", "patina": "#58b09a", "brass": "#e8b85a", "cu": "#e08a48", "rock": "#bcb2a6"}
+ACCENT = {"glow": "#ffa63a", "patina": "#8f9650", "brass": "#e8b85a", "cu": "#e08a48", "rock": "#bcb2a6"}
 
 
 def hexc(h):

@@ -611,7 +611,10 @@ html.gb-route .sf-foot { display: none !important; }
 
 /* ---- windows leave the site showing (2026-11-15): desktop, a narrower panel docked beside the rail that ends above the dock; phone, a bottom sheet that covers the dock and leaves the top of the site visible ---- */
 @media (min-width: 861px) and (min-height: 521px) {
-    .gb-root .gb-win { width: min(400px, calc(100vw - 100px)); max-height: calc(100% - var(--gb-dock-top, 140px) - 92px); }
+    /* 200 px floor: on a short screen the panel is its 360 px minimum, so the window would otherwise fall to about 130 px and show only its banner. */
+    /* the zoom column sits at the lower left of the view, beside the rail: the right side holds the job card and the feed */
+    .gb-root .gb-zoom { left: 200px; right: auto; }
+    .gb-root .gb-win { width: min(400px, calc(100vw - 100px)); max-height: max(200px, calc(100% - var(--gb-dock-top, 140px) - 92px)); }
     .gb-root .gb-win.gb-sm { width: min(320px, calc(100vw - 100px)); }
     .gb-root .gb-win.gb-lg { width: min(520px, calc(100vw - 100px)); }
 }
@@ -712,6 +715,16 @@ html.gb-route .sf-foot { display: none !important; }
     .gb-root .gb-tile-name { font-size: 9px; }
     .gb-root .gb-tile[data-state="locked"] { height: 90px; }
     .gb-root .gb-lv { min-width: 22px; height: 18px; font-size: 12px; }
+}
+
+/* ---- short desktop screens (2026-11-16): about 720 px tall or less, the panel is at its minimum and the dock sits high.
+   The job card drops its banner (56 px) so it ends above the dock, and the toast feed shows only the newest toast so it does not reach the cue line. ---- */
+@media (min-width: 861px) and (min-height: 521px) and (max-height: 720px) {
+    .gb-root .gb-job .gb-banner { display: none; }
+    .gb-root .gb-feed li:nth-last-child(n+2) { display: none; }
+    /* the card ends above the dock; a long job (a late save) scrolls its body instead of running under the dock */
+    .gb-root .gb-job { display: flex; flex-direction: column; max-height: calc(100% - var(--gb-dock-top, 140px) - 80px); }
+    .gb-root .gb-job-body { min-height: 0; overflow: auto; }
 }
 
 /* Reward moments. A material that comes on site rings its dock tile once: a square outline that grows and fades in

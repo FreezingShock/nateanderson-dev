@@ -6,11 +6,12 @@ import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type PointerEvent as RPointerEvent, type ReactNode } from "react";
 import { useGameShell } from "@/components/games/shell/game-route-shell";
 import { createSaveTools, downloadText, readPickedFile, writeStored } from "@/lib/games/save";
+import { loadSave, rawSavedAt, reviveAuto, reviveText, rollCopies, writeSave, encodeSave } from "@/lib/saves/core";
 import { JOB_BY, JOBS, MATS, PERKS, TIER_LABELS, TUNE, UNLOCK_COST as UNLOCK, cityOf, N as NMAT } from "@/lib/groundbreak/data";
 import {
-    SAVE_KEY, SAVE_VERSION, acceptChange, buy, jobMat, buyPerk, canBuy, canIncorporate, canUnlock, catchUp, charterGain, chain, declineChange, effects, fmt, fmtAge,
-    fmtCash, fresh, incorporate, isSave, jobFloors, jobPhaseName, jobProgress, load, methodReady, overtime, overtimeCost, parse, payout, perkReady, phaseNeeds,
-    plan, queue, nextJob, offlineCapS, rawRate, repPay, repeatPay, repeatRep, serialize, stageOf, step, tierCost, unlock, waitingFor, type State,
+    GROUNDBREAK_SAVE, SAVE_KEY, SAVE_VERSION, acceptChange, buy, jobMat, buyPerk, canBuy, canIncorporate, canUnlock, catchUp, charterGain, chain, declineChange, effects, fmt, fmtAge,
+    fmtCash, fresh, incorporate, isSave, jobFloors, jobPhaseName, jobProgress, methodReady, overtime, overtimeCost, parse, payout, perkReady, phaseNeeds,
+    plan, queue, nextJob, offlineCapS, rawRate, repPay, repeatPay, repeatRep, stageOf, step, tierCost, unlock, waitingFor, type State,
 } from "@/lib/groundbreak/engine";
 import { gbCommand } from "@/lib/groundbreak/commands";
 import { awaySnap, awaySummary, doCue, nextCue, type AwaySummary, type Cue } from "@/lib/groundbreak/guide";
@@ -150,19 +151,15 @@ export function Groundbreak() {
         if (!s) return;
         if (conflictRef.current) return;
         s.savedAt = Date.now();
-        const raw = serialize(s);
-        if (!writeStored(window.localStorage, SAVE_KEY, raw)) {
+        const raw = writeSave(window.localStorage, GROUNDBREAK_SAVE, s, s.savedAt);
+        if (raw === null) {
             if (!warnedWrite.current) { warnedWrite.current = true; note("The browser would not save the game (storage full or blocked). Export a save from the Menu so nothing is lost.", "hot", true); }
             return;
         }
         // two rolling copies, five minutes apart, so a bad import or a bug never costs more than a few minutes
         if (s.savedAt - lastBackup.current > 300_000) {
             lastBackup.current = s.savedAt;
-            try {
-                const old = window.localStorage.getItem(SAVE_KEY + "-auto1");
-                if (old) writeStored(window.localStorage, SAVE_KEY + "-auto2", old);
-                writeStored(window.localStorage, SAVE_KEY + "-auto1", raw);
-            } catch { /* storage blocked */ }
+            try { rollCopies(window.localStorage, SAVE_KEY + "-auto1", SAVE_KEY + "-auto2", raw); } catch { /* storage blocked */ }
         }
     }, [note]);
 
@@ -264,14 +261,10 @@ export function Groundbreak() {
     // ---- boot and tick -------------------------------------------------------------------------------------------------------
     useEffect(() => {
         const now = Date.now();
-        const loaded = load(window.localStorage);
-        if (!loaded) {
-            // A save that exists but cannot be read is copied aside before the new game overwrites it.
-            try {
-                const raw = window.localStorage.getItem(SAVE_KEY);
-                if (raw) { writeStored(window.localStorage, SAVE_KEY + "-corrupt", raw); note("Your saved game could not be read. A copy is kept for recovery and a new firm starts.", "hot", true); }
-            } catch { /* storage blocked */ }
-        }
+        // lib/saves/core copies a save that cannot be read to SAVE_KEY-corrupt, then tries the rolling copies before it gives up
+        const got = loadSave(window.localStorage, GROUNDBREAK_SAVE, now);
+        const loaded = got.state;
+        if (got.note) note(got.note, "hot", true);
         const s = loaded ?? fresh(now);
         if (loaded) {
             const gone = (now - s.savedAt) / 1000;
@@ -334,7 +327,7 @@ export function Groundbreak() {
         // `gb` in the site console talks to the open game through this event
         const onStore = (e: StorageEvent) => {
             if (e.key !== SAVE_KEY || !e.newValue || !sRef.current) return;
-            try { if ((JSON.parse(e.newValue) as { savedAt?: number }).savedAt! > sRef.current.savedAt) { conflictRef.current = true; setConflict(true); } } catch { /* ignore */ }
+            try { if (rawSavedAt(e.newValue) > sRef.current.savedAt) { conflictRef.current = true; setConflict(true); } } catch { /* ignore */ }
         };
         window.addEventListener("storage", onStore);
         // after 40 s without touching the view, the camera finds the site again
@@ -630,9 +623,9 @@ export function Groundbreak() {
 
             <Window open={win === "menu"} title="Menu" variant="settle" size="sm" icon="menu" banner="menu" onClose={() => setWin(null)}>
                 <MenuBody s={s} paused={paused} onPause={togglePause} simple={simple} onSimple={toggleSimple} fs={shell.supportsFullscreen} onFs={shell.toggleFullscreen} fsOn={shell.fullscreen}
-                    onImport={(st) => { const p = parse(st); if (!p) { note("That save could not be read."); return; } if (sRef.current) writeStored(window.localStorage, SAVE_KEY + "-backup", serialize(sRef.current)); sRef.current = p; seen.current = { built: p.built, open: p.open, change: !!p.change, cashAll: p.cashAll }; seenRe.current = p.reruns; save(); bump(); note("Save imported. The old one is kept as a backup.", "hot"); }}
-                    onWipe={() => { if (sRef.current) writeStored(window.localStorage, SAVE_KEY + "-backup", serialize(sRef.current)); sRef.current = fresh(Date.now()); seen.current = { built: 0, open: 1, change: false, cashAll: 0 }; seenRe.current = -1; save(); setWin(null); setSel(null); bump(); }} onNote={note}
-                    onRestore={(raw) => { const p = parse(JSON.parse(raw)); if (!p) { note("That backup could not be read."); return; } if (sRef.current) writeStored(window.localStorage, SAVE_KEY + "-backup", serialize(sRef.current)); sRef.current = p; seen.current = { built: p.built, open: p.open, change: !!p.change, cashAll: p.cashAll }; seenRe.current = p.reruns; save(); setWin(null); bump(); note("Backup restored. The save you replaced is kept as the manual backup.", "hot"); }} />
+                    onImport={(st) => { const p = reviveAuto(GROUNDBREAK_SAVE, st); if (!p) { note("That save could not be read."); return; } if (sRef.current) writeStored(window.localStorage, SAVE_KEY + "-backup", encodeSave(GROUNDBREAK_SAVE, sRef.current)); sRef.current = p; seen.current = { built: p.built, open: p.open, change: !!p.change, cashAll: p.cashAll }; seenRe.current = p.reruns; save(); bump(); note("Save imported. The old one is kept as a backup.", "hot"); }}
+                    onWipe={() => { if (sRef.current) writeStored(window.localStorage, SAVE_KEY + "-backup", encodeSave(GROUNDBREAK_SAVE, sRef.current)); sRef.current = fresh(Date.now()); seen.current = { built: 0, open: 1, change: false, cashAll: 0 }; seenRe.current = -1; save(); setWin(null); setSel(null); bump(); }} onNote={note}
+                    onRestore={(raw) => { const p = reviveText(GROUNDBREAK_SAVE, raw); if (!p) { note("That backup could not be read."); return; } if (sRef.current) writeStored(window.localStorage, SAVE_KEY + "-backup", encodeSave(GROUNDBREAK_SAVE, sRef.current)); sRef.current = p; seen.current = { built: p.built, open: p.open, change: !!p.change, cashAll: p.cashAll }; seenRe.current = p.reruns; save(); setWin(null); bump(); note("Backup restored. The save you replaced is kept as the manual backup.", "hot"); }} />
             </Window>
         </div>
     );
@@ -802,7 +795,7 @@ function Console({ run }: { run: (line: string) => { t: string; k?: string }[] }
 }
 
 function MenuBody({ s, paused, onPause, simple, onSimple, fs, onFs, fsOn, onImport, onWipe, onNote, onRestore }: { s: State; paused: boolean; onPause: () => void; simple: boolean; onSimple: () => void; fs: boolean; onFs: () => void; fsOn: boolean; onImport: (s: State) => void; onWipe: () => void; onNote: (t: string) => void; onRestore: (raw: string) => void }) {
-    const [backups] = useState(() => { try { return [["Automatic backup", SAVE_KEY + "-auto1"], ["Older automatic backup", SAVE_KEY + "-auto2"], ["Before last import or reset", SAVE_KEY + "-backup"]].flatMap(([label, key]) => { const raw = window.localStorage.getItem(key); if (!raw) return []; const p = parse(JSON.parse(raw)); return p ? [{ label, raw, built: p.built, at: p.savedAt }] : []; }); } catch { return []; } });
+    const [backups] = useState(() => { try { return [["Automatic backup", SAVE_KEY + "-auto1"], ["Older automatic backup", SAVE_KEY + "-auto2"], ["Before last import or reset", SAVE_KEY + "-backup"]].flatMap(([label, key]) => { const raw = window.localStorage.getItem(key); if (!raw) return []; const p = reviveText(GROUNDBREAK_SAVE, raw); return p ? [{ label, raw, built: p.built, at: p.savedAt }] : []; }); } catch { return []; } });
     const [pickedBackup, setPickedBackup] = useState<number | null>(null);
     const file = useRef<HTMLInputElement>(null);
     const [pending, setPending] = useState<State | null>(null);

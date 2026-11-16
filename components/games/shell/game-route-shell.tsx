@@ -195,10 +195,12 @@ export function GameRouteShell({ name, children, header, mode = "framed", game }
         };
         // On desktop the anchor is the Play section's top rule, not the panel. The section's label and heading sit above the
         // panel, so anchoring on the panel left "Light your star." under the bar. Desktop fits the whole block below the bar.
-        // Phones, and desktops under 700px tall, keep the panel as the anchor: the game matters more than the heading there.
+        // Tall phones (760px and up) fit the whole block too, so they anchor on the section as well: the site bar was hiding
+        // "Light your star." on a 390 x 844 phone. Short phones and desktops under 700px tall keep the panel as the anchor.
         const anchor = () => {
             const desktopTall = window.matchMedia("(min-width: 761px) and (min-height: 700px)").matches;
-            return (desktopTall && panelRef.current?.closest<HTMLElement>("section.cm-section")) || panelRef.current;
+            const phoneTall = window.matchMedia("(max-width: 760px) and (min-height: 760px)").matches;
+            return ((desktopTall || phoneTall) && panelRef.current?.closest<HTMLElement>("section.cm-section")) || panelRef.current;
         };
         let settle = 0;
         let moved = false;
@@ -245,8 +247,8 @@ export function GameRouteShell({ name, children, header, mode = "framed", game }
     if (windowed && game) {
         const g = GAMES[game];
         const slot = SAVE_SLOTS[game];
-        const onExport = () => {
-            const r = exportSave(game);
+        const onExport = async () => {
+            const r = await exportSave(game);
             setSaveMsg(r.ok ? { tone: "ok", text: r.message } : { tone: "err", text: r.error });
         };
         const onPick = async (e: ChangeEvent<HTMLInputElement>) => {

@@ -10,7 +10,7 @@ export const C = {
     iron: 0x7f8ca3,
     ironD: 0x4e5a6e,
     cream: 0xf0dfb8,
-    patina: 0x58b09a,
+    patina: 0x8f9650,
     coal: 0x25252b,
     belt: 0x1c140c,
     glow: 0xffb347,

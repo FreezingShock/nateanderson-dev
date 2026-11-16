@@ -1,3 +1,5 @@
+import { rawSavedAt } from "../saves/core";
+
 // Game kit: playing in more than one browser tab. Two tools, both safe to call where the browser API is missing:
 //
 //  - claimTab: one tab plays at a time. Each tab says hello on a BroadcastChannel when it starts or takes over; a tab
@@ -25,7 +27,8 @@ export function claimTab(channel: string, onSuperseded: () => void): TabClaim {
 }
 
 /**
- * Calls `onNewer` when another tab stores a save under `key` whose `savedAt` is newer than `mySavedAt()`.
+ * Calls `onNewer` when another tab stores a save under `key` whose savedAt (read with rawSavedAt from lib/saves/core)
+ * is newer than `mySavedAt()`.
  * Returns the unsubscribe.
  */
 export function watchNewerSave(key: string, mySavedAt: () => number | null | undefined, onNewer: () => void): () => void {
@@ -34,12 +37,8 @@ export function watchNewerSave(key: string, mySavedAt: () => number | null | und
         if (e.key !== key || !e.newValue) return;
         const mine = mySavedAt();
         if (mine === null || mine === undefined) return;
-        try {
-            const theirs = (JSON.parse(e.newValue) as { savedAt?: number }).savedAt;
-            if (typeof theirs === "number" && theirs > mine) onNewer();
-        } catch {
-            /* not JSON: not a save we can compare */
-        }
+        // either save form (the lib/saves envelope or a bare state) carries its time; 0 when unknown
+        if (rawSavedAt(e.newValue) > mine) onNewer();
     };
     window.addEventListener("storage", onStore);
     return () => window.removeEventListener("storage", onStore);

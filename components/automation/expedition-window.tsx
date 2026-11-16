@@ -17,7 +17,7 @@ const ORE_NAMES: Record<string, string> = {
 };
 const ORE_COLORS: Record<string, string> = {
     iron_ore: "#b4553a",
-    copper_ore: "#58b09a",
+    copper_ore: "#8f9650",
     coal: "#6b6b78",
     quartz: "#f2cfe0",
     aluminium_ore: "#98b2d4",

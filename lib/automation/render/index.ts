@@ -160,7 +160,7 @@ export interface VoxelIsland {
     setPixelSize(px: number): void;
     setQuality(level: number | "auto"): void;
     setLowFx(on: boolean): void;
-    /** Sea colours: "verdigris" (default), "lagoon", or "spec" (the original reference blue). */
+    /** Sea colours: "verdigris" (default, olive-bronze), "lagoon", or "spec" (the original reference blue). */
     setWaterPalette(name: WaterPaletteName): void;
     /** Wind strength 0..1 from the simulation. 0.5 is the approved baseline sway; grass reads it. */
     setWind(strength: number): void;

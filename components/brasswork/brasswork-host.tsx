@@ -56,11 +56,12 @@ import { attachUiSounds, playSound, setAmbient, setEnabled as setSoundOn, startA
 import { LightingRow, SaveRows } from "./settings-extras";
 import { VolumeRows } from "./audio-rows";
 import { loadSettings, saveSettings } from "@/lib/brasswork/settings";
+import { BRASSWORK_SAVE } from "@/lib/automation/sim/save";
+import { loadSave, writeSave } from "@/lib/saves/core";
 import "@/components/brasswork-ui/type.css";
 
 const W = 18;
 const D = 12;
-const SAVE_KEY = "brasswork-save-v1";
 const CAT = DEFAULT_CATALOG;
 const START_SETTINGS: HudSettings = { sound: true, reduceMotion: false, lowFx: false, numberFormat: "short", showRates: true };
 
@@ -111,15 +112,9 @@ function freshWorld(): World {
 }
 
 function loadWorld(): { world: World; savedAt: number } {
-    try {
-        const raw = localStorage.getItem(SAVE_KEY);
-        if (raw) {
-            const { text, savedAt } = JSON.parse(raw) as { text: string; savedAt: number };
-            return { world: deserialize(text), savedAt };
-        }
-    } catch {
-        /* a bad save falls through to a fresh world */
-    }
+    // lib/saves/core keeps a save that cannot be read under SAVE_KEY-corrupt before a fresh world starts
+    const r = loadSave(localStorage, BRASSWORK_SAVE);
+    if (r.state) return { world: r.state, savedAt: r.savedAt || Date.now() };
     return { world: freshWorld(), savedAt: Date.now() };
 }
 
@@ -421,11 +416,8 @@ export function BrassworkHost() {
                 setData(d);
             };
             const save = () => {
-                try {
-                    localStorage.setItem(SAVE_KEY, JSON.stringify({ text: serialize(world), savedAt: Date.now() }));
-                } catch {
-                    /* private mode or full storage: play without saving */
-                }
+                // private mode or full storage: writeSave returns null and the game plays on without saving
+                writeSave(localStorage, BRASSWORK_SAVE, world);
             };
 
             // The input module owns the camera and placement. It talks to the sim through this adapter, in the shared

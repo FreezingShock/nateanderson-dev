@@ -1,14 +1,14 @@
 "use client";
 
 // Small shared pieces of the Starwright GUI: glyph icons, element tiles, the floating tooltip, and the open/close hook that
-// keeps a panel mounted while its closing animation plays.
+// keeps a panel mounted while its closing animation plays (from the game kit).
 import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { cssUrl, glyphMask } from "@/lib/starwright/ui-art";
 import { loadSheets, onSheets, sheetUrl } from "@/lib/starwright/ui-sheets";
 import { ELEMENTS } from "@/lib/starwright/data";
 
 /** This thread's drawn GUI art (scripts/starwright/ui-art/build.py writes public/starwright/ui). Bump UI_V when it changes. */
-export const UI_V = 8;
+export const UI_V = 9;
 export const ui = (name: string) => `/starwright/ui/${name}.webp?v=${UI_V}`;
 /** Glyph names that have a drawn 16px icon in the ui set. */
 const UI_GLYPH: Record<string, string> = {
@@ -70,39 +70,8 @@ export function dockOrigin(): { x: number; y: number } | null {
     return { x: Math.round(r.left + r.width / 2), y: Math.round(r.top + r.height / 2) };
 }
 
-/**
- * Keeps `value` mounted for `ms` after it changes so a closing animation can play. Going from one menu straight to another plays
- * the old one's exit first, then the new one's entrance, so the page change reads as one move instead of a cut.
- */
-export function useLeaving<T>(value: T | null, ms = 260): { shown: T | null; leaving: boolean } {
-    const [shown, setShown] = useState<T | null>(value);
-    const [leaving, setLeaving] = useState(false);
-    useEffect(() => {
-        if (value === shown) { const t = window.setTimeout(() => setLeaving(false), 0); return () => window.clearTimeout(t); }
-        if (value !== null && shown === null) {
-            const t = window.setTimeout(() => { setShown(value); setLeaving(false); }, 0);
-            return () => window.clearTimeout(t);
-        }
-        // closing, or swapping to another menu: the old one plays its exit, then the new one (if any) takes its place
-        const a = window.setTimeout(() => setLeaving(true), 0);
-        const b = window.setTimeout(() => { setShown(value); setLeaving(false); }, ms);
-        return () => { window.clearTimeout(a); window.clearTimeout(b); };
-    }, [value, shown, ms]);
-    return { shown: shown === null ? value : shown, leaving: leaving && value !== shown };
-}
-
-/**
- * Keeps a card mounted for `ms` after `active` turns false, so its exit can play. `leaving` is true only during that window.
- */
-export function usePresence(active: boolean, ms = 120): { mounted: boolean; leaving: boolean } {
-    const [mounted, setMounted] = useState(active);
-    useEffect(() => {
-        if (active) { setMounted(true); return; }
-        const id = window.setTimeout(() => setMounted(false), ms);
-        return () => window.clearTimeout(id);
-    }, [active, ms]);
-    return { mounted: active || mounted, leaving: !active && mounted };
-}
+// The open/close hooks are the game kit's (components/game-kit/hooks.ts): useLeaving swaps menus, usePresence keeps a card for its exit.
+export { useLeaving, usePresence } from "@/components/game-kit/hooks";
 
 /** Loads the art sheets once and re-renders the caller when they arrive. */
 export function useSheets(): number {
