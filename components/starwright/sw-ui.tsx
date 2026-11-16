@@ -91,6 +91,19 @@ export function useLeaving<T>(value: T | null, ms = 260): { shown: T | null; lea
     return { shown: shown === null ? value : shown, leaving: leaving && value !== shown };
 }
 
+/**
+ * Keeps a card mounted for `ms` after `active` turns false, so its exit can play. `leaving` is true only during that window.
+ */
+export function usePresence(active: boolean, ms = 120): { mounted: boolean; leaving: boolean } {
+    const [mounted, setMounted] = useState(active);
+    useEffect(() => {
+        if (active) { setMounted(true); return; }
+        const id = window.setTimeout(() => setMounted(false), ms);
+        return () => window.clearTimeout(id);
+    }, [active, ms]);
+    return { mounted: active || mounted, leaving: !active && mounted };
+}
+
 /** Loads the art sheets once and re-renders the caller when they arrive. */
 export function useSheets(): number {
     const [n, setN] = useState(0);

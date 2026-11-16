@@ -22,7 +22,7 @@ import {
 import { uiVars } from "@/lib/starwright/ui-art";
 import { Almanac, CloudPick, Ending, Menu, Orbit, StarChart, Visitor, tools } from "./panels";
 import { AwayCard, ScrollHint, type AwayData } from "./settings";
-import { ElTile, Gl, Pic, ui, useLeaving, useSheets, useTips } from "./sw-ui";
+import { ElTile, Gl, Pic, ui, useLeaving, usePresence, useSheets, useTips } from "./sw-ui";
 import { BuyBurst } from "./buy-burst";
 import "@/app/camino/starwright-juice.css";
 
@@ -74,6 +74,10 @@ export function Starwright() {
     const [sound, setSoundState] = useState(true);
     const [paused, setPaused] = useState(false);
     const [card, setCard] = useState<AwayData | null>(null);
+    // The away card keeps its last content while it plays its exit.
+    const awayKeep = useRef<AwayData | null>(null);
+    if (card) awayKeep.current = card;
+    const awayP = usePresence(card !== null);
     const readOnly = useRef(false);
     const [other, setOther] = useState(false);
     const tabCh = useRef<{ ch: BroadcastChannel; id: string } | null>(null);
@@ -554,7 +558,7 @@ export function Starwright() {
             {s.event && <Visitor s={s} onAnswer={doAnswer} />}
             {s.offer.length > 0 && <CloudPick s={s} onPick={doCloud} onPreview={(id) => { previewRef.current = id; }} />}
             <ScrollHint />
-            {card && <AwayCard card={card} onClose={() => setCard(null)} />}
+            {awayP.mounted && awayKeep.current && <AwayCard card={awayKeep.current} onClose={() => setCard(null)} leaving={awayP.leaving} />}
             {other && (
                 <div className="sw-lock sw-panel" role="alert">
                     <span>Starwright is open in another tab, so this one stopped saving.</span>
