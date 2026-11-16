@@ -47,6 +47,11 @@ Format and rules: `docs/WORKFLOW.md`. Append new items at the end of a section; 
 
 - [ ] SITE-keys-tap | S | the "?keyboard shortcuts" button is 34px tall on phones; lift it to 44px on touch screens (`components/cm/keys.css`, Shell owner) | phone pass 2026-11-16
 - [ ] SITE-timeline-markers-tap | S | timeline milestone markers are 32px on phones and sit close together; a larger hit area on each card header would be better than bigger markers | phone pass 2026-11-16
+- [ ] SITE-speed-game-css | M | Brasswork (about 48 KB gz CSS, 16 sheets) and Node Farm (about 50 KB gz) ship every rule; split by route and keep first-paint rules. Measure with real rule coverage first (the CDP numbers in `/mnt/project-files/portfolio/speed-2026-11-16/cov.mjs` read 0% unused, which is wrong) | docs/games/brasswork
+- [ ] SITE-speed-nodefarm-js | M | Node Farm JS is about 450 KB gz; splitting it does not move the first board paint (`portfolio/node-farm-perf/load/REPORT.md`). The engine tables in `lib/nodefarm/engine.ts` are the real lever | docs/node-farm.md
+- [ ] SITE-speed-home-cards | S | homepage Play cards load 337, 196 and 95 KB 1200w webp on phones when scrolled; a 960w phone tier would save about 100 KB. The current webp is already optimal, so it is lossy-only; needs a look check | components/home/games-showcase.tsx
+- [ ] SITE-speed-guesser-js | M | flag and outline guessers each ship about 400 KB gz JS; find how much is shared site code and how much is the game | components/games/
+- [ ] SITE-speed-brasswork-three | L | Brasswork's 3D renderer (about 88 KB gz) loads on first paint because the island is the first screen; only worth a change if the island gets a loading state | components/brasswork/brasswork-host.tsx
 
 ## Ideas (offered to Nate, not picked)
 - [ ] ASK SITE-resume | M | resume page
