@@ -189,13 +189,15 @@ export function GameRouteShell({ name, children, header, mode = "framed", game }
         // The line the title bar should sit below: the site bar's real bottom (taller on phones) plus a small gap.
         const clearance = () => {
             const bar = document.querySelector<HTMLElement>("header.nv-top");
-            return (bar ? bar.getBoundingClientRect().bottom : 56) + 12;
+            // Groundbreak hides the site bar on its route, so keep the old 72px line there.
+            const bottom = bar ? bar.getBoundingClientRect().bottom : 0;
+            return bottom > 0 ? bottom + 12 : 72;
         };
         let settle = 0;
         let moved = false;
         const stop = () => { moved = true; };
-        // For a few seconds the page keeps the title bar under the site bar while the page above it settles (the game boots, the cover lifts).
-        // Any wheel, touch or key from the reader ends it.
+        // For a few seconds (the game can take a while to boot) the page keeps the title bar under the site bar while the page above it settles (the game boots, the cover lifts).
+        // Any wheel, touch, press or key from the reader ends it.
         const hold = (until: number) => {
             const p = panelRef.current;
             if (!p || moved || performance.now() > until) return;
@@ -214,14 +216,16 @@ export function GameRouteShell({ name, children, header, mode = "framed", game }
             frameRef.current?.focus({ preventScroll: true });
             window.addEventListener("wheel", stop, { passive: true });
             window.addEventListener("touchstart", stop, { passive: true });
+            window.addEventListener("pointerdown", stop, { passive: true });
             window.addEventListener("keydown", stop);
-            hold(performance.now() + 4000);
+            hold(performance.now() + 8000);
         }, 450);
         return () => {
             window.clearTimeout(id);
             window.clearTimeout(settle);
             window.removeEventListener("wheel", stop);
             window.removeEventListener("touchstart", stop);
+            window.removeEventListener("pointerdown", stop);
             window.removeEventListener("keydown", stop);
         };
     }, [windowed]);
