@@ -51,6 +51,7 @@ Play is fine: 60 fps, no long frames at 4x CPU, 5.5 MB heap flat over 98 s, engi
 - [x] OVERFLOW-none | measured paging for Orbit, Almanac, Menu; phone star map per constellation
 - [ ] MOTION-visitor-cloud-away | open/close for visitor, birth cloud and welcome cards once the backlog thread's shared panel style lands
 - [ ] MOTION-real-device | judge the motion and sound on a real phone and with speakers
+- [x] FEEL-buy-burst | size S | Element-coloured burst on every burner buy: ring and sparks in the row's colour, bigger for tier II and III, one per row on fast taps, a fade only under reduced motion | `components/starwright/buy-burst.tsx`, `app/camino/starwright-burst.css`
 
 ## Pre-deploy audit 2026-11-16 (report: /mnt/project-files/portfolio/starwright/predeploy-2026-11-16/REPORT.md)
 - [x] AUDIT-almanac-phone-names | size S | Almanac element names overlapped their neighbours at 360 to 390 wide (the 9px names added under "Do now" item 12 collided with the symbol, so that item is superseded). Phones now show the symbol only, and the name opens in the tap sheet | `app/camino/starwright-ev.css`
