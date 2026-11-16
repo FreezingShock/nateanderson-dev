@@ -24,6 +24,7 @@ Format: `- area | paths | owner (thread title or "free") | since YYYY-MM-DD | do
 - Node Farm | components/nodefarm, lib/nodefarm, app/camino/nodefarm, tests/nodefarm, scripts/nodefarm | Build the Node Farm page | 2026-11-16 | docs/node-farm.md, docs/site
 - Outline and Flag Guesser | components/games/*.tsx, lib/outline-game.ts, lib/data, scripts/games/guessers-check.mjs | Polish guessers with animated reveals | 2026-11-16 | docs/site
 - Shared game shell and windowed panel | components/games/shell, lib/games, app/camino/game-shell.css, app/creations/games/{brasswork,starwright,groundbreak}/layout.tsx and page.tsx (metadata only), route-chrome removed from both games | Build the shared game shell and windowed panel | 2026-11-16 | docs/site
+- Shared game kit | lib/game-kit, components/game-kit, app/camino/game-kit.css, tests/games/game-kit.test.mjs, docs/game-kit.md | Build a shared game kit | 2026-11-16 | docs/game-kit.md
 
 - New-game template | scripts/games/new-game.mjs, scripts/games/new-game/, scripts/games/games-under-check.json, scripts/games/window-check.mjs, scripts/games/shell-check.mjs, docs/games/NEW-GAME.md | Make a fast new-game template | 2026-11-16 | docs/games/NEW-GAME.md
 <!-- gen-anchor: owners -->
