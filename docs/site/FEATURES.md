@@ -14,6 +14,7 @@ Current state of the site outside the three games with their own docs (Brasswork
 - Type scale tokens (11px floor, 15px body, 18px lead) and the one-cyan-accent palette.
 - Motion: scroll reveals and `Scramble`/`Slab`/`ScrollType` (`components/cm/motion.tsx`, `lib/motion/engine.ts`). Titles scramble once per hover; reduced motion shows plain text. The engine follows the OS reduced-motion setting (Windows: Animation effects) live: switching it off tears every observer and listener down, and switching it back on rebuilds without a refresh, with on-screen content settling in place rather than replaying (`lib/motion/engine.ts`, `motionOn`, `subscribeMotion`, `useMotionOn`).
 - Page transition: fast shutter (`app/camino/transition.css`).
+- Card art hover: the pixel art behind toned cards (Explore, the Creations hub, About) lifts 8px and brightens on pointer hover; colour only under reduced motion (`app/camino/site-motion.css`, loaded last after `micro.css`).
 - Dithered art: `NaosBackdrop` per page, header bands and washes (`components/cm/naos-art.tsx`, `scripts/naos-art/`).
 - Navigation: top bar, floating dock (7 items, labels 11px on phones), site map, `/` launcher; all read `lib/nav.ts`, which also pulls games from `lib/creations-data.ts`.
 - Console (backtick or Ctrl/Cmd+J): commands including `nf` for Node Farm and per-game commands. Help lists two-line entries that wrap at `|`.
