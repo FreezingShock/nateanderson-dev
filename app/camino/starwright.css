@@ -126,9 +126,9 @@
 .sw-row[data-cold] .sw-rt .sw-el { filter: saturate(.4) brightness(.8); }
 .sw-info { min-width: 0; display: grid; gap: 1px; }
 .sw-info b { font-weight: 500; font-size: 14px; }
-.sw-info b small { margin-left: 8px; font: 400 11px var(--cm-mono, monospace); color: var(--sw-dim); }
+.sw-info b small { display: block; margin-left: 0; font: 400 11px var(--cm-mono, monospace); color: var(--sw-dim); }
 .sw-amt { font: 500 13px var(--cm-mono, monospace); color: var(--c); display: flex; gap: 8px; align-items: baseline; flex-wrap: wrap; }
-.sw-amt em { font-style: normal; font-size: 12px; color: #ffd27a; }
+.sw-amt em { flex-basis: 100%; font-style: normal; font-size: 12px; color: #ffd27a; }
 .sw-amt em[data-neg] { color: #ff8a7e; }
 .sw-amt .sw-cold { color: #ffb24d; text-transform: uppercase; font-size: 11px; letter-spacing: .08em; }
 .sw-sub { display: none; font: 400 11px var(--cm-mono, monospace); color: var(--sw-dim); }
@@ -297,7 +297,7 @@
     .sw-dock { gap: 6px; }
     .sw-dt { width: 44px; height: 44px; box-shadow: none; }
     .sw-dt em, .sw-dt kbd { display: none; }
-    .sw-scene { order: -1; position: sticky; top: 57px; z-index: 1; flex: none; height: clamp(190px, 34dvh, 330px); }
+    .sw-scene { order: -1; position: sticky; top: 57px; z-index: 1; flex: none; height: clamp(150px, 22dvh, 210px); }
     .sw-fade { height: 64px; background-size: 8px 64px; }
     .sw-readout { top: 8px; left: 10px; }
     .sw-readout p { margin-top: 4px; font-size: 12px; gap: 2px 12px; }
@@ -310,6 +310,7 @@
     .sw-ladder { display: block; padding-bottom: 12px; }
     .sw-ladder > ol { overflow: visible; margin-right: 0; padding-right: 0; }
     .sw-collapse { order: 1; }
+    .sw-collapse[data-ready] .sw-col-line { display: none; }
     .sw-ladder { order: 2; }
     .sw-visitor, .sw-away, .sw-clouds { order: 0; }
     .sw-planets { grid-template-columns: 1fr; }
