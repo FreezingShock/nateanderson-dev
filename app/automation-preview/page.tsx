@@ -6,10 +6,10 @@ export const metadata = {
   robots: { index: false, follow: false },
 };
 
-// Preview route for the Brasswork HUD. It is hidden in production unless
-// AUTOMATION_PREVIEW=1 is set at build time, so visitors never see it.
+// Preview route for the Brasswork HUD. It is always a 404 in a production build, whatever
+// AUTOMATION_PREVIEW says, so visitors never see it. Run it with `next dev`.
 export default function AutomationPreviewPage() {
-  if (process.env.NODE_ENV === "production" && process.env.AUTOMATION_PREVIEW !== "1") {
+  if (process.env.NODE_ENV === "production") {
     notFound();
   }
   return (

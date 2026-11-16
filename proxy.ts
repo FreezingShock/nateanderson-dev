@@ -9,6 +9,10 @@ import { verifyToken } from "@/lib/gate/token";
 export async function proxy(req: NextRequest) {
     const { pathname } = req.nextUrl;
     if (pathname === GATE.unlockPath) return NextResponse.next();
+    // The Brasswork HUD preview is for `next dev` only. A real 404 status here, whatever the env says.
+    if (process.env.NODE_ENV === "production" && pathname === "/automation-preview") {
+        return new NextResponse("Not found", { status: 404, headers: { "content-type": "text/plain; charset=utf-8", "x-robots-tag": "noindex, nofollow" } });
+    }
     if (await verifyToken(req.cookies.get(GATE.cookie)?.value)) return NextResponse.next();
 
     const headers = { "cache-control": "no-store", "x-robots-tag": "noindex, nofollow" };
