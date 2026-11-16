@@ -176,12 +176,6 @@ html.gb-route .sf-foot { display: none !important; }
 .gb-req { color: var(--gb-hi) !important; }
 .gb-none { font-size: 13px; color: var(--gb-dim); }
 
-/* skyline window */
-.gb-sky { display: flex; align-items: flex-end; gap: 8px; height: 196px; overflow-x: auto; padding-bottom: 4px; }
-.gb-sky li { position: relative; flex: none; width: 74px; height: var(--h); display: grid; align-content: end; justify-items: center; padding-bottom: 6px; text-align: center; }
-.gb-sky-b { position: absolute; inset: 0; background: repeating-linear-gradient(0deg, #3a2a48 0 6px, #2a1e36 6px 8px); border: 1px solid var(--gb-line-2); }
-.gb-sky b { position: relative; font: 700 16px var(--gb-text); color: var(--gb-hi); }
-.gb-sky em { position: relative; font-style: normal; font-size: 10px; color: var(--gb-ink); line-height: 1.2; }
 
 /* firm */
 .gb-stats { display: grid; grid-template-columns: auto 1fr; gap: 6px 16px; font-size: 13px; }
@@ -564,14 +558,36 @@ html.gb-route .sf-foot { display: none !important; }
 .gb-root .gb-change-act .gb-go { border-color: var(--gb-line); color: var(--gb-ink); }
 .gb-root .gb-change-act .gb-go:hover { border-color: var(--gb-hi); color: var(--gb-hi); }
 
-/* skyline window: the buildings you finished, standing on one shoreline */
-.gb-root .gb-sky { align-items: flex-end; gap: 4px; height: 220px; padding: 0 8px; background: linear-gradient(transparent 82%, #2a1d14 82%, #1a1310); border-bottom: 2px solid var(--gb-amber); }
-.gb-root .gb-sky li { width: auto; height: auto; display: grid; justify-items: center; align-content: end; padding: 0 0 6px; animation: gbRise .4s steps(6, end) both; animation-delay: calc(var(--i, 0) * 60ms + 120ms); }
+/* skyline window: every job in the game, named. Built ones stand in colour with a count; unbuilt ones are dark silhouettes, so the window fills and shows what is left. */
+.gb-root .gb-sky { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 8px; }
+.gb-root .gb-sky li { position: relative; display: grid; justify-items: center; align-content: end; gap: 4px; min-width: 0; padding: 8px 6px; text-align: center; background: linear-gradient(180deg, #2b1d30 0%, #1c1419 56%, #2b1c10 56%, #1a1210 100%); border: 1px solid var(--gb-line-2); animation: gbRise .4s steps(6, end) both; animation-delay: calc(var(--i, 0) * 60ms + 120ms); }
 .gb-sky .gb-thumb { grid-row: auto; transition: transform .18s steps(3, end); }
-.gb-sky li:hover .gb-thumb { transform: translateY(-4px); }
-.gb-root .gb-sky b { margin-top: 2px; padding: 1px 6px; background: #0b0806; border: 1px solid var(--gb-line); font: 700 12px var(--gb-text); color: var(--gb-hi); }
+.gb-sky li[data-built]:hover .gb-thumb { transform: translateY(-4px); }
+.gb-sky li:not([data-built]) .gb-thumb { filter: brightness(0) invert(.32); }
+.gb-root .gb-sky b { font: 700 12px/1.2 var(--gb-display); letter-spacing: .06em; text-transform: uppercase; color: var(--gb-hi); }
+.gb-root .gb-sky em { font: 600 11px/1.2 var(--gb-text); font-style: normal; color: var(--gb-ink); }
+.gb-root .gb-sky li:not([data-built]) b, .gb-root .gb-sky li:not([data-built]) em { color: var(--gb-dim); }
 @keyframes gbRise { from { opacity: 0; transform: translateY(24px); } }
-@media (max-width: 860px) { .gb-root .gb-sky { height: 180px; } .gb-sky .gb-thumb { max-width: 110px; } }
+@media (max-width: 860px) {
+    .gb-root .gb-sky { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+    .gb-root .gb-sky li { padding: 6px 4px; }
+    .gb-root .gb-sky .gb-thumb { zoom: .7; }
+    .gb-root .gb-sky b { font-size: 11px; }
+}
+
+/* firm on phones: perk rows come first, so they sit above the pinned Incorporate fade; the stats and copy follow in two short blocks */
+@media (max-width: 860px) {
+    .gb-root .gb-win.gb-lg .gb-banner { height: 44px; }
+    .gb-root .gb-win.gb-lg .gb-perks { order: -1; }
+    .gb-root .gb-win.gb-lg .gb-perks h3 { font-size: 12px; margin-bottom: 4px; }
+    .gb-root .gb-win.gb-lg .gb-perks h3 .gb-ico { width: 18px !important; height: 18px !important; }
+    .gb-root .gb-win.gb-lg .gb-perks ul { grid-template-columns: repeat(auto-fill, minmax(36px, 1fr)); gap: 4px; }
+    .gb-root .gb-win.gb-lg .gb-perk { min-height: 0; height: 50px; padding: 4px 1px 2px; }
+    .gb-root .gb-win.gb-lg .gb-perk .gb-ico { width: 32px !important; height: 32px !important; }
+    .gb-root .gb-win.gb-lg .gb-perk em { font-size: 10px; }
+    .gb-root .gb-win.gb-lg .gb-stats { grid-template-columns: repeat(2, auto minmax(0, 1fr)); gap: 2px 10px; font-size: 12px; }
+    .gb-root .gb-win.gb-lg .gb-firm-line { font-size: 12px; line-height: 1.35; }
+}
 
 /* ---- HUD stacking (2026-11-15): everything that floats above the dock sits on the dock's real height, which the page publishes as --gb-dock-top ---- */
 @media (min-height: 521px) {
