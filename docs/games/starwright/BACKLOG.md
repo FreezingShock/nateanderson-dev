@@ -22,6 +22,7 @@ Before any change: `npm run test:nodefarm`. Visual changes also need PNG screens
 12b. [x] **Ladder rows and phone fold (Nate, 2026-11-16).** Buy buttons no longer cover level, rate or recipe at 1440 and 390; phone star shortened so the first ladder row shows above the fold. Shots in `portfolio/starwright/ladder-fit/`. The "Scroll for the ladder" cue still needs placing for the shorter shell panel once that PR lands.
 13. [ ] **Welcome back and event cards: real-phone tap check.** Chips toggle the Almanac line on tap; confirm on a device (cloud tests are headless only). Also add a leaving animation once the audio/animations thread exposes its hook on `.sw-ev`.
 14. [ ] **Menu card fits at 1440x900.** The Menu is 3 px taller than its box (scrollHeight 845 vs 842) so it can show a scrollbar; trim spacing. Overflow thread may fix it first; check before starting.
+15. [x] **First step for new players.** On a new star the guide line reads "Start here: buy a hydrogen burner (key 1, 18 H)" and moves on to helium once it is bought. Done when 1440 and 390 shots show it on a fresh save. Files: `lib/starwright/engine.ts` `guide()`, test in `tests/starwright/engine.test.mjs`. Shots: `/mnt/project-files/starwright-guide-line-2026-11-16/`.
 
 ## Needs Nate (taste call or his own playtest)
 
@@ -62,3 +63,4 @@ Play is fine: 60 fps, no long frames at 4x CPU, 5.5 MB heap flat over 98 s, engi
 - [ ] ASK AUDIT-detail-sheet-wrap | size S | The Almanac tap sheet breaks "Neon · weight 20" across lines at 390. Taste call on the sheet's header layout
 - [ ] AUDIT-real-phone-pass | size M | Not testable in the cloud: Safari, touch on a real phone, sound. Needs Nate's playthrough (see MOTION-real-device)
 - [x] AUDIT-cards-visual | size S | Visual pass on the visitor, birth cloud, welcome-back, neutron star (ready and formed) and black hole (ending) cards at 1440 and 390. Found: the phone "Scroll for the ladder" cue sat on the visitor card's second option and on the collapse panel. Fixed: it moves to the star's lower edge in portrait and waits while an event, welcome or cloud card is up | `app/camino/starwright-qol.css`
+- [x] AUDIT-keys-fit | size S | Settings keys list cut off under the window at 1440 (the Menu was measured against the whole screen, not the game window). DONE: the Menu sits inside the game window on desktop and cards fit it; the Keys list starts its own page (`newPage`) | `components/starwright/paged.tsx`, `components/starwright/panels.tsx`, `app/camino/starwright-qol.css`

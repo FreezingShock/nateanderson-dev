@@ -235,6 +235,8 @@ export function guide(s: State, f: Fx): string {
     for (let r = 0; r < ROWS; r++) {
         if (!rowOpen(s, r)) break; // gold and uranium wait for a neutron star; the lines below carry the player meanwhile
         if (levels(s, r) === 0) {
+            // a new star's first step: one burner on hydrogen, named with its key and cost, so the first minute has a clear action
+            if (r === 0) return `Start here: buy a hydrogen burner (key 1, ${fmt(cost(s, r, 0))}\u00a0H). It fuses hydrogen into helium.`;
             const gate = gateMK(r, f);
             const heat = s.heat >= gate ? "" : ` and core heat ${fmtHeat(gate)}`;
             return `Next: burn ${ELEMENTS[r].name.toLowerCase()} into ${ELEMENTS[r + 1].name.toLowerCase()}. Needs ${fmt(cost(s, r, 0))} ${ELEMENTS[r].sym}${heat}.`;
