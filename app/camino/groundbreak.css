@@ -585,7 +585,7 @@ html.gb-route .sf-foot { display: none !important; }
     .gb-root .gb-win.gb-lg .gb-perk { min-height: 0; height: 50px; padding: 4px 1px 2px; }
     .gb-root .gb-win.gb-lg .gb-perk .gb-ico { width: 32px !important; height: 32px !important; }
     .gb-root .gb-win.gb-lg .gb-perk em { font-size: 10px; }
-    .gb-root .gb-win.gb-lg .gb-stats { grid-template-columns: repeat(2, auto minmax(0, 1fr)); gap: 2px 10px; font-size: 12px; }
+    .gb-root .gb-win.gb-lg .gb-stats { gap: 4px 12px; font-size: 12px; }
     .gb-root .gb-win.gb-lg .gb-firm-line { font-size: 12px; line-height: 1.35; }
 }
 
