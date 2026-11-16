@@ -668,3 +668,15 @@ html.gb-route .sf-foot { display: none !important; }
     .gb-root .gb-away dl div { padding: 0; border: 0; gap: 6px; font-size: 12px; }
     .gb-root .gb-away .gb-go { min-height: 36px; padding: 0 12px; }
 }
+
+/* ---- cue and toasts (2026-11-16): the cue's second line is a solid panel with brighter text, so it reads over the busy scene.
+   Toasts leave the bottom left and stack at the top right: on desktop left of the job card; on phone portrait one at a time under the job card. ---- */
+.gb-root .gb-cue p { background: #120e0b; border: 1px solid var(--gb-line-2); color: var(--gb-ink); font-size: 13px; padding: 4px 10px; }
+@media (min-width: 861px) and (min-height: 521px) {
+    .gb-root .gb-feed { top: 72px; right: 300px; left: auto; bottom: auto; width: min(300px, calc(100vw - 620px)); max-width: none; }
+}
+@media (max-width: 860px) and (min-height: 521px) {
+    .gb-root .gb-feed { top: 200px; right: 8px; left: auto; bottom: auto; width: min(230px, calc(100vw - 24px)); max-width: none; }
+    .gb-root .gb-feed li:nth-last-child(n+2) { display: none; }
+}
+.gb-root .gb-feed li { background: #161110; font-size: 12px; }
