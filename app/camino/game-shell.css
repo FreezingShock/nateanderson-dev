@@ -119,6 +119,11 @@ html.gs-game-route {
     border-bottom: 0;
 }
 
+/* Touch screens: the title-bar buttons meet the 44px target size. */
+@media (hover: none) {
+    .gs-win-btn { min-height: 44px; }
+}
+
 .gs-win-foot {
     min-height: 48px;
     border-top: 0;
