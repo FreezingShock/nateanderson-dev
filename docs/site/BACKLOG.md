@@ -26,7 +26,7 @@ Format and rules: `docs/WORKFLOW.md`. Append new items at the end of a section; 
 - [ ] ASK SITE-env-cleanup | S | Nate deletes GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET in Vercel and drops the account tables in Supabase
 - [ ] ASK SITE-branch-delete | S | threads cannot delete branches (403); Nate runs `branch-cleanup-delete.sh` from the audit folder, merged ones only | audit 9
 - [ ] ASK SITE-stale-prs | S | decide PRs #399 and #400 (merge or close) and the Brasswork drafts; owners decide their own | audit 9
-- [ ] ASK SITE-short-screen | S | on screens under about 700 px tall the windowed panel sits at its 260 px floor and is small (1366 by 657 laptops); the footer now clears the dock everywhere | pick: keep the floor, or anchor those screens on the panel and let the heading sit under the bar
+- [x] SITE-short-screen | S | under 700 px tall the windowed panel is the scroll anchor, so the game is up under the bar and the heading stays below it; footer clears the dock down to 657 px tall | #665 (coordinator decision, 2026-11-16)
 - [x] SITE-phone-heading | S | decided by the coordinator on 2026-11-16: phones keep the panel as the anchor, so the Play heading can sit under the bar there | decided
 
 - [x] SITE-hub-layout | S | Nate picked Poster on 2026-11-15 (decision card); rows and index layouts removed | #610 follow-up
@@ -47,6 +47,11 @@ Format and rules: `docs/WORKFLOW.md`. Append new items at the end of a section; 
 
 - [ ] SITE-keys-tap | S | the "?keyboard shortcuts" button is 34px tall on phones; lift it to 44px on touch screens (`components/cm/keys.css`, Shell owner) | phone pass 2026-11-16
 - [ ] SITE-timeline-markers-tap | S | timeline milestone markers are 32px on phones and sit close together; a larger hit area on each card header would be better than bigger markers | phone pass 2026-11-16
+- [ ] SITE-speed-game-css | M | Brasswork (about 48 KB gz CSS, 16 sheets) and Node Farm (about 50 KB gz) ship every rule; split by route and keep first-paint rules. Measure with real rule coverage first (the CDP numbers in `/mnt/project-files/portfolio/speed-2026-11-16/cov.mjs` read 0% unused, which is wrong) | docs/games/brasswork
+- [ ] SITE-speed-nodefarm-js | M | Node Farm JS is about 450 KB gz; splitting it does not move the first board paint (`portfolio/node-farm-perf/load/REPORT.md`). The engine tables in `lib/nodefarm/engine.ts` are the real lever | docs/node-farm.md
+- [ ] SITE-speed-home-cards | S | homepage Play cards load 337, 196 and 95 KB 1200w webp on phones when scrolled; a 960w phone tier would save about 100 KB. The current webp is already optimal, so it is lossy-only; needs a look check | components/home/games-showcase.tsx
+- [ ] SITE-speed-guesser-js | M | flag and outline guessers each ship about 400 KB gz JS; find how much is shared site code and how much is the game | components/games/
+- [ ] SITE-speed-brasswork-three | L | Brasswork's 3D renderer (about 88 KB gz) loads on first paint because the island is the first screen; only worth a change if the island gets a loading state | components/brasswork/brasswork-host.tsx
 
 ## Ideas (offered to Nate, not picked)
 - [ ] ASK SITE-resume | M | resume page
@@ -71,3 +76,7 @@ Slot for findings from the thread "Audit website code for simplification". That 
 - [x] SHELL-play-under-bar | S | desktop windowed games: the Play heading and panel start below the site bar, and the panel and footer clear the site dock; Brasswork's left dock compacts under 1000 px tall | #654
 - [x] SITE-short-screen-dock | S | footer clears the site dock down to 657 px tall (panel floor 260 px, height 100dvh minus 400 px), and Brasswork's left dock scrolls inside a short panel instead of clipping | #659
 - [x] SITE-home-band-art | M | animated sprite art for each game across the whole homepage Play band, lazy and paused off screen | this PR
+- [x] SITE-motion-card-art | S | pixel art on toned cards lifts and brightens on pointer hover; colour only under reduced motion; type pass: card text and studies course body on the 13.5px ui token (were 14px), About verbs on the 18px lead token (were 19px); the rest of the home and page motion already existed and was checked, not changed. Left: a 17px timeline date line and 12px stat numbers | this PR
+- [x] SITE-short-anchor | S | desktop under 700 px tall anchors on the panel (the game matters more than the heading there) | #665
+- [x] GUESS-reveal-polish | M | animated miss and win reveals, streak readout, Unlimited unlock moment, flag round double shake removed, reduced motion respected | this PR
+- [x] SITE-motion-scale | M | one motion scale (easing, durations, lift and press travel) and one reduced-motion rule; buttons, chips, cards, home game cards and page shutters use it | this PR

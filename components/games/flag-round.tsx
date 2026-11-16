@@ -111,18 +111,6 @@ export function FlagRound({
         if (!playing || state.picks.includes(code)) return;
         setFresh(code);
         onChange({ ...state, picks: [...state.picks, code] });
-        if (code !== answer.c) {
-            gridRef.current?.animate(
-                [
-                    { transform: "translateX(0)" },
-                    { transform: "translateX(-7px)" },
-                    { transform: "translateX(6px)" },
-                    { transform: "translateX(-4px)" },
-                    { transform: "translateX(0)" },
-                ],
-                { duration: 380 }
-            );
-        }
     };
 
     return (
@@ -134,11 +122,16 @@ export function FlagRound({
                 Which flag is {answer.n}&apos;s?
             </h3>
             <p className="mt-1 text-center font-mono text-xs uppercase tracking-wider text-muted-foreground">
-                {playing
-                    ? `${chancesLeft} ${chancesLeft === 1 ? "chance" : "chances"} left`
-                    : status === "won"
-                      ? "Correct!"
-                      : "Out of chances"}
+                {/* Keyed on the count, so each lost chance pops the number. A miss shakes only its own tile. */}
+                {playing ? (
+                    <span key={chancesLeft} className="og-hint inline-block">
+                        {`${chancesLeft} ${chancesLeft === 1 ? "chance" : "chances"} left`}
+                    </span>
+                ) : status === "won" ? (
+                    "Correct!"
+                ) : (
+                    "Out of chances"
+                )}
             </p>
 
             <div
@@ -166,7 +159,7 @@ export function FlagRound({
                             }
                             className={cn(
                                 "group relative overflow-hidden rounded-[2px] border-2 bg-card/60 p-1.5 transition-all duration-300",
-                                playing && !picked && "hover:-translate-y-1 hover:",
+                                playing && !picked && "hover:-translate-y-1",
                                 right && fresh === code && "og-win",
                                 wrong && fresh === code && "og-shake",
                                 dim && "opacity-35 grayscale"

@@ -1,3 +1,4 @@
+import { useEffect, useRef, useState } from "react";
 import type {
   MachineView,
   NumberFormat,
@@ -101,6 +102,30 @@ export function openRowsOf(machines: MachineView[], group: GroupId): MachineView
 }
 
 /** Build list for the factory panel. Each row builds on tap and opens its inspector with Info. */
+/**
+ * The ids that were just unlocked: a row that appears in `ids` after the first render is "fresh" for about a second and a
+ * half, and its tile plays one brass stamp (build-tile.css, `data-fresh`). The first render marks nothing.
+ */
+function useNewlyUnlocked(ids: string[]): Set<string> {
+  const key = ids.join("|");
+  const seen = useRef<Set<string> | null>(null);
+  const timer = useRef(0);
+  const [fresh, setFresh] = useState<Set<string>>(() => new Set());
+  useEffect(() => {
+    const cur = new Set(key ? key.split("|") : []);
+    const prev = seen.current;
+    seen.current = cur;
+    if (!prev) return;
+    const added = [...cur].filter((id) => !prev.has(id));
+    if (added.length === 0) return;
+    setFresh(new Set(added));
+    window.clearTimeout(timer.current);
+    timer.current = window.setTimeout(() => setFresh(new Set()), 1500);
+  }, [key]);
+  useEffect(() => () => window.clearTimeout(timer.current), []);
+  return fresh;
+}
+
 export function BuildList({
   machines,
   resources,
@@ -122,6 +147,7 @@ export function BuildList({
   onSelect: (id: string | null) => void;
 }) {
   // One framed panel per group, in the order the groups first appear. Each panel collapses from its header.
+  const fresh = useNewlyUnlocked(machines.filter((m) => m.unlocked).map((m) => m.id));
   const groups: { id: GroupId; items: MachineView[] }[] = [];
   const shown = collapseTiers(machines).sort((a, b) => orderOf(a.id) - orderOf(b.id));
   for (const m of shown) {
@@ -147,6 +173,7 @@ export function BuildList({
               data-armed={armed}
               data-locked={!m.unlocked}
               data-afford={ok}
+              data-fresh={fresh.has(m.id) ? "" : undefined}
             >
               <button
                 type="button"

@@ -24,7 +24,7 @@
 .cm-back { position: relative; display: inline-grid; grid-template-columns: auto auto; align-items: stretch; justify-self: start; width: fit-content; min-height: 38px; text-decoration: none; font: 700 var(--cm-ctos-t-tag, 11px)/1 var(--cm-mono); letter-spacing: .14em; text-transform: uppercase; color: var(--cm-fg); background: var(--cm-ctos-panel, transparent); border: 1px solid var(--cm-hair-hi); overflow: hidden; -webkit-tap-highlight-color: transparent; transition: transform var(--cm-d-base) var(--cm-ease), border-color var(--cm-d-base), color var(--cm-d-base), background-color var(--cm-d-base); }
 .cm-back i { display: grid; place-items: center; min-width: 34px; padding: 0 10px; font-style: normal; font-size: 14px; background: var(--cm-ctos-block, var(--cm-cyan)); color: var(--cm-ctos-ink, var(--cm-cyan-ink)); transition: transform var(--cm-d-base) var(--cm-ease), background-color var(--cm-d-base), color var(--cm-d-base); }
 .cm-back span { display: flex; align-items: center; padding: 0 14px 0 12px; white-space: nowrap; border-left: 1px dashed var(--cm-hair-hi); }
-.cm-back:hover { border-color: var(--cm-cyan); color: var(--cm-cyan); transform: translateY(-1px); }
+.cm-back:hover { border-color: var(--cm-cyan); color: var(--cm-cyan); transform: var(--cm-lift); }
 .cm-back:hover i { transform: translateX(-3px); background: var(--cm-cyan); color: var(--cm-cyan-ink); }
 .cm-back:focus-visible { outline: 2px solid var(--cm-ctos-block, var(--cm-cyan)); outline-offset: 3px; }
 .cm-back:active { transform: translateY(1px); background: var(--cm-cyan-wash); border-color: var(--cm-cyan); }
@@ -40,6 +40,7 @@
 .cm-sec-head { display: flex; justify-content: space-between; align-items: end; gap: 16px; flex-wrap: wrap; margin-bottom: var(--cm-s5); }
 .cm-sec-head > div { display: grid; gap: 10px; }
 .cm-more { font: 600 var(--cm-ctos-t-micro)/1 var(--cm-mono); letter-spacing: .13em; text-transform: uppercase; text-decoration: none; color: var(--cm-mute); border-bottom: 1px solid var(--cm-hair-hi); padding-bottom: 4px; white-space: nowrap; }
+.cm-more { transition: color var(--cm-d-base) var(--cm-ease), border-color var(--cm-d-base) var(--cm-ease); }
 .cm-more:hover { color: var(--cm-cyan); border-color: var(--cm-cyan); }
 .cm-prose { max-width: var(--cm-measure); color: var(--cm-mute); }
 .cm-prose p { margin: 0; } .cm-prose p + p { margin-top: var(--cm-s3); }
@@ -55,7 +56,8 @@
 div.cm-card { cursor: default; }
 div.cm-card:hover { transform: none; }
 .cm-card.link { cursor: pointer; }
-.cm-card.link:hover { transform: translateY(-2px); }
+.cm-card.link:hover { transform: var(--cm-lift); }
+.cm-card.link:active { transform: var(--cm-press); }
 
 
 

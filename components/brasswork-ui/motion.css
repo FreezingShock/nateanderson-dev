@@ -46,3 +46,16 @@
 @media (prefers-reduced-motion: reduce) {
   .bwm-swap, .bwm-pop { animation: none !important; }
 }
+
+/* Phone tab panes (Settings pages, Hub pages). A pane that a tab brings back into view slides in with the swap timing.
+   A hidden pane leaves the layout, so it plays again each time its tab is chosen. Desktop shows every pane at once, so
+   the class does nothing above the phone breakpoint. */
+.bwm-pane-in { animation: bwm-swap-in var(--cm-d-base) var(--cm-ease-out) both; }
+@media (min-width: 768px) { .bwm-pane-in { animation: none; } }
+[data-reduce="true"] .bwm-pane-in, [data-lowfx="true"] .bwm-pane-in { animation: none !important; }
+@media (prefers-reduced-motion: reduce) { .bwm-pane-in { animation: none !important; } }
+
+/* Tab buttons (Settings pages, Hub pages, phone tab bar). Timings are the site scale (--cm-*) so they match every other button. */
+.bwm-tab { transition: transform var(--cm-d-instant) var(--cm-ease-press), background-color var(--cm-d-base) var(--cm-ease), color var(--cm-d-base) var(--cm-ease), border-color var(--cm-d-base) var(--cm-ease); }
+.bwm-tab:active { transform: translateY(2px); }
+@media (prefers-reduced-motion: reduce) { .bwm-tab, .bwm-tab:active { transition: none; transform: none; } }

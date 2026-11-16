@@ -14,6 +14,8 @@ import {
     GuessRow,
     KeyLegend,
     StatsPanel,
+    StreakLine,
+    prefersReducedMotion,
     focusGameInput,
     useGameKeys,
     load,
@@ -102,6 +104,7 @@ export function FlagGuesser() {
     const [dir, setDir] = useState<"r" | "l">("r");
     const dailyDate = useMemo(() => ({ current: "" }), []);
     const rootRef = useRef<HTMLDivElement>(null);
+    const boardRef = useRef<HTMLDivElement>(null);
     useGameKeys(rootRef);
     // A new puzzle puts the cursor in the country box.
     useEffect(() => {
@@ -270,6 +273,8 @@ export function FlagGuesser() {
                 setUnlocked(true);
                 setJustUnlocked(true);
                 save(K.unlock, true);
+                // Lands after the result sound, so the rising unlock tone is heard on its own.
+                window.setTimeout(() => sfx("level"), 650);
             }
             setStats((prev) => {
                 const today = todayPT();
@@ -314,6 +319,19 @@ export function FlagGuesser() {
         if (!answer || status !== "playing") return;
         const g = makeGuess(target, answer);
         sfx(g.pct === 100 ? "granted" : "deny");
+        // A miss jolts the flag board once, matching the outline guesser.
+        if (g.pct < 100 && !prefersReducedMotion()) {
+            boardRef.current?.animate(
+                [
+                    { transform: "translateX(0)" },
+                    { transform: "translateX(-7px)" },
+                    { transform: "translateX(6px)" },
+                    { transform: "translateX(-3px)" },
+                    { transform: "translateX(0)" },
+                ],
+                { duration: 380, easing: "ease-in-out" }
+            );
+        }
         const next = [...guesses, g];
         setGuesses(next);
         setFreshIndex(next.length - 1);
@@ -475,6 +493,7 @@ export function FlagGuesser() {
 
             {/* The flag, behind a 3 x 2 grid of tiles */}
             <div
+                ref={boardRef}
                 key={`${answer.c}-${round}`}
                 className={cn(
                     "relative mx-auto w-full max-w-[24rem] overflow-hidden rounded-[2px] border border-border/60 bg-slate-950 p-3",
@@ -525,6 +544,7 @@ export function FlagGuesser() {
                         );
                     })}
                 </div>
+                {status === "won" && <span aria-hidden className="og-ring" />}
                 {status === "won" && <Burst />}
                 {!playing && (
                     <div className="og-hint absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 to-transparent px-4 pb-2 pt-8 text-center">
@@ -643,6 +663,7 @@ export function FlagGuesser() {
                         It was{" "}
                         <strong className="text-foreground">{answer.n}</strong>.
                     </p>
+                    <StreakLine streak={s.streak} best={s.best} won={status === "won"} />
                     <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
                         <button
                             type="button"

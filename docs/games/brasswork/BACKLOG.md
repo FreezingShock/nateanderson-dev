@@ -82,3 +82,7 @@ Floors above ground level, photo mode, panel folding, a second island as a site.
 
 ## Research readability (thread "Make Brasswork research readable", 2026-11-16)
 - [x] RESEARCH-names-header | size S | Research node names 12.5 px to 14 px and cards 114 px to 122 px tall so two-line names (Aluminium casings, Quartz-only silicon) no longer clip; header band 66 px to 50 px so the title leads | this PR
+
+## Detail sweep (2026-11-16, thread "Sweep games for inconsistent details")
+- [x] SWEEP-research-teal | size S | The research window and two window banners were teal and mint (the accent, tier labels, blueprint count, card edges and the header blueprint strip; the Research and Milestones banners and the Hub banner's roof). They are now brass with a warm olive-bronze patina (`--rs-acc #8f9650`). The in-world verdigris is unchanged (see SWEEP-world-verdigris). | `components/automation/research-screen.css`, `components/brasswork-ui/brass-kit.css`, `scripts/brasswork/build-window-art.py` (`print` and `olive` ramps), `public/brasswork/window/banner-{research,milestones,hub}.png`
+- [ ] ASK SWEEP-world-verdigris | size M | In-world verdigris (`#58b09a` in the model palettes, and the green-leaning `patina` ramp) still reads teal on machine roofs, belts, resource nodes and the machine icon halos. Nate's rule says no teal, but the change touches every model, so it needs his call on the exact colour | `lib/automation/models/*/palette.ts`, `scripts/brasswork/bw_palette.py`, `scripts/brasswork/build-menu-art.py`

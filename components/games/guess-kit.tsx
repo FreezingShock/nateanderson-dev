@@ -219,11 +219,20 @@ export function makeGuess(guess: Country, answer: Country): Guess {
     };
 }
 
-/** Counts up to `to` once when a fresh row appears. */
+/** True when the visitor asked for less motion. Read at the moment of use, never cached. */
+export function prefersReducedMotion() {
+    return typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+}
+
+/** Counts up to `to` once when a fresh row appears. Reduced motion shows the value at once. */
 function CountUp({ to, animate }: { to: number; animate: boolean }) {
     const [v, setV] = useState(animate ? 0 : to);
     useEffect(() => {
         if (!animate) return;
+        if (prefersReducedMotion()) {
+            setV(to);
+            return;
+        }
         const start = performance.now() + 550;
         let raf = 0;
         const tick = (now: number) => {
@@ -258,7 +267,7 @@ export function GuessRow({
     return (
         <div
             className={cn(
-                "grid grid-cols-[1fr_auto_2.25rem_3.25rem] items-center gap-2 rounded-[2px] border px-3 py-1.5 text-sm",
+                "relative grid grid-cols-[1fr_auto_2.25rem_3.25rem] items-center gap-2 overflow-hidden rounded-[2px] border px-3 py-1.5 text-sm",
                 fresh ? "og-row" : ""
             )}
             style={{
@@ -272,6 +281,8 @@ export function GuessRow({
                     : `${country.n}, ${formatDistance(guess.km, unit)} away, target is ${DIRECTION_NAME[dir]}, ${guess.pct} percent`
             }
         >
+            {/* A miss flashes red across the row once, then fades. Separate element so it never fights the row's entrance. */}
+            {fresh && !correct && <span aria-hidden className="og-flash" />}
             <span
                 className="og-cell truncate font-semibold uppercase tracking-wide"
                 style={delay(0)}
@@ -360,6 +371,45 @@ export function Burst() {
                     }
                 />
             ))}
+        </div>
+    );
+}
+
+/**
+ * The streak after a finished game: the count pops when it changes, ten pips
+ * fill left to right (a win) or drop to empty (a loss). Mounts with the result,
+ * so the pips build once per finish.
+ */
+export function StreakLine({
+    streak,
+    best,
+    won,
+}: {
+    streak: number;
+    best: number;
+    won: boolean;
+}) {
+    const PIPS = 10;
+    const lit = Math.min(streak, PIPS);
+    return (
+        <div className="gk-streak mt-4" aria-live="polite">
+            <div className="gk-streak-head">
+                <span className="gk-streak-label">{won ? "Streak" : "Streak reset"}</span>
+                {/* Keyed on the count so each change replays the pop. */}
+                <span key={streak} className="gk-streak-num">
+                    {streak}
+                </span>
+                <span className="gk-streak-best">best {best}</span>
+            </div>
+            <div className="gk-pips" aria-hidden>
+                {Array.from({ length: PIPS }, (_, i) => (
+                    <span
+                        key={i}
+                        className={cn("gk-pip", i < lit && "is-on")}
+                        style={i < lit ? { animationDelay: `${0.12 + i * 0.07}s` } : undefined}
+                    />
+                ))}
+            </div>
         </div>
     );
 }

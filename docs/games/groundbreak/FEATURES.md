@@ -129,3 +129,8 @@ First run to the bridge is about 3 hours (Nate's pick). The bot test "finishes t
 - Hint ring (amber frame on the next dock tile, tier, or cue): shares `::after` with the tooltip, so it must reset the tooltip's box, background and hover shift (`groundbreak.css`, block after `.gb-tier[data-hint]`). Headless Chrome only.
 - Console submit: the command runs in the submit handler, not inside the output's state updater (a `gb` command that changes the game would otherwise run during render). Headless Chrome dev build only.
 - Firm window foot: the Incorporate button is pinned at the bottom while the perks and copy scroll (`.gb-win-foot`); on phones the perk rows come first, above the fade. Windows and the material card are near opaque. While the crew repeats a job the waiting cue also names what the next campaign job waits on (`guide.ts` `nextCue`). Headless Chrome only.
+
+## Reward moments
+- Material on site: the dock tile of a material that comes on site rings once (`.gb-unlock`, set from `pulse` in `components/groundbreak/groundbreak.tsx`, styles in the end of `app/camino/groundbreak.css`). Hot feed lines glow once as they land. Hidden in reduced motion. Checked headless with the admin console (`gb admin on`, `gb give gravel 500`, U).
+- Job handover: the crew tick of the job that just finished stamps amber once (`freshTick` in `components/groundbreak/groundbreak.tsx`, `.gb-ticks li[data-fresh]` at the end of `app/camino/groundbreak.css`). Not yet captured in a frame.
+- Counters: the cash chip eases to its new value (`Ticked`, `components/games/juice/ticked.tsx`).

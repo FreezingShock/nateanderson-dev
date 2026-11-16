@@ -55,9 +55,35 @@
     animation: ogBurst var(--cm-d-long) cubic-bezier(0.22, 1, 0.36, 1) forwards;
 }
 .og-hint { animation: ogHint var(--cm-d-enter) cubic-bezier(0.22, 1, 0.36, 1) both; }
+
+/* A miss: one red wash across its row, then it fades. */
+.og-flash {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background: color-mix(in oklch, var(--cm-alert) 30%, transparent);
+    animation: ogFlash var(--cm-d-enter) ease-out both;
+}
+@keyframes ogFlash { from { opacity: 1; } to { opacity: 0; } }
+
+/* A win: one square ring grows out of the outline. */
+.og-ring {
+    position: absolute;
+    inset: 16%;
+    pointer-events: none;
+    border: 2px solid var(--cm-good);
+    animation: ogRing var(--cm-d-reveal) var(--cm-ease-out) both;
+}
+@keyframes ogRing {
+    from { opacity: 0.9; transform: scale(0.7); }
+    to { opacity: 0; transform: scale(1.5); }
+}
+
 @media (prefers-reduced-motion: reduce) {
     .og-row, .og-cell, .og-arrow, .og-pip, .og-shape, .og-shake, .og-win,
-    .og-burst, .og-hint { animation: none; }
+    .og-burst, .og-hint, .og-flash, .og-ring { animation: none; }
+    /* Without its animation the burst would sit as a cluster on the centre, so it is hidden instead. */
+    .og-burst, .og-flash, .og-ring { display: none; }
 }
 
 /* ---- Outline Guesser: neighbours round (components/games/neighbor-round.tsx) ---- */
@@ -781,11 +807,77 @@
     100% { box-shadow: inset 0 0 0 0 transparent; }
 }
 
+/* Unlimited opens: one cyan wipe across the tab bar, and the padlock pops open. */
+.ctos .gk-tabs-sweep {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    z-index: 1;
+    pointer-events: none;
+    background: linear-gradient(90deg, transparent, color-mix(in oklch, var(--cm-cyan) 40%, transparent) 50%, transparent);
+    transform: translate3d(-100%, 0, 0);
+    animation: gkSweep var(--cm-d-reveal) var(--cm-ease-cut) both;
+}
+@keyframes gkSweep { to { transform: translate3d(100%, 0, 0); } }
+.ctos .gk-unlock-icon {
+    display: inline-flex;
+    animation: gkPadlock var(--cm-d-enter) var(--cm-ease-press) both;
+}
+@keyframes gkPadlock {
+    0% { opacity: 0; transform: scale(0.4) rotate(-30deg); }
+    60% { opacity: 1; transform: scale(1.25) rotate(8deg); }
+    100% { opacity: 1; transform: none; }
+}
+
+/* Streak after a finished game: the count pops, ten bars fill in turn. */
+.ctos .gk-streak { display: grid; justify-items: center; gap: 8px; }
+.ctos .gk-streak-head { display: flex; align-items: baseline; gap: 10px; }
+.ctos .gk-streak-label {
+    font: 600 var(--cm-ctos-t-micro)/1 var(--cm-mono);
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--cm-mute);
+}
+.ctos .gk-streak-num {
+    font: 800 28px/1 var(--cm-display);
+    letter-spacing: -0.03em;
+    color: var(--cm-cyan);
+    font-variant-numeric: tabular-nums;
+    animation: gkPop var(--cm-d-enter) var(--cm-ease-press) both;
+}
+.ctos .gk-streak-best {
+    font: 500 var(--cm-ctos-t-micro)/1 var(--cm-mono);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--cm-ctos-meta);
+}
+@keyframes gkPop {
+    0% { opacity: 0; transform: translate3d(0, 8px, 0) scale(0.7); }
+    60% { opacity: 1; transform: scale(1.12); }
+    100% { opacity: 1; transform: none; }
+}
+.ctos .gk-pips { display: flex; gap: 4px; }
+.ctos .gk-pip {
+    width: 14px;
+    height: 6px;
+    border: 1px solid var(--cm-hair-hi);
+    background: transparent;
+}
+.ctos .gk-pip.is-on {
+    background: var(--cm-cyan);
+    border-color: var(--cm-cyan);
+    animation: gkPipOn var(--cm-d-enter) var(--cm-ease-out) both;
+}
+@keyframes gkPipOn { from { transform: scaleX(0); transform-origin: left; } to { transform: scaleX(1); } }
+
 @media (pointer: coarse) {
     .ctos .gk-tab { min-height: 64px; }
     .ctos .gk-tool, .ctos .gk-step, .ctos .gk-chip { min-height: 38px; }
 }
 @media (prefers-reduced-motion: reduce) {
-    .ctos .gk-stage, .ctos .gk-tab, .ctos .gk-tool, .ctos .gk-step, .ctos .gk-chip, .ctos .gk-tabs-ink { animation: none !important; transition: none !important; }
-    .ctos .gk-stage::after { display: none; }
+    .ctos .gk-stage, .ctos .gk-tab, .ctos .gk-tool, .ctos .gk-step, .ctos .gk-chip, .ctos .gk-tabs-ink,
+    .ctos .gk-unlock-icon, .ctos .gk-streak-num, .ctos .gk-pip.is-on { animation: none !important; transition: none !important; }
+    .ctos .gk-stage::after, .ctos .gk-tabs-sweep { display: none; }
 }

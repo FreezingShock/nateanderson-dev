@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState, type KeyboardEvent } from "react";
 import { PixelIcon } from "@/components/cm/pixel-icons";
 import { cn } from "@/lib/utils";
-import type { Mode } from "@/components/games/guess-kit";
+import { Burst, type Mode } from "@/components/games/guess-kit";
 
 // The Daily / Unlimited switch on both guessers. Two sharp naOS tabs share one
 // white block that slides under the active tab. Unlimited shows a padlock until
@@ -79,6 +79,8 @@ export function GuessModeTabs({
                 className="gk-tabs-ink"
                 style={{ transform: `translate3d(${index * 100}%, 0, 0)` }}
             />
+            {/* One cyan wipe across the bar when Unlimited opens. */}
+            {justUnlocked && <span aria-hidden="true" className="gk-tabs-sweep" />}
             {tabs.map((t, i) => {
                 const on = mode === t.id;
                 return (
@@ -111,11 +113,15 @@ export function GuessModeTabs({
                             {t.locked ? (
                                 <PixelIcon name="lock" className="size-3.5" />
                             ) : t.id === "unlimited" && justUnlocked ? (
-                                <PixelIcon name="unlock" className="size-3.5" />
+                                // Mounts with the unlock, so the padlock pops open once.
+                                <span className="gk-unlock-icon" aria-hidden="true">
+                                    <PixelIcon name="unlock" className="size-3.5" />
+                                </span>
                             ) : null}
                             {t.label}
                         </span>
                         <span className="gk-tab-meta">{t.meta}</span>
+                        {t.id === "unlimited" && justUnlocked && <Burst />}
                     </button>
                 );
             })}

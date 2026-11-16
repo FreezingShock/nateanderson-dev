@@ -91,7 +91,7 @@
    a row of cards ends level, and a linked card shows a cyan edge when keyboard focus lands on it. Grids with a few
    cards (.cm-fit) stretch to the row instead of leaving empty cells at the right. */
 .ctos .cm-card > b, .ctos .cm-card > .cm-row + b, .ctos .cm-card b.cm-card-t { font-size: var(--cm-ctos-t-lead); line-height: 1.1; }
-.ctos .cm-card p { font-size: 14px; line-height: 1.5; }
+.ctos .cm-card p { font-size: var(--cm-ctos-t-ui); line-height: 1.5; }
 .ctos .cm-grid > .cm-card.link p, .ctos .cm-cols3 > .cm-card.link p { font-size: 13.5px; }
 .ctos .cm-card > .st, .ctos .cm-card > .cm-state:last-child { margin-top: auto; padding-top: 6px; line-height: 1.45; }
 .ctos .cm-card > .st { letter-spacing: .1em; overflow-wrap: anywhere; }

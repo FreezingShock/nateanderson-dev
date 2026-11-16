@@ -185,6 +185,7 @@
 .sw-over { position: fixed; inset: 0; z-index: 30; display: grid; place-items: center; padding: 16px; background-color: rgba(2, 2, 8, .5); background-image: var(--px-ck2); background-size: 8px 8px; }
 @keyframes swFadeIn { from { opacity: 0; } }
 @keyframes swFadeOut { to { opacity: 0; } }
+.sw-over > .sw-card { max-height: 100%; }
 .sw-card { width: min(520px, 100%); max-height: calc(100dvh - 32px); display: flex; flex-direction: column; padding: 14px 18px 18px; overflow: hidden; }
 .sw-card[data-wide] { width: min(920px, 100%); }
 .sw-card-head, .sw-chart-top { display: flex; align-items: center; gap: 14px; }
@@ -233,7 +234,7 @@
 /* menu */
 .sw-menu { display: grid; gap: 14px; }
 .sw-field { display: grid; gap: 4px; font: 500 11px var(--cm-mono, monospace); letter-spacing: .1em; text-transform: uppercase; color: var(--sw-dim); }
-.sw-field input { min-height: 44px; padding: 0 12px; background: #05040c; border: 1px solid var(--sw-line); color: var(--sw-ink); font: 400 16px var(--cm-mono, monospace); }
+.sw-field input { width: 100%; min-width: 0; box-sizing: border-box; min-height: 44px; padding: 0 12px; background: #05040c; border: 1px solid var(--sw-line); color: var(--sw-ink); font: 400 16px var(--cm-mono, monospace); }
 .sw-ibtns { display: grid; grid-template-columns: repeat(auto-fit, minmax(76px, 1fr)); gap: 8px; }
 .sw-ibtn { display: grid; justify-items: center; gap: 4px; padding: 10px 4px 8px; background: rgba(5, 4, 12, .5); border: 1px solid var(--sw-line); font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--sw-ink); }
 .sw-ibtn:hover { border-color: var(--sw-cy); color: var(--sw-cy); }
@@ -339,10 +340,10 @@
 
 /* ==== GUI art pass (2026-11-15): drawn frames, fills and icons from public/starwright/ui (scripts/starwright/ui-art) ==== */
 .sw-root {
-    --ui-frame: url("/starwright/ui/frame.png?v=8");
-    --ui-fill: url("/starwright/ui/fill.png?v=8");
-    --ui-head: url("/starwright/ui/head.png?v=8");
-    --ui-rule: url("/starwright/ui/rule.png?v=8");
+    --ui-frame: url("/starwright/ui/frame.webp?v=8");
+    --ui-fill: url("/starwright/ui/fill.webp?v=8");
+    --ui-head: url("/starwright/ui/head.webp?v=8");
+    --ui-rule: url("/starwright/ui/rule.webp?v=8");
 }
 .sw-panel, .sw-dt, .sw-back, .sw-chart-top {
     border: 8px solid transparent; border-image: var(--ui-frame) 8 fill / 8px / 0 stretch;
@@ -364,7 +365,7 @@
 .sw-dt::before { content: ""; position: absolute; inset: -8px; background: linear-gradient(100deg, transparent 35%, rgba(95, 227, 255, .22) 50%, transparent 65%); transform: translateX(-120%); pointer-events: none; }
 .sw-dt:hover::before { animation: swSweep .45s steps(6, end); }
 .sw-dt:hover { transform: translateY(-2px); }
-.sw-dt[aria-pressed="true"] { border-image-source: url("/starwright/ui/frame-warm.png?v=8"); color: #ffd27a; }
+.sw-dt[aria-pressed="true"] { border-image-source: url("/starwright/ui/frame-warm.webp?v=8"); color: #ffd27a; }
 .sw-dt:hover .sw-pic { animation: swHop .42s steps(4, end); }
 .sw-back { padding: 0 12px 0 6px; min-height: 44px; background-color: #070616; background-clip: padding-box; }
 @keyframes swSweep { to { transform: translateX(120%); } }
@@ -398,19 +399,19 @@
 .sw-tier { display: block; width: 16px; height: 16px; background-size: 100% 100%; image-rendering: pixelated; opacity: .9; }
 .sw-btn:hover:not(:disabled) .sw-tier { filter: brightness(0); animation: swHop .38s steps(4, end); }
 .sw-btn:disabled .sw-tier { opacity: .3; }
-.sw-btn[data-tier="0"] { background-image: url("/starwright/ui/btn-1.png?v=8"); background-size: 8px 8px; }
-.sw-btn[data-tier="1"] { background-image: url("/starwright/ui/btn-2.png?v=8"); background-size: 8px 8px; }
-.sw-btn[data-tier="2"] { background-image: url("/starwright/ui/btn-3.png?v=8"); background-size: 8px 8px; }
+.sw-btn[data-tier="0"] { background-image: url("/starwright/ui/btn-1.webp?v=8"); background-size: 8px 8px; }
+.sw-btn[data-tier="1"] { background-image: url("/starwright/ui/btn-2.webp?v=8"); background-size: 8px 8px; }
+.sw-btn[data-tier="2"] { background-image: url("/starwright/ui/btn-3.webp?v=8"); background-size: 8px 8px; }
 .sw-btn:disabled { background-image: none; }
 
 /* collapse bar */
-.sw-bar i { background-image: url("/starwright/ui/bar.png?v=8"); background-size: 16px 16px; }
-.sw-bar i[data-full] { background-image: url("/starwright/ui/bar-full.png?v=8"); animation: swBarFlow .6s steps(2, end) infinite; }
+.sw-bar i { background-image: url("/starwright/ui/bar.webp?v=8"); background-size: 16px 16px; }
+.sw-bar i[data-full] { background-image: url("/starwright/ui/bar-full.webp?v=8"); animation: swBarFlow .6s steps(2, end) infinite; }
 .sw-go:not(:disabled) .sw-pic { animation: swPulse 1.4s steps(3, end) infinite; }
 @keyframes swPulse { 50% { transform: scale(1.15) rotate(22deg); } }
 
 /* overlays: dithered scrim, and a scanline that sweeps each card as it opens */
-.sw-over { background-color: rgba(2, 2, 8, .45); background-image: url("/starwright/ui/scrim.png?v=8"); background-size: 8px 8px; }
+.sw-over { background-color: rgba(2, 2, 8, .45); background-image: url("/starwright/ui/scrim.webp?v=8"); background-size: 8px 8px; }
 .sw-card::after { content: ""; position: absolute; left: 0; right: 0; top: 0; height: 3px; background: rgba(95, 227, 255, .55); box-shadow: 0 0 0 1px rgba(95, 227, 255, .15); pointer-events: none; animation: swScan .6s cubic-bezier(.4, 0, .2, 1) .08s both; }
 @keyframes swScan { from { top: 0; opacity: 1; } 90% { opacity: 1; } to { top: calc(100% - 3px); opacity: 0; } }
 .sw-card-head h2 { display: inline-flex; align-items: center; gap: 8px; }
@@ -507,8 +508,8 @@
 .sw-ready { color: var(--sw-cy) !important; font-weight: 500; animation: swPing 1.6s steps(2, end) infinite; }
 
 .sw-starcard { position: fixed; z-index: 35; width: 300px; padding: 12px 14px 14px; transform: translateY(-50%);
-    border: 8px solid transparent; border-image: url("/starwright/ui/frame.png?v=8") 8 fill / 8px / 0 stretch;
-    background: url("/starwright/ui/head.png?v=8") repeat-x, url("/starwright/ui/fill.png?v=8") repeat; background-size: 8px 20px, 32px 32px; background-color: #070616; background-clip: padding-box;
+    border: 8px solid transparent; border-image: url("/starwright/ui/frame.webp?v=8") 8 fill / 8px / 0 stretch;
+    background: url("/starwright/ui/head.webp?v=8") repeat-x, url("/starwright/ui/fill.webp?v=8") repeat; background-size: 8px 20px, 32px 32px; background-color: #070616; background-clip: padding-box;
     box-shadow: 6px 6px 0 rgba(0, 0, 0, .55); animation: swCardIn .3s steps(5, end) both; }
 .sw-starcard[data-side="l"] { transform: translate(-100%, -50%); }
 .sw-starcard > .sw-cn { border-color: var(--c); }
@@ -543,8 +544,8 @@
 
 /* deep stars: the endless last row, docked bottom right of the map */
 .sw-deep { position: absolute; right: 16px; bottom: 36px; z-index: 2; display: grid; grid-template-columns: 56px minmax(0, 1fr) auto; align-items: center; gap: 12px; width: min(480px, calc(100% - 32px)); padding: 8px 10px;
-    border: 8px solid transparent; border-image: url("/starwright/ui/frame-warm.png?v=8") 8 fill / 8px / 0 stretch; background: url("/starwright/ui/fill.png?v=8"); background-size: 32px 32px; background-color: #0c0814; background-clip: padding-box; box-shadow: 4px 4px 0 rgba(0, 0, 0, .55); }
-.sw-deep:not([data-open]) { border-image-source: url("/starwright/ui/frame.png?v=8"); opacity: .8; }
+    border: 8px solid transparent; border-image: url("/starwright/ui/frame-warm.webp?v=8") 8 fill / 8px / 0 stretch; background: url("/starwright/ui/fill.webp?v=8"); background-size: 32px 32px; background-color: #0c0814; background-clip: padding-box; box-shadow: 4px 4px 0 rgba(0, 0, 0, .55); }
+.sw-deep:not([data-open]) { border-image-source: url("/starwright/ui/frame.webp?v=8"); opacity: .8; }
 .sw-deep-art { width: 56px; height: 56px; background-size: 100% 100%; image-rendering: pixelated; animation: swLitPop .6s steps(6, end); }
 .sw-deep[data-can] .sw-deep-art { filter: drop-shadow(0 0 8px #ffd27a); }
 .sw-deep-copy b { display: flex; align-items: baseline; gap: 10px; font: 600 13px var(--cm-mono, monospace); letter-spacing: .12em; text-transform: uppercase; color: #ffd27a; }
@@ -569,7 +570,7 @@
 
 /* pulsar map: cold sky, a turning beam and pulse rings from the pulsar at its heart */
 .sw-chart[data-map="pulsar"] .sw-chart-bg { filter: hue-rotate(-55deg) saturate(.9) brightness(.9); }
-.sw-chart[data-map="pulsar"] .sw-chart-top { border-image-source: url("/starwright/ui/frame.png?v=8"); }
+.sw-chart[data-map="pulsar"] .sw-chart-top { border-image-source: url("/starwright/ui/frame.webp?v=8"); }
 .sw-psr { fill: #9fd0ff; pointer-events: none; }
 .sw-beam { fill: #bfe6ff; opacity: .1; animation: swBeam 8s steps(48, end) infinite; transform-origin: 0 0; }
 @keyframes swBeam { to { transform: rotate(360deg); } }
@@ -583,34 +584,46 @@
 /* ==== Orbit and Almanac art pass ==== */
 .sw-planets { gap: 12px; }
 .sw-planets li { grid-template-columns: 96px minmax(0, 1fr); grid-template-rows: auto auto; align-items: start; gap: 4px 14px; padding: 10px;
-    border: 8px solid transparent; border-image: url("/starwright/ui/frame.png?v=8") 8 fill / 8px / 0 stretch; background: url("/starwright/ui/fill.png?v=8"); background-size: 32px 32px; background-color: #070616; background-clip: padding-box; transition: transform .12s steps(2, end); }
-.sw-planets li[data-own] { border-image-source: url("/starwright/ui/frame-warm.png?v=8"); }
+    border: 8px solid transparent; border-image: url("/starwright/ui/frame.webp?v=8") 8 fill / 8px / 0 stretch; background: url("/starwright/ui/fill.webp?v=8"); background-size: 32px 32px; background-color: #070616; background-clip: padding-box; transition: transform .12s steps(2, end); }
+.sw-planets li[data-own] { border-image-source: url("/starwright/ui/frame-warm.webp?v=8"); }
 .sw-planets li[data-ok] { box-shadow: 0 0 0 1px var(--c), 4px 4px 0 rgba(0, 0, 0, .55); }
-.sw-pl-art { grid-row: 1 / 3; position: relative; width: 96px; height: 96px; display: grid; place-items: center; background: url("/starwright/ui/orbit-bg.png?v=8") center / 96px 96px no-repeat; image-rendering: pixelated; }
+.sw-pl-art { grid-row: 1 / 3; position: relative; width: 96px; height: 96px; display: grid; place-items: center; background: url("/starwright/ui/orbit-bg.webp?v=8") center / 96px 96px no-repeat; image-rendering: pixelated; }
 .sw-pl-art .sw-orb, .sw-pl-art .sw-sprite { width: 56px; height: 56px; }
 .sw-planets li:hover .sw-orb { animation: swHop .5s steps(4, end); }
 .sw-pips { position: absolute; bottom: 0; left: 50%; transform: translateX(-50%); display: flex; gap: 3px; }
-.sw-pips i { width: 10px; height: 10px; background: url("/starwright/ui/pip-empty.png?v=8") center / 100% 100%; image-rendering: pixelated; }
-.sw-pips i[data-on] { background-image: url("/starwright/ui/pip.png?v=8"); filter: drop-shadow(0 0 3px var(--c)); }
+.sw-pips i { width: 10px; height: 10px; background: url("/starwright/ui/pip-empty.webp?v=8") center / 100% 100%; image-rendering: pixelated; }
+.sw-pips i[data-on] { background-image: url("/starwright/ui/pip.webp?v=8"); filter: drop-shadow(0 0 3px var(--c)); }
 .sw-pl-body { display: grid; gap: 3px; min-width: 0; }
 .sw-pl-body b { font: 600 14px var(--cm-mono, monospace); letter-spacing: .06em; text-transform: uppercase; color: var(--c); }
 .sw-pl-body b small { margin-left: 6px; font: italic 400 12px var(--cm-display, serif); letter-spacing: 0; text-transform: none; color: var(--sw-dim); }
 .sw-planets .sw-pl-bonus { font: 600 15px var(--cm-mono, monospace); color: var(--sw-ink); }
-.sw-pl-bonus em { font-style: normal; font-size: 12px; color: #5fb4ff; }
+.sw-pl-bonus em { font-style: normal; font-size: 12px; color: #5fb4ff; white-space: nowrap; }
 .sw-pl-bar { display: block; height: 10px; border: 1px solid color-mix(in srgb, var(--c) 60%, transparent); padding: 1px; margin-top: 2px; }
-.sw-pl-bar i { display: block; height: 100%; background: var(--c); background-image: url("/starwright/ui/btn-2.png?v=8"); background-size: 8px 8px; transition: width 1s linear; }
+.sw-pl-bar i { display: block; height: 100%; background: var(--c); background-image: url("/starwright/ui/btn-2.webp?v=8"); background-size: 8px 8px; transition: width 1s linear; }
 .sw-pl-form { grid-column: 2; margin-top: 4px; min-height: 40px; background: var(--c); }
 .sw-pl-form:disabled { background: transparent; }
 .sw-planets li:not([data-own]) .sw-pl-art { filter: saturate(.6); }
+/* short landscape phones (844 by 390, 667 by 375): the pager gives a page about 136 px, and a planet row was 151 px, so its last
+   row clipped by 15 px. Tighter padding and gaps bring a row under the room, so two planets share a row. */
+@media (max-height: 520px) and (orientation: landscape) {
+    .sw-planets { gap: 8px; }
+    .sw-planets li { padding: 6px; gap: 0 12px; }
+    .sw-pl-body { gap: 0; }
+    .sw-planets .sw-pl-bonus { font-size: 14px; line-height: 1.3; }
+    .sw-pl-form { min-height: 34px; margin-top: 2px; }
+}
+@media (max-height: 520px) and (orientation: landscape) and (min-width: 561px) {
+    .sw-planets { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
 
 .sw-medal { width: 40px; height: 40px; border: 0 !important; background: none center / 100% 100% no-repeat; image-rendering: pixelated; }
-.sw-ach li { grid-template-columns: 40px minmax(0, 1fr); border: 8px solid transparent; border-image: url("/starwright/ui/frame.png?v=8") 8 fill / 8px / 0 stretch; background: none; padding: 4px 6px; opacity: .75; }
-.sw-ach li[data-own] { opacity: 1; border-image-source: url("/starwright/ui/frame-warm.png?v=8"); }
+.sw-ach li { grid-template-columns: 40px minmax(0, 1fr); border: 8px solid transparent; border-image: url("/starwright/ui/frame.webp?v=8") 8 fill / 8px / 0 stretch; background: none; padding: 4px 6px; opacity: .75; }
+.sw-ach li[data-own] { opacity: 1; border-image-source: url("/starwright/ui/frame-warm.webp?v=8"); }
 .sw-ach li[data-own] b { color: #ffd27a; }
 .sw-ach li:hover .sw-medal { animation: swMedalSwing .6s steps(6, end); transform-origin: 50% 0; }
 @keyframes swMedalSwing { 25% { transform: rotate(-12deg); } 60% { transform: rotate(8deg); } 100% { transform: none; } }
-.sw-cx { border: 8px solid transparent; border-image: url("/starwright/ui/frame.png?v=8") 8 fill / 8px / 0 stretch; background: none; padding: 2px 2px 4px; }
-.sw-codex li[data-own] .sw-cx { border-image-source: url("/starwright/ui/frame-warm.png?v=8"); }
+.sw-cx { border: 8px solid transparent; border-image: url("/starwright/ui/frame.webp?v=8") 8 fill / 8px / 0 stretch; background: none; padding: 2px 2px 4px; }
+.sw-codex li[data-own] .sw-cx { border-image-source: url("/starwright/ui/frame-warm.webp?v=8"); }
 .sw-codex li[data-sel] .sw-cx { box-shadow: 0 0 0 2px var(--c); }
 .sw-fact { display: grid; grid-template-columns: 72px minmax(0, 1fr); gap: 14px; align-items: center; padding: 10px 12px; border: 1px solid color-mix(in srgb, var(--c) 55%, transparent); background: color-mix(in srgb, var(--c) 10%, #05040c); animation: swCardIn .3s steps(5, end); }
 .sw-fact b { display: block; font: 600 16px var(--cm-mono, monospace); color: var(--c); letter-spacing: .04em; }
@@ -619,19 +632,65 @@
 @media (max-width: 560px) { .sw-planets li { grid-template-columns: 72px minmax(0, 1fr); } .sw-pl-art { width: 72px; height: 72px; background-size: 72px 72px; } .sw-pl-art .sw-orb, .sw-pl-art .sw-sprite { width: 56px; height: 56px; } .sw-pl-form { grid-column: 1 / -1; } }
 @media (prefers-reduced-motion: reduce) { .sw-fact, .sw-ach li:hover .sw-medal { animation: none !important; } }
 @media (min-width: 1100px) { .sw-ach { grid-template-columns: repeat(4, minmax(0, 1fr)); } .sw-ach li { padding: 2px 4px; } }
+/* phones: milestones are one tight row each (30 px medal), so the Almanac pages in 3 instead of 6 inside the game panel */
+@media (max-width: 560px) {
+    .sw-ach { gap: 6px; }
+    .sw-ach li { grid-template-columns: 30px minmax(0, 1fr); column-gap: 8px; padding: 2px 6px; }
+    .sw-ach .sw-medal { width: 30px; height: 30px; }
+    .sw-ach b { font-size: 10.5px; }
+    .sw-ach span:last-child { font-size: 11px; }
+    /* phones: the tap-open note keeps its art and uses the full width; its close button sits in the corner, not in a column */
+    .sw-pg-view > .sw-fact.sw-fact { grid-template-columns: 56px minmax(0, 1fr); gap: 10px; padding: 8px 10px; }
+    .sw-pg-view > .sw-fact.sw-fact .sw-el { width: 56px; height: 56px; }
+    .sw-pg-view > .sw-fact.sw-fact .sw-fact-x { position: absolute; top: 6px; right: 6px; width: 32px; height: 32px; }
+    .sw-pg-view > .sw-fact.sw-fact b { padding-right: 30px; font-size: 13px; line-height: 1.3; white-space: nowrap; overflow: hidden; text-overflow: clip; }
+    .sw-pg-view > .sw-fact.sw-fact b span { margin-left: 5px; font-size: 10px; letter-spacing: .02em; }
+    .sw-pg-view > .sw-fact.sw-fact p { margin-top: 2px; font-size: 12.5px; line-height: 1.4; }
+    .sw-pg-dots b { white-space: nowrap; }
+}
+/* phones: the star map gets the room. The Deep stars row becomes one compact line beside its button, and the explanation
+   under the map is hidden (the star card and the Menu keep the same rules), so a 390 by 844 panel shows the constellation at full size. */
+@media (max-width: 560px) {
+    .sw-chart .sw-deep { margin: 0 8px 4px; padding: 6px 8px; gap: 6px 10px; grid-template-columns: 40px minmax(0, 1fr); }
+    .sw-chart .sw-deep-art { grid-row: 1 / 3; width: 40px; height: 40px; }
+    .sw-chart .sw-deep-copy { grid-column: 2; grid-row: 1; }
+    .sw-chart .sw-deep-copy span { font-size: 11.5px; line-height: 1.3; }
+    .sw-chart .sw-deep-buy { grid-column: 2; grid-row: 2; width: 100%; min-width: 0; min-height: 40px; margin: 0; padding: 0 12px; font-size: 12px; }
+    .sw-chart .sw-chart-foot { display: none; }
+}
+/* short viewports (landscape phones, small laptops): the game window is only a few hundred px tall, so the menu cards tighten
+   their padding, rule and pager so a heading, one row and the flip bar still fit and nothing is clipped */
+@media (max-height: 700px) {
+    .sw-over > .sw-card { padding: 8px 12px 10px; }
+    .sw-over .sw-pg-nav { height: 36px; margin-top: 4px; }
+    .sw-over .sw-pg-btn { width: 36px; height: 36px; }
+    .sw-over .sw-h3 { margin: 8px 0 6px; }
+    .sw-over .sw-pg-page { gap: 8px; }
+}
+/* 360 wide and under: the element's symbol and weight drop to their own line so the close button never sits on the name */
+@media (max-width: 380px) {
+    .sw-pg-view > .sw-fact.sw-fact b span { display: block; margin: 2px 0 0; }
+}
+/* very narrow phones: the page count stays, the dots go, so the flip bar fits inside a 360 px card */
+@media (max-width: 400px) {
+    .sw-pg-nav { gap: 6px; }
+    .sw-pg-dots { gap: 4px; }
+    .sw-pg-dots i { display: none; }
+    .sw-pg-dots b { margin-left: 0; }
+}
 
 /* collapse ready: warm frame, heat shimmer and a big glowing supernova button */
-.sw-collapse[data-ready] { border-image-source: url("/starwright/ui/frame-warm.png?v=8"); box-shadow: 0 0 0 1px rgba(255, 178, 77, .35), 0 0 24px rgba(240, 138, 74, .25), 4px 4px 0 rgba(0, 0, 0, .55); }
+.sw-collapse[data-ready] { border-image-source: url("/starwright/ui/frame-warm.webp?v=8"); box-shadow: 0 0 0 1px rgba(255, 178, 77, .35), 0 0 24px rgba(240, 138, 74, .25), 4px 4px 0 rgba(0, 0, 0, .55); }
 .sw-collapse[data-ready] .sw-col-head h2 { color: #ffd27a; }
 .sw-collapse[data-ready] .sw-col-head h2 .sw-pic { animation: swPulse 1s steps(3, end) infinite; }
-.sw-collapse .sw-go:not(.sw-go2):not(:disabled) { min-height: 52px; padding: 0 20px; background: #ffb24d url("/starwright/ui/btn-3.png?v=8"); background-size: 8px 8px; border: 0; color: #1a0c04; font-weight: 700; font-size: 14px; box-shadow: inset 0 -4px 0 rgba(0, 0, 0, .3), 3px 3px 0 #000; animation: swReadyGlow 1.4s steps(4, end) infinite; }
+.sw-collapse .sw-go:not(.sw-go2):not(:disabled) { min-height: 52px; padding: 0 20px; background: #ffb24d url("/starwright/ui/btn-3.webp?v=8"); background-size: 8px 8px; border: 0; color: #1a0c04; font-weight: 700; font-size: 14px; box-shadow: inset 0 -4px 0 rgba(0, 0, 0, .3), 3px 3px 0 #000; animation: swReadyGlow 1.4s steps(4, end) infinite; }
 .sw-collapse .sw-go:not(.sw-go2):not(:disabled):hover { background-color: #ffd27a; color: #1a0c04; }
 @keyframes swReadyGlow { 50% { box-shadow: inset 0 -4px 0 rgba(0, 0, 0, .3), 3px 3px 0 #000, 0 0 18px rgba(255, 178, 77, .7); } }
-.sw-visitor, .sw-clouds { border: 8px solid transparent; border-image: url("/starwright/ui/frame-warm.png?v=8") 8 fill / 8px / 0 stretch; background-clip: padding-box; }
-.sw-opt { border: 8px solid transparent; border-image: url("/starwright/ui/frame.png?v=8") 8 fill / 8px / 0 stretch; background: none; }
-.sw-opt:hover { border-image-source: url("/starwright/ui/frame-warm.png?v=8"); background: none; transform: translateY(-2px); }
-.sw-cloud { border: 8px solid transparent; border-image: url("/starwright/ui/frame.png?v=8") 8 fill / 8px / 0 stretch; background: none; }
-.sw-cloud:hover { border-image-source: url("/starwright/ui/frame-warm.png?v=8"); background: none; }
+.sw-visitor, .sw-clouds { border: 8px solid transparent; border-image: url("/starwright/ui/frame-warm.webp?v=8") 8 fill / 8px / 0 stretch; background-clip: padding-box; }
+.sw-opt { border: 8px solid transparent; border-image: url("/starwright/ui/frame.webp?v=8") 8 fill / 8px / 0 stretch; background: none; }
+.sw-opt:hover { border-image-source: url("/starwright/ui/frame-warm.webp?v=8"); background: none; transform: translateY(-2px); }
+.sw-cloud { border: 8px solid transparent; border-image: url("/starwright/ui/frame.webp?v=8") 8 fill / 8px / 0 stretch; background: none; }
+.sw-cloud:hover { border-image-source: url("/starwright/ui/frame-warm.webp?v=8"); background: none; }
 @media (prefers-reduced-motion: reduce) { .sw-collapse .sw-go, .sw-collapse[data-ready] .sw-pic { animation: none !important; } }
 
 /* ======== motion language =================================================================================================
@@ -764,8 +823,8 @@
 @keyframes swStrip { to { transform: translateX(-87.5%); } }
 
 .sw-bar i, .sw-bar i[data-full] { position: relative; overflow: hidden; background-image: none; animation: none; }
-.sw-bar i::before { content: ""; position: absolute; top: 0; bottom: 0; left: -8px; right: 0; background: url("/starwright/ui/bar.png?v=8") 0 0 / 16px 16px; image-rendering: pixelated; animation: swBarSlide 1.2s steps(2, end) infinite; }
-.sw-bar i[data-full]::before { background-image: url("/starwright/ui/bar-full.png?v=8"); animation-duration: .6s; }
+.sw-bar i::before { content: ""; position: absolute; top: 0; bottom: 0; left: -8px; right: 0; background: url("/starwright/ui/bar.webp?v=8") 0 0 / 16px 16px; image-rendering: pixelated; animation: swBarSlide 1.2s steps(2, end) infinite; }
+.sw-bar i[data-full]::before { background-image: url("/starwright/ui/bar-full.webp?v=8"); animation-duration: .6s; }
 @keyframes swBarSlide { to { transform: translateX(8px); } }
 
 .sw-collapse .sw-go:not(.sw-go2):not(:disabled) { position: relative; animation: none; }

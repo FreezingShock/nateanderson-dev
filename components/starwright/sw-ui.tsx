@@ -9,7 +9,7 @@ import { ELEMENTS } from "@/lib/starwright/data";
 
 /** This thread's drawn GUI art (scripts/starwright/ui-art/build.py writes public/starwright/ui). Bump UI_V when it changes. */
 export const UI_V = 8;
-export const ui = (name: string) => `/starwright/ui/${name}.png?v=${UI_V}`;
+export const ui = (name: string) => `/starwright/ui/${name}.webp?v=${UI_V}`;
 /** Glyph names that have a drawn 16px icon in the ui set. */
 const UI_GLYPH: Record<string, string> = {
     back: "ui-back", cross: "ui-cross", burst: "stat-burst", star: "dock-stars", pulse: "dock-pulsar", orbit: "dock-orbit", book: "dock-almanac",
@@ -89,6 +89,19 @@ export function useLeaving<T>(value: T | null, ms = 260): { shown: T | null; lea
         return () => { window.clearTimeout(a); window.clearTimeout(b); };
     }, [value, shown, ms]);
     return { shown: shown === null ? value : shown, leaving: leaving && value !== shown };
+}
+
+/**
+ * Keeps a card mounted for `ms` after `active` turns false, so its exit can play. `leaving` is true only during that window.
+ */
+export function usePresence(active: boolean, ms = 120): { mounted: boolean; leaving: boolean } {
+    const [mounted, setMounted] = useState(active);
+    useEffect(() => {
+        if (active) { setMounted(true); return; }
+        const id = window.setTimeout(() => setMounted(false), ms);
+        return () => window.clearTimeout(id);
+    }, [active, ms]);
+    return { mounted: active || mounted, leaving: !active && mounted };
 }
 
 /** Loads the art sheets once and re-renders the caller when they arrive. */

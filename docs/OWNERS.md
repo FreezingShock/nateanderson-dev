@@ -6,10 +6,12 @@ Format: `- area | paths | owner (thread title or "free") | since YYYY-MM-DD | do
 
 ## Site
 - Shell, nav, console, search | components/cm, lib/nav.ts, lib/search, lib/motion, app/camino/{ctos,nav-naos,motion,entrances,transition}.css | Fix the animations toggle without refresh | 2026-11-16 | docs/site
+- Site motion scale (tokens, hover, press, cards, buttons, page shutters) | app/camino/camino.tokens.css (Motion), app/camino/camino.components.css (buttons, chips, cards), app/camino/transition.css (timings only), hover and press rules in app/camino/site.css, components/creations/creations.css, components/home/home.css `gs-card` | Build a site-wide motion system | 2026-11-16 | docs/site
 - Pages (home, about, studies, timeline, history, blog) | app/{page,about,studies,timeline,history,blog}, components/home, lib/*-data.ts | Polish site pages on phones | 2026-11-16 | docs/site
 - Homepage games showcase and band art | components/home/games-showcase.tsx, components/home/games-band*.ts(x), components/home/band-atlas.ts, public/home/games, public/home/band, scripts/home-band, the Play section in app/page.tsx and components/home/home.css (the `gs-` rules and `#play`) | Animate sprite art behind game cards | 2026-11-16 | docs/site
 - Creations and games hub | app/creations (not games/*), components/creations, components/games/naos.tsx, lib/creations-data.ts, public/games/shots | Games page redesign | 2026-11-15 | docs/site
 - Game launch and exit flow | app/creations/games/layout.tsx, components/game-launch, lib/game-launch, app/camino/game-launch.css | Smooth the game launch and exit flow | 2026-11-16 | docs/site
+- Site motion on home and non-game pages (hover life for toned card art) | app/camino/site-motion.css | Animate homepage and site pages | 2026-11-16 | docs/site
 - Gate, SEO, CI, deploy | proxy.ts, lib/gate, lib/seo.ts, .github, scripts/ci, vercel.json | free | | docs/deploys.md, docs/ci.md
 
 ## Games
@@ -20,7 +22,7 @@ Format: `- area | paths | owner (thread title or "free") | since YYYY-MM-DD | do
 - Groundbreak | components/{groundbreak,groundbreak-art}, lib/{groundbreak,groundbreak-fonts}, app/camino/groundbreak.css, tests/groundbreak, scripts/{groundbreak,groundbreak-art} | Ship the Groundbreak backlog (all Groundbreak files) | 2026-11-15 | docs/games/groundbreak
 - Groundbreak Skyline and Firm windows | components/groundbreak/groundbreak.tsx `SkylineView` and the Firm window body only; app/camino/groundbreak.css skyline block (`.gb-sky`) and the phone firm block at its end | Redraw Groundbreak skyline window | 2026-11-16 | docs/games/groundbreak
 - Node Farm | components/nodefarm, lib/nodefarm, app/camino/nodefarm, tests/nodefarm, scripts/nodefarm | Build the Node Farm page | 2026-11-16 | docs/node-farm.md, docs/site
-- Outline and Flag Guesser | components/games/*.tsx, lib/outline-game.ts, lib/data, scripts/games/guessers-check.mjs | Merge daily and unlimited guesser modes | 2026-11-16 | docs/site
+- Outline and Flag Guesser | components/games/*.tsx, lib/outline-game.ts, lib/data, scripts/games/guessers-check.mjs | Polish guessers with animated reveals | 2026-11-16 | docs/site
 - Shared game shell and windowed panel | components/games/shell, lib/games, app/camino/game-shell.css, app/creations/games/{brasswork,starwright,groundbreak}/layout.tsx and page.tsx (metadata only), route-chrome removed from both games | Build the shared game shell and windowed panel | 2026-11-16 | docs/site
 
 Inside a game, finer ownership (art, menus, sim, QOL) is recorded in that game's `docs/games/<game>/BACKLOG.md` header, if it has one.

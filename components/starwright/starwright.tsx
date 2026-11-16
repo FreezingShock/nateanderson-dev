@@ -22,8 +22,10 @@ import {
 import { uiVars } from "@/lib/starwright/ui-art";
 import { Almanac, CloudPick, Ending, Menu, Orbit, StarChart, Visitor, tools } from "./panels";
 import { AwayCard, ScrollHint, type AwayData } from "./settings";
-import { ElTile, Gl, Pic, ui, useLeaving, useSheets, useTips } from "./sw-ui";
+import { ElTile, Gl, Pic, ui, useLeaving, usePresence, useSheets, useTips } from "./sw-ui";
 import { BuyBurst } from "./buy-burst";
+import "@/app/camino/starwright-juice.css";
+import { Ticked } from "@/components/games/juice/ticked";
 
 type Panel = null | "stars" | "pulsar" | "orbit" | "almanac" | "menu";
 interface Note { id: number; text: string; tone?: "hot" | "dim" }
@@ -73,6 +75,10 @@ export function Starwright() {
     const [sound, setSoundState] = useState(true);
     const [paused, setPaused] = useState(false);
     const [card, setCard] = useState<AwayData | null>(null);
+    // The away card keeps its last content while it plays its exit.
+    const awayKeep = useRef<AwayData | null>(null);
+    if (card) awayKeep.current = card;
+    const awayP = usePresence(card !== null);
     const readOnly = useRef(false);
     const [other, setOther] = useState(false);
     const tabCh = useRef<{ ch: BroadcastChannel; id: string } | null>(null);
@@ -85,6 +91,11 @@ export function Starwright() {
         setNotes((n) => [...n.slice(-3), { id, text, tone }]);
         window.setTimeout(() => setNotes((n) => n.filter((x) => x.id !== id)), 9000);
     }, []);
+
+    // A reward flash over the whole star, in the element's colour: ignitions and doubled burners. Keyed, so a new one restarts it.
+    const [flash, setFlash] = useState<{ key: number; c: string } | null>(null);
+    const flashId = useRef(0);
+    const flashTo = useCallback((c: string) => setFlash({ key: ++flashId.current, c }), []);
 
     const save = useCallback(() => {
         const s = sRef.current;
@@ -153,6 +164,7 @@ export function Starwright() {
                 const e = ELEMENTS[h];
                 note(`${e.name} ignites in the core.`, "hot");
                 play("ignite", { row: h });
+                flashTo(e.color);
                 lastHeavy.current = h;
             }
             if (Date.now() - lastAch.current > 1000) {
@@ -160,6 +172,7 @@ export function Starwright() {
                 for (const id of checkAch(s)) {
                     note(`Almanac: ${ACHIEVEMENTS.find((a) => a.id === id)?.name}. Everything +${Math.round(ACH_BONUS * 100)}%.`, "hot");
                     play("badge");
+                    flashTo("#ffc94d");
                 }
             }
             const isReady = collapse(s, effects(s)) >= 1;
@@ -186,7 +199,7 @@ export function Starwright() {
             window.removeEventListener("pagehide", onHide);
             save();
         };
-    }, [ready, bump, save, note]);
+    }, [ready, bump, save, note, flashTo]);
 
     // ---- the scene -----------------------------------------------------------------------------------------------
     useEffect(() => {
@@ -272,10 +285,11 @@ export function Starwright() {
                 if (m > (lastMult.current[i] ?? 1)) {
                     note(`${ELEMENTS[i].name} burners double. Level ${levels(s, i)} makes it x${fmt(m)}.`, "hot");
                     play("milestone", { row: i });
+                    flashTo(ELEMENTS[i].color);
                 } else play("buy", { row: i, tier: k });
                 lastMult.current[i] = m;
             }),
-        [act, note],
+        [act, note, flashTo],
     );
 
     const doAnswer = useCallback(
@@ -503,13 +517,14 @@ export function Starwright() {
         <div className="sw-root" data-paused={paused ? "true" : undefined} style={vars as CSSProperties} {...tips.handlers}>
             <section className="sw-scene" aria-label="Your star">
                 <canvas ref={canvasRef} width={W} height={H} className="sw-canvas" role="img" aria-label={`${s.name}, a ${STAGE_NAMES[stage].toLowerCase()}`} />
+                {flash && <i key={flash.key} className="sw-reward" style={{ "--c": flash.c } as CSSProperties} aria-hidden="true" />}
                 <i className="sw-fade" data-edge="top" aria-hidden="true" />
                 <i className="sw-fade" data-edge="bottom" aria-hidden="true" />
                 <div className="sw-readout">
                     <span className="sw-tag">{s.name.toUpperCase()}</span>
                     <p>
-                        <span data-tip="Mass|Grows as the star fuses. Raises hydrogen inflow."><Gl n="mass" s={1} />mass <b>{fmt(mass(s))}</b></span>
-                        <span data-tip="Core heat|Gates every fusion. Mass sets it."><Gl n="heat" s={1} />heat <b>{fmtHeat(s.heat)}</b></span>
+                        <span data-tip="Mass|Grows as the star fuses. Raises hydrogen inflow."><Gl n="mass" s={1} />mass <b><Ticked value={mass(s)} format={fmt} /></b></span>
+                        <span data-tip="Core heat|Gates every fusion. Mass sets it."><Gl n="heat" s={1} />heat <b><Ticked value={s.heat} format={fmtHeat} /></b></span>
                         <span data-tip="Age of this star"><Gl n="age" s={1} />age <b>{fmtAge(s.age)}</b></span>
                     </p>
                     <p className="sw-stage">{STAGE_NAMES[stage]}{s.novasAll ? ` · supernova ${s.novas + 1}` : ""}</p>
@@ -545,7 +560,7 @@ export function Starwright() {
             {s.event && <Visitor s={s} onAnswer={doAnswer} />}
             {s.offer.length > 0 && <CloudPick s={s} onPick={doCloud} onPreview={(id) => { previewRef.current = id; }} />}
             <ScrollHint />
-            {card && <AwayCard card={card} onClose={() => setCard(null)} />}
+            {awayP.mounted && awayKeep.current && <AwayCard card={awayKeep.current} onClose={() => setCard(null)} leaving={awayP.leaving} />}
             {other && (
                 <div className="sw-lock sw-panel" role="alert">
                     <span>Starwright is open in another tab, so this one stopped saving.</span>
@@ -593,9 +608,9 @@ export function Starwright() {
                 <Corners />
             </section>
 
-            {shown === "stars" && <StarChart title="Constellations" list={PERKS} owned={s.perks} cur={s.stardust} curName="stardust" onBuy={(id) => act((x) => buyPerk(x, id))} onClose={() => setPanel(null)} constellations leaving={leaving} deep={{ n: s.deep, cost: deepCost(s), onBuy: () => act((x) => { buyDeep(x); }) }} />}
-            {shown === "pulsar" && <StarChart title="Pulsar map" list={PULSAR_PERKS} owned={s.pulsar} cur={s.neutrons} curName="neutrons" onBuy={(id) => act((x) => buyPulsar(x, id))} onClose={() => setPanel(null)} leaving={leaving} />}
-            {shown === "orbit" && <Orbit s={s} onBuy={(id) => act((x) => { if (buyPlanet(x, id)) { note(`${PLANETS.find((p) => p.id === id)?.name} forms in orbit.`); play("planet"); } })} onClose={() => setPanel(null)} leaving={leaving} />}
+            {shown === "stars" && <StarChart title="Constellations" list={PERKS} owned={s.perks} cur={s.stardust} curName="stardust" onBuy={(id) => act((x) => { if (buyPerk(x, id)) flashTo("#5fe0ff"); })} onClose={() => setPanel(null)} constellations leaving={leaving} deep={{ n: s.deep, cost: deepCost(s), onBuy: () => act((x) => { if (buyDeep(x)) flashTo("#5fe0ff"); }) }} />}
+            {shown === "pulsar" && <StarChart title="Pulsar map" list={PULSAR_PERKS} owned={s.pulsar} cur={s.neutrons} curName="neutrons" onBuy={(id) => act((x) => { if (buyPulsar(x, id)) flashTo("#ff5fc8"); })} onClose={() => setPanel(null)} leaving={leaving} />}
+            {shown === "orbit" && <Orbit s={s} onBuy={(id) => act((x) => { if (buyPlanet(x, id)) { const pl = PLANETS.find((p) => p.id === id); note(`${pl?.name} forms in orbit.`); play("planet"); flashTo(pl?.color ?? "#ffc94d"); } })} onClose={() => setPanel(null)} leaving={leaving} />}
             {shown === "almanac" && <Almanac s={s} onClose={() => setPanel(null)} leaving={leaving} />}
             {shown === "menu" && (
                 <Menu

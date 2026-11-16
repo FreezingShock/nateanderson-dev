@@ -229,7 +229,7 @@ html.gb-route .sf-foot { display: none !important; }
     .gb-res li { padding: 0 6px 0 4px; }
     .gb-title { font-size: 20px; }
 }
-@media (prefers-reduced-motion: reduce), (max-height: 0px) { .gb-win, .gb-card, .gb-job-body, .gb-feed li { animation-duration: .01s !important; } .gb-rail-btn[data-ping]::before, .gb-tile[data-ready] { animation: none; } }
+@media (prefers-reduced-motion: reduce), (max-height: 0px) { .gb-win, .gb-card, .gb-away, .gb-job-body, .gb-feed li { animation-duration: .01s !important; } .gb-rail-btn[data-ping]::before, .gb-tile[data-ready] { animation: none; } }
 .gb-root[data-reduce="true"] .gb-win, .gb-root[data-simple="true"] .gb-win { animation-duration: .01s !important; }
 
 @media (max-width: 520px) { .gb-res li:nth-child(3) { display: none; } }
@@ -723,3 +723,23 @@ html.gb-route .sf-foot { display: none !important; }
     .gb-root .gb-job { display: flex; flex-direction: column; max-height: calc(100% - var(--gb-dock-top, 140px) - 80px); }
     .gb-root .gb-job-body { min-height: 0; overflow: auto; }
 }
+
+/* Reward moments. A material that comes on site rings its dock tile once: a square outline that grows and fades in
+   stepped frames. A hot feed line glows once as it lands. Both are off under reduced motion (the feed line keeps its text). */
+.gb-unlock { position: absolute; inset: -4px; pointer-events: none; border: 2px solid var(--gb-amber); box-shadow: 0 0 0 1px #0c0905; animation: gbUnlockRing var(--cm-d-wipe) steps(4, end) both; }
+.gb-unlock::after { content: ""; position: absolute; inset: 6px; background: var(--gb-amber); animation: gbUnlockCore var(--cm-d-enter) steps(2, end) both; }
+@keyframes gbUnlockRing { from { transform: scale(.9); opacity: 1; } to { transform: scale(1.3); opacity: 0; } }
+@keyframes gbUnlockCore { from { opacity: .6; } to { opacity: 0; } }
+.gb-feed li[data-tone="hot"] { animation: gbIn .2s ease-out, gbGlow var(--cm-d-reveal) steps(2, end); }
+@keyframes gbGlow { 0% { box-shadow: 0 0 0 2px var(--gb-amber); } 100% { box-shadow: 0 0 0 0 transparent; } }
+@media (prefers-reduced-motion: reduce) { .gb-unlock, .gb-unlock::after { display: none; } .gb-feed li[data-tone="hot"] { animation: gbIn .2s ease-out; } }
+/* A job's tick when its handover lands (groundbreak.tsx `freshTick`): the tick flashes amber once. */
+.gb-ticks li[data-fresh] { animation: gbTickStamp var(--cm-d-reveal) steps(4, end) both; }
+@keyframes gbTickStamp { 0% { background: var(--gb-hi); box-shadow: 0 0 0 2px var(--gb-amber); } 100% { box-shadow: 0 0 0 0 transparent; } }
+@media (prefers-reduced-motion: reduce) { .gb-ticks li[data-fresh] { animation: none; } }
+
+/* Exits: the material card and the welcome-back card fade and slide out on the site fast timing, then unmount. */
+.gb-card[data-s="out"] { animation: gbCardOut var(--cm-d-fast) ease-in both; pointer-events: none; }
+.gb-away[data-s="out"] { animation: gbAwayOut var(--cm-d-fast) ease-in both; pointer-events: none; }
+@keyframes gbCardOut { to { opacity: 0; transform: translate(-50%, 12px); } }
+@keyframes gbAwayOut { to { opacity: 0; transform: translateY(-4px); } }
