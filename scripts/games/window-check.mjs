@@ -55,6 +55,20 @@ async function openGame(view, id) {
     return { ctx, page };
 }
 
+// Instant scroll to a reachable position, then wait until it lands (the page's default scroll is smooth and slow in headless).
+// Returns where it actually landed. Target is clamped to the page's scroll room, so short pages still test the same thing.
+async function scrollTo(page, want) {
+    const target = await page.evaluate((w) => Math.max(0, Math.min(w, document.documentElement.scrollHeight - innerHeight)), want);
+    await page.evaluate((t) => window.scrollTo({ top: t, behavior: "instant" }), target);
+    let y = -1;
+    for (let i = 0; i < 25; i++) {
+        y = await page.evaluate(() => window.scrollY);
+        if (Math.abs(y - target) < 2) break;
+        await page.waitForTimeout(100);
+    }
+    return { target, y };
+}
+
 const rectOf = (page, sel) => page.evaluate((s) => {
     const el = document.querySelector(s);
     if (!el) return null;
@@ -101,15 +115,15 @@ for (const g of GAMES) {
             `${tag}: game root fills the panel (${root ? `${Math.round(root.width)}x${Math.round(root.height)}` : "missing"} in ${frame ? `${Math.round(frame.width)}x${Math.round(frame.height)}` : "?"})`);
 
         // Keys stay with the game: put the page at a scrolled position, press scroll keys, the page must not move.
-        await page.evaluate(() => { window.scrollTo(0, 120); });
-        await page.waitForTimeout(150);
+        // The position is 120 px, or half the page's room on a short page (Groundbreak on a phone has about 86 px).
+        const keysAt = await scrollTo(page, 120);
         await page.evaluate(() => document.querySelector(".gs-frame")?.focus({ preventScroll: true }));
         for (const key of ["ArrowDown", "PageDown", "Space", "End"]) {
             await page.keyboard.press(key);
         }
         await page.waitForTimeout(250);
         const afterKeys = await page.evaluate(() => window.scrollY);
-        check(Math.abs(afterKeys - 120) < 2, `${tag}: game keys do not scroll the page (scrollY ${afterKeys})`);
+        check(Math.abs(afterKeys - keysAt.y) < 2, `${tag}: game keys do not scroll the page (scrollY ${afterKeys}, was ${keysAt.y})`);
 
         // The wheel over the panel stays with the game while it has focus. Bring the panel back under the pointer first.
         await page.evaluate(() => document.querySelector(".gs-frame").focus({ preventScroll: true }));
@@ -127,28 +141,31 @@ for (const g of GAMES) {
         // The wheel over the title bar still scrolls the page.
         const bar = await rectOf(page, ".gs-win-bar");
         if (bar && bar.height > 0) {
-            // measured again: the page moved during the key and wheel checks above
-            await page.waitForTimeout(600);
+            // Start from a reachable position below the top, so there is room to scroll up. The page moved during the
+            // key and wheel checks above, so the title bar is measured again after it lands.
+            const barAt = await scrollTo(page, 120);
             const barNow = await rectOf(page, ".gs-win-bar");
             await page.mouse.move(barNow.left + barNow.width / 2, barNow.top + barNow.height / 2);
             // Scroll up, so the check does not depend on how much room is left below.
             await page.mouse.wheel(0, -200);
             await page.waitForTimeout(300);
             // Headless WebGL runs the 3D games at a few frames a second, so the page scroll can land late. Poll for it.
-            let afterWheelBar = afterWheelGame;
-            for (let i = 0; i < 20 && afterWheelBar >= afterWheelGame - 20; i++) {
+            let afterWheelBar = barAt.y;
+            for (let i = 0; i < 20 && afterWheelBar >= barAt.y - 20; i++) {
                 await page.waitForTimeout(200);
                 afterWheelBar = await page.evaluate(() => window.scrollY);
             }
-            check(afterWheelBar < afterWheelGame - 20, `${tag}: wheel over the title bar scrolls the page (scrollY ${afterWheelGame} to ${afterWheelBar})`);
+            check(afterWheelBar < barAt.y - 20, `${tag}: wheel over the title bar scrolls the page (scrollY ${barAt.y} to ${afterWheelBar})`);
         }
 
         // Save export: with a save present it downloads; without one it says so. Either way nothing throws.
         const fs = await page.evaluate(() => document.querySelector(".gs-win-msg")?.textContent ?? "");
         const saveBtn = page.getByRole("button", { name: "Export save" });
         if (!(await saveBtn.isVisible().catch(() => false))) {
-            // Brasswork on a phone is full screen: its save rows live in Settings, so the footer is hidden there.
-            console.log(`SKIP ${tag}: Export save is not shown on this layout`);
+            // On a phone the window footer is hidden on purpose (Groundbreak's phone pass, groundbreak.css `.gs-win-foot`
+            // display none). Export and Import stay in each game's Menu and Settings there, so this is a designed skip,
+            // not a missing button. Import is still checked below because its input stays in the DOM.
+            console.log(`SKIP ${tag}: Export save is not in the footer on this layout (designed; Menu and Settings hold it)`);
         } else {
             await saveBtn.click();
             await page.waitForTimeout(300);
