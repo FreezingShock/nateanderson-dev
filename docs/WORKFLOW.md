@@ -61,6 +61,13 @@ Games must be original (own name, theme, art). Taste notes for idle games are in
 ## Audits
 A repo-wide pass writes its report to `/mnt/project-files/portfolio/<topic>-<date>/` and lands its findings as BACKLOG lines, one each. Do not duplicate the dead-code audit; its findings go in the "Code health" section of `docs/site/BACKLOG.md`.
 
+## Repo hygiene
+- Never commit `.env*` files, keys, or a password, even as a default. The repo is public, so anything pushed is public forever, and a rewrite of history does not undo it. Rotate the value instead.
+- The `secret-scan` check runs gitleaks on every PR. A red result is real until proven otherwise.
+- Never force-push a shared branch (`integration`, `release`, or another thread's branch). Merge or rebase onto it instead.
+- Delete a task branch once its PR is merged. Deleting another thread's branch needs Nate's OK.
+- `deploy/*` branches are deleted by the Deploy workflow. Do not reuse one.
+
 ## Keeping this working
 When a thread hits a process problem (a check that lies, a doc that was wrong, a step that cost time), it fixes the doc in the same PR. `CLAUDE.md` stays under about 80 lines; detail goes here.
 - A baseline build from another worktree needs `cp -al node_modules` (hard links). A symlinked `node_modules` makes Turbopack fail with "points out of the filesystem root".

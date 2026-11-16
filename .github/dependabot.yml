@@ -1,0 +1,19 @@
+# Security updates for npm and GitHub Actions are opened by Dependabot automatically.
+# Version updates are off (limit 0) so the PR queue stays quiet. Turn them on by raising the limit.
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: "/"
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 0
+  - package-ecosystem: npm
+    directory: "/scripts/ci"
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 0
+  - package-ecosystem: github-actions
+    directory: "/"
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 0
