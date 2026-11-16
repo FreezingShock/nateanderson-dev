@@ -195,10 +195,10 @@ export function GameRouteShell({ name, children, header, mode = "framed", game }
         };
         // On desktop the anchor is the Play section's top rule, not the panel. The section's label and heading sit above the
         // panel, so anchoring on the panel left "Light your star." under the bar. Desktop fits the whole block below the bar.
-        // Phones keep the panel as the anchor: their panel is taller than the screen under the bar.
+        // Phones, and desktops under 700px tall, keep the panel as the anchor: the game matters more than the heading there.
         const anchor = () => {
-            const desktop = window.matchMedia("(min-width: 761px)").matches;
-            return (desktop && panelRef.current?.closest<HTMLElement>("section.cm-section")) || panelRef.current;
+            const desktopTall = window.matchMedia("(min-width: 761px) and (min-height: 700px)").matches;
+            return (desktopTall && panelRef.current?.closest<HTMLElement>("section.cm-section")) || panelRef.current;
         };
         let settle = 0;
         let moved = false;

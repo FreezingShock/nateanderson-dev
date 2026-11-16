@@ -26,7 +26,7 @@ Format and rules: `docs/WORKFLOW.md`. Append new items at the end of a section; 
 - [ ] ASK SITE-env-cleanup | S | Nate deletes GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET in Vercel and drops the account tables in Supabase
 - [ ] ASK SITE-branch-delete | S | threads cannot delete branches (403); Nate runs `branch-cleanup-delete.sh` from the audit folder, merged ones only | audit 9
 - [ ] ASK SITE-stale-prs | S | decide PRs #399 and #400 (merge or close) and the Brasswork drafts; owners decide their own | audit 9
-- [ ] ASK SITE-short-screen | S | on screens under about 700 px tall the windowed panel sits at its 260 px floor and is small (1366 by 657 laptops); the footer now clears the dock everywhere | pick: keep the floor, or anchor those screens on the panel and let the heading sit under the bar
+- [x] SITE-short-screen | S | under 700 px tall the windowed panel is the scroll anchor, so the game is up under the bar and the heading stays below it; footer clears the dock down to 657 px tall | #PR (coordinator decision, 2026-11-16)
 - [x] SITE-phone-heading | S | decided by the coordinator on 2026-11-16: phones keep the panel as the anchor, so the Play heading can sit under the bar there | decided
 
 - [x] SITE-hub-layout | S | Nate picked Poster on 2026-11-15 (decision card); rows and index layouts removed | #610 follow-up
@@ -71,3 +71,4 @@ Slot for findings from the thread "Audit website code for simplification". That 
 - [x] SHELL-play-under-bar | S | desktop windowed games: the Play heading and panel start below the site bar, and the panel and footer clear the site dock; Brasswork's left dock compacts under 1000 px tall | #654
 - [x] SITE-short-screen-dock | S | footer clears the site dock down to 657 px tall (panel floor 260 px, height 100dvh minus 400 px), and Brasswork's left dock scrolls inside a short panel instead of clipping | #659
 - [x] SITE-home-band-art | M | animated sprite art for each game across the whole homepage Play band, lazy and paused off screen | this PR
+- [x] SITE-short-anchor | S | desktop under 700 px tall anchors on the panel (the game matters more than the heading there) | #PR
