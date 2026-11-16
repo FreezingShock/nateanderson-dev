@@ -46,9 +46,9 @@ import { numberFormatter, catchUp } from "../game-kit/format";
 
 ### tabs.ts (more than one browser tab)
 - `claimTab(channel, onSuperseded)` gives `{ claim, close }`: one tab plays at a time (BroadcastChannel).
-- `watchNewerSave(key, mySavedAt, onNewer)`: another tab wrote a newer save, so stop saving here.
+- `watchNewerSave(key, mySavedAt, onNewer)`: another tab wrote a newer save, so stop saving here. Reads either save form with `rawSavedAt` from `lib/saves/core`.
 
-Saves themselves (format, versions, migrations, backups, export and import) are the save system's: `lib/games/save.ts` and `lib/games/save-slot.ts`. The kit only runs the save loop (`useAutosave`).
+Saves themselves (format, versions, migrations, backups, corrupt-save handling, export and import) are the save system's: `lib/saves/` (`writeSave`, `loadSave`, `rollCopies`) and `lib/games/save*.ts`. The kit only runs the save loop: `useAutosave` calls the game's own `save()`, which writes through `lib/saves/core`.
 
 ## React half: `components/game-kit/`
 
