@@ -495,10 +495,10 @@
 @keyframes swLight { from { r: 16; opacity: 1; stroke-width: 6; } to { r: 60; opacity: 0; stroke-width: 1; } }
 .sw-node[data-lit] .sw-nodeart { animation: swLitPop .6s steps(6, end); }
 @keyframes swLitPop { 0% { transform: scale(.6); } 50% { transform: scale(1.4); } 100% { transform: scale(1); } }
-.sw-nodename { fill: #e9ecf6; font: 600 12px var(--cm-mono, monospace); letter-spacing: .06em; }
+.sw-nodename { fill: #e9ecf6; font: 600 12.5px var(--cm-mono, monospace); letter-spacing: .06em; }
 .sw-node[data-st="lock"] .sw-nodename { fill: #6b6f8a; }
-.sw-nodedes { fill: #8a90a8; font: italic 400 10px var(--cm-display, serif); letter-spacing: .04em; paint-order: stroke; stroke: #05040c; stroke-width: 3px; }
-.sw-nodebuff { fill: var(--c); font: 600 11px var(--cm-mono, monospace); letter-spacing: .04em; paint-order: stroke; stroke: #05040c; stroke-width: 3px; }
+.sw-nodedes { fill: #8a90a8; font: italic 400 12px var(--cm-display, serif); letter-spacing: .04em; paint-order: stroke; stroke: #05040c; stroke-width: 3px; }
+.sw-nodebuff { fill: var(--c); font: 600 12px var(--cm-mono, monospace); letter-spacing: .04em; paint-order: stroke; stroke: #05040c; stroke-width: 3px; }
 .sw-node[data-st="lock"] .sw-nodebuff { fill: #6b6f8a; }
 .sw-conname { font: 600 15px var(--cm-mono, monospace); letter-spacing: .45em; }
 .sw-conlat { font: italic 400 11px var(--cm-display, serif); letter-spacing: .1em; opacity: .75; paint-order: stroke; stroke: #05040c; stroke-width: 3px; }

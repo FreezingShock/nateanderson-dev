@@ -62,7 +62,7 @@ export default function BrassKit() {
                     <div style={{ display: "grid", gap: 10 }}>
                         <button className="bw-slot" aria-pressed="true"><span className="bw-icon sm"><Glyph c="#c4682f" /></span><span><span className="nm">Smelter</span><span className="sub">iron ore → ingot</span></span><span className="amt">x3</span></button>
                         <button className="bw-slot"><span className="bw-icon sm"><Glyph c="#7f8ca3" /></span><span><span className="nm">Press</span><span className="sub">ingot → plate</span></span><span className="amt">x1</span></button>
-                        <button className="bw-slot" disabled><span className="bw-icon sm"><Glyph c="#58b09a" /></span><span><span className="nm">Windmill</span><span className="sub">needs Gear cutting</span></span></button>
+                        <button className="bw-slot" disabled><span className="bw-icon sm"><Glyph c="#8f9650" /></span><span><span className="nm">Windmill</span><span className="sub">needs Gear cutting</span></span></button>
                     </div>
                     <div style={{ display: "flex", gap: 14, marginTop: 20, alignItems: "end" }}>
                         <span className="bw-icon sm"><Glyph c="#d29a3c" /></span>

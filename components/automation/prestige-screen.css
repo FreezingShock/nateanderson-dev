@@ -123,7 +123,8 @@
 }
 
 @media (max-width: 759px) {
-  .pw-scrim { padding: 6px; }
+  /* Under the HUD bar, like the other windows: the bar's buttons (Tools) must not sit on the close button. */
+  .pw-scrim { padding: calc(var(--ab-top-h, 0px) + 8px) 6px 6px; }
   .pw-wrap { width: 100%; }
   .pw { width: 100%; margin: 0; border-width: 18px; border-image-width: 18px; }
   .pw-head { flex-wrap: wrap; gap: 6px 8px; }
@@ -134,12 +135,13 @@
   .pw-close { min-height: 40px; padding: 0 12px; }
   .pw-picker { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); }
   .pw-plan { width: 84px; }
-  .pw-in { max-height: calc(100dvh - 24px); padding: 6px 8px; }
+  .pw-in { max-height: calc(100dvh - var(--ab-top-h, 0px) - 14px); padding: 6px 8px; }
   .pw-ico { width: 24px; height: 24px; }
   .pw-body { grid-template-columns: 1fr; gap: 14px; }
   .pw-picker { flex-direction: row; gap: 6px; }
   .pw-pick { flex: 1 1 0; min-width: 0; min-height: 44px; padding: 4px; }
-  .pw-pick-name { font-size: 10px; letter-spacing: 0.02em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  /* Site names wrap onto two lines instead of cutting off ("IRON R..."). */
+  .pw-pick-name { font-size: 10px; letter-spacing: 0.02em; line-height: 1.15; text-align: center; overflow-wrap: anywhere; }
   .pw-view-cap strong { font-size: 16px; }
   .pw-view-cap span { font-size: 12px; }
   .pw-left { display: contents; }

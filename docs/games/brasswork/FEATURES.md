@@ -70,7 +70,7 @@ Owners are per area, one thread per file set. The threads: "Streamline Brasswork
 |---|---|---|---|
 | Voxel island, terrain (one base tone for the plateau and the grass top, no per-voxel jitter on ground), mesher with AO, fog, grass in wind | working | `render/index.ts`, `mesher.ts`, `terrain.ts`, `grass.ts`, `fog.ts` | none |
 | Sky with sun elevation by clock, stars, moon, shooting stars, cirrus; clouds | working | `render/sky.ts`, `clouds.ts`, `lighting.ts`, `config.ts` | none |
-| Sea: baked shore height map, foam, glints, three palettes (verdigris default) | working | `render/water.ts` | none |
+| Sea: baked shore height map, foam, glints, three palettes (verdigris default, now dark olive-bronze, no teal) | working | `render/water.ts` | none |
 | Horizon islands and night lighthouse beam | working | `render/horizon.ts` | none |
 | Dither post pass (6 levels, pixel 3, toggle; the Bayer dither applies only where the picture has an edge, so flat ground snaps to one tone), quality governor | working | `render/postfx.ts`, `governor.ts` | none |
 | Machines with working, clock and charge states, hub growth stages 0 to 3, ore node boards | working | `render/models.ts`, `models/machines/`, `models/resources/node.ts` | `machine-models.test.mjs`, `resources.test.mjs` |
