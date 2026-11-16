@@ -317,6 +317,20 @@ export type MachineView = {
   group?: "machines" | "power" | "logistics";
 };
 
+/** One recipe in a crafter's picker. `perMin` is the output per minute at this building's speed and research bonus. */
+export type RecipeEntry = {
+  id: string;
+  name: string;
+  alternate: boolean;
+  inputs: Line[];
+  outputs: Line[];
+  seconds: number;
+  perMin: number;
+  state: "selected" | "open" | "locked";
+  /** Locked only: plain reason, e.g. "Research: Copper smelting, 6 blueprints" or "Needs Iron plates first". */
+  lockReason?: string;
+};
+
 export type MachineDetail = MachineView & {
   recipe: {
     name: string;
@@ -331,6 +345,8 @@ export type MachineDetail = MachineView & {
   recipeOptions?: { id: string; name: string; alternate: boolean }[];
   /** Crafters with no recipe chosen: every unlocked recipe with its inputs, outputs and craft time. */
   recipeChoices?: { id: string; name: string; alternate: boolean; inputs: Line[]; outputs: Line[]; seconds: number }[];
+  /** Crafters: every recipe this machine type runs, open ones first, each with its rate and why a locked one is shut. */
+  recipeLibrary?: RecipeEntry[];
   /** Drills: each resource node this machine can mine, with the output per minute at the node's purity. */
   mines?: { resourceId: string; name: string; purity: string; perMin: number }[];
   /** Power use in kW, from the machine's power draw. */
@@ -440,6 +456,8 @@ export type NextStepView = {
   /** Optional button that acts on the hint, such as selecting the next machine. */
   actionLabel?: string;
   actionId?: string;
+  /** A placed building the action selects (opens its inspector), instead of arming a tool. */
+  selectId?: number;
 };
 
 export type HudSettings = {
@@ -458,6 +476,10 @@ export type HubUnlock = {
   name: string;
   /** Icon id for lib/automation/icons (item or machine id). Absent for blueprints. */
   icon?: string;
+  /** How many: blueprints paid, or items in a supply crate. */
+  qty?: number;
+  /** The bare item name for a crate tile, without the count. */
+  label?: string;
 };
 
 /** One step of the hub ladder: an early request or a blueprint milestone. */

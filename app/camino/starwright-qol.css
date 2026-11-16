@@ -1,21 +1,14 @@
 /* Starwright quality-of-life additions: settings block in the Menu, welcome-back card, save notices. */
-.sw-set ul { display: grid; gap: 6px; margin: 0; padding: 0; list-style: none; }
+.sw-setlist { display: grid; gap: 6px; margin: 0; padding: 0; list-style: none; }
 .sw-setrow { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 40px; padding: 0 0 0 2px; border-bottom: 1px dashed var(--sw-line); }
 .sw-setname { font-size: 14px; color: var(--sw-ink); }
 .sw-tog { min-width: 96px; max-width: 62%; text-align: center; min-height: 36px; padding: 0 12px; background: rgba(5, 4, 12, .5); border: 1px solid var(--sw-line); color: var(--sw-cy); font: 500 12px var(--cm-mono, monospace); letter-spacing: .06em; text-transform: uppercase; }
 .sw-tog:hover { border-color: var(--sw-cy); }
 .sw-setlock { font: 400 12px/1.35 var(--cm-mono, monospace); color: var(--sw-dim); text-align: right; }
 .sw-setrow[data-locked] .sw-setname { color: var(--sw-dim); }
-.sw-away2 { display: grid; gap: 4px; }
-.sw-away2 b { font: 600 12px var(--cm-mono, monospace); letter-spacing: .12em; text-transform: uppercase; color: var(--sw-cy); }
-.sw-away2 .sw-away-line { margin: 0; font: 400 13px/1.4 var(--cm-display, sans-serif); letter-spacing: 0; text-transform: none; color: var(--sw-ink); }
-@media (min-width: 901px) { .sw-away2 { top: 150px; } }
-@media (pointer: coarse) { .sw-menu .sw-keys { display: none; } }
-.sw-away2 .sw-away-x { justify-self: start; margin: 4px 0 0; }
 .sw-lock { position: absolute; z-index: 7; inset: auto 0 18px; margin: 0 auto; width: min(520px, calc(100% - 32px)); padding: 12px 14px; display: grid; gap: 8px; border-color: #ffb03a; font-size: 13px; }
 .sw-lock button { justify-self: start; min-height: 40px; padding: 0 14px; background: transparent; border: 1px solid #ffb03a; color: #ffb03a; font: 500 12px var(--cm-mono, monospace); letter-spacing: .06em; text-transform: uppercase; }
 .sw-lock button:hover { background: #ffb03a; color: #05040c; }
-.sw-keyrow { display: contents; }
 
 /* ---- phones: notches and home bars (the page uses viewport-fit=cover) ---- */
 @media (max-width: 900px) {
@@ -38,3 +31,7 @@
 @media (prefers-reduced-motion: reduce) { .sw-hint2 { animation: none; } }
 /* held sideways the ladder is already beside the star, so no cue (this sits after the base rule so it wins) */
 @media (max-width: 960px) and (max-height: 520px) and (orientation: landscape) { .sw-hint2 { display: none; } }
+/* portrait phones: the cue sits on the star's lower edge, not on the collapse panel or a visitor or cloud card under it (found in the 390 card walk) */
+@media (max-width: 900px) and (orientation: portrait) { .sw-hint2 { top: 34vh; bottom: auto; } }
+/* while a visitor, welcome-back or birth-cloud card is up (all carry sw-ev), the cue waits: the card is what the player must read */
+.sw-root:has(.sw-ev) .sw-hint2 { display: none; }

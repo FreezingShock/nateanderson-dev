@@ -24,9 +24,10 @@ Current state of the site outside the three games with their own docs (Brasswork
 
 ## Pages
 - Home `/`: hero, "Built in" (TypeScript, Three.js, JavaScript), featured work, live site stats, timeline preview, recent posts (teasers while the blog is empty).
+- Home "Play" section: under the hero, three cards for Brasswork, Starwright and Groundbreak. Each is themed by `data-game` (brass, fusion red and violet, golden-hour amber), with a padded plate around a UI-free capture of a built-up save, a genre panel, the game's blurb and three short feature panels. Stacks to two columns under 1024px and one under 768px. Images are static webp in `public/home/games`, lazy-loaded; no looping captures. Code: `components/home/games-showcase.tsx`, styles at the end of `components/home/home.css`.
 - About `/about`: dark cards, cyan top edge on live items, "Student", "Heading toward 2031", running stats, philosophy, education timeline, skills.
 - Studies `/studies` and `/studies/[slug]`: coursework explorer, education pathway, reading queue, per-course pages.
-- Timeline `/timeline`: milestones, live countdowns, journey to 2031.
+- Timeline `/timeline`: milestones, live countdowns, journey to 2031. On phones (560px and under) milestone cards show title and date and open on tap (`.tl-hd-phone`, `.tl-ev[data-open]` in `app/timeline/timeline.css`).
 - History `/history`: commit history from GitHub, live.
 - Blog `/blog`, `/blog/[slug]`: category sections and post pages, driven by `lib/blog.ts`. Currently no posts; the empty page stays visible by Nate's decision. Philosophy and Politics writing will go here.
 - Creations `/creations`: hub with Games, Projects, Renovations, Artwork. Featured order Nexus, Deepstack, sfvOS; grid 4 across at 1080px and up, then 2x2, then 1.
@@ -37,7 +38,7 @@ Current state of the site outside the three games with their own docs (Brasswork
 - Also in `app`: `manifest.ts`, `loading.tsx`, `global-error.tsx`.
 
 ## Games hub and shared game code
-- Hub `/creations/games`: sections Geography, Incremental, Automation; acts as a launcher. Cards use a generic glyph (see backlog).
+- Hub `/creations/games`: sections Geography, Incremental, Automation; acts as a launcher. Each card is themed in its game's colour (`accent` in `lib/creations-data.ts`) and shows a screenshot of the game inset in a dark frame (`public/games/shots/*.webp`, `shot`; Brasswork, Starwright and Groundbreak are clean scenes, Node Farm and both guessers show their own in-game panels), the pitch, short tag panels (`tags`), a status line (status and section) and a Play bar. Two cards across, three across for three games (`components/games/naos.tsx`, styles in `app/camino/games.css`).
 - Leaving a game: every game has a visible "Games" link (Starwright, Groundbreak, Brasswork top bar; Node Farm page header) that lands on its own hub section (`#incremental`, `#automation`); browser back also works; Esc only closes menus.
 - Shared shell `components/games/shell` (`GameRouteShell`): full-screen game routes, pause on hidden tab, hides site chrome. Save export and import: `lib/games/save.ts` (`tests/games/save.test.mjs`).
 - Outline Guesser and Flag Guesser (`/creations/games/outline-guesser`, `flag-guesser`; also daily modes): daily schedule (`lib/data/daily-*.json`, built by `scripts/build-daily-schedule.mjs`), unlimited practice, neighbours round, flag round, end-of-run summary, tile-flip reveal, keyboard controls. Components in `components/games/*.tsx`.

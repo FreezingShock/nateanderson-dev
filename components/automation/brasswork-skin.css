@@ -83,7 +83,7 @@
   text-shadow: 0 1px 0 rgba(255, 230, 160, 0.55);
   background: var(--bw-dither-lite), linear-gradient(180deg, var(--bw-brass-hi) 0%, var(--bw-brass) 45%, #b4782a 100%);
   box-shadow: inset 1px 1px 0 rgba(255, 245, 200, 0.7), inset -1px -1px 0 rgba(90, 50, 10, 0.7), 0 4px 0 var(--bw-brass-dk), 0 8px 8px rgba(0, 0, 0, 0.5);
-  transition: transform 0.07s, box-shadow 0.07s, filter 0.12s;
+  transition: transform var(--bwm-press) ease-out, box-shadow var(--bwm-press) ease-out, filter var(--bwm-hover) ease-out;
 }
 .ab-root.bw .ab-action:hover:not(:disabled),
 .ab-root.bw .ab-hold:hover:not(:disabled),
@@ -142,7 +142,7 @@
   border: 0; border-radius: 0;
   background: var(--bw-dither), var(--bw-grain), linear-gradient(180deg, #46301c, #2f2013);
   box-shadow: inset 1px 1px 0 rgba(255, 200, 120, 0.28), inset -1px -1px 0 rgba(0, 0, 0, 0.6), 0 4px 0 #120b05, 0 8px 10px rgba(0, 0, 0, 0.45);
-  transition: transform 0.08s, filter 0.12s;
+  transition: transform var(--bwm-press) ease-out, filter var(--bwm-hover) ease-out;
 }
 .ab-root.bw .ab-node:hover,
 .ab-root.bw .ab-site:hover { filter: brightness(1.18); transform: translateY(-1px); }
@@ -188,7 +188,7 @@
   border: 0; border-radius: 0; color: var(--bw-cream);
   background: var(--bw-dither), linear-gradient(180deg, #3b2a18, #281b0f);
   box-shadow: inset 1px 1px 0 rgba(255, 200, 120, 0.25), 0 3px 0 #0b0703;
-  transition: transform 0.07s, box-shadow 0.07s, filter 0.12s;
+  transition: transform var(--bwm-press) ease-out, box-shadow var(--bwm-press) ease-out, filter var(--bwm-hover) ease-out;
 }
 .ab-root.bw .ab-info:hover { filter: brightness(1.2); }
 .ab-root.bw .ab-info:active { transform: translateY(2px); box-shadow: 0 1px 0 #0b0703; }
@@ -371,8 +371,7 @@
 .ab-inspect-power[data-powered="short"] strong { color: #ffb347; }
 .ab-inspect-power[data-powered="full"] strong { color: #b8e0a0; }
 
-/* Top bar resources (desktop): bigger icons, the name moves into a tooltip that shows on hover and keyboard focus.
-   The tooltip reads the live resource data, so it updates as the factory runs. Opens in 180 ms, closes in 140 ms. */
+/* Top bar resources (desktop): bigger icons. The name and live numbers show in the shared Brasswork tooltip on hover and keyboard focus. */
 @media (min-width: 760px) {
   .ab-root.bw .ab-res-list { gap: 6px 18px; }
   .ab-root.bw .ab-res-item {
@@ -384,29 +383,6 @@
   .ab-root.bw .ab-res-amt { font-size: 18px; color: var(--bw-amber); }
   .ab-root.bw .ab-res-rate { font-size: 11px; }
 
-  .ab-root.bw .ab-res-tip {
-    position: absolute; top: calc(100% + 10px); left: 0; z-index: 10; min-width: 200px; max-width: 260px;
-    display: grid; gap: 6px; padding: 10px 12px; box-sizing: border-box;
-    background: var(--bw-dither) padding-box, linear-gradient(180deg, #4a3118, #24170b) border-box;
-    border: 2px solid #b8862f; box-shadow: 0 6px 18px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 220, 150, 0.35);
-    color: #efe2c4; font-size: 13px; line-height: 1.3; text-align: left; white-space: normal;
-    opacity: 0; transform: translateY(-6px) scale(0.98); transform-origin: top left;
-    visibility: hidden; pointer-events: none;
-    transition: opacity 140ms ease-in, transform 140ms ease-in, visibility 0s linear 140ms;
-  }
-  .ab-root.bw .ab-res-item:hover .ab-res-tip,
-  .ab-root.bw .ab-res-item:focus-visible .ab-res-tip {
-    opacity: 1; transform: none; visibility: visible;
-    transition: opacity 180ms cubic-bezier(0.2, 0.7, 0.2, 1), transform 180ms cubic-bezier(0.2, 0.7, 0.2, 1), visibility 0s;
-  }
-  .ab-root.bw .ab-res-tip-name {
-    font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; color: #ffd98a; font-weight: 700;
-    border-bottom: 1px solid #4a3a22; padding-bottom: 4px;
-  }
-  .ab-root.bw .ab-res-tip-line { display: flex; justify-content: space-between; gap: 12px; color: #d9c79a; }
-  .ab-root.bw .ab-res-tip-line b { color: #f4e4b8; font-weight: 600; font-variant-numeric: tabular-nums; }
-  .ab-root.bw .ab-res-tip-line b[data-neg="true"] { color: var(--ab-bad); }
-  .ab-root.bw .ab-res-tip-note { font-size: 12px; color: #c99a4a; font-style: italic; }
   /* The icon lifts and glows on hover or focus, and the bar drops in once when the game opens. */
   .ab-root.bw .ab-res-item .ab-glyph { transition: transform 160ms cubic-bezier(0.2, 0.7, 0.2, 1), filter 160ms ease-out; }
   .ab-root.bw .ab-res-item:hover .ab-glyph,
@@ -415,13 +391,9 @@
   }
   .ab-root.bw .ab-top { animation: bw-top-in 240ms cubic-bezier(0.2, 0.7, 0.2, 1) both; }
   @keyframes bw-top-in { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: none; } }
-  .ab-root[data-reduce="true"] .ab-res-tip,
-  .ab-root[data-lowfx="true"] .ab-res-tip,
   .ab-root[data-reduce="true"] .ab-res-item .ab-glyph,
   .ab-root[data-lowfx="true"] .ab-res-item .ab-glyph,
   .ab-root[data-reduce="true"] .ab-top,
   .ab-root[data-lowfx="true"] .ab-top { transition: none; animation: none; }
 }
-@media (max-width: 759px) {
-  .ab-root.bw .ab-res-tip { display: none; }
-}
+

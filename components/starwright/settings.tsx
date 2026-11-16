@@ -2,12 +2,15 @@
 
 // Starwright settings and the welcome-back card. Settings live in lib/starwright/settings.ts (kept in this browser, apart from
 // the save). The block sits in the Menu; the card shows what the star did while you were away. Styles: app/camino/starwright-qol.css.
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
+import { CODEX, ELEMENTS } from "@/lib/starwright/data";
+import { ElTile, Gl } from "./sw-ui";
 import "@/app/camino/starwright-qol.css";
 import { AUTO_NOVA_STEPS, AUTO_VISITOR_STEPS, UNLOCKS, cycle, getSettings, onSettings, setSettings, unlocked, type Settings } from "@/lib/starwright/settings";
 import type { State } from "@/lib/starwright/engine";
-import { readBackup, writeBackup } from "@/lib/starwright/session";
-import { fmtAge } from "@/lib/starwright/engine";
+import { readBackup, writeBackup, type AwayReport } from "@/lib/starwright/session";
+import { fmt, fmtAge } from "@/lib/starwright/engine";
+import { VOLUMES, getVolume, play, setVolume } from "@/lib/starwright/sound";
 
 /** The current settings, re-read when the console or the menu changes them. */
 export function useSettings(): Settings {
@@ -44,45 +47,83 @@ function BackupRow({ s }: { s: State }) {
     );
 }
 
-export function SettingsBlock({ s }: { s: State }) {
-    const v = useSettings();
-    const nova = unlocked(s, "autoNova");
-    const vis = unlocked(s, "autoVisitor");
+function VolumeRow() {
+    const [v, setV] = useState(1);
+    useEffect(() => { setV(getVolume()); }, []);
     return (
-        <div className="sw-set">
-            <h3 className="sw-h3">Settings</h3>
-            <ul>
-                <Row label="Scene" tip="Full draws the whole art at 30 frames a second. Simple draws 15 and is lighter on slow machines." value={v.fx === "full" ? "Full" : "Simple"} onClick={() => setSettings({ fx: v.fx === "full" ? "simple" : "full" })} />
-                <Row label="Notices" tip="The little notes over the scene: ignitions, milestones, visitors." value={v.notices ? "On" : "Off"} onClick={() => setSettings({ notices: !v.notices })} />
-                <Row label="Welcome back" tip="A card with what the star did while you were away." value={v.welcome ? "On" : "Off"} onClick={() => setSettings({ welcome: !v.welcome })} />
-                <Row
-                    label="Auto supernova"
-                    tip="Goes supernova by itself once the core passes this share of its collapse. Waiting longer seeds more stardust."
-                    value={v.autoNova ? `At ${v.autoNova * 100}%` : "Off"}
-                    onClick={() => setSettings({ autoNova: cycle(AUTO_NOVA_STEPS, v.autoNova) })}
-                    locked={nova ? undefined : `${UNLOCKS.autoNova.need} (${Math.min(10, s.novasAll)}/10)`}
-                />
-                <Row
-                    label="Auto visitors"
-                    tip="Answers a waiting visitor for you: the lump of output, or the timed boost."
-                    value={v.autoVisitor === "off" ? "Off" : v.autoVisitor === "lump" ? "Lump" : "Boost"}
-                    onClick={() => setSettings({ autoVisitor: cycle(AUTO_VISITOR_STEPS, v.autoVisitor) })}
-                    locked={vis ? undefined : `${UNLOCKS.autoVisitor.need} (${Math.min(12, s.visitors)}/12)`}
-                />
-                <BackupRow s={s} />
-            </ul>
-        </div>
+        <Row
+            label="Volume"
+            tip="How loud every sound is. The sound switch in the Menu turns them all off."
+            value={VOLUMES[v][0]}
+            onClick={() => { const n = (v + 1) % VOLUMES.length; setVolume(n); setV(n); play("buy", { tier: 1, row: 3 }); }}
+        />
     );
 }
 
-/** A card over the scene: what the star did while you were away, or a problem with the save. Clicking it, or Esc, dismisses it. */
-export function AwayCard({ title, lines, onClose }: { title: string; lines: string[]; onClose: () => void }) {
+/** The settings as one row each, for the Menu to lay out in pages (see paged.tsx). */
+export function settingUnits(s: State, v: Settings): ReactNode[] {
+    const nova = unlocked(s, "autoNova");
+    const vis = unlocked(s, "autoVisitor");
+    return [
+        <VolumeRow key="volume" />,
+        <Row key="fx" label="Scene" tip="Full draws the whole art at 30 frames a second. Simple draws 15 and is lighter on slow machines." value={v.fx === "full" ? "Full" : "Simple"} onClick={() => setSettings({ fx: v.fx === "full" ? "simple" : "full" })} />,
+        <Row key="notices" label="Notices" tip="The little notes over the scene: ignitions, milestones, visitors." value={v.notices ? "On" : "Off"} onClick={() => setSettings({ notices: !v.notices })} />,
+        <Row key="welcome" label="Welcome back" tip="A card with what the star did while you were away." value={v.welcome ? "On" : "Off"} onClick={() => setSettings({ welcome: !v.welcome })} />,
+        <Row
+            key="autoNova"
+            label="Auto supernova"
+            tip="Goes supernova by itself once the core passes this share of its collapse. Waiting longer seeds more stardust."
+            value={v.autoNova ? `At ${v.autoNova * 100}%` : "Off"}
+            onClick={() => setSettings({ autoNova: cycle(AUTO_NOVA_STEPS, v.autoNova) })}
+            locked={nova ? undefined : `${UNLOCKS.autoNova.need} (${Math.min(10, s.novasAll)}/10)`}
+        />,
+        <Row
+            key="autoVisitor"
+            label="Auto visitors"
+            tip="Answers a waiting visitor for you: the lump of output, or the timed boost."
+            value={v.autoVisitor === "off" ? "Off" : v.autoVisitor === "lump" ? "Lump" : "Boost"}
+            onClick={() => setSettings({ autoVisitor: cycle(AUTO_VISITOR_STEPS, v.autoVisitor) })}
+            locked={vis ? undefined : `${UNLOCKS.autoVisitor.need} (${Math.min(12, s.visitors)}/12)`}
+        />,
+        <BackupRow key="backup" s={s} />,
+    ];
+}
+
+export interface AwayData { title: string; lines: string[]; report?: AwayReport }
+
+/** A card over the scene: what the star did while you were away, or a problem with the save. Dismiss button, or Esc. The elements it
+ *  gained show as chips with their drawn icon; hover shows the Almanac line and a tap does the same (touch has no hover). Styles: starwright-ev.css. */
+export function AwayCard({ card, onClose }: { card: AwayData; onClose: () => void }) {
+    const { title, lines, report: r } = card;
+    const [pick, setPick] = useState<number | null>(null);
+    const welcome = !!r;
+    const rows = lines.map((x, i) => ({ x, i })).filter(({ i }) => !(welcome && (i === 0 || i === r.gainAt)));
     return (
-        <button type="button" className="sw-away sw-away2 sw-panel" onClick={onClose} aria-label={`${title}. Dismiss.`}>
-            <b>{title}</b>
-            {lines.map((x, i) => <span key={i} className="sw-away-line">{x}</span>)}
-            <span className="sw-away-x">dismiss</span>
-        </button>
+        <div className="sw-away sw-ev sw-away2 sw-panel" role="dialog" aria-label={title} data-kind="away">
+            <div className="sw-ev-head">
+                <span className="sw-ev-art" aria-hidden="true"><Gl n="age" s={3} /></span>
+                <div><b>{title}</b>{welcome && <em>{lines[0]}</em>}</div>
+            </div>
+            {r?.gains && r.gains.length > 0 && (
+                <div className="sw-ev-gains" role="list" aria-label="Elements gained">
+                    {r.gains.map((g) => {
+                        const e = ELEMENTS[g.i];
+                        return (
+                            <button key={e.sym} type="button" role="listitem" className="sw-gain" style={{ "--c": e.color } as React.CSSProperties} aria-pressed={pick === g.i}
+                                data-tip={`${e.name}|${CODEX[e.sym]}`} onClick={() => setPick(pick === g.i ? null : g.i)}>
+                                <ElTile i={g.i} size={2} anim />
+                                <b>+{fmt(g.d, 1)}</b>
+                                <span>{e.name}</span>
+                            </button>
+                        );
+                    })}
+                </div>
+            )}
+            {pick !== null && <p className="sw-ev-note" key={pick}><b style={{ color: ELEMENTS[pick].color }}>{ELEMENTS[pick].name}</b> {CODEX[ELEMENTS[pick].sym]}</p>}
+            {rows.map(({ x, i }) => <p key={i} className="sw-away-line">{x}</p>)}
+            {welcome && r.col !== undefined && <i className="sw-ev-core" aria-hidden="true"><i style={{ width: `${Math.round(r.col * 100)}%` }} /></i>}
+            <button type="button" className="sw-ev-x" onClick={onClose}>Dismiss</button>
+        </div>
     );
 }
 

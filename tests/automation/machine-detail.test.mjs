@@ -29,6 +29,7 @@ test("a crafter with no recipe lists its available recipes with inputs, outputs 
     const w = S.createWorld({ width: 20, depth: 20, hub: { x: 8, z: 5 } }, CAT);
     const k = S.place(w, "kiln", 5, 2, 0, CAT);
     assert.equal(k.ok, true, k.reason);
+    S.setRecipe(w, k.id, null, CAT);
     const detail = S.hudData(w, CAT, k.id).selected;
     assert.ok(detail.recipeChoices.length > 0);
     const iron = detail.recipeChoices.find((r) => r.id === "r_iron_ingot");

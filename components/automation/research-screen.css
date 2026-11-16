@@ -2,7 +2,7 @@
    Cards are art first (the blueprint fills the card edge to edge); each state tints its own panel. */
 
 .bw-window[aria-label="Research"] {
-  width: min(720px, 100%); max-height: min(88dvh, 780px);
+  width: min(940px, 100%); max-height: min(88dvh, 780px); /* seven columns of 104 px cards plus the gaps need about 890 px */
   --rs-acc: #58b09a; --rs-acc-dim: rgba(88, 176, 154, 0.3);
   border-color: #3f8a76;
 }
@@ -44,7 +44,7 @@
   background: #15110b; color: var(--bw-cream, #f0dfb8);
   --edge: #6b5638; --rib: #4a4338; --ribfg: #d8cdb0; --tint: grayscale(1) brightness(0.72);
   box-shadow: 0 0 0 2px var(--edge), 0 5px 0 #0a0704, 0 8px 10px rgba(0, 0, 0, 0.45);
-  transition: transform 0.08s, filter 0.12s;
+  transition: transform var(--bwm-press) ease-out, filter var(--bwm-hover) ease-out;
 }
 .rs-card:hover { transform: translateY(-2px); filter: brightness(1.12); }
 .rs-card:focus-visible { outline: 2px solid #fff3c8; outline-offset: 3px; }
@@ -160,7 +160,8 @@
 
 /* phone: bottom sheet window; the pop-up becomes a sheet over the bottom of the tree */
 @media (max-width: 767px) {
-  .bw-window[aria-label="Research"] { max-height: 94dvh; height: 94dvh; width: 100%; }
+  /* Starts under the top bar, so the title and the bar's buttons are never covered. */
+  .bw-window[aria-label="Research"] { max-height: calc(100dvh - var(--ab-top-h, 0px) - 8px); height: calc(100dvh - var(--ab-top-h, 0px) - 8px); width: 100%; }
   .bw-window[aria-label="Research"] .bw-window-body { padding: 8px 10px 10px; }
   .rs-bp-note, .rs-legend { display: none; }
   .rs-pop { position: fixed; left: 8px !important; right: 8px; bottom: 8px; top: auto !important; width: auto !important; max-height: 58dvh; overflow: auto; animation: none; }

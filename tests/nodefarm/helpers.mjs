@@ -19,6 +19,7 @@ export const AR = await import(resolve(root, "lib/nodefarm/zones/arcs.ts"));
 export const END = await import(resolve(root, "lib/nodefarm/systems/ending.ts"));
 export const OFF = await import(resolve(root, "lib/nodefarm/offline.ts"));
 export const { LOGS } = await import(resolve(root, "lib/nodefarm/content/story.ts"));
+export const CX = await import(resolve(root, "lib/nodefarm/content/codex.ts"));
 
 export const FIXTURES = resolve(root, "scripts/nodefarm/fixtures");
 export const fixtureNames = () => readdirSync(FIXTURES).filter((f) => f.endsWith(".json")).sort();

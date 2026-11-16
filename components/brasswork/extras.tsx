@@ -4,8 +4,10 @@ import { uiIconStyle } from "@/lib/automation/icons/ui";
 // Small extras around the Brasswork stage: photo mode (P), the key sheet (?) and the welcome-back report. They sit on
 // top of the HUD and use the brass kit's bw-* classes. The host passes in a snapshot function and the away report.
 import { useCallback, useEffect, useRef, useState } from "react";
+import { EmptyState } from "@/components/brasswork-art";
 import { Codex } from "./codex";
 import "./extras.css";
+import { tipAttr } from "@/components/brasswork-ui/tip";
 
 export const MOODS = ["Auto", "Day", "Dusk", "Night"] as const;
 export type Mood = (typeof MOODS)[number];
@@ -100,12 +102,11 @@ export function BrassworkExtras({ snapshot, away, mood, onMood }: { snapshot: ()
             if (typing(e) || e.ctrlKey || e.metaKey || e.altKey) return;
             if (e.key === "p" || e.key === "P") {
                 if (!e.repeat) photo();
-            } else if (e.key === "c" || e.key === "C") setCodex((c) => !c);
+            } else if (e.key === "c" || e.key === "C") setCodex(true); // the codex closes itself on C or Escape, so its exit plays
             else if (e.key === "l" || e.key === "L") onMood(MOODS[(MOODS.indexOf(mood) + 1) % MOODS.length]);
             else if (e.key === "h" || e.key === "H") setSheet((s) => !s);
             else if (e.key === "Escape") {
                 setSheet(false);
-                setCodex(false);
                 setReport(null);
             }
         };
@@ -121,19 +122,20 @@ export function BrassworkExtras({ snapshot, away, mood, onMood }: { snapshot: ()
                     type="button"
                     className="bw-btn bx-btn bx-tools-toggle"
                     aria-expanded={toolsOpen}
+                    {...tipAttr({ title: "Tools", tag: "Menu", text: "Take a photo, open the machine guide, or read the keyboard shortcuts." })}
                     onClick={() => setToolsOpen((v) => !v)}
                 >
                     <span className="bx-lbl">Tools</span>
                 </button>
                 {toolsOpen && (
                     <div className="bx-tools-menu" role="menu" aria-label="Tools">
-                        <button type="button" role="menuitem" className="bx-tools-item" onClick={() => { setToolsOpen(false); photo(); }}>
+                        <button type="button" role="menuitem" className="bx-tools-item" {...tipAttr({ title: "Take a photo", tag: "Tools", text: "Save a picture of the island as it looks now." })} onClick={() => { setToolsOpen(false); photo(); }}>
                             Take a photo <kbd>P</kbd>
                         </button>
-                        <button type="button" role="menuitem" className="bx-tools-item" onClick={() => { setToolsOpen(false); setCodex(true); }}>
+                        <button type="button" role="menuitem" className="bx-tools-item" {...tipAttr({ title: "Machine guide", tag: "Tools", text: "Every machine and belt, what it makes and what it takes." })} onClick={() => { setToolsOpen(false); setCodex(true); }}>
                             Machine guide <kbd>C</kbd>
                         </button>
-                        <button type="button" role="menuitem" className="bx-tools-item" onClick={() => { setToolsOpen(false); setSheet(true); }}>
+                        <button type="button" role="menuitem" className="bx-tools-item" {...tipAttr({ title: "Keyboard shortcuts", tag: "Tools", text: "The keys for tools, camera and undo." })} onClick={() => { setToolsOpen(false); setSheet(true); }}>
                             Keyboard shortcuts <kbd>H</kbd>
                         </button>
                     </div>
@@ -175,7 +177,7 @@ export function BrassworkExtras({ snapshot, away, mood, onMood }: { snapshot: ()
                                 </div>
                             ))
                         ) : (
-                            <p className="bx-lead">Nothing came off the belts. Check that your drills have power and a belt to the hub.</p>
+                            <EmptyState scene="idle">Nothing came off the belts. Check that your drills have power and a belt to the hub.</EmptyState>
                         )}
                         <button type="button" className="bw-btn" onClick={() => setReport(null)}>
                             Back to work

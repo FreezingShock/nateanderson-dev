@@ -144,7 +144,9 @@ export type BuildEvent =
     // A click on bare ground with no tool, or Esc with nothing armed: the host closes its inspector and pop-up.
     | { type: "deselect" }
     // Touch routing: the first tap picked a source machine (active) or the pick was cleared (not active).
-    | { type: "route-source"; active: boolean };
+    | { type: "route-source"; active: boolean }
+    // Ctrl/Cmd+C took this many buildings into the clipboard.
+    | { type: "copy"; count: number };
 
 interface Edit {
     x: number;
@@ -162,6 +164,18 @@ export interface BuildOptions {
     lineKinds?: string[];
     // Finds a belt route between two cells (either may sit on a building). Missing means belts only draw by hand.
     route?: (from: Cell, to: Cell, toolId: string) => { ok: true; cells: { x: number; z: number; rot: Rot }[] } | { ok: false; reason: string };
+    // Footprint of a kind before rotation. Copy and paste need it to turn a copied layout. Missing means 1 by 1.
+    footprintOf?: (kind: string) => Footprint | undefined;
+    // False for kinds a player cannot place (the hub), so a copy never takes them. Missing means every kind can be copied.
+    copyable?: (kind: string) => boolean;
+}
+
+// One building in the clipboard: where its anchor sits from the copied block's minimum corner.
+export interface ClipPart {
+    kind: string;
+    rot: Rot;
+    dx: number;
+    dz: number;
 }
 
 const sameItem = (a: ItemRef | null, b: ItemRef | null) => (!a && !b) || (!!a && !!b && a.kind === b.kind && a.rot === b.rot);
@@ -186,6 +200,12 @@ export class BuildController {
     private listeners = new Set<() => void>();
     private lineKinds: Set<string>;
     private highlight: Cell[] = [];
+    private footprintOf?: BuildOptions["footprintOf"];
+    private copyable?: BuildOptions["copyable"];
+    // Area selection (Shift-drag with no tool), the copied layout, and whether a paste is armed.
+    private sel: { a: Cell; b: Cell; done: boolean } | null = null;
+    private clip: ClipPart[] = [];
+    private pasting = false;
 
     constructor(opts: BuildOptions) {
         this.world = opts.world;
@@ -194,6 +214,8 @@ export class BuildController {
         this.onEvent = opts.onEvent;
         this.lineKinds = new Set(opts.lineKinds ?? []);
         this.route = opts.route;
+        this.footprintOf = opts.footprintOf;
+        this.copyable = opts.copyable;
     }
 
     // Every cell in the connected run of line pieces (belts) that holds this cell, found by walking
@@ -261,6 +283,8 @@ export class BuildController {
     setTool(tool: ToolSpec | null): void {
         this.clearRouteFrom();
         this.stroke = null;
+        if (tool) this.cancelPaste();
+        if (tool) this.clearSelection();
         this.tool = tool;
         this.emit();
     }
@@ -284,6 +308,7 @@ export class BuildController {
         const same = (this.hover?.x ?? null) === (cell?.x ?? null) && (this.hover?.z ?? null) === (cell?.z ?? null);
         if (same) return;
         this.hover = cell ? { x: cell.x, z: cell.z } : null;
+        if (this.pasting) this.highlight = this.pasteCells();
         this.emit();
     }
 
@@ -450,6 +475,10 @@ export class BuildController {
 
     // The R key. With no tool armed, over a placed building (and not mid-drag) it turns that building, otherwise it turns the ghost.
     rotateHover(): void {
+        if (this.pasting) {
+            this.rotateClip();
+            return;
+        }
         const h = this.hover;
         // With a tool armed R always turns the ghost, even when the cursor rests on a placed building.
         if (h && !this.stroke && !this.tool && this.world.get(h.x, h.z)) {
@@ -457,6 +486,195 @@ export class BuildController {
             return;
         }
         this.rotateCw();
+    }
+
+    // ---- Copy and paste ----
+
+    // Drags out a selection rectangle. Needs no tool. The buildings whose anchor sits inside it glow.
+    beginSelect(cell: Cell): void {
+        if (this.tool) return;
+        this.cancelPaste();
+        this.sel = { a: { ...cell }, b: { ...cell }, done: false };
+        this.refreshSelection();
+    }
+
+    updateSelect(cell: Cell): void {
+        if (!this.sel || this.sel.done) return;
+        this.sel.b = { ...cell };
+        this.refreshSelection();
+    }
+
+    // Ends the drag and keeps the selection. Returns how many buildings it holds.
+    endSelect(): number {
+        if (!this.sel) return 0;
+        this.sel.done = true;
+        const n = this.selectedAnchors().length;
+        if (n === 0) this.clearSelection();
+        else this.refreshSelection();
+        return n;
+    }
+
+    isSelecting(): boolean {
+        return !!this.sel && !this.sel.done;
+    }
+
+    hasSelection(): boolean {
+        return !!this.sel && this.sel.done;
+    }
+
+    clearSelection(): boolean {
+        if (!this.sel) return false;
+        this.sel = null;
+        this.highlight = [];
+        this.emit();
+        return true;
+    }
+
+    private refreshSelection(): void {
+        this.highlight = this.selectedAnchors().flatMap((a) => this.deleteOffsets(a).map((o) => ({ x: a.x + o.dx, z: a.z + o.dz })));
+        this.emit();
+    }
+
+    // Anchors of every building that has its anchor cell inside the selection.
+    private selectedAnchors(): Cell[] {
+        if (!this.sel) return [];
+        const out: Cell[] = [];
+        for (const c of rectCells(this.sel.a, this.sel.b)) {
+            const it = this.world.get(c.x, c.z);
+            if (!it) continue;
+            const a = it.anchor ?? c;
+            if (a.x === c.x && a.z === c.z && (this.copyable?.(it.kind) ?? true)) out.push({ x: c.x, z: c.z });
+        }
+        return out;
+    }
+
+    // Copies the selection, or the building under the cursor when nothing is selected. Returns the building count.
+    copy(): number {
+        let anchors = this.selectedAnchors();
+        if (anchors.length === 0 && this.hover) {
+            const it = this.world.get(this.hover.x, this.hover.z);
+            if (it && (this.copyable?.(it.kind) ?? true)) anchors = [{ ...(it.anchor ?? this.hover) }];
+        }
+        if (anchors.length === 0) return 0;
+        const minX = Math.min(...anchors.map((a) => a.x));
+        const minZ = Math.min(...anchors.map((a) => a.z));
+        this.clip = anchors.map((a) => {
+            const it = this.world.get(a.x, a.z)!;
+            return { kind: it.kind, rot: it.rot, dx: a.x - minX, dz: a.z - minZ };
+        });
+        this.sel = null;
+        return this.clip.length;
+    }
+
+    hasClipboard(): boolean {
+        return this.clip.length > 0;
+    }
+
+    getClipboard(): ClipPart[] {
+        return this.clip.map((p) => ({ ...p }));
+    }
+
+    isPasting(): boolean {
+        return this.pasting;
+    }
+
+    // Arms the paste: the copied layout follows the cursor and one click places it.
+    startPaste(): boolean {
+        if (this.clip.length === 0) return false;
+        this.tool = null;
+        this.stroke = null;
+        this.sel = null;
+        this.pasting = true;
+        this.highlight = this.pasteCells();
+        this.emit();
+        return true;
+    }
+
+    cancelPaste(): boolean {
+        if (!this.pasting) return false;
+        this.pasting = false;
+        this.highlight = [];
+        this.emit();
+        return true;
+    }
+
+    // Quarter-turns the whole copied layout, buildings included, so a pasted row lines up with the board.
+    rotateClip(): void {
+        if (this.clip.length === 0) return;
+        // A quarter turn sends (x, z) to (z, -x), the same sense as a building's own turn.
+        const turned = this.clip.map((p) => {
+            const cells = footprintOffsets(this.footprintOf?.(p.kind), p.rot).map((o) => ({ x: p.dx + o.dx, z: p.dz + o.dz }));
+            const rc = cells.map((c) => ({ x: c.z, z: -c.x }));
+            return { kind: p.kind, rot: rotate(p.rot, 1), x: Math.min(...rc.map((c) => c.x)), z: Math.min(...rc.map((c) => c.z)) };
+        });
+        const minX = Math.min(...turned.map((t) => t.x));
+        const minZ = Math.min(...turned.map((t) => t.z));
+        this.clip = turned.map((t) => ({ kind: t.kind, rot: t.rot, dx: t.x - minX, dz: t.z - minZ }));
+        if (this.pasting) this.highlight = this.pasteCells();
+        this.emit();
+    }
+
+    // Cells the paste would fill at the hover cell, for the placeable parts only.
+    private pasteCells(): Cell[] {
+        const h = this.hover;
+        if (!h) return [];
+        const out: Cell[] = [];
+        for (const p of this.clip) {
+            if (this.partError(p, h) !== null) continue;
+            for (const o of footprintOffsets(this.footprintOf?.(p.kind), p.rot)) out.push({ x: h.x + p.dx + o.dx, z: h.z + p.dz + o.dz });
+        }
+        return out;
+    }
+
+    private partError(p: ClipPart, at: Cell): string | null {
+        const ax = at.x + p.dx;
+        const az = at.z + p.dz;
+        for (const o of footprintOffsets(this.footprintOf?.(p.kind), p.rot)) {
+            const c = { x: ax + o.dx, z: az + o.dz };
+            if (!cellInBoard(c, this.board)) return "outside";
+            if (this.world.get(c.x, c.z)) return "occupied";
+        }
+        return this.world.check ? this.world.check(p.kind, ax, az, p.rot) : null;
+    }
+
+    // Places the copied layout with its minimum corner on the cell. Parts that do not fit are skipped and counted.
+    // The whole paste is one undo step. Returns how many buildings were placed.
+    paste(at: Cell): number {
+        if (this.clip.length === 0) return 0;
+        const edits: Edit[] = [];
+        let skipped = 0;
+        let firstReason: string | null = null;
+        for (const p of this.clip) {
+            const why = this.partError(p, at);
+            if (why) {
+                skipped++;
+                firstReason = firstReason ?? why;
+                continue;
+            }
+            const x = at.x + p.dx;
+            const z = at.z + p.dz;
+            const after: ItemRef = { kind: p.kind, rot: p.rot };
+            this.world.set(x, z, after);
+            // The sim can still refuse (cost, limits). Count only what actually landed.
+            const landed = this.world.get(x, z);
+            if (!landed || landed.kind !== p.kind) {
+                skipped++;
+                continue;
+            }
+            edits.push({ x, z, before: null, after });
+        }
+        // Edits are already applied above, so only record them. commitEdits would write them a second time.
+        if (edits.length) {
+            this.highlight = [];
+            this.undoStack.push(edits);
+            if (this.undoStack.length > this.historyLimit) this.undoStack.shift();
+            this.redoStack = [];
+            this.onEvent?.({ type: "place", count: edits.length, cells: edits.map((e) => ({ x: e.x, z: e.z })) });
+        }
+        if (skipped > 0) this.onEvent?.({ type: "invalid", reason: `${skipped} of ${this.clip.length} skipped (${firstReason ?? "no room"})` });
+        if (this.pasting) this.highlight = this.pasteCells();
+        this.emit();
+        return edits.length;
     }
 
     // Quarter-turns the building that covers this cell, in one undo step. The building is lifted first so

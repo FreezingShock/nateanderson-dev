@@ -30,18 +30,26 @@
   .ab-root.bw .ab-more-item:active { background: #46290a; }
 
   /* Milestones sheet lands like a stamp; More menu opens like a hinged lid from the bottom right. */
-  .ab-root.bw[data-sheet="factory"] .ab-factory { animation: bw-phone-stamp 280ms cubic-bezier(.3,.6,.3,1) both; }
-  .ab-root.bw .ab-more { transform-origin: 100% 100%; animation: bw-phone-lid 240ms cubic-bezier(.2,.75,.25,1) both; }
-  .ab-root.bw .ab-more-item { animation: bw-phone-item 260ms cubic-bezier(.2,.7,.2,1) both; }
+  .ab-root.bw[data-sheet="factory"] .ab-factory { animation: bw-phone-stamp var(--bwm-enter) cubic-bezier(.3,.6,.3,1) both; }
+  .ab-root.bw .ab-more { transform-origin: 100% 100%; animation: bw-phone-lid var(--bwm-enter) cubic-bezier(.2,.75,.25,1) both; }
+  .ab-root.bw .ab-more-item { animation: bw-phone-item var(--bwm-enter) var(--bwm-ease-out) both; }
   .ab-root.bw .ab-more-item:nth-child(2) { animation-delay: 30ms; }
   .ab-root.bw .ab-more-item:nth-child(3) { animation-delay: 60ms; }
   .ab-root.bw .ab-more-item:nth-child(4) { animation-delay: 90ms; }
   .ab-root.bw .ab-more-item:nth-child(5) { animation-delay: 120ms; }
   .ab-root.bw .ab-more-item:nth-child(6) { animation-delay: 150ms; }
+  /* Closing: each sheet plays a short drawn exit before it goes. */
+  .ab-root.bw[data-leaving="on"][data-sheet="factory"] .ab-factory { animation: bw-phone-stamp-out var(--bwm-exit) var(--bwm-ease-in) both; pointer-events: none; }
+  .ab-root.bw[data-leaving="on"][data-sheet="pal"] .ab-pal { animation: bw-phone-slide-out var(--bwm-exit) var(--bwm-ease-in) both; pointer-events: none; }
+  .ab-root.bw[data-leaving="on"] .ab-more { animation: bw-phone-lid-out var(--bwm-exit) var(--bwm-ease-in) both; pointer-events: none; }
+  .ab-root.bw[data-leaving="on"] .ab-more-item { animation: none; }
   .ab-root.bw[data-reduce="true"] :is(.ab-factory, .ab-more, .ab-more-item),
   .ab-root.bw[data-lowfx="true"] :is(.ab-factory, .ab-more, .ab-more-item) { animation: none !important; }
 }
 @keyframes bw-phone-stamp { 0% { opacity: 0; transform: translateY(24px) scale(1.04); } 70% { opacity: 1; transform: scale(.99); } 100% { transform: none; } }
 @keyframes bw-phone-lid { from { opacity: 0; transform: perspective(700px) rotateX(70deg); } to { opacity: 1; transform: none; } }
+@keyframes bw-phone-stamp-out { to { opacity: 0; transform: translateY(18px) scale(1.03); } }
+@keyframes bw-phone-slide-out { to { opacity: 0; transform: translateY(100%); } }
+@keyframes bw-phone-lid-out { to { opacity: 0; transform: perspective(700px) rotateX(70deg); } }
 @keyframes bw-phone-item { from { opacity: 0; transform: translateX(14px); } to { opacity: 1; transform: none; } }
 @media (prefers-reduced-motion: reduce) { .ab-root.bw :is(.ab-factory, .ab-more, .ab-more-item) { animation: none !important; } }

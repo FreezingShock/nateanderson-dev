@@ -62,6 +62,8 @@ test("the objective line follows the open order, then the milestone", () => {
     const kiln = S.place(w, "kiln", 5, 2, 0, CAT);
     S.setRecipe(w, kiln.id, "r_iron_ingot", CAT);
     S.place(w, "windmill", 4, 6, 0, CAT);
+    S.place(w, "belt", 4, 2, 0, CAT);
+    S.place(w, "belt", 7, 2, 0, CAT);
     assert.equal(S.hudData(w, CAT).nextStep.title, "Copper at the kiln");
     assert.equal(S.hudData(w, CAT).nextStep.actionId, "hub-menu");
     w.progress.requestsDone = CAT.tree.requests.map((r) => r.id);
@@ -82,9 +84,9 @@ test("a played opening fills the first order within three minutes", () => {
     CAT.tree.nodes.forEach((n, i) => SPOTS[i] && S.addDeposit(world, SPOTS[i][0], SPOTS[i][1], n.item, 1));
     const must = (r) => assert.equal(r.ok, true, r.reason);
     const belt = (route) => { must(route); route.cells.forEach((c) => must(S.place(world, "belt", c.x, c.z, c.rot, CAT))); };
-    must(S.place(world, "drill", 2, 2, 0, CAT));
+    must(S.place(world, "drill", 2, 2, 1, CAT));
     must(S.place(world, "windmill", 4, 5, 0, CAT));
-    const kiln = S.place(world, "kiln", 5, 2, 0, CAT);
+    const kiln = S.place(world, "kiln", 5, 2, 1, CAT);
     must(kiln);
     must(S.setRecipe(world, kiln.id, "r_iron_ingot", CAT));
     belt(S.autoRoute(world, { x: 4, z: 2 }, { x: 5, z: 2 }, "belt", CAT));

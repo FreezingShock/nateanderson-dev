@@ -29,6 +29,8 @@ export interface InputOptions {
     onGroup?: (index: number) => void;
     // Belt route finder for press-on-a-building drags. See BuildOptions.route.
     route?: BuildOptions["route"];
+    // False for kinds that cannot be copied (the hub).
+    copyable?: BuildOptions["copyable"];
     heightAt?: HeightFn;
     // Bare ground, without machine bodies. Placement picks use it so a tall machine never hides the cells behind it.
     groundHeightAt?: HeightFn;
@@ -68,7 +70,7 @@ export function createInputController(opts: InputOptions): InputController {
     const camera = new OrbitCamera(opts.limits ?? DEFAULT_LIMITS, opts.initialPose);
     // Line tools (belts) define the runs that runAt and the belt pop-up follow.
     const lineKinds = opts.tools.filter((t) => t.line).map((t) => t.id);
-    const build = new BuildController({ world: opts.world, board: opts.board, onEvent: opts.onEvent, lineKinds, route: opts.route });
+    const build = new BuildController({ world: opts.world, board: opts.board, onEvent: opts.onEvent, lineKinds, route: opts.route, copyable: opts.copyable, footprintOf: (k) => opts.tools.find((t) => t.id === k)?.footprint });
     const pointer = new PointerInput({
         element: opts.element,
         camera,
@@ -101,7 +103,15 @@ export function createInputController(opts: InputOptions): InputController {
                 return build.undo();
             case "redo":
                 return build.redo();
+            case "copy": {
+                const n = build.copy();
+                if (n > 0) opts.onEvent?.({ type: "copy", count: n });
+                return n > 0;
+            }
+            case "paste":
+                return build.startPaste();
             case "cancel":
+                if (build.cancelPaste() || build.clearSelection()) return true;
                 if (build.isStroking()) {
                     build.cancelStroke();
                     return true;

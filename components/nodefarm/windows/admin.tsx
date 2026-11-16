@@ -16,6 +16,7 @@ import { ERAS } from "@/lib/nodefarm/zones/scenery";
 import { LOGS } from "@/lib/nodefarm/content/story";
 import { codeReveal, cxClear } from "@/lib/nodefarm/cx";
 import { RIGS, clearRigs, fillRigs, maxRigs, rigLine } from "@/lib/nodefarm/zones/rigs";
+import "@/app/camino/nodefarm/lazy/admin.css";
 
 // Node Farm admin panel ("root console"): a full-screen operator console opened by `nf admin on` in the naOS console.
 // Plain bracket panels with data lines, no tabs or chips. Sections fold with the shared code reveal. Styles:

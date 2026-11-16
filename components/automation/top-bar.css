@@ -1,0 +1,104 @@
+.ab-nav-slot { display: contents; }
+/* Desktop top bar: one row, never two. Back button and nameplate on the left, the resource boxes with their rates
+   under them in the middle, the five views on the right. The views keep their words when there is room and shrink
+   to icons (names in a tooltip) when there is not. Phone keeps its own stacked layout. */
+@media (min-width: 760px) {
+  .ab-root.bw .ab-top {
+    flex-wrap: nowrap; align-items: center; gap: 14px; padding: 8px 14px 10px;
+  }
+  .ab-root.bw .ab-top > * { min-width: 0; }
+
+  /* Back button and nameplate */
+  .ab-root.bw .ab-top .ab-brand {
+    flex: none; flex-direction: row; align-items: center; gap: 10px; min-width: 0;
+  }
+  .ab-root.bw .ab-top .ab-back {
+    position: relative; flex: none; margin: 0; min-height: 44px; padding: 0 12px 0 10px; gap: 8px; opacity: 1;
+    font: 700 11px var(--bw-font-ui, inherit); letter-spacing: .16em; text-decoration: none; color: #2a1606;
+    text-shadow: 0 1px 0 rgba(255, 230, 160, 0.55);
+    background: var(--bw-dither-lite), linear-gradient(180deg, var(--bw-brass-hi) 0%, var(--bw-brass) 45%, #b4782a 100%);
+    box-shadow: inset 1px 1px 0 rgba(255, 245, 200, 0.7), inset -1px -1px 0 rgba(90, 50, 10, 0.7), 0 4px 0 var(--bw-brass-dk), 0 8px 8px rgba(0, 0, 0, 0.5);
+    transition: transform 0.07s, box-shadow 0.07s, filter 0.12s;
+  }
+  .ab-root.bw .ab-top .ab-back:hover,
+  .ab-root.bw .ab-top .ab-back:focus-visible { text-decoration: none; filter: brightness(1.12); }
+  .ab-root.bw .ab-top .ab-back:active { transform: translateY(3px); box-shadow: inset 1px 1px 0 rgba(90, 50, 10, 0.6), 0 1px 0 var(--bw-brass-dk); }
+  .ab-root.bw .ab-top .ab-back:focus-visible { outline: 2px solid #fff3c4; outline-offset: 2px; }
+  /* The "<" in the markup is hidden, a drawn chevron takes its place. */
+  .ab-root.bw .ab-top .ab-back-chev { position: relative; width: 12px; height: 16px; font-size: 0; color: transparent; }
+  .ab-root.bw .ab-top .ab-back-chev::before {
+    content: ""; position: absolute; left: 3px; top: 3px; width: 9px; height: 9px;
+    border-left: 3px solid #2a1606; border-bottom: 3px solid #2a1606; transform: rotate(45deg);
+  }
+
+  /* Nameplate: an engraved plate with rivets, not loose text. */
+  .ab-root.bw .ab-top .ab-brand-name {
+    position: relative; display: inline-flex; align-items: center; height: 44px; padding: 0 20px; box-sizing: border-box;
+    font-size: 20px; font-weight: 700; letter-spacing: .2em; text-transform: uppercase; white-space: nowrap;
+    color: var(--bw-brass-hi); text-shadow: 0 1px 0 #000, 0 0 8px rgba(255, 179, 71, 0.25);
+    background:
+      var(--bw-rivet) 5px 50% / 9px 9px no-repeat,
+      var(--bw-rivet) calc(100% - 5px) 50% / 9px 9px no-repeat,
+      var(--bw-dither-lite), linear-gradient(180deg, #1c130a, #120c06);
+    box-shadow: inset 0 0 0 1px var(--bw-brass-lo), inset 0 3px 6px #000, 0 1px 0 rgba(255, 220, 150, 0.3);
+  }
+
+  /* Resources: the rate sits under its box, so every box is the same width and the row spaces evenly. */
+  .ab-root.bw .ab-top .ab-res { flex: 1 1 auto; justify-content: center; min-width: 0; }
+  .ab-root.bw .ab-top .ab-res-list { flex-wrap: nowrap; gap: 6px 14px; }
+  .ab-root.bw .ab-top .ab-res-item { flex-direction: column; align-items: center; justify-content: flex-start; gap: 2px; padding: 0; }
+  .ab-root.bw .ab-top .ab-res-rate {
+    display: block; min-height: 14px; font-size: 11px; line-height: 14px; text-align: center; white-space: nowrap;
+  }
+
+  /* Views: one row at every width, icon only. The word is hidden until hover or keyboard focus, then the button
+     widens (grid track 0fr to 1fr) while the letters type in, one step per letter. */
+  .ab-root.bw .ab-top .ab-nav { flex: none; flex-wrap: nowrap; align-items: center; gap: 8px; margin-left: 0; }
+  /* Each button sits in a fixed slot and grows leftward from its right edge over its neighbours, so the row never
+     reflows and the pointer never leaves the button as it widens. */
+  .ab-root.bw .ab-top .ab-nav-slot { display: block; position: relative; flex: none; width: 48px; height: 44px; }
+  .ab-root.bw .ab-top .ab-nav-slot:hover, .ab-root.bw .ab-top .ab-nav-slot:focus-within { z-index: 5; }
+  .ab-root.bw .ab-top .ab-nav .ab-text-btn {
+    position: absolute; right: 0; top: 0; width: max-content; display: inline-grid; grid-template-columns: auto 0fr; align-items: center; align-self: center;
+    height: 44px; min-height: 44px; min-width: 48px; padding: 0 12px; justify-content: center; gap: 0; white-space: nowrap; box-sizing: border-box;
+    transition: grid-template-columns calc(var(--n, 6) * 28ms) steps(var(--n, 6), end), transform 0.07s, box-shadow 0.07s, filter 0.12s;
+  }
+  .ab-root.bw .ab-top .ab-nav .ab-text-btn > svg,
+  .ab-root.bw .ab-top .ab-nav .ab-text-btn > .ab-ico { justify-self: center; }
+  .ab-root.bw .ab-top .ab-nav-label { display: block; min-width: 0; overflow: hidden; }
+  .ab-root.bw .ab-top .ab-nav-txt { display: block; padding-left: 8px; white-space: nowrap; }
+  .ab-root.bw .ab-top .ab-nav .ab-text-btn:hover:not(:disabled),
+  .ab-root.bw .ab-top .ab-nav .ab-text-btn:focus-visible { grid-template-columns: auto 1fr; }
+  .ab-root[data-reduce="true"] .ab-top .ab-nav .ab-text-btn,
+  .ab-root[data-lowfx="true"] .ab-top .ab-nav .ab-text-btn { transition: none; }
+}
+
+/* Resource boxes in the bar: flat dark plate, no gradient behind the icon. The rate hangs under the box so every
+   box sits on the same centre line as the buttons. */
+@media (min-width: 760px) {
+  .ab-root.bw .ab-top .ab-res-box .ab-glyph {
+    background: #17110a; box-shadow: 0 0 0 2px var(--bw-brass-lo);
+  }
+  .ab-root.bw .ab-top .ab-res-item { position: relative; align-self: center; }
+  .ab-root.bw .ab-top .ab-res-rate {
+    position: absolute; top: 100%; left: 50%; transform: translateX(-50%); min-height: 0; margin-top: 1px;
+  }
+  .ab-root.bw .ab-top { padding-bottom: 8px; }
+}
+
+/* Narrow desktop windows: back button shrinks to its arrow, smaller boxes and plate. */
+@media (min-width: 760px) and (max-width: 1099px) {
+  .ab-root.bw .ab-top { gap: 10px; padding-left: 10px; padding-right: 10px; }
+  .ab-root.bw .ab-top .ab-back { padding: 0 12px; }
+  .ab-root.bw .ab-top .ab-back-label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+  .ab-root.bw .ab-top .ab-brand-name { padding: 0 18px; font-size: 16px; letter-spacing: .14em; }
+  .ab-root.bw .ab-top .ab-res-list { gap: 4px 4px; }
+  .ab-root.bw .ab-top .ab-res-item { padding: 0; }
+  .ab-root.bw .ab-top .ab-nav-slot { width: 44px; }
+  .ab-root.bw .ab-top .ab-nav .ab-text-btn { min-width: 44px; padding: 0 10px; }
+  .ab-root.bw .ab-top .ab-res-box .ab-glyph { width: 40px !important; height: 40px !important; }
+  .ab-root.bw .ab-top .ab-nav { gap: 6px; }
+}
+@media (min-width: 760px) and (max-width: 919px) {
+  .ab-root.bw .ab-top .ab-brand-name { display: none; }
+}

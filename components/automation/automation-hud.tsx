@@ -1,8 +1,10 @@
 "use client";
+import { tipAttr } from "@/components/brasswork-ui/tip";
+import { CONTROL_TIPS } from "@/lib/automation/tips";
 import { UiArtIcon } from "@/components/brasswork-art/icons";
 
 import Link from "next/link";
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import "@/components/brasswork-ui/brass-kit.css";
 import "@/components/brasswork-ui/scrollbar.css";
 import "./automation-hud.css";
@@ -19,10 +21,12 @@ import { ProductionWindow } from "./production-window";
 import { ExpeditionWindow } from "./expedition-window";
 import { ResearchScreen } from "./research-screen";
 import { PrestigeScreen } from "./prestige-screen";
-import { HubMenu, HubToast, HUB_OPEN_EVENT, openHubMenu } from "./hub-menu";
+import { HubMenu, HUB_OPEN_EVENT, openHubMenu } from "./hub-menu";
+import { RewardMoment } from "./reward-moment";
 import "./brasswork-skin.css";
 import "./desktop-stage.css";
 import "./phone-menu-art.css";
+import "./top-bar.css";
 import { canAfford } from "./format";
 import { uiIconStyle } from "@/lib/automation/icons/ui";
 import { QuestScroll, type QuestState } from "@/components/brasswork/first-run";
@@ -45,6 +49,15 @@ const DRAWER_TITLE: Record<Drawer, string> = {
   settings: "Settings",
 };
 
+/** A top-bar button's word. Hidden until the button is hovered or focused, then it types in (steps = letters). */
+function NavLabel({ text }: { text: string }) {
+  return (
+    <span className="ab-nav-label" style={{ "--n": text.length } as CSSProperties}>
+      <span className="ab-nav-txt">{text}</span>
+    </span>
+  );
+}
+
 /**
  * Brasswork's 2D interface, drawn over the 3D workshop.
  * Layout follows the design mock: machine palette on the left, the 3D floor in
@@ -52,6 +65,12 @@ const DRAWER_TITLE: Record<Drawer, string> = {
  * milestones on the right. Research and prestige open as full-screen views.
  * `children` is the 3D view slot.
  */
+const GROUP_TIP_TEXT: Record<"logistics" | "machines" | "power", string> = {
+  logistics: "Belts, splitters, mergers, underground belts, loaders, unloaders, crates, strongboxes and docks.",
+  machines: "Drills, kilns, furnaces, presses, lathes, assemblers and fabricators.",
+  power: "Windmills and spring winders, with the spring stores that keep their energy.",
+};
+
 export function AutomationHud({
   data,
   actions,
@@ -78,6 +97,7 @@ export function AutomationHud({
 }) {
   const rootRef = useRef<HTMLDivElement>(null);
   const topRef = useRef<HTMLElement>(null);
+  const nextRef = useRef<HTMLParagraphElement>(null);
   // The top bar wraps to two rows on a desktop-width window, so its height is measured. The rails, the Milestones
   // dock and the panels read --ab-top-h, so nothing hides under the bar.
   useEffect(() => {
@@ -91,6 +111,19 @@ export function AutomationHud({
     ro.observe(top);
     return () => ro.disconnect();
   }, []);
+  // The objective card grows with its text and progress bar, and the tool hint sits above it. The card's height is
+  // measured so the hint always clears it, at any width.
+  useEffect(() => {
+    const next = nextRef.current;
+    const root = rootRef.current;
+    if (!next || !root) return;
+    const apply = () => root.style.setProperty("--ab-next-h", `${Math.ceil(next.getBoundingClientRect().height)}px`);
+    apply();
+    if (typeof ResizeObserver === "undefined") return;
+    const ro = new ResizeObserver(apply);
+    ro.observe(next);
+    return () => ro.disconnect();
+  }, []);
   const [drawer, setDrawer] = useState<Drawer | null>(null);
   const [screen, setScreen] = useState<Screen | null>(null);
   // Site chosen in Expedition, handed to the workshop selection screen.
@@ -99,6 +132,22 @@ export function AutomationHud({
   const [sheet, setSheet] = useState<"pal" | "factory" | null>(null);
   // Phone only: the "More" sheet lists the drawers, so the bottom bar stays at four tabs.
   const [more, setMore] = useState(false);
+  // Phone only: the sheet that just closed. It stays mounted for its short exit animation, then goes.
+  const [leaving, setLeaving] = useState<"pal" | "factory" | "more" | null>(null);
+  const wasOpen = useRef<"pal" | "factory" | "more" | null>(null);
+  const quiet = data.settings.reduceMotion || data.settings.lowFx;
+  useEffect(() => {
+    const now = more ? "more" : sheet;
+    const was = wasOpen.current;
+    wasOpen.current = now;
+    if (!was || now || quiet) {
+      setLeaving(null);
+      return;
+    }
+    setLeaving(was);
+    const t = setTimeout(() => setLeaving(null), 190);
+    return () => clearTimeout(t);
+  }, [sheet, more, quiet]);
   // Desktop: one build group flyout from the left dock, and the Milestones window from the right dock.
   const [palGroup, setPalGroup] = useState<GroupId | null>(null);
   // The section that is closing. It plays its exit while the newly chosen section plays its entrance.
@@ -108,7 +157,7 @@ export function AutomationHud({
   const leavePal = (from: GroupId) => {
     setPalLeaving(from);
     if (leaveTimer.current !== null) window.clearTimeout(leaveTimer.current);
-    leaveTimer.current = window.setTimeout(() => { setPalLeaving(null); leaveTimer.current = null; }, 170);
+    leaveTimer.current = window.setTimeout(() => { setPalLeaving(null); leaveTimer.current = null; }, 160);
   };
   // One section at a time: choosing another section closes the open one with its exit animation.
   // The quest scroll shares the one-section-at-a-time rule with the build flyouts.
@@ -227,7 +276,8 @@ export function AutomationHud({
       ref={rootRef}
       className="ab-root bw"
       data-drawer={drawer ?? "none"}
-      data-sheet={sheet ?? "none"}
+      data-sheet={sheet ?? (leaving === "pal" || leaving === "factory" ? leaving : "none")}
+      data-leaving={leaving ? "on" : "off"}
       data-inspect={held ? "on" : "off"}
       data-lowfx={data.settings.lowFx}
       data-reduce={data.settings.reduceMotion}
@@ -237,7 +287,7 @@ export function AutomationHud({
       <header className="ab-top" ref={topRef}>
         <div className="ab-brand">
           <Link prefetch={false} href="/creations/games#automation" className="ab-back" aria-label="Back to Games">
-            <span aria-hidden="true">{"<"}</span> Games
+            <span className="ab-back-chev" aria-hidden="true">{"<"}</span> <span className="ab-back-label">Games</span>
           </Link>
           <span className="ab-brand-name">Brasswork</span>
         </div>
@@ -247,30 +297,34 @@ export function AutomationHud({
           numberFormat={mode}
         />
         <nav className="ab-nav" aria-label="Workshop views">
-          <button
+          <span className="ab-nav-slot"><button
             type="button"
             className="ab-text-btn ab-primary"
+            data-label="Research"
             aria-expanded={screen === "research"}
+            {...tipAttr(CONTROL_TIPS.research)}
             onClick={() => setScreen((s) => (s === "research" ? null : "research"))}
           >
             <Ico id="research" />
-            Research
-          </button>
-          <button type="button" className="ab-text-btn" aria-expanded={hubOpen} onClick={() => (hubOpen ? setHubOpen(false) : openHubMenu())}>
+            <NavLabel text="Research" />
+          </button></span>
+          <span className="ab-nav-slot"><button type="button" className="ab-text-btn" data-label="Hub" aria-expanded={hubOpen} {...tipAttr(CONTROL_TIPS.hub)} onClick={() => (hubOpen ? setHubOpen(false) : openHubMenu())}>
             <Ico id="milestones" />
-            Hub
-          </button>
+            <NavLabel text="Hub" />
+          </button></span>
           {(["expedition", "stats", "settings"] as const).map((d) => (
-            <button
+            <span className="ab-nav-slot"><button
               key={d}
               type="button"
               className="ab-text-btn"
+              data-label={DRAWER_TITLE[d]}
               aria-expanded={d === "expedition" ? screen === "expedition" : drawer === d}
+              {...tipAttr(CONTROL_TIPS[d])}
               onClick={() => toggle(d)}
             >
               <Ico id={DRAWER_ICON[d]} />
-              {DRAWER_TITLE[d]}
-            </button>
+              <NavLabel text={DRAWER_TITLE[d]} />
+            </button></span>
           ))}
         </nav>
       </header>
@@ -289,6 +343,7 @@ export function AutomationHud({
                 aria-pressed={palGroup === g}
                 aria-label={`${GROUP_TITLE[g]}, ${open} open`}
                 data-armed={armedHere}
+                {...tipAttr({ title: GROUP_TITLE[g], tag: "Build group", text: GROUP_TIP_TEXT[g], rows: [{ k: "Open", v: String(open) }] })}
                 onClick={() => choosePal(g)}
               >
                 <DockGlyph group={g} />
@@ -302,18 +357,13 @@ export function AutomationHud({
               className="ab-dock-btn ab-dock-quest"
               aria-pressed={questOpen}
               aria-label={`Starter quest, ${quest.finished} of ${quest.steps.length} done. ${questOpen ? "Roll up the scroll" : "Open the scroll"}`}
+              {...tipAttr({ ...CONTROL_TIPS.quest, rows: [{ k: "Done", v: `${quest.finished} of ${quest.steps.length}` }] })}
               onClick={toggleQuest}
             >
               <QuestGlyph />
               <span className="ab-dock-label">Quest</span>
               <span className="ab-dock-count" aria-hidden="true">{quest.finished}/{quest.steps.length}</span>
             </button>
-          )}
-          {data.armed && (
-            <span className="ab-dock-rot" aria-label={`Turn ${data.rotation ?? 0} degrees, press R to turn`}>
-              <span className="ab-dock-rot-k">Turn · R</span>
-              <span className="ab-dock-rot-v">{data.rotation ?? 0}°</span>
-            </span>
           )}
           {removeSlot && <div className="ab-dock-foot">{removeSlot}</div>}
         </nav>
@@ -359,6 +409,7 @@ export function AutomationHud({
               type="button"
               className="ab-tab"
               aria-pressed={sheet === "pal"}
+              {...tipAttr({ title: "Machines", tag: "Sheet", text: "The build palette: belts and logistics, machines and power. Tap a row to hold it." })}
               onClick={() => {
                 setMore(false);
                 setSheet((c) => (c === "pal" ? null : "pal"));
@@ -371,6 +422,7 @@ export function AutomationHud({
               type="button"
               className="ab-tab"
               aria-pressed={sheet === "factory"}
+              {...tipAttr({ title: "Milestones", tag: "Sheet", text: "Deliveries, blueprints, and the card for the machine you picked." })}
               onClick={() => {
                 setMore(false);
                 setSheet((c) => (c === "factory" ? null : "factory"));
@@ -383,6 +435,7 @@ export function AutomationHud({
               type="button"
               className="ab-tab"
               aria-pressed={screen === "research"}
+              {...tipAttr(CONTROL_TIPS.research)}
               onClick={() => {
                 setMore(false);
                 setScreen((s) => (s === "research" ? null : "research"));
@@ -395,6 +448,7 @@ export function AutomationHud({
               type="button"
               className="ab-tab"
               aria-pressed={more}
+              {...tipAttr({ title: "More", tag: "Menu", text: "Hub, prestige, the starter quest, expedition, production and settings." })}
               onClick={() => {
                 setSheet(null);
                 setMore((m) => !m);
@@ -404,9 +458,9 @@ export function AutomationHud({
               <span className="ab-tab-label">More</span>
             </button>
           </nav>
-          {more && (
-            <div className="ab-more" role="menu" aria-label="More menus">
-              <button type="button" role="menuitem" className="ab-more-item" onClick={openHubMenu}>
+          {(more || leaving === "more") && (
+            <div className="ab-more" role="menu" aria-label="More menus" inert={!more || undefined}>
+              <button type="button" role="menuitem" className="ab-more-item" {...tipAttr(CONTROL_TIPS.hub)} onClick={openHubMenu}>
                 <Ico id="milestones" />
                 Hub
               </button>
@@ -456,7 +510,7 @@ export function AutomationHud({
               ))}
             </div>
           )}
-          <p className="ab-next" aria-label="Current objective">
+          <p className="ab-next" ref={nextRef} aria-label="Current objective">
             <span className="ab-next-label">{next.title ? "Objective" : "Next"}</span>
             {next.title && <span className="ab-next-title">{next.title}</span>}
             {next.progress !== undefined && (
@@ -469,9 +523,11 @@ export function AutomationHud({
               <button
                 type="button"
                 className="ab-text-btn"
+                {...tipAttr({ ...CONTROL_TIPS.next, text: `${next.actionLabel}. Click to do it now.` })}
                 onClick={() => {
                   const id = next.actionId!;
                   if (id === "hub-menu") openHubMenu();
+                  else if (next.selectId !== undefined) actions.onSelect(String(next.selectId));
                   else if (actions.onNextStep) actions.onNextStep(id);
                   else {
                     // A machine step arms that machine in its palette section, so the next click on the stage places it.
@@ -498,6 +554,7 @@ export function AutomationHud({
             className="ab-dock-btn"
             aria-pressed={milestonesOpen}
             aria-label={`Milestones, ${data.blueprints} blueprints`}
+            {...tipAttr({ ...CONTROL_TIPS.milestones, rows: [{ k: "Blueprints", v: String(data.blueprints) }] })}
             onClick={() => setMilestonesOpen((o) => !o)}
           >
             <Ico id="milestones" />
@@ -551,7 +608,7 @@ export function AutomationHud({
       )}
 
       {hubOpen && <HubMenu hub={data.hub} onClose={() => setHubOpen(false)} />}
-      {!hubOpen && <HubToast hub={data.hub} onOpen={openHubMenu} />}
+      {!hubOpen && <RewardMoment hub={data.hub} onOpenHub={openHubMenu} onOpenResearch={() => setScreen("research")} />}
 
       {milestonesOpen && (
         <MenuWindow

@@ -32,7 +32,7 @@ export function ElTile({ i, locked, size = 2, anim }: { i: number; locked?: bool
     const sym = ELEMENTS[i].sym.toLowerCase();
     const moving = anim && !locked;
     const src = locked ? ui("el-locked") : ui(moving ? `el-${sym}-anim` : `el-${sym}`);
-    return <span className="sw-el" aria-hidden="true" data-locked={locked ? "" : undefined} data-anim={moving ? "" : undefined} style={{ backgroundImage: cssUrl(src), "--s": size } as CSSProperties} />;
+    return <span className="sw-el" aria-hidden="true" data-locked={locked ? "" : undefined} data-anim={moving ? "" : undefined} style={{ backgroundImage: moving ? undefined : cssUrl(src), "--sheet": moving ? cssUrl(src) : undefined, "--s": size } as CSSProperties} />;
 }
 
 /** `data-tip="Title|line|line"` on any element shows a floating box. One layer for the whole game, so panels never clip it. */
@@ -62,20 +62,33 @@ export function useTips() {
     return { layer, handlers: { onPointerOver: onOver, onPointerLeave: clear, onPointerDown: clear } };
 }
 
-/** Keeps `value` mounted for `ms` after it becomes null so a closing animation can play. */
+/** Where the dock tile that opened the open menu sits (its middle), so a menu can grow out of it. */
+export function dockOrigin(): { x: number; y: number } | null {
+    const b = document.querySelector<HTMLElement>('.sw-dt[aria-pressed="true"]');
+    if (!b) return null;
+    const r = b.getBoundingClientRect();
+    return { x: Math.round(r.left + r.width / 2), y: Math.round(r.top + r.height / 2) };
+}
+
+/**
+ * Keeps `value` mounted for `ms` after it changes so a closing animation can play. Going from one menu straight to another plays
+ * the old one's exit first, then the new one's entrance, so the page change reads as one move instead of a cut.
+ */
 export function useLeaving<T>(value: T | null, ms = 260): { shown: T | null; leaving: boolean } {
     const [shown, setShown] = useState<T | null>(value);
     const [leaving, setLeaving] = useState(false);
     useEffect(() => {
-        if (value !== null) {
+        if (value === shown) { const t = window.setTimeout(() => setLeaving(false), 0); return () => window.clearTimeout(t); }
+        if (value !== null && shown === null) {
             const t = window.setTimeout(() => { setShown(value); setLeaving(false); }, 0);
             return () => window.clearTimeout(t);
         }
+        // closing, or swapping to another menu: the old one plays its exit, then the new one (if any) takes its place
         const a = window.setTimeout(() => setLeaving(true), 0);
-        const b = window.setTimeout(() => { setShown(null); setLeaving(false); }, ms);
+        const b = window.setTimeout(() => { setShown(value); setLeaving(false); }, ms);
         return () => { window.clearTimeout(a); window.clearTimeout(b); };
-    }, [value, ms]);
-    return { shown: value ?? shown, leaving: value === null && leaving };
+    }, [value, shown, ms]);
+    return { shown: shown === null ? value : shown, leaving: leaving && value !== shown };
 }
 
 /** Loads the art sheets once and re-renders the caller when they arrive. */

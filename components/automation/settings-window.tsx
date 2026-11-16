@@ -1,10 +1,12 @@
 "use client";
 // Brasswork's Settings window: a compact centred panel, sized to its content, grouped under brass headings.
 // Click the dark space around it (or press Escape) to close.
+import { useState } from "react";
 import type { HudSettings } from "@/lib/automation/types";
 import { uiIconStyle } from "@/lib/automation/icons/ui";
 import { MenuWindow } from "@/components/brasswork-ui/window";
 import "./settings-window.css";
+import { tipAttr } from "@/components/brasswork-ui/tip";
 
 export const Ico = ({ id }: { id: string }) => <span className="bws-ico" style={uiIconStyle(id, 32)} aria-hidden="true" />;
 
@@ -23,6 +25,7 @@ function Switch({ label, hint, icon, on, onChange }: { label: string; hint: stri
                 aria-checked={on}
                 aria-labelledby={`bws-${icon}-${label}`}
                 className="bws-switch"
+                {...tipAttr({ title: label, tag: "Setting", text: hint, rows: [{ k: "Now", v: on ? "On" : "Off" }] })}
                 onClick={() => onChange(!on)}
             >
                 <span className="bws-knob" />
@@ -58,39 +61,54 @@ export function Choice<T extends string>({ label, value, options, onChange }: { 
     );
 }
 
-export function Group({ title, children }: { title: string; children: React.ReactNode }) {
+export function Group({ title, children, tab }: { title: string; children: React.ReactNode; tab?: SettingsPage }) {
     return (
-        <section className="bws-group" aria-label={title}>
+        <section className="bws-group" aria-label={title} data-tab={tab}>
             <h3 className="bws-group-h">{title}</h3>
             {children}
         </section>
     );
 }
 
+/** Phones show one group at a time (a tab row picks it); desktop shows all four in two columns. */
+export type SettingsPage = "sound" | "display" | "numbers" | "save";
+const PAGES: { id: SettingsPage; label: string }[] = [
+    { id: "sound", label: "Sound" },
+    { id: "display", label: "Display" },
+    { id: "numbers", label: "Numbers" },
+    { id: "save", label: "Save" },
+];
+
 export type SettingsSlots = { sound?: React.ReactNode; display?: React.ReactNode; save?: React.ReactNode };
 
 export function SettingsWindow({ settings, onChange, onClose, slots }: {
     settings: HudSettings; onChange: (patch: Partial<HudSettings>) => void; onClose: () => void; slots?: SettingsSlots;
 }) {
+    const [page, setPage] = useState<SettingsPage>("sound");
     return (
-        <MenuWindow theme="settings" title="Workshop controls" label="Settings" variant="settle" art={<span className="bws-spin"><Ico id="settings" /></span>} onClose={onClose}>
-            <div className="bws-body" data-panel="controls">
-                        <Group title="Sound">
+        <MenuWindow size="wide" theme="settings" title="Workshop controls" label="Settings" variant="settle" art={<span className="bws-spin"><Ico id="settings" /></span>} onClose={onClose}>
+            <div className="bws-body" data-panel="controls" data-page={page}>
+                        <div className="bws-tabs" aria-label="Settings pages">
+                            {PAGES.filter((t) => t.id !== "save" || slots?.save).map((t) => (
+                                <button key={t.id} type="button" className="bws-tab" aria-pressed={page === t.id} onClick={() => setPage(t.id)}>{t.label}</button>
+                            ))}
+                        </div>
+                        <Group title="Sound" tab="sound">
                             <Switch icon="sound" label="Sound" hint="Mutes everything. Starts after your first click." on={settings.sound} onChange={(v) => onChange({ sound: v })} />
                             {slots?.sound}
                         </Group>
-                        <Group title="Display">
+                        <Group title="Display" tab="display">
                             <Switch icon="light" label="Simple visuals" hint="No shimmer, scrambling text or slides, and fewer plants." on={settings.lowFx} onChange={(v) => onChange({ lowFx: v })} />
                             <Switch icon="pause" label="Reduce motion" hint="Stops the belts, wind and every animation." on={settings.reduceMotion} onChange={(v) => onChange({ reduceMotion: v })} />
                             {slots?.display}
                         </Group>
-                        <Group title="Numbers">
+                        <Group title="Numbers" tab="numbers">
                             <Switch icon="rates" label="Show rates" hint="Per-minute income under each resource." on={settings.showRates} onChange={(v) => onChange({ showRates: v })} />
                             <Row icon="stats" label="Number style" hint="12.4k or 12,400."><Choice label="Number style" value={settings.numberFormat} options={[{ value: "short", label: "Short" }, { value: "full", label: "Full" }]} onChange={(v) => onChange({ numberFormat: v })} /></Row>
                         </Group>
                         {slots?.save && (
                             <>
-                                        <Group title="Save and leave">{slots.save}</Group>
+                                        <Group title="Save and leave" tab="save">{slots.save}</Group>
                             </>
                         )}
                         <p className="bws-note">Changes apply at once and are saved in this browser.</p>

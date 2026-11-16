@@ -8,6 +8,7 @@ import { nfx as sfx } from "@/lib/nodefarm/sound";
 import { MATS, fmt, fmtTime, statDef, type StatId } from "@/lib/nodefarm/engine";
 import { NfIcon } from "../board/icon";
 import type { SysGroup } from "@/lib/nodefarm/offline";
+import "@/app/camino/nodefarm/lazy/away.css";
 
 export interface Away {
     /** seconds actually banked (capped) */

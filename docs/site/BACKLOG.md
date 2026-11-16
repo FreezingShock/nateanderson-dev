@@ -6,9 +6,14 @@ Format and rules: `docs/WORKFLOW.md`. Append new items at the end of a section; 
 - [x] SITE-motion-stuck-test | S | test that jumps to hash anchors, fast-scrolls and tabs through each route, and fails if any `data-rx` text is unresolved after 3 s; reduced motion shows plain text at once | audit 7 | scripts/ci/motion-stuck.mjs, runs in the blocking PR check; passed locally on the current site
 - [x] SITE-a11y-sweep | S | scanned 12 routes at 390 on a production build: 0 images without alt, 0 unnamed buttons or links, 0 visible text under 11px (the audit's 7 to 9 per page, the one missing alt and the Node Farm button are already fixed) | headless Chromium only
 - [ ] SITE-contrast | S | measure contrast of dim mono labels against the dithered backgrounds (needs a sampled-pixel check, not a CSS colour check) and lift any under 4.5:1
-- [ ] SITE-css-per-route | M | load page CSS per route instead of everything through `globals.css`; record before and after bytes; `games.css` still carries homepage rules | audit 4
+- [x] SITE-css-per-route | M | load page CSS per route instead of everything through `globals.css`; record before and after bytes; `games.css` still carries homepage rules | audit 4 | WON'T DO: measured 2026-11-15, at most 21 KB source (about 4 KB gzipped) is page-specific and the shared file is cached once; report in /mnt/project-files/portfolio/css-audit-2026-11-15/css-audit.md
+- [x] SITE-nodefarm-weight | M | partly done: 67 selectors that match nothing in any Node Farm state removed (486 to 480 KB, visually unchanged). The rest is shared, see SITE-nodefarm-css-split | css audit | #616
+- [ ] SITE-nodefarm-css-split | L | split Node Farm CSS so panels load on first open: about 290 KB of rules use classes that several modules share, so each split needs a class-ownership pass first | docs/node-farm.md CSS notes
 - [x] SITE-footer-mobile | S | footer at 390 is 1,259 px, down from 1,638 (directories two across, contact tiles three across) | screenshots in /mnt/project-files/portfolio/site-mobile/
 - [ ] ASK SITE-timeline-mobile | M | compact mobile mode for Timeline (11,900 px at 390) and Studies (9,400 px); target Timeline under 7,000 px; Nate has a decision card open (collapse live phase, or short cards with tap for detail); the live phase already starts open and holds about 4,400 px | audit 6
+- [x] SITE-timeline-cards-phone | S | Nate chose short cards, tap for detail (2026-11-15): milestones show title and date on phones, the description opens on tap; phases block 7,429 to 4,946 px at 390 | screenshots in /mnt/project-files/portfolio/site-mobile/
+- [ ] SITE-timeline-overview-phone | S | Timeline is still about 9,400 px at 390; the overview section is 2,038 px and the live phase 2,938 px; trim the overview to reach the 7,000 px target | audit 6
+- [ ] SITE-studies-mobile | M | Studies is 9,400 px at 390 (classes 2,398, reading 1,083, pathway 1,280); same short-card treatment
 - [ ] SITE-creations-detail | M | hero image, short build story, stack and role block, screenshots on each detail page | audit 2 | needs Nate's facts, see below
 
 ## Needs Nate
@@ -22,8 +27,10 @@ Format and rules: `docs/WORKFLOW.md`. Append new items at the end of a section; 
 - [ ] ASK SITE-branch-delete | S | threads cannot delete branches (403); Nate runs `branch-cleanup-delete.sh` from the audit folder, merged ones only | audit 9
 - [ ] ASK SITE-stale-prs | S | decide PRs #399 and #400 (merge or close) and the Brasswork drafts; owners decide their own | audit 9
 
+- [x] SITE-hub-layout | S | Nate picked Poster on 2026-11-15 (decision card); rows and index layouts removed | #610 follow-up
+
 ## Next
-- [ ] SITE-game-thumbs | M | dithered screenshot per game on the hub and the Creations featured grid; Brasswork card still says OFFLINE and "In development" while playable; run after the card overhaul | audit 5 | light taste call on crop style
+- [x] SITE-game-thumbs | M | real screenshot per game on the hub cards (captured from the built game, 16:10); the Creations featured grid still uses its own cards | done in the Games hub redesign | #610
 - [x] SITE-nexus-iframe | S | remove the "Allow attribute will take precedence over allowfullscreen" log; load the embed on click behind a poster | audit 2 | the log is gone (frame uses `allow` only, `components/creations/deferred-frame.tsx`); loading on click behind a poster is not done and not needed while the frame loads after page load
 - [x] SITE-bento-cards | M | finish the card overhaul if any remains (cards pinned footers, one title size landed in e016de91) | check state first | checked 2026-11-15: one dark treatment, pinned footers, one title size and grids that fill the row are live on the games hub; only the generic glyph previews remain (SITE-game-thumbs)
 - [x] SITE-check-feature-docs | S | verify every line of `docs/site/FEATURES.md` against the code and fix mismatches | fixed fonts, dev routes, dock labels, share images; page behaviour lines checked by file only, not in a browser
@@ -46,3 +53,5 @@ Slot for findings from the thread "Audit website code for simplification". That 
 - [x] SITE-claude-md | S | root `CLAUDE.md` and `AGENTS.md` were referenced everywhere but missing; added short guides
 - [x] SITE-console-help | S | console help entries stack and wrap at `|` | e03b1748
 - [x] SITE-preload-warnings | S | no unused-preload warnings, Nexus page loads in 0.3 s | #483
+- [x] SITE-home-games | S | homepage "Play" section: one card per playable game with a real capture, linking straight in; layout chosen from a decision card (three cards in a row, built as recommended) | this PR
+- [x] SITE-pages-audit-2026-11-16 | S | non-game pages audited at 1440 and 390 (build, gate, search, console, transitions, stuck text, overlaps, LCP); no code change needed; report and before shots in /mnt/project-files/portfolio/site-audit-2026-11-16/REPORT.md | this PR

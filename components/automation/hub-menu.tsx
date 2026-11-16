@@ -1,13 +1,16 @@
 "use client";
 
 import { ArtIcon, UiArtIcon } from "@/components/brasswork-art/icons";
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
 import { MenuWindow } from "@/components/brasswork-ui/window";
-import { MachinePortrait } from "@/components/brasswork-art";
+import { EmptyState, MachinePortrait } from "@/components/brasswork-art";
 import { iconStyle } from "@/lib/automation/icons";
 import { uiIconStyle } from "@/lib/automation/icons/ui";
 import type { HubStep, HubUnlock, HubView } from "@/lib/automation/types";
 import "./hub-menu.css";
+import { tipAttr } from "@/components/brasswork-ui/tip";
+import { itemTip } from "@/lib/automation/tips";
+import { DEFAULT_CATALOG } from "@/lib/automation/sim/data";
 
 /** Anything can open the hub menu: the host on a click on the hub building, a button, the goal strip. */
 export const HUB_OPEN_EVENT = "bw:open-hub";
@@ -58,7 +61,7 @@ function Slip({ step, index, total }: { step: HubStep; index: number; total: num
           const pct = Math.round((it.have / it.need) * 100);
           return (
             <li key={it.id} className="hm-item" data-full={it.have >= it.need}>
-              <ArtIcon id={it.id} size={48} name={it.name} className="hm-item-ico" />
+              <ArtIcon id={it.id} size={48} name={it.name} tip={itemTip(DEFAULT_CATALOG.tree, it.id)} className="hm-item-ico" />
               <span className="hm-item-name">{it.name}</span>
               <span className="hm-item-count">{it.have} / {it.need}</span>
               <span className="hm-bar" role="progressbar" aria-label={`${it.name} delivered`} aria-valuemin={0} aria-valuemax={it.need} aria-valuenow={it.have}>
@@ -69,6 +72,7 @@ function Slip({ step, index, total }: { step: HubStep; index: number; total: num
         })}
       </ul>
 
+      {step.state === "now" && step.progress === 0 && <div className="hm-empty"><EmptyState scene="crate">Nothing delivered yet. The crate for this one is waiting.</EmptyState></div>}
       {step.state === "now" && <p className="hm-hint">Belt these into the hub, or drop them in with a loader. Everything the hub receives counts.</p>}
     </article>
   );
@@ -81,6 +85,8 @@ function Slip({ step, index, total }: { step: HubStep; index: number; total: num
 export function HubMenu({ hub, onClose }: { hub: HubView; onClose: () => void }) {
   const now = hub.steps.findIndex((s) => s.state === "now");
   const [sel, setSel] = useState(now >= 0 ? now : Math.max(0, hub.steps.length - 1));
+  // Phones show one pane at a time: the slip for the chosen order, or the ladder (hall, orders, milestones). Picking a row opens its slip.
+  const [view, setView] = useState<"slip" | "ladder">("slip");
   const step = hub.steps[sel];
   const orders = hub.steps.filter((s) => s.kind === "request");
   const indexOf = (s: HubStep) => hub.steps.filter((x) => x.kind === s.kind).findIndex((x) => x.id === s.id) + 1;
@@ -89,7 +95,7 @@ export function HubMenu({ hub, onClose }: { hub: HubView; onClose: () => void })
 
   const row = ({ s, i }: { s: HubStep; i: number }) => (
     <li key={s.id}>
-      <button type="button" className="hm-row" data-state={s.state} aria-current={i === sel} onClick={() => setSel(i)}>
+      <button type="button" className="hm-row" data-state={s.state} aria-current={i === sel} {...tipAttr({ title: s.name, tag: s.kind === "request" ? "Hub request" : "Hub step", text: s.note, rows: [{ k: "Status", v: s.state === "done" ? "Done" : s.state === "now" ? `${Math.round(s.progress * 100)}% delivered` : s.state === "ahead" ? "Not yet" : "Ready" }] })} onClick={() => { setSel(i); setView("slip"); }}>
         <span className="hm-dot" data-state={s.state} aria-hidden="true">
           {s.state === "done" ? <span style={uiIconStyle("done", 20)} /> : s.state === "ahead" ? <span style={uiIconStyle("lock", 20)} /> : <b />}
         </span>
@@ -102,7 +108,11 @@ export function HubMenu({ hub, onClose }: { hub: HubView; onClose: () => void })
 
   return (
     <MenuWindow theme="hub" title="Hub" label="Hub" size="wide" variant="settle" art={<MachinePortrait id="hub" size={32} />} onClose={onClose}>
-      <div className="hm-wrap">
+      <div className="hm-tabs" role="group" aria-label="Hub pages">
+        <button type="button" className="hm-tab" aria-pressed={view === "slip"} onClick={() => setView("slip")}>Order</button>
+        <button type="button" className="hm-tab" aria-pressed={view === "ladder"} onClick={() => setView("ladder")}>Orders and milestones</button>
+      </div>
+      <div className="hm-wrap" data-view={view}>
         <aside className="hm-side" aria-label="Hub ladder">
           <div className="hm-hall">
             <MachinePortrait id="hub" size={96} label="The hub" />
@@ -119,35 +129,9 @@ export function HubMenu({ hub, onClose }: { hub: HubView; onClose: () => void })
           <h4 className="hm-kick" data-glyph="milestones">Milestones · pay blueprints</h4>
           <ol className="hm-ladder">{listed("milestone").map(row)}</ol>
         </aside>
-        <Slip step={step} index={indexOf(step)} total={step.kind === "request" ? orders.length : hub.steps.length - orders.length} />
+        {/* Keyed by step, so choosing another row swaps the slip with its own short entrance. */}
+        <Slip key={step.id} step={step} index={indexOf(step)} total={step.kind === "request" ? orders.length : hub.steps.length - orders.length} />
       </div>
     </MenuWindow>
-  );
-}
-
-/** A short toast when the hub fills an order: the recipes and machines it just opened. Non-blocking. */
-export function HubToast({ hub, onOpen }: { hub: HubView; onOpen: () => void }) {
-  const seen = useRef<Set<string> | null>(null);
-  const [toast, setToast] = useState<HubStep | null>(null);
-  useEffect(() => {
-    const done = new Set(hub.steps.filter((s) => s.state === "done" && s.kind === "request").map((s) => s.id));
-    if (seen.current === null) { seen.current = done; return; } // the first read is the saved state, not news
-    const fresh = hub.steps.find((s) => done.has(s.id) && !seen.current!.has(s.id));
-    seen.current = done;
-    if (fresh) setToast(fresh);
-  }, [hub]);
-  useEffect(() => {
-    if (!toast) return;
-    const t = window.setTimeout(() => setToast(null), 7000);
-    return () => window.clearTimeout(t);
-  }, [toast]);
-  if (!toast) return null;
-  return (
-    <div className="hm-toast" role="status">
-      <span className="hm-toast-kick">Order filled</span>
-      <span className="hm-toast-name">{toast.name}</span>
-      <span className="hm-toast-opens">Opened: {toast.unlocks.map((u) => u.name).join(", ")}</span>
-      <button type="button" className="hm-toast-btn" onClick={() => { setToast(null); onOpen(); }}>Open hub</button>
-    </div>
   );
 }

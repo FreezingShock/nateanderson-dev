@@ -62,17 +62,24 @@
   .ex-view { aspect-ratio: 16 / 7; }
 }
 @media (max-width: 759px) {
-  .ex-grid { grid-template-columns: 1fr; gap: 10px; }
-  .ex-card { display: grid; grid-template-columns: 116px minmax(0, 1fr); }
-  .ex-view { aspect-ratio: auto; min-height: 100%; }
-  .ex-name { font-size: 12px; left: 6px; bottom: 6px; right: 4px; }
+  /* Phones: the four sites sit in a two by two grid of cards, so the list never scrolls inside the window. The sheet
+     rises almost to the top of the screen to make room. */
+  .bw-window[data-theme="expedition"] { max-height: calc(100dvh - 40px); }
+  .ex-root { gap: 8px; padding: 8px; margin: -8px; }
+  .ex-brief { gap: 4px 12px; padding: 6px 10px; }
+  .ex-lede { font-size: 14px; flex-basis: 100%; }
+  .ex-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+  .ex-card { display: flex; flex-direction: column; }
+  .ex-view { aspect-ratio: 4 / 3; min-height: 0; }
+  .ex-name { font-size: 11px; left: 6px; bottom: 5px; right: 4px; }
   .ex-plan-wrap { display: none; }
   .ex-here { font-size: 9px; padding: 2px 5px; left: 4px; top: 4px; letter-spacing: 0.08em; }
-  .ex-body { gap: 6px; padding: 8px 10px; }
-  .ex-ores { gap: 3px; }
-  .ex-ore { zoom: 0.78; }
-  .ex-facts { font-size: 12px; }
-  .ex-go { min-height: 44px; font-size: 13px; }
+  .ex-body { gap: 4px; padding: 6px 8px 8px; }
+  .ex-ores { gap: 2px; }
+  .ex-ore { zoom: 0.72; }
+  .ex-facts { font-size: 11px; line-height: 1.25; }
+  .ex-state { font-size: 12px; }
+  .ex-go { min-height: 44px; font-size: 12px; padding: 0 8px; }
 }
 @media (prefers-reduced-motion: reduce) { .ex-card { animation: none; } }
 
@@ -91,7 +98,7 @@
 
 /* Hover: the card lifts, the painting leans in, and the ore tiles hop one after another. */
 @keyframes ex-hop { 0%, 100% { transform: none; } 40% { transform: translateY(-4px); } }
-.ex-card { transition: transform 0.16s ease-out, box-shadow 0.16s, filter 0.16s; }
+.ex-card { transition: transform var(--bwm-hover) var(--bwm-ease-out), box-shadow var(--bwm-hover), filter var(--bwm-hover); }
 .ex-img { transition: transform 0.4s cubic-bezier(0.2, 0.7, 0.2, 1); }
 @media (hover: hover) {
   .ex-card:hover { transform: translateY(-4px); box-shadow: inset 0 0 0 2px var(--bw-brass, #d29a3c), 0 8px 0 #0b0703, 0 0 18px rgba(210, 154, 60, 0.3); }

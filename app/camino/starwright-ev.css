@@ -1,0 +1,61 @@
+/* Shared event card: the visitor choices (comet, flare, gas cloud, companion) and the Welcome back card. One framed panel with a header
+   (animated art, title, line), then its own body. Both set data-kind so motion and sound can hook per card: [data-kind="visitor"],
+   [data-kind="away"]; the countdown sets data-late under 20 s. Loaded after starwright.css so it wins ties. */
+.sw-ev { --ev: var(--sw-cy); display: grid; gap: 10px; padding: 12px 14px 14px; border: 8px solid transparent; border-image: url("/starwright/ui/frame-warm.png?v=8") 8 fill / 8px / 0 stretch; background-clip: padding-box; overflow: hidden; }
+.sw-ev-head { display: grid; grid-template-columns: 64px minmax(0, 1fr) auto; align-items: center; gap: 12px; }
+.sw-ev[data-kind="away"] .sw-ev-head { grid-template-columns: 64px minmax(0, 1fr); }
+.sw-ev-head b { display: block; font: 600 13px var(--cm-mono, monospace); letter-spacing: .1em; text-transform: uppercase; color: var(--sw-cy); }
+.sw-ev-head em { display: block; margin-top: 3px; font: 400 13px/1.35 var(--cm-display, sans-serif); font-style: normal; color: var(--sw-dim); }
+.sw-ev-art { position: relative; display: grid; place-items: center; width: 64px; height: 64px; overflow: hidden; color: #ffd27a; background: rgba(5, 4, 12, .7); border: 1px solid color-mix(in srgb, #ffb24d 60%, transparent); }
+.sw-ev-art[style*="--sheet"]::before { content: ""; position: absolute; top: 0; left: 0; width: calc(var(--n) * 100%); height: 100%; background: var(--sheet) 0 0 / 100% 100%; image-rendering: pixelated; animation: swEvStrip var(--ms, 2s) steps(var(--n), jump-none) infinite; will-change: transform; }
+@keyframes swEvStrip { to { transform: translateX(calc(-100% * (var(--n) - 1) / var(--n))); } }
+.sw-ev-time { align-self: start; min-width: 46px; padding: 3px 6px; text-align: center; font: 600 13px var(--cm-mono, monospace); letter-spacing: .04em; color: var(--sw-ink); background: rgba(5, 4, 12, .7); border: 1px solid var(--sw-line); }
+.sw-ev[data-late] .sw-ev-time { color: #1a0c04; background: #ffb24d; border-color: #ffb24d; animation: swPing 1s steps(2, end) infinite; }
+
+/* visitor: two answers, each with an icon, a name, what it pays, and its key */
+.sw-visitor.sw-ev { width: min(420px, calc(100% - var(--sw-lad) - 300px)); min-width: 300px; border-color: transparent; }
+.sw-visitor .sw-visitor-opts { margin-top: 0; gap: 10px; }
+.sw-visitor .sw-opt { position: relative; grid-template-columns: auto 1fr; grid-template-rows: auto auto; align-content: start; align-items: center; column-gap: 8px; row-gap: 4px; min-height: 96px; padding: 8px 10px 10px; }
+.sw-opt-ic { grid-row: 1; display: grid; place-items: center; width: 36px; height: 36px; color: #ffd27a; background: rgba(5, 4, 12, .7); border: 1px solid var(--sw-line); }
+.sw-visitor .sw-opt b { grid-column: 2; grid-row: 1; }
+.sw-visitor .sw-opt .sw-opt-d { grid-column: 1 / -1; font-size: 12px; line-height: 1.35; color: var(--sw-dim); }
+.sw-visitor .sw-opt kbd { position: absolute; top: 3px; right: 5px; font: 500 10px var(--cm-mono, monospace); color: var(--sw-dim); }
+.sw-visitor .sw-opt:hover .sw-opt-ic { border-color: #ffb24d; }
+.sw-visitor .sw-opt:hover .sw-opt-ic .sw-pic { animation: swHop .5s steps(4, end); }
+.sw-visitor .sw-visitor-bar { height: 4px; background: var(--sw-cy); opacity: .9; }
+.sw-visitor[data-late] .sw-visitor-bar { background: #ffb24d; }
+
+/* welcome back: gained elements as icon chips */
+.sw-away.sw-ev { width: min(460px, calc(100% - var(--sw-lad) - 200px)); border-color: transparent; }
+@media (min-width: 901px) { .sw-away.sw-ev { top: 150px; } }
+.sw-ev-gains { display: grid; grid-template-columns: repeat(auto-fit, minmax(104px, 1fr)); gap: 8px; }
+.sw-gain { display: grid; grid-template-columns: auto 1fr; grid-template-rows: auto auto; align-items: center; column-gap: 8px; padding: 6px 8px; text-align: left; background: rgba(5, 4, 12, .7); border: 1px solid color-mix(in srgb, var(--c) 55%, transparent); font-family: var(--cm-display, sans-serif); color: var(--sw-ink); }
+.sw-gain .sw-el { grid-row: 1 / 3; }
+.sw-gain b { align-self: end; font: 600 13px var(--cm-mono, monospace); color: var(--c); }
+.sw-gain span:last-child { align-self: start; font-size: 11px; color: var(--sw-dim); }
+.sw-gain:hover, .sw-gain[aria-pressed="true"] { border-color: var(--c); background: color-mix(in srgb, var(--c) 14%, #05040c); transform: translateY(-2px); }
+.sw-ev-note { margin: 0; font-size: 12px; line-height: 1.4; color: var(--sw-dim); animation: swVisit .25s steps(4, end); }
+.sw-ev .sw-away-line { margin: 0; font: 400 13px/1.4 var(--cm-display, sans-serif); color: var(--sw-ink); }
+.sw-ev-core { display: block; height: 8px; border: 1px solid var(--sw-line); background: #0a0710; }
+.sw-ev-core > i { display: block; height: 100%; background: #f08a4a; }
+.sw-ev-x { justify-self: start; min-height: 40px; padding: 0 16px; background: transparent; border: 1px solid var(--sw-cy); color: var(--sw-cy); font: 500 12px var(--cm-mono, monospace); letter-spacing: .08em; text-transform: uppercase; }
+.sw-ev-x:hover { background: var(--sw-cy); color: #04060c; }
+@media (max-width: 900px) { .sw-visitor.sw-ev, .sw-away.sw-ev { width: auto; min-width: 0; } .sw-visitor .sw-opt { min-height: 0; } }
+@media (prefers-reduced-motion: reduce) { .sw-ev-art::before, .sw-ev[data-late] .sw-ev-time { animation: none !important; } }
+
+/* birth-cloud picker: same framed card; the sky behind it previews whichever cloud is pointed at */
+.sw-clouds.sw-ev { width: var(--sw-col); border-color: transparent; }
+.sw-clouds .sw-cloud-list { display: grid; gap: 8px; }
+.sw-clouds .sw-cloud { min-height: 72px; transition: transform .12s steps(2, end); }
+.sw-clouds .sw-cloud:hover, .sw-clouds .sw-cloud:focus-visible { transform: translateX(4px); border-color: var(--c); }
+.sw-clouds .sw-cloud-art { min-height: 72px; }
+@media (max-width: 900px) { .sw-clouds.sw-ev { width: auto; } }
+
+/* phone fit: Almanac tiles show the symbol only (the name is in the tap-open sheet). Names at 9px overlapped
+   their neighbours at 360 to 390 wide, so they are hidden here rather than shrunk. */
+@media (max-width: 520px) {
+    .sw-codex .sw-cx b { font-size: 0; letter-spacing: 0; white-space: nowrap; max-width: 100%; overflow: hidden; }
+    .sw-codex .sw-cx b::before { font: 600 13px var(--cm-mono, monospace); letter-spacing: .04em; }
+    .sw-codex .sw-cx { padding-left: 2px; padding-right: 2px; min-width: 0; }
+}
+.sw-chart .sw-chart-foot { box-sizing: border-box; width: 100%; padding: 6px 16px 16px; text-align: left; }

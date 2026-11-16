@@ -113,51 +113,8 @@
 }
 
 /* ---- tree menu skin */
-.ctos .nf-tm[data-theme="hangar"] { background: #07090d; }
-.ctos .nf-tm[data-theme="hangar"] .nf-tm-bar { background: #14100a; color: var(--hg-ink); box-shadow: inset 0 -2px var(--hg-amber); }
-.ctos .nf-tm[data-theme="hangar"] .nf-tm-ps1 { margin-right: 10px; font-style: normal; color: var(--hg-haz); letter-spacing: .06em; }
-.ctos .nf-tm[data-theme="hangar"] .nf-tm-x { background: var(--hg-ink); }
-.ctos .nf-tm[data-theme="hangar"] .nf-tm-x i::before, .ctos .nf-tm[data-theme="hangar"] .nf-tm-x i::after { background: #14100a; }
-.ctos .nf-tm[data-theme="hangar"] .nf-tm-x:hover { background: var(--hg-amber); }
-.ctos .nf-tm[data-theme="hangar"] .nf-tm-b { background: #1a140a; color: var(--hg-ink); }
-.ctos .nf-tm[data-theme="hangar"] .nf-tm-b:hover:not(:disabled) { background: var(--hg-amber); color: #140e04; }
-.ctos .nf-tm[data-theme="hangar"] .nf-tm-zoom .nf-tm-b { background: #1a140aee; border-color: #ffb14a55; }
-.ctos .nf-tm[data-theme="hangar"] .nf-tn { --ex: #2a1f10; --ex2: #120c05; --rim: #6a4a1e; }
-.ctos .nf-tm[data-theme="hangar"] .nf-tn-face { background: radial-gradient(circle at 50% 42%, #2a2418 0, #0f0d09 78%), #0f0d09; }
-.ctos .nf-tm[data-theme="hangar"] .nf-tn-face::before { background: repeating-linear-gradient(45deg, #ffd23a0d 0 4px, transparent 4px 8px); }
-.ctos .nf-tm[data-theme="hangar"] .nf-tn[data-st="owned"] .nf-tn-face { background: radial-gradient(circle at 50% 42%, color-mix(in srgb, var(--c) 34%, #0f0d09) 0, #0f0d09 80%); }
-.ctos .nf-tm[data-theme="hangar"] .nf-tn[data-vis="fog"] { --rim: #3a2c18; }
-.ctos .nf-tm[data-theme="hangar"] .nf-tn[data-vis="fog"] .nf-tn-body { background: linear-gradient(145deg, #1c160c, #0a0805); }
-.ctos .nf-tm[data-theme="hangar"] .nf-tn[data-vis="fog"] .nf-tn-face { background: repeating-linear-gradient(45deg, #14100a 0 4px, #2a1f0c 4px 8px); border-style: dashed; }
-.ctos .nf-tm[data-theme="hangar"] .nf-tn-l { background: #14100ae6; color: var(--hg-ink); border-left: 2px solid var(--c); }
-.ctos .nf-tm[data-theme="hangar"] .nf-tn-cost { color: var(--hg-haz); }
-.ctos .nf-tm[data-theme="hangar"] .nf-tn-shadow { background: #000; }
-.ctos .nf-tm[data-theme="hangar"] .nf-tl-bed { stroke: #050403; }
-.ctos .nf-tm[data-theme="hangar"] .nf-tl[data-st="off"] { stroke: #6a5a40; }
-.ctos .nf-tm[data-theme="hangar"] .nf-tl-via { fill: #0f0d09; stroke: #6a5a40; }
-.ctos .nf-tm[data-theme="hangar"] .nf-tl-pk { stroke: var(--hg-haz); }
-.ctos .nf-tm[data-theme="hangar"] .nf-tm-sec { background: #14100ae0; box-shadow: 6px 6px 0 #000c; border-top: 3px solid var(--hg-haz); }
-.ctos .nf-tm[data-theme="hangar"] .nf-tm-sec b { font-family: var(--cm-mono); font-size: 22px; letter-spacing: .04em; text-transform: uppercase; }
-.ctos .nf-tm[data-theme="hangar"] .nf-tm-sec small { color: #c9b89a; }
-.ctos .nf-tm[data-theme="hangar"] .nf-tm-card { background: #14100a; border-color: #ffb14a66; color: var(--hg-ink); box-shadow: 8px 8px 0 #000c; }
-.ctos .nf-tm[data-theme="hangar"] .nf-tm-card .nf-tm-k { color: #c9b89a; }
-.ctos .nf-tm[data-theme="hangar"] .nf-tm-fx { background: linear-gradient(90deg, color-mix(in srgb, var(--c) 22%, #14100a) 0, #1a140a 72%); }
-.ctos .nf-tm[data-theme="hangar"] .nf-tm-fx b { color: var(--hg-haz); }
-.ctos .nf-tm[data-theme="hangar"] .nf-tm-flv { background: #1a140a; color: #e6d6b8; }
-.ctos .nf-tm[data-theme="hangar"] .nf-tm-need, .ctos .nf-tm[data-theme="hangar"] .nf-tm-cost small { color: #c9b89a; }
-.ctos .nf-tm[data-theme="hangar"] .nf-tm-buy:disabled { background: #2a2010; color: #8a7a5a; }
-.ctos .nf-tm[data-theme="hangar"] .nf-tm-lead { background: var(--c); }
-.ctos .nf-tm[data-theme="hangar"] .nf-tm-hint { background: #14100af2; border-color: #ffb14a33; border-top-color: var(--hg-amber); }
-.ctos .nf-tm[data-theme="hangar"] .nf-tm-hint::before { background: conic-gradient(var(--hg-amber) 25%, transparent 0 50%, var(--hg-amber) 0 75%, transparent 0) 0 0 / 4px 4px; }
-.ctos .nf-tm[data-theme="hangar"] .nf-tm-ps { color: var(--hg-haz); }
-.ctos .nf-tm[data-theme="hangar"] .nf-tm-caret { background: var(--hg-ink); }
-.ctos .nf-tm[data-theme="hangar"] .nf-tm-tot { background: #14100af2; border-color: #ffb14a44; }
-.ctos .nf-tm[data-theme="hangar"] .nf-tm-th { color: var(--hg-amber); }
-.ctos .nf-tm[data-theme="hangar"] .nf-tm-toast, .ctos .nf-tm[data-theme="hangar"] .nf-tm-msg { background: #14100a; color: var(--hg-ink); }
 
 /* ---- hangar-floor backdrop */
-.nf-hbd { position: absolute; inset: 0; z-index: 0; overflow: hidden; pointer-events: none; contain: strict; background: radial-gradient(ellipse at 50% 46%, #1a1610 0, #0c0e12 45%, #040506 100%); }
-.nf-hbd-vig { position: absolute; inset: 0; display: block; background: radial-gradient(ellipse at center, transparent 55%, #000000d0 100%), repeating-linear-gradient(0deg, transparent 0 3px, #00000018 3px 4px); }
 
 /* late game on a phone: up to 20 level pips, a 5-column track and a long posting name pushed the whole row past the screen edge, hiding the posting list and the third mod */
 .ctos .nf-hg .nf-dr-list li { min-width: 0; overflow: hidden; }

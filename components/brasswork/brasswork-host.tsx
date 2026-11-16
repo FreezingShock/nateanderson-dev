@@ -20,6 +20,7 @@ import {
     autoRoute,
     suggestSpot,
     footprintCells,
+    edgeCells,
     hudData,
     resolve,
     SITES,
@@ -47,6 +48,10 @@ import { useFirstRunQuest } from "./first-run";
 import { BuildPopover, TrashButton } from "./build-popover";
 import { NextMarker, type NextTarget } from "./next-marker";
 import { HoverName } from "./hover-name";
+import { TipLayer } from "@/components/brasswork-ui/tip";
+import { kindTip, withRecipe } from "@/lib/automation/tips";
+import { recipeTagAt } from "@/lib/automation/sim/recipe-tag";
+import { BuildingBadge } from "./building-badge";
 import { attachUiSounds, playSound, setAmbient, setEnabled as setSoundOn, startAudio } from "@/lib/automation/audio";
 import { LightingRow, SaveRows } from "./settings-extras";
 import { VolumeRows } from "./audio-rows";
@@ -166,6 +171,8 @@ export function BrassworkHost() {
     const [pop, setPop] = useState<{ anchor: { x: number; z: number }; kind: string; kindLabel: string; x: number; y: number } | null>(null);
     const [inputCtl, setInputCtl] = useState<InputController | null>(null);
     const nameOfKind = useCallback((kind: string) => resolve(CAT, kind)?.name ?? kind, []);
+    // The hover tag for a placed building: its kind tag, plus the recipe it is set to (read from the cell under the pointer).
+    const tipOfKind = useCallback((kind: string) => withRecipe(kindTip(CAT, kind), ctl.current?.recipeAtHover() ?? null), []);
     const [nextTarget, setNextTarget] = useState<NextTarget | null>(null);
     const [away, setAway] = useState<AwayReport | null>(null);
     const [mood, setMood] = useState<Mood>("Auto");
@@ -193,6 +200,7 @@ export function BrassworkHost() {
         if (g) ctl.current?.group(DOCK_ORDER.indexOf(g));
     }, []);
     const ctl = useRef<{
+        recipeAtHover: () => string | null;
         setTool: (id: string | null) => void;
         group: (index: number) => void;
         select: (id: string | null) => void;
@@ -384,7 +392,7 @@ export function BrassworkHost() {
                 if (started) {
                     const [hx, hz] = hubAt();
                     if (ms.some((m) => !doneMilestones.has(m.id))) {
-                        playSound("milestone");
+                        // The reward card plays its own "reward" sound when it opens, so the milestone cue stays quiet here.
                         life.burst("milestone", hx, hz);
                         island.burst({ x: hx - W / 2, z: hz - D / 2 }, "milestone");
                     } else if (rs > doneResearch) {
@@ -461,6 +469,7 @@ export function BrassworkHost() {
                 touchBar: true,
                 board: BOARD,
                 world: buildWorld,
+                copyable: (kind) => resolve(CAT, kind)?.placeable !== false,
                 tools,
                 groups: dockTools,
                 // Press a belt on a machine and drag to another: the sim finds the shortest clear route (input frame in, input frame out).
@@ -468,7 +477,11 @@ export function BrassworkHost() {
                     const r = autoRoute(world, { x: from.x + ox, z: from.z + oz }, { x: to.x + ox, z: to.z + oz }, toolId, CAT);
                     return r.ok ? { ok: true, cells: r.cells.map((c) => ({ x: c.x - ox, z: c.z - oz, rot: c.rot })) } : r;
                 },
-                onGroup: (i) => setDockGroup(DOCK_ORDER[i] ?? null),
+                // Fires only for the keyboard (Tab cycles groups); a dock click is already a press sound.
+                onGroup: (i) => {
+                    setDockGroup(DOCK_ORDER[i] ?? null);
+                    playSound("tab");
+                },
                 heightAt: pickHeightAt,
                 groundHeightAt: heightAt,
                 // Wide screens open with the Machines dock beside the island, so the view sits a little right of the hub to keep the first drill node clear of it.
@@ -487,6 +500,9 @@ export function BrassworkHost() {
                         setNote("");
                         syncScene();
                         refresh();
+                    } else if (e.type === "copy") {
+                        playSound("select");
+                        setNote(`Copied ${e.count} ${e.count === 1 ? "building" : "buildings"}. Ctrl+V to paste, R turns it.`);
                     } else if (e.type === "rotate" || e.type === "undo") {
                         playSound(e.type);
                     } else if (e.type === "route-source") {
@@ -536,8 +552,32 @@ export function BrassworkHost() {
                 island.setHighlight(sel);
                 ghostKey = "";
             });
+            // Input (back edge) and output (front edge) arrows for a machine at a render-frame anchor, or none for pieces without ports.
+            let portsKey = "";
+            const portArrowsFor = (type: string, ax: number, az: number, rot: number) => {
+                const r = resolve(CAT, type);
+                if (!r || (r.kind !== "miner" && r.kind !== "crafter")) return [];
+                const b = { x: ax, z: az, rot: rot as Rot };
+                const out = edgeCells(b, r.footprint, "front").map(([x, z]) => ({ x, z, rot, kind: "out" as const }));
+                const inn = r.kind === "crafter" ? edgeCells(b, r.footprint, "back").map(([x, z]) => ({ x, z, rot, kind: "in" as const })) : [];
+                return [...inn, ...out];
+            };
+            const updatePorts = (g: ReturnType<typeof input.controller.build.ghost>) => {
+                let list: ReturnType<typeof portArrowsFor> = [];
+                if (g && g.tool.id !== DELETE_TOOL.id && g.cells.length && !g.tool.line) {
+                    list = portArrowsFor(g.tool.id, Math.min(...g.cells.map((k) => k.x)), Math.min(...g.cells.map((k) => k.z)), g.rot);
+                } else if (!g && selectedId !== null && world.buildings[selectedId]) {
+                    const sb = world.buildings[selectedId];
+                    list = portArrowsFor(sb.type, sb.x - W / 2, sb.z - D / 2, sb.rot);
+                }
+                const key = list.map((a) => `${a.kind}${a.x},${a.z},${a.rot}`).join(";");
+                if (key === portsKey) return;
+                portsKey = key;
+                island.setPortArrows(list);
+            };
             const updateGhost = () => {
                 const g = input.controller.build.ghost();
+                updatePorts(g);
                 // Remove preview: outline every building cell the delete tool would clear, so a multi-cell machine shows whole.
                 if (g && g.tool.id === DELETE_TOOL.id) {
                     const cells = g.cells.filter((k) => k.existing).map((k) => ({ x: k.x, z: k.z }));
@@ -555,6 +595,16 @@ export function BrassworkHost() {
                     if (pk === ghostKey) return;
                     if (!ghostKey.startsWith("path:")) island.clearGhost();
                     ghostKey = pk;
+                    island.setGhostPath(g.cells.map((k) => ({ x: k.x, z: k.z, rot: k.rot, valid: k.valid })));
+                    return;
+                }
+                // A line tool that is only hovering (belts, no drag yet) previews the single belt under the cursor.
+                // Tools with no 3D model fall back to the same plates, so nothing placeable hovers without a ghost.
+                if (g && g.cells.length && (g.tool.line || !getMachineModel(g.tool.id))) {
+                    const hk = "path:" + g.cells.map((k) => `${k.x},${k.z},${k.rot},${k.valid ? 1 : 0}`).join(";");
+                    if (hk === ghostKey) return;
+                    if (!ghostKey.startsWith("path:")) island.clearGhost();
+                    ghostKey = hk;
                     island.setGhostPath(g.cells.map((k) => ({ x: k.x, z: k.z, rot: k.rot, valid: k.valid })));
                     return;
                 }
@@ -590,6 +640,10 @@ export function BrassworkHost() {
                     refresh();
                 },
                 group: (index) => input.controller.setGroup(index),
+                recipeAtHover: () => {
+                    const h = input.controller.build.getHover();
+                    return h ? recipeTagAt(world, h.x + W / 2, h.z + D / 2, CAT) : null;
+                },
                 setTool: (id) => {
                     input.controller.setToolById(id);
                     setNote("");
@@ -605,18 +659,23 @@ export function BrassworkHost() {
                 },
                 research: (id) => {
                     const r = simActions.buyResearch(world, id, CAT);
+                    if (!r.ok) playSound("invalid");
                     setNote(r.ok ? "" : r.reason);
                     refresh();
                 },
                 setRecipe: (recipeId) => {
                     if (selectedId === null) return;
                     const r = simActions.setRecipe(world, selectedId, recipeId, CAT);
+                    if (!r.ok) playSound("invalid");
                     setNote(r.ok ? "" : r.reason);
                     refresh();
                 },
                 prestige: (id) => {
                     const r = simActions.prestige(world, id, CAT);
-                    if (!r.ok) return setNote(r.reason);
+                    if (!r.ok) {
+                        playSound("invalid");
+                        return setNote(r.reason);
+                    }
                     playSound("prestige");
                     save();
                     syncScene();
@@ -751,7 +810,7 @@ export function BrassworkHost() {
                                   : `Drag to lay ${name.toLowerCase()}, or drag from one machine to another to route it for you. Esc stops.`
                                 : touch
                                   ? `Tap a spot to preview ${name}, tap it again to place. Hold to turn it. Cancel stops.`
-                                  : `Click to place ${name}. R turns it, Esc stops.`
+                                  : `Click to place ${name}. Green tiles take items in, brass tiles send them out. R turns it, Esc stops.`
                     );
                 }
                 refresh();
@@ -802,7 +861,9 @@ export function BrassworkHost() {
             <AutomationHud data={data} actions={{ onBuild, onSelect, onResearch, onSetRecipe, onPrestige, onSettings }} settingsSlots={{ sound: <VolumeRows />, display: <LightingRow mood={mood} onMood={onMood} />, save: <SaveRows /> }} removeSlot={inputCtl ? <TrashButton input={inputCtl} variant="dock" /> : undefined} quest={quest ?? undefined} dockGroup={dockGroup} onDockGroup={onDockGroup}>
                 <canvas ref={canvasRef} className="bw-canvas" />
                 <BrassworkExtras snapshot={snapshot} away={away} mood={mood} onMood={onMood} />
-                {inputCtl && <HoverName input={inputCtl} nameOf={nameOfKind} canvas={canvasRef} />}
+                {inputCtl && <BuildingBadge input={inputCtl} nameOf={nameOfKind} />}
+                {inputCtl && <HoverName input={inputCtl} tipOf={tipOfKind} canvas={canvasRef} />}
+                <TipLayer />
                 {inputCtl && nextTarget && <NextMarker input={inputCtl} target={nextTarget} canvas={canvasRef} />}
                 {inputCtl && pop && (
                     <BuildPopover

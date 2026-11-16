@@ -418,4 +418,6 @@ export function markCodexSeen(id: string) {
     try { localStorage.setItem(KEY, JSON.stringify([...set])); } catch {}
 }
 /** The basics and reference entries are on file from the first second, so they never count as new; only what the player reaches does. */
-export const codexNew = (s: State): CodexEntry[] => { const seen = codexSeen(); return unlocked(s).filter((e) => e.group !== "basics" && e.group !== "ref" && !seen.has(e.id)); };
+/** One rule for "new", shared by the rail count, the window's NEW readout and the dots in its list. */
+export const isCodexNew = (e: CodexEntry, seen: Set<string>): boolean => e.group !== "basics" && e.group !== "ref" && !seen.has(e.id);
+export const codexNew = (s: State): CodexEntry[] => { const seen = codexSeen(); return unlocked(s).filter((e) => isCodexNew(e, seen)); };

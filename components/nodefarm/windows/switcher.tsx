@@ -40,7 +40,8 @@ const WIN_ORDER: OpenId[] = ["map", "goals", "records", "ascend", "tree", "lab",
 const shown = (w: OpenId, tree: boolean, lab: boolean, info?: SwInfo) => (w !== "tree" || tree) && (w !== "lab" || lab) && !info?.[w]?.hide;
 
 /** One line of live state per slot, and whether that window wants a look (a lit pip). */
-export type SwInfo = Record<SwId, { read: string; hot?: boolean; hide?: boolean }>;
+/** `short` is the desktop rail readout when `read` is too long for a slot (the lab's "13.2K intel" truncated to "13.2K int…"). */
+export type SwInfo = Record<SwId, { read: string; short?: string; hot?: boolean; hide?: boolean }>;
 
 // Records shows a pip for logs recovered since it was last opened. Kept per browser, not in the save. Cached in the
 // module because swInfo runs on every game render (10 a second) and the game component returns early before it boots.
@@ -75,13 +76,13 @@ export function swInfo(s: State, bps: number, lastSave: number, fs: boolean, lab
         map: { read: `zone ${pad(zones)}` }, // same numbering as the Map window and the zone names everywhere else (Bytes is zone 01, Sunstone 25)
         goals: { read: `${g.goals}/${GOALS.length}` },
         records: { read: newLogs ? `${newLogs} new` : `${s.logs.length} logs`, hot: newLogs > 0 },
-        ascend: { read: ready ? `ready +${fmt(apOnAscend(s))}` : `${fmt(s.aether)}/${fmt(ascendNeed(s))} AE`, hot: ready, hide: !isUnlocked(s, "aether") && s.life.ascends === 0 },
+        ascend: { read: ready ? `ready +${fmt(apOnAscend(s))}` : `${fmt(s.aether)}/${fmt(ascendNeed(s))} AE`, short: ready ? "ready" : undefined, hot: ready, hide: !isUnlocked(s, "aether") && s.life.ascends === 0 },
         tree: { read: spend ? `${s.ap} AP free` : `${s.tree.length}/${TREE.length}`, hot: spend },
         codex: (() => { const n = codexNew(s).length; return { read: n ? `${n} new` : `${codexOpen(s).length} entries`, hot: n > 0, hide: s.reboot < 1 && s.life.ascends === 0 }; })(),
         menu: { read: ago < 0 ? "not saved" : ago < 60 ? `saved ${ago}s` : `saved ${Math.floor(ago / 60)}m` },
-        lab: { read: labReady ? `${labReady} ready` : `${fmt(s.lab.intel)} intel`, hot: labReady > 0 },
+        lab: { read: labReady ? `${labReady} ready` : `${fmt(s.lab.intel)} intel`, short: labReady ? `${labReady} ready` : fmt(s.lab.intel), hot: labReady > 0 },
         full: { read: fs ? "on" : "off" },
-        stress: { read: chRun(s) ? testDef(chRun(s)!.id).name.toLowerCase() : `${ranksTotal(s)}/${RANKS_ALL} ranks`, hot: !!chRun(s), hide: !chOpen(s) },
+        stress: { read: chRun(s) ? testDef(chRun(s)!.id).name.toLowerCase() : `${ranksTotal(s)}/${RANKS_ALL} ranks`, short: chRun(s) ? undefined : `${ranksTotal(s)}/${RANKS_ALL}`, hot: !!chRun(s), hide: !chOpen(s) },
         handover: { read: hkeys > 0 ? `ready +${hkeys} keys` : s.hand.count ? `${s.hand.keys} keys` : "node zero", hot: hkeys > 0, hide: !handSeen(s) },
     };
 }
@@ -123,7 +124,7 @@ function Slot({ id, info, active, guide, onClick, compact = false }: { id: SwId;
             {!compact && (
                 <span className="nf-sw-t" aria-hidden="true">
                     <span className="nf-sw-l" ref={ref}>{def.label}</span>
-                    <span className="nf-sw-r">{it.read}</span>
+                    <span className="nf-sw-r">{it.short ?? it.read}</span>
                 </span>
             )}
             {def.key && <kbd className="nf-sw-k" aria-hidden="true">{def.key}</kbd>}

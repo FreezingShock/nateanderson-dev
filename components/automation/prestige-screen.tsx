@@ -205,7 +205,8 @@ export function PrestigeScreen({
                     <header className="pw-head">
                         <div className="pw-head-text">
                             <PanelTitle>Open a new workshop</PanelTitle>
-                            <p className="pw-sub">{prestige.requirement}</p>
+                            {/* Not ready: the footer already says what is missing, so the line is not said twice. */}
+                            {prestige.ready && <p className="pw-sub">{prestige.requirement}</p>}
                         </div>
                         <button
                             type="button"

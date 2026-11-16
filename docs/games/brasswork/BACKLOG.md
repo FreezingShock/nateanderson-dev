@@ -13,33 +13,17 @@ Ordered by value. Each is one PR.
 - Done when: a screenshot shows the column on a delivery at day and at night, it respects Low fx and reduce motion, and the frame time does not rise. **Needs screenshots.**
 - 2026-11-15 attempt (`scripts/automation/delivery-light.mjs`): in headless Chrome with software WebGL (about 5 frames a second) the column and glints were not visible at day or night, and Low fx correctly shows none. This does not prove the effect is missing; software rendering outruns the 1 s particle life. Needs a real GPU: Nate's P-05 playtest, or a thread with one. Frame time was not measurable for the same reason.
 
-**B-10 Phone sheets: groups and open/close animation**
-- Tap targets are done (every interactive element at 390 wide is 44 px or more, `scripts/automation/tap-targets.mjs`). What is left: the phone sheet groups and open and close animation (`phone-menu-art.css`, `automation-hud.tsx`) should match the desktop `MenuWindow` variants (iris, shutter, settle).
-- Done when: Machines, Milestones, Research and More sheets open and close with a drawn animation like the desktop windows, with 390 screenshots of the open and closing frames. **Needs screenshots.**
-
-**B-05 Full-run pacing bot**
-- Add `scripts/automation/pacing-bot.mjs`: a headless player on `DEFAULT_CATALOG` that places drills, kilns and windmills from `suggestSpot`/`autoRoute`, buys research, delivers milestones, and prestiges once. Print simulated time to each milestone, first Sky orrery light, and prestige.
-- Done when: it finishes without a soft-lock, prints the times, and a short test asserts every milestone is reachable. Write the times in `FEATURES.md`. This does not judge the pacing; Nate's playtest does (P-01).
-
-**B-06 Copy and paste of building areas**
-- Not built. Drag a rectangle with a modifier (suggest Ctrl/Cmd+C after a Shift-drag select), then a paste ghost that keeps rotation and belt links, placed with one click, one undo for the whole paste. Only machines and belts the player can afford and has unlocked are pasted, the rest are skipped and counted in the tool hint.
-- Code: `input/build.ts` (stroke and ghost), `input/keys.ts`, `input/pointer.ts`, `sim/grid.ts` (`gridView`).
-- Done when: unit tests in `tests/automation/input.test.mjs` cover copy, rotate-then-paste, blocked cells, unaffordable parts and undo; a screenshot shows the paste ghost. **Needs screenshots.**
-
-**B-07 Research menu pass**
-- Nate's brief: pop-up beside the clicked card, alternates mixed into the tree in different colours, art edge to edge with a panel colour per state (`research-screen.tsx`, `research-screen.css`). Today the pop-up and alternate colouring still need a clean pass, and the six Mastery cards need checking next to the core tree.
-- Done when: one section open at a time, every card has art and a name tooltip, keyboard focus works, no React warnings in the console, 1440 and 390 screenshots. **Needs screenshots.**
-
-**B-08 Expedition menu pass**
-- Same standard as B-07 for `expedition-window.tsx` and `prestige-screen.tsx`: art first, one line of text, ore dots with names in tooltips, hold to confirm. Wait for T-01 if Nate wants the big view instead.
-- Done when: all four sites render with their art, hold to confirm works with keyboard and touch, screenshots. **Needs screenshots.**
-
+**B-05 Full-run pacing bot (the placing half)**
+- Done: `scripts/automation/pacing-model.mjs` walks every request and milestone through the recipe tree (soft-lock check: machines open in time, research paid by earlier blueprints; idealised lower-bound times). It does not place anything, so it knows nothing about belts, power, the 18 by 12 plateau or build time. Guarded by `tests/automation/pacing-model.test.mjs`.
+- Left: a headless player that actually builds on `DEFAULT_CATALOG`: a drill per node, a producer per recipe on `suggestSpot`, `autoRoute` between producers and consumers and to the hub, windmills within range, buys research, prestiges once, and prints real simulated time to each milestone and the first Sky orrery light. Hard parts: several inputs into one machine without starving it, and fitting the orrery chain on the plateau.
+- Done when: it finishes without a soft-lock and prints the times next to the model's lower bounds, which go in `FEATURES.md`. It does not judge the pacing; Nate's playtest does (P-01). Size L.
 
 **Performance audit 2026-11-15** (report: `/mnt/project-files/portfolio/perf-audit-2026-11-15/brasswork.md`, bench: `scripts/automation/perf-sim.mjs`)
 - [ ] PERF-drawcalls | size L | A 141-building factory draws about 450 calls a frame (about 350 at the phone's quality level), 605 vertex arrays live. Merge each machine's static voxel parts into one mesh per model and instance repeats, or batch belts. Done when a dense factory is under 150 calls and the look is pixel-identical in the screenshot diff | `render/models.ts`, `render/index.ts`
 - [ ] PERF-catchup-cost | size M | The 8 h catch-up still costs about 3.4 s of CPU on a dense factory (about 24 s until playable on a 4x-throttled phone). It no longer freezes the page, but it delays play. Options: coarser steps after the first 5 min (`catchUp()` exists but uses the same 1 s step; a coarser step changes results, so ASK Nate), or run it in a Worker | `components/brasswork/brasswork-host.tsx`, `sim/world.ts`
 - [ ] PERF-gl-resources | size S | After 150 place and remove cycles the GL buffers rose by 16 and vertex arrays by 4. Check that `removeObject` disposes geometry; done when the counts return to baseline (harness: `play.cjs` in the audit folder) | `render/models.ts`
 - [ ] PERF-device | size S | ASK P-05: frame time on a real GPU and phone. Headless numbers only count calls and JS time, they cannot show fps
+- [x] TIP-shared | size M | One brass tooltip for every machine, belt, item, resource, research node, milestone, recipe and control; hover on desktop, tap on phone | `components/brasswork-ui/tip.tsx`, `lib/automation/tips.ts`
 
 ## 2. Needs Nate's taste call
 
@@ -73,3 +57,18 @@ Read these and say which to keep: higher logistics tiers cost only their extra i
 ## Parked
 
 Floors above ground level, photo mode, panel folding, a second island as a site. Nate said "later" or did not pick.
+
+## Rewards and first minutes (thread "Polish Brasswork rewards and first minutes", 2026-11-15)
+- [x] REWARD-moment | size M | Reward card for orders, milestones and commissions with crate icons, count-up, sound hook and tests | this PR
+- [x] FIRST-banner | size S | NEXT banner named no kiln recipe and no belts, so a newcomer reached "Deliver 10 ingots" with an idle kiln and nothing connected; it now says both first | this PR
+- [x] EMPTY-states | size S | Padlock slots for locked machines, crate scene on an untouched hub order, idle scene in the away report | this PR
+- [x] FIRST-kiln-recipe | size S | Nate chose auto-pick: a new kiln starts on Iron ingot (docs/rule-changes/2026-11-15-brasswork-kiln-default-recipe.md) | this PR
+- [ ] FIRST-pacing-note | size S | For B-05: in a real click-through the opening has four hand steps after the windmill (recipe, two belt runs, hub). Time the human steps, not only the sim, when the pacing bot lands
+- [ ] EMPTY-expedition-lock | size S | Expedition cards show a text "Locked" button; a padlock glyph and the missing milestone would match the new locked slots
+
+## Audit 2026-11-16 (pre-deploy walk of every menu at 1440 and 390)
+- [x] AUDIT-prestige-phone-scroll | size S | "Open a new workshop" on a phone scrolled its ore list and bonuses inside the window; now the header is one row with a square close, gauges and lists are sized, and the window fits 390 by 844 with no inner scroll | this PR
+- [x] AUDIT-research-phone-top | size S | On a phone the Research window covered the top bar and its title; it now starts under the bar | this PR
+- [x] AUDIT-next-marker-check | size S | `next-markers.mjs` expected the hub marker before the first delivery; the banner correctly shows belt and kiln first (since the first-banner change), so the check now marks one delivery first | this PR
+- [x] AUDIT-settings-desktop-scroll | size M | At 1440 by 900 the Workshop controls window scrolled inside. Coordinator decided: fit it. Desktop groups now sit in two columns, phones get a tab row | this PR
+- [ ] AUDIT-prestige-short-phone | size S | Below about 740 px tall (375 by 667) the Open a new workshop body still scrolls inside the window | `prestige-screen.css`

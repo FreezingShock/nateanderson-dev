@@ -6,10 +6,11 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { nfx } from "@/lib/nodefarm/sound";
 import { codeReveal } from "@/lib/nodefarm/cx";
-import { ENTRIES, ENTRY_BY, GROUPS, codexNew, codexSeen, markCodexSeen, unlocked, type Block, type CodexOpen } from "@/lib/nodefarm/content/codex";
+import { ENTRIES, ENTRY_BY, GROUPS, codexNew, codexSeen, isCodexNew, markCodexSeen, unlocked, type Block, type CodexOpen } from "@/lib/nodefarm/content/codex";
 import type { State } from "@/lib/nodefarm/engine";
 import { DataLines, Frame, WinBanner } from "./win-kit";
 import "@/app/camino/nodefarm/codex.css";
+import "@/app/camino/nodefarm/lazy/codex.css";
 
 const COLOR = "#ff6b57";
 
@@ -53,7 +54,7 @@ export function CodexPanel({ s, shown, onOpen }: { s: State; shown: boolean; onO
         codeReveal(reader.current, { bare: true, rows: ":scope > *", ms: 300, sound: false });
     }, [entry?.id]);
     const total = ENTRIES.length;
-    const fresh = list.filter((e) => !seen.has(e.id)).length;
+    const fresh = list.filter((e) => isCodexNew(e, seen)).length;
     const pick = (id: string) => { setSel(id); setView("entry"); nfx("nfPage"); };
 
     return (
@@ -79,9 +80,9 @@ export function CodexPanel({ s, shown, onOpen }: { s: State; shown: boolean; onO
                                 <ul>
                                     {es.map((e) => (
                                         <li key={e.id}>
-                                            <button type="button" aria-pressed={e.id === entry.id} data-new={seen.has(e.id) ? undefined : ""} onClick={() => pick(e.id)}>
+                                            <button type="button" aria-pressed={e.id === entry.id} data-new={isCodexNew(e, seen) ? "" : undefined} onClick={() => pick(e.id)}>
                                                 <span>{e.title}</span>
-                                                {!seen.has(e.id) && <i className="nf-cdx-dot" aria-label="new" />}
+                                                {isCodexNew(e, seen) && <i className="nf-cdx-dot" aria-label="new" />}
                                             </button>
                                         </li>
                                     ))}

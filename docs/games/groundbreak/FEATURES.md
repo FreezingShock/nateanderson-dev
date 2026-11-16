@@ -17,7 +17,7 @@ Idle construction-company game. Route `/creations/games/groundbreak`. Audited 20
 | Scene art and life | `components/groundbreak-art/` (`site-scene.tsx` backdrop and jobs, `site-life.tsx` crew, vehicles, machines, `icons.ts`, `ui-art.ts`, generated `scene-data.ts` and `life-data.ts`, `art.css`) |
 | Art generators | `scripts/groundbreak-art/` (`build-icons.py`, `build-scene.py`, `build-ui.py`, `build-life.py`; `gb_kit.py` is the dither canvas). Output in `public/groundbreak/{icons,jobs,backdrop,life,ui}` |
 | Route and dev preview | `app/creations/games/groundbreak/{page,layout}.tsx`, `app/dev/groundbreak-art/page.tsx` (needs `VOXEL_BENCH=1` in production) |
-| Fonts | `lib/groundbreak-fonts/` |
+| Fonts | `lib/groundbreak-fonts/` (Barlow Condensed 700 for display, IBM Plex Mono 400/500/600 for text; no 600 display face, every display style is 700) |
 | Console hook | `components/cm/console.tsx` imports `gbCommand` |
 
 
@@ -106,7 +106,7 @@ Thread names change each wave; the file split is what matters. Before editing a 
 | Fog bank over the bridge saddle (2696bbd9) | untested in the running game | `site-scene.tsx` | none |
 | Skyline window: finished buildings on a shoreline | working | `SkylineView`, `groundbreak.tsx` | none |
 | Windows: Jobs, Skyline, Firm (perks), Console, Menu; each opens with its own animation and banner art | partial: Jobs and Firm open over the site | `Window` in `groundbreak.tsx`, `ui-art.ts` | none |
-| 42 dither icons (64 px): materials, currencies, equipment, phases, perks | working | `components/groundbreak-art/icons.ts`, `build-icons.py` | none |
+| 42 dither icons (64 px): materials, currencies, equipment, phases, perks, drawn from the one shared sheet | working | `components/groundbreak-art/icons.ts` (`GB_ICONS`), `build-icons.py`, `Ico` in `groundbreak.tsx` | none |
 | Header: site board, location plate, stage and job progress; job card with phases and pay | working | `groundbreak.tsx` `gb-top`, `gb-job` | none |
 | Phone layout under 860 px; landscape phone under 500 px high | partial | `groundbreak.css` media rules | none |
 
@@ -119,5 +119,9 @@ First run to the bridge is about 3 hours (Nate's pick). The bot test "finishes t
 - Floating HUD stacks on the dock: `groundbreak.tsx` measures the dock and sets `--gb-dock-top`; the cue, view buttons, feed and card use it (`groundbreak.css`, last block). Phone landscape moves the cue to the top. No overlaps at 1440, 390, 360, 375x667, 844x390, 932x430 (headless Chrome only).
 - Windows (Jobs, Skyline, Firm, Console, Menu): desktop, a 320 to 520 px panel docked beside the rail that ends above the dock, cue and feed hidden while open; phone, a bottom sheet over the dock (up to 58% tall) with the top of the site showing, cue, view buttons and feed hidden. Blank click and Esc close. `groundbreak.css`, last block. Headless Chrome only.
 - Phone landscape (max-height 520): header 46 px, rail across the top (or down the side from 861 px), windows and material card sized by `--gb-dock-top`, cue top right and narrowed (no key hint), job card 200 px under 700 px wide. Checked 844x390, 932x430, 667x375 in headless Chrome only.
+- Phone portrait (max-width 860, height over 520): the dock shows groups up to the newest open one and hides the ones still locked beyond it (`data-far`), so the dock is 92 px at the start (was 183) and 182 px at 360x740 (was 274). Mid-game it is the same as before. Headless Chrome only.
+- Pixel snap: 350 ms after the zoom stops, the art scale snaps to a whole device-pixel step if that moves it by 25% or less, so each art pixel is one width and walking workers do not flicker; mid-zoom stays smooth (`site-scene.tsx`). Headless Chrome only, checked at 1440 (rest 3 to 4 after one wheel step) and 390 at 2x.
 - Corrupt or unreadable save: a copy is kept in `gb-save-v1-corrupt`, a fresh firm starts, and a sticky 20 s warning tells the player (the storage-blocked warning is sticky too). `groundbreak.tsx` `note(text, tone, sticky)`. Headless Chrome only.
+- Hint ring (amber frame on the next dock tile, tier, or cue): shares `::after` with the tooltip, so it must reset the tooltip's box, background and hover shift (`groundbreak.css`, block after `.gb-tier[data-hint]`). Headless Chrome only.
+- Console submit: the command runs in the submit handler, not inside the output's state updater (a `gb` command that changes the game would otherwise run during render). Headless Chrome dev build only.
 - Firm window foot: the Incorporate line and button are pinned at the bottom while the perks scroll (`.gb-win-foot`). Windows and the material card are near opaque. While the crew repeats a job the waiting cue also names what the next campaign job waits on (`guide.ts` `nextCue`). Headless Chrome only.

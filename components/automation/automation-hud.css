@@ -624,7 +624,7 @@
   padding: 16px;
   overflow-y: auto;
   overscroll-behavior: contain;
-  animation: ab-drawer-in 0.22s var(--ab-ease);
+  animation: ab-drawer-in var(--bwm-enter) var(--bwm-ease-out);
 }
 
 @keyframes ab-drawer-in {

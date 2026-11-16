@@ -53,7 +53,7 @@ const EventRow = memo(function EventRow({ event, status, open, onToggle }: Event
     const [detailsSeen, setDetailsSeen] = useState(open);
     if (open && !detailsSeen) setDetailsSeen(true);
 
-    const header = (
+    const headerOf = (glyph: boolean) => (
         <>
             <span style={{ display: "grid", gap: 8, minWidth: 0, flex: 1 }}>
                 <span style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 8 }}>
@@ -67,16 +67,19 @@ const EventRow = memo(function EventRow({ event, status, open, onToggle }: Event
                     {event.title}
                 </span>
             </span>
-            {hasDetails && (
+            {glyph && (
                 <span aria-hidden="true" className="cm-lbl" style={{ flexShrink: 0 }}>
                     {open ? "−" : "+"}
                 </span>
             )}
         </>
     );
+    // Phones show short cards (title and date) and open the description on tap, so every card is tappable there.
+    // A card with no details only gets that button on phones (.tl-hd-phone); desktop keeps its plain header.
+    const btnStyle = { width: "100%", alignItems: "flex-start", justifyContent: "space-between", gap: 12, textAlign: "left", background: "none", border: 0, color: "inherit", cursor: "pointer", font: "inherit" } as const;
 
     return (
-        <li id={event.id} className={`tl-ev ${state} tl-s-${status}`.trim()} style={{ scrollMarginTop: 120 }}>
+        <li id={event.id} className={`tl-ev ${state} tl-s-${status}`.trim()} data-open={open ? "" : undefined} style={{ scrollMarginTop: 120 }}>
             <div className="cm-panel" style={{ opacity: status === "upcoming" || status === "planned" ? 0.85 : 1 }}>
                 {hasDetails ? (
                     <button
@@ -84,18 +87,29 @@ const EventRow = memo(function EventRow({ event, status, open, onToggle }: Event
                         onClick={() => onToggle(event.id)}
                         aria-expanded={open}
                         aria-controls={detailsId}
-                        className="cm-body-pad"
-                        style={{ display: "flex", width: "100%", alignItems: "flex-start", justifyContent: "space-between", gap: 12, textAlign: "left", background: "none", border: 0, color: "inherit", cursor: "pointer", font: "inherit" }}
+                        className="cm-body-pad tl-hd-btn"
+                        style={btnStyle}
                     >
-                        {header}
+                        {headerOf(true)}
                     </button>
                 ) : (
-                    <div className="cm-body-pad" style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12 }}>
-                        {header}
-                    </div>
+                    <>
+                        <div className="cm-body-pad tl-hd-desk" style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12 }}>
+                            {headerOf(false)}
+                        </div>
+                        <button
+                            type="button"
+                            onClick={() => onToggle(event.id)}
+                            aria-expanded={open}
+                            className="cm-body-pad tl-hd-phone"
+                            style={btnStyle}
+                        >
+                            {headerOf(true)}
+                        </button>
+                    </>
                 )}
 
-                <div className="cm-body-pad" style={{ paddingTop: 0, display: "grid", gap: 10 }}>
+                <div className="cm-body-pad tl-ev-body" style={{ paddingTop: 0, display: "grid", gap: 10 }}>
                     <p className="cm-body" style={{ margin: 0 }}>{event.description}</p>
 
                     {event.tags && event.tags.length > 0 && (

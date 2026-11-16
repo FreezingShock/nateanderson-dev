@@ -82,8 +82,10 @@ html.gb-route .sf-foot { display: none !important; }
 /* current job */
 .gb-job { position: absolute; right: 12px; top: 56px; z-index: 10; width: 272px; background: var(--gb-panel); border: 1px solid var(--gb-line); }
 .gb-job-head { width: 100%; min-height: 44px; display: flex; align-items: center; gap: 8px; padding: 0 12px; text-align: left; font: 700 18px var(--gb-display); letter-spacing: .06em; text-transform: uppercase; }
-.gb-job-head span { flex: 1; }
-.gb-job-head em { font: 500 12px var(--gb-text); font-style: normal; color: var(--gb-hi); letter-spacing: 0; text-transform: none; }
+.gb-job-head span { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.gb-job-head em { flex: none; white-space: nowrap; font: 500 12px var(--gb-text); font-style: normal; color: var(--gb-hi); letter-spacing: 0; text-transform: none; }
+/* phones: the status (permit, inspection, %) drops under the name so a long job name keeps its width */
+@media (max-width: 860px) { .gb-root .gb-job-head { flex-wrap: wrap; row-gap: 2px; padding-bottom: 8px; } .gb-root .gb-job-head em { width: 100%; padding-left: 36px; } }
 .gb-job-body { padding: 4px 12px 12px; display: grid; gap: 8px; animation: gbIn .2s ease-out; }
 .gb-phases { display: grid; gap: 6px; }
 .gb-phases li { display: flex; align-items: center; gap: 8px; }
@@ -149,6 +151,7 @@ html.gb-route .sf-foot { display: none !important; }
 .gb-win-hint + .gb-x { margin-left: 0; }
 .gb-win-head h2 + .gb-x { margin-left: auto; }
 .gb-win-body { padding: 12px; overflow: auto; display: grid; gap: 10px; align-content: start; }
+
 .gb-win[data-v="iris"] { animation: gbIris .26s ease-out both; }
 .gb-win[data-v="shutter"] { animation: gbShutter .24s ease-out both; }
 .gb-win[data-v="settle"] { animation: gbSettle .22s ease-out both; }
@@ -208,7 +211,7 @@ html.gb-route .sf-foot { display: none !important; }
 .gb-feed { position: absolute; left: 80px; bottom: 100px; z-index: 9; display: grid; gap: 4px; pointer-events: none; max-width: min(360px, calc(100vw - 100px)); }
 .gb-feed li { padding: 6px 10px; background: var(--gb-panel); border: 1px solid var(--gb-line-2); font-size: 12px; animation: gbIn .2s ease-out; }
 .gb-feed li[data-tone="hot"] { border-color: var(--gb-amber); color: var(--gb-hi); }
-.gb-away { position: absolute; left: 50%; top: 56px; z-index: 11; transform: translateX(-50%); width: min(520px, calc(100vw - 24px)); padding: 10px 12px; background: var(--gb-panel); border: 1px solid var(--gb-amber); font-size: 13px; text-align: left; animation: gbIn .25s ease-out; }
+.gb-away { position: absolute; left: 50%; top: 56px; z-index: 15; transform: translateX(-50%); width: min(520px, calc(100vw - 24px)); padding: 10px 12px; background: var(--gb-panel); border: 1px solid var(--gb-amber); font-size: 13px; text-align: left; animation: gbIn .25s ease-out; }
 .gb-away span { color: var(--gb-dim); margin-left: 8px; }
 .gb-paused { position: absolute; left: 50%; top: 56px; z-index: 11; transform: translateX(-50%); padding: 6px 14px; background: var(--gb-panel); border: 1px solid var(--gb-line); font-size: 12px; letter-spacing: .1em; text-transform: uppercase; }
 
@@ -261,7 +264,8 @@ html.gb-route .sf-foot { display: none !important; }
 .gb-cue button { pointer-events: auto; display: inline-flex; align-items: center; gap: 10px; min-height: 40px; max-width: 100%; padding: 0 12px; background: var(--gb-panel); border: 1px solid var(--gb-amber); font: 600 15px var(--gb-text); }
 .gb-cue button:hover { background: #2e2012; border-color: var(--gb-hi); }
 .gb-cue[data-doable] button { position: relative; }
-.gb-cue[data-doable] button::after, .gb-tile[data-hint]::after, .gb-root .gb-tier[data-hint]::after { content: ""; position: absolute; inset: -5px; border: 4px solid rgba(240, 160, 48, .28); pointer-events: none; opacity: 0; animation: gbCue 1.8s ease-in-out infinite; }
+.gb-cue[data-doable] button::after, .gb-tile[data-hint]::after, .gb-root .gb-tier[data-hint]::after { content: ""; position: absolute; top: -5px; left: -5px; width: calc(100% + 10px); height: calc(100% + 10px); border: 4px solid rgba(240, 160, 48, .28); pointer-events: none; opacity: 0; animation: gbCue 1.8s ease-in-out infinite; }
+@media (hover: none) { .gb-cue kbd { display: none; } }
 .gb-cue strong { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .gb-cue-k { font: 700 11px var(--gb-text); letter-spacing: .12em; text-transform: uppercase; color: var(--gb-amber); }
 .gb-cue:not([data-doable]) button { border-color: var(--gb-line-2); }
@@ -270,6 +274,9 @@ html.gb-route .sf-foot { display: none !important; }
 /* the pulse animates opacity of a ring (compositor only); animating box-shadow repainted the button every frame */
 @keyframes gbCue { 50% { opacity: 1; } }
 .gb-tile[data-hint], .gb-root .gb-tier[data-hint] { outline: 2px solid var(--gb-hi); outline-offset: -2px; }
+/* The hint ring shares ::after with the tooltip (data-tip). Reset the tooltip's box, offset and hover shift so the ring stays an empty amber frame. */
+.gb-root [data-hint]::after, .gb-root .gb-cue[data-doable] button::after { background: none; padding: 0; max-width: none; z-index: auto; transform: none; transition: none; }
+.gb-root [data-hint]:hover::after, .gb-root [data-hint]:focus-visible::after { transform: none; transition-delay: 0s; }
 .gb-root[data-reduce="true"] .gb-cue button::after, .gb-root[data-reduce="true"] [data-hint]::after, .gb-root[data-simple="true"] .gb-cue button::after, .gb-root[data-simple="true"] [data-hint]::after { animation: none; }
 .gb-away { top: 50%; transform: translate(-50%, -50%); width: min(420px, calc(100vw - 24px)); display: grid; gap: 10px; padding: 14px; }
 .gb-away h2 { font: 700 22px var(--gb-display); letter-spacing: .06em; text-transform: uppercase; color: var(--gb-hi); }
@@ -615,3 +622,8 @@ html.gb-route .sf-foot { display: none !important; }
 /* ---- polish (2026-11-15): near opaque window panels; the Incorporate line and button stay pinned at the foot of the Firm window ---- */
 .gb-root .gb-win, .gb-root .gb-card { background: rgba(20, 14, 18, .985); }
 .gb-win-foot { position: sticky; bottom: -12px; display: grid; gap: 8px; margin: 0 -12px -12px; padding: 10px 12px 12px; background: rgba(20, 14, 18, .985); border-top: 1px solid var(--gb-line-2); }
+/* a fade just above the pinned Incorporate line, so a perk row cut at the scroll edge reads as "scroll for more" */
+.gb-win-foot::before { content: ""; position: absolute; left: 0; right: 0; top: -28px; height: 28px; background: linear-gradient(rgba(20, 14, 18, 0), rgba(20, 14, 18, .985)); pointer-events: none; }
+
+/* ---- phone portrait (2026-11-15): locked groups past the next one stay hidden until they are in reach ---- */
+@media (max-width: 860px) and (min-height: 521px) { .gb-root .gb-dgroup[data-far] { display: none; } }

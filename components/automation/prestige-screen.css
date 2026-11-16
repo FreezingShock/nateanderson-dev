@@ -2,7 +2,8 @@
 .pw-scrim {
   position: absolute; inset: 0; z-index: 30;
   display: flex; align-items: center; justify-content: center;
-  padding: 24px;
+  /* The window sits below the top bar, so the bar's buttons and boxes never show beside or above its frame. */
+  padding: calc(var(--ab-top-h, 0px) + 26px) 24px 24px;
   /* No dark scrim: the game stays visible and running behind. This layer only catches a click on blank space. */
   background: transparent;
 }
@@ -11,13 +12,15 @@
 
 .pw-wrap { width: min(1080px, calc(100% - 28px)); max-height: 100%; animation: pw-drop 0.22s cubic-bezier(0.2, 0.7, 0.2, 1) both; transform-origin: 50% 0; filter: drop-shadow(0 14px 30px rgba(0, 0, 0, 0.55)); }
 .pw-wrap[data-closing] { animation: pw-lift 0.17s cubic-bezier(0.5, 0, 0.8, 0.4) both; }
-.pw { width: 100%; max-height: 100%; }
+/* The frame art is a thin rail on the outer edge of a 32 px ring. The ring is filled with the panel colour, so the rail
+   sits on the panel and the game no longer shows through between them. */
+.pw { width: 100%; max-height: 100%; background: var(--bw-dither, none), linear-gradient(180deg, #3a2616, #24160c); background-clip: border-box; }
 /* Continues the Expedition shutter: the screen comes down from the top and goes back up. */
 @keyframes pw-drop { from { opacity: 0; transform: translateY(-28px) scaleY(0.9); } to { opacity: 1; transform: none; } }
 @keyframes pw-lift { from { opacity: 1; transform: none; } to { opacity: 0; transform: translateY(-28px) scaleY(0.9); } }
 .ab-root[data-reduce="true"] .pw-wrap, .ab-root[data-lowfx="true"] .pw-wrap { animation: none; }
 .pw-in {
-  min-width: 0; display: flex; flex-direction: column; gap: 4px; max-height: calc(100dvh - 140px);
+  min-width: 0; display: flex; flex-direction: column; gap: 4px; max-height: calc(100dvh - var(--ab-top-h, 0px) - 120px);
   padding: 8px 14px; background: var(--bw-dither, none), linear-gradient(180deg, #3a2616, #24160c); box-shadow: inset 0 0 0 1px rgba(210,154,60,0.25); font-family: var(--bw-font, "Courier New", monospace); color: var(--bw-cream, #f0dfb8);
 }
 
@@ -47,7 +50,7 @@
   border: 0; cursor: pointer; text-align: left; font: inherit; color: var(--bw-dim, #b09a6c);
   background: var(--bw-dither, none), linear-gradient(180deg, #2f2013, #1d130a);
   box-shadow: inset 0 0 0 1px rgba(210, 154, 60, 0.3), 0 3px 0 #0b0703;
-  transition: filter 0.12s, transform 0.08s;
+  transition: filter var(--bwm-hover) ease-out, transform var(--bwm-press) ease-out;
 }
 .pw-pick:hover { filter: brightness(1.2); }
 .pw-pick-img { display: block; aspect-ratio: 16 / 9; background-size: cover; background-position: center; image-rendering: pixelated; filter: saturate(0.75) brightness(0.8); }
@@ -123,15 +126,15 @@
   .pw-scrim { padding: 6px; }
   .pw-wrap { width: 100%; }
   .pw { width: 100%; margin: 0; border-width: 18px; border-image-width: 18px; }
-  .pw-head { flex-wrap: wrap; gap: 6px; }
+  .pw-head { flex-wrap: wrap; gap: 6px 8px; }
   .pw-head-text { display: contents; }
-  .pw-head .bwa-title { flex: 1 1 100%; white-space: nowrap; font-size: 11px; letter-spacing: 0.06em; }
-  .pw-head .bwa-title { font-size: 12px; min-height: 44px; padding: 0 36px; border-width: 0 40px; border-image-width: 0 40px; }
+  .pw-head .bwa-title { flex: 1 1 0; min-width: 0; white-space: nowrap; font-size: 11px; letter-spacing: 0.06em; }
+  .pw-head .bwa-title { font-size: 11px; min-height: 44px; padding: 0 24px; border-width: 0 28px; border-image-width: 0 28px; }
   .pw-sub { flex: 1; margin: 0; }
   .pw-close { min-height: 40px; padding: 0 12px; }
   .pw-picker { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); }
   .pw-plan { width: 84px; }
-  .pw-in { max-height: calc(100dvh - 76px); padding: 6px 8px; }
+  .pw-in { max-height: calc(100dvh - 24px); padding: 6px 8px; }
   .pw-ico { width: 24px; height: 24px; }
   .pw-body { grid-template-columns: 1fr; gap: 14px; }
   .pw-picker { flex-direction: row; gap: 6px; }
@@ -148,6 +151,67 @@
   .pw-reason { order: 2; text-align: center; font-size: 13px; }
   .pw-hold { width: 100%; }
   .pw-close { min-width: 44px; min-height: 44px; }
+  /* Close is a square × beside the title, so the header takes one row. */
+  .pw-close { font-size: 0; padding: 0; }
+  .pw-close::before { content: "\00d7"; font-size: 24px; line-height: 1; }
+  /* No list scrolls inside the window on a phone: the picture, ore list, bonuses and keep/leave lists are sized so the
+     whole window fits the screen. Short phones (under about 740 px tall) still scroll the body as a last resort. */
+  .pw-body { gap: 8px; }
+  .pw-main { gap: 10px; }
+  .pw-view-img { aspect-ratio: 16 / 5.2; }
+  .pw-info { gap: 8px; }
+  .pw-block { gap: 6px; }
+  .pw-block:has(> .pw-gauge) { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 12px; }
+  .pw-block:has(> .pw-gauge) > .pw-h,
+  .pw-block:has(> .pw-gauge) > .pw-size { grid-column: 1 / -1; }
+  .pw-gauge { grid-template-columns: 36px minmax(0, 1fr) auto; gap: 2px 6px; }
+  .pw-gauge .bwa-gauge { width: 36px !important; height: 36px !important; }
+  .pw-gauge-label { font-size: 12px; min-width: 0; white-space: nowrap; }
+  .pw-gauge-val { font-size: 12px; white-space: nowrap; }
+  .pw-ores-row { gap: 10px; align-items: center; }
+  .pw-ores-row .pw-ores { min-width: 0; }
+  .pw-ore { padding: 0; gap: 6px; grid-template-columns: 32px minmax(0, 1fr) auto; }
+  .pw-ore-ico { margin: -4px 0; }
+  .pw-ore-name { font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .pw-ore-q { font-size: 10px; letter-spacing: 0.06em; }
+  .pw-plan { width: 72px; }
+  .pw-list { font-size: 12px; gap: 1px; }
+  .pw-carry { gap: 8px 12px; }
+  .pw-foot { gap: 6px; }
+  .pw-hold { min-height: 50px; }
 }
 @media (prefers-reduced-motion: reduce) { .pw-wrap, .pw-view-img { animation: none; } }
 .pw-ico { display: inline-block; flex: none; image-rendering: pixelated; }
+
+/* Short windows (a laptop screen, or a browser with toolbars): the picture, picker tiles and gauges shrink so the lists
+   fit without a cut-off row. Phones scroll inside the window instead. */
+@media (min-width: 900px) and (max-height: 899px) {
+  .pw-in { gap: 2px; padding: 6px 14px; }
+  .pw-in .bwa-divider { margin: 0; }
+  .pw-sub { margin: 0; }
+  .pw-body { gap: 10px 18px; }
+  .pw-picker { gap: 6px; }
+  .pw-pick { gap: 4px; padding: 4px 4px 6px; }
+  .pw-pick-img { aspect-ratio: 16 / 6; }
+  .pw-pick-name { font-size: 12px; }
+  .pw-view-img { aspect-ratio: 16 / 7; }
+  .pw-main { gap: 14px; }
+  .pw-left { gap: 10px; }
+  .pw-info { gap: 8px; }
+  .pw-block { gap: 4px; }
+  .pw-ore { padding: 0; gap: 8px; }
+  .pw-ore-ico { width: 28px; height: 28px; }
+  .pw-gauge { grid-template-columns: 44px 1fr auto; }
+  .pw-gauge .bwa-gauge { width: 44px !important; height: 44px !important; }
+  .pw-hold { min-height: 48px; }
+  .pw-list { margin-top: 4px; }
+}
+@media (min-width: 900px) and (max-height: 760px) {
+  .pw-view-img { aspect-ratio: 16 / 5.4; }
+  .pw-pick-img { aspect-ratio: 16 / 4; }
+  .pw-scrim { padding-top: calc(var(--ab-top-h, 0px) + 12px); padding-bottom: 12px; }
+  .pw-in { max-height: calc(100dvh - var(--ab-top-h, 0px) - 84px); }
+  .pw-pick-name { font-size: 12px; }
+  .pw-plan { width: 80px; }
+  .pw-size { margin: 0; }
+}

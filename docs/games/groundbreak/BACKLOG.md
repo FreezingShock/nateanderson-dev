@@ -4,7 +4,7 @@ Ordered. A fresh thread can take the top item under "A thread can do these" and 
 
 How to verify any UI item: production build, 1440 and 390 wide, PNGs saved to `/mnt/project-files/portfolio/groundbreak/<topic>/`, no console warnings. Engine items: add a test in `tests/groundbreak/` and run `npm run test:nodefarm`.
 
-Last audited 2026-11-15, `integration` at 5138bb6f.
+Last audited 2026-11-16 (pre-deploy audit, see "2026-11-16 audit" below). Earlier pass: 2026-11-15, `integration` at 5138bb6f.
 
 ## A thread can do these
 
@@ -55,8 +55,8 @@ Last audited 2026-11-15, `integration` at 5138bb6f.
 - Corrupt save: when `parse` returns null for a present but broken save, the page keeps a copy under a backup key and tells the player, instead of silently starting fresh. Test it.
 - Split into three PRs if one grows.
 
-### PERF-gb-icons-sheet | size S
-- First paint requests about 30 single-icon PNGs (1 to 2 KB each, `components/groundbreak/icons.ts`) although `public/groundbreak/icons/icons.webp` holds them as a sheet. Done when: first paint needs one icon request, 1440 and 390 PNGs match before and after, and the transfer count drops by about 30.
+### PERF-gb-icons-sheet | size S (DONE 2026-11-16)
+- First paint requested about 35 single-icon PNGs. `Ico` now draws every icon from `icons.webp` (one request), with no pop-in after mount. Checked: the game page makes one icon request (was 35+), and the 1440 and 390 PNGs match the before set in `/mnt/project-files/portfolio/groundbreak/audit-2026-11-16/`.
 
 ### PERF-gb-font-preloads | size S
 - The site root preloads Plex Mono 400 and Arimo, and Groundbreak preloads Barlow 600, none used on first paint (about 56 KB, roughly 0.3 s on a throttled phone). Root fonts are outside this area; check `docs/OWNERS.md`. Done when: unused preloads are gone and no text changes face.
@@ -64,9 +64,29 @@ Last audited 2026-11-15, `integration` at 5138bb6f.
 ### PERF-gb-real-device | size S
 - All numbers in `/mnt/project-files/portfolio/perf-audit-2026-11-15/groundbreak.md` are headless Chromium. Needs Nate or a real phone: playable time, frame feel with the tower at 40 storeys, and a multi-hour soak. Preloading the scene art was tried and gave no gain in time to playable (bandwidth bound), so do not redo it without new evidence.
 
+## 2026-11-16 audit (pre-deploy pass, headless Chromium on production and dev builds)
+
+Done in this pass (PR from `claude/project-thread-ch5ivg`):
+- Console: a `gb` command ran inside a state updater, so React reported "Cannot update a component while rendering" and the command could run twice. The command now runs once, in the submit handler.
+- Hint ring: the amber "next" ring on dock tiles, tiers and the cue shared `::after` with the tooltip, so it drew a dark box over icons and text (a 26 px dark bar on the material card, a block over "charter" in the cue). The ring now resets the tooltip box and hover shift.
+- Touch: the cue's "Space" hint is hidden on touch screens.
+- Welcome-back card: it now sits above the windows until dismissed, so a window cannot cover it.
+- PERF-gb-icons-sheet (above).
+
+Checked and fine: 60 fps idle and while zooming at 1440 and 390 (headless, no GPU); no overlap of cue, zoom, dock, feed, job card and rail at 1440, 1366, 1280, 1024, 1920, 860, 390, 360, 375, 844, 932 and 667 wide; no React warnings in the dev build across buy, cue, warp, firm, incorporate and console; incorporate confirm moves the firm on.
+
+Fixed in the same pass (the three open items it left):
+- Phone 390 wide: the job card status (permit, inspection, %) now drops under the name, so "SIDEWALK RUN" stays on one line.
+- Firm window: a fade sits above the pinned Incorporate line, so the perk row cut at the scroll edge reads as "scroll for more".
+- Font preload: measured with `document.fonts` on the first paint. Barlow 600 was preloaded but no display style uses weight 600 (all are 700), so it is removed from the Groundbreak font list and its file deleted. Barlow 700 and Plex 400, 500 and 600 draw on first paint and stay preloaded, so no face changed.
+
+Still open:
+- Change order: not reached in the headless walk (it needs the structure phase of a live job). Needs a longer warp run to see the card and both buttons at 390.
+- Real phone, Safari and a live playthrough remain Nate's.
+
 ## Needs Nate
 
-- [ ] ASK GB-pixel-snap | size M | Fractional-pixel shimmer: camera offsets and sprite positions are already whole pixels, but the art scale (fit x zoom) is fractional, so each art pixel is 2 or 3 screen pixels wide and a walking worker's shape can flicker. Fix is to snap the scale to whole device-pixel steps once the camera settles (a small pop of up to about 20% at rest) or leave it. Recommend: snap at rest, never mid-zoom. | `site-scene.tsx` `s`, `layer()`
+- [x] DONE 2026-11-15 (Nate chose snap at rest) GB-pixel-snap | size M | Fractional-pixel shimmer: camera offsets and sprite positions are already whole pixels, but the art scale (fit x zoom) is fractional, so each art pixel is 2 or 3 screen pixels wide and a walking worker's shape can flicker. Fix is to snap the scale to whole device-pixel steps once the camera settles (a small pop of up to about 20% at rest) or leave it. Recommend: snap at rest, never mid-zoom. | `site-scene.tsx` `s`, `layer()`
 
 | Item | What is needed |
 |---|---|
@@ -94,7 +114,7 @@ Corrupt save (item 11c): the game already kept a copy under `gb-save-v1-corrupt`
 
 ## Found during the 2026-11-15 pass (do these next, top first; polish pass recommended to Nate)
 
-### 12. Phone portrait: the dock takes about 40% of the screen
+### 12. Phone portrait: the dock takes about 40% of the screen (DONE 2026-11-15: later groups hide until reached)
 - At 390 and 360 wide the dock wraps to 3 rows (about 330 px) and the site gets the top half. Done when: groups collapse to one open row (the group of the selected or newest material) with the others one tap away, and the dig is at least 55% of the screen; number keys and the NEXT cue still work.
 
 ### 13. Window panels look see-through (DONE 2026-11-15: panels .985 opaque)
@@ -103,7 +123,7 @@ Corrupt save (item 11c): the game already kept a copy under `gb-save-v1-corrupt`
 ### 14. Firm window needs scrolling to reach everything on small heights (DONE 2026-11-15: `.gb-win-foot` pinned)
 - At 900 tall the perk grid plus the Incorporate line fills the window; on shorter screens the button scrolls out of sight. Done when: the Incorporate button and its line stay pinned at the bottom of the Firm window while the perks scroll.
 
-### 15. Tests for the pure part of the HUD
+### 15. Tests for the pure part of the HUD (DONE 2026-11-15: `scripts/ci/gb-hud.mjs`, documented in docs/ci.md)
 - `--gb-dock-top` and the window sizes have only a headless script (`hud-overlap/check.mjs`). Done when: the script runs in `scripts/ci` against the built site as an advisory check, or its sizes are listed in `docs/ci.md` for threads to run before merging HUD changes.
 
 ### 16. Repeat order payout and the cue (DONE 2026-11-15: the waiting cue names the next job's wait and the repeat)
