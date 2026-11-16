@@ -94,6 +94,9 @@ const CALM_KEY = "nf-calm-v1"; // "1" when motion is forced calm, on top of the 
 const FMT_KEY = "nf-numfmt-v1"; // number format: short | sci | eng (per device)
 type Tab = "core" | "stats" | "map" | "goals" | "records" | "ascend" | "handover" | "stress" | "codex" | "menu";
 const SIDE: Tab[] = ["map", "goals", "records", "ascend", "handover", "stress", "codex", "menu"];
+// Keys that would scroll the page. On the Node Farm page they belong to the game, so the page never moves under them.
+const SCROLL_KEYS = new Set([" ", "ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", "PageUp", "PageDown", "Home", "End"]);
+
 type Win = "map" | "goals" | "records" | "ascend" | "handover" | "stress" | "codex" | "menu";
 
 function load(): { s: State | null; unreadable: boolean; raw: string } {
@@ -976,6 +979,30 @@ export function NodeFarm() {
         return () => window.removeEventListener("keydown", onKey);
     }, [ready]);
 
+    // Page: the board takes focus as soon as it is ready, so the game keys work without a click. Game keys never scroll the page,
+    // and a window pane keeps its own scrolling. nf:win opens a window from the page's side panel.
+    useEffect(() => {
+        if (!ready) return;
+        root.current?.focus({ preventScroll: true });
+        const onScrollKey = (e: KeyboardEvent) => {
+            if (e.defaultPrevented || keyIsTyping(e) || !SCROLL_KEYS.has(e.key)) return;
+            const t = e.target as HTMLElement | null;
+            if (t && t !== document.body && t !== document.documentElement && !t.closest(".nf")) return;
+            if (t?.closest(".nf-sidepane")) return;
+            e.preventDefault();
+        };
+        const onWin = (e: Event) => {
+            const w = (e as CustomEvent<{ w?: string }>).detail?.w;
+            if (w && root.current?.getAttribute("data-win") !== w) keyApi.current.open(w as Win);
+        };
+        window.addEventListener("keydown", onScrollKey);
+        window.addEventListener("nf:win", onWin);
+        return () => {
+            window.removeEventListener("keydown", onScrollKey);
+            window.removeEventListener("nf:win", onWin);
+        };
+    }, [ready]);
+
     // codex: a feed line when a system you just reached gets its entry
     const codexAnn = useRef<Set<string> | null>(null);
     useEffect(() => {
@@ -1289,7 +1316,7 @@ export function NodeFarm() {
     const latch = (id: string) => { if (onPane(id)) opened.current.add(id); return opened.current.has(id); };
     return (
         <TipCtx.Provider value={tipApi}>
-        <div className="nf" ref={root} data-tab={tab} data-side={sideShown} data-win={win || undefined} data-fs={fs ? "" : undefined} data-oc={s.overclock > 0 ? "" : undefined}>
+        <div className="nf" ref={root} tabIndex={-1} data-tab={tab} data-side={sideShown} data-win={win || undefined} data-fs={fs ? "" : undefined} data-oc={s.overclock > 0 ? "" : undefined}>
             {fs && (
                 <div className="nf-fsbar">
                     <span>NODE.FARM // FULL SCREEN</span>
