@@ -13,7 +13,7 @@ Format: `- area | paths | owner (thread title or "free") | since YYYY-MM-DD | do
 - Gate, SEO, CI, deploy | proxy.ts, lib/gate, lib/seo.ts, .github, scripts/ci, vercel.json | free | | docs/deploys.md, docs/ci.md
 
 ## Games
-- Brasswork | components/{brasswork,brasswork-ui,brasswork-art,automation}, lib/{brasswork,automation}, tests/automation, scripts/{brasswork,automation} | Ship the Brasswork backlog | 2026-11-15 | docs/games/brasswork
+- Brasswork | components/{brasswork,brasswork-ui,brasswork-art,automation}, lib/{brasswork,automation}, tests/automation, scripts/{brasswork,automation} | Ship the Brasswork backlog; phone layout and camera pad | 2026-11-15 | docs/games/brasswork
 - Brasswork sound pass | lib/automation/audio, components/brasswork/audio-rows.tsx, scripts/automation/sound-check.mjs | Add sound to Brasswork | 2026-11-15 | docs/games/brasswork
 - Brasswork recipe picker | components/automation/inspector.{tsx,css}, lib/automation/sim/recipe-tag.ts, tests/automation/recipe-picker.test.mjs, scripts/automation/recipe-picker-shots.mjs | Rework Brasswork recipe selection | 2026-11-15 | docs/games/brasswork
 - Starwright | components/starwright, lib/starwright, app/camino/starwright*.css, tests/starwright, scripts/starwright | Ship the Starwright backlog (all Starwright files) | 2026-11-15 | docs/games/starwright

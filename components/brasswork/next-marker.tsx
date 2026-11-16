@@ -43,6 +43,16 @@ export function NextMarker({ input, target, canvas }: { input: InputController; 
                     el.style.width = el.style.height = `${size}px`;
                     // The `translate` property, not `transform`: the breathing `scale` would otherwise scale the position too and slide the marker off its cell.
                     el.style.translate = `${cx - origin.left - size / 2}px ${cy - origin.top - size / 2}px`;
+                    // The label is centred under the marker. Near a screen edge it slides back inside the stage, so it never clips.
+                    const label = el.querySelector<HTMLElement>("span");
+                    if (label) {
+                        const lw = label.offsetWidth;
+                        const left = cx - origin.left - lw / 2;
+                        let dx = 0;
+                        if (left < 8) dx = 8 - left;
+                        else if (left + lw > origin.width - 8) dx = origin.width - 8 - lw - left;
+                        label.style.transform = `translateX(calc(-50% + ${dx.toFixed(1)}px))`;
+                    }
                 }
             }
             raf = requestAnimationFrame(place);

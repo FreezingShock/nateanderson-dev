@@ -27,6 +27,7 @@ import "./brasswork-skin.css";
 import "./desktop-stage.css";
 import "./phone-menu-art.css";
 import "./top-bar.css";
+import "./phone-stage.css";
 import { canAfford } from "./format";
 import { uiIconStyle } from "@/lib/automation/icons/ui";
 import { QuestScroll, type QuestState } from "@/components/brasswork/first-run";
@@ -96,6 +97,12 @@ export function AutomationHud({
   onDockGroup?: (g: GroupId | null) => void;
 }) {
   const rootRef = useRef<HTMLDivElement>(null);
+  // The page marks this route (html.bw-route) so phone CSS can hide the site bar and dock behind the game (phone-stage.css).
+  useEffect(() => {
+    const root = document.documentElement;
+    root.classList.add("bw-route");
+    return () => root.classList.remove("bw-route");
+  }, []);
   const topRef = useRef<HTMLElement>(null);
   const nextRef = useRef<HTMLParagraphElement>(null);
   // The top bar wraps to two rows on a desktop-width window, so its height is measured. The rails, the Milestones
