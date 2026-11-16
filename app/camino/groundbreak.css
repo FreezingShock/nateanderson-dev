@@ -176,12 +176,6 @@ html.gb-route .sf-foot { display: none !important; }
 .gb-req { color: var(--gb-hi) !important; }
 .gb-none { font-size: 13px; color: var(--gb-dim); }
 
-/* skyline window */
-.gb-sky { display: flex; align-items: flex-end; gap: 8px; height: 196px; overflow-x: auto; padding-bottom: 4px; }
-.gb-sky li { position: relative; flex: none; width: 74px; height: var(--h); display: grid; align-content: end; justify-items: center; padding-bottom: 6px; text-align: center; }
-.gb-sky-b { position: absolute; inset: 0; background: repeating-linear-gradient(0deg, #3a2a48 0 6px, #2a1e36 6px 8px); border: 1px solid var(--gb-line-2); }
-.gb-sky b { position: relative; font: 700 16px var(--gb-text); color: var(--gb-hi); }
-.gb-sky em { position: relative; font-style: normal; font-size: 10px; color: var(--gb-ink); line-height: 1.2; }
 
 /* firm */
 .gb-stats { display: grid; grid-template-columns: auto 1fr; gap: 6px 16px; font-size: 13px; }
@@ -443,7 +437,7 @@ html.gb-route .sf-foot { display: none !important; }
 
 /* view controls: one bracketed panel */
 .gb-root .gb-zoom { gap: 0; bottom: 132px; padding: 4px; background: var(--gb-panel); border: 1px solid var(--gb-line); }
-.gb-root .gb-zoom button { width: 48px; height: 48px; background: none; border: 0; border-bottom: 1px solid var(--gb-line-2); }
+.gb-root .gb-zoom button { width: 40px; height: 40px; background: none; border: 0; border-bottom: 1px solid var(--gb-line-2); }
 .gb-root .gb-zoom button:last-child { border-bottom: 0; }
 .gb-root .gb-zoom button:hover { background: #2e2012; }
 .gb-zoom::before, .gb-zoom::after { content: ""; position: absolute; width: 10px; height: 10px; border: 0 solid var(--gb-amber); }
@@ -564,14 +558,36 @@ html.gb-route .sf-foot { display: none !important; }
 .gb-root .gb-change-act .gb-go { border-color: var(--gb-line); color: var(--gb-ink); }
 .gb-root .gb-change-act .gb-go:hover { border-color: var(--gb-hi); color: var(--gb-hi); }
 
-/* skyline window: the buildings you finished, standing on one shoreline */
-.gb-root .gb-sky { align-items: flex-end; gap: 4px; height: 220px; padding: 0 8px; background: linear-gradient(transparent 82%, #2a1d14 82%, #1a1310); border-bottom: 2px solid var(--gb-amber); }
-.gb-root .gb-sky li { width: auto; height: auto; display: grid; justify-items: center; align-content: end; padding: 0 0 6px; animation: gbRise .4s steps(6, end) both; animation-delay: calc(var(--i, 0) * 60ms + 120ms); }
+/* skyline window: every job in the game, named. Built ones stand in colour with a count; unbuilt ones are dark silhouettes, so the window fills and shows what is left. */
+.gb-root .gb-sky { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 8px; }
+.gb-root .gb-sky li { position: relative; display: grid; justify-items: center; align-content: end; gap: 4px; min-width: 0; padding: 8px 6px; text-align: center; background: linear-gradient(180deg, #2b1d30 0%, #1c1419 56%, #2b1c10 56%, #1a1210 100%); border: 1px solid var(--gb-line-2); animation: gbRise .4s steps(6, end) both; animation-delay: calc(var(--i, 0) * 60ms + 120ms); }
 .gb-sky .gb-thumb { grid-row: auto; transition: transform .18s steps(3, end); }
-.gb-sky li:hover .gb-thumb { transform: translateY(-4px); }
-.gb-root .gb-sky b { margin-top: 2px; padding: 1px 6px; background: #0b0806; border: 1px solid var(--gb-line); font: 700 12px var(--gb-text); color: var(--gb-hi); }
+.gb-sky li[data-built]:hover .gb-thumb { transform: translateY(-4px); }
+.gb-sky li:not([data-built]) .gb-thumb { filter: brightness(0) invert(.32); }
+.gb-root .gb-sky b { font: 700 12px/1.2 var(--gb-display); letter-spacing: .06em; text-transform: uppercase; color: var(--gb-hi); }
+.gb-root .gb-sky em { font: 600 11px/1.2 var(--gb-text); font-style: normal; color: var(--gb-ink); }
+.gb-root .gb-sky li:not([data-built]) b, .gb-root .gb-sky li:not([data-built]) em { color: var(--gb-dim); }
 @keyframes gbRise { from { opacity: 0; transform: translateY(24px); } }
-@media (max-width: 860px) { .gb-root .gb-sky { height: 180px; } .gb-sky .gb-thumb { max-width: 110px; } }
+@media (max-width: 860px) {
+    .gb-root .gb-sky { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+    .gb-root .gb-sky li { padding: 6px 4px; }
+    .gb-root .gb-sky .gb-thumb { zoom: .7; }
+    .gb-root .gb-sky b { font-size: 11px; }
+}
+
+/* firm on phones: perk rows come first, so they sit above the pinned Incorporate fade; the stats and copy follow in two short blocks */
+@media (max-width: 860px) {
+    .gb-root .gb-win.gb-lg .gb-banner { height: 44px; }
+    .gb-root .gb-win.gb-lg .gb-perks { order: -1; }
+    .gb-root .gb-win.gb-lg .gb-perks h3 { font-size: 12px; margin-bottom: 4px; }
+    .gb-root .gb-win.gb-lg .gb-perks h3 .gb-ico { width: 18px !important; height: 18px !important; }
+    .gb-root .gb-win.gb-lg .gb-perks ul { grid-template-columns: repeat(auto-fill, minmax(36px, 1fr)); gap: 4px; }
+    .gb-root .gb-win.gb-lg .gb-perk { min-height: 0; height: 50px; padding: 4px 1px 2px; }
+    .gb-root .gb-win.gb-lg .gb-perk .gb-ico { width: 32px !important; height: 32px !important; }
+    .gb-root .gb-win.gb-lg .gb-perk em { font-size: 10px; }
+    .gb-root .gb-win.gb-lg .gb-stats { gap: 4px 12px; font-size: 12px; }
+    .gb-root .gb-win.gb-lg .gb-firm-line { font-size: 12px; line-height: 1.35; }
+}
 
 /* ---- HUD stacking (2026-11-15): everything that floats above the dock sits on the dock's real height, which the page publishes as --gb-dock-top ---- */
 @media (min-height: 521px) {
@@ -587,7 +603,7 @@ html.gb-route .sf-foot { display: none !important; }
 }
 /* phone held sideways: the cue sits in the free top corner, clear of the rail and the job card */
 @media (max-height: 520px) and (min-width: 561px) and (max-width: 860px) {
-    .gb-root .gb-cue { top: 46px; right: 8px; left: auto; width: min(330px, calc(50vw - 128px)); }
+    .gb-root .gb-cue { top: 100px; right: 8px; left: auto; width: min(330px, calc(50vw - 128px)); }
 }
 @media (max-height: 520px) and (min-width: 861px) {
     .gb-root .gb-cue { top: 46px; left: 64px; right: auto; width: min(330px, calc(100vw - 300px)); }
@@ -600,7 +616,7 @@ html.gb-route .sf-foot { display: none !important; }
     .gb-root .gb-win.gb-lg { width: min(520px, calc(100vw - 100px)); }
 }
 @media (max-width: 860px) and (min-height: 521px) {
-    .gb-root .gb-win { top: auto; bottom: 0; left: 0; right: 0; max-height: min(58%, calc(100% - 220px)); border-bottom: 0; }
+    .gb-root .gb-win { top: auto; bottom: 0; left: 0; right: 0; max-height: min(50%, calc(100% - 220px)); border-bottom: 0; }
     .gb-root .gb-win[data-v] { transform-origin: 50% 100%; }
     .gb-root[data-win] .gb-cue, .gb-root[data-win] .gb-zoom, .gb-root[data-win] .gb-feed, .gb-root[data-win] .gb-card { display: none; }
 }
@@ -627,3 +643,70 @@ html.gb-route .sf-foot { display: none !important; }
 
 /* ---- phone portrait (2026-11-15): locked groups past the next one stay hidden until they are in reach ---- */
 @media (max-width: 860px) and (min-height: 521px) { .gb-root .gb-dgroup[data-far] { display: none; } }
+
+/* ---- phone portrait (2026-11-16): the dig gets the screen. The page intro and section head step aside, the title bar is one
+   row, the save footer steps aside (Menu keeps Export and Import), and the header keeps the currency chips that fit. Groundbreak only. ---- */
+@media (max-width: 860px) and (min-height: 521px) {
+    .gs-shell[data-game="Groundbreak"] .cr-head,
+    .gs-shell[data-game="Groundbreak"] .cm-sec-rule,
+    .gs-shell[data-game="Groundbreak"] .cm-sec-head,
+    .gs-shell[data-game="Groundbreak"] .gs-win-foot { display: none; }
+    .gs-shell[data-game="Groundbreak"] .cm-section { padding-top: 6px; padding-bottom: 6px; }
+    .gs-shell[data-game="Groundbreak"] .gs-win-bar { flex-wrap: nowrap; min-height: 0; height: 40px; padding: 0 6px 0 10px; gap: 6px; }
+    .gs-shell[data-game="Groundbreak"] .gs-win-kick,
+    .gs-shell[data-game="Groundbreak"] .gs-state { display: none; }
+    .gs-shell[data-game="Groundbreak"] .gs-win-btn { min-height: 36px; padding: 0 8px; gap: 0; font-size: 0; }
+    .gs-shell[data-game="Groundbreak"] .gs-win-btn svg { width: 14px; height: 14px; }
+    .gs-shell[data-game="Groundbreak"] .gs-frame { height: calc(100dvh - 58px); }
+    .gb-root .gb-title { display: none; }
+    .gb-root .gb-top { height: 56px; padding-left: 6px; padding-right: 6px; gap: 6px; }
+    .gb-root .gb-back { min-width: 40px; height: 40px; min-height: 40px; padding: 0 8px; }
+    .gb-root .gb-res { gap: 6px; flex: none; }
+    .gb-root .gb-res li { min-height: 40px; padding: 0 8px 0 6px; gap: 5px; }
+    .gb-root .gb-res b { font-size: 15px; }
+}
+
+/* short landscape screens (932 x 430): the zoom row drops into the bottom corner beside the dock, so a tall job card above it is never covered */
+@media (max-height: 520px) and (min-width: 861px) {
+    .gb-root .gb-zoom { bottom: 8px; }
+}
+
+/* ---- phone portrait (2026-11-16): sheets. Jobs, Skyline, Firm, Console, Menu and the material card rise from the bottom and take at
+   most half the screen, so the dig stays above them. The welcome-back card is a compact strip under the header, not a modal. ---- */
+@keyframes gbSheet { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: none; } }
+@media (max-width: 860px) and (min-height: 521px) {
+    .gb-root .gb-card { left: 0; right: 0; bottom: 0; top: auto; width: auto; max-height: 50%; overflow: auto; transform: none; border-left: 0; border-right: 0; border-bottom: 0; animation: gbSheet .22s ease-out both; }
+    .gb-root .gb-card header h3 { font-size: 20px; }
+    .gb-root .gb-away { top: 108px; bottom: auto; left: 8px; right: 8px; transform: none; width: auto; max-height: 40%; overflow: auto; padding: 8px 10px; display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 4px 10px; font-size: 12px; }
+    .gb-root .gb-away h2 { font-size: 16px; }
+    .gb-root .gb-away p { display: none; }
+    .gb-root .gb-away dl { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 2px 12px; }
+    .gb-root .gb-away dl div { padding: 0; border: 0; gap: 6px; font-size: 12px; }
+    .gb-root .gb-away .gb-go { min-height: 36px; padding: 0 12px; }
+}
+
+/* ---- cue and toasts (2026-11-16): the cue's second line is a solid panel with brighter text, so it reads over the busy scene.
+   Toasts leave the bottom left and stack at the top right: on desktop left of the job card; on phone portrait one at a time under the job card. ---- */
+.gb-root .gb-cue p { background: #120e0b; border: 1px solid var(--gb-line-2); color: var(--gb-ink); font-size: 13px; padding: 4px 10px; }
+@media (min-width: 861px) and (min-height: 521px) {
+    .gb-root .gb-feed { top: 72px; right: 300px; left: auto; bottom: auto; width: min(300px, calc(100vw - 620px)); max-width: none; }
+}
+@media (max-width: 860px) and (min-height: 521px) {
+    .gb-root .gb-feed { top: 200px; right: 8px; left: auto; bottom: auto; width: min(230px, calc(100vw - 24px)); max-width: none; }
+    .gb-root .gb-feed li:nth-last-child(n+2) { display: none; }
+}
+.gb-root .gb-feed li { background: #161110; font-size: 12px; }
+
+/* ---- dock (2026-11-16): a locked tile names the material and shows what opening it costs, so a new player knows the next goal.
+   Multiplier tags (the crew count shown as x81) are bigger. ---- */
+.gb-root .gb-tile-name { position: relative; z-index: 1; max-width: 100%; padding: 0 3px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font: 700 10px/1.1 var(--gb-display); letter-spacing: .08em; text-transform: uppercase; color: var(--gb-dim); font-style: normal; }
+.gb-root .gb-tile[data-state="locked"] b { display: flex; align-items: center; gap: 3px; font: 600 11px var(--gb-text); color: var(--gb-dim); min-height: 14px; }
+.gb-root .gb-tile[data-state="locked"] b .gb-ico { width: 11px !important; height: 11px !important; }
+.gb-root .gb-tile .gb-tile-lock { top: 3px; right: 3px; bottom: auto; }
+.gb-root .gb-lv { min-width: 26px; height: 22px; padding: 0 5px; font: 700 14px/1 var(--gb-text); }
+.gb-root .gb-lv::before { opacity: .75; }
+@media (max-width: 860px) and (min-height: 521px) {
+    .gb-root .gb-tile-name { font-size: 9px; }
+    .gb-root .gb-tile[data-state="locked"] { height: 78px; }
+    .gb-root .gb-lv { min-width: 22px; height: 18px; font-size: 12px; }
+}

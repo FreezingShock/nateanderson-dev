@@ -484,6 +484,7 @@ export function hudData(world: World, cat: Catalog = DEFAULT_CATALOG, selectedId
         prestige: {
             ready: allDone,
             requirement: allDone ? "Ready: choose one of three sites" : "Finish every milestone delivery",
+            missing: cat.tree.milestones.filter((m) => !world.progress.milestonesDone.includes(m.id)).map((m) => m.name),
             gain: `Keeps ${cat.tree.prestige.keeps.join(", ")}. Resets ${cat.tree.prestige.resets.join(" and ")}.`,
             keeps: [...cat.tree.prestige.keeps],
             leaves: [...cat.tree.prestige.resets],

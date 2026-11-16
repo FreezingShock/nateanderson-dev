@@ -133,10 +133,11 @@ def precast(s):
 @icon
 def curtain(s):
     s.box(-15, 15, 0, 33, -2, 2, "steel", -0.08)
-    for i in range(2):
-        for j in range(3):
-            x0, y0 = -13.5 + i * 14, 1.5 + j * 10.5
-            s.box(x0, x0 + 13, y0, y0 + 9.5, 1.6, 2.4, "glass", 0.05 * ((i + j) % 2))
+    # 3 by 4 small panels with steel mullions between them, so it reads as a curtain wall and not as one glass pane
+    for i in range(3):
+        for j in range(4):
+            x0, y0 = -13.5 + i * 9.5, 1.5 + j * 7.8
+            s.box(x0, x0 + 8, y0, y0 + 6.3, 1.6, 2.4, "glass", 0.05 * ((i + j) % 2))
 
     def post(c, sc):
         a, b = sc.pt((-12, 31, 2.5)), sc.pt((10, 3, 2.5))

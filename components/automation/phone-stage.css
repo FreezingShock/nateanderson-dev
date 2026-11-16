@@ -107,7 +107,8 @@
   .ab-root.bw .ab-res-box .ab-glyph { margin: 2px; }
   .ab-root.bw .ab-res-box .ab-res-amt { font-size: 11px; min-width: 20px; padding: 1px 3px; }
 
-  /* Objective: one compact card under the stock row, read-only except its button. */
+  /* Objective: one compact card under the stock row, read-only except its button. The text sits in a column
+     with the button beside it, so the card is about two lines of text tall instead of a full row for each. */
   .ab-root.bw .ab-next {
     position: absolute;
     top: calc(var(--ab-top-h, 96px) + 6px);
@@ -118,19 +119,39 @@
     width: auto;
     max-width: none;
     margin: 0;
-    padding: 6px 10px;
+    padding: 6px 8px 6px 10px;
     z-index: 5;
     pointer-events: none;
     display: flex;
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
     align-items: center;
-    gap: 2px 8px;
+    gap: 10px;
     background: rgba(18, 13, 8, 0.9);
     border: 1px solid var(--ab-line-soft);
     font-size: 12px;
-    line-height: 1.35;
+    line-height: 1.3;
   }
-  .ab-root.bw .ab-next-text { flex: 1 1 100%; min-width: 0; }
+  .ab-root.bw .ab-next-body {
+    display: flex;
+    flex: 1 1 0;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+  }
+  .ab-root.bw .ab-next-label { font-size: 10px; line-height: 1.2; letter-spacing: 0.1em; }
+  .ab-root.bw .ab-next-title { font-size: 12px; line-height: 1.25; }
+  .ab-root.bw .ab-next-bar { width: 100%; height: 5px; }
+  .ab-root.bw .ab-next-text { min-width: 0; font-size: 12px; line-height: 1.3; }
+  .ab-root.bw .ab-next > .ab-text-btn {
+    flex: 0 0 auto;
+    grid-column: auto;
+    grid-row: auto;
+    min-height: 44px;
+    padding: 6px 10px;
+    font-size: 11px;
+    letter-spacing: 0.06em;
+    white-space: nowrap;
+  }
   .ab-root.bw .ab-next .ab-text-btn { pointer-events: auto; }
 
   /* Tool hint rides just under the objective card. */
@@ -189,10 +210,12 @@
   }
   .ab-root.bw .ab-more { bottom: calc(var(--ab-phone-below) + 6px); }
 
-  /* Camera controls and tool column: they float over the stage, away from the sheets. Hidden while a sheet is up. */
-  .ab-root.bw[data-sheet="pal"] .bw-pad,
-  .ab-root.bw[data-sheet="factory"] .bw-pad,
-  .ab-root.bw[data-inspect="on"] .bw-pad { display: none !important; }
+  /* Camera pad and tool column float over the stage, away from the sheets. Both step aside while a sheet or the More
+     menu is up, so a menu's rows never run under the touch column. */
+  .ab-root.bw[data-sheet="pal"] :is(.bw-pad, .bw-touch-bar),
+  .ab-root.bw[data-sheet="factory"] :is(.bw-pad, .bw-touch-bar),
+  .ab-root.bw[data-inspect="on"] :is(.bw-pad, .bw-touch-bar),
+  .ab-root.bw:has(.ab-more) :is(.bw-pad, .bw-touch-bar) { display: none !important; }
   .ab-root.bw .bw-touch-bar { bottom: var(--bw-pad-bottom); right: 8px; }
   .ab-root.bw .bw-pad { left: 8px; bottom: var(--bw-pad-bottom); }
 
