@@ -1,7 +1,7 @@
 /* Shared event card: the visitor choices (comet, flare, gas cloud, companion) and the Welcome back card. One framed panel with a header
    (animated art, title, line), then its own body. Both set data-kind so motion and sound can hook per card: [data-kind="visitor"],
    [data-kind="away"]; the countdown sets data-late under 20 s. Loaded after starwright.css so it wins ties. */
-.sw-ev { --ev: var(--sw-cy); display: grid; gap: 10px; padding: 12px 14px 14px; border: 8px solid transparent; border-image: url("/starwright/ui/frame-warm.png?v=8") 8 fill / 8px / 0 stretch; background-clip: padding-box; overflow: hidden; }
+.sw-ev { --ev: var(--sw-cy); display: grid; gap: 10px; padding: 12px 14px 14px; border: 8px solid transparent; border-image: url("/starwright/ui/frame-warm.webp?v=8") 8 fill / 8px / 0 stretch; background-clip: padding-box; overflow: hidden; }
 .sw-ev-head { display: grid; grid-template-columns: 64px minmax(0, 1fr) auto; align-items: center; gap: 12px; }
 .sw-ev[data-kind="away"] .sw-ev-head { grid-template-columns: 64px minmax(0, 1fr); }
 .sw-ev-head b { display: block; font: 600 13px var(--cm-mono, monospace); letter-spacing: .1em; text-transform: uppercase; color: var(--sw-cy); }
