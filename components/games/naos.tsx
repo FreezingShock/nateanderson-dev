@@ -3,6 +3,8 @@ import type { CSSProperties, ReactNode } from "react";
 import { Section } from "@/components/cm/ui";
 import { Scramble } from "@/components/cm/motion";
 import { GAME_STATUS, type Game, type GameMode } from "@/lib/creations-data";
+import { ResumeLine } from "@/components/game-launch/resume-line";
+import { routeSlugOf } from "@/lib/game-launch/launch";
 
 // naOS pieces for the games pages. Server-safe: the interactive game components stay client components and sit
 // inside these frames unchanged. Styling lives in app/camino/games.css under `.ctos`.
@@ -104,6 +106,7 @@ function GameCard({ game, index, section }: { game: Game; index: number; section
             </div>
             <b>{game.title}</b>
             <p>{game.blurb}</p>
+            {game.href && routeSlugOf(game.href) && <ResumeLine slug={routeSlugOf(game.href) as string} />}
             <ul className="g-tags-list">
                 {tags.map((t) => (
                     <li key={t} className="g-tagp">
