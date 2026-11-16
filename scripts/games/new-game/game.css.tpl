@@ -333,6 +333,26 @@
     font-variant-numeric: tabular-nums;
 }
 
+.__SLUG__-toasts {
+    display: grid;
+    gap: 6px;
+    width: min(100%, 360px);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.__SLUG__-toasts li {
+    padding: 8px 12px;
+    border: 1px solid var(--gs-line);
+    background: rgba(7, 9, 13, 0.9);
+    color: var(--gs-hi);
+    font-size: 13px;
+    text-align: center;
+    cursor: pointer;
+    animation: __SLUG__-in 0.25s ease-out both;
+}
+
 @keyframes __SLUG__-pop {
     from { transform: translate(-50%, 0); opacity: 1; }
     to { transform: translate(-50%, -48px); opacity: 0; }

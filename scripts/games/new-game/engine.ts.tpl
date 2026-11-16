@@ -1,9 +1,15 @@
-// __NAME__ engine: the rules as plain functions over a plain object. No DOM and no React, so the node tests run it
-// directly (npm run test:__SLUG__). The panel in components/__SLUG__ owns the clock and the storage.
+// __NAME__ engine: the rules as plain functions over a plain object. It runs on the shared game kit (lib/game-kit),
+// imported by relative path so the node tests load it (npm run test:__SLUG__). The panel in components/__SLUG__ owns
+// the clock, the storage and the markup.
 //
-// This is the incremental starter the template ships with: tap to gather __RESOURCE__, buy generators that gather on
-// their own, buy one-time upgrades that multiply everything, collect offline progress, and reset for prestige points.
-// The numbers are placeholders for the real design. Every balance change also gets a file in docs/rule-changes/.
+// This is the incremental starter the template ships with: tap to gather __RESOURCE__, generators that make the tier
+// below them (Plants make Rigs, Rigs make Runners, Runners make __RESOURCE__), upgrades that multiply everything,
+// offline progress, big numbers, and a prestige reset. The numbers are placeholders for the real design. Every
+// balance change also gets a file in docs/rule-changes/.
+
+import { costAt, prestigeGain, prestigeProgress, rates, resetKeeping, stepChain, upgradeMult, type Generator, type Upgrade } from "../game-kit/idle";
+import { catchUp, gapSeconds } from "../game-kit/time";
+import { numberFormatter } from "../game-kit/format";
 
 export const SAVE_KEY = "__SLUG__-save-v1";
 export const SAVE_VERSION = 1;
@@ -11,36 +17,28 @@ export const SAVE_VERSION = 1;
 export const TAP_GAIN = 1;
 /** Away time that counts. Anything longer earns nothing extra. */
 export const OFFLINE_CAP_SECONDS = 8 * 60 * 60;
+/** Most steps one catch-up may run. Keeps a long absence cheap on the page. */
+const MAX_STEPS = 120;
 
-export type Generator = {
-    name: string;
-    /** Price of the first copy. Each copy after costs `growth` times the one before. */
-    baseCost: number;
-    growth: number;
-    /** __RESOURCE__ per second from one copy, before multipliers. */
-    baseRate: number;
-};
+/** A shared-kit generator with a display name. Tier i makes tier i-1; tier 0 makes __RESOURCE__. */
+export type Gen = Generator & { name: string };
 
-export type Upgrade = {
-    name: string;
-    cost: number;
-    /** Multiplies all production, once. */
-    multiplier: number;
-};
+/** A shared-kit upgrade with a display name and a price. */
+export type Up = Upgrade & { name: string; cost: number };
 
-/** Generators in unlock order: each one is bought with __RESOURCE__ like everything else. */
-export const GENERATORS: readonly Generator[] = [
-    { name: "Runner", baseCost: 10, growth: 1.15, baseRate: 0.5 },
-    { name: "Rig", baseCost: 120, growth: 1.2, baseRate: 4 },
-    { name: "Plant", baseCost: 1500, growth: 1.25, baseRate: 30 },
+export const GENERATORS: readonly Gen[] = [
+    { id: "runner", name: "Runner", rate: 0.5, baseCost: 10, growth: 1.15 },
+    { id: "rig", name: "Rig", rate: 0.2, baseCost: 120, growth: 1.2 },
+    { id: "plant", name: "Plant", rate: 0.05, baseCost: 1500, growth: 1.25 },
 ];
 
-export const UPGRADES: readonly Upgrade[] = [
-    { name: "Better tools", cost: 60, multiplier: 2 },
-    { name: "Shift pattern", cost: 900, multiplier: 2 },
+/** One-time upgrades. Each one multiplies all production. */
+export const UPGRADES: readonly Up[] = [
+    { id: "tools", name: "Better tools", target: "all", mult: 2, cost: 60 },
+    { id: "shifts", name: "Shift pattern", target: "all", mult: 2, cost: 900 },
 ];
 
-/** A run earns prestige points for the square root of what it gathered, once it passes PRESTIGE_UNIT. */
+/** Lifetime __RESOURCE__ a run needs for its first prestige point. Points follow the square root of the run's total. */
 export const PRESTIGE_UNIT = 10_000;
 /** Each prestige point adds this much to all production, for good. */
 export const PRESTIGE_BONUS = 0.1;
@@ -52,10 +50,10 @@ export type State = {
     earned: number;
     /** Lifetime taps. */
     tapped: number;
-    /** Copies owned of each generator, same order as GENERATORS. */
+    /** Copies owned of each generator, same order as GENERATORS. Chains can make these fractional. */
     owned: number[];
-    /** Whether each upgrade is bought, same order as UPGRADES. */
-    bought: boolean[];
+    /** Ids of the upgrades bought. */
+    bought: string[];
     /** Prestige points, kept across resets. */
     points: number;
     /** Completed resets. */
@@ -64,40 +62,40 @@ export type State = {
     savedAt: number;
 };
 
+/** Whole-number display of a count: a chained tier can hold 3.7 of something, and the player sees 3. */
+export const whole = (n: number) => Math.floor(n + 1e-9);
+
+/** Short display form for amounts: 999, 1.23K, 15.0M and so on. */
+export const fmt = numberFormatter("suffix");
+
 export function fresh(now: number): State {
     return {
         amount: 0,
         earned: 0,
         tapped: 0,
         owned: GENERATORS.map(() => 0),
-        bought: UPGRADES.map(() => false),
+        bought: [],
         points: 0,
         runs: 0,
         savedAt: now,
     };
 }
 
+/** Price of the next copy of generator i. */
 export function generatorCost(s: State, i: number): number {
     const g = GENERATORS[i];
-    return Math.ceil(g.baseCost * g.growth ** s.owned[i]);
+    return costAt(g.baseCost, g.growth, whole(s.owned[i]));
 }
 
-/** All production multipliers together: prestige points, then every bought upgrade. */
-export function multiplier(s: State): number {
-    let m = 1 + PRESTIGE_BONUS * s.points;
-    UPGRADES.forEach((u, i) => {
-        if (s.bought[i]) m *= u.multiplier;
-    });
-    return m;
+/** Multiplier for every generator: prestige points, then each bought upgrade. */
+export function multipliers(s: State): number[] {
+    const m = (1 + PRESTIGE_BONUS * s.points) * upgradeMult(UPGRADES, s.bought, "all");
+    return GENERATORS.map(() => m);
 }
 
-/** Production per second across every generator. */
+/** __RESOURCE__ per second from the bottom tier, which is what the stage shows. */
 export function rate(s: State): number {
-    let base = 0;
-    GENERATORS.forEach((g, i) => {
-        base += s.owned[i] * g.baseRate;
-    });
-    return base * multiplier(s);
+    return rates(GENERATORS, s.owned, multipliers(s))[0];
 }
 
 export function tap(s: State): State {
@@ -114,35 +112,51 @@ export function buyGenerator(s: State, i: number): State {
 }
 
 export function canBuyUpgrade(s: State, j: number): boolean {
-    return j >= 0 && j < UPGRADES.length && !s.bought[j] && s.amount >= UPGRADES[j].cost;
+    return j >= 0 && j < UPGRADES.length && !s.bought.includes(UPGRADES[j].id) && s.amount >= UPGRADES[j].cost;
 }
 
 export function buyUpgrade(s: State, j: number): State {
     if (!canBuyUpgrade(s, j)) return s;
-    const bought = s.bought.slice();
-    bought[j] = true;
-    return { ...s, amount: s.amount - UPGRADES[j].cost, bought };
+    return { ...s, amount: s.amount - UPGRADES[j].cost, bought: [...s.bought, UPGRADES[j].id] };
 }
 
-/** Counts production from savedAt up to now. Time only moves forward, and a long gap stops at the offline cap. */
+/** One slice of production: the chain runs for `dt` seconds. */
+function step(s: State, dt: number): State {
+    const owned = s.owned.slice();
+    const gained = stepChain(GENERATORS, owned, multipliers(s), dt);
+    return { ...s, owned, amount: s.amount + gained, earned: s.earned + gained };
+}
+
+/**
+ * Counts production from savedAt up to now. A live tick plays a fraction of a second; time away is caught up in
+ * fixed steps and stops at the offline cap. Time only moves forward.
+ */
 export function advance(s: State, now: number): State {
-    if (now <= s.savedAt) return s;
-    const seconds = Math.min((now - s.savedAt) / 1000, OFFLINE_CAP_SECONDS);
-    const gained = rate(s) * seconds;
-    return { ...s, amount: s.amount + gained, earned: s.earned + gained, savedAt: now };
+    const gap = gapSeconds(s.savedAt, now);
+    if (gap <= 0) return s;
+    let next = s;
+    catchUp(gap, { capS: OFFLINE_CAP_SECONDS, stepCap: MAX_STEPS, minS: 0 }, (dt) => {
+        next = step(next, dt);
+    });
+    return { ...next, savedAt: now };
 }
 
 /** Points a reset would earn now. Zero until the run has gathered PRESTIGE_UNIT. */
-export function prestigeGain(s: State): number {
-    if (s.earned < PRESTIGE_UNIT) return 0;
-    return Math.floor(Math.sqrt(s.earned / PRESTIGE_UNIT));
+export function prestigeGainNow(s: State): number {
+    return prestigeGain(s.earned, PRESTIGE_UNIT);
 }
 
-/** Resets the run for points. Keeps points, runs and lifetime taps. Does nothing when there is no gain. */
+/** 0 to 1: how far the run is toward its next prestige point. */
+export function prestigeMeter(s: State): number {
+    return prestigeProgress(s.earned, PRESTIGE_UNIT);
+}
+
+/** Resets the run for points. Keeps points, resets and lifetime taps. Does nothing when there is no gain. */
 export function prestige(s: State, now: number): State {
-    const gain = prestigeGain(s);
+    const gain = prestigeGainNow(s);
     if (gain < 1) return s;
-    return { ...fresh(now), tapped: s.tapped, points: s.points + gain, runs: s.runs + 1 };
+    const next = resetKeeping(s, () => fresh(now), ["tapped", "points", "runs"]);
+    return { ...next, points: s.points + gain, runs: s.runs + 1 };
 }
 
 export function serialize(s: State): string {
@@ -167,31 +181,16 @@ export function parse(data: unknown): State | null {
     for (const v of o.owned) {
         const n = num(v);
         if (n === null) return null;
-        owned.push(Math.floor(n));
+        owned.push(n);
     }
 
-    if (!Array.isArray(o.bought) || o.bought.length !== UPGRADES.length) return null;
-    const bought: boolean[] = [];
+    if (!Array.isArray(o.bought)) return null;
+    const known = new Set(UPGRADES.map((u) => u.id));
+    const bought: string[] = [];
     for (const v of o.bought) {
-        if (typeof v !== "boolean") return null;
+        if (typeof v !== "string" || !known.has(v)) return null;
         bought.push(v);
     }
 
     return { amount, earned, tapped: Math.floor(tapped), owned, bought, points: Math.floor(points), runs: Math.floor(runs), savedAt };
-}
-
-const UNITS = ["", "K", "M", "B", "T", "Qa", "Qi", "Sx", "Sp", "Oc", "No", "Dc"];
-
-/** Short display form: 999 stays whole, then 1.50K, 42.0M and so on. Rounding never shows 1000 of a unit. */
-export function formatAmount(n: number): string {
-    if (!Number.isFinite(n) || n <= 0) return "0";
-    if (n < 1000) return String(Math.floor(n));
-    let v = n;
-    let u = 0;
-    while (v >= 999.5 && u < UNITS.length - 1) {
-        v /= 1000;
-        u += 1;
-    }
-    const text = v < 10 ? v.toFixed(2) : v < 100 ? v.toFixed(1) : v.toFixed(0);
-    return `${text}${UNITS[u]}`;
 }

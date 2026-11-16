@@ -53,6 +53,10 @@ Lines added to shared files. Each one ends with `gen:<slug>` (or `<!-- gen:<slug
 Nothing else in a shared file is touched. The generator refuses to run when a slug already exists, and it writes nothing
 until every anchor it needs is found.
 
+## Shared kit
+
+The starter runs on `lib/game-kit` (see docs/game-kit.md). The engine imports `idle`, `time` and `format` by relative path, and the panel uses `useGameClock`, `useAutosave` and `useToasts`. Build new mechanics on the kit's helpers (`stepChain`, `costAt`, `upgradeMult`, `prestigeGain`, `catchUp`) so every game prints and saves the same way.
+
 ## Save
 
 Key `<slug>-save-v1`, envelope app `<slug>`, version 1. The shell's Export and Import buttons work from the start,
@@ -97,7 +101,7 @@ Deletes the folders and every line tagged `gen:<slug>`, and drops the game from 
 
 ## What the template does not do yet
 
-- Shared kit: the panel uses today's shell and save helpers only. When `lib/game-kit` lands (see `docs/game-kit.md` once it merges), move the windows, toasts, counters and formatting onto it. That is on the generated game's BACKLOG.
+- Save system: the save slot still uses `lib/games/save.ts` and `save-slot.ts`. Move it to the unified save system when that merges.
+- Kit UI: the panel uses the kit hooks (clock, autosave, toasts) and its own markup. The kit's styled pieces (ToastStack, PressButton, Counter) are not used yet.
 - Homepage Play band: the homepage showcase is a fixed list in `components/home/games-showcase.tsx`, and it needs art. Add a game there only when it has real art.
-- Prestige hooks are a starter: one reset that asks twice and pays points by the square root of what the run gathered. Replace it with the game's own rule.
 - Art: the stage uses a plain square. Replace it with the game's own dithered art before a playtest.
