@@ -8,6 +8,7 @@ import { EmptyState } from "@/components/brasswork-art";
 import { Codex } from "./codex";
 import "./extras.css";
 import { tipAttr } from "@/components/brasswork-ui/tip";
+import { useCoarsePointer } from "@/components/automation/use-coarse-pointer";
 
 export const MOODS = ["Auto", "Day", "Dusk", "Night"] as const;
 export type Mood = (typeof MOODS)[number];
@@ -63,6 +64,8 @@ const fmtAway = (s: number) => {
 const fmtN = (n: number) => (n >= 10000 ? `${(n / 1000).toFixed(1)}k` : String(Math.round(n)));
 
 export function BrassworkExtras({ snapshot, away, mood, onMood }: { snapshot: () => string | null; away: AwayReport | null; mood: Mood; onMood: (m: Mood) => void }) {
+    // On touch the Tools tap opens its menu; a tap tag there would cover the first rows, so it is left off.
+    const coarse = useCoarsePointer();
     const [sheet, setSheet] = useState(false);
     const [codex, setCodex] = useState(false);
     const [toolsOpen, setToolsOpen] = useState(false);
@@ -122,7 +125,7 @@ export function BrassworkExtras({ snapshot, away, mood, onMood }: { snapshot: ()
                     type="button"
                     className="bw-btn bx-btn bx-tools-toggle"
                     aria-expanded={toolsOpen}
-                    {...tipAttr({ title: "Tools", tag: "Menu", text: "Take a photo, open the machine guide, or read the keyboard shortcuts." })}
+                    {...(coarse ? {} : tipAttr({ title: "Tools", tag: "Menu", text: "Take a photo, open the machine guide, or read the keyboard shortcuts." }))}
                     onClick={() => setToolsOpen((v) => !v)}
                 >
                     <span className="bx-lbl">Tools</span>

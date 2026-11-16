@@ -437,7 +437,7 @@ html.gb-route .sf-foot { display: none !important; }
 
 /* view controls: one bracketed panel */
 .gb-root .gb-zoom { gap: 0; bottom: 132px; padding: 4px; background: var(--gb-panel); border: 1px solid var(--gb-line); }
-.gb-root .gb-zoom button { width: 48px; height: 48px; background: none; border: 0; border-bottom: 1px solid var(--gb-line-2); }
+.gb-root .gb-zoom button { width: 40px; height: 40px; background: none; border: 0; border-bottom: 1px solid var(--gb-line-2); }
 .gb-root .gb-zoom button:last-child { border-bottom: 0; }
 .gb-root .gb-zoom button:hover { background: #2e2012; }
 .gb-zoom::before, .gb-zoom::after { content: ""; position: absolute; width: 10px; height: 10px; border: 0 solid var(--gb-amber); }
@@ -603,7 +603,7 @@ html.gb-route .sf-foot { display: none !important; }
 }
 /* phone held sideways: the cue sits in the free top corner, clear of the rail and the job card */
 @media (max-height: 520px) and (min-width: 561px) and (max-width: 860px) {
-    .gb-root .gb-cue { top: 46px; right: 8px; left: auto; width: min(330px, calc(50vw - 128px)); }
+    .gb-root .gb-cue { top: 100px; right: 8px; left: auto; width: min(330px, calc(50vw - 128px)); }
 }
 @media (max-height: 520px) and (min-width: 861px) {
     .gb-root .gb-cue { top: 46px; left: 64px; right: auto; width: min(330px, calc(100vw - 300px)); }
@@ -643,3 +643,30 @@ html.gb-route .sf-foot { display: none !important; }
 
 /* ---- phone portrait (2026-11-15): locked groups past the next one stay hidden until they are in reach ---- */
 @media (max-width: 860px) and (min-height: 521px) { .gb-root .gb-dgroup[data-far] { display: none; } }
+
+/* ---- phone portrait (2026-11-16): the dig gets the screen. The page intro and section head step aside, the title bar is one
+   row, the save footer steps aside (Menu keeps Export and Import), and the header keeps the currency chips that fit. Groundbreak only. ---- */
+@media (max-width: 860px) and (min-height: 521px) {
+    .gs-shell[data-game="Groundbreak"] .cr-head,
+    .gs-shell[data-game="Groundbreak"] .cm-sec-rule,
+    .gs-shell[data-game="Groundbreak"] .cm-sec-head,
+    .gs-shell[data-game="Groundbreak"] .gs-win-foot { display: none; }
+    .gs-shell[data-game="Groundbreak"] .cm-section { padding-top: 6px; padding-bottom: 6px; }
+    .gs-shell[data-game="Groundbreak"] .gs-win-bar { flex-wrap: nowrap; min-height: 0; height: 40px; padding: 0 6px 0 10px; gap: 6px; }
+    .gs-shell[data-game="Groundbreak"] .gs-win-kick,
+    .gs-shell[data-game="Groundbreak"] .gs-state { display: none; }
+    .gs-shell[data-game="Groundbreak"] .gs-win-btn { min-height: 36px; padding: 0 8px; gap: 0; font-size: 0; }
+    .gs-shell[data-game="Groundbreak"] .gs-win-btn svg { width: 14px; height: 14px; }
+    .gs-shell[data-game="Groundbreak"] .gs-frame { height: calc(100dvh - 58px); }
+    .gb-root .gb-title { display: none; }
+    .gb-root .gb-top { height: 56px; padding-left: 6px; padding-right: 6px; gap: 6px; }
+    .gb-root .gb-back { min-width: 40px; height: 40px; min-height: 40px; padding: 0 8px; }
+    .gb-root .gb-res { gap: 6px; flex: none; }
+    .gb-root .gb-res li { min-height: 40px; padding: 0 8px 0 6px; gap: 5px; }
+    .gb-root .gb-res b { font-size: 15px; }
+}
+
+/* short landscape screens (932 x 430): the zoom row drops into the bottom corner beside the dock, so a tall job card above it is never covered */
+@media (max-height: 520px) and (min-width: 861px) {
+    .gb-root .gb-zoom { bottom: 8px; }
+}

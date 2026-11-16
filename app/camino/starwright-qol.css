@@ -6,6 +6,12 @@
 .sw-tog:hover { border-color: var(--sw-cy); }
 .sw-setlock { font: 400 12px/1.35 var(--cm-mono, monospace); color: var(--sw-dim); text-align: right; }
 .sw-setrow[data-locked] .sw-setname { color: var(--sw-dim); }
+/* Desktop window: the game window is a transformed box that clips the screen, so a fixed overlay (the Menu, its Keys list) ran
+   past the window's bottom and its page measure used the whole screen. Overlays sit inside the window instead, and cards fit it. */
+@media (min-width: 901px) {
+    .gs-win .sw-root .sw-over { position: absolute; }
+    .gs-win .sw-root .sw-card { max-height: 100%; }
+}
 .sw-lock { position: absolute; z-index: 7; inset: auto 0 18px; margin: 0 auto; width: min(520px, calc(100% - 32px)); padding: 12px 14px; display: grid; gap: 8px; border-color: #ffb03a; font-size: 13px; }
 .sw-lock button { justify-self: start; min-height: 40px; padding: 0 14px; background: transparent; border: 1px solid #ffb03a; color: #ffb03a; font: 500 12px var(--cm-mono, monospace); letter-spacing: .06em; text-transform: uppercase; }
 .sw-lock button:hover { background: #ffb03a; color: #05040c; }

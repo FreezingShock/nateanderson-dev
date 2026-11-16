@@ -5,9 +5,9 @@
 //  - framed (default; Node Farm): the page is the game's own page. The shell marks the route and adds the hooks below,
 //    and draws nothing around the game. Use <GameRouteShell name="Node Farm">{children}</GameRouteShell>.
 //  - windowed (Brasswork, Starwright, Groundbreak): the page is a normal site page with an intro. The game runs in a large
-//    panel with a themed title bar on top. On load the page scrolls the panel into view, and the game takes focus. While
-//    the game has focus, game keys and the wheel stay with the game; the title bar and the space below the panel still
-//    scroll the page. The panel's own full screen button makes the game fill the screen.
+//    panel with a themed title bar on top. On load the page scrolls the Play section (its label, heading and panel) under
+//    the site bar, and the game takes focus. While the game has focus, game keys and the wheel stay with the game; the
+//    title bar and the space below the panel still scroll the page. The panel's own full screen button makes the game fill the screen.
 //
 // Both modes do the same things, and only these:
 //  - mark the page as a game route (html.gs-game-route) so overscroll and pull-to-refresh stay out of the game
@@ -182,33 +182,40 @@ export function GameRouteShell({ name, children, header, mode = "framed", game }
         };
     }, [windowed]);
 
-    // Windowed only. On load, bring the panel up under the site bar, then give the game focus without moving the page again.
+    // Windowed only. On load, bring the Play section up under the site bar, then give the game focus without moving the page again.
     // Waits past the launch cover's reveal (about 0.4 s after the route changes) so the scroll is not seen behind it.
     useEffect(() => {
         if (!windowed) return;
-        // The line the title bar should sit below: the site bar's real bottom (taller on phones) plus a small gap.
+        // The line the page should start below: the site bar's real bottom (taller on phones) plus a small gap.
         const clearance = () => {
             const bar = document.querySelector<HTMLElement>("header.nv-top");
             // Groundbreak hides the site bar on its route, so keep the old 72px line there.
             const bottom = bar ? bar.getBoundingClientRect().bottom : 0;
             return bottom > 0 ? bottom + 12 : 72;
         };
+        // On desktop the anchor is the Play section's top rule, not the panel. The section's label and heading sit above the
+        // panel, so anchoring on the panel left "Light your star." under the bar. Desktop fits the whole block below the bar.
+        // Phones keep the panel as the anchor: their panel is taller than the screen under the bar.
+        const anchor = () => {
+            const desktop = window.matchMedia("(min-width: 761px)").matches;
+            return (desktop && panelRef.current?.closest<HTMLElement>("section.cm-section")) || panelRef.current;
+        };
         let settle = 0;
         let moved = false;
         const stop = () => { moved = true; };
-        // For a few seconds (the game can take a while to boot) the page keeps the title bar under the site bar while the page above it settles (the game boots, the cover lifts).
+        // For a few seconds (the game can take a while to boot) the page keeps the Play section under the site bar while the page above it settles (the game boots, the cover lifts).
         // Any wheel, touch, press or key from the reader ends it.
         const hold = (until: number) => {
-            const p = panelRef.current;
+            const p = anchor();
             if (!p || moved || performance.now() > until) return;
             const off = p.getBoundingClientRect().top - clearance();
             if (off < -2) window.scrollBy({ top: off, behavior: "auto" });
             settle = window.setTimeout(() => hold(until), 120);
         };
         const id = window.setTimeout(() => {
-            const panel = panelRef.current;
-            if (panel) {
-                const target = Math.max(0, panel.getBoundingClientRect().top + window.scrollY - clearance());
+            const play = anchor();
+            if (play) {
+                const target = Math.max(0, play.getBoundingClientRect().top + window.scrollY - clearance());
                 if (Math.abs(window.scrollY - target) > 8) {
                     window.scrollTo({ top: target, behavior: reducedMotion() ? "auto" : "smooth" });
                 }

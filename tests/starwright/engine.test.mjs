@@ -265,7 +265,11 @@ test("planets grow through four stages with time in orbit and pay more for it", 
 test("the guide always says something useful and the collapse estimate follows the iron flow", () => {
     const s = E.fresh(0);
     let f = E.effects(s);
-    assert.match(E.guide(s, f), /^Next: burn hydrogen/);
+    assert.match(E.guide(s, f), /^Start here: buy a hydrogen burner \(key 1, 18\s+H\)/);
+    // once the first burner is bought the line moves on to helium, so a new player always has the next step
+    const first = E.fresh(0);
+    E.buy(first, 0, 0);
+    assert.match(E.guide(first, E.effects(first)), /^Next: burn helium into /);
     for (let i = 0; i < D.ROWS; i++) s.bought[i][0] = 1;
     s.amt = s.amt.map(() => 0);
     f = E.effects(s);

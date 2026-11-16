@@ -16,6 +16,8 @@ export interface PagedGroup {
     className?: string;
     /** `ul` when the units are `li`s. */
     tag?: "ul" | "div" | "dl";
+    /** Starts this group on a new page whenever the menu has to be split (the Menu's Keys list uses it). */
+    newPage?: boolean;
     /** One entry per row, tile or card. A unit is never split across pages. */
     units: ReactNode[];
 }
@@ -84,6 +86,7 @@ export function Paged({ groups, deps = "", label, overlay }: { groups: PagedGrou
             if (!sec || kids.length === 0) return;
             const y = (e: Element, edge: "top" | "bottom") => abs(e as HTMLElement) - base + (edge === "bottom" ? (e as HTMLElement).offsetHeight : 0);
             const headTop = y(sec, "top");
+            if (g.newPage && cur.length) flush();
             if (cur.length === 0) top = headTop;
             let from = 0;
             for (let k = 0; k < kids.length; k++) {
