@@ -724,3 +724,8 @@ html.gb-route .sf-foot { display: none !important; }
 .gb-ticks li[data-fresh] { animation: gbTickStamp var(--cm-d-reveal) steps(4, end) both; }
 @keyframes gbTickStamp { 0% { background: var(--gb-hi); box-shadow: 0 0 0 2px var(--gb-amber); } 100% { box-shadow: 0 0 0 0 transparent; } }
 @media (prefers-reduced-motion: reduce) { .gb-ticks li[data-fresh] { animation: none; } }
+/* A new stage (its pip stamps amber once) and a perk just bought (its tile flashes once). groundbreak.tsx: freshStage, freshPerk. */
+.gb-pips li[data-fresh] { animation: gbTickStamp var(--cm-d-reveal) steps(4, end) both; }
+.gb-perks li[data-fresh] .gb-perk { animation: gbPerkStamp var(--cm-d-reveal) steps(4, end) both; }
+@keyframes gbPerkStamp { 0% { box-shadow: 0 0 0 3px var(--gb-hi); transform: scale(1.1); } 100% { box-shadow: 0 0 0 0 transparent; transform: none; } }
+@media (prefers-reduced-motion: reduce) { .gb-pips li[data-fresh], .gb-perks li[data-fresh] .gb-perk { animation: none; } }

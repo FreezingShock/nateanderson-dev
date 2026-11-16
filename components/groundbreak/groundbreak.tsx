@@ -6,7 +6,8 @@ import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type PointerEvent as RPointerEvent, type ReactNode } from "react";
 import { useGameShell } from "@/components/games/shell/game-route-shell";
 import { createSaveTools, downloadText, readPickedFile, writeStored } from "@/lib/games/save";
-import { JOB_BY, JOBS, MATS, PERKS, TIER_LABELS, TUNE, UNLOCK_COST as UNLOCK, cityOf, N as NMAT } from "@/lib/groundbreak/data";
+import { JOB_BY, JOBS, MATS, PERKS, STAGES, TIER_LABELS, TUNE, UNLOCK_COST as UNLOCK, cityOf, N as NMAT } from "@/lib/groundbreak/data";
+import { Ticked } from "@/components/games/juice/ticked";
 import {
     SAVE_KEY, SAVE_VERSION, acceptChange, buy, jobMat, buyPerk, canBuy, canIncorporate, canUnlock, catchUp, charterGain, chain, declineChange, effects, fmt, fmtAge,
     fmtCash, fresh, incorporate, isSave, jobFloors, jobPhaseName, jobProgress, load, methodReady, overtime, overtimeCost, parse, payout, perkReady, phaseNeeds,
@@ -20,7 +21,6 @@ import { GB_BANNERS, type GbBannerId } from "@/components/groundbreak-art/ui-art
 import { GB_ICONS, GB_ICON_COLS, GB_ICON_ROWS, GB_ICON_SHEET, type GbIconId } from "@/components/groundbreak-art/icons";
 import { GbSiteScene as GroundbreakScene } from "@/components/groundbreak-art/site-scene";
 import { CAMERA_HOME, GROUND_Y, WORLD_H, WORLD_W, ZOOM_MAX, ZOOM_MIN, type Camera, type SceneJob } from "./scene-types";
-import { Ticked } from "@/components/games/juice/ticked";
 
 const tools = createSaveTools<State>({ app: "groundbreak", version: SAVE_VERSION, validate: isSave });
 type Tier = 0 | 1 | 2;
@@ -103,6 +103,10 @@ export function Groundbreak() {
     const pulseId = useRef(0);
     // the crew-tick of the job that was just handed over: it plays one stamp (`data-fresh`, see app/camino/groundbreak.css)
     const [freshTick, setFreshTick] = useState(-1);
+    // the stage that just opened (its pip stamps once), and the perk that was just bought (its tile stamps once)
+    const [freshStage, setFreshStage] = useState(-1);
+    const [freshPerk, setFreshPerk] = useState<string | null>(null);
+    const lastStage = useRef(-1);
     const [away, setAway] = useState<AwaySummary | null>(null);
     const [conflict, setConflict] = useState(false);
     const conflictRef = useRef(false);
@@ -312,6 +316,10 @@ export function Groundbreak() {
             }
             lastJob.current = jid;
             if (s.open > sn.open) { note(`${MATS[s.open - 1].name} is on site.`, "hot"); setPulse({ key: ++pulseId.current, mat: s.open - 1 }); }
+            // a new stage: the pip stamps and the feed names it (the first read only records the stage, it does not announce it)
+            const stNow = stageOf(s);
+            if (lastStage.current > 0 && stNow > lastStage.current) { note(`Stage ${stNow}: ${STAGES[stNow - 1]?.name ?? "new crew"} on the job.`, "hot"); setFreshStage(stNow); }
+            lastStage.current = stNow;
             if (s.change && !sn.change) note("Change order: the client wants more.", "hot");
             seen.current = { built: s.built, open: s.open, change: !!s.change, cashAll: s.cashAll };
         }, 100);
@@ -453,7 +461,7 @@ export function Groundbreak() {
                 <div className="gb-prog" aria-label={`Stage ${stage} of 5, job ${Math.min(JOBS.length, s.builtThisFirm + 1)} of ${JOBS.length}`}>
                     <div className="gb-prog-row" data-tip={`Stage ${stage} of 5`}>
                         <span>Stage</span>
-                        <ol className="gb-pips">{[1, 2, 3, 4, 5].map((n) => <li key={n} data-s={n < stage ? "done" : n === stage ? "now" : "wait"} />)}</ol>
+                        <ol className="gb-pips">{[1, 2, 3, 4, 5].map((n) => <li key={n} data-s={n < stage ? "done" : n === stage ? "now" : "wait"} data-fresh={n === freshStage ? "" : undefined} />)}</ol>
                         <b>{stage}<small>/5</small></b>
                     </div>
                     <div className="gb-prog-row" data-tip={`Job ${Math.min(JOBS.length, s.builtThisFirm + 1)} of ${JOBS.length}`}>
@@ -604,7 +612,7 @@ export function Groundbreak() {
                     <dt>Offline limit</dt><dd>{Math.round((TUNE.offlineH + f.offlineH))} hours</dd>
                 </dl>
                 <p className="gb-line gb-firm-line">{canIncorporate(s, f) ? `Incorporate: +${charterGain(s, f)} charter for perks that stay, a new firm in ${cityOf(s.firm + 1).name}. The skyline stays.` : `Opens at ${TUNE.charterMinRep} rep (you have ${fmt(s.repFirm)}). Pays about +${Math.max(1, Math.floor(Math.sqrt(TUNE.charterMinRep / TUNE.charterDiv) * f.charter))} charter for perks that stay, then a new firm in ${cityOf(s.firm + 1).name}. The skyline stays.`}</p>
-                <PerkGrid s={s} onBuy={(id) => act((x) => { if (buyPerk(x, id)) save(); })} onAuto={(n) => act((x) => { x.autoOff = x.autoOff.includes(n) ? x.autoOff.filter((v) => v !== n) : [...x.autoOff, n]; save(); })} />
+                <PerkGrid s={s} justBought={freshPerk} onBuy={(id) => act((x) => { if (buyPerk(x, id)) { save(); setFreshPerk(id); note(`${PERKS.find((p) => p.id === id)?.name ?? "Perk"} bought.`, "hot"); } })} onAuto={(n) => act((x) => { x.autoOff = x.autoOff.includes(n) ? x.autoOff.filter((v) => v !== n) : [...x.autoOff, n]; save(); })} />
 <div className="gb-win-foot">
                 <ConfirmGo label="Incorporate" sure="Cash, crews and materials reset. Charter and the skyline stay. Sure?" onGo={doIncorporate} disabled={!canIncorporate(s, f)} />
                 </div>
@@ -708,7 +716,7 @@ function MatCard({ s, i, onBuy, onUnlock, onClose, cue }: { s: State; i: number;
     );
 }
 
-function PerkGrid({ s, onBuy, onAuto }: { s: State; onBuy: (id: string) => void; onAuto: (n: number) => void }) {
+function PerkGrid({ s, justBought, onBuy, onAuto }: { s: State; justBought: string | null; onBuy: (id: string) => void; onAuto: (n: number) => void }) {
     const autoOf: Record<string, number> = { o2: 1, o4: 2, l9: 3 };
     const branches = [["ops", "Operations"], ["money", "Money"], ["logistics", "Logistics"]] as const;
     return (
@@ -720,7 +728,7 @@ function PerkGrid({ s, onBuy, onAuto }: { s: State; onBuy: (id: string) => void;
                         {PERKS.filter((p) => p.branch === b).map((p) => {
                             const own = s.perks.includes(p.id), ready = perkReady(s.perks, p);
                             return (
-                                <li key={p.id}>
+                                <li key={p.id} data-fresh={justBought === p.id ? "" : undefined}>
                                     <button type="button" className="gb-perk" disabled={own || !ready || s.charter < p.cost} data-own={own ? "" : undefined} data-lock={!ready && !own ? "" : undefined} aria-label={p.name} data-tip={`${p.name}: ${p.desc}${own ? " Owned." : !ready ? " Needs an earlier perk." : ""}`} onClick={() => onBuy(p.id)}>
                                         <Ico id={`perk_${p.id}`} size={48} /><em>{own ? "✓" : p.cost}</em>
                                     </button>
