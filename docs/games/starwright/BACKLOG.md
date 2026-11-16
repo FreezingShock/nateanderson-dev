@@ -50,3 +50,12 @@ Play is fine: 60 fps, no long frames at 4x CPU, 5.5 MB heap flat over 98 s, engi
 - [x] OVERFLOW-none | measured paging for Orbit, Almanac, Menu; phone star map per constellation
 - [ ] MOTION-visitor-cloud-away | open/close for visitor, birth cloud and welcome cards once the backlog thread's shared panel style lands
 - [ ] MOTION-real-device | judge the motion and sound on a real phone and with speakers
+
+## Pre-deploy audit 2026-11-16 (report: /mnt/project-files/portfolio/starwright/predeploy-2026-11-16/REPORT.md)
+- [x] AUDIT-almanac-phone-names | size S | Almanac element names overlapped their neighbours at 360 to 390 wide (the 9px names added under "Do now" item 12 collided with the symbol, so that item is superseded). Phones now show the symbol only, and the name opens in the tap sheet | `app/camino/starwright-ev.css`
+- [x] AUDIT-constellations-phone-header | size S | At 560 px and under the stardust counter ran under the close button. The bar now pads for the button | `app/camino/starwright.css`
+- [x] AUDIT-keys-columns | size S | Keys list in the Menu: each row sized its own key column, so descriptions did not line up. One grid now | `app/camino/starwright.css`
+- [ ] AUDIT-kiln-labels-phone | size S | At 390 the dim, locked Kiln and Loom labels sit under faint node labels and the "THE KILN" title, so the locked constellations read as a smear. Give the locked labels a dark backing or hide the title until the constellation has a lit star
+- [ ] AUDIT-protostar-label | size S | The "Protostar" stage label sits under a scene sparkle at 1440 and 390 at the top left. Move the label to a clear spot or put the sparkle layer below the stats
+- [ ] ASK AUDIT-detail-sheet-wrap | size S | The Almanac tap sheet breaks "Neon · weight 20" across lines at 390. Taste call on the sheet's header layout
+- [ ] AUDIT-real-phone-pass | size M | Not testable in the cloud: Safari, touch on a real phone, sound. Needs Nate's playthrough (see MOTION-real-device)

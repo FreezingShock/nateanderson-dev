@@ -29,7 +29,7 @@ Test commands: `npm run test:nodefarm` (a PR check; includes `tests/starwright/*
 | Planets (8) with four stages by time in orbit, +20% per stage; Survivors keeps age | working | `data.ts` `PLANETS`, `engine.ts` `planetStage`, `buyPlanet` | engine.test: planets |
 | Visitors (4) with two answers each; first at 40 s; never from time away | working | `data.ts` `EVENTS`, `engine.ts` `answer` | engine.test: visitors |
 | Birth clouds (6), three offered per new star after the first supernova | working | `data.ts` `CLOUDS`, `engine.ts` `chooseCloud` | engine.test: clouds |
-| Almanac: codex of elements and 21 milestones (+2% each) | working | `data.ts` `ACHIEVEMENTS`, `engine.ts` `checkAch` | engine.test: milestones, codex |
+| Almanac: codex of elements and 21 milestones (+2% each). Phones (520 px and under) show element symbols only; the name opens in the tap sheet | working | `data.ts` `ACHIEVEMENTS`, `engine.ts` `checkAch`, `starwright-ev.css` | engine.test: milestones, codex; 360/390 checked headless |
 
 ## Saves, time away, settings
 | Feature | State | Code | Test |
