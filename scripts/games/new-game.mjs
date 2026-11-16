@@ -29,6 +29,7 @@ const SECTIONS = {
 /** Shared files that get lines from the template. Each one has anchor lines (`gen-anchor: <name>`) placed by hand once. */
 const SHARED_FILES = [
     "lib/games/registry.ts",
+    "lib/saves/keys.ts",
     "lib/games/save-slot.ts",
     "lib/game-launch/launch.ts",
     "lib/creations-data.ts",
@@ -182,13 +183,9 @@ function createGame(slug, args) {
         `        backLabel: "Back to Games", ${tag}`,
         `    }, ${tag}`,
     ]);
-    edit("lib/games/save-slot.ts", "slots", [`    "${slug}": { key: "${slug}-save-v1", app: "${slug}", version: 1 }, ${tag}`]);
-    edit("lib/games/save-slot.ts", "checks", [
-        `        if (game === "${slug}") { ${tag}`,
-        `            const { parse } = await import("@/lib/${slug}/engine"); ${tag}`,
-        `            return parse(data) !== null; ${tag}`,
-        `        } ${tag}`,
-    ]);
+    edit("lib/saves/keys.ts", "slots", [`    "${slug}": { app: "${slug}", key: "${slug}-save-v1", version: 1 }, ${tag}`]);
+    edit("lib/games/save-slot.ts", "slots", [`    "${slug}": SLOTS["${slug}"], ${tag}`]);
+    edit("lib/games/save-slot.ts", "defs", [`    if (game === "${slug}") return (await import("@/lib/${slug}/engine")).SAVE_DEF as SaveDef<unknown>; ${tag}`]);
     edit("lib/game-launch/launch.ts", "saves", [
         `    "${slug}": { key: "${slug}-save-v1", kind: "save", read: (o) => ({ savedAt: num(o.savedAt) }) }, ${tag}`,
     ]);

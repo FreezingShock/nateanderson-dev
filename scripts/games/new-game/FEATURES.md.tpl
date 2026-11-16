@@ -15,8 +15,8 @@ What exists now. One line per feature. Update the line when the behaviour change
 ## Pause and saves
 - Pause: the shell's Pause stops play and the save clock, so paused time never pays out. Hidden tabs count as paused.
 - Clock and autosave: the kit's `useGameClock` and `useAutosave`, with a 3-second save interval, on tab hide, and on page leave.
-- Shell footer: Export save and Import save, checked by `checkSaveData` in `lib/games/save-slot.ts`.
-- Damaged saves are kept under a `:damaged` key instead of being overwritten.
+- Shell footer: Export save and Import save, run through `defFor` in `lib/games/save-slot.ts` (the engine's `SAVE_DEF`).
+- Saves go through `lib/saves/core` (`loadSave`, `writeSave`). A damaged save is kept under `-corrupt`, and never silently dropped. A toast tells the player when a save was lost.
 
 ## Not built yet
 - The real game. The starter loop above only proves the template. See BACKLOG.md.

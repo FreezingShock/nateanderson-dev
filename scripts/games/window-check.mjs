@@ -103,7 +103,11 @@ for (const g of GAMES) {
             check(lowest <= view.viewport.height, `${tag}: panel and footer fit the viewport (bottom ${Math.round(lowest)}px of ${view.viewport.height}px)`);
             if (dock && dock.height > 0) check(lowest <= dock.top, `${tag}: panel and footer sit above the site dock (bottom ${Math.round(lowest)}px, dock top ${Math.round(dock.top)}px)`);
         } else {
-            check(frame && frame.top >= 0 && frame.top < 180, `${tag}: panel scrolled into view (top ${Math.round(frame?.top ?? -1)}px)`);
+            // Tall phones (760px and up) anchor the scroll on the Play section, so its heading shows above the panel (PR #690).
+            // Short phones keep the panel as the anchor.
+            const tallPhone = view.viewport.height >= 760;
+            const anchorBox = tallPhone ? sectionNow : frame;
+            check(anchorBox && anchorBox.top >= 0 && anchorBox.top < 180, `${tag}: ${tallPhone ? "Play section" : "panel"} scrolled into view (top ${Math.round(anchorBox?.top ?? -1)}px)`);
         }
         const minTall = view.viewport.height < 700 ? 260 : 360;
         check(frame && frame.height >= minTall, `${tag}: panel is tall (${Math.round(frame?.height ?? 0)}px)`);

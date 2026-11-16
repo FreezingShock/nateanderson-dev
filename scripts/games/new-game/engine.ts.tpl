@@ -10,9 +10,8 @@
 import { costAt, prestigeGain, prestigeProgress, rates, resetKeeping, stepChain, upgradeMult, type Generator, type Upgrade } from "../game-kit/idle";
 import { catchUp, gapSeconds } from "../game-kit/time";
 import { numberFormatter } from "../game-kit/format";
-
-export const SAVE_KEY = "__SLUG__-save-v1";
-export const SAVE_VERSION = 1;
+import { SAVE_SLOTS } from "../saves/keys";
+import type { SaveDef } from "../saves/core";
 
 export const TAP_GAIN = 1;
 /** Away time that counts. Anything longer earns nothing extra. */
@@ -159,10 +158,6 @@ export function prestige(s: State, now: number): State {
     return { ...next, points: s.points + gain, runs: s.runs + 1 };
 }
 
-export function serialize(s: State): string {
-    return JSON.stringify(s);
-}
-
 /** Rebuilds a state from a stored object. Anything it cannot rebuild gives null, so the caller can keep the old save. */
 export function parse(data: unknown): State | null {
     if (!data || typeof data !== "object") return null;
@@ -194,3 +189,16 @@ export function parse(data: unknown): State | null {
 
     return { amount, earned, tapped: Math.floor(tapped), owned, bought, points: Math.floor(points), runs: Math.floor(runs), savedAt };
 }
+
+/**
+ * The save definition, in the shared save system (lib/saves). The key, app id and version come from lib/saves/keys.ts,
+ * so a rename shows in one diff. The state is plain data, so dump is the identity. Add a migrations[version] entry
+ * before any change to the State shape, and keep every migration forever.
+ */
+export const SAVE_DEF: SaveDef<State> = {
+    app: SAVE_SLOTS["__SLUG__"].app,
+    key: SAVE_SLOTS["__SLUG__"].key,
+    version: SAVE_SLOTS["__SLUG__"].version,
+    revive: (data) => parse(data),
+    dump: (s) => s,
+};

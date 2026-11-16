@@ -138,7 +138,7 @@ test("the prestige meter is between 0 and 1", () => {
 
 test("save and load round-trip the state exactly", () => {
     const s = { ...E.fresh(0), amount: 12.5, earned: 99, tapped: 40, owned: [3, 2.5, 1], bought: ["shifts"], points: 2, runs: 1, savedAt: 777 };
-    const back = E.parse(JSON.parse(E.serialize(s)));
+    const back = E.SAVE_DEF.revive(JSON.parse(JSON.stringify(E.SAVE_DEF.dump(s))));
     assert.deepEqual(back, s);
 });
 
@@ -160,4 +160,10 @@ test("fmt shows whole numbers small and short forms large", () => {
     assert.equal(E.fmt(999), "999");
     assert.equal(E.fmt(1500), "1.50K");
     assert.equal(E.fmt(42_000_000), "42.0M");
+});
+
+test("the save definition uses the key and version from lib/saves/keys.ts", () => {
+    assert.equal(E.SAVE_DEF.key, "__SLUG__-save-v1");
+    assert.equal(E.SAVE_DEF.app, "__SLUG__");
+    assert.equal(E.SAVE_DEF.version, 1);
 });

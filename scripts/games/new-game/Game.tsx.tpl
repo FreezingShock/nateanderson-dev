@@ -7,7 +7,7 @@ import { useEffect, useRef, useState, type KeyboardEvent } from "react";
 import { useGameShell } from "@/components/games/shell/game-route-shell";
 import { useAutosave, useGameClock } from "@/components/game-kit/hooks";
 import { useToasts } from "@/components/game-kit/use-toasts";
-import { readStored, writeStored } from "@/lib/games/save";
+import { loadSave, writeSave } from "@/lib/saves/core";
 import * as E from "@/lib/__SLUG__/engine";
 
 const POP_MS = 650;
@@ -20,23 +20,12 @@ function storage(): Storage | null {
     }
 }
 
-/** Reads the save and moves its clock to now. Also reports what the generators gathered while the page was closed. */
-function load(now: number): { state: E.State; away: number } {
-    const store = storage();
-    const raw = readStored(store, E.SAVE_KEY);
-    if (raw) {
-        try {
-            const saved = E.parse(JSON.parse(raw));
-            if (saved) {
-                const state = E.advance(saved, now);
-                return { state, away: state.amount - saved.amount };
-            }
-        } catch {
-            /* fall through: a damaged save is kept below, never silently dropped */
-        }
-        writeStored(store, `${E.SAVE_KEY}:damaged`, raw);
-    }
-    return { state: E.fresh(now), away: 0 };
+/** Reads the save through the shared save system (lib/saves), moves its clock to now, and reports what the generators gathered while away. */
+function load(now: number): { state: E.State; away: number; note: string } {
+    const r = loadSave(storage(), E.SAVE_DEF, now);
+    if (!r.state) return { state: E.fresh(now), away: 0, note: r.note };
+    const state = E.advance(r.state, now);
+    return { state, away: state.amount - r.state.amount, note: r.note };
 }
 
 export function __CAMEL__() {
@@ -54,6 +43,7 @@ export function __CAMEL__() {
         latest.current = loaded.state;
         setState(loaded.state);
         setAway(loaded.away >= 1 ? loaded.away : 0);
+        if (loaded.note) push(loaded.note, "warn", true);
     }, []);
 
     const ready = state !== null;
@@ -87,7 +77,7 @@ export function __CAMEL__() {
     useAutosave(
         () => {
             const cur = latest.current;
-            if (cur) writeStored(storage(), E.SAVE_KEY, E.serialize(cur));
+            if (cur) writeSave(storage(), E.SAVE_DEF, cur);
         },
         { everyMs: 3000, enabled: ready },
     );

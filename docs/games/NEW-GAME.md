@@ -43,7 +43,8 @@ New files (all named after the slug):
 Lines added to shared files. Each one ends with `gen:<slug>` (or `<!-- gen:<slug> -->` in markdown):
 
 - `lib/games/registry.ts`: the game id, the theme, and the `GAMES` entry (name, path, eyebrow, description, play title, back link)
-- `lib/games/save-slot.ts`: the save slot (`<slug>-save-v1`, version 1) and the import check that runs the engine's `parse`
+- `lib/saves/keys.ts`: the save slot (`<slug>-save-v1`, version 1)
+- `lib/games/save-slot.ts`: the export and import hook (`defFor` returns the engine's `SAVE_DEF`)
 - `lib/game-launch/launch.ts`: the line the hub shows for a saved game
 - `lib/creations-data.ts`: the Creations card, in the chosen section
 - `docs/OWNERS.md` and `docs/README.md`: the ownership line and the docs index link
@@ -59,9 +60,11 @@ The starter runs on `lib/game-kit` (see docs/game-kit.md). The engine imports `i
 
 ## Save
 
-Key `<slug>-save-v1`, envelope app `<slug>`, version 1. The shell's Export and Import buttons work from the start,
-and a damaged save is kept under `<slug>-save-v1:damaged` rather than overwritten. Bump `SAVE_VERSION` and the version
-in `save-slot.ts` together when the save shape changes, and write a migration in the engine's `parse`.
+The save runs on the shared save system, `docs/saves.md`. The key, app and version live in one place, `lib/saves/keys.ts`. The engine's `SAVE_DEF` (`lib/<slug>/engine.ts`) points at that entry and turns the state into plain data (`dump`) and back (`revive`). `loadSave` and `writeSave` from `lib/saves/core.ts` do the reading and writing.
+
+- Damage: a save that will not load is never dropped. Its text is kept under `<key>-corrupt` (an older different copy under `-corrupt-prev`), and the player sees a toast.
+- Migrations: before you change the State shape, bump the version in `lib/saves/keys.ts` and add `migrations[oldVersion]` to `SAVE_DEF`. Keep every migration forever, and add a fixture test under `tests/saves/`.
+- Export and import: the shell's buttons. Export writes the migrated envelope, and import checks the file and stages it, as in `lib/games/save-slot.ts`.
 
 ## Make it live
 
@@ -101,7 +104,6 @@ Deletes the folders and every line tagged `gen:<slug>`, and drops the game from 
 
 ## What the template does not do yet
 
-- Save system: the save slot still uses `lib/games/save.ts` and `save-slot.ts`. Move it to the unified save system when that merges.
 - Kit UI: the panel uses the kit hooks (clock, autosave, toasts) and its own markup. The kit's styled pieces (ToastStack, PressButton, Counter) are not used yet.
 - Homepage Play band: the homepage showcase is a fixed list in `components/home/games-showcase.tsx`, and it needs art. Add a game there only when it has real art.
 - Art: the stage uses a plain square. Replace it with the game's own dithered art before a playtest.
