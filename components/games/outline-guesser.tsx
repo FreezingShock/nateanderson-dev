@@ -13,8 +13,10 @@ import { FlagRound } from "@/components/games/flag-round";
 import { GameSummary } from "@/components/games/game-summary";
 import {
     Burst,
+    StreakLine,
     KeyLegend,
     focusGameInput,
+    prefersReducedMotion,
     useGameKeys,
     CountryCombobox,
     COLOR,
@@ -131,6 +133,7 @@ export function OutlineGuesser() {
     const deck = useRef<Country[]>([]);
     const dailyDate = useRef("");
     const rootRef = useRef<HTMLDivElement>(null);
+    const shapeRef = useRef<HTMLDivElement>(null);
     useGameKeys(rootRef);
     // A new puzzle puts the cursor in the country box.
     useEffect(() => {
@@ -312,6 +315,8 @@ export function OutlineGuesser() {
                 setUnlocked(true);
                 setJustUnlocked(true);
                 save(K.unlock, true);
+                // Lands after the result sound, so the rising unlock tone is heard on its own.
+                window.setTimeout(() => sfx("level"), 650);
             }
             setStats((prev) => {
                 const today = todayPT();
@@ -358,6 +363,19 @@ export function OutlineGuesser() {
             if (!answer || status !== "playing") return;
             const g = makeGuess(target, answer);
             sfx(g.pct === 100 ? "granted" : "deny");
+            // A miss jolts the outline once. The row's own red flash runs alongside, and nothing else shakes.
+            if (g.pct < 100 && !prefersReducedMotion()) {
+                shapeRef.current?.animate(
+                    [
+                        { transform: "translateX(0)" },
+                        { transform: "translateX(-7px)" },
+                        { transform: "translateX(6px)" },
+                        { transform: "translateX(-3px)" },
+                        { transform: "translateX(0)" },
+                    ],
+                    { duration: 380, easing: "ease-in-out" }
+                );
+            }
             const next = [...guesses, g];
             setGuesses(next);
             setFreshIndex(next.length - 1);
@@ -805,6 +823,7 @@ export function OutlineGuesser() {
                 <div className="og-hint">
             {/* The outline */}
             <div
+                ref={shapeRef}
                 key={`${answer.c}-${round}`}
                 className={cn(
                     "relative mx-auto grid aspect-square w-full max-w-[22rem] place-items-center overflow-hidden rounded-[2px] border border-border/60 bg-slate-950 p-6",
@@ -839,6 +858,7 @@ export function OutlineGuesser() {
                         style={{ transition: "fill 0.6s, stroke 0.6s" }}
                     />
                 </svg>
+                {status === "won" && <span aria-hidden className="og-ring" />}
                 {status === "won" && <Burst />}
                 {!playing && (
                     <div className="og-hint absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 to-transparent px-4 pb-3 pt-8 text-center">
@@ -942,6 +962,7 @@ export function OutlineGuesser() {
                     <p className="mt-1 text-sm text-muted-foreground">
                         It was <strong className="text-foreground">{answer.n}</strong>.
                     </p>
+                    <StreakLine streak={s.streak} best={s.best} won={status === "won"} />
                     {nav1}
                 </div>
             )}
