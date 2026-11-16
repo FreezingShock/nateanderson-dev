@@ -710,9 +710,36 @@
     .gs-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 @media (max-width: 767px) {
-    .gs-grid { grid-template-columns: minmax(0, 1fr); gap: var(--cm-s3); }
+    .gs-grid { grid-template-columns: minmax(0, 1fr); gap: 64px; }
+}
+
+/* Animated sprite band behind the whole Play section (components/home/games-band*.ts). The canvas is drawn at about a
+   half of CSS resolution and scaled up with hard pixel edges; it sits under the section's content and never takes
+   space, so it cannot shift the layout when it arrives. */
+#play { isolation: isolate; }
+/* The heading and the All games link sit straight on the art: a soft pool behind the heading that fades to nothing at
+   its edges (the shared pool stops short and reads as a box here), and a dark plate behind the link. */
+#play .cm-sec-head > div::before {
+    inset: -48px -140px -48px -72px;
+    background: radial-gradient(closest-side, rgba(18, 16, 14, .86) 0, rgba(18, 16, 14, .7) 55%, rgba(18, 16, 14, 0) 100%);
+}
+#play .cm-more { background: rgba(14, 12, 18, .86); padding: 6px 10px; box-shadow: 0 0 0 1px rgba(244, 244, 242, .08); }
+.gs-band {
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    overflow: hidden;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity .9s ease;
+}
+.gs-band.on { opacity: 1; }
+.gs-band canvas {
+    display: block;
+    image-rendering: crisp-edges;
+    image-rendering: pixelated;
 }
 @media (prefers-reduced-motion: reduce) {
-    .gs-card, .gs-shot img { transition: none; }
+    .gs-card, .gs-shot img, .gs-band { transition: none; }
     .gs-card:hover, .gs-card:hover .gs-shot img { transform: none; }
 }
