@@ -15,9 +15,11 @@ import "@/app/camino/nodefarm/next.css";
 import "@/app/camino/nodefarm/admin.css";
 import "@/app/camino/nodefarm/phone.css";
 import "@/app/camino/nodefarm/layout.css";
+import "@/app/camino/nodefarm/side.css";
 import { CreationsShell, Section } from "@/components/creations-sections";
 import { GameFrame } from "@/components/games/naos";
 import { NodeFarm } from "@/components/nodefarm/node-farm";
+import { NodeFarmSide } from "@/components/nodefarm/side-panel";
 import { NodeFarmBoundary } from "@/components/nodefarm/board/error-boundary";
 import { NaosBackdrop } from "@/components/cm/naos-art";
 import { pageMeta } from "@/lib/seo";
@@ -42,11 +44,16 @@ export default function NodeFarmPage() {
             >
                 <Section id="play" no="01" label="Play" title="Hack the node." ctos>
                     <div className="nf-bleed">
-                        <GameFrame code="node.farm" foot={["saves on this device", "offline up to 8 h"]}>
-                        <NodeFarmBoundary>
-                            <NodeFarm />
-                        </NodeFarmBoundary>
-                    </GameFrame>
+                        <div className="nf-page">
+                            <div className="nf-stage">
+                                <GameFrame code="node.farm" foot={["saves on this device", "offline up to 8 h"]}>
+                                    <NodeFarmBoundary>
+                                        <NodeFarm />
+                                    </NodeFarmBoundary>
+                                </GameFrame>
+                            </div>
+                            <NodeFarmSide />
+                        </div>
                     </div>
                 </Section>
             </CreationsShell>

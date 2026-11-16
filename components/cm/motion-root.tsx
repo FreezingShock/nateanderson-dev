@@ -2,7 +2,7 @@
 
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useRef } from "react";
-import { markNavigation, prefersReducedMotion, scan, start } from "@/lib/motion/engine";
+import { markNavigation, motionOn, scan, start, subscribeMotion } from "@/lib/motion/engine";
 import { NAV_EVENT } from "@/lib/motion/navigate";
 import { navItems } from "@/lib/nav";
 
@@ -70,6 +70,9 @@ export function MotionRoot() {
     const first = useRef(true);
     const wipe = useRef<HTMLDivElement>(null);
 
+    // Motion switched off mid-transition: drop the curtain at once.
+    useEffect(() => subscribeMotion(() => { if (!motionOn()) reset.current(); }), []);
+
     // Engine + boot cleanup.
     useEffect(() => {
         const stop = start();
@@ -132,7 +135,6 @@ export function MotionRoot() {
 
     // Click interception + launcher jumps.
     useEffect(() => {
-        const reduce = prefersReducedMotion();
         const s = st.current;
 
         const toHold = () => {
@@ -179,7 +181,7 @@ export function MotionRoot() {
         };
 
         const onClick = (e: MouseEvent) => {
-            if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+            if (!motionOn() || e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
             if (!(e.target instanceof Element)) return;
             const a = e.target.closest<HTMLAnchorElement>("a[href]");
             if (!a || (a.target && a.target !== "_self") || a.hasAttribute("download") || a.closest("[data-no-curtain]")) return;
@@ -189,7 +191,7 @@ export function MotionRoot() {
         };
         const onNav = (e: Event) => {
             const href = (e as CustomEvent<string>).detail;
-            if (reduce || !go(href)) router.push(href);
+            if (!motionOn() || !go(href)) router.push(href);
         };
         // Warm the route before the click: the card then holds for less time while the RSC payload arrives.
         const warmed = new Set<string>();
@@ -204,7 +206,7 @@ export function MotionRoot() {
             warmed.add(href);
             router.prefetch(href);
         };
-        if (!reduce) document.addEventListener("click", onClick, true);
+        document.addEventListener("click", onClick, true);
         document.addEventListener("pointerover", warm, { capture: true, passive: true });
         document.addEventListener("touchstart", warm, { capture: true, passive: true });
         document.addEventListener("focusin", warm, true);

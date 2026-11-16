@@ -1,14 +1,15 @@
 "use client";
 
 import { useLayoutEffect, useRef } from "react";
-import { prefersReducedMotion, whenUngated } from "@/lib/motion/engine";
+import { useMotionOn, whenUngated } from "@/lib/motion/engine";
 
 /** Counts up once, when it first comes into view (900ms ease-out). Writes the DOM directly: no re-renders. */
 export function CountUp({ value, className = "" }: { value: number; className?: string }) {
     const ref = useRef<HTMLSpanElement>(null);
+    const on = useMotionOn();
     useLayoutEffect(() => {
         const el = ref.current;
-        if (!el || prefersReducedMotion() || typeof IntersectionObserver === "undefined") return;
+        if (!el || !on || typeof IntersectionObserver === "undefined") return;
         const final = value.toLocaleString("en-US");
         el.textContent = (0).toLocaleString("en-US");
         let raf = 0;
@@ -37,7 +38,7 @@ export function CountUp({ value, className = "" }: { value: number; className?: 
             cancelAnimationFrame(raf);
             el.textContent = final;
         };
-    }, [value]);
+    }, [value, on]);
     return (
         <span ref={ref} className={`cm-num ${className}`.trim()} suppressHydrationWarning>
             {value.toLocaleString("en-US")}

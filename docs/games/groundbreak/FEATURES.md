@@ -82,6 +82,7 @@ Thread names change each wave; the file split is what matters. Before editing a 
 | Rolling backups (two copies, five minutes apart) with Restore in the Menu; export and import | working | `groundbreak.tsx`, `lib/games/save` | none (UI) |
 | Other-tab guard (a second tab never overwrites the save) | untested | `groundbreak.tsx` storage listener, `gb-conflict` | none |
 | Pause on hidden tab, `P` pauses | untested | `useGameShell`, `togglePause` | none |
+| Windowed panel under the site chrome with a title bar; scrolls into view and takes focus on load; keys and wheel stay with the game; full screen; save export/import in the panel footer | working headless at 1440 and 390 (production build); not on a real phone or in Safari | `components/games/shell/game-route-shell.tsx`, `lib/games/save-slot.ts`, `app/creations/games/groundbreak/layout.tsx` | `npm run test:window` (`scripts/games/window-check.mjs`) |
 
 ### Guidance and controls
 
