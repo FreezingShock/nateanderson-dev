@@ -5,6 +5,14 @@ const nextConfig: NextConfig = {
     // info-disclosure hardening, doesn't change behavior.
     poweredByHeader: false,
 
+    async redirects() {
+        // Daily and Unlimited now live in one page per guesser; the daily links go to the Daily tab.
+        return [
+            { source: "/creations/games/daily-outline", destination: "/creations/games/outline-guesser?mode=daily", permanent: true },
+            { source: "/creations/games/daily-flag", destination: "/creations/games/flag-guesser?mode=daily", permanent: true },
+        ];
+    },
+
     async headers() {
         return [
             {

@@ -32,6 +32,7 @@ import {
     type Unit,
 } from "@/components/games/guess-kit";
 import { GLASS_CLASS } from "@/components/games/guess-kit";
+import { GuessModeTabs, MODE_PANEL_ID } from "@/components/games/mode-tabs";
 import { cn } from "@/lib/utils";
 import { sfx } from "@/lib/sound/sounds";
 import neighborData from "@/lib/data/neighbors.json";
@@ -91,6 +92,8 @@ const K = {
     unit: "outline-unit",
     mode: "outline-mode",
     filters: "outline-filters",
+    // Set once a daily is finished on this device; opens Unlimited.
+    unlock: "outline-unlimited-unlocked-v1",
 };
 
 export function OutlineGuesser() {
@@ -119,6 +122,11 @@ export function OutlineGuesser() {
     // Unlimited-mode filters; an empty list means "all".
     const [difficulties, setDifficulties] = useState<number[]>([]);
     const [regions, setRegions] = useState<string[]>([]);
+    // Unlimited opens after one finished daily. `justUnlocked` drives the
+    // tab's unlock flash for a few seconds.
+    const [unlocked, setUnlocked] = useState(false);
+    const [justUnlocked, setJustUnlocked] = useState(false);
+    const [dir, setDir] = useState<"r" | "l">("r");
 
     const deck = useRef<Country[]>([]);
     const dailyDate = useRef("");
@@ -220,11 +228,19 @@ export function OutlineGuesser() {
             daily: { ...EMPTY_STATS(), ...saved.daily },
             unlimited: { ...EMPTY_STATS(), ...saved.unlimited },
         });
+        // Unlimited stays locked until a daily is finished. Players who already
+        // have daily results on this device keep it open.
+        const isUnlocked =
+            load<boolean>(K.unlock, false) || (saved.daily?.played ?? 0) > 0;
+        if (isUnlocked) save(K.unlock, true);
+        setUnlocked(isUnlocked);
         const fromUrl = new URLSearchParams(window.location.search).get("mode");
-        const initial: Mode =
+        const asked: Mode =
             fromUrl === "daily" || fromUrl === "unlimited"
                 ? fromUrl
                 : load<Mode>(K.mode, "unlimited");
+        const initial: Mode =
+            asked === "unlimited" && !isUnlocked ? "daily" : asked;
         const f = load<{ d: number[]; r: string[] }>(K.filters, {
             d: [],
             r: [],
@@ -239,6 +255,8 @@ export function OutlineGuesser() {
 
     const switchMode = (next: Mode) => {
         if (!countries || next === mode) return;
+        if (next === "unlimited" && !unlocked) return;
+        setDir(next === "unlimited" ? "r" : "l");
         setMode(next);
         save(K.mode, next);
         if (next === "daily") startDaily(countries);
@@ -289,6 +307,12 @@ export function OutlineGuesser() {
     const finish = useCallback(
         (result: "won" | "lost", used: number) => {
             setStatus(result);
+            // Finishing any daily (won or lost) opens Unlimited for good.
+            if (mode === "daily" && !unlocked) {
+                setUnlocked(true);
+                setJustUnlocked(true);
+                save(K.unlock, true);
+            }
             setStats((prev) => {
                 const today = todayPT();
                 // A replayed daily doesn't count twice.
@@ -313,8 +337,15 @@ export function OutlineGuesser() {
                 return next;
             });
         },
-        [mode]
+        [mode, unlocked]
     );
+
+    // The unlock flash on the Unlimited tab lasts a few seconds.
+    useEffect(() => {
+        if (!justUnlocked) return;
+        const id = window.setTimeout(() => setJustUnlocked(false), 2400);
+        return () => window.clearTimeout(id);
+    }, [justUnlocked]);
 
     // ---- Input ----
     const guessedCodes = useMemo(
@@ -453,13 +484,6 @@ export function OutlineGuesser() {
         );
     }
 
-    const pill = (on: boolean) =>
-        cn(
-            "rounded-[2px] border px-3 py-1 font-mono text-xs font-semibold transition-colors",
-            on
-                ? "border-[var(--cm-cyan)] bg-[var(--cm-cyan)]/15 text-[var(--cm-cyan)]"
-                : "border-border text-muted-foreground hover:text-foreground"
-        );
 
     // ---- Moving between rounds ----
     const openRound = (n: 1 | 2 | 3 | 4) => {
@@ -622,34 +646,22 @@ export function OutlineGuesser() {
             className={GLASS_CLASS}
         >
             {/* Mode + tools */}
-            <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-                <div className="flex gap-1.5" role="group" aria-label="Mode">
-                    <button
-                        type="button"
-                        aria-pressed={mode === "daily"}
-                        onClick={() => switchMode("daily")}
-                        className={pill(mode === "daily")}
-                    >
-                        Daily
-                    </button>
-                    <button
-                        type="button"
-                        aria-pressed={mode === "unlimited"}
-                        onClick={() => switchMode("unlimited")}
-                        className={pill(mode === "unlimited")}
-                    >
-                        Unlimited
-                    </button>
-                </div>
-                <div className="flex gap-1.5">
-                    <button
-                        type="button"
-                        data-action="restart"
-                        onClick={restartGame}
-                        className={cn(
-                            pill(confirmRestart),
-                            "inline-flex items-center gap-1"
-                        )}
+            <GuessModeTabs
+                mode={mode}
+                unlocked={unlocked}
+                justUnlocked={justUnlocked}
+                dailyMeta={`#${dailyNumber(dailyDate.current)} · ${
+                    stats.daily.last === todayPT() ? "done today" : "today"
+                }`}
+                unlimitedMeta={`${pool.length} in pool`}
+                onSelect={switchMode}
+            />
+            <div className="gk-tools">
+                <button
+                    type="button"
+                    data-action="restart"
+                    onClick={restartGame}
+                    className={cn("gk-tool", confirmRestart && "is-on")}
                         aria-label={
                             mode === "daily"
                                 ? "Restart the daily puzzle"
@@ -662,7 +674,7 @@ export function OutlineGuesser() {
                     <button
                         type="button"
                         onClick={changeUnit}
-                        className={pill(false)}
+                        className="gk-tool"
                         aria-label={`Distance in ${unit}, switch units`}
                     >
                         {unit}
@@ -671,13 +683,21 @@ export function OutlineGuesser() {
                         type="button"
                         aria-pressed={showStats}
                         onClick={() => setShowStats((v) => !v)}
-                        className={cn(pill(showStats), "inline-flex items-center gap-1")}
+                        className={cn("gk-tool", showStats && "is-on")}
                     >
                         <PixelIcon name="chart" className="size-3.5" /> Stats
                     </button>
-                </div>
             </div>
 
+            {/* Everything below the tabs is one panel; switching modes slides it in. */}
+            <div
+                key={mode}
+                id={MODE_PANEL_ID}
+                role="tabpanel"
+                aria-labelledby={`gk-tab-${mode}`}
+                className="gk-stage"
+                data-dir={dir}
+            >
             {mode === "unlimited" && (
                 <FilterPanel
                     difficulties={difficulties}
@@ -725,12 +745,7 @@ export function OutlineGuesser() {
                                       : undefined
                             }
                             onClick={() => openRound(n)}
-                            className={cn(
-                                "inline-flex items-center gap-1.5 rounded-[2px] border px-2.5 py-1 font-mono text-xs font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-45",
-                                current
-                                    ? "border-[var(--cm-cyan)] bg-[var(--cm-cyan)]/15 text-[var(--cm-cyan)]"
-                                    : "border-border text-muted-foreground hover:text-foreground"
-                            )}
+                            className={cn("gk-step", current && "is-on", done && "is-done")}
                         >
                             <span className="font-mono text-[11px]">
                                 {done ? <PixelIcon name="check" className="size-3" /> : n === 4 ? "★" : n}
@@ -966,6 +981,8 @@ export function OutlineGuesser() {
 
                 </div>
             )}
+
+            </div>
 
             <KeyLegend />
 

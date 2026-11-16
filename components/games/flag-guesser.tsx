@@ -25,6 +25,7 @@ import {
     type Status,
     type Unit,
 } from "@/components/games/guess-kit";
+import { GuessModeTabs, MODE_PANEL_ID } from "@/components/games/mode-tabs";
 import { cn } from "@/lib/utils";
 import { sfx } from "@/lib/sound/sounds";
 import {
@@ -58,6 +59,8 @@ const K = {
     unit: "flag-unit",
     mode: "flag-mode",
     filters: "flag-filters",
+    // Set once a daily is finished on this device; opens Unlimited.
+    unlock: "flag-unlimited-unlocked-v1",
 };
 const COLS = 3;
 const TILES = 6;
@@ -92,6 +95,11 @@ export function FlagGuesser() {
     const [difficulties, setDifficulties] = useState<number[]>([]);
     const [regions, setRegions] = useState<string[]>([]);
     const [deck, setDeck] = useState<Country[]>([]);
+    // Unlimited opens after one finished daily. `justUnlocked` drives the
+    // tab's unlock flash for a few seconds.
+    const [unlocked, setUnlocked] = useState(false);
+    const [justUnlocked, setJustUnlocked] = useState(false);
+    const [dir, setDir] = useState<"r" | "l">("r");
     const dailyDate = useMemo(() => ({ current: "" }), []);
     const rootRef = useRef<HTMLDivElement>(null);
     useGameKeys(rootRef);
@@ -190,11 +198,19 @@ export function FlagGuesser() {
         });
         setDifficulties(f.d);
         setRegions(f.r);
+        // Unlimited stays locked until a daily is finished. Players who already
+        // have daily results on this device keep it open.
+        const isUnlocked =
+            load<boolean>(K.unlock, false) || (saved.daily?.played ?? 0) > 0;
+        if (isUnlocked) save(K.unlock, true);
+        setUnlocked(isUnlocked);
         const fromUrl = new URLSearchParams(window.location.search).get("mode");
-        const initial: Mode =
+        const asked: Mode =
             fromUrl === "daily" || fromUrl === "unlimited"
                 ? fromUrl
                 : load<Mode>(K.mode, "unlimited");
+        const initial: Mode =
+            asked === "unlimited" && !isUnlocked ? "daily" : asked;
         setMode(initial);
         if (initial === "daily") startDaily(countries);
         else startUnlimited(poolFor(countries, f.d, f.r));
@@ -203,6 +219,8 @@ export function FlagGuesser() {
 
     const switchMode = (next: Mode) => {
         if (!countries || next === mode) return;
+        if (next === "unlimited" && !unlocked) return;
+        setDir(next === "unlimited" ? "r" : "l");
         setMode(next);
         save(K.mode, next);
         if (next === "daily") startDaily(countries);
@@ -247,6 +265,12 @@ export function FlagGuesser() {
     const finish = useCallback(
         (result: "won" | "lost", used: number) => {
             setStatus(result);
+            // Finishing any daily (won or lost) opens Unlimited for good.
+            if (mode === "daily" && !unlocked) {
+                setUnlocked(true);
+                setJustUnlocked(true);
+                save(K.unlock, true);
+            }
             setStats((prev) => {
                 const today = todayPT();
                 // A replayed daily doesn't count twice.
@@ -271,8 +295,15 @@ export function FlagGuesser() {
                 return next;
             });
         },
-        [mode]
+        [mode, unlocked]
     );
+
+    // The unlock flash on the Unlimited tab lasts a few seconds.
+    useEffect(() => {
+        if (!justUnlocked) return;
+        const id = window.setTimeout(() => setJustUnlocked(false), 2400);
+        return () => window.clearTimeout(id);
+    }, [justUnlocked]);
 
     const guessed = useMemo(
         () => new Set(guesses.map((g) => g.code)),
@@ -366,13 +397,6 @@ export function FlagGuesser() {
         [Math.floor(n / 3600), Math.floor((n % 3600) / 60), n % 60]
             .map((x) => String(x).padStart(2, "0"))
             .join(":");
-    const pill = (on: boolean) =>
-        cn(
-            "rounded-[2px] border px-3 py-1 font-mono text-xs font-semibold transition-colors",
-            on
-                ? "border-[var(--cm-cyan)] bg-[var(--cm-cyan)]/15 text-[var(--cm-cyan)]"
-                : "border-border text-muted-foreground hover:text-foreground"
-        );
     const letters = answer.n.replace(/[^\p{L}]/gu, "").length;
     const hintList = [
         { key: "k", text: `Continent: ${answer.k}` },
@@ -383,34 +407,22 @@ export function FlagGuesser() {
     return (
         <div ref={rootRef} className={GLASS_CLASS} style={GLASS_STYLE}>
             {/* Mode + tools */}
-            <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-                <div className="flex gap-1.5" role="group" aria-label="Mode">
-                    <button
-                        type="button"
-                        aria-pressed={mode === "daily"}
-                        onClick={() => switchMode("daily")}
-                        className={pill(mode === "daily")}
-                    >
-                        Daily
-                    </button>
-                    <button
-                        type="button"
-                        aria-pressed={mode === "unlimited"}
-                        onClick={() => switchMode("unlimited")}
-                        className={pill(mode === "unlimited")}
-                    >
-                        Unlimited
-                    </button>
-                </div>
-                <div className="flex gap-1.5">
-                    <button
-                        type="button"
-                        data-action="restart"
-                        onClick={restartGame}
-                        className={cn(
-                            pill(confirmRestart),
-                            "inline-flex items-center gap-1"
-                        )}
+            <GuessModeTabs
+                mode={mode}
+                unlocked={unlocked}
+                justUnlocked={justUnlocked}
+                dailyMeta={`#${dailyNumber(dailyDate.current)} · ${
+                    stats.daily.last === todayPT() ? "done today" : "today"
+                }`}
+                unlimitedMeta={`${pool.length} in pool`}
+                onSelect={switchMode}
+            />
+            <div className="gk-tools">
+                <button
+                    type="button"
+                    data-action="restart"
+                    onClick={restartGame}
+                    className={cn("gk-tool", confirmRestart && "is-on")}
                         aria-label={
                             mode === "daily"
                                 ? "Restart the daily puzzle"
@@ -427,7 +439,7 @@ export function FlagGuesser() {
                             setUnit(next);
                             save(K.unit, next);
                         }}
-                        className={pill(false)}
+                        className="gk-tool"
                         aria-label={`Distance in ${unit}, switch units`}
                     >
                         {unit}
@@ -436,16 +448,21 @@ export function FlagGuesser() {
                         type="button"
                         aria-pressed={showStats}
                         onClick={() => setShowStats((v) => !v)}
-                        className={cn(
-                            pill(showStats),
-                            "inline-flex items-center gap-1"
-                        )}
+                        className={cn("gk-tool", showStats && "is-on")}
                     >
                         <PixelIcon name="chart" className="size-3.5" /> Stats
                     </button>
-                </div>
             </div>
 
+            {/* Everything below the tabs is one panel; switching modes slides it in. */}
+            <div
+                key={mode}
+                id={MODE_PANEL_ID}
+                role="tabpanel"
+                aria-labelledby={`gk-tab-${mode}`}
+                className="gk-stage"
+                data-dir={dir}
+            >
             {mode === "unlimited" && (
                 <FilterPanel
                     difficulties={difficulties}
@@ -714,6 +731,8 @@ export function FlagGuesser() {
                         </div>
                     );
                 })}
+            </div>
+
             </div>
 
             <KeyLegend />
