@@ -1,0 +1,17 @@
+[
+  {
+    "id": "brasswork",
+    "name": "Brasswork",
+    "root": ".bw-root"
+  },
+  {
+    "id": "starwright",
+    "name": "Starwright",
+    "root": ".sw-root"
+  },
+  {
+    "id": "groundbreak",
+    "name": "Groundbreak",
+    "root": ".gb-root"
+  }
+]
