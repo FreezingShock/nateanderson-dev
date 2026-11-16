@@ -35,6 +35,7 @@ const GAMES = [
 const VIEWS = [
     { label: "1440", viewport: { width: 1440, height: 900 }, hasTouch: false },
     { label: "390", viewport: { width: 390, height: 844 }, hasTouch: true },
+    { label: "1366x657", viewport: { width: 1366, height: 657 }, hasTouch: false },
 ];
 
 async function openGame(view, id) {
@@ -45,12 +46,17 @@ async function openGame(view, id) {
     page.on("pageerror", (e) => page.errs.push(e.message));
     await page.goto(`${base}/creations/games/${id}`, { waitUntil: "networkidle" });
     // Headless WebGL can take many seconds to settle the smooth scroll on load. Wait until the page stops moving (max 15 s).
+    // Headless WebGL can run the on-load smooth scroll for many seconds. Wait until the panel's title bar sits near the
+    // site bar's line (or 20 s), then until the scroll stops moving for 3 reads.
     let last = -1;
-    for (let i = 0; i < 30; i++) {
+    let still = 0;
+    for (let i = 0; i < 40; i++) {
         await page.waitForTimeout(500);
         const y = await page.evaluate(() => window.scrollY);
-        if (i >= 4 && y === last) break;
+        const top = await page.evaluate(() => document.querySelector(".gs-win-bar")?.getBoundingClientRect().top ?? 9999);
+        still = y === last ? still + 1 : 0;
         last = y;
+        if (i >= 4 && still >= 3 && top <= 140) break;
     }
     return { ctx, page };
 }
@@ -84,8 +90,16 @@ for (const g of GAMES) {
             // Groundbreak hides the site bar on its route, so its line is the 72px fallback from the shell.
             const floor = barNow && barNow.bottom > 0 ? barNow.bottom : 0;
             const line = barNow && barNow.bottom > 0 ? barNow.bottom : 72;
-            check(sectionNow && sectionNow.top >= floor - 1 && sectionNow.top < line + 30,
-                `${tag}: Play section starts below the site bar (section ${Math.round(sectionNow?.top ?? -1)}px, line ${Math.round(line)}px)`);
+            // Under 700px tall the panel is the anchor (no Play heading in view), so the panel's title bar starts at the line.
+            const short = view.viewport.height < 700;
+            if (short) {
+                const winBarNow = await rectOf(page, ".gs-win-bar");
+                check(winBarNow && winBarNow.top >= floor - 1 && winBarNow.top < line + 30,
+                    `${tag}: panel title bar starts below the site bar on a short screen (title bar ${Math.round(winBarNow?.top ?? -1)}px, line ${Math.round(line)}px)`);
+            } else {
+                check(sectionNow && sectionNow.top >= floor - 1 && sectionNow.top < line + 30,
+                    `${tag}: Play section starts below the site bar (section ${Math.round(sectionNow?.top ?? -1)}px, line ${Math.round(line)}px)`);
+            }
             const foot = await rectOf(page, ".gs-win-foot");
             const dock = await rectOf(page, ".cm-dock");
             const lowest = Math.max(frame?.bottom ?? 0, foot?.bottom ?? 0);
@@ -94,7 +108,8 @@ for (const g of GAMES) {
         } else {
             check(frame && frame.top >= 0 && frame.top < 180, `${tag}: panel scrolled into view (top ${Math.round(frame?.top ?? -1)}px)`);
         }
-        check(frame && frame.height >= 360, `${tag}: panel is tall (${Math.round(frame?.height ?? 0)}px)`);
+        const minTall = view.viewport.height < 700 ? 260 : 360;
+        check(frame && frame.height >= minTall, `${tag}: panel is tall (${Math.round(frame?.height ?? 0)}px)`);
         check(state.focused, `${tag}: panel takes focus on load`);
         const root = await rectOf(page, g.root);
         check(root && frame && Math.abs(root.left - frame.left) < 3 && Math.abs(root.width - frame.width) < 4 && Math.abs(root.height - frame.height) < 4,
