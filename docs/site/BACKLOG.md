@@ -72,3 +72,4 @@ Slot for findings from the thread "Audit website code for simplification". That 
 - [x] SITE-short-screen-dock | S | footer clears the site dock down to 657 px tall (panel floor 260 px, height 100dvh minus 400 px), and Brasswork's left dock scrolls inside a short panel instead of clipping | #659
 - [x] SITE-home-band-art | M | animated sprite art for each game across the whole homepage Play band, lazy and paused off screen | this PR
 - [x] SITE-short-anchor | S | desktop under 700 px tall anchors on the panel (the game matters more than the heading there) | #665
+- [x] SITE-motion-scale | M | one motion scale (easing, durations, lift and press travel) and one reduced-motion rule; buttons, chips, cards, home game cards and page shutters use it | this PR
