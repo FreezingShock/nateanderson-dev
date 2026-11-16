@@ -245,7 +245,8 @@ export function createVoxelIsland(
     const blocks = new BlockRegistry(BLOCK_ID_BASE);
     const terrainGrid = new VoxelGrid(TERRAIN_CELL);
     const objectGrid = new VoxelGrid(OBJECT_CELL);
-    const terrainMesher = new ChunkMesher(terrainGrid, blocks, blockMaterial);
+    // Terrain is flat ground: no per-voxel jitter, so the base tone reads as one surface.
+    const terrainMesher = new ChunkMesher(terrainGrid, blocks, blockMaterial, 0);
     const objectMesher = new ChunkMesher(objectGrid, blocks, blockMaterial);
     const models = new ModelRenderer(scene, heightAt);
     const scenery = new Scenery(scene);
