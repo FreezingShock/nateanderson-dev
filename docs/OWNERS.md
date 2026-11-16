@@ -9,6 +9,7 @@ Format: `- area | paths | owner (thread title or "free") | since YYYY-MM-DD | do
 - Pages (home, about, studies, timeline, history, blog) | app/{page,about,studies,timeline,history,blog}, components/home, lib/*-data.ts | free | | docs/site
 - Homepage games showcase | components/home/games-showcase.tsx, public/home/games, the Play section in app/page.tsx and components/home/home.css (the `gs-` rules) | Feature games on the homepage | 2026-11-15 | docs/site
 - Creations and games hub | app/creations (not games/*), components/creations, components/games/naos.tsx, lib/creations-data.ts, public/games/shots | Games page redesign | 2026-11-15 | docs/site
+- Game launch and exit flow | app/creations/games/layout.tsx, components/game-launch, lib/game-launch, app/camino/game-launch.css | Smooth the game launch and exit flow | 2026-11-16 | docs/site
 - Gate, SEO, CI, deploy | proxy.ts, lib/gate, lib/seo.ts, .github, scripts/ci, vercel.json | free | | docs/deploys.md, docs/ci.md
 
 ## Games
