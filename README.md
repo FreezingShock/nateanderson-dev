@@ -34,15 +34,24 @@ The site runs on **naOS**, an original hacker-OS layer on top of **Camino**, a d
 > [!NOTE]
 > The site is password-gated while it is being built, so the live pages are private. This README describes what is in the repo.
 
-| Page | What is there |
-| :-- | :-- |
-| **Home** | Intro, selected work, timeline preview |
-| **About** | Stats, education timeline, skills |
-| **Creations** | Games, projects, renovations and artwork |
-| **Studies** | Coursework explorer and reading queue |
-| **Timeline** | Milestones and the road to 2031 |
-| **History** | Commit history pulled live from GitHub |
-| **Blog** | Writing and updates (in progress) |
+<table>
+  <tr>
+    <td width="50%"><a href="https://nateanderson.dev"><img src="docs/readme/tile-page-home.png" alt="home: intro, selected work and timeline preview" width="100%"></a></td>
+    <td width="50%"><a href="https://nateanderson.dev/about"><img src="docs/readme/tile-page-about.png" alt="about: stats, education timeline and skills" width="100%"></a></td>
+  </tr>
+  <tr>
+    <td width="50%"><a href="https://nateanderson.dev/creations"><img src="docs/readme/tile-page-creations.png" alt="creations: games, projects, renovations and artwork" width="100%"></a></td>
+    <td width="50%"><a href="https://nateanderson.dev/studies"><img src="docs/readme/tile-page-studies.png" alt="studies: coursework explorer and reading queue" width="100%"></a></td>
+  </tr>
+  <tr>
+    <td width="50%"><a href="https://nateanderson.dev/timeline"><img src="docs/readme/tile-page-timeline.png" alt="timeline: milestones and the road to 2031" width="100%"></a></td>
+    <td width="50%"><a href="https://nateanderson.dev/history"><img src="docs/readme/tile-page-history.png" alt="history: commit history pulled live from GitHub" width="100%"></a></td>
+  </tr>
+  <tr>
+    <td width="50%"><a href="https://nateanderson.dev/blog"><img src="docs/readme/tile-page-blog.png" alt="blog: writing and updates, in progress" width="100%"></a></td>
+    <td width="50%"><a href="https://nateanderson.dev"><img src="docs/readme/tile-page-all.png" alt="all pages: the site at nateanderson.dev" width="100%"></a></td>
+  </tr>
+</table>
 
 <br />
 
@@ -77,10 +86,12 @@ Four games have their own palettes and themes. Each one runs in the browser and 
 
 **Node Farm** is an idle incremental game, grown from one hacked node in a naOS terminal. Stack stats from Bytes up to Origin, ascend for Ascension Points, and spend them on a 40-node prestige tree. The palette is cyan on near-black.
 
-| Also on the site | What it is |
-| :-- | :-- |
-| **[Outline Guesser](https://nateanderson.dev/creations/games/outline-guesser)** | Identify a country from its outline. Daily puzzle plus unlimited practice. |
-| **[Flag Guesser](https://nateanderson.dev/creations/games/flag-guesser)** | Name the country from its flag. Daily puzzle plus unlimited practice. |
+<table>
+  <tr>
+    <td width="50%"><a href="https://nateanderson.dev/creations/games/outline-guesser"><img src="docs/readme/tile-outline-guesser.png" alt="Outline Guesser: a dithered country-like outline. Identify the country from its shape. Daily puzzle plus unlimited practice." width="100%"></a></td>
+    <td width="50%"><a href="https://nateanderson.dev/creations/games/flag-guesser"><img src="docs/readme/tile-flag-guesser.png" alt="Flag Guesser: a grid of abstract flip tiles. Name the country from its flag. Daily puzzle plus unlimited practice." width="100%"></a></td>
+  </tr>
+</table>
 
 <br />
 
@@ -90,26 +101,16 @@ Four games have their own palettes and themes. Each one runs in the browser and 
 </picture>
 
 <p align="center">
-  <img alt="Next.js 16" src="https://img.shields.io/badge/Next.js_16-000000?style=flat-square&logo=nextdotjs&logoColor=white">
-  <img alt="React 19" src="https://img.shields.io/badge/React_19-1a1a1a?style=flat-square&logo=react&logoColor=2fd8e8">
-  <img alt="TypeScript" src="https://img.shields.io/badge/TypeScript-1a1a1a?style=flat-square&logo=typescript&logoColor=ffffff">
-  <img alt="Tailwind CSS v4" src="https://img.shields.io/badge/Tailwind_v4-1a1a1a?style=flat-square&logo=tailwindcss&logoColor=2fd8e8">
-  <img alt="Three.js" src="https://img.shields.io/badge/Three.js-1a1a1a?style=flat-square&logo=threedotjs&logoColor=ffffff">
-  <img alt="Supabase" src="https://img.shields.io/badge/Supabase-1a1a1a?style=flat-square&logo=supabase&logoColor=3ecf8e">
-  <img alt="Vercel" src="https://img.shields.io/badge/Vercel-1a1a1a?style=flat-square&logo=vercel&logoColor=ffffff">
+  <img alt="Next.js 16" src="https://img.shields.io/badge/NEXT.JS_16-000000?style=for-the-badge&logo=nextdotjs&logoColor=ffffff">
+  <img alt="React 19" src="https://img.shields.io/badge/REACT_19-1a1a1a?style=for-the-badge&logo=react&logoColor=2fd8e8">
+  <img alt="TypeScript" src="https://img.shields.io/badge/TYPESCRIPT-1a1a1a?style=for-the-badge&logo=typescript&logoColor=ffffff">
+  <img alt="Tailwind CSS v4" src="https://img.shields.io/badge/TAILWIND_V4-1a1a1a?style=for-the-badge&logo=tailwindcss&logoColor=2fd8e8">
+  <img alt="Three.js" src="https://img.shields.io/badge/THREE.JS-1a1a1a?style=for-the-badge&logo=threedotjs&logoColor=ffffff">
+  <img alt="Supabase" src="https://img.shields.io/badge/SUPABASE-1a1a1a?style=for-the-badge&logo=supabase&logoColor=3ecf8e">
+  <img alt="Vercel" src="https://img.shields.io/badge/VERCEL-1a1a1a?style=for-the-badge&logo=vercel&logoColor=ffffff">
+  <img alt="GitHub Actions" src="https://img.shields.io/badge/GITHUB_ACTIONS-1a1a1a?style=for-the-badge&logo=githubactions&logoColor=2fd8e8">
+  <img alt="node:test" src="https://img.shields.io/badge/NODE_TEST-1a1a1a?style=for-the-badge&logo=nodedotjs&logoColor=ffffff">
 </p>
-
-| Layer | What it uses |
-| :-- | :-- |
-| **Framework** | Next.js 16 (App Router, Turbopack), React 19, TypeScript |
-| **Styling** | Camino base, the naOS layer, Tailwind CSS v4, `next-themes` for dark and paper themes |
-| **3D** | Three.js 0.186 renders the Brasswork voxel island |
-| **Maps and data** | `d3-geo` and `topojson-client` for the country outlines |
-| **Data** | Supabase for stored project data |
-| **Games** | Rules are plain TypeScript with no DOM, tested with `node:test`. Saves live in `localStorage`. |
-| **Art** | Procedural 1-bit dither drawn by a script in the repo (`scripts/readme-art`), no third-party art or audio files. Sound is synthesized with Web Audio. |
-| **Checks** | GitHub Actions: typecheck, production build, link crawl, Node Farm and automation test suites, and a stuck-text check |
-| **Hosting** | Vercel builds one branch, `release` |
 
 <br />
 
@@ -120,55 +121,24 @@ Four games have their own palettes and themes. Each one runs in the browser and 
 
 Work lands in small pull requests against `integration`. Merging deploys nothing. `release` is the only branch Vercel builds, and it moves forward only when a deploy is asked for. See [docs/deploys.md](docs/deploys.md).
 
-| Doc | Read it for |
-| :-- | :-- |
-| [docs/WORKFLOW.md](docs/WORKFLOW.md) | How a change goes from idea to merged |
-| [docs/README.md](docs/README.md) | The index of every doc in the repo |
-| [docs/OWNERS.md](docs/OWNERS.md) | Which area owns which files |
-| [docs/ci.md](docs/ci.md) | What each PR check runs and why |
-| [docs/naos.md](docs/naos.md) | The naOS design system: tokens, art, motion, console |
-| [docs/rule-changes/](docs/rule-changes/) | One file per game balance change |
-| [docs/games/](docs/games/) | Per-game `FEATURES.md` and `BACKLOG.md` |
-| [docs/site/](docs/site/) | Site features and backlog |
-
-<br />
-
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="docs/readme/divider-05.png">
-  <img src="docs/readme/divider-05-light.png" alt="05 run it locally" width="860">
-</picture>
-
-```bash
-git clone https://github.com/FreezingShock/nateanderson-dev.git
-cd nateanderson-dev
-git checkout integration
-npm install
-```
-
-Create `.env.local` in the project root:
-
-```bash
-NEXT_PUBLIC_SUPABASE_URL=your-supabase-url
-NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=your-supabase-publishable-key
-GITHUB_TOKEN=your-github-token   # optional, used by the History page
-```
-
-Then start the dev server and open [http://localhost:3000](http://localhost:3000):
-
-```bash
-npm run dev
-```
-
-| Command | What it does |
-| :-- | :-- |
-| `npm run dev` | Dev server with Turbopack |
-| `npm run build` | Production build (the one to test against) |
-| `npm run start` | Serve the production build |
-| `npm run test:nodefarm` | Node Farm, Starwright, Groundbreak and game-shell engine tests |
-| `npm run test:automation` | Brasswork simulation tests |
-| `npm run format` | Format with Prettier |
-
-Local pages sit behind the same password gate as the live site. To redraw the README art, run `python3 scripts/readme-art/generate.py`.
+<table>
+  <tr>
+    <td width="50%"><a href="docs/WORKFLOW.md"><img src="docs/readme/tile-doc-workflow.png" alt="workflow: how a change goes from idea to merged" width="100%"></a></td>
+    <td width="50%"><a href="docs/README.md"><img src="docs/readme/tile-doc-index.png" alt="index: the list of every doc in the repo" width="100%"></a></td>
+  </tr>
+  <tr>
+    <td width="50%"><a href="docs/OWNERS.md"><img src="docs/readme/tile-doc-owners.png" alt="owners: which area owns which files" width="100%"></a></td>
+    <td width="50%"><a href="docs/ci.md"><img src="docs/readme/tile-doc-ci.png" alt="ci: what each PR check runs and why" width="100%"></a></td>
+  </tr>
+  <tr>
+    <td width="50%"><a href="docs/naos.md"><img src="docs/readme/tile-doc-naos.png" alt="naos: the naOS design system, tokens, art, motion and console" width="100%"></a></td>
+    <td width="50%"><a href="docs/games/"><img src="docs/readme/tile-doc-games.png" alt="games: per-game FEATURES.md and BACKLOG.md" width="100%"></a></td>
+  </tr>
+  <tr>
+    <td width="50%"><a href="docs/rule-changes/"><img src="docs/readme/tile-doc-rules.png" alt="rule changes: one file per game balance change" width="100%"></a></td>
+    <td width="50%"><a href="docs/site/"><img src="docs/readme/tile-doc-site.png" alt="site: site features and backlog" width="100%"></a></td>
+  </tr>
+</table>
 
 <br />
 

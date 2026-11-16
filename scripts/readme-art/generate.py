@@ -214,7 +214,7 @@ def hero(light=False):
     title = font(104)
     x, y = 46, 52
     x2, y2 = plate(d, x, y, "naOS", title, block, blockink, pad=(26, 8))
-    small = font(26, mono=True)
+    small = font(30, mono=True)
     plate(d, x, y2 + 16, "NATE ANDERSON OS  //  GAMES, RENDERS, SYSTEMS", small,
           sub_fill, sub_ink, pad=(12, 7))
     return im
@@ -222,7 +222,7 @@ def hero(light=False):
 
 # ---------------------------------------------------------------- dividers
 def divider(number, label, light=False):
-    W, H = 600, 40
+    W, H = 600, 56
     yy, xx = grid(H, W)
     wash = 0.6 * (1 - xx / W) + 0.3 * fbm(H, W, 21 + number, 10, 2)
     ramp = (["#f4f4f2", "#dcdcd8", "#b4b4b0", "#7c7c78", "#3c3c3a", "#1a1a1a"] if light
@@ -231,12 +231,12 @@ def divider(number, label, light=False):
     im = upscale(to_image(rgb))
     d = ImageDraw.Draw(im)
     accent = hx(NAOS["cyan_ink"] if light else NAOS["cyan"])
-    d.rectangle([0, im.height - 4, im.width, im.height], fill=accent)
-    mono = font(26, mono=True)
-    f = font(38)
+    d.rectangle([0, im.height - 6, im.width, im.height], fill=accent)
+    mono = font(34, mono=True)
+    f = font(54)
     block, blockink = (NAOS["ink"], NAOS["paper"]) if light else (NAOS["paper"], NAOS["ink"])
-    x2, _ = plate(d, 0, 12, f"{number:02d}", mono, block, blockink, pad=(14, 6))
-    plate(d, x2 + 10, 12, label, f, block, blockink, pad=(14, 6))
+    x2, _ = plate(d, 0, 10, f"{number:02d}", mono, block, blockink, pad=(16, 8))
+    plate(d, x2 + 10, 10, label, f, block, blockink, pad=(18, 8))
     return im
 
 
@@ -304,9 +304,9 @@ def card_brasswork():
     d.rectangle([0, 242, W, H], fill=hx(BRASS["ink"]))
     im = upscale(im)
     d = ImageDraw.Draw(im)
-    plate(d, 30, 300, "BRASSWORK", font(56), BRASS["ink"], BRASS["brass_hi"], pad=(20, 10),
+    plate(d, 30, 300, "BRASSWORK", font(68), BRASS["ink"], BRASS["brass_hi"], pad=(20, 10),
           border=hx(BRASS["brass"]))
-    plate(d, 30, 396, "3D voxel clockwork automation", font(24, mono=True), BRASS["ink"],
+    plate(d, 30, 396, "3D voxel clockwork automation", font(30, mono=True), BRASS["ink"],
           BRASS["cream"], pad=(12, 7))
     return im
 
@@ -360,9 +360,9 @@ def card_starwright():
         d.rectangle([nx - 2, ny - 2, nx + 2, ny + 2], outline=hx(STAR["lime"]), width=1)
     im = upscale(im)
     d = ImageDraw.Draw(im)
-    plate(d, 30, 300, "STARWRIGHT", font(56), STAR["ink"], STAR["gold"], pad=(20, 10),
+    plate(d, 30, 300, "STARWRIGHT", font(68), STAR["ink"], STAR["gold"], pad=(20, 10),
           border=hx(STAR["gold"]))
-    plate(d, 30, 396, "star fusion idle, one element at a time", font(24, mono=True),
+    plate(d, 30, 396, "star fusion idle, one element at a time", font(30, mono=True),
           STAR["ink"], STAR["text"], pad=(12, 7))
     return im
 
@@ -424,9 +424,9 @@ def card_groundbreak():
     d.rectangle([cr - 4, horizon - 36, cr + 4, horizon - 20], fill=hx(GOLD["dusk"]))
     im = upscale(im)
     d = ImageDraw.Draw(im)
-    plate(d, 30, 300, "GROUNDBREAK", font(56), GOLD["bg"], GOLD["ink"], pad=(20, 10),
+    plate(d, 30, 300, "GROUNDBREAK", font(68), GOLD["bg"], GOLD["ink"], pad=(20, 10),
           border=hx(GOLD["hi"]))
-    plate(d, 30, 396, "idle construction company, bay area", font(24, mono=True), GOLD["bg"],
+    plate(d, 30, 396, "idle construction company, bay area", font(30, mono=True), GOLD["bg"],
           GOLD["hi"], pad=(12, 7))
     return im
 
@@ -461,9 +461,9 @@ def card_node_farm():
     d.rectangle([core[0] - 4, core[1] - 4, core[0] + 4, core[1] + 4], fill=hx(NODE["ground"]))
     im = upscale(im)
     d = ImageDraw.Draw(im)
-    plate(d, 30, 300, "NODE FARM", font(56), NODE["ground"], NODE["cyan"], pad=(20, 10),
+    plate(d, 30, 300, "NODE FARM", font(68), NODE["ground"], NODE["cyan"], pad=(20, 10),
           border=hx(NODE["cyan"]))
-    plate(d, 30, 396, "idle incremental, grown from one hacked node", font(24, mono=True),
+    plate(d, 30, 396, "idle incremental, grown from one hacked node", font(30, mono=True),
           NODE["ground"], NODE["ink"], pad=(12, 7))
     return im
 
@@ -479,9 +479,226 @@ def footer(light=False):
     accent = hx(NAOS["cyan_ink"] if light else NAOS["cyan"])
     d.rectangle([0, 0, im.width, 4], fill=accent)
     block, blockink = (NAOS["ink"], NAOS["paper"]) if light else (NAOS["paper"], NAOS["ink"])
-    plate(d, 24, 16, "// end of transmission", font(24, mono=True), block, blockink, pad=(12, 6))
+    plate(d, 24, 16, "// end of transmission", font(30, mono=True), block, blockink, pad=(12, 6))
     return im
 
+
+# ---------------------------------------------------------------- link tiles
+TILE_W, TILE_H = 240, 120
+CYAN = "#2fd8e8"
+PAPER = "#f4f4f2"
+
+
+def _icon(d, name, cx, cy, col):
+    """Small line icons on the logical grid, centred on (cx, cy)."""
+    c = hx(col)
+    L = lambda *p: d.line(list(p), fill=c, width=1)
+    if name == "home":
+        d.polygon([(cx - 12, cy), (cx, cy - 12), (cx + 12, cy)], outline=c)
+        d.rectangle([cx - 9, cy, cx + 9, cy + 12], outline=c)
+        d.rectangle([cx - 3, cy + 5, cx + 3, cy + 12], fill=c)
+    elif name == "about":
+        d.ellipse([cx - 5, cy - 12, cx + 5, cy - 2], fill=c)
+        d.pieslice([cx - 11, cy - 1, cx + 11, cy + 21], 180, 360, fill=c)
+    elif name == "creations":
+        for ox, oy in [(-10, -10), (1, -10), (-10, 1), (1, 1)]:
+            d.rectangle([cx + ox, cy + oy, cx + ox + 9, cy + oy + 9], outline=c)
+    elif name == "studies":
+        d.rectangle([cx - 11, cy - 11, cx + 11, cy + 11], outline=c)
+        L(cx - 4, cy - 11, cx - 4, cy + 11)
+        L(cx, cy - 5, cx + 7, cy - 5)
+        L(cx, cy, cx + 7, cy)
+        L(cx, cy + 5, cx + 5, cy + 5)
+    elif name == "timeline":
+        L(cx - 12, cy, cx + 12, cy)
+        d.ellipse([cx - 13, cy - 1, cx - 9, cy + 3], fill=c)
+        d.ellipse([cx - 2, cy - 2, cx + 2, cy + 2], outline=c)
+        d.ellipse([cx + 9, cy - 3, cx + 14, cy + 2], fill=c)
+        L(cx - 13, cy - 8, cx - 13, cy - 4)
+        L(cx + 11, cy + 4, cx + 11, cy + 9)
+    elif name == "history":
+        d.ellipse([cx - 11, cy - 11, cx + 11, cy + 11], outline=c)
+        L(cx, cy, cx, cy - 6)
+        L(cx, cy, cx + 5, cy)
+    elif name == "blog":
+        L(cx - 11, cy - 8, cx + 11, cy - 8)
+        L(cx - 11, cy - 2, cx + 11, cy - 2)
+        L(cx - 11, cy + 4, cx + 3, cy + 4)
+        L(cx - 11, cy + 10, cx + 6, cy + 10)
+    elif name == "all":
+        L(cx - 10, cy, cx + 8, cy)
+        d.polygon([(cx + 2, cy - 7), (cx + 10, cy), (cx + 2, cy + 7)], fill=c)
+    elif name == "workflow":
+        d.arc([cx - 11, cy - 11, cx + 11, cy + 11], 30, 300, fill=c)
+        d.polygon([(cx + 6, cy - 13), (cx + 13, cy - 5), (cx + 4, cy - 2)], fill=c)
+    elif name == "index":
+        for oy in (-8, 0, 8):
+            d.rectangle([cx - 11, cy + oy - 1, cx - 9, cy + oy + 1], fill=c)
+            L(cx - 6, cy + oy, cx + 11, cy + oy)
+    elif name == "owners":
+        d.ellipse([cx - 11, cy - 5, cx - 1, cy + 5], outline=c)
+        L(cx - 1, cy, cx + 11, cy)
+        L(cx + 6, cy, cx + 6, cy + 5)
+        L(cx + 10, cy, cx + 10, cy + 4)
+    elif name == "ci":
+        d.ellipse([cx - 11, cy - 11, cx + 11, cy + 11], outline=c)
+        L(cx - 5, cy, cx - 1, cy + 4)
+        L(cx - 1, cy + 4, cx + 6, cy - 4)
+    elif name == "naos":
+        for off in (-6, 0, 6):
+            pts = [(cx - 12 + x, cy + off + 2 * math.sin(x * 0.7)) for x in range(25)]
+            d.line(pts, fill=c, width=1)
+    elif name == "games":
+        d.rounded_rectangle([cx - 12, cy - 6, cx + 12, cy + 6], radius=3, outline=c)
+        L(cx - 7, cy, cx - 3, cy)
+        L(cx - 5, cy - 2, cx - 5, cy + 2)
+        d.ellipse([cx + 4, cy - 2, cx + 6, cy], fill=c)
+        d.ellipse([cx + 7, cy, cx + 9, cy + 2], fill=c)
+    elif name == "rules":
+        L(cx, cy - 11, cx, cy + 11)
+        L(cx - 11, cy - 7, cx + 11, cy - 7)
+        L(cx - 11, cy - 7, cx - 11, cy + 1)
+        L(cx + 11, cy - 7, cx + 11, cy + 1)
+        d.arc([cx - 15, cy - 1, cx - 7, cy + 7], 0, 180, fill=c)
+        d.arc([cx + 7, cy - 1, cx + 15, cy + 7], 0, 180, fill=c)
+    elif name == "site":
+        d.ellipse([cx - 11, cy - 11, cx + 11, cy + 11], outline=c)
+        d.ellipse([cx - 5, cy - 11, cx + 5, cy + 11], outline=c)
+        L(cx - 11, cy, cx + 11, cy)
+
+
+def _frame(name_art=None):
+    """Dark plate with a faint dither wash and cyan corner brackets (logical grid)."""
+    yy, xx = grid(TILE_H, TILE_W)
+    wash = 0.02 + 0.07 * fbm(TILE_H, TILE_W, 31, 24, 2) + 0.05 * (xx / TILE_W)
+    rgb = dither(np.clip(wash, 0, 1), ["#141414", "#181818", "#202020", "#2a2a2a"])
+    im = to_image(rgb)
+    d = ImageDraw.Draw(im)
+    d.rectangle([0, 0, TILE_W - 1, TILE_H - 1], outline=hx("#2a2a2a"))
+    c = hx(CYAN)
+    for x, y, dx, dy in [(0, 0, 1, 1), (TILE_W - 1, 0, -1, 1),
+                         (0, TILE_H - 1, 1, -1), (TILE_W - 1, TILE_H - 1, -1, -1)]:
+        d.line([x, y, x + dx * 12, y], fill=c)
+        d.line([x, y, x, y + dy * 12], fill=c)
+    return im, d
+
+
+def _tile_text(im, title, tag, text_x, cy=60, title_size=40):
+    """Title and tag centred on the row at logical cy, drawn at 2x."""
+    im = upscale(im)
+    d = ImageDraw.Draw(im)
+    tf = font(title_size * 1)
+    gf = font(22, mono=True)
+    lines = title.split("\n")
+    lh = int(title_size * 1.0)
+    block_h = lh * len(lines) + 14 + 28
+    top = cy * SCALE - block_h // 2
+    for i, line in enumerate(lines):
+        d.text((text_x, top + i * lh), line, font=tf, fill=hx(PAPER))
+    if tag:
+        d.text((text_x, top + lh * len(lines) + 14), tag, font=gf, fill=hx("#8b99a1"))
+    return im
+
+
+def tile_page(icon, title, tag):
+    im, d = _frame()
+    _icon(d, icon, 34, 60, CYAN)
+    return _tile_text(im, title, tag, text_x=112)
+
+
+def tile_doc(icon, title, tag):
+    im, d = _frame()
+    _icon(d, icon, 34, 60, CYAN)
+    return _tile_text(im, title, tag, text_x=112)
+
+
+def tile_outline_guesser():
+    im, d = _frame()
+    # Dotted grid behind the art.
+    for gy in range(10, TILE_H, 10):
+        for gx in range(120, TILE_W, 10):
+            d.point((gx, gy), fill=hx("#2a2a2a"))
+    # An original landmass: a jagged closed outline with a dithered inside.
+    cx, cy = 198, 62
+    pts = []
+    for k in range(48):
+        t = 2 * math.pi * k / 48
+        r = 27 + 5 * math.sin(3 * t + 1) + 2.5 * math.sin(7 * t) + 1.5 * math.cos(11 * t)
+        pts.append((cx + r * math.cos(t) * 0.92, cy + r * math.sin(t) * 0.78))
+    mask = Image.new("L", (TILE_W, TILE_H), 0)
+    ImageDraw.Draw(mask).polygon(pts, fill=255)
+    m = np.array(mask) > 0
+    yy, xx = grid(TILE_H, TILE_W)
+    field = np.clip(0.35 + 0.5 * (1 - np.hypot(xx - cx, (yy - cy) * 1.2) / 44), 0, 1)
+    fill = dither(field, ["#0e2a2e", "#1d4a4f", "#2fd8e8", "#dffaff"])
+    arr = np.array(im)
+    arr[m] = fill[m]
+    im = Image.fromarray(arr)
+    d = ImageDraw.Draw(im)
+    d.line(pts + [pts[0]], fill=hx(PAPER), width=1)
+    # Guess marker.
+    mx, my = 190, 58
+    d.rectangle([mx - 2, my - 2, mx + 2, my + 2], fill=hx(PAPER))
+    d.rectangle([mx - 1, my - 1, mx + 1, my + 1], fill=hx(CYAN))
+    return _tile_text(im, "outline\nguesser", "daily + unlimited", text_x=36)
+
+
+def tile_flag_guesser():
+    im, d = _frame()
+    palette = [CYAN, PAPER, "#1a1a1a", "#0a6f7c"]
+    cells = [
+        ("h", 0, 1), ("v", 1, 2), ("q", 2, 3),
+        ("d", 0, 1), ("c", 1, 2), ("h", 3, 0),
+    ]
+    x0, y0, cw, ch, gap = 140, 24, 30, 34, 4
+    for i, (kind, a, b) in enumerate(cells):
+        col, row = i % 3, i // 3
+        x = x0 + col * (cw + gap)
+        y = y0 + row * (ch + gap)
+        flip = i == 4  # one cell is mid-flip, drawn narrower
+        w = 7 if flip else cw
+        ox = x + (cw - w) // 2
+        c1, c2, c3 = palette[a], palette[b], palette[(a + b) % 4]
+        if kind == "h":
+            d.rectangle([ox, y, ox + w, y + ch // 2], fill=hx(c1))
+            d.rectangle([ox, y + ch // 2, ox + w, y + ch], fill=hx(c2))
+        elif kind == "v":
+            d.rectangle([ox, y, ox + w // 3, y + ch], fill=hx(c1))
+            d.rectangle([ox + w // 3, y, ox + 2 * w // 3, y + ch], fill=hx(c2))
+            d.rectangle([ox + 2 * w // 3, y, ox + w, y + ch], fill=hx(c3))
+        elif kind == "q":
+            d.rectangle([ox, y, ox + w, y + ch], fill=hx(c1))
+            d.rectangle([ox + w // 2, y + ch // 2, ox + w, y + ch], fill=hx(c2))
+        elif kind == "d":
+            d.rectangle([ox, y, ox + w, y + ch], fill=hx(c1))
+            d.polygon([(ox, y + ch), (ox + w, y), (ox + w, y + ch)], fill=hx(c2))
+        else:
+            d.rectangle([ox, y, ox + w, y + ch], fill=hx(c1))
+            d.ellipse([ox + w // 4, y + ch // 4, ox + 3 * w // 4, y + 3 * ch // 4], fill=hx(c2))
+        d.rectangle([ox, y, ox + w, y + ch], outline=hx("#0e0e0e"))
+    return _tile_text(im, "flag\nguesser", "daily + unlimited", text_x=36)
+
+
+PAGE_TILES = {
+    "tile-page-home": ("home", "home", "/"),
+    "tile-page-about": ("about", "about", "/about"),
+    "tile-page-creations": ("creations", "creations", "/creations"),
+    "tile-page-studies": ("studies", "studies", "/studies"),
+    "tile-page-timeline": ("timeline", "timeline", "/timeline"),
+    "tile-page-history": ("history", "history", "/history"),
+    "tile-page-blog": ("blog", "blog", "/blog"),
+    "tile-page-all": ("all", "all pages", "nateanderson.dev"),
+}
+DOC_TILES = {
+    "tile-doc-workflow": ("workflow", "workflow", "docs/WORKFLOW.md"),
+    "tile-doc-index": ("index", "index", "docs/README.md"),
+    "tile-doc-owners": ("owners", "owners", "docs/OWNERS.md"),
+    "tile-doc-ci": ("ci", "ci", "docs/ci.md"),
+    "tile-doc-naos": ("naos", "naos", "docs/naos.md"),
+    "tile-doc-games": ("games", "games", "docs/games/"),
+    "tile-doc-rules": ("rules", "rule changes", "docs/rule-changes/"),
+    "tile-doc-site": ("site", "site", "docs/site/"),
+}
 
 # ---------------------------------------------------------------- registry
 PIECES = {
@@ -491,16 +708,18 @@ PIECES = {
     "divider-02": lambda: divider(2, "games"),
     "divider-03": lambda: divider(3, "stack"),
     "divider-04": lambda: divider(4, "workflow"),
-    "divider-05": lambda: divider(5, "run it locally"),
     "divider-01-light": lambda: divider(1, "what it is", light=True),
     "divider-02-light": lambda: divider(2, "games", light=True),
     "divider-03-light": lambda: divider(3, "stack", light=True),
     "divider-04-light": lambda: divider(4, "workflow", light=True),
-    "divider-05-light": lambda: divider(5, "run it locally", light=True),
     "card-brasswork": card_brasswork,
     "card-starwright": card_starwright,
     "card-groundbreak": card_groundbreak,
     "card-node-farm": card_node_farm,
+    "tile-outline-guesser": tile_outline_guesser,
+    "tile-flag-guesser": tile_flag_guesser,
+    **{k: (lambda v=v: tile_page(*v)) for k, v in PAGE_TILES.items()},
+    **{k: (lambda v=v: tile_doc(*v)) for k, v in DOC_TILES.items()},
     "footer": lambda: footer(light=False),
     "footer-light": lambda: footer(light=True),
 }
