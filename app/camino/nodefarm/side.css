@@ -1,0 +1,43 @@
+/* ---- Node Farm page: the board, with a side panel for the log, the keys and the save tools (components/nodefarm/side-panel.tsx).
+   Wide screens: board on the left, panel on the right and sticky. Narrow screens: the panel stacks under the board. */
+.ctos .nf-page { display: grid; gap: 22px; min-width: 0; }
+.ctos .nf-stage { min-width: 0; }
+@media (min-width: 1240px) {
+    .ctos .nf-page { grid-template-columns: minmax(0, 1fr) 300px; align-items: start; gap: 24px; }
+    .ctos .nf-side { position: sticky; top: 84px; }
+}
+
+.ctos .nf-side { display: grid; gap: 12px; min-width: 0; align-content: start; }
+.ctos .nf-card { position: relative; display: grid; gap: 8px; padding: 14px 16px 16px; background: #0a0a0a; border: 1px solid var(--nf-line); color: var(--cm-fg); }
+.ctos .nf-card::before { content: ""; position: absolute; left: -1px; top: -1px; width: 14px; height: 14px; border-top: 2px solid var(--cm-cyan); border-left: 2px solid var(--cm-cyan); pointer-events: none; }
+.ctos .nf-card-top { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.ctos .nf-card-sys { font: 600 var(--cm-ctos-t-micro)/1 var(--cm-mono); letter-spacing: .14em; text-transform: uppercase; color: var(--cm-mute); }
+.ctos .nf-card .nf-card-h { margin: 2px 0 0; font: 700 var(--cm-ctos-t-ui)/1.2 var(--cm-mono); letter-spacing: .08em; text-transform: uppercase; color: #f4f4f4; }
+.ctos .nf-card .nf-card-p { margin: 0; font: 400 15px/1.5 var(--font-arimo), Helvetica, Arial, sans-serif; color: var(--cm-fg); }
+.ctos .nf-card-note { margin: 2px 0 0; font: 500 var(--cm-ctos-t-micro)/1.3 var(--cm-mono); letter-spacing: .08em; color: var(--cm-mute); }
+
+.ctos .nf-keys { display: grid; gap: 0; margin: 0; }
+.ctos .nf-key { display: grid; grid-template-columns: 92px minmax(0, 1fr); gap: 10px; align-items: baseline; padding: 6px 0; border-top: 1px solid var(--cm-hair, #1e1e1e); }
+.ctos .nf-key:first-child { border-top: 0; }
+.ctos .nf-key dt { display: flex; flex-wrap: wrap; gap: 3px; }
+.ctos .nf-key dd { margin: 0; font: 400 13px/1.4 var(--font-arimo), Helvetica, Arial, sans-serif; color: var(--cm-mute); }
+.ctos .nf-keys kbd, .ctos .nf-side-btn kbd {
+    display: inline-block; min-width: 1.6em; padding: 2px 5px; text-align: center; font: 600 11px/1.2 var(--cm-mono); color: var(--cm-fg);
+    background: #141414; border: 1px solid var(--nf-line); letter-spacing: .04em;
+}
+
+.ctos .nf-side-acts { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.ctos .nf-side-btn {
+    display: flex; align-items: center; justify-content: space-between; gap: 8px; min-height: 34px; padding: 0 10px;
+    background: #101010; border: 1px solid var(--nf-line); color: var(--cm-fg); cursor: pointer;
+    font: 600 var(--cm-ctos-t-micro)/1.2 var(--cm-mono); letter-spacing: .1em; text-transform: uppercase; text-align: left;
+}
+.ctos .nf-side-acts .nf-side-btn:first-child { grid-column: 1 / -1; }
+.ctos .nf-side-full { margin-top: 2px; justify-content: center; }
+.ctos .nf-side-btn:hover { background: var(--cm-cyan); color: #0a0a0a; border-color: var(--cm-cyan); }
+.ctos .nf-side-btn:hover kbd { background: #0a0a0a; color: var(--cm-cyan); border-color: #0a0a0a; }
+.ctos .nf-side-btn:focus-visible { outline: 2px solid var(--cm-cyan); outline-offset: 2px; }
+@media (hover: none) { .ctos .nf-side-btn { min-height: 40px; } }
+@media (prefers-reduced-motion: no-preference) {
+    .ctos .nf-side-btn { transition: background-color .12s steps(2, end), color .12s steps(2, end); }
+}
