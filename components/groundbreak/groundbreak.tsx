@@ -6,7 +6,7 @@ import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type PointerEvent as RPointerEvent, type ReactNode } from "react";
 import { useGameShell } from "@/components/games/shell/game-route-shell";
 import { createSaveTools, downloadText, readPickedFile, writeStored } from "@/lib/games/save";
-import { loadSave, rawSavedAt, reviveAuto, reviveText, rollCopies, writeSave, encodeSave } from "@/lib/saves/core";
+import { loadSave, reviveAuto, reviveText, rollCopies, writeSave, encodeSave } from "@/lib/saves/core";
 import { JOB_BY, JOBS, MATS, PERKS, TIER_LABELS, TUNE, UNLOCK_COST as UNLOCK, cityOf, N as NMAT } from "@/lib/groundbreak/data";
 import {
     GROUNDBREAK_SAVE, SAVE_KEY, SAVE_VERSION, acceptChange, buy, jobMat, buyPerk, canBuy, canIncorporate, canUnlock, catchUp, charterGain, chain, declineChange, effects, fmt, fmtAge,
@@ -15,6 +15,9 @@ import {
 } from "@/lib/groundbreak/engine";
 import { gbCommand } from "@/lib/groundbreak/commands";
 import { awaySnap, awaySummary, doCue, nextCue, type AwaySummary, type Cue } from "@/lib/groundbreak/guide";
+import { usePresence, useAutosave } from "@/components/game-kit/hooks";
+import { useToasts } from "@/components/game-kit/use-toasts";
+import { watchNewerSave } from "@/lib/game-kit/tabs";
 import { MAT_ICONS, iconUrl } from "./icons";
 import { GB_JOBS, type GbJobId } from "@/components/groundbreak-art";
 import { GB_BANNERS, type GbBannerId } from "@/components/groundbreak-art/ui-art";
@@ -62,15 +65,10 @@ function Ico({ id, size = 20, className }: { id: string; size?: number; classNam
     return <i className={`gb-ico ${className ?? ""}`} style={{ width: size, height: size, backgroundImage: url ? `url(${url})` : undefined }} aria-hidden="true" />;
 }
 
-/** Keeps a window mounted for its exit animation. */
+/** Keeps a window mounted for its exit animation (the game kit's usePresence). */
 function useExit(open: boolean, ms = 190): { mounted: boolean; state: "in" | "out" } {
-    const [mounted, setMounted] = useState(open);
-    useEffect(() => {
-        if (open) { setMounted(true); return; }
-        const id = window.setTimeout(() => setMounted(false), ms);
-        return () => window.clearTimeout(id);
-    }, [open, ms]);
-    return { mounted: open || mounted, state: open ? "in" : "out" };
+    const { mounted } = usePresence(open, ms);
+    return { mounted, state: open ? "in" : "out" };
 }
 
 /** Holds the last non-null value for `ms` after it clears, so a card can play its exit. `state` is "out" while it leaves. */
@@ -109,7 +107,8 @@ export function Groundbreak() {
     const bump = useCallback(() => setN((n) => n + 1), []);
     const [win, setWin] = useState<Win>(null);
     const [sel, setSel] = useState<number | null>(null);
-    const [notes, setNotes] = useState<Note[]>([]);
+    // Toasts (the game kit's queue): warnings stay 20 s and are never pushed out; of the rest only the newest stays beside a new one.
+    const { toasts: notes, push: pushNote } = useToasts<NonNullable<Note["tone"]>>({ keep: 1, dedupe: true, ttlMs: 6000, stickyTtlMs: 20000 });
     // the material that just came on site: its dock tile plays one ring (keyed, so a new one restarts it)
     const [pulse, setPulse] = useState<{ key: number; mat: number } | null>(null);
     const pulseId = useRef(0);
@@ -135,17 +134,14 @@ export function Groundbreak() {
     const [reduce, setReduce] = useState(false);
     const [simple, setSimple] = useState(false);
     const [jobOpen, setJobOpen] = useState(true);
-    const noteId = useRef(0);
     const lastTick = useRef(0);
     const seen = useRef({ built: 0, open: 1, change: false, cashAll: 0 });
     const shell = useGameShell();
 
     // a sticky note is a warning the player must be able to read (a broken save, storage blocked): later toasts do not push it out, and it stays 20 s
     const note = useCallback((text: string, tone?: Note["tone"], sticky = false) => {
-        const id = ++noteId.current;
-        setNotes((n) => { const rest = n.filter((x) => x.text !== text); return [...rest.filter((x) => x.sticky), ...rest.filter((x) => !x.sticky).slice(-1), { id, text, tone, sticky }]; });
-        window.setTimeout(() => setNotes((n) => n.filter((x) => x.id !== id)), sticky ? 20000 : 6000);
-    }, []);
+        pushNote(text, tone, sticky);
+    }, [pushNote]);
     const save = useCallback(() => {
         const s = sRef.current;
         if (!s) return;
@@ -320,24 +316,19 @@ export function Groundbreak() {
             seen.current = { built: s.built, open: s.open, change: !!s.change, cashAll: s.cashAll };
         }, 100);
         const ui = window.setInterval(bump, 250);
-        const sv = window.setInterval(save, 8000);
-        const onHide = () => save();
-        document.addEventListener("visibilitychange", onHide);
-        window.addEventListener("pagehide", onHide);
-        // `gb` in the site console talks to the open game through this event
-        const onStore = (e: StorageEvent) => {
-            if (e.key !== SAVE_KEY || !e.newValue || !sRef.current) return;
-            try { if (rawSavedAt(e.newValue) > sRef.current.savedAt) { conflictRef.current = true; setConflict(true); } } catch { /* ignore */ }
-        };
-        window.addEventListener("storage", onStore);
+        // another tab saved newer progress: stop saving here so it cannot be overwritten (the game kit's watcher)
+        const offNewer = watchNewerSave(SAVE_KEY, () => sRef.current?.savedAt, () => { conflictRef.current = true; setConflict(true); });
         // after 40 s without touching the view, the camera finds the site again
         const follow = window.setInterval(() => {
             if (userCam.current && lastInput.current && Date.now() - lastInput.current > 40_000) { userCam.current = false; const s = sRef.current; if (s) setCamera(homeCam(s.job?.id ?? nextJob(s).id)); }
         }, 2000);
+        // `gb` in the site console talks to the open game through this event
         const onLive = (e: Event) => { (e as CustomEvent).detail.live = { s: sRef.current, changed: () => { bump(); save(); } }; };
         window.addEventListener("gb:live", onLive);
-        return () => { clearInterval(tick); clearInterval(ui); clearInterval(sv); clearInterval(follow); window.removeEventListener("storage", onStore); document.removeEventListener("visibilitychange", onHide); window.removeEventListener("pagehide", onHide); window.removeEventListener("gb:live", onLive); save(); };
+        return () => { clearInterval(tick); clearInterval(ui); clearInterval(follow); offNewer(); window.removeEventListener("gb:live", onLive); };
     }, [ready, bump, save, note, setCamera, homeCam]);
+    // Saves every 8 s, on tab hide, on leaving and on unmount (the game kit's loop; save() writes through lib/saves).
+    useAutosave(save, { enabled: ready });
 
     // ---- actions -----------------------------------------------------------------------------------------------------------
     const act = useCallback((fn: (s: State) => unknown) => { const s = sRef.current; if (s) { fn(s); bump(); } }, [bump]);
