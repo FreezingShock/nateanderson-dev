@@ -123,7 +123,9 @@ def save_sheet(key, frames, fps=8, loop=True, **meta):
     path = os.path.join(OUT, key + ".png")
     os.makedirs(os.path.dirname(path), exist_ok=True)
     Image.fromarray(sheet, "RGBA").save(path, optimize=True)
-    MANIFEST[key] = {"src": f"/starwright/{key}.png", "w": w, "h": h, "frames": len(frames), "fps": fps, "loop": loop, **meta}
+    # The site loads the lossless WebP (same pixels, about 43% of the bytes); the PNG stays as the source.
+    Image.fromarray(sheet, "RGBA").save(path[:-4] + ".webp", "WEBP", lossless=True, method=6, quality=100)
+    MANIFEST[key] = {"src": f"/starwright/{key}.webp", "w": w, "h": h, "frames": len(frames), "fps": fps, "loop": loop, **meta}
     return sheet
 
 

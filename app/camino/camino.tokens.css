@@ -81,6 +81,25 @@
   --cm-d-reveal: .7s; --cm-rise: 14px; --cm-slide: 24px;
   --cm-d-slow: 1s;   --cm-d-long: 1.2s;   /* ambient and long loops; snapped from raw 0.9 to 1.5s values */
 
+  /* ---- Site motion scale (shared by every page, card and button) ----------------------------------------
+     Use these names. Do not write a duration or curve into a component.
+       easing:   --cm-ease       hover, colour, enter
+                 --cm-ease-out  reveals, landings, page content arriving
+                 --cm-ease-cut  wipes, panels, page shutters (hard start and stop)
+                 --cm-ease-press press and lift: a small settle, no overshoot on collapse
+       duration: --cm-d-instant press feedback        --cm-d-fast tips and colour
+                 --cm-d-base    hover borders and fills --cm-d-enter menus and panels
+                 --cm-d-shut    page shutters close    --cm-d-name page title settles
+                 --cm-d-exit   page shutters open     --cm-d-wipe, --cm-d-reveal, --cm-d-count, --cm-d-slow, --cm-d-long
+       travel:   --cm-lift (hover rise), --cm-press (press scale)                                           */
+  --cm-ease-press: cubic-bezier(.2, 1.25, .4, 1);
+  --cm-d-instant: .08s;
+  --cm-d-shut: .22s;   /* page shutters close (was a local --x-cover) */
+  --cm-d-name: .18s;   /* page title and blurb settle (was --x-name) */
+  --cm-d-exit: .28s;   /* page shutters open (was --x-exit) */
+  --cm-lift: translate3d(0, -2px, 0);
+  --cm-press: scale(.985);
+
   /* ---- Layers --------------------------------------------------------- */
   --cm-z-film: 2; --cm-z-tags: 3; --cm-z-ui: 5; --cm-z-modal: 12; --cm-z-top: 20; --cm-z-curtain: 40; --cm-z-boot: 50;
 }
@@ -99,6 +118,20 @@
   --cm-shadow: 0 18px 40px -28px rgba(0,0,0,.35);
 }
 
+/* Reduced motion, one rule for the whole site: every transition and animation finishes at once on its end state
+   (no travel, no loops, no delays). Engine-driven reveals are handled in lib/motion/engine.ts. Games follow it too. */
 @media (prefers-reduced-motion: reduce) {
-  :root { --cm-d-fast: .01s; --cm-d-base: .01s; --cm-d-enter: .01s; --cm-d-wipe: .01s; --cm-d-count: .01s; }
+  :root {
+    --cm-d-instant: .01s; --cm-d-fast: .01s; --cm-d-base: .01s; --cm-d-enter: .01s; --cm-d-wipe: .01s; --cm-d-count: .01s;
+    --cm-d-shut: .01s; --cm-d-name: .01s; --cm-d-exit: .01s;
+    --cm-lift: none; --cm-press: none;
+  }
+  *, *::before, *::after {
+    animation-duration: .01ms !important;
+    animation-delay: 0s !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .01ms !important;
+    transition-delay: 0s !important;
+    scroll-behavior: auto !important;
+  }
 }

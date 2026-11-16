@@ -140,3 +140,6 @@ One motion language for every menu, sheet and button. Tokens and shared keyframe
 
 **Empty and locked states:** locked machine rows show padlock slots and "Fill hub orders and they appear here" (`build-bar.tsx`); an untouched hub order shows the crate scene; the away report with nothing gained and the production ledger show the idle scene. `components/automation/empty-states.css`.
 **First minutes (checked headless with `scripts/automation/first-minutes.mjs`):** the banner walks drill, kiln (starts on Iron ingot), windmill, belts, then the first order. The quest scroll and banner agree.
+
+## Reward moments
+- Resource gain float: a `+N` rises once off a resource box in the top strip when its stock rises (about once a second per resource). Shows over the reward card's count-up and does not replace it. `GainFloat` in `components/automation/resource-strip.tsx`, styles at the end of `components/automation/resource-box.css`. Hidden in reduced motion and Low fx. Checked headless with the `?bwdev=1` hook (`/mnt/project-files/game-juice-2026-11-16/brasswork-gain.mjs`), not on a real GPU.

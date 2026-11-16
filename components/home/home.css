@@ -578,7 +578,7 @@
     background-color: var(--gs-ink);
     border: 1px solid var(--gs-line);
     box-shadow: inset 0 0 0 1px rgba(0, 0, 0, .4);
-    transition: border-color var(--cm-d-base), transform var(--cm-d-base);
+    transition: border-color var(--cm-d-base) var(--cm-ease), transform var(--cm-d-enter) var(--cm-ease);
 }
 /* Brasswork: brass on warm dark, no cyan. */
 .gs-card[data-game="brasswork"] {
@@ -607,8 +607,9 @@
 .gs-card:hover,
 .gs-card:focus-visible {
     border-color: var(--gs-accent);
-    transform: translateY(-2px);
+    transform: var(--cm-lift);
 }
+.gs-card:active { transform: var(--cm-press); }
 .gs-card:focus-visible { outline: 2px solid var(--gs-accent); outline-offset: 3px; }
 
 /* Padded plate around the capture: the card body shows as a frame on every side. */
@@ -635,7 +636,7 @@
 }
 .gs-shot img {
     object-fit: cover;
-    transition: transform 600ms cubic-bezier(.2, .7, .2, 1);
+    transition: transform var(--cm-d-count) var(--cm-ease);
 }
 .gs-card:hover .gs-shot img { transform: scale(1.03); }
 
