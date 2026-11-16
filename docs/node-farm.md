@@ -48,6 +48,9 @@ Folder map (reorganised 2026-11-13, files moved only, no behaviour change; the s
 - Core stages (`core.tsx`): hexagon until 4 stats are unlocked, then an octagon with an inner rotor, then an eight-pointed crystal at 6 stats. Layers on top: an orbiting node per unlocked stat past the second, a centre spoke per doubling of Reboots (max 8), and a halo segment per Ascension Point (max 24).
 - Sounds: the `nf*` entries in `lib/sound/sounds.ts` (naOS blips and scans, rate-limited, off until the first click or key press). `nfBuy` has a voice per stat (keypad, relay clack, ticks, chime, airy swell); `nfTierUp` plays the first time a tier is bought, `nfDecrypt` when a stat unlocks, `nfAscend` is the long root-access sequence. The reactor hum is `setHum()` in `lib/sound/engine.ts`, driven every game tick; it rises with Bytes/s, pitches up during an Overclock, and has its own Hum switch in the Menu (`nf-hum-v1`).
 
+## Codex "new" rule (2026-11-16)
+`isCodexNew(entry, seen)` in `lib/nodefarm/content/codex.ts` is the one rule for "new": basics and reference entries are never new, anything reached and not yet read is. The rail count (`switcher.tsx`), the window's NEW readout and the dots in its list all call it. Before, the window counted basics too (23 against the rail's 10). Test: `tests/nodefarm/codex.test.mjs`.
+
 ## Gotchas
 - Always put `font` rules for buttons through `:where(button)` (the reset is), or element selectors beat the class rules.
 - Events only spawn once Multipliers plus Reboots reach 5 (the trace needs 8), so a brand-new player is not interrupted. The incoming card waits 15 s, so a Playwright test that fast-forwards a fake clock must step in small chunks and stop as soon as `.nf-ev` exists.
