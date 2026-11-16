@@ -58,6 +58,9 @@ import { VolumeRows } from "./audio-rows";
 import { loadSettings, saveSettings } from "@/lib/brasswork/settings";
 import { BRASSWORK_SAVE } from "@/lib/automation/sim/save";
 import { loadSave, writeSave } from "@/lib/saves/core";
+import { useToasts } from "@/components/game-kit/use-toasts";
+import { ToastStack } from "@/components/game-kit/ui";
+import "./save-notes.css";
 import "@/components/brasswork-ui/type.css";
 
 const W = 18;
@@ -111,11 +114,12 @@ function freshWorld(): World {
     return w;
 }
 
-function loadWorld(): { world: World; savedAt: number } {
-    // lib/saves/core keeps a save that cannot be read under SAVE_KEY-corrupt before a fresh world starts
+function loadWorld(): { world: World; savedAt: number; note: string } {
+    // lib/saves/core keeps a save that cannot be read under SAVE_KEY-corrupt before a fresh world starts. `note` says so
+    // (or that a backup was loaded instead); it is empty for a normal load.
     const r = loadSave(localStorage, BRASSWORK_SAVE);
-    if (r.state) return { world: r.state, savedAt: r.savedAt || Date.now() };
-    return { world: freshWorld(), savedAt: Date.now() };
+    if (r.state) return { world: r.state, savedAt: r.savedAt || Date.now(), note: r.note };
+    return { world: freshWorld(), savedAt: Date.now(), note: r.note };
 }
 
 // Yields to the browser between slices of work. A MessageChannel is not clamped in a background tab the way setTimeout is.
@@ -160,6 +164,8 @@ export function BrassworkHost() {
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const [data, setData] = useState<HudData>(() => hudData(freshWorld(), CAT, null, START_SETTINGS));
     const [note, setNote] = useState("");
+    // Save warnings (an unreadable save was kept, or a backup was loaded): a sticky brass toast the player can read, 20 s.
+    const { toasts: saveNotes, push: pushSaveNote, dismiss: dismissSaveNote } = useToasts<"hot">({ keep: 1, dedupe: true, ttlMs: 20000 });
     // What the armed tool does, shown until something else needs the line. Follows the input layer's tool, however it was armed.
     const [hint, setHint] = useState("");
     // Placed-piece pop-up: the building's anchor, what it is, and where to pin it on screen.
@@ -212,7 +218,8 @@ export function BrassworkHost() {
         (async () => {
             // The save loads at once. The away-time catch-up runs in slices beside the chunk downloads, so the page stays
             // responsive (an 8 hour gap is 28,800 one-second steps) and costs no wall time the download was not already taking.
-            const { world, savedAt } = loadWorld();
+            const { world, savedAt, note: loadNote } = loadWorld();
+            if (loadNote) pushSaveNote(loadNote, "hot", true);
             let settings = loadSettings(START_SETTINGS);
             const caughtUp = catchUpAway(world, savedAt, settings, setAway, () => dead);
             const [{ createVoxelIsland, heightAt }, { mount }, { attachLife }] = await Promise.all([import("@/lib/automation/render"), import("@/lib/automation/input"), import("@/lib/automation/render/life"), caughtUp]);
@@ -875,6 +882,9 @@ export function BrassworkHost() {
                     />
                 )}
                 {(note || hint) && <p className="bw-note">{note || hint}</p>}
+                <div className="gk bw-save-notes">
+                    <ToastStack toasts={saveNotes} onDismiss={dismissSaveNote} placement="top" />
+                </div>
             </AutomationHud>
         </div>
     );
