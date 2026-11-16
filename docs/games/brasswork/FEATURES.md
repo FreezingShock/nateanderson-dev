@@ -37,7 +37,7 @@ Owners are per area, one thread per file set. The threads: "Streamline Brasswork
 | Drills on nodes: purity multiplier, work from any of their four cells | working | `sim/world.ts`, `data/tree.ts` | `drills.test.mjs`, `resources.test.mjs` |
 | Crafting machines (kiln, furnace, press, lathe, drawer, assembler, fabricator), recipes, buffers | working | `data/tree.ts`, `sim/world.ts` | `recipes.test.mjs`, `sim.test.mjs` |
 | Power: windmills 50 kW over 8 cells with gusts, spring winder steady 60 kW, spring store battery, unused power shared | working | `sim/world.ts` (`windAt`, `chargeOf`) | `power-detail.test.mjs`, `power-share.test.mjs` |
-| Research tree: 16 core nodes, 5 alternate recipes, 6 mastery nodes; research enforced | working | `data/tree.ts`, `sim/progress.ts` | `research-gate.test.mjs`, `progression.test.mjs` |
+| Research tree: 16 core nodes, 5 alternate recipes, 6 mastery nodes; research enforced; the window uses brass and a warm olive-bronze patina, no teal | working | `data/tree.ts`, `sim/progress.ts` | `research-gate.test.mjs`, `progression.test.mjs` |
 | Hub requests (4 early deliveries) and 5 milestones paying blueprints | working | `data/tree.ts`, `sim/progress.ts` | `hub-requests.test.mjs`, `hub-costs.test.mjs` |
 | Commissions after Sky orrery first light, repeating and scaling | working | `sim/data.ts`, `sim/progress.ts` | `progression.test.mjs` |
 | Supply crates on orders and milestones | working | `sim/progress.ts` | `progression.test.mjs` |

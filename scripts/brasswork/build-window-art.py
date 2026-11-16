@@ -39,9 +39,11 @@ EXTRA = {
     "night": [hexc(c) for c in ("#0d0905", "#160f08", "#21170c", "#2e2010", "#3d2b14")],
     "ink": [hexc(c) for c in ("#0e0a06", "#1a1209", "#2a1d0e")],
     "paper": [hexc(c) for c in ("#5a4a30", "#8a7650", "#b8a47a", "#dccaa0", "#f2e4c0")],
-    "print": [hexc(c) for c in ("#0e1c1e", "#14302f", "#1d4542", "#2b5e58", "#4a837a", "#86b2a6")],
+    "print": [hexc(c) for c in ("#15120a", "#282210", "#3b3316", "#55491f", "#7a6a2e", "#b0a060")],
     "sea": [hexc(c) for c in ("#10161a", "#1a2a2c", "#27403e", "#3a5a52", "#5a7c68")],
     "red": [hexc(c) for c in ("#2a0a06", "#5a160c", "#8e2814", "#c0442a", "#e07050")],
+    # warm green-bronze patina for the window banners (the game's verdigris ramp leans green-teal)
+    "olive": [hexc(c) for c in ("#14120a", "#262010", "#3a3418", "#554c24", "#76693a", "#a09a5c")],
 }
 
 
@@ -265,8 +267,8 @@ def hub():
     p.fill(body, "brick", p.lit(np.full((H, W), 0.6), 160, 12, 0.04))
     bricks = body & (((p.Y.astype(int)) % 3 == 0) | (((p.X.astype(int) + (p.Y.astype(int) // 3) * 3) % 6) == 0))
     p.fill(bricks, "brick", 0.25)
-    p.fill(p.poly([(112, 7), (162, -2), (212, 7)]), "patina", p.vgrad(0.75, 0.4))
-    p.fill(p.rect(112, 6, 212, 7), "patina", 0.25)
+    p.fill(p.poly([(112, 7), (162, -2), (212, 7)]), "olive", p.vgrad(0.75, 0.4))
+    p.fill(p.rect(112, 6, 212, 7), "olive", 0.25)
     # doors, windows, lamp light
     p.fill(p.rect(152, 10, 168, 19), "wood", 0.45)
     p.fill(p.rect(159.5, 10, 160.5, 19), "wood", 0.15)

@@ -9,7 +9,7 @@
   --bw-cream: #f0dfb8; --bw-dim: #b09a6c;
   --bw-wood: #3a2616; --bw-wood-hi: #4d3320; --bw-wood-lo: #24160c; --bw-ink: #140d08;
   --bw-steel: #5e5348; --bw-steel-lo: #3a3128;
-  --bw-amber: #ffb347; --bw-patina: #58b09a; --bw-bad: #d4614a; --bw-ok: #9bc27a;
+  --bw-amber: #ffb347; --bw-patina: #8f9650; --bw-bad: #d4614a; --bw-ok: #9bc27a;
   --bw-font: "Courier New", ui-monospace, monospace;
 
   /* Bayer-style dither overlays (4px cell, nearest-neighbour) */
