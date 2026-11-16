@@ -13,7 +13,7 @@
 
 @media (hover: hover) and (prefers-reduced-motion: no-preference) {
   .ctos .cm-card[data-tone] > .cm-card-art {
-    transition: translate var(--cm-d-reveal) var(--cm-ease-out), opacity var(--cm-d-enter) var(--cm-ease);
+    transition: translate var(--cm-d-enter) var(--cm-ease), opacity var(--cm-d-base) var(--cm-ease);
   }
   /* Panel tone (the default for toned cards): the art lifts 8px and brightens from .14 to .24. */
   .ctos .cm-card.link[data-tone="panel"]:hover > .cm-card-art,
