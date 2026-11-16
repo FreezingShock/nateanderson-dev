@@ -7,8 +7,11 @@ import {
     UNLOCK_COST, cityLoop, cityOf, jobAt, type FxKey, type JobDef, type PhaseId,
 } from "./data";
 
-export const SAVE_KEY = "gb-save-v1";
-export const SAVE_VERSION = 2;
+import { SAVE_SLOTS } from "../saves/keys";
+import { readSaveKey, type SaveDef } from "../saves/core";
+
+export const SAVE_KEY = SAVE_SLOTS.groundbreak.key;
+export const SAVE_VERSION = SAVE_SLOTS.groundbreak.version;
 
 export interface ActiveJob {
     /** position in the campaign (JOBS order, then the last three looping) */
@@ -637,13 +640,24 @@ export function parse(raw: unknown): State | null {
 
 export const serialize = (s: State) => JSON.stringify({ ...s, flow: undefined });
 
+/** Groundbreak's save definition: envelope, migrations and rolling copies. See lib/saves/core.ts. */
+export const GROUNDBREAK_SAVE: SaveDef<State> = {
+    app: SAVE_SLOTS.groundbreak.app,
+    key: SAVE_KEY,
+    version: SAVE_VERSION,
+    bareVersion: (d) => (typeof d?.v === "number" ? d.v : 1),
+    migrations: {
+        // v1 to v2 retuned rates and the job order. Numbers stored at v1 stay as they are; the retune applies from the next tick.
+        1: (d) => ({ ...d, v: 2 }),
+    },
+    revive: (d) => parse(d),
+    dump: (s) => ({ ...s, flow: undefined }),
+    fallbacks: [SAVE_KEY + "-auto1", SAVE_KEY + "-auto2", SAVE_KEY + "-backup"],
+};
+
+/** Reads the live save (migrating an older one). Null when it is missing or unusable; use loadSave for the reason. */
 export function load(storage: Pick<Storage, "getItem"> | null | undefined): State | null {
-    try {
-        const t = storage?.getItem(SAVE_KEY);
-        return t ? parse(JSON.parse(t)) : null;
-    } catch {
-        return null;
-    }
+    return readSaveKey(storage, GROUNDBREAK_SAVE, SAVE_KEY);
 }
 
 // ---- number format ------------------------------------------------------------------------------------------------

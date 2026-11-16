@@ -27,6 +27,7 @@ import {
     type Status,
     type Unit,
 } from "@/components/games/guess-kit";
+import { loadStats, saveStats } from "@/components/games/guess-kit";
 import { GuessModeTabs, MODE_PANEL_ID } from "@/components/games/mode-tabs";
 import { cn } from "@/lib/utils";
 import { sfx } from "@/lib/sound/sounds";
@@ -190,7 +191,7 @@ export function FlagGuesser() {
     useEffect(() => {
         if (!countries) return;
         setUnit(load<Unit>(K.unit, "km"));
-        const saved = load<Partial<AllStats>>(K.stats, {});
+        const saved = loadStats("flag-guesser", K.stats);
         setStats({
             daily: { ...EMPTY_STATS(), ...saved.daily },
             unlimited: { ...EMPTY_STATS(), ...saved.unlimited },
@@ -296,7 +297,7 @@ export function FlagGuesser() {
                 }
                 if (mode === "daily") s.last = today;
                 const next = { ...prev, [mode]: s };
-                save(K.stats, next);
+                saveStats("flag-guesser", K.stats, next);
                 return next;
             });
         },

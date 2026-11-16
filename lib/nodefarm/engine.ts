@@ -2702,9 +2702,13 @@ function renameCore(o: Record<string, any>) {
     }
     if (Array.isArray(o.ze?.act)) for (const e of o.ze.act) if (e && e.zone === "core") e.zone = "sunstone"; // a vein or fault still running
 }
+/** A stored or exported save is the shared envelope { app, version, savedAt, data }; the game's JSON is inside it. Bare JSON passes through. */
+function unwrapSave(o: any): any {
+    return o && typeof o === "object" && o.app === "node-farm" && "data" in o ? o.data : o;
+}
 export function parseSave(raw: string): State | null {
     try {
-        const o = JSON.parse(raw.trim().startsWith("{") ? raw : fromCode(raw.trim()));
+        const o = unwrapSave(JSON.parse(raw.trim().startsWith("{") ? raw : fromCode(raw.trim())));
         renameCore(o);
         if (!o || o.v !== 1 || typeof o.bytes !== "number") return null;
         const base = fresh();

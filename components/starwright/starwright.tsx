@@ -7,7 +7,9 @@
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import { useGameShell } from "@/components/games/shell/game-route-shell";
-import { downloadText, writeStored } from "@/lib/games/save";
+import { downloadText } from "@/lib/games/save";
+import { STARWRIGHT_SAVE } from "@/lib/starwright/engine";
+import { writeSave } from "@/lib/saves/core";
 import { ACHIEVEMENTS, ACH_BONUS, CLOUDS, ELEMENTS, EVENT_STAY, PERKS, PLANETS, PULSAR_PERKS, RECIPE, ROWS, STAGE_NAMES, TIERS, TIER_LEVELS, TIER_NAMES, TUNE } from "@/lib/starwright/data";
 import { play, setSound, soundOn } from "@/lib/starwright/sound";
 import { REPORT_MIN, advanceAuto, autoAnswer, awayReport, loadSession, saveAway, snap, writeBackup, type Snap } from "@/lib/starwright/session";
@@ -101,7 +103,7 @@ export function Starwright() {
         const s = sRef.current;
         if (!s || readOnly.current) return;
         s.savedAt = Date.now();
-        if (!writeStored(window.localStorage, SAVE_KEY, serialize(s)) && Date.now() - saveFailAt.current > 300000) {
+        if (!writeSave(window.localStorage, STARWRIGHT_SAVE, s) && Date.now() - saveFailAt.current > 300000) {
             saveFailAt.current = Date.now();
             note("Could not save: this browser's storage is full or blocked. Export a save from the menu to keep your star.", "hot", true);
         }
@@ -621,7 +623,7 @@ export function Starwright() {
                     onClose={() => setPanel(null)}
                     onName={(n) => act((x) => { x.name = n.slice(0, 24) || x.name; })}
                     onImport={(next) => { writeBackup(window.localStorage, s, true); next.savedAt = Date.now(); sRef.current = next; lastHeavy.current = heaviest(next); save(); bump(); note("Save imported. The old one is kept as a backup.", "hot", true); }}
-                    onReset={() => { writeBackup(window.localStorage, s, true); const n = fresh(); sRef.current = n; lastHeavy.current = 0; writeStored(window.localStorage, SAVE_KEY, serialize(n)); setPanel(null); bump(); }}
+                    onReset={() => { writeBackup(window.localStorage, s, true); const n = fresh(); sRef.current = n; lastHeavy.current = 0; writeSave(window.localStorage, STARWRIGHT_SAVE, n); setPanel(null); bump(); }}
                     onExport={() => downloadText(tools.fileName(), tools.exportText(s))}
                     sound={sound}
                     onSound={toggleSound}
