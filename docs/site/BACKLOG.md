@@ -73,3 +73,4 @@ Slot for findings from the thread "Audit website code for simplification". That 
 - [x] SITE-home-band-art | M | animated sprite art for each game across the whole homepage Play band, lazy and paused off screen | this PR
 - [x] SITE-motion-card-art | S | pixel art on toned cards lifts and brightens on pointer hover; colour only under reduced motion; type pass: card text and studies course body on the 13.5px ui token (were 14px), About verbs on the 18px lead token (were 19px); the rest of the home and page motion already existed and was checked, not changed. Left: a 17px timeline date line and 12px stat numbers | this PR
 - [x] SITE-short-anchor | S | desktop under 700 px tall anchors on the panel (the game matters more than the heading there) | #665
+- [x] SITE-motion-scale | M | one motion scale (easing, durations, lift and press travel) and one reduced-motion rule; buttons, chips, cards, home game cards and page shutters use it | this PR

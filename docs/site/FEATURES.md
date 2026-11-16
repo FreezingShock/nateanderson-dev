@@ -13,7 +13,8 @@ Current state of the site outside the three games with their own docs (Brasswork
 - Page wrapper `<div className="ctos">`, `Section ctos`, `PageHead`; scoped CSS in `app/camino/ctos.css`; `body.ctos-on` set by `components/cm/ctos-body.tsx`.
 - Type scale tokens (11px floor, 15px body, 18px lead) and the one-cyan-accent palette.
 - Motion: scroll reveals and `Scramble`/`Slab`/`ScrollType` (`components/cm/motion.tsx`, `lib/motion/engine.ts`). Titles scramble once per hover; reduced motion shows plain text. The engine follows the OS reduced-motion setting (Windows: Animation effects) live: switching it off tears every observer and listener down, and switching it back on rebuilds without a refresh, with on-screen content settling in place rather than replaying (`lib/motion/engine.ts`, `motionOn`, `subscribeMotion`, `useMotionOn`).
-- Page transition: fast shutter (`app/camino/transition.css`).
+- Page transition: fast shutter (`app/camino/transition.css`); its timings come from the shared scale (`--cm-d-shut`, `--cm-d-name`, `--cm-d-exit`).
+- Motion scale: one set of easing and duration tokens in `app/camino/camino.tokens.css` (Motion). Buttons, chips and cards lift on hover (`--cm-lift`) and press down on click (`--cm-press`). One reduced-motion rule there finishes every transition and animation at once.
 - Card art hover: the pixel art behind toned cards (Explore, the Creations hub, About) lifts 8px and brightens on pointer hover; colour only under reduced motion (`app/camino/site-motion.css`, loaded last after `micro.css`).
 - Dithered art: `NaosBackdrop` per page, header bands and washes (`components/cm/naos-art.tsx`, `scripts/naos-art/`).
 - Navigation: top bar, floating dock (7 items, labels 11px on phones), site map, `/` launcher; all read `lib/nav.ts`, which also pulls games from `lib/creations-data.ts`.

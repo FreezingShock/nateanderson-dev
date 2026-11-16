@@ -70,8 +70,9 @@
 
 
 /* ---- Buttons ------------------------------------------------------------- */
-.cm-btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; background: transparent; border: 1px solid var(--cm-hair); color: var(--cm-fg); font: 600 var(--cm-ctos-t-micro)/1 var(--cm-mono); letter-spacing: .13em; text-transform: uppercase; padding: 9px 12px; cursor: pointer; text-decoration: none; transition: border-color var(--cm-d-base), color var(--cm-d-base), background var(--cm-d-base), filter var(--cm-d-base); }
+.cm-btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; background: transparent; border: 1px solid var(--cm-hair); color: var(--cm-fg); font: 600 var(--cm-ctos-t-micro)/1 var(--cm-mono); letter-spacing: .13em; text-transform: uppercase; padding: 9px 12px; cursor: pointer; text-decoration: none; transition: border-color var(--cm-d-base), color var(--cm-d-base), background var(--cm-d-base), filter var(--cm-d-base), transform var(--cm-d-instant) var(--cm-ease-press); }
 .cm-btn:hover { border-color: var(--cm-cyan); color: var(--cm-cyan); }
+.cm-btn:active:not(:disabled):not([aria-disabled="true"]) { transform: var(--cm-press); }
 .cm-btn.solid { background: var(--cm-cyan); color: var(--cm-cyan-ink); border-color: var(--cm-cyan); } .cm-btn.solid:hover { filter: brightness(1.1); color: var(--cm-cyan-ink); }
 .cm-btn.paper { background: var(--cm-paper); color: var(--cm-ink-0); border-color: var(--cm-paper); } .cm-btn.paper:hover { background: var(--cm-cyan); border-color: var(--cm-cyan); color: var(--cm-cyan-ink); }
 .cm-btn.danger:hover { border-color: var(--cm-alert); color: var(--cm-alert); }
@@ -86,6 +87,7 @@
 
 .cm-chip { display: inline-flex; align-items: center; gap: 6px; background: transparent; border: 1px solid var(--cm-hair); color: var(--cm-mute); font: 600 var(--cm-ctos-t-micro)/1 var(--cm-mono); letter-spacing: .12em; text-transform: uppercase; padding: 6px 8px; cursor: pointer; transition: color var(--cm-d-base), background-color var(--cm-d-base), border-color var(--cm-d-base), transform var(--cm-d-base); }
 .cm-chip:hover { color: var(--cm-fg); border-color: var(--cm-hair-hi); }
+.cm-chip:active { transform: var(--cm-press); }
 .cm-chip[aria-pressed="true"], .cm-chip[aria-current="true"] { color: var(--cm-cyan-ink); background: var(--cm-cyan); border-color: var(--cm-cyan); }
 .cm-chip .dot { width: 6px; height: 6px; background: currentColor; }
 
@@ -101,7 +103,7 @@
 
 /* ---- Card (content tile with a visual, title, 2-line text, mono status) -- */
 .cm-card { display: flex; flex-direction: column; gap: 6px; padding: 12px; background: rgba(255,255,255,.02); border: 1px solid var(--cm-hair); color: inherit; text-decoration: none; text-align: left; cursor: pointer; transition: border-color var(--cm-d-base), background var(--cm-d-base), transform var(--cm-d-base); }
-.cm-card:hover { border-color: var(--cm-hair-hi); background: rgba(255,255,255,.05); transform: translateY(-2px); }
+.cm-card:hover { border-color: var(--cm-hair-hi); background: rgba(255,255,255,.05); transform: var(--cm-lift); }
 .cm-card[aria-pressed="true"], .cm-card.on { border-color: var(--cm-cyan); background: var(--cm-cyan-wash); box-shadow: inset 0 0 0 1px var(--cm-cyan); }
 .cm-card .vis { aspect-ratio: 16/9; background: #030405; border: 1px solid var(--cm-hair); display: grid; place-items: center; overflow: hidden; }
 .cm-card .vis img, .cm-card .vis svg { width: 100%; height: 100%; object-fit: cover; display: block; }

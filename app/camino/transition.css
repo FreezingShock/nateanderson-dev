@@ -19,9 +19,9 @@ html[data-xition="hold"] .cm-main, html[data-xition="hold"] .sf-foot { opacity: 
 /* ---- The container: hidden when idle, so the panels only exist during a switch ---------------------------------- */
 .cm-wipe {
   --acc: #2fd8e8;
-  --x-cover: .22s;   /* the panels close */
-  --x-name: .18s;    /* the readout, name and blurb settle */
-  --x-exit: .28s;    /* the panels open */
+  --x-cover: var(--cm-d-shut);   /* the panels close */
+  --x-name: var(--cm-d-name);    /* the readout, name and blurb settle */
+  --x-exit: var(--cm-d-exit);    /* the panels open */
   position: fixed; inset: 0; z-index: var(--cm-z-curtain); pointer-events: none; visibility: hidden;
 }
 html[data-xition] .cm-wipe, html[data-xin] .cm-wipe { visibility: visible; }

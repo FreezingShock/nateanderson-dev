@@ -5,7 +5,7 @@
    "frames": 8,
    "h": 180,
    "loop": true,
-   "src": "/starwright/bg/nebula-blue.png",
+   "src": "/starwright/bg/nebula-blue.webp",
    "w": 320
   },
   "bg/nebula-dwarf": {
@@ -13,7 +13,7 @@
    "frames": 8,
    "h": 180,
    "loop": true,
-   "src": "/starwright/bg/nebula-dwarf.png",
+   "src": "/starwright/bg/nebula-dwarf.webp",
    "w": 320
   },
   "bg/nebula-giant": {
@@ -21,7 +21,7 @@
    "frames": 8,
    "h": 180,
    "loop": true,
-   "src": "/starwright/bg/nebula-giant.png",
+   "src": "/starwright/bg/nebula-giant.webp",
    "w": 320
   },
   "bg/nebula-iron": {
@@ -29,7 +29,7 @@
    "frames": 8,
    "h": 180,
    "loop": true,
-   "src": "/starwright/bg/nebula-iron.png",
+   "src": "/starwright/bg/nebula-iron.webp",
    "w": 320
   },
   "bg/nebula-n1": {
@@ -37,7 +37,7 @@
    "frames": 8,
    "h": 180,
    "loop": true,
-   "src": "/starwright/bg/nebula-n1.png",
+   "src": "/starwright/bg/nebula-n1.webp",
    "w": 320
   },
   "bg/nebula-n2": {
@@ -45,7 +45,7 @@
    "frames": 8,
    "h": 180,
    "loop": true,
-   "src": "/starwright/bg/nebula-n2.png",
+   "src": "/starwright/bg/nebula-n2.webp",
    "w": 320
   },
   "bg/nebula-proto": {
@@ -53,7 +53,7 @@
    "frames": 8,
    "h": 180,
    "loop": true,
-   "src": "/starwright/bg/nebula-proto.png",
+   "src": "/starwright/bg/nebula-proto.webp",
    "w": 320
   },
   "bg/nebula-super": {
@@ -61,7 +61,7 @@
    "frames": 8,
    "h": 180,
    "loop": true,
-   "src": "/starwright/bg/nebula-super.png",
+   "src": "/starwright/bg/nebula-super.webp",
    "w": 320
   },
   "card/cloud-dense": {
@@ -69,7 +69,7 @@
    "frames": 8,
    "h": 64,
    "loop": true,
-   "src": "/starwright/card/cloud-dense.png",
+   "src": "/starwright/card/cloud-dense.webp",
    "w": 160
   },
   "card/cloud-dusty": {
@@ -77,7 +77,7 @@
    "frames": 8,
    "h": 64,
    "loop": true,
-   "src": "/starwright/card/cloud-dusty.png",
+   "src": "/starwright/card/cloud-dusty.webp",
    "w": 160
   },
   "card/cloud-hot": {
@@ -85,7 +85,7 @@
    "frames": 8,
    "h": 64,
    "loop": true,
-   "src": "/starwright/card/cloud-hot.png",
+   "src": "/starwright/card/cloud-hot.webp",
    "w": 160
   },
   "card/cloud-quiet": {
@@ -93,7 +93,7 @@
    "frames": 8,
    "h": 64,
    "loop": true,
-   "src": "/starwright/card/cloud-quiet.png",
+   "src": "/starwright/card/cloud-quiet.webp",
    "w": 160
   },
   "card/cloud-rich": {
@@ -101,7 +101,7 @@
    "frames": 8,
    "h": 64,
    "loop": true,
-   "src": "/starwright/card/cloud-rich.png",
+   "src": "/starwright/card/cloud-rich.webp",
    "w": 160
   },
   "card/cloud-thin": {
@@ -109,7 +109,7 @@
    "frames": 8,
    "h": 64,
    "loop": true,
-   "src": "/starwright/card/cloud-thin.png",
+   "src": "/starwright/card/cloud-thin.webp",
    "w": 160
   },
   "fx/arrive": {
@@ -117,7 +117,7 @@
    "frames": 20,
    "h": 96,
    "loop": false,
-   "src": "/starwright/fx/arrive.png",
+   "src": "/starwright/fx/arrive.webp",
    "w": 96
   },
   "fx/planet-gone": {
@@ -125,7 +125,7 @@
    "frames": 24,
    "h": 96,
    "loop": false,
-   "src": "/starwright/fx/planet-gone.png",
+   "src": "/starwright/fx/planet-gone.webp",
    "w": 96
   },
   "fx/planet-up": {
@@ -133,7 +133,7 @@
    "frames": 20,
    "h": 64,
    "loop": false,
-   "src": "/starwright/fx/planet-up.png",
+   "src": "/starwright/fx/planet-up.webp",
    "w": 64
   },
   "icon/dock-almanac": {
@@ -141,7 +141,7 @@
    "frames": 1,
    "h": 16,
    "loop": false,
-   "src": "/starwright/icon/dock-almanac.png",
+   "src": "/starwright/icon/dock-almanac.webp",
    "w": 16
   },
   "icon/dock-menu": {
@@ -149,7 +149,7 @@
    "frames": 1,
    "h": 16,
    "loop": false,
-   "src": "/starwright/icon/dock-menu.png",
+   "src": "/starwright/icon/dock-menu.webp",
    "w": 16
   },
   "icon/dock-orbit": {
@@ -157,7 +157,7 @@
    "frames": 1,
    "h": 16,
    "loop": false,
-   "src": "/starwright/icon/dock-orbit.png",
+   "src": "/starwright/icon/dock-orbit.webp",
    "w": 16
   },
   "icon/dock-pulsar": {
@@ -165,7 +165,7 @@
    "frames": 1,
    "h": 16,
    "loop": false,
-   "src": "/starwright/icon/dock-pulsar.png",
+   "src": "/starwright/icon/dock-pulsar.webp",
    "w": 16
   },
   "icon/dock-stars": {
@@ -173,7 +173,7 @@
    "frames": 1,
    "h": 16,
    "loop": false,
-   "src": "/starwright/icon/dock-stars.png",
+   "src": "/starwright/icon/dock-stars.webp",
    "w": 16
   },
   "icon/el-au": {
@@ -181,7 +181,7 @@
    "frames": 1,
    "h": 24,
    "loop": false,
-   "src": "/starwright/icon/el-au.png",
+   "src": "/starwright/icon/el-au.webp",
    "w": 24
   },
   "icon/el-c": {
@@ -189,7 +189,7 @@
    "frames": 1,
    "h": 24,
    "loop": false,
-   "src": "/starwright/icon/el-c.png",
+   "src": "/starwright/icon/el-c.webp",
    "w": 24
   },
   "icon/el-fe": {
@@ -197,7 +197,7 @@
    "frames": 1,
    "h": 24,
    "loop": false,
-   "src": "/starwright/icon/el-fe.png",
+   "src": "/starwright/icon/el-fe.webp",
    "w": 24
   },
   "icon/el-h": {
@@ -205,7 +205,7 @@
    "frames": 1,
    "h": 24,
    "loop": false,
-   "src": "/starwright/icon/el-h.png",
+   "src": "/starwright/icon/el-h.webp",
    "w": 24
   },
   "icon/el-he": {
@@ -213,7 +213,7 @@
    "frames": 1,
    "h": 24,
    "loop": false,
-   "src": "/starwright/icon/el-he.png",
+   "src": "/starwright/icon/el-he.webp",
    "w": 24
   },
   "icon/el-mg": {
@@ -221,7 +221,7 @@
    "frames": 1,
    "h": 24,
    "loop": false,
-   "src": "/starwright/icon/el-mg.png",
+   "src": "/starwright/icon/el-mg.webp",
    "w": 24
   },
   "icon/el-ne": {
@@ -229,7 +229,7 @@
    "frames": 1,
    "h": 24,
    "loop": false,
-   "src": "/starwright/icon/el-ne.png",
+   "src": "/starwright/icon/el-ne.webp",
    "w": 24
   },
   "icon/el-o": {
@@ -237,7 +237,7 @@
    "frames": 1,
    "h": 24,
    "loop": false,
-   "src": "/starwright/icon/el-o.png",
+   "src": "/starwright/icon/el-o.webp",
    "w": 24
   },
   "icon/el-si": {
@@ -245,7 +245,7 @@
    "frames": 1,
    "h": 24,
    "loop": false,
-   "src": "/starwright/icon/el-si.png",
+   "src": "/starwright/icon/el-si.webp",
    "w": 24
   },
   "icon/el-u": {
@@ -253,7 +253,7 @@
    "frames": 1,
    "h": 24,
    "loop": false,
-   "src": "/starwright/icon/el-u.png",
+   "src": "/starwright/icon/el-u.webp",
    "w": 24
   },
   "icon/lock": {
@@ -261,7 +261,7 @@
    "frames": 1,
    "h": 16,
    "loop": false,
-   "src": "/starwright/icon/lock.png",
+   "src": "/starwright/icon/lock.webp",
    "w": 16
   },
   "icon/medal": {
@@ -269,7 +269,7 @@
    "frames": 1,
    "h": 16,
    "loop": false,
-   "src": "/starwright/icon/medal.png",
+   "src": "/starwright/icon/medal.webp",
    "w": 16
   },
   "icon/medal-lit": {
@@ -277,7 +277,7 @@
    "frames": 1,
    "h": 16,
    "loop": false,
-   "src": "/starwright/icon/medal-lit.png",
+   "src": "/starwright/icon/medal-lit.webp",
    "w": 16
   },
   "icon/menu-export": {
@@ -285,7 +285,7 @@
    "frames": 1,
    "h": 16,
    "loop": false,
-   "src": "/starwright/icon/menu-export.png",
+   "src": "/starwright/icon/menu-export.webp",
    "w": 16
   },
   "icon/menu-full": {
@@ -293,7 +293,7 @@
    "frames": 1,
    "h": 16,
    "loop": false,
-   "src": "/starwright/icon/menu-full.png",
+   "src": "/starwright/icon/menu-full.webp",
    "w": 16
   },
   "icon/menu-import": {
@@ -301,7 +301,7 @@
    "frames": 1,
    "h": 16,
    "loop": false,
-   "src": "/starwright/icon/menu-import.png",
+   "src": "/starwright/icon/menu-import.webp",
    "w": 16
   },
   "icon/menu-mute": {
@@ -309,7 +309,7 @@
    "frames": 1,
    "h": 16,
    "loop": false,
-   "src": "/starwright/icon/menu-mute.png",
+   "src": "/starwright/icon/menu-mute.webp",
    "w": 16
   },
   "icon/menu-pause": {
@@ -317,7 +317,7 @@
    "frames": 1,
    "h": 16,
    "loop": false,
-   "src": "/starwright/icon/menu-pause.png",
+   "src": "/starwright/icon/menu-pause.webp",
    "w": 16
   },
   "icon/menu-play": {
@@ -325,7 +325,7 @@
    "frames": 1,
    "h": 16,
    "loop": false,
-   "src": "/starwright/icon/menu-play.png",
+   "src": "/starwright/icon/menu-play.webp",
    "w": 16
   },
   "icon/menu-sound": {
@@ -333,7 +333,7 @@
    "frames": 1,
    "h": 16,
    "loop": false,
-   "src": "/starwright/icon/menu-sound.png",
+   "src": "/starwright/icon/menu-sound.webp",
    "w": 16
   },
   "icon/planet-cinder": {
@@ -341,7 +341,7 @@
    "frames": 1,
    "h": 32,
    "loop": false,
-   "src": "/starwright/icon/planet-cinder.png",
+   "src": "/starwright/icon/planet-cinder.webp",
    "w": 32
   },
   "icon/planet-ember": {
@@ -349,7 +349,7 @@
    "frames": 1,
    "h": 32,
    "loop": false,
-   "src": "/starwright/icon/planet-ember.png",
+   "src": "/starwright/icon/planet-ember.webp",
    "w": 32
   },
   "icon/planet-glass": {
@@ -357,7 +357,7 @@
    "frames": 1,
    "h": 32,
    "loop": false,
-   "src": "/starwright/icon/planet-glass.png",
+   "src": "/starwright/icon/planet-glass.webp",
    "w": 32
   },
   "icon/planet-haze": {
@@ -365,7 +365,7 @@
    "frames": 1,
    "h": 32,
    "loop": false,
-   "src": "/starwright/icon/planet-haze.png",
+   "src": "/starwright/icon/planet-haze.webp",
    "w": 32
   },
   "icon/planet-ironclad": {
@@ -373,7 +373,7 @@
    "frames": 1,
    "h": 32,
    "loop": false,
-   "src": "/starwright/icon/planet-ironclad.png",
+   "src": "/starwright/icon/planet-ironclad.webp",
    "w": 32
   },
   "icon/planet-orrery": {
@@ -381,7 +381,7 @@
    "frames": 1,
    "h": 32,
    "loop": false,
-   "src": "/starwright/icon/planet-orrery.png",
+   "src": "/starwright/icon/planet-orrery.webp",
    "w": 32
   },
   "icon/planet-seer": {
@@ -389,7 +389,7 @@
    "frames": 1,
    "h": 32,
    "loop": false,
-   "src": "/starwright/icon/planet-seer.png",
+   "src": "/starwright/icon/planet-seer.webp",
    "w": 32
   },
   "icon/planet-thule": {
@@ -397,7 +397,7 @@
    "frames": 1,
    "h": 32,
    "loop": false,
-   "src": "/starwright/icon/planet-thule.png",
+   "src": "/starwright/icon/planet-thule.webp",
    "w": 32
   },
   "panel/bar": {
@@ -405,7 +405,7 @@
    "frames": 1,
    "h": 4,
    "loop": false,
-   "src": "/starwright/panel/bar.png",
+   "src": "/starwright/panel/bar.webp",
    "w": 8
   },
   "panel/corner": {
@@ -413,7 +413,7 @@
    "frames": 1,
    "h": 8,
    "loop": false,
-   "src": "/starwright/panel/corner.png",
+   "src": "/starwright/panel/corner.webp",
    "w": 8
   },
   "panel/rule": {
@@ -421,7 +421,7 @@
    "frames": 1,
    "h": 4,
    "loop": false,
-   "src": "/starwright/panel/rule.png",
+   "src": "/starwright/panel/rule.webp",
    "w": 8
   },
   "panel/vignette-bottom": {
@@ -429,7 +429,7 @@
    "frames": 1,
    "h": 64,
    "loop": false,
-   "src": "/starwright/panel/vignette-bottom.png",
+   "src": "/starwright/panel/vignette-bottom.webp",
    "w": 4
   },
   "panel/vignette-top": {
@@ -437,7 +437,7 @@
    "frames": 1,
    "h": 64,
    "loop": false,
-   "src": "/starwright/panel/vignette-top.png",
+   "src": "/starwright/panel/vignette-top.webp",
    "w": 4
   },
   "planet/cinder-s0": {
@@ -446,7 +446,7 @@
    "frames": 24,
    "h": 48,
    "loop": true,
-   "src": "/starwright/planet/cinder-s0.png",
+   "src": "/starwright/planet/cinder-s0.webp",
    "w": 48
   },
   "planet/cinder-s1": {
@@ -455,7 +455,7 @@
    "frames": 24,
    "h": 48,
    "loop": true,
-   "src": "/starwright/planet/cinder-s1.png",
+   "src": "/starwright/planet/cinder-s1.webp",
    "w": 48
   },
   "planet/cinder-s2": {
@@ -464,7 +464,7 @@
    "frames": 24,
    "h": 48,
    "loop": true,
-   "src": "/starwright/planet/cinder-s2.png",
+   "src": "/starwright/planet/cinder-s2.webp",
    "w": 48
   },
   "planet/cinder-s3": {
@@ -473,7 +473,7 @@
    "frames": 24,
    "h": 48,
    "loop": true,
-   "src": "/starwright/planet/cinder-s3.png",
+   "src": "/starwright/planet/cinder-s3.webp",
    "w": 48
   },
   "planet/ember-s0": {
@@ -482,7 +482,7 @@
    "frames": 24,
    "h": 48,
    "loop": true,
-   "src": "/starwright/planet/ember-s0.png",
+   "src": "/starwright/planet/ember-s0.webp",
    "w": 48
   },
   "planet/ember-s1": {
@@ -491,7 +491,7 @@
    "frames": 24,
    "h": 48,
    "loop": true,
-   "src": "/starwright/planet/ember-s1.png",
+   "src": "/starwright/planet/ember-s1.webp",
    "w": 48
   },
   "planet/ember-s2": {
@@ -500,7 +500,7 @@
    "frames": 24,
    "h": 48,
    "loop": true,
-   "src": "/starwright/planet/ember-s2.png",
+   "src": "/starwright/planet/ember-s2.webp",
    "w": 48
   },
   "planet/ember-s3": {
@@ -509,7 +509,7 @@
    "frames": 24,
    "h": 48,
    "loop": true,
-   "src": "/starwright/planet/ember-s3.png",
+   "src": "/starwright/planet/ember-s3.webp",
    "w": 48
   },
   "planet/glass-s0": {
@@ -518,7 +518,7 @@
    "frames": 24,
    "h": 48,
    "loop": true,
-   "src": "/starwright/planet/glass-s0.png",
+   "src": "/starwright/planet/glass-s0.webp",
    "w": 48
   },
   "planet/glass-s1": {
@@ -527,7 +527,7 @@
    "frames": 24,
    "h": 48,
    "loop": true,
-   "src": "/starwright/planet/glass-s1.png",
+   "src": "/starwright/planet/glass-s1.webp",
    "w": 48
   },
   "planet/glass-s2": {
@@ -536,7 +536,7 @@
    "frames": 24,
    "h": 48,
    "loop": true,
-   "src": "/starwright/planet/glass-s2.png",
+   "src": "/starwright/planet/glass-s2.webp",
    "w": 48
   },
   "planet/glass-s3": {
@@ -545,7 +545,7 @@
    "frames": 24,
    "h": 48,
    "loop": true,
-   "src": "/starwright/planet/glass-s3.png",
+   "src": "/starwright/planet/glass-s3.webp",
    "w": 48
   },
   "planet/haze-s0": {
@@ -554,7 +554,7 @@
    "frames": 24,
    "h": 48,
    "loop": true,
-   "src": "/starwright/planet/haze-s0.png",
+   "src": "/starwright/planet/haze-s0.webp",
    "w": 48
   },
   "planet/haze-s1": {
@@ -563,7 +563,7 @@
    "frames": 24,
    "h": 48,
    "loop": true,
-   "src": "/starwright/planet/haze-s1.png",
+   "src": "/starwright/planet/haze-s1.webp",
    "w": 48
   },
   "planet/haze-s2": {
@@ -572,7 +572,7 @@
    "frames": 24,
    "h": 48,
    "loop": true,
-   "src": "/starwright/planet/haze-s2.png",
+   "src": "/starwright/planet/haze-s2.webp",
    "w": 48
   },
   "planet/haze-s3": {
@@ -581,7 +581,7 @@
    "frames": 24,
    "h": 48,
    "loop": true,
-   "src": "/starwright/planet/haze-s3.png",
+   "src": "/starwright/planet/haze-s3.webp",
    "w": 48
   },
   "planet/ironclad-s0": {
@@ -590,7 +590,7 @@
    "frames": 24,
    "h": 48,
    "loop": true,
-   "src": "/starwright/planet/ironclad-s0.png",
+   "src": "/starwright/planet/ironclad-s0.webp",
    "w": 48
   },
   "planet/ironclad-s1": {
@@ -599,7 +599,7 @@
    "frames": 24,
    "h": 48,
    "loop": true,
-   "src": "/starwright/planet/ironclad-s1.png",
+   "src": "/starwright/planet/ironclad-s1.webp",
    "w": 48
   },
   "planet/ironclad-s2": {
@@ -608,7 +608,7 @@
    "frames": 24,
    "h": 48,
    "loop": true,
-   "src": "/starwright/planet/ironclad-s2.png",
+   "src": "/starwright/planet/ironclad-s2.webp",
    "w": 48
   },
   "planet/ironclad-s3": {
@@ -617,7 +617,7 @@
    "frames": 24,
    "h": 48,
    "loop": true,
-   "src": "/starwright/planet/ironclad-s3.png",
+   "src": "/starwright/planet/ironclad-s3.webp",
    "w": 48
   },
   "planet/orrery-s0": {
@@ -626,7 +626,7 @@
    "frames": 24,
    "h": 48,
    "loop": true,
-   "src": "/starwright/planet/orrery-s0.png",
+   "src": "/starwright/planet/orrery-s0.webp",
    "w": 48
   },
   "planet/orrery-s1": {
@@ -635,7 +635,7 @@
    "frames": 24,
    "h": 48,
    "loop": true,
-   "src": "/starwright/planet/orrery-s1.png",
+   "src": "/starwright/planet/orrery-s1.webp",
    "w": 48
   },
   "planet/orrery-s2": {
@@ -644,7 +644,7 @@
    "frames": 24,
    "h": 48,
    "loop": true,
-   "src": "/starwright/planet/orrery-s2.png",
+   "src": "/starwright/planet/orrery-s2.webp",
    "w": 48
   },
   "planet/orrery-s3": {
@@ -653,7 +653,7 @@
    "frames": 24,
    "h": 48,
    "loop": true,
-   "src": "/starwright/planet/orrery-s3.png",
+   "src": "/starwright/planet/orrery-s3.webp",
    "w": 48
   },
   "planet/seer-s0": {
@@ -662,7 +662,7 @@
    "frames": 24,
    "h": 72,
    "loop": true,
-   "src": "/starwright/planet/seer-s0.png",
+   "src": "/starwright/planet/seer-s0.webp",
    "w": 72
   },
   "planet/seer-s1": {
@@ -671,7 +671,7 @@
    "frames": 24,
    "h": 72,
    "loop": true,
-   "src": "/starwright/planet/seer-s1.png",
+   "src": "/starwright/planet/seer-s1.webp",
    "w": 72
   },
   "planet/seer-s2": {
@@ -680,7 +680,7 @@
    "frames": 24,
    "h": 72,
    "loop": true,
-   "src": "/starwright/planet/seer-s2.png",
+   "src": "/starwright/planet/seer-s2.webp",
    "w": 72
   },
   "planet/seer-s3": {
@@ -689,7 +689,7 @@
    "frames": 24,
    "h": 72,
    "loop": true,
-   "src": "/starwright/planet/seer-s3.png",
+   "src": "/starwright/planet/seer-s3.webp",
    "w": 72
   },
   "planet/thule-s0": {
@@ -698,7 +698,7 @@
    "frames": 24,
    "h": 48,
    "loop": true,
-   "src": "/starwright/planet/thule-s0.png",
+   "src": "/starwright/planet/thule-s0.webp",
    "w": 48
   },
   "planet/thule-s1": {
@@ -707,7 +707,7 @@
    "frames": 24,
    "h": 48,
    "loop": true,
-   "src": "/starwright/planet/thule-s1.png",
+   "src": "/starwright/planet/thule-s1.webp",
    "w": 48
   },
   "planet/thule-s2": {
@@ -716,7 +716,7 @@
    "frames": 24,
    "h": 48,
    "loop": true,
-   "src": "/starwright/planet/thule-s2.png",
+   "src": "/starwright/planet/thule-s2.webp",
    "w": 48
   },
   "planet/thule-s3": {
@@ -725,7 +725,7 @@
    "frames": 24,
    "h": 48,
    "loop": true,
-   "src": "/starwright/planet/thule-s3.png",
+   "src": "/starwright/planet/thule-s3.webp",
    "w": 48
   },
   "star/birth": {
@@ -733,7 +733,7 @@
    "frames": 24,
    "h": 180,
    "loop": false,
-   "src": "/starwright/star/birth.png",
+   "src": "/starwright/star/birth.webp",
    "w": 320
   },
   "star/blue": {
@@ -741,7 +741,7 @@
    "frames": 24,
    "h": 128,
    "loop": true,
-   "src": "/starwright/star/blue.png",
+   "src": "/starwright/star/blue.webp",
    "w": 128
   },
   "star/dwarf": {
@@ -749,7 +749,7 @@
    "frames": 24,
    "h": 128,
    "loop": true,
-   "src": "/starwright/star/dwarf.png",
+   "src": "/starwright/star/dwarf.webp",
    "w": 128
   },
   "star/giant": {
@@ -757,7 +757,7 @@
    "frames": 24,
    "h": 128,
    "loop": true,
-   "src": "/starwright/star/giant.png",
+   "src": "/starwright/star/giant.webp",
    "w": 128
   },
   "star/hole": {
@@ -765,7 +765,7 @@
    "frames": 24,
    "h": 180,
    "loop": true,
-   "src": "/starwright/star/hole.png",
+   "src": "/starwright/star/hole.webp",
    "w": 320
   },
   "star/implode-blue": {
@@ -773,7 +773,7 @@
    "frames": 12,
    "h": 96,
    "loop": false,
-   "src": "/starwright/star/implode-blue.png",
+   "src": "/starwright/star/implode-blue.webp",
    "w": 96
   },
   "star/implode-dwarf": {
@@ -781,7 +781,7 @@
    "frames": 12,
    "h": 96,
    "loop": false,
-   "src": "/starwright/star/implode-dwarf.png",
+   "src": "/starwright/star/implode-dwarf.webp",
    "w": 96
   },
   "star/implode-giant": {
@@ -789,7 +789,7 @@
    "frames": 12,
    "h": 96,
    "loop": false,
-   "src": "/starwright/star/implode-giant.png",
+   "src": "/starwright/star/implode-giant.webp",
    "w": 96
   },
   "star/implode-iron": {
@@ -797,7 +797,7 @@
    "frames": 12,
    "h": 96,
    "loop": false,
-   "src": "/starwright/star/implode-iron.png",
+   "src": "/starwright/star/implode-iron.webp",
    "w": 96
   },
   "star/implode-proto": {
@@ -805,7 +805,7 @@
    "frames": 12,
    "h": 96,
    "loop": false,
-   "src": "/starwright/star/implode-proto.png",
+   "src": "/starwright/star/implode-proto.webp",
    "w": 96
   },
   "star/implode-super": {
@@ -813,7 +813,7 @@
    "frames": 12,
    "h": 96,
    "loop": false,
-   "src": "/starwright/star/implode-super.png",
+   "src": "/starwright/star/implode-super.webp",
    "w": 96
   },
   "star/iron": {
@@ -821,7 +821,7 @@
    "frames": 24,
    "h": 128,
    "loop": true,
-   "src": "/starwright/star/iron.png",
+   "src": "/starwright/star/iron.webp",
    "w": 128
   },
   "star/iron-ready": {
@@ -829,7 +829,7 @@
    "frames": 24,
    "h": 128,
    "loop": true,
-   "src": "/starwright/star/iron-ready.png",
+   "src": "/starwright/star/iron-ready.webp",
    "w": 128
   },
   "star/nova-neutron": {
@@ -837,7 +837,7 @@
    "frames": 24,
    "h": 180,
    "loop": false,
-   "src": "/starwright/star/nova-neutron.png",
+   "src": "/starwright/star/nova-neutron.webp",
    "w": 320
   },
   "star/nova-supernova": {
@@ -845,7 +845,7 @@
    "frames": 24,
    "h": 180,
    "loop": false,
-   "src": "/starwright/star/nova-supernova.png",
+   "src": "/starwright/star/nova-supernova.webp",
    "w": 320
   },
   "star/proto": {
@@ -853,7 +853,7 @@
    "frames": 24,
    "h": 128,
    "loop": true,
-   "src": "/starwright/star/proto.png",
+   "src": "/starwright/star/proto.webp",
    "w": 128
   },
   "star/super": {
@@ -861,7 +861,7 @@
    "frames": 24,
    "h": 128,
    "loop": true,
-   "src": "/starwright/star/super.png",
+   "src": "/starwright/star/super.webp",
    "w": 128
   },
   "star/trans-blue-super": {
@@ -869,7 +869,7 @@
    "frames": 24,
    "h": 128,
    "loop": false,
-   "src": "/starwright/star/trans-blue-super.png",
+   "src": "/starwright/star/trans-blue-super.webp",
    "w": 128
   },
   "star/trans-dwarf-giant": {
@@ -877,7 +877,7 @@
    "frames": 24,
    "h": 128,
    "loop": false,
-   "src": "/starwright/star/trans-dwarf-giant.png",
+   "src": "/starwright/star/trans-dwarf-giant.webp",
    "w": 128
   },
   "star/trans-giant-blue": {
@@ -885,7 +885,7 @@
    "frames": 24,
    "h": 128,
    "loop": false,
-   "src": "/starwright/star/trans-giant-blue.png",
+   "src": "/starwright/star/trans-giant-blue.webp",
    "w": 128
   },
   "star/trans-proto-dwarf": {
@@ -893,7 +893,7 @@
    "frames": 24,
    "h": 128,
    "loop": false,
-   "src": "/starwright/star/trans-proto-dwarf.png",
+   "src": "/starwright/star/trans-proto-dwarf.webp",
    "w": 128
   },
   "star/trans-super-iron": {
@@ -901,7 +901,7 @@
    "frames": 24,
    "h": 128,
    "loop": false,
-   "src": "/starwright/star/trans-super-iron.png",
+   "src": "/starwright/star/trans-super-iron.webp",
    "w": 128
   },
   "visitor/comet": {
@@ -909,7 +909,7 @@
    "frames": 24,
    "h": 48,
    "loop": true,
-   "src": "/starwright/visitor/comet.png",
+   "src": "/starwright/visitor/comet.webp",
    "w": 48
   },
   "visitor/flare": {
@@ -917,7 +917,7 @@
    "frames": 24,
    "h": 48,
    "loop": true,
-   "src": "/starwright/visitor/flare.png",
+   "src": "/starwright/visitor/flare.webp",
    "w": 48
   },
   "visitor/nebula": {
@@ -925,7 +925,7 @@
    "frames": 24,
    "h": 96,
    "loop": true,
-   "src": "/starwright/visitor/nebula.png",
+   "src": "/starwright/visitor/nebula.webp",
    "w": 96
   },
   "visitor/pair": {
@@ -933,7 +933,7 @@
    "frames": 24,
    "h": 48,
    "loop": true,
-   "src": "/starwright/visitor/pair.png",
+   "src": "/starwright/visitor/pair.webp",
    "w": 48
   }
  },

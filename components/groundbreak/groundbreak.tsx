@@ -97,6 +97,9 @@ export function Groundbreak() {
     const [win, setWin] = useState<Win>(null);
     const [sel, setSel] = useState<number | null>(null);
     const [notes, setNotes] = useState<Note[]>([]);
+    // the material that just came on site: its dock tile plays one ring (keyed, so a new one restarts it)
+    const [pulse, setPulse] = useState<{ key: number; mat: number } | null>(null);
+    const pulseId = useRef(0);
     const [away, setAway] = useState<AwaySummary | null>(null);
     const [conflict, setConflict] = useState(false);
     const conflictRef = useRef(false);
@@ -304,7 +307,7 @@ export function Groundbreak() {
                 if (jd) note(`${jd.name} started at ${cityOf(s.firm).sites[jd.stage - 1]}.`, "hot");
             }
             lastJob.current = jid;
-            if (s.open > sn.open) note(`${MATS[s.open - 1].name} is on site.`, "hot");
+            if (s.open > sn.open) { note(`${MATS[s.open - 1].name} is on site.`, "hot"); setPulse({ key: ++pulseId.current, mat: s.open - 1 }); }
             if (s.change && !sn.change) note("Change order: the client wants more.", "hot");
             seen.current = { built: s.built, open: s.open, change: !!s.change, cashAll: s.cashAll };
         }, 100);
@@ -561,6 +564,7 @@ export function Groundbreak() {
                                         {open && <i className="gb-lv">{s.crews[i]}</i>}
                                         {!open && !next && <em className="gb-tile-name">{m.name}</em>}
                                         {!open && !next && <Ico id="lock" size={16} className="gb-tile-lock" />}
+                                        {pulse?.mat === i && <i key={pulse.key} className="gb-unlock" aria-hidden="true" />}
                                     </button>
                                 );
                             })}
