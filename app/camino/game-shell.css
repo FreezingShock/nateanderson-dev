@@ -210,8 +210,9 @@ html.gs-game-route {
     width: 100%;
     min-width: 0;
     /* On desktop the Play section (label, heading, title bar, panel, footer) starts under the site bar and ends above the
-       site dock (about 64px at the bottom), so the panel leaves room for all of it. Phones use their own height below. */
-    height: clamp(360px, calc(100dvh - 390px), 940px);
+       site dock (about 64px at the bottom), so the panel leaves room for all of it. The 400px allowance covers a footer
+       that wraps on narrower desktops. The 260px floor is for screens about 660px tall, where the footer must stay above the dock. Phones use their own height below. */
+    height: clamp(260px, calc(100dvh - 400px), 940px);
     min-height: 0;
     overflow: hidden;
     background: var(--gs-bg);
