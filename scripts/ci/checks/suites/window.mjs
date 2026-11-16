@@ -83,16 +83,13 @@ export async function run(env) {
                 const lowest = Math.max(frame?.bottom ?? 0, foot?.bottom ?? 0);
                 check(suite, lowest <= view.viewport.height, `${tag}: panel and footer fit the viewport (bottom ${Math.round(lowest)}px of ${view.viewport.height}px)`);
                 if (dock && dock.height > 0) check(suite, lowest <= dock.top, `${tag}: panel and footer sit above the site dock (bottom ${Math.round(lowest)}px, dock top ${Math.round(dock.top)}px)`);
-            } else if (g.window.tallPhoneSection && view.viewport.height >= 760) {
-                // Tall phones anchor the Play section under the site bar; the panel must still be on screen below it.
-                const floor = barNow && barNow.bottom > 0 ? barNow.bottom : 0;
-                const line = barNow && barNow.bottom > 0 ? barNow.bottom : 72;
-                check(suite, sectionNow && sectionNow.top >= floor - 1 && sectionNow.top < line + 30,
-                    `${tag}: Play section starts below the site bar on a tall phone (section ${Math.round(sectionNow?.top ?? -1)}px, line ${Math.round(line)}px)`);
-                check(suite, frame && frame.top >= 0 && frame.top < view.viewport.height - 200,
-                    `${tag}: panel is on screen on a tall phone (top ${Math.round(frame?.top ?? -1)}px)`);
             } else {
-                check(suite, frame && frame.top >= 0 && frame.top < 180, `${tag}: panel scrolled into view (top ${Math.round(frame?.top ?? -1)}px)`);
+                // Tall phones (760px and up) anchor the scroll on the Play section, so its heading shows above the panel (PR #690).
+                // Short phones keep the panel as the anchor.
+                const tallPhone = view.viewport.height >= 760;
+                const anchorBox = tallPhone ? sectionNow : frame;
+                check(suite, anchorBox && anchorBox.top >= 0 && anchorBox.top < 180,
+                    `${tag}: ${tallPhone ? "Play section" : "panel"} scrolled into view (top ${Math.round(anchorBox?.top ?? -1)}px)`);
             }
             const minTall = view.viewport.height < 700 ? 260 : 360;
             check(suite, frame && frame.height >= minTall, `${tag}: panel is tall (${Math.round(frame?.height ?? 0)}px)`);

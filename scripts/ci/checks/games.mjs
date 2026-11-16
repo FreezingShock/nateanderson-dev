@@ -14,8 +14,7 @@ registerGame({
 registerGame({
     id: "starwright",
     name: "Starwright",
-    // Tall phones anchor the Play section under the site bar (PR #690): "Light your star." is no longer hidden behind the bar.
-    window: { root: ".sw-root", tallPhoneSection: true },
+    window: { root: ".sw-root" },
 });
 
 registerGame({

@@ -2,6 +2,8 @@
 // A construction firm: twelve materials unlock one after another, each boosting the next, and the last three feed back
 // down the chain. Jobs pull materials phase by phase, wait out a timed inspection, then pay cash and reputation and add a
 // building to the skyline. Incorporate starts a new firm in a new city and keeps Charter points and the skyline.
+import { catchUp as kitCatchUp } from "../game-kit/time";
+import { formatAge, numberFormatter } from "../game-kit/format";
 import {
     BASE_RATE, CITIES, CREW_COST, EQUIP_COST, FX_KEYS, JOBS, JOB_BY, MATS, METHOD_COST, MUL_FX, N, PERKS, PHASES, RECIPE, STAGES, TUNE,
     UNLOCK_COST, cityLoop, cityOf, jobAt, type FxKey, type JobDef, type PhaseId,
@@ -523,12 +525,7 @@ export function auto(s: State, f: Fx) {
 /** Catch up after time away. Returns the seconds simulated. */
 export function catchUp(s: State, away: number): number {
     const f = effects(s);
-    const secs = Math.max(0, Math.min(away, offlineCapS(f)));
-    if (secs < 2) return 0;
-    const steps = Math.min(TUNE.offlineStepCap, Math.max(1, Math.ceil(secs / 2)));
-    const dt = secs / steps;
-    for (let i = 0; i < steps; i++) step(s, dt, f);
-    return secs;
+    return kitCatchUp(away, { capS: offlineCapS(f), stepCap: TUNE.offlineStepCap }, (dt) => step(s, dt, f));
 }
 
 // ---- prestige -----------------------------------------------------------------------------------------------------
@@ -662,21 +659,8 @@ export function load(storage: Pick<Storage, "getItem"> | null | undefined): Stat
 
 // ---- number format ------------------------------------------------------------------------------------------------
 
-export function fmt(n: number, digits = 2): string {
-    if (!Number.isFinite(n)) return "0";
-    if (n < 0) return "-" + fmt(-n, digits);
-    if (n < 1000) return n < 10 && n % 1 !== 0 ? n.toFixed(digits) : Math.floor(n).toString();
-    if (n < 1e6) return (n / 1e3).toFixed(n < 1e4 ? 2 : n < 1e5 ? 1 : 0) + "K";
-    const sfx = ["M", "B", "T", "Qa", "Qi"];
-    const e = Math.floor(Math.log10(n) / 3);
-    if (e - 2 < sfx.length) return (n / Math.pow(10, e * 3)).toFixed(digits) + sfx[e - 2];
-    const x = Math.floor(Math.log10(n));
-    return `${(n / Math.pow(10, x)).toFixed(digits)}e${x}`;
-}
+/** Numbers in Groundbreak: 1.23K, 15.00M, up to Qi, then scientific. The kit's "kilo" style. */
+export const fmt = numberFormatter("kilo");
 export const fmtCash = (n: number) => "$" + fmt(n);
-export function fmtAge(sec: number): string {
-    if (sec < 90) return `${Math.floor(sec)} s`;
-    if (sec < 5400) return `${Math.floor(sec / 60)} min`;
-    return `${(sec / 3600).toFixed(1)} h`;
-}
+export const fmtAge = formatAge;
 export const matName = (n: number) => MATS[n].name;
