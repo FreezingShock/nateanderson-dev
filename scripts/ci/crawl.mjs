@@ -8,12 +8,18 @@ const base = (process.argv[2] || "http://localhost:3123").replace(/\/$/, "");
 await waitFor(base);
 const cookie = await unlock(base);
 
+// Preview routes that are built but answer 404 on purpose in a production build (see proxy.ts). They are not part of the
+// served site, so they are not seeded. Nothing links to them, so this only removes the seed for the 404 they return.
+const NOT_SERVED_IN_PRODUCTION = new Set(["/automation-preview"]);
+
 const seeds = new Set(["/"]);
 try {
     const m = JSON.parse(readFileSync(".next/server/app-paths-manifest.json", "utf8"));
     for (const k of Object.keys(m)) {
         if (!k.endsWith("/page") || k.includes("[") || k.startsWith("/_")) continue;
-        seeds.add(k.replace(/\/page$/, "") || "/");
+        const route = k.replace(/\/page$/, "") || "/";
+        if (NOT_SERVED_IN_PRODUCTION.has(route)) continue;
+        seeds.add(route);
     }
 } catch {}
 

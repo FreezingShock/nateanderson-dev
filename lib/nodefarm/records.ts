@@ -13,9 +13,10 @@ import { END_STAGES, END_STEPS, buildBlock, endSeen, endStage, lastZone, stageCo
 import { zeTitle, zoneLabel } from "./zones/zoneevents";
 import { ENTRIES, unlocked as unlockedEntries } from "./content/codex";
 import { etaRate, exact, incomeOf, nextStep } from "./content/guide";
+import { NF_KEY } from "./save";
 
 export const NF_PATH = "/creations/games/node-farm";
-export const NF_SAVE_KEY = "nf-save-v1";
+export const NF_SAVE_KEY = NF_KEY;
 
 export interface RecordSection {
     id: string;

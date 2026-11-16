@@ -10,8 +10,11 @@ import {
     PLANET_STAGE_AT, PLANET_STAGE_BONUS, TIER_COST_X, TIER_NAMES, TIER_LEVELS, TUNE, type FxKey, type Perk,
 } from "./data";
 
-export const SAVE_KEY = "sw-save-v1";
-export const SAVE_VERSION = 1;
+import { SAVE_SLOTS } from "../saves/keys";
+import { readSaveKey, type SaveDef } from "../saves/core";
+
+export const SAVE_KEY = SAVE_SLOTS.starwright.key;
+export const SAVE_VERSION = SAVE_SLOTS.starwright.version;
 
 export interface State {
     v: number;
@@ -592,13 +595,21 @@ export function parse(raw: unknown): State | null {
 
 export const serialize = (s: State) => JSON.stringify({ ...s, flow: undefined });
 
+/** Starwright's save definition: envelope, migrations and the rolling backup. See lib/saves/core.ts. */
+export const STARWRIGHT_SAVE: SaveDef<State> = {
+    app: SAVE_SLOTS.starwright.app,
+    key: SAVE_KEY,
+    version: SAVE_VERSION,
+    bareVersion: (d) => (typeof d?.v === "number" ? d.v : 1),
+    migrations: {},
+    revive: (d) => parse(d),
+    dump: (s) => ({ ...s, flow: undefined }),
+    fallbacks: [SAVE_KEY + "-backup"],
+};
+
+/** Reads the live save (migrating an older one). Null when it is missing or unusable; use loadSave for the reason. */
 export function load(storage: Pick<Storage, "getItem"> | null | undefined): State | null {
-    try {
-        const t = storage?.getItem(SAVE_KEY);
-        return t ? parse(JSON.parse(t)) : null;
-    } catch {
-        return null;
-    }
+    return readSaveKey(storage, STARWRIGHT_SAVE, SAVE_KEY);
 }
 
 // ---- number format ------------------------------------------------------------------------------------------------

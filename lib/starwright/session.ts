@@ -1,7 +1,8 @@
 // Starwright session care: loading a save without losing it, backups, time credit for stalls and time away, and the
 // welcome-back report. Pure TypeScript (storage and clocks are passed in), so the tests run it under node.
 import { ELEMENTS, PLANETS, STAGE_NAMES } from "./data";
-import { SAVE_KEY, answer, canSupernova, catchUp, collapse, effects, eventOf, fmt, fmtAge, heaviest, levels, offlineCapS, parse, planetStage, serialize, stageOf, step, supernova, type State } from "./engine";
+import { SAVE_KEY, STARWRIGHT_SAVE, answer, canSupernova, catchUp, collapse, effects, eventOf, fmt, fmtAge, heaviest, levels, offlineCapS, planetStage, stageOf, step, supernova, type State } from "./engine";
+import { encodeSave, loadSave, readSaveKey } from "../saves/core";
 
 export const BACKUP_KEY = `${SAVE_KEY}-backup`;
 export const CORRUPT_KEY = `${SAVE_KEY}-corrupt`;
@@ -16,45 +17,29 @@ const write = (st: Store, k: string, v: string): boolean => {
     try { if (!st) return false; st.setItem(k, v); return true; } catch { return false; }
 };
 
-// ---- loading --------------------------------------------------------------------------------------------------------
+// ---- loading and backups ----------------------------------------------------------------------------------------------
+// The save goes through lib/saves/core.ts: envelope, migrations, the damaged copy under CORRUPT_KEY and the rolling backup.
 
-/** new: nothing saved. ok: loaded. restored: the main save was damaged, the backup was used. lost: damaged and no backup (a copy is kept). */
+/** new: nothing saved. ok: loaded (an older save is migrated on the way). restored: the main save was damaged, the backup was used. lost: damaged and no backup (a copy is kept). */
 export type LoadStatus = "new" | "ok" | "restored" | "lost";
 export interface Loaded { state: State | null; status: LoadStatus; note: string }
 
 const ago = (ms: number) => fmtAge(Math.max(0, ms) / 1000);
 
-/** Keep a damaged save under `sw-save-v1-corrupt`. A different, older damaged save moves to `...-corrupt-prev` instead of being overwritten. */
-function keepCorrupt(st: Store, raw: string) {
-    const old = read(st, CORRUPT_KEY);
-    if (old === raw) return;
-    if (old) write(st, CORRUPT_KEY + "-prev", old);
-    write(st, CORRUPT_KEY, raw);
-}
-
 /**
- * Read the save. A save that will not parse is never dropped silently: its text is kept under CORRUPT_KEY, the rolling
+ * Read the save. A save that will not load is never dropped silently: its text is kept under CORRUPT_KEY, the rolling
  * backup is tried next, and the caller gets a note to show the player.
  */
 export function loadSession(st: Store, now = Date.now()): Loaded {
-    const raw = read(st, SAVE_KEY);
-    if (!raw) return { state: null, status: "new", note: "" };
-    try {
-        const s = parse(JSON.parse(raw));
-        if (s) return { state: s, status: "ok", note: "" };
-    } catch { /* fall through to recovery */ }
-    keepCorrupt(st, raw);
-    const back = readBackup(st);
-    if (back) return { state: back, status: "restored", note: `Your save was damaged, so Starwright loaded its backup from ${ago(now - back.savedAt)} ago. The damaged file is kept.` };
+    const r = loadSave(st, STARWRIGHT_SAVE, now);
+    if (r.status === "new") return { state: null, status: "new", note: "" };
+    if (r.status === "ok" || r.status === "migrated") return { state: r.state, status: "ok", note: "" };
+    if (r.status === "restored") return { state: r.state, status: "restored", note: `Your save was damaged, so Starwright loaded its backup from ${ago(now - r.savedAt)} ago. The damaged file is kept.` };
     return { state: null, status: "lost", note: "Your save could not be read, so a new star was lit. The damaged file is kept: type sw corrupt in the console to see it." };
 }
 
-// ---- backups --------------------------------------------------------------------------------------------------------
-
 export function readBackup(st: Store): State | null {
-    const raw = read(st, BACKUP_KEY);
-    if (!raw) return null;
-    try { return parse(JSON.parse(raw)); } catch { return null; }
+    return readSaveKey(st, STARWRIGHT_SAVE, BACKUP_KEY);
 }
 
 /** Keep one rolling backup. Unless `force`, it never replaces a backup that has more play in it (so a reset does not wipe it). */
@@ -63,7 +48,8 @@ export function writeBackup(st: Store, s: State, force = false): boolean {
         const old = readBackup(st);
         if (old && old.totalAge > s.totalAge) return false;
     }
-    return write(st, BACKUP_KEY, serialize({ ...s, savedAt: Date.now() }));
+    const now = Date.now();
+    return write(st, BACKUP_KEY, encodeSave(STARWRIGHT_SAVE, { ...s, savedAt: now }, now));
 }
 
 // ---- time ----------------------------------------------------------------------------------------------------------
