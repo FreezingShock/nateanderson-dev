@@ -3,7 +3,7 @@
 // Game kit styled pieces for new games: a floating window, a toast stack, tabs, a counter, a press button and a burst.
 // Every piece is themed by the CSS variables on the nearest `.gk` element (see app/camino/game-kit.css), so a new game
 // sets its palette once and keeps its own look. The three older games keep their own markup and use the hooks only.
-import { useRef, type CSSProperties, type ReactNode } from "react";
+import { useEffect, useRef, type CSSProperties, type ReactNode } from "react";
 import { formatNumber, type NumberStyle } from "@/lib/game-kit/format";
 import type { Toast } from "@/lib/game-kit/toasts";
 import { useCountUp, useGain, usePresence, useReducedMotion, useTween } from "./hooks";
@@ -60,9 +60,22 @@ function WindowBody({ open, title, hint, icon, onClose, motion = "rise", size = 
     const box = useRef<HTMLElement>(null);
     const { closing, requestClose } = useWindowClose(onClose, { exitMs: EXIT_MS });
     useFocusTrap(box, modal);
+    // Floating windows let the game take clicks, so the layer cannot catch them: watch the document instead. A press on
+    // blank ground (anything that is not a control and not inside the window) closes it.
+    useEffect(() => {
+        if (modal) return;
+        const onDown = (e: PointerEvent) => {
+            const t = e.target as Element | null;
+            if (!t || box.current?.contains(t)) return;
+            if (t.closest("button, a, input, select, textarea, label, [role=button], [role=tab], [data-gk-keep]")) return;
+            requestClose();
+        };
+        document.addEventListener("pointerdown", onDown);
+        return () => document.removeEventListener("pointerdown", onDown);
+    }, [modal, requestClose]);
     const out = closing || !open;
     return (
-        <div className="gk-win-layer" data-modal={modal ? "" : undefined} onPointerDown={(e) => { if (e.target === e.currentTarget) requestClose(); }}>
+        <div className="gk-win-layer" data-modal={modal ? "" : undefined} onPointerDown={modal ? (e) => { if (e.target === e.currentTarget) requestClose(); } : undefined}>
             <section ref={box} tabIndex={-1} className="gk-win" data-size={size} data-motion={motion} data-s={out ? "out" : "in"} role="dialog" aria-modal={modal || undefined} aria-label={title}>
                 <header className="gk-win-head">
                     {icon && <span className="gk-win-icon" aria-hidden="true">{icon}</span>}
