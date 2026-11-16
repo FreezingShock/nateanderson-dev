@@ -727,7 +727,7 @@ def stack_art():
 
     Labels are sized for a phone: at 390px wide the piece is about 0.3x its
     pixel size, so the text is drawn large."""
-    W, H = 600, 160
+    W, H = 600, 168
     yy, xx = grid(H, W)
     field = 0.04 + 0.1 * fbm(H, W, 91, 30, 3) + 0.08 * (xx / W)
     im = to_image(dither(np.clip(field, 0, 1), ["#141414", "#181818", "#202020", "#2a2a2a", "#333333"]))
@@ -743,7 +743,7 @@ def stack_art():
         ("three.js + supabase", "#8a8a88", "#666664", "#4a4a48"),
         ("vercel + github actions", CYAN, "#0a6f7c", "#064a52"),
     ]
-    cx, w, h, t, step, base = 166, 96, 26, 10, 24, 124
+    cx, w, h, t, step, base = 150, 110, 28, 12, 24, 122
     labels = []
     for k, (label, top_c, left_c, right_c) in enumerate(layers):
         top_y = base - k * step
@@ -770,7 +770,7 @@ def stack_art():
 def workflow_art():
     """Vertical flow: pull request into integration (solid), then integration to
     release (gated, dashed). Stacked vertically so the text can be large on phones."""
-    W, H = 600, 284
+    W, H = 600, 316
     yy, xx = grid(H, W)
     field = 0.03 + 0.09 * fbm(H, W, 57, 28, 3) + 0.05 * (yy / H)
     im = to_image(dither(np.clip(field, 0, 1), ["#141414", "#181818", "#202020", "#2a2a2a"]))
@@ -779,7 +779,7 @@ def workflow_art():
         for gx in range(8, W, 12):
             d.point((gx, gy), fill=hx("#262626"))
     bx0, bx1, bh = 90, 510, 64
-    tops = [16, 104, 192]
+    tops = [16, 110, 204]
     boxes = [
         ("pull request", "small and reviewed"),
         ("integration", "merging deploys nothing"),
@@ -811,7 +811,7 @@ def workflow_art():
         d.text((2 * (bx0 + 20), 2 * (ty + 36)), sub, font=sf, fill=hx("#9aa7af"))
     d.text((2 * (cxm + 22), 2 * gate), "deploy only when asked", font=font(34, mono=True),
            fill=c, anchor="lm")
-    d.text((2 * cxm, 2 * 274), "release moves forward only on a deploy", font=font(34, mono=True),
+    d.text((2 * cxm, 2 * 294), "release moves forward only on a deploy", font=font(34, mono=True),
            fill=hx("#7a7a78"), anchor="mm")
     return im
 
