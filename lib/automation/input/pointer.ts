@@ -37,15 +37,18 @@ interface Tracked {
 
 const ORBIT_YAW = 0.008;
 const ORBIT_PITCH = 0.005;
+// Touch orbit is a little quicker per pixel: a finger covers less travel than a mouse on a 390 pixel screen.
+const TOUCH_YAW = 0.0075;
+const TOUCH_PITCH = 0.0055;
 
 // Turns DOM pointer events into camera moves and placement strokes.
 // Desktop: left drag places (or pans when no tool is active), middle or space+drag pans, right drag orbits, wheel zooms.
-// Touch: one finger pans, a quick tap places one cell, a rest-then-drag draws a line, two fingers pinch zoom and rotate.
+// Touch: one finger drags to orbit, a quick tap places one cell, a rest-then-drag draws a line, two fingers pinch zoom, slide to pan and rotate.
 export class PointerInput {
     private opts: Required<Omit<PointerOptions, "heightAt" | "groundHeightAt" | "onChange">> & Pick<PointerOptions, "heightAt" | "groundHeightAt" | "onChange">;
     private pointers = new Map<number, Tracked>();
     private spaceDown = false;
-    private pinchPrev: { dist: number; angle: number } | null = null;
+    private pinchPrev: { dist: number; angle: number; mx: number; my: number } | null = null;
     private attached = false;
     // Touch: the cell a machine's first tap previewed, waiting for a second tap to place it.
     private preview: { tool: string; x: number; z: number } | null = null;
@@ -263,7 +266,8 @@ export class PointerInput {
             if (Math.hypot(e.clientX - p.sx, e.clientY - p.sy) > this.opts.slopPx) {
                 if (p.hold) clearTimeout(p.hold);
                 p.hold = undefined;
-                p.mode = "pan";
+                // One finger drags to orbit, like a phone game camera. Placing and drawing stay on tap and long press.
+                p.mode = p.type === "touch" ? "orbit" : "pan";
             } else {
                 return;
             }
@@ -272,10 +276,12 @@ export class PointerInput {
             case "pan":
                 this.opts.camera.panPixels(dx, dy, this.viewportH());
                 break;
-            case "orbit":
-                this.opts.camera.rotate(-dx * ORBIT_YAW);
-                this.opts.camera.tilt(dy * ORBIT_PITCH);
+            case "orbit": {
+                const touch = p.type === "touch";
+                this.opts.camera.rotate(-dx * (touch ? TOUCH_YAW : ORBIT_YAW));
+                this.opts.camera.tilt(dy * (touch ? TOUCH_PITCH : ORBIT_PITCH));
                 break;
+            }
             case "stroke": {
                 const cell = this.cellAt(e.clientX, e.clientY);
                 if (cell) this.opts.build.updateStroke(cell);
@@ -372,11 +378,13 @@ export class PointerInput {
         e.preventDefault();
     };
 
-    private pinchState(): { dist: number; angle: number } {
+    private pinchState(): { dist: number; angle: number; mx: number; my: number } {
         const [a, b] = [...this.pointers.values()];
         return {
             dist: Math.max(1, Math.hypot(a.x - b.x, a.y - b.y)),
             angle: Math.atan2(b.y - a.y, b.x - a.x),
+            mx: (a.x + b.x) / 2,
+            my: (a.y + b.y) / 2,
         };
     }
 
@@ -388,6 +396,8 @@ export class PointerInput {
         const [a, b] = [...this.pointers.values()];
         const mid = this.groundAt((a.x + b.x) / 2, (a.y + b.y) / 2);
         this.opts.camera.zoomAt(this.pinchPrev.dist / next.dist, mid);
+        // Two fingers moving together pan the map under them (the midpoint follows the fingers).
+        this.opts.camera.panPixels(next.mx - this.pinchPrev.mx, next.my - this.pinchPrev.my, this.viewportH());
         let dAngle = next.angle - this.pinchPrev.angle;
         if (dAngle > Math.PI) dAngle -= 2 * Math.PI;
         if (dAngle < -Math.PI) dAngle += 2 * Math.PI;
