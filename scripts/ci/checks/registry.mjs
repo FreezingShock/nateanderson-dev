@@ -46,7 +46,9 @@ export function registerGame(config) {
 
     if (config.window) {
         if (typeof config.window.root !== "string" || !config.window.root) throw new Error(`registerGame("${id}"): window.root must be a selector`);
-        game.window = { root: config.window.root, views: config.window.views ?? WINDOW_VIEWS };
+        // tallPhoneSection: phones 760 px tall and up anchor on the Play section (components/games/shell, PR #690),
+        // not on the panel. Such a game checks the section sits under the site bar and the panel is on screen.
+        game.window = { root: config.window.root, views: config.window.views ?? WINDOW_VIEWS, tallPhoneSection: !!config.window.tallPhoneSection };
     }
 
     if (config.hud) {
