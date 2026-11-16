@@ -3,6 +3,7 @@
 import type { CSSProperties } from "react";
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { nfx as sfx, nfx, humVol } from "@/lib/nodefarm/sound";
+import { NF_KEY, nfSaveText } from "@/lib/nodefarm/save";
 import { setHum } from "@/lib/sound/engine";
 import { useSoundPrefs } from "@/lib/sound/use-sound";
 import {
@@ -84,7 +85,7 @@ import { ACC_KEY, blankFoldTarget, readyCount, shownArcIds, soloArc } from "@/li
 
 import { AUTO_GAP, addBackup, readBackups, type Backup } from "@/lib/nodefarm/backups";
 
-const KEY = "nf-save-v1";
+const KEY = NF_KEY;
 const EV_KEY = "nf-events-v1"; // old per-device "off" for the card events; moved into the save as ze.off when a save loads
 const FS_KEY = "nf-fs-v1"; // full screen mode on or off (per device)
 const HUM_KEY = "nf-hum-v1"; // reactor hum on or off (per device)
@@ -450,7 +451,7 @@ export function NodeFarm() {
         try {
             s.at = Date.now();
             const text = JSON.stringify(s);
-            localStorage.setItem(KEY, text);
+            localStorage.setItem(KEY, nfSaveText(s));
             saved.current = Date.now();
             setLastSave(saved.current);
             // a rolling backup every half hour of play (skipped when nothing changed since the last one)

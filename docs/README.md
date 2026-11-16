@@ -10,6 +10,7 @@ Start with [CLAUDE.md](../CLAUDE.md) (agent guide), then [WORKFLOW.md](WORKFLOW.
 - [ci.md](ci.md): PR checks and running them locally.
 - [games/NEW-GAME.md](games/NEW-GAME.md): make a new game in one command, and what it sets up.
 - [rule-changes/](rule-changes/README.md): one file per game balance or rule change.
+- [saves.md](saves.md): the save system (envelope, migrations, damaged copies, export and import).
 
 ## Design and motion
 - [naos.md](naos.md): the naOS look, tokens, type scale, dithered art.
