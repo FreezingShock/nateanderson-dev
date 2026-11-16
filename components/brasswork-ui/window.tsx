@@ -20,7 +20,8 @@
  *   .ab-root or .bw-root, so the window needs no extra prop for them.
  */
 
-import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
+import { useRef, type ReactNode } from "react";
+import { useFocusTrap, useWindowClose } from "@/components/game-kit/use-window";
 import "./motion.css";
 import "./window.css";
 import "./scrollbar.css";
@@ -71,54 +72,10 @@ export function MenuWindow({
   theme,
   children,
 }: MenuWindowProps) {
-  const [closing, setClosing] = useState(false);
-  const timer = useRef<number | null>(null);
   const box = useRef<HTMLElement>(null);
-
-  // Run the exit animation, then hand control back to the caller. A second close while closing is ignored.
-  const requestClose = useCallback(() => {
-    if (timer.current !== null) return;
-    setClosing(true);
-    timer.current = window.setTimeout(() => {
-      timer.current = null;
-      onClose();
-    }, EXIT_MS);
-  }, [onClose]);
-
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") requestClose();
-    };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [requestClose]);
-
-  useEffect(() => () => {
-    if (timer.current !== null) window.clearTimeout(timer.current);
-  }, []);
-
-  // The window is modal: focus moves into it on open, Tab stays inside it, and focus goes back to whatever opened it on close.
-  useEffect(() => {
-    const back = document.activeElement instanceof HTMLElement ? document.activeElement : null;
-    const el = box.current;
-    el?.focus({ preventScroll: true });
-    const trap = (e: KeyboardEvent) => {
-      if (e.key !== "Tab" || !el) return;
-      const items = [...el.querySelectorAll<HTMLElement>('button, a[href], input, select, textarea, [tabindex]:not([tabindex="-1"])')].filter((n) => n.offsetParent !== null && !n.hasAttribute("disabled"));
-      if (items.length === 0) return;
-      const first = items[0];
-      const last = items[items.length - 1];
-      const at = document.activeElement;
-      if (!el.contains(at) || at === el) { e.preventDefault(); (e.shiftKey ? last : first).focus(); }
-      else if (e.shiftKey && at === first) { e.preventDefault(); last.focus(); }
-      else if (!e.shiftKey && at === last) { e.preventDefault(); first.focus(); }
-    };
-    window.addEventListener("keydown", trap);
-    return () => {
-      window.removeEventListener("keydown", trap);
-      if (back && document.contains(back)) back.focus({ preventScroll: true });
-    };
-  }, []);
+  // Exit animation then onClose, Escape to close, and a modal focus trap: the game kit's window hooks.
+  const { closing, requestClose } = useWindowClose(onClose, { exitMs: EXIT_MS });
+  useFocusTrap(box);
 
   return (
     <div

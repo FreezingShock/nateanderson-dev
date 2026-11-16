@@ -82,6 +82,6 @@ Put class `gk` on the game root and set the palette there (CSS in `app/camino/ga
 ## Which game uses what
 - Starwright: on the kit. `fmt` is the grouped style, `fmtAge` and `catchUp` come from the kit, settings use createSettingsStore, notes use useToasts (keep 3, 9 s), usePresence/useLeaving/useGain, useAutosave (with the 10 min backup in afterSave) and claimTab ("sw-tab").
 - Groundbreak: on the kit. `fmt` is the kilo style, `fmtAge` and `catchUp` from the kit, toasts from useToasts (keep 1, dedupe, 6 s, sticky 20 s), window exits from usePresence, useAutosave, watchNewerSave.
-- Brasswork: after that (number formatting, settings, MenuWindow on useWindowClose and useFocusTrap, count-up).
+- Brasswork: on the kit. HUD numbers use the compact and full styles, MenuWindow uses useWindowClose and useFocusTrap, the reward card uses useCountUp, and save warnings use useToasts with a brass-themed ToastStack (`components/brasswork/save-notes.css` shows how to theme the kit pieces for a game).
 - Node Farm: not moved; it is finished and deployed.
 This list is updated as each game moves.

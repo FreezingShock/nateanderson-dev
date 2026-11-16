@@ -10,6 +10,7 @@ import { MILESTONE_ART } from "@/lib/automation/art";
 import { playSound } from "@/lib/automation/audio";
 import type { HubView } from "@/lib/automation/types";
 import { diffRewards, type RewardEvent, type RewardMemory } from "@/lib/brasswork/rewards";
+import { useCountUp } from "@/components/game-kit/hooks";
 import "./reward-moment.css";
 
 /** Fired on window for every reward, so sound or other layers can listen without touching this file. */
@@ -19,23 +20,8 @@ const KICKER: Record<RewardEvent["kind"], string> = { order: "Order filled", mil
 const HOLD_MS = 7500;
 const LEAVE_MS = 260;
 
-/** Counts up to `to` over about half a second. Reads as a fresh payout; skipped when motion is off. */
-function useCount(to: number, still: boolean): number {
-    const [n, setN] = useState(still ? to : 0);
-    useEffect(() => {
-        if (still || to <= 0) { setN(to); return; }
-        let raf = 0;
-        const t0 = performance.now();
-        const tick = (t: number) => {
-            const k = Math.min(1, (t - t0) / 650);
-            setN(Math.round(to * (1 - (1 - k) * (1 - k))));
-            if (k < 1) raf = requestAnimationFrame(tick);
-        };
-        raf = requestAnimationFrame(tick);
-        return () => cancelAnimationFrame(raf);
-    }, [to, still]);
-    return n;
-}
+/** Counts up to `to` over about half a second (the game kit's useCountUp). Reads as a fresh payout; skipped when motion is off. */
+const useCount = (to: number, still: boolean) => useCountUp(to, { ms: 650, still });
 
 function Card({ ev, queued, onOpenHub, onOpenResearch, onDone }: {
     ev: RewardEvent; queued: number; onOpenHub: () => void; onOpenResearch: () => void; onDone: () => void;
