@@ -8,7 +8,7 @@ import { loadSheets, onSheets, sheetUrl } from "@/lib/starwright/ui-sheets";
 import { ELEMENTS } from "@/lib/starwright/data";
 
 /** This thread's drawn GUI art (scripts/starwright/ui-art/build.py writes public/starwright/ui). Bump UI_V when it changes. */
-export const UI_V = 8;
+export const UI_V = 9;
 export const ui = (name: string) => `/starwright/ui/${name}.webp?v=${UI_V}`;
 /** Glyph names that have a drawn 16px icon in the ui set. */
 const UI_GLYPH: Record<string, string> = {
