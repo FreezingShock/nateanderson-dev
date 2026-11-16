@@ -17,6 +17,7 @@ import { awaySnap, awaySummary, doCue, nextCue, type AwaySummary, type Cue } fro
 import { MAT_ICONS, iconUrl } from "./icons";
 import { GB_JOBS, type GbJobId } from "@/components/groundbreak-art";
 import { GB_BANNERS, type GbBannerId } from "@/components/groundbreak-art/ui-art";
+import { GB_ICONS, GB_ICON_COLS, GB_ICON_ROWS, GB_ICON_SHEET, type GbIconId } from "@/components/groundbreak-art/icons";
 import { GbSiteScene as GroundbreakScene } from "@/components/groundbreak-art/site-scene";
 import { CAMERA_HOME, GROUND_Y, WORLD_H, WORLD_W, ZOOM_MAX, ZOOM_MIN, type Camera, type SceneJob } from "./scene-types";
 
@@ -48,9 +49,14 @@ const MAT_KEYS = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "0", "-", "="];
 const dockHeight = (r: { width: number; height: number }) => (r.height <= 520 ? 96 : r.width <= 860 ? 230 : 150);
 const clamp = (v: number, a: number, b: number) => Math.max(a, Math.min(b, v));
 
+/** One icon. Every icon the game uses is a cell of the shared sheet, so the first paint needs one image request, not one per icon. */
 function Ico({ id, size = 20, className }: { id: string; size?: number; className?: string }) {
     const [url, setUrl] = useState("");
-    useEffect(() => setUrl(iconUrl(id)), [id]);
+    const cell = id in GB_ICONS ? GB_ICONS[id as GbIconId] : undefined;
+    useEffect(() => { if (cell === undefined) setUrl(iconUrl(id)); }, [id, cell]);
+    if (cell !== undefined) {
+        return <i className={`gb-ico ${className ?? ""}`} style={{ width: size, height: size, backgroundImage: `url("${GB_ICON_SHEET}")`, backgroundSize: `${GB_ICON_COLS * size}px ${GB_ICON_ROWS * size}px`, backgroundPosition: `${-(cell % GB_ICON_COLS) * size}px ${-Math.floor(cell / GB_ICON_COLS) * size}px` }} aria-hidden="true" />;
+    }
     return <i className={`gb-ico ${className ?? ""}`} style={{ width: size, height: size, backgroundImage: url ? `url(${url})` : undefined }} aria-hidden="true" />;
 }
 
@@ -756,7 +762,7 @@ function Console({ run }: { run: (line: string) => { t: string; k?: string }[] }
     return (
         <div className="gb-con">
             <div ref={box} className="gb-con-out">{lines.map((l, i) => <p key={i} data-k={l.k}>{l.t}</p>)}</div>
-            <form onSubmit={(e) => { e.preventDefault(); const line = v.trim(); if (!line) return; setLines((p) => [...p.slice(-60), { t: `> ${line}`, k: "in" }, ...run(line)]); setV(""); }}>
+            <form onSubmit={(e) => { e.preventDefault(); const line = v.trim(); if (!line) return; const out = run(line); setLines((p) => [...p.slice(-60), { t: `> ${line}`, k: "in" }, ...out]); setV(""); }}>
                 <span aria-hidden="true">&gt;</span>
                 <input ref={input} value={v} onChange={(e) => setV(e.target.value)} aria-label="Console command" autoComplete="off" autoCapitalize="off" spellCheck={false} />
             </form>
