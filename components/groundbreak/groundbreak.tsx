@@ -100,6 +100,8 @@ export function Groundbreak() {
     // the material that just came on site: its dock tile plays one ring (keyed, so a new one restarts it)
     const [pulse, setPulse] = useState<{ key: number; mat: number } | null>(null);
     const pulseId = useRef(0);
+    // the crew-tick of the job that was just handed over: it plays one stamp (`data-fresh`, see app/camino/groundbreak.css)
+    const [freshTick, setFreshTick] = useState(-1);
     const [away, setAway] = useState<AwaySummary | null>(null);
     const [conflict, setConflict] = useState(false);
     const conflictRef = useRef(false);
@@ -294,6 +296,7 @@ export function Groundbreak() {
             if (s.built > sn.built) {
                 const last = s.skyline[s.skyline.length - 1];
                 note(`${JOB_BY.get(last?.id ?? "")?.name ?? "Job"} handed over.`, "hot");
+                setFreshTick(s.builtThisFirm - 1);
             }
             if (seenRe.current < 0 || s.reruns < seenRe.current) seenRe.current = s.reruns;
             if (s.reruns > seenRe.current) {
@@ -454,7 +457,7 @@ export function Groundbreak() {
                     </div>
                     <div className="gb-prog-row" data-tip={`Job ${Math.min(JOBS.length, s.builtThisFirm + 1)} of ${JOBS.length}`}>
                         <span>Jobs</span>
-                        <ol className="gb-ticks">{JOBS.map((j, n) => <li key={j.id} data-s={n < s.builtThisFirm ? "done" : n === s.builtThisFirm ? "now" : "wait"} />)}</ol>
+                        <ol className="gb-ticks">{JOBS.map((j, n) => <li key={j.id} data-s={n < s.builtThisFirm ? "done" : n === s.builtThisFirm ? "now" : "wait"} data-fresh={n === freshTick ? "" : undefined} />)}</ol>
                         <b>{Math.min(JOBS.length, s.builtThisFirm + 1)}<small>/{JOBS.length}</small></b>
                     </div>
                 </div>

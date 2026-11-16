@@ -720,3 +720,7 @@ html.gb-route .sf-foot { display: none !important; }
 .gb-feed li[data-tone="hot"] { animation: gbIn .2s ease-out, gbGlow var(--cm-d-reveal) steps(2, end); }
 @keyframes gbGlow { 0% { box-shadow: 0 0 0 2px var(--gb-amber); } 100% { box-shadow: 0 0 0 0 transparent; } }
 @media (prefers-reduced-motion: reduce) { .gb-unlock, .gb-unlock::after { display: none; } .gb-feed li[data-tone="hot"] { animation: gbIn .2s ease-out; } }
+/* A job's tick when its handover lands (groundbreak.tsx `freshTick`): the tick flashes amber once. */
+.gb-ticks li[data-fresh] { animation: gbTickStamp var(--cm-d-reveal) steps(4, end) both; }
+@keyframes gbTickStamp { 0% { background: var(--gb-hi); box-shadow: 0 0 0 2px var(--gb-amber); } 100% { box-shadow: 0 0 0 0 transparent; } }
+@media (prefers-reduced-motion: reduce) { .gb-ticks li[data-fresh] { animation: none; } }
