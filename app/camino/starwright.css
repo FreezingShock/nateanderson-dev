@@ -1,11 +1,6 @@
 /* Starwright. The star fills the screen; every panel floats over it, separated, with its own margin. All art is Bayer dither
    (lib/starwright/ui-art.ts draws the textures into the --px-* variables). Panels are sharp with corner brackets; no pills,
    no tabs, no coloured strip down a panel edge. */
-html.sw-route .cm-dock,
-html.sw-route .nv-top,
-html.sw-route .cm-pgauge,
-html.sw-route .sf-foot { display: none !important; }
-
 .sw-root {
     --sw-cy: var(--cm-cyan, #5fe3ff);
     --sw-ink: #e9ecf6;
