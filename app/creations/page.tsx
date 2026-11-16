@@ -68,7 +68,7 @@ export default async function CreationsPage() {
                 no="03"
                 label="Game modes"
                 title="Game sections."
-                blurb="Geography is live. Incremental and automation are next. Each links to its section."
+                blurb="Geography, incremental and automation. Each card opens its section on the Games page."
             >
                 <div className="cm-grid cm-fit cr-modes">
                     {GAME_MODES.map((m) => {
