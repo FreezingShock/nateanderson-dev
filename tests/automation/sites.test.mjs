@@ -50,3 +50,14 @@ test("other sites are locked before the first prestige and open after it", () =>
     assert.equal(after.find((a) => a.id === S.SITES[0].id).state, "current");
     for (const a of after.filter((a) => a.id !== S.SITES[0].id)) assert.equal(a.state, "open", a.id);
 });
+
+// Locked expedition cards name the milestones still open, in tree order, so the player sees what to deliver next.
+test("the expedition lists every milestone still open, in tree order", () => {
+    const world = S.createWorld({ width: 18, depth: 12, hub: { x: 8, z: 5 } }, CAT);
+    const all = CAT.tree.milestones.map((m) => m.name);
+    assert.deepEqual(S.hudData(world, CAT).prestige.missing, all);
+    world.progress.milestonesDone = [CAT.tree.milestones[0].id];
+    assert.deepEqual(S.hudData(world, CAT).prestige.missing, all.slice(1));
+    world.progress.milestonesDone = CAT.tree.milestones.map((m) => m.id);
+    assert.deepEqual(S.hudData(world, CAT).prestige.missing, []);
+});

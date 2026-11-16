@@ -64,7 +64,7 @@ Floors above ground level, photo mode, panel folding, a second island as a site.
 - [x] EMPTY-states | size S | Padlock slots for locked machines, crate scene on an untouched hub order, idle scene in the away report | this PR
 - [x] FIRST-kiln-recipe | size S | Nate chose auto-pick: a new kiln starts on Iron ingot (docs/rule-changes/2026-11-15-brasswork-kiln-default-recipe.md) | this PR
 - [ ] FIRST-pacing-note | size S | For B-05: in a real click-through the opening has four hand steps after the windmill (recipe, two belt runs, hub). Time the human steps, not only the sim, when the pacing bot lands
-- [ ] EMPTY-expedition-lock | size S | Expedition cards show a text "Locked" button; a padlock glyph and the missing milestone would match the new locked slots
+- [x] EMPTY-expedition-lock | size S | Expedition cards show a text "Locked" button; a padlock glyph and the missing milestone would match the new locked slots | this PR
 
 ## Audit 2026-11-16 (pre-deploy walk of every menu at 1440 and 390)
 - [x] AUDIT-prestige-phone-scroll | size S | "Open a new workshop" on a phone scrolled its ore list and bonuses inside the window; now the header is one row with a square close, gauges and lists are sized, and the window fits 390 by 844 with no inner scroll | this PR
@@ -75,4 +75,6 @@ Floors above ground level, photo mode, panel folding, a second island as a site.
 - [x] PHONE-stage | size L | Phone: the 3D world fills the game screen (it was a 0 px strip under the panel); floating top bar, objective, tabs and bottom sheets; camera pad (joystick, turn, zoom) and one-finger orbit, two-finger pan and pinch | this PR
 - [ ] PHONE-check-real | size S | ASK P-03: on a real iPhone, check the full-screen panel with no site bar, that one-finger orbit does not fight the browser, and that the joystick and tool column reach with a thumb | headless screenshots only so far
 - [x] PHONE-tap-44 | size S | Phone tap audit (`tap-targets.mjs`) flagged touch bar, camera pad, Tools and resource boxes under 44 px; all now 44 px, audit reports 0 in every phone state | this PR
+- [x] PHONE-next-banner | size S | Phone NEXT banner: text beside its button, about 65 css px tall at 390 (was about 114); milestone stat labels on one line at 375 and 390 | this PR
+- [x] PHONE-overlaps-menus | size S | At 390 the More menu ran under the tool column, the Tools and sheet-tab tags covered their menus, and the placement label could sit under the camera pad; menus now clear the column, touch skips tags on tabs, More items and Tools, and the label flips above its marker | this PR
 - [x] GROUND-calm-base | size M | Calmer ground (Nate's pick, FINDINGS WS5): one base tone for the plateau and grass on every screen size; Bayer dither only on edges, kiln glow kept | this PR
