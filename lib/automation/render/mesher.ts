@@ -50,7 +50,8 @@ interface Buffers {
 export function meshChunk(
     grid: VoxelGrid,
     key: string,
-    blocks: BlockRegistry
+    blocks: BlockRegistry,
+    jitterAmount = 0.14
 ): THREE.BufferGeometry | null {
     const data = grid.getChunk(key);
     if (!data) return null;
@@ -81,7 +82,7 @@ export function meshChunk(
                 const gk = z0 + lz;
                 const color = blocks.color(id);
                 if (!color) continue;
-                const jitter = 1 + (cellHash(gi, gj, gk) - 0.5) * 0.14;
+                const jitter = 1 + (cellHash(gi, gj, gk) - 0.5) * jitterAmount;
                 base[0] = gi;
                 base[1] = gj;
                 base[2] = gk;
@@ -220,15 +221,19 @@ export class ChunkMesher {
     private readonly material: THREE.Material;
     private readonly blocks: BlockRegistry;
     private readonly grid: VoxelGrid;
+    private readonly jitter: number;
 
+    /** `jitter` is the per-voxel brightness spread (0 for flat ground). */
     constructor(
         grid: VoxelGrid,
         blocks: BlockRegistry,
-        material: THREE.Material
+        material: THREE.Material,
+        jitter = 0.14
     ) {
         this.grid = grid;
         this.blocks = blocks;
         this.material = material;
+        this.jitter = jitter;
     }
 
     /** Rebuilds up to `max` dirty chunks. Returns how many were rebuilt. */
@@ -244,7 +249,7 @@ export class ChunkMesher {
                 old.geometry.dispose();
                 this.meshes.delete(key);
             }
-            const geo = meshChunk(this.grid, key, this.blocks);
+            const geo = meshChunk(this.grid, key, this.blocks, this.jitter);
             if (!geo) continue;
             const mesh = new THREE.Mesh(geo, this.material);
             mesh.castShadow = true;
