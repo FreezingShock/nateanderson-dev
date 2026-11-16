@@ -76,6 +76,7 @@ Slot for findings from the thread "Audit website code for simplification". That 
 - [x] SHELL-play-under-bar | S | desktop windowed games: the Play heading and panel start below the site bar, and the panel and footer clear the site dock; Brasswork's left dock compacts under 1000 px tall | #654
 - [x] SITE-short-screen-dock | S | footer clears the site dock down to 657 px tall (panel floor 260 px, height 100dvh minus 400 px), and Brasswork's left dock scrolls inside a short panel instead of clipping | #659
 - [x] SITE-home-band-art | M | animated sprite art for each game across the whole homepage Play band, lazy and paused off screen | this PR
+- [x] SITE-motion-card-art | S | pixel art on toned cards lifts and brightens on pointer hover; colour only under reduced motion; type pass: card text and studies course body on the 13.5px ui token (were 14px), About verbs on the 18px lead token (were 19px); the rest of the home and page motion already existed and was checked, not changed. Left: a 17px timeline date line and 12px stat numbers | this PR
 - [x] SITE-short-anchor | S | desktop under 700 px tall anchors on the panel (the game matters more than the heading there) | #665
 - [x] GUESS-reveal-polish | M | animated miss and win reveals, streak readout, Unlimited unlock moment, flag round double shake removed, reduced motion respected | this PR
 - [x] SITE-motion-scale | M | one motion scale (easing, durations, lift and press travel) and one reduced-motion rule; buttons, chips, cards, home game cards and page shutters use it | this PR

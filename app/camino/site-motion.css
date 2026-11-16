@@ -1,0 +1,33 @@
+/* ==========================================================================
+   Site motion (2026-11-16). Loaded after micro.css in app/globals.css.
+   Scope: the pixel art behind toned cards (Explore on the home page, the Creations hub, About and others) answers the
+   pointer. Nothing else moves here: reveals live in motion.css and the engine, card edges and arrows in micro.css,
+   the dock in nav-naos.css.
+
+   Rules that keep this safe:
+   - Movement uses the individual `translate` property, never `transform`, so it stacks with the art's own
+     translate(-50%, -50%) centring and cannot cancel a reveal in progress.
+   - Pointer devices only (`hover: hover`). Touch screens get no hover movement.
+   - Reduced motion: no movement and no transition. The art keeps its resting opacity.
+   ========================================================================== */
+
+@media (hover: hover) and (prefers-reduced-motion: no-preference) {
+  .ctos .cm-card[data-tone] > .cm-card-art {
+    transition: translate var(--cm-d-enter) var(--cm-ease), opacity var(--cm-d-base) var(--cm-ease);
+  }
+  /* Panel tone (the default for toned cards): the art lifts 8px and brightens from .14 to .24. */
+  .ctos .cm-card.link[data-tone="panel"]:hover > .cm-card-art,
+  .ctos .cm-card.link[data-tone="panel"]:focus-visible > .cm-card-art { translate: 0 -8px; opacity: .24; }
+  /* Paper tone: the ink art lifts and goes from .09 to .16. */
+  .ctos .cm-card.link[data-tone="paper"]:hover > .cm-card-art,
+  .ctos .cm-card.link[data-tone="paper"]:focus-visible > .cm-card-art { translate: 0 -8px; opacity: .16; }
+  /* Cyan tone: the ink art lifts and goes from .13 to .22. */
+  .ctos .cm-card.link[data-tone="cyan"]:hover > .cm-card-art,
+  .ctos .cm-card.link[data-tone="cyan"]:focus-visible > .cm-card-art { translate: 0 -8px; opacity: .22; }
+}
+
+@media (hover: hover) and (prefers-reduced-motion: reduce) {
+  .ctos .cm-card.link[data-tone]:hover > .cm-card-art { opacity: .24; }
+  .ctos .cm-card.link[data-tone="paper"]:hover > .cm-card-art { opacity: .16; }
+  .ctos .cm-card.link[data-tone="cyan"]:hover > .cm-card-art { opacity: .22; }
+}
