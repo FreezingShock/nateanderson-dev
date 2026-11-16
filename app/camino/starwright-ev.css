@@ -59,3 +59,8 @@
     .sw-codex .sw-cx { padding-left: 2px; padding-right: 2px; min-width: 0; }
 }
 .sw-chart .sw-chart-foot { box-sizing: border-box; width: 100%; padding: 6px 16px 16px; text-align: left; }
+
+/* The away card's exit: it fades up and out, quicker than it arrived. Reduce motion removes the animation, so it just goes. */
+.sw-away[data-leaving] { animation: swAwayOut var(--cm-d-fast) steps(3, end) forwards; pointer-events: none; }
+@keyframes swAwayOut { to { opacity: 0; margin-top: -10px; } }
+@media (prefers-reduced-motion: reduce) { .sw-away[data-leaving] { animation: none; opacity: 0; } }
