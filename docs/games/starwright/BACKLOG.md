@@ -22,6 +22,7 @@ Before any change: `npm run test:nodefarm`. Visual changes also need PNG screens
 12b. [x] **Ladder rows and phone fold (Nate, 2026-11-16).** Buy buttons no longer cover level, rate or recipe at 1440 and 390; phone star shortened so the first ladder row shows above the fold. Shots in `portfolio/starwright/ladder-fit/`. The "Scroll for the ladder" cue still needs placing for the shorter shell panel once that PR lands.
 13. [ ] **Welcome back and event cards: real-phone tap check.** Chips toggle the Almanac line on tap; confirm on a device (cloud tests are headless only). Also add a leaving animation once the audio/animations thread exposes its hook on `.sw-ev`.
 14. [ ] **Menu card fits at 1440x900.** The Menu is 3 px taller than its box (scrollHeight 845 vs 842) so it can show a scrollbar; trim spacing. Overflow thread may fix it first; check before starting.
+- [x] ART-ending-blast | size S | Neutron star blast: two tapered pulsar beams (wide at the core, thin at reach, dithered in the blue ramp) replace the single thin line that read as a glitch. Supernova and black hole sheets unchanged. Done when the before and after frames sit in `portfolio/starwright/ending-screens-2026-11-16/`. | `scripts/starwright/art/stars.py` (VERSION 8)
 15. [x] **First step for new players.** On a new star the guide line reads "Start here: buy a hydrogen burner (key 1, 18 H)" and moves on to helium once it is bought. Done when 1440 and 390 shots show it on a fresh save. Files: `lib/starwright/engine.ts` `guide()`, test in `tests/starwright/engine.test.mjs`. Shots: `/mnt/project-files/starwright-guide-line-2026-11-16/`.
 
 ## Needs Nate (taste call or his own playtest)
@@ -29,7 +30,7 @@ Before any change: `npm run test:nodefarm`. Visual changes also need PNG screens
 - **His own playthrough of the first star.** The first supernova is about 13 minutes for the bot; people are slower. Needs his notes on the first minute, the first visitor, and whether the guide line is clear. Blocks any further pacing change.
 - ~~Offline pacing~~ decided 2026-11-15: cap a few (3) supernovas per absence with auto supernova on. Done in the away-cap PR.
 - ~~Rule changes l5 Corona, a5 Iron rain, deep stars~~ signed off by Nate 2026-11-15.
-- **Next art pass.** Planet break-up chunks done (his pick 2026-11-15). Still offered, not picked: visitor and cloud cards, supernova and ending screens.
+- **Next art pass.** Planet break-up chunks done (his pick 2026-11-15). Ending screens: neutron beams done (ART-ending-blast). Still offered, not picked: visitor and cloud cards, supernova and black hole ending screens.
 - **Audio.** Rebuilt 2026-11-15 (see FEATURES). Needs him to listen: WAVs in `/mnt/project-files/portfolio/starwright/motion-audio-overhaul/audio/`, then volume levels and which sounds to change. Real Safari autoplay unchecked.
 
 ## Cannot be tested in the cloud (his devices)
