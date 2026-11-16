@@ -75,5 +75,10 @@ Floors above ground level, photo mode, panel folding, a second island as a site.
 - [x] PHONE-stage | size L | Phone: the 3D world fills the game screen (it was a 0 px strip under the panel); floating top bar, objective, tabs and bottom sheets; camera pad (joystick, turn, zoom) and one-finger orbit, two-finger pan and pinch | this PR
 - [ ] PHONE-check-real | size S | ASK P-03: on a real iPhone, check the full-screen panel with no site bar, that one-finger orbit does not fight the browser, and that the joystick and tool column reach with a thumb | headless screenshots only so far
 - [x] PHONE-tap-44 | size S | Phone tap audit (`tap-targets.mjs`) flagged touch bar, camera pad, Tools and resource boxes under 44 px; all now 44 px, audit reports 0 in every phone state | this PR
+- [x] DESK-fit-windows | size M | Desktop windows: Machines locked-row text sits inside its dashed box; the NEXT banner steps beside an open flyout and hides under a full window; Settings uses one switch for every on/off and one slider for every range (lamps and rule ticks removed, Number style is now a Full numbers switch, Lighting is a slider) | this PR
+- [x] PHONE-next-banner | size S | Phone NEXT banner: text beside its button, about 65 css px tall at 390 (was about 114); milestone stat labels on one line at 375 and 390 | this PR
 - [x] PHONE-overlaps-menus | size S | At 390 the More menu ran under the tool column, the Tools and sheet-tab tags covered their menus, and the placement label could sit under the camera pad; menus now clear the column, touch skips tags on tabs, More items and Tools, and the label flips above its marker | this PR
 - [x] GROUND-calm-base | size M | Calmer ground (Nate's pick, FINDINGS WS5): one base tone for the plateau and grass on every screen size; Bayer dither only on edges, kiln glow kept | this PR
+
+## Research readability (thread "Make Brasswork research readable", 2026-11-16)
+- [x] RESEARCH-names-header | size S | Research node names 12.5 px to 14 px and cards 114 px to 122 px tall so two-line names (Aluminium casings, Quartz-only silicon) no longer clip; header band 66 px to 50 px so the title leads | this PR

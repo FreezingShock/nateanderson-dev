@@ -4,7 +4,7 @@
 import Link from "next/link";
 import { useRef, useState } from "react";
 import { ArtGauge } from "@/components/brasswork-art";
-import { Choice, Row } from "@/components/automation/settings-window";
+import { Row } from "@/components/automation/settings-window";
 import { deserialize } from "@/lib/automation/sim/save";
 import { MOODS, type Mood } from "./extras";
 import { tipAttr } from "@/components/brasswork-ui/tip";
@@ -20,7 +20,20 @@ export function LightingRow({ mood, onMood }: { mood: Mood; onMood: (m: Mood) =>
                 <span className="bws-name">Lighting</span>
                 <span className="bws-hint">Auto follows the clock. Shows live behind this panel.</span>
             </div>
-            <Choice label="Lighting" value={mood} options={MOODS.map((m) => ({ value: m, label: m }))} onChange={onMood} />
+            {/* A range like the volume sliders: one stop per mood, Auto at the left end. */}
+            <span className="bwa-range bws-step">
+                <input
+                    type="range"
+                    min={0}
+                    max={MOODS.length - 1}
+                    step={1}
+                    value={i}
+                    aria-label="Lighting"
+                    aria-valuetext={mood}
+                    onChange={(e) => onMood(MOODS[Number(e.target.value)])}
+                />
+                <output>{mood}</output>
+            </span>
         </div>
     );
 }

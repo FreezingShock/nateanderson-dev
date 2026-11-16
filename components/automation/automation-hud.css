@@ -312,6 +312,11 @@
   min-width: 0;
 }
 
+/* Wraps the label, title, bar and text. Desktop keeps the children in the banner's own layout; phone stacks them. */
+.ab-next-body {
+  display: contents;
+}
+
 /* ---- factory panel (desktop: right column) ---- */
 
 .ab-factory {
