@@ -417,7 +417,7 @@ export function AutomationHud({
           <nav className="ab-tabbar" aria-label="Menus">
             <button
               type="button"
-              className="ab-tab"
+              className="ab-tab bwm-tab"
               aria-pressed={sheet === "pal"}
               {...(coarse ? {} : tipAttr({ title: "Machines", tag: "Sheet", text: "The build palette: belts and logistics, machines and power. Tap a row to hold it." }))}
               onClick={() => {
@@ -430,7 +430,7 @@ export function AutomationHud({
             </button>
             <button
               type="button"
-              className="ab-tab"
+              className="ab-tab bwm-tab"
               aria-pressed={sheet === "factory"}
               {...(coarse ? {} : tipAttr({ title: "Milestones", tag: "Sheet", text: "Deliveries, blueprints, and the card for the machine you picked." }))}
               onClick={() => {
@@ -443,7 +443,7 @@ export function AutomationHud({
             </button>
             <button
               type="button"
-              className="ab-tab"
+              className="ab-tab bwm-tab"
               aria-pressed={screen === "research"}
               {...(coarse ? {} : tipAttr(CONTROL_TIPS.research))}
               onClick={() => {
@@ -456,7 +456,7 @@ export function AutomationHud({
             </button>
             <button
               type="button"
-              className="ab-tab"
+              className="ab-tab bwm-tab"
               aria-pressed={more}
               {...(coarse ? {} : tipAttr({ title: "More", tag: "Menu", text: "Hub, prestige, the starter quest, expedition, production and settings." }))}
               onClick={() => {

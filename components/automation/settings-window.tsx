@@ -50,7 +50,7 @@ export function Row({ icon, label, hint, stack, children }: { icon: string; labe
 
 export function Group({ title, children, tab }: { title: string; children: React.ReactNode; tab?: SettingsPage }) {
     return (
-        <section className="bws-group" aria-label={title} data-tab={tab}>
+        <section className="bws-group bwm-pane-in" aria-label={title} data-tab={tab}>
             <h3 className="bws-group-h">{title}</h3>
             {children}
         </section>
@@ -77,7 +77,7 @@ export function SettingsWindow({ settings, onChange, onClose, slots }: {
             <div className="bws-body" data-panel="controls" data-page={page}>
                         <div className="bws-tabs" aria-label="Settings pages">
                             {PAGES.filter((t) => t.id !== "save" || slots?.save).map((t) => (
-                                <button key={t.id} type="button" className="bws-tab" aria-pressed={page === t.id} onClick={() => setPage(t.id)}>{t.label}</button>
+                                <button key={t.id} type="button" className="bws-tab bwm-tab" aria-pressed={page === t.id} onClick={() => setPage(t.id)}>{t.label}</button>
                             ))}
                         </div>
                         <Group title="Sound" tab="sound">
