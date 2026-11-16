@@ -154,6 +154,12 @@
     font-family: var(--bw-font-text, system-ui, sans-serif); font-weight: 700; text-transform: uppercase;
     transition: transform 140ms ease-out, background 140ms ease-out, border-color 140ms ease-out;
   }
+  /* Windowed panel under the site bar (components/games/shell): on a screen under 1000px tall the panel is shorter, so the six
+     group buttons (five groups and Quest) get a smaller height to stay inside the panel. */
+  @media (max-height: 1000px) {
+    .ab-root.bw .ab-dock { gap: 6px; }
+    .ab-root.bw .ab-dock-btn { min-height: 52px; padding: 5px 2px 4px; }
+  }
   .ab-root.bw .ab-dock-btn:hover { transform: translateY(-1px); border-color: #d29a3c; background: linear-gradient(180deg, #4a3418, #26190b); }
   .ab-root.bw .ab-dock-btn:focus-visible { outline: 2px solid #ffd98a; outline-offset: 2px; }
   .ab-root.bw .ab-dock-btn[aria-pressed="true"] {
