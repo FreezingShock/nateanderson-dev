@@ -23,6 +23,7 @@ Before any change: `npm run test:nodefarm`. Visual changes also need PNG screens
 13. [ ] **Welcome back and event cards: real-phone tap check.** Chips toggle the Almanac line on tap; confirm on a device (cloud tests are headless only). Also add a leaving animation once the audio/animations thread exposes its hook on `.sw-ev`.
 14. [ ] **Menu card fits at 1440x900.** The Menu is 3 px taller than its box (scrollHeight 845 vs 842) so it can show a scrollbar; trim spacing. Overflow thread may fix it first; check before starting.
 - [x] ART-ending-blast | size S | Neutron star blast: two tapered pulsar beams (wide at the core, thin at reach, dithered in the blue ramp) replace the single thin line that read as a glitch. Supernova and black hole sheets unchanged. Done when the before and after frames sit in `portfolio/starwright/ending-screens-2026-11-16/`. | `scripts/starwright/art/stars.py` (VERSION 8)
+15. [x] **First step for new players.** On a new star the guide line reads "Start here: buy a hydrogen burner (key 1, 18 H)" and moves on to helium once it is bought. Done when 1440 and 390 shots show it on a fresh save. Files: `lib/starwright/engine.ts` `guide()`, test in `tests/starwright/engine.test.mjs`. Shots: `/mnt/project-files/starwright-guide-line-2026-11-16/`.
 
 ## Needs Nate (taste call or his own playtest)
 
@@ -52,6 +53,7 @@ Play is fine: 60 fps, no long frames at 4x CPU, 5.5 MB heap flat over 98 s, engi
 - [x] OVERFLOW-none | measured paging for Orbit, Almanac, Menu; phone star map per constellation
 - [ ] MOTION-visitor-cloud-away | open/close for visitor, birth cloud and welcome cards once the backlog thread's shared panel style lands
 - [ ] MOTION-real-device | judge the motion and sound on a real phone and with speakers
+- [x] FEEL-buy-burst | size S | Element-coloured burst on every burner buy: ring and sparks in the row's colour, bigger for tier II and III, one per row on fast taps, a fade only under reduced motion | `components/starwright/buy-burst.tsx`, `app/camino/starwright-burst.css`
 
 ## Pre-deploy audit 2026-11-16 (report: /mnt/project-files/portfolio/starwright/predeploy-2026-11-16/REPORT.md)
 - [x] AUDIT-almanac-phone-names | size S | Almanac element names overlapped their neighbours at 360 to 390 wide (the 9px names added under "Do now" item 12 collided with the symbol, so that item is superseded). Phones now show the symbol only, and the name opens in the tap sheet | `app/camino/starwright-ev.css`
