@@ -218,7 +218,7 @@ export function GameRouteShell({ name, children, header, mode = "framed", game }
             window.addEventListener("touchstart", stop, { passive: true });
             window.addEventListener("pointerdown", stop, { passive: true });
             window.addEventListener("keydown", stop);
-            hold(performance.now() + 8000);
+            hold(performance.now() + 15000);
         }, 450);
         return () => {
             window.clearTimeout(id);
