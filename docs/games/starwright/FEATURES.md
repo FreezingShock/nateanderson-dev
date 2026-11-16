@@ -85,3 +85,6 @@ One owner per file; merge `integration` before every push. Historic split is in 
 | Add Starwright quality of life features | `lib/starwright/session.ts`, `settings.ts`, `components/starwright/settings.tsx`, `app/camino/starwright-qol.css`, `tests/starwright/session.test.mjs` |
 | Draw new Starwright stars, planets and skies | `lib/starwright/art.ts`, `sprites.ts`, `scripts/starwright/art/*`, `public/starwright/{star,planet,bg,visitor,fx}/*`, `manifest.json` |
 | Draw new Starwright menus and icons | `components/starwright/*` (except settings), `starwright.css`, `scripts/starwright/ui-art/*`, `public/starwright/{ui,icon,card,panel}/*`, `ui-art.ts`, `ui-sheets.ts` |
+
+## Reward moments
+- Reward flash: an ignition in the core, or a burner that doubles, washes the star in that element's colour with one square ring (`.sw-reward` in `components/starwright/starwright.tsx`, styles in `app/camino/starwright-juice.css`). Hot feed notes also glow once as they land. Hidden in reduced motion. Checked headless with the buy keys (Shift+1) on a fresh save.

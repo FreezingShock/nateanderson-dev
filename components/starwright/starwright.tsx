@@ -24,6 +24,7 @@ import { Almanac, CloudPick, Ending, Menu, Orbit, StarChart, Visitor, tools } fr
 import { AwayCard, ScrollHint, type AwayData } from "./settings";
 import { ElTile, Gl, Pic, ui, useLeaving, useSheets, useTips } from "./sw-ui";
 import { BuyBurst } from "./buy-burst";
+import "@/app/camino/starwright-juice.css";
 
 type Panel = null | "stars" | "pulsar" | "orbit" | "almanac" | "menu";
 interface Note { id: number; text: string; tone?: "hot" | "dim" }
@@ -85,6 +86,11 @@ export function Starwright() {
         setNotes((n) => [...n.slice(-3), { id, text, tone }]);
         window.setTimeout(() => setNotes((n) => n.filter((x) => x.id !== id)), 9000);
     }, []);
+
+    // A reward flash over the whole star, in the element's colour: ignitions and doubled burners. Keyed, so a new one restarts it.
+    const [flash, setFlash] = useState<{ key: number; c: string } | null>(null);
+    const flashId = useRef(0);
+    const flashTo = useCallback((c: string) => setFlash({ key: ++flashId.current, c }), []);
 
     const save = useCallback(() => {
         const s = sRef.current;
@@ -153,6 +159,7 @@ export function Starwright() {
                 const e = ELEMENTS[h];
                 note(`${e.name} ignites in the core.`, "hot");
                 play("ignite", { row: h });
+                flashTo(e.color);
                 lastHeavy.current = h;
             }
             if (Date.now() - lastAch.current > 1000) {
@@ -186,7 +193,7 @@ export function Starwright() {
             window.removeEventListener("pagehide", onHide);
             save();
         };
-    }, [ready, bump, save, note]);
+    }, [ready, bump, save, note, flashTo]);
 
     // ---- the scene -----------------------------------------------------------------------------------------------
     useEffect(() => {
@@ -272,10 +279,11 @@ export function Starwright() {
                 if (m > (lastMult.current[i] ?? 1)) {
                     note(`${ELEMENTS[i].name} burners double. Level ${levels(s, i)} makes it x${fmt(m)}.`, "hot");
                     play("milestone", { row: i });
+                    flashTo(ELEMENTS[i].color);
                 } else play("buy", { row: i, tier: k });
                 lastMult.current[i] = m;
             }),
-        [act, note],
+        [act, note, flashTo],
     );
 
     const doAnswer = useCallback(
@@ -503,6 +511,7 @@ export function Starwright() {
         <div className="sw-root" data-paused={paused ? "true" : undefined} style={vars as CSSProperties} {...tips.handlers}>
             <section className="sw-scene" aria-label="Your star">
                 <canvas ref={canvasRef} width={W} height={H} className="sw-canvas" role="img" aria-label={`${s.name}, a ${STAGE_NAMES[stage].toLowerCase()}`} />
+                {flash && <i key={flash.key} className="sw-reward" style={{ "--c": flash.c } as CSSProperties} aria-hidden="true" />}
                 <i className="sw-fade" data-edge="top" aria-hidden="true" />
                 <i className="sw-fade" data-edge="bottom" aria-hidden="true" />
                 <div className="sw-readout">

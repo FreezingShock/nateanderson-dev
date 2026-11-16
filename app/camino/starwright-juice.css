@@ -1,0 +1,48 @@
+/* Starwright reward flash (components/starwright/starwright.tsx). When an element ignites in the core, or a burner
+   doubles, the star scene gets one stepped wash in that element's colour and a square ring that grows out from the
+   middle. It sits under the notes and never takes a press. Reduced motion shows nothing: the note text already says it. */
+
+.sw-reward {
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    pointer-events: none;
+    background: radial-gradient(circle at 50% 46%, var(--c) 0, transparent 62%);
+    mix-blend-mode: screen;
+    opacity: 0;
+    animation: swRewardWash var(--cm-d-count) steps(4, end) both;
+}
+.sw-reward::after {
+    content: "";
+    position: absolute;
+    left: 50%;
+    top: 46%;
+    width: 36%;
+    aspect-ratio: 1;
+    border: 3px solid var(--c);
+    box-shadow: 0 0 0 1px #05040c;
+    transform: translate(-50%, -50%) scale(.2);
+    animation: swRewardRing var(--cm-d-reveal) steps(5, end) both;
+}
+
+@keyframes swRewardWash {
+    0% { opacity: .5; }
+    30% { opacity: .22; }
+    100% { opacity: 0; }
+}
+@keyframes swRewardRing {
+    from { transform: translate(-50%, -50%) scale(.2); opacity: 1; }
+    to { transform: translate(-50%, -50%) scale(2.6); opacity: 0; }
+}
+
+/* a hot note gets one stepped glow on its border as it lands, on top of its fade */
+.sw-feed li[data-tone="hot"] { animation: swNote 9s linear forwards, swNoteGlow var(--cm-d-reveal) steps(2, end); }
+@keyframes swNoteGlow {
+    0% { box-shadow: 0 0 0 2px var(--sw-cy); }
+    100% { box-shadow: 0 0 0 0 transparent; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .sw-reward, .sw-reward::after { display: none; }
+    .sw-feed li[data-tone="hot"] { animation: swNote 9s linear forwards; }
+}
