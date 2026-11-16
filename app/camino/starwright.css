@@ -57,7 +57,11 @@ html.sw-route .sf-foot { display: none !important; }
 .sw-fade { position: absolute; left: 0; right: 0; height: 128px; background: var(--px-fade) repeat-x; background-size: 8px 128px; image-rendering: pixelated; pointer-events: none; }
 .sw-fade[data-edge="top"] { top: 0; }
 .sw-fade[data-edge="bottom"] { bottom: 0; transform: scaleY(-1); }
-.sw-readout { position: absolute; top: 72px; left: 16px; max-width: 360px; pointer-events: none; }
+.sw-readout { position: absolute; top: 72px; left: 16px; max-width: 360px; pointer-events: none; padding: 6px 10px 7px; background: rgba(5, 4, 12, .72); }
+/* a constellation with no lit star: its name and count sit under a wider dark halo, so the faint node labels around it cannot smear into it */
+.sw-con[data-lock] text { stroke: #05040c; stroke-width: 8px; stroke-linejoin: round; paint-order: stroke; }
+.sw-con[data-lock] .sw-conname { opacity: .6; }
+.sw-con[data-lock] .sw-conlat { opacity: .85; }
 .sw-tag { display: inline-block; padding: 3px 10px; background: #efe6cf; color: #0b0a12; font: 600 12px var(--cm-mono, monospace); letter-spacing: .14em; box-shadow: 3px 3px 0 rgba(0, 0, 0, .55); }
 .sw-readout p { margin-top: 8px; display: flex; flex-wrap: wrap; gap: 4px 16px; font: 400 13px var(--cm-mono, monospace); color: var(--sw-dim); text-shadow: 0 1px 2px #000; }
 .sw-readout p span { pointer-events: auto; }
@@ -240,8 +244,9 @@ html.sw-route .sf-foot { display: none !important; }
 .sw-ibtn:hover { border-color: var(--sw-cy); color: var(--sw-cy); }
 .sw-ibtn:hover .sw-gl, .sw-ibtn:hover .sw-pic { animation: swBob .5s steps(3, end); }
 .sw-msg { font: 400 13px var(--cm-mono, monospace); color: var(--sw-cy); }
-.sw-keys { display: grid; gap: 4px; margin: 0; font-size: 13px; }
-.sw-keyrow { display: grid; grid-template-columns: minmax(96px, auto) minmax(0, 1fr); gap: 14px; }
+/* one column pair for the whole list (rows are subgrids, so each keeps a box for the pager to measure) */
+.sw-keys { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 4px 14px; margin: 0; font-size: 13px; }
+.sw-keyrow { display: grid; grid-column: 1 / -1; grid-template-columns: subgrid; }
 .sw-keys dt { font: 500 12px var(--cm-mono, monospace); color: var(--sw-cy); }
 .sw-keys dd { margin: 0; color: var(--sw-dim); }
 .sw-reset { justify-self: start; min-height: 40px; padding: 0 14px; background: transparent; border: 1px solid #6a3a3a; color: #ff8a7e; font-size: 12px; letter-spacing: .06em; text-transform: uppercase; }
@@ -564,7 +569,7 @@ html.sw-route .sf-foot { display: none !important; }
 .sw-root .sw-sc-buy, .sw-chart .sw-sc-buy { color: #05040c; }
 .sw-chart .sw-sc-buy:disabled { color: var(--sw-dim); }
 .sw-ready { white-space: nowrap; }
-@media (max-width: 560px) { .sw-chart-top { flex-wrap: wrap; gap: 4px 12px; margin: 8px 8px 0; } .sw-chart-top .sw-x { position: absolute; top: 4px; right: 4px; } .sw-chart-top h2 { padding-right: 44px; } }
+@media (max-width: 560px) { .sw-chart-top { flex-wrap: wrap; gap: 4px 12px; margin: 8px 8px 0; } .sw-chart-top .sw-x { position: absolute; top: 4px; right: 4px; } .sw-chart-top { padding-right: 56px; } }
 
 /* pulsar map: cold sky, a turning beam and pulse rings from the pulsar at its heart */
 .sw-chart[data-map="pulsar"] .sw-chart-bg { filter: hue-rotate(-55deg) saturate(.9) brightness(.9); }
@@ -745,6 +750,8 @@ html.sw-route .sf-foot { display: none !important; }
 
 /* one constellation per page on a phone: the others stay faintly in the sky but cannot be touched; names are bigger, the rest waits for a tap */
 .sw-chart [data-off] { opacity: .14; pointer-events: none; }
+/* a phone shows one constellation at a time: the others are hidden, not ghosted, so their faint labels cannot smear into it */
+.sw-chart[data-region] [data-off] { visibility: hidden; }
 .sw-chart[data-region] .sw-nodename { font-size: 17px; }
 .sw-chart[data-region] .sw-node:not([data-sel]) .sw-nodebuff, .sw-chart[data-region] .sw-node:not([data-sel]) .sw-nodedes { display: none; }
 .sw-chart[data-region] .sw-conname { font-size: 20px; }

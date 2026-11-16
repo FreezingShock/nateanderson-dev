@@ -22,14 +22,14 @@ Test commands: `npm run test:nodefarm` (a PR check; includes `tests/starwright/*
 ## Perks and progression
 | Feature | State | Code | Test |
 |---|---|---|---|
-| Constellation map: 20 stars in 4 constellations (Lantern, Kiln, Anvil, Loom) | working | `data.ts` `PERKS`, `engine.ts` `buyPerk` | engine.test: perks |
+| Constellation map: 20 stars in 4 constellations (Lantern, Kiln, Anvil, Loom); on a phone one constellation at a time, the others hidden, and a locked constellation's title sits over its node labels with a dark halo | working | `data.ts` `PERKS`, `engine.ts` `buyPerk` | engine.test: perks |
 | New perks l5 Corona (inflow x2, heat x1.2, 900) and a5 Iron rain (stardust x2, 1800, needs a3 + a4) | working, rule change signed off by Nate | `data.ts`, node art in `scripts/starwright/ui-art/build.py` `NODES` | none specific |
 | Pulsar map: 8 perks bought with Neutrons | working | `data.ts` `PULSAR_PERKS`, `engine.ts` `buyPulsar` | engine.test: neutron |
 | Deep stars: endless stardust sink, +4% everything each, cost x1.4 each, cleared by a neutron star | working (button in the star map, `sw deep`) | `engine.ts` `buyDeep`; button `components/starwright/star-chart.tsx` `Deep`, wired in `starwright.tsx` | engine.test: deep stars, `sw deep` |
 | Planets (8) with four stages by time in orbit, +20% per stage; Survivors keeps age | working | `data.ts` `PLANETS`, `engine.ts` `planetStage`, `buyPlanet` | engine.test: planets |
 | Visitors (4) with two answers each; first at 40 s; never from time away | working | `data.ts` `EVENTS`, `engine.ts` `answer` | engine.test: visitors |
 | Birth clouds (6), three offered per new star after the first supernova | working | `data.ts` `CLOUDS`, `engine.ts` `chooseCloud` | engine.test: clouds |
-| Almanac: codex of elements and 21 milestones (+2% each) | working | `data.ts` `ACHIEVEMENTS`, `engine.ts` `checkAch` | engine.test: milestones, codex |
+| Almanac: codex of elements and 21 milestones (+2% each). Phones (520 px and under) show element symbols only; the name opens in the tap sheet | working | `data.ts` `ACHIEVEMENTS`, `engine.ts` `checkAch`, `starwright-ev.css` | engine.test: milestones, codex; 360/390 checked headless |
 
 ## Saves, time away, settings
 | Feature | State | Code | Test |
@@ -65,7 +65,7 @@ Test commands: `npm run test:nodefarm` (a PR check; includes `tests/starwright/*
 | Birth clouds change the sky: each of the six washes the scene in its own dithered colour and motion (dense blue low haze, hot embers, metal-rich gold dust, thin pale wisps, dusty purple lanes, restless green bands); the pick crossfades over 2.6 s, a collapse fades it out, and pointing at a card in the picker previews its sky | working | `lib/starwright/art.ts` (`CLOUD_LOOK`, `drawCloudSky`), `SceneFrame.cloud`, `starwright.tsx` (`cloudRef`, `previewRef`), `CloudPick` in `panels.tsx` | `scripts/starwright/ui-art/cloud-sky-shots.mjs`; shots `cloud-*.png`, `picker-*.png` |
 | Orbit and Almanac cards with drawn art; Orbit tiles use the drawn sheets for all 8 planets at all 4 stages (the code drawing shows only while a sheet loads) | working | `panels.tsx` | `tests/starwright/art-manifest.test.mjs`; `scripts/starwright/ui-art/orbit-shots.mjs` |
 | Drawn UI art (element tiles with 8-frame loops, dock, menu, node, ring and pulsar icons) | working | `scripts/starwright/ui-art/build.py` -> `public/starwright/ui/*`; bump `UI_V` in `sw-ui.tsx` and `?v=` in `starwright.css` | none; `shots.mjs` screenshots |
-| Phone scroll cue "Scroll for the ladder": once, gone on the first page scroll, not shown held sideways (`ScrollHint` in `settings.tsx`) | working headless | `settings.tsx`, `starwright-qol.css`, `scripts/starwright/ui-art/hint-check.mjs` | hint-check script |
+| Phone scroll cue "Scroll for the ladder": once, gone on the first page scroll, not shown held sideways, sits on the star's lower edge in portrait and waits while an event, welcome or cloud card is up (`ScrollHint` in `settings.tsx`) | working headless, checked at 390 with cards | `settings.tsx`, `starwright-qol.css`, `scripts/starwright/ui-art/hint-check.mjs` | hint-check script |
 | Tooltips (`data-tip="Title|line"`), touch recipe lines | working | `sw-ui.tsx` | none |
 | Game shell (full screen, pause on hidden tab, save export/import) | working | `lib/games/*`, `app/creations/games/starwright/*` | `scripts/games/shell-check.mjs` |
 

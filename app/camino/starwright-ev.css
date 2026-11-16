@@ -51,9 +51,11 @@
 .sw-clouds .sw-cloud-art { min-height: 72px; }
 @media (max-width: 900px) { .sw-clouds.sw-ev { width: auto; } }
 
-/* phone fit: Almanac names and the star map caption (found in the 1440/390 walk-through) */
+/* phone fit: Almanac tiles show the symbol only (the name is in the tap-open sheet). Names at 9px overlapped
+   their neighbours at 360 to 390 wide, so they are hidden here rather than shrunk. */
 @media (max-width: 520px) {
-    .sw-codex .sw-cx b { font-size: 9px; letter-spacing: 0; white-space: nowrap; text-align: center; max-width: 100%; }
+    .sw-codex .sw-cx b { font-size: 0; letter-spacing: 0; white-space: nowrap; max-width: 100%; overflow: hidden; }
+    .sw-codex .sw-cx b::before { font: 600 13px var(--cm-mono, monospace); letter-spacing: .04em; }
     .sw-codex .sw-cx { padding-left: 2px; padding-right: 2px; min-width: 0; }
 }
 .sw-chart .sw-chart-foot { box-sizing: border-box; width: 100%; padding: 6px 16px 16px; text-align: left; }

@@ -210,23 +210,12 @@ export function StarChart({ title, list, owned, cur, curName, onBuy, onClose, co
                             const on = owned.includes(a.id) && owned.includes(p.id);
                             const next = owned.includes(a.id) && !owned.includes(p.id);
                             return (
-                                <g key={`${r}-${p.id}`} className="sw-edge" data-lit={on ? "" : undefined} data-next={next ? "" : undefined} style={{ stroke: color(p) }}>
+                                <g key={`${r}-${p.id}`} className="sw-edge" data-lit={on ? "" : undefined} data-next={next ? "" : undefined} data-off={region >= 0 && p.con !== regions[region] ? "" : undefined} style={{ stroke: color(p) }}>
                                     {on && <line x1={x1} y1={y1} x2={x2} y2={y2} className="sw-edge-glow" />}
                                     <line x1={x1} y1={y1} x2={x2} y2={y2} />
                                 </g>
                             );
                         }))}
-                        {constellations && CONSTELLATIONS.map((c) => {
-                            const ps = list.filter((p) => p.con === c.id);
-                            const x = ps.reduce((a, p) => a + P(p)[0], 0) / ps.length, y = Math.min(...ps.map((p) => P(p)[1])) - 40;
-                            const n = ps.filter((p) => owned.includes(p.id)).length;
-                            return (
-                                <g key={c.id} className="sw-con" data-off={region >= 0 && c.id !== regions[region] ? "" : undefined} style={{ fill: c.color }}>
-                                    <text x={x} y={y} className="sw-conname" textAnchor="middle">{c.name.toUpperCase()}</text>
-                                    <text x={x} y={y + 15} className="sw-conlat" textAnchor="middle">{LATIN[c.id]} · {n}/{ps.length}</text>
-                                </g>
-                            );
-                        })}
                         {list.map((p, ni) => {
                             const [x, y] = P(p);
                             const st = stateOf(p);
@@ -241,6 +230,17 @@ export function StarChart({ title, list, owned, cur, curName, onBuy, onClose, co
                                     <text y="34" className="sw-nodename" textAnchor="middle">{p.name}</text>
                                     <text y="47" className="sw-nodebuff" textAnchor="middle">{b.big} {b.what}</text>
                                     <text y="60" className="sw-nodedes" textAnchor="middle">{desig(p)}</text>
+                                </g>
+                            );
+                        })}
+                        {constellations && CONSTELLATIONS.map((c) => {
+                            const ps = list.filter((p) => p.con === c.id);
+                            const x = ps.reduce((a, p) => a + P(p)[0], 0) / ps.length, y = Math.min(...ps.map((p) => P(p)[1])) - 40;
+                            const n = ps.filter((p) => owned.includes(p.id)).length;
+                            return (
+                                <g key={c.id} className="sw-con" data-off={region >= 0 && c.id !== regions[region] ? "" : undefined} data-lock={n === 0 ? "" : undefined} style={{ fill: c.color }}>
+                                    <text x={x} y={y} className="sw-conname" textAnchor="middle">{c.name.toUpperCase()}</text>
+                                    <text x={x} y={y + 15} className="sw-conlat" textAnchor="middle">{LATIN[c.id]} · {n}/{ps.length}</text>
                                 </g>
                             );
                         })}
