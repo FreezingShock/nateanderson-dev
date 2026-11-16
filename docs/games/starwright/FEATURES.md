@@ -22,7 +22,7 @@ Test commands: `npm run test:nodefarm` (a PR check; includes `tests/starwright/*
 ## Perks and progression
 | Feature | State | Code | Test |
 |---|---|---|---|
-| Constellation map: 20 stars in 4 constellations (Lantern, Kiln, Anvil, Loom) | working | `data.ts` `PERKS`, `engine.ts` `buyPerk` | engine.test: perks |
+| Constellation map: 20 stars in 4 constellations (Lantern, Kiln, Anvil, Loom); on a phone one constellation at a time, the others hidden, and a locked constellation's title sits over its node labels with a dark halo | working | `data.ts` `PERKS`, `engine.ts` `buyPerk` | engine.test: perks |
 | New perks l5 Corona (inflow x2, heat x1.2, 900) and a5 Iron rain (stardust x2, 1800, needs a3 + a4) | working, rule change signed off by Nate | `data.ts`, node art in `scripts/starwright/ui-art/build.py` `NODES` | none specific |
 | Pulsar map: 8 perks bought with Neutrons | working | `data.ts` `PULSAR_PERKS`, `engine.ts` `buyPulsar` | engine.test: neutron |
 | Deep stars: endless stardust sink, +4% everything each, cost x1.4 each, cleared by a neutron star | working (button in the star map, `sw deep`) | `engine.ts` `buyDeep`; button `components/starwright/star-chart.tsx` `Deep`, wired in `starwright.tsx` | engine.test: deep stars, `sw deep` |
