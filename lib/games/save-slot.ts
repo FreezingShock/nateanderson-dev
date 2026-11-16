@@ -1,29 +1,22 @@
-// Save export and import for every game, in one place. A save file is the shared envelope from lib/games/save.ts:
-// { app, version, savedAt, data }, where data is the game's own stored save object. Files the games' own menus export
-// use the same envelope, so either side can read the other's file.
+// Save export and import for every game, on top of lib/saves/core.ts. A save file is the shared envelope { app, version, savedAt,
+// data }, and the live save in the browser is that same envelope, so a file and the stored save read the same way.
 //
-// Import never writes straight to storage. It validates the file, keeps the current save as a backup under
-// "<key>:before-import", and stages the new save in sessionStorage. The page then reloads, and applyPendingImports()
-// runs when the shell module loads, before any game reads its save. That order matters: games write their save on
-// pagehide, so writing first would let the old state overwrite the import.
-import { createSaveTools, downloadText, readPickedFile, readStored, writeStored } from "@/lib/games/save";
+// Export runs the game's own migrations and writes the current version. Import checks the file, runs the game's own revive on
+// it (after migrating an older file), and stages the file in sessionStorage. The page then reloads, and applyPendingImports()
+// runs when the shell module loads, before any game reads its save. That order matters: games write their save on pagehide,
+// so writing first would let the old state overwrite the import.
+import { createSaveTools, downloadText, readPickedFile, readStored, writeStored, type SaveTools } from "@/lib/games/save";
 import type { GameId } from "@/lib/games/registry";
+import { SAVE_SLOTS as SLOTS } from "@/lib/saves/keys";
+import { loadSave, migrateData, type SaveDef } from "@/lib/saves/core";
 
-export type SaveSlot = {
-    /** localStorage key the game reads. Must match the game's own SAVE_KEY. */
-    key: string;
-    /** Envelope app id. Must match the game's own createSaveTools app, so its menus accept the file. */
-    app: string;
-    /** Envelope version. Must match the game's own SAVE_VERSION. */
-    version: number;
-};
+export type SaveSlot = { key: string; app: string; version: number };
 
-// Duplicated from the engines on purpose: importing them here would pull every engine into every game route.
-// checkSaveData below runs each engine's real parse, so a drift shows up as a refused import, not a silent one.
+/** The slot of every game that keeps a save file. Node Farm exports its own code text (lib/nodefarm/engine.ts exportSave). */
 export const SAVE_SLOTS: Partial<Record<GameId, SaveSlot>> = {
-    brasswork: { key: "brasswork-save-v1", app: "brasswork", version: 1 },
-    starwright: { key: "sw-save-v1", app: "starwright", version: 1 },
-    groundbreak: { key: "gb-save-v1", app: "groundbreak", version: 2 },
+    brasswork: SLOTS.brasswork,
+    starwright: SLOTS.starwright,
+    groundbreak: SLOTS.groundbreak,
 };
 
 const PENDING = (key: string) => `gs-pending-import:${key}`;
@@ -44,7 +37,15 @@ function local(): Storage | null {
     }
 }
 
-function toolsFor(slot: SaveSlot) {
+/** The game's save definition. Loaded on demand so no engine is pulled into every game route. */
+async function defFor(game: GameId): Promise<SaveDef<unknown> | null> {
+    if (game === "brasswork") return (await import("@/lib/automation/sim/save")).BRASSWORK_SAVE as SaveDef<unknown>;
+    if (game === "starwright") return (await import("@/lib/starwright/engine")).STARWRIGHT_SAVE as SaveDef<unknown>;
+    if (game === "groundbreak") return (await import("@/lib/groundbreak/engine")).GROUNDBREAK_SAVE as SaveDef<unknown>;
+    return null;
+}
+
+function toolsFor(slot: SaveSlot): SaveTools<unknown> {
     return createSaveTools<unknown>({
         app: slot.app,
         version: slot.version,
@@ -52,67 +53,48 @@ function toolsFor(slot: SaveSlot) {
     });
 }
 
-/** Runs the game's own parse on an imported save object. Each engine's parse refuses anything it cannot rebuild. */
-export async function checkSaveData(game: GameId, data: unknown): Promise<boolean> {
-    try {
-        if (game === "brasswork") {
-            const { deserialize } = await import("@/lib/automation/sim/save");
-            const text = (data as { text?: unknown }).text;
-            if (typeof text !== "string") return false;
-            deserialize(text);
-            return true;
-        }
-        if (game === "starwright") {
-            const { parse } = await import("@/lib/starwright/engine");
-            return parse(data) !== null;
-        }
-        if (game === "groundbreak") {
-            const { parse } = await import("@/lib/groundbreak/engine");
-            return parse(data) !== null;
-        }
-    } catch {
-        return false;
-    }
-    return false;
-}
-
 export type SaveResult = { ok: true; message: string } | { ok: false; error: string };
 
-/** Downloads the game's current save as a file. */
-export function exportSave(game: GameId, now: Date = new Date()): SaveResult {
+/** Downloads the game's current save as a file, migrated to the current version. */
+export async function exportSave(game: GameId, now: Date = new Date()): Promise<SaveResult> {
     const slot = SAVE_SLOTS[game];
-    if (!slot) return { ok: false, error: "This game has no save to export." };
-    const raw = readStored(local(), slot.key);
-    if (!raw) return { ok: false, error: "There is no save in this browser yet. Play a little, then export." };
-    let data: unknown;
-    try {
-        data = JSON.parse(raw);
-    } catch {
-        return { ok: false, error: "The save in this browser could not be read, so there is nothing to export." };
-    }
+    const def = await defFor(game);
+    if (!slot || !def) return { ok: false, error: "This game has no save to export." };
+    if (!readStored(local(), slot.key)) return { ok: false, error: "There is no save in this browser yet. Play a little, then export." };
+    const r = loadSave(local(), def, now.getTime());
+    if (!r.state) return { ok: false, error: "The save in this browser could not be read, so there is nothing to export. A copy is kept for recovery." };
     const tools = toolsFor(slot);
-    downloadText(tools.fileName(now), tools.exportText(data, now));
+    downloadText(tools.fileName(now), tools.exportText(def.dump(r.state), now));
     return { ok: true, message: "Save file downloaded." };
 }
 
 /**
  * Checks a picked file and stages it. The caller reloads the page after an ok result.
- * Refuses files that are not this game's save, newer than the game, damaged, or too large.
+ * Refuses files that are not this game's save, newer than the game, damaged, or too large. A file from an older version is
+ * accepted when its data migrates and revives.
  */
 export async function importSave(game: GameId, file: Blob): Promise<SaveResult> {
     const slot = SAVE_SLOTS[game];
-    if (!slot) return { ok: false, error: "This game has no save to import." };
+    const def = await defFor(game);
+    if (!slot || !def) return { ok: false, error: "This game has no save to import." };
     const picked = await readPickedFile(file);
     if (!picked.ok) return { ok: false, error: picked.error };
     const parsed = toolsFor(slot).importText(picked.data);
     if (!parsed.ok) return { ok: false, error: parsed.error };
-    if (!(await checkSaveData(game, parsed.data))) return { ok: false, error: "That save is damaged and cannot be loaded." };
+    const fileVersion = (JSON.parse(picked.data) as { version: number }).version;
+    try {
+        const m = migrateData(def, parsed.data, fileVersion);
+        if (def.revive(m.data) === null) throw new Error("not usable");
+    } catch {
+        return { ok: false, error: "That save is damaged and cannot be loaded." };
+    }
     const current = readStored(local(), slot.key);
     if (current) writeStored(local(), slot.key + ":before-import", current);
     try {
         const s = session();
         if (!s) throw new Error("no session storage");
-        s.setItem(PENDING(slot.key), JSON.stringify(parsed.data));
+        // the file itself is stored: it is already the envelope, so the game's own load migrates it on the next start
+        s.setItem(PENDING(slot.key), picked.data);
     } catch {
         return { ok: false, error: "This browser would not hold the save while the page reloads. Free some space and try again." };
     }

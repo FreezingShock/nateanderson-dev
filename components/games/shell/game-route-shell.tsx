@@ -245,8 +245,8 @@ export function GameRouteShell({ name, children, header, mode = "framed", game }
     if (windowed && game) {
         const g = GAMES[game];
         const slot = SAVE_SLOTS[game];
-        const onExport = () => {
-            const r = exportSave(game);
+        const onExport = async () => {
+            const r = await exportSave(game);
             setSaveMsg(r.ok ? { tone: "ok", text: r.message } : { tone: "err", text: r.error });
         };
         const onPick = async (e: ChangeEvent<HTMLInputElement>) => {
