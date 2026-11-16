@@ -611,7 +611,8 @@ html.gb-route .sf-foot { display: none !important; }
 
 /* ---- windows leave the site showing (2026-11-15): desktop, a narrower panel docked beside the rail that ends above the dock; phone, a bottom sheet that covers the dock and leaves the top of the site visible ---- */
 @media (min-width: 861px) and (min-height: 521px) {
-    .gb-root .gb-win { width: min(400px, calc(100vw - 100px)); max-height: calc(100% - var(--gb-dock-top, 140px) - 92px); }
+    /* 200 px floor: on a short screen the panel is its 360 px minimum, so the window would otherwise fall to about 130 px and show only its banner. */
+    .gb-root .gb-win { width: min(400px, calc(100vw - 100px)); max-height: max(200px, calc(100% - var(--gb-dock-top, 140px) - 92px)); }
     .gb-root .gb-win.gb-sm { width: min(320px, calc(100vw - 100px)); }
     .gb-root .gb-win.gb-lg { width: min(520px, calc(100vw - 100px)); }
 }
