@@ -1,0 +1,179 @@
+/* Game kit styled pieces (components/game-kit/ui.tsx). For new games; the three older games keep their own CSS.
+   Theme: set these on the game's root element with class "gk" (the template does it). Nothing here names a colour of
+   its own, so each game keeps its palette.
+     --gk-bg      panel fill               --gk-ink     text
+     --gk-dim     quiet text               --gk-line    panel edges and rules
+     --gk-accent  corners, hot toasts, ready buttons, bursts
+     --gk-shade   the dark edge under sparks and pressed buttons
+     --gk-font    body font                --gk-mono    numbers and keys
+   Rules from Nate's taste notes: sharp panels with corner brackets, no pill chips, no coloured strip on a panel's left,
+   nothing blocks the game (no scrim), every window has its own open and close motion. Timings come from the site motion
+   tokens (camino.tokens.css), so reduced motion settles everything at once. */
+
+.gk {
+    --gk-bg: #14110d;
+    --gk-ink: #efe6d2;
+    --gk-dim: #a99c83;
+    --gk-line: #4a4134;
+    --gk-accent: #e0a440;
+    --gk-shade: #07060a;
+    --gk-font: inherit;
+    --gk-mono: ui-monospace, "SFMono-Regular", Menlo, monospace;
+    --gk-in: var(--cm-d-enter, .32s);
+    --gk-out: .18s;
+    position: relative;
+    color: var(--gk-ink);
+    font-family: var(--gk-font);
+}
+
+/* ---- corner brackets ------------------------------------------------------------------------------------------- */
+.gk-cn { position: absolute; width: 12px; height: 12px; border: 0 solid var(--gk-accent); pointer-events: none; }
+.gk-cn[data-c="tl"] { top: -1px; left: -1px; border-width: 2px 0 0 2px; }
+.gk-cn[data-c="tr"] { top: -1px; right: -1px; border-width: 2px 2px 0 0; }
+.gk-cn[data-c="bl"] { bottom: -1px; left: -1px; border-width: 0 0 2px 2px; }
+.gk-cn[data-c="br"] { bottom: -1px; right: -1px; border-width: 0 2px 2px 0; }
+
+/* ---- window ---------------------------------------------------------------------------------------------------- */
+/* The layer only catches a click on blank ground; it draws nothing, so the game stays visible and running. */
+.gk-win-layer { position: absolute; inset: 0; z-index: 30; display: grid; place-items: center; padding: 16px; pointer-events: none; }
+.gk-win-layer[data-modal] { pointer-events: auto; }
+.gk-win {
+    position: relative;
+    pointer-events: auto;
+    width: min(100%, 520px);
+    max-height: min(100%, 720px);
+    display: flex;
+    flex-direction: column;
+    background: var(--gk-bg);
+    border: 1px solid var(--gk-line);
+    border-radius: 0;
+    box-shadow: 0 18px 40px -18px rgb(0 0 0 / .7);
+    outline: none;
+}
+.gk-win[data-size="sm"] { width: min(100%, 360px); }
+.gk-win[data-size="lg"] { width: min(100%, 760px); }
+.gk-win-head { display: grid; grid-template-columns: auto 1fr auto auto; align-items: center; gap: 10px; padding: 10px 12px; border-bottom: 1px solid var(--gk-line); }
+.gk-win-head h2 { margin: 0; font-size: 15px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.gk-win-icon { display: grid; place-items: center; width: 32px; height: 32px; }
+.gk-win-hint { color: var(--gk-dim); font: 12px/1 var(--gk-mono); white-space: nowrap; }
+.gk-x { width: 30px; height: 30px; border: 1px solid var(--gk-line); background: transparent; color: var(--gk-ink); font-size: 18px; line-height: 1; cursor: pointer; border-radius: 0; transition: border-color var(--cm-d-base, .15s) var(--cm-ease, ease), color var(--cm-d-base, .15s); }
+.gk-x:hover, .gk-x:focus-visible { border-color: var(--gk-accent); color: var(--gk-accent); }
+.gk-win-body { padding: 12px; overflow: auto; overscroll-behavior: contain; }
+.gk-win-foot { padding: 10px 12px; border-top: 1px solid var(--gk-line); display: flex; gap: 8px; justify-content: flex-end; }
+
+/* Each motion has an enter and an exit. Transform and opacity only. */
+.gk-win[data-s="in"][data-motion="rise"] { animation: gkRise var(--gk-in) var(--cm-ease-out, ease-out) both; }
+.gk-win[data-s="out"][data-motion="rise"] { animation: gkRise var(--gk-out) var(--cm-ease-cut, ease-in) reverse both; }
+.gk-win[data-s="in"][data-motion="drop"] { animation: gkDrop var(--gk-in) var(--cm-ease-out, ease-out) both; }
+.gk-win[data-s="out"][data-motion="drop"] { animation: gkDrop var(--gk-out) var(--cm-ease-cut, ease-in) reverse both; }
+.gk-win[data-s="in"][data-motion="iris"] { animation: gkIris var(--gk-in) var(--cm-ease-out, ease-out) both; }
+.gk-win[data-s="out"][data-motion="iris"] { animation: gkIris var(--gk-out) var(--cm-ease-cut, ease-in) reverse both; }
+.gk-win[data-motion="unroll"] { transform-origin: 50% 0; }
+.gk-win[data-s="in"][data-motion="unroll"] { animation: gkUnroll var(--gk-in) steps(6, end) both; }
+.gk-win[data-s="out"][data-motion="unroll"] { animation: gkUnroll var(--gk-out) steps(3, end) reverse both; }
+.gk-win[data-s="in"][data-motion="stamp"] { animation: gkStamp var(--gk-in) var(--cm-ease-press, ease-out) both; }
+.gk-win[data-s="out"][data-motion="stamp"] { animation: gkFade var(--gk-out) linear reverse both; }
+
+@keyframes gkRise { from { opacity: 0; transform: translate3d(0, var(--cm-rise, 14px), 0); } to { opacity: 1; transform: none; } }
+@keyframes gkDrop { from { opacity: 0; transform: translate3d(0, -18px, 0); } to { opacity: 1; transform: none; } }
+@keyframes gkIris { from { opacity: 0; transform: scale(.92); } to { opacity: 1; transform: none; } }
+@keyframes gkUnroll { from { opacity: .4; transform: scaleY(.08); } to { opacity: 1; transform: none; } }
+@keyframes gkStamp { 0% { opacity: 0; transform: scale(1.12); } 70% { opacity: 1; transform: scale(.985); } 100% { opacity: 1; transform: none; } }
+@keyframes gkFade { from { opacity: 0; } to { opacity: 1; } }
+
+/* Phones: every window is a bottom sheet over the lower half, so the game stays in view above it. */
+@media (max-width: 640px) {
+    .gk-win-layer { place-items: end stretch; padding: 0; }
+    .gk-win, .gk-win[data-size] { width: 100%; max-height: 55%; border-left: 0; border-right: 0; border-bottom: 0; transform-origin: 50% 100%; }
+    .gk-win[data-s="in"][data-motion] { animation: gkSheet var(--gk-in) var(--cm-ease-out, ease-out) both; }
+    .gk-win[data-s="out"][data-motion] { animation: gkSheet var(--gk-out) var(--cm-ease-cut, ease-in) reverse both; }
+}
+@keyframes gkSheet { from { transform: translate3d(0, 100%, 0); } to { transform: none; } }
+
+/* ---- toasts ---------------------------------------------------------------------------------------------------- */
+.gk-toasts { position: absolute; z-index: 40; display: grid; gap: 6px; pointer-events: none; max-width: min(340px, calc(100% - 24px)); }
+.gk-toasts[data-at="top-right"] { top: 12px; right: 12px; justify-items: end; }
+.gk-toasts[data-at="top"] { top: 12px; left: 50%; transform: translateX(-50%); justify-items: center; }
+.gk-toasts[data-at="bottom"] { bottom: 12px; left: 50%; transform: translateX(-50%); justify-items: center; }
+.gk-toast {
+    margin: 0;
+    padding: 8px 12px;
+    background: var(--gk-bg);
+    border: 1px solid var(--gk-line);
+    border-radius: 0;
+    font-size: 13px;
+    line-height: 1.35;
+    pointer-events: auto;
+    animation: gkToast var(--cm-d-enter, .32s) var(--cm-ease-out, ease-out) both;
+}
+.gk-toast[data-tone="hot"] { border-top: 2px solid var(--gk-accent); }
+.gk-toast[data-tone="dim"] { color: var(--gk-dim); }
+.gk-toast[data-sticky] { border-color: var(--gk-accent); }
+@keyframes gkToast { from { opacity: 0; transform: translate3d(0, -8px, 0); } to { opacity: 1; transform: none; } }
+
+/* ---- tabs ------------------------------------------------------------------------------------------------------ */
+.gk-tab-row { display: flex; gap: 4px; border-bottom: 1px solid var(--gk-line); }
+.gk-tab {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 12px;
+    margin-bottom: -1px;
+    background: transparent;
+    color: var(--gk-dim);
+    border: 1px solid transparent;
+    border-radius: 0;
+    font: inherit;
+    font-size: 13px;
+    cursor: pointer;
+    transition: color var(--cm-d-base, .15s) var(--cm-ease, ease), border-color var(--cm-d-base, .15s) var(--cm-ease, ease);
+}
+.gk-tab:hover { color: var(--gk-ink); }
+.gk-tab[aria-selected="true"] { color: var(--gk-ink); border-color: var(--gk-line); border-bottom-color: var(--gk-bg); background: var(--gk-bg); }
+.gk-tab[aria-selected="true"]::after { content: ""; position: absolute; left: -1px; right: -1px; top: -1px; height: 2px; background: var(--gk-accent); }
+.gk-tab-badge { font: 11px/1 var(--gk-mono); color: var(--gk-accent); }
+.gk-tab-pane { padding-top: 10px; animation: gkPane var(--cm-d-enter, .32s) var(--cm-ease-out, ease-out) both; }
+@keyframes gkPane { from { opacity: 0; transform: translate3d(var(--cm-rise, 14px), 0, 0); } to { opacity: 1; transform: none; } }
+
+/* ---- counter --------------------------------------------------------------------------------------------------- */
+.gk-num { display: inline-block; font-family: var(--gk-mono); font-variant-numeric: tabular-nums; }
+.gk-num[data-up] { animation: gkUp var(--cm-d-enter, .32s) var(--cm-ease-press, ease-out); }
+@keyframes gkUp { 0% { transform: translate3d(0, -2px, 0); color: var(--gk-accent); } 100% { transform: none; } }
+
+/* ---- press button ---------------------------------------------------------------------------------------------- */
+.gk-btn {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 8px 12px;
+    background: var(--gk-bg);
+    color: var(--gk-ink);
+    border: 1px solid var(--gk-line);
+    border-radius: 0;
+    font: inherit;
+    cursor: pointer;
+    transition: transform var(--cm-d-fast, .12s) var(--cm-ease-press, ease-out), border-color var(--cm-d-base, .15s) var(--cm-ease, ease);
+}
+.gk-btn[data-ready] { border-color: var(--gk-accent); }
+.gk-btn:hover:not(:disabled) { transform: var(--cm-lift, translate3d(0, -2px, 0)); }
+.gk-btn:active:not(:disabled) { transform: var(--cm-press, scale(.985)); transition-duration: var(--cm-d-instant, .08s); }
+.gk-btn:disabled { opacity: .5; cursor: default; }
+.gk-key { position: absolute; top: 2px; right: 3px; font: 10px/1 var(--gk-mono); color: var(--gk-dim); }
+
+/* ---- burst ----------------------------------------------------------------------------------------------------- */
+.gk-burst { --r: 18px; --c: var(--gk-accent); position: absolute; left: 50%; top: 50%; width: 0; height: 0; z-index: 2; pointer-events: none; font-style: normal; }
+.gk-burst[data-size="m"] { --r: 24px; }
+.gk-burst[data-size="l"] { --r: 30px; }
+.gk-burst::before { content: ""; position: absolute; left: -11px; top: -11px; width: 22px; height: 22px; border: 2px solid var(--c); box-shadow: 0 0 0 1px var(--gk-shade); animation: gkRing .36s steps(3, end) forwards; }
+.gk-burst b { position: absolute; left: -3px; top: -3px; width: 6px; height: 6px; background: var(--c); box-shadow: 0 0 0 1px var(--gk-shade); animation: gkSpark .42s steps(4, end) forwards; }
+.gk-burst b:nth-child(2n) { background: color-mix(in srgb, var(--c) 60%, var(--gk-shade)); }
+@keyframes gkRing { from { opacity: 1; transform: scale(.6); } to { opacity: 0; transform: scale(2.2); } }
+@keyframes gkSpark { from { opacity: 1; transform: rotate(var(--a)) translate3d(0, 0, 0); } to { opacity: 0; transform: rotate(var(--a)) translate3d(var(--r), 0, 0); } }
+
+@media (prefers-reduced-motion: reduce) {
+    .gk-burst b { display: none; }
+    .gk-win[data-motion], .gk-toast, .gk-tab-pane, .gk-num[data-up] { animation-duration: .01s !important; }
+}

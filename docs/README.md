@@ -18,6 +18,8 @@ Start with [CLAUDE.md](../CLAUDE.md) (agent guide) and [WORKFLOW.md](WORKFLOW.md
 - [site/BACKLOG.md](site/BACKLOG.md): what to work on, what needs Nate.
 
 ## Games
+- [game-kit.md](game-kit.md): the shared game kit (formatting, idle math, offline catch-up, settings, toasts, windows, counters). Build new games on it.
+
 Each game has FEATURES.md and BACKLOG.md.
 - Brasswork: [FEATURES](games/brasswork/FEATURES.md), [BACKLOG](games/brasswork/BACKLOG.md)
 - Starwright: [FEATURES](games/starwright/FEATURES.md), [BACKLOG](games/starwright/BACKLOG.md); older notes in [starwright.md](starwright.md)
