@@ -5,6 +5,7 @@
 //   node scripts/games/shell-check.mjs http://localhost:3123
 // Exits 1 if any check fails. Safari and iPhone full screen cannot be run here.
 import { createRequire } from "node:module";
+import { readFileSync } from "node:fs";
 import { unlock } from "../ci/lib.mjs";
 const { chromium } = createRequire(import.meta.url)("playwright");
 const base = (process.argv[2] || "http://localhost:3123").replace(/\/$/, "");
@@ -125,6 +126,36 @@ if (headerRoute) {
     check(await page.evaluate(() => document.querySelector(".gs-btn")?.getAttribute("aria-pressed") === "true"), "header: Pause toggles and reports pressed");
     check(await page.evaluate(() => !!document.querySelector('.gs-shell[data-paused="true"]')), "header: manual pause marks the shell paused");
     await ctx.close();
+}
+
+// 8. Games from the template (npm run new-game): the windowed shell mounts, the panel is filled, a tap counts, no errors.
+const templateGames = JSON.parse(readFileSync(new URL("./games-under-check.json", import.meta.url), "utf8")).filter((g) => g.template);
+for (const g of templateGames) {
+    for (const [label, viewport] of [["phone 390", { width: 390, height: 844 }], ["desktop 1440", { width: 1440, height: 900 }]]) {
+        const { ctx, page } = await open(viewport, `/creations/games/${g.id}`);
+        const info = await page.evaluate(({ name, root }) => {
+            const r = document.querySelector(root);
+            const rr = r?.getBoundingClientRect();
+            return {
+                route: document.documentElement.classList.contains("gs-game-route"),
+                shell: !!document.querySelector(`.gs-windowed[data-game="${name}"]`),
+                overflow: document.documentElement.scrollWidth - document.documentElement.clientWidth,
+                rootFilled: !!r && !!rr && rr.width > 0 && rr.height > 0,
+            };
+        }, { name: g.name, root: g.root });
+        check(info.route && info.shell, `${g.name} ${label}: windowed shell mounts and marks the game route`);
+        check(info.rootFilled, `${g.name} ${label}: game root renders with a size`);
+        check(info.overflow <= 0, `${g.name} ${label}: no sideways scroll (overflow ${info.overflow}px)`);
+        check(page.errs.length === 0, `${g.name} ${label}: no page errors${page.errs.length ? ` (${page.errs[0]})` : ""}`);
+        if (label === "desktop 1440") {
+            const before = await page.evaluate((id) => document.querySelector(`.${id}-amount`)?.textContent ?? "", g.id);
+            await page.click(`.${g.id}-tap`);
+            await page.waitForTimeout(400);
+            const after = await page.evaluate((id) => document.querySelector(`.${id}-amount`)?.textContent ?? "", g.id);
+            check(before !== after, `${g.name} ${label}: a tap changes the amount (${before} to ${after})`);
+        }
+        await ctx.close();
+    }
 }
 
 await browser.close();

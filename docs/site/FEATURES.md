@@ -6,7 +6,7 @@ Current state of the site outside the three games with their own docs (Brasswork
 - Password gate: `proxy.ts` blocks every route behind a signed cookie (`lib/gate`). The whole site is private. Do not change without Nate.
 - Deploys: only `release` builds; see `docs/deploys.md`. PR checks: `docs/ci.md`.
 - Data: Supabase for Creations projects (`public.projects`, slugs match `lib/creations-data.ts`); GitHub API for History (`app/api/commits`). Accounts were dropped; Google env vars and account tables are still to be removed by Nate.
-- `/dev/*` return 404 in production unless `VOXEL_BENCH=1` is set at build time; `/automation-preview` unless `AUTOMATION_PREVIEW=1`. All are preview or bench routes for the games.
+- `/dev/*` return 404 in production unless `VOXEL_BENCH=1` is set at build time; `/automation-preview` always (it 404s in every production build; run it with `next dev`). All are preview or bench routes for the games.
 - Fonts: Helvetica Neue first with Arimo as fallback, IBM Plex Mono for labels, both through `next/font/google` in `app/layout.tsx` (Next downloads and self-hosts them at build). Brasswork uses Fraunces and IBM Plex Sans via `next/font/local`; never `next/font/google` there.
 
 ## naOS shell (docs/naos.md is the source for the look)

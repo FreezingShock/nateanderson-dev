@@ -22,7 +22,7 @@ Audited 2026-11-15 against `integration` at 5138bb6. Route `/creations/games/bra
 | HUD and menus | `components/automation/`, `components/brasswork-ui/`, `components/brasswork/`, `app/camino/brasswork.css` | `MenuWindow` in `brasswork-ui/window.tsx` |
 | Audio | `lib/automation/audio/` | Web Audio synthesis, no sample files |
 | Settings and first run | `lib/brasswork/` | Settings in localStorage, quest flag |
-| Dev pages | `/dev/voxel-island`, `/dev/voxel-model`, `/dev/brass-kit`, `/dev/brass-art`, `/dev/brasswork-site`, `/automation-preview` | Bench pages 404 on a production build unless `VOXEL_BENCH=1`; use `next dev` |
+| Dev pages | `/dev/voxel-island`, `/dev/voxel-model`, `/dev/brass-kit`, `/dev/brass-art`, `/dev/brasswork-site`, `/automation-preview` | Bench pages 404 on a production build unless `VOXEL_BENCH=1`; `/automation-preview` 404s on every production build; use `next dev` |
 
 Owners are per area, one thread per file set. The threads: "Streamline Brasswork building and controls" (`input/`, build bar), "Make Brasswork progression more satisfying" (`sim/`, `data/`), and the three art threads for island and sky (`render/`), menu art (`components/brasswork-ui`, `components/automation`) and item and machine icons (`components/brasswork-art`, `scripts/brasswork/`). If a thread for an area is finished, a fresh thread may take its files; say so in the PR.
 
