@@ -53,3 +53,4 @@ Current state of the site outside the three games with their own docs (Brasswork
 - Stuck-text check in PR checks (`scripts/ci/motion-stuck.mjs`): no scramble text rests as glyphs after anchor jumps, fast scrolls, tabbing or reduced motion.
 - PR checks, link crawl and screenshot diff: `docs/ci.md`; scripts in `scripts/ci`.
 - Engine tests for every game run in one command (`npm run test:nodefarm`).
+- Brasswork phone overrides (2026-11-16, PR #637, `components/automation/phone-stage.css`, scoped to the Brasswork route): on phones under 760 px the `.gs-frame` is full screen (fixed, z 60) and the panel's title bar and footer are hidden; `html.bw-route` (set by the Brasswork HUD) hides `.cm-dock` and `.nv-top`; `html.bw-route .cm-main` and `.gs-shell .cr-sub` drop their stacking contexts so the frame sits above the page. No other route is affected.
