@@ -11,11 +11,11 @@ The game at `/creations/games/__SLUG__`. Made by `npm run new-game -- __SLUG__` 
 - `app/camino/__SLUG__.css`: the palette (`data-theme="__SLUG__"`) and the panel layout.
 - `docs/games/__SLUG__/`: this README, FEATURES.md (what exists) and BACKLOG.md (what to do next).
 
-The template also added lines to shared files, each tagged `gen:__SLUG__`: `lib/games/registry.ts`, `lib/games/save-slot.ts`, `lib/game-launch/launch.ts`, `lib/creations-data.ts`, `docs/OWNERS.md`, `docs/README.md`, `scripts/games/games-under-check.json` and `package.json`.
+The template also added lines to shared files, each tagged `gen:__SLUG__`: `lib/games/registry.ts`, `lib/saves/keys.ts`, `lib/games/save-slot.ts`, `lib/game-launch/launch.ts`, `lib/creations-data.ts`, `docs/OWNERS.md`, `docs/README.md`, `scripts/games/games-under-check.json` and `package.json`.
 
 ## Save
 
-Key `__SLUG__-save-v1`, envelope app `__SLUG__`, version 1. Export and import are the shell's buttons under the panel. A damaged save is kept under `__SLUG__-save-v1:damaged`.
+Saved through the shared save system (`docs/saves.md`). Key `__SLUG__-save-v1`, envelope app `__SLUG__`, version 1, defined as `SAVE_DEF` in the engine and listed in `lib/saves/keys.ts`. Export and import are the shell's buttons under the panel. A damaged save is kept under `__SLUG__-save-v1-corrupt`, and an older different copy under `-corrupt-prev`.
 
 ## Checks
 

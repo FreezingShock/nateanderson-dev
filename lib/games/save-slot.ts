@@ -59,6 +59,7 @@ async function defFor(game: GameId): Promise<SaveDef<unknown> | null> {
     if (game === "brasswork") return (await import("@/lib/automation/sim/save")).BRASSWORK_SAVE as SaveDef<unknown>;
     if (game === "starwright") return (await import("@/lib/starwright/engine")).STARWRIGHT_SAVE as SaveDef<unknown>;
     if (game === "groundbreak") return (await import("@/lib/groundbreak/engine")).GROUNDBREAK_SAVE as SaveDef<unknown>;
+    // gen-anchor: defs
     return null;
 }
 
