@@ -11,6 +11,7 @@ import "./automation-hud.css";
 import type { HudData, MachineDetail } from "@/lib/automation/types";
 import type { HudActions } from "./types";
 import { ResourceStrip } from "./resource-strip";
+import { useCoarsePointer } from "./use-coarse-pointer";
 import { BuildList, GROUP_ICON, GROUP_TITLE, type GroupId } from "./build-bar";
 import { Inspector } from "./inspector";
 import { Milestones, PrestigeCard, Section } from "./factory-sections";
@@ -97,6 +98,8 @@ export function AutomationHud({
   onDockGroup?: (g: GroupId | null) => void;
 }) {
   const rootRef = useRef<HTMLDivElement>(null);
+  // On touch a tap opens the menu itself, so the tap tag is left off (it would sit over the menu it opens).
+  const coarse = useCoarsePointer();
   // The page marks this route (html.bw-route) so phone CSS can hide the site bar and dock behind the game (phone-stage.css).
   useEffect(() => {
     const root = document.documentElement;
@@ -416,7 +419,7 @@ export function AutomationHud({
               type="button"
               className="ab-tab"
               aria-pressed={sheet === "pal"}
-              {...tipAttr({ title: "Machines", tag: "Sheet", text: "The build palette: belts and logistics, machines and power. Tap a row to hold it." })}
+              {...(coarse ? {} : tipAttr({ title: "Machines", tag: "Sheet", text: "The build palette: belts and logistics, machines and power. Tap a row to hold it." }))}
               onClick={() => {
                 setMore(false);
                 setSheet((c) => (c === "pal" ? null : "pal"));
@@ -429,7 +432,7 @@ export function AutomationHud({
               type="button"
               className="ab-tab"
               aria-pressed={sheet === "factory"}
-              {...tipAttr({ title: "Milestones", tag: "Sheet", text: "Deliveries, blueprints, and the card for the machine you picked." })}
+              {...(coarse ? {} : tipAttr({ title: "Milestones", tag: "Sheet", text: "Deliveries, blueprints, and the card for the machine you picked." }))}
               onClick={() => {
                 setMore(false);
                 setSheet((c) => (c === "factory" ? null : "factory"));
@@ -442,7 +445,7 @@ export function AutomationHud({
               type="button"
               className="ab-tab"
               aria-pressed={screen === "research"}
-              {...tipAttr(CONTROL_TIPS.research)}
+              {...(coarse ? {} : tipAttr(CONTROL_TIPS.research))}
               onClick={() => {
                 setMore(false);
                 setScreen((s) => (s === "research" ? null : "research"));
@@ -455,7 +458,7 @@ export function AutomationHud({
               type="button"
               className="ab-tab"
               aria-pressed={more}
-              {...tipAttr({ title: "More", tag: "Menu", text: "Hub, prestige, the starter quest, expedition, production and settings." })}
+              {...(coarse ? {} : tipAttr({ title: "More", tag: "Menu", text: "Hub, prestige, the starter quest, expedition, production and settings." }))}
               onClick={() => {
                 setSheet(null);
                 setMore((m) => !m);
@@ -467,7 +470,7 @@ export function AutomationHud({
           </nav>
           {(more || leaving === "more") && (
             <div className="ab-more" role="menu" aria-label="More menus" inert={!more || undefined}>
-              <button type="button" role="menuitem" className="ab-more-item" {...tipAttr(CONTROL_TIPS.hub)} onClick={openHubMenu}>
+              <button type="button" role="menuitem" className="ab-more-item" {...(coarse ? {} : tipAttr(CONTROL_TIPS.hub))} onClick={openHubMenu}>
                 <Ico id="milestones" />
                 Hub
               </button>

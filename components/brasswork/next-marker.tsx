@@ -15,6 +15,16 @@ export interface NextTarget {
     label: string;
 }
 
+// Camera pad and tool column on screen, when they are showing (phone only). Empty on desktop.
+function cornerControls(cv: HTMLCanvasElement): DOMRect[] {
+    const root = cv.closest(".ab-root");
+    if (!root) return [];
+    return [...root.querySelectorAll<HTMLElement>(".bw-pad, .bw-touch-bar")]
+        .filter((e) => getComputedStyle(e).display !== "none")
+        .map((e) => e.getBoundingClientRect())
+        .filter((r) => r.width > 0 && r.height > 0);
+}
+
 export function NextMarker({ input, target, canvas }: { input: InputController; target: NextTarget; canvas: RefObject<HTMLCanvasElement | null> }) {
     const ref = useRef<HTMLDivElement>(null);
     useEffect(() => {
@@ -47,11 +57,21 @@ export function NextMarker({ input, target, canvas }: { input: InputController; 
                     const label = el.querySelector<HTMLElement>("span");
                     if (label) {
                         const lw = label.offsetWidth;
+                        const lh = label.offsetHeight;
                         const left = cx - origin.left - lw / 2;
                         let dx = 0;
                         if (left < 8) dx = 8 - left;
                         else if (left + lw > origin.width - 8) dx = origin.width - 8 - lw - left;
                         label.style.transform = `translateX(calc(-50% + ${dx.toFixed(1)}px))`;
+                        // On a phone the camera pad and tool column sit over the stage corners. A label that would land under
+                        // them flips above its marker instead, so the control never covers the words.
+                        const top = cy - origin.top + size / 2 + 6;
+                        const box = { l: origin.left + left + dx, r: origin.left + left + dx + lw, t: origin.top + top, b: origin.top + top + lh };
+                        const clash = cornerControls(cv).some((o) => o.left < box.r && o.right > box.l && o.top < box.b && o.bottom > box.t);
+                        label.style.top = clash ? "auto" : "";
+                        label.style.bottom = clash ? "100%" : "";
+                        label.style.marginTop = clash ? "0" : "";
+                        label.style.marginBottom = clash ? "6px" : "";
                     }
                 }
             }
