@@ -261,3 +261,32 @@ test("guesser streaks: a written value reads back through the envelope", () => {
     assert.equal(r.status, "ok");
     assert.equal(r.state.daily.streak, 4);
 });
+
+// ---- pre-migration fixtures (written by the engines' own serialize, as the games stored them before this change) ----------
+
+test("fixture: a Starwright save from before the envelope loads with its numbers", () => {
+    const raw = fixture("starwright-bare-v1.json");
+    const st = memory();
+    st.setItem(SW.SAVE_KEY, raw);
+    const r = CORE.loadSave(st, SW.STARWRIGHT_SAVE);
+    assert.equal(r.status, "ok");
+    assert.equal(r.state.amt[0], 40);
+    assert.equal(r.state.novasAll, 2);
+    assert.equal(r.state.totalAge, 1200);
+});
+
+test("fixture: a Brasswork save from before the envelope ({ text, savedAt }) loads and keeps its world", () => {
+    const wrapper = JSON.parse(fixture("brasswork-legacy-wrapper.json"));
+    const st = memory();
+    st.setItem(BW.BRASSWORK_SAVE.key, JSON.stringify(wrapper));
+    const r = CORE.loadSave(st, BW.BRASSWORK_SAVE);
+    assert.equal(r.status, "ok");
+    assert.equal(r.savedAt, 1_700_000_000_000);
+    assert.equal(r.state.hubId, BW.deserialize(wrapper.text).hubId);
+});
+
+test("fixture: a Node Farm save from before the envelope loads", () => {
+    const raw = fixture("node-farm-bare-v1.json");
+    assert.equal(NF.parseSave(raw)?.bytes, 5000);
+    assert.equal(NF.parseSave(JSON.stringify({ app: "node-farm", version: 1, savedAt: "2026-11-16T00:00:00.000Z", data: JSON.parse(raw) }))?.bytes, 5000);
+});
