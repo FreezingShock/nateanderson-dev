@@ -52,6 +52,13 @@
   color: var(--bw-brass-hi, #f4cf7e); background: var(--bw-dither, none), linear-gradient(180deg, #6a4a1e, #4b3114);
   box-shadow: inset 0 0 0 2px var(--bw-amber, #ffb347), 0 3px 0 #120b05;
 }
+.ex-need { margin: 0; display: flex; align-items: flex-start; gap: 6px; font-size: 13px; line-height: 1.3; color: var(--bw-amber, #ffb347); }
+.ex-need b { font-weight: 700; color: var(--bw-brass-hi, #f4cf7e); }
+.ex-need-ico { flex: none; display: block; image-rendering: pixelated; margin-top: 1px; }
+.ex-need-more { color: var(--bw-dim, #b09a6c); }
+.ex-need-word { white-space: pre; }
+.ex-go { display: flex; align-items: center; justify-content: center; gap: 8px; }
+.ex-go-ico { flex: none; display: block; image-rendering: pixelated; }
 .ex-go:hover:not(:disabled) { filter: brightness(1.15); }
 .ex-go:active:not(:disabled) { transform: translateY(2px); }
 .ex-go:disabled { cursor: not-allowed; color: var(--bw-dim, #b09a6c); background: var(--bw-dither, none), linear-gradient(180deg, #3b2a18, #281b0f); box-shadow: inset 0 0 0 1px rgba(210, 154, 60, 0.35), 0 3px 0 #120b05; }
@@ -79,6 +86,10 @@
   .ex-ore { zoom: 0.72; }
   .ex-facts { font-size: 11px; line-height: 1.25; }
   .ex-state { font-size: 12px; }
+  .ex-need { font-size: 11px; gap: 4px; }
+  .ex-need-word { display: none; }  /* phones: the lock, the name and a count fit one line */
+  .ex-need-ico { width: 12px; height: 12px; }
+  .ex-go-ico { width: 12px; height: 12px; }
   .ex-go { min-height: 44px; font-size: 12px; padding: 0 8px; }
 }
 @media (prefers-reduced-motion: reduce) { .ex-card { animation: none; } }
