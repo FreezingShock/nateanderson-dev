@@ -69,6 +69,8 @@
 /* Phone Milestones sheet: the same panel, tighter. */
 @media (max-width: 759px) {
   .ab-factory-meta .ms { gap: 14px; padding: 8px 10px 12px; }
+  .ab-factory-meta .ms-stats { gap: 8px; }
+  .ab-factory-meta .ms-stats dt { font-size: 10px; letter-spacing: 0.1em; white-space: nowrap; }
   .ab-factory-meta .ms-stats dd { font-size: 20px; }
   .ab-factory-meta .ms-hero { padding: 10px; gap: 10px; }
   .ab-factory-meta .ms-hero-name { font-size: 22px; }

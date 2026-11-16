@@ -518,14 +518,16 @@ export function AutomationHud({
             </div>
           )}
           <p className="ab-next" ref={nextRef} aria-label="Current objective">
-            <span className="ab-next-label">{next.title ? "Objective" : "Next"}</span>
-            {next.title && <span className="ab-next-title">{next.title}</span>}
-            {next.progress !== undefined && (
-              <span className="ab-next-bar" role="progressbar" aria-label="Objective progress" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(next.progress * 100)}>
-                <span className="ab-next-fill" style={{ width: `${Math.round(next.progress * 100)}%` }} />
-              </span>
-            )}
-            <span className="ab-next-text">{next.text}</span>
+            <span className="ab-next-body">
+              <span className="ab-next-label">{next.title ? "Objective" : "Next"}</span>
+              {next.title && <span className="ab-next-title">{next.title}</span>}
+              {next.progress !== undefined && (
+                <span className="ab-next-bar" role="progressbar" aria-label="Objective progress" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(next.progress * 100)}>
+                  <span className="ab-next-fill" style={{ width: `${Math.round(next.progress * 100)}%` }} />
+                </span>
+              )}
+              <span className="ab-next-text">{next.text}</span>
+            </span>
             {next.actionId && next.actionLabel && (
               <button
                 type="button"
