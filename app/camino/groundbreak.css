@@ -696,3 +696,17 @@ html.gb-route .sf-foot { display: none !important; }
     .gb-root .gb-feed li:nth-last-child(n+2) { display: none; }
 }
 .gb-root .gb-feed li { background: #161110; font-size: 12px; }
+
+/* ---- dock (2026-11-16): a locked tile names the material and shows what opening it costs, so a new player knows the next goal.
+   Multiplier tags (the crew count shown as x81) are bigger. ---- */
+.gb-root .gb-tile-name { position: relative; z-index: 1; max-width: 100%; padding: 0 3px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font: 700 10px/1.1 var(--gb-display); letter-spacing: .08em; text-transform: uppercase; color: var(--gb-dim); font-style: normal; }
+.gb-root .gb-tile[data-state="locked"] b { display: flex; align-items: center; gap: 3px; font: 600 11px var(--gb-text); color: var(--gb-dim); min-height: 14px; }
+.gb-root .gb-tile[data-state="locked"] b .gb-ico { width: 11px !important; height: 11px !important; }
+.gb-root .gb-tile .gb-tile-lock { top: 3px; right: 3px; bottom: auto; }
+.gb-root .gb-lv { min-width: 26px; height: 22px; padding: 0 5px; font: 700 14px/1 var(--gb-text); }
+.gb-root .gb-lv::before { opacity: .75; }
+@media (max-width: 860px) and (min-height: 521px) {
+    .gb-root .gb-tile-name { font-size: 9px; }
+    .gb-root .gb-tile[data-state="locked"] { height: 78px; }
+    .gb-root .gb-lv { min-width: 22px; height: 18px; font-size: 12px; }
+}

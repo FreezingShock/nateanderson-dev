@@ -556,10 +556,11 @@ export function Groundbreak() {
                                         style={next ? ({ ["--pct" as string]: `${pct}%` } as CSSProperties) : undefined}
                                         onClick={() => { setWin(null); setSel(card === i ? null : i); }}>
                                         <kbd>{MAT_KEYS[i]}</kbd>
-                                        <Ico id={MAT_ICONS[i]} size={48} className={open ? "" : next ? "is-next" : "is-shadow"} />
-                                        <b>{open ? fmt(s.amt[i]) : next ? `${pct}%` : ""}</b>
+                                        <Ico id={MAT_ICONS[i]} size={open || next ? 48 : 40} className={open ? "" : next ? "is-next" : "is-shadow"} />
+                                        <b>{open ? fmt(s.amt[i]) : next ? `${pct}%` : <><Ico id={MAT_ICONS[i - 1]} size={11} />{fmt(UNLOCK[i])}</>}</b>
                                         {open && <i className="gb-lv">{s.crews[i]}</i>}
-                                        {!open && !next && <Ico id="lock" size={18} className="gb-tile-lock" />}
+                                        {!open && !next && <em className="gb-tile-name">{m.name}</em>}
+                                        {!open && !next && <Ico id="lock" size={16} className="gb-tile-lock" />}
                                     </button>
                                 );
                             })}
