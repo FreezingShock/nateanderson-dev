@@ -7,7 +7,7 @@ variants, never from random effects. Only transform, opacity and clip-path anima
 Files: `app/camino/motion.css` (all CSS), `lib/motion/engine.ts` (one runtime), `components/cm/motion.tsx`
 (server-safe `ScrollType`, `Scramble`, `Slab`), `components/cm/reveal.tsx` (`CountUp`),
 `components/cm/motion-root.tsx` (engine start, page curtain, scroll gauge), `components/cm/boot.tsx` (load sequence).
-Tokens: `--cm-ease-out`, `--cm-d-reveal`, `--cm-rise`, `--cm-slide` in `camino.tokens.css`.
+Tokens: `--cm-ease`, `--cm-ease-out`, `--cm-ease-cut`, `--cm-ease-press`, the `--cm-d-*` durations, `--cm-lift` and `--cm-press` (hover rise and press travel), `--cm-rise`, `--cm-slide`, all in `camino.tokens.css` (Motion, with the rules for using them). Hover and press on buttons, chips and cards use `--cm-lift` and `--cm-press`; page shutters take their timings from `--cm-d-shut`, `--cm-d-name` and `--cm-d-exit`. Reduced motion is one rule in the same file: every transition and animation finishes at once.
 
 | Moment | What it does |
 | --- | --- |
