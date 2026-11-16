@@ -583,20 +583,27 @@ def _frame(name_art=None):
     return im, d
 
 
-def _tile_text(im, title, tag, text_x, cy=60, title_size=40):
-    """Title and tag centred on the row at logical cy, drawn at 2x."""
+def _tile_text(im, title, tag, text_x, cy=60, title_size=44, tag_size=30):
+    """Title and tag block centred on the row at logical cy, drawn at 2x.
+
+    Either part can span lines with a newline. The tag is sized for phone
+    widths, where the tile is about 170 css px wide."""
     im = upscale(im)
     d = ImageDraw.Draw(im)
-    tf = font(title_size * 1)
-    gf = font(22, mono=True)
-    lines = title.split("\n")
+    tf = font(title_size)
+    gf = font(tag_size, mono=True)
+    title_lines = title.split("\n")
+    tag_lines = tag.split("\n") if tag else []
     lh = int(title_size * 1.0)
-    block_h = lh * len(lines) + 14 + 28
+    tag_lh = int(tag_size * 1.2)
+    gap = 14 if tag_lines else 0
+    block_h = lh * len(title_lines) + gap + tag_lh * len(tag_lines)
     top = cy * SCALE - block_h // 2
-    for i, line in enumerate(lines):
+    for i, line in enumerate(title_lines):
         d.text((text_x, top + i * lh), line, font=tf, fill=hx(PAPER))
-    if tag:
-        d.text((text_x, top + lh * len(lines) + 14), tag, font=gf, fill=hx("#8b99a1"))
+    ty = top + lh * len(title_lines) + gap
+    for i, line in enumerate(tag_lines):
+        d.text((text_x, ty + i * tag_lh), line, font=gf, fill=hx("#9aa7af"))
     return im
 
 
@@ -640,7 +647,7 @@ def tile_outline_guesser():
     mx, my = 190, 58
     d.rectangle([mx - 2, my - 2, mx + 2, my + 2], fill=hx(PAPER))
     d.rectangle([mx - 1, my - 1, mx + 1, my + 1], fill=hx(CYAN))
-    return _tile_text(im, "outline\nguesser", "daily + unlimited", text_x=36)
+    return _tile_text(im, "outline\nguesser", "daily +\nunlimited", text_x=36)
 
 
 def tile_flag_guesser():
@@ -650,7 +657,7 @@ def tile_flag_guesser():
         ("h", 0, 1), ("v", 1, 2), ("q", 2, 3),
         ("d", 0, 1), ("c", 1, 2), ("h", 3, 0),
     ]
-    x0, y0, cw, ch, gap = 140, 24, 30, 34, 4
+    x0, y0, cw, ch, gap = 148, 24, 27, 34, 4
     for i, (kind, a, b) in enumerate(cells):
         col, row = i % 3, i // 3
         x = x0 + col * (cw + gap)
@@ -676,7 +683,7 @@ def tile_flag_guesser():
             d.rectangle([ox, y, ox + w, y + ch], fill=hx(c1))
             d.ellipse([ox + w // 4, y + ch // 4, ox + 3 * w // 4, y + 3 * ch // 4], fill=hx(c2))
         d.rectangle([ox, y, ox + w, y + ch], outline=hx("#0e0e0e"))
-    return _tile_text(im, "flag\nguesser", "daily + unlimited", text_x=36)
+    return _tile_text(im, "flag\nguesser", "daily +\nunlimited", text_x=36)
 
 
 PAGE_TILES = {
