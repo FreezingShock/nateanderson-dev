@@ -24,3 +24,4 @@ Format: `- area | paths | owner (thread title or "free") | since YYYY-MM-DD | do
 
 Inside a game, finer ownership (art, menus, sim, QOL) is recorded in that game's `docs/games/<game>/BACKLOG.md` header, if it has one.
 - Brasswork menu motion | components/brasswork-ui/motion.css, window.css and window.tsx motion rules, automation/phone-menu-art.css, brasswork/codex.tsx, hub-menu motion, press timings in the brass kit and skin files | Animate Brasswork menus | 2026-11-15 | docs/games/brasswork
+- Brasswork research screen | components/automation/research-screen.{tsx,css}, scripts/automation/research-check.mjs | Make Brasswork research readable (released when its PR merges) | 2026-11-16 | docs/games/brasswork
