@@ -52,6 +52,10 @@ async function openGame(view, id) {
         if (i >= 4 && y === last) break;
         last = y;
     }
+    // The windowed route keeps the Play section under the site bar for a few seconds after load (game-route-shell "hold").
+    // Any key from the reader ends it; without this the page snaps back while the checks move it.
+    await page.keyboard.press("Shift");
+    await page.waitForTimeout(300);
     return { ctx, page };
 }
 
@@ -101,7 +105,11 @@ for (const g of GAMES) {
             `${tag}: game root fills the panel (${root ? `${Math.round(root.width)}x${Math.round(root.height)}` : "missing"} in ${frame ? `${Math.round(frame.width)}x${Math.round(frame.height)}` : "?"})`);
 
         // Keys stay with the game: put the page at a scrolled position, press scroll keys, the page must not move.
-        await page.evaluate(() => { window.scrollTo(0, 120); });
+        // A phone panel can be most of the screen (Groundbreak on a phone), so the page may have less than 120 px to scroll:
+        // start at 120 px or at the most the page has.
+        const room = await page.evaluate(() => document.documentElement.scrollHeight - window.innerHeight);
+        const start = Math.max(0, Math.min(120, room));
+        await page.evaluate((y) => { window.scrollTo(0, y); }, start);
         await page.waitForTimeout(150);
         await page.evaluate(() => document.querySelector(".gs-frame")?.focus({ preventScroll: true }));
         for (const key of ["ArrowDown", "PageDown", "Space", "End"]) {
@@ -109,7 +117,7 @@ for (const g of GAMES) {
         }
         await page.waitForTimeout(250);
         const afterKeys = await page.evaluate(() => window.scrollY);
-        check(Math.abs(afterKeys - 120) < 2, `${tag}: game keys do not scroll the page (scrollY ${afterKeys})`);
+        check(Math.abs(afterKeys - start) < 2, `${tag}: game keys do not scroll the page (scrollY ${afterKeys}, was ${start})`);
 
         // The wheel over the panel stays with the game while it has focus. Bring the panel back under the pointer first.
         await page.evaluate(() => document.querySelector(".gs-frame").focus({ preventScroll: true }));
@@ -129,18 +137,21 @@ for (const g of GAMES) {
         if (bar && bar.height > 0) {
             // measured again: the page moved during the key and wheel checks above
             await page.waitForTimeout(600);
+            // A short phone page can sit at its top with no room above the panel (Groundbreak on a phone): then scroll down instead.
+            const atTop = afterWheelGame < 20;
             const barNow = await rectOf(page, ".gs-win-bar");
             await page.mouse.move(barNow.left + barNow.width / 2, barNow.top + barNow.height / 2);
-            // Scroll up, so the check does not depend on how much room is left below.
-            await page.mouse.wheel(0, -200);
+            // Scroll up when there is room above, so the check does not depend on how much room is left below.
+            await page.mouse.wheel(0, atTop ? 200 : -200);
             await page.waitForTimeout(300);
             // Headless WebGL runs the 3D games at a few frames a second, so the page scroll can land late. Poll for it.
+            const moved = (y) => (atTop ? y > afterWheelGame + 20 : y < afterWheelGame - 20);
             let afterWheelBar = afterWheelGame;
-            for (let i = 0; i < 20 && afterWheelBar >= afterWheelGame - 20; i++) {
+            for (let i = 0; i < 20 && !moved(afterWheelBar); i++) {
                 await page.waitForTimeout(200);
                 afterWheelBar = await page.evaluate(() => window.scrollY);
             }
-            check(afterWheelBar < afterWheelGame - 20, `${tag}: wheel over the title bar scrolls the page (scrollY ${afterWheelGame} to ${afterWheelBar})`);
+            check(moved(afterWheelBar), `${tag}: wheel over the title bar scrolls the page (scrollY ${afterWheelGame} to ${afterWheelBar}${atTop ? ", from the top" : ""})`);
         }
 
         // Save export: with a save present it downloads; without one it says so. Either way nothing throws.
