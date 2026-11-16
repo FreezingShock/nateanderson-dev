@@ -26,7 +26,7 @@ export function AboutStory() {
                 <ScrollType
                     as="p"
                     className="about-lede"
-                    text="I'm Nate, a senior in high school in Southern California. I'm headed to Cal Poly SLO for Construction Management, with Cal Poly Pomona as a goal and community college as my fallback. I build games, render systems, and design spaces, always with an eye toward sustainable, interconnected systems."
+                    text="I'm Nate, a senior in high school in Southern California. I'm headed to Cal Poly SLO for Construction Management, with Cal Poly Pomona as a goal and community college as my fallback. I build games, render systems and design spaces, with an eye toward sustainable, interconnected systems."
                 />
             </div>
             <div className="cm-panel">
@@ -103,8 +103,8 @@ export function RunningSection() {
                 <div className="cm-panel">
                     <div className="cm-hbar"><span>Training philosophy</span><span>Cross country</span></div>
                     <p className="cm-body-pad cm-prose" style={{ margin: 0 }}>
-                        Consistent training, mental resilience and continuous improvement. Cross country has shaped my
-                        discipline and leadership, qualities I bring to all areas of work.
+                        Consistent training, mental toughness and steady improvement. Cross country built my discipline
+                        and leadership, and I bring both into everything else I do.
                     </p>
                     <div className="p-foot" aria-hidden="true">
                         <span className="id-bars"><i /><i /><i /><i /><i /></span>

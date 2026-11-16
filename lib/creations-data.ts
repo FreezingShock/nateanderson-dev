@@ -208,7 +208,7 @@ export const GAME_MODES: GameMode[] = [
         color: "var(--cm-cyan)",
         icon: Ic.Map,
         tagline: "Geography games, right here in your browser.",
-        about: "Each guesser opens with a new daily puzzle at midnight Pacific. Finish a daily once and its unlimited practice opens too. Streaks and stats stay in your browser.",
+        about: "A new daily puzzle at midnight Pacific. Finish one and its unlimited practice opens too. Streaks and stats stay in your browser.",
         games: [
             {
                 slug: "flag-guesser",
