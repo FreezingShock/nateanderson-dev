@@ -14,7 +14,7 @@ import { researchTip } from "@/lib/automation/tips";
 /** Tier headings, left to right. A node sits one column right of its deepest prerequisite. */
 const TIERS = ["Base", "Parts", "Components", "Clockworks", "Megaproject"];
 const CW = 104; // card width
-const CH = 114; // card height
+const CH = 122; // card height: art (78 px at CW) plus room for two lines of name
 const GX = 22; // gap between columns (links run here)
 const GY = 8; // gap between rows
 const TOP = 26;

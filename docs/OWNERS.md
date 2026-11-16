@@ -7,7 +7,7 @@ Format: `- area | paths | owner (thread title or "free") | since YYYY-MM-DD | do
 ## Site
 - Shell, nav, console, search | components/cm, lib/nav.ts, lib/search, lib/motion, app/camino/{ctos,nav-naos,motion,entrances,transition}.css | Fix the animations toggle without refresh | 2026-11-16 | docs/site
 - Pages (home, about, studies, timeline, history, blog) | app/{page,about,studies,timeline,history,blog}, components/home, lib/*-data.ts | Polish site pages on phones | 2026-11-16 | docs/site
-- Homepage games showcase | components/home/games-showcase.tsx, public/home/games, the Play section in app/page.tsx and components/home/home.css (the `gs-` rules) | Feature games on the homepage | 2026-11-15 | docs/site
+- Homepage games showcase and band art | components/home/games-showcase.tsx, components/home/games-band*.ts(x), components/home/band-atlas.ts, public/home/games, public/home/band, scripts/home-band, the Play section in app/page.tsx and components/home/home.css (the `gs-` rules and `#play`) | Animate sprite art behind game cards | 2026-11-16 | docs/site
 - Creations and games hub | app/creations (not games/*), components/creations, components/games/naos.tsx, lib/creations-data.ts, public/games/shots | Games page redesign | 2026-11-15 | docs/site
 - Game launch and exit flow | app/creations/games/layout.tsx, components/game-launch, lib/game-launch, app/camino/game-launch.css | Smooth the game launch and exit flow | 2026-11-16 | docs/site
 - Gate, SEO, CI, deploy | proxy.ts, lib/gate, lib/seo.ts, .github, scripts/ci, vercel.json | free | | docs/deploys.md, docs/ci.md
@@ -27,3 +27,4 @@ Inside a game, finer ownership (art, menus, sim, QOL) is recorded in that game's
 - Brasswork menu motion | components/brasswork-ui/motion.css, window.css and window.tsx motion rules, automation/phone-menu-art.css, brasswork/codex.tsx, hub-menu motion, press timings in the brass kit and skin files | Animate Brasswork menus | 2026-11-15 | docs/games/brasswork
 - Brasswork desktop windows and Settings | components/automation/{settings-window.tsx,settings-window.css,factory-sections.tsx}, components/brasswork/settings-extras.tsx, desktop rules in components/automation/desktop-stage.css and empty-states.css, scripts/automation/fit-check.mjs | Fit and unify Brasswork desktop windows | 2026-11-16 | docs/games/brasswork
 - Brasswork ground tones and edge dither | lib/automation/render/{terrain,mesher,postfx,config}.ts | Calmer Brasswork ground (done 2026-11-16, released) | 2026-11-16 | docs/games/brasswork
+- Brasswork research screen | components/automation/research-screen.{tsx,css}, scripts/automation/research-check.mjs | Make Brasswork research readable (released when its PR merges) | 2026-11-16 | docs/games/brasswork

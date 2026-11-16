@@ -32,6 +32,14 @@ const cards = await page.evaluate(() => [...document.querySelectorAll(".bw-windo
 ok("research has cards", cards.length >= 20, `${cards.length} cards`);
 ok("every card has a name", cards.every((c) => c.name), JSON.stringify(cards.filter((c) => !c.name).length));
 ok("every card has art", cards.every((c) => c.art), `${cards.filter((c) => !c.art).length} without`);
+// Names must fit inside their card: the art sits above the name with no overlap, and the name's text is not cut off.
+const fit = await page.evaluate(() => [...document.querySelectorAll(".bw-window .rs-card")].map((c) => {
+    const a = c.querySelector(".rs-card-art").getBoundingClientRect(), n = c.querySelector(".rs-card-name"), nb = n.getBoundingClientRect(), cb = c.getBoundingClientRect();
+    return { name: n.textContent, bad: n.scrollHeight > n.clientHeight + 1 || nb.bottom > cb.bottom + 0.5 || a.bottom > nb.top + 1 };
+}).filter((x) => x.bad));
+ok("every card name fits inside its card", fit.length === 0, fit.slice(0, 3).map((x) => x.name).join(", "));
+const headH = await page.evaluate(() => document.querySelector('.bw-window[aria-label="Research"] .bw-window-head')?.getBoundingClientRect().height ?? 0);
+ok("research header band is 52 px or less", headH > 0 && headH <= 52, `${Math.round(headH)} px`);
 if (!phone) {
     const sc = await page.evaluate(() => { const t = document.querySelector(".bw-window .rs-tree-wrap"); return t ? { sw: t.scrollWidth, cw: t.clientWidth } : null; });
     ok("whole tree fits without sideways scroll on desktop", !!sc && sc.sw <= sc.cw + 1, JSON.stringify(sc));
