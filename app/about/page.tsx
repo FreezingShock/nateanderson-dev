@@ -48,7 +48,7 @@ export default function AboutPage() {
                             as="p"
                             auto
                             className="about-lead"
-                            text="Student, builder, runner, systems thinker. This is the full story, and how the parts connect."
+                            text="Student, builder, runner, systems thinker. Here is the full story and how the parts connect."
                         />
                     </div>
                     <aside className="about-id id" aria-label="Profile card">
@@ -116,7 +116,7 @@ export default function AboutPage() {
                         <div className="cm-hbar"><span>What&apos;s next</span><span>Living document</span></div>
                         <div className="cm-body-pad">
                             <p className="cm-prose">
-                                This page is a living document. Sections will deepen as projects launch and plans firm up.
+                                This page keeps growing as projects launch and plans firm up.
                                 To see the work in progress:
                             </p>
                         </div>
