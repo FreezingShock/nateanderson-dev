@@ -4,7 +4,7 @@ import { GATE, gatePassword, gateSecret } from "./config";
 const enc = new TextEncoder();
 const hex = (b: ArrayBuffer) => Array.from(new Uint8Array(b), (x) => x.toString(16).padStart(2, "0")).join("");
 
-export async function sha256(text: string): Promise<string> {
+async function sha256(text: string): Promise<string> {
     return hex(await crypto.subtle.digest("SHA-256", enc.encode(text)));
 }
 
@@ -14,9 +14,9 @@ async function hmac(data: string): Promise<string> {
 }
 
 /** Hash of the current password; folded into every token so a password change revokes them all. */
-export const passwordDigest = async () => process.env.SITE_PASSWORD_SHA256?.toLowerCase() || (await sha256(gatePassword()));
+const passwordDigest = async () => process.env.SITE_PASSWORD_SHA256?.toLowerCase() || (await sha256(gatePassword()));
 
-export function safeEqual(a: string, b: string): boolean {
+function safeEqual(a: string, b: string): boolean {
     if (a.length !== b.length) return false;
     let d = 0;
     for (let i = 0; i < a.length; i++) d |= a.charCodeAt(i) ^ b.charCodeAt(i);
