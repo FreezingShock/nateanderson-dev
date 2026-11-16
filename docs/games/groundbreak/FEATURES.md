@@ -93,7 +93,7 @@ Thread names change each wave; the file split is what matters. Before editing a 
 | Site-wide shortcuts (`g` chord, `[` `]`, `?`) must exclude Groundbreak or the game keys do nothing | working, gotcha | `components/cm/keys.tsx` | none |
 | Console `gb`: stats, hire, unlock, jobs, change, overtime, perks, incorporate, skyline, open, next, go, auto, rate; `give` and `warp` are admin-gated | working | `commands.ts`, `commands-qol.ts` | engine.test "console commands", guide.test console |
 | Simple visuals toggle (`gb-simple`) | untested | `groundbreak.tsx` `toggleSimple` | none |
-| Material dock: grouped tiles with number keys, level, progress to unlock, hover names | working on mouse; touch has no hover | `groundbreak.tsx` dock | none |
+| Material dock: grouped tiles with number keys, level, progress to unlock, hover names; a locked tile names its material in full (two lines) | working on mouse; touch has no hover | `groundbreak.tsx` dock | none |
 
 ### Screen and art
 
@@ -133,3 +133,4 @@ First run to the bridge is about 3 hours (Nate's pick). The bot test "finishes t
 ## Reward moments
 - Material on site: the dock tile of a material that comes on site rings once (`.gb-unlock`, set from `pulse` in `components/groundbreak/groundbreak.tsx`, styles in the end of `app/camino/groundbreak.css`). Hot feed lines glow once as they land. Hidden in reduced motion. Checked headless with the admin console (`gb admin on`, `gb give gravel 500`, U).
 - Job handover: the crew tick of the job that just finished stamps amber once (`freshTick` in `components/groundbreak/groundbreak.tsx`, `.gb-ticks li[data-fresh]` at the end of `app/camino/groundbreak.css`). Not yet captured in a frame.
+- Counters: the cash chip eases to its new value (`Ticked`, `components/games/juice/ticked.tsx`).
