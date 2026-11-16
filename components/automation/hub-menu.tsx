@@ -85,6 +85,8 @@ function Slip({ step, index, total }: { step: HubStep; index: number; total: num
 export function HubMenu({ hub, onClose }: { hub: HubView; onClose: () => void }) {
   const now = hub.steps.findIndex((s) => s.state === "now");
   const [sel, setSel] = useState(now >= 0 ? now : Math.max(0, hub.steps.length - 1));
+  // Phones show one pane at a time: the slip for the chosen order, or the ladder (hall, orders, milestones). Picking a row opens its slip.
+  const [view, setView] = useState<"slip" | "ladder">("slip");
   const step = hub.steps[sel];
   const orders = hub.steps.filter((s) => s.kind === "request");
   const indexOf = (s: HubStep) => hub.steps.filter((x) => x.kind === s.kind).findIndex((x) => x.id === s.id) + 1;
@@ -93,7 +95,7 @@ export function HubMenu({ hub, onClose }: { hub: HubView; onClose: () => void })
 
   const row = ({ s, i }: { s: HubStep; i: number }) => (
     <li key={s.id}>
-      <button type="button" className="hm-row" data-state={s.state} aria-current={i === sel} {...tipAttr({ title: s.name, tag: s.kind === "request" ? "Hub request" : "Hub step", text: s.note, rows: [{ k: "Status", v: s.state === "done" ? "Done" : s.state === "now" ? `${Math.round(s.progress * 100)}% delivered` : s.state === "ahead" ? "Not yet" : "Ready" }] })} onClick={() => setSel(i)}>
+      <button type="button" className="hm-row" data-state={s.state} aria-current={i === sel} {...tipAttr({ title: s.name, tag: s.kind === "request" ? "Hub request" : "Hub step", text: s.note, rows: [{ k: "Status", v: s.state === "done" ? "Done" : s.state === "now" ? `${Math.round(s.progress * 100)}% delivered` : s.state === "ahead" ? "Not yet" : "Ready" }] })} onClick={() => { setSel(i); setView("slip"); }}>
         <span className="hm-dot" data-state={s.state} aria-hidden="true">
           {s.state === "done" ? <span style={uiIconStyle("done", 20)} /> : s.state === "ahead" ? <span style={uiIconStyle("lock", 20)} /> : <b />}
         </span>
@@ -106,7 +108,11 @@ export function HubMenu({ hub, onClose }: { hub: HubView; onClose: () => void })
 
   return (
     <MenuWindow theme="hub" title="Hub" label="Hub" size="wide" variant="settle" art={<MachinePortrait id="hub" size={32} />} onClose={onClose}>
-      <div className="hm-wrap">
+      <div className="hm-tabs" role="group" aria-label="Hub pages">
+        <button type="button" className="hm-tab" aria-pressed={view === "slip"} onClick={() => setView("slip")}>Order</button>
+        <button type="button" className="hm-tab" aria-pressed={view === "ladder"} onClick={() => setView("ladder")}>Orders and milestones</button>
+      </div>
+      <div className="hm-wrap" data-view={view}>
         <aside className="hm-side" aria-label="Hub ladder">
           <div className="hm-hall">
             <MachinePortrait id="hub" size={96} label="The hub" />

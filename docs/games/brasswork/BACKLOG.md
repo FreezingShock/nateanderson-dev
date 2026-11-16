@@ -65,3 +65,10 @@ Floors above ground level, photo mode, panel folding, a second island as a site.
 - [x] FIRST-kiln-recipe | size S | Nate chose auto-pick: a new kiln starts on Iron ingot (docs/rule-changes/2026-11-15-brasswork-kiln-default-recipe.md) | this PR
 - [ ] FIRST-pacing-note | size S | For B-05: in a real click-through the opening has four hand steps after the windmill (recipe, two belt runs, hub). Time the human steps, not only the sim, when the pacing bot lands
 - [ ] EMPTY-expedition-lock | size S | Expedition cards show a text "Locked" button; a padlock glyph and the missing milestone would match the new locked slots
+
+## Audit 2026-11-16 (pre-deploy walk of every menu at 1440 and 390)
+- [x] AUDIT-prestige-phone-scroll | size S | "Open a new workshop" on a phone scrolled its ore list and bonuses inside the window; now the header is one row with a square close, gauges and lists are sized, and the window fits 390 by 844 with no inner scroll | this PR
+- [x] AUDIT-research-phone-top | size S | On a phone the Research window covered the top bar and its title; it now starts under the bar | this PR
+- [x] AUDIT-next-marker-check | size S | `next-markers.mjs` expected the hub marker before the first delivery; the banner correctly shows belt and kiln first (since the first-banner change), so the check now marks one delivery first | this PR
+- [x] AUDIT-settings-desktop-scroll | size M | At 1440 by 900 the Workshop controls window scrolled inside. Coordinator decided: fit it. Desktop groups now sit in two columns, phones get a tab row | this PR
+- [ ] AUDIT-prestige-short-phone | size S | Below about 740 px tall (375 by 667) the Open a new workshop body still scrolls inside the window | `prestige-screen.css`

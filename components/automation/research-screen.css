@@ -160,7 +160,8 @@
 
 /* phone: bottom sheet window; the pop-up becomes a sheet over the bottom of the tree */
 @media (max-width: 767px) {
-  .bw-window[aria-label="Research"] { max-height: 94dvh; height: 94dvh; width: 100%; }
+  /* Starts under the top bar, so the title and the bar's buttons are never covered. */
+  .bw-window[aria-label="Research"] { max-height: calc(100dvh - var(--ab-top-h, 0px) - 8px); height: calc(100dvh - var(--ab-top-h, 0px) - 8px); width: 100%; }
   .bw-window[aria-label="Research"] .bw-window-body { padding: 8px 10px 10px; }
   .rs-bp-note, .rs-legend { display: none; }
   .rs-pop { position: fixed; left: 8px !important; right: 8px; bottom: 8px; top: auto !important; width: auto !important; max-height: 58dvh; overflow: auto; animation: none; }

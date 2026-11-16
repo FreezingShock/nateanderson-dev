@@ -65,11 +65,26 @@
 .ab-root[data-lowfx="true"] :is(.hm-slip, .hm-stamp, .hm-dot b, .hm-bar i) { animation: none; transition: none; }
 @media (prefers-reduced-motion: reduce) { .hm-slip, .hm-stamp, .hm-dot b, .hm-bar i { animation: none; transition: none; } }
 
+.hm-tabs { display: none; }
 @media (max-width: 767px) {
+  /* Phones: the window rises almost to the top, and one pane shows at a time (tab row), so nothing scrolls inside it. */
+  .bw-window[data-theme="hub"] { max-height: calc(100dvh - 40px); }
+  .hm-tabs { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin: 0 0 8px; }
+  .hm-tab {
+    min-height: 44px; border: 1px solid var(--ab-line, #4a3a22); background: #120d07; color: var(--ab-dim, #9c8a66); cursor: pointer;
+    font-size: 12px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; padding: 0 6px;
+  }
+  .hm-tab[aria-pressed="true"] { background: linear-gradient(#d9ae62, #b28438); color: #2a1606; border-color: var(--ab-brass, #c59a52); }
   .hm-wrap { grid-template-columns: 1fr; gap: 10px; }
+  .hm-wrap[data-view="slip"] > .hm-side { display: none; }
+  .hm-wrap[data-view="ladder"] > .hm-slip { display: none; }
   .hm-slip { order: -1; padding: 12px 14px 14px; }
   .hm-slip-title { font-size: 20px; }
   .hm-opens { grid-template-columns: 1fr; }
+  /* The empty crate scene is smaller on a phone so the whole order fits the pane. */
+  .hm-empty .bwa-empty { padding: 6px 10px 8px; gap: 4px; }
+  .hm-empty .bwa-empty > span:first-child { zoom: 0.72; }
+  .hm-hint { margin-top: 8px; }
 }
 
 /* Hierarchy pass: progress numbers first, the unlock reads big, fewer outlines. */
