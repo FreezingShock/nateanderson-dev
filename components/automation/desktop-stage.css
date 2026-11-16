@@ -183,6 +183,26 @@
   .ab-root.bw .ab-sub-title { font-size: 12px; letter-spacing: 0.14em; }
   .ab-root.bw .ab-locked-note { font-size: 13.5px; padding: 8px 10px; }
   .ab-root.bw .ab-key-hint { top: 6px; right: 6px; }
+
+  /* The locked-row note: the padlock slots sit on one line and the text takes the full width under them, so it stays
+     inside its dashed box at any flyout width. */
+  .ab-root.bw .ab-locked-note { flex-wrap: wrap; row-gap: 8px; }
+  .ab-root.bw .ab-locked-note > span:last-child { flex: 1 1 100%; min-width: 0; }
+  /* The flyout may run lower now that the objective card is beside it, so its last row (the locked note) is not cut off. */
+  .ab-root.bw:not([data-palgroup="none"]) .ab-pal { max-height: min(560px, calc(100% - var(--bw-inset-top) - 2px)); }
+
+  /* The objective card steps to the right of an open flyout, so it never covers the bottom rows of Machines, Power or
+     Logistics. It returns to the centre when the flyout closes. */
+  .ab-root.bw:not([data-palgroup="none"]) .ab-next {
+    left: calc(var(--ab-dock-edge) + 380px + 16px); transform: none; margin: 0;
+    max-width: min(440px, calc(100% - var(--ab-dock-edge) - 380px - 32px));
+    transition: left 200ms cubic-bezier(0.2, 0.7, 0.2, 1), transform 200ms cubic-bezier(0.2, 0.7, 0.2, 1), max-width 200ms cubic-bezier(0.2, 0.7, 0.2, 1);
+  }
+  .ab-root.bw .ab-next { transition: left 200ms cubic-bezier(0.2, 0.7, 0.2, 1), transform 200ms cubic-bezier(0.2, 0.7, 0.2, 1), max-width 200ms cubic-bezier(0.2, 0.7, 0.2, 1); }
+  .ab-root[data-reduce="true"] .ab-next, .ab-root[data-lowfx="true"] .ab-next { transition: none; }
+  /* A full window (Settings, research, expedition, production, hub) sits on top of the stage, so the objective card
+     steps aside while it is open and comes back when it closes. Its space stays reserved, so nothing moves. */
+  .ab-root.bw[data-modal="on"] .ab-next { visibility: hidden; }
 }
 
 /* Build rows on every size: the name keeps its room, and status or Details wrap rather than crush it. */

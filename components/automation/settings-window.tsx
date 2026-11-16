@@ -18,7 +18,6 @@ function Switch({ label, hint, icon, on, onChange }: { label: string; hint: stri
                 <span className="bws-name" id={`bws-${icon}-${label}`}>{label}</span>
                 <span className="bws-hint">{hint}</span>
             </div>
-            <span className="bws-lamp" data-on={on ? "true" : "false"} aria-hidden="true" />
             <button
                 type="button"
                 role="switch"
@@ -46,18 +45,6 @@ export function Row({ icon, label, hint, stack, children }: { icon: string; labe
             </div>
             {children}
         </div>
-    );
-}
-
-export function Choice<T extends string>({ label, value, options, onChange }: { label: string; value: T; options: { value: T; label: string }[]; onChange: (v: T) => void }) {
-    return (
-        <span className="bws-pair" data-n={options.length} role="radiogroup" aria-label={label}>
-            {options.map((o) => (
-                <button key={o.value} type="button" role="radio" aria-checked={value === o.value} onClick={() => onChange(o.value)}>
-                    {o.label}
-                </button>
-            ))}
-        </span>
     );
 }
 
@@ -104,7 +91,7 @@ export function SettingsWindow({ settings, onChange, onClose, slots }: {
                         </Group>
                         <Group title="Numbers" tab="numbers">
                             <Switch icon="rates" label="Show rates" hint="Per-minute income under each resource." on={settings.showRates} onChange={(v) => onChange({ showRates: v })} />
-                            <Row icon="stats" label="Number style" hint="12.4k or 12,400."><Choice label="Number style" value={settings.numberFormat} options={[{ value: "short", label: "Short" }, { value: "full", label: "Full" }]} onChange={(v) => onChange({ numberFormat: v })} /></Row>
+                            <Switch icon="stats" label="Full numbers" hint="Shows 12,400 instead of 12.4k." on={settings.numberFormat === "full"} onChange={(v) => onChange({ numberFormat: v ? "full" : "short" })} />
                         </Group>
                         {slots?.save && (
                             <>
