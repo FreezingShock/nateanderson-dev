@@ -27,8 +27,8 @@ const CSS = `
 .bw-pad-stick::after{top:50%;left:14px;right:14px;height:1px;transform:translateY(-50%)}
 .bw-pad-knob{position:absolute;left:50%;top:50%;width:44px;height:44px;margin:-22px 0 0 -22px;box-sizing:border-box;border:2px solid #f0c97a;background:linear-gradient(180deg,#f4cf7e,#b8862f);box-shadow:0 2px 0 #000;pointer-events:none;transition:transform 90ms ease-out}
 .bw-pad-stick[data-live="true"] .bw-pad-knob{transition:none}
-.bw-pad-turns{display:grid;grid-template-columns:repeat(2,40px);grid-template-rows:repeat(2,40px);gap:6px}
-.bw-pad-btn{display:grid;place-items:center;width:40px;height:40px;margin:0;padding:0;box-sizing:border-box;border:2px solid #b8862f;border-radius:0;background:rgba(29,22,11,.92);color:#f0c97a;cursor:pointer;touch-action:none;-webkit-tap-highlight-color:transparent}
+.bw-pad-turns{display:grid;grid-template-columns:repeat(2,44px);grid-template-rows:repeat(2,44px);gap:6px}
+.bw-pad-btn{display:grid;place-items:center;width:44px;height:44px;margin:0;padding:0;box-sizing:border-box;border:2px solid #b8862f;border-radius:0;background:rgba(29,22,11,.92);color:#f0c97a;cursor:pointer;touch-action:none;-webkit-tap-highlight-color:transparent}
 .bw-pad-btn svg{width:18px;height:18px;display:block;pointer-events:none}
 .bw-pad-btn[data-held="true"]{background:#f2c14e;border-color:#f2c14e;color:#1d160b}
 .bw-pad-btn:focus-visible{outline:2px solid #f4e4b8;outline-offset:2px}

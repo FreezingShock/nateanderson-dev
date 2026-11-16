@@ -30,7 +30,7 @@ const STYLE_ID = "bw-touch-bar-style";
 // Height of the strip. The stage gives this much room at its bottom edge, and --bw-inset-bottom on .ab-root follows it.
 const CSS = `
 .bw-touch-bar{position:absolute;right:10px;bottom:var(--bw-pad-bottom,72px);z-index:6;display:none;flex-direction:column;align-items:center;gap:6px;padding:0;box-sizing:border-box;background:none;border:0;touch-action:manipulation;-webkit-user-select:none;user-select:none}
-.bw-touch-bar button{flex:none;display:grid;place-items:center;width:40px;height:40px;margin:0;padding:0;border:2px solid #b8862f;border-radius:0;background:rgba(29,22,11,.92);cursor:pointer;-webkit-tap-highlight-color:transparent}
+.bw-touch-bar button{flex:none;display:grid;place-items:center;width:44px;height:44px;margin:0;padding:0;border:2px solid #b8862f;border-radius:0;background:rgba(29,22,11,.92);cursor:pointer;-webkit-tap-highlight-color:transparent}
 .bw-touch-bar button:active{background:#3a2c14}
 .bw-touch-bar button[aria-pressed="true"]{background:#f2c14e;border-color:#f2c14e}
 .bw-touch-bar button[aria-pressed="true"] span{filter:brightness(0.18) sepia(1)}

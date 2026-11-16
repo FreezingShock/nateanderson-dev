@@ -94,7 +94,7 @@
     max-width: none;
     z-index: 1001;
   }
-  .ab-root.bw .bx-tools .bx-btn { min-height: 40px; padding: 6px 10px; }
+  .ab-root.bw .bx-tools .bx-btn { min-height: 44px; min-width: 44px; padding: 6px 10px; }
   .ab-root.bw .ab-res {
     display: grid;
     grid-template-columns: repeat(8, minmax(0, 1fr));
@@ -102,7 +102,7 @@
     width: 100%;
   }
   .ab-root.bw .ab-res .ab-res-list { display: contents; }
-  .ab-root.bw .ab-res .ab-res-item { min-width: 0; justify-content: center; }
+  .ab-root.bw .ab-res .ab-res-item { min-width: 44px; min-height: 44px; justify-content: center; }
   .ab-root.bw .ab-res .ab-glyph-art { width: 34px !important; height: 34px !important; }
   .ab-root.bw .ab-res-box .ab-glyph { margin: 2px; }
   .ab-root.bw .ab-res-box .ab-res-amt { font-size: 11px; min-width: 20px; padding: 1px 3px; }
