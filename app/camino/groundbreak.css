@@ -719,4 +719,7 @@ html.gb-route .sf-foot { display: none !important; }
 @media (min-width: 861px) and (min-height: 521px) and (max-height: 720px) {
     .gb-root .gb-job .gb-banner { display: none; }
     .gb-root .gb-feed li:nth-last-child(n+2) { display: none; }
+    /* the card ends above the dock; a long job (a late save) scrolls its body instead of running under the dock */
+    .gb-root .gb-job { display: flex; flex-direction: column; max-height: calc(100% - var(--gb-dock-top, 140px) - 80px); }
+    .gb-root .gb-job-body { min-height: 0; overflow: auto; }
 }
