@@ -210,10 +210,12 @@
   }
   .ab-root.bw .ab-more { bottom: calc(var(--ab-phone-below) + 6px); }
 
-  /* Camera controls and tool column: they float over the stage, away from the sheets. Hidden while a sheet is up. */
-  .ab-root.bw[data-sheet="pal"] .bw-pad,
-  .ab-root.bw[data-sheet="factory"] .bw-pad,
-  .ab-root.bw[data-inspect="on"] .bw-pad { display: none !important; }
+  /* Camera pad and tool column float over the stage, away from the sheets. Both step aside while a sheet or the More
+     menu is up, so a menu's rows never run under the touch column. */
+  .ab-root.bw[data-sheet="pal"] :is(.bw-pad, .bw-touch-bar),
+  .ab-root.bw[data-sheet="factory"] :is(.bw-pad, .bw-touch-bar),
+  .ab-root.bw[data-inspect="on"] :is(.bw-pad, .bw-touch-bar),
+  .ab-root.bw:has(.ab-more) :is(.bw-pad, .bw-touch-bar) { display: none !important; }
   .ab-root.bw .bw-touch-bar { bottom: var(--bw-pad-bottom); right: 8px; }
   .ab-root.bw .bw-pad { left: 8px; bottom: var(--bw-pad-bottom); }
 
