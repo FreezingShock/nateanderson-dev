@@ -7,6 +7,7 @@ import { iconCell, iconStyle } from "@/lib/automation/icons";
 import { tipAttr, type TipData } from "@/components/brasswork-ui/tip";
 import { itemTip } from "@/lib/automation/tips";
 import { DEFAULT_CATALOG } from "@/lib/automation/sim/data";
+import { Ticked } from "@/components/games/juice/ticked";
 
 /**
  * A square badge for an item or machine. Shows the sprite-sheet icon when the id has one
@@ -165,7 +166,7 @@ function ResourceList({
           >
             <span className="ab-res-box">
               <Glyph code={r.glyph} size={48} icon={r.id} />
-              <span className="ab-res-amt">{amount}</span>
+              <Ticked className="ab-res-amt" value={r.amount} format={(n) => fmtNum(n, numberFormat)} />
               <GainFloat amount={r.amount} numberFormat={numberFormat} />
             </span>
             {/* The rate sits under its box. A steady item keeps an empty slot, so every box has the same height. */}
