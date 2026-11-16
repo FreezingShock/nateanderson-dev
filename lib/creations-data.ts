@@ -208,7 +208,7 @@ export const GAME_MODES: GameMode[] = [
         color: "var(--cm-cyan)",
         icon: Ic.Map,
         tagline: "Geography games, right here in your browser.",
-        about: "A new daily puzzle every day at midnight Pacific, plus unlimited practice for learning and high scores. Streaks and stats stay in your browser.",
+        about: "A new daily puzzle at midnight Pacific, plus unlimited practice for learning and high scores. Streaks and stats stay in your browser.",
         games: [
             {
                 slug: "daily-outline",
