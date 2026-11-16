@@ -4,7 +4,7 @@ Ordered. A fresh thread can take the top item under "A thread can do these" and 
 
 How to verify any UI item: production build, 1440 and 390 wide, PNGs saved to `/mnt/project-files/portfolio/groundbreak/<topic>/`, no console warnings. Engine items: add a test in `tests/groundbreak/` and run `npm run test:nodefarm`.
 
-Last audited 2026-11-15, `integration` at 5138bb6f.
+Last audited 2026-11-16 (pre-deploy audit, see "2026-11-16 audit" below). Earlier pass: 2026-11-15, `integration` at 5138bb6f.
 
 ## A thread can do these
 
@@ -55,14 +55,32 @@ Last audited 2026-11-15, `integration` at 5138bb6f.
 - Corrupt save: when `parse` returns null for a present but broken save, the page keeps a copy under a backup key and tells the player, instead of silently starting fresh. Test it.
 - Split into three PRs if one grows.
 
-### PERF-gb-icons-sheet | size S
-- First paint requests about 30 single-icon PNGs (1 to 2 KB each, `components/groundbreak/icons.ts`) although `public/groundbreak/icons/icons.webp` holds them as a sheet. Done when: first paint needs one icon request, 1440 and 390 PNGs match before and after, and the transfer count drops by about 30.
+### PERF-gb-icons-sheet | size S (DONE 2026-11-16)
+- First paint requested about 35 single-icon PNGs. `Ico` now draws every icon from `icons.webp` (one request), with no pop-in after mount. Checked: the game page makes one icon request (was 35+), and the 1440 and 390 PNGs match the before set in `/mnt/project-files/portfolio/groundbreak/audit-2026-11-16/`.
 
 ### PERF-gb-font-preloads | size S
 - The site root preloads Plex Mono 400 and Arimo, and Groundbreak preloads Barlow 600, none used on first paint (about 56 KB, roughly 0.3 s on a throttled phone). Root fonts are outside this area; check `docs/OWNERS.md`. Done when: unused preloads are gone and no text changes face.
 
 ### PERF-gb-real-device | size S
 - All numbers in `/mnt/project-files/portfolio/perf-audit-2026-11-15/groundbreak.md` are headless Chromium. Needs Nate or a real phone: playable time, frame feel with the tower at 40 storeys, and a multi-hour soak. Preloading the scene art was tried and gave no gain in time to playable (bandwidth bound), so do not redo it without new evidence.
+
+## 2026-11-16 audit (pre-deploy pass, headless Chromium on production and dev builds)
+
+Done in this pass (PR from `claude/project-thread-ch5ivg`):
+- Console: a `gb` command ran inside a state updater, so React reported "Cannot update a component while rendering" and the command could run twice. The command now runs once, in the submit handler.
+- Hint ring: the amber "next" ring on dock tiles, tiers and the cue shared `::after` with the tooltip, so it drew a dark box over icons and text (a 26 px dark bar on the material card, a block over "charter" in the cue). The ring now resets the tooltip box and hover shift.
+- Touch: the cue's "Space" hint is hidden on touch screens.
+- Welcome-back card: it now sits above the windows until dismissed, so a window cannot cover it.
+- PERF-gb-icons-sheet (above).
+
+Checked and fine: 60 fps idle and while zooming at 1440 and 390 (headless, no GPU); no overlap of cue, zoom, dock, feed, job card and rail at 1440, 1366, 1280, 1024, 1920, 860, 390, 360, 375, 844, 932 and 667 wide; no React warnings in the dev build across buy, cue, warp, firm, incorporate and console; incorporate confirm moves the firm on.
+
+Found, not done (small, pick up next):
+- Phone 390 wide: the job card title wraps to three lines ("SIDEWALK / RUN") beside "permit 0:06". Fix with a nowrap ellipsis or a smaller title on phone.
+- 1440 Firm window: the last perk row is cut at the scroll edge with no fade. A fade or a bottom pad would say it scrolls.
+- Font preloads (Barlow 700 and Plex 500 and 600 preload on first paint): needs a check of which weights draw on first paint. Do not change faces without the before and after PNGs.
+- Change order: not reached in the headless walk (it needs the structure phase of a live job). Needs a longer warp run to see the card and both buttons at 390.
+- Real phone, Safari and a live playthrough remain Nate's.
 
 ## Needs Nate
 
