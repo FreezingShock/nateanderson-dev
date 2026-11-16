@@ -12,7 +12,7 @@ Current state of the site outside the three games with their own docs (Brasswork
 ## naOS shell (docs/naos.md is the source for the look)
 - Page wrapper `<div className="ctos">`, `Section ctos`, `PageHead`; scoped CSS in `app/camino/ctos.css`; `body.ctos-on` set by `components/cm/ctos-body.tsx`.
 - Type scale tokens (11px floor, 15px body, 18px lead) and the one-cyan-accent palette.
-- Motion: scroll reveals and `Scramble`/`Slab`/`ScrollType` (`components/cm/motion.tsx`, `lib/motion/engine.ts`). Titles scramble once per hover; reduced motion shows plain text.
+- Motion: scroll reveals and `Scramble`/`Slab`/`ScrollType` (`components/cm/motion.tsx`, `lib/motion/engine.ts`). Titles scramble once per hover; reduced motion shows plain text. The engine follows the OS reduced-motion setting (Windows: Animation effects) live: switching it off tears every observer and listener down, and switching it back on rebuilds without a refresh, with on-screen content settling in place rather than replaying (`lib/motion/engine.ts`, `motionOn`, `subscribeMotion`, `useMotionOn`).
 - Page transition: fast shutter (`app/camino/transition.css`).
 - Dithered art: `NaosBackdrop` per page, header bands and washes (`components/cm/naos-art.tsx`, `scripts/naos-art/`).
 - Navigation: top bar, floating dock (7 items, labels 11px on phones), site map, `/` launcher; all read `lib/nav.ts`, which also pulls games from `lib/creations-data.ts`.
@@ -48,6 +48,7 @@ Current state of the site outside the three games with their own docs (Brasswork
 - Starwright, Groundbreak, Brasswork: per-game docs in `docs/games/`; older notes in `docs/starwright.md`.
 
 ## Checks and tooling
+- Live motion toggle check (`scripts/ci/motion-toggle.mjs`, not a PR check): flips reduced motion on a running page and checks that on-screen items settle, the curtain runs again, and no text rests as glyphs.
 - Stuck-text check in PR checks (`scripts/ci/motion-stuck.mjs`): no scramble text rests as glyphs after anchor jumps, fast scrolls, tabbing or reduced motion.
 - PR checks, link crawl and screenshot diff: `docs/ci.md`; scripts in `scripts/ci`.
 - Engine tests for every game run in one command (`npm run test:nodefarm`).

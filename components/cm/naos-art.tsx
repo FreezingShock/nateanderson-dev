@@ -2,6 +2,7 @@
 
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { preload } from "react-dom";
+import { useMotionOn } from "@/lib/motion/engine";
 import "./naos-art.css";
 
 /** Every full-page backdrop. A page prefetches the others once its own art is up, so the next page is ready. */
@@ -137,6 +138,7 @@ export function NaosBackdrop({ src }: { src: string }) {
         };
     }, []);
 
+    const on = useMotionOn();
     // Input reactions. The art drifts a little with the pointer and the scroll position (depth, not a fixed sheet), a
     // dither halo wakes under the cursor or finger, and each press throws a short dither ring. Everything moves by
     // transform on its own layer, in one rAF loop that sleeps once settled, so no frame ever re-lays out the page.
@@ -146,7 +148,7 @@ export function NaosBackdrop({ src }: { src: string }) {
         const halo = haloRef.current;
         const ripples = ripplesRef.current;
         if (!backdrop || !halo || !ripples) return;
-        if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+        if (!on) return;
 
         const phone = window.matchMedia("(max-width: 760px)");
         const fine = window.matchMedia("(hover: hover) and (pointer: fine)").matches;
@@ -228,7 +230,7 @@ export function NaosBackdrop({ src }: { src: string }) {
             halo.style.transform = "";
             backdrop.style.transform = "";
         };
-    }, [src]);
+    }, [src, on]);
 
     return (
         <>

@@ -28,6 +28,7 @@ Format and rules: `docs/WORKFLOW.md`. Append new items at the end of a section; 
 - [ ] ASK SITE-stale-prs | S | decide PRs #399 and #400 (merge or close) and the Brasswork drafts; owners decide their own | audit 9
 
 - [x] SITE-hub-layout | S | Nate picked Poster on 2026-11-15 (decision card); rows and index layouts removed | #610 follow-up
+- [x] SITE-motion-toggle | S | the motion setting now applies live both ways: off tears the engine down, on rebuilds it with no refresh, and on-screen content settles without replaying; the page curtain, typed lines and counters follow too | this PR
 
 ## Next
 - [x] SITE-game-thumbs | M | real screenshot per game on the hub cards (captured from the built game, 16:10); the Creations featured grid still uses its own cards | done in the Games hub redesign | #610

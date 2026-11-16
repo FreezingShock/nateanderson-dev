@@ -20,5 +20,7 @@ Tokens: `--cm-ease-out`, `--cm-d-reveal`, `--cm-rise`, `--cm-slide` in `camino.t
 | Drift | `data-mx-par="0.1"` moves an element with scroll. |
 | Gauge | 2px cyan line at the top of the viewport fills with page scroll. |
 
+Motion setting: the engine follows `prefers-reduced-motion` live (Windows: Animation effects). Off tears every observer and listener down and leaves text on its real words; on rebuilds it and settles what is already on screen without replaying. Read it with `useMotionOn()` in React, or `motionOn()` / `subscribeMotion()` elsewhere; never cache it at mount.
+
 Rules: never put `data-mx` on an element React re-keys often; use `data-no-curtain` on a link to skip the curtain;
 `navigateWithCurtain(href)` from `lib/motion/navigate.ts` for programmatic jumps.
