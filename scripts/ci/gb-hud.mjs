@@ -54,6 +54,8 @@ const digReport = (grid) => {
         .filter((q) => q.width && q.height);
     if (!sheets.length) return null;
     const inside = (x, y, q) => x >= q.left && x <= q.right && y >= q.top && y <= q.bottom;
+    // A point on a sheet's edge is not covered: the sheet has to be over the centre, not touching it.
+    const over = (x, y, q) => x > q.left && x < q.right && y > q.top && y < q.bottom;
     let free = 0;
     for (let i = 0; i < grid; i++) for (let j = 0; j < grid; j++) {
         const x = view.left + ((i + 0.5) * view.width) / grid;
@@ -62,7 +64,7 @@ const digReport = (grid) => {
     }
     const cx = view.left + view.width / 2;
     const cy = view.top + view.height / 2;
-    return { open: free / (grid * grid), centreCovered: sheets.some((q) => inside(cx, cy, q)) };
+    return { open: free / (grid * grid), centreCovered: sheets.some((q) => over(cx, cy, q)), centreY: Math.round(cy), sheetTop: Math.round(Math.min(...sheets.map((q) => q.top))) };
 };
 
 for (const [w, h] of sizes) {
@@ -98,7 +100,7 @@ for (const [w, h] of sizes) {
         const onLoad = await p.evaluate(digReport, GRID);
         if (onLoad) {
             const pct = (onLoad.open * 100).toFixed(0);
-            console.log(`  on load: ${pct}% of the dig free`);
+            console.log(`  on load: ${pct}% of the scene free`);
             if (onLoad.centreCovered || onLoad.open < MIN_DIG_OPEN) fail(`390x844 a card on load hides the dig: ${pct}% of the scene free, centre ${onLoad.centreCovered ? "covered" : "free"}`);
         }
         const labels = await p.$$eval(".gb-rail-btn", (bs) => bs.map((e) => e.getAttribute("aria-label")));
@@ -116,7 +118,7 @@ for (const [w, h] of sizes) {
                 console.log(`  ${label}: no sheet opened`);
             } else {
                 const pct = (d.open * 100).toFixed(0);
-                console.log(`  ${label}: ${pct}% of the dig free, centre ${d.centreCovered ? "covered" : "free"}`);
+                console.log(`  ${label}: ${pct}% of the scene free, centre y ${d.centreY}, top sheet edge y ${d.sheetTop}, centre ${d.centreCovered ? "covered" : "free"}`);
                 if (d.centreCovered) fail(`390x844 the ${label} sheet covers the centre of the scene, where the dig is`);
                 else if (d.open < MIN_DIG_OPEN) fail(`390x844 the ${label} sheet hides the dig: only ${pct}% of the scene free, needs ${MIN_DIG_OPEN * 100}%`);
             }
