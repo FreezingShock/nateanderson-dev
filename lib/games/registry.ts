@@ -4,8 +4,20 @@
 import type { Metadata } from "next";
 import { pageMeta } from "@/lib/seo";
 
-export type GameId = "brasswork" | "starwright" | "groundbreak" | "node-farm";
-export type GameTheme = "brass" | "star" | "ground" | "node";
+export type GameId =
+    | "brasswork"
+    | "starwright"
+    | "groundbreak"
+    | "node-farm"
+    // gen-anchor: ids
+    ;
+export type GameTheme =
+    | "brass"
+    | "star"
+    | "ground"
+    | "node"
+    // gen-anchor: themes
+    ;
 
 export type GameEntry = {
     id: GameId;
@@ -67,6 +79,7 @@ export const GAMES: Record<GameId, GameEntry> = {
         backHref: "/creations/games#incremental",
         backLabel: "Back to Games",
     },
+    // gen-anchor: games
 };
 
 /** Page metadata for a game route. Every game's title, description and share preview come from here. */

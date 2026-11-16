@@ -11,6 +11,7 @@
         "test:automation:browser": "node tests/automation/browser/run.mjs",
         "start": "next start",
         "test:shell": "node scripts/games/shell-check.mjs",
+        "new-game": "node scripts/games/new-game.mjs",
         "test:window": "node scripts/games/window-check.mjs",
         "format": "prettier --write \"**/*.{js,jsx,ts,tsx,json,css,scss,md}\"",
         "check:automation": "node --experimental-strip-types --no-warnings scripts/automation/check-recipes.mjs"

@@ -7,6 +7,7 @@ Start with [CLAUDE.md](../CLAUDE.md) (agent guide) and [WORKFLOW.md](WORKFLOW.md
 - [OWNERS.md](OWNERS.md): who owns which paths.
 - [deploys.md](deploys.md): merges, `release`, how to deploy (only when Nate asks).
 - [ci.md](ci.md): PR checks and running them locally.
+- [games/NEW-GAME.md](games/NEW-GAME.md): make a new game in one command, and what it sets up.
 - [rule-changes/](rule-changes/README.md): one file per game balance or rule change.
 - [saves.md](saves.md): the save system (envelope, migrations, damaged copies, export and import).
 
@@ -25,5 +26,6 @@ Each game has FEATURES.md and BACKLOG.md.
 - Groundbreak: [FEATURES](games/groundbreak/FEATURES.md), [BACKLOG](games/groundbreak/BACKLOG.md)
 - Node Farm: [node-farm.md](node-farm.md) (design and systems); backlog is in the site backlog until it gets its own folder
 - Outline and Flag Guesser: covered in [site/FEATURES.md](site/FEATURES.md)
+<!-- gen-anchor: games -->
 
 The three per-game folders are written by sibling threads and may not have merged yet; the links work once they do.

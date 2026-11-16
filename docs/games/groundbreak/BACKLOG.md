@@ -131,3 +131,7 @@ Corrupt save (item 11c): the game already kept a copy under `gb-save-v1-corrupt`
 
 ### 16. Repeat order payout and the cue (DONE 2026-11-15: the waiting cue names the next job's wait and the repeat)
 - The NEXT cue says nothing about a running repeat order. Done when: while the crew is on a repeat order the cue (or the job card) says why the next campaign job has not started and what it waits on.
+
+## Detail sweep (2026-11-16, thread "Sweep games for inconsistent details")
+- [x] SWEEP-dock-locked-names | size S | A locked dock tile cut its material name to "PRECAST PAN..." and "STEEL BE..." at 1440 and 390. Locked tiles now wrap the name to two lines and are 88 px tall on desktop and 90 px on phones (landscape phones keep their 50 px tiles). Checked: HUD check clear on the fresh save at all seven sizes, and the dock crops at 1440 and 390. | `app/camino/groundbreak.css` (dock block, the `gb-tile-name` and `data-state="locked"` rules)
+- [ ] SWEEP-hud-late-zoom-job | size S | On the late seed (`seeds/late180.json`) at 1440 the zoom buttons overlap the job card. Seen before this sweep; not caused by the dock change. Move the zoom column under the job card's bottom edge on desktop, then rerun `scripts/ci/gb-hud.mjs` with the late seed | `app/camino/groundbreak.css` (`.gb-zoom`, `.gb-job`)

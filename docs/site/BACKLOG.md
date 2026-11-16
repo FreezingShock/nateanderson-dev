@@ -63,6 +63,18 @@ Format and rules: `docs/WORKFLOW.md`. Append new items at the end of a section; 
 ## Code health
 Slot for findings from the thread "Audit website code for simplification". That thread appends one line per finding here, with prefix `SITE-dead-`. Known leads from the site audit (audit 11, sequence after the Brasswork work): both `components/automation` and `components/brasswork` exist; `PLACEHOLDER_CATALOG`; `components/automation/mock.ts`; `/automation-preview` and `/dev/*` routes may be test or preview only.
 
+- [ ] SITE-dead-nodefarm | M | Node Farm: about 80 unused exports in lib/nodefarm and components/nodefarm (`npx -y knip@5`); grep before deleting, since tests and scripts import some by path | Node Farm owner
+- [ ] SITE-dead-brasswork | M | Brasswork: unused exports in lib/automation (models, input, render, sim) and components/automation/{mock,reward-moment,settings-window}.tsx; PLACEHOLDER_* names in lib/automation/sim/data.ts are used only by tests | Brasswork owner
+- [ ] SITE-dead-starwright | S | Starwright: unused exports in lib/starwright/{engine,session,art,ui-art,settings,data}.ts and components/starwright/{paged,panels,sw-ui}.tsx | Starwright owner
+- [ ] SITE-dead-groundbreak | S | Groundbreak: unused exports in lib/groundbreak and components/groundbreak-art; site-life and site-scene export the same component twice (`default` and a named alias) | Groundbreak owner
+- [ ] SITE-dead-shell | S | Shell: NateMark (components/cm/mark.tsx) and useTyped (components/cm/typed.tsx) have no importers | shell owner
+- [ ] SITE-dead-creations | S | GameModeSection in components/creations-sections.tsx has no importers | Creations owner
+- [ ] SITE-dead-games-lib | S | Guessers and shared games lib: unused exports in lib/outline-game.ts and lib/games (save-slot checkSaveData), lib/game-launch (LAST_GAME_KEY, GAME_SAVES) | guessers and shell owners
+- [ ] SITE-dead-types | S | Unused exported types in lib/{about,studies,creations,upcoming,blog,github,content,identity}*.ts and lib/og/card.tsx. Types only; unexport when the file's owner next edits it
+- [ ] ASK SITE-dead-orphan-scripts | S | Scripts nothing references: scripts/brasswork/preview-models.py, scripts/automation/tab-motion-check.mjs, scripts/nodefarm/{console-browser-check,guide-follow,tree-browser,web-basics-browser}.mjs, scripts/starwright/ui-art/landscape-shots.mjs. They are hand-run tools, so Nate decides which to delete
+- [ ] ASK SITE-dead-browser-test | M | tests/automation/browser fails on integration (touch-bar imports icons/ui, which the runner never copies). Fix it (about 10 lines) or delete it with its script | Brasswork owner
+- [ ] SITE-dead-deps | S | scripts use playwright, pngjs and pixelmatch without declaring them in the root package.json (scripts/ci has its own). Declare them or document the install
+
 ## Done
 - [x] SITE-games-exit | S | Brasswork top bar gets a Games link; every game's back link lands on its own section of the Games page | this PR
 - [x] SITE-claude-md | S | root `CLAUDE.md` and `AGENTS.md` were referenced everywhere but missing; added short guides
@@ -80,3 +92,4 @@ Slot for findings from the thread "Audit website code for simplification". That 
 - [x] SITE-short-anchor | S | desktop under 700 px tall anchors on the panel (the game matters more than the heading there) | #665
 - [x] GUESS-reveal-polish | M | animated miss and win reveals, streak readout, Unlimited unlock moment, flag round double shake removed, reduced motion respected | this PR
 - [x] SITE-motion-scale | M | one motion scale (easing, durations, lift and press travel) and one reduced-motion rule; buttons, chips, cards, home game cards and page shutters use it | this PR
+- [x] SITE-dead-knip | S | `knip.json` at the root: run `npx -y knip@5` for unused files, exports and deps. Removed the unused `getProjectAccentColor` and unexported unused gate and sound symbols. knip misses dynamic imports, so grep before deleting | this PR

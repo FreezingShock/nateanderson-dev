@@ -73,6 +73,17 @@ function useExit(open: boolean, ms = 190): { mounted: boolean; state: "in" | "ou
     return { mounted: open || mounted, state: open ? "in" : "out" };
 }
 
+/** Holds the last non-null value for `ms` after it clears, so a card can play its exit. `state` is "out" while it leaves. */
+function useHeld<T>(value: T | null, ms = 120): { shown: T | null; state: "in" | "out" } {
+    const [held, setHeld] = useState<T | null>(value);
+    useEffect(() => {
+        if (value !== null) { setHeld(value); return; }
+        const id = window.setTimeout(() => setHeld(null), ms);
+        return () => window.clearTimeout(id);
+    }, [value, ms]);
+    return { shown: value ?? held, state: value !== null ? "in" : "out" };
+}
+
 function Window({ open, title, hint, variant, size = "md", onClose, children, icon, banner }: { open: boolean; title: string; hint?: string; variant: "iris" | "shutter" | "settle" | "drop" | "unroll" | "stamp"; size?: "sm" | "md" | "lg"; onClose: () => void; children: ReactNode; icon?: string; banner?: GbBannerId }) {
     const { mounted, state } = useExit(open);
     if (!mounted) return null;
@@ -414,6 +425,9 @@ export function Groundbreak() {
         return () => ro.disconnect();
     }, [ready]);
 
+    // Held for the exit animations. These sit above the boot return so the hook order never changes.
+    const cardH = useHeld(sel, 120);
+    const awayH = useHeld(away, 120);
     if (!ready || !s || !f) return <div className="gb-root gb-boot" aria-busy="true"><p>Staking out the site…</p></div>;
 
     const stage = stageOf(s);
@@ -532,10 +546,10 @@ export function Groundbreak() {
                     <button type="button" className="gb-go" onClick={() => { conflictRef.current = false; setConflict(false); save(); }}>Use this tab</button>
                 </div>
             )}
-            {away && <AwayCard a={away} onClose={() => setAway(null)} />}
+            {awayH.shown && <AwayCard a={awayH.shown} onClose={() => setAway(null)} leaving={awayH.state === "out"} />}
             {(paused || shell.paused) && <div className="gb-paused" role="status">Paused · P to resume</div>}
 
-            {card !== null && <MatCard s={s} i={card} onBuy={doBuy} onUnlock={doUnlock} onClose={() => setSel(null)} cue={cue} />}
+            {cardH.shown !== null && <MatCard s={s} i={cardH.shown} onBuy={doBuy} onUnlock={doUnlock} onClose={() => setSel(null)} cue={cue} leaving={cardH.state === "out"} />}
 
             <div ref={dockRef} className="gb-dock" onPointerDown={(e) => e.stopPropagation()} role="toolbar" aria-label="Materials">
                 {DOCK_GROUPS.map(([label, from, to], gi) => (
@@ -631,7 +645,7 @@ function CueChip({ cue, onGo }: { cue: Cue; onGo: () => void }) {
     );
 }
 
-function AwayCard({ a, onClose }: { a: AwaySummary; onClose: () => void }) {
+function AwayCard({ a, onClose, leaving }: { a: AwaySummary; onClose: () => void; leaving?: boolean }) {
     const rows: [string, string][] = [];
     for (const j of a.jobs) rows.push([j.count > 1 ? `${j.name} x${j.count}` : j.name, "handed over"]);
     if (a.cash > 0) rows.push(["Cash earned", fmtCash(a.cash)]);
@@ -640,7 +654,7 @@ function AwayCard({ a, onClose }: { a: AwaySummary; onClose: () => void }) {
     if (a.crews > 0) rows.push(["Crews hired", `+${a.crews}`]);
     for (const m of a.mats) rows.push([m.name, `+${fmt(m.gain)}`]);
     return (
-        <section className="gb-away" role="dialog" aria-label="Welcome back" onPointerDown={(e) => e.stopPropagation()}>
+        <section className="gb-away" role="dialog" aria-label="Welcome back" data-s={leaving ? "out" : undefined} onPointerDown={(e) => e.stopPropagation()}>
             <h2>Welcome back</h2>
             <p>The crews kept working for {fmtAge(a.secs)}{a.capped ? `. That is the offline limit of ${a.hours} hours; the rest of your time away did not count` : ""}.</p>
             {rows.length > 0 && <dl>{rows.slice(0, 7).map(([k, v]) => <div key={k}><dt>{k}</dt><dd>{v}</dd></div>)}</dl>}
@@ -659,14 +673,14 @@ function CostLine({ s, i, t }: { s: State; i: number; t: Tier }) {
     );
 }
 
-function MatCard({ s, i, onBuy, onUnlock, onClose, cue }: { s: State; i: number; onBuy: (i: number, t: Tier) => void; onUnlock: () => void; onClose: () => void; cue: Cue }) {
+function MatCard({ s, i, onBuy, onUnlock, onClose, cue, leaving }: { s: State; i: number; onBuy: (i: number, t: Tier) => void; onUnlock: () => void; onClose: () => void; cue: Cue; leaving?: boolean }) {
     const hint = cue.kind === "buy" && cue.mat === i ? cue.tier : undefined;
     const m = MATS[i];
     const f = effects(s);
     const open = i < s.open;
     const next = i === s.open;
     return (
-        <section className="gb-card" key={i} role="dialog" aria-label={m.name} onPointerDown={(e) => e.stopPropagation()}>
+        <section className="gb-card" key={i} role="dialog" aria-label={m.name} data-s={leaving ? "out" : undefined} onPointerDown={(e) => e.stopPropagation()}>
             <header>
                 <Ico id={open || next ? MAT_ICONS[i] : "lock"} size={56} />
                 <div><h3>{m.name}</h3><p>{open ? `${fmt(rawRate(s, i, f, chain(s)))} /s · ${fmt(s.amt[i])} held` : next ? `needs ${fmt(UNLOCK[i])} ${MATS[i - 1].name}` : "Locked"}</p></div>

@@ -229,7 +229,7 @@ html.gb-route .sf-foot { display: none !important; }
     .gb-res li { padding: 0 6px 0 4px; }
     .gb-title { font-size: 20px; }
 }
-@media (prefers-reduced-motion: reduce), (max-height: 0px) { .gb-win, .gb-card, .gb-job-body, .gb-feed li { animation-duration: .01s !important; } .gb-rail-btn[data-ping]::before, .gb-tile[data-ready] { animation: none; } }
+@media (prefers-reduced-motion: reduce), (max-height: 0px) { .gb-win, .gb-card, .gb-away, .gb-job-body, .gb-feed li { animation-duration: .01s !important; } .gb-rail-btn[data-ping]::before, .gb-tile[data-ready] { animation: none; } }
 .gb-root[data-reduce="true"] .gb-win, .gb-root[data-simple="true"] .gb-win { animation-duration: .01s !important; }
 
 @media (max-width: 520px) { .gb-res li:nth-child(3) { display: none; } }
@@ -700,6 +700,9 @@ html.gb-route .sf-foot { display: none !important; }
 /* ---- dock (2026-11-16): a locked tile names the material and shows what opening it costs, so a new player knows the next goal.
    Multiplier tags (the crew count shown as x81) are bigger. ---- */
 .gb-root .gb-tile-name { position: relative; z-index: 1; max-width: 100%; padding: 0 3px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font: 700 10px/1.1 var(--gb-display); letter-spacing: .08em; text-transform: uppercase; color: var(--gb-dim); font-style: normal; }
+/* a locked tile names its material in full: two lines at most, so "Precast panels" and "Steel beams" no longer cut to "PRECAST PAN..." */
+@media (min-height: 521px) { .gb-root .gb-tile[data-state="locked"] { height: 88px; padding-top: 4px; gap: 2px; } }
+.gb-root .gb-tile[data-state="locked"] .gb-tile-name { white-space: normal; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; line-height: 1.1; text-align: center; max-width: 100%; }
 .gb-root .gb-tile[data-state="locked"] b { display: flex; align-items: center; gap: 3px; font: 600 11px var(--gb-text); color: var(--gb-dim); min-height: 14px; }
 .gb-root .gb-tile[data-state="locked"] b .gb-ico { width: 11px !important; height: 11px !important; }
 .gb-root .gb-tile .gb-tile-lock { top: 3px; right: 3px; bottom: auto; }
@@ -707,7 +710,7 @@ html.gb-route .sf-foot { display: none !important; }
 .gb-root .gb-lv::before { opacity: .75; }
 @media (max-width: 860px) and (min-height: 521px) {
     .gb-root .gb-tile-name { font-size: 9px; }
-    .gb-root .gb-tile[data-state="locked"] { height: 78px; }
+    .gb-root .gb-tile[data-state="locked"] { height: 90px; }
     .gb-root .gb-lv { min-width: 22px; height: 18px; font-size: 12px; }
 }
 
@@ -724,3 +727,9 @@ html.gb-route .sf-foot { display: none !important; }
 .gb-ticks li[data-fresh] { animation: gbTickStamp var(--cm-d-reveal) steps(4, end) both; }
 @keyframes gbTickStamp { 0% { background: var(--gb-hi); box-shadow: 0 0 0 2px var(--gb-amber); } 100% { box-shadow: 0 0 0 0 transparent; } }
 @media (prefers-reduced-motion: reduce) { .gb-ticks li[data-fresh] { animation: none; } }
+
+/* Exits: the material card and the welcome-back card fade and slide out on the site fast timing, then unmount. */
+.gb-card[data-s="out"] { animation: gbCardOut var(--cm-d-fast) ease-in both; pointer-events: none; }
+.gb-away[data-s="out"] { animation: gbAwayOut var(--cm-d-fast) ease-in both; pointer-events: none; }
+@keyframes gbCardOut { to { opacity: 0; transform: translate(-50%, 12px); } }
+@keyframes gbAwayOut { to { opacity: 0; transform: translateY(-4px); } }

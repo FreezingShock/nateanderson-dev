@@ -8,7 +8,7 @@
 import { createSaveTools, downloadText, readPickedFile, readStored, writeStored, type SaveTools } from "@/lib/games/save";
 import type { GameId } from "@/lib/games/registry";
 import { SAVE_SLOTS as SLOTS } from "@/lib/saves/keys";
-import { loadSave, migrateData, type SaveDef } from "@/lib/saves/core";
+import { loadSave, reviveData, type SaveDef } from "@/lib/saves/core";
 
 export type SaveSlot = { key: string; app: string; version: number };
 
@@ -17,6 +17,7 @@ export const SAVE_SLOTS: Partial<Record<GameId, SaveSlot>> = {
     brasswork: SLOTS.brasswork,
     starwright: SLOTS.starwright,
     groundbreak: SLOTS.groundbreak,
+    // gen-anchor: slots
 };
 
 const PENDING = (key: string) => `gs-pending-import:${key}`;
@@ -35,6 +36,22 @@ function local(): Storage | null {
     } catch {
         return null;
     }
+}
+
+/**
+ * Runs the game's own revive on imported data, after migrating it from the file's version. True when the save is usable.
+ * The new-game template adds a branch here (anchor "checks") for each game it makes.
+ */
+export async function checkSaveData(game: GameId, data: unknown, fileVersion = 1): Promise<boolean> {
+    try {
+        if (game === "brasswork") return reviveData((await import("@/lib/automation/sim/save")).BRASSWORK_SAVE, data, fileVersion) !== null;
+        if (game === "starwright") return reviveData((await import("@/lib/starwright/engine")).STARWRIGHT_SAVE, data, fileVersion) !== null;
+        if (game === "groundbreak") return reviveData((await import("@/lib/groundbreak/engine")).GROUNDBREAK_SAVE, data, fileVersion) !== null;
+        // gen-anchor: checks
+    } catch {
+        return false;
+    }
+    return false;
 }
 
 /** The game's save definition. Loaded on demand so no engine is pulled into every game route. */
@@ -82,12 +99,7 @@ export async function importSave(game: GameId, file: Blob): Promise<SaveResult> 
     const parsed = toolsFor(slot).importText(picked.data);
     if (!parsed.ok) return { ok: false, error: parsed.error };
     const fileVersion = (JSON.parse(picked.data) as { version: number }).version;
-    try {
-        const m = migrateData(def, parsed.data, fileVersion);
-        if (def.revive(m.data) === null) throw new Error("not usable");
-    } catch {
-        return { ok: false, error: "That save is damaged and cannot be loaded." };
-    }
+    if (!(await checkSaveData(game, parsed.data, fileVersion))) return { ok: false, error: "That save is damaged and cannot be loaded." };
     const current = readStored(local(), slot.key);
     if (current) writeStored(local(), slot.key + ":before-import", current);
     try {
