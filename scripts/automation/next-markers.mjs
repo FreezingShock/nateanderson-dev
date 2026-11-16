@@ -61,7 +61,9 @@ await check("windmill marker on suggestSpot", { x: wmSpot.x, z: wmSpot.z, w: 2, 
 await page.evaluate(([x, z]) => window.__bwdev.placeAt("windmill", x, z), [wmSpot.x, wmSpot.z]);
 await page.evaluate(() => window.__bwdev.refresh());
 // Step 4: hub request, shown once the hub can fill an order. Give the hub the ingots.
-await page.evaluate(() => { const wd = window.__bwdev.getWorld(); wd.buildings[wd.hubId].input.iron_ingot = 40; window.__bwdev.refresh(); });
+// The banner shows the belt and kiln steps first until something has been delivered (hudData's "untouched" branch),
+// so mark one delivery as made to reach the hub step.
+await page.evaluate(() => { const wd = window.__bwdev.getWorld(); wd.buildings[wd.hubId].input.iron_ingot = 40; wd.progress.delivered.iron_ingot = 1; window.__bwdev.refresh(); });
 const hub = await page.evaluate(() => { const wd = window.__bwdev.getWorld(); const b = wd.buildings[wd.hubId]; return { x: b.x, z: b.z }; });
 await check("hub marker on the 3x3 hub", { x: hub.x, z: hub.z, w: 3, d: 3 }, "next-4-hub");
 // Finish the opening orders: the hub step is done, so no marker should remain.
