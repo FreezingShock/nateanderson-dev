@@ -1,3 +1,4 @@
+// Superseded for the expedition previews by scripts/brasswork/build-site-previews.py (pixel art, 2026-11-16). This 3D still is kept for reference only.
 // Renders one picture per prestige site with the game's own renderer (software WebGL is fine for stills).
 // Usage: VOXEL_BENCH=1 npm run build && VOXEL_BENCH=1 npm start, then
 //   BASE_URL=http://localhost:3000 SITE_PASSWORD=... node scripts/brasswork/render-sites.mjs

@@ -47,8 +47,10 @@ export const TERRAIN_HEX: Record<number, number> = {
     [BLOCK.GRASS_B]: 0x6da345,
     [BLOCK.GRASS_C]: 0x4f8236,
     [BLOCK.GRASS_D]: 0x7bb04c,
-    [BLOCK.FLOOR_A]: 0x6b5238,
-    [BLOCK.FLOOR_B]: 0x7d6044,
+    // Ground is one base tone per surface (calmer ground, Nate's pick 2026-11-16). FLOOR_B is
+    // kept as an id for old saves and tests but terrain.ts only paints FLOOR_A.
+    [BLOCK.FLOOR_A]: 0x6e5438,
+    [BLOCK.FLOOR_B]: 0x6e5438,
     [BLOCK.SKIRT]: 0x7a5a38,
 };
 

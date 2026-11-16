@@ -230,9 +230,12 @@ def nova(kind):
         vis = dmask(np.clip(v * 1.4, 0, 1) * fade)
         col = pick(hot, 1 - v * (1 - t * 0.5))
         out[vis] = col[vis]; m |= vis
-        if kind == "neutron" and t > 0.15:  # beams from the new pulsar
-            beam = (np.abs(np.sin(ang - 0.6 - t * 3)) < 0.03) & (d < 40 + 120 * t) & dmask(np.full(d.shape, 0.8 * fade + 0.2))
-            out[beam] = hexc(P["frost"]); m |= beam
+        if kind == "neutron" and t > 0.15:  # two opposite pulsar beams: a tapered cone, wide at the core, thin at its reach, dithered
+            reach = 40 + 150 * t
+            half = 0.05 + 0.09 * (1 - np.clip(d / reach, 0, 1))  # angular half-width, shrinking outward
+            bv = np.clip(1 - np.abs(np.sin(ang - 0.6 - t * 3)) / half, 0, 1) * np.clip(1 - d / reach, 0, 1) * (0.55 + 0.45 * fade)
+            beam = (d < reach) & (bv > 0.02) & dmask(np.clip(bv * 1.6, 0, 1))
+            out[beam] = pick(R("azure", "sky", "frost", "white"), np.clip(bv * 1.2, 0, 1))[beam]; m |= beam
         # bright knots of debris flung out along rays, ahead of the shell, trailing short streaks
         rng = np.random.default_rng(7 if kind == "supernova" else 9)
         for j in range(42):
