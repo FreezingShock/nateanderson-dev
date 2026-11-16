@@ -33,7 +33,7 @@ Many threads merge into `integration` daily, and docs are the likeliest collisio
 ## Ideas
 ## Done         (newest appended at the end)
 ```
-Item line: `- [ ] ID | size S/M/L | text, with the "done when" in a few words | refs`. Prefix `ASK` right after the checkbox when it needs Nate (`- [ ] ASK ID | ...`). Mark done by changing `[ ]` to `[x]` and appending ` | #PR` on the same line. Moving it to Done is optional; leaving it where it is avoids conflicts.
+Item line: `- [ ] ID | size S/M/L | text, with the "done when" in a few words | refs`. Prefix `ASK` right after the checkbox when it needs Nate (`- [ ] ASK ID | ...`). Mark done by changing `[ ]` to `[x]` and appending ` | #PR` on the same line. Moving it to Done is optional; leaving it where it is avoids conflicts. Finished items may be condensed to one line in Done; the full text stays in git history. Keep the sections in this order: Now, Next, Needs Nate, Ideas, Done.
 
 ## FEATURES.md format
 One section per feature area, one line per feature: `- Name: what it does now, key files`. Describe the current state only; history lives in git. Update the line when behaviour changes.
