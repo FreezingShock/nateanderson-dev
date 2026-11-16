@@ -23,8 +23,8 @@ Saved through the shared save system (`docs/saves.md`). Key `__SLUG__-save-v1`, 
 npm run test:__SLUG__                       # engine tests, no browser
 npm run build                               # production build
 SITE_PASSWORD=ci-password npx next start -p 3123 &
-node scripts/games/window-check.mjs http://localhost:3123   # panel layout, keys, wheel, save buttons
-node scripts/games/shell-check.mjs http://localhost:3123    # shell mounts, no page errors, no sideways scroll
+node scripts/ci/checks/run.mjs window http://localhost:3123   # panel layout, keys, wheel, save buttons
+node scripts/ci/checks/run.mjs shell http://localhost:3123    # shell mounts, no page errors, no sideways scroll
 ```
 
 Safari, iPhone full screen and real audio are not covered by these checks.

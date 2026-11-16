@@ -129,7 +129,7 @@ Changing a save's shape means bumping its version and writing a migration. A sav
 - `npm run test:nodefarm` runs every game engine test in `tests/` (`nodefarm`, `games`, `automation`, `starwright`, `groundbreak`). The name is historical; it covers all games. It is a PR check.
 - `npm run test:automation` runs the Brasswork input tests. It is also a PR check.
 - `npm run check:automation` checks the Brasswork recipes.
-- Browser checks, run by hand against a production build: `scripts/games/window-check.mjs` (windowed panels), `scripts/games/shell-check.mjs` (shell, Node Farm, Games hub), `scripts/ci/gb-hud.mjs` (Groundbreak HUD overlap at seven sizes). Not PR checks yet.
+- Game checks, one runner against a production build: `scripts/ci/checks/run.mjs` (windowed panels, the framed game route and hub, the Groundbreak HUD at seven sizes). A PR check: see `docs/ci.md`, "Game checks".
 
 Every game balance or rule change gets a file in `docs/rule-changes/` (see `docs/rule-changes/README.md`).
 

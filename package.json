@@ -10,9 +10,11 @@
         "test:automation": "node --experimental-strip-types --no-warnings --test --test-reporter=spec \"tests/automation/*.test.mjs\"",
         "test:automation:browser": "node tests/automation/browser/run.mjs",
         "start": "next start",
-        "test:shell": "node scripts/games/shell-check.mjs",
+        "test:shell": "node scripts/ci/checks/run.mjs shell",
+        "test:window": "node scripts/ci/checks/run.mjs window",
+        "test:hud": "node scripts/ci/checks/run.mjs hud",
+        "check:games": "node scripts/ci/checks/run.mjs all",
         "new-game": "node scripts/games/new-game.mjs",
-        "test:window": "node scripts/games/window-check.mjs",
         "format": "prettier --write \"**/*.{js,jsx,ts,tsx,json,css,scss,md}\"",
         "check:automation": "node --experimental-strip-types --no-warnings scripts/automation/check-recipes.mjs"
     },

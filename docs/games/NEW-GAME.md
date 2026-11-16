@@ -48,7 +48,7 @@ Lines added to shared files. Each one ends with `gen:<slug>` (or `<!-- gen:<slug
 - `lib/game-launch/launch.ts`: the line the hub shows for a saved game
 - `lib/creations-data.ts`: the Creations card, in the chosen section
 - `docs/OWNERS.md` and `docs/README.md`: the ownership line and the docs index link
-- `scripts/games/games-under-check.json`: the game is in the window check and shell check (marked `template: true`)
+- `scripts/games/games-under-check.json`: the game is in the window and shell suites of the game checks (marked `template: true`; `scripts/ci/checks/games.mjs` reads the list)
 - `package.json`: the `test:<slug>` script
 
 Nothing else in a shared file is touched. The generator refuses to run when a slug already exists, and it writes nothing
@@ -77,12 +77,12 @@ After `npm run build`, against a production server (CI password shown; the real 
 
 ```
 SITE_PASSWORD=ci-password npx next start -p 3123 &
-node scripts/games/window-check.mjs http://localhost:3123 out-dir
-node scripts/games/shell-check.mjs http://localhost:3123
+node scripts/ci/checks/run.mjs window http://localhost:3123 out-dir
+node scripts/ci/checks/run.mjs shell http://localhost:3123
 ```
 
-- `window-check` runs every game in `games-under-check.json` at 1440, 390 and 1366x657. It checks the panel mounts, the game root fills it, keys and the wheel stay with the game, the title bar scrolls the page, the save buttons answer, and no page errors. With a PNG per game in the output folder.
-- `shell-check` mounts each template game at 390 and 1440, checks no sideways scroll and no errors, and taps the stage once to prove the loop responds.
+- The `window` suite (`docs/ci.md`, "Game checks") runs every game in `games-under-check.json` at 1440, 390 and 1366x657. It checks the panel mounts, the game root fills it, keys and the wheel stay with the game, the title bar scrolls the page, the save buttons answer, and no page errors. With a PNG per game in the output folder.
+- The `shell` suite mounts each template game at 390 and 1440, checks no sideways scroll and no errors, and taps the stage once to prove the loop responds.
 
 Not covered by these checks: Safari, iPhone full screen, sound, real phones, and the look. Look at the screenshots at 1440 and 390 before merging.
 

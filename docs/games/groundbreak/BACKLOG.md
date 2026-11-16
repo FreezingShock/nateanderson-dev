@@ -42,7 +42,7 @@ How to verify a UI item: production build, 1440 and 390 wide, PNGs saved to `/mn
 - [x] DONE-12 | Phone portrait dock: later groups hide until reached, so the dig gets most of the screen
 - [x] DONE-13 | Window panels are opaque (`.985`)
 - [x] DONE-14 | Firm window: Incorporate line pinned at the bottom; perks scroll
-- [x] DONE-15 | HUD overlap check `scripts/ci/gb-hud.mjs`, documented in `docs/ci.md`
+- [x] DONE-15 | HUD overlap check `scripts/ci/checks/run.mjs hud`, documented in `docs/ci.md`
 - [x] DONE-16 | Waiting cue names the next job's wait and the repeat order
 - [x] GB-pixel-snap | Nate chose snap at rest (2026-11-15): art scale snaps to whole device pixels once the camera settles; never mid-zoom | `site-scene.tsx` `s`, `layer()`
 - [x] PERF-gb-icons-sheet | `Ico` draws every icon from `icons.webp` (one request, was 35+); 1440 and 390 PNGs match the before set
