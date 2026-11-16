@@ -54,3 +54,4 @@ Slot for findings from the thread "Audit website code for simplification". That 
 - [x] SITE-console-help | S | console help entries stack and wrap at `|` | e03b1748
 - [x] SITE-preload-warnings | S | no unused-preload warnings, Nexus page loads in 0.3 s | #483
 - [x] SITE-home-games | S | homepage "Play" section: one card per playable game with a real capture, linking straight in; layout chosen from a decision card (three cards in a row, built as recommended) | this PR
+- [x] SITE-pages-audit-2026-11-16 | S | non-game pages audited at 1440 and 390 (build, gate, search, console, transitions, stuck text, overlaps, LCP); no code change needed; report and before shots in /mnt/project-files/portfolio/site-audit-2026-11-16/REPORT.md | this PR
