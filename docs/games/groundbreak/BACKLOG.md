@@ -100,6 +100,7 @@ Still open:
 
 ## Done recently (do not redo)
 
+Reward moments: material-on-site ring and hot feed glow (game-juice pass, 2026-11-16).
 First minute plays itself (#491), zoom to 5x (#487), staged jobs and Bay backdrop (#478, #482), engine pacing and repeat orders (#506), site life (#502), icons and menu art (#498), QOL cue, welcome-back, backups, console (#515), change-order cost card (e303c356), material arrives stocked (#534), skyline window art, shore traffic, fog bank (#539 to #543).
 
 Skyline body and Firm on phones (workstream 5, thread "Redraw Groundbreak skyline window"): the Skyline window lists every job, named, with its count or as a silhouette; the Firm window on a phone puts the perk rows first, above the pinned Incorporate fade, with the stats and copy below. Before and after at 1440 and 390 in `/mnt/project-files/groundbreak-skyline-2026-11-16/`. Headless only.
