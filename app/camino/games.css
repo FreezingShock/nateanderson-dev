@@ -62,7 +62,7 @@
     inset: 0;
     pointer-events: none;
     background: color-mix(in oklch, var(--cm-alert) 30%, transparent);
-    animation: ogFlash 620ms ease-out both;
+    animation: ogFlash var(--cm-d-enter) ease-out both;
 }
 @keyframes ogFlash { from { opacity: 1; } to { opacity: 0; } }
 
@@ -72,7 +72,7 @@
     inset: 16%;
     pointer-events: none;
     border: 2px solid var(--cm-good);
-    animation: ogRing 900ms cubic-bezier(0.22, 1, 0.36, 1) both;
+    animation: ogRing var(--cm-d-reveal) var(--cm-ease-out) both;
 }
 @keyframes ogRing {
     from { opacity: 0.9; transform: scale(0.7); }
@@ -818,12 +818,12 @@
     pointer-events: none;
     background: linear-gradient(90deg, transparent, color-mix(in oklch, var(--cm-cyan) 40%, transparent) 50%, transparent);
     transform: translate3d(-100%, 0, 0);
-    animation: gkSweep 900ms cubic-bezier(0.3, 0.7, 0.2, 1) both;
+    animation: gkSweep var(--cm-d-reveal) var(--cm-ease-cut) both;
 }
 @keyframes gkSweep { to { transform: translate3d(100%, 0, 0); } }
 .ctos .gk-unlock-icon {
     display: inline-flex;
-    animation: gkPadlock 620ms cubic-bezier(0.2, 0.9, 0.22, 1) both;
+    animation: gkPadlock var(--cm-d-enter) var(--cm-ease-press) both;
 }
 @keyframes gkPadlock {
     0% { opacity: 0; transform: scale(0.4) rotate(-30deg); }
@@ -845,7 +845,7 @@
     letter-spacing: -0.03em;
     color: var(--cm-cyan);
     font-variant-numeric: tabular-nums;
-    animation: gkPop 460ms cubic-bezier(0.2, 0.9, 0.22, 1) both;
+    animation: gkPop var(--cm-d-enter) var(--cm-ease-press) both;
 }
 .ctos .gk-streak-best {
     font: 500 var(--cm-ctos-t-micro)/1 var(--cm-mono);
@@ -868,7 +868,7 @@
 .ctos .gk-pip.is-on {
     background: var(--cm-cyan);
     border-color: var(--cm-cyan);
-    animation: gkPipOn 380ms cubic-bezier(0.2, 0.9, 0.22, 1) both;
+    animation: gkPipOn var(--cm-d-enter) var(--cm-ease-out) both;
 }
 @keyframes gkPipOn { from { transform: scaleX(0); transform-origin: left; } to { transform: scaleX(1); } }
 
