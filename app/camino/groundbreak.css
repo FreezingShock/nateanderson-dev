@@ -82,8 +82,10 @@ html.gb-route .sf-foot { display: none !important; }
 /* current job */
 .gb-job { position: absolute; right: 12px; top: 56px; z-index: 10; width: 272px; background: var(--gb-panel); border: 1px solid var(--gb-line); }
 .gb-job-head { width: 100%; min-height: 44px; display: flex; align-items: center; gap: 8px; padding: 0 12px; text-align: left; font: 700 18px var(--gb-display); letter-spacing: .06em; text-transform: uppercase; }
-.gb-job-head span { flex: 1; }
-.gb-job-head em { font: 500 12px var(--gb-text); font-style: normal; color: var(--gb-hi); letter-spacing: 0; text-transform: none; }
+.gb-job-head span { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.gb-job-head em { flex: none; white-space: nowrap; font: 500 12px var(--gb-text); font-style: normal; color: var(--gb-hi); letter-spacing: 0; text-transform: none; }
+/* phones: the status (permit, inspection, %) drops under the name so a long job name keeps its width */
+@media (max-width: 860px) { .gb-root .gb-job-head { flex-wrap: wrap; row-gap: 2px; padding-bottom: 8px; } .gb-root .gb-job-head em { width: 100%; padding-left: 36px; } }
 .gb-job-body { padding: 4px 12px 12px; display: grid; gap: 8px; animation: gbIn .2s ease-out; }
 .gb-phases { display: grid; gap: 6px; }
 .gb-phases li { display: flex; align-items: center; gap: 8px; }
@@ -149,6 +151,7 @@ html.gb-route .sf-foot { display: none !important; }
 .gb-win-hint + .gb-x { margin-left: 0; }
 .gb-win-head h2 + .gb-x { margin-left: auto; }
 .gb-win-body { padding: 12px; overflow: auto; display: grid; gap: 10px; align-content: start; }
+
 .gb-win[data-v="iris"] { animation: gbIris .26s ease-out both; }
 .gb-win[data-v="shutter"] { animation: gbShutter .24s ease-out both; }
 .gb-win[data-v="settle"] { animation: gbSettle .22s ease-out both; }
@@ -619,6 +622,8 @@ html.gb-route .sf-foot { display: none !important; }
 /* ---- polish (2026-11-15): near opaque window panels; the Incorporate line and button stay pinned at the foot of the Firm window ---- */
 .gb-root .gb-win, .gb-root .gb-card { background: rgba(20, 14, 18, .985); }
 .gb-win-foot { position: sticky; bottom: -12px; display: grid; gap: 8px; margin: 0 -12px -12px; padding: 10px 12px 12px; background: rgba(20, 14, 18, .985); border-top: 1px solid var(--gb-line-2); }
+/* a fade just above the pinned Incorporate line, so a perk row cut at the scroll edge reads as "scroll for more" */
+.gb-win-foot::before { content: ""; position: absolute; left: 0; right: 0; top: -28px; height: 28px; background: linear-gradient(rgba(20, 14, 18, 0), rgba(20, 14, 18, .985)); pointer-events: none; }
 
 /* ---- phone portrait (2026-11-15): locked groups past the next one stay hidden until they are in reach ---- */
 @media (max-width: 860px) and (min-height: 521px) { .gb-root .gb-dgroup[data-far] { display: none; } }

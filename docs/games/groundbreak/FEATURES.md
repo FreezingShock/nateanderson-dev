@@ -17,7 +17,7 @@ Idle construction-company game. Route `/creations/games/groundbreak`. Audited 20
 | Scene art and life | `components/groundbreak-art/` (`site-scene.tsx` backdrop and jobs, `site-life.tsx` crew, vehicles, machines, `icons.ts`, `ui-art.ts`, generated `scene-data.ts` and `life-data.ts`, `art.css`) |
 | Art generators | `scripts/groundbreak-art/` (`build-icons.py`, `build-scene.py`, `build-ui.py`, `build-life.py`; `gb_kit.py` is the dither canvas). Output in `public/groundbreak/{icons,jobs,backdrop,life,ui}` |
 | Route and dev preview | `app/creations/games/groundbreak/{page,layout}.tsx`, `app/dev/groundbreak-art/page.tsx` (needs `VOXEL_BENCH=1` in production) |
-| Fonts | `lib/groundbreak-fonts/` |
+| Fonts | `lib/groundbreak-fonts/` (Barlow Condensed 700 for display, IBM Plex Mono 400/500/600 for text; no 600 display face, every display style is 700) |
 | Console hook | `components/cm/console.tsx` imports `gbCommand` |
 
 

@@ -75,10 +75,12 @@ Done in this pass (PR from `claude/project-thread-ch5ivg`):
 
 Checked and fine: 60 fps idle and while zooming at 1440 and 390 (headless, no GPU); no overlap of cue, zoom, dock, feed, job card and rail at 1440, 1366, 1280, 1024, 1920, 860, 390, 360, 375, 844, 932 and 667 wide; no React warnings in the dev build across buy, cue, warp, firm, incorporate and console; incorporate confirm moves the firm on.
 
-Found, not done (small, pick up next):
-- Phone 390 wide: the job card title wraps to three lines ("SIDEWALK / RUN") beside "permit 0:06". Fix with a nowrap ellipsis or a smaller title on phone.
-- 1440 Firm window: the last perk row is cut at the scroll edge with no fade. A fade or a bottom pad would say it scrolls.
-- Font preloads (Barlow 700 and Plex 500 and 600 preload on first paint): needs a check of which weights draw on first paint. Do not change faces without the before and after PNGs.
+Fixed in the same pass (the three open items it left):
+- Phone 390 wide: the job card status (permit, inspection, %) now drops under the name, so "SIDEWALK RUN" stays on one line.
+- Firm window: a fade sits above the pinned Incorporate line, so the perk row cut at the scroll edge reads as "scroll for more".
+- Font preload: measured with `document.fonts` on the first paint. Barlow 600 was preloaded but no display style uses weight 600 (all are 700), so it is removed from the Groundbreak font list and its file deleted. Barlow 700 and Plex 400, 500 and 600 draw on first paint and stay preloaded, so no face changed.
+
+Still open:
 - Change order: not reached in the headless walk (it needs the structure phase of a live job). Needs a longer warp run to see the card and both buttons at 390.
 - Real phone, Safari and a live playthrough remain Nate's.
 
