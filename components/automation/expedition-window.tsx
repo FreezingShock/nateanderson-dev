@@ -58,6 +58,27 @@ function Plan({ plan, scale }: { plan: NonNullable<PrestigeSite["plan"]>; scale:
     );
 }
 
+/** What a locked site waits for: the next milestone still open, and how many follow it. The full list sits in the tooltip. */
+function LockNote({ names }: { names: string[] }) {
+    if (names.length === 0) return null;
+    const [next, ...rest] = names;
+    return (
+        <p className="ex-need" {...tipAttr({ title: "Still to finish", tag: "Milestones", text: `Deliver these to open the islands: ${names.join(", ")}.` })}>
+            <span className="ex-need-ico" style={uiIconStyle("lock", 16)} aria-hidden="true" />
+            <span>
+                <span className="ex-need-word">Missing </span>
+                <b>{next}</b>
+                {rest.length > 0 && (
+                    <span className="ex-need-more">
+                        , +{rest.length}
+                        <span className="ex-need-word"> more</span>
+                    </span>
+                )}
+            </span>
+        </p>
+    );
+}
+
 /** Glyph for a keep or leave line, picked from its wording. Each has its own drawing in the brass keep/leave set. */
 function carryIcon(text: string, leave: boolean): UiIconId {
     const t = text.toLowerCase();
@@ -179,15 +200,25 @@ export function ExpeditionWindow({
                                         {here ? (
                                             <p className="ex-state">Your workshop is here now.</p>
                                         ) : (
-                                            <button
-                                                type="button"
-                                                className="ex-go"
-                                                disabled={!open}
-                                                {...tipAttr({ title: s.name, tag: "Expedition", text: "Pick this site to plan the move. You confirm it on the next step." })}
-                                                onClick={() => choose(s.id)}
-                                            >
-                                                {open ? "Plan the move" : "Locked"}
-                                            </button>
+                                            <>
+                                                {!open && <LockNote names={prestige.missing} />}
+                                                <button
+                                                    type="button"
+                                                    className="ex-go"
+                                                    disabled={!open}
+                                                    {...tipAttr({ title: s.name, tag: "Expedition", text: open ? "Pick this site to plan the move. You confirm it on the next step." : "Locked until every milestone delivery is done." })}
+                                                    onClick={() => choose(s.id)}
+                                                >
+                                                    {open ? (
+                                                        "Plan the move"
+                                                    ) : (
+                                                        <>
+                                                            <span className="ex-go-ico" style={uiIconStyle("lock", 14)} aria-hidden="true" />
+                                                            Locked
+                                                        </>
+                                                    )}
+                                                </button>
+                                            </>
                                         )}
                                     </div>
                                 </li>

@@ -220,6 +220,7 @@ export const mockHud: HudData = {
   prestige: {
     ready: process.env.NEXT_PUBLIC_PRESTIGE_READY === "1",
     requirement: "Reach 1 M iron made",
+    missing: ["Components crate", "Clockwork shipment", "Sky orrery, first light"],
     gain: "+5% speed per workshop kept",
     keeps: ["Blueprints and research", "Unlocked designs", "Routes found", "One free machine of each kind", "Records"],
     leaves: ["Machines and belts", "Stored stock", "Fleets on expedition"],
