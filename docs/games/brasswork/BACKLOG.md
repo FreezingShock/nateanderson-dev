@@ -79,3 +79,6 @@ Floors above ground level, photo mode, panel folding, a second island as a site.
 - [x] PHONE-next-banner | size S | Phone NEXT banner: text beside its button, about 65 css px tall at 390 (was about 114); milestone stat labels on one line at 375 and 390 | this PR
 - [x] PHONE-overlaps-menus | size S | At 390 the More menu ran under the tool column, the Tools and sheet-tab tags covered their menus, and the placement label could sit under the camera pad; menus now clear the column, touch skips tags on tabs, More items and Tools, and the label flips above its marker | this PR
 - [x] GROUND-calm-base | size M | Calmer ground (Nate's pick, FINDINGS WS5): one base tone for the plateau and grass on every screen size; Bayer dither only on edges, kiln glow kept | this PR
+
+## Research readability (thread "Make Brasswork research readable", 2026-11-16)
+- [x] RESEARCH-names-header | size S | Research node names 12.5 px to 14 px and cards 114 px to 122 px tall so two-line names (Aluminium casings, Quartz-only silicon) no longer clip; header band 66 px to 50 px so the title leads | this PR
