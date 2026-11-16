@@ -24,6 +24,7 @@ export const SAVE_SLOTS: Partial<Record<GameId, SaveSlot>> = {
     brasswork: { key: "brasswork-save-v1", app: "brasswork", version: 1 },
     starwright: { key: "sw-save-v1", app: "starwright", version: 1 },
     groundbreak: { key: "gb-save-v1", app: "groundbreak", version: 2 },
+    // gen-anchor: slots
 };
 
 const PENDING = (key: string) => `gs-pending-import:${key}`;
@@ -69,6 +70,7 @@ export async function checkSaveData(game: GameId, data: unknown): Promise<boolea
         if (game === "groundbreak") {
             const { parse } = await import("@/lib/groundbreak/engine");
             return parse(data) !== null;
+        // gen-anchor: checks
         }
     } catch {
         return false;
