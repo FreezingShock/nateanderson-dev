@@ -24,7 +24,10 @@ Format: `- area | paths | owner (thread title or "free") | since YYYY-MM-DD | do
 - Node Farm | components/nodefarm, lib/nodefarm, app/camino/nodefarm, tests/nodefarm, scripts/nodefarm | Build the Node Farm page | 2026-11-16 | docs/node-farm.md, docs/site
 - Outline and Flag Guesser | components/games/*.tsx, lib/outline-game.ts, lib/data, scripts/games/guessers-check.mjs | Polish guessers with animated reveals | 2026-11-16 | docs/site
 - Shared game shell and windowed panel | components/games/shell, lib/games, app/camino/game-shell.css, app/creations/games/{brasswork,starwright,groundbreak}/layout.tsx and page.tsx (metadata only), route-chrome removed from both games | Build the shared game shell and windowed panel | 2026-11-16 | docs/site
+- Shared game kit | lib/game-kit, components/game-kit, app/camino/game-kit.css, tests/games/game-kit.test.mjs, docs/game-kit.md | Build a shared game kit | 2026-11-16 | docs/game-kit.md
 
+- New-game template | scripts/games/new-game.mjs, scripts/games/new-game/, scripts/games/games-under-check.json, scripts/ci/checks (the template games' checks), docs/games/NEW-GAME.md | Make a fast new-game template | 2026-11-16 | docs/games/NEW-GAME.md
+<!-- gen-anchor: owners -->
 Inside a game, finer ownership (art, menus, sim, QOL) is recorded in that game's `docs/games/<game>/BACKLOG.md` header, if it has one.
 - Brasswork menu motion | components/brasswork-ui/motion.css, window.css and window.tsx motion rules, automation/phone-menu-art.css, brasswork/codex.tsx, hub-menu motion, press timings in the brass kit and skin files | Animate Brasswork menus | 2026-11-15 | docs/games/brasswork
 - Brasswork desktop windows and Settings | components/automation/{settings-window.tsx,settings-window.css,factory-sections.tsx}, components/brasswork/settings-extras.tsx, desktop rules in components/automation/desktop-stage.css and empty-states.css, scripts/automation/fit-check.mjs | Fit and unify Brasswork desktop windows | 2026-11-16 | docs/games/brasswork

@@ -4,6 +4,7 @@
 //   registerGame({
 //       id: "my-game",                       // slug: the route is /creations/games/<id>
 //       name: "My Game",                     // the data-game name the shell writes on its shell box
+//       template: false,                     // true for a generated game (games-under-check.json, template: true)
 //       window: { root: ".mg-root" },        // windowed panel (mode="windowed"); optional views: [...]
 //       hud: { seeds: [{ label: "fresh" }, { label: "late", save: "seeds/my-game-late.json" }] }, // optional sizes: [[w, h]...]
 //       shell: { gameSelector: '[class*="mg-"]', saveKey: "mg-save-v1" }, // framed game route; optional headerRoute
@@ -40,7 +41,8 @@ export function registerGame(config) {
     if (typeof config.name !== "string" || !config.name) throw new Error(`registerGame("${id}"): name is required`);
     if (!config.window && !config.hud && !config.shell) throw new Error(`registerGame("${id}"): give it at least one of window, hud or shell`);
 
-    const game = { id, name: config.name, route: `/creations/games/${id}`, window: null, hud: null, shell: null };
+    // template: a game from `npm run new-game`. The shell suite also checks its root, its tap and its errors (the template's own checks).
+    const game = { id, name: config.name, route: `/creations/games/${id}`, template: !!config.template, window: null, hud: null, shell: null };
 
     if (config.window) {
         if (typeof config.window.root !== "string" || !config.window.root) throw new Error(`registerGame("${id}"): window.root must be a selector`);

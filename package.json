@@ -14,6 +14,7 @@
         "test:window": "node scripts/ci/checks/run.mjs window",
         "test:hud": "node scripts/ci/checks/run.mjs hud",
         "check:games": "node scripts/ci/checks/run.mjs all",
+        "new-game": "node scripts/games/new-game.mjs",
         "format": "prettier --write \"**/*.{js,jsx,ts,tsx,json,css,scss,md}\"",
         "check:automation": "node --experimental-strip-types --no-warnings scripts/automation/check-recipes.mjs"
     },

@@ -1,0 +1,13 @@
+{
+  "$schema": "https://unpkg.com/knip@5/schema.json",
+  "entry": [
+    "app/**/{page,layout,route,template,loading,error,not-found,default,opengraph-image,twitter-image,icon,apple-icon,sitemap,robots,manifest}.{ts,tsx}",
+    "proxy.ts",
+    "next.config.ts",
+    "tests/**/*.{mjs,ts,js}",
+    "scripts/**/*.{mjs,ts,js}"
+  ],
+  "project": ["**/*.{ts,tsx,mjs,js,css}"],
+  "ignore": ["scripts/naos-art/**", "public/**", "docs/**", ".claude/**"],
+  "ignoreDependencies": ["@types/*", "flag-icons"]
+}

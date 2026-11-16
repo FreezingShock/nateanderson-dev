@@ -131,4 +131,34 @@ export async function run(env) {
         check(suite, await page.evaluate(() => !!document.querySelector('.gs-shell[data-paused="true"]')), "header: manual pause marks the shell paused");
         await ctx.close();
     }
+
+    // 8. Generated games (npm run new-game, games-under-check.json with template: true): the windowed shell mounts, the
+    // panel's root renders with a size, no sideways scroll, no page errors, and a tap on the stage changes the amount.
+    for (const g of games.filter((x) => x.template)) {
+        for (const [label, viewport] of [["phone 390", { width: 390, height: 844 }], ["desktop 1440", { width: 1440, height: 900 }]]) {
+            const { ctx, page } = await open(viewport, g.route);
+            const info = await page.evaluate(({ name, root }) => {
+                const r = document.querySelector(root);
+                const rr = r?.getBoundingClientRect();
+                return {
+                    route: document.documentElement.classList.contains("gs-game-route"),
+                    shell: !!document.querySelector(`.gs-windowed[data-game="${name}"]`),
+                    overflow: document.documentElement.scrollWidth - document.documentElement.clientWidth,
+                    rootFilled: !!r && !!rr && rr.width > 0 && rr.height > 0,
+                };
+            }, { name: g.name, root: g.window.root });
+            check(suite, info.route && info.shell, `${g.name} ${label}: windowed shell mounts and marks the game route`);
+            check(suite, info.rootFilled, `${g.name} ${label}: game root renders with a size`);
+            check(suite, info.overflow <= 0, `${g.name} ${label}: no sideways scroll (overflow ${info.overflow}px)`);
+            check(suite, page.errs.length === 0, `${g.name} ${label}: no page errors${page.errs.length ? ` (${page.errs[0]})` : ""}`);
+            if (label === "desktop 1440") {
+                const before = await page.evaluate((id) => document.querySelector(`.${id}-amount`)?.textContent ?? "", g.id);
+                await page.click(`.${g.id}-tap`);
+                await page.waitForTimeout(400);
+                const after = await page.evaluate((id) => document.querySelector(`.${id}-amount`)?.textContent ?? "", g.id);
+                check(suite, before !== after, `${g.name} ${label}: a tap changes the amount (${before} to ${after})`);
+            }
+            await ctx.close();
+        }
+    }
 }

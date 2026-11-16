@@ -38,7 +38,7 @@ node scripts/ci/checks/run.mjs all http://localhost:3123 game-checks           #
 
 Suites: `window` (the windowed panel at 1440, 390 and 1366x657), `shell` (the framed game route at 390 and 1440, the hidden tab, full screen, saves, the manifest and the hub), `hud` (the Groundbreak HUD at seven sizes, with the fresh and the late save). Pick one with `npm run test:window`, `test:shell` or `test:hud`, or name a comma list. `--game groundbreak` limits the per-game checks to one game. Exit 1 on any failure. With an out dir it writes `results.json`, `summary.md` and the screenshots per suite.
 
-**Adding a game to the checks.** Add one `registerGame({...})` call to `scripts/ci/checks/games.mjs`. The fields are documented in `scripts/ci/checks/registry.mjs`:
+**Adding a game to the checks.** Games from `npm run new-game` need nothing here: the generator lists them in `scripts/games/games-under-check.json`, and `games.mjs` reads that list (`template: true` also runs the template's tap and error checks). A hand-made game adds one `registerGame({...})` call to `scripts/ci/checks/games.mjs`. The fields are documented in `scripts/ci/checks/registry.mjs`:
 
 - `id` (route slug, `/creations/games/<id>`) and `name` (the `data-game` name the shell writes).
 - `window: { root }` for a windowed game: the CSS selector of the game's fixed root, which must fill the panel. Optional `views`.
