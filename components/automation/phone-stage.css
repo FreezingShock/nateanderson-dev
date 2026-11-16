@@ -1,0 +1,233 @@
+/* Phone stage. On a phone the 3D workshop fills the whole game screen and every panel floats over it: a slim top
+   bar with the stock row, the objective card under it, the four-tab bar at the bottom, the palette and inspector as
+   bottom sheets that cover only the lower half, and the camera pad and tool column in the bottom corners. Nothing
+   reserves layout space, so the island is never a strip. Desktop is untouched (min-width 760px rules are elsewhere).
+
+   The game page (components/games/shell) shows this route full screen on phones: its title bar and save footer are
+   hidden here because the HUD has its own back link and its Settings window has the save rows. */
+
+@media (max-width: 759px) {
+  /* The page wraps the game in two stacking contexts (the site's main and the .cr-sub isolation). Left alone they keep
+     the panel under the page sections below it, so on this route only they step out of the way. Scoped to html.bw-route. */
+  html.bw-route .cm-main { z-index: auto; }
+  html.bw-route .gs-shell .cr-sub { isolation: auto; }
+
+  /* Full screen panel for this game only. The shell's title bar and footer are not needed on a phone. */
+  .gs-shell[data-game="Brasswork"] .gs-win-bar,
+  .gs-shell[data-game="Brasswork"] .gs-win-foot { display: none; }
+  /* The panel section carries a transform from the page reveal, which would make the fixed frame size itself to the section. */
+  .gs-shell[data-game="Brasswork"] .gs-win { display: block; transform: none !important; filter: none !important; perspective: none !important; contain: none !important; animation: none !important; }
+  .gs-shell[data-game="Brasswork"] .gs-frame {
+    position: fixed;
+    inset: 0;
+    z-index: 60;
+    width: 100%;
+    height: 100%;
+    min-height: 0;
+    max-height: none;
+    contain: none;
+    border: 0;
+  }
+
+  .ab-root.bw {
+    --bw-tab-h: 58px;
+    --ab-phone-below: calc(var(--bw-tab-h) + env(safe-area-inset-bottom, 0px) + 8px);
+    --bw-pad-bottom: calc(var(--ab-phone-below) + 4px);
+    font-size: 14px;
+  }
+
+  /* Stage and body fill the screen behind the overlays. */
+  .ab-root.bw .ab-body,
+  .ab-root.bw .ab-center {
+    position: absolute;
+    inset: 0;
+    display: block;
+    pointer-events: none;
+    margin: 0;
+    padding: 0;
+  }
+  /* No stacking context here, so the Tools button and the tool hint (children of the stage) layer with the top bar. */
+  .ab-root.bw .ab-body { z-index: auto; }
+  .ab-root.bw .ab-stage {
+    position: absolute;
+    inset: 0;
+    pointer-events: auto;
+    flex: none;
+    min-height: 0;
+  }
+  .ab-root.bw .ab-stage canvas { width: 100%; height: 100%; display: block; }
+
+  /* Top: brand row, then the stock row. The Tools button sits in the brand row's right corner. */
+  .ab-root.bw .ab-top {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 6;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: calc(env(safe-area-inset-top, 0px) + 6px) 8px 14px;
+    background: linear-gradient(rgba(10, 7, 4, 0.94), rgba(10, 7, 4, 0.7) 70%, rgba(10, 7, 4, 0));
+    pointer-events: none;
+  }
+  .ab-root.bw .ab-top > * { pointer-events: auto; }
+  .ab-root.bw .ab-brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-height: 40px;
+    padding-right: 118px;
+    min-width: 0;
+  }
+  .ab-root.bw .ab-brand-name {
+    font-family: var(--bw-font-display, Georgia, serif);
+    font-size: 17px;
+    color: var(--ab-brass-hi);
+    letter-spacing: 0.04em;
+    white-space: nowrap;
+  }
+  /* The Tools button and the tool hint are siblings of the HUD, so they sit above it here. */
+  .bw-root .bx-tools {
+    top: calc(env(safe-area-inset-top, 0px) + 6px);
+    right: 8px;
+    max-width: none;
+    z-index: 1001;
+  }
+  .ab-root.bw .bx-tools .bx-btn { min-height: 44px; min-width: 44px; padding: 6px 10px; }
+  .ab-root.bw .ab-res {
+    display: grid;
+    grid-template-columns: repeat(8, minmax(0, 1fr));
+    gap: 4px;
+    width: 100%;
+  }
+  .ab-root.bw .ab-res .ab-res-list { display: contents; }
+  .ab-root.bw .ab-res .ab-res-item { min-width: 44px; min-height: 44px; justify-content: center; }
+  .ab-root.bw .ab-res .ab-glyph-art { width: 34px !important; height: 34px !important; }
+  .ab-root.bw .ab-res-box .ab-glyph { margin: 2px; }
+  .ab-root.bw .ab-res-box .ab-res-amt { font-size: 11px; min-width: 20px; padding: 1px 3px; }
+
+  /* Objective: one compact card under the stock row, read-only except its button. The text sits in a column
+     with the button beside it, so the card is about two lines of text tall instead of a full row for each. */
+  .ab-root.bw .ab-next {
+    position: absolute;
+    top: calc(var(--ab-top-h, 96px) + 6px);
+    left: 8px;
+    right: 8px;
+    bottom: auto;
+    transform: none;
+    width: auto;
+    max-width: none;
+    margin: 0;
+    padding: 6px 8px 6px 10px;
+    z-index: 5;
+    pointer-events: none;
+    display: flex;
+    flex-wrap: nowrap;
+    align-items: center;
+    gap: 10px;
+    background: rgba(18, 13, 8, 0.9);
+    border: 1px solid var(--ab-line-soft);
+    font-size: 12px;
+    line-height: 1.3;
+  }
+  .ab-root.bw .ab-next-body {
+    display: flex;
+    flex: 1 1 0;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+  }
+  .ab-root.bw .ab-next-label { font-size: 10px; line-height: 1.2; letter-spacing: 0.1em; }
+  .ab-root.bw .ab-next-title { font-size: 12px; line-height: 1.25; }
+  .ab-root.bw .ab-next-bar { width: 100%; height: 5px; }
+  .ab-root.bw .ab-next-text { min-width: 0; font-size: 12px; line-height: 1.3; }
+  .ab-root.bw .ab-next > .ab-text-btn {
+    flex: 0 0 auto;
+    grid-column: auto;
+    grid-row: auto;
+    min-height: 44px;
+    padding: 6px 10px;
+    font-size: 11px;
+    letter-spacing: 0.06em;
+    white-space: nowrap;
+  }
+  .ab-root.bw .ab-next .ab-text-btn { pointer-events: auto; }
+
+  /* Tool hint rides just under the objective card. */
+  .bw-root .bw-note {
+    display: block;
+    top: 240px; /* just under the objective card (about 136 to 232 px) */
+    bottom: auto;
+    left: 8px;
+    right: 8px;
+    transform: none;
+    max-width: none;
+    width: auto;
+    text-align: center;
+    white-space: normal;
+    z-index: 1001;
+  }
+
+  /* Bottom tab bar: four sharp tabs, floating at the screen edge. */
+  .ab-root.bw .ab-tabbar {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 6;
+    margin: 0;
+    height: calc(var(--bw-tab-h) + env(safe-area-inset-bottom, 0px));
+    box-sizing: border-box;
+    padding: 6px 8px calc(6px + env(safe-area-inset-bottom, 0px));
+    gap: 6px;
+    pointer-events: auto;
+    background: rgba(13, 10, 6, 0.96);
+    border-top: 1px solid var(--ab-brass);
+  }
+  .ab-root.bw .ab-tab { min-height: 0; height: 100%; padding: 2px 2px; font-size: 11px; }
+
+  /* Sheets: bottom sheets over the stage, never more than the lower half of the screen. */
+  .ab-root.bw .ab-pal,
+  .ab-root.bw .ab-factory {
+    position: absolute;
+    left: 8px;
+    right: 8px;
+    top: auto;
+    bottom: var(--ab-phone-below);
+    width: auto;
+    margin: 0;
+    max-height: min(46dvh, 440px);
+    z-index: 7;
+    pointer-events: auto;
+  }
+  .ab-root.bw[data-inspect="on"][data-sheet="none"] .ab-factory { max-height: min(46dvh, 440px); }
+  .ab-root.bw .ab-pal { max-height: min(50dvh, 460px); }
+  .ab-root.bw .ab-drawer {
+    bottom: var(--ab-phone-below);
+    max-height: min(56dvh, 520px);
+    z-index: 8;
+  }
+  .ab-root.bw .ab-more { bottom: calc(var(--ab-phone-below) + 6px); }
+
+  /* Camera pad and tool column float over the stage, away from the sheets. Both step aside while a sheet or the More
+     menu is up, so a menu's rows never run under the touch column. */
+  .ab-root.bw[data-sheet="pal"] :is(.bw-pad, .bw-touch-bar),
+  .ab-root.bw[data-sheet="factory"] :is(.bw-pad, .bw-touch-bar),
+  .ab-root.bw[data-inspect="on"] :is(.bw-pad, .bw-touch-bar),
+  .ab-root.bw:has(.ab-more) :is(.bw-pad, .bw-touch-bar) { display: none !important; }
+  .ab-root.bw .bw-touch-bar { bottom: var(--bw-pad-bottom); right: 8px; }
+  .ab-root.bw .bw-pad { left: 8px; bottom: var(--bw-pad-bottom); }
+
+  /* The site's own bar and bottom dock are hidden on this route, as on Groundbreak: the game has its own Games link. */
+  html.bw-route .cm-dock,
+  html.bw-route .nv-top { display: none !important; }
+
+  /* The build dock is a desktop device. Phone keeps only the bottom tabs. */
+  .ab-root.bw .ab-dock { display: none; }
+}
+
+/* Reduced motion and Simple visuals: no sheet slide on the stage, the bars stay still. */
+@media (max-width: 759px) and (prefers-reduced-motion: reduce) {
+  .ab-root.bw .ab-stage canvas { transition: none; }
+}

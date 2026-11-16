@@ -11,6 +11,7 @@ import "./automation-hud.css";
 import type { HudData, MachineDetail } from "@/lib/automation/types";
 import type { HudActions } from "./types";
 import { ResourceStrip } from "./resource-strip";
+import { useCoarsePointer } from "./use-coarse-pointer";
 import { BuildList, GROUP_ICON, GROUP_TITLE, type GroupId } from "./build-bar";
 import { Inspector } from "./inspector";
 import { Milestones, PrestigeCard, Section } from "./factory-sections";
@@ -27,6 +28,7 @@ import "./brasswork-skin.css";
 import "./desktop-stage.css";
 import "./phone-menu-art.css";
 import "./top-bar.css";
+import "./phone-stage.css";
 import { canAfford } from "./format";
 import { uiIconStyle } from "@/lib/automation/icons/ui";
 import { QuestScroll, type QuestState } from "@/components/brasswork/first-run";
@@ -96,6 +98,14 @@ export function AutomationHud({
   onDockGroup?: (g: GroupId | null) => void;
 }) {
   const rootRef = useRef<HTMLDivElement>(null);
+  // On touch a tap opens the menu itself, so the tap tag is left off (it would sit over the menu it opens).
+  const coarse = useCoarsePointer();
+  // The page marks this route (html.bw-route) so phone CSS can hide the site bar and dock behind the game (phone-stage.css).
+  useEffect(() => {
+    const root = document.documentElement;
+    root.classList.add("bw-route");
+    return () => root.classList.remove("bw-route");
+  }, []);
   const topRef = useRef<HTMLElement>(null);
   const nextRef = useRef<HTMLParagraphElement>(null);
   // The top bar wraps to two rows on a desktop-width window, so its height is measured. The rails, the Milestones
@@ -409,7 +419,7 @@ export function AutomationHud({
               type="button"
               className="ab-tab"
               aria-pressed={sheet === "pal"}
-              {...tipAttr({ title: "Machines", tag: "Sheet", text: "The build palette: belts and logistics, machines and power. Tap a row to hold it." })}
+              {...(coarse ? {} : tipAttr({ title: "Machines", tag: "Sheet", text: "The build palette: belts and logistics, machines and power. Tap a row to hold it." }))}
               onClick={() => {
                 setMore(false);
                 setSheet((c) => (c === "pal" ? null : "pal"));
@@ -422,7 +432,7 @@ export function AutomationHud({
               type="button"
               className="ab-tab"
               aria-pressed={sheet === "factory"}
-              {...tipAttr({ title: "Milestones", tag: "Sheet", text: "Deliveries, blueprints, and the card for the machine you picked." })}
+              {...(coarse ? {} : tipAttr({ title: "Milestones", tag: "Sheet", text: "Deliveries, blueprints, and the card for the machine you picked." }))}
               onClick={() => {
                 setMore(false);
                 setSheet((c) => (c === "factory" ? null : "factory"));
@@ -435,7 +445,7 @@ export function AutomationHud({
               type="button"
               className="ab-tab"
               aria-pressed={screen === "research"}
-              {...tipAttr(CONTROL_TIPS.research)}
+              {...(coarse ? {} : tipAttr(CONTROL_TIPS.research))}
               onClick={() => {
                 setMore(false);
                 setScreen((s) => (s === "research" ? null : "research"));
@@ -448,7 +458,7 @@ export function AutomationHud({
               type="button"
               className="ab-tab"
               aria-pressed={more}
-              {...tipAttr({ title: "More", tag: "Menu", text: "Hub, prestige, the starter quest, expedition, production and settings." })}
+              {...(coarse ? {} : tipAttr({ title: "More", tag: "Menu", text: "Hub, prestige, the starter quest, expedition, production and settings." }))}
               onClick={() => {
                 setSheet(null);
                 setMore((m) => !m);
@@ -460,7 +470,7 @@ export function AutomationHud({
           </nav>
           {(more || leaving === "more") && (
             <div className="ab-more" role="menu" aria-label="More menus" inert={!more || undefined}>
-              <button type="button" role="menuitem" className="ab-more-item" {...tipAttr(CONTROL_TIPS.hub)} onClick={openHubMenu}>
+              <button type="button" role="menuitem" className="ab-more-item" {...(coarse ? {} : tipAttr(CONTROL_TIPS.hub))} onClick={openHubMenu}>
                 <Ico id="milestones" />
                 Hub
               </button>
@@ -511,14 +521,16 @@ export function AutomationHud({
             </div>
           )}
           <p className="ab-next" ref={nextRef} aria-label="Current objective">
-            <span className="ab-next-label">{next.title ? "Objective" : "Next"}</span>
-            {next.title && <span className="ab-next-title">{next.title}</span>}
-            {next.progress !== undefined && (
-              <span className="ab-next-bar" role="progressbar" aria-label="Objective progress" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(next.progress * 100)}>
-                <span className="ab-next-fill" style={{ width: `${Math.round(next.progress * 100)}%` }} />
-              </span>
-            )}
-            <span className="ab-next-text">{next.text}</span>
+            <span className="ab-next-body">
+              <span className="ab-next-label">{next.title ? "Objective" : "Next"}</span>
+              {next.title && <span className="ab-next-title">{next.title}</span>}
+              {next.progress !== undefined && (
+                <span className="ab-next-bar" role="progressbar" aria-label="Objective progress" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(next.progress * 100)}>
+                  <span className="ab-next-fill" style={{ width: `${Math.round(next.progress * 100)}%` }} />
+                </span>
+              )}
+              <span className="ab-next-text">{next.text}</span>
+            </span>
             {next.actionId && next.actionLabel && (
               <button
                 type="button"

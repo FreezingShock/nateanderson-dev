@@ -48,7 +48,7 @@
 }
 .rs-card:hover { transform: translateY(-2px); filter: brightness(1.12); }
 .rs-card:focus-visible { outline: 2px solid #fff3c8; outline-offset: 3px; }
-.rs-card-art { position: relative; display: block; line-height: 0; background: #0c1620; overflow: hidden; }
+.rs-card-art { position: relative; display: block; flex: none; line-height: 0; background: #0c1620; overflow: hidden; }
 .rs-card-art .bwa-cell { image-rendering: auto; filter: var(--tint); }
 .rs-rib {
   position: absolute; left: 0; right: 0; bottom: 0; padding: 3px 2px 3px; text-align: center; line-height: 1;
@@ -56,16 +56,26 @@
   background: var(--rib); color: var(--ribfg);
 }
 .rs-card-name {
-  display: flex; align-items: center; justify-content: center; flex: 1 1 auto; padding: 3px 3px 4px;
-  font: 600 12.5px/1.15 var(--bw-font-display, inherit); color: #f6e9c4; overflow-wrap: anywhere;
+  display: flex; align-items: center; justify-content: center; flex: 1 1 auto; min-height: 0; padding: 4px 3px 5px;
+  font: 600 14px/1.12 var(--bw-font-display, inherit); color: #f6e9c4; overflow-wrap: anywhere; text-wrap: balance;
 }
+
+/* header band: shorter than the other menus, with the art faded out under the title so the title leads */
+.bw-window[aria-label="Research"][data-theme] .bw-window-head { min-height: 50px; padding: 6px 12px 6px 14px; }
+.bw-window[aria-label="Research"][data-theme] .bw-window-banner { background-size: auto 44px; }
+.bw-window[aria-label="Research"][data-theme] .bw-window-banner::after {
+  content: ""; position: absolute; inset: 0;
+  background: linear-gradient(90deg, #160f08 0%, rgba(22, 15, 8, 0.85) 36%, rgba(22, 15, 8, 0) 68%);
+}
+.bw-window[aria-label="Research"][data-theme] .bw-window-art { width: 34px; height: 34px; }
+.bw-window[aria-label="Research"][data-theme] .bw-window-title { font-size: 21px; }
 
 /* per-state panel colour: researched green, ready amber, short red, locked slate; alternates are copper */
 .rs-card[data-status="done"]   { --edge: #58b09a; --rib: #58b09a; --ribfg: #0d2a22; --tint: hue-rotate(-62deg) saturate(0.95) brightness(1.02); }
 .rs-card[data-status="ready"]  { --edge: #ffb347; --rib: #ffb347; --ribfg: #2a1606; --tint: hue-rotate(188deg) saturate(1.35) brightness(1.08); }
 .rs-card[data-status="short"]  { --edge: #d4614a; --rib: #d4614a; --ribfg: #2a0d07; --tint: hue-rotate(143deg) saturate(1.15) brightness(0.98); }
 .rs-card[data-status="locked"] { --edge: #4a4338; --rib: #3a342b; --ribfg: #b09a6c; --tint: grayscale(1) brightness(0.62) contrast(0.9); }
-.rs-card[data-status="locked"] .rs-card-name { color: #a39878; }
+.rs-card[data-status="locked"] .rs-card-name { color: #c9b98e; }
 .rs-card[data-alt="true"] .rs-card-name { color: #f2c79a; }
 .rs-card[data-alt="true"]:not([data-status="locked"]) { --tint: hue-rotate(168deg) saturate(1.05) sepia(0.35) brightness(1.0); box-shadow: 0 0 0 2px #d9803c, 0 5px 0 #0a0704, 0 8px 10px rgba(0, 0, 0, 0.45); }
 .rs-card[data-alt="true"][data-status="locked"] { box-shadow: 0 0 0 2px #6a4a2e, 0 5px 0 #0a0704, 0 8px 10px rgba(0, 0, 0, 0.45); }

@@ -56,7 +56,7 @@ export function Almanac({ s, onClose, leaving }: { s: State; onClose: () => void
     const codex = ELEMENTS.map((e, i) => {
         const own = s.found.includes(e.sym);
         return (
-            <li key={e.sym} style={{ "--c": e.color } as CSSProperties} data-own={own ? "" : undefined} data-sel={sel === i ? "" : undefined} data-tip={own ? `${e.name}|${CODEX[e.sym]}` : "Not yet made|Fuse your way up the ladder."}>
+            <li key={e.sym} style={{ "--c": e.color } as CSSProperties} data-own={own ? "" : undefined} data-sel={sel === i ? "" : undefined} data-tip={sel !== null ? undefined : own ? `${e.name}|${CODEX[e.sym]}` : "Not yet made|Fuse your way up the ladder."}>
                 <button type="button" className="sw-cx" onClick={() => setSel(sel === i ? null : i)} aria-label={own ? e.name : "Not yet made"}>
                     <ElTile i={i} locked={!own} anim={own} />
                     <b data-sym={own ? e.sym : "?"}>{own ? e.name : "?"}</b>
@@ -232,7 +232,7 @@ export function Menu({ sound, onSound, s, paused, onPause, onClose, onName, onIm
                 groups={[
                     { key: "top", className: "sw-menu", units: top },
                     { key: "settings", title: "Settings", className: "sw-setlist", tag: "ul", units: settingUnits(s, v) },
-                    ...(coarse ? [] : [{ key: "keys", title: "Keys", className: "sw-keys", tag: "dl" as const, units: SW_KEYS.map(([k, d]) => <div key={k} className="sw-keyrow"><dt>{k}</dt><dd>{d}</dd></div>) }]),
+                    ...(coarse ? [] : [{ key: "keys", title: "Keys", className: "sw-keys", tag: "dl" as const, newPage: true, units: SW_KEYS.map(([k, d]) => <div key={k} className="sw-keyrow"><dt>{k}</dt><dd>{d}</dd></div>) }]),
                     { key: "foot", className: "sw-menu", units: foot },
                 ]}
             />

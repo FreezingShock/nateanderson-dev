@@ -209,8 +209,10 @@ html.gs-game-route {
     contain: layout;
     width: 100%;
     min-width: 0;
-    /* Leaves room for the title bar and footer above the site dock when the panel is scrolled into place. */
-    height: clamp(360px, calc(100dvh - 250px), 940px);
+    /* On desktop the Play section (label, heading, title bar, panel, footer) starts under the site bar and ends above the
+       site dock (about 64px at the bottom), so the panel leaves room for all of it. The 400px allowance covers a footer
+       that wraps on narrower desktops. The 260px floor is for screens about 660px tall, where the footer must stay above the dock. Phones use their own height below. */
+    height: clamp(260px, calc(100dvh - 400px), 940px);
     min-height: 0;
     overflow: hidden;
     background: var(--gs-bg);
@@ -264,6 +266,18 @@ html.gs-game-route {
     font-size: 11px;
     letter-spacing: 0.02em;
     text-transform: none;
+}
+
+/* Groundbreak hides the site bar and the dock on its route, so nothing covers the panel's bottom. Its windows (the Skyline
+   row, the bids) need the extra height, so on desktop its panel takes the room the dock would have used. Phones keep the rule above. */
+@media (min-width: 761px) {
+    .gs-windowed[data-game="Groundbreak"] .gs-frame { height: clamp(360px, calc(100dvh - 330px), 940px); }
+}
+
+/* Desktop under 700px tall: the panel is the scroll anchor (game-route-shell.tsx), so it starts under the site bar and takes
+   the room the heading would have used. The footer still clears the site dock. Groundbreak keeps its own rule above. */
+@media (min-width: 761px) and (max-height: 699px) {
+    .gs-windowed:not([data-game="Groundbreak"]) .gs-frame { height: clamp(300px, calc(100dvh - 240px), 940px); }
 }
 
 /* Phones: the site's bottom tab bar sits over the bottom of the screen, so the panel leaves room for it and for the footer. */

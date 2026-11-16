@@ -7,6 +7,7 @@ export { type Cell, type Rot, type BoardSize, cellKey, cellInBoard, lineCells, r
 export { mapKey, type KeyAction, type KeyLike } from "./keys";
 export { PointerInput, type PointerOptions } from "./pointer";
 export { createTouchBar, type TouchBar, type TouchBarOptions } from "./touch-bar";
+export { createTouchPad, type TouchPad, type TouchPadOptions } from "./touch-pad";
 export { vec, type Vec3 } from "./math";
 
 import { type BoardSize } from "./grid";
@@ -16,6 +17,7 @@ import { BuildController, type BuildWorld, type BuildOptions, type ToolSpec, DEL
 import { PointerInput } from "./pointer";
 import { project } from "./picking";
 import { createTouchBar, type TouchBar } from "./touch-bar";
+import { createTouchPad, type TouchPad } from "./touch-pad";
 import { mapKey, type KeyAction, type WalkDir } from "./keys";
 
 export interface InputOptions {
@@ -280,6 +282,8 @@ export interface MountOptions extends Omit<InputOptions, "element" | "keyTarget"
 export interface MountedInput {
     controller: InputController;
     touchBar?: TouchBar;
+    // Touch camera pad (joystick, turn and zoom buttons). Added with the touch bar.
+    pad?: TouchPad;
     // Call once per frame: advances the camera and writes its view to the sink.
     update(dt: number): void;
     destroy(): void;
@@ -291,6 +295,7 @@ export function mount(camera: ViewSink, domElement: HTMLElement, options: MountO
     const { touchBar: touchBarOpt, ...inputOpts } = options;
     const controller = createInputController({ ...inputOpts, element: domElement, keyTarget: options.keyTarget });
     let touchBar: TouchBar | undefined;
+    let pad: TouchPad | undefined;
     if (touchBarOpt) {
         const container = typeof touchBarOpt === "object" ? touchBarOpt.container : domElement.parentElement ?? domElement;
         const b = controller.build;
@@ -298,6 +303,7 @@ export function mount(camera: ViewSink, domElement: HTMLElement, options: MountO
             fn();
             touchBar?.sync();
         };
+        pad = createTouchPad({ container, camera: controller.camera });
         touchBar = createTouchBar({
             container,
             isTopDown: () => controller.camera.isTopDown(),
@@ -330,11 +336,14 @@ export function mount(camera: ViewSink, domElement: HTMLElement, options: MountO
     return {
         controller,
         touchBar,
+        pad,
         update(dt: number) {
             controller.update(dt);
+            pad?.update(dt);
             write();
         },
         destroy() {
+            pad?.destroy();
             touchBar?.destroy();
             controller.destroy();
         },

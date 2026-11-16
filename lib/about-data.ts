@@ -221,7 +221,7 @@ export const building: BuildingItem[] = [
         color: "var(--cm-cyan)",
         status: "Always building",
         description:
-            "A living project: renovation studies, design work and creations, changing in public with every commit.",
+            "Renovation studies, design work and creations, changing in public with every commit.",
         href: "/history",
         cta: "Read the changelog",
     },
@@ -230,7 +230,7 @@ export const building: BuildingItem[] = [
         color: "var(--cm-good)",
         status: "Senior year",
         description:
-            "Freshman admission to Cal Poly SLO Construction Management or Cal Poly Pomona Construction Engineering & Management, with community college as the fallback.",
+            "Aiming for freshman admission to Cal Poly SLO Construction Management or Cal Poly Pomona Construction Engineering & Management. Community college is the fallback.",
         href: "/timeline",
         cta: "Open the timeline",
     },
@@ -239,7 +239,7 @@ export const building: BuildingItem[] = [
         color: "var(--cm-amber)",
         status: "Playable",
         description:
-            "Small browser games I made on the side: Outline Guesser and Flag Guesser, each with a daily puzzle and an unlimited mode.",
+            "Browser games I made on the side: geography puzzles with daily modes, idle games and an automation factory.",
         href: "/creations/games",
         cta: "Play them",
     },

@@ -2,6 +2,7 @@
 // shows a scrollbar, clips its content or pokes out of its card. Exits 1 when it finds something.
 // Usage: BASE=http://localhost:3100 SITE_PASSWORD=ci-password node scripts/starwright/ui-art/overflow-check.mjs [outDir]
 // With an outDir it also saves a PNG of each menu at each size (named <menu>-<w>x<h>.png).
+// On a phone the game is a windowed panel (.gs-frame): a menu is measured against that panel, not the screen.
 import { createRequire } from "node:module";
 const { chromium } = createRequire(import.meta.url)("playwright");
 const BASE = process.env.BASE ?? "http://localhost:3100";
@@ -30,14 +31,18 @@ const measure = () => {
     const root = document.querySelector(".sw-over .sw-card, .sw-chart");
     if (!root) return ["no menu is open"];
     const rr = root.getBoundingClientRect();
+    // on a phone the game is a windowed panel (.gs-frame): a menu must fit inside that panel, which can sit below the fold
+    const frame = document.querySelector(".gs-frame");
+    const fr = frame ? frame.getBoundingClientRect() : { left: 0, top: 0, right: innerWidth, bottom: innerHeight };
     const vw = innerWidth, vh = innerHeight;
-    if (rr.left < -1 || rr.top < -1 || rr.right > vw + 1 || rr.bottom > vh + 1) out.push(`card leaves the screen: ${Math.round(rr.left)},${Math.round(rr.top)} to ${Math.round(rr.right)},${Math.round(rr.bottom)} in ${vw}x${vh}`);
+    if (rr.left < fr.left - 1 || rr.top < fr.top - 1 || rr.right > fr.right + 1 || rr.bottom > fr.bottom + 1) out.push(`card leaves its ${frame ? "panel" : "screen"}: ${Math.round(rr.left)},${Math.round(rr.top)} to ${Math.round(rr.right)},${Math.round(rr.bottom)} in ${Math.round(fr.left)},${Math.round(fr.top)} to ${Math.round(fr.right)},${Math.round(fr.bottom)} (${vw}x${vh})`);
     const name = (e) => `${e.tagName.toLowerCase()}.${String(e.className?.baseVal ?? e.className).split(" ").slice(0, 2).join(".")}`;
     const all = [root, ...root.querySelectorAll("*")];
     for (const e of all) {
         const cs = getComputedStyle(e);
         if (cs.display === "none" || cs.visibility === "hidden") continue;
         if (e.matches("[data-anim]")) continue; // a sprite strip clipped to one frame on purpose
+        if (e.matches("input, textarea")) continue; // a text field scrolls its own long text by design
         const ox = cs.overflowX, oy = cs.overflowY;
         const scrollsY = (oy === "auto" || oy === "scroll") && e.scrollHeight > e.clientHeight + 1;
         const scrollsX = (ox === "auto" || ox === "scroll") && e.scrollWidth > e.clientWidth + 1;
@@ -76,7 +81,10 @@ for (const [w, h] of SIZES) {
     for (const m of MENUS) {
         const btn = page.getByRole("button", { name: m, exact: true });
         if (!(await btn.count())) { console.log(`${w}x${h} ${m}: no dock button`); continue; }
-        await btn.click();
+        await page.locator(".gs-frame").first().scrollIntoViewIfNeeded().catch(() => {});
+        // the dock tiles bob while idle and the windowed panel can sit under them, so the click is a DOM click (what a tap does);
+        // this check is about what a menu shows, not about hit testing
+        await btn.evaluate((b) => b.click());
         await page.waitForTimeout(900);
         const problems = await page.evaluate(measure);
         if (OUT) await page.screenshot({ path: `${OUT}/${m.toLowerCase().replace(/ /g, "-")}-${w}x${h}.png` });
