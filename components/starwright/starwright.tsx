@@ -25,6 +25,7 @@ import { AwayCard, ScrollHint, type AwayData } from "./settings";
 import { ElTile, Gl, Pic, ui, useLeaving, usePresence, useSheets, useTips } from "./sw-ui";
 import { BuyBurst } from "./buy-burst";
 import "@/app/camino/starwright-juice.css";
+import { Ticked } from "@/components/games/juice/ticked";
 
 type Panel = null | "stars" | "pulsar" | "orbit" | "almanac" | "menu";
 interface Note { id: number; text: string; tone?: "hot" | "dim" }
@@ -171,6 +172,7 @@ export function Starwright() {
                 for (const id of checkAch(s)) {
                     note(`Almanac: ${ACHIEVEMENTS.find((a) => a.id === id)?.name}. Everything +${Math.round(ACH_BONUS * 100)}%.`, "hot");
                     play("badge");
+                    flashTo("#ffc94d");
                 }
             }
             const isReady = collapse(s, effects(s)) >= 1;
@@ -521,8 +523,8 @@ export function Starwright() {
                 <div className="sw-readout">
                     <span className="sw-tag">{s.name.toUpperCase()}</span>
                     <p>
-                        <span data-tip="Mass|Grows as the star fuses. Raises hydrogen inflow."><Gl n="mass" s={1} />mass <b>{fmt(mass(s))}</b></span>
-                        <span data-tip="Core heat|Gates every fusion. Mass sets it."><Gl n="heat" s={1} />heat <b>{fmtHeat(s.heat)}</b></span>
+                        <span data-tip="Mass|Grows as the star fuses. Raises hydrogen inflow."><Gl n="mass" s={1} />mass <b><Ticked value={mass(s)} format={fmt} /></b></span>
+                        <span data-tip="Core heat|Gates every fusion. Mass sets it."><Gl n="heat" s={1} />heat <b><Ticked value={s.heat} format={fmtHeat} /></b></span>
                         <span data-tip="Age of this star"><Gl n="age" s={1} />age <b>{fmtAge(s.age)}</b></span>
                     </p>
                     <p className="sw-stage">{STAGE_NAMES[stage]}{s.novasAll ? ` · supernova ${s.novas + 1}` : ""}</p>
@@ -606,9 +608,9 @@ export function Starwright() {
                 <Corners />
             </section>
 
-            {shown === "stars" && <StarChart title="Constellations" list={PERKS} owned={s.perks} cur={s.stardust} curName="stardust" onBuy={(id) => act((x) => buyPerk(x, id))} onClose={() => setPanel(null)} constellations leaving={leaving} deep={{ n: s.deep, cost: deepCost(s), onBuy: () => act((x) => { buyDeep(x); }) }} />}
-            {shown === "pulsar" && <StarChart title="Pulsar map" list={PULSAR_PERKS} owned={s.pulsar} cur={s.neutrons} curName="neutrons" onBuy={(id) => act((x) => buyPulsar(x, id))} onClose={() => setPanel(null)} leaving={leaving} />}
-            {shown === "orbit" && <Orbit s={s} onBuy={(id) => act((x) => { if (buyPlanet(x, id)) { note(`${PLANETS.find((p) => p.id === id)?.name} forms in orbit.`); play("planet"); } })} onClose={() => setPanel(null)} leaving={leaving} />}
+            {shown === "stars" && <StarChart title="Constellations" list={PERKS} owned={s.perks} cur={s.stardust} curName="stardust" onBuy={(id) => act((x) => { if (buyPerk(x, id)) flashTo("#5fe0ff"); })} onClose={() => setPanel(null)} constellations leaving={leaving} deep={{ n: s.deep, cost: deepCost(s), onBuy: () => act((x) => { if (buyDeep(x)) flashTo("#5fe0ff"); }) }} />}
+            {shown === "pulsar" && <StarChart title="Pulsar map" list={PULSAR_PERKS} owned={s.pulsar} cur={s.neutrons} curName="neutrons" onBuy={(id) => act((x) => { if (buyPulsar(x, id)) flashTo("#ff5fc8"); })} onClose={() => setPanel(null)} leaving={leaving} />}
+            {shown === "orbit" && <Orbit s={s} onBuy={(id) => act((x) => { if (buyPlanet(x, id)) { const pl = PLANETS.find((p) => p.id === id); note(`${pl?.name} forms in orbit.`); play("planet"); flashTo(pl?.color ?? "#ffc94d"); } })} onClose={() => setPanel(null)} leaving={leaving} />}
             {shown === "almanac" && <Almanac s={s} onClose={() => setPanel(null)} leaving={leaving} />}
             {shown === "menu" && (
                 <Menu

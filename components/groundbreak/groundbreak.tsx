@@ -20,6 +20,7 @@ import { GB_BANNERS, type GbBannerId } from "@/components/groundbreak-art/ui-art
 import { GB_ICONS, GB_ICON_COLS, GB_ICON_ROWS, GB_ICON_SHEET, type GbIconId } from "@/components/groundbreak-art/icons";
 import { GbSiteScene as GroundbreakScene } from "@/components/groundbreak-art/site-scene";
 import { CAMERA_HOME, GROUND_Y, WORLD_H, WORLD_W, ZOOM_MAX, ZOOM_MIN, type Camera, type SceneJob } from "./scene-types";
+import { Ticked } from "@/components/games/juice/ticked";
 
 const tools = createSaveTools<State>({ app: "groundbreak", version: SAVE_VERSION, validate: isSave });
 type Tier = 0 | 1 | 2;
@@ -462,7 +463,7 @@ export function Groundbreak() {
                     </div>
                 </div>
                 <ul className="gb-res" aria-label="Resources">
-                    <li data-tip="Cash. Jobs pay it; methods cost it."><Ico id="cash" size={22} /><b>{fmtCash(s.cash)}</b></li>
+                    <li data-tip="Cash. Jobs pay it; methods cost it."><Ico id="cash" size={22} /><b><Ticked value={s.cash} format={fmtCash} /></b></li>
                     <li data-tip="Reputation. It lifts all output and inspections."><Ico id="rep" size={22} /><b>{fmt(s.rep)}</b></li>
                     <li data-tip="Crews hired"><Ico id="crew" size={22} /><b>{crewTotal}</b></li>
                 </ul>
