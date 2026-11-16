@@ -707,6 +707,105 @@ DOC_TILES = {
     "tile-doc-site": ("site", "site", "docs/site/"),
 }
 
+# ---------------------------------------------------------------- section art
+def _shade(h, f):
+    return "#" + "".join(f"{int(c * f):02x}" for c in hx(h))
+
+
+def _dither_face(im, poly, ramp, tex):
+    """Dither a texture onto one polygon only (keeps painter order for stacked faces)."""
+    arr = np.array(im)
+    m = Image.new("L", (im.width, im.height), 0)
+    ImageDraw.Draw(m).polygon(poly, fill=255)
+    mask = np.array(m) > 0
+    arr[mask] = dither(0.6 + 0.4 * tex, ramp)[mask]
+    return Image.fromarray(arr)
+
+
+def stack_art():
+    """Layered slabs, one per part of the stack, bottom (base) to top (deploy)."""
+    W, H = 600, 160
+    yy, xx = grid(H, W)
+    field = 0.04 + 0.1 * fbm(H, W, 91, 30, 3) + 0.08 * (xx / W)
+    im = to_image(dither(np.clip(field, 0, 1), ["#141414", "#181818", "#202020", "#2a2a2a", "#333333"]))
+    d = ImageDraw.Draw(im)
+    for gy in range(8, H, 12):
+        for gx in range(8, W, 12):
+            d.point((gx, gy), fill=hx("#262626"))
+    tex = fbm(H, W, 92, cell=6, octaves=2)
+    layers = [  # label, top, left face, right face
+        ("camino base", "#3a3a3a", "#2a2a2a", "#1f1f1f"),
+        ("next.js 16", "#4c4c4c", "#353535", "#262626"),
+        ("react 19 + tailwind v4", "#6a6a6a", "#4a4a4a", "#333333"),
+        ("three.js + supabase", "#8a8a88", "#666664", "#4a4a48"),
+        ("vercel + github actions", CYAN, "#0a6f7c", "#064a52"),
+    ]
+    cx, w, h, t, step, base = 180, 100, 26, 10, 20, 124
+    labels = []
+    for k, (label, top_c, left_c, right_c) in enumerate(layers):
+        top_y = base - k * step
+        T = (cx, top_y)
+        UR = (cx + w, top_y + h / 2)
+        B = (cx, top_y + h)
+        UL = (cx - w, top_y + h / 2)
+        d.polygon([UL, B, (B[0], B[1] + t), (UL[0], UL[1] + t)], fill=hx(left_c))
+        d.polygon([B, UR, (UR[0], UR[1] + t), (B[0], B[1] + t)], fill=hx(right_c))
+        top = [T, UR, B, UL]
+        d.polygon(top, fill=hx(top_c))
+        im = _dither_face(im, top, [_shade(top_c, 0.55), top_c], tex)
+        d = ImageDraw.Draw(im)
+        labels.append((label, UR[0], UR[1]))
+    im = upscale(im)
+    d = ImageDraw.Draw(im)
+    f = font(26, mono=True)
+    for label, x, y in labels:
+        d.line([x * 2 + 4, y * 2, x * 2 + 16, y * 2], fill=hx("#6a6a6a"), width=2)
+        d.text((x * 2 + 22, y * 2), label, font=f, fill=hx(PAPER), anchor="lm")
+    return im
+
+
+def workflow_art():
+    """pull request -> integration (solid), integration -> release (gated, dashed)."""
+    W, H = 600, 140
+    yy, xx = grid(H, W)
+    field = 0.03 + 0.09 * fbm(H, W, 57, 28, 3) + 0.05 * (yy / H)
+    im = to_image(dither(np.clip(field, 0, 1), ["#141414", "#181818", "#202020", "#2a2a2a"]))
+    d = ImageDraw.Draw(im)
+    for gy in range(8, H, 12):
+        for gx in range(8, W, 12):
+            d.point((gx, gy), fill=hx("#262626"))
+    top, bot, mid = 36, 116, 76
+    boxes = [
+        ("pull request", "small and reviewed", 24, 176),
+        ("integration", "merging deploys nothing", 222, 378),
+        ("release", "vercel builds only this", 424, 576),
+    ]
+    c = hx(CYAN)
+    for _, _, x0, x1 in boxes:
+        d.rectangle([x0, top, x1, bot], fill=hx("#141414"), outline=hx("#2a2a2a"))
+        for x, y, dx, dy in [(x0, top, 1, 1), (x1, top, -1, 1), (x0, bot, 1, -1), (x1, bot, -1, -1)]:
+            d.line([x, y, x + dx * 10, y], fill=c)
+            d.line([x, y, x, y + dy * 10], fill=c)
+    # Solid arrow: pull request into integration.
+    d.line([176, mid, 212, mid], fill=c, width=1)
+    d.polygon([(222, mid), (212, mid - 4), (212, mid + 4)], fill=c)
+    # Gated, dashed arrow: integration to release.
+    for x in range(380, 414, 7):
+        d.line([x, mid, x + 4, mid], fill=c)
+    d.line([401, 60, 401, 92], fill=c, width=2)
+    d.polygon([(424, mid), (414, mid - 4), (414, mid + 4)], fill=c)
+    im = upscale(im)
+    d = ImageDraw.Draw(im)
+    tf, sf = font(34), font(18, mono=True)
+    for title, sub, x0, _ in boxes:
+        d.text((2 * (x0 + 16), 2 * (top + 12)), title, font=tf, fill=hx(PAPER))
+        d.text((2 * (x0 + 16), 2 * (top + 56)), sub, font=sf, fill=hx("#9aa7af"))
+    d.text((2 * 401, 2 * 24), "deploy only when asked", font=sf, fill=c, anchor="mm")
+    d.text((2 * 300, 2 * 130), "release moves forward only on a deploy", font=sf,
+           fill=hx("#6a6a6a"), anchor="mm")
+    return im
+
+
 # ---------------------------------------------------------------- registry
 PIECES = {
     "hero-dark": lambda: hero(light=False),
@@ -727,6 +826,8 @@ PIECES = {
     "tile-flag-guesser": tile_flag_guesser,
     **{k: (lambda v=v: tile_page(*v)) for k, v in PAGE_TILES.items()},
     **{k: (lambda v=v: tile_doc(*v)) for k, v in DOC_TILES.items()},
+    "stack-art": stack_art,
+    "workflow-art": workflow_art,
     "footer": lambda: footer(light=False),
     "footer-light": lambda: footer(light=True),
 }

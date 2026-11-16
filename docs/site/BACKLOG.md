@@ -43,6 +43,9 @@ Format and rules: `docs/WORKFLOW.md`. Append new items at the end of a section; 
 - [ ] SHELL-webkit | S | run `scripts/games/window-check.mjs` in WebKit; check `contain: layout` on the games' fixed roots and iPhone Safari (no full screen there) | untested
 - [ ] ASK SHELL-node-farm-window | M | move Node Farm from its framed page into the windowed panel too, or keep it framed (current) | Nate's taste; the Node Farm thread owns the page
 
+- [ ] SITE-keys-tap | S | the "?keyboard shortcuts" button is 34px tall on phones; lift it to 44px on touch screens (`components/cm/keys.css`, Shell owner) | phone pass 2026-11-16
+- [ ] SITE-timeline-markers-tap | S | timeline milestone markers are 32px on phones and sit close together; a larger hit area on each card header would be better than bigger markers | phone pass 2026-11-16
+
 ## Ideas (offered to Nate, not picked)
 - [ ] ASK SITE-resume | M | resume page
 - [ ] ASK SITE-running | M | running page
@@ -61,4 +64,5 @@ Slot for findings from the thread "Audit website code for simplification". That 
 - [x] SITE-home-games | S | homepage "Play" section: one card per playable game with a real capture, linking straight in; layout chosen from a decision card (three cards in a row, built as recommended) | this PR
 - [x] SITE-pages-audit-2026-11-16 | S | non-game pages audited at 1440 and 390 (build, gate, search, console, transitions, stuck text, overlaps, LCP); no code change needed; report and before shots in /mnt/project-files/portfolio/site-audit-2026-11-16/REPORT.md | this PR
 - [x] SITE-game-launch | S | themed cover into and out of each game, "Continue your save" line on each hub card, hub remembers the last game played | this PR
-- [x] GUESS-merge-modes | size M | Daily and Unlimited merged into one page per guesser; Unlimited unlocks after a finished daily; old daily routes redirect | #PENDING
+- [x] GUESS-merge-modes | size M | Daily and Unlimited merged into one page per guesser; Unlimited unlocks after a finished daily; old daily routes redirect | #634
+- [x] SITE-phone-pass-2026-11-16 | S | non-game pages walked at 1440, 390 and 375 (14 routes, before and after PNGs in /mnt/project-files/site-pages-phone-2026-11-16/): no sideways scroll, no console errors; About profile footer stops wrapping "2027" on phones; chips and "more" links already have a 44px touch area (`app/camino/site.css`) | this PR
