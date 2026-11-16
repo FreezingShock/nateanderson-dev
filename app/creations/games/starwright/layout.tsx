@@ -1,13 +1,11 @@
 import { GameRouteShell } from "@/components/games/shell/game-route-shell";
-import { StarwrightRouteChrome } from "@/components/starwright/route-chrome";
 import "@/app/camino/starwright.css";
 import "@/app/camino/starwright-ev.css";
 
-// Route-level game shell for Starwright (full screen, manual pause, hidden-tab handling).
+// Route shell for Starwright: the site page with its intro, and the game in a windowed panel (components/games/shell).
 export default function StarwrightLayout({ children }: { children: React.ReactNode }) {
     return (
-        <GameRouteShell name="Starwright">
-            <StarwrightRouteChrome />
+        <GameRouteShell name="Starwright" game="starwright" mode="windowed">
             {children}
         </GameRouteShell>
     );

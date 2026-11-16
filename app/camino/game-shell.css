@@ -81,3 +81,189 @@ html.gs-game-route {
         order: -1;
     }
 }
+
+/* Windowed mode (components/games/shell, mode="windowed"). The page keeps the site chrome. The game runs in a large panel
+   under a themed title bar. The panel is a containing block (contain: layout), so the games' own position: fixed roots
+   fill the panel instead of the window. Sharp edges, corner brackets, no pills, no coloured strip down a side. */
+.gs-windowed[data-theme="brass"] { --gs-accent: #d29a3c; --gs-hi: #f4cf7e; --gs-bg: #0d0a06; --gs-line: rgba(210, 154, 60, 0.42); --gs-ink: #f0dfb8; }
+.gs-windowed[data-theme="star"] { --gs-accent: #5fe3ff; --gs-hi: #bff3ff; --gs-bg: #05040c; --gs-line: rgba(95, 227, 255, 0.38); --gs-ink: #e9ecf6; }
+.gs-windowed[data-theme="ground"] { --gs-accent: #f0a030; --gs-hi: #ffd36a; --gs-bg: #120e0b; --gs-line: rgba(240, 176, 74, 0.4); --gs-ink: #f2e9d6; }
+
+.gs-win {
+    position: relative;
+    display: grid;
+    width: 100%;
+    min-width: 0;
+    margin: 0;
+    color: var(--gs-ink);
+}
+
+.gs-win-bar,
+.gs-win-foot {
+    position: relative;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px 12px;
+    padding: 6px 12px;
+    background: var(--gs-bg);
+    border: 1px solid var(--gs-line);
+    font-family: var(--font-roboto-mono), ui-monospace, monospace;
+    font-size: 12px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+}
+
+.gs-win-bar {
+    min-height: 52px;
+    border-bottom: 0;
+}
+
+.gs-win-foot {
+    min-height: 48px;
+    border-top: 0;
+}
+
+/* Corner brackets on the title bar: the only accent on its edges. */
+.gs-win-bar::before,
+.gs-win-bar::after {
+    content: "";
+    position: absolute;
+    top: -1px;
+    width: 12px;
+    height: 12px;
+    border-top: 2px solid var(--gs-accent);
+    pointer-events: none;
+}
+.gs-win-bar::before { left: -1px; border-left: 2px solid var(--gs-accent); }
+.gs-win-bar::after { right: -1px; border-right: 2px solid var(--gs-accent); }
+
+.gs-win-title {
+    display: flex;
+    flex: 1 1 auto;
+    align-items: baseline;
+    gap: 10px;
+    min-width: 0;
+}
+
+.gs-win-title h3 {
+    margin: 0;
+    font: inherit;
+    font-size: 15px;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    color: var(--gs-accent);
+}
+
+.gs-win-kick {
+    opacity: 0.6;
+    font-size: 11px;
+}
+
+.gs-win-btn,
+.gs-fs-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    min-height: 40px;
+    min-width: 40px;
+    padding: 0 12px;
+    font: inherit;
+    letter-spacing: inherit;
+    text-transform: inherit;
+    color: var(--gs-ink);
+    background: transparent;
+    border: 1px solid var(--gs-line);
+    border-radius: 0;
+    text-decoration: none;
+    cursor: pointer;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.gs-win-btn:hover,
+.gs-fs-link:hover {
+    border-color: var(--gs-accent);
+    color: var(--gs-accent);
+}
+
+.gs-win-btn[aria-pressed="true"] {
+    border-color: var(--gs-accent);
+    color: var(--gs-accent);
+}
+
+.gs-win-btn:focus-visible,
+.gs-fs-link:focus-visible {
+    outline: 2px solid var(--gs-accent);
+    outline-offset: 2px;
+}
+
+/* The panel. Tall enough to fill most of a desktop screen above the dock, and never taller than the viewport on a phone. */
+.gs-frame {
+    position: relative;
+    contain: layout;
+    width: 100%;
+    min-width: 0;
+    /* Leaves room for the title bar and footer above the site dock when the panel is scrolled into place. */
+    height: clamp(360px, calc(100dvh - 250px), 940px);
+    min-height: 0;
+    overflow: hidden;
+    background: var(--gs-bg);
+    border: 1px solid var(--gs-line);
+    outline: none;
+}
+
+.gs-frame:focus-visible {
+    box-shadow: inset 0 0 0 1px var(--gs-accent);
+}
+
+.gs-frame:fullscreen {
+    width: 100%;
+    height: 100%;
+    max-height: none;
+    border: 0;
+}
+
+/* Full screen only: the way back to Games and out of full screen, in the top corner. */
+.gs-fs-bar {
+    display: none;
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    z-index: 2147483000;
+    gap: 6px;
+}
+
+.gs-frame:fullscreen .gs-fs-bar {
+    display: flex;
+}
+
+.gs-fs-link {
+    background: rgba(0, 0, 0, 0.7);
+    font-size: 12px;
+}
+
+.gs-win-msg {
+    flex: 1 1 200px;
+    min-height: 1em;
+    margin: 0;
+    color: var(--gs-hi);
+}
+
+.gs-win-msg[data-tone="err"] {
+    color: #f08a7a;
+}
+
+.gs-win-hint {
+    opacity: 0.6;
+    font-size: 11px;
+    letter-spacing: 0.02em;
+    text-transform: none;
+}
+
+/* Phones: the site's bottom tab bar sits over the bottom of the screen, so the panel leaves room for it and for the footer. */
+@media (max-width: 760px) {
+    .gs-frame { height: clamp(360px, calc(100dvh - 340px), 940px); }
+    .gs-win-hint { display: none; }
+    .gs-win-title h3 { font-size: 14px; }
+}

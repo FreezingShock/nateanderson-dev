@@ -67,7 +67,7 @@ Test commands: `npm run test:nodefarm` (a PR check; includes `tests/starwright/*
 | Drawn UI art (element tiles with 8-frame loops, dock, menu, node, ring and pulsar icons) | working | `scripts/starwright/ui-art/build.py` -> `public/starwright/ui/*`; bump `UI_V` in `sw-ui.tsx` and `?v=` in `starwright.css` | none; `shots.mjs` screenshots |
 | Phone scroll cue "Scroll for the ladder": once, gone on the first page scroll, not shown held sideways, sits on the star's lower edge in portrait and waits while an event, welcome or cloud card is up (`ScrollHint` in `settings.tsx`) | working headless, checked at 390 with cards | `settings.tsx`, `starwright-qol.css`, `scripts/starwright/ui-art/hint-check.mjs` | hint-check script |
 | Tooltips (`data-tip="Title|line"`), touch recipe lines | working | `sw-ui.tsx` | none |
-| Game shell (full screen, pause on hidden tab, save export/import) | working | `lib/games/*`, `app/creations/games/starwright/*` | `scripts/games/shell-check.mjs` |
+| Game shell: runs in a windowed panel under the site chrome with a title bar, scrolls into view and takes focus on load, keys and wheel stay with the game, full screen, pause on hidden tab, save export/import in the panel footer | working headless at 1440 and 390 (production build); not on a real phone or in Safari | `components/games/shell/game-route-shell.tsx`, `lib/games/save-slot.ts`, `app/camino/game-shell.css`, `app/creations/games/starwright/layout.tsx` | `npm run test:window` (`scripts/games/window-check.mjs`) |
 
 ## Not tested anywhere
 Safari/WebKit, real phones, audio (heard by nobody yet), auto actions while the tab is hidden, the one-tab rule, hotkeys F U P A M W.
