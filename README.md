@@ -101,6 +101,10 @@ Four games have their own palettes and themes. Each one runs in the browser and 
 </picture>
 
 <p align="center">
+  <img src="docs/readme/stack-art.png" alt="stack, drawn as layers: camino base, next.js 16, react 19 with tailwind v4, three.js with supabase, and vercel with github actions on top" width="860">
+</p>
+
+<p align="center">
   <img alt="Next.js 16" src="https://img.shields.io/badge/NEXT.JS_16-000000?style=for-the-badge&logo=nextdotjs&logoColor=ffffff">
   <img alt="React 19" src="https://img.shields.io/badge/REACT_19-1a1a1a?style=for-the-badge&logo=react&logoColor=2fd8e8">
   <img alt="TypeScript" src="https://img.shields.io/badge/TYPESCRIPT-1a1a1a?style=for-the-badge&logo=typescript&logoColor=ffffff">
@@ -120,6 +124,10 @@ Four games have their own palettes and themes. Each one runs in the browser and 
 </picture>
 
 Work lands in small pull requests against `integration`. Merging deploys nothing. `release` is the only branch Vercel builds, and it moves forward only when a deploy is asked for. See [docs/deploys.md](docs/deploys.md).
+
+<p align="center">
+  <img src="docs/readme/workflow-art.png" alt="workflow: a pull request lands in integration, merging deploys nothing, and release moves forward only when a deploy is asked for" width="860">
+</p>
 
 <table>
   <tr>
