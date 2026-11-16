@@ -134,6 +134,7 @@ First run to the bridge is about 3 hours (Nate's pick). The bot test "finishes t
 - Material on site: the dock tile of a material that comes on site rings once (`.gb-unlock`, set from `pulse` in `components/groundbreak/groundbreak.tsx`, styles in the end of `app/camino/groundbreak.css`). Hot feed lines glow once as they land. Hidden in reduced motion. Checked headless with the admin console (`gb admin on`, `gb give gravel 500`, U).
 - Job handover: the crew tick of the job that just finished stamps amber once (`freshTick` in `components/groundbreak/groundbreak.tsx`, `.gb-ticks li[data-fresh]` at the end of `app/camino/groundbreak.css`). Not yet captured in a frame.
 - Counters: the cash chip eases to its new value (`Ticked`, `components/games/juice/ticked.tsx`).
+- Stage and perks: a new stage stamps its pip and the feed names it (`freshStage`); a perk bought stamps its tile once and the feed names it (`freshPerk`, `PerkGrid` `justBought`). Styles at the end of `app/camino/groundbreak.css`. Frames: `/mnt/project-files/game-juice-2026-11-16/groundbreak-beats.mjs` (seeds state through the `gb:live` hook).
 
 ## Shared game kit
 - Built on the kit (`docs/game-kit.md`): `fmt` (kilo style), `fmtAge` and `catchUp` from `lib/game-kit`; toasts from `useToasts` (keep 1, dedupe, 6 s, sticky 20 s); window exits from `usePresence`; the save loop from `useAutosave` (save() still writes through `lib/saves`); the other-tab check from `watchNewerSave`. No change on screen.
