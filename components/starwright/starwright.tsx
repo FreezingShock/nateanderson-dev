@@ -26,6 +26,9 @@ import { Almanac, CloudPick, Ending, Menu, Orbit, StarChart, Visitor, tools } fr
 import { AwayCard, ScrollHint, type AwayData } from "./settings";
 import { ElTile, Gl, Pic, ui, useLeaving, usePresence, useSheets, useTips } from "./sw-ui";
 import { BuyBurst } from "./buy-burst";
+import { useAutosave } from "@/components/game-kit/hooks";
+import { useToasts } from "@/components/game-kit/use-toasts";
+import { claimTab, type TabClaim } from "@/lib/game-kit/tabs";
 import "@/app/camino/starwright-juice.css";
 import { Ticked } from "@/components/games/juice/ticked";
 
@@ -47,7 +50,8 @@ export function Starwright() {
     const [, setTick] = useState(0);
     const bump = useCallback(() => setTick((n) => n + 1), []);
     const [panel, setPanel] = useState<Panel>(null);
-    const [notes, setNotes] = useState<Note[]>([]);
+    // Notes over the scene: the newest four stay, each for 9 s (the game kit's toast queue).
+    const { toasts: notes, push: pushNote } = useToasts<NonNullable<Note["tone"]>>({ keep: 3, ttlMs: 9000 });
     const [ending, setEnding] = useState(false);
     const shell = useGameShell();
     const tips = useTips();
@@ -68,7 +72,6 @@ export function Starwright() {
     const novaKind = useRef(0);
     const stageRef = useRef({ now: 0, from: 0, at: -1e9 });
     const lastNovaAt = useRef(0);
-    const noteId = useRef(0);
     const lastHeavy = useRef(0);
     const lastTickAt = useRef(0);
     const lastMult = useRef<number[]>([]);
@@ -83,16 +86,14 @@ export function Starwright() {
     const awayP = usePresence(card !== null);
     const readOnly = useRef(false);
     const [other, setOther] = useState(false);
-    const tabCh = useRef<{ ch: BroadcastChannel; id: string } | null>(null);
+    const tabLock = useRef<TabClaim | null>(null);
     const saveFailAt = useRef(0);
     const lastBackup = useRef(Date.now());
 
     const note = useCallback((text: string, tone?: Note["tone"], force = false) => {
         if (!force && !getSettings().notices) return;
-        const id = ++noteId.current;
-        setNotes((n) => [...n.slice(-3), { id, text, tone }]);
-        window.setTimeout(() => setNotes((n) => n.filter((x) => x.id !== id)), 9000);
-    }, []);
+        pushNote(text, tone);
+    }, [pushNote]);
 
     // A reward flash over the whole star, in the element's colour: ignitions and doubled burners. Keyed, so a new one restarts it.
     const [flash, setFlash] = useState<{ key: number; c: string } | null>(null);
@@ -185,23 +186,20 @@ export function Starwright() {
             lastEvent.current = ev;
         }, 100);
         const ui = window.setInterval(bump, 250);
-        const sv = window.setInterval(() => {
-            save();
-            const s = sRef.current;
-            if (s && Date.now() - lastBackup.current > 600000) { lastBackup.current = Date.now(); writeBackup(window.localStorage, s); }
-        }, 8000);
-        const onHide = () => save();
-        document.addEventListener("visibilitychange", onHide);
-        window.addEventListener("pagehide", onHide);
         return () => {
             window.clearInterval(id);
             window.clearInterval(ui);
-            window.clearInterval(sv);
-            document.removeEventListener("visibilitychange", onHide);
-            window.removeEventListener("pagehide", onHide);
-            save();
         };
     }, [ready, bump, save, note, flashTo]);
+
+    // Saves every 8 s, on tab hide, on leaving and on unmount (the game kit's loop); a rolling backup every 10 min.
+    useAutosave(save, {
+        enabled: ready,
+        afterSave: () => {
+            const s = sRef.current;
+            if (s && Date.now() - lastBackup.current > 600000) { lastBackup.current = Date.now(); writeBackup(window.localStorage, s); }
+        },
+    });
 
     // ---- the scene -----------------------------------------------------------------------------------------------
     useEffect(() => {
@@ -389,25 +387,22 @@ export function Starwright() {
         setPaused(false);
         lastTickAt.current = Date.now();
         setOther(false);
-        tabCh.current?.ch.postMessage({ t: "hello", id: tabCh.current.id });
+        tabLock.current?.claim();
         bump();
     }, [bump]);
 
     useEffect(() => {
-        if (!ready || typeof BroadcastChannel === "undefined") return;
-        const id = Math.random().toString(36).slice(2);
-        const ch = new BroadcastChannel("sw-tab");
-        tabCh.current = { ch, id };
-        ch.onmessage = (e: MessageEvent) => {
-            if (e.data?.t !== "hello" || e.data.id === id || readOnly.current) return;
+        if (!ready) return;
+        const lock = claimTab("sw-tab", () => {
+            if (readOnly.current) return;
             save();
             readOnly.current = true;
             manualPause.current = true;
             setPaused(true);
             setOther(true);
-        };
-        ch.postMessage({ t: "hello", id });
-        return () => { ch.close(); tabCh.current = null; };
+        });
+        tabLock.current = lock;
+        return () => { lock.close(); tabLock.current = null; };
     }, [ready, save]);
 
     // Automation unlocks (opt-in, see Settings): supernova by itself at a chosen core share, and visitors answered for you.

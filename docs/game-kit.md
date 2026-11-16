@@ -46,9 +46,9 @@ import { numberFormatter, catchUp } from "../game-kit/format";
 
 ### tabs.ts (more than one browser tab)
 - `claimTab(channel, onSuperseded)` gives `{ claim, close }`: one tab plays at a time (BroadcastChannel).
-- `watchNewerSave(key, mySavedAt, onNewer)`: another tab wrote a newer save, so stop saving here.
+- `watchNewerSave(key, mySavedAt, onNewer)`: another tab wrote a newer save, so stop saving here. Reads either save form with `rawSavedAt` from `lib/saves/core`.
 
-Saves themselves (format, versions, migrations, backups, export and import) are the save system's: `lib/games/save.ts` and `lib/games/save-slot.ts`. The kit only runs the save loop (`useAutosave`).
+Saves themselves (format, versions, migrations, backups, corrupt-save handling, export and import) are the save system's: `lib/saves/` (`writeSave`, `loadSave`, `rollCopies`) and `lib/games/save*.ts`. The kit only runs the save loop: `useAutosave` calls the game's own `save()`, which writes through `lib/saves/core`.
 
 ## React half: `components/game-kit/`
 
@@ -80,7 +80,7 @@ Put class `gk` on the game root and set the palette there (CSS in `app/camino/ga
 - `<Burst trigger size="s|m|l">` and `<Corners />`.
 
 ## Which game uses what
-- Starwright: being moved onto the kit (formatting, catch-up, settings store, toasts, presence, autosave, tab lock).
+- Starwright: on the kit. `fmt` is the grouped style, `fmtAge` and `catchUp` come from the kit, settings use createSettingsStore, notes use useToasts (keep 3, 9 s), usePresence/useLeaving/useGain, useAutosave (with the 10 min backup in afterSave) and claimTab ("sw-tab").
 - Groundbreak: next (formatting, catch-up, toasts, presence, autosave, newer-save watch).
 - Brasswork: after that (number formatting, settings, MenuWindow on useWindowClose and useFocusTrap, count-up).
 - Node Farm: not moved; it is finished and deployed.
