@@ -360,11 +360,18 @@ export function Starwright() {
         });
     }, [act, save]);
 
-    const togglePause = useCallback(() => {
-        manualPause.current = !manualPause.current;
+    // One pause for the window's Pause button, Space and the Menu's Pause tile. The shell owns it (`manualPaused`);
+    // a tab that lost the save lock stays paused.
+    const { manualPaused: shellPaused, setPaused: setShellPaused } = shell;
+    const togglePause = useCallback(() => setShellPaused(!manualPause.current), [setShellPaused]);
+    useEffect(() => {
+        manualPause.current = shellPaused || readOnly.current;
         setPaused(manualPause.current);
         lastTickAt.current = Date.now();
-    }, []);
+    }, [shellPaused]);
+    useEffect(() => {
+        if (other && !shellPaused) setShellPaused(true);
+    }, [other, shellPaused, setShellPaused]);
 
     const toggleSound = useCallback(() => {
         const v = !soundOn();
@@ -383,13 +390,11 @@ export function Starwright() {
             lastHeavy.current = heaviest(ld.state);
         }
         readOnly.current = false;
-        manualPause.current = false;
-        setPaused(false);
-        lastTickAt.current = Date.now();
+        setShellPaused(false);
         setOther(false);
         tabLock.current?.claim();
         bump();
-    }, [bump]);
+    }, [bump, setShellPaused]);
 
     useEffect(() => {
         if (!ready) return;
@@ -539,6 +544,7 @@ export function Starwright() {
                     ))}
                 </ul>
                 {paused && <div className="sw-paused" role="status">Paused</div>}
+                <ScrollHint />
             </section>
 
             <header className="sw-top">
@@ -556,7 +562,6 @@ export function Starwright() {
 
             {s.event && <Visitor s={s} onAnswer={doAnswer} />}
             {s.offer.length > 0 && <CloudPick s={s} onPick={doCloud} onPreview={(id) => { previewRef.current = id; }} />}
-            <ScrollHint />
             {awayP.mounted && awayKeep.current && <AwayCard card={awayKeep.current} onClose={() => setCard(null)} leaving={awayP.leaving} />}
             {other && (
                 <div className="sw-lock sw-panel" role="alert">
