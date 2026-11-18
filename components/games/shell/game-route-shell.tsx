@@ -40,6 +40,8 @@ applyPendingImports();
 export type GameShellState = {
     hidden: boolean;
     paused: boolean;
+    /** The pause the player asked for (the window's Pause button). Unlike `paused`, a hidden tab does not count. */
+    manualPaused: boolean;
     fullscreen: boolean;
     supportsFullscreen: boolean;
     setPaused: (paused: boolean) => void;
@@ -49,6 +51,7 @@ export type GameShellState = {
 const NOOP_STATE: GameShellState = {
     hidden: false,
     paused: false,
+    manualPaused: false,
     fullscreen: false,
     supportsFullscreen: false,
     setPaused: () => {},
@@ -240,8 +243,8 @@ export function GameRouteShell({ name, children, header, mode = "framed", game }
     }, [windowed]);
 
     const value = useMemo<GameShellState>(
-        () => ({ hidden, paused, fullscreen, supportsFullscreen, setPaused: setManualPause, toggleFullscreen }),
-        [hidden, paused, fullscreen, supportsFullscreen, toggleFullscreen],
+        () => ({ hidden, paused, manualPaused: manualPause, fullscreen, supportsFullscreen, setPaused: setManualPause, toggleFullscreen }),
+        [hidden, paused, manualPause, fullscreen, supportsFullscreen, toggleFullscreen],
     );
 
     if (windowed && game) {
