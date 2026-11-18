@@ -135,3 +135,30 @@
     scroll-behavior: auto !important;
   }
 }
+
+/* ==========================================================================
+   Page accents (2026-11-17). Pages after Creations each take one colour; Home, Creations and the games keep cyan.
+   A page sets data-accent="<page>" on its .ctos root. Every token below is then redefined on that same element, so the
+   page recolours without editing its components. The derived values are repeated here because a custom property built
+   from var(--cm-cyan) resolves where it is declared, not where it is used. Art is drawn in the same ink
+   (scripts/naos-art/generate.py, PAGE_ACCENTS). Paper values are darker, so accent text reaches 4.5:1 on paper and
+   UI edges 3:1. Adding a page: one block here, one PAGE_ACCENTS line, its art pieces, its overrides in the page CSS.
+   ========================================================================== */
+[data-accent="about"] {
+  --cm-cyan:       #f0708a;
+  --cm-cyan-ink:   #031417;
+  --cm-cyan-deep:  #4a0d1d;
+  --cm-cyan-wash:  rgba(240, 112, 138, .12);
+  --cm-accent-rgb: 240, 112, 138;
+  --cm-accent-on-light: #d9173e;
+  --cm-glow:       0 0 20px rgba(240, 112, 138, .25);
+  --cm-ctos-edge-live: color-mix(in srgb, var(--cm-cyan) 70%, transparent);
+}
+[data-theme="paper"] [data-accent="about"] {
+  --cm-cyan:       #d9173e;
+  --cm-cyan-ink:   #ffffff;
+  --cm-cyan-deep:  #fde8ee;
+  --cm-cyan-wash:  rgba(217, 23, 62, .1);
+  --cm-accent-rgb: 217, 23, 62;
+  --cm-glow:       0 0 20px rgba(217, 23, 62, .2);
+}

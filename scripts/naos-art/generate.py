@@ -29,10 +29,15 @@ def dither(intensity, ids):
     return ink
 
 
-def save_1bit(ink, path):
-    idx = ink.astype(np.uint8)
+def hex_ink(h):
+    """'#f0708a' -> (240, 112, 138)."""
+    return tuple(int(h[i:i + 2], 16) for i in (1, 3, 5))
+
+
+def save_1bit(mask, path, colour=INK):
+    idx = mask.astype(np.uint8)
     img = Image.fromarray(idx, "P")
-    pal = [0, 0, 0] + list(INK) + [0] * (256 - 2) * 3
+    pal = [0, 0, 0] + list(colour) + [0] * (256 - 2) * 3
     img.putpalette(pal[: 256 * 3])
     img.save(path, transparency=0, optimize=True)
     print("wrote", os.path.normpath(path), img.size, os.path.getsize(path), "bytes")
@@ -345,17 +350,29 @@ def section_wash(seed, angle=90, W=360, H=240, base=3):
 # `python3 generate.py bg-home band-track` rebuilds just those. Each piece is written as a 1-bit PNG and
 # a lossless WebP (pixel-identical, about 15 to 20 percent smaller); pages point at the WebP.
 # ---------------------------------------------------------------------------------------------
+# Page accents. A page after Creations draws its own art in one ink: the backdrop, the header band and the section
+# washes. Each entry is the ink for that page, in dark theme (paper uses the same art). Keep these hexes in step with
+# the [data-accent] block at the end of app/camino/camino.tokens.css. Add a page by adding one line here, then its
+# pieces in PIECES, then the data-accent block.
+PAGE_ACCENTS = {"about": "#f0708a"}
+
 PIECES = {
     "islands": (islands, {}),
     "assembly": (assembly, {}),
-    **{f"bg-{name}": (backdrop, cfg) for name, cfg in BACKDROPS.items()},
+    **{f"bg-{name}": (backdrop, cfg) for name, cfg in BACKDROPS.items() if name not in PAGE_ACCENTS},
+    **{f"bg-{page}": (backdrop, BACKDROPS[page], ink) for page, ink in PAGE_ACCENTS.items()},
     "band-track": (band, dict(seed=101, variant="track")),
     "band-rail": (band, dict(seed=113, variant="rail")),
-    "band-seam": (band, dict(seed=127, variant="seam")),
+    "band-seam": (band, dict(seed=127, variant="seam"), PAGE_ACCENTS["about"]),
     "wash-a": (section_wash, dict(seed=201, angle=90)),
     "wash-b": (section_wash, dict(seed=213, angle=45)),
     "wash-c": (section_wash, dict(seed=227, angle=270)),
     "wash-d": (section_wash, dict(seed=239, angle=180)),
+    # About's own washes: the same shapes as wash-a..d, drawn in the About accent (naos.md, Dithered art).
+    "wash-about-a": (section_wash, dict(seed=201, angle=90), PAGE_ACCENTS["about"]),
+    "wash-about-b": (section_wash, dict(seed=213, angle=45), PAGE_ACCENTS["about"]),
+    "wash-about-c": (section_wash, dict(seed=227, angle=270), PAGE_ACCENTS["about"]),
+    "wash-about-d": (section_wash, dict(seed=239, angle=180), PAGE_ACCENTS["about"]),
 }
 
 
@@ -366,11 +383,13 @@ def save_webp(png_path):
 
 def build(names=None):
     os.makedirs(OUT, exist_ok=True)
-    for name, (fn, kwargs) in PIECES.items():
+    for name, entry in PIECES.items():
         if names and name not in names:
             continue
+        fn, kwargs = entry[0], entry[1]
+        colour = hex_ink(entry[2]) if len(entry) > 2 else INK
         png = os.path.join(OUT, f"{name}.png")
-        save_1bit(fn(**kwargs), png)
+        save_1bit(fn(**kwargs), png, colour)
         save_webp(png)
 
 

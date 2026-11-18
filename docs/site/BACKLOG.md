@@ -95,3 +95,4 @@ Slot for findings from the thread "Audit website code for simplification". That 
 - [x] GUESS-reveal-polish | M | animated miss and win reveals, streak readout, Unlimited unlock moment, flag round double shake removed, reduced motion respected | this PR
 - [x] SITE-motion-scale | M | one motion scale (easing, durations, lift and press travel) and one reduced-motion rule; buttons, chips, cards, home game cards and page shutters use it | this PR
 - [x] SITE-dead-knip | S | `knip.json` at the root: run `npx -y knip@5` for unused files, exports and deps. Removed the unused `getProjectAccentColor` and unexported unused gate and sound symbols. knip misses dynamic imports, so grep before deleting | this PR
+- [x] ART-page-accent-about | M | About takes its own rose accent (`data-accent`): tokens, backdrop, band and washes drawn in that ink, cache stamps; Studies, Timeline, History and Blog are proposed values in the PR, not built | this PR

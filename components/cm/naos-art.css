@@ -143,7 +143,7 @@
   }
 }
 .ctos.st-page .cm-head::before { background-image: url("/naos/band-rail.webp"); }
-.ctos.about .cm-head::before { background-image: url("/naos/band-seam.webp"); }
+.ctos.about .cm-head::before { background-image: url("/naos/band-seam.webp?v=8ec2b08e"); }
 @media (max-width: 760px) {
   .ctos .cm-head::before { background-size: 480px 96px; height: 96px; opacity: .3; }
 }

@@ -169,3 +169,16 @@ html[data-xition="hold"] .about .about-id { animation: none; opacity: 0; }
     .about .about-id, .about .about-id *, .about .about-id::before, .about .about-id::after { animation: none !important; }
 }
 
+
+/* ---- Page accent: rose (data-accent="about" in camino.tokens.css). The colour is in the tokens; these rules cover the
+   places that still hard-code cyan or teal, the art tints that are not tokens, and About's own washes. ---- */
+.ctos.about .cm-h2 { text-shadow: -.035em 0 rgba(255, 70, 90, .32), .035em 0 rgba(var(--cm-accent-rgb), .32); }
+.ctos.about .cm-card[data-tone="paper"] .cm-state { color: var(--cm-accent-on-light); }
+.ctos.about .cta-b.a:hover { background: color-mix(in srgb, var(--cm-cyan) 80%, #fff); }
+.ctos.about .naos-halo { background: radial-gradient(circle, rgba(var(--cm-accent-rgb), .5) 0 30%, transparent 34%) 0 0 / 6px 6px; }
+.ctos.about .naos-ripple { background: radial-gradient(circle, rgba(var(--cm-accent-rgb), .7) 0 30%, transparent 34%) 0 0 / 6px 6px; }
+.ctos.about .naos-backdrop-ground { background: radial-gradient(circle, rgba(var(--cm-accent-rgb), .16) 0 30%, transparent 34%) 0 0 / 6px 6px; }
+.ctos.about .cm-section.ruled::before { background-image: url("/naos/wash-about-a.webp?v=f44ba726"); }
+.ctos.about .cm-section.ruled:nth-of-type(4n+2)::before { background-image: url("/naos/wash-about-b.webp?v=ce236a52"); }
+.ctos.about .cm-section.ruled:nth-of-type(4n+3)::before { background-image: url("/naos/wash-about-c.webp?v=9377091b"); }
+.ctos.about .cm-section.ruled:nth-of-type(4n)::before { background-image: url("/naos/wash-about-d.webp?v=242715b9"); }

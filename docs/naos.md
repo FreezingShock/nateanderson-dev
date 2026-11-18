@@ -30,7 +30,7 @@ Page CSS uses these tokens instead of raw px; display sizes (clamp or 26px and u
 Text colours: `--cm-fg` primary, `--cm-mute` secondary, `--cm-ctos-meta` meta (5.3:1 or better on panels), `--cm-dim`
 (`#66767f`) for ticks and disabled only. Fonts unchanged: Helvetica Neue/Arimo display, IBM Plex Mono for labels (already self-hosted).
 Accent stays `--cm-cyan #2fd8e8` (`--cm-cyan-ink` on cyan). Magenta `#ff2d8a` only for thin guide
-lines. One accent rule: cyan or white, never rainbow.
+lines. One accent per page: cyan on Home, Creations and the games; the pages after Creations take their own (see Page accents).
 
 ## Fonts
 Display: heavy grotesk (`--cm-display`), lowercase, tight tracking (-.04 to -.06em), line-height ~.86 on title cards.
@@ -102,6 +102,13 @@ Placement rules:
 - Never put `clip-path` or `mask` on a `data-rx` item (see the Creations hub note below).
 
 `games` and the Creations hub keep their own load-in choreography (see `app/camino/games.css` and `components/creations/creations.css`); their art comes from the same registry.
+
+## Page accents
+Home, Creations and the games use cyan. Each page after Creations (About now; Studies, Timeline, History and Blog are proposed) takes one accent, set as `data-accent="<page>"` on its `.ctos` root. The block at the end of `app/camino/camino.tokens.css` redefines every cyan token on that element (`--cm-cyan`, `-ink`, `-deep`, `-wash`, `--cm-glow`, `--cm-accent-rgb`, `--cm-accent-on-light`), and a paper variant sits under `[data-theme="paper"]`. Components need no edits.
+- Hard-coded cyan or teal left in shared CSS is overridden in the page CSS (About: `app/about/about.css`). Add one there when a new rule hard-codes a colour.
+- The art is drawn in the page ink: `PAGE_ACCENTS` in `scripts/naos-art/generate.py` (backdrop, header band, four washes). Regenerating keeps each dither mask; only the ink changes.
+- `/naos/*` is cached for a week, so art regenerated under an existing name carries `?v=<first 8 chars of sha1>` in every reference (`bg-about` in `app/about/page.tsx`, `band-seam` in `naos-art.css` and `ArtPreload`, `wash-about-*` in `about.css`). Update the stamp whenever the file changes.
+- Dark-theme inks are the site values. Paper variants are darker so text reaches 4.5:1 on paper and UI 3:1; the dark ground needs no change.
 
 ## Creations hub
 `/creations` is its own page look (`.ctos.cr-hub`, styles at the bottom of `components/creations/creations.css`): the magenta guide X is replaced by a scanline field and one cyan sweep on load, the assembly art fills the head behind the status card, and the head plays a once-only load-in (grid, art dithers in, card drops in, rows and bars follow). Hub cards reveal from alternating sides through the scrubbed engine. Do not add `clip-path` or `mask` to `data-rx` items: the engine's IntersectionObserver treats a fully clipped item as off screen and leaves it hidden.

@@ -9,6 +9,7 @@
  */
 export type NaosArtName = "band-track" | "band-rail" | "band-seam" | "wash-a" | "wash-b" | "wash-c" | "wash-d";
 
-export function ArtPreload({ name }: { name: NaosArtName }) {
-    return <link rel="preload" as="image" href={`/naos/${name}.webp`} />;
+/** `v` is the content stamp for art that was regenerated under the same name (see docs/naos.md, Dithered art). */
+export function ArtPreload({ name, v }: { name: NaosArtName; v?: string }) {
+    return <link rel="preload" as="image" href={`/naos/${name}.webp${v ? `?v=${v}` : ""}`} />;
 }

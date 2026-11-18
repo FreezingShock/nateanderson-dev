@@ -28,9 +28,9 @@ export default function AboutPage() {
     const daysToGrad = daysUntil(KEY_DATES.graduation, nowMs);
 
     return (
-        <div className="ctos about" data-entrance="lean">
-            <NaosBackdrop src="/naos/bg-about.webp" />
-            <ArtPreload name="band-seam" />
+        <div className="ctos about" data-accent="about" data-entrance="lean">
+            <NaosBackdrop src="/naos/bg-about.webp?v=ed13060f" />
+            <ArtPreload name="band-seam" v="8ec2b08e" />
             <header className="cm-head about-head" id="top">
                 <div className="cm-grid-bg" aria-hidden="true" />
                 <div className="cm-persp" aria-hidden="true" />
