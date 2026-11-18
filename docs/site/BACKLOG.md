@@ -4,7 +4,7 @@ Format and rules: `docs/WORKFLOW.md`. Append new items at the end of a section; 
 
 ## Now
 (open, ordered: top is next and not waiting on Nate)
-- [ ] SITE-contrast | S | measure contrast of dim mono labels against the dithered backgrounds (needs a sampled-pixel check, not a CSS colour check) and lift any under 4.5:1
+- [x] SITE-contrast | S | measure contrast of dim mono labels against the dithered backgrounds (needs a sampled-pixel check, not a CSS colour check) and lift any under 4.5:1 | claude/site-polish-taps-contrast: --cm-dim lifted to #88979e (Nate chose a site-wide lift, 2026-11-17)
 - [ ] SITE-nodefarm-css-split | L | split Node Farm CSS so panels load on first open: about 290 KB of rules use classes that several modules share, so each split needs a class-ownership pass first | docs/node-farm.md CSS notes
 - [ ] SITE-timeline-overview-phone | S | Timeline is still about 9,400 px at 390; the overview section is 2,038 px and the live phase 2,938 px; trim the overview to reach the 7,000 px target | audit 6
 - [ ] SITE-studies-mobile | M | Studies is 9,400 px at 390 (classes 2,398, reading 1,083, pathway 1,280); same short-card treatment
@@ -17,13 +17,14 @@ Format and rules: `docs/WORKFLOW.md`. Append new items at the end of a section; 
 - [ ] SHELL-saves-one-path | M | point the in-game Export and Import rows (Starwright menu in `components/starwright/panels.tsx`, Groundbreak menu) at `lib/games/save-slot.ts` so there is one save path; each game's owner does its own file | window shell
 - [ ] SHELL-phone-touch | S | on a real phone check the windowed panel: page scroll over the game by touch, Brasswork's touch bar and Starwright's hold gestures, and that the footer clears the site tab bar | untested: no real phone
 - [ ] SHELL-webkit | S | run `scripts/ci/checks/run.mjs window` in WebKit; check `contain: layout` on the games' fixed roots and iPhone Safari (no full screen there) | untested
-- [ ] SITE-keys-tap | S | the "?keyboard shortcuts" button is 34px tall on phones; lift it to 44px on touch screens (`components/cm/keys.css`, Shell owner) | phone pass 2026-11-16
-- [ ] SITE-timeline-markers-tap | S | timeline milestone markers are 32px on phones and sit close together; a larger hit area on each card header would be better than bigger markers | phone pass 2026-11-16
+- [x] SITE-keys-tap | S | the "?keyboard shortcuts" button is 34px tall on phones; lift it to 44px on touch screens (`components/cm/keys.css`, Shell owner) | phone pass 2026-11-16 | claude/site-polish-taps-contrast
+- [x] SITE-timeline-markers-tap | S | timeline milestone markers are 32px on phones and sit close together; a larger hit area on each card header would be better than bigger markers | phone pass 2026-11-16 | closed 2026-11-17: Nate chose to leave the journey markers; the milestone cards already measure 79 to 105px
 - [ ] SITE-speed-game-css | M | Brasswork (about 48 KB gz CSS, 16 sheets) and Node Farm (about 50 KB gz) ship every rule; split by route and keep first-paint rules. Measure with real rule coverage first (the CDP numbers in `/mnt/project-files/portfolio/speed-2026-11-16/cov.mjs` read 0% unused, which is wrong) | docs/games/brasswork
 - [ ] SITE-speed-nodefarm-js | M | Node Farm JS is about 450 KB gz; splitting it does not move the first board paint (`portfolio/node-farm-perf/load/REPORT.md`). The engine tables in `lib/nodefarm/engine.ts` are the real lever | docs/node-farm.md
 - [ ] SITE-speed-home-cards | S | homepage Play cards load 337, 196 and 95 KB 1200w webp on phones when scrolled; a 960w phone tier would save about 100 KB. The current webp is already optimal, so it is lossy-only; needs a look check | components/home/games-showcase.tsx
 - [ ] SITE-speed-guesser-js | M | flag and outline guessers each ship about 400 KB gz JS; find how much is shared site code and how much is the game | components/games/
 - [ ] SITE-speed-brasswork-three | L | Brasswork's 3D renderer (about 88 KB gz) loads on first paint because the island is the first screen; only worth a change if the island gets a loading state | components/brasswork/brasswork-host.tsx
+- [ ] SITE-stuck-timeline-tab | S | `scripts/ci/motion-stuck.mjs` fails 3 runs in 4 on the baseline build too: after tabbing on /timeline at 390, the phase buttons ("01 / September 2026 — Summer 2027") and "Hide" stay scrambled past 3 s. It is a blocking check, so it can fail a PR at random | docs/ci.md
 
 ## Needs Nate
 (waiting on a decision, Nate's content or his own device; `ASK` prefix)
@@ -39,6 +40,9 @@ Format and rules: `docs/WORKFLOW.md`. Append new items at the end of a section; 
 - [ ] ASK SITE-stale-prs | S | decide PRs #399 and #400 (merge or close) and the Brasswork drafts; owners decide their own | audit 9
 - [ ] ASK SITE-games-chrome | S | the games disagree on site chrome (Node Farm keeps header, dock and footer; the other three hide them); pick one rule, or leave | audit site-integration-audit-2026-11-15
 - [ ] ASK SHELL-node-farm-window | M | move Node Farm from its framed page into the windowed panel too, or keep it framed (current) | Nate's taste; the Node Farm thread owns the page
+- [x] ASK SITE-timeline-markers-layout | M | journey markers on phones are 32px and their centres sit 0, 18 and 29 px apart (two share a spot), so a 44px tap area would overlap the next marker and a CSS-only fix would open the wrong milestone. Milestone cards already have 79 to 105px headers. Options: (1) on phones, list the milestones as 44px rows and drop the track (recommended); (2) keep the track and let a tap on overlapping markers open a picker; (3) leave it | claude/site-polish-taps-contrast | decided 2026-11-17: leave markers as they are
+- [x] ASK SITE-contrast-dim | S | `--cm-dim` (#75858e) is 3.6 to 3.9:1 on the dithered page for 5 labels: footer "keyboard shortcuts" and "?", the /history notes, the home "—" and the games "/" separators. Lifting the token by the minimum that clears them (+5.5 L, #75858e to #88979e) changes 33 uses in 14 files, games included, so it waits for Nate. Options: (1) move those 5 labels to `--cm-mute`, which clears 4.5 on every dithered label by median (lowest 4.65); no new colour (recommended); (2) lift the token to #88979e; (3) leave it | claude/site-polish-taps-contrast | decided 2026-11-17: lift the token site-wide (done)
+- [ ] ASK SITE-contrast-paper | S | paper-theme `--cm-dim` (#8a8f94 on #f2f3f1, about 3:1 by arithmetic) appears on none of the eight routes, so it is unmeasured; the "Hide" label on a light plate reads 3.6:1 at 390 on /timeline (dark-scope paper-mute on a light plate) | claude/site-polish-taps-contrast
 
 ## Ideas
 (offered to Nate, not picked)
