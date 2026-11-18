@@ -2,12 +2,12 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { resolve, dirname } from "node:path";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
-const { RECIPE_TREE } = await import(resolve(root, "lib/automation/data/tree.ts"));
-const { ITEM_MODELS } = await import(resolve(root, "lib/automation/models/items/index.ts"));
-const { validateModel, TAG } = await import(resolve(root, "lib/automation/models/format.ts"));
+const { RECIPE_TREE } = await import(pathToFileURL(resolve(root, "lib/automation/data/tree.ts")).href);
+const { ITEM_MODELS } = await import(pathToFileURL(resolve(root, "lib/automation/models/items/index.ts")).href);
+const { validateModel, TAG } = await import(pathToFileURL(resolve(root, "lib/automation/models/format.ts")).href);
 
 test("every item has a valid, small belt model", () => {
     assert.equal(TAG.SOLID, 0);

@@ -3,11 +3,11 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { registerHooks } from "node:module";
 import { resolve, dirname } from "node:path";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 
 registerHooks({ resolve(spec, ctx, next) { try { return next(spec, ctx); } catch (e) { if (spec.startsWith(".")) return next(spec + ".ts", ctx); throw e; } } });
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
-const S = await import(resolve(root, "lib/automation/sim/index.ts"));
+const S = await import(pathToFileURL(resolve(root, "lib/automation/sim/index.ts")).href);
 const CAT = S.DEFAULT_CATALOG;
 const HUB = { x: 8, z: 5 };
 const fresh = () => S.createWorld({ width: 20, depth: 14, hub: HUB }, CAT);

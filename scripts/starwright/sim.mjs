@@ -2,11 +2,11 @@
 // Run: node --experimental-strip-types --no-warnings scripts/starwright/sim.mjs [hours]
 import { registerHooks } from "node:module";
 import { resolve, dirname } from "node:path";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 registerHooks({ resolve(spec, ctx, next) { try { return next(spec, ctx); } catch (e) { if (spec.startsWith(".")) return next(spec + ".ts", ctx); throw e; } } });
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
-const E = await import(resolve(root, "lib/starwright/engine.ts"));
-const D = await import(resolve(root, "lib/starwright/data.ts"));
+const E = await import(pathToFileURL(resolve(root, "lib/starwright/engine.ts")).href);
+const D = await import(pathToFileURL(resolve(root, "lib/starwright/data.ts")).href);
 
 const hours = Number(process.argv[2] ?? 12);
 const s = E.fresh(0);

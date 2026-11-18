@@ -2,11 +2,11 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { resolve, dirname } from "node:path";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 import { E, loadFixture, clone, fixtureNames } from "./helpers.mjs";
 
-const R = await import(resolve(dirname(fileURLToPath(import.meta.url)), "../../lib/nodefarm/records.ts"));
-const G = await import(resolve(dirname(fileURLToPath(import.meta.url)), "../../lib/nodefarm/content/guide.ts"));
+const R = await import(pathToFileURL(resolve(dirname(fileURLToPath(import.meta.url)), "../../lib/nodefarm/records.ts")).href);
+const G = await import(pathToFileURL(resolve(dirname(fileURLToPath(import.meta.url)), "../../lib/nodefarm/content/guide.ts")).href);
 const text = (r) => r.lines.map((l) => `${l.a ? `${l.a} ${l.b}` : l.t ?? ""}`).join("\n");
 const run = (s, ...args) => R.nfCommand(s, args);
 

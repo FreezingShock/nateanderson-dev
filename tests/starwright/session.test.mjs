@@ -3,14 +3,14 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { registerHooks } from "node:module";
 import { resolve, dirname } from "node:path";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 
 registerHooks({ resolve(spec, ctx, next) { try { return next(spec, ctx); } catch (e) { if (spec.startsWith(".")) return next(spec + ".ts", ctx); throw e; } } });
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
-const E = await import(resolve(root, "lib/starwright/engine.ts"));
-const S = await import(resolve(root, "lib/starwright/session.ts"));
-const T = await import(resolve(root, "lib/starwright/settings.ts"));
-const D = await import(resolve(root, "lib/starwright/data.ts"));
+const E = await import(pathToFileURL(resolve(root, "lib/starwright/engine.ts")).href);
+const S = await import(pathToFileURL(resolve(root, "lib/starwright/session.ts")).href);
+const T = await import(pathToFileURL(resolve(root, "lib/starwright/settings.ts")).href);
+const D = await import(pathToFileURL(resolve(root, "lib/starwright/data.ts")).href);
 
 const mem = () => { const m = new Map(); return { getItem: (k) => m.get(k) ?? null, setItem: (k, v) => void m.set(k, String(v)), m }; };
 const played = () => { const s = E.fresh(1000); for (let i = 0; i < 6; i++) s.bought[i][0] = 25; return s; };

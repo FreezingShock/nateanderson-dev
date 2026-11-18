@@ -1,12 +1,12 @@
 // Checks the Brasswork recipe tree is solvable and prints the ratios.
 // Run: npm run check:automation   (exit code 1 when there are errors)
 import { resolve, dirname } from "node:path";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const root = resolve(here, "../..");
-const { RECIPE_TREE } = await import(resolve(root, "lib/automation/data/tree.ts"));
-const { checkTree, report } = await import(resolve(root, "lib/automation/data/analyze.ts"));
+const { RECIPE_TREE } = await import(pathToFileURL(resolve(root, "lib/automation/data/tree.ts")).href);
+const { checkTree, report } = await import(pathToFileURL(resolve(root, "lib/automation/data/analyze.ts")).href);
 
 const issues = checkTree(RECIPE_TREE);
 const errors = issues.filter((i) => i.level === "error");

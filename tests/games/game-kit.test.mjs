@@ -4,11 +4,11 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { registerHooks } from "node:module";
 import { resolve, dirname } from "node:path";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 
 registerHooks({ resolve(spec, ctx, next) { try { return next(spec, ctx); } catch (e) { if (spec.startsWith(".")) return next(spec + ".ts", ctx); throw e; } } });
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
-const K = await import(resolve(root, "lib/game-kit/index.ts"));
+const K = await import(pathToFileURL(resolve(root, "lib/game-kit/index.ts")).href);
 
 // ---- the formatters as each game shipped them before the kit (copied verbatim, so drift shows up here) ------------
 

@@ -3,12 +3,12 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { registerHooks } from "node:module";
 import { resolve, dirname } from "node:path";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 
 registerHooks({ resolve(spec, ctx, next) { try { return next(spec, ctx); } catch (e) { if (spec.startsWith(".")) return next(spec + ".ts", ctx); throw e; } } });
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
-const S = await import(resolve(root, "lib/automation/sim/index.ts"));
-const P = await import(resolve(root, "lib/automation/sim/progress.ts"));
+const S = await import(pathToFileURL(resolve(root, "lib/automation/sim/index.ts")).href);
+const P = await import(pathToFileURL(resolve(root, "lib/automation/sim/progress.ts")).href);
 const CAT = S.DEFAULT_CATALOG;
 const fresh = () => S.createWorld({ width: 18, depth: 12, hub: { x: 8, z: 5 } }, CAT);
 const hubOf = (w) => w.buildings[w.hubId].input;

@@ -2,11 +2,11 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { resolve, dirname } from "node:path";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
-const { RECIPE_TREE, PURITY } = await import(resolve(root, "lib/automation/data/tree.ts"));
-const { checkTree, solve } = await import(resolve(root, "lib/automation/data/analyze.ts"));
+const { RECIPE_TREE, PURITY } = await import(pathToFileURL(resolve(root, "lib/automation/data/tree.ts")).href);
+const { checkTree, solve } = await import(pathToFileURL(resolve(root, "lib/automation/data/analyze.ts")).href);
 
 test("the tree has no errors", () => {
     const errors = checkTree(RECIPE_TREE).filter((i) => i.level === "error");
@@ -32,7 +32,7 @@ test("purity multipliers are the documented values", () => {
     assert.deepEqual(PURITY, { impure: 0.5, normal: 1, pure: 2 });
 });
 
-const { baseRecipes, alternateIds, generatorsFor } = await import(resolve(root, "lib/automation/data/analyze.ts"));
+const { baseRecipes, alternateIds, generatorsFor } = await import(pathToFileURL(resolve(root, "lib/automation/data/analyze.ts")).href);
 
 test("each item has exactly one base recipe, and alternates are flagged", () => {
     const base = baseRecipes(RECIPE_TREE);

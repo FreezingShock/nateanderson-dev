@@ -7,7 +7,7 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 
 registerHooks({ resolve(spec, ctx, next) { try { return next(spec, ctx); } catch (e) { if (spec.startsWith(".")) return next(spec + ".ts", ctx); throw e; } } });
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
-const S = await import(resolve(root, "lib/automation/sim/index.ts"));
+const S = await import(pathToFileURL(resolve(root, "lib/automation/sim/index.ts")).href);
 const { denseFactory } = await import(pathToFileURL(resolve(root, "scripts/automation/perf-sim.mjs")).href);
 const CAT = S.DEFAULT_CATALOG;
 

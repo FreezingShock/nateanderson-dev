@@ -4,11 +4,11 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { registerHooks } from "node:module";
 import { resolve, dirname } from "node:path";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 
 registerHooks({ resolve(spec, ctx, next) { try { return next(spec, ctx); } catch (e) { if (spec.startsWith(".")) return next(spec + ".ts", ctx); throw e; } } });
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
-const { runStage2Layout } = await import(resolve(root, "scripts/automation/stage2-hand-layout.mjs"));
+const { runStage2Layout } = await import(pathToFileURL(resolve(root, "scripts/automation/stage2-hand-layout.mjs")).href);
 
 test("the stage 2 layout places every piece", () => {
     const { log } = runStage2Layout(0);
