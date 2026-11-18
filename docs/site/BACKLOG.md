@@ -39,6 +39,7 @@ Format and rules: `docs/WORKFLOW.md`. Append new items at the end of a section; 
 - [ ] ASK SITE-stale-prs | S | decide PRs #399 and #400 (merge or close) and the Brasswork drafts; owners decide their own | audit 9
 - [ ] ASK SITE-games-chrome | S | the games disagree on site chrome (Node Farm keeps header, dock and footer; the other three hide them); pick one rule, or leave | audit site-integration-audit-2026-11-15
 - [ ] ASK SHELL-node-farm-window | M | move Node Farm from its framed page into the windowed panel too, or keep it framed (current) | Nate's taste; the Node Farm thread owns the page
+- [ ] ASK SITE-timeline-markers-layout | M | journey markers on phones are 32px and their centres sit 0, 18 and 29 px apart (two share a spot), so a 44px tap area would overlap the next marker and a CSS-only fix would open the wrong milestone. Milestone cards already have 79 to 105px headers. Options: (1) on phones, list the milestones as 44px rows and drop the track (recommended); (2) keep the track and let a tap on overlapping markers open a picker; (3) leave it | claude/site-polish-taps-contrast
 
 ## Ideas
 (offered to Nate, not picked)
