@@ -1,17 +1,25 @@
 /* naOS dithered art: decorative 1-bit PNGs. Scoped to .naos-art so no other page is affected. */
 .naos-art { position: relative; pointer-events: none; user-select: none; }
-.naos-art img { display: block; width: 100%; height: auto; image-rendering: pixelated; image-rendering: crisp-edges; }
+/* The dither art is a 1-bit alpha PNG/WebP: its ink pixels are opaque, the rest transparent. Each piece is drawn as a
+   mask and filled with --cm-accent, so it takes the time-of-day accent (lib/accent.ts) and eases with it. The image is
+   set per piece in --naos-art. */
+.naos-art-ink {
+  display: block; width: 100%; height: auto; aspect-ratio: var(--ar, 3 / 2);
+  background: var(--cm-accent);
+  -webkit-mask: var(--naos-art) center / 100% 100% no-repeat; mask: var(--naos-art) center / 100% 100% no-repeat;
+  image-rendering: pixelated; image-rendering: crisp-edges;
+}
 
 /* Section-break piece: centred, capped so each art pixel stays a crisp ~2 css px on desktop. */
 .naos-art-break { width: min(100%, 640px); margin: clamp(28px, 5vw, 56px) auto; }
 
 /* Hero piece: floats in the top-right corner behind the copy, quieter on phones. */
 .naos-art-hero { position: absolute; top: 5%; right: 0; width: min(44vw, 420px); z-index: 0; opacity: .9; }
-.naos-art-hero img { width: 100%; }
+.naos-art-hero .naos-art-ink { width: 100%; }
 
 /* Scroll reveal: a stepped clip, so the dither appears in hard steps instead of a smooth fade. */
-.naos-art.is-armed img { clip-path: inset(0 100% 0 0); }
-.naos-art.is-in img { animation: naos-dither-in var(--cm-d-slow) steps(12, end) forwards; }
+.naos-art.is-armed .naos-art-ink { clip-path: inset(0 100% 0 0); }
+.naos-art.is-in .naos-art-ink { animation: naos-dither-in var(--cm-d-slow) steps(12, end) forwards; }
 @keyframes naos-dither-in {
   from { clip-path: inset(0 100% 0 0); }
   to { clip-path: inset(0 0 0 0); }
@@ -21,7 +29,7 @@
   .naos-art-hero { top: 2%; right: -6%; width: 74vw; opacity: .22; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .naos-art.is-armed img, .naos-art.is-in img { clip-path: none; animation: none; }
+  .naos-art.is-armed .naos-art-ink, .naos-art.is-in .naos-art-ink { clip-path: none; animation: none; }
   .naos-backdrop, .naos-backdrop-ground { transition: none; }
 }
 
@@ -49,14 +57,18 @@
    overscan. The mask stays on .naos-backdrop, so the fade keeps its geometry. */
 .naos-backdrop-art {
   position: absolute; inset: -64px; pointer-events: none;
-  background-position: center 64px; background-size: max(1440px, 100vw) auto; background-repeat: no-repeat;
+  background: var(--cm-accent);
+  -webkit-mask-image: var(--naos-art); mask-image: var(--naos-art);
+  -webkit-mask-position: center 64px; mask-position: center 64px;
+  -webkit-mask-size: max(1440px, 100vw) auto; mask-size: max(1440px, 100vw) auto;
+  -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat;
   image-rendering: pixelated;
 }
 /* Shown at once, under the art, while the image decodes: a plain dot field in the same spot and shape. It fades out
    as the art fades in, so the page is never blank and the art never snaps in. */
 .naos-backdrop-ground {
   position: fixed; inset: 0; z-index: -1; pointer-events: none;
-  background: radial-gradient(circle, rgba(244, 244, 242, .16) 0 30%, transparent 34%) 0 0 / 6px 6px;
+  background: radial-gradient(circle, color-mix(in srgb, var(--cm-accent) 16%, transparent) 0 30%, transparent 34%) 0 0 / 6px 6px;
   -webkit-mask-image: radial-gradient(ellipse 75% 85% at 82% 18%, #000 0, rgba(0, 0, 0, .55) 45%, transparent 92%);
   mask-image: radial-gradient(ellipse 75% 85% at 82% 18%, #000 0, rgba(0, 0, 0, .55) 45%, transparent 92%);
   opacity: .6; transition: opacity 700ms ease-out;
@@ -71,7 +83,7 @@
   .naos-backdrop.is-ready { opacity: .4; }
   .naos-backdrop-art {
     /* 62% is taken over the 518px overscanned box, so -15.36px keeps the art where 62% of 390px put it before. */
-    background-position: calc(62% - 15.36px) 64px;
+    -webkit-mask-position: calc(62% - 15.36px) 64px; mask-position: calc(62% - 15.36px) 64px;
   }
   .naos-backdrop {
     -webkit-mask-image: linear-gradient(180deg, transparent 0, #000 22%, rgba(0, 0, 0, .6) 60%, transparent 96%);
@@ -97,14 +109,14 @@
 .naos-halo {
   inset: auto; left: 0; top: 0; width: 300px; height: 300px; opacity: 0; will-change: transform;
   transition: opacity 420ms ease-out;
-  background: radial-gradient(circle, rgba(244, 244, 242, .5) 0 30%, transparent 34%) 0 0 / 6px 6px;
+  background: radial-gradient(circle, color-mix(in srgb, var(--cm-accent) 50%, transparent) 0 30%, transparent 34%) 0 0 / 6px 6px;
   -webkit-mask-image: radial-gradient(circle closest-side, #000 0, rgba(0, 0, 0, .6) 40%, transparent 100%);
   mask-image: radial-gradient(circle closest-side, #000 0, rgba(0, 0, 0, .6) 40%, transparent 100%);
 }
 .naos-halo.is-on { opacity: .8; }
 .naos-ripple {
   position: absolute; width: 240px; height: 240px; margin: -120px 0 0 -120px; border-radius: 50%;
-  background: radial-gradient(circle, rgba(244, 244, 242, .7) 0 30%, transparent 34%) 0 0 / 6px 6px;
+  background: radial-gradient(circle, color-mix(in srgb, var(--cm-accent) 70%, transparent) 0 30%, transparent 34%) 0 0 / 6px 6px;
   -webkit-mask-image: radial-gradient(circle closest-side, transparent 76%, #000 84%, #000 92%, transparent 100%);
   mask-image: radial-gradient(circle closest-side, transparent 76%, #000 84%, #000 92%, transparent 100%);
   animation: naos-ripple-out 900ms steps(9, end) both; pointer-events: none;
@@ -126,46 +138,53 @@
    desktop, 1 on phones) with pixelated sampling, so the dots stay crisp.
    A band sits behind each page title on the right and fades toward the left; each page family gets its own variant.
    A wash sits behind each ruled section, fading across it; sections rotate through the four washes. Both sit at
-   z-index -1 inside .ctos, so they paint over the backdrop and under the content. */
+   z-index -1 inside .ctos, so they paint over the backdrop and under the content.
+   The art is a mask filled with --cm-accent. Each mask layer is intersected with the existing fade, so the fade and
+   the art keep their geometry. The art is set per variant in --band-art or --wash-art. */
 .ctos .cm-head::before {
   content: ""; position: absolute; z-index: -1; right: 0; top: 50%; transform: translateY(-50%);
   width: 100%; height: 192px; pointer-events: none;
-  background: url("/naos/band-track.webp") right center / 960px 192px no-repeat;
-  image-rendering: pixelated; opacity: .42;
-  -webkit-mask-image: linear-gradient(270deg, #000 35%, transparent 100%);
-  mask-image: linear-gradient(270deg, #000 35%, transparent 100%);
+  --band-art: url("/naos/band-track.webp"); --band-size: 960px 192px;
+  background: var(--cm-accent); image-rendering: pixelated; opacity: .42;
+  -webkit-mask-image: var(--band-art), linear-gradient(270deg, #000 35%, transparent 100%);
+          mask-image: var(--band-art), linear-gradient(270deg, #000 35%, transparent 100%);
+  -webkit-mask-composite: source-in; mask-composite: intersect;
+  -webkit-mask-size: var(--band-size), auto; mask-size: var(--band-size), auto;
+  -webkit-mask-position: right center, 0 0; mask-position: right center, 0 0;
+  -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat;
 }
 /* On wide screens the lede runs under the left half of the band, so the band stays faint there and shows on the right. */
 @media (min-width: 761px) {
   .ctos .cm-head::before {
-    -webkit-mask-image: linear-gradient(270deg, #000 22%, transparent 50%);
-    mask-image: linear-gradient(270deg, #000 22%, transparent 50%);
+    -webkit-mask-image: var(--band-art), linear-gradient(270deg, #000 22%, transparent 50%);
+            mask-image: var(--band-art), linear-gradient(270deg, #000 22%, transparent 50%);
   }
 }
-.ctos.st-page .cm-head::before { background-image: url("/naos/band-rail.webp"); }
-.ctos.about .cm-head::before { background-image: url("/naos/band-seam.webp"); }
+.ctos.st-page .cm-head::before { --band-art: url("/naos/band-rail.webp"); }
+.ctos.about .cm-head::before { --band-art: url("/naos/band-seam.webp"); }
 @media (max-width: 760px) {
-  .ctos .cm-head::before { background-size: 480px 96px; height: 96px; opacity: .3; }
+  .ctos .cm-head::before { --band-size: 480px 96px; height: 96px; opacity: .3; }
 }
 
 /* The wash fades in from the top edge and out toward the sides and the bottom, so the block never reads as a
-   rectangle. The mask is an intersection of a horizontal ramp and a vertical ramp. */
+   rectangle. The mask is an intersection of the art with a horizontal ramp and a vertical ramp. */
 .ctos .cm-section.ruled::before {
   content: ""; position: absolute; inset: 0; z-index: -1; pointer-events: none;
-  background: url("/naos/wash-a.webp") center top / 720px 480px no-repeat; image-rendering: pixelated; opacity: .3;
-  -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 24%, #000 60%, transparent 98%),
+  --wash-art: url("/naos/wash-a.webp"); --wash-size: 720px 480px;
+  background: var(--cm-accent); image-rendering: pixelated; opacity: .3;
+  -webkit-mask-image: var(--wash-art), linear-gradient(90deg, transparent 0, #000 24%, #000 60%, transparent 98%),
                       linear-gradient(180deg, transparent 0, #000 14%, #000 38%, transparent 90%);
   -webkit-mask-composite: source-in;
-          mask-image: linear-gradient(90deg, transparent 0, #000 24%, #000 60%, transparent 98%),
+          mask-image: var(--wash-art), linear-gradient(90deg, transparent 0, #000 24%, #000 60%, transparent 98%),
                       linear-gradient(180deg, transparent 0, #000 14%, #000 38%, transparent 90%);
           mask-composite: intersect;
-  -webkit-mask-size: 720px 480px; mask-size: 720px 480px;
+  -webkit-mask-size: var(--wash-size); mask-size: var(--wash-size);
   -webkit-mask-position: center top; mask-position: center top;
   -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat;
 }
-.ctos .cm-section.ruled:nth-of-type(4n+2)::before { background-image: url("/naos/wash-b.webp"); }
-.ctos .cm-section.ruled:nth-of-type(4n+3)::before { background-image: url("/naos/wash-c.webp"); }
-.ctos .cm-section.ruled:nth-of-type(4n)::before { background-image: url("/naos/wash-d.webp"); }
+.ctos .cm-section.ruled:nth-of-type(4n+2)::before { --wash-art: url("/naos/wash-b.webp"); }
+.ctos .cm-section.ruled:nth-of-type(4n+3)::before { --wash-art: url("/naos/wash-c.webp"); }
+.ctos .cm-section.ruled:nth-of-type(4n)::before { --wash-art: url("/naos/wash-d.webp"); }
 @media (max-width: 760px) {
-  .ctos .cm-section.ruled::before { background-size: 360px 240px; -webkit-mask-size: 360px 240px; mask-size: 360px 240px; opacity: .22; }
+  .ctos .cm-section.ruled::before { --wash-size: 360px 240px; opacity: .22; }
 }

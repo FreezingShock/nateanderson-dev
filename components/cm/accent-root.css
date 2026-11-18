@@ -1,0 +1,22 @@
+/* Accent change sweep (components/cm/accent-root.tsx). A stepped accent bar crosses the viewport over a faint tint,
+   so a band change or a pick reads as a move, not a silent swap. Pointer-events none; never blocks content. */
+.accent-sweep { position: fixed; inset: 0; z-index: var(--cm-z-top); pointer-events: none; overflow: hidden; background: var(--cm-accent); opacity: 0; }
+.accent-sweep::after {
+  content: ""; position: absolute; top: 0; bottom: 0; left: 0; width: 8px; background: var(--cm-accent);
+  transform: translateX(-8px); opacity: 0;
+}
+.accent-sweep.is-run { animation: accent-sweep-tint 1.1s var(--cm-ease-cut) forwards; }
+.accent-sweep.is-run::after { animation: accent-sweep-bar 1.1s steps(18, end) forwards; }
+@keyframes accent-sweep-tint {
+  0% { opacity: 0; }
+  12% { opacity: .12; }
+  100% { opacity: 0; }
+}
+@keyframes accent-sweep-bar {
+  0% { opacity: 1; transform: translateX(-8px); }
+  85% { opacity: 1; }
+  100% { opacity: 0; transform: translateX(calc(100vw + 8px)); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .accent-sweep, .accent-sweep::after { display: none; }
+}

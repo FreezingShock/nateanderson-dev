@@ -22,6 +22,8 @@ import { nfSaveText } from "@/lib/nodefarm/save";
 import { SW_PATH, SW_SAVE_KEY, SW_SUBS, swCommand } from "@/lib/starwright/commands";
 import { STARWRIGHT_SAVE, type State as SwState } from "@/lib/starwright/engine";
 import { setPrefs } from "@/lib/sound/engine";
+import { pickAccent } from "@/components/cm/accent-root";
+import { ACCENT_KEY } from "@/lib/accent";
 import { sfx } from "@/lib/sound/sounds";
 import { useSoundPrefs } from "@/lib/sound/use-sound";
 import "./console.css";
@@ -482,6 +484,27 @@ const COMMANDS: Cmd[] = [
             }
             if (a) return [t("sound: use on or off.", "err")];
             return [t(`sound is ${ctx.soundOn ? "on" : "off"}. sound on · sound off`)];
+        },
+    },
+    {
+        name: "accent",
+        usage: "accent [auto|amber|cyan|violet]",
+        desc: "colour by time of day, or pin one",
+        run: (args) => {
+            const a = (args[0] ?? "").toLowerCase();
+            if (a === "auto" || a === "amber" || a === "cyan" || a === "violet") {
+                pickAccent(a);
+                return [t(a === "auto" ? "accent follows Pacific time." : `accent pinned to ${a}.`)];
+            }
+            if (a) return [t("accent: use auto, amber, cyan or violet.", "err")];
+            let stored: string | null = null;
+            try {
+                stored = localStorage.getItem(ACCENT_KEY);
+            } catch {
+                /* blocked storage */
+            }
+            const shown = document.documentElement.getAttribute("data-accent") ?? "cyan";
+            return [t(`accent is ${shown}, ${stored ? "pinned" : "following Pacific time"}. accent auto · accent amber · accent cyan · accent violet`)];
         },
     },
     {

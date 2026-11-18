@@ -10,6 +10,8 @@ import { SiteMap } from "@/components/cm/site-map";
 import { KeyboardShortcuts } from "@/components/cm/keys";
 import { Boot, BOOT_SCRIPT } from "@/components/cm/boot";
 import { MotionRoot } from "@/components/cm/motion-root";
+import { AccentRoot } from "@/components/cm/accent-root";
+import { ACCENT_SCRIPT } from "@/lib/accent";
 import { CtosBody } from "@/components/cm/ctos-body";
 import { CTOS_BODY_SCRIPT } from "@/lib/ctos-body-script";
 import { SiteFooter } from "@/components/site-footer";
@@ -68,6 +70,8 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
                 <meta name="darkreader-lock" />
                 {/* Picks the load-sequence variant before first paint (see components/cm/boot.tsx). */}
                 <script dangerouslySetInnerHTML={{ __html: BOOT_SCRIPT }} />
+                {/* Sets the time-of-day accent (data-accent on <html>) before first paint (lib/accent.ts). */}
+                <script dangerouslySetInnerHTML={{ __html: ACCENT_SCRIPT }} />
             </head>
             <body suppressHydrationWarning>
                 <ThemeProvider
@@ -82,6 +86,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
                     <Boot />
                     <Film />
                     <MotionRoot />
+                    <AccentRoot />
                     <CtosBody />
                     <Bar />
                     <main id="main" className="cm-main">{children}</main>
