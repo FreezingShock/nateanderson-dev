@@ -102,14 +102,18 @@ export async function run(env) {
             // A phone panel can be most of the screen (Groundbreak on a phone), so the page may have less than 120 px to scroll:
             // start at 120 px or at the most the page has.
             const room = await page.evaluate(() => document.documentElement.scrollHeight - window.innerHeight);
-            const start = Math.max(0, Math.min(120, room));
-            await page.evaluate((y) => { window.scrollTo(0, y); }, start);
-            await page.waitForTimeout(150);
+            const want = Math.max(0, Math.min(120, room));
+            // An instant scroll also cancels a smooth scroll the shell started on load that is still landing (headless WebGL
+            // can stall frames, so the page can look still for a while). Take the baseline after that settles, so a late
+            // landing cannot count as a key press.
+            await page.evaluate((y) => { window.scrollTo({ top: y, behavior: "instant" }); }, want);
+            await page.waitForTimeout(400);
+            const start = await page.evaluate(() => window.scrollY);
             await page.evaluate(() => document.querySelector(".gs-frame")?.focus({ preventScroll: true }));
             for (const key of ["ArrowDown", "PageDown", "Space", "End"]) {
                 await page.keyboard.press(key);
             }
-            await page.waitForTimeout(250);
+            await page.waitForTimeout(500);
             const afterKeys = await page.evaluate(() => window.scrollY);
             check(suite, Math.abs(afterKeys - start) < 2, `${tag}: game keys do not scroll the page (scrollY ${afterKeys}, was ${start})`);
 
