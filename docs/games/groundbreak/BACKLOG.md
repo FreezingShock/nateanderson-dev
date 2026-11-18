@@ -17,8 +17,8 @@ How to verify a UI item: production build, 1440 and 390 wide, PNGs saved to `/mn
 - [ ] ASK GB-windows-dock | size S | Windows over the site (Jobs and Firm): side-docked panel on desktop, or a smaller window. Recommend side-docked on desktop, bottom sheet on phone | taste
 - [ ] ASK GB-repeat-orders | size S | Repeat orders pay 50% cash and 10% rep with no new building. Keep the rule or drop it; he has seen the feature only in passing, so confirm after his playthrough | playtest
 - [ ] ASK PERF-gb-real-device | size S | All numbers in `/mnt/project-files/portfolio/perf-audit-2026-11-15/groundbreak.md` are headless Chromium. Needs a real phone: playable time, frame feel with the tower at 40 storeys, and a multi-hour soak. Scene-art preloading gave no gain in time to playable, so do not redo it without new evidence | device
-- [ ] ASK GB-perk-names-touch | size S | Perk names and costs are on hover only, so a phone player sees icons and numbers. Options: caption under each icon, or tap to read then tap to buy. Recommend tap to read, tap again to buy | taste
-- [ ] ASK GB-firm-desktop-layout | size S | Desktop Firm window is 230 px of body, so perk tiles sit below the fold. Options: two columns (stats left, perks right), or a taller window. Recommend two columns | taste
+- [x] ASK GB-perk-names-touch | size S | Chosen by Nate 2026-11-18: tap to read, tap again to buy. Built: first tap shows the name and effect in the Firm footer, second tap buys | taste
+- [x] ASK GB-firm-desktop-layout | size S | Chosen by Nate 2026-11-18: two columns. Built: stats and Incorporate left, perk grid right; the long reason copy is hidden on desktop (the footer line says the same) | taste
 - [ ] ASK GB-crews-chip-phone | size S | The Crews chip is hidden under 520 px wide, so phone players never see their crew count. Recommend showing it as icon and number in the chip row | taste
 - [ ] ASK GB-real-phone-safari | size S | Real phone and Safari playthrough. Neither can be tested by a thread | device
 - [ ] ASK GB-live-check | size S | Live-site check after the next deploy. The password gate returns 401 to threads | device
