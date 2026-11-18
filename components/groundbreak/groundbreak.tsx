@@ -7,7 +7,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, 
 import { useGameShell } from "@/components/games/shell/game-route-shell";
 import { createSaveTools, downloadText, readPickedFile, writeStored } from "@/lib/games/save";
 import { loadSave, reviveAuto, reviveText, rollCopies, writeSave, encodeSave } from "@/lib/saves/core";
-import { JOB_BY, JOBS, MATS, PERKS, STAGES, TIER_LABELS, TUNE, UNLOCK_COST as UNLOCK, cityOf, N as NMAT } from "@/lib/groundbreak/data";
+import { JOB_BY, JOBS, MATS, PERKS, STAGES, TIER_LABELS, TUNE, UNLOCK_COST as UNLOCK, cityOf, N as NMAT, type Perk } from "@/lib/groundbreak/data";
 import { Ticked } from "@/components/games/juice/ticked";
 import {
     GROUNDBREAK_SAVE, SAVE_KEY, SAVE_VERSION, acceptChange, buy, jobMat, buyPerk, canBuy, canIncorporate, canUnlock, catchUp, charterGain, chain, declineChange, effects, fmt, fmtAge,
@@ -117,7 +117,10 @@ export function Groundbreak() {
     // the stage that just opened (its pip stamps once), and the perk that was just bought (its tile stamps once)
     const [freshStage, setFreshStage] = useState(-1);
     const [freshPerk, setFreshPerk] = useState<string | null>(null);
+    // the perk a phone player tapped once: its name and effect show in the Firm footer, and a second tap buys it
+    const [perkPeek, setPerkPeek] = useState<string | null>(null);
     const lastStage = useRef(-1);
+    useEffect(() => { if (win !== "firm") setPerkPeek(null); }, [win]);
     const [away, setAway] = useState<AwaySummary | null>(null);
     const [conflict, setConflict] = useState(false);
     const conflictRef = useRef(false);
@@ -624,6 +627,7 @@ export function Groundbreak() {
             </Window>
 
             <Window open={win === "firm"} title="Firm" hint={`${city.name} · firm ${s.firm + 1}`} variant="stamp" size="lg" icon="firm" banner="firm" onClose={() => setWin(null)}>
+                <div className="gb-firm-side">
                 <dl className="gb-stats">
                     <dt>Reputation this firm</dt><dd>{fmt(s.repFirm)}</dd>
                     <dt>Charter to spend</dt><dd>{s.charter}</dd>
@@ -631,12 +635,13 @@ export function Groundbreak() {
                     <dt>Offline limit</dt><dd>{Math.round((TUNE.offlineH + f.offlineH))} hours</dd>
                 </dl>
                 <p className="gb-line gb-firm-line">{canIncorporate(s, f) ? `Incorporate: +${charterGain(s, f)} charter for perks that stay, a new firm in ${cityOf(s.firm + 1).name}. The skyline stays.` : `Opens at ${TUNE.charterMinRep} rep (you have ${fmt(s.repFirm)}). Pays about +${Math.max(1, Math.floor(Math.sqrt(TUNE.charterMinRep / TUNE.charterDiv) * f.charter))} charter for perks that stay, then a new firm in ${cityOf(s.firm + 1).name}. The skyline stays.`}</p>
-                <PerkGrid s={s} justBought={freshPerk} onBuy={(id) => act((x) => { if (buyPerk(x, id)) { save(); setFreshPerk(id); note(`${PERKS.find((p) => p.id === id)?.name ?? "Perk"} bought.`, "hot"); } })} onAuto={(n) => act((x) => { x.autoOff = x.autoOff.includes(n) ? x.autoOff.filter((v) => v !== n) : [...x.autoOff, n]; save(); })} />
-<div className="gb-win-foot">
-                    {/* the reason stays in view under the perks, so a greyed button always says what it is waiting for */}
-                    <p className="gb-foot-line">{canIncorporate(s, f) ? `Ready: +${charterGain(s, f)} charter, a new firm in ${cityOf(s.firm + 1).name}.` : `Opens at ${TUNE.charterMinRep} rep. You have ${fmt(s.repFirm)}.`}</p>
+                <div className="gb-win-foot">
+                    {/* the reason stays in view under the perks, so a greyed button always says what it is waiting for; a tapped perk on a phone takes this line for its name and effect */}
+                    <p className="gb-foot-line" aria-live="polite">{perkPeek && PERKS.some((p) => p.id === perkPeek) ? perkLine(s, PERKS.find((p) => p.id === perkPeek)!) : canIncorporate(s, f) ? `Ready: +${charterGain(s, f)} charter, a new firm in ${cityOf(s.firm + 1).name}.` : `Opens at ${TUNE.charterMinRep} rep. You have ${fmt(s.repFirm)}.`}</p>
                     <ConfirmGo label="Incorporate" sure="Cash, crews and materials reset. Charter and the skyline stay. Sure?" onGo={doIncorporate} disabled={!canIncorporate(s, f)} />
                 </div>
+                </div>
+                <PerkGrid s={s} justBought={freshPerk} peek={perkPeek} onPeek={setPerkPeek} onBuy={(id) => act((x) => { if (buyPerk(x, id)) { save(); setFreshPerk(id); setPerkPeek(null); note(`${PERKS.find((p) => p.id === id)?.name ?? "Perk"} bought.`, "hot"); } })} onAuto={(n) => act((x) => { x.autoOff = x.autoOff.includes(n) ? x.autoOff.filter((v) => v !== n) : [...x.autoOff, n]; save(); })} />
             </Window>
 
             <Window open={win === "console"} title="Console" hint="gb help" variant="drop" icon="console" banner="console" size="md" onClose={() => setWin(null)}>
@@ -737,9 +742,24 @@ function MatCard({ s, i, onBuy, onUnlock, onClose, cue, leaving }: { s: State; i
     );
 }
 
-function PerkGrid({ s, justBought, onBuy, onAuto }: { s: State; justBought: string | null; onBuy: (id: string) => void; onAuto: (n: number) => void }) {
+/** What a perk's footer line says: its name and effect, and what stands between the player and buying it. */
+function perkLine(s: State, p: { id: string; name: string; desc: string; cost: number }): string {
+    if (s.perks.includes(p.id)) return `${p.name}: ${p.desc} Owned.`;
+    if (!perkReady(s.perks, p as Perk)) return `${p.name}: ${p.desc} Needs an earlier perk first.`;
+    if (s.charter < p.cost) return `${p.name}: ${p.desc} Costs ${p.cost} charter. You have ${s.charter}.`;
+    return `${p.name}: ${p.desc} Tap again to buy for ${p.cost} charter.`;
+}
+
+function PerkGrid({ s, justBought, peek, onPeek, onBuy, onAuto }: { s: State; justBought: string | null; peek: string | null; onPeek: (id: string | null) => void; onBuy: (id: string) => void; onAuto: (n: number) => void }) {
     const autoOf: Record<string, number> = { o2: 1, o4: 2, l9: 3 };
     const branches = [["ops", "Operations"], ["money", "Money"], ["logistics", "Logistics"]] as const;
+    // A touch screen has no hover to read a perk with: its first tap shows the name and effect, the second buys. A mouse buys on one click.
+    const tap = (p: Perk, buyable: boolean) => {
+        if (!buyable) { onPeek(p.id); return; }
+        const touch = window.matchMedia("(hover: none)").matches;
+        if (!touch || peek === p.id) { onPeek(null); onBuy(p.id); return; }
+        onPeek(p.id);
+    };
     return (
         <div className="gb-perks">
             {branches.map(([b, label]) => (
@@ -748,9 +768,10 @@ function PerkGrid({ s, justBought, onBuy, onAuto }: { s: State; justBought: stri
                     <ul>
                         {PERKS.filter((p) => p.branch === b).map((p) => {
                             const own = s.perks.includes(p.id), ready = perkReady(s.perks, p);
+                            const buyable = !own && ready && s.charter >= p.cost;
                             return (
                                 <li key={p.id} data-fresh={justBought === p.id ? "" : undefined}>
-                                    <button type="button" className="gb-perk" disabled={own || !ready || s.charter < p.cost} data-own={own ? "" : undefined} data-lock={!ready && !own ? "" : undefined} aria-label={p.name} data-tip={`${p.name}: ${p.desc}${own ? " Owned." : !ready ? " Needs an earlier perk." : ""}`} onClick={() => onBuy(p.id)}>
+                                    <button type="button" className="gb-perk" aria-disabled={!buyable || undefined} data-peek={peek === p.id ? "" : undefined} data-own={own ? "" : undefined} data-lock={!ready && !own ? "" : undefined} aria-label={p.name} data-tip={`${p.name}: ${p.desc}${own ? " Owned." : !ready ? " Needs an earlier perk." : ""}`} onClick={() => tap(p, buyable)}>
                                         <Ico id={`perk_${p.id}`} size={48} /><em>{own ? "✓" : p.cost}</em>
                                     </button>
                                     {own && autoOf[p.id] && <button type="button" className="gb-auto" aria-pressed={!s.autoOff.includes(autoOf[p.id])} onClick={() => onAuto(autoOf[p.id])} data-tip="Switch this automation on or off">{s.autoOff.includes(autoOf[p.id]) ? "off" : "on"}</button>}

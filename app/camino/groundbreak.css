@@ -245,8 +245,9 @@ html.gb-route .sf-foot { display: none !important; }
 .gb-perks ul { display: grid; gap: 4px; }
 .gb-perks li { display: flex; gap: 4px; }
 .gb-perk { flex: 1; display: flex; justify-content: space-between; gap: 6px; min-height: 36px; align-items: center; padding: 0 8px; background: #1c150f; border: 1px solid var(--gb-line-2); font-size: 12px; text-align: left; }
-.gb-perk:hover:not(:disabled) { border-color: var(--gb-hi); background: #2e2012; }
-.gb-perk:disabled { color: #8c8370; }
+.gb-perk:hover:not([aria-disabled="true"]) { border-color: var(--gb-hi); background: #2e2012; }
+.gb-perk[data-peek] { border-color: var(--gb-hi); background: #2e2012; }
+.gb-perk[aria-disabled="true"] { color: #8c8370; }
 .gb-perk[data-own] { border-color: var(--gb-ok); color: var(--gb-ink); }
 .gb-perk em { font-style: normal; color: var(--gb-hi); }
 .gb-auto { min-width: 40px; border: 1px solid var(--gb-line-2); font-size: 11px; text-transform: uppercase; }
@@ -388,10 +389,10 @@ html.gb-route .sf-foot { display: none !important; }
 .gb-perks li { position: relative; display: grid; }
 .gb-root .gb-perk { display: grid; place-items: center; justify-content: center; gap: 0; min-height: 76px; padding: 6px 4px 4px; flex: none; }
 .gb-perk .gb-ico { transition: transform .18s steps(3, end), filter .18s; }
-.gb-perk:hover:not(:disabled) .gb-ico { transform: translateY(-4px) scale(1.08); }
-.gb-perk:active:not(:disabled) .gb-ico { transform: translateY(1px); }
+.gb-perk:hover:not([aria-disabled="true"]) .gb-ico { transform: translateY(-4px) scale(1.08); }
+.gb-perk:active:not([aria-disabled="true"]) .gb-ico { transform: translateY(1px); }
 .gb-perk[data-lock] .gb-ico { filter: grayscale(.6) brightness(.7); }
-.gb-root .gb-perk:disabled:not([data-lock]) { opacity: 1; }
+.gb-root .gb-perk[aria-disabled="true"]:not([data-lock]) { opacity: 1; }
 
 .gb-perk[data-own] .gb-ico { animation: gbPop .3s steps(4, end); }
 .gb-perk em { font: 600 12px var(--gb-text); }
@@ -640,10 +641,23 @@ html.gb-route .sf-foot { display: none !important; }
 
 /* ---- polish (2026-11-15): near opaque window panels; the Incorporate line and button stay pinned at the foot of the Firm window ---- */
 .gb-root .gb-win, .gb-root .gb-card { background: rgba(20, 14, 18, .985); }
-.gb-win-foot { position: sticky; bottom: -12px; display: grid; gap: 8px; margin: 0 -12px -12px; padding: 10px 12px 12px; background: rgba(20, 14, 18, .985); border-top: 1px solid var(--gb-line-2); }
+.gb-win-foot { position: sticky; bottom: -12px; z-index: 2; display: grid; gap: 8px; margin: 0 -12px -12px; padding: 10px 12px 12px; background: rgba(20, 14, 18, .985); border-top: 1px solid var(--gb-line-2); }
 /* a fade just above the pinned Incorporate line, so a perk row cut at the scroll edge reads as "scroll for more" */
 .gb-win-foot::before { content: ""; position: absolute; left: 0; right: 0; top: -28px; height: 28px; background: linear-gradient(rgba(20, 14, 18, 0), rgba(20, 14, 18, .985)); pointer-events: none; }
 .gb-foot-line { font: 500 12px/1.35 var(--gb-text); color: var(--gb-dim); text-align: center; }
+.gb-firm-side { display: contents; }
+/* desktop Firm window (2026-11-18): two columns. Stats, the reason and Incorporate on the left; the perk grid on the right. */
+@media (min-width: 861px) and (min-height: 521px) {
+    .gb-root .gb-win.gb-lg { width: min(720px, calc(100vw - 420px)); }
+    .gb-root .gb-win.gb-lg .gb-win-body { display: grid; grid-template-columns: minmax(200px, .8fr) minmax(0, 1.4fr); align-items: start; gap: 12px 16px; }
+    .gb-root .gb-win.gb-lg .gb-firm-side { display: grid; gap: 10px; align-content: start; }
+    .gb-root .gb-win.gb-lg .gb-firm-side .gb-stats { grid-template-columns: auto 1fr; }
+    .gb-root .gb-win.gb-lg .gb-firm-side .gb-win-foot { position: static; margin: 0; padding: 10px 0 0; background: none; border-top: 1px solid var(--gb-line-2); }
+    .gb-root .gb-win.gb-lg .gb-firm-side .gb-win-foot::before { content: none; }
+    .gb-root .gb-win.gb-lg .gb-perks { grid-column: 2; grid-row: 1; }
+    /* the footer line above Incorporate already says what it needs or gives; the long copy stays on phones, where it sits in the scroll */
+    .gb-root .gb-win.gb-lg .gb-firm-line { display: none; }
+}
 /* desktop Firm window: four stats in two rows, so the perk grid starts higher and can be seen without a long scroll */
 @media (min-width: 861px) { .gb-root .gb-win.gb-lg .gb-stats { grid-template-columns: auto 1fr auto 1fr; gap: 4px 14px; } }
 
