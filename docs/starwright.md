@@ -48,8 +48,10 @@ Where: the "Deep stars" panel at the bottom of the constellation map (key C), on
 
 ## Saves, time away, settings (quality of life)
 - `lib/starwright/session.ts`: `loadSession` never drops a save that will not parse (the text is kept under `sw-save-v1-corrupt`, the rolling `sw-save-v1-backup` is tried, the player is told). Backups are written before a neutron star or black hole, before an import or reset, and every 10 minutes (never over a backup with more play). `advance(s, gap)` credits every gap: up to 2 s is one step, longer is caught up like time away (before, gaps of 1 to 3 s were lost). `awayReport` builds the welcome-back lines (kept under `sw-away-v1` for `sw away`).
+- New preferences go in `lib/starwright/settings.ts`, never in the save.
 - `lib/starwright/settings.ts`: `sw-settings-v1` (scene full/simple, notices, welcome card, auto supernova, auto visitors). The two automations are opt-in and unlock with existing milestones: Ten stars (auto supernova at 100/150/200/300% of the collapse) and twelve visitors (take the lump or the boost). They also run during time away (a waiting visitor is answered, supernovas fire as the core passes the share) and are reported on the welcome card.
 - One tab plays at a time (`BroadcastChannel` `sw-tab`): a newer tab tells older ones to stop saving; "Play here" swaps back.
+- Pause: the window's Pause button, Space and the Menu's Pause tile are one pause (the shell's `manualPaused`). A hidden tab is caught up on return like time away. A tab that lost the save lock stays paused.
 - Keys: 1 to 9 buy, N supernova, Q/W answer a visitor, Space pause, F full screen, U sound, C P O A M panels, Esc.
 - Console: `sw save`, `sw backup`, `sw restore [now]`, `sw corrupt`, `sw away`, `sw settings`, `sw set <name> <value>`, `sw keys`, `sw admin give|dust|neutrons|time` (a testing tool).
 - Sprites (`sprites.ts`) load a sheet when the scene first asks for it; the rest trickle in two at a time after 1.5 s instead of ~100 requests at boot.
