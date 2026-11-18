@@ -19,6 +19,17 @@ test("a late-game state ticking for 1 hour stays finite and non-negative", () =>
     assert.deepEqual(bad.slice(0, 3), []);
 });
 
+test("a state with every amount at the CAP stays finite through ticks, presses and a save round trip (Multipliers used to reach Infinity)", () => {
+    const s = maxed();
+    for (const k of ["bytes", "mult", "reboot", "ap", ...E.MATS]) s[k] = E.CAP;
+    s.life.bytes = E.CAP;
+    for (let i = 0; i < 40; i++) E.tick(s, 1);
+    for (const st of [...E.MATS, "mult", "reboot"]) if (E.isUnlocked(s, st)) for (let k = 0; k < E.TIERS; k++) E.press(s, st, k);
+    E.tick(s, 1);
+    assert.deepEqual(problems(s), []);
+    assert.ok(E.parseSave(JSON.stringify(s)), "the capped save still loads");
+});
+
 test("the Ascend, Handover, Ascend loop keeps every number sane", () => {
     const s = maxed();
     AD.ownAllFw(s);

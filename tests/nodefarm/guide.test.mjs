@@ -2,10 +2,10 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { resolve, dirname } from "node:path";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 import { E, ZE, fixtureNames, loadFixture, clone } from "./helpers.mjs";
 
-const G = await import(resolve(dirname(fileURLToPath(import.meta.url)), "../../lib/nodefarm/content/guide.ts"));
+const G = await import(pathToFileURL(resolve(dirname(fileURLToPath(import.meta.url)), "../../lib/nodefarm/content/guide.ts")).href);
 const step = (s) => G.nextStep(s, E.derive(s));
 
 test("every fixture gets a titled step with a finite meter", () => {

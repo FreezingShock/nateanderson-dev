@@ -1120,7 +1120,7 @@ export function press(s: State, stat: ButtonStat, tier: number): boolean {
         s.life.presses += 1;
         s.life.reboots += gain;
         s.rebootAt = s.life.secs;
-        s.mult = Math.max(1, s.mult * treeFx(s).rebootKeep);
+        s.mult = Math.min(CAP, Math.max(1, s.mult * treeFx(s).rebootKeep));
         s.bought.mult.fill(0);
         s.bytes = derive(s).bytesPerSec * (10 * s.perks.start + treeFx(s).start);
         RIG_HOOKS.afterReboot?.(s);
@@ -1129,7 +1129,7 @@ export function press(s: State, stat: ButtonStat, tier: number): boolean {
     (s[b.pays] as number) = amount(s, b.pays) - b.cost;
     s.life.presses += 1;
     s.bought[stat][tier] += 1;
-    if (stat === "mult") s.mult += b.gain;
+    if (stat === "mult") s.mult = Math.min(CAP, s.mult + b.gain);
     else s.prod[stat] += b.gain;
     RIG_HOOKS.spend?.(s, stat, tier);
     return true;

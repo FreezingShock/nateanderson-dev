@@ -7,7 +7,7 @@ import { writeFileSync, mkdirSync } from "node:fs";
 import { resolve } from "node:path";
 const [repo, out, label = "old"] = process.argv.slice(2);
 if (!repo || !out) { console.error("usage: save-gen.mjs <old repo> <out dir> [label]"); process.exit(1); }
-const E = await import(resolve(repo, "lib/nodefarm/engine.ts"));
+const E = await import(pathToFileURL(resolve(repo, "lib/nodefarm/engine.ts")).href);
 mkdirSync(out, { recursive: true });
 const s = E.fresh(0);
 const order = [...E.MATS].reverse().concat("mult");

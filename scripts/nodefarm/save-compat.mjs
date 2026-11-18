@@ -3,7 +3,7 @@
 //   node --experimental-strip-types scripts/nodefarm/save-compat.mjs [old repo, to also compare unlocks against it]
 import { readdirSync, readFileSync } from "node:fs";
 import { resolve, dirname } from "node:path";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 const dir = resolve(dirname(fileURLToPath(import.meta.url)), "fixtures");
 // rigs.ts and scripts.ts import "./engine" without an extension and hook themselves into the tick; load them like the game does
 const { registerHooks } = await import("node:module");
@@ -11,7 +11,7 @@ registerHooks({ resolve(spec, ctx, next) { try { return next(spec, ctx); } catch
 const E = await import("../../lib/nodefarm/engine.ts");
 const RG = await import("../../lib/nodefarm/zones/rigs.ts");
 const SC = await import("../../lib/nodefarm/systems/scripts.ts");
-const O = process.argv[2] ? await import(resolve(process.argv[2], "lib/nodefarm/engine.ts")) : null;
+const O = process.argv[2] ? await import(pathToFileURL(resolve(process.argv[2], "lib/nodefarm/engine.ts")).href) : null;
 let bad = 0;
 const fail = (f, msg) => { bad++; console.log(`  FAIL ${f}: ${msg}`); };
 const walk = (v, path, f) => {

@@ -13,8 +13,9 @@
 import { createHash } from "node:crypto";
 import { readFileSync, readdirSync, writeFileSync, existsSync } from "node:fs";
 import { join } from "node:path";
+import { fileURLToPath } from "node:url";
 
-const ROOT = new URL("../..", import.meta.url).pathname;
+const ROOT = fileURLToPath(new URL("../..", import.meta.url));
 const ART = join(ROOT, "public/naos/nodefarm");
 const CSS_DIR = join(ROOT, "app/camino");
 const TS_OUT = join(ROOT, "lib/nodefarm/art/art-version.ts");
@@ -50,7 +51,7 @@ export const ART_V: Record<string, string> = ${JSON.stringify(hash, null, 4).rep
 /** \`/naos/nodefarm/<file>?v=<hash>\` so a regenerated sheet never meets a stale cached copy. */
 export const nfArt = (file: string) => \`/naos/nodefarm/\${file}?v=\${ART_V[file] ?? "0"}\`;
 `;
-if (!existsSync(TS_OUT) || readFileSync(TS_OUT, "utf8") !== ts) {
+if (!existsSync(TS_OUT) || readFileSync(TS_OUT, "utf8").replaceAll("\r\n", "\n") !== ts) {
     if (check) errors.push("lib/nodefarm/art/art-version.ts is stale");
     else { writeFileSync(TS_OUT, ts); console.log("wrote lib/nodefarm/art/art-version.ts"); }
 }
