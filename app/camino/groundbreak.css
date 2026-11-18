@@ -21,7 +21,7 @@ html.gb-route .sf-foot { display: none !important; }
 .gb-boot { display: grid; place-items: center; color: var(--gb-dim); letter-spacing: .1em; text-transform: uppercase; font-size: 13px; }
 .gb-ico { display: inline-block; flex: none; background-size: 100% 100%; background-repeat: no-repeat; image-rendering: pixelated; }
 .gb-ico.is-dim { opacity: .45; }
-.gb-root kbd { font: 500 10px var(--gb-text); color: var(--gb-dim); }
+.gb-root kbd { font: 500 11px var(--gb-text); color: var(--gb-dim); }
 
 /* the site view */
 .gb-view { position: absolute; inset: 0; touch-action: none; cursor: grab; }
@@ -643,6 +643,9 @@ html.gb-route .sf-foot { display: none !important; }
 .gb-win-foot { position: sticky; bottom: -12px; display: grid; gap: 8px; margin: 0 -12px -12px; padding: 10px 12px 12px; background: rgba(20, 14, 18, .985); border-top: 1px solid var(--gb-line-2); }
 /* a fade just above the pinned Incorporate line, so a perk row cut at the scroll edge reads as "scroll for more" */
 .gb-win-foot::before { content: ""; position: absolute; left: 0; right: 0; top: -28px; height: 28px; background: linear-gradient(rgba(20, 14, 18, 0), rgba(20, 14, 18, .985)); pointer-events: none; }
+.gb-foot-line { font: 500 12px/1.35 var(--gb-text); color: var(--gb-dim); text-align: center; }
+/* desktop Firm window: four stats in two rows, so the perk grid starts higher and can be seen without a long scroll */
+@media (min-width: 861px) { .gb-root .gb-win.gb-lg .gb-stats { grid-template-columns: auto 1fr auto 1fr; gap: 4px 14px; } }
 
 /* ---- phone portrait (2026-11-15): locked groups past the next one stay hidden until they are in reach ---- */
 @media (max-width: 860px) and (min-height: 521px) { .gb-root .gb-dgroup[data-far] { display: none; } }
@@ -711,6 +714,9 @@ html.gb-route .sf-foot { display: none !important; }
 .gb-root .gb-tile .gb-tile-lock { top: 3px; right: 3px; bottom: auto; }
 .gb-root .gb-lv { min-width: 26px; height: 22px; padding: 0 5px; font: 700 14px/1 var(--gb-text); }
 .gb-root .gb-lv::before { opacity: .75; }
+@media (max-width: 860px) {
+    .gb-root .gb-x { width: 44px; height: 44px; font-size: 26px; }
+}
 @media (max-width: 860px) and (min-height: 521px) {
     .gb-root .gb-tile-name { font-size: 9px; }
     .gb-root .gb-tile[data-state="locked"] { height: 90px; }
@@ -722,10 +728,12 @@ html.gb-route .sf-foot { display: none !important; }
 @media (min-width: 861px) and (min-height: 521px) and (max-height: 720px) {
     .gb-root .gb-job .gb-banner { display: none; }
     .gb-root .gb-feed li:nth-last-child(n+2) { display: none; }
-    /* the card ends above the dock; a long job (a late save) scrolls its body instead of running under the dock */
-    .gb-root .gb-job { display: flex; flex-direction: column; max-height: calc(100% - var(--gb-dock-top, 140px) - 80px); }
-    .gb-root .gb-job-body { min-height: 0; overflow: auto; }
 }
+/* Every layout: the job card ends above the dock (--gb-job-room is measured in groundbreak.tsx). A long job (a late save, a change
+   order) scrolls its body instead of running under the dock, where its Accept and Decline buttons could not be pressed. */
+.gb-root .gb-job { display: flex; flex-direction: column; max-height: var(--gb-job-room, 60%); }
+.gb-root .gb-job > .gb-banner { flex: none; }
+.gb-root .gb-job-body { min-height: 0; overflow: auto; }
 
 /* Reward moments. A material that comes on site rings its dock tile once: a square outline that grows and fades in
    stepped frames. A hot feed line glows once as it lands. Both are off under reduced motion (the feed line keeps its text). */
