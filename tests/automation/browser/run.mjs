@@ -25,14 +25,20 @@ for (const f of readdirSync(srcDir).filter((f) => f.endsWith(".ts"))) {
     js = js.replace(/from "(\.\.?\/[^"]+)"/g, (m, p) => (p.endsWith(".js") ? m : `from "${p}.js"`));
     writeFileSync(join(out, "input", f.replace(/\.ts$/, ".js")), js);
 }
-// touch-bar.ts imports the HUD glyph sheet (../icons/ui), so that module has to be served too.
+// touch-bar.ts imports the HUD glyph sheet (../icons/ui) and the control tips (../tips), which sit outside input/.
+// Both sit at the same level as input/ in the temp build, so their relative imports resolve the same way.
 mkdirSync(join(out, "icons"));
-writeFileSync(
-    join(out, "icons", "ui.js"),
-    ts.transpileModule(readFileSync(join(root, "lib/automation/icons/ui.ts"), "utf8"), {
-        compilerOptions: { module: ts.ModuleKind.ESNext, target: ts.ScriptTarget.ES2020 },
-    }).outputText,
-);
+for (const [src, dst] of [
+    ["lib/automation/icons/ui.ts", "icons/ui.js"],
+    ["lib/automation/tips.ts", "tips.js"],
+]) {
+    writeFileSync(
+        join(out, dst),
+        ts.transpileModule(readFileSync(join(root, src), "utf8"), {
+            compilerOptions: { module: ts.ModuleKind.ESNext, target: ts.ScriptTarget.ES2020 },
+        }).outputText,
+    );
+}
 writeFileSync(join(out, "index.html"), `<!doctype html><html><head><meta name="viewport" content="width=device-width,initial-scale=1"><style>html,body{margin:0;height:100%;overflow:hidden;background:#0b1410}canvas{display:block;width:100vw;height:100vh;touch-action:none}</style></head><body><canvas id="c"></canvas><script type="module" src="/harness.js"></script></body></html>`);
 copyFileSync(join(here, "harness.js"), join(out, "harness.js"));
 const server = createServer((req, res) => {
@@ -199,11 +205,14 @@ const state = (page) => page.evaluate(() => window.__auto.snapshot());
 
     await page.evaluate(() => window.__auto.ctl.setToolById(null));
     const t0 = (await state(page)).target;
+    const y0Orbit = (await state(page)).yaw;
     const from = { x: 200, y: 500 };
     await drag(from, { x: 120, y: 500 }, 12);
     await page.waitForTimeout(100);
     const t1 = (await state(page)).target;
-    check("phone: one-finger drag pans the map", Math.hypot(t1.x - t0.x, t1.z - t0.z) > 0.3, `${t0.x.toFixed(2)},${t0.z.toFixed(2)} -> ${t1.x.toFixed(2)},${t1.z.toFixed(2)}`);
+    const t1Yaw = (await state(page)).yaw;
+    // On touch, one finger orbits the camera (pointer.ts: "One finger drags to orbit"); panning is a two-finger slide.
+    check("phone: one-finger drag orbits the camera", Math.abs(t1Yaw - y0Orbit) > 0.05 && Math.hypot(t1.x - t0.x, t1.z - t0.z) < 0.3, `yaw ${y0Orbit.toFixed(2)} -> ${t1Yaw.toFixed(2)}`);
 
     // Pinch: fingers spread apart zooms in (distance goes down).
     const d0 = (await state(page)).distance;
@@ -236,14 +245,21 @@ const state = (page) => page.evaluate(() => window.__auto.snapshot());
     // Long-press on an empty cell with a machine tool turns the ghost.
     await page.evaluate(() => window.__auto.ctl.setToolById("machine"));
     // Pick an empty cell on screen. Pinch zoom moves the target toward the fingers, so a fixed cell can end up off screen.
+    // Scan a grid of screen points for the first one over an empty board cell. The belt drawn above crosses the
+    // middle of the screen, so a fixed point can land on a belt and test the wrong thing.
     const e = await page.evaluate(() => {
         const ctl = window.__auto.ctl;
         const r = document.querySelector("canvas").getBoundingClientRect();
-        const pt = ctl.pointer.cellAt(r.left + r.width / 2, r.top + r.height / 2);
-        return { x: r.left + r.width / 2, y: r.top + r.height / 2, cell: pt };
+        const occupied = new Set(window.__auto.snapshot().items.map((i) => `${i.x},${i.z}`));
+        for (let y = r.top + 120; y < r.bottom - 120; y += 30) {
+            for (let x = r.left + 40; x < r.right - 40; x += 30) {
+                const cell = ctl.pointer.cellAt(x, y);
+                if (cell && !occupied.has(`${cell.x},${cell.z}`)) return { x, y, cell };
+            }
+        }
+        return { x: 0, y: 0, cell: null };
     });
-    const empty = await page.evaluate((cell) => !window.__auto.snapshot().items.some((i) => cell && i.x === cell.x && i.z === cell.z), e.cell);
-    check("phone: long-press target is an empty cell on screen", !!e.cell && empty, JSON.stringify(e.cell));
+    check("phone: long-press target is an empty cell on screen", !!e.cell, JSON.stringify(e.cell));
     await touch("touchStart", [{ x: e.x, y: e.y, id: 1 }]);
     await page.waitForTimeout(450);
     await touch("touchEnd", []);
