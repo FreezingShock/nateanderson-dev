@@ -21,9 +21,10 @@ registerGame({
     id: "groundbreak",
     name: "Groundbreak",
     window: { root: ".gb-root" },
-    // The fresh seed and the late seed (about 3 h of play, 13 jobs). The late seed found two HUD overlaps the fresh one missed.
+    // The fresh seed, the late seed (about 3 h of play, 13 jobs) and the late seed with a change order open. The late seed found two
+    // HUD overlaps the fresh one missed; the change order's card ran under the dock on desktop until 2026-11-18.
     hud: {
-        seeds: [{ label: "fresh" }, { label: "late", save: "seeds/groundbreak-late.json" }],
+        seeds: [{ label: "fresh" }, { label: "late", save: "seeds/groundbreak-late.json" }, { label: "late, change order", save: "seeds/groundbreak-change.json" }],
     },
 });
 

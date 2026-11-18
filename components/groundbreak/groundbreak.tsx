@@ -379,6 +379,7 @@ export function Groundbreak() {
             else if (k === "k") setWin((w) => (w === "skyline" ? null : "skyline"));
             else if (k === "f") setWin((w) => (w === "firm" ? null : "firm"));
             else if (k === "m") setWin((w) => (w === "menu" ? null : "menu"));
+            else if (k === "c") setWin((w) => (w === "console" ? null : "console"));
             else if (k === "p") togglePause();
             else if (k === "u") doUnlock();
             else if (k === "y") act((x) => acceptChange(x));
@@ -414,15 +415,35 @@ export function Groundbreak() {
     const skyline = useMemo(() => (sRef.current ? sRef.current.skyline.map((b, index) => ({ id: b.id, firm: b.firm, index })) : []), [skyKey]); // eslint-disable-line react-hooks/exhaustive-deps
 
     // the dock wraps to two or three rows on phones; publish how much room it takes so the cue, view buttons and feed sit above it
+    const measureRef = useRef<() => void>(() => {});
     useEffect(() => {
         const root = rootRef.current, dock = dockRef.current;
         if (!root || !dock) return;
-        const measure = () => root.style.setProperty("--gb-dock-top", `${Math.ceil(root.getBoundingClientRect().bottom - dock.getBoundingClientRect().top)}px`);
+        const measure = () => {
+            const rr = root.getBoundingClientRect(), dr = dock.getBoundingClientRect();
+            root.style.setProperty("--gb-dock-top", `${Math.ceil(rr.bottom - dr.top)}px`);
+            // The job card runs down to the dock, or to the cue or zoom buttons beside it. Its body scrolls past that.
+            const job = root.querySelector<HTMLElement>(".gb-job");
+            if (job) {
+                const jr = job.getBoundingClientRect();
+                let bottom = dr.top - 10;
+                for (const sel of [".gb-cue", ".gb-zoom"]) {
+                    const e = root.querySelector<HTMLElement>(sel);
+                    if (!e) continue;
+                    const er = e.getBoundingClientRect();
+                    if (er.width && er.height && er.right > jr.left && er.left < jr.right && er.top > jr.top) bottom = Math.min(bottom, er.top - 8);
+                }
+                root.style.setProperty("--gb-job-room", `${Math.max(56, Math.floor(bottom - jr.top))}px`);
+            }
+        };
+        measureRef.current = measure;
         measure();
         const ro = new ResizeObserver(measure);
         ro.observe(dock); ro.observe(root);
         return () => ro.disconnect();
     }, [ready]);
+    // the cue and job card change height with the game, so re-measure after every render
+    useEffect(() => { measureRef.current(); });
 
     // Held for the exit animations. These sit above the boot return so the hook order never changes.
     const cardH = useHeld(sel, 120);
@@ -476,7 +497,7 @@ export function Groundbreak() {
             </header>
 
             <nav className="gb-rail" aria-label="Menus" onPointerDown={(e) => e.stopPropagation()}>
-                {([["jobs", "bid", "Jobs", "J"], ["skyline", "skyline", "Skyline", "K"], ["firm", "firm", "Firm", "F"], ["console", "console", "Console", "⌃J"], ["menu", "menu", "Menu", "M"]] as const).map(([id, ic, label, key]) => (
+                {([["jobs", "bid", "Jobs", "J"], ["skyline", "skyline", "Skyline", "K"], ["firm", "firm", "Firm", "F"], ["console", "console", "Console", "C"], ["menu", "menu", "Menu", "M"]] as const).map(([id, ic, label, key]) => (
                     <button key={id} type="button" className="gb-rail-btn" aria-pressed={win === id} aria-label={label} data-tip={`${label} · ${key}`} data-ping={id === "firm" && (canIncorporate(s, f) || PERKS.some((p) => perkReady(s.perks, p) && s.charter >= p.cost)) ? "" : id === "jobs" && wait ? "" : undefined} onClick={() => { setSel(null); setWin(win === id ? null : id); }}>
                         <Ico id={ic} size={36} /><kbd>{key}</kbd>
                     </button>
@@ -612,7 +633,9 @@ export function Groundbreak() {
                 <p className="gb-line gb-firm-line">{canIncorporate(s, f) ? `Incorporate: +${charterGain(s, f)} charter for perks that stay, a new firm in ${cityOf(s.firm + 1).name}. The skyline stays.` : `Opens at ${TUNE.charterMinRep} rep (you have ${fmt(s.repFirm)}). Pays about +${Math.max(1, Math.floor(Math.sqrt(TUNE.charterMinRep / TUNE.charterDiv) * f.charter))} charter for perks that stay, then a new firm in ${cityOf(s.firm + 1).name}. The skyline stays.`}</p>
                 <PerkGrid s={s} justBought={freshPerk} onBuy={(id) => act((x) => { if (buyPerk(x, id)) { save(); setFreshPerk(id); note(`${PERKS.find((p) => p.id === id)?.name ?? "Perk"} bought.`, "hot"); } })} onAuto={(n) => act((x) => { x.autoOff = x.autoOff.includes(n) ? x.autoOff.filter((v) => v !== n) : [...x.autoOff, n]; save(); })} />
 <div className="gb-win-foot">
-                <ConfirmGo label="Incorporate" sure="Cash, crews and materials reset. Charter and the skyline stay. Sure?" onGo={doIncorporate} disabled={!canIncorporate(s, f)} />
+                    {/* the reason stays in view under the perks, so a greyed button always says what it is waiting for */}
+                    <p className="gb-foot-line">{canIncorporate(s, f) ? `Ready: +${charterGain(s, f)} charter, a new firm in ${cityOf(s.firm + 1).name}.` : `Opens at ${TUNE.charterMinRep} rep. You have ${fmt(s.repFirm)}.`}</p>
+                    <ConfirmGo label="Incorporate" sure="Cash, crews and materials reset. Charter and the skyline stay. Sure?" onGo={doIncorporate} disabled={!canIncorporate(s, f)} />
                 </div>
             </Window>
 
