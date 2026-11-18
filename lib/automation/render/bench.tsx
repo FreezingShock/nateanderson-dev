@@ -12,6 +12,7 @@
 //   delivery=1|unlock=1  fire that reward at the hub every 1.5 s (needs life)
 import { getMachineModel } from "../models/machines";
 import { useEffect, useRef } from "react";
+import * as THREE_NS from "three";
 import { createVoxelIsland, type VoxelIsland } from "./index";
 import { heightAt } from "./terrain";
 import { EXAMPLE_BLOCK } from "../models/examples";
@@ -182,9 +183,33 @@ export default function VoxelIslandBench() {
 
         if (q.get("cam") === "close") {
             // Close-up on a target cell (tx, tz in board units, default the centre) for stills of chutes and machines.
-            const tx = Number(q.get("tx") ?? 0), tz = Number(q.get("tz") ?? 0);
-            island.camera.position.set(tx + 3.6, 3.6, tz + 4.6);
-            island.camera.lookAt(tx, 0.6, tz);
+            // Default target: the centre of the furnace and press footprints from the fx case, on the same cells
+            // the sim places them on. Aimed at mid-height, since the bodies stand about 2 units tall.
+            const fxCells = [
+                { m: getMachineModel("furnace"), cell: { x: -3, z: -5 } },
+                { m: getMachineModel("press"), cell: { x: 0, z: -5 } },
+            ].filter((c) => c.m);
+            const centre = fxCells.reduce(
+                (acc, c) => ({
+                    x: acc.x + (c.cell.x + (c.m!.footprint?.w ?? 1) / 2) / fxCells.length,
+                    z: acc.z + (c.cell.z + (c.m!.footprint?.d ?? 1) / 2) / fxCells.length,
+                }),
+                { x: 0, z: 0 }
+            );
+            const tx = Number(q.get("tx") ?? centre.x), tz = Number(q.get("tz") ?? centre.z);
+            island.camera.position.set(tx + 3.2, 3.0, tz + 4.0);
+            island.camera.lookAt(tx, 1.4, tz);
+            // Readout for the close-up check: where the camera sits, what it aims at, and where each mesh in the scene is.
+            const { Box3, Vector3 } = THREE_NS;
+            const meshes = [] as { type: string; name: string; centre: number[]; size: number[] }[];
+            island.scene.traverse((o: { type: string; name: string; isMesh?: boolean; geometry?: { boundingBox: unknown } }) => {
+                if (!o.isMesh || meshes.length >= 40) return;
+                const box = new Box3().setFromObject(o as unknown as import("three").Object3D);
+                const c = box.getCenter(new Vector3());
+                const sz = box.getSize(new Vector3());
+                meshes.push({ type: o.type, name: o.name, centre: [c.x, c.y, c.z].map((v) => Math.round(v * 10) / 10), size: [sz.x, sz.y, sz.z].map((v) => Math.round(v * 10) / 10) });
+            });
+            console.log("[close-readout]", JSON.stringify({ cam: island.camera.position.toArray(), target: [tx, 1.4, tz], centre, meshes }));
         }
 
         island.resize();
