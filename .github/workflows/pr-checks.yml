@@ -38,11 +38,9 @@ jobs:
             - name: Typecheck
               run: npx tsc --noEmit
             # Node Farm engine rules (saves, resets, zone order, no NaN, tick size). Plain node:test, about 25 s, no extra dependencies.
+            # The same run includes the automation input tests (tests/automation), so there is no separate step for them.
             - name: Node Farm engine tests
               run: npm run test:nodefarm
-            # Automation input layer: camera, picking, placement and undo logic. Plain node:test, no browser.
-            - name: Automation input tests
-              run: npm run test:automation
             - uses: actions/cache@v4
               with:
                   path: .next/cache
