@@ -7,20 +7,20 @@ import assert from "node:assert/strict";
 import { registerHooks } from "node:module";
 import { readFileSync } from "node:fs";
 import { resolve, dirname } from "node:path";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 
 registerHooks({ resolve(spec, ctx, next) { try { return next(spec, ctx); } catch (e) { if (spec.startsWith(".")) return next(spec + ".ts", ctx); throw e; } } });
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
 const at = (p) => resolve(root, p);
-const CORE = await import(at("lib/saves/core.ts"));
-const KEYS = await import(at("lib/saves/keys.ts"));
-const GB = await import(at("lib/groundbreak/engine.ts"));
-const SW = await import(at("lib/starwright/engine.ts"));
-const BW = await import(at("lib/automation/sim/save.ts"));
-const WORLD = await import(at("lib/automation/sim/world.ts"));
-const NF = await import(at("lib/nodefarm/engine.ts"));
-const NFS = await import(at("lib/nodefarm/save.ts"));
-const GS = await import(at("lib/games/guess-stats.ts"));
+const CORE = await import(pathToFileURL(at("lib/saves/core.ts")).href);
+const KEYS = await import(pathToFileURL(at("lib/saves/keys.ts")).href);
+const GB = await import(pathToFileURL(at("lib/groundbreak/engine.ts")).href);
+const SW = await import(pathToFileURL(at("lib/starwright/engine.ts")).href);
+const BW = await import(pathToFileURL(at("lib/automation/sim/save.ts")).href);
+const WORLD = await import(pathToFileURL(at("lib/automation/sim/world.ts")).href);
+const NF = await import(pathToFileURL(at("lib/nodefarm/engine.ts")).href);
+const NFS = await import(pathToFileURL(at("lib/nodefarm/save.ts")).href);
+const GS = await import(pathToFileURL(at("lib/games/guess-stats.ts")).href);
 
 const memory = () => {
     const m = new Map();

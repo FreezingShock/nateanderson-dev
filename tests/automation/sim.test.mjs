@@ -3,14 +3,14 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { registerHooks } from "node:module";
 import { resolve, dirname } from "node:path";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 
 // The engine imports siblings without extensions, like the rest of lib/. Resolve them to .ts the way the bundler does.
 registerHooks({ resolve(spec, ctx, next) { try { return next(spec, ctx); } catch (e) { if (spec.startsWith(".")) return next(spec + ".ts", ctx); throw e; } } });
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
-const S = await import(resolve(root, "lib/automation/sim/index.ts"));
-const { PLACEHOLDER_CATALOG: CAT } = await import(resolve(root, "lib/automation/sim/data.ts"));
+const S = await import(pathToFileURL(resolve(root, "lib/automation/sim/index.ts")).href);
+const { PLACEHOLDER_CATALOG: CAT } = await import(pathToFileURL(resolve(root, "lib/automation/sim/data.ts")).href);
 
 const clone = (x) => structuredClone(x);
 const hubAt = { x: 10, z: 10 };

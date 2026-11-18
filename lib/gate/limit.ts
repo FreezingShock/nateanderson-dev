@@ -21,7 +21,8 @@ export function makeLimiter(max: number, windowMs: number) {
     };
 }
 
-export const clientIp = (req: Request) => (req.headers.get("x-forwarded-for") ?? "").split(",")[0].trim() || req.headers.get("x-real-ip") || "unknown";
+// Prefer headers the platform sets itself; the leftmost X-Forwarded-For entry is client-supplied, so it is the last resort.
+export const clientIp = (req: Request) => req.headers.get("x-vercel-forwarded-for")?.trim() || req.headers.get("x-real-ip")?.trim() || (req.headers.get("x-forwarded-for") ?? "").split(",")[0].trim() || "unknown";
 
 /** Reject cross-site POSTs: the Origin must match the Host. */
 export function sameOrigin(req: Request): boolean {

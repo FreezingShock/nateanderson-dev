@@ -2,15 +2,20 @@ name: PR checks
 
 on:
     pull_request:
-        branches: [integration, main]
+        # main is stale and PRs never target it (CLAUDE.md, docs/WORKFLOW.md).
+        branches: [integration]
+    # Re-test what integration holds after each merge. Only the verify job runs on push; the
+    # screenshot job is PR-only (its base_ref does not exist on push).
+    push:
+        branches: [integration]
 
 concurrency:
-    group: pr-checks-${{ github.event.pull_request.number }}
-    cancel-in-progress: true
+    # One group per PR; one per branch for pushes. Pushes are not cancelled, so every merged head gets a result.
+    group: pr-checks-${{ github.event.pull_request.number || github.ref }}
+    cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 permissions:
     contents: read
-    pull-requests: write
 
 env:
     SITE_PASSWORD: ci-password
@@ -34,30 +39,39 @@ jobs:
               with:
                   node-version: 22
                   cache: npm
+                  cache-dependency-path: |
+                      package-lock.json
+                      scripts/ci/package-lock.json
             - run: npm ci --no-audit --no-fund
             - name: Typecheck
               run: npx tsc --noEmit
             # Node Farm engine rules (saves, resets, zone order, no NaN, tick size). Plain node:test, about 25 s, no extra dependencies.
+            # The same run includes the automation input tests (tests/automation), so there is no separate step for them.
             - name: Node Farm engine tests
               run: npm run test:nodefarm
-            # Automation input layer: camera, picking, placement and undo logic. Plain node:test, no browser.
-            - name: Automation input tests
-              run: npm run test:automation
+            # Next's build cache. Keyed on the lockfile and the source the build reads, so a re-run of the same
+            # source restores it. Otherwise it falls back to the newest cache for the same lockfile.
             - uses: actions/cache@v4
               with:
                   path: .next/cache
-                  key: next-${{ runner.os }}-${{ hashFiles('package-lock.json') }}-${{ github.sha }}
-                  restore-keys: next-${{ runner.os }}-${{ hashFiles('package-lock.json') }}-
+                  key: next-${{ runner.os }}-${{ hashFiles('package-lock.json') }}-${{ hashFiles('next.config.ts', 'tsconfig.json', 'postcss.config.mjs', 'proxy.ts', 'app/**', 'components/**', 'lib/**', 'public/**') }}
+                  restore-keys: |
+                      next-${{ runner.os }}-${{ hashFiles('package-lock.json') }}-
             - name: Build
               run: npm run build
             - name: Crawl for broken links
               run: |
                   npx next start -p 3123 > server.log 2>&1 &
                   node scripts/ci/crawl.mjs http://localhost:3123 || { echo "--- server log ---"; tail -40 server.log; exit 1; }
+            - uses: actions/cache@v4
+              with:
+                  path: ~/.cache/ms-playwright
+                  key: playwright-${{ runner.os }}-${{ hashFiles('scripts/ci/package-lock.json') }}
             - name: Install browser for the stuck-text check
               working-directory: scripts/ci
+              # --with-deps still installs the system libraries on a cache hit; the cache only skips the download.
               run: |
-                  npm install --no-audit --no-fund
+                  npm ci --no-audit --no-fund
                   npx playwright install --with-deps chromium
             - name: Stuck-text check
               run: node scripts/ci/motion-stuck.mjs http://localhost:3123 || { echo "--- server log ---"; tail -40 server.log; exit 1; }
@@ -79,6 +93,11 @@ jobs:
         name: Screenshot diff
         runs-on: ubuntu-latest
         timeout-minutes: 30
+        if: github.event_name == 'pull_request'
+        # Only this job writes to the PR (the sticky summary comment), so only it gets pull-requests: write.
+        permissions:
+            contents: read
+            pull-requests: write
         steps:
             - uses: actions/checkout@v4
               with:
@@ -94,6 +113,7 @@ jobs:
                   cache-dependency-path: |
                       head/package-lock.json
                       base/package-lock.json
+                      head/scripts/ci/package-lock.json
             - name: Install and build both
               run: |
                   (cd head && npm ci --no-audit --no-fund && npm run build) &
@@ -101,10 +121,14 @@ jobs:
                   (cd base && npm ci --no-audit --no-fund && npm run build) &
                   p2=$!
                   wait $p1 && wait $p2
+            - uses: actions/cache@v4
+              with:
+                  path: ~/.cache/ms-playwright
+                  key: playwright-${{ runner.os }}-${{ hashFiles('head/scripts/ci/package-lock.json') }}
             - name: Install screenshot tools
               working-directory: head/scripts/ci
               run: |
-                  npm install --no-audit --no-fund
+                  npm ci --no-audit --no-fund
                   npx playwright install --with-deps chromium
             - name: Screenshot base and head
               # The two runs use separate servers and output folders, so they go side by side.

@@ -3,13 +3,13 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { registerHooks } from "node:module";
 import { resolve, dirname } from "node:path";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 
 registerHooks({ resolve(spec, ctx, next) { try { return next(spec, ctx); } catch (e) { if (spec.startsWith(".")) return next(spec + ".ts", ctx); throw e; } } });
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
-const E = await import(resolve(root, "lib/groundbreak/engine.ts"));
-const D = await import(resolve(root, "lib/groundbreak/data.ts"));
-const C = await import(resolve(root, "lib/groundbreak/commands.ts"));
+const E = await import(pathToFileURL(resolve(root, "lib/groundbreak/engine.ts")).href);
+const D = await import(pathToFileURL(resolve(root, "lib/groundbreak/data.ts")).href);
+const C = await import(pathToFileURL(resolve(root, "lib/groundbreak/commands.ts")).href);
 
 const finite = (s) => s.amt.every((v) => Number.isFinite(v) && v >= 0) && Number.isFinite(s.cash) && s.cash >= 0 && Number.isFinite(s.rep);
 function run(s, secs, dt = 1) { for (let t = 0; t < secs; t += dt) E.step(s, dt); }
@@ -500,7 +500,7 @@ test("gb help names every console subcommand", () => {
 });
 
 test("while the crew repeats a job, the waiting cue says what the next job waits on", async () => {
-    const G = await import(resolve(root, "lib/groundbreak/guide.ts"));
+    const G = await import(pathToFileURL(resolve(root, "lib/groundbreak/guide.ts")).href);
     const s = E.fresh(0);
     for (let t = 0; t < 3600 && !(s.job && s.job.rerun); t++) {
         const f = E.effects(s);

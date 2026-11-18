@@ -3,14 +3,14 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { registerHooks } from "node:module";
 import { resolve, dirname } from "node:path";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 
 registerHooks({ resolve(spec, ctx, next) { try { return next(spec, ctx); } catch (e) { if (spec.startsWith(".")) return next(spec + ".ts", ctx); throw e; } } });
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
-const E = await import(resolve(root, "lib/groundbreak/engine.ts"));
-const G = await import(resolve(root, "lib/groundbreak/guide.ts"));
-const C = await import(resolve(root, "lib/groundbreak/commands.ts"));
-const Q = await import(resolve(root, "lib/groundbreak/commands-qol.ts"));
+const E = await import(pathToFileURL(resolve(root, "lib/groundbreak/engine.ts")).href);
+const G = await import(pathToFileURL(resolve(root, "lib/groundbreak/guide.ts")).href);
+const C = await import(pathToFileURL(resolve(root, "lib/groundbreak/commands.ts")).href);
+const Q = await import(pathToFileURL(resolve(root, "lib/groundbreak/commands-qol.ts")).href);
 
 const run = (s, secs) => { for (let t = 0; t < secs; t++) E.step(s, 1); };
 

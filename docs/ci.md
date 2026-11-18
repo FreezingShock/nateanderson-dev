@@ -1,27 +1,37 @@
 # PR checks
 
-`.github/workflows/pr-checks.yml` runs on every pull request into `integration` or `main`. It runs in GitHub Actions, so it uses no Vercel deployments.
+`.github/workflows/pr-checks.yml` runs on every pull request into `integration` and on every push to `integration`, so a merged head is tested too. `main` is stale and is not a target. On a push only the blocking job (Typecheck, build, link crawl) runs; the screenshot diff is PR-only. It runs in GitHub Actions, so it uses no Vercel deployments.
 
 | Check | Blocks the PR? | What it does |
 |---|---|---|
 | Typecheck | yes | `tsc --noEmit` |
-| Node Farm engine tests | yes | `npm run test:nodefarm` (about 25 s): saves, resets, zone order, no NaN, tick size. See `docs/node-farm.md` ("Engine tests"). Runs in the same job as Typecheck, Build and Link crawl, so it is part of the existing required check. |
+| Node Farm engine tests | yes | `npm run test:nodefarm` (about 25 s): saves, resets, zone order, no NaN, tick size. See `docs/node-farm.md` ("Engine tests"). Runs in the same job as Typecheck, Build and Link crawl, so it is part of the existing required check. The same run covers the automation input tests (`tests/automation`), which `test:nodefarm` globs, so there is no separate step for them. |
 | Build | yes | `npm run build` |
 | Link crawl | yes | Starts the built site, signs in through the password gate, follows every internal link, image and script from `/` and every static route, and fails on any 4xx/5xx. External links are not checked. |
 | Stuck-text check | yes | `scripts/ci/motion-stuck.mjs`, after the link crawl in the same job. In Chromium on the built site, at 1440 and 390 (plus reduced motion at 1440), it jumps to in-page anchors, scrolls fast to the bottom and back, and tabs through the page. Every on-screen `data-final` text must show its real text within 3 s, and at once under reduced motion. Each check polls until the text has settled or the deadline passes (no single check after a fixed wait), so a slow runner cannot fail it; the job step takes about 2 min. `scripts/ci/scramble.mjs` is the slower, deeper hover and scroll hammer (about 10 min); run it by hand after changing `lib/motion/engine.ts`. |
 | Game checks | yes | `scripts/ci/checks/run.mjs all`, after the stuck-text check. One config-driven runner for the windowed game panel (Brasswork, Starwright, Groundbreak), the framed game route (Node Farm), and the Groundbreak HUD at seven sizes with a fresh and a late save. About 6 min. Results and failing screenshots are in the `game-checks` artifact. See "Game checks" below. |
-| Screenshot diff | no (advisory) | Builds the PR and its base branch, screenshots every route at 1440 and 390 wide (`scripts/ci/checks/run.mjs shots` and `diff`), and comments which pages changed by 0.5% of pixels or more. Diff images are in the `screenshot-diff` artifact. |
+| Screenshot diff | no (advisory, PR only) | Builds the PR and its base branch, screenshots every route at 1440 and 390 wide (`scripts/ci/checks/run.mjs shots` and `diff`), and comments which pages changed by 0.5% of pixels or more. Diff images are in the `screenshot-diff` artifact. |
 
 The CI site uses a throwaway `SITE_PASSWORD`, so no secrets are needed. Nothing here touches the real gate.
 
-Run locally (after `npm run build`):
+**Caching.** The verify job restores `.next/cache` (keyed on `package-lock.json` plus the source the build reads) and `~/.cache/ms-playwright` (keyed on `scripts/ci/package-lock.json`). GitHub scopes caches by branch: a PR run can restore caches saved on `integration`, but a PR cannot see another PR's caches. The push run on `integration` is what saves the caches the next PR run restores.
+
+Run locally (after `npm run build`). Bash:
 
 ```
 SITE_PASSWORD=ci-password npx next start -p 3123 &
 SITE_PASSWORD=ci-password node scripts/ci/crawl.mjs http://localhost:3123
 ```
 
-Screenshots need `cd scripts/ci && npm install && npx playwright install chromium` first. They freeze CSS animations and use reduced motion, so pages with random content (the guessers) can show small false diffs.
+PowerShell (Windows PowerShell 5.1: `VAR=x cmd` and `&` do not work there). The server runs in a hidden process and is stopped with its whole process tree when the crawl ends:
+
+```powershell
+$env:SITE_PASSWORD = 'ci-password'
+$server = Start-Process -FilePath 'npx.cmd' -ArgumentList 'next', 'start', '-p', '3123' -PassThru -WindowStyle Hidden
+try { node scripts/ci/crawl.mjs http://localhost:3123 } finally { taskkill /PID $server.Id /T /F }
+```
+
+Screenshots need `npm ci` and `npx playwright install chromium` run in `scripts/ci` first. They freeze CSS animations and use reduced motion, so pages with random content (the guessers) can show small false diffs.
 
 Known noise: the Groundbreak pages show live game state (stock counts, workers, the first-minute run), so a PR that changes the engine or the start state, such as #534, shows a 1 to 5% diff with no art change. `phone__creations-games-brasswork` shows about 1% on most PRs (animated scene) even when the PR does not touch it. Read the diff image before assuming a PR broke a page.
 
@@ -30,10 +40,21 @@ Known noise: the Groundbreak pages show live game state (stock counts, workers, 
 
 One runner, `scripts/ci/checks/run.mjs`, runs the browser checks for the games against a production build. It replaces the old window, shell and Groundbreak HUD scripts, and it keeps every assertion they made.
 
+Bash:
+
 ```
-cd scripts/ci && npm install && npx playwright install chromium && cd ../..   # once
-SITE_PASSWORD=ci-password SITE_GATE_SECRET=x npx next start -p 3123           # after npm run build
+(cd scripts/ci && npm ci && npx playwright install chromium)                   # once
+SITE_PASSWORD=ci-password SITE_GATE_SECRET=x npx next start -p 3123           # after npm run build, in its own terminal
 node scripts/ci/checks/run.mjs all http://localhost:3123 game-checks           # or: npm run check:games
+```
+
+PowerShell (after `npm run build`). Use `npm.cmd` and `npx.cmd`: the `.ps1` shims are blocked by the default execution policy.
+
+```powershell
+Push-Location scripts/ci; npm.cmd ci; npx.cmd playwright install chromium; Pop-Location   # once
+$env:SITE_PASSWORD = 'ci-password'; $env:SITE_GATE_SECRET = 'x'
+$server = Start-Process -FilePath 'npx.cmd' -ArgumentList 'next', 'start', '-p', '3123' -PassThru -WindowStyle Hidden
+try { node scripts/ci/checks/run.mjs all http://localhost:3123 game-checks } finally { taskkill /PID $server.Id /T /F }
 ```
 
 Suites: `window` (the windowed panel at 1440, 390 and 1366x657), `shell` (the framed game route at 390 and 1440, the hidden tab, full screen, saves, the manifest and the hub), `hud` (the Groundbreak HUD at seven sizes, with the fresh and the late save). Pick one with `npm run test:window`, `test:shell` or `test:hud`, or name a comma list. `--game groundbreak` limits the per-game checks to one game. Exit 1 on any failure. With an out dir it writes `results.json`, `summary.md` and the screenshots per suite.
@@ -60,6 +81,10 @@ Defaults: windowed games get the three windowed views, the HUD gets the seven st
 `scripts/ci/checks/run.mjs shots <base> <out>` screenshots every route at 1440 and 390 with CSS animations frozen, from the repo root of the build being served (it reads that build's `.next` manifests). `run.mjs diff <base-dir> <head-dir> <diff-dir>` writes the diff images and `summary.md`. Both are advisory and always exit 0.
 
 Known noise: the Groundbreak pages show live game state (stock counts, workers, the first-minute run), so a PR that changes the engine or the start state, such as #534, shows a 1 to 5% diff with no art change. `phone__creations-games-brasswork` shows about 1% on most PRs (animated scene) even when the PR does not touch it. Read the diff image before assuming a PR broke a page.
+
+## Contrast check
+
+`node scripts/ci/contrast.mjs <base> [out.json]` measures the dim and muted text tokens (`--cm-dim`, `--cm-mute`, `--cm-paper-mute` in `app/camino/camino.tokens.css`) on the real pixels behind each label, at 1440 and 390 over the eight main routes. It is not a PR gate. It needs `cd scripts/ci && npm ci && npx playwright install chromium` first. Text is made transparent and each label is read inside its own border at every scroll position. Judge a token by the median background (`p50`): a label whose median background is darker than #2e2e2e is on the dithered page, and lighter ones are component fills. The table counts labels whose 5th-percentile pixel is under the threshold, which is noisy for one-glyph spans; `min` is the single worst pixel. Headless Chromium only.
 
 ## Files
 

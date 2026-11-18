@@ -11,7 +11,7 @@
 // to "-corrupt-prev"), then each fallback key (rolling backups) is tried in order. A save from a newer version of the game is
 // treated the same way, so a rollback never overwrites it.
 
-export type Migration = (data: any) => any;
+export type Migration = (data: unknown) => unknown;
 
 export interface SaveDef<T> {
     /** Envelope app id. The same id the export file carries, so an export and a live save read the same way. */
@@ -21,11 +21,11 @@ export interface SaveDef<T> {
     /** Current save version. */
     version: number;
     /** Version of a save stored without an envelope. Defaults to 1. */
-    bareVersion?: (data: any) => number;
+    bareVersion?: (data: unknown) => number;
     /** migrations[v] turns data at version v into data at version v + 1. Keep every migration forever: old saves stay in browsers. */
     migrations?: Partial<Record<number, Migration>>;
     /** Builds the live state from migrated data. Return null for a save that is not usable. May throw. */
-    revive: (data: any) => T | null;
+    revive: (data: unknown) => T | null;
     /** The plain JSON to store for a live state. */
     dump: (state: T) => unknown;
     /** Rolling backups, newest first. Tried in order when the live save is damaged. */
@@ -66,6 +66,9 @@ const write = (st: Store, k: string, v: string): boolean => {
     }
 };
 
+/** A parsed JSON object (not null, not an array): the shape every save check below reads. */
+const isRecord = (v: unknown): v is Record<string, unknown> => !!v && typeof v === "object" && !Array.isArray(v);
+
 /** Text for "from N minutes ago" in a restore note. */
 export function agoText(ms: number): string {
     if (!(ms > 0)) return "earlier";
@@ -93,12 +96,13 @@ export function encodeData(app: string, version: number, data: unknown, now: num
  * A save from a newer version is refused (not migrated backwards).
  */
 export function upgrade<T>(def: SaveDef<T>, raw: string): { data: unknown; from: number; savedAt: number } {
-    const parsed: any = JSON.parse(raw);
-    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) throw new Error("not a save object");
+    const parsed: unknown = JSON.parse(raw);
+    if (!isRecord(parsed)) throw new Error("not a save object");
     if (typeof parsed.app === "string" && "data" in parsed) {
         if (parsed.app !== def.app) throw new Error(`save is for ${parsed.app}, not ${def.app}`);
         const savedAt = typeof parsed.savedAt === "string" ? Date.parse(parsed.savedAt) || 0 : 0;
-        return { ...migrateData(def, parsed.data, parsed.version), savedAt };
+        // migrateData checks that the version is a usable whole number, so the stored value is passed through as it is
+        return { ...migrateData(def, parsed.data, parsed.version as number), savedAt };
     }
     const savedAt = typeof parsed.savedAt === "number" && Number.isFinite(parsed.savedAt) ? parsed.savedAt : 0;
     return { ...migrateData(def, parsed, def.bareVersion ? def.bareVersion(parsed) : 1), savedAt };
@@ -141,10 +145,10 @@ export function reviveAuto<T>(def: SaveDef<T>, data: unknown): T | null {
 export function rawSavedAt(raw: string | null | undefined): number {
     if (!raw) return 0;
     try {
-        const p: any = JSON.parse(raw);
-        const inner = p && typeof p === "object" && "data" in p && typeof p.app === "string" ? p.data : p;
-        if (inner && typeof inner.savedAt === "number" && Number.isFinite(inner.savedAt)) return inner.savedAt;
-        return p && typeof p.savedAt === "string" ? Date.parse(p.savedAt) || 0 : 0;
+        const p: unknown = JSON.parse(raw);
+        const inner: unknown = isRecord(p) && "data" in p && typeof p.app === "string" ? p.data : p;
+        if (isRecord(inner) && typeof inner.savedAt === "number" && Number.isFinite(inner.savedAt)) return inner.savedAt;
+        return isRecord(p) && typeof p.savedAt === "string" ? Date.parse(p.savedAt) || 0 : 0;
     } catch {
         return 0;
     }

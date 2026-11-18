@@ -4,7 +4,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { registerHooks } from "node:module";
 import { resolve, dirname } from "node:path";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 
 // Resolve extensionless imports inside lib/automation to .ts, like the bundler does.
 registerHooks({
@@ -19,8 +19,8 @@ registerHooks({
 });
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
-const M = await import(resolve(root, "lib/automation/models/machines/index.ts"));
-const F = await import(resolve(root, "lib/automation/models/format.ts"));
+const M = await import(pathToFileURL(resolve(root, "lib/automation/models/machines/index.ts")).href);
+const F = await import(pathToFileURL(resolve(root, "lib/automation/models/format.ts")).href);
 
 const TREE_MACHINES = ["drill", "kiln", "furnace", "press", "lathe", "drawer", "assembler", "fabricator"];
 const FOOTPRINTS = { drill: [2, 2], kiln: [2, 2], furnace: [2, 3], press: [2, 3], lathe: [1, 2], drawer: [1, 2], assembler: [3, 3], fabricator: [4, 4] };

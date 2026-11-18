@@ -2,11 +2,16 @@
     "name": "nathans-portfolio-website",
     "version": "0.1.0",
     "private": true,
+    "engines": {
+        "node": ">=22.15"
+    },
     "scripts": {
         "dev": "next dev --turbopack",
         "prebuild": "node scripts/nodefarm/stamp-art.mjs --check",
         "build": "next build",
-        "test:nodefarm": "node --experimental-strip-types --no-warnings --test --test-reporter=spec \"tests/nodefarm/*.test.mjs\" \"tests/games/*.test.mjs\" \"tests/automation/*.test.mjs\" \"tests/starwright/*.test.mjs\" \"tests/groundbreak/*.test.mjs\" \"tests/saves/*.test.mjs\"",
+        "test:nodefarm": "node --experimental-strip-types --no-warnings --test --test-reporter=spec \"tests/nodefarm/*.test.mjs\" \"tests/games/*.test.mjs\" \"tests/automation/*.test.mjs\" \"tests/starwright/*.test.mjs\" \"tests/groundbreak/*.test.mjs\" \"tests/saves/*.test.mjs\" \"tests/gate/*.test.mjs\"",
+        "typecheck": "tsc --noEmit",
+        "verify": "npm run typecheck && npm run test:nodefarm",
         "test:automation": "node --experimental-strip-types --no-warnings --test --test-reporter=spec \"tests/automation/*.test.mjs\"",
         "test:automation:browser": "node tests/automation/browser/run.mjs",
         "start": "next start",

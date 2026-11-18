@@ -3,13 +3,13 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { registerHooks } from "node:module";
 import { resolve, dirname } from "node:path";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 
 registerHooks({ resolve(spec, ctx, next) { try { return next(spec, ctx); } catch (e) { if (spec.startsWith(".")) return next(spec + ".ts", ctx); throw e; } } });
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
-const S = await import(resolve(root, "lib/automation/sim/index.ts"));
-const G = await import(resolve(root, "lib/automation/sim/grid.ts"));
-const H = await import(resolve(root, "lib/automation/sim/hud.ts"));
+const S = await import(pathToFileURL(resolve(root, "lib/automation/sim/index.ts")).href);
+const G = await import(pathToFileURL(resolve(root, "lib/automation/sim/grid.ts")).href);
+const H = await import(pathToFileURL(resolve(root, "lib/automation/sim/hud.ts")).href);
 const CAT = S.DEFAULT_CATALOG;
 const SPOTS = S.START_NODE_SPOTS;
 const board = () => {

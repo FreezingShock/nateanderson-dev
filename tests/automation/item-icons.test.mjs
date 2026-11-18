@@ -3,10 +3,10 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { existsSync, readFileSync } from "node:fs";
 import { resolve, dirname } from "node:path";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
-const { RECIPE_TREE } = await import(resolve(root, "lib/automation/data/tree.ts"));
+const { RECIPE_TREE } = await import(pathToFileURL(resolve(root, "lib/automation/data/tree.ts")).href);
 
 // The icon index is generated TSX-free TypeScript but imports a React type, so read its tables as text.
 const iconSrc = readFileSync(resolve(root, "lib/automation/icons/index.ts"), "utf8");

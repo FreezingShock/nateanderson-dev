@@ -14,7 +14,8 @@ test("portraits match the current machine models", () => {
     const stale = [];
     for (const id of Object.keys(PORTRAITS)) {
         const h = createHash("sha1");
-        for (const f of [FILE[id] ?? `${id}.ts`, ...SHARED]) h.update(readFileSync(new URL(f, DIR)));
+        // A Windows checkout may hold CRLF; the stored hash is over LF source, so normalise before hashing.
+        for (const f of [FILE[id] ?? `${id}.ts`, ...SHARED]) h.update(readFileSync(new URL(f, DIR), "utf8").replace(/\r\n/g, "\n"));
         if (h.digest("hex").slice(0, 12) !== PORTRAIT_MODEL_HASH[id]) stale.push(id);
     }
     assert.deepEqual(stale, [], `Machine models changed: ${stale.join(", ")}. Update their drawings in scripts/brasswork/bw_machines.py, then run python3 scripts/brasswork/build-menu-art.py`);

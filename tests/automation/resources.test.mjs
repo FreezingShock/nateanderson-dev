@@ -4,7 +4,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { registerHooks } from "node:module";
 import { resolve, dirname } from "node:path";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 
 registerHooks({
     resolve(spec, ctx, next) {
@@ -18,7 +18,7 @@ registerHooks({
 });
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
 const R = await import(
-    resolve(root, "lib/automation/models/resources/index.ts")
+    pathToFileURL(resolve(root, "lib/automation/models/resources/index.ts")).href
 );
 
 const STATES = {
@@ -30,7 +30,7 @@ const STATES = {
 
 test("every raw item in the recipe tree has a deposit and a colour", async () => {
     const { RECIPE_TREE } = await import(
-        resolve(root, "lib/automation/data/tree.ts")
+        pathToFileURL(resolve(root, "lib/automation/data/tree.ts")).href
     );
     for (const n of RECIPE_TREE.nodes) {
         assert.ok(
@@ -139,7 +139,7 @@ test("stockpiles fit a cell and rise with fill", () => {
 
 test("every model id builds, validates against the shared format and fits its cell", async () => {
     const { validateModel, voxelCount } = await import(
-        resolve(root, "lib/automation/models/format.ts")
+        pathToFileURL(resolve(root, "lib/automation/models/format.ts")).href
     );
     const ids = R.allResourceModelIds();
     assert.ok(ids.length >= 80);

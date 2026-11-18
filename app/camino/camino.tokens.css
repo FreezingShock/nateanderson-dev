@@ -16,7 +16,7 @@
   --cm-ink-0:     #050607;   /* text ON paper/cyan plates */
   --cm-fg:        #e9eff1;   /* primary text */
   --cm-mute:      #8a99a3;   /* secondary text, labels */
-  --cm-dim:       #75858e;   /* disabled, placeholders, tick marks */
+  --cm-dim:       #88979e;   /* disabled, placeholders, tick marks (lifted from #75858e to clear 4.5:1 on the dithered pages) */
   --cm-paper:     #f2f3f1;   /* white plates: tags, header bars, active seg */
   --cm-paper-mute:#4a565c;   /* secondary text on paper */
 

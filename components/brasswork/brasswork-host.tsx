@@ -858,7 +858,7 @@ export function BrassworkHost() {
     return (
         <div className="bw-root">
             <AutomationHud data={data} actions={{ onBuild, onSelect, onResearch, onSetRecipe, onPrestige, onSettings }} settingsSlots={{ sound: <VolumeRows />, display: <LightingRow mood={mood} onMood={onMood} />, save: <SaveRows /> }} removeSlot={inputCtl ? <TrashButton input={inputCtl} variant="dock" /> : undefined} quest={quest ?? undefined} dockGroup={dockGroup} onDockGroup={onDockGroup}>
-                <canvas ref={canvasRef} className="bw-canvas" />
+                <canvas ref={canvasRef} className="bw-canvas" role="img" aria-label="Brasswork factory floor" />
                 <BrassworkExtras snapshot={snapshot} away={away} mood={mood} onMood={onMood} />
                 {inputCtl && <BuildingBadge input={inputCtl} nameOf={nameOfKind} />}
                 {inputCtl && <HoverName input={inputCtl} tipOf={tipOfKind} canvas={canvasRef} />}

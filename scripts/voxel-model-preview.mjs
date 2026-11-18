@@ -17,7 +17,8 @@ if (!id || !out) {
     process.exit(1);
 }
 const BASE = process.env.BASE_URL || "http://localhost:3000";
-const PASSWORD = process.env.SITE_PASSWORD || "dean";
+const PASSWORD = process.env.SITE_PASSWORD;
+if (!PASSWORD) throw new Error("Set SITE_PASSWORD (the site gate password) before running this script.");
 
 const browser = await chromium.launch({
     args: [

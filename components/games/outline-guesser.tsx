@@ -31,27 +31,26 @@ import {
     type Status,
     type Unit,
 } from "@/components/games/guess-kit";
-import { GLASS_CLASS, useGuessProgress } from "@/components/games/guess-kit";
+import { GLASS_CLASS, ShareResultButton, useGuessProgress } from "@/components/games/guess-kit";
 import { GuessModeTabs, MODE_PANEL_ID } from "@/components/games/mode-tabs";
 import { cn } from "@/lib/utils";
 import { sfx } from "@/lib/sound/sounds";
 import neighborData from "@/lib/data/neighbors.json";
 import {
-    ARROW_EMOJI,
     EMPTY_NEIGHBOR_STATE,
     MAX_GUESSES,
     MAX_HINTS,
     dailyCountry,
     dailyNumber,
     dayNumber,
-    direction8,
     flagSrc,
     flagStatus,
     makeFlagOptions,
-    pctSquares,
     poolFor,
     scoreGame,
     formatCountdown,
+    formatShareText,
+    formatSummaryShareText,
     seededShuffle,
     todayPT,
     type Country,
@@ -109,7 +108,6 @@ export function OutlineGuesser() {
     const [round, setRound] = useState(0);
     const [unit, setUnit] = useState<Unit>("km");
     const [showStats, setShowStats] = useState(false);
-    const [copied, setCopied] = useState(false);
     const [stage, setStage] = useState<1 | 2 | 3 | 4>(1);
     const [flag, setFlag] = useState<FlagState | null>(null);
     const [confirmRestart, setConfirmRestart] = useState(false);
@@ -366,50 +364,37 @@ export function OutlineGuesser() {
         return { results, score: scoreGame(results) };
     }, [status, guesses.length, hints, nb, nbCodes, flag, answer]);
 
-    const share = async () => {
-        if (!answer) return;
-        const head =
-            mode === "daily"
-                ? `Outline Guesser #${dailyNumber(dailyDate.current)}`
-                : "Outline Guesser";
-        const r1Score =
-            status === "won" ? `${guesses.length}/${MAX_GUESSES}` : `X/${MAX_GUESSES}`;
-        const rows = guesses.map((g) =>
-            g.pct === 100
-                ? "🟩🟩🟩🟩🟩 🎉"
-                : `${pctSquares(g.pct)} ${ARROW_EMOJI[direction8(g.bearing)]}`
-        );
-        const lines = [
-            `${head} ${game.score.pct}% ${game.score.rating}`,
-            `🌍 Country ${r1Score}${hints ? ` (${hints} hint${hints > 1 ? "s" : ""})` : ""}`,
-            ...rows,
-        ];
-        if (nbCodes.length > 0) {
-            lines.push(
-                game.results.r2?.played
-                    ? `🗺️ Neighbours ${game.results.r2.found}/${nbCodes.length} ${nb.guesses
-                          .map((g) => (nbCodes.includes(g) ? "🟩" : "🟥"))
-                          .join("")}`
-                    : "🗺️ Neighbours skipped"
-            );
-        }
-        lines.push(
-            game.results.r3.played
-                ? `🏳️ Flag ${
-                      game.results.r3.status === "won"
-                          ? `${game.results.r3.picks}/3`
-                          : "X/3"
-                  }`
-                : "🏳️ Flag skipped"
-        );
-        lines.push(`${window.location.origin}/creations/games/outline-guesser`);
-        const text = lines.join("\n");
-        try {
-            await navigator.clipboard.writeText(text);
-            setCopied(true);
-            setTimeout(() => setCopied(false), 2000);
-        } catch {}
-    };
+    // Plain-text summary of all three rounds for the summary's Share button: no emoji, no answer.
+    const summaryShareText = () =>
+        formatSummaryShareText({
+            game: "Outline Guesser",
+            ...(mode === "daily"
+                ? { mode: "daily" as const, puzzleNumber: dailyNumber(dailyDate.current) }
+                : { mode: "unlimited" as const }),
+            pct: game.score.pct,
+            rating: game.score.rating,
+            url: `${window.location.origin}/creations/games/outline-guesser`,
+            country: { won: status === "won", used: guesses.length, max: MAX_GUESSES, hints },
+            neighbours:
+                nbCodes.length > 0
+                    ? { played: !!game.results.r2?.played, found: game.results.r2?.found ?? 0, total: nbCodes.length }
+                    : null,
+            flag: { played: game.results.r3.played, won: game.results.r3.status === "won", picks: game.results.r3.picks, max: 3 },
+        });
+
+    // Plain-text result of this round for the Share result button: no emoji, no answer.
+    const roundShareText = () =>
+        formatShareText({
+            game: "Outline Guesser",
+            ...(mode === "daily"
+                ? { mode: "daily" as const, puzzleNumber: dailyNumber(dailyDate.current) }
+                : { mode: "unlimited" as const }),
+            won: status === "won",
+            used: guesses.length,
+            max: MAX_GUESSES,
+            streak: s.streak,
+            url: `${window.location.origin}/creations/games/outline-guesser`,
+        });
 
     const changeUnit = () => {
         const next: Unit = unit === "km" ? "mi" : "km";
@@ -554,19 +539,7 @@ export function OutlineGuesser() {
 
     const actions = (
         <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
-            <button
-                type="button"
-                onClick={share}
-                className="inline-flex items-center gap-2 rounded-[2px] border px-4 py-2 font-sans text-sm font-bold transition-transform hover:-translate-y-0.5"
-                style={{
-                    color: COLOR,
-                    borderColor: `color-mix(in oklch, ${COLOR} 55%, transparent)`,
-                    backgroundColor: `color-mix(in oklch, ${COLOR} 12%, transparent)`,
-                }}
-            >
-                {copied ? <PixelIcon name="check" className="size-4" /> : <PixelIcon name="share" className="size-4" />}
-                {copied ? "Copied!" : "Share"}
-            </button>
+            <ShareResultButton build={summaryShareText} />
             {mode === "unlimited" ? (
                 <button
                     type="button"
@@ -906,6 +879,9 @@ export function OutlineGuesser() {
                         It was <strong className="text-foreground">{answer.n}</strong>.
                     </p>
                     <StreakLine streak={s.streak} best={s.best} won={status === "won"} />
+                    <div className="mt-4 flex justify-center">
+                        <ShareResultButton build={roundShareText} />
+                    </div>
                     {nav1}
                 </div>
             )}

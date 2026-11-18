@@ -3,12 +3,12 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { resolve, dirname } from "node:path";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
-const { RECIPE_TREE } = await import(resolve(root, "lib/automation/data/tree.ts"));
-const { iconCell } = await import(resolve(root, "lib/automation/icons/index.ts"));
-const mock = await import(resolve(root, "components/automation/mock.ts"));
+const { RECIPE_TREE } = await import(pathToFileURL(resolve(root, "lib/automation/data/tree.ts")).href);
+const { iconCell } = await import(pathToFileURL(resolve(root, "lib/automation/icons/index.ts")).href);
+const mock = await import(pathToFileURL(resolve(root, "components/automation/mock.ts")).href);
 
 const missing = (ids) => [...new Set(ids)].filter((id) => iconCell(id) === undefined);
 

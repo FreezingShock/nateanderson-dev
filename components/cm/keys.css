@@ -61,6 +61,11 @@
     .cm-keys-btn { transition: none; }
 }
 
+/* Touch screens and phones: this footer button is a tap target, so it is at least 44px tall (34px by default). */
+@media (pointer: coarse), (max-width: 560px) {
+    .cm-keys-btn { min-height: 44px; }
+}
+
 /* The Node Farm window keys are short one-word rows, so they sit in two columns instead of a tall list. */
 @media (min-width: 561px) {
     .nv-keys-group[data-short] .nv-keys-list { display: grid; grid-template-columns: 1fr 1fr; column-gap: 28px; }

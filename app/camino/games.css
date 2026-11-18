@@ -724,6 +724,47 @@
 .ctos .gk-tool.is-on { background: var(--cm-ctos-block); border-color: var(--cm-ctos-block); color: var(--cm-ctos-ink); }
 .ctos .gk-tool:focus-visible { outline: 2px solid var(--cm-cyan); outline-offset: 2px; }
 
+/* Share result: the round's result screen (guess-kit.tsx ShareResultButton). 44px tall, sharp, shows Copied or Copy failed. */
+.ctos .gk-share-wrap { display: grid; justify-items: center; gap: 8px; max-width: 100%; }
+.ctos .gk-share {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    min-height: 44px;
+    padding: 10px 16px;
+    border: 1px solid color-mix(in oklch, var(--cm-cyan) 55%, transparent);
+    border-radius: 0;
+    background: color-mix(in oklch, var(--cm-cyan) 12%, transparent);
+    color: var(--cm-cyan);
+    font-size: 14px;
+    font-weight: 700;
+    line-height: 1;
+    cursor: pointer;
+    transition: background-color var(--cm-d-fast) var(--cm-ease), border-color var(--cm-d-fast) var(--cm-ease), color var(--cm-d-fast) var(--cm-ease);
+}
+.ctos .gk-share:hover { background: color-mix(in oklch, var(--cm-cyan) 22%, transparent); }
+.ctos .gk-share:focus-visible { outline: 2px solid var(--cm-cyan); outline-offset: 2px; }
+.ctos .gk-share.is-copied {
+    color: var(--cm-good);
+    border-color: color-mix(in oklch, var(--cm-good) 60%, transparent);
+    background: color-mix(in oklch, var(--cm-good) 14%, transparent);
+}
+.ctos .gk-share.is-failed { color: var(--cm-alert); border-color: color-mix(in oklch, var(--cm-alert) 60%, transparent); }
+.ctos .gk-share-text {
+    width: min(22rem, 100%);
+    min-height: 6rem;
+    padding: 10px 12px;
+    border: 1px solid var(--cm-hair-hi);
+    border-radius: 0;
+    background: transparent;
+    color: var(--cm-fg);
+    font: 500 13px/1.5 var(--cm-mono);
+    resize: none;
+    user-select: text;
+}
+.ctos .gk-share-text:focus-visible { outline: 2px solid var(--cm-cyan); outline-offset: 2px; }
+
 .ctos .gk-stage { position: relative; }
 .ctos .gk-stage[data-dir="r"] { animation: gkInR 460ms cubic-bezier(0.2, 0.9, 0.22, 1) both; }
 .ctos .gk-stage[data-dir="l"] { animation: gkInL 460ms cubic-bezier(0.2, 0.9, 0.22, 1) both; }
@@ -877,7 +918,7 @@
     .ctos .gk-tool, .ctos .gk-step, .ctos .gk-chip { min-height: 38px; }
 }
 @media (prefers-reduced-motion: reduce) {
-    .ctos .gk-stage, .ctos .gk-tab, .ctos .gk-tool, .ctos .gk-step, .ctos .gk-chip, .ctos .gk-tabs-ink,
+    .ctos .gk-stage, .ctos .gk-tab, .ctos .gk-tool, .ctos .gk-step, .ctos .gk-chip, .ctos .gk-tabs-ink, .ctos .gk-share,
     .ctos .gk-unlock-icon, .ctos .gk-streak-num, .ctos .gk-pip.is-on { animation: none !important; transition: none !important; }
     .ctos .gk-stage::after, .ctos .gk-tabs-sweep { display: none; }
 }
