@@ -60,6 +60,6 @@ export const BRASSWORK_SAVE: SaveDef<World> = {
     key: slot.key,
     version: slot.version,
     migrations: {},
-    revive: (d) => deserialize(d.text),
+    revive: (d) => deserialize((d as { text: string }).text),
     dump: (w) => ({ text: serialize(w) }),
 };

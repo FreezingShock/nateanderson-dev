@@ -642,10 +642,13 @@ export const GROUNDBREAK_SAVE: SaveDef<State> = {
     app: SAVE_SLOTS.groundbreak.app,
     key: SAVE_KEY,
     version: SAVE_VERSION,
-    bareVersion: (d) => (typeof d?.v === "number" ? d.v : 1),
+    bareVersion: (d) => {
+        const v = (d as { v?: unknown } | null | undefined)?.v;
+        return typeof v === "number" ? v : 1;
+    },
     migrations: {
         // v1 to v2 retuned rates and the job order. Numbers stored at v1 stay as they are; the retune applies from the next tick.
-        1: (d) => ({ ...d, v: 2 }),
+        1: (d) => ({ ...(d as object), v: 2 }),
     },
     revive: (d) => parse(d),
     dump: (s) => ({ ...s, flow: undefined }),
