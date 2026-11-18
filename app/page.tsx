@@ -3,6 +3,7 @@ import { Suspense } from "react";
 import { allGames } from "@/lib/creations-data";
 import { NOW_FEED, PATH, PILLARS, PROFILE_LEAD } from "@/lib/identity";
 import { navItems } from "@/lib/nav";
+import { homeJsonLd } from "@/lib/seo";
 import { Section } from "@/components/cm/ui";
 import { ScrollType, Scramble } from "@/components/cm/motion";
 import { NaosArt, NaosBackdrop } from "@/components/cm/naos-art";
@@ -28,6 +29,8 @@ const EXPLORE_TONE: Record<string, "paper" | "cyan" | "panel"> = {
 
 export const revalidate = 60; // re-check Supabase for new content every 60s
 
+export const metadata = { alternates: { canonical: "/" } };
+
 // Nothing here waits on the network: the library lookups live in <FeaturedCards />, behind a Suspense boundary, so
 // the hero and every section paint at once and the cards stream in when Supabase answers.
 export default function Home() {
@@ -35,6 +38,7 @@ export default function Home() {
 
     return (
         <div className="ctos" data-entrance="dither">
+            <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(homeJsonLd()).replace(/</g, "\u003c") }} />
             <NaosBackdrop src="/naos/bg-home.webp" />
             <header className="cm-hero" id="top">
                 <div className="cm-grid-bg" aria-hidden="true" />

@@ -26,6 +26,7 @@ export function pageMeta({
     return {
         title,
         description,
+        alternates: { canonical: path },
         openGraph: {
             type: "website",
             locale: "en_US",
@@ -41,5 +42,17 @@ export function pageMeta({
             description,
             ...(images && { images }),
         },
+    };
+}
+
+/** Schema.org JSON-LD for the homepage: the site and the person it is about. Only facts the site already states. */
+export function homeJsonLd() {
+    const site = "https://nateanderson.dev";
+    return {
+        "@context": "https://schema.org",
+        "@graph": [
+            { "@type": "WebSite", "@id": `${site}/#website`, url: site, name: SITE_NAME, description: DEFAULT_DESCRIPTION, inLanguage: "en-US", publisher: { "@id": `${site}/#person` } },
+            { "@type": "Person", "@id": `${site}/#person`, name: "Nate Anderson", url: site, sameAs: ["https://github.com/FreezingShock"] },
+        ],
     };
 }
