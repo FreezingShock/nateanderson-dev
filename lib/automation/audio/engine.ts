@@ -1,3 +1,4 @@
+import { audioContextClass, makeRoomImpulse } from "@/lib/audio/room";
 // Brasswork's audio engine: one Web Audio graph, built on the first click, tap or key press (browsers require one),
 // with every sound synthesized in code (no audio files, nothing third-party). The graph is
 //
@@ -62,23 +63,13 @@ let g: Graph | null = null;
 let armed = false;
 let removeArm: (() => void) | null = null;
 
+// A small dark workshop room (see lib/audio/room.ts).
 function impulse(ctx: AudioContext) {
-    // A small dark workshop room: decaying noise, low-passed by averaging.
-    const len = Math.floor(ctx.sampleRate * 0.7);
-    const b = ctx.createBuffer(2, len, ctx.sampleRate);
-    for (let c = 0; c < 2; c++) {
-        const d = b.getChannelData(c);
-        let last = 0;
-        for (let i = 0; i < len; i++) {
-            last = last * 0.8 + (Math.random() * 2 - 1) * 0.2;
-            d[i] = last * Math.pow(1 - i / len, 2.8);
-        }
-    }
-    return b;
+    return makeRoomImpulse(ctx, { seconds: 0.7, pole: 0.8, decay: 2.8 });
 }
 
 function build(): Graph | null {
-    const AC = window.AudioContext ?? (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+    const AC = audioContextClass();
     if (!AC) return null;
     const ctx = new AC({ latencyHint: "interactive" });
     const fx = ctx.createGain();
