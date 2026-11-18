@@ -38,7 +38,7 @@ export default function Home() {
 
     return (
         <div className="ctos" data-entrance="dither">
-            <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(homeJsonLd()).replace(/</g, "\u003c") }} />
+            <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(homeJsonLd()).replace(/</g, "\\u003c") }} />
             <NaosBackdrop src="/naos/bg-home.webp" />
             <header className="cm-hero" id="top">
                 <div className="cm-grid-bg" aria-hidden="true" />
