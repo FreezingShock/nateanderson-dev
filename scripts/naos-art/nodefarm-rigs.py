@@ -647,13 +647,51 @@ def convection(c, p, f):
         c.set(rect(36 + k * 4, 50 - t * 40, 37 + k * 4, 51 - t * 40), P["co"][5])
     status_strip(c, f, "co")
 
+P.update({
+    "as": [hexc(c) for c in ("#14110f", "#2c2723", "#544b43", "#7e7266", "#a89a8a", "#d2c4b4", "#f6efe6")],
+    "dw": [hexc(c) for c in ("#2a1c06", "#5a3e10", "#9a7020", "#d8a63c", "#ffd982", "#ffeaa8", "#fffbea")],
+    "dr": [hexc(c) for c in ("#200a14", "#4a1428", "#8a2a46", "#c24a66", "#ef7a88", "#ffa8a8", "#fff0ea")],
+})
+
+
+# 26 Ash gallery: Sifting
+def sifting(c, p, f):
+    floor_plate(c)
+    sieve = rect(20, 24, 76, 28)
+    c.fill(sieve, 0.5, "steel")
+    c.outline(sieve, "ink")
+    for k in range(9):
+        c.set(rect(22 + k * 6, 24, 24 + k * 6, 28), P["ink"][1])
+    c.fill(poly([(18, 24), (78, 24), (66, 8), (30, 8)]), 0.25, "as")
+    for k in range(int(2 + f * 8)):
+        t = (p + k / 10) % 1
+        c.set(rect(24 + (k * 13) % 48, 28 + t * 22, 25 + (k * 13) % 48, 29 + t * 22), P["as"][6])
+    heap = poly([(24, 56), (48, 56 - 8 - 12 * f), (72, 56)])
+    c.fill(heap, 0.3 + 0.3 * f, "as", outline="as")
+    status_strip(c, f, "as")
+
+
+# 27 Dawn gate: Horizon
+def horizon(c, p, f):
+    floor_plate(c)
+    c.fill(rect(8, 12, 88, 46), 0.1 + 0.2 * f, "dr")
+    sun = disc(48, 46, 8 + 6 * f) & (Y < 46)
+    c.fill(sun, 0.7 + 0.2 * f, "dw", outline="dw")
+    c.glow(sun, ("dw", 5), r=3, a=110)
+    for k in range(int(2 + f * 6)):
+        a = math.pi + (k + 0.5) / (2 + f * 6) * math.pi
+        c.set(path([(48 + math.cos(a) * 18, 46 + math.sin(a) * 18), (48 + math.cos(a) * 30, 46 + math.sin(a) * 30)], 1), P["dw"][5 + int(wave(p, 2) * 2)])
+    c.set(rect(8, 46, 88, 47), P["as"][4])
+    status_strip(c, f, "dw")
+
+
 RIG_ORDER = ["bytes", "mult", "reboot", "copper", "silicon", "quartz", "aether", "runes", "starglass", "voidsteel", "chrono",
              "nebula", "pulsars", "singularity", "engrams", "paradox", "origin",
-             "spores", "mycelium", "pollen", "bloom", "basalt", "magma", "geodes", "sunstone"]
+             "spores", "mycelium", "pollen", "bloom", "basalt", "magma", "geodes", "sunstone", "ash", "dawn"]
 DRAW = {"bytes": cache, "mult": staging, "reboot": capacitor, "copper": pour, "silicon": scrubbers, "quartz": crystals, "aether": afterglow, "runes": carvings,
         "starglass": prism, "voidsteel": voiddraw, "chrono": stillness, "nebula": weather, "pulsars": beacon, "singularity": well, "engrams": index,
         "paradox": mirror, "origin": rewrite, "spores": spread, "mycelium": knots, "pollen": daylight, "bloom": seedbank,
-        "basalt": drill, "magma": eruption, "geodes": ringing, "sunstone": convection}
+        "basalt": drill, "magma": eruption, "geodes": ringing, "sunstone": convection, "ash": sifting, "dawn": horizon}
 
 
 def blank(c, p, f):

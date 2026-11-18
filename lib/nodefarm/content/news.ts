@@ -210,7 +210,19 @@ const BASE: News[] = [
     { k: "op", from: 24, t: "Every rig I tuned on the way down makes the clamps glow brighter. Nothing down here is wasted, not even the mistakes." },
     { k: "note", from: 24, t: () => `${lastMat().toLowerCase()}.hold() // clamps: holding. temperature: yes.` },
     { k: "wry", from: 24, t: "Reached the bottom of everything. It is bright, loud and too warm. Like the first rack, really." },
-    { k: "hint", from: 24, t: () => `${lastMat()} boosts Geodes and everything a little, and every rig level in zones 18 to 24 makes it stronger.` },
+    { k: "hint", from: 24, to: 25, t: () => `${lastMat()} boosts Geodes and everything a little, and every rig level in zones 18 to 24 makes it stronger.` },
+
+    // ---- Ash (25) and Dawn (26): the Afterglow arc past the buried sun
+    { k: "op", from: 25, t: "The ash is still warm. I keep a jar of it on the amp bay and the amp bay has never run cooler." },
+    { k: "op", from: 25, t: "Sifted the gallery for a week. The sieve gets finer every time I tune it, and so does the pile." },
+    { k: "note", from: 25, t: "ash.sift() // magma overhead: noted. grain: fine. warmth: retained." },
+    { k: "wry", from: 25, t: "Banked a sun overnight. Woke up to a gallery of dust and a better yield. Housekeeping has opinions." },
+    { k: "hint", from: 25, to: 26, t: "Ash boosts Sunstone and grows with the Magma you hold. Past the gallery, something is getting lighter." },
+    { k: "op", from: 26, t: "The light at the top of the gallery moves one pixel a night. I mark it on the wall. It has not missed a night yet." },
+    { k: "op", from: 26, t: "Every rig I tuned on the way down gives the dawn a little more room. It looks at me like it is grateful. It cannot look. It is light." },
+    { k: "note", from: 26, t: "dawn.rise() // horizon: clear. clamps: none. temperature: kind." },
+    { k: "wry", from: 26, t: "Reached the end of the dark. It is brighter than the start, and nobody asked it to be." },
+    { k: "hint", from: 26, t: "Dawn boosts Ash and everything a little, and every rig level in zones 18 to 26 makes it stronger." },
 
     // ---- more of the middle and the end
     { k: "op", from: 3, to: 6, t: "I measure my days in Reboots now. Today was a good one. Fourteen, and none of them hurt." },

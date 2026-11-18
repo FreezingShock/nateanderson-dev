@@ -4,7 +4,7 @@ import { END_STAGES, END_STEPS, buildBlock, endDone, endOpen, endStage, lastZone
 import {
     chOff,
     GOALS, MATS, PERKS, TIERS, TREE, TUNE, REBOOT_UNLOCK,
-    ARC_MATS, arcGateNeed, LAB, LAB_TUNE, PAYLOADS, STATS, apGlobal, apSpent, labHas, labNodeOpen, treeFx, intelRate, amount, apOnAscend, ascendNeed, unlockNeed, FW, fwNodeOpen, keysOnHandover, treeComplete, button, canAfford, canAscend, derive, droneBoost, droneCost, droneMax, droneRate, dronesOpen, postOf, postX, zoneRank, ROMAN, originAp, paradoxOc, bloomKeys, sunstoneAll, singularityAll, fmt, fmtTime, goalDone, TREE_FULL, handOpen, HAND_TUNE, cores, DRONE_TREE, droneNodeOpen, modBlock, MOD_COUNT, hasNode, isUnlocked, nodeOpen, statDef,
+    ARC_MATS, arcGateNeed, LAB, LAB_TUNE, PAYLOADS, STATS, apGlobal, apSpent, labHas, labNodeOpen, treeFx, intelRate, amount, apOnAscend, ascendNeed, unlockNeed, FW, fwNodeOpen, keysOnHandover, treeComplete, button, canAfford, canAscend, derive, droneBoost, droneCost, droneMax, droneRate, dronesOpen, postOf, postX, zoneRank, ROMAN, originAp, paradoxOc, bloomKeys, sunstoneAll, dawnAll, singularityAll, fmt, fmtTime, goalDone, TREE_FULL, handOpen, HAND_TUNE, cores, DRONE_TREE, droneNodeOpen, modBlock, MOD_COUNT, hasNode, isUnlocked, nodeOpen, statDef,
     type ButtonStat, type Derived, type MatId, type State, type StatId,
 } from "../engine";
 import { LORE } from "./lore";
@@ -432,6 +432,8 @@ export function feedLine(id: StatId, s: State, d: Derived): string {
         case "magma": return `Basalt ×${fmt(b.mgBa)}`;
         case "geodes": return `Magma ×${fmt(b.geMg)}`;
         case "sunstone": return `Geodes ×${fmt(b.suGe)}, everything ×${fmt(sunstoneAll(s))}`;
+        case "ash": return `Sunstone ×${fmt(b.asSu)}`;
+        case "dawn": return `Ash ×${fmt(b.dwAs)}, everything ×${fmt(dawnAll(s))}`;
     }
 }
 

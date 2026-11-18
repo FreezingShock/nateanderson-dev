@@ -12,7 +12,7 @@ export const END_TUNE = {
     /** Keys per stage */
     keys: [8, 14, 24, 40, 60],
     /** last-zone material per stage (spent) */
-    mat: [1e6, 1e9, 1e12, 1e15, 1e18],
+    mat: [1e6, 1e9, 1e14, 1e19, 1e24], // stages 3 to 5 were 1e12, 1e15, 1e18 until Ash fed Sunstone (balance round 7)
     /** producers the last zone needs this run before the build opens */
     needProd: 1,
     /** characters in the log you leave */
@@ -36,8 +36,9 @@ export const END_COLORS = ["#ffd04a", "#2fd8e8", "#b6f04a", "#f08a3c", "#c8f6ff"
 
 export const freshEnd = (): EndState => ({ stage: 0, doneAt: 0, seen: false, stars: 0, logs: [] });
 
-/** The last zone in the game (whatever the newest arc ends on). */
-export const lastZone = (): MatId => STATS[STATS.length - 1].id as MatId;
+/** The ending stays at the buried sun. Ash and Dawn (zones 26 and 27) are the Afterglow arc past it, so a save with stages built is never charged in a material it has not opened. */
+export const lastZone = (): MatId => "sunstone";
+const zoneName = () => STATS.find((x) => x.id === lastZone())!.name;
 
 /** The save's ending state, created on first use. */
 export function endOf(s: State): EndState {
@@ -62,7 +63,7 @@ export function buildBlock(s: State): string | null {
     if (stage >= END_STEPS) return "built";
     if (s.ch?.run) return "Locked until you leave the test";
     const z = lastZone();
-    const name = STATS[STATS.length - 1].name;
+    const name = zoneName();
     if (!endOpen(s)) return `Start ${name} production`;
     const c = stageCost(stage);
     if ((s[z] as number) < c.mat) return `Need ${fmt(c.mat)} ${name}`;
@@ -135,4 +136,4 @@ export const END_COPY = {
     buildDone: "Node zero is awake.",
     inherited: "Log from operator {n}",
 };
-export const endText = (t: string, s: State) => t.replace("{zone}", STATS[STATS.length - 1].name.replace(/^The /, "the ")).replace("{n}", String(Math.max(1, s.end?.stars ?? 1)));
+export const endText = (t: string, s: State) => t.replace("{zone}", zoneName().replace(/^The /, "the ")).replace("{n}", String(Math.max(1, s.end?.stars ?? 1)));

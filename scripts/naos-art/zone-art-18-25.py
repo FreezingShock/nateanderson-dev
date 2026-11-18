@@ -1,4 +1,4 @@
-"""Node Farm staged zone art for the Overgrowth and Descent arcs (zones 18 to 25).
+"""Node Farm staged zone art for the Overgrowth, Descent and Afterglow arcs (zones 18 to 27).
 
 Follows the staged zone art contract v4 (docs/node-farm.md, "Zone art"): one sheet per zone at public/naos/nodefarm/zone-<id>,
 288 x 96 cells, 8 rows (row 0 is the bare backdrop, row n adds sprite n) by 6 frames, a 6-frame loop at 6 fps.
@@ -31,10 +31,12 @@ _spec.loader.exec_module(SC)
 
 W, H, F = ZK.W, ZK.H, ZK.FRAMES
 FLOOR = 95
-ERA = {"spores": 15, "mycelium": 16, "pollen": 17, "bloom": 18, "basalt": 19, "magma": 20, "geodes": 21, "sunstone": 22}
+ERA = {"spores": 15, "mycelium": 16, "pollen": 17, "bloom": 18, "basalt": 19, "magma": 20, "geodes": 21, "sunstone": 22, "ash": 22, "dawn": 22}  # Ash and Dawn have no era of their own: they show other stretches of the Sun scene
 # the band of the era world shown in the panel (world x offset, top world row) and scale; chosen so the scene's floor line
 # sits near the panel floor and its centrepiece falls right of centre, behind the hero
 BAND = {15: (40, 112), 16: (20, 104), 17: (40, 108), 18: (20, 100), 19: (60, 120), 20: (40, 116), 21: (40, 110), 22: (20, 96)}
+# per-zone band where a zone shares an era (the scene is 480 wide and tiles, so another x offset is another stretch of it)
+BAND_STAT = {"ash": (260, 100), "dawn": (380, 92)}
 SCALE = 0.6
 # sprite n: (centre x, size in px). 1-4 at half size, 5-6 at three quarters, 7 (6 grown) at full size
 SLOT = {1: (70, 32), 2: (100, 32), 3: (130, 32), 4: (160, 32), 5: (196, 48), 6: (250, 48), 7: (250, 64)}
@@ -46,8 +48,8 @@ class Cell:
         self.img = img
 
 
-def backdrop(era, f):
-    ox, oy = BAND[era]
+def backdrop(era, f, stat=None):
+    ox, oy = BAND_STAT.get(stat, BAND[era])
     v = SC.View(W, H, SCALE, ox, oy)
     _, far, near, fx, _ = SC.K.ERAS[era]
     img = SC.over(SC.over(far(v).img, near(v).img), fx(v, round(f * SC.FRAMES / F) % SC.FRAMES).img)
@@ -80,7 +82,7 @@ def paste(dst, src, cx, bottom):
 
 def build(stat):
     era = ERA[stat]
-    bgs = [backdrop(era, f) for f in range(F)]
+    bgs = [backdrop(era, f, stat) for f in range(F)]
 
     def draw(stage, f):
         img = bgs[f].copy()

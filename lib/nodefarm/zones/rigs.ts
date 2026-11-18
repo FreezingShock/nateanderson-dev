@@ -67,6 +67,10 @@ export const RIG_TUNE = {
     ring: 0.04, ringLv: 0.012, ringMax: 3,
     // 25 Convection: per rig level owned across zones 18 to 24
     conv: 0.01, convLv: 0.003,
+    // 26 Sifting: Ash grows with the Magma you hold (log), capped
+    sift: 0.03, siftLv: 0.01, siftMax: 3,
+    // 27 Horizon: per rig level owned across zones 18 to 26
+    horizon: 0.008, horizonLv: 0.0025,
 };
 const T = RIG_TUNE;
 
@@ -110,6 +114,8 @@ export const RIGS: RigDef[] = [
     R("magma", "Eruptions", "timing", "Pressure builds on its own clock. Each eruption pays a lump of Magma and heats the shaft above, so Basalt runs at ×1.5 for a minute.", "erupts 6% sooner and heat lasts 10 s longer"),
     R("geodes", "Ringing", "link", "The vault rings with the Crystal vault far above. Geodes grow with the Quartz you hold, up to ×3.", "a louder ring"),
     R("sunstone", "Convection", "meta", "Heat rises through the arc. Every rig level owned in zones 18 to 24 strengthens the Sunstone.", "+0.3% per level below"),
+    R("ash", "Sifting", "link", "The ash lies over the Magma line. Ash grows with the Magma you hold, up to ×3.", "a finer sieve"),
+    R("dawn", "Horizon", "meta", "Light climbs the whole descent. Every rig level owned in zones 18 to 26 strengthens Dawn.", "+0.25% per level below"),
     R("origin", "Rewrite", "meta", "Spend Origin to rewrite another zone's rig. Each rewrite raises that rig's level cap by one, up to three, forever.", ""),
 ];
 export const RIG_BY = new Map(RIGS.map((r) => [r.zone, r]));
@@ -310,6 +316,10 @@ export const heatSecs = (s: State) => T.heatSecs + T.heatSecsLv * L(s, "magma");
 export const ringMul = (s: State) => Math.min(T.ringMax, 1 + (T.ring + T.ringLv * L(s, "geodes")) * Math.log10(1 + Math.max(0, s.quartz)));
 export const DESCENT_RIGS: StatId[] = ["spores", "mycelium", "pollen", "bloom", "basalt", "magma", "geodes"];
 export const convLevels = (s: State) => DESCENT_RIGS.reduce((a, z) => a + rigLv(s, z), 0);
+export const siftMul = (s: State) => Math.min(T.siftMax, 1 + (T.sift + T.siftLv * L(s, "ash")) * Math.log10(1 + Math.max(0, s.magma)));
+export const HORIZON_RIGS: StatId[] = [...DESCENT_RIGS, "sunstone", "ash"];
+export const horizonLevels = (s: State) => HORIZON_RIGS.reduce((a, z) => a + rigLv(s, z), 0);
+export const horizonMul = (s: State) => 1 + horizonLevels(s) * (T.horizon + T.horizonLv * L(s, "dawn"));
 export const convMul = (s: State) => 1 + convLevels(s) * (T.conv + T.convLv * L(s, "sunstone"));
 
 /** Every rig's output multiplier, by zone. Only open zones count. */
@@ -342,6 +352,8 @@ export function muls(s: State): Partial<Record<StatId, number>> {
     if (open("magma") && (r.heat ?? 0) > 0) mul("basalt", T.heat);
     if (open("geodes")) mul("geodes", ringMul(s));
     if (open("sunstone")) mul("sunstone", convMul(s));
+    if (open("ash")) mul("ash", siftMul(s));
+    if (open("dawn")) mul("dawn", horizonMul(s));
     for (const a of ARCS) { const k = linkTier(s, a.id); if (k > 0) for (const z of a.zones) mul(z as StatId, LINK_TUNE.mul[k - 1]); }
     // a zone event, Rig tune: that zone's rig bonus counts several times over (only a bonus: a rig that costs output is left alone)
     const tuned = zeTuned(s);

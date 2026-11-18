@@ -250,6 +250,8 @@ const DEFS = {
                 case "magma":
                 case "geodes":
                 case "sunstone":
+                case "ash":
+                case "dawn":
                     // Descent: a low struck-stone thud with a bright chip on top
                     tone("game", { f: base * 0.25, dur: 0.3, gain: 0.07, glide: 0.8, harm: 0.4, cutoff: 700, attack: 0.004 });
                     blip("game", base * 3, { at: 0.02, dur: 0.03, gain: 0.03, cutoff: 5200 });

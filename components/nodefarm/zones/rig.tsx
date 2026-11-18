@@ -14,14 +14,14 @@ import {
     GROW_NAMES, PRISM_AIMS, RIGS, RIG_TUNE as T, buyRig, cacheCap, capCharge, capPay, capSecs, castMax, drawPay, glowFor, glowMul, growMul, growNext, growStage,
     indexMul, indexed, mirrorMul, mirrored, pourSecs, prismMul, pulseSecs, rewrite, rewritePrice, rig, rigCap, rigDef, rigLv, rigPrice, scrubBurn, setRig,
     siliconYield, stagesLit, ARC_LINKS, LINK_TUNE, arcLevel, arcOfZone, linkTier, stagingMul, stillFrac, stillMul, weather, wellMul, zoneNo,
-    runningZones, spreadMul, knotsTied, knotMul, daylight, seedMax, seedMul, seedsFor, basaltYield, coolBurn, ventSecs, heatSecs, ringMul, convLevels, convMul, DESCENT_RIGS,
+    runningZones, spreadMul, knotsTied, knotMul, daylight, seedMax, seedMul, seedsFor, basaltYield, coolBurn, ventSecs, heatSecs, ringMul, convLevels, convMul, DESCENT_RIGS, siftMul, horizonLevels, horizonMul, HORIZON_RIGS,
 } from "@/lib/nodefarm/zones/rigs";
 import "@/app/camino/nodefarm/rig.css";
 
 type Line = [string, string];
 /** Row order of public/naos/nodefarm/rigs.webp (scripts/naos-art/nodefarm-rigs.py RIG_ORDER). */
 const ART_ROWS: StatId[] = ["bytes", "mult", "reboot", "copper", "silicon", "quartz", "aether", "runes", "starglass", "voidsteel", "chrono", "nebula", "pulsars", "singularity", "engrams", "paradox", "origin",
-    "spores", "mycelium", "pollen", "bloom", "basalt", "magma", "geodes", "sunstone"];
+    "spores", "mycelium", "pollen", "bloom", "basalt", "magma", "geodes", "sunstone", "ash", "dawn"];
 /** Which of the four drawn states to show: empty, started, past half, full. Weather shows its sky instead of its clock. */
 function artState(id: StatId, s: State, frac: number): number {
     if (id === "pollen") return s.prod.pollen > 0 && daylight(s).phase === "day" ? 3 : 0;
@@ -131,6 +131,14 @@ function view(id: StatId, s: State, d: Derived): View {
         case "sunstone": {
             const n = convLevels(s);
             return { frac: n / (DESCENT_RIGS.length * (T.baseCap + T.rewriteMax)), meter: `${n} rig levels below`, lines: [["Sunstone output", x(convMul(s))]] };
+        }
+        case "ash": {
+            const m = siftMul(s);
+            return { frac: (m - 1) / (T.siftMax - 1), meter: `sifting under ${fmt(s.magma)} Magma`, lines: [["Ash output", x(m)]] };
+        }
+        case "dawn": {
+            const n = horizonLevels(s);
+            return { frac: n / (HORIZON_RIGS.length * (T.baseCap + T.rewriteMax)), meter: `${n} rig levels below`, lines: [["Dawn output", x(horizonMul(s))]] };
         }
         default:
             return { frac: 0, meter: "", lines: [] };

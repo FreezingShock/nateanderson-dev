@@ -2,6 +2,7 @@
 
 Overgrowth: Spores (Spore cellar), Mycelium (Mycel web), Pollen (Canopy hall), Bloom (Bloom core).
 Descent: Basalt (Bedrock shaft), Magma (Magma line), Geodes (Geode vault), Sunstone (The buried sun).
+Afterglow: Ash (Ash gallery), Dawn (Dawn gate).
 
 Tier names come from lib/nodefarm/content/lore.ts. Each tier grows in size, parts and motion; tier 5 is the zone's namesake and also
 serves as the zone icon. Same kit and rules as the other tiers64 modules (draw(t, p) -> Canvas, phase p in [0, 1)).
@@ -24,6 +25,9 @@ P.update({
     "mg": ramp("#1a0602", "#3e0e04", "#7a2006", "#b03808", "#d4500e", "#ff7a1a", "#ffb04a", "#fff1b0"),
     "ge": ramp("#0e0618", "#1e0c34", "#38145e", "#5a2290", "#8a3ad0", "#b064f0", "#d6a2ff", "#f6e8ff"),
     "co": ramp("#1a1002", "#3e2604", "#80460a", "#b8660c", "#e08a10", "#ffb42a", "#ffd04a", "#fffbe0"),
+    "as": ramp("#0d0b0a", "#221e1b", "#4a423b", "#6f655b", "#948879", "#b8a89a", "#dccfc0", "#f6efe6"),
+    "dw": ramp("#1a1204", "#3a2a0c", "#7a5a1c", "#b88a2c", "#e8b84a", "#ffd982", "#ffeaa8", "#fffbea"),
+    "dr": ramp("#200a14", "#4a1428", "#8a2a46", "#c24a66", "#ef7a88", "#ffa8a8", "#ffd0c4", "#fff0ea"),
 })
 
 
@@ -827,8 +831,160 @@ def core(c, p):
 CORE = [spark1, ingot, furnace, mantle, star, core]
 
 
+# ===================================================================================================== Ash
+def flake(c, p):
+    """Flake: one grey flake tumbling down, a last ember in its edge."""
+    y = 18 + 22 * p
+    x = 32 + 6 * math.sin(p * math.tau)
+    shadow(c, 32, 12, 56)
+    m = poly([(x - 9, y + 2), (x - 2, y - 7), (x + 8, y - 3), (x + 6, y + 6), (x - 4, y + 8)])
+    c.fill(m, 0.3 + 0.5 * (1 - lin(x - 9, y - 7, x + 8, y + 8)), "as", outline="as")
+    c.rim(m, P["as"][7], -1, -1)
+    c.set(disc(x + 5, y + 4, 1.2), P["co"][5 + int(wave(p, 2) * 2)])
+
+
+def adrift(c, p):
+    """Drift: a stream of flakes falling past a dark post, wind-bent."""
+    shadow(c, 32, 26, 58)
+    c.fill(rect(28, 14, 34, 58), 0.3, "steel", outline="steel")
+    for k in range(9):
+        q = (p + k / 9) % 1.0
+        x = 8 + (k * 17) % 46 + math.sin(q * 6 + k) * 3 + q * 6
+        y = 6 + q * 50
+        c.fill(poly([(x - 3, y), (x, y - 2.5), (x + 3, y + 0.5), (x, y + 2.5)]), 0.35 + 0.5 * ((k * 7) % 5) / 5, "as", outline="as")
+
+
+def dune(c, p):
+    """Dune: a wind-carved dune of ash with a rippled flank and a glowing seam on top."""
+    shadow(c, 32, 26, 58)
+    body = poly([(4, 56), (14, 40), (30, 24), (42, 34), (60, 56)])
+    c.fill(body, 0.2 + 0.6 * (1 - lin(4, 24, 60, 56)), "as", outline="as")
+    for k in range(4):
+        y = 38 + k * 4.5
+        c.set(path([(10 + k * 3, y + 3), (30, y - 3 + math.sin(p * math.tau + k)), (52 - k * 3, y + 3)], 1) & body, P["as"][2])
+    c.set(path([(30, 24), (42, 34)], 1), P["as"][7])
+    c.set(disc(30, 24, 1.6), P["co"][5 + int(wave(p) * 2)])
+
+
+def sheet(c, p):
+    """Sheet: three stacked sheets of ash, warm air shimmering off the top one."""
+    shadow(c, 32, 26, 58)
+    for k, (x, y, w) in enumerate(((8, 44, 40), (12, 34, 38), (16, 24, 34))):
+        box(c, x, y, w, 8, 6, "as", 0.05 + 0.1 * k)
+    for k in range(3):
+        q = (p + k / 3) % 1.0
+        x = 24 + k * 9
+        c.set(path([(x + math.sin(q * 6) * 1.5, 22 - q * 14), (x + math.sin(q * 6 + 1) * 1.5, 18 - q * 14)], 1), P["co"][5], int(190 * (1 - q)))
+
+
+def seam(c, p):
+    """Seam: a cut face of ash strata with one orange seam still burning through it."""
+    shadow(c, 32, 26, 58)
+    face = rect(8, 12, 56, 54)
+    for k in range(6):
+        c.fill(rect(8, 12 + k * 7, 56, 12 + (k + 1) * 7) & face, 0.22 + 0.1 * (k % 3), "as")
+    c.outline(face, P["as"][1])
+    g = wave(p)
+    c.fill(rect(8, 30, 56, 34) & face, 0.6 + 0.35 * g, "co")
+    soft_glow(c, 32, 32, 22, ("co", 4), 70)
+    for k in range(4):
+        c.set(disc(14 + k * 12, 32 + math.sin(p * math.tau + k), 0.9), P["co"][7])
+
+
+def gallery(c, p):
+    """Gallery: a long hall of ash arches, light at the far end, flakes drifting through."""
+    c.fill(rect(0, 0, 64, 64), 0.0, "as")
+    for k, (w, h, v) in enumerate(((26, 40, 0.18), (20, 32, 0.3), (14, 24, 0.5))):
+        c.fill(rect(32 - w, 56 - h, 32 + w, 56) & ~(rect(32 - w * 0.6, 56 - h * 0.7, 32 + w * 0.6, 56) | disc(32, 56 - h * 0.7, w * 0.6)), v, "as", outline="as")
+    c.fill(rect(26, 36, 38, 56), 0.9 + 0.1 * wave(p), "dw")
+    soft_glow(c, 32, 46, 16, ("dw", 5), 90)
+    for k in range(6):
+        q = (p + k / 6) % 1.0
+        c.set(disc(10 + (k * 23) % 44 + math.sin(q * 6 + k) * 2, 6 + q * 46, 0.9), P["as"][6], int(220 * (1 - q * 0.4)))
+
+
+ASH = [flake, adrift, dune, sheet, seam, gallery]
+
+
+# ===================================================================================================== Dawn
+def _horizon(c, y=44, v=0.2):
+    """Dark ground line with a faint reflection."""
+    c.fill(rect(0, y, 64, 64), v, "as")
+    c.set(rect(0, y, 64, y + 1), P["as"][4])
+
+
+def glint(c, p):
+    """Glint: a first point of light on the horizon, flaring."""
+    _horizon(c, 46)
+    g = wave(p, 2)
+    soft_glow(c, 32, 46, 14 + g * 5, ("dw", 5), 110)
+    c.fill(star4(32, 46, 9 + g * 6, 1.6), 0.9, "dw", outline="dw")
+    c.set(disc(32, 46, 2), P["white"][2])
+
+
+def streak(c, p):
+    """Streak: a streak of light climbing out of the ash, one ray through a dark sky."""
+    c.fill(rect(0, 0, 64, 48), 0.05, "dr")
+    _horizon(c, 48)
+    h = 16 + 18 * wave(p)
+    c.fill(poly([(29, 48), (35, 48), (33, 48 - h), (31, 48 - h)]), 0.8, "dw")
+    soft_glow(c, 32, 48 - h / 2, 14, ("dw", 4), 80)
+    c.set(disc(32, 48 - h, 2), P["white"][2])
+
+
+def band(c, p):
+    """Band: bands of rose and gold rising over a dark ground, the lowest one brightest."""
+    c.fill(rect(0, 0, 64, 64), 0.0, "dr")
+    for k in range(5):
+        y = 14 + k * 7
+        c.fill(rect(0, y, 64, y + 7), 0.2 + 0.14 * k + 0.05 * math.sin(p * math.tau + k), "dr" if k < 3 else "dw")
+    _horizon(c, 50, 0.12)
+    c.set(rect(4, 49, 60, 50), P["dw"][6])
+
+
+def gleam(c, p):
+    """Gleam: half a sun on the horizon, rays turning slowly."""
+    _horizon(c, 46)
+    for k in range(9):
+        a = math.pi + k / 8 * math.pi + math.sin(p * math.tau) * 0.04
+        c.fill(path([(32 + math.cos(a) * 12, 46 + math.sin(a) * 12), (32 + math.cos(a) * 26, 46 + math.sin(a) * 26)], 1.6), 0.7, "dw")
+    soft_glow(c, 32, 46, 22, ("dw", 5), 90)
+    c.fill(disc(32, 46, 10) & (Y < 46), 0.6 + 0.4 * (1 - np.clip(np.hypot(X - 29, Y - 42) / 14, 0, 1)), "dw", outline="dw")
+
+
+def crest(c, p):
+    """Crest: a sun cresting two ash hills, the rim of each hill lit gold."""
+    c.fill(rect(0, 0, 64, 64), 0.0, "dr")
+    c.fill(rect(0, 20, 64, 52), 0.25 + 0.2 * wave(p), "dr")
+    soft_glow(c, 32, 36, 26, ("dw", 5), 90)
+    c.fill(disc(32, 34, 11), 0.7 + 0.3 * (1 - np.clip(np.hypot(X - 29, Y - 31) / 14, 0, 1)), "dw", outline="dw")
+    for pts in (((0, 52), (10, 40), (24, 36), (36, 44), (36, 58), (0, 58)), ((26, 58), (38, 46), (52, 38), (64, 44), (64, 58))):
+        m = poly(list(pts))
+        c.fill(m, 0.2, "as", outline="as")
+        c.rim(m, P["dw"][6], -1, -1)
+
+
+def dawn(c, p):
+    """Dawn: the whole gate at sunrise, a bright sun inside a stone arch, light spilling down the steps."""
+    c.fill(rect(0, 0, 64, 64), 0.0, "dr")
+    for k in range(6):
+        c.fill(rect(0, 4 + k * 8, 64, 12 + k * 8), 0.18 + 0.11 * k, "dr" if k < 4 else "dw")
+    g = wave(p)
+    soft_glow(c, 32, 34, 28, ("dw", 5), 100)
+    c.fill(disc(32, 34, 12 + g), 0.7 + 0.3 * (1 - np.clip(np.hypot(X - 28, Y - 30) / 16, 0, 1)), "dw", outline="dw")
+    c.set(disc(28, 30, 3), P["white"][2])
+    arch = rect(6, 14, 58, 58) & ~(disc(32, 34, 20, 22) | rect(12, 34, 52, 58))
+    c.fill(arch, 0.22, "as", outline="as")
+    c.rim(arch, P["as"][6], -1, -1)
+    for k in range(4):
+        c.fill(rect(14 + k * 2, 50 + k * 2, 50 - k * 2, 52 + k * 2), 0.4 + 0.15 * k, "dw")
+
+
+DAWN = [glint, streak, band, gleam, crest, dawn]
+
+
 ARCS = {"spores": SPORES, "mycelium": MYCELIUM, "pollen": POLLEN, "bloom": BLOOM,
-        "basalt": BASALT, "magma": MAGMA, "geodes": GEODES, "sunstone": CORE}
+        "basalt": BASALT, "magma": MAGMA, "geodes": GEODES, "sunstone": CORE, "ash": ASH, "dawn": DAWN}
 
 
 def make(stat):

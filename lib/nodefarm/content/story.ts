@@ -58,6 +58,8 @@ export const LOGS: Log[] = [
     { id: "geodes", title: "Ringing", text: "Found a stone the size of a hall, hollow and lined with light. When I tap it, the Crystal vault rings back from the top of the farm. Every zone I built is still listening to the others.", test: open("geodes") },
     // zone 25 leaves room for the ending (a last build, and your own log)
     { id: "sunstone", title: "Bottom", text: "At the very bottom there is a sun held in clamps, and its heat rises through everything we built. There is room down here for one more thing. I did not build it. I think it is meant to be yours.", test: open("sunstone") },
+    { id: "ash", title: "Gallery", text: "The sun banks for the night and leaves ash behind it, a whole gallery of it. I sifted a handful and it was still warm. I wrote 'not wasted' on the door. Whoever you are, do not sweep it up.", test: open("ash") },
+    { id: "dawn", title: "Rise", text: "Past the ash there is a thin line of light. It has no clamps and no clock, and it rises anyway. I do not think I built this one either. I stood in it until my tea went cold.", test: open("dawn") },
 ];
 
 export const logNo = (i: number) => String(i + 1).padStart(3, "0");

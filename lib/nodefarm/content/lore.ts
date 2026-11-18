@@ -36,4 +36,7 @@ export const LORE: Record<StatId, Lore> = {
     magma: { code: "MG-LINE // FLOW", zone: "Magma line", flavor: "The farm's last pipeline runs over a river of it. The heat hardens the Basalt as it climbs.", tiers: ["Ember", "Vent", "Seep", "Flow", "Lake", "Caldera"] },
     geodes: { code: "GE-VAULT // HOLLOW", zone: "Geode vault", flavor: "A stone the size of a hall, hollow and lined with light. The racks inside read the crystal like a disk. It cools the Magma into shape.", tiers: ["Pebble", "Nodule", "Druse", "Cavity", "Vault", "Cathedral"] },
     sunstone: { code: "SU-DEEP // BOTTOM", zone: "The buried sun", flavor: "A white sun held in clamps at the bottom of everything. It feeds the Geodes, and warms the whole farm a little.", tiers: ["Spark", "Ingot", "Furnace", "Mantle", "Star", "Sun"] },
+    // Afterglow: what the buried sun leaves, and what comes up after it
+    ash: { code: "AS-SIFT // BANKED", zone: "Ash gallery", flavor: "The sun banks overnight and leaves a long gallery of fine grey ash. Sifted, it still holds heat. It feeds the Sunstone.", tiers: ["Flake", "Drift", "Dune", "Sheet", "Seam", "Gallery"] },
+    dawn: { code: "DN-HORIZON // RISE", zone: "Dawn gate", flavor: "A thin light at the top of the gallery, rising from the ash on a clock nobody set. It feeds the Ash, and warms the whole farm a little.", tiers: ["Glint", "Streak", "Band", "Gleam", "Crest", "Dawn"] },
 };

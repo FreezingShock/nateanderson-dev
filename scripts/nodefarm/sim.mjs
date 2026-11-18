@@ -106,7 +106,7 @@ while (t < hours * 3600) {
         // NF_TRACE=<minutes>: print a status line every that many play minutes (to find walls and runaways)
         if (process.env.NF_TRACE && t >= (marks.nextTrace || 0)) { marks.nextTrace = t + 60 * Number(process.env.NF_TRACE); console.log("t", (t / 3600).toFixed(2), "b/s", E.fmt(E.derive(s).bytesPerSec), "ae", E.fmt(s.aether), "or", E.fmt(s.origin), "px", E.fmt(s.paradox), "ap+", E.apOnAscend(s), "asc", s.life.ascends, "tree", s.tree.length, "G", E.fmt(E.derive(s).global), "ap", s.ap, "mounts", s.mounts.join("+"), "prod", MATS_P(s)); }
         if (SNAP) { if (E.treeComplete(s)) snapOnce("tree-whole"); if (firstHandT && t - firstHandT > 3600) snapOnce("hand1-plus1h"); for (const m of E.MATS) if (s[m] > 0) snapOnce("zone-" + m); }
-        for (const k of [6, 9, 12, 15, 18]) if (s.sunstone >= 10 ** k) mark(`sunstone 1e${k}` + (s.hand.count ? ` (H${s.hand.count})` : ""), t); // the ending's stage costs run 1e6 to 1e18
+        for (const k of [6, 9, 12, 14, 15, 18, 19, 24]) if (s.sunstone >= 10 ** k) mark(`sunstone 1e${k}` + (s.hand.count ? ` (H${s.hand.count})` : ""), t); // the ending's stage costs run 1e6 to 1e24
         if (s.reboot >= 1) mark("first reboot", t);
         if (s.life.reboots >= 25) mark("25 reboots", t);
         if (s.copper > 0) mark("copper", t);

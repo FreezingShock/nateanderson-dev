@@ -1,7 +1,7 @@
 "use client";
 
 import { memo, useContext, useEffect, useRef, type CSSProperties } from "react";
-import { MATS, ROMAN, STATS, TIERS, button, postOf, zoneRank, derive, droneBoost, originAp, paradoxOc, bloomKeys, sunstoneAll, singularityAll, fmt, fmtTime, hasFeature, isUnlocked, statDef, type ButtonStat, type State, type StatId } from "@/lib/nodefarm/engine";
+import { MATS, ROMAN, STATS, TIERS, button, postOf, zoneRank, derive, droneBoost, originAp, paradoxOc, bloomKeys, sunstoneAll, dawnAll, singularityAll, fmt, fmtTime, hasFeature, isUnlocked, statDef, type ButtonStat, type State, type StatId } from "@/lib/nodefarm/engine";
 import { LORE } from "@/lib/nodefarm/content/lore";
 import { fnCaption } from "@/lib/nodefarm/feed";
 import { buttonTip, exact, unlockInfo, type Target } from "@/lib/nodefarm/content/guide";
@@ -72,12 +72,18 @@ function effects(id: StatId, s: State, d: D): [string, string][] {
             return [["Feeds Magma", `×${fmt(d.boosts.geMg)}`], ["Own output", `${fmt(d.rates.geodes)}/s`]];
         case "sunstone":
             return [["Feeds Geodes", `×${fmt(d.boosts.suGe)}`], ["Everything", `×${fmt(sunstoneAll(s))}`]];
+        case "ash":
+            return [["Feeds Sunstone", `×${fmt(d.boosts.asSu)}`], ["Own output", `${fmt(d.rates.ash)}/s`]];
+        case "dawn":
+            return [["Feeds Ash", `×${fmt(d.boosts.dwAs)}`], ["Everything", `×${fmt(dawnAll(s))}`]];
     }
 }
 
 /** The signal chain: who boosts whom, with live multipliers. Sits above the stat dossiers. Only the zones you have reached, plus the next one, are drawn. */
 export function Chain({ s, d, onAll, allOpen, onIdle, onJump }: { s: State; d: D; onAll: (open: boolean) => void; allOpen: boolean; onIdle?: () => void; onJump?: (id: StatId) => void }) {
     const feed: Partial<Record<StatId, string>> = {
+        dawn: `Ash ×${fmt(d.boosts.dwAs)}`,
+        ash: `Sunstone ×${fmt(d.boosts.asSu)}`,
         sunstone: `Geodes ×${fmt(d.boosts.suGe)}`,
         geodes: `Magma ×${fmt(d.boosts.geMg)}`,
         magma: `Basalt ×${fmt(d.boosts.mgBa)}`,

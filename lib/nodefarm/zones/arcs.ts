@@ -12,6 +12,7 @@ export const ARCS: readonly Arc[] = [
     { id: "origin", name: "The origin", blurb: "Memory, mirrors and the first node.", color: "#3dff6e", zones: ["engrams", "paradox", "origin"], scene: 13 },
     { id: "overgrowth", name: "Overgrowth", blurb: "Spores, threads, pollen and the farm in flower. Two zones open with each of the first two Handovers.", color: "#5cf0c0", zones: ["spores", "mycelium", "pollen", "bloom"], scene: 18 },
     { id: "descent", name: "Descent", blurb: "Rock, magma, hollow stone and a buried sun. Two zones open with each of the third and fourth Handovers.", color: "#ff9a2a", zones: ["basalt", "magma", "geodes", "sunstone"], scene: 22 },
+    { id: "afterglow", name: "Afterglow", blurb: "What the buried sun leaves, and the light that comes after it. One zone opens with each of the fifth and sixth Handovers.", color: "#ffeaa8", zones: ["ash", "dawn"], scene: 22 },
 ];
 
 export const arcKey = (id: string) => `arc:${id}`;
@@ -31,5 +32,5 @@ export function arcProgress(s: State, zones: readonly string[]) {
 export const arcCleared = (s: State, a: Arc) => { const p = arcProgress(s, a.zones); return p.total > 0 && p.built >= p.total; };
 export const arcsCleared = (s: State) => ARCS.reduce((n, a) => n + (arcCleared(s, a) ? 1 : 0), 0);
 ARC_HOOKS.cleared = arcsCleared;
-/** Zone number (01 to 25), the same one the zone panels print. */
+/** Zone number (01 to 27), the same one the zone panels print. */
 export const zoneNo = (id: string) => STATS.findIndex((x) => x.id === id) + 1;
