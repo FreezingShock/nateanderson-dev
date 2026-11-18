@@ -123,7 +123,7 @@ export default function Home() {
                     id="play"
                     label="Play"
                     title="Three games to play in your browser."
-                    blurb="Each one opens full screen. Pick one and start."
+                    blurb="Each one opens in its own window. Pick one and start."
                     more={{ href: "/creations/games", label: "All games" }}
                 >
                     <GamesShowcase />

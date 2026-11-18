@@ -232,3 +232,15 @@
   display: inline-grid; place-items: center; font-family: ui-monospace, monospace; font-weight: 600; font-size: 11px; line-height: 1;
   color: #ffd98a; background: #0d0905; border: 1px solid #4a3a22; pointer-events: none;
 }
+
+/* Desktop panel (decision 2026-11-18, Nate: taller panel). Brasswork only: the shared shell keeps its 400px allowance.
+   The 385px allowance keeps the footer (about 53px under the frame) above the site dock at 1440 by 900 and 1366 by 768. A
+   larger panel needs the dock hidden on this route, as Groundbreak does. Below 700px tall the
+   shell's own short-screen rule applies, unchanged. */
+@media (min-width: 761px) and (min-height: 700px) {
+  .gs-shell[data-game="Brasswork"] .gs-frame { height: clamp(360px, calc(100dvh - 385px), 940px); }
+}
+/* Brass frame (decision 2026-11-18, Nate: brass, not the site cyan). The panel's outline and focus ring use the brass
+   accent. The site's sound label and top bar are outside the panel and keep the site cyan. */
+.gs-shell[data-game="Brasswork"] .gs-frame,
+.gs-shell[data-game="Brasswork"] .gs-frame:focus-visible { outline-color: #d29a3c; }

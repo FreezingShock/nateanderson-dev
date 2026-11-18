@@ -27,8 +27,8 @@ Each game has FEATURES.md and BACKLOG.md.
 - Brasswork: [FEATURES](games/brasswork/FEATURES.md), [BACKLOG](games/brasswork/BACKLOG.md)
 - Starwright: [FEATURES](games/starwright/FEATURES.md), [BACKLOG](games/starwright/BACKLOG.md); older notes in [starwright.md](starwright.md)
 - Groundbreak: [FEATURES](games/groundbreak/FEATURES.md), [BACKLOG](games/groundbreak/BACKLOG.md)
-- Node Farm: [node-farm.md](node-farm.md) (design and systems); backlog is in the site backlog until it gets its own folder
+- Node Farm: [node-farm.md](node-farm.md) (design and systems). It has no `docs/games/` folder yet; its backlog lines are in [site/BACKLOG.md](site/BACKLOG.md).
 - Outline and Flag Guesser: covered in [site/FEATURES.md](site/FEATURES.md)
 <!-- gen-anchor: games -->
 
-The three per-game folders are written by sibling threads and may not have merged yet; the links work once they do.
+New games get their three docs from `npm run new-game` (see [games/NEW-GAME.md](games/NEW-GAME.md)).
