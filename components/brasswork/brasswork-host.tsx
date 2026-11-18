@@ -176,9 +176,10 @@ export function BrassworkHost() {
     const tipOfKind = useCallback((kind: string) => withRecipe(kindTip(CAT, kind), ctl.current?.recipeAtHover() ?? null), []);
     const [nextTarget, setNextTarget] = useState<NextTarget | null>(null);
     const [away, setAway] = useState<AwayReport | null>(null);
-    const [mood, setMood] = useState<Mood>("Auto");
+    // New visitors open at Dusk (Nate's pick, 2026-11-18). A mood they chose is kept in localStorage and wins.
+    const [mood, setMood] = useState<Mood>("Dusk");
     const quest = useFirstRunQuest(data);
-    const moodRef = useRef<Mood>("Auto");
+    const moodRef = useRef<Mood>("Dusk");
     const onMood = useCallback((m: Mood) => {
         moodRef.current = m;
         setMood(m);
@@ -234,7 +235,7 @@ export function BrassworkHost() {
             const bodyTop = new Map<string, number>();
             const pickHeightAt = (x: number, z: number) => heightAt(x, z) + (bodyTop.get(`${Math.floor(x)},${Math.floor(z)}`) ?? 0);
 
-            const island: VoxelIsland = createVoxelIsland(canvas, { quality: "auto", dither: true, timeOfDay: 0.4, cycle: false, orbit: false });
+            const island: VoxelIsland = createVoxelIsland(canvas, { quality: "auto", dither: true, timeOfDay: 0.5, cycle: false, orbit: false });
             [1.2, 2, 3].forEach((v, tier) => island.setBeltSpeed(tier, v));
             // Island life: leaves, birds, fireflies, smoke, shore glints, drizzle and reward bursts.
             const life = attachLife(island, heightAt);
