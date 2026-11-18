@@ -703,7 +703,7 @@ export interface State {
 }
 
 /** Scripts: learned automation (rules live in lib/nodefarm/systems/scripts.ts, which registers itself in TICK_HOOKS). */
-export type ScriptId = "buy" | "reboot" | "compile" | "deploy" | "drop" | "ascend" | "rig" | "event" | "restore";
+export type ScriptId = "buy" | "reboot" | "compile" | "deploy" | "drop" | "ascend" | "rig" | "event" | "restore" | "dispatch";
 export interface AutoState {
     /** manual presses per stat and tier, lifetime (buy.sh may only press tiers you pressed by hand) */
     taught: Record<string, number[]>;
@@ -755,6 +755,8 @@ export interface AutoState {
     rebuild?: boolean;
     seenHand?: number;
     restPerks?: boolean;
+    /** dispatch.sh: "done" reposts Drones docked or on a mastered zone; "lowest" also spreads every Drone over the lowest-rank zones */
+    dispatch?: "done" | "lowest";
 }
 /** Called at the end of every tick (and so also through time away). Scripts add themselves here. */
 export const TICK_HOOKS: ((s: State, dt: number) => void)[] = [];
@@ -1884,7 +1886,7 @@ export const DRONE_TUNE = {
     postX: 3, // a posted Drone presses this many times as fast on its zone
     partK: 0.1, // Parts per attempted press
     reachEach: 0.2, // each Reach level presses the tier below at this share of the Drone's speed
-    servoEach: 0.25, // each Servo level: Drone speed +this
+    servoEach: 0.3, // each Servo level: Drone speed +this (was 0.25: Uplink at +1x on a 3x posting is +33% a level, so it beat Servo at every level for the same price)
     tunerEach: 0.25, // each Tuner level: mastery from this Drone's posting +this
     salvageEach: 0.3, // each Salvager level: Parts from this Drone +this
     masteredSpeed: 0.02, // every zone at mastery V: every Drone +this speed
@@ -1905,7 +1907,7 @@ export const DRONE_TUNE = {
 export const POSTABLE: readonly ButtonStat[] = ["mult", ...MATS];
 export type ModId = "servo" | "uplink" | "reach" | "tuner" | "salvage";
 export const MODS: { id: ModId; name: string; blurb: string }[] = [
-    { id: "servo", name: "Servo", blurb: "presses 25% faster per level" },
+    { id: "servo", name: "Servo", blurb: "presses 30% faster per level" },
     { id: "uplink", name: "Uplink", blurb: "posting speed +1x per level" },
     { id: "reach", name: "Reach", blurb: "also presses the tier below at 20% per level" },
     { id: "tuner", name: "Tuner", blurb: "builds mastery 25% faster per level while posted" },
@@ -2124,9 +2126,10 @@ export const foundryAll = (s: State) => (s.dr ? 1 + droneFx(s).modGlobal * modLe
 // -- mods
 export const modMax = (s: State, mod: number) => DRONE_TUNE.modMax + (mod === 0 ? droneFx(s).servoMax : 0);
 export const modCost = (s: State, tier: number, mod: number) => DRONE_TUNE.modBase * Math.pow(DRONE_TUNE.modGrowth, s.dr.mods[tier][mod]) * Math.pow(DRONE_TUNE.modTier, tier) * (1 - droneFx(s).modCost);
-export type ModFail = "drone" | "max" | "parts";
+export type ModFail = "drone" | "max" | "parts" | "none";
 export function modBlock(s: State, tier: number, mod: number): ModFail | null {
     if (s.drones[tier] <= 0) return "drone";
+    if (mod === 2 && tier === 0) return "none"; // Reach presses the tier below, and T1 has none (droneStep), so it can't be bought for nothing
     if (s.dr.mods[tier][mod] >= modMax(s, mod)) return "max";
     if (s.dr.parts < modCost(s, tier, mod)) return "parts";
     return null;

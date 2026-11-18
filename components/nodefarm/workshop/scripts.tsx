@@ -2,10 +2,11 @@
 
 import { useRef, type CSSProperties } from "react";
 import { useFoldReveal } from "@/lib/nodefarm/cx";
-import { PAYLOADS, STATS, TIERS, apOnAscend, dropFill, fmt, fmtTime, hasRecipe, isUnlocked, type ScriptId, type State } from "@/lib/nodefarm/engine";
+import { DRONE_TUNE, PAYLOADS, POSTABLE, STATS, TIERS, apOnAscend, dropFill, fmt, fmtTime, hasRecipe, isUnlocked, postOf, zoneRank, type ScriptId, type State } from "@/lib/nodefarm/engine";
 import {
-    BUY_STATS, RIG_ZONES, SCRIPTS, SCRIPT_COLOR, SCRIPT_TUNE, ascendTarget, auto, buyCycle, buyVer, cycleAnswer, cycleSetting, cycleStock, flip, isOn, learnLeft, learnPart,
-    restoreLeft, runAge, schedStage, toggleRigZone, scriptGate, scriptNext, scriptOpen, setRunning, taughtMask, toggleBuyStat, toggleBuyTier, toggleDeploy, type ScriptDef,
+    BUY_STATS, RIG_ZONES, SCRIPTS, SCRIPT_COLOR, SCRIPT_TUNE, ascendTarget, auto, buyCycle, buyVer, cycleAnswer, cycleDispatch, cycleSetting, cycleStock, dispatchTargets, flip, isOn,
+    learnLeft, learnPart, restoreLeft, runAge, schedStage, toggleRigZone, scriptGate, scriptIdle, scriptNext, scriptOpen, setRunning, taughtMask, toggleBuyStat, toggleBuyTier,
+    toggleDeploy, type ScriptDef,
 } from "@/lib/nodefarm/systems/scripts";
 import { capCharge, rigCap, rigDef, rigLv, rigOpen, zoneNo } from "@/lib/nodefarm/zones/rigs";
 import "@/app/camino/nodefarm/scripts.css";
@@ -16,7 +17,8 @@ import "@/app/camino/nodefarm/scripts.css";
  * Styles: app/camino/nodefarm/scripts.css. Art: scripts/naos-art/nodefarm-sched-scene.py (zone-sched, sched-icons).
  */
 const statName = (id: string) => STATS.find((x) => x.id === id)!;
-const ROW: Record<ScriptId, number> = { buy: 0, reboot: 1, compile: 2, deploy: 3, drop: 4, ascend: 5, rig: 6, event: 7, restore: 8 };
+/** Rows of sched-icons. dispatch.sh borrows the crane row (rig.sh) until it gets its own drawing (the art script needs Python). */
+const ROW: Record<ScriptId, number> = { buy: 0, reboot: 1, compile: 2, deploy: 3, drop: 4, ascend: 5, rig: 6, event: 7, restore: 8, dispatch: 6 };
 
 export function ScriptIcon({ id, on }: { id: ScriptId; on?: boolean }) {
     return <span className="nf-sch-ic" aria-hidden="true" data-on={on ? "" : undefined} style={{ ["--r" as string]: ROW[id] } as CSSProperties} />;
@@ -69,6 +71,7 @@ function ScriptLine({ x, s, onChange }: { x: ScriptDef; s: State; onChange: (msg
     const opened = scriptOpen(s, x.id);
     const on = isOn(s, x.id);
     const part = learnPart(s, x.id);
+    const idle = scriptIdle(s, x.id);
     const st = !opened && !own ? "lock" : !own ? "rec" : on ? "run" : "stop";
     return (
         <li className="nf-sch-s" data-st={st} style={{ ["--c" as string]: x.color } as CSSProperties} data-cx-i="">
@@ -76,9 +79,9 @@ function ScriptLine({ x, s, onChange }: { x: ScriptDef; s: State; onChange: (msg
                 <ScriptIcon id={x.id} on={on} />
                 <span className="nf-sch-n">
                     <b>{x.file}</b>
-                    <small>{x.name}{x.id === "buy" && own ? ` · v${buyVer(s) + 1} · every ${buyCycle(s)} s` : ""}</small>
+                    <small>{x.name}{x.id === "buy" && own ? ` · v${buyVer(s) + 1} · every ${buyCycle(s)} s` : ""}{idle ? ` · idle: ${idle}` : ""}</small>
                 </span>
-                <span className="nf-sch-st">{st === "lock" ? "encrypted" : st === "rec" ? `recording ${Math.floor(part * 100)}%` : on ? "running" : "stopped"}</span>
+                <span className="nf-sch-st">{st === "lock" ? "encrypted" : st === "rec" ? `recording ${Math.floor(part * 100)}%` : on ? (idle ? "idle" : "running") : "stopped"}</span>
                 {own && (
                     <button type="button" className="nf-sch-run" aria-pressed={on} onClick={() => { setRunning(s, x.id, !on); onChange(`${x.file} ${on ? "stopped" : "running"}`); }}>
                         {on ? "Stop" : "Run"}
@@ -221,6 +224,21 @@ function Rules({ id, s, onChange }: { id: ScriptId; s: State; onChange: (msg?: s
                     <span>{fmt(a.ran.event ?? 0)} answered so far · checks every second</span>
                 </p>
                 <p className="nf-sch-hint">Mining pays 4 minutes of the zone at once; letting it run doubles it for 4 minutes. A patch costs a little Bytes; a Fault you can&apos;t pay for waits until you can.</p>
+            </>
+        );
+    }
+    if (id === "dispatch") {
+        const mode = a.dispatch ?? "done";
+        const next = dispatchTargets(s)[0];
+        const mastered = POSTABLE.filter((z) => isUnlocked(s, z) && zoneRank(s, z) >= DRONE_TUNE.rankAt.length).length;
+        const docked = Array.from({ length: TIERS }, (_, k) => k).filter((k) => s.drones[k] > 0 && !postOf(s, k)).length;
+        return (
+            <>
+                <p className="nf-sch-line">
+                    send <Cyc v={mode === "done" ? "idle Drones only" : "every Drone"} label="Dispatch" onPress={() => { cycleDispatch(s); onChange(); }} /> to the lowest mastery
+                    <span>{fmt(a.ran.dispatch ?? 0)} moves so far · every {SCRIPT_TUNE.cycle.dispatch} s · next zone {next ? `${statName(next).name} (mastery ${zoneRank(s, next) || "0"})` : "none left"} · {docked} docked · {mastered} mastered</span>
+                </p>
+                <p className="nf-sch-hint">&quot;Idle Drones only&quot; moves a Drone when it is docked or its zone is at mastery V, and leaves the rest where you posted them. &quot;Every Drone&quot; also spreads them over the lowest-rank zones, so it undoes your own postings. Mastery is permanent, so moving a Drone loses nothing.</p>
             </>
         );
     }

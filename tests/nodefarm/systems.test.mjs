@@ -163,3 +163,35 @@ test("a played game passes through every system without the engine throwing (zon
     play(s, 1800, { ascend: true, each: (st, t) => { if (t % 120 === 0) { const ev = ZE.rollEvent(st); if (ev) ZE.zeStart(st, ev.kind, ev.zone); } } });
     assert.deepEqual(problems(s), []);
 });
+
+test("dispatch.sh: reposts docked Drones and Drones on a mastered zone, and leaves the rest alone", () => {
+    const s = maxed();
+    E.ascend(s);
+    AD.maxDrones(s);
+    const open = E.POSTABLE.filter((st) => E.isUnlocked(s, st));
+    assert.ok(open.length >= 3, "enough open zones");
+    AD.teachScript(s, "dispatch");
+    s.auto.dispatch = "done";
+    // tier 0 sits on a mastered zone, tier 1 is docked, tier 2 sits on a zone that still has ranks to earn
+    const done = open[0], live = open[1];
+    s.dr.svc[done] = E.DRONE_TUNE.rankAt[E.DRONE_TUNE.rankAt.length - 1];
+    s.dr.svc[live] = 0;
+    E.setPost(s, 0, done); s.dr.post[1] = null; E.setPost(s, 2, live);
+    const moved = SC.runDispatch(s);
+    assert.ok(moved >= 2, `moved ${moved}`);
+    assert.notEqual(E.postOf(s, 0), done, "left the mastered zone");
+    assert.ok(E.postOf(s, 1), "docked Drone is posted");
+    assert.equal(E.postOf(s, 2), live, "a Drone on a zone that still needs mastery stays put");
+    assert.deepEqual(problems(s), []);
+});
+
+test("mods: Reach on T1 can't be bought (it presses the tier below, and there is none)", () => {
+    const s = maxed();
+    E.ascend(s);
+    AD.maxDrones(s);
+    s.dr.parts = 1e12;
+    assert.equal(E.modBlock(s, 0, 2), "none");
+    assert.equal(E.buyMod(s, 0, 2), false);
+    s.dr.mods[1][2] = 0;
+    assert.equal(E.modBlock(s, 1, 2), null);
+});

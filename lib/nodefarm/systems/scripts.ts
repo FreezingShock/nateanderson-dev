@@ -8,12 +8,14 @@
 //   ascend.sh   Ascends once the AP on offer beats your last Ascend by a margin you pick
 //   rig.sh      upgrades the zone rigs you tick once you hold a multiple of the price
 //   event.sh    answers zone events: mines or rides a Rich vein, patches or waits out a Fault
+//   dispatch.sh reposts Drones that are docked or on a mastered zone to the zone with the lowest mastery
 //   restore.sh  after a Handover, buys your tree back in the order you built it, then your perks
 // Drones are the fast, blind hands; scripts are the slow rules about when, which and how much to keep.
 // Rules are pure (no React). The board zone is components/nodefarm/workshop/scripts.tsx. See docs/node-farm.md "Scripts".
 import {
-    MATS, STATS, TICK_HOOKS, TIERS, amount, apOnAscend, button, compile, compileBlock, deploy, deployBlock, dropFill, hasFeature, hasRecipe, isRunning,
+    MATS, STATS, TICK_HOOKS, TIERS, amount, apOnAscend, button, chOff, compile, compileBlock, deploy, deployBlock, dropFill, hasFeature, hasRecipe, isRunning,
     isUnlocked, labOpen, labSlots, openDrop, payload, press, PAYLOADS, PERKS, TREE, buyNode, buyPerk, handSeen, nodeLevel,
+    DRONE_TUNE, POSTABLE, dronesOpen, postOf, setPost, zoneRank, zoneSvc,
     type AutoState, type ButtonStat, type PayloadId, type ScriptId, type State, type StatId,
 } from "../engine";
 import { RIGS, buyRig, capCharge, rig, rigOpen, rigPrice } from "../zones/rigs";
@@ -22,7 +24,7 @@ const BY_ID = new Set(TREE.map((n) => n.id));
 
 export const SCRIPT_TUNE = {
     /** manual actions that teach each script */
-    learn: { buy: 40, reboot: 12, compile: 5, deploy: 5, drop: 2, ascend: 3, rig: 5, event: 3, restore: 1 } as Record<ScriptId, number>,
+    learn: { buy: 40, reboot: 12, compile: 5, deploy: 5, drop: 2, ascend: 3, rig: 5, event: 3, restore: 1, dispatch: 3 } as Record<ScriptId, number>,
     /** rig.sh buys a level once you hold this many times its price */
     rigX: [2, 5, 10, 20],
     /** buy.sh may press a tier after you pressed it by hand this many times (on that stat) */
@@ -31,7 +33,7 @@ export const SCRIPT_TUNE = {
     buyCycle: [3, 1.5, 0.75, 0.3],
     buyVer: [0, 500, 5000, 50000],
     /** the other scripts' cycles, seconds */
-    cycle: { compile: 2, deploy: 1, drop: 5, rig: 5, event: 1, restore: 1 } as Record<string, number>,
+    cycle: { compile: 2, deploy: 1, drop: 5, rig: 5, event: 1, restore: 1, dispatch: 60 } as Record<string, number>,
     /** settings each rule cycles through on a press */
     keep: [1, 2, 5, 10],
     rebootX: [1.5, 3, 10, 30],
@@ -63,6 +65,7 @@ export const SCRIPTS: ScriptDef[] = [
     { id: "drop", file: "drop.sh", name: "Auto-collect", color: "#ffc53a", blurb: "Opens the Dead drop the moment it is full, even while you are away.", teach: (n) => `Open the Dead drop by hand ${n} more time${n === 1 ? "" : "s"}.`, flavor: "Checks the box every five seconds. It has never been late." },
     { id: "rig", file: "rig.sh", name: "Auto-rig", color: "#f08a3c", blurb: "Upgrades the zone rigs you tick, one level at a time, once you hold a multiple of the price.", teach: (n) => `Buy ${n} more rig level${n === 1 ? "" : "s"} by hand in any zone.`, flavor: "It read the service manuals cover to cover. Then it picked up the wrench." },
     { id: "event", file: "event.sh", name: "Auto-answer", color: "#ffc53a", blurb: "Answers zone events for you: mines or rides a Rich vein, patches or waits out a Fault.", teach: (n) => `Answer ${n} more Rich vein or Fault by hand.`, flavor: "Picks up on the first ring. Always says the same thing." },
+    { id: "dispatch", file: "dispatch.sh", name: "Auto-dispatch", color: "#ff9a4a", blurb: "Every minute, sends Drones that are docked or sitting on a mastered zone to the open zone with the lowest mastery.", teach: (n) => `Post a Drone to a zone by hand ${n} more time${n === 1 ? "" : "s"} in the Drone hangar.`, flavor: "It watched you move the same six frames around the board. It asked for the clipboard." },
     { id: "restore", file: "restore.sh", name: "Auto-restore", color: "#9fe870", blurb: "After a Handover, buys your prestige tree back in the order you built it, then your perks, as AP comes in.", teach: () => "Do your first Handover. It saves your build on the way out.", flavor: "Somebody has to remember the floor plan. It wrote it on the back of the door." },
     { id: "ascend", file: "ascend.sh", name: "Auto-Ascend", color: "#6bffc9", blurb: "Ascends for you once the AP on offer beats your last Ascend by the margin you set. Only while the game is open.", teach: (n) => `Ascend by hand ${n} more time${n === 1 ? "" : "s"}.`, flavor: "It knows the way up now. It waits for you to say how high." },
 ];
@@ -129,6 +132,7 @@ function sanitize(o: unknown): AutoState {
     b.rigX = pick(x.rigX, SCRIPT_TUNE.rigX, 5);
     if (x.vein === "mine" || x.vein === "run") b.vein = x.vein;
     if (x.fault === "patch" || x.fault === "wait") b.fault = x.fault;
+    if (x.dispatch === "done" || x.dispatch === "lowest") b.dispatch = x.dispatch;
     if (Array.isArray(x.build)) b.build = x.build.filter((id) => typeof id === "string" && BY_ID.has(id));
     for (const k of ["buildLv", "buildPerks"] as const) if (x[k] && typeof x[k] === "object") b[k] = Object.fromEntries(Object.entries(x[k]!).filter(([, v]) => num(v) > 0).map(([id, v]) => [id, Math.floor(num(v))]));
     if (Number.isFinite(x.seenHand)) b.seenHand = Math.max(0, num(x.seenHand));
@@ -147,12 +151,13 @@ export function scriptOpen(s: State, id: ScriptId): boolean {
         case "rig": return true;
         case "event": return !!s.ze || s.life.secs >= 300;
         case "restore": return handSeen(s);
+        case "dispatch": return dronesOpen(s) && s.drones.some((lv) => lv > 0);
     }
 }
 /** What still locks a script, in a few words, for scripts that are not open yet. */
 export const scriptGate: Record<ScriptId, string> = {
     buy: "", reboot: "opens with Reboots", compile: "opens with the Exploit Lab (Silicon)", deploy: "opens with the Exploit Lab (Silicon)", drop: "opens with the Dead drop tree node", ascend: "opens when you can first Ascend",
-    rig: "", event: "opens with the first zone event", restore: "opens when the Root Chamber decrypts",
+    rig: "", event: "opens with the first zone event", restore: "opens when the Root Chamber decrypts", dispatch: "opens with your first Drone",
 };
 export const owns = (s: State, id: ScriptId) => !!s.auto?.own.includes(id);
 /** 0..1 how far a script is learned. Watchdog timer (tree) teaches reboot.sh and Cron job (lab) teaches compile.sh. */
@@ -199,6 +204,8 @@ export const teachDeploy = (s: State) => bump(auto(s), "deploy");
 export const teachDrop = (s: State) => bump(auto(s), "drop");
 export const teachAscend = (s: State) => bump(auto(s), "ascend");
 export const teachEvent = (s: State) => bump(auto(s), "event");
+/** A Drone posted to a zone by hand in the hangar (dispatch.sh learns from these). */
+export const teachPost = (s: State) => bump(auto(s), "dispatch");
 
 // ---- buy.sh
 /** Tiers of a stat buy.sh is allowed to press (taught by hand), as a bitmask. */
@@ -334,6 +341,41 @@ export function runEvent(s: State): number {
 const mineVein = (s: State, id: number) => zeChoose(s, id, "mine").ok;
 const patchFault = (s: State, id: number) => zeChoose(s, id, "patch").ok;
 
+// ---- dispatch.sh
+/** Open zones whose mastery still has a rank to earn, lowest rank first, then least progress to the next rank, then the newest zone. */
+export function dispatchTargets(s: State): ButtonStat[] {
+    const top = DRONE_TUNE.rankAt.length;
+    const prog = (st: ButtonStat) => { const r = zoneRank(s, st); const prev = r ? DRONE_TUNE.rankAt[r - 1] : 0; return (zoneSvc(s, st) - prev) / (DRONE_TUNE.rankAt[r] - prev); };
+    return POSTABLE.filter((st) => isUnlocked(s, st) && zoneRank(s, st) < top)
+        .sort((x, y) => zoneRank(s, x) - zoneRank(s, y) || prog(x) - prog(y) || POSTABLE.indexOf(y) - POSTABLE.indexOf(x));
+}
+/** One dispatch.sh run: moves Drones (docked, or on a mastered zone; in "lowest" mode all of them) to the zones that still need mastery. Returns Drones moved. */
+export function runDispatch(s: State): number {
+    const a = s.auto!;
+    if (chOff(s, "drones")) return 0;
+    const targets = dispatchTargets(s);
+    if (!targets.length) return 0;
+    const tiers = Array.from({ length: TIERS }, (_, k) => k).filter((k) => s.drones[k] > 0);
+    let n = 0;
+    if (a.dispatch === "lowest") {
+        tiers.forEach((k, i) => { const to = targets[i % targets.length]; if (s.dr.post[k] !== to && setPost(s, k, to)) n++; });
+    } else {
+        const load = new Map<ButtonStat, number>(targets.map((st) => [st, tiers.filter((k) => postOf(s, k) === st).length]));
+        for (const k of tiers) {
+            const at = postOf(s, k);
+            if (at && load.has(at)) continue;
+            const to = [...targets].sort((x, y) => load.get(x)! - load.get(y)!)[0];
+            if (setPost(s, k, to)) { load.set(to, load.get(to)! + 1); n++; }
+        }
+    }
+    a.ran.dispatch = (a.ran.dispatch ?? 0) + n;
+    return n;
+}
+export function cycleDispatch(s: State) {
+    const a = auto(s);
+    a.dispatch = (a.dispatch ?? "done") === "done" ? "lowest" : "done";
+}
+
 // ---- restore.sh
 /** Keep a copy of the build while it grows, and start rebuilding when a Handover happens. */
 function restoreWatch(s: State, a: AutoState) {
@@ -440,6 +482,24 @@ export function setRunning(s: State, id: ScriptId, on: boolean) {
 }
 export const isOn = (s: State, id: ScriptId) => (id === "reboot" ? owns(s, "reboot") && s.watchdog : !!(s.auto?.own.includes(id) && s.auto.on[id]));
 
+/** Why a running script has nothing to do right now, in a few words, or null when it is working (or stopped). */
+export function scriptIdle(s: State, id: ScriptId): string | null {
+    const a = s.auto;
+    if (!a || !isOn(s, id)) return null;
+    switch (id) {
+        case "buy": return BUY_STATS.some((st) => (a.buy[st] ?? 0) & taughtMask(s, st)) ? null : "no stat ticked";
+        case "compile": return PAYLOADS.some((p) => (a.stockTo[p.id] ?? 0) > 0 && hasRecipe(s, p.id)) ? null : "no stock level set";
+        case "deploy": return a.dep.length ? null : "no payload ticked";
+        case "rig": return RIG_ZONES.some((z) => a.rigs?.[z] && rigOpen(s, z)) ? null : "no rig ticked";
+        case "dispatch":
+            if (chOff(s, "drones")) return "Drones are off in this test";
+            if (!s.drones.some((lv) => lv > 0)) return "no Drones built";
+            return dispatchTargets(s).length ? null : "every zone is mastered";
+        case "restore": return a.rebuild ? null : "waiting for a Handover";
+        default: return null;
+    }
+}
+
 // ---- the scheduler: runs every tick, so scripts also work through time away (except ascend.sh)
 function every(a: AutoState, id: ScriptId, dt: number, cycle: number, fn: () => unknown) {
     let t = (a.acc[id] ?? 0) + dt;
@@ -491,6 +551,7 @@ export function scriptStep(s: State, dt: number) {
     if (s.watchdog && a.own.includes("reboot")) runReboot(s);
     if (a.on.rig && a.own.includes("rig")) every(a, "rig", dt, SCRIPT_TUNE.cycle.rig, () => runRig(s));
     if (a.on.event && a.own.includes("event")) every(a, "event", dt, SCRIPT_TUNE.cycle.event, () => runEvent(s));
+    if (a.on.dispatch && a.own.includes("dispatch")) every(a, "dispatch", dt, SCRIPT_TUNE.cycle.dispatch, () => runDispatch(s));
     if (a.on.restore && a.own.includes("restore")) every(a, "restore", dt, SCRIPT_TUNE.cycle.restore, () => runRestore(s));
     if (a.on.buy && a.own.includes("buy")) every(a, "buy", dt, buyCycle(s), () => runBuy(s));
     if (a.on.compile && a.own.includes("compile") && labOpen(s)) every(a, "compile", dt, SCRIPT_TUNE.cycle.compile, () => runCompile(s));

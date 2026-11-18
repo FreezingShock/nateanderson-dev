@@ -242,7 +242,7 @@ export const ENTRIES: CodexEntry[] = [
                 list: [
                     ["Postings", `post a Drone to one zone. It presses only there, ${DRONE_TUNE.postX}x as fast. Every press it attempts adds service to that zone.`],
                     ["Mastery", `service sets a zone's rank I to V (at ${DRONE_TUNE.rankAt.map((n) => n.toLocaleString("en-US")).join(", ")}). Each rank multiplies that zone's output, up to x${DRONE_TUNE.rankX[5]}. Kept forever.`],
-                    ["Parts and mods", `every attempted press salvages ${DRONE_TUNE.partK} Parts. Parts buy Servo (+${pct(DRONE_TUNE.servoEach)} speed), Uplink (+1x posting speed) and Reach (also presses the tier below), up to level ${DRONE_TUNE.modMax}. They reset on Ascend.`],
+                    ["Parts and mods", `every attempted press salvages ${DRONE_TUNE.partK} Parts. Parts buy five mods per Drone: Servo (+${pct(DRONE_TUNE.servoEach)} speed), Uplink (+1x posting speed), Reach (also presses the tier below; not on T1), Tuner (mastery +${pct(DRONE_TUNE.tunerEach)}) and Salvager (Parts +${pct(DRONE_TUNE.salvageEach)}), up to level ${DRONE_TUNE.modMax}. They reset on Ascend.`],
                     ["Drone tree", `${DRONE_TREE.length} nodes in three arms, bought with Cores (ranks earned minus nodes owned). Respec is free.`],
                 ],
             },

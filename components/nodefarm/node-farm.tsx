@@ -41,7 +41,7 @@ const AscendPanel = dynamic(() => import("./ascend/ascend").then((m) => ({ defau
 const CodexPanel = dynamic(() => import("./windows/codex").then((m) => ({ default: m.CodexPanel })), { ssr: false });
 import { LabHud, LabZone, labModel, labReady } from "./workshop/lab";
 import { ScriptsZone } from "./workshop/scripts";
-import { SCRIPTS, SCRIPT_BY, toggleBuyStat, ascendDue, ascendPrep, learnStep, teachEvent, schedOpen, teachAscend, teachCompile, teachDeploy, teachDrop, teachPress } from "@/lib/nodefarm/systems/scripts";
+import { SCRIPTS, SCRIPT_BY, toggleBuyStat, ascendDue, ascendPrep, learnStep, teachEvent, schedOpen, teachAscend, teachCompile, teachDeploy, teachDrop, teachPost, teachPress } from "@/lib/nodefarm/systems/scripts";
 import { eraOf } from "@/lib/nodefarm/zones/scenery";
 import { DroneBay, droneModel } from "./workshop/drones";
 import { rigManual } from "@/lib/nodefarm/zones/rigs";
@@ -1401,6 +1401,7 @@ export function NodeFarm() {
                         onBuy={doDrone}
                         onPost={(k, st) => {
                             if (!setPost(s, k, st)) return sfx("deny");
+                            if (st) teachPost(s);
                             sfx("tab");
                             feedStore.push([...call(idTok("drones"), st ? "post" : "dock", [strTok(`T${k + 1}`), ...(st ? [pun(", "), strTok(st)] : [])]), pun(" → "), strTok(st ? `${DRONE_NAMES[k]} on station` : "docked, idle")], { tone: "good" });
                             save();

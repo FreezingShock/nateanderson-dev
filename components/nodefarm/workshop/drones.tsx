@@ -33,6 +33,20 @@ export const droneReady = (s: State) => DRONE_TREE.filter((n) => !s.dr.nodes.inc
 
 const MOD_SHORT = ["SERVO", "UPLINK", "REACH", "TUNER", "SALVAGE"];
 
+/** What the next level of a mod does to this Drone, in numbers ("+33% presses/s"), or "" at the cap. */
+function modGain(s: State, tier: number, mod: number): string {
+    const l = s.dr.mods[tier][mod];
+    if (l >= modMax(s, mod)) return "";
+    const pct = (x: number) => `+${Math.round((x - 1) * 100)}%`;
+    switch (MODS[mod].id) {
+        case "servo": return `${pct((1 + DRONE_TUNE.servoEach * (l + 1)) / (1 + DRONE_TUNE.servoEach * l))} presses/s`;
+        case "uplink": return `${pct((postX(s, tier) + DRONE_TUNE.uplinkEach) / postX(s, tier))} presses/s while posted`;
+        case "reach": return tier === 0 ? "nothing below T1, so no effect" : `+${Math.round(DRONE_TUNE.reachEach * 100)}% of its speed pressing T${tier} on the same zone`;
+        case "tuner": return `${pct((1 + DRONE_TUNE.tunerEach * (l + 1)) / (1 + DRONE_TUNE.tunerEach * l))} mastery from this Drone`;
+        default: return `${pct((1 + DRONE_TUNE.salvageEach * (l + 1)) / (1 + DRONE_TUNE.salvageEach * l))} Parts from this Drone`;
+    }
+}
+
 /** The Drone hangar: berths with live Drones, the roster (build, post, mod), zone mastery and the way into the drone tree. */
 export function DroneBay({ s, open, onToggle, onBuy, onPost, onMod, onTree, guided }: {
     s: State; open: boolean; onToggle: () => void; onBuy: (tier: number) => void; onPost: (tier: number, st: ButtonStat | null) => void; onMod: (tier: number, mod: number) => void; onTree: () => void; guided?: number;
@@ -104,7 +118,7 @@ export function DroneBay({ s, open, onToggle, onBuy, onPost, onMod, onTree, guid
                                         <span className="nf-sp-d" aria-hidden="true" data-on={lvl > 0 ? "" : undefined} style={{ ["--k" as string]: k } as CSSProperties} />
                                         <span className="nf-dr-n">
                                             <b>T{k + 1} {NAMES[k]}</b>
-                                            <small>{lvl > 0 ? `${post ? `${fmt(rate)} presses/s · posted to ${statDef(post).name}` : want ? `${statDef(want).name} locked, docked` : "docked, pick a zone"}` : "not built"}</small>
+                                            <small>{lvl > 0 ? `${post ? `${fmt(rate)} presses/s · posted to ${statDef(post).name}${zoneRank(s, post) >= DRONE_TUNE.rankAt.length ? ", mastered: no more rank to earn here" : ""}` : want ? `${statDef(want).name} locked, docked` : "docked, pick a zone"}` : "not built"}</small>
                                         </span>
                                         <span className="nf-dr-pips" aria-label={`Level ${lvl} of ${droneMax(s)}`}>
                                             {Array.from({ length: droneMax(s) }, (_, i) => <i key={i} data-f={i < lvl ? "" : undefined} />)}
@@ -119,7 +133,7 @@ export function DroneBay({ s, open, onToggle, onBuy, onPost, onMod, onTree, guid
                                                 <span>Posting</span>
                                                 <select value={want ?? ""} onChange={(e) => onPost(k, (e.target.value || null) as ButtonStat | null)} aria-label={`Posting for T${k + 1} ${NAMES[k]}`}>
                                                     <option value="">Docked (does nothing)</option>
-                                                    {zones.map((st) => <option key={st} value={st}>{statDef(st).name} · mastery {ROMAN[zoneRank(s, st)] || "0"}</option>)}
+                                                    {zones.map((st) => <option key={st} value={st}>{statDef(st).name} · {zoneRank(s, st) >= DRONE_TUNE.rankAt.length ? "mastered" : `mastery ${ROMAN[zoneRank(s, st)] || "0"}`}</option>)}
                                                     {want && !zones.includes(want) && <option value={want}>{statDef(want).name} (locked)</option>}
                                                 </select>
                                             </label>
@@ -129,12 +143,14 @@ export function DroneBay({ s, open, onToggle, onBuy, onPost, onMod, onTree, guid
                                                     const mx = modMax(s, i);
                                                     const why = modBlock(s, k, i);
                                                     const c = modCost(s, k, i);
+                                                    const gain = modGain(s, k, i);
                                                     return (
-                                                        <button key={m.id} type="button" className="nf-hg-mod" disabled={!!why} onClick={() => onMod(k, i)} title={`${m.name}: ${m.blurb}`}
-                                                            aria-label={why === "max" ? `${m.name} maxed at ${mx}` : `${m.name} level ${ml} of ${mx}, ${m.blurb}. Costs ${fmt(c)} Parts`}>
+                                                        <button key={m.id} type="button" className="nf-hg-mod" disabled={!!why} onClick={() => onMod(k, i)}
+                                                            title={why === "none" ? `${m.name}: ${modGain(s, k, i)}` : `${m.name}: ${m.blurb}${gain ? `. Next level: ${gain}` : ""}${why === "parts" ? `. Needs ${fmt(c)} Parts, you have ${fmt(s.dr.parts)}` : ""}`}
+                                                            aria-label={why === "max" ? `${m.name} maxed at ${mx}` : why === "none" ? `${m.name} does nothing on T1` : `${m.name} level ${ml} of ${mx}, ${m.blurb}. Next level ${gain}. Costs ${fmt(c)} Parts`}>
                                                             <b>{MOD_SHORT[i]}</b>
                                                             <span className="nf-hg-lv" aria-hidden="true">{Array.from({ length: mx }, (_, j) => <i key={j} data-f={j < ml ? "" : undefined} />)}</span>
-                                                            <small>{why === "max" ? "max" : `${fmt(c)} P`}</small>
+                                                            <small>{why === "max" ? "max" : why === "none" ? "n/a" : `${fmt(c)} P`}</small>
                                                         </button>
                                                     );
                                                 })}
