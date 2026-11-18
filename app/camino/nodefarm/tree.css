@@ -332,3 +332,4 @@ body.nf-tm-chrome.nf-tm-dock .cm-dock { visibility: visible; z-index: 1001; anim
     .ctos .nf-tm-dockb, .ctos .nf-tm-dockb i { transition: none; }
 }
 
+.ctos .nf-tn[data-form="capstone"] .nf-tn-form, .ctos .nf-tn[data-form="doctrine"] .nf-tn-form { border-style: double; border-width: 3px; }

@@ -151,7 +151,7 @@ export const clearLogs = (s: State) => { s.logs = []; };
 /** Open the lab, research every node and fill Intel and stock. */
 export function grantLab(s: State) {
     s.lab.seen = true;
-    s.lab.nodes = LAB.map((n) => n.id);
+    s.lab.nodes = LAB.filter((n) => n.form !== "doctrine").map((n) => n.id).concat("rx_hotdeploy"); // every research node and one doctrine
     s.lab.intel = Math.max(s.lab.intel, 1e6);
     for (const p of PAYLOADS) s.lab.stock[p.id] = LAB_TUNE.stockMax;
 }

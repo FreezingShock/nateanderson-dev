@@ -42,7 +42,7 @@ while (t < END) {
         if (has("dronesOpen") && E.dronesOpen(s)) for (let k = 0; k < E.TIERS; k++) if (s.aether >= E.droneCost(s, k) * 3) E.buyDrone(s, k);
         E.checkGoals(s);
         if (s.lab?.seen) {
-            for (const n of [...E.LAB].sort((a, b) => a.cost - b.cost)) if (!s.lab.nodes.includes(n.id)) E.buyLabNode(s, n.id);
+            for (const n of E.LAB.filter((n) => n.form !== "doctrine").sort((a, b) => a.cost - b.cost)) if (!s.lab.nodes.includes(n.id)) E.buyLabNode(s, n.id);
             for (const p of E.PAYLOADS) if ((s.lab.stock[p.id] ?? 0) < 2) E.compile(s, p.id);
         }
         const mats = ["chrono", "voidsteel", "starglass", "runes", "aether"].filter((m) => s.prod[m] > 0).slice(0, E.mountSlots?.(s) ?? 0);

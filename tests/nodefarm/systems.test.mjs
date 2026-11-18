@@ -163,3 +163,56 @@ test("a played game passes through every system without the engine throwing (zon
     play(s, 1800, { ascend: true, each: (st, t) => { if (t % 120 === 0) { const ev = ZE.rollEvent(st); if (ev) ZE.zeStart(st, ev.kind, ev.zone); } } });
     assert.deepEqual(problems(s), []);
 });
+
+test("capstones: pick one of five, swap for free, never part of the whole tree, and each reaches its system", () => {
+    const caps = E.TREE.filter((n) => n.form === "capstone");
+    assert.equal(caps.length, 5);
+    assert.ok(caps.every((n) => !E.fullTreeIds().includes(n.id)), "a capstone is not one of the whole-tree nodes");
+    const s = E.fresh(0);
+    s.ap = 1e9;
+    for (let more = true; more;) { more = false; for (const n of E.TREE) if (E.fullTreeIds().includes(n.id) && !E.nodeMaxed(s, n) && E.nodeOpen(s, n) && E.buyNode(s, n.id)) more = true; }
+    const [a, b] = caps;
+    const base = E.derive(s).global;
+    const owned = E.treeOwned(s);
+    assert.ok(E.buyNode(s, a.id) && s.tree.includes(a.id));
+    assert.equal(E.treeOwned(s), owned, "a capstone does not count toward the whole tree");
+    const ap = s.ap, held = E.treeSpent(s);
+    assert.ok(E.buyNode(s, b.id) && s.tree.includes(b.id) && !s.tree.includes(a.id), "buying another swaps the first out");
+    assert.equal(s.ap + E.treeSpent(s), ap + held, "a swap keeps the AP books balanced");
+    assert.equal(s.tree.filter((id) => E.treeNode(id).form === "capstone").length, 1);
+    // zone sync: everything x(1 + 0.08 per zone with a producer)
+    s.tree = s.tree.filter((id) => id !== b.id);
+    for (const m of E.MATS.slice(0, 3)) s.prod[m] = 1;
+    const without = E.derive(s).global;
+    s.tree = [...s.tree, "synclock"];
+    assert.ok(Math.abs(E.derive(s).global / without - (1 + 0.08 * 3)) < 1e-9, "Zone sync multiplies everything per running zone");
+    assert.ok(base > 0);
+    // a hand-edited save with two capstones keeps the first and refunds the second
+    const t = E.fresh(0);
+    t.tree = [...E.fullTreeIds(), a.id, b.id];
+    E.migrateTree(t);
+    assert.equal(t.tree.filter((id) => E.treeNode(id).form === "capstone").length, 1);
+});
+
+test("lab doctrines: one at a time, swap gives the Intel back, Hot deploy deploys a finished buff", () => {
+    const docs = E.LAB.filter((n) => n.form === "doctrine");
+    assert.equal(docs.length, 3);
+    const s = E.fresh(0);
+    s.lab.seen = true;
+    s.lab.nodes = E.LAB.filter((n) => n.form !== "doctrine").map((n) => n.id);
+    s.lab.intel = 1e6;
+    const [a, b] = docs;
+    assert.ok(E.buyLabNode(s, a.id));
+    const intel = s.lab.intel;
+    assert.ok(E.buyLabNode(s, b.id) && !s.lab.nodes.includes(a.id) && s.lab.nodes.includes(b.id));
+    assert.equal(s.lab.intel, intel, "a swap costs nothing");
+    assert.equal(E.LAB_FULL, s.lab.nodes.length, "a full lab is every research node plus one doctrine");
+    const dup = E.parseSave(JSON.stringify({ ...s, lab: { ...s.lab, nodes: [...s.lab.nodes, a.id] } }));
+    assert.equal(dup.lab.nodes.filter((id) => E.labNode(id).form === "doctrine").length, 1, "a save holding two doctrines keeps one");
+    // Hot deploy: a finished buff starts running by itself
+    s.lab.nodes = s.lab.nodes.filter((id) => id !== b.id);
+    E.buyLabNode(s, "rx_hotdeploy");
+    s.lab.queue.push({ id: "sniffer", left: 1 });
+    E.labStep(s, 2, 1e6);
+    assert.ok(E.isRunning(s, "sniffer"), "the finished Packet sniffer deployed itself");
+});

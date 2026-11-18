@@ -8,7 +8,7 @@
 // Rules are pure (no React). Importing this file fills the engine's CH_HOOKS and adds a tick hook. The window is
 // components/nodefarm/windows/stress.tsx. See docs/node-farm.md "Stress tests". Reward sizes belong to the balance pass: CH_TUNE.
 import {
-    CH_HOOKS, RIG_HOOKS, TICK_HOOKS, drOnAscend, fresh, freshLab, isUnlocked, parseSave,
+    CH_HOOKS, RIG_HOOKS, TICK_HOOKS, drOnAscend, fresh, freshLab, isUnlocked, parseSave, treeFx,
     type ButtonStat, type ChMuls, type ChOff, type State, type StatId,
 } from "../engine";
 
@@ -129,10 +129,11 @@ function muls(s: State): ChMuls {
     if (!ch) return ONE;
     const d = ch.done ?? {};
     const run = ch.run?.id ?? "";
-    const key = run + "|" + TESTS.map((t) => d[t.id] ?? 0).join("");
+    const pay = 1 + treeFx(s).stressPay; // Load tester (capstone)
+    const key = run + "|" + pay + "|" + TESTS.map((t) => d[t.id] ?? 0).join("");
     const hit = MCACHE.get(ch);
     if (hit && hit.key === key) return hit.v;
-    const r = (id: TestId) => (d[id] ?? 0) * P[id];
+    const r = (id: TestId) => (d[id] ?? 0) * P[id] * pay;
     const v: ChMuls = {
         global: 1 + r("brownout"),
         drone: 1 + r("grounded"),

@@ -4,7 +4,7 @@
 import { SCRIPTS, auto, isOn, learnPart, scriptNext, scriptOpen } from "./systems/scripts";
 import { OPERATORS, archiveOf, loadSeen, pickNews } from "./content/news";
 import {
-    GOALS, GOAL_TIERS, LAB, MATS, PAYLOADS, PERKS, SECRETS, TIER_NAMES, TREE, TREE_FULL, apOnAscend, intelRate, derive, fmt, fmtTime, goalDone, statDef, tiersDone, unlock,
+    GOALS, GOAL_TIERS, LAB_FULL, MATS, PAYLOADS, PERKS, SECRETS, TIER_NAMES, TREE, TREE_FULL, apOnAscend, intelRate, derive, fmt, fmtTime, goalDone, statDef, tiersDone, unlock,
     FW, PROTOS, ROMAN, handSeen, keysOnHandover, protoDef, protoRank,
     type State,
 } from "./engine";
@@ -82,7 +82,7 @@ export function recordSections(s: State): RecordSection[] {
     if (mats.length) out.splice(1, 0, { id: "mats", title: "Materials", blurb: "Held, nodes and output per second.", rows: mats });
     if (s.lab.seen) out.push({ id: "lab", title: "Exploit Lab", blurb: "Research and stock survive Ascend; Intel does not.", rows: [
         ["Intel", `${fmt(s.lab.intel)} · +${fmt(intelRate(s, d.bytesPerSec))}/s`],
-        ["Research", `${s.lab.nodes.length} / ${LAB.length}`],
+        ["Research", `${s.lab.nodes.length} / ${LAB_FULL}`],
         ["Payloads", `${PAYLOADS.filter((p) => s.lab.nodes.includes(`rx_${p.id}`)).length} / ${PAYLOADS.length}`],
         ["Intel, lifetime", fmt(s.life.intel)],
         ["Payloads compiled", fmt(s.life.compiled)],
@@ -223,7 +223,7 @@ export function nfCommand(s: State, args: string[]): NfResult {
             lines = [
                 t("exploit lab", "hi"),
                 row("intel", `${fmt(s.lab.intel)}  (+${fmt(intelRate(s))}/s)`),
-                row("research", `${s.lab.nodes.length}/${LAB.length}`),
+                row("research", `${s.lab.nodes.length}/${LAB_FULL}`),
                 row("running", run.length ? run.map((r) => `${r.id} ${fmtTime(r.left)}`).join(", ") : "nothing"),
                 row("queue", s.lab.queue.length ? s.lab.queue.map((q) => q.id).join(", ") : "idle"),
                 row("stock", stock.length ? stock.map((p) => `${p.id} x${s.lab.stock[p.id]}`).join(", ") : "empty"),

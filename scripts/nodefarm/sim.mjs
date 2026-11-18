@@ -38,7 +38,9 @@ const SNAP_AT = [5, 20, 60, 120, 240, 480, 1440].map((m) => m * 60);
 const MATS_P = (s) => E.MATS.map((m) => E.fmt(s.prod[m])).join("/");
 const order = [...E.MATS].reverse().concat("mult");
 const treeOrder = [...E.TREE].sort((a, b) => a.cost - b.cost);
-const labOrder = [...E.LAB].sort((a, b) => a.cost - b.cost);
+const CAP_ID = process.env.NF_CAP || "synclock";
+const labOrder = E.LAB.filter((n) => n.form !== "doctrine").sort((a, b) => a.cost - b.cost);
+const labDoc = process.env.NF_DOC || "rx_hotdeploy"; // NF_DOC=rx_livefire|rx_botfarm|none: which lab doctrine the bot takes once the keystones are in
 let labBought = 0, labCompiles = 0;
 const labSkip = (process.env.NF_LABSKIP || "").split(","); // payload ids the bot never compiles
 const FULL = new Set(E.fullTreeIds()); // NF_BAN=id,id: the bot never buys these nodes (to see what one node does)
@@ -134,12 +136,15 @@ while (t < hours * 3600) {
             if (next && E.buyNode(s, next.id)) { more = true; mark("node " + next.id + (E.nodeLevel(s, next.id) > 1 ? " r" + E.nodeLevel(s, next.id) : ""), t); }
         }
         const allRanks = E.TREE.every((n) => !FULL.has(n.id) || E.nodeMaxed(s, n));
+        // capstone (NF_CAP=synclock|foundry|loadtest|hangarlink|horizon|none): the bot takes one once the whole tree is owned (ranks not needed), with the AP that is left
+        if (E.treeComplete(s) && CAP_ID !== "none" && !s.tree.includes(CAP_ID) && E.buyNode(s, CAP_ID)) mark("capstone " + CAP_ID, t);
         if (s.tree.filter((id) => !E.treeNode(id).form).length === 40) mark("first 40 done", t);
         // Exploit Lab (NF_NOLAB=1 skips it): research cheapest first, keep a little stock of every recipe, deploy as soon as it helps
         if (!process.env.NF_NOLAB && s.lab.seen) {
             mark("lab open", t);
             for (const n of labOrder) if (!s.lab.nodes.includes(n.id) && E.buyLabNode(s, n.id)) { labBought++; mark(`lab ${labBought}`, t); }
-            if (s.lab.nodes.length === E.LAB.length) mark("lab done", t);
+            if (labDoc !== "none" && !s.lab.nodes.includes(labDoc)) E.buyLabNode(s, labDoc);
+            if (s.lab.nodes.length === E.LAB_FULL) mark("lab done", t);
             for (const p of E.PAYLOADS) if (!labSkip.includes(p.id) && (s.lab.stock[p.id] ?? 0) < 2 && E.compile(s, p.id)) labCompiles++;
             for (const p of E.PAYLOADS) {
                 if ((s.lab.stock[p.id] ?? 0) < 1) continue;
@@ -182,7 +187,7 @@ if (END) console.log("ending", `stage ${s.end?.stage ?? 0}/${END.END_STEPS}`, "l
 console.log("ascends", ascents.map(([a, g, ap]) => `${(a / 3600).toFixed(0)}h +${g} (ap ${ap})`).join(", "));
 const h = (x) => (x / 3600).toFixed(2) + " h";
 for (const [k, v] of Object.entries(marks)) if (k !== "lastReboot") console.log(k.padEnd(14), h(v));
-console.log("lab", s.lab.nodes.length + "/" + E.LAB.length, "compiles", labCompiles, "intel life", E.fmt(s.life.intel));
+console.log("lab", s.lab.nodes.length + "/" + E.LAB_FULL, "compiles", labCompiles, "intel life", E.fmt(s.life.intel));
 console.log("end", h(t), "bytes/s", E.fmt(E.derive(s).bytesPerSec), "R", E.fmt(s.reboot), "cu", E.fmt(s.copper), "si", E.fmt(s.silicon), "qz", E.fmt(s.quartz), "ae", E.fmt(s.aether), "rn", E.fmt(s.runes), "sg", E.fmt(s.starglass), "vs", E.fmt(s.voidsteel), "ch", E.fmt(s.chrono), "eg", E.fmt(s.engrams), "px", E.fmt(s.paradox), "or", E.fmt(s.origin), "ap", s.ap, "ascends", s.life.ascends, "goals", s.ach.length);
 
 if (process.env.DUMP) {

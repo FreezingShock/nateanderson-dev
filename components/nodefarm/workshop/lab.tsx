@@ -3,7 +3,7 @@
 import { useRef, type CSSProperties } from "react";
 import { useFoldReveal } from "@/lib/nodefarm/cx";
 import {
-    LAB, LAB_SECS, LAB_TUNE, PAYLOADS, compileBlock, compileSecs, deployBlock, fmt, fmtTime, hasRecipe, intelRate, isArmed, labHas, labNode, labNodeOpen,
+    LAB, LAB_FULL, LAB_SECS, LAB_TUNE, PAYLOADS, compileBlock, compileSecs, deployBlock, fmt, fmtTime, hasRecipe, intelRate, isArmed, labHas, labNode, labNodeOpen,
     labQueueMax, labSlots, labTotals, labVis, payloadCost, payloadDur, payloadV, statDef, type Derived, type PayloadDef, type PayloadId, type State,
 } from "@/lib/nodefarm/engine";
 import { TreeSprite } from "../tree/tree-sprite";
@@ -40,7 +40,7 @@ export function labModel(s: State): TreeModel {
 }
 
 /** Scene stage 0..7 for the panel art (zone-lab sheet): grows with research. */
-export const labStage = (s: State) => { const n = s.lab.nodes.length; return n === 0 ? 0 : Math.min(7, 1 + Math.floor(((n - 1) * 6) / (LAB.length - 1))); };
+export const labStage = (s: State) => { const n = s.lab.nodes.length; return n === 0 ? 0 : Math.min(7, 1 + Math.floor(((n - 1) * 6) / (LAB_FULL - 1))); };
 
 type Step = "intel" | "research" | "compile" | "deploy";
 const STEP_NOTE: Record<Step, string> = {
@@ -61,7 +61,7 @@ function nextStep(s: State, d: Derived, ready: number): Step {
 }
 
 /** How many research nodes you can buy right now. */
-export const labReady = (s: State) => LAB.filter((n) => !labHas(s, n.id) && labNodeOpen(s, n) && s.lab.intel >= n.cost).length;
+export const labReady = (s: State) => LAB.filter((n) => !labHas(s, n.id) && labNodeOpen(s, n) && !n.alt?.some((a) => labHas(s, a)) && s.lab.intel >= n.cost).length;
 
 const KIND_WORD = { buff: "buff", charge: "charge", instant: "instant" } as const;
 function effect(s: State, p: PayloadDef) {
@@ -88,7 +88,7 @@ export function LabZone({ s, d, open, onToggle, onCompile, onCancel, onDeploy, o
     const stock = PAYLOADS.reduce((n, p) => n + (s.lab.stock[p.id] ?? 0), 0);
     const steps: { id: Step; k: string; v: string }[] = [
         { id: "intel", k: "earn intel", v: `+${fmt(rate)}/s` },
-        { id: "research", k: "research", v: ready ? `${ready} ready` : `${s.lab.nodes.length}/${LAB.length}` },
+        { id: "research", k: "research", v: ready ? `${ready} ready` : `${s.lab.nodes.length}/${LAB_FULL}` },
         { id: "compile", k: "compile", v: s.lab.queue.length ? `${s.lab.queue.length} in queue` : recipes.length ? "idle" : "no payload" },
         { id: "deploy", k: "deploy", v: `${stock} in stock · ${running.length}/${slots} on` },
     ];
@@ -113,7 +113,7 @@ export function LabZone({ s, d, open, onToggle, onCompile, onCancel, onDeploy, o
                         </div>
                         <button type="button" className="nf-lab-go" data-ready={ready ? "" : undefined} onClick={onResearch} aria-haspopup="dialog">
                             <span aria-hidden="true">&gt; open ~/lab/research</span>
-                            <b>{ready ? `${ready} ready` : `${s.lab.nodes.length}/${LAB.length}`}</b>
+                            <b>{ready ? `${ready} ready` : `${s.lab.nodes.length}/${LAB_FULL}`}</b>
                             <span className="sr-only">Open the research tree. {ready ? `${ready} nodes ready to research.` : `${s.lab.nodes.length} of ${LAB.length} researched.`}</span>
                         </button>
                     </div>

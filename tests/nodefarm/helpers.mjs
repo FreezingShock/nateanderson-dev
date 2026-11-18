@@ -3,21 +3,21 @@
 import { readFileSync, readdirSync } from "node:fs";
 import { registerHooks } from "node:module";
 import { resolve, dirname } from "node:path";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 
 registerHooks({ resolve(spec, ctx, next) { try { return next(spec, ctx); } catch (e) { if (spec.startsWith(".")) return next(spec + ".ts", ctx); throw e; } } });
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
-export const E = await import(resolve(root, "lib/nodefarm/engine.ts"));
-export const RG = await import(resolve(root, "lib/nodefarm/zones/rigs.ts"));
-export const SC = await import(resolve(root, "lib/nodefarm/systems/scripts.ts"));
-export const ZE = await import(resolve(root, "lib/nodefarm/zones/zoneevents.ts"));
-export const ST = await import(resolve(root, "lib/nodefarm/systems/stress.ts"));
-export const EV = await import(resolve(root, "lib/nodefarm/events.ts"));
-export const AD = await import(resolve(root, "lib/nodefarm/systems/admin.ts"));
-export const AR = await import(resolve(root, "lib/nodefarm/zones/arcs.ts"));
-export const OFF = await import(resolve(root, "lib/nodefarm/offline.ts"));
-export const { LOGS } = await import(resolve(root, "lib/nodefarm/content/story.ts"));
+export const E = await import(pathToFileURL(resolve(root, "lib/nodefarm/engine.ts")).href);
+export const RG = await import(pathToFileURL(resolve(root, "lib/nodefarm/zones/rigs.ts")).href);
+export const SC = await import(pathToFileURL(resolve(root, "lib/nodefarm/systems/scripts.ts")).href);
+export const ZE = await import(pathToFileURL(resolve(root, "lib/nodefarm/zones/zoneevents.ts")).href);
+export const ST = await import(pathToFileURL(resolve(root, "lib/nodefarm/systems/stress.ts")).href);
+export const EV = await import(pathToFileURL(resolve(root, "lib/nodefarm/events.ts")).href);
+export const AD = await import(pathToFileURL(resolve(root, "lib/nodefarm/systems/admin.ts")).href);
+export const AR = await import(pathToFileURL(resolve(root, "lib/nodefarm/zones/arcs.ts")).href);
+export const OFF = await import(pathToFileURL(resolve(root, "lib/nodefarm/offline.ts")).href);
+export const { LOGS } = await import(pathToFileURL(resolve(root, "lib/nodefarm/content/story.ts")).href);
 
 export const FIXTURES = resolve(root, "scripts/nodefarm/fixtures");
 export const fixtureNames = () => readdirSync(FIXTURES).filter((f) => f.endsWith(".json")).sort();

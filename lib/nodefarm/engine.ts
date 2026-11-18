@@ -197,6 +197,12 @@ export interface TreeFx {
     droneTierGoal?: number; // extra Drone levels per completed goal tier
     frenzy?: number; // an event win sends the Drones into a frenzy (1 = on)
     ocReboot?: number; // Reboot power x(1 + this) during an Overclock
+    // added with the capstones (one per section, pick one: each reaches into a different system)
+    zoneSync?: number; // everything x(1 + this per zone you have a producer in)
+    rigCut?: number; // zone rig upgrades cost this fraction less
+    stressPay?: number; // what cleared stress test ranks pay x(1 + this)
+    postBoost?: number; // posted Drones press x(1 + this) as fast on their zone
+    zeLong?: number; // zone events last x(1 + this) as long
     feature?: Feature;
 }
 /** Systems a node switches on. The UI checks them with `hasFeature`. */
@@ -232,7 +238,9 @@ export interface TreeNode {
     /** part of a chain with rising cost, such as Carrier I to III */
     chain?: { id: string; step: number; of: number };
     /** the deeper tree (2026-11-12): junctions, forks and ranked nodes. Absent on the first 40. */
-    form?: "junction" | "fork" | "ranked";
+    form?: "junction" | "fork" | "ranked" | "capstone";
+    /** capstone: the other four capstones. You can own one at a time; buying another is a free swap (like a fork, with more sides) */
+    alt?: string[];
     /** junction: every one of these must be owned (both sections), not just one neighbor */
     req?: string[];
     /** fork: the other side of the pair. Owning one locks the other; buying the other swaps for free */
@@ -335,6 +343,19 @@ const JUNCTIONS: Record<Branch, JRow> = {
     anomaly: ["feedback", "Feedback loop", "During an Overclock, Reboot power x3.", "Pointed the mic at the speaker. The whole node screamed in tune.", { ocReboot: 2 }],
 };
 const JUNCTION_COST = 160;
+// Capstones (2026-11-17): one past each section's ranked tip, a pick-one choice (a free swap, like a fork with five sides). Each
+// one reaches into a different system, so the build you finish with says which one you lean on. An optional AP sink after the
+// whole tree: not part of "whole tree" (`TREE_FULL`), and the tree wipe of a Handover takes it back like any other node.
+type CRow = [id: string, name: string, blurb: string, flavor: string, fx: TreeFx];
+const CAPSTONES: Record<Branch, CRow> = {
+    signal: ["synclock", "Zone sync", "Everything x1.08 for every zone you have a producer in.", "Every zone ticks to one clock. The node finally keeps time.", { zoneSync: 0.08 }],
+    forge: ["foundry", "Rig foundry", "Zone rig upgrades cost 40% less.", "Stamped the rig parts instead of fitting them by hand.", { rigCut: 0.4 }],
+    systems: ["loadtest", "Load tester", "Cleared stress test ranks pay twice as much.", "Every failure you survived gets filed as a feature.", { stressPay: 1 }],
+    drones: ["hangarlink", "Hangar link", "Posted Drones press twice as fast on their zone.", "A cable from the hangar to every zone. They stopped commuting.", { postBoost: 1 }],
+    anomaly: ["horizon", "Event horizon", "Zone events last twice as long.", "The knock lingers. You learn to answer it slowly.", { zeLong: 1 }],
+};
+const CAP_COST = 3500;
+const CAP_U = 15.4;
 const RANKS = 5;
 const CHAINS: Record<string, [string, number, number]> = { carrier1: ["carrier", 1, 3], carrier2: ["carrier", 2, 3], carrier3: ["carrier", 3, 3], mount1: ["mount", 1, 2], mount2: ["mount", 2, 2] };
 const ARM_ORDER: Branch[] = ["signal", "forge", "systems", "drones", "anomaly"];
@@ -386,6 +407,18 @@ function buildTree(): TreeNode[] {
         });
         req.forEach((r) => link(id, r));
     });
+    // capstones: past the ranked tip of each section, every one locks the other four
+    ARM_ORDER.forEach((arm, ai) => {
+        const th = -Math.PI / 2 + (ai * 2 * Math.PI) / ARM_ORDER.length;
+        const [id, name, blurb, flavor, fx] = CAPSTONES[arm];
+        const tip = slotIds[arm][SLOTS.length + 2];
+        out.push({
+            id, branch: arm, kind: "keystone", name, blurb, flavor, fx, cost: Math.round(CAP_COST * TUNE.treeCost), links: [tip],
+            x: +(CAP_U * Math.cos(th)).toFixed(3), y: +(CAP_U * Math.sin(th)).toFixed(3), ix: out.length, sprite: id, form: "capstone",
+            alt: ARM_ORDER.filter((a) => a !== arm).map((a) => CAPSTONES[a][0]),
+        });
+        byId(tip).links.push(id);
+    });
     return out;
 }
 export const TREE: TreeNode[] = buildTree();
@@ -405,11 +438,16 @@ const nodeSpent = (s: State, n: TreeNode) => { let t = 0; for (let l = 0; l < no
 /** AP spent on the whole tree, ranks included (what a respec refunds). */
 export const treeSpent = (s: State) => s.tree.reduce((a, id) => a + (BY_ID.has(id) ? nodeSpent(s, BY_ID.get(id)!) : 0), 0);
 /** Nodes you can own at once: every node but the other side of each fork. "Whole tree" means this many. */
-export const TREE_FULL = TREE.filter((n) => !(n.form === "fork" && n.excl && TREE.indexOf(treeNode(n.excl)) < TREE.indexOf(n))).length;
+const inFull = (n: TreeNode) => n.form !== "capstone" && !(n.form === "fork" && n.excl && TREE.indexOf(treeNode(n.excl)) < TREE.indexOf(n));
+export const TREE_FULL = TREE.filter(inFull).length;
 /** Ids that make a whole tree (the first side of every fork), for admin and tests. */
-export const fullTreeIds = () => TREE.filter((n) => !(n.form === "fork" && n.excl && TREE.indexOf(treeNode(n.excl)) < TREE.indexOf(n))).map((n) => n.id);
+export const fullTreeIds = () => TREE.filter(inFull).map((n) => n.id);
+/** Nodes owned that count toward the whole tree (a capstone is an extra, not one of the TREE_FULL). */
+export const treeOwned = (s: State) => s.tree.reduce((a, id) => a + (BY_ID.get(id)?.form === "capstone" ? 0 : 1), 0);
+/** The owned node that locks this one out (the other side of a fork, or the capstone you hold), if any. */
+export const rivalOwned = (owned: readonly string[], n: { excl?: string; alt?: string[] }) => (n.alt ?? (n.excl ? [n.excl] : [])).find((x) => owned.includes(x));
 /** Whole tree: TREE_FULL nodes owned (forks count once). Ranks are not needed. */
-export const treeComplete = (s: State) => s.tree.length >= TREE_FULL;
+export const treeComplete = (s: State) => treeOwned(s) >= TREE_FULL;
 /** Progressive reveal (Nate, 2026-11-12): owned and buyable nodes are shown; one step past a shown node is fog (a
  *  silhouette at its real size, no name or cost); everything further out is hidden. */
 /** Admin mode: show every node, fog or not (components/nodefarm/windows/admin.tsx). */
@@ -426,7 +464,8 @@ export function buyNode(s: State, id: string): boolean {
     const n = BY_ID.get(id);
     if (!n || nodeMaxed(s, n) || !nodeOpen(s, n) || chOff(s, "prestige")) return false;
     const cost = nodeCost(s, n);
-    const swap = n.excl && s.tree.includes(n.excl) ? BY_ID.get(n.excl)! : null;
+    const rival = rivalOwned(s.tree, n);
+    const swap = rival ? BY_ID.get(rival)! : null;
     const back = swap ? nodeSpent(s, swap) : 0;
     if (s.ap + back < cost) return false;
     if (swap) s.tree = s.tree.filter((x) => x !== swap.id); // a new array, so the effect cache recomputes
@@ -468,7 +507,7 @@ export function migrateTree(s: State): number {
     for (const [id, v] of Object.entries(s.treeLv ?? {})) { const n = BY_ID.get(id); if (n?.ranks && keep.includes(id) && Number.isFinite(v) && v > 1) lv[id] = Math.min(n.ranks, Math.floor(v)); }
     s.treeLv = lv;
     // both sides of a fork (an admin save, or an old bug): keep the first, refund the second
-    for (const id of [...s.tree]) { const n = BY_ID.get(id)!; if (n.excl && s.tree.includes(n.excl) && s.tree.indexOf(n.excl) < s.tree.indexOf(id)) { s.tree = s.tree.filter((x) => x !== id); back += n.cost; } }
+    for (const id of [...s.tree]) { const n = BY_ID.get(id)!; const r = rivalOwned(s.tree, n); if (r && s.tree.indexOf(r) < s.tree.indexOf(id)) { s.tree = s.tree.filter((x) => x !== id); back += n.cost; } }
     s.ap += back;
     return back;
 }
@@ -532,6 +571,11 @@ export function treeTotals(s: State): [string, string][] {
     if (f.droneTierGoal) rows.push(["Night crew", `+${f.droneTierGoal * tiersDone(s)} Drone levels`]);
     if (f.frenzy) rows.push(["Swarm alarm", `Drones x${TUNE.frenzyX} for ${TUNE.frenzySecs} s per win`]);
     if (f.ocReboot) rows.push(["Overclock Reboot power", `x${1 + f.ocReboot}`]);
+    if (f.zoneSync) rows.push(["Zone sync", `everything x${+(1 + f.zoneSync * zonesRunning(s)).toFixed(2)} (${zonesRunning(s)} zones)`]);
+    if (f.rigCut) rows.push(["Rig upgrades", `${Math.round(f.rigCut * 100)}% cheaper`]);
+    if (f.stressPay) rows.push(["Stress test pay", `x${1 + f.stressPay}`]);
+    if (f.postBoost) rows.push(["Posted Drones", `x${1 + f.postBoost} on their zone`]);
+    if (f.zeLong) rows.push(["Zone events", `${Math.round(f.zeLong * 100)}% longer`]);
     if (f.features.length) rows.push(["Systems", f.features.map((k) => FEATURE_NAME[k]).join(", ")]);
     return rows;
 }
@@ -556,6 +600,7 @@ function treeFxRaw(s: State) {
         apEach: 0, growth: 0, rebootKeep: 0, unlockMul: 1, kitReboot: 0, kitProd: {} as Record<string, number>, kitDrones: 0, droneKeep: 0, droneGlobal: 0, mounts: 0,
         eventRate: 0, ocTime: 0, ocX: 0, winBoost: 0, zeroDay: 0, echo: 0, features: [] as Feature[],
         coldStart: 0, longHaul: 0, specialist: 0, perNode: 0, spearhead: 0, winPay: 0, busbar: 0, apPerMat: 0, droneTierGoal: 0, frenzy: 0, ocReboot: 0,
+        zoneSync: 0, rigCut: 0, stressPay: 0, postBoost: 0, zeLong: 0,
     };
     const each: TreeFx[] = [];
     for (const id of s.tree) {
@@ -608,6 +653,11 @@ function treeFxRaw(s: State) {
         o.droneTierGoal += f.droneTierGoal ?? 0;
         o.frenzy += f.frenzy ?? 0;
         o.ocReboot += f.ocReboot ?? 0;
+        o.zoneSync += f.zoneSync ?? 0;
+        o.rigCut = Math.max(o.rigCut, f.rigCut ?? 0);
+        o.stressPay += f.stressPay ?? 0;
+        o.postBoost += f.postBoost ?? 0;
+        o.zeLong += f.zeLong ?? 0;
     }
     return o;
 }
@@ -1027,7 +1077,7 @@ export function derive(s: State): Derived {
     // a Brownout stress test runs without perks, unspent AP and the goal bonuses
     const global = (ch?.bare ? 1 : (1 + s.perks.power * 0.15) * apGlobal(s) * (1 + s.ach.length * (TUNE.achBonus + tf.goals) * (1 + protoK(s, "tamsin"))) * (1 + tiersDone(s) * TUNE.tierBonus)) * (1 + tf.global) * handGlobal(s) * (ARC_HOOKS.cleared ? 1 + TUNE.arcBonus * ARC_HOOKS.cleared(s) : 1) * (ch?.global ?? 1)
         * (1 + droneLv * tf.droneGlobal) * (1 + s.runWins * tf.winBoost) * boosts.chAll * singularityAll(s) * (s.overclock > 0 ? overclockMult(s) : 1) * lb.global
-        * (tf.perNode ? 1 + tf.perNode * treeCount(s) : 1) * foundryAll(s) * sunstoneAll(s);
+        * (tf.perNode ? 1 + tf.perNode * treeCount(s) : 1) * foundryAll(s) * sunstoneAll(s) * (tf.zoneSync ? 1 + tf.zoneSync * zonesRunning(s) : 1);
     const wren = protoK(s, "wren");
     const rig = RIG_HOOKS.muls ? RIG_HOOKS.muls(s) : {};
     const rebootStrength = TUNE.rebootStrength * boosts.cuReboot * (1 + tf.reboot) * (tf.ocReboot && s.overclock > 0 ? 1 + tf.ocReboot : 1) * (1 + wren) * zeOut(s, "reboot");
@@ -1049,6 +1099,8 @@ export function derive(s: State): Derived {
     return { global, bytesPerSec, rebootStrength, multGainMult, rates, offlineCap: Math.max(1, TUNE.offlineCapHours + s.perks.offline * 4 + tf.offline + (handFx(s).standby ? HAND_TUNE.standbyHours : 0) + (ch?.offlineH ?? 0)) * 3600, boosts };
 }
 
+/** Zones with a producer in them (Zone sync). */
+export const zonesRunning = (s: State) => MATS.filter((m) => s.prod[m] > 0).length;
 /** Nodes plus extra ranks owned (Investor). */
 export const treeCount = (s: State) => { let n = s.tree.length; if (s.treeLv) for (const k in s.treeLv) n += Math.max(0, s.treeLv[k] - 1); return n; };
 /** Seconds since the last Reboot or Ascend. */
@@ -1199,7 +1251,7 @@ export function droneStep(s: State, dt: number, eff = 1): number {
         }
         parts += postRate * salv;
     }
-    if (parts > 0) D.parts = Math.min(CAP, D.parts + parts * DRONE_TUNE.partK * (1 + fx.parts));
+    if (parts > 0) D.parts = Math.min(CAP, D.parts + parts * DRONE_TUNE.partK * (1 + fx.parts) * (isRunning(s, "botnet") ? 1 + 2 * labFx(s).botFarm : 1)); // Bot farm (doctrine)
     return made;
 }
 
@@ -1456,7 +1508,7 @@ export const GOALS: Goal[] = [
     G("r2k", "Reboot loop", "Reach 2,500 Reboots.", 7, "reboot", 2500, life("reboots")),
     G("ch1k", "Spare hours", "Hold 1,000 Chrono.", 7, "chrono", 1e3, (s) => s.chrono),
     G("asc20", "Habit of leaving", "Ascend 20 times.", 7, "ascend", 20, life("ascends")),
-    G("tr18", "Whole tree", "Own every node in the prestige tree (one side of each fork).", 7, "ascend", TREE_FULL, (s) => s.tree.length),
+    G("tr18", "Whole tree", "Own every node in the prestige tree (one side of each fork).", 7, "ascend", TREE_FULL, (s) => treeOwned(s)),
     // VIII SOURCE: the six zones past Chrono, out into space and then down to where the node began
     G("nb1", "Stardust", "Gather your first Nebula.", 8, "nebula", 1e-9, (s) => s.nebula),
     G("pu1", "Lighthouse keeper", "Catch your first Pulsar.", 8, "pulsars", 1e-9, (s) => s.pulsars),
@@ -1591,6 +1643,10 @@ export interface LabFx {
     longer?: LabSec; // that section's buffs last twice as long
     dumps?: number; // Reboot and event Intel x(1 + this)
     cron?: boolean; // an empty queue repeats the last compile
+    // doctrines (2026-11-17): one per section, pick one
+    liveFire?: number; // Exploits buffs are this much stronger while an Overclock runs
+    botFarm?: number; // Botnet is this much stronger, and Drones salvage x(1 + 2 * this) Parts while it runs
+    hotDeploy?: boolean; // a finished buff payload deploys itself when a slot is free
 }
 export interface LabNode {
     id: string;
@@ -1607,6 +1663,9 @@ export interface LabNode {
     ix: number;
     sprite: string;
     entry?: boolean;
+    /** doctrine: the other two doctrines. You can own one; buying another is a free swap (Intel back) */
+    alt?: string[];
+    form?: "doctrine";
 }
 // Each section is a small diamond: entry, two paths of two, keystone. 0 entry | 1, 3 upper | 2, 4 lower | 5 keystone.
 const LAB_SLOTS: [number, number, number[]][] = [[2.3, 0, []], [3.9, -1.1, [0]], [3.9, 1.1, [0]], [5.7, -1.25, [1]], [5.7, 1.25, [2]], [7.5, 0, [3, 4]]];
@@ -1637,6 +1696,15 @@ const LAB_ARMS: Record<LabSec, LabRow[]> = {
         [5, "rx_rootshell", "keystone", "Root shell", "Intel x3 and one more buff slot (4).", "Prompt ends in a hash now. The whole lab answers to it.", { intel: 2, slots: 1 }],
     ],
 };
+// Doctrines sit past each section's keystone. Intel pays for one, and swapping is free: the lab leans on exploits in the field,
+// on the hangar, or on its own automation.
+type DocRow = [id: string, name: string, blurb: string, flavor: string, fx: LabFx];
+const LAB_DOCTRINES: Record<LabSec, DocRow> = {
+    exploits: ["rx_livefire", "Live fire", "Exploits buffs are 50% stronger while an Overclock runs.", "Fire while the node is already screaming. Nobody hears the difference.", { liveFire: 0.5 }],
+    malware: ["rx_botfarm", "Bot farm", "Botnet is 50% stronger, and Drones salvage triple Parts while it runs.", "Rent out the Drones' spare hands. Keep the scrap.", { botFarm: 0.5 }],
+    infra: ["rx_hotdeploy", "Hot deploy", "A finished buff payload deploys itself when a slot is free.", "The bench stopped waiting for you. The bench is faster alone.", { hotDeploy: true }],
+};
+const LAB_DOC_COST = 200000;
 const LAB_ORDER: LabSec[] = ["exploits", "malware", "infra"];
 function buildLab(): LabNode[] {
     const out: LabNode[] = [];
@@ -1662,11 +1730,27 @@ function buildLab(): LabNode[] {
             B.links.push(A.id);
         }));
     });
+    // doctrines, after every research node so the older sprite rows and ix never move
+    LAB_ORDER.forEach((arm, ai) => {
+        const th = -Math.PI / 2 + (ai * 2 * Math.PI) / LAB_ORDER.length;
+        const [id, name, blurb, flavor, fx] = LAB_DOCTRINES[arm];
+        const key = out.find((n) => n.branch === arm && n.kind === "keystone")!;
+        out.push({
+            id, branch: arm, kind: "keystone", name, blurb, flavor, fx, cost: Math.round(LAB_DOC_COST * LAB_TUNE.labScale), links: [key.id],
+            x: +(9.7 * Math.cos(th)).toFixed(3), y: +(9.7 * Math.sin(th)).toFixed(3), ix: out.length, sprite: id, form: "doctrine",
+            alt: LAB_ORDER.filter((a) => a !== arm).map((a) => LAB_DOCTRINES[a][0]),
+        });
+        key.links.push(id);
+    });
     return out;
 }
 export const LAB: LabNode[] = buildLab();
+/** Nodes that make a full lab: every research node plus one doctrine. */
+export const LAB_FULL = LAB.filter((n) => n.form !== "doctrine").length + 1;
 const LAB_BY = new Map(LAB.map((n) => [n.id, n]));
 export const labNode = (id: string) => LAB_BY.get(id)!;
+/** Keep the first doctrine only (a hand-edited or admin save may hold two). */
+const labOneDoctrine = (ids: string[]) => { let seen = false; return ids.filter((id) => { if (LAB_BY.get(id)?.form !== "doctrine") return true; if (seen) return false; seen = true; return true; }); };
 export const labHas = (s: State, id: string) => s.lab.nodes.includes(id);
 export const labNodeOpen = (s: State, n: LabNode) => n.links.some((l) => l === "core" || s.lab.nodes.includes(l));
 export function labVis(s: State, n: LabNode): NodeVis {
@@ -1699,7 +1783,7 @@ export function labFx(s: State) {
     return v;
 }
 function labFxRaw(s: State) {
-    const o = { recipes: [] as PayloadId[], intel: 0, compile: 0, queue: 0, slots: 0, potency: [] as LabSec[], longer: [] as LabSec[], dumps: 0, cron: false };
+    const o = { recipes: [] as PayloadId[], intel: 0, compile: 0, queue: 0, slots: 0, potency: [] as LabSec[], longer: [] as LabSec[], dumps: 0, cron: false, liveFire: 0, botFarm: 0, hotDeploy: false };
     for (const id of s.lab.nodes) {
         const f = LAB_BY.get(id)?.fx;
         if (!f) continue;
@@ -1712,6 +1796,9 @@ function labFxRaw(s: State) {
         if (f.longer) o.longer.push(f.longer);
         o.dumps += f.dumps ?? 0;
         if (f.cron) o.cron = true;
+        o.liveFire += f.liveFire ?? 0;
+        o.botFarm += f.botFarm ?? 0;
+        if (f.hotDeploy) o.hotDeploy = true;
     }
     return o;
 }
@@ -1719,7 +1806,13 @@ export const labQueueMax = (s: State) => LAB_TUNE.queue + labFx(s).queue;
 export const labSlots = (s: State) => LAB_TUNE.slots + labFx(s).slots;
 export const hasRecipe = (s: State, id: PayloadId) => labFx(s).recipes.includes(id);
 /** A buff's strength right now (Obfuscation makes Exploits buffs 50% stronger). */
-export const payloadV = (s: State, p: PayloadDef) => p.v * (labFx(s).potency.includes(p.sec) ? 1.5 : 1);
+export const payloadV = (s: State, p: PayloadDef) => {
+    const f = labFx(s);
+    let k = f.potency.includes(p.sec) ? 1.5 : 1;
+    if (f.liveFire && p.sec === "exploits" && s.overclock > 0) k += f.liveFire; // Live fire (doctrine)
+    if (f.botFarm && p.id === "botnet") k += f.botFarm; // Bot farm (doctrine)
+    return p.v * k;
+};
 export const payloadDur = (s: State, p: PayloadDef) => p.dur * (labFx(s).longer.includes(p.sec) ? 2 : 1);
 export const compileSecs = (s: State, p: PayloadDef) => p.compile / (1 + labFx(s).compile);
 /** Intel per second right now. Uses the log of Bytes/s so it stays steady from one era to the next. */
@@ -1755,9 +1848,13 @@ export const isArmed = (s: State, id: PayloadId) => s.lab.armed.includes(id);
 
 export function buyLabNode(s: State, id: string): boolean {
     const n = LAB_BY.get(id);
-    if (!n || s.lab.nodes.includes(id) || !labNodeOpen(s, n) || s.lab.intel < n.cost) return false;
-    s.lab.intel -= n.cost;
-    s.lab.nodes.push(id);
+    if (!n || s.lab.nodes.includes(id) || !labNodeOpen(s, n)) return false;
+    const rival = n.alt?.find((x) => s.lab.nodes.includes(x));
+    const back = rival ? LAB_BY.get(rival)!.cost : 0; // a doctrine swap gives the old one's Intel back
+    if (s.lab.intel + back < n.cost) return false;
+    if (rival) s.lab.nodes = s.lab.nodes.filter((x) => x !== rival); // a new array, so the effect cache recomputes
+    s.lab.intel += back - n.cost;
+    s.lab.nodes = [...s.lab.nodes, id];
     return true;
 }
 export type CompileFail = "recipe" | "queue" | "stock" | "intel" | "mat";
@@ -1833,6 +1930,9 @@ export function labTotals(s: State): [string, string][] {
     for (const sec of f.potency) rows.push([`${LAB_SECS.find((x) => x.id === sec)!.name} buffs`, "+50% stronger"]);
     for (const sec of f.longer) rows.push([`${LAB_SECS.find((x) => x.id === sec)!.name} buffs`, "last twice as long"]);
     if (f.cron) rows.push(["Cron job", "repeats your last compile"]);
+    if (f.liveFire) rows.push(["Live fire", "Exploits +50% in an Overclock"]);
+    if (f.botFarm) rows.push(["Bot farm", "Botnet +50%, Parts x3"]);
+    if (f.hotDeploy) rows.push(["Hot deploy", "finished buffs deploy themselves"]);
     return rows;
 }
 /** Bank crash-dump Intel (on a Reboot) or event Intel. Returns the Intel added. */
@@ -1868,6 +1968,7 @@ export function labStep(s: State, dt: number, bytesPerSec: number): PayloadId[] 
             L.stock[q.id] = Math.min(LAB_TUNE.stockMax, (L.stock[q.id] ?? 0) + 1);
             s.life.compiled += 1;
             done.push(q.id);
+            if (labFx(s).hotDeploy && PAY_BY.get(q.id)?.kind === "buff" && !deployBlock(s, q.id)) deploy(s, q.id); // Hot deploy (doctrine)
             if (!L.queue.length && labFx(s).cron && L.last) compile(s, L.last);
         }
     }
@@ -2084,7 +2185,7 @@ export function setPost(s: State, tier: number, st: ButtonStat | null): boolean 
     s.dr.post[tier] = st;
     return true;
 }
-export const postX = (s: State, tier: number) => DRONE_TUNE.postX + droneFx(s).postX + (s.dr.mods[tier]?.[1] ?? 0) * DRONE_TUNE.uplinkEach;
+export const postX = (s: State, tier: number) => (DRONE_TUNE.postX + droneFx(s).postX + (s.dr.mods[tier]?.[1] ?? 0) * DRONE_TUNE.uplinkEach) * (1 + treeFx(s).postBoost); // Hangar link (capstone)
 /** The hangar's part of a Drone's speed: Servo, the tree, Formation and Hivemind. */
 export function hangarSpeed(s: State, tier: number): number {
     if (!s.dr) return 1;
@@ -2295,7 +2396,7 @@ const FW_ARMS: Partial<Record<FwSec, FwRow[]>> = {
         [5, "fw_lineage", "keystone", "Lineage", "Everything +50% for every Handover you have done.", "Every operator who left made the node a little stronger.", { lineage: 0.5 }],
     ],
     field: [
-        [0, "fw_rod", "minor", "Lightning rod", "Zone events last 50% longer.", "Give the weather something tall to hold on to.", { zeLong: 0.5 }],
+        [0, "fw_rod", "minor", "Lightning rod", "Zone events last twice as long.", "Give the weather something tall to hold on to.", { zeLong: 1 }],
         [1, "fw_fastpath", "minor", "Fast path", "Every material opens at half the usual amount.", "Shorter cable, same signal.", { unlockMul: 0.5 }],
         [2, "fw_fieldkit", "minor", "Field kit", "Rig levels cost 40% less.", "Every zone gets a toolbox. Somebody finally labeled the drawers.", { rigCost: 0.4 }],
         [3, "fw_weather", "notable", "Weather eye", "Zone events come twice as often.", "Watch the zones long enough and you can feel the next one coming.", { zeOften: 1 }],
@@ -2417,7 +2518,9 @@ export function protoK(s: State, id: ProtoId): number {
 }
 /** Field: rig prices, zone event length and gap, and the Field operator keystone (read by rigs.ts and zoneevents.ts). */
 export const fwRigCost = (s: State) => (s.hand ? Math.max(0.2, 1 - handFx(s).rigCost) : 1);
-export const fwZeLong = (s: State) => (s.hand ? 1 + handFx(s).zeLong : 1);
+export const fwZeLong = (s: State) => (s.hand ? 1 + handFx(s).zeLong : 1) * (1 + treeFx(s).zeLong); // Lightning rod (Firmware), Event horizon (capstone)
+/** Rig foundry (capstone): rig upgrades cost this much of the usual. */
+export const treeRigCost = (s: State) => 1 - treeFx(s).rigCut;
 export const fwZeGap = (s: State) => (s.hand ? 1 / (1 + handFx(s).zeOften) : 1);
 export const fwFieldOp = (s: State) => !!s.hand && handFx(s).fieldOp;
 /** Lineage: everything +50% per Handover done. */
@@ -2756,7 +2859,7 @@ function parseLab(o: unknown): LabState {
     return {
         seen: !!x.seen,
         intel: Math.max(0, num(x.intel)),
-        nodes: Array.isArray(x.nodes) ? [...new Set(x.nodes.filter((id) => LAB_BY.has(id)))] : [],
+        nodes: Array.isArray(x.nodes) ? labOneDoctrine([...new Set(x.nodes.filter((id) => LAB_BY.has(id)))]) : [],
         queue: Array.isArray(x.queue) ? x.queue.filter((q) => q && pid(q.id)).map((q) => ({ id: q.id, left: Math.max(0, num(q.left)) })) : [],
         stock: Object.fromEntries(Object.entries(x.stock ?? {}).filter(([k, v]) => pid(k) && num(v) > 0).map(([k, v]) => [k, Math.min(LAB_TUNE.stockMax, Math.floor(num(v)))])),
         run: Array.isArray(x.run) ? x.run.filter((r) => r && pid(r.id) && num(r.left) > 0).map((r) => ({ id: r.id, left: Math.min(LAB_TUNE.maxRun, num(r.left)) })) : [],
@@ -2816,7 +2919,7 @@ GOALS.push(
     G("rg25", "Tuned", "Reach 25 rig levels in total.", 11, "copper", 25, rigSum),
     G("ze1", "Anomaly", "See a zone event.", 11, "alert", 1, (s) => s.ze?.seen ?? 0),
     G("lb1", "Live fire", "Deploy your first payload.", 11, "alert", 1, life("deployed")),
-    G("lb18", "Full stack", "Research every Exploit Lab node.", 11, "alert", LAB.length, (s) => s.lab.nodes.length),
+    G("lb18", "Full stack", "Research every Exploit Lab node (the three doctrines past the keystones are a choice, so one of them counts).", 11, "alert", LAB_FULL, (s) => s.lab.nodes.reduce((a, id) => a + (LAB_BY.get(id)?.form === "doctrine" ? 0 : 1), 0) + (s.lab.nodes.some((id) => LAB_BY.get(id)?.form === "doctrine") ? 1 : 0)),
     G("cr9", "Fully bolted", "Get every structure onto the reactor core.", 11, "ascend", 1, (s) => (coreFull(s) ? 1 : 0)),
     // XII FIRMWARE: Handover
     G("hd1", "Handed over", "Hand the node over once.", 12, "origin", 1, (s) => s.hand?.count ?? 0),

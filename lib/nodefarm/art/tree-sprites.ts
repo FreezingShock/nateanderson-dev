@@ -2,6 +2,7 @@
 /** sprite key -> [sheet size key, row]. Sheets: public/naos/nodefarm/tree-spr-{s,m,l}.webp, 6 columns per row. */
 export const SPRITE_CELLS: Record<string, ["s" | "m" | "l", number]> = {
     "linecode": ["s", 0],
+    "batchjob": ["s", 1],
     "echocancel": ["s", 2],
     "headstart": ["s", 3],
     "hotswap": ["s", 4],
@@ -127,6 +128,14 @@ export const SPRITE_CELLS: Record<string, ["s" | "m" | "l", number]> = {
     "fw_tape": ["l", 21],
     "fw_lineage": ["l", 22],
     "fw_fieldop": ["l", 23],
+    "synclock": ["l", 24],
+    "foundry": ["l", 25],
+    "loadtest": ["l", 26],
+    "hangarlink": ["l", 27],
+    "horizon": ["l", 28],
+    "rx_livefire": ["l", 29],
+    "rx_botfarm": ["l", 30],
+    "rx_hotdeploy": ["l", 31],
 };
 export const SPRITE_PX = { s: 32, m: 40, l: 64 } as const;
-export const SPRITE_ROWS = { s: 59, m: 44, l: 24 } as const;
+export const SPRITE_ROWS = { s: 59, m: 44, l: 32 } as const;

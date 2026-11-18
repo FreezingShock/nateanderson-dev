@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef, useState, type CSSProperties } from "react";
-import { BRANCHES, GOALS, GOAL_TIERS, STATS, TIER_NAMES, TREE, TREE_FULL, TUNE, fullTreeIds, amount, apEach, apOnAscend, canAscend, derive, droneCost, dronesOpen, fmt, goalDone, hasNode, intelRate, isUnlocked, LAB, LAB_SECS, PAYLOADS, hasRecipe, tiersDone, MATS, type MatId, type State, type StatId, ascendNeed } from "@/lib/nodefarm/engine";
+import { BRANCHES, GOALS, GOAL_TIERS, STATS, TIER_NAMES, LAB_FULL, TREE, TREE_FULL, TUNE, fullTreeIds, amount, apEach, apOnAscend, canAscend, derive, droneCost, dronesOpen, fmt, goalDone, hasNode, intelRate, isUnlocked, LAB, LAB_SECS, PAYLOADS, hasRecipe, tiersDone, MATS, type MatId, type State, type StatId, ascendNeed } from "@/lib/nodefarm/engine";
 const FULL = new Set(fullTreeIds());
 import { feedLine, nextStep, unlockInfo } from "@/lib/nodefarm/content/guide";
 import { LORE } from "@/lib/nodefarm/content/lore";
@@ -53,7 +53,7 @@ export function MapPanel({ s, d, onTree, onWin, onLab }: { s: State; d: D; onTre
                     ["ZONES", `${online} / ${STATS.length} online`],
                     ["TREE", `${owned} / ${TREE_FULL} nodes`],
                     ["GOALS", `${goals} / ${GOALS.length}`],
-                    ...(s.lab.seen ? [["LAB", `${s.lab.nodes.length} / ${LAB.length} research`] as [string, string]] : []),
+                    ...(s.lab.seen ? [["LAB", `${s.lab.nodes.length} / ${LAB_FULL} research`] as [string, string]] : []),
                 ]}
             />
 

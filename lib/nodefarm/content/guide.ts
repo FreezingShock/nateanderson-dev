@@ -184,7 +184,7 @@ export function readyNow(s: State, d: Derived): Also[] {
     }
     // the lab: research you can afford, once the first one is done
     if (s.lab.seen && s.lab.nodes.length > 0) {
-        const ready = LAB.filter((n) => !labHas(s, n.id) && labNodeOpen(s, n) && s.lab.intel >= n.cost).length;
+        const ready = LAB.filter((n) => !labHas(s, n.id) && labNodeOpen(s, n) && !n.alt?.some((a) => labHas(s, a)) && s.lab.intel >= n.cost).length;
         if (ready) out.push({ id: "lab-more", text: `${ready} research ready in the lab`, target: { win: "lab" } });
     }
     // stress tests: once, as an invitation
@@ -382,7 +382,7 @@ export function telemetry(s: State, d: Derived): Cell[] {
     // Exploit Lab
     if (!s.lab.seen) out.push({ id: "lab", icon: "lab", label: "Exploit Lab", value: "Locked", sub: `Opens with ${statDef(LAB_TUNE.opensAt).name}`, frac: 0, color: "#9fd0ff", state: "locked" });
     else {
-        const open = LAB.filter((n) => !labHas(s, n.id) && labNodeOpen(s, n));
+        const open = LAB.filter((n) => !labHas(s, n.id) && labNodeOpen(s, n) && !n.alt?.some((a) => labHas(s, a)));
         const ready = open.filter((n) => s.lab.intel >= n.cost).length;
         const cheap = open.length ? Math.min(...open.map((n) => n.cost)) : 0;
         const stock = Object.values(s.lab.stock).reduce((a, b) => a + (b ?? 0), 0);

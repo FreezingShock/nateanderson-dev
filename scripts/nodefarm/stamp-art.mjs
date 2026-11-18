@@ -13,8 +13,9 @@
 import { createHash } from "node:crypto";
 import { readFileSync, readdirSync, writeFileSync, existsSync } from "node:fs";
 import { join } from "node:path";
+import { fileURLToPath } from "node:url";
 
-const ROOT = new URL("../..", import.meta.url).pathname;
+const ROOT = fileURLToPath(new URL("../..", import.meta.url)); // not .pathname: that is /C:/... on Windows
 const ART = join(ROOT, "public/naos/nodefarm");
 const CSS_DIR = join(ROOT, "app/camino");
 const TS_OUT = join(ROOT, "lib/nodefarm/art/art-version.ts");
@@ -29,7 +30,7 @@ for (const f of readdirSync(ART).sort()) {
 
 // 1. CSS url() stamps.
 const URL_RE = /url\((['"]?)\/naos\/nodefarm\/([\w.-]+\.(?:webp|png))(?:\?v=[0-9a-f]*)?\1\)/g;
-for (const f of readdirSync(CSS_DIR).filter((n) => n.endsWith(".css"))) {
+for (const f of [...readdirSync(CSS_DIR).filter((n) => n.endsWith(".css")), ...readdirSync(join(CSS_DIR, "nodefarm")).filter((n) => n.endsWith(".css")).map((n) => "nodefarm/" + n)]) { // the Node Farm styles moved into app/camino/nodefarm/ (#287)
     const p = join(CSS_DIR, f);
     const src = readFileSync(p, "utf8");
     const out = src.replace(URL_RE, (m, q, file) => {

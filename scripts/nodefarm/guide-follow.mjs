@@ -15,7 +15,7 @@ for (let t = 0; t < mins * 60; t++) {
     const tg = st.target;
     if (tg?.stat !== undefined && tg.tier !== undefined && E.canAfford(s, tg.stat, tg.tier)) E.press(s, tg.stat, tg.tier);
     else if (tg?.drone !== undefined) E.buyDrone(s, tg.drone);
-    else if (tg?.win === "lab" || tg?.lab) { for (const n of [...E.LAB].sort((a, b) => a.cost - b.cost)) if (E.buyLabNode(s, n.id)) break; for (const p of E.PAYLOADS) if ((s.lab.stock[p.id] ?? 0) < 1) E.compile(s, p.id); }
+    else if (tg?.win === "lab" || tg?.lab) { for (const n of E.LAB.filter((n) => n.form !== "doctrine").sort((a, b) => a.cost - b.cost)) if (E.buyLabNode(s, n.id)) break; for (const p of E.PAYLOADS) if ((s.lab.stock[p.id] ?? 0) < 1) E.compile(s, p.id); }
     else if (st.id === "ascend" && E.canAscend(s)) E.ascend(s);
     else if (st.id === "spend-ap") { for (const n of [...E.TREE].sort((a, b) => a.cost - b.cost)) if (E.buyNode(s, n.id)) break; }
     if (st.id !== last) {

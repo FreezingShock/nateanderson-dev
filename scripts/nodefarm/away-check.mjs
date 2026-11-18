@@ -21,7 +21,7 @@ const STAGES_DIR = resolve(OUT, "stages");
 mkdirSync(STAGES_DIR, { recursive: true });
 const clone = (s) => JSON.parse(JSON.stringify(s));
 const FULL = new Set(E.fullTreeIds());
-const labOrder = [...E.LAB].sort((a, b) => a.cost - b.cost);
+const labOrder = E.LAB.filter((n) => n.form !== "doctrine").sort((a, b) => a.cost - b.cost);
 const order = [...E.MATS].reverse().concat("mult");
 const MATS_BOT = ["chrono", "voidsteel", "starglass", "runes", "aether"];
 

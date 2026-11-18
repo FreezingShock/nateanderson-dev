@@ -9,7 +9,7 @@ import { cardGlitch } from "../board/card-glitch";
 import { LabBackdrop } from "../workshop/lab-backdrop";
 import { FwBackdrop } from "../ascend/fw-backdrop";
 import { HangarBackdrop } from "../workshop/hangar-backdrop";
-import { BRANCHES, TREE, fmt, nodeCost, nodeLevel, nodeOpen, nodeVis, treeNode, treeSpent, treeTotals, type Branch, type State, type TreeKind } from "@/lib/nodefarm/engine";
+import { BRANCHES, TREE, fmt, nodeCost, nodeLevel, nodeOpen, nodeVis, rivalOwned, treeNode, treeSpent, treeTotals, type Branch, type State, type TreeKind } from "@/lib/nodefarm/engine";
 
 /**
  * The prestige tree menu: a full-screen web of nodes with a camera you pan, pinch and zoom.
@@ -32,7 +32,7 @@ type Vis = "shown" | "fog" | "hidden";
 export interface MenuNode {
     id: string; branch: string; kind: TreeKind; name: string; blurb: string; flavor?: string; cost: number; links: string[]; x: number; y: number; ix: number; sprite?: string;
     /** the deeper prestige tree: junction (needs every `req`), fork (owning `excl` locks it until you swap), ranked (bought up to `ranks` times) */
-    form?: "junction" | "fork" | "ranked"; req?: string[]; excl?: string; ranks?: number;
+    form?: "junction" | "fork" | "ranked" | "capstone" | "doctrine"; req?: string[]; excl?: string; alt?: string[]; ranks?: number;
 }
 /**
  * What the menu needs to draw a tree. The same camera, tiles, card, links and reveal run both trees; the model swaps the
@@ -138,7 +138,7 @@ const moreRanks = (m: TreeModel, n: MenuNode) => !!n.ranks && m.owned.includes(n
 function buyState(m: TreeModel, n: MenuNode): NodeState {
     if (m.owned.includes(n.id) && !moreRanks(m, n)) return "owned";
     if (!m.open(n)) return "locked";
-    return m.wallet + (n.excl && m.owned.includes(n.excl) ? priceOf(m, n) : 0) >= priceOf(m, n) ? "ready" : "open";
+    return m.wallet + (rivalOwned(m.owned, n) ? priceOf(m, n) : 0) >= priceOf(m, n) ? "ready" : "open";
 }
 /** The tile's look: a ranked node with ranks left still looks owned. */
 function stateOf(m: TreeModel, n: MenuNode): NodeState {
@@ -810,7 +810,7 @@ function TreeMenuInner({ s, model, reduced, onBuy, onRespec, onClose }: TreeMenu
     const rows = m.totals();
     const spent = m.spent ? m.spent() : m.owned.reduce((a, id) => a + (byId.get(id)?.cost ?? 0), 0);
     // ready to buy: new nodes and ranks left, not fork swaps (a swap is a choice, not progress)
-    const ready = TREE.filter((n) => seen(n.id) && buyState(m, n) === "ready" && !(n.excl && m.owned.includes(n.excl))).length;
+    const ready = TREE.filter((n) => seen(n.id) && buyState(m, n) === "ready" && !rivalOwned(m.owned, n)).length;
 
     const buy = (id: string) => {
         onBuy(id);
@@ -834,7 +834,8 @@ function TreeMenuInner({ s, model, reduced, onBuy, onRespec, onClose }: TreeMenu
     const cst = cn ? buyState(m, cn) : null;
     const clv = cn ? levelOf(m, cn) : 0;
     const cprice = cn ? priceOf(m, cn) : 0;
-    const cswap = cn?.excl && m.owned.includes(cn.excl) ? treeNode(cn.excl) : null;
+    const crival = cn ? rivalOwned(m.owned, cn) : undefined;
+    const cswap = crival ? (byId.get(crival) ?? null) : null;
     const fogCard = cvis === "fog";
     const pinned = !!shown && shown === sel;
 
@@ -908,7 +909,7 @@ function TreeMenuInner({ s, model, reduced, onBuy, onRespec, onClose }: TreeMenu
                         const bst = buyState(m, n);
                         const fog = v === "fog";
                         const lv = levelOf(m, n);
-                        const swapOut = !!n.excl && m.owned.includes(n.excl);
+                        const swapOut = !!rivalOwned(m.owned, n);
                         return (
                             <button
                                 key={n.id}
@@ -940,7 +941,7 @@ function TreeMenuInner({ s, model, reduced, onBuy, onRespec, onClose }: TreeMenu
                                     <span className="nf-tn-face"><NodeIcon n={n} st={st} fog={fog} /></span>
                                 </span>
                                 <span className="nf-tn-l">{fog ? "encrypted" : n.name}</span>
-                                {!fog && n.form && <span className="nf-tn-form" aria-hidden="true">{n.form === "ranked" ? <>{Array.from({ length: n.ranks ?? 1 }, (_, i) => <i key={i} data-on={i < lv ? "" : undefined} />)}</> : n.form === "fork" ? (swapOut ? "swap" : "fork") : "junction"}</span>}
+                                {!fog && n.form && <span className="nf-tn-form" aria-hidden="true">{n.form === "ranked" ? <>{Array.from({ length: n.ranks ?? 1 }, (_, i) => <i key={i} data-on={i < lv ? "" : undefined} />)}</> : n.form === "fork" ? (swapOut ? "swap" : "fork") : (n.form === "capstone" || n.form === "doctrine") ? (swapOut ? "swap" : n.form) : "junction"}</span>}
                                 {!fog && bst !== "owned" && <span className="nf-tn-cost">{fmt(priceOf(m, n))} {m.unit}</span>}
                             </button>
                         );
@@ -987,6 +988,9 @@ function TreeMenuInner({ s, model, reduced, onBuy, onRespec, onClose }: TreeMenu
                         ) : (
                             <p className="nf-tm-need" data-cx-i="4">// needs a neighbor: {cn.links.filter((l) => l !== "core" && seen(l) && vis.get(l) !== "fog").map((l) => treeNode(l).name).join(", ") || "decrypt the path first"}</p>
                         ))}
+                        {!fogCard && (cn.form === "capstone" || cn.form === "doctrine") && (
+                            <p className="nf-tm-need" data-cx-i="4" data-tone="fork">// {cn.form}: pick one of {cn.form === "capstone" ? "five" : "three"}. {cswap ? `Swapping refunds ${cswap.name} and takes this instead, free.` : m.owned.includes(cn.id) ? "The others are locked; buy one to swap." : "Owning this locks the others."}</p>
+                        )}
                         {!fogCard && cn.form === "fork" && cn.excl && (
                             <p className="nf-tm-need" data-cx-i="4" data-tone="fork">// fork: pick one. {cswap ? `Swapping refunds ${cswap.name} and takes this instead, free.` : m.owned.includes(cn.id) ? `${seen(cn.excl) ? treeNode(cn.excl).name : "The other side"} is locked; buy it to swap.` : `Owning this locks ${seen(cn.excl) && vis.get(cn.excl) !== "fog" ? treeNode(cn.excl).name : "the other side"}.`}</p>
                         )}
