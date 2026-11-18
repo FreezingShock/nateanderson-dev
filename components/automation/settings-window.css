@@ -94,12 +94,13 @@ a.bws-action, a.bws-action:visited { color: var(--ab-brass-hi, #f0c97a); }
   .bws-body[data-panel="controls"] > .bws-note { grid-column: 1 / -1; margin: 0; }
 }
 @media (max-width: 767px), (max-height: 1199px) {
-  .bws-tabs { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; margin: 0 0 10px; }
+  /* Plain text tabs on a hairline; the picked tab gets a brass underline (no boxes, no chips). */
+  .bws-tabs { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0; margin: 0 0 12px; border-bottom: 1px solid var(--ab-line, #4a3a22); }
   .bws-tab {
-    min-height: 44px; border: 1px solid var(--ab-line, #4a3a22); background: #120d07; color: var(--ab-dim, #9c8a66); cursor: pointer;
+    min-height: 44px; border: 0; border-bottom: 2px solid transparent; margin-bottom: -1px; background: none; color: var(--ab-dim, #9c8a66); cursor: pointer;
     font-size: 12px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; padding: 0;
   }
-  .bws-tab[aria-pressed="true"] { background: linear-gradient(#d9ae62, #b28438); color: #2a1606; border-color: var(--ab-brass, #c59a52); }
+  .bws-tab[aria-pressed="true"] { color: var(--ab-brass-hi, #f4cf7e); border-bottom-color: var(--ab-brass, #c59a52); }
   .bws-body[data-page="sound"] > .bws-group:not([data-tab="sound"]),
   .bws-body[data-page="display"] > .bws-group:not([data-tab="display"]),
   .bws-body[data-page="numbers"] > .bws-group:not([data-tab="numbers"]),
