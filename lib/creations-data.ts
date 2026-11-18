@@ -13,6 +13,7 @@ const Ic = {
     Sun: px("sun"),
     Pencil: px("pen"),
     Boxes: px("boxes"),
+    Brain: px("brain"),
     Crane: px("crane"),
     Layers: px("layers"),
     Settings: px("settings"),
@@ -190,7 +191,7 @@ export interface Game {
 
 export interface GameMode {
     /** Section id on the Games hub; also the #anchor the Creations overview links to. */
-    id: "geography" | "incremental" | "automation";
+    id: "geography" | "puzzle" | "incremental" | "automation";
     title: string;
     color: string;
     icon: PixelComponent;
@@ -237,6 +238,20 @@ export const GAME_MODES: GameMode[] = [
                 tags: ["238 countries", "Daily + unlimited", "km or mi"],
             },
             // gen-anchor: games:geography
+        ],
+    },
+    {
+        id: "puzzle",
+        title: "Puzzle",
+        color: "var(--cm-amber)",
+        icon: Ic.Brain,
+        tagline: "One puzzle a day, the same for everyone.",
+        about: "Word and number puzzles with a new one at midnight Pacific. Finish a daily and its unlimited practice opens too. Streaks and stats stay in your browser.",
+        coming: "The first daily puzzles are in development. They go live in this section when they are playable.",
+        games: [
+            // puzzle-card: word (insert the word puzzle's card ABOVE this line)
+            // The two markers sit on separate lines on purpose, so two branches adding a card here do not conflict.
+            // puzzle-card: number (insert the number puzzle's card ABOVE this line)
         ],
     },
     {

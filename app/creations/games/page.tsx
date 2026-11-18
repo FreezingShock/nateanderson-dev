@@ -12,7 +12,7 @@ export default function GamesPage() {
             <CreationsShell
                 eyebrow="Creations / Games"
                 title={["Games"]}
-                description="Browser games in three sections: geography, incremental and automation. Geography has a daily puzzle and unlimited practice. Streaks and stats stay on your device."
+                description="Browser games in four sections: geography, puzzle, incremental and automation. Geography and Puzzle have a daily and unlimited practice. Streaks and stats stay on your device."
                 back={{ href: "/creations", label: "Back to Creations" }}
             >
                 <div className="cm-wrap">
