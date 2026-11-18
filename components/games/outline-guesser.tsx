@@ -31,7 +31,7 @@ import {
     type Status,
     type Unit,
 } from "@/components/games/guess-kit";
-import { GLASS_CLASS, useGuessProgress } from "@/components/games/guess-kit";
+import { GLASS_CLASS, ShareResultButton, useGuessProgress } from "@/components/games/guess-kit";
 import { GuessModeTabs, MODE_PANEL_ID } from "@/components/games/mode-tabs";
 import { cn } from "@/lib/utils";
 import { sfx } from "@/lib/sound/sounds";
@@ -52,6 +52,7 @@ import {
     poolFor,
     scoreGame,
     formatCountdown,
+    formatShareText,
     seededShuffle,
     todayPT,
     type Country,
@@ -410,6 +411,20 @@ export function OutlineGuesser() {
             setTimeout(() => setCopied(false), 2000);
         } catch {}
     };
+
+    // Plain-text result of this round for the Share result button: no emoji, no answer.
+    const roundShareText = () =>
+        formatShareText({
+            game: "Outline Guesser",
+            ...(mode === "daily"
+                ? { mode: "daily" as const, puzzleNumber: dailyNumber(dailyDate.current) }
+                : { mode: "unlimited" as const }),
+            won: status === "won",
+            used: guesses.length,
+            max: MAX_GUESSES,
+            streak: s.streak,
+            url: `${window.location.origin}/creations/games/outline-guesser`,
+        });
 
     const changeUnit = () => {
         const next: Unit = unit === "km" ? "mi" : "km";
@@ -906,6 +921,9 @@ export function OutlineGuesser() {
                         It was <strong className="text-foreground">{answer.n}</strong>.
                     </p>
                     <StreakLine streak={s.streak} best={s.best} won={status === "won"} />
+                    <div className="mt-4 flex justify-center">
+                        <ShareResultButton build={roundShareText} />
+                    </div>
                     {nav1}
                 </div>
             )}

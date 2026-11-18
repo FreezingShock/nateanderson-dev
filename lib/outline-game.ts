@@ -194,6 +194,28 @@ export function formatCountdown(n: number): string {
         .join(":");
 }
 
+/** What a finished round shares: the result line, the streak when it is over 1, and the game's URL. Plain text, no emoji, no answer. */
+export type ShareResult = {
+    game: string;
+    won: boolean;
+    used: number;
+    max: number;
+    streak: number;
+    url: string;
+} & ({ mode: "daily"; puzzleNumber: number } | { mode: "unlimited" });
+
+export function formatShareText(r: ShareResult): string {
+    const head =
+        r.mode === "daily"
+            ? `${r.game} daily #${r.puzzleNumber}`
+            : `${r.game} unlimited`;
+    const result = r.won ? `${r.used}/${r.max} won` : "missed";
+    const lines = [`${head} - ${result}`];
+    if (r.won && r.streak > 1) lines.push(`Streak ${r.streak}`);
+    lines.push(r.url);
+    return lines.join("\n");
+}
+
 /** Seconds until the next Pacific-time midnight. */
 export function secondsToNextDaily(now = Date.now()): number {
     const parts = new Intl.DateTimeFormat("en-GB", {

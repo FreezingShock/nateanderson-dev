@@ -550,6 +550,105 @@ const toggleIn = <T,>(list: T[], v: T) =>
     list.includes(v) ? list.filter((x) => x !== v) : [...list, v];
 
 /** Difficulty and region chips for Unlimited mode. */
+// ---- Share result ----
+
+/** A device whose main pointer is touch (phones, tablets): the native share sheet fits there. */
+const touchFirst = () => typeof window !== "undefined" && !finePointer();
+
+/** Copies text: the clipboard API, then a hidden textarea and execCommand where the API is missing or refuses. */
+export async function copyText(text: string): Promise<boolean> {
+    try {
+        if (navigator.clipboard?.writeText) {
+            await navigator.clipboard.writeText(text);
+            return true;
+        }
+    } catch {}
+    const ta = document.createElement("textarea");
+    ta.value = text;
+    ta.setAttribute("readonly", "");
+    ta.style.position = "fixed";
+    ta.style.top = "0";
+    ta.style.left = "0";
+    ta.style.opacity = "0";
+    document.body.appendChild(ta);
+    try {
+        ta.select();
+        ta.setSelectionRange(0, text.length);
+        return document.execCommand("copy");
+    } catch {
+        return false;
+    } finally {
+        ta.remove();
+    }
+}
+
+type ShareState = "idle" | "copied" | "failed";
+
+/**
+ * The Share result button on a finished round. `build` runs on click, so the
+ * URL is read from the page then. Touch devices get the share sheet; everything
+ * else copies. A failed copy shows the text in a selectable box instead.
+ */
+export function ShareResultButton({ build }: { build: () => string }) {
+    const [state, setState] = useState<ShareState>("idle");
+    const [manual, setManual] = useState("");
+    const timer = useRef(0);
+    useEffect(() => () => window.clearTimeout(timer.current), []);
+
+    const flash = (next: ShareState) => {
+        window.clearTimeout(timer.current);
+        setState(next);
+        if (next !== "idle") timer.current = window.setTimeout(() => setState("idle"), 2000);
+    };
+
+    const onClick = async () => {
+        const text = build();
+        if (touchFirst() && typeof navigator.share === "function") {
+            try {
+                await navigator.share({ text });
+                return;
+            } catch (e) {
+                // Closing the sheet is not an error; any other failure falls back to copying.
+                if ((e as Error | undefined)?.name === "AbortError") return;
+            }
+        }
+        const ok = await copyText(text);
+        setManual(ok ? "" : text);
+        flash(ok ? "copied" : "failed");
+    };
+
+    const label = state === "copied" ? "Copied" : state === "failed" ? "Copy failed" : "Share result";
+    return (
+        <div className="gk-share-wrap">
+            <button
+                type="button"
+                onClick={onClick}
+                className={cn(
+                    "gk-share font-sans",
+                    state === "copied" && "is-copied",
+                    state === "failed" && "is-failed"
+                )}
+            >
+                <PixelIcon name={state === "copied" ? "check" : "send"} className="size-4" />
+                {label}
+            </button>
+            <span role="status" aria-live="polite" className="sr-only">
+                {state === "idle" ? "" : label}
+            </span>
+            {manual !== "" && (
+                <textarea
+                    readOnly
+                    rows={5}
+                    aria-label="Result text, select and copy by hand"
+                    value={manual}
+                    onFocus={(e) => e.currentTarget.select()}
+                    className="gk-share-text"
+                />
+            )}
+        </div>
+    );
+}
+
 export function FilterPanel({
     difficulties,
     regions,

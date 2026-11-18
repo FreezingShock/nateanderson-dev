@@ -5,7 +5,6 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import flagSchedule from "@/lib/data/daily-flag-schedule.json";
 import {
     Burst,
-    COLOR,
     CountryCombobox,
     FilterPanel,
     GLASS_CLASS,
@@ -13,6 +12,7 @@ import {
     GuessRow,
     KeyLegend,
     StatsPanel,
+    ShareResultButton,
     StreakLine,
     useGuessProgress,
     prefersReducedMotion,
@@ -30,17 +30,15 @@ import { GuessModeTabs, MODE_PANEL_ID } from "@/components/games/mode-tabs";
 import { cn } from "@/lib/utils";
 import { sfx } from "@/lib/sound/sounds";
 import {
-    ARROW_EMOJI,
     MAX_GUESSES,
     MAX_HINTS,
     dailyCountry,
     dailyNumber,
     dayNumber,
-    direction8,
     flagSrc,
-    pctSquares,
     poolFor,
     formatCountdown,
+    formatShareText,
     seededShuffle,
     todayPT,
     type Country,
@@ -87,7 +85,6 @@ export function FlagGuesser() {
     const [order, setOrder] = useState<number[]>([0, 1, 2, 3, 4, 5]);
     const [unit, setUnit] = useState<Unit>("km");
     const [showStats, setShowStats] = useState(false);
-    const [copied, setCopied] = useState(false);
     const [difficulties, setDifficulties] = useState<number[]>([]);
     const [regions, setRegions] = useState<string[]>([]);
     const [deck, setDeck] = useState<Country[]>([]);
@@ -316,32 +313,19 @@ export function FlagGuesser() {
         }
     };
 
-    const share = async () => {
-        if (!answer) return;
-        const head =
-            mode === "daily"
-                ? `Flag Guesser #${dailyNumber(dailyDate.current)}`
-                : "Flag Guesser";
-        const score =
-            status === "won"
-                ? `${guesses.length}/${MAX_GUESSES}`
-                : `X/${MAX_GUESSES}`;
-        const rows = guesses.map((g) =>
-            g.pct === 100
-                ? "🟩🟩🟩🟩🟩 🎉"
-                : `${pctSquares(g.pct)} ${ARROW_EMOJI[direction8(g.bearing)]}`
-        );
-        const text = [
-            `${head} ${score}${hints ? ` (${hints} hint${hints > 1 ? "s" : ""})` : ""}`,
-            ...rows,
-            `${window.location.origin}/creations/games/flag-guesser`,
-        ].join("\n");
-        try {
-            await navigator.clipboard.writeText(text);
-            setCopied(true);
-            setTimeout(() => setCopied(false), 2000);
-        } catch {}
-    };
+    // Plain-text result of this round for the Share result button: no emoji, no answer.
+    const shareText = () =>
+        formatShareText({
+            game: "Flag Guesser",
+            ...(mode === "daily"
+                ? { mode: "daily" as const, puzzleNumber: dailyNumber(dailyDate.current) }
+                : { mode: "unlimited" as const }),
+            won: status === "won",
+            used: guesses.length,
+            max: MAX_GUESSES,
+            streak: s.streak,
+            url: `${window.location.origin}/creations/games/flag-guesser`,
+        });
 
     if (!countries || !answer) {
         return (
@@ -609,23 +593,7 @@ export function FlagGuesser() {
                     </p>
                     <StreakLine streak={s.streak} best={s.best} won={status === "won"} />
                     <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
-                        <button
-                            type="button"
-                            onClick={share}
-                            className="inline-flex items-center gap-2 rounded-[2px] border px-4 py-2 font-sans text-sm font-bold transition-transform hover:-translate-y-0.5"
-                            style={{
-                                color: COLOR,
-                                borderColor: `color-mix(in oklch, ${COLOR} 55%, transparent)`,
-                                backgroundColor: `color-mix(in oklch, ${COLOR} 12%, transparent)`,
-                            }}
-                        >
-                            {copied ? (
-                                <PixelIcon name="check" className="size-4" />
-                            ) : (
-                                <PixelIcon name="share" className="size-4" />
-                            )}
-                            {copied ? "Copied!" : "Share"}
-                        </button>
+                        <ShareResultButton build={shareText} />
                         {mode === "unlimited" ? (
                             <button
                                 type="button"
