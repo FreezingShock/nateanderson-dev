@@ -187,6 +187,17 @@ export const Tip = memo(function Tip({ host, store }: { host: RefObject<HTMLElem
     const shown = useCodeReveal(ref, !!live, { bare: true, ms: 200, rows: ":scope > *" });
     const tip = live ?? (shown ? last.current : null);
     const target = live?.el ?? null;
+    // a screen reader hears the tip as the target's description, and Escape dismisses it without moving focus
+    useEffect(() => {
+        if (!target) return;
+        target.setAttribute("aria-describedby", "nf-tip");
+        const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") store.set(null); };
+        window.addEventListener("keydown", onKey, true);
+        return () => {
+            target.removeAttribute("aria-describedby");
+            window.removeEventListener("keydown", onKey, true);
+        };
+    }, [target, store]);
     const prevTarget = useRef<HTMLElement | null>(null);
     useEffect(() => {
         if (target && prevTarget.current && target !== prevTarget.current) cxPlay(ref.current, { bare: true, ms: 200, rows: ":scope > *" });
@@ -211,7 +222,7 @@ export const Tip = memo(function Tip({ host, store }: { host: RefObject<HTMLElem
     if (!tip || !tip.el.isConnected) return null;
     const c = tip.build();
     return (
-        <div ref={ref} className="nf-tip" role="tooltip" data-tone={c.tone} style={{ ["--c" as string]: c.color }}>
+        <div ref={ref} id="nf-tip" className="nf-tip" role="tooltip"data-tone={c.tone} style={{ ["--c" as string]: c.color }}>
             <div className="nf-tip-h">
                 <span>{tip.guided ? "NEXT STEP // " : ""}{c.kicker}</span>
                 <b>{c.title}</b>

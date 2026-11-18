@@ -48,7 +48,7 @@ export function MiniHud({ bytes, rate, step, onGo, paused }: { bytes: number; ra
     const live = show && !paused;
     return createPortal(
         <div className="ctos nf-ev-host">
-            <div className="nf-mh" data-show={live ? "" : undefined} inert={!live} role="status" aria-label="Progress">
+            <div className="nf-mh" data-show={live ? "" : undefined} inert={!live} role="group" aria-label="Progress">
                 <span className="nf-mh-n"><NfIcon name="bytes" /><b>{fmt(bytes)}</b><small>+{fmt(rate)}/s</small></span>
                 <span className="nf-mh-s">
                     <span className="nf-mh-t"><small aria-hidden="true">$ next //</small>{step.title}</span>

@@ -1307,12 +1307,13 @@ export function NodeFarm() {
                 <LabHud s={s} />
                 {s.overclock > 0 && (
                     <div className="nf-oc" role="status">
-                        <NfIcon name="spark" /> OVERCLOCK x{fmt(overclockMult(s))} · {Math.ceil(s.overclock)}s
+                        <NfIcon name="spark" /> <span aria-hidden="true">OVERCLOCK x{fmt(overclockMult(s))} · {Math.ceil(s.overclock)}s</span>
+                        <span className="sr-only">Overclock active, x{fmt(overclockMult(s))}</span>
                     </div>
                 )}
                 <div className="nf-hud-side">
                     {!fs && <button type="button" className="nf-fsb" onClick={() => { setFs(true); sfx("tab"); }} aria-label="Full screen">Full</button>}
-                    <button type="button" className="nf-fsb nf-keysb" onClick={() => window.dispatchEvent(new Event("cm:keys"))} aria-haspopup="dialog" aria-label="Keyboard shortcuts" title="Keyboard shortcuts (?)">Keys ?</button>
+                    <button type="button" className="nf-fsb nf-keysb" onClick={() => window.dispatchEvent(new Event("cm:keys"))} aria-haspopup="dialog" aria-label="Keys, keyboard shortcuts" title="Keyboard shortcuts (?)">Keys ?</button>
                     <span className="nf-hud-n"><NfIcon name="reboot" /> {fmt(s.reboot)}<small>RBT</small></span>
                     <span className="nf-hud-n"><NfIcon name="mult" /> {fmt(s.mult)}<small>MUL</small></span>
                     {s.ap > 0 && <span className="nf-hud-n"><NfIcon name="ascend" /> {s.ap}<small>AP</small></span>}
@@ -1598,7 +1599,7 @@ function DeadDrop({ s, onOpen }: { s: State; onOpen: () => void }) {
     const f = dropFill(s);
     const left = (1 - f) * TUNE.dropHours * 3600;
     return f >= 1
-        ? <button type="button" className="nf-drop" data-ready="" onClick={onOpen} aria-label="Open the Dead drop">DROP READY</button>
+        ? <button type="button" className="nf-drop" data-ready="" onClick={onOpen} aria-label="Drop ready, open the Dead drop">DROP READY</button>
         : <span className="nf-drop" title={`Dead drop fills in ${fmtTime(left)}`} aria-label={`Dead drop ${Math.floor(f * 100)}% full, ready in ${fmtTime(left)}`}><i style={{ width: `${f * 100}%` }} />DROP {Math.floor(f * 100)}%</span>;
 }
 
