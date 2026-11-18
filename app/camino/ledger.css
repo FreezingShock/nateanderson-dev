@@ -1,0 +1,380 @@
+/* Ledger: an accountant's ledger and an adding-machine tape. Tokens from camino.tokens.css only; no new durations or
+   easings. Accent: a cool paper green-grey, #7fd6a4 (Node Farm is #9be564, a yellow-green). Used for the picked tile,
+   operator and exact result, and always with a word next to it. */
+
+.ldg {
+    --ldg-accent: #7fd6a4;
+    --ldg-accent-wash: rgba(127, 214, 164, 0.14);
+    --ldg-ink: var(--cm-ink-0);
+    display: flex;
+    flex-direction: column;
+    gap: var(--cm-s3);
+    min-width: 0;
+    max-width: 100%;
+}
+
+.ldg .ldg-kicker {
+    font: 500 var(--cm-t-micro) / 1 var(--cm-mono);
+    letter-spacing: var(--cm-track-caps);
+    text-transform: uppercase;
+    color: var(--cm-mute);
+}
+
+/* Target: the printed total at the top of the ledger page. */
+.ldg-target {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--cm-s2);
+    padding: var(--cm-s3) var(--cm-s4);
+    border: 1px solid var(--cm-hair);
+    background: var(--cm-solid);
+}
+.ldg-target-num {
+    font: 600 clamp(44px, 13vw, 68px) / 1 var(--cm-mono);
+    font-variant-numeric: tabular-nums;
+    color: var(--cm-fg);
+    letter-spacing: var(--cm-track-tight);
+}
+
+/* The tape: paper ink on a white plate, one printed line per step. Scrolls inside itself, never sideways. */
+.ldg-tape {
+    margin: 0;
+    padding: var(--cm-s2) var(--cm-s3);
+    list-style: none;
+    background: var(--cm-paper);
+    color: var(--ldg-ink);
+    font: 500 13px / 1.5 var(--cm-mono);
+    max-height: 168px;
+    min-height: 56px;
+    overflow-y: auto;
+    overflow-x: hidden;
+    overscroll-behavior: contain;
+    border: 1px solid var(--cm-hair-hi);
+}
+.ldg-tape li,
+.ldg-entries li {
+    display: flex;
+    align-items: baseline;
+    gap: var(--cm-s2);
+    min-width: 0;
+    padding: 4px 0;
+    border-bottom: 1px dashed rgba(5, 6, 7, 0.28);
+}
+.ldg-tape li:last-child,
+.ldg-entries li:last-child {
+    border-bottom: 0;
+}
+.ldg-tape-empty {
+    color: var(--cm-paper-mute);
+    font-family: var(--cm-display);
+    font-size: 13px;
+    line-height: 1.4;
+}
+.ldg-line-no {
+    flex: 0 0 auto;
+    min-width: 2ch;
+    color: var(--cm-paper-mute);
+    font-variant-numeric: tabular-nums;
+}
+.ldg-line {
+    min-width: 0;
+    overflow-wrap: anywhere;
+}
+
+/* Tiles: the numbers on the tape. 3 per row on a phone, 6 on a desktop. Each is at least 56px tall. */
+.ldg-tiles {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: var(--cm-s2);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+@media (min-width: 640px) {
+    .ldg-tiles {
+        grid-template-columns: repeat(6, minmax(0, 1fr));
+    }
+}
+.ldg-tiles li {
+    display: flex;
+    min-width: 0;
+}
+.ldg-tile {
+    position: relative;
+    display: flex;
+    flex: 1 1 auto;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    min-height: 56px;
+    padding: var(--cm-s2) 4px;
+    border: 1px solid var(--cm-hair-hi);
+    background: var(--cm-glass-hi);
+    color: var(--cm-fg);
+    cursor: pointer;
+    transition:
+        border-color var(--cm-d-base) var(--cm-ease),
+        background-color var(--cm-d-base) var(--cm-ease),
+        transform var(--cm-d-instant) var(--cm-ease-press);
+}
+.ldg-tile:hover:not(:disabled) {
+    border-color: var(--cm-fg);
+}
+.ldg-tile:active:not(:disabled) {
+    transform: var(--cm-press);
+}
+.ldg-tile:focus-visible,
+.ldg-op:focus-visible,
+.ldg-btn:focus-visible,
+.ldg .gk-tool:focus-visible {
+    outline: 2px solid var(--ldg-accent);
+    outline-offset: 2px;
+}
+.ldg-tile[data-kind="given"] {
+    border-top: 3px solid var(--cm-fg);
+}
+.ldg-tile[aria-pressed="true"] {
+    border-color: var(--ldg-accent);
+    background: var(--ldg-accent-wash);
+    box-shadow: inset 0 0 0 1px var(--ldg-accent);
+}
+.ldg-tile:disabled {
+    opacity: 0.55;
+    cursor: default;
+}
+.ldg-tile-pos {
+    position: absolute;
+    top: 4px;
+    left: 6px;
+    font: 500 var(--cm-t-micro) / 1 var(--cm-mono);
+    color: var(--cm-dim);
+}
+.ldg-tile-val {
+    font: 600 22px / 1 var(--cm-mono);
+    font-variant-numeric: tabular-nums;
+}
+.ldg-tile-kind {
+    font: 500 var(--cm-t-micro) / 1 var(--cm-mono);
+    letter-spacing: var(--cm-track-caps);
+    text-transform: uppercase;
+    color: var(--cm-mute);
+}
+.ldg-tile[aria-pressed="true"] .ldg-tile-kind {
+    color: var(--ldg-accent);
+}
+
+/* Operators: four keys in a row, each 48px tall. */
+.ldg-ops {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: var(--cm-s2);
+}
+.ldg-op,
+.ldg-btn {
+    min-height: 48px;
+    padding: var(--cm-s2) var(--cm-s3);
+    border: 1px solid var(--cm-hair-hi);
+    background: var(--cm-glass-hi);
+    color: var(--cm-fg);
+    font: 600 var(--cm-t-tag) / 1 var(--cm-mono);
+    letter-spacing: var(--cm-track-caps);
+    text-transform: uppercase;
+    cursor: pointer;
+    transition:
+        border-color var(--cm-d-base) var(--cm-ease),
+        background-color var(--cm-d-base) var(--cm-ease),
+        transform var(--cm-d-instant) var(--cm-ease-press);
+}
+.ldg-op {
+    font-size: 22px;
+    letter-spacing: 0;
+    text-transform: none;
+}
+.ldg-op:hover:not(:disabled),
+.ldg-btn:hover:not(:disabled) {
+    border-color: var(--cm-fg);
+}
+.ldg-op:active:not(:disabled),
+.ldg-btn:active:not(:disabled) {
+    transform: var(--cm-press);
+}
+.ldg-op[aria-pressed="true"] {
+    border-color: var(--ldg-accent);
+    background: var(--ldg-accent-wash);
+    color: var(--ldg-accent);
+    box-shadow: inset 0 0 0 1px var(--ldg-accent);
+}
+.ldg-op:disabled,
+.ldg-btn:disabled {
+    opacity: 0.5;
+    cursor: default;
+}
+
+.ldg-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1.4fr;
+    gap: var(--cm-s2);
+}
+.ldg-btn-submit {
+    border-color: var(--ldg-accent);
+    color: var(--ldg-accent);
+}
+
+/* Live status line: the result of the last move, in words. */
+.ldg-status {
+    min-height: 1.5em;
+    margin: 0;
+    font: 500 var(--cm-t-small) / 1.4 var(--cm-mono);
+    color: var(--cm-fg);
+    overflow-wrap: anywhere;
+}
+
+/* Entries: six lines, one per submission. */
+.ldg-entries {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+}
+.ldg-entries li {
+    align-items: center;
+    padding: 6px 0;
+    font: 500 var(--cm-t-small) / 1.2 var(--cm-mono);
+    border-bottom-color: var(--cm-hair);
+}
+.ldg-entry-val {
+    min-width: 4ch;
+    font-variant-numeric: tabular-nums;
+    color: var(--cm-fg);
+}
+.ldg-entry-off {
+    margin-left: auto;
+    color: var(--cm-mute);
+}
+.ldg-entry.is-exact .ldg-entry-off {
+    color: var(--ldg-accent);
+}
+.ldg-entry-empty {
+    color: var(--cm-dim);
+}
+
+/* Result: shown when the round is over. */
+.ldg-result {
+    display: flex;
+    flex-direction: column;
+    gap: var(--cm-s2);
+    padding: var(--cm-s3) var(--cm-s4);
+    border: 1px solid var(--cm-hair-hi);
+    background: var(--cm-solid);
+}
+.ldg-result-head {
+    margin: 0;
+    font: 600 var(--cm-t-lead) / 1.2 var(--cm-display);
+    color: var(--cm-fg);
+}
+.ldg-result-sub {
+    margin: 0;
+    font: 500 var(--cm-t-small) / 1.4 var(--cm-mono);
+    color: var(--cm-mute);
+}
+.ldg-solution {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    font: 500 13px / 1.6 var(--cm-mono);
+    color: var(--cm-fg);
+}
+.ldg-share-slot:empty {
+    display: none;
+}
+
+.ldg-keys {
+    display: none;
+    margin: 0;
+    font: 500 var(--cm-t-micro) / 1.4 var(--cm-mono);
+    letter-spacing: var(--cm-track-caps);
+    text-transform: uppercase;
+    color: var(--cm-dim);
+    text-align: center;
+}
+@media (pointer: fine) {
+    .ldg-keys {
+        display: block;
+    }
+}
+
+/* Statistics panel (its own, in the Ledger accent). */
+.ldg-stats {
+    display: flex;
+    flex-direction: column;
+    gap: var(--cm-s3);
+    padding: var(--cm-s4);
+}
+.ldg-stats-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: var(--cm-s2);
+    text-align: center;
+}
+.ldg-stat-num {
+    margin: 0;
+    font: 600 22px / 1 var(--cm-mono);
+    font-variant-numeric: tabular-nums;
+    color: var(--ldg-accent);
+}
+.ldg-stat-label {
+    margin: 4px 0 0;
+    font: 500 var(--cm-t-micro) / 1 var(--cm-mono);
+    letter-spacing: var(--cm-track-caps);
+    text-transform: uppercase;
+    color: var(--cm-mute);
+}
+.ldg-dist {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+.ldg-dist-row {
+    display: flex;
+    align-items: center;
+    gap: var(--cm-s2);
+    font: 500 var(--cm-t-small) / 1 var(--cm-mono);
+}
+.ldg-dist-no {
+    width: 1.5ch;
+    color: var(--cm-mute);
+}
+.ldg-dist-bar {
+    flex: 1 1 auto;
+    height: 16px;
+    background: rgba(226, 238, 240, 0.08);
+}
+.ldg-dist-bar > div {
+    height: 100%;
+    min-width: 0;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    padding: 0 6px;
+    background: var(--ldg-accent);
+    color: var(--cm-ink-0);
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .ldg .ldg-tile,
+    .ldg .ldg-op,
+    .ldg .ldg-btn {
+        transition: none;
+    }
+    .ldg .ldg-tile:active:not(:disabled),
+    .ldg .ldg-op:active:not(:disabled),
+    .ldg .ldg-btn:active:not(:disabled) {
+        transform: none;
+    }
+}

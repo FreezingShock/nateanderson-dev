@@ -1,4 +1,5 @@
 import { px, type PixelComponent } from "@/components/cm/pixel-icons";
+import { LEDGER_NAME } from "@/lib/ledger/name";
 
 const Ic = {
     Brush: px("brush"),
@@ -251,6 +252,19 @@ export const GAME_MODES: GameMode[] = [
         games: [
             // puzzle-card: word (insert the word puzzle's card ABOVE this line)
             // The two markers sit on separate lines on purpose, so two branches adding a card here do not conflict.
+            {
+                slug: "ledger",
+                title: LEDGER_NAME,
+                status: "playable",
+                icon: px("book"),
+                format: "Daily + Unlimited",
+                blurb: "Six numbers and a target on an adding-machine tape. Combine them with + - x and /, one step at a time. A new puzzle a day, the same for everyone, then endless ones once you finish a daily.",
+                features: ["Adding-machine tape", "Daily puzzle, then unlimited", "Keyboard and touch"],
+                href: "/creations/games/ledger",
+                shot: "/games/shots/ledger.webp",
+                accent: "#7fd6a4",
+                tags: ["6 numbers", "Daily + unlimited", "6 entries"],
+            },
             // puzzle-card: number (insert the number puzzle's card ABOVE this line)
         ],
     },

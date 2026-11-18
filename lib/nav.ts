@@ -30,6 +30,7 @@ export interface NavItem {
 const GAME_ICON: Record<string, PixelName> = {
     "outline-guesser": "shapes",
     "flag-guesser": "flag",
+    ledger: "book",
     brasswork: "settings",
 };
 
