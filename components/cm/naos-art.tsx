@@ -1,5 +1,6 @@
 "use client";
 
+import type React from "react";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { preload } from "react-dom";
 import { useMotionOn } from "@/lib/motion/engine";
@@ -53,8 +54,8 @@ export function NaosArt({
 
     return (
         <div ref={ref} className={`naos-art naos-art-${variant} ${className}`.trim()} aria-hidden="true">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={src} width={width} height={height} alt="" loading={eager ? "eager" : "lazy"} decoding="async" draggable={false} />
+            {/* The art is a mask (see naos-art.css), so it takes the live accent. Decorative: no image element, no alt text. */}
+            <span className="naos-art-ink" style={{ "--ar": `${width} / ${height}`, "--naos-art": `url(${src})` } as React.CSSProperties} />
         </div>
     );
 }
@@ -237,7 +238,7 @@ export function NaosBackdrop({ src }: { src: string }) {
             <div ref={stageRef} className="naos-backdrop-stage" aria-hidden="true">
                 <div className={`naos-backdrop-ground${ready ? " is-hidden" : ""}`} aria-hidden="true" />
                 <div className={`naos-backdrop${ready ? " is-ready" : ""}`} aria-hidden="true">
-                    <div ref={backdropRef} className="naos-backdrop-art" style={{ backgroundImage: `url(${src})` }} />
+                    <div ref={backdropRef} className="naos-backdrop-art" style={{ "--naos-art": `url(${src})` } as React.CSSProperties} />
                 </div>
             </div>
             <div ref={haloRef} className="naos-halo" aria-hidden="true" />

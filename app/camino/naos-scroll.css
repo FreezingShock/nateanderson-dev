@@ -8,7 +8,7 @@
   --naos-sb-w: 10px;
   --naos-sb-track: var(--cm-ctos-panel);
   --naos-sb-edge: rgba(244, 244, 242, .12);
-  --naos-sb-thumb: #2fd8e8;
+  --naos-sb-thumb: var(--cm-cyan);
   --naos-sb-dot: rgba(3, 20, 23, .55);
   --naos-sb-hot: #f4f4f2;
   --naos-sb-hot-dot: rgba(26, 26, 26, .6);

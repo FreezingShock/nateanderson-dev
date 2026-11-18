@@ -5,6 +5,7 @@ import { PATH } from "@/lib/identity";
 import { navItems } from "@/lib/nav";
 import { NateGlyph } from "@/components/cm/mark";
 import { ShortcutsButton } from "@/components/cm/keys";
+import { AccentSwitch } from "@/components/cm/accent-switch";
 import { PixelIcon, type PixelName } from "@/components/cm/pixel-icons";
 
 // Site footer, the "ID card" layout: Nate's identity card beside a page and about directory, then the channels.
@@ -131,6 +132,7 @@ export function SiteFooter() {
                 <div className="sf-base">
                     <span>© {year} {identity.name} {identity.lastName}</span>
                     <span>Built in Southern California / Camino design system</span>
+                    <AccentSwitch />
                     <ShortcutsButton />
                 </div>
             </div>

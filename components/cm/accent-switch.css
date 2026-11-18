@@ -1,0 +1,19 @@
+/* Footer accent switch (components/cm/accent-switch.tsx). Sharp squares, mono caps, no pills, no side strips. */
+.acc-sw { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; }
+.acc-sw-lead { color: var(--cm-ctos-meta); }
+.acc-sw-row { display: inline-flex; flex-wrap: wrap; gap: 0; border: 1px solid var(--cm-hair); }
+.acc-sw-btn {
+  appearance: none; display: inline-flex; align-items: center; gap: 8px; min-height: 32px; padding: 0 10px;
+  background: var(--cm-ctos-panel); color: var(--cm-ctos-meta); border: 0; border-right: 1px solid var(--cm-hair);
+  font: inherit; letter-spacing: inherit; text-transform: inherit; cursor: pointer;
+  transition: background-color var(--cm-d-base) var(--cm-ease), color var(--cm-d-base) var(--cm-ease);
+}
+.acc-sw-btn:last-child { border-right: 0; }
+.acc-sw-btn i { width: 10px; height: 10px; flex: none; background: var(--swatch, #888); }
+.acc-sw-btn[data-k="auto"] i { background: linear-gradient(90deg, #f2c94c 0 33.3%, #2fd8e8 33.3% 66.6%, #a58bff 66.6%); }
+.acc-sw-btn[data-k="amber"] i { --swatch: #f2c94c; }
+.acc-sw-btn[data-k="cyan"] i { --swatch: #2fd8e8; }
+.acc-sw-btn[data-k="violet"] i { --swatch: #a58bff; }
+.acc-sw-btn:hover { color: var(--cm-fg); background: var(--cm-ctos-panel-hi, #181818); }
+.acc-sw-btn[aria-pressed="true"] { color: var(--cm-accent); background: var(--cm-accent-wash); box-shadow: inset 0 -2px 0 var(--cm-accent); }
+.acc-sw-now { font-variant-numeric: tabular-nums; color: var(--cm-ctos-meta); }

@@ -18,7 +18,7 @@ html[data-xition="hold"] .cm-main, html[data-xition="hold"] .sf-foot { opacity: 
 
 /* ---- The container: hidden when idle, so the panels only exist during a switch ---------------------------------- */
 .cm-wipe {
-  --acc: #2fd8e8;
+  --acc: var(--cm-cyan);
   --x-cover: var(--cm-d-shut);   /* the panels close */
   --x-name: var(--cm-d-name);    /* the readout, name and blurb settle */
   --x-exit: var(--cm-d-exit);    /* the panels open */
