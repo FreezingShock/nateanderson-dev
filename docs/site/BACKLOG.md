@@ -95,3 +95,4 @@ Slot for findings from the thread "Audit website code for simplification". That 
 - [x] GUESS-reveal-polish | M | animated miss and win reveals, streak readout, Unlimited unlock moment, flag round double shake removed, reduced motion respected | this PR
 - [x] SITE-motion-scale | M | one motion scale (easing, durations, lift and press travel) and one reduced-motion rule; buttons, chips, cards, home game cards and page shutters use it | this PR
 - [x] SITE-dead-knip | S | `knip.json` at the root: run `npx -y knip@5` for unused files, exports and deps. Removed the unused `getProjectAccentColor` and unexported unused gate and sound symbols. knip misses dynamic imports, so grep before deleting | this PR
+- [x] GUESS-share-result | S | Share result button on the Outline round-1 result and the Flag round result: plain text (result, streak over 1, URL), copies or opens the share sheet on touch, Copied and Copy failed states | this PR
