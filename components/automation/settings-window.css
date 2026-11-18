@@ -84,21 +84,23 @@ a.bws-action, a.bws-action:visited { color: var(--ab-brass-hi, #f0c97a); }
   .bws-action { min-height: 44px; }
 }
 
-/* Layout. Desktop: the four groups sit in two columns (Sound and Display, then Numbers and Save), so the whole panel
-   fits a 1440 by 900 screen with no scroll inside. Phones: a tab row shows one group at a time, so nothing scrolls. */
+/* Layout. Tall desktop (viewport 1200 px and up): the four groups sit in two columns. Phones and every shorter
+   window: a tab row shows one group at a time. The game panel is only about 500 px tall on a 1440 by 900 screen,
+   too short for the two-column window, so it uses the tab row there. */
 .bws-tabs { display: none; }
-@media (min-width: 768px) {
+@media (min-width: 768px) and (min-height: 1200px) {
   .bws-body[data-panel="controls"] { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); column-gap: 28px; row-gap: 14px; align-items: start; }
   .bws-group + .bws-group { margin-top: 0; }
   .bws-body[data-panel="controls"] > .bws-note { grid-column: 1 / -1; margin: 0; }
 }
-@media (max-width: 767px) {
-  .bws-tabs { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; margin: 0 0 10px; }
+@media (max-width: 767px), (max-height: 1199px) {
+  /* Plain text tabs on a hairline; the picked tab gets a brass underline (no boxes, no chips). */
+  .bws-tabs { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0; margin: 0 0 12px; border-bottom: 1px solid var(--ab-line, #4a3a22); }
   .bws-tab {
-    min-height: 44px; border: 1px solid var(--ab-line, #4a3a22); background: #120d07; color: var(--ab-dim, #9c8a66); cursor: pointer;
+    min-height: 44px; border: 0; border-bottom: 2px solid transparent; margin-bottom: -1px; background: none; color: var(--ab-dim, #9c8a66); cursor: pointer;
     font-size: 12px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; padding: 0;
   }
-  .bws-tab[aria-pressed="true"] { background: linear-gradient(#d9ae62, #b28438); color: #2a1606; border-color: var(--ab-brass, #c59a52); }
+  .bws-tab[aria-pressed="true"] { color: var(--ab-brass-hi, #f4cf7e); border-bottom-color: var(--ab-brass, #c59a52); }
   .bws-body[data-page="sound"] > .bws-group:not([data-tab="sound"]),
   .bws-body[data-page="display"] > .bws-group:not([data-tab="display"]),
   .bws-body[data-page="numbers"] > .bws-group:not([data-tab="numbers"]),

@@ -157,6 +157,12 @@ export function BuildList({
     if (!g) groups.push((g = { id, items: [] }));
     g.items.push(m);
   }
+  // One group open at a time. The Machines tab opens on Machines (the drill and kiln a new player needs first);
+  // the desktop dock opens its own group. Tapping an open header folds it, and the others stay folded.
+  const [openId, setOpenId] = useState<GroupId | null>(group ?? "machines");
+  useEffect(() => {
+    if (group) setOpenId(group);
+  }, [group]);
   // Number-key hint for each open row of the shown group: 1 to 9, in the order the rows are listed.
   const hintOf = new Map<string, number>();
   if (group) openRowsOf(machines, group).slice(0, 9).forEach((m, i) => hintOf.set(m.id, i + 1));
@@ -248,7 +254,14 @@ export function BuildList({
       {groups.map((g) => {
         const openCount = g.items.filter((m) => m.unlocked).length;
         return (
-          <Section key={g.id} title={GROUP_TITLE[g.id]} icon={GROUP_ICON[g.id]} meta={`${openCount} open`}>
+          <Section
+            key={g.id}
+            title={GROUP_TITLE[g.id]}
+            icon={GROUP_ICON[g.id]}
+            meta={`${openCount} open`}
+            open={openId === g.id}
+            onToggle={() => setOpenId((cur) => (cur === g.id ? null : g.id))}
+          >
             {g.id === "logistics" ? (
               (Object.keys(SUB_TITLE) as (keyof typeof SUB_TITLE)[])
                 .map((sub) => ({ sub, items: g.items.filter((m) => subOf(m.id) === sub) }))

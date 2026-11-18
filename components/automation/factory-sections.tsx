@@ -13,6 +13,8 @@ export function Section({
   meta,
   icon,
   defaultOpen = true,
+  open: openProp,
+  onToggle,
   children,
 }: {
   title: string;
@@ -20,16 +22,21 @@ export function Section({
   /** A HUD glyph id from lib/automation/icons/ui.ts, shown before the title. */
   icon?: string;
   defaultOpen?: boolean;
+  /** Pass `open` and `onToggle` to let a parent own the state (one open at a time). Otherwise it is local. */
+  open?: boolean;
+  onToggle?: () => void;
   children: ReactNode;
 }) {
-  const [open, setOpen] = useState(defaultOpen);
+  const [localOpen, setLocalOpen] = useState(defaultOpen);
+  const controlled = openProp !== undefined;
+  const open = controlled ? openProp : localOpen;
   return (
     <section className="ab-section ab-panel" data-open={open}>
       <button
         type="button"
         className="ab-section-head"
         aria-expanded={open}
-        onClick={() => setOpen((v) => !v)}
+        onClick={() => (controlled ? onToggle?.() : setLocalOpen((v) => !v))}
       >
         {icon && <span className="ab-ico" style={uiIconStyle(icon, 20)} aria-hidden="true" />}
         <span className="ab-h">{title}</span>

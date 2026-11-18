@@ -123,3 +123,10 @@
 @media (pointer: coarse) {
   .ex-carry-tile { width: 44px; height: 44px; }
 }
+
+/* Expedition banner (decision 2026-11-18, Nate: fade into the dark band). The bright block at the banner's left edge
+   fades out before the title, so the art no longer reads as a coloured strip. */
+.bw-window[data-theme="expedition"] .bw-window-banner {
+  -webkit-mask-image: linear-gradient(90deg, transparent 0, transparent 40%, #000 62%);
+          mask-image: linear-gradient(90deg, transparent 0, transparent 40%, #000 62%);
+}
