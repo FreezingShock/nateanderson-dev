@@ -220,7 +220,7 @@ html.gb-route .sf-foot { display: none !important; }
     .gb-rail-btn { width: 44px; height: 44px; }
     .gb-job { left: 8px; right: auto; top: 98px; width: 220px; }
     .gb-zoom { bottom: 190px; right: 8px; flex-direction: row; }
-    .gb-zoom button { width: 40px; height: 40px; }
+    .gb-zoom button { width: 44px; height: 44px; }
     .gb-feed { left: 8px; bottom: 262px; }
     .gb-dock { grid-template-columns: repeat(6, 1fr); grid-auto-flow: row; width: calc(100vw - 16px); bottom: 8px; gap: 4px; padding: 6px; }
     .gb-tile { width: auto; height: 62px; }
@@ -367,8 +367,8 @@ html.gb-route .sf-foot { display: none !important; }
     .gb-top { height: 40px; }
     .gb-title { font-size: 18px; }
     .gb-sub { display: none; }
-    .gb-rail { top: 44px; gap: 4px; }
-    .gb-rail-btn { width: 40px; height: 40px; }
+    .gb-rail { top: 44px; gap: 4px; justify-content: flex-end; }
+    .gb-rail-btn { width: 44px; height: 44px; }
     .gb-rail-btn .gb-ico { width: 28px !important; height: 28px !important; }
     .gb-dock { grid-template-columns: none; grid-auto-flow: column; width: auto; gap: 4px; padding: 4px; bottom: 4px; }
     .gb-root .gb-tile { width: 44px; height: 50px; }
@@ -474,7 +474,7 @@ html.gb-route .sf-foot { display: none !important; }
     .gb-tile b { font-size: 10px; }
     .gb-root .gb-tile kbd, .gb-root .gb-lv { height: 14px; min-width: 14px; font-size: 9px; }
     .gb-root .gb-zoom { bottom: 64px; }
-    .gb-root .gb-zoom button { width: 36px; height: 36px; }
+    .gb-root .gb-zoom button { width: 44px; height: 44px; }
     .gb-feed { bottom: 64px; }
 }
 .gb-root .gb-lv { white-space: nowrap; }
