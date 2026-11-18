@@ -7,6 +7,7 @@ export const SAVE_SLOTS = {
     starwright: { app: "starwright", key: "sw-save-v1", version: 1 },
     groundbreak: { app: "groundbreak", key: "gb-save-v1", version: 2 },
     "node-farm": { app: "node-farm", key: "nf-save-v1", version: 1 },
+    strata: { app: "strata", key: "strata-save-v1", version: 1 },
     // gen-anchor: slots
 } as const;
 

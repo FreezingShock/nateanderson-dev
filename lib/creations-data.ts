@@ -249,6 +249,19 @@ export const GAME_MODES: GameMode[] = [
         about: "Word and number puzzles with a new one at midnight Pacific. Finish a daily and its unlimited practice opens too. Streaks and stats stay in your browser.",
         coming: "The first daily puzzles are in development. They go live in this section when they are playable.",
         games: [
+            {
+                slug: "strata",
+                title: "Strata",
+                status: "playable",
+                icon: Ic.Layers,
+                format: "Daily + Unlimited",
+                blurb: "A hidden five-letter word a day, the same for everyone, then random words once you finish a daily. Six tries, and every letter is marked.",
+                features: ["Daily word, then unlimited", "Every letter marked, duplicates scored", "Works on the keyboard or on screen"],
+                href: "/creations/games/strata",
+                shot: "/games/shots/strata.webp",
+                accent: "#d9895b",
+                tags: ["6 tries", "Daily + unlimited", "Keyboard + touch"],
+            },
             // puzzle-card: word (insert the word puzzle's card ABOVE this line)
             // The two markers sit on separate lines on purpose, so two branches adding a card here do not conflict.
             // puzzle-card: number (insert the number puzzle's card ABOVE this line)

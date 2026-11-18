@@ -1,0 +1,188 @@
+/* Strata (components/games/strata.tsx). Every class is `st-`. The accent is a warm clay, deliberately not Groundbreak's amber.
+   Motion uses the naOS tokens in camino.tokens.css; reduced motion turns the flip and the shake off. */
+
+.ctos .st-root {
+    --st-accent: #d9895b;
+    --st-ink: #1a0e07;
+    position: relative;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 14px;
+    min-width: 0;
+    color: var(--cm-fg);
+}
+/* Grid items default to their widest content (the key rows); let every child shrink to the frame instead. */
+.ctos .st-root > *,
+.ctos .st-panel > *,
+.ctos .st-keys,
+.ctos .st-key-row { min-width: 0; max-width: 100%; }
+
+.ctos .st-panel { position: relative; padding: 4px 0 0; min-width: 0; }
+
+.ctos .st-head { text-align: center; }
+.ctos .st-title {
+    font: 700 16px/1.2 var(--cm-display);
+    color: var(--st-accent);
+    letter-spacing: 0.01em;
+}
+.ctos .st-sub {
+    margin-top: 4px;
+    font: 500 12px/1.4 var(--cm-mono);
+    letter-spacing: var(--cm-track-caps);
+    text-transform: uppercase;
+    color: var(--cm-mute);
+}
+
+/* Board: six rows of five tiles. Tiles are square and fill the row, so the board scales to a 360px phone. */
+.ctos .st-board {
+    display: grid;
+    gap: 6px;
+    width: 100%;
+    max-width: 340px;
+    margin: 12px auto 0;
+}
+.ctos .st-row {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 6px;
+}
+.ctos .st-row.is-shake { animation: st-shake var(--cm-d-enter) var(--cm-ease-cut); }
+
+.ctos .st-tile {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    aspect-ratio: 1 / 1;
+    border: 1px solid var(--cm-hair);
+    background: rgba(255, 255, 255, 0.02);
+    font: 700 clamp(18px, 5.2vw, 26px)/1 var(--cm-mono);
+    text-transform: uppercase;
+    color: var(--cm-fg);
+    user-select: none;
+}
+.ctos .st-tile.is-empty { border-color: var(--cm-hair); }
+.ctos .st-tile.is-typed { border-color: var(--cm-mute); }
+
+/* Correct: a solid clay fill with a dark square in the corner. */
+.ctos .st-tile.is-correct {
+    background: var(--st-accent);
+    border-color: var(--st-accent);
+    color: var(--st-ink);
+}
+.ctos .st-tile.is-correct::after {
+    content: "";
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    width: 6px;
+    height: 6px;
+    background: var(--st-ink);
+}
+
+/* Wrong place: a clay outline with diagonal hatching. */
+.ctos .st-tile.is-present {
+    border: 2px solid var(--st-accent);
+    background: repeating-linear-gradient(135deg, rgba(217, 137, 91, 0.3) 0 2px, transparent 2px 7px);
+    color: var(--st-accent);
+}
+
+/* Not in the word: a dim tile, the letter in lowercase and a slash through it. */
+.ctos .st-tile.is-absent {
+    background: transparent;
+    border-color: var(--cm-hair);
+    color: var(--cm-dim);
+    text-transform: lowercase;
+}
+.ctos .st-tile.is-absent::after {
+    content: "";
+    position: absolute;
+    left: 14%;
+    right: 14%;
+    top: 50%;
+    height: 1px;
+    background: var(--cm-dim);
+    transform: rotate(-35deg);
+}
+
+.ctos .st-tile.is-flip {
+    animation: st-flip var(--cm-d-enter) var(--cm-ease-out) both;
+    animation-delay: calc(var(--i, 0) * var(--cm-d-fast));
+}
+
+.ctos .st-msg {
+    min-height: 1.5em;
+    text-align: center;
+    font: 600 13px/1.4 var(--cm-mono);
+    color: var(--cm-fg);
+}
+
+.ctos .st-result { text-align: center; display: grid; justify-items: center; gap: 8px; }
+.ctos .st-result-line { font: 700 18px/1.25 var(--cm-display); color: var(--cm-fg); }
+.ctos .st-next { font: 500 12px var(--cm-mono); letter-spacing: var(--cm-track-caps); text-transform: uppercase; color: var(--cm-mute); }
+.ctos .st-next-btn {
+    min-height: 44px;
+    padding: 0 18px;
+    background: var(--st-accent);
+    color: var(--st-ink);
+    font: 700 12px var(--cm-mono);
+    letter-spacing: var(--cm-track-caps);
+    text-transform: uppercase;
+    border: 0;
+    cursor: pointer;
+}
+.ctos .st-next-btn:focus-visible { outline: 2px solid var(--st-accent); outline-offset: 3px; }
+/* Reserved for the share action (another branch). Takes no space until something is in it. */
+.ctos .st-share-slot:empty { display: none; }
+
+/* On-screen keyboard. Keys are at least 44px tall on phones. */
+.ctos .st-keys { display: grid; gap: 6px; width: 100%; max-width: 520px; margin: 4px auto 0; }
+.ctos .st-key-row { display: flex; gap: 6px; justify-content: center; }
+.ctos .st-key {
+    flex: 1 1 0;
+    min-width: 0;
+    padding: 0;
+    min-height: 44px;
+    border: 1px solid var(--cm-hair);
+    background: rgba(255, 255, 255, 0.05);
+    color: var(--cm-fg);
+    font: 600 14px/1 var(--cm-mono);
+    cursor: pointer;
+}
+.ctos .st-key-wide { flex: 1.6 1 0; font-size: 11px; letter-spacing: var(--cm-track-caps); text-transform: uppercase; }
+/* games.css gives every button in a game frame a 44px minimum width. The keys need only the 44px height, so their width can shrink to the row. */
+.ctos .g-frame .st-key { min-width: 0; }
+.ctos .st-key:disabled { opacity: 0.4; cursor: default; }
+.ctos .st-key:focus-visible { outline: 2px solid var(--st-accent); outline-offset: 2px; }
+.ctos .st-key[data-state="correct"] { background: var(--st-accent); border-color: var(--st-accent); color: var(--st-ink); }
+.ctos .st-key[data-state="present"] { border-color: var(--st-accent); color: var(--st-accent); }
+.ctos .st-key[data-state="absent"] { color: var(--cm-dim); background: transparent; }
+
+.ctos .st-stats {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 8px;
+    margin-top: 6px;
+    padding-top: 14px;
+    border-top: 1px solid var(--cm-hair);
+    text-align: center;
+}
+.ctos .st-stat-n { font: 700 22px/1 var(--cm-mono); color: var(--st-accent); }
+.ctos .st-stat-l { margin-top: 4px; font: 500 10px/1 var(--cm-mono); letter-spacing: var(--cm-track-caps); text-transform: uppercase; color: var(--cm-mute); }
+
+@keyframes st-flip {
+    0% { transform: rotateX(0deg); }
+    50% { transform: rotateX(90deg); }
+    100% { transform: rotateX(0deg); }
+}
+@keyframes st-shake {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-5px); }
+    75% { transform: translateX(5px); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .ctos .st-tile.is-flip,
+    .ctos .st-row.is-shake { animation: none; }
+}

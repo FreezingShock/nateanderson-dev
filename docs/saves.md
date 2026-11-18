@@ -15,6 +15,7 @@ Keys and versions live in one place, `lib/saves/keys.ts`. Engines import their k
 | Starwright | `starwright` | `sw-save-v1` | 1 |
 | Groundbreak | `groundbreak` | `gb-save-v1` | 2 |
 | Node Farm | `node-farm` | `nf-save-v1` | 1 |
+| Strata | `strata` | `strata-save-v1` | 1 |
 
 Node Farm keeps its own backup list (`nf-backups-v1`, lib/nodefarm/backups.ts). Its backups hold the game's bare JSON text, and its own export code is read by `parseSave`, which accepts the envelope and the bare form.
 
