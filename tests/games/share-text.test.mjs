@@ -27,7 +27,7 @@ registerHooks({
     return next(url, ctx);
   },
 });
-const { formatShareText, MAX_GUESSES } = await import(pathToFileURL(resolve(root, "lib/outline-game.ts")).href);
+const { formatShareText, formatSummaryShareText, MAX_GUESSES } = await import(pathToFileURL(resolve(root, "lib/outline-game.ts")).href);
 
 const URL_OUTLINE = "https://nateanderson.dev/creations/games/outline-guesser";
 const URL_FLAG = "https://nateanderson.dev/creations/games/flag-guesser";
@@ -135,4 +135,30 @@ test("share text has no emoji, no trailing newline, and only the URL as its last
     assert.equal(text.endsWith("\n"), false);
     assert.equal(text.split("\n").at(-1), c.url);
   }
+});
+
+test("summary share: plain text for all three rounds, no emoji", () => {
+  const base = { game: "Outline Guesser", pct: 84, rating: "Great", url: "https://x.test/g", mode: "daily", puzzleNumber: 51 };
+  const text = formatSummaryShareText({
+    ...base,
+    country: { won: true, used: 3, max: 6, hints: 1 },
+    neighbours: { played: true, found: 3, total: 5 },
+    flag: { played: true, won: true, picks: 1, max: 3 },
+  });
+  assert.equal(text, "Outline Guesser daily #51 - 84% Great\nCountry 3/6 (1 hint)\nNeighbours 3/5\nFlag 1/3\nhttps://x.test/g");
+  assert.doesNotMatch(text, /\p{Extended_Pictographic}/u);
+});
+
+test("summary share: missed, skipped and no-neighbours cases", () => {
+  const base = { game: "Outline Guesser", pct: 10, rating: "Keep going", url: "https://x.test/g", mode: "unlimited" };
+  const text = formatSummaryShareText({
+    ...base,
+    country: { won: false, used: 6, max: 6, hints: 2 },
+    neighbours: null,
+    flag: { played: false, won: false, picks: 0, max: 3 },
+  });
+  assert.equal(text, "Outline Guesser unlimited - 10% Keep going\nCountry missed (2 hints)\nFlag skipped\nhttps://x.test/g");
+  const skipped = formatSummaryShareText({ ...base, country: { won: true, used: 1, max: 6, hints: 0 }, neighbours: { played: false, found: 0, total: 4 }, flag: { played: true, won: false, picks: 3, max: 3 } });
+  assert.match(skipped, /Neighbours skipped/);
+  assert.match(skipped, /Flag missed/);
 });

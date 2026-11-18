@@ -216,6 +216,31 @@ export function formatShareText(r: ShareResult): string {
     return lines.join("\n");
 }
 
+export type SummaryShareResult = {
+    game: string;
+    pct: number;
+    rating: string;
+    url: string;
+    country: { won: boolean; used: number; max: number; hints: number };
+    /** null when this puzzle has no neighbours round. */
+    neighbours: { played: boolean; found: number; total: number } | null;
+    flag: { played: boolean; won: boolean; picks: number; max: number };
+} & ({ mode: "daily"; puzzleNumber: number } | { mode: "unlimited" });
+
+/** Plain-text summary of all three rounds: no emoji, no answers. */
+export function formatSummaryShareText(r: SummaryShareResult): string {
+    const head = r.mode === "daily" ? `${r.game} daily #${r.puzzleNumber}` : `${r.game} unlimited`;
+    const hints = r.country.hints ? ` (${r.country.hints} hint${r.country.hints > 1 ? "s" : ""})` : "";
+    const lines = [
+        `${head} - ${r.pct}% ${r.rating}`,
+        `Country ${r.country.won ? `${r.country.used}/${r.country.max}` : "missed"}${hints}`,
+    ];
+    if (r.neighbours) lines.push(r.neighbours.played ? `Neighbours ${r.neighbours.found}/${r.neighbours.total}` : "Neighbours skipped");
+    lines.push(!r.flag.played ? "Flag skipped" : r.flag.won ? `Flag ${r.flag.picks}/${r.flag.max}` : "Flag missed");
+    lines.push(r.url);
+    return lines.join("\n");
+}
+
 /** Seconds until the next Pacific-time midnight. */
 export function secondsToNextDaily(now = Date.now()): number {
     const parts = new Intl.DateTimeFormat("en-GB", {
