@@ -199,6 +199,25 @@ const GHOST_VALID_HOT = 0xfff2c0;
 const GHOST_REFUSED_TINT = 0xff4a3a;
 const GHOST_REFUSED_HOT = 0xff9a80;
 
+/**
+ * Device pixels per CSS pixel for the island canvas. Capped at 2: the pixel pass is full-screen, so a
+ * 3x phone would pay nine times the fill for no visible gain. On a 3x phone the browser then scales the
+ * canvas by 1.5 with nearest sampling (`.bw-canvas` is pixelated), and each pixel block is still a whole
+ * number of device pixels (8 canvas px is 12 device px).
+ */
+function deviceRatio(): number {
+    if (typeof window === "undefined") return 1;
+    return Math.min(2, Math.max(1, window.devicePixelRatio || 1));
+}
+
+/**
+ * Converts a pixel size in CSS px to canvas px, so the blocks keep their on-screen size at any ratio.
+ * The post pass samples its Bayer dither by the same block size, so the pattern stays on the blocks.
+ */
+function blockPixels(cssPixels: number): number {
+    return cssPixels * deviceRatio();
+}
+
 /** Smoke starts just above the model's top, in world units. */
 function chimneyHeight(model: VoxelModel): number {
     const h = model.size?.[1] ?? 10;
@@ -224,7 +243,9 @@ export function createVoxelIsland(
         antialias: false,
         powerPreference: "high-performance",
     });
-    renderer.setPixelRatio(1);
+    // Draw at the screen's device pixel ratio so retina and phone canvases are not stretched by the
+    // browser. Pixel blocks keep their size in CSS px (see `blockPixels`), so the look is unchanged.
+    renderer.setPixelRatio(deviceRatio());
     renderer.info.autoReset = false;
     renderer.shadowMap.enabled = true;
     renderer.shadowMap.type = THREE.PCFShadowMap;
@@ -377,7 +398,7 @@ export function createVoxelIsland(
         post.resize(
             canvas.width,
             canvas.height,
-            pixelOverride ?? preset.pixelSize
+            blockPixels(pixelOverride ?? preset.pixelSize)
         );
     }
 
@@ -394,10 +415,16 @@ export function createVoxelIsland(
             1,
             Math.floor(canvas.clientHeight || window.innerHeight)
         );
+        // Re-read the ratio here too, so browser zoom and moving between screens update the canvas.
+        renderer.setPixelRatio(deviceRatio());
         renderer.setSize(w, h, false);
         camera.aspect = w / h;
         camera.updateProjectionMatrix();
-        post.resize(w, h, pixelOverride ?? QUALITY_PRESETS[level].pixelSize);
+        post.resize(
+            canvas.width,
+            canvas.height,
+            blockPixels(pixelOverride ?? QUALITY_PRESETS[level].pixelSize)
+        );
     }
 
     function setGhostTint(valid: boolean): void {
@@ -618,7 +645,7 @@ export function createVoxelIsland(
             post.setDither(on);
         },
         setPixelSize(px) {
-            post.resize(canvas.width, canvas.height, px);
+            post.resize(canvas.width, canvas.height, blockPixels(px));
         },
         setQuality(next) {
             auto = next === "auto";
